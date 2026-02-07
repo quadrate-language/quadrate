@@ -16,9 +16,11 @@ void qdrt_dump_stack(qd_context* ctx);
 // Error handling macros - consolidate repetitive error reporting
 
 // Fatal error with stack dump and abort
-#define QDRT_FATAL(ctx, op, msg)                                                                                       \
+#define QDRT_FATAL(ctx, op, ...)                                                                                       \
 	do {                                                                                                               \
-		fprintf(stderr, "Fatal error in %s: %s\n", (op), (msg));                                                       \
+		fprintf(stderr, "Fatal error in %s: ", (op));                                                                   \
+		fprintf(stderr, __VA_ARGS__);                                                                                  \
+		fprintf(stderr, "\n");                                                                                         \
 		qdrt_dump_stack(ctx);                                                                                          \
 		qd_print_stack_trace(ctx);                                                                                     \
 		abort();                                                                                                       \

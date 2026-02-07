@@ -916,7 +916,7 @@ int qd_shl(qd_context* ctx) {
 		abort();
 	}
 
-	int64_t result = second->value.i << top->value.i;
+	int64_t result = (int64_t)((uint64_t)second->value.i << top->value.i);
 	st->size -= 2;
 	QD_STACK_PUSH_INT_FAST(st, result);
 	return (int){0};

@@ -492,3 +492,399 @@ test "math::cubic_hermite" {
 	0.0 1.0 2.0 3.0 0.0 math::cubic_hermite 1.0 0.0001 testing::assert_approx_eq
 	0.0 1.0 2.0 3.0 1.0 math::cubic_hermite 2.0 0.0001 testing::assert_approx_eq
 }
+
+// ============================================================================
+// Vec2 additional tests
+// ============================================================================
+
+test "math::Vec2 length_sq" {
+	math::Vec2 { x = 3.0 y = 4.0 } -> v
+	v length_sq 25.0 0.0001 testing::assert_approx_eq
+}
+
+test "math::Vec2 neg" {
+	math::Vec2 { x = 3.0 y = -4.0 } -> v
+	v neg -> n
+	n @x -3.0 0.0001 testing::assert_approx_eq
+	n @y 4.0 0.0001 testing::assert_approx_eq
+}
+
+test "math::Vec2 lerp" {
+	math::Vec2 { x = 0.0 y = 0.0 } -> a
+	math::Vec2 { x = 10.0 y = 20.0 } -> b
+	a b 0.5 lerp -> mid
+	mid @x 5.0 0.0001 testing::assert_approx_eq
+	mid @y 10.0 0.0001 testing::assert_approx_eq
+	a b 0.0 lerp -> start
+	start @x 0.0 0.0001 testing::assert_approx_eq
+	a b 1.0 lerp -> end
+	end @x 10.0 0.0001 testing::assert_approx_eq
+}
+
+test "math::Vec2 angle" {
+	math::Vec2 { x = 1.0 y = 0.0 } -> v
+	v angle 0.0 0.0001 testing::assert_approx_eq
+	math::Vec2 { x = 0.0 y = 1.0 } -> v2
+	v2 angle math::Pi 2.0 / 0.0001 testing::assert_approx_eq
+}
+
+test "math::Vec2 rotate" {
+	math::Vec2 { x = 1.0 y = 0.0 } -> v
+	v math::Pi 2.0 / rotate -> r
+	r @x 0.0 0.001 testing::assert_approx_eq
+	r @y 1.0 0.001 testing::assert_approx_eq
+}
+
+test "math::Vec2 perpendicular" {
+	math::Vec2 { x = 1.0 y = 0.0 } -> v
+	v perpendicular -> p
+	p @x 0.0 0.0001 testing::assert_approx_eq
+	p @y 1.0 0.0001 testing::assert_approx_eq
+}
+
+// ============================================================================
+// Vec3 additional tests
+// ============================================================================
+
+test "math::vec3_unit_x" {
+	math::vec3_unit_x -> v
+	v @x 1.0 testing::assert_eq
+	v @y 0.0 testing::assert_eq
+	v @z 0.0 testing::assert_eq
+}
+
+test "math::vec3_unit_y" {
+	math::vec3_unit_y -> v
+	v @x 0.0 testing::assert_eq
+	v @y 1.0 testing::assert_eq
+	v @z 0.0 testing::assert_eq
+}
+
+test "math::vec3_unit_z" {
+	math::vec3_unit_z -> v
+	v @x 0.0 testing::assert_eq
+	v @y 0.0 testing::assert_eq
+	v @z 1.0 testing::assert_eq
+}
+
+test "math::Vec3 subtract" {
+	math::Vec3 { x = 5.0 y = 7.0 z = 9.0 } -> a
+	math::Vec3 { x = 2.0 y = 3.0 z = 4.0 } -> b
+	a b subtract -> c
+	c @x 3.0 testing::assert_eq
+	c @y 4.0 testing::assert_eq
+	c @z 5.0 testing::assert_eq
+}
+
+test "math::Vec3 scale" {
+	math::Vec3 { x = 1.0 y = 2.0 z = 3.0 } -> v
+	v 2.0 scale -> s
+	s @x 2.0 testing::assert_eq
+	s @y 4.0 testing::assert_eq
+	s @z 6.0 testing::assert_eq
+}
+
+test "math::Vec3 length_sq" {
+	math::Vec3 { x = 1.0 y = 2.0 z = 2.0 } -> v
+	v length_sq 9.0 0.0001 testing::assert_approx_eq
+}
+
+test "math::Vec3 neg" {
+	math::Vec3 { x = 1.0 y = -2.0 z = 3.0 } -> v
+	v neg -> n
+	n @x -1.0 0.0001 testing::assert_approx_eq
+	n @y 2.0 0.0001 testing::assert_approx_eq
+	n @z -3.0 0.0001 testing::assert_approx_eq
+}
+
+test "math::Vec3 lerp" {
+	math::Vec3 { x = 0.0 y = 0.0 z = 0.0 } -> a
+	math::Vec3 { x = 10.0 y = 20.0 z = 30.0 } -> b
+	a b 0.5 lerp -> mid
+	mid @x 5.0 0.0001 testing::assert_approx_eq
+	mid @y 10.0 0.0001 testing::assert_approx_eq
+	mid @z 15.0 0.0001 testing::assert_approx_eq
+}
+
+test "math::Vec3 reflect" {
+	math::Vec3 { x = 1.0 y = -1.0 z = 0.0 } -> v
+	math::Vec3 { x = 0.0 y = 1.0 z = 0.0 } -> n
+	v n reflect -> r
+	r @x 1.0 0.0001 testing::assert_approx_eq
+	r @y 1.0 0.0001 testing::assert_approx_eq
+	r @z 0.0 0.0001 testing::assert_approx_eq
+}
+
+test "math::Vec3 distance" {
+	math::Vec3 { x = 0.0 y = 0.0 z = 0.0 } -> a
+	math::Vec3 { x = 1.0 y = 2.0 z = 2.0 } -> b
+	b a distance 3.0 0.0001 testing::assert_approx_eq
+}
+
+test "math::Vec3 angle_between" {
+	math::Vec3 { x = 1.0 y = 0.0 z = 0.0 } -> a
+	math::Vec3 { x = 0.0 y = 1.0 z = 0.0 } -> b
+	b a angle_between math::Pi 2.0 / 0.0001 testing::assert_approx_eq
+}
+
+// ============================================================================
+// Vec4 additional tests
+// ============================================================================
+
+test "math::vec4_one" {
+	math::vec4_one -> v
+	v @x 1.0 testing::assert_eq
+	v @y 1.0 testing::assert_eq
+	v @z 1.0 testing::assert_eq
+	v @w 1.0 testing::assert_eq
+}
+
+test "math::Vec4 add" {
+	math::Vec4 { x = 1.0 y = 2.0 z = 3.0 w = 4.0 } -> a
+	math::Vec4 { x = 5.0 y = 6.0 z = 7.0 w = 8.0 } -> b
+	b a add -> c
+	c @x 6.0 testing::assert_eq
+	c @y 8.0 testing::assert_eq
+	c @z 10.0 testing::assert_eq
+	c @w 12.0 testing::assert_eq
+}
+
+test "math::Vec4 subtract" {
+	math::Vec4 { x = 5.0 y = 7.0 z = 9.0 w = 11.0 } -> a
+	math::Vec4 { x = 1.0 y = 2.0 z = 3.0 w = 4.0 } -> b
+	a b subtract -> c
+	c @x 4.0 testing::assert_eq
+	c @y 5.0 testing::assert_eq
+	c @z 6.0 testing::assert_eq
+	c @w 7.0 testing::assert_eq
+}
+
+test "math::Vec4 scale" {
+	math::Vec4 { x = 1.0 y = 2.0 z = 3.0 w = 4.0 } -> v
+	v 2.0 scale -> s
+	s @x 2.0 testing::assert_eq
+	s @y 4.0 testing::assert_eq
+	s @z 6.0 testing::assert_eq
+	s @w 8.0 testing::assert_eq
+}
+
+test "math::Vec4 length_sq" {
+	math::Vec4 { x = 1.0 y = 2.0 z = 2.0 w = 0.0 } -> v
+	v length_sq 9.0 0.0001 testing::assert_approx_eq
+}
+
+test "math::Vec4 normalize" {
+	math::Vec4 { x = 3.0 y = 0.0 z = 4.0 w = 0.0 } -> v
+	v normalize -> n
+	n length 1.0 0.0001 testing::assert_approx_eq
+}
+
+test "math::Vec4 neg" {
+	math::Vec4 { x = 1.0 y = -2.0 z = 3.0 w = -4.0 } -> v
+	v neg -> n
+	n @x -1.0 0.0001 testing::assert_approx_eq
+	n @y 2.0 0.0001 testing::assert_approx_eq
+	n @z -3.0 0.0001 testing::assert_approx_eq
+	n @w 4.0 0.0001 testing::assert_approx_eq
+}
+
+test "math::Vec4 lerp" {
+	math::Vec4 { x = 0.0 y = 0.0 z = 0.0 w = 0.0 } -> a
+	math::Vec4 { x = 10.0 y = 20.0 z = 30.0 w = 40.0 } -> b
+	a b 0.5 lerp -> mid
+	mid @x 5.0 0.0001 testing::assert_approx_eq
+	mid @y 10.0 0.0001 testing::assert_approx_eq
+	mid @z 15.0 0.0001 testing::assert_approx_eq
+	mid @w 20.0 0.0001 testing::assert_approx_eq
+}
+
+// ============================================================================
+// Quaternion additional tests
+// ============================================================================
+
+test "math::Quat mul" {
+	math::quat_identity -> a
+	math::quat_identity -> b
+	b a mul -> c
+	c @w 1.0 0.0001 testing::assert_approx_eq
+	c @x 0.0 0.0001 testing::assert_approx_eq
+	c @y 0.0 0.0001 testing::assert_approx_eq
+	c @z 0.0 0.0001 testing::assert_approx_eq
+}
+
+test "math::Quat dot" {
+	math::quat_identity -> a
+	math::quat_identity -> b
+	b a dot 1.0 0.0001 testing::assert_approx_eq
+}
+
+test "math::Quat inverse" {
+	math::quat_identity -> q
+	q inverse -> inv
+	inv @w 1.0 0.0001 testing::assert_approx_eq
+	inv @x 0.0 0.0001 testing::assert_approx_eq
+	inv @y 0.0 0.0001 testing::assert_approx_eq
+	inv @z 0.0 0.0001 testing::assert_approx_eq
+}
+
+test "math::Quat length_sq" {
+	math::quat_identity -> q
+	q length_sq 1.0 0.0001 testing::assert_approx_eq
+	math::Quat { w = 2.0 x = 0.0 y = 0.0 z = 0.0 } -> q2
+	q2 length_sq 4.0 0.0001 testing::assert_approx_eq
+}
+
+test "math::Quat slerp" {
+	math::quat_identity -> a
+	math::Vec3 { x = 0.0 y = 1.0 z = 0.0 } -> axis
+	axis math::Pi 2.0 / math::quat_from_axis_angle -> b
+	// slerp at t=0 should give a
+	a b 0.0 slerp -> s0
+	s0 @w 1.0 0.001 testing::assert_approx_eq
+	// slerp at t=1 should give b
+	a b 1.0 slerp -> s1
+	s1 length 1.0 0.001 testing::assert_approx_eq
+}
+
+test "math::Quat rotate_vec3" {
+	// Rotate (1,0,0) by 90 degrees around Y axis -> should give (0,0,-1)
+	math::Vec3 { x = 0.0 y = 1.0 z = 0.0 } -> axis
+	axis math::Pi 2.0 / math::quat_from_axis_angle -> q
+	math::Vec3 { x = 1.0 y = 0.0 z = 0.0 } -> v
+	q v rotate_vec3 -> r
+	r @x 0.0 0.001 testing::assert_approx_eq
+	r @y 0.0 0.001 testing::assert_approx_eq
+	r @z -1.0 0.001 testing::assert_approx_eq
+}
+
+test "math::quat_from_euler" {
+	// Zero rotation should give identity
+	0.0 0.0 0.0 math::quat_from_euler -> q
+	q @w 1.0 0.0001 testing::assert_approx_eq
+	q @x 0.0 0.0001 testing::assert_approx_eq
+	q @y 0.0 0.0001 testing::assert_approx_eq
+	q @z 0.0 0.0001 testing::assert_approx_eq
+}
+
+// ============================================================================
+// Mat4 additional tests
+// ============================================================================
+
+test "math::Mat4 transform_point" {
+	// Translation matrix should move point
+	1.0 2.0 3.0 math::mat4_translation -> m
+	math::Vec3 { x = 0.0 y = 0.0 z = 0.0 } -> p
+	m p transform_point -> r
+	r @x 1.0 0.0001 testing::assert_approx_eq
+	r @y 2.0 0.0001 testing::assert_approx_eq
+	r @z 3.0 0.0001 testing::assert_approx_eq
+}
+
+test "math::Mat4 transform_vec4" {
+	math::mat4_identity -> m
+	math::Vec4 { x = 1.0 y = 2.0 z = 3.0 w = 1.0 } -> v
+	m v transform_vec4 -> r
+	r @x 1.0 0.0001 testing::assert_approx_eq
+	r @y 2.0 0.0001 testing::assert_approx_eq
+	r @z 3.0 0.0001 testing::assert_approx_eq
+	r @w 1.0 0.0001 testing::assert_approx_eq
+}
+
+test "math::mat4_look_at" {
+	math::Vec3 { x = 0.0 y = 0.0 z = 5.0 } -> eye
+	math::Vec3 { x = 0.0 y = 0.0 z = 0.0 } -> target
+	math::Vec3 { x = 0.0 y = 1.0 z = 0.0 } -> up
+	eye target up math::mat4_look_at -> m
+	// Determinant should be nonzero (valid transform)
+	m determinant math::abs 0.0001 > testing::assert_true
+}
+
+test "math::mat4_perspective" {
+	1.047 1.777 0.1 100.0 math::mat4_perspective -> m
+	m @m23 -1.0 0.0001 testing::assert_approx_eq
+	m @m33 0.0 0.0001 testing::assert_approx_eq
+}
+
+test "math::mat4_orthographic" {
+	-1.0 1.0 -1.0 1.0 0.1 100.0 math::mat4_orthographic -> m
+	m @m00 1.0 0.0001 testing::assert_approx_eq
+	m @m11 1.0 0.0001 testing::assert_approx_eq
+	m @m33 1.0 0.0001 testing::assert_approx_eq
+}
+
+test "math::mat4_rotation_x" {
+	math::Pi 2.0 / math::mat4_rotation_x -> m
+	m @m00 1.0 0.0001 testing::assert_approx_eq
+	m @m11 0.0 0.001 testing::assert_approx_eq
+	m @m22 0.0 0.001 testing::assert_approx_eq
+}
+
+test "math::mat4_rotation_y" {
+	math::Pi 2.0 / math::mat4_rotation_y -> m
+	m @m11 1.0 0.0001 testing::assert_approx_eq
+	m @m00 0.0 0.001 testing::assert_approx_eq
+	m @m22 0.0 0.001 testing::assert_approx_eq
+}
+
+test "math::mat4_rotation_z" {
+	math::Pi 2.0 / math::mat4_rotation_z -> m
+	m @m22 1.0 0.0001 testing::assert_approx_eq
+	m @m00 0.0 0.001 testing::assert_approx_eq
+	m @m11 0.0 0.001 testing::assert_approx_eq
+}
+
+test "math::mat4_from_quat" {
+	// Identity quaternion should give identity matrix
+	math::quat_identity -> q
+	q math::mat4_from_quat -> m
+	m @m00 1.0 0.0001 testing::assert_approx_eq
+	m @m11 1.0 0.0001 testing::assert_approx_eq
+	m @m22 1.0 0.0001 testing::assert_approx_eq
+	m @m33 1.0 0.0001 testing::assert_approx_eq
+	m @m01 0.0 0.0001 testing::assert_approx_eq
+	m @m10 0.0 0.0001 testing::assert_approx_eq
+}
+
+// ============================================================================
+// Bezier Vec tests
+// ============================================================================
+
+test "math::bezier2_vec2" {
+	math::Vec2 { x = 0.0 y = 0.0 } -> p0
+	math::Vec2 { x = 0.5 y = 1.0 } -> p1
+	math::Vec2 { x = 1.0 y = 0.0 } -> p2
+	p0 p1 p2 0.0 math::bezier2_vec2 -> r0
+	r0 @x 0.0 0.0001 testing::assert_approx_eq
+	r0 @y 0.0 0.0001 testing::assert_approx_eq
+	p0 p1 p2 1.0 math::bezier2_vec2 -> r1
+	r1 @x 1.0 0.0001 testing::assert_approx_eq
+	r1 @y 0.0 0.0001 testing::assert_approx_eq
+}
+
+test "math::bezier3_vec2" {
+	math::Vec2 { x = 0.0 y = 0.0 } -> p0
+	math::Vec2 { x = 0.25 y = 0.5 } -> p1
+	math::Vec2 { x = 0.75 y = 0.5 } -> p2
+	math::Vec2 { x = 1.0 y = 0.0 } -> p3
+	p0 p1 p2 p3 0.0 math::bezier3_vec2 -> r0
+	r0 @x 0.0 0.0001 testing::assert_approx_eq
+	r0 @y 0.0 0.0001 testing::assert_approx_eq
+	p0 p1 p2 p3 1.0 math::bezier3_vec2 -> r1
+	r1 @x 1.0 0.0001 testing::assert_approx_eq
+	r1 @y 0.0 0.0001 testing::assert_approx_eq
+}
+
+test "math::bezier3_vec3" {
+	math::Vec3 { x = 0.0 y = 0.0 z = 0.0 } -> p0
+	math::Vec3 { x = 0.25 y = 0.5 z = 0.0 } -> p1
+	math::Vec3 { x = 0.75 y = 0.5 z = 0.0 } -> p2
+	math::Vec3 { x = 1.0 y = 0.0 z = 0.0 } -> p3
+	p0 p1 p2 p3 0.0 math::bezier3_vec3 -> r0
+	r0 @x 0.0 0.0001 testing::assert_approx_eq
+	r0 @y 0.0 0.0001 testing::assert_approx_eq
+	r0 @z 0.0 0.0001 testing::assert_approx_eq
+	p0 p1 p2 p3 1.0 math::bezier3_vec3 -> r1
+	r1 @x 1.0 0.0001 testing::assert_approx_eq
+	r1 @y 0.0 0.0001 testing::assert_approx_eq
+	r1 @z 0.0 0.0001 testing::assert_approx_eq
+}

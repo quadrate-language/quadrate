@@ -173,47 +173,50 @@ pub fn days_in_month(yr:i64 mon:i64 -- days:i64) {
 	}
 }
 
+// Internal: decompose unix timestamp into year, month, day in a single pass.
+// Avoids redundant year/month iteration when multiple components are needed.
+fn decompose(ts:i64 -- yr:i64 mon:i64 d:i64) {
+	-> ts
+	1970 -> yr
+	ts 0 >= if {
+		loop {
+			yr is_leap_year if { 366 } else { 365 }
+			-> days_in_yr
+			days_in_yr 86400 * -> secs_in_yr
+			ts secs_in_yr < if { break }
+			ts secs_in_yr - -> ts
+			yr 1 + -> yr
+		}
+	} else {
+		loop {
+			yr 1 - -> yr
+			yr is_leap_year if { 366 } else { 365 }
+			-> days_in_yr
+			days_in_yr 86400 * -> secs_in_yr
+			ts secs_in_yr + -> ts
+			ts 0 >= if { break }
+		}
+	}
+	// ts is now seconds from start of year
+	ts 0 < if { ts 86400 + -> ts }
+	1 -> mon
+	loop {
+		mon 12 > if { break }
+		yr mon days_in_month 86400 * -> days_secs
+		ts days_secs < if { break }
+		ts days_secs - -> ts
+		mon 1 + -> mon
+	}
+	ts 86400 / 1 + -> d
+	yr mon d
+}
+
 /// Extract year from Unix timestamp.
 /// @param ts i64 Unix timestamp in seconds
 /// @return yr i64 Year (e.g., 2024)
 /// @example time::unix time::year .
 pub fn year(ts:i64 -- yr:i64) {
-	-> ts
-	1970 -> yr
-	ts 0 >= if {
-		// Forward from 1970
-		loop {
-			yr is_leap_year if {
-				366
-			} else {
-				365
-			}
-			-> days_in_yr
-			days_in_yr 86400 * -> secs_in_yr
-			ts secs_in_yr < if {
-				break
-			}
-			ts secs_in_yr - -> ts
-			yr 1 + -> yr
-		}
-	} else {
-		// Backward from 1970
-		loop {
-			yr 1 - -> yr
-			yr is_leap_year if {
-				366
-			} else {
-				365
-			}
-			-> days_in_yr
-			days_in_yr 86400 * -> secs_in_yr
-			ts secs_in_yr + -> ts
-			ts 0 >= if {
-				break
-			}
-		}
-	}
-	yr
+	decompose drop drop
 }
 
 /// Extract month from Unix timestamp (1-12).
@@ -221,57 +224,7 @@ pub fn year(ts:i64 -- yr:i64) {
 /// @return mon i64 Month (1=January, 12=December)
 /// @example time::unix time::month .
 pub fn month(ts:i64 -- mon:i64) {
-	-> ts
-	ts year -> yr
-	// Calculate seconds from start of year
-	1970 -> y
-	0 -> secs
-	ts 0 >= if {
-		loop {
-			y yr >= if {
-				break
-			}
-			y is_leap_year if {
-				366
-			} else {
-				365
-			}
-			86400 * secs + -> secs
-			y 1 + -> y
-		}
-	} else {
-		yr -> y
-		loop {
-			y 1970 >= if {
-				break
-			}
-			y 1 - -> y
-			y is_leap_year if {
-				366
-			} else {
-				365
-			}
-			86400 * secs - -> secs
-		}
-	}
-	ts secs - -> remaining
-	remaining 0 < if {
-		remaining 86400 + -> remaining
-	}
-
-	1 -> mon
-	loop {
-		mon 12 > if {
-			break
-		}
-		yr mon days_in_month 86400 * -> days_secs
-		remaining days_secs < if {
-			break
-		}
-		remaining days_secs - -> remaining
-		mon 1 + -> mon
-	}
-	mon
+	decompose drop nip
 }
 
 /// Extract day of month from Unix timestamp (1-31).
@@ -279,56 +232,7 @@ pub fn month(ts:i64 -- mon:i64) {
 /// @return d i64 Day of month
 /// @example time::unix time::day .
 pub fn day(ts:i64 -- d:i64) {
-	-> ts
-	ts year -> yr
-	ts month -> mon
-
-	// Calculate seconds from start of year
-	1970 -> y
-	0 -> secs
-	ts 0 >= if {
-		loop {
-			y yr >= if {
-				break
-			}
-			y is_leap_year if {
-				366
-			} else {
-				365
-			}
-			86400 * secs + -> secs
-			y 1 + -> y
-		}
-	} else {
-		yr -> y
-		loop {
-			y 1970 >= if {
-				break
-			}
-			y 1 - -> y
-			y is_leap_year if {
-				366
-			} else {
-				365
-			}
-			86400 * secs - -> secs
-		}
-	}
-	ts secs - -> remaining
-	remaining 0 < if {
-		remaining 86400 + -> remaining
-	}
-
-	// Subtract months
-	1 -> m
-	loop {
-		m mon >= if {
-			break
-		}
-		yr m days_in_month 86400 * remaining swap - -> remaining
-		m 1 + -> m
-	}
-	remaining 86400 / 1 +
+	decompose nip nip
 }
 
 /// Extract hour from Unix timestamp (0-23).
@@ -393,17 +297,11 @@ pub fn weekday(ts:i64 -- wd:i64) {
 /// @return yd i64 Day of year
 /// @example time::unix time::year_day .
 pub fn year_day(ts:i64 -- yd:i64) {
-	-> ts
-	ts year -> yr
-	ts month -> mon
-	ts day -> d
-
+	decompose -> d -> mon -> yr
 	0 -> total
 	1 -> m
 	loop {
-		m mon >= if {
-			break
-		}
+		m mon >= if { break }
 		yr m days_in_month total + -> total
 		m 1 + -> m
 	}
@@ -606,10 +504,7 @@ pub fn hours_between(ts1:i64 ts2:i64 -- hours:i64) {
 /// @return midnight_ts i64 Timestamp at midnight of same day
 /// @example time::unix time::start_of_day .
 pub fn start_of_day(ts:i64 -- midnight_ts:i64) {
-	-> ts
-	ts year -> yr
-	ts month -> mon
-	ts day -> d
+	decompose -> d -> mon -> yr
 	yr mon d 0 0 0 date
 }
 
@@ -618,10 +513,7 @@ pub fn start_of_day(ts:i64 -- midnight_ts:i64) {
 /// @return end_ts i64 Timestamp at 23:59:59 of same day
 /// @example time::unix time::end_of_day .
 pub fn end_of_day(ts:i64 -- end_ts:i64) {
-	-> ts
-	ts year -> yr
-	ts month -> mon
-	ts day -> d
+	decompose -> d -> mon -> yr
 	yr mon d 23 59 59 date
 }
 
@@ -649,7 +541,9 @@ pub fn iso_week(ts:i64 -- week:i64) {
 /// @example ts1 ts2 time::same_day .
 pub fn same_day(ts1:i64 ts2:i64 -- same:i64) {
 	-> ts2 -> ts1
-	ts1 year ts2 year == ts1 month ts2 month == and ts1 day ts2 day == and
+	ts1 decompose -> d1 -> mon1 -> yr1
+	ts2 decompose -> d2 -> mon2 -> yr2
+	yr1 yr2 == mon1 mon2 == and d1 d2 == and
 }
 
 /// Get current time in milliseconds since epoch.

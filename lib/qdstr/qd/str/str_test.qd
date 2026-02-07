@@ -82,6 +82,10 @@ test "str::replace" {
 	"hello world" "world" "there" str::replace! "hello there" testing::assert_eq
 	"aaa" "a" "b" str::replace! "bbb" testing::assert_eq
 	"hello" "x" "y" str::replace! "hello" testing::assert_eq
+	// Bug #14: Shrinking replacement (new_len < old_len) caused integer underflow
+	"hello" "ll" "x" str::replace! "hexo" testing::assert_eq
+	"aabbcc" "bb" "d" str::replace! "aadcc" testing::assert_eq
+	"xxxxx" "xx" "y" str::replace! "yyx" testing::assert_eq
 }
 
 test "str::substring" {
@@ -115,6 +119,8 @@ test "str::repeat" {
 	"hello" 1 str::repeat "hello" testing::assert_eq
 	"test" 0 str::repeat "" testing::assert_eq
 	"" 10 str::repeat "" testing::assert_eq
+	// Bug #15: negative repeat count should return empty
+	"abc" -1 str::repeat "" testing::assert_eq
 }
 
 test "str::reverse" {

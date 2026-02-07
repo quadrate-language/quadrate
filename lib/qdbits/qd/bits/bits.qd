@@ -8,7 +8,11 @@
 /// @return result i64 Masked value
 /// @example 0xFF 4 bits::mask print  // 15
 pub fn mask(value:i64 num_bits:i64 -- result:i64) {
-	1 swap shl 1 sub and
+	dup 64 >= if {
+		drop
+	} else {
+		1 swap shl 1 sub and
+	}
 }
 
 /// Extract a bit field from a value.

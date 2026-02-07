@@ -8,7 +8,8 @@
 #include <string.h>
 #include <unistd.h>  // for sysconf
 
-// Helper to push a stack element based on its type
+// Helper to push a stack element based on its type.
+// Takes ownership of the element (consumes string references).
 static void push_element(qd_context* ctx, qd_stack_element_t elem) {
 	switch (elem.type) {
 	case QD_STACK_TYPE_INT:
@@ -21,7 +22,10 @@ static void push_element(qd_context* ctx, qd_stack_element_t elem) {
 		qd_push_p(ctx, elem.value.p);
 		break;
 	case QD_STACK_TYPE_STR:
+		// push_s_ref retains for the stack; release the source reference
+		// to transfer ownership from the channel buffer to the stack
 		qd_push_s_ref(ctx, elem.value.s);
+		qd_string_release(elem.value.s);
 		break;
 	default:
 		qd_push_i(ctx, 0);
@@ -718,6 +722,17 @@ int usr_thread_raw_chan_free(qd_context* ctx) {
 		mtx_unlock(&ch->mutex);
 		return (int){0};
 	}
+
+	// Release any remaining string elements in the buffer
+	size_t effective_cap = (ch->capacity == 0) ? 1 : ch->capacity;
+	while (ch->count > 0) {
+		qd_stack_element_t val = ch->buffer[ch->head];
+		ch->head = (ch->head + 1) % effective_cap;
+		ch->count--;
+		if (val.type == QD_STACK_TYPE_STR && val.value.s) {
+			qd_string_release(val.value.s);
+		}
+	}
 	mtx_unlock(&ch->mutex);
 
 	cnd_destroy(&ch->not_full);
@@ -868,30 +883,18 @@ int usr_thread_raw_once_new(qd_context* ctx) {
 		return (int){THREAD_ERR_CREATE};
 	}
 
-	// Initialize the once_flag to ONCE_FLAG_INIT
-	once_flag init = ONCE_FLAG_INIT;
-	once->flag = init;
-	once->func = NULL;
+	if (mtx_init(&once->mutex, mtx_plain) != thrd_success) {
+		free(once);
+		qd_set_error_msg(ctx, "once::new: failed to init mutex");
+		ctx->error_code = THREAD_ERR_CREATE;
+		return (int){THREAD_ERR_CREATE};
+	}
+
 	once->completed = false;
 
 	qd_push_p(ctx, once);
 	qd_push_i(ctx, THREAD_OK);
 	return (int){0};
-}
-
-// Thread-local storage for the function to call during call_once
-static _Thread_local qd_context* tls_ctx = NULL;
-static _Thread_local qd_stack_element_t tls_func;
-
-static void once_callback(void) {
-	if (tls_ctx && tls_func.type == QD_STACK_TYPE_PTR) {
-		typedef int (*qd_function_ptr)(qd_context*);
-		qd_function_ptr func;
-		memcpy(&func, &tls_func.value.p, sizeof(func));
-		if (func) {
-			func(tls_ctx);
-		}
-	}
 }
 
 // do(func:ptr once:ptr -- )
@@ -912,13 +915,21 @@ int usr_thread_raw_once_do(qd_context* ctx) {
 	qd_once* once = (qd_once*)once_elem.value.p;
 	if (!once) return (int){0};
 
-	// Set up thread-local storage for the callback
-	tls_ctx = ctx;
-	tls_func = func_elem;
+	mtx_lock(&once->mutex);
+	if (!once->completed) {
+		once->completed = true;
+		mtx_unlock(&once->mutex);
 
-	// call_once ensures the function runs exactly once
-	call_once(&once->flag, once_callback);
-	once->completed = true;
+		// Call the function outside the lock (safe for reentrancy)
+		typedef int (*qd_function_ptr)(qd_context*);
+		qd_function_ptr func;
+		memcpy(&func, &func_elem.value.p, sizeof(func));
+		if (func) {
+			func(ctx);
+		}
+	} else {
+		mtx_unlock(&once->mutex);
+	}
 
 	return (int){0};
 }
@@ -953,6 +964,9 @@ int usr_thread_raw_once_free(qd_context* ctx) {
 	}
 
 	qd_once* once = (qd_once*)elem.value.p;
+	if (once) {
+		mtx_destroy(&once->mutex);
+	}
 	free(once);
 
 	return (int){0};

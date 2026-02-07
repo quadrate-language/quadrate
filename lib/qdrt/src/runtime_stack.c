@@ -609,21 +609,6 @@ int qd_tuck(qd_context* ctx) {
 	qdrt_release_if_string(&a);
 	qdrt_release_if_string(&b);
 
-	// Dummy switch to maintain structure (will be removed)
-	switch (b.type) {
-		case QD_STACK_TYPE_INT:
-		case QD_STACK_TYPE_FLOAT:
-		case QD_STACK_TYPE_STR:
-		case QD_STACK_TYPE_PTR:
-			break;
-		default:
-			qdrt_release_if_string(&b);
-			return (int){-3};
-	}
-	if (err != QD_STACK_OK) {
-		return (int){-2};
-	}
-
 	return (int){0};
 }
 
@@ -646,12 +631,12 @@ int qd_pick(qd_context* ctx) {
 
 	int64_t n = idx_elem.value.i;
 	if (n < 0) {
-		QDRT_FATAL(ctx, "pick", "Index must be non-negative (got %ld)");
+		QDRT_FATAL(ctx, "pick", "Index must be non-negative (got %ld)", (long)n);
 	}
 
 	stack_size = qd_stack_size(ctx->st);  // Update after popping index
 	if ((size_t)n >= stack_size) {
-		QDRT_FATAL(ctx, "pick", "Index %ld out of range (stack has %zu elements)");
+		QDRT_FATAL(ctx, "pick", "Index %ld out of range (stack has %zu elements)", (long)n, stack_size);
 	}
 
 	// Get the nth element from the top (0 = top)
@@ -690,7 +675,7 @@ int qd_roll(qd_context* ctx) {
 
 	int64_t n = count_elem.value.i;
 	if (n < 0) {
-		QDRT_FATAL(ctx, "roll", "Count must be non-negative (got %ld)");
+		QDRT_FATAL(ctx, "roll", "Count must be non-negative (got %ld)", (long)n);
 	}
 
 	// Convert from 0-based indexing to internal element count
@@ -703,7 +688,7 @@ int qd_roll(qd_context* ctx) {
 
 	stack_size = qd_stack_size(ctx->st);  // Update after popping count
 	if ((size_t)n > stack_size) {
-		QDRT_FATAL(ctx, "roll", "Count %ld exceeds stack size %zu");
+		QDRT_FATAL(ctx, "roll", "Count %ld exceeds stack size %zu", (long)n, stack_size);
 	}
 
 	// Allocate temporary storage for n elements

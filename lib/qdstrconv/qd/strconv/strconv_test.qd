@@ -137,3 +137,16 @@ test "strconv::parse_int! with plus sign" {
 test "strconv::parse_int! with whitespace" {
 	"  42" 10 strconv::parse_int! 42 testing::assert_eq
 }
+
+// Bug #13: INT64_MIN negation UB in format_int
+test "strconv::format_int INT64_MIN" {
+	-9223372036854775807 1 - 10 strconv::format_int "-9223372036854775808" testing::assert_eq
+}
+
+test "strconv::itoa INT64_MIN" {
+	-9223372036854775807 1 - strconv::itoa "-9223372036854775808" testing::assert_eq
+}
+
+test "strconv::format_int INT64_MAX" {
+	9223372036854775807 10 strconv::format_int "9223372036854775807" testing::assert_eq
+}

@@ -166,7 +166,12 @@ pub fn is_absolute(path:str -- result:i64) {
 /// @example "/home//user/" path::normalize -> "/home/user"
 pub fn normalize(path:str -- norm:str) {
 	-> path
-	path "//" "/" str::replace! -> result
+	// Loop to handle triple+ slashes (/// -> // -> /)
+	path -> result
+	loop {
+		result "//" str::contains 0 == if { break }
+		result "//" "/" str::replace! -> result
+	}
 	result str::len -> rlen
 	rlen 1 > if {
 		result rlen 1 - str::char_at! 47 == if {

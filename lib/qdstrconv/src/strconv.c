@@ -81,7 +81,7 @@ int usr_strconv_format_int(qd_context* ctx) {
 
 	if (value < 0) {
 		negative = 1;
-		uvalue = (uint64_t)(-value);
+		uvalue = (uint64_t)(-(value + 1)) + 1;
 	} else {
 		uvalue = (uint64_t)value;
 	}

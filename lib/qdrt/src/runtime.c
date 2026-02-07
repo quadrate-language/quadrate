@@ -238,7 +238,7 @@ int qd_call(qd_context* ctx) {
 
 	// Verify it's a pointer type
 	if (val.type != QD_STACK_TYPE_PTR) {
-		QDRT_FATAL(ctx, "call", "Expected pointer type, got %d");
+		QDRT_FATAL(ctx, "call", "Expected pointer type, got %d", val.type);
 	}
 
 	void* ptr = val.value.p;
@@ -430,7 +430,7 @@ int qd_castp(qd_context* ctx) {
 		// Cast integer to pointer
 		ptr_value = (void*)(intptr_t)elem.value.i;
 	} else {
-		QDRT_FATAL(ctx, "castp", "Cannot cast type %d to pointer");
+		QDRT_FATAL(ctx, "castp", "Cannot cast type %d to pointer", elem.type);
 	}
 
 	err = qd_stack_push_ptr(ctx->st, ptr_value);
@@ -581,7 +581,7 @@ void qd_check_stack(qd_context* ctx, size_t count, const qd_stack_type* types, c
 int qd_free(qd_context* ctx) {
 	size_t stack_size = qd_stack_size(ctx->st);
 	if (stack_size < 1) {
-		QDRT_FATAL(ctx, "free", "Stack underflow (required 1 element, have %zu)");
+		QDRT_FATAL(ctx, "free", "Stack underflow (required 1 element, have %zu)", stack_size);
 		dump_stack(ctx);
 		qd_print_stack_trace(ctx);
 		abort();
@@ -595,7 +595,7 @@ int qd_free(qd_context* ctx) {
 
 	// Verify it's a pointer type
 	if (val.type != QD_STACK_TYPE_PTR) {
-		QDRT_FATAL(ctx, "free", "Expected pointer type, got type %d");
+		QDRT_FATAL(ctx, "free", "Expected pointer type, got type %d", val.type);
 	}
 
 	// Check if this is a struct pointer (uses registry lookup)
@@ -618,7 +618,7 @@ int qd_free(qd_context* ctx) {
 int qd_free_struct(qd_context* ctx) {
 	size_t stack_size = qd_stack_size(ctx->st);
 	if (stack_size < 1) {
-		QDRT_FATAL(ctx, "free", "Stack underflow (required 1 element, have %zu)");
+		QDRT_FATAL(ctx, "free", "Stack underflow (required 1 element, have %zu)", stack_size);
 		dump_stack(ctx);
 		qd_print_stack_trace(ctx);
 		abort();
@@ -632,7 +632,7 @@ int qd_free_struct(qd_context* ctx) {
 
 	// Verify it's a pointer type
 	if (val.type != QD_STACK_TYPE_PTR) {
-		QDRT_FATAL(ctx, "free", "Expected pointer type, got type %d");
+		QDRT_FATAL(ctx, "free", "Expected pointer type, got type %d", val.type);
 	}
 
 	// Release the struct (decrements refcount, frees when 0)
@@ -697,7 +697,7 @@ int qd_spawn(qd_context* ctx) {
 
 	// Verify it's a pointer type
 	if (val.type != QD_STACK_TYPE_PTR) {
-		QDRT_FATAL(ctx, "spawn", "Expected pointer type, got %d");
+		QDRT_FATAL(ctx, "spawn", "Expected pointer type, got %d", val.type);
 	}
 
 	// Create new context for the thread
@@ -747,7 +747,7 @@ int qd_detach(qd_context* ctx) {
 
 	// Verify it's an integer type
 	if (val.type != QD_STACK_TYPE_INT) {
-		QDRT_FATAL(ctx, "detach", "Expected integer type, got %d");
+		QDRT_FATAL(ctx, "detach", "Expected integer type, got %d", val.type);
 	}
 
 	// Get thread handle
@@ -775,7 +775,7 @@ int qd_wait(qd_context* ctx) {
 
 	// Verify it's an integer type
 	if (val.type != QD_STACK_TYPE_INT) {
-		QDRT_FATAL(ctx, "wait", "Expected integer type, got %d");
+		QDRT_FATAL(ctx, "wait", "Expected integer type, got %d", val.type);
 	}
 
 	// Get thread handle
@@ -830,7 +830,7 @@ int qd_panic(qd_context* ctx) {
 	}
 
 	if (error_code_elem.type != QD_STACK_TYPE_INT) {
-		QDRT_FATAL(ctx, "panic", "Expected integer error code, got type %d");
+		QDRT_FATAL(ctx, "panic", "Expected integer error code, got type %d", error_code_elem.type);
 	}
 
 	// Pop error message (string)
@@ -840,7 +840,7 @@ int qd_panic(qd_context* ctx) {
 	}
 
 	if (error_msg_elem.type != QD_STACK_TYPE_STR) {
-		QDRT_FATAL(ctx, "panic", "Expected string error message, got type %d");
+		QDRT_FATAL(ctx, "panic", "Expected string error message, got type %d", error_msg_elem.type);
 		dump_stack(ctx);
 		qd_print_stack_trace(ctx);
 		// Release the error code's string reference if needed

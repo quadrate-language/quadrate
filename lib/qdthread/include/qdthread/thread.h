@@ -88,8 +88,7 @@ int usr_thread_raw_wg_wait(qd_context* ctx); // (wg:ptr -- )!
 int usr_thread_raw_wg_free(qd_context* ctx); // (wg:ptr -- )
 
 typedef struct qd_once {
-	once_flag flag;
-	void (*func)(void);
+	mtx_t mutex;
 	bool completed;
 } qd_once;
 

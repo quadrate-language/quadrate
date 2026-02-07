@@ -536,9 +536,12 @@ int usr_str_replace(qd_context* ctx) {
 		pos += old_len;
 	}
 
-	// Calculate result length
+	// Calculate result length using signed arithmetic to handle shrinking replacements
 	size_t str_len = strlen(qd_string_data(str_elem.value.s));
-	size_t result_len = str_len + count * (new_len - old_len);
+	int64_t delta = (int64_t)new_len - (int64_t)old_len;
+	int64_t result_len_signed = (int64_t)str_len + (int64_t)count * delta;
+	if (result_len_signed < 0) result_len_signed = 0;
+	size_t result_len = (size_t)result_len_signed;
 
 	char* result = malloc(result_len + 1);
 	if (!result) {
@@ -898,6 +901,11 @@ int usr_str_repeat(qd_context* ctx) {
 	}
 
 	size_t str_len = strlen(qd_string_data(str_elem.value.s));
+	if (str_len > 0 && (size_t)n > SIZE_MAX / str_len) {
+		fprintf(stderr, "Fatal error in str::repeat: Result size overflow\n");
+		qd_string_release(str_elem.value.s);
+		abort();
+	}
 	size_t result_len = str_len * (size_t)n;
 
 	char* result = malloc(result_len + 1);

@@ -1,7 +1,7 @@
 BUILD_DIR_DEBUG   := build/debug
 BUILD_DIR_RELEASE := build/release
 
-MESON_FLAGS := -Dbuild_tests=true -Db_pie=false
+MESON_FLAGS := -Dbuild_tests=true
 
 # Detect Haiku and set appropriate paths
 UNAME_S := $(shell uname -s)
@@ -33,10 +33,10 @@ CMDS := quad quadc quadfmt quadlint quadlsp quadpm quaduses
 
 # Libraries with C components (need static archive creation)
 # Note: qdsqlite moved to external module (https://github.com/quadrate-language/sqlite)
-LIBS_WITH_C := qdrt qd qdfmt qdio qdmath qdmem qdos qdsignal qdstr qdstrconv qdtime qdthread qdtesting
+LIBS_WITH_C := qdrt qd qdfmt qdio qdmath qdmem qdos qdsignal qdstr qdstrconv qdtime qdthread qdtesting qdtty
 
 # Libraries with headers to install
-LIBS_WITH_HEADERS := qdrt qd qdfmt qdio qdmath qdmem qdos qdstr qdstrconv qdtime qdtesting
+LIBS_WITH_HEADERS := qdrt qd qdfmt qdio qdmath qdmem qdos qdsignal qdstr qdstrconv qdtime qdthread qdtesting
 
 # Standard library modules (auto-discovered from lib/qd*/qd/*/)
 # Note: Some modules moved to external repos: http, sqlite, json, regex, ct, crypto
@@ -69,7 +69,7 @@ define do_build
 	@echo "Creating static libraries..."
 	@(cd $(1)/lib/qdrt && ar rcs libqdrt.a $$(ar -t libqdrt_static.a) && cp libqdrt.a ../../../../dist/lib/) && echo "  libqdrt.a"
 	@(cd $(1)/lib/qd && ar rcs libqd.a $$(ar -t libqd_static.a) && cp libqd.a ../../../../dist/lib/) && echo "  libqd.a"
-	@for lib in qdfmt qdio qdmath qdmem qdos qdsignal qdstr qdstrconv qdtime qdthread qdtesting qdtty; do \
+	@for lib in $(filter-out qdrt qd,$(LIBS_WITH_C)); do \
 		(cd $(1)/lib/$$lib && ar rcs lib$${lib}_regular.a $$(ar -t lib$$lib.a) && cp lib$${lib}_regular.a ../../../../dist/lib/lib$$lib.a) && echo "  lib$$lib.a"; \
 	done
 	@for lib in qdthread; do \

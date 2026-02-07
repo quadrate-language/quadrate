@@ -287,6 +287,7 @@ int qd_read(qd_context* ctx) {
 
 	// Save program name (argv[0]) to context
 	if (ctx->argc > 0) {
+		free(ctx->program_name);
 		ctx->program_name = strdup(ctx->argv[0]);
 		if (!ctx->program_name) {
 			fprintf(stderr, "Fatal error in read: Memory allocation failed for program name\n");

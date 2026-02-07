@@ -30,6 +30,10 @@ qd_string_t* qd_string_create_with_length(const char* str, size_t length) {
 	if (length < QD_STRING_SMALL_CAPACITY) {
 		capacity = QD_STRING_SMALL_CAPACITY;
 	} else {
+		if (length > SIZE_MAX / 2) {
+			free(qd_str);
+			return NULL;
+		}
 		capacity = length * 2;
 		if (capacity < QD_STRING_MIN_CAPACITY) {
 			capacity = QD_STRING_MIN_CAPACITY;

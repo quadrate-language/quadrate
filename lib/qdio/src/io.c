@@ -6,6 +6,7 @@
 #include <qdio/io.h>
 #include <qdrt/runtime.h>
 #include <qdrt/stack.h>
+#include <pthread.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -20,6 +21,7 @@ typedef struct file_registry_entry {
 } file_registry_entry_t;
 
 static file_registry_entry_t* file_registry[FILE_REGISTRY_SIZE] = {0};
+static pthread_mutex_t file_registry_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 static size_t file_registry_hash(const FILE* fp) {
     uintptr_t val = (uintptr_t)fp;
@@ -29,6 +31,7 @@ static size_t file_registry_hash(const FILE* fp) {
 
 static void file_registry_add(FILE* fp) {
     if (!fp) return;
+    pthread_mutex_lock(&file_registry_mutex);
     size_t idx = file_registry_hash(fp);
     file_registry_entry_t* entry = (file_registry_entry_t*)malloc(sizeof(file_registry_entry_t));
     if (entry) {
@@ -36,23 +39,28 @@ static void file_registry_add(FILE* fp) {
         entry->next = file_registry[idx];
         file_registry[idx] = entry;
     }
+    pthread_mutex_unlock(&file_registry_mutex);
 }
 
 static int file_registry_contains(const FILE* fp) {
     if (!fp) return 0;
+    pthread_mutex_lock(&file_registry_mutex);
     size_t idx = file_registry_hash(fp);
     file_registry_entry_t* entry = file_registry[idx];
     while (entry) {
         if (entry->fp == fp) {
+            pthread_mutex_unlock(&file_registry_mutex);
             return 1;
         }
         entry = entry->next;
     }
+    pthread_mutex_unlock(&file_registry_mutex);
     return 0;
 }
 
 static void file_registry_remove(FILE* fp) {
     if (!fp) return;
+    pthread_mutex_lock(&file_registry_mutex);
     size_t idx = file_registry_hash(fp);
     file_registry_entry_t** pp = &file_registry[idx];
     while (*pp) {
@@ -60,10 +68,12 @@ static void file_registry_remove(FILE* fp) {
             file_registry_entry_t* to_free = *pp;
             *pp = (*pp)->next;
             free(to_free);
+            pthread_mutex_unlock(&file_registry_mutex);
             return;
         }
         pp = &(*pp)->next;
     }
+    pthread_mutex_unlock(&file_registry_mutex);
 }
 
 // Helper to validate a FILE handle before use

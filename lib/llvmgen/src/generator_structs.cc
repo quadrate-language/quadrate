@@ -143,11 +143,8 @@ namespace Qd {
 						builder->CreateGEP(builder->getInt8Ty(), structPtr, fieldOffset, "nested_field_ptr");
 				llvm::Value* nestedStructPtr = builder->CreateLoad(ptrTy, fieldBytePtr, "nested_struct_ptr");
 
-				// Recursively cleanup the nested struct
-				generateStructCleanup(nestedStructPtr, field.typeName);
-
-				// Free the nested struct memory
-				builder->CreateCall(this->freeFn, {nestedStructPtr});
+				// Release the nested struct (handles refcount, destructor, and deallocation)
+				builder->CreateCall(qdStructReleaseFn, {nestedStructPtr});
 			}
 		}
 
@@ -520,16 +517,23 @@ namespace Qd {
 
 		// Fallback: search all struct types if we don't know the type
 		if (!matchingField) {
+			int matchCount = 0;
+			std::string selectedStruct;
 			for (const auto& pair : structDefinitions) {
 				for (const auto& field : pair.second.fields) {
 					if (field.name == fieldName) {
-						matchingField = &field;
+						if (!matchingField) {
+							matchingField = &field;
+							selectedStruct = pair.first;
+						}
+						matchCount++;
 						break;
 					}
 				}
-				if (matchingField) {
-					break;
-				}
+			}
+			if (matchCount > 1) {
+				std::cerr << "Warning: ambiguous field '" << fieldName << "' found in " << matchCount
+						  << " structs, using '" << selectedStruct << "'" << std::endl;
 			}
 		}
 
@@ -660,16 +664,23 @@ namespace Qd {
 
 		// Fallback: search all struct types if we don't know the type
 		if (!matchingField) {
+			int matchCount = 0;
+			std::string selectedStruct;
 			for (const auto& pair : structDefinitions) {
 				for (const auto& field : pair.second.fields) {
 					if (field.name == fieldName) {
-						matchingField = &field;
+						if (!matchingField) {
+							matchingField = &field;
+							selectedStruct = pair.first;
+						}
+						matchCount++;
 						break;
 					}
 				}
-				if (matchingField) {
-					break;
-				}
+			}
+			if (matchCount > 1) {
+				std::cerr << "Warning: ambiguous field '" << fieldName << "' found in " << matchCount
+						  << " structs, using '" << selectedStruct << "'" << std::endl;
 			}
 		}
 

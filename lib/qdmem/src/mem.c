@@ -1,3 +1,4 @@
+#define _POSIX_C_SOURCE 200809L
 #include <qdmem/mem.h>
 #include <qdrt/stack.h>
 #include <stdlib.h>
@@ -174,7 +175,8 @@ int usr_mem_set_byte(qd_context* ctx) {
 
 	if (address == NULL) {
 		ctx->error_code = -1;
-		ctx->error_msg = "Null pointer in mem::set_byte";
+		free(ctx->error_msg);
+		ctx->error_msg = strdup("Null pointer in mem::set_byte");
 		return (int){-1};
 	}
 
@@ -194,7 +196,8 @@ int usr_mem_get_byte(qd_context* ctx) {
 
 	if (address == NULL) {
 		ctx->error_code = -1;
-		ctx->error_msg = "Null pointer in mem::get_byte";
+		free(ctx->error_msg);
+		ctx->error_msg = strdup("Null pointer in mem::get_byte");
 		return (int){-1};
 	}
 
@@ -215,7 +218,8 @@ int usr_mem_set_i64(qd_context* ctx) {
 
 	if (address == NULL) {
 		ctx->error_code = -1;
-		ctx->error_msg = "Null pointer in mem::set_i64";
+		free(ctx->error_msg);
+		ctx->error_msg = strdup("Null pointer in mem::set_i64");
 		return (int){-1};
 	}
 
@@ -235,7 +239,8 @@ int usr_mem_get_i64(qd_context* ctx) {
 
 	if (address == NULL) {
 		ctx->error_code = -1;
-		ctx->error_msg = "Null pointer in mem::get_i64";
+		free(ctx->error_msg);
+		ctx->error_msg = strdup("Null pointer in mem::get_i64");
 		return (int){-1};
 	}
 
@@ -258,7 +263,8 @@ int usr_mem_set_f64(qd_context* ctx) {
 
 	if (address == NULL) {
 		ctx->error_code = -1;
-		ctx->error_msg = "Null pointer in mem::set_f64";
+		free(ctx->error_msg);
+		ctx->error_msg = strdup("Null pointer in mem::set_f64");
 		return (int){-1};
 	}
 
@@ -278,7 +284,8 @@ int usr_mem_get_f64(qd_context* ctx) {
 
 	if (address == NULL) {
 		ctx->error_code = -1;
-		ctx->error_msg = "Null pointer in mem::get_f64";
+		free(ctx->error_msg);
+		ctx->error_msg = strdup("Null pointer in mem::get_f64");
 		return (int){-1};
 	}
 
@@ -300,7 +307,8 @@ int usr_mem_set_ptr(qd_context* ctx) {
 
 	if (address == NULL) {
 		ctx->error_code = -1;
-		ctx->error_msg = "Null pointer in mem::set_ptr";
+		free(ctx->error_msg);
+		ctx->error_msg = strdup("Null pointer in mem::set_ptr");
 		return (int){-1};
 	}
 
@@ -320,7 +328,8 @@ int usr_mem_get_ptr(qd_context* ctx) {
 
 	if (address == NULL) {
 		ctx->error_code = -1;
-		ctx->error_msg = "Null pointer in mem::get_ptr";
+		free(ctx->error_msg);
+		ctx->error_msg = strdup("Null pointer in mem::get_ptr");
 		return (int){-1};
 	}
 
@@ -342,13 +351,15 @@ int usr_mem_copy(qd_context* ctx) {
 
 	if (src == NULL || dst == NULL) {
 		ctx->error_code = -1;
-		ctx->error_msg = "Null pointer in mem::copy";
+		free(ctx->error_msg);
+		ctx->error_msg = strdup("Null pointer in mem::copy");
 		return (int){-1};
 	}
 
 	if (bytes < 0) {
 		ctx->error_code = -1;
-		ctx->error_msg = "Negative size in mem::copy";
+		free(ctx->error_msg);
+		ctx->error_msg = strdup("Negative size in mem::copy");
 		return (int){-1};
 	}
 
@@ -368,13 +379,15 @@ int usr_mem_zero(qd_context* ctx) {
 
 	if (address == NULL) {
 		ctx->error_code = -1;
-		ctx->error_msg = "Null pointer in mem::zero";
+		free(ctx->error_msg);
+		ctx->error_msg = strdup("Null pointer in mem::zero");
 		return (int){-1};
 	}
 
 	if (bytes < 0) {
 		ctx->error_code = -1;
-		ctx->error_msg = "Negative size in mem::zero";
+		free(ctx->error_msg);
+		ctx->error_msg = strdup("Negative size in mem::zero");
 		return (int){-1};
 	}
 
@@ -395,13 +408,15 @@ int usr_mem_fill(qd_context* ctx) {
 
 	if (address == NULL) {
 		ctx->error_code = -1;
-		ctx->error_msg = "Null pointer in mem::fill";
+		free(ctx->error_msg);
+		ctx->error_msg = strdup("Null pointer in mem::fill");
 		return (int){-1};
 	}
 
 	if (bytes < 0) {
 		ctx->error_code = -1;
-		ctx->error_msg = "Negative size in mem::fill";
+		free(ctx->error_msg);
+		ctx->error_msg = strdup("Negative size in mem::fill");
 		return (int){-1};
 	}
 
@@ -421,13 +436,15 @@ int usr_mem_to_string(qd_context* ctx) {
 
 	if (buffer == NULL) {
 		ctx->error_code = -1;
-		ctx->error_msg = "Null pointer in mem::to_string";
+		free(ctx->error_msg);
+		ctx->error_msg = strdup("Null pointer in mem::to_string");
 		return (int){-1};
 	}
 
 	if (length < 0) {
 		ctx->error_code = -1;
-		ctx->error_msg = "Negative length in mem::to_string";
+		free(ctx->error_msg);
+		ctx->error_msg = strdup("Negative length in mem::to_string");
 		return (int){-1};
 	}
 
@@ -435,7 +452,8 @@ int usr_mem_to_string(qd_context* ctx) {
 	char* str = malloc((size_t)length + 1);
 	if (!str) {
 		ctx->error_code = -1;
-		ctx->error_msg = "Allocation failed in mem::to_string";
+		free(ctx->error_msg);
+		ctx->error_msg = strdup("Allocation failed in mem::to_string");
 		return (int){-1};
 	}
 
@@ -471,7 +489,8 @@ int usr_mem_from_string(qd_context* ctx) {
 	if (!buffer) {
 		qd_string_release(str_elem.value.s);
 		ctx->error_code = -1;
-		ctx->error_msg = "Allocation failed in mem::from_string";
+		free(ctx->error_msg);
+		ctx->error_msg = strdup("Allocation failed in mem::from_string");
 		return (int){-1};
 	}
 

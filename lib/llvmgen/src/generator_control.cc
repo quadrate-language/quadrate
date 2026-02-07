@@ -46,11 +46,8 @@ namespace Qd {
 		llvm::Value* newSize = builder->CreateSub(size, builder->getInt64(1), "new_size");
 		builder->CreateStore(newSize, sizePtr);
 
-		// Convert to condition value
-		auto condValue = builder->CreateTrunc(value64, int32Ty, "cond");
-
-		// Check if condition is non-zero
-		auto isTrue = builder->CreateICmpNE(condValue, builder->getInt32(0), "is_true");
+		// Check if condition is non-zero (compare full i64, not truncated i32)
+		auto isTrue = builder->CreateICmpNE(value64, builder->getInt64(0), "is_true");
 
 		// Branch based on condition
 		if (elseBB) {
@@ -250,9 +247,9 @@ namespace Qd {
 
 		loopStack.pop_back();
 
-		// Loop increment (nsw enables loop optimizations like strength reduction)
+		// Loop increment (use plain add to avoid UB on overflow near INT64_MAX)
 		builder->SetInsertPoint(loopIncBB);
-		auto nextIter = builder->CreateNSWAdd(iterVar, stepValue, "next_i");
+		auto nextIter = builder->CreateAdd(iterVar, stepValue, "next_i");
 		iterVar->addIncoming(nextIter, loopIncBB);
 		builder->CreateBr(loopHeaderBB);
 
@@ -309,11 +306,8 @@ namespace Qd {
 		llvm::Value* newSize = builder->CreateSub(size, builder->getInt64(1), "new_size");
 		builder->CreateStore(newSize, sizePtr);
 
-		// Convert to condition value
-		auto condValue = builder->CreateTrunc(value64, int32Ty, "cond");
-
-		// Check if condition is non-zero
-		auto isTrue = builder->CreateICmpNE(condValue, builder->getInt32(0), "is_true");
+		// Check if condition is non-zero (compare full i64, not truncated i32)
+		auto isTrue = builder->CreateICmpNE(value64, builder->getInt64(0), "is_true");
 
 		// Branch based on condition with weights (loop body is likely)
 		llvm::MDBuilder mdBuilder(*context);

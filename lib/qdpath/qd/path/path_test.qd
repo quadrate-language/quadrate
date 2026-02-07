@@ -49,6 +49,9 @@ test "path::normalize" {
 	"/home//user" path::normalize "/home/user" testing::assert_eq
 	"/home/user/" path::normalize "/home/user" testing::assert_eq
 	"/home//user/" path::normalize "/home/user" testing::assert_eq
+	// Bug #29: Triple+ slashes should also be normalized
+	"///home///user" path::normalize "/home/user" testing::assert_eq
+	"/home////user" path::normalize "/home/user" testing::assert_eq
 }
 
 test "path::with_ext" {

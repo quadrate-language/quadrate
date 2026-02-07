@@ -7,6 +7,11 @@ test "bits::mask" {
 	255 8 bits::mask 255 testing::assert_eq
 	1023 5 bits::mask 31 testing::assert_eq
 	0 4 bits::mask 0 testing::assert_eq
+	// Bug #5: mask with width=64 should return all bits set (-1)
+	-1 64 bits::mask -1 testing::assert_eq
+	255 16 bits::mask 255 testing::assert_eq
+	// Width=0 should return 0
+	255 0 bits::mask 0 testing::assert_eq
 }
 
 test "bits::has_bit" {

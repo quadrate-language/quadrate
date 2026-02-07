@@ -1,3 +1,4 @@
+#define _POSIX_C_SOURCE 200809L
 #include <qdrt/runtime.h>
 #include <qdrt/stack.h>
 #include <stdlib.h>
@@ -8,7 +9,8 @@
 	do { \
 		if ((ptr) == NULL) { \
 			(ctx)->error_code = -1; \
-			(ctx)->error_msg = "Null pointer in mem::" op_name; \
+			free((ctx)->error_msg); \
+			(ctx)->error_msg = strdup("Null pointer in mem::" op_name); \
 			return (int){-1}; \
 		} \
 	} while (0)
@@ -254,7 +256,8 @@ int qd_mem_copy(qd_context* ctx) {
 
 	if (bytes < 0) {
 		ctx->error_code = -1;
-		ctx->error_msg = "Negative size in mem::copy";
+		free(ctx->error_msg);
+		ctx->error_msg = strdup("Negative size in mem::copy");
 		return (int){-1};
 	}
 
@@ -276,7 +279,8 @@ int qd_mem_zero(qd_context* ctx) {
 
 	if (bytes < 0) {
 		ctx->error_code = -1;
-		ctx->error_msg = "Negative size in mem::zero";
+		free(ctx->error_msg);
+		ctx->error_msg = strdup("Negative size in mem::zero");
 		return (int){-1};
 	}
 
@@ -299,7 +303,8 @@ int qd_mem_fill(qd_context* ctx) {
 
 	if (bytes < 0) {
 		ctx->error_code = -1;
-		ctx->error_msg = "Negative size in mem::fill";
+		free(ctx->error_msg);
+		ctx->error_msg = strdup("Negative size in mem::fill");
 		return (int){-1};
 	}
 

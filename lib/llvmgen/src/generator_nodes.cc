@@ -902,7 +902,7 @@ namespace Qd {
 		auto switchElemTy = llvm::StructType::get(*context,
 				{int64Ty,						// value (union as i64)
 						int32Ty,				// type
-						builder->getInt1Ty()}); // is_error_tainted
+						builder->getInt8Ty()}); // is_error_tainted
 
 		// Pop the value to switch on from the stack
 		auto stackFieldPtr = builder->CreateStructGEP(llvm::StructType::get(*context,

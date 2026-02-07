@@ -173,6 +173,7 @@ pub fn positional(f:ptr index:i64 -- value:str)! {
 	0 -> pos_idx
 	0 -> start
 	0 -> end_idx
+	0 -> found
 	f @argv -> argv
 	argv str::len -> len
 
@@ -201,7 +202,8 @@ pub fn positional(f:ptr index:i64 -- value:str)! {
 			// This is a positional argument
 			pos_idx index == if {
 				argv start end_idx start - str::substring! -> result
-				result return
+				1 -> found
+				break
 			}
 			pos_idx 1 + -> pos_idx
 		} else {
@@ -228,8 +230,10 @@ pub fn positional(f:ptr index:i64 -- value:str)! {
 		end_idx 1 + -> start
 	}
 
-	"positional argument not found at index " index strconv::itoa str::concat ErrNotFound panic
-	""
+	found 0 == if {
+		"positional argument not found at index " index strconv::itoa str::concat ErrNotFound panic
+	}
+	result
 }
 
 fn parse_int(s:str -- value:i64) {

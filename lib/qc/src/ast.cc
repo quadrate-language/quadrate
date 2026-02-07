@@ -61,7 +61,7 @@ namespace Qd {
 		if (tCurrentSourceMaps) {
 			return tCurrentSourceMaps->charByteMap.getByteOffset(charIndex);
 		}
-		return fastCharToByteOffset(src, charIndex);
+		return charIndexToByteOffset(src, charIndex);
 	}
 
 	// Optimized calculateLineColumn - uses precomputed table when available

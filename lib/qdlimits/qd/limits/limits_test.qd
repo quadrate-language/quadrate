@@ -8,6 +8,15 @@ test "limits::I64 bounds" {
 	limits::I64Max limits::I64Min > testing::assert_true
 }
 
+// Bug #4: I64Min should be the true minimum (-2^63)
+test "limits::I64Min exact value" {
+	limits::I64Min -9223372036854775807 1 - testing::assert_eq
+}
+
+test "limits::I64Max exact value" {
+	limits::I64Max 9223372036854775807 testing::assert_eq
+}
+
 test "limits::F64 bounds" {
 	limits::F64Max 0.0 > testing::assert_true
 	limits::F64Min 0.0 > testing::assert_true

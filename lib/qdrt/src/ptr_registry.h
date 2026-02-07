@@ -10,6 +10,7 @@
 #define QD_PTR_REGISTRY_H
 
 #include "platform/mutex_platform.h"
+#include <stdatomic.h>
 #include <stddef.h>
 #include <stdint.h>
 #include <stdlib.h>
@@ -60,15 +61,23 @@ static inline size_t ptr_registry_hash(const void* ptr) {
 }
 
 /* Ensure registry is initialized (lazy init for static registries)
- * Uses double-checked locking pattern with volatile for thread safety */
+ * Uses atomic CAS to safely bootstrap the init mutex */
 static inline void ptr_registry_ensure_init(ptr_registry_t* reg) {
 	if (!reg->initialized) {
-		// Use a static mutex for the initialization race
+		// Bootstrap: safely initialize the static init mutex using atomic CAS
+		// States: 0 = uninitialized, 1 = initializing, 2 = ready
 		static _Alignas(8) char init_mutex_storage[PTR_REGISTRY_MUTEX_STORAGE_SIZE] = {0};
-		static int init_mutex_ready = 0;
-		if (!init_mutex_ready) {
+		static atomic_int init_mutex_state = 0;
+		int expected = 0;
+		if (atomic_compare_exchange_strong(&init_mutex_state, &expected, 1)) {
+			// Won the race: initialize the mutex
 			mutex_platform_init((mutex_platform_t*)init_mutex_storage);
-			init_mutex_ready = 1;
+			atomic_store(&init_mutex_state, 2);
+		} else {
+			// Another thread is initializing or has finished; wait for completion
+			while (atomic_load(&init_mutex_state) != 2) {
+				// spin
+			}
 		}
 		mutex_platform_lock((mutex_platform_t*)init_mutex_storage);
 		// Double-check after acquiring lock
