@@ -16,6 +16,13 @@
 #define STR_ERR_ALLOC 3         // Allocation failed
 #define STR_ERR_INVALID_ARG 4   // Invalid argument
 
+#define STR_POP(ctx, elem, func_name) do { \
+	if (qd_stack_pop((ctx)->st, (elem)) != QD_STACK_OK) { \
+		fprintf(stderr, "Fatal error in str::" func_name ": Stack underflow\n"); \
+		abort(); \
+	} \
+} while(0)
+
 // len - get string length ( str:s -- len:i )
 int usr_str_len(qd_context* ctx) {
 	qd_stack_element_t val;
@@ -1243,9 +1250,9 @@ int usr_str_equals_ignore_case(qd_context* ctx) {
 // pad_left - left-pad string to length ( str:s len:i ch:s -- result:s )
 int usr_str_pad_left(qd_context* ctx) {
 	qd_stack_element_t ch_elem, len_elem, str_elem;
-	qd_stack_pop(ctx->st, &ch_elem);
-	qd_stack_pop(ctx->st, &len_elem);
-	qd_stack_pop(ctx->st, &str_elem);
+	STR_POP(ctx, &ch_elem, "pad_left");
+	STR_POP(ctx, &len_elem, "pad_left");
+	STR_POP(ctx, &str_elem, "pad_left");
 
 	const char* str = qd_string_data(str_elem.value.s);
 	int64_t target_len = len_elem.value.i;
@@ -1278,9 +1285,9 @@ int usr_str_pad_left(qd_context* ctx) {
 // pad_right - right-pad string to length ( str:s len:i ch:s -- result:s )
 int usr_str_pad_right(qd_context* ctx) {
 	qd_stack_element_t ch_elem, len_elem, str_elem;
-	qd_stack_pop(ctx->st, &ch_elem);
-	qd_stack_pop(ctx->st, &len_elem);
-	qd_stack_pop(ctx->st, &str_elem);
+	STR_POP(ctx, &ch_elem, "pad_right");
+	STR_POP(ctx, &len_elem, "pad_right");
+	STR_POP(ctx, &str_elem, "pad_right");
 
 	const char* str = qd_string_data(str_elem.value.s);
 	int64_t target_len = len_elem.value.i;
@@ -1314,9 +1321,9 @@ int usr_str_pad_right(qd_context* ctx) {
 // center - center string with padding ( str:s len:i ch:s -- result:s )
 int usr_str_center(qd_context* ctx) {
 	qd_stack_element_t ch_elem, len_elem, str_elem;
-	qd_stack_pop(ctx->st, &ch_elem);
-	qd_stack_pop(ctx->st, &len_elem);
-	qd_stack_pop(ctx->st, &str_elem);
+	STR_POP(ctx, &ch_elem, "center");
+	STR_POP(ctx, &len_elem, "center");
+	STR_POP(ctx, &str_elem, "center");
 
 	const char* str = qd_string_data(str_elem.value.s);
 	int64_t target_len = len_elem.value.i;
@@ -1352,7 +1359,7 @@ int usr_str_center(qd_context* ctx) {
 // capitalize - uppercase first char ( str:s -- result:s )
 int usr_str_capitalize(qd_context* ctx) {
 	qd_stack_element_t str_elem;
-	qd_stack_pop(ctx->st, &str_elem);
+	STR_POP(ctx, &str_elem, "capitalize");
 
 	const char* str = qd_string_data(str_elem.value.s);
 	size_t len = strlen(str);
@@ -1377,7 +1384,7 @@ int usr_str_capitalize(qd_context* ctx) {
 // title - title case ( str:s -- result:s )
 int usr_str_title(qd_context* ctx) {
 	qd_stack_element_t str_elem;
-	qd_stack_pop(ctx->st, &str_elem);
+	STR_POP(ctx, &str_elem, "title");
 
 	const char* str = qd_string_data(str_elem.value.s);
 	size_t len = strlen(str);
@@ -1408,8 +1415,8 @@ int usr_str_title(qd_context* ctx) {
 // trim_prefix - remove prefix if present ( str:s prefix:s -- result:s )
 int usr_str_trim_prefix(qd_context* ctx) {
 	qd_stack_element_t prefix_elem, str_elem;
-	qd_stack_pop(ctx->st, &prefix_elem);
-	qd_stack_pop(ctx->st, &str_elem);
+	STR_POP(ctx, &prefix_elem, "trim_prefix");
+	STR_POP(ctx, &str_elem, "trim_prefix");
 
 	const char* str = qd_string_data(str_elem.value.s);
 	const char* prefix = qd_string_data(prefix_elem.value.s);
@@ -1430,8 +1437,8 @@ int usr_str_trim_prefix(qd_context* ctx) {
 // trim_suffix - remove suffix if present ( str:s suffix:s -- result:s )
 int usr_str_trim_suffix(qd_context* ctx) {
 	qd_stack_element_t suffix_elem, str_elem;
-	qd_stack_pop(ctx->st, &suffix_elem);
-	qd_stack_pop(ctx->st, &str_elem);
+	STR_POP(ctx, &suffix_elem, "trim_suffix");
+	STR_POP(ctx, &str_elem, "trim_suffix");
 
 	const char* str = qd_string_data(str_elem.value.s);
 	const char* suffix = qd_string_data(suffix_elem.value.s);
@@ -1457,9 +1464,9 @@ int usr_str_trim_suffix(qd_context* ctx) {
 // replace_first - replace first occurrence only ( str:s old:s new:s -- result:s )
 int usr_str_replace_first(qd_context* ctx) {
 	qd_stack_element_t new_elem, old_elem, str_elem;
-	qd_stack_pop(ctx->st, &new_elem);
-	qd_stack_pop(ctx->st, &old_elem);
-	qd_stack_pop(ctx->st, &str_elem);
+	STR_POP(ctx, &new_elem, "replace_first");
+	STR_POP(ctx, &old_elem, "replace_first");
+	STR_POP(ctx, &str_elem, "replace_first");
 
 	const char* str = qd_string_data(str_elem.value.s);
 	const char* old = qd_string_data(old_elem.value.s);
@@ -1494,9 +1501,9 @@ int usr_str_replace_first(qd_context* ctx) {
 // insert - insert string at position ( str:s pos:i ins:s -- result:s )
 int usr_str_insert(qd_context* ctx) {
 	qd_stack_element_t ins_elem, pos_elem, str_elem;
-	qd_stack_pop(ctx->st, &ins_elem);
-	qd_stack_pop(ctx->st, &pos_elem);
-	qd_stack_pop(ctx->st, &str_elem);
+	STR_POP(ctx, &ins_elem, "insert");
+	STR_POP(ctx, &pos_elem, "insert");
+	STR_POP(ctx, &str_elem, "insert");
 
 	const char* str = qd_string_data(str_elem.value.s);
 	int64_t pos = pos_elem.value.i;
@@ -1524,9 +1531,9 @@ int usr_str_insert(qd_context* ctx) {
 // remove_range - remove range from string ( str:s start:i len:i -- result:s )
 int usr_str_remove_range(qd_context* ctx) {
 	qd_stack_element_t len_elem, start_elem, str_elem;
-	qd_stack_pop(ctx->st, &len_elem);
-	qd_stack_pop(ctx->st, &start_elem);
-	qd_stack_pop(ctx->st, &str_elem);
+	STR_POP(ctx, &len_elem, "remove_range");
+	STR_POP(ctx, &start_elem, "remove_range");
+	STR_POP(ctx, &str_elem, "remove_range");
 
 	const char* str = qd_string_data(str_elem.value.s);
 	int64_t start = start_elem.value.i;
@@ -1559,9 +1566,9 @@ int usr_str_remove_range(qd_context* ctx) {
 // truncate - truncate to max length with optional suffix ( str:s max:i suffix:s -- result:s )
 int usr_str_truncate(qd_context* ctx) {
 	qd_stack_element_t suffix_elem, max_elem, str_elem;
-	qd_stack_pop(ctx->st, &suffix_elem);
-	qd_stack_pop(ctx->st, &max_elem);
-	qd_stack_pop(ctx->st, &str_elem);
+	STR_POP(ctx, &suffix_elem, "truncate");
+	STR_POP(ctx, &max_elem, "truncate");
+	STR_POP(ctx, &str_elem, "truncate");
 
 	const char* str = qd_string_data(str_elem.value.s);
 	int64_t max_len = max_elem.value.i;
@@ -1597,7 +1604,7 @@ int usr_str_truncate(qd_context* ctx) {
 // lines - split by newlines ( str:s -- arr:p count:i )!
 int usr_str_lines(qd_context* ctx) {
 	qd_stack_element_t str_elem;
-	qd_stack_pop(ctx->st, &str_elem);
+	STR_POP(ctx, &str_elem, "lines");
 
 	const char* str = qd_string_data(str_elem.value.s);
 
@@ -1633,7 +1640,7 @@ int usr_str_lines(qd_context* ctx) {
 // words - split by whitespace ( str:s -- arr:p count:i )!
 int usr_str_words(qd_context* ctx) {
 	qd_stack_element_t str_elem;
-	qd_stack_pop(ctx->st, &str_elem);
+	STR_POP(ctx, &str_elem, "words");
 
 	const char* str = qd_string_data(str_elem.value.s);
 
@@ -1685,9 +1692,9 @@ int usr_str_words(qd_context* ctx) {
 // split_n - split into at most n parts ( str:s delim:s n:i -- parts:p count:i )!
 int usr_str_split_n(qd_context* ctx) {
 	qd_stack_element_t n_elem, delim_elem, str_elem;
-	qd_stack_pop(ctx->st, &n_elem);
-	qd_stack_pop(ctx->st, &delim_elem);
-	qd_stack_pop(ctx->st, &str_elem);
+	STR_POP(ctx, &n_elem, "split_n");
+	STR_POP(ctx, &delim_elem, "split_n");
+	STR_POP(ctx, &str_elem, "split_n");
 
 	const char* str = qd_string_data(str_elem.value.s);
 	const char* delim = qd_string_data(delim_elem.value.s);
@@ -1741,7 +1748,7 @@ int usr_str_split_n(qd_context* ctx) {
 // is_numeric - check if all digits ( str:s -- result:i )
 int usr_str_is_numeric(qd_context* ctx) {
 	qd_stack_element_t str_elem;
-	qd_stack_pop(ctx->st, &str_elem);
+	STR_POP(ctx, &str_elem, "is_numeric");
 
 	const char* str = qd_string_data(str_elem.value.s);
 	int result = (*str != '\0') ? 1 : 0;
@@ -1757,7 +1764,7 @@ int usr_str_is_numeric(qd_context* ctx) {
 // is_alpha - check if all alphabetic ( str:s -- result:i )
 int usr_str_is_alpha(qd_context* ctx) {
 	qd_stack_element_t str_elem;
-	qd_stack_pop(ctx->st, &str_elem);
+	STR_POP(ctx, &str_elem, "is_alpha");
 
 	const char* str = qd_string_data(str_elem.value.s);
 	int result = (*str != '\0') ? 1 : 0;
@@ -1773,7 +1780,7 @@ int usr_str_is_alpha(qd_context* ctx) {
 // is_alphanumeric - check if all alphanumeric ( str:s -- result:i )
 int usr_str_is_alphanumeric(qd_context* ctx) {
 	qd_stack_element_t str_elem;
-	qd_stack_pop(ctx->st, &str_elem);
+	STR_POP(ctx, &str_elem, "is_alphanumeric");
 
 	const char* str = qd_string_data(str_elem.value.s);
 	int result = (*str != '\0') ? 1 : 0;
@@ -1789,7 +1796,7 @@ int usr_str_is_alphanumeric(qd_context* ctx) {
 // is_ascii - check if all ASCII (0-127) ( str:s -- result:i )
 int usr_str_is_ascii(qd_context* ctx) {
 	qd_stack_element_t str_elem;
-	qd_stack_pop(ctx->st, &str_elem);
+	STR_POP(ctx, &str_elem, "is_ascii");
 
 	const char* str = qd_string_data(str_elem.value.s);
 	int result = 1;
@@ -1805,7 +1812,7 @@ int usr_str_is_ascii(qd_context* ctx) {
 // is_lowercase - check if all lowercase ( str:s -- result:i )
 int usr_str_is_lowercase(qd_context* ctx) {
 	qd_stack_element_t str_elem;
-	qd_stack_pop(ctx->st, &str_elem);
+	STR_POP(ctx, &str_elem, "is_lowercase");
 
 	const char* str = qd_string_data(str_elem.value.s);
 	int has_letters = 0;
@@ -1823,7 +1830,7 @@ int usr_str_is_lowercase(qd_context* ctx) {
 // is_uppercase - check if all uppercase ( str:s -- result:i )
 int usr_str_is_uppercase(qd_context* ctx) {
 	qd_stack_element_t str_elem;
-	qd_stack_pop(ctx->st, &str_elem);
+	STR_POP(ctx, &str_elem, "is_uppercase");
 
 	const char* str = qd_string_data(str_elem.value.s);
 	int has_letters = 0;
@@ -1841,7 +1848,7 @@ int usr_str_is_uppercase(qd_context* ctx) {
 // char_count - count UTF-8 codepoints ( str:s -- count:i )
 int usr_str_char_count(qd_context* ctx) {
 	qd_stack_element_t str_elem;
-	qd_stack_pop(ctx->st, &str_elem);
+	STR_POP(ctx, &str_elem, "char_count");
 
 	const char* str = qd_string_data(str_elem.value.s);
 	int64_t count = 0;
@@ -1859,9 +1866,9 @@ int usr_str_char_count(qd_context* ctx) {
 // slice - substring with negative index support ( str:s start:i end:i -- result:s )
 int usr_str_slice(qd_context* ctx) {
 	qd_stack_element_t end_elem, start_elem, str_elem;
-	qd_stack_pop(ctx->st, &end_elem);
-	qd_stack_pop(ctx->st, &start_elem);
-	qd_stack_pop(ctx->st, &str_elem);
+	STR_POP(ctx, &end_elem, "slice");
+	STR_POP(ctx, &start_elem, "slice");
+	STR_POP(ctx, &str_elem, "slice");
 
 	const char* str = qd_string_data(str_elem.value.s);
 	int64_t start = start_elem.value.i;
@@ -1896,10 +1903,10 @@ int usr_str_slice(qd_context* ctx) {
 // column - format strings into columns ( arr:p count:i widths:p num_cols:i -- result:s )
 int usr_str_column(qd_context* ctx) {
 	qd_stack_element_t num_cols_elem, widths_elem, count_elem, arr_elem;
-	qd_stack_pop(ctx->st, &num_cols_elem);
-	qd_stack_pop(ctx->st, &widths_elem);
-	qd_stack_pop(ctx->st, &count_elem);
-	qd_stack_pop(ctx->st, &arr_elem);
+	STR_POP(ctx, &num_cols_elem, "column");
+	STR_POP(ctx, &widths_elem, "column");
+	STR_POP(ctx, &count_elem, "column");
+	STR_POP(ctx, &arr_elem, "column");
 
 	char** arr = (char**)arr_elem.value.p;
 	int64_t count = count_elem.value.i;
