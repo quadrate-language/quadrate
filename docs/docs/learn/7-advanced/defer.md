@@ -31,19 +31,14 @@ use io
 
 fn process_file(path:str -- )! {
 	-> path  // bind parameter
-	path io::Read io::open if {
-		-> file  // bind file handle
-		defer {
-			// Always runs
-			file io::close
-		}
-
-		// Even if this fails, file gets closed
-		file do_something!
-	} else {
-		drop
-		"open failed" 1 panic
+	path io::Read io::open! -> file
+	defer {
+		// Always runs, even if do_something fails
+		file io::close
 	}
+
+	// Even if this fails, file gets closed
+	file do_something!
 }
 ```
 
@@ -96,32 +91,16 @@ use mem
 fn copy_file(src:str dst:str -- )! {
 	-> dst -> src  // bind parameters
 
-	src io::Read io::open if {
-		-> src_file  // bind file handle
-		defer {
-			src_file io::close
-		}
+	src io::Read io::open! -> src_file
+	defer { src_file io::close }
 
-		dst io::Write io::create if {
-			-> dst_file  // bind file handle
-			defer {
-				dst_file io::close
-			}
+	dst io::Write io::open! -> dst_file
+	defer { dst_file io::close }
 
-			4096 mem::alloc! -> buf
-			defer {
-				buf mem::free
-			}
+	4096 mem::alloc! -> buf
+	defer { buf mem::free }
 
-			// Copy data...
-		} else {
-			drop
-			"create failed" 2 panic
-		}
-	} else {
-		drop
-		"open failed" 1 panic
-	}
+	// Copy data...
 }
 ```
 

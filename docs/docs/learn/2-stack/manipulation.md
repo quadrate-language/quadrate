@@ -149,11 +149,13 @@ Index 0 is the top, 1 is second, etc.
 ```qd
 fn main() {
 	10 20 30 40
-	2 roll     // Move index 2 to top
+	2 roll     // Move index 2 to top (0-based: 0=top)
 	print nl   // 20
 	// Stack now: [10, 30, 40]
 }
 ```
+
+Index 0 is the top, 1 is second, etc. (same as `pick`).
 
 ## Utility operations
 

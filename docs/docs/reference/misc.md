@@ -63,8 +63,7 @@ fn for_each(arr:ptr callback:ptr -- ) {
 }
 
 fn print_item(x:i64 -- ) {
-	-> x
-	x print " " print
+	print " " print
 }
 
 fn main() {
@@ -76,8 +75,6 @@ fn main() {
 ### Function tables
 
 ```qd
-use mem
-
 fn op_add(a:i64 b:i64 -- r:i64) {
 	+
 }
@@ -92,9 +89,9 @@ fn op_mul(a:i64 b:i64 -- r:i64) {
 
 fn main() {
 	3 make<ptr> -> ops
-	&op_add ops 0 mem::set_ptr
-	&op_sub ops 1 mem::set_ptr
-	&op_mul ops 2 mem::set_ptr
+	ops 0 &op_add set
+	ops 1 &op_sub set
+	ops 2 &op_mul set
 
 	10 5 ops 0 nth call print nl  // 15
 	10 5 ops 1 nth call print nl  // 5
@@ -108,8 +105,8 @@ fn main() {
 fn map(arr:ptr f:ptr -- result:ptr) {
 	-> f -> arr
 	arr len make<i64> -> result
-	0 arr len for i {
-		arr i nth f call result i set
+	0 arr len 1 for i {
+		result i arr i nth f call set
 	}
 	result
 }

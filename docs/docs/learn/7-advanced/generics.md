@@ -77,7 +77,7 @@ Convert between types:
 ```qd
 fn main() {
 	3.14 cast<i64> print nl    // 3 (truncates)
-	42 cast<f64> print nl      // 42.0
+	42 cast<f64> print nl      // 42
 	100 cast<str> print nl     // 100
 	"42" cast<i64> print nl    // 42
 	"2.5" cast<f64> print nl   // 2.5

@@ -35,7 +35,7 @@ Prints a value with type information for debugging.
 **Signature:** `(val --)`
 
 ```qd
-42 printv // prints something like: i64:42
+42 printv // prints: int:42
 ```
 
 ### prints

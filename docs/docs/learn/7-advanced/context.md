@@ -225,11 +225,11 @@ Output different values based on conditions:
 fn classify(x:i64 -- category:str) {
 	-> x  // bind parameter
 	x ctx {
-		0 < if {
-			"negative"
+		dup 0 < if {
+			drop "negative"
 		} else {
-			dup 0 == if {
-				drop "zero"
+			0 == if {
+				"zero"
 			} else {
 				"positive"
 			}

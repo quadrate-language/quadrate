@@ -130,18 +130,18 @@ See [External Packages](../external-packages.md) for the full list.
 
 ## Integer vs float confusion
 
-`2` is an integer, `2.0` is a float. Mixing them causes type errors:
+`2` is an integer, `2.0` is a float. Some functions accept both, but being explicit about types is good practice:
 
 ```qd
-// WRONG - 2 is i64, but math::sqrt expects f64
+// Works, but implicit conversion
 2 math::sqrt
 
-// RIGHT
+// Better - explicit about the type
 2.0 math::sqrt
 ```
 
-Use `cast` to convert between types:
+Use `cast` for explicit conversion:
 
 ```qd
-2 cast<f64> math::sqrt print nl  // 1.414...
+2 cast<f64> math::sqrt print nl  // 1.41421
 ```

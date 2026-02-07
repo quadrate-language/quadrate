@@ -133,3 +133,13 @@ quaduses -w src/         # Update all .qd files in directory recursively
 ```
 
 Note: `quad uses` automatically adds `-w` to update files in place. Use `quad uses --check` for dry run.
+
+## quadmcp
+
+Model Context Protocol server for AI assistants. Provides language documentation, code examples, and standard library reference to MCP-compatible tools.
+
+```bash
+quadmcp    # Start the MCP server
+```
+
+Configure your MCP client to connect to `quadmcp` as a stdio-based server.

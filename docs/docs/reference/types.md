@@ -22,7 +22,7 @@ Converts a value to the specified type using the `cast<T>` syntax.
 
 ```qd
 3.14 cast<i64>   // 3 (truncates toward zero)
-42 cast<f64>     // 42.0
+42 cast<f64>     // 42
 42 cast<str>     // "42"
 "3.14" cast<f64> // 3.14 (parses string)
 "42" cast<i64>   // 42 (parses string)
@@ -67,5 +67,5 @@ Quadrate does not perform implicit type conversions. Use explicit casts:
 5 3.0 + // Error!
 
 // CORRECT: Explicit cast
-5 cast<f64> 3.0 + // 8.0
+5 cast<f64> 3.0 + // 8
 ```

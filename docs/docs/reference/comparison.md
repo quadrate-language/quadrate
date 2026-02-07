@@ -96,13 +96,14 @@ Outputs 1 if a is greater than or equal to b, 0 otherwise.
 
 ### within
 
-Outputs 1 if val is in [low, high), 0 otherwise.
+Outputs 1 if val is in [low, high], 0 otherwise.
 
 **Signature:** `(val low high -- bool)`
 
 ```qd
-5 0 10 within // 1 (5 is in [0,10))
-10 0 10 within // 0 (10 is not in [0,10))
+5 0 10 within  // 1 (5 is in [0,10])
+10 0 10 within // 1 (10 is in [0,10])
+11 0 10 within // 0 (11 is not in [0,10])
 ```
 
 ---

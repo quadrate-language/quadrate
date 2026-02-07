@@ -248,10 +248,10 @@ For standard library functions, prefer `switch { Ok { } _ { } }` over `if`/`else
 
 1. Mark fallible functions with `!` after the signature
 2. Use `"message" code panic` to signal panics
-3. Handle errors with `if { success } else { error }`
-4. Use `err` in the else branch to retrieve error details
-5. The compiler enforces error handling
-6. The `if` branch has the function outputs; the `else` branch does not
+3. Handle errors with `if { success } else { error }` for your own functions, or `switch { Ok { } _ { } }` for standard library calls
+4. Use `err` in the error branch to retrieve error details
+5. Use `!` to propagate errors without handling them (`func!`)
+6. The compiler enforces error handling
 
 ## What's next?
 

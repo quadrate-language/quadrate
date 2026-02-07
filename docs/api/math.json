@@ -266,16 +266,6 @@
       "examples": ["other v cross -> c"]
     },
     {
-      "name": "dec",
-      "signature": "(x:i64 -- result:i64)",
-      "failable": false,
-      "description": "Decrement integer by 1.",
-      "params": [{"name": "x", "type": "i64", "description": "Value to decrement"}],
-      "returns": [{"name": "result", "type": "i64", "description": "x - 1"}],
-      "errors": [],
-      "examples": ["5 math::dec print  // 4"]
-    },
-    {
       "name": "deg_to_rad",
       "signature": "(degrees:f64 -- radians:f64)",
       "failable": false,
@@ -374,16 +364,6 @@
       "returns": [{"name": "result", "type": "f64", "description": "sqrt(x² + y²)"}],
       "errors": [],
       "examples": ["3.0 4.0 math::hypot print  // 5.0"]
-    },
-    {
-      "name": "inc",
-      "signature": "(x:i64 -- result:i64)",
-      "failable": false,
-      "description": "Increment integer by 1.",
-      "params": [{"name": "x", "type": "i64", "description": "Value to increment"}],
-      "returns": [{"name": "result", "type": "i64", "description": "x + 1"}],
-      "errors": [],
-      "examples": ["5 math::inc print  // 6"]
     },
     {
       "name": "inv",

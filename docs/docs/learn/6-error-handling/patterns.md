@@ -98,6 +98,7 @@ Propagate errors through multiple operations:
 
 ```qd
 fn step1(x:i64 -- y:i64)! {
+	-> x
 	x 0 < if {
 		"negative input" 1 panic
 	}
@@ -105,6 +106,7 @@ fn step1(x:i64 -- y:i64)! {
 }
 
 fn step2(x:i64 -- y:i64)! {
+	-> x
 	x 100 > if {
 		"overflow" 2 panic
 	}
@@ -136,29 +138,21 @@ use mem
 fn read_file(path:str -- content:str)! {
 	-> path  // bind parameter
 
-	path io::ReadOnly io::open if {
-		-> file  // bind file handle
-		defer {
-			// Always runs
-			file io::close
-		}
-
-		4096 -> size
-		size mem::alloc! -> buf
-		defer {
-			// Always runs
-			buf mem::free
-		}
-
-		file buf size io::read if {
-			-> bytes_read
-			buf bytes_read mem::to_string
-		} else {
-			"read failed" 1 panic
-		}
-	} else {
-		"open failed" 1 panic
+	path io::Read io::open! -> file
+	defer {
+		// Always runs
+		file io::close
 	}
+
+	4096 -> size
+	size mem::alloc! -> buf
+	defer {
+		// Always runs
+		buf mem::free
+	}
+
+	file buf size io::read! -> bytes_read
+	buf bytes_read mem::to_string
 }
 ```
 
@@ -170,20 +164,23 @@ Wrap resource operations:
 
 ```qd
 struct File {
-	handle:i64
+	handle:ptr
 	path:str
 }
 
 fn file_open(path:str -- f:ptr)! {
 	-> path  // bind parameter
-	path io::Read io::open if {
-		-> handle  // bind handle
-		File {
-			handle = handle
-			path = path
+	path io::Read io::open switch {
+		Ok {
+			-> handle  // bind handle
+			File {
+				handle = handle
+				path = path
+			}
 		}
-	} else {
-		"open failed" 1 panic
+		_ {
+			"open failed" 1 panic
+		}
 	}
 }
 

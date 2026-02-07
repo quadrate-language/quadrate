@@ -232,27 +232,6 @@ Cosine of angle in radians.
 ```
 ---
 
-### `fn` dec
-
-Decrement integer by 1.
-
-**Signature:** `(x:i64 -- result:i64)`
-
-| Parameter | Type | Description |
-|-----------|------|-------------|
-| `x` | `i64` | Value to decrement |
-
-| Output | Type | Description |
-|--------|------|-------------|
-| `result` | `i64` | x - 1 |
-
-**Example:**
-
-```qd
-5 math::dec print  // 4
-```
----
-
 ### `fn` deg_to_rad
 
 Convert degrees to radians.
@@ -378,27 +357,6 @@ Hypotenuse (Euclidean distance). Computes sqrt(x² + y²) without intermediate o
 
 ```qd
 3.0 4.0 math::hypot print  // 5.0
-```
----
-
-### `fn` inc
-
-Increment integer by 1.
-
-**Signature:** `(x:i64 -- result:i64)`
-
-| Parameter | Type | Description |
-|-----------|------|-------------|
-| `x` | `i64` | Value to increment |
-
-| Output | Type | Description |
-|--------|------|-------------|
-| `result` | `i64` | x + 1 |
-
-**Example:**
-
-```qd
-5 math::inc print  // 6
 ```
 ---
 

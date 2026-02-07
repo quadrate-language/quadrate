@@ -138,10 +138,12 @@ quadpm install
 | `base64` | `quadpm get https://github.com/quadrate-language/base64` |
 | `compress` | `quadpm get https://github.com/quadrate-language/compress` |
 | `crypto` | `quadpm get https://github.com/quadrate-language/crypto` |
+| `ct` | `quadpm get https://github.com/quadrate-language/ct` |
 | `hex` | `quadpm get https://github.com/quadrate-language/hex` |
 | `hof` | `quadpm get https://github.com/quadrate-language/hof` |
 | `http` | `quadpm get https://github.com/quadrate-language/http` |
 | `json` | `quadpm get https://github.com/quadrate-language/json` |
+| `log` | `quadpm get https://github.com/quadrate-language/log` |
 | `net` | `quadpm get https://github.com/quadrate-language/net` |
 | `regex` | `quadpm get https://github.com/quadrate-language/regex` |
 | `sort` | `quadpm get https://github.com/quadrate-language/sort` |

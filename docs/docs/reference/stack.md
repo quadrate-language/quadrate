@@ -180,12 +180,12 @@ Copies the nth value (0-indexed from top) to the top.
 
 ### roll
 
-Moves the nth value to the top, shifting others down.
+Moves the nth value (0-indexed from top) to the top, shifting others down.
 
 **Signature:** `(... n -- ...)`
 
 ```qd
-1 2 3 4 2 roll // Moves index 2 (value 2) to top
+1 2 3 4 2 roll // Moves index 2 (value 2) to top -> [1, 3, 4, 2]
 ```
 
 ### clear

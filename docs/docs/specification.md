@@ -655,7 +655,6 @@ Methods are functions with a receiver parameter in parentheses before the functi
 struct Vec2 { x:f64 y:f64 }
 
 fn (v:Vec2) length( -- len:f64) {
-    -> v
     v @x v @x * v @y v @y * + math::sqrt
 }
 
@@ -1092,7 +1091,7 @@ fn process(path:str -- )! {
 | `gt` | `>` | `(a b -- bool)` | Greater than |
 | `lte` | `<=` | `(a b -- bool)` | Less than or equal |
 | `gte` | `>=` | `(a b -- bool)` | Greater than or equal |
-| `within` | | `(x lo hi -- bool)` | lo <= x < hi |
+| `within` | | `(x lo hi -- bool)` | lo <= x <= hi |
 
 ### 12.3 Bitwise
 

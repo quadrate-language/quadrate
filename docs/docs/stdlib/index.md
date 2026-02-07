@@ -51,4 +51,5 @@ fn main() {
 | [testing](testing.md) | Testing framework |
 | [thread](thread.md) | Threading primitives |
 | [time](time.md) | Time and date operations |
+| [tty](tty.md) | Terminal detection and dimensions |
 | [unicode](unicode.md) | Unicode utilities |

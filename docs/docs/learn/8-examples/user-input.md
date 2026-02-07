@@ -108,6 +108,7 @@ A complete example combining input and parsing:
 
 ```qd
 use io
+use str
 
 fn main() {
 	loop {

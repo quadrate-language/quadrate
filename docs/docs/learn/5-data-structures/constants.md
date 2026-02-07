@@ -124,26 +124,19 @@ const ErrPermission = 2
 const ErrTimeout = 3
 
 fn handle_error(code:i64 -- ) {
-	-> code  // bind parameter
+	-> code
 	code switch {
-		ErrNone {
-			"Success" print nl
-		}
-		ErrNotFound {
-			"Not found" print nl
-		}
-		ErrPermission {
-			"Permission denied" print nl
-		}
-		ErrTimeout {
-			"Timeout" print nl
-		}
-		_ {
-			"Unknown error" print nl
-		}
+		0 { "Success" print nl }
+		1 { "Not found" print nl }
+		2 { "Permission denied" print nl }
+		3 { "Timeout" print nl }
+		_ { "Unknown error" print nl }
 	}
 }
 ```
+
+!!! note "Constants in switch"
+    Constants cannot currently be used as `switch` case values. Use literal values instead.
 
 ## Constants for bit flags
 

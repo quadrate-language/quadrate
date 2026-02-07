@@ -960,13 +960,25 @@ int usr_str_trim_left(qd_context* ctx) {
 		abort();
 	}
 
-	const char* start = qd_string_data(str_elem.value.s);
-	while (*start && isspace((unsigned char)*start)) {
-		start++;
+	const char* src = qd_string_data(str_elem.value.s);
+	while (*src && isspace((unsigned char)*src)) {
+		src++;
 	}
 
+	size_t len = strlen(src);
+	char* result = malloc(len + 1);
+	if (!result) {
+		fprintf(stderr, "Fatal error in str::trim_left: Memory allocation failed\n");
+		qd_string_release(str_elem.value.s);
+		abort();
+	}
+
+	memcpy(result, src, len);
+	result[len] = '\0';
+
 	qd_string_release(str_elem.value.s);
-	qd_push_s(ctx, start);
+	qd_push_s(ctx, result);
+	free(result);
 
 	return (int){0};
 }

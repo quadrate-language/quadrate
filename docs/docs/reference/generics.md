@@ -63,14 +63,14 @@ fn swap<T>(a:T b:T -- b:T a:T) {
 fn main() {
     10 20 swap
     -> a -> b
-    a print " " print b print nl  // 20 10
+    a print " " print b print nl  // 10 20
 }
 ```
 
 ### Apply
 
 ```qd
-fn apply<T>(x:T f:fn(T -- T) -- result:T) {
+fn apply<T>(x:T f:ptr -- result:T) {
     -> f -> x
     x f call
 }

@@ -395,8 +395,8 @@ namespace Qd {
 					size_t receiverPositionFromTop = ident->methodReceiverPositionFromTop();
 					if (receiverPositionFromTop > 0) {
 						// Push the count and call qd_roll
-						// roll (N+1) brings the (N+1)th element (0-indexed from top) to top
-						builder->CreateCall(pushIntFn, {ctx, builder->getInt64(receiverPositionFromTop + 1)});
+						// roll N brings the Nth element (0-indexed from top) to top
+						builder->CreateCall(pushIntFn, {ctx, builder->getInt64(receiverPositionFromTop)});
 						auto rollFnTy = llvm::FunctionType::get(execResultTy, {contextPtrTy}, false);
 						auto rollFn = module->getOrInsertFunction("qd_roll", rollFnTy);
 						builder->CreateCall(rollFn, {ctx});
@@ -718,8 +718,8 @@ namespace Qd {
 				size_t receiverPositionFromTop = scopedIdent->methodReceiverPositionFromTop();
 				if (receiverPositionFromTop > 0) {
 					// Push the count and call qd_roll
-					// roll (N+1) brings the (N+1)th element (0-indexed from top) to top
-					builder->CreateCall(pushIntFn, {ctx, builder->getInt64(receiverPositionFromTop + 1)});
+					// roll N brings the Nth element (0-indexed from top) to top
+					builder->CreateCall(pushIntFn, {ctx, builder->getInt64(receiverPositionFromTop)});
 					auto rollFnTy = llvm::FunctionType::get(execResultTy, {contextPtrTy}, false);
 					auto rollFn = module->getOrInsertFunction("qd_roll", rollFnTy);
 					builder->CreateCall(rollFn, {ctx});

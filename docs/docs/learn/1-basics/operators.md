@@ -75,12 +75,13 @@ fn main() {
 
 ### Range check
 
-`within` checks if a value is in a range [low, high):
+`within` checks if a value is in a range [low, high]:
 
 ```qd
 fn main() {
-	5 0 10 within print nl  // 1 (5 is in [0,10))
-	10 0 10 within print nl // 0 (10 is not in [0,10))
+	5 0 10 within print nl   // 1 (5 is in [0,10])
+	10 0 10 within print nl  // 1 (10 is in [0,10])
+	11 0 10 within print nl  // 0 (11 is not in [0,10])
 }
 ```
 

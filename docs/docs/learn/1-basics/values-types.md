@@ -104,6 +104,21 @@ fn main() {
 
 Any non-zero value is considered true in conditionals.
 
+## Converting between types
+
+Use `cast<T>` to convert a value to a different type:
+
+```qd
+fn main() {
+	42 cast<f64> print nl    // 42
+	3.14 cast<i64> print nl  // 3 (truncates)
+	42 cast<str> print nl    // 42
+	"99" cast<i64> print nl  // 99
+}
+```
+
+This is especially useful when mixing integer and float operations.
+
 ## Type in function signatures
 
 When you write functions, you specify types:

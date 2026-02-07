@@ -271,7 +271,8 @@ pub fn max(a:any b:any -- result:any) {
 /// @return result f64 log_base(x)
 /// @example 8.0 2.0 math::log print  // 3.0
 pub fn log(x:f64 base:f64 -- result:f64) {
-	swap ln swap ln div
+	-> base -> x
+	x math::ln base math::ln /
 }
 
 /// Clamp value to range.

@@ -31,8 +31,8 @@ fn main() {
 		x = 10.0
 		y = 20.0
 	} -> p
-	p @x print nl  // 10.0
-	p @y print nl  // 20.0
+	p @x print nl  // 10
+	p @y print nl  // 20
 }
 ```
 
@@ -56,7 +56,7 @@ fn main() {
 		width = 5.0
 		height = 3.0
 	} -> rect
-	rect area print nl  // 15.0
+	rect area print nl  // 15
 }
 ```
 
@@ -114,8 +114,8 @@ fn main() {
 		end = p2
 	} -> line
 
-	line @start @x print nl  // 0.0
-	line @end @x print nl    // 10.0
+	line @start @x print nl  // 0
+	line @end @x print nl    // 10
 }
 ```
 
@@ -186,14 +186,14 @@ fn main() {
 	Point { x = 3.0 y = 4.0 } -> pt
 
 	// Call method on struct - receiver is popped from stack
-	pt magnitude print nl  // 5.0
+	pt magnitude print nl  // 5
 
 	// Methods can also work on inline struct construction
-	Point { x = 5.0 y = 12.0 } magnitude print nl  // 13.0
+	Point { x = 5.0 y = 12.0 } magnitude print nl  // 13
 
 	// Method with parameters
 	pt 1.0 1.0 move
-	pt @x print nl  // 4.0
+	pt @x print nl  // 4
 }
 ```
 
@@ -244,7 +244,7 @@ fn main() {
 	Point { x = 0.0 y = 0.0 } -> a
 	Point { x = 3.0 y = 4.0 } -> b
 
-	a b point_distance print nl  // 5.0
+	a b point_distance print nl  // 5
 }
 ```
 

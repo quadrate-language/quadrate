@@ -81,6 +81,86 @@
       "returns": [{"name": "stem", "type": "str", "description": "Filename without extension"}],
       "errors": [],
       "examples": ["\"file.txt\" path::stem -> \"file\""]
+    },
+    {
+      "name": "has_ext",
+      "signature": "(path:str -- result:i64)",
+      "failable": false,
+      "description": "Check if path has any file extension.",
+      "params": [{"name": "path", "type": "str", "description": "File path"}],
+      "returns": [{"name": "result", "type": "i64", "description": "1 if path has an extension, 0 otherwise"}],
+      "errors": [],
+      "examples": ["\"file.txt\" path::has_ext  // 1"]
+    },
+    {
+      "name": "has_extension",
+      "signature": "(path:str extension:str -- result:i64)",
+      "failable": false,
+      "description": "Check if path has a specific extension.",
+      "params": [{"name": "path", "type": "str", "description": "File path"}, {"name": "extension", "type": "str", "description": "Extension to check (with or without dot)"}],
+      "returns": [{"name": "result", "type": "i64", "description": "1 if extension matches, 0 otherwise"}],
+      "errors": [],
+      "examples": ["\"file.txt\" \"txt\" path::has_extension  // 1"]
+    },
+    {
+      "name": "with_ext",
+      "signature": "(path:str newext:str -- result:str)",
+      "failable": false,
+      "description": "Replace or add file extension.",
+      "params": [{"name": "path", "type": "str", "description": "File path"}, {"name": "newext", "type": "str", "description": "New extension (with or without dot)"}],
+      "returns": [{"name": "result", "type": "str", "description": "Path with new extension"}],
+      "errors": [],
+      "examples": ["\"file.txt\" \".qd\" path::with_ext  // \"file.qd\""]
+    },
+    {
+      "name": "parent",
+      "signature": "(path:str -- parent:str)",
+      "failable": false,
+      "description": "Get parent directory (alias for dirname).",
+      "params": [{"name": "path", "type": "str", "description": "File path"}],
+      "returns": [{"name": "parent", "type": "str", "description": "Parent directory"}],
+      "errors": [],
+      "examples": ["\"/home/user/file.txt\" path::parent  // \"/home/user\""]
+    },
+    {
+      "name": "is_relative",
+      "signature": "(path:str -- result:i64)",
+      "failable": false,
+      "description": "Check if path is relative (not absolute).",
+      "params": [{"name": "path", "type": "str", "description": "File path"}],
+      "returns": [{"name": "result", "type": "i64", "description": "1 if relative, 0 otherwise"}],
+      "errors": [],
+      "examples": ["\"home/user\" path::is_relative  // 1"]
+    },
+    {
+      "name": "depth",
+      "signature": "(path:str -- depth:i64)",
+      "failable": false,
+      "description": "Get the depth of a path (number of components).",
+      "params": [{"name": "path", "type": "str", "description": "File path"}],
+      "returns": [{"name": "depth", "type": "i64", "description": "Number of path components"}],
+      "errors": [],
+      "examples": ["\"/home/user/file.txt\" path::depth  // 3"]
+    },
+    {
+      "name": "starts_with",
+      "signature": "(path:str prefix:str -- result:i64)",
+      "failable": false,
+      "description": "Check if path starts with a given prefix path.",
+      "params": [{"name": "path", "type": "str", "description": "File path to check"}, {"name": "prefix", "type": "str", "description": "Prefix path"}],
+      "returns": [{"name": "result", "type": "i64", "description": "1 if starts with prefix, 0 otherwise"}],
+      "errors": [],
+      "examples": ["\"/home/user/file.txt\" \"/home\" path::starts_with  // 1"]
+    },
+    {
+      "name": "strip_prefix",
+      "signature": "(path:str prefix:str -- result:str)",
+      "failable": false,
+      "description": "Remove a prefix from a path if it exists.",
+      "params": [{"name": "path", "type": "str", "description": "File path"}, {"name": "prefix", "type": "str", "description": "Prefix to remove"}],
+      "returns": [{"name": "result", "type": "str", "description": "Path without prefix"}],
+      "errors": [],
+      "examples": ["\"/home/user/file.txt\" \"/home\" path::strip_prefix  // \"user/file.txt\""]
     }
   ]
 }

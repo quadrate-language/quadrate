@@ -50,7 +50,7 @@ Functions that can fail are marked with `!` after the signature:
 fn divide(a:i64 b:i64 -- result:i64)! {
 	dup 0 == if {
 		drop2
-		"division by zero" Err panic
+		"division by zero" 1 panic
 	}
 	/
 }

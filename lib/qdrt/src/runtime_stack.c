@@ -693,8 +693,12 @@ int qd_roll(qd_context* ctx) {
 		QDRT_FATAL(ctx, "roll", "Count must be non-negative (got %ld)");
 	}
 
-	if (n == 0) {
-		return (int){0};  // Nothing to do
+	// Convert from 0-based indexing to internal element count
+	// 0 = top (no-op), 1 = swap, 2 = rot, etc.
+	n++;
+
+	if (n <= 1) {
+		return (int){0};  // 0 roll = no-op (already at top)
 	}
 
 	stack_size = qd_stack_size(ctx->st);  // Update after popping count

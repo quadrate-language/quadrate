@@ -76,14 +76,36 @@ Get the file extension (including dot).
 
 ### `fn` has_ext
 
-Check if path has a specific extension.
+Check if path has any file extension.
 
-**Signature:** `(path:str ext:str -- result:i64)`
+**Signature:** `(path:str -- result:i64)`
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
 | `path` | `str` | File path |
-| `ext` | `str` | Extension to check (with or without dot) |
+
+| Output | Type | Description |
+|--------|------|-------------|
+| `result` | `i64` | 1 if path has an extension, 0 otherwise |
+
+**Example:**
+
+```qd
+"file.txt" path::has_ext print   // 1
+"Makefile" path::has_ext print   // 0
+```
+---
+
+### `fn` has_extension
+
+Check if path has a specific extension.
+
+**Signature:** `(path:str extension:str -- result:i64)`
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `path` | `str` | File path |
+| `extension` | `str` | Extension to check (with or without dot) |
 
 | Output | Type | Description |
 |--------|------|-------------|
@@ -92,9 +114,9 @@ Check if path has a specific extension.
 **Example:**
 
 ```qd
-"file.txt" ".txt" path::has_ext print  // 1
-"file.txt" "txt" path::has_ext print   // 1
-"file.qd" ".txt" path::has_ext print   // 0
+"file.txt" ".txt" path::has_extension print  // 1
+"file.txt" "txt" path::has_extension print   // 1
+"file.qd" ".txt" path::has_extension print   // 0
 ```
 ---
 
@@ -226,4 +248,91 @@ Replace or add file extension.
 "file.txt" ".qd" path::with_ext print   // "file.qd"
 "file.txt" "md" path::with_ext print    // "file.md"
 "/home/user/test.c" ".h" path::with_ext print  // "/home/user/test.h"
+```
+---
+
+### `fn` is_relative
+
+Check if path is relative (not absolute).
+
+**Signature:** `(path:str -- result:i64)`
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `path` | `str` | File path |
+
+| Output | Type | Description |
+|--------|------|-------------|
+| `result` | `i64` | 1 if relative, 0 otherwise |
+
+**Example:**
+
+```qd
+"home/user" path::is_relative print  // 1
+"/home/user" path::is_relative print  // 0
+```
+---
+
+### `fn` depth
+
+Get the depth of a path (number of components).
+
+**Signature:** `(path:str -- depth:i64)`
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `path` | `str` | File path |
+
+| Output | Type | Description |
+|--------|------|-------------|
+| `depth` | `i64` | Number of path components |
+
+**Example:**
+
+```qd
+"/home/user/file.txt" path::depth print  // 3
+```
+---
+
+### `fn` starts_with
+
+Check if path starts with a given prefix path.
+
+**Signature:** `(path:str prefix:str -- result:i64)`
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `path` | `str` | File path to check |
+| `prefix` | `str` | Prefix path |
+
+| Output | Type | Description |
+|--------|------|-------------|
+| `result` | `i64` | 1 if starts with prefix, 0 otherwise |
+
+**Example:**
+
+```qd
+"/home/user/file.txt" "/home" path::starts_with print  // 1
+```
+---
+
+### `fn` strip_prefix
+
+Remove a prefix from a path if it exists.
+
+**Signature:** `(path:str prefix:str -- result:str)`
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `path` | `str` | File path |
+| `prefix` | `str` | Prefix to remove |
+
+| Output | Type | Description |
+|--------|------|-------------|
+| `result` | `str` | Path without prefix |
+
+**Example:**
+
+```qd
+"/home/user/file.txt" "/home" path::strip_prefix print  // "user/file.txt"
 ```

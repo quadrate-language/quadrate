@@ -161,7 +161,7 @@ fn sb_append_byte(sb:ptr byte:i64 -- ) {
 	-> byte -> sb
 	sb @len sb @capacity >= if {
 		// Need to grow
-		sb @data sb @capacity 2 * mem::realloc sb.data
+		sb @data sb @capacity 2 * mem::realloc! sb.data
 		sb @capacity 2 * sb.capacity
 	}
 	byte sb @data sb @len mem::set_byte

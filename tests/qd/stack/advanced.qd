@@ -8,8 +8,8 @@ fn main() {
 	// Copy element at index 2 (which is 200)
 	prints
 	clear
-	// Test roll - rotate n elements
+	// Test roll - move index n to top (0-based)
 	10 20 30 40 3 roll
-	// Rotate top 3 = 20 30 40 -> 30 40 20
+	// Move index 3 (10) to top: 20 30 40 10
 	prints
 }

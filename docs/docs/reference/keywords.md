@@ -176,13 +176,15 @@ Skips to the next iteration of the innermost loop.
 Exits the current function immediately.
 
 ```qd
-fn early() {
-	true if {
-		return
-	}
+fn do_work( -- ) {
+	"working" print nl
+	return
 	"not reached" print
 }
 ```
+
+!!! note
+    `return` only works at the function body's top level. It cannot be used inside `if`, `else`, `loop`, or other blocks.
 
 ### switch
 

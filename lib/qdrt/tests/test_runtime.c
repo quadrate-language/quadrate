@@ -2750,7 +2750,7 @@ TEST(RollTest) {
 	qd_push_i(ctx, 30);
 	qd_push_i(ctx, 40);
 
-	// Roll 3 elements: ( 10 20 30 40 ) -> ( 10 30 40 20 )
+	// Roll index 3 (0-based): ( 10 20 30 40 ) -> ( 20 30 40 10 )
 	qd_push_i(ctx, 3);
 	qd_roll(ctx);
 
@@ -2759,13 +2759,13 @@ TEST(RollTest) {
 
 	qd_stack_element_t elem;
 	qd_stack_pop(ctx->st, &elem);
-	ASSERT_EQ((int)elem.value.i, 20, "top should be 20 (rolled from position 3)");
+	ASSERT_EQ((int)elem.value.i, 10, "top should be 10 (rolled from index 3)");
 	qd_stack_pop(ctx->st, &elem);
 	ASSERT_EQ((int)elem.value.i, 40, "should be 40");
 	qd_stack_pop(ctx->st, &elem);
 	ASSERT_EQ((int)elem.value.i, 30, "should be 30");
 	qd_stack_pop(ctx->st, &elem);
-	ASSERT_EQ((int)elem.value.i, 10, "should be 10");
+	ASSERT_EQ((int)elem.value.i, 20, "should be 20");
 
 	destroy_test_context(ctx);
 }
