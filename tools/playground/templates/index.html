@@ -487,8 +487,8 @@
                             <span class="result">print a string</span>
                         </div>
                         <div class="quick-ref-example">
-                            <code>"Hello" len</code>
-                            <span class="result">string length → 5</span>
+                            <code>"Hello" str::len</code>
+                            <span class="result">string length → 5 (use str)</span>
                         </div>
                         <div class="quick-ref-example">
                             <code>"a" "b" str::concat</code>
@@ -504,10 +504,6 @@
                         <div class="quick-ref-example">
                             <code>nl</code>
                             <span class="result">print newline</span>
-                        </div>
-                        <div class="quick-ref-example">
-                            <code>. (dot)</code>
-                            <span class="result">print with newline</span>
                         </div>
                         <div class="quick-ref-example">
                             <code>" " print</code>
@@ -544,8 +540,8 @@
                             <span class="result">string</span>
                         </div>
                         <div class="quick-ref-example">
-                            <code>bool</code>
-                            <span class="result">true or false</span>
+                            <code>ptr</code>
+                            <span class="result">pointer / array</span>
                         </div>
                     </div>
                     <div class="quick-ref-section">
@@ -575,7 +571,7 @@
                         </div>
                         <div class="quick-ref-example">
                             <code>swap drop</code>
-                            <span class="result">keep second, discard first</span>
+                            <span class="result">discard second (same as nip)</span>
                         </div>
                     </div>
                 </div>
@@ -656,7 +652,7 @@
 
         // Quadrate syntax highlighting
         const keywords = ['fn', 'pub', 'if', 'else', 'for', 'while', 'loop', 'break', 'continue', 'return', 'use', 'struct', 'const', 'defer', 'true', 'false', 'and', 'or', 'not'];
-        const types = ['i64', 'f64', 'str', 'bool', 'ptr', 'any'];
+        const types = ['i64', 'f64', 'str', 'ptr', 'any'];
         const builtins = ['dup', 'swap', 'drop', 'over', 'rot', 'nip', 'tuck', 'print', 'nl', 'it', 'len', 'push', 'pop', 'get', 'set', 'call', 'eq', 'neq', 'lt', 'gt', 'lte', 'gte', 'abs', 'neg', 'sin', 'cos', 'tan', 'sqrt', 'floor', 'ceil', 'round', 'min', 'max', 'mod'];
 
         function escapeHtml(text) {
