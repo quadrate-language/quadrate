@@ -82,6 +82,8 @@ nav:
           - bytes: stdlib/bytes.md
       - Math & numbers:
           - math: stdlib/math.md
+          - math (vectors): stdlib/math-vectors.md
+          - math (matrices): stdlib/math-matrices.md
           - limits: stdlib/limits.md
           - bits: stdlib/bits.md
           - rand: stdlib/rand.md
@@ -98,7 +100,6 @@ nav:
           - flag: stdlib/flag.md
           - testing: stdlib/testing.md
       - Terminal:
-          - term: stdlib/term.md
           - tty: stdlib/tty.md
       - Signal handling:
           - signal: stdlib/signal.md

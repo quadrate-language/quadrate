@@ -62,16 +62,15 @@ t detach  // Thread runs on its own
 ### Multiple workers
 
 ```qd
-fn task(id:i64 -- ) {
-	-> id
-	"Task " print id print " running" print nl
+fn worker() {
+	"Working" print nl
 }
 
 fn main() {
-	3 make<ptr> -> threads
+	3 make<i64> -> threads
 
 	0 3 1 for i {
-		&task spawn threads i set
+		threads i &worker spawn set
 	}
 
 	// Wait for all
@@ -82,6 +81,8 @@ fn main() {
 	"All done" print nl
 }
 ```
+
+> **Note:** Spawned threads start with their own empty stack. Use channels (`thread::chan_buffered!`) to pass data between threads. See [thread](../stdlib/thread.md) for details.
 
 ### Fire and forget
 
