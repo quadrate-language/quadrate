@@ -1,6 +1,6 @@
 [wrap-git]
 url = https://github.com/akheron/jansson.git
-revision = v2.14.1
+revision = v2.15.0
 depth = 1
 patch_directory = jansson
 
