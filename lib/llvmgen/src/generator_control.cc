@@ -3,6 +3,97 @@
 namespace Qd {
 
 	void LlvmGenerator::Impl::generateIf(AstNodeIfStatement* ifStmt, llvm::Value* ctx) {
+		// Compile-time stack path
+		if (useCompileTimeStack) {
+			llvm::Function* currentFn = builder->GetInsertBlock()->getParent();
+
+			llvm::BasicBlock* thenBB = llvm::BasicBlock::Create(*context, "if.then", currentFn);
+			llvm::BasicBlock* elseBB =
+					ifStmt->elseBody() ? llvm::BasicBlock::Create(*context, "if.else", currentFn) : nullptr;
+			llvm::BasicBlock* mergeBB = llvm::BasicBlock::Create(*context, "if.merge", currentFn);
+
+			// Pop condition from compile-time stack
+			llvm::Value* condition = compileTimeStack.back();
+			compileTimeStack.pop_back();
+			auto isTrue = builder->CreateICmpNE(condition, builder->getInt64(0), "is_true");
+
+			// Remember the block where the branch is emitted (needed as else predecessor when no else block)
+			llvm::BasicBlock* condBlock = builder->GetInsertBlock();
+
+			if (elseBB) {
+				builder->CreateCondBr(isTrue, thenBB, elseBB);
+			} else {
+				builder->CreateCondBr(isTrue, thenBB, mergeBB);
+			}
+
+			// Save compile-time stack state before then block
+			auto savedStack = compileTimeStack;
+
+			// Generate then block
+			builder->SetInsertPoint(thenBB);
+			if (ifStmt->thenBody()) {
+				generateNode(ifStmt->thenBody(), ctx);
+			}
+			auto thenStack = compileTimeStack;
+			llvm::BasicBlock* thenExitBlock = builder->GetInsertBlock();
+			bool thenTerminated = (thenExitBlock != nullptr && thenExitBlock->getTerminator() != nullptr);
+			if (!thenTerminated) {
+				builder->CreateBr(mergeBB);
+			}
+
+			// Generate else block
+			llvm::BasicBlock* elseExitBlock = condBlock; // Default: condition block (no else)
+			auto elseStack = savedStack;				 // Default: unchanged if no else
+			bool elseTerminated = false;
+			if (elseBB) {
+				compileTimeStack = savedStack;
+				builder->SetInsertPoint(elseBB);
+				if (ifStmt->elseBody()) {
+					generateNode(ifStmt->elseBody(), ctx);
+				}
+				elseStack = compileTimeStack;
+				elseExitBlock = builder->GetInsertBlock();
+				elseTerminated = (elseExitBlock != nullptr && elseExitBlock->getTerminator() != nullptr);
+				if (!elseTerminated) {
+					builder->CreateBr(mergeBB);
+				}
+			}
+
+			// Merge block - create PHI nodes for differing stack values
+			builder->SetInsertPoint(mergeBB);
+
+			if (thenTerminated && elseTerminated) {
+				// Both branches terminated - merge block is unreachable
+				compileTimeStack = thenStack;
+			} else if (thenTerminated) {
+				// Only then terminated - use else values
+				compileTimeStack = elseStack;
+			} else if (elseTerminated) {
+				// Only else terminated - use then values
+				compileTimeStack = thenStack;
+			} else {
+				// Both branches reach merge - need PHI nodes
+				llvm::BasicBlock* thenPred = thenExitBlock;
+				llvm::BasicBlock* elsePred = elseExitBlock;
+
+				// Merge stack values with PHI nodes
+				size_t mergeSize = std::min(thenStack.size(), elseStack.size());
+				compileTimeStack.clear();
+				for (size_t i = 0; i < mergeSize; i++) {
+					if (thenStack[i] == elseStack[i]) {
+						compileTimeStack.push_back(thenStack[i]);
+					} else {
+						auto* phi = builder->CreatePHI(int64Ty, 2, "merge");
+						phi->addIncoming(thenStack[i], thenPred);
+						phi->addIncoming(elseStack[i], elsePred);
+						compileTimeStack.push_back(phi);
+					}
+				}
+			}
+
+			return;
+		}
+
 		// Get current function
 		llvm::Function* currentFn = builder->GetInsertBlock()->getParent();
 
@@ -92,8 +183,16 @@ namespace Qd {
 		llvm::Value* endValue;
 		llvm::Value* stepValue;
 
-		// Fast path for integer-only functions: inline pops, no type checking
-		if (currentFunctionIsIntegerOnly) {
+		// Compile-time stack path: pop start/end/step from compile-time stack
+		if (useCompileTimeStack) {
+			stepValue = compileTimeStack.back();
+			compileTimeStack.pop_back();
+			endValue = compileTimeStack.back();
+			compileTimeStack.pop_back();
+			startValue = compileTimeStack.back();
+			compileTimeStack.pop_back();
+		} else if (currentFunctionIsIntegerOnly) {
+			// Fast path for integer-only functions: inline pops, no type checking
 			// Pop start, end, step directly as integers (in reverse order: step, end, start)
 			stepValue = generateInlinePopInt(ctx);
 			endValue = generateInlinePopInt(ctx);
@@ -594,6 +693,10 @@ namespace Qd {
 				builder->CreateBr(currentFunctionReturnBlock);
 			}
 			break;
+			// Note: for native functions using compile-time stack, the return value
+			// is stored to the retval alloca before each branch to the return block.
+			// This happens in generateFunction's native path (before the final branch)
+			// and in the PHI merge logic of generateIf.
 		case IAstNode::Type::DEFER_STATEMENT:
 			// Collect defer statement for later execution at scope end
 			if (deferScopeStack.empty()) {

@@ -14,6 +14,30 @@ namespace Qd {
 	}
 
 	void LlvmGenerator::Impl::generateLocalOne(const std::string& name, size_t lineNum, llvm::Value* ctx) {
+		// Compile-time stack path: store to i64 alloca
+		if (useCompileTimeStack) {
+			if (name == "_") {
+				// Discard
+				compileTimeStack.pop_back();
+				return;
+			}
+			llvm::Value* val = compileTimeStack.back();
+			compileTimeStack.pop_back();
+
+			// Find or create alloca for this local
+			auto it = nativeLocalVariables.find(name);
+			if (it == nativeLocalVariables.end()) {
+				// Create alloca in entry block
+				llvm::Function* currentFn = builder->GetInsertBlock()->getParent();
+				llvm::IRBuilder<> tmpBuilder(&currentFn->getEntryBlock(), currentFn->getEntryBlock().begin());
+				auto* alloca = tmpBuilder.CreateAlloca(int64Ty, nullptr, name);
+				nativeLocalVariables[name] = alloca;
+				it = nativeLocalVariables.find(name);
+			}
+			builder->CreateStore(val, it->second);
+			return;
+		}
+
 		// Special case: -> _ means discard (drop) the value without storing it
 		// This is useful for ignoring return values from functions:
 		//   json::get_string -> _ -> value   // discard found flag, keep value

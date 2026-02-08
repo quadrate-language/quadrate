@@ -8,6 +8,262 @@ namespace Qd {
 	void LlvmGenerator::Impl::generateInstruction(AstNodeInstruction* inst, llvm::Value* ctx) {
 		const std::string& name = inst->name();
 
+		// Compile-time stack path for native integer-only functions
+		if (useCompileTimeStack) {
+			// Check if instruction name shadows a native local variable
+			auto nativeLocalIt = nativeLocalVariables.find(name);
+			if (nativeLocalIt != nativeLocalVariables.end()) {
+				llvm::Value* val = builder->CreateLoad(int64Ty, nativeLocalIt->second, name);
+				compileTimeStack.push_back(val);
+				return;
+			}
+
+			// Arithmetic operations
+			if (name == "+" || name == "add") {
+				llvm::Value* b = compileTimeStack.back();
+				compileTimeStack.pop_back();
+				llvm::Value* a = compileTimeStack.back();
+				compileTimeStack.pop_back();
+				compileTimeStack.push_back(builder->CreateNSWAdd(a, b, "add"));
+				return;
+			}
+			if (name == "-" || name == "sub") {
+				llvm::Value* b = compileTimeStack.back();
+				compileTimeStack.pop_back();
+				llvm::Value* a = compileTimeStack.back();
+				compileTimeStack.pop_back();
+				compileTimeStack.push_back(builder->CreateNSWSub(a, b, "sub"));
+				return;
+			}
+			if (name == "*" || name == "mul") {
+				llvm::Value* b = compileTimeStack.back();
+				compileTimeStack.pop_back();
+				llvm::Value* a = compileTimeStack.back();
+				compileTimeStack.pop_back();
+				compileTimeStack.push_back(builder->CreateNSWMul(a, b, "mul"));
+				return;
+			}
+			if (name == "/" || name == "div") {
+				llvm::Value* b = compileTimeStack.back();
+				compileTimeStack.pop_back();
+				llvm::Value* a = compileTimeStack.back();
+				compileTimeStack.pop_back();
+				compileTimeStack.push_back(builder->CreateSDiv(a, b, "div"));
+				return;
+			}
+			if (name == "%" || name == "mod") {
+				llvm::Value* b = compileTimeStack.back();
+				compileTimeStack.pop_back();
+				llvm::Value* a = compileTimeStack.back();
+				compileTimeStack.pop_back();
+				compileTimeStack.push_back(builder->CreateSRem(a, b, "mod"));
+				return;
+			}
+			// Comparison operations
+			if (name == "<" || name == "lt") {
+				llvm::Value* b = compileTimeStack.back();
+				compileTimeStack.pop_back();
+				llvm::Value* a = compileTimeStack.back();
+				compileTimeStack.pop_back();
+				llvm::Value* cmp = builder->CreateICmpSLT(a, b, "lt");
+				compileTimeStack.push_back(builder->CreateZExt(cmp, int64Ty, "lt_i64"));
+				return;
+			}
+			if (name == ">" || name == "gt") {
+				llvm::Value* b = compileTimeStack.back();
+				compileTimeStack.pop_back();
+				llvm::Value* a = compileTimeStack.back();
+				compileTimeStack.pop_back();
+				llvm::Value* cmp = builder->CreateICmpSGT(a, b, "gt");
+				compileTimeStack.push_back(builder->CreateZExt(cmp, int64Ty, "gt_i64"));
+				return;
+			}
+			if (name == "==" || name == "eq") {
+				llvm::Value* b = compileTimeStack.back();
+				compileTimeStack.pop_back();
+				llvm::Value* a = compileTimeStack.back();
+				compileTimeStack.pop_back();
+				llvm::Value* cmp = builder->CreateICmpEQ(a, b, "eq");
+				compileTimeStack.push_back(builder->CreateZExt(cmp, int64Ty, "eq_i64"));
+				return;
+			}
+			if (name == "!=" || name == "neq") {
+				llvm::Value* b = compileTimeStack.back();
+				compileTimeStack.pop_back();
+				llvm::Value* a = compileTimeStack.back();
+				compileTimeStack.pop_back();
+				llvm::Value* cmp = builder->CreateICmpNE(a, b, "ne");
+				compileTimeStack.push_back(builder->CreateZExt(cmp, int64Ty, "ne_i64"));
+				return;
+			}
+			if (name == "<=" || name == "lte") {
+				llvm::Value* b = compileTimeStack.back();
+				compileTimeStack.pop_back();
+				llvm::Value* a = compileTimeStack.back();
+				compileTimeStack.pop_back();
+				llvm::Value* cmp = builder->CreateICmpSLE(a, b, "le");
+				compileTimeStack.push_back(builder->CreateZExt(cmp, int64Ty, "le_i64"));
+				return;
+			}
+			if (name == ">=" || name == "gte") {
+				llvm::Value* b = compileTimeStack.back();
+				compileTimeStack.pop_back();
+				llvm::Value* a = compileTimeStack.back();
+				compileTimeStack.pop_back();
+				llvm::Value* cmp = builder->CreateICmpSGE(a, b, "ge");
+				compileTimeStack.push_back(builder->CreateZExt(cmp, int64Ty, "ge_i64"));
+				return;
+			}
+			// Bitwise operations
+			if (name == "and") {
+				llvm::Value* b = compileTimeStack.back();
+				compileTimeStack.pop_back();
+				llvm::Value* a = compileTimeStack.back();
+				compileTimeStack.pop_back();
+				compileTimeStack.push_back(builder->CreateAnd(a, b, "and"));
+				return;
+			}
+			if (name == "or") {
+				llvm::Value* b = compileTimeStack.back();
+				compileTimeStack.pop_back();
+				llvm::Value* a = compileTimeStack.back();
+				compileTimeStack.pop_back();
+				compileTimeStack.push_back(builder->CreateOr(a, b, "or"));
+				return;
+			}
+			if (name == "xor") {
+				llvm::Value* b = compileTimeStack.back();
+				compileTimeStack.pop_back();
+				llvm::Value* a = compileTimeStack.back();
+				compileTimeStack.pop_back();
+				compileTimeStack.push_back(builder->CreateXor(a, b, "xor"));
+				return;
+			}
+			if (name == "not") {
+				llvm::Value* a = compileTimeStack.back();
+				compileTimeStack.pop_back();
+				compileTimeStack.push_back(builder->CreateNot(a, "not"));
+				return;
+			}
+			if (name == "shl" || name == "<<") {
+				llvm::Value* b = compileTimeStack.back();
+				compileTimeStack.pop_back();
+				llvm::Value* a = compileTimeStack.back();
+				compileTimeStack.pop_back();
+				compileTimeStack.push_back(builder->CreateShl(a, b, "shl"));
+				return;
+			}
+			if (name == "shr" || name == ">>") {
+				llvm::Value* b = compileTimeStack.back();
+				compileTimeStack.pop_back();
+				llvm::Value* a = compileTimeStack.back();
+				compileTimeStack.pop_back();
+				compileTimeStack.push_back(builder->CreateAShr(a, b, "shr"));
+				return;
+			}
+			// Increment/decrement
+			if (name == "++") {
+				llvm::Value* a = compileTimeStack.back();
+				compileTimeStack.pop_back();
+				compileTimeStack.push_back(builder->CreateNSWAdd(a, builder->getInt64(1), "inc"));
+				return;
+			}
+			if (name == "--") {
+				llvm::Value* a = compileTimeStack.back();
+				compileTimeStack.pop_back();
+				compileTimeStack.push_back(builder->CreateNSWSub(a, builder->getInt64(1), "dec"));
+				return;
+			}
+			if (name == "neg") {
+				llvm::Value* a = compileTimeStack.back();
+				compileTimeStack.pop_back();
+				compileTimeStack.push_back(builder->CreateNeg(a, "neg"));
+				return;
+			}
+			// Stack operations
+			if (name == "dup") {
+				compileTimeStack.push_back(compileTimeStack.back());
+				return;
+			}
+			if (name == "dup2") {
+				size_t sz = compileTimeStack.size();
+				compileTimeStack.push_back(compileTimeStack[sz - 2]);
+				compileTimeStack.push_back(compileTimeStack[sz - 1]);
+				return;
+			}
+			if (name == "swap") {
+				size_t sz = compileTimeStack.size();
+				std::swap(compileTimeStack[sz - 1], compileTimeStack[sz - 2]);
+				return;
+			}
+			if (name == "drop") {
+				compileTimeStack.pop_back();
+				return;
+			}
+			if (name == "drop2") {
+				compileTimeStack.pop_back();
+				compileTimeStack.pop_back();
+				return;
+			}
+			if (name == "over") {
+				size_t sz = compileTimeStack.size();
+				compileTimeStack.push_back(compileTimeStack[sz - 2]);
+				return;
+			}
+			if (name == "rot") {
+				size_t sz = compileTimeStack.size();
+				llvm::Value* a = compileTimeStack[sz - 3];
+				compileTimeStack[sz - 3] = compileTimeStack[sz - 2];
+				compileTimeStack[sz - 2] = compileTimeStack[sz - 1];
+				compileTimeStack[sz - 1] = a;
+				return;
+			}
+			if (name == "nip") {
+				size_t sz = compileTimeStack.size();
+				compileTimeStack[sz - 2] = compileTimeStack[sz - 1];
+				compileTimeStack.pop_back();
+				return;
+			}
+			if (name == "tuck") {
+				size_t sz = compileTimeStack.size();
+				llvm::Value* top = compileTimeStack[sz - 1];
+				compileTimeStack.insert(compileTimeStack.begin() + static_cast<long>(sz - 2), top);
+				return;
+			}
+			if (name == "pick") {
+				// pick N: copy the Nth element from top (0-indexed)
+				// In compile-time stack, we can't do dynamic pick,
+				// but for constant N this would work. For now, fall through.
+			}
+			if (name == "roll") {
+				// Similar to pick but removes the element. Fall through for now.
+			}
+			// print: materialize top value to runtime stack, call runtime print
+			if (name == "print") {
+				llvm::Value* val = compileTimeStack.back();
+				compileTimeStack.pop_back();
+				generateInlinePushIntValue(ctx, val);
+				// Call qd_print (maps to "print" -> "qd_print")
+				llvm::Function* printFn = module->getFunction("qd_print");
+				if (!printFn) {
+					auto fnTy = llvm::FunctionType::get(execResultTy, {contextPtrTy}, false);
+					printFn = llvm::Function::Create(fnTy, llvm::Function::ExternalLinkage, "qd_print", *module);
+				}
+				builder->CreateCall(printFn, {ctx});
+				return;
+			}
+			if (name == "prints") {
+				builder->CreateCall(printsFn, {ctx});
+				return;
+			}
+			if (name == "nl") {
+				builder->CreateCall(nlFn, {ctx});
+				return;
+			}
+			// For any unhandled instruction in compile-time stack mode, fall through
+			// to the normal path (which will use the runtime stack)
+		}
+
 		// Check if instruction name shadows a local variable - if so, push the variable
 		auto localIt = localVariables.find(name);
 		if (localIt != localVariables.end()) {

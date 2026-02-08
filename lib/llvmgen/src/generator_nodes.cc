@@ -17,11 +17,14 @@ namespace Qd {
 						  << std::endl;
 				compilationFailed = true;
 			}
-			// Use function calls when debug info is enabled for better debuggability
-			// Use inline code for release builds for better performance
-			if (debugInfoEnabled) {
+			if (useCompileTimeStack) {
+				// Compile-time stack: push LLVM constant directly
+				compileTimeStack.push_back(builder->getInt64(static_cast<uint64_t>(val)));
+			} else if (debugInfoEnabled) {
+				// Use function calls when debug info is enabled for better debuggability
 				builder->CreateCall(pushIntFn, {ctx, builder->getInt64(static_cast<uint64_t>(val))});
 			} else {
+				// Use inline code for release builds for better performance
 				generateInlinePushInt(ctx, val);
 			}
 			lastPushedType = LastPushedType::INTEGER;
@@ -186,6 +189,18 @@ namespace Qd {
 			return;
 		}
 
+		// Check if it's a native local variable (compile-time stack mode)
+		if (useCompileTimeStack) {
+			auto nativeLocalIt = nativeLocalVariables.find(name);
+			if (nativeLocalIt != nativeLocalVariables.end()) {
+				// Load from i64 alloca and push to compile-time stack
+				llvm::Value* val = builder->CreateLoad(int64Ty, nativeLocalIt->second, name);
+				compileTimeStack.push_back(val);
+				lastIdentifierPushed = name;
+				return;
+			}
+		}
+
 		// Check if it's a local variable
 		auto localIt = localVariables.find(name);
 		if (localIt != localVariables.end()) {
@@ -289,8 +304,12 @@ namespace Qd {
 		// Check if it's a loop iterator variable
 		auto iterIt = iteratorVars.find(name);
 		if (iterIt != iteratorVars.end()) {
-			// Push loop iterator as integer (inline for performance)
-			generateInlinePushIntValue(ctx, iterIt->second);
+			if (useCompileTimeStack) {
+				compileTimeStack.push_back(iterIt->second);
+			} else {
+				// Push loop iterator as integer (inline for performance)
+				generateInlinePushIntValue(ctx, iterIt->second);
+			}
 			return;
 		}
 
@@ -298,6 +317,21 @@ namespace Qd {
 		auto constIt = moduleConstants.find(name);
 		if (constIt != moduleConstants.end()) {
 			const std::string& value = constIt->second;
+
+			// Compile-time stack path for integer constants
+			if (useCompileTimeStack) {
+				// Only handle integer constants in compile-time stack mode
+				if (value.empty() || (value.size() >= 2 && value.front() == '"') ||
+						value.find('.') != std::string::npos) {
+					// String or float constant - shouldn't happen in integer-only functions
+					// Fall through to runtime path
+				} else {
+					int64_t intValue = 0;
+					safeParseInt64(value, intValue);
+					compileTimeStack.push_back(builder->getInt64(static_cast<uint64_t>(intValue)));
+					return;
+				}
+			}
 
 			// Determine the type of the constant and push it
 			if (!value.empty() && value.size() >= 2 && value.front() == '"' && value.back() == '"') {
@@ -364,6 +398,37 @@ namespace Qd {
 			}
 		}
 		if (it != userFunctions.end()) {
+			// Compile-time stack path: call native version directly if available
+			if (useCompileTimeStack) {
+				auto calleeNativeIt = nativeFunctions.find(lookupName);
+				if (calleeNativeIt != nativeFunctions.end()) {
+					auto& calleeInfo = nativeFuncInfo[lookupName];
+					// Pop args from compile-time stack (in reverse order)
+					std::vector<llvm::Value*> args;
+					args.push_back(ctx); // ctx is always first
+					std::vector<llvm::Value*> poppedArgs;
+					for (size_t i = 0; i < calleeInfo.inputCount; i++) {
+						poppedArgs.push_back(compileTimeStack.back());
+						compileTimeStack.pop_back();
+					}
+					// Reverse to get correct parameter order
+					for (auto rit = poppedArgs.rbegin(); rit != poppedArgs.rend(); ++rit) {
+						args.push_back(*rit);
+					}
+					// Call native function directly
+					if (calleeInfo.outputCount == 1) {
+						llvm::Value* result = builder->CreateCall(calleeNativeIt->second, args, "call_result");
+						compileTimeStack.push_back(result);
+					} else {
+						builder->CreateCall(calleeNativeIt->second, args);
+					}
+					return;
+				}
+				// Callee has no native version - fall through to stack-based call
+				// Materialize compile-time stack args to runtime stack, call, dematerialize
+				// For now, this shouldn't happen for integer-only callers calling integer-only callees
+			}
+
 			// Generate any needed type casts before the function call
 			generateCastInstructions(ident->parameterCasts(), ctx);
 

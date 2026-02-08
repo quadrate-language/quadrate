@@ -211,6 +211,27 @@ namespace Qd {
 		std::set<std::string> importedCFunctions;
 		std::map<std::string, std::string> functionReturnStructType;
 
+		// Native calling convention for integer-only functions
+		// Maps register name (e.g. "fib") to the native LLVM function
+		std::map<std::string, llvm::Function*> nativeFunctions;
+
+		struct NativeFuncInfo {
+			size_t inputCount;
+			size_t outputCount; // 0 or 1
+		};
+
+		std::map<std::string, NativeFuncInfo> nativeFuncInfo;
+
+		// Compile-time value stack (active when useCompileTimeStack=true)
+		std::vector<llvm::Value*> compileTimeStack;
+		bool useCompileTimeStack = false;
+
+		// Return value alloca for native functions (used by return statement)
+		llvm::AllocaInst* nativeReturnAlloca = nullptr;
+
+		// Native local variables: name → alloca (i64) for compile-time stack mode
+		std::map<std::string, llvm::AllocaInst*> nativeLocalVariables;
+
 		// Cross-module imported function info
 		struct CrossModuleImportInfo {
 			std::string library;
@@ -491,6 +512,7 @@ namespace Qd {
 
 		// Analysis helpers
 		bool analyzeIsBodyIntegerOnly(IAstNode* node);
+		bool analyzeCalleesAllNative(IAstNode* node);
 	};
 
 } // namespace Qd
