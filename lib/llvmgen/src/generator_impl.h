@@ -519,7 +519,8 @@ namespace Qd {
 		void executeDeferScope(llvm::Value* ctx);
 
 		// Analysis helpers
-		bool analyzeIsBodyIntegerOnly(IAstNode* node);
+		void collectLocalNames(IAstNode* node, std::set<std::string>& names);
+		bool analyzeIsBodyIntegerOnly(IAstNode* node, const std::set<std::string>& localNames);
 		bool analyzeCalleesAllNative(IAstNode* node);
 	};
 

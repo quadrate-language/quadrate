@@ -398,7 +398,24 @@ namespace Qd {
 		}
 	}
 
-	bool LlvmGenerator::Impl::analyzeIsBodyIntegerOnly(IAstNode* node) {
+	void LlvmGenerator::Impl::collectLocalNames(IAstNode* node, std::set<std::string>& names) {
+		if (!node) {
+			return;
+		}
+		if (node->type() == IAstNode::Type::LOCAL) {
+			auto* local = static_cast<AstNodeLocal*>(node);
+			for (const auto& n : local->names()) {
+				if (n != "_") {
+					names.insert(n);
+				}
+			}
+		}
+		for (auto* child : node->children()) {
+			collectLocalNames(child, names);
+		}
+	}
+
+	bool LlvmGenerator::Impl::analyzeIsBodyIntegerOnly(IAstNode* node, const std::set<std::string>& localNames) {
 		if (!node) {
 			return true;
 		}
@@ -418,13 +435,17 @@ namespace Qd {
 			const std::string& name = inst->name();
 			// Reject instructions that work with non-integer types (strings, arrays, pointers)
 			// Also reject dynamic stack ops (pick, roll) that can't be statically handled
-			if (name == "err" || name == "read" || name == "getenv" || name == "make" || name == "set" ||
-					name == "nth" || name == "len" || name == "push_back" || name == "pop_back" || name == "cast" ||
-					name == "panic" || name == "sizeof" || name == "type" || name == "call" || name == "pick" ||
-					name == "roll" || name == "depth" || name == "clear" || name == "within" || name == "swap2" ||
-					name == "over2" || name == "nipd" || name == "swapd" || name == "dupd" || name == "overd" ||
-					name == "free" || name == "peek") {
-				return false;
+			// But skip the check if the instruction name is actually a local variable reference
+			// (the parser emits Instruction nodes for names like "len" even when they refer to locals)
+			if (localNames.find(name) == localNames.end()) {
+				if (name == "err" || name == "read" || name == "getenv" || name == "make" || name == "set" ||
+						name == "nth" || name == "len" || name == "push_back" || name == "pop_back" || name == "cast" ||
+						name == "panic" || name == "sizeof" || name == "type" || name == "call" || name == "pick" ||
+						name == "roll" || name == "depth" || name == "clear" || name == "within" || name == "swap2" ||
+						name == "over2" || name == "nipd" || name == "swapd" || name == "dupd" || name == "overd" ||
+						name == "free" || name == "peek") {
+					return false;
+				}
 			}
 			break;
 		}
@@ -451,7 +472,7 @@ namespace Qd {
 
 		// Recursively check children
 		for (auto* child : node->children()) {
-			if (!analyzeIsBodyIntegerOnly(child)) {
+			if (!analyzeIsBodyIntegerOnly(child, localNames)) {
 				return false;
 			}
 		}
@@ -624,8 +645,10 @@ namespace Qd {
 
 			// Detect if main function body only uses integers (for type specialization)
 			currentFunctionIsIntegerOnly = true;
+			std::set<std::string> mainLocalNames;
+			collectLocalNames(funcNode, mainLocalNames);
 			for (auto* child : funcNode->children()) {
-				if (!analyzeIsBodyIntegerOnly(child)) {
+				if (!analyzeIsBodyIntegerOnly(child, mainLocalNames)) {
 					currentFunctionIsIntegerOnly = false;
 					break;
 				}
@@ -825,8 +848,10 @@ namespace Qd {
 			// Also check the function body for non-integer types (strings, floats, module calls)
 			if (currentFunctionIsIntegerOnly) {
 				// Scan the function body to ensure it only uses integers
+				std::set<std::string> funcLocalNames;
+				collectLocalNames(funcNode, funcLocalNames);
 				for (auto* child : funcNode->children()) {
-					if (!analyzeIsBodyIntegerOnly(child)) {
+					if (!analyzeIsBodyIntegerOnly(child, funcLocalNames)) {
 						currentFunctionIsIntegerOnly = false;
 						break;
 					}
@@ -1245,9 +1270,11 @@ namespace Qd {
 			}
 			if (allParamsInteger) {
 				// Check body is integer-only
+				std::set<std::string> funcLocalNames;
+				collectLocalNames(funcNode, funcLocalNames);
 				bool bodyOk = true;
 				for (auto* child : funcNode->children()) {
-					if (!analyzeIsBodyIntegerOnly(child)) {
+					if (!analyzeIsBodyIntegerOnly(child, funcLocalNames)) {
 						bodyOk = false;
 						break;
 					}
@@ -1846,9 +1873,11 @@ namespace Qd {
 						}
 					}
 					if (allParamsInteger) {
+						std::set<std::string> funcLocalNames;
+						collectLocalNames(funcNode, funcLocalNames);
 						bool bodyOk = true;
 						for (auto* child2 : funcNode->children()) {
-							if (!analyzeIsBodyIntegerOnly(child2)) {
+							if (!analyzeIsBodyIntegerOnly(child2, funcLocalNames)) {
 								bodyOk = false;
 								break;
 							}

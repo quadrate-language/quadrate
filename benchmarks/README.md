@@ -36,12 +36,12 @@ All compiled languages use -O3 (or equivalent) optimization. Quadrate compiles t
 
 | Language | Time |
 |----------|------|
-| C        | 75 ms |
-| Go       | 81 ms |
+| C        | 74 ms |
 | Rust     | 84 ms |
+| Go       | 85 ms |
 | Quadrate | 86 ms |
-| Node.js  | 378 ms |
-| Python   | 2584 ms |
+| Node.js  | 380 ms |
+| Python   | 2594 ms |
 
 ### Recursive Fibonacci (n=35)
 
@@ -50,68 +50,68 @@ All compiled languages use -O3 (or equivalent) optimization. Quadrate compiles t
 | C        | 37 ms |
 | Rust     | 53 ms |
 | Quadrate | 55 ms |
-| Go       | 91 ms |
-| Node.js  | 264 ms |
-| Python   | 2636 ms |
+| Go       | 94 ms |
+| Node.js  | 259 ms |
+| Python   | 2586 ms |
 
 ### String Concat (50K iterations)
 
 | Language | Time |
 |----------|------|
 | Rust     | <1 ms |
-| Node.js  | 6 ms |
-| Python   | 102 ms |
-| C        | 111 ms |
-| Quadrate | 125 ms |
-| Go       | 447 ms |
+| Node.js  | 7 ms |
+| Python   | 101 ms |
+| C        | 114 ms |
+| Quadrate | 123 ms |
+| Go       | 431 ms |
 
 ### Compute Benchmarks
 
-Functions with loops use scoped variables and don't qualify for native calling convention, so they run on the stack machine. Recursive functions (Ackermann, Tak) qualify for native calling convention and achieve near-C performance.
+All integer-only functions qualify for native calling convention and achieve near-C performance.
 
 #### Collatz Longest Chain (under 1M)
 
 | Language | Time |
 |----------|------|
-| Rust     | 306 ms |
-| C        | 326 ms |
-| Go       | 573 ms |
-| Node.js  | 2367 ms |
-| Quadrate | 13567 ms |
-| Python   | 20865 ms |
+| Quadrate | 295 ms |
+| Rust     | 319 ms |
+| C        | 330 ms |
+| Go       | 577 ms |
+| Node.js  | 2339 ms |
+| Python   | 20766 ms |
 
 #### Prime Counting (under 1M)
 
 | Language | Time |
 |----------|------|
-| Quadrate | 241 ms |
-| Rust     | 262 ms |
-| Node.js  | 315 ms |
-| C        | 545 ms |
-| Go       | 609 ms |
-| Python   | 5023 ms |
+| Quadrate | 262 ms |
+| Rust     | 260 ms |
+| Node.js  | 320 ms |
+| C        | 548 ms |
+| Go       | 594 ms |
+| Python   | 5024 ms |
 
 #### Ackermann(3, 11)
 
 | Language | Time |
 |----------|------|
-| C        | 212 ms |
-| Rust     | 253 ms |
-| Quadrate | 298 ms |
-| Go       | 1626 ms |
-| Node.js  | 2889 ms |
-| Python   | 44795 ms |
+| C        | 210 ms |
+| Quadrate | 244 ms |
+| Rust     | 255 ms |
+| Go       | 1624 ms |
+| Node.js  | 2883 ms |
+| Python   | 44869 ms |
 
 #### Popcount Sum (1..10M)
 
 | Language | Time |
 |----------|------|
-| C        | 166 ms |
-| Go       | 190 ms |
-| Quadrate | 249 ms |
-| Rust     | 266 ms |
-| Node.js  | 275 ms |
-| Python   | 26446 ms |
+| C        | 162 ms |
+| Go       | 184 ms |
+| Quadrate | 245 ms |
+| Rust     | 267 ms |
+| Node.js  | 272 ms |
+| Python   | 26171 ms |
 
 #### Tak(24, 16, 8)
 
@@ -122,6 +122,6 @@ Functions with loops use scoped variables and don't qualify for native calling c
 | Rust     | 6 ms |
 | Go       | 7 ms |
 | Node.js  | 21 ms |
-| Python   | 205 ms |
+| Python   | 206 ms |
 
 Results from an Intel Core i3-4030U @ 1.90GHz. Run `./benchmarks/run_benchmarks.sh` to reproduce.
