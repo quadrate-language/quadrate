@@ -640,6 +640,8 @@ namespace Qd {
 				// InternalLinkage allows LLVM to eliminate unused functions via GlobalDCE
 				auto linkage = exportMode ? llvm::Function::ExternalLinkage : llvm::Function::InternalLinkage;
 				fn = llvm::Function::Create(fnTy, linkage, fnName, *module);
+				// ctx parameter is always non-null
+				fn->addParamAttr(0, llvm::Attribute::NonNull);
 			}
 
 			// Add debug info for user function
@@ -954,6 +956,8 @@ namespace Qd {
 			auto fnTy = llvm::FunctionType::get(execResultTy, {contextPtrTy}, false);
 			auto linkage = exportMode ? llvm::Function::ExternalLinkage : llvm::Function::InternalLinkage;
 			fn = llvm::Function::Create(fnTy, linkage, fnName, *module);
+			// ctx parameter is always non-null
+			fn->addParamAttr(0, llvm::Attribute::NonNull);
 		}
 
 		// Register the function with appropriate scope
@@ -1484,6 +1488,8 @@ namespace Qd {
 				// InternalLinkage allows LLVM to eliminate unused functions via GlobalDCE
 				auto linkage = exportMode ? llvm::Function::ExternalLinkage : llvm::Function::InternalLinkage;
 				auto fn = llvm::Function::Create(fnTy, linkage, fnName, *module);
+				// ctx parameter is always non-null
+				fn->addParamAttr(0, llvm::Attribute::NonNull);
 				// Register the function for forward reference lookup
 				userFunctions[registerName] = fn;
 				fallibleFunctions[registerName] = funcNode->throws();

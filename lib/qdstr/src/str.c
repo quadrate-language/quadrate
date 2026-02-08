@@ -46,19 +46,11 @@ int usr_str_len(qd_context* ctx) {
 }
 
 // concat - concatenate two strings ( str1:s str2:s -- result:s )
+// Uses qd_string_concat_smart for in-place append when possible (refcount==1 && enough capacity)
 int usr_str_concat(qd_context* ctx) {
 	qd_stack_element_t str2, str1;
-	qd_stack_error err = qd_stack_pop(ctx->st, &str2);
-	if (err != QD_STACK_OK) {
-		fprintf(stderr, "Fatal error in str::concat: Stack underflow\n");
-		abort();
-	}
-	err = qd_stack_pop(ctx->st, &str1);
-	if (err != QD_STACK_OK) {
-		fprintf(stderr, "Fatal error in str::concat: Stack underflow\n");
-		if (str2.type == QD_STACK_TYPE_STR) qd_string_release(str2.value.s);
-		abort();
-	}
+	STR_POP(ctx, &str2, "concat");
+	STR_POP(ctx, &str1, "concat");
 
 	if (str1.type != QD_STACK_TYPE_STR || str2.type != QD_STACK_TYPE_STR) {
 		fprintf(stderr, "Fatal error in str::concat: Expected two strings\n");
@@ -67,25 +59,19 @@ int usr_str_concat(qd_context* ctx) {
 		abort();
 	}
 
-	size_t len1 = strlen(qd_string_data(str1.value.s));
-	size_t len2 = strlen(qd_string_data(str2.value.s));
-	char* result = malloc(len1 + len2 + 1);
+	// concat_smart handles in-place append when str1 has refcount==1 and enough capacity,
+	// otherwise allocates a new string with 2x capacity for future growth.
+	// It releases both inputs internally.
+	qd_string_t* result = qd_string_concat_smart(str1.value.s, str2.value.s);
 
 	if (!result) {
 		fprintf(stderr, "Fatal error in str::concat: Memory allocation failed\n");
-		qd_string_release(str1.value.s);
-		qd_string_release(str2.value.s);
 		abort();
 	}
 
-	memcpy(result, qd_string_data(str1.value.s), len1);
-	memcpy(result + len1, qd_string_data(str2.value.s), len2 + 1);  // +1 for null terminator
-
-	qd_string_release(str1.value.s);
-	qd_string_release(str2.value.s);
-
-	qd_push_s(ctx, result);
-	free(result);
+	// Push result using ref to avoid an extra copy — concat_smart returns refcount=1
+	qd_push_s_ref(ctx, result);
+	qd_string_release(result);  // push_s_ref retained it; release our reference
 
 	return (int){0};
 }
