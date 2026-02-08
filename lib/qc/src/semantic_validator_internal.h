@@ -292,7 +292,7 @@ inline std::vector<std::string> globQdFiles(const std::string& directory) {
 
 		// Sort alphabetically for deterministic order
 		std::sort(files.begin(), files.end());
-	} catch (...) {
+	} catch (const std::filesystem::filesystem_error&) {
 		// Ignore filesystem errors
 	}
 

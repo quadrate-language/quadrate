@@ -46,7 +46,7 @@ static std::string findFirstQdFile(const std::string& directory) {
 				}
 			}
 		}
-	} catch (...) {
+	} catch (const std::filesystem::filesystem_error&) {
 		// Ignore filesystem errors
 	}
 	return "";
@@ -94,7 +94,7 @@ static std::string findModuleFile(const std::string& moduleName) {
 				if (!result.empty()) {
 					return result;
 				}
-			} catch (...) {
+			} catch (const std::filesystem::filesystem_error&) {
 				// Ignore errors resolving path
 			}
 		}
@@ -149,7 +149,7 @@ static std::string findLibraryDir() {
 				if (fs::exists(installedLib / "libqdrt.a") || fs::exists(installedLib / "libqdrt.so")) {
 					return installedLib.string();
 				}
-			} catch (...) {
+			} catch (const std::filesystem::filesystem_error&) {
 				// Ignore errors resolving path
 			}
 		}

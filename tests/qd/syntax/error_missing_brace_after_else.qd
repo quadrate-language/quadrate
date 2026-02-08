@@ -1,0 +1,6 @@
+fn main() {
+	1 if {
+		1 print nl
+	} else
+		2 print nl
+}

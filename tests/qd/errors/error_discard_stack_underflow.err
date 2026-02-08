@@ -1,0 +1,1 @@
+[1mquadc: [0m[1mtests/qd/errors/error_discard_stack_underflow.qd:2:2:[0m [1m[1;31merror:[0m [1mType error in discard '-> _': Stack underflow (no value to discard)[0m

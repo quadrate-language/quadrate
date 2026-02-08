@@ -1,0 +1,15 @@
+use testing
+use rt
+use str
+
+test "version returns non-empty string" {
+	rt::version str::len 0 > testing::assert_true
+}
+
+test "version_api returns positive number" {
+	rt::version_api 0 > testing::assert_true
+}
+
+test "version_api is at least 20000 (v2.0.0)" {
+	rt::version_api 20000 >= testing::assert_true
+}

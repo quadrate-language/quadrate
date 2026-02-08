@@ -18,7 +18,7 @@ void qdrt_dump_stack(qd_context* ctx);
 // Fatal error with stack dump and abort
 #define QDRT_FATAL(ctx, op, ...)                                                                                       \
 	do {                                                                                                               \
-		fprintf(stderr, "Fatal error in %s: ", (op));                                                                   \
+		fprintf(stderr, "Fatal error in %s: ", (op));                                                                  \
 		fprintf(stderr, __VA_ARGS__);                                                                                  \
 		fprintf(stderr, "\n");                                                                                         \
 		qdrt_dump_stack(ctx);                                                                                          \

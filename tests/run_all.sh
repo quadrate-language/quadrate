@@ -1040,6 +1040,39 @@ run_quadmcp_tests() {
     CURRENT_TEST_TOTAL=0
 }
 
+# Run quad CLI tests
+run_quad_tests() {
+    local suite="quad"
+    local test_script="$PROJECT_ROOT/tests/quad/test_quad.sh"
+
+    if ! should_run_test "$suite" "quad_tests"; then
+        return
+    fi
+
+    print_header "Quad CLI Tests"
+
+    if [[ ! -f "$test_script" ]]; then
+        log_skip "$suite" "quad_tests" "test script not found"
+        return
+    fi
+
+    local output
+    local exit_code
+    output=$(cd "$PROJECT_ROOT" && bash "$test_script" 2>&1)
+    exit_code=$?
+
+    # Parse pass/fail counts from output
+    local summary_line=$(echo "$output" | tail -1)
+    local passed=$(echo "$summary_line" | grep -o '[0-9]* passed' | grep -o '[0-9]*')
+    local failed=$(echo "$summary_line" | grep -o '[0-9]* failed' | grep -o '[0-9]*')
+
+    if [[ $exit_code -eq 0 ]]; then
+        log_pass "$suite" "quad_tests" "(${passed:-0} tests)"
+    else
+        log_fail "$suite" "quad_tests" "${failed:-?}/${passed:-?} tests failed"
+    fi
+}
+
 # Run command-line argument tests
 run_args_tests() {
     local suite="args"
@@ -1696,6 +1729,10 @@ main() {
 
     if [[ -z "$SPECIFIC_SUITE" ]] || [[ "$SPECIFIC_SUITE" == "quadmcp" ]]; then
         run_quadmcp_tests
+    fi
+
+    if [[ -z "$SPECIFIC_SUITE" ]] || [[ "$SPECIFIC_SUITE" == "quad" ]]; then
+        run_quad_tests
     fi
 
     if [[ -z "$SPECIFIC_SUITE" ]] || [[ "$SPECIFIC_SUITE" == "args" ]]; then

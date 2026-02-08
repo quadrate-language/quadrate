@@ -3657,7 +3657,7 @@ namespace Qd {
 					size_t importSlashPos = SIZE_MAX;
 					while (true) {
 						token = u8t_scanner_scan(&scanner);
-						if (token == '}') {
+						if (token == '}' || token == U8T_EOF) {
 							break;
 						}
 

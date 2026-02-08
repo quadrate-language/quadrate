@@ -1,0 +1,5 @@
+fn main() {
+	fn inner() {
+		1 print nl
+	}
+}

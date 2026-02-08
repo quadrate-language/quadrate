@@ -1,0 +1,1 @@
+[1mquadc: [0m[1mtests/qd/errors/error_if_stack_underflow.qd:2:5:[0m [1m[1;31merror:[0m [1mType error in 'if': Stack underflow (requires 1 condition value)[0m

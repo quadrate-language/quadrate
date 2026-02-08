@@ -1,0 +1,1 @@
+[1mquadc: [0m[1mtests/qd/errors/error_nip_stack_underflow.qd:2:4:[0m [1m[1;31merror:[0m [1mType error in 'nip': Stack underflow (requires 2 values)[0m

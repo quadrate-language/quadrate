@@ -144,7 +144,7 @@ namespace Qd {
 					}
 				}
 			}
-		} catch (...) {
+		} catch (const std::filesystem::filesystem_error&) {
 			// Ignore filesystem errors
 		}
 
@@ -166,7 +166,7 @@ namespace Qd {
 			// Normalize the path
 			try {
 				return std::filesystem::canonical(target).string();
-			} catch (...) {
+			} catch (const std::filesystem::filesystem_error&) {
 				return target;
 			}
 		}
@@ -383,7 +383,7 @@ namespace Qd {
 							break; // Only try first matching version
 						}
 					}
-				} catch (...) {
+				} catch (const std::filesystem::filesystem_error&) {
 					// Ignore errors iterating directory
 				}
 			}
@@ -533,7 +533,7 @@ namespace Qd {
 									}
 								}
 							}
-						} catch (...) {
+						} catch (const std::filesystem::filesystem_error&) {
 							// Ignore filesystem errors
 						}
 					}
@@ -590,7 +590,7 @@ namespace Qd {
 									break; // Only try first matching version
 								}
 							}
-						} catch (...) {
+						} catch (const std::filesystem::filesystem_error&) {
 							// Ignore errors iterating directory
 						}
 					}
@@ -654,7 +654,7 @@ namespace Qd {
 						if (tryLoadModuleFromDirectory(shareDir.string(), moduleName)) {
 							return;
 						}
-					} catch (...) {
+					} catch (const std::filesystem::filesystem_error&) {
 						// Ignore errors reading executable path
 					}
 				}
@@ -687,7 +687,7 @@ namespace Qd {
 							return;
 						}
 						file.close();
-					} catch (...) {
+					} catch (const std::filesystem::filesystem_error&) {
 						// Ignore errors resolving symlink
 					}
 				}
