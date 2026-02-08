@@ -1,5 +1,6 @@
 # Compiled binaries
-arithmetic_qd*
+arithmetic_qd
+arithmetic_qd_o3
 arithmetic_c
 arithmetic_rust
 arithmetic_go
@@ -11,4 +12,16 @@ compute_qd
 compute_c
 compute_rust
 compute_go
+float_compute_qd
+float_compute_c
+float_compute_rust
+float_compute_go
+mat4x4_qd
+mat4x4_c
+mat4x4_rust
+mat4x4_go
 *.out
+
+# C# build artifacts
+csharp/bin/
+csharp/obj/
