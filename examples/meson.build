@@ -12,6 +12,7 @@ subdir('hello-world-c')
 subdir('hof')
 subdir('lambdas')
 subdir('modules')
+subdir('raytracer')
 subdir('rocket')
 # Note: rest-api and web-server removed - they depend on http which is now an external module
 # subdir('rest-api')
