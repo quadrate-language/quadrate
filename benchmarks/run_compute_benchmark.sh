@@ -60,6 +60,14 @@ if command -v node &> /dev/null; then
     node --stack-size=65536 benchmarks/compute.js
 fi
 
+# Run C#
+echo ""
+if command -v dotnet &> /dev/null; then
+    echo "Compiling C# benchmark..."
+    cp benchmarks/compute.cs benchmarks/csharp/Program.cs
+    dotnet run --project benchmarks/csharp -c Release 2>/dev/null
+fi
+
 # Run Python
 echo ""
 if command -v python3 &> /dev/null; then

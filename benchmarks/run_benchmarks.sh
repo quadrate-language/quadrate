@@ -64,6 +64,13 @@ if command -v node &> /dev/null; then
     echo ""
 fi
 
+# Run C#
+if command -v dotnet &> /dev/null; then
+    cp benchmarks/arithmetic.cs benchmarks/csharp/Program.cs
+    dotnet run --project benchmarks/csharp -c Release 2>/dev/null
+    echo ""
+fi
+
 # Run Python
 if command -v python3 &> /dev/null; then
     python3 benchmarks/arithmetic.py

@@ -50,3 +50,5 @@ oom-*
 slow-unit-*
 fuzz/
 tests/fuzz/corpus/
+/benchmarks/csharp/bin
+/benchmarks/csharp/obj

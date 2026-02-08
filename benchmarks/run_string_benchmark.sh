@@ -60,6 +60,13 @@ if command -v node &> /dev/null; then
     node benchmarks/string_ops.js
 fi
 
+# Run C#
+echo ""
+if command -v dotnet &> /dev/null; then
+    cp benchmarks/string_ops.cs benchmarks/csharp/Program.cs
+    dotnet run --project benchmarks/csharp -c Release 2>/dev/null
+fi
+
 # Run Python
 echo ""
 if command -v python3 &> /dev/null; then
