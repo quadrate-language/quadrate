@@ -257,6 +257,134 @@ namespace Qd {
 			stepValue = builder->CreateSelect(isFloatLoop, stepFloatToInt, stepBits, "step");
 		}
 
+		// Compile-time stack path for the entire for loop structure
+		if (useCompileTimeStack) {
+			// Save pre-loop stack state (after start/end/step have been popped)
+			auto preLoopStack = compileTimeStack;
+
+			// Create basic blocks
+			llvm::BasicBlock* loopHeaderBB = llvm::BasicBlock::Create(*context, "for.header", currentFn);
+			llvm::BasicBlock* loopBodyBB = llvm::BasicBlock::Create(*context, "for.body", currentFn);
+			llvm::BasicBlock* loopIncBB = llvm::BasicBlock::Create(*context, "for.inc", currentFn);
+			llvm::BasicBlock* loopExitBB = llvm::BasicBlock::Create(*context, "for.exit", currentFn);
+
+			llvm::BasicBlock* preBB = builder->GetInsertBlock();
+			builder->CreateBr(loopHeaderBB);
+
+			// Loop header: create iterator PHI + stack PHIs
+			builder->SetInsertPoint(loopHeaderBB);
+			llvm::PHINode* iterVar = builder->CreatePHI(int64Ty, 2, "i");
+			iterVar->addIncoming(startValue, preBB);
+
+			// Create PHI nodes for each compile-time stack position
+			std::vector<llvm::PHINode*> stackPHIs;
+			compileTimeStack.clear();
+			for (size_t i = 0; i < preLoopStack.size(); i++) {
+				auto* phi = builder->CreatePHI(int64Ty, 2, "stk");
+				phi->addIncoming(preLoopStack[i], preBB);
+				stackPHIs.push_back(phi);
+				compileTimeStack.push_back(phi);
+			}
+
+			// Loop condition
+			auto stepIsNegative = builder->CreateICmpSLT(stepValue, builder->getInt64(0), "step_neg");
+			auto condPositive = builder->CreateICmpSLT(iterVar, endValue, "cmp_pos");
+			auto condNegative = builder->CreateICmpSGT(iterVar, endValue, "cmp_neg");
+			auto cond = builder->CreateSelect(stepIsNegative, condNegative, condPositive, "cmp");
+
+			llvm::MDBuilder mdBuilder(*context);
+			llvm::MDNode* branchWeights = mdBuilder.createBranchWeights(1000, 1);
+			auto* br = builder->CreateCondBr(cond, loopBodyBB, loopExitBB);
+			br->setMetadata(llvm::LLVMContext::MD_prof, branchWeights);
+
+			// Loop body
+			builder->SetInsertPoint(loopBodyBB);
+
+			// Push loop context for break/continue
+			loopStack.push_back({loopExitBB, loopIncBB, {}});
+
+			// Register iterator variable
+			const std::string& iterName = forStmt->iteratorName();
+			llvm::Value* prevIterVar = nullptr;
+			auto prevIt = iteratorVars.find(iterName);
+			if (prevIt != iteratorVars.end()) {
+				prevIterVar = prevIt->second;
+			}
+			iteratorVars[iterName] = iterVar;
+
+			if (forStmt->body()) {
+				generateNode(forStmt->body(), ctx);
+			}
+
+			// Restore iterator
+			if (prevIterVar) {
+				iteratorVars[iterName] = prevIterVar;
+			} else {
+				iteratorVars.erase(iterName);
+			}
+
+			// Capture body-end state before branching to inc
+			auto bodyEndStack = compileTimeStack;
+			llvm::BasicBlock* bodyEndBlock = builder->GetInsertBlock();
+			if (bodyEndBlock != nullptr && bodyEndBlock->getTerminator() == nullptr) {
+				builder->CreateBr(loopIncBB);
+			}
+
+			// Collect break infos before popping loop context
+			auto breakInfos = std::move(loopStack.back().breakInfos);
+			loopStack.pop_back();
+
+			// Loop increment
+			builder->SetInsertPoint(loopIncBB);
+			auto nextIter = builder->CreateAdd(iterVar, stepValue, "next_i");
+			iterVar->addIncoming(nextIter, loopIncBB);
+
+			// Wire stack PHI back-edges from inc block
+			for (size_t i = 0; i < stackPHIs.size(); i++) {
+				llvm::Value* val = (i < bodyEndStack.size()) ? bodyEndStack[i] : builder->getInt64(0);
+				stackPHIs[i]->addIncoming(val, loopIncBB);
+			}
+			builder->CreateBr(loopHeaderBB);
+
+			// Exit block
+			builder->SetInsertPoint(loopExitBB);
+
+			// Merge compile-time stack: header PHI values + break states
+			if (breakInfos.empty()) {
+				// No breaks - stack is just the header PHI values
+				compileTimeStack.clear();
+				for (auto* phi : stackPHIs) {
+					compileTimeStack.push_back(phi);
+				}
+			} else {
+				// Merge header values (from normal exit) with break states
+				compileTimeStack.clear();
+				for (size_t i = 0; i < stackPHIs.size(); i++) {
+					bool allSame = true;
+					for (const auto& bi : breakInfos) {
+						if (i < bi.stackState.size() && bi.stackState[i] != stackPHIs[i]) {
+							allSame = false;
+							break;
+						}
+					}
+					if (allSame) {
+						compileTimeStack.push_back(stackPHIs[i]);
+					} else {
+						auto* exitPhi =
+								builder->CreatePHI(int64Ty, static_cast<unsigned>(1 + breakInfos.size()), "exit.stk");
+						exitPhi->addIncoming(stackPHIs[i], loopHeaderBB);
+						for (const auto& bi : breakInfos) {
+							llvm::Value* val = (i < bi.stackState.size()) ? bi.stackState[i] : builder->getInt64(0);
+							exitPhi->addIncoming(val, bi.fromBlock);
+						}
+						compileTimeStack.push_back(exitPhi);
+					}
+				}
+			}
+
+			return;
+		}
+
 		// Create basic blocks
 		llvm::BasicBlock* loopHeaderBB = llvm::BasicBlock::Create(*context, "for.header", currentFn);
 		llvm::BasicBlock* loopBodyBB = llvm::BasicBlock::Create(*context, "for.body", currentFn);
@@ -290,7 +418,7 @@ namespace Qd {
 		builder->SetInsertPoint(loopBodyBB);
 
 		// Push loop context for break/continue
-		loopStack.push_back({loopExitBB, loopIncBB});
+		loopStack.push_back({loopExitBB, loopIncBB, {}});
 
 		// Push defer scope for this loop - defers will be generated at end of iteration
 		pushDeferScope();
@@ -360,6 +488,104 @@ namespace Qd {
 		// Get current function
 		llvm::Function* currentFn = builder->GetInsertBlock()->getParent();
 
+		// Compile-time stack path
+		if (useCompileTimeStack) {
+			// The condition is on top of the compile-time stack
+			llvm::Value* initialCond = compileTimeStack.back();
+			compileTimeStack.pop_back();
+			auto preLoopStack = compileTimeStack;
+
+			llvm::BasicBlock* whileCondBB = llvm::BasicBlock::Create(*context, "while.cond", currentFn);
+			llvm::BasicBlock* whileBodyBB = llvm::BasicBlock::Create(*context, "while.body", currentFn);
+			llvm::BasicBlock* whileExitBB = llvm::BasicBlock::Create(*context, "while.exit", currentFn);
+
+			llvm::BasicBlock* preBB = builder->GetInsertBlock();
+			builder->CreateBr(whileCondBB);
+
+			// Condition block with PHIs
+			builder->SetInsertPoint(whileCondBB);
+			llvm::PHINode* condPhi = builder->CreatePHI(int64Ty, 2, "while.cond.phi");
+			condPhi->addIncoming(initialCond, preBB);
+
+			std::vector<llvm::PHINode*> stackPHIs;
+			compileTimeStack.clear();
+			for (size_t i = 0; i < preLoopStack.size(); i++) {
+				auto* phi = builder->CreatePHI(int64Ty, 2, "while.stk");
+				phi->addIncoming(preLoopStack[i], preBB);
+				stackPHIs.push_back(phi);
+				compileTimeStack.push_back(phi);
+			}
+
+			auto isTrue = builder->CreateICmpNE(condPhi, builder->getInt64(0), "is_true");
+			llvm::MDBuilder mdBuilder(*context);
+			llvm::MDNode* branchWeights = mdBuilder.createBranchWeights(1000, 1);
+			auto* br = builder->CreateCondBr(isTrue, whileBodyBB, whileExitBB);
+			br->setMetadata(llvm::LLVMContext::MD_prof, branchWeights);
+
+			// While body
+			builder->SetInsertPoint(whileBodyBB);
+			loopStack.push_back({whileExitBB, whileCondBB, {}});
+
+			if (whileStmt->body()) {
+				generateNode(whileStmt->body(), ctx);
+			}
+
+			// Body should push new condition on stack
+			llvm::Value* newCond = compileTimeStack.back();
+			compileTimeStack.pop_back();
+			auto bodyEndStack = compileTimeStack;
+
+			llvm::BasicBlock* bodyEndBlock = builder->GetInsertBlock();
+			if (bodyEndBlock != nullptr && bodyEndBlock->getTerminator() == nullptr) {
+				builder->CreateBr(whileCondBB);
+			}
+
+			// Wire PHI back-edges
+			condPhi->addIncoming(newCond, bodyEndBlock);
+			for (size_t i = 0; i < stackPHIs.size(); i++) {
+				llvm::Value* val = (i < bodyEndStack.size()) ? bodyEndStack[i] : builder->getInt64(0);
+				stackPHIs[i]->addIncoming(val, bodyEndBlock);
+			}
+
+			auto breakInfos = std::move(loopStack.back().breakInfos);
+			loopStack.pop_back();
+
+			// Exit block
+			builder->SetInsertPoint(whileExitBB);
+
+			if (breakInfos.empty()) {
+				compileTimeStack.clear();
+				for (auto* phi : stackPHIs) {
+					compileTimeStack.push_back(phi);
+				}
+			} else {
+				compileTimeStack.clear();
+				for (size_t i = 0; i < stackPHIs.size(); i++) {
+					bool allSame = true;
+					for (const auto& bi : breakInfos) {
+						if (i < bi.stackState.size() && bi.stackState[i] != stackPHIs[i]) {
+							allSame = false;
+							break;
+						}
+					}
+					if (allSame) {
+						compileTimeStack.push_back(stackPHIs[i]);
+					} else {
+						auto* exitPhi = builder->CreatePHI(
+								int64Ty, static_cast<unsigned>(1 + breakInfos.size()), "while.exit.stk");
+						exitPhi->addIncoming(stackPHIs[i], whileCondBB);
+						for (const auto& bi : breakInfos) {
+							llvm::Value* val = (i < bi.stackState.size()) ? bi.stackState[i] : builder->getInt64(0);
+							exitPhi->addIncoming(val, bi.fromBlock);
+						}
+						compileTimeStack.push_back(exitPhi);
+					}
+				}
+			}
+
+			return;
+		}
+
 		// Create basic blocks
 		llvm::BasicBlock* whileCondBB = llvm::BasicBlock::Create(*context, "while.cond", currentFn);
 		llvm::BasicBlock* underflowBB = llvm::BasicBlock::Create(*context, "while.underflow", currentFn);
@@ -419,7 +645,7 @@ namespace Qd {
 
 		// Push loop context for break/continue
 		// break jumps to whileExitBB, continue jumps back to whileCondBB
-		loopStack.push_back({whileExitBB, whileCondBB});
+		loopStack.push_back({whileExitBB, whileCondBB, {}});
 
 		// Push defer scope for this loop iteration
 		pushDeferScope();
@@ -464,6 +690,95 @@ namespace Qd {
 		// Get current function
 		llvm::Function* currentFn = builder->GetInsertBlock()->getParent();
 
+		// Compile-time stack path
+		if (useCompileTimeStack) {
+			auto preLoopStack = compileTimeStack;
+
+			llvm::BasicBlock* loopBodyBB = llvm::BasicBlock::Create(*context, "loop.body", currentFn);
+			llvm::BasicBlock* loopExitBB = llvm::BasicBlock::Create(*context, "loop.exit", currentFn);
+
+			llvm::BasicBlock* preBB = builder->GetInsertBlock();
+			builder->CreateBr(loopBodyBB);
+
+			// Loop body with stack PHIs
+			builder->SetInsertPoint(loopBodyBB);
+			std::vector<llvm::PHINode*> stackPHIs;
+			compileTimeStack.clear();
+			for (size_t i = 0; i < preLoopStack.size(); i++) {
+				auto* phi = builder->CreatePHI(int64Ty, 2, "loop.stk");
+				phi->addIncoming(preLoopStack[i], preBB);
+				stackPHIs.push_back(phi);
+				compileTimeStack.push_back(phi);
+			}
+
+			loopStack.push_back({loopExitBB, loopBodyBB, {}});
+
+			if (loopStmt->body()) {
+				generateNode(loopStmt->body(), ctx);
+			}
+
+			auto bodyEndStack = compileTimeStack;
+			llvm::BasicBlock* bodyEndBlock = builder->GetInsertBlock();
+			if (bodyEndBlock != nullptr && bodyEndBlock->getTerminator() == nullptr) {
+				builder->CreateBr(loopBodyBB);
+				// Wire stack PHI back-edges
+				for (size_t i = 0; i < stackPHIs.size(); i++) {
+					llvm::Value* val = (i < bodyEndStack.size()) ? bodyEndStack[i] : builder->getInt64(0);
+					stackPHIs[i]->addIncoming(val, bodyEndBlock);
+				}
+			}
+
+			auto breakInfos = std::move(loopStack.back().breakInfos);
+			loopStack.pop_back();
+
+			// Exit block - only reached via break
+			builder->SetInsertPoint(loopExitBB);
+
+			if (breakInfos.empty()) {
+				// No breaks - loop is infinite with no exit; stack is meaningless
+				compileTimeStack.clear();
+				for (auto* phi : stackPHIs) {
+					compileTimeStack.push_back(phi);
+				}
+			} else if (breakInfos.size() == 1) {
+				// Single break - use its stack state directly
+				compileTimeStack = breakInfos[0].stackState;
+			} else {
+				// Multiple breaks - merge with PHI nodes
+				compileTimeStack.clear();
+				size_t maxSize = 0;
+				for (const auto& bi : breakInfos) {
+					maxSize = std::max(maxSize, bi.stackState.size());
+				}
+				for (size_t i = 0; i < maxSize; i++) {
+					bool allSame = true;
+					llvm::Value* firstVal =
+							(i < breakInfos[0].stackState.size()) ? breakInfos[0].stackState[i] : nullptr;
+					for (size_t j = 1; j < breakInfos.size(); j++) {
+						llvm::Value* val =
+								(i < breakInfos[j].stackState.size()) ? breakInfos[j].stackState[i] : nullptr;
+						if (val != firstVal) {
+							allSame = false;
+							break;
+						}
+					}
+					if (allSame && firstVal) {
+						compileTimeStack.push_back(firstVal);
+					} else {
+						auto* exitPhi =
+								builder->CreatePHI(int64Ty, static_cast<unsigned>(breakInfos.size()), "loop.exit.stk");
+						for (const auto& bi : breakInfos) {
+							llvm::Value* val = (i < bi.stackState.size()) ? bi.stackState[i] : builder->getInt64(0);
+							exitPhi->addIncoming(val, bi.fromBlock);
+						}
+						compileTimeStack.push_back(exitPhi);
+					}
+				}
+			}
+
+			return;
+		}
+
 		// Create basic blocks
 		llvm::BasicBlock* loopBodyBB = llvm::BasicBlock::Create(*context, "loop.body", currentFn);
 		llvm::BasicBlock* loopExitBB = llvm::BasicBlock::Create(*context, "loop.exit", currentFn);
@@ -475,7 +790,7 @@ namespace Qd {
 		builder->SetInsertPoint(loopBodyBB);
 
 		// Push loop context for break/continue
-		loopStack.push_back({loopExitBB, loopBodyBB});
+		loopStack.push_back({loopExitBB, loopBodyBB, {}});
 
 		// Push defer scope for this loop iteration
 		pushDeferScope();
@@ -661,6 +976,10 @@ namespace Qd {
 							}
 						}
 					}
+				}
+				// Record break state for compile-time stack merging at loop exit
+				if (useCompileTimeStack) {
+					loopStack.back().breakInfos.push_back({builder->GetInsertBlock(), compileTimeStack});
 				}
 				builder->CreateBr(loopStack.back().breakTarget);
 			}

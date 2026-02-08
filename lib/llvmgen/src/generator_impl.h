@@ -201,6 +201,14 @@ namespace Qd {
 		struct LoopContext {
 			llvm::BasicBlock* breakTarget;
 			llvm::BasicBlock* continueTarget;
+
+			// For compile-time stack break handling
+			struct BreakInfo {
+				llvm::BasicBlock* fromBlock;
+				std::vector<llvm::Value*> stackState;
+			};
+
+			std::vector<BreakInfo> breakInfos;
 		};
 
 		std::vector<LoopContext> loopStack;

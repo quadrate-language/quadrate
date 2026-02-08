@@ -5,4 +5,10 @@ arithmetic_rust
 arithmetic_go
 string_ops
 string_ops_c
+string_ops_rust
+string_ops_go
+compute_qd
+compute_c
+compute_rust
+compute_go
 *.out

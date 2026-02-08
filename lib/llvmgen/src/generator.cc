@@ -428,11 +428,9 @@ namespace Qd {
 			}
 			break;
 		}
-		case IAstNode::Type::FOR_STATEMENT:
-		case IAstNode::Type::WHILE_STATEMENT:
-		case IAstNode::Type::LOOP_STATEMENT:
-			// Loops require PHI nodes for compile-time stack values that change across iterations.
-			// This is not yet supported, so reject functions with loops from native compilation.
+		case IAstNode::Type::CONTINUE_STATEMENT:
+			// Continue requires wiring compile-time stack back to loop header mid-body,
+			// which adds significant complexity. Reject for now.
 			return false;
 		case IAstNode::Type::SCOPED_IDENTIFIER:
 			// Module calls (like str::len) might return non-integers

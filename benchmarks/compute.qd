@@ -1,0 +1,174 @@
+use fmt
+use time
+
+// Collatz conjecture: length of chain starting at n
+fn collatz_len(n:i64 -- len:i64) {
+	-> n
+	0 -> len
+	n 1 gt while {
+		n 2 mod 0 eq if {
+			n 2 div -> n
+		} else {
+			n 3 mul 1 add -> n
+		}
+		len 1 add -> len
+		n 1 gt
+	}
+	len
+}
+
+// Longest Collatz chain under limit
+fn longest_collatz(limit:i64 -- best:i64) {
+	-> limit
+	0 -> best
+	1 limit 1 for i {
+		i collatz_len -> len
+		len best gt if {
+			len -> best
+		}
+	}
+	best
+}
+
+// Trial division primality test
+fn is_prime(n:i64 -- result:i64) {
+	-> n
+	n 2 lt if {
+		0
+	} else {
+		n 2 eq if {
+			1
+		} else {
+			n 2 mod 0 eq if {
+				0
+			} else {
+				1 -> result
+				3 -> d
+				loop {
+					d d mul n gt if {
+						break
+					}
+					n d mod 0 eq if {
+						0 -> result
+						break
+					}
+					d 2 add -> d
+				}
+				result
+			}
+		}
+	}
+}
+
+// Count primes under limit
+fn count_primes(limit:i64 -- count:i64) {
+	-> limit
+	0 -> count
+	2 limit 1 for i {
+		i is_prime if {
+			count 1 add -> count
+		}
+	}
+	count
+}
+
+// Ackermann function
+fn ack(m:i64 n:i64 -- result:i64) {
+	-> n -> m
+	m 0 eq if {
+		n 1 add
+	} else {
+		n 0 eq if {
+			m 1 sub 1 ack
+		} else {
+			m 1 sub m n 1 sub ack ack
+		}
+	}
+}
+
+// Popcount: count set bits in n
+fn popcount(n:i64 -- count:i64) {
+	-> n
+	0 -> count
+	n 0 gt while {
+		n 1 and count add -> count
+		n 1 shr -> n
+		n 0 gt
+	}
+	count
+}
+
+// Total popcount from 1 to limit
+fn total_popcount(limit:i64 -- total:i64) {
+	-> limit
+	0 -> total
+	1 limit 1 add 1 for i {
+		i popcount total add -> total
+	}
+	total
+}
+
+// Takeuchi function
+fn tak(x:i64 y:i64 z:i64 -- result:i64) {
+	-> z -> y -> x
+	x y gt 0 eq if {
+		z
+	} else {
+		x 1 sub y z tak
+		y 1 sub z x tak
+		z 1 sub x y tak
+		tak
+	}
+}
+
+fn main() {
+	"=== Quadrate Compute Benchmarks ===\n" fmt::printf
+
+	// Benchmark 1: Collatz conjecture
+	1000000 -> limit
+	time::now -> start
+	limit longest_collatz -> result
+	time::now start - -> elapsed
+	limit "Collatz longest chain under %d:\n" fmt::printf
+	elapsed 1000000 div "  Time: %d ms\n" fmt::printf
+	result "  Result: %d\n" fmt::printf
+
+	// Benchmark 2: Prime counting
+	1000000 -> limit
+	time::now -> start
+	limit count_primes -> result
+	time::now start - -> elapsed
+	limit "Prime count under %d:\n" fmt::printf
+	elapsed 1000000 div "  Time: %d ms\n" fmt::printf
+	result "  Result: %d\n" fmt::printf
+
+	// Benchmark 3: Ackermann
+	3 -> m
+	11 -> n
+	time::now -> start
+	m n ack -> result
+	time::now start - -> elapsed
+	m n "Ackermann(%d, %d):\n" fmt::printf
+	elapsed 1000000 div "  Time: %d ms\n" fmt::printf
+	result "  Result: %d\n" fmt::printf
+
+	// Benchmark 4: Popcount
+	10000000 -> limit
+	time::now -> start
+	limit total_popcount -> result
+	time::now start - -> elapsed
+	limit "Popcount sum 1..%d:\n" fmt::printf
+	elapsed 1000000 div "  Time: %d ms\n" fmt::printf
+	result "  Result: %d\n" fmt::printf
+
+	// Benchmark 5: Takeuchi
+	24 -> x
+	16 -> y
+	8 -> z
+	time::now -> start
+	x y z tak -> result
+	time::now start - -> elapsed
+	x y z "Tak(%d, %d, %d):\n" fmt::printf
+	elapsed 1000000 div "  Time: %d ms\n" fmt::printf
+	result "  Result: %d\n" fmt::printf
+}
