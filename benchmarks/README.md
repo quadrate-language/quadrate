@@ -55,25 +55,25 @@ All compiled languages use -O3 (or equivalent) optimization. Quadrate compiles t
 
 | Language | Time |
 |----------|------|
-| C        | 75 ms |
+| C        | 74 ms |
 | C#       | 76 ms |
 | Go       | 80 ms |
 | Rust     | 85 ms |
 | Quadrate | 86 ms |
 | Node.js  | 376 ms |
-| Python   | 2571 ms |
+| Python   | 2564 ms |
 
 ### Recursive Fibonacci (n=35)
 
 | Language | Time |
 |----------|------|
-| C        | 38 ms |
+| C        | 36 ms |
 | Quadrate | 55 ms |
 | Rust     | 55 ms |
-| C#       | 75 ms |
+| C#       | 76 ms |
 | Go       | 87 ms |
-| Node.js  | 257 ms |
-| Python   | 2540 ms |
+| Node.js  | 256 ms |
+| Python   | 2622 ms |
 
 ### String Concat (50K iterations)
 
@@ -82,10 +82,10 @@ All compiled languages use -O3 (or equivalent) optimization. Quadrate compiles t
 | Rust     | <1 ms |
 | Node.js  | 2 ms |
 | Python   | 97 ms |
-| C        | 108 ms |
-| Quadrate | 125 ms |
-| Go       | 405 ms |
-| C#       | 534 ms |
+| C        | 109 ms |
+| Quadrate | 121 ms |
+| Go       | 380 ms |
+| C#       | 551 ms |
 
 ### Integer Compute Benchmarks
 
@@ -95,49 +95,49 @@ All integer-only functions qualify for native calling convention and achieve nea
 
 | Language | Time |
 |----------|------|
-| Quadrate | 293 ms |
-| Rust     | 298 ms |
-| C        | 300 ms |
-| Go       | 455 ms |
-| C#       | 506 ms |
-| Node.js  | 2538 ms |
-| Python   | 20550 ms |
+| Quadrate | 294 ms |
+| C        | 299 ms |
+| Rust     | 299 ms |
+| Go       | 460 ms |
+| C#       | 507 ms |
+| Node.js  | 2543 ms |
+| Python   | 21215 ms |
 
 #### Prime Counting (under 1M)
 
 | Language | Time |
 |----------|------|
-| Quadrate | 257 ms |
-| Rust     | 260 ms |
-| Node.js  | 310 ms |
-| C#       | 519 ms |
-| C        | 544 ms |
-| Go       | 566 ms |
-| Python   | 5044 ms |
+| Quadrate | 241 ms |
+| Rust     | 259 ms |
+| Node.js  | 314 ms |
+| C#       | 521 ms |
+| C        | 546 ms |
+| Go       | 568 ms |
+| Python   | 5048 ms |
 
 #### Ackermann(3, 11)
 
 | Language | Time |
 |----------|------|
-| C        | 192 ms |
-| Rust     | 290 ms |
+| C        | 194 ms |
 | Quadrate | 291 ms |
-| C#       | 860 ms |
-| Go       | 1610 ms |
-| Node.js  | 2814 ms |
-| Python   | 44446 ms |
+| Rust     | 292 ms |
+| C#       | 388 ms |
+| Go       | 1626 ms |
+| Node.js  | 2827 ms |
+| Python   | 44906 ms |
 
 #### Popcount Sum (1..10M)
 
 | Language | Time |
 |----------|------|
-| C        | 187 ms |
-| C#       | 196 ms |
-| Go       | 215 ms |
-| Rust     | 253 ms |
+| C        | 190 ms |
+| C#       | 202 ms |
+| Go       | 213 ms |
+| Quadrate | 244 ms |
+| Rust     | 254 ms |
 | Node.js  | 267 ms |
-| Quadrate | 273 ms |
-| Python   | 26885 ms |
+| Python   | 26580 ms |
 
 #### Tak(24, 16, 8)
 
@@ -148,32 +148,32 @@ All integer-only functions qualify for native calling convention and achieve nea
 | Rust     | 6 ms |
 | Go       | 7 ms |
 | C#       | 10 ms |
-| Node.js  | 21 ms |
-| Python   | 204 ms |
+| Node.js  | 19 ms |
+| Python   | 202 ms |
 
 #### Euler Totient Sum (1..10K)
 
 | Language | Time |
 |----------|------|
-| Quadrate | 5407 ms |
-| Rust     | 5553 ms |
-| Node.js  | 5777 ms |
-| C#       | 9437 ms |
-| C        | 9577 ms |
-| Go       | 9649 ms |
-| Python   | 36589 ms |
+| Quadrate | 5411 ms |
+| Rust     | 5566 ms |
+| Node.js  | 5768 ms |
+| C#       | 9409 ms |
+| C        | 9586 ms |
+| Go       | 9675 ms |
+| Python   | 36660 ms |
 
 #### Digit Sum (1..10M)
 
 | Language | Time |
 |----------|------|
-| C        | 130 ms |
-| Quadrate | 140 ms |
-| Go       | 169 ms |
-| C#       | 176 ms |
+| C        | 126 ms |
+| Quadrate | 134 ms |
+| Go       | 173 ms |
+| C#       | 179 ms |
 | Rust     | 231 ms |
-| Node.js  | 886 ms |
-| Python   | 9483 ms |
+| Node.js  | 883 ms |
+| Python   | 9433 ms |
 
 ### Float Compute Benchmarks
 
@@ -189,7 +189,7 @@ Float functions with f64 parameters also qualify for native calling convention a
 | Go       | 74 ms |
 | Node.js  | 74 ms |
 | C#       | 75 ms |
-| Python   | 2199 ms |
+| Python   | 2225 ms |
 
 #### Leibniz Pi (10M terms)
 
@@ -199,9 +199,9 @@ Float functions with f64 parameters also qualify for native calling convention a
 | Quadrate | 74 ms |
 | Rust     | 74 ms |
 | Go       | 74 ms |
-| C#       | 74 ms |
 | Node.js  | 74 ms |
-| Python   | 3100 ms |
+| C#       | 74 ms |
+| Python   | 3086 ms |
 
 #### Mandelbrot (200x200)
 
@@ -210,10 +210,10 @@ Float functions with f64 parameters also qualify for native calling convention a
 | C        | 3 ms |
 | Rust     | 3 ms |
 | Go       | 3 ms |
-| Node.js  | 3 ms |
+| Node.js  | 5 ms |
 | C#       | 9 ms |
-| Quadrate | 24 ms |
-| Python   | 178 ms |
+| Quadrate | 25 ms |
+| Python   | 176 ms |
 
 #### Mat4x4 Multiply (1M iterations)
 
@@ -221,10 +221,10 @@ Float functions with f64 parameters also qualify for native calling convention a
 |----------|------|
 | C        | 14 ms |
 | Rust     | 21 ms |
-| Quadrate | 31 ms |
-| C#       | 131 ms |
-| Go       | 168 ms |
-| Node.js  | 1375 ms |
-| Python   | 15109 ms |
+| Quadrate | 32 ms |
+| Go       | 173 ms |
+| C#       | 177 ms |
+| Node.js  | 1463 ms |
+| Python   | 15513 ms |
 
 Results from an Intel Core i3-4030U @ 1.90GHz. Warmup + best-of-3 methodology. Run `./benchmarks/run_benchmarks.sh` to reproduce.

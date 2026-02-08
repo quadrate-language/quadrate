@@ -313,7 +313,7 @@ namespace Qd {
 			builder->SetInsertPoint(loopBodyBB);
 
 			// Push loop context for break/continue
-			loopStack.push_back({loopExitBB, loopIncBB, {}});
+			loopStack.push_back({loopExitBB, loopIncBB, {}, {}});
 
 			// Register iterator variable
 			const std::string& iterName = forStmt->iteratorName();
@@ -338,16 +338,53 @@ namespace Qd {
 			// Capture body-end state before branching to inc
 			auto bodyEndStack = compileTimeStack;
 			llvm::BasicBlock* bodyEndBlock = builder->GetInsertBlock();
-			if (bodyEndBlock != nullptr && bodyEndBlock->getTerminator() == nullptr) {
+			bool bodyFallsThrough = (bodyEndBlock != nullptr && bodyEndBlock->getTerminator() == nullptr);
+			if (bodyFallsThrough) {
 				builder->CreateBr(loopIncBB);
 			}
 
-			// Collect break infos before popping loop context
+			// Collect break/continue infos before popping loop context
+			auto continueInfos = std::move(loopStack.back().continueInfos);
 			auto breakInfos = std::move(loopStack.back().breakInfos);
 			loopStack.pop_back();
 
 			// Loop increment
 			builder->SetInsertPoint(loopIncBB);
+
+			// Merge compile-time stack from normal body end + continue states
+			std::vector<llvm::Value*> incStack;
+			unsigned numIncPreds = (bodyFallsThrough ? 1 : 0) + static_cast<unsigned>(continueInfos.size());
+			for (size_t i = 0; i < stackPHIs.size(); i++) {
+				llvm::Type* phiTy = stackPHIs[i]->getType();
+				auto defaultVal = phiTy->isDoubleTy()
+									 ? static_cast<llvm::Value*>(llvm::ConstantFP::get(phiTy, 0.0))
+									 : static_cast<llvm::Value*>(builder->getInt64(0));
+
+				if (continueInfos.empty()) {
+					// No continues - use body-end value directly (original path)
+					incStack.push_back((i < bodyEndStack.size()) ? bodyEndStack[i] : defaultVal);
+				} else if (numIncPreds == 1) {
+					// Single predecessor - no PHI needed
+					if (bodyFallsThrough) {
+						incStack.push_back((i < bodyEndStack.size()) ? bodyEndStack[i] : defaultVal);
+					} else {
+						incStack.push_back((i < continueInfos[0].stackState.size())
+											   ? continueInfos[0].stackState[i]
+											   : defaultVal);
+					}
+				} else {
+					// Multiple predecessors - merge with PHI
+					auto* phi = builder->CreatePHI(phiTy, numIncPreds, "cont.merge");
+					if (bodyFallsThrough) {
+						phi->addIncoming((i < bodyEndStack.size()) ? bodyEndStack[i] : defaultVal, bodyEndBlock);
+					}
+					for (const auto& ci : continueInfos) {
+						phi->addIncoming((i < ci.stackState.size()) ? ci.stackState[i] : defaultVal, ci.fromBlock);
+					}
+					incStack.push_back(phi);
+				}
+			}
+
 			llvm::Value* nextIter;
 			if (iterVar->getType()->isDoubleTy()) {
 				nextIter = builder->CreateFAdd(iterVar, stepValue, "next_i");
@@ -358,15 +395,7 @@ namespace Qd {
 
 			// Wire stack PHI back-edges from inc block
 			for (size_t i = 0; i < stackPHIs.size(); i++) {
-				llvm::Value* val;
-				if (i < bodyEndStack.size()) {
-					val = bodyEndStack[i];
-				} else {
-					llvm::Type* phiTy = stackPHIs[i]->getType();
-					val = phiTy->isDoubleTy() ? static_cast<llvm::Value*>(llvm::ConstantFP::get(phiTy, 0.0))
-											  : builder->getInt64(0);
-				}
-				stackPHIs[i]->addIncoming(val, loopIncBB);
+				stackPHIs[i]->addIncoming(incStack[i], loopIncBB);
 			}
 			builder->CreateBr(loopHeaderBB);
 
@@ -449,7 +478,7 @@ namespace Qd {
 		builder->SetInsertPoint(loopBodyBB);
 
 		// Push loop context for break/continue
-		loopStack.push_back({loopExitBB, loopIncBB, {}});
+		loopStack.push_back({loopExitBB, loopIncBB, {}, {}});
 
 		// Push defer scope for this loop - defers will be generated at end of iteration
 		pushDeferScope();
@@ -556,7 +585,7 @@ namespace Qd {
 
 			// While body
 			builder->SetInsertPoint(whileBodyBB);
-			loopStack.push_back({whileExitBB, whileCondBB, {}});
+			loopStack.push_back({whileExitBB, whileCondBB, {}, {}});
 
 			if (whileStmt->body()) {
 				generateNode(whileStmt->body(), ctx);
@@ -568,23 +597,43 @@ namespace Qd {
 			auto bodyEndStack = compileTimeStack;
 
 			llvm::BasicBlock* bodyEndBlock = builder->GetInsertBlock();
-			if (bodyEndBlock != nullptr && bodyEndBlock->getTerminator() == nullptr) {
+			bool bodyFallsThrough = (bodyEndBlock != nullptr && bodyEndBlock->getTerminator() == nullptr);
+			if (bodyFallsThrough) {
 				builder->CreateBr(whileCondBB);
 			}
 
-			// Wire PHI back-edges
-			condPhi->addIncoming(newCond, bodyEndBlock);
-			for (size_t i = 0; i < stackPHIs.size(); i++) {
-				llvm::Value* val;
-				if (i < bodyEndStack.size()) {
-					val = bodyEndStack[i];
-				} else {
-					llvm::Type* stkTy = stackPHIs[i]->getType();
-					val = stkTy->isDoubleTy()
-								  ? static_cast<llvm::Value*>(llvm::ConstantFP::get(builder->getDoubleTy(), 0.0))
-								  : static_cast<llvm::Value*>(builder->getInt64(0));
+			// Wire PHI back-edges from normal body end
+			if (bodyFallsThrough) {
+				condPhi->addIncoming(newCond, bodyEndBlock);
+				for (size_t i = 0; i < stackPHIs.size(); i++) {
+					llvm::Value* val;
+					if (i < bodyEndStack.size()) {
+						val = bodyEndStack[i];
+					} else {
+						llvm::Type* stkTy = stackPHIs[i]->getType();
+						val = stkTy->isDoubleTy()
+									  ? static_cast<llvm::Value*>(llvm::ConstantFP::get(builder->getDoubleTy(), 0.0))
+									  : static_cast<llvm::Value*>(builder->getInt64(0));
+					}
+					stackPHIs[i]->addIncoming(val, bodyEndBlock);
 				}
-				stackPHIs[i]->addIncoming(val, bodyEndBlock);
+			}
+
+			// Wire PHI back-edges from continue states
+			auto continueInfos = std::move(loopStack.back().continueInfos);
+			for (const auto& ci : continueInfos) {
+				// Continue in while loop: top of stack is new condition
+				if (!ci.stackState.empty()) {
+					condPhi->addIncoming(ci.stackState.back(), ci.fromBlock);
+					for (size_t i = 0; i < stackPHIs.size(); i++) {
+						llvm::Type* stkTy = stackPHIs[i]->getType();
+						auto defaultVal = stkTy->isDoubleTy()
+											  ? static_cast<llvm::Value*>(llvm::ConstantFP::get(stkTy, 0.0))
+											  : static_cast<llvm::Value*>(builder->getInt64(0));
+						stackPHIs[i]->addIncoming((i < ci.stackState.size() - 1) ? ci.stackState[i] : defaultVal,
+												  ci.fromBlock);
+					}
+				}
 			}
 
 			auto breakInfos = std::move(loopStack.back().breakInfos);
@@ -693,7 +742,7 @@ namespace Qd {
 
 		// Push loop context for break/continue
 		// break jumps to whileExitBB, continue jumps back to whileCondBB
-		loopStack.push_back({whileExitBB, whileCondBB, {}});
+		loopStack.push_back({whileExitBB, whileCondBB, {}, {}});
 
 		// Push defer scope for this loop iteration
 		pushDeferScope();
@@ -760,7 +809,7 @@ namespace Qd {
 				compileTimeStack.push_back(phi);
 			}
 
-			loopStack.push_back({loopExitBB, loopBodyBB, {}});
+			loopStack.push_back({loopExitBB, loopBodyBB, {}, {}});
 
 			if (loopStmt->body()) {
 				generateNode(loopStmt->body(), ctx);
@@ -782,6 +831,19 @@ namespace Qd {
 									  : static_cast<llvm::Value*>(builder->getInt64(0));
 					}
 					stackPHIs[i]->addIncoming(val, bodyEndBlock);
+				}
+			}
+
+			// Wire stack PHI back-edges from continue states
+			auto continueInfos = std::move(loopStack.back().continueInfos);
+			for (const auto& ci : continueInfos) {
+				for (size_t i = 0; i < stackPHIs.size(); i++) {
+					llvm::Type* stkTy = stackPHIs[i]->getType();
+					auto defaultVal = stkTy->isDoubleTy()
+										  ? static_cast<llvm::Value*>(llvm::ConstantFP::get(stkTy, 0.0))
+										  : static_cast<llvm::Value*>(builder->getInt64(0));
+					stackPHIs[i]->addIncoming((i < ci.stackState.size()) ? ci.stackState[i] : defaultVal,
+											  ci.fromBlock);
 				}
 			}
 
@@ -857,7 +919,7 @@ namespace Qd {
 		builder->SetInsertPoint(loopBodyBB);
 
 		// Push loop context for break/continue
-		loopStack.push_back({loopExitBB, loopBodyBB, {}});
+		loopStack.push_back({loopExitBB, loopBodyBB, {}, {}});
 
 		// Push defer scope for this loop iteration
 		pushDeferScope();
@@ -1069,6 +1131,10 @@ namespace Qd {
 							}
 						}
 					}
+				}
+				// Record continue state for compile-time stack merging
+				if (useCompileTimeStack) {
+					loopStack.back().continueInfos.push_back({builder->GetInsertBlock(), compileTimeStack});
 				}
 				builder->CreateBr(loopStack.back().continueTarget);
 			}

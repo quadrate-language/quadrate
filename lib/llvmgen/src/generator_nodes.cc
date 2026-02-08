@@ -494,7 +494,37 @@ namespace Qd {
 						builder->CreateCall(rollFn, {ctx});
 					}
 				}
-				builder->CreateCall(it->second, {ctx});
+				// Check if callee has native version - call directly to skip wrapper overhead
+				auto nativeIt = nativeFunctions.find(lookupName);
+				if (nativeIt != nativeFunctions.end()) {
+					auto& info = nativeFuncInfo[lookupName];
+					std::vector<llvm::Value*> nativeArgs;
+					nativeArgs.push_back(ctx);
+					std::vector<llvm::Value*> poppedArgs;
+					for (size_t j = info.inputCount; j > 0; j--) {
+						if (info.inputTypes[j - 1] == NativeParamType::F64) {
+							poppedArgs.push_back(generateInlinePopFloat(ctx));
+						} else {
+							poppedArgs.push_back(generateInlinePopInt(ctx));
+						}
+					}
+					for (auto rit = poppedArgs.rbegin(); rit != poppedArgs.rend(); ++rit) {
+						nativeArgs.push_back(*rit);
+					}
+					if (info.outputCount == 1) {
+						llvm::Value* result =
+								builder->CreateCall(nativeIt->second, nativeArgs, "inline_call");
+						if (info.outputType == NativeParamType::F64) {
+							generateInlinePushFloatValue(ctx, result);
+						} else {
+							generateInlinePushIntValue(ctx, result);
+						}
+					} else {
+						builder->CreateCall(nativeIt->second, nativeArgs);
+					}
+				} else {
+					builder->CreateCall(it->second, {ctx});
+				}
 			}
 
 			// Track return struct type for local variable binding (-> name)

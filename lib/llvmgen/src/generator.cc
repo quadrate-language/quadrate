@@ -453,9 +453,7 @@ namespace Qd {
 			break;
 		}
 		case IAstNode::Type::CONTINUE_STATEMENT:
-			// Continue requires wiring compile-time stack back to loop header mid-body,
-			// which adds significant complexity. Reject for now.
-			return false;
+			break;
 		case IAstNode::Type::DEFER_STATEMENT:
 			// Defer blocks execute at function return, which conflicts with the
 			// compile-time stack approach. Reject for now.
@@ -886,10 +884,17 @@ namespace Qd {
 			}
 			// If callees aren't all native, remove the native function declaration
 			if (nativeIt != nativeFunctions.end() && !calleesAllNative) {
-				nativeIt->second->eraseFromParent();
+				auto* erasedFn = nativeIt->second;
+				erasedFn->eraseFromParent();
 				nativeFunctions.erase(registerName);
 				nativeFuncInfo.erase(registerName);
-				// Also remove unqualified name if it was a merged module
+				// Also remove any other name that points to the same erased function
+				// (main-file functions are registered under both qualified and unqualified names)
+				auto unqualIt = nativeFunctions.find(funcNode->name());
+				if (unqualIt != nativeFunctions.end() && unqualIt->second == erasedFn) {
+					nativeFunctions.erase(unqualIt);
+					nativeFuncInfo.erase(funcNode->name());
+				}
 				if (namePrefix != "main" && mergedModules.count(namePrefix) > 0) {
 					nativeFunctions.erase(funcNode->name());
 					nativeFuncInfo.erase(funcNode->name());
