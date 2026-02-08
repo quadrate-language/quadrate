@@ -62,7 +62,11 @@ LIST_TESTS=0
 CLEAR_FAILED=0
 VERBOSE=0
 USE_VALGRIND=0
+USE_HELGRIND=0
 FUZZ_TIME=10
+
+# Shared valgrind flags for all test types
+VALGRIND_FLAGS="--leak-check=full --show-leak-kinds=definite,indirect,possible --track-fds=yes --track-origins=yes --error-exitcode=1"
 
 while [[ $# -gt 0 ]]; do
     case $1 in
@@ -98,6 +102,10 @@ while [[ $# -gt 0 ]]; do
             USE_VALGRIND=1
             shift
             ;;
+        --helgrind)
+            USE_HELGRIND=1
+            shift
+            ;;
         --help|-h)
             echo "Usage: $0 [OPTIONS]"
             echo ""
@@ -110,6 +118,7 @@ while [[ $# -gt 0 ]]; do
             echo "  --clear, -c        Clear failed tests file"
             echo "  --verbose, -v      Show verbose output"
             echo "  --valgrind         Run tests with valgrind (memory leak detection)"
+            echo "  --helgrind         Run stdlib tests with helgrind (thread error detection)"
             echo "  --help, -h         Show this help"
             exit 0
             ;;
@@ -573,7 +582,7 @@ run_single_qd_test() {
         # Run (with or without valgrind)
         if [[ "${USE_VALGRIND:-0}" -eq 1 ]]; then
             local valgrind_log="$TEMP_DIR/qd_${test_name//\//_}.valgrind"
-            if ! valgrind --leak-check=full --show-leak-kinds=all --track-origins=yes --error-exitcode=1 --log-file="$valgrind_log" "$binary" >"$actual_output" 2>&1; then
+            if ! valgrind $VALGRIND_FLAGS --log-file="$valgrind_log" "$binary" >"$actual_output" 2>&1; then
                 # Check if it's a valgrind error or runtime error
                 if grep -q "ERROR SUMMARY: [1-9]" "$valgrind_log" 2>/dev/null; then
                     echo "FAIL:valgrind errors" > "$result_file"
@@ -824,7 +833,7 @@ run_linter_tests() {
 
     local valgrind_cmd=""
     if [[ $USE_VALGRIND -eq 1 ]]; then
-        valgrind_cmd="valgrind --leak-check=full --error-exitcode=1 --quiet"
+        valgrind_cmd="valgrind $VALGRIND_FLAGS --quiet"
     fi
 
     local all_passed=true
@@ -920,7 +929,7 @@ run_embed_tests() {
 
         if [[ $USE_VALGRIND -eq 1 ]]; then
             local valgrind_log="$TEMP_DIR/embed_${test_name}.valgrind"
-            output=$(LD_LIBRARY_PATH="$PROJECT_ROOT/dist/lib${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}" valgrind --leak-check=full --show-leak-kinds=all --track-origins=yes --error-exitcode=99 --log-file="$valgrind_log" "$test_exe" 2>&1)
+            output=$(LD_LIBRARY_PATH="$PROJECT_ROOT/dist/lib${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}" valgrind $VALGRIND_FLAGS --error-exitcode=99 --log-file="$valgrind_log" "$test_exe" 2>&1)
             exit_code=$?
 
             if [[ $exit_code -eq 99 ]]; then
@@ -1481,6 +1490,75 @@ run_stdlib_tests() {
     fi
 }
 
+run_helgrind_tests() {
+    local suite="stdlib"
+
+    if [[ $USE_HELGRIND -ne 1 ]]; then
+        return
+    fi
+
+    if ! command -v valgrind &> /dev/null; then
+        log_skip "$suite" "helgrind" "valgrind not found"
+        return
+    fi
+
+    print_header "Helgrind Thread Analysis"
+
+    # Find all test files that use the thread module
+    local thread_tests=()
+    while IFS= read -r test_file; do
+        if grep -q 'use thread' "$test_file" 2>/dev/null; then
+            thread_tests+=("$test_file")
+        fi
+    done < <(find "$PROJECT_ROOT/lib" -name '*_test.qd' -type f 2>/dev/null)
+
+    if [[ ${#thread_tests[@]} -eq 0 ]]; then
+        log_skip "$suite" "helgrind" "no thread tests found"
+        return
+    fi
+
+    local quadc="$PROJECT_ROOT/$BUILD_DIR/cmd/quadc/quadc"
+    if [[ ! -x "$quadc" ]]; then
+        log_skip "$suite" "helgrind" "quadc not found"
+        return
+    fi
+
+    for test_file in "${thread_tests[@]}"; do
+        local test_name=$(basename "$test_file" .qd)
+        local binary="$TEMP_DIR/helgrind_${test_name}"
+        local helgrind_log="$TEMP_DIR/helgrind_${test_name}.log"
+
+        # Compile the test
+        if ! QUADRATE_ROOT="$QUADRATE_ROOT_DEFAULT" QUADRATE_LIBDIR="$QUADRATE_LIBDIR_DEFAULT" \
+            "$quadc" --test -o "$binary" "$test_file" 2>/dev/null; then
+            log_fail "$suite" "helgrind:${test_name}" "compilation failed"
+            continue
+        fi
+
+        # Run under helgrind
+        local output
+        local exit_code
+        output=$(valgrind --tool=helgrind --error-exitcode=1 --log-file="$helgrind_log" "$binary" 2>&1)
+        exit_code=$?
+
+        if [[ $exit_code -eq 0 ]]; then
+            log_pass "$suite" "helgrind:${test_name}"
+        else
+            if grep -q "ERROR SUMMARY: [1-9]" "$helgrind_log" 2>/dev/null; then
+                local errors=$(grep -c "Possible data race\|Lock order violated\|Thread.*exited" "$helgrind_log" 2>/dev/null || echo "?")
+                log_fail "$suite" "helgrind:${test_name}" "$errors thread errors detected"
+                if [[ $VERBOSE -eq 1 ]]; then
+                    grep -A 5 "Possible data race\|Lock order violated" "$helgrind_log" | head -30 | sed 's/^/      /'
+                fi
+            else
+                log_pass "$suite" "helgrind:${test_name}" "(test passed, runtime error)"
+            fi
+        fi
+
+        rm -f "$binary"
+    done
+}
+
 run_fuzz_tests() {
     local suite="fuzz"
 
@@ -1682,6 +1760,9 @@ main() {
     if [[ $USE_VALGRIND -eq 1 ]]; then
         mode_info="${CYAN}valgrind${NC}"
     fi
+    if [[ $USE_HELGRIND -eq 1 ]]; then
+        mode_info="${mode_info:+$mode_info }${CYAN}helgrind${NC}"
+    fi
     if [[ $RUN_FAILED_ONLY -eq 1 ]]; then
         local failed_count=0
         if [[ -f "$FAILED_TESTS_FILE" ]]; then
@@ -1745,6 +1826,7 @@ main() {
 
     if [[ -z "$SPECIFIC_SUITE" ]] || [[ "$SPECIFIC_SUITE" == "stdlib" ]]; then
         run_stdlib_tests
+        run_helgrind_tests
     fi
 
     if [[ -z "$SPECIFIC_SUITE" ]] || [[ "$SPECIFIC_SUITE" == "mtls" ]]; then

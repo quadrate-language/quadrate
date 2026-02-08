@@ -18,8 +18,7 @@ tests/
 ├── run_linter_tests.sh   # Linter test runner
 ├── run_mtls_test.sh      # mTLS tests
 ├── test_utils.sh         # Shared test utilities
-├── external_modules.txt  # External modules for testing
-└── valgrind.supp         # Valgrind suppressions
+└── external_modules.txt  # External modules for testing
 ```
 
 ## Running tests

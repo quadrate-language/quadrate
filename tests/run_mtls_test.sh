@@ -13,7 +13,7 @@ PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 USE_VALGRIND="${1:-no}"
 VALGRIND_CMD=""
 if [ "$USE_VALGRIND" = "valgrind" ]; then
-    VALGRIND_CMD="valgrind --leak-check=full --error-exitcode=1 --quiet"
+    VALGRIND_CMD="valgrind --leak-check=full --show-leak-kinds=definite,indirect,possible --track-fds=yes --track-origins=yes --error-exitcode=1 --quiet"
 fi
 
 # Colors for output

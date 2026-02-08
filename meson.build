@@ -64,7 +64,8 @@ if get_option('build_tests')
 				add_test_setup('valgrind',
 						exe_wrapper: [valgrind,
 								'--leak-check=full',
-								'--show-leak-kinds=all',
+								'--show-leak-kinds=definite,indirect,possible',
+								'--track-fds=yes',
 								'--track-origins=yes',
 								'--error-exitcode=1'],
 						timeout_multiplier: 10)

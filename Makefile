@@ -147,6 +147,9 @@ valgrind: debug
 	@$(MAKE) examples --no-print-directory
 	@bash tests/run_all.sh --valgrind $(if $(TEST),--test $(TEST),) $(if $(SUITE),--suite $(SUITE),)
 
+helgrind: debug
+	@bash tests/run_all.sh --helgrind --suite stdlib $(if $(TEST),--test $(TEST),)
+
 # ASAN (AddressSanitizer) build for memory error detection
 # Note: Uses static linking for sanitizer runtime to avoid shared library issues
 asan:
