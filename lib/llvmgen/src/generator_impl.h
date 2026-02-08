@@ -249,6 +249,7 @@ namespace Qd {
 		llvm::BasicBlock* currentFunctionReturnBlock = nullptr;
 		bool currentFunctionIsFallible = false;
 		bool currentFunctionIsIntegerOnly = false;
+		bool currentFunctionIsMain = false;
 
 		// Current module prefix
 		std::string currentModulePrefix = "main";

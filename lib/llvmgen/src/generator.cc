@@ -416,13 +416,10 @@ namespace Qd {
 		case IAstNode::Type::INSTRUCTION: {
 			auto* inst = static_cast<AstNodeInstruction*>(node);
 			const std::string& name = inst->name();
-			// The 'err' instruction pushes a string (error message), so functions
-			// using it are not integer-only
-			if (name == "err") {
-				return false;
-			}
-			// Other instructions that produce strings
-			if (name == "read" || name == "getenv") {
+			// Reject instructions that work with non-integer types (strings, arrays, pointers)
+			if (name == "err" || name == "read" || name == "getenv" || name == "make" || name == "set" ||
+					name == "nth" || name == "len" || name == "push_back" || name == "pop_back" || name == "cast" ||
+					name == "panic" || name == "sizeof" || name == "type" || name == "call") {
 				return false;
 			}
 			break;
@@ -433,6 +430,12 @@ namespace Qd {
 			return false;
 		case IAstNode::Type::ANONYMOUS_FUNCTION:
 			// Anonymous functions/closures are complex, reject for now
+			return false;
+		case IAstNode::Type::ARRAY_LITERAL:
+		case IAstNode::Type::STRUCT_CONSTRUCTION:
+		case IAstNode::Type::FIELD_ACCESS:
+		case IAstNode::Type::FIELD_SET:
+			// Arrays, structs, and field operations use pointers
 			return false;
 		default:
 			break;
@@ -494,6 +497,7 @@ namespace Qd {
 		}
 
 		llvm::Function* fn = nullptr;
+		currentFunctionIsMain = isMain;
 
 		if (isMain) {
 			// Create main function: i32 @main(i32 %argc, i8** %argv)
@@ -579,6 +583,15 @@ namespace Qd {
 			auto sourceFileStr = getOrCreateGlobalString(sourceFile);
 			auto lineNum = builder->getInt64(funcNode->line());
 			builder->CreateCall(pushCallFn, {ctx, funcNameStr, sourceFileStr, lineNum});
+
+			// Detect if main function body only uses integers (for type specialization)
+			currentFunctionIsIntegerOnly = true;
+			for (auto* child : funcNode->children()) {
+				if (!analyzeIsBodyIntegerOnly(child)) {
+					currentFunctionIsIntegerOnly = false;
+					break;
+				}
+			}
 
 			// Create return basic block for defer execution
 			auto returnBB = llvm::BasicBlock::Create(*context, "return", fn);
@@ -744,16 +757,15 @@ namespace Qd {
 
 			// Detect if function only uses integers (for type specialization)
 			// Do this BEFORE generating call tracking so we can skip it for integer-only functions
-			// Only consider it integer-only if it has at least one explicit integer parameter
-			// Functions with no parameters can't be assumed integer-only (they might use strings, floats, etc.)
-			bool hasIntegerParams = false;
-			currentFunctionIsIntegerOnly = true; // Assume true, set false if we find non-integer
+			// A function is integer-only if all typed parameters are integers AND the body
+			// contains no strings, floats, or module calls that might return non-integers.
+			// Functions with no parameters are also eligible if their body is integer-only.
+			currentFunctionIsIntegerOnly = true;
 			for (const auto* param : funcNode->inputParameters()) {
 				if (const auto* paramNode = dynamic_cast<const AstNodeParameter*>(param)) {
 					const std::string& typeStr = paramNode->typeString();
-					if (typeStr == "i64" || typeStr == "int" || typeStr == "int64" || typeStr == "i") {
-						hasIntegerParams = true;
-					} else {
+					if (!typeStr.empty() && typeStr != "i64" && typeStr != "int" && typeStr != "int64" &&
+							typeStr != "i") {
 						currentFunctionIsIntegerOnly = false;
 						break;
 					}
@@ -763,17 +775,14 @@ namespace Qd {
 				for (const auto* param : funcNode->outputParameters()) {
 					if (const auto* paramNode = dynamic_cast<const AstNodeParameter*>(param)) {
 						const std::string& typeStr = paramNode->typeString();
-						if (typeStr == "i64" || typeStr == "int" || typeStr == "int64" || typeStr == "i") {
-							hasIntegerParams = true;
-						} else {
+						if (!typeStr.empty() && typeStr != "i64" && typeStr != "int" && typeStr != "int64" &&
+								typeStr != "i") {
 							currentFunctionIsIntegerOnly = false;
 							break;
 						}
 					}
 				}
 			}
-			// Only enable integer-only optimizations if there's at least one integer parameter
-			currentFunctionIsIntegerOnly = currentFunctionIsIntegerOnly && hasIntegerParams;
 
 			// Also check the function body for non-integer types (strings, floats, module calls)
 			if (currentFunctionIsIntegerOnly) {

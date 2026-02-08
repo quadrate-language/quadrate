@@ -73,8 +73,8 @@ namespace Qd {
 		llvm::Value* sizePtr = builder->CreateStructGEP(stackStructTy, st, 2, "size_ptr");
 		llvm::Value* size = builder->CreateLoad(int64Ty, sizePtr, "size");
 
-		// Skip overflow check for integer-only functions (predictable stack usage)
-		if (!currentFunctionIsIntegerOnly) {
+		// Skip overflow check for integer-only non-main functions (predictable stack usage)
+		if (!currentFunctionIsIntegerOnly || currentFunctionIsMain) {
 			// Check for overflow
 			llvm::Value* capacityPtr = builder->CreateStructGEP(stackStructTy, st, 1, "capacity_ptr");
 			llvm::Value* capacity = builder->CreateLoad(int64Ty, capacityPtr, "capacity");
