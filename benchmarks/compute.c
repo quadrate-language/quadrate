@@ -2,6 +2,8 @@
 #include <stdint.h>
 #include <time.h>
 
+#define RUNS 3
+
 int64_t collatz_len(int64_t n) {
     int64_t len = 0;
     while (n > 1) {
@@ -125,65 +127,100 @@ int main() {
 
     // Benchmark 1: Collatz conjecture
     int64_t limit = 1000000;
-    int64_t start = get_time_ns();
-    int64_t result = longest_collatz(limit);
-    int64_t elapsed = get_time_ns() - start;
+    longest_collatz(limit); // warmup
+    int64_t best = INT64_MAX, result;
+    for (int run = 0; run < RUNS; run++) {
+        int64_t start = get_time_ns();
+        int64_t r = longest_collatz(limit);
+        int64_t elapsed = get_time_ns() - start;
+        if (elapsed < best) { best = elapsed; result = r; }
+    }
     printf("Collatz longest chain under %ld:\n", limit);
-    printf("  Time: %ld ms\n", elapsed / 1000000);
+    printf("  Time: %ld ms\n", best / 1000000);
     printf("  Result: %ld\n", result);
 
     // Benchmark 2: Prime counting
     limit = 1000000;
-    start = get_time_ns();
-    result = count_primes(limit);
-    elapsed = get_time_ns() - start;
+    count_primes(limit); // warmup
+    best = INT64_MAX;
+    for (int run = 0; run < RUNS; run++) {
+        int64_t start = get_time_ns();
+        int64_t r = count_primes(limit);
+        int64_t elapsed = get_time_ns() - start;
+        if (elapsed < best) { best = elapsed; result = r; }
+    }
     printf("Prime count under %ld:\n", limit);
-    printf("  Time: %ld ms\n", elapsed / 1000000);
+    printf("  Time: %ld ms\n", best / 1000000);
     printf("  Result: %ld\n", result);
 
     // Benchmark 3: Ackermann
     int64_t m = 3, n = 11;
-    start = get_time_ns();
-    result = ack(m, n);
-    elapsed = get_time_ns() - start;
+    ack(m, n); // warmup
+    best = INT64_MAX;
+    for (int run = 0; run < RUNS; run++) {
+        int64_t start = get_time_ns();
+        int64_t r = ack(m, n);
+        int64_t elapsed = get_time_ns() - start;
+        if (elapsed < best) { best = elapsed; result = r; }
+    }
     printf("Ackermann(%ld, %ld):\n", m, n);
-    printf("  Time: %ld ms\n", elapsed / 1000000);
+    printf("  Time: %ld ms\n", best / 1000000);
     printf("  Result: %ld\n", result);
 
     // Benchmark 4: Popcount
     limit = 10000000;
-    start = get_time_ns();
-    result = total_popcount(limit);
-    elapsed = get_time_ns() - start;
+    total_popcount(limit); // warmup
+    best = INT64_MAX;
+    for (int run = 0; run < RUNS; run++) {
+        int64_t start = get_time_ns();
+        int64_t r = total_popcount(limit);
+        int64_t elapsed = get_time_ns() - start;
+        if (elapsed < best) { best = elapsed; result = r; }
+    }
     printf("Popcount sum 1..%ld:\n", limit);
-    printf("  Time: %ld ms\n", elapsed / 1000000);
+    printf("  Time: %ld ms\n", best / 1000000);
     printf("  Result: %ld\n", result);
 
     // Benchmark 5: Takeuchi
     int64_t x = 24, y = 16, z = 8;
-    start = get_time_ns();
-    result = tak(x, y, z);
-    elapsed = get_time_ns() - start;
+    tak(x, y, z); // warmup
+    best = INT64_MAX;
+    for (int run = 0; run < RUNS; run++) {
+        int64_t start = get_time_ns();
+        int64_t r = tak(x, y, z);
+        int64_t elapsed = get_time_ns() - start;
+        if (elapsed < best) { best = elapsed; result = r; }
+    }
     printf("Tak(%ld, %ld, %ld):\n", x, y, z);
-    printf("  Time: %ld ms\n", elapsed / 1000000);
+    printf("  Time: %ld ms\n", best / 1000000);
     printf("  Result: %ld\n", result);
 
     // Benchmark 6: Euler totient sum
     limit = 10000;
-    start = get_time_ns();
-    result = sum_totients(limit);
-    elapsed = get_time_ns() - start;
+    sum_totients(limit); // warmup
+    best = INT64_MAX;
+    for (int run = 0; run < RUNS; run++) {
+        int64_t start = get_time_ns();
+        int64_t r = sum_totients(limit);
+        int64_t elapsed = get_time_ns() - start;
+        if (elapsed < best) { best = elapsed; result = r; }
+    }
     printf("Euler totient sum(1..%ld):\n", limit);
-    printf("  Time: %ld ms\n", elapsed / 1000000);
+    printf("  Time: %ld ms\n", best / 1000000);
     printf("  Result: %ld\n", result);
 
     // Benchmark 7: Digit sum
     limit = 10000000;
-    start = get_time_ns();
-    result = total_digit_sum(limit);
-    elapsed = get_time_ns() - start;
+    total_digit_sum(limit); // warmup
+    best = INT64_MAX;
+    for (int run = 0; run < RUNS; run++) {
+        int64_t start = get_time_ns();
+        int64_t r = total_digit_sum(limit);
+        int64_t elapsed = get_time_ns() - start;
+        if (elapsed < best) { best = elapsed; result = r; }
+    }
     printf("Digit sum(1..%ld):\n", limit);
-    printf("  Time: %ld ms\n", elapsed / 1000000);
+    printf("  Time: %ld ms\n", best / 1000000);
     printf("  Result: %ld\n", result);
 
     return 0;

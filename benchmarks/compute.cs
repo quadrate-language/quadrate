@@ -1,5 +1,7 @@
 using System.Diagnostics;
 
+const int Runs = 3;
+
 long CollatzLen(long n) {
     long len = 0;
     while (n > 1) {
@@ -111,63 +113,106 @@ Console.WriteLine("=== C# Compute Benchmarks ===");
 
 // Benchmark 1: Collatz conjecture
 long limit = 1000000;
-var sw = Stopwatch.StartNew();
-long result = LongestCollatz(limit);
-sw.Stop();
+LongestCollatz(limit); // warmup
+long bestNs = long.MaxValue;
+long result = 0;
+for (int run = 0; run < Runs; run++) {
+    var sw = Stopwatch.StartNew();
+    long r = LongestCollatz(limit);
+    sw.Stop();
+    long elapsed = sw.Elapsed.Ticks * 100;
+    if (elapsed < bestNs) { bestNs = elapsed; result = r; }
+}
 Console.WriteLine($"Collatz longest chain under {limit}:");
-Console.WriteLine($"  Time: {sw.ElapsedMilliseconds} ms");
+Console.WriteLine($"  Time: {bestNs / 1000000} ms");
 Console.WriteLine($"  Result: {result}");
 
 // Benchmark 2: Prime counting
 limit = 1000000;
-sw = Stopwatch.StartNew();
-result = CountPrimes(limit);
-sw.Stop();
+CountPrimes(limit); // warmup
+bestNs = long.MaxValue;
+for (int run = 0; run < Runs; run++) {
+    var sw = Stopwatch.StartNew();
+    long r = CountPrimes(limit);
+    sw.Stop();
+    long elapsed = sw.Elapsed.Ticks * 100;
+    if (elapsed < bestNs) { bestNs = elapsed; result = r; }
+}
 Console.WriteLine($"Prime count under {limit}:");
-Console.WriteLine($"  Time: {sw.ElapsedMilliseconds} ms");
+Console.WriteLine($"  Time: {bestNs / 1000000} ms");
 Console.WriteLine($"  Result: {result}");
 
 // Benchmark 3: Ackermann
 long m = 3, n = 11;
-sw = Stopwatch.StartNew();
-result = Ack(m, n);
-sw.Stop();
+Ack(m, n); // warmup
+bestNs = long.MaxValue;
+for (int run = 0; run < Runs; run++) {
+    var sw = Stopwatch.StartNew();
+    long r = Ack(m, n);
+    sw.Stop();
+    long elapsed = sw.Elapsed.Ticks * 100;
+    if (elapsed < bestNs) { bestNs = elapsed; result = r; }
+}
 Console.WriteLine($"Ackermann({m}, {n}):");
-Console.WriteLine($"  Time: {sw.ElapsedMilliseconds} ms");
+Console.WriteLine($"  Time: {bestNs / 1000000} ms");
 Console.WriteLine($"  Result: {result}");
 
 // Benchmark 4: Popcount
 limit = 10000000;
-sw = Stopwatch.StartNew();
-result = TotalPopcount(limit);
-sw.Stop();
+TotalPopcount(limit); // warmup
+bestNs = long.MaxValue;
+for (int run = 0; run < Runs; run++) {
+    var sw = Stopwatch.StartNew();
+    long r = TotalPopcount(limit);
+    sw.Stop();
+    long elapsed = sw.Elapsed.Ticks * 100;
+    if (elapsed < bestNs) { bestNs = elapsed; result = r; }
+}
 Console.WriteLine($"Popcount sum 1..{limit}:");
-Console.WriteLine($"  Time: {sw.ElapsedMilliseconds} ms");
+Console.WriteLine($"  Time: {bestNs / 1000000} ms");
 Console.WriteLine($"  Result: {result}");
 
 // Benchmark 5: Takeuchi
 long x = 24, y = 16, z = 8;
-sw = Stopwatch.StartNew();
-result = Tak(x, y, z);
-sw.Stop();
+Tak(x, y, z); // warmup
+bestNs = long.MaxValue;
+for (int run = 0; run < Runs; run++) {
+    var sw = Stopwatch.StartNew();
+    long r = Tak(x, y, z);
+    sw.Stop();
+    long elapsed = sw.Elapsed.Ticks * 100;
+    if (elapsed < bestNs) { bestNs = elapsed; result = r; }
+}
 Console.WriteLine($"Tak({x}, {y}, {z}):");
-Console.WriteLine($"  Time: {sw.ElapsedMilliseconds} ms");
+Console.WriteLine($"  Time: {bestNs / 1000000} ms");
 Console.WriteLine($"  Result: {result}");
 
 // Benchmark 6: Euler totient sum
 limit = 10000;
-sw = Stopwatch.StartNew();
-result = SumTotients(limit);
-sw.Stop();
+SumTotients(limit); // warmup
+bestNs = long.MaxValue;
+for (int run = 0; run < Runs; run++) {
+    var sw = Stopwatch.StartNew();
+    long r = SumTotients(limit);
+    sw.Stop();
+    long elapsed = sw.Elapsed.Ticks * 100;
+    if (elapsed < bestNs) { bestNs = elapsed; result = r; }
+}
 Console.WriteLine($"Euler totient sum(1..{limit}):");
-Console.WriteLine($"  Time: {sw.ElapsedMilliseconds} ms");
+Console.WriteLine($"  Time: {bestNs / 1000000} ms");
 Console.WriteLine($"  Result: {result}");
 
 // Benchmark 7: Digit sum
 limit = 10000000;
-sw = Stopwatch.StartNew();
-result = TotalDigitSum(limit);
-sw.Stop();
+TotalDigitSum(limit); // warmup
+bestNs = long.MaxValue;
+for (int run = 0; run < Runs; run++) {
+    var sw = Stopwatch.StartNew();
+    long r = TotalDigitSum(limit);
+    sw.Stop();
+    long elapsed = sw.Elapsed.Ticks * 100;
+    if (elapsed < bestNs) { bestNs = elapsed; result = r; }
+}
 Console.WriteLine($"Digit sum(1..{limit}):");
-Console.WriteLine($"  Time: {sw.ElapsedMilliseconds} ms");
+Console.WriteLine($"  Time: {bestNs / 1000000} ms");
 Console.WriteLine($"  Result: {result}");

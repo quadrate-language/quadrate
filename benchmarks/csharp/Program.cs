@@ -1,5 +1,7 @@
 using System.Diagnostics;
 
+const int Runs = 3;
+
 double SumInvSquares(long n) {
     double sum = 0.0;
     for (long i = 1; i <= n; i++) {
@@ -37,34 +39,60 @@ Console.WriteLine("=== C# Float Benchmarks ===");
 
 // Benchmark 1: Basel problem
 long n = 10000000;
-var sw = Stopwatch.StartNew();
-double resultF = SumInvSquares(n);
-sw.Stop();
+SumInvSquares(n); // warmup
+long best = long.MaxValue;
+double resultF = 0.0;
+for (int run = 0; run < Runs; run++) {
+    var sw = Stopwatch.StartNew();
+    double r = SumInvSquares(n);
+    sw.Stop();
+    long elapsed = sw.Elapsed.Ticks * 100;
+    if (elapsed < best) { best = elapsed; resultF = r; }
+}
 Console.WriteLine($"Basel sum(1/i^2, 1..{n}):");
-Console.WriteLine($"  Time: {sw.ElapsedMilliseconds} ms");
+Console.WriteLine($"  Time: {best / 1000000} ms");
 Console.WriteLine($"  Result: {resultF:F10}");
 
 // Benchmark 2: Leibniz pi
 n = 10000000;
-sw = Stopwatch.StartNew();
-resultF = LeibnizPi(n);
-sw.Stop();
+LeibnizPi(n); // warmup
+best = long.MaxValue;
+for (int run = 0; run < Runs; run++) {
+    var sw = Stopwatch.StartNew();
+    double r = LeibnizPi(n);
+    sw.Stop();
+    long elapsed = sw.Elapsed.Ticks * 100;
+    if (elapsed < best) { best = elapsed; resultF = r; }
+}
 Console.WriteLine($"Leibniz pi({n} terms):");
-Console.WriteLine($"  Time: {sw.ElapsedMilliseconds} ms");
+Console.WriteLine($"  Time: {best / 1000000} ms");
 Console.WriteLine($"  Result: {resultF:F10}");
 
 // Benchmark 3: Mandelbrot grid
 long size = 200;
-sw = Stopwatch.StartNew();
-long total = 0;
-for (long y = 0; y < size; y++) {
-    for (long x = 0; x < size; x++) {
-        double cr = ((double)x - 100.0) / 50.0;
-        double ci = ((double)y - 100.0) / 50.0;
-        total += MandelbrotIter(cr, ci, 100);
-    }
+// warmup
+{
+    long t = 0;
+    for (long y = 0; y < size; y++)
+        for (long x = 0; x < size; x++)
+            t += MandelbrotIter(((double)x - 100.0) / 50.0, ((double)y - 100.0) / 50.0, 100);
 }
-sw.Stop();
+best = long.MaxValue;
+long total = 0;
+for (int run = 0; run < Runs; run++) {
+    var sw = Stopwatch.StartNew();
+    long t = 0;
+    for (long y = 0; y < size; y++) {
+        for (long x = 0; x < size; x++) {
+            double cr = ((double)x - 100.0) / 50.0;
+            double ci = ((double)y - 100.0) / 50.0;
+            t += MandelbrotIter(cr, ci, 100);
+        }
+    }
+    sw.Stop();
+    long elapsed = sw.Elapsed.Ticks * 100;
+    if (elapsed < best) { best = elapsed; total = t; }
+}
 Console.WriteLine($"Mandelbrot {size}x{size}:");
-Console.WriteLine($"  Time: {sw.ElapsedMilliseconds} ms");
+Console.WriteLine($"  Time: {best / 1000000} ms");
 Console.WriteLine($"  Result: {total}");

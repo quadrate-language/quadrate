@@ -182,67 +182,124 @@ fn main() {
 
 	// Benchmark 1: Collatz conjecture
 	1000000 -> limit
-	time::now -> start
-	limit longest_collatz -> result
-	time::now start - -> elapsed
+	limit longest_collatz drop // warmup
+	9999999999 -> best
+	0 -> result
+	0 3 1 for run {
+		time::now -> start
+		limit longest_collatz -> r
+		time::now start - -> elapsed
+		elapsed best lt if {
+			elapsed -> best
+			r -> result
+		}
+	}
 	limit "Collatz longest chain under %d:\n" fmt::printf
-	elapsed 1000000 div "  Time: %d ms\n" fmt::printf
+	best 1000000 div "  Time: %d ms\n" fmt::printf
 	result "  Result: %d\n" fmt::printf
 
 	// Benchmark 2: Prime counting
 	1000000 -> limit
-	time::now -> start
-	limit count_primes -> result
-	time::now start - -> elapsed
+	limit count_primes drop // warmup
+	9999999999 -> best
+	0 3 1 for run {
+		time::now -> start
+		limit count_primes -> r
+		time::now start - -> elapsed
+		elapsed best lt if {
+			elapsed -> best
+			r -> result
+		}
+	}
 	limit "Prime count under %d:\n" fmt::printf
-	elapsed 1000000 div "  Time: %d ms\n" fmt::printf
+	best 1000000 div "  Time: %d ms\n" fmt::printf
 	result "  Result: %d\n" fmt::printf
 
 	// Benchmark 3: Ackermann
 	3 -> m
 	11 -> n
-	time::now -> start
-	m n ack -> result
-	time::now start - -> elapsed
+	m n ack drop // warmup
+	9999999999 -> best
+	0 3 1 for run {
+		time::now -> start
+		m n ack -> r
+		time::now start - -> elapsed
+		elapsed best lt if {
+			elapsed -> best
+			r -> result
+		}
+	}
 	m n "Ackermann(%d, %d):\n" fmt::printf
-	elapsed 1000000 div "  Time: %d ms\n" fmt::printf
+	best 1000000 div "  Time: %d ms\n" fmt::printf
 	result "  Result: %d\n" fmt::printf
 
 	// Benchmark 4: Popcount
 	10000000 -> limit
-	time::now -> start
-	limit total_popcount -> result
-	time::now start - -> elapsed
+	limit total_popcount drop // warmup
+	9999999999 -> best
+	0 3 1 for run {
+		time::now -> start
+		limit total_popcount -> r
+		time::now start - -> elapsed
+		elapsed best lt if {
+			elapsed -> best
+			r -> result
+		}
+	}
 	limit "Popcount sum 1..%d:\n" fmt::printf
-	elapsed 1000000 div "  Time: %d ms\n" fmt::printf
+	best 1000000 div "  Time: %d ms\n" fmt::printf
 	result "  Result: %d\n" fmt::printf
 
 	// Benchmark 5: Takeuchi
 	24 -> x
 	16 -> y
 	8 -> z
-	time::now -> start
-	x y z tak -> result
-	time::now start - -> elapsed
+	x y z tak drop // warmup
+	9999999999 -> best
+	0 3 1 for run {
+		time::now -> start
+		x y z tak -> r
+		time::now start - -> elapsed
+		elapsed best lt if {
+			elapsed -> best
+			r -> result
+		}
+	}
 	x y z "Tak(%d, %d, %d):\n" fmt::printf
-	elapsed 1000000 div "  Time: %d ms\n" fmt::printf
+	best 1000000 div "  Time: %d ms\n" fmt::printf
 	result "  Result: %d\n" fmt::printf
 
 	// Benchmark 6: Euler totient sum
 	10000 -> limit
-	time::now -> start
-	limit sum_totients -> result
-	time::now start - -> elapsed
+	limit sum_totients drop // warmup
+	9999999999 -> best
+	0 3 1 for run {
+		time::now -> start
+		limit sum_totients -> r
+		time::now start - -> elapsed
+		elapsed best lt if {
+			elapsed -> best
+			r -> result
+		}
+	}
 	limit "Euler totient sum(1..%d):\n" fmt::printf
-	elapsed 1000000 div "  Time: %d ms\n" fmt::printf
+	best 1000000 div "  Time: %d ms\n" fmt::printf
 	result "  Result: %d\n" fmt::printf
 
 	// Benchmark 7: Digit sum
 	10000000 -> limit
-	time::now -> start
-	limit total_digit_sum -> result
-	time::now start - -> elapsed
+	limit total_digit_sum drop // warmup
+	9999999999 -> best
+	0 3 1 for run {
+		time::now -> start
+		limit total_digit_sum -> r
+		time::now start - -> elapsed
+		elapsed best lt if {
+			elapsed -> best
+			r -> result
+		}
+	}
 	limit "Digit sum(1..%d):\n" fmt::printf
-	elapsed 1000000 div "  Time: %d ms\n" fmt::printf
+	best 1000000 div "  Time: %d ms\n" fmt::printf
 	result "  Result: %d\n" fmt::printf
 }

@@ -2,6 +2,8 @@
 #include <stdint.h>
 #include <time.h>
 
+#define RUNS 3
+
 int64_t benchmark_arithmetic(int64_t iterations) {
     int64_t sum = 0;
     for (int64_t i = 0; i < iterations; i++) {
@@ -25,26 +27,34 @@ int64_t get_time_ns() {
 
 int main() {
     printf("=== C Benchmarks ===\n");
-    
+
     // Benchmark 1: Arithmetic loop
     int64_t iterations = 10000000;
-    int64_t start = get_time_ns();
-    int64_t result = benchmark_arithmetic(iterations);
-    int64_t elapsed = get_time_ns() - start;
-    
+    benchmark_arithmetic(iterations); // warmup
+    int64_t best = INT64_MAX, result;
+    for (int run = 0; run < RUNS; run++) {
+        int64_t start = get_time_ns();
+        int64_t r = benchmark_arithmetic(iterations);
+        int64_t elapsed = get_time_ns() - start;
+        if (elapsed < best) { best = elapsed; result = r; }
+    }
     printf("Arithmetic loop (%ld iterations):\n", iterations);
-    printf("  Time: %ld ms\n", elapsed / 1000000);
+    printf("  Time: %ld ms\n", best / 1000000);
     printf("  Result: %ld\n", result);
-    
+
     // Benchmark 2: Recursive fibonacci
     int64_t n = 35;
-    start = get_time_ns();
-    result = fib(n);
-    elapsed = get_time_ns() - start;
-    
+    fib(n); // warmup
+    best = INT64_MAX;
+    for (int run = 0; run < RUNS; run++) {
+        int64_t start = get_time_ns();
+        int64_t r = fib(n);
+        int64_t elapsed = get_time_ns() - start;
+        if (elapsed < best) { best = elapsed; result = r; }
+    }
     printf("Fibonacci (n=%ld):\n", n);
-    printf("  Time: %ld ms\n", elapsed / 1000000);
+    printf("  Time: %ld ms\n", best / 1000000);
     printf("  Result: %ld\n", result);
-    
+
     return 0;
 }

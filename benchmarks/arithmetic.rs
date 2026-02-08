@@ -1,4 +1,7 @@
+use std::hint::black_box;
 use std::time::Instant;
+
+const RUNS: usize = 3;
 
 fn benchmark_arithmetic(iterations: i64) -> i64 {
     let mut sum: i64 = 0;
@@ -21,21 +24,30 @@ fn main() {
 
     // Benchmark 1: Arithmetic loop
     let iterations = 10_000_000i64;
-    let start = Instant::now();
-    let result = benchmark_arithmetic(iterations);
-    let elapsed = start.elapsed();
-
+    let _ = benchmark_arithmetic(black_box(iterations)); // warmup
+    let mut best = u128::MAX;
+    let mut result: i64 = 0;
+    for _ in 0..RUNS {
+        let start = Instant::now();
+        let r = benchmark_arithmetic(black_box(iterations));
+        let elapsed = start.elapsed().as_nanos();
+        if elapsed < best { best = elapsed; result = r; }
+    }
     println!("Arithmetic loop ({} iterations):", iterations);
-    println!("  Time: {} ms", elapsed.as_millis());
+    println!("  Time: {} ms", best / 1_000_000);
     println!("  Result: {}", result);
 
     // Benchmark 2: Recursive fibonacci
     let n = 35i64;
-    let start = Instant::now();
-    let result = fib(n);
-    let elapsed = start.elapsed();
-
+    let _ = fib(black_box(n)); // warmup
+    best = u128::MAX;
+    for _ in 0..RUNS {
+        let start = Instant::now();
+        let r = fib(black_box(n));
+        let elapsed = start.elapsed().as_nanos();
+        if elapsed < best { best = elapsed; result = r; }
+    }
     println!("Fibonacci (n={}):", n);
-    println!("  Time: {} ms", elapsed.as_millis());
+    println!("  Time: {} ms", best / 1_000_000);
     println!("  Result: {}", result);
 }

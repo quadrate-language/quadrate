@@ -1,3 +1,5 @@
+const RUNS = 3;
+
 function sumInvSquares(n) {
     let sum = 0.0;
     for (let i = 1; i <= n; i++) {
@@ -35,36 +37,59 @@ function main() {
 
     // Benchmark 1: Basel problem
     const n1 = 10000000;
-    let start = process.hrtime.bigint();
-    let resultF = sumInvSquares(n1);
-    let elapsed = process.hrtime.bigint() - start;
+    sumInvSquares(n1); // warmup
+    let best = BigInt(Number.MAX_SAFE_INTEGER);
+    let resultF;
+    for (let run = 0; run < RUNS; run++) {
+        let start = process.hrtime.bigint();
+        let r = sumInvSquares(n1);
+        let elapsed = process.hrtime.bigint() - start;
+        if (elapsed < best) { best = elapsed; resultF = r; }
+    }
     console.log(`Basel sum(1/i^2, 1..${n1}):`);
-    console.log(`  Time: ${elapsed / 1000000n} ms`);
+    console.log(`  Time: ${best / 1000000n} ms`);
     console.log(`  Result: ${resultF.toFixed(10)}`);
 
     // Benchmark 2: Leibniz pi
     const n2 = 10000000;
-    start = process.hrtime.bigint();
-    resultF = leibnizPi(n2);
-    elapsed = process.hrtime.bigint() - start;
+    leibnizPi(n2); // warmup
+    best = BigInt(Number.MAX_SAFE_INTEGER);
+    for (let run = 0; run < RUNS; run++) {
+        let start = process.hrtime.bigint();
+        let r = leibnizPi(n2);
+        let elapsed = process.hrtime.bigint() - start;
+        if (elapsed < best) { best = elapsed; resultF = r; }
+    }
     console.log(`Leibniz pi(${n2} terms):`);
-    console.log(`  Time: ${elapsed / 1000000n} ms`);
+    console.log(`  Time: ${best / 1000000n} ms`);
     console.log(`  Result: ${resultF.toFixed(10)}`);
 
     // Benchmark 3: Mandelbrot grid
     const size = 200;
-    start = process.hrtime.bigint();
-    let total = 0;
-    for (let y = 0; y < size; y++) {
-        for (let x = 0; x < size; x++) {
-            const cr = (x - 100.0) / 50.0;
-            const ci = (y - 100.0) / 50.0;
-            total += mandelbrotIter(cr, ci, 100);
-        }
+    // warmup
+    {
+        let t = 0;
+        for (let y = 0; y < size; y++)
+            for (let x = 0; x < size; x++)
+                t += mandelbrotIter((x - 100.0) / 50.0, (y - 100.0) / 50.0, 100);
     }
-    elapsed = process.hrtime.bigint() - start;
+    best = BigInt(Number.MAX_SAFE_INTEGER);
+    let total;
+    for (let run = 0; run < RUNS; run++) {
+        let start = process.hrtime.bigint();
+        let t = 0;
+        for (let y = 0; y < size; y++) {
+            for (let x = 0; x < size; x++) {
+                const cr = (x - 100.0) / 50.0;
+                const ci = (y - 100.0) / 50.0;
+                t += mandelbrotIter(cr, ci, 100);
+            }
+        }
+        let elapsed = process.hrtime.bigint() - start;
+        if (elapsed < best) { best = elapsed; total = t; }
+    }
     console.log(`Mandelbrot ${size}x${size}:`);
-    console.log(`  Time: ${elapsed / 1000000n} ms`);
+    console.log(`  Time: ${best / 1000000n} ms`);
     console.log(`  Result: ${total}`);
 }
 

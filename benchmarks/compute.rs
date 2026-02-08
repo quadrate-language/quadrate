@@ -1,4 +1,7 @@
+use std::hint::black_box;
 use std::time::Instant;
+
+const RUNS: usize = 3;
 
 fn collatz_len(mut n: i64) -> i64 {
     let mut length: i64 = 0;
@@ -119,64 +122,100 @@ fn main() {
 
     // Benchmark 1: Collatz conjecture
     let limit: i64 = 1000000;
-    let start = Instant::now();
-    let result = longest_collatz(limit);
-    let elapsed = start.elapsed();
+    longest_collatz(black_box(limit)); // warmup
+    let mut best: u128 = u128::MAX;
+    let mut result: i64 = 0;
+    for _ in 0..RUNS {
+        let start = Instant::now();
+        let r = longest_collatz(black_box(limit));
+        let elapsed = start.elapsed().as_nanos();
+        if elapsed < best { best = elapsed; result = r; }
+    }
     println!("Collatz longest chain under {}:", limit);
-    println!("  Time: {} ms", elapsed.as_millis());
+    println!("  Time: {} ms", best / 1000000);
     println!("  Result: {}", result);
 
     // Benchmark 2: Prime counting
     let limit: i64 = 1000000;
-    let start = Instant::now();
-    let result = count_primes(limit);
-    let elapsed = start.elapsed();
+    count_primes(black_box(limit)); // warmup
+    best = u128::MAX;
+    for _ in 0..RUNS {
+        let start = Instant::now();
+        let r = count_primes(black_box(limit));
+        let elapsed = start.elapsed().as_nanos();
+        if elapsed < best { best = elapsed; result = r; }
+    }
     println!("Prime count under {}:", limit);
-    println!("  Time: {} ms", elapsed.as_millis());
+    println!("  Time: {} ms", best / 1000000);
     println!("  Result: {}", result);
 
     // Benchmark 3: Ackermann
     let (m, n) = (3i64, 11i64);
-    let start = Instant::now();
-    let result = ack(m, n);
-    let elapsed = start.elapsed();
+    ack(black_box(m), black_box(n)); // warmup
+    best = u128::MAX;
+    for _ in 0..RUNS {
+        let start = Instant::now();
+        let r = ack(black_box(m), black_box(n));
+        let elapsed = start.elapsed().as_nanos();
+        if elapsed < best { best = elapsed; result = r; }
+    }
     println!("Ackermann({}, {}):", m, n);
-    println!("  Time: {} ms", elapsed.as_millis());
+    println!("  Time: {} ms", best / 1000000);
     println!("  Result: {}", result);
 
     // Benchmark 4: Popcount
     let limit: i64 = 10000000;
-    let start = Instant::now();
-    let result = total_popcount(limit);
-    let elapsed = start.elapsed();
+    total_popcount(black_box(limit)); // warmup
+    best = u128::MAX;
+    for _ in 0..RUNS {
+        let start = Instant::now();
+        let r = total_popcount(black_box(limit));
+        let elapsed = start.elapsed().as_nanos();
+        if elapsed < best { best = elapsed; result = r; }
+    }
     println!("Popcount sum 1..{}:", limit);
-    println!("  Time: {} ms", elapsed.as_millis());
+    println!("  Time: {} ms", best / 1000000);
     println!("  Result: {}", result);
 
     // Benchmark 5: Takeuchi
     let (x, y, z) = (24i64, 16i64, 8i64);
-    let start = Instant::now();
-    let result = tak(x, y, z);
-    let elapsed = start.elapsed();
+    tak(black_box(x), black_box(y), black_box(z)); // warmup
+    best = u128::MAX;
+    for _ in 0..RUNS {
+        let start = Instant::now();
+        let r = tak(black_box(x), black_box(y), black_box(z));
+        let elapsed = start.elapsed().as_nanos();
+        if elapsed < best { best = elapsed; result = r; }
+    }
     println!("Tak({}, {}, {}):", x, y, z);
-    println!("  Time: {} ms", elapsed.as_millis());
+    println!("  Time: {} ms", best / 1000000);
     println!("  Result: {}", result);
 
     // Benchmark 6: Euler totient sum
     let limit: i64 = 10000;
-    let start = Instant::now();
-    let result = sum_totients(limit);
-    let elapsed = start.elapsed();
+    sum_totients(black_box(limit)); // warmup
+    best = u128::MAX;
+    for _ in 0..RUNS {
+        let start = Instant::now();
+        let r = sum_totients(black_box(limit));
+        let elapsed = start.elapsed().as_nanos();
+        if elapsed < best { best = elapsed; result = r; }
+    }
     println!("Euler totient sum(1..{}):", limit);
-    println!("  Time: {} ms", elapsed.as_millis());
+    println!("  Time: {} ms", best / 1000000);
     println!("  Result: {}", result);
 
     // Benchmark 7: Digit sum
     let limit: i64 = 10000000;
-    let start = Instant::now();
-    let result = total_digit_sum(limit);
-    let elapsed = start.elapsed();
+    total_digit_sum(black_box(limit)); // warmup
+    best = u128::MAX;
+    for _ in 0..RUNS {
+        let start = Instant::now();
+        let r = total_digit_sum(black_box(limit));
+        let elapsed = start.elapsed().as_nanos();
+        if elapsed < best { best = elapsed; result = r; }
+    }
     println!("Digit sum(1..{}):", limit);
-    println!("  Time: {} ms", elapsed.as_millis());
+    println!("  Time: {} ms", best / 1000000);
     println!("  Result: {}", result);
 }

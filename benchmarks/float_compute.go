@@ -5,6 +5,8 @@ import (
 	"time"
 )
 
+const runs = 3
+
 func sumInvSquares(n int64) float64 {
 	var sum float64 = 0.0
 	for i := int64(1); i <= n; i++ {
@@ -43,35 +45,72 @@ func main() {
 
 	// Benchmark 1: Basel problem
 	n := int64(10000000)
-	start := time.Now()
-	resultF := sumInvSquares(n)
-	elapsed := time.Since(start)
+	sumInvSquares(n) // warmup
+	var best int64 = 1 << 62
+	var resultF float64
+	for run := 0; run < runs; run++ {
+		start := time.Now()
+		r := sumInvSquares(n)
+		elapsed := time.Since(start).Nanoseconds()
+		if elapsed < best {
+			best = elapsed
+			resultF = r
+		}
+	}
 	fmt.Printf("Basel sum(1/i^2, 1..%d):\n", n)
-	fmt.Printf("  Time: %d ms\n", elapsed.Milliseconds())
+	fmt.Printf("  Time: %d ms\n", best/1000000)
 	fmt.Printf("  Result: %.10f\n", resultF)
 
 	// Benchmark 2: Leibniz pi
 	n = 10000000
-	start = time.Now()
-	resultF = leibnizPi(n)
-	elapsed = time.Since(start)
+	leibnizPi(n) // warmup
+	best = 1 << 62
+	for run := 0; run < runs; run++ {
+		start := time.Now()
+		r := leibnizPi(n)
+		elapsed := time.Since(start).Nanoseconds()
+		if elapsed < best {
+			best = elapsed
+			resultF = r
+		}
+	}
 	fmt.Printf("Leibniz pi(%d terms):\n", n)
-	fmt.Printf("  Time: %d ms\n", elapsed.Milliseconds())
+	fmt.Printf("  Time: %d ms\n", best/1000000)
 	fmt.Printf("  Result: %.10f\n", resultF)
 
 	// Benchmark 3: Mandelbrot grid
 	size := int64(200)
-	start = time.Now()
-	var total int64 = 0
-	for y := int64(0); y < size; y++ {
-		for x := int64(0); x < size; x++ {
-			cr := (float64(x) - 100.0) / 50.0
-			ci := (float64(y) - 100.0) / 50.0
-			total += mandelbrotIter(cr, ci, 100)
+	// warmup
+	{
+		var t int64 = 0
+		for y := int64(0); y < size; y++ {
+			for x := int64(0); x < size; x++ {
+				cr := (float64(x) - 100.0) / 50.0
+				ci := (float64(y) - 100.0) / 50.0
+				t += mandelbrotIter(cr, ci, 100)
+			}
+		}
+		_ = t
+	}
+	best = 1 << 62
+	var total int64
+	for run := 0; run < runs; run++ {
+		start := time.Now()
+		var t int64 = 0
+		for y := int64(0); y < size; y++ {
+			for x := int64(0); x < size; x++ {
+				cr := (float64(x) - 100.0) / 50.0
+				ci := (float64(y) - 100.0) / 50.0
+				t += mandelbrotIter(cr, ci, 100)
+			}
+		}
+		elapsed := time.Since(start).Nanoseconds()
+		if elapsed < best {
+			best = elapsed
+			total = t
 		}
 	}
-	elapsed = time.Since(start)
 	fmt.Printf("Mandelbrot %dx%d:\n", size, size)
-	fmt.Printf("  Time: %d ms\n", elapsed.Milliseconds())
+	fmt.Printf("  Time: %d ms\n", best/1000000)
 	fmt.Printf("  Result: %d\n", total)
 }

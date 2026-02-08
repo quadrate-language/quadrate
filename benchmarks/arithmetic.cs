@@ -1,5 +1,7 @@
 using System.Diagnostics;
 
+const int Runs = 3;
+
 long BenchmarkArithmetic(long iterations) {
     long sum = 0;
     for (long i = 0; i < iterations; i++) {
@@ -17,18 +19,31 @@ Console.WriteLine("=== C# Benchmarks ===");
 
 // Benchmark 1: Arithmetic loop
 long iterations = 10000000;
-var sw = Stopwatch.StartNew();
-long result = BenchmarkArithmetic(iterations);
-sw.Stop();
+BenchmarkArithmetic(iterations); // warmup
+long bestNs = long.MaxValue;
+long result = 0;
+for (int run = 0; run < Runs; run++) {
+    var sw = Stopwatch.StartNew();
+    long r = BenchmarkArithmetic(iterations);
+    sw.Stop();
+    long ns = sw.Elapsed.Ticks * 100;
+    if (ns < bestNs) { bestNs = ns; result = r; }
+}
 Console.WriteLine($"Arithmetic loop ({iterations} iterations):");
-Console.WriteLine($"  Time: {sw.ElapsedMilliseconds} ms");
+Console.WriteLine($"  Time: {bestNs / 1000000} ms");
 Console.WriteLine($"  Result: {result}");
 
 // Benchmark 2: Recursive fibonacci
 long n = 35;
-sw = Stopwatch.StartNew();
-result = Fib(n);
-sw.Stop();
+Fib(n); // warmup
+bestNs = long.MaxValue;
+for (int run = 0; run < Runs; run++) {
+    var sw = Stopwatch.StartNew();
+    long r = Fib(n);
+    sw.Stop();
+    long ns = sw.Elapsed.Ticks * 100;
+    if (ns < bestNs) { bestNs = ns; result = r; }
+}
 Console.WriteLine($"Fibonacci (n={n}):");
-Console.WriteLine($"  Time: {sw.ElapsedMilliseconds} ms");
+Console.WriteLine($"  Time: {bestNs / 1000000} ms");
 Console.WriteLine($"  Result: {result}");

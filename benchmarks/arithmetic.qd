@@ -26,23 +26,36 @@ fn main() {
 
 	// Benchmark 1: Arithmetic loop (10 million iterations)
 	10000000 -> iterations
-
-	time::now -> start
-	iterations benchmark_arithmetic -> result
-	time::now start - -> elapsed
-
+	iterations benchmark_arithmetic drop // warmup
+	9999999999 -> best
+	0 -> result
+	0 3 1 for run {
+		time::now -> start
+		iterations benchmark_arithmetic -> r
+		time::now start - -> elapsed
+		elapsed best lt if {
+			elapsed -> best
+			r -> result
+		}
+	}
 	iterations "Arithmetic loop (%d iterations):\n" fmt::printf
-	elapsed 1000000 div "  Time: %d ms\n" fmt::printf
+	best 1000000 div "  Time: %d ms\n" fmt::printf
 	result "  Result: %d\n" fmt::printf
 
 	// Benchmark 2: Recursive fibonacci
 	35 -> n
-
-	time::now -> start
-	n fib -> result
-	time::now start - -> elapsed
-
+	n fib drop // warmup
+	9999999999 -> best
+	0 3 1 for run {
+		time::now -> start
+		n fib -> r
+		time::now start - -> elapsed
+		elapsed best lt if {
+			elapsed -> best
+			r -> result
+		}
+	}
 	n "Fibonacci (n=%d):\n" fmt::printf
-	elapsed 1000000 div "  Time: %d ms\n" fmt::printf
+	best 1000000 div "  Time: %d ms\n" fmt::printf
 	result "  Result: %d\n" fmt::printf
 }

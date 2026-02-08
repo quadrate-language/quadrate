@@ -1,3 +1,5 @@
+const RUNS = 3;
+
 function collatzLen(n) {
     let length = 0;
     while (n > 1) {
@@ -115,64 +117,101 @@ function main() {
 
     // Benchmark 1: Collatz conjecture
     const limit1 = 1000000;
-    let start = process.hrtime.bigint();
-    let result = longestCollatz(limit1);
-    let elapsed = process.hrtime.bigint() - start;
+    longestCollatz(limit1); // warmup
+    let best = BigInt(Number.MAX_SAFE_INTEGER);
+    let result;
+    for (let run = 0; run < RUNS; run++) {
+        let start = process.hrtime.bigint();
+        let r = longestCollatz(limit1);
+        let elapsed = process.hrtime.bigint() - start;
+        if (elapsed < best) { best = elapsed; result = r; }
+    }
     console.log(`Collatz longest chain under ${limit1}:`);
-    console.log(`  Time: ${elapsed / 1000000n} ms`);
+    console.log(`  Time: ${best / 1000000n} ms`);
     console.log(`  Result: ${result}`);
 
     // Benchmark 2: Prime counting
     const limit2 = 1000000;
-    start = process.hrtime.bigint();
-    result = countPrimes(limit2);
-    elapsed = process.hrtime.bigint() - start;
+    countPrimes(limit2); // warmup
+    best = BigInt(Number.MAX_SAFE_INTEGER);
+    for (let run = 0; run < RUNS; run++) {
+        let start = process.hrtime.bigint();
+        let r = countPrimes(limit2);
+        let elapsed = process.hrtime.bigint() - start;
+        if (elapsed < best) { best = elapsed; result = r; }
+    }
     console.log(`Prime count under ${limit2}:`);
-    console.log(`  Time: ${elapsed / 1000000n} ms`);
+    console.log(`  Time: ${best / 1000000n} ms`);
     console.log(`  Result: ${result}`);
 
     // Benchmark 3: Ackermann
     const m = 3, n = 11;
-    start = process.hrtime.bigint();
-    result = ack(m, n);
-    elapsed = process.hrtime.bigint() - start;
+    ack(m, n); // warmup
+    best = BigInt(Number.MAX_SAFE_INTEGER);
+    for (let run = 0; run < RUNS; run++) {
+        let start = process.hrtime.bigint();
+        let r = ack(m, n);
+        let elapsed = process.hrtime.bigint() - start;
+        if (elapsed < best) { best = elapsed; result = r; }
+    }
     console.log(`Ackermann(${m}, ${n}):`);
-    console.log(`  Time: ${elapsed / 1000000n} ms`);
+    console.log(`  Time: ${best / 1000000n} ms`);
     console.log(`  Result: ${result}`);
 
     // Benchmark 4: Popcount
     const limit3 = 10000000;
-    start = process.hrtime.bigint();
-    result = totalPopcount(limit3);
-    elapsed = process.hrtime.bigint() - start;
+    totalPopcount(limit3); // warmup
+    best = BigInt(Number.MAX_SAFE_INTEGER);
+    for (let run = 0; run < RUNS; run++) {
+        let start = process.hrtime.bigint();
+        let r = totalPopcount(limit3);
+        let elapsed = process.hrtime.bigint() - start;
+        if (elapsed < best) { best = elapsed; result = r; }
+    }
     console.log(`Popcount sum 1..${limit3}:`);
-    console.log(`  Time: ${elapsed / 1000000n} ms`);
+    console.log(`  Time: ${best / 1000000n} ms`);
     console.log(`  Result: ${result}`);
 
     // Benchmark 5: Takeuchi
     const x = 24, y = 16, z = 8;
-    start = process.hrtime.bigint();
-    result = tak(x, y, z);
-    elapsed = process.hrtime.bigint() - start;
+    tak(x, y, z); // warmup
+    best = BigInt(Number.MAX_SAFE_INTEGER);
+    for (let run = 0; run < RUNS; run++) {
+        let start = process.hrtime.bigint();
+        let r = tak(x, y, z);
+        let elapsed = process.hrtime.bigint() - start;
+        if (elapsed < best) { best = elapsed; result = r; }
+    }
     console.log(`Tak(${x}, ${y}, ${z}):`);
-    console.log(`  Time: ${elapsed / 1000000n} ms`);
+    console.log(`  Time: ${best / 1000000n} ms`);
     console.log(`  Result: ${result}`);
+
     // Benchmark 6: Euler totient sum
     const limit6 = 10000;
-    start = process.hrtime.bigint();
-    result = sumTotients(limit6);
-    elapsed = process.hrtime.bigint() - start;
+    sumTotients(limit6); // warmup
+    best = BigInt(Number.MAX_SAFE_INTEGER);
+    for (let run = 0; run < RUNS; run++) {
+        let start = process.hrtime.bigint();
+        let r = sumTotients(limit6);
+        let elapsed = process.hrtime.bigint() - start;
+        if (elapsed < best) { best = elapsed; result = r; }
+    }
     console.log(`Euler totient sum(1..${limit6}):`);
-    console.log(`  Time: ${elapsed / 1000000n} ms`);
+    console.log(`  Time: ${best / 1000000n} ms`);
     console.log(`  Result: ${result}`);
 
     // Benchmark 7: Digit sum
     const limit7 = 10000000;
-    start = process.hrtime.bigint();
-    result = totalDigitSum(limit7);
-    elapsed = process.hrtime.bigint() - start;
+    totalDigitSum(limit7); // warmup
+    best = BigInt(Number.MAX_SAFE_INTEGER);
+    for (let run = 0; run < RUNS; run++) {
+        let start = process.hrtime.bigint();
+        let r = totalDigitSum(limit7);
+        let elapsed = process.hrtime.bigint() - start;
+        if (elapsed < best) { best = elapsed; result = r; }
+    }
     console.log(`Digit sum(1..${limit7}):`);
-    console.log(`  Time: ${elapsed / 1000000n} ms`);
+    console.log(`  Time: ${best / 1000000n} ms`);
     console.log(`  Result: ${result}`);
 }
 

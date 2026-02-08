@@ -5,6 +5,8 @@ import (
 	"time"
 )
 
+const runs = 3
+
 func collatzLen(n int64) int64 {
 	var length int64 = 0
 	for n > 1 {
@@ -138,64 +140,121 @@ func main() {
 
 	// Benchmark 1: Collatz conjecture
 	limit := int64(1000000)
-	start := time.Now()
-	result := longestCollatz(limit)
-	elapsed := time.Since(start)
+	longestCollatz(limit) // warmup
+	var best int64 = 1 << 62
+	var result int64
+	for run := 0; run < runs; run++ {
+		start := time.Now()
+		r := longestCollatz(limit)
+		elapsed := time.Since(start).Nanoseconds()
+		if elapsed < best {
+			best = elapsed
+			result = r
+		}
+	}
 	fmt.Printf("Collatz longest chain under %d:\n", limit)
-	fmt.Printf("  Time: %d ms\n", elapsed.Milliseconds())
+	fmt.Printf("  Time: %d ms\n", best/1000000)
 	fmt.Printf("  Result: %d\n", result)
 
 	// Benchmark 2: Prime counting
 	limit = 1000000
-	start = time.Now()
-	result = countPrimes(limit)
-	elapsed = time.Since(start)
+	countPrimes(limit) // warmup
+	best = 1 << 62
+	for run := 0; run < runs; run++ {
+		start := time.Now()
+		r := countPrimes(limit)
+		elapsed := time.Since(start).Nanoseconds()
+		if elapsed < best {
+			best = elapsed
+			result = r
+		}
+	}
 	fmt.Printf("Prime count under %d:\n", limit)
-	fmt.Printf("  Time: %d ms\n", elapsed.Milliseconds())
+	fmt.Printf("  Time: %d ms\n", best/1000000)
 	fmt.Printf("  Result: %d\n", result)
 
 	// Benchmark 3: Ackermann
 	m, n := int64(3), int64(11)
-	start = time.Now()
-	result = ack(m, n)
-	elapsed = time.Since(start)
+	ack(m, n) // warmup
+	best = 1 << 62
+	for run := 0; run < runs; run++ {
+		start := time.Now()
+		r := ack(m, n)
+		elapsed := time.Since(start).Nanoseconds()
+		if elapsed < best {
+			best = elapsed
+			result = r
+		}
+	}
 	fmt.Printf("Ackermann(%d, %d):\n", m, n)
-	fmt.Printf("  Time: %d ms\n", elapsed.Milliseconds())
+	fmt.Printf("  Time: %d ms\n", best/1000000)
 	fmt.Printf("  Result: %d\n", result)
 
 	// Benchmark 4: Popcount
 	limit = 10000000
-	start = time.Now()
-	result = totalPopcount(limit)
-	elapsed = time.Since(start)
+	totalPopcount(limit) // warmup
+	best = 1 << 62
+	for run := 0; run < runs; run++ {
+		start := time.Now()
+		r := totalPopcount(limit)
+		elapsed := time.Since(start).Nanoseconds()
+		if elapsed < best {
+			best = elapsed
+			result = r
+		}
+	}
 	fmt.Printf("Popcount sum 1..%d:\n", limit)
-	fmt.Printf("  Time: %d ms\n", elapsed.Milliseconds())
+	fmt.Printf("  Time: %d ms\n", best/1000000)
 	fmt.Printf("  Result: %d\n", result)
 
 	// Benchmark 5: Takeuchi
 	x, y, z := int64(24), int64(16), int64(8)
-	start = time.Now()
-	result = tak(x, y, z)
-	elapsed = time.Since(start)
+	tak(x, y, z) // warmup
+	best = 1 << 62
+	for run := 0; run < runs; run++ {
+		start := time.Now()
+		r := tak(x, y, z)
+		elapsed := time.Since(start).Nanoseconds()
+		if elapsed < best {
+			best = elapsed
+			result = r
+		}
+	}
 	fmt.Printf("Tak(%d, %d, %d):\n", x, y, z)
-	fmt.Printf("  Time: %d ms\n", elapsed.Milliseconds())
+	fmt.Printf("  Time: %d ms\n", best/1000000)
 	fmt.Printf("  Result: %d\n", result)
 
 	// Benchmark 6: Euler totient sum
 	limit = 10000
-	start = time.Now()
-	result = sumTotients(limit)
-	elapsed = time.Since(start)
+	sumTotients(limit) // warmup
+	best = 1 << 62
+	for run := 0; run < runs; run++ {
+		start := time.Now()
+		r := sumTotients(limit)
+		elapsed := time.Since(start).Nanoseconds()
+		if elapsed < best {
+			best = elapsed
+			result = r
+		}
+	}
 	fmt.Printf("Euler totient sum(1..%d):\n", limit)
-	fmt.Printf("  Time: %d ms\n", elapsed.Milliseconds())
+	fmt.Printf("  Time: %d ms\n", best/1000000)
 	fmt.Printf("  Result: %d\n", result)
 
 	// Benchmark 7: Digit sum
 	limit = 10000000
-	start = time.Now()
-	result = totalDigitSum(limit)
-	elapsed = time.Since(start)
+	totalDigitSum(limit) // warmup
+	best = 1 << 62
+	for run := 0; run < runs; run++ {
+		start := time.Now()
+		r := totalDigitSum(limit)
+		elapsed := time.Since(start).Nanoseconds()
+		if elapsed < best {
+			best = elapsed
+			result = r
+		}
+	}
 	fmt.Printf("Digit sum(1..%d):\n", limit)
-	fmt.Printf("  Time: %d ms\n", elapsed.Milliseconds())
+	fmt.Printf("  Time: %d ms\n", best/1000000)
 	fmt.Printf("  Result: %d\n", result)
 }

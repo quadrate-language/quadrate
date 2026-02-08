@@ -3,6 +3,8 @@ import sys
 
 sys.setrecursionlimit(20000)
 
+RUNS = 3
+
 def collatz_len(n):
     length = 0
     while n > 1:
@@ -103,65 +105,108 @@ def main():
 
     # Benchmark 1: Collatz conjecture
     limit = 1000000
-    start = time.time_ns()
-    result = longest_collatz(limit)
-    elapsed = time.time_ns() - start
+    longest_collatz(limit)  # warmup
+    best = float('inf')
+    result = 0
+    for run in range(RUNS):
+        start = time.time_ns()
+        r = longest_collatz(limit)
+        elapsed = time.time_ns() - start
+        if elapsed < best:
+            best = elapsed
+            result = r
     print(f"Collatz longest chain under {limit}:")
-    print(f"  Time: {elapsed // 1000000} ms")
+    print(f"  Time: {best // 1000000} ms")
     print(f"  Result: {result}")
 
     # Benchmark 2: Prime counting
     limit = 1000000
-    start = time.time_ns()
-    result = count_primes(limit)
-    elapsed = time.time_ns() - start
+    count_primes(limit)  # warmup
+    best = float('inf')
+    for run in range(RUNS):
+        start = time.time_ns()
+        r = count_primes(limit)
+        elapsed = time.time_ns() - start
+        if elapsed < best:
+            best = elapsed
+            result = r
     print(f"Prime count under {limit}:")
-    print(f"  Time: {elapsed // 1000000} ms")
+    print(f"  Time: {best // 1000000} ms")
     print(f"  Result: {result}")
 
     # Benchmark 3: Ackermann
     m, n = 3, 11
-    start = time.time_ns()
-    result = ack(m, n)
-    elapsed = time.time_ns() - start
+    ack(m, n)  # warmup
+    best = float('inf')
+    for run in range(RUNS):
+        start = time.time_ns()
+        r = ack(m, n)
+        elapsed = time.time_ns() - start
+        if elapsed < best:
+            best = elapsed
+            result = r
     print(f"Ackermann({m}, {n}):")
-    print(f"  Time: {elapsed // 1000000} ms")
+    print(f"  Time: {best // 1000000} ms")
     print(f"  Result: {result}")
 
     # Benchmark 4: Popcount
     limit = 10000000
-    start = time.time_ns()
-    result = total_popcount(limit)
-    elapsed = time.time_ns() - start
+    total_popcount(limit)  # warmup
+    best = float('inf')
+    for run in range(RUNS):
+        start = time.time_ns()
+        r = total_popcount(limit)
+        elapsed = time.time_ns() - start
+        if elapsed < best:
+            best = elapsed
+            result = r
     print(f"Popcount sum 1..{limit}:")
-    print(f"  Time: {elapsed // 1000000} ms")
+    print(f"  Time: {best // 1000000} ms")
     print(f"  Result: {result}")
 
     # Benchmark 5: Takeuchi
     x, y, z = 24, 16, 8
-    start = time.time_ns()
-    result = tak(x, y, z)
-    elapsed = time.time_ns() - start
+    tak(x, y, z)  # warmup
+    best = float('inf')
+    for run in range(RUNS):
+        start = time.time_ns()
+        r = tak(x, y, z)
+        elapsed = time.time_ns() - start
+        if elapsed < best:
+            best = elapsed
+            result = r
     print(f"Tak({x}, {y}, {z}):")
-    print(f"  Time: {elapsed // 1000000} ms")
+    print(f"  Time: {best // 1000000} ms")
     print(f"  Result: {result}")
 
     # Benchmark 6: Euler totient sum
     limit = 10000
-    start = time.time_ns()
-    result = sum_totients(limit)
-    elapsed = time.time_ns() - start
+    sum_totients(limit)  # warmup
+    best = float('inf')
+    for run in range(RUNS):
+        start = time.time_ns()
+        r = sum_totients(limit)
+        elapsed = time.time_ns() - start
+        if elapsed < best:
+            best = elapsed
+            result = r
     print(f"Euler totient sum(1..{limit}):")
-    print(f"  Time: {elapsed // 1000000} ms")
+    print(f"  Time: {best // 1000000} ms")
     print(f"  Result: {result}")
 
     # Benchmark 7: Digit sum
     limit = 10000000
-    start = time.time_ns()
-    result = total_digit_sum(limit)
-    elapsed = time.time_ns() - start
+    total_digit_sum(limit)  # warmup
+    best = float('inf')
+    for run in range(RUNS):
+        start = time.time_ns()
+        r = total_digit_sum(limit)
+        elapsed = time.time_ns() - start
+        if elapsed < best:
+            best = elapsed
+            result = r
     print(f"Digit sum(1..{limit}):")
-    print(f"  Time: {elapsed // 1000000} ms")
+    print(f"  Time: {best // 1000000} ms")
     print(f"  Result: {result}")
 
 if __name__ == "__main__":

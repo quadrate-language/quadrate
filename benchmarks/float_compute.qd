@@ -48,35 +48,57 @@ fn main() {
 
 	// Benchmark 1: Basel problem
 	10000000 -> n
-	time::now -> start
-	n sum_inv_squares -> result_f
-	time::now start - -> elapsed
+	n sum_inv_squares drop // warmup
+	9999999999 -> best
+	0.0 -> result_f
+	0 3 1 for run {
+		time::now -> start
+		n sum_inv_squares -> r
+		time::now start - -> elapsed
+		elapsed best lt if { elapsed -> best  r -> result_f }
+	}
 	n "Basel sum(1/i^2, 1..%d):\n" fmt::printf
-	elapsed 1000000 div "  Time: %d ms\n" fmt::printf
+	best 1000000 div "  Time: %d ms\n" fmt::printf
 	result_f "  Result: %.10f\n" fmt::printf
 
 	// Benchmark 2: Leibniz pi
 	10000000 -> n
-	time::now -> start
-	n leibniz_pi -> result_f
-	time::now start - -> elapsed
+	n leibniz_pi drop // warmup
+	9999999999 -> best
+	0 3 1 for run {
+		time::now -> start
+		n leibniz_pi -> r
+		time::now start - -> elapsed
+		elapsed best lt if { elapsed -> best  r -> result_f }
+	}
 	n "Leibniz pi(%d terms):\n" fmt::printf
-	elapsed 1000000 div "  Time: %d ms\n" fmt::printf
+	best 1000000 div "  Time: %d ms\n" fmt::printf
 	result_f "  Result: %.10f\n" fmt::printf
 
 	// Benchmark 3: Mandelbrot grid
 	200 -> size
-	time::now -> start
+	// warmup
+	0 -> tmp
+	0 size 1 for y { 0 size 1 for x {
+		x cast<f64> 100.0 - 50.0 / -> cr
+		y cast<f64> 100.0 - 50.0 / -> ci
+		cr ci 100 mandelbrot_iter tmp + -> tmp
+	} }
+	// best of 3
+	9999999999 -> best
 	0 -> total
-	0 size 1 for y {
-		0 size 1 for x {
+	0 3 1 for run {
+		time::now -> start
+		0 -> t
+		0 size 1 for y { 0 size 1 for x {
 			x cast<f64> 100.0 - 50.0 / -> cr
 			y cast<f64> 100.0 - 50.0 / -> ci
-			cr ci 100 mandelbrot_iter total + -> total
-		}
+			cr ci 100 mandelbrot_iter t + -> t
+		} }
+		time::now start - -> elapsed
+		elapsed best lt if { elapsed -> best  t -> total }
 	}
-	time::now start - -> elapsed
 	size size "Mandelbrot %dx%d:\n" fmt::printf
-	elapsed 1000000 div "  Time: %d ms\n" fmt::printf
+	best 1000000 div "  Time: %d ms\n" fmt::printf
 	total "  Result: %d\n" fmt::printf
 }

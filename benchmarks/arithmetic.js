@@ -1,3 +1,5 @@
+const RUNS = 3;
+
 function benchmarkArithmetic(iterations) {
     let sum = 0;
     for (let i = 0; i < iterations; i++) {
@@ -7,9 +9,7 @@ function benchmarkArithmetic(iterations) {
 }
 
 function fib(n) {
-    if (n < 2) {
-        return n;
-    }
+    if (n < 2) return n;
     return fib(n - 1) + fib(n - 2);
 }
 
@@ -18,22 +18,31 @@ function main() {
 
     // Benchmark 1: Arithmetic loop
     const iterations = 10000000;
-    let start = process.hrtime.bigint();
-    let result = benchmarkArithmetic(iterations);
-    let elapsed = process.hrtime.bigint() - start;
-
+    benchmarkArithmetic(iterations); // warmup
+    let best = BigInt(Number.MAX_SAFE_INTEGER);
+    let result;
+    for (let run = 0; run < RUNS; run++) {
+        const start = process.hrtime.bigint();
+        const r = benchmarkArithmetic(iterations);
+        const elapsed = process.hrtime.bigint() - start;
+        if (elapsed < best) { best = elapsed; result = r; }
+    }
     console.log(`Arithmetic loop (${iterations} iterations):`);
-    console.log(`  Time: ${elapsed / 1000000n} ms`);
+    console.log(`  Time: ${best / 1000000n} ms`);
     console.log(`  Result: ${result}`);
 
     // Benchmark 2: Recursive fibonacci
     const n = 35;
-    start = process.hrtime.bigint();
-    result = fib(n);
-    elapsed = process.hrtime.bigint() - start;
-
+    fib(n); // warmup
+    best = BigInt(Number.MAX_SAFE_INTEGER);
+    for (let run = 0; run < RUNS; run++) {
+        const start = process.hrtime.bigint();
+        const r = fib(n);
+        const elapsed = process.hrtime.bigint() - start;
+        if (elapsed < best) { best = elapsed; result = r; }
+    }
     console.log(`Fibonacci (n=${n}):`);
-    console.log(`  Time: ${elapsed / 1000000n} ms`);
+    console.log(`  Time: ${best / 1000000n} ms`);
     console.log(`  Result: ${result}`);
 }
 
