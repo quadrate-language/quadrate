@@ -27,10 +27,10 @@ namespace Qd {
 			// Find or create alloca for this local
 			auto it = nativeLocalVariables.find(name);
 			if (it == nativeLocalVariables.end()) {
-				// Create alloca in entry block
+				// Create alloca in entry block with the value's type (i64 or f64)
 				llvm::Function* currentFn = builder->GetInsertBlock()->getParent();
 				llvm::IRBuilder<> tmpBuilder(&currentFn->getEntryBlock(), currentFn->getEntryBlock().begin());
-				auto* alloca = tmpBuilder.CreateAlloca(int64Ty, nullptr, name);
+				auto* alloca = tmpBuilder.CreateAlloca(val->getType(), nullptr, name);
 				nativeLocalVariables[name] = alloca;
 				it = nativeLocalVariables.find(name);
 			}

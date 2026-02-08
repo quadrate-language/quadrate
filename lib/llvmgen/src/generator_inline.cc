@@ -341,19 +341,82 @@ namespace Qd {
 		return value;
 	}
 
-	void LlvmGenerator::Impl::generateInlinePopIntToStorage(llvm::Value* ctx, llvm::Value* dst) {
-		// Inline pop for integer-only functions - stores directly to a qd_stack_element_t alloca
+	llvm::Value* LlvmGenerator::Impl::generateInlinePopFloat(llvm::Value* ctx) {
+		// Inline pop for float values - returns the popped f64 value
+		// The value union field is at offset 0 (same layout for i64 and f64)
 		auto sa = getStackAccess(ctx);
-		// Load top element value: data[size - 1].value
+		llvm::Value* topIdx = builder->CreateSub(sa.size, builder->getInt64(1), "top_idx");
+		llvm::Value* topElemPtr = builder->CreateGEP(stackElementTy, sa.data, topIdx, "top_elem");
+		llvm::Value* valuePtr = builder->CreateStructGEP(stackElementTy, topElemPtr, 0, "value_ptr");
+		llvm::Value* value = builder->CreateLoad(builder->getDoubleTy(), valuePtr, "pop_fvalue");
+		// Decrement size
+		llvm::Value* newSize = builder->CreateSub(sa.size, builder->getInt64(1), "new_size");
+		builder->CreateStore(newSize, sa.sizePtr);
+		return value;
+	}
+
+	void LlvmGenerator::Impl::generateInlinePushFloatValue(llvm::Value* ctx, llvm::Value* value) {
+		// Inline implementation of qd_push_f for runtime float values
+		llvm::Value* stPtr = builder->CreateStructGEP(contextStructTy, ctx, 0, "st_ptr");
+		llvm::Value* st = builder->CreateLoad(ptrTy, stPtr, "st");
+
+		llvm::Value* sizePtr = builder->CreateStructGEP(stackStructTy, st, 2, "size_ptr");
+		llvm::Value* size = builder->CreateLoad(int64Ty, sizePtr, "size");
+
+		// Skip overflow check for non-main functions (predictable stack usage)
+		if (!currentFunctionIsIntegerOnly || currentFunctionIsMain) {
+			llvm::Value* capacityPtr = builder->CreateStructGEP(stackStructTy, st, 1, "capacity_ptr");
+			llvm::Value* capacity = builder->CreateLoad(int64Ty, capacityPtr, "capacity");
+			llvm::Value* hasSpace = builder->CreateICmpULT(size, capacity, "has_space");
+
+			llvm::Function* currentFn = builder->GetInsertBlock()->getParent();
+			llvm::BasicBlock* overflowBB = llvm::BasicBlock::Create(*context, "pushf.overflow", currentFn);
+			llvm::BasicBlock* pushBB = llvm::BasicBlock::Create(*context, "pushf.do", currentFn);
+			builder->CreateCondBr(hasSpace, pushBB, overflowBB);
+
+			builder->SetInsertPoint(overflowBB);
+			emitFatalError(ctx, "Fatal error: Stack overflow (use -s to increase stack size)\n");
+
+			builder->SetInsertPoint(pushBB);
+		}
+
+		llvm::Value* dataPtr = builder->CreateStructGEP(stackStructTy, st, 0, "data_ptr");
+		llvm::Value* data = builder->CreateLoad(ptrTy, dataPtr, "data");
+
+		llvm::Value* elemPtr = builder->CreateGEP(stackElementTy, data, size, "elem_ptr");
+
+		// Store float value (union field at offset 0, same as integer)
+		llvm::Value* valuePtr = builder->CreateStructGEP(stackElementTy, elemPtr, 0, "value_ptr");
+		builder->CreateStore(value, valuePtr);
+
+		// Set type to float (QD_STACK_TYPE_FLOAT = 1)
+		llvm::Value* typePtr = builder->CreateStructGEP(stackElementTy, elemPtr, 1, "type_ptr");
+		builder->CreateStore(builder->getInt32(1), typePtr);
+
+		// Set is_error_tainted to false
+		llvm::Value* taintedPtr = builder->CreateStructGEP(stackElementTy, elemPtr, 2, "tainted_ptr");
+		builder->CreateStore(builder->getInt1(false), taintedPtr);
+
+		// Increment size
+		llvm::Value* newSize = builder->CreateAdd(size, builder->getInt64(1), "new_size");
+		builder->CreateStore(newSize, sizePtr);
+	}
+
+	void LlvmGenerator::Impl::generateInlinePopIntToStorage(llvm::Value* ctx, llvm::Value* dst) {
+		// Inline pop for numeric functions - stores directly to a qd_stack_element_t alloca
+		auto sa = getStackAccess(ctx);
+		// Load top element: data[size - 1]
 		llvm::Value* topIdx = builder->CreateSub(sa.size, builder->getInt64(1), "top_idx");
 		llvm::Value* topElemPtr = builder->CreateGEP(stackElementTy, sa.data, topIdx, "top_elem");
 		llvm::Value* valuePtr = builder->CreateStructGEP(stackElementTy, topElemPtr, 0, "value_ptr");
 		llvm::Value* value = builder->CreateLoad(int64Ty, valuePtr, "pop_value");
+		llvm::Value* srcTypePtr = builder->CreateStructGEP(stackElementTy, topElemPtr, 1, "src_type_ptr");
+		llvm::Value* srcType = builder->CreateLoad(int32Ty, srcTypePtr, "src_type");
 		// Store to destination (qd_stack_element_t: { i64 value, i32 type, i1 tainted })
 		llvm::Value* dstValuePtr = builder->CreateStructGEP(stackElementTy, dst, 0, "dst_value_ptr");
 		builder->CreateStore(value, dstValuePtr);
 		llvm::Value* dstTypePtr = builder->CreateStructGEP(stackElementTy, dst, 1, "dst_type_ptr");
-		builder->CreateStore(builder->getInt32(0), dstTypePtr);
+		builder->CreateStore(srcType, dstTypePtr);
 		llvm::Value* dstTaintedPtr = builder->CreateStructGEP(stackElementTy, dst, 2, "dst_tainted_ptr");
 		builder->CreateStore(builder->getInt1(false), dstTaintedPtr);
 		// Decrement size

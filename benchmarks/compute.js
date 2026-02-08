@@ -68,6 +68,48 @@ function tak(x, y, z) {
     return tak(tak(x - 1, y, z), tak(y - 1, z, x), tak(z - 1, x, y));
 }
 
+function gcd(a, b) {
+    while (b !== 0) {
+        const t = a % b;
+        a = b;
+        b = t;
+    }
+    return a;
+}
+
+function eulerTotient(n) {
+    let count = 0;
+    for (let i = 1; i < n; i++) {
+        if (gcd(i, n) === 1) count++;
+    }
+    return count;
+}
+
+function sumTotients(limit) {
+    let total = 0;
+    for (let i = 1; i <= limit; i++) {
+        total += eulerTotient(i);
+    }
+    return total;
+}
+
+function digitSum(n) {
+    let sum = 0;
+    while (n > 0) {
+        sum += n % 10;
+        n = Math.floor(n / 10);
+    }
+    return sum;
+}
+
+function totalDigitSum(limit) {
+    let total = 0;
+    for (let i = 1; i <= limit; i++) {
+        total += digitSum(i);
+    }
+    return total;
+}
+
 function main() {
     console.log("=== Node.js Compute Benchmarks ===");
 
@@ -113,6 +155,23 @@ function main() {
     result = tak(x, y, z);
     elapsed = process.hrtime.bigint() - start;
     console.log(`Tak(${x}, ${y}, ${z}):`);
+    console.log(`  Time: ${elapsed / 1000000n} ms`);
+    console.log(`  Result: ${result}`);
+    // Benchmark 6: Euler totient sum
+    const limit6 = 10000;
+    start = process.hrtime.bigint();
+    result = sumTotients(limit6);
+    elapsed = process.hrtime.bigint() - start;
+    console.log(`Euler totient sum(1..${limit6}):`);
+    console.log(`  Time: ${elapsed / 1000000n} ms`);
+    console.log(`  Result: ${result}`);
+
+    // Benchmark 7: Digit sum
+    const limit7 = 10000000;
+    start = process.hrtime.bigint();
+    result = totalDigitSum(limit7);
+    elapsed = process.hrtime.bigint() - start;
+    console.log(`Digit sum(1..${limit7}):`);
     console.log(`  Time: ${elapsed / 1000000n} ms`);
     console.log(`  Result: ${result}`);
 }

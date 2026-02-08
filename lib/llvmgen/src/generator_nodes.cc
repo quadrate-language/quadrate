@@ -42,7 +42,11 @@ namespace Qd {
 				dval = 0.0;
 			}
 			auto val = llvm::ConstantFP::get(builder->getDoubleTy(), dval);
-			builder->CreateCall(pushFloatFn, {ctx, val});
+			if (useCompileTimeStack) {
+				compileTimeStack.push_back(val);
+			} else {
+				builder->CreateCall(pushFloatFn, {ctx, val});
+			}
 			lastPushedType = LastPushedType::FLOAT;
 			break;
 		}
@@ -193,8 +197,9 @@ namespace Qd {
 		if (useCompileTimeStack) {
 			auto nativeLocalIt = nativeLocalVariables.find(name);
 			if (nativeLocalIt != nativeLocalVariables.end()) {
-				// Load from i64 alloca and push to compile-time stack
-				llvm::Value* val = builder->CreateLoad(int64Ty, nativeLocalIt->second, name);
+				// Load from typed alloca and push to compile-time stack
+				llvm::Value* val =
+						builder->CreateLoad(nativeLocalIt->second->getAllocatedType(), nativeLocalIt->second, name);
 				compileTimeStack.push_back(val);
 				lastIdentifierPushed = name;
 				return;
@@ -214,12 +219,32 @@ namespace Qd {
 				storagePtr = builder->CreateLoad(ptrTy, localAlloca, name + "_storage");
 			}
 
-			// Fast path for integer-only functions with non-captured locals
-			// Skip type switch - we know all locals are integers
+			// Fast path for numeric functions with non-captured locals
+			// Check stored type to handle both int and float locals
 			if (currentFunctionIsIntegerOnly && !isIndirect) {
-				llvm::Value* valuePtr = builder->CreateStructGEP(stackElementTy, storagePtr, 0, name + "_value_ptr");
-				llvm::Value* intVal = builder->CreateLoad(int64Ty, valuePtr, name + "_i");
-				generateInlinePushIntValue(ctx, intVal);
+				llvm::Value* typePtr = builder->CreateStructGEP(stackElementTy, storagePtr, 1, name + "_type_ptr");
+				llvm::Value* typeVal = builder->CreateLoad(int32Ty, typePtr, name + "_type");
+				llvm::Value* isFloat = builder->CreateICmpEQ(typeVal, builder->getInt32(1), name + "_is_float");
+
+				llvm::Function* currentFn = builder->GetInsertBlock()->getParent();
+				llvm::BasicBlock* floatBB = llvm::BasicBlock::Create(*context, name + "_float_load", currentFn);
+				llvm::BasicBlock* intBB = llvm::BasicBlock::Create(*context, name + "_int_load", currentFn);
+				llvm::BasicBlock* contBB = llvm::BasicBlock::Create(*context, name + "_load_done", currentFn);
+				builder->CreateCondBr(isFloat, floatBB, intBB);
+
+				builder->SetInsertPoint(floatBB);
+				llvm::Value* fValuePtr = builder->CreateStructGEP(stackElementTy, storagePtr, 0, name + "_fvalue_ptr");
+				llvm::Value* fVal = builder->CreateLoad(builder->getDoubleTy(), fValuePtr, name + "_f");
+				generateInlinePushFloatValue(ctx, fVal);
+				builder->CreateBr(contBB);
+
+				builder->SetInsertPoint(intBB);
+				llvm::Value* iValuePtr = builder->CreateStructGEP(stackElementTy, storagePtr, 0, name + "_ivalue_ptr");
+				llvm::Value* iVal = builder->CreateLoad(int64Ty, iValuePtr, name + "_i");
+				generateInlinePushIntValue(ctx, iVal);
+				builder->CreateBr(contBB);
+
+				builder->SetInsertPoint(contBB);
 				lastIdentifierPushed = name;
 				return;
 			}
@@ -318,13 +343,15 @@ namespace Qd {
 		if (constIt != moduleConstants.end()) {
 			const std::string& value = constIt->second;
 
-			// Compile-time stack path for integer constants
+			// Compile-time stack path for numeric constants
 			if (useCompileTimeStack) {
-				// Only handle integer constants in compile-time stack mode
-				if (value.empty() || (value.size() >= 2 && value.front() == '"') ||
-						value.find('.') != std::string::npos) {
-					// String or float constant - shouldn't happen in integer-only functions
-					// Fall through to runtime path
+				if (value.empty() || (value.size() >= 2 && value.front() == '"')) {
+					// String constant - fall through to runtime path
+				} else if (value.find('.') != std::string::npos) {
+					// Float constant
+					double floatValue = std::stod(value);
+					compileTimeStack.push_back(llvm::ConstantFP::get(builder->getDoubleTy(), floatValue));
+					return;
 				} else {
 					int64_t intValue = 0;
 					safeParseInt64(value, intValue);

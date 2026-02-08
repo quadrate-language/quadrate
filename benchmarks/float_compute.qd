@@ -1,0 +1,82 @@
+use fmt
+use time
+
+// Basel problem: sum of 1/i^2 for i=1..n
+fn sum_inv_squares(n:i64 -- result:f64) {
+	-> n
+	0.0 -> sum
+	1 n 1 for i {
+		i cast<f64> -> fi
+		sum 1.0 fi fi * / + -> sum
+	}
+	sum
+}
+
+// Leibniz formula for pi: pi/4 = 1 - 1/3 + 1/5 - 1/7 + ...
+fn leibniz_pi(n:i64 -- result:f64) {
+	-> n
+	0.0 -> sum
+	1.0 -> sign
+	1 n 1 for i {
+		i 2 * 1 - cast<f64> -> denom
+		sum sign denom / + -> sum
+		sign neg -> sign
+	}
+	sum 4.0 *
+}
+
+// Mandelbrot escape iteration
+fn mandelbrot_iter(cr:f64 ci:f64 max_iter:i64 -- iters:i64) {
+	-> max_iter -> ci -> cr
+	0.0 -> zr
+	0.0 -> zi
+	max_iter -> result
+	0 max_iter 1 for i {
+		zr zr * zi zi * - cr + -> tr
+		2.0 zr * zi * ci + -> zi
+		tr -> zr
+		zr zr * zi zi * + 4.0 gt if {
+			i -> result
+			break
+		}
+	}
+	result
+}
+
+fn main() {
+	"=== Quadrate Float Benchmarks ===\n" fmt::printf
+
+	// Benchmark 1: Basel problem
+	10000000 -> n
+	time::now -> start
+	n sum_inv_squares -> result_f
+	time::now start - -> elapsed
+	n "Basel sum(1/i^2, 1..%d):\n" fmt::printf
+	elapsed 1000000 div "  Time: %d ms\n" fmt::printf
+	result_f "  Result: %.10f\n" fmt::printf
+
+	// Benchmark 2: Leibniz pi
+	10000000 -> n
+	time::now -> start
+	n leibniz_pi -> result_f
+	time::now start - -> elapsed
+	n "Leibniz pi(%d terms):\n" fmt::printf
+	elapsed 1000000 div "  Time: %d ms\n" fmt::printf
+	result_f "  Result: %.10f\n" fmt::printf
+
+	// Benchmark 3: Mandelbrot grid
+	200 -> size
+	time::now -> start
+	0 -> total
+	0 size 1 for y {
+		0 size 1 for x {
+			x cast<f64> 100.0 - 50.0 / -> cr
+			y cast<f64> 100.0 - 50.0 / -> ci
+			cr ci 100 mandelbrot_iter total + -> total
+		}
+	}
+	time::now start - -> elapsed
+	size size "Mandelbrot %dx%d:\n" fmt::printf
+	elapsed 1000000 div "  Time: %d ms\n" fmt::printf
+	total "  Result: %d\n" fmt::printf
+}

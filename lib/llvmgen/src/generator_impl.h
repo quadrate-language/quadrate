@@ -219,13 +219,20 @@ namespace Qd {
 		std::set<std::string> importedCFunctions;
 		std::map<std::string, std::string> functionReturnStructType;
 
-		// Native calling convention for integer-only functions
+		// Native calling convention for optimized functions
 		// Maps register name (e.g. "fib") to the native LLVM function
 		std::map<std::string, llvm::Function*> nativeFunctions;
+
+		enum class NativeParamType {
+			I64,
+			F64
+		};
 
 		struct NativeFuncInfo {
 			size_t inputCount;
 			size_t outputCount; // 0 or 1
+			std::vector<NativeParamType> inputTypes;
+			NativeParamType outputType = NativeParamType::I64;
 		};
 
 		std::map<std::string, NativeFuncInfo> nativeFuncInfo;
@@ -483,8 +490,10 @@ namespace Qd {
 		void generateInlineDrop(llvm::Value* ctx);
 		void generateInlineOver(llvm::Value* ctx);
 		void generateInlineRot(llvm::Value* ctx);
-		llvm::Value* generateInlinePopInt(llvm::Value* ctx);					// Returns popped i64 value
-		void generateInlinePopIntToStorage(llvm::Value* ctx, llvm::Value* dst); // Pops i64 and stores to dst alloca
+		llvm::Value* generateInlinePopInt(llvm::Value* ctx);					 // Returns popped i64 value
+		llvm::Value* generateInlinePopFloat(llvm::Value* ctx);					 // Returns popped f64 value
+		void generateInlinePushFloatValue(llvm::Value* ctx, llvm::Value* value); // Pushes f64 value to runtime stack
+		void generateInlinePopIntToStorage(llvm::Value* ctx, llvm::Value* dst);	 // Pops i64 and stores to dst alloca
 
 		// Type-aware operation helpers
 		struct TypeAwareOpContext {
@@ -520,7 +529,8 @@ namespace Qd {
 
 		// Analysis helpers
 		void collectLocalNames(IAstNode* node, std::set<std::string>& names);
-		bool analyzeIsBodyIntegerOnly(IAstNode* node, const std::set<std::string>& localNames);
+		bool analyzeIsBodyNativeEligible(
+				IAstNode* node, const std::set<std::string>& localNames, bool allowFloat = true);
 		bool analyzeCalleesAllNative(IAstNode* node);
 	};
 

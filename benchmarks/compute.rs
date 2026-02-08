@@ -72,6 +72,48 @@ fn tak(x: i64, y: i64, z: i64) -> i64 {
     tak(tak(x - 1, y, z), tak(y - 1, z, x), tak(z - 1, x, y))
 }
 
+fn gcd(mut a: i64, mut b: i64) -> i64 {
+    while b != 0 {
+        let t = a % b;
+        a = b;
+        b = t;
+    }
+    a
+}
+
+fn euler_totient(n: i64) -> i64 {
+    let mut count: i64 = 0;
+    for i in 1..n {
+        if gcd(i, n) == 1 { count += 1; }
+    }
+    count
+}
+
+fn sum_totients(limit: i64) -> i64 {
+    let mut total: i64 = 0;
+    for i in 1..=limit {
+        total += euler_totient(i);
+    }
+    total
+}
+
+fn digit_sum(mut n: i64) -> i64 {
+    let mut sum: i64 = 0;
+    while n > 0 {
+        sum += n % 10;
+        n /= 10;
+    }
+    sum
+}
+
+fn total_digit_sum(limit: i64) -> i64 {
+    let mut total: i64 = 0;
+    for i in 1..=limit {
+        total += digit_sum(i);
+    }
+    total
+}
+
 fn main() {
     println!("=== Rust Compute Benchmarks ===");
 
@@ -117,6 +159,24 @@ fn main() {
     let result = tak(x, y, z);
     let elapsed = start.elapsed();
     println!("Tak({}, {}, {}):", x, y, z);
+    println!("  Time: {} ms", elapsed.as_millis());
+    println!("  Result: {}", result);
+
+    // Benchmark 6: Euler totient sum
+    let limit: i64 = 10000;
+    let start = Instant::now();
+    let result = sum_totients(limit);
+    let elapsed = start.elapsed();
+    println!("Euler totient sum(1..{}):", limit);
+    println!("  Time: {} ms", elapsed.as_millis());
+    println!("  Result: {}", result);
+
+    // Benchmark 7: Digit sum
+    let limit: i64 = 10000000;
+    let start = Instant::now();
+    let result = total_digit_sum(limit);
+    let elapsed = start.elapsed();
+    println!("Digit sum(1..{}):", limit);
     println!("  Time: {} ms", elapsed.as_millis());
     println!("  Result: {}", result);
 }

@@ -8,23 +8,36 @@ namespace Qd {
 	void LlvmGenerator::Impl::generateInstruction(AstNodeInstruction* inst, llvm::Value* ctx) {
 		const std::string& name = inst->name();
 
-		// Compile-time stack path for native integer-only functions
+		// Compile-time stack path for native functions
 		if (useCompileTimeStack) {
 			// Check if instruction name shadows a native local variable
 			auto nativeLocalIt = nativeLocalVariables.find(name);
 			if (nativeLocalIt != nativeLocalVariables.end()) {
-				llvm::Value* val = builder->CreateLoad(int64Ty, nativeLocalIt->second, name);
+				llvm::Value* val =
+						builder->CreateLoad(nativeLocalIt->second->getAllocatedType(), nativeLocalIt->second, name);
 				compileTimeStack.push_back(val);
 				return;
 			}
 
-			// Arithmetic operations
+			// Arithmetic operations (type-aware: check operand type for int vs float)
 			if (name == "+" || name == "add") {
 				llvm::Value* b = compileTimeStack.back();
 				compileTimeStack.pop_back();
 				llvm::Value* a = compileTimeStack.back();
 				compileTimeStack.pop_back();
-				compileTimeStack.push_back(builder->CreateNSWAdd(a, b, "add"));
+				// Auto-promote: if either operand is double, promote the other
+				bool aIsDouble = a->getType()->isDoubleTy();
+				bool bIsDouble = b->getType()->isDoubleTy();
+				if (aIsDouble && !bIsDouble) {
+					b = builder->CreateSIToFP(b, builder->getDoubleTy(), "promo_b");
+				} else if (!aIsDouble && bIsDouble) {
+					a = builder->CreateSIToFP(a, builder->getDoubleTy(), "promo_a");
+				}
+				if (a->getType()->isDoubleTy()) {
+					compileTimeStack.push_back(builder->CreateFAdd(a, b, "fadd"));
+				} else {
+					compileTimeStack.push_back(builder->CreateNSWAdd(a, b, "add"));
+				}
 				return;
 			}
 			if (name == "-" || name == "sub") {
@@ -32,7 +45,19 @@ namespace Qd {
 				compileTimeStack.pop_back();
 				llvm::Value* a = compileTimeStack.back();
 				compileTimeStack.pop_back();
-				compileTimeStack.push_back(builder->CreateNSWSub(a, b, "sub"));
+				// Auto-promote: if either operand is double, promote the other
+				bool aIsDouble = a->getType()->isDoubleTy();
+				bool bIsDouble = b->getType()->isDoubleTy();
+				if (aIsDouble && !bIsDouble) {
+					b = builder->CreateSIToFP(b, builder->getDoubleTy(), "promo_b");
+				} else if (!aIsDouble && bIsDouble) {
+					a = builder->CreateSIToFP(a, builder->getDoubleTy(), "promo_a");
+				}
+				if (a->getType()->isDoubleTy()) {
+					compileTimeStack.push_back(builder->CreateFSub(a, b, "fsub"));
+				} else {
+					compileTimeStack.push_back(builder->CreateNSWSub(a, b, "sub"));
+				}
 				return;
 			}
 			if (name == "*" || name == "mul") {
@@ -40,7 +65,19 @@ namespace Qd {
 				compileTimeStack.pop_back();
 				llvm::Value* a = compileTimeStack.back();
 				compileTimeStack.pop_back();
-				compileTimeStack.push_back(builder->CreateNSWMul(a, b, "mul"));
+				// Auto-promote: if either operand is double, promote the other
+				bool aIsDouble = a->getType()->isDoubleTy();
+				bool bIsDouble = b->getType()->isDoubleTy();
+				if (aIsDouble && !bIsDouble) {
+					b = builder->CreateSIToFP(b, builder->getDoubleTy(), "promo_b");
+				} else if (!aIsDouble && bIsDouble) {
+					a = builder->CreateSIToFP(a, builder->getDoubleTy(), "promo_a");
+				}
+				if (a->getType()->isDoubleTy()) {
+					compileTimeStack.push_back(builder->CreateFMul(a, b, "fmul"));
+				} else {
+					compileTimeStack.push_back(builder->CreateNSWMul(a, b, "mul"));
+				}
 				return;
 			}
 			if (name == "/" || name == "div") {
@@ -48,7 +85,19 @@ namespace Qd {
 				compileTimeStack.pop_back();
 				llvm::Value* a = compileTimeStack.back();
 				compileTimeStack.pop_back();
-				compileTimeStack.push_back(builder->CreateSDiv(a, b, "div"));
+				// Auto-promote: if either operand is double, promote the other
+				bool aIsDouble = a->getType()->isDoubleTy();
+				bool bIsDouble = b->getType()->isDoubleTy();
+				if (aIsDouble && !bIsDouble) {
+					b = builder->CreateSIToFP(b, builder->getDoubleTy(), "promo_b");
+				} else if (!aIsDouble && bIsDouble) {
+					a = builder->CreateSIToFP(a, builder->getDoubleTy(), "promo_a");
+				}
+				if (a->getType()->isDoubleTy()) {
+					compileTimeStack.push_back(builder->CreateFDiv(a, b, "fdiv"));
+				} else {
+					compileTimeStack.push_back(builder->CreateSDiv(a, b, "div"));
+				}
 				return;
 			}
 			if (name == "%" || name == "mod") {
@@ -56,16 +105,37 @@ namespace Qd {
 				compileTimeStack.pop_back();
 				llvm::Value* a = compileTimeStack.back();
 				compileTimeStack.pop_back();
-				compileTimeStack.push_back(builder->CreateSRem(a, b, "mod"));
+				// Auto-promote: if either operand is double, promote the other
+				bool aIsDouble = a->getType()->isDoubleTy();
+				bool bIsDouble = b->getType()->isDoubleTy();
+				if (aIsDouble && !bIsDouble) {
+					b = builder->CreateSIToFP(b, builder->getDoubleTy(), "promo_b");
+				} else if (!aIsDouble && bIsDouble) {
+					a = builder->CreateSIToFP(a, builder->getDoubleTy(), "promo_a");
+				}
+				if (a->getType()->isDoubleTy()) {
+					compileTimeStack.push_back(builder->CreateFRem(a, b, "fmod"));
+				} else {
+					compileTimeStack.push_back(builder->CreateSRem(a, b, "mod"));
+				}
 				return;
 			}
-			// Comparison operations
+			// Comparison operations (always return i64)
 			if (name == "<" || name == "lt") {
 				llvm::Value* b = compileTimeStack.back();
 				compileTimeStack.pop_back();
 				llvm::Value* a = compileTimeStack.back();
 				compileTimeStack.pop_back();
-				llvm::Value* cmp = builder->CreateICmpSLT(a, b, "lt");
+				// Auto-promote: if either operand is double, promote the other
+				bool aIsDouble = a->getType()->isDoubleTy();
+				bool bIsDouble = b->getType()->isDoubleTy();
+				if (aIsDouble && !bIsDouble) {
+					b = builder->CreateSIToFP(b, builder->getDoubleTy(), "promo_b");
+				} else if (!aIsDouble && bIsDouble) {
+					a = builder->CreateSIToFP(a, builder->getDoubleTy(), "promo_a");
+				}
+				llvm::Value* cmp = a->getType()->isDoubleTy() ? builder->CreateFCmpOLT(a, b, "flt")
+															  : builder->CreateICmpSLT(a, b, "lt");
 				compileTimeStack.push_back(builder->CreateZExt(cmp, int64Ty, "lt_i64"));
 				return;
 			}
@@ -74,7 +144,16 @@ namespace Qd {
 				compileTimeStack.pop_back();
 				llvm::Value* a = compileTimeStack.back();
 				compileTimeStack.pop_back();
-				llvm::Value* cmp = builder->CreateICmpSGT(a, b, "gt");
+				// Auto-promote: if either operand is double, promote the other
+				bool aIsDouble = a->getType()->isDoubleTy();
+				bool bIsDouble = b->getType()->isDoubleTy();
+				if (aIsDouble && !bIsDouble) {
+					b = builder->CreateSIToFP(b, builder->getDoubleTy(), "promo_b");
+				} else if (!aIsDouble && bIsDouble) {
+					a = builder->CreateSIToFP(a, builder->getDoubleTy(), "promo_a");
+				}
+				llvm::Value* cmp = a->getType()->isDoubleTy() ? builder->CreateFCmpOGT(a, b, "fgt")
+															  : builder->CreateICmpSGT(a, b, "gt");
 				compileTimeStack.push_back(builder->CreateZExt(cmp, int64Ty, "gt_i64"));
 				return;
 			}
@@ -83,7 +162,16 @@ namespace Qd {
 				compileTimeStack.pop_back();
 				llvm::Value* a = compileTimeStack.back();
 				compileTimeStack.pop_back();
-				llvm::Value* cmp = builder->CreateICmpEQ(a, b, "eq");
+				// Auto-promote: if either operand is double, promote the other
+				bool aIsDouble = a->getType()->isDoubleTy();
+				bool bIsDouble = b->getType()->isDoubleTy();
+				if (aIsDouble && !bIsDouble) {
+					b = builder->CreateSIToFP(b, builder->getDoubleTy(), "promo_b");
+				} else if (!aIsDouble && bIsDouble) {
+					a = builder->CreateSIToFP(a, builder->getDoubleTy(), "promo_a");
+				}
+				llvm::Value* cmp = a->getType()->isDoubleTy() ? builder->CreateFCmpOEQ(a, b, "feq")
+															  : builder->CreateICmpEQ(a, b, "eq");
 				compileTimeStack.push_back(builder->CreateZExt(cmp, int64Ty, "eq_i64"));
 				return;
 			}
@@ -92,7 +180,16 @@ namespace Qd {
 				compileTimeStack.pop_back();
 				llvm::Value* a = compileTimeStack.back();
 				compileTimeStack.pop_back();
-				llvm::Value* cmp = builder->CreateICmpNE(a, b, "ne");
+				// Auto-promote: if either operand is double, promote the other
+				bool aIsDouble = a->getType()->isDoubleTy();
+				bool bIsDouble = b->getType()->isDoubleTy();
+				if (aIsDouble && !bIsDouble) {
+					b = builder->CreateSIToFP(b, builder->getDoubleTy(), "promo_b");
+				} else if (!aIsDouble && bIsDouble) {
+					a = builder->CreateSIToFP(a, builder->getDoubleTy(), "promo_a");
+				}
+				llvm::Value* cmp = a->getType()->isDoubleTy() ? builder->CreateFCmpONE(a, b, "fne")
+															  : builder->CreateICmpNE(a, b, "ne");
 				compileTimeStack.push_back(builder->CreateZExt(cmp, int64Ty, "ne_i64"));
 				return;
 			}
@@ -101,7 +198,16 @@ namespace Qd {
 				compileTimeStack.pop_back();
 				llvm::Value* a = compileTimeStack.back();
 				compileTimeStack.pop_back();
-				llvm::Value* cmp = builder->CreateICmpSLE(a, b, "le");
+				// Auto-promote: if either operand is double, promote the other
+				bool aIsDouble = a->getType()->isDoubleTy();
+				bool bIsDouble = b->getType()->isDoubleTy();
+				if (aIsDouble && !bIsDouble) {
+					b = builder->CreateSIToFP(b, builder->getDoubleTy(), "promo_b");
+				} else if (!aIsDouble && bIsDouble) {
+					a = builder->CreateSIToFP(a, builder->getDoubleTy(), "promo_a");
+				}
+				llvm::Value* cmp = a->getType()->isDoubleTy() ? builder->CreateFCmpOLE(a, b, "fle")
+															  : builder->CreateICmpSLE(a, b, "le");
 				compileTimeStack.push_back(builder->CreateZExt(cmp, int64Ty, "le_i64"));
 				return;
 			}
@@ -110,11 +216,20 @@ namespace Qd {
 				compileTimeStack.pop_back();
 				llvm::Value* a = compileTimeStack.back();
 				compileTimeStack.pop_back();
-				llvm::Value* cmp = builder->CreateICmpSGE(a, b, "ge");
+				// Auto-promote: if either operand is double, promote the other
+				bool aIsDouble = a->getType()->isDoubleTy();
+				bool bIsDouble = b->getType()->isDoubleTy();
+				if (aIsDouble && !bIsDouble) {
+					b = builder->CreateSIToFP(b, builder->getDoubleTy(), "promo_b");
+				} else if (!aIsDouble && bIsDouble) {
+					a = builder->CreateSIToFP(a, builder->getDoubleTy(), "promo_a");
+				}
+				llvm::Value* cmp = a->getType()->isDoubleTy() ? builder->CreateFCmpOGE(a, b, "fge")
+															  : builder->CreateICmpSGE(a, b, "ge");
 				compileTimeStack.push_back(builder->CreateZExt(cmp, int64Ty, "ge_i64"));
 				return;
 			}
-			// Bitwise operations
+			// Bitwise operations (integer-only, no float changes needed)
 			if (name == "and") {
 				llvm::Value* b = compileTimeStack.back();
 				compileTimeStack.pop_back();
@@ -161,23 +276,37 @@ namespace Qd {
 				compileTimeStack.push_back(builder->CreateAShr(a, b, "shr"));
 				return;
 			}
-			// Increment/decrement
+			// Increment/decrement (type-aware)
 			if (name == "++") {
 				llvm::Value* a = compileTimeStack.back();
 				compileTimeStack.pop_back();
-				compileTimeStack.push_back(builder->CreateNSWAdd(a, builder->getInt64(1), "inc"));
+				if (a->getType()->isDoubleTy()) {
+					compileTimeStack.push_back(
+							builder->CreateFAdd(a, llvm::ConstantFP::get(builder->getDoubleTy(), 1.0), "finc"));
+				} else {
+					compileTimeStack.push_back(builder->CreateNSWAdd(a, builder->getInt64(1), "inc"));
+				}
 				return;
 			}
 			if (name == "--") {
 				llvm::Value* a = compileTimeStack.back();
 				compileTimeStack.pop_back();
-				compileTimeStack.push_back(builder->CreateNSWSub(a, builder->getInt64(1), "dec"));
+				if (a->getType()->isDoubleTy()) {
+					compileTimeStack.push_back(
+							builder->CreateFSub(a, llvm::ConstantFP::get(builder->getDoubleTy(), 1.0), "fdec"));
+				} else {
+					compileTimeStack.push_back(builder->CreateNSWSub(a, builder->getInt64(1), "dec"));
+				}
 				return;
 			}
 			if (name == "neg") {
 				llvm::Value* a = compileTimeStack.back();
 				compileTimeStack.pop_back();
-				compileTimeStack.push_back(builder->CreateNeg(a, "neg"));
+				if (a->getType()->isDoubleTy()) {
+					compileTimeStack.push_back(builder->CreateFNeg(a, "fneg"));
+				} else {
+					compileTimeStack.push_back(builder->CreateNeg(a, "neg"));
+				}
 				return;
 			}
 			// Stack operations
@@ -242,8 +371,11 @@ namespace Qd {
 			if (name == "print") {
 				llvm::Value* val = compileTimeStack.back();
 				compileTimeStack.pop_back();
-				generateInlinePushIntValue(ctx, val);
-				// Call qd_print (maps to "print" -> "qd_print")
+				if (val->getType()->isDoubleTy()) {
+					generateInlinePushFloatValue(ctx, val);
+				} else {
+					generateInlinePushIntValue(ctx, val);
+				}
 				llvm::Function* printFn = module->getFunction("qd_print");
 				if (!printFn) {
 					auto fnTy = llvm::FunctionType::get(execResultTy, {contextPtrTy}, false);
@@ -428,6 +560,24 @@ namespace Qd {
 		// Handle generic cast<T> instruction
 		if (name == "cast" && inst->hasTypeParam()) {
 			const std::string& typeParam = inst->typeParam();
+
+			// Compile-time stack path for numeric casts
+			if (useCompileTimeStack) {
+				llvm::Value* val = compileTimeStack.back();
+				compileTimeStack.pop_back();
+				if (typeParam == "f64" || typeParam == "f" || typeParam == "float" || typeParam == "float64") {
+					if (!val->getType()->isDoubleTy()) {
+						val = builder->CreateSIToFP(val, builder->getDoubleTy(), "cast_f64");
+					}
+				} else if (typeParam == "i64" || typeParam == "i" || typeParam == "int" || typeParam == "int64") {
+					if (val->getType()->isDoubleTy()) {
+						val = builder->CreateFPToSI(val, int64Ty, "cast_i64");
+					}
+				}
+				compileTimeStack.push_back(val);
+				return;
+			}
+
 			std::string fnName;
 			if (typeParam == "i64" || typeParam == "i32" || typeParam == "i16" || typeParam == "i8" ||
 					typeParam == "u64" || typeParam == "u32" || typeParam == "u16" || typeParam == "u8") {

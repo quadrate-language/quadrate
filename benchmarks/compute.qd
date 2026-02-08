@@ -121,6 +121,62 @@ fn tak(x:i64 y:i64 z:i64 -- result:i64) {
 	}
 }
 
+// GCD using Euclidean algorithm
+fn gcd(a:i64 b:i64 -- result:i64) {
+	-> b -> a
+	b 0 neq while {
+		a b mod -> t
+		b -> a
+		t -> b
+		b 0 neq
+	}
+	a
+}
+
+// Euler's totient: count integers 1..n-1 coprime to n
+fn euler_totient(n:i64 -- count:i64) {
+	-> n
+	0 -> count
+	1 n 1 for i {
+		i n gcd 1 eq if {
+			count 1 add -> count
+		}
+	}
+	count
+}
+
+// Sum of totients 1..limit
+fn sum_totients(limit:i64 -- total:i64) {
+	-> limit
+	0 -> total
+	1 limit 1 add 1 for i {
+		i euler_totient total add -> total
+	}
+	total
+}
+
+// Sum of digits of n
+fn digit_sum(n:i64 -- sum:i64) {
+	-> n
+	0 -> sum
+	n 0 gt while {
+		n 10 mod sum add -> sum
+		n 10 div -> n
+		n 0 gt
+	}
+	sum
+}
+
+// Total digit sum from 1 to limit
+fn total_digit_sum(limit:i64 -- total:i64) {
+	-> limit
+	0 -> total
+	1 limit 1 add 1 for i {
+		i digit_sum total add -> total
+	}
+	total
+}
+
 fn main() {
 	"=== Quadrate Compute Benchmarks ===\n" fmt::printf
 
@@ -169,6 +225,24 @@ fn main() {
 	x y z tak -> result
 	time::now start - -> elapsed
 	x y z "Tak(%d, %d, %d):\n" fmt::printf
+	elapsed 1000000 div "  Time: %d ms\n" fmt::printf
+	result "  Result: %d\n" fmt::printf
+
+	// Benchmark 6: Euler totient sum
+	10000 -> limit
+	time::now -> start
+	limit sum_totients -> result
+	time::now start - -> elapsed
+	limit "Euler totient sum(1..%d):\n" fmt::printf
+	elapsed 1000000 div "  Time: %d ms\n" fmt::printf
+	result "  Result: %d\n" fmt::printf
+
+	// Benchmark 7: Digit sum
+	10000000 -> limit
+	time::now -> start
+	limit total_digit_sum -> result
+	time::now start - -> elapsed
+	limit "Digit sum(1..%d):\n" fmt::printf
 	elapsed 1000000 div "  Time: %d ms\n" fmt::printf
 	result "  Result: %d\n" fmt::printf
 }

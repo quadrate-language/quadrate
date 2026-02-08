@@ -72,6 +72,48 @@ int64_t tak(int64_t x, int64_t y, int64_t z) {
     return tak(tak(x - 1, y, z), tak(y - 1, z, x), tak(z - 1, x, y));
 }
 
+int64_t gcd(int64_t a, int64_t b) {
+    while (b != 0) {
+        int64_t t = a % b;
+        a = b;
+        b = t;
+    }
+    return a;
+}
+
+int64_t euler_totient(int64_t n) {
+    int64_t count = 0;
+    for (int64_t i = 1; i < n; i++) {
+        if (gcd(i, n) == 1) count++;
+    }
+    return count;
+}
+
+int64_t sum_totients(int64_t limit) {
+    int64_t total = 0;
+    for (int64_t i = 1; i <= limit; i++) {
+        total += euler_totient(i);
+    }
+    return total;
+}
+
+int64_t digit_sum(int64_t n) {
+    int64_t sum = 0;
+    while (n > 0) {
+        sum += n % 10;
+        n /= 10;
+    }
+    return sum;
+}
+
+int64_t total_digit_sum(int64_t limit) {
+    int64_t total = 0;
+    for (int64_t i = 1; i <= limit; i++) {
+        total += digit_sum(i);
+    }
+    return total;
+}
+
 int64_t get_time_ns() {
     struct timespec ts;
     clock_gettime(CLOCK_MONOTONIC, &ts);
@@ -123,6 +165,24 @@ int main() {
     result = tak(x, y, z);
     elapsed = get_time_ns() - start;
     printf("Tak(%ld, %ld, %ld):\n", x, y, z);
+    printf("  Time: %ld ms\n", elapsed / 1000000);
+    printf("  Result: %ld\n", result);
+
+    // Benchmark 6: Euler totient sum
+    limit = 10000;
+    start = get_time_ns();
+    result = sum_totients(limit);
+    elapsed = get_time_ns() - start;
+    printf("Euler totient sum(1..%ld):\n", limit);
+    printf("  Time: %ld ms\n", elapsed / 1000000);
+    printf("  Result: %ld\n", result);
+
+    // Benchmark 7: Digit sum
+    limit = 10000000;
+    start = get_time_ns();
+    result = total_digit_sum(limit);
+    elapsed = get_time_ns() - start;
+    printf("Digit sum(1..%ld):\n", limit);
     printf("  Time: %ld ms\n", elapsed / 1000000);
     printf("  Result: %ld\n", result);
 

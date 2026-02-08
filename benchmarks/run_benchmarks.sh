@@ -82,6 +82,12 @@ if [ -f benchmarks/run_compute_benchmark.sh ]; then
     echo ""
 fi
 
+# Run Float Compute Benchmarks
+if [ -f benchmarks/run_float_benchmark.sh ]; then
+    ./benchmarks/run_float_benchmark.sh
+    echo ""
+fi
+
 echo "=========================================="
 echo "  Benchmark Complete"
 echo "=========================================="

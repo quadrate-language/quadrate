@@ -67,6 +67,37 @@ def tak(x, y, z):
         return z
     return tak(tak(x - 1, y, z), tak(y - 1, z, x), tak(z - 1, x, y))
 
+def gcd(a, b):
+    while b != 0:
+        a, b = b, a % b
+    return a
+
+def euler_totient(n):
+    count = 0
+    for i in range(1, n):
+        if gcd(i, n) == 1:
+            count += 1
+    return count
+
+def sum_totients(limit):
+    total = 0
+    for i in range(1, limit + 1):
+        total += euler_totient(i)
+    return total
+
+def digit_sum(n):
+    s = 0
+    while n > 0:
+        s += n % 10
+        n //= 10
+    return s
+
+def total_digit_sum(limit):
+    total = 0
+    for i in range(1, limit + 1):
+        total += digit_sum(i)
+    return total
+
 def main():
     print("=== Python Compute Benchmarks ===")
 
@@ -112,6 +143,24 @@ def main():
     result = tak(x, y, z)
     elapsed = time.time_ns() - start
     print(f"Tak({x}, {y}, {z}):")
+    print(f"  Time: {elapsed // 1000000} ms")
+    print(f"  Result: {result}")
+
+    # Benchmark 6: Euler totient sum
+    limit = 10000
+    start = time.time_ns()
+    result = sum_totients(limit)
+    elapsed = time.time_ns() - start
+    print(f"Euler totient sum(1..{limit}):")
+    print(f"  Time: {elapsed // 1000000} ms")
+    print(f"  Result: {result}")
+
+    # Benchmark 7: Digit sum
+    limit = 10000000
+    start = time.time_ns()
+    result = total_digit_sum(limit)
+    elapsed = time.time_ns() - start
+    print(f"Digit sum(1..{limit}):")
     print(f"  Time: {elapsed // 1000000} ms")
     print(f"  Result: {result}")
 

@@ -91,6 +91,48 @@ func tak(x, y, z int64) int64 {
 	return tak(tak(x-1, y, z), tak(y-1, z, x), tak(z-1, x, y))
 }
 
+func gcd(a, b int64) int64 {
+	for b != 0 {
+		a, b = b, a%b
+	}
+	return a
+}
+
+func eulerTotient(n int64) int64 {
+	var count int64 = 0
+	for i := int64(1); i < n; i++ {
+		if gcd(i, n) == 1 {
+			count++
+		}
+	}
+	return count
+}
+
+func sumTotients(limit int64) int64 {
+	var total int64 = 0
+	for i := int64(1); i <= limit; i++ {
+		total += eulerTotient(i)
+	}
+	return total
+}
+
+func digitSum(n int64) int64 {
+	var sum int64 = 0
+	for n > 0 {
+		sum += n % 10
+		n /= 10
+	}
+	return sum
+}
+
+func totalDigitSum(limit int64) int64 {
+	var total int64 = 0
+	for i := int64(1); i <= limit; i++ {
+		total += digitSum(i)
+	}
+	return total
+}
+
 func main() {
 	fmt.Println("=== Go Compute Benchmarks ===")
 
@@ -136,6 +178,24 @@ func main() {
 	result = tak(x, y, z)
 	elapsed = time.Since(start)
 	fmt.Printf("Tak(%d, %d, %d):\n", x, y, z)
+	fmt.Printf("  Time: %d ms\n", elapsed.Milliseconds())
+	fmt.Printf("  Result: %d\n", result)
+
+	// Benchmark 6: Euler totient sum
+	limit = 10000
+	start = time.Now()
+	result = sumTotients(limit)
+	elapsed = time.Since(start)
+	fmt.Printf("Euler totient sum(1..%d):\n", limit)
+	fmt.Printf("  Time: %d ms\n", elapsed.Milliseconds())
+	fmt.Printf("  Result: %d\n", result)
+
+	// Benchmark 7: Digit sum
+	limit = 10000000
+	start = time.Now()
+	result = totalDigitSum(limit)
+	elapsed = time.Since(start)
+	fmt.Printf("Digit sum(1..%d):\n", limit)
 	fmt.Printf("  Time: %d ms\n", elapsed.Milliseconds())
 	fmt.Printf("  Result: %d\n", result)
 }

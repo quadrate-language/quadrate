@@ -83,7 +83,8 @@ namespace Qd {
 					if (thenStack[i] == elseStack[i]) {
 						compileTimeStack.push_back(thenStack[i]);
 					} else {
-						auto* phi = builder->CreatePHI(int64Ty, 2, "merge");
+						llvm::Type* stkType = thenStack[i]->getType();
+						auto* phi = builder->CreatePHI(stkType, 2, "merge");
 						phi->addIncoming(thenStack[i], thenPred);
 						phi->addIncoming(elseStack[i], elsePred);
 						compileTimeStack.push_back(phi);
@@ -273,23 +274,34 @@ namespace Qd {
 
 			// Loop header: create iterator PHI + stack PHIs
 			builder->SetInsertPoint(loopHeaderBB);
-			llvm::PHINode* iterVar = builder->CreatePHI(int64Ty, 2, "i");
+			llvm::PHINode* iterVar = builder->CreatePHI(startValue->getType(), 2, "i");
 			iterVar->addIncoming(startValue, preBB);
 
-			// Create PHI nodes for each compile-time stack position
+			// Create PHI nodes for each compile-time stack position (typed)
 			std::vector<llvm::PHINode*> stackPHIs;
 			compileTimeStack.clear();
 			for (size_t i = 0; i < preLoopStack.size(); i++) {
-				auto* phi = builder->CreatePHI(int64Ty, 2, "stk");
+				llvm::Type* stkType = preLoopStack[i]->getType();
+				auto* phi = builder->CreatePHI(stkType, 2, "stk");
 				phi->addIncoming(preLoopStack[i], preBB);
 				stackPHIs.push_back(phi);
 				compileTimeStack.push_back(phi);
 			}
 
-			// Loop condition
-			auto stepIsNegative = builder->CreateICmpSLT(stepValue, builder->getInt64(0), "step_neg");
-			auto condPositive = builder->CreateICmpSLT(iterVar, endValue, "cmp_pos");
-			auto condNegative = builder->CreateICmpSGT(iterVar, endValue, "cmp_neg");
+			// Loop condition (type-aware for int/float iterators)
+			llvm::Value* stepIsNegative;
+			llvm::Value* condPositive;
+			llvm::Value* condNegative;
+			if (startValue->getType()->isDoubleTy()) {
+				stepIsNegative = builder->CreateFCmpOLT(
+						stepValue, llvm::ConstantFP::get(builder->getDoubleTy(), 0.0), "step_neg");
+				condPositive = builder->CreateFCmpOLT(iterVar, endValue, "cmp_pos");
+				condNegative = builder->CreateFCmpOGT(iterVar, endValue, "cmp_neg");
+			} else {
+				stepIsNegative = builder->CreateICmpSLT(stepValue, builder->getInt64(0), "step_neg");
+				condPositive = builder->CreateICmpSLT(iterVar, endValue, "cmp_pos");
+				condNegative = builder->CreateICmpSGT(iterVar, endValue, "cmp_neg");
+			}
 			auto cond = builder->CreateSelect(stepIsNegative, condNegative, condPositive, "cmp");
 
 			llvm::MDBuilder mdBuilder(*context);
@@ -336,12 +348,24 @@ namespace Qd {
 
 			// Loop increment
 			builder->SetInsertPoint(loopIncBB);
-			auto nextIter = builder->CreateAdd(iterVar, stepValue, "next_i");
+			llvm::Value* nextIter;
+			if (iterVar->getType()->isDoubleTy()) {
+				nextIter = builder->CreateFAdd(iterVar, stepValue, "next_i");
+			} else {
+				nextIter = builder->CreateAdd(iterVar, stepValue, "next_i");
+			}
 			iterVar->addIncoming(nextIter, loopIncBB);
 
 			// Wire stack PHI back-edges from inc block
 			for (size_t i = 0; i < stackPHIs.size(); i++) {
-				llvm::Value* val = (i < bodyEndStack.size()) ? bodyEndStack[i] : builder->getInt64(0);
+				llvm::Value* val;
+				if (i < bodyEndStack.size()) {
+					val = bodyEndStack[i];
+				} else {
+					llvm::Type* phiTy = stackPHIs[i]->getType();
+					val = phiTy->isDoubleTy() ? static_cast<llvm::Value*>(llvm::ConstantFP::get(phiTy, 0.0))
+											  : builder->getInt64(0);
+				}
 				stackPHIs[i]->addIncoming(val, loopIncBB);
 			}
 			builder->CreateBr(loopHeaderBB);
@@ -370,11 +394,18 @@ namespace Qd {
 					if (allSame) {
 						compileTimeStack.push_back(stackPHIs[i]);
 					} else {
+						llvm::Type* phiTy = stackPHIs[i]->getType();
 						auto* exitPhi =
-								builder->CreatePHI(int64Ty, static_cast<unsigned>(1 + breakInfos.size()), "exit.stk");
+								builder->CreatePHI(phiTy, static_cast<unsigned>(1 + breakInfos.size()), "exit.stk");
 						exitPhi->addIncoming(stackPHIs[i], loopHeaderBB);
 						for (const auto& bi : breakInfos) {
-							llvm::Value* val = (i < bi.stackState.size()) ? bi.stackState[i] : builder->getInt64(0);
+							llvm::Value* val;
+							if (i < bi.stackState.size()) {
+								val = bi.stackState[i];
+							} else {
+								val = phiTy->isDoubleTy() ? static_cast<llvm::Value*>(llvm::ConstantFP::get(phiTy, 0.0))
+														  : builder->getInt64(0);
+							}
 							exitPhi->addIncoming(val, bi.fromBlock);
 						}
 						compileTimeStack.push_back(exitPhi);
@@ -510,7 +541,8 @@ namespace Qd {
 			std::vector<llvm::PHINode*> stackPHIs;
 			compileTimeStack.clear();
 			for (size_t i = 0; i < preLoopStack.size(); i++) {
-				auto* phi = builder->CreatePHI(int64Ty, 2, "while.stk");
+				llvm::Type* phiTy = preLoopStack[i]->getType();
+				auto* phi = builder->CreatePHI(phiTy, 2, "while.stk");
 				phi->addIncoming(preLoopStack[i], preBB);
 				stackPHIs.push_back(phi);
 				compileTimeStack.push_back(phi);
@@ -543,7 +575,15 @@ namespace Qd {
 			// Wire PHI back-edges
 			condPhi->addIncoming(newCond, bodyEndBlock);
 			for (size_t i = 0; i < stackPHIs.size(); i++) {
-				llvm::Value* val = (i < bodyEndStack.size()) ? bodyEndStack[i] : builder->getInt64(0);
+				llvm::Value* val;
+				if (i < bodyEndStack.size()) {
+					val = bodyEndStack[i];
+				} else {
+					llvm::Type* stkTy = stackPHIs[i]->getType();
+					val = stkTy->isDoubleTy()
+								  ? static_cast<llvm::Value*>(llvm::ConstantFP::get(builder->getDoubleTy(), 0.0))
+								  : static_cast<llvm::Value*>(builder->getInt64(0));
+				}
 				stackPHIs[i]->addIncoming(val, bodyEndBlock);
 			}
 
@@ -571,11 +611,19 @@ namespace Qd {
 					if (allSame) {
 						compileTimeStack.push_back(stackPHIs[i]);
 					} else {
+						llvm::Type* phiTy = stackPHIs[i]->getType();
 						auto* exitPhi = builder->CreatePHI(
-								int64Ty, static_cast<unsigned>(1 + breakInfos.size()), "while.exit.stk");
+								phiTy, static_cast<unsigned>(1 + breakInfos.size()), "while.exit.stk");
 						exitPhi->addIncoming(stackPHIs[i], whileCondBB);
 						for (const auto& bi : breakInfos) {
-							llvm::Value* val = (i < bi.stackState.size()) ? bi.stackState[i] : builder->getInt64(0);
+							llvm::Value* val;
+							if (i < bi.stackState.size()) {
+								val = bi.stackState[i];
+							} else {
+								val = phiTy->isDoubleTy() ? static_cast<llvm::Value*>(
+																	llvm::ConstantFP::get(builder->getDoubleTy(), 0.0))
+														  : static_cast<llvm::Value*>(builder->getInt64(0));
+							}
 							exitPhi->addIncoming(val, bi.fromBlock);
 						}
 						compileTimeStack.push_back(exitPhi);
@@ -705,7 +753,8 @@ namespace Qd {
 			std::vector<llvm::PHINode*> stackPHIs;
 			compileTimeStack.clear();
 			for (size_t i = 0; i < preLoopStack.size(); i++) {
-				auto* phi = builder->CreatePHI(int64Ty, 2, "loop.stk");
+				llvm::Type* phiTy = preLoopStack[i]->getType();
+				auto* phi = builder->CreatePHI(phiTy, 2, "loop.stk");
 				phi->addIncoming(preLoopStack[i], preBB);
 				stackPHIs.push_back(phi);
 				compileTimeStack.push_back(phi);
@@ -723,7 +772,15 @@ namespace Qd {
 				builder->CreateBr(loopBodyBB);
 				// Wire stack PHI back-edges
 				for (size_t i = 0; i < stackPHIs.size(); i++) {
-					llvm::Value* val = (i < bodyEndStack.size()) ? bodyEndStack[i] : builder->getInt64(0);
+					llvm::Value* val;
+					if (i < bodyEndStack.size()) {
+						val = bodyEndStack[i];
+					} else {
+						llvm::Type* stkTy = stackPHIs[i]->getType();
+						val = stkTy->isDoubleTy()
+									  ? static_cast<llvm::Value*>(llvm::ConstantFP::get(builder->getDoubleTy(), 0.0))
+									  : static_cast<llvm::Value*>(builder->getInt64(0));
+					}
 					stackPHIs[i]->addIncoming(val, bodyEndBlock);
 				}
 			}
@@ -765,10 +822,20 @@ namespace Qd {
 					if (allSame && firstVal) {
 						compileTimeStack.push_back(firstVal);
 					} else {
+						llvm::Type* phiTy = (i < breakInfos[0].stackState.size() && breakInfos[0].stackState[i])
+													? breakInfos[0].stackState[i]->getType()
+													: int64Ty;
 						auto* exitPhi =
-								builder->CreatePHI(int64Ty, static_cast<unsigned>(breakInfos.size()), "loop.exit.stk");
+								builder->CreatePHI(phiTy, static_cast<unsigned>(breakInfos.size()), "loop.exit.stk");
 						for (const auto& bi : breakInfos) {
-							llvm::Value* val = (i < bi.stackState.size()) ? bi.stackState[i] : builder->getInt64(0);
+							llvm::Value* val;
+							if (i < bi.stackState.size()) {
+								val = bi.stackState[i];
+							} else {
+								val = phiTy->isDoubleTy() ? static_cast<llvm::Value*>(
+																	llvm::ConstantFP::get(builder->getDoubleTy(), 0.0))
+														  : static_cast<llvm::Value*>(builder->getInt64(0));
+							}
 							exitPhi->addIncoming(val, bi.fromBlock);
 						}
 						compileTimeStack.push_back(exitPhi);

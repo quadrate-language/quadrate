@@ -415,7 +415,8 @@ namespace Qd {
 		}
 	}
 
-	bool LlvmGenerator::Impl::analyzeIsBodyIntegerOnly(IAstNode* node, const std::set<std::string>& localNames) {
+	bool LlvmGenerator::Impl::analyzeIsBodyNativeEligible(
+			IAstNode* node, const std::set<std::string>& localNames, bool allowFloat) {
 		if (!node) {
 			return true;
 		}
@@ -424,8 +425,9 @@ namespace Qd {
 		switch (node->type()) {
 		case IAstNode::Type::LITERAL: {
 			auto* lit = static_cast<AstNodeLiteral*>(node);
-			// Only INTEGER literals are allowed
-			if (lit->literalType() != AstNodeLiteral::LiteralType::INTEGER) {
+			// INTEGER literals always allowed; FLOAT only when allowFloat is true
+			if (lit->literalType() != AstNodeLiteral::LiteralType::INTEGER &&
+					(!allowFloat || lit->literalType() != AstNodeLiteral::LiteralType::FLOAT)) {
 				return false;
 			}
 			break;
@@ -437,13 +439,14 @@ namespace Qd {
 			// Also reject dynamic stack ops (pick, roll) that can't be statically handled
 			// But skip the check if the instruction name is actually a local variable reference
 			// (the parser emits Instruction nodes for names like "len" even when they refer to locals)
+			// Note: "cast" is allowed when allowFloat is true for compile-time stack i64<->f64 conversions
 			if (localNames.find(name) == localNames.end()) {
-				if (name == "err" || name == "read" || name == "getenv" || name == "make" || name == "set" ||
-						name == "nth" || name == "len" || name == "push_back" || name == "pop_back" || name == "cast" ||
-						name == "panic" || name == "sizeof" || name == "type" || name == "call" || name == "pick" ||
-						name == "roll" || name == "depth" || name == "clear" || name == "within" || name == "swap2" ||
-						name == "over2" || name == "nipd" || name == "swapd" || name == "dupd" || name == "overd" ||
-						name == "free" || name == "peek") {
+				if ((!allowFloat && name == "cast") || name == "err" || name == "read" || name == "getenv" ||
+						name == "make" || name == "set" || name == "nth" || name == "len" || name == "push_back" ||
+						name == "pop_back" || name == "panic" || name == "sizeof" || name == "type" || name == "call" ||
+						name == "pick" || name == "roll" || name == "depth" || name == "clear" || name == "within" ||
+						name == "swap2" || name == "over2" || name == "nipd" || name == "swapd" || name == "dupd" ||
+						name == "overd" || name == "free" || name == "peek") {
 					return false;
 				}
 			}
@@ -452,6 +455,14 @@ namespace Qd {
 		case IAstNode::Type::CONTINUE_STATEMENT:
 			// Continue requires wiring compile-time stack back to loop header mid-body,
 			// which adds significant complexity. Reject for now.
+			return false;
+		case IAstNode::Type::DEFER_STATEMENT:
+			// Defer blocks execute at function return, which conflicts with the
+			// compile-time stack approach. Reject for now.
+			return false;
+		case IAstNode::Type::CTX_STATEMENT:
+			// Ctx blocks clone the context and expect results on the runtime stack,
+			// which conflicts with the compile-time stack approach.
 			return false;
 		case IAstNode::Type::SCOPED_IDENTIFIER:
 			// Module calls (like str::len) might return non-integers
@@ -472,7 +483,7 @@ namespace Qd {
 
 		// Recursively check children
 		for (auto* child : node->children()) {
-			if (!analyzeIsBodyIntegerOnly(child, localNames)) {
+			if (!analyzeIsBodyNativeEligible(child, localNames, allowFloat)) {
 				return false;
 			}
 		}
@@ -648,7 +659,7 @@ namespace Qd {
 			std::set<std::string> mainLocalNames;
 			collectLocalNames(funcNode, mainLocalNames);
 			for (auto* child : funcNode->children()) {
-				if (!analyzeIsBodyIntegerOnly(child, mainLocalNames)) {
+				if (!analyzeIsBodyNativeEligible(child, mainLocalNames, false)) {
 					currentFunctionIsIntegerOnly = false;
 					break;
 				}
@@ -816,11 +827,11 @@ namespace Qd {
 			currentFunctionReturnBlock = returnBB;
 			currentFunctionIsFallible = funcNode->throws();
 
-			// Detect if function only uses integers (for type specialization)
-			// Do this BEFORE generating call tracking so we can skip it for integer-only functions
-			// A function is integer-only if all typed parameters are integers AND the body
-			// contains no strings, floats, or module calls that might return non-integers.
-			// Functions with no parameters are also eligible if their body is integer-only.
+			// Detect if function only uses numeric types (for type specialization)
+			// Do this BEFORE generating call tracking so we can skip it for numeric-only functions
+			// A function is "integer-only" if all typed parameters are i64
+			// AND the body contains no floats, strings, or module calls.
+			// This enables fast inline integer operations (no type checking needed).
 			currentFunctionIsIntegerOnly = true;
 			for (const auto* param : funcNode->inputParameters()) {
 				if (const auto* paramNode = dynamic_cast<const AstNodeParameter*>(param)) {
@@ -845,13 +856,13 @@ namespace Qd {
 				}
 			}
 
-			// Also check the function body for non-integer types (strings, floats, module calls)
+			// Also check the function body for non-numeric types (strings, module calls)
 			if (currentFunctionIsIntegerOnly) {
-				// Scan the function body to ensure it only uses integers
+				// Scan the function body to ensure it only uses numerics
 				std::set<std::string> funcLocalNames;
 				collectLocalNames(funcNode, funcLocalNames);
 				for (auto* child : funcNode->children()) {
-					if (!analyzeIsBodyIntegerOnly(child, funcLocalNames)) {
+					if (!analyzeIsBodyNativeEligible(child, funcLocalNames, false)) {
 						currentFunctionIsIntegerOnly = false;
 						break;
 					}
@@ -937,8 +948,13 @@ namespace Qd {
 				// Create return value alloca in entry block (LLVM mem2reg will promote to SSA)
 				nativeReturnAlloca = nullptr;
 				if (info.outputCount == 1) {
-					nativeReturnAlloca = builder->CreateAlloca(int64Ty, nullptr, "retval");
-					builder->CreateStore(builder->getInt64(0), nativeReturnAlloca);
+					llvm::Type* retTy = (info.outputType == NativeParamType::F64) ? builder->getDoubleTy() : int64Ty;
+					nativeReturnAlloca = builder->CreateAlloca(retTy, nullptr, "retval");
+					llvm::Value* retInit =
+							retTy->isDoubleTy()
+									? static_cast<llvm::Value*>(llvm::ConstantFP::get(builder->getDoubleTy(), 0.0))
+									: static_cast<llvm::Value*>(builder->getInt64(0));
+					builder->CreateStore(retInit, nativeReturnAlloca);
 				}
 
 				// Create return block for native function
@@ -968,7 +984,8 @@ namespace Qd {
 				builder->SetInsertPoint(nativeReturnBB);
 
 				if (info.outputCount == 1) {
-					llvm::Value* retVal = builder->CreateLoad(int64Ty, nativeReturnAlloca, "retval_load");
+					llvm::Value* retVal = builder->CreateLoad(
+							nativeReturnAlloca->getAllocatedType(), nativeReturnAlloca, "retval_load");
 					builder->CreateRet(retVal);
 				} else {
 					builder->CreateRetVoid();
@@ -999,7 +1016,13 @@ namespace Qd {
 				// Pop N args (they come off stack in reverse parameter order)
 				std::vector<llvm::Value*> poppedArgs;
 				for (size_t i = 0; i < info.inputCount; i++) {
-					poppedArgs.push_back(generateInlinePopInt(ctx));
+					// Pop in reverse order, so pop index is (inputCount - 1 - i)
+					size_t popIdx = info.inputCount - 1 - i;
+					if (popIdx < info.inputTypes.size() && info.inputTypes[popIdx] == NativeParamType::F64) {
+						poppedArgs.push_back(generateInlinePopFloat(ctx));
+					} else {
+						poppedArgs.push_back(generateInlinePopInt(ctx));
+					}
 				}
 				// Reverse to get correct parameter order
 				for (auto it = poppedArgs.rbegin(); it != poppedArgs.rend(); ++it) {
@@ -1009,7 +1032,11 @@ namespace Qd {
 				// Call native function and push result to runtime stack
 				if (info.outputCount == 1) {
 					llvm::Value* nativeResult = builder->CreateCall(nativeFn, nativeArgs, "result");
-					generateInlinePushIntValue(ctx, nativeResult);
+					if (info.outputType == NativeParamType::F64) {
+						generateInlinePushFloatValue(ctx, nativeResult);
+					} else {
+						generateInlinePushIntValue(ctx, nativeResult);
+					}
 				} else {
 					builder->CreateCall(nativeFn, nativeArgs);
 				}
@@ -1243,38 +1270,46 @@ namespace Qd {
 		fallibleFunctions[registerName] = funcNode->throws();
 
 		// Check if this function qualifies for native calling convention
-		// Requirements: non-main, non-receiver, non-fallible, all params i64, body is integer-only
+		// Requirements: non-receiver, non-fallible, all params i64/f64, body is native-eligible
 		if (!funcNode->hasReceiver() && !funcNode->throws()) {
-			bool allParamsInteger = true;
+			bool allParamsNumeric = true;
+			std::vector<NativeParamType> inputTypes;
 			for (const auto* param : funcNode->inputParameters()) {
 				if (const auto* paramNode = dynamic_cast<const AstNodeParameter*>(param)) {
 					const std::string& typeStr = paramNode->typeString();
-					if (!typeStr.empty() && typeStr != "i64" && typeStr != "int" && typeStr != "int64" &&
-							typeStr != "i") {
-						allParamsInteger = false;
+					if (typeStr == "f64" || typeStr == "float" || typeStr == "float64" || typeStr == "f") {
+						inputTypes.push_back(NativeParamType::F64);
+					} else if (typeStr.empty() || typeStr == "i64" || typeStr == "int" || typeStr == "int64" ||
+							   typeStr == "i") {
+						inputTypes.push_back(NativeParamType::I64);
+					} else {
+						allParamsNumeric = false;
 						break;
 					}
 				}
 			}
-			if (allParamsInteger) {
+			NativeParamType outputType = NativeParamType::I64;
+			if (allParamsNumeric) {
 				for (const auto* param : funcNode->outputParameters()) {
 					if (const auto* paramNode = dynamic_cast<const AstNodeParameter*>(param)) {
 						const std::string& typeStr = paramNode->typeString();
-						if (!typeStr.empty() && typeStr != "i64" && typeStr != "int" && typeStr != "int64" &&
-								typeStr != "i") {
-							allParamsInteger = false;
+						if (typeStr == "f64" || typeStr == "float" || typeStr == "float64" || typeStr == "f") {
+							outputType = NativeParamType::F64;
+						} else if (!typeStr.empty() && typeStr != "i64" && typeStr != "int" && typeStr != "int64" &&
+								   typeStr != "i") {
+							allParamsNumeric = false;
 							break;
 						}
 					}
 				}
 			}
-			if (allParamsInteger) {
-				// Check body is integer-only
+			if (allParamsNumeric) {
+				// Check body is native-eligible
 				std::set<std::string> funcLocalNames;
 				collectLocalNames(funcNode, funcLocalNames);
 				bool bodyOk = true;
 				for (auto* child : funcNode->children()) {
-					if (!analyzeIsBodyIntegerOnly(child, funcLocalNames)) {
+					if (!analyzeIsBodyNativeEligible(child, funcLocalNames)) {
 						bodyOk = false;
 						break;
 					}
@@ -1284,18 +1319,20 @@ namespace Qd {
 					size_t outputCount = funcNode->outputParameters().size();
 					// Require at least 1 typed input parameter and at most 1 output
 					if (inputCount > 0 && outputCount <= 1) {
-						// Declare native version: i64 @fn_native(ctx*, i64, i64, ...)
 						std::string nativeName = fnName + "_native";
 
 						// Check if native function already exists (can happen for merged/local modules)
 						llvm::Function* nativeFn = module->getFunction(nativeName);
 						if (!nativeFn) {
+							auto* doubleTy = builder->getDoubleTy();
 							std::vector<llvm::Type*> nativeParams;
 							nativeParams.push_back(contextPtrTy); // ctx still needed for print/etc
 							for (size_t i = 0; i < inputCount; i++) {
-								nativeParams.push_back(int64Ty);
+								nativeParams.push_back(inputTypes[i] == NativeParamType::F64 ? doubleTy : int64Ty);
 							}
-							llvm::Type* nativeRetTy = (outputCount == 1) ? int64Ty : builder->getVoidTy();
+							llvm::Type* nativeRetTy =
+									(outputCount == 0) ? builder->getVoidTy()
+													   : (outputType == NativeParamType::F64 ? doubleTy : int64Ty);
 							auto nativeFnTy = llvm::FunctionType::get(nativeRetTy, nativeParams, false);
 							auto linkage =
 									exportMode ? llvm::Function::ExternalLinkage : llvm::Function::InternalLinkage;
@@ -1307,12 +1344,12 @@ namespace Qd {
 
 						// Register native function by all names the stack-based version is registered under
 						nativeFunctions[registerName] = nativeFn;
-						nativeFuncInfo[registerName] = {inputCount, outputCount};
+						nativeFuncInfo[registerName] = {inputCount, outputCount, inputTypes, outputType};
 
 						// Also register with unqualified name for merged modules
 						if (namePrefix != "main" && mergedModules.count(namePrefix) > 0) {
 							nativeFunctions[funcNode->name()] = nativeFn;
-							nativeFuncInfo[funcNode->name()] = {inputCount, outputCount};
+							nativeFuncInfo[funcNode->name()] = {inputCount, outputCount, inputTypes, outputType};
 						}
 					}
 				}
@@ -1849,35 +1886,43 @@ namespace Qd {
 
 				// Check if this function qualifies for native calling convention
 				if (!funcNode->hasReceiver() && !funcNode->throws()) {
-					bool allParamsInteger = true;
+					bool allParamsNumeric = true;
+					std::vector<NativeParamType> inputTypes;
 					for (const auto* param : funcNode->inputParameters()) {
 						if (const auto* paramNode = dynamic_cast<const AstNodeParameter*>(param)) {
 							const std::string& typeStr = paramNode->typeString();
-							if (!typeStr.empty() && typeStr != "i64" && typeStr != "int" && typeStr != "int64" &&
-									typeStr != "i") {
-								allParamsInteger = false;
+							if (typeStr == "f64" || typeStr == "float" || typeStr == "float64" || typeStr == "f") {
+								inputTypes.push_back(NativeParamType::F64);
+							} else if (typeStr.empty() || typeStr == "i64" || typeStr == "int" || typeStr == "int64" ||
+									   typeStr == "i") {
+								inputTypes.push_back(NativeParamType::I64);
+							} else {
+								allParamsNumeric = false;
 								break;
 							}
 						}
 					}
-					if (allParamsInteger) {
+					NativeParamType outputType = NativeParamType::I64;
+					if (allParamsNumeric) {
 						for (const auto* param : funcNode->outputParameters()) {
 							if (const auto* paramNode = dynamic_cast<const AstNodeParameter*>(param)) {
 								const std::string& typeStr = paramNode->typeString();
-								if (!typeStr.empty() && typeStr != "i64" && typeStr != "int" && typeStr != "int64" &&
-										typeStr != "i") {
-									allParamsInteger = false;
+								if (typeStr == "f64" || typeStr == "float" || typeStr == "float64" || typeStr == "f") {
+									outputType = NativeParamType::F64;
+								} else if (!typeStr.empty() && typeStr != "i64" && typeStr != "int" &&
+										   typeStr != "int64" && typeStr != "i") {
+									allParamsNumeric = false;
 									break;
 								}
 							}
 						}
 					}
-					if (allParamsInteger) {
+					if (allParamsNumeric) {
 						std::set<std::string> funcLocalNames;
 						collectLocalNames(funcNode, funcLocalNames);
 						bool bodyOk = true;
 						for (auto* child2 : funcNode->children()) {
-							if (!analyzeIsBodyIntegerOnly(child2, funcLocalNames)) {
+							if (!analyzeIsBodyNativeEligible(child2, funcLocalNames)) {
 								bodyOk = false;
 								break;
 							}
@@ -1889,12 +1934,17 @@ namespace Qd {
 								std::string nativeName = fnName + "_native";
 								llvm::Function* nativeFn = module->getFunction(nativeName);
 								if (!nativeFn) {
+									auto* doubleTy = builder->getDoubleTy();
 									std::vector<llvm::Type*> nativeParams;
 									nativeParams.push_back(contextPtrTy);
 									for (size_t i = 0; i < inputCount; i++) {
-										nativeParams.push_back(int64Ty);
+										nativeParams.push_back(
+												inputTypes[i] == NativeParamType::F64 ? doubleTy : int64Ty);
 									}
-									llvm::Type* nativeRetTy = (outputCount == 1) ? int64Ty : builder->getVoidTy();
+									llvm::Type* nativeRetTy =
+											(outputCount == 0)
+													? builder->getVoidTy()
+													: (outputType == NativeParamType::F64 ? doubleTy : int64Ty);
 									auto nativeFnTy = llvm::FunctionType::get(nativeRetTy, nativeParams, false);
 									nativeFn = llvm::Function::Create(nativeFnTy, linkage, nativeName, *module);
 									nativeFn->addParamAttr(0, llvm::Attribute::NonNull);
@@ -1902,12 +1952,12 @@ namespace Qd {
 									nativeFn->addFnAttr(llvm::Attribute::NoUnwind);
 								}
 								nativeFunctions[registerName] = nativeFn;
-								nativeFuncInfo[registerName] = {inputCount, outputCount};
+								nativeFuncInfo[registerName] = {inputCount, outputCount, inputTypes, outputType};
 								// Also register with qualified name (mainModuleName::funcName)
 								// since generateFunction uses that as registerName
 								std::string qualifiedName = mainModuleName + "::" + funcNode->name();
 								nativeFunctions[qualifiedName] = nativeFn;
-								nativeFuncInfo[qualifiedName] = {inputCount, outputCount};
+								nativeFuncInfo[qualifiedName] = {inputCount, outputCount, inputTypes, outputType};
 							}
 						}
 					}
