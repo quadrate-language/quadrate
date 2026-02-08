@@ -1,0 +1,88 @@
+use fmt
+use time
+
+// Inline mat4x4 multiply in a loop, returning checksum.
+// Single f64 return qualifies for native calling convention.
+fn mat4_bench(
+	n:i64
+	b00:f64 b01:f64 b02:f64 b03:f64
+	b10:f64 b11:f64 b12:f64 b13:f64
+	b20:f64 b21:f64 b22:f64 b23:f64
+	b30:f64 b31:f64 b32:f64 b33:f64
+	-- checksum:f64
+) {
+	-> b33 -> b32 -> b31 -> b30
+	-> b23 -> b22 -> b21 -> b20
+	-> b13 -> b12 -> b11 -> b10
+	-> b03 -> b02 -> b01 -> b00
+	-> n
+
+	// A = identity
+	1.0 -> a00  0.0 -> a01  0.0 -> a02  0.0 -> a03
+	0.0 -> a10  1.0 -> a11  0.0 -> a12  0.0 -> a13
+	0.0 -> a20  0.0 -> a21  1.0 -> a22  0.0 -> a23
+	0.0 -> a30  0.0 -> a31  0.0 -> a32  1.0 -> a33
+
+	0 n 1 for i {
+		// Row 0
+		a00 b00 * a01 b10 * + a02 b20 * + a03 b30 * + -> r0
+		a00 b01 * a01 b11 * + a02 b21 * + a03 b31 * + -> r1
+		a00 b02 * a01 b12 * + a02 b22 * + a03 b32 * + -> r2
+		a00 b03 * a01 b13 * + a02 b23 * + a03 b33 * + -> r3
+		r0 -> a00  r1 -> a01  r2 -> a02  r3 -> a03
+		// Row 1
+		a10 b00 * a11 b10 * + a12 b20 * + a13 b30 * + -> r0
+		a10 b01 * a11 b11 * + a12 b21 * + a13 b31 * + -> r1
+		a10 b02 * a11 b12 * + a12 b22 * + a13 b32 * + -> r2
+		a10 b03 * a11 b13 * + a12 b23 * + a13 b33 * + -> r3
+		r0 -> a10  r1 -> a11  r2 -> a12  r3 -> a13
+		// Row 2
+		a20 b00 * a21 b10 * + a22 b20 * + a23 b30 * + -> r0
+		a20 b01 * a21 b11 * + a22 b21 * + a23 b31 * + -> r1
+		a20 b02 * a21 b12 * + a22 b22 * + a23 b32 * + -> r2
+		a20 b03 * a21 b13 * + a22 b23 * + a23 b33 * + -> r3
+		r0 -> a20  r1 -> a21  r2 -> a22  r3 -> a23
+		// Row 3
+		a30 b00 * a31 b10 * + a32 b20 * + a33 b30 * + -> r0
+		a30 b01 * a31 b11 * + a32 b21 * + a33 b31 * + -> r1
+		a30 b02 * a31 b12 * + a32 b22 * + a33 b32 * + -> r2
+		a30 b03 * a31 b13 * + a32 b23 * + a33 b33 * + -> r3
+		r0 -> a30  r1 -> a31  r2 -> a32  r3 -> a33
+	}
+
+	a00 a01 + a02 + a03 +
+	a10 + a11 + a12 + a13 +
+	a20 + a21 + a22 + a23 +
+	a30 + a31 + a32 + a33 +
+}
+
+fn main() {
+	"=== Quadrate Mat4x4 Benchmarks ===\n" fmt::printf
+
+	1000000 -> n
+
+	// B = 30-degree rotation in XY plane
+	0.8660254037844387 -> b00  -0.5 -> b01               0.0 -> b02  0.0 -> b03
+	0.5 -> b10                 0.8660254037844387 -> b11  0.0 -> b12  0.0 -> b13
+	0.0 -> b20                 0.0 -> b21                 1.0 -> b22  0.0 -> b23
+	0.0 -> b30                 0.0 -> b31                 0.0 -> b32  1.0 -> b33
+
+	// Warmup
+	n b00 b01 b02 b03 b10 b11 b12 b13 b20 b21 b22 b23 b30 b31 b32 b33 mat4_bench drop
+
+	// Best of 3
+	9999999999 -> best
+	0.0 -> checksum
+	0 3 1 for run {
+		time::now -> start
+		n b00 b01 b02 b03 b10 b11 b12 b13 b20 b21 b22 b23 b30 b31 b32 b33 mat4_bench -> cs
+		time::now start - -> elapsed
+		elapsed best lt if {
+			elapsed -> best
+			cs -> checksum
+		}
+	}
+	n "Mat4x4 multiply (%d iterations):\n" fmt::printf
+	best 1000000 div "  Time: %d ms\n" fmt::printf
+	checksum "  Result: %.10f\n" fmt::printf
+}

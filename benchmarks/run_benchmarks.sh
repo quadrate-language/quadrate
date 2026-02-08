@@ -95,6 +95,12 @@ if [ -f benchmarks/run_float_benchmark.sh ]; then
     echo ""
 fi
 
+# Run Mat4x4 Benchmarks
+if [ -f benchmarks/run_mat4x4_benchmark.sh ]; then
+    ./benchmarks/run_mat4x4_benchmark.sh
+    echo ""
+fi
+
 echo "=========================================="
 echo "  Benchmark Complete"
 echo "=========================================="

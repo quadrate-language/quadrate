@@ -35,6 +35,7 @@ Performance benchmarks comparing Quadrate to other languages.
 - **Basel Problem** - sum of 1/i^2 for i=1..10M (loop + float division)
 - **Leibniz Pi** - pi/4 = 1 - 1/3 + 1/5 - ... for 10M terms (loop + float arithmetic)
 - **Mandelbrot** - 200x200 grid escape iteration (nested loops + mixed int/float)
+- **Mat4x4 Multiply** - 1M chained 4x4 matrix multiplications (17-param native function)
 
 ## Languages
 
@@ -213,5 +214,17 @@ Float functions with f64 parameters also qualify for native calling convention a
 | C#       | 9 ms |
 | Quadrate | 24 ms |
 | Python   | 178 ms |
+
+#### Mat4x4 Multiply (1M iterations)
+
+| Language | Time |
+|----------|------|
+| C        | 14 ms |
+| Rust     | 21 ms |
+| Quadrate | 31 ms |
+| C#       | 131 ms |
+| Go       | 168 ms |
+| Node.js  | 1375 ms |
+| Python   | 15109 ms |
 
 Results from an Intel Core i3-4030U @ 1.90GHz. Warmup + best-of-3 methodology. Run `./benchmarks/run_benchmarks.sh` to reproduce.

@@ -52,3 +52,7 @@ fuzz/
 tests/fuzz/corpus/
 /benchmarks/csharp/bin
 /benchmarks/csharp/obj
+/benchmarks/mat4x4_rust
+/benchmarks/mat4x4_qd
+/benchmarks/mat4x4_go
+/benchmarks/mat4x4_c
