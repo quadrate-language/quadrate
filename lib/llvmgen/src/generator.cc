@@ -64,7 +64,10 @@ namespace Qd {
 
 		// Helper to declare external functions
 		auto declareFn = [this](llvm::FunctionType* ty, const char* name) {
-			return llvm::Function::Create(ty, llvm::Function::ExternalLinkage, name, *module);
+			auto fn = llvm::Function::Create(ty, llvm::Function::ExternalLinkage, name, *module);
+			// Runtime functions don't throw C++ exceptions
+			fn->addFnAttr(llvm::Attribute::NoUnwind);
+			return fn;
 		};
 
 		// Context management: (i64) -> ctx, (ctx) -> void, (ctx) -> ctx
@@ -640,8 +643,9 @@ namespace Qd {
 				// InternalLinkage allows LLVM to eliminate unused functions via GlobalDCE
 				auto linkage = exportMode ? llvm::Function::ExternalLinkage : llvm::Function::InternalLinkage;
 				fn = llvm::Function::Create(fnTy, linkage, fnName, *module);
-				// ctx parameter is always non-null
 				fn->addParamAttr(0, llvm::Attribute::NonNull);
+				fn->addParamAttr(0, llvm::Attribute::NoAlias);
+				fn->addFnAttr(llvm::Attribute::NoUnwind);
 			}
 
 			// Add debug info for user function
@@ -956,8 +960,9 @@ namespace Qd {
 			auto fnTy = llvm::FunctionType::get(execResultTy, {contextPtrTy}, false);
 			auto linkage = exportMode ? llvm::Function::ExternalLinkage : llvm::Function::InternalLinkage;
 			fn = llvm::Function::Create(fnTy, linkage, fnName, *module);
-			// ctx parameter is always non-null
 			fn->addParamAttr(0, llvm::Attribute::NonNull);
+			fn->addParamAttr(0, llvm::Attribute::NoAlias);
+			fn->addFnAttr(llvm::Attribute::NoUnwind);
 		}
 
 		// Register the function with appropriate scope
@@ -1488,8 +1493,9 @@ namespace Qd {
 				// InternalLinkage allows LLVM to eliminate unused functions via GlobalDCE
 				auto linkage = exportMode ? llvm::Function::ExternalLinkage : llvm::Function::InternalLinkage;
 				auto fn = llvm::Function::Create(fnTy, linkage, fnName, *module);
-				// ctx parameter is always non-null
 				fn->addParamAttr(0, llvm::Attribute::NonNull);
+				fn->addParamAttr(0, llvm::Attribute::NoAlias);
+				fn->addFnAttr(llvm::Attribute::NoUnwind);
 				// Register the function for forward reference lookup
 				userFunctions[registerName] = fn;
 				fallibleFunctions[registerName] = funcNode->throws();
@@ -1992,44 +1998,36 @@ namespace Qd {
 
 		// Run optimization passes if optimization level > 0
 		if (mImpl->optimizationLevel > 0) {
-			// Use legacy PassManager for optimization passes
-			llvm::legacy::FunctionPassManager fpm(mImpl->module.get());
-			llvm::legacy::PassManager mpm;
+			// Use new PassBuilder API (replaces legacy FunctionPassManager)
+			// This gives us the full standard pipeline: inlining, vectorization,
+			// LICM, GVN, SROA, loop unroll, SLP vectorize, etc.
+			llvm::LoopAnalysisManager optLam;
+			llvm::FunctionAnalysisManager optFam;
+			llvm::CGSCCAnalysisManager optCgam;
+			llvm::ModuleAnalysisManager optMam;
 
-			// Add function-level optimization passes based on level
-			if (mImpl->optimizationLevel >= 1) {
-				// Basic optimizations
-				fpm.add(llvm::createPromoteMemoryToRegisterPass()); // mem2reg
-				fpm.add(llvm::createEarlyCSEPass());				// Early common subexpression elimination
-				fpm.add(llvm::createInstructionCombiningPass());	// instcombine
-				fpm.add(llvm::createReassociatePass());				// reassociate
-				fpm.add(llvm::createCFGSimplificationPass());		// simplifycfg
+			llvm::PassBuilder optPb(targetMachine.get());
+			optPb.registerModuleAnalyses(optMam);
+			optPb.registerCGSCCAnalyses(optCgam);
+			optPb.registerFunctionAnalyses(optFam);
+			optPb.registerLoopAnalyses(optLam);
+			optPb.crossRegisterProxies(optLam, optFam, optCgam, optMam);
+
+			llvm::OptimizationLevel optLevel;
+			switch (mImpl->optimizationLevel) {
+			case 1:
+				optLevel = llvm::OptimizationLevel::O1;
+				break;
+			case 2:
+				optLevel = llvm::OptimizationLevel::O2;
+				break;
+			default:
+				optLevel = llvm::OptimizationLevel::O3;
+				break;
 			}
 
-			if (mImpl->optimizationLevel >= 2) {
-				// More aggressive optimizations
-				fpm.add(llvm::createGVNPass());					// GVN (Global Value Numbering)
-				fpm.add(llvm::createDeadCodeEliminationPass()); // Dead Code Elimination
-				fpm.add(llvm::createSROAPass());				// Scalar Replacement of Aggregates
-			}
-
-			if (mImpl->optimizationLevel >= 3) {
-				// Most aggressive optimizations
-				fpm.add(llvm::createLICMPass()); // Loop Invariant Code Motion
-				fpm.add(llvm::createLoopUnrollPass());
-			}
-
-			// Run function passes on all functions
-			fpm.doInitialization();
-			for (auto& func : *mImpl->module) {
-				if (!func.isDeclaration()) {
-					fpm.run(func);
-				}
-			}
-			fpm.doFinalization();
-
-			// Run legacy module passes (if any were added to mpm)
-			mpm.run(*mImpl->module);
+			llvm::ModulePassManager optMpm = optPb.buildPerModuleDefaultPipeline(optLevel);
+			optMpm.run(*mImpl->module, optMam);
 			printTiming("optimizationPasses");
 		}
 
