@@ -120,7 +120,7 @@ fn mcp_tools_list(id:str -- response:str) {
 	id result rpc_result
 }
 
-const MODULE_LIST = "bits,bytes,ct,flag,fmt,io,limits,math,mem,net,os,path,rand,sb,signal,str,strconv,term,testing,thread,time,unicode"
+const MODULE_LIST = "bits,bytes,ct,flag,fmt,io,limits,math,mem,net,os,path,rand,sb,signal,sort,str,strconv,term,testing,thread,time,unicode"
 
 fn module_entry(ds:ptr name:str -- entry:str) {
 	-> name -> ds
@@ -158,6 +158,7 @@ fn tool_list_modules(ds:ptr -- result:str) {
 	ds "rand" module_entry json::join
 	ds "sb" module_entry json::join
 	ds "signal" module_entry json::join
+	ds "sort" module_entry json::join
 	ds "str" module_entry json::join
 	ds "strconv" module_entry json::join
 	ds "term" module_entry json::join
@@ -307,6 +308,7 @@ fn tool_search(ds:ptr args:str -- result:str) {
 		ds "rand" query r search_module -> r
 		ds "sb" query r search_module -> r
 		ds "signal" query r search_module -> r
+		ds "sort" query r search_module -> r
 		ds "str" query r search_module -> r
 		ds "strconv" query r search_module -> r
 		ds "term" query r search_module -> r
@@ -529,6 +531,7 @@ fn tool_find_function(ds:ptr args:str -- result:str) {
 			ds "rand" query r count fuzzy_find_in_module -> count -> r
 			ds "sb" query r count fuzzy_find_in_module -> count -> r
 			ds "signal" query r count fuzzy_find_in_module -> count -> r
+			ds "sort" query r count fuzzy_find_in_module -> count -> r
 			ds "str" query r count fuzzy_find_in_module -> count -> r
 			ds "strconv" query r count fuzzy_find_in_module -> count -> r
 			ds "term" query r count fuzzy_find_in_module -> count -> r
@@ -611,6 +614,7 @@ fn tool_search_by_signature(ds:ptr args:str -- result:str) {
 		ds "rand" pattern r count search_by_sig_in_module -> count -> r
 		ds "sb" pattern r count search_by_sig_in_module -> count -> r
 		ds "signal" pattern r count search_by_sig_in_module -> count -> r
+		ds "sort" pattern r count search_by_sig_in_module -> count -> r
 		ds "str" pattern r count search_by_sig_in_module -> count -> r
 		ds "strconv" pattern r count search_by_sig_in_module -> count -> r
 		ds "term" pattern r count search_by_sig_in_module -> count -> r

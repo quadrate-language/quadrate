@@ -1,0 +1,234 @@
+/// Sorting algorithms for arrays.
+/// Arrays are pointers to contiguous i64 values or string pointers.
+use mem
+use str
+
+/// Sort an array of i64 in ascending order (insertion sort).
+/// @param arr ptr Array of i64 values
+/// @param count i64 Number of elements
+/// @example arr count sort::ints
+pub fn ints(arr:ptr count:i64 -- ) {
+	-> count
+	-> arr
+	// Insertion sort
+	1 count 1 for it {
+		it -> i
+		arr i 8 * mem::get_i64 -> key
+		i 1 - -> j
+		loop {
+			j 0 < if {
+				break
+			}
+			arr j 8 * mem::get_i64 -> jval
+			jval key <= if {
+				break
+			}
+			// Move element right
+			jval arr j 1 + 8 * mem::set_i64
+			j 1 - -> j
+		}
+		key arr j 1 + 8 * mem::set_i64
+	}
+}
+
+/// Sort an array of i64 in descending order.
+/// @param arr ptr Array of i64 values
+/// @param count i64 Number of elements
+/// @example arr count sort::ints_desc
+pub fn ints_desc(arr:ptr count:i64 -- ) {
+	-> count
+	-> arr
+	// Insertion sort descending
+	1 count 1 for it {
+		it -> i
+		arr i 8 * mem::get_i64 -> key
+		i 1 - -> j
+		loop {
+			j 0 < if {
+				break
+			}
+			arr j 8 * mem::get_i64 -> jval
+			jval key >= if {
+				break
+			}
+			// Move element right
+			jval arr j 1 + 8 * mem::set_i64
+			j 1 - -> j
+		}
+		key arr j 1 + 8 * mem::set_i64
+	}
+}
+
+/// Find minimum value in array.
+/// @param arr ptr Array of i64 values
+/// @param count i64 Number of elements (must be > 0)
+/// @return minval i64 Minimum value
+/// @example arr count sort::min -> val
+pub fn min(arr:ptr count:i64 -- minval:i64) {
+	-> count
+	-> arr
+	arr 0 mem::get_i64 -> result
+	1 count 1 for it {
+		it -> i
+		arr i 8 * mem::get_i64 -> val
+		val result < if {
+			val -> result
+		}
+	}
+	result
+}
+
+/// Find maximum value in array.
+/// @param arr ptr Array of i64 values
+/// @param count i64 Number of elements (must be > 0)
+/// @return maxval i64 Maximum value
+/// @example arr count sort::max -> val
+pub fn max(arr:ptr count:i64 -- maxval:i64) {
+	-> count
+	-> arr
+	arr 0 mem::get_i64 -> result
+	1 count 1 for it {
+		it -> i
+		arr i 8 * mem::get_i64 -> val
+		val result > if {
+			val -> result
+		}
+	}
+	result
+}
+
+/// Check if array is sorted in ascending order.
+/// @param arr ptr Array of i64 values
+/// @param count i64 Number of elements
+/// @return sorted i64 1 if sorted, 0 otherwise
+/// @example arr count sort::is_sorted -> result
+pub fn is_sorted(arr:ptr count:i64 -- sorted:i64) {
+	-> count
+	-> arr
+	1 -> result
+	count 2 < if {
+		result
+	} else {
+		1 count 1 for it {
+			it -> i
+			arr i 1 - 8 * mem::get_i64 -> prev
+			arr i 8 * mem::get_i64 -> curr
+			prev curr > if {
+				0 -> result
+				break
+			}
+		}
+		result
+	}
+}
+
+/// Reverse an array in place.
+/// @param arr ptr Array of i64 values
+/// @param count i64 Number of elements
+/// @example arr count sort::reverse
+pub fn reverse(arr:ptr count:i64 -- ) {
+	-> count
+	-> arr
+	0 -> left
+	count 1 - -> right
+	loop {
+		left right >= if {
+			break
+		}
+		// Swap elements
+		arr left 8 * mem::get_i64 -> lval
+		arr right 8 * mem::get_i64 -> rval
+		rval arr left 8 * mem::set_i64
+		lval arr right 8 * mem::set_i64
+		left 1 + -> left
+		right 1 - -> right
+	}
+}
+
+/// Binary search for value in sorted array.
+/// @param arr ptr Sorted array of i64 values
+/// @param count i64 Number of elements
+/// @param needle i64 Value to find
+/// @return idx i64 Index if found, -1 otherwise
+/// @example arr count 42 sort::search -> idx
+pub fn search(arr:ptr count:i64 needle:i64 -- idx:i64) {
+	-> needle
+	-> count
+	-> arr
+	0 -> left
+	count -> right
+	-1 -> result
+	loop {
+		left right >= if {
+			break
+		}
+		left right + 2 / -> mid
+		arr mid 8 * mem::get_i64 -> midval
+		midval needle == if {
+			mid -> result
+			break
+		}
+		midval needle < if {
+			mid 1 + -> left
+		} else {
+			mid -> right
+		}
+	}
+	result
+}
+
+/// Sort an array of strings in ascending alphabetical order (insertion sort).
+/// @param arr ptr Array of string pointers
+/// @param count i64 Number of elements
+/// @example strs count sort::strings
+pub fn strings(arr:ptr count:i64 -- ) {
+	-> count
+	-> arr
+	// Insertion sort
+	1 count 1 for it {
+		it -> i
+		arr i 8 * mem::get_ptr -> key
+		i 1 - -> j
+		loop {
+			j 0 < if {
+				break
+			}
+			arr j 8 * mem::get_ptr -> jval
+			jval key str::compare 0 <= if {
+				break
+			}
+			// Move element right
+			jval arr j 1 + 8 * mem::set_ptr
+			j 1 - -> j
+		}
+		key arr j 1 + 8 * mem::set_ptr
+	}
+}
+
+/// Sort an array of strings in descending alphabetical order.
+/// @param arr ptr Array of string pointers
+/// @param count i64 Number of elements
+/// @example strs count sort::strings_desc
+pub fn strings_desc(arr:ptr count:i64 -- ) {
+	-> count
+	-> arr
+	// Insertion sort descending
+	1 count 1 for it {
+		it -> i
+		arr i 8 * mem::get_ptr -> key
+		i 1 - -> j
+		loop {
+			j 0 < if {
+				break
+			}
+			arr j 8 * mem::get_ptr -> jval
+			jval key str::compare 0 >= if {
+				break
+			}
+			// Move element right
+			jval arr j 1 + 8 * mem::set_ptr
+			j 1 - -> j
+		}
+		key arr j 1 + 8 * mem::set_ptr
+	}
+}

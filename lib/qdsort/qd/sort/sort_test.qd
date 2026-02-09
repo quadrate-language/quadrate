@@ -1,0 +1,446 @@
+use sort
+use mem
+use testing
+
+// --- sort::ints ---
+
+test "sort::ints ascending" {
+	5 8 * mem::alloc! -> arr
+	5 arr 0 mem::set_i64
+	2 arr 8 mem::set_i64
+	8 arr 16 mem::set_i64
+	1 arr 24 mem::set_i64
+	9 arr 32 mem::set_i64
+
+	arr 5 sort::ints
+
+	arr 0 mem::get_i64 1 testing::assert_eq
+	arr 8 mem::get_i64 2 testing::assert_eq
+	arr 16 mem::get_i64 5 testing::assert_eq
+	arr 24 mem::get_i64 8 testing::assert_eq
+	arr 32 mem::get_i64 9 testing::assert_eq
+
+	arr mem::free
+}
+
+test "sort::ints already sorted" {
+	3 8 * mem::alloc! -> arr
+	1 arr 0 mem::set_i64
+	2 arr 8 mem::set_i64
+	3 arr 16 mem::set_i64
+
+	arr 3 sort::ints
+
+	arr 0 mem::get_i64 1 testing::assert_eq
+	arr 8 mem::get_i64 2 testing::assert_eq
+	arr 16 mem::get_i64 3 testing::assert_eq
+
+	arr mem::free
+}
+
+test "sort::ints reverse sorted" {
+	4 8 * mem::alloc! -> arr
+	4 arr 0 mem::set_i64
+	3 arr 8 mem::set_i64
+	2 arr 16 mem::set_i64
+	1 arr 24 mem::set_i64
+
+	arr 4 sort::ints
+
+	arr 0 mem::get_i64 1 testing::assert_eq
+	arr 8 mem::get_i64 2 testing::assert_eq
+	arr 16 mem::get_i64 3 testing::assert_eq
+	arr 24 mem::get_i64 4 testing::assert_eq
+
+	arr mem::free
+}
+
+test "sort::ints single element" {
+	1 8 * mem::alloc! -> arr
+	42 arr 0 mem::set_i64
+
+	arr 1 sort::ints
+
+	arr 0 mem::get_i64 42 testing::assert_eq
+
+	arr mem::free
+}
+
+test "sort::ints with duplicates" {
+	5 8 * mem::alloc! -> arr
+	3 arr 0 mem::set_i64
+	1 arr 8 mem::set_i64
+	3 arr 16 mem::set_i64
+	2 arr 24 mem::set_i64
+	1 arr 32 mem::set_i64
+
+	arr 5 sort::ints
+
+	arr 0 mem::get_i64 1 testing::assert_eq
+	arr 8 mem::get_i64 1 testing::assert_eq
+	arr 16 mem::get_i64 2 testing::assert_eq
+	arr 24 mem::get_i64 3 testing::assert_eq
+	arr 32 mem::get_i64 3 testing::assert_eq
+
+	arr mem::free
+}
+
+test "sort::ints with negatives" {
+	4 8 * mem::alloc! -> arr
+	-5 arr 0 mem::set_i64
+	3 arr 8 mem::set_i64
+	-1 arr 16 mem::set_i64
+	0 arr 24 mem::set_i64
+
+	arr 4 sort::ints
+
+	arr 0 mem::get_i64 -5 testing::assert_eq
+	arr 8 mem::get_i64 -1 testing::assert_eq
+	arr 16 mem::get_i64 0 testing::assert_eq
+	arr 24 mem::get_i64 3 testing::assert_eq
+
+	arr mem::free
+}
+
+test "sort::ints all same value" {
+	3 8 * mem::alloc! -> arr
+	7 arr 0 mem::set_i64
+	7 arr 8 mem::set_i64
+	7 arr 16 mem::set_i64
+
+	arr 3 sort::ints
+
+	arr 0 mem::get_i64 7 testing::assert_eq
+	arr 8 mem::get_i64 7 testing::assert_eq
+	arr 16 mem::get_i64 7 testing::assert_eq
+
+	arr mem::free
+}
+
+// --- sort::ints_desc ---
+
+test "sort::ints_desc descending" {
+	5 8 * mem::alloc! -> arr
+	5 arr 0 mem::set_i64
+	2 arr 8 mem::set_i64
+	8 arr 16 mem::set_i64
+	1 arr 24 mem::set_i64
+	9 arr 32 mem::set_i64
+
+	arr 5 sort::ints_desc
+
+	arr 0 mem::get_i64 9 testing::assert_eq
+	arr 8 mem::get_i64 8 testing::assert_eq
+	arr 16 mem::get_i64 5 testing::assert_eq
+	arr 24 mem::get_i64 2 testing::assert_eq
+	arr 32 mem::get_i64 1 testing::assert_eq
+
+	arr mem::free
+}
+
+test "sort::ints_desc with negatives" {
+	4 8 * mem::alloc! -> arr
+	-5 arr 0 mem::set_i64
+	3 arr 8 mem::set_i64
+	-1 arr 16 mem::set_i64
+	0 arr 24 mem::set_i64
+
+	arr 4 sort::ints_desc
+
+	arr 0 mem::get_i64 3 testing::assert_eq
+	arr 8 mem::get_i64 0 testing::assert_eq
+	arr 16 mem::get_i64 -1 testing::assert_eq
+	arr 24 mem::get_i64 -5 testing::assert_eq
+
+	arr mem::free
+}
+
+// --- sort::min ---
+
+test "sort::min" {
+	3 8 * mem::alloc! -> arr
+	5 arr 0 mem::set_i64
+	2 arr 8 mem::set_i64
+	8 arr 16 mem::set_i64
+
+	arr 3 sort::min 2 testing::assert_eq
+
+	arr mem::free
+}
+
+test "sort::min with negatives" {
+	4 8 * mem::alloc! -> arr
+	3 arr 0 mem::set_i64
+	-10 arr 8 mem::set_i64
+	5 arr 16 mem::set_i64
+	-2 arr 24 mem::set_i64
+
+	arr 4 sort::min -10 testing::assert_eq
+
+	arr mem::free
+}
+
+test "sort::min single element" {
+	1 8 * mem::alloc! -> arr
+	42 arr 0 mem::set_i64
+
+	arr 1 sort::min 42 testing::assert_eq
+
+	arr mem::free
+}
+
+test "sort::min first element is min" {
+	3 8 * mem::alloc! -> arr
+	1 arr 0 mem::set_i64
+	5 arr 8 mem::set_i64
+	3 arr 16 mem::set_i64
+
+	arr 3 sort::min 1 testing::assert_eq
+
+	arr mem::free
+}
+
+test "sort::min last element is min" {
+	3 8 * mem::alloc! -> arr
+	5 arr 0 mem::set_i64
+	3 arr 8 mem::set_i64
+	1 arr 16 mem::set_i64
+
+	arr 3 sort::min 1 testing::assert_eq
+
+	arr mem::free
+}
+
+// --- sort::max ---
+
+test "sort::max" {
+	3 8 * mem::alloc! -> arr
+	5 arr 0 mem::set_i64
+	2 arr 8 mem::set_i64
+	8 arr 16 mem::set_i64
+
+	arr 3 sort::max 8 testing::assert_eq
+
+	arr mem::free
+}
+
+test "sort::max with negatives" {
+	3 8 * mem::alloc! -> arr
+	-5 arr 0 mem::set_i64
+	-2 arr 8 mem::set_i64
+	-8 arr 16 mem::set_i64
+
+	arr 3 sort::max -2 testing::assert_eq
+
+	arr mem::free
+}
+
+// --- sort::search ---
+
+test "sort::search finds element" {
+	5 8 * mem::alloc! -> arr
+	1 arr 0 mem::set_i64
+	2 arr 8 mem::set_i64
+	5 arr 16 mem::set_i64
+	8 arr 24 mem::set_i64
+	9 arr 32 mem::set_i64
+
+	arr 5 5 sort::search 2 testing::assert_eq
+	arr 5 1 sort::search 0 testing::assert_eq
+	arr 5 9 sort::search 4 testing::assert_eq
+
+	arr mem::free
+}
+
+test "sort::search not found" {
+	5 8 * mem::alloc! -> arr
+	1 arr 0 mem::set_i64
+	2 arr 8 mem::set_i64
+	5 arr 16 mem::set_i64
+	8 arr 24 mem::set_i64
+	9 arr 32 mem::set_i64
+
+	arr 5 3 sort::search -1 testing::assert_eq
+	arr 5 0 sort::search -1 testing::assert_eq
+	arr 5 10 sort::search -1 testing::assert_eq
+
+	arr mem::free
+}
+
+test "sort::search single element found" {
+	1 8 * mem::alloc! -> arr
+	42 arr 0 mem::set_i64
+
+	arr 1 42 sort::search 0 testing::assert_eq
+
+	arr mem::free
+}
+
+test "sort::search single element not found" {
+	1 8 * mem::alloc! -> arr
+	42 arr 0 mem::set_i64
+
+	arr 1 99 sort::search -1 testing::assert_eq
+
+	arr mem::free
+}
+
+// --- sort::is_sorted ---
+
+test "sort::is_sorted true" {
+	3 8 * mem::alloc! -> arr
+	1 arr 0 mem::set_i64
+	2 arr 8 mem::set_i64
+	3 arr 16 mem::set_i64
+
+	arr 3 sort::is_sorted testing::assert_true
+
+	arr mem::free
+}
+
+test "sort::is_sorted false" {
+	3 8 * mem::alloc! -> arr
+	3 arr 0 mem::set_i64
+	1 arr 8 mem::set_i64
+	2 arr 16 mem::set_i64
+
+	arr 3 sort::is_sorted testing::assert_false
+
+	arr mem::free
+}
+
+test "sort::is_sorted single element" {
+	1 8 * mem::alloc! -> arr
+	42 arr 0 mem::set_i64
+
+	arr 1 sort::is_sorted testing::assert_true
+
+	arr mem::free
+}
+
+test "sort::is_sorted with equal elements" {
+	3 8 * mem::alloc! -> arr
+	5 arr 0 mem::set_i64
+	5 arr 8 mem::set_i64
+	5 arr 16 mem::set_i64
+
+	arr 3 sort::is_sorted testing::assert_true
+
+	arr mem::free
+}
+
+test "sort::is_sorted after sort" {
+	4 8 * mem::alloc! -> arr
+	9 arr 0 mem::set_i64
+	1 arr 8 mem::set_i64
+	5 arr 16 mem::set_i64
+	3 arr 24 mem::set_i64
+
+	arr 4 sort::is_sorted testing::assert_false
+	arr 4 sort::ints
+	arr 4 sort::is_sorted testing::assert_true
+
+	arr mem::free
+}
+
+// --- sort::reverse ---
+
+test "sort::reverse" {
+	4 8 * mem::alloc! -> arr
+	1 arr 0 mem::set_i64
+	2 arr 8 mem::set_i64
+	3 arr 16 mem::set_i64
+	4 arr 24 mem::set_i64
+
+	arr 4 sort::reverse
+
+	arr 0 mem::get_i64 4 testing::assert_eq
+	arr 8 mem::get_i64 3 testing::assert_eq
+	arr 16 mem::get_i64 2 testing::assert_eq
+	arr 24 mem::get_i64 1 testing::assert_eq
+
+	arr mem::free
+}
+
+test "sort::reverse odd count" {
+	3 8 * mem::alloc! -> arr
+	10 arr 0 mem::set_i64
+	20 arr 8 mem::set_i64
+	30 arr 16 mem::set_i64
+
+	arr 3 sort::reverse
+
+	arr 0 mem::get_i64 30 testing::assert_eq
+	arr 8 mem::get_i64 20 testing::assert_eq
+	arr 16 mem::get_i64 10 testing::assert_eq
+
+	arr mem::free
+}
+
+test "sort::reverse single element" {
+	1 8 * mem::alloc! -> arr
+	42 arr 0 mem::set_i64
+
+	arr 1 sort::reverse
+
+	arr 0 mem::get_i64 42 testing::assert_eq
+
+	arr mem::free
+}
+
+test "sort::reverse twice restores original" {
+	3 8 * mem::alloc! -> arr
+	1 arr 0 mem::set_i64
+	2 arr 8 mem::set_i64
+	3 arr 16 mem::set_i64
+
+	arr 3 sort::reverse
+	arr 3 sort::reverse
+
+	arr 0 mem::get_i64 1 testing::assert_eq
+	arr 8 mem::get_i64 2 testing::assert_eq
+	arr 16 mem::get_i64 3 testing::assert_eq
+
+	arr mem::free
+}
+
+// --- sort::strings ---
+
+// --- sort + reverse combo ---
+
+test "sort::ints then reverse gives descending" {
+	4 8 * mem::alloc! -> arr
+	3 arr 0 mem::set_i64
+	1 arr 8 mem::set_i64
+	4 arr 16 mem::set_i64
+	2 arr 24 mem::set_i64
+
+	arr 4 sort::ints
+	arr 4 sort::reverse
+
+	arr 0 mem::get_i64 4 testing::assert_eq
+	arr 8 mem::get_i64 3 testing::assert_eq
+	arr 16 mem::get_i64 2 testing::assert_eq
+	arr 24 mem::get_i64 1 testing::assert_eq
+
+	arr mem::free
+}
+
+// --- sort + search combo ---
+
+test "sort then search" {
+	5 8 * mem::alloc! -> arr
+	50 arr 0 mem::set_i64
+	10 arr 8 mem::set_i64
+	30 arr 16 mem::set_i64
+	40 arr 24 mem::set_i64
+	20 arr 32 mem::set_i64
+
+	arr 5 sort::ints
+	arr 5 30 sort::search 2 testing::assert_eq
+	arr 5 10 sort::search 0 testing::assert_eq
+	arr 5 50 sort::search 4 testing::assert_eq
+	arr 5 25 sort::search -1 testing::assert_eq
+
+	arr mem::free
+}

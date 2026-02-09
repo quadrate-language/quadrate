@@ -16,4 +16,4 @@ uri https://github.com/quadrate-language/uri
 hex https://github.com/quadrate-language/hex
 base64 https://github.com/quadrate-language/base64
 uuid https://github.com/quadrate-language/uuid
-sort https://github.com/quadrate-language/sort
+
