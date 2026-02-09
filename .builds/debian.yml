@@ -45,12 +45,6 @@ tasks:
   - valgrind: |
       cd quadrate
       make valgrind
-  - mirror-to-github: |
-      cd ~/quadrate
-      ssh-keyscan github.com >> ~/.ssh/known_hosts
-      git remote add github git@github.com:quadrate-language/quadrate.git || \
-        git remote set-url github git@github.com:quadrate-language/quadrate.git
-      git push --mirror github
 
 triggers:
   - action: email
