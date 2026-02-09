@@ -15,7 +15,7 @@ namespace Qd {
 
 	public:
 		AstNodeIdentifier(const std::string& name)
-			: mName(name), mParent(nullptr), mAbortOnError(false), mLine(0), mColumn(0) {
+			: mName(name), mParent(nullptr), mAbortOnError(false), mPropagateOnError(false), mLine(0), mColumn(0) {
 		}
 
 		IAstNode::Type type() const override {
@@ -63,6 +63,14 @@ namespace Qd {
 			return mAbortOnError;
 		}
 
+		void setPropagateOnError(bool propagate) {
+			mPropagateOnError = propagate;
+		}
+
+		bool propagateOnError() const {
+			return mPropagateOnError;
+		}
+
 		const std::vector<CastDirection>& parameterCasts() const {
 			return mParameterCasts;
 		}
@@ -108,6 +116,7 @@ namespace Qd {
 		std::string mName;
 		IAstNode* mParent;
 		bool mAbortOnError;
+		bool mPropagateOnError;
 		size_t mLine;
 		size_t mColumn;
 		std::vector<CastDirection> mParameterCasts; // Which parameters need casts (indexed from bottom of stack)

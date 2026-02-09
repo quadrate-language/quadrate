@@ -1,0 +1,26 @@
+// Test: ? with defer - defer should still execute when ? causes early return
+fn might_fail(x:i64 -- result:i64)! {
+	-> x
+	x 0 < if { "negative" 1 panic }
+	x 10 +
+}
+
+fn with_defer(x:i64 -- result:i64)! {
+	-> x
+	defer { "defer ran" print nl }
+	x might_fail?
+	2 *
+}
+
+fn main() {
+	// Success path: defer runs after function completes
+	5 with_defer switch {
+		Ok { "5 -> " print print nl }
+		_ { "failed" print nl }
+	}
+	// Error path: defer should still run before returning
+	-1 with_defer switch {
+		Ok { "-1 -> " print print nl }
+		_ { "error propagated" print nl }
+	}
+}

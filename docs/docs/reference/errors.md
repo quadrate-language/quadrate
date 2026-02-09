@@ -153,18 +153,30 @@ fn compute(x:i64 -- result:i64)! {
 
 **Warning**: Using `!` terminates the entire program if the function fails. Only use when crashing is acceptable (e.g., during initialization or in scripts).
 
-### Propagating errors
+### With ? (propagate to caller)
 
-To propagate errors to the caller, handle with `if/else` and call `panic`:
+Automatically propagate errors to the calling function:
 
 ```qd
 fn compute(x:i64 -- result:i64)! {
 	-> x
-	x 2 divide if {
-		10 +
-	} else {
-		"compute failed" 1 panic
+	x 2 divide?  // Propagates error to caller if divide fails
+	10 +
+}
+```
+
+The `?` operator requires the enclosing function to be fallible (marked with `!`). On error, it immediately returns from the current function, preserving the error state.
+
+This is equivalent to the more verbose pattern:
+
+```qd
+fn compute(x:i64 -- result:i64)! {
+	-> x
+	x 2 divide switch {
+		Ok { }
+		_ { err panic }
 	}
+	10 +
 }
 ```
 

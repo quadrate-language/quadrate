@@ -512,8 +512,7 @@ namespace Qd {
 						nativeArgs.push_back(*rit);
 					}
 					if (info.outputCount == 1) {
-						llvm::Value* result =
-								builder->CreateCall(nativeIt->second, nativeArgs, "inline_call");
+						llvm::Value* result = builder->CreateCall(nativeIt->second, nativeArgs, "inline_call");
 						if (info.outputType == NativeParamType::F64) {
 							generateInlinePushFloatValue(ctx, result);
 						} else {
@@ -564,6 +563,23 @@ namespace Qd {
 					// Continue block - user-defined functions don't push success status
 					builder->SetInsertPoint(continueBlock);
 					// Note: don't drop here - only imported C functions push success status
+				} else if (ident->propagateOnError()) {
+					// ? operator: propagate error to caller
+					llvm::BasicBlock* errorBlock = llvm::BasicBlock::Create(
+							*context, "error_propagate", builder->GetInsertBlock()->getParent());
+					llvm::BasicBlock* continueBlock =
+							llvm::BasicBlock::Create(*context, "no_error", builder->GetInsertBlock()->getParent());
+
+					builder->CreateCondBr(hasError, errorBlock, continueBlock);
+
+					builder->SetInsertPoint(errorBlock);
+					if (currentFunctionReturnBlock) {
+						builder->CreateBr(currentFunctionReturnBlock);
+					} else {
+						builder->CreateUnreachable();
+					}
+
+					builder->SetInsertPoint(continueBlock);
 				} else {
 					// No operator or ? operator: push error status
 					// Convert bool to success status: true (error) -> 0, false (no error) -> 1
@@ -876,6 +892,23 @@ namespace Qd {
 						// Continue - user-defined methods don't push success status
 						builder->SetInsertPoint(continueBlock);
 						// Note: don't drop here - only imported C functions push success status
+					} else if (scopedIdent->propagateOnError()) {
+						// ? operator: propagate error to caller
+						llvm::BasicBlock* errorBlock = llvm::BasicBlock::Create(
+								*context, "error_propagate", builder->GetInsertBlock()->getParent());
+						llvm::BasicBlock* continueBlock =
+								llvm::BasicBlock::Create(*context, "no_error", builder->GetInsertBlock()->getParent());
+
+						builder->CreateCondBr(hasError, errorBlock, continueBlock);
+
+						builder->SetInsertPoint(errorBlock);
+						if (currentFunctionReturnBlock) {
+							builder->CreateBr(currentFunctionReturnBlock);
+						} else {
+							builder->CreateUnreachable();
+						}
+
+						builder->SetInsertPoint(continueBlock);
 					} else {
 						auto successStatus = builder->CreateSelect(
 								hasError, builder->getInt64(0), builder->getInt64(1), "success_status");
@@ -994,6 +1027,32 @@ namespace Qd {
 
 				// For imported C functions, pop the success status they pushed
 				// (since ! operator handles error via error_code, not stack-based status)
+				if (importedCFunctions.find(fullName) != importedCFunctions.end()) {
+					generateInlineDrop(ctx);
+				}
+			} else if (scopedIdent->propagateOnError()) {
+				// ? operator: propagate error to caller
+				llvm::BasicBlock* errorBlock =
+						llvm::BasicBlock::Create(*context, "error_propagate", builder->GetInsertBlock()->getParent());
+				llvm::BasicBlock* continueBlock =
+						llvm::BasicBlock::Create(*context, "no_error", builder->GetInsertBlock()->getParent());
+
+				builder->CreateCondBr(hasError, errorBlock, continueBlock);
+
+				builder->SetInsertPoint(errorBlock);
+				// For imported C functions, drop the error status they pushed before returning
+				if (importedCFunctions.find(fullName) != importedCFunctions.end()) {
+					generateInlineDrop(ctx);
+				}
+				if (currentFunctionReturnBlock) {
+					builder->CreateBr(currentFunctionReturnBlock);
+				} else {
+					builder->CreateUnreachable();
+				}
+
+				builder->SetInsertPoint(continueBlock);
+
+				// For imported C functions, pop the success status they pushed
 				if (importedCFunctions.find(fullName) != importedCFunctions.end()) {
 					generateInlineDrop(ctx);
 				}

@@ -1,0 +1,4 @@
+defer ran
+5 -> 30
+defer ran
+error propagated

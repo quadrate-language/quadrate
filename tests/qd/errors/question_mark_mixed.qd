@@ -1,0 +1,34 @@
+// Test: mixing ?, !, and bare fallible calls in one function
+fn risky(x:i64 -- result:i64)! {
+	-> x
+	x 0 < if { "risky: negative" 1 panic }
+	x 100 +
+}
+
+fn combined(x:i64 -- result:i64)! {
+	-> x
+	// Use ? to propagate
+	x risky?
+	-> a
+
+	// Use ! to abort on error (success guaranteed here since a > 0)
+	a risky!
+	-> b
+
+	// Use bare call with switch
+	b risky switch {
+		Ok { }
+		_ { err panic }
+	}
+}
+
+fn main() {
+	5 combined switch {
+		Ok { "5 -> " print print nl }
+		_ { err -> c -> m "error: " print m print nl }
+	}
+	-1 combined switch {
+		Ok { "-1 -> " print print nl }
+		_ { err -> c -> m "error: " print m print nl }
+	}
+}

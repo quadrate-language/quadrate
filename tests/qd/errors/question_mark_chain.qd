@@ -1,0 +1,31 @@
+// Test: ? operator chained through multiple levels
+fn step1(x:i64 -- result:i64)! {
+	-> val
+	val 0 < if { "step1: negative" 1 panic }
+	val 10 +
+}
+
+fn step2(x:i64 -- result:i64)! {
+	-> val
+	val step1?
+	2 *
+}
+
+fn step3(x:i64 -- result:i64)! {
+	-> val
+	val step2?
+	1 +
+}
+
+fn main() {
+	// Success: 5 -> step1(15) -> step2(30) -> step3(31)
+	5 step3 switch {
+		Ok { "5 -> " print print nl }
+		_ { err -> c -> m "error: " print m print nl }
+	}
+	// Error propagates through step3 -> step2 -> step1
+	-1 step3 switch {
+		Ok { "-1 -> " print print nl }
+		_ { err -> c -> m "error: " print m print nl }
+	}
+}

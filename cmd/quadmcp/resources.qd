@@ -55,15 +55,16 @@ fn get_common_mistakes_content( -- content:str) {
 
 	s "4. NOT HANDLING FAILABLE FUNCTIONS\n" str::concat -> s
 	s "-----------------------------------\n" str::concat -> s
-	s "Problem: Functions ending conceptually in ? must be handled.\n\n" str::concat -> s
+	s "Problem: Failable functions (marked !) must be handled.\n\n" str::concat -> s
 	s "WRONG:\n" str::concat -> s
 	s "  path io::read_file -> content  // ERROR: must handle failure\n\n" str::concat -> s
 	s "RIGHT:\n" str::concat -> s
 	s "  path io::read_file! -> content  // Use ! to panic on error\n" str::concat -> s
+	s "  path io::read_file? -> content  // Use ? to propagate error to caller\n" str::concat -> s
 	s "  // OR use switch:\n" str::concat -> s
 	s "  path io::read_file switch {\n" str::concat -> s
 	s "    Ok { -> content }\n" str::concat -> s
-	s "    Err { -> code -> msg }\n" str::concat -> s
+	s "    _ { err -> code -> msg }\n" str::concat -> s
 	s "  }\n\n" str::concat -> s
 
 	s "5. TYPE MISMATCHES\n" str::concat -> s
@@ -162,13 +163,19 @@ fn get_best_practices_content( -- content:str) {
 	s "3. ERROR HANDLING PATTERNS\n" str::concat -> s
 	s "---------------------------\n" str::concat -> s
 	s "Use ! for operations that should never fail.\n" str::concat -> s
+	s "Use ? to propagate errors to the caller.\n" str::concat -> s
 	s "Use switch for operations where failure is expected.\n\n" str::concat -> s
 	s "GOOD - Use ! for critical operations:\n" str::concat -> s
 	s "  config_path io::read_file! -> config  // Fail fast\n\n" str::concat -> s
+	s "GOOD - Use ? to propagate errors:\n" str::concat -> s
+	s "  fn load(path:str -- content:str)! {\n" str::concat -> s
+	s "    path io::read_file? -> content  // Error propagates to caller\n" str::concat -> s
+	s "    content\n" str::concat -> s
+	s "  }\n\n" str::concat -> s
 	s "GOOD - Use switch for user input:\n" str::concat -> s
 	s "  user_file io::read_file switch {\n" str::concat -> s
 	s "    Ok { -> content  content process }\n" str::concat -> s
-	s "    Err { -> _ -> msg  msg log_error  default_value }\n" str::concat -> s
+	s "    _ { err -> _ -> msg  msg log_error  default_value }\n" str::concat -> s
 	s "  }\n\n" str::concat -> s
 
 	s "4. CLEAR FUNCTION SIGNATURES\n" str::concat -> s
@@ -421,7 +428,7 @@ fn get_snippet_content(uri:str -- content:str) {
 	resource_uri_to_index switch {
 		1 { "// Hello World\nfn main() {\n\t42 print nl\n}" }
 		2 { "// File I/O\nuse io\n\nfn read_example() {\n\tpath io::read_file switch {\n\t\tOk { -> content content print nl }\n\t\t_ { 1 os::exit }\n\t}\n}\n\nfn write_example() {\n\tpath data io::write_file!\n}" }
-		3 { "// Error Handling\n\n// Method 1: ! suffix panics on error\npath io::read_file! -> content\n\n// Method 2: switch handles error\npath io::read_file switch {\n\tOk { -> content }\n\tErr { err -> code -> msg }\n}" }
+		3 { "// Error Handling\n\n// Method 1: ! suffix panics on error\npath io::read_file! -> content\n\n// Method 2: ? propagates error to caller (caller must be fallible !)\npath io::read_file? -> content\n\n// Method 3: switch handles error\npath io::read_file switch {\n\tOk { -> content }\n\t_ { err -> code -> msg }\n}" }
 		4 { "// Structs\n\nstruct Point {\n\tx: f64\n\ty: f64\n}\n\nfn main() {\n\tPoint { x = 10.0 y = 20.0 } -> p\n\tp @x print nl  // 10.0\n\tp 30.0 #x -> p2 // update x\n}" }
 		5 { "// Loops\n\n// For loop\n0 10 1 for i { i print nl }\n\n// While loop\n0 -> x\nx 5 < while { x print nl  x 1 + -> x  x 5 < }\n\n// Loop with break\nloop { cond if { break } }" }
 		6 { "// Stack Operations\n\n5 dup      // 5 5 (duplicate)\n1 2 swap   // 2 1 (swap top two)\n1 2 drop   // 1 (remove top)\n1 2 over   // 1 2 1 (copy second)\n1 2 3 rot  // 2 3 1 (rotate)\n1 2 nip    // 2 (remove second)\n42 -> x    // bind to variable" }

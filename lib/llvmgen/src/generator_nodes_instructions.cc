@@ -499,32 +499,49 @@ namespace Qd {
 				builder->CreateCall(methodFn, {ctx});
 
 				// Handle fallible method calls
-				if (inst->abortOnError()) {
-					// Check error code and abort if set
+				if (inst->abortOnError() || inst->propagateOnError()) {
+					// Check error code
 					auto errorCodePtr = builder->CreateStructGEP(contextStructTy, ctx, 1, "error_code_ptr");
 					auto errorCode = builder->CreateLoad(int64Ty, errorCodePtr, "error_code");
 					auto hasError = builder->CreateICmpNE(errorCode, builder->getInt64(0), "has_error");
 
-					llvm::BasicBlock* errorBlock =
-							llvm::BasicBlock::Create(*context, "error_abort", builder->GetInsertBlock()->getParent());
-					llvm::BasicBlock* continueBlock =
-							llvm::BasicBlock::Create(*context, "no_error", builder->GetInsertBlock()->getParent());
+					if (inst->abortOnError()) {
+						llvm::BasicBlock* errorBlock = llvm::BasicBlock::Create(
+								*context, "error_abort", builder->GetInsertBlock()->getParent());
+						llvm::BasicBlock* continueBlock =
+								llvm::BasicBlock::Create(*context, "no_error", builder->GetInsertBlock()->getParent());
 
-					builder->CreateCondBr(hasError, errorBlock, continueBlock);
+						builder->CreateCondBr(hasError, errorBlock, continueBlock);
 
-					// Error block: print message and abort
-					builder->SetInsertPoint(errorBlock);
+						// Error block: print message and abort
+						builder->SetInsertPoint(errorBlock);
 
-					// Print error message with context->error_msg if available
-					auto funcNameStr = builder->CreateGlobalString(name);
-					builder->CreateCall(printErrorMsgFn, {ctx, funcNameStr});
-					builder->CreateCall(printStackTraceFn, {ctx});
-					builder->CreateCall(exitFn, {builder->getInt32(1)});
-					builder->CreateUnreachable();
+						auto funcNameStr = builder->CreateGlobalString(name);
+						builder->CreateCall(printErrorMsgFn, {ctx, funcNameStr});
+						builder->CreateCall(printStackTraceFn, {ctx});
+						builder->CreateCall(exitFn, {builder->getInt32(1)});
+						builder->CreateUnreachable();
 
-					// Continue block - user-defined methods don't push a success status
-					builder->SetInsertPoint(continueBlock);
-					// Note: don't drop here - only imported C functions push success status
+						// Continue block - user-defined methods don't push a success status
+						builder->SetInsertPoint(continueBlock);
+					} else {
+						// ? operator: propagate error to caller
+						llvm::BasicBlock* errorBlock = llvm::BasicBlock::Create(
+								*context, "error_propagate", builder->GetInsertBlock()->getParent());
+						llvm::BasicBlock* continueBlock =
+								llvm::BasicBlock::Create(*context, "no_error", builder->GetInsertBlock()->getParent());
+
+						builder->CreateCondBr(hasError, errorBlock, continueBlock);
+
+						builder->SetInsertPoint(errorBlock);
+						if (currentFunctionReturnBlock) {
+							builder->CreateBr(currentFunctionReturnBlock);
+						} else {
+							builder->CreateUnreachable();
+						}
+
+						builder->SetInsertPoint(continueBlock);
+					}
 				}
 
 				return;

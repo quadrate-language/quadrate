@@ -564,11 +564,14 @@ namespace Qd {
 
 			AstNodeIdentifier* node = new AstNodeIdentifier(text);
 			setNodePosition(node, scanner, src);
-			// Check for '!' suffix
+			// Check for '!' or '?' suffix
 			char32_t nextToken = u8t_scanner_peek(scanner);
 			if (nextToken == '!') {
 				u8t_scanner_scan(scanner); // Consume the '!'
 				node->setAbortOnError(true);
+			} else if (nextToken == '?') {
+				u8t_scanner_scan(scanner); // Consume the '?'
+				node->setPropagateOnError(true);
 			}
 			return node;
 		}
@@ -764,6 +767,9 @@ namespace Qd {
 						if (nextToken == '!') {
 							u8t_scanner_scan(scanner); // Consume the '!'
 							scoped->setAbortOnError(true);
+						} else if (nextToken == '?') {
+							u8t_scanner_scan(scanner); // Consume the '?'
+							scoped->setPropagateOnError(true);
 						}
 						tempNodes.push_back(scoped);
 					} else {
@@ -1117,11 +1123,14 @@ namespace Qd {
 
 						AstNodeScopedIdentifier* scoped = new AstNodeScopedIdentifier(scopeName, memberName);
 						setNodePosition(scoped, scanner, src);
-						// Check for '!' suffix
+						// Check for '!' or '?' suffix
 						char32_t suffixToken = u8t_scanner_peek(scanner);
 						if (suffixToken == '!') {
 							u8t_scanner_scan(scanner); // Consume the '!'
 							scoped->setAbortOnError(true);
+						} else if (suffixToken == '?') {
+							u8t_scanner_scan(scanner); // Consume the '?'
+							scoped->setPropagateOnError(true);
 						}
 						return scoped;
 					}
@@ -1171,11 +1180,14 @@ namespace Qd {
 
 			AstNodeIdentifier* node = new AstNodeIdentifier(text);
 			setNodePosition(node, scanner, src);
-			// Check for '!' suffix
+			// Check for '!' or '?' suffix
 			nextToken = u8t_scanner_peek(scanner);
 			if (nextToken == '!') {
 				u8t_scanner_scan(scanner); // Consume the '!'
 				node->setAbortOnError(true);
+			} else if (nextToken == '?') {
+				u8t_scanner_scan(scanner); // Consume the '?'
+				node->setPropagateOnError(true);
 			}
 			return node;
 		}
@@ -1699,6 +1711,9 @@ namespace Qd {
 						if (nextToken == '!') {
 							u8t_scanner_scan(scanner); // Consume the '!'
 							scoped->setAbortOnError(true);
+						} else if (nextToken == '?') {
+							u8t_scanner_scan(scanner); // Consume the '?'
+							scoped->setPropagateOnError(true);
 						}
 						tempNodes.push_back(scoped);
 					} else {
@@ -2280,11 +2295,14 @@ namespace Qd {
 									AstNodeScopedIdentifier* scoped =
 											new AstNodeScopedIdentifier(scopeName, memberName);
 									setNodePosition(scoped, scanner, src);
-									// Check for '!' suffix
+									// Check for '!' or '?' suffix
 									char32_t suffixToken = u8t_scanner_peek(scanner);
 									if (suffixToken == '!') {
 										u8t_scanner_scan(scanner);
 										scoped->setAbortOnError(true);
+									} else if (suffixToken == '?') {
+										u8t_scanner_scan(scanner);
+										scoped->setPropagateOnError(true);
 									}
 									tempNodes.push_back(scoped);
 									continue;
@@ -2329,11 +2347,14 @@ namespace Qd {
 
 						AstNodeIdentifier* id = new AstNodeIdentifier(text);
 						setNodePosition(id, scanner, src);
-						// Check for '!' suffix
+						// Check for '!' or '?' suffix
 						nextToken = u8t_scanner_peek(scanner);
 						if (nextToken == '!') {
 							u8t_scanner_scan(scanner); // Consume the '!'
 							id->setAbortOnError(true);
+						} else if (nextToken == '?') {
+							u8t_scanner_scan(scanner); // Consume the '?'
+							id->setPropagateOnError(true);
 						}
 						tempNodes.push_back(id);
 					}
@@ -2455,6 +2476,18 @@ namespace Qd {
 						AstNodeInstruction* instr = new AstNodeInstruction("not");
 						setNodePosition(instr, scanner, src);
 						tempNodes.push_back(instr);
+					}
+				}
+			} else if (token == '?') {
+				// Handle '?' as error propagation marker on previous node
+				if (!tempNodes.empty()) {
+					IAstNode* prevNode = tempNodes.back();
+					if (prevNode->type() == IAstNode::Type::IDENTIFIER) {
+						static_cast<AstNodeIdentifier*>(prevNode)->setPropagateOnError(true);
+					} else if (prevNode->type() == IAstNode::Type::INSTRUCTION) {
+						static_cast<AstNodeInstruction*>(prevNode)->setPropagateOnError(true);
+					} else if (prevNode->type() == IAstNode::Type::SCOPED_IDENTIFIER) {
+						static_cast<AstNodeScopedIdentifier*>(prevNode)->setPropagateOnError(true);
 					}
 				}
 			} else if (token == '&') {
@@ -3048,11 +3081,14 @@ namespace Qd {
 
 							AstNodeScopedIdentifier* scoped = new AstNodeScopedIdentifier(scopeName, memberName);
 							setNodePosition(scoped, scanner, src);
-							// Check for '!' suffix
+							// Check for '!' or '?' suffix
 							char32_t suffixToken = u8t_scanner_peek(scanner);
 							if (suffixToken == '!') {
 								u8t_scanner_scan(scanner);
 								scoped->setAbortOnError(true);
+							} else if (suffixToken == '?') {
+								u8t_scanner_scan(scanner);
+								scoped->setPropagateOnError(true);
 							}
 							currentFieldNodes.push_back(scoped);
 							continue;
@@ -3068,11 +3104,14 @@ namespace Qd {
 				} else {
 					AstNodeIdentifier* ident = new AstNodeIdentifier(text);
 					setNodePosition(ident, scanner, src);
-					// Check for '!' suffix
+					// Check for '!' or '?' suffix
 					nextToken = u8t_scanner_peek(scanner);
 					if (nextToken == '!') {
 						u8t_scanner_scan(scanner);
 						ident->setAbortOnError(true);
+					} else if (nextToken == '?') {
+						u8t_scanner_scan(scanner);
+						ident->setPropagateOnError(true);
 					}
 					currentFieldNodes.push_back(ident);
 				}

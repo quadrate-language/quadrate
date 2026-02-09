@@ -1,0 +1,45 @@
+// Test: ? inside nested if/else blocks
+fn validate(x:i64 -- result:i64)! {
+	-> x
+	x 0 < if { "negative" 1 panic }
+	x
+}
+
+fn complex(x:i64 mode:i64 -- result:i64)! {
+	-> mode -> x
+	mode 1 == if {
+		x validate?
+		10 +
+	} else {
+		mode 2 == if {
+			x validate?
+			20 +
+		} else {
+			x validate?
+			30 +
+		}
+	}
+}
+
+fn main() {
+	5 1 complex switch {
+		Ok { "mode1(5): " print print nl }
+		_ { "failed" print nl }
+	}
+	5 2 complex switch {
+		Ok { "mode2(5): " print print nl }
+		_ { "failed" print nl }
+	}
+	5 3 complex switch {
+		Ok { "mode3(5): " print print nl }
+		_ { "failed" print nl }
+	}
+	-1 1 complex switch {
+		Ok { "mode1(-1): " print print nl }
+		_ { "error in mode1" print nl }
+	}
+	-1 2 complex switch {
+		Ok { "mode2(-1): " print print nl }
+		_ { "error in mode2" print nl }
+	}
+}

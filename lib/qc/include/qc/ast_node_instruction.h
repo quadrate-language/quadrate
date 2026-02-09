@@ -94,6 +94,14 @@ namespace Qd {
 			return mAbortOnError;
 		}
 
+		void setPropagateOnError(bool propagate) {
+			mPropagateOnError = propagate;
+		}
+
+		bool propagateOnError() const {
+			return mPropagateOnError;
+		}
+
 	private:
 		// Semantic validation setters (only accessible by SemanticValidator)
 		void setIsMethodCall(bool isMethod) {
@@ -122,6 +130,7 @@ namespace Qd {
 		size_t mMethodInputParamCount = 0;
 		size_t mMethodReceiverPositionFromTop = 0;
 		bool mAbortOnError = false;
+		bool mPropagateOnError = false;
 	};
 }
 

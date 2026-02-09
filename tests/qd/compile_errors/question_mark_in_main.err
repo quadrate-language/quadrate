@@ -1,0 +1,1 @@
+Cannot use '?' operator on function 'might_fail': enclosing function must be fallible

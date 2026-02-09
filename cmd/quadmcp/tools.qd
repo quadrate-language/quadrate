@@ -717,7 +717,9 @@ fn tool_trace_stack(args:str -- result:str) {
 		output "  nl        ( -- )         print newline\n\n" str::concat -> output
 
 		output "FUNCTION CALLS:\n" str::concat -> output
-		output "  mod::fn   (args -- results)  call function (see fn signature)\n\n" str::concat -> output
+		output "  mod::fn   (args -- results)  call function (see fn signature)\n" str::concat -> output
+		output "  mod::fn!  abort on error (failable functions)\n" str::concat -> output
+		output "  mod::fn?  propagate error to caller (failable functions)\n\n" str::concat -> output
 
 		output "Example trace for '1 2 + dup *':\n" str::concat -> output
 		output "  1    : ( -- 1)           Stack: [1]\n" str::concat -> output
@@ -755,7 +757,7 @@ fn tool_generate_template(args:str -- result:str) {
 								"STRUCT CRUD TEMPLATE\n====================\n\nstruct Item {\n    id: i64\n    name: str\n    count: i64\n}\n\n// Create\nfn new_item(id:i64 name:str -- item:Item) {\n    Item { id = id name = name count = 0 }\n}\n\n// Read: item @field_name\n// Update: item value #field_name\n\nfn main() {\n    1 name new_item -> item\n    item @name print nl\n    item 10 #count -> item\n    item @count print nl\n}" tool_text_result
 							} else {
 								template "error-handling" str::compare 0 == if {
-									"ERROR HANDLING TEMPLATE\n=======================\nuse io\n\n// Method 1: Panic with !\n//   path io::read_file!\n\n// Method 2: Switch on result\nfn try_read(path:str -- content:str ok:i64) {\n    path io::read_file switch {\n        Ok { -> content content 1 }\n        Err { -> _ -> _ empty 0 }\n    }\n}\n\n// Method 3: Default on error\nfn read_or(path:str default:str -- content:str) {\n    path io::read_file switch {\n        Ok { -> content content }\n        Err { -> _ -> _ default }\n    }\n}" tool_text_result
+									"ERROR HANDLING TEMPLATE\n=======================\nuse io\n\n// Method 1: Panic with !\n//   path io::read_file!\n\n// Method 2: Propagate with ? (caller must be fallible !)\nfn read_file(path:str -- content:str)! {\n    path io::read_file? -> content\n    content\n}\n\n// Method 3: Switch on result\nfn try_read(path:str -- content:str ok:i64) {\n    path io::read_file switch {\n        Ok { -> content content 1 }\n        _ { empty 0 }\n    }\n}\n\n// Method 4: Default on error\nfn read_or(path:str default:str -- content:str) {\n    path io::read_file switch {\n        Ok { -> content content }\n        _ { default }\n    }\n}" tool_text_result
 								} else {
 									template "loop-array" str::compare 0 == if {
 										"LOOP AND ARRAY TEMPLATE\n=======================\n\n// Create array of n integers\nfn make_array(n:i64 -- arr:ptr) {\n    n makei -> arr\n    0 n 1 for i {\n        arr i i set -> arr\n    }\n    arr\n}\n\n// Sum with for loop\nfn sum(arr:ptr -- total:i64) {\n    0 -> total\n    0 arr len 1 for i {\n        total arr i nth + -> total\n    }\n    total\n}\n\n// Find with loop/break\nfn find(arr:ptr val:i64 -- idx:i64) {\n    0 1 negate -> idx\n    0 -> i\n    loop {\n        i arr len >= if { break }\n        arr i nth val == if { i -> idx break }\n        i 1 + -> i\n    }\n    idx\n}" tool_text_result

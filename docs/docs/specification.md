@@ -898,6 +898,16 @@ The `error { code = N message = "..." }` syntax creates an anonymous error value
 10 0 divide!    // Aborts program if divide fails
 ```
 
+**Propagate error (`?` operator):**
+```quadrate
+fn wrapper(a:i64 b:i64 -- result:i64)! {
+    divide?     // Propagates error to caller if divide fails
+    2 *
+}
+```
+
+The `?` operator requires the enclosing function to be fallible. On error, the function returns immediately, preserving the callee's error state.
+
 **Check with if-else:**
 ```quadrate
 10 0 divide if {
@@ -1436,6 +1446,7 @@ instruction     = "dup" | "swap" | "drop" | "over" | "rot" | "nip" | "tuck"
 | `.` | Field set (write) |
 | `&` | Get function pointer |
 | `!` | Abort on error (after fallible call) |
+| `?` | Propagate error to caller (after fallible call) |
 
 ---
 

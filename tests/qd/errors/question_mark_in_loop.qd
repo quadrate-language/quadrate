@@ -1,0 +1,30 @@
+// Test: ? inside a for loop - should return from the function on error
+use strconv
+
+fn sum_strings(count:i64 -- total:i64)! {
+	-> n
+	0 -> total
+	// Parse string numbers and sum them; error propagates out of loop
+	0 n 1 for i {
+		i 3 == if {
+			"bad" strconv::atoi?
+			drop
+		} else {
+			i total + -> total
+		}
+	}
+	total
+}
+
+fn main() {
+	// Will fail when i == 3 (tries to parse "bad")
+	5 sum_strings switch {
+		Ok { "sum: " print print nl }
+		_ { "sum_strings failed at i=3" print nl }
+	}
+	// Won't hit the bad case (0,1,2 only)
+	3 sum_strings switch {
+		Ok { "sum(0..2): " print print nl }
+		_ { "unexpected failure" print nl }
+	}
+}

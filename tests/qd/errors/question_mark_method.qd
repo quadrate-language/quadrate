@@ -1,0 +1,25 @@
+// Test: ? with functions that take structs as arguments
+struct Acc { total:i64 }
+
+fn acc_add(a:Acc n:i64 -- result:Acc)! {
+	-> n -> a
+	n 0 < if { "cannot add negative" 1 panic }
+	Acc { total = a @total n + }
+}
+
+fn build(values_count:i64 -- result:i64)! {
+	-> n
+	Acc { total = 0 } -> acc
+	0 n 1 for i {
+		acc i acc_add?
+		-> acc
+	}
+	acc @total
+}
+
+fn main() {
+	5 build switch {
+		Ok { "sum(0..4): " print print nl }
+		_ { "build failed" print nl }
+	}
+}

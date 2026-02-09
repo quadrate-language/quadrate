@@ -1,0 +1,19 @@
+// Test: ? operator with scoped (module) function calls
+use strconv
+
+fn parse_and_double(s:str -- result:i64)! {
+	-> s
+	s strconv::atoi?
+	2 *
+}
+
+fn main() {
+	"42" parse_and_double switch {
+		Ok { "42 -> " print print nl }
+		_ { err -> c -> m "error: " print m print nl }
+	}
+	"abc" parse_and_double switch {
+		Ok { "abc -> " print print nl }
+		_ { "abc failed" print nl }
+	}
+}

@@ -1,0 +1,36 @@
+// Test: ? with imported C stdlib functions (they push their own success status)
+use strconv
+use str
+
+fn parse_two(a:str b:str -- x:i64 y:i64)! {
+	-> b -> a
+	a strconv::atoi?
+	-> x
+	b strconv::atoi?
+	-> y
+	x y
+}
+
+fn safe_char_at(s:str idx:i64 -- ch:i64)! {
+	-> idx -> s
+	s idx str::char_at?
+}
+
+fn main() {
+	"10" "20" parse_two switch {
+		Ok { -> y -> x "x=" print x print " y=" print y print nl }
+		_ { "parse_two failed" print nl }
+	}
+	"10" "abc" parse_two switch {
+		Ok { -> y -> x "x=" print x print " y=" print y print nl }
+		_ { "parse_two failed on bad input" print nl }
+	}
+	"hello" 1 safe_char_at switch {
+		Ok { "char at 1: " print print nl }
+		_ { "char_at failed" print nl }
+	}
+	"hi" 99 safe_char_at switch {
+		Ok { "char at 99: " print print nl }
+		_ { "char_at out of bounds" print nl }
+	}
+}

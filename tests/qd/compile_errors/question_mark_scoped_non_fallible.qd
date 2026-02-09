@@ -1,0 +1,11 @@
+// Test: ? on a non-fallible scoped function
+use math
+
+fn wrapper(x:f64 -- result:f64)! {
+	-> x
+	x math::sqrt?
+}
+
+fn main() {
+	4.0 wrapper! print nl
+}

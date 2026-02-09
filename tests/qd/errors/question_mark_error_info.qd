@@ -1,0 +1,24 @@
+// Test: error code and message are preserved through ? propagation
+fn inner( -- result:i64)! {
+	"inner error message" 42 panic
+}
+
+fn middle( -- result:i64)! {
+	inner?
+}
+
+fn outer( -- result:i64)! {
+	middle?
+}
+
+fn main() {
+	// Error should propagate through 3 levels with original info preserved
+	outer switch {
+		Ok { "unexpected success: " print print nl }
+		_ {
+			err -> code -> msg
+			"msg: " print msg print nl
+			"code: " print code print nl
+		}
+	}
+}

@@ -356,9 +356,8 @@ namespace Qd {
 			unsigned numIncPreds = (bodyFallsThrough ? 1 : 0) + static_cast<unsigned>(continueInfos.size());
 			for (size_t i = 0; i < stackPHIs.size(); i++) {
 				llvm::Type* phiTy = stackPHIs[i]->getType();
-				auto defaultVal = phiTy->isDoubleTy()
-									 ? static_cast<llvm::Value*>(llvm::ConstantFP::get(phiTy, 0.0))
-									 : static_cast<llvm::Value*>(builder->getInt64(0));
+				auto defaultVal = phiTy->isDoubleTy() ? static_cast<llvm::Value*>(llvm::ConstantFP::get(phiTy, 0.0))
+													  : static_cast<llvm::Value*>(builder->getInt64(0));
 
 				if (continueInfos.empty()) {
 					// No continues - use body-end value directly (original path)
@@ -368,9 +367,8 @@ namespace Qd {
 					if (bodyFallsThrough) {
 						incStack.push_back((i < bodyEndStack.size()) ? bodyEndStack[i] : defaultVal);
 					} else {
-						incStack.push_back((i < continueInfos[0].stackState.size())
-											   ? continueInfos[0].stackState[i]
-											   : defaultVal);
+						incStack.push_back(
+								(i < continueInfos[0].stackState.size()) ? continueInfos[0].stackState[i] : defaultVal);
 					}
 				} else {
 					// Multiple predecessors - merge with PHI
@@ -628,10 +626,10 @@ namespace Qd {
 					for (size_t i = 0; i < stackPHIs.size(); i++) {
 						llvm::Type* stkTy = stackPHIs[i]->getType();
 						auto defaultVal = stkTy->isDoubleTy()
-											  ? static_cast<llvm::Value*>(llvm::ConstantFP::get(stkTy, 0.0))
-											  : static_cast<llvm::Value*>(builder->getInt64(0));
-						stackPHIs[i]->addIncoming((i < ci.stackState.size() - 1) ? ci.stackState[i] : defaultVal,
-												  ci.fromBlock);
+												  ? static_cast<llvm::Value*>(llvm::ConstantFP::get(stkTy, 0.0))
+												  : static_cast<llvm::Value*>(builder->getInt64(0));
+						stackPHIs[i]->addIncoming(
+								(i < ci.stackState.size() - 1) ? ci.stackState[i] : defaultVal, ci.fromBlock);
 					}
 				}
 			}
@@ -839,11 +837,9 @@ namespace Qd {
 			for (const auto& ci : continueInfos) {
 				for (size_t i = 0; i < stackPHIs.size(); i++) {
 					llvm::Type* stkTy = stackPHIs[i]->getType();
-					auto defaultVal = stkTy->isDoubleTy()
-										  ? static_cast<llvm::Value*>(llvm::ConstantFP::get(stkTy, 0.0))
-										  : static_cast<llvm::Value*>(builder->getInt64(0));
-					stackPHIs[i]->addIncoming((i < ci.stackState.size()) ? ci.stackState[i] : defaultVal,
-											  ci.fromBlock);
+					auto defaultVal = stkTy->isDoubleTy() ? static_cast<llvm::Value*>(llvm::ConstantFP::get(stkTy, 0.0))
+														  : static_cast<llvm::Value*>(builder->getInt64(0));
+					stackPHIs[i]->addIncoming((i < ci.stackState.size()) ? ci.stackState[i] : defaultVal, ci.fromBlock);
 				}
 			}
 

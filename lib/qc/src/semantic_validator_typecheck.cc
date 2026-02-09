@@ -1580,21 +1580,30 @@ namespace Qd {
 						const FunctionSignature& sig = methodSigIt->second;
 
 						// Validate '!' and '?' usage
-						if (ident->abortOnError() && !sig.throws) {
-							std::string errorMsg =
-									"Cannot use '!' operator on method '" + name + "' which is not marked as fallible";
+						if ((ident->abortOnError() || ident->propagateOnError()) && !sig.throws) {
+							std::string op = ident->abortOnError() ? "!" : "?";
+							std::string errorMsg = "Cannot use '" + op + "' operator on method '" + name +
+												   "' which is not marked as fallible";
 							reportError(ident, errorMsg.c_str());
 						}
 
-						// Check fallible methods without ! must be followed by 'if' or 'switch'
-						if (sig.throws && !ident->abortOnError()) {
+						// Check '?' requires caller to be fallible
+						if (ident->propagateOnError() && !mCurrentFunctionFallible) {
+							std::string errorMsg =
+									"Cannot use '?' operator on method '" + name +
+									"': enclosing function must be fallible (add '!' to function signature)";
+							reportError(ident, errorMsg.c_str());
+						}
+
+						// Check fallible methods without ! or ? must be followed by 'if' or 'switch'
+						if (sig.throws && !ident->abortOnError() && !ident->propagateOnError()) {
 							IAstNode* nextNode = (i + 1 < node->childCount()) ? node->child(i + 1) : nullptr;
 							if (!nextNode || (nextNode->type() != IAstNode::Type::IF_STATEMENT &&
 													 nextNode->type() != IAstNode::Type::SWITCH_STATEMENT)) {
 								std::string errorMsg =
 										"Fallible method '" + name +
 										"' must be immediately followed by 'if' or 'switch' to check for "
-										"errors, or use '!' to abort on error";
+										"errors, or use '!' to abort on error, or '?' to propagate";
 								reportError(ident, errorMsg.c_str());
 							}
 						}
@@ -1713,7 +1722,7 @@ namespace Qd {
 						}
 
 						// Push return values
-						if (sig.throws && !ident->abortOnError()) {
+						if (sig.throws && !ident->abortOnError() && !ident->propagateOnError()) {
 							pushProducesTypes(sig, typeStack, structTypeStack);
 							typeStack.push_back(StackValueType::INT); // Error status
 							structTypeStack.push_back("");
@@ -1744,21 +1753,29 @@ namespace Qd {
 				if (sigIt != mFunctionSignatures.end()) {
 					const FunctionSignature& sig = sigIt->second;
 
-					// Validate '!' usage: only allowed on fallible functions (marked with '!')
-					if (ident->abortOnError() && !sig.throws) {
-						std::string errorMsg = "Cannot use '!' operator on function '" + name +
+					// Validate '!' and '?' usage: only allowed on fallible functions (marked with '!')
+					if ((ident->abortOnError() || ident->propagateOnError()) && !sig.throws) {
+						std::string op = ident->abortOnError() ? "!" : "?";
+						std::string errorMsg = "Cannot use '" + op + "' operator on function '" + name +
 											   "' which is not marked as fallible (add '!' after signature)";
 						reportError(ident, errorMsg.c_str());
 					}
 
-					// Check fallible functions without ! must be followed by 'if' or 'switch'
-					if (sig.throws && !ident->abortOnError()) {
+					// Check '?' requires caller to be fallible
+					if (ident->propagateOnError() && !mCurrentFunctionFallible) {
+						std::string errorMsg = "Cannot use '?' operator on function '" + name +
+											   "': enclosing function must be fallible (add '!' to function signature)";
+						reportError(ident, errorMsg.c_str());
+					}
+
+					// Check fallible functions without ! or ? must be followed by 'if' or 'switch'
+					if (sig.throws && !ident->abortOnError() && !ident->propagateOnError()) {
 						IAstNode* nextNode = (i + 1 < node->childCount()) ? node->child(i + 1) : nullptr;
 						if (!nextNode || (nextNode->type() != IAstNode::Type::IF_STATEMENT &&
 												 nextNode->type() != IAstNode::Type::SWITCH_STATEMENT)) {
 							std::string errorMsg = "Fallible function '" + name +
 												   "' must be immediately followed by 'if' or 'switch' to check for "
-												   "errors, or use '!' to abort on error";
+												   "errors, or use '!' to abort on error, or '?' to propagate";
 							reportError(ident, errorMsg.c_str());
 						}
 					}
@@ -2095,8 +2112,8 @@ namespace Qd {
 					};
 
 					// Apply the produces effect
-					if (sig.throws && !ident->abortOnError()) {
-						// func without ! - pushes result + error flag
+					if (sig.throws && !ident->abortOnError() && !ident->propagateOnError()) {
+						// func without ! or ? - pushes result + error flag
 						for (size_t idx = 0; idx < sig.produces.size(); idx++) {
 							StackValueType type = resolveTypeVar(sig.produces[idx]);
 							typeStack.push_back(type);
@@ -2595,21 +2612,30 @@ namespace Qd {
 						const FunctionSignature& sig = methodSigIt->second;
 
 						// Validate '!' and '?' usage
-						if (scoped->abortOnError() && !sig.throws) {
-							std::string errorMsg = "Cannot use '!' operator on method '" + functionName +
+						if ((scoped->abortOnError() || scoped->propagateOnError()) && !sig.throws) {
+							std::string op = scoped->abortOnError() ? "!" : "?";
+							std::string errorMsg = "Cannot use '" + op + "' operator on method '" + functionName +
 												   "' which is not marked as fallible";
 							reportError(scoped, errorMsg.c_str());
 						}
 
-						// Check fallible methods without ! must be followed by 'if' or 'switch'
-						if (sig.throws && !scoped->abortOnError()) {
+						// Check '?' requires caller to be fallible
+						if (scoped->propagateOnError() && !mCurrentFunctionFallible) {
+							std::string errorMsg =
+									"Cannot use '?' operator on method '" + functionName +
+									"': enclosing function must be fallible (add '!' to function signature)";
+							reportError(scoped, errorMsg.c_str());
+						}
+
+						// Check fallible methods without ! or ? must be followed by 'if' or 'switch'
+						if (sig.throws && !scoped->abortOnError() && !scoped->propagateOnError()) {
 							IAstNode* nextNode = (i + 1 < node->childCount()) ? node->child(i + 1) : nullptr;
 							if (!nextNode || (nextNode->type() != IAstNode::Type::IF_STATEMENT &&
 													 nextNode->type() != IAstNode::Type::SWITCH_STATEMENT)) {
 								std::string errorMsg =
 										"Fallible method '" + functionName +
 										"' must be immediately followed by 'if' or 'switch' to check for "
-										"errors, or use '!' to abort on error";
+										"errors, or use '!' to abort on error, or '?' to propagate";
 								reportError(scoped, errorMsg.c_str());
 							}
 						}
@@ -2676,7 +2702,7 @@ namespace Qd {
 						}
 
 						// Push return values
-						if (sig.throws && !scoped->abortOnError()) {
+						if (sig.throws && !scoped->abortOnError() && !scoped->propagateOnError()) {
 							pushProducesTypes(sig, typeStack, structTypeStack);
 							typeStack.push_back(StackValueType::INT);
 							structTypeStack.push_back("");
@@ -2710,10 +2736,19 @@ namespace Qd {
 							if (methodSigIt != mFunctionSignatures.end()) {
 								const FunctionSignature& sig = methodSigIt->second;
 
-								// Validate '!' usage
-								if (scoped->abortOnError() && !sig.throws) {
-									std::string errorMsg = "Cannot use '!' operator on method '" + functionName +
-														   "' which is not marked as fallible";
+								// Validate '!' and '?' usage
+								if ((scoped->abortOnError() || scoped->propagateOnError()) && !sig.throws) {
+									std::string op = scoped->abortOnError() ? "!" : "?";
+									std::string errorMsg = "Cannot use '" + op + "' operator on method '" +
+														   functionName + "' which is not marked as fallible";
+									reportError(scoped, errorMsg.c_str());
+								}
+
+								// Check '?' requires caller to be fallible
+								if (scoped->propagateOnError() && !mCurrentFunctionFallible) {
+									std::string errorMsg =
+											"Cannot use '?' operator on method '" + functionName +
+											"': enclosing function must be fallible (add '!' to function signature)";
 									reportError(scoped, errorMsg.c_str());
 								}
 
@@ -2757,21 +2792,29 @@ namespace Qd {
 				if (sigIt != mFunctionSignatures.end()) {
 					const FunctionSignature& sig = sigIt->second;
 
-					// Validate '!' usage: only allowed on fallible functions (marked with '!')
-					if (scoped->abortOnError() && !sig.throws) {
-						std::string errorMsg = "Cannot use '!' operator on function '" + qualifiedName +
+					// Validate '!' and '?' usage: only allowed on fallible functions (marked with '!')
+					if ((scoped->abortOnError() || scoped->propagateOnError()) && !sig.throws) {
+						std::string op = scoped->abortOnError() ? "!" : "?";
+						std::string errorMsg = "Cannot use '" + op + "' operator on function '" + qualifiedName +
 											   "' which is not marked as fallible (add '!' after signature)";
 						reportError(scoped, errorMsg.c_str());
 					}
 
-					// Check fallible functions without ! must be followed by 'if' or 'switch'
-					if (sig.throws && !scoped->abortOnError()) {
+					// Check '?' requires caller to be fallible
+					if (scoped->propagateOnError() && !mCurrentFunctionFallible) {
+						std::string errorMsg = "Cannot use '?' operator on function '" + qualifiedName +
+											   "': enclosing function must be fallible (add '!' to function signature)";
+						reportError(scoped, errorMsg.c_str());
+					}
+
+					// Check fallible functions without ! or ? must be followed by 'if' or 'switch'
+					if (sig.throws && !scoped->abortOnError() && !scoped->propagateOnError()) {
 						IAstNode* nextNode = (i + 1 < node->childCount()) ? node->child(i + 1) : nullptr;
 						if (!nextNode || (nextNode->type() != IAstNode::Type::IF_STATEMENT &&
 												 nextNode->type() != IAstNode::Type::SWITCH_STATEMENT)) {
 							std::string errorMsg = "Fallible function '" + qualifiedName +
 												   "' must be immediately followed by 'if' or 'switch' to check for "
-												   "errors, or use '!' to abort on error";
+												   "errors, or use '!' to abort on error, or '?' to propagate";
 							reportError(scoped, errorMsg.c_str());
 						}
 					}
@@ -2902,8 +2945,8 @@ namespace Qd {
 					};
 
 					// Apply the produces effect
-					if (sig.throws && !scoped->abortOnError()) {
-						// func without ! - pushes result + error flag
+					if (sig.throws && !scoped->abortOnError() && !scoped->propagateOnError()) {
+						// func without ! or ? - pushes result + error flag
 						for (size_t idx = 0; idx < sig.produces.size(); idx++) {
 							StackValueType type = resolveTypeVar(sig.produces[idx]);
 							typeStack.push_back(type);
