@@ -63,6 +63,17 @@ namespace Qd {
 			fieldInfo.offset = layout.totalSize;
 			fieldInfo.size = getTypeSize(field->typeName());
 
+			// Check if this field is a type parameter (generic field)
+			if (structDecl->isGeneric()) {
+				for (const auto& tp : structDecl->typeParams()) {
+					if (field->typeName() == tp) {
+						fieldInfo.isTypeParam = true;
+						fieldInfo.size = 16; // 8 value + 8 type tag
+						break;
+					}
+				}
+			}
+
 			// Copy default value nodes (we don't own them, just reference)
 			if (field->hasDefaultValue()) {
 				for (auto* node : field->defaultValue()) {
@@ -322,8 +333,20 @@ namespace Qd {
 				// Retain happens when pushing a local to the stack (in generateIdentifier).
 				// The containing struct's destructor will release nested structs.
 				builder->CreateStore(ptrValue, bytePtr);
+			} else if (field.isTypeParam) {
+				// Generic type parameter field - store raw 8-byte value + type tag
+				llvm::Value* intValue = builder->CreateLoad(int64Ty, valuePtr, "generic_val");
+				builder->CreateStore(intValue, bytePtr);
+				// Read type tag from stack element (GEP index 1)
+				llvm::Value* typeTagPtr = builder->CreateStructGEP(stackElementTy, elemPtr, 1, "elem_type_ptr");
+				llvm::Value* typeTag = builder->CreateLoad(int32Ty, typeTagPtr, "type_tag");
+				// Store type tag at field.offset + 8
+				llvm::Value* tagOffset = builder->getInt64(field.offset + 8);
+				llvm::Value* tagPtr = builder->CreateGEP(builder->getInt8Ty(), structPtr, tagOffset, "tag_ptr");
+				llvm::Value* tagExt = builder->CreateZExt(typeTag, int64Ty, "tag_i64");
+				builder->CreateStore(tagExt, tagPtr);
 			} else {
-				// Unknown type (including type parameters like T) - treat as i64
+				// Unknown type - treat as i64
 				llvm::Value* intValue = builder->CreateLoad(int64Ty, valuePtr, "generic_val");
 				builder->CreateStore(intValue, bytePtr);
 			}
@@ -583,8 +606,48 @@ namespace Qd {
 			builder->CreateCall(pushPtrFn, {ctx, ptrValue});
 			// Track the struct type for chained field access
 			lastFieldAccessResultType = matchingField->typeName;
+		} else if (matchingField->isTypeParam) {
+			// Generic type parameter field - switch on stored type tag to push correctly
+			llvm::Value* tagOffset = builder->getInt64(matchingField->offset + 8);
+			llvm::Value* tagPtr = builder->CreateGEP(builder->getInt8Ty(), structPtr, tagOffset, "tag_ptr");
+			llvm::Value* typeTag = builder->CreateLoad(int64Ty, tagPtr, "type_tag");
+			llvm::Value* rawValue = builder->CreateLoad(int64Ty, bytePtr, "raw_value");
+
+			llvm::Function* currentFn = builder->GetInsertBlock()->getParent();
+			auto* intBB = llvm::BasicBlock::Create(*context, "generic.int", currentFn);
+			auto* floatBB = llvm::BasicBlock::Create(*context, "generic.float", currentFn);
+			auto* ptrBB = llvm::BasicBlock::Create(*context, "generic.ptr", currentFn);
+			auto* strBB = llvm::BasicBlock::Create(*context, "generic.str", currentFn);
+			auto* endBB = llvm::BasicBlock::Create(*context, "generic.end", currentFn);
+
+			auto* sw = builder->CreateSwitch(typeTag, intBB, 3);
+			sw->addCase(builder->getInt64(1), floatBB);
+			sw->addCase(builder->getInt64(2), ptrBB);
+			sw->addCase(builder->getInt64(3), strBB);
+
+			builder->SetInsertPoint(intBB);
+			builder->CreateCall(pushIntFn, {ctx, rawValue});
+			builder->CreateBr(endBB);
+
+			builder->SetInsertPoint(floatBB);
+			auto* fval = builder->CreateBitCast(rawValue, builder->getDoubleTy(), "float_val");
+			builder->CreateCall(pushFloatFn, {ctx, fval});
+			builder->CreateBr(endBB);
+
+			builder->SetInsertPoint(ptrBB);
+			auto* pval = builder->CreateIntToPtr(rawValue, ptrTy, "ptr_val");
+			builder->CreateCall(pushPtrFn, {ctx, pval});
+			builder->CreateBr(endBB);
+
+			builder->SetInsertPoint(strBB);
+			auto* sval = builder->CreateIntToPtr(rawValue, ptrTy, "str_val");
+			builder->CreateCall(pushStrRefFn, {ctx, sval});
+			builder->CreateBr(endBB);
+
+			builder->SetInsertPoint(endBB);
+			lastFieldAccessResultType.clear();
 		} else {
-			// Type parameter or unknown type - treat as i64 value
+			// Unknown type - treat as i64 value
 			llvm::Value* fieldPtr = bytePtr;
 			llvm::Value* intValue = builder->CreateLoad(int64Ty, fieldPtr, "field_value");
 			builder->CreateCall(pushIntFn, {ctx, intValue});
@@ -731,8 +794,20 @@ namespace Qd {
 			// Pointer type (including ptr, str, raw pointers, and struct-typed fields)
 			llvm::Value* ptrValue = builder->CreateLoad(ptrTy, valuePtr, "ptr_val");
 			builder->CreateStore(ptrValue, bytePtr);
+		} else if (matchingField->isTypeParam) {
+			// Generic type parameter field - store raw 8-byte value + type tag
+			llvm::Value* intValue = builder->CreateLoad(int64Ty, valuePtr, "generic_val");
+			builder->CreateStore(intValue, bytePtr);
+			// Read type tag from stack element (GEP index 1)
+			llvm::Value* typeTagPtr = builder->CreateStructGEP(stackElementTy, elemPtr, 1, "elem_type_ptr");
+			llvm::Value* typeTag = builder->CreateLoad(int32Ty, typeTagPtr, "type_tag");
+			// Store type tag at field.offset + 8
+			llvm::Value* tagOffset = builder->getInt64(matchingField->offset + 8);
+			llvm::Value* tagPtr = builder->CreateGEP(builder->getInt8Ty(), structPtr, tagOffset, "tag_ptr");
+			llvm::Value* tagExt = builder->CreateZExt(typeTag, int64Ty, "tag_i64");
+			builder->CreateStore(tagExt, tagPtr);
 		} else {
-			// Type parameter or unknown type - treat as i64 value
+			// Unknown type - treat as i64 value
 			llvm::Value* intValue = builder->CreateLoad(int64Ty, valuePtr, "generic_val");
 			builder->CreateStore(intValue, bytePtr);
 		}

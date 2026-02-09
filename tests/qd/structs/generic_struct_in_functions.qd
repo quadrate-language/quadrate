@@ -1,0 +1,36 @@
+// Test generic structs passed to and returned from functions
+struct Box<T> { value:T }
+
+fn print_box(b:ptr -- ) {
+	-> b
+	b @value print nl
+}
+
+fn make_int_box(x:i64 -- result:ptr) {
+	-> x
+	x Box
+}
+
+fn make_float_box(x:f64 -- result:ptr) {
+	-> x
+	x Box
+}
+
+fn main() {
+	// Pass generic struct to function
+	42 Box -> b1
+	b1 print_box
+
+	// Return generic struct from function
+	99 make_int_box -> b2
+	b2 @value print nl
+
+	3.14 make_float_box -> b3
+	b3 @value print nl
+
+	// Multiple boxes in a loop
+	0 5 1 for i {
+		i Box -> tmp
+		tmp @value print nl
+	}
+}

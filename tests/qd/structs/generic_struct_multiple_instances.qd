@@ -1,0 +1,39 @@
+// Test creating many generic struct instances to verify no memory/tag corruption
+struct Box<T> { value:T }
+
+fn main() {
+	// Create alternating int/float/str boxes and verify all values
+	1 Box -> a1
+	1.1 Box -> a2
+	"one" Box -> a3
+	2 Box -> b1
+	2.2 Box -> b2
+	"two" Box -> b3
+	3 Box -> c1
+	3.3 Box -> c2
+	"three" Box -> c3
+
+	// Read back all values - verifies no cross-contamination
+	a1 @value print nl
+	a2 @value print nl
+	a3 @value print nl
+	b1 @value print nl
+	b2 @value print nl
+	b3 @value print nl
+	c1 @value print nl
+	c2 @value print nl
+	c3 @value print nl
+
+	// Overwrite some and re-read
+	99 a1.value
+	9.9 a2.value
+	"nine" a3.value
+	a1 @value print nl
+	a2 @value print nl
+	a3 @value print nl
+
+	// Verify others unchanged
+	b1 @value print nl
+	b2 @value print nl
+	b3 @value print nl
+}

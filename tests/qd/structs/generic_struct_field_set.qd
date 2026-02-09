@@ -1,0 +1,50 @@
+// Test field set operations on generic struct fields
+struct Box<T> { value:T }
+struct Pair<A, B> { first:A second:B }
+
+fn main() {
+	// Set i64 field to new i64 value
+	10 Box -> b1
+	b1 @value print nl
+	20 b1.value
+	b1 @value print nl
+
+	// Set f64 field to new f64 value
+	1.5 Box -> b2
+	b2 @value print nl
+	2.5 b2.value
+	b2 @value print nl
+
+	// Set str field to new str value
+	"old" Box -> b3
+	b3 @value print nl
+	"new" b3.value
+	b3 @value print nl
+
+	// Set generic field changing from i64 to f64
+	42 Box -> b4
+	b4 @value print nl
+	3.14 b4.value
+	b4 @value print nl
+
+	// Set generic field changing from f64 to str
+	2.718 Box -> b5
+	b5 @value print nl
+	"switched" b5.value
+	b5 @value print nl
+
+	// Set generic field changing from str to i64
+	"text" Box -> b6
+	b6 @value print nl
+	99 b6.value
+	b6 @value print nl
+
+	// Set fields on Pair independently
+	1 2 Pair -> p1
+	p1 @first print nl
+	p1 @second print nl
+	10 p1.first
+	20 p1.second
+	p1 @first print nl
+	p1 @second print nl
+}

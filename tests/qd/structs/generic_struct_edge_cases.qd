@@ -1,0 +1,43 @@
+// Edge case tests for generic structs
+struct Box<T> { value:T }
+struct Pair<A, B> { first:A second:B }
+struct Triple<X, Y, Z> { x:X y:Y z:Z }
+
+fn main() {
+	// Edge case: zero values
+	0 Box -> z1
+	z1 @value print nl
+	0.0 Box -> z2
+	z2 @value print nl
+	"" Box -> z3
+	z3 @value print nl
+
+	// Edge case: negative values
+	-42 Box -> n1
+	n1 @value print nl
+	-3.14 Box -> n2
+	n2 @value print nl
+
+	// Edge case: large values
+	9999999999 Box -> big1
+	big1 @value print nl
+	1234567890.123456 Box -> big2
+	big2 @value print nl
+
+	// Edge case: triple with all different types
+	100 2.5 "test" Triple -> t1
+	t1 @x print nl
+	t1 @y print nl
+	t1 @z print nl
+
+	// Edge case: pair with same type both sides
+	10 20 Pair -> same1
+	same1 @first print nl
+	same1 @second print nl
+	3.14 2.72 Pair -> same2
+	same2 @first print nl
+	same2 @second print nl
+	"abc" "def" Pair -> same3
+	same3 @first print nl
+	same3 @second print nl
+}

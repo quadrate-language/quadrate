@@ -1,0 +1,24 @@
+// Test generic structs created and accessed inside loops
+struct Box<T> { value:T }
+
+fn main() {
+	// Create and access generic structs in a loop
+	1 5 1 for i {
+		i Box -> b
+		b @value print nl
+	}
+
+	// Accumulate using generic struct field (need cast for arithmetic)
+	0 Box -> acc
+	1 4 1 for i {
+		acc @value cast<i64> i + acc.value
+	}
+	acc @value print nl
+
+	// Float accumulation
+	0.0 Box -> facc
+	1 4 1 for i {
+		facc @value cast<f64> 1.5 + facc.value
+	}
+	facc @value print nl
+}

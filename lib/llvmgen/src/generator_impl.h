@@ -354,6 +354,7 @@ namespace Qd {
 			std::string typeName;
 			size_t offset;
 			size_t size;
+			bool isTypeParam = false;
 			std::vector<IAstNode*> defaultValue; // Default value expression nodes (not owned)
 		};
 
