@@ -1,9 +1,9 @@
 // Sphere raytracer — renders 4 spheres with diffuse lighting and shadows
-// Outputs PPM P3 image to stdout (800x450)
+// Outputs PPM P3 image to stdout (800x800)
 //
 // Run: quadc raytracer.qd -r > image.ppm
-use math
 use fmt
+use math
 use testing
 
 // Ray-sphere intersection (half-b optimization)
@@ -46,59 +46,142 @@ fn to_byte(v:f64 -- b:i64) {
 }
 
 // --- Tests (run with: quadc raytracer.qd --test -r) ---
-
 test "hit: direct hit along -z axis" {
-	math::Vec3 { x = 0.0 y = 0.0 z = 0.0 }
-	math::Vec3 { x = 0.0 y = 0.0 z = -1.0 }
-	math::Vec3 { x = 0.0 y = 0.0 z = -5.0 }
+	math::Vec3 {
+		x = 0.0
+		y = 0.0
+		z = 0.0
+	}
+	math::Vec3 {
+		x = 0.0
+		y = 0.0
+		z = -1.0
+	}
+	math::Vec3 {
+		x = 0.0
+		y = 0.0
+		z = -5.0
+	}
 	1.0 hit
 	4.0 0.001 testing::assert_approx_eq
 }
 
 test "hit: ray misses sphere" {
-	math::Vec3 { x = 0.0 y = 5.0 z = 0.0 }
-	math::Vec3 { x = 0.0 y = 0.0 z = -1.0 }
-	math::Vec3 { x = 0.0 y = 0.0 z = -5.0 }
+	math::Vec3 {
+		x = 0.0
+		y = 5.0
+		z = 0.0
+	}
+	math::Vec3 {
+		x = 0.0
+		y = 0.0
+		z = -1.0
+	}
+	math::Vec3 {
+		x = 0.0
+		y = 0.0
+		z = -5.0
+	}
 	1.0 hit
 	-1.0 0.001 testing::assert_approx_eq
 }
 
 test "hit: origin inside sphere returns exit point" {
-	math::Vec3 { x = 0.0 y = 0.0 z = -5.0 }
-	math::Vec3 { x = 0.0 y = 0.0 z = -1.0 }
-	math::Vec3 { x = 0.0 y = 0.0 z = -5.0 }
+	math::Vec3 {
+		x = 0.0
+		y = 0.0
+		z = -5.0
+	}
+	math::Vec3 {
+		x = 0.0
+		y = 0.0
+		z = -1.0
+	}
+	math::Vec3 {
+		x = 0.0
+		y = 0.0
+		z = -5.0
+	}
 	1.0 hit
 	1.0 0.001 testing::assert_approx_eq
 }
 
 test "hit: ray pointing away from sphere" {
-	math::Vec3 { x = 0.0 y = 0.0 z = 0.0 }
-	math::Vec3 { x = 0.0 y = 0.0 z = 1.0 }
-	math::Vec3 { x = 0.0 y = 0.0 z = -5.0 }
+	math::Vec3 {
+		x = 0.0
+		y = 0.0
+		z = 0.0
+	}
+	math::Vec3 {
+		x = 0.0
+		y = 0.0
+		z = 1.0
+	}
+	math::Vec3 {
+		x = 0.0
+		y = 0.0
+		z = -5.0
+	}
 	1.0 hit
 	-1.0 0.001 testing::assert_approx_eq
 }
 
 test "hit: tangent ray" {
-	math::Vec3 { x = 1.0 y = 0.0 z = 0.0 }
-	math::Vec3 { x = 0.0 y = 0.0 z = -1.0 }
-	math::Vec3 { x = 0.0 y = 0.0 z = -5.0 }
+	math::Vec3 {
+		x = 1.0
+		y = 0.0
+		z = 0.0
+	}
+	math::Vec3 {
+		x = 0.0
+		y = 0.0
+		z = -1.0
+	}
+	math::Vec3 {
+		x = 0.0
+		y = 0.0
+		z = -5.0
+	}
 	1.0 hit
 	5.0 0.001 testing::assert_approx_eq
 }
 
 test "hit: off-center hit" {
-	math::Vec3 { x = 0.3 y = 0.0 z = 0.0 }
-	math::Vec3 { x = 0.0 y = 0.0 z = -1.0 }
-	math::Vec3 { x = 0.0 y = 0.0 z = -5.0 }
+	math::Vec3 {
+		x = 0.3
+		y = 0.0
+		z = 0.0
+	}
+	math::Vec3 {
+		x = 0.0
+		y = 0.0
+		z = -1.0
+	}
+	math::Vec3 {
+		x = 0.0
+		y = 0.0
+		z = -5.0
+	}
 	0.5 hit
 	4.6 0.001 testing::assert_approx_eq
 }
 
 test "hit: large sphere (ground plane)" {
-	math::Vec3 { x = 0.0 y = 0.5 z = 2.0 }
-	math::Vec3 { x = 0.0 y = -0.2425 z = -0.9701 }
-	math::Vec3 { x = 0.0 y = -100.5 z = -1.0 }
+	math::Vec3 {
+		x = 0.0
+		y = 0.5
+		z = 2.0
+	}
+	math::Vec3 {
+		x = 0.0
+		y = -0.2425
+		z = -0.9701
+	}
+	math::Vec3 {
+		x = 0.0
+		y = -100.5
+		z = -1.0
+	}
 	100.0 hit -> t
 	t 0.0 > testing::assert_true
 }
@@ -125,18 +208,42 @@ test "to_byte: one maps to 255" {
 
 fn main() {
 	800 -> w
-	450 -> h
+	800 -> h
 
-	math::Vec3 { x = 0.0 y = 0.5 z = 2.0 } -> cam
+	math::Vec3 {
+		x = 0.0
+		y = 0.5
+		z = 2.0
+	} -> cam
 	2.0 -> vp_w
 	w cast<f64> h cast<f64> / vp_w * -> vp_h
-	math::Vec3 { x = -0.5 y = 0.8 z = 0.6 } normalize -> light
+	math::Vec3 {
+		x = -0.5
+		y = 0.8
+		z = 0.6
+	} normalize -> light
 
 	// Sphere centers
-	math::Vec3 { x = 0.0 y = -100.5 z = -1.0 } -> sc0
-	math::Vec3 { x = 0.0 y = 0.0 z = -1.2 } -> sc1
-	math::Vec3 { x = -1.1 y = 0.0 z = -1.5 } -> sc2
-	math::Vec3 { x = 1.1 y = 0.0 z = -1.5 } -> sc3
+	math::Vec3 {
+		x = 0.0
+		y = -100.5
+		z = -1.0
+	} -> sc0
+	math::Vec3 {
+		x = 0.0
+		y = 0.0
+		z = -1.2
+	} -> sc1
+	math::Vec3 {
+		x = -1.1
+		y = 0.0
+		z = -1.5
+	} -> sc2
+	math::Vec3 {
+		x = 1.1
+		y = 0.0
+		z = -1.5
+	} -> sc3
 
 	// PPM header
 	"P3" print nl
@@ -147,7 +254,11 @@ fn main() {
 		0 w 1 for col {
 			col cast<f64> 0.5 + w cast<f64> / vp_w * vp_w 2.0 / - -> px
 			vp_h 2.0 / row cast<f64> 0.5 + h cast<f64> / vp_h * - -> py
-			math::Vec3 { x = px y = py z = 0.0 } cam subtract normalize -> dir
+			math::Vec3 {
+				x = px
+				y = py
+				z = 0.0
+			} cam subtract normalize -> dir
 
 			-1.0 -> best_t
 			0 -> best_id
@@ -183,10 +294,18 @@ fn main() {
 				cam dir best_t scale add -> hp
 
 				math::vec3_zero -> center   0.0 -> rad
-				best_id 0 == if { sc0 -> center  100.0 -> rad }
-				best_id 1 == if { sc1 -> center  0.5 -> rad }
-				best_id 2 == if { sc2 -> center  0.5 -> rad }
-				best_id 3 == if { sc3 -> center  0.5 -> rad }
+				best_id 0 == if {
+					sc0 -> center  100.0 -> rad
+				}
+				best_id 1 == if {
+					sc1 -> center  0.5 -> rad
+				}
+				best_id 2 == if {
+					sc2 -> center  0.5 -> rad
+				}
+				best_id 3 == if {
+					sc3 -> center  0.5 -> rad
+				}
 				hp center subtract 1.0 rad / scale -> normal
 
 				// Diffuse lighting
@@ -205,9 +324,17 @@ fn main() {
 				math::vec3_zero -> mat
 				best_id 0 == if {
 					hp @x math::floor cast<i64> hp @z math::floor cast<i64> + 2 mod 0 == if {
-						math::Vec3 { x = 0.9 y = 0.9 z = 0.9 } -> mat
+						math::Vec3 {
+							x = 0.9
+							y = 0.9
+							z = 0.9
+						} -> mat
 					} else {
-						math::Vec3 { x = 0.4 y = 0.4 z = 0.4 } -> mat
+						math::Vec3 {
+							x = 0.4
+							y = 0.4
+							z = 0.4
+						} -> mat
 					}
 				}
 				best_id 1 == if { math::Vec3 { x = 0.9 y = 0.15 z = 0.15 } -> mat }
