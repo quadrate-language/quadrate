@@ -2745,9 +2745,34 @@ namespace Qd {
 
 							// Check if it's an absolute path to a .a file (transitive native dependency)
 							if (depLine[0] == '/' && depLine.size() > 2 && depLine.substr(depLine.size() - 2) == ".a") {
-								// Add to flags and recursively process its deps
-								allDepsFlags += " " + depLine;
-								processLibraryDeps(depLine);
+								std::string resolvedDep = depLine;
+								if (!std::filesystem::exists(depLine)) {
+									// Absolute path doesn't exist — try stdlib libDir
+									// Extract base name: "/path/to/libqdnet_static.a" -> "qdnet"
+									std::string fn = std::filesystem::path(depLine).filename().string();
+									std::string bn = fn;
+									if (bn.rfind("lib", 0) == 0) {
+										bn = bn.substr(3);
+									}
+									if (bn.size() > 2 && bn.substr(bn.size() - 2) == ".a") {
+										bn = bn.substr(0, bn.size() - 2);
+									}
+									if (bn.size() > 7 && bn.substr(bn.size() - 7) == "_static") {
+										bn = bn.substr(0, bn.size() - 7);
+									}
+									std::string stdlibPath = libDir + "/lib" + bn + ".a";
+									if (std::filesystem::exists(stdlibPath)) {
+										resolvedDep = stdlibPath;
+									} else {
+										// Try original filename in libDir
+										stdlibPath = libDir + "/" + fn;
+										if (std::filesystem::exists(stdlibPath)) {
+											resolvedDep = stdlibPath;
+										}
+									}
+								}
+								allDepsFlags += " " + resolvedDep;
+								processLibraryDeps(resolvedDep);
 							}
 							// For -l<name> entries, try to resolve to full path if it's a Quadrate library
 							else if (depLine.rfind("-l", 0) == 0 && depLine.size() > 2) {
@@ -2863,6 +2888,23 @@ namespace Qd {
 				}
 
 				libraryFlags += " -l" + libName;
+			}
+		}
+
+		// Add all stdlib native libraries so external modules can resolve stdlib symbols
+		if (!libDir.empty()) {
+			for (const auto& entry : std::filesystem::directory_iterator(libDir)) {
+				if (!entry.is_regular_file()) {
+					continue;
+				}
+				std::string fn = entry.path().filename().string();
+				if (fn.rfind("libqd", 0) == 0 && fn.size() > 2 && fn.substr(fn.size() - 2) == ".a") {
+					std::string libPath = entry.path().string();
+					if (!processedLibraries.count(libPath)) {
+						allDepsFlags += " " + libPath;
+						processLibraryDeps(libPath);
+					}
+				}
 			}
 		}
 

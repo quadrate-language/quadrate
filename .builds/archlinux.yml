@@ -17,13 +17,11 @@ sources:
   - https://github.com/quadrate-language/hof
   - https://github.com/quadrate-language/log
   - https://github.com/quadrate-language/compress
-  - https://github.com/quadrate-language/net
   - https://github.com/quadrate-language/tls
   - https://github.com/quadrate-language/http
   - https://github.com/quadrate-language/sqlite
   - https://github.com/quadrate-language/json
   - https://github.com/quadrate-language/regex
-  - https://github.com/quadrate-language/ct
   - https://github.com/quadrate-language/crypto
 
 tasks:
