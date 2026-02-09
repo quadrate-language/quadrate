@@ -1,0 +1,605 @@
+{
+  "name": "ct",
+  "description": "Container types: Vec (dynamic array), Deque (double-ended queue), Queue (FIFO), Set (string set), Map (string-keyed hash map), and Pair (two-element tuple).",
+  "functions": [
+    {
+      "name": "push",
+      "signature": "(v:Vec<T> elem:T -- v2:Vec<T>)",
+      "description": "Push an element to the end of the vector. Automatically grows capacity when full.",
+      "parameters": [
+        {"name": "v", "type": "Vec<T>", "description": "The vector"},
+        {"name": "elem", "type": "T", "description": "Element to push"}
+      ],
+      "returns": [
+        {"name": "v2", "type": "Vec<T>", "description": "Updated vector"}
+      ],
+      "failable": true,
+      "example": "v 42 push! -> v"
+    },
+    {
+      "name": "pop",
+      "signature": "(v:Vec<T> -- elem:T v2:Vec<T>)",
+      "description": "Pop and return the last element. Panics if empty.",
+      "parameters": [
+        {"name": "v", "type": "Vec<T>", "description": "The vector"}
+      ],
+      "returns": [
+        {"name": "elem", "type": "T", "description": "The popped element"},
+        {"name": "v2", "type": "Vec<T>", "description": "Updated vector"}
+      ],
+      "failable": true,
+      "example": "v pop! -> v -> elem"
+    },
+    {
+      "name": "get",
+      "signature": "(v:Vec<T> idx:i64 -- elem:T)",
+      "description": "Get element at index. Panics if out of bounds.",
+      "parameters": [
+        {"name": "v", "type": "Vec<T>", "description": "The vector"},
+        {"name": "idx", "type": "i64", "description": "Index (0-based)"}
+      ],
+      "returns": [
+        {"name": "elem", "type": "T", "description": "The element"}
+      ],
+      "failable": true,
+      "example": "v 0 get! -> first"
+    },
+    {
+      "name": "set",
+      "signature": "(v:Vec<T> idx:i64 elem:T -- v2:Vec<T>)",
+      "description": "Set element at index. Panics if out of bounds.",
+      "parameters": [
+        {"name": "v", "type": "Vec<T>", "description": "The vector"},
+        {"name": "idx", "type": "i64", "description": "Index (0-based)"},
+        {"name": "elem", "type": "T", "description": "New value"}
+      ],
+      "returns": [
+        {"name": "v2", "type": "Vec<T>", "description": "Updated vector"}
+      ],
+      "failable": true,
+      "example": "v 0 100 set! -> v"
+    },
+    {
+      "name": "Vec::length",
+      "signature": "(v:Vec<T> -- n:i64)",
+      "description": "Get the number of elements in the vector.",
+      "parameters": [
+        {"name": "v", "type": "Vec<T>", "description": "The vector"}
+      ],
+      "returns": [
+        {"name": "n", "type": "i64", "description": "Number of elements"}
+      ],
+      "failable": false,
+      "example": "v length -> n"
+    },
+    {
+      "name": "capacity",
+      "signature": "(v:Vec<T> -- n:i64)",
+      "description": "Get the allocated capacity of the vector.",
+      "parameters": [
+        {"name": "v", "type": "Vec<T>", "description": "The vector"}
+      ],
+      "returns": [
+        {"name": "n", "type": "i64", "description": "Capacity"}
+      ],
+      "failable": false,
+      "example": "v capacity -> cap"
+    },
+    {
+      "name": "Vec::is_empty",
+      "signature": "(v:Vec<T> -- b:i64)",
+      "description": "Check if the vector is empty.",
+      "parameters": [
+        {"name": "v", "type": "Vec<T>", "description": "The vector"}
+      ],
+      "returns": [
+        {"name": "b", "type": "i64", "description": "1 if empty, 0 otherwise"}
+      ],
+      "failable": false,
+      "example": "v is_empty if { \"empty\" print nl }"
+    },
+    {
+      "name": "reset",
+      "signature": "(v:Vec<T> -- v2:Vec<T>)",
+      "description": "Remove all elements, keeping allocated capacity.",
+      "parameters": [
+        {"name": "v", "type": "Vec<T>", "description": "The vector"}
+      ],
+      "returns": [
+        {"name": "v2", "type": "Vec<T>", "description": "Empty vector with same capacity"}
+      ],
+      "failable": false,
+      "example": "v reset -> v"
+    },
+    {
+      "name": "Vec::release",
+      "signature": "(v:Vec<T> --)",
+      "description": "Free the vector's memory.",
+      "parameters": [
+        {"name": "v", "type": "Vec<T>", "description": "The vector to free"}
+      ],
+      "returns": [],
+      "failable": false,
+      "example": "v release"
+    },
+    {
+      "name": "push_back",
+      "signature": "(d:Deque<T> val:T -- d2:Deque<T>)",
+      "description": "Push an element to the back of the deque.",
+      "parameters": [
+        {"name": "d", "type": "Deque<T>", "description": "The deque"},
+        {"name": "val", "type": "T", "description": "Value to push"}
+      ],
+      "returns": [
+        {"name": "d2", "type": "Deque<T>", "description": "Updated deque"}
+      ],
+      "failable": true,
+      "example": "d 42 push_back! -> d"
+    },
+    {
+      "name": "push_front",
+      "signature": "(d:Deque<T> val:T -- d2:Deque<T>)",
+      "description": "Push an element to the front of the deque.",
+      "parameters": [
+        {"name": "d", "type": "Deque<T>", "description": "The deque"},
+        {"name": "val", "type": "T", "description": "Value to push"}
+      ],
+      "returns": [
+        {"name": "d2", "type": "Deque<T>", "description": "Updated deque"}
+      ],
+      "failable": true,
+      "example": "d 42 push_front! -> d"
+    },
+    {
+      "name": "pop_front",
+      "signature": "(d:Deque<T> -- val:T d2:Deque<T>)",
+      "description": "Remove and return the front element.",
+      "parameters": [
+        {"name": "d", "type": "Deque<T>", "description": "The deque"}
+      ],
+      "returns": [
+        {"name": "val", "type": "T", "description": "Front element"},
+        {"name": "d2", "type": "Deque<T>", "description": "Updated deque"}
+      ],
+      "failable": true,
+      "example": "d pop_front! -> d -> val"
+    },
+    {
+      "name": "pop_back",
+      "signature": "(d:Deque<T> -- val:T d2:Deque<T>)",
+      "description": "Remove and return the back element.",
+      "parameters": [
+        {"name": "d", "type": "Deque<T>", "description": "The deque"}
+      ],
+      "returns": [
+        {"name": "val", "type": "T", "description": "Back element"},
+        {"name": "d2", "type": "Deque<T>", "description": "Updated deque"}
+      ],
+      "failable": true,
+      "example": "d pop_back! -> d -> val"
+    },
+    {
+      "name": "peek_front",
+      "signature": "(d:Deque<T> -- val:T)",
+      "description": "View the front element without removing it.",
+      "parameters": [
+        {"name": "d", "type": "Deque<T>", "description": "The deque"}
+      ],
+      "returns": [
+        {"name": "val", "type": "T", "description": "Front element"}
+      ],
+      "failable": true,
+      "example": "d peek_front! -> val"
+    },
+    {
+      "name": "peek_back",
+      "signature": "(d:Deque<T> -- val:T)",
+      "description": "View the back element without removing it.",
+      "parameters": [
+        {"name": "d", "type": "Deque<T>", "description": "The deque"}
+      ],
+      "returns": [
+        {"name": "val", "type": "T", "description": "Back element"}
+      ],
+      "failable": true,
+      "example": "d peek_back! -> val"
+    },
+    {
+      "name": "Deque::length",
+      "signature": "(d:Deque<T> -- n:i64)",
+      "description": "Get the number of elements in the deque.",
+      "parameters": [
+        {"name": "d", "type": "Deque<T>", "description": "The deque"}
+      ],
+      "returns": [
+        {"name": "n", "type": "i64", "description": "Number of elements"}
+      ],
+      "failable": false,
+      "example": "d length -> n"
+    },
+    {
+      "name": "Deque::is_empty",
+      "signature": "(d:Deque<T> -- b:i64)",
+      "description": "Check if the deque is empty.",
+      "parameters": [
+        {"name": "d", "type": "Deque<T>", "description": "The deque"}
+      ],
+      "returns": [
+        {"name": "b", "type": "i64", "description": "1 if empty, 0 otherwise"}
+      ],
+      "failable": false,
+      "example": "d is_empty if { \"empty\" print nl }"
+    },
+    {
+      "name": "Deque::release",
+      "signature": "(d:Deque<T> --)",
+      "description": "Free the deque's memory.",
+      "parameters": [
+        {"name": "d", "type": "Deque<T>", "description": "The deque to free"}
+      ],
+      "returns": [],
+      "failable": false,
+      "example": "d release"
+    },
+    {
+      "name": "enqueue",
+      "signature": "(q:Queue<T> val:T -- q2:Queue<T>)",
+      "description": "Add an element to the back of the queue.",
+      "parameters": [
+        {"name": "q", "type": "Queue<T>", "description": "The queue"},
+        {"name": "val", "type": "T", "description": "Value to enqueue"}
+      ],
+      "returns": [
+        {"name": "q2", "type": "Queue<T>", "description": "Updated queue"}
+      ],
+      "failable": true,
+      "example": "q 42 enqueue! -> q"
+    },
+    {
+      "name": "dequeue",
+      "signature": "(q:Queue<T> -- val:T q2:Queue<T>)",
+      "description": "Remove and return the front element. FIFO order.",
+      "parameters": [
+        {"name": "q", "type": "Queue<T>", "description": "The queue"}
+      ],
+      "returns": [
+        {"name": "val", "type": "T", "description": "Front element"},
+        {"name": "q2", "type": "Queue<T>", "description": "Updated queue"}
+      ],
+      "failable": true,
+      "example": "q dequeue! -> q -> val"
+    },
+    {
+      "name": "peek",
+      "signature": "(q:Queue<T> -- val:T)",
+      "description": "View the front element without removing it.",
+      "parameters": [
+        {"name": "q", "type": "Queue<T>", "description": "The queue"}
+      ],
+      "returns": [
+        {"name": "val", "type": "T", "description": "Front element"}
+      ],
+      "failable": true,
+      "example": "q peek! -> val"
+    },
+    {
+      "name": "Queue::length",
+      "signature": "(q:Queue<T> -- n:i64)",
+      "description": "Get the number of elements in the queue.",
+      "parameters": [
+        {"name": "q", "type": "Queue<T>", "description": "The queue"}
+      ],
+      "returns": [
+        {"name": "n", "type": "i64", "description": "Number of elements"}
+      ],
+      "failable": false,
+      "example": "q length -> n"
+    },
+    {
+      "name": "Queue::is_empty",
+      "signature": "(q:Queue<T> -- b:i64)",
+      "description": "Check if the queue is empty.",
+      "parameters": [
+        {"name": "q", "type": "Queue<T>", "description": "The queue"}
+      ],
+      "returns": [
+        {"name": "b", "type": "i64", "description": "1 if empty, 0 otherwise"}
+      ],
+      "failable": false,
+      "example": "q is_empty if { \"empty\" print nl }"
+    },
+    {
+      "name": "Queue::release",
+      "signature": "(q:Queue<T> --)",
+      "description": "Free the queue's memory.",
+      "parameters": [
+        {"name": "q", "type": "Queue<T>", "description": "The queue to free"}
+      ],
+      "returns": [],
+      "failable": false,
+      "example": "q release"
+    },
+    {
+      "name": "add",
+      "signature": "(s:Set key:str -- s2:Set)",
+      "description": "Add a string element to the set. Duplicates are ignored.",
+      "parameters": [
+        {"name": "s", "type": "Set", "description": "The set"},
+        {"name": "key", "type": "str", "description": "Element to add"}
+      ],
+      "returns": [
+        {"name": "s2", "type": "Set", "description": "Updated set"}
+      ],
+      "failable": true,
+      "example": "s \"alice\" add! -> s"
+    },
+    {
+      "name": "contains",
+      "signature": "(s:Set key:str -- exists:i64)",
+      "description": "Check if an element exists in the set.",
+      "parameters": [
+        {"name": "s", "type": "Set", "description": "The set"},
+        {"name": "key", "type": "str", "description": "Element to check"}
+      ],
+      "returns": [
+        {"name": "exists", "type": "i64", "description": "1 if found, 0 otherwise"}
+      ],
+      "failable": false,
+      "example": "s \"alice\" contains if { \"found\" print nl }"
+    },
+    {
+      "name": "Set::remove",
+      "signature": "(s:Set key:str -- s2:Set)",
+      "description": "Remove an element from the set. Errors if not found.",
+      "parameters": [
+        {"name": "s", "type": "Set", "description": "The set"},
+        {"name": "key", "type": "str", "description": "Element to remove"}
+      ],
+      "returns": [
+        {"name": "s2", "type": "Set", "description": "Updated set"}
+      ],
+      "failable": true,
+      "example": "s \"alice\" remove! -> s"
+    },
+    {
+      "name": "Set::length",
+      "signature": "(s:Set -- n:i64)",
+      "description": "Get the number of elements in the set.",
+      "parameters": [
+        {"name": "s", "type": "Set", "description": "The set"}
+      ],
+      "returns": [
+        {"name": "n", "type": "i64", "description": "Number of elements"}
+      ],
+      "failable": false,
+      "example": "s length -> n"
+    },
+    {
+      "name": "Set::is_empty",
+      "signature": "(s:Set -- b:i64)",
+      "description": "Check if the set is empty.",
+      "parameters": [
+        {"name": "s", "type": "Set", "description": "The set"}
+      ],
+      "returns": [
+        {"name": "b", "type": "i64", "description": "1 if empty, 0 otherwise"}
+      ],
+      "failable": false,
+      "example": "s is_empty if { \"empty\" print nl }"
+    },
+    {
+      "name": "Set::release",
+      "signature": "(s:Set --)",
+      "description": "Free the set's memory.",
+      "parameters": [
+        {"name": "s", "type": "Set", "description": "The set to free"}
+      ],
+      "returns": [],
+      "failable": false,
+      "example": "s release"
+    },
+    {
+      "name": "first",
+      "signature": "(p:Pair<T,U> -- a:T)",
+      "description": "Get the first element of a pair.",
+      "parameters": [
+        {"name": "p", "type": "Pair<T,U>", "description": "The pair"}
+      ],
+      "returns": [
+        {"name": "a", "type": "T", "description": "First element"}
+      ],
+      "failable": false,
+      "example": "p first -> a"
+    },
+    {
+      "name": "second",
+      "signature": "(p:Pair<T,U> -- b:U)",
+      "description": "Get the second element of a pair.",
+      "parameters": [
+        {"name": "p", "type": "Pair<T,U>", "description": "The pair"}
+      ],
+      "returns": [
+        {"name": "b", "type": "U", "description": "Second element"}
+      ],
+      "failable": false,
+      "example": "p second -> b"
+    },
+    {
+      "name": "unpack",
+      "signature": "(p:Pair<T,U> -- a:T b:U)",
+      "description": "Unpack both elements of a pair onto the stack.",
+      "parameters": [
+        {"name": "p", "type": "Pair<T,U>", "description": "The pair"}
+      ],
+      "returns": [
+        {"name": "a", "type": "T", "description": "First element"},
+        {"name": "b", "type": "U", "description": "Second element"}
+      ],
+      "failable": false,
+      "example": "p unpack -> b -> a"
+    },
+    {
+      "name": "insert",
+      "signature": "(m:Map<V> key:str value:V -- m2:Map<V>)",
+      "description": "Insert a key-value pair. If the key exists, the value is updated.",
+      "parameters": [
+        {"name": "m", "type": "Map<V>", "description": "The map"},
+        {"name": "key", "type": "str", "description": "Key to insert"},
+        {"name": "value", "type": "V", "description": "Value to insert"}
+      ],
+      "returns": [
+        {"name": "m2", "type": "Map<V>", "description": "Updated map"}
+      ],
+      "failable": true,
+      "example": "m \"alice\" 42 insert! -> m"
+    },
+    {
+      "name": "Map::get",
+      "signature": "(m:Map<V> key:str -- value:V)",
+      "description": "Get the value for a key. Errors if key not found.",
+      "parameters": [
+        {"name": "m", "type": "Map<V>", "description": "The map"},
+        {"name": "key", "type": "str", "description": "Key to look up"}
+      ],
+      "returns": [
+        {"name": "value", "type": "V", "description": "The value"}
+      ],
+      "failable": true,
+      "example": "m \"alice\" get! -> age"
+    },
+    {
+      "name": "has",
+      "signature": "(m:Map<V> key:str -- exists:i64)",
+      "description": "Check if a key exists in the map.",
+      "parameters": [
+        {"name": "m", "type": "Map<V>", "description": "The map"},
+        {"name": "key", "type": "str", "description": "Key to check"}
+      ],
+      "returns": [
+        {"name": "exists", "type": "i64", "description": "1 if found, 0 otherwise"}
+      ],
+      "failable": false,
+      "example": "m \"alice\" has if { \"found\" print nl }"
+    },
+    {
+      "name": "Map::remove",
+      "signature": "(m:Map<V> key:str -- m2:Map<V>)",
+      "description": "Remove a key from the map. Errors if key not found.",
+      "parameters": [
+        {"name": "m", "type": "Map<V>", "description": "The map"},
+        {"name": "key", "type": "str", "description": "Key to remove"}
+      ],
+      "returns": [
+        {"name": "m2", "type": "Map<V>", "description": "Updated map"}
+      ],
+      "failable": true,
+      "example": "m \"alice\" remove! -> m"
+    },
+    {
+      "name": "Map::length",
+      "signature": "(m:Map<V> -- n:i64)",
+      "description": "Get the number of entries in the map.",
+      "parameters": [
+        {"name": "m", "type": "Map<V>", "description": "The map"}
+      ],
+      "returns": [
+        {"name": "n", "type": "i64", "description": "Number of entries"}
+      ],
+      "failable": false,
+      "example": "m length -> n"
+    },
+    {
+      "name": "Map::is_empty",
+      "signature": "(m:Map<V> -- b:i64)",
+      "description": "Check if the map is empty.",
+      "parameters": [
+        {"name": "m", "type": "Map<V>", "description": "The map"}
+      ],
+      "returns": [
+        {"name": "b", "type": "i64", "description": "1 if empty, 0 otherwise"}
+      ],
+      "failable": false,
+      "example": "m is_empty if { \"empty\" print nl }"
+    },
+    {
+      "name": "Map::release",
+      "signature": "(m:Map<V> --)",
+      "description": "Free the map's memory.",
+      "parameters": [
+        {"name": "m", "type": "Map<V>", "description": "The map to free"}
+      ],
+      "returns": [],
+      "failable": false,
+      "example": "m release"
+    }
+  ],
+  "structs": [
+    {
+      "name": "Vec",
+      "description": "A growable dynamic array.",
+      "type_params": ["T"],
+      "fields": [
+        {"name": "data", "type": "ptr", "description": "Pointer to element storage"},
+        {"name": "len", "type": "i64", "description": "Number of elements"},
+        {"name": "cap", "type": "i64", "description": "Allocated capacity"}
+      ]
+    },
+    {
+      "name": "Deque",
+      "description": "A double-ended queue (circular buffer).",
+      "type_params": ["T"],
+      "fields": [
+        {"name": "data", "type": "ptr", "description": "Pointer to circular buffer"},
+        {"name": "head", "type": "i64", "description": "Index of front element"},
+        {"name": "tail", "type": "i64", "description": "Index after last element"},
+        {"name": "len", "type": "i64", "description": "Number of elements"},
+        {"name": "cap", "type": "i64", "description": "Buffer capacity"}
+      ]
+    },
+    {
+      "name": "Queue",
+      "description": "A FIFO queue (circular buffer).",
+      "type_params": ["T"],
+      "fields": [
+        {"name": "data", "type": "ptr", "description": "Pointer to circular buffer"},
+        {"name": "head", "type": "i64", "description": "Index of front element"},
+        {"name": "tail", "type": "i64", "description": "Index after last element"},
+        {"name": "len", "type": "i64", "description": "Number of elements"},
+        {"name": "cap", "type": "i64", "description": "Buffer capacity"}
+      ]
+    },
+    {
+      "name": "Set",
+      "description": "A set of unique string elements (open addressing with linear probing).",
+      "type_params": [],
+      "fields": [
+        {"name": "keys", "type": "ptr", "description": "Array of string key pointers"},
+        {"name": "states", "type": "ptr", "description": "Slot states (0=empty, 1=occupied, 2=deleted)"},
+        {"name": "len", "type": "i64", "description": "Number of elements"},
+        {"name": "cap", "type": "i64", "description": "Allocated capacity"}
+      ]
+    },
+    {
+      "name": "Map",
+      "description": "A string-keyed hash map with generic values (open addressing with linear probing).",
+      "type_params": ["V"],
+      "fields": [
+        {"name": "keys", "type": "ptr", "description": "Array of string key pointers"},
+        {"name": "values", "type": "ptr", "description": "Array of value storage"},
+        {"name": "states", "type": "ptr", "description": "Slot states (0=empty, 1=occupied, 2=deleted)"},
+        {"name": "len", "type": "i64", "description": "Number of entries"},
+        {"name": "cap", "type": "i64", "description": "Allocated capacity"}
+      ]
+    },
+    {
+      "name": "Pair",
+      "description": "A two-element generic tuple.",
+      "type_params": ["T", "U"],
+      "fields": [
+        {"name": "first", "type": "T", "description": "First element"},
+        {"name": "second", "type": "U", "description": "Second element"}
+      ]
+    }
+  ],
+  "constants": []
+}

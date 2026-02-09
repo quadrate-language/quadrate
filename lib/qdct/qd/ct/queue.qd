@@ -1,0 +1,169 @@
+/// Queue<T> - A FIFO Queue
+/// ========================
+///
+/// Queue provides First-In-First-Out (FIFO) operations.
+/// Implemented using a circular buffer for O(1) enqueue/dequeue.
+///
+/// ## Creating a Queue
+///
+/// Create an empty queue:
+///
+///     Queue<i64> { data = 0 head = 0 tail = 0 len = 0 cap = 0 } -> q
+///
+/// ## Basic Operations
+///
+/// Enqueue (add to back):
+///
+///     q 42 enqueue! -> q
+///
+/// Dequeue (remove from front):
+///
+///     q dequeue! -> q -> val
+///
+/// Peek (view front without removing):
+///
+///     q peek! -> val
+///
+/// ## Memory Management
+///
+/// Always call release when done:
+///
+///     q release
+
+use mem
+
+/// FIFO Queue with elements of type T.
+///
+/// Fields:
+///   data - Pointer to circular buffer
+///   head - Index of front element
+///   tail - Index after last element
+///   len  - Number of elements
+///   cap  - Buffer capacity
+pub struct Queue<T> {
+	data: ptr
+	head: i64
+	tail: i64
+	len: i64
+	cap: i64
+}
+
+/// Add an element to the back of the queue.
+///
+/// Returns the updated queue which must be captured.
+///
+/// Example:
+///     q 42 enqueue! -> q
+///
+/// Stack: (q val -- q2)
+pub fn (q:Queue<T>) enqueue<T>(val:T -- q2:Queue<T>)! {
+	-> val
+
+	q @data -> data
+	q @head -> head
+	q @tail -> tail
+	q @len -> len
+	q @cap -> cap
+
+	// Grow capacity if full
+	len cap >= cap 0 == or if {
+		cap 0 == if { 8 } else { cap 2 * } -> new_cap
+		new_cap 8 * mem::alloc! -> new_data
+
+		// Copy elements in order (unwrap circular buffer)
+		cap 0 > if {
+			0 -> i
+			loop {
+				i len >= if { break }
+				head i + cap mod -> src_idx
+				data src_idx 8 * mem::get_i64 -> v
+				v new_data i 8 * mem::set_i64
+				i 1 + -> i
+			}
+			data mem::free
+		}
+
+		new_data -> data
+		0 -> head
+		len -> tail
+		new_cap -> cap
+	}
+
+	val data tail 8 * mem::set_i64
+
+	tail 1 + cap mod -> new_tail
+
+	Queue<T> { data = data head = head tail = new_tail len = len 1 + cap = cap }
+}
+
+/// Remove and return the front element.
+///
+/// Returns error if queue is empty.
+/// Returns the value and updated queue.
+///
+/// Example:
+///     q dequeue! -> q -> val
+///
+/// Stack: (q -- val q2)
+pub fn (q:Queue<T>) dequeue<T>(-- val:T q2:Queue<T>)! {
+	q @len -> len
+
+	len 0 == if {
+		"dequeue: queue is empty" 1 err
+	}
+
+	q @data -> data
+	q @head -> head
+	q @tail -> tail
+	q @cap -> cap
+
+	data head 8 * mem::get_i64 -> val
+
+	head 1 + cap mod -> new_head
+
+	val
+	Queue<T> { data = data head = new_head tail = tail len = len 1 - cap = cap }
+}
+
+/// View the front element without removing it.
+///
+/// Returns error if queue is empty.
+///
+/// Example:
+///     q peek! -> val
+///
+/// Stack: (q -- val)
+pub fn (q:Queue<T>) peek<T>(-- val:T)! {
+	q @len -> len
+
+	len 0 == if {
+		"peek: queue is empty" 1 err
+	}
+
+	q @data -> data
+	q @head -> head
+
+	data head 8 * mem::get_i64
+}
+
+/// Get the number of elements in the queue.
+///
+/// Stack: (q -- n)
+pub fn (q:Queue<T>) length<T>(-- n:i64) {
+	q @len
+}
+
+/// Check if the queue is empty.
+///
+/// Stack: (q -- bool)
+pub fn (q:Queue<T>) is_empty<T>(-- b:i64) {
+	q @len 0 ==
+}
+
+/// Free the queue's memory.
+///
+/// Stack: (q --)
+pub fn (q:Queue<T>) release<T>(--) {
+	q @data -> data
+	data 0 neq if { data mem::free }
+}

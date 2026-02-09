@@ -81,6 +81,7 @@ nav:
           - unicode: stdlib/unicode.md
       - Data:
           - bytes: stdlib/bytes.md
+          - ct: stdlib/ct.md
       - Math & numbers:
           - math: stdlib/math.md
           - math (vectors): stdlib/math-vectors.md

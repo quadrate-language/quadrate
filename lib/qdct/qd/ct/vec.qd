@@ -1,0 +1,215 @@
+/// Vec<T> - A Generic Dynamic Array
+/// ================================
+///
+/// Vec<T> is a growable array that can hold elements of any type T.
+/// It automatically manages memory allocation and resizing.
+///
+/// ## Creating a Vector
+///
+/// Create an empty vector with zero initialization:
+///
+///     Vec<i64> { data = 0 len = 0 cap = 0 } -> v
+///
+/// ## Basic Operations
+///
+/// Push elements (vector is returned, must be captured):
+///
+///     v 10 push! -> v
+///     v 20 push! -> v
+///
+/// Get elements by index (0-indexed):
+///
+///     v 0 get! -> first_elem
+///
+/// Set elements by index:
+///
+///     v 0 100 set! -> v
+///
+/// Pop the last element:
+///
+///     v pop! -> v -> elem
+///
+/// ## Memory Management
+///
+/// Always call release when done to free memory:
+///
+///     v release
+
+use mem
+
+/// Dynamic array (vector) structure.
+///
+/// Fields:
+///   data - Pointer to contiguous element storage
+///   len  - Current number of elements (0 to cap)
+///   cap  - Allocated capacity in elements
+pub struct Vec<T> {
+	data: ptr
+	len: i64
+	cap: i64
+}
+
+/// Push an element to the end of the vector.
+///
+/// Automatically grows capacity when full (doubles size, starting at 8).
+/// Returns the updated vector which must be captured.
+///
+/// Example:
+///     v 42 push! -> v
+///
+/// Stack: (v elem -- v2)
+pub fn (v:Vec<T>) push<T>(elem:T -- v2:Vec<T>)! {
+	-> elem
+
+	v @len -> len
+	v @cap -> cap
+	v @data -> data
+
+	// Grow capacity if full
+	len cap >= if {
+		cap 0 == if { 8 } else { cap 2 * } -> new_cap
+		data new_cap sizeof<T> * mem::realloc! -> data
+		new_cap -> cap
+	}
+
+	// Store element at end
+	elem data len sizeof<T> * mem::set_i64
+
+	Vec<T> { data = data len = len 1 + cap = cap }
+}
+
+/// Pop and return the last element.
+///
+/// Panics if the vector is empty.
+/// Returns both the element and the updated vector.
+///
+/// Example:
+///     v pop! -> v -> elem
+///
+/// Stack: (v -- elem v2)
+pub fn (v:Vec<T>) pop<T>(-- elem:T v2:Vec<T>)! {
+	v @len -> len
+	v @cap -> cap
+	v @data -> data
+
+	len 0 <= if {
+		"pop: vector is empty" 1 panic
+	}
+
+	// Get last element
+	data len 1 - sizeof<T> * mem::get_i64 -> elem
+
+	elem
+	Vec<T> { data = data len = len 1 - cap = cap }
+}
+
+/// Get element at index.
+///
+/// Panics if index is out of bounds (< 0 or >= len).
+///
+/// Example:
+///     v 0 get! -> first
+///
+/// Stack: (v idx -- elem)
+pub fn (v:Vec<T>) get<T>(idx:i64 -- elem:T)! {
+	-> idx
+
+	v @len -> len
+	v @data -> data
+
+	idx 0 < idx len >= or if {
+		"get: index out of bounds" 1 panic
+	}
+
+	data idx sizeof<T> * mem::get_i64
+}
+
+/// Set element at index.
+///
+/// Panics if index is out of bounds (< 0 or >= len).
+/// Returns the updated vector which must be captured.
+///
+/// Example:
+///     v 0 100 set! -> v
+///
+/// Stack: (v idx elem -- v2)
+pub fn (v:Vec<T>) set<T>(idx:i64 elem:T -- v2:Vec<T>)! {
+	-> elem
+	-> idx
+
+	v @len -> len
+	v @cap -> cap
+	v @data -> data
+
+	idx 0 < idx len >= or if {
+		"set: index out of bounds" 1 panic
+	}
+
+	elem data idx sizeof<T> * mem::set_i64
+
+	Vec<T> { data = data len = len cap = cap }
+}
+
+/// Get the number of elements in the vector.
+///
+/// Example:
+///     v length -> n
+///
+/// Stack: (v -- n)
+pub fn (v:Vec<T>) length<T>(-- n:i64) {
+	v @len
+}
+
+/// Get the allocated capacity.
+///
+/// Capacity is always >= length. The vector can hold
+/// up to 'capacity' elements before needing to reallocate.
+///
+/// Example:
+///     v capacity -> cap
+///
+/// Stack: (v -- n)
+pub fn (v:Vec<T>) capacity<T>(-- n:i64) {
+	v @cap
+}
+
+/// Check if the vector is empty (length == 0).
+///
+/// Example:
+///     v is_empty if { "empty!" print nl }
+///
+/// Stack: (v -- bool)
+pub fn (v:Vec<T>) is_empty<T>(-- b:i64) {
+	v @len 0 ==
+}
+
+/// Remove all elements, keeping allocated capacity.
+///
+/// Useful for reusing a vector without reallocating.
+///
+/// Example:
+///     v reset -> v
+///
+/// Stack: (v -- v2)
+pub fn (v:Vec<T>) reset<T>(-- v2:Vec<T>) {
+	v @cap -> cap
+	v @data -> data
+	Vec<T> { data = data len = 0 cap = cap }
+}
+
+/// Free the vector's memory.
+///
+/// IMPORTANT: Always call this when done with a vector
+/// to prevent memory leaks. After calling release,
+/// the vector should not be used.
+///
+/// Example:
+///     v release
+///
+/// Stack: (v --)
+pub fn (v:Vec<T>) release<T>(--) {
+	v @data -> data
+	data 0 neq if {
+		data mem::free
+	}
+}

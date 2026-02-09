@@ -1,0 +1,518 @@
+use ct
+use testing
+use strconv
+use str
+
+test "Vec push and get" {
+	Vec<i64> { data = 0 len = 0 cap = 0 } -> v
+	v 10 push! -> v
+	v 20 push! -> v
+	v 30 push! -> v
+	v 0 get! 10 testing::assert_eq
+	v 1 get! 20 testing::assert_eq
+	v 2 get! 30 testing::assert_eq
+	v release
+}
+
+test "Vec length" {
+	Vec<i64> { data = 0 len = 0 cap = 0 } -> v
+	v length 0 testing::assert_eq
+	v 10 push! -> v
+	v length 1 testing::assert_eq
+	v 20 push! -> v
+	v length 2 testing::assert_eq
+	v release
+}
+
+test "Vec pop" {
+	Vec<i64> { data = 0 len = 0 cap = 0 } -> v
+	v 10 push! -> v
+	v 20 push! -> v
+	v 30 push! -> v
+	v pop! -> v -> popped
+	popped 30 testing::assert_eq
+	v length 2 testing::assert_eq
+	v release
+}
+
+test "Vec set" {
+	Vec<i64> { data = 0 len = 0 cap = 0 } -> v
+	v 10 push! -> v
+	v 20 push! -> v
+	v 0 100 set! -> v
+	v 0 get! 100 testing::assert_eq
+	v 1 get! 20 testing::assert_eq
+	v release
+}
+
+test "Vec is_empty" {
+	Vec<i64> { data = 0 len = 0 cap = 0 } -> v
+	v is_empty testing::assert_true
+	v 10 push! -> v
+	v is_empty testing::assert_false
+	v release
+}
+
+test "Vec growth" {
+	Vec<i64> { data = 0 len = 0 cap = 0 } -> v
+	v capacity 0 testing::assert_eq
+	0 20 1 for i {
+		v i push! -> v
+	}
+	v length 20 testing::assert_eq
+	v capacity 20 >= testing::assert_true
+	0 20 1 for i {
+		v i get! i testing::assert_eq
+	}
+	v release
+}
+
+test "Vec stress" {
+	Vec<i64> { data = 0 len = 0 cap = 0 } -> v
+
+	0 100 1 for i {
+		v i push! -> v
+	}
+	v length 100 testing::assert_eq
+
+	v 0 get! 0 testing::assert_eq
+	v 50 get! 50 testing::assert_eq
+	v 99 get! 99 testing::assert_eq
+
+	0 50 1 for i {
+		v pop! -> v drop
+	}
+	v length 50 testing::assert_eq
+
+	0 10 1 for i {
+		v i 1000 i + set! -> v
+	}
+	v 5 get! 1005 testing::assert_eq
+
+	v reset -> v
+	v length 0 testing::assert_eq
+	v capacity 0 > testing::assert_true
+
+	v 42 push! -> v
+	v 0 get! 42 testing::assert_eq
+
+	v release
+}
+
+test "Vec pop all" {
+	Vec<i64> { data = 0 len = 0 cap = 0 } -> v
+
+	v 1 push! -> v
+	v 2 push! -> v
+	v 3 push! -> v
+
+	v pop! -> v -> val
+	val 3 testing::assert_eq
+	v pop! -> v -> val
+	val 2 testing::assert_eq
+	v pop! -> v -> val
+	val 1 testing::assert_eq
+
+	v length 0 testing::assert_eq
+	v is_empty testing::assert_true
+
+	v release
+}
+
+test "Deque basic" {
+	Deque<i64> { data = 0 len = 0 cap = 0 head = 0 tail = 0 } -> d
+	d 10 push_back! -> d
+	d 20 push_back! -> d
+	d length 2 testing::assert_eq
+	d release
+}
+
+test "Deque push front and back" {
+	Deque<i64> { data = 0 len = 0 cap = 0 head = 0 tail = 0 } -> d
+	d 10 push_back! -> d
+	d 20 push_back! -> d
+	d 5 push_front! -> d
+	d length 3 testing::assert_eq
+	d pop_front! -> d -> val
+	val 5 testing::assert_eq
+	d pop_front! -> d -> val
+	val 10 testing::assert_eq
+	d pop_front! -> d -> val
+	val 20 testing::assert_eq
+	d is_empty testing::assert_true
+	d release
+}
+
+test "Deque pop back" {
+	Deque<i64> { data = 0 len = 0 cap = 0 head = 0 tail = 0 } -> d
+	d 1 push_back! -> d
+	d 2 push_back! -> d
+	d 3 push_back! -> d
+	d pop_back! -> d -> val
+	val 3 testing::assert_eq
+	d pop_back! -> d -> val
+	val 2 testing::assert_eq
+	d length 1 testing::assert_eq
+	d release
+}
+
+test "Deque peek" {
+	Deque<i64> { data = 0 len = 0 cap = 0 head = 0 tail = 0 } -> d
+	d 10 push_back! -> d
+	d 20 push_back! -> d
+	d peek_front! 10 testing::assert_eq
+	d peek_back! 20 testing::assert_eq
+	d length 2 testing::assert_eq
+	d release
+}
+
+test "Deque is_empty" {
+	Deque<i64> { data = 0 len = 0 cap = 0 head = 0 tail = 0 } -> d
+	d is_empty testing::assert_true
+	d 1 push_back! -> d
+	d is_empty testing::assert_false
+	d pop_front! -> d drop
+	d is_empty testing::assert_true
+	d release
+}
+
+test "Deque length tracking" {
+	Deque<i64> { data = 0 len = 0 cap = 0 head = 0 tail = 0 } -> d
+	d length 0 testing::assert_eq
+	d 10 push_back! -> d
+	d length 1 testing::assert_eq
+	d 20 push_front! -> d
+	d length 2 testing::assert_eq
+	d pop_back! -> d drop
+	d length 1 testing::assert_eq
+	d pop_front! -> d drop
+	d length 0 testing::assert_eq
+	d release
+}
+
+test "Deque growth" {
+	Deque<i64> { data = 0 len = 0 cap = 0 head = 0 tail = 0 } -> d
+	0 20 1 for i {
+		d i push_back! -> d
+	}
+	d length 20 testing::assert_eq
+	0 20 1 for i {
+		d pop_front! -> d -> val
+		val i testing::assert_eq
+	}
+	d is_empty testing::assert_true
+	d release
+}
+
+test "Deque interleaved front and back" {
+	Deque<i64> { data = 0 len = 0 cap = 0 head = 0 tail = 0 } -> d
+	d 1 push_front! -> d
+	d 2 push_back! -> d
+	d 3 push_front! -> d
+	d 4 push_back! -> d
+	// Order: 3 1 2 4
+	d pop_front! -> d -> val
+	val 3 testing::assert_eq
+	d pop_back! -> d -> val
+	val 4 testing::assert_eq
+	d pop_front! -> d -> val
+	val 1 testing::assert_eq
+	d pop_back! -> d -> val
+	val 2 testing::assert_eq
+	d release
+}
+
+test "Queue basic" {
+	Queue<i64> { data = 0 len = 0 cap = 0 head = 0 tail = 0 } -> q
+	q 10 enqueue! -> q
+	q 20 enqueue! -> q
+	q dequeue! -> q -> val
+	val 10 testing::assert_eq
+	q dequeue! -> q -> val
+	val 20 testing::assert_eq
+	q release
+}
+
+test "Queue FIFO order" {
+	Queue<i64> { data = 0 len = 0 cap = 0 head = 0 tail = 0 } -> q
+	q 1 enqueue! -> q
+	q 2 enqueue! -> q
+	q 3 enqueue! -> q
+	q peek! 1 testing::assert_eq
+	q dequeue! -> q -> val
+	val 1 testing::assert_eq
+	q dequeue! -> q -> val
+	val 2 testing::assert_eq
+	q dequeue! -> q -> val
+	val 3 testing::assert_eq
+	q is_empty testing::assert_true
+	q release
+}
+
+test "Queue growth" {
+	Queue<i64> { data = 0 len = 0 cap = 0 head = 0 tail = 0 } -> q
+	0 20 1 for i {
+		q i enqueue! -> q
+	}
+	q length 20 testing::assert_eq
+	0 20 1 for i {
+		q dequeue! -> q -> val
+		val i testing::assert_eq
+	}
+	q is_empty testing::assert_true
+	q release
+}
+
+test "Queue is_empty" {
+	Queue<i64> { data = 0 len = 0 cap = 0 head = 0 tail = 0 } -> q
+	q is_empty testing::assert_true
+	q 1 enqueue! -> q
+	q is_empty testing::assert_false
+	q dequeue! -> q drop
+	q is_empty testing::assert_true
+	q release
+}
+
+test "Queue length tracking" {
+	Queue<i64> { data = 0 len = 0 cap = 0 head = 0 tail = 0 } -> q
+	q length 0 testing::assert_eq
+	q 10 enqueue! -> q
+	q length 1 testing::assert_eq
+	q 20 enqueue! -> q
+	q length 2 testing::assert_eq
+	q 30 enqueue! -> q
+	q length 3 testing::assert_eq
+	q dequeue! -> q drop
+	q length 2 testing::assert_eq
+	q release
+}
+
+test "Set basic" {
+	Set { keys = 0 states = 0 len = 0 cap = 0 } -> s
+	s "alice" add! -> s
+	s "bob" add! -> s
+	s "alice" add! -> s  // duplicate
+	s length 2 testing::assert_eq
+	s "alice" contains testing::assert_true
+	s "charlie" contains testing::assert_false
+	s release
+}
+
+test "Set operations" {
+	Set { keys = 0 states = 0 len = 0 cap = 0 } -> s
+	s "a" add! -> s
+	s "b" add! -> s
+	s "c" add! -> s
+	s length 3 testing::assert_eq
+	s "b" remove! -> s
+	s length 2 testing::assert_eq
+	s "b" contains testing::assert_false
+	s "a" contains testing::assert_true
+	s release
+}
+
+test "Set empty" {
+	Set { keys = 0 states = 0 len = 0 cap = 0 } -> s
+	s is_empty testing::assert_true
+	s "x" add! -> s
+	s is_empty testing::assert_false
+	s release
+}
+
+test "Set length tracking" {
+	Set { keys = 0 states = 0 len = 0 cap = 0 } -> s
+	s length 0 testing::assert_eq
+	s "a" add! -> s
+	s length 1 testing::assert_eq
+	s "b" add! -> s
+	s length 2 testing::assert_eq
+	s "a" add! -> s  // duplicate
+	s length 2 testing::assert_eq
+	s "b" remove! -> s
+	s length 1 testing::assert_eq
+	s release
+}
+
+test "Set growth" {
+	Set { keys = 0 states = 0 len = 0 cap = 0 } -> s
+	0 32 1 for i {
+		s "item_" i strconv::itoa str::concat add! -> s
+	}
+	s length 32 testing::assert_eq
+	0 32 1 for i {
+		s "item_" i strconv::itoa str::concat contains testing::assert_true
+	}
+	s "nonexistent" contains testing::assert_false
+	s release
+}
+
+test "Set tombstones" {
+	Set { keys = 0 states = 0 len = 0 cap = 0 } -> s
+	s "a" add! -> s
+	s "b" add! -> s
+	s "c" add! -> s
+	s "d" add! -> s
+	s "e" add! -> s
+	s length 5 testing::assert_eq
+
+	s "b" remove! -> s
+	s "d" remove! -> s
+	s length 3 testing::assert_eq
+
+	s "a" contains testing::assert_true
+	s "c" contains testing::assert_true
+	s "e" contains testing::assert_true
+	s "b" contains testing::assert_false
+	s "d" contains testing::assert_false
+
+	// Insert after removal (reuse tombstone slots)
+	s "f" add! -> s
+	s "g" add! -> s
+	s length 5 testing::assert_eq
+	s "f" contains testing::assert_true
+	s "g" contains testing::assert_true
+
+	s release
+}
+
+test "Pair first and second methods" {
+	Pair<i64, i64> { first = 7 second = 13 } -> p
+	p first 7 testing::assert_eq
+	p second 13 testing::assert_eq
+}
+
+test "Pair basic" {
+	Pair<i64, i64> { first = 42 second = 99 } -> p
+	p @first 42 testing::assert_eq
+	p @second 99 testing::assert_eq
+}
+
+test "Pair unpack" {
+	Pair<i64, i64> { first = 10 second = 20 } -> p
+	p unpack -> b -> a
+	a 10 testing::assert_eq
+	b 20 testing::assert_eq
+}
+
+fn empty_map(-- m:Map<i64>) {
+	Map<i64> { keys = 0 values = 0 states = 0 len = 0 cap = 0 }
+}
+
+test "Map empty" {
+	empty_map -> m
+	m is_empty testing::assert_true
+	m length 0 testing::assert_eq
+	m release
+}
+
+test "Map insert and get" {
+	empty_map -> m
+	m "one" 1 insert! -> m
+	m "two" 2 insert! -> m
+	m "one" get! 1 testing::assert_eq
+	m "two" get! 2 testing::assert_eq
+	m release
+}
+
+test "Map has" {
+	empty_map -> m
+	m "foo" 1 insert! -> m
+	m "bar" 2 insert! -> m
+	m "foo" has testing::assert_true
+	m "bar" has testing::assert_true
+	m "baz" has testing::assert_false
+	m release
+}
+
+test "Map has on empty" {
+	empty_map -> m
+	m "anything" has testing::assert_false
+	m release
+}
+
+test "Map remove" {
+	empty_map -> m
+	m "a" 1 insert! -> m
+	m "b" 2 insert! -> m
+	m "a" remove! -> m
+	m "a" has testing::assert_false
+	m "b" get! 2 testing::assert_eq
+	m length 1 testing::assert_eq
+	m release
+}
+
+test "Map overwrite" {
+	empty_map -> m
+	m "key" 100 insert! -> m
+	m "key" get! 100 testing::assert_eq
+	m "key" 200 insert! -> m
+	m "key" get! 200 testing::assert_eq
+	m length 1 testing::assert_eq
+	m release
+}
+
+test "Map length tracking" {
+	empty_map -> m
+	m length 0 testing::assert_eq
+	m "a" 1 insert! -> m
+	m length 1 testing::assert_eq
+	m "b" 2 insert! -> m
+	m length 2 testing::assert_eq
+	m "c" 3 insert! -> m
+	m length 3 testing::assert_eq
+	m "b" remove! -> m
+	m length 2 testing::assert_eq
+	m release
+}
+
+test "Map tombstones" {
+	empty_map -> m
+
+	m "a" 1 insert! -> m
+	m "b" 2 insert! -> m
+	m "c" 3 insert! -> m
+	m "d" 4 insert! -> m
+	m "e" 5 insert! -> m
+
+	m length 5 testing::assert_eq
+
+	m "b" remove! -> m
+	m "d" remove! -> m
+	m length 3 testing::assert_eq
+
+	m "a" get! 1 testing::assert_eq
+	m "c" get! 3 testing::assert_eq
+	m "e" get! 5 testing::assert_eq
+
+	m "f" 6 insert! -> m
+	m "g" 7 insert! -> m
+	m length 5 testing::assert_eq
+
+	m "b" has testing::assert_false
+	m "d" has testing::assert_false
+
+	m release
+}
+
+test "Map growth" {
+	empty_map -> m
+	0 32 1 for i {
+		m "key_" i strconv::itoa str::concat i insert! -> m
+	}
+	m length 32 testing::assert_eq
+
+	0 32 1 for i {
+		m "key_" i strconv::itoa str::concat get! i testing::assert_eq
+	}
+	m release
+}
+
+test "Map is_empty" {
+	empty_map -> m
+	m is_empty testing::assert_true
+	m "a" 1 insert! -> m
+	m is_empty testing::assert_false
+	m "a" remove! -> m
+	m is_empty testing::assert_true
+	m release
+}

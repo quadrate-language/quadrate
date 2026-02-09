@@ -120,7 +120,7 @@ fn mcp_tools_list(id:str -- response:str) {
 	id result rpc_result
 }
 
-const MODULE_LIST = "bits,bytes,flag,fmt,io,limits,math,mem,os,path,rand,sb,signal,str,strconv,term,testing,thread,time,unicode"
+const MODULE_LIST = "bits,bytes,ct,flag,fmt,io,limits,math,mem,os,path,rand,sb,signal,str,strconv,term,testing,thread,time,unicode"
 
 fn module_entry(ds:ptr name:str -- entry:str) {
 	-> name -> ds
@@ -145,6 +145,7 @@ fn tool_list_modules(ds:ptr -- result:str) {
 	-> ds
 	ds "bits" module_entry
 	ds "bytes" module_entry json::join
+	ds "ct" module_entry json::join
 	ds "flag" module_entry json::join
 	ds "fmt" module_entry json::join
 	ds "io" module_entry json::join
@@ -292,6 +293,7 @@ fn tool_search(ds:ptr args:str -- result:str) {
 
 		ds "bits" query r search_module -> r
 		ds "bytes" query r search_module -> r
+		ds "ct" query r search_module -> r
 		ds "flag" query r search_module -> r
 		ds "fmt" query r search_module -> r
 		ds "io" query r search_module -> r
@@ -512,6 +514,7 @@ fn tool_find_function(ds:ptr args:str -- result:str) {
 		} else {
 			ds "bits" query r count fuzzy_find_in_module -> count -> r
 			ds "bytes" query r count fuzzy_find_in_module -> count -> r
+			ds "ct" query r count fuzzy_find_in_module -> count -> r
 			ds "flag" query r count fuzzy_find_in_module -> count -> r
 			ds "fmt" query r count fuzzy_find_in_module -> count -> r
 			ds "io" query r count fuzzy_find_in_module -> count -> r
@@ -592,6 +595,7 @@ fn tool_search_by_signature(ds:ptr args:str -- result:str) {
 
 		ds "bits" pattern r count search_by_sig_in_module -> count -> r
 		ds "bytes" pattern r count search_by_sig_in_module -> count -> r
+		ds "ct" pattern r count search_by_sig_in_module -> count -> r
 		ds "flag" pattern r count search_by_sig_in_module -> count -> r
 		ds "fmt" pattern r count search_by_sig_in_module -> count -> r
 		ds "io" pattern r count search_by_sig_in_module -> count -> r

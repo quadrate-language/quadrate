@@ -1,0 +1,367 @@
+/// Map<V> - A String-Keyed Hash Map
+/// ====================================
+///
+/// Map stores key-value pairs with O(1) average lookup time.
+/// Keys are strings, values can be any type V.
+///
+/// ## Creating a Map
+///
+/// Create an empty map with a struct literal:
+///
+///     Map<i64> { keys = 0 values = 0 states = 0 len = 0 cap = 0 } -> m
+///
+/// ## Basic Operations
+///
+/// Insert a key-value pair (map is returned, must be captured):
+///
+///     m "alice" 42 insert! -> m
+///
+/// Get a value by key (returns error if not found):
+///
+///     m "alice" get! -> age
+///
+/// Check if key exists:
+///
+///     m "alice" has -> exists
+///
+/// Remove a key:
+///
+///     m "alice" remove! -> m
+///
+/// ## Memory Management
+///
+/// Always call release when done to free memory:
+///
+///     m release
+
+use mem
+use str
+
+/// Hash map with string keys and values of type V.
+///
+/// Fields:
+///   keys   - Array of string key pointers
+///   values - Array of V values
+///   states - Array of slot states (0=empty, 1=occupied, 2=deleted)
+///   len    - Number of entries
+///   cap    - Allocated capacity
+pub struct Map<V> {
+	keys: ptr
+	values: ptr
+	states: ptr
+	len: i64
+	cap: i64
+}
+
+// Internal: DJB2 hash a string key to an index
+fn hash_key(key:str cap:i64 -- idx:i64) {
+	-> cap -> key
+	key mem::from_string -> klen -> buf
+	5381 -> hash
+	0 klen 1 for i {
+		hash 33 * buf i mem::get_byte + -> hash
+	}
+	buf mem::free
+	hash cap mod -> idx
+	// Ensure positive index
+	idx 0 < if {
+		idx cap + -> idx
+	}
+	idx
+}
+
+// Internal: Find slot for key (for insertion or lookup)
+// Returns: slot index, and whether key was found (1) or empty slot (0)
+fn find_slot(keys:ptr states:ptr cap:i64 key:str -- slot:i64 found:i64) {
+	-> key
+	-> cap
+	-> states
+	-> keys
+
+	key cap hash_key -> start
+	start -> idx
+	-1 -> first_deleted
+
+	loop {
+		states idx 8 * mem::get_i64 -> state
+
+		state 0 == if {
+			// Empty slot - key not found
+			first_deleted 0 >= if {
+				first_deleted 0
+			} else {
+				idx 0
+			}
+			break
+		}
+
+		state 2 == if {
+			// Deleted slot - remember for insertion
+			first_deleted 0 < if {
+				idx -> first_deleted
+			}
+		} else {
+			// Occupied slot - check key
+			keys idx 8 * mem::get_ptr str::from_ptr -> existing_key
+			existing_key key eq if {
+				// Found the key
+				idx 1
+				break
+			}
+		}
+
+		// Linear probing
+		idx 1 + cap mod -> idx
+		idx start == if {
+			// Wrapped around - table full or key not found
+			first_deleted 0 >= if {
+				first_deleted 0
+			} else {
+				-1 0  // Should not happen if load factor is maintained
+			}
+			break
+		}
+	}
+}
+
+// Internal: Rehash all entries into new arrays of given capacity.
+// Returns new_keys, new_values, new_states pointers.
+fn rehash(old_keys:ptr old_values:ptr old_states:ptr old_cap:i64 new_cap:i64 -- new_keys:ptr new_values:ptr new_states:ptr)! {
+	-> new_cap -> old_cap -> old_states -> old_values -> old_keys
+
+	new_cap 8 * mem::alloc! -> new_keys
+	new_cap 8 * mem::alloc! -> new_values
+	new_cap 8 * mem::alloc! -> new_states
+
+	// Initialize states to 0 (empty)
+	new_states new_cap 8 * mem::zero
+
+	// Rehash existing entries
+	old_cap 0 > if {
+		0 -> i
+		loop {
+			i old_cap >= if { break }
+
+			old_states i 8 * mem::get_i64 1 == if {
+				// Occupied slot - rehash
+				old_keys i 8 * mem::get_ptr -> key_ptr
+				old_values i 8 * mem::get_i64 -> value
+
+				key_ptr str::from_ptr -> key
+				new_keys new_states new_cap key find_slot -> found -> slot
+
+				key_ptr new_keys slot 8 * mem::set_ptr
+				value new_values slot 8 * mem::set_i64
+				1 new_states slot 8 * mem::set_i64
+			}
+
+			i 1 + -> i
+		}
+
+		// Free old arrays
+		old_keys mem::free
+		old_values mem::free
+		old_states mem::free
+	}
+
+	new_keys new_values new_states
+}
+
+/// Insert a key-value pair into the map.
+///
+/// If the key already exists, the value is updated.
+/// Returns the updated map which must be captured.
+///
+/// Example:
+///     m "alice" 42 insert! -> m
+///
+/// Stack: (m key value -- m2)
+pub fn (m:Map<V>) insert<V>(key:str value:V -- m2:Map<V>)! {
+	-> value
+	-> key
+
+	m @keys -> keys
+	m @values -> values
+	m @states -> states
+	m @len -> len
+	m @cap -> cap
+
+	// Check load factor and grow if needed (threshold: 70%)
+	len 10 * cap 7 * >= cap 0 == or if {
+		// Double capacity (or start at 8)
+		8 -> new_cap
+		cap 0 > if {
+			cap 2 * -> new_cap
+		}
+		keys values states cap new_cap rehash! -> states -> values -> keys
+		new_cap -> cap
+	}
+
+	keys states cap key find_slot -> found -> slot
+
+	slot 0 < if {
+		"insert: hash table is full" 1 err
+	}
+
+	found 0 == if {
+		// New key - allocate null-terminated copy and store
+		key str::len -> klen
+		klen 1 + mem::alloc! -> key_buf
+		key mem::from_string -> tmplen -> tmpbuf
+		key_buf tmpbuf klen mem::copy
+		0 key_buf klen mem::set_byte  // null terminate
+		tmpbuf mem::free
+		key_buf keys slot 8 * mem::set_ptr
+		len 1 + -> len
+	}
+
+	// Store value and mark occupied
+	value values slot 8 * mem::set_i64
+	1 states slot 8 * mem::set_i64
+
+	Map<V> { keys = keys values = values states = states len = len cap = cap }
+}
+
+/// Get the value for a key.
+///
+/// Returns an error if the key is not found.
+///
+/// Example:
+///     m "alice" get! -> age
+///
+/// Stack: (m key -- value)
+pub fn (m:Map<V>) get<V>(key:str -- value:V)! {
+	-> key
+
+	m @values -> values
+	m @keys -> keys
+	m @states -> states
+	m @cap -> cap
+
+	cap 0 == if {
+		"get: map is empty" 1 err
+	}
+
+	keys states cap key find_slot -> found -> slot
+
+	found 0 == if {
+		"get: key not found" 1 err
+	}
+
+	values slot 8 * mem::get_i64
+}
+
+/// Check if a key exists in the map.
+///
+/// Example:
+///     m "alice" has if { "found!" print nl }
+///
+/// Stack: (m key -- exists)
+pub fn (m:Map<V>) has<V>(key:str -- exists:i64) {
+	-> key
+
+	m @cap -> cap
+
+	cap 0 == if {
+		0
+	} else {
+		m @keys -> keys
+		m @states -> states
+		keys states cap key find_slot -> found -> slot
+		// slot is unused, found indicates if key exists
+		found
+	}
+}
+
+/// Remove a key from the map.
+///
+/// Returns error if the key is not found.
+/// Returns the updated map which must be captured.
+///
+/// Example:
+///     m "alice" remove! -> m
+///
+/// Stack: (m key -- m2)
+pub fn (m:Map<V>) remove<V>(key:str -- m2:Map<V>)! {
+	-> key
+
+	m @keys -> keys
+	m @values -> values
+	m @states -> states
+	m @len -> len
+	m @cap -> cap
+
+	cap 0 == if {
+		"remove: map is empty" 1 err
+	}
+
+	keys states cap key find_slot -> found -> slot
+
+	found 0 == if {
+		"remove: key not found" 1 err
+	}
+
+	// Free the key string
+	keys slot 8 * mem::get_ptr mem::free
+
+	// Mark as deleted (tombstone)
+	2 states slot 8 * mem::set_i64
+
+	Map<V> { keys = keys values = values states = states len = len 1 - cap = cap }
+}
+
+/// Get the number of entries in the map.
+///
+/// Example:
+///     m length -> n
+///
+/// Stack: (m -- n)
+pub fn (m:Map<V>) length<V>(-- n:i64) {
+	m @len
+}
+
+/// Check if the map is empty.
+///
+/// Example:
+///     m is_empty if { "empty!" print nl }
+///
+/// Stack: (m -- bool)
+pub fn (m:Map<V>) is_empty<V>(-- b:i64) {
+	m @len 0 ==
+}
+
+/// Free the map's memory.
+///
+/// IMPORTANT: Always call this when done with a map
+/// to prevent memory leaks. After calling release,
+/// the map should not be used.
+///
+/// Example:
+///     m release
+///
+/// Stack: (m --)
+pub fn (m:Map<V>) release<V>(--) {
+	m @keys -> keys
+	m @values -> values
+	m @states -> states
+	m @cap -> cap
+
+	// Free key strings
+	cap 0 > if {
+		0 -> i
+		loop {
+			i cap >= if { break }
+
+			states i 8 * mem::get_i64 1 == if {
+				keys i 8 * mem::get_ptr mem::free
+			}
+
+			i 1 + -> i
+		}
+	}
+
+	// Free arrays
+	keys 0 neq if { keys mem::free }
+	values 0 neq if { values mem::free }
+	states 0 neq if { states mem::free }
+}
