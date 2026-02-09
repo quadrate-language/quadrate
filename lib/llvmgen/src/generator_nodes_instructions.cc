@@ -462,6 +462,7 @@ namespace Qd {
 			auto structTypeIt = localVariableStructTypes.find(name);
 			if (structTypeIt != localVariableStructTypes.end()) {
 				lastStructConstructed = structTypeIt->second;
+				lastStructWasConstructedInPlace = false;
 			}
 			return;
 		}

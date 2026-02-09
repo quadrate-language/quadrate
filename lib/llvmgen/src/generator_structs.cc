@@ -171,6 +171,34 @@ namespace Qd {
 				builder->CreateCall(qdStringReleaseFn, {stringPtr});
 			}
 		}
+
+		// Release generic type parameter fields that hold strings
+		for (const auto& field : layout.fields) {
+			if (field.isTypeParam) {
+				auto tagOffset = builder->getInt64(field.offset + 8);
+				auto tagPtr = builder->CreateGEP(builder->getInt8Ty(), structPtr, tagOffset, "typeparam_tag_ptr");
+				llvm::Value* typeTag = builder->CreateLoad(int64Ty, tagPtr, "typeparam_tag");
+
+				llvm::Function* currentFn = builder->GetInsertBlock()->getParent();
+				llvm::BasicBlock* releaseStr =
+						llvm::BasicBlock::Create(*context, field.name + "_release_str", currentFn);
+				llvm::BasicBlock* skipRelease =
+						llvm::BasicBlock::Create(*context, field.name + "_skip_release", currentFn);
+
+				llvm::Value* isStr = builder->CreateICmpEQ(typeTag, builder->getInt64(3), "is_str_typeparam");
+				builder->CreateCondBr(isStr, releaseStr, skipRelease);
+
+				builder->SetInsertPoint(releaseStr);
+				auto fieldOffset = builder->getInt64(field.offset);
+				auto fieldBytePtr =
+						builder->CreateGEP(builder->getInt8Ty(), structPtr, fieldOffset, "typeparam_str_ptr");
+				llvm::Value* stringPtr = builder->CreateLoad(ptrTy, fieldBytePtr, "typeparam_str");
+				builder->CreateCall(qdStringReleaseFn, {stringPtr});
+				builder->CreateBr(skipRelease);
+
+				builder->SetInsertPoint(skipRelease);
+			}
+		}
 	}
 
 	void LlvmGenerator::Impl::generateStructDestructors() {
@@ -186,7 +214,8 @@ namespace Qd {
 				if (!baseTypeName.empty() && baseTypeName[0] == '*') {
 					baseTypeName = baseTypeName.substr(1);
 				}
-				if (field.typeName == "str" || (looksLikeStructType(baseTypeName) && isKnownStruct(baseTypeName))) {
+				if (field.typeName == "str" || field.isTypeParam ||
+						(looksLikeStructType(baseTypeName) && isKnownStruct(baseTypeName))) {
 					needsDestructor = true;
 					break;
 				}
@@ -238,6 +267,33 @@ namespace Qd {
 							builder->CreateGEP(builder->getInt8Ty(), structPtr, fieldOffset, "str_field_ptr");
 					llvm::Value* stringPtr = builder->CreateLoad(ptrTy, fieldBytePtr, "string_ptr");
 					builder->CreateCall(qdStringReleaseFn, {stringPtr});
+				}
+			}
+
+			// Release generic type parameter fields that hold strings
+			for (const auto& field : layout.fields) {
+				if (field.isTypeParam) {
+					auto tagOffset = builder->getInt64(field.offset + 8);
+					auto tagPtr = builder->CreateGEP(builder->getInt8Ty(), structPtr, tagOffset, "typeparam_tag_ptr");
+					llvm::Value* typeTag = builder->CreateLoad(int64Ty, tagPtr, "typeparam_tag");
+
+					llvm::BasicBlock* releaseStr =
+							llvm::BasicBlock::Create(*context, field.name + "_release_str", dtorFn);
+					llvm::BasicBlock* skipRelease =
+							llvm::BasicBlock::Create(*context, field.name + "_skip_release", dtorFn);
+
+					llvm::Value* isStr = builder->CreateICmpEQ(typeTag, builder->getInt64(3), "is_str_typeparam");
+					builder->CreateCondBr(isStr, releaseStr, skipRelease);
+
+					builder->SetInsertPoint(releaseStr);
+					auto fieldOffset = builder->getInt64(field.offset);
+					auto fieldBytePtr =
+							builder->CreateGEP(builder->getInt8Ty(), structPtr, fieldOffset, "typeparam_str_ptr");
+					llvm::Value* stringPtr = builder->CreateLoad(ptrTy, fieldBytePtr, "typeparam_str");
+					builder->CreateCall(qdStringReleaseFn, {stringPtr});
+					builder->CreateBr(skipRelease);
+
+					builder->SetInsertPoint(skipRelease);
 				}
 			}
 
@@ -357,6 +413,7 @@ namespace Qd {
 
 		// Track that we just constructed this struct type
 		lastStructConstructed = structName;
+		lastStructWasConstructedInPlace = !currentFunctionReturnsPtr;
 	}
 
 	void LlvmGenerator::Impl::generateFieldAccess(AstNodeFieldAccess* fieldAccess, llvm::Value* ctx) {
@@ -795,6 +852,30 @@ namespace Qd {
 			llvm::Value* ptrValue = builder->CreateLoad(ptrTy, valuePtr, "ptr_val");
 			builder->CreateStore(ptrValue, bytePtr);
 		} else if (matchingField->isTypeParam) {
+			// Release old string value if the generic field currently holds a string
+			{
+				llvm::Value* oldTagOffset = builder->getInt64(matchingField->offset + 8);
+				llvm::Value* oldTagPtr =
+						builder->CreateGEP(builder->getInt8Ty(), structPtr, oldTagOffset, "old_tag_ptr");
+				llvm::Value* oldTag = builder->CreateLoad(int64Ty, oldTagPtr, "old_tag");
+				llvm::Value* wasStr = builder->CreateICmpEQ(oldTag, builder->getInt64(3), "was_str");
+				llvm::Function* currentFn = builder->GetInsertBlock()->getParent();
+				llvm::BasicBlock* releaseOldStr =
+						llvm::BasicBlock::Create(*context, "release_old_typeparam_str", currentFn);
+				llvm::BasicBlock* afterRelease =
+						llvm::BasicBlock::Create(*context, "after_old_typeparam_release", currentFn);
+				builder->CreateCondBr(wasStr, releaseOldStr, afterRelease);
+
+				builder->SetInsertPoint(releaseOldStr);
+				llvm::Value* oldValPtr = builder->CreateGEP(
+						builder->getInt8Ty(), structPtr, builder->getInt64(matchingField->offset), "old_val_ptr");
+				llvm::Value* oldStr = builder->CreateLoad(ptrTy, oldValPtr, "old_str");
+				builder->CreateCall(qdStringReleaseFn, {oldStr});
+				builder->CreateBr(afterRelease);
+
+				builder->SetInsertPoint(afterRelease);
+			}
+
 			// Generic type parameter field - store raw 8-byte value + type tag
 			llvm::Value* intValue = builder->CreateLoad(int64Ty, valuePtr, "generic_val");
 			builder->CreateStore(intValue, bytePtr);

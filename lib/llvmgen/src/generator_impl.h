@@ -324,6 +324,7 @@ namespace Qd {
 		std::map<std::string, llvm::AllocaInst*> localVariables;
 		std::map<std::string, std::string> localVariableStructTypes;
 		std::set<std::string> localArrayVariables;
+		std::set<std::string> stackAllocatedStructLocals;
 
 		// Captured variables
 		std::map<std::string, llvm::AllocaInst*> capturedVariableRefs;
@@ -338,6 +339,7 @@ namespace Qd {
 		std::string lastFieldAccessResultType;
 		bool lastPushedWasArray = false;
 		bool currentFunctionReturnsPtr = false;
+		bool lastStructWasConstructedInPlace = false;
 
 		// Anonymous function tracking
 		size_t anonymousFunctionCounter = 0;

@@ -368,7 +368,11 @@ namespace Qd {
 		// If we just constructed a struct, record its type for this local variable
 		if (!lastStructConstructed.empty()) {
 			localVariableStructTypes[name] = lastStructConstructed;
+			if (lastStructWasConstructedInPlace) {
+				stackAllocatedStructLocals.insert(name);
+			}
 			lastStructConstructed.clear();
+			lastStructWasConstructedInPlace = false;
 		} else if (!lastFieldAccessResultType.empty()) {
 			// Also track struct type from field access results (e.g., c @v -> vptr where v is Vec3)
 			localVariableStructTypes[name] = lastFieldAccessResultType;
@@ -687,7 +691,6 @@ namespace Qd {
 				builder->CreateBr(skipFreeBlock);
 			} else {
 				// Non-array, non-closure pointer - could be a struct pointer
-				// Call qd_ptr_release - works for both arrays and structs
 				llvm::BasicBlock* freePtrBlock = llvm::BasicBlock::Create(*context, varName + "_free_ptr", currentFn);
 				llvm::Value* isPtr = builder->CreateICmpEQ(type, builder->getInt32(2), varName + "_is_ptr");
 				builder->CreateCondBr(isPtr, freePtrBlock, skipFreeBlock);
@@ -696,7 +699,55 @@ namespace Qd {
 				llvm::Value* ptrValuePtr =
 						builder->CreateStructGEP(stackElementTy, localAlloca, 0, varName + "_cleanup_ptr_value_ptr");
 				llvm::Value* ptrVal = builder->CreateLoad(ptrTy, ptrValuePtr, varName + "_cleanup_ptr");
-				builder->CreateCall(qdPtrReleaseFn, {ptrVal});
+
+				// Check if this is a stack-allocated struct needing field cleanup
+				auto structTypeIt = localVariableStructTypes.find(varName);
+				if (stackAllocatedStructLocals.count(varName) > 0 && structTypeIt != localVariableStructTypes.end()) {
+					const StructLayout* layoutPtr = findStructDefinition(structTypeIt->second);
+					if (layoutPtr) {
+						// Release concrete string fields
+						for (const auto& field : layoutPtr->fields) {
+							if (field.typeName == "str") {
+								auto fieldOffset = builder->getInt64(field.offset);
+								auto fieldBytePtr = builder->CreateGEP(
+										builder->getInt8Ty(), ptrVal, fieldOffset, varName + "_str_field_ptr");
+								llvm::Value* strFieldPtr = builder->CreateLoad(ptrTy, fieldBytePtr, "str_field");
+								builder->CreateCall(qdStringReleaseFn, {strFieldPtr});
+							}
+						}
+						// Release generic type parameter fields that hold strings
+						for (const auto& field : layoutPtr->fields) {
+							if (field.isTypeParam) {
+								auto tagOffset = builder->getInt64(field.offset + 8);
+								auto tagPtr = builder->CreateGEP(
+										builder->getInt8Ty(), ptrVal, tagOffset, varName + "_typeparam_tag_ptr");
+								llvm::Value* typeTag = builder->CreateLoad(int64Ty, tagPtr, "typeparam_tag");
+
+								llvm::BasicBlock* releaseStr = llvm::BasicBlock::Create(
+										*context, varName + "_" + field.name + "_rel_str", currentFn);
+								llvm::BasicBlock* skipRelease = llvm::BasicBlock::Create(
+										*context, varName + "_" + field.name + "_skip_rel", currentFn);
+
+								llvm::Value* isStr =
+										builder->CreateICmpEQ(typeTag, builder->getInt64(3), "is_str_typeparam");
+								builder->CreateCondBr(isStr, releaseStr, skipRelease);
+
+								builder->SetInsertPoint(releaseStr);
+								auto fieldOffset = builder->getInt64(field.offset);
+								auto fieldBytePtr = builder->CreateGEP(
+										builder->getInt8Ty(), ptrVal, fieldOffset, varName + "_typeparam_str_ptr");
+								llvm::Value* stringPtr = builder->CreateLoad(ptrTy, fieldBytePtr, "typeparam_str");
+								builder->CreateCall(qdStringReleaseFn, {stringPtr});
+								builder->CreateBr(skipRelease);
+
+								builder->SetInsertPoint(skipRelease);
+							}
+						}
+					}
+					// Stack struct - no qd_ptr_release needed
+				} else {
+					builder->CreateCall(qdPtrReleaseFn, {ptrVal});
+				}
 				builder->CreateBr(skipFreeBlock);
 			}
 

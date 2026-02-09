@@ -537,8 +537,10 @@ namespace Qd {
 		// Clear local variables for this function
 		localVariables.clear();
 		localVariableStructTypes.clear();
+		stackAllocatedStructLocals.clear();
 		localArrayVariables.clear();
 		lastStructConstructed.clear();
+		lastStructWasConstructedInPlace = false;
 		lastFieldAccessResultType.clear();
 		heapAllocatedCaptures.clear();
 		heapCapturePointers.clear();
@@ -931,6 +933,7 @@ namespace Qd {
 				// Save and reset state for native body generation
 				auto savedLocalVars = localVariables;
 				auto savedLocalVarStructTypes = localVariableStructTypes;
+				auto savedStackAllocStructLocals = stackAllocatedStructLocals;
 				auto savedLocalArrayVars = localArrayVariables;
 				auto savedNativeLocalVars = nativeLocalVariables;
 				auto savedReturnBlock = currentFunctionReturnBlock;
@@ -940,6 +943,7 @@ namespace Qd {
 
 				localVariables.clear();
 				localVariableStructTypes.clear();
+				stackAllocatedStructLocals.clear();
 				localArrayVariables.clear();
 				nativeLocalVariables.clear();
 				iteratorVars.clear();
@@ -1017,6 +1021,7 @@ namespace Qd {
 				// Restore state
 				localVariables = savedLocalVars;
 				localVariableStructTypes = savedLocalVarStructTypes;
+				stackAllocatedStructLocals = savedStackAllocStructLocals;
 				localArrayVariables = savedLocalArrayVars;
 				nativeLocalVariables = savedNativeLocalVars;
 				currentFunctionReturnBlock = savedReturnBlock;
@@ -1388,8 +1393,10 @@ namespace Qd {
 		// Clear local variables for this test
 		localVariables.clear();
 		localVariableStructTypes.clear();
+		stackAllocatedStructLocals.clear();
 		localArrayVariables.clear();
 		lastStructConstructed.clear();
+		lastStructWasConstructedInPlace = false;
 		lastFieldAccessResultType.clear();
 
 		currentFunctionReturnsPtr = true;

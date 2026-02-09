@@ -322,6 +322,7 @@ namespace Qd {
 			auto structTypeIt = localVariableStructTypes.find(name);
 			if (structTypeIt != localVariableStructTypes.end()) {
 				lastStructConstructed = structTypeIt->second;
+				lastStructWasConstructedInPlace = false;
 			}
 			return;
 		}
@@ -530,6 +531,7 @@ namespace Qd {
 			auto returnTypeIt = functionReturnStructType.find(lookupName);
 			if (returnTypeIt != functionReturnStructType.end()) {
 				lastStructConstructed = returnTypeIt->second;
+				lastStructWasConstructedInPlace = false;
 			}
 
 			// Check if this function is fallible
@@ -629,6 +631,7 @@ namespace Qd {
 		// Save current state
 		auto savedLocalVars = localVariables;
 		auto savedLocalVarStructTypes = localVariableStructTypes;
+		auto savedStackAllocStructLocals = stackAllocatedStructLocals;
 		auto savedLocalArrayVars = localArrayVariables;
 		auto savedCapturedVarRefs = capturedVariableRefs;
 		auto savedLastStruct = lastStructConstructed;
@@ -645,6 +648,7 @@ namespace Qd {
 		// Clear local variables for the anonymous function
 		localVariables.clear();
 		localVariableStructTypes.clear();
+		stackAllocatedStructLocals.clear();
 		localArrayVariables.clear();
 		capturedVariableRefs.clear();
 		lastStructConstructed.clear();
@@ -730,6 +734,7 @@ namespace Qd {
 		// Restore state
 		localVariables = savedLocalVars;
 		localVariableStructTypes = savedLocalVarStructTypes;
+		stackAllocatedStructLocals = savedStackAllocStructLocals;
 		localArrayVariables = savedLocalArrayVars;
 		capturedVariableRefs = savedCapturedVarRefs;
 		lastStructConstructed = savedLastStruct;
@@ -1041,6 +1046,7 @@ namespace Qd {
 		auto returnTypeIt = functionReturnStructType.find(fullName);
 		if (returnTypeIt != functionReturnStructType.end()) {
 			lastStructConstructed = returnTypeIt->second;
+			lastStructWasConstructedInPlace = false;
 		}
 
 		// If in test mode, track errors from testing:: assertion functions only
