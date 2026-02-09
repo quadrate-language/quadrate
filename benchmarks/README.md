@@ -35,6 +35,8 @@ Performance benchmarks comparing Quadrate to other languages.
 - **Basel Problem** - sum of 1/i^2 for i=1..10M (loop + float division)
 - **Leibniz Pi** - pi/4 = 1 - 1/3 + 1/5 - ... for 10M terms (loop + float arithmetic)
 - **Mandelbrot** - 200x200 grid escape iteration (nested loops + mixed int/float)
+- **Distance** - 10M euclidean distance computations using sqrt (native module call bridging)
+- **Trig Sum** - sum of sin(x)+cos(x) for 5M values (native module call bridging)
 - **Mat4x4 Multiply** - 1M chained 4x4 matrix multiplications (17-param native function)
 
 ## Languages
@@ -177,7 +179,7 @@ All integer-only functions qualify for native calling convention and achieve nea
 
 ### Float Compute Benchmarks
 
-Float functions with f64 parameters also qualify for native calling convention and achieve C-level performance.
+Float functions with f64 parameters also qualify for native calling convention. Functions using only inline arithmetic achieve C-level performance. Functions calling imported C module functions (math::sqrt, math::sin, etc.) use native bridge wrappers which add some overhead from runtime stack push/pop in the bridge layer.
 
 #### Basel Problem (sum 1/i^2, 1..10M)
 
@@ -214,6 +216,30 @@ Float functions with f64 parameters also qualify for native calling convention a
 | C#       | 9 ms |
 | Quadrate | 25 ms |
 | Python   | 176 ms |
+
+#### Distance (10M iterations, sqrt)
+
+| Language | Time |
+|----------|------|
+| C        | 74 ms |
+| Rust     | 74 ms |
+| Go       | 74 ms |
+| Node.js  | 74 ms |
+| C#       | 76 ms |
+| Quadrate | 452 ms |
+| Python   | 4117 ms |
+
+#### Trig Sum (sin+cos, 5M iterations)
+
+| Language | Time |
+|----------|------|
+| C        | 172 ms |
+| Rust     | 172 ms |
+| Go       | 222 ms |
+| Node.js  | 324 ms |
+| C#       | 346 ms |
+| Quadrate | 868 ms |
+| Python   | 1588 ms |
 
 #### Mat4x4 Multiply (1M iterations)
 

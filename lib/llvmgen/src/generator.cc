@@ -462,10 +462,15 @@ namespace Qd {
 			// Ctx blocks clone the context and expect results on the runtime stack,
 			// which conflicts with the compile-time stack approach.
 			return false;
-		case IAstNode::Type::SCOPED_IDENTIFIER:
-			// Module calls (like str::len) might return non-integers
-			// Be conservative and reject
-			return false;
+		case IAstNode::Type::SCOPED_IDENTIFIER: {
+			auto* scoped = static_cast<AstNodeScopedIdentifier*>(node);
+			std::string fullName = scoped->scope() + "::" + scoped->name();
+			// Allow if a native bridge exists for this scoped function
+			if (nativeFunctions.find(fullName) == nativeFunctions.end()) {
+				return false;
+			}
+			break;
+		}
 		case IAstNode::Type::ANONYMOUS_FUNCTION:
 			// Anonymous functions/closures are complex, reject for now
 			return false;
@@ -509,6 +514,14 @@ namespace Qd {
 				if (nativeFunctions.find(lookupName) == nativeFunctions.end()) {
 					return false;
 				}
+			}
+		}
+		if (node->type() == IAstNode::Type::SCOPED_IDENTIFIER) {
+			auto* scoped = static_cast<AstNodeScopedIdentifier*>(node);
+			std::string fullName = scoped->scope() + "::" + scoped->name();
+			// Imported C functions with native bridges are fine
+			if (nativeFunctions.find(fullName) == nativeFunctions.end()) {
+				return false;
 			}
 		}
 		for (auto* child : node->children()) {
@@ -1707,6 +1720,113 @@ namespace Qd {
 								auto wrapperFn = llvm::Function::Create(
 										fnTy, llvm::Function::ExternalLinkage, moduleScoped, *module);
 								createForwardingWrapperBody(wrapperFn, fn);
+							}
+						}
+
+						// Create native bridge wrapper for qualifying imported C functions.
+						// This allows functions calling these imports to use native calling convention.
+						if (!func->throws) {
+							bool allNumeric = true;
+							std::vector<NativeParamType> bridgeInputTypes;
+							for (const auto* param : func->inputParameters) {
+								const std::string& typeStr = param->typeString();
+								if (typeStr == "f64" || typeStr == "float" || typeStr == "float64" || typeStr == "f") {
+									bridgeInputTypes.push_back(NativeParamType::F64);
+								} else if (typeStr.empty() || typeStr == "i64" || typeStr == "int" ||
+										   typeStr == "int64" || typeStr == "i") {
+									bridgeInputTypes.push_back(NativeParamType::I64);
+								} else {
+									allNumeric = false;
+									break;
+								}
+							}
+							NativeParamType bridgeOutputType = NativeParamType::I64;
+							size_t bridgeOutputCount = func->outputParameters.size();
+							if (allNumeric && bridgeOutputCount <= 1) {
+								for (const auto* param : func->outputParameters) {
+									const std::string& typeStr = param->typeString();
+									if (typeStr == "f64" || typeStr == "float" || typeStr == "float64" ||
+											typeStr == "f") {
+										bridgeOutputType = NativeParamType::F64;
+									} else if (!typeStr.empty() && typeStr != "i64" && typeStr != "int" &&
+											   typeStr != "int64" && typeStr != "i") {
+										allNumeric = false;
+										break;
+									}
+								}
+							}
+							if (allNumeric && bridgeInputTypes.size() > 0 && bridgeOutputCount <= 1) {
+								size_t bridgeInputCount = bridgeInputTypes.size();
+								std::string nativeName = mangledName + "_native";
+
+								// Build native function type: (ctx, typed_params...) -> typed_result
+								auto* doubleTy = builder->getDoubleTy();
+								std::vector<llvm::Type*> nativeParams;
+								nativeParams.push_back(contextPtrTy);
+								for (size_t i = 0; i < bridgeInputCount; i++) {
+									nativeParams.push_back(
+											bridgeInputTypes[i] == NativeParamType::F64 ? doubleTy : int64Ty);
+								}
+								llvm::Type* nativeRetTy =
+										(bridgeOutputCount == 0)
+												? builder->getVoidTy()
+												: (bridgeOutputType == NativeParamType::F64 ? doubleTy : int64Ty);
+								auto nativeFnTy = llvm::FunctionType::get(nativeRetTy, nativeParams, false);
+								auto nativeFn = llvm::Function::Create(
+										nativeFnTy, llvm::Function::InternalLinkage, nativeName, *module);
+								nativeFn->addParamAttr(0, llvm::Attribute::NonNull);
+								nativeFn->addParamAttr(0, llvm::Attribute::NoAlias);
+								nativeFn->addFnAttr(llvm::Attribute::NoUnwind);
+
+								// Generate bridge body: push args to runtime stack, call C func, pop result
+								auto bridgeEntryBB = llvm::BasicBlock::Create(*context, "entry", nativeFn);
+								auto savedInsertPoint = builder->GetInsertBlock();
+								auto savedInsertPos = builder->GetInsertPoint();
+								builder->SetInsertPoint(bridgeEntryBB);
+
+								auto bridgeCtx = nativeFn->getArg(0);
+								// Push each typed arg to the runtime stack
+								for (size_t i = 0; i < bridgeInputCount; i++) {
+									auto arg = nativeFn->getArg(static_cast<unsigned>(i + 1));
+									if (bridgeInputTypes[i] == NativeParamType::F64) {
+										generateInlinePushFloatValue(bridgeCtx, arg);
+									} else {
+										generateInlinePushIntValue(bridgeCtx, arg);
+									}
+								}
+								// Call the C function
+								builder->CreateCall(fn, {bridgeCtx});
+								// Pop result if any
+								if (bridgeOutputCount == 1) {
+									llvm::Value* result;
+									if (bridgeOutputType == NativeParamType::F64) {
+										result = generateInlinePopFloat(bridgeCtx);
+									} else {
+										result = generateInlinePopInt(bridgeCtx);
+									}
+									builder->CreateRet(result);
+								} else {
+									builder->CreateRetVoid();
+								}
+
+								// Restore insert point
+								if (savedInsertPoint) {
+									builder->SetInsertPoint(savedInsertPoint, savedInsertPos);
+								}
+
+								// Register under the namespace::name key
+								std::string bridgeFullName = namespaceName + "::" + func->name;
+								nativeFunctions[bridgeFullName] = nativeFn;
+								nativeFuncInfo[bridgeFullName] = {
+										bridgeInputCount, bridgeOutputCount, bridgeInputTypes, bridgeOutputType};
+
+								// Also register under moduleName::name for cross-module access
+								if (func->isPublic && moduleName != namespaceName) {
+									std::string crossName = moduleName + "::" + func->name;
+									nativeFunctions[crossName] = nativeFn;
+									nativeFuncInfo[crossName] = {
+											bridgeInputCount, bridgeOutputCount, bridgeInputTypes, bridgeOutputType};
+								}
 							}
 						}
 					}

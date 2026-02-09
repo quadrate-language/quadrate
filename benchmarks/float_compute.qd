@@ -1,4 +1,5 @@
 use fmt
+use math
 use time
 
 // Basel problem: sum of 1/i^2 for i=1..n
@@ -41,6 +42,34 @@ fn mandelbrot_iter(cr:f64 ci:f64 max_iter:i64 -- iters:i64) {
 		}
 	}
 	result
+}
+
+// Euclidean distance using math::sqrt
+fn distance(x1:f64 y1:f64 x2:f64 y2:f64 -- d:f64) {
+	-> y2 -> x2 -> y1 -> x1
+	x2 x1 - dup *  y2 y1 - dup *  + math::sqrt
+}
+
+// Sum of distances over n iterations
+fn distance_sum(n:i64 -- result:f64) {
+	-> n
+	0.0 -> sum
+	0 n 1 for i {
+		i cast<f64> 0.001 * -> x
+		x 0.0 0.0 x distance sum + -> sum
+	}
+	sum
+}
+
+// Sum of sin(x) + cos(x) for x = 0..n*0.001
+fn trig_sum(n:i64 -- result:f64) {
+	-> n
+	0.0 -> sum
+	0 n 1 for i {
+		i cast<f64> 0.001 * -> x
+		x math::sin x math::cos + sum + -> sum
+	}
+	sum
 }
 
 fn main() {
@@ -101,4 +130,32 @@ fn main() {
 	size size "Mandelbrot %dx%d:\n" fmt::printf
 	best 1000000 div "  Time: %d ms\n" fmt::printf
 	total "  Result: %d\n" fmt::printf
+
+	// Benchmark 4: Distance computation (uses math::sqrt)
+	10000000 -> n
+	n distance_sum drop // warmup
+	9999999999 -> best
+	0 3 1 for run {
+		time::now -> start
+		n distance_sum -> r
+		time::now start - -> elapsed
+		elapsed best lt if { elapsed -> best  r -> result_f }
+	}
+	n "Distance (%d iterations):\n" fmt::printf
+	best 1000000 div "  Time: %d ms\n" fmt::printf
+	result_f "  Result: %.10f\n" fmt::printf
+
+	// Benchmark 5: Trig computation (uses math::sin, math::cos)
+	5000000 -> n
+	n trig_sum drop // warmup
+	9999999999 -> best
+	0 3 1 for run {
+		time::now -> start
+		n trig_sum -> r
+		time::now start - -> elapsed
+		elapsed best lt if { elapsed -> best  r -> result_f }
+	}
+	n "Trig sum(%d):\n" fmt::printf
+	best 1000000 div "  Time: %d ms\n" fmt::printf
+	result_f "  Result: %.10f\n" fmt::printf
 }

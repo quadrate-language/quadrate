@@ -1,3 +1,4 @@
+import math
 import time
 
 RUNS = 3
@@ -28,6 +29,18 @@ def mandelbrot_iter(cr, ci, max_iter):
         if zr * zr + zi * zi > 4.0:
             return i
     return max_iter
+
+def distance(x1, y1, x2, y2):
+    dx = x2 - x1
+    dy = y2 - y1
+    return math.sqrt(dx * dx + dy * dy)
+
+def trig_sum(n):
+    s = 0.0
+    for i in range(n):
+        x = i * 0.001
+        s += math.sin(x) + math.cos(x)
+    return s
 
 def main():
     print("=== Python Float Benchmarks ===")
@@ -89,6 +102,43 @@ def main():
     print(f"Mandelbrot {size}x{size}:")
     print(f"  Time: {best // 1000000} ms")
     print(f"  Result: {total}")
+
+    # Benchmark 4: Distance computation
+    n = 10000000
+    # warmup
+    s = 0.0
+    for i in range(n):
+        x = i * 0.001
+        s += distance(x, 0.0, 0.0, x)
+    best = float('inf')
+    for run in range(RUNS):
+        start = time.time_ns()
+        s = 0.0
+        for i in range(n):
+            x = i * 0.001
+            s += distance(x, 0.0, 0.0, x)
+        elapsed = time.time_ns() - start
+        if elapsed < best:
+            best = elapsed
+            result = s
+    print(f"Distance ({n} iterations):")
+    print(f"  Time: {best // 1000000} ms")
+    print(f"  Result: {result:.10f}")
+
+    # Benchmark 5: Trig computation
+    n = 5000000
+    trig_sum(n)  # warmup
+    best = float('inf')
+    for run in range(RUNS):
+        start = time.time_ns()
+        r = trig_sum(n)
+        elapsed = time.time_ns() - start
+        if elapsed < best:
+            best = elapsed
+            result = r
+    print(f"Trig sum({n}):")
+    print(f"  Time: {best // 1000000} ms")
+    print(f"  Result: {result:.10f}")
 
 if __name__ == "__main__":
     main()

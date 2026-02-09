@@ -22,6 +22,21 @@ double LeibnizPi(long n) {
     return sum * 4.0;
 }
 
+double Distance(double x1, double y1, double x2, double y2) {
+    double dx = x2 - x1;
+    double dy = y2 - y1;
+    return Math.Sqrt(dx * dx + dy * dy);
+}
+
+double TrigSum(long n) {
+    double sum = 0.0;
+    for (long i = 0; i < n; i++) {
+        double x = (double)i * 0.001;
+        sum += Math.Sin(x) + Math.Cos(x);
+    }
+    return sum;
+}
+
 long MandelbrotIter(double cr, double ci, long maxIter) {
     double zr = 0.0, zi = 0.0;
     for (long i = 0; i < maxIter; i++) {
@@ -96,3 +111,44 @@ for (int run = 0; run < Runs; run++) {
 Console.WriteLine($"Mandelbrot {size}x{size}:");
 Console.WriteLine($"  Time: {best / 1000000} ms");
 Console.WriteLine($"  Result: {total}");
+
+// Benchmark 4: Distance computation
+n = 10000000;
+// warmup
+{
+    double s = 0.0;
+    for (long i = 0; i < n; i++) {
+        double x = (double)i * 0.001;
+        s += Distance(x, 0.0, 0.0, x);
+    }
+}
+best = long.MaxValue;
+for (int run = 0; run < Runs; run++) {
+    var sw = Stopwatch.StartNew();
+    double s = 0.0;
+    for (long i = 0; i < n; i++) {
+        double x = (double)i * 0.001;
+        s += Distance(x, 0.0, 0.0, x);
+    }
+    sw.Stop();
+    long elapsed = sw.Elapsed.Ticks * 100;
+    if (elapsed < best) { best = elapsed; resultF = s; }
+}
+Console.WriteLine($"Distance ({n} iterations):");
+Console.WriteLine($"  Time: {best / 1000000} ms");
+Console.WriteLine($"  Result: {resultF:F10}");
+
+// Benchmark 5: Trig computation
+n = 5000000;
+TrigSum(n); // warmup
+best = long.MaxValue;
+for (int run = 0; run < Runs; run++) {
+    var sw = Stopwatch.StartNew();
+    double r = TrigSum(n);
+    sw.Stop();
+    long elapsed = sw.Elapsed.Ticks * 100;
+    if (elapsed < best) { best = elapsed; resultF = r; }
+}
+Console.WriteLine($"Trig sum({n}):");
+Console.WriteLine($"  Time: {best / 1000000} ms");
+Console.WriteLine($"  Result: {resultF:F10}");

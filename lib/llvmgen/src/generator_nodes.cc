@@ -967,6 +967,31 @@ namespace Qd {
 			fn = llvm::Function::Create(fnTy, linkage, mangledName, *module);
 		}
 
+		// Compile-time stack path: call native bridge directly if available
+		if (useCompileTimeStack) {
+			auto calleeNativeIt = nativeFunctions.find(fullName);
+			if (calleeNativeIt != nativeFunctions.end()) {
+				auto& calleeInfo = nativeFuncInfo[fullName];
+				std::vector<llvm::Value*> args;
+				args.push_back(ctx);
+				std::vector<llvm::Value*> poppedArgs;
+				for (size_t i = 0; i < calleeInfo.inputCount; i++) {
+					poppedArgs.push_back(compileTimeStack.back());
+					compileTimeStack.pop_back();
+				}
+				for (auto rit = poppedArgs.rbegin(); rit != poppedArgs.rend(); ++rit) {
+					args.push_back(*rit);
+				}
+				if (calleeInfo.outputCount == 1) {
+					llvm::Value* result = builder->CreateCall(calleeNativeIt->second, args, "call_result");
+					compileTimeStack.push_back(result);
+				} else {
+					builder->CreateCall(calleeNativeIt->second, args);
+				}
+				return;
+			}
+		}
+
 		// Generate any needed type casts before the function call
 		generateCastInstructions(scopedIdent->parameterCasts(), ctx);
 
@@ -978,8 +1003,39 @@ namespace Qd {
 			builder->CreateStore(builder->getInt64(0), errorCodePtr);
 		}
 
-		// Call the scoped function
-		auto callResult = builder->CreateCall(fn, {ctx}, "call_result");
+		// Call the scoped function — use native bridge (A optimization) if available
+		auto nativeIt = nativeFunctions.find(fullName);
+		llvm::Value* callResult;
+		if (nativeIt != nativeFunctions.end()) {
+			auto& info = nativeFuncInfo[fullName];
+			std::vector<llvm::Value*> nativeArgs;
+			nativeArgs.push_back(ctx);
+			std::vector<llvm::Value*> poppedArgs;
+			for (size_t j = info.inputCount; j > 0; j--) {
+				if (info.inputTypes[j - 1] == NativeParamType::F64) {
+					poppedArgs.push_back(generateInlinePopFloat(ctx));
+				} else {
+					poppedArgs.push_back(generateInlinePopInt(ctx));
+				}
+			}
+			for (auto rit = poppedArgs.rbegin(); rit != poppedArgs.rend(); ++rit) {
+				nativeArgs.push_back(*rit);
+			}
+			if (info.outputCount == 1) {
+				llvm::Value* result = builder->CreateCall(nativeIt->second, nativeArgs, "inline_call");
+				if (info.outputType == NativeParamType::F64) {
+					generateInlinePushFloatValue(ctx, result);
+				} else {
+					generateInlinePushIntValue(ctx, result);
+				}
+			} else {
+				builder->CreateCall(nativeIt->second, nativeArgs);
+			}
+			// Synthesize a zero call result for downstream error checking
+			callResult = builder->getInt32(0);
+		} else {
+			callResult = builder->CreateCall(fn, {ctx}, "call_result");
+		}
 
 		// Track return struct type for local variable binding (-> name)
 		auto returnTypeIt = functionReturnStructType.find(fullName);

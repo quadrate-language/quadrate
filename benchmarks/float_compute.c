@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdint.h>
+#include <math.h>
 #include <time.h>
 
 #define RUNS 3
@@ -38,6 +39,23 @@ int64_t mandelbrot_iter(double cr, double ci, int64_t max_iter) {
         }
     }
     return max_iter;
+}
+
+// Euclidean distance using sqrt
+double distance(double x1, double y1, double x2, double y2) {
+    double dx = x2 - x1;
+    double dy = y2 - y1;
+    return sqrt(dx * dx + dy * dy);
+}
+
+// Sum of sin(x) + cos(x) for x = 0..n*0.001
+double trig_sum(int64_t n) {
+    double sum = 0.0;
+    for (int64_t i = 0; i < n; i++) {
+        double x = (double)i * 0.001;
+        sum += sin(x) + cos(x);
+    }
+    return sum;
 }
 
 int64_t get_time_ns() {
@@ -105,6 +123,45 @@ int main() {
     printf("Mandelbrot %ldx%ld:\n", size, size);
     printf("  Time: %ld ms\n", best / 1000000);
     printf("  Result: %ld\n", total);
+
+    // Benchmark 4: Distance computation
+    n = 10000000;
+    // warmup
+    {
+        double s = 0.0;
+        for (int64_t i = 0; i < n; i++) {
+            double x = (double)i * 0.001;
+            s += distance(x, 0.0, 0.0, x);
+        }
+    }
+    best = INT64_MAX;
+    for (int run = 0; run < RUNS; run++) {
+        int64_t start = get_time_ns();
+        double s = 0.0;
+        for (int64_t i = 0; i < n; i++) {
+            double x = (double)i * 0.001;
+            s += distance(x, 0.0, 0.0, x);
+        }
+        int64_t elapsed = get_time_ns() - start;
+        if (elapsed < best) { best = elapsed; result_f = s; }
+    }
+    printf("Distance (%ld iterations):\n", n);
+    printf("  Time: %ld ms\n", best / 1000000);
+    printf("  Result: %.10f\n", result_f);
+
+    // Benchmark 5: Trig computation
+    n = 5000000;
+    trig_sum(n); // warmup
+    best = INT64_MAX;
+    for (int run = 0; run < RUNS; run++) {
+        int64_t start = get_time_ns();
+        double r = trig_sum(n);
+        int64_t elapsed = get_time_ns() - start;
+        if (elapsed < best) { best = elapsed; result_f = r; }
+    }
+    printf("Trig sum(%ld):\n", n);
+    printf("  Time: %ld ms\n", best / 1000000);
+    printf("  Result: %.10f\n", result_f);
 
     return 0;
 }

@@ -32,6 +32,21 @@ function mandelbrotIter(cr, ci, maxIter) {
     return maxIter;
 }
 
+function distance(x1, y1, x2, y2) {
+    const dx = x2 - x1;
+    const dy = y2 - y1;
+    return Math.sqrt(dx * dx + dy * dy);
+}
+
+function trigSum(n) {
+    let sum = 0.0;
+    for (let i = 0; i < n; i++) {
+        const x = i * 0.001;
+        sum += Math.sin(x) + Math.cos(x);
+    }
+    return sum;
+}
+
 function main() {
     console.log("=== Node.js Float Benchmarks ===");
 
@@ -91,6 +106,45 @@ function main() {
     console.log(`Mandelbrot ${size}x${size}:`);
     console.log(`  Time: ${best / 1000000n} ms`);
     console.log(`  Result: ${total}`);
+
+    // Benchmark 4: Distance computation
+    const n4 = 10000000;
+    // warmup
+    {
+        let s = 0.0;
+        for (let i = 0; i < n4; i++) {
+            const x = i * 0.001;
+            s += distance(x, 0.0, 0.0, x);
+        }
+    }
+    best = BigInt(Number.MAX_SAFE_INTEGER);
+    for (let run = 0; run < RUNS; run++) {
+        let start = process.hrtime.bigint();
+        let s = 0.0;
+        for (let i = 0; i < n4; i++) {
+            const x = i * 0.001;
+            s += distance(x, 0.0, 0.0, x);
+        }
+        let elapsed = process.hrtime.bigint() - start;
+        if (elapsed < best) { best = elapsed; resultF = s; }
+    }
+    console.log(`Distance (${n4} iterations):`);
+    console.log(`  Time: ${best / 1000000n} ms`);
+    console.log(`  Result: ${resultF.toFixed(10)}`);
+
+    // Benchmark 5: Trig computation
+    const n5 = 5000000;
+    trigSum(n5); // warmup
+    best = BigInt(Number.MAX_SAFE_INTEGER);
+    for (let run = 0; run < RUNS; run++) {
+        let start = process.hrtime.bigint();
+        let r = trigSum(n5);
+        let elapsed = process.hrtime.bigint() - start;
+        if (elapsed < best) { best = elapsed; resultF = r; }
+    }
+    console.log(`Trig sum(${n5}):`);
+    console.log(`  Time: ${best / 1000000n} ms`);
+    console.log(`  Result: ${resultF.toFixed(10)}`);
 }
 
 main();

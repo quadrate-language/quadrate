@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"math"
 	"time"
 )
 
@@ -38,6 +39,21 @@ func mandelbrotIter(cr, ci float64, maxIter int64) int64 {
 		}
 	}
 	return maxIter
+}
+
+func distance(x1, y1, x2, y2 float64) float64 {
+	dx := x2 - x1
+	dy := y2 - y1
+	return math.Sqrt(dx*dx + dy*dy)
+}
+
+func trigSum(n int64) float64 {
+	var sum float64 = 0.0
+	for i := int64(0); i < n; i++ {
+		x := float64(i) * 0.001
+		sum += math.Sin(x) + math.Cos(x)
+	}
+	return sum
 }
 
 func main() {
@@ -113,4 +129,50 @@ func main() {
 	fmt.Printf("Mandelbrot %dx%d:\n", size, size)
 	fmt.Printf("  Time: %d ms\n", best/1000000)
 	fmt.Printf("  Result: %d\n", total)
+
+	// Benchmark 4: Distance computation
+	n = 10000000
+	// warmup
+	{
+		var s float64 = 0.0
+		for i := int64(0); i < n; i++ {
+			x := float64(i) * 0.001
+			s += distance(x, 0.0, 0.0, x)
+		}
+		_ = s
+	}
+	best = 1 << 62
+	for run := 0; run < runs; run++ {
+		start := time.Now()
+		var s float64 = 0.0
+		for i := int64(0); i < n; i++ {
+			x := float64(i) * 0.001
+			s += distance(x, 0.0, 0.0, x)
+		}
+		elapsed := time.Since(start).Nanoseconds()
+		if elapsed < best {
+			best = elapsed
+			resultF = s
+		}
+	}
+	fmt.Printf("Distance (%d iterations):\n", n)
+	fmt.Printf("  Time: %d ms\n", best/1000000)
+	fmt.Printf("  Result: %.10f\n", resultF)
+
+	// Benchmark 5: Trig computation
+	n = 5000000
+	trigSum(n) // warmup
+	best = 1 << 62
+	for run := 0; run < runs; run++ {
+		start := time.Now()
+		r := trigSum(n)
+		elapsed := time.Since(start).Nanoseconds()
+		if elapsed < best {
+			best = elapsed
+			resultF = r
+		}
+	}
+	fmt.Printf("Trig sum(%d):\n", n)
+	fmt.Printf("  Time: %d ms\n", best/1000000)
+	fmt.Printf("  Result: %.10f\n", resultF)
 }
