@@ -1,0 +1,67 @@
+// Unit tests for the net module
+use net
+use testing
+
+test "net error constants" {
+	net::ErrListen 2 testing::assert_eq
+	net::ErrAccept 3 testing::assert_eq
+	net::ErrConnect 4 testing::assert_eq
+	net::ErrSend 5 testing::assert_eq
+	net::ErrReceive 6 testing::assert_eq
+	net::ErrInvalidArg 7 testing::assert_eq
+}
+
+test "net error constants are positive" {
+	net::ErrListen 0 > testing::assert_true
+	net::ErrAccept 0 > testing::assert_true
+	net::ErrConnect 0 > testing::assert_true
+	net::ErrSend 0 > testing::assert_true
+	net::ErrReceive 0 > testing::assert_true
+	net::ErrInvalidArg 0 > testing::assert_true
+}
+
+test "net error constants are unique" {
+	net::ErrListen net::ErrAccept != testing::assert_true
+	net::ErrListen net::ErrConnect != testing::assert_true
+	net::ErrAccept net::ErrConnect != testing::assert_true
+	net::ErrSend net::ErrReceive != testing::assert_true
+	net::ErrSend net::ErrInvalidArg != testing::assert_true
+	net::ErrReceive net::ErrInvalidArg != testing::assert_true
+}
+
+test "net::listen on port 0 and close" {
+	// Port 0 lets the OS assign an available port
+	0 net::listen switch {
+		Ok { -> server
+			server net::close
+		}
+		_ { "listen on port 0 should succeed" testing::fail }
+	}
+}
+
+test "net::send to invalid fd fails" {
+	// Sending to fd -1 should fail with ErrSend
+	-1 "hello" net::send switch {
+		Ok { -> _ "send to invalid fd should fail" testing::fail }
+		_ { }
+	}
+}
+
+test "net::receive from invalid fd fails" {
+	// Receiving from fd -1 should fail with ErrReceive
+	-1 1024 net::receive switch {
+		Ok { -> _ -> _ "receive from invalid fd should fail" testing::fail }
+		_ { }
+	}
+}
+
+test "net::connect to refused port fails" {
+	// Connecting to 127.0.0.1 on a non-listening port should fail
+	"127.0.0.1" 1 net::connect switch {
+		Ok { -> sock
+			sock net::close
+			"connect to refused port should fail" testing::fail
+		}
+		_ { }
+	}
+}

@@ -120,7 +120,7 @@ fn mcp_tools_list(id:str -- response:str) {
 	id result rpc_result
 }
 
-const MODULE_LIST = "bits,bytes,ct,flag,fmt,io,limits,math,mem,os,path,rand,sb,signal,str,strconv,term,testing,thread,time,unicode"
+const MODULE_LIST = "bits,bytes,ct,flag,fmt,io,limits,math,mem,net,os,path,rand,sb,signal,str,strconv,term,testing,thread,time,unicode"
 
 fn module_entry(ds:ptr name:str -- entry:str) {
 	-> name -> ds
@@ -152,6 +152,7 @@ fn tool_list_modules(ds:ptr -- result:str) {
 	ds "limits" module_entry json::join
 	ds "math" module_entry json::join
 	ds "mem" module_entry json::join
+	ds "net" module_entry json::join
 	ds "os" module_entry json::join
 	ds "path" module_entry json::join
 	ds "rand" module_entry json::join
@@ -300,6 +301,7 @@ fn tool_search(ds:ptr args:str -- result:str) {
 		ds "limits" query r search_module -> r
 		ds "math" query r search_module -> r
 		ds "mem" query r search_module -> r
+		ds "net" query r search_module -> r
 		ds "os" query r search_module -> r
 		ds "path" query r search_module -> r
 		ds "rand" query r search_module -> r
@@ -521,6 +523,7 @@ fn tool_find_function(ds:ptr args:str -- result:str) {
 			ds "limits" query r count fuzzy_find_in_module -> count -> r
 			ds "math" query r count fuzzy_find_in_module -> count -> r
 			ds "mem" query r count fuzzy_find_in_module -> count -> r
+			ds "net" query r count fuzzy_find_in_module -> count -> r
 			ds "os" query r count fuzzy_find_in_module -> count -> r
 			ds "path" query r count fuzzy_find_in_module -> count -> r
 			ds "rand" query r count fuzzy_find_in_module -> count -> r
@@ -602,6 +605,7 @@ fn tool_search_by_signature(ds:ptr args:str -- result:str) {
 		ds "limits" pattern r count search_by_sig_in_module -> count -> r
 		ds "math" pattern r count search_by_sig_in_module -> count -> r
 		ds "mem" pattern r count search_by_sig_in_module -> count -> r
+		ds "net" pattern r count search_by_sig_in_module -> count -> r
 		ds "os" pattern r count search_by_sig_in_module -> count -> r
 		ds "path" pattern r count search_by_sig_in_module -> count -> r
 		ds "rand" pattern r count search_by_sig_in_module -> count -> r

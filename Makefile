@@ -33,10 +33,10 @@ CMDS := quad quadc quadfmt quadlint quadlsp quadpm quaduses
 
 # Libraries with C components (need static archive creation)
 # Note: qdsqlite moved to external module (https://github.com/quadrate-language/sqlite)
-LIBS_WITH_C := qdrt qd qdfmt qdio qdmath qdmem qdos qdsignal qdstr qdstrconv qdtime qdthread qdtesting qdtty
+LIBS_WITH_C := qdrt qd qdfmt qdio qdmath qdmem qdnet qdos qdsignal qdstr qdstrconv qdtime qdthread qdtesting qdtty
 
 # Libraries with headers to install
-LIBS_WITH_HEADERS := qdrt qd qdfmt qdio qdmath qdmem qdos qdsignal qdstr qdstrconv qdtime qdthread qdtesting qdtty
+LIBS_WITH_HEADERS := qdrt qd qdfmt qdio qdmath qdmem qdnet qdos qdsignal qdstr qdstrconv qdtime qdthread qdtesting qdtty
 
 # Standard library modules (auto-discovered from lib/qd*/qd/*/)
 # Note: Some modules moved to external repos: http, sqlite, json, regex, ct, crypto
@@ -75,6 +75,7 @@ define do_build
 	@for lib in qdthread; do \
 		if [ -f lib/$$lib/lib$$lib.deps ]; then cp lib/$$lib/lib$$lib.deps dist/lib/; fi; \
 	done
+	@if [ "$$(uname -s)" = "Haiku" ]; then echo "-lnetwork" > dist/lib/libqdnet.deps; fi
 	@for lib in $(LIBS_WITH_HEADERS); do cp -rf lib/$$lib/include/$$lib dist/include/; done
 	@mkdir -p $(DIST_DATADIR)/quadrate
 	@for mod in $(STDLIB_MODULES); do cp -r lib/qd*/qd/$$mod $(DIST_DATADIR)/quadrate/ 2>/dev/null || true; done

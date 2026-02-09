@@ -1,0 +1,66 @@
+/// TCP network operations.
+/// Error codes: Ok=1 (success), specific errors start at 2
+
+/// Error: Listen/bind failed.
+pub const ErrListen = 2
+/// Error: Accept failed.
+pub const ErrAccept = 3
+/// Error: Connection failed.
+pub const ErrConnect = 4
+/// Error: Send failed.
+pub const ErrSend = 5
+/// Error: Receive failed.
+pub const ErrReceive = 6
+/// Error: Invalid argument.
+pub const ErrInvalidArg = 7
+
+import "libqdnet.a" as "net" {
+	/// Start listening for connections on a port.
+	/// @param port i64 Port number to listen on
+	/// @return socket i64 Server socket descriptor
+	/// @error ErrListen Port may be in use or permission denied
+	/// @example 8080 net::listen! -> server
+	pub fn listen(port:i64 -- socket:i64)!
+
+	/// Accept an incoming connection.
+	/// @param server_socket i64 Server socket from listen
+	/// @return client_socket i64 Connected client socket
+	/// @error ErrAccept Failed to accept connection
+	/// @example server net::accept! -> client
+	pub fn accept(server_socket:i64 -- client_socket:i64)!
+
+	/// Connect to a remote host.
+	/// @param host str Hostname or IP address
+	/// @param port i64 Port number
+	/// @return socket i64 Connected socket descriptor
+	/// @error ErrConnect Host unreachable or connection refused
+	/// @example "localhost" 8080 net::connect! -> sock
+	pub fn connect(host:str port:i64 -- socket:i64)!
+
+	/// Send data over socket.
+	/// @param socket i64 Socket descriptor
+	/// @param data str Data to send
+	/// @return bytes_sent i64 Number of bytes sent
+	/// @error ErrSend Failed to send data
+	/// @example sock "Hello" net::send! -> n
+	pub fn send(socket:i64 data:str -- bytes_sent:i64)!
+
+	/// Receive data from socket.
+	/// @param socket i64 Socket descriptor
+	/// @param max_bytes i64 Maximum bytes to receive
+	/// @return data str Received data
+	/// @return bytes_read i64 Actual bytes received
+	/// @error ErrReceive Failed to receive data
+	/// @example sock 1024 net::receive! -> n -> data
+	pub fn receive(socket:i64 max_bytes:i64 -- data:str bytes_read:i64)!
+
+	/// Shutdown socket for reading/writing.
+	/// @param socket i64 Socket descriptor
+	/// @example sock net::shutdown
+	pub fn shutdown(socket:i64 -- )
+
+	/// Close socket and release resources.
+	/// @param socket i64 Socket descriptor
+	/// @example sock net::close
+	pub fn close(socket:i64 -- )
+}

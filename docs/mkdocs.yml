@@ -91,6 +91,7 @@ nav:
           - rand: stdlib/rand.md
       - I/O & system:
           - io: stdlib/io.md
+          - net: stdlib/net.md
           - os: stdlib/os.md
           - path: stdlib/path.md
       - Time:
