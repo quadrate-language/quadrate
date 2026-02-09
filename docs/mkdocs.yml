@@ -99,6 +99,8 @@ nav:
           - time: stdlib/time.md
       - Concurrency:
           - thread: stdlib/thread.md
+      - Functional:
+          - hof: stdlib/hof.md
       - Utilities:
           - mem: stdlib/mem.md
           - flag: stdlib/flag.md

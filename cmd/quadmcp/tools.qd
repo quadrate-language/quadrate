@@ -120,7 +120,7 @@ fn mcp_tools_list(id:str -- response:str) {
 	id result rpc_result
 }
 
-const MODULE_LIST = "bits,bytes,ct,flag,fmt,io,limits,math,mem,net,os,path,rand,sb,signal,sort,str,strconv,term,testing,thread,time,unicode"
+const MODULE_LIST = "bits,bytes,ct,flag,fmt,hof,io,limits,math,mem,net,os,path,rand,sb,signal,sort,str,strconv,term,testing,thread,time,unicode"
 
 fn module_entry(ds:ptr name:str -- entry:str) {
 	-> name -> ds
@@ -148,6 +148,7 @@ fn tool_list_modules(ds:ptr -- result:str) {
 	ds "ct" module_entry json::join
 	ds "flag" module_entry json::join
 	ds "fmt" module_entry json::join
+	ds "hof" module_entry json::join
 	ds "io" module_entry json::join
 	ds "limits" module_entry json::join
 	ds "math" module_entry json::join
@@ -298,6 +299,7 @@ fn tool_search(ds:ptr args:str -- result:str) {
 		ds "ct" query r search_module -> r
 		ds "flag" query r search_module -> r
 		ds "fmt" query r search_module -> r
+		ds "hof" query r search_module -> r
 		ds "io" query r search_module -> r
 		ds "limits" query r search_module -> r
 		ds "math" query r search_module -> r
@@ -521,6 +523,7 @@ fn tool_find_function(ds:ptr args:str -- result:str) {
 			ds "ct" query r count fuzzy_find_in_module -> count -> r
 			ds "flag" query r count fuzzy_find_in_module -> count -> r
 			ds "fmt" query r count fuzzy_find_in_module -> count -> r
+			ds "hof" query r count fuzzy_find_in_module -> count -> r
 			ds "io" query r count fuzzy_find_in_module -> count -> r
 			ds "limits" query r count fuzzy_find_in_module -> count -> r
 			ds "math" query r count fuzzy_find_in_module -> count -> r
@@ -604,6 +607,7 @@ fn tool_search_by_signature(ds:ptr args:str -- result:str) {
 		ds "ct" pattern r count search_by_sig_in_module -> count -> r
 		ds "flag" pattern r count search_by_sig_in_module -> count -> r
 		ds "fmt" pattern r count search_by_sig_in_module -> count -> r
+		ds "hof" pattern r count search_by_sig_in_module -> count -> r
 		ds "io" pattern r count search_by_sig_in_module -> count -> r
 		ds "limits" pattern r count search_by_sig_in_module -> count -> r
 		ds "math" pattern r count search_by_sig_in_module -> count -> r
