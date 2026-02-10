@@ -18,14 +18,14 @@ packages:
 
 sources:
   - git+ssh://git@git.sr.ht/~klahr/quadrate
-  - https://github.com/quadrate-language/log
-  - https://github.com/quadrate-language/compress
-  - https://github.com/quadrate-language/tls
-  - https://github.com/quadrate-language/http
-  - https://github.com/quadrate-language/sqlite
-  - https://github.com/quadrate-language/json
-  - https://github.com/quadrate-language/regex
-  - https://github.com/quadrate-language/crypto
+  - https://git.sr.ht/~klahr/qdlog
+  - https://git.sr.ht/~klahr/qdcompress
+  - https://git.sr.ht/~klahr/qdtls
+  - https://git.sr.ht/~klahr/qdhttp
+  - https://git.sr.ht/~klahr/qdsqlite
+  - https://git.sr.ht/~klahr/qdjson
+  - https://git.sr.ht/~klahr/qdregex
+  - https://git.sr.ht/~klahr/qdcrypto
 
 environment:
   GIT_SSH_COMMAND: "ssh -o StrictHostKeyChecking=no"

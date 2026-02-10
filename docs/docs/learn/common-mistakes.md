@@ -123,7 +123,7 @@ fn main() {
 If `use json` gives an "unknown module" error, the module might be an external package that needs to be installed:
 
 ```bash
-quadpm get https://github.com/quadrate-language/json
+quadpm get https://git.sr.ht/~klahr/qdjson
 ```
 
 See [External Packages](../external-packages.md) for the full list.

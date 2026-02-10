@@ -32,7 +32,7 @@ endif
 CMDS := quad quadc quadfmt quadlint quadlsp quadpm quaduses
 
 # Libraries with C components (need static archive creation)
-# Note: qdsqlite moved to external module (https://github.com/quadrate-language/sqlite)
+# Note: qdsqlite moved to external module (https://git.sr.ht/~klahr/qdsqlite)
 LIBS_WITH_C := qdrt qd qdfmt qdio qdmath qdmem qdnet qdos qdsignal qdstr qdstrconv qdtime qdthread qdtesting qdtty
 
 # Libraries with headers to install

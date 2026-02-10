@@ -3,29 +3,29 @@
 The following modules have been moved out of the core standard library and are now available as separate packages. Install them using `quadpm get`:
 
 ```bash
-quadpm get https://github.com/quadrate-language/json
+quadpm get https://git.sr.ht/~klahr/qdjson
 ```
 
 ## Available packages
 
 | Package | Description | Install |
 |---------|-------------|---------|
-| [base64](https://github.com/quadrate-language/base64) | Base64 encoding/decoding | `quadpm get https://github.com/quadrate-language/base64` |
-| [compress](https://github.com/quadrate-language/compress) | Compression (gzip, zlib) | `quadpm get https://github.com/quadrate-language/compress` |
-| [crypto](https://github.com/quadrate-language/crypto) | Cryptographic hashes (SHA256, MD5, CRC32) | `quadpm get https://github.com/quadrate-language/crypto` |
-| [ct](https://github.com/quadrate-language/ct) | Compile-time utilities | `quadpm get https://github.com/quadrate-language/ct` |
-| [hex](https://github.com/quadrate-language/hex) | Hex encoding/decoding | `quadpm get https://github.com/quadrate-language/hex` |
-| [hof](https://github.com/quadrate-language/hof) | Higher-order function combinators | `quadpm get https://github.com/quadrate-language/hof` |
-| [http](https://github.com/quadrate-language/http) | HTTP client and server | `quadpm get https://github.com/quadrate-language/http` |
-| [json](https://github.com/quadrate-language/json) | JSON parsing and generation | `quadpm get https://github.com/quadrate-language/json` |
-| [log](https://github.com/quadrate-language/log) | Logging with levels and formatting | `quadpm get https://github.com/quadrate-language/log` |
-| [net](https://github.com/quadrate-language/net) | TCP/UDP networking | `quadpm get https://github.com/quadrate-language/net` |
-| [regex](https://github.com/quadrate-language/regex) | Regular expressions | `quadpm get https://github.com/quadrate-language/regex` |
-| [sort](https://github.com/quadrate-language/sort) | Sorting algorithms | `quadpm get https://github.com/quadrate-language/sort` |
-| [sqlite](https://github.com/quadrate-language/sqlite) | SQLite database | `quadpm get https://github.com/quadrate-language/sqlite` |
-| [tls](https://github.com/quadrate-language/tls) | TLS/SSL support | `quadpm get https://github.com/quadrate-language/tls` |
-| [uri](https://github.com/quadrate-language/uri) | URI parsing | `quadpm get https://github.com/quadrate-language/uri` |
-| [uuid](https://github.com/quadrate-language/uuid) | UUID generation | `quadpm get https://github.com/quadrate-language/uuid` |
+| [base64](https://git.sr.ht/~klahr/qdbase64) | Base64 encoding/decoding | `quadpm get https://git.sr.ht/~klahr/qdbase64` |
+| [compress](https://git.sr.ht/~klahr/qdcompress) | Compression (gzip, zlib) | `quadpm get https://git.sr.ht/~klahr/qdcompress` |
+| [crypto](https://git.sr.ht/~klahr/qdcrypto) | Cryptographic hashes (SHA256, MD5, CRC32) | `quadpm get https://git.sr.ht/~klahr/qdcrypto` |
+| [ct](https://git.sr.ht/~klahr/qdct) | Compile-time utilities | `quadpm get https://git.sr.ht/~klahr/qdct` |
+| [hex](https://git.sr.ht/~klahr/qdhex) | Hex encoding/decoding | `quadpm get https://git.sr.ht/~klahr/qdhex` |
+| [hof](https://git.sr.ht/~klahr/qdhof) | Higher-order function combinators | `quadpm get https://git.sr.ht/~klahr/qdhof` |
+| [http](https://git.sr.ht/~klahr/qdhttp) | HTTP client and server | `quadpm get https://git.sr.ht/~klahr/qdhttp` |
+| [json](https://git.sr.ht/~klahr/qdjson) | JSON parsing and generation | `quadpm get https://git.sr.ht/~klahr/qdjson` |
+| [log](https://git.sr.ht/~klahr/qdlog) | Logging with levels and formatting | `quadpm get https://git.sr.ht/~klahr/qdlog` |
+| [net](https://git.sr.ht/~klahr/qdnet) | TCP/UDP networking | `quadpm get https://git.sr.ht/~klahr/qdnet` |
+| [regex](https://git.sr.ht/~klahr/qdregex) | Regular expressions | `quadpm get https://git.sr.ht/~klahr/qdregex` |
+| [sort](https://git.sr.ht/~klahr/qdsort) | Sorting algorithms | `quadpm get https://git.sr.ht/~klahr/qdsort` |
+| [sqlite](https://git.sr.ht/~klahr/qdsqlite) | SQLite database | `quadpm get https://git.sr.ht/~klahr/qdsqlite` |
+| [tls](https://git.sr.ht/~klahr/qdtls) | TLS/SSL support | `quadpm get https://git.sr.ht/~klahr/qdtls` |
+| [uri](https://git.sr.ht/~klahr/qduri) | URI parsing | `quadpm get https://git.sr.ht/~klahr/qduri` |
+| [uuid](https://git.sr.ht/~klahr/qduuid) | UUID generation | `quadpm get https://git.sr.ht/~klahr/qduuid` |
 
 ## Usage
 
@@ -48,10 +48,10 @@ fn main() {
 
 ```bash
 # Install a single package
-quadpm get https://github.com/quadrate-language/json
+quadpm get https://git.sr.ht/~klahr/qdjson
 
 # Install a specific version/ref
-quadpm get https://github.com/quadrate-language/json@v1.0.0
+quadpm get https://git.sr.ht/~klahr/qdjson@v1.0.0
 
 # Install all dependencies from qd.json
 quadpm install

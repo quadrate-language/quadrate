@@ -5,7 +5,7 @@ Higher-order functions (HOF) are functions that take other functions as argument
 !!! note "External package"
     The `hof` module is an external package. Install it first:
     ```bash
-    quadpm get https://github.com/quadrate-language/hof
+    quadpm get https://git.sr.ht/~klahr/qdhof
     ```
 
 ## Why combinators?

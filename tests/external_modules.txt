@@ -4,16 +4,17 @@
 # If clone fails, tests for that module are skipped
 
 
-log https://github.com/quadrate-language/log
-compress https://github.com/quadrate-language/compress
-tls https://github.com/quadrate-language/tls
-http https://github.com/quadrate-language/http
-sqlite https://github.com/quadrate-language/sqlite
-json https://github.com/quadrate-language/json
-regex https://github.com/quadrate-language/regex
-crypto https://github.com/quadrate-language/crypto
-uri https://github.com/quadrate-language/uri
-hex https://github.com/quadrate-language/hex
-base64 https://github.com/quadrate-language/base64
-uuid https://github.com/quadrate-language/uuid
+log https://git.sr.ht/~klahr/qdlog
+compress https://git.sr.ht/~klahr/qdcompress
+tls https://git.sr.ht/~klahr/qdtls
+http https://git.sr.ht/~klahr/qdhttp
+sqlite https://git.sr.ht/~klahr/qdsqlite
+json https://git.sr.ht/~klahr/qdjson
+regex https://git.sr.ht/~klahr/qdregex
+crypto https://git.sr.ht/~klahr/qdcrypto
+uri https://git.sr.ht/~klahr/qduri
+hex https://git.sr.ht/~klahr/qdhex
+base64 https://git.sr.ht/~klahr/qdbase64
+uuid https://git.sr.ht/~klahr/qduuid
+
 

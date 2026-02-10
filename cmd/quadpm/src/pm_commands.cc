@@ -1472,7 +1472,7 @@ int removeModule(const std::string& targetModuleName) {
 		// Match by:
 		// 1. Full directory name (e.g., "json@master")
 		// 2. Just the module name (e.g., "json")
-		// 3. Full hostPath (e.g., "github.com/quadrate-language/json")
+		// 3. Full hostPath (e.g., "git.sr.ht/~klahr/qdjson")
 		// 4. Namespace from qd.json
 		std::string manifestNamespace;
 		std::string manifestModuleName;

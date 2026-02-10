@@ -3,6 +3,6 @@
   "version": "1.0.0",
   "description": "Quadrate diskette store",
   "dependencies": {
-    "http": "https://github.com/quadrate-language/http"
+    "http": "https://git.sr.ht/~klahr/qdhttp"
   }
 }
