@@ -1,43 +1,35 @@
 {
   "packages": [
     {
-      "integrity": "5ab2d7bf57bfe72e7dfc28a475a1e210c32e5274",
+      "integrity": "334d425d83ef809534265a0330b26fd70486d329",
       "isPath": false,
       "name": "fuzzy",
       "ref": "master",
-      "resolved": "5ab2d7bf57bfe72e7dfc28a475a1e210c32e5274",
+      "resolved": "334d425d83ef809534265a0330b26fd70486d329",
       "url": "https://git.sr.ht/~klahr/qdfuzzy"
     },
     {
-      "integrity": "778aded7d51d2239d2bdf40b9eca5e02034618ec",
+      "integrity": "90e4d9c4de076416401235d46d15f22102f97744",
       "isPath": false,
       "name": "http",
       "ref": "master",
-      "resolved": "778aded7d51d2239d2bdf40b9eca5e02034618ec",
+      "resolved": "90e4d9c4de076416401235d46d15f22102f97744",
       "url": "https://git.sr.ht/~klahr/qdhttp"
     },
     {
-      "integrity": "881663eba1332d7d19a9ae7d6769b612f0bd146f",
+      "integrity": "46ebb2a9e246f34900c9d40646a06604e0c9f256",
       "isPath": false,
       "name": "json",
       "ref": "master",
-      "resolved": "881663eba1332d7d19a9ae7d6769b612f0bd146f",
+      "resolved": "46ebb2a9e246f34900c9d40646a06604e0c9f256",
       "url": "https://git.sr.ht/~klahr/qdjson"
     },
     {
-      "integrity": "59edab06712346dc7c754b5acecdfa771c7b2601",
-      "isPath": false,
-      "name": "net",
-      "ref": "master",
-      "resolved": "59edab06712346dc7c754b5acecdfa771c7b2601",
-      "url": "https://git.sr.ht/~klahr/qdnet"
-    },
-    {
-      "integrity": "2c41d73612a1ebe4a49cc1e9fb92874e3c682c0f",
+      "integrity": "b8ebbd1aeced974cc0a33a0ba67aabc2cc121a19",
       "isPath": false,
       "name": "tls",
       "ref": "master",
-      "resolved": "2c41d73612a1ebe4a49cc1e9fb92874e3c682c0f",
+      "resolved": "b8ebbd1aeced974cc0a33a0ba67aabc2cc121a19",
       "url": "https://git.sr.ht/~klahr/qdtls"
     }
   ],

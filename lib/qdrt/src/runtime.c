@@ -883,6 +883,7 @@ qd_context* qd_create_context(size_t stack_size) {
 		ctx->error_code = 0;
 		ctx->error_msg = NULL;
 		ctx->error_context = NULL;
+		ctx->userdata = NULL;
 		ctx->argc = 0;
 		ctx->argv = NULL;
 		ctx->program_name = NULL;
@@ -949,6 +950,9 @@ qd_context* qd_clone_context(const qd_context* src) {
 	} else {
 		ctx->error_context = NULL;
 	}
+
+	/* Share userdata pointer (shallow copy) */
+	ctx->userdata = src->userdata;
 
 	/* Share command-line arguments (not copied) */
 	ctx->argc = src->argc;
@@ -1229,6 +1233,19 @@ int qd_rt_version(qd_context* ctx) {
 
 int qd_rt_version_api(qd_context* ctx) {
 	return qd_push_i(ctx, qd_version_api());
+}
+
+void qd_set_userdata(qd_context* ctx, void* userdata) {
+	if (ctx) {
+		ctx->userdata = userdata;
+	}
+}
+
+void* qd_get_userdata(qd_context* ctx) {
+	if (!ctx) {
+		return NULL;
+	}
+	return ctx->userdata;
 }
 
 // User-facing functions (usr_ prefix for import mechanism)

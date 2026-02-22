@@ -56,19 +56,27 @@ qd_module* qd_get_module(qd_context* ctx, const char* name);
 void qd_add_script(qd_module* mod, const char* script);
 
 /**
+ * @brief Native function pointer type for registered callbacks
+ *
+ * @param ctx Execution context
+ * @param userdata User-defined data pointer passed at registration time
+ * @return 0 on success, non-zero on error
+ */
+typedef int (*qd_native_fn)(qd_context* ctx, void* userdata);
+
+/**
  * @brief Register a native C function with the module
  *
  * Registers a C function that can be called from Quadrate code.
- * The function must follow Quadrate calling conventions (taking qd_context*
- * and returning int).
+ * The function receives the execution context and a user-defined data pointer.
  *
  * @param mod Target module
  * @param name Function name as it appears in Quadrate code
  * @param fn Function pointer (must not be NULL)
- *
- * @note Function pointers are stored as void*, cast appropriately when calling
+ * @param userdata User-defined data pointer passed to fn on each call
  */
-void qd_register_function(qd_module* mod, const char* name, void (*fn)(void));
+void qd_register_function(qd_module* mod, const char* name,
+                           qd_native_fn fn, void* userdata);
 
 /**
  * @brief Compile all scripts added to the module

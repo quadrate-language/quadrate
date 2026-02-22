@@ -97,14 +97,14 @@ The real power of embedding comes from exposing your application's functions to 
 
 ### Basic Native Function
 
-Native functions take a `qd_context*` and return `int`:
+Native functions take a `qd_context*` and a `void* userdata`, and return `int`:
 
 ```c
 #include <qd/qd.h>
 #include <qdrt/runtime.h>
 
 // Native function: pushes current time onto stack
-int native_get_time(qd_context* ctx) {
+int native_get_time(qd_context* ctx, void* userdata) {
     time_t now = time(NULL);
     return qd_push_i(ctx, (int64_t)now);
 }
@@ -114,7 +114,7 @@ int main(void) {
     qd_module* utils = qd_get_module(ctx, "utils");
 
     // Register the native function
-    qd_register_function(utils, "get_time", (void(*)(void))native_get_time);
+    qd_register_function(utils, "get_time", native_get_time, NULL);
 
     qd_build(utils);
 
@@ -134,7 +134,7 @@ Use `qd_stack_pop` to read arguments:
 #include <qdrt/stack.h>
 
 // Native function: (a b -- sum)
-int native_add(qd_context* ctx) {
+int native_add(qd_context* ctx, void* userdata) {
     qd_stack_element_t b, a;
 
     // Pop in reverse order (b is on top)
@@ -224,12 +224,10 @@ typedef struct {
     double delta_time;
 } GameState;
 
-extern GameState g_game;
-
-Entity* engine_spawn(double x, double y, int64_t health, const char* script);
-Entity* engine_get_entity(int64_t id);
-void engine_damage(int64_t id, int64_t amount);
-void engine_move(int64_t id, double dx, double dy);
+Entity* engine_spawn(GameState* game, double x, double y, int64_t health, const char* script);
+Entity* engine_get_entity(GameState* game, int64_t id);
+void engine_damage(GameState* game, int64_t id, int64_t amount);
+void engine_move(GameState* game, int64_t id, double dx, double dy);
 
 #endif
 ```
@@ -242,13 +240,11 @@ void engine_move(int64_t id, double dx, double dy);
 #include <stdio.h>
 #include <string.h>
 
-GameState g_game = {0};
+Entity* engine_spawn(GameState* game, double x, double y, int64_t health, const char* script) {
+    if (game->entity_count >= MAX_ENTITIES) return NULL;
 
-Entity* engine_spawn(double x, double y, int64_t health, const char* script) {
-    if (g_game.entity_count >= MAX_ENTITIES) return NULL;
-
-    Entity* e = &g_game.entities[g_game.entity_count];
-    e->id = g_game.entity_count;
+    Entity* e = &game->entities[game->entity_count];
+    e->id = game->entity_count;
     e->x = x;
     e->y = y;
     e->health = health;
@@ -256,18 +252,18 @@ Entity* engine_spawn(double x, double y, int64_t health, const char* script) {
     e->active = true;
     e->script_module = script;
 
-    g_game.entity_count++;
+    game->entity_count++;
     printf("[Engine] Spawned entity %lld at (%.1f, %.1f)\n", e->id, x, y);
     return e;
 }
 
-Entity* engine_get_entity(int64_t id) {
-    if (id < 0 || id >= g_game.entity_count) return NULL;
-    return &g_game.entities[id];
+Entity* engine_get_entity(GameState* game, int64_t id) {
+    if (id < 0 || id >= game->entity_count) return NULL;
+    return &game->entities[id];
 }
 
-void engine_damage(int64_t id, int64_t amount) {
-    Entity* e = engine_get_entity(id);
+void engine_damage(GameState* game, int64_t id, int64_t amount) {
+    Entity* e = engine_get_entity(game, id);
     if (!e || !e->active) return;
 
     e->health -= amount;
@@ -280,8 +276,8 @@ void engine_damage(int64_t id, int64_t amount) {
     }
 }
 
-void engine_move(int64_t id, double dx, double dy) {
-    Entity* e = engine_get_entity(id);
+void engine_move(GameState* game, int64_t id, double dx, double dy) {
+    Entity* e = engine_get_entity(game, id);
     if (!e || !e->active) return;
 
     e->x += dx;
@@ -303,18 +299,21 @@ void engine_move(int64_t id, double dx, double dy) {
 static qd_context* script_ctx = NULL;
 
 // === Native functions exposed to scripts ===
+// Each function receives the GameState* through userdata — no globals needed.
 
 // Get current entity's ID ( -- id)
-int script_self(qd_context* ctx) {
-    return qd_push_i(ctx, g_game.current_entity);
+int script_self(qd_context* ctx, void* userdata) {
+    GameState* game = (GameState*)userdata;
+    return qd_push_i(ctx, game->current_entity);
 }
 
 // Get entity position (id -- x y)
-int script_get_pos(qd_context* ctx) {
+int script_get_pos(qd_context* ctx, void* userdata) {
+    GameState* game = (GameState*)userdata;
     qd_stack_element_t id_elem;
     qd_stack_pop(ctx->st, &id_elem);
 
-    Entity* e = engine_get_entity(id_elem.value.i);
+    Entity* e = engine_get_entity(game, id_elem.value.i);
     if (!e) {
         qd_push_f(ctx, 0.0);
         qd_push_f(ctx, 0.0);
@@ -326,54 +325,59 @@ int script_get_pos(qd_context* ctx) {
 }
 
 // Get entity health (id -- health)
-int script_get_health(qd_context* ctx) {
+int script_get_health(qd_context* ctx, void* userdata) {
+    GameState* game = (GameState*)userdata;
     qd_stack_element_t id_elem;
     qd_stack_pop(ctx->st, &id_elem);
 
-    Entity* e = engine_get_entity(id_elem.value.i);
+    Entity* e = engine_get_entity(game, id_elem.value.i);
     return qd_push_i(ctx, e ? e->health : 0);
 }
 
 // Move entity (id dx dy --)
-int script_move(qd_context* ctx) {
+int script_move(qd_context* ctx, void* userdata) {
+    GameState* game = (GameState*)userdata;
     qd_stack_element_t dy_elem, dx_elem, id_elem;
     qd_stack_pop(ctx->st, &dy_elem);
     qd_stack_pop(ctx->st, &dx_elem);
     qd_stack_pop(ctx->st, &id_elem);
 
-    engine_move(id_elem.value.i, dx_elem.value.f, dy_elem.value.f);
+    engine_move(game, id_elem.value.i, dx_elem.value.f, dy_elem.value.f);
     return QD_OK;
 }
 
 // Damage entity (id amount --)
-int script_damage(qd_context* ctx) {
+int script_damage(qd_context* ctx, void* userdata) {
+    GameState* game = (GameState*)userdata;
     qd_stack_element_t amount_elem, id_elem;
     qd_stack_pop(ctx->st, &amount_elem);
     qd_stack_pop(ctx->st, &id_elem);
 
-    engine_damage(id_elem.value.i, amount_elem.value.i);
+    engine_damage(game, id_elem.value.i, amount_elem.value.i);
     return QD_OK;
 }
 
 // Spawn new entity (x y health -- id)
-int script_spawn(qd_context* ctx) {
+int script_spawn(qd_context* ctx, void* userdata) {
+    GameState* game = (GameState*)userdata;
     qd_stack_element_t health_elem, y_elem, x_elem;
     qd_stack_pop(ctx->st, &health_elem);
     qd_stack_pop(ctx->st, &y_elem);
     qd_stack_pop(ctx->st, &x_elem);
 
-    Entity* e = engine_spawn(x_elem.value.f, y_elem.value.f,
+    Entity* e = engine_spawn(game, x_elem.value.f, y_elem.value.f,
                              health_elem.value.i, NULL);
     return qd_push_i(ctx, e ? e->id : -1);
 }
 
 // Get delta time ( -- dt)
-int script_delta_time(qd_context* ctx) {
-    return qd_push_f(ctx, g_game.delta_time);
+int script_delta_time(qd_context* ctx, void* userdata) {
+    GameState* game = (GameState*)userdata;
+    return qd_push_f(ctx, game->delta_time);
 }
 
 // Calculate distance between two points (x1 y1 x2 y2 -- dist)
-int script_distance(qd_context* ctx) {
+int script_distance(qd_context* ctx, void* userdata) {
     qd_stack_element_t y2, x2, y1, x1;
     qd_stack_pop(ctx->st, &y2);
     qd_stack_pop(ctx->st, &x2);
@@ -386,7 +390,7 @@ int script_distance(qd_context* ctx) {
 }
 
 // Log a message (msg --)
-int script_log(qd_context* ctx) {
+int script_log(qd_context* ctx, void* userdata) {
     qd_stack_element_t msg;
     qd_stack_pop(ctx->st, &msg);
 
@@ -399,21 +403,21 @@ int script_log(qd_context* ctx) {
 
 // === Script system initialization ===
 
-void scripting_init(void) {
+void scripting_init(GameState* game) {
     script_ctx = qd_create_context(4096);
 
-    // Create the 'engine' module with native functions
+    // Create the 'engine' module — pass game state as userdata to each function
     qd_module* engine = qd_get_module(script_ctx, "engine");
 
-    qd_register_function(engine, "self", (void(*)(void))script_self);
-    qd_register_function(engine, "get_pos", (void(*)(void))script_get_pos);
-    qd_register_function(engine, "get_health", (void(*)(void))script_get_health);
-    qd_register_function(engine, "move", (void(*)(void))script_move);
-    qd_register_function(engine, "damage", (void(*)(void))script_damage);
-    qd_register_function(engine, "spawn", (void(*)(void))script_spawn);
-    qd_register_function(engine, "delta_time", (void(*)(void))script_delta_time);
-    qd_register_function(engine, "distance", (void(*)(void))script_distance);
-    qd_register_function(engine, "log", (void(*)(void))script_log);
+    qd_register_function(engine, "self", script_self, game);
+    qd_register_function(engine, "get_pos", script_get_pos, game);
+    qd_register_function(engine, "get_health", script_get_health, game);
+    qd_register_function(engine, "move", script_move, game);
+    qd_register_function(engine, "damage", script_damage, game);
+    qd_register_function(engine, "spawn", script_spawn, game);
+    qd_register_function(engine, "delta_time", script_delta_time, game);
+    qd_register_function(engine, "distance", script_distance, game);
+    qd_register_function(engine, "log", script_log, game);
 
     qd_build(engine);
 }
@@ -520,7 +524,7 @@ fn update() {
 #include "engine.h"
 
 // Forward declarations from scripting.c
-void scripting_init(void);
+void scripting_init(GameState* game);
 void scripting_load_module(const char* name, const char* source);
 void scripting_call_update(const char* module_name);
 void scripting_shutdown(void);
@@ -544,8 +548,11 @@ char* load_file(const char* path) {
 int main(void) {
     printf("=== Game Engine with Quadrate Scripting ===\n\n");
 
-    // Initialize scripting system
-    scripting_init();
+    // Game state lives on the stack — no globals
+    GameState game = {0};
+
+    // Initialize scripting system with game state
+    scripting_init(&game);
 
     // Load scripts
     char* player_script = load_file("scripts/player.qd");
@@ -561,22 +568,22 @@ int main(void) {
     }
 
     // Spawn entities
-    Entity* player = engine_spawn(0.0, 0.0, 100, "player");
-    Entity* enemy = engine_spawn(100.0, 100.0, 50, "enemy");
+    Entity* player = engine_spawn(&game, 0.0, 0.0, 100, "player");
+    Entity* enemy = engine_spawn(&game, 100.0, 100.0, 50, "enemy");
 
     // Game loop (simplified - just 10 frames)
     printf("\n--- Starting game loop ---\n\n");
 
     for (int frame = 0; frame < 10; frame++) {
         printf("Frame %d:\n", frame);
-        g_game.delta_time = 0.016;  // ~60 FPS
+        game.delta_time = 0.016;  // ~60 FPS
 
         // Update all entities
-        for (int i = 0; i < g_game.entity_count; i++) {
-            Entity* e = &g_game.entities[i];
+        for (int i = 0; i < game.entity_count; i++) {
+            Entity* e = &game.entities[i];
             if (!e->active || !e->script_module) continue;
 
-            g_game.current_entity = e->id;
+            game.current_entity = e->id;
             scripting_call_update(e->script_module);
         }
 
@@ -623,7 +630,7 @@ clean:
 |----------|-------------|
 | `qd_get_module(ctx, name)` | Get or create module |
 | `qd_add_script(mod, source)` | Add Quadrate source code |
-| `qd_register_function(mod, name, fn)` | Register native function |
+| `qd_register_function(mod, name, fn, userdata)` | Register native function |
 | `qd_build(mod)` | Compile the module |
 | `qd_is_compiled(mod)` | Check if compilation succeeded |
 
@@ -685,7 +692,7 @@ switch (elem.type) {
 
 ```c
 // Native: ( -- x y z)
-int get_vector(qd_context* ctx) {
+int get_vector(qd_context* ctx, void* userdata) {
     qd_push_f(ctx, 1.0);  // x
     qd_push_f(ctx, 2.0);  // y
     return qd_push_f(ctx, 3.0);  // z
@@ -705,7 +712,7 @@ fn process() {
 ### Error Propagation
 
 ```c
-int native_might_fail(qd_context* ctx) {
+int native_might_fail(qd_context* ctx, void* userdata) {
     if (error_condition) {
         // Set error state
         ctx->error_code = 1;

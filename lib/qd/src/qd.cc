@@ -203,7 +203,11 @@ static std::string findStaticLib(const std::string& libDir, const std::string& l
 struct qd_module {
 	std::string name;
 	std::vector<std::string> scripts;
-	std::unordered_map<std::string, void (*)()> native_functions;
+	struct NativeFunction {
+		qd_native_fn fn;
+		void* userdata;
+	};
+	std::unordered_map<std::string, NativeFunction> native_functions;
 	std::unordered_map<std::string, std::string> symbol_map; // function_name -> full_symbol_name
 	dynlib_handle_t dl_handle;								 // dynamic library handle
 	fs::path temp_dir;
@@ -257,11 +261,12 @@ void qd_add_script(qd_module* mod, const char* script) {
 	mod->scripts.push_back(script);
 }
 
-void qd_register_function(qd_module* mod, const char* name, void (*fn)()) {
+void qd_register_function(qd_module* mod, const char* name,
+                           qd_native_fn fn, void* userdata) {
 	if (!mod || !name || !fn) {
 		return;
 	}
-	mod->native_functions[name] = fn;
+	mod->native_functions[name] = {fn, userdata};
 }
 
 void qd_set_warning_min_line(qd_module* mod, size_t line) {
@@ -638,30 +643,31 @@ void qd_execute(qd_context* ctx, const char* code) {
 				symbol_name = "usr_" + module_name + "_" + func_name;
 			}
 
-			// Function signature: int (*)(qd_context*)
-			typedef int (*qd_func_t)(qd_context*);
+			// Try compiled (.so) function first
+			typedef int (*qd_compiled_fn)(qd_context*);
 
 			void* sym = dynlib_platform_symbol(mod->dl_handle, symbol_name.c_str());
-			qd_func_t func = reinterpret_cast<qd_func_t>(sym);
-			if (!func) {
-				// Check native functions
+			if (sym) {
+				auto func = reinterpret_cast<qd_compiled_fn>(sym);
+				int result = func(ctx);
+				if (result != 0) {
+					fprintf(stderr, "qd_execute: Function '%s::%s' returned error code %d\n", module_name.c_str(),
+							func_name.c_str(), result);
+				}
+			} else {
+				// Try native function
 				auto native_it = mod->native_functions.find(func_name);
 				if (native_it != mod->native_functions.end()) {
-					// Call native function
-					// Note: This assumes native functions follow the same signature
-					func = reinterpret_cast<qd_func_t>(native_it->second);
+					auto& nf = native_it->second;
+					int result = nf.fn(ctx, nf.userdata);
+					if (result != 0) {
+						fprintf(stderr, "qd_execute: Function '%s::%s' returned error code %d\n", module_name.c_str(),
+								func_name.c_str(), result);
+					}
 				} else {
 					fprintf(stderr, "qd_execute: Function '%s' (symbol '%s') not found in module '%s': %s\n",
 							func_name.c_str(), symbol_name.c_str(), module_name.c_str(), dynlib_platform_error());
-					continue;
 				}
-			}
-
-			// Call the function
-			int result = func(ctx);
-			if (result != 0) {
-				fprintf(stderr, "qd_execute: Function '%s::%s' returned error code %d\n", module_name.c_str(),
-						func_name.c_str(), result);
 			}
 		} else {
 			fprintf(stderr, "qd_execute: Unknown token '%s'\n", token.c_str());

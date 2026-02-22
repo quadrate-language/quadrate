@@ -702,6 +702,22 @@ void qd_free_context(qd_context* ctx);
  */
 qd_context* qd_clone_context(const qd_context* src);
 
+/**
+ * @brief Set user-defined data pointer on context
+ *
+ * @param ctx Execution context
+ * @param userdata Pointer to user data (embedder owns lifetime)
+ */
+void qd_set_userdata(qd_context* ctx, void* userdata);
+
+/**
+ * @brief Get user-defined data pointer from context
+ *
+ * @param ctx Execution context
+ * @return User data pointer, or NULL if not set
+ */
+void* qd_get_userdata(qd_context* ctx);
+
 /** @} */ // end of ContextManagement group
 
 /**
