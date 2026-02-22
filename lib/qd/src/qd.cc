@@ -199,6 +199,16 @@ static std::string findStaticLib(const std::string& libDir, const std::string& l
 	return "";
 }
 
+static const char* findCC() {
+	const char* cc = getenv("CC");
+	return (cc && cc[0]) ? cc : "cc";
+}
+
+static const char* findCXX() {
+	const char* cxx = getenv("CXX");
+	return (cxx && cxx[0]) ? cxx : "c++";
+}
+
 // Module implementation
 struct qd_module {
 	std::string name;
@@ -214,8 +224,9 @@ struct qd_module {
 	fs::path so_path;
 	bool compiled;
 	size_t warning_min_line; // Minimum line for warnings (0 = no suppression)
+	qd_context* owner_ctx;  // Context that owns this module (for qd_call_native)
 
-	qd_module(const std::string& n) : name(n), dl_handle(nullptr), compiled(false), warning_min_line(0) {
+	qd_module(const std::string& n) : name(n), dl_handle(nullptr), compiled(false), warning_min_line(0), owner_ctx(nullptr) {
 	}
 
 	~qd_module() {
@@ -250,6 +261,7 @@ qd_module* qd_get_module(qd_context* ctx, const char* name) {
 
 	// Create new module
 	qd_module* mod = new qd_module(name);
+	mod->owner_ctx = ctx;
 	modules[name] = mod;
 	return mod;
 }
@@ -406,6 +418,112 @@ void qd_build(qd_module* mod) {
 		};
 		collectAndLoadModules(root);
 
+		// Generate C stubs for native-only modules (modules with registered
+		// native functions but no .qd source file). Compiled QD code emits
+		// external calls to symbols like usr_sat_get; the stubs trampoline
+		// through qd_call_native so dlopen can resolve them at load time.
+		std::vector<fs::path> stub_objects;
+		{
+			// Build set of modules that were actually loaded from .qd files.
+			// Note: processedModules includes modules where findModuleFile
+			// returned empty, so use moduleASTs which only has successful loads.
+			std::unordered_set<std::string> loadedModules;
+			for (const auto& ast_pair : moduleASTs) {
+				loadedModules.insert(ast_pair.first);
+			}
+
+			// Walk use statements to find modules that were NOT loaded from
+			// .qd files (native-only modules).
+			std::unordered_set<std::string> nativeOnlyModules;
+			std::function<void(Qd::IAstNode*)> findNativeOnly = [&](Qd::IAstNode* node) {
+				if (!node) return;
+				if (node->type() == Qd::IAstNode::Type::USE_STATEMENT) {
+					auto* useNode = static_cast<Qd::AstNodeUse*>(node);
+					std::string modName = useNode->module();
+					if (!loadedModules.count(modName)) {
+						nativeOnlyModules.insert(modName);
+					}
+				}
+				for (size_t i = 0; i < node->childCount(); i++) {
+					findNativeOnly(node->child(i));
+				}
+			};
+			findNativeOnly(root);
+
+			for (const auto& nativeModName : nativeOnlyModules) {
+				// Check if this module exists in the owner context and has native functions
+				if (!mod->owner_ctx) continue;
+				auto ctx_it = g_context_modules.find(mod->owner_ctx);
+				if (ctx_it == g_context_modules.end()) continue;
+				auto mod_it = ctx_it->second.find(nativeModName);
+				if (mod_it == ctx_it->second.end()) continue;
+				qd_module* nativeMod = mod_it->second;
+				if (nativeMod->native_functions.empty()) continue;
+
+				// Generate C stub file
+				fs::path stub_c = mod->temp_dir / ("stub_" + nativeModName + ".c");
+				FILE* stub_f = fopen(stub_c.c_str(), "w");
+				if (!stub_f) continue;
+
+				fprintf(stub_f, "#include <qd/qd.h>\n");
+				for (const auto& fn_pair : nativeMod->native_functions) {
+					fprintf(stub_f,
+						"int usr_%s_%s(qd_context* ctx) {\n"
+						"    return qd_call_native(ctx, \"%s\", \"%s\");\n"
+						"}\n",
+						nativeModName.c_str(), fn_pair.first.c_str(),
+						nativeModName.c_str(), fn_pair.first.c_str());
+				}
+				fclose(stub_f);
+
+				// Compile the stub
+				fs::path stub_o = mod->temp_dir / ("stub_" + nativeModName + ".o");
+
+				// Find include directories for qd/qd.h and qdrt/context.h
+				std::vector<std::string> include_dirs;
+				std::string lib_dir_for_inc = findLibraryDir();
+				// Try relative to lib dir: ../include
+				fs::path inc_candidate = fs::path(lib_dir_for_inc) / ".." / "include";
+				if (fs::exists(inc_candidate / "qd" / "qd.h")) {
+					include_dirs.push_back(fs::canonical(inc_candidate).string());
+				} else if (MESON_BUILD_ROOT[0] != '\0') {
+					// Development build: headers are in source tree
+					fs::path buildRoot = fs::path(MESON_BUILD_ROOT).parent_path().parent_path();
+					inc_candidate = buildRoot / "lib" / "qd" / "include";
+					if (fs::exists(inc_candidate / "qd" / "qd.h")) {
+						include_dirs.push_back(inc_candidate.string());
+					}
+					fs::path qdrt_inc = buildRoot / "lib" / "qdrt" / "include";
+					if (fs::exists(qdrt_inc / "qdrt" / "runtime.h")) {
+						include_dirs.push_back(qdrt_inc.string());
+					}
+				}
+
+				std::string stub_cmd = std::string(findCC()) + " -c -fPIC";
+				for (const auto& dir : include_dirs) {
+					stub_cmd += " -I" + dir;
+				}
+				stub_cmd += " " + stub_c.string() + " -o " + stub_o.string() + " 2>&1";
+
+				FILE* stub_output = popen(stub_cmd.c_str(), "r");
+				if (!stub_output) continue;
+
+				char sbuf[256];
+				std::string stub_errors;
+				while (fgets(sbuf, sizeof(sbuf), stub_output)) {
+					stub_errors += sbuf;
+				}
+				int stub_result = pclose(stub_output);
+				if (stub_result != 0) {
+					fprintf(stderr, "qd_build: Failed to compile stub for module '%s':\n%s\n",
+						nativeModName.c_str(), stub_errors.c_str());
+					continue;
+				}
+
+				stub_objects.push_back(stub_o);
+			}
+		}
+
 		// Generate LLVM IR
 		Qd::LlvmGenerator generator;
 		generator.setOptimizationLevel(2);
@@ -467,9 +585,12 @@ void qd_build(qd_module* mod) {
 		// Find the library directory (build or installed location)
 		std::string lib_dir = findLibraryDir();
 
-		// Use clang/gcc to link the object file into a shared library with static libs
-		std::string link_cmd = "clang++ -shared -fPIC ";
+		// Link the object file into a shared library with static libs
+		std::string link_cmd = std::string(findCXX()) + " -shared -fPIC ";
 		link_cmd += obj_file.string();
+		for (const auto& stub_o : stub_objects) {
+			link_cmd += " " + stub_o.string();
+		}
 		link_cmd += " -o ";
 		link_cmd += mod->so_path.string();
 
@@ -484,6 +605,11 @@ void qd_build(qd_module* mod) {
 		}
 
 		link_cmd += " -lm"; // Math library for sin, cos, etc.
+		if (!stub_objects.empty()) {
+			// Link against libqd so qd_call_native resolves at dlopen time
+			// via the already-loaded shared library.
+			link_cmd += " -L" + lib_dir + " -lqd";
+		}
 		link_cmd += " 2>&1";
 
 		FILE* link_output = popen(link_cmd.c_str(), "r");
@@ -523,6 +649,31 @@ bool qd_is_compiled(qd_module* mod) {
 		return false;
 	}
 	return mod->compiled;
+}
+
+int qd_call_native(qd_context* ctx, const char* module_name, const char* func_name) {
+	if (!ctx || !module_name || !func_name) {
+		return QD_ERR_GENERIC;
+	}
+
+	auto ctx_it = g_context_modules.find(ctx);
+	if (ctx_it == g_context_modules.end()) {
+		return QD_ERR_GENERIC;
+	}
+
+	auto mod_it = ctx_it->second.find(module_name);
+	if (mod_it == ctx_it->second.end()) {
+		return QD_ERR_GENERIC;
+	}
+
+	qd_module* mod = mod_it->second;
+	auto fn_it = mod->native_functions.find(func_name);
+	if (fn_it == mod->native_functions.end()) {
+		return QD_ERR_GENERIC;
+	}
+
+	auto& nf = fn_it->second;
+	return nf.fn(ctx, nf.userdata);
 }
 
 void qd_execute(qd_context* ctx, const char* code) {

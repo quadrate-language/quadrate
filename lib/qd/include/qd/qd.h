@@ -123,6 +123,20 @@ void qd_set_warning_min_line(qd_module* mod, size_t line);
  */
 void qd_execute(qd_context* ctx, const char* code);
 
+/**
+ * @brief Call a native function registered in a module
+ *
+ * Looks up a native function by module and function name in the context's
+ * module registry and calls it. This is used by generated C stubs so that
+ * compiled QD code can transparently call host-registered functions.
+ *
+ * @param ctx Execution context
+ * @param module_name Name of the module containing the function
+ * @param func_name Name of the native function to call
+ * @return 0 on success, QD_ERR_GENERIC if the module or function is not found
+ */
+int qd_call_native(qd_context* ctx, const char* module_name, const char* func_name);
+
 #ifdef __cplusplus
 }
 #endif

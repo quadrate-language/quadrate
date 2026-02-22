@@ -171,6 +171,51 @@ qd_push_s(ctx, "hello");      // Push string (copied)
 qd_push_p(ctx, my_pointer);   // Push pointer
 ```
 
+### Userdata
+
+Each native function receives a `void* userdata` pointer that was passed at registration time. This lets callbacks access application state without globals:
+
+```c
+typedef struct { int score; const char* name; } Player;
+
+int get_score(qd_context* ctx, void* userdata) {
+    Player* p = (Player*)userdata;
+    return qd_push_i(ctx, p->score);
+}
+
+Player player = { .score = 42, .name = "Alice" };
+qd_register_function(mod, "get_score", get_score, &player);
+```
+
+For data that should be accessible from any native function regardless of which module it belongs to, use context-level userdata:
+
+```c
+qd_set_userdata(ctx, &game_state);
+
+// Later, in any native function:
+int some_func(qd_context* ctx, void* userdata) {
+    GameState* game = qd_get_userdata(ctx);
+    // ...
+}
+```
+
+### Native-Only Modules
+
+You can create modules that consist entirely of registered native functions, with no Quadrate source code. When another module uses such a module, the embedding API automatically generates stub functions so compiled code can call your native functions transparently:
+
+```c
+// Register a pure-native module
+qd_module* sensors = qd_get_module(ctx, "sensors");
+qd_register_function(sensors, "temperature", read_temp, &hw);
+qd_register_function(sensors, "pressure", read_pressure, &hw);
+// No qd_add_script or qd_build needed for native-only modules
+
+// Another module can use it normally
+qd_module* app = qd_get_module(ctx, "app");
+qd_add_script(app, "use sensors\nfn check() { sensors::temperature print nl }");
+qd_build(app);
+```
+
 ---
 
 # Tutorial: Embedding in a Game Engine
@@ -623,6 +668,8 @@ clean:
 | `qd_create_context(size)` | Create context with stack capacity |
 | `qd_free_context(ctx)` | Free context and all resources |
 | `qd_clone_context(ctx)` | Deep copy a context |
+| `qd_set_userdata(ctx, ptr)` | Set user-defined data pointer on context |
+| `qd_get_userdata(ctx)` | Get user-defined data pointer from context |
 
 ### Module Management
 
