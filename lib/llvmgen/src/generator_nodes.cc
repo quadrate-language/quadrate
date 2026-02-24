@@ -409,10 +409,12 @@ namespace Qd {
 		// For methods, lookup uses ReceiverType::methodName
 		auto it = userFunctions.end();
 		std::string lookupName = name;
+		bool resolvedAsMethod = false;
 		if (ident->isMethodCall()) {
 			// Method call - use mangled name
 			lookupName = ident->receiverType() + "::" + name;
 			it = userFunctions.find(lookupName);
+			resolvedAsMethod = (it != userFunctions.end());
 		} else {
 			// Regular function call
 			// First try the plain name, then try with current module prefix for intra-module calls
@@ -422,6 +424,27 @@ namespace Qd {
 				it = userFunctions.find(qualifiedName);
 				if (it != userFunctions.end()) {
 					lookupName = qualifiedName;
+				}
+			}
+			// Fallback: try resolving as a method call on the most recently pushed struct.
+			// This handles intra-module method calls in cached module function bodies where
+			// the semantic validator didn't type-check (so isMethodCall was never set).
+			if (it == userFunctions.end() && !lastStructConstructed.empty()) {
+				std::string methodLookup = lastStructConstructed + "::" + name;
+				it = userFunctions.find(methodLookup);
+				if (it != userFunctions.end()) {
+					lookupName = methodLookup;
+					resolvedAsMethod = true;
+				} else if (lastStructConstructed.find("::") != std::string::npos) {
+					// Try unqualified struct name
+					std::string unqualified =
+							lastStructConstructed.substr(lastStructConstructed.rfind("::") + 2);
+					methodLookup = unqualified + "::" + name;
+					it = userFunctions.find(methodLookup);
+					if (it != userFunctions.end()) {
+						lookupName = methodLookup;
+						resolvedAsMethod = true;
+					}
 				}
 			}
 		}
@@ -484,8 +507,17 @@ namespace Qd {
 			} else {
 				// For method calls, rotate stack so receiver is on top before calling
 				// Only roll if receiver is NOT already on top
-				if (ident->isMethodCall()) {
-					size_t receiverPositionFromTop = ident->methodReceiverPositionFromTop();
+				if (resolvedAsMethod) {
+					size_t receiverPositionFromTop = 0;
+					if (ident->isMethodCall()) {
+						receiverPositionFromTop = ident->methodReceiverPositionFromTop();
+					} else {
+						// Fallback path: use stored method metadata
+						auto posIt = methodReceiverPosition.find(lookupName);
+						if (posIt != methodReceiverPosition.end()) {
+							receiverPositionFromTop = posIt->second;
+						}
+					}
 					if (receiverPositionFromTop > 0) {
 						// Push the count and call qd_roll
 						// roll N brings the Nth element (0-indexed from top) to top

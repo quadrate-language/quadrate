@@ -219,6 +219,10 @@ namespace Qd {
 		std::map<std::string, bool> fallibleFunctions;
 		std::set<std::string> importedCFunctions;
 		std::map<std::string, std::string> functionReturnStructType;
+		// For methods: maps register name to receiver position from top of stack
+		// (i.e., number of non-receiver args). Used for fallback method resolution
+		// when the semantic validator didn't mark the call as a method call.
+		std::map<std::string, size_t> methodReceiverPosition;
 
 		// Native calling convention for optimized functions
 		// Maps register name (e.g. "fib") to the native LLVM function

@@ -183,9 +183,9 @@ test "json::get_array" {
 // JSON Building Tests
 // ============================================================
 
-test "json::str quotes string" {
+test "json::encode quotes string" {
 	34 -> q
-	"hello" json::str -> result
+	"hello" json::encode -> result
 	q strings::from_char "hello" strings::concat q strings::from_char strings::concat -> expected
 	result expected testing::assert_eq
 }

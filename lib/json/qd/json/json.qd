@@ -1,5 +1,6 @@
 /// JSON parsing and querying without AST construction.
 use strings
+use strconv
 use unicode
 
 /// Type: Null value.
@@ -383,7 +384,8 @@ pub fn get_float(json:str key:str -- value:f64 found:i64) {
 		end_pos start - -> length
 		length 0 > if {
 			json start length strings::substring! -> num_str
-			num_str parse_int cast<f64> 1
+			num_str strconv::parse_float! -> num_val
+			num_val 1
 		} else {
 			0.0 0
 		}
@@ -603,7 +605,8 @@ pub fn array_get_float(json:str index:i64 -- value:f64 found:i64) {
 		end_pos start - -> length
 		length 0 > if {
 			json start length strings::substring! -> num_str
-			num_str parse_int cast<f64> 1
+			num_str strconv::parse_float! -> num_val
+			num_val 1
 		} else {
 			0.0 0
 		}

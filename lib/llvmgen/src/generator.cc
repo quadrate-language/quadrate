@@ -1296,6 +1296,13 @@ namespace Qd {
 				userFunctions[unqualifiedRegisterName] = fn;
 				fallibleFunctions[unqualifiedRegisterName] = funcNode->throws();
 			}
+
+			// Store receiver position (number of non-receiver args) for fallback method resolution
+			size_t receiverPos = funcNode->inputParameters().size();
+			methodReceiverPosition[registerName] = receiverPos;
+			if (unqualifiedRegisterName != registerName) {
+				methodReceiverPosition[unqualifiedRegisterName] = receiverPos;
+			}
 		} else {
 			registerName = (namePrefix == "main") ? funcNode->name() : (namePrefix + "::" + funcNode->name());
 

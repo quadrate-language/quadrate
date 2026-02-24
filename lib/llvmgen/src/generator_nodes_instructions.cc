@@ -472,13 +472,28 @@ namespace Qd {
 			const std::string& receiverType = inst->receiverType();
 			if (!receiverType.empty()) {
 				// Generate method call - use qualified function name
-				std::string mangledFnName = "usr_" + receiverType + "_" + name;
+				// For intra-module method calls, the semantic validator may return an unqualified
+				// receiver type (e.g., "Sha256" instead of "crypto::Sha256"). We need to qualify
+				// it with the current module name to find the correct LLVM function.
+				std::string qualifiedReceiverType = receiverType;
+				if (receiverType.find("::") == std::string::npos && !currentModuleName.empty()) {
+					qualifiedReceiverType = currentModuleName + "::" + receiverType;
+				}
+				std::string mangledFnName = "usr_" + qualifiedReceiverType + "_" + name;
 				// Replace :: with _ for valid function names
 				for (size_t pos = 0; (pos = mangledFnName.find("::")) != std::string::npos;) {
 					mangledFnName.replace(pos, 2, "_");
 				}
 
 				llvm::Function* methodFn = module->getFunction(mangledFnName);
+				if (!methodFn) {
+					// Try without module prefix as fallback (e.g., for main module methods)
+					std::string fallbackFnName = "usr_" + receiverType + "_" + name;
+					for (size_t pos = 0; (pos = fallbackFnName.find("::")) != std::string::npos;) {
+						fallbackFnName.replace(pos, 2, "_");
+					}
+					methodFn = module->getFunction(fallbackFnName);
+				}
 				if (!methodFn) {
 					// Method not found - this shouldn't happen if validation passed
 					llvm::errs() << "Method function not found: " << mangledFnName << "\n";
