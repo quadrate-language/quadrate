@@ -12,6 +12,7 @@
 #include <quadrate/qc/ast_node.h>
 #include <quadrate/qc/ast_node_use.h>
 #include <quadrate/qc/semantic_validator.h>
+#include <set>
 #include <sstream>
 #include <string>
 #include <unordered_map>
@@ -592,6 +593,70 @@ void qd_build(qd_module* mod) {
 		// Find the library directory (build or installed location)
 		std::string lib_dir = findLibraryDir();
 
+		// Determine the stdlib subdirectory (quadrate/ under lib_dir)
+		std::string stdlibDir;
+		{
+			fs::path quadrateDir = fs::path(lib_dir) / "quadrate";
+			if (fs::exists(quadrateDir)) {
+				stdlibDir = quadrateDir.string();
+			}
+		}
+
+		// Recursively process .deps files for transitive native dependencies.
+		// This mirrors the logic in generator.cc's processLibraryDeps.
+		std::set<std::string> processedDeps;
+		std::string transitiveDepsFlags;
+
+		std::function<void(const std::string&)> processLibraryDeps;
+		processLibraryDeps = [&](const std::string& libPath) {
+			if (processedDeps.count(libPath)) {
+				return;
+			}
+			processedDeps.insert(libPath);
+
+			// Derive .deps filename from .a path
+			std::string depsFile = libPath;
+			if (depsFile.size() > 2 && depsFile.substr(depsFile.size() - 2) == ".a") {
+				depsFile = depsFile.substr(0, depsFile.size() - 2) + ".deps";
+			}
+
+			if (!fs::exists(depsFile)) {
+				return;
+			}
+
+			std::ifstream deps(depsFile);
+			if (!deps.is_open()) {
+				return;
+			}
+
+			std::string line;
+			while (std::getline(deps, line)) {
+				// Trim whitespace
+				line.erase(0, line.find_first_not_of(" \t\r\n"));
+				line.erase(line.find_last_not_of(" \t\r\n") + 1);
+				if (line.empty()) {
+					continue;
+				}
+
+				if (line.rfind("-l", 0) == 0 && line.size() > 2) {
+					// -l<name>: check if it's a Quadrate library first
+					std::string depName = line.substr(2);
+					std::string depLib = findStaticLib(lib_dir, depName);
+					if (!depLib.empty()) {
+						// It's a Quadrate library — link it and recurse
+						transitiveDepsFlags += " " + depLib;
+						processLibraryDeps(depLib);
+					} else {
+						// System library — pass through as-is
+						transitiveDepsFlags += " " + line;
+					}
+				} else {
+					// Other flags (e.g., -L paths) — pass through
+					transitiveDepsFlags += " " + line;
+				}
+			}
+		};
+
 		// Link the object file into a shared library with static libs
 		std::string link_cmd = std::string(findCXX()) + " -shared -fPIC ";
 		link_cmd += obj_file.string();
@@ -601,14 +666,27 @@ void qd_build(qd_module* mod) {
 		link_cmd += " -o ";
 		link_cmd += mod->so_path.string();
 
-		// Link with static libraries (whole-archive to include all symbols)
-		std::vector<std::string> libs = {
-				"qdrt", "qdmath", "qdfmt", "qdio", "qdos", "qdstrings", "qdtime", "qdmem", "qdstrconv"};
-		for (const auto& lib : libs) {
-			std::string libPath = findStaticLib(lib_dir, lib);
+		// Link only the stdlib libraries that the script actually uses.
+		// The runtime (rt) is always required. Other libraries are linked
+		// based on which modules were imported via 'use' statements.
+		// Each library's .deps file is processed for transitive dependencies.
+		std::unordered_set<std::string> usedLibs;
+		usedLibs.insert("rt"); // Runtime is always needed
+		for (const auto& ast_pair : moduleASTs) {
+			usedLibs.insert(ast_pair.first);
+		}
+
+		for (const auto& libName : usedLibs) {
+			std::string libPath = findStaticLib(lib_dir, libName);
 			if (!libPath.empty()) {
 				link_cmd += " -Wl,--whole-archive " + libPath + " -Wl,--no-whole-archive";
+				processLibraryDeps(libPath);
 			}
+		}
+
+		// Add transitive dependencies (system libs from .deps files)
+		if (!transitiveDepsFlags.empty()) {
+			link_cmd += " -Wl,--start-group" + transitiveDepsFlags + " -Wl,--end-group";
 		}
 
 		link_cmd += " -lm"; // Math library for sin, cos, etc.
