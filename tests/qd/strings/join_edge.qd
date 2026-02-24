@@ -2,6 +2,7 @@
 use strings
 use os
 use mem
+use io
 
 fn main() {
 	// Test 1: Single element
@@ -44,5 +45,3 @@ fn main() {
 	"[" print empty_result print "]" print nl
 	empty_arr mem::free
 }
-
-use io

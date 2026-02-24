@@ -6,7 +6,7 @@ fn main() {
 	"Hello" strings::len print nl
 
 	// Test 2: strings::concat
-	"Hello" " World" strings::concat prints nl
+	"Hello" " World" strings::concat print nl
 
 	// Test 3: strings::contains
 	"Hello World" "World" strings::contains print nl
@@ -21,22 +21,22 @@ fn main() {
 	"Hello World" "Hello" strings::ends_with print nl
 
 	// Test 6: strings::upper
-	"hello world" strings::upper prints nl
+	"hello world" strings::upper print nl
 
 	// Test 7: strings::lower
-	"HELLO WORLD" strings::lower prints nl
+	"HELLO WORLD" strings::lower print nl
 
 	// Test 8: strings::trim
-	"  hello world  " strings::trim prints nl
-	"hello" strings::trim prints nl
+	"  hello world  " strings::trim print nl
+	"hello" strings::trim print nl
 
 	// Test 9: strings::substring
-	"Hello World" 0 5 strings::substring! prints nl
-	"Hello World" 6 5 strings::substring! prints nl
+	"Hello World" 0 5 strings::substring! print nl
+	"Hello World" 6 5 strings::substring! print nl
 
 	// Test 10: strings::replace
-	"Hello World World" "World" "Universe" strings::replace! prints nl
-	"abc abc abc" "abc" "xyz" strings::replace! prints nl
+	"Hello World World" "World" "Universe" strings::replace! print nl
+	"abc abc abc" "abc" "xyz" strings::replace! print nl
 
 	// Test 11: strings::compare
 	"aaa" "bbb" strings::compare print nl
@@ -50,5 +50,5 @@ fn main() {
 
 	// Test 13: Single character tests
 	"a" strings::len print nl
-	"a" "b" strings::concat prints nl
+	"a" "b" strings::concat print nl
 }

@@ -1,6 +1,7 @@
-// Test: switch statement with break in cases
+// Test: break inside switch case blocks exits the enclosing loop, not the case.
+// When there is no enclosing loop, break is a no-op and execution continues.
 fn main() {
-	// Test that break exits the switch (200 should not print)
+	// break with no enclosing loop is a no-op — 200 still prints
 	5 switch {
 		5 {
 			100 print nl
@@ -12,7 +13,7 @@ fn main() {
 		}
 	}
 
-	// Test break in default case (400 should not print)
+	// Same for default case — 400 still prints
 	10 switch {
 		1 {
 			10 print nl
@@ -24,7 +25,7 @@ fn main() {
 		}
 	}
 
-	// Test switch without break (both 500 and 600 should print)
+	// Without break, both 500 and 600 print as expected
 	7 switch {
 		7 {
 			500 print nl

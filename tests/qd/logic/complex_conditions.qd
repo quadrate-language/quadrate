@@ -6,13 +6,13 @@ fn main() {
 	// Test: (false OR true) AND true = true
 	0 1 or 1 and print nl
 
-	// Test: NOT (true AND false) = true
+	// Test: NOT (true AND false) = -1 (bitwise NOT of 0; truthy)
 	1 0 and not print nl
 
 	// Test: (true OR false) AND (false OR true) = true
 	1 0 or 0 1 or and print nl
 
-	// Test: NOT (false OR false) = true
+	// Test: NOT (false OR false) = -1 (bitwise NOT of 0; truthy)
 	0 0 or not print nl
 
 	// Test: (10 > 5) AND (3 < 7) = true

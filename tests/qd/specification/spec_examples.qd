@@ -182,7 +182,7 @@ fn main() {
     p @x print nl               // 1.5
     p @y print nl               // 2.5
     5.0 p.x
-    p @x print nl               // 5.0
+    p @x print nl               // 5
 
     // Section 8.5 - Generic Structs
     Box<i64> { value = 100 } -> box
