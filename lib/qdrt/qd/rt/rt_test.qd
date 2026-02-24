@@ -1,9 +1,9 @@
 use testing
 use rt
-use str
+use strings
 
 test "version returns non-empty string" {
-	rt::version str::len 0 > testing::assert_true
+	rt::version strings::len 0 > testing::assert_true
 }
 
 test "version_api returns positive number" {

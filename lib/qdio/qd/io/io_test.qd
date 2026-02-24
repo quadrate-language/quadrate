@@ -2,7 +2,7 @@
 use io
 use os
 use mem
-use str
+use strings
 use testing
 
 test "io constants - modes" {
@@ -39,7 +39,7 @@ test "io error constants" {
 
 test "io::write_file and read_file" {
 	os::mktemp! -> tmpdir
-	tmpdir "/test.txt" str::concat -> path
+	tmpdir "/test.txt" strings::concat -> path
 	path "Hello, World!" io::write_file!
 	path io::read_file! -> contents
 	contents "Hello, World!" testing::assert_eq
@@ -49,7 +49,7 @@ test "io::write_file and read_file" {
 
 test "io::write_file overwrites" {
 	os::mktemp! -> tmpdir
-	tmpdir "/overwrite.txt" str::concat -> path
+	tmpdir "/overwrite.txt" strings::concat -> path
 	path "first" io::write_file!
 	path "second" io::write_file!
 	path io::read_file! -> contents
@@ -60,29 +60,29 @@ test "io::write_file overwrites" {
 
 test "io::read_file empty file" {
 	os::mktemp! -> tmpdir
-	tmpdir "/empty.txt" str::concat -> path
+	tmpdir "/empty.txt" strings::concat -> path
 	path "" io::write_file!
 	path io::read_file! -> contents
-	contents str::len 0 testing::assert_eq
+	contents strings::len 0 testing::assert_eq
 	path os::delete!
 	tmpdir os::rmdir!
 }
 
 test "io::write_file multiline" {
 	os::mktemp! -> tmpdir
-	tmpdir "/multi.txt" str::concat -> path
+	tmpdir "/multi.txt" strings::concat -> path
 	path "line1\nline2\nline3" io::write_file!
 	path io::read_file! -> contents
-	contents "line1" str::contains testing::assert_true
-	contents "line2" str::contains testing::assert_true
-	contents "line3" str::contains testing::assert_true
+	contents "line1" strings::contains testing::assert_true
+	contents "line2" strings::contains testing::assert_true
+	contents "line3" strings::contains testing::assert_true
 	path os::delete!
 	tmpdir os::rmdir!
 }
 
 test "io::open and close write mode" {
 	os::mktemp! -> tmpdir
-	tmpdir "/open_test.txt" str::concat -> path
+	tmpdir "/open_test.txt" strings::concat -> path
 	path io::Write io::open! -> f
 	f io::close
 	path os::exists 1 testing::assert_eq
@@ -92,7 +92,7 @@ test "io::open and close write mode" {
 
 test "io::open read existing file" {
 	os::mktemp! -> tmpdir
-	tmpdir "/readable.txt" str::concat -> path
+	tmpdir "/readable.txt" strings::concat -> path
 	path "test content" io::write_file!
 	path io::Read io::open! -> f
 	f io::close
@@ -102,7 +102,7 @@ test "io::open read existing file" {
 
 test "io::seek and tell" {
 	os::mktemp! -> tmpdir
-	tmpdir "/seek_test.txt" str::concat -> path
+	tmpdir "/seek_test.txt" strings::concat -> path
 	path "0123456789" io::write_file!
 
 	path io::Read io::open! -> f
@@ -119,7 +119,7 @@ test "io::seek and tell" {
 
 test "io::seek from current" {
 	os::mktemp! -> tmpdir
-	tmpdir "/seek_cur.txt" str::concat -> path
+	tmpdir "/seek_cur.txt" strings::concat -> path
 	path "0123456789" io::write_file!
 
 	path io::Read io::open! -> f
@@ -134,7 +134,7 @@ test "io::seek from current" {
 
 test "io::seek from end" {
 	os::mktemp! -> tmpdir
-	tmpdir "/seek_end.txt" str::concat -> path
+	tmpdir "/seek_end.txt" strings::concat -> path
 	path "0123456789" io::write_file!
 
 	path io::Read io::open! -> f
@@ -148,7 +148,7 @@ test "io::seek from end" {
 
 test "io::write and read with buffers" {
 	os::mktemp! -> tmpdir
-	tmpdir "/buffer_test.txt" str::concat -> path
+	tmpdir "/buffer_test.txt" strings::concat -> path
 
 	path io::Write io::open! -> f
 	"Hello" mem::from_string -> len -> buf
@@ -166,7 +166,7 @@ test "io::write and read with buffers" {
 
 test "io::read partial" {
 	os::mktemp! -> tmpdir
-	tmpdir "/partial.txt" str::concat -> path
+	tmpdir "/partial.txt" strings::concat -> path
 	path "ABCDEFGHIJ" io::write_file!
 
 	path io::Read io::open! -> f
@@ -183,7 +183,7 @@ test "io::read partial" {
 
 test "io::eof at start" {
 	os::mktemp! -> tmpdir
-	tmpdir "/eof_test.txt" str::concat -> path
+	tmpdir "/eof_test.txt" strings::concat -> path
 	path "content" io::write_file!
 
 	path io::Read io::open! -> f
@@ -197,7 +197,7 @@ test "io::eof at start" {
 
 test "io::eof after reading all" {
 	os::mktemp! -> tmpdir
-	tmpdir "/eof_end.txt" str::concat -> path
+	tmpdir "/eof_end.txt" strings::concat -> path
 	path "AB" io::write_file!
 
 	path io::Read io::open! -> f
@@ -220,7 +220,7 @@ test "io::eof after reading all" {
 
 test "io::open append mode" {
 	os::mktemp! -> tmpdir
-	tmpdir "/append.txt" str::concat -> path
+	tmpdir "/append.txt" strings::concat -> path
 	path "first" io::write_file!
 
 	path io::Append io::open! -> f
@@ -238,7 +238,7 @@ test "io::open append mode" {
 
 test "io::binary write and read" {
 	os::mktemp! -> tmpdir
-	tmpdir "/binary.bin" str::concat -> path
+	tmpdir "/binary.bin" strings::concat -> path
 
 	path io::WriteBinary io::open! -> f
 	4 mem::alloc! -> buf
@@ -268,7 +268,7 @@ test "io::binary write and read" {
 
 test "io::open read-write mode" {
 	os::mktemp! -> tmpdir
-	tmpdir "/readwrite.txt" str::concat -> path
+	tmpdir "/readwrite.txt" strings::concat -> path
 	path "AAAA" io::write_file!
 
 	path io::ReadWrite io::open! -> f
@@ -288,12 +288,12 @@ test "io::open read-write mode" {
 
 test "io::read_file large content" {
 	os::mktemp! -> tmpdir
-	tmpdir "/large.txt" str::concat -> path
+	tmpdir "/large.txt" strings::concat -> path
 
-	"x" 1000 str::repeat -> content
+	"x" 1000 strings::repeat -> content
 	path content io::write_file!
 	path io::read_file! -> read_content
-	read_content str::len 1000 testing::assert_eq
+	read_content strings::len 1000 testing::assert_eq
 
 	path os::delete!
 	tmpdir os::rmdir!
@@ -301,7 +301,7 @@ test "io::read_file large content" {
 
 test "io::seek to start after writing" {
 	os::mktemp! -> tmpdir
-	tmpdir "/rewind.txt" str::concat -> path
+	tmpdir "/rewind.txt" strings::concat -> path
 
 	path io::WriteRead io::open! -> f
 	"Hello" mem::from_string -> len -> buf
@@ -332,7 +332,7 @@ test "io::ErrStat constant" {
 
 test "io::stat_size" {
 	os::mktemp! -> tmpdir
-	tmpdir "/stat_size.txt" str::concat -> path
+	tmpdir "/stat_size.txt" strings::concat -> path
 	path "Hello" io::write_file!
 	path io::stat_size! -> size
 	size 5 testing::assert_eq
@@ -342,7 +342,7 @@ test "io::stat_size" {
 
 test "io::stat_size empty file" {
 	os::mktemp! -> tmpdir
-	tmpdir "/stat_empty.txt" str::concat -> path
+	tmpdir "/stat_empty.txt" strings::concat -> path
 	path "" io::write_file!
 	path io::stat_size! -> size
 	size 0 testing::assert_eq
@@ -352,8 +352,8 @@ test "io::stat_size empty file" {
 
 test "io::stat_size larger file" {
 	os::mktemp! -> tmpdir
-	tmpdir "/stat_large.txt" str::concat -> path
-	"x" 1000 str::repeat -> content
+	tmpdir "/stat_large.txt" strings::concat -> path
+	"x" 1000 strings::repeat -> content
 	path content io::write_file!
 	path io::stat_size! -> size
 	size 1000 testing::assert_eq
@@ -363,7 +363,7 @@ test "io::stat_size larger file" {
 
 test "io::stat_mtime recent file" {
 	os::mktemp! -> tmpdir
-	tmpdir "/stat_mtime.txt" str::concat -> path
+	tmpdir "/stat_mtime.txt" strings::concat -> path
 	path "test" io::write_file!
 	path io::stat_mtime! -> mtime
 	mtime 1577836800 > testing::assert_true
@@ -373,7 +373,7 @@ test "io::stat_mtime recent file" {
 
 test "io::stat_atime recent file" {
 	os::mktemp! -> tmpdir
-	tmpdir "/stat_atime.txt" str::concat -> path
+	tmpdir "/stat_atime.txt" strings::concat -> path
 	path "test" io::write_file!
 	path io::stat_atime! -> atime
 	atime 1577836800 > testing::assert_true
@@ -383,7 +383,7 @@ test "io::stat_atime recent file" {
 
 test "io::stat_mode regular file" {
 	os::mktemp! -> tmpdir
-	tmpdir "/stat_mode.txt" str::concat -> path
+	tmpdir "/stat_mode.txt" strings::concat -> path
 	path "test" io::write_file!
 	path io::stat_mode! -> mode
 	mode 0 >= testing::assert_true

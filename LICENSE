@@ -27,7 +27,7 @@ SPDX-License-Identifier: Apache-2.0
 This includes:
 - lib/qdrt/    (runtime library)
 - lib/qd/      (embedding API)
-- lib/qd*/     (standard library modules: qdio, qdstr, qdmath, etc.)
+- lib/qd*/     (standard library modules: qdio, qdstrings, qdmath, etc.)
 
 Programs compiled with Quadrate link against the standard library and
 runtime, which are permissively licensed. You may distribute your

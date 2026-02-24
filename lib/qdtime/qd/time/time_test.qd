@@ -1,5 +1,5 @@
 // Unit tests for the time module
-use str
+use strings
 use time
 use testing
 
@@ -162,17 +162,17 @@ test "time::error constants" {
 
 test "time::format year-month-day" {
 	0 "%Y-%m-%d" time::format! -> result
-	result str::len 10 testing::assert_eq
+	result strings::len 10 testing::assert_eq
 }
 
 test "time::format time" {
 	0 "%H:%M:%S" time::format! -> result
-	result str::len 8 testing::assert_eq
+	result strings::len 8 testing::assert_eq
 }
 
 test "time::format full datetime" {
 	0 "%Y-%m-%d %H:%M:%S" time::format! -> result
-	result str::len 19 testing::assert_eq
+	result strings::len 19 testing::assert_eq
 }
 
 test "time::parse and format roundtrip" {

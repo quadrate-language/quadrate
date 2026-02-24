@@ -1,5 +1,5 @@
-// Test str::join - join array of strings with os::list results
-use str
+// Test strings::join - join array of strings with os::list results
+use strings
 use os
 use io
 use mem
@@ -9,17 +9,17 @@ fn main() {
 	os::mktemp! -> tmpdir
 
 	// Create some test files
-	tmpdir "/a.txt" str::concat "a" io::write_file!
-	tmpdir "/b.txt" str::concat "b" io::write_file!
-	tmpdir "/c.txt" str::concat "c" io::write_file!
+	tmpdir "/a.txt" strings::concat "a" io::write_file!
+	tmpdir "/b.txt" strings::concat "b" io::write_file!
+	tmpdir "/c.txt" strings::concat "c" io::write_file!
 
 	// List directory and join with comma
 	tmpdir os::list! -> count -> entries
-	entries count str::sort
-	entries count "," str::join! print nl
+	entries count strings::sort
+	entries count "," strings::join! print nl
 
 	// Join with slash
-	entries count "/" str::join! print nl
+	entries count "/" strings::join! print nl
 
 	// Free entries array (each string + the array itself)
 	0 count 1 for i {
@@ -28,8 +28,8 @@ fn main() {
 	entries mem::free
 
 	// Clean up
-	tmpdir "/a.txt" str::concat os::delete!
-	tmpdir "/b.txt" str::concat os::delete!
-	tmpdir "/c.txt" str::concat os::delete!
+	tmpdir "/a.txt" strings::concat os::delete!
+	tmpdir "/b.txt" strings::concat os::delete!
+	tmpdir "/c.txt" strings::concat os::delete!
 	tmpdir os::rmdir!
 }

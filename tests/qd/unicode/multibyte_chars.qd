@@ -1,34 +1,34 @@
 // Test multi-byte UTF-8 character handling
-use str
+use strings
 
 fn main() {
 	// Byte lengths of different character types
 	"=== Byte lengths ===" print nl
-	"A" str::len print nl        // 1 byte (ASCII)
-	"é" str::len print nl        // 2 bytes (Latin-1 Supplement)
-	"世" str::len print nl       // 3 bytes (CJK)
-	"🌍" str::len print nl       // 4 bytes (emoji)
+	"A" strings::len print nl        // 1 byte (ASCII)
+	"é" strings::len print nl        // 2 bytes (Latin-1 Supplement)
+	"世" strings::len print nl       // 3 bytes (CJK)
+	"🌍" strings::len print nl       // 4 bytes (emoji)
 
 	// String with mixed byte-width characters
 	"=== Mixed byte-widths ===" print nl
-	"Aé世🌍" str::len print nl   // 1+2+3+4 = 10 bytes
-	"hello世界" str::len print nl // 5+3+3 = 11 bytes
+	"Aé世🌍" strings::len print nl   // 1+2+3+4 = 10 bytes
+	"hello世界" strings::len print nl // 5+3+3 = 11 bytes
 
 	// Comparison with multi-byte
 	"=== Multi-byte comparison ===" print nl
-	"世界" "世" str::starts_with print nl    // 1
-	"世界" "界" str::ends_with print nl      // 1
+	"世界" "世" strings::starts_with print nl    // 1
+	"世界" "界" strings::ends_with print nl      // 1
 
 	// Substring with multi-byte
 	"=== Multi-byte contains ===" print nl
-	"hello世界goodbye" "世界" str::contains print nl  // 1
-	"Привет мир" "вет" str::contains print nl        // 1
+	"hello世界goodbye" "世界" strings::contains print nl  // 1
+	"Привет мир" "вет" strings::contains print nl        // 1
 
 	// Empty string edge cases
 	"=== Empty string ===" print nl
-	"" str::len print nl              // 0
-	"" "世" str::contains print nl    // 0
-	"世" "" str::contains print nl    // 1
+	"" strings::len print nl              // 0
+	"" "世" strings::contains print nl    // 0
+	"世" "" strings::contains print nl    // 1
 
 	"done" print nl
 }

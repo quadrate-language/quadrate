@@ -16,7 +16,7 @@ fn main() {
 		z = 3.0
 	} process print nl
 
-	"hello" str::upper print nl
+	"hello" strings::upper print nl
 
 	os::getcwd print nl
 }

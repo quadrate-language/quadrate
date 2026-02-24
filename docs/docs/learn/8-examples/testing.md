@@ -167,16 +167,16 @@ Import the module you're testing:
 
 ```qd
 use testing
-use str
+use strings
 
-test "str::len counts characters" {
-	"hello" str::len 5 testing::assert_eq
-	"" str::len 0 testing::assert_eq
+test "strings::len counts characters" {
+	"hello" strings::len 5 testing::assert_eq
+	"" strings::len 0 testing::assert_eq
 }
 
-test "str::contains finds substrings" {
-	"hello world" "world" str::contains testing::assert_true
-	"hello world" "xyz" str::contains testing::assert_false
+test "strings::contains finds substrings" {
+	"hello world" "world" strings::contains testing::assert_true
+	"hello world" "xyz" strings::contains testing::assert_false
 }
 ```
 

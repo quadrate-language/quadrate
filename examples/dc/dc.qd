@@ -11,7 +11,7 @@ use io
 use math
 use mem
 use os
-use str
+use strings
 use strconv
 use unicode
 
@@ -167,14 +167,14 @@ fn is_number(tok:str -- result:i64) {
 	0 -> first
 	0 -> second
 	0 -> result
-	tok str::len 0 > if {
-		tok 0 str::char_at! -> first
+	tok strings::len 0 > if {
+		tok 0 strings::char_at! -> first
 		first unicode::is_digit if {
 			1 -> result
 		} else {
 			first unicode::underscore == first unicode::minus == or if {
-				tok str::len 1 > if {
-					tok 1 str::char_at! -> second
+				tok strings::len 1 > if {
+					tok 1 strings::char_at! -> second
 					second unicode::is_digit -> result
 				}
 			}
@@ -188,9 +188,9 @@ fn process_token(s:ptr tok:str -- ) {
 	-> s
 	tok is_number -> is_num
 	is_num if {
-		tok 0 str::char_at! -> first
+		tok 0 strings::char_at! -> first
 		first unicode::underscore == if {
-			tok 1 tok str::len 1 - str::substring! cast<f64> -> val
+			tok 1 tok strings::len 1 - strings::substring! cast<f64> -> val
 			s 0.0 val - stack_push
 		} else {
 			tok cast<f64> -> val
@@ -198,7 +198,7 @@ fn process_token(s:ptr tok:str -- ) {
 		}
 	}
 	is_num 0 == if {
-		tok str::len 0 > if {
+		tok strings::len 0 > if {
 			s tok process_operator
 		}
 	}
@@ -213,7 +213,7 @@ fn process_operator(s:ptr op:str -- ) {
 	0.0 -> q
 	0.0 -> r
 	"" -> octal
-	op 0 str::char_at! switch {
+	op 0 strings::char_at! switch {
 		unicode::plus {
 			s 2 stack_check if {
 				s stack_pop -> b
@@ -330,7 +330,7 @@ fn process_operator(s:ptr op:str -- ) {
 			0 os::exit
 		}
 		_ {
-			op 0 str::char_at! 8 strconv::format_int -> octal
+			op 0 strings::char_at! 8 strconv::format_int -> octal
 			"dc: '" print op print "' (0" print octal print ") unimplemented" print nl
 		}
 	}
@@ -344,30 +344,30 @@ fn process_line(s:ptr input:str -- ) {
 	"" -> token
 	0 -> space_pos
 	// Strip comments (everything from # to end of line)
-	input "#" str::index_of -> comment_pos
+	input "#" strings::index_of -> comment_pos
 	comment_pos 0 >= if {
-		input 0 comment_pos str::substring! -> input
+		input 0 comment_pos strings::substring! -> input
 	}
-	input str::trim -> trimmed
+	input strings::trim -> trimmed
 
 	// Process space-separated tokens
 	loop {
-		trimmed str::len 0 <= if {
+		trimmed strings::len 0 <= if {
 			break
 		}
-		trimmed " " str::index_of -> space_pos
+		trimmed " " strings::index_of -> space_pos
 		space_pos 0 < if {
 			// No more spaces - process remaining as last token
 			s trimmed process_token
 			break
 		}
 		// Extract token before space
-		trimmed 0 space_pos str::substring! -> token
-		token str::len 0 > if {
+		trimmed 0 space_pos strings::substring! -> token
+		token strings::len 0 > if {
 			s token process_token
 		}
 		// Skip past space and continue
-		trimmed space_pos 1 + trimmed str::len space_pos - 1 - str::substring! -> trimmed
+		trimmed space_pos 1 + trimmed strings::len space_pos - 1 - strings::substring! -> trimmed
 	}
 }
 
@@ -404,20 +404,20 @@ fn run_file(s:ptr path:str -- ) {
 
 	// Process content line by line
 	loop {
-		content str::len 0 <= if {
+		content strings::len 0 <= if {
 			break
 		}
-		content "\n" str::index_of -> newline_pos
+		content "\n" strings::index_of -> newline_pos
 		newline_pos 0 < if {
 			// No more newlines - process remaining as last line
 			s content process_line
 			break
 		} else {
 			// Extract line before newline
-			content 0 newline_pos str::substring! -> line
+			content 0 newline_pos strings::substring! -> line
 			s line process_line
 			// Skip past newline and continue
-			content newline_pos 1 + content str::len newline_pos - 1 - str::substring! -> content
+			content newline_pos 1 + content strings::len newline_pos - 1 - strings::substring! -> content
 		}
 	}
 }

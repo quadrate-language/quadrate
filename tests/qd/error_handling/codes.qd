@@ -1,6 +1,6 @@
 // Test programmatic error handling with error codes
 use io
-use str
+use strings
 
 fn main() {
 	// Test 1: File not found returns ErrNotFound
@@ -47,14 +47,14 @@ fn main() {
 	}
 
 	// Test 4: String error codes
-	"hello" 100 str::char_at switch {
+	"hello" 100 strings::char_at switch {
 		Ok {
 			-> ch
 			"FAIL: should be out of bounds" print nl
 		}
 		_ {
 			err -> code -> msg
-			code str::ErrOutOfBounds == if {
+			code strings::ErrOutOfBounds == if {
 				"str_out_of_bounds_ok" print nl
 			} else {
 				"FAIL: expected ErrOutOfBounds, got " print code print nl
@@ -71,7 +71,7 @@ fn main() {
 		_ {
 			err -> code -> msg
 			// Check that error message is non-empty
-			msg str::len 0 > if {
+			msg strings::len 0 > if {
 				"err_msg_ok" print nl
 			} else {
 				"FAIL: error message empty" print nl

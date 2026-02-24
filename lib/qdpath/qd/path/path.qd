@@ -1,6 +1,6 @@
 /// File path manipulation functions.
 /// POSIX-style paths with forward slash separator.
-use str
+use strings
 
 /// Path separator constant.
 pub const Sep = "/"
@@ -8,11 +8,11 @@ pub const Sep = "/"
 /// Find last occurrence of slash in string.
 fn find_last_slash(s:str -- idx:i64) {
 	-> s
-	s str::len -> slen
+	s strings::len -> slen
 	-1 -> result
 	0 slen 1 for it {
 		it -> i
-		s i str::char_at! 47 == if {
+		s i strings::char_at! 47 == if {
 			i -> result
 		}
 	}
@@ -22,11 +22,11 @@ fn find_last_slash(s:str -- idx:i64) {
 /// Find last occurrence of dot in string.
 fn find_last_dot(s:str -- idx:i64) {
 	-> s
-	s str::len -> slen
+	s strings::len -> slen
 	-1 -> result
 	0 slen 1 for it {
 		it -> i
-		s i str::char_at! 46 == if {
+		s i strings::char_at! 46 == if {
 			i -> result
 		}
 	}
@@ -45,7 +45,7 @@ pub fn dirname(path:str -- dir:str) {
 		"/" -> result
 	}
 	last_slash 0 > if {
-		path 0 last_slash str::substring! -> result
+		path 0 last_slash strings::substring! -> result
 	}
 	result
 }
@@ -59,10 +59,10 @@ pub fn basename(path:str -- name:str) {
 	path find_last_slash -> last_slash
 	path -> result
 	last_slash -1 != if {
-		path str::len -> pathlen
+		path strings::len -> pathlen
 		last_slash 1 + -> start
 		start pathlen < if {
-			path start pathlen start - str::substring! -> result
+			path start pathlen start - strings::substring! -> result
 		} else {
 			"" -> result
 		}
@@ -80,10 +80,10 @@ pub fn ext(path:str -- ext:str) {
 	path find_last_slash -> last_slash
 	path -> name
 	last_slash -1 != if {
-		path str::len -> plen
+		path strings::len -> plen
 		last_slash 1 + -> pstart
 		pstart plen < if {
-			path pstart plen pstart - str::substring! -> name
+			path pstart plen pstart - strings::substring! -> name
 		} else {
 			"" -> name
 		}
@@ -92,8 +92,8 @@ pub fn ext(path:str -- ext:str) {
 	name find_last_dot -> last_dot
 	"" -> result
 	last_dot 0 > if {
-		name str::len -> nlen
-		name last_dot nlen last_dot - str::substring! -> result
+		name strings::len -> nlen
+		name last_dot nlen last_dot - strings::substring! -> result
 	}
 	result
 }
@@ -108,10 +108,10 @@ pub fn stem(path:str -- stem:str) {
 	path find_last_slash -> last_slash
 	path -> name
 	last_slash -1 != if {
-		path str::len -> plen
+		path strings::len -> plen
 		last_slash 1 + -> pstart
 		pstart plen < if {
-			path pstart plen pstart - str::substring! -> name
+			path pstart plen pstart - strings::substring! -> name
 		} else {
 			"" -> name
 		}
@@ -120,7 +120,7 @@ pub fn stem(path:str -- stem:str) {
 	name find_last_dot -> last_dot
 	name -> result
 	last_dot 0 > if {
-		name 0 last_dot str::substring! -> result
+		name 0 last_dot strings::substring! -> result
 	}
 	result
 }
@@ -134,17 +134,17 @@ pub fn join(p1:str p2:str -- joined:str) {
 	-> p2
 	-> p1
 	p1 -> result
-	p2 "/" str::starts_with if {
+	p2 "/" strings::starts_with if {
 		p2 -> result
 	} else {
-		p1 str::len -> len1
+		p1 strings::len -> len1
 		len1 0 == if {
 			p2 -> result
 		} else {
-			p1 len1 1 - str::char_at! 47 == if {
-				p1 p2 str::concat -> result
+			p1 len1 1 - strings::char_at! 47 == if {
+				p1 p2 strings::concat -> result
 			} else {
-				p1 "/" str::concat p2 str::concat -> result
+				p1 "/" strings::concat p2 strings::concat -> result
 			}
 		}
 	}
@@ -157,7 +157,7 @@ pub fn join(p1:str p2:str -- joined:str) {
 /// @example "/home/user" path::is_absolute -> 1
 pub fn is_absolute(path:str -- result:i64) {
 	-> path
-	path "/" str::starts_with
+	path "/" strings::starts_with
 }
 
 /// Normalize a path (remove redundant separators).
@@ -169,13 +169,13 @@ pub fn normalize(path:str -- norm:str) {
 	// Loop to handle triple+ slashes (/// -> // -> /)
 	path -> result
 	loop {
-		result "//" str::contains 0 == if { break }
-		result "//" "/" str::replace! -> result
+		result "//" strings::contains 0 == if { break }
+		result "//" "/" strings::replace! -> result
 	}
-	result str::len -> rlen
+	result strings::len -> rlen
 	rlen 1 > if {
-		result rlen 1 - str::char_at! 47 == if {
-			result 0 rlen 1 - str::substring! -> result
+		result rlen 1 - strings::char_at! 47 == if {
+			result 0 rlen 1 - strings::substring! -> result
 		}
 	}
 	result
@@ -194,16 +194,16 @@ pub fn with_ext(path:str newext:str -- result:str) {
 	// Get directory
 	path dirname -> dir
 	// Ensure extension starts with dot
-	newext str::len 0 > if {
-		newext 0 str::char_at! 46 != if {
-			"." newext str::concat -> newext
+	newext strings::len 0 > if {
+		newext 0 strings::char_at! 46 != if {
+			"." newext strings::concat -> newext
 		}
 	}
 	// Build result
-	dir "." str::compare 0 == if {
-		base newext str::concat
+	dir "." strings::compare 0 == if {
+		base newext strings::concat
 	} else {
-		dir "/" str::concat base str::concat newext str::concat
+		dir "/" strings::concat base strings::concat newext strings::concat
 	}
 }
 
@@ -213,7 +213,7 @@ pub fn with_ext(path:str newext:str -- result:str) {
 /// @example "file.txt" path::has_ext -> 1
 pub fn has_ext(path:str -- result:i64) {
 	-> path
-	path ext str::len 0 >
+	path ext strings::len 0 >
 }
 
 /// Get parent directory (same as dirname but clearer name).
@@ -240,12 +240,12 @@ pub fn is_relative(path:str -- result:i64) {
 pub fn has_extension(path:str extension:str -- result:i64) {
 	-> extension -> path
 	// Normalize extension to include dot
-	extension str::len 0 > if {
-		extension 0 str::char_at! 46 != if {
-			"." extension str::concat -> extension
+	extension strings::len 0 > if {
+		extension 0 strings::char_at! 46 != if {
+			"." extension strings::concat -> extension
 		}
 	}
-	path ext extension str::compare 0 ==
+	path ext extension strings::compare 0 ==
 }
 
 /// Get the depth of a path (number of components).
@@ -254,7 +254,7 @@ pub fn has_extension(path:str extension:str -- result:i64) {
 /// @example "/home/user/file.txt" path::depth -> 3
 pub fn depth(path:str -- depth:i64) {
 	-> path
-	path str::len -> plen
+	path strings::len -> plen
 	plen 0 == if {
 		0
 	} else {
@@ -263,7 +263,7 @@ pub fn depth(path:str -- depth:i64) {
 		0 -> in_component
 		loop {
 			i plen >= if { break }
-			path i str::char_at! -> ch
+			path i strings::char_at! -> ch
 			ch 47 == if {
 				in_component 1 == if {
 					0 -> in_component
@@ -287,16 +287,16 @@ pub fn depth(path:str -- depth:i64) {
 /// @example "/home/user/file.txt" "/home" path::starts_with -> 1
 pub fn starts_with(path:str prefix:str -- result:i64) {
 	-> prefix -> path
-	path prefix str::starts_with -> result
+	path prefix strings::starts_with -> result
 	// Also check it's at a path boundary
 	result if {
-		prefix str::len -> plen
-		path str::len -> pathlen
+		prefix strings::len -> plen
+		path strings::len -> pathlen
 		plen pathlen == if {
 			1 -> result
 		} else {
 			pathlen plen > if {
-				path plen str::char_at! 47 == -> result
+				path plen strings::char_at! 47 == -> result
 			}
 		}
 	}
@@ -311,14 +311,14 @@ pub fn starts_with(path:str prefix:str -- result:i64) {
 pub fn strip_prefix(path:str prefix:str -- result:str) {
 	-> prefix -> path
 	path prefix starts_with if {
-		prefix str::len -> plen
-		path str::len -> pathlen
+		prefix strings::len -> plen
+		path strings::len -> pathlen
 		plen pathlen < if {
 			// Skip the prefix and any leading slash
-			path plen str::char_at! 47 == if {
+			path plen strings::char_at! 47 == if {
 				plen 1 + -> plen
 			}
-			path plen pathlen plen - str::substring!
+			path plen pathlen plen - strings::substring!
 		} else {
 			""
 		}

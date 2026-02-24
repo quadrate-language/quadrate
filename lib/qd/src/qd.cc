@@ -596,7 +596,7 @@ void qd_build(qd_module* mod) {
 
 		// Link with static libraries (whole-archive to include all symbols)
 		std::vector<std::string> libs = {
-				"qdrt", "qdmath", "qdfmt", "qdio", "qdos", "qdstr", "qdtime", "qdmem", "qdstrconv"};
+				"qdrt", "qdmath", "qdfmt", "qdio", "qdos", "qdstrings", "qdtime", "qdmem", "qdstrconv"};
 		for (const auto& lib : libs) {
 			std::string libPath = findStaticLib(lib_dir, lib);
 			if (!libPath.empty()) {

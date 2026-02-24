@@ -307,12 +307,12 @@ fn main() {
 
         # Use a temp path that doesn't need to exist on disk
         uri = "file:///tmp/test_links.qd"
-        content = '''use str
+        content = '''use strings
 use math
 use io
 
 fn main() {
-    "hello" str::upper print nl
+    "hello" strings::upper print nl
 }
 '''
         self.session.open_document(uri, content)

@@ -108,7 +108,7 @@ A complete example combining input and parsing:
 
 ```qd
 use io
-use str
+use strings
 
 fn main() {
 	loop {
@@ -116,7 +116,7 @@ fn main() {
 		io::readline switch {
 			Ok {
 				-> line
-				line str::len 0 == if {
+				line strings::len 0 == if {
 					continue
 				}
 				line cast<f64> -> num

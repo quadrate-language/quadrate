@@ -1,6 +1,6 @@
 // Test: ? with imported C stdlib functions (they push their own success status)
 use strconv
-use str
+use strings
 
 fn parse_two(a:str b:str -- x:i64 y:i64)! {
 	-> b -> a
@@ -13,7 +13,7 @@ fn parse_two(a:str b:str -- x:i64 y:i64)! {
 
 fn safe_char_at(s:str idx:i64 -- ch:i64)! {
 	-> idx -> s
-	s idx str::char_at?
+	s idx strings::char_at?
 }
 
 fn main() {

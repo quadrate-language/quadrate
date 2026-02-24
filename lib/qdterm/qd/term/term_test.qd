@@ -1,51 +1,51 @@
 // Unit tests for the term module
 use term
-use str
+use strings
 use testing
 
 test "term::Reset constant" {
-	term::Reset str::len 0 > testing::assert_true
+	term::Reset strings::len 0 > testing::assert_true
 	term::Reset "\x1b[0m" testing::assert_eq
 }
 
 test "term::text styles" {
-	term::Bold str::len 0 > testing::assert_true
-	term::Dim str::len 0 > testing::assert_true
-	term::Italic str::len 0 > testing::assert_true
-	term::Underline str::len 0 > testing::assert_true
+	term::Bold strings::len 0 > testing::assert_true
+	term::Dim strings::len 0 > testing::assert_true
+	term::Italic strings::len 0 > testing::assert_true
+	term::Underline strings::len 0 > testing::assert_true
 }
 
 test "term::foreground colors" {
-	term::Black str::len 0 > testing::assert_true
-	term::Red str::len 0 > testing::assert_true
-	term::Green str::len 0 > testing::assert_true
-	term::Yellow str::len 0 > testing::assert_true
-	term::Blue str::len 0 > testing::assert_true
-	term::Magenta str::len 0 > testing::assert_true
-	term::Cyan str::len 0 > testing::assert_true
-	term::White str::len 0 > testing::assert_true
+	term::Black strings::len 0 > testing::assert_true
+	term::Red strings::len 0 > testing::assert_true
+	term::Green strings::len 0 > testing::assert_true
+	term::Yellow strings::len 0 > testing::assert_true
+	term::Blue strings::len 0 > testing::assert_true
+	term::Magenta strings::len 0 > testing::assert_true
+	term::Cyan strings::len 0 > testing::assert_true
+	term::White strings::len 0 > testing::assert_true
 }
 
 test "term::bright foreground colors" {
-	term::BrightBlack str::len 0 > testing::assert_true
-	term::BrightRed str::len 0 > testing::assert_true
-	term::BrightGreen str::len 0 > testing::assert_true
-	term::BrightYellow str::len 0 > testing::assert_true
-	term::BrightBlue str::len 0 > testing::assert_true
-	term::BrightMagenta str::len 0 > testing::assert_true
-	term::BrightCyan str::len 0 > testing::assert_true
-	term::BrightWhite str::len 0 > testing::assert_true
+	term::BrightBlack strings::len 0 > testing::assert_true
+	term::BrightRed strings::len 0 > testing::assert_true
+	term::BrightGreen strings::len 0 > testing::assert_true
+	term::BrightYellow strings::len 0 > testing::assert_true
+	term::BrightBlue strings::len 0 > testing::assert_true
+	term::BrightMagenta strings::len 0 > testing::assert_true
+	term::BrightCyan strings::len 0 > testing::assert_true
+	term::BrightWhite strings::len 0 > testing::assert_true
 }
 
 test "term::background colors" {
-	term::BgBlack str::len 0 > testing::assert_true
-	term::BgRed str::len 0 > testing::assert_true
-	term::BgGreen str::len 0 > testing::assert_true
-	term::BgYellow str::len 0 > testing::assert_true
-	term::BgBlue str::len 0 > testing::assert_true
-	term::BgMagenta str::len 0 > testing::assert_true
-	term::BgCyan str::len 0 > testing::assert_true
-	term::BgWhite str::len 0 > testing::assert_true
+	term::BgBlack strings::len 0 > testing::assert_true
+	term::BgRed strings::len 0 > testing::assert_true
+	term::BgGreen strings::len 0 > testing::assert_true
+	term::BgYellow strings::len 0 > testing::assert_true
+	term::BgBlue strings::len 0 > testing::assert_true
+	term::BgMagenta strings::len 0 > testing::assert_true
+	term::BgCyan strings::len 0 > testing::assert_true
+	term::BgWhite strings::len 0 > testing::assert_true
 }
 
 test "term::styles exact codes" {
@@ -89,15 +89,15 @@ test "term::background exact codes" {
 }
 
 test "term::concatenation works" {
-	term::Bold term::Red str::concat -> styled
-	styled str::len term::Bold str::len term::Red str::len + testing::assert_eq
+	term::Bold term::Red strings::concat -> styled
+	styled strings::len term::Bold strings::len term::Red strings::len + testing::assert_eq
 }
 
 test "term::all codes start with escape" {
-	term::Reset "\x1b[" str::starts_with testing::assert_true
-	term::Bold "\x1b[" str::starts_with testing::assert_true
-	term::Red "\x1b[" str::starts_with testing::assert_true
-	term::BgBlue "\x1b[" str::starts_with testing::assert_true
+	term::Reset "\x1b[" strings::starts_with testing::assert_true
+	term::Bold "\x1b[" strings::starts_with testing::assert_true
+	term::Red "\x1b[" strings::starts_with testing::assert_true
+	term::BgBlue "\x1b[" strings::starts_with testing::assert_true
 }
 
 test "term::clear screen codes" {
@@ -141,10 +141,10 @@ test "term::alternate screen codes" {
 }
 
 test "term::all cursor codes start with escape" {
-	term::Clear "\x1b[" str::starts_with testing::assert_true
-	term::Home "\x1b[" str::starts_with testing::assert_true
-	term::CursorUp "\x1b[" str::starts_with testing::assert_true
-	term::AltScreen "\x1b[" str::starts_with testing::assert_true
+	term::Clear "\x1b[" strings::starts_with testing::assert_true
+	term::Home "\x1b[" strings::starts_with testing::assert_true
+	term::CursorUp "\x1b[" strings::starts_with testing::assert_true
+	term::AltScreen "\x1b[" strings::starts_with testing::assert_true
 }
 
 test "term::fg256 format" {
@@ -193,8 +193,8 @@ test "term::left format" {
 }
 
 test "term::all color functions start with escape" {
-	196 term::fg256 "\x1b[" str::starts_with testing::assert_true
-	21 term::bg256 "\x1b[" str::starts_with testing::assert_true
-	255 0 0 term::rgb "\x1b[" str::starts_with testing::assert_true
-	0 0 255 term::bg_rgb "\x1b[" str::starts_with testing::assert_true
+	196 term::fg256 "\x1b[" strings::starts_with testing::assert_true
+	21 term::bg256 "\x1b[" strings::starts_with testing::assert_true
+	255 0 0 term::rgb "\x1b[" strings::starts_with testing::assert_true
+	0 0 255 term::bg_rgb "\x1b[" strings::starts_with testing::assert_true
 }

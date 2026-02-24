@@ -1,6 +1,6 @@
 // Test unicode module - constants and character classification
 use unicode
-use str
+use strings
 
 fn main() {
 	"=== Control character constants ===" print nl
@@ -56,8 +56,8 @@ fn main() {
 	unicode::space unicode::is_digit print nl
 
 	"=== Using constants to build strings ===" print nl
-	unicode::H str::from_char print
-	unicode::i str::from_char print nl
+	unicode::H strings::from_char print
+	unicode::i strings::from_char print nl
 
 	"done" print nl
 }

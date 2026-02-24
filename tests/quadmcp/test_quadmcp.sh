@@ -210,9 +210,9 @@ run_test "Get module: math" \
     '{"jsonrpc":"2.0","method":"tools/call","id":20,"params":{"name":"quadrate_get_module","arguments":{"name":"math"}}}' \
     'name.*math'
 
-run_test "Get module: str" \
-    '{"jsonrpc":"2.0","method":"tools/call","id":21,"params":{"name":"quadrate_get_module","arguments":{"name":"str"}}}' \
-    'name.*str'
+run_test "Get module: strings" \
+    '{"jsonrpc":"2.0","method":"tools/call","id":21,"params":{"name":"quadrate_get_module","arguments":{"name":"strings"}}}' \
+    'name.*strings'
 
 run_test "Get module: io" \
     '{"jsonrpc":"2.0","method":"tools/call","id":22,"params":{"name":"quadrate_get_module","arguments":{"name":"io"}}}' \
@@ -269,16 +269,16 @@ run_test "Get function: math::sqrt" \
     '{"jsonrpc":"2.0","method":"tools/call","id":42,"params":{"name":"quadrate_get_function","arguments":{"module":"math","function":"sqrt"}}}' \
     'name.*sqrt.*signature'
 
-run_test "Get function: str::len" \
-    '{"jsonrpc":"2.0","method":"tools/call","id":43,"params":{"name":"quadrate_get_function","arguments":{"module":"str","function":"len"}}}' \
+run_test "Get function: strings::len" \
+    '{"jsonrpc":"2.0","method":"tools/call","id":43,"params":{"name":"quadrate_get_function","arguments":{"module":"strings","function":"len"}}}' \
     'name.*len.*signature'
 
-run_test "Get function: str::concat" \
-    '{"jsonrpc":"2.0","method":"tools/call","id":44,"params":{"name":"quadrate_get_function","arguments":{"module":"str","function":"concat"}}}' \
+run_test "Get function: strings::concat" \
+    '{"jsonrpc":"2.0","method":"tools/call","id":44,"params":{"name":"quadrate_get_function","arguments":{"module":"strings","function":"concat"}}}' \
     'name.*concat.*signature'
 
-run_test "Get function: str::split" \
-    '{"jsonrpc":"2.0","method":"tools/call","id":45,"params":{"name":"quadrate_get_function","arguments":{"module":"str","function":"split"}}}' \
+run_test "Get function: strings::split" \
+    '{"jsonrpc":"2.0","method":"tools/call","id":45,"params":{"name":"quadrate_get_function","arguments":{"module":"strings","function":"split"}}}' \
     'name.*split.*signature'
 
 run_test "Get function: io::read_file" \
@@ -663,9 +663,9 @@ run_test "Search: alloc (finds mem module)" \
     '{"jsonrpc":"2.0","method":"tools/call","id":159,"params":{"name":"quadrate_search","arguments":{"query":"alloc"}}}' \
     'mem module'
 
-run_test "Search: concat (finds str module)" \
+run_test "Search: concat (finds strings module)" \
     '{"jsonrpc":"2.0","method":"tools/call","id":160,"params":{"name":"quadrate_search","arguments":{"query":"concat"}}}' \
-    'str module'
+    'strings module'
 
 run_test "Search: path (finds path module)" \
     '{"jsonrpc":"2.0","method":"tools/call","id":161,"params":{"name":"quadrate_search","arguments":{"query":"basename"}}}' \
@@ -750,8 +750,8 @@ run_test "Special chars in search: underscore" \
     'io module'
 
 run_test "Special chars in search: double colon" \
-    '{"jsonrpc":"2.0","method":"tools/call","id":184,"params":{"name":"quadrate_search","arguments":{"query":"str::len"}}}' \
-    'str module'
+    '{"jsonrpc":"2.0","method":"tools/call","id":184,"params":{"name":"quadrate_search","arguments":{"query":"strings::len"}}}' \
+    'strings module'
 
 run_test "Very long query returns results" \
     '{"jsonrpc":"2.0","method":"tools/call","id":185,"params":{"name":"quadrate_search","arguments":{"query":"thisisaverylongquerythatprobablywontmatchanything"}}}' \
@@ -840,7 +840,7 @@ run_test "Find function: rd_fl (fuzzy match for read_file)" \
 
 run_test "Find function: concat" \
     '{"jsonrpc":"2.0","method":"tools/call","id":302,"params":{"name":"quadrate_find_function","arguments":{"query":"concat"}}}' \
-    'str::concat'
+    'strings::concat'
 
 run_test "Find function: case insensitive (SIN)" \
     '{"jsonrpc":"2.0","method":"tools/call","id":303,"params":{"name":"quadrate_find_function","arguments":{"query":"SIN"}}}' \
@@ -1363,7 +1363,7 @@ run_test "Type conversion: str to ptr" \
 
 run_test "Type conversion: ptr to str" \
     '{"jsonrpc":"2.0","method":"tools/call","id":387,"params":{"name":"quadrate_type_conversion","arguments":{"from":"ptr","to":"str"}}}' \
-    'str::from_bytes'
+    'strings::from_bytes'
 
 run_test "Type conversion: bool to i64" \
     '{"jsonrpc":"2.0","method":"tools/call","id":388,"params":{"name":"quadrate_type_conversion","arguments":{"from":"bool","to":"i64"}}}' \
@@ -1408,7 +1408,7 @@ run_test "Type conversion: f64 to bool" \
 
 run_test "Type conversion: str to bool" \
     '{"jsonrpc":"2.0","method":"tools/call","id":454,"params":{"name":"quadrate_type_conversion","arguments":{"from":"str","to":"bool"}}}' \
-    'str::len'
+    'strings::len'
 
 run_test "Type conversion: bool to str" \
     '{"jsonrpc":"2.0","method":"tools/call","id":455,"params":{"name":"quadrate_type_conversion","arguments":{"from":"bool","to":"str"}}}' \
@@ -1449,11 +1449,11 @@ run_test "Type conversion: str to ptr notes strings are ptrs" \
 
 run_test "Type conversion: ptr to str shows from_bytes" \
     '{"jsonrpc":"2.0","method":"tools/call","id":464,"params":{"name":"quadrate_type_conversion","arguments":{"from":"ptr","to":"str"}}}' \
-    'str::from_bytes'
+    'strings::from_bytes'
 
 run_test "Type conversion: ptr to str shows from_cstr" \
     '{"jsonrpc":"2.0","method":"tools/call","id":465,"params":{"name":"quadrate_type_conversion","arguments":{"from":"ptr","to":"str"}}}' \
-    'str::from_cstr'
+    'strings::from_cstr'
 
 run_test "Type conversion: bool to i64 notes native" \
     '{"jsonrpc":"2.0","method":"tools/call","id":466,"params":{"name":"quadrate_type_conversion","arguments":{"from":"bool","to":"i64"}}}' \

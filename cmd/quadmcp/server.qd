@@ -26,29 +26,29 @@ fn mcp_prompts_get(id:str body:str -- response:str) {
 	found 0 == if {
 		id "-32602" "Missing required parameter: name" rpc_error
 	} else {
-		name "explain_code" str::compare 0 == if {
+		name "explain_code" strings::compare 0 == if {
 			args "code" json::get_string -> _ -> code
 			"role" "user" json::kv
-			"content" "Please explain this Quadrate code step by step. For each line, describe:\n1. What values are pushed/popped from the stack\n2. What the operation does\n3. The stack state after the operation\n\nCode:\n```quadrate\n" code str::concat "\n```\n\nQuadrate is a stack-based language where:\n- Values are pushed onto a stack\n- Operations consume values from the stack and push results\n- -> binds stack top to a variable\n- @ accesses struct fields\n- Functions have signatures like (inputs -- outputs)" str::concat json::kv json::join
+			"content" "Please explain this Quadrate code step by step. For each line, describe:\n1. What values are pushed/popped from the stack\n2. What the operation does\n3. The stack state after the operation\n\nCode:\n```quadrate\n" code strings::concat "\n```\n\nQuadrate is a stack-based language where:\n- Values are pushed onto a stack\n- Operations consume values from the stack and push results\n- -> binds stack top to a variable\n- @ accesses struct fields\n- Functions have signatures like (inputs -- outputs)" strings::concat json::kv json::join
 			json::obj json::arr -> messages
 
 			"messages" messages json::kv_raw json::obj -> result
 			id result rpc_result
 		} else {
-			name "convert_to_idiomatic" str::compare 0 == if {
+			name "convert_to_idiomatic" strings::compare 0 == if {
 				args "code" json::get_string -> _ -> code
 				"role" "user" json::kv
-				"content" "Please convert this Quadrate code to more idiomatic style:\n\n```quadrate\n" code str::concat "\n```\n\nConsider:\n1. Using stack operations (dup, swap, over, rot) instead of temporary variables\n2. Using -> _ to discard unused values\n3. Combining operations where possible\n4. Using appropriate built-in functions\n5. Proper error handling with switch" str::concat json::kv json::join
+				"content" "Please convert this Quadrate code to more idiomatic style:\n\n```quadrate\n" code strings::concat "\n```\n\nConsider:\n1. Using stack operations (dup, swap, over, rot) instead of temporary variables\n2. Using -> _ to discard unused values\n3. Combining operations where possible\n4. Using appropriate built-in functions\n5. Proper error handling with switch" strings::concat json::kv json::join
 				json::obj json::arr -> messages
 
 				"messages" messages json::kv_raw json::obj -> result
 				id result rpc_result
 			} else {
-				name "debug_stack" str::compare 0 == if {
+				name "debug_stack" strings::compare 0 == if {
 					args "code" json::get_string -> _ -> code
 					args "error" json::get_string -> _ -> error
 					"role" "user" json::kv
-					"content" "Please help debug this Quadrate code that has a stack issue:\n\n```quadrate\n" code str::concat "\n```\n\nError/Issue: " str::concat error str::concat "\n\nPlease:\n1. Trace the stack state through each operation\n2. Identify where the stack becomes incorrect\n3. Suggest a fix\n4. Common issues: stack underflow, wrong order, forgetting to drop" str::concat json::kv json::join
+					"content" "Please help debug this Quadrate code that has a stack issue:\n\n```quadrate\n" code strings::concat "\n```\n\nError/Issue: " strings::concat error strings::concat "\n\nPlease:\n1. Trace the stack state through each operation\n2. Identify where the stack becomes incorrect\n3. Suggest a fix\n4. Common issues: stack underflow, wrong order, forgetting to drop" strings::concat json::kv json::join
 					json::obj json::arr -> messages
 
 					"messages" messages json::kv_raw json::obj -> result
@@ -68,8 +68,8 @@ fn mcp_ping(id:str -- response:str) {
 
 fn is_notification(method:str -- is_notif:i64) {
 	-> method
-	method str::len 14 >= if {
-		method 0 14 str::substring! "notifications/" str::compare 0 ==
+	method strings::len 14 >= if {
+		method 0 14 strings::substring! "notifications/" strings::compare 0 ==
 	} else {
 		0
 	}
@@ -109,7 +109,7 @@ fn run_stdio(ds:ptr -- ) {
 	-> ds
 	loop {
 		io::readline switch {
-			Ok { -> line line str::len 0 > if { line "method" json::get_string -> found -> method found 0 == if { "null" "-32600" "Invalid request: missing method" rpc_error print nl io::flush } else { line extract_id -> id ds method id line dispatch -> response response str::len 0 > if { response print nl io::flush } } } }
+			Ok { -> line line strings::len 0 > if { line "method" json::get_string -> found -> method found 0 == if { "null" "-32600" "Invalid request: missing method" rpc_error print nl io::flush } else { line extract_id -> id ds method id line dispatch -> response response strings::len 0 > if { response print nl io::flush } } } }
 			_ { break }
 		}
 	}
@@ -127,11 +127,11 @@ fn handle_mcp(c:ptr -- ) {
 
 	body extract_id -> id
 
-	method str::len 0 == if {
+	method strings::len 0 == if {
 		c http::StatusBadRequest id "-32600" "Invalid request" rpc_error http::json
 	} else {
 		ds method id body dispatch -> response
-		response str::len 0 > if {
+		response strings::len 0 > if {
 			c http::StatusOK response http::json
 		} else {
 			c 204 "" http::string

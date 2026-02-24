@@ -37,7 +37,7 @@ declare -A STDLIB_MODULES=(
     ["rand"]="lib/qdrand/qd/rand/rand.qd"
     ["sb"]="lib/qdsb/qd/sb/sb.qd"
     ["signal"]="lib/qdsignal/qd/signal/signal.qd"
-    ["str"]="lib/qdstr/qd/str/str.qd"
+    ["strings"]="lib/qdstrings/qd/strings/strings.qd"
     ["strconv"]="lib/qdstrconv/qd/strconv/strconv.qd"
     ["term"]="lib/qdterm/qd/term/term.qd"
     ["testing"]="lib/qdtesting/qd/testing/testing.qd"
@@ -920,11 +920,11 @@ The Quadrate standard library provides modules for common programming tasks.
 Import a module with `use`:
 
 ```qd
-use str
+use strings
 use math
 
 fn main() {
-	"hello" str::upper print nl  // HELLO
+	"hello" strings::upper print nl  // HELLO
 	16.0 math::sqrt print nl  // 4
 }
 ```
@@ -934,10 +934,10 @@ fn main() {
 Functions marked with `!` can fail and require error handling:
 
 ```qd
-use str
+use strings
 
 fn main() {
-	"hello" 0 3 str::substring! print nl  // "hel"
+	"hello" 0 3 strings::substring! print nl  // "hel"
 }
 ```
 

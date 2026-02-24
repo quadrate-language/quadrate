@@ -1,6 +1,6 @@
 {
   "name": "sb",
-  "description": "StringBuilder - Efficient string building. Avoids O(n²) cost of repeated str::concat.",
+  "description": "StringBuilder - Efficient string building. Avoids O(n²) cost of repeated strings::concat.",
   "constants": [
 
   ],

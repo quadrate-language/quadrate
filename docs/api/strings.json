@@ -1,5 +1,5 @@
 {
-  "name": "str",
+  "name": "strings",
   "description": "String manipulation functions. Error codes: Ok=1 (success), specific errors start at 2",
   "constants": [
     {
@@ -30,7 +30,7 @@
       "params": [{"name": "str", "type": "str", "description": "Input string"}, {"name": "index", "type": "i64", "description": "Character position"}],
       "returns": [{"name": "char_code", "type": "i64", "description": "ASCII/UTF-8 byte value"}],
       "errors": [{"code": "ErrOutOfBounds", "description": "Index out of bounds"}],
-      "examples": ["\"hello\" 0 str::char_at! print  // 104 ('h')"]
+      "examples": ["\"hello\" 0 strings::char_at! print  // 104 ('h')"]
     },
     {
       "name": "compare",
@@ -40,7 +40,7 @@
       "params": [{"name": "str1", "type": "str", "description": "First string"}, {"name": "str2", "type": "str", "description": "Second string"}],
       "returns": [{"name": "result", "type": "i64", "description": "<0 if str1<str2, 0 if equal, >0 if str1>str2"}],
       "errors": [],
-      "examples": ["\"abc\" \"abd\" str::compare print  // -1"]
+      "examples": ["\"abc\" \"abd\" strings::compare print  // -1"]
     },
     {
       "name": "concat",
@@ -50,7 +50,7 @@
       "params": [{"name": "str1", "type": "str", "description": "First string"}, {"name": "str2", "type": "str", "description": "Second string"}],
       "returns": [{"name": "result", "type": "str", "description": "Combined string"}],
       "errors": [],
-      "examples": ["\"hello\" \" world\" str::concat print  // \"hello world\""]
+      "examples": ["\"hello\" \" world\" strings::concat print  // \"hello world\""]
     },
     {
       "name": "contains",
@@ -60,7 +60,7 @@
       "params": [{"name": "str", "type": "str", "description": "String to search in"}, {"name": "needle", "type": "str", "description": "Substring to find"}],
       "returns": [{"name": "result", "type": "i64", "description": "1 if found, 0 otherwise"}],
       "errors": [],
-      "examples": ["\"hello\" \"ell\" str::contains print  // 1"]
+      "examples": ["\"hello\" \"ell\" strings::contains print  // 1"]
     },
     {
       "name": "ends_with",
@@ -70,7 +70,7 @@
       "params": [{"name": "str", "type": "str", "description": "String to check"}, {"name": "suffix", "type": "str", "description": "Suffix to match"}],
       "returns": [{"name": "result", "type": "i64", "description": "1 if matches, 0 otherwise"}],
       "errors": [],
-      "examples": ["\"hello\" \"lo\" str::ends_with print  // 1"]
+      "examples": ["\"hello\" \"lo\" strings::ends_with print  // 1"]
     },
     {
       "name": "from_char",
@@ -80,7 +80,7 @@
       "params": [{"name": "char_code", "type": "i64", "description": "ASCII/UTF-8 byte value"}],
       "returns": [{"name": "str", "type": "str", "description": "Single character string"}],
       "errors": [],
-      "examples": ["65 str::from_char print  // \"A\""]
+      "examples": ["65 strings::from_char print  // \"A\""]
     },
     {
       "name": "from_ptr",
@@ -90,7 +90,7 @@
       "params": [{"name": "ptr", "type": "ptr", "description": "Pointer to null-terminated C string"}],
       "returns": [{"name": "str", "type": "str", "description": "Quadrate string"}],
       "errors": [],
-      "examples": ["entries 0 mem::get_ptr str::from_ptr print"]
+      "examples": ["entries 0 mem::get_ptr strings::from_ptr print"]
     },
     {
       "name": "index_of_from",
@@ -100,7 +100,7 @@
       "params": [{"name": "haystack", "type": "str", "description": "String to search in"}, {"name": "needle", "type": "str", "description": "Substring to find"}, {"name": "start", "type": "i64", "description": "Starting position"}],
       "returns": [{"name": "index", "type": "i64", "description": "Index of match, -1 if not found"}],
       "errors": [],
-      "examples": ["\"hello hello\" \"hello\" 1 str::index_of_from print  // 6"]
+      "examples": ["\"hello hello\" \"hello\" 1 strings::index_of_from print  // 6"]
     },
     {
       "name": "index_of",
@@ -110,7 +110,7 @@
       "params": [{"name": "haystack", "type": "str", "description": "String to search in"}, {"name": "needle", "type": "str", "description": "Substring to find"}],
       "returns": [{"name": "index", "type": "i64", "description": "Index of first match, -1 if not found"}],
       "errors": [],
-      "examples": ["\"hello\" \"ll\" str::index_of print  // 2"]
+      "examples": ["\"hello\" \"ll\" strings::index_of print  // 2"]
     },
     {
       "name": "join",
@@ -120,7 +120,7 @@
       "params": [{"name": "parts", "type": "ptr", "description": "Array of string pointers"}, {"name": "count", "type": "i64", "description": "Number of strings"}, {"name": "delim", "type": "str", "description": "Delimiter string"}],
       "returns": [{"name": "result", "type": "str", "description": "Joined string"}],
       "errors": [{"code": "ErrAlloc", "description": "Memory allocation failed"}],
-      "examples": ["parts count \"/\" str::join! -> path"]
+      "examples": ["parts count \"/\" strings::join! -> path"]
     },
     {
       "name": "len",
@@ -130,7 +130,7 @@
       "params": [{"name": "str", "type": "str", "description": "Input string"}],
       "returns": [{"name": "len", "type": "i64", "description": "Length in bytes"}],
       "errors": [],
-      "examples": ["\"hello\" str::len print  // 5"]
+      "examples": ["\"hello\" strings::len print  // 5"]
     },
     {
       "name": "lower",
@@ -140,7 +140,7 @@
       "params": [{"name": "str", "type": "str", "description": "Input string"}],
       "returns": [{"name": "result", "type": "str", "description": "Lowercase string"}],
       "errors": [],
-      "examples": ["\"HELLO\" str::lower print  // \"hello\""]
+      "examples": ["\"HELLO\" strings::lower print  // \"hello\""]
     },
     {
       "name": "replace",
@@ -150,7 +150,7 @@
       "params": [{"name": "str", "type": "str", "description": "Source string"}, {"name": "old", "type": "str", "description": "Substring to replace"}, {"name": "new", "type": "str", "description": "Replacement string"}],
       "returns": [{"name": "result", "type": "str", "description": "String with replacements"}],
       "errors": [{"code": "ErrAlloc", "description": "Memory allocation failed"}],
-      "examples": ["\"hello\" \"l\" \"L\" str::replace! print  // \"heLLo\""]
+      "examples": ["\"hello\" \"l\" \"L\" strings::replace! print  // \"heLLo\""]
     },
     {
       "name": "sort",
@@ -160,7 +160,7 @@
       "params": [{"name": "arr", "type": "ptr", "description": "Array of string pointers"}, {"name": "count", "type": "i64", "description": "Number of elements"}],
       "returns": [],
       "errors": [],
-      "examples": ["entries count str::sort"]
+      "examples": ["entries count strings::sort"]
     },
     {
       "name": "sort_desc",
@@ -170,7 +170,7 @@
       "params": [{"name": "arr", "type": "ptr", "description": "Array of string pointers"}, {"name": "count", "type": "i64", "description": "Number of elements"}],
       "returns": [],
       "errors": [],
-      "examples": ["entries count str::sort_desc"]
+      "examples": ["entries count strings::sort_desc"]
     },
     {
       "name": "split",
@@ -180,7 +180,7 @@
       "params": [{"name": "str", "type": "str", "description": "String to split"}, {"name": "delim", "type": "str", "description": "Delimiter string"}],
       "returns": [{"name": "parts", "type": "ptr", "description": "Array of string parts"}, {"name": "count", "type": "i64", "description": "Number of parts"}],
       "errors": [{"code": "ErrAlloc", "description": "Memory allocation failed"}],
-      "examples": ["\"a,b,c\" \",\" str::split!  // parts=[\"a\",\"b\",\"c\"], count=3"]
+      "examples": ["\"a,b,c\" \",\" strings::split!  // parts=[\"a\",\"b\",\"c\"], count=3"]
     },
     {
       "name": "starts_with",
@@ -190,7 +190,7 @@
       "params": [{"name": "str", "type": "str", "description": "String to check"}, {"name": "prefix", "type": "str", "description": "Prefix to match"}],
       "returns": [{"name": "result", "type": "i64", "description": "1 if matches, 0 otherwise"}],
       "errors": [],
-      "examples": ["\"hello\" \"hel\" str::starts_with print  // 1"]
+      "examples": ["\"hello\" \"hel\" strings::starts_with print  // 1"]
     },
     {
       "name": "substring",
@@ -200,7 +200,7 @@
       "params": [{"name": "str", "type": "str", "description": "Source string"}, {"name": "start", "type": "i64", "description": "Starting index"}, {"name": "length", "type": "i64", "description": "Number of characters"}],
       "returns": [{"name": "result", "type": "str", "description": "Extracted substring"}],
       "errors": [{"code": "ErrOutOfBounds", "description": "Index out of bounds"}],
-      "examples": ["\"hello\" 1 3 str::substring! print  // \"ell\""]
+      "examples": ["\"hello\" 1 3 strings::substring! print  // \"ell\""]
     },
     {
       "name": "trim",
@@ -210,7 +210,7 @@
       "params": [{"name": "str", "type": "str", "description": "Input string"}],
       "returns": [{"name": "result", "type": "str", "description": "Trimmed string"}],
       "errors": [],
-      "examples": ["\"  hello  \" str::trim print  // \"hello\""]
+      "examples": ["\"  hello  \" strings::trim print  // \"hello\""]
     },
     {
       "name": "upper",
@@ -220,7 +220,7 @@
       "params": [{"name": "str", "type": "str", "description": "Input string"}],
       "returns": [{"name": "result", "type": "str", "description": "Uppercase string"}],
       "errors": [],
-      "examples": ["\"hello\" str::upper print  // \"HELLO\""]
+      "examples": ["\"hello\" strings::upper print  // \"HELLO\""]
     }
   ]
 }

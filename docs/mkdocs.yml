@@ -74,7 +74,7 @@ nav:
   - Standard library:
       - Overview: stdlib/index.md
       - Text & strings:
-          - str: stdlib/str.md
+          - strings: stdlib/strings.md
           - strconv: stdlib/strconv.md
           - fmt: stdlib/fmt.md
           - sb: stdlib/sb.md

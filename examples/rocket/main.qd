@@ -6,7 +6,7 @@
 use fmt
 use io
 use math
-use str
+use strings
 use term
 use time
 
@@ -35,17 +35,17 @@ fn progress_bar(pct:f64 width:f64 -- bar:str) {
 		i filled >= if {
 			break
 		}
-		bar "#" str::concat -> bar
+		bar "#" strings::concat -> bar
 		i 1.0 + -> i
 	}
 	loop {
 		i width >= if {
 			break
 		}
-		bar "-" str::concat -> bar
+		bar "-" strings::concat -> bar
 		i 1.0 + -> i
 	}
-	bar "]" str::concat -> bar
+	bar "]" strings::concat -> bar
 	bar
 }
 

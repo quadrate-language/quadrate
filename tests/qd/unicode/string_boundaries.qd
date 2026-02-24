@@ -1,39 +1,39 @@
 // Test string boundary conditions
-use str
+use strings
 
 fn main() {
 	// Very long strings
 	"=== Long strings ===" print nl
-	"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa" str::len print nl  // 50
-	"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA" str::len print nl  // 100
+	"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa" strings::len print nl  // 50
+	"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA" strings::len print nl  // 100
 
 	// Single character strings
 	"=== Single char ===" print nl
 	"a" print nl
 	"Z" print nl
 	"0" print nl
-	" " str::len print nl   // 1 (print length instead of char)
+	" " strings::len print nl   // 1 (print length instead of char)
 	"!" print nl
 
 	// Only whitespace
 	"=== Whitespace only ===" print nl
-	" " str::len print nl
-	"  " str::len print nl
-	"\t" str::len print nl
-	"\n" str::len print nl
-	"   " str::trim str::len print nl  // 0 after trim
+	" " strings::len print nl
+	"  " strings::len print nl
+	"\t" strings::len print nl
+	"\n" strings::len print nl
+	"   " strings::trim strings::len print nl  // 0 after trim
 
 	// String with all special chars
 	"=== Special chars ===" print nl
-	"!@#$%^&*()" str::len print nl
-	"<>[]{}|\\" str::len print nl
-	".,;:!?'" str::len print nl
+	"!@#$%^&*()" strings::len print nl
+	"<>[]{}|\\" strings::len print nl
+	".,;:!?'" strings::len print nl
 
 	// Repeated patterns
 	"=== Patterns ===" print nl
-	"abcabcabc" "abc" str::contains print nl
-	"abcabcabc" "abc" str::starts_with print nl
-	"abcabcabc" "abc" str::ends_with print nl
+	"abcabcabc" "abc" strings::contains print nl
+	"abcabcabc" "abc" strings::starts_with print nl
+	"abcabcabc" "abc" strings::ends_with print nl
 
 	"done" print nl
 }

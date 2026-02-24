@@ -1,26 +1,26 @@
 /**
- * @file str.h
- * @brief String manipulation functions for Quadrate (str:: module)
+ * @file strings.h
+ * @brief String manipulation functions for Quadrate (strings:: module)
  *
  * Provides string operations including length, concatenation, search, and case conversion.
  */
 
-#ifndef QD_QDSTR_STR_H
-#define QD_QDSTR_STR_H
+#ifndef QD_QDSTRINGS_STRINGS_H
+#define QD_QDSTRINGS_STRINGS_H
 
 #include <qdrt/context.h>
 #include <qdrt/exec_result.h>
 
 /**
- * @brief Error codes for str module
+ * @brief Error codes for strings module
  *
- * These match the constants defined in str/module.qd
+ * These match the constants defined in strings/module.qd
  * Ok=1 (success), specific errors start at 2
  */
-#define STR_ERR_OK 1			/**< Success (matches builtin Ok) */
-#define STR_ERR_OUT_OF_BOUNDS 2 /**< Index out of bounds */
-#define STR_ERR_ALLOC 3			/**< Memory allocation failed */
-#define STR_ERR_INVALID_ARG 4	/**< Invalid argument */
+#define STRINGS_ERR_OK 1			/**< Success (matches builtin Ok) */
+#define STRINGS_ERR_OUT_OF_BOUNDS 2 /**< Index out of bounds */
+#define STRINGS_ERR_ALLOC 3			/**< Memory allocation failed */
+#define STRINGS_ERR_INVALID_ARG 4	/**< Invalid argument */
 
 #ifdef __cplusplus
 extern "C" {
@@ -32,7 +32,7 @@ extern "C" {
  * @param ctx Execution context
  * @return Execution result
  */
-int usr_str_len(qd_context* ctx);
+int usr_strings_len(qd_context* ctx);
 
 /**
  * @brief Concatenate two strings
@@ -42,7 +42,7 @@ int usr_str_len(qd_context* ctx);
  *
  * Creates a new string by concatenating s1 and s2.
  */
-int usr_str_concat(qd_context* ctx);
+int usr_strings_concat(qd_context* ctx);
 
 /**
  * @brief Check if string contains substring
@@ -52,7 +52,7 @@ int usr_str_concat(qd_context* ctx);
  *
  * Returns 1 if haystack contains needle, 0 otherwise.
  */
-int usr_str_contains(qd_context* ctx);
+int usr_strings_contains(qd_context* ctx);
 
 /**
  * @brief Check if string starts with prefix
@@ -62,7 +62,7 @@ int usr_str_contains(qd_context* ctx);
  *
  * Returns 1 if s starts with prefix, 0 otherwise.
  */
-int usr_str_starts_with(qd_context* ctx);
+int usr_strings_starts_with(qd_context* ctx);
 
 /**
  * @brief Check if string ends with suffix
@@ -72,7 +72,7 @@ int usr_str_starts_with(qd_context* ctx);
  *
  * Returns 1 if s ends with suffix, 0 otherwise.
  */
-int usr_str_ends_with(qd_context* ctx);
+int usr_strings_ends_with(qd_context* ctx);
 
 /**
  * @brief Convert string to uppercase
@@ -80,7 +80,7 @@ int usr_str_ends_with(qd_context* ctx);
  * @param ctx Execution context
  * @return Execution result
  */
-int usr_str_upper(qd_context* ctx);
+int usr_strings_upper(qd_context* ctx);
 
 /**
  * @brief Convert string to lowercase
@@ -88,7 +88,7 @@ int usr_str_upper(qd_context* ctx);
  * @param ctx Execution context
  * @return Execution result
  */
-int usr_str_lower(qd_context* ctx);
+int usr_strings_lower(qd_context* ctx);
 
 /**
  * @brief Trim whitespace from both ends
@@ -98,7 +98,7 @@ int usr_str_lower(qd_context* ctx);
  *
  * Removes leading and trailing whitespace characters.
  */
-int usr_str_trim(qd_context* ctx);
+int usr_strings_trim(qd_context* ctx);
 
 /**
  * @brief Extract substring
@@ -109,7 +109,7 @@ int usr_str_trim(qd_context* ctx);
  * Returns substring starting at index 'start' with length 'length'.
  * Aborts if indices are out of bounds.
  */
-int usr_str_substring(qd_context* ctx);
+int usr_strings_substring(qd_context* ctx);
 
 /**
  * @brief Split string by delimiter
@@ -119,7 +119,7 @@ int usr_str_substring(qd_context* ctx);
  *
  * Returns pointer to array of strings and count. Caller must free each string and the array.
  */
-int usr_str_split(qd_context* ctx);
+int usr_strings_split(qd_context* ctx);
 
 /**
  * @brief Replace all occurrences of substring
@@ -129,7 +129,7 @@ int usr_str_split(qd_context* ctx);
  *
  * Replaces all occurrences of 'old' with 'new' in string.
  */
-int usr_str_replace(qd_context* ctx);
+int usr_strings_replace(qd_context* ctx);
 
 /**
  * @brief Compare two strings
@@ -139,7 +139,7 @@ int usr_str_replace(qd_context* ctx);
  *
  * Returns -1 if s1 < s2, 0 if equal, 1 if s1 > s2.
  */
-int usr_str_compare(qd_context* ctx);
+int usr_strings_compare(qd_context* ctx);
 
 /**
  * @brief Get character code at index
@@ -150,7 +150,7 @@ int usr_str_compare(qd_context* ctx);
  * Returns the ASCII/Unicode code point at the given index.
  * Aborts if index is out of bounds.
  */
-int usr_str_char_at(qd_context* ctx);
+int usr_strings_char_at(qd_context* ctx);
 
 /**
  * @brief Find index of substring
@@ -161,7 +161,7 @@ int usr_str_char_at(qd_context* ctx);
  * Returns the index of the first occurrence of needle in haystack.
  * Returns -1 if not found.
  */
-int usr_str_index_of(qd_context* ctx);
+int usr_strings_index_of(qd_context* ctx);
 
 /**
  * @brief Find index of substring starting from position
@@ -173,7 +173,7 @@ int usr_str_index_of(qd_context* ctx);
  * starting the search from the given position.
  * Returns -1 if not found.
  */
-int usr_str_index_of_from(qd_context* ctx);
+int usr_strings_index_of_from(qd_context* ctx);
 
 /**
  * @brief Create a single-character string from character code
@@ -183,7 +183,7 @@ int usr_str_index_of_from(qd_context* ctx);
  *
  * Creates a string containing a single character with the given code point.
  */
-int usr_str_from_char(qd_context* ctx);
+int usr_strings_from_char(qd_context* ctx);
 
 /**
  * @brief Sort array of strings in ascending order
@@ -193,7 +193,7 @@ int usr_str_from_char(qd_context* ctx);
  *
  * Sorts the array of string pointers in place using strcmp comparison.
  */
-int usr_str_sort(qd_context* ctx);
+int usr_strings_sort(qd_context* ctx);
 
 /**
  * @brief Sort array of strings in descending order
@@ -203,7 +203,7 @@ int usr_str_sort(qd_context* ctx);
  *
  * Sorts the array of string pointers in place using strcmp comparison (reversed).
  */
-int usr_str_sort_desc(qd_context* ctx);
+int usr_strings_sort_desc(qd_context* ctx);
 
 /**
  * @brief Convert C string pointer to Quadrate string
@@ -214,7 +214,7 @@ int usr_str_sort_desc(qd_context* ctx);
  * Converts a pointer to a null-terminated C string into a Quadrate string.
  * If the pointer is NULL, returns an empty string.
  */
-int usr_str_from_ptr(qd_context* ctx);
+int usr_strings_from_ptr(qd_context* ctx);
 
 /**
  * @brief Join array of strings with delimiter
@@ -225,7 +225,7 @@ int usr_str_from_ptr(qd_context* ctx);
  * Joins an array of strings using the given delimiter.
  * Returns a new string with all parts concatenated.
  */
-int usr_str_join(qd_context* ctx);
+int usr_strings_join(qd_context* ctx);
 
 /**
  * @brief Repeat string n times
@@ -235,7 +235,7 @@ int usr_str_join(qd_context* ctx);
  *
  * Creates a new string by repeating str n times.
  */
-int usr_str_repeat(qd_context* ctx);
+int usr_strings_repeat(qd_context* ctx);
 
 /**
  * @brief Reverse a string
@@ -245,7 +245,7 @@ int usr_str_repeat(qd_context* ctx);
  *
  * Creates a new string with characters in reverse order.
  */
-int usr_str_reverse(qd_context* ctx);
+int usr_strings_reverse(qd_context* ctx);
 
 /**
  * @brief Remove leading whitespace
@@ -253,7 +253,7 @@ int usr_str_reverse(qd_context* ctx);
  * @param ctx Execution context
  * @return Execution result
  */
-int usr_str_trim_left(qd_context* ctx);
+int usr_strings_trim_left(qd_context* ctx);
 
 /**
  * @brief Remove trailing whitespace
@@ -261,7 +261,7 @@ int usr_str_trim_left(qd_context* ctx);
  * @param ctx Execution context
  * @return Execution result
  */
-int usr_str_trim_right(qd_context* ctx);
+int usr_strings_trim_right(qd_context* ctx);
 
 /**
  * @brief Count occurrences of substring
@@ -271,7 +271,7 @@ int usr_str_trim_right(qd_context* ctx);
  *
  * Returns the number of non-overlapping occurrences of needle in haystack.
  */
-int usr_str_count(qd_context* ctx);
+int usr_strings_count(qd_context* ctx);
 
 /**
  * @brief Find last occurrence of substring
@@ -282,10 +282,10 @@ int usr_str_count(qd_context* ctx);
  * Returns the index of the last occurrence of needle in haystack.
  * Returns -1 if not found.
  */
-int usr_str_last_index_of(qd_context* ctx);
+int usr_strings_last_index_of(qd_context* ctx);
 
 #ifdef __cplusplus
 }
 #endif
 
-#endif // QD_QDSTR_STR_H
+#endif // QD_QDSTRINGS_STRINGS_H

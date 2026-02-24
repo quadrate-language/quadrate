@@ -112,7 +112,7 @@ fi
 # Test 9: Check mode on unformatted file (unsorted imports)
 echo "Testing check mode on unformatted file..."
 cat > "$TMP_DIR/unformatted.qd" << 'EOF'
-use str
+use strings
 use io
 
 fn main() {
@@ -169,7 +169,7 @@ fi
 # Test 13: Write mode
 echo "Testing write mode..."
 cat > "$TMP_DIR/to_format.qd" << 'EOF'
-use str
+use strings
 use io
 
 fn main() {
@@ -177,7 +177,7 @@ fn main() {
 }
 EOF
 if "$QUADFMT" -w "$TMP_DIR/to_format.qd" >/dev/null 2>&1; then
-    # Verify imports were sorted (io before str)
+    # Verify imports were sorted (io before strings)
     if head -1 "$TMP_DIR/to_format.qd" | grep -q "use io"; then
         pass "write_mode"
     else

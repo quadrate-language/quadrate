@@ -31,7 +31,7 @@
 ///     s release
 
 use mem
-use str
+use strings
 
 /// Set of unique string elements.
 ///
@@ -91,7 +91,7 @@ fn set_find_slot(keys:ptr states:ptr cap:i64 key:str -- slot:i64 found:i64) {
 				idx -> first_deleted
 			}
 		} else {
-			keys idx 8 * mem::get_ptr str::from_ptr -> existing_key
+			keys idx 8 * mem::get_ptr strings::from_ptr -> existing_key
 			existing_key key eq if {
 				idx 1
 				break
@@ -127,7 +127,7 @@ fn set_rehash(old_keys:ptr old_states:ptr old_cap:i64 new_cap:i64 -- new_keys:pt
 			old_states i 8 * mem::get_i64 1 == if {
 				old_keys i 8 * mem::get_ptr -> key_ptr
 
-				key_ptr str::from_ptr -> key
+				key_ptr strings::from_ptr -> key
 				new_keys new_states new_cap key set_find_slot -> found -> slot
 
 				key_ptr new_keys slot 8 * mem::set_ptr
@@ -177,7 +177,7 @@ pub fn (s:Set) add(key:str -- s2:Set)! {
 	}
 
 	found 0 == if {
-		key str::len -> klen
+		key strings::len -> klen
 		klen 1 + mem::alloc! -> key_buf
 		key mem::from_string -> tmplen -> tmpbuf
 		key_buf tmpbuf klen mem::copy

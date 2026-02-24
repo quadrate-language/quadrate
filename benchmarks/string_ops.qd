@@ -1,14 +1,14 @@
 use fmt
-use str
+use strings
 use time
 
 fn benchmark_concat(limit:i64 -- result:i64) {
 	-> limit
 	"" -> s
 	0 limit 1 for it {
-		s "a" str::concat -> s
+		s "a" strings::concat -> s
 	}
-	s str::len
+	s strings::len
 }
 
 fn main() {
@@ -20,14 +20,14 @@ fn main() {
 
 	// Warmup
 	"" -> s
-	0 50000 1 for i { s "a" str::concat -> s }
+	0 50000 1 for i { s "a" strings::concat -> s }
 
 	// Best of 3
 	9999999999 -> best
 	0 3 1 for run {
 		"" -> s
 		time::now -> start
-		0 50000 1 for i { s "a" str::concat -> s }
+		0 50000 1 for i { s "a" strings::concat -> s }
 		time::now start - -> elapsed
 		elapsed best lt if { elapsed -> best }
 	}

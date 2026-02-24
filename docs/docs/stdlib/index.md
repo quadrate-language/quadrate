@@ -7,11 +7,11 @@ The Quadrate standard library provides modules for common programming tasks.
 Import a module with `use`:
 
 ```qd
-use str
+use strings
 use math
 
 fn main() {
-	"hello" str::upper print nl  // HELLO
+	"hello" strings::upper print nl  // HELLO
 	16.0 math::sqrt print nl  // 4
 }
 ```
@@ -21,10 +21,10 @@ fn main() {
 Functions marked with `!` can fail and require error handling:
 
 ```qd
-use str
+use strings
 
 fn main() {
-	"hello" 0 3 str::substring! print nl  // "hel"
+	"hello" 0 3 strings::substring! print nl  // "hel"
 }
 ```
 
@@ -45,7 +45,7 @@ fn main() {
 | [rand](rand.md) | Random number generation |
 | [sb](sb.md) | String builder |
 | [signal](signal.md) | Signal handling |
-| [str](str.md) | String operations |
+| [strings](strings.md) | String operations |
 | [strconv](strconv.md) | String conversion utilities |
 | [term](tty.md#use-term) | Terminal colors and formatting |
 | [testing](testing.md) | Testing framework |

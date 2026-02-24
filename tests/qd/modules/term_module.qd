@@ -1,36 +1,36 @@
 // Test term module - ANSI escape codes
 use term
-use str
+use strings
 
 fn main() {
 	"=== Basic colors exist ===" print nl
-	term::Red str::len 0 gt print nl
-	term::Green str::len 0 gt print nl
-	term::Blue str::len 0 gt print nl
-	term::Reset str::len 0 gt print nl
+	term::Red strings::len 0 gt print nl
+	term::Green strings::len 0 gt print nl
+	term::Blue strings::len 0 gt print nl
+	term::Reset strings::len 0 gt print nl
 
 	"=== Formatting codes exist ===" print nl
-	term::Bold str::len 0 gt print nl
-	term::Dim str::len 0 gt print nl
-	term::Italic str::len 0 gt print nl
-	term::Underline str::len 0 gt print nl
+	term::Bold strings::len 0 gt print nl
+	term::Dim strings::len 0 gt print nl
+	term::Italic strings::len 0 gt print nl
+	term::Underline strings::len 0 gt print nl
 
 	"=== Background colors exist ===" print nl
-	term::BgRed str::len 0 gt print nl
-	term::BgGreen str::len 0 gt print nl
-	term::BgBlue str::len 0 gt print nl
+	term::BgRed strings::len 0 gt print nl
+	term::BgGreen strings::len 0 gt print nl
+	term::BgBlue strings::len 0 gt print nl
 
 	"=== Bright colors exist ===" print nl
-	term::BrightRed str::len 0 gt print nl
-	term::BrightGreen str::len 0 gt print nl
-	term::BrightBlue str::len 0 gt print nl
+	term::BrightRed strings::len 0 gt print nl
+	term::BrightGreen strings::len 0 gt print nl
+	term::BrightBlue strings::len 0 gt print nl
 
 	"=== All constants are non-empty ===" print nl
-	term::Black str::len 0 gt print nl
-	term::White str::len 0 gt print nl
-	term::Yellow str::len 0 gt print nl
-	term::Cyan str::len 0 gt print nl
-	term::Magenta str::len 0 gt print nl
+	term::Black strings::len 0 gt print nl
+	term::White strings::len 0 gt print nl
+	term::Yellow strings::len 0 gt print nl
+	term::Cyan strings::len 0 gt print nl
+	term::Magenta strings::len 0 gt print nl
 
 	"done" print nl
 }

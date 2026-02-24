@@ -188,13 +188,13 @@ Sort an array of strings in ascending alphabetical order (insertion sort). Modif
 | `arr` | `ptr` | Array of string pointers |
 | `count` | `i64` | Number of elements |
 
-String arrays typically come from functions like `str::lines!` or `os::glob` which return a pointer and count.
+String arrays typically come from functions like `strings::lines!` or `os::glob` which return a pointer and count.
 
 **Example:**
 
 ```qd
 // Sort lines read from a file
-data str::lines! -> count -> lines
+data strings::lines! -> count -> lines
 lines count sort::strings
 ```
 ---

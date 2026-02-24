@@ -1,11 +1,11 @@
 /**
- * @file test_str.c
- * @brief Unit tests for the qdstr string library
+ * @file test_strings.c
+ * @brief Unit tests for the qdstrings string library
  */
 
 #define _POSIX_C_SOURCE 200809L
 
-#include <qdstr/str.h>
+#include <qdstrings/strings.h>
 #include <qdrt/runtime.h>
 #include <qdrt/context.h>
 #include <qdrt/stack.h>
@@ -27,7 +27,7 @@ TEST(StrLenTest) {
 	qd_context* ctx = create_test_context();
 
 	qd_push_s(ctx, "hello");
-	usr_str_len(ctx);
+	usr_strings_len(ctx);
 
 	qd_stack_element_t elem;
 	qd_stack_pop(ctx->st, &elem);
@@ -41,7 +41,7 @@ TEST(StrLenEmptyTest) {
 	qd_context* ctx = create_test_context();
 
 	qd_push_s(ctx, "");
-	usr_str_len(ctx);
+	usr_strings_len(ctx);
 
 	qd_stack_element_t elem;
 	qd_stack_pop(ctx->st, &elem);
@@ -56,7 +56,7 @@ TEST(StrConcatTest) {
 
 	qd_push_s(ctx, "hello");
 	qd_push_s(ctx, " world");
-	usr_str_concat(ctx);
+	usr_strings_concat(ctx);
 
 	qd_stack_element_t elem;
 	qd_stack_pop(ctx->st, &elem);
@@ -72,7 +72,7 @@ TEST(StrConcatEmptyTest) {
 
 	qd_push_s(ctx, "hello");
 	qd_push_s(ctx, "");
-	usr_str_concat(ctx);
+	usr_strings_concat(ctx);
 
 	qd_stack_element_t elem;
 	qd_stack_pop(ctx->st, &elem);
@@ -88,7 +88,7 @@ TEST(StrContainsTest) {
 
 	qd_push_s(ctx, "hello world");
 	qd_push_s(ctx, "world");
-	usr_str_contains(ctx);
+	usr_strings_contains(ctx);
 
 	qd_stack_element_t elem;
 	qd_stack_pop(ctx->st, &elem);
@@ -102,7 +102,7 @@ TEST(StrContainsNotFoundTest) {
 
 	qd_push_s(ctx, "hello world");
 	qd_push_s(ctx, "xyz");
-	usr_str_contains(ctx);
+	usr_strings_contains(ctx);
 
 	qd_stack_element_t elem;
 	qd_stack_pop(ctx->st, &elem);
@@ -117,7 +117,7 @@ TEST(StrStartsWithTest) {
 
 	qd_push_s(ctx, "hello world");
 	qd_push_s(ctx, "hello");
-	usr_str_starts_with(ctx);
+	usr_strings_starts_with(ctx);
 
 	qd_stack_element_t elem;
 	qd_stack_pop(ctx->st, &elem);
@@ -131,7 +131,7 @@ TEST(StrEndsWithTest) {
 
 	qd_push_s(ctx, "hello world");
 	qd_push_s(ctx, "world");
-	usr_str_ends_with(ctx);
+	usr_strings_ends_with(ctx);
 
 	qd_stack_element_t elem;
 	qd_stack_pop(ctx->st, &elem);
@@ -145,7 +145,7 @@ TEST(StrUpperTest) {
 	qd_context* ctx = create_test_context();
 
 	qd_push_s(ctx, "Hello World");
-	usr_str_upper(ctx);
+	usr_strings_upper(ctx);
 
 	qd_stack_element_t elem;
 	qd_stack_pop(ctx->st, &elem);
@@ -159,7 +159,7 @@ TEST(StrLowerTest) {
 	qd_context* ctx = create_test_context();
 
 	qd_push_s(ctx, "Hello World");
-	usr_str_lower(ctx);
+	usr_strings_lower(ctx);
 
 	qd_stack_element_t elem;
 	qd_stack_pop(ctx->st, &elem);
@@ -174,7 +174,7 @@ TEST(StrTrimTest) {
 	qd_context* ctx = create_test_context();
 
 	qd_push_s(ctx, "  hello world  ");
-	usr_str_trim(ctx);
+	usr_strings_trim(ctx);
 
 	qd_stack_element_t elem;
 	qd_stack_pop(ctx->st, &elem);
@@ -190,7 +190,7 @@ TEST(StrCompareEqualTest) {
 
 	qd_push_s(ctx, "hello");
 	qd_push_s(ctx, "hello");
-	usr_str_compare(ctx);
+	usr_strings_compare(ctx);
 
 	qd_stack_element_t elem;
 	qd_stack_pop(ctx->st, &elem);
@@ -204,7 +204,7 @@ TEST(StrCompareLessTest) {
 
 	qd_push_s(ctx, "abc");
 	qd_push_s(ctx, "abd");
-	usr_str_compare(ctx);
+	usr_strings_compare(ctx);
 
 	qd_stack_element_t elem;
 	qd_stack_pop(ctx->st, &elem);
@@ -218,7 +218,7 @@ TEST(StrCompareGreaterTest) {
 
 	qd_push_s(ctx, "abd");
 	qd_push_s(ctx, "abc");
-	usr_str_compare(ctx);
+	usr_strings_compare(ctx);
 
 	qd_stack_element_t elem;
 	qd_stack_pop(ctx->st, &elem);
@@ -234,12 +234,12 @@ TEST(StrSubstringTest) {
 	qd_push_s(ctx, "hello world");
 	qd_push_i(ctx, 6);  // start
 	qd_push_i(ctx, 5);  // length
-	usr_str_substring(ctx);
+	usr_strings_substring(ctx);
 
 	// Pop status code first
 	qd_stack_element_t status_elem;
 	qd_stack_pop(ctx->st, &status_elem);
-	ASSERT_EQ(STR_ERR_OK, (int)status_elem.value.i, "substring should succeed");
+	ASSERT_EQ(STRINGS_ERR_OK, (int)status_elem.value.i, "substring should succeed");
 
 	qd_stack_element_t elem;
 	qd_stack_pop(ctx->st, &elem);
@@ -254,12 +254,12 @@ TEST(StrCharAtTest) {
 
 	qd_push_s(ctx, "hello");
 	qd_push_i(ctx, 1);
-	usr_str_char_at(ctx);
+	usr_strings_char_at(ctx);
 
 	// Pop status code first
 	qd_stack_element_t status_elem;
 	qd_stack_pop(ctx->st, &status_elem);
-	ASSERT_EQ(STR_ERR_OK, (int)status_elem.value.i, "char_at should succeed");
+	ASSERT_EQ(STRINGS_ERR_OK, (int)status_elem.value.i, "char_at should succeed");
 
 	qd_stack_element_t elem;
 	qd_stack_pop(ctx->st, &elem);
@@ -273,7 +273,7 @@ TEST(StrIndexOfTest) {
 
 	qd_push_s(ctx, "hello world");
 	qd_push_s(ctx, "world");
-	usr_str_index_of(ctx);
+	usr_strings_index_of(ctx);
 
 	qd_stack_element_t elem;
 	qd_stack_pop(ctx->st, &elem);
@@ -287,7 +287,7 @@ TEST(StrIndexOfNotFoundTest) {
 
 	qd_push_s(ctx, "hello world");
 	qd_push_s(ctx, "xyz");
-	usr_str_index_of(ctx);
+	usr_strings_index_of(ctx);
 
 	qd_stack_element_t elem;
 	qd_stack_pop(ctx->st, &elem);
@@ -300,7 +300,7 @@ TEST(StrFromCharTest) {
 	qd_context* ctx = create_test_context();
 
 	qd_push_i(ctx, 'A');
-	usr_str_from_char(ctx);
+	usr_strings_from_char(ctx);
 
 	qd_stack_element_t elem;
 	qd_stack_pop(ctx->st, &elem);
@@ -316,12 +316,12 @@ TEST(StrReplaceTest) {
 	qd_push_s(ctx, "hello world");
 	qd_push_s(ctx, "world");
 	qd_push_s(ctx, "universe");
-	usr_str_replace(ctx);
+	usr_strings_replace(ctx);
 
 	// Pop status code first
 	qd_stack_element_t status_elem;
 	qd_stack_pop(ctx->st, &status_elem);
-	ASSERT_EQ(STR_ERR_OK, (int)status_elem.value.i, "replace should succeed");
+	ASSERT_EQ(STRINGS_ERR_OK, (int)status_elem.value.i, "replace should succeed");
 
 	qd_stack_element_t elem;
 	qd_stack_pop(ctx->st, &elem);
@@ -336,12 +336,12 @@ TEST(StrSplitTest) {
 
 	qd_push_s(ctx, "a,b,c");
 	qd_push_s(ctx, ",");
-	usr_str_split(ctx);
+	usr_strings_split(ctx);
 
 	// Pop status code first
 	qd_stack_element_t status_elem;
 	qd_stack_pop(ctx->st, &status_elem);
-	ASSERT_EQ(STR_ERR_OK, (int)status_elem.value.i, "split should succeed");
+	ASSERT_EQ(STRINGS_ERR_OK, (int)status_elem.value.i, "split should succeed");
 
 	qd_stack_element_t count_elem;
 	qd_stack_pop(ctx->st, &count_elem);
@@ -373,12 +373,12 @@ TEST(StrJoinTest) {
 	qd_push_p(ctx, parts);
 	qd_push_i(ctx, 3);
 	qd_push_s(ctx, ",");
-	usr_str_join(ctx);
+	usr_strings_join(ctx);
 
 	// Pop status code first
 	qd_stack_element_t status_elem;
 	qd_stack_pop(ctx->st, &status_elem);
-	ASSERT_EQ(STR_ERR_OK, (int)status_elem.value.i, "join should succeed");
+	ASSERT_EQ(STRINGS_ERR_OK, (int)status_elem.value.i, "join should succeed");
 
 	qd_stack_element_t elem;
 	qd_stack_pop(ctx->st, &elem);

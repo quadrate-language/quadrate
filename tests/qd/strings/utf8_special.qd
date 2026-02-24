@@ -1,57 +1,57 @@
-use str
+use strings
 
 fn main() {
 	// UTF-8 length tests (note: strlen counts bytes, not characters)
-	"hello" str::len print nl
-	"héllo" str::len print nl
-	"世界" str::len print nl
-	"🌍" str::len print nl
+	"hello" strings::len print nl
+	"héllo" strings::len print nl
+	"世界" strings::len print nl
+	"🌍" strings::len print nl
 
 	// UTF-8 concat
-	"Hello " "世界" str::concat print nl
-	"Привет " "мир" str::concat print nl
-	"🌍" "🌎" str::concat print nl
+	"Hello " "世界" strings::concat print nl
+	"Привет " "мир" strings::concat print nl
+	"🌍" "🌎" strings::concat print nl
 
 	// UTF-8 contains
-	"Hello 世界" "世界" str::contains print nl
-	"Привет мир" "мир" str::contains print nl
-	"test 🌍 string" "🌍" str::contains print nl
+	"Hello 世界" "世界" strings::contains print nl
+	"Привет мир" "мир" strings::contains print nl
+	"test 🌍 string" "🌍" strings::contains print nl
 
 	// UTF-8 starts_with
-	"世界 Hello" "世界" str::starts_with print nl
-	"Привет мир" "Привет" str::starts_with print nl
-	"🌍 world" "🌍" str::starts_with print nl
+	"世界 Hello" "世界" strings::starts_with print nl
+	"Привет мир" "Привет" strings::starts_with print nl
+	"🌍 world" "🌍" strings::starts_with print nl
 
 	// UTF-8 ends_with
-	"Hello 世界" "世界" str::ends_with print nl
-	"Привет мир" "мир" str::ends_with print nl
-	"world 🌍" "🌍" str::ends_with print nl
+	"Hello 世界" "世界" strings::ends_with print nl
+	"Привет мир" "мир" strings::ends_with print nl
+	"world 🌍" "🌍" strings::ends_with print nl
 
 	// Strings with multiple spaces and tabs
-	"hello  world" "  " str::contains print nl
-	"	tab	here" "	" str::contains print nl
-	"multiple   spaces" "   " str::contains print nl
+	"hello  world" "  " strings::contains print nl
+	"	tab	here" "	" strings::contains print nl
+	"multiple   spaces" "   " strings::contains print nl
 
 	// Trim with various whitespace
-	"  spaces  " str::trim print nl
-	"		tabs		" str::trim print nl
-	"  mixed 	 " str::trim print nl
+	"  spaces  " strings::trim print nl
+	"		tabs		" strings::trim print nl
+	"  mixed 	 " strings::trim print nl
 
 	// Empty and whitespace edge cases
-	"" str::len print nl
-	"" "" str::concat str::len print nl
-	"" "test" str::contains print nl
-	"test" "" str::contains print nl
+	"" strings::len print nl
+	"" "" strings::concat strings::len print nl
+	"" "test" strings::contains print nl
+	"test" "" strings::contains print nl
 
 	// Case conversion with UTF-8 (only ASCII affected)
-	"hello WORLD" str::upper print nl
-	"HELLO world" str::lower print nl
-	"test 世界 TEST" str::upper print nl
-	"TEST 世界 test" str::lower print nl
+	"hello WORLD" strings::upper print nl
+	"HELLO world" strings::lower print nl
+	"test 世界 TEST" strings::upper print nl
+	"TEST 世界 test" strings::lower print nl
 
 	// UTF-8 case should not change non-ASCII
-	"héllo" str::upper print nl
-	"HÉLLO" str::lower print nl
-	"Привет" str::upper print nl
-	"ПРИВЕТ" str::lower print nl
+	"héllo" strings::upper print nl
+	"HÉLLO" strings::lower print nl
+	"Привет" strings::upper print nl
+	"ПРИВЕТ" strings::lower print nl
 }

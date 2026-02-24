@@ -35,7 +35,7 @@
 ///     m release
 
 use mem
-use str
+use strings
 
 /// Hash map with string keys and values of type V.
 ///
@@ -102,7 +102,7 @@ fn find_slot(keys:ptr states:ptr cap:i64 key:str -- slot:i64 found:i64) {
 			}
 		} else {
 			// Occupied slot - check key
-			keys idx 8 * mem::get_ptr str::from_ptr -> existing_key
+			keys idx 8 * mem::get_ptr strings::from_ptr -> existing_key
 			existing_key key eq if {
 				// Found the key
 				idx 1
@@ -147,7 +147,7 @@ fn rehash(old_keys:ptr old_values:ptr old_states:ptr old_cap:i64 new_cap:i64 -- 
 				old_keys i 8 * mem::get_ptr -> key_ptr
 				old_values i 8 * mem::get_i64 -> value
 
-				key_ptr str::from_ptr -> key
+				key_ptr strings::from_ptr -> key
 				new_keys new_states new_cap key find_slot -> found -> slot
 
 				key_ptr new_keys slot 8 * mem::set_ptr
@@ -205,7 +205,7 @@ pub fn (m:Map<V>) insert<V>(key:str value:V -- m2:Map<V>)! {
 
 	found 0 == if {
 		// New key - allocate null-terminated copy and store
-		key str::len -> klen
+		key strings::len -> klen
 		klen 1 + mem::alloc! -> key_buf
 		key mem::from_string -> tmplen -> tmpbuf
 		key_buf tmpbuf klen mem::copy

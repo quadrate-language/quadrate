@@ -1,7 +1,7 @@
 // Test io module - file I/O operations
 use io
 use os
-use str
+use strings
 use mem
 
 fn main() {
@@ -14,19 +14,19 @@ fn main() {
 	io::SeekEnd print nl
 
 	"=== Mode constants exist ===" print nl
-	io::Read str::len 0 gt print nl
-	io::Write str::len 0 gt print nl
-	io::Append str::len 0 gt print nl
-	io::ReadWrite str::len 0 gt print nl
+	io::Read strings::len 0 gt print nl
+	io::Write strings::len 0 gt print nl
+	io::Append strings::len 0 gt print nl
+	io::ReadWrite strings::len 0 gt print nl
 
 	"=== write_file and read_file ===" print nl
 	os::mktemp! -> tmpdir
-	tmpdir "/test.txt" str::concat -> testfile
+	tmpdir "/test.txt" strings::concat -> testfile
 	testfile "Hello, World!" io::write_file!
 	testfile io::read_file! print nl
 
 	"=== open, write, seek, read, close ===" print nl
-	tmpdir "/binary.dat" str::concat -> binfile
+	tmpdir "/binary.dat" strings::concat -> binfile
 	binfile io::Write io::open! -> f
 	8 mem::alloc! -> buf
 	65 buf 0 mem::set_byte

@@ -1,7 +1,7 @@
 /// StringBuilder - Efficient string building.
-/// Avoids O(n²) cost of repeated str::concat.
+/// Avoids O(n²) cost of repeated strings::concat.
 use mem
-use str
+use strings
 use unicode
 
 /// Growable string buffer for efficient string building.
@@ -57,7 +57,7 @@ pub fn append(sb:ptr s:str -- sb:ptr) {
 	sb @len -> curlen
 	sb @cap -> cap
 
-	s str::len -> slen
+	s strings::len -> slen
 
 	// Check if we need to grow
 	curlen slen + -> newlen
@@ -78,7 +78,7 @@ pub fn append(sb:ptr s:str -- sb:ptr) {
 		i slen >= if {
 			break
 		}
-		s i str::char_at! -> byte
+		s i strings::char_at! -> byte
 		byte buf curlen i + mem::set_byte
 		i 1 + -> i
 	}

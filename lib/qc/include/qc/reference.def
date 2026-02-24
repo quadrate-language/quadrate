@@ -27,7 +27,7 @@ KEYWORD(const, "Declares a compile-time constant value.")
 KEYWORD(struct, "Declares a structured data type with named fields.")
 
 /// Module import keyword.
-/// @example use str
+/// @example use strings
 KEYWORD(use, "Imports a module, making its functions available with module::function syntax.")
 
 /// C library import keyword.

@@ -1,7 +1,7 @@
 use bits
 use math
 use net
-use str
+use strings
 
 fn main() {
 	// Only using math

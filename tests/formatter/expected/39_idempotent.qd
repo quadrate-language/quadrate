@@ -1,5 +1,5 @@
 use io
-use str
+use strings
 
 const MAX_SIZE = 1024
 

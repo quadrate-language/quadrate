@@ -1,11 +1,11 @@
 {
   "packages": [
     {
-      "integrity": "334d425d83ef809534265a0330b26fd70486d329",
+      "integrity": "b852fdb18a06bbf8da7dd25bec428f2aba3b1d04",
       "isPath": false,
       "name": "fuzzy",
       "ref": "master",
-      "resolved": "334d425d83ef809534265a0330b26fd70486d329",
+      "resolved": "b852fdb18a06bbf8da7dd25bec428f2aba3b1d04",
       "url": "https://git.sr.ht/~klahr/qdfuzzy"
     },
     {
@@ -17,11 +17,11 @@
       "url": "https://git.sr.ht/~klahr/qdhttp"
     },
     {
-      "integrity": "46ebb2a9e246f34900c9d40646a06604e0c9f256",
+      "integrity": "a6d4e0655c7bdb78da995d5879545e5ffa1f5b06",
       "isPath": false,
       "name": "json",
       "ref": "master",
-      "resolved": "46ebb2a9e246f34900c9d40646a06604e0c9f256",
+      "resolved": "a6d4e0655c7bdb78da995d5879545e5ffa1f5b06",
       "url": "https://git.sr.ht/~klahr/qdjson"
     },
     {

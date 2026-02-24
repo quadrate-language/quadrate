@@ -1,7 +1,7 @@
 use ct
 use testing
 use strconv
-use str
+use strings
 
 test "Vec push and get" {
 	Vec<i64> { data = 0 len = 0 cap = 0 } -> v
@@ -336,11 +336,11 @@ test "Set length tracking" {
 test "Set growth" {
 	Set { keys = 0 states = 0 len = 0 cap = 0 } -> s
 	0 32 1 for i {
-		s "item_" i strconv::itoa str::concat add! -> s
+		s "item_" i strconv::itoa strings::concat add! -> s
 	}
 	s length 32 testing::assert_eq
 	0 32 1 for i {
-		s "item_" i strconv::itoa str::concat contains testing::assert_true
+		s "item_" i strconv::itoa strings::concat contains testing::assert_true
 	}
 	s "nonexistent" contains testing::assert_false
 	s release
@@ -497,12 +497,12 @@ test "Map tombstones" {
 test "Map growth" {
 	empty_map -> m
 	0 32 1 for i {
-		m "key_" i strconv::itoa str::concat i insert! -> m
+		m "key_" i strconv::itoa strings::concat i insert! -> m
 	}
 	m length 32 testing::assert_eq
 
 	0 32 1 for i {
-		m "key_" i strconv::itoa str::concat get! i testing::assert_eq
+		m "key_" i strconv::itoa strings::concat get! i testing::assert_eq
 	}
 	m release
 }

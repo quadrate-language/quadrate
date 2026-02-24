@@ -11,8 +11,8 @@ int main(void) {
 	qd_build(math_mod);
 
 	// Module 2: string operations
-	qd_module* str_mod = qd_get_module(ctx, "str");
-	qd_add_script(str_mod, "fn greet() { \"Hello from str module!\" print nl }");
+	qd_module* str_mod = qd_get_module(ctx, "strings");
+	qd_add_script(str_mod, "fn greet() { \"Hello from strings module!\" print nl }");
 	qd_add_script(str_mod, "fn farewell() { \"Goodbye!\" print nl }");
 	qd_build(str_mod);
 
@@ -32,8 +32,8 @@ int main(void) {
 
 	// Test string module
 	printf("String module:\n");
-	qd_execute(ctx, "str::greet");
-	qd_execute(ctx, "str::farewell");
+	qd_execute(ctx, "strings::greet");
+	qd_execute(ctx, "strings::farewell");
 
 	printf("\n");
 

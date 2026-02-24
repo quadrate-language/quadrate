@@ -1,54 +1,54 @@
 // Comprehensive string module tests
-use str
+use strings
 
 fn main() {
-	// Test 1: str::len
-	"Hello" str::len print nl
+	// Test 1: strings::len
+	"Hello" strings::len print nl
 
-	// Test 2: str::concat
-	"Hello" " World" str::concat prints nl
+	// Test 2: strings::concat
+	"Hello" " World" strings::concat prints nl
 
-	// Test 3: str::contains
-	"Hello World" "World" str::contains print nl
-	"Hello World" "Foo" str::contains print nl
+	// Test 3: strings::contains
+	"Hello World" "World" strings::contains print nl
+	"Hello World" "Foo" strings::contains print nl
 
-	// Test 4: str::starts_with
-	"Hello World" "Hello" str::starts_with print nl
-	"Hello World" "World" str::starts_with print nl
+	// Test 4: strings::starts_with
+	"Hello World" "Hello" strings::starts_with print nl
+	"Hello World" "World" strings::starts_with print nl
 
-	// Test 5: str::ends_with
-	"Hello World" "World" str::ends_with print nl
-	"Hello World" "Hello" str::ends_with print nl
+	// Test 5: strings::ends_with
+	"Hello World" "World" strings::ends_with print nl
+	"Hello World" "Hello" strings::ends_with print nl
 
-	// Test 6: str::upper
-	"hello world" str::upper prints nl
+	// Test 6: strings::upper
+	"hello world" strings::upper prints nl
 
-	// Test 7: str::lower
-	"HELLO WORLD" str::lower prints nl
+	// Test 7: strings::lower
+	"HELLO WORLD" strings::lower prints nl
 
-	// Test 8: str::trim
-	"  hello world  " str::trim prints nl
-	"hello" str::trim prints nl
+	// Test 8: strings::trim
+	"  hello world  " strings::trim prints nl
+	"hello" strings::trim prints nl
 
-	// Test 9: str::substring
-	"Hello World" 0 5 str::substring! prints nl
-	"Hello World" 6 5 str::substring! prints nl
+	// Test 9: strings::substring
+	"Hello World" 0 5 strings::substring! prints nl
+	"Hello World" 6 5 strings::substring! prints nl
 
-	// Test 10: str::replace
-	"Hello World World" "World" "Universe" str::replace! prints nl
-	"abc abc abc" "abc" "xyz" str::replace! prints nl
+	// Test 10: strings::replace
+	"Hello World World" "World" "Universe" strings::replace! prints nl
+	"abc abc abc" "abc" "xyz" strings::replace! prints nl
 
-	// Test 11: str::compare
-	"aaa" "bbb" str::compare print nl
-	"bbb" "aaa" str::compare print nl
-	"aaa" "aaa" str::compare print nl
+	// Test 11: strings::compare
+	"aaa" "bbb" strings::compare print nl
+	"bbb" "aaa" strings::compare print nl
+	"aaa" "aaa" strings::compare print nl
 
 	// Test 12: Empty string tests
-	"" str::len print nl
-	"" "" str::concat str::len print nl
-	"test" "" str::contains print nl
+	"" strings::len print nl
+	"" "" strings::concat strings::len print nl
+	"test" "" strings::contains print nl
 
 	// Test 13: Single character tests
-	"a" str::len print nl
-	"a" "b" str::concat prints nl
+	"a" strings::len print nl
+	"a" "b" strings::concat prints nl
 }

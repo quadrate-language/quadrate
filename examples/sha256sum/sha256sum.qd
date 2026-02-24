@@ -3,7 +3,7 @@ use crypto
 use flag
 use io
 use mem
-use str
+use strings
 
 const VERSION = "1.0.0"
 
@@ -53,7 +53,7 @@ fn hash_file(path:str binary_mode:i64 tag_mode:i64 zero_mode:i64 -- ) {
 	-> path
 
 	path read_file switch {
-		Ok { -> length -> buf buf length crypto::sha256_bytes! -> hash_str tag_mode if { "SHA256 (" print path print ") = " print hash_str print } else { hash_str print binary_mode if { " *" } else { "  " } print path print } zero_mode if { 0 str::from_char print } else { nl } buf mem::free }
+		Ok { -> length -> buf buf length crypto::sha256_bytes! -> hash_str tag_mode if { "SHA256 (" print path print ") = " print hash_str print } else { hash_str print binary_mode if { " *" } else { "  " } print path print } zero_mode if { 0 strings::from_char print } else { nl } buf mem::free }
 		_ {
 			"sha256sum: " print path print ": No such file or directory" print nl
 		}
@@ -66,7 +66,7 @@ fn parse_checksum_line(line:str -- hash:str filename:str valid:i64) {
 	"" -> filename
 	0 -> valid
 
-	line str::len -> line_len
+	line strings::len -> line_len
 
 	// Need at least 64 chars for hash + 2 for separator + 1 for filename
 	line_len 67 >= if {
@@ -77,14 +77,14 @@ fn parse_checksum_line(line:str -- hash:str filename:str valid:i64) {
 			i 64 >= if {
 				break
 			}
-			line i str::char_at! str::from_char -> ch
-			hash_tmp ch str::concat -> hash_tmp
+			line i strings::char_at! strings::from_char -> ch
+			hash_tmp ch strings::concat -> hash_tmp
 			i 1 + -> i
 		}
 		hash_tmp -> hash
 
 		// Check separator (space + space or space + asterisk)
-		line 64 str::char_at! 32 == line 64 str::char_at! 42 == or if {
+		line 64 strings::char_at! 32 == line 64 strings::char_at! 42 == or if {
 			// Extract filename (after position 66)
 			66 -> start
 			"" -> fname_tmp
@@ -92,8 +92,8 @@ fn parse_checksum_line(line:str -- hash:str filename:str valid:i64) {
 				start line_len >= if {
 					break
 				}
-				line start str::char_at! str::from_char -> ch
-				fname_tmp ch str::concat -> fname_tmp
+				line start strings::char_at! strings::from_char -> ch
+				fname_tmp ch strings::concat -> fname_tmp
 				start 1 + -> start
 			}
 			fname_tmp -> filename
@@ -113,8 +113,8 @@ fn extract_line(content:str start:i64 end_pos:i64 -- line:str) {
 		start end_pos >= if {
 			break
 		}
-		content start str::char_at! str::from_char -> ch
-		line ch str::concat -> line
+		content start strings::char_at! strings::from_char -> ch
+		line ch strings::concat -> line
 		start 1 + -> start
 	}
 	line
@@ -130,7 +130,7 @@ fn check_file(path:str quiet:i64 status_mode:i64 warn_mode:i64 ignore_missing:i6
 	0 -> failures
 
 	path read_file switch {
-		Ok { -> length -> buf buf length mem::to_string -> content 0 -> pos 0 -> line_num loop { pos length >= if { break } pos -> line_start loop { pos length >= if { break } buf pos mem::get_byte 10 == if { break } pos 1 + -> pos } pos line_start - -> line_len line_len 0 > if { content line_start pos extract_line -> line line_num 1 + -> line_num line parse_checksum_line -> valid -> expected_file -> expected_hash valid if { expected_file read_file switch { Ok { -> file_len -> file_buf file_buf file_len crypto::sha256_bytes -> actual_hash file_buf mem::free actual_hash expected_hash str::compare 0 == if { status_mode 0 == quiet 0 == and if { expected_file print ": OK" print nl } } else { status_mode 0 == if { expected_file print ": FAILED" print nl } failures 1 + -> failures } } _ { ignore_missing 0 == if { status_mode 0 == if { "sha256sum: " print expected_file print ": No such file or directory" print nl } failures 1 + -> failures } } } } valid 0 == if { warn_mode status_mode 0 == and if { "sha256sum: " print path print ":" print line_num print ": improperly formatted SHA256 checksum line" print nl } strict if { failures 1 + -> failures } } } pos 1 + -> pos } buf mem::free content drop }
+		Ok { -> length -> buf buf length mem::to_string -> content 0 -> pos 0 -> line_num loop { pos length >= if { break } pos -> line_start loop { pos length >= if { break } buf pos mem::get_byte 10 == if { break } pos 1 + -> pos } pos line_start - -> line_len line_len 0 > if { content line_start pos extract_line -> line line_num 1 + -> line_num line parse_checksum_line -> valid -> expected_file -> expected_hash valid if { expected_file read_file switch { Ok { -> file_len -> file_buf file_buf file_len crypto::sha256_bytes -> actual_hash file_buf mem::free actual_hash expected_hash strings::compare 0 == if { status_mode 0 == quiet 0 == and if { expected_file print ": OK" print nl } } else { status_mode 0 == if { expected_file print ": FAILED" print nl } failures 1 + -> failures } } _ { ignore_missing 0 == if { status_mode 0 == if { "sha256sum: " print expected_file print ": No such file or directory" print nl } failures 1 + -> failures } } } } valid 0 == if { warn_mode status_mode 0 == and if { "sha256sum: " print path print ":" print line_num print ": improperly formatted SHA256 checksum line" print nl } strict if { failures 1 + -> failures } } } pos 1 + -> pos } buf mem::free content drop }
 		_ {
 			status_mode 0 == if {
 				"sha256sum: " print path print ": No such file or directory" print nl
@@ -144,8 +144,8 @@ fn check_file(path:str quiet:i64 status_mode:i64 warn_mode:i64 ignore_missing:i6
 
 fn is_flag(arg:str -- result:i64) {
 	-> arg
-	arg str::len 0 > if {
-		arg 0 str::char_at! 45 ==
+	arg strings::len 0 > if {
+		arg 0 strings::char_at! 45 ==
 	} else {
 		0
 	}

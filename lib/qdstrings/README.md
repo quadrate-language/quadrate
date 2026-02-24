@@ -1,6 +1,6 @@
-# qdstr
+# qdstrings
 
-String manipulation functions (`str::` module).
+String manipulation functions (`strings::` module).
 
 ## Overview
 

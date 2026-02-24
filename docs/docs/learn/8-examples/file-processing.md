@@ -93,7 +93,7 @@ fn main() {
 ```qd
 use io
 use mem
-use str
+use strings
 
 fn process_line(num:i64 line:str -- ) {
 	-> line -> num
@@ -104,7 +104,7 @@ fn main() {
 	"data.txt" io::read_file switch {
 		Ok {
 			-> content
-			content str::lines! -> count -> lines
+			content strings::lines! -> count -> lines
 			0 count 1 for i {
 				i 1 + lines i 8 * mem::get_ptr cast<str> process_line
 			}
@@ -120,21 +120,21 @@ fn main() {
 ```qd
 use io
 use mem
-use str
+use strings
 
 fn count_words(path:str -- words:i64 lines:i64 chars:i64)! {
 	-> path
 	path io::read_file! -> content
 
-	content str::len -> chars
-	content str::lines! -> line_count -> line_array
+	content strings::len -> chars
+	content strings::lines! -> line_count -> line_array
 	line_count -> lines
 
 	0 -> words
 	0 line_count 1 for i {
 		line_array i 8 * mem::get_ptr cast<str> -> line
-		line str::len 0 > if {
-			line str::words! -> word_count -> word_arr
+		line strings::len 0 > if {
+			line strings::words! -> word_count -> word_arr
 			words word_count + -> words
 			word_arr mem::free
 		}

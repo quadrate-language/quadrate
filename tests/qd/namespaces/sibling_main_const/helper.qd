@@ -1,6 +1,6 @@
 // Helper file that references constants from main.qd
 use fmt
-use str
+use strings
 
 fn compute(x:i64 -- result:i64) {
 	x MULTIPLIER *
@@ -9,5 +9,5 @@ fn compute(x:i64 -- result:i64) {
 fn format_value(x:i64 -- result:str) {
 	-> x
 	x "%d" fmt::sprintf -> num_str
-	PREFIX num_str str::concat
+	PREFIX num_str strings::concat
 }

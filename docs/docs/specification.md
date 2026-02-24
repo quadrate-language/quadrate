@@ -630,7 +630,7 @@ Functions are called by name; arguments must already be on stack:
 **Module-qualified calls:**
 ```quadrate
 3.14 math::sin      // Call 'sin' from 'math' module
-"hello" str::len    // Call 'len' from 'str' module
+"hello" strings::len    // Call 'len' from 'strings' module
 ```
 
 ### 7.3 Generic Functions
@@ -1180,7 +1180,7 @@ Mathematical functions and constants.
 - Rounding: `ceil`, `floor`, `round`, `trunc`
 - Utility: `abs`, `min`, `max`, `clamp`, `lerp`, `sign`
 
-### 13.2 str
+### 13.2 strings
 
 String manipulation.
 

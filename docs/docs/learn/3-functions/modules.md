@@ -22,11 +22,11 @@ Use `::` to call functions from a module:
 
 ```qd
 use math
-use str
+use strings
 
 fn main() {
 	3.14159 math::sin print nl
-	"hello" str::len print nl
+	"hello" strings::len print nl
 }
 ```
 
@@ -86,7 +86,7 @@ These modules ship with Quadrate and are always available:
 | `rand` | Random numbers |
 | `sb` | String builder |
 | `signal` | Unix signal handling |
-| `str` | String manipulation |
+| `strings` | String manipulation |
 | `strconv` | String conversion |
 | `term` | Terminal colors and formatting |
 | `testing` | Testing framework |

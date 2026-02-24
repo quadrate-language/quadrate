@@ -5,7 +5,7 @@ use zoo
 
 fn helper() {
 	5.5 math::sqrt print nl
-	"test" str::len print nl
+	"test" strings::len print nl
 }
 
 fn main() {

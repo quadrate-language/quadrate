@@ -46,7 +46,7 @@ static const char* g_builtins[] = {
 		"makei", "makef", "makes", "make", "len", "nth", "set", "append", nullptr};
 
 static const char* g_modules[] = {
-		"math::", "str::", "io::", "fmt::", "os::", "mem::", "time::", "thread::", "flag::", "path::", "rand::",
+		"math::", "strings::", "io::", "fmt::", "os::", "mem::", "time::", "thread::", "flag::", "path::", "rand::",
 		"unicode::", "strconv::", "bytes::", "bits::", "signal::", "term::", "limits::", "testing::", "sb::", nullptr};
 
 // Module function completions (module::function format)
@@ -56,10 +56,10 @@ static const char* g_moduleFunctions[] = {
 		"math::atan2", "math::exp", "math::log", "math::log10", "math::log2", "math::pow", "math::floor", "math::ceil",
 		"math::round", "math::trunc", "math::min", "math::max", "math::clamp", "math::lerp", "math::sq", "math::hypot",
 		"math::PI", "math::E", "math::TAU",
-		// str module
-		"str::len", "str::concat", "str::substr", "str::index", "str::contains", "str::starts_with", "str::ends_with",
-		"str::trim", "str::ltrim", "str::rtrim", "str::upper", "str::lower", "str::replace", "str::split", "str::join",
-		"str::repeat", "str::reverse", "str::compare", "str::char_at", "str::from_char",
+		// strings module
+		"strings::len", "strings::concat", "strings::substr", "strings::index", "strings::contains", "strings::starts_with", "strings::ends_with",
+		"strings::trim", "strings::ltrim", "strings::rtrim", "strings::upper", "strings::lower", "strings::replace", "strings::split", "strings::join",
+		"strings::repeat", "strings::reverse", "strings::compare", "strings::char_at", "strings::from_char",
 		// io module
 		"io::open", "io::close", "io::read", "io::write", "io::read_line", "io::read_file", "io::write_file",
 		"io::append_file", "io::exists", "io::remove", "io::rename", "io::mkdir", "io::rmdir", "io::ReadOnly",

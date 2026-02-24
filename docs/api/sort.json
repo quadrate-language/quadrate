@@ -100,7 +100,7 @@
       "name": "strings",
       "signature": "(arr:ptr count:i64 --)",
       "failable": false,
-      "description": "Sort an array of strings in ascending alphabetical order using insertion sort. Modifies the array in place. Uses str::compare for ordering.",
+      "description": "Sort an array of strings in ascending alphabetical order using insertion sort. Modifies the array in place. Uses strings::compare for ordering.",
       "params": [
         {"name": "arr", "type": "ptr", "description": "Array of string pointers"},
         {"name": "count", "type": "i64", "description": "Number of elements"}
@@ -113,7 +113,7 @@
       "name": "strings_desc",
       "signature": "(arr:ptr count:i64 --)",
       "failable": false,
-      "description": "Sort an array of strings in descending alphabetical order using insertion sort. Modifies the array in place. Uses str::compare for ordering.",
+      "description": "Sort an array of strings in descending alphabetical order using insertion sort. Modifies the array in place. Uses strings::compare for ordering.",
       "params": [
         {"name": "arr", "type": "ptr", "description": "Array of string pointers"},
         {"name": "count", "type": "i64", "description": "Number of elements"}

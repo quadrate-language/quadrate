@@ -1,11 +1,11 @@
 // Test os::mktemp - create temporary directory
 use os
-use str
+use strings
 
 fn main() {
 	// Create a temp directory
 	os::mktemp! -> tmpdir
-	"Created: " print tmpdir "/tmp/qd_" str::starts_with print nl
+	"Created: " print tmpdir "/tmp/qd_" strings::starts_with print nl
 
 	// Verify it exists
 	tmpdir os::exists print nl

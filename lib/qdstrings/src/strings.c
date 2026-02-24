@@ -1,7 +1,7 @@
 #define _POSIX_C_SOURCE 200809L
 #define _DEFAULT_SOURCE
 
-#include <qdstr/str.h>
+#include <qdstrings/strings.h>
 #include <strings.h>
 #include <qdrt/stack.h>
 #include <qdrt/runtime.h>
@@ -11,30 +11,30 @@
 #include <ctype.h>
 
 // Error codes matching module.qd
-#define STR_ERR_OK 1            // Success (matches builtin Ok)
-#define STR_ERR_OUT_OF_BOUNDS 2 // Index out of bounds
-#define STR_ERR_ALLOC 3         // Allocation failed
-#define STR_ERR_INVALID_ARG 4   // Invalid argument
+#define STRINGS_ERR_OK 1            // Success (matches builtin Ok)
+#define STRINGS_ERR_OUT_OF_BOUNDS 2 // Index out of bounds
+#define STRINGS_ERR_ALLOC 3         // Allocation failed
+#define STRINGS_ERR_INVALID_ARG 4   // Invalid argument
 
-#define STR_POP(ctx, elem, func_name) do { \
+#define STRINGS_POP(ctx, elem, func_name) do { \
 	if (qd_stack_pop((ctx)->st, (elem)) != QD_STACK_OK) { \
-		fprintf(stderr, "Fatal error in str::" func_name ": Stack underflow\n"); \
+		fprintf(stderr, "Fatal error in strings::" func_name ": Stack underflow\n"); \
 		abort(); \
 	} \
 } while(0)
 
 // len - get string length ( str:s -- len:i )
-int usr_str_len(qd_context* ctx) {
+int usr_strings_len(qd_context* ctx) {
 	qd_stack_element_t val;
 	qd_stack_error err = qd_stack_pop(ctx->st, &val);
 
 	if (err != QD_STACK_OK) {
-		fprintf(stderr, "Fatal error in str::len: Stack underflow\n");
+		fprintf(stderr, "Fatal error in strings::len: Stack underflow\n");
 		abort();
 	}
 
 	if (val.type != QD_STACK_TYPE_STR) {
-		fprintf(stderr, "Fatal error in str::len: Expected string, got type %d\n", val.type);
+		fprintf(stderr, "Fatal error in strings::len: Expected string, got type %d\n", val.type);
 		abort();
 	}
 
@@ -47,13 +47,13 @@ int usr_str_len(qd_context* ctx) {
 
 // concat - concatenate two strings ( str1:s str2:s -- result:s )
 // Uses qd_string_concat_smart for in-place append when possible (refcount==1 && enough capacity)
-int usr_str_concat(qd_context* ctx) {
+int usr_strings_concat(qd_context* ctx) {
 	qd_stack_element_t str2, str1;
-	STR_POP(ctx, &str2, "concat");
-	STR_POP(ctx, &str1, "concat");
+	STRINGS_POP(ctx, &str2, "concat");
+	STRINGS_POP(ctx, &str1, "concat");
 
 	if (str1.type != QD_STACK_TYPE_STR || str2.type != QD_STACK_TYPE_STR) {
-		fprintf(stderr, "Fatal error in str::concat: Expected two strings\n");
+		fprintf(stderr, "Fatal error in strings::concat: Expected two strings\n");
 		if (str1.type == QD_STACK_TYPE_STR) qd_string_release(str1.value.s);
 		if (str2.type == QD_STACK_TYPE_STR) qd_string_release(str2.value.s);
 		abort();
@@ -65,7 +65,7 @@ int usr_str_concat(qd_context* ctx) {
 	qd_string_t* result = qd_string_concat_smart(str1.value.s, str2.value.s);
 
 	if (!result) {
-		fprintf(stderr, "Fatal error in str::concat: Memory allocation failed\n");
+		fprintf(stderr, "Fatal error in strings::concat: Memory allocation failed\n");
 		abort();
 	}
 
@@ -77,22 +77,22 @@ int usr_str_concat(qd_context* ctx) {
 }
 
 // contains - check if string contains substring ( str:s needle:s -- contains:i )
-int usr_str_contains(qd_context* ctx) {
+int usr_strings_contains(qd_context* ctx) {
 	qd_stack_element_t needle, haystack;
 	qd_stack_error err = qd_stack_pop(ctx->st, &needle);
 	if (err != QD_STACK_OK) {
-		fprintf(stderr, "Fatal error in str::contains: Stack underflow\n");
+		fprintf(stderr, "Fatal error in strings::contains: Stack underflow\n");
 		abort();
 	}
 	err = qd_stack_pop(ctx->st, &haystack);
 	if (err != QD_STACK_OK) {
-		fprintf(stderr, "Fatal error in str::contains: Stack underflow\n");
+		fprintf(stderr, "Fatal error in strings::contains: Stack underflow\n");
 		if (needle.type == QD_STACK_TYPE_STR) qd_string_release(needle.value.s);
 		abort();
 	}
 
 	if (haystack.type != QD_STACK_TYPE_STR || needle.type != QD_STACK_TYPE_STR) {
-		fprintf(stderr, "Fatal error in str::contains: Expected two strings\n");
+		fprintf(stderr, "Fatal error in strings::contains: Expected two strings\n");
 		if (haystack.type == QD_STACK_TYPE_STR) qd_string_release(haystack.value.s);
 		if (needle.type == QD_STACK_TYPE_STR) qd_string_release(needle.value.s);
 		abort();
@@ -108,22 +108,22 @@ int usr_str_contains(qd_context* ctx) {
 }
 
 // starts_with - check if string starts with prefix ( str:s prefix:s -- result:i )
-int usr_str_starts_with(qd_context* ctx) {
+int usr_strings_starts_with(qd_context* ctx) {
 	qd_stack_element_t prefix, str;
 	qd_stack_error err = qd_stack_pop(ctx->st, &prefix);
 	if (err != QD_STACK_OK) {
-		fprintf(stderr, "Fatal error in str::starts_with: Stack underflow\n");
+		fprintf(stderr, "Fatal error in strings::starts_with: Stack underflow\n");
 		abort();
 	}
 	err = qd_stack_pop(ctx->st, &str);
 	if (err != QD_STACK_OK) {
-		fprintf(stderr, "Fatal error in str::starts_with: Stack underflow\n");
+		fprintf(stderr, "Fatal error in strings::starts_with: Stack underflow\n");
 		if (prefix.type == QD_STACK_TYPE_STR) qd_string_release(prefix.value.s);
 		abort();
 	}
 
 	if (str.type != QD_STACK_TYPE_STR || prefix.type != QD_STACK_TYPE_STR) {
-		fprintf(stderr, "Fatal error in str::starts_with: Expected two strings\n");
+		fprintf(stderr, "Fatal error in strings::starts_with: Expected two strings\n");
 		if (str.type == QD_STACK_TYPE_STR) qd_string_release(str.value.s);
 		if (prefix.type == QD_STACK_TYPE_STR) qd_string_release(prefix.value.s);
 		abort();
@@ -145,22 +145,22 @@ int usr_str_starts_with(qd_context* ctx) {
 }
 
 // ends_with - check if string ends with suffix ( str:s suffix:s -- result:i )
-int usr_str_ends_with(qd_context* ctx) {
+int usr_strings_ends_with(qd_context* ctx) {
 	qd_stack_element_t suffix, str;
 	qd_stack_error err = qd_stack_pop(ctx->st, &suffix);
 	if (err != QD_STACK_OK) {
-		fprintf(stderr, "Fatal error in str::ends_with: Stack underflow\n");
+		fprintf(stderr, "Fatal error in strings::ends_with: Stack underflow\n");
 		abort();
 	}
 	err = qd_stack_pop(ctx->st, &str);
 	if (err != QD_STACK_OK) {
-		fprintf(stderr, "Fatal error in str::ends_with: Stack underflow\n");
+		fprintf(stderr, "Fatal error in strings::ends_with: Stack underflow\n");
 		if (suffix.type == QD_STACK_TYPE_STR) qd_string_release(suffix.value.s);
 		abort();
 	}
 
 	if (str.type != QD_STACK_TYPE_STR || suffix.type != QD_STACK_TYPE_STR) {
-		fprintf(stderr, "Fatal error in str::ends_with: Expected two strings\n");
+		fprintf(stderr, "Fatal error in strings::ends_with: Expected two strings\n");
 		if (str.type == QD_STACK_TYPE_STR) qd_string_release(str.value.s);
 		if (suffix.type == QD_STACK_TYPE_STR) qd_string_release(suffix.value.s);
 		abort();
@@ -183,17 +183,17 @@ int usr_str_ends_with(qd_context* ctx) {
 }
 
 // upper - convert string to uppercase ( str:s -- result:s )
-int usr_str_upper(qd_context* ctx) {
+int usr_strings_upper(qd_context* ctx) {
 	qd_stack_element_t val;
 	qd_stack_error err = qd_stack_pop(ctx->st, &val);
 
 	if (err != QD_STACK_OK) {
-		fprintf(stderr, "Fatal error in str::upper: Stack underflow\n");
+		fprintf(stderr, "Fatal error in strings::upper: Stack underflow\n");
 		abort();
 	}
 
 	if (val.type != QD_STACK_TYPE_STR) {
-		fprintf(stderr, "Fatal error in str::upper: Expected string, got type %d\n", val.type);
+		fprintf(stderr, "Fatal error in strings::upper: Expected string, got type %d\n", val.type);
 		abort();
 	}
 
@@ -201,7 +201,7 @@ int usr_str_upper(qd_context* ctx) {
 	char* result = malloc(len + 1);
 
 	if (!result) {
-		fprintf(stderr, "Fatal error in str::upper: Memory allocation failed\n");
+		fprintf(stderr, "Fatal error in strings::upper: Memory allocation failed\n");
 		qd_string_release(val.value.s);
 		abort();
 	}
@@ -218,17 +218,17 @@ int usr_str_upper(qd_context* ctx) {
 }
 
 // lower - convert string to lowercase ( str:s -- result:s )
-int usr_str_lower(qd_context* ctx) {
+int usr_strings_lower(qd_context* ctx) {
 	qd_stack_element_t val;
 	qd_stack_error err = qd_stack_pop(ctx->st, &val);
 
 	if (err != QD_STACK_OK) {
-		fprintf(stderr, "Fatal error in str::lower: Stack underflow\n");
+		fprintf(stderr, "Fatal error in strings::lower: Stack underflow\n");
 		abort();
 	}
 
 	if (val.type != QD_STACK_TYPE_STR) {
-		fprintf(stderr, "Fatal error in str::lower: Expected string, got type %d\n", val.type);
+		fprintf(stderr, "Fatal error in strings::lower: Expected string, got type %d\n", val.type);
 		abort();
 	}
 
@@ -236,7 +236,7 @@ int usr_str_lower(qd_context* ctx) {
 	char* result = malloc(len + 1);
 
 	if (!result) {
-		fprintf(stderr, "Fatal error in str::lower: Memory allocation failed\n");
+		fprintf(stderr, "Fatal error in strings::lower: Memory allocation failed\n");
 		qd_string_release(val.value.s);
 		abort();
 	}
@@ -253,17 +253,17 @@ int usr_str_lower(qd_context* ctx) {
 }
 
 // trim - remove leading and trailing whitespace ( str:s -- result:s )
-int usr_str_trim(qd_context* ctx) {
+int usr_strings_trim(qd_context* ctx) {
 	qd_stack_element_t val;
 	qd_stack_error err = qd_stack_pop(ctx->st, &val);
 
 	if (err != QD_STACK_OK) {
-		fprintf(stderr, "Fatal error in str::trim: Stack underflow\n");
+		fprintf(stderr, "Fatal error in strings::trim: Stack underflow\n");
 		abort();
 	}
 
 	if (val.type != QD_STACK_TYPE_STR) {
-		fprintf(stderr, "Fatal error in str::trim: Expected string, got type %d\n", val.type);
+		fprintf(stderr, "Fatal error in strings::trim: Expected string, got type %d\n", val.type);
 		abort();
 	}
 
@@ -295,7 +295,7 @@ int usr_str_trim(qd_context* ctx) {
 	char* result = malloc(trimmed_len + 1);
 
 	if (!result) {
-		fprintf(stderr, "Fatal error in str::trim: Memory allocation failed\n");
+		fprintf(stderr, "Fatal error in strings::trim: Memory allocation failed\n");
 		qd_string_release(val.value.s);
 		abort();
 	}
@@ -313,31 +313,31 @@ int usr_str_trim(qd_context* ctx) {
 }
 
 // substring - extract substring ( str:s start:i length:i -- result:s )!
-int usr_str_substring(qd_context* ctx) {
+int usr_strings_substring(qd_context* ctx) {
 	qd_stack_element_t len_elem, start_elem, str_elem;
 	qd_stack_error err = qd_stack_pop(ctx->st, &len_elem);
 	if (err != QD_STACK_OK) {
-		fprintf(stderr, "Fatal error in str::substring: Stack underflow\n");
+		fprintf(stderr, "Fatal error in strings::substring: Stack underflow\n");
 		abort();
 	}
 	err = qd_stack_pop(ctx->st, &start_elem);
 	if (err != QD_STACK_OK) {
-		fprintf(stderr, "Fatal error in str::substring: Stack underflow\n");
+		fprintf(stderr, "Fatal error in strings::substring: Stack underflow\n");
 		abort();
 	}
 	err = qd_stack_pop(ctx->st, &str_elem);
 	if (err != QD_STACK_OK) {
-		fprintf(stderr, "Fatal error in str::substring: Stack underflow\n");
+		fprintf(stderr, "Fatal error in strings::substring: Stack underflow\n");
 		abort();
 	}
 
 	if (str_elem.type != QD_STACK_TYPE_STR) {
-		fprintf(stderr, "Fatal error in str::substring: Expected string\n");
+		fprintf(stderr, "Fatal error in strings::substring: Expected string\n");
 		abort();
 	}
 
 	if (start_elem.type != QD_STACK_TYPE_INT || len_elem.type != QD_STACK_TYPE_INT) {
-		fprintf(stderr, "Fatal error in str::substring: Expected integers for start and length\n");
+		fprintf(stderr, "Fatal error in strings::substring: Expected integers for start and length\n");
 		qd_string_release(str_elem.value.s);
 		abort();
 	}
@@ -347,13 +347,13 @@ int usr_str_substring(qd_context* ctx) {
 	size_t str_len = strlen(qd_string_data(str_elem.value.s));
 
 	if (start < 0 || length < 0) {
-		fprintf(stderr, "Fatal error in str::substring: Negative indices not allowed\n");
+		fprintf(stderr, "Fatal error in strings::substring: Negative indices not allowed\n");
 		qd_string_release(str_elem.value.s);
 		abort();
 	}
 
 	if ((size_t)start > str_len) {
-		fprintf(stderr, "Fatal error in str::substring: Start index out of bounds\n");
+		fprintf(stderr, "Fatal error in strings::substring: Start index out of bounds\n");
 		qd_string_release(str_elem.value.s);
 		abort();
 	}
@@ -366,7 +366,7 @@ int usr_str_substring(qd_context* ctx) {
 
 	char* result = malloc(actual_length + 1);
 	if (!result) {
-		fprintf(stderr, "Fatal error in str::substring: Memory allocation failed\n");
+		fprintf(stderr, "Fatal error in strings::substring: Memory allocation failed\n");
 		qd_string_release(str_elem.value.s);
 		abort();
 	}
@@ -377,29 +377,29 @@ int usr_str_substring(qd_context* ctx) {
 	qd_string_release(str_elem.value.s);
 	qd_push_s(ctx, result);
 	free(result);
-	qd_push_i(ctx, STR_ERR_OK);  // Success status for fallible function
+	qd_push_i(ctx, STRINGS_ERR_OK);  // Success status for fallible function
 
-	return (int){STR_ERR_OK};
+	return (int){STRINGS_ERR_OK};
 }
 
 // split - split string by delimiter ( str:s delim:s -- parts:p count:i )
 // Returns pointer to array of qd_string* and count
-int usr_str_split(qd_context* ctx) {
+int usr_strings_split(qd_context* ctx) {
 	qd_stack_element_t delim_elem, str_elem;
 	qd_stack_error err = qd_stack_pop(ctx->st, &delim_elem);
 	if (err != QD_STACK_OK) {
-		fprintf(stderr, "Fatal error in str::split: Stack underflow\n");
+		fprintf(stderr, "Fatal error in strings::split: Stack underflow\n");
 		abort();
 	}
 	err = qd_stack_pop(ctx->st, &str_elem);
 	if (err != QD_STACK_OK) {
-		fprintf(stderr, "Fatal error in str::split: Stack underflow\n");
+		fprintf(stderr, "Fatal error in strings::split: Stack underflow\n");
 		if (delim_elem.type == QD_STACK_TYPE_STR) qd_string_release(delim_elem.value.s);
 		abort();
 	}
 
 	if (str_elem.type != QD_STACK_TYPE_STR || delim_elem.type != QD_STACK_TYPE_STR) {
-		fprintf(stderr, "Fatal error in str::split: Expected two strings\n");
+		fprintf(stderr, "Fatal error in strings::split: Expected two strings\n");
 		if (str_elem.type == QD_STACK_TYPE_STR) qd_string_release(str_elem.value.s);
 		if (delim_elem.type == QD_STACK_TYPE_STR) qd_string_release(delim_elem.value.s);
 		abort();
@@ -409,7 +409,7 @@ int usr_str_split(qd_context* ctx) {
 	size_t delim_len = strlen(delim);
 
 	if (delim_len == 0) {
-		fprintf(stderr, "Fatal error in str::split: Empty delimiter\n");
+		fprintf(stderr, "Fatal error in strings::split: Empty delimiter\n");
 		qd_string_release(str_elem.value.s);
 		qd_string_release(delim_elem.value.s);
 		abort();
@@ -426,7 +426,7 @@ int usr_str_split(qd_context* ctx) {
 	// Allocate array for qd_string pointers
 	qd_string_t** parts = malloc(count * sizeof(qd_string_t*));
 	if (!parts) {
-		fprintf(stderr, "Fatal error in str::split: Memory allocation failed\n");
+		fprintf(stderr, "Fatal error in strings::split: Memory allocation failed\n");
 		qd_string_release(str_elem.value.s);
 		qd_string_release(delim_elem.value.s);
 		abort();
@@ -441,7 +441,7 @@ int usr_str_split(qd_context* ctx) {
 		size_t part_len = (size_t)(pos - start);
 		parts[idx] = qd_string_create_with_length(start, part_len);
 		if (!parts[idx]) {
-			fprintf(stderr, "Fatal error in str::split: Memory allocation failed\n");
+			fprintf(stderr, "Fatal error in strings::split: Memory allocation failed\n");
 			for (size_t i = 0; i < idx; i++) qd_string_release(parts[i]);
 			free(parts);
 			qd_string_release(str_elem.value.s);
@@ -457,7 +457,7 @@ int usr_str_split(qd_context* ctx) {
 	size_t part_len = strlen(start);
 	parts[idx] = qd_string_create_with_length(start, part_len);
 	if (!parts[idx]) {
-		fprintf(stderr, "Fatal error in str::split: Memory allocation failed\n");
+		fprintf(stderr, "Fatal error in strings::split: Memory allocation failed\n");
 		for (size_t i = 0; i < idx; i++) qd_string_release(parts[i]);
 		free(parts);
 		qd_string_release(str_elem.value.s);
@@ -470,28 +470,28 @@ int usr_str_split(qd_context* ctx) {
 
 	qd_push_p(ctx, parts);
 	qd_push_i(ctx, (int64_t)count);
-	qd_push_i(ctx, STR_ERR_OK);  // Success status for fallible function
+	qd_push_i(ctx, STRINGS_ERR_OK);  // Success status for fallible function
 
-	return (int){STR_ERR_OK};
+	return (int){STRINGS_ERR_OK};
 }
 
 // replace - replace all occurrences ( str:s old:s new:s -- result:s )
-int usr_str_replace(qd_context* ctx) {
+int usr_strings_replace(qd_context* ctx) {
 	qd_stack_element_t new_elem, old_elem, str_elem;
 	qd_stack_error err = qd_stack_pop(ctx->st, &new_elem);
 	if (err != QD_STACK_OK) {
-		fprintf(stderr, "Fatal error in str::replace: Stack underflow\n");
+		fprintf(stderr, "Fatal error in strings::replace: Stack underflow\n");
 		abort();
 	}
 	err = qd_stack_pop(ctx->st, &old_elem);
 	if (err != QD_STACK_OK) {
-		fprintf(stderr, "Fatal error in str::replace: Stack underflow\n");
+		fprintf(stderr, "Fatal error in strings::replace: Stack underflow\n");
 		if (new_elem.type == QD_STACK_TYPE_STR) qd_string_release(new_elem.value.s);
 		abort();
 	}
 	err = qd_stack_pop(ctx->st, &str_elem);
 	if (err != QD_STACK_OK) {
-		fprintf(stderr, "Fatal error in str::replace: Stack underflow\n");
+		fprintf(stderr, "Fatal error in strings::replace: Stack underflow\n");
 		if (new_elem.type == QD_STACK_TYPE_STR) qd_string_release(new_elem.value.s);
 		if (old_elem.type == QD_STACK_TYPE_STR) qd_string_release(old_elem.value.s);
 		abort();
@@ -499,7 +499,7 @@ int usr_str_replace(qd_context* ctx) {
 
 	if (str_elem.type != QD_STACK_TYPE_STR || old_elem.type != QD_STACK_TYPE_STR ||
 			new_elem.type != QD_STACK_TYPE_STR) {
-		fprintf(stderr, "Fatal error in str::replace: Expected three strings\n");
+		fprintf(stderr, "Fatal error in strings::replace: Expected three strings\n");
 		if (str_elem.type == QD_STACK_TYPE_STR) qd_string_release(str_elem.value.s);
 		if (old_elem.type == QD_STACK_TYPE_STR) qd_string_release(old_elem.value.s);
 		if (new_elem.type == QD_STACK_TYPE_STR) qd_string_release(new_elem.value.s);
@@ -517,8 +517,8 @@ int usr_str_replace(qd_context* ctx) {
 		qd_string_release(new_elem.value.s);
 		qd_push_s(ctx, qd_string_data(str_elem.value.s));
 		qd_string_release(str_elem.value.s);
-		qd_push_i(ctx, STR_ERR_OK);  // Success status for fallible function
-		return (int){STR_ERR_OK};
+		qd_push_i(ctx, STRINGS_ERR_OK);  // Success status for fallible function
+		return (int){STRINGS_ERR_OK};
 	}
 
 	// Count occurrences
@@ -538,7 +538,7 @@ int usr_str_replace(qd_context* ctx) {
 
 	char* result = malloc(result_len + 1);
 	if (!result) {
-		fprintf(stderr, "Fatal error in str::replace: Memory allocation failed\n");
+		fprintf(stderr, "Fatal error in strings::replace: Memory allocation failed\n");
 		qd_string_release(str_elem.value.s);
 		qd_string_release(old_elem.value.s);
 		qd_string_release(new_elem.value.s);
@@ -575,29 +575,29 @@ int usr_str_replace(qd_context* ctx) {
 
 	qd_push_s(ctx, result);
 	free(result);
-	qd_push_i(ctx, STR_ERR_OK);  // Success status for fallible function
+	qd_push_i(ctx, STRINGS_ERR_OK);  // Success status for fallible function
 
-	return (int){STR_ERR_OK};
+	return (int){STRINGS_ERR_OK};
 }
 
 // compare - compare two strings ( str1:s str2:s -- result:i )
 // Returns: -1 if str1 < str2, 0 if equal, 1 if str1 > str2
-int usr_str_compare(qd_context* ctx) {
+int usr_strings_compare(qd_context* ctx) {
 	qd_stack_element_t str2_elem, str1_elem;
 	qd_stack_error err = qd_stack_pop(ctx->st, &str2_elem);
 	if (err != QD_STACK_OK) {
-		fprintf(stderr, "Fatal error in str::compare: Stack underflow\n");
+		fprintf(stderr, "Fatal error in strings::compare: Stack underflow\n");
 		abort();
 	}
 	err = qd_stack_pop(ctx->st, &str1_elem);
 	if (err != QD_STACK_OK) {
-		fprintf(stderr, "Fatal error in str::compare: Stack underflow\n");
+		fprintf(stderr, "Fatal error in strings::compare: Stack underflow\n");
 		if (str2_elem.type == QD_STACK_TYPE_STR) qd_string_release(str2_elem.value.s);
 		abort();
 	}
 
 	if (str1_elem.type != QD_STACK_TYPE_STR || str2_elem.type != QD_STACK_TYPE_STR) {
-		fprintf(stderr, "Fatal error in str::compare: Expected two strings\n");
+		fprintf(stderr, "Fatal error in strings::compare: Expected two strings\n");
 		if (str1_elem.type == QD_STACK_TYPE_STR) qd_string_release(str1_elem.value.s);
 		if (str2_elem.type == QD_STACK_TYPE_STR) qd_string_release(str2_elem.value.s);
 		abort();
@@ -614,28 +614,28 @@ int usr_str_compare(qd_context* ctx) {
 }
 
 // char_at - get character code at index ( str:s index:i -- char_code:i )!
-int usr_str_char_at(qd_context* ctx) {
+int usr_strings_char_at(qd_context* ctx) {
 	qd_stack_element_t index_elem, str_elem;
 	qd_stack_error err = qd_stack_pop(ctx->st, &index_elem);
 	if (err != QD_STACK_OK) {
-		qd_push_i(ctx, STR_ERR_INVALID_ARG);
-		return (int){STR_ERR_INVALID_ARG};
+		qd_push_i(ctx, STRINGS_ERR_INVALID_ARG);
+		return (int){STRINGS_ERR_INVALID_ARG};
 	}
 	err = qd_stack_pop(ctx->st, &str_elem);
 	if (err != QD_STACK_OK) {
-		qd_push_i(ctx, STR_ERR_INVALID_ARG);
-		return (int){STR_ERR_INVALID_ARG};
+		qd_push_i(ctx, STRINGS_ERR_INVALID_ARG);
+		return (int){STRINGS_ERR_INVALID_ARG};
 	}
 
 	if (str_elem.type != QD_STACK_TYPE_STR) {
-		qd_push_i(ctx, STR_ERR_INVALID_ARG);
-		return (int){STR_ERR_INVALID_ARG};
+		qd_push_i(ctx, STRINGS_ERR_INVALID_ARG);
+		return (int){STRINGS_ERR_INVALID_ARG};
 	}
 
 	if (index_elem.type != QD_STACK_TYPE_INT) {
 		qd_string_release(str_elem.value.s);
-		qd_push_i(ctx, STR_ERR_INVALID_ARG);
-		return (int){STR_ERR_INVALID_ARG};
+		qd_push_i(ctx, STRINGS_ERR_INVALID_ARG);
+		return (int){STRINGS_ERR_INVALID_ARG};
 	}
 
 	int64_t index = index_elem.value.i;
@@ -643,10 +643,10 @@ int usr_str_char_at(qd_context* ctx) {
 
 	if (index < 0 || (size_t)index >= str_len) {
 		qd_string_release(str_elem.value.s);
-		ctx->error_code = STR_ERR_OUT_OF_BOUNDS;
+		ctx->error_code = STRINGS_ERR_OUT_OF_BOUNDS;
 		qd_set_error_msg(ctx, "index out of bounds");
-		qd_push_i(ctx, STR_ERR_OUT_OF_BOUNDS);
-		return (int){STR_ERR_OUT_OF_BOUNDS};
+		qd_push_i(ctx, STRINGS_ERR_OUT_OF_BOUNDS);
+		return (int){STRINGS_ERR_OUT_OF_BOUNDS};
 	}
 
 	int64_t char_code = (unsigned char)qd_string_data(str_elem.value.s)[index];
@@ -655,27 +655,27 @@ int usr_str_char_at(qd_context* ctx) {
 
 	// Push result then Ok
 	qd_push_i(ctx, char_code);
-	qd_push_i(ctx, STR_ERR_OK);
+	qd_push_i(ctx, STRINGS_ERR_OK);
 	return (int){0};
 }
 
 // index_of - find index of substring ( haystack:s needle:s -- index:i )
-int usr_str_index_of(qd_context* ctx) {
+int usr_strings_index_of(qd_context* ctx) {
 	qd_stack_element_t needle_elem, haystack_elem;
 	qd_stack_error err = qd_stack_pop(ctx->st, &needle_elem);
 	if (err != QD_STACK_OK) {
-		fprintf(stderr, "Fatal error in str::index_of: Stack underflow\n");
+		fprintf(stderr, "Fatal error in strings::index_of: Stack underflow\n");
 		abort();
 	}
 	err = qd_stack_pop(ctx->st, &haystack_elem);
 	if (err != QD_STACK_OK) {
-		fprintf(stderr, "Fatal error in str::index_of: Stack underflow\n");
+		fprintf(stderr, "Fatal error in strings::index_of: Stack underflow\n");
 		if (needle_elem.type == QD_STACK_TYPE_STR) qd_string_release(needle_elem.value.s);
 		abort();
 	}
 
 	if (haystack_elem.type != QD_STACK_TYPE_STR || needle_elem.type != QD_STACK_TYPE_STR) {
-		fprintf(stderr, "Fatal error in str::index_of: Expected two strings\n");
+		fprintf(stderr, "Fatal error in strings::index_of: Expected two strings\n");
 		if (haystack_elem.type == QD_STACK_TYPE_STR) qd_string_release(haystack_elem.value.s);
 		if (needle_elem.type == QD_STACK_TYPE_STR) qd_string_release(needle_elem.value.s);
 		abort();
@@ -695,34 +695,34 @@ int usr_str_index_of(qd_context* ctx) {
 }
 
 // index_of_from - find index of substring starting from position ( haystack:s needle:s start:i -- index:i )
-int usr_str_index_of_from(qd_context* ctx) {
+int usr_strings_index_of_from(qd_context* ctx) {
 	qd_stack_element_t start_elem, needle_elem, haystack_elem;
 	qd_stack_error err = qd_stack_pop(ctx->st, &start_elem);
 	if (err != QD_STACK_OK) {
-		fprintf(stderr, "Fatal error in str::index_of_from: Stack underflow\n");
+		fprintf(stderr, "Fatal error in strings::index_of_from: Stack underflow\n");
 		abort();
 	}
 	err = qd_stack_pop(ctx->st, &needle_elem);
 	if (err != QD_STACK_OK) {
-		fprintf(stderr, "Fatal error in str::index_of_from: Stack underflow\n");
+		fprintf(stderr, "Fatal error in strings::index_of_from: Stack underflow\n");
 		abort();
 	}
 	err = qd_stack_pop(ctx->st, &haystack_elem);
 	if (err != QD_STACK_OK) {
-		fprintf(stderr, "Fatal error in str::index_of_from: Stack underflow\n");
+		fprintf(stderr, "Fatal error in strings::index_of_from: Stack underflow\n");
 		if (needle_elem.type == QD_STACK_TYPE_STR) qd_string_release(needle_elem.value.s);
 		abort();
 	}
 
 	if (haystack_elem.type != QD_STACK_TYPE_STR || needle_elem.type != QD_STACK_TYPE_STR) {
-		fprintf(stderr, "Fatal error in str::index_of_from: Expected two strings\n");
+		fprintf(stderr, "Fatal error in strings::index_of_from: Expected two strings\n");
 		if (haystack_elem.type == QD_STACK_TYPE_STR) qd_string_release(haystack_elem.value.s);
 		if (needle_elem.type == QD_STACK_TYPE_STR) qd_string_release(needle_elem.value.s);
 		abort();
 	}
 
 	if (start_elem.type != QD_STACK_TYPE_INT) {
-		fprintf(stderr, "Fatal error in str::index_of_from: Expected integer start position\n");
+		fprintf(stderr, "Fatal error in strings::index_of_from: Expected integer start position\n");
 		qd_string_release(haystack_elem.value.s);
 		qd_string_release(needle_elem.value.s);
 		abort();
@@ -749,17 +749,17 @@ int usr_str_index_of_from(qd_context* ctx) {
 }
 
 // from_char - create string from character code ( char_code:i -- str:s )
-int usr_str_from_char(qd_context* ctx) {
+int usr_strings_from_char(qd_context* ctx) {
 	qd_stack_element_t code_elem;
 
 	qd_stack_error err = qd_stack_pop(ctx->st, &code_elem);
 	if (err != QD_STACK_OK) {
-		fprintf(stderr, "Fatal error in str::from_char: Stack underflow\n");
+		fprintf(stderr, "Fatal error in strings::from_char: Stack underflow\n");
 		abort();
 	}
 
 	if (code_elem.type != QD_STACK_TYPE_INT) {
-		fprintf(stderr, "Fatal error in str::from_char: Expected integer\n");
+		fprintf(stderr, "Fatal error in strings::from_char: Expected integer\n");
 		abort();
 	}
 
@@ -784,17 +784,17 @@ int usr_str_from_char(qd_context* ctx) {
 }
 
 // from_ptr - convert C string pointer to Quadrate string ( ptr:p -- str:s )
-int usr_str_from_ptr(qd_context* ctx) {
+int usr_strings_from_ptr(qd_context* ctx) {
 	qd_stack_element_t ptr_elem;
 
 	qd_stack_error err = qd_stack_pop(ctx->st, &ptr_elem);
 	if (err != QD_STACK_OK) {
-		fprintf(stderr, "Fatal error in str::from_ptr: Stack underflow\n");
+		fprintf(stderr, "Fatal error in strings::from_ptr: Stack underflow\n");
 		abort();
 	}
 
 	if (ptr_elem.type != QD_STACK_TYPE_PTR) {
-		fprintf(stderr, "Fatal error in str::from_ptr: Expected pointer\n");
+		fprintf(stderr, "Fatal error in strings::from_ptr: Expected pointer\n");
 		abort();
 	}
 
@@ -823,18 +823,18 @@ static int str_cmp_desc(const void* a, const void* b) {
 }
 
 // sort - sort array of strings in ascending order ( arr:p count:i -- )
-int usr_str_sort(qd_context* ctx) {
+int usr_strings_sort(qd_context* ctx) {
 	qd_stack_element_t count_elem, arr_elem;
 	qd_stack_error err = qd_stack_pop(ctx->st, &count_elem);
 	if (err != QD_STACK_OK || count_elem.type != QD_STACK_TYPE_INT) {
-		fprintf(stderr, "Fatal error in str::sort: Expected integer count\n");
+		fprintf(stderr, "Fatal error in strings::sort: Expected integer count\n");
 		abort();
 	}
 
 	// Pop array pointer
 	err = qd_stack_pop(ctx->st, &arr_elem);
 	if (err != QD_STACK_OK || arr_elem.type != QD_STACK_TYPE_PTR) {
-		fprintf(stderr, "Fatal error in str::sort: Expected pointer to string array\n");
+		fprintf(stderr, "Fatal error in strings::sort: Expected pointer to string array\n");
 		abort();
 	}
 
@@ -849,18 +849,18 @@ int usr_str_sort(qd_context* ctx) {
 }
 
 // sort_desc - sort array of strings in descending order ( arr:p count:i -- )
-int usr_str_sort_desc(qd_context* ctx) {
+int usr_strings_sort_desc(qd_context* ctx) {
 	qd_stack_element_t count_elem, arr_elem;
 	qd_stack_error err = qd_stack_pop(ctx->st, &count_elem);
 	if (err != QD_STACK_OK || count_elem.type != QD_STACK_TYPE_INT) {
-		fprintf(stderr, "Fatal error in str::sort_desc: Expected integer count\n");
+		fprintf(stderr, "Fatal error in strings::sort_desc: Expected integer count\n");
 		abort();
 	}
 
 	// Pop array pointer
 	err = qd_stack_pop(ctx->st, &arr_elem);
 	if (err != QD_STACK_OK || arr_elem.type != QD_STACK_TYPE_PTR) {
-		fprintf(stderr, "Fatal error in str::sort_desc: Expected pointer to string array\n");
+		fprintf(stderr, "Fatal error in strings::sort_desc: Expected pointer to string array\n");
 		abort();
 	}
 
@@ -875,16 +875,16 @@ int usr_str_sort_desc(qd_context* ctx) {
 }
 
 // repeat - repeat string n times ( str:s n:i -- result:s )
-int usr_str_repeat(qd_context* ctx) {
+int usr_strings_repeat(qd_context* ctx) {
 	qd_stack_element_t n_elem, str_elem;
 	qd_stack_error err = qd_stack_pop(ctx->st, &n_elem);
 	if (err != QD_STACK_OK || n_elem.type != QD_STACK_TYPE_INT) {
-		fprintf(stderr, "Fatal error in str::repeat: Expected integer count\n");
+		fprintf(stderr, "Fatal error in strings::repeat: Expected integer count\n");
 		abort();
 	}
 	err = qd_stack_pop(ctx->st, &str_elem);
 	if (err != QD_STACK_OK || str_elem.type != QD_STACK_TYPE_STR) {
-		fprintf(stderr, "Fatal error in str::repeat: Expected string\n");
+		fprintf(stderr, "Fatal error in strings::repeat: Expected string\n");
 		abort();
 	}
 
@@ -895,7 +895,7 @@ int usr_str_repeat(qd_context* ctx) {
 
 	size_t str_len = strlen(qd_string_data(str_elem.value.s));
 	if (str_len > 0 && (size_t)n > SIZE_MAX / str_len) {
-		fprintf(stderr, "Fatal error in str::repeat: Result size overflow\n");
+		fprintf(stderr, "Fatal error in strings::repeat: Result size overflow\n");
 		qd_string_release(str_elem.value.s);
 		abort();
 	}
@@ -903,7 +903,7 @@ int usr_str_repeat(qd_context* ctx) {
 
 	char* result = malloc(result_len + 1);
 	if (!result) {
-		fprintf(stderr, "Fatal error in str::repeat: Memory allocation failed\n");
+		fprintf(stderr, "Fatal error in strings::repeat: Memory allocation failed\n");
 		qd_string_release(str_elem.value.s);
 		abort();
 	}
@@ -923,18 +923,18 @@ int usr_str_repeat(qd_context* ctx) {
 }
 
 // reverse - reverse a string ( str:s -- result:s )
-int usr_str_reverse(qd_context* ctx) {
+int usr_strings_reverse(qd_context* ctx) {
 	qd_stack_element_t str_elem;
 	qd_stack_error err = qd_stack_pop(ctx->st, &str_elem);
 	if (err != QD_STACK_OK || str_elem.type != QD_STACK_TYPE_STR) {
-		fprintf(stderr, "Fatal error in str::reverse: Expected string\n");
+		fprintf(stderr, "Fatal error in strings::reverse: Expected string\n");
 		abort();
 	}
 
 	size_t len = strlen(qd_string_data(str_elem.value.s));
 	char* result = malloc(len + 1);
 	if (!result) {
-		fprintf(stderr, "Fatal error in str::reverse: Memory allocation failed\n");
+		fprintf(stderr, "Fatal error in strings::reverse: Memory allocation failed\n");
 		qd_string_release(str_elem.value.s);
 		abort();
 	}
@@ -953,11 +953,11 @@ int usr_str_reverse(qd_context* ctx) {
 }
 
 // trim_left - remove leading whitespace ( str:s -- result:s )
-int usr_str_trim_left(qd_context* ctx) {
+int usr_strings_trim_left(qd_context* ctx) {
 	qd_stack_element_t str_elem;
 	qd_stack_error err = qd_stack_pop(ctx->st, &str_elem);
 	if (err != QD_STACK_OK || str_elem.type != QD_STACK_TYPE_STR) {
-		fprintf(stderr, "Fatal error in str::trim_left: Expected string\n");
+		fprintf(stderr, "Fatal error in strings::trim_left: Expected string\n");
 		abort();
 	}
 
@@ -969,7 +969,7 @@ int usr_str_trim_left(qd_context* ctx) {
 	size_t len = strlen(src);
 	char* result = malloc(len + 1);
 	if (!result) {
-		fprintf(stderr, "Fatal error in str::trim_left: Memory allocation failed\n");
+		fprintf(stderr, "Fatal error in strings::trim_left: Memory allocation failed\n");
 		qd_string_release(str_elem.value.s);
 		abort();
 	}
@@ -985,11 +985,11 @@ int usr_str_trim_left(qd_context* ctx) {
 }
 
 // trim_right - remove trailing whitespace ( str:s -- result:s )
-int usr_str_trim_right(qd_context* ctx) {
+int usr_strings_trim_right(qd_context* ctx) {
 	qd_stack_element_t str_elem;
 	qd_stack_error err = qd_stack_pop(ctx->st, &str_elem);
 	if (err != QD_STACK_OK || str_elem.type != QD_STACK_TYPE_STR) {
-		fprintf(stderr, "Fatal error in str::trim_right: Expected string\n");
+		fprintf(stderr, "Fatal error in strings::trim_right: Expected string\n");
 		abort();
 	}
 
@@ -1002,7 +1002,7 @@ int usr_str_trim_right(qd_context* ctx) {
 
 	char* result = malloc(len + 1);
 	if (!result) {
-		fprintf(stderr, "Fatal error in str::trim_right: Memory allocation failed\n");
+		fprintf(stderr, "Fatal error in strings::trim_right: Memory allocation failed\n");
 		qd_string_release(str_elem.value.s);
 		abort();
 	}
@@ -1018,17 +1018,17 @@ int usr_str_trim_right(qd_context* ctx) {
 }
 
 // count - count occurrences of substring ( haystack:s needle:s -- count:i )
-int usr_str_count(qd_context* ctx) {
+int usr_strings_count(qd_context* ctx) {
 	qd_stack_element_t needle_elem, haystack_elem;
 	qd_stack_error err = qd_stack_pop(ctx->st, &needle_elem);
 	if (err != QD_STACK_OK || needle_elem.type != QD_STACK_TYPE_STR) {
-		fprintf(stderr, "Fatal error in str::count: Expected string needle\n");
+		fprintf(stderr, "Fatal error in strings::count: Expected string needle\n");
 		abort();
 	}
 	err = qd_stack_pop(ctx->st, &haystack_elem);
 	if (err != QD_STACK_OK || haystack_elem.type != QD_STACK_TYPE_STR) {
 		qd_string_release(needle_elem.value.s);
-		fprintf(stderr, "Fatal error in str::count: Expected string haystack\n");
+		fprintf(stderr, "Fatal error in strings::count: Expected string haystack\n");
 		abort();
 	}
 
@@ -1053,17 +1053,17 @@ int usr_str_count(qd_context* ctx) {
 }
 
 // last_index_of - find last occurrence of substring ( haystack:s needle:s -- index:i )
-int usr_str_last_index_of(qd_context* ctx) {
+int usr_strings_last_index_of(qd_context* ctx) {
 	qd_stack_element_t needle_elem, haystack_elem;
 	qd_stack_error err = qd_stack_pop(ctx->st, &needle_elem);
 	if (err != QD_STACK_OK || needle_elem.type != QD_STACK_TYPE_STR) {
-		fprintf(stderr, "Fatal error in str::last_index_of: Expected string needle\n");
+		fprintf(stderr, "Fatal error in strings::last_index_of: Expected string needle\n");
 		abort();
 	}
 	err = qd_stack_pop(ctx->st, &haystack_elem);
 	if (err != QD_STACK_OK || haystack_elem.type != QD_STACK_TYPE_STR) {
 		qd_string_release(needle_elem.value.s);
-		fprintf(stderr, "Fatal error in str::last_index_of: Expected string haystack\n");
+		fprintf(stderr, "Fatal error in strings::last_index_of: Expected string haystack\n");
 		abort();
 	}
 
@@ -1091,17 +1091,17 @@ int usr_str_last_index_of(qd_context* ctx) {
 }
 
 // join - join array of strings with delimiter ( parts:p count:i delim:s -- result:s )
-int usr_str_join(qd_context* ctx) {
+int usr_strings_join(qd_context* ctx) {
 	qd_stack_element_t delim_elem, count_elem, parts_elem;
 	qd_stack_error err = qd_stack_pop(ctx->st, &delim_elem);
 	if (err != QD_STACK_OK || delim_elem.type != QD_STACK_TYPE_STR) {
-		fprintf(stderr, "Fatal error in str::join: Expected string delimiter\n");
+		fprintf(stderr, "Fatal error in strings::join: Expected string delimiter\n");
 		abort();
 	}
 	err = qd_stack_pop(ctx->st, &count_elem);
 	if (err != QD_STACK_OK || count_elem.type != QD_STACK_TYPE_INT) {
 		qd_string_release(delim_elem.value.s);
-		fprintf(stderr, "Fatal error in str::join: Expected integer count\n");
+		fprintf(stderr, "Fatal error in strings::join: Expected integer count\n");
 		abort();
 	}
 
@@ -1109,7 +1109,7 @@ int usr_str_join(qd_context* ctx) {
 	err = qd_stack_pop(ctx->st, &parts_elem);
 	if (err != QD_STACK_OK || parts_elem.type != QD_STACK_TYPE_PTR) {
 		qd_string_release(delim_elem.value.s);
-		fprintf(stderr, "Fatal error in str::join: Expected pointer to string array\n");
+		fprintf(stderr, "Fatal error in strings::join: Expected pointer to string array\n");
 		abort();
 	}
 
@@ -1122,7 +1122,7 @@ int usr_str_join(qd_context* ctx) {
 	if (count <= 0 || parts == NULL) {
 		qd_string_release(delim_elem.value.s);
 		qd_push_s(ctx, "");
-		qd_push_i(ctx, STR_ERR_OK);
+		qd_push_i(ctx, STRINGS_ERR_OK);
 		return (int){0};
 	}
 
@@ -1141,10 +1141,10 @@ int usr_str_join(qd_context* ctx) {
 	char* result = malloc(total_len + 1);
 	if (!result) {
 		qd_string_release(delim_elem.value.s);
-		ctx->error_code = STR_ERR_ALLOC;
-		qd_set_error_msg(ctx, "str::join: allocation failed");
-		qd_push_i(ctx, STR_ERR_ALLOC);
-		return (int){STR_ERR_ALLOC};
+		ctx->error_code = STRINGS_ERR_ALLOC;
+		qd_set_error_msg(ctx, "strings::join: allocation failed");
+		qd_push_i(ctx, STRINGS_ERR_ALLOC);
+		return (int){STRINGS_ERR_ALLOC};
 	}
 
 	// Build result
@@ -1166,17 +1166,17 @@ int usr_str_join(qd_context* ctx) {
 
 	qd_push_s(ctx, result);
 	free(result);
-	qd_push_i(ctx, STR_ERR_OK);
+	qd_push_i(ctx, STRINGS_ERR_OK);
 
 	return (int){0};
 }
 
 // is_empty - check if string is empty ( str:s -- result:i )
-int usr_str_is_empty(qd_context* ctx) {
+int usr_strings_is_empty(qd_context* ctx) {
 	qd_stack_element_t str_elem;
 	qd_stack_error err = qd_stack_pop(ctx->st, &str_elem);
 	if (err != QD_STACK_OK || str_elem.type != QD_STACK_TYPE_STR) {
-		fprintf(stderr, "Fatal error in str::is_empty: Expected string\n");
+		fprintf(stderr, "Fatal error in strings::is_empty: Expected string\n");
 		abort();
 	}
 
@@ -1187,11 +1187,11 @@ int usr_str_is_empty(qd_context* ctx) {
 }
 
 // is_blank - check if string is empty or only whitespace ( str:s -- result:i )
-int usr_str_is_blank(qd_context* ctx) {
+int usr_strings_is_blank(qd_context* ctx) {
 	qd_stack_element_t str_elem;
 	qd_stack_error err = qd_stack_pop(ctx->st, &str_elem);
 	if (err != QD_STACK_OK || str_elem.type != QD_STACK_TYPE_STR) {
-		fprintf(stderr, "Fatal error in str::is_blank: Expected string\n");
+		fprintf(stderr, "Fatal error in strings::is_blank: Expected string\n");
 		abort();
 	}
 
@@ -1210,7 +1210,7 @@ int usr_str_is_blank(qd_context* ctx) {
 }
 
 // equals_ignore_case - case-insensitive comparison ( a:s b:s -- result:i )
-int usr_str_equals_ignore_case(qd_context* ctx) {
+int usr_strings_equals_ignore_case(qd_context* ctx) {
 	qd_stack_element_t b_elem, a_elem;
 	qd_stack_error err = qd_stack_pop(ctx->st, &b_elem);
 	if (err != QD_STACK_OK) abort();
@@ -1234,11 +1234,11 @@ int usr_str_equals_ignore_case(qd_context* ctx) {
 }
 
 // pad_left - left-pad string to length ( str:s len:i ch:s -- result:s )
-int usr_str_pad_left(qd_context* ctx) {
+int usr_strings_pad_left(qd_context* ctx) {
 	qd_stack_element_t ch_elem, len_elem, str_elem;
-	STR_POP(ctx, &ch_elem, "pad_left");
-	STR_POP(ctx, &len_elem, "pad_left");
-	STR_POP(ctx, &str_elem, "pad_left");
+	STRINGS_POP(ctx, &ch_elem, "pad_left");
+	STRINGS_POP(ctx, &len_elem, "pad_left");
+	STRINGS_POP(ctx, &str_elem, "pad_left");
 
 	const char* str = qd_string_data(str_elem.value.s);
 	int64_t target_len = len_elem.value.i;
@@ -1269,11 +1269,11 @@ int usr_str_pad_left(qd_context* ctx) {
 }
 
 // pad_right - right-pad string to length ( str:s len:i ch:s -- result:s )
-int usr_str_pad_right(qd_context* ctx) {
+int usr_strings_pad_right(qd_context* ctx) {
 	qd_stack_element_t ch_elem, len_elem, str_elem;
-	STR_POP(ctx, &ch_elem, "pad_right");
-	STR_POP(ctx, &len_elem, "pad_right");
-	STR_POP(ctx, &str_elem, "pad_right");
+	STRINGS_POP(ctx, &ch_elem, "pad_right");
+	STRINGS_POP(ctx, &len_elem, "pad_right");
+	STRINGS_POP(ctx, &str_elem, "pad_right");
 
 	const char* str = qd_string_data(str_elem.value.s);
 	int64_t target_len = len_elem.value.i;
@@ -1305,11 +1305,11 @@ int usr_str_pad_right(qd_context* ctx) {
 }
 
 // center - center string with padding ( str:s len:i ch:s -- result:s )
-int usr_str_center(qd_context* ctx) {
+int usr_strings_center(qd_context* ctx) {
 	qd_stack_element_t ch_elem, len_elem, str_elem;
-	STR_POP(ctx, &ch_elem, "center");
-	STR_POP(ctx, &len_elem, "center");
-	STR_POP(ctx, &str_elem, "center");
+	STRINGS_POP(ctx, &ch_elem, "center");
+	STRINGS_POP(ctx, &len_elem, "center");
+	STRINGS_POP(ctx, &str_elem, "center");
 
 	const char* str = qd_string_data(str_elem.value.s);
 	int64_t target_len = len_elem.value.i;
@@ -1343,9 +1343,9 @@ int usr_str_center(qd_context* ctx) {
 }
 
 // capitalize - uppercase first char ( str:s -- result:s )
-int usr_str_capitalize(qd_context* ctx) {
+int usr_strings_capitalize(qd_context* ctx) {
 	qd_stack_element_t str_elem;
-	STR_POP(ctx, &str_elem, "capitalize");
+	STRINGS_POP(ctx, &str_elem, "capitalize");
 
 	const char* str = qd_string_data(str_elem.value.s);
 	size_t len = strlen(str);
@@ -1368,9 +1368,9 @@ int usr_str_capitalize(qd_context* ctx) {
 }
 
 // title - title case ( str:s -- result:s )
-int usr_str_title(qd_context* ctx) {
+int usr_strings_title(qd_context* ctx) {
 	qd_stack_element_t str_elem;
-	STR_POP(ctx, &str_elem, "title");
+	STRINGS_POP(ctx, &str_elem, "title");
 
 	const char* str = qd_string_data(str_elem.value.s);
 	size_t len = strlen(str);
@@ -1399,10 +1399,10 @@ int usr_str_title(qd_context* ctx) {
 }
 
 // trim_prefix - remove prefix if present ( str:s prefix:s -- result:s )
-int usr_str_trim_prefix(qd_context* ctx) {
+int usr_strings_trim_prefix(qd_context* ctx) {
 	qd_stack_element_t prefix_elem, str_elem;
-	STR_POP(ctx, &prefix_elem, "trim_prefix");
-	STR_POP(ctx, &str_elem, "trim_prefix");
+	STRINGS_POP(ctx, &prefix_elem, "trim_prefix");
+	STRINGS_POP(ctx, &str_elem, "trim_prefix");
 
 	const char* str = qd_string_data(str_elem.value.s);
 	const char* prefix = qd_string_data(prefix_elem.value.s);
@@ -1421,10 +1421,10 @@ int usr_str_trim_prefix(qd_context* ctx) {
 }
 
 // trim_suffix - remove suffix if present ( str:s suffix:s -- result:s )
-int usr_str_trim_suffix(qd_context* ctx) {
+int usr_strings_trim_suffix(qd_context* ctx) {
 	qd_stack_element_t suffix_elem, str_elem;
-	STR_POP(ctx, &suffix_elem, "trim_suffix");
-	STR_POP(ctx, &str_elem, "trim_suffix");
+	STRINGS_POP(ctx, &suffix_elem, "trim_suffix");
+	STRINGS_POP(ctx, &str_elem, "trim_suffix");
 
 	const char* str = qd_string_data(str_elem.value.s);
 	const char* suffix = qd_string_data(suffix_elem.value.s);
@@ -1448,11 +1448,11 @@ int usr_str_trim_suffix(qd_context* ctx) {
 }
 
 // replace_first - replace first occurrence only ( str:s old:s new:s -- result:s )
-int usr_str_replace_first(qd_context* ctx) {
+int usr_strings_replace_first(qd_context* ctx) {
 	qd_stack_element_t new_elem, old_elem, str_elem;
-	STR_POP(ctx, &new_elem, "replace_first");
-	STR_POP(ctx, &old_elem, "replace_first");
-	STR_POP(ctx, &str_elem, "replace_first");
+	STRINGS_POP(ctx, &new_elem, "replace_first");
+	STRINGS_POP(ctx, &old_elem, "replace_first");
+	STRINGS_POP(ctx, &str_elem, "replace_first");
 
 	const char* str = qd_string_data(str_elem.value.s);
 	const char* old = qd_string_data(old_elem.value.s);
@@ -1485,11 +1485,11 @@ int usr_str_replace_first(qd_context* ctx) {
 }
 
 // insert - insert string at position ( str:s pos:i ins:s -- result:s )
-int usr_str_insert(qd_context* ctx) {
+int usr_strings_insert(qd_context* ctx) {
 	qd_stack_element_t ins_elem, pos_elem, str_elem;
-	STR_POP(ctx, &ins_elem, "insert");
-	STR_POP(ctx, &pos_elem, "insert");
-	STR_POP(ctx, &str_elem, "insert");
+	STRINGS_POP(ctx, &ins_elem, "insert");
+	STRINGS_POP(ctx, &pos_elem, "insert");
+	STRINGS_POP(ctx, &str_elem, "insert");
 
 	const char* str = qd_string_data(str_elem.value.s);
 	int64_t pos = pos_elem.value.i;
@@ -1515,11 +1515,11 @@ int usr_str_insert(qd_context* ctx) {
 }
 
 // remove_range - remove range from string ( str:s start:i len:i -- result:s )
-int usr_str_remove_range(qd_context* ctx) {
+int usr_strings_remove_range(qd_context* ctx) {
 	qd_stack_element_t len_elem, start_elem, str_elem;
-	STR_POP(ctx, &len_elem, "remove_range");
-	STR_POP(ctx, &start_elem, "remove_range");
-	STR_POP(ctx, &str_elem, "remove_range");
+	STRINGS_POP(ctx, &len_elem, "remove_range");
+	STRINGS_POP(ctx, &start_elem, "remove_range");
+	STRINGS_POP(ctx, &str_elem, "remove_range");
 
 	const char* str = qd_string_data(str_elem.value.s);
 	int64_t start = start_elem.value.i;
@@ -1550,11 +1550,11 @@ int usr_str_remove_range(qd_context* ctx) {
 }
 
 // truncate - truncate to max length with optional suffix ( str:s max:i suffix:s -- result:s )
-int usr_str_truncate(qd_context* ctx) {
+int usr_strings_truncate(qd_context* ctx) {
 	qd_stack_element_t suffix_elem, max_elem, str_elem;
-	STR_POP(ctx, &suffix_elem, "truncate");
-	STR_POP(ctx, &max_elem, "truncate");
-	STR_POP(ctx, &str_elem, "truncate");
+	STRINGS_POP(ctx, &suffix_elem, "truncate");
+	STRINGS_POP(ctx, &max_elem, "truncate");
+	STRINGS_POP(ctx, &str_elem, "truncate");
 
 	const char* str = qd_string_data(str_elem.value.s);
 	int64_t max_len = max_elem.value.i;
@@ -1588,9 +1588,9 @@ int usr_str_truncate(qd_context* ctx) {
 }
 
 // lines - split by newlines ( str:s -- arr:p count:i )!
-int usr_str_lines(qd_context* ctx) {
+int usr_strings_lines(qd_context* ctx) {
 	qd_stack_element_t str_elem;
-	STR_POP(ctx, &str_elem, "lines");
+	STRINGS_POP(ctx, &str_elem, "lines");
 
 	const char* str = qd_string_data(str_elem.value.s);
 
@@ -1619,14 +1619,14 @@ int usr_str_lines(qd_context* ctx) {
 	qd_string_release(str_elem.value.s);
 	qd_push_p(ctx, parts);
 	qd_push_i(ctx, (int64_t)idx);
-	qd_push_i(ctx, STR_ERR_OK);
+	qd_push_i(ctx, STRINGS_ERR_OK);
 	return (int){0};
 }
 
 // words - split by whitespace ( str:s -- arr:p count:i )!
-int usr_str_words(qd_context* ctx) {
+int usr_strings_words(qd_context* ctx) {
 	qd_stack_element_t str_elem;
-	STR_POP(ctx, &str_elem, "words");
+	STRINGS_POP(ctx, &str_elem, "words");
 
 	const char* str = qd_string_data(str_elem.value.s);
 
@@ -1646,7 +1646,7 @@ int usr_str_words(qd_context* ctx) {
 		qd_string_release(str_elem.value.s);
 		qd_push_p(ctx, NULL);
 		qd_push_i(ctx, 0);
-		qd_push_i(ctx, STR_ERR_OK);
+		qd_push_i(ctx, STRINGS_ERR_OK);
 		return (int){0};
 	}
 
@@ -1671,16 +1671,16 @@ int usr_str_words(qd_context* ctx) {
 	qd_string_release(str_elem.value.s);
 	qd_push_p(ctx, parts);
 	qd_push_i(ctx, (int64_t)idx);
-	qd_push_i(ctx, STR_ERR_OK);
+	qd_push_i(ctx, STRINGS_ERR_OK);
 	return (int){0};
 }
 
 // split_n - split into at most n parts ( str:s delim:s n:i -- parts:p count:i )!
-int usr_str_split_n(qd_context* ctx) {
+int usr_strings_split_n(qd_context* ctx) {
 	qd_stack_element_t n_elem, delim_elem, str_elem;
-	STR_POP(ctx, &n_elem, "split_n");
-	STR_POP(ctx, &delim_elem, "split_n");
-	STR_POP(ctx, &str_elem, "split_n");
+	STRINGS_POP(ctx, &n_elem, "split_n");
+	STRINGS_POP(ctx, &delim_elem, "split_n");
+	STRINGS_POP(ctx, &str_elem, "split_n");
 
 	const char* str = qd_string_data(str_elem.value.s);
 	const char* delim = qd_string_data(delim_elem.value.s);
@@ -1695,7 +1695,7 @@ int usr_str_split_n(qd_context* ctx) {
 		qd_string_release(delim_elem.value.s);
 		qd_push_p(ctx, parts);
 		qd_push_i(ctx, 1);
-		qd_push_i(ctx, STR_ERR_OK);
+		qd_push_i(ctx, STRINGS_ERR_OK);
 		return (int){0};
 	}
 
@@ -1727,14 +1727,14 @@ int usr_str_split_n(qd_context* ctx) {
 	qd_string_release(delim_elem.value.s);
 	qd_push_p(ctx, parts);
 	qd_push_i(ctx, (int64_t)count);
-	qd_push_i(ctx, STR_ERR_OK);
+	qd_push_i(ctx, STRINGS_ERR_OK);
 	return (int){0};
 }
 
 // is_numeric - check if all digits ( str:s -- result:i )
-int usr_str_is_numeric(qd_context* ctx) {
+int usr_strings_is_numeric(qd_context* ctx) {
 	qd_stack_element_t str_elem;
-	STR_POP(ctx, &str_elem, "is_numeric");
+	STRINGS_POP(ctx, &str_elem, "is_numeric");
 
 	const char* str = qd_string_data(str_elem.value.s);
 	int result = (*str != '\0') ? 1 : 0;
@@ -1748,9 +1748,9 @@ int usr_str_is_numeric(qd_context* ctx) {
 }
 
 // is_alpha - check if all alphabetic ( str:s -- result:i )
-int usr_str_is_alpha(qd_context* ctx) {
+int usr_strings_is_alpha(qd_context* ctx) {
 	qd_stack_element_t str_elem;
-	STR_POP(ctx, &str_elem, "is_alpha");
+	STRINGS_POP(ctx, &str_elem, "is_alpha");
 
 	const char* str = qd_string_data(str_elem.value.s);
 	int result = (*str != '\0') ? 1 : 0;
@@ -1764,9 +1764,9 @@ int usr_str_is_alpha(qd_context* ctx) {
 }
 
 // is_alphanumeric - check if all alphanumeric ( str:s -- result:i )
-int usr_str_is_alphanumeric(qd_context* ctx) {
+int usr_strings_is_alphanumeric(qd_context* ctx) {
 	qd_stack_element_t str_elem;
-	STR_POP(ctx, &str_elem, "is_alphanumeric");
+	STRINGS_POP(ctx, &str_elem, "is_alphanumeric");
 
 	const char* str = qd_string_data(str_elem.value.s);
 	int result = (*str != '\0') ? 1 : 0;
@@ -1780,9 +1780,9 @@ int usr_str_is_alphanumeric(qd_context* ctx) {
 }
 
 // is_ascii - check if all ASCII (0-127) ( str:s -- result:i )
-int usr_str_is_ascii(qd_context* ctx) {
+int usr_strings_is_ascii(qd_context* ctx) {
 	qd_stack_element_t str_elem;
-	STR_POP(ctx, &str_elem, "is_ascii");
+	STRINGS_POP(ctx, &str_elem, "is_ascii");
 
 	const char* str = qd_string_data(str_elem.value.s);
 	int result = 1;
@@ -1796,9 +1796,9 @@ int usr_str_is_ascii(qd_context* ctx) {
 }
 
 // is_lowercase - check if all lowercase ( str:s -- result:i )
-int usr_str_is_lowercase(qd_context* ctx) {
+int usr_strings_is_lowercase(qd_context* ctx) {
 	qd_stack_element_t str_elem;
-	STR_POP(ctx, &str_elem, "is_lowercase");
+	STRINGS_POP(ctx, &str_elem, "is_lowercase");
 
 	const char* str = qd_string_data(str_elem.value.s);
 	int has_letters = 0;
@@ -1814,9 +1814,9 @@ int usr_str_is_lowercase(qd_context* ctx) {
 }
 
 // is_uppercase - check if all uppercase ( str:s -- result:i )
-int usr_str_is_uppercase(qd_context* ctx) {
+int usr_strings_is_uppercase(qd_context* ctx) {
 	qd_stack_element_t str_elem;
-	STR_POP(ctx, &str_elem, "is_uppercase");
+	STRINGS_POP(ctx, &str_elem, "is_uppercase");
 
 	const char* str = qd_string_data(str_elem.value.s);
 	int has_letters = 0;
@@ -1832,9 +1832,9 @@ int usr_str_is_uppercase(qd_context* ctx) {
 }
 
 // char_count - count UTF-8 codepoints ( str:s -- count:i )
-int usr_str_char_count(qd_context* ctx) {
+int usr_strings_char_count(qd_context* ctx) {
 	qd_stack_element_t str_elem;
-	STR_POP(ctx, &str_elem, "char_count");
+	STRINGS_POP(ctx, &str_elem, "char_count");
 
 	const char* str = qd_string_data(str_elem.value.s);
 	int64_t count = 0;
@@ -1850,11 +1850,11 @@ int usr_str_char_count(qd_context* ctx) {
 }
 
 // slice - substring with negative index support ( str:s start:i end:i -- result:s )
-int usr_str_slice(qd_context* ctx) {
+int usr_strings_slice(qd_context* ctx) {
 	qd_stack_element_t end_elem, start_elem, str_elem;
-	STR_POP(ctx, &end_elem, "slice");
-	STR_POP(ctx, &start_elem, "slice");
-	STR_POP(ctx, &str_elem, "slice");
+	STRINGS_POP(ctx, &end_elem, "slice");
+	STRINGS_POP(ctx, &start_elem, "slice");
+	STRINGS_POP(ctx, &str_elem, "slice");
 
 	const char* str = qd_string_data(str_elem.value.s);
 	int64_t start = start_elem.value.i;
@@ -1887,12 +1887,12 @@ int usr_str_slice(qd_context* ctx) {
 }
 
 // column - format strings into columns ( arr:p count:i widths:p num_cols:i -- result:s )
-int usr_str_column(qd_context* ctx) {
+int usr_strings_column(qd_context* ctx) {
 	qd_stack_element_t num_cols_elem, widths_elem, count_elem, arr_elem;
-	STR_POP(ctx, &num_cols_elem, "column");
-	STR_POP(ctx, &widths_elem, "column");
-	STR_POP(ctx, &count_elem, "column");
-	STR_POP(ctx, &arr_elem, "column");
+	STRINGS_POP(ctx, &num_cols_elem, "column");
+	STRINGS_POP(ctx, &widths_elem, "column");
+	STRINGS_POP(ctx, &count_elem, "column");
+	STRINGS_POP(ctx, &arr_elem, "column");
 
 	char** arr = (char**)arr_elem.value.p;
 	int64_t count = count_elem.value.i;

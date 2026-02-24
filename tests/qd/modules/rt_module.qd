@@ -1,11 +1,11 @@
 // Test rt module - runtime version information
 use rt
-use str
+use strings
 
 fn main() {
 	"=== version ===" print nl
-	rt::version str::len 0 gt print nl
-	rt::version "." str::contains print nl
+	rt::version strings::len 0 gt print nl
+	rt::version "." strings::contains print nl
 
 	"=== version_api ===" print nl
 	rt::version_api 0 gt print nl

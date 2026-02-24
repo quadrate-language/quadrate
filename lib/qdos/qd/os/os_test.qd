@@ -1,16 +1,16 @@
 // Unit tests for the os module
 use os
-use str
+use strings
 use testing
 
 test "os::getenv existing variable" {
 	"PATH" os::getenv -> path
-	path str::len 0 > testing::assert_true
+	path strings::len 0 > testing::assert_true
 }
 
 test "os::getenv non-existing variable" {
 	"QUADRATE_TEST_NONEXISTENT_VAR_12345" os::getenv -> val
-	val str::len 0 testing::assert_eq
+	val strings::len 0 testing::assert_eq
 }
 
 test "os::setenv and getenv" {
@@ -30,12 +30,12 @@ test "os::unsetenv removes variable" {
 	"QUADRATE_UNSET_TEST" "testvalue" os::setenv
 	"QUADRATE_UNSET_TEST" os::getenv "testvalue" testing::assert_eq
 	"QUADRATE_UNSET_TEST" os::unsetenv
-	"QUADRATE_UNSET_TEST" os::getenv str::len 0 testing::assert_eq
+	"QUADRATE_UNSET_TEST" os::getenv strings::len 0 testing::assert_eq
 }
 
 test "os::unsetenv nonexistent is safe" {
 	"QUADRATE_NEVER_SET_VAR_12345" os::unsetenv
-	"QUADRATE_NEVER_SET_VAR_12345" os::getenv str::len 0 testing::assert_eq
+	"QUADRATE_NEVER_SET_VAR_12345" os::getenv strings::len 0 testing::assert_eq
 }
 
 test "os::exists for existing directory" {
@@ -72,7 +72,7 @@ test "os::is_dir for non-existing" {
 
 test "os::cwd returns non-empty" {
 	os::cwd! -> dir
-	dir str::len 0 > testing::assert_true
+	dir strings::len 0 > testing::assert_true
 }
 
 test "os::cwd returns existing directory" {
@@ -97,14 +97,14 @@ test "os::mktemp creates directory" {
 test "os::mktemp creates unique directories" {
 	os::mktemp! -> tmp1
 	os::mktemp! -> tmp2
-	tmp1 tmp2 str::compare 0 != testing::assert_true
+	tmp1 tmp2 strings::compare 0 != testing::assert_true
 	tmp1 os::rmdir!
 	tmp2 os::rmdir!
 }
 
 test "os::mkdir creates directory" {
 	os::mktemp! -> tmpdir
-	tmpdir "/subdir" str::concat -> subdir
+	tmpdir "/subdir" strings::concat -> subdir
 	subdir os::mkdir!
 	subdir os::exists 1 testing::assert_eq
 	subdir os::is_dir 1 testing::assert_eq
@@ -113,7 +113,7 @@ test "os::mkdir creates directory" {
 
 test "os::mkdir creates nested directories" {
 	os::mktemp! -> tmpdir
-	tmpdir "/a/b/c" str::concat -> nested
+	tmpdir "/a/b/c" strings::concat -> nested
 	nested os::mkdir!
 	nested os::exists 1 testing::assert_eq
 	nested os::is_dir 1 testing::assert_eq
@@ -122,8 +122,8 @@ test "os::mkdir creates nested directories" {
 
 test "os::list directory" {
 	os::mktemp! -> tmpdir
-	tmpdir "/sub1" str::concat -> sub1
-	tmpdir "/sub2" str::concat -> sub2
+	tmpdir "/sub1" strings::concat -> sub1
+	tmpdir "/sub2" strings::concat -> sub2
 	sub1 os::mkdir!
 	sub2 os::mkdir!
 	tmpdir os::list! -> count -> entries
@@ -151,7 +151,7 @@ test "os::system failure returns non-zero" {
 test "os::exec captures output" {
 	"echo hello" os::exec! -> exitcode -> stdout
 	exitcode 0 testing::assert_eq
-	stdout str::trim "hello" testing::assert_eq
+	stdout strings::trim "hello" testing::assert_eq
 }
 
 test "os::exec exit code" {
@@ -170,10 +170,10 @@ test "os::popen line by line" {
 
 test "os::copy and delete" {
 	os::mktemp! -> tmpdir
-	tmpdir "/src.txt" str::concat -> src
-	tmpdir "/dst.txt" str::concat -> dst
+	tmpdir "/src.txt" strings::concat -> src
+	tmpdir "/dst.txt" strings::concat -> dst
 
-	"echo test > " src str::concat os::system drop
+	"echo test > " src strings::concat os::system drop
 
 	src os::exists 1 testing::assert_eq
 	src dst os::copy!
@@ -189,10 +189,10 @@ test "os::copy and delete" {
 
 test "os::rename file" {
 	os::mktemp! -> tmpdir
-	tmpdir "/old.txt" str::concat -> oldpath
-	tmpdir "/new.txt" str::concat -> newpath
+	tmpdir "/old.txt" strings::concat -> oldpath
+	tmpdir "/new.txt" strings::concat -> newpath
 
-	"echo test > " oldpath str::concat os::system drop
+	"echo test > " oldpath strings::concat os::system drop
 
 	oldpath os::exists 1 testing::assert_eq
 	oldpath newpath os::rename!
@@ -205,8 +205,8 @@ test "os::rename file" {
 
 test "os::walk visits all entries" {
 	os::mktemp! -> tmpdir
-	tmpdir "/sub1" str::concat -> sub1
-	tmpdir "/sub2" str::concat -> sub2
+	tmpdir "/sub1" strings::concat -> sub1
+	tmpdir "/sub2" strings::concat -> sub2
 	sub1 os::mkdir!
 	sub2 os::mkdir!
 
@@ -222,15 +222,15 @@ test "os::walk visits all entries" {
 
 test "os::glob matches files" {
 	os::mktemp! -> tmpdir
-	tmpdir "/test1.txt" str::concat -> f1
-	tmpdir "/test2.txt" str::concat -> f2
-	tmpdir "/other.dat" str::concat -> f3
+	tmpdir "/test1.txt" strings::concat -> f1
+	tmpdir "/test2.txt" strings::concat -> f2
+	tmpdir "/other.dat" strings::concat -> f3
 
-	"touch " f1 str::concat os::system drop
-	"touch " f2 str::concat os::system drop
-	"touch " f3 str::concat os::system drop
+	"touch " f1 strings::concat os::system drop
+	"touch " f2 strings::concat os::system drop
+	"touch " f3 strings::concat os::system drop
 
-	tmpdir "/*.txt" str::concat os::glob! -> count -> entries
+	tmpdir "/*.txt" strings::concat os::glob! -> count -> entries
 	count 2 testing::assert_eq
 
 	tmpdir os::rmdir!
@@ -250,15 +250,15 @@ test "os::is_file empty path" {
 
 test "os::getenv empty name" {
 	"" os::getenv -> val
-	val str::len 0 testing::assert_eq
+	val strings::len 0 testing::assert_eq
 }
 
 test "os::symlink and readlink" {
 	os::mktemp! -> tmpdir
-	tmpdir "/target.txt" str::concat -> target
-	tmpdir "/link.txt" str::concat -> linkpath
+	tmpdir "/target.txt" strings::concat -> target
+	tmpdir "/link.txt" strings::concat -> linkpath
 
-	"touch " target str::concat os::system drop
+	"touch " target strings::concat os::system drop
 
 	target linkpath os::symlink!
 
@@ -272,10 +272,10 @@ test "os::symlink and readlink" {
 
 test "os::is_symlink true" {
 	os::mktemp! -> tmpdir
-	tmpdir "/target.txt" str::concat -> target
-	tmpdir "/link.txt" str::concat -> linkpath
+	tmpdir "/target.txt" strings::concat -> target
+	tmpdir "/link.txt" strings::concat -> linkpath
 
-	"touch " target str::concat os::system drop
+	"touch " target strings::concat os::system drop
 	target linkpath os::symlink!
 
 	linkpath os::is_symlink 1 testing::assert_eq
@@ -287,9 +287,9 @@ test "os::is_symlink true" {
 
 test "os::is_symlink false for regular file" {
 	os::mktemp! -> tmpdir
-	tmpdir "/regular.txt" str::concat -> path
+	tmpdir "/regular.txt" strings::concat -> path
 
-	"touch " path str::concat os::system drop
+	"touch " path strings::concat os::system drop
 
 	path os::is_symlink 0 testing::assert_eq
 
@@ -299,7 +299,7 @@ test "os::is_symlink false for regular file" {
 
 test "os::is_symlink false for directory" {
 	os::mktemp! -> tmpdir
-	tmpdir "/subdir" str::concat -> path
+	tmpdir "/subdir" strings::concat -> path
 
 	path os::mkdir!
 
@@ -315,9 +315,9 @@ test "os::is_symlink false for nonexistent" {
 
 test "os::chmod basic" {
 	os::mktemp! -> tmpdir
-	tmpdir "/chmod_test.txt" str::concat -> path
+	tmpdir "/chmod_test.txt" strings::concat -> path
 
-	"touch " path str::concat os::system drop
+	"touch " path strings::concat os::system drop
 
 	path 420 os::chmod!
 
@@ -329,9 +329,9 @@ test "os::chmod basic" {
 
 test "os::chmod executable" {
 	os::mktemp! -> tmpdir
-	tmpdir "/script.sh" str::concat -> path
+	tmpdir "/script.sh" strings::concat -> path
 
-	"touch " path str::concat os::system drop
+	"touch " path strings::concat os::system drop
 
 	path 493 os::chmod!
 
@@ -353,5 +353,5 @@ test "os::getgid returns non-negative" {
 
 test "os::hostname returns non-empty" {
 	os::hostname! -> name
-	name str::len 0 > testing::assert_true
+	name strings::len 0 > testing::assert_true
 }

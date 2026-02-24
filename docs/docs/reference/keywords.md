@@ -79,10 +79,10 @@ struct Point {
 Imports a module, making its functions available with `module::function` syntax.
 
 ```qd
-use str
+use strings
 
 fn main() {
-	"hello" str::len print nl  // 5
+	"hello" strings::len print nl  // 5
 }
 ```
 

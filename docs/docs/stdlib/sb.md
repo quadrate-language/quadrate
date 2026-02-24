@@ -1,7 +1,7 @@
 # `use` sb
 
 StringBuilder - Efficient string building.
-Avoids O(n²) cost of repeated str::concat.
+Avoids O(n²) cost of repeated strings::concat.
 
 ## Functions
 

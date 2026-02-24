@@ -1,7 +1,7 @@
 /// Sorting algorithms for arrays.
 /// Arrays are pointers to contiguous i64 values or string pointers.
 use mem
-use str
+use strings
 
 /// Sort an array of i64 in ascending order (insertion sort).
 /// @param arr ptr Array of i64 values
@@ -194,7 +194,7 @@ pub fn strings(arr:ptr count:i64 -- ) {
 				break
 			}
 			arr j 8 * mem::get_ptr -> jval
-			jval key str::compare 0 <= if {
+			jval key strings::compare 0 <= if {
 				break
 			}
 			// Move element right
@@ -222,7 +222,7 @@ pub fn strings_desc(arr:ptr count:i64 -- ) {
 				break
 			}
 			arr j 8 * mem::get_ptr -> jval
-			jval key str::compare 0 >= if {
+			jval key strings::compare 0 >= if {
 				break
 			}
 			// Move element right

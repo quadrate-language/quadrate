@@ -1,25 +1,25 @@
-// Test str::compare
-use str
+// Test strings::compare
+use strings
 
 fn main() {
 	"=== compare equal ===" print nl
-	"abc" "abc" str::compare print nl
-	"" "" str::compare print nl
-	"hello" "hello" str::compare print nl
+	"abc" "abc" strings::compare print nl
+	"" "" strings::compare print nl
+	"hello" "hello" strings::compare print nl
 
 	"=== compare less ===" print nl
-	"abc" "abd" str::compare 0 < print nl
-	"a" "b" str::compare 0 < print nl
-	"apple" "banana" str::compare 0 < print nl
-	"" "a" str::compare 0 < print nl
-	"aaa" "aaaa" str::compare 0 < print nl
+	"abc" "abd" strings::compare 0 < print nl
+	"a" "b" strings::compare 0 < print nl
+	"apple" "banana" strings::compare 0 < print nl
+	"" "a" strings::compare 0 < print nl
+	"aaa" "aaaa" strings::compare 0 < print nl
 
 	"=== compare greater ===" print nl
-	"abd" "abc" str::compare 0 > print nl
-	"z" "a" str::compare 0 > print nl
-	"banana" "apple" str::compare 0 > print nl
-	"a" "" str::compare 0 > print nl
-	"aaaa" "aaa" str::compare 0 > print nl
+	"abd" "abc" strings::compare 0 > print nl
+	"z" "a" strings::compare 0 > print nl
+	"banana" "apple" strings::compare 0 > print nl
+	"a" "" strings::compare 0 > print nl
+	"aaaa" "aaa" strings::compare 0 > print nl
 
 	"done" print nl
 }

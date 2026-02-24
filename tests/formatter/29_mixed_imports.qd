@@ -1,6 +1,6 @@
 use time
 use "local_module.qd"
-use str
+use strings
 use "another_local.qd"
 use io
 

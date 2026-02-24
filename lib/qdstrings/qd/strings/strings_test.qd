@@ -1,0 +1,384 @@
+// Unit tests for the strings module
+use strings
+use testing
+
+test "strings::len" {
+	"hello" strings::len 5 testing::assert_eq
+	"" strings::len 0 testing::assert_eq
+	"a" strings::len 1 testing::assert_eq
+	"hello world" strings::len 11 testing::assert_eq
+}
+
+test "strings::concat" {
+	"hello" " world" strings::concat "hello world" testing::assert_eq
+	"" "test" strings::concat "test" testing::assert_eq
+	"test" "" strings::concat "test" testing::assert_eq
+	"" "" strings::concat "" testing::assert_eq
+}
+
+test "strings::contains" {
+	"hello world" "world" strings::contains testing::assert_true
+	"hello world" "foo" strings::contains testing::assert_false
+	"hello world" "" strings::contains testing::assert_true
+	"" "test" strings::contains testing::assert_false
+	"hello" "hello" strings::contains testing::assert_true
+}
+
+test "strings::starts_with" {
+	"hello world" "hello" strings::starts_with testing::assert_true
+	"hello world" "world" strings::starts_with testing::assert_false
+	"hello world" "" strings::starts_with testing::assert_true
+	"" "test" strings::starts_with testing::assert_false
+	"hello" "hello" strings::starts_with testing::assert_true
+}
+
+test "strings::ends_with" {
+	"hello world" "world" strings::ends_with testing::assert_true
+	"hello world" "hello" strings::ends_with testing::assert_false
+	"hello world" "" strings::ends_with testing::assert_true
+	"" "test" strings::ends_with testing::assert_false
+	"hello" "hello" strings::ends_with testing::assert_true
+}
+
+test "strings::upper" {
+	"hello" strings::upper "HELLO" testing::assert_eq
+	"HELLO" strings::upper "HELLO" testing::assert_eq
+	"HeLLo" strings::upper "HELLO" testing::assert_eq
+	"123" strings::upper "123" testing::assert_eq
+	"" strings::upper "" testing::assert_eq
+}
+
+test "strings::lower" {
+	"HELLO" strings::lower "hello" testing::assert_eq
+	"hello" strings::lower "hello" testing::assert_eq
+	"HeLLo" strings::lower "hello" testing::assert_eq
+	"123" strings::lower "123" testing::assert_eq
+	"" strings::lower "" testing::assert_eq
+}
+
+test "strings::trim" {
+	"  hello  " strings::trim "hello" testing::assert_eq
+	"hello" strings::trim "hello" testing::assert_eq
+	"  hello" strings::trim "hello" testing::assert_eq
+	"hello  " strings::trim "hello" testing::assert_eq
+	"   " strings::trim "" testing::assert_eq
+	"" strings::trim "" testing::assert_eq
+}
+
+test "strings::index_of" {
+	"hello world" "world" strings::index_of 6 testing::assert_eq
+	"hello world" "hello" strings::index_of 0 testing::assert_eq
+	"hello world" "foo" strings::index_of -1 testing::assert_eq
+	"hello" "l" strings::index_of 2 testing::assert_eq
+}
+
+test "strings::index_of_from" {
+	"hello hello" "hello" 1 strings::index_of_from 6 testing::assert_eq
+	"aaa" "a" 1 strings::index_of_from 1 testing::assert_eq
+	"hello" "x" 0 strings::index_of_from -1 testing::assert_eq
+}
+
+test "strings::replace" {
+	"hello world" "world" "there" strings::replace! "hello there" testing::assert_eq
+	"aaa" "a" "b" strings::replace! "bbb" testing::assert_eq
+	"hello" "x" "y" strings::replace! "hello" testing::assert_eq
+	// Bug #14: Shrinking replacement (new_len < old_len) caused integer underflow
+	"hello" "ll" "x" strings::replace! "hexo" testing::assert_eq
+	"aabbcc" "bb" "d" strings::replace! "aadcc" testing::assert_eq
+	"xxxxx" "xx" "y" strings::replace! "yyx" testing::assert_eq
+}
+
+test "strings::substring" {
+	"hello world" 0 5 strings::substring! "hello" testing::assert_eq
+	"hello world" 6 5 strings::substring! "world" testing::assert_eq
+	"hello" 0 0 strings::substring! "" testing::assert_eq
+}
+
+test "strings::char_at returns char code" {
+	"hello" 0 strings::char_at! 104 testing::assert_eq  // 'h' = 104
+	"hello" 1 strings::char_at! 101 testing::assert_eq  // 'e' = 101
+	"ABC" 0 strings::char_at! 65 testing::assert_eq     // 'A' = 65
+}
+
+test "strings::from_char" {
+	65 strings::from_char "A" testing::assert_eq
+	97 strings::from_char "a" testing::assert_eq
+	48 strings::from_char "0" testing::assert_eq
+}
+
+test "strings::compare" {
+	"abc" "abc" strings::compare 0 testing::assert_eq
+	"abc" "abd" strings::compare 0 < testing::assert_true
+	"abd" "abc" strings::compare 0 > testing::assert_true
+	"" "" strings::compare 0 testing::assert_eq
+}
+
+test "strings::repeat" {
+	"ab" 3 strings::repeat "ababab" testing::assert_eq
+	"x" 5 strings::repeat "xxxxx" testing::assert_eq
+	"hello" 1 strings::repeat "hello" testing::assert_eq
+	"test" 0 strings::repeat "" testing::assert_eq
+	"" 10 strings::repeat "" testing::assert_eq
+	// Bug #15: negative repeat count should return empty
+	"abc" -1 strings::repeat "" testing::assert_eq
+}
+
+test "strings::reverse" {
+	"hello" strings::reverse "olleh" testing::assert_eq
+	"abc" strings::reverse "cba" testing::assert_eq
+	"a" strings::reverse "a" testing::assert_eq
+	"" strings::reverse "" testing::assert_eq
+	"12345" strings::reverse "54321" testing::assert_eq
+}
+
+test "strings::trim_left" {
+	"  hello" strings::trim_left "hello" testing::assert_eq
+	"hello" strings::trim_left "hello" testing::assert_eq
+	"  hello  " strings::trim_left "hello  " testing::assert_eq
+	"   " strings::trim_left "" testing::assert_eq
+	"" strings::trim_left "" testing::assert_eq
+}
+
+test "strings::trim_right" {
+	"hello  " strings::trim_right "hello" testing::assert_eq
+	"hello" strings::trim_right "hello" testing::assert_eq
+	"  hello  " strings::trim_right "  hello" testing::assert_eq
+	"   " strings::trim_right "" testing::assert_eq
+	"" strings::trim_right "" testing::assert_eq
+}
+
+test "strings::count" {
+	"ababa" "a" strings::count 3 testing::assert_eq
+	"hello" "l" strings::count 2 testing::assert_eq
+	"hello" "x" strings::count 0 testing::assert_eq
+	"aaa" "aa" strings::count 1 testing::assert_eq  // non-overlapping
+	"" "test" strings::count 0 testing::assert_eq
+}
+
+test "strings::last_index_of" {
+	"hello hello" "hello" strings::last_index_of 6 testing::assert_eq
+	"abcabc" "abc" strings::last_index_of 3 testing::assert_eq
+	"hello" "x" strings::last_index_of -1 testing::assert_eq
+	"hello" "hello" strings::last_index_of 0 testing::assert_eq
+}
+
+test "strings::is_empty" {
+	"" strings::is_empty testing::assert_true
+	"hello" strings::is_empty testing::assert_false
+	" " strings::is_empty testing::assert_false
+}
+
+test "strings::is_blank" {
+	"" strings::is_blank testing::assert_true
+	"   " strings::is_blank testing::assert_true
+	" \t\n " strings::is_blank testing::assert_true
+	"hello" strings::is_blank testing::assert_false
+	"  a  " strings::is_blank testing::assert_false
+}
+
+test "strings::equals_ignore_case" {
+	"Hello" "HELLO" strings::equals_ignore_case testing::assert_true
+	"hello" "hello" strings::equals_ignore_case testing::assert_true
+	"ABC" "abc" strings::equals_ignore_case testing::assert_true
+	"hello" "world" strings::equals_ignore_case testing::assert_false
+	"" "" strings::equals_ignore_case testing::assert_true
+}
+
+test "strings::pad_left" {
+	"42" 5 "0" strings::pad_left "00042" testing::assert_eq
+	"hello" 10 " " strings::pad_left "     hello" testing::assert_eq
+	"test" 4 "x" strings::pad_left "test" testing::assert_eq
+	"test" 2 "x" strings::pad_left "test" testing::assert_eq
+	"" 3 "-" strings::pad_left "---" testing::assert_eq
+}
+
+test "strings::pad_right" {
+	"hi" 5 "." strings::pad_right "hi..." testing::assert_eq
+	"hello" 10 " " strings::pad_right "hello     " testing::assert_eq
+	"test" 4 "x" strings::pad_right "test" testing::assert_eq
+	"test" 2 "x" strings::pad_right "test" testing::assert_eq
+	"" 3 "-" strings::pad_right "---" testing::assert_eq
+}
+
+test "strings::center" {
+	"hi" 6 "-" strings::center "--hi--" testing::assert_eq
+	"abc" 7 " " strings::center "  abc  " testing::assert_eq
+	"test" 4 "x" strings::center "test" testing::assert_eq
+	"a" 4 "=" strings::center "=a==" testing::assert_eq
+}
+
+test "strings::capitalize" {
+	"hello" strings::capitalize "Hello" testing::assert_eq
+	"HELLO" strings::capitalize "Hello" testing::assert_eq
+	"hELLO wORLD" strings::capitalize "Hello world" testing::assert_eq
+	"" strings::capitalize "" testing::assert_eq
+	"a" strings::capitalize "A" testing::assert_eq
+}
+
+test "strings::title" {
+	"hello world" strings::title "Hello World" testing::assert_eq
+	"HELLO WORLD" strings::title "Hello World" testing::assert_eq
+	"the quick brown fox" strings::title "The Quick Brown Fox" testing::assert_eq
+	"" strings::title "" testing::assert_eq
+	"a b c" strings::title "A B C" testing::assert_eq
+}
+
+test "strings::trim_prefix" {
+	"hello" "hel" strings::trim_prefix "lo" testing::assert_eq
+	"hello" "world" strings::trim_prefix "hello" testing::assert_eq
+	"hello" "" strings::trim_prefix "hello" testing::assert_eq
+	"hello" "hello" strings::trim_prefix "" testing::assert_eq
+	"" "test" strings::trim_prefix "" testing::assert_eq
+}
+
+test "strings::trim_suffix" {
+	"hello" "lo" strings::trim_suffix "hel" testing::assert_eq
+	"hello" "world" strings::trim_suffix "hello" testing::assert_eq
+	"hello" "" strings::trim_suffix "hello" testing::assert_eq
+	"hello" "hello" strings::trim_suffix "" testing::assert_eq
+	"" "test" strings::trim_suffix "" testing::assert_eq
+}
+
+test "strings::replace_first" {
+	"abab" "ab" "X" strings::replace_first "Xab" testing::assert_eq
+	"hello world world" "world" "there" strings::replace_first "hello there world" testing::assert_eq
+	"hello" "x" "y" strings::replace_first "hello" testing::assert_eq
+	"aaa" "a" "bb" strings::replace_first "bbaa" testing::assert_eq
+}
+
+test "strings::insert" {
+	"hello" 2 "XX" strings::insert "heXXllo" testing::assert_eq
+	"hello" 0 "XX" strings::insert "XXhello" testing::assert_eq
+	"hello" 5 "XX" strings::insert "helloXX" testing::assert_eq
+	"" 0 "test" strings::insert "test" testing::assert_eq
+}
+
+test "strings::remove_range" {
+	"hello" 1 3 strings::remove_range "ho" testing::assert_eq
+	"hello" 0 1 strings::remove_range "ello" testing::assert_eq
+	"hello" 4 1 strings::remove_range "hell" testing::assert_eq
+	"hello" 0 5 strings::remove_range "" testing::assert_eq
+	"hello" 2 0 strings::remove_range "hello" testing::assert_eq
+}
+
+test "strings::truncate" {
+	"hello world" 8 "..." strings::truncate "hello..." testing::assert_eq
+	"hi" 10 "..." strings::truncate "hi" testing::assert_eq
+	"hello" 5 "..." strings::truncate "hello" testing::assert_eq
+	"hello world" 5 "" strings::truncate "hello" testing::assert_eq
+}
+
+test "strings::is_numeric" {
+	"12345" strings::is_numeric testing::assert_true
+	"0" strings::is_numeric testing::assert_true
+	"" strings::is_numeric testing::assert_false
+	"123abc" strings::is_numeric testing::assert_false
+	"12.34" strings::is_numeric testing::assert_false
+	"-5" strings::is_numeric testing::assert_false
+}
+
+test "strings::is_alpha" {
+	"Hello" strings::is_alpha testing::assert_true
+	"abc" strings::is_alpha testing::assert_true
+	"" strings::is_alpha testing::assert_false
+	"Hello123" strings::is_alpha testing::assert_false
+	"Hello World" strings::is_alpha testing::assert_false
+}
+
+test "strings::is_alphanumeric" {
+	"Hello123" strings::is_alphanumeric testing::assert_true
+	"abc" strings::is_alphanumeric testing::assert_true
+	"123" strings::is_alphanumeric testing::assert_true
+	"" strings::is_alphanumeric testing::assert_false
+	"Hello World" strings::is_alphanumeric testing::assert_false
+	"test!" strings::is_alphanumeric testing::assert_false
+}
+
+test "strings::is_ascii" {
+	"hello" strings::is_ascii testing::assert_true
+	"Hello123!@#" strings::is_ascii testing::assert_true
+	"" strings::is_ascii testing::assert_true
+	// Non-ASCII characters should return false
+	"héllo" strings::is_ascii testing::assert_false
+	"日本語" strings::is_ascii testing::assert_false
+	"hello 🎉" strings::is_ascii testing::assert_false
+}
+
+test "strings::is_lowercase" {
+	"hello" strings::is_lowercase testing::assert_true
+	"hello world" strings::is_lowercase testing::assert_true
+	"Hello" strings::is_lowercase testing::assert_false
+	"HELLO" strings::is_lowercase testing::assert_false
+	"123" strings::is_lowercase testing::assert_false
+	"" strings::is_lowercase testing::assert_false
+}
+
+test "strings::is_uppercase" {
+	"HELLO" strings::is_uppercase testing::assert_true
+	"HELLO WORLD" strings::is_uppercase testing::assert_true
+	"Hello" strings::is_uppercase testing::assert_false
+	"hello" strings::is_uppercase testing::assert_false
+	"123" strings::is_uppercase testing::assert_false
+	"" strings::is_uppercase testing::assert_false
+}
+
+test "strings::char_count" {
+	"hello" strings::char_count 5 testing::assert_eq
+	"" strings::char_count 0 testing::assert_eq
+	"abc" strings::char_count 3 testing::assert_eq
+	// UTF-8 multi-byte characters (each is 2-4 bytes but 1 codepoint)
+	"héllo" strings::char_count 5 testing::assert_eq
+	"日本語" strings::char_count 3 testing::assert_eq
+	"🎉" strings::char_count 1 testing::assert_eq
+}
+
+test "strings::slice" {
+	"hello" 1 4 strings::slice "ell" testing::assert_eq
+	"hello" 0 5 strings::slice "hello" testing::assert_eq
+	"hello" -3 -1 strings::slice "ll" testing::assert_eq
+	"hello" 1 -1 strings::slice "ell" testing::assert_eq
+	"hello" -2 100 strings::slice "lo" testing::assert_eq
+	"hello" 3 3 strings::slice "" testing::assert_eq
+	// Edge: start > end after normalization returns empty
+	"hello" 4 2 strings::slice "" testing::assert_eq
+	// Edge: negative start beyond string length
+	"hello" -100 3 strings::slice "hel" testing::assert_eq
+	// Edge: empty string
+	"" 0 0 strings::slice "" testing::assert_eq
+}
+
+test "strings::lines" {
+	"a\nb\nc" strings::lines! -> count -> arr
+	count 3 testing::assert_eq
+
+	"single" strings::lines! -> count2 -> arr2
+	count2 1 testing::assert_eq
+
+	"a\r\nb\r\nc" strings::lines! -> count3 -> arr3
+	count3 3 testing::assert_eq
+}
+
+test "strings::words" {
+	"hello world" strings::words! -> count -> arr
+	count 2 testing::assert_eq
+
+	"  multiple   spaces  " strings::words! -> count2 -> arr2
+	count2 2 testing::assert_eq
+
+	"single" strings::words! -> count3 -> arr3
+	count3 1 testing::assert_eq
+
+	"   " strings::words! -> count4 -> arr4
+	count4 0 testing::assert_eq
+}
+
+test "strings::split_n" {
+	"a:b:c:d" ":" 2 strings::split_n! -> count -> arr
+	count 2 testing::assert_eq
+
+	"a:b:c" ":" 10 strings::split_n! -> count2 -> arr2
+	count2 3 testing::assert_eq
+
+	"a:b:c" ":" 1 strings::split_n! -> count3 -> arr3
+	count3 1 testing::assert_eq
+}

@@ -3,7 +3,7 @@
 use io
 use mem
 use os
-use str
+use strings
 use unicode
 
 const TapeSize = 30000
@@ -16,7 +16,7 @@ fn main() {
 	-> filename
 
 	filename io::read_file! -> code
-	code str::len -> code_len
+	code strings::len -> code_len
 
 	TapeSize mem::alloc! -> tape
 	defer {
@@ -32,7 +32,7 @@ fn main() {
 			break
 		}
 
-		code ip str::char_at! switch {
+		code ip strings::char_at! switch {
 			unicode::gt {
 				dp ++ -> dp
 			}
@@ -46,12 +46,12 @@ fn main() {
 				tape dp mem::get_byte -- 255 and tape dp mem::set_byte
 			}
 			unicode::dot {
-				tape dp mem::get_byte str::from_char print
+				tape dp mem::get_byte strings::from_char print
 			}
 			unicode::comma {
 				io::readline! -> line
-				line str::len 0 > if {
-					line 0 str::char_at!
+				line strings::len 0 > if {
+					line 0 strings::char_at!
 				} else {
 					0
 				}
@@ -65,7 +65,7 @@ fn main() {
 							drop break
 						}
 						ip ++ -> ip
-						code ip str::char_at! switch {
+						code ip strings::char_at! switch {
 							unicode::lbracket {
 								++
 							}
@@ -84,7 +84,7 @@ fn main() {
 							drop break
 						}
 						ip -- -> ip
-						code ip str::char_at! switch {
+						code ip strings::char_at! switch {
 							unicode::rbracket {
 								++
 							}

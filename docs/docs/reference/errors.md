@@ -24,7 +24,7 @@ Each module defines specific error codes starting at 2. For example:
 - `io::ErrNotFound` = 2
 - `io::ErrPermission` = 3
 - `os::ErrNotFound` = 2
-- `str::ErrOutOfBounds` = 2
+- `strings::ErrOutOfBounds` = 2
 
 ---
 
@@ -203,9 +203,9 @@ os::ErrNotFound      // 2 - No such file or directory
 os::ErrPermission    // 3 - Permission denied
 os::ErrExists        // 4 - File already exists
 
-// str module
-str::ErrOutOfBounds  // 2 - Index out of bounds
-str::ErrAlloc        // 3 - Memory allocation failed
+// strings module
+strings::ErrOutOfBounds  // 2 - Index out of bounds
+strings::ErrAlloc        // 3 - Memory allocation failed
 ```
 
 ---

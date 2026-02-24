@@ -80,7 +80,7 @@
       "syntax": "use module_name",
       "examples": [
         "use math",
-        "use str",
+        "use strings",
         "use io"
       ]
     },
@@ -470,7 +470,7 @@
       "description": "Calls a function from an imported module",
       "examples": [
         "3.14 math::sin",
-        "\"hello\" str::len",
+        "\"hello\" strings::len",
         "\"file.txt\" io::read_file"
       ]
     },

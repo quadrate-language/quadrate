@@ -1,14 +1,14 @@
 // Test term module - terminal colors
 use term
-use str
+use strings
 
 fn main() {
 	// Test that constants have correct escape sequences
-	term::Reset "\x1b[0m" str::compare 0 eq print nl
-	term::Red "\x1b[31m" str::compare 0 eq print nl
-	term::Green "\x1b[32m" str::compare 0 eq print nl
-	term::Yellow "\x1b[33m" str::compare 0 eq print nl
-	term::Blue "\x1b[34m" str::compare 0 eq print nl
+	term::Reset "\x1b[0m" strings::compare 0 eq print nl
+	term::Red "\x1b[31m" strings::compare 0 eq print nl
+	term::Green "\x1b[32m" strings::compare 0 eq print nl
+	term::Yellow "\x1b[33m" strings::compare 0 eq print nl
+	term::Blue "\x1b[34m" strings::compare 0 eq print nl
 
 	// Test usage pattern
 	term::Green print "PASS" print term::Reset print nl

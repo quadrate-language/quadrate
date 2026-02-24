@@ -5,7 +5,7 @@ fn mcp_tools_list(id:str -- response:str) {
 	"List all available Quadrate standard library modules (returns JSON with name, description, function count)"
 	"" "" build_tool -> tool1
 
-	"name" "Module name (e.g., 'math', 'str', 'io')" build_string_prop json::kv_raw json::obj -> props
+	"name" "Module name (e.g., 'math', 'strings', 'io')" build_string_prop json::kv_raw json::obj -> props
 	"name" json::encode json::arr -> req
 	"quadrate_get_module"
 	"Get full documentation for a specific Quadrate module including all functions, constants, and structs"
@@ -160,7 +160,7 @@ fn tool_list_modules(ds:ptr -- result:str) {
 	ds "sb" module_entry json::join
 	ds "signal" module_entry json::join
 	ds "sort" module_entry json::join
-	ds "str" module_entry json::join
+	ds "strings" module_entry json::join
 	ds "strconv" module_entry json::join
 	ds "term" module_entry json::join
 	ds "testing" module_entry json::join
@@ -180,7 +180,7 @@ fn tool_get_module(ds:ptr args:str -- result:str) {
 		ds mod_name load_module -> mod_json
 		mod_json "name" json::get_string -> found -> _
 		found 0 == if {
-			"Module '" mod_name str::concat "' not found. Available: " str::concat MODULE_LIST str::concat tool_error_result
+			"Module '" mod_name strings::concat "' not found. Available: " strings::concat MODULE_LIST strings::concat tool_error_result
 		} else {
 			mod_json tool_text_result
 		}
@@ -197,7 +197,7 @@ fn find_in_array(arr:str name:str -- item:str found:i64) {
 		arr i json::array_get_object -> ok -> obj
 		ok if {
 			obj "name" json::get_string -> ok -> obj_name
-			ok obj_name name str::compare 0 == * if {
+			ok obj_name name strings::compare 0 == * if {
 				obj -> result
 				1 -> found
 			}
@@ -221,12 +221,12 @@ fn find_related_functions(funcs:str current_name:str -- related:str) {
 		ok if {
 			func "name" json::get_string -> ok -> name
 			ok if {
-				name current_name str::compare 0 != if {
+				name current_name strings::compare 0 != if {
 					current_name name fuzzy::score 100 > if {
 						count 0 > if {
-							result ", " str::concat -> result
+							result ", " strings::concat -> result
 						}
-						result name str::concat -> result
+						result name strings::concat -> result
 						count 1 + -> count
 					}
 				}
@@ -250,18 +250,18 @@ fn tool_get_function(ds:ptr args:str -- result:str) {
 			ds mod_name load_module -> mod_json
 			mod_json "functions" json::get_array -> found -> funcs
 			found 0 == if {
-				"Module '" mod_name str::concat "' not found" str::concat tool_error_result
+				"Module '" mod_name strings::concat "' not found" strings::concat tool_error_result
 			} else {
 				funcs fn_name find_in_array -> found -> func_obj
 				found if {
 					funcs fn_name find_related_functions -> related
-					related str::len 0 > if {
-						"Function found:\n" func_obj str::concat "\n\nRelated functions in " str::concat mod_name str::concat ": " str::concat related str::concat tool_text_result
+					related strings::len 0 > if {
+						"Function found:\n" func_obj strings::concat "\n\nRelated functions in " strings::concat mod_name strings::concat ": " strings::concat related strings::concat tool_text_result
 					} else {
 						func_obj tool_text_result
 					}
 				} else {
-					"Function '" fn_name str::concat "' not found in module '" str::concat mod_name str::concat "'" str::concat tool_error_result
+					"Function '" fn_name strings::concat "' not found in module '" strings::concat mod_name strings::concat "'" strings::concat tool_error_result
 				}
 			}
 		}
@@ -272,7 +272,7 @@ fn search_module(ds:ptr name:str query:str result:str -- new_result:str) {
 	-> result -> query -> name -> ds
 	ds name load_module -> m
 	m query fuzzy::contains_ci if {
-		result "=== " str::concat name str::concat " module ===\n" str::concat m str::concat "\n\n" str::concat
+		result "=== " strings::concat name strings::concat " module ===\n" strings::concat m strings::concat "\n\n" strings::concat
 	} else {
 		result
 	}
@@ -284,14 +284,14 @@ fn tool_search(ds:ptr args:str -- result:str) {
 	found 0 == if {
 		"Missing required parameter: query" tool_error_result
 	} else {
-		"Search results for: " query str::concat "\n\n" str::concat -> r
+		"Search results for: " query strings::concat "\n\n" strings::concat -> r
 
 		ds @builtins query fuzzy::contains_ci if {
-			r "=== Builtins ===\n" str::concat ds @builtins str::concat "\n\n" str::concat -> r
+			r "=== Builtins ===\n" strings::concat ds @builtins strings::concat "\n\n" strings::concat -> r
 		}
 
 		ds @language query fuzzy::contains_ci if {
-			r "=== Language Reference ===\n" str::concat ds @language str::concat "\n\n" str::concat -> r
+			r "=== Language Reference ===\n" strings::concat ds @language strings::concat "\n\n" strings::concat -> r
 		}
 
 		ds "bits" query r search_module -> r
@@ -311,7 +311,7 @@ fn tool_search(ds:ptr args:str -- result:str) {
 		ds "sb" query r search_module -> r
 		ds "signal" query r search_module -> r
 		ds "sort" query r search_module -> r
-		ds "str" query r search_module -> r
+		ds "strings" query r search_module -> r
 		ds "strconv" query r search_module -> r
 		ds "term" query r search_module -> r
 		ds "testing" query r search_module -> r
@@ -326,7 +326,7 @@ fn tool_search(ds:ptr args:str -- result:str) {
 
 fn tool_get_builtins(ds:ptr -- result:str) {
 	-> ds
-	ds @builtins dup str::len 2 > if {
+	ds @builtins dup strings::len 2 > if {
 		tool_text_result
 	} else {
 		drop "Builtins documentation not available" tool_error_result
@@ -354,12 +354,12 @@ fn find_builtin(builtins:str name:str -- item:str found:i64) {
 						instrs j json::array_get_object -> ok -> instr
 						ok if {
 							instr "name" json::get_string -> ok -> instr_name
-							ok instr_name name str::compare 0 == * if {
+							ok instr_name name strings::compare 0 == * if {
 								instr -> result
 								1 -> found
 							} else {
 								instr "alias" json::get_string -> ok -> alias
-								ok alias name str::compare 0 == * if {
+								ok alias name strings::compare 0 == * if {
 									instr -> result
 									1 -> found
 								}
@@ -387,14 +387,14 @@ fn tool_get_builtin(ds:ptr args:str -- result:str) {
 		found if {
 			builtin_obj tool_text_result
 		} else {
-			"Builtin '" name str::concat "' not found. Try: dup, swap, add, +, ==, etc." str::concat tool_error_result
+			"Builtin '" name strings::concat "' not found. Try: dup, swap, add, +, ==, etc." strings::concat tool_error_result
 		}
 	}
 }
 
 fn tool_get_syntax(ds:ptr -- result:str) {
 	-> ds
-	ds @language dup str::len 2 > if {
+	ds @language dup strings::len 2 > if {
 		tool_text_result
 	} else {
 		drop "Language reference not available" tool_error_result
@@ -415,7 +415,7 @@ fn tool_get_keyword(ds:ptr args:str -- result:str) {
 			found if {
 				kw_obj tool_text_result
 			} else {
-				"Keyword '" name str::concat "' not found. Try: fn, if, else, loop, while, for, struct, use, const, pub" str::concat tool_error_result
+				"Keyword '" name strings::concat "' not found. Try: fn, if, else, loop, while, for, struct, use, const, pub" strings::concat tool_error_result
 			}
 		}
 	}
@@ -431,12 +431,12 @@ fn find_with_alias(arr:str name:str -- item:str found:i64) {
 		arr i json::array_get_object -> ok -> obj
 		ok if {
 			obj "name" json::get_string -> ok -> obj_name
-			ok obj_name name str::compare 0 == * if {
+			ok obj_name name strings::compare 0 == * if {
 				obj -> result
 				1 -> found
 			} else {
 				obj "alias" json::get_string -> ok -> alias
-				ok alias name str::compare 0 == * if {
+				ok alias name strings::compare 0 == * if {
 					obj -> result
 					1 -> found
 				}
@@ -462,7 +462,7 @@ fn tool_get_operator(ds:ptr args:str -- result:str) {
 			found if {
 				op_obj tool_text_result
 			} else {
-				"Operator '" name str::concat "' not found. Try: +, -, *, /, %, ==, !=, <, >, ->" str::concat tool_error_result
+				"Operator '" name strings::concat "' not found. Try: +, -, *, /, %, ==, !=, <, >, ->" strings::concat tool_error_result
 			}
 		}
 	}
@@ -490,9 +490,9 @@ fn fuzzy_find_in_module(ds:ptr mod_name:str query:str results:str count:i64 -- n
 						score 150 > if {
 							func "signature" json::get_string -> _ -> sig
 							count 0 > if {
-								results "\n" str::concat -> results
+								results "\n" strings::concat -> results
 							}
-							results mod_name str::concat "::" str::concat name str::concat " " str::concat sig str::concat " (score: " str::concat score strconv::itoa str::concat ")" str::concat -> results
+							results mod_name strings::concat "::" strings::concat name strings::concat " " strings::concat sig strings::concat " (score: " strings::concat score strconv::itoa strings::concat ")" strings::concat -> results
 							count 1 + -> count
 						}
 					}
@@ -512,7 +512,7 @@ fn tool_find_function(ds:ptr args:str -- result:str) {
 	} else {
 		args "module" json::get_string -> has_mod -> specific_mod
 
-		"Fuzzy search results for: " query str::concat "\n\n" str::concat -> r
+		"Fuzzy search results for: " query strings::concat "\n\n" strings::concat -> r
 		0 -> count
 
 		has_mod if {
@@ -535,7 +535,7 @@ fn tool_find_function(ds:ptr args:str -- result:str) {
 			ds "sb" query r count fuzzy_find_in_module -> count -> r
 			ds "signal" query r count fuzzy_find_in_module -> count -> r
 			ds "sort" query r count fuzzy_find_in_module -> count -> r
-			ds "str" query r count fuzzy_find_in_module -> count -> r
+			ds "strings" query r count fuzzy_find_in_module -> count -> r
 			ds "strconv" query r count fuzzy_find_in_module -> count -> r
 			ds "term" query r count fuzzy_find_in_module -> count -> r
 			ds "testing" query r count fuzzy_find_in_module -> count -> r
@@ -546,7 +546,7 @@ fn tool_find_function(ds:ptr args:str -- result:str) {
 		}
 
 		count 0 == if {
-			r "No functions found matching '" str::concat query str::concat "'" str::concat -> r
+			r "No functions found matching '" strings::concat query strings::concat "'" strings::concat -> r
 		}
 
 		r tool_text_result
@@ -579,9 +579,9 @@ fn search_by_sig_in_module(ds:ptr mod_name:str pattern:str results:str count:i64
 						sig pattern sig_matches_pattern if {
 							func "name" json::get_string -> _ -> name
 							count 0 > if {
-								results "\n" str::concat -> results
+								results "\n" strings::concat -> results
 							}
-							results mod_name str::concat "::" str::concat name str::concat " " str::concat sig str::concat -> results
+							results mod_name strings::concat "::" strings::concat name strings::concat " " strings::concat sig strings::concat -> results
 							count 1 + -> count
 						}
 					}
@@ -599,7 +599,7 @@ fn tool_search_by_signature(ds:ptr args:str -- result:str) {
 	found 0 == if {
 		"Missing required parameter: signature" tool_error_result
 	} else {
-		"Functions matching signature pattern '" pattern str::concat "':\n\n" str::concat -> r
+		"Functions matching signature pattern '" pattern strings::concat "':\n\n" strings::concat -> r
 		0 -> count
 
 		ds "bits" pattern r count search_by_sig_in_module -> count -> r
@@ -619,7 +619,7 @@ fn tool_search_by_signature(ds:ptr args:str -- result:str) {
 		ds "sb" pattern r count search_by_sig_in_module -> count -> r
 		ds "signal" pattern r count search_by_sig_in_module -> count -> r
 		ds "sort" pattern r count search_by_sig_in_module -> count -> r
-		ds "str" pattern r count search_by_sig_in_module -> count -> r
+		ds "strings" pattern r count search_by_sig_in_module -> count -> r
 		ds "strconv" pattern r count search_by_sig_in_module -> count -> r
 		ds "term" pattern r count search_by_sig_in_module -> count -> r
 		ds "testing" pattern r count search_by_sig_in_module -> count -> r
@@ -629,7 +629,7 @@ fn tool_search_by_signature(ds:ptr args:str -- result:str) {
 		ds "unicode" pattern r count search_by_sig_in_module -> count -> r
 
 		count 0 == if {
-			r "No functions found with signature matching '" str::concat pattern str::concat "'\n\nTry patterns like: 'str -- i64', 'f64 -- f64', 'ptr'" str::concat -> r
+			r "No functions found with signature matching '" strings::concat pattern strings::concat "'\n\nTry patterns like: 'str -- i64', 'f64 -- f64', 'ptr'" strings::concat -> r
 		}
 
 		r tool_text_result
@@ -649,13 +649,13 @@ fn tool_get_error(ds:ptr args:str -- result:str) {
 			ds mod_name load_module -> mod_json
 			mod_json "constants" json::get_array -> found -> consts
 			found 0 == if {
-				"Module '" mod_name str::concat "' not found or has no constants" str::concat tool_error_result
+				"Module '" mod_name strings::concat "' not found or has no constants" strings::concat tool_error_result
 			} else {
 				consts err_name find_in_array -> found -> const_obj
 				found if {
-					"Error constant " mod_name str::concat "::" str::concat err_name str::concat ":\n\n" str::concat const_obj str::concat "\n\nHandling tip: Use switch/match on failable functions to handle this error." str::concat tool_text_result
+					"Error constant " mod_name strings::concat "::" strings::concat err_name strings::concat ":\n\n" strings::concat const_obj strings::concat "\n\nHandling tip: Use switch/match on failable functions to handle this error." strings::concat tool_text_result
 				} else {
-					"Error '" err_name str::concat "' not found in module '" str::concat mod_name str::concat "'.\n\nAvailable constants in " str::concat mod_name str::concat ":\n" str::concat -> r
+					"Error '" err_name strings::concat "' not found in module '" strings::concat mod_name strings::concat "'.\n\nAvailable constants in " strings::concat mod_name strings::concat ":\n" strings::concat -> r
 					consts json::array_len -> len
 					0 -> i
 					loop {
@@ -664,7 +664,7 @@ fn tool_get_error(ds:ptr args:str -- result:str) {
 						ok if {
 							c "name" json::get_string -> ok -> cname
 							ok if {
-								r "  - " str::concat cname str::concat "\n" str::concat -> r
+								r "  - " strings::concat cname strings::concat "\n" strings::concat -> r
 							}
 						}
 						i 1 + -> i
@@ -682,67 +682,67 @@ fn tool_trace_stack(args:str -- result:str) {
 	found 0 == if {
 		"Missing required parameter: code" tool_error_result
 	} else {
-		"Stack Trace for: " code str::concat "\n" str::concat -> output
-		output "=" str::concat code str::len 17 + 0 1 for _ { "=" str::concat } "\n\n" str::concat -> output
+		"Stack Trace for: " code strings::concat "\n" strings::concat -> output
+		output "=" strings::concat code strings::len 17 + 0 1 for _ { "=" strings::concat } "\n\n" strings::concat -> output
 
-		output "Common Operations Reference:\n\n" str::concat -> output
+		output "Common Operations Reference:\n\n" strings::concat -> output
 
-		output "LITERALS:\n" str::concat -> output
-		output "  42        ( -- 42)      push integer\n" str::concat -> output
-		output "  3.14      ( -- 3.14)    push float\n" str::concat -> output
-		output "  'text'    ( -- str)     push string\n\n" str::concat -> output
+		output "LITERALS:\n" strings::concat -> output
+		output "  42        ( -- 42)      push integer\n" strings::concat -> output
+		output "  3.14      ( -- 3.14)    push float\n" strings::concat -> output
+		output "  'text'    ( -- str)     push string\n\n" strings::concat -> output
 
-		output "STACK MANIPULATION:\n" str::concat -> output
-		output "  dup       (a -- a a)           duplicate top\n" str::concat -> output
-		output "  dup2      (a b -- a b a b)     duplicate top two\n" str::concat -> output
-		output "  drop      (a -- )              remove top\n" str::concat -> output
-		output "  swap      (a b -- b a)         swap top two\n" str::concat -> output
-		output "  over      (a b -- a b a)       copy second to top\n" str::concat -> output
-		output "  rot       (a b c -- b c a)     rotate: bottom to top\n" str::concat -> output
-		output "  nip       (a b -- b)           remove second\n" str::concat -> output
-		output "  tuck      (a b -- b a b)       copy top under second\n\n" str::concat -> output
+		output "STACK MANIPULATION:\n" strings::concat -> output
+		output "  dup       (a -- a a)           duplicate top\n" strings::concat -> output
+		output "  dup2      (a b -- a b a b)     duplicate top two\n" strings::concat -> output
+		output "  drop      (a -- )              remove top\n" strings::concat -> output
+		output "  swap      (a b -- b a)         swap top two\n" strings::concat -> output
+		output "  over      (a b -- a b a)       copy second to top\n" strings::concat -> output
+		output "  rot       (a b c -- b c a)     rotate: bottom to top\n" strings::concat -> output
+		output "  nip       (a b -- b)           remove second\n" strings::concat -> output
+		output "  tuck      (a b -- b a b)       copy top under second\n\n" strings::concat -> output
 
-		output "ARITHMETIC:\n" str::concat -> output
-		output "  + / add   (a b -- a+b)   addition\n" str::concat -> output
-		output "  - / sub   (a b -- a-b)   subtraction\n" str::concat -> output
-		output "  * / mul   (a b -- a*b)   multiplication\n" str::concat -> output
-		output "  / / div   (a b -- a/b)   division\n" str::concat -> output
-		output "  % / mod   (a b -- a%b)   modulo\n" str::concat -> output
-		output "  ++ / inc  (a -- a+1)     increment\n" str::concat -> output
-		output "  -- / dec  (a -- a-1)     decrement\n" str::concat -> output
-		output "  neg       (a -- -a)      negate\n\n" str::concat -> output
+		output "ARITHMETIC:\n" strings::concat -> output
+		output "  + / add   (a b -- a+b)   addition\n" strings::concat -> output
+		output "  - / sub   (a b -- a-b)   subtraction\n" strings::concat -> output
+		output "  * / mul   (a b -- a*b)   multiplication\n" strings::concat -> output
+		output "  / / div   (a b -- a/b)   division\n" strings::concat -> output
+		output "  % / mod   (a b -- a%b)   modulo\n" strings::concat -> output
+		output "  ++ / inc  (a -- a+1)     increment\n" strings::concat -> output
+		output "  -- / dec  (a -- a-1)     decrement\n" strings::concat -> output
+		output "  neg       (a -- -a)      negate\n\n" strings::concat -> output
 
-		output "COMPARISON (result: 0=false, 1=true):\n" str::concat -> output
-		output "  == / eq   (a b -- bool)  equal\n" str::concat -> output
-		output "  != / neq  (a b -- bool)  not equal\n" str::concat -> output
-		output "  < / lt    (a b -- bool)  less than\n" str::concat -> output
-		output "  > / gt    (a b -- bool)  greater than\n" str::concat -> output
-		output "  <= / le   (a b -- bool)  less or equal\n" str::concat -> output
-		output "  >= / ge   (a b -- bool)  greater or equal\n" str::concat -> output
-		output "  and       (a b -- bool)  logical and\n" str::concat -> output
-		output "  or        (a b -- bool)  logical or\n" str::concat -> output
-		output "  not       (a -- bool)    logical not\n\n" str::concat -> output
+		output "COMPARISON (result: 0=false, 1=true):\n" strings::concat -> output
+		output "  == / eq   (a b -- bool)  equal\n" strings::concat -> output
+		output "  != / neq  (a b -- bool)  not equal\n" strings::concat -> output
+		output "  < / lt    (a b -- bool)  less than\n" strings::concat -> output
+		output "  > / gt    (a b -- bool)  greater than\n" strings::concat -> output
+		output "  <= / le   (a b -- bool)  less or equal\n" strings::concat -> output
+		output "  >= / ge   (a b -- bool)  greater or equal\n" strings::concat -> output
+		output "  and       (a b -- bool)  logical and\n" strings::concat -> output
+		output "  or        (a b -- bool)  logical or\n" strings::concat -> output
+		output "  not       (a -- bool)    logical not\n\n" strings::concat -> output
 
-		output "BINDING:\n" str::concat -> output
-		output "  -> x      (a -- )        pop top, bind to variable x\n" str::concat -> output
-		output "  -> _      (a -- )        pop and discard (same as drop)\n" str::concat -> output
-		output "  x         ( -- val)      push value of variable x\n\n" str::concat -> output
+		output "BINDING:\n" strings::concat -> output
+		output "  -> x      (a -- )        pop top, bind to variable x\n" strings::concat -> output
+		output "  -> _      (a -- )        pop and discard (same as drop)\n" strings::concat -> output
+		output "  x         ( -- val)      push value of variable x\n\n" strings::concat -> output
 
-		output "I/O:\n" str::concat -> output
-		output "  print     (a -- )        print value (no newline)\n" str::concat -> output
-		output "  nl        ( -- )         print newline\n\n" str::concat -> output
+		output "I/O:\n" strings::concat -> output
+		output "  print     (a -- )        print value (no newline)\n" strings::concat -> output
+		output "  nl        ( -- )         print newline\n\n" strings::concat -> output
 
-		output "FUNCTION CALLS:\n" str::concat -> output
-		output "  mod::fn   (args -- results)  call function (see fn signature)\n" str::concat -> output
-		output "  mod::fn!  abort on error (failable functions)\n" str::concat -> output
-		output "  mod::fn?  propagate error to caller (failable functions)\n\n" str::concat -> output
+		output "FUNCTION CALLS:\n" strings::concat -> output
+		output "  mod::fn   (args -- results)  call function (see fn signature)\n" strings::concat -> output
+		output "  mod::fn!  abort on error (failable functions)\n" strings::concat -> output
+		output "  mod::fn?  propagate error to caller (failable functions)\n\n" strings::concat -> output
 
-		output "Example trace for '1 2 + dup *':\n" str::concat -> output
-		output "  1    : ( -- 1)           Stack: [1]\n" str::concat -> output
-		output "  2    : ( -- 2)           Stack: [1 2]\n" str::concat -> output
-		output "  +    : (1 2 -- 3)        Stack: [3]\n" str::concat -> output
-		output "  dup  : (3 -- 3 3)        Stack: [3 3]\n" str::concat -> output
-		output "  *    : (3 3 -- 9)        Stack: [9]\n" str::concat -> output
+		output "Example trace for '1 2 + dup *':\n" strings::concat -> output
+		output "  1    : ( -- 1)           Stack: [1]\n" strings::concat -> output
+		output "  2    : ( -- 2)           Stack: [1 2]\n" strings::concat -> output
+		output "  +    : (1 2 -- 3)        Stack: [3]\n" strings::concat -> output
+		output "  dup  : (3 -- 3 3)        Stack: [3 3]\n" strings::concat -> output
+		output "  *    : (3 3 -- 9)        Stack: [9]\n" strings::concat -> output
 
 		output tool_text_result
 	}
@@ -754,28 +754,28 @@ fn tool_generate_template(args:str -- result:str) {
 	found 0 == if {
 		"Missing required parameter: template" tool_error_result
 	} else {
-		template "file-read" str::compare 0 == if {
+		template "file-read" strings::compare 0 == if {
 			"FILE READ TEMPLATE\n==================\nuse io\n\nfn read_safely(path:str -- content:str) {\n    path io::read_file switch {\n        Ok { -> content content }\n        Err { -> _ -> msg msg print nl default }\n    }\n}\n\n// Or panic on error:\n//   path io::read_file!" tool_text_result
 		} else {
-			template "file-write" str::compare 0 == if {
+			template "file-write" strings::compare 0 == if {
 				"FILE WRITE TEMPLATE\n===================\nuse io\n\n// Write (overwrites):\n//   path content io::write_file!\n\n// Append:\n//   path content io::append_file!\n\n// With error handling:\nfn write_safely(path:str content:str -- ok:i64) {\n    path content io::write_file switch {\n        Ok { 1 }\n        Err { -> _ -> _ 0 }\n    }\n}" tool_text_result
 			} else {
-				template "json-parse" str::compare 0 == if {
+				template "json-parse" strings::compare 0 == if {
 					"JSON PARSE TEMPLATE\n===================\nuse json\n\nfn parse_json(data:str -- obj:str) {\n    data json::parse! -> obj\n    \n    // Get string: obj key json::get_string -> found -> value\n    // Get int:    obj key json::get_int -> found -> value\n    // Get bool:   obj key json::get_bool -> found -> value\n    // Get object: obj key json::get_object -> found -> value\n    // Get array:  obj key json::get_array -> found -> arr\n    \n    obj\n}" tool_text_result
 				} else {
-					template "http-get" str::compare 0 == if {
+					template "http-get" strings::compare 0 == if {
 						"HTTP GET TEMPLATE\n=================\nuse http\n\nfn fetch(url:str -- body:str) {\n    url http::get switch {\n        Ok { -> resp\n            resp @status 200 == if {\n                resp @body\n            } else { empty }\n        }\n        Err { -> _ -> _ empty }\n    }\n}" tool_text_result
 					} else {
-						template "cli-args" str::compare 0 == if {
+						template "cli-args" strings::compare 0 == if {
 							"CLI ARGS TEMPLATE\n=================\nuse os\n\nfn main() {\n    os::args -> args\n    args len -> argc\n    \n    1 -> i\n    loop {\n        i argc >= if { break }\n        args i nth -> arg\n        arg print nl\n        i 1 + -> i\n    }\n}" tool_text_result
 						} else {
-							template "struct-crud" str::compare 0 == if {
+							template "struct-crud" strings::compare 0 == if {
 								"STRUCT CRUD TEMPLATE\n====================\n\nstruct Item {\n    id: i64\n    name: str\n    count: i64\n}\n\n// Create\nfn new_item(id:i64 name:str -- item:Item) {\n    Item { id = id name = name count = 0 }\n}\n\n// Read: item @field_name\n// Update: item value #field_name\n\nfn main() {\n    1 name new_item -> item\n    item @name print nl\n    item 10 #count -> item\n    item @count print nl\n}" tool_text_result
 							} else {
-								template "error-handling" str::compare 0 == if {
+								template "error-handling" strings::compare 0 == if {
 									"ERROR HANDLING TEMPLATE\n=======================\nuse io\n\n// Method 1: Panic with !\n//   path io::read_file!\n\n// Method 2: Propagate with ? (caller must be fallible !)\nfn read_file(path:str -- content:str)! {\n    path io::read_file? -> content\n    content\n}\n\n// Method 3: Switch on result\nfn try_read(path:str -- content:str ok:i64) {\n    path io::read_file switch {\n        Ok { -> content content 1 }\n        _ { empty 0 }\n    }\n}\n\n// Method 4: Default on error\nfn read_or(path:str default:str -- content:str) {\n    path io::read_file switch {\n        Ok { -> content content }\n        _ { default }\n    }\n}" tool_text_result
 								} else {
-									template "loop-array" str::compare 0 == if {
+									template "loop-array" strings::compare 0 == if {
 										"LOOP AND ARRAY TEMPLATE\n=======================\n\n// Create array of n integers\nfn make_array(n:i64 -- arr:ptr) {\n    n makei -> arr\n    0 n 1 for i {\n        arr i i set -> arr\n    }\n    arr\n}\n\n// Sum with for loop\nfn sum(arr:ptr -- total:i64) {\n    0 -> total\n    0 arr len 1 for i {\n        total arr i nth + -> total\n    }\n    total\n}\n\n// Find with loop/break\nfn find(arr:ptr val:i64 -- idx:i64) {\n    0 1 negate -> idx\n    0 -> i\n    loop {\n        i arr len >= if { break }\n        arr i nth val == if { i -> idx break }\n        i 1 + -> i\n    }\n    idx\n}" tool_text_result
 									} else {
 										"Unknown template. Available: file-read, file-write, json-parse, http-get, cli-args, struct-crud, error-handling, loop-array" tool_error_result
@@ -797,70 +797,70 @@ fn tool_explain_signature(args:str -- result:str) {
 		"Missing required parameter: signature" tool_error_result
 	} else {
 		"Signature Explanation\n" -> output
-		output "=====================\n\n" str::concat -> output
-		output "Signature: (" str::concat sig str::concat ")\n\n" str::concat -> output
+		output "=====================\n\n" strings::concat -> output
+		output "Signature: (" strings::concat sig strings::concat ")\n\n" strings::concat -> output
 
 		// Check if it has --
-		sig "--" str::contains if {
-			output "This signature has INPUTS and OUTPUTS separated by '--'\n\n" str::concat -> output
+		sig "--" strings::contains if {
+			output "This signature has INPUTS and OUTPUTS separated by '--'\n\n" strings::concat -> output
 		} else {
-			output "Note: No '--' found. Signatures should be: (inputs -- outputs)\n\n" str::concat -> output
+			output "Note: No '--' found. Signatures should be: (inputs -- outputs)\n\n" strings::concat -> output
 		}
 
 		// Explain the format
-		output "FORMAT EXPLANATION:\n" str::concat -> output
-		output "==================\n" str::concat -> output
-		output "  (inputs -- outputs)\n\n" str::concat -> output
-		output "  INPUTS (left of --): Values the function CONSUMES from the stack\n" str::concat -> output
-		output "  OUTPUTS (right of --): Values the function PUSHES onto the stack\n\n" str::concat -> output
+		output "FORMAT EXPLANATION:\n" strings::concat -> output
+		output "==================\n" strings::concat -> output
+		output "  (inputs -- outputs)\n\n" strings::concat -> output
+		output "  INPUTS (left of --): Values the function CONSUMES from the stack\n" strings::concat -> output
+		output "  OUTPUTS (right of --): Values the function PUSHES onto the stack\n\n" strings::concat -> output
 
-		output "READING THE SIGNATURE:\n" str::concat -> output
-		output "======================\n" str::concat -> output
-		output "  - Each parameter has format: name:type\n" str::concat -> output
-		output "  - Multiple parameters are space-separated\n" str::concat -> output
-		output "  - Rightmost input is TOP of stack (pushed last)\n" str::concat -> output
-		output "  - Rightmost output is TOP of stack after call\n\n" str::concat -> output
+		output "READING THE SIGNATURE:\n" strings::concat -> output
+		output "======================\n" strings::concat -> output
+		output "  - Each parameter has format: name:type\n" strings::concat -> output
+		output "  - Multiple parameters are space-separated\n" strings::concat -> output
+		output "  - Rightmost input is TOP of stack (pushed last)\n" strings::concat -> output
+		output "  - Rightmost output is TOP of stack after call\n\n" strings::concat -> output
 
-		output "COMMON TYPES:\n" str::concat -> output
-		output "=============\n" str::concat -> output
-		output "  i64  - 64-bit integer\n" str::concat -> output
-		output "  f64  - 64-bit float\n" str::concat -> output
-		output "  str  - string\n" str::concat -> output
-		output "  ptr  - pointer (arrays, structs, raw memory)\n" str::concat -> output
-		output "  bool - boolean (actually i64: 0=false, 1=true)\n\n" str::concat -> output
+		output "COMMON TYPES:\n" strings::concat -> output
+		output "=============\n" strings::concat -> output
+		output "  i64  - 64-bit integer\n" strings::concat -> output
+		output "  f64  - 64-bit float\n" strings::concat -> output
+		output "  str  - string\n" strings::concat -> output
+		output "  ptr  - pointer (arrays, structs, raw memory)\n" strings::concat -> output
+		output "  bool - boolean (actually i64: 0=false, 1=true)\n\n" strings::concat -> output
 
-		output "EXAMPLES:\n" str::concat -> output
-		output "=========\n" str::concat -> output
-		output "  (a:i64 b:i64 -- sum:i64)\n" str::concat -> output
-		output "    Takes 2 integers, returns 1 integer\n" str::concat -> output
-		output "    Call: 3 5 add  ->  8 on stack\n\n" str::concat -> output
+		output "EXAMPLES:\n" strings::concat -> output
+		output "=========\n" strings::concat -> output
+		output "  (a:i64 b:i64 -- sum:i64)\n" strings::concat -> output
+		output "    Takes 2 integers, returns 1 integer\n" strings::concat -> output
+		output "    Call: 3 5 add  ->  8 on stack\n\n" strings::concat -> output
 
-		output "  (s:str -- len:i64)\n" str::concat -> output
-		output "    Takes 1 string, returns its length\n" str::concat -> output
-		output "    Call: mystr str::len  ->  5 on stack\n\n" str::concat -> output
+		output "  (s:str -- len:i64)\n" strings::concat -> output
+		output "    Takes 1 string, returns its length\n" strings::concat -> output
+		output "    Call: mystr strings::len  ->  5 on stack\n\n" strings::concat -> output
 
-		output "  (path:str -- content:str found:i64)\n" str::concat -> output
-		output "    Takes 1 string, returns 2 values\n" str::concat -> output
-		output "    'found' is on TOP (check it first)\n" str::concat -> output
-		output "    Call: path read -> found -> content\n\n" str::concat -> output
+		output "  (path:str -- content:str found:i64)\n" strings::concat -> output
+		output "    Takes 1 string, returns 2 values\n" strings::concat -> output
+		output "    'found' is on TOP (check it first)\n" strings::concat -> output
+		output "    Call: path read -> found -> content\n\n" strings::concat -> output
 
-		output "  ( -- timestamp:i64)\n" str::concat -> output
-		output "    Takes nothing, returns 1 integer\n" str::concat -> output
-		output "    Call: time::now  ->  timestamp on stack\n\n" str::concat -> output
+		output "  ( -- timestamp:i64)\n" strings::concat -> output
+		output "    Takes nothing, returns 1 integer\n" strings::concat -> output
+		output "    Call: time::now  ->  timestamp on stack\n\n" strings::concat -> output
 
-		output "  (val:i64 -- )\n" str::concat -> output
-		output "    Takes 1 integer, returns nothing\n" str::concat -> output
-		output "    Call: 42 print  ->  nothing on stack\n\n" str::concat -> output
+		output "  (val:i64 -- )\n" strings::concat -> output
+		output "    Takes 1 integer, returns nothing\n" strings::concat -> output
+		output "    Call: 42 print  ->  nothing on stack\n\n" strings::concat -> output
 
-		output "CALLING CONVENTION:\n" str::concat -> output
-		output "===================\n" str::concat -> output
-		output "  1. Push inputs LEFT to RIGHT\n" str::concat -> output
-		output "  2. Call the function\n" str::concat -> output
-		output "  3. Pop outputs RIGHT to LEFT (top first)\n\n" str::concat -> output
+		output "CALLING CONVENTION:\n" strings::concat -> output
+		output "===================\n" strings::concat -> output
+		output "  1. Push inputs LEFT to RIGHT\n" strings::concat -> output
+		output "  2. Call the function\n" strings::concat -> output
+		output "  3. Pop outputs RIGHT to LEFT (top first)\n\n" strings::concat -> output
 
-		output "  Example for (a:str b:i64 -- x:ptr y:i64):\n" str::concat -> output
-		output "    mystr 42 func -> y -> x\n" str::concat -> output
-		output "    // y is popped first (was on top)\n" str::concat -> output
+		output "  Example for (a:str b:i64 -- x:ptr y:i64):\n" strings::concat -> output
+		output "    mystr 42 func -> y -> x\n" strings::concat -> output
+		output "    // y is popped first (was on top)\n" strings::concat -> output
 
 		output tool_text_result
 	}
@@ -873,20 +873,20 @@ fn tool_type_conversion(args:str -- result:str) {
 	found_from 0 == found_to 0 == or if {
 		"Missing required parameters: from and to" tool_error_result
 	} else {
-		from_type str::lower -> from_type
-		to_type str::lower -> to_type
+		from_type strings::lower -> from_type
+		to_type strings::lower -> to_type
 
-		from_type "i64" str::compare 0 == if {
-			to_type "f64" str::compare 0 == if {
+		from_type "i64" strings::compare 0 == if {
+			to_type "f64" strings::compare 0 == if {
 				"i64 to f64 CONVERSION\n=====================\n\nMethod: cast<f64>\n\nExample:\n    42 cast<f64>  // Result: 42.0 on stack\n\nNotes:\n- Lossless for integers within f64 precision\n- Large integers may lose precision" tool_text_result
 			} else {
-				to_type "str" str::compare 0 == if {
+				to_type "str" strings::compare 0 == if {
 					"i64 to str CONVERSION\n=====================\n\nMethod: strconv::itoa\n\nExample:\n    42 strconv::itoa  // Result: the string 42 on stack\n\nFor formatted output:\n    use fmt\n    42 fmt::int  // Formatted integer string" tool_text_result
 				} else {
-					to_type "bool" str::compare 0 == if {
+					to_type "bool" strings::compare 0 == if {
 						"i64 to bool CONVERSION\n======================\n\nMethod: Comparison or direct use\n\nQuadrate uses i64 for booleans (0=false, nonzero=true)\n\nExamples:\n    x 0 != -> is_nonzero   // Explicit: 1 if x!=0\n    x if { ... }           // Direct: any nonzero is truthy\n\nNotes:\n- No explicit conversion needed\n- 0 is false, everything else is true" tool_text_result
 					} else {
-						to_type "ptr" str::compare 0 == if {
+						to_type "ptr" strings::compare 0 == if {
 							"i64 to ptr CONVERSION\n=====================\n\nMethod: cast<ptr> (unsafe)\n\nExample:\n    addr cast<ptr>  // Interpret integer as memory address\n\nWARNING: This is unsafe!\n- Only use for FFI or low-level memory operations\n- Ensure the address is valid\n- Prefer using mem:: functions instead" tool_text_result
 						} else {
 							"Unknown target type. Valid types: i64, f64, str, ptr, bool" tool_error_result
@@ -895,14 +895,14 @@ fn tool_type_conversion(args:str -- result:str) {
 				}
 			}
 		} else {
-			from_type "f64" str::compare 0 == if {
-				to_type "i64" str::compare 0 == if {
+			from_type "f64" strings::compare 0 == if {
+				to_type "i64" strings::compare 0 == if {
 					"f64 to i64 CONVERSION\n=====================\n\nMethod: cast<i64>\n\nExample:\n    3.7 cast<i64>  // Result: 3 (truncates toward zero)\n\nRounding options:\n    x math::floor cast<i64>  // Round down\n    x math::ceil cast<i64>   // Round up\n    x math::round cast<i64>  // Round to nearest\n\nNotes:\n- Truncates decimal part (no rounding by default)\n- Overflow behavior is undefined for huge values" tool_text_result
 				} else {
-					to_type "str" str::compare 0 == if {
+					to_type "str" strings::compare 0 == if {
 						"f64 to str CONVERSION\n=====================\n\nMethod: strconv::ftoa\n\nExample:\n    3.14159 strconv::ftoa  // Result: string representation\n\nFor formatted output:\n    use fmt\n    3.14159 2 fmt::float  // 2 decimal places" tool_text_result
 					} else {
-						to_type "bool" str::compare 0 == if {
+						to_type "bool" strings::compare 0 == if {
 							"f64 to bool CONVERSION\n======================\n\nMethod: Comparison\n\nExamples:\n    x 0.0 != -> is_nonzero\n    x 0.0 > -> is_positive\n\nNotes:\n- Compare against 0.0 for boolean conversion\n- Be careful with floating point equality" tool_text_result
 						} else {
 							"Unknown target type. Valid types: i64, f64, str, bool" tool_error_result
@@ -910,18 +910,18 @@ fn tool_type_conversion(args:str -- result:str) {
 					}
 				}
 			} else {
-				from_type "str" str::compare 0 == if {
-					to_type "i64" str::compare 0 == if {
+				from_type "str" strings::compare 0 == if {
+					to_type "i64" strings::compare 0 == if {
 						"str to i64 CONVERSION\n=====================\n\nMethod: strconv::atoi (failable)\n\nExample:\n    s strconv::atoi switch {\n        Ok { -> val val }\n        Err { -> _ -> _ 0 }  // default on error\n    }\n\nOr panic on invalid:\n    s strconv::atoi!\n\nNotes:\n- Returns error for non-numeric strings\n- Handles negative numbers\n- Leading/trailing whitespace may cause errors" tool_text_result
 					} else {
-						to_type "f64" str::compare 0 == if {
+						to_type "f64" strings::compare 0 == if {
 							"str to f64 CONVERSION\n=====================\n\nMethod: strconv::atof (failable)\n\nExample:\n    s strconv::atof switch {\n        Ok { -> val val }\n        Err { -> _ -> _ 0.0 }  // default on error\n    }\n\nOr panic on invalid:\n    s strconv::atof!\n\nNotes:\n- Handles scientific notation\n- Returns error for non-numeric strings" tool_text_result
 						} else {
-							to_type "ptr" str::compare 0 == if {
-								"str to ptr CONVERSION\n=====================\n\nStrings ARE pointers in Quadrate!\n\nA str is already a ptr to character data.\nNo conversion needed for most operations.\n\nTo get raw bytes:\n    s str::bytes -> ptr  // Get byte array\n\nTo get length:\n    s str::len -> len" tool_text_result
+							to_type "ptr" strings::compare 0 == if {
+								"str to ptr CONVERSION\n=====================\n\nStrings ARE pointers in Quadrate!\n\nA str is already a ptr to character data.\nNo conversion needed for most operations.\n\nTo get raw bytes:\n    s strings::bytes -> ptr  // Get byte array\n\nTo get length:\n    s strings::len -> len" tool_text_result
 							} else {
-								to_type "bool" str::compare 0 == if {
-									"str to bool CONVERSION\n======================\n\nMethod: Check length or content\n\nExamples:\n    s str::len 0 > -> not_empty\n    s str::len 0 == -> is_empty\n\nFor parsing bool strings:\n    s str::lower -> s\n    s str::compare 0 == -> is_true  // compare with expected" tool_text_result
+								to_type "bool" strings::compare 0 == if {
+									"str to bool CONVERSION\n======================\n\nMethod: Check length or content\n\nExamples:\n    s strings::len 0 > -> not_empty\n    s strings::len 0 == -> is_empty\n\nFor parsing bool strings:\n    s strings::lower -> s\n    s strings::compare 0 == -> is_true  // compare with expected" tool_text_result
 								} else {
 									"Unknown target type. Valid types: i64, f64, ptr, bool" tool_error_result
 								}
@@ -929,22 +929,22 @@ fn tool_type_conversion(args:str -- result:str) {
 						}
 					}
 				} else {
-					from_type "ptr" str::compare 0 == if {
-						to_type "i64" str::compare 0 == if {
+					from_type "ptr" strings::compare 0 == if {
+						to_type "i64" strings::compare 0 == if {
 							"ptr to i64 CONVERSION\n=====================\n\nMethod: cast<i64> (unsafe)\n\nExample:\n    p cast<i64>  // Get memory address as integer\n\nMore commonly, get array length:\n    arr len -> count\n\nOr access array elements:\n    arr i nth -> element\n\nNotes:\n- Direct ptr to i64 cast gives memory address\n- Usually you want len or nth instead" tool_text_result
 						} else {
-							to_type "str" str::compare 0 == if {
-								"ptr to str CONVERSION\n=====================\n\nFor byte arrays:\n    bytes str::from_bytes -> s\n\nFor C strings (null-terminated):\n    cstr str::from_cstr -> s\n\nNotes:\n- Ensure valid UTF-8 encoding\n- from_cstr stops at first null byte\n- from_bytes uses entire array" tool_text_result
+							to_type "str" strings::compare 0 == if {
+								"ptr to str CONVERSION\n=====================\n\nFor byte arrays:\n    bytes strings::from_bytes -> s\n\nFor C strings (null-terminated):\n    cstr strings::from_cstr -> s\n\nNotes:\n- Ensure valid UTF-8 encoding\n- from_cstr stops at first null byte\n- from_bytes uses entire array" tool_text_result
 							} else {
 								"Unknown target type. Valid types: i64, str" tool_error_result
 							}
 						}
 					} else {
-						from_type "bool" str::compare 0 == if {
-							to_type "i64" str::compare 0 == if {
+						from_type "bool" strings::compare 0 == if {
+							to_type "i64" strings::compare 0 == if {
 								"bool to i64 CONVERSION\n======================\n\nNo conversion needed!\n\nQuadrate bools ARE i64 values:\n- false = 0\n- true = 1 (or any nonzero)\n\nExample:\n    x y == -> result  // result is 0 or 1\n    result 10 * -> scaled  // Use directly in math" tool_text_result
 							} else {
-								to_type "str" str::compare 0 == if {
+								to_type "str" strings::compare 0 == if {
 									"bool to str CONVERSION\n======================\n\nMethod: Conditional or strconv\n\nExample:\n    flag if { 1 } else { 0 } strconv::itoa\n\nOr use conditional strings:\n    flag if { val1 } else { val2 } -> s" tool_text_result
 								} else {
 									"Unknown target type. Valid types: i64, str" tool_error_result

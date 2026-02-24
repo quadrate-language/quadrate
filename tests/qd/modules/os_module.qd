@@ -1,6 +1,6 @@
 // Test os module - operating system interface
 use os
-use str
+use strings
 
 fn main() {
 	"=== Error constants ===" print nl
@@ -25,20 +25,20 @@ fn main() {
 	"/tmp" os::is_file print nl
 
 	"=== getenv ===" print nl
-	"HOME" os::getenv str::len 0 gt print nl
-	"PATH" os::getenv str::len 0 gt print nl
-	"NONEXISTENT_VAR_12345" os::getenv str::len 0 eq print nl
+	"HOME" os::getenv strings::len 0 gt print nl
+	"PATH" os::getenv strings::len 0 gt print nl
+	"NONEXISTENT_VAR_12345" os::getenv strings::len 0 eq print nl
 
 	"=== getpid ===" print nl
 	os::getpid 0 gt print nl
 
 	"=== cwd ===" print nl
-	os::cwd! str::len 0 gt print nl
+	os::cwd! strings::len 0 gt print nl
 
 	"=== exec ===" print nl
 	"echo hello" os::exec! -> exitcode -> output
 	exitcode print nl
-	output str::trim print nl
+	output strings::trim print nl
 
 	"=== mktemp and rmdir ===" print nl
 	os::mktemp! -> tmpdir
