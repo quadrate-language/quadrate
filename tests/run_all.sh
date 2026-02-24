@@ -1483,21 +1483,11 @@ run_stdlib_tests() {
     local output
     local exit_code
 
-    # Find test files only in stdlib modules (directories with meson.build)
-    # This excludes in-tree external modules that don't have meson.build
+    # Find test files in tests/qd/stdlib/
     local test_files=""
     while IFS= read -r -d '' f; do
         test_files+=" $f"
-    done < <(find "$PROJECT_ROOT/lib" -name '*_test.qd' -print0 | while IFS= read -r -d '' f; do
-        dir=$(dirname "$f")
-        while [[ "$dir" != "$PROJECT_ROOT/lib" && "$dir" != "/" ]]; do
-            if [[ -f "$dir/meson.build" ]]; then
-                printf '%s\0' "$f"
-                break
-            fi
-            dir=$(dirname "$dir")
-        done
-    done)
+    done < <(find "$PROJECT_ROOT/tests/qd/stdlib" -maxdepth 1 -name '*_test.qd' -print0)
     output=$(cd "$PROJECT_ROOT" && \
         QUADRATE_ROOT="$QUADRATE_ROOT_DEFAULT" \
         QUADRATE_LIBDIR="$QUADRATE_LIBDIR_DEFAULT" \

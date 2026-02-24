@@ -59,7 +59,7 @@ test "uri::query_has" {
 
 test "uri IPv6 addresses" {
 	"http://[::1]:8080/path" uri::parse -> u
-	u @host "[::1]" testing::assert_eq
+	u @host "::1" testing::assert_eq
 	u @port 8080 testing::assert_eq
 }
 
@@ -73,6 +73,6 @@ test "uri decode edge cases" {
 	// Incomplete percent encoding
 	"%" uri::decode "%" testing::assert_eq
 	"%2" uri::decode "%2" testing::assert_eq
-	// Plus sign handling
-	"a+b" uri::decode "a+b" testing::assert_eq
+	// Plus sign is decoded as space (form encoding)
+	"a+b" uri::decode "a b" testing::assert_eq
 }

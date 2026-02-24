@@ -32,10 +32,10 @@ endif
 CMDS := quad quadc quadfmt quadlint quadlsp quadpm quaduses
 
 # Libraries with C components (directory names under lib/)
-LIBS_WITH_C := rt qd fmt io math mem net os signal strings strconv time thread testing tty
+LIBS_WITH_C := rt qd fmt io math mem net os signal strings strconv time thread testing tty tls http log
 
 # Libraries with headers to install (directory names under lib/)
-LIBS_WITH_HEADERS := rt qd fmt io math mem net os signal strings strconv time thread testing tty
+LIBS_WITH_HEADERS := rt qd fmt io math mem net os signal strings strconv time thread testing tty tls http log
 
 # Standard library modules (auto-discovered from lib/*/qd/*/)
 STDLIB_MODULES := $(shell find lib/*/qd -maxdepth 1 -mindepth 1 -type d -exec basename {} \; 2>/dev/null | sort -u)
@@ -70,7 +70,7 @@ define do_build
 	@for dir in $(filter-out rt qd,$(LIBS_WITH_C)); do \
 		(cd $(1)/lib/$$dir && ar rcs lib$${dir}_regular.a $$(ar -t lib$$dir.a) && cp lib$${dir}_regular.a ../../../../dist/lib/quadrate/lib$$dir.a) && echo "  lib$$dir.a"; \
 	done
-	@for dir in thread; do \
+	@for dir in thread tls http; do \
 		if [ -f lib/$$dir/lib$$dir.deps ]; then cp lib/$$dir/lib$$dir.deps dist/lib/quadrate/; fi; \
 	done
 	@if [ "$$(uname -s)" = "Haiku" ]; then echo "-lnetwork" > dist/lib/quadrate/libnet.deps; fi

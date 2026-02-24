@@ -2,7 +2,7 @@
 /// Provides encryption layer on top of TCP sockets using OpenSSL.
 /// Error codes: Ok=1 (success), specific errors start at 2
 
-import "libtls_static.a" as "tls" {
+import "libtls.a" as "tls" {
 	/// TLS initialization failed.
 	pub const ErrInit = 2
 

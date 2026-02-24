@@ -103,7 +103,7 @@ pub struct Ctx {
 	_responded: i64
 }
 
-import "libhttp_static.a" as "http" {
+import "libhttp.a" as "http" {
 	/// Connection failed.
 	pub const ErrConnect = 2
 

@@ -5,6 +5,8 @@
  * Bridges Quadrate runtime to TLS platform abstraction.
  */
 
+#define _POSIX_C_SOURCE 200809L
+
 #include <quadrate/tls/tls.h>
 #include <quadrate/rt/runtime.h>
 #include <quadrate/rt/stack.h>

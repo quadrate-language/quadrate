@@ -1,10 +1,5 @@
 {
 	"name": "quadmcp",
 	"version": "0.1.0",
-	"description": "MCP (Model Context Protocol) server in Quadrate",
-	"dependencies": {
-		"fuzzy": "https://git.sr.ht/~klahr/qdfuzzy",
-		"http": "https://git.sr.ht/~klahr/qdhttp",
-		"json": "https://git.sr.ht/~klahr/qdjson"
-	}
+	"description": "MCP (Model Context Protocol) server in Quadrate"
 }

@@ -17,7 +17,7 @@ static bool isStdlibImport(const std::string& library) {
 		"librt.a", "libfmt.a", "libio.a", "libmath.a", "libmem.a",
 		"libnet.a", "libos.a", "libsignal.a", "libstrings.a", "libstrconv.a",
 		"libtime.a", "libthread.a", "libtesting.a", "libtty.a", "libbits.a",
-		"libhttp_static.a", "libtls_static.a", "liblog_static.a",
+		"libhttp.a", "libtls.a", "liblog.a",
 	};
 	for (const char* name : stdlibLibs) {
 		if (library == name) return true;

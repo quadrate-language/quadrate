@@ -1,0 +1,3 @@
+-lssl
+-lcrypto
+/home/klarre/dev/sourcehut/~klahr/quadrate-language/quadrate/lib/tls/lib/libtls_static.a
