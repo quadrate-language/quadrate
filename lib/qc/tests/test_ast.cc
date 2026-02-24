@@ -1,6 +1,6 @@
 #include <cstring>
-#include <qc/ast.h>
-#include <qc/ast_printer.h>
+#include <quadrate/qc/ast.h>
+#include <quadrate/qc/ast_printer.h>
 #include <unit-check/uc.h>
 
 TEST(SimpleFunctionDeclaration) {

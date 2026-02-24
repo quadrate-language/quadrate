@@ -5,11 +5,11 @@
 # Parses /// doc comments with @param, @return, @example, @error, @field tags
 # and generates structured markdown documentation.
 #
-# Also generates the language reference from lib/qc/include/qc/reference.def.
+# Also generates the language reference from lib/qc/include/quadrate/qc/reference.def.
 #
 # Usage:
 #     ./docs/gen_docs.sh                           # Generate all docs
-#     ./docs/gen_docs.sh lib/qdmath/qd/math/math.qd  # Single file
+#     ./docs/gen_docs.sh lib/math/qd/math/math.qd  # Single file
 #
 
 set -euo pipefail
@@ -24,33 +24,33 @@ JSON_DIR="$PROJECT_ROOT/docs/api"
 
 # Standard library modules (core modules only - external packages are not included)
 declare -A STDLIB_MODULES=(
-    ["bits"]="lib/qdbits/qd/bits/bits.qd"
-    ["bytes"]="lib/qdbytes/qd/bytes/bytes.qd"
-    ["flag"]="lib/qdflag/qd/flag/flag.qd"
-    ["fmt"]="lib/qdfmt/qd/fmt/fmt.qd"
-    ["io"]="lib/qdio/qd/io/io.qd"
-    ["limits"]="lib/qdlimits/qd/limits/limits.qd"
-    ["math"]="lib/qdmath/qd/math/math.qd"
-    ["mem"]="lib/qdmem/qd/mem/mem.qd"
-    ["os"]="lib/qdos/qd/os/os.qd"
-    ["path"]="lib/qdpath/qd/path/path.qd"
-    ["rand"]="lib/qdrand/qd/rand/rand.qd"
-    ["sb"]="lib/qdsb/qd/sb/sb.qd"
-    ["signal"]="lib/qdsignal/qd/signal/signal.qd"
-    ["strings"]="lib/qdstrings/qd/strings/strings.qd"
-    ["strconv"]="lib/qdstrconv/qd/strconv/strconv.qd"
-    ["term"]="lib/qdterm/qd/term/term.qd"
-    ["testing"]="lib/qdtesting/qd/testing/testing.qd"
-    ["thread"]="lib/qdthread/qd/thread/thread.qd"
-    ["time"]="lib/qdtime/qd/time/time.qd"
-    ["unicode"]="lib/qdunicode/qd/unicode/unicode.qd"
+    ["bits"]="lib/bits/qd/bits/bits.qd"
+    ["bytes"]="lib/bytes/qd/bytes/bytes.qd"
+    ["flag"]="lib/flag/qd/flag/flag.qd"
+    ["fmt"]="lib/fmt/qd/fmt/fmt.qd"
+    ["io"]="lib/io/qd/io/io.qd"
+    ["limits"]="lib/limits/qd/limits/limits.qd"
+    ["math"]="lib/math/qd/math/math.qd"
+    ["mem"]="lib/mem/qd/mem/mem.qd"
+    ["os"]="lib/os/qd/os/os.qd"
+    ["path"]="lib/path/qd/path/path.qd"
+    ["rand"]="lib/rand/qd/rand/rand.qd"
+    ["sb"]="lib/sb/qd/sb/sb.qd"
+    ["signal"]="lib/signal/qd/signal/signal.qd"
+    ["strings"]="lib/strings/qd/strings/strings.qd"
+    ["strconv"]="lib/strconv/qd/strconv/strconv.qd"
+    ["term"]="lib/term/qd/term/term.qd"
+    ["testing"]="lib/testing/qd/testing/testing.qd"
+    ["thread"]="lib/thread/qd/thread/thread.qd"
+    ["time"]="lib/time/qd/time/time.qd"
+    ["unicode"]="lib/unicode/qd/unicode/unicode.qd"
 )
 
 # Get module name from file path
 get_module_name() {
     local filepath="$1"
-    # Extract module name from path like lib/qdmath/qd/math/math.qd -> math
-    # or lib/qdmath/qd/math/module.qd -> math (backwards compat)
+    # Extract module name from path like lib/math/qd/math/math.qd -> math
+    # or lib/math/qd/math/module.qd -> math (backwards compat)
     local name
     name=$(echo "$filepath" | sed -n 's|.*/qd/\([^/]*\)/[^/]*\.qd|\1|p')
     echo "$name"
@@ -728,7 +728,7 @@ generate_json() {
 
 # Generate language reference from reference.def
 generate_reference() {
-    local ref_def="$PROJECT_ROOT/lib/qc/include/qc/reference.def"
+    local ref_def="$PROJECT_ROOT/lib/qc/include/quadrate/qc/reference.def"
 
     if [[ ! -f "$ref_def" ]]; then
         echo "Warning: $ref_def not found, skipping reference generation"

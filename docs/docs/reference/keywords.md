@@ -245,7 +245,7 @@ test "addition works" {
 Imports a native C library for use in a module. Used with `as` to specify the module namespace.
 
 ```qd
-import "libqdmath.a" as "math" {
+import "libmath.a" as "math" {
 	pub fn sqrt(x:f64 -- result:f64)
 }
 ```

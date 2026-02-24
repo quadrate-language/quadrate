@@ -1,0 +1,861 @@
+/// JSON parsing and querying without AST construction.
+use strings
+use unicode
+
+/// Type: Null value.
+pub const Null = 0
+/// Type: Boolean value.
+pub const Bool = 1
+/// Type: Number value.
+pub const Number = 2
+/// Type: String value.
+pub const String = 3
+/// Type: Array value.
+pub const Array = 4
+/// Type: Object value.
+pub const Object = 5
+
+fn skip_ws(json:str pos:i64 -- new_pos:i64) {
+	-> pos -> json
+	0 -> slen
+	0 -> ch
+	json strings::len -> slen
+	loop {
+		pos slen < if {
+			json pos strings::char_at! -> ch
+			ch unicode::space == ch unicode::tab == + ch unicode::newline == + ch unicode::cr == + 0 > if {
+				pos 1 + -> pos
+			} else {
+				break
+			}
+		} else {
+			break
+		}
+	}
+	pos
+}
+
+/// Find end of JSON string (pos at opening quote).
+/// @param json str JSON string
+/// @param pos i64 Position of opening quote
+/// @return end_pos i64 Position after closing quote
+pub fn find_str_end(json:str pos:i64 -- end_pos:i64) {
+	-> pos -> json
+	0 -> slen
+	0 -> ch
+	json strings::len -> slen
+	pos 1 + -> pos
+	loop {
+		pos slen < if {
+			json pos strings::char_at! -> ch
+			ch unicode::dquote == if {
+				pos 1 + -> pos
+				break
+			} else {
+				ch unicode::backslash == if {
+					pos 2 + -> pos
+				} else {
+					pos 1 + -> pos
+				}
+			}
+		} else {
+			break
+		}
+	}
+	pos
+}
+
+fn find_num_end(json:str pos:i64 -- end_pos:i64) {
+	-> pos -> json
+	0 -> slen
+	0 -> ch
+	json strings::len -> slen
+	loop {
+		pos slen < if {
+			json pos strings::char_at! -> ch
+			ch unicode::digit0 >= ch unicode::digit9 <= *
+			ch unicode::minus == +
+			ch unicode::plus == +
+			ch unicode::dot == +
+			ch unicode::e == +
+			ch unicode::E == +
+			0 > if {
+				pos 1 + -> pos
+			} else {
+				break
+			}
+		} else {
+			break
+		}
+	}
+	pos
+}
+
+fn find_bracket(json:str pos:i64 -- end_pos:i64) {
+	-> pos -> json
+	0 -> slen
+	0 -> open_ch
+	0 -> close_ch
+	0 -> nesting
+	0 -> ch
+	json strings::len -> slen
+	json pos strings::char_at! -> open_ch
+	open_ch unicode::lbrace == if {
+		unicode::rbrace
+	} else {
+		unicode::rbracket
+	}
+	-> close_ch
+	1 -> nesting
+	pos 1 + -> pos
+	loop {
+		pos slen < nesting 0 > * if {
+			json pos strings::char_at! -> ch
+			ch unicode::dquote == if {
+				json pos find_str_end -> pos
+			} else {
+				ch open_ch == if {
+					nesting 1 + -> nesting
+					pos 1 + -> pos
+				} else {
+					ch close_ch == if {
+						nesting 1 - -> nesting
+						pos 1 + -> pos
+					} else {
+						pos 1 + -> pos
+					}
+				}
+			}
+		} else {
+			break
+		}
+	}
+	pos
+}
+
+/// Get JSON value type at position.
+/// @param json str JSON string
+/// @param pos i64 Position to check
+/// @return type i64 Type constant (Null, Bool, Number, String, Array, Object)
+/// @example "{\"a\":1}" 5 json::type_at print  // 2 (Number)
+pub fn type_at(json:str pos:i64 -- type:i64) {
+	-> pos -> json
+	json pos skip_ws -> pos
+	json strings::len -> slen
+	pos slen >= if {
+		Null
+	} else {
+		json pos strings::char_at! -> ch
+		ch unicode::dquote == if {
+			String
+		} else {
+			ch unicode::lbrace == if {
+				Object
+			} else {
+				ch unicode::lbracket == if {
+					Array
+				} else {
+					ch unicode::t == if {
+						Bool
+					} else {
+						ch unicode::f == if {
+							Bool
+						} else {
+							ch unicode::n == if {
+								Null
+							} else {
+								Number
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+}
+
+/// Extract string value at position.
+/// @param json str JSON string
+/// @param pos i64 Position of opening quote
+/// @return value str Extracted string
+pub fn extract_str(json:str pos:i64 -- value:str) {
+	-> pos -> json
+	pos 1 + -> start
+	json pos find_str_end -> after_end
+	after_end 1 - -> end_pos
+	end_pos start - -> length
+	length 0 > if {
+		json start length strings::substring!
+	} else {
+		""
+	}
+}
+
+fn skip_value(json:str pos:i64 -- new_pos:i64) {
+	-> pos -> json
+	0 -> slen
+	0 -> val_type
+	0 -> ch
+	json strings::len -> slen
+	json pos type_at -> val_type
+	val_type String == if {
+		json pos find_str_end
+	} else {
+		val_type Object == val_type Array == + 0 > if {
+			json pos find_bracket
+		} else {
+			loop {
+				pos slen < if {
+					json pos strings::char_at! -> ch
+					ch unicode::comma == ch unicode::rbrace == + ch unicode::rbracket == + 0 > if {
+						break
+					} else {
+						pos 1 + -> pos
+					}
+				} else {
+					break
+				}
+			}
+			pos
+		}
+	}
+}
+
+fn find_key(json:str pos:i64 key:str -- value_pos:i64) {
+	-> key -> pos -> json
+	0 -> slen
+	0 -> result
+	0 -> ch
+	"" -> current_key
+	json pos skip_ws -> pos
+	json strings::len -> slen
+
+	pos slen >= if {
+		-1
+	} else {
+		json pos strings::char_at! unicode::lbrace != if {
+			-1
+		} else {
+			pos 1 + -> pos
+			-1 -> result
+			loop {
+				json pos skip_ws -> pos
+				pos slen >= if {
+					break
+				} else {
+					json pos strings::char_at! -> ch
+					ch unicode::rbrace == if {
+						break
+					} else {
+						ch unicode::comma == if {
+							pos 1 + -> pos
+							json pos skip_ws -> pos
+							json pos strings::char_at! -> ch
+						}
+
+						ch unicode::dquote == if {
+							json pos extract_str -> current_key
+							json pos find_str_end -> pos
+
+							json pos skip_ws -> pos
+							pos slen < if {
+								json pos strings::char_at! unicode::colon == if {
+									pos 1 + -> pos
+									json pos skip_ws -> pos
+
+									current_key key strings::compare 0 == if {
+										pos -> result
+										break
+									} else {
+										json pos skip_value -> pos
+									}
+								} else {
+									break
+								}
+							} else {
+								break
+							}
+						} else {
+							break
+						}
+					}
+				}
+			}
+			result
+		}
+	}
+}
+
+fn parse_int(num_str:str -- value:i64) {
+	-> num_str
+	0 -> num_len
+	0 -> value
+	0 -> i
+	1 -> sign
+	0 -> ch
+	num_str strings::len -> num_len
+	num_len 0 > if {
+		num_str 0 strings::char_at! unicode::minus == if {
+			-1 -> sign
+			1 -> i
+		}
+	}
+	loop {
+		i num_len < if {
+			num_str i strings::char_at! -> ch
+			ch unicode::digit0 >= ch unicode::digit9 <= * if {
+				value 10 * ch unicode::digit0 - + -> value
+				i 1 + -> i
+			} else {
+				break
+			}
+		} else {
+			break
+		}
+	}
+	value sign *
+}
+
+/// Get string value by key from object.
+/// @param json str JSON object string
+/// @param key str Key to look up
+/// @return value str String value
+/// @return found i64 1 if found, 0 otherwise
+/// @example "{\"name\":\"Bob\"}" "name" json::get_string  // "Bob" 1
+pub fn get_string(json:str key:str -- value:str found:i64) {
+	-> key -> json
+	json 0 key find_key -> pos
+	pos 0 < if {
+		"" 0
+	} else {
+		json pos extract_str 1
+	}
+}
+
+/// Get integer value by key from object.
+/// @param json str JSON object string
+/// @param key str Key to look up
+/// @return value i64 Integer value
+/// @return found i64 1 if found, 0 otherwise
+/// @example "{\"age\":42}" "age" json::get_int  // 42 1
+pub fn get_int(json:str key:str -- value:i64 found:i64) {
+	-> key -> json
+	0 -> start
+	0 -> end_pos
+	0 -> length
+	"" -> num_str
+	json 0 key find_key -> pos
+	pos 0 < if {
+		0 0
+	} else {
+		json pos skip_ws -> pos
+		pos -> start
+		json pos find_num_end -> end_pos
+		end_pos start - -> length
+		length 0 > if {
+			json start length strings::substring! -> num_str
+			num_str parse_int 1
+		} else {
+			0 0
+		}
+	}
+}
+
+/// Get float value by key from object.
+/// @param json str JSON object string
+/// @param key str Key to look up
+/// @return value f64 Float value
+/// @return found i64 1 if found, 0 otherwise
+/// @example "{\"pi\":3.14}" "pi" json::get_float  // 3.14 1
+pub fn get_float(json:str key:str -- value:f64 found:i64) {
+	-> key -> json
+	0 -> start
+	0 -> end_pos
+	0 -> length
+	"" -> num_str
+	json 0 key find_key -> pos
+	pos 0 < if {
+		0.0 0
+	} else {
+		json pos skip_ws -> pos
+		pos -> start
+		json pos find_num_end -> end_pos
+		end_pos start - -> length
+		length 0 > if {
+			json start length strings::substring! -> num_str
+			num_str parse_int cast<f64> 1
+		} else {
+			0.0 0
+		}
+	}
+}
+
+/// Get boolean value by key from object.
+/// @param json str JSON object string
+/// @param key str Key to look up
+/// @return value i64 1 for true, 0 for false
+/// @return found i64 1 if found, 0 otherwise
+/// @example "{\"ok\":true}" "ok" json::get_bool  // 1 1
+pub fn get_bool(json:str key:str -- value:i64 found:i64) {
+	-> key -> json
+	0 -> ch
+	json 0 key find_key -> pos
+	pos 0 < if {
+		0 0
+	} else {
+		json pos skip_ws -> pos
+		json pos strings::char_at! -> ch
+		ch unicode::t == if {
+			1 1
+		} else {
+			ch unicode::f == if {
+				0 1
+			} else {
+				0 0
+			}
+		}
+	}
+}
+
+/// Check if key exists in object.
+/// @param json str JSON object string
+/// @param key str Key to check
+/// @return exists i64 1 if exists, 0 otherwise
+/// @example "{\"a\":1}" "a" json::has_key print  // 1
+pub fn has_key(json:str key:str -- exists:i64) {
+	-> key -> json
+	json 0 key find_key 0 >= if {
+		1
+	} else {
+		0
+	}
+}
+
+/// Get nested object as string by key.
+/// @param json str JSON object string
+/// @param key str Key to look up
+/// @return value str Nested object as string
+/// @return found i64 1 if found, 0 otherwise
+/// @example "{\"obj\":{\"x\":1}}" "obj" json::get_object  // "{\"x\":1}" 1
+pub fn get_object(json:str key:str -- value:str found:i64) {
+	-> key -> json
+	0 -> end_pos
+	0 -> length
+	json 0 key find_key -> pos
+	pos 0 < if {
+		"" 0
+	} else {
+		json pos skip_ws -> pos
+		json pos strings::char_at! unicode::lbrace != if {
+			"" 0
+		} else {
+			json pos find_bracket -> end_pos
+			end_pos pos - -> length
+			length 0 > if {
+				json pos length strings::substring! 1
+			} else {
+				"" 0
+			}
+		}
+	}
+}
+
+/// Get nested array as string by key.
+/// @param json str JSON object string
+/// @param key str Key to look up
+/// @return value str Array as string
+/// @return found i64 1 if found, 0 otherwise
+/// @example "{\"arr\":[1,2]}" "arr" json::get_array  // "[1,2]" 1
+pub fn get_array(json:str key:str -- value:str found:i64) {
+	-> key -> json
+	0 -> end_pos
+	0 -> length
+	json 0 key find_key -> pos
+	pos 0 < if {
+		"" 0
+	} else {
+		json pos skip_ws -> pos
+		json pos strings::char_at! unicode::lbracket != if {
+			"" 0
+		} else {
+			json pos find_bracket -> end_pos
+			end_pos pos - -> length
+			length 0 > if {
+				json pos length strings::substring! 1
+			} else {
+				"" 0
+			}
+		}
+	}
+}
+
+fn find_elem(json:str pos:i64 index:i64 -- elem_pos:i64) {
+	-> index -> pos -> json
+	0 -> slen
+	0 -> current_index
+	0 -> result
+	0 -> ch
+	json pos skip_ws -> pos
+	json strings::len -> slen
+
+	pos slen >= if {
+		-1
+	} else {
+		json pos strings::char_at! unicode::lbracket != if {
+			-1
+		} else {
+			pos 1 + -> pos
+			0 -> current_index
+			-1 -> result
+			loop {
+				json pos skip_ws -> pos
+				pos slen >= if {
+					break
+				} else {
+					json pos strings::char_at! -> ch
+					ch unicode::rbracket == if {
+						break
+					} else {
+						ch unicode::comma == if {
+							pos 1 + -> pos
+							json pos skip_ws -> pos
+						}
+
+						current_index index == if {
+							pos -> result
+							break
+						} else {
+							json pos skip_value -> pos
+							current_index 1 + -> current_index
+						}
+					}
+				}
+			}
+			result
+		}
+	}
+}
+
+/// Get array element as string by index.
+/// @param json str JSON array string
+/// @param index i64 Element index (0-based)
+/// @return value str String value
+/// @return found i64 1 if found, 0 otherwise
+/// @example "[\"a\",\"b\"]" 1 json::array_get_string  // "b" 1
+pub fn array_get_string(json:str index:i64 -- value:str found:i64) {
+	-> index -> json
+	json 0 index find_elem -> pos
+	pos 0 < if {
+		"" 0
+	} else {
+		json pos extract_str 1
+	}
+}
+
+/// Get array element as integer by index.
+/// @param json str JSON array string
+/// @param index i64 Element index (0-based)
+/// @return value i64 Integer value
+/// @return found i64 1 if found, 0 otherwise
+/// @example "[10,20,30]" 2 json::array_get_int  // 30 1
+pub fn array_get_int(json:str index:i64 -- value:i64 found:i64) {
+	-> index -> json
+	0 -> start
+	0 -> end_pos
+	0 -> length
+	"" -> num_str
+	json 0 index find_elem -> pos
+	pos 0 < if {
+		0 0
+	} else {
+		json pos skip_ws -> pos
+		pos -> start
+		json pos find_num_end -> end_pos
+		end_pos start - -> length
+		length 0 > if {
+			json start length strings::substring! -> num_str
+			num_str parse_int 1
+		} else {
+			0 0
+		}
+	}
+}
+
+/// Get array element as float by index.
+/// @param json str JSON array string
+/// @param index i64 Element index (0-based)
+/// @return value f64 Float value
+/// @return found i64 1 if found, 0 otherwise
+/// @example "[1.5,2.5]" 0 json::array_get_float  // 1.5 1
+pub fn array_get_float(json:str index:i64 -- value:f64 found:i64) {
+	-> index -> json
+	0 -> start
+	0 -> end_pos
+	0 -> length
+	"" -> num_str
+	json 0 index find_elem -> pos
+	pos 0 < if {
+		0.0 0
+	} else {
+		json pos skip_ws -> pos
+		pos -> start
+		json pos find_num_end -> end_pos
+		end_pos start - -> length
+		length 0 > if {
+			json start length strings::substring! -> num_str
+			num_str parse_int cast<f64> 1
+		} else {
+			0.0 0
+		}
+	}
+}
+
+/// Get array element as object by index.
+/// @param json str JSON array string
+/// @param index i64 Element index (0-based)
+/// @return value str Object as JSON string
+/// @return found i64 1 if found, 0 otherwise
+/// @example "[{\"a\":1},{\"b\":2}]" 1 json::array_get_object  // "{\"b\":2}" 1
+pub fn array_get_object(json:str index:i64 -- value:str found:i64) {
+	-> index -> json
+	0 -> end_pos
+	0 -> length
+	json 0 index find_elem -> pos
+	pos 0 < if {
+		"" 0
+	} else {
+		json pos skip_ws -> pos
+		json pos strings::char_at! unicode::lbrace != if {
+			"" 0
+		} else {
+			json pos find_bracket -> end_pos
+			end_pos pos - -> length
+			length 0 > if {
+				json pos length strings::substring! 1
+			} else {
+				"" 0
+			}
+		}
+	}
+}
+
+/// Get array element as nested array by index.
+/// @param json str JSON array string
+/// @param index i64 Element index (0-based)
+/// @return value str Nested array as JSON string
+/// @return found i64 1 if found, 0 otherwise
+/// @example "[[1,2],[3,4]]" 0 json::array_get_array  // "[1,2]" 1
+pub fn array_get_array(json:str index:i64 -- value:str found:i64) {
+	-> index -> json
+	0 -> end_pos
+	0 -> length
+	json 0 index find_elem -> pos
+	pos 0 < if {
+		"" 0
+	} else {
+		json pos skip_ws -> pos
+		json pos strings::char_at! unicode::lbracket != if {
+			"" 0
+		} else {
+			json pos find_bracket -> end_pos
+			end_pos pos - -> length
+			length 0 > if {
+				json pos length strings::substring! 1
+			} else {
+				"" 0
+			}
+		}
+	}
+}
+
+/// Get length of JSON array.
+/// @param json str JSON array string
+/// @return length i64 Number of elements
+/// @example "[1,2,3]" json::array_len print  // 3
+pub fn array_len(json:str -- length:i64) {
+	-> json
+	0 -> pos
+	0 -> slen
+	0 -> count
+	0 -> ch
+	json 0 skip_ws -> pos
+	json strings::len -> slen
+
+	pos slen >= if {
+		0
+	} else {
+		json pos strings::char_at! unicode::lbracket != if {
+			0
+		} else {
+			pos 1 + -> pos
+			0 -> count
+			loop {
+				json pos skip_ws -> pos
+				pos slen >= if {
+					break
+				} else {
+					json pos strings::char_at! -> ch
+					ch unicode::rbracket == if {
+						break
+					} else {
+						ch unicode::comma == if {
+							pos 1 + -> pos
+							json pos skip_ws -> pos
+							json pos strings::char_at! -> ch
+						}
+
+						ch unicode::rbracket != if {
+							count 1 + -> count
+							json pos skip_value -> pos
+						}
+					}
+				}
+			}
+			count
+		}
+	}
+}
+
+/// Check if value at position is null.
+/// @param json str JSON string
+/// @param pos i64 Position to check
+/// @return is_null i64 1 if null, 0 otherwise
+/// @example "null" 0 json::is_null_at print  // 1
+pub fn is_null_at(json:str pos:i64 -- is_null:i64) {
+	-> pos -> json
+	json pos skip_ws -> pos
+	json strings::len -> slen
+	pos slen >= if {
+		1
+	} else {
+		json pos strings::char_at! unicode::n == if {
+			1
+		} else {
+			0
+		}
+	}
+}
+
+// ============================================================
+// JSON Building Functions
+// ============================================================
+
+/// Quote character for JSON strings.
+fn quote( -- q:str) { "\x22" }
+
+/// Encode a string for JSON (add quotes and escape special chars).
+/// @param s str String to encode
+/// @return encoded str JSON-encoded string with quotes
+/// @example "hello" json::encode print  // "hello"
+pub fn encode(s:str -- encoded:str) {
+	-> s
+	s "\\" "\\\\" strings::replace!
+	"\x22" "\\\x22" strings::replace!
+	"\n" "\\n" strings::replace!
+	"\t" "\\t" strings::replace!
+	"\r" "\\r" strings::replace!
+	-> s
+	quote s strings::concat quote strings::concat
+}
+
+/// Build a key-value pair with string value.
+/// @param key str Key name
+/// @param value str String value
+/// @return kv str JSON key-value pair
+/// @example "name" "Bob" json::kv print  // "name":"Bob"
+pub fn kv(key:str value:str -- kv:str) {
+	-> value -> key
+	key encode ":" strings::concat value encode strings::concat
+}
+
+/// Build a key-value pair with integer value.
+/// @param key str Key name
+/// @param value i64 Integer value
+/// @return kv str JSON key-value pair
+/// @example "age" 42 json::kv_int print  // "age":42
+pub fn kv_int(key:str value:i64 -- kv:str) {
+	-> value -> key
+	key encode ":" strings::concat
+	0 -> neg
+	value 0 < if {
+		value -1 * -> value
+		1 -> neg
+	}
+	"" -> digits
+	value 0 == if {
+		"0" -> digits
+	} else {
+		loop {
+			value 0 > if {
+				value 10 % unicode::digit0 + strings::from_char digits strings::concat -> digits
+				value 10 / -> value
+			} else {
+				break
+			}
+		}
+	}
+	neg 1 == if {
+		"-" digits strings::concat -> digits
+	}
+	digits strings::concat
+}
+
+/// Build a key-value pair with boolean value.
+/// @param key str Key name
+/// @param value i64 Boolean value (0=false, non-zero=true)
+/// @return kv str JSON key-value pair
+/// @example "active" 1 json::kv_bool print  // "active":true
+pub fn kv_bool(key:str value:i64 -- kv:str) {
+	-> value -> key
+	key encode ":" strings::concat
+	value 0 != if { "true" } else { "false" }
+	strings::concat
+}
+
+/// Build a key-value pair with raw JSON value (object, array, or literal).
+/// @param key str Key name
+/// @param value str Raw JSON value (not quoted)
+/// @return kv str JSON key-value pair
+/// @example "data" "{}" json::kv_raw print  // "data":{}
+pub fn kv_raw(key:str value:str -- kv:str) {
+	-> value -> key
+	key encode ":" strings::concat value strings::concat
+}
+
+/// Build a JSON object from comma-separated key-value pairs.
+/// @param content str Comma-separated key-value pairs
+/// @return obj str JSON object
+/// @example "\"a\":1,\"b\":2" json::obj print  // {"a":1,"b":2}
+pub fn obj(content:str -- obj:str) {
+	-> content
+	"{" content strings::concat "}" strings::concat
+}
+
+/// Build an empty JSON object.
+/// @return obj str Empty JSON object
+/// @example json::empty_obj print  // {}
+pub fn empty_obj( -- obj:str) { "{}" }
+
+/// Build a JSON array from comma-separated elements.
+/// @param content str Comma-separated elements
+/// @return arr str JSON array
+/// @example "1,2,3" json::arr print  // [1,2,3]
+pub fn arr(content:str -- arr:str) {
+	-> content
+	"[" content strings::concat "]" strings::concat
+}
+
+/// Build an empty JSON array.
+/// @return arr str Empty JSON array
+/// @example json::empty_arr print  // []
+pub fn empty_arr( -- arr:str) { "[]" }
+
+/// Join multiple JSON fragments with commas.
+/// @param a str First fragment
+/// @param b str Second fragment
+/// @return joined str Comma-joined fragments
+/// @example "\"a\":1" "\"b\":2" json::join print  // "a":1,"b":2
+pub fn join(a:str b:str -- joined:str) {
+	-> b -> a
+	a "," strings::concat b strings::concat
+}

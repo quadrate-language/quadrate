@@ -1,0 +1,146 @@
+#ifndef QDTHREAD_THREAD_H
+#define QDTHREAD_THREAD_H
+
+#include <quadrate/rt/context.h>
+#include <quadrate/rt/exec_result.h>
+#include <stdbool.h>
+#include <stddef.h>
+#include <stdint.h>
+#include <threads.h>
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+// Error codes
+#define THREAD_OK 1
+#define THREAD_ERR_CREATE 2
+#define THREAD_ERR_JOIN 3
+#define THREAD_ERR_DETACH 4
+#define THREAD_ERR_MUTEX 5
+#define THREAD_ERR_CHANNEL 6
+#define THREAD_ERR_CLOSED 7
+#define THREAD_ERR_TIMEOUT 8
+
+typedef struct qd_thread {
+	thrd_t handle;
+	bool started;
+	bool joined;
+	bool detached;
+} qd_thread;
+
+// Thread functions exposed to Quadrate (raw_ prefix to avoid collision with Quadrate wrappers)
+int usr_thread_raw_spawn(qd_context* ctx);	  // (fn -- thread:ptr)!
+int usr_thread_raw_join(qd_context* ctx);	  // (thread:ptr -- )!
+int usr_thread_raw_detach(qd_context* ctx);	  // (thread:ptr -- )!
+int usr_thread_raw_is_alive(qd_context* ctx); // (thread:ptr -- alive:i64)
+int usr_thread_raw_sleep(qd_context* ctx);	  // (ms:i64 -- )
+
+typedef struct qd_mutex {
+	mtx_t handle;
+	bool initialized;
+} qd_mutex;
+
+// Mutex functions exposed to Quadrate (raw_ prefix to avoid collision with Quadrate wrappers)
+int usr_thread_raw_mutex_new(qd_context* ctx);		// ( -- mutex:ptr)!
+int usr_thread_raw_mutex_lock(qd_context* ctx);		// (mutex:ptr -- )!
+int usr_thread_raw_mutex_unlock(qd_context* ctx);	// (mutex:ptr -- )!
+int usr_thread_raw_mutex_try_lock(qd_context* ctx); // (mutex:ptr -- success:i64)
+int usr_thread_raw_mutex_free(qd_context* ctx);		// (mutex:ptr -- )
+
+typedef struct qd_channel {
+	mtx_t mutex;
+	cnd_t not_empty;
+	cnd_t not_full;
+	qd_stack_element_t* buffer;
+	size_t capacity; // 0 = unbuffered (synchronous)
+	size_t count;
+	size_t head;
+	size_t tail;
+	bool closed;
+	int refcount;
+} qd_channel;
+
+// Channel functions exposed to Quadrate (raw_ prefix to avoid collision with Quadrate wrappers)
+int usr_thread_raw_chan_new(qd_context* ctx);		// ( -- ch:ptr)!
+int usr_thread_raw_chan_buffered(qd_context* ctx);	// (capacity:i64 -- ch:ptr)!
+int usr_thread_raw_chan_send(qd_context* ctx);		// (val ch:ptr -- )!
+int usr_thread_raw_chan_recv(qd_context* ctx);		// (ch:ptr -- val)!
+int usr_thread_raw_chan_try_send(qd_context* ctx);	// (val ch:ptr -- success:i64)
+int usr_thread_raw_chan_try_recv(qd_context* ctx);	// (ch:ptr -- val success:i64)
+int usr_thread_raw_chan_close(qd_context* ctx);		// (ch:ptr -- )
+int usr_thread_raw_chan_is_closed(qd_context* ctx); // (ch:ptr -- closed:i64)
+int usr_thread_raw_chan_len(qd_context* ctx);		// (ch:ptr -- len:i64)
+int usr_thread_raw_chan_cap(qd_context* ctx);		// (ch:ptr -- cap:i64)
+int usr_thread_raw_chan_free(qd_context* ctx);		// (ch:ptr -- )
+
+typedef struct qd_waitgroup {
+	mtx_t mutex;
+	cnd_t done;
+	int count;
+} qd_waitgroup;
+
+// WaitGroup functions exposed to Quadrate (raw_ prefix to avoid collision with Quadrate wrappers)
+int usr_thread_raw_wg_new(qd_context* ctx);	 // ( -- wg:ptr)!
+int usr_thread_raw_wg_add(qd_context* ctx);	 // (n:i64 wg:ptr -- )
+int usr_thread_raw_wg_done(qd_context* ctx); // (wg:ptr -- )
+int usr_thread_raw_wg_wait(qd_context* ctx); // (wg:ptr -- )!
+int usr_thread_raw_wg_free(qd_context* ctx); // (wg:ptr -- )
+
+typedef struct qd_once {
+	mtx_t mutex;
+	bool completed;
+} qd_once;
+
+// Once functions - run initialization code exactly once
+int usr_thread_raw_once_new(qd_context* ctx);  // ( -- once:ptr)!
+int usr_thread_raw_once_do(qd_context* ctx);   // (func:ptr once:ptr -- )
+int usr_thread_raw_once_done(qd_context* ctx); // (once:ptr -- done:i64)
+int usr_thread_raw_once_free(qd_context* ctx); // (once:ptr -- )
+
+typedef struct qd_barrier {
+	mtx_t mutex;
+	cnd_t cond;
+	int threshold;
+	int count;
+	int generation;
+} qd_barrier;
+
+// Barrier functions - synchronize threads at a point
+int usr_thread_raw_barrier_new(qd_context* ctx);  // (n:i64 -- barrier:ptr)!
+int usr_thread_raw_barrier_wait(qd_context* ctx); // (barrier:ptr -- is_serial:i64)
+int usr_thread_raw_barrier_free(qd_context* ctx); // (barrier:ptr -- )
+
+typedef struct qd_rwlock {
+	mtx_t mutex;
+	cnd_t read_cond;
+	cnd_t write_cond;
+	int readers;
+	int writers_waiting;
+	bool writer_active;
+} qd_rwlock;
+
+// RwLock functions - read-write lock
+int usr_thread_raw_rwlock_new(qd_context* ctx);			 // ( -- rwlock:ptr)!
+int usr_thread_raw_rwlock_read_lock(qd_context* ctx);	 // (rwlock:ptr -- )!
+int usr_thread_raw_rwlock_read_unlock(qd_context* ctx);	 // (rwlock:ptr -- )!
+int usr_thread_raw_rwlock_write_lock(qd_context* ctx);	 // (rwlock:ptr -- )!
+int usr_thread_raw_rwlock_write_unlock(qd_context* ctx); // (rwlock:ptr -- )!
+int usr_thread_raw_rwlock_try_read(qd_context* ctx);	 // (rwlock:ptr -- success:i64)
+int usr_thread_raw_rwlock_try_write(qd_context* ctx);	 // (rwlock:ptr -- success:i64)
+int usr_thread_raw_rwlock_free(qd_context* ctx);		 // (rwlock:ptr -- )
+
+// Get current thread ID
+int usr_thread_raw_self(qd_context* ctx); // ( -- id:i64)
+
+// Yield CPU to other threads
+int usr_thread_raw_yield(qd_context* ctx); // ( -- )
+
+// Get number of CPUs/cores
+int usr_thread_raw_cpu_count(qd_context* ctx); // ( -- count:i64)
+
+#ifdef __cplusplus
+}
+#endif
+
+#endif // QDTHREAD_THREAD_H

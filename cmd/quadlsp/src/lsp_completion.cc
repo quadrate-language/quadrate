@@ -4,14 +4,14 @@
 #include "lsp_impl.h"
 #include <filesystem>
 #include <fstream>
-#include <qc/ast.h>
-#include <qc/ast_node_constant.h>
-#include <qc/ast_node_function.h>
-#include <qc/ast_node_import.h>
-#include <qc/ast_node_parameter.h>
-#include <qc/ast_node_scoped.h>
-#include <qc/ast_node_struct.h>
-#include <qc/ast_node_use.h>
+#include <quadrate/qc/ast.h>
+#include <quadrate/qc/ast_node_constant.h>
+#include <quadrate/qc/ast_node_function.h>
+#include <quadrate/qc/ast_node_import.h>
+#include <quadrate/qc/ast_node_parameter.h>
+#include <quadrate/qc/ast_node_scoped.h>
+#include <quadrate/qc/ast_node_struct.h>
+#include <quadrate/qc/ast_node_use.h>
 #include <sstream>
 
 // Check if cursor is at top level (not inside a function body)

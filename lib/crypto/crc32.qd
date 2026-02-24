@@ -1,0 +1,160 @@
+/// CRC32 Implementation
+/// ====================
+///
+/// CRC32 checksum with streaming and one-shot APIs.
+///
+/// @example
+/// use crypto
+///
+/// // One-shot
+/// "Hello" crc32 -> crc
+/// "Hello" crc32_hex -> hex
+///
+/// // Streaming
+/// Crc32 {} -> c
+/// c "Hello" update -> c
+/// c " World" update -> c
+/// c value -> crc
+/// c release
+
+use bits
+use mem
+use strings
+
+// CRC32 polynomial (reflected form of 0x04C11DB7)
+const CRC32_POLY = 3988292384
+const CRC32_INIT = 4294967295
+
+/// CRC32 hasher state for streaming computation.
+/// @field state Current CRC state
+/// @field tbl Lookup table (allocated on first update)
+pub struct Crc32 {
+	state:i64 = 4294967295
+	tbl:ptr = 0
+}
+
+// Generate CRC32 lookup table entry
+fn crc32_make_entry(index:i64 -- entry:i64) {
+	-> index
+	index -> crc
+	0 8 1 for j {
+		crc 1 shr -> shifted
+		shifted CRC32_POLY xor -> xored
+		crc 1 and 1 == if {
+			xored -> crc
+		} else {
+			shifted -> crc
+		}
+	}
+	crc
+}
+
+// Create CRC32 lookup table
+fn crc32_make_table( -- tbl:ptr) {
+	2048 mem::alloc! -> tbl
+	0 256 1 for i {
+		i crc32_make_entry -> entry
+		entry tbl i 8 * mem::set_i64
+	}
+	tbl
+}
+
+/// Update CRC32 state with additional data.
+/// @param c Crc32 The hasher state
+/// @param data str Data to hash
+/// @return c2 Crc32 Updated hasher state
+pub fn (c:Crc32) update(data:str -- c2:Crc32) {
+	-> data
+
+	c @state -> state
+	c @tbl -> tbl
+
+	// Lazy init table
+	tbl 0 == if {
+		crc32_make_table -> tbl
+	}
+
+	data strings::len -> slen
+
+	0 slen 1 for i {
+		data i strings::char_at! -> byte
+		state byte xor 255 and -> index
+		tbl index 8 * mem::get_i64 state 8 shr xor -> state
+	}
+
+	// Return new Crc32 with updated state
+	Crc32 { state = state tbl = tbl }
+}
+
+/// Get the current CRC32 value.
+/// @param c Crc32 The hasher state
+/// @return crc i64 Current CRC32 checksum
+pub fn (c:Crc32) value( -- crc:i64) {
+	c @state CRC32_INIT xor 32 bits::mask
+}
+
+/// Get CRC32 as 8-character hex string.
+/// @param c Crc32 The hasher state
+/// @return hex str CRC32 as lowercase hex string
+pub fn (c:Crc32) hex( -- hex:str) {
+	c value -> crc
+
+	8 mem::alloc! -> buf
+	0 8 1 for i {
+		crc 28 i 4 * - shr 15 and -> nibble
+		nibble 10 < if {
+			48 nibble +
+		} else {
+			87 nibble +
+		}
+		-> char
+		char buf i mem::set_byte
+	}
+
+	buf 8 mem::to_string -> result
+	buf mem::free
+	result
+}
+
+/// Free resources used by CRC32 hasher.
+/// @param c Crc32 The hasher state to free
+pub fn (c:Crc32) release( -- ) {
+	c @tbl -> tbl
+	tbl 0 != if {
+		tbl mem::free
+	}
+}
+
+/// One-shot CRC32 of a string.
+/// @param s str Input string
+/// @return crc i64 CRC32 checksum
+/// @example "Hello" crc32 -> crc
+pub fn crc32(s:str -- crc:i64) {
+	-> s
+	Crc32 {} -> c
+	c s update -> c
+	c value -> result
+	c release
+	result
+}
+
+/// One-shot CRC32 as hex string.
+/// @param s str Input string
+/// @return hex str CRC32 as 8-character hex string
+pub fn crc32_hex(s:str -- hex:str) {
+	-> s
+	Crc32 {} -> c
+	c s update -> c
+	c hex -> result
+	c release
+	result
+}
+
+/// Verify data against expected CRC32.
+/// @param s str Data to verify
+/// @param expected i64 Expected CRC32 value
+/// @return ok i64 1 if matches, 0 otherwise
+pub fn crc32_verify(s:str expected:i64 -- ok:i64) {
+	-> expected -> s
+	s crc32 expected == if { 1 } else { 0 }
+}

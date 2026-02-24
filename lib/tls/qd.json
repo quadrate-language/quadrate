@@ -1,0 +1,13 @@
+{
+	"name": "tls",
+	"version": "0.1.0",
+	"namespace": "tls",
+	"description": "TLS/SSL secure socket operations using OpenSSL",
+	"license": "Apache-2.0",
+	"repository": "https://git.sr.ht/~klahr/qdtls",
+	"keywords": ["tls", "ssl", "encryption", "security", "openssl"],
+	"quadrate": ">=0.4.0",
+	"native": {
+		"link": ["ssl", "crypto"]
+	}
+}

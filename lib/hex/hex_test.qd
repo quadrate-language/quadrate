@@ -1,0 +1,61 @@
+// Unit tests for the hex module
+use hex
+use testing
+
+test "hex::encode basic" {
+	"Hello" hex::encode "48656C6C6F" testing::assert_eq
+	"A" hex::encode "41" testing::assert_eq
+	"" hex::encode "" testing::assert_eq
+}
+
+test "hex::encode_lower" {
+	"Hello" hex::encode_lower "48656c6c6f" testing::assert_eq
+	"ABC" hex::encode_lower "414243" testing::assert_eq
+}
+
+test "hex::decode basic" {
+	"48656C6C6F" hex::decode "Hello" testing::assert_eq
+	"41" hex::decode "A" testing::assert_eq
+	"" hex::decode "" testing::assert_eq
+}
+
+test "hex::decode lowercase" {
+	"48656c6c6f" hex::decode "Hello" testing::assert_eq
+	"414243" hex::decode "ABC" testing::assert_eq
+}
+
+test "hex roundtrip" {
+	"Hello World!" hex::encode hex::decode "Hello World!" testing::assert_eq
+	"Test 123" hex::encode_lower hex::decode "Test 123" testing::assert_eq
+}
+
+test "hex::encode_byte" {
+	0 hex::encode_byte "00" testing::assert_eq
+	255 hex::encode_byte "FF" testing::assert_eq
+	16 hex::encode_byte "10" testing::assert_eq
+	171 hex::encode_byte "AB" testing::assert_eq
+}
+
+test "hex::decode_byte" {
+	"00" hex::decode_byte 0 testing::assert_eq
+	"FF" hex::decode_byte 255 testing::assert_eq
+	"ff" hex::decode_byte 255 testing::assert_eq
+	"AB" hex::decode_byte 171 testing::assert_eq
+}
+
+test "hex::is_valid" {
+	"48656C6C6F" hex::is_valid testing::assert_true
+	"0123456789ABCDEF" hex::is_valid testing::assert_true
+	"0123456789abcdef" hex::is_valid testing::assert_true
+	"" hex::is_valid testing::assert_true
+	"GHI" hex::is_valid testing::assert_false
+	"48656C6C6G" hex::is_valid testing::assert_false
+}
+
+test "hex long string" {
+	"414141414141414141414141414141414141414141" hex::decode "AAAAAAAAAAAAAAAAAAAAA" testing::assert_eq
+}
+
+test "hex mixed case" {
+	"48656c6C6f" hex::decode "Hello" testing::assert_eq
+}

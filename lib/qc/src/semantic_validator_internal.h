@@ -9,8 +9,8 @@
 #include <cstdint>
 #include <cstdlib>
 #include <filesystem>
-#include <qc/ast_node_literal.h>
-#include <qc/semantic_validator.h>
+#include <quadrate/qc/ast_node_literal.h>
+#include <quadrate/qc/semantic_validator.h>
 #include <string>
 #include <unordered_set>
 #include <vector>

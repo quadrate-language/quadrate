@@ -1,5 +1,5 @@
 // Import test - using imports with defer blocks
-import "libqdfmt.a" as "fmt" {
+import "libfmt.a" as "fmt" {
 	fn printf(format:str -- )
 }
 

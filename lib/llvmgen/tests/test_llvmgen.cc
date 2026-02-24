@@ -4,9 +4,9 @@
  */
 
 #include <cstring>
-#include <llvmgen/generator.h>
-#include <qc/ast.h>
-#include <qc/semantic_validator.h>
+#include <quadrate/llvmgen/generator.h>
+#include <quadrate/qc/ast.h>
+#include <quadrate/qc/semantic_validator.h>
 #include <string>
 #include <unit-check/uc.h>
 

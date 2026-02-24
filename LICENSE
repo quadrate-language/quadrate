@@ -12,7 +12,7 @@ This includes:
 - cmd/         (compiler, tools)
 - lib/qc/      (parser, AST)
 - lib/llvmgen/ (code generator)
-- lib/qdcli/   (CLI utilities)
+- lib/cli/     (CLI utilities)
 
 
 Quadrate Standard Library
@@ -25,9 +25,9 @@ See LICENSE-STDLIB for the full text.
 SPDX-License-Identifier: Apache-2.0
 
 This includes:
-- lib/qdrt/    (runtime library)
+- lib/rt/      (runtime library)
 - lib/qd/      (embedding API)
-- lib/qd*/     (standard library modules: qdio, qdstrings, qdmath, etc.)
+- lib/*/       (standard library modules: io, strings, math, etc.)
 
 Programs compiled with Quadrate link against the standard library and
 runtime, which are permissively licensed. You may distribute your

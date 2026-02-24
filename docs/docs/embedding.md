@@ -12,7 +12,7 @@ This guide shows how to embed Quadrate as a scripting language in your C/C++ app
 Here's the minimal code to embed Quadrate:
 
 ```c
-#include <qd/qd.h>
+#include <quadrate/qd/qd.h>
 
 int main(void) {
     // Create execution context with 1024-element stack
@@ -34,7 +34,7 @@ int main(void) {
 
 Compile with:
 ```bash
-gcc -o myapp myapp.c -lqd -lqdrt -L/path/to/quadrate/dist/lib -I/path/to/quadrate/dist/include
+gcc -o myapp myapp.c -lqd -lqdrt -L/path/to/quadrate/dist/lib/quadrate -I/path/to/quadrate/dist/include
 ```
 
 ## Core Concepts
@@ -100,8 +100,8 @@ The real power of embedding comes from exposing your application's functions to 
 Native functions take a `qd_context*` and a `void* userdata`, and return `int`:
 
 ```c
-#include <qd/qd.h>
-#include <qdrt/runtime.h>
+#include <quadrate/qd/qd.h>
+#include <quadrate/rt/runtime.h>
 
 // Native function: pushes current time onto stack
 int native_get_time(qd_context* ctx, void* userdata) {
@@ -131,7 +131,7 @@ int main(void) {
 Use `qd_stack_pop` to read arguments:
 
 ```c
-#include <qdrt/stack.h>
+#include <quadrate/rt/stack.h>
 
 // Native function: (a b -- sum)
 int native_add(qd_context* ctx, void* userdata) {
@@ -334,9 +334,9 @@ void engine_move(GameState* game, int64_t id, double dx, double dy) {
 
 ```c
 // scripting.c
-#include <qd/qd.h>
-#include <qdrt/runtime.h>
-#include <qdrt/stack.h>
+#include <quadrate/qd/qd.h>
+#include <quadrate/rt/runtime.h>
+#include <quadrate/rt/stack.h>
 #include "engine.h"
 #include <stdio.h>
 #include <math.h>
@@ -650,7 +650,7 @@ int main(void) {
 # Makefile
 QUADRATE_DIR = /path/to/quadrate/dist
 CFLAGS = -I$(QUADRATE_DIR)/include -Wall
-LDFLAGS = -L$(QUADRATE_DIR)/lib -lqd -lqdrt -lm -Wl,-rpath,$(QUADRATE_DIR)/lib
+LDFLAGS = -L$(QUADRATE_DIR)/lib/quadrate -lqd -lqdrt -lm -Wl,-rpath,$(QUADRATE_DIR)/lib/quadrate
 
 game: src/main.c src/engine.c src/scripting.c
 	gcc $(CFLAGS) -o game $^ $(LDFLAGS)

@@ -38,8 +38,9 @@ make clean
 
 Build outputs are placed in the `dist/` directory:
 - `dist/bin/` - Executables (quadc, quadfmt) - built from `cmd/`
-- `dist/lib/` - Shared and static libraries (libquadrate.so, libquadrate_static.a)
-- `dist/include/` - Public headers
+- `dist/lib/` - Shared libraries (libqdrt.so, libqd.so)
+- `dist/lib/quadrate/` - Static libraries (librt.a, libqd.a, etc.)
+- `dist/include/quadrate/` - Public headers
 
 Intermediate build files are in `build/debug/` or `build/release/`.
 
@@ -89,9 +90,9 @@ quadrate/
 ├── lib/          # Libraries
 │   ├── qc/       # Compiler frontend (parser, AST, semantic analysis)
 │   ├── qd/       # Embedding API (libqd)
-│   ├── qdrt/     # Runtime (libqdrt)
+│   ├── rt/       # Runtime (librt)
 │   ├── llvmgen/  # LLVM code generator
-│   └── qd*/      # Standard library modules
+│   └── ...       # Standard library modules
 ├── examples/     # Example programs
 ├── tests/        # Test suite
 └── docs/         # Documentation source

@@ -31,16 +31,14 @@ endif
 # Commands to copy
 CMDS := quad quadc quadfmt quadlint quadlsp quadpm quaduses
 
-# Libraries with C components (need static archive creation)
-# Note: qdsqlite moved to external module (https://git.sr.ht/~klahr/qdsqlite)
-LIBS_WITH_C := qdrt qd qdfmt qdio qdmath qdmem qdnet qdos qdsignal qdstrings qdstrconv qdtime qdthread qdtesting qdtty
+# Libraries with C components (directory names under lib/)
+LIBS_WITH_C := rt qd fmt io math mem net os signal strings strconv time thread testing tty
 
-# Libraries with headers to install
-LIBS_WITH_HEADERS := qdrt qd qdfmt qdio qdmath qdmem qdnet qdos qdsignal qdstrings qdstrconv qdtime qdthread qdtesting qdtty
+# Libraries with headers to install (directory names under lib/)
+LIBS_WITH_HEADERS := rt qd fmt io math mem net os signal strings strconv time thread testing tty
 
-# Standard library modules (auto-discovered from lib/qd*/qd/*/)
-# Note: Some modules moved to external repos: http, sqlite, json, regex, ct, crypto
-STDLIB_MODULES := $(shell find lib/qd*/qd -maxdepth 1 -mindepth 1 -type d -exec basename {} \; 2>/dev/null | sort -u)
+# Standard library modules (auto-discovered from lib/*/qd/*/)
+STDLIB_MODULES := $(shell find lib/*/qd -maxdepth 1 -mindepth 1 -type d -exec basename {} \; 2>/dev/null | sort -u)
 
 .PHONY: all debug release docker-x64 docker-arm64 docker-all tests tests-failed tests-clear valgrind asan fuzz examples format install uninstall clean docs quadmcp playground
 
@@ -51,8 +49,8 @@ all: debug
 define do_build
 	meson setup $(1) --buildtype=$(2) $(MESON_FLAGS)
 	meson compile -C $(1)
-	@mkdir -p dist/bin dist/lib dist/include
-	@cp -f $(1)/lib/qdrt/libqdrt.so dist/lib/
+	@mkdir -p dist/bin dist/lib/quadrate dist/include/quadrate
+	@cp -f $(1)/lib/rt/libqdrt.so dist/lib/
 	@cp -f $(1)/lib/qd/libqd.so dist/lib/
 	@for cmd in $(CMDS); do \
 		cp -f $(1)/cmd/$$cmd/$$cmd dist/bin/; \
@@ -67,18 +65,20 @@ define do_build
 		fi; \
 	else echo "Note: quadrepl not built (readline not found)"; fi
 	@echo "Creating static libraries..."
-	@(cd $(1)/lib/qdrt && ar rcs libqdrt.a $$(ar -t libqdrt_static.a) && cp libqdrt.a ../../../../dist/lib/) && echo "  libqdrt.a"
-	@(cd $(1)/lib/qd && ar rcs libqd.a $$(ar -t libqd_static.a) && cp libqd.a ../../../../dist/lib/) && echo "  libqd.a"
-	@for lib in $(filter-out qdrt qd,$(LIBS_WITH_C)); do \
-		(cd $(1)/lib/$$lib && ar rcs lib$${lib}_regular.a $$(ar -t lib$$lib.a) && cp lib$${lib}_regular.a ../../../../dist/lib/lib$$lib.a) && echo "  lib$$lib.a"; \
+	@(cd $(1)/lib/rt && ar rcs librt.a $$(ar -t librt_static.a) && cp librt.a ../../../../dist/lib/quadrate/) && echo "  librt.a"
+	@(cd $(1)/lib/qd && ar rcs libqd.a $$(ar -t libqd_static.a) && cp libqd.a ../../../../dist/lib/quadrate/) && echo "  libqd.a"
+	@for dir in $(filter-out rt qd,$(LIBS_WITH_C)); do \
+		(cd $(1)/lib/$$dir && ar rcs lib$${dir}_regular.a $$(ar -t lib$$dir.a) && cp lib$${dir}_regular.a ../../../../dist/lib/quadrate/lib$$dir.a) && echo "  lib$$dir.a"; \
 	done
-	@for lib in qdthread; do \
-		if [ -f lib/$$lib/lib$$lib.deps ]; then cp lib/$$lib/lib$$lib.deps dist/lib/; fi; \
+	@for dir in thread; do \
+		if [ -f lib/$$dir/lib$$dir.deps ]; then cp lib/$$dir/lib$$dir.deps dist/lib/quadrate/; fi; \
 	done
-	@if [ "$$(uname -s)" = "Haiku" ]; then echo "-lnetwork" > dist/lib/libqdnet.deps; fi
-	@for lib in $(LIBS_WITH_HEADERS); do cp -rf lib/$$lib/include/$$lib dist/include/; done
+	@if [ "$$(uname -s)" = "Haiku" ]; then echo "-lnetwork" > dist/lib/quadrate/libnet.deps; fi
+	@for dir in $(LIBS_WITH_HEADERS); do \
+		cp -rf lib/$$dir/include/quadrate/$$dir dist/include/quadrate/; \
+	done
 	@mkdir -p $(DIST_DATADIR)/quadrate
-	@for mod in $(STDLIB_MODULES); do cp -r lib/qd*/qd/$$mod $(DIST_DATADIR)/quadrate/ 2>/dev/null || true; done
+	@for mod in $(STDLIB_MODULES); do cp -r lib/*/qd/$$mod $(DIST_DATADIR)/quadrate/ 2>/dev/null || true; done
 	@mkdir -p $(DIST_DATADIR)/bash-completion/completions
 	@cp -f completions/quad.bash $(DIST_DATADIR)/bash-completion/completions/quad
 	@echo "$(3)"
@@ -175,7 +175,7 @@ examples: debug
 	meson compile -C $(BUILD_DIR_DEBUG) examples/embed/embed examples/embed/embed_copy examples/embed/multi-module-test examples/embed/multi-module-test_copy examples/embed/native-functions-test examples/embed/native-functions-test_copy examples/embed/incremental-test examples/embed/incremental-test_copy examples/ffi/ffi examples/hello-world/hello-world examples/hello-world-c/hello-world-c examples/bmi/bmi examples/dc/dc examples/defer/defer examples/donut/donut examples/errors/errors examples/fibonacci/fibonacci examples/modules/modules examples/sha256sum/sha256sum examples/sierpinski/sierpinski examples/stars/stars examples/threading/threading
 	@echo "Copying shared libraries for embed examples..."
 	@cp -f $(BUILD_DIR_DEBUG)/lib/qd/libqd.so dist/lib/
-	@cp -f $(BUILD_DIR_DEBUG)/lib/qdrt/libqdrt.so dist/lib/
+	@cp -f $(BUILD_DIR_DEBUG)/lib/rt/libqdrt.so dist/lib/
 
 format:
 	find cmd lib examples -type f \( -name '*.cc' -o -name '*.h' \) -exec clang-format -i {} +
@@ -209,16 +209,22 @@ install:
 	@for cmd in $(CMDS); do install -m 755 dist/bin/$$cmd $(DESTDIR)$(PREFIX)/bin/; done
 	@if [ -f dist/bin/quadrepl ]; then install -m 755 dist/bin/quadrepl $(DESTDIR)$(PREFIX)/bin/; fi
 	@if [ -f dist/bin/quadmcp ]; then install -m 755 dist/bin/quadmcp $(DESTDIR)$(PREFIX)/bin/; fi
-	@for lib in $(LIBS_WITH_C); do install -m 644 dist/lib/lib$$lib.a $(DESTDIR)$(PREFIX)/lib/; done
-	@for deps in dist/lib/*.deps; do if [ -f "$$deps" ]; then install -m 644 "$$deps" $(DESTDIR)$(PREFIX)/lib/; fi; done
+	install -d $(DESTDIR)$(PREFIX)/lib/quadrate
+	@for dir in $(LIBS_WITH_C); do \
+		install -m 644 dist/lib/quadrate/lib$$dir.a $(DESTDIR)$(PREFIX)/lib/quadrate/; \
+	done
+	@for deps in dist/lib/quadrate/*.deps; do if [ -f "$$deps" ]; then install -m 644 "$$deps" $(DESTDIR)$(PREFIX)/lib/quadrate/; fi; done
 	install -m 755 dist/lib/libqdrt.so $(DESTDIR)$(PREFIX)/lib/
 	install -m 755 dist/lib/libqd.so $(DESTDIR)$(PREFIX)/lib/
-	@for lib in $(LIBS_WITH_HEADERS); do cp -r dist/include/$$lib $(DESTDIR)$(INCLUDEDIR)/; done
+	install -d $(DESTDIR)$(INCLUDEDIR)/quadrate
+	@for dir in $(LIBS_WITH_HEADERS); do \
+		cp -r dist/include/quadrate/$$dir $(DESTDIR)$(INCLUDEDIR)/quadrate/; \
+	done
 	@find $(DESTDIR)$(INCLUDEDIR) -type f -exec chmod 644 {} +
 	@find $(DESTDIR)$(INCLUDEDIR) -type d -exec chmod 755 {} +
 	@echo "Installing Quadrate standard library modules to $(DESTDIR)$(DATADIR)/quadrate/"
 	install -d $(DESTDIR)$(DATADIR)/quadrate
-	@for mod in $(STDLIB_MODULES); do cp -r lib/qd*/qd/$$mod $(DESTDIR)$(DATADIR)/quadrate/ 2>/dev/null || true; done
+	@for mod in $(STDLIB_MODULES); do cp -r lib/*/qd/$$mod $(DESTDIR)$(DATADIR)/quadrate/ 2>/dev/null || true; done
 	@find $(DESTDIR)$(DATADIR)/quadrate -type f -exec chmod 644 {} +
 	@find $(DESTDIR)$(DATADIR)/quadrate -type d -exec chmod 755 {} +
 	@echo "Installing API documentation to $(DESTDIR)$(DATADIR)/quadrate/docs/api/"
@@ -231,10 +237,10 @@ install:
 
 uninstall:
 	@for cmd in $(CMDS) quadrepl quadmcp; do rm -f $(DESTDIR)$(PREFIX)/bin/$$cmd; done
-	@for lib in $(LIBS_WITH_C); do rm -f $(DESTDIR)$(PREFIX)/lib/lib$$lib.a; done
+	rm -rf $(DESTDIR)$(PREFIX)/lib/quadrate
 	rm -f $(DESTDIR)$(PREFIX)/lib/libqdrt.so
 	rm -f $(DESTDIR)$(PREFIX)/lib/libqd.so
-	@for lib in $(LIBS_WITH_HEADERS); do rm -rf $(DESTDIR)$(INCLUDEDIR)/$$lib; done
+	rm -rf $(DESTDIR)$(INCLUDEDIR)/quadrate
 	@echo "Removing Quadrate standard library modules from $(DESTDIR)$(DATADIR)/quadrate/"
 	rm -rf $(DESTDIR)$(DATADIR)/quadrate
 	@echo "Removing bash completions from $(DESTDIR)$(DATADIR)/bash-completion/completions/"

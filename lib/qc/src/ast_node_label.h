@@ -1,7 +1,7 @@
 #ifndef QD_QC_AST_NODE_LABEL_H
 #define QD_QC_AST_NODE_LABEL_H
 
-#include <qc/ast_node.h>
+#include <quadrate/qc/ast_node.h>
 #include <string>
 
 namespace Qd {

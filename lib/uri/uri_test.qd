@@ -1,0 +1,78 @@
+// Unit tests for the uri module
+use uri
+use testing
+
+test "uri::parse full URL" {
+	"https://example.com:8080/path?q=1#top" uri::parse -> u
+	u @scheme "https" testing::assert_eq
+	u @host "example.com" testing::assert_eq
+	u @port 8080 testing::assert_eq
+	u @path "/path" testing::assert_eq
+	u @query "q=1" testing::assert_eq
+	u @fragment "top" testing::assert_eq
+}
+
+test "uri::parse simple URL" {
+	"http://test.org/page" uri::parse -> u
+	u @scheme "http" testing::assert_eq
+	u @host "test.org" testing::assert_eq
+	u @path "/page" testing::assert_eq
+}
+
+test "uri::encode" {
+	"hello world" uri::encode "hello%20world" testing::assert_eq
+	"a+b=c" uri::encode "a%2Bb%3Dc" testing::assert_eq
+	"test" uri::encode "test" testing::assert_eq
+}
+
+test "uri::decode" {
+	"hello%20world" uri::decode "hello world" testing::assert_eq
+	"a%2Bb%3Dc" uri::decode "a+b=c" testing::assert_eq
+	"test" uri::decode "test" testing::assert_eq
+}
+
+test "uri roundtrip" {
+	"hello world!" uri::encode uri::decode "hello world!" testing::assert_eq
+	"a=1&b=2" uri::encode uri::decode "a=1&b=2" testing::assert_eq
+}
+
+test "uri::build" {
+	uri::Uri {
+		scheme = "https"
+		host = "example.com"
+		port = 443
+		path = "/api/v1"
+		query = "key=value"
+		fragment = ""
+	} uri::build "https://example.com:443/api/v1?key=value" testing::assert_eq
+}
+
+test "uri::query_get" {
+	"name=Alice&age=30" "name" uri::query_get "Alice" testing::assert_eq
+	"name=Alice&age=30" "age" uri::query_get "30" testing::assert_eq
+}
+
+test "uri::query_has" {
+	"name=Alice&age=30" "name" uri::query_has testing::assert_true
+	"name=Alice&age=30" "missing" uri::query_has testing::assert_false
+}
+
+test "uri IPv6 addresses" {
+	"http://[::1]:8080/path" uri::parse -> u
+	u @host "[::1]" testing::assert_eq
+	u @port 8080 testing::assert_eq
+}
+
+test "uri port validation" {
+	// Valid max port
+	"http://host:65535/path" uri::parse -> u
+	u @port 65535 testing::assert_eq
+}
+
+test "uri decode edge cases" {
+	// Incomplete percent encoding
+	"%" uri::decode "%" testing::assert_eq
+	"%2" uri::decode "%2" testing::assert_eq
+	// Plus sign handling
+	"a+b" uri::decode "a+b" testing::assert_eq
+}

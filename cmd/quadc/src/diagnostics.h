@@ -4,7 +4,7 @@
 #include <fstream>
 #include <iostream>
 #include <optional>
-#include <qc/colors.h>
+#include <quadrate/qc/colors.h>
 #include <string>
 
 // Helper functions for printing compiler diagnostics with consistent formatting

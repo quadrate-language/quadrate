@@ -1,0 +1,11 @@
+// Unit tests for the tls module
+// Note: TLS error constants are defined inside the import block and not externally accessible.
+// All TLS functions require network connections and certificates, so comprehensive testing
+// requires integration tests with actual TLS servers.
+use tls
+use testing
+
+test "tls module loads" {
+	// Verify the module can be imported and linked successfully
+	1 testing::assert_true
+}

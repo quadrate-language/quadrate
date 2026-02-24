@@ -1,0 +1,109 @@
+/// Unix signal handling with polling-based API.
+///
+/// Signals are caught and stored as flags. Use pending() to check
+/// if a signal was received, and clear() to reset the flag.
+///
+/// Example:
+///   use signal
+///
+///   fn main() {
+///       signal::SigInt signal::trap
+///       "Running. Press Ctrl+C to stop." print nl
+///
+///       loop {
+///           signal::SigInt signal::pending if {
+///               "Shutting down" print nl
+///               signal::SigInt signal::clear
+///               break
+///           }
+///       }
+///   }
+
+import "libsignal.a" as "signal" {
+	/// Hangup signal (terminal closed).
+	pub fn SigHup( -- val:i64)
+	/// Interrupt signal (Ctrl+C).
+	pub fn SigInt( -- val:i64)
+	/// Quit signal (Ctrl+\).
+	pub fn SigQuit( -- val:i64)
+	/// Illegal instruction.
+	pub fn SigIll( -- val:i64)
+	/// Abort signal.
+	pub fn SigAbrt( -- val:i64)
+	/// Floating point exception.
+	pub fn SigFpe( -- val:i64)
+	/// Kill signal (cannot be caught).
+	pub fn SigKill( -- val:i64)
+	/// Segmentation fault.
+	pub fn SigSegv( -- val:i64)
+	/// Broken pipe.
+	pub fn SigPipe( -- val:i64)
+	/// Alarm clock.
+	pub fn SigAlrm( -- val:i64)
+	/// Termination signal.
+	pub fn SigTerm( -- val:i64)
+	/// User-defined signal 1.
+	pub fn SigUsr1( -- val:i64)
+	/// User-defined signal 2.
+	pub fn SigUsr2( -- val:i64)
+	/// Child process stopped or terminated.
+	pub fn SigChld( -- val:i64)
+	/// Continue if stopped.
+	pub fn SigCont( -- val:i64)
+	/// Stop signal (cannot be caught).
+	pub fn SigStop( -- val:i64)
+	/// Terminal stop (Ctrl+Z).
+	pub fn SigTstp( -- val:i64)
+	/// Background read from terminal.
+	pub fn SigTtin( -- val:i64)
+	/// Background write to terminal.
+	pub fn SigTtou( -- val:i64)
+
+	/// Install a handler to catch the specified signal.
+	/// After trapping, the signal sets a pending flag instead of
+	/// causing the default action (e.g., termination).
+	/// @param signum i64 Signal number (use signal::SigInt, etc.)
+	/// @example signal::SigInt signal::trap
+	pub fn trap(signum:i64 -- )
+
+	/// Ignore the specified signal completely.
+	/// @param signum i64 Signal number
+	/// @example signal::SigPipe signal::ignore
+	pub fn ignore(signum:i64 -- )
+
+	/// Reset signal to default behavior.
+	/// @param signum i64 Signal number
+	/// @example signal::SigInt signal::reset
+	pub fn reset(signum:i64 -- )
+
+	/// Check if a signal is pending (received but not cleared).
+	/// Returns 1 if pending, 0 otherwise. Does not clear the flag.
+	/// @param signum i64 Signal number
+	/// @return flag i64 1 if pending, 0 otherwise
+	/// @example signal::SigInt signal::pending
+	pub fn pending(signum:i64 -- flag:i64)
+
+	/// Clear the pending flag for a signal.
+	/// @param signum i64 Signal number
+	/// @example signal::SigInt signal::clear
+	pub fn clear(signum:i64 -- )
+
+	/// Block until any trapped signal is received.
+	/// Returns the signal number that was received.
+	/// @return signum i64 The signal that was received
+	/// @example signal::wait -> sig
+	pub fn wait( -- signum:i64)
+
+	/// Send a signal to the current process.
+	/// @param signum i64 Signal number to send
+	/// @return result i64 0 on success, -1 on error
+	/// @example signal::SigUsr1 signal::raise drop
+	pub fn raise(signum:i64 -- result:i64)
+
+	/// Send a signal to another process.
+	/// @param pid i64 Process ID to signal
+	/// @param signum i64 Signal number to send
+	/// @return result i64 0 on success, -1 on error
+	/// @example 1234 signal::SigTerm signal::kill drop
+	pub fn kill(pid:i64 signum:i64 -- result:i64)
+}

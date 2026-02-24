@@ -2,7 +2,7 @@
 embed_exe = executable('embed',
 	'main.cc',
 	dependencies: qd_dep,
-	build_rpath: meson.project_build_root() / 'lib/qdrt' + ':' + meson.project_build_root() / 'lib/qd',
+	build_rpath: meson.project_build_root() / 'lib/rt' + ':' + meson.project_build_root() / 'lib/qd',
 	install_rpath: '$ORIGIN/../lib',
 	build_by_default: false
 )
@@ -10,7 +10,7 @@ embed_exe = executable('embed',
 multi_module_test_exe = executable('multi-module-test',
 	'multi-module-test.cc',
 	dependencies: qd_dep,
-	build_rpath: meson.project_build_root() / 'lib/qdrt' + ':' + meson.project_build_root() / 'lib/qd',
+	build_rpath: meson.project_build_root() / 'lib/rt' + ':' + meson.project_build_root() / 'lib/qd',
 	install_rpath: '$ORIGIN/../lib',
 	build_by_default: false
 )
@@ -18,7 +18,7 @@ multi_module_test_exe = executable('multi-module-test',
 native_functions_test_exe = executable('native-functions-test',
 	'native-functions-test.cc',
 	dependencies: qd_dep,
-	build_rpath: meson.project_build_root() / 'lib/qdrt' + ':' + meson.project_build_root() / 'lib/qd',
+	build_rpath: meson.project_build_root() / 'lib/rt' + ':' + meson.project_build_root() / 'lib/qd',
 	install_rpath: '$ORIGIN/../lib',
 	build_by_default: false
 )
@@ -26,7 +26,7 @@ native_functions_test_exe = executable('native-functions-test',
 incremental_test_exe = executable('incremental-test',
 	'incremental-test.cc',
 	dependencies: qd_dep,
-	build_rpath: meson.project_build_root() / 'lib/qdrt' + ':' + meson.project_build_root() / 'lib/qd',
+	build_rpath: meson.project_build_root() / 'lib/rt' + ':' + meson.project_build_root() / 'lib/qd',
 	install_rpath: '$ORIGIN/../lib',
 	build_by_default: false
 )

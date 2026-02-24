@@ -1,0 +1,660 @@
+/// Regular expression matching using Thompson NFA.
+/// Supports . * + ? | () [] [^] [a-z] ^ $ and escapes.
+/// Note: Nested groups and alternation inside groups not yet supported.
+use mem
+use strings
+use unicode
+
+// NFA state types
+const STATE_CHAR = 0    // Match specific character
+const STATE_ANY = 1     // Match any character (.)
+const STATE_SPLIT = 2   // Epsilon split (for |, *, +, ?)
+const STATE_MATCH = 3   // Accepting state
+const STATE_CCLASS = 4  // Character class [...]
+const STATE_NCCLASS = 5 // Negated char class [^...]
+const STATE_BOL = 6     // Beginning of line ^
+const STATE_EOL = 7     // End of line $
+// State structure offsets (48 bytes per state)
+const ST_TYPE = 0       // i64: state type
+const ST_CHAR = 8       // i64: character to match
+const ST_OUT1 = 16      // i64: first out state index (-1 = none)
+const ST_OUT2 = 24      // i64: second out state index (for SPLIT)
+const ST_CCLASS = 32    // i64: cclass index in cclass array
+const STATE_SIZE = 40
+// Max states and character classes
+const MAX_STATES = 256
+const MAX_CCLASS = 32
+// Regex structure offsets
+const RE_STATES = 0     // ptr: states array
+const RE_NSTATES = 8    // i64: number of states
+const RE_START = 16     // i64: start state index
+const RE_CCLASSES = 24  // ptr: array of cclass pointers
+const RE_NCCLASS = 32   // i64: number of cclasses
+const REGEX_SIZE = 40
+
+// Allocate a new regex structure
+fn regex_new( -- re:ptr) {
+	REGEX_SIZE mem::alloc! -> re
+	MAX_STATES STATE_SIZE * mem::alloc! -> states
+	MAX_CCLASS 8 * mem::alloc! -> cclasses
+	states re RE_STATES mem::set_ptr
+	0 re RE_NSTATES mem::set_i64
+	0 re RE_START mem::set_i64
+	cclasses re RE_CCLASSES mem::set_ptr
+	0 re RE_NCCLASS mem::set_i64
+	re
+}
+
+// Get state field
+fn state_get(re:ptr idx:i64 field:i64 -- val:i64) {
+	-> field -> idx -> re
+	re RE_STATES mem::get_ptr idx STATE_SIZE * field + mem::get_i64
+}
+
+// Set state field
+fn state_set(re:ptr idx:i64 field:i64 val:i64 -- ) {
+	-> val -> field -> idx -> re
+	val re RE_STATES mem::get_ptr idx STATE_SIZE * field + mem::set_i64
+}
+
+// Add a state to the regex, returns state index
+fn add_state(re:ptr stype:i64 -- idx:i64) {
+	-> stype -> re
+	re RE_NSTATES mem::get_i64 -> n
+	n MAX_STATES >= if {
+		-1  // overflow
+	} else {
+		re n ST_TYPE stype state_set
+		re n ST_CHAR 0 state_set
+		re n ST_OUT1 -1 state_set
+		re n ST_OUT2 -1 state_set
+		re n ST_CCLASS -1 state_set
+		n 1 + re RE_NSTATES mem::set_i64
+		n
+	}
+}
+
+// Create character class bitmap (32 bytes = 256 bits)
+fn cclass_new( -- cc:ptr) {
+	32 mem::alloc! -> cc
+	cc 32 mem::zero
+	cc
+}
+
+// Add cclass to regex, returns cclass index
+fn add_cclass(re:ptr cc:ptr -- idx:i64) {
+	-> cc -> re
+	re RE_NCCLASS mem::get_i64 -> n
+	n MAX_CCLASS >= if {
+		cc mem::free
+		-1
+	} else {
+		cc re RE_CCLASSES mem::get_ptr n 8 * mem::set_ptr
+		n 1 + re RE_NCCLASS mem::set_i64
+		n
+	}
+}
+
+// Get cclass pointer by index
+fn get_cclass(re:ptr idx:i64 -- cc:ptr) {
+	-> idx -> re
+	idx -1 == if {
+		0  // null
+	} else {
+		re RE_CCLASSES mem::get_ptr idx 8 * mem::get_ptr
+	}
+}
+
+// Set bit in character class
+fn cclass_set(cc:ptr c:i64 -- ) {
+	-> c -> cc
+	c 255 and -> c
+	c 8 / -> byte_idx
+	c 8 % -> bit_idx
+	cc byte_idx mem::get_byte -> b
+	1 bit_idx shl b or -> b
+	b cc byte_idx mem::set_byte
+}
+
+// Test bit in character class
+fn cclass_test(cc:ptr c:i64 -- result:i64) {
+	-> c -> cc
+	c 255 and -> c
+	c 8 / -> byte_idx
+	c 8 % -> bit_idx
+	cc byte_idx mem::get_byte -> b
+	b bit_idx shr 1 and
+}
+
+// Parser state (stored in memory)
+const PS_PAT = 0        // str stored as ptr
+const PS_POS = 8
+const PS_LEN = 16
+const PS_RE = 24
+const PSTATE_SIZE = 32
+
+// Parser: create parser state
+fn parser_new(pattern:str re:ptr -- ps:ptr) {
+	-> re -> pattern
+	PSTATE_SIZE mem::alloc! -> ps
+	pattern mem::from_string -> plen -> pbuf
+	pbuf ps PS_PAT mem::set_ptr
+	0 ps PS_POS mem::set_i64
+	plen ps PS_LEN mem::set_i64
+	re ps PS_RE mem::set_ptr
+	ps
+}
+
+// Parser: free
+fn parser_free(ps:ptr -- ) {
+	-> ps
+	ps PS_PAT mem::get_ptr mem::free
+	ps mem::free
+}
+
+// Parser: peek current char (or -1 if at end)
+fn parser_peek(ps:ptr -- c:i64) {
+	-> ps
+	ps PS_POS mem::get_i64 -> pos
+	ps PS_LEN mem::get_i64 -> plen
+	pos plen >= if {
+		-1
+	} else {
+		ps PS_PAT mem::get_ptr pos mem::get_byte
+	}
+}
+
+// Parser: advance and return current char
+fn parser_next(ps:ptr -- c:i64) {
+	-> ps
+	ps parser_peek -> c
+	c -1 != if {
+		ps PS_POS mem::get_i64 1 + ps PS_POS mem::set_i64
+	}
+	c
+}
+
+// Parse escape sequence, returns character
+fn parse_escape(ps:ptr -- c:i64) {
+	-> ps
+	ps parser_next -> c
+	c switch {
+		unicode::n {
+			unicode::newline -> c
+		}
+		unicode::t {
+			unicode::tab -> c
+		}
+		unicode::r {
+			unicode::cr -> c
+		}
+		unicode::digit0 {
+			unicode::nul -> c
+		}
+	}
+	c
+}
+
+// Parse character class [...], returns state index
+fn parse_cclass(ps:ptr -- start:i64) {
+	-> ps
+	ps PS_RE mem::get_ptr -> re
+
+	// Check for negation
+	0 -> negated
+	ps parser_peek unicode::caret == if {
+		ps parser_next drop
+		1 -> negated
+	}
+
+	cclass_new -> cc
+
+	// Parse characters until ]
+	loop {
+		ps parser_peek -> c
+		c -1 == c unicode::rbracket == or if {
+			break
+		}
+
+		ps parser_next drop
+
+		c unicode::backslash == if {
+			ps parse_escape -> c
+		}
+
+		// Check for range
+		ps parser_peek unicode::minus == if {
+			ps parser_next drop
+			ps parser_peek -> end_c
+			end_c unicode::rbracket == end_c -1 == or if {
+				cc c cclass_set
+				cc unicode::minus cclass_set
+			} else {
+				ps parser_next drop
+				end_c unicode::backslash == if {
+					ps parse_escape -> end_c
+				}
+				c -> i
+				loop {
+					i end_c > if {
+						break
+					}
+					cc i cclass_set
+					i 1 + -> i
+				}
+			}
+		} else {
+			cc c cclass_set
+		}
+	}
+
+	ps parser_peek unicode::rbracket == if {
+		ps parser_next drop
+	}
+
+	negated if {
+		STATE_NCCLASS
+	} else {
+		STATE_CCLASS
+	}
+	-> stype
+	re stype add_state -> start
+	re cc add_cclass -> ccidx
+	re start ST_CCLASS ccidx state_set
+	start
+}
+
+// Parse atom: char, ., (), [], ^, $
+fn parse_atom(ps:ptr -- start:i64 end:i64) {
+	-> ps
+	ps PS_RE mem::get_ptr -> re
+	ps parser_peek -> c
+
+	c switch {
+		unicode::lparen {
+			// (
+			ps parser_next drop
+			// Parse content - simplified, just parse sequence of atoms
+			-1 -> gstart
+			-1 -> gend
+			loop {
+				ps parser_peek -> nc
+				nc -1 == nc unicode::rparen == or if {
+					break
+				}
+				// Parse single atom - skip meta chars
+				nc -1 != nc unicode::pipe != and nc unicode::rparen != and
+				nc unicode::asterisk != and nc unicode::plus != and nc unicode::question != and if {
+					ps parser_next drop
+					re STATE_CHAR add_state -> nstate
+					re nstate ST_CHAR nc state_set
+					gstart -1 == if {
+						nstate -> gstart
+						nstate -> gend
+					} else {
+						re gend ST_OUT1 nstate state_set
+						nstate -> gend
+					}
+				} else {
+					break
+				}
+			}
+			ps parser_peek unicode::rparen == if {
+				ps parser_next drop
+			}
+			gstart -1 == if {
+				-1 -1
+			} else {
+				gend gstart
+			}
+		}
+		unicode::lbracket {
+			// [
+			ps parser_next drop
+			ps parse_cclass -> start
+			start start
+		}
+		unicode::dot {
+			// .
+			ps parser_next drop
+			re STATE_ANY add_state -> start
+			start start
+		}
+		unicode::caret {
+			// ^
+			ps parser_next drop
+			re STATE_BOL add_state -> start
+			start start
+		}
+		unicode::dollar {
+			// $
+			ps parser_next drop
+			re STATE_EOL add_state -> start
+			start start
+		}
+		unicode::backslash {
+			// \
+			ps parser_next drop
+			ps parse_escape -> c
+			re STATE_CHAR add_state -> start
+			re start ST_CHAR c state_set
+			start start
+		}
+		_ {
+			// Regular character (not a metachar)
+			c -1 != c unicode::pipe != and c unicode::rparen != and
+			c unicode::asterisk != and c unicode::plus != and c unicode::question != and if {
+				ps parser_next drop
+				re STATE_CHAR add_state -> start
+				re start ST_CHAR c state_set
+				start start
+			} else {
+				-1 -1
+			}
+		}
+	}
+}
+
+// Helper: connect state to next, using OUT2 for SPLIT states
+fn connect_state(re:ptr sidx:i64 next:i64 -- ) {
+	-> next -> sidx -> re
+	re sidx ST_TYPE state_get STATE_SPLIT == if {
+		re sidx ST_OUT2 next state_set
+	} else {
+		re sidx ST_OUT1 next state_set
+	}
+}
+
+// Parse repeat: atom*, atom+, atom?
+fn parse_repeat(ps:ptr -- start:i64 end:i64) {
+	-> ps
+	ps PS_RE mem::get_ptr -> re
+	ps parse_atom -> astart -> aend
+
+	astart -1 == if {
+		-1 -1
+	} else {
+		ps parser_peek switch {
+			unicode::asterisk {
+				// *
+				ps parser_next drop
+				re STATE_SPLIT add_state -> split
+				re split ST_OUT1 astart state_set
+				re aend ST_OUT1 split state_set
+				split split
+			}
+			unicode::plus {
+				// +
+				ps parser_next drop
+				re STATE_SPLIT add_state -> split
+				re aend ST_OUT1 split state_set
+				re split ST_OUT1 astart state_set
+				split astart
+			}
+			unicode::question {
+				// ?
+				ps parser_next drop
+				re STATE_SPLIT add_state -> split
+				re split ST_OUT1 astart state_set
+				re STATE_SPLIT add_state -> join
+				re aend ST_OUT1 join state_set
+				re split ST_OUT2 join state_set
+				join split
+			}
+			_ {
+				aend astart
+			}
+		}
+	}
+}
+
+// Parse concatenation
+fn parse_concat(ps:ptr -- start:i64 end:i64) {
+	-> ps
+	ps PS_RE mem::get_ptr -> re
+	ps parse_repeat -> start -> end
+
+	start -1 == if {
+		-1 -1
+	} else {
+		loop {
+			ps parse_repeat -> nstart -> nend
+			nstart -1 == if {
+				break
+			}
+			re end nstart connect_state
+			nend -> end
+		}
+		// Return order: push end first, then start (start pops first)
+		end start
+	}
+}
+
+// Parse alternation
+fn parse_alt(ps:ptr -- start:i64 end:i64) {
+	-> ps
+	ps PS_RE mem::get_ptr -> re
+	ps parse_concat -> start -> end
+
+	start -1 == if {
+		-1 -1
+	} else {
+		loop {
+			ps parser_peek unicode::pipe != if {
+				break
+			}
+			ps parser_next drop
+			ps parse_concat -> astart -> aend
+			astart -1 == if {
+				break
+			}
+
+			re STATE_SPLIT add_state -> split
+			re split ST_OUT1 start state_set
+			re split ST_OUT2 astart state_set
+
+			re STATE_SPLIT add_state -> join
+			re end join connect_state
+			re aend join connect_state
+
+			split -> start
+			join -> end
+		}
+		// Return order: push end first, then start (start pops first)
+		end start
+	}
+}
+
+/// Compile a regex pattern.
+/// @param pattern str Regular expression pattern
+/// @return re ptr Compiled regex (null on error)
+pub fn compile(pattern:str -- re:ptr) {
+	-> pattern
+	regex_new -> re
+	pattern re parser_new -> ps
+
+	ps parse_alt -> start -> end
+
+	re STATE_MATCH add_state -> match_state
+	end -1 != if {
+		re end match_state connect_state
+	}
+	start -1 != if {
+		start re RE_START mem::set_i64
+	}
+
+	ps parser_free
+	re
+}
+
+/// Free a compiled regex.
+pub fn release(re:ptr -- ) {
+	-> re
+	// Free character classes
+	re RE_NCCLASS mem::get_i64 -> n
+	0 -> i
+	loop {
+		i n >= if {
+			break
+		}
+		re RE_CCLASSES mem::get_ptr i 8 * mem::get_ptr mem::free
+		i 1 + -> i
+	}
+	re RE_CCLASSES mem::get_ptr mem::free
+	re RE_STATES mem::get_ptr mem::free
+	re mem::free
+}
+
+// Add state to set with epsilon closure (visited is separate array)
+fn addstate(re:ptr states:ptr visited:ptr idx:i64 listid:i64 -- ) {
+	-> listid -> idx -> visited -> states -> re
+
+	idx -1 == if {
+	} else {
+		// Check if already visited for this listid
+		visited idx 8 * mem::get_i64 -> mark
+		mark listid == if {
+		} else {
+			listid visited idx 8 * mem::set_i64
+
+			// Add to states array
+			states 0 mem::get_i64 -> n
+			idx states n 1 + 8 * mem::set_i64
+			n 1 + states 0 mem::set_i64
+
+			// Follow epsilon transitions
+			re idx ST_TYPE state_get -> stype
+			stype STATE_SPLIT == if {
+				re idx ST_OUT1 state_get -> out1
+				re idx ST_OUT2 state_get -> out2
+				re states visited out1 listid addstate
+				re states visited out2 listid addstate
+			}
+		}
+	}
+}
+
+// Check if state matches character
+fn state_matches(re:ptr idx:i64 c:i64 -- result:i64) {
+	-> c -> idx -> re
+	re idx ST_TYPE state_get -> stype
+	stype STATE_CHAR == if {
+		re idx ST_CHAR state_get c ==
+	} else {
+		stype STATE_ANY == if {
+			c -1 !=
+		} else {
+			stype STATE_CCLASS == if {
+				c -1 != if {
+					re idx ST_CCLASS state_get -> ccidx
+					re ccidx get_cclass c cclass_test
+				} else {
+					0
+				}
+			} else {
+				stype STATE_NCCLASS == if {
+					c -1 != if {
+						re idx ST_CCLASS state_get -> ccidx
+						re ccidx get_cclass c cclass_test 0 ==
+					} else {
+						0
+					}
+				} else {
+					0
+				}
+			}
+		}
+	}
+}
+
+/// Test if a string matches a compiled regex (full match).
+/// @param re ptr Compiled regex
+/// @param s str String to match
+/// @return matches i64 1 if matches, 0 otherwise
+pub fn matches(re:ptr s:str -- result:i64) {
+	-> s -> re
+
+	s strings::len -> slen
+	re RE_NSTATES mem::get_i64 -> nstates
+
+	// Allocate state sets and visited array
+	nstates 1 + 8 * mem::alloc! -> clist
+	nstates 1 + 8 * mem::alloc! -> nlist
+	nstates 8 * mem::alloc! -> visited
+	visited nstates 8 * mem::zero
+
+	// Unique ID for epsilon closure
+	1 -> listid
+
+	// Start with initial state
+	0 clist 0 mem::set_i64
+	re clist visited re RE_START mem::get_i64 listid addstate
+
+	// Process each character
+	0 -> pos
+	loop {
+		pos slen >= if {
+			break
+		}
+
+		s pos strings::char_at! -> c
+		listid 1 + -> listid
+
+		// Build next state set
+		0 nlist 0 mem::set_i64
+		clist 0 mem::get_i64 -> n
+		0 -> i
+		loop {
+			i n >= if {
+				break
+			}
+			clist i 1 + 8 * mem::get_i64 -> sidx
+			re sidx c state_matches if {
+				re sidx ST_OUT1 state_get -> out
+				re nlist visited out listid addstate
+			}
+			i 1 + -> i
+		}
+
+		// Swap lists
+		clist -> tmp
+		nlist -> clist
+		tmp -> nlist
+
+		pos 1 + -> pos
+	}
+
+	// Check for match state
+	0 -> result
+	clist 0 mem::get_i64 -> n
+	0 -> i
+	loop {
+		i n >= result or if {
+			break
+		}
+		clist i 1 + 8 * mem::get_i64 -> sidx
+		re sidx ST_TYPE state_get STATE_MATCH == if {
+			1 -> result
+		}
+		i 1 + -> i
+	}
+
+	clist mem::free
+	nlist mem::free
+	visited mem::free
+
+	result
+}
+
+/// Compile and test if pattern matches string.
+/// @param pattern str Regex pattern
+/// @param s str String to match
+/// @return result i64 1 if matches, 0 otherwise
+/// @example "hello.*" "hello world" regex::is_match -> result
+pub fn is_match(pattern:str s:str -- result:i64) {
+	-> s -> pattern
+	pattern compile -> re
+	re s matches -> result
+	re release
+	result
+}

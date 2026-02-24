@@ -2,8 +2,8 @@
 #define QUADC_PARSED_MODULE_H
 
 #include <memory>
-#include <qc/ast.h>
-#include <qc/ast_node.h>
+#include <quadrate/qc/ast.h>
+#include <quadrate/qc/ast_node.h>
 #include <string>
 #include <vector>
 

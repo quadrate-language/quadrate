@@ -55,9 +55,9 @@ The compiler generates a wrapper `usr_greet_hello` that calls your `hello` funct
 FFI functions manipulate the Quadrate stack directly:
 
 ```c
-#include <qdrt/context.h>
-#include <qdrt/exec_result.h>
-#include <qdrt/stack.h>
+#include <quadrate/rt/context.h>
+#include <quadrate/rt/exec_result.h>
+#include <quadrate/rt/stack.h>
 
 qd_exec_result hello(qd_context* ctx) {
     // Pop a value from the stack
@@ -90,7 +90,7 @@ qd_exec_result hello(qd_context* ctx) {
 ## Required headers
 
 ```c
-#include <qdrt/context.h>      // qd_context
-#include <qdrt/exec_result.h>  // qd_exec_result
-#include <qdrt/stack.h>        // qd_stack_*, QD_STACK_TYPE_*
+#include <quadrate/rt/context.h>      // qd_context
+#include <quadrate/rt/exec_result.h>  // qd_exec_result
+#include <quadrate/rt/stack.h>        // qd_stack_*, QD_STACK_TYPE_*
 ```

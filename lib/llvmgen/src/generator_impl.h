@@ -4,7 +4,7 @@
 #ifndef QD_LLVMGEN_GENERATOR_IMPL_H
 #define QD_LLVMGEN_GENERATOR_IMPL_H
 
-#include <llvmgen/generator.h>
+#include <quadrate/llvmgen/generator.h>
 
 // Suppress all warnings from LLVM headers (third-party code)
 #if defined(__clang__)
@@ -50,32 +50,32 @@
 #pragma GCC diagnostic pop
 #endif
 
-#include <qc/ast_node.h>
-#include <qc/ast_node_anonymous_function.h>
-#include <qc/ast_node_array.h>
-#include <qc/ast_node_break.h>
-#include <qc/ast_node_constant.h>
-#include <qc/ast_node_continue.h>
-#include <qc/ast_node_ctx.h>
-#include <qc/ast_node_defer.h>
-#include <qc/ast_node_for.h>
-#include <qc/ast_node_function.h>
-#include <qc/ast_node_function_pointer.h>
-#include <qc/ast_node_identifier.h>
-#include <qc/ast_node_if.h>
-#include <qc/ast_node_import.h>
-#include <qc/ast_node_instruction.h>
-#include <qc/ast_node_literal.h>
-#include <qc/ast_node_local.h>
-#include <qc/ast_node_loop.h>
-#include <qc/ast_node_parameter.h>
-#include <qc/ast_node_return.h>
-#include <qc/ast_node_scoped.h>
-#include <qc/ast_node_struct.h>
-#include <qc/ast_node_switch.h>
-#include <qc/ast_node_test.h>
-#include <qc/ast_node_use.h>
-#include <qc/ast_node_while.h>
+#include <quadrate/qc/ast_node.h>
+#include <quadrate/qc/ast_node_anonymous_function.h>
+#include <quadrate/qc/ast_node_array.h>
+#include <quadrate/qc/ast_node_break.h>
+#include <quadrate/qc/ast_node_constant.h>
+#include <quadrate/qc/ast_node_continue.h>
+#include <quadrate/qc/ast_node_ctx.h>
+#include <quadrate/qc/ast_node_defer.h>
+#include <quadrate/qc/ast_node_for.h>
+#include <quadrate/qc/ast_node_function.h>
+#include <quadrate/qc/ast_node_function_pointer.h>
+#include <quadrate/qc/ast_node_identifier.h>
+#include <quadrate/qc/ast_node_if.h>
+#include <quadrate/qc/ast_node_import.h>
+#include <quadrate/qc/ast_node_instruction.h>
+#include <quadrate/qc/ast_node_literal.h>
+#include <quadrate/qc/ast_node_local.h>
+#include <quadrate/qc/ast_node_loop.h>
+#include <quadrate/qc/ast_node_parameter.h>
+#include <quadrate/qc/ast_node_return.h>
+#include <quadrate/qc/ast_node_scoped.h>
+#include <quadrate/qc/ast_node_struct.h>
+#include <quadrate/qc/ast_node_switch.h>
+#include <quadrate/qc/ast_node_test.h>
+#include <quadrate/qc/ast_node_use.h>
+#include <quadrate/qc/ast_node_while.h>
 
 #include <algorithm>
 #include <charconv>

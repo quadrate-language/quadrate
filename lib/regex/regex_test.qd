@@ -1,0 +1,65 @@
+// Unit tests for the regex module
+use regex
+use testing
+
+test "regex literal match" {
+	"hello" "hello" regex::is_match testing::assert_true
+	"hello" "world" regex::is_match testing::assert_false
+}
+
+test "regex dot any char" {
+	"h.llo" "hello" regex::is_match testing::assert_true
+	"h.llo" "hxllo" regex::is_match testing::assert_true
+	"h.llo" "hllo" regex::is_match testing::assert_false
+}
+
+test "regex star zero or more" {
+	"ab*c" "ac" regex::is_match testing::assert_true
+	"ab*c" "abc" regex::is_match testing::assert_true
+	"ab*c" "abbbbc" regex::is_match testing::assert_true
+}
+
+test "regex plus one or more" {
+	"ab+c" "ac" regex::is_match testing::assert_false
+	"ab+c" "abc" regex::is_match testing::assert_true
+	"ab+c" "abbbc" regex::is_match testing::assert_true
+}
+
+test "regex question zero or one" {
+	"ab?c" "ac" regex::is_match testing::assert_true
+	"ab?c" "abc" regex::is_match testing::assert_true
+	"ab?c" "abbc" regex::is_match testing::assert_false
+}
+
+test "regex alternation" {
+	"cat|dog" "cat" regex::is_match testing::assert_true
+	"cat|dog" "dog" regex::is_match testing::assert_true
+	"cat|dog" "bird" regex::is_match testing::assert_false
+}
+
+test "regex character class" {
+	"[abc]" "a" regex::is_match testing::assert_true
+	"[abc]" "b" regex::is_match testing::assert_true
+	"[abc]" "d" regex::is_match testing::assert_false
+	"[a-z]" "m" regex::is_match testing::assert_true
+	"[a-z]" "M" regex::is_match testing::assert_false
+}
+
+test "regex negated class" {
+	"[^abc]" "d" regex::is_match testing::assert_true
+	"[^abc]" "a" regex::is_match testing::assert_false
+}
+
+test "regex digit via class" {
+	"[0-9]+" "123" regex::is_match testing::assert_true
+	"[0-9]+" "abc" regex::is_match testing::assert_false
+}
+
+test "regex word via class" {
+	"[a-zA-Z0-9_]+" "hello123" regex::is_match testing::assert_true
+}
+
+test "regex whitespace via class" {
+	"[ ]+" "   " regex::is_match testing::assert_true
+	"[ ]+" "abc" regex::is_match testing::assert_false
+}

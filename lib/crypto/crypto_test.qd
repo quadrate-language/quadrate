@@ -1,0 +1,68 @@
+// Unit tests for the crypto module
+use crypto
+use testing
+
+test "sha256 basic" {
+	"Hello" crypto::sha256! "185f8db32271fe25f561a6fc938b2e264306ec304eda518007d1764826381969" testing::assert_eq
+	"hello" crypto::sha256! "2cf24dba5fb0a30e26e83b2ac5b9e29e1b161e5c1fa7425e73043362938b9824" testing::assert_eq
+	"" crypto::sha256! "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855" testing::assert_eq
+}
+
+test "md5 basic" {
+	"hello" crypto::md5! "5d41402abc4b2a76b9719d911017c592" testing::assert_eq
+	"abc" crypto::md5! "900150983cd24fb0d6963f7d28e17f72" testing::assert_eq
+	"" crypto::md5! "d41d8cd98f00b204e9800998ecf8427e" testing::assert_eq
+}
+
+test "crc32 basic" {
+	"hello" crypto::crc32 907060870 testing::assert_eq
+	"Hello" crypto::crc32 4157704578 testing::assert_eq
+	"" crypto::crc32 0 testing::assert_eq
+}
+
+test "sha256 streaming" {
+	crypto::Sha256 {} -> h
+	h "Hello" update! -> h
+	h finish! "185f8db32271fe25f561a6fc938b2e264306ec304eda518007d1764826381969" testing::assert_eq
+	h release
+}
+
+test "md5 streaming" {
+	crypto::Md5 {} -> h
+	h "hello" update! -> h
+	h finish! "5d41402abc4b2a76b9719d911017c592" testing::assert_eq
+	h release
+}
+
+test "crc32 streaming" {
+	crypto::Crc32 {} -> c
+	c "hello" update -> c
+	c value 907060870 testing::assert_eq
+	c release
+}
+
+test "sha256 streaming multi-chunk" {
+	crypto::Sha256 {} -> h
+	h "Hello" update! -> h
+	h " World" update! -> h
+	h finish! "a591a6d40bf420404a011733cfb7b190d62c65bf0bcda32b57b277d9ad9f146e" testing::assert_eq
+	h release
+}
+
+test "crc32 streaming multi-chunk" {
+	crypto::Crc32 {} -> c
+	c "Hello" update -> c
+	c " World" update -> c
+	c value 1243066710 testing::assert_eq
+	c release
+}
+
+test "crc32 hex" {
+	"Hello" crypto::crc32_hex "f7d18982" testing::assert_eq
+	"" crypto::crc32_hex "00000000" testing::assert_eq
+}
+
+test "crc32 verify" {
+	"Hello" 4157704578 crypto::crc32_verify 1 testing::assert_eq
+	"Hello" 12345 crypto::crc32_verify 0 testing::assert_eq
+}

@@ -10,7 +10,7 @@ if llvmgen_dep.found()
 	)
 
 	# Include qdrt source directory for platform headers
-	qdrt_src_inc = include_directories('../../lib/qdrt')
+	qdrt_src_inc = include_directories('../../lib/rt')
 
 	# jansson_dep is declared in root meson.build
 

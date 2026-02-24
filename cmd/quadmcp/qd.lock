@@ -9,11 +9,11 @@
       "url": "https://git.sr.ht/~klahr/qdfuzzy"
     },
     {
-      "integrity": "90e4d9c4de076416401235d46d15f22102f97744",
+      "integrity": "72ce3e6cb205b1566091a50ada2f1c05ab96bc51",
       "isPath": false,
       "name": "http",
       "ref": "master",
-      "resolved": "90e4d9c4de076416401235d46d15f22102f97744",
+      "resolved": "72ce3e6cb205b1566091a50ada2f1c05ab96bc51",
       "url": "https://git.sr.ht/~klahr/qdhttp"
     },
     {
@@ -25,11 +25,11 @@
       "url": "https://git.sr.ht/~klahr/qdjson"
     },
     {
-      "integrity": "b8ebbd1aeced974cc0a33a0ba67aabc2cc121a19",
+      "integrity": "3940971c9bfd4b64c84a9dfbb8c122d97fc2ebe2",
       "isPath": false,
       "name": "tls",
       "ref": "master",
-      "resolved": "b8ebbd1aeced974cc0a33a0ba67aabc2cc121a19",
+      "resolved": "3940971c9bfd4b64c84a9dfbb8c122d97fc2ebe2",
       "url": "https://git.sr.ht/~klahr/qdtls"
     }
   ],

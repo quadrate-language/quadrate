@@ -1,6 +1,6 @@
 #include <cstring>
-#include <qc/ast.h>
-#include <qc/semantic_validator.h>
+#include <quadrate/qc/ast.h>
+#include <quadrate/qc/semantic_validator.h>
 #include <unit-check/uc.h>
 
 // Helper function to validate code and return error count

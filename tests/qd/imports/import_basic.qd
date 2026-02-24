@@ -1,5 +1,5 @@
 // Basic import test - single function call
-import "libqdfmt.a" as "fmt" {
+import "libfmt.a" as "fmt" {
 	fn printf(format:str -- )
 }
 

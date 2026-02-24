@@ -12,10 +12,10 @@
 #include <vector>
 
 #include "instructions.h"
-#include <qc/ast_node.h>
-#include <qc/ast_node_instruction.h>
-#include <qc/ast_node_literal.h>
-#include <qc/semantic_validator.h>
+#include <quadrate/qc/ast_node.h>
+#include <quadrate/qc/ast_node_instruction.h>
+#include <quadrate/qc/ast_node_literal.h>
+#include <quadrate/qc/semantic_validator.h>
 
 namespace Qd {
 

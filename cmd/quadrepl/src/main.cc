@@ -1,8 +1,8 @@
-#include <qc/ast.h>
-#include <qc/colors.h>
-#include <qd/qd.h>
-#include <qdplatform/platform.h>
-#include <qdrt/stack.h>
+#include <quadrate/qc/ast.h>
+#include <quadrate/qc/colors.h>
+#include <quadrate/qd/qd.h>
+#include <quadrate/platform/platform.h>
+#include <quadrate/rt/stack.h>
 
 #include <csetjmp>
 #include <csignal>

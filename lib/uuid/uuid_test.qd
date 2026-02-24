@@ -1,0 +1,61 @@
+// Unit tests for the uuid module
+use uuid
+use strings
+use testing
+
+test "uuid::is_valid valid UUIDs" {
+	"550e8400-e29b-41d4-a716-446655440000" uuid::is_valid testing::assert_true
+	"00000000-0000-4000-8000-000000000000" uuid::is_valid testing::assert_true
+	"ffffffff-ffff-ffff-ffff-ffffffffffff" uuid::is_valid testing::assert_true
+}
+
+test "uuid::is_valid invalid UUIDs" {
+	"" uuid::is_valid testing::assert_false
+	"not-a-uuid" uuid::is_valid testing::assert_false
+	"550e8400-e29b-41d4-a716" uuid::is_valid testing::assert_false
+	"550e8400e29b41d4a716446655440000" uuid::is_valid testing::assert_false
+}
+
+test "uuid::v4 format" {
+	uuid::v4 -> id
+	id strings::len 36 testing::assert_eq
+	id uuid::is_valid testing::assert_true
+}
+
+test "uuid::v4 uniqueness" {
+	uuid::v4 -> id1
+	uuid::v4 -> id2
+	uuid::v4 -> id3
+	id1 id2 strings::compare 0 != testing::assert_true
+	id2 id3 strings::compare 0 != testing::assert_true
+	id1 id3 strings::compare 0 != testing::assert_true
+}
+
+test "uuid::v4_seeded reproducibility" {
+	12345 uuid::v4_seeded -> id1
+	12345 uuid::v4_seeded -> id2
+	id1 id2 testing::assert_eq
+}
+
+test "uuid::v4_seeded different seeds" {
+	12345 uuid::v4_seeded -> id1
+	67890 uuid::v4_seeded -> id2
+	id1 id2 strings::compare 0 != testing::assert_true
+}
+
+test "uuid format structure" {
+	42 uuid::v4_seeded -> id
+	// Check version nibble at position 14 is '4'
+	id 14 strings::char_at! 52 testing::assert_eq  // '4' = ASCII 52
+	// Check dash positions (8, 13, 18, 23)
+	id 8 strings::char_at! 45 testing::assert_eq   // '-' = ASCII 45
+	id 13 strings::char_at! 45 testing::assert_eq
+	id 18 strings::char_at! 45 testing::assert_eq
+	id 23 strings::char_at! 45 testing::assert_eq
+}
+
+test "uuid length consistency" {
+	1 uuid::v4_seeded strings::len 36 testing::assert_eq
+	2 uuid::v4_seeded strings::len 36 testing::assert_eq
+	3 uuid::v4_seeded strings::len 36 testing::assert_eq
+}

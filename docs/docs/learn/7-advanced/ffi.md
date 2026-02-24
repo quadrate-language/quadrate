@@ -16,7 +16,7 @@ Let's create a simple C function that Quadrate can call.
 Create `greet.c`:
 
 ```c
-#include <qdrt/ffi.h>
+#include <quadrate/rt/ffi.h>
 #include <stdio.h>
 
 int hello(qd_context* ctx) {
@@ -79,7 +79,7 @@ The function name in C must match the name declared in the Quadrate import block
 ## Required header
 
 ```c
-#include <qdrt/ffi.h>  // All FFI types and functions
+#include <quadrate/rt/ffi.h>  // All FFI types and functions
 ```
 
 ## Stack operations
@@ -146,7 +146,7 @@ Here's a more complete example with multiple functions and return values.
 ### math_ext.c
 
 ```c
-#include <qdrt/ffi.h>
+#include <quadrate/rt/ffi.h>
 #include <math.h>
 
 // Calculate hypotenuse: ( a:f64 b:f64 -- c:f64 )

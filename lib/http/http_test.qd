@@ -1,0 +1,185 @@
+// Unit tests for the http module
+use http
+use testing
+
+// Handler functions for testing
+fn handle_root(c:ptr -- ) {
+	-> c
+	c 200 "Hello" http::string
+}
+
+fn handle_users(c:ptr -- ) {
+	-> c
+	c 200 "Users list" http::string
+}
+
+fn handle_users_post(c:ptr -- ) {
+	-> c
+	c 201 "Created" http::string
+}
+
+fn handle_user_by_id(c:ptr -- ) {
+	-> c
+	c "id" http::param -> id
+	c 200 id http::string
+}
+
+fn handle_api_data(c:ptr -- ) {
+	-> c
+	c 200 "Data" http::json
+}
+
+fn global_middleware(c:ptr -- ) {
+	-> c
+}
+
+fn group_middleware(c:ptr -- ) {
+	-> c
+}
+
+test "http engine creation" {
+	http::engine -> e
+	e 0 != testing::assert_true
+	e http::free_engine
+}
+
+test "http route registration" {
+	http::engine -> e
+	e "/" &handle_root http::GET
+	e "/users" &handle_users http::GET
+	e "/users" &handle_users_post http::POST
+	e "/users/:id" &handle_user_by_id http::GET
+	1 testing::assert_true  // If we get here, registration worked
+	e http::free_engine
+}
+
+test "http route groups" {
+	http::engine -> e
+	e "/api" http::group -> api
+	api 0 != testing::assert_true
+	api "/users" &handle_users http::group_GET
+	api "/data" &handle_api_data http::group_GET
+	e http::free_engine
+}
+
+test "http middleware" {
+	http::engine -> e
+	e &global_middleware http::use
+	e "/" &handle_root http::GET
+	e "/api" http::group -> api
+	api &group_middleware http::group_use
+	api "/data" &handle_api_data http::group_GET
+	1 testing::assert_true  // If we get here, middleware registration worked
+	e http::free_engine
+}
+
+
+test "http status constants" {
+	http::StatusOK 200 testing::assert_eq
+	http::StatusCreated 201 testing::assert_eq
+	http::StatusBadRequest 400 testing::assert_eq
+	http::StatusNotFound 404 testing::assert_eq
+	http::StatusInternalServerError 500 testing::assert_eq
+}
+
+// ============================================================
+// SSE (Server-Sent Events) Tests
+// ============================================================
+
+// SSE handler functions for testing
+fn handle_sse_basic(c:ptr -- ) {
+	-> c
+	c http::sse_start
+	c "hello" http::sse_send
+	c http::sse_end
+}
+
+fn handle_sse_multiple(c:ptr -- ) {
+	-> c
+	c http::sse_start
+	c "first" http::sse_send
+	c "second" http::sse_send
+	c "third" http::sse_send
+	c http::sse_end
+}
+
+fn handle_sse_named_events(c:ptr -- ) {
+	-> c
+	c http::sse_start
+	c "message" "hello" http::sse_event
+	c "update" "data" http::sse_event
+	c http::sse_end
+}
+
+fn handle_sse_mixed(c:ptr -- ) {
+	-> c
+	c http::sse_start
+	c "anonymous data" http::sse_send
+	c "status" "processing" http::sse_event
+	c "more data" http::sse_send
+	c "done" "complete" http::sse_event
+	c http::sse_end
+}
+
+fn handle_sse_with_loop(c:ptr -- ) {
+	-> c
+	c http::sse_start
+	0 5 1 for i {
+		c "iteration" http::sse_send
+	}
+	c http::sse_end
+}
+
+fn handle_sse_empty(c:ptr -- ) {
+	-> c
+	c http::sse_start
+	// No events sent
+	c http::sse_end
+}
+
+test "sse route registration" {
+	http::engine -> e
+	e "/sse" &handle_sse_basic http::GET
+	1 testing::assert_true  // Registration succeeded
+	e http::free_engine
+}
+
+test "sse multiple handlers registration" {
+	http::engine -> e
+	e "/sse/basic" &handle_sse_basic http::GET
+	e "/sse/multiple" &handle_sse_multiple http::GET
+	e "/sse/named" &handle_sse_named_events http::GET
+	e "/sse/mixed" &handle_sse_mixed http::GET
+	e "/sse/loop" &handle_sse_with_loop http::GET
+	e "/sse/empty" &handle_sse_empty http::GET
+	1 testing::assert_true  // All registrations succeeded
+	e http::free_engine
+}
+
+test "sse with route groups" {
+	http::engine -> e
+	e "/api" http::group -> api
+	api "/events" &handle_sse_basic http::group_GET
+	api "/stream" &handle_sse_multiple http::group_GET
+	1 testing::assert_true  // Group registration succeeded
+	e http::free_engine
+}
+
+test "sse with middleware" {
+	http::engine -> e
+	e &global_middleware http::use
+	e "/events" &handle_sse_basic http::GET
+	1 testing::assert_true  // Middleware + SSE registration succeeded
+	e http::free_engine
+}
+
+test "sse mixed with regular routes" {
+	http::engine -> e
+	e "/" &handle_root http::GET
+	e "/users" &handle_users http::GET
+	e "/events" &handle_sse_basic http::GET
+	e "/stream" &handle_sse_multiple http::GET
+	e "/api/data" &handle_api_data http::POST
+	1 testing::assert_true  // Mixed route types registration succeeded
+	e http::free_engine
+}

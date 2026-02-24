@@ -5,7 +5,7 @@ qd_sources = files(
 qd_inc = include_directories('include')
 
 # Include qdrt source directory for platform headers
-qdrt_src_inc = include_directories('../qdrt')
+qdrt_src_inc = include_directories('../rt')
 
 # Define MESON_BUILD_ROOT for finding runtime library (only in debug builds)
 if get_option('buildtype') == 'debug' or get_option('buildtype') == 'debugoptimized'

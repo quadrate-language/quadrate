@@ -1,0 +1,67 @@
+/// String to number conversions.
+///
+/// Functions:
+/// - format_int: Format integer in any base (2-36)
+/// - parse_int: Parse string to integer in any base (2-36)
+/// - itoa: Convert integer to decimal string (shorthand for 10 format_int)
+/// - atoi: Parse decimal string to integer (shorthand for 10 parse_int)
+/// - format_float: Format float to string
+/// - parse_float: Parse string to float
+/// - format_bool: Format boolean to string ("true"/"false")
+/// - parse_bool: Parse string to boolean
+import "libstrconv.a" as "strconv" {
+	/// Format integer in given base.
+	/// @param value i64 Integer value
+	/// @param base i64 Numeric base (2-36)
+	/// @return s str Formatted string
+	/// @example 255 16 strconv::format_int print  // "ff"
+	pub fn format_int(value:i64 base:i64 -- s:str)
+
+	/// Parse integer from string in given base.
+	/// @param s str String to parse
+	/// @param base i64 Numeric base (2-36)
+	/// @return value i64 Parsed integer
+	/// @example "ff" 16 strconv::parse_int! print  // 255
+	pub fn parse_int(s:str base:i64 -- value:i64)!
+
+	/// Convert integer to decimal string (base 10).
+	/// Equivalent to: value 10 strconv::format_int
+	/// @param value i64 Integer value
+	/// @return s str Decimal string
+	/// @example 42 strconv::itoa print  // "42"
+	pub fn itoa(value:i64 -- s:str)
+
+	/// Parse decimal string to integer (base 10).
+	/// Equivalent to: str 10 strconv::parse_int
+	/// @param s str Decimal string
+	/// @return value i64 Parsed integer
+	/// @example "42" strconv::atoi! print  // 42
+	pub fn atoi(s:str -- value:i64)!
+
+	/// Format float to string.
+	/// Uses compact %g format (removes trailing zeros).
+	/// @param value f64 Float value
+	/// @return s str Formatted string
+	/// @example 3.14159 strconv::format_float print  // "3.14159"
+	pub fn format_float(value:f64 -- s:str)
+
+	/// Parse string to float.
+	/// @param s str String to parse
+	/// @return value f64 Parsed float
+	/// @example "3.14" strconv::parse_float! print  // 3.14
+	pub fn parse_float(s:str -- value:f64)!
+
+	/// Format boolean to string.
+	/// Non-zero becomes "true", zero becomes "false".
+	/// @param value i64 Boolean value (0 or non-zero)
+	/// @return s str "true" or "false"
+	/// @example 1 strconv::format_bool print  // "true"
+	pub fn format_bool(value:i64 -- s:str)
+
+	/// Parse string to boolean.
+	/// Accepts "true"/"1" as true, "false"/"0" as false (case-insensitive).
+	/// @param s str String to parse
+	/// @return value i64 1 for true, 0 for false
+	/// @example "true" strconv::parse_bool! print  // 1
+	pub fn parse_bool(s:str -- value:i64)!
+}

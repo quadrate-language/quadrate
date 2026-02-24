@@ -1,0 +1,186 @@
+/// File and stream I/O operations.
+/// Error codes: Ok=1 (success), specific errors start at 2
+
+/// Error: File not found.
+pub const ErrNotFound = 2
+/// Error: Permission denied.
+pub const ErrPermission = 3
+/// Error: Invalid file handle.
+pub const ErrInvalidHandle = 4
+/// Error: Read operation failed.
+pub const ErrRead = 5
+/// Error: Write operation failed.
+pub const ErrWrite = 6
+/// Error: Seek operation failed.
+pub const ErrSeek = 7
+/// Error: End of file reached.
+pub const ErrEof = 8
+/// Error: Invalid argument.
+pub const ErrInvalidArg = 9
+/// Error: Stat operation failed.
+pub const ErrStat = 10
+
+/// Open mode: read only.
+pub const Read = "r"
+/// Open mode: read binary.
+pub const ReadBinary = "rb"
+/// Open mode: write (truncate).
+pub const Write = "w"
+/// Open mode: write binary.
+pub const WriteBinary = "wb"
+/// Open mode: append.
+pub const Append = "a"
+/// Open mode: append binary.
+pub const AppendBinary = "ab"
+/// Open mode: read and write.
+pub const ReadWrite = "r+"
+/// Open mode: read and write binary.
+pub const ReadWriteBinary = "rb+"
+/// Open mode: write and read (truncate).
+pub const WriteRead = "w+"
+/// Open mode: write and read binary.
+pub const WriteReadBinary = "wb+"
+/// Open mode: append and read.
+pub const AppendRead = "a+"
+/// Open mode: append and read binary.
+pub const AppendReadBinary = "ab+"
+/// Seek from beginning of file.
+pub const SeekSet = 0
+/// Seek from current position.
+pub const SeekCur = 1
+/// Seek from end of file.
+pub const SeekEnd = 2
+import "libio.a" as "io" {
+	/// Open a file.
+	/// @param path str File path
+	/// @param mode str Open mode (use io::Read, io::Write, etc.)
+	/// @return handle ptr File handle
+	/// @error ErrNotFound File not found
+	/// @example "data.txt" io::Read io::open! -> f
+	pub fn open(path:str mode:str -- handle:ptr)!
+
+	/// Close a file.
+	/// @param handle ptr File handle to close
+	/// @example f io::close
+	pub fn close(handle:ptr -- )
+
+	/// Read bytes into buffer.
+	/// @param handle ptr File handle
+	/// @param buffer ptr Pre-allocated buffer
+	/// @param count i64 Maximum bytes to read
+	/// @return bytes_read i64 Actual bytes read
+	/// @error ErrInvalidArg Invalid file handle, buffer, or count
+	/// @error ErrRead Read operation failed
+	/// @example f buf 1024 io::read! -> n
+	pub fn read(handle:ptr buffer:ptr count:i64 -- bytes_read:i64)!
+
+	/// Write bytes from buffer.
+	/// @param handle ptr File handle
+	/// @param buffer ptr Buffer containing data
+	/// @param count i64 Number of bytes to write
+	/// @return bytes_written i64 Actual bytes written
+	/// @error ErrInvalidArg Invalid file handle, buffer, or count
+	/// @error ErrWrite Write operation failed
+	/// @example f buf len io::write! drop
+	pub fn write(handle:ptr buffer:ptr count:i64 -- bytes_written:i64)!
+
+	/// Seek to position in file.
+	/// @param handle ptr File handle
+	/// @param offset i64 Offset in bytes
+	/// @param whence i64 Reference point (SeekSet, SeekCur, SeekEnd)
+	/// @return position i64 New position
+	/// @error ErrInvalidHandle Invalid file handle
+	/// @error ErrInvalidArg Invalid whence value
+	/// @error ErrSeek Seek operation failed
+	/// @example f 0 io::SeekSet io::seek! drop
+	pub fn seek(handle:ptr offset:i64 whence:i64 -- position:i64)!
+
+	/// Get current position in file.
+	/// @param handle ptr File handle
+	/// @return position i64 Current position
+	/// @error ErrInvalidHandle Invalid file handle
+	/// @error ErrSeek Tell operation failed
+	/// @example f io::tell! -> pos
+	pub fn tell(handle:ptr -- position:i64)!
+
+	/// Check if at end of file.
+	/// @param handle ptr File handle
+	/// @return handle ptr File handle (unchanged)
+	/// @return is_eof i64 1 if at EOF, 0 otherwise
+	/// @example f io::eof -> f -> at_end
+	pub fn eof(handle:ptr -- handle:ptr is_eof:i64)
+
+	/// Read a line from stdin.
+	/// @return line str Line without trailing newline
+	/// @error ErrEof End of file or read error
+	/// @example io::readline! -> input
+	pub fn readline( -- line:str)!
+
+	/// Read entire file contents.
+	/// @param path str File path
+	/// @return contents str File contents as string
+	/// @error ErrNotFound File not found
+	/// @error ErrRead Read operation failed
+	/// @example "/etc/hostname" io::read_file! -> contents
+	pub fn read_file(path:str -- contents:str)!
+
+	/// Write string contents to file.
+	/// Creates or truncates the file at the given path.
+	/// @param path str File path
+	/// @param contents str String to write
+	/// @error ErrPermission Permission denied or cannot create file
+	/// @error ErrWrite Write operation failed
+	/// @example "/tmp/test.txt" "Hello, world!\n" io::write_file!
+	pub fn write_file(path:str contents:str -- )!
+
+	/// Flush stdout buffer.
+	/// Ensures all pending output is written immediately.
+	/// Useful for progress indicators that don't use newlines.
+	/// @example "Loading..." print io::flush
+	pub fn flush( -- )
+
+	/// Get file size in bytes.
+	/// @param path str File path
+	/// @return size i64 File size in bytes
+	/// @error ErrNotFound File not found
+	/// @error ErrPermission Permission denied
+	/// @error ErrStat Stat operation failed
+	/// @example "/etc/hostname" io::stat_size! -> size
+	pub fn stat_size(path:str -- size:i64)!
+
+	/// Get file modification time.
+	/// @param path str File path
+	/// @return mtime i64 Last modification time as Unix timestamp
+	/// @error ErrNotFound File not found
+	/// @error ErrPermission Permission denied
+	/// @error ErrStat Stat operation failed
+	/// @example "/etc/hostname" io::stat_mtime! -> mtime
+	pub fn stat_mtime(path:str -- mtime:i64)!
+
+	/// Get file access time.
+	/// @param path str File path
+	/// @return atime i64 Last access time as Unix timestamp
+	/// @error ErrNotFound File not found
+	/// @error ErrPermission Permission denied
+	/// @error ErrStat Stat operation failed
+	/// @example "/etc/hostname" io::stat_atime! -> atime
+	pub fn stat_atime(path:str -- atime:i64)!
+
+	/// Get file permissions (Unix mode).
+	/// @param path str File path
+	/// @return mode i64 Unix permission mode (e.g., 0644)
+	/// @error ErrNotFound File not found
+	/// @error ErrPermission Permission denied
+	/// @error ErrStat Stat operation failed
+	/// @example "/etc/hostname" io::stat_mode! -> mode
+	pub fn stat_mode(path:str -- mode:i64)!
+
+	/// Append string contents to a file.
+	/// Creates the file if it doesn't exist.
+	/// @param path str File path
+	/// @param contents str String to append
+	/// @error ErrPermission Permission denied or cannot open file
+	/// @error ErrWrite Write operation failed
+	/// @example "/tmp/log.txt" "New line\n" io::append_file!
+	pub fn append_file(path:str contents:str -- )!
+}

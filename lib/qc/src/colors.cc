@@ -1,4 +1,4 @@
-#include <qc/colors.h>
+#include <quadrate/qc/colors.h>
 
 namespace Qd {
 

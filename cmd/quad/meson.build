@@ -5,7 +5,7 @@ quad_sources = files(
 )
 
 # Include qdrt source directory for platform headers
-qdrt_src_inc = include_directories('../../lib/qdrt')
+qdrt_src_inc = include_directories('../../lib/rt')
 
 quad_exe = executable('quad',
 	quad_sources,

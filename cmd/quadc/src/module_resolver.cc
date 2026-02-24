@@ -327,7 +327,13 @@ std::vector<std::string> findModuleFiles(const std::string& moduleName, const st
 	}
 
 	// Try 6: Standard library directories relative to current directory (development fallback)
-	result = tryGetModuleFilesFromDir("lib/qd" + moduleName + "/qd/" + moduleName);
+	result = tryGetModuleFilesFromDir("lib/" + moduleName + "/qd/" + moduleName);
+	if (!result.empty()) {
+		return result;
+	}
+
+	// Try 6b: In-tree modules without qd/ subdirectory (e.g. external modules moved to lib/)
+	result = tryGetModuleFilesFromDir("lib/" + moduleName);
 	if (!result.empty()) {
 		return result;
 	}
@@ -454,9 +460,9 @@ std::vector<std::string> getSiblingQdFiles(const std::string& filePath) {
 			return siblings;
 		}
 
-		// Don't auto-merge for stdlib module directories
+		// Don't auto-merge for stdlib/library module directories
 		// These use explicit `use module` imports
-		if (canonicalInput.find("/lib/qd") != std::string::npos) {
+		if (canonicalInput.find("/lib/") != std::string::npos) {
 			return siblings;
 		}
 

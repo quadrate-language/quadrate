@@ -10,22 +10,8 @@ quadpm get https://git.sr.ht/~klahr/qdjson
 
 | Package | Description | Install |
 |---------|-------------|---------|
-| [base64](https://git.sr.ht/~klahr/qdbase64) | Base64 encoding/decoding | `quadpm get https://git.sr.ht/~klahr/qdbase64` |
 | [compress](https://git.sr.ht/~klahr/qdcompress) | Compression (gzip, zlib) | `quadpm get https://git.sr.ht/~klahr/qdcompress` |
-| [crypto](https://git.sr.ht/~klahr/qdcrypto) | Cryptographic hashes (SHA256, MD5, CRC32) | `quadpm get https://git.sr.ht/~klahr/qdcrypto` |
-| [ct](https://git.sr.ht/~klahr/qdct) | Compile-time utilities | `quadpm get https://git.sr.ht/~klahr/qdct` |
-| [hex](https://git.sr.ht/~klahr/qdhex) | Hex encoding/decoding | `quadpm get https://git.sr.ht/~klahr/qdhex` |
-| [hof](https://git.sr.ht/~klahr/qdhof) | Higher-order function combinators | `quadpm get https://git.sr.ht/~klahr/qdhof` |
-| [http](https://git.sr.ht/~klahr/qdhttp) | HTTP client and server | `quadpm get https://git.sr.ht/~klahr/qdhttp` |
-| [json](https://git.sr.ht/~klahr/qdjson) | JSON parsing and generation | `quadpm get https://git.sr.ht/~klahr/qdjson` |
-| [log](https://git.sr.ht/~klahr/qdlog) | Logging with levels and formatting | `quadpm get https://git.sr.ht/~klahr/qdlog` |
-| [net](https://git.sr.ht/~klahr/qdnet) | TCP/UDP networking | `quadpm get https://git.sr.ht/~klahr/qdnet` |
-| [regex](https://git.sr.ht/~klahr/qdregex) | Regular expressions | `quadpm get https://git.sr.ht/~klahr/qdregex` |
-| [sort](https://git.sr.ht/~klahr/qdsort) | Sorting algorithms | `quadpm get https://git.sr.ht/~klahr/qdsort` |
 | [sqlite](https://git.sr.ht/~klahr/qdsqlite) | SQLite database | `quadpm get https://git.sr.ht/~klahr/qdsqlite` |
-| [tls](https://git.sr.ht/~klahr/qdtls) | TLS/SSL support | `quadpm get https://git.sr.ht/~klahr/qdtls` |
-| [uri](https://git.sr.ht/~klahr/qduri) | URI parsing | `quadpm get https://git.sr.ht/~klahr/qduri` |
-| [uuid](https://git.sr.ht/~klahr/qduuid) | UUID generation | `quadpm get https://git.sr.ht/~klahr/qduuid` |
 
 ## Usage
 

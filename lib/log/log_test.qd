@@ -1,0 +1,65 @@
+// Unit tests for the log module
+use log
+use io
+use strings
+use testing
+
+test "log level filtering" {
+	log::new! -> logger
+	logger disable_stdout
+	logger "/tmp/test_log_unit.log" add_file!
+
+	// Set level to WARN
+	logger log::LevelWarn set_level
+
+	// These should NOT appear
+	logger "debug message" debug
+	logger "info message" info
+
+	// These SHOULD appear
+	logger "warn message" warn
+	logger "error message" error
+
+	logger free
+
+	// Read and verify
+	"/tmp/test_log_unit.log" io::read_file! -> content
+	content "debug" strings::contains testing::assert_false
+	content "info" strings::contains testing::assert_false
+	content "warn" strings::contains testing::assert_true
+	content "error" strings::contains testing::assert_true
+}
+
+test "log all levels" {
+	log::new! -> logger
+	logger disable_stdout
+	logger "/tmp/test_log_all.log" add_file!
+	logger log::LevelDebug set_level
+
+	logger "debug" debug
+	logger "info" info
+	logger "warn" warn
+	logger "error" error
+
+	logger free
+
+	"/tmp/test_log_all.log" io::read_file! -> content
+	content "debug" strings::contains testing::assert_true
+	content "info" strings::contains testing::assert_true
+	content "warn" strings::contains testing::assert_true
+	content "error" strings::contains testing::assert_true
+}
+
+test "log level off" {
+	log::new! -> logger
+	logger disable_stdout
+	logger "/tmp/test_log_off.log" add_file!
+	logger log::LevelOff set_level
+
+	logger "should not appear" error
+
+	logger free
+
+	"/tmp/test_log_off.log" io::read_file! -> content
+	content strings::len 0 testing::assert_eq
+}

@@ -1,0 +1,291 @@
+/**
+ * @file strings.h
+ * @brief String manipulation functions for Quadrate (strings:: module)
+ *
+ * Provides string operations including length, concatenation, search, and case conversion.
+ */
+
+#ifndef QD_QDSTRINGS_STRINGS_H
+#define QD_QDSTRINGS_STRINGS_H
+
+#include <quadrate/rt/context.h>
+#include <quadrate/rt/exec_result.h>
+
+/**
+ * @brief Error codes for strings module
+ *
+ * These match the constants defined in strings/module.qd
+ * Ok=1 (success), specific errors start at 2
+ */
+#define STRINGS_ERR_OK 1			/**< Success (matches builtin Ok) */
+#define STRINGS_ERR_OUT_OF_BOUNDS 2 /**< Index out of bounds */
+#define STRINGS_ERR_ALLOC 3			/**< Memory allocation failed */
+#define STRINGS_ERR_INVALID_ARG 4	/**< Invalid argument */
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+/**
+ * @brief Get string length
+ * @par Stack Effect: ( s:s -- len:i )
+ * @param ctx Execution context
+ * @return Execution result
+ */
+int usr_strings_len(qd_context* ctx);
+
+/**
+ * @brief Concatenate two strings
+ * @par Stack Effect: ( s1:s s2:s -- result:s )
+ * @param ctx Execution context
+ * @return Execution result
+ *
+ * Creates a new string by concatenating s1 and s2.
+ */
+int usr_strings_concat(qd_context* ctx);
+
+/**
+ * @brief Check if string contains substring
+ * @par Stack Effect: ( haystack:s needle:s -- bool:i )
+ * @param ctx Execution context
+ * @return Execution result
+ *
+ * Returns 1 if haystack contains needle, 0 otherwise.
+ */
+int usr_strings_contains(qd_context* ctx);
+
+/**
+ * @brief Check if string starts with prefix
+ * @par Stack Effect: ( s:s prefix:s -- bool:i )
+ * @param ctx Execution context
+ * @return Execution result
+ *
+ * Returns 1 if s starts with prefix, 0 otherwise.
+ */
+int usr_strings_starts_with(qd_context* ctx);
+
+/**
+ * @brief Check if string ends with suffix
+ * @par Stack Effect: ( s:s suffix:s -- bool:i )
+ * @param ctx Execution context
+ * @return Execution result
+ *
+ * Returns 1 if s ends with suffix, 0 otherwise.
+ */
+int usr_strings_ends_with(qd_context* ctx);
+
+/**
+ * @brief Convert string to uppercase
+ * @par Stack Effect: ( s:s -- upper:s )
+ * @param ctx Execution context
+ * @return Execution result
+ */
+int usr_strings_upper(qd_context* ctx);
+
+/**
+ * @brief Convert string to lowercase
+ * @par Stack Effect: ( s:s -- lower:s )
+ * @param ctx Execution context
+ * @return Execution result
+ */
+int usr_strings_lower(qd_context* ctx);
+
+/**
+ * @brief Trim whitespace from both ends
+ * @par Stack Effect: ( s:s -- trimmed:s )
+ * @param ctx Execution context
+ * @return Execution result
+ *
+ * Removes leading and trailing whitespace characters.
+ */
+int usr_strings_trim(qd_context* ctx);
+
+/**
+ * @brief Extract substring
+ * @par Stack Effect: ( s:s start:i length:i -- result:s )
+ * @param ctx Execution context
+ * @return Execution result
+ *
+ * Returns substring starting at index 'start' with length 'length'.
+ * Aborts if indices are out of bounds.
+ */
+int usr_strings_substring(qd_context* ctx);
+
+/**
+ * @brief Split string by delimiter
+ * @par Stack Effect: ( s:s delim:s -- parts:p count:i )
+ * @param ctx Execution context
+ * @return Execution result
+ *
+ * Returns pointer to array of strings and count. Caller must free each string and the array.
+ */
+int usr_strings_split(qd_context* ctx);
+
+/**
+ * @brief Replace all occurrences of substring
+ * @par Stack Effect: ( s:s old:s new:s -- result:s )
+ * @param ctx Execution context
+ * @return Execution result
+ *
+ * Replaces all occurrences of 'old' with 'new' in string.
+ */
+int usr_strings_replace(qd_context* ctx);
+
+/**
+ * @brief Compare two strings
+ * @par Stack Effect: ( s1:s s2:s -- result:i )
+ * @param ctx Execution context
+ * @return Execution result
+ *
+ * Returns -1 if s1 < s2, 0 if equal, 1 if s1 > s2.
+ */
+int usr_strings_compare(qd_context* ctx);
+
+/**
+ * @brief Get character code at index
+ * @par Stack Effect: ( s:s index:i -- char_code:i )
+ * @param ctx Execution context
+ * @return Execution result
+ *
+ * Returns the ASCII/Unicode code point at the given index.
+ * Aborts if index is out of bounds.
+ */
+int usr_strings_char_at(qd_context* ctx);
+
+/**
+ * @brief Find index of substring
+ * @par Stack Effect: ( haystack:s needle:s -- index:i )
+ * @param ctx Execution context
+ * @return Execution result
+ *
+ * Returns the index of the first occurrence of needle in haystack.
+ * Returns -1 if not found.
+ */
+int usr_strings_index_of(qd_context* ctx);
+
+/**
+ * @brief Find index of substring starting from position
+ * @par Stack Effect: ( haystack:s needle:s start:i -- index:i )
+ * @param ctx Execution context
+ * @return Execution result
+ *
+ * Returns the index of the first occurrence of needle in haystack,
+ * starting the search from the given position.
+ * Returns -1 if not found.
+ */
+int usr_strings_index_of_from(qd_context* ctx);
+
+/**
+ * @brief Create a single-character string from character code
+ * @par Stack Effect: ( char_code:i -- s:s )
+ * @param ctx Execution context
+ * @return Execution result
+ *
+ * Creates a string containing a single character with the given code point.
+ */
+int usr_strings_from_char(qd_context* ctx);
+
+/**
+ * @brief Sort array of strings in ascending order
+ * @par Stack Effect: ( arr:p count:i -- )
+ * @param ctx Execution context
+ * @return Execution result
+ *
+ * Sorts the array of string pointers in place using strcmp comparison.
+ */
+int usr_strings_sort(qd_context* ctx);
+
+/**
+ * @brief Sort array of strings in descending order
+ * @par Stack Effect: ( arr:p count:i -- )
+ * @param ctx Execution context
+ * @return Execution result
+ *
+ * Sorts the array of string pointers in place using strcmp comparison (reversed).
+ */
+int usr_strings_sort_desc(qd_context* ctx);
+
+/**
+ * @brief Convert C string pointer to Quadrate string
+ * @par Stack Effect: ( ptr:p -- str:s )
+ * @param ctx Execution context
+ * @return Execution result
+ *
+ * Converts a pointer to a null-terminated C string into a Quadrate string.
+ * If the pointer is NULL, returns an empty string.
+ */
+int usr_strings_from_ptr(qd_context* ctx);
+
+/**
+ * @brief Join array of strings with delimiter
+ * @par Stack Effect: ( parts:p count:i delim:s -- result:s )!
+ * @param ctx Execution context
+ * @return Execution result
+ *
+ * Joins an array of strings using the given delimiter.
+ * Returns a new string with all parts concatenated.
+ */
+int usr_strings_join(qd_context* ctx);
+
+/**
+ * @brief Repeat string n times
+ * @par Stack Effect: ( str:s n:i -- result:s )
+ * @param ctx Execution context
+ * @return Execution result
+ *
+ * Creates a new string by repeating str n times.
+ */
+int usr_strings_repeat(qd_context* ctx);
+
+/**
+ * @brief Reverse a string
+ * @par Stack Effect: ( str:s -- result:s )
+ * @param ctx Execution context
+ * @return Execution result
+ *
+ * Creates a new string with characters in reverse order.
+ */
+int usr_strings_reverse(qd_context* ctx);
+
+/**
+ * @brief Remove leading whitespace
+ * @par Stack Effect: ( str:s -- result:s )
+ * @param ctx Execution context
+ * @return Execution result
+ */
+int usr_strings_trim_left(qd_context* ctx);
+
+/**
+ * @brief Remove trailing whitespace
+ * @par Stack Effect: ( str:s -- result:s )
+ * @param ctx Execution context
+ * @return Execution result
+ */
+int usr_strings_trim_right(qd_context* ctx);
+
+/**
+ * @brief Count occurrences of substring
+ * @par Stack Effect: ( haystack:s needle:s -- count:i )
+ * @param ctx Execution context
+ * @return Execution result
+ *
+ * Returns the number of non-overlapping occurrences of needle in haystack.
+ */
+int usr_strings_count(qd_context* ctx);
+
+/**
+ * @brief Find last occurrence of substring
+ * @par Stack Effect: ( haystack:s needle:s -- index:i )
+ * @param ctx Execution context
+ * @return Execution result
+ *
+ * Returns the index of the last occurrence of needle in haystack.
+ * Returns -1 if not found.
+ */
+int usr_strings_last_index_of(qd_context* ctx);
+
+#ifdef __cplusplus
+}
+#endif
+
+#endif // QD_QDSTRINGS_STRINGS_H

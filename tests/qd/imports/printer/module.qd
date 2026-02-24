@@ -1,5 +1,5 @@
 // Module that uses imports internally
-import "libqdfmt.a" as "fmt" {
+import "libfmt.a" as "fmt" {
 	fn printf(format:str -- )
 }
 

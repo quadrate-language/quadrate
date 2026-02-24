@@ -1,0 +1,39 @@
+// Unit tests for the base64 module
+use base64
+use testing
+
+test "base64::encode simple" {
+	"Hello" base64::encode "SGVsbG8=" testing::assert_eq
+	"Hello World!" base64::encode "SGVsbG8gV29ybGQh" testing::assert_eq
+}
+
+test "base64::encode single chars" {
+	"A" base64::encode "QQ==" testing::assert_eq
+	"AB" base64::encode "QUI=" testing::assert_eq
+	"ABC" base64::encode "QUJD" testing::assert_eq
+}
+
+test "base64::encode empty" {
+	"" base64::encode "" testing::assert_eq
+}
+
+test "base64::decode simple" {
+	"SGVsbG8=" base64::decode "Hello" testing::assert_eq
+	"SGVsbG8gV29ybGQh" base64::decode "Hello World!" testing::assert_eq
+}
+
+test "base64::decode single chars" {
+	"QQ==" base64::decode "A" testing::assert_eq
+	"QUI=" base64::decode "AB" testing::assert_eq
+	"QUJD" base64::decode "ABC" testing::assert_eq
+}
+
+test "base64::decode empty" {
+	"" base64::decode "" testing::assert_eq
+}
+
+test "base64 roundtrip" {
+	"Hello" base64::encode base64::decode "Hello" testing::assert_eq
+	"The quick brown fox" base64::encode base64::decode "The quick brown fox" testing::assert_eq
+	"1234567890" base64::encode base64::decode "1234567890" testing::assert_eq
+}

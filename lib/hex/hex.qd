@@ -1,0 +1,289 @@
+/// Hexadecimal encoding and decoding.
+/// Converts between binary data and hexadecimal string representation.
+use mem
+use strings
+use unicode
+
+/// Encode a string to uppercase hexadecimal.
+/// Each byte becomes two hex characters (00-FF).
+/// @param s str String to encode
+/// @return hex str Hexadecimal string (uppercase)
+/// @example "Hello" hex::encode -> "48656C6C6F"
+pub fn encode(s:str -- hex:str) {
+	-> s
+	s strings::len -> slen
+
+	slen 0 == if {
+		""
+	} else {
+		slen 2 * mem::alloc! -> out
+		0 -> i
+		0 -> o
+
+		loop {
+			i slen >= if {
+				break
+			}
+			s i strings::char_at! -> byte
+
+			// High nibble
+			byte 4 shr 15 and -> high
+			high 10 < if {
+				unicode::digit0 high +
+			} else {
+				unicode::A high 10 - +
+			}
+			-> hchar
+			hchar out o mem::set_byte
+			o 1 + -> o
+
+			// Low nibble
+			byte 15 and -> low
+			low 10 < if {
+				unicode::digit0 low +
+			} else {
+				unicode::A low 10 - +
+			}
+			-> lchar
+			lchar out o mem::set_byte
+			o 1 + -> o
+
+			i 1 + -> i
+		}
+
+		out o mem::to_string -> result
+		out mem::free
+		result
+	}
+}
+
+/// Encode a string to lowercase hexadecimal.
+/// Each byte becomes two hex characters (00-ff).
+/// @param s str String to encode
+/// @return hex str Hexadecimal string (lowercase)
+/// @example "Hello" hex::encode_lower -> "48656c6c6f"
+pub fn encode_lower(s:str -- hex:str) {
+	-> s
+	s strings::len -> slen
+
+	slen 0 == if {
+		""
+	} else {
+		slen 2 * mem::alloc! -> out
+		0 -> i
+		0 -> o
+
+		loop {
+			i slen >= if {
+				break
+			}
+			s i strings::char_at! -> byte
+
+			// High nibble
+			byte 4 shr 15 and -> high
+			high 10 < if {
+				unicode::digit0 high +
+			} else {
+				unicode::a high 10 - +
+			}
+			-> hchar
+			hchar out o mem::set_byte
+			o 1 + -> o
+
+			// Low nibble
+			byte 15 and -> low
+			low 10 < if {
+				unicode::digit0 low +
+			} else {
+				unicode::a low 10 - +
+			}
+			-> lchar
+			lchar out o mem::set_byte
+			o 1 + -> o
+
+			i 1 + -> i
+		}
+
+		out o mem::to_string -> result
+		out mem::free
+		result
+	}
+}
+
+// Convert hex character to value (0-15), returns -1 for invalid
+fn hex_char_value(c:i64 -- v:i64) {
+	-> c
+	// '0'-'9'
+	c unicode::digit0 >= c unicode::digit9 <= and if {
+		c unicode::digit0 -
+	} else {
+		// 'A'-'F'
+		c unicode::A >= c unicode::F <= and if {
+			c unicode::A - 10 +
+		} else {
+			// 'a'-'f'
+			c unicode::a >= c unicode::f <= and if {
+				c unicode::a - 10 +
+			} else {
+				-1
+			}
+		}
+	}
+}
+
+/// Decode a hexadecimal string to bytes.
+/// Accepts both uppercase and lowercase hex digits.
+/// Invalid characters are skipped.
+/// @param hex str Hexadecimal string
+/// @return s str Decoded string
+/// @example "48656C6C6F" hex::decode -> "Hello"
+pub fn decode(hex:str -- s:str) {
+	-> hex
+	hex strings::len -> hlen
+
+	hlen 0 == if {
+		""
+	} else {
+		// Output is at most half the input length
+		hlen 2 / 1 + mem::alloc! -> out
+		0 -> i
+		0 -> o
+
+		loop {
+			i 1 + hlen >= if {
+				break
+			}
+
+			hex i strings::char_at! hex_char_value -> high
+			hex i 1 + strings::char_at! hex_char_value -> low
+
+			high -1 != low -1 != and if {
+				high 4 shl low or -> byte
+				byte out o mem::set_byte
+				o 1 + -> o
+			}
+
+			i 2 + -> i
+		}
+
+		out o mem::to_string -> result
+		out mem::free
+		result
+	}
+}
+
+/// Encode a single byte (0-255) to a 2-character hex string.
+/// @param b i64 Byte value (0-255)
+/// @return hex str Two-character hex string (uppercase)
+/// @example 65 hex::encode_byte -> "41"
+pub fn encode_byte(b:i64 -- hex:str) {
+	-> b
+	b 255 and -> b  // Clamp to byte range
+
+	2 mem::alloc! -> out
+
+	// High nibble
+	b 4 shr 15 and -> high
+	high 10 < if {
+		unicode::digit0 high +
+	} else {
+		unicode::A high 10 - +
+	}
+	-> hchar
+	hchar out 0 mem::set_byte
+
+	// Low nibble
+	b 15 and -> low
+	low 10 < if {
+		unicode::digit0 low +
+	} else {
+		unicode::A low 10 - +
+	}
+	-> lchar
+	lchar out 1 mem::set_byte
+
+	out 2 mem::to_string -> result
+	out mem::free
+	result
+}
+
+/// Decode a 2-character hex string to a byte value.
+/// Returns -1 if the input is invalid.
+/// @param hex str Two-character hex string
+/// @return b i64 Byte value (0-255) or -1 if invalid
+/// @example "41" hex::decode_byte -> 65
+pub fn decode_byte(hex:str -- b:i64) {
+	-> hex
+	hex strings::len 2 != if {
+		-1
+	} else {
+		hex 0 strings::char_at! hex_char_value -> high
+		hex 1 strings::char_at! hex_char_value -> low
+
+		high -1 == low -1 == or if {
+			-1
+		} else {
+			high 4 shl low or
+		}
+	}
+}
+
+/// Check if a string contains only valid hexadecimal characters.
+/// Valid characters are 0-9, A-F, a-f.
+/// @param hex str String to check
+/// @return valid i64 1 if valid hex, 0 otherwise
+/// @example "48656C6C6F" hex::is_valid -> 1
+/// @example "48ZZ" hex::is_valid -> 0
+pub fn is_valid(hex:str -- valid:i64) {
+	-> hex
+	hex strings::len -> hlen
+
+	// Empty string is valid (decodes to empty)
+	hlen 0 == if {
+		1
+	} else {
+		// Must have even length
+		hlen 2 mod 0 != if {
+			0
+		} else {
+			1 -> valid
+			0 -> i
+
+			loop {
+				i hlen >= valid 0 == or if {
+					break
+				}
+				hex i strings::char_at! hex_char_value -1 == if {
+					0 -> valid
+				}
+				i 1 + -> i
+			}
+
+			valid
+		}
+	}
+}
+
+/// Get the length of data that would result from decoding a hex string.
+/// Returns -1 if the hex string has invalid length (odd).
+/// @param hex str Hexadecimal string
+/// @return len i64 Decoded length in bytes, or -1 if invalid
+/// @example "48656C6C6F" hex::decoded_len -> 5
+pub fn decoded_len(hex:str -- len:i64) {
+	-> hex
+	hex strings::len -> hlen
+	hlen 2 mod 0 != if {
+		-1
+	} else {
+		hlen 2 /
+	}
+}
+
+/// Get the length of hex string that would result from encoding data.
+/// @param s str String to encode
+/// @return len i64 Encoded length in characters
+/// @example "Hello" hex::encoded_len -> 10
+pub fn encoded_len(s:str -- len:i64) {
+	-> s
+	s strings::len 2 *
+}

@@ -4,9 +4,9 @@
 #include "lsp_types.h"
 #include <jansson.h>
 #include <map>
-#include <qc/ast_node.h>
-#include <qc/ast_node_function.h>
-#include <qc/ast_node_local.h>
+#include <quadrate/qc/ast_node.h>
+#include <quadrate/qc/ast_node_function.h>
+#include <quadrate/qc/ast_node_local.h>
 #include <string>
 #include <utility>
 #include <vector>

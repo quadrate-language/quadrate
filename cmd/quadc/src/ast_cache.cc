@@ -2,7 +2,7 @@
 #include "diagnostics.h"
 #include <filesystem>
 #include <functional>
-#include <qc/ast_node_use.h>
+#include <quadrate/qc/ast_node_use.h>
 
 AstCache& AstCache::instance() {
 	static AstCache cache;

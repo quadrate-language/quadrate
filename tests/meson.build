@@ -41,7 +41,7 @@ if get_option('build_examples')
 		suite: 'embed',
 		workdir: meson.project_source_root(),
 		env: {
-			'LD_LIBRARY_PATH': meson.project_build_root() / 'lib/qdrt' + ':' + meson.project_build_root() / 'lib/qd',
+			'LD_LIBRARY_PATH': meson.project_build_root() / 'lib/rt' + ':' + meson.project_build_root() / 'lib/qd',
 		},
 		timeout: 60
 	)

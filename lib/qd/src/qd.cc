@@ -1,4 +1,4 @@
-#include <qd/qd.h>
+#include <quadrate/qd/qd.h>
 
 #include <cstdio>
 #include <cstdlib>
@@ -6,12 +6,12 @@
 #include <filesystem>
 #include <fstream>
 #include <functional>
-#include <llvmgen/generator.h>
+#include <quadrate/llvmgen/generator.h>
 #include <memory>
-#include <qc/ast.h>
-#include <qc/ast_node.h>
-#include <qc/ast_node_use.h>
-#include <qc/semantic_validator.h>
+#include <quadrate/qc/ast.h>
+#include <quadrate/qc/ast_node.h>
+#include <quadrate/qc/ast_node_use.h>
+#include <quadrate/qc/semantic_validator.h>
 #include <sstream>
 #include <string>
 #include <unordered_map>
@@ -132,7 +132,7 @@ static std::string findLibraryDir() {
 	// Try 2: Build directory (MESON_BUILD_ROOT/lib, debug builds only)
 	if (MESON_BUILD_ROOT[0] != '\0') {
 		fs::path buildLibPath = fs::path(MESON_BUILD_ROOT) / "lib";
-		if (fs::exists(buildLibPath / "qdrt" / "libqdrt_static.a") || fs::exists(buildLibPath / "qdrt" / "libqdrt.a")) {
+		if (fs::exists(buildLibPath / "rt" / "librt_static.a") || fs::exists(buildLibPath / "rt" / "librt.a")) {
 			return buildLibPath.string();
 		}
 	}
@@ -146,7 +146,8 @@ static std::string findLibraryDir() {
 				fs::path exePath = fs::canonical(exePathBuf);
 				fs::path exeDir = exePath.parent_path();
 				fs::path installedLib = exeDir / ".." / "lib";
-				if (fs::exists(installedLib / "libqdrt.a") || fs::exists(installedLib / "libqdrt.so")) {
+				if ((fs::exists(installedLib / "quadrate" / "librt.a") || fs::exists(installedLib / "libqdrt.so"))
+					&& fs::exists(installedLib / "quadrate" / "libqd.a")) {
 					return installedLib.string();
 				}
 			} catch (const std::filesystem::filesystem_error&) {
@@ -157,17 +158,17 @@ static std::string findLibraryDir() {
 
 #ifdef __HAIKU__
 	// Try 4: Haiku system library location
-	if (fs::exists("/boot/system/lib/libqdrt.a")) {
+	if (fs::exists("/boot/system/lib/quadrate/libqd.a")) {
 		return "/boot/system/lib";
 	}
 #else
 	// Try 4: System installed location (/usr/lib)
-	if (fs::exists("/usr/lib/libqdrt.a")) {
+	if (fs::exists("/usr/lib/quadrate/libqd.a")) {
 		return "/usr/lib";
 	}
 
 	// Try 5: /usr/local/lib
-	if (fs::exists("/usr/local/lib/libqdrt.a")) {
+	if (fs::exists("/usr/local/lib/quadrate/libqd.a")) {
 		return "/usr/local/lib";
 	}
 #endif
@@ -191,8 +192,14 @@ static std::string findStaticLib(const std::string& libDir, const std::string& l
 	if (fs::exists(nestedLib)) {
 		return nestedLib.string();
 	}
-	// In installed location: lib<name>.a
+	// In installed location: quadrate/lib<name>.a
+	fs::path quadrateLib = fs::path(libDir) / "quadrate" / ("lib" + libName + ".a");
+	if (fs::exists(quadrateLib)) {
+		return quadrateLib.string();
+	}
+	// Legacy flat location: lib<name>.a
 	fs::path flatLib = fs::path(libDir) / ("lib" + libName + ".a");
+
 	if (fs::exists(flatLib)) {
 		return flatLib.string();
 	}
@@ -465,7 +472,7 @@ void qd_build(qd_module* mod) {
 				FILE* stub_f = fopen(stub_c.c_str(), "w");
 				if (!stub_f) continue;
 
-				fprintf(stub_f, "#include <qd/qd.h>\n");
+				fprintf(stub_f, "#include <quadrate/qd/qd.h>\n");
 				for (const auto& fn_pair : nativeMod->native_functions) {
 					fprintf(stub_f,
 						"int usr_%s_%s(qd_context* ctx) {\n"
@@ -484,17 +491,17 @@ void qd_build(qd_module* mod) {
 				std::string lib_dir_for_inc = findLibraryDir();
 				// Try relative to lib dir: ../include
 				fs::path inc_candidate = fs::path(lib_dir_for_inc) / ".." / "include";
-				if (fs::exists(inc_candidate / "qd" / "qd.h")) {
+				if (fs::exists(inc_candidate / "quadrate" / "qd" / "qd.h")) {
 					include_dirs.push_back(fs::canonical(inc_candidate).string());
 				} else if (MESON_BUILD_ROOT[0] != '\0') {
 					// Development build: headers are in source tree
 					fs::path buildRoot = fs::path(MESON_BUILD_ROOT).parent_path().parent_path();
 					inc_candidate = buildRoot / "lib" / "qd" / "include";
-					if (fs::exists(inc_candidate / "qd" / "qd.h")) {
+					if (fs::exists(inc_candidate / "quadrate" / "qd" / "qd.h")) {
 						include_dirs.push_back(inc_candidate.string());
 					}
-					fs::path qdrt_inc = buildRoot / "lib" / "qdrt" / "include";
-					if (fs::exists(qdrt_inc / "qdrt" / "runtime.h")) {
+					fs::path qdrt_inc = buildRoot / "lib" / "rt" / "include";
+					if (fs::exists(qdrt_inc / "quadrate" / "rt" / "runtime.h")) {
 						include_dirs.push_back(qdrt_inc.string());
 					}
 				}

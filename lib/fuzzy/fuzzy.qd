@@ -1,0 +1,331 @@
+use mem
+use strings
+
+/// Minimum of two integers.
+fn min2(a:i64 b:i64 -- min:i64) {
+	dup2 < if { drop } else { nip }
+}
+
+/// Minimum of three integers.
+fn min3(a:i64 b:i64 c:i64 -- min:i64) {
+	min2 min2
+}
+
+/// Maximum of two integers.
+fn max2(a:i64 b:i64 -- max:i64) {
+	dup2 > if { drop } else { nip }
+}
+
+/// Compute Levenshtein edit distance between two strings.
+/// The edit distance is the minimum number of single-character edits
+/// (insertions, deletions, substitutions) required to transform one string into another.
+/// @param a str First string
+/// @param b str Second string
+/// @return dist i64 Edit distance (0 = identical)
+/// @example "kitten" "sitting" fuzzy::distance -> 3
+/// @example "hello" "hello" fuzzy::distance -> 0
+/// @example "" "abc" fuzzy::distance -> 3
+pub fn distance(a:str b:str -- dist:i64) {
+	-> b -> a
+	a strings::len -> len_a
+	b strings::len -> len_b
+
+	// Handle empty strings
+	len_a 0 == if {
+		len_b
+	} else {
+		len_b 0 == if {
+			len_a
+		} else {
+			// Use two rows for space efficiency: O(min(m,n)) instead of O(m*n)
+			len_b 1 + -> row_size
+			row_size 8 * mem::alloc! -> prev_row
+			row_size 8 * mem::alloc! -> curr_row
+
+			// Initialize prev_row: distance from empty string to b[0..j]
+			0 -> j
+			loop {
+				j row_size >= if { break }
+				j prev_row j 8 * mem::set_i64
+				j 1 + -> j
+			}
+
+			// Fill the matrix row by row
+			0 -> i
+			loop {
+				i len_a >= if { break }
+
+				// First element of curr_row: distance from a[0..i+1] to empty
+				i 1 + curr_row 0 mem::set_i64
+
+				0 -> j
+				loop {
+					j len_b >= if { break }
+
+					a i strings::char_at! b j strings::char_at! == if {
+						// Characters match: no edit needed
+						prev_row j 8 * mem::get_i64 curr_row j 1 + 8 * mem::set_i64
+					} else {
+						// Take minimum of insert, delete, substitute
+						prev_row j 1 + 8 * mem::get_i64 1 +
+						curr_row j 8 * mem::get_i64 1 +
+						prev_row j 8 * mem::get_i64 1 +
+						min3 curr_row j 1 + 8 * mem::set_i64
+					}
+
+					j 1 + -> j
+				}
+
+				// Swap rows: curr becomes prev for next iteration
+				0 -> j
+				loop {
+					j row_size >= if { break }
+					curr_row j 8 * mem::get_i64 prev_row j 8 * mem::set_i64
+					j 1 + -> j
+				}
+
+				i 1 + -> i
+			}
+
+			prev_row len_b 8 * mem::get_i64 -> result
+			prev_row mem::free
+			curr_row mem::free
+			result
+		}
+	}
+}
+
+/// Compute similarity between two strings as a value from 0.0 to 1.0.
+/// 1.0 means identical, 0.0 means completely different.
+/// Based on normalized Levenshtein distance: 1 - (distance / max_length).
+/// @param a str First string
+/// @param b str Second string
+/// @return sim f64 Similarity score (0.0 to 1.0)
+/// @example "hello" "hello" fuzzy::similarity -> 1.0
+/// @example "hello" "hallo" fuzzy::similarity -> 0.8
+/// @example "abc" "xyz" fuzzy::similarity -> 0.0
+pub fn similarity(a:str b:str -- sim:f64) {
+	-> b -> a
+	a strings::len -> len_a
+	b strings::len -> len_b
+
+	// Handle empty strings - both empty means identical
+	len_a 0 == len_b 0 == and if {
+		1.0
+	} else {
+		1.0 a b distance cast<f64> len_a len_b max2 cast<f64> / -
+	}
+}
+
+/// Check if query approximately matches target within a similarity threshold.
+/// @param query str Query string to search for
+/// @param target str Target string to match against
+/// @param threshold f64 Minimum similarity (0.0 to 1.0)
+/// @return matches i64 1 if similarity >= threshold, 0 otherwise
+/// @example "helo" "hello" 0.7 fuzzy::matches -> 1
+/// @example "xyz" "hello" 0.7 fuzzy::matches -> 0
+pub fn matches(query:str target:str threshold:f64 -- matches:i64) {
+	rot rot similarity swap >= if { 1 } else { 0 }
+}
+
+/// Compute a fuzzy match score combining multiple matching strategies.
+/// Higher scores indicate better matches. Returns 0 if no match.
+/// Scoring:
+///   - Exact match: 1000
+///   - Prefix match: 500 + (query_len / target_len * 100)
+///   - Substring match: 300 + (query_len / target_len * 100)
+///   - Word boundary match (after _ or at start): 200
+///   - Similarity match (>= 0.6): similarity * 100
+/// @param query str Query string (typically shorter)
+/// @param target str Target string to match against
+/// @return score i64 Match score (0 = no match, higher = better)
+/// @example "sin" "sin" fuzzy::score -> 1000
+/// @example "sin" "asin" fuzzy::score -> ~350 (substring)
+/// @example "rf" "read_file" fuzzy::score -> 200 (word boundary)
+pub fn score(query:str target:str -- score:i64) {
+	-> target -> query
+
+	query strings::len -> qlen
+	target strings::len -> tlen
+
+	// Empty query matches nothing
+	qlen 0 == if {
+		0
+	} else {
+		// Convert to lowercase for case-insensitive matching
+		query strings::lower -> q
+		target strings::lower -> t
+
+		// Exact match
+		q t strings::compare 0 == if {
+			1000
+		} else {
+			// Prefix match
+			t q strings::starts_with if {
+				500 qlen 100 * tlen / +
+			} else {
+				// Substring match
+				t q strings::contains if {
+					300 qlen 100 * tlen / +
+				} else {
+					// Word boundary match
+					q t word_boundary_match if {
+						200
+					} else {
+						// Similarity-based match
+						q t similarity -> sim
+						sim 0.6 >= if {
+							sim 100.0 * cast<i64>
+						} else {
+							0
+						}
+					}
+				}
+			}
+		}
+	}
+}
+
+/// Check if query matches target at word boundaries.
+/// Word boundaries are the start of the string and positions after '_'.
+/// @param query str Query characters to match
+/// @param target str Target string with potential word boundaries
+/// @return matches i64 1 if all query chars match at boundaries, 0 otherwise
+fn word_boundary_match(query:str target:str -- matches:i64) {
+	-> target -> query
+	query strings::len -> qlen
+	target strings::len -> tlen
+
+	qlen 0 == if {
+		0
+	} else {
+		// Find word boundary positions in target
+		0 -> qi  // query index
+		0 -> ti  // target index
+		1 -> at_boundary  // start of string is a boundary
+
+		loop {
+			qi qlen >= ti tlen >= or if { break }
+
+			at_boundary if {
+				query qi strings::char_at! target ti strings::char_at! == if {
+					qi 1 + -> qi
+				}
+			}
+
+			// Check for next boundary
+			target ti strings::char_at! 95 == if {
+				// 95 = '_'
+				1 -> at_boundary
+			} else {
+				0 -> at_boundary
+			}
+
+			ti 1 + -> ti
+		}
+
+		// Match if we consumed all query characters
+		qi qlen == if { 1 } else { 0 }
+	}
+}
+
+/// Find the best matching items from a list, sorted by score descending.
+/// Items with score 0 are excluded.
+/// @param query str Query string to match
+/// @param items ptr Array of strings to search
+/// @param max_results i64 Maximum number of results to return
+/// @return results ptr Array of matching strings (caller must free)
+/// @return count i64 Number of results
+pub fn best(query:str items:ptr max_results:i64 -- results:ptr count:i64) {
+	-> max_results -> items -> query
+
+	items len -> num_items
+
+	// Create arrays for (score, index) pairs using raw memory
+	num_items 8 * mem::alloc! -> scores
+	num_items 8 * mem::alloc! -> indices
+
+	// Score all items
+	0 -> i
+	loop {
+		i num_items >= if { break }
+		query items i nth score scores i 8 * mem::set_i64
+		i indices i 8 * mem::set_i64
+		i 1 + -> i
+	}
+
+	// Simple selection sort to find top max_results (good enough for small lists)
+	0 -> sorted
+	loop {
+		sorted max_results >= sorted num_items >= or if { break }
+
+		// Find max score in unsorted portion
+		sorted -> max_idx
+		scores sorted 8 * mem::get_i64 -> max_score
+
+		sorted 1 + -> j
+		loop {
+			j num_items >= if { break }
+			scores j 8 * mem::get_i64 -> s
+			s max_score > if {
+				s -> max_score
+				j -> max_idx
+			}
+			j 1 + -> j
+		}
+
+		// Swap max to sorted position
+		max_idx sorted != if {
+			scores sorted 8 * mem::get_i64 -> temp_score
+			indices sorted 8 * mem::get_i64 -> temp_idx
+
+			max_score scores sorted 8 * mem::set_i64
+			indices max_idx 8 * mem::get_i64 indices sorted 8 * mem::set_i64
+
+			temp_score scores max_idx 8 * mem::set_i64
+			temp_idx indices max_idx 8 * mem::set_i64
+		}
+
+		sorted 1 + -> sorted
+	}
+
+	// Count non-zero results
+	0 -> count
+	loop {
+		count max_results >= count num_items >= or if { break }
+		scores count 8 * mem::get_i64 0 > if {
+			count 1 + -> count
+		} else {
+			break
+		}
+	}
+
+	// Build result array
+	count makes -> results
+	0 -> i
+	loop {
+		i count >= if { break }
+		results i items indices i 8 * mem::get_i64 nth set -> results
+		i 1 + -> i
+	}
+
+	scores mem::free
+	indices mem::free
+	results count
+}
+
+/// Check if a string starts with a given prefix (case-insensitive).
+/// @param s str String to check
+/// @param prefix str Prefix to look for
+/// @return starts i64 1 if s starts with prefix, 0 otherwise
+pub fn starts_with_ci(s:str prefix:str -- starts:i64) {
+	swap strings::lower swap strings::lower strings::starts_with
+}
+
+/// Check if a string contains a substring (case-insensitive).
+/// @param s str String to search in
+/// @param substr str Substring to look for
+/// @return contains i64 1 if s contains substr, 0 otherwise
+pub fn contains_ci(s:str substr:str -- contains:i64) {
+	swap strings::lower swap strings::lower strings::contains
+}

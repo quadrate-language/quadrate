@@ -1,0 +1,298 @@
+// Unit tests for the json module
+use json
+use strings
+use strconv
+use testing
+
+// Helper to build JSON strings (since Quadrate doesn't support \" escape)
+// q = 34 (double quote character)
+fn make_json_string(key:str val:str -- json:str) {
+	-> val -> key
+	34 -> q
+	"{" q strings::from_char strings::concat key strings::concat q strings::from_char strings::concat ": " strings::concat
+		q strings::from_char strings::concat val strings::concat q strings::from_char strings::concat "}" strings::concat
+}
+
+fn make_json_int(key:str val:i64 -- json:str) {
+	-> val -> key
+	34 -> q
+	"{" q strings::from_char strings::concat key strings::concat q strings::from_char strings::concat ": " strings::concat
+		val strconv::itoa strings::concat "}" strings::concat
+}
+
+fn make_json_bool(key:str val:i64 -- json:str) {
+	-> val -> key
+	34 -> q
+	"{" q strings::from_char strings::concat key strings::concat q strings::from_char strings::concat ": " strings::concat
+		val if { "true" } else { "false" } strings::concat "}" strings::concat
+}
+
+test "json::get_string" {
+	"name" "Alice" make_json_string "name" json::get_string -> found -> val
+	found testing::assert_true
+	val "Alice" testing::assert_eq
+}
+
+test "json::get_string missing key" {
+	"name" "Alice" make_json_string "missing" json::get_string -> found -> val
+	found testing::assert_false
+}
+
+test "json::get_int" {
+	"count" 42 make_json_int "count" json::get_int -> found -> val
+	found testing::assert_true
+	val 42 testing::assert_eq
+}
+
+test "json::get_int missing key" {
+	"count" 42 make_json_int "missing" json::get_int -> found -> val
+	found testing::assert_false
+}
+
+test "json::get_bool true" {
+	"active" 1 make_json_bool "active" json::get_bool -> found -> val
+	found testing::assert_true
+	val testing::assert_true
+}
+
+test "json::get_bool false" {
+	"active" 0 make_json_bool "active" json::get_bool -> found -> val
+	found testing::assert_true
+	val testing::assert_false
+}
+
+test "json::has_key" {
+	34 -> q
+	"{" q strings::from_char strings::concat "name" strings::concat q strings::from_char strings::concat ": " strings::concat
+		q strings::from_char strings::concat "test" strings::concat q strings::from_char strings::concat ", " strings::concat
+		q strings::from_char strings::concat "value" strings::concat q strings::from_char strings::concat ": 123}" strings::concat
+	-> j
+	j "name" json::has_key testing::assert_true
+	j "value" json::has_key testing::assert_true
+	j "missing" json::has_key testing::assert_false
+}
+
+test "json::array_len" {
+	"[1, 2, 3]" json::array_len 3 testing::assert_eq
+	"[]" json::array_len 0 testing::assert_eq
+	"[1]" json::array_len 1 testing::assert_eq
+	"[1, 2, 3, 4, 5]" json::array_len 5 testing::assert_eq
+}
+
+test "json::array_get_int" {
+	"[10, 20, 30]" 0 json::array_get_int -> found -> val
+	found testing::assert_true
+	val 10 testing::assert_eq
+	"[10, 20, 30]" 1 json::array_get_int -> found -> val
+	found testing::assert_true
+	val 20 testing::assert_eq
+	"[10, 20, 30]" 2 json::array_get_int -> found -> val
+	found testing::assert_true
+	val 30 testing::assert_eq
+}
+
+test "json::array_get_int out of bounds" {
+	"[10, 20, 30]" 5 json::array_get_int -> found -> val
+	found testing::assert_false
+}
+
+test "json::array_get_int negative" {
+	"[-5, 0, 5]" 0 json::array_get_int -> found -> val
+	found testing::assert_true
+	val -5 testing::assert_eq
+}
+
+test "json::array_get_string" {
+	34 -> q
+	"[" q strings::from_char strings::concat "a" strings::concat q strings::from_char strings::concat ", " strings::concat
+	q strings::from_char strings::concat "b" strings::concat q strings::from_char strings::concat ", " strings::concat
+	q strings::from_char strings::concat "c" strings::concat q strings::from_char strings::concat "]" strings::concat
+	-> json_arr
+	json_arr 0 json::array_get_string -> found -> val
+	found testing::assert_true
+	val "a" testing::assert_eq
+	json_arr 1 json::array_get_string -> found -> val
+	found testing::assert_true
+	val "b" testing::assert_eq
+}
+
+test "json type constants" {
+	json::Null 0 testing::assert_eq
+	json::Bool 1 testing::assert_eq
+	json::Number 2 testing::assert_eq
+	json::String 3 testing::assert_eq
+	json::Array 4 testing::assert_eq
+	json::Object 5 testing::assert_eq
+}
+
+test "json::get_float" {
+	34 -> q
+	"{" q strings::from_char strings::concat "value" strings::concat q strings::from_char strings::concat ": 3.14}" strings::concat
+	-> j
+	j "value" json::get_float -> found -> val
+	found testing::assert_true
+	val 3.14 - 0.001 < testing::assert_true
+}
+
+test "json::get_float negative" {
+	34 -> q
+	"{" q strings::from_char strings::concat "temp" strings::concat q strings::from_char strings::concat ": -273.15}" strings::concat
+	-> j
+	j "temp" json::get_float -> found -> val
+	found testing::assert_true
+	val -273.15 - 0.001 < testing::assert_true
+}
+
+test "json::array_get_float" {
+	"[1.1, 2.2, 3.3]" 0 json::array_get_float -> found -> val
+	found testing::assert_true
+	val 1.1 - 0.001 < testing::assert_true
+
+	"[1.1, 2.2, 3.3]" 1 json::array_get_float -> found -> val
+	found testing::assert_true
+	val 2.2 - 0.001 < testing::assert_true
+}
+
+test "json::get_object" {
+	34 -> q
+	// {"outer": {"inner": 42}}
+	"{" q strings::from_char strings::concat "outer" strings::concat q strings::from_char strings::concat ": {" strings::concat
+		q strings::from_char strings::concat "inner" strings::concat q strings::from_char strings::concat ": 42}}" strings::concat
+	-> j
+	j "outer" json::get_object -> found -> json_obj
+	found testing::assert_true
+	json_obj "inner" json::get_int -> found -> val
+	found testing::assert_true
+	val 42 testing::assert_eq
+}
+
+test "json::get_array" {
+	34 -> q
+	// {"items": [1, 2, 3]}
+	"{" q strings::from_char strings::concat "items" strings::concat q strings::from_char strings::concat ": [1, 2, 3]}" strings::concat
+	-> j
+	j "items" json::get_array -> found -> json_arr
+	found testing::assert_true
+	json_arr json::array_len 3 testing::assert_eq
+	json_arr 0 json::array_get_int -> found -> val
+	found testing::assert_true
+	val 1 testing::assert_eq
+}
+
+// ============================================================
+// JSON Building Tests
+// ============================================================
+
+test "json::str quotes string" {
+	34 -> q
+	"hello" json::str -> result
+	q strings::from_char "hello" strings::concat q strings::from_char strings::concat -> expected
+	result expected testing::assert_eq
+}
+
+test "json::kv builds key-value" {
+	34 -> q
+	"name" "Bob" json::kv -> result
+	// Expected: "name":"Bob"
+	q strings::from_char "name" strings::concat q strings::from_char strings::concat ":" strings::concat
+		q strings::from_char strings::concat "Bob" strings::concat q strings::from_char strings::concat -> expected
+	result expected testing::assert_eq
+}
+
+test "json::kv_int builds key-int" {
+	34 -> q
+	"age" 42 json::kv_int -> result
+	// Expected: "age":42
+	q strings::from_char "age" strings::concat q strings::from_char strings::concat ":42" strings::concat -> expected
+	result expected testing::assert_eq
+}
+
+test "json::kv_int negative" {
+	34 -> q
+	"temp" -10 json::kv_int -> result
+	// Expected: "temp":-10
+	q strings::from_char "temp" strings::concat q strings::from_char strings::concat ":-10" strings::concat -> expected
+	result expected testing::assert_eq
+}
+
+test "json::kv_int zero" {
+	34 -> q
+	"count" 0 json::kv_int -> result
+	// Expected: "count":0
+	q strings::from_char "count" strings::concat q strings::from_char strings::concat ":0" strings::concat -> expected
+	result expected testing::assert_eq
+}
+
+test "json::kv_bool true" {
+	34 -> q
+	"active" 1 json::kv_bool -> result
+	// Expected: "active":true
+	q strings::from_char "active" strings::concat q strings::from_char strings::concat ":true" strings::concat -> expected
+	result expected testing::assert_eq
+}
+
+test "json::kv_bool false" {
+	34 -> q
+	"active" 0 json::kv_bool -> result
+	// Expected: "active":false
+	q strings::from_char "active" strings::concat q strings::from_char strings::concat ":false" strings::concat -> expected
+	result expected testing::assert_eq
+}
+
+test "json::kv_raw builds key-raw" {
+	34 -> q
+	"data" "{}" json::kv_raw -> result
+	// Expected: "data":{}
+	q strings::from_char "data" strings::concat q strings::from_char strings::concat ":{}" strings::concat -> expected
+	result expected testing::assert_eq
+}
+
+test "json::obj builds object" {
+	34 -> q
+	"a" "1" json::kv -> kv1
+	kv1 json::obj -> result
+	// Expected: {"a":"1"}
+	"{" q strings::from_char strings::concat "a" strings::concat q strings::from_char strings::concat ":" strings::concat
+		q strings::from_char strings::concat "1" strings::concat q strings::from_char strings::concat "}" strings::concat -> expected
+	result expected testing::assert_eq
+}
+
+test "json::empty_obj" {
+	json::empty_obj "{}" testing::assert_eq
+}
+
+test "json::arr builds array" {
+	"1,2,3" json::arr -> result
+	result "[1,2,3]" testing::assert_eq
+}
+
+test "json::empty_arr" {
+	json::empty_arr "[]" testing::assert_eq
+}
+
+test "json::join" {
+	34 -> q
+	"a" 1 json::kv_int -> kv1
+	"b" 2 json::kv_int -> kv2
+	kv1 kv2 json::join -> result
+	// Expected: "a":1,"b":2
+	q strings::from_char "a" strings::concat q strings::from_char strings::concat ":1," strings::concat
+		q strings::from_char strings::concat "b" strings::concat q strings::from_char strings::concat ":2" strings::concat -> expected
+	result expected testing::assert_eq
+}
+
+test "json build full object" {
+	// Build {"name":"Alice","age":30}
+	"name" "Alice" json::kv -> kv1
+	"age" 30 json::kv_int -> kv2
+	kv1 kv2 json::join json::obj -> result
+
+	// Parse it back to verify
+	result "name" json::get_string -> found -> val
+	found testing::assert_true
+	val "Alice" testing::assert_eq
+
+	result "age" json::get_int -> found -> val
+	found testing::assert_true
+	val 30 testing::assert_eq
+}

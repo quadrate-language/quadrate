@@ -1,0 +1,429 @@
+/// HTTP module.
+/// Provides HTTP client and server functionality.
+/// Error codes: Ok=1 (success), specific errors start at 2
+
+// HTTP Status Codes - 1xx Informational
+pub const StatusContinue = 100
+pub const StatusSwitchingProtocols = 101
+pub const StatusProcessing = 102
+pub const StatusEarlyHints = 103
+
+// HTTP Status Codes - 2xx Success
+pub const StatusOK = 200
+pub const StatusCreated = 201
+pub const StatusAccepted = 202
+pub const StatusNonAuthoritativeInfo = 203
+pub const StatusNoContent = 204
+pub const StatusResetContent = 205
+pub const StatusPartialContent = 206
+pub const StatusMultiStatus = 207
+pub const StatusAlreadyReported = 208
+pub const StatusIMUsed = 226
+
+// HTTP Status Codes - 3xx Redirection
+pub const StatusMultipleChoices = 300
+pub const StatusMovedPermanently = 301
+pub const StatusFound = 302
+pub const StatusSeeOther = 303
+pub const StatusNotModified = 304
+pub const StatusUseProxy = 305
+pub const StatusTemporaryRedirect = 307
+pub const StatusPermanentRedirect = 308
+
+// HTTP Status Codes - 4xx Client Error
+pub const StatusBadRequest = 400
+pub const StatusUnauthorized = 401
+pub const StatusPaymentRequired = 402
+pub const StatusForbidden = 403
+pub const StatusNotFound = 404
+pub const StatusMethodNotAllowed = 405
+pub const StatusNotAcceptable = 406
+pub const StatusProxyAuthRequired = 407
+pub const StatusRequestTimeout = 408
+pub const StatusConflict = 409
+pub const StatusGone = 410
+pub const StatusLengthRequired = 411
+pub const StatusPreconditionFailed = 412
+pub const StatusPayloadTooLarge = 413
+pub const StatusURITooLong = 414
+pub const StatusUnsupportedMediaType = 415
+pub const StatusRangeNotSatisfiable = 416
+pub const StatusExpectationFailed = 417
+pub const StatusTeapot = 418
+pub const StatusMisdirectedRequest = 421
+pub const StatusUnprocessableEntity = 422
+pub const StatusLocked = 423
+pub const StatusFailedDependency = 424
+pub const StatusTooEarly = 425
+pub const StatusUpgradeRequired = 426
+pub const StatusPreconditionRequired = 428
+pub const StatusTooManyRequests = 429
+pub const StatusRequestHeaderFieldsTooLarge = 431
+pub const StatusUnavailableForLegalReasons = 451
+
+// HTTP Status Codes - 5xx Server Error
+pub const StatusInternalServerError = 500
+pub const StatusNotImplemented = 501
+pub const StatusBadGateway = 502
+pub const StatusServiceUnavailable = 503
+pub const StatusGatewayTimeout = 504
+pub const StatusHTTPVersionNotSupported = 505
+pub const StatusVariantAlsoNegotiates = 506
+pub const StatusInsufficientStorage = 507
+pub const StatusLoopDetected = 508
+pub const StatusNotExtended = 510
+pub const StatusNetworkAuthRequired = 511
+
+/// HTTP Response structure (for client)
+pub struct Response {
+	status: i64
+	headers: str
+	body: str
+}
+
+/// HTTP Context structure (for server handlers).
+/// Passed to route handlers, contains request data and response methods.
+/// Fields:
+///   method - GET, POST, PUT, DELETE, etc.
+///   path - /users/123 (path without query string)
+///   query - Raw query string (foo=bar&baz=qux)
+///   headers - Request headers
+///   body - Request body
+///   params - Path parameters as "key=val\nkey2=val2"
+///   _socket - Internal: client socket
+///   _responded - Internal: response sent flag
+pub struct Ctx {
+	method: str
+	path: str
+	query: str
+	headers: str
+	body: str
+	params: str
+	_socket: i64
+	_responded: i64
+}
+
+import "libhttp_static.a" as "http" {
+	/// Connection failed.
+	pub const ErrConnect = 2
+
+	/// TLS handshake failed.
+	pub const ErrTls = 3
+
+	/// Request timeout.
+	pub const ErrTimeout = 4
+
+	/// Response parse error.
+	pub const ErrParse = 5
+
+	/// Invalid URL format.
+	pub const ErrInvalidUrl = 6
+
+	/// Too many redirects.
+	pub const ErrRedirect = 7
+
+	/// Memory allocation failed.
+	pub const ErrMemory = 8
+
+	/// Send failed.
+	pub const ErrSend = 9
+
+	/// Receive failed.
+	pub const ErrReceive = 10
+
+	/// Create new HTTP request builder.
+	/// @param url str The request URL (http:// or https://)
+	/// @return req ptr Request object
+	/// @example "https://example.com" http::new -> req
+	pub fn new(url:str -- req:ptr)
+
+	/// Set request HTTP method.
+	/// @param req ptr Request object
+	/// @param method str HTTP method (GET, POST, PUT, DELETE, etc.)
+	/// @example req "POST" http::method
+	pub fn method(req:ptr method:str -- )
+
+	/// Add request header.
+	/// @param req ptr Request object
+	/// @param name str Header name
+	/// @param value str Header value
+	/// @example req "Content-Type" "application/json" http::header
+	pub fn header(req:ptr name:str value:str -- )
+
+	/// Set request body.
+	/// @param req ptr Request object
+	/// @param body str Request body content
+	/// @example req "{\"key\":\"value\"}" http::body
+	pub fn body(req:ptr body:str -- )
+
+	/// Set client certificate for mTLS (mutual TLS).
+	/// @param req ptr Request object
+	/// @param cert_path str Path to PEM client certificate file
+	/// @param key_path str Path to PEM client private key file
+	/// @example req "/path/client.crt" "/path/client.key" http::cert
+	pub fn cert(req:ptr cert_path:str key_path:str -- )
+
+	/// Execute HTTP request.
+	/// @param req ptr Request object
+	/// @return resp Response Response struct with status, headers, body
+	/// @example req http::send! -> resp  resp @status print
+	pub fn send(req:ptr -- resp:Response)!
+
+	/// Free request object (call after send).
+	/// @param req ptr Request object
+	/// @example req http::free_request
+	pub fn free_request(req:ptr -- )
+
+	/// Close and free response.
+	/// @param resp Response Response object
+	/// @example resp http::close
+	pub fn close(resp:Response -- )
+
+	/// Simple GET request.
+	/// @param url str The request URL
+	/// @return resp Response Response struct
+	/// @example "https://example.com" http::get! -> resp
+	pub fn get(url:str -- resp:Response)!
+
+	// ============================================================
+	// Server API (Gin-inspired)
+	// ============================================================
+
+	/// Server error codes
+	pub const ErrBind = 20
+	pub const ErrAccept = 21
+	pub const ErrParse = 22
+
+	/// Create new HTTP engine.
+	/// @return engine ptr Engine handle
+	/// @example http::engine -> e
+	pub fn engine( -- engine:ptr)
+
+	/// Register GET route.
+	/// @param engine ptr Engine
+	/// @param path str Route path. Supports:
+	///   - :param for path parameters (e.g., "/users/:id")
+	///   - /* for wildcard suffix (e.g., "/static/*" matches /static/anything)
+	/// @param handler ptr Handler function receiving Ctx
+	/// @example e "/" fn(c:Ctx -- ) { c 200 "Hello" http::string } http::GET
+	pub fn GET(engine:ptr path:str handler:ptr -- )
+
+	/// Register POST route.
+	/// @param engine ptr Engine
+	/// @param path str Route path
+	/// @param handler ptr Handler function
+	/// @example e "/api/users" fn(c:Ctx -- ) { ... } http::POST
+	pub fn POST(engine:ptr path:str handler:ptr -- )
+
+	/// Register PUT route.
+	/// @param engine ptr Engine
+	/// @param path str Route path
+	/// @param handler ptr Handler function
+	pub fn PUT(engine:ptr path:str handler:ptr -- )
+
+	/// Register DELETE route.
+	/// @param engine ptr Engine
+	/// @param path str Route path
+	/// @param handler ptr Handler function
+	pub fn DELETE(engine:ptr path:str handler:ptr -- )
+
+	/// Register handler for any HTTP method.
+	/// @param engine ptr Engine
+	/// @param path str Route path
+	/// @param handler ptr Handler function
+	pub fn ANY(engine:ptr path:str handler:ptr -- )
+
+	/// Add middleware to engine.
+	/// Middleware runs before route handlers on every request.
+	/// @param engine ptr Engine
+	/// @param middleware ptr Middleware function
+	/// @example e fn(c:Ctx -- ) { c "X-Server" "Quadrate" http::set_header } http::use
+	pub fn use(engine:ptr middleware:ptr -- )
+
+	/// Start server (blocking).
+	/// @param engine ptr Engine
+	/// @param addr str Address like ":8080" or "127.0.0.1:3000"
+	/// @error ErrBind Failed to bind to address
+	/// @example e ":8080" http::run!
+	pub fn run(engine:ptr addr:str -- )!
+
+	/// Handle a single request (non-blocking alternative to run).
+	/// Returns 0 if no request pending, 1 if request handled.
+	/// @param engine ptr Engine
+	/// @return handled i64 1 if request was handled, 0 otherwise
+	/// @example e http::handle_one -> handled
+	pub fn handle_one(engine:ptr -- handled:i64)
+
+	/// Stop the server.
+	/// @param engine ptr Engine
+	/// @example e http::stop
+	pub fn stop(engine:ptr -- )
+
+	/// Free engine resources.
+	/// @param engine ptr Engine
+	/// @example e http::free_engine
+	pub fn free_engine(engine:ptr -- )
+
+	// ============================================================
+	// Context Methods
+	// ============================================================
+
+	/// Get path parameter by name.
+	/// @param c Ctx Context
+	/// @param name str Parameter name (e.g., "id" for route "/users/:id")
+	/// @return value str Parameter value
+	/// @example c "id" http::param -> id
+	pub fn param(c:Ctx name:str -- value:str)
+
+	/// Get query parameter by name.
+	/// @param c Ctx Context
+	/// @param name str Parameter name
+	/// @return value str Parameter value (empty if not found)
+	/// @example c "page" http::query_param -> page
+	pub fn query_param(c:Ctx name:str -- value:str)
+
+	/// Get header value by name.
+	/// @param c Ctx Context
+	/// @param name str Header name (case-insensitive)
+	/// @return value str Header value (empty if not found)
+	/// @example c "Content-Type" http::get_header -> ct
+	pub fn get_header(c:Ctx name:str -- value:str)
+
+	/// Send plain text response.
+	/// @param c Ctx Context
+	/// @param status i64 HTTP status code
+	/// @param body str Response body
+	/// @example c 200 "Hello, World!" http::string
+	pub fn string(c:Ctx status:i64 body:str -- )
+
+	/// Send JSON response (sets Content-Type: application/json).
+	/// @param c Ctx Context
+	/// @param status i64 HTTP status code
+	/// @param body str JSON body
+	/// @example c 200 "{\"ok\":true}" http::json
+	pub fn json(c:Ctx status:i64 body:str -- )
+
+	/// Send HTML response (sets Content-Type: text/html).
+	/// @param c Ctx Context
+	/// @param status i64 HTTP status code
+	/// @param body str HTML body
+	/// @example c 200 "<h1>Hello</h1>" http::html
+	pub fn html(c:Ctx status:i64 body:str -- )
+
+	/// Set response header.
+	/// Must be called before sending response body.
+	/// @param c Ctx Context
+	/// @param name str Header name
+	/// @param value str Header value
+	/// @example c "X-Custom" "value" http::set_header
+	pub fn set_header(c:Ctx name:str value:str -- )
+
+	/// Abort request processing and send error response.
+	/// Prevents further middleware/handlers from running.
+	/// @param c Ctx Context
+	/// @param status i64 HTTP status code
+	/// @param body str Error message
+	/// @example c 401 "Unauthorized" http::abort
+	pub fn abort(c:Ctx status:i64 body:str -- )
+
+	/// Check if response has already been sent.
+	/// @param c Ctx Context
+	/// @return sent i64 1 if sent, 0 otherwise
+	/// @example c http::is_responded -> sent
+	pub fn is_responded(c:Ctx -- sent:i64)
+
+	// ============================================================
+	// Route Groups
+	// ============================================================
+
+	/// Create route group with prefix.
+	/// @param engine ptr Engine
+	/// @param prefix str Path prefix (e.g., "/api")
+	/// @return group ptr Group handle
+	/// @example e "/api" http::group -> api
+	pub fn group(engine:ptr prefix:str -- group:ptr)
+
+	/// Add middleware to group.
+	/// @param group ptr Group handle
+	/// @param middleware ptr Middleware function
+	/// @example api fn(c:Ctx -- ) { ... } http::group_use
+	pub fn group_use(group:ptr middleware:ptr -- )
+
+	/// Register GET on group.
+	/// @param group ptr Group handle
+	/// @param path str Route path (relative to group prefix)
+	/// @param handler ptr Handler function
+	/// @example api "/users" fn(c:Ctx -- ) { ... } http::group_GET
+	pub fn group_GET(group:ptr path:str handler:ptr -- )
+
+	/// Register POST on group.
+	pub fn group_POST(group:ptr path:str handler:ptr -- )
+
+	/// Register PUT on group.
+	pub fn group_PUT(group:ptr path:str handler:ptr -- )
+
+	/// Register DELETE on group.
+	pub fn group_DELETE(group:ptr path:str handler:ptr -- )
+
+	// ============================================================
+	// Static File Serving
+	// ============================================================
+
+	/// Serve a single file from the filesystem.
+	/// Automatically detects MIME type from file extension.
+	/// Returns 404 if file not found, 403 for path traversal attempts.
+	/// @param c Ctx Context
+	/// @param filepath str Path to file on filesystem
+	/// @example c "/var/www/index.html" http::static_file
+	pub fn static_file(c:Ctx filepath:str -- )
+
+	/// Serve files from a directory.
+	/// Maps URL paths to filesystem paths. Use with a wildcard route (/*).
+	/// Automatically serves index.html for directory requests.
+	/// Returns 404 if file not found, 403 for path traversal attempts.
+	/// @param c Ctx Context
+	/// @param prefix str URL prefix to strip (e.g., "/static")
+	/// @param fs_path str Filesystem directory path (e.g., "./public")
+	/// @example
+	/// // Serve files from ./public at /static/*
+	/// fn handle_static(c:ptr -- ) {
+	///     -> c
+	///     c "/static" "./public" http::static
+	/// }
+	/// e "/static/*" &handle_static http::GET
+	pub fn static(c:Ctx prefix:str fs_path:str -- )
+
+	// ============================================================
+	// Server-Sent Events (SSE)
+	// ============================================================
+
+	/// Start an SSE (Server-Sent Events) stream.
+	/// Sends SSE headers and keeps the connection open for streaming events.
+	/// Must be called before sse_send or sse_event.
+	/// @param c Ctx Context
+	/// @example c http::sse_start
+	pub fn sse_start(c:Ctx -- )
+
+	/// Send a data-only SSE event.
+	/// The data is sent as "data: <content>\n\n".
+	/// @param c Ctx Context
+	/// @param data str Event data (typically JSON)
+	/// @example c "{\"count\": 1}" http::sse_send
+	pub fn sse_send(c:Ctx data:str -- )
+
+	/// Send a named SSE event.
+	/// The event is sent as "event: <name>\ndata: <content>\n\n".
+	/// Clients can listen for specific event types with addEventListener.
+	/// @param c Ctx Context
+	/// @param name str Event name
+	/// @param data str Event data (typically JSON)
+	/// @example c "progress" "{\"percent\": 50}" http::sse_event
+	pub fn sse_event(c:Ctx name:str data:str -- )
+
+	/// End the SSE stream.
+	/// Marks the stream as complete. The connection will be closed
+	/// after the handler returns.
+	/// @param c Ctx Context
+	/// @example c http::sse_end
+	pub fn sse_end(c:Ctx -- )
+}

@@ -1,7 +1,7 @@
 #include <cstring>
-#include <qc/ast.h>
-#include <qc/ast_node.h>
-#include <qc/ast_printer.h>
+#include <quadrate/qc/ast.h>
+#include <quadrate/qc/ast_node.h>
+#include <quadrate/qc/ast_printer.h>
 #include <unit-check/uc.h>
 
 // Empty and Whitespace Inputs

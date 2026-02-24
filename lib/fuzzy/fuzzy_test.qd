@@ -1,0 +1,116 @@
+// Unit tests for the fuzzy module
+use fuzzy
+use testing
+
+test "distance identical strings" {
+	"hello" "hello" fuzzy::distance 0 testing::assert_eq
+	"" "" fuzzy::distance 0 testing::assert_eq
+	"a" "a" fuzzy::distance 0 testing::assert_eq
+}
+
+test "distance empty strings" {
+	"" "abc" fuzzy::distance 3 testing::assert_eq
+	"abc" "" fuzzy::distance 3 testing::assert_eq
+}
+
+test "distance single char" {
+	"a" "b" fuzzy::distance 1 testing::assert_eq
+	"a" "ab" fuzzy::distance 1 testing::assert_eq
+	"ab" "a" fuzzy::distance 1 testing::assert_eq
+}
+
+test "distance classic examples" {
+	"kitten" "sitting" fuzzy::distance 3 testing::assert_eq
+	"saturday" "sunday" fuzzy::distance 3 testing::assert_eq
+	"flaw" "lawn" fuzzy::distance 2 testing::assert_eq
+}
+
+test "distance substitution" {
+	"abc" "adc" fuzzy::distance 1 testing::assert_eq
+	"abc" "axc" fuzzy::distance 1 testing::assert_eq
+	"abc" "xyz" fuzzy::distance 3 testing::assert_eq
+}
+
+test "distance insertion" {
+	"ac" "abc" fuzzy::distance 1 testing::assert_eq
+	"abc" "abcd" fuzzy::distance 1 testing::assert_eq
+	"a" "abc" fuzzy::distance 2 testing::assert_eq
+}
+
+test "distance deletion" {
+	"abc" "ac" fuzzy::distance 1 testing::assert_eq
+	"abcd" "abc" fuzzy::distance 1 testing::assert_eq
+	"abc" "a" fuzzy::distance 2 testing::assert_eq
+}
+
+test "similarity identical" {
+	"hello" "hello" fuzzy::similarity 1.0 == testing::assert_true
+	"a" "a" fuzzy::similarity 1.0 == testing::assert_true
+}
+
+test "similarity empty" {
+	"" "" fuzzy::similarity 1.0 == testing::assert_true
+}
+
+test "similarity completely different" {
+	"abc" "xyz" fuzzy::similarity 0.0 == testing::assert_true
+}
+
+test "similarity partial" {
+	"hello" "hallo" fuzzy::similarity -> sim
+	sim 0.7 > testing::assert_true
+	sim 0.9 < testing::assert_true
+}
+
+test "matches threshold" {
+	"hello" "hallo" 0.7 fuzzy::matches 1 testing::assert_eq
+	"hello" "hallo" 0.9 fuzzy::matches 0 testing::assert_eq
+	"abc" "xyz" 0.5 fuzzy::matches 0 testing::assert_eq
+	"test" "test" 1.0 fuzzy::matches 1 testing::assert_eq
+}
+
+test "score exact match" {
+	"sin" "sin" fuzzy::score 1000 testing::assert_eq
+}
+
+test "score prefix match" {
+	"read" "read_file" fuzzy::score -> s
+	s 500 >= testing::assert_true
+}
+
+test "score substring match" {
+	"file" "read_file" fuzzy::score -> s
+	s 300 >= testing::assert_true
+	s 500 < testing::assert_true
+}
+
+test "score word boundary match" {
+	"rf" "read_file" fuzzy::score 200 testing::assert_eq
+}
+
+test "score no match" {
+	"xyz" "abc" fuzzy::score 0 testing::assert_eq
+}
+
+test "score case insensitive" {
+	"SIN" "sin" fuzzy::score 1000 testing::assert_eq
+	"READ" "read_file" fuzzy::score -> s
+	s 500 >= testing::assert_true
+}
+
+test "starts_with_ci" {
+	"Hello" "hel" fuzzy::starts_with_ci 1 testing::assert_eq
+	"HELLO" "hel" fuzzy::starts_with_ci 1 testing::assert_eq
+	"hello" "HEL" fuzzy::starts_with_ci 1 testing::assert_eq
+	"hello" "xyz" fuzzy::starts_with_ci 0 testing::assert_eq
+}
+
+test "contains_ci" {
+	"Hello World" "wor" fuzzy::contains_ci 1 testing::assert_eq
+	"HELLO" "ell" fuzzy::contains_ci 1 testing::assert_eq
+	"hello" "xyz" fuzzy::contains_ci 0 testing::assert_eq
+}
+
+test "word boundary multiple" {
+	"rfl" "read_file_line" fuzzy::score 200 testing::assert_eq
+}

@@ -40,20 +40,23 @@ if [ ! -x "$QUADC" ]; then
     exit 1
 fi
 
-# Build include flags for external modules (net, tls are external)
+# Build include flags for modules (net is stdlib, tls is in-tree or external)
 INCLUDE_FLAGS=""
 if [ -n "${QUADRATE_EXTERNAL_MODULES:-}" ]; then
     INCLUDE_FLAGS="-I $QUADRATE_EXTERNAL_MODULES"
 fi
 
-# Check if net and tls modules are available
-if [ -z "$INCLUDE_FLAGS" ]; then
-    echo -e "${RED}SKIP${NC}: QUADRATE_EXTERNAL_MODULES not set (net/tls are external modules)"
-    exit 0
+# Check if tls module is available (in-tree at lib/tls/ or via QUADRATE_EXTERNAL_MODULES)
+TLS_FOUND=0
+if [ -d "$PROJECT_ROOT/lib/tls" ] && ls "$PROJECT_ROOT/lib/tls"/*.qd >/dev/null 2>&1; then
+    INCLUDE_FLAGS="-I $PROJECT_ROOT/lib"
+    TLS_FOUND=1
+elif [ -n "${QUADRATE_EXTERNAL_MODULES:-}" ] && [ -f "$QUADRATE_EXTERNAL_MODULES/tls/tls.qd" ]; then
+    TLS_FOUND=1
 fi
 
-if [ ! -f "$QUADRATE_EXTERNAL_MODULES/net/module.qd" ] || [ ! -f "$QUADRATE_EXTERNAL_MODULES/tls/module.qd" ]; then
-    echo -e "${RED}SKIP${NC}: net or tls module not found in $QUADRATE_EXTERNAL_MODULES"
+if [ "$TLS_FOUND" -eq 0 ]; then
+    echo -e "${RED}SKIP${NC}: tls module not found (not in lib/tls/ or QUADRATE_EXTERNAL_MODULES)"
     exit 0
 fi
 

@@ -3,18 +3,5 @@
 # Tests in tests/qd/<module_name>/ will use -I flag to find these modules
 # If clone fails, tests for that module are skipped
 
-
-log https://git.sr.ht/~klahr/qdlog
 compress https://git.sr.ht/~klahr/qdcompress
-tls https://git.sr.ht/~klahr/qdtls
-http https://git.sr.ht/~klahr/qdhttp
 sqlite https://git.sr.ht/~klahr/qdsqlite
-json https://git.sr.ht/~klahr/qdjson
-regex https://git.sr.ht/~klahr/qdregex
-crypto https://git.sr.ht/~klahr/qdcrypto
-uri https://git.sr.ht/~klahr/qduri
-hex https://git.sr.ht/~klahr/qdhex
-base64 https://git.sr.ht/~klahr/qdbase64
-uuid https://git.sr.ht/~klahr/qduuid
-
-

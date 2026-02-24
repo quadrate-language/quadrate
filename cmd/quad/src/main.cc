@@ -4,7 +4,7 @@
 #include <filesystem>
 #include <fstream>
 #include <iostream>
-#include <qc/colors.h>
+#include <quadrate/qc/colors.h>
 #include <string>
 #include <vector>
 

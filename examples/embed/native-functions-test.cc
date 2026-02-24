@@ -1,4 +1,4 @@
-#include <qd/qd.h>
+#include <quadrate/qd/qd.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <time.h>

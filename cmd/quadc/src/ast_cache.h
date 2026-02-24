@@ -2,8 +2,8 @@
 #define QUADC_AST_CACHE_H
 
 #include <memory>
-#include <qc/ast.h>
-#include <qc/semantic_validator.h>
+#include <quadrate/qc/ast.h>
+#include <quadrate/qc/semantic_validator.h>
 #include <string>
 #include <unordered_map>
 #include <vector>

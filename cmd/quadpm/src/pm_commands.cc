@@ -228,14 +228,14 @@ bool compileCsources(const std::string& moduleDir, const std::string& moduleName
 	}
 	// Module's src directory (for platform headers)
 	includePaths.push_back("-I" + srcDir);
-	if (fs::exists("dist/include/qdrt")) {
+	if (fs::exists("dist/include/quadrate/rt")) {
 		includePaths.push_back("-Idist/include");
 	}
 	const char* root_env = std::getenv("QUADRATE_ROOT");
 	if (root_env) {
 		fs::path rootPath(root_env);
 		fs::path includePath = rootPath / "dist" / "include";
-		if (fs::exists(includePath / "qdrt")) {
+		if (fs::exists(includePath / "quadrate" / "rt")) {
 			includePaths.push_back("-I" + includePath.string());
 		}
 	}
@@ -243,7 +243,7 @@ bool compileCsources(const std::string& moduleDir, const std::string& moduleName
 	if (libDir_env) {
 		fs::path libPath(libDir_env);
 		fs::path includePath = libPath.parent_path() / "include";
-		if (fs::exists(includePath / "qdrt")) {
+		if (fs::exists(includePath / "quadrate" / "rt")) {
 			includePaths.push_back("-I" + includePath.string());
 		}
 	}

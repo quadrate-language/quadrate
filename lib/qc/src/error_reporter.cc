@@ -1,7 +1,7 @@
 #include "source_utils.h"
 #include <iostream>
-#include <qc/colors.h>
-#include <qc/error_reporter.h>
+#include <quadrate/qc/colors.h>
+#include <quadrate/qc/error_reporter.h>
 #include <string.h>
 #include <u8t/scanner.h>
 

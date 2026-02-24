@@ -1,0 +1,377 @@
+/// String manipulation functions.
+/// Error codes: Ok=1 (success), specific errors start at 2
+
+/// Error: Index out of bounds.
+pub const ErrOutOfBounds = 2
+/// Error: Memory allocation failed.
+pub const ErrAlloc = 3
+/// Error: Invalid argument.
+pub const ErrInvalidArg = 4
+
+import "libstrings.a" as "strings" {
+	/// Get string length in bytes.
+	/// @param str str Input string
+	/// @return len i64 Length in bytes
+	/// @example "hello" strings::len print  // 5
+	pub fn len(str:str -- len:i64)
+
+	/// Concatenate two strings.
+	/// @param str1 str First string
+	/// @param str2 str Second string
+	/// @return result str Combined string
+	/// @example "hello" " world" strings::concat print  // "hello world"
+	pub fn concat(str1:str str2:str -- result:str)
+
+	/// Check if string contains substring.
+	/// @param str str String to search in
+	/// @param needle str Substring to find
+	/// @return result i64 1 if found, 0 otherwise
+	/// @example "hello" "ell" strings::contains print  // 1
+	pub fn contains(str:str needle:str -- result:i64)
+
+	/// Check if string starts with prefix.
+	/// @param str str String to check
+	/// @param prefix str Prefix to match
+	/// @return result i64 1 if matches, 0 otherwise
+	/// @example "hello" "hel" strings::starts_with print  // 1
+	pub fn starts_with(str:str prefix:str -- result:i64)
+
+	/// Check if string ends with suffix.
+	/// @param str str String to check
+	/// @param suffix str Suffix to match
+	/// @return result i64 1 if matches, 0 otherwise
+	/// @example "hello" "lo" strings::ends_with print  // 1
+	pub fn ends_with(str:str suffix:str -- result:i64)
+
+	/// Find first occurrence of substring.
+	/// @param haystack str String to search in
+	/// @param needle str Substring to find
+	/// @return index i64 Index of first match, -1 if not found
+	/// @example "hello" "ll" strings::index_of print  // 2
+	pub fn index_of(haystack:str needle:str -- index:i64)
+
+	/// Find substring starting from position.
+	/// @param haystack str String to search in
+	/// @param needle str Substring to find
+	/// @param start i64 Starting position
+	/// @return index i64 Index of match, -1 if not found
+	/// @example "hello hello" "hello" 1 strings::index_of_from print  // 6
+	pub fn index_of_from(haystack:str needle:str start:i64 -- index:i64)
+
+	/// Convert string to uppercase.
+	/// @param str str Input string
+	/// @return result str Uppercase string
+	/// @example "hello" strings::upper print  // "HELLO"
+	pub fn upper(str:str -- result:str)
+
+	/// Convert string to lowercase.
+	/// @param str str Input string
+	/// @return result str Lowercase string
+	/// @example "HELLO" strings::lower print  // "hello"
+	pub fn lower(str:str -- result:str)
+
+	/// Remove leading and trailing whitespace.
+	/// @param str str Input string
+	/// @return result str Trimmed string
+	/// @example "  hello  " strings::trim print  // "hello"
+	pub fn trim(str:str -- result:str)
+
+	/// Extract substring.
+	/// @param str str Source string
+	/// @param start i64 Starting index
+	/// @param length i64 Number of characters
+	/// @return result str Extracted substring
+	/// @error ErrOutOfBounds Index out of bounds
+	/// @example "hello" 1 3 strings::substring! print  // "ell"
+	pub fn substring(str:str start:i64 length:i64 -- result:str)!
+
+	/// Replace all occurrences of substring.
+	/// @param str str Source string
+	/// @param old str Substring to replace
+	/// @param new str Replacement string
+	/// @return result str String with replacements
+	/// @error ErrAlloc Memory allocation failed
+	/// @example "hello" "l" "L" strings::replace! print  // "heLLo"
+	pub fn replace(str:str old:str new:str -- result:str)!
+
+	/// Get character code at index.
+	/// @param str str Input string
+	/// @param index i64 Character position
+	/// @return char_code i64 ASCII/UTF-8 byte value
+	/// @error ErrOutOfBounds Index out of bounds
+	/// @example "hello" 0 strings::char_at! print  // 104 ('h')
+	pub fn char_at(str:str index:i64 -- char_code:i64)!
+
+	/// Create string from character code.
+	/// @param char_code i64 ASCII/UTF-8 byte value
+	/// @return str str Single character string
+	/// @example 65 strings::from_char print  // "A"
+	pub fn from_char(char_code:i64 -- str:str)
+
+	/// Split string by delimiter.
+	/// @param str str String to split
+	/// @param delim str Delimiter string
+	/// @return parts ptr Array of string parts
+	/// @return count i64 Number of parts
+	/// @error ErrAlloc Memory allocation failed
+	/// @example "a,b,c" "," strings::split!  // parts=["a","b","c"], count=3
+	pub fn split(str:str delim:str -- parts:ptr count:i64)!
+
+	/// Compare two strings lexicographically.
+	/// @param str1 str First string
+	/// @param str2 str Second string
+	/// @return result i64 <0 if str1<str2, 0 if equal, >0 if str1>str2
+	/// @example "abc" "abd" strings::compare print  // -1
+	pub fn compare(str1:str str2:str -- result:i64)
+
+	/// Sort array of strings in ascending alphabetical order.
+	/// @param arr ptr Array of string pointers
+	/// @param count i64 Number of elements
+	/// @example entries count strings::sort
+	pub fn sort(arr:ptr count:i64 -- )
+
+	/// Sort array of strings in descending alphabetical order.
+	/// @param arr ptr Array of string pointers
+	/// @param count i64 Number of elements
+	/// @example entries count strings::sort_desc
+	pub fn sort_desc(arr:ptr count:i64 -- )
+
+	/// Convert C string pointer to Quadrate string.
+	/// @param ptr ptr Pointer to null-terminated C string
+	/// @return str str Quadrate string
+	/// @example entries 0 mem::get_ptr strings::from_ptr print
+	pub fn from_ptr(ptr:ptr -- str:str)
+
+	/// Join array of strings with delimiter.
+	/// @param parts ptr Array of string pointers
+	/// @param count i64 Number of strings
+	/// @param delim str Delimiter string
+	/// @return result str Joined string
+	/// @error ErrAlloc Memory allocation failed
+	/// @example parts count "/" strings::join! -> path
+	pub fn join(parts:ptr count:i64 delim:str -- result:str)!
+
+	/// Repeat string n times.
+	/// @param str str Input string
+	/// @param n i64 Number of repetitions
+	/// @return result str Repeated string
+	/// @example "ab" 3 strings::repeat print  // "ababab"
+	pub fn repeat(str:str n:i64 -- result:str)
+
+	/// Reverse a string.
+	/// @param str str Input string
+	/// @return result str Reversed string
+	/// @example "hello" strings::reverse print  // "olleh"
+	pub fn reverse(str:str -- result:str)
+
+	/// Remove leading whitespace.
+	/// @param str str Input string
+	/// @return result str String with leading whitespace removed
+	/// @example "  hello" strings::trim_left print  // "hello"
+	pub fn trim_left(str:str -- result:str)
+
+	/// Remove trailing whitespace.
+	/// @param str str Input string
+	/// @return result str String with trailing whitespace removed
+	/// @example "hello  " strings::trim_right print  // "hello"
+	pub fn trim_right(str:str -- result:str)
+
+	/// Count occurrences of substring.
+	/// @param haystack str String to search in
+	/// @param needle str Substring to count
+	/// @return count i64 Number of occurrences
+	/// @example "ababa" "aba" strings::count print  // 1 (non-overlapping)
+	pub fn count(haystack:str needle:str -- count:i64)
+
+	/// Find last occurrence of substring.
+	/// @param haystack str String to search in
+	/// @param needle str Substring to find
+	/// @return index i64 Index of last match, -1 if not found
+	/// @example "hello hello" "hello" strings::last_index_of print  // 6
+	pub fn last_index_of(haystack:str needle:str -- index:i64)
+
+	/// Check if string is empty.
+	/// @param s str Input string
+	/// @return result i64 1 if empty, 0 otherwise
+	/// @example "" strings::is_empty print  // 1
+	pub fn is_empty(s:str -- result:i64)
+
+	/// Check if string is empty or only whitespace.
+	/// @param s str Input string
+	/// @return result i64 1 if blank, 0 otherwise
+	/// @example "  " strings::is_blank print  // 1
+	pub fn is_blank(s:str -- result:i64)
+
+	/// Case-insensitive string comparison.
+	/// @param a str First string
+	/// @param b str Second string
+	/// @return result i64 1 if equal (ignoring case), 0 otherwise
+	/// @example "Hello" "HELLO" strings::equals_ignore_case print  // 1
+	pub fn equals_ignore_case(a:str b:str -- result:i64)
+
+	/// Left-pad string to target length.
+	/// @param s str Input string
+	/// @param len i64 Target length
+	/// @param ch str Padding character
+	/// @return result str Padded string
+	/// @example "42" 5 "0" strings::pad_left print  // "00042"
+	pub fn pad_left(s:str len:i64 ch:str -- result:str)
+
+	/// Right-pad string to target length.
+	/// @param s str Input string
+	/// @param len i64 Target length
+	/// @param ch str Padding character
+	/// @return result str Padded string
+	/// @example "hi" 5 "." strings::pad_right print  // "hi..."
+	pub fn pad_right(s:str len:i64 ch:str -- result:str)
+
+	/// Center string with padding on both sides.
+	/// @param s str Input string
+	/// @param len i64 Target length
+	/// @param ch str Padding character
+	/// @return result str Centered string
+	/// @example "hi" 6 "-" strings::center print  // "--hi--"
+	pub fn center(s:str len:i64 ch:str -- result:str)
+
+	/// Capitalize first character, lowercase rest.
+	/// @param s str Input string
+	/// @return result str Capitalized string
+	/// @example "hELLO" strings::capitalize print  // "Hello"
+	pub fn capitalize(s:str -- result:str)
+
+	/// Title case - capitalize first letter of each word.
+	/// @param s str Input string
+	/// @return result str Title-cased string
+	/// @example "hello world" strings::title print  // "Hello World"
+	pub fn title(s:str -- result:str)
+
+	/// Remove prefix if present.
+	/// @param s str Input string
+	/// @param prefix str Prefix to remove
+	/// @return result str String without prefix
+	/// @example "hello" "hel" strings::trim_prefix print  // "lo"
+	pub fn trim_prefix(s:str prefix:str -- result:str)
+
+	/// Remove suffix if present.
+	/// @param s str Input string
+	/// @param suffix str Suffix to remove
+	/// @return result str String without suffix
+	/// @example "hello" "lo" strings::trim_suffix print  // "hel"
+	pub fn trim_suffix(s:str suffix:str -- result:str)
+
+	/// Replace first occurrence only.
+	/// @param s str Source string
+	/// @param old str Substring to replace
+	/// @param new str Replacement string
+	/// @return result str String with first occurrence replaced
+	/// @example "abab" "ab" "X" strings::replace_first print  // "Xab"
+	pub fn replace_first(s:str old:str new:str -- result:str)
+
+	/// Insert string at position.
+	/// @param s str Original string
+	/// @param pos i64 Insert position
+	/// @param ins str String to insert
+	/// @return result str String with insertion
+	/// @example "hello" 2 "XX" strings::insert print  // "heXXllo"
+	pub fn insert(s:str pos:i64 ins:str -- result:str)
+
+	/// Remove range from string.
+	/// @param s str Input string
+	/// @param start i64 Start position
+	/// @param len i64 Number of characters to remove
+	/// @return result str String with range removed
+	/// @example "hello" 1 3 strings::remove_range print  // "ho"
+	pub fn remove_range(s:str start:i64 len:i64 -- result:str)
+
+	/// Truncate to max length with optional suffix.
+	/// @param s str Input string
+	/// @param max i64 Maximum length
+	/// @param suffix str Suffix to append when truncated (e.g. "...")
+	/// @return result str Truncated string
+	/// @example "hello world" 8 "..." strings::truncate print  // "hello..."
+	pub fn truncate(s:str max:i64 suffix:str -- result:str)
+
+	/// Split string by newlines.
+	/// @param s str Input string
+	/// @return arr ptr Array of line strings
+	/// @return count i64 Number of lines
+	/// @error ErrAlloc Memory allocation failed
+	/// @example "a\nb\nc" strings::lines!  // ["a", "b", "c"]
+	pub fn lines(s:str -- arr:ptr count:i64)!
+
+	/// Split string by whitespace.
+	/// @param s str Input string
+	/// @return arr ptr Array of word strings
+	/// @return count i64 Number of words
+	/// @error ErrAlloc Memory allocation failed
+	/// @example "hello  world" strings::words!  // ["hello", "world"]
+	pub fn words(s:str -- arr:ptr count:i64)!
+
+	/// Split into at most n parts.
+	/// @param s str String to split
+	/// @param delim str Delimiter
+	/// @param n i64 Maximum number of parts
+	/// @return parts ptr Array of string parts
+	/// @return count i64 Number of parts
+	/// @error ErrAlloc Memory allocation failed
+	/// @example "a:b:c:d" ":" 2 strings::split_n!  // ["a", "b:c:d"]
+	pub fn split_n(s:str delim:str n:i64 -- parts:ptr count:i64)!
+
+	/// Check if string contains only digits.
+	/// @param s str Input string
+	/// @return result i64 1 if numeric, 0 otherwise
+	/// @example "12345" strings::is_numeric print  // 1
+	pub fn is_numeric(s:str -- result:i64)
+
+	/// Check if string contains only letters.
+	/// @param s str Input string
+	/// @return result i64 1 if alphabetic, 0 otherwise
+	/// @example "Hello" strings::is_alpha print  // 1
+	pub fn is_alpha(s:str -- result:i64)
+
+	/// Check if string contains only letters and digits.
+	/// @param s str Input string
+	/// @return result i64 1 if alphanumeric, 0 otherwise
+	/// @example "Hello123" strings::is_alphanumeric print  // 1
+	pub fn is_alphanumeric(s:str -- result:i64)
+
+	/// Check if all characters are ASCII (0-127).
+	/// @param s str Input string
+	/// @return result i64 1 if all ASCII, 0 otherwise
+	/// @example "hello" strings::is_ascii print  // 1
+	pub fn is_ascii(s:str -- result:i64)
+
+	/// Check if all letters are lowercase.
+	/// @param s str Input string
+	/// @return result i64 1 if lowercase, 0 otherwise
+	/// @example "hello" strings::is_lowercase print  // 1
+	pub fn is_lowercase(s:str -- result:i64)
+
+	/// Check if all letters are uppercase.
+	/// @param s str Input string
+	/// @return result i64 1 if uppercase, 0 otherwise
+	/// @example "HELLO" strings::is_uppercase print  // 1
+	pub fn is_uppercase(s:str -- result:i64)
+
+	/// Count UTF-8 codepoints (characters, not bytes).
+	/// @param s str Input string
+	/// @return count i64 Number of UTF-8 codepoints
+	/// @example "héllo" strings::char_count print  // 5
+	pub fn char_count(s:str -- count:i64)
+
+	/// Slice with negative index support (Python-style).
+	/// @param s str Input string
+	/// @param start i64 Start index (negative counts from end)
+	/// @param end i64 End index (negative counts from end)
+	/// @return result str Sliced substring
+	/// @example "hello" 1 -1 strings::slice print  // "ell"
+	pub fn slice(s:str start:i64 end:i64 -- result:str)
+
+	/// Format strings into columns.
+	/// @param arr ptr Array of strings
+	/// @param count i64 Number of strings
+	/// @param widths ptr Array of column widths
+	/// @param num_cols i64 Number of columns
+	/// @return result str Formatted column output
+	pub fn column(arr:ptr count:i64 widths:ptr num_cols:i64 -- result:str)
+}

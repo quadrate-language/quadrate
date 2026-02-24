@@ -1,0 +1,199 @@
+// Integration tests for SSE (Server-Sent Events)
+// These tests verify actual SSE output format and behavior
+//
+// Run with: quad test sse_integration_test.qd
+// Or manually: quad run sse_integration_test.qd
+// Then in another terminal: curl -N http://localhost:19876/test/<name>
+
+use http
+use strconv
+use time
+
+// ============================================================
+// Test Handlers
+// ============================================================
+
+/// Basic SSE: single data event
+fn test_single_event(c:ptr -- ) {
+	-> c
+	c http::sse_start
+	c "hello world" http::sse_send
+	c http::sse_end
+}
+
+/// Multiple data events in sequence
+fn test_multiple_events(c:ptr -- ) {
+	-> c
+	c http::sse_start
+	c "first" http::sse_send
+	c "second" http::sse_send
+	c "third" http::sse_send
+	c http::sse_end
+}
+
+/// Named events with event: prefix
+fn test_named_events(c:ptr -- ) {
+	-> c
+	c http::sse_start
+	c "greeting" "hello" http::sse_event
+	c "farewell" "goodbye" http::sse_event
+	c http::sse_end
+}
+
+/// Mix of data-only and named events
+fn test_mixed_events(c:ptr -- ) {
+	-> c
+	c http::sse_start
+	c "data only" http::sse_send
+	c "status" "ok" http::sse_event
+	c "more data" http::sse_send
+	c "done" "true" http::sse_event
+	c http::sse_end
+}
+
+/// SSE with for loop
+fn test_loop_events(c:ptr -- ) {
+	-> c
+	c http::sse_start
+	1 6 1 for i {
+		c i strconv::itoa http::sse_send
+	}
+	c http::sse_end
+}
+
+/// SSE with delays (streaming behavior)
+fn test_streaming(c:ptr -- ) {
+	-> c
+	c http::sse_start
+	1 4 1 for i {
+		c i strconv::itoa http::sse_send
+		100000000 time::sleep  // 100ms delay
+	}
+	c "complete" "true" http::sse_event
+	c http::sse_end
+}
+
+/// Empty SSE stream (start + end, no events)
+fn test_empty_stream(c:ptr -- ) {
+	-> c
+	c http::sse_start
+	c http::sse_end
+}
+
+/// JSON data in SSE
+fn test_json_data(c:ptr -- ) {
+	-> c
+	c http::sse_start
+	c "{'type':'init','id':1}" http::sse_send
+	c "{'type':'update','value':42}" http::sse_send
+	c "complete" "{'success':true}" http::sse_event
+	c http::sse_end
+}
+
+/// Long data payload
+fn test_long_payload(c:ptr -- ) {
+	-> c
+	c http::sse_start
+	c "This is a longer message that contains more data than a typical short event. It tests that the SSE implementation handles larger payloads correctly without truncation or corruption." http::sse_send
+	c http::sse_end
+}
+
+/// Special characters in data
+fn test_special_chars(c:ptr -- ) {
+	-> c
+	c http::sse_start
+	c "hello:world" http::sse_send
+	c "key=value" http::sse_send
+	c "spaces   and	tabs" http::sse_send
+	c http::sse_end
+}
+
+/// Counter pattern (common use case)
+fn test_counter(c:ptr -- ) {
+	-> c
+	c http::sse_start
+	0 -> count
+	loop {
+		count 5 >= if { break }
+		c "count" count strconv::itoa http::sse_event
+		count 1 + -> count
+		50000000 time::sleep  // 50ms
+	}
+	c "done" "true" http::sse_event
+	c http::sse_end
+}
+
+/// Progress updates pattern
+fn test_progress(c:ptr -- ) {
+	-> c
+	c http::sse_start
+	c "progress" "0" http::sse_event
+	c "progress" "25" http::sse_event
+	c "progress" "50" http::sse_event
+	c "progress" "75" http::sse_event
+	c "progress" "100" http::sse_event
+	c "complete" "true" http::sse_event
+	c http::sse_end
+}
+
+/// Root handler with test menu
+fn handle_root(c:ptr -- ) {
+	-> c
+	c 200 "SSE Integration Tests
+
+Available endpoints:
+  /test/single       - Single data event
+  /test/multiple     - Multiple data events
+  /test/named        - Named events (event: prefix)
+  /test/mixed        - Mixed data and named events
+  /test/loop         - Events in a for loop
+  /test/streaming    - Events with delays
+  /test/empty        - Empty stream (no events)
+  /test/json         - JSON payloads
+  /test/long         - Long payload
+  /test/special      - Special characters
+  /test/counter      - Counter pattern
+  /test/progress     - Progress updates
+
+Test with: curl -N http://localhost:19877/test/<name>
+" http::string
+}
+
+fn main() {
+	"SSE Integration Test Server" print nl
+	"============================" print nl
+	"Running on http://localhost:19877" print nl
+	"Test with: curl -N http://localhost:19877/test/<name>" print nl
+	nl
+	"Available tests:" print nl
+	"  single, multiple, named, mixed, loop, streaming," print nl
+	"  empty, json, long, special, counter, progress" print nl
+	nl
+
+	http::engine -> e
+	defer {
+		e http::free_engine
+	}
+
+	// Root handler
+	e "/" &handle_root http::GET
+
+	// Test group
+	e "/test" http::group -> tests
+
+	// Register all test handlers
+	tests "/single" &test_single_event http::group_GET
+	tests "/multiple" &test_multiple_events http::group_GET
+	tests "/named" &test_named_events http::group_GET
+	tests "/mixed" &test_mixed_events http::group_GET
+	tests "/loop" &test_loop_events http::group_GET
+	tests "/streaming" &test_streaming http::group_GET
+	tests "/empty" &test_empty_stream http::group_GET
+	tests "/json" &test_json_data http::group_GET
+	tests "/long" &test_long_payload http::group_GET
+	tests "/special" &test_special_chars http::group_GET
+	tests "/counter" &test_counter http::group_GET
+	tests "/progress" &test_progress http::group_GET
+
+	e ":19877" http::run!
+}

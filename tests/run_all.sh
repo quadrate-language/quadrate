@@ -211,6 +211,26 @@ if [[ -f "$EXTERNAL_MODULES_FILE" ]]; then
     done < "$EXTERNAL_MODULES_FILE"
 fi
 
+# Build in-tree external modules (moved from external repos into lib/)
+for intree_dir in "$PROJECT_ROOT"/lib/*/; do
+    module_name=$(basename "$intree_dir")
+    # Skip meson-built libraries (have meson.build) and non-module directories
+    [[ -f "$intree_dir/meson.build" ]] && continue
+    ls "$intree_dir"/*.qd >/dev/null 2>&1 || continue
+
+    # Build native module if it has src/ directory
+    if [[ -d "$intree_dir/src" ]]; then
+        build_log="$TEMP_DIR/build_${module_name}.log"
+        if ! (cd "$intree_dir" && QUADRATE_PATH="$PROJECT_ROOT/lib" QUADRATE_LIBDIR="$QUADRATE_LIBDIR_DEFAULT" "$QUADPM" build >"$build_log" 2>&1); then
+            echo "Warning: Failed to build in-tree module $module_name:" >&2
+            head -20 "$build_log" >&2
+        fi
+    fi
+
+    # Record path for include flag resolution
+    echo "$module_name $PROJECT_ROOT/lib" >> "$EXTERNAL_MODULES_PATHS_FILE"
+done
+
 # Helper function to get include flags for a test file
 get_include_flags() {
     local test_file="$1"
@@ -1463,11 +1483,25 @@ run_stdlib_tests() {
     local output
     local exit_code
 
-    # Run quad test ./... from lib directory to find all *_test.qd files
-    output=$(cd "$PROJECT_ROOT/lib" && \
+    # Find test files only in stdlib modules (directories with meson.build)
+    # This excludes in-tree external modules that don't have meson.build
+    local test_files=""
+    while IFS= read -r -d '' f; do
+        test_files+=" $f"
+    done < <(find "$PROJECT_ROOT/lib" -name '*_test.qd' -print0 | while IFS= read -r -d '' f; do
+        dir=$(dirname "$f")
+        while [[ "$dir" != "$PROJECT_ROOT/lib" && "$dir" != "/" ]]; do
+            if [[ -f "$dir/meson.build" ]]; then
+                printf '%s\0' "$f"
+                break
+            fi
+            dir=$(dirname "$dir")
+        done
+    done)
+    output=$(cd "$PROJECT_ROOT" && \
         QUADRATE_ROOT="$QUADRATE_ROOT_DEFAULT" \
         QUADRATE_LIBDIR="$QUADRATE_LIBDIR_DEFAULT" \
-        "$quad" test ./... 2>&1)
+        "$quad" test $test_files 2>&1)
     exit_code=$?
 
     # Count passed/failed from output

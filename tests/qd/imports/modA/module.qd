@@ -1,5 +1,5 @@
 // Module A - imports libstdqd as "io"
-import "libqdfmt.a" as "fmt" {
+import "libfmt.a" as "fmt" {
 	fn printf(format:str -- )
 }
 

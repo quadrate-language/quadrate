@@ -1,5 +1,5 @@
 // Import test - complex format strings
-import "libqdfmt.a" as "fmt" {
+import "libfmt.a" as "fmt" {
 	fn printf(format:str -- )
 }
 

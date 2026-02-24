@@ -2,7 +2,7 @@
 #include <cctype>
 #include <cstdlib>
 #include <fstream>
-#include <qc/formatter.h>
+#include <quadrate/qc/formatter.h>
 #include <sstream>
 #include <unistd.h>
 #include <vector>
