@@ -33,8 +33,9 @@ if quadpm_exe.found()
 	)
 endif
 
-# Embed examples tests (via run_all.sh)
+# Embed API tests (standalone executables linking against libqd)
 if get_option('build_examples')
+	subdir('embed')
 	test('embed_tests',
 		find_program('run_all.sh'),
 		args: ['--suite', 'embed'],

@@ -1,23 +1,17 @@
-# Embedding API
+# Embedding Example
 
-Demonstrates embedding Quadrate in C/C++ applications.
+Demonstrates embedding Quadrate in a C/C++ application.
 
 ## Build
 
 ```bash
-meson compile -C build/debug examples/embed/embed
+make examples
 ```
 
 ## Files
 
-- `main.cc` - Basic embedding
-- `multi-module-test.cc` - Multiple modules
-- `native-functions-test.cc` - Registering C functions
-- `incremental-test.cc` - Incremental compilation
+- `main.cc` - Basic embedding: module creation, script compilation, execution, stdlib usage
 
-## Features
+## Tests
 
-- Module creation
-- Script compilation
-- Native function registration
-- Code execution
+Embedding API tests are in `tests/embed/`. See `tests/embed/` for test coverage of native function registration, typed signatures, userdata, and stdlib interop.

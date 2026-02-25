@@ -26,8 +26,8 @@ int main(void) {
 	qd_add_script(utils, "fn double(x:i64 -- result:i64) { 2 * }");
 
 	// Register native C functions
-	qd_register_function(utils, "get_timestamp", native_get_timestamp, NULL);
-	qd_register_function(utils, "random", native_random, NULL);
+	qd_register_function(utils, "get_timestamp", "( -- t:i64)", native_get_timestamp, NULL);
+	qd_register_function(utils, "random", "( -- v:i64)", native_random, NULL);
 
 	qd_build(utils);
 

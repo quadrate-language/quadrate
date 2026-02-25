@@ -11,7 +11,7 @@ Provides a simplified C API for embedding Quadrate scripts in applications. Hand
 - `qd_create_context()` - Create execution context
 - `qd_get_module()` - Get or create a module
 - `qd_add_script()` - Add source code to module
-- `qd_register_function()` - Register native C function with userdata
+- `qd_register_function()` - Register native C function with type signature
 - `qd_build()` - Compile module
 - `qd_execute()` - Run Quadrate code
 

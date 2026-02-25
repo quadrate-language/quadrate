@@ -224,6 +224,7 @@ struct qd_module {
 	struct NativeFunction {
 		qd_native_fn fn;
 		void* userdata;
+		std::string signature; // Optional type signature, e.g. "( -- v:f64)"
 	};
 	std::unordered_map<std::string, NativeFunction> native_functions;
 	std::unordered_map<std::string, std::string> symbol_map; // function_name -> full_symbol_name
@@ -282,11 +283,11 @@ void qd_add_script(qd_module* mod, const char* script) {
 }
 
 void qd_register_function(qd_module* mod, const char* name,
-                           qd_native_fn fn, void* userdata) {
-	if (!mod || !name || !fn) {
+                           const char* signature, qd_native_fn fn, void* userdata) {
+	if (!mod || !name || !fn || !signature) {
 		return;
 	}
-	mod->native_functions[name] = {fn, userdata};
+	mod->native_functions[name] = {fn, userdata, signature};
 }
 
 void qd_set_warning_min_line(qd_module* mod, size_t line) {
@@ -342,6 +343,49 @@ void qd_build(qd_module* mod) {
 		fwrite(combined_source.c_str(), 1, combined_source.size(), f);
 		fclose(f);
 
+		// Generate synthetic .qd module files for other modules that have
+		// typed native functions. This allows the semantic validator and LLVM
+		// generator to resolve type signatures for host-registered callbacks.
+		{
+			auto ctx_it = g_context_modules.find(mod->owner_ctx);
+			if (ctx_it != g_context_modules.end()) {
+				for (const auto& [modName, otherMod] : ctx_it->second) {
+					if (modName == mod->name) continue;
+					if (otherMod->native_functions.empty()) continue;
+
+					// Check if any functions have type signatures
+					bool hasTypedFunctions = false;
+					for (const auto& [fname, nf] : otherMod->native_functions) {
+						if (!nf.signature.empty()) {
+							hasTypedFunctions = true;
+							break;
+						}
+					}
+					if (!hasTypedFunctions) continue;
+
+					// Create synthetic module directory and .qd file
+					fs::path synth_dir = mod->temp_dir / modName;
+					fs::create_directories(synth_dir);
+					fs::path synth_file = synth_dir / (modName + ".qd");
+
+					FILE* sf = fopen(synth_file.c_str(), "w");
+					if (!sf) continue;
+
+					// Use libqd<name>.a naming to trigger usr_<ns>_<func> mangling
+					// in the LLVM generator (matches the C stubs generated below)
+					fprintf(sf, "import \"libqd%s.a\" as \"%s\" {\n",
+						modName.c_str(), modName.c_str());
+					for (const auto& [fname, nf] : otherMod->native_functions) {
+						if (!nf.signature.empty()) {
+							fprintf(sf, "\tpub fn %s%s\n", fname.c_str(), nf.signature.c_str());
+						}
+					}
+					fprintf(sf, "}\n");
+					fclose(sf);
+				}
+			}
+		}
+
 		// Parse the source
 		Qd::Ast ast;
 		Qd::IAstNode* root = ast.generate(combined_source.c_str(), false, source_file.string().c_str());
@@ -355,6 +399,8 @@ void qd_build(qd_module* mod) {
 		if (mod->warning_min_line > 0) {
 			validator.setWarningMinLine(mod->warning_min_line);
 		}
+		// Add temp dir as include path so validator finds synthetic module files
+		validator.setIncludePaths({mod->temp_dir.string()});
 		size_t error_count = validator.validate(root, source_file.string().c_str(), true, false);
 		if (error_count > 0) {
 			fprintf(stderr, "qd_build: Semantic validation failed with %zu error(s)\n", error_count);
@@ -382,6 +428,10 @@ void qd_build(qd_module* mod) {
 
 				// Find and load the module
 				std::string modulePath = findModuleFile(moduleName);
+				if (modulePath.empty()) {
+					// Check for synthetic module file (from typed native functions)
+					modulePath = findFirstQdFile((mod->temp_dir / moduleName).string());
+				}
 				if (modulePath.empty()) {
 					// Module not found - semantic validator should have caught this
 					return;
@@ -426,39 +476,29 @@ void qd_build(qd_module* mod) {
 		};
 		collectAndLoadModules(root);
 
-		// Generate C stubs for native-only modules (modules with registered
-		// native functions but no .qd source file). Compiled QD code emits
-		// external calls to symbols like usr_sat_get; the stubs trampoline
-		// through qd_call_native so dlopen can resolve them at load time.
+		// Generate C stubs for modules with registered native functions.
+		// Compiled QD code emits external calls to symbols like usr_sat_get;
+		// the stubs trampoline through qd_call_native so dlopen can resolve
+		// them at load time. This covers both:
+		// - Native-only modules (no .qd source, untyped functions)
+		// - Typed modules (synthetic .qd file generated above)
 		std::vector<fs::path> stub_objects;
 		{
-			// Build set of modules that were actually loaded from .qd files.
-			// Note: processedModules includes modules where findModuleFile
-			// returned empty, so use moduleASTs which only has successful loads.
-			std::unordered_set<std::string> loadedModules;
-			for (const auto& ast_pair : moduleASTs) {
-				loadedModules.insert(ast_pair.first);
-			}
-
-			// Walk use statements to find modules that were NOT loaded from
-			// .qd files (native-only modules).
-			std::unordered_set<std::string> nativeOnlyModules;
-			std::function<void(Qd::IAstNode*)> findNativeOnly = [&](Qd::IAstNode* node) {
+			// Collect all used module names from USE statements
+			std::unordered_set<std::string> usedModules;
+			std::function<void(Qd::IAstNode*)> collectUsedModules = [&](Qd::IAstNode* node) {
 				if (!node) return;
 				if (node->type() == Qd::IAstNode::Type::USE_STATEMENT) {
 					auto* useNode = static_cast<Qd::AstNodeUse*>(node);
-					std::string modName = useNode->module();
-					if (!loadedModules.count(modName)) {
-						nativeOnlyModules.insert(modName);
-					}
+					usedModules.insert(useNode->module());
 				}
 				for (size_t i = 0; i < node->childCount(); i++) {
-					findNativeOnly(node->child(i));
+					collectUsedModules(node->child(i));
 				}
 			};
-			findNativeOnly(root);
+			collectUsedModules(root);
 
-			for (const auto& nativeModName : nativeOnlyModules) {
+			for (const auto& nativeModName : usedModules) {
 				// Check if this module exists in the owner context and has native functions
 				if (!mod->owner_ctx) continue;
 				auto ctx_it = g_context_modules.find(mod->owner_ctx);

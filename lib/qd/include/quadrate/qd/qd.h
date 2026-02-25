@@ -68,15 +68,18 @@ typedef int (*qd_native_fn)(qd_context* ctx, void* userdata);
  * @brief Register a native C function with the module
  *
  * Registers a C function that can be called from Quadrate code.
- * The function receives the execution context and a user-defined data pointer.
+ * The stack effect signature tells the compiler what types the function
+ * consumes and produces, enabling type-checked interop with the stdlib.
  *
  * @param mod Target module
  * @param name Function name as it appears in Quadrate code
+ * @param signature Stack effect signature in Quadrate syntax,
+ *                  e.g. "( -- v:f64)", "(x:f64 -- s:str)", "(a:i64 b:i64 -- r:i64)"
  * @param fn Function pointer (must not be NULL)
  * @param userdata User-defined data pointer passed to fn on each call
  */
 void qd_register_function(qd_module* mod, const char* name,
-                           qd_native_fn fn, void* userdata);
+                           const char* signature, qd_native_fn fn, void* userdata);
 
 /**
  * @brief Compile all scripts added to the module

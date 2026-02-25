@@ -910,6 +910,8 @@ run_embed_tests() {
         "multi-module-test:Math module:"
         "native-functions-test:Current timestamp:"
         "incremental-test:Building all at once"
+        "typed-native-test:All typed native tests passed"
+        "embed-comprehensive-test:All comprehensive tests passed"
         "ffi:Hello, World!"
     )
 
@@ -1670,7 +1672,7 @@ list_all_tests() {
     echo ""
 
     echo "Embed Tests (suite: embed):"
-    for test in embed multi-module-test native-functions-test incremental-test ffi; do
+    for test in embed multi-module-test native-functions-test incremental-test typed-native-test embed-comprehensive-test ffi; do
         echo "  $test"
     done
     echo ""

@@ -97,13 +97,13 @@ The real power of embedding comes from exposing your application's functions to 
 
 ### Basic Native Function
 
-Native functions take a `qd_context*` and a `void* userdata`, and return `int`:
+Native functions take a `qd_context*` and a `void* userdata`, and return `int`. When registering, you provide a stack effect signature so the compiler can type-check calls:
 
 ```c
 #include <quadrate/qd/qd.h>
 #include <quadrate/rt/runtime.h>
 
-// Native function: pushes current time onto stack
+// Native function: pushes current time onto stack ( -- t:i64)
 int native_get_time(qd_context* ctx, void* userdata) {
     time_t now = time(NULL);
     return qd_push_i(ctx, (int64_t)now);
@@ -113,8 +113,8 @@ int main(void) {
     qd_context* ctx = qd_create_context(1024);
     qd_module* utils = qd_get_module(ctx, "utils");
 
-    // Register the native function
-    qd_register_function(utils, "get_time", native_get_time, NULL);
+    // Register with stack effect signature
+    qd_register_function(utils, "get_time", "( -- t:i64)", native_get_time, NULL);
 
     qd_build(utils);
 
@@ -124,6 +124,14 @@ int main(void) {
     qd_free_context(ctx);
     return 0;
 }
+```
+
+The signature string uses Quadrate stack effect syntax: `(inputs -- outputs)`. Parameter names are documentation-only; the types are what matter:
+
+```c
+qd_register_function(mod, "add", "(a:i64 b:i64 -- sum:i64)", my_add, NULL);
+qd_register_function(mod, "greet", "(name:str -- msg:str)", my_greet, NULL);
+qd_register_function(mod, "reset", "( -- )", my_reset, NULL);
 ```
 
 ### Reading Arguments from the Stack
@@ -152,13 +160,13 @@ The `qd_stack_element_t` structure:
 
 ```c
 typedef struct {
-    qd_stack_type type;  // QD_STACK_TYPE_INT, _FLOAT, _STR, _PTR
     union {
         int64_t i;       // Integer value
         double f;        // Float value
         qd_string_t* s;  // String value (reference counted)
         void* p;         // Pointer value
     } value;
+    qd_stack_type type;  // QD_STACK_TYPE_INT, _FLOAT, _STR, _PTR
 } qd_stack_element_t;
 ```
 
@@ -184,7 +192,7 @@ int get_score(qd_context* ctx, void* userdata) {
 }
 
 Player player = { .score = 42, .name = "Alice" };
-qd_register_function(mod, "get_score", get_score, &player);
+qd_register_function(mod, "get_score", "( -- score:i64)", get_score, &player);
 ```
 
 For data that should be accessible from any native function regardless of which module it belongs to, use context-level userdata:
@@ -206,14 +214,25 @@ You can create modules that consist entirely of registered native functions, wit
 ```c
 // Register a pure-native module
 qd_module* sensors = qd_get_module(ctx, "sensors");
-qd_register_function(sensors, "temperature", read_temp, &hw);
-qd_register_function(sensors, "pressure", read_pressure, &hw);
+qd_register_function(sensors, "temperature", "( -- v:f64)", read_temp, &hw);
+qd_register_function(sensors, "pressure", "( -- v:f64)", read_pressure, &hw);
 // No qd_add_script or qd_build needed for native-only modules
 
 // Another module can use it normally
 qd_module* app = qd_get_module(ctx, "app");
 qd_add_script(app, "use sensors\nfn check() { sensors::temperature print nl }");
 qd_build(app);
+```
+
+Type signatures enable seamless interop with the Quadrate standard library:
+
+```quadrate
+use sensors
+use strconv
+
+fn telemetry( -- ) {
+    sensors::temperature strconv::format_float print nl  // type-checked!
+}
 ```
 
 ---
@@ -454,15 +473,15 @@ void scripting_init(GameState* game) {
     // Create the 'engine' module — pass game state as userdata to each function
     qd_module* engine = qd_get_module(script_ctx, "engine");
 
-    qd_register_function(engine, "self", script_self, game);
-    qd_register_function(engine, "get_pos", script_get_pos, game);
-    qd_register_function(engine, "get_health", script_get_health, game);
-    qd_register_function(engine, "move", script_move, game);
-    qd_register_function(engine, "damage", script_damage, game);
-    qd_register_function(engine, "spawn", script_spawn, game);
-    qd_register_function(engine, "delta_time", script_delta_time, game);
-    qd_register_function(engine, "distance", script_distance, game);
-    qd_register_function(engine, "log", script_log, game);
+    qd_register_function(engine, "self", "( -- id:i64)", script_self, game);
+    qd_register_function(engine, "get_pos", "(id:i64 -- x:f64 y:f64)", script_get_pos, game);
+    qd_register_function(engine, "get_health", "(id:i64 -- health:i64)", script_get_health, game);
+    qd_register_function(engine, "move", "(id:i64 dx:f64 dy:f64 -- )", script_move, game);
+    qd_register_function(engine, "damage", "(id:i64 amount:i64 -- )", script_damage, game);
+    qd_register_function(engine, "spawn", "(x:f64 y:f64 health:i64 -- id:i64)", script_spawn, game);
+    qd_register_function(engine, "delta_time", "( -- dt:f64)", script_delta_time, game);
+    qd_register_function(engine, "distance", "(x1:f64 y1:f64 x2:f64 y2:f64 -- dist:f64)", script_distance, game);
+    qd_register_function(engine, "log", "(msg:str -- )", script_log, game);
 
     qd_build(engine);
 }
@@ -677,7 +696,7 @@ clean:
 |----------|-------------|
 | `qd_get_module(ctx, name)` | Get or create module |
 | `qd_add_script(mod, source)` | Add Quadrate source code |
-| `qd_register_function(mod, name, fn, userdata)` | Register native function |
+| `qd_register_function(mod, name, sig, fn, userdata)` | Register native function with type signature |
 | `qd_build(mod)` | Compile the module |
 | `qd_is_compiled(mod)` | Check if compilation succeeded |
 
