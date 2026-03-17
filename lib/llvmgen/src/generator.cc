@@ -2522,7 +2522,11 @@ namespace Qd {
 #endif
 
 		std::string error;
+#if LLVM_VERSION_MAJOR >= 21
+		auto target = llvm::TargetRegistry::lookupTarget(targetTriple, error);
+#else
 		auto target = llvm::TargetRegistry::lookupTarget(targetTripleStr, error);
+#endif
 		if (!target) {
 			std::cerr << "Error: " << error << std::endl;
 			return false;
