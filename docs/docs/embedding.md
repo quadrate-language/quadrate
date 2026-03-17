@@ -787,3 +787,10 @@ int native_might_fail(qd_context* ctx, void* userdata) {
     return qd_push_i(ctx, result);
 }
 ```
+
+## Language Bindings
+
+Wrappers around the C embedding API are available for other languages:
+
+- **Go**: [go-quadrate](https://git.sr.ht/~klahr/go-quadrate)
+- **Python**: [python-quadrate](https://git.sr.ht/~klahr/python-quadrate)
