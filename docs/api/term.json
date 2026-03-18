@@ -3,6 +3,11 @@
   "description": "Terminal colors and formatting using ANSI escape codes. Use these constants to colorize terminal output. @example term::Green print \"PASS\" print term::Reset print nl",
   "constants": [
     {
+      "name": "AltScreen",
+      "value": "\"\\x1b[?1049h\"",
+      "description": "Enter alternate screen buffer."
+    },
+    {
       "name": "BgBlack",
       "value": "\"\\x1b[40m\"",
       "description": "Black background."
@@ -98,6 +103,56 @@
       "description": "Bright yellow foreground."
     },
     {
+      "name": "ClearLineToBegin",
+      "value": "\"\\x1b[1K\"",
+      "description": "Clear from cursor to beginning of line."
+    },
+    {
+      "name": "ClearLineToEnd",
+      "value": "\"\\x1b[0K\"",
+      "description": "Clear from cursor to end of line."
+    },
+    {
+      "name": "ClearLine",
+      "value": "\"\\x1b[2K\"",
+      "description": "Clear entire line."
+    },
+    {
+      "name": "ClearToBegin",
+      "value": "\"\\x1b[1J\"",
+      "description": "Clear from cursor to beginning of screen."
+    },
+    {
+      "name": "ClearToEnd",
+      "value": "\"\\x1b[0J\"",
+      "description": "Clear from cursor to end of screen."
+    },
+    {
+      "name": "Clear",
+      "value": "\"\\x1b[2J\"",
+      "description": "Clear entire screen."
+    },
+    {
+      "name": "CursorDown",
+      "value": "\"\\x1b[1B\"",
+      "description": "Move cursor down one line."
+    },
+    {
+      "name": "CursorLeft",
+      "value": "\"\\x1b[1D\"",
+      "description": "Move cursor left one column."
+    },
+    {
+      "name": "CursorRight",
+      "value": "\"\\x1b[1C\"",
+      "description": "Move cursor right one column."
+    },
+    {
+      "name": "CursorUp",
+      "value": "\"\\x1b[1A\"",
+      "description": "Move cursor up one line."
+    },
+    {
       "name": "Cyan",
       "value": "\"\\x1b[36m\"",
       "description": "Cyan foreground."
@@ -113,6 +168,16 @@
       "description": "Green foreground."
     },
     {
+      "name": "HideCursor",
+      "value": "\"\\x1b[?25l\"",
+      "description": "Hide cursor."
+    },
+    {
+      "name": "Home",
+      "value": "\"\\x1b[H\"",
+      "description": "Move cursor to home position (1, 1)."
+    },
+    {
       "name": "Italic",
       "value": "\"\\x1b[3m\"",
       "description": "Italic text."
@@ -123,6 +188,11 @@
       "description": "Magenta foreground."
     },
     {
+      "name": "MainScreen",
+      "value": "\"\\x1b[?1049l\"",
+      "description": "Exit alternate screen buffer."
+    },
+    {
       "name": "Red",
       "value": "\"\\x1b[31m\"",
       "description": "Red foreground."
@@ -131,6 +201,31 @@
       "name": "Reset",
       "value": "\"\\x1b[0m\"",
       "description": "Reset all formatting."
+    },
+    {
+      "name": "RestoreCursor",
+      "value": "\"\\x1b[u\"",
+      "description": "Restore cursor position."
+    },
+    {
+      "name": "SaveCursor",
+      "value": "\"\\x1b[s\"",
+      "description": "Save cursor position."
+    },
+    {
+      "name": "ScrollDown",
+      "value": "\"\\x1b[1T\"",
+      "description": "Scroll down one line."
+    },
+    {
+      "name": "ScrollUp",
+      "value": "\"\\x1b[1S\"",
+      "description": "Scroll up one line."
+    },
+    {
+      "name": "ShowCursor",
+      "value": "\"\\x1b[?25h\"",
+      "description": "Show cursor."
     },
     {
       "name": "Underline",
@@ -152,6 +247,95 @@
 
   ],
   "functions": [
-
+    {
+      "name": "bg256",
+      "signature": "(n:i64 -- s:str)",
+      "failable": false,
+      "description": "Set background to 256-color palette value (0-255).",
+      "params": [{"name": "n", "type": "i64", "description": "Color index (0-255)"}],
+      "returns": [{"name": "s", "type": "str", "description": "ANSI escape sequence"}],
+      "errors": [],
+      "examples": ["21 term::bg256 print \"Blue BG\" print term::Reset print nl"]
+    },
+    {
+      "name": "bg_rgb",
+      "signature": "(r:i64 g:i64 b:i64 -- s:str)",
+      "failable": false,
+      "description": "Set background to RGB color.",
+      "params": [{"name": "r", "type": "i64", "description": "Red component (0-255)"}, {"name": "g", "type": "i64", "description": "Green component (0-255)"}, {"name": "b", "type": "i64", "description": "Blue component (0-255)"}],
+      "returns": [{"name": "s", "type": "str", "description": "ANSI escape sequence"}],
+      "errors": [],
+      "examples": ["0 0 128 term::bg_rgb print \"Navy BG\" print term::Reset print nl"]
+    },
+    {
+      "name": "down",
+      "signature": "(n:i64 -- s:str)",
+      "failable": false,
+      "description": "Move cursor down by n lines.",
+      "params": [{"name": "n", "type": "i64", "description": "Number of lines"}],
+      "returns": [{"name": "s", "type": "str", "description": "ANSI escape sequence"}],
+      "errors": [],
+      "examples": ["5 term::down print"]
+    },
+    {
+      "name": "fg256",
+      "signature": "(n:i64 -- s:str)",
+      "failable": false,
+      "description": "Set foreground to 256-color palette value (0-255).",
+      "params": [{"name": "n", "type": "i64", "description": "Color index (0-255)"}],
+      "returns": [{"name": "s", "type": "str", "description": "ANSI escape sequence"}],
+      "errors": [],
+      "examples": ["196 term::fg256 print \"Red\" print term::Reset print nl"]
+    },
+    {
+      "name": "goto",
+      "signature": "(row:i64 col:i64 -- s:str)",
+      "failable": false,
+      "description": "Move cursor to specific position (1-indexed).",
+      "params": [{"name": "row", "type": "i64", "description": "Row number (1-based)"}, {"name": "col", "type": "i64", "description": "Column number (1-based)"}],
+      "returns": [{"name": "s", "type": "str", "description": "ANSI escape sequence"}],
+      "errors": [],
+      "examples": ["10 5 term::goto print"]
+    },
+    {
+      "name": "left",
+      "signature": "(n:i64 -- s:str)",
+      "failable": false,
+      "description": "Move cursor left by n columns.",
+      "params": [{"name": "n", "type": "i64", "description": "Number of columns"}],
+      "returns": [{"name": "s", "type": "str", "description": "ANSI escape sequence"}],
+      "errors": [],
+      "examples": ["10 term::left print"]
+    },
+    {
+      "name": "rgb",
+      "signature": "(r:i64 g:i64 b:i64 -- s:str)",
+      "failable": false,
+      "description": "Set foreground to RGB color.",
+      "params": [{"name": "r", "type": "i64", "description": "Red component (0-255)"}, {"name": "g", "type": "i64", "description": "Green component (0-255)"}, {"name": "b", "type": "i64", "description": "Blue component (0-255)"}],
+      "returns": [{"name": "s", "type": "str", "description": "ANSI escape sequence"}],
+      "errors": [],
+      "examples": ["255 128 0 term::rgb print \"Orange\" print term::Reset print nl"]
+    },
+    {
+      "name": "right",
+      "signature": "(n:i64 -- s:str)",
+      "failable": false,
+      "description": "Move cursor right by n columns.",
+      "params": [{"name": "n", "type": "i64", "description": "Number of columns"}],
+      "returns": [{"name": "s", "type": "str", "description": "ANSI escape sequence"}],
+      "errors": [],
+      "examples": ["10 term::right print"]
+    },
+    {
+      "name": "up",
+      "signature": "(n:i64 -- s:str)",
+      "failable": false,
+      "description": "Move cursor up by n lines.",
+      "params": [{"name": "n", "type": "i64", "description": "Number of lines"}],
+      "returns": [{"name": "s", "type": "str", "description": "ANSI escape sequence"}],
+      "errors": [],
+      "examples": ["5 term::up print"]
+    }
   ]
 }

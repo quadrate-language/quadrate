@@ -73,6 +73,36 @@
   ],
   "functions": [
     {
+      "name": "chdir",
+      "signature": "(path:str -- )",
+      "failable": true,
+      "description": "Change the current working directory.",
+      "params": [{"name": "path", "type": "str", "description": "Directory path"}],
+      "returns": [],
+      "errors": [{"code": "ErrNotFound", "description": "Directory not found"}, {"code": "ErrPermission", "description": "Permission denied"}, {"code": "ErrNotDirectory", "description": "Path is not a directory"}],
+      "examples": ["\"/tmp\" os::chdir!"]
+    },
+    {
+      "name": "chmod",
+      "signature": "(path:str mode:i64 -- )",
+      "failable": true,
+      "description": "Change file permissions. Mode is specified as Unix permission bits (e.g., 0o644, 0o755).",
+      "params": [{"name": "path", "type": "str", "description": "File or directory path"}, {"name": "mode", "type": "i64", "description": "Permission mode (e.g., 420 for 0o644)"}],
+      "returns": [],
+      "errors": [{"code": "ErrNotFound", "description": "File not found"}, {"code": "ErrPermission", "description": "Permission denied"}],
+      "examples": ["\"/tmp/script.sh\" 0o755 os::chmod!"]
+    },
+    {
+      "name": "chown",
+      "signature": "(path:str uid:i64 gid:i64 -- )",
+      "failable": true,
+      "description": "Change file owner and group. Use -1 for uid or gid to leave unchanged.",
+      "params": [{"name": "path", "type": "str", "description": "File or directory path"}, {"name": "uid", "type": "i64", "description": "User ID (-1 to not change)"}, {"name": "gid", "type": "i64", "description": "Group ID (-1 to not change)"}],
+      "returns": [],
+      "errors": [{"code": "ErrNotFound", "description": "File not found"}, {"code": "ErrPermission", "description": "Permission denied (usually requires root)"}],
+      "examples": ["\"/tmp/myfile\" 1000 1000 os::chown!"]
+    },
+    {
       "name": "copy",
       "signature": "(srcpath:str dstpath:str -- )",
       "failable": true,
@@ -143,6 +173,16 @@
       "examples": ["\"HOME\" os::getenv -> home"]
     },
     {
+      "name": "getgid",
+      "signature": "( -- gid:i64)",
+      "failable": false,
+      "description": "Get the current group ID.",
+      "params": [],
+      "returns": [{"name": "gid", "type": "i64", "description": "Real group ID of the calling process"}],
+      "errors": [],
+      "examples": ["os::getgid print"]
+    },
+    {
       "name": "getpid",
       "signature": "( -- pid:i64)",
       "failable": false,
@@ -153,6 +193,16 @@
       "examples": ["os::getpid print nl"]
     },
     {
+      "name": "getuid",
+      "signature": "( -- uid:i64)",
+      "failable": false,
+      "description": "Get the current user ID.",
+      "params": [],
+      "returns": [{"name": "uid", "type": "i64", "description": "Real user ID of the calling process"}],
+      "errors": [],
+      "examples": ["os::getuid print"]
+    },
+    {
       "name": "glob",
       "signature": "(pattern:str -- entries:ptr count:i64)",
       "failable": true,
@@ -161,6 +211,16 @@
       "returns": [{"name": "entries", "type": "ptr", "description": "Array of matching paths"}, {"name": "count", "type": "i64", "description": "Number of matches"}],
       "errors": [],
       "examples": ["\"*.qd\" os::glob! -> count -> entries"]
+    },
+    {
+      "name": "hostname",
+      "signature": "( -- hostname:str)",
+      "failable": true,
+      "description": "Get the system hostname.",
+      "params": [],
+      "returns": [{"name": "hostname", "type": "str", "description": "Hostname of the current system"}],
+      "errors": [{"code": "ErrIo", "description": "Failed to get hostname"}],
+      "examples": ["os::hostname! print"]
     },
     {
       "name": "is_dir",
@@ -181,6 +241,16 @@
       "returns": [{"name": "is_file", "type": "i64", "description": "1 if regular file, 0 otherwise"}],
       "errors": [],
       "examples": ["\"/etc/passwd\" os::is_file print  // 1"]
+    },
+    {
+      "name": "is_symlink",
+      "signature": "(path:str -- is_symlink:i64)",
+      "failable": false,
+      "description": "Check if path is a symbolic link. Does not follow the link to check if the target exists.",
+      "params": [{"name": "path", "type": "str", "description": "Path to check"}],
+      "returns": [{"name": "is_symlink", "type": "i64", "description": "1 if symbolic link, 0 otherwise"}],
+      "errors": [],
+      "examples": ["\"/tmp/mylink\" os::is_symlink print"]
     },
     {
       "name": "list",
@@ -223,6 +293,16 @@
       "examples": ["\"ls -la\" fn (line:str -- ) { print nl } os::popen! -> code"]
     },
     {
+      "name": "readlink",
+      "signature": "(path:str -- target:str)",
+      "failable": true,
+      "description": "Read the target of a symbolic link.",
+      "params": [{"name": "path", "type": "str", "description": "Path to the symbolic link"}],
+      "returns": [{"name": "target", "type": "str", "description": "Path that the link points to"}],
+      "errors": [{"code": "ErrNotFound", "description": "Link not found"}, {"code": "ErrInvalidArg", "description": "Path is not a symbolic link"}],
+      "examples": ["\"/tmp/mylink\" os::readlink! -> target"]
+    },
+    {
       "name": "rename",
       "signature": "(oldpath:str newpath:str -- )",
       "failable": true,
@@ -253,6 +333,16 @@
       "examples": ["\"MY_VAR\" \"hello\" os::setenv"]
     },
     {
+      "name": "symlink",
+      "signature": "(target:str linkpath:str -- )",
+      "failable": true,
+      "description": "Create a symbolic link.",
+      "params": [{"name": "target", "type": "str", "description": "Path that the link points to"}, {"name": "linkpath", "type": "str", "description": "Path where the link will be created"}],
+      "returns": [],
+      "errors": [{"code": "ErrExists", "description": "Link path already exists"}, {"code": "ErrPermission", "description": "Permission denied"}],
+      "examples": ["\"/usr/bin/python3\" \"/tmp/python\" os::symlink!"]
+    },
+    {
       "name": "system",
       "signature": "(cmd:str -- exitcode:i64)",
       "failable": false,
@@ -261,6 +351,16 @@
       "returns": [{"name": "exitcode", "type": "i64", "description": "Command exit status"}],
       "errors": [],
       "examples": ["\"ls -la\" os::system -> code"]
+    },
+    {
+      "name": "unsetenv",
+      "signature": "(name:str -- )",
+      "failable": false,
+      "description": "Unset environment variable.",
+      "params": [{"name": "name", "type": "str", "description": "Variable name to remove"}],
+      "returns": [],
+      "errors": [],
+      "examples": ["\"MY_VAR\" os::unsetenv"]
     },
     {
       "name": "walk",

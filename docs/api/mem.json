@@ -18,6 +18,16 @@
   ],
   "functions": [
     {
+      "name": "alloc_aligned",
+      "signature": "(alignment:i64 bytes:i64 -- address:ptr)",
+      "failable": true,
+      "description": "Allocate aligned memory. The returned pointer is aligned to the specified boundary. Use standard mem::free to deallocate.",
+      "params": [{"name": "alignment", "type": "i64", "description": "Alignment boundary (must be power of 2, e.g., 16, 32, 64)"}, {"name": "bytes", "type": "i64", "description": "Number of bytes to allocate"}],
+      "returns": [{"name": "address", "type": "ptr", "description": "Aligned memory address"}],
+      "errors": [{"code": "ErrAlloc", "description": "Allocation failed"}, {"code": "ErrInvalidArg", "description": "Invalid alignment or size"}],
+      "examples": ["64 1024 mem::alloc_aligned! -> buf  // 64-byte aligned"]
+    },
+    {
       "name": "alloc",
       "signature": "(bytes:i64 -- address:ptr)",
       "failable": true,
@@ -106,6 +116,16 @@
       "returns": [{"name": "value", "type": "ptr", "description": "Pointer value"}],
       "errors": [],
       "examples": ["buf 0 mem::get_ptr -> p"]
+    },
+    {
+      "name": "is_not_null",
+      "signature": "(address:ptr -- not_null:i64)",
+      "failable": false,
+      "description": "Check if pointer is not null.",
+      "params": [{"name": "address", "type": "ptr", "description": "Pointer to check"}],
+      "returns": [{"name": "not_null", "type": "i64", "description": "1 if not null, 0 otherwise"}],
+      "errors": [],
+      "examples": ["buf mem::is_not_null print  // 1"]
     },
     {
       "name": "is_null",

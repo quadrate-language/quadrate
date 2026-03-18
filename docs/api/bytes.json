@@ -19,6 +19,16 @@
       "examples": ["buf1 0 buf2 0 10 bytes::compare -> result"]
     },
     {
+      "name": "contains",
+      "signature": "(buf:ptr offset:i64 count:i64 value:i64 -- result:i64)",
+      "failable": false,
+      "description": "Check if a byte value exists in a buffer.",
+      "params": [{"name": "buf", "type": "ptr", "description": "Buffer to search"}, {"name": "offset", "type": "i64", "description": "Starting offset"}, {"name": "count", "type": "i64", "description": "Number of bytes to search"}, {"name": "value", "type": "i64", "description": "Byte value to find"}],
+      "returns": [{"name": "result", "type": "i64", "description": "1 if found, 0 otherwise"}],
+      "errors": [],
+      "examples": ["buf 0 10 0x41 bytes::contains -> found"]
+    },
+    {
       "name": "copy",
       "signature": "(dst:ptr dst_off:i64 src:ptr src_off:i64 count:i64 -- )",
       "failable": false,
@@ -29,6 +39,26 @@
       "examples": ["dst 0 src 0 10 bytes::copy"]
     },
     {
+      "name": "count",
+      "signature": "(buf:ptr offset:i64 len:i64 value:i64 -- result:i64)",
+      "failable": false,
+      "description": "Count occurrences of a byte value in a buffer.",
+      "params": [{"name": "buf", "type": "ptr", "description": "Buffer to search"}, {"name": "offset", "type": "i64", "description": "Starting offset"}, {"name": "count", "type": "i64", "description": "Number of bytes to search"}, {"name": "value", "type": "i64", "description": "Byte value to count"}],
+      "returns": [{"name": "result", "type": "i64", "description": "Number of occurrences"}],
+      "errors": [],
+      "examples": ["buf 0 10 0x41 bytes::count -> n"]
+    },
+    {
+      "name": "equals",
+      "signature": "(a:ptr a_off:i64 b:ptr b_off:i64 count:i64 -- result:i64)",
+      "failable": false,
+      "description": "Check if two byte buffers are equal.",
+      "params": [{"name": "a", "type": "ptr", "description": "First buffer"}, {"name": "a_off", "type": "i64", "description": "First buffer offset"}, {"name": "b", "type": "ptr", "description": "Second buffer"}, {"name": "b_off", "type": "i64", "description": "Second buffer offset"}, {"name": "count", "type": "i64", "description": "Number of bytes to compare"}],
+      "returns": [{"name": "result", "type": "i64", "description": "1 if equal, 0 otherwise"}],
+      "errors": [],
+      "examples": ["buf1 0 buf2 0 10 bytes::equals -> result"]
+    },
+    {
       "name": "fill",
       "signature": "(value:i64 buf:ptr offset:i64 count:i64 -- )",
       "failable": false,
@@ -37,6 +67,16 @@
       "returns": [],
       "errors": [],
       "examples": ["0 buf 0 10 bytes::fill"]
+    },
+    {
+      "name": "find",
+      "signature": "(buf:ptr offset:i64 count:i64 value:i64 -- result:i64)",
+      "failable": false,
+      "description": "Find the first occurrence of a byte value in a buffer.",
+      "params": [{"name": "buf", "type": "ptr", "description": "Buffer to search"}, {"name": "offset", "type": "i64", "description": "Starting offset"}, {"name": "count", "type": "i64", "description": "Number of bytes to search"}, {"name": "value", "type": "i64", "description": "Byte value to find"}],
+      "returns": [{"name": "result", "type": "i64", "description": "Index of first occurrence, or -1 if not found"}],
+      "errors": [],
+      "examples": ["buf 0 10 0x41 bytes::find -> idx"]
     },
     {
       "name": "read_u16_be",
@@ -97,6 +137,16 @@
       "returns": [{"name": "value", "type": "i64", "description": "64-bit value"}],
       "errors": [],
       "examples": ["buf 0 bytes::read_u64_le -> val"]
+    },
+    {
+      "name": "reverse",
+      "signature": "(buf:ptr offset:i64 count:i64 -- )",
+      "failable": false,
+      "description": "Reverse the byte order in a buffer region.",
+      "params": [{"name": "buf", "type": "ptr", "description": "Buffer to reverse"}, {"name": "offset", "type": "i64", "description": "Starting offset"}, {"name": "count", "type": "i64", "description": "Number of bytes to reverse"}],
+      "returns": [],
+      "errors": [],
+      "examples": ["buf 0 10 bytes::reverse"]
     },
     {
       "name": "swap16",
@@ -187,6 +237,16 @@
       "returns": [],
       "errors": [],
       "examples": ["buf 0 0x123456789ABCDEF0 bytes::write_u64_le"]
+    },
+    {
+      "name": "xor",
+      "signature": "(dst:ptr dst_off:i64 src:ptr src_off:i64 count:i64 -- )",
+      "failable": false,
+      "description": "XOR two byte buffers, storing result in first buffer.",
+      "params": [{"name": "dst", "type": "ptr", "description": "Destination buffer (also first operand)"}, {"name": "dst_off", "type": "i64", "description": "Destination offset"}, {"name": "src", "type": "ptr", "description": "Source buffer (second operand)"}, {"name": "src_off", "type": "i64", "description": "Source offset"}, {"name": "count", "type": "i64", "description": "Number of bytes to XOR"}],
+      "returns": [],
+      "errors": [],
+      "examples": ["dst 0 src 0 10 bytes::xor"]
     }
   ]
 }

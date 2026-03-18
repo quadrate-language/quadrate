@@ -58,6 +58,11 @@
       "description": "Error: Seek operation failed."
     },
     {
+      "name": "ErrStat",
+      "value": "10",
+      "description": "Error: Stat operation failed."
+    },
+    {
       "name": "ErrWrite",
       "value": "6",
       "description": "Error: Write operation failed."
@@ -123,6 +128,16 @@
   ],
   "functions": [
     {
+      "name": "append_file",
+      "signature": "(path:str contents:str -- )",
+      "failable": true,
+      "description": "Append string contents to a file. Creates the file if it doesn't exist.",
+      "params": [{"name": "path", "type": "str", "description": "File path"}, {"name": "contents", "type": "str", "description": "String to append"}],
+      "returns": [],
+      "errors": [{"code": "ErrPermission", "description": "Permission denied or cannot open file"}, {"code": "ErrWrite", "description": "Write operation failed"}],
+      "examples": ["\"/tmp/log.txt\" \"New line\\n\" io::append_file!"]
+    },
+    {
       "name": "close",
       "signature": "(handle:ptr -- )",
       "failable": false,
@@ -141,6 +156,16 @@
       "returns": [{"name": "handle", "type": "ptr", "description": "File handle (unchanged)"}, {"name": "is_eof", "type": "i64", "description": "1 if at EOF, 0 otherwise"}],
       "errors": [],
       "examples": ["f io::eof -> f -> at_end"]
+    },
+    {
+      "name": "flush",
+      "signature": "( -- )",
+      "failable": false,
+      "description": "Flush stdout buffer. Ensures all pending output is written immediately. Useful for progress indicators that don't use newlines.",
+      "params": [],
+      "returns": [],
+      "errors": [],
+      "examples": ["\"Loading...\" print io::flush"]
     },
     {
       "name": "open",
@@ -191,6 +216,46 @@
       "returns": [{"name": "position", "type": "i64", "description": "New position"}],
       "errors": [{"code": "ErrInvalidHandle", "description": "Invalid file handle"}, {"code": "ErrInvalidArg", "description": "Invalid whence value"}, {"code": "ErrSeek", "description": "Seek operation failed"}],
       "examples": ["f 0 io::SeekSet io::seek! drop"]
+    },
+    {
+      "name": "stat_atime",
+      "signature": "(path:str -- atime:i64)",
+      "failable": true,
+      "description": "Get file access time.",
+      "params": [{"name": "path", "type": "str", "description": "File path"}],
+      "returns": [{"name": "atime", "type": "i64", "description": "Last access time as Unix timestamp"}],
+      "errors": [{"code": "ErrNotFound", "description": "File not found"}, {"code": "ErrPermission", "description": "Permission denied"}, {"code": "ErrStat", "description": "Stat operation failed"}],
+      "examples": ["\"/etc/hostname\" io::stat_atime! -> atime"]
+    },
+    {
+      "name": "stat_mode",
+      "signature": "(path:str -- mode:i64)",
+      "failable": true,
+      "description": "Get file permissions (Unix mode).",
+      "params": [{"name": "path", "type": "str", "description": "File path"}],
+      "returns": [{"name": "mode", "type": "i64", "description": "Unix permission mode (e.g., 0644)"}],
+      "errors": [{"code": "ErrNotFound", "description": "File not found"}, {"code": "ErrPermission", "description": "Permission denied"}, {"code": "ErrStat", "description": "Stat operation failed"}],
+      "examples": ["\"/etc/hostname\" io::stat_mode! -> mode"]
+    },
+    {
+      "name": "stat_mtime",
+      "signature": "(path:str -- mtime:i64)",
+      "failable": true,
+      "description": "Get file modification time.",
+      "params": [{"name": "path", "type": "str", "description": "File path"}],
+      "returns": [{"name": "mtime", "type": "i64", "description": "Last modification time as Unix timestamp"}],
+      "errors": [{"code": "ErrNotFound", "description": "File not found"}, {"code": "ErrPermission", "description": "Permission denied"}, {"code": "ErrStat", "description": "Stat operation failed"}],
+      "examples": ["\"/etc/hostname\" io::stat_mtime! -> mtime"]
+    },
+    {
+      "name": "stat_size",
+      "signature": "(path:str -- size:i64)",
+      "failable": true,
+      "description": "Get file size in bytes.",
+      "params": [{"name": "path", "type": "str", "description": "File path"}],
+      "returns": [{"name": "size", "type": "i64", "description": "File size in bytes"}],
+      "errors": [{"code": "ErrNotFound", "description": "File not found"}, {"code": "ErrPermission", "description": "Permission denied"}, {"code": "ErrStat", "description": "Stat operation failed"}],
+      "examples": ["\"/etc/hostname\" io::stat_size! -> size"]
     },
     {
       "name": "tell",

@@ -23,6 +23,16 @@
       "description": ""
     },
     {
+      "name": "ErrFormat",
+      "value": "2",
+      "description": "Error: Format operation failed."
+    },
+    {
+      "name": "ErrParse",
+      "value": "3",
+      "description": "Error: Parse operation failed."
+    },
+    {
       "name": "February",
       "value": "2",
       "description": ""
@@ -143,6 +153,36 @@
   ],
   "functions": [
     {
+      "name": "add_days",
+      "signature": "(ts:i64 days:i64 -- new_ts:i64)",
+      "failable": false,
+      "description": "Add days to a timestamp.",
+      "params": [{"name": "ts", "type": "i64", "description": "Unix timestamp in seconds"}, {"name": "days", "type": "i64", "description": "Number of days to add"}],
+      "returns": [{"name": "new_ts", "type": "i64", "description": "New timestamp"}],
+      "errors": [],
+      "examples": ["time::unix 7 time::add_days ."]
+    },
+    {
+      "name": "add_hours",
+      "signature": "(ts:i64 hours:i64 -- new_ts:i64)",
+      "failable": false,
+      "description": "Add hours to a timestamp.",
+      "params": [{"name": "ts", "type": "i64", "description": "Unix timestamp in seconds"}, {"name": "hours", "type": "i64", "description": "Number of hours to add"}],
+      "returns": [{"name": "new_ts", "type": "i64", "description": "New timestamp"}],
+      "errors": [],
+      "examples": ["time::unix 2 time::add_hours ."]
+    },
+    {
+      "name": "add_minutes",
+      "signature": "(ts:i64 mins:i64 -- new_ts:i64)",
+      "failable": false,
+      "description": "Add minutes to a timestamp.",
+      "params": [{"name": "ts", "type": "i64", "description": "Unix timestamp in seconds"}, {"name": "mins", "type": "i64", "description": "Number of minutes to add"}],
+      "returns": [{"name": "new_ts", "type": "i64", "description": "New timestamp"}],
+      "errors": [],
+      "examples": ["time::unix 30 time::add_minutes ."]
+    },
+    {
       "name": "add",
       "signature": "(ts:i64 duration:i64 -- new_ts:i64)",
       "failable": false,
@@ -183,6 +223,16 @@
       "examples": ["2024 1 15 12 30 0 time::date ."]
     },
     {
+      "name": "days_between",
+      "signature": "(ts1:i64 ts2:i64 -- days:i64)",
+      "failable": false,
+      "description": "Get number of full days between two timestamps.",
+      "params": [{"name": "ts1", "type": "i64", "description": "First timestamp in seconds"}, {"name": "ts2", "type": "i64", "description": "Second timestamp in seconds"}],
+      "returns": [{"name": "days", "type": "i64", "description": "Number of full days between timestamps (absolute)"}],
+      "errors": [],
+      "examples": ["end_ts start_ts time::days_between ."]
+    },
+    {
       "name": "days_in_month",
       "signature": "(yr:i64 mon:i64 -- days:i64)",
       "failable": false,
@@ -193,6 +243,16 @@
       "examples": ["2024 2 time::days_in_month print  // 29"]
     },
     {
+      "name": "days_in_year",
+      "signature": "(yr:i64 -- days:i64)",
+      "failable": false,
+      "description": "Get number of days in a year.",
+      "params": [{"name": "yr", "type": "i64", "description": "Year"}],
+      "returns": [{"name": "days", "type": "i64", "description": "365 or 366 for leap year"}],
+      "errors": [],
+      "examples": ["2024 time::days_in_year .  // 366"]
+    },
+    {
       "name": "day",
       "signature": "(ts:i64 -- d:i64)",
       "failable": false,
@@ -201,6 +261,36 @@
       "returns": [{"name": "d", "type": "i64", "description": "Day of month"}],
       "errors": [],
       "examples": ["time::unix time::day ."]
+    },
+    {
+      "name": "end_of_day",
+      "signature": "(ts:i64 -- end_ts:i64)",
+      "failable": false,
+      "description": "Get end of day (23:59:59) for a timestamp.",
+      "params": [{"name": "ts", "type": "i64", "description": "Unix timestamp in seconds"}],
+      "returns": [{"name": "end_ts", "type": "i64", "description": "Timestamp at 23:59:59 of same day"}],
+      "errors": [],
+      "examples": ["time::unix time::end_of_day ."]
+    },
+    {
+      "name": "format",
+      "signature": "(timestamp:i64 format:str -- result:str)",
+      "failable": true,
+      "description": "Format timestamp using strftime format string. Common format specifiers: - %Y: 4-digit year, %m: month (01-12), %d: day (01-31) - %H: hour (00-23), %M: minute (00-59), %S: second (00-59) - %F: date (YYYY-MM-DD), %T: time (HH:MM:SS) - %A: weekday name, %B: month name",
+      "params": [{"name": "timestamp", "type": "i64", "description": "Unix timestamp in seconds"}, {"name": "format", "type": "str", "description": "strftime format string"}],
+      "returns": [{"name": "result", "type": "str", "description": "Formatted time string"}],
+      "errors": [{"code": "ErrFormat", "description": "Format error or invalid timestamp"}],
+      "examples": ["time::unix \"%Y-%m-%d %H:%M:%S\" time::format! print"]
+    },
+    {
+      "name": "hours_between",
+      "signature": "(ts1:i64 ts2:i64 -- hours:i64)",
+      "failable": false,
+      "description": "Get number of full hours between two timestamps.",
+      "params": [{"name": "ts1", "type": "i64", "description": "First timestamp in seconds"}, {"name": "ts2", "type": "i64", "description": "Second timestamp in seconds"}],
+      "returns": [{"name": "hours", "type": "i64", "description": "Number of full hours between timestamps (absolute)"}],
+      "errors": [],
+      "examples": ["end_ts start_ts time::hours_between ."]
     },
     {
       "name": "hour",
@@ -221,6 +311,56 @@
       "returns": [{"name": "is_leap", "type": "i64", "description": "1 if leap year, 0 otherwise"}],
       "errors": [],
       "examples": ["2024 time::is_leap_year print  // 1"]
+    },
+    {
+      "name": "iso_week",
+      "signature": "(ts:i64 -- week:i64)",
+      "failable": false,
+      "description": "Get ISO week number (1-53).",
+      "params": [{"name": "ts", "type": "i64", "description": "Unix timestamp in seconds"}],
+      "returns": [{"name": "week", "type": "i64", "description": "ISO week number"}],
+      "errors": [],
+      "examples": ["time::unix time::iso_week ."]
+    },
+    {
+      "name": "is_weekday",
+      "signature": "(wd:i64 -- is_wkday:i64)",
+      "failable": false,
+      "description": "Check if weekday is a weekday (Monday-Friday).",
+      "params": [{"name": "wd", "type": "i64", "description": "Weekday (0=Sunday, 6=Saturday)"}],
+      "returns": [{"name": "is_wkday", "type": "i64", "description": "1 if weekday, 0 otherwise"}],
+      "errors": [],
+      "examples": ["time::unix time::weekday time::is_weekday ."]
+    },
+    {
+      "name": "is_weekend",
+      "signature": "(wd:i64 -- is_wknd:i64)",
+      "failable": false,
+      "description": "Check if weekday is a weekend day (Saturday or Sunday).",
+      "params": [{"name": "wd", "type": "i64", "description": "Weekday (0=Sunday, 6=Saturday)"}],
+      "returns": [{"name": "is_wknd", "type": "i64", "description": "1 if weekend, 0 otherwise"}],
+      "errors": [],
+      "examples": ["time::unix time::weekday time::is_weekend ."]
+    },
+    {
+      "name": "micros",
+      "signature": "( -- microseconds:i64)",
+      "failable": false,
+      "description": "Get current time in microseconds since epoch.",
+      "params": [],
+      "returns": [{"name": "microseconds", "type": "i64", "description": "Microseconds since 1970-01-01 00:00:00 UTC"}],
+      "errors": [],
+      "examples": ["time::micros -> us"]
+    },
+    {
+      "name": "millis",
+      "signature": "( -- milliseconds:i64)",
+      "failable": false,
+      "description": "Get current time in milliseconds since epoch.",
+      "params": [],
+      "returns": [{"name": "milliseconds", "type": "i64", "description": "Milliseconds since 1970-01-01 00:00:00 UTC"}],
+      "errors": [],
+      "examples": ["time::millis -> ms"]
     },
     {
       "name": "minute",
@@ -253,6 +393,26 @@
       "examples": ["time::now -> start"]
     },
     {
+      "name": "parse",
+      "signature": "(input:str format:str -- timestamp:i64)",
+      "failable": true,
+      "description": "Parse string to timestamp using strptime format string.",
+      "params": [{"name": "input", "type": "str", "description": "String to parse"}, {"name": "format", "type": "str", "description": "strptime format string"}],
+      "returns": [{"name": "timestamp", "type": "i64", "description": "Unix timestamp in seconds"}],
+      "errors": [{"code": "ErrParse", "description": "Parse failed or invalid format"}],
+      "examples": ["\"2024-01-15\" \"%Y-%m-%d\" time::parse! -> ts"]
+    },
+    {
+      "name": "same_day",
+      "signature": "(ts1:i64 ts2:i64 -- same:i64)",
+      "failable": false,
+      "description": "Check if two timestamps are on the same day.",
+      "params": [{"name": "ts1", "type": "i64", "description": "First timestamp"}, {"name": "ts2", "type": "i64", "description": "Second timestamp"}],
+      "returns": [{"name": "same", "type": "i64", "description": "1 if same day, 0 otherwise"}],
+      "errors": [],
+      "examples": ["ts1 ts2 time::same_day ."]
+    },
+    {
       "name": "second",
       "signature": "(ts:i64 -- s:i64)",
       "failable": false,
@@ -271,6 +431,16 @@
       "returns": [],
       "errors": [],
       "examples": ["time::Second time::sleep"]
+    },
+    {
+      "name": "start_of_day",
+      "signature": "(ts:i64 -- midnight_ts:i64)",
+      "failable": false,
+      "description": "Get start of day (midnight) for a timestamp.",
+      "params": [{"name": "ts", "type": "i64", "description": "Unix timestamp in seconds"}],
+      "returns": [{"name": "midnight_ts", "type": "i64", "description": "Timestamp at midnight of same day"}],
+      "errors": [],
+      "examples": ["time::unix time::start_of_day ."]
     },
     {
       "name": "sub",

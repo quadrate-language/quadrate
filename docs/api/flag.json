@@ -84,9 +84,9 @@
       "signature": "(f:ptr index:i64 -- value:str)",
       "failable": true,
       "description": "Get positional argument at index.",
-      "params": [{"name": "f", "type": "ptr", "description": "Flag struct"}, {"name": "index", "type": "i64", "description": "Position (0-based)"}],
+      "params": [{"name": "f", "type": "ptr", "description": "Flag struct"}, {"name": "index", "type": "i64", "description": "Position (0-based, skips flags starting with -)"}],
       "returns": [{"name": "value", "type": "str", "description": "Positional argument"}],
-      "errors": [{"code": "ErrNotFound", "description": "Not yet implemented"}],
+      "errors": [{"code": "ErrNotFound", "description": "Index out of bounds"}],
       "examples": []
     },
     {

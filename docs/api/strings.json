@@ -23,6 +23,26 @@
   ],
   "functions": [
     {
+      "name": "capitalize",
+      "signature": "(s:str -- result:str)",
+      "failable": false,
+      "description": "Capitalize first character, lowercase rest.",
+      "params": [{"name": "s", "type": "str", "description": "Input string"}],
+      "returns": [{"name": "result", "type": "str", "description": "Capitalized string"}],
+      "errors": [],
+      "examples": ["\"hELLO\" strings::capitalize print  // \"Hello\""]
+    },
+    {
+      "name": "center",
+      "signature": "(s:str len:i64 ch:str -- result:str)",
+      "failable": false,
+      "description": "Center string with padding on both sides.",
+      "params": [{"name": "s", "type": "str", "description": "Input string"}, {"name": "len", "type": "i64", "description": "Target length"}, {"name": "ch", "type": "str", "description": "Padding character"}],
+      "returns": [{"name": "result", "type": "str", "description": "Centered string"}],
+      "errors": [],
+      "examples": ["\"hi\" 6 \"-\" strings::center print  // \"--hi--\""]
+    },
+    {
       "name": "char_at",
       "signature": "(str:str index:i64 -- char_code:i64)",
       "failable": true,
@@ -31,6 +51,26 @@
       "returns": [{"name": "char_code", "type": "i64", "description": "ASCII/UTF-8 byte value"}],
       "errors": [{"code": "ErrOutOfBounds", "description": "Index out of bounds"}],
       "examples": ["\"hello\" 0 strings::char_at! print  // 104 ('h')"]
+    },
+    {
+      "name": "char_count",
+      "signature": "(s:str -- count:i64)",
+      "failable": false,
+      "description": "Count UTF-8 codepoints (characters, not bytes).",
+      "params": [{"name": "s", "type": "str", "description": "Input string"}],
+      "returns": [{"name": "count", "type": "i64", "description": "Number of UTF-8 codepoints"}],
+      "errors": [],
+      "examples": ["\"héllo\" strings::char_count print  // 5"]
+    },
+    {
+      "name": "column",
+      "signature": "(arr:ptr count:i64 widths:ptr num_cols:i64 -- result:str)",
+      "failable": false,
+      "description": "Format strings into columns.",
+      "params": [{"name": "arr", "type": "ptr", "description": "Array of strings"}, {"name": "count", "type": "i64", "description": "Number of strings"}, {"name": "widths", "type": "ptr", "description": "Array of column widths"}, {"name": "num_cols", "type": "i64", "description": "Number of columns"}],
+      "returns": [{"name": "result", "type": "str", "description": "Formatted column output"}],
+      "errors": [],
+      "examples": []
     },
     {
       "name": "compare",
@@ -63,6 +103,16 @@
       "examples": ["\"hello\" \"ell\" strings::contains print  // 1"]
     },
     {
+      "name": "count",
+      "signature": "(haystack:str needle:str -- count:i64)",
+      "failable": false,
+      "description": "Count occurrences of substring.",
+      "params": [{"name": "haystack", "type": "str", "description": "String to search in"}, {"name": "needle", "type": "str", "description": "Substring to count"}],
+      "returns": [{"name": "count", "type": "i64", "description": "Number of occurrences"}],
+      "errors": [],
+      "examples": ["\"ababa\" \"aba\" strings::count print  // 1 (non-overlapping)"]
+    },
+    {
       "name": "ends_with",
       "signature": "(str:str suffix:str -- result:i64)",
       "failable": false,
@@ -71,6 +121,16 @@
       "returns": [{"name": "result", "type": "i64", "description": "1 if matches, 0 otherwise"}],
       "errors": [],
       "examples": ["\"hello\" \"lo\" strings::ends_with print  // 1"]
+    },
+    {
+      "name": "equals_ignore_case",
+      "signature": "(a:str b:str -- result:i64)",
+      "failable": false,
+      "description": "Case-insensitive string comparison.",
+      "params": [{"name": "a", "type": "str", "description": "First string"}, {"name": "b", "type": "str", "description": "Second string"}],
+      "returns": [{"name": "result", "type": "i64", "description": "1 if equal (ignoring case), 0 otherwise"}],
+      "errors": [],
+      "examples": ["\"Hello\" \"HELLO\" strings::equals_ignore_case print  // 1"]
     },
     {
       "name": "from_char",
@@ -113,6 +173,96 @@
       "examples": ["\"hello\" \"ll\" strings::index_of print  // 2"]
     },
     {
+      "name": "insert",
+      "signature": "(s:str pos:i64 ins:str -- result:str)",
+      "failable": false,
+      "description": "Insert string at position.",
+      "params": [{"name": "s", "type": "str", "description": "Original string"}, {"name": "pos", "type": "i64", "description": "Insert position"}, {"name": "ins", "type": "str", "description": "String to insert"}],
+      "returns": [{"name": "result", "type": "str", "description": "String with insertion"}],
+      "errors": [],
+      "examples": ["\"hello\" 2 \"XX\" strings::insert print  // \"heXXllo\""]
+    },
+    {
+      "name": "is_alphanumeric",
+      "signature": "(s:str -- result:i64)",
+      "failable": false,
+      "description": "Check if string contains only letters and digits.",
+      "params": [{"name": "s", "type": "str", "description": "Input string"}],
+      "returns": [{"name": "result", "type": "i64", "description": "1 if alphanumeric, 0 otherwise"}],
+      "errors": [],
+      "examples": ["\"Hello123\" strings::is_alphanumeric print  // 1"]
+    },
+    {
+      "name": "is_alpha",
+      "signature": "(s:str -- result:i64)",
+      "failable": false,
+      "description": "Check if string contains only letters.",
+      "params": [{"name": "s", "type": "str", "description": "Input string"}],
+      "returns": [{"name": "result", "type": "i64", "description": "1 if alphabetic, 0 otherwise"}],
+      "errors": [],
+      "examples": ["\"Hello\" strings::is_alpha print  // 1"]
+    },
+    {
+      "name": "is_ascii",
+      "signature": "(s:str -- result:i64)",
+      "failable": false,
+      "description": "Check if all characters are ASCII (0-127).",
+      "params": [{"name": "s", "type": "str", "description": "Input string"}],
+      "returns": [{"name": "result", "type": "i64", "description": "1 if all ASCII, 0 otherwise"}],
+      "errors": [],
+      "examples": ["\"hello\" strings::is_ascii print  // 1"]
+    },
+    {
+      "name": "is_blank",
+      "signature": "(s:str -- result:i64)",
+      "failable": false,
+      "description": "Check if string is empty or only whitespace.",
+      "params": [{"name": "s", "type": "str", "description": "Input string"}],
+      "returns": [{"name": "result", "type": "i64", "description": "1 if blank, 0 otherwise"}],
+      "errors": [],
+      "examples": ["\"  \" strings::is_blank print  // 1"]
+    },
+    {
+      "name": "is_empty",
+      "signature": "(s:str -- result:i64)",
+      "failable": false,
+      "description": "Check if string is empty.",
+      "params": [{"name": "s", "type": "str", "description": "Input string"}],
+      "returns": [{"name": "result", "type": "i64", "description": "1 if empty, 0 otherwise"}],
+      "errors": [],
+      "examples": ["\"\" strings::is_empty print  // 1"]
+    },
+    {
+      "name": "is_lowercase",
+      "signature": "(s:str -- result:i64)",
+      "failable": false,
+      "description": "Check if all letters are lowercase.",
+      "params": [{"name": "s", "type": "str", "description": "Input string"}],
+      "returns": [{"name": "result", "type": "i64", "description": "1 if lowercase, 0 otherwise"}],
+      "errors": [],
+      "examples": ["\"hello\" strings::is_lowercase print  // 1"]
+    },
+    {
+      "name": "is_numeric",
+      "signature": "(s:str -- result:i64)",
+      "failable": false,
+      "description": "Check if string contains only digits.",
+      "params": [{"name": "s", "type": "str", "description": "Input string"}],
+      "returns": [{"name": "result", "type": "i64", "description": "1 if numeric, 0 otherwise"}],
+      "errors": [],
+      "examples": ["\"12345\" strings::is_numeric print  // 1"]
+    },
+    {
+      "name": "is_uppercase",
+      "signature": "(s:str -- result:i64)",
+      "failable": false,
+      "description": "Check if all letters are uppercase.",
+      "params": [{"name": "s", "type": "str", "description": "Input string"}],
+      "returns": [{"name": "result", "type": "i64", "description": "1 if uppercase, 0 otherwise"}],
+      "errors": [],
+      "examples": ["\"HELLO\" strings::is_uppercase print  // 1"]
+    },
+    {
       "name": "join",
       "signature": "(parts:ptr count:i64 delim:str -- result:str)",
       "failable": true,
@@ -121,6 +271,16 @@
       "returns": [{"name": "result", "type": "str", "description": "Joined string"}],
       "errors": [{"code": "ErrAlloc", "description": "Memory allocation failed"}],
       "examples": ["parts count \"/\" strings::join! -> path"]
+    },
+    {
+      "name": "last_index_of",
+      "signature": "(haystack:str needle:str -- index:i64)",
+      "failable": false,
+      "description": "Find last occurrence of substring.",
+      "params": [{"name": "haystack", "type": "str", "description": "String to search in"}, {"name": "needle", "type": "str", "description": "Substring to find"}],
+      "returns": [{"name": "index", "type": "i64", "description": "Index of last match, -1 if not found"}],
+      "errors": [],
+      "examples": ["\"hello hello\" \"hello\" strings::last_index_of print  // 6"]
     },
     {
       "name": "len",
@@ -133,6 +293,16 @@
       "examples": ["\"hello\" strings::len print  // 5"]
     },
     {
+      "name": "lines",
+      "signature": "(s:str -- arr:ptr count:i64)",
+      "failable": true,
+      "description": "Split string by newlines.",
+      "params": [{"name": "s", "type": "str", "description": "Input string"}],
+      "returns": [{"name": "arr", "type": "ptr", "description": "Array of line strings"}, {"name": "count", "type": "i64", "description": "Number of lines"}],
+      "errors": [{"code": "ErrAlloc", "description": "Memory allocation failed"}],
+      "examples": ["\"a\\nb\\nc\" strings::lines!  // [\"a\", \"b\", \"c\"]"]
+    },
+    {
       "name": "lower",
       "signature": "(str:str -- result:str)",
       "failable": false,
@@ -143,6 +313,56 @@
       "examples": ["\"HELLO\" strings::lower print  // \"hello\""]
     },
     {
+      "name": "pad_left",
+      "signature": "(s:str len:i64 ch:str -- result:str)",
+      "failable": false,
+      "description": "Left-pad string to target length.",
+      "params": [{"name": "s", "type": "str", "description": "Input string"}, {"name": "len", "type": "i64", "description": "Target length"}, {"name": "ch", "type": "str", "description": "Padding character"}],
+      "returns": [{"name": "result", "type": "str", "description": "Padded string"}],
+      "errors": [],
+      "examples": ["\"42\" 5 \"0\" strings::pad_left print  // \"00042\""]
+    },
+    {
+      "name": "pad_right",
+      "signature": "(s:str len:i64 ch:str -- result:str)",
+      "failable": false,
+      "description": "Right-pad string to target length.",
+      "params": [{"name": "s", "type": "str", "description": "Input string"}, {"name": "len", "type": "i64", "description": "Target length"}, {"name": "ch", "type": "str", "description": "Padding character"}],
+      "returns": [{"name": "result", "type": "str", "description": "Padded string"}],
+      "errors": [],
+      "examples": ["\"hi\" 5 \".\" strings::pad_right print  // \"hi...\""]
+    },
+    {
+      "name": "remove_range",
+      "signature": "(s:str start:i64 len:i64 -- result:str)",
+      "failable": false,
+      "description": "Remove range from string.",
+      "params": [{"name": "s", "type": "str", "description": "Input string"}, {"name": "start", "type": "i64", "description": "Start position"}, {"name": "len", "type": "i64", "description": "Number of characters to remove"}],
+      "returns": [{"name": "result", "type": "str", "description": "String with range removed"}],
+      "errors": [],
+      "examples": ["\"hello\" 1 3 strings::remove_range print  // \"ho\""]
+    },
+    {
+      "name": "repeat",
+      "signature": "(str:str n:i64 -- result:str)",
+      "failable": false,
+      "description": "Repeat string n times.",
+      "params": [{"name": "str", "type": "str", "description": "Input string"}, {"name": "n", "type": "i64", "description": "Number of repetitions"}],
+      "returns": [{"name": "result", "type": "str", "description": "Repeated string"}],
+      "errors": [],
+      "examples": ["\"ab\" 3 strings::repeat print  // \"ababab\""]
+    },
+    {
+      "name": "replace_first",
+      "signature": "(s:str old:str new:str -- result:str)",
+      "failable": false,
+      "description": "Replace first occurrence only.",
+      "params": [{"name": "s", "type": "str", "description": "Source string"}, {"name": "old", "type": "str", "description": "Substring to replace"}, {"name": "new", "type": "str", "description": "Replacement string"}],
+      "returns": [{"name": "result", "type": "str", "description": "String with first occurrence replaced"}],
+      "errors": [],
+      "examples": ["\"abab\" \"ab\" \"X\" strings::replace_first print  // \"Xab\""]
+    },
+    {
       "name": "replace",
       "signature": "(str:str old:str new:str -- result:str)",
       "failable": true,
@@ -151,6 +371,26 @@
       "returns": [{"name": "result", "type": "str", "description": "String with replacements"}],
       "errors": [{"code": "ErrAlloc", "description": "Memory allocation failed"}],
       "examples": ["\"hello\" \"l\" \"L\" strings::replace! print  // \"heLLo\""]
+    },
+    {
+      "name": "reverse",
+      "signature": "(str:str -- result:str)",
+      "failable": false,
+      "description": "Reverse a string.",
+      "params": [{"name": "str", "type": "str", "description": "Input string"}],
+      "returns": [{"name": "result", "type": "str", "description": "Reversed string"}],
+      "errors": [],
+      "examples": ["\"hello\" strings::reverse print  // \"olleh\""]
+    },
+    {
+      "name": "slice",
+      "signature": "(s:str start:i64 end:i64 -- result:str)",
+      "failable": false,
+      "description": "Slice with negative index support (Python-style).",
+      "params": [{"name": "s", "type": "str", "description": "Input string"}, {"name": "start", "type": "i64", "description": "Start index (negative counts from end)"}, {"name": "end", "type": "i64", "description": "End index (negative counts from end)"}],
+      "returns": [{"name": "result", "type": "str", "description": "Sliced substring"}],
+      "errors": [],
+      "examples": ["\"hello\" 1 -1 strings::slice print  // \"ell\""]
     },
     {
       "name": "sort",
@@ -171,6 +411,16 @@
       "returns": [],
       "errors": [],
       "examples": ["entries count strings::sort_desc"]
+    },
+    {
+      "name": "split_n",
+      "signature": "(s:str delim:str n:i64 -- parts:ptr count:i64)",
+      "failable": true,
+      "description": "Split into at most n parts.",
+      "params": [{"name": "s", "type": "str", "description": "String to split"}, {"name": "delim", "type": "str", "description": "Delimiter"}, {"name": "n", "type": "i64", "description": "Maximum number of parts"}],
+      "returns": [{"name": "parts", "type": "ptr", "description": "Array of string parts"}, {"name": "count", "type": "i64", "description": "Number of parts"}],
+      "errors": [{"code": "ErrAlloc", "description": "Memory allocation failed"}],
+      "examples": ["\"a:b:c:d\" \":\" 2 strings::split_n!  // [\"a\", \"b:c:d\"]"]
     },
     {
       "name": "split",
@@ -203,6 +453,46 @@
       "examples": ["\"hello\" 1 3 strings::substring! print  // \"ell\""]
     },
     {
+      "name": "title",
+      "signature": "(s:str -- result:str)",
+      "failable": false,
+      "description": "Title case - capitalize first letter of each word.",
+      "params": [{"name": "s", "type": "str", "description": "Input string"}],
+      "returns": [{"name": "result", "type": "str", "description": "Title-cased string"}],
+      "errors": [],
+      "examples": ["\"hello world\" strings::title print  // \"Hello World\""]
+    },
+    {
+      "name": "trim_left",
+      "signature": "(str:str -- result:str)",
+      "failable": false,
+      "description": "Remove leading whitespace.",
+      "params": [{"name": "str", "type": "str", "description": "Input string"}],
+      "returns": [{"name": "result", "type": "str", "description": "String with leading whitespace removed"}],
+      "errors": [],
+      "examples": ["\"  hello\" strings::trim_left print  // \"hello\""]
+    },
+    {
+      "name": "trim_prefix",
+      "signature": "(s:str prefix:str -- result:str)",
+      "failable": false,
+      "description": "Remove prefix if present.",
+      "params": [{"name": "s", "type": "str", "description": "Input string"}, {"name": "prefix", "type": "str", "description": "Prefix to remove"}],
+      "returns": [{"name": "result", "type": "str", "description": "String without prefix"}],
+      "errors": [],
+      "examples": ["\"hello\" \"hel\" strings::trim_prefix print  // \"lo\""]
+    },
+    {
+      "name": "trim_right",
+      "signature": "(str:str -- result:str)",
+      "failable": false,
+      "description": "Remove trailing whitespace.",
+      "params": [{"name": "str", "type": "str", "description": "Input string"}],
+      "returns": [{"name": "result", "type": "str", "description": "String with trailing whitespace removed"}],
+      "errors": [],
+      "examples": ["\"hello  \" strings::trim_right print  // \"hello\""]
+    },
+    {
       "name": "trim",
       "signature": "(str:str -- result:str)",
       "failable": false,
@@ -213,6 +503,26 @@
       "examples": ["\"  hello  \" strings::trim print  // \"hello\""]
     },
     {
+      "name": "trim_suffix",
+      "signature": "(s:str suffix:str -- result:str)",
+      "failable": false,
+      "description": "Remove suffix if present.",
+      "params": [{"name": "s", "type": "str", "description": "Input string"}, {"name": "suffix", "type": "str", "description": "Suffix to remove"}],
+      "returns": [{"name": "result", "type": "str", "description": "String without suffix"}],
+      "errors": [],
+      "examples": ["\"hello\" \"lo\" strings::trim_suffix print  // \"hel\""]
+    },
+    {
+      "name": "truncate",
+      "signature": "(s:str max:i64 suffix:str -- result:str)",
+      "failable": false,
+      "description": "Truncate to max length with optional suffix.",
+      "params": [{"name": "s", "type": "str", "description": "Input string"}, {"name": "max", "type": "i64", "description": "Maximum length"}, {"name": "suffix", "type": "str", "description": "Suffix to append when truncated (e.g. \"...\")"}],
+      "returns": [{"name": "result", "type": "str", "description": "Truncated string"}],
+      "errors": [],
+      "examples": ["\"hello world\" 8 \"...\" strings::truncate print  // \"hello...\""]
+    },
+    {
       "name": "upper",
       "signature": "(str:str -- result:str)",
       "failable": false,
@@ -221,6 +531,16 @@
       "returns": [{"name": "result", "type": "str", "description": "Uppercase string"}],
       "errors": [],
       "examples": ["\"hello\" strings::upper print  // \"HELLO\""]
+    },
+    {
+      "name": "words",
+      "signature": "(s:str -- arr:ptr count:i64)",
+      "failable": true,
+      "description": "Split string by whitespace.",
+      "params": [{"name": "s", "type": "str", "description": "Input string"}],
+      "returns": [{"name": "arr", "type": "ptr", "description": "Array of word strings"}, {"name": "count", "type": "i64", "description": "Number of words"}],
+      "errors": [{"code": "ErrAlloc", "description": "Memory allocation failed"}],
+      "examples": ["\"hello  world\" strings::words!  // [\"hello\", \"world\"]"]
     }
   ]
 }

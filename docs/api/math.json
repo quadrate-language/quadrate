@@ -126,6 +126,16 @@
       "examples": ["||-5.0 math::abs print  // 5.0"]
     },
     {
+      "name": "acosh",
+      "signature": "(x:f64 -- result:f64)",
+      "failable": false,
+      "description": "Inverse hyperbolic cosine.",
+      "params": [{"name": "x", "type": "f64", "description": "Value >= 1"}],
+      "returns": [{"name": "result", "type": "f64", "description": "Inverse hyperbolic cosine of x"}],
+      "errors": [],
+      "examples": ["1.0 math::acosh print  // 0.0"]
+    },
+    {
       "name": "acos",
       "signature": "(x:f64 -- result:f64)",
       "failable": false,
@@ -166,6 +176,36 @@
       "examples": ["other v add -> sum"]
     },
     {
+      "name": "angle_between",
+      "signature": "(v:Vec3) angle_between(other:Vec3 -- result:f64)",
+      "failable": false,
+      "description": "Angle between this vector and another.",
+      "params": [{"name": "other", "type": "Vec3", "description": "Other vector"}],
+      "returns": [{"name": "result", "type": "f64", "description": "Angle in radians [0, π]"}],
+      "errors": [],
+      "examples": ["other v angle_between -> a"]
+    },
+    {
+      "name": "angle",
+      "signature": "(v:Vec2) angle( -- result:f64)",
+      "failable": false,
+      "description": "Angle of this vector from positive X axis.",
+      "params": [],
+      "returns": [{"name": "result", "type": "f64", "description": "Angle in radians [-π, π]"}],
+      "errors": [],
+      "examples": ["v angle -> a"]
+    },
+    {
+      "name": "asinh",
+      "signature": "(x:f64 -- result:f64)",
+      "failable": false,
+      "description": "Inverse hyperbolic sine.",
+      "params": [{"name": "x", "type": "f64", "description": "Any value"}],
+      "returns": [{"name": "result", "type": "f64", "description": "Inverse hyperbolic sine of x"}],
+      "errors": [],
+      "examples": ["0.0 math::asinh print  // 0.0"]
+    },
+    {
       "name": "asin",
       "signature": "(x:f64 -- result:f64)",
       "failable": false,
@@ -186,6 +226,16 @@
       "examples": ["1.0 1.0 math::atan2 print  // ~0.785 (π/4)"]
     },
     {
+      "name": "atanh",
+      "signature": "(x:f64 -- result:f64)",
+      "failable": false,
+      "description": "Inverse hyperbolic tangent.",
+      "params": [{"name": "x", "type": "f64", "description": "Value in range (-1, 1)"}],
+      "returns": [{"name": "result", "type": "f64", "description": "Inverse hyperbolic tangent of x"}],
+      "errors": [],
+      "examples": ["0.0 math::atanh print  // 0.0"]
+    },
+    {
       "name": "atan",
       "signature": "(x:f64 -- result:f64)",
       "failable": false,
@@ -194,6 +244,56 @@
       "returns": [{"name": "result", "type": "f64", "description": "Angle in radians [-π/2, π/2]"}],
       "errors": [],
       "examples": ["0.0 math::atan print  // 0.0"]
+    },
+    {
+      "name": "bezier2",
+      "signature": "(p0:f64 p1:f64 p2:f64 t:f64 -- result:f64)",
+      "failable": false,
+      "description": "Evaluate quadratic Bezier curve.",
+      "params": [{"name": "p0", "type": "f64", "description": "Start point"}, {"name": "p1", "type": "f64", "description": "Control point"}, {"name": "p2", "type": "f64", "description": "End point"}, {"name": "t", "type": "f64", "description": "Parameter [0, 1]"}],
+      "returns": [{"name": "result", "type": "f64", "description": "Point on curve"}],
+      "errors": [],
+      "examples": ["0.0 1.0 2.0 0.5 math::bezier2 print  // 1.0"]
+    },
+    {
+      "name": "bezier2_vec2",
+      "signature": "(p0:Vec2 p1:Vec2 p2:Vec2 t:f64 -- result:Vec2)",
+      "failable": false,
+      "description": "Evaluate quadratic Bezier curve for Vec2.",
+      "params": [{"name": "p0", "type": "Vec2", "description": "Start point"}, {"name": "p1", "type": "Vec2", "description": "Control point"}, {"name": "p2", "type": "Vec2", "description": "End point"}, {"name": "t", "type": "f64", "description": "Parameter [0, 1]"}],
+      "returns": [{"name": "result", "type": "Vec2", "description": "Point on curve"}],
+      "errors": [],
+      "examples": []
+    },
+    {
+      "name": "bezier3",
+      "signature": "(p0:f64 p1:f64 p2:f64 p3:f64 t:f64 -- result:f64)",
+      "failable": false,
+      "description": "Evaluate cubic Bezier curve.",
+      "params": [{"name": "p0", "type": "f64", "description": "Start point"}, {"name": "p1", "type": "f64", "description": "First control point"}, {"name": "p2", "type": "f64", "description": "Second control point"}, {"name": "p3", "type": "f64", "description": "End point"}, {"name": "t", "type": "f64", "description": "Parameter [0, 1]"}],
+      "returns": [{"name": "result", "type": "f64", "description": "Point on curve"}],
+      "errors": [],
+      "examples": ["0.0 0.5 0.5 1.0 0.5 math::bezier3 print"]
+    },
+    {
+      "name": "bezier3_vec2",
+      "signature": "(p0:Vec2 p1:Vec2 p2:Vec2 p3:Vec2 t:f64 -- result:Vec2)",
+      "failable": false,
+      "description": "Evaluate cubic Bezier curve for Vec2.",
+      "params": [{"name": "p0", "type": "Vec2", "description": "Start point"}, {"name": "p1", "type": "Vec2", "description": "First control point"}, {"name": "p2", "type": "Vec2", "description": "Second control point"}, {"name": "p3", "type": "Vec2", "description": "End point"}, {"name": "t", "type": "f64", "description": "Parameter [0, 1]"}],
+      "returns": [{"name": "result", "type": "Vec2", "description": "Point on curve"}],
+      "errors": [],
+      "examples": []
+    },
+    {
+      "name": "bezier3_vec3",
+      "signature": "(p0:Vec3 p1:Vec3 p2:Vec3 p3:Vec3 t:f64 -- result:Vec3)",
+      "failable": false,
+      "description": "Evaluate cubic Bezier curve for Vec3.",
+      "params": [{"name": "p0", "type": "Vec3", "description": "Start point"}, {"name": "p1", "type": "Vec3", "description": "First control point"}, {"name": "p2", "type": "Vec3", "description": "Second control point"}, {"name": "p3", "type": "Vec3", "description": "End point"}, {"name": "t", "type": "f64", "description": "Parameter [0, 1]"}],
+      "returns": [{"name": "result", "type": "Vec3", "description": "Point on curve"}],
+      "errors": [],
+      "examples": []
     },
     {
       "name": "cbrt",
@@ -246,6 +346,16 @@
       "examples": ["q conjugate -> q_conj"]
     },
     {
+      "name": "cosh",
+      "signature": "(x:f64 -- result:f64)",
+      "failable": false,
+      "description": "Hyperbolic cosine.",
+      "params": [{"name": "x", "type": "f64", "description": "Any value"}],
+      "returns": [{"name": "result", "type": "f64", "description": "Hyperbolic cosine of x"}],
+      "errors": [],
+      "examples": ["0.0 math::cosh print  // 1.0"]
+    },
+    {
       "name": "cos",
       "signature": "(x:f64 -- result:f64)",
       "failable": false,
@@ -266,6 +376,16 @@
       "examples": ["other v cross -> c"]
     },
     {
+      "name": "cubic_hermite",
+      "signature": "(p0:f64 p1:f64 p2:f64 p3:f64 t:f64 -- result:f64)",
+      "failable": false,
+      "description": "Cubic Hermite spline interpolation. Interpolates between p1 and p2 using tangents m1 and m2.",
+      "params": [{"name": "p0", "type": "f64", "description": "Point before p1 (used to compute tangent)"}, {"name": "p1", "type": "f64", "description": "Start point"}, {"name": "p2", "type": "f64", "description": "End point"}, {"name": "p3", "type": "f64", "description": "Point after p2 (used to compute tangent)"}, {"name": "t", "type": "f64", "description": "Interpolation factor [0, 1]"}],
+      "returns": [{"name": "result", "type": "f64", "description": "Interpolated value"}],
+      "errors": [],
+      "examples": ["0.0 1.0 4.0 5.0 0.5 math::cubic_hermite print"]
+    },
+    {
       "name": "deg_to_rad",
       "signature": "(degrees:f64 -- radians:f64)",
       "failable": false,
@@ -274,6 +394,36 @@
       "returns": [{"name": "radians", "type": "f64", "description": "Angle in radians"}],
       "errors": [],
       "examples": ["180.0 math::deg_to_rad print  // ~3.14159"]
+    },
+    {
+      "name": "determinant",
+      "signature": "(m:Mat4) determinant( -- result:f64)",
+      "failable": false,
+      "description": "Matrix determinant.",
+      "params": [],
+      "returns": [{"name": "result", "type": "f64", "description": "Determinant of matrix"}],
+      "errors": [],
+      "examples": ["m determinant -> det"]
+    },
+    {
+      "name": "distance",
+      "signature": "(v:Vec2) distance(other:Vec2 -- result:f64)",
+      "failable": false,
+      "description": "Distance to another Vec2.",
+      "params": [{"name": "other", "type": "Vec2", "description": "Other point"}],
+      "returns": [{"name": "result", "type": "f64", "description": "Distance between points"}],
+      "errors": [],
+      "examples": ["other v distance -> d"]
+    },
+    {
+      "name": "distance",
+      "signature": "(v:Vec3) distance(other:Vec3 -- result:f64)",
+      "failable": false,
+      "description": "Distance to another Vec3.",
+      "params": [{"name": "other", "type": "Vec3", "description": "Other point"}],
+      "returns": [{"name": "result", "type": "f64", "description": "Distance between points"}],
+      "errors": [],
+      "examples": ["other v distance -> d"]
     },
     {
       "name": "dot",
@@ -314,6 +464,16 @@
       "returns": [{"name": "result", "type": "f64", "description": "Dot product"}],
       "errors": [],
       "examples": ["other v dot -> d"]
+    },
+    {
+      "name": "exp2",
+      "signature": "(x:f64 -- result:f64)",
+      "failable": false,
+      "description": "Exponential base 2 (2^x).",
+      "params": [{"name": "x", "type": "f64", "description": "Exponent"}],
+      "returns": [{"name": "result", "type": "f64", "description": "2 raised to x"}],
+      "errors": [],
+      "examples": ["3.0 math::exp2 print  // 8.0"]
     },
     {
       "name": "exp",
@@ -366,6 +526,36 @@
       "examples": ["3.0 4.0 math::hypot print  // 5.0"]
     },
     {
+      "name": "inverse_lerp",
+      "signature": "(a:f64 b:f64 v:f64 -- result:f64)",
+      "failable": false,
+      "description": "Inverse lerp - find t given a value between a and b.",
+      "params": [{"name": "a", "type": "f64", "description": "Start value"}, {"name": "b", "type": "f64", "description": "End value"}, {"name": "v", "type": "f64", "description": "Value to find t for"}],
+      "returns": [{"name": "result", "type": "f64", "description": "Interpolation factor t where lerp(a, b, t) = v"}],
+      "errors": [],
+      "examples": ["0.0 10.0 5.0 math::inverse_lerp print  // 0.5"]
+    },
+    {
+      "name": "inverse",
+      "signature": "(m:Mat4) inverse( -- result:Mat4)",
+      "failable": false,
+      "description": "Matrix inverse.",
+      "params": [],
+      "returns": [{"name": "result", "type": "Mat4", "description": "Inverse matrix (returns identity if singular)"}],
+      "errors": [],
+      "examples": ["m inverse -> m_inv"]
+    },
+    {
+      "name": "inverse",
+      "signature": "(q:Quat) inverse( -- result:Quat)",
+      "failable": false,
+      "description": "Inverse of this quaternion.",
+      "params": [],
+      "returns": [{"name": "result", "type": "Quat", "description": "Inverse quaternion"}],
+      "errors": [],
+      "examples": ["q inverse -> q_inv"]
+    },
+    {
       "name": "inv",
       "signature": "(x:f64 -- result:f64)",
       "failable": false,
@@ -387,6 +577,16 @@
     },
     {
       "name": "length_sq",
+      "signature": "(q:Quat) length_sq( -- result:f64)",
+      "failable": false,
+      "description": "Squared length of quaternion.",
+      "params": [],
+      "returns": [{"name": "result", "type": "f64", "description": "Squared length"}],
+      "errors": [],
+      "examples": []
+    },
+    {
+      "name": "length_sq",
       "signature": "(v:Vec2) length_sq( -- result:f64)",
       "failable": false,
       "description": "Squared length of this vector (avoids sqrt).",
@@ -398,6 +598,16 @@
     {
       "name": "length_sq",
       "signature": "(v:Vec3) length_sq( -- result:f64)",
+      "failable": false,
+      "description": "Squared length of this vector (avoids sqrt).",
+      "params": [],
+      "returns": [{"name": "result", "type": "f64", "description": "Squared length of vector"}],
+      "errors": [],
+      "examples": ["v length_sq -> len_sq"]
+    },
+    {
+      "name": "length_sq",
+      "signature": "(v:Vec4) length_sq( -- result:f64)",
       "failable": false,
       "description": "Squared length of this vector (avoids sqrt).",
       "params": [],
@@ -466,6 +676,16 @@
       "examples": ["other 0.5 v lerp -> mid"]
     },
     {
+      "name": "lerp",
+      "signature": "(v:Vec4) lerp(other:Vec4 t:f64 -- result:Vec4)",
+      "failable": false,
+      "description": "Linear interpolation to another Vec4.",
+      "params": [{"name": "other", "type": "Vec4", "description": "End vector"}, {"name": "t", "type": "f64", "description": "Interpolation factor (0.0 to 1.0)"}],
+      "returns": [{"name": "result", "type": "Vec4", "description": "Interpolated vector"}],
+      "errors": [],
+      "examples": ["other 0.5 v lerp -> mid"]
+    },
+    {
       "name": "ln",
       "signature": "(x:f64 -- result:f64)",
       "failable": false,
@@ -486,6 +706,16 @@
       "examples": ["100.0 math::log10 print  // 2.0"]
     },
     {
+      "name": "log2",
+      "signature": "(x:f64 -- result:f64)",
+      "failable": false,
+      "description": "Base-2 logarithm.",
+      "params": [{"name": "x", "type": "f64", "description": "Positive value"}],
+      "returns": [{"name": "result", "type": "f64", "description": "Log base 2 of x"}],
+      "errors": [],
+      "examples": ["8.0 math::log2 print  // 3.0"]
+    },
+    {
       "name": "log",
       "signature": "(x:f64 base:f64 -- result:f64)",
       "failable": false,
@@ -496,6 +726,16 @@
       "examples": ["8.0 2.0 math::log print  // 3.0"]
     },
     {
+      "name": "mat4_from_quat",
+      "signature": "(q:Quat -- m:Mat4)",
+      "failable": false,
+      "description": "Create rotation matrix from quaternion.",
+      "params": [{"name": "q", "type": "Quat", "description": "Rotation quaternion"}],
+      "returns": [{"name": "m", "type": "Mat4", "description": "Rotation matrix"}],
+      "errors": [],
+      "examples": ["q mat4_from_quat -> rot_mat"]
+    },
+    {
       "name": "mat4_identity",
       "signature": "( -- m:Mat4)",
       "failable": false,
@@ -504,6 +744,36 @@
       "returns": [{"name": "m", "type": "Mat4", "description": "Identity matrix"}],
       "errors": [],
       "examples": ["math::mat4_identity -> m"]
+    },
+    {
+      "name": "mat4_look_at",
+      "signature": "(eye:Vec3 target:Vec3 up:Vec3 -- m:Mat4)",
+      "failable": false,
+      "description": "Create a look-at view matrix.",
+      "params": [{"name": "eye", "type": "Vec3", "description": "Camera position"}, {"name": "target", "type": "Vec3", "description": "Point to look at"}, {"name": "up", "type": "Vec3", "description": "Up direction"}],
+      "returns": [{"name": "m", "type": "Mat4", "description": "View matrix"}],
+      "errors": [],
+      "examples": ["eye target up mat4_look_at -> view"]
+    },
+    {
+      "name": "mat4_orthographic",
+      "signature": "(left:f64 right:f64 bottom:f64 top:f64 near:f64 far:f64 -- m:Mat4)",
+      "failable": false,
+      "description": "Create an orthographic projection matrix.",
+      "params": [{"name": "left", "type": "f64", "description": "Left clipping plane"}, {"name": "right", "type": "f64", "description": "Right clipping plane"}, {"name": "bottom", "type": "f64", "description": "Bottom clipping plane"}, {"name": "top", "type": "f64", "description": "Top clipping plane"}, {"name": "near", "type": "f64", "description": "Near clipping plane"}, {"name": "far", "type": "f64", "description": "Far clipping plane"}],
+      "returns": [{"name": "m", "type": "Mat4", "description": "Orthographic projection matrix"}],
+      "errors": [],
+      "examples": ["-1.0 1.0 -1.0 1.0 0.1 100.0 mat4_orthographic -> proj"]
+    },
+    {
+      "name": "mat4_perspective",
+      "signature": "(fov:f64 aspect:f64 near:f64 far:f64 -- m:Mat4)",
+      "failable": false,
+      "description": "Create a perspective projection matrix.",
+      "params": [{"name": "fov", "type": "f64", "description": "Field of view in radians"}, {"name": "aspect", "type": "f64", "description": "Aspect ratio (width/height)"}, {"name": "near", "type": "f64", "description": "Near clipping plane"}, {"name": "far", "type": "f64", "description": "Far clipping plane"}],
+      "returns": [{"name": "m", "type": "Mat4", "description": "Perspective projection matrix"}],
+      "errors": [],
+      "examples": ["1.047 1.777 0.1 100.0 mat4_perspective -> proj"]
     },
     {
       "name": "mat4_rotation_x",
@@ -587,6 +857,16 @@
     },
     {
       "name": "mul",
+      "signature": "(m:Mat4) mul(other:Mat4 -- result:Mat4)",
+      "failable": false,
+      "description": "Matrix multiplication.",
+      "params": [{"name": "other", "type": "Mat4", "description": "Matrix to multiply with"}],
+      "returns": [{"name": "result", "type": "Mat4", "description": "Product of matrices (m * other)"}],
+      "errors": [],
+      "examples": ["other m mul -> product"]
+    },
+    {
+      "name": "mul",
       "signature": "(q:Quat) mul(other:Quat -- result:Quat)",
       "failable": false,
       "description": "Quaternion multiplication.",
@@ -612,6 +892,16 @@
       "description": "Negate this vector.",
       "params": [],
       "returns": [{"name": "result", "type": "Vec3", "description": "Negated vector"}],
+      "errors": [],
+      "examples": ["v neg -> neg_v"]
+    },
+    {
+      "name": "neg",
+      "signature": "(v:Vec4) neg( -- result:Vec4)",
+      "failable": false,
+      "description": "Negate this vector.",
+      "params": [],
+      "returns": [{"name": "result", "type": "Vec4", "description": "Negated vector"}],
       "errors": [],
       "examples": ["v neg -> neg_v"]
     },
@@ -656,6 +946,16 @@
       "examples": ["v normalize -> unit"]
     },
     {
+      "name": "perpendicular",
+      "signature": "(v:Vec2) perpendicular( -- result:Vec2)",
+      "failable": false,
+      "description": "Get perpendicular vector (90° counterclockwise rotation).",
+      "params": [],
+      "returns": [{"name": "result", "type": "Vec2", "description": "Perpendicular vector"}],
+      "errors": [],
+      "examples": ["v perpendicular -> perp"]
+    },
+    {
       "name": "pow",
       "signature": "(base:f64 exp:f64 -- result:f64)",
       "failable": false,
@@ -664,6 +964,26 @@
       "returns": [{"name": "result", "type": "f64", "description": "base raised to exp"}],
       "errors": [],
       "examples": ["2.0 3.0 math::pow print  // 8.0"]
+    },
+    {
+      "name": "quat_from_axis_angle",
+      "signature": "(axis:Vec3 angle:f64 -- result:Quat)",
+      "failable": false,
+      "description": "Create quaternion from axis and angle.",
+      "params": [{"name": "axis", "type": "Vec3", "description": "Rotation axis (should be normalized)"}, {"name": "angle", "type": "f64", "description": "Rotation angle in radians"}],
+      "returns": [{"name": "result", "type": "Quat", "description": "Rotation quaternion"}],
+      "errors": [],
+      "examples": ["axis 1.57 quat_from_axis_angle -> q"]
+    },
+    {
+      "name": "quat_from_euler",
+      "signature": "(pitch:f64 yaw:f64 roll:f64 -- result:Quat)",
+      "failable": false,
+      "description": "Create quaternion from Euler angles (XYZ order).",
+      "params": [{"name": "pitch", "type": "f64", "description": "Rotation around X axis (radians)"}, {"name": "yaw", "type": "f64", "description": "Rotation around Y axis (radians)"}, {"name": "roll", "type": "f64", "description": "Rotation around Z axis (radians)"}],
+      "returns": [{"name": "result", "type": "Quat", "description": "Rotation quaternion"}],
+      "errors": [],
+      "examples": ["0.0 1.57 0.0 quat_from_euler -> q"]
     },
     {
       "name": "quat_identity",
@@ -694,6 +1014,36 @@
       "returns": [{"name": "result", "type": "Vec3", "description": "Reflected vector"}],
       "errors": [],
       "examples": ["normal v reflect -> reflected"]
+    },
+    {
+      "name": "remap",
+      "signature": "(in_min:f64 in_max:f64 out_min:f64 out_max:f64 v:f64 -- result:f64)",
+      "failable": false,
+      "description": "Remap a value from one range to another.",
+      "params": [{"name": "in_min", "type": "f64", "description": "Input range minimum"}, {"name": "in_max", "type": "f64", "description": "Input range maximum"}, {"name": "out_min", "type": "f64", "description": "Output range minimum"}, {"name": "out_max", "type": "f64", "description": "Output range maximum"}, {"name": "v", "type": "f64", "description": "Value to remap"}],
+      "returns": [{"name": "result", "type": "f64", "description": "Remapped value"}],
+      "errors": [],
+      "examples": ["0.0 10.0 0.0 100.0 5.0 math::remap print  // 50.0"]
+    },
+    {
+      "name": "rotate_vec3",
+      "signature": "(q:Quat) rotate_vec3(v:Vec3 -- result:Vec3)",
+      "failable": false,
+      "description": "Rotate a Vec3 by this quaternion.",
+      "params": [{"name": "v", "type": "Vec3", "description": "Vector to rotate"}],
+      "returns": [{"name": "result", "type": "Vec3", "description": "Rotated vector"}],
+      "errors": [],
+      "examples": ["v q rotate_vec3 -> rotated"]
+    },
+    {
+      "name": "rotate",
+      "signature": "(v:Vec2) rotate(angle:f64 -- result:Vec2)",
+      "failable": false,
+      "description": "Rotate this vector by an angle.",
+      "params": [{"name": "angle", "type": "f64", "description": "Rotation angle in radians"}],
+      "returns": [{"name": "result", "type": "Vec2", "description": "Rotated vector"}],
+      "errors": [],
+      "examples": ["1.57 v rotate -> rotated"]
     },
     {
       "name": "round",
@@ -736,6 +1086,26 @@
       "examples": ["2.0 v scale -> scaled"]
     },
     {
+      "name": "sign",
+      "signature": "(x:f64 -- result:f64)",
+      "failable": false,
+      "description": "Sign function.",
+      "params": [{"name": "x", "type": "f64", "description": "Input value"}],
+      "returns": [{"name": "result", "type": "f64", "description": "-1 if x < 0, 0 if x == 0, 1 if x > 0"}],
+      "errors": [],
+      "examples": ["-5.0 math::sign print  // -1.0"]
+    },
+    {
+      "name": "sinh",
+      "signature": "(x:f64 -- result:f64)",
+      "failable": false,
+      "description": "Hyperbolic sine.",
+      "params": [{"name": "x", "type": "f64", "description": "Any value"}],
+      "returns": [{"name": "result", "type": "f64", "description": "Hyperbolic sine of x"}],
+      "errors": [],
+      "examples": ["1.0 math::sinh print  // ~1.175"]
+    },
+    {
       "name": "sin",
       "signature": "(x:f64 -- result:f64)",
       "failable": false,
@@ -744,6 +1114,36 @@
       "returns": [{"name": "result", "type": "f64", "description": "Sine value [-1, 1]"}],
       "errors": [],
       "examples": ["0.0 math::sin print  // 0.0"]
+    },
+    {
+      "name": "slerp",
+      "signature": "(q:Quat) slerp(other:Quat t:f64 -- result:Quat)",
+      "failable": false,
+      "description": "Spherical linear interpolation to another quaternion.",
+      "params": [{"name": "other", "type": "Quat", "description": "End quaternion"}, {"name": "t", "type": "f64", "description": "Interpolation factor (0.0 to 1.0)"}],
+      "returns": [{"name": "result", "type": "Quat", "description": "Interpolated quaternion"}],
+      "errors": [],
+      "examples": ["other 0.5 q slerp -> mid"]
+    },
+    {
+      "name": "smootherstep",
+      "signature": "(edge0:f64 edge1:f64 x:f64 -- result:f64)",
+      "failable": false,
+      "description": "Smoother step interpolation (quintic, zero first and second derivatives at edges).",
+      "params": [{"name": "edge0", "type": "f64", "description": "Lower edge"}, {"name": "edge1", "type": "f64", "description": "Upper edge"}, {"name": "x", "type": "f64", "description": "Value to interpolate"}],
+      "returns": [{"name": "result", "type": "f64", "description": "Smoothly interpolated value [0, 1]"}],
+      "errors": [],
+      "examples": ["0.0 1.0 0.5 math::smootherstep print  // 0.5"]
+    },
+    {
+      "name": "smoothstep",
+      "signature": "(edge0:f64 edge1:f64 x:f64 -- result:f64)",
+      "failable": false,
+      "description": "Smooth step interpolation (cubic Hermite, zero derivatives at edges).",
+      "params": [{"name": "edge0", "type": "f64", "description": "Lower edge"}, {"name": "edge1", "type": "f64", "description": "Upper edge"}, {"name": "x", "type": "f64", "description": "Value to interpolate"}],
+      "returns": [{"name": "result", "type": "f64", "description": "Smoothly interpolated value [0, 1]"}],
+      "errors": [],
+      "examples": ["0.0 1.0 0.5 math::smoothstep print  // 0.5"]
     },
     {
       "name": "sqrt",
@@ -796,6 +1196,16 @@
       "examples": ["other v subtract -> diff"]
     },
     {
+      "name": "tanh",
+      "signature": "(x:f64 -- result:f64)",
+      "failable": false,
+      "description": "Hyperbolic tangent.",
+      "params": [{"name": "x", "type": "f64", "description": "Any value"}],
+      "returns": [{"name": "result", "type": "f64", "description": "Hyperbolic tangent of x [-1, 1]"}],
+      "errors": [],
+      "examples": ["0.0 math::tanh print  // 0.0"]
+    },
+    {
       "name": "tan",
       "signature": "(x:f64 -- result:f64)",
       "failable": false,
@@ -806,6 +1216,26 @@
       "examples": ["0.0 math::tan print  // 0.0"]
     },
     {
+      "name": "transform_point",
+      "signature": "(m:Mat4) transform_point(v:Vec3 -- result:Vec3)",
+      "failable": false,
+      "description": "Transform a Vec3 point by this matrix (w=1).",
+      "params": [{"name": "v", "type": "Vec3", "description": "Point to transform"}],
+      "returns": [{"name": "result", "type": "Vec3", "description": "Transformed point"}],
+      "errors": [],
+      "examples": ["point m transform_point -> transformed"]
+    },
+    {
+      "name": "transform_vec4",
+      "signature": "(m:Mat4) transform_vec4(v:Vec4 -- result:Vec4)",
+      "failable": false,
+      "description": "Transform a Vec4 by this matrix.",
+      "params": [{"name": "v", "type": "Vec4", "description": "Vector to transform"}],
+      "returns": [{"name": "result", "type": "Vec4", "description": "Transformed vector"}],
+      "errors": [],
+      "examples": ["vec m transform_vec4 -> transformed"]
+    },
+    {
       "name": "transpose",
       "signature": "(m:Mat4) transpose( -- result:Mat4)",
       "failable": false,
@@ -814,6 +1244,16 @@
       "returns": [{"name": "result", "type": "Mat4", "description": "Transposed matrix"}],
       "errors": [],
       "examples": ["m transpose -> m_t"]
+    },
+    {
+      "name": "trunc",
+      "signature": "(x:f64 -- result:f64)",
+      "failable": false,
+      "description": "Truncate toward zero.",
+      "params": [{"name": "x", "type": "f64", "description": "Any value"}],
+      "returns": [{"name": "result", "type": "f64", "description": "Integer part of x (toward zero)"}],
+      "errors": [],
+      "examples": ["-2.7 math::trunc print  // -2.0"]
     },
     {
       "name": "vec2_one",

@@ -19,6 +19,26 @@
       "examples": ["0b1010 1 bits::clear_bit print  // 8 (0b1000)"]
     },
     {
+      "name": "clz",
+      "signature": "(value:i64 -- count:i64)",
+      "failable": false,
+      "description": "Count leading zeros (from MSB).",
+      "params": [{"name": "value", "type": "i64", "description": "Value to count"}],
+      "returns": [{"name": "count", "type": "i64", "description": "Number of leading zero bits (0-64)"}],
+      "errors": [],
+      "examples": ["0x0F00000000000000 bits::clz print  // 4"]
+    },
+    {
+      "name": "ctz",
+      "signature": "(value:i64 -- count:i64)",
+      "failable": false,
+      "description": "Count trailing zeros (from LSB).",
+      "params": [{"name": "value", "type": "i64", "description": "Value to count"}],
+      "returns": [{"name": "count", "type": "i64", "description": "Number of trailing zero bits (0-64)"}],
+      "errors": [],
+      "examples": ["0x100 bits::ctz print  // 8"]
+    },
+    {
       "name": "extract",
       "signature": "(value:i64 start_bit:i64 num_bits:i64 -- result:i64)",
       "failable": false,
@@ -39,6 +59,46 @@
       "examples": ["0b1010 1 bits::has_bit print  // 1"]
     },
     {
+      "name": "highest_bit",
+      "signature": "(value:i64 -- result:i64)",
+      "failable": false,
+      "description": "Get the highest set bit as a value (isolate highest bit).",
+      "params": [{"name": "value", "type": "i64", "description": "Input value"}],
+      "returns": [{"name": "result", "type": "i64", "description": "Highest set bit as power of two, 0 if input is 0"}],
+      "errors": [],
+      "examples": ["0b1010 bits::highest_bit print  // 8 (0b1000)"]
+    },
+    {
+      "name": "is_power_of_two",
+      "signature": "(value:i64 -- flag:i64)",
+      "failable": false,
+      "description": "Check if value is a power of two.",
+      "params": [{"name": "value", "type": "i64", "description": "Value to check"}],
+      "returns": [{"name": "flag", "type": "i64", "description": "1 if power of two, 0 otherwise"}],
+      "errors": [],
+      "examples": ["8 bits::is_power_of_two print  // 1", "7 bits::is_power_of_two print  // 0"]
+    },
+    {
+      "name": "log2",
+      "signature": "(value:i64 -- result:i64)",
+      "failable": false,
+      "description": "Integer log base 2 (position of highest set bit).",
+      "params": [{"name": "value", "type": "i64", "description": "Value (must be > 0)"}],
+      "returns": [{"name": "result", "type": "i64", "description": "Floor of log2(value)"}],
+      "errors": [],
+      "examples": ["8 bits::log2 print  // 3", "15 bits::log2 print  // 3"]
+    },
+    {
+      "name": "lowest_bit",
+      "signature": "(value:i64 -- result:i64)",
+      "failable": false,
+      "description": "Get the lowest set bit as a value (isolate lowest bit).",
+      "params": [{"name": "value", "type": "i64", "description": "Input value"}],
+      "returns": [{"name": "result", "type": "i64", "description": "Lowest set bit as power of two, 0 if input is 0"}],
+      "errors": [],
+      "examples": ["0b1010 bits::lowest_bit print  // 2 (0b0010)"]
+    },
+    {
       "name": "mask",
       "signature": "(value:i64 num_bits:i64 -- result:i64)",
       "failable": false,
@@ -47,6 +107,16 @@
       "returns": [{"name": "result", "type": "i64", "description": "Masked value"}],
       "errors": [],
       "examples": ["0xFF 4 bits::mask print  // 15"]
+    },
+    {
+      "name": "next_power_of_two",
+      "signature": "(value:i64 -- result:i64)",
+      "failable": false,
+      "description": "Find the next power of two greater than or equal to value.",
+      "params": [{"name": "value", "type": "i64", "description": "Input value"}],
+      "returns": [{"name": "result", "type": "i64", "description": "Next power of two"}],
+      "errors": [],
+      "examples": ["5 bits::next_power_of_two print  // 8", "8 bits::next_power_of_two print  // 8"]
     },
     {
       "name": "popcount",

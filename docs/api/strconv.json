@@ -1,6 +1,6 @@
 {
   "name": "strconv",
-  "description": "String to number conversions. Provides format and parse functions for integers (any base 2-36), floats, and booleans.",
+  "description": "String to number conversions.  Functions: - format_int: Format integer in any base (2-36) - parse_int: Parse string to integer in any base (2-36) - itoa: Convert integer to decimal string (shorthand for 10 format_int) - atoi: Parse decimal string to integer (shorthand for 10 parse_int) - format_float: Format float to string - parse_float: Parse string to float - format_bool: Format boolean to string (\"true\"/\"false\") - parse_bool: Parse string to boolean",
   "constants": [
 
   ],
@@ -9,64 +9,14 @@
   ],
   "functions": [
     {
-      "name": "itoa",
-      "signature": "(value:i64 -- s:str)",
-      "failable": false,
-      "description": "Convert integer to decimal string (base 10). Equivalent to: value 10 strconv::format_int",
-      "params": [{"name": "value", "type": "i64", "description": "Integer value"}],
-      "returns": [{"name": "s", "type": "str", "description": "Decimal string"}],
-      "errors": [],
-      "examples": ["42 strconv::itoa print  // \"42\""]
-    },
-    {
       "name": "atoi",
       "signature": "(s:str -- value:i64)",
       "failable": true,
       "description": "Parse decimal string to integer (base 10). Equivalent to: str 10 strconv::parse_int",
       "params": [{"name": "s", "type": "str", "description": "Decimal string"}],
       "returns": [{"name": "value", "type": "i64", "description": "Parsed integer"}],
-      "errors": ["Invalid number format"],
+      "errors": [],
       "examples": ["\"42\" strconv::atoi! print  // 42"]
-    },
-    {
-      "name": "format_int",
-      "signature": "(value:i64 base:i64 -- s:str)",
-      "failable": false,
-      "description": "Format integer in given base.",
-      "params": [{"name": "value", "type": "i64", "description": "Integer value"}, {"name": "base", "type": "i64", "description": "Numeric base (2-36)"}],
-      "returns": [{"name": "s", "type": "str", "description": "Formatted string"}],
-      "errors": [],
-      "examples": ["255 16 strconv::format_int print  // \"ff\""]
-    },
-    {
-      "name": "parse_int",
-      "signature": "(s:str base:i64 -- value:i64)",
-      "failable": true,
-      "description": "Parse integer from string in given base.",
-      "params": [{"name": "s", "type": "str", "description": "String to parse"}, {"name": "base", "type": "i64", "description": "Numeric base (2-36)"}],
-      "returns": [{"name": "value", "type": "i64", "description": "Parsed integer"}],
-      "errors": ["Invalid number format"],
-      "examples": ["\"ff\" 16 strconv::parse_int! print  // 255"]
-    },
-    {
-      "name": "format_float",
-      "signature": "(value:f64 -- s:str)",
-      "failable": false,
-      "description": "Format float to string. Uses compact %g format (removes trailing zeros).",
-      "params": [{"name": "value", "type": "f64", "description": "Float value"}],
-      "returns": [{"name": "s", "type": "str", "description": "Formatted string"}],
-      "errors": [],
-      "examples": ["3.14159 strconv::format_float print  // \"3.14159\""]
-    },
-    {
-      "name": "parse_float",
-      "signature": "(s:str -- value:f64)",
-      "failable": true,
-      "description": "Parse string to float.",
-      "params": [{"name": "s", "type": "str", "description": "String to parse"}],
-      "returns": [{"name": "value", "type": "f64", "description": "Parsed float"}],
-      "errors": ["Invalid number format"],
-      "examples": ["\"3.14\" strconv::parse_float! print  // 3.14"]
     },
     {
       "name": "format_bool",
@@ -79,14 +29,64 @@
       "examples": ["1 strconv::format_bool print  // \"true\""]
     },
     {
+      "name": "format_float",
+      "signature": "(value:f64 -- s:str)",
+      "failable": false,
+      "description": "Format float to string. Uses compact %g format (removes trailing zeros).",
+      "params": [{"name": "value", "type": "f64", "description": "Float value"}],
+      "returns": [{"name": "s", "type": "str", "description": "Formatted string"}],
+      "errors": [],
+      "examples": ["3.14159 strconv::format_float print  // \"3.14159\""]
+    },
+    {
+      "name": "format_int",
+      "signature": "(value:i64 base:i64 -- s:str)",
+      "failable": false,
+      "description": "Format integer in given base.",
+      "params": [{"name": "value", "type": "i64", "description": "Integer value"}, {"name": "base", "type": "i64", "description": "Numeric base (2-36)"}],
+      "returns": [{"name": "s", "type": "str", "description": "Formatted string"}],
+      "errors": [],
+      "examples": ["255 16 strconv::format_int print  // \"ff\""]
+    },
+    {
+      "name": "itoa",
+      "signature": "(value:i64 -- s:str)",
+      "failable": false,
+      "description": "Convert integer to decimal string (base 10). Equivalent to: value 10 strconv::format_int",
+      "params": [{"name": "value", "type": "i64", "description": "Integer value"}],
+      "returns": [{"name": "s", "type": "str", "description": "Decimal string"}],
+      "errors": [],
+      "examples": ["42 strconv::itoa print  // \"42\""]
+    },
+    {
       "name": "parse_bool",
       "signature": "(s:str -- value:i64)",
       "failable": true,
       "description": "Parse string to boolean. Accepts \"true\"/\"1\" as true, \"false\"/\"0\" as false (case-insensitive).",
       "params": [{"name": "s", "type": "str", "description": "String to parse"}],
       "returns": [{"name": "value", "type": "i64", "description": "1 for true, 0 for false"}],
-      "errors": ["Invalid boolean format"],
+      "errors": [],
       "examples": ["\"true\" strconv::parse_bool! print  // 1"]
+    },
+    {
+      "name": "parse_float",
+      "signature": "(s:str -- value:f64)",
+      "failable": true,
+      "description": "Parse string to float.",
+      "params": [{"name": "s", "type": "str", "description": "String to parse"}],
+      "returns": [{"name": "value", "type": "f64", "description": "Parsed float"}],
+      "errors": [],
+      "examples": ["\"3.14\" strconv::parse_float! print  // 3.14"]
+    },
+    {
+      "name": "parse_int",
+      "signature": "(s:str base:i64 -- value:i64)",
+      "failable": true,
+      "description": "Parse integer from string in given base.",
+      "params": [{"name": "s", "type": "str", "description": "String to parse"}, {"name": "base", "type": "i64", "description": "Numeric base (2-36)"}],
+      "returns": [{"name": "value", "type": "i64", "description": "Parsed integer"}],
+      "errors": [],
+      "examples": ["\"ff\" 16 strconv::parse_int! print  // 255"]
     }
   ]
 }

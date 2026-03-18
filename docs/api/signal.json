@@ -2,101 +2,7 @@
   "name": "signal",
   "description": "Unix signal handling with polling-based API.  Signals are caught and stored as flags. Use pending() to check if a signal was received, and clear() to reset the flag.  Example:   use signal    fn main() {       signal::SigInt signal::trap       \"Running. Press Ctrl+C to stop.\" print nl        loop {           signal::SigInt signal::pending if {               \"Shutting down\" print nl               signal::SigInt signal::clear               break           }       }   }",
   "constants": [
-    {
-      "name": "SigAbrt",
-      "value": "6",
-      "description": "Abort signal."
-    },
-    {
-      "name": "SigAlrm",
-      "value": "14",
-      "description": "Alarm clock."
-    },
-    {
-      "name": "SigChld",
-      "value": "17",
-      "description": "Child process stopped or terminated."
-    },
-    {
-      "name": "SigCont",
-      "value": "18",
-      "description": "Continue if stopped."
-    },
-    {
-      "name": "SigFpe",
-      "value": "8",
-      "description": "Floating point exception."
-    },
-    {
-      "name": "SigHup",
-      "value": "1",
-      "description": "Hangup signal (terminal closed)."
-    },
-    {
-      "name": "SigIll",
-      "value": "4",
-      "description": "Illegal instruction."
-    },
-    {
-      "name": "SigInt",
-      "value": "2",
-      "description": "Interrupt signal (Ctrl+C)."
-    },
-    {
-      "name": "SigKill",
-      "value": "9",
-      "description": "Kill signal (cannot be caught)."
-    },
-    {
-      "name": "SigPipe",
-      "value": "13",
-      "description": "Broken pipe."
-    },
-    {
-      "name": "SigQuit",
-      "value": "3",
-      "description": "Quit signal (Ctrl+\\)."
-    },
-    {
-      "name": "SigSegv",
-      "value": "11",
-      "description": "Segmentation fault."
-    },
-    {
-      "name": "SigStop",
-      "value": "19",
-      "description": "Stop signal (cannot be caught)."
-    },
-    {
-      "name": "SigTerm",
-      "value": "15",
-      "description": "Termination signal."
-    },
-    {
-      "name": "SigTstp",
-      "value": "20",
-      "description": "Terminal stop (Ctrl+Z)."
-    },
-    {
-      "name": "SigTtin",
-      "value": "21",
-      "description": "Background read from terminal."
-    },
-    {
-      "name": "SigTtou",
-      "value": "22",
-      "description": "Background write to terminal."
-    },
-    {
-      "name": "SigUsr1",
-      "value": "10",
-      "description": "User-defined signal 1."
-    },
-    {
-      "name": "SigUsr2",
-      "value": "12",
-      "description": "User-defined signal 2."
-    }
+
   ],
   "structs": [
 
@@ -123,6 +29,16 @@
       "examples": ["signal::SigPipe signal::ignore"]
     },
     {
+      "name": "kill",
+      "signature": "(pid:i64 signum:i64 -- result:i64)",
+      "failable": false,
+      "description": "Send a signal to another process.",
+      "params": [{"name": "pid", "type": "i64", "description": "Process ID to signal"}, {"name": "signum", "type": "i64", "description": "Signal number to send"}],
+      "returns": [{"name": "result", "type": "i64", "description": "0 on success, -1 on error"}],
+      "errors": [],
+      "examples": ["1234 signal::SigTerm signal::kill drop"]
+    },
+    {
       "name": "pending",
       "signature": "(signum:i64 -- flag:i64)",
       "failable": false,
@@ -133,6 +49,16 @@
       "examples": ["signal::SigInt signal::pending"]
     },
     {
+      "name": "raise",
+      "signature": "(signum:i64 -- result:i64)",
+      "failable": false,
+      "description": "Send a signal to the current process.",
+      "params": [{"name": "signum", "type": "i64", "description": "Signal number to send"}],
+      "returns": [{"name": "result", "type": "i64", "description": "0 on success, -1 on error"}],
+      "errors": [],
+      "examples": ["signal::SigUsr1 signal::raise drop"]
+    },
+    {
       "name": "reset",
       "signature": "(signum:i64 -- )",
       "failable": false,
@@ -141,6 +67,196 @@
       "returns": [],
       "errors": [],
       "examples": ["signal::SigInt signal::reset"]
+    },
+    {
+      "name": "SigAbrt",
+      "signature": "( -- val:i64)",
+      "failable": false,
+      "description": "Abort signal.",
+      "params": [],
+      "returns": [],
+      "errors": [],
+      "examples": []
+    },
+    {
+      "name": "SigAlrm",
+      "signature": "( -- val:i64)",
+      "failable": false,
+      "description": "Alarm clock.",
+      "params": [],
+      "returns": [],
+      "errors": [],
+      "examples": []
+    },
+    {
+      "name": "SigChld",
+      "signature": "( -- val:i64)",
+      "failable": false,
+      "description": "Child process stopped or terminated.",
+      "params": [],
+      "returns": [],
+      "errors": [],
+      "examples": []
+    },
+    {
+      "name": "SigCont",
+      "signature": "( -- val:i64)",
+      "failable": false,
+      "description": "Continue if stopped.",
+      "params": [],
+      "returns": [],
+      "errors": [],
+      "examples": []
+    },
+    {
+      "name": "SigFpe",
+      "signature": "( -- val:i64)",
+      "failable": false,
+      "description": "Floating point exception.",
+      "params": [],
+      "returns": [],
+      "errors": [],
+      "examples": []
+    },
+    {
+      "name": "SigHup",
+      "signature": "( -- val:i64)",
+      "failable": false,
+      "description": "Hangup signal (terminal closed).",
+      "params": [],
+      "returns": [],
+      "errors": [],
+      "examples": []
+    },
+    {
+      "name": "SigIll",
+      "signature": "( -- val:i64)",
+      "failable": false,
+      "description": "Illegal instruction.",
+      "params": [],
+      "returns": [],
+      "errors": [],
+      "examples": []
+    },
+    {
+      "name": "SigInt",
+      "signature": "( -- val:i64)",
+      "failable": false,
+      "description": "Interrupt signal (Ctrl+C).",
+      "params": [],
+      "returns": [],
+      "errors": [],
+      "examples": []
+    },
+    {
+      "name": "SigKill",
+      "signature": "( -- val:i64)",
+      "failable": false,
+      "description": "Kill signal (cannot be caught).",
+      "params": [],
+      "returns": [],
+      "errors": [],
+      "examples": []
+    },
+    {
+      "name": "SigPipe",
+      "signature": "( -- val:i64)",
+      "failable": false,
+      "description": "Broken pipe.",
+      "params": [],
+      "returns": [],
+      "errors": [],
+      "examples": []
+    },
+    {
+      "name": "SigQuit",
+      "signature": "( -- val:i64)",
+      "failable": false,
+      "description": "Quit signal (Ctrl+\\).",
+      "params": [],
+      "returns": [],
+      "errors": [],
+      "examples": []
+    },
+    {
+      "name": "SigSegv",
+      "signature": "( -- val:i64)",
+      "failable": false,
+      "description": "Segmentation fault.",
+      "params": [],
+      "returns": [],
+      "errors": [],
+      "examples": []
+    },
+    {
+      "name": "SigStop",
+      "signature": "( -- val:i64)",
+      "failable": false,
+      "description": "Stop signal (cannot be caught).",
+      "params": [],
+      "returns": [],
+      "errors": [],
+      "examples": []
+    },
+    {
+      "name": "SigTerm",
+      "signature": "( -- val:i64)",
+      "failable": false,
+      "description": "Termination signal.",
+      "params": [],
+      "returns": [],
+      "errors": [],
+      "examples": []
+    },
+    {
+      "name": "SigTstp",
+      "signature": "( -- val:i64)",
+      "failable": false,
+      "description": "Terminal stop (Ctrl+Z).",
+      "params": [],
+      "returns": [],
+      "errors": [],
+      "examples": []
+    },
+    {
+      "name": "SigTtin",
+      "signature": "( -- val:i64)",
+      "failable": false,
+      "description": "Background read from terminal.",
+      "params": [],
+      "returns": [],
+      "errors": [],
+      "examples": []
+    },
+    {
+      "name": "SigTtou",
+      "signature": "( -- val:i64)",
+      "failable": false,
+      "description": "Background write to terminal.",
+      "params": [],
+      "returns": [],
+      "errors": [],
+      "examples": []
+    },
+    {
+      "name": "SigUsr1",
+      "signature": "( -- val:i64)",
+      "failable": false,
+      "description": "User-defined signal 1.",
+      "params": [],
+      "returns": [],
+      "errors": [],
+      "examples": []
+    },
+    {
+      "name": "SigUsr2",
+      "signature": "( -- val:i64)",
+      "failable": false,
+      "description": "User-defined signal 2.",
+      "params": [],
+      "returns": [],
+      "errors": [],
+      "examples": []
     },
     {
       "name": "trap",

@@ -18,6 +18,11 @@
       "description": "Smallest positive normalized f64 value."
     },
     {
+      "name": "F64Size",
+      "value": "8",
+      "description": "Size of f64 in bytes."
+    },
+    {
       "name": "I16Max",
       "value": "32767",
       "description": "Maximum value for 16-bit signed integer (C: int16_t)."
@@ -43,9 +48,9 @@
       "description": "Maximum value for i64 (Quadrate's native integer type)."
     },
     {
-      "name": "I64Min",
-      "value": "-9223372036854775807",
-      "description": "Minimum value for i64 (Quadrate's native integer type)."
+      "name": "I64Size",
+      "value": "8",
+      "description": "Size of i64 in bytes."
     },
     {
       "name": "I8Max",
@@ -56,6 +61,11 @@
       "name": "I8Min",
       "value": "-128",
       "description": "Minimum value for 8-bit signed integer (C: int8_t)."
+    },
+    {
+      "name": "PtrSize",
+      "value": "8",
+      "description": "Size of a pointer in bytes (64-bit platform)."
     },
     {
       "name": "U16Max",
@@ -77,6 +87,115 @@
 
   ],
   "functions": [
-
+    {
+      "name": "clamp_i16",
+      "signature": "(v:i64 -- clamped:i64)",
+      "failable": false,
+      "description": "Clamp value to i16 range.",
+      "params": [{"name": "v", "type": "i64", "description": "Value to clamp"}],
+      "returns": [{"name": "clamped", "type": "i64", "description": "Value clamped to [-32768, 32767]"}],
+      "errors": [],
+      "examples": ["50000 limits::clamp_i16 print  // 32767"]
+    },
+    {
+      "name": "clamp_i8",
+      "signature": "(v:i64 -- clamped:i64)",
+      "failable": false,
+      "description": "Clamp value to i8 range.",
+      "params": [{"name": "v", "type": "i64", "description": "Value to clamp"}],
+      "returns": [{"name": "clamped", "type": "i64", "description": "Value clamped to [-128, 127]"}],
+      "errors": [],
+      "examples": ["200 limits::clamp_i8 print  // 127"]
+    },
+    {
+      "name": "clamp_u16",
+      "signature": "(v:i64 -- clamped:i64)",
+      "failable": false,
+      "description": "Clamp value to u16 range.",
+      "params": [{"name": "v", "type": "i64", "description": "Value to clamp"}],
+      "returns": [{"name": "clamped", "type": "i64", "description": "Value clamped to [0, 65535]"}],
+      "errors": [],
+      "examples": ["70000 limits::clamp_u16 print  // 65535"]
+    },
+    {
+      "name": "clamp_u8",
+      "signature": "(v:i64 -- clamped:i64)",
+      "failable": false,
+      "description": "Clamp value to u8 range.",
+      "params": [{"name": "v", "type": "i64", "description": "Value to clamp"}],
+      "returns": [{"name": "clamped", "type": "i64", "description": "Value clamped to [0, 255]"}],
+      "errors": [],
+      "examples": ["300 limits::clamp_u8 print  // 255"]
+    },
+    {
+      "name": "fits_i16",
+      "signature": "(v:i64 -- fits:i64)",
+      "failable": false,
+      "description": "Check if value fits in i16 range.",
+      "params": [{"name": "v", "type": "i64", "description": "Value to check"}],
+      "returns": [{"name": "fits", "type": "i64", "description": "1 if in range, 0 otherwise"}],
+      "errors": [],
+      "examples": ["30000 limits::fits_i16 print  // 1"]
+    },
+    {
+      "name": "fits_i32",
+      "signature": "(v:i64 -- fits:i64)",
+      "failable": false,
+      "description": "Check if value fits in i32 range.",
+      "params": [{"name": "v", "type": "i64", "description": "Value to check"}],
+      "returns": [{"name": "fits", "type": "i64", "description": "1 if in range, 0 otherwise"}],
+      "errors": [],
+      "examples": ["2000000000 limits::fits_i32 print  // 1"]
+    },
+    {
+      "name": "fits_i8",
+      "signature": "(v:i64 -- fits:i64)",
+      "failable": false,
+      "description": "Check if value fits in i8 range.",
+      "params": [{"name": "v", "type": "i64", "description": "Value to check"}],
+      "returns": [{"name": "fits", "type": "i64", "description": "1 if in range, 0 otherwise"}],
+      "errors": [],
+      "examples": ["100 limits::fits_i8 print  // 1"]
+    },
+    {
+      "name": "fits_u16",
+      "signature": "(v:i64 -- fits:i64)",
+      "failable": false,
+      "description": "Check if value fits in u16 range.",
+      "params": [{"name": "v", "type": "i64", "description": "Value to check"}],
+      "returns": [{"name": "fits", "type": "i64", "description": "1 if in range, 0 otherwise"}],
+      "errors": [],
+      "examples": ["50000 limits::fits_u16 print  // 1"]
+    },
+    {
+      "name": "fits_u32",
+      "signature": "(v:i64 -- fits:i64)",
+      "failable": false,
+      "description": "Check if value fits in u32 range.",
+      "params": [{"name": "v", "type": "i64", "description": "Value to check"}],
+      "returns": [{"name": "fits", "type": "i64", "description": "1 if in range, 0 otherwise"}],
+      "errors": [],
+      "examples": ["3000000000 limits::fits_u32 print  // 1"]
+    },
+    {
+      "name": "fits_u8",
+      "signature": "(v:i64 -- fits:i64)",
+      "failable": false,
+      "description": "Check if value fits in u8 range.",
+      "params": [{"name": "v", "type": "i64", "description": "Value to check"}],
+      "returns": [{"name": "fits", "type": "i64", "description": "1 if in range, 0 otherwise"}],
+      "errors": [],
+      "examples": ["200 limits::fits_u8 print  // 1"]
+    },
+    {
+      "name": "I64Min",
+      "signature": "( -- result:i64)",
+      "failable": false,
+      "description": "Minimum value for i64 (Quadrate's native integer type). Note: -9223372036854775808 cannot be a literal (parser overflows), so we compute it.",
+      "params": [],
+      "returns": [],
+      "errors": [],
+      "examples": []
+    }
   ]
 }

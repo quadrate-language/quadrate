@@ -140,7 +140,7 @@
     {
       "name": "dollar",
       "value": "36",
-      "description": "Punctuation: Dollar sign (it)."
+      "description": "Punctuation: Dollar sign ($)."
     },
     {
       "name": "dot",
@@ -508,6 +508,66 @@
   ],
   "functions": [
     {
+      "name": "digit_value",
+      "signature": "(c:i64 -- result:i64)",
+      "failable": false,
+      "description": "Convert digit character to its numeric value.",
+      "params": [{"name": "c", "type": "i64", "description": "Character code (must be a digit)"}],
+      "returns": [{"name": "result", "type": "i64", "description": "Numeric value (0-9), or -1 if not a digit"}],
+      "errors": [],
+      "examples": ["53 unicode::digit_value print  // 5"]
+    },
+    {
+      "name": "hex_digit_value",
+      "signature": "(c:i64 -- result:i64)",
+      "failable": false,
+      "description": "Convert hex digit character to its numeric value.",
+      "params": [{"name": "c", "type": "i64", "description": "Character code (must be a hex digit)"}],
+      "returns": [{"name": "result", "type": "i64", "description": "Numeric value (0-15), or -1 if not a hex digit"}],
+      "errors": [],
+      "examples": ["65 unicode::hex_digit_value print  // 10 (A)"]
+    },
+    {
+      "name": "is_alnum",
+      "signature": "(c:i64 -- result:i64)",
+      "failable": false,
+      "description": "Check if character is alphanumeric (A-Z, a-z, or 0-9).",
+      "params": [{"name": "c", "type": "i64", "description": "Character code"}],
+      "returns": [{"name": "result", "type": "i64", "description": "1 if alphanumeric, 0 otherwise"}],
+      "errors": [],
+      "examples": ["65 unicode::is_alnum print  // 1"]
+    },
+    {
+      "name": "is_alpha",
+      "signature": "(c:i64 -- result:i64)",
+      "failable": false,
+      "description": "Check if character is an alphabetic letter (A-Z or a-z).",
+      "params": [{"name": "c", "type": "i64", "description": "Character code"}],
+      "returns": [{"name": "result", "type": "i64", "description": "1 if alphabetic, 0 otherwise"}],
+      "errors": [],
+      "examples": ["65 unicode::is_alpha print  // 1"]
+    },
+    {
+      "name": "is_ascii",
+      "signature": "(c:i64 -- result:i64)",
+      "failable": false,
+      "description": "Check if character is ASCII (0-127).",
+      "params": [{"name": "c", "type": "i64", "description": "Character code"}],
+      "returns": [{"name": "result", "type": "i64", "description": "1 if ASCII, 0 otherwise"}],
+      "errors": [],
+      "examples": ["65 unicode::is_ascii print  // 1"]
+    },
+    {
+      "name": "is_control",
+      "signature": "(c:i64 -- result:i64)",
+      "failable": false,
+      "description": "Check if character is a control character (ASCII 0-31 and 127).",
+      "params": [{"name": "c", "type": "i64", "description": "Character code"}],
+      "returns": [{"name": "result", "type": "i64", "description": "1 if control character, 0 otherwise"}],
+      "errors": [],
+      "examples": ["10 unicode::is_control print  // 1 (newline)"]
+    },
+    {
       "name": "is_digit",
       "signature": "(c:i64 -- result:i64)",
       "failable": false,
@@ -516,6 +576,156 @@
       "returns": [{"name": "result", "type": "i64", "description": "1 if digit, 0 otherwise"}],
       "errors": [],
       "examples": ["48 unicode::is_digit print  // 1"]
+    },
+    {
+      "name": "is_hex_digit",
+      "signature": "(c:i64 -- result:i64)",
+      "failable": false,
+      "description": "Check if character is a hexadecimal digit (0-9, A-F, a-f).",
+      "params": [{"name": "c", "type": "i64", "description": "Character code"}],
+      "returns": [{"name": "result", "type": "i64", "description": "1 if hex digit, 0 otherwise"}],
+      "errors": [],
+      "examples": ["65 unicode::is_hex_digit print  // 1 (A)"]
+    },
+    {
+      "name": "is_ident_cont",
+      "signature": "(c:i64 -- result:i64)",
+      "failable": false,
+      "description": "Check if character is a valid identifier continuation (letter, digit, or underscore).",
+      "params": [{"name": "c", "type": "i64", "description": "Character code"}],
+      "returns": [{"name": "result", "type": "i64", "description": "1 if valid identifier continuation, 0 otherwise"}],
+      "errors": [],
+      "examples": ["95 unicode::is_ident_cont print  // 1 (_)"]
+    },
+    {
+      "name": "is_ident_start",
+      "signature": "(c:i64 -- result:i64)",
+      "failable": false,
+      "description": "Check if character is a valid identifier start (letter or underscore).",
+      "params": [{"name": "c", "type": "i64", "description": "Character code"}],
+      "returns": [{"name": "result", "type": "i64", "description": "1 if valid identifier start, 0 otherwise"}],
+      "errors": [],
+      "examples": ["95 unicode::is_ident_start print  // 1 (_)"]
+    },
+    {
+      "name": "is_lower",
+      "signature": "(c:i64 -- result:i64)",
+      "failable": false,
+      "description": "Check if character is a lowercase letter (a-z).",
+      "params": [{"name": "c", "type": "i64", "description": "Character code"}],
+      "returns": [{"name": "result", "type": "i64", "description": "1 if lowercase, 0 otherwise"}],
+      "errors": [],
+      "examples": ["97 unicode::is_lower print  // 1"]
+    },
+    {
+      "name": "is_print",
+      "signature": "(c:i64 -- result:i64)",
+      "failable": false,
+      "description": "Check if character is printable (space through tilde, ASCII 32-126).",
+      "params": [{"name": "c", "type": "i64", "description": "Character code"}],
+      "returns": [{"name": "result", "type": "i64", "description": "1 if printable, 0 otherwise"}],
+      "errors": [],
+      "examples": ["65 unicode::is_print print  // 1"]
+    },
+    {
+      "name": "is_punct",
+      "signature": "(c:i64 -- result:i64)",
+      "failable": false,
+      "description": "Check if character is punctuation (printable but not alphanumeric or space).",
+      "params": [{"name": "c", "type": "i64", "description": "Character code"}],
+      "returns": [{"name": "result", "type": "i64", "description": "1 if punctuation, 0 otherwise"}],
+      "errors": [],
+      "examples": ["33 unicode::is_punct print  // 1 (!)"]
+    },
+    {
+      "name": "is_space",
+      "signature": "(c:i64 -- result:i64)",
+      "failable": false,
+      "description": "Check if character is whitespace (space, tab, newline, carriage return).",
+      "params": [{"name": "c", "type": "i64", "description": "Character code"}],
+      "returns": [{"name": "result", "type": "i64", "description": "1 if whitespace, 0 otherwise"}],
+      "errors": [],
+      "examples": ["32 unicode::is_space print  // 1"]
+    },
+    {
+      "name": "is_upper",
+      "signature": "(c:i64 -- result:i64)",
+      "failable": false,
+      "description": "Check if character is an uppercase letter (A-Z).",
+      "params": [{"name": "c", "type": "i64", "description": "Character code"}],
+      "returns": [{"name": "result", "type": "i64", "description": "1 if uppercase, 0 otherwise"}],
+      "errors": [],
+      "examples": ["65 unicode::is_upper print  // 1"]
+    },
+    {
+      "name": "is_utf8_cont",
+      "signature": "(b:i64 -- result:i64)",
+      "failable": false,
+      "description": "Check if byte is a UTF-8 continuation byte (10xxxxxx).",
+      "params": [{"name": "b", "type": "i64", "description": "Byte value"}],
+      "returns": [{"name": "result", "type": "i64", "description": "1 if continuation byte, 0 otherwise"}],
+      "errors": [],
+      "examples": ["0x80 unicode::is_utf8_cont print  // 1"]
+    },
+    {
+      "name": "is_utf8_start",
+      "signature": "(b:i64 -- result:i64)",
+      "failable": false,
+      "description": "Check if byte is the start of a UTF-8 sequence.",
+      "params": [{"name": "b", "type": "i64", "description": "Byte value"}],
+      "returns": [{"name": "result", "type": "i64", "description": "1 if start byte, 0 otherwise"}],
+      "errors": [],
+      "examples": ["0xC2 unicode::is_utf8_start print  // 1"]
+    },
+    {
+      "name": "is_valid_codepoint",
+      "signature": "(cp:i64 -- valid:i64)",
+      "failable": false,
+      "description": "Check if a codepoint is valid Unicode.",
+      "params": [{"name": "cp", "type": "i64", "description": "Codepoint to check"}],
+      "returns": [{"name": "valid", "type": "i64", "description": "1 if valid, 0 otherwise"}],
+      "errors": [],
+      "examples": ["0x1F600 unicode::is_valid_codepoint print  // 1 (😀)"]
+    },
+    {
+      "name": "to_lower",
+      "signature": "(c:i64 -- result:i64)",
+      "failable": false,
+      "description": "Convert uppercase letter to lowercase.",
+      "params": [{"name": "c", "type": "i64", "description": "Character code"}],
+      "returns": [{"name": "result", "type": "i64", "description": "Lowercase character code (unchanged if not uppercase)"}],
+      "errors": [],
+      "examples": ["65 unicode::to_lower print  // 97"]
+    },
+    {
+      "name": "to_upper",
+      "signature": "(c:i64 -- result:i64)",
+      "failable": false,
+      "description": "Convert lowercase letter to uppercase.",
+      "params": [{"name": "c", "type": "i64", "description": "Character code"}],
+      "returns": [{"name": "result", "type": "i64", "description": "Uppercase character code (unchanged if not lowercase)"}],
+      "errors": [],
+      "examples": ["97 unicode::to_upper print  // 65"]
+    },
+    {
+      "name": "utf8_encode_len",
+      "signature": "(cp:i64 -- len:i64)",
+      "failable": false,
+      "description": "Get the number of UTF-8 bytes needed to encode a codepoint.",
+      "params": [{"name": "cp", "type": "i64", "description": "Unicode codepoint"}],
+      "returns": [{"name": "len", "type": "i64", "description": "Number of bytes needed (1-4), or 0 if invalid"}],
+      "errors": [],
+      "examples": ["0x00E9 unicode::utf8_encode_len print  // 2 (é)"]
+    },
+    {
+      "name": "utf8_seq_len",
+      "signature": "(b:i64 -- len:i64)",
+      "failable": false,
+      "description": "Get the number of bytes in a UTF-8 sequence based on the first byte. Returns 1 for ASCII, 2-4 for multi-byte sequences, 0 for invalid.",
+      "params": [{"name": "b", "type": "i64", "description": "First byte of UTF-8 sequence"}],
+      "returns": [{"name": "len", "type": "i64", "description": "Number of bytes (1-4), or 0 if invalid"}],
+      "errors": [],
+      "examples": ["0xC2 unicode::utf8_seq_len print  // 2"]
     }
   ]
 }

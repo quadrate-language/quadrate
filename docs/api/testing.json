@@ -9,6 +9,36 @@
   ],
   "functions": [
     {
+      "name": "assert_approx_eq",
+      "signature": "(a:f64 b:f64 epsilon:f64 -- )",
+      "failable": false,
+      "description": "Assert that two floats are approximately equal within epsilon. Useful for comparing floating-point numbers which may have rounding errors.",
+      "params": [{"name": "a", "type": "f64", "description": "First value"}, {"name": "b", "type": "f64", "description": "Second value (expected)"}, {"name": "epsilon", "type": "f64", "description": "Maximum allowed difference"}],
+      "returns": [],
+      "errors": [],
+      "examples": ["3.14159 3.14160 0.0001 testing::assert_approx_eq  // passes"]
+    },
+    {
+      "name": "assert_contains",
+      "signature": "(haystack:str needle:str -- )",
+      "failable": false,
+      "description": "Assert that a string contains a substring.",
+      "params": [{"name": "haystack", "type": "str", "description": "String to search in"}, {"name": "needle", "type": "str", "description": "Substring to search for"}],
+      "returns": [],
+      "errors": [],
+      "examples": ["\"hello world\" \"world\" testing::assert_contains  // passes"]
+    },
+    {
+      "name": "assert_ends_with",
+      "signature": "(s:str suffix:str -- )",
+      "failable": false,
+      "description": "Assert that a string ends with a suffix.",
+      "params": [{"name": "s", "type": "str", "description": "String to check"}, {"name": "suffix", "type": "str", "description": "Expected suffix"}],
+      "returns": [],
+      "errors": [],
+      "examples": ["\"hello world\" \"world\" testing::assert_ends_with  // passes"]
+    },
+    {
       "name": "assert_eq",
       "signature": "(a:any b:any -- )",
       "failable": false,
@@ -29,44 +59,14 @@
       "examples": ["0 testing::assert_false  // passes", "\"\" testing::assert_false  // passes"]
     },
     {
-      "name": "assert_ne",
-      "signature": "(a:any b:any -- )",
+      "name": "assert_ge",
+      "signature": "(a:i64 b:i64 -- )",
       "failable": false,
-      "description": "Assert that two values are not equal. Works with any type (i64, f64, str, ptr).",
-      "params": [{"name": "a", "type": "any", "description": "First value"}, {"name": "b", "type": "any", "description": "Second value"}],
+      "description": "Assert that a is greater than or equal to b.",
+      "params": [{"name": "a", "type": "i64", "description": "First value"}, {"name": "b", "type": "i64", "description": "Second value"}],
       "returns": [],
       "errors": [],
-      "examples": ["5 6 testing::assert_ne  // passes"]
-    },
-    {
-      "name": "assert_true",
-      "signature": "(v:any -- )",
-      "failable": false,
-      "description": "Assert that a value is truthy. Truthy means: non-zero for integers, non-zero for floats, non-empty for strings, non-null for pointers.",
-      "params": [{"name": "v", "type": "any", "description": "Value to check"}],
-      "returns": [],
-      "errors": [],
-      "examples": ["1 testing::assert_true  // passes", "\"hello\" testing::assert_true  // passes"]
-    },
-    {
-      "name": "fail",
-      "signature": "(msg:str -- )",
-      "failable": false,
-      "description": "Unconditionally fail a test with a message.",
-      "params": [{"name": "msg", "type": "str", "description": "Failure message"}],
-      "returns": [],
-      "errors": [],
-      "examples": ["\"Not implemented\" testing::fail"]
-    },
-    {
-      "name": "assert_approx_eq",
-      "signature": "(a:f64 b:f64 epsilon:f64 -- )",
-      "failable": false,
-      "description": "Assert that two floats are approximately equal within epsilon.",
-      "params": [{"name": "a", "type": "f64", "description": "First value"}, {"name": "b", "type": "f64", "description": "Second value (expected)"}, {"name": "epsilon", "type": "f64", "description": "Maximum allowed difference"}],
-      "returns": [],
-      "errors": [],
-      "examples": ["3.14159 3.14160 0.0001 testing::assert_approx_eq  // passes"]
+      "examples": ["5 5 testing::assert_ge  // passes"]
     },
     {
       "name": "assert_gt",
@@ -79,34 +79,14 @@
       "examples": ["5 3 testing::assert_gt  // passes"]
     },
     {
-      "name": "assert_lt",
-      "signature": "(a:i64 b:i64 -- )",
+      "name": "assert_gt_f",
+      "signature": "(a:f64 b:f64 -- )",
       "failable": false,
-      "description": "Assert that a is less than b.",
-      "params": [{"name": "a", "type": "i64", "description": "First value"}, {"name": "b", "type": "i64", "description": "Second value"}],
+      "description": "Assert that a float is greater than another.",
+      "params": [{"name": "a", "type": "f64", "description": "First value"}, {"name": "b", "type": "f64", "description": "Second value"}],
       "returns": [],
       "errors": [],
-      "examples": ["3 5 testing::assert_lt  // passes"]
-    },
-    {
-      "name": "assert_ge",
-      "signature": "(a:i64 b:i64 -- )",
-      "failable": false,
-      "description": "Assert that a is greater than or equal to b.",
-      "params": [{"name": "a", "type": "i64", "description": "First value"}, {"name": "b", "type": "i64", "description": "Second value"}],
-      "returns": [],
-      "errors": [],
-      "examples": ["5 5 testing::assert_ge  // passes"]
-    },
-    {
-      "name": "assert_le",
-      "signature": "(a:i64 b:i64 -- )",
-      "failable": false,
-      "description": "Assert that a is less than or equal to b.",
-      "params": [{"name": "a", "type": "i64", "description": "First value"}, {"name": "b", "type": "i64", "description": "Second value"}],
-      "returns": [],
-      "errors": [],
-      "examples": ["5 5 testing::assert_le  // passes"]
+      "examples": ["5.0 3.0 testing::assert_gt_f  // passes"]
     },
     {
       "name": "assert_in_range",
@@ -119,14 +99,24 @@
       "examples": ["5 0 10 testing::assert_in_range  // passes"]
     },
     {
-      "name": "assert_gt_f",
-      "signature": "(a:f64 b:f64 -- )",
+      "name": "assert_le",
+      "signature": "(a:i64 b:i64 -- )",
       "failable": false,
-      "description": "Assert that a float is greater than another.",
-      "params": [{"name": "a", "type": "f64", "description": "First value"}, {"name": "b", "type": "f64", "description": "Second value"}],
+      "description": "Assert that a is less than or equal to b.",
+      "params": [{"name": "a", "type": "i64", "description": "First value"}, {"name": "b", "type": "i64", "description": "Second value"}],
       "returns": [],
       "errors": [],
-      "examples": ["5.5 3.3 testing::assert_gt_f  // passes"]
+      "examples": ["5 5 testing::assert_le  // passes"]
+    },
+    {
+      "name": "assert_lt",
+      "signature": "(a:i64 b:i64 -- )",
+      "failable": false,
+      "description": "Assert that a is less than b.",
+      "params": [{"name": "a", "type": "i64", "description": "First value"}, {"name": "b", "type": "i64", "description": "Second value"}],
+      "returns": [],
+      "errors": [],
+      "examples": ["3 5 testing::assert_lt  // passes"]
     },
     {
       "name": "assert_lt_f",
@@ -136,17 +126,17 @@
       "params": [{"name": "a", "type": "f64", "description": "First value"}, {"name": "b", "type": "f64", "description": "Second value"}],
       "returns": [],
       "errors": [],
-      "examples": ["3.3 5.5 testing::assert_lt_f  // passes"]
+      "examples": ["3.0 5.0 testing::assert_lt_f  // passes"]
     },
     {
-      "name": "assert_positive",
-      "signature": "(value:i64 -- )",
+      "name": "assert_ne",
+      "signature": "(a:any b:any -- )",
       "failable": false,
-      "description": "Assert that value is positive (> 0).",
-      "params": [{"name": "value", "type": "i64", "description": "Value to check"}],
+      "description": "Assert that two values are not equal. Works with any type (i64, f64, str, ptr).",
+      "params": [{"name": "a", "type": "any", "description": "First value"}, {"name": "b", "type": "any", "description": "Second value"}],
       "returns": [],
       "errors": [],
-      "examples": ["5 testing::assert_positive  // passes"]
+      "examples": ["5 6 testing::assert_ne  // passes"]
     },
     {
       "name": "assert_negative",
@@ -159,16 +149,6 @@
       "examples": ["-5 testing::assert_negative  // passes"]
     },
     {
-      "name": "assert_zero",
-      "signature": "(value:i64 -- )",
-      "failable": false,
-      "description": "Assert that value is zero.",
-      "params": [{"name": "value", "type": "i64", "description": "Value to check"}],
-      "returns": [],
-      "errors": [],
-      "examples": ["0 testing::assert_zero  // passes"]
-    },
-    {
       "name": "assert_nonzero",
       "signature": "(value:i64 -- )",
       "failable": false,
@@ -179,14 +159,14 @@
       "examples": ["5 testing::assert_nonzero  // passes"]
     },
     {
-      "name": "assert_contains",
-      "signature": "(haystack:str needle:str -- )",
+      "name": "assert_positive",
+      "signature": "(value:i64 -- )",
       "failable": false,
-      "description": "Assert that a string contains a substring.",
-      "params": [{"name": "haystack", "type": "str", "description": "String to search in"}, {"name": "needle", "type": "str", "description": "Substring to search for"}],
+      "description": "Assert that value is positive (> 0).",
+      "params": [{"name": "value", "type": "i64", "description": "Value to check"}],
       "returns": [],
       "errors": [],
-      "examples": ["\"hello world\" \"world\" testing::assert_contains  // passes"]
+      "examples": ["5 testing::assert_positive  // passes"]
     },
     {
       "name": "assert_starts_with",
@@ -199,14 +179,34 @@
       "examples": ["\"hello world\" \"hello\" testing::assert_starts_with  // passes"]
     },
     {
-      "name": "assert_ends_with",
-      "signature": "(s:str suffix:str -- )",
+      "name": "assert_true",
+      "signature": "(v:any -- )",
       "failable": false,
-      "description": "Assert that a string ends with a suffix.",
-      "params": [{"name": "s", "type": "str", "description": "String to check"}, {"name": "suffix", "type": "str", "description": "Expected suffix"}],
+      "description": "Assert that a value is truthy. Truthy means: non-zero for integers, non-zero for floats, non-empty for strings, non-null for pointers.",
+      "params": [{"name": "v", "type": "any", "description": "Value to check"}],
       "returns": [],
       "errors": [],
-      "examples": ["\"hello world\" \"world\" testing::assert_ends_with  // passes"]
+      "examples": ["1 testing::assert_true  // passes", "\"hello\" testing::assert_true  // passes"]
+    },
+    {
+      "name": "assert_zero",
+      "signature": "(value:i64 -- )",
+      "failable": false,
+      "description": "Assert that value is zero.",
+      "params": [{"name": "value", "type": "i64", "description": "Value to check"}],
+      "returns": [],
+      "errors": [],
+      "examples": ["0 testing::assert_zero  // passes"]
+    },
+    {
+      "name": "fail",
+      "signature": "(msg:str -- )",
+      "failable": false,
+      "description": "Unconditionally fail a test with a message.",
+      "params": [{"name": "msg", "type": "str", "description": "Failure message"}],
+      "returns": [],
+      "errors": [],
+      "examples": ["\"Not implemented\" testing::fail"]
     }
   ]
 }

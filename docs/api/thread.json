@@ -40,6 +40,13 @@
   ],
   "structs": [
     {
+      "name": "Barrier",
+      "description": "A Barrier synchronizes multiple threads at a point.",
+      "fields": [
+        {"name": "handle", "type": "ptr", "description": ""}
+      ]
+    },
+    {
       "name": "Channel",
       "description": "A channel for thread communication.",
       "fields": [
@@ -49,6 +56,20 @@
     {
       "name": "Mutex",
       "description": "A mutual exclusion lock.",
+      "fields": [
+        {"name": "handle", "type": "ptr", "description": ""}
+      ]
+    },
+    {
+      "name": "Once",
+      "description": "A Once ensures a function is executed only once.",
+      "fields": [
+        {"name": "handle", "type": "ptr", "description": ""}
+      ]
+    },
+    {
+      "name": "RwLock",
+      "description": "A RwLock allows multiple readers or one writer. Writers are prioritized to prevent starvation.",
       "fields": [
         {"name": "handle", "type": "ptr", "description": ""}
       ]
@@ -78,6 +99,16 @@
       "returns": [],
       "errors": [],
       "examples": ["wg 2 add"]
+    },
+    {
+      "name": "barrier_new",
+      "signature": "(n:i64 -- b:Barrier)",
+      "failable": true,
+      "description": "Create a new Barrier for n threads. ",
+      "params": [{"name": "n", "type": "i64", "description": "Number of threads that must reach the barrier"}],
+      "returns": [{"name": "b", "type": "Barrier", "description": "New Barrier handle"}],
+      "errors": [{"code": "ErrCreate", "description": "Failed to create Barrier"}],
+      "examples": ["4 thread::barrier_new! -> b"]
     },
     {
       "name": "cap",
@@ -120,6 +151,16 @@
       "examples": ["ch close"]
     },
     {
+      "name": "cpu_count",
+      "signature": "( -- count:i64)",
+      "failable": false,
+      "description": "Get the number of online CPUs/cores. Useful for determining how many threads to spawn. ",
+      "params": [],
+      "returns": [{"name": "count", "type": "i64", "description": "Number of CPUs"}],
+      "errors": [],
+      "examples": ["thread::cpu_count -> n"]
+    },
+    {
       "name": "detach",
       "signature": "(t:Thread) detach( -- )",
       "failable": true,
@@ -140,6 +181,26 @@
       "examples": ["wg done"]
     },
     {
+      "name": "do",
+      "signature": "(o:Once) do(func:ptr -- )",
+      "failable": false,
+      "description": "Execute the function exactly once. If multiple threads call this concurrently, only one will execute the function; the others will wait until it completes. ",
+      "params": [{"name": "func", "type": "ptr", "description": "Function to execute once"}],
+      "returns": [],
+      "errors": [],
+      "examples": ["o &init_stuff do"]
+    },
+    {
+      "name": "free",
+      "signature": "(b:Barrier) free( -- )",
+      "failable": false,
+      "description": "Free the Barrier. ",
+      "params": [],
+      "returns": [],
+      "errors": [],
+      "examples": ["b free"]
+    },
+    {
       "name": "free",
       "signature": "(ch:Channel) free( -- )",
       "failable": false,
@@ -158,6 +219,26 @@
       "returns": [],
       "errors": [],
       "examples": ["m free"]
+    },
+    {
+      "name": "free",
+      "signature": "(o:Once) free( -- )",
+      "failable": false,
+      "description": "Free the Once. ",
+      "params": [],
+      "returns": [],
+      "errors": [],
+      "examples": ["o free"]
+    },
+    {
+      "name": "free",
+      "signature": "(rw:RwLock) free( -- )",
+      "failable": false,
+      "description": "Free the RwLock. ",
+      "params": [],
+      "returns": [],
+      "errors": [],
+      "examples": ["rw free"]
     },
     {
       "name": "free",
@@ -188,6 +269,16 @@
       "returns": [{"name": "closed", "type": "i64", "description": "1 if closed, 0 if open"}],
       "errors": [],
       "examples": ["ch is_closed -> done"]
+    },
+    {
+      "name": "is_done",
+      "signature": "(o:Once) is_done( -- done:i64)",
+      "failable": false,
+      "description": "Check if the function has been executed. ",
+      "params": [],
+      "returns": [{"name": "done", "type": "i64", "description": "1 if executed, 0 if not yet"}],
+      "errors": [],
+      "examples": ["o is_done -> executed"]
     },
     {
       "name": "join",
@@ -230,6 +321,36 @@
       "examples": ["thread::mutex_new! -> m"]
     },
     {
+      "name": "once_new",
+      "signature": "( -- o:Once)",
+      "failable": true,
+      "description": "Create a new Once. ",
+      "params": [],
+      "returns": [{"name": "o", "type": "Once", "description": "New Once handle"}],
+      "errors": [{"code": "ErrCreate", "description": "Failed to create Once"}],
+      "examples": ["thread::once_new! -> o"]
+    },
+    {
+      "name": "read_lock",
+      "signature": "(rw:RwLock) read_lock( -- )",
+      "failable": true,
+      "description": "Acquire a read lock. Multiple threads can hold read locks simultaneously. Blocks if a writer is active or waiting. ",
+      "params": [],
+      "returns": [],
+      "errors": [],
+      "examples": ["rw read_lock!"]
+    },
+    {
+      "name": "read_unlock",
+      "signature": "(rw:RwLock) read_unlock( -- )",
+      "failable": true,
+      "description": "Release a read lock. ",
+      "params": [],
+      "returns": [],
+      "errors": [],
+      "examples": ["rw read_unlock!"]
+    },
+    {
       "name": "recv",
       "signature": "(ch:Channel) recv( -- val:i64)",
       "failable": true,
@@ -238,6 +359,26 @@
       "returns": [{"name": "val", "type": "i64", "description": "Received value"}],
       "errors": [{"code": "ErrClosed", "description": "Channel closed with no values"}],
       "examples": ["ch recv! -> val"]
+    },
+    {
+      "name": "rwlock_new",
+      "signature": "( -- rw:RwLock)",
+      "failable": true,
+      "description": "Create a new RwLock. ",
+      "params": [],
+      "returns": [{"name": "rw", "type": "RwLock", "description": "New RwLock handle"}],
+      "errors": [{"code": "ErrCreate", "description": "Failed to create RwLock"}],
+      "examples": ["thread::rwlock_new! -> rw"]
+    },
+    {
+      "name": "self",
+      "signature": "( -- id:i64)",
+      "failable": false,
+      "description": "Get the current thread's ID. The ID is implementation-defined but can be used for comparison. ",
+      "params": [],
+      "returns": [{"name": "id", "type": "i64", "description": "Current thread ID"}],
+      "errors": [],
+      "examples": ["thread::self -> id"]
     },
     {
       "name": "send",
@@ -280,6 +421,16 @@
       "examples": ["m try_lock -> got"]
     },
     {
+      "name": "try_read",
+      "signature": "(rw:RwLock) try_read( -- success:i64)",
+      "failable": false,
+      "description": "Try to acquire a read lock without blocking. ",
+      "params": [],
+      "returns": [{"name": "success", "type": "i64", "description": "1 if acquired, 0 otherwise"}],
+      "errors": [],
+      "examples": ["rw try_read -> got"]
+    },
+    {
       "name": "try_recv",
       "signature": "(ch:Channel) try_recv( -- val:i64 success:i64)",
       "failable": false,
@@ -300,6 +451,16 @@
       "examples": ["ch 42 try_send -> sent"]
     },
     {
+      "name": "try_write",
+      "signature": "(rw:RwLock) try_write( -- success:i64)",
+      "failable": false,
+      "description": "Try to acquire a write lock without blocking. ",
+      "params": [],
+      "returns": [{"name": "success", "type": "i64", "description": "1 if acquired, 0 otherwise"}],
+      "errors": [],
+      "examples": ["rw try_write -> got"]
+    },
+    {
       "name": "unlock",
       "signature": "(m:Mutex) unlock( -- )",
       "failable": true,
@@ -308,6 +469,16 @@
       "returns": [],
       "errors": [],
       "examples": ["m unlock!"]
+    },
+    {
+      "name": "wait",
+      "signature": "(b:Barrier) wait( -- is_serial:i64)",
+      "failable": false,
+      "description": "Wait at the barrier until all threads arrive. Returns 1 for exactly one thread (the \"serial thread\"), 0 for all other threads. This can be used to have one thread perform serial work after the barrier. ",
+      "params": [],
+      "returns": [{"name": "is_serial", "type": "i64", "description": "1 for serial thread, 0 otherwise"}],
+      "errors": [],
+      "examples": ["b wait -> serial"]
     },
     {
       "name": "wait",
@@ -328,6 +499,36 @@
       "returns": [{"name": "wg", "type": "WaitGroup", "description": "New WaitGroup handle"}],
       "errors": [{"code": "ErrCreate", "description": "Failed to create WaitGroup"}],
       "examples": ["thread::wg_new! -> wg"]
+    },
+    {
+      "name": "write_lock",
+      "signature": "(rw:RwLock) write_lock( -- )",
+      "failable": true,
+      "description": "Acquire a write lock. Only one thread can hold the write lock. Blocks until all readers and writers release. ",
+      "params": [],
+      "returns": [],
+      "errors": [],
+      "examples": ["rw write_lock!"]
+    },
+    {
+      "name": "write_unlock",
+      "signature": "(rw:RwLock) write_unlock( -- )",
+      "failable": true,
+      "description": "Release a write lock. ",
+      "params": [],
+      "returns": [],
+      "errors": [],
+      "examples": ["rw write_unlock!"]
+    },
+    {
+      "name": "yield",
+      "signature": "( -- )",
+      "failable": false,
+      "description": "Yield the CPU to allow other threads to run. ",
+      "params": [],
+      "returns": [],
+      "errors": [],
+      "examples": ["thread::yield"]
     }
   ]
 }

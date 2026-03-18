@@ -25,6 +25,46 @@
       "examples": ["rng rand::boolean -> rng b"]
     },
     {
+      "name": "choice",
+      "signature": "(rng:ptr arr:ptr len:i64 -- rng:ptr val:i64)",
+      "failable": false,
+      "description": "Pick a random element from array.",
+      "params": [{"name": "rng", "type": "ptr", "description": "RNG state"}, {"name": "arr", "type": "ptr", "description": "Array of i64 values"}, {"name": "len", "type": "i64", "description": "Array length"}],
+      "returns": [{"name": "rng", "type": "ptr", "description": "Updated RNG state"}, {"name": "val", "type": "i64", "description": "Random element from array"}],
+      "errors": [],
+      "examples": ["rng arr len rand::choice -> rng val"]
+    },
+    {
+      "name": "exponential",
+      "signature": "(rng:ptr lambda:f64 -- rng:ptr n:f64)",
+      "failable": false,
+      "description": "Generate random f64 from exponential distribution.",
+      "params": [{"name": "rng", "type": "ptr", "description": "RNG state"}, {"name": "lambda", "type": "f64", "description": "Rate parameter (1/mean)"}],
+      "returns": [{"name": "rng", "type": "ptr", "description": "Updated RNG state"}, {"name": "n", "type": "f64", "description": "Random value from Exp(lambda)"}],
+      "errors": [],
+      "examples": ["rng 1.0 rand::exponential -> rng n"]
+    },
+    {
+      "name": "float_range",
+      "signature": "(rng:ptr min:f64 max:f64 -- rng:ptr f:f64)",
+      "failable": false,
+      "description": "Generate random f64 in range [min, max).",
+      "params": [{"name": "rng", "type": "ptr", "description": "RNG state"}, {"name": "min", "type": "f64", "description": "Lower bound (inclusive)"}, {"name": "max", "type": "f64", "description": "Upper bound (exclusive)"}],
+      "returns": [{"name": "rng", "type": "ptr", "description": "Updated RNG state"}, {"name": "f", "type": "f64", "description": "Random float in [min, max)"}],
+      "errors": [],
+      "examples": ["rng 0.0 10.0 rand::float_range -> rng f"]
+    },
+    {
+      "name": "float",
+      "signature": "(rng:ptr -- rng:ptr f:f64)",
+      "failable": false,
+      "description": "Generate random f64 in range [0.0, 1.0).",
+      "params": [{"name": "rng", "type": "ptr", "description": "RNG state"}],
+      "returns": [{"name": "rng", "type": "ptr", "description": "Updated RNG state"}, {"name": "f", "type": "f64", "description": "Random float in [0.0, 1.0)"}],
+      "errors": [],
+      "examples": ["rng rand::float -> rng f"]
+    },
+    {
       "name": "int",
       "signature": "(rng:ptr max:i64 -- rng:ptr n:i64)",
       "failable": false,
@@ -55,6 +95,26 @@
       "examples": ["rng rand::next -> rng n"]
     },
     {
+      "name": "normal_params",
+      "signature": "(rng:ptr mean:f64 stddev:f64 -- rng:ptr n:f64)",
+      "failable": false,
+      "description": "Generate random f64 from normal distribution with given mean and stddev.",
+      "params": [{"name": "rng", "type": "ptr", "description": "RNG state"}, {"name": "mean", "type": "f64", "description": "Distribution mean"}, {"name": "stddev", "type": "f64", "description": "Distribution standard deviation"}],
+      "returns": [{"name": "rng", "type": "ptr", "description": "Updated RNG state"}, {"name": "n", "type": "f64", "description": "Random value from N(mean, stddev)"}],
+      "errors": [],
+      "examples": ["rng 100.0 15.0 rand::normal_params -> rng n"]
+    },
+    {
+      "name": "normal",
+      "signature": "(rng:ptr -- rng:ptr n:f64)",
+      "failable": false,
+      "description": "Generate random f64 from standard normal distribution (mean=0, stddev=1). Uses Box-Muller transform.",
+      "params": [{"name": "rng", "type": "ptr", "description": "RNG state"}],
+      "returns": [{"name": "rng", "type": "ptr", "description": "Updated RNG state"}, {"name": "n", "type": "f64", "description": "Random value from N(0,1)"}],
+      "errors": [],
+      "examples": ["rng rand::normal -> rng n"]
+    },
+    {
       "name": "range",
       "signature": "(rng:ptr min:i64 max:i64 -- rng:ptr n:i64)",
       "failable": false,
@@ -63,6 +123,26 @@
       "returns": [{"name": "rng", "type": "ptr", "description": "Updated RNG state"}, {"name": "n", "type": "i64", "description": "Random integer in [min, max)"}],
       "errors": [],
       "examples": ["rng 10 20 rand::range -> rng n"]
+    },
+    {
+      "name": "sample",
+      "signature": "(rng:ptr src:ptr src_len:i64 dst:ptr n:i64 -- rng:ptr)",
+      "failable": false,
+      "description": "Pick n random elements from array without replacement. Uses partial Fisher-Yates algorithm. Output array must have space for n elements.",
+      "params": [{"name": "rng", "type": "ptr", "description": "RNG state"}, {"name": "src", "type": "ptr", "description": "Source array of i64 values"}, {"name": "src_len", "type": "i64", "description": "Source array length"}, {"name": "dst", "type": "ptr", "description": "Destination array (must have space for n i64 values)"}, {"name": "n", "type": "i64", "description": "Number of elements to pick"}],
+      "returns": [{"name": "rng", "type": "ptr", "description": "Updated RNG state"}],
+      "errors": [],
+      "examples": ["rng src 10 dst 3 rand::sample -> rng"]
+    },
+    {
+      "name": "shuffle",
+      "signature": "(rng:ptr arr:ptr len:i64 -- rng:ptr)",
+      "failable": false,
+      "description": "Shuffle array in place using Fisher-Yates algorithm.",
+      "params": [{"name": "rng", "type": "ptr", "description": "RNG state"}, {"name": "arr", "type": "ptr", "description": "Array of i64 values"}, {"name": "len", "type": "i64", "description": "Array length"}],
+      "returns": [{"name": "rng", "type": "ptr", "description": "Updated RNG state"}],
+      "errors": [],
+      "examples": ["rng arr len rand::shuffle -> rng"]
     },
     {
       "name": "with_seed",

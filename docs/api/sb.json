@@ -57,6 +57,16 @@
       "examples": ["builder sb::build -> result"]
     },
     {
+      "name": "capacity",
+      "signature": "(sb:ptr -- cap:i64)",
+      "failable": false,
+      "description": "Get the current capacity of the builder.",
+      "params": [{"name": "sb", "type": "ptr", "description": "Builder to check"}],
+      "returns": [{"name": "cap", "type": "i64", "description": "Current buffer capacity"}],
+      "errors": [],
+      "examples": ["builder sb::capacity -> cap"]
+    },
+    {
       "name": "finish",
       "signature": "(sb:ptr -- s:str)",
       "failable": false,
@@ -77,6 +87,16 @@
       "examples": ["builder sb::free"]
     },
     {
+      "name": "is_empty",
+      "signature": "(sb:ptr -- empty:i64)",
+      "failable": false,
+      "description": "Check if the builder is empty.",
+      "params": [{"name": "sb", "type": "ptr", "description": "Builder to check"}],
+      "returns": [{"name": "empty", "type": "i64", "description": "1 if empty, 0 otherwise"}],
+      "errors": [],
+      "examples": ["builder sb::is_empty -> empty"]
+    },
+    {
       "name": "len",
       "signature": "(sb:ptr -- sblen:i64)",
       "failable": false,
@@ -87,6 +107,16 @@
       "examples": ["builder sb::len -> sblen"]
     },
     {
+      "name": "newline",
+      "signature": "(sb:ptr -- sb:ptr)",
+      "failable": false,
+      "description": "Append a newline character.",
+      "params": [{"name": "sb", "type": "ptr", "description": "Builder to append to"}],
+      "returns": [{"name": "sb", "type": "ptr", "description": "Updated builder"}],
+      "errors": [],
+      "examples": ["builder sb::newline -> builder"]
+    },
+    {
       "name": "new",
       "signature": "( -- sb:ptr)",
       "failable": false,
@@ -95,6 +125,16 @@
       "returns": [{"name": "sb", "type": "ptr", "description": "New empty builder"}],
       "errors": [],
       "examples": ["sb::new -> builder"]
+    },
+    {
+      "name": "space",
+      "signature": "(sb:ptr -- sb:ptr)",
+      "failable": false,
+      "description": "Append a space character.",
+      "params": [{"name": "sb", "type": "ptr", "description": "Builder to append to"}],
+      "returns": [{"name": "sb", "type": "ptr", "description": "Updated builder"}],
+      "errors": [],
+      "examples": ["builder sb::space -> builder"]
     },
     {
       "name": "with_capacity",
