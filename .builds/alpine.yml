@@ -1,6 +1,7 @@
 image: alpine/edge
 
 packages:
+  - bash
   - clang
   - clang-dev
   - clang-extra-tools
