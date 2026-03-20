@@ -1,11 +1,12 @@
-#include <quadrate/time/time.h>
-#include <quadrate/rt/stack.h>
+#define _DEFAULT_SOURCE
+#include "platform/time_platform.h"
 #include <quadrate/rt/runtime.h>
+#include <quadrate/rt/stack.h>
+#include <quadrate/time/time.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
-#include "platform/time_platform.h"
 
 #define TIME_ERR_OK 1
 #define TIME_ERR_FORMAT 2

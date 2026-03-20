@@ -1,3 +1,4 @@
+#define _DEFAULT_SOURCE
 /**
  * @file http_server.c
  * @brief HTTP server implementation for Quadrate (Gin-inspired API)
@@ -5,23 +6,23 @@
 
 #define _POSIX_C_SOURCE 200809L
 
+#include <arpa/inet.h>
+#include <ctype.h>
+#include <errno.h>
+#include <fcntl.h>
+#include <netinet/in.h>
+#include <poll.h>
 #include <quadrate/http/http.h>
 #include <quadrate/rt/runtime.h>
 #include <quadrate/rt/stack.h>
+#include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <strings.h>
-#include <stdbool.h>
-#include <ctype.h>
-#include <errno.h>
-#include <fcntl.h>
-#include <poll.h>
-#include <unistd.h>
 #include <sys/socket.h>
-#include <netinet/in.h>
-#include <arpa/inet.h>
 #include <threads.h>
+#include <unistd.h>
 
 // ============================================================
 // Internal Structures
@@ -39,9 +40,9 @@ typedef enum {
 /** Route definition */
 typedef struct {
 	http_method_t method;
-	char* path;              // Pattern like "/users/:id"
-	void* handler;           // Function pointer
-	int group_idx;           // -1 for root, otherwise group index
+	char* path;	   // Pattern like "/users/:id"
+	void* handler; // Function pointer
+	int group_idx; // -1 for root, otherwise group index
 } http_route_t;
 
 /** Route group */
@@ -112,48 +113,75 @@ static void handle_request(http_engine_t* engine, int client_fd, qd_context* ctx
 /** Get HTTP status text */
 static const char* http_status_text(int status) {
 	switch (status) {
-		case 200: return "OK";
-		case 201: return "Created";
-		case 204: return "No Content";
-		case 301: return "Moved Permanently";
-		case 302: return "Found";
-		case 304: return "Not Modified";
-		case 400: return "Bad Request";
-		case 401: return "Unauthorized";
-		case 403: return "Forbidden";
-		case 404: return "Not Found";
-		case 405: return "Method Not Allowed";
-		case 500: return "Internal Server Error";
-		case 502: return "Bad Gateway";
-		case 503: return "Service Unavailable";
-		default: return "Unknown";
+	case 200:
+		return "OK";
+	case 201:
+		return "Created";
+	case 204:
+		return "No Content";
+	case 301:
+		return "Moved Permanently";
+	case 302:
+		return "Found";
+	case 304:
+		return "Not Modified";
+	case 400:
+		return "Bad Request";
+	case 401:
+		return "Unauthorized";
+	case 403:
+		return "Forbidden";
+	case 404:
+		return "Not Found";
+	case 405:
+		return "Method Not Allowed";
+	case 500:
+		return "Internal Server Error";
+	case 502:
+		return "Bad Gateway";
+	case 503:
+		return "Service Unavailable";
+	default:
+		return "Unknown";
 	}
 }
 
 /** Parse address string like ":8080" or "127.0.0.1:3000" */
 static int parse_addr(const char* addr, char* host, size_t host_size, int* port) {
 	const char* colon = strchr(addr, ':');
-	if (!colon) return -1;
+	if (!colon) {
+		return -1;
+	}
 
 	if (colon == addr) {
-		if (host_size < 8) return -1;  // "0.0.0.0" + null
+		if (host_size < 8) {
+			return -1; // "0.0.0.0" + null
+		}
 		memcpy(host, "0.0.0.0", 8);
 	} else {
 		size_t len = (size_t)(colon - addr);
-		if (len >= host_size) return -1;
+		if (len >= host_size) {
+			return -1;
+		}
 		memcpy(host, addr, len);
 		host[len] = '\0';
 	}
 
 	// Validate port string contains only digits
 	const char* port_str = colon + 1;
-	if (*port_str == '\0') return -1;
+	if (*port_str == '\0') {
+		return -1;
+	}
 	for (const char* p = port_str; *p; p++) {
-		if (*p < '0' || *p > '9') return -1;
+		if (*p < '0' || *p > '9') {
+			return -1;
+		}
 	}
 
 	long port_val = strtol(port_str, NULL, 10);
-	if (port_val <= 0 || port_val > 65535) return -1;
+	if (port_val <= 0 || port_val > 65535) {
+		return -1;
+	}
 	*port = (int)port_val;
 
 	return 0;
@@ -172,7 +200,7 @@ static bool match_route(const char* pattern, const char* path, char* params_out,
 		if (*p == '/' && p[1] == '*' && p[2] == '\0') {
 			// Store rest of path as "_path" param
 			size_t rest_len = strlen(q);
-			size_t needed = (params_len > 0 ? 1 : 0) + 5 + 1 + rest_len + 1;  // "_path=..."
+			size_t needed = (params_len > 0 ? 1 : 0) + 5 + 1 + rest_len + 1; // "_path=..."
 			if (params_len + needed <= params_size) {
 				if (params_len > 0) {
 					params_out[params_len++] = '\n';
@@ -184,25 +212,29 @@ static bool match_route(const char* pattern, const char* path, char* params_out,
 				params_len += rest_len;
 				params_out[params_len] = '\0';
 			}
-			return true;  // Wildcard matches everything
+			return true; // Wildcard matches everything
 		}
 
 		if (*p == ':') {
 			// Extract parameter name
 			p++;
 			const char* name_start = p;
-			while (*p && *p != '/') p++;
+			while (*p && *p != '/') {
+				p++;
+			}
 			size_t name_len = (size_t)(p - name_start);
 
 			// Extract value from path
 			const char* val_start = q;
-			while (*q && *q != '/') q++;
+			while (*q && *q != '/') {
+				q++;
+			}
 			size_t val_len = (size_t)(q - val_start);
 
 			// Check bounds before adding to params
 			size_t needed = (params_len > 0 ? 1 : 0) + name_len + 1 + val_len + 1;
 			if (params_len + needed > params_size) {
-				return false;  // Params buffer too small
+				return false; // Params buffer too small
 			}
 
 			// Add to params
@@ -229,44 +261,65 @@ static bool match_route(const char* pattern, const char* path, char* params_out,
 	}
 
 	// Both should be at end (or pattern could end with trailing slash)
-	if (*p == '/' && !p[1]) p++;
-	if (*q == '/' && !q[1]) q++;
+	if (*p == '/' && !p[1]) {
+		p++;
+	}
+	if (*q == '/' && !q[1]) {
+		q++;
+	}
 
 	return (*p == '\0' && *q == '\0');
 }
 
 /** Convert method string to enum */
 static http_method_t method_from_string(const char* method) {
-	if (strcmp(method, "GET") == 0) return HTTP_METHOD_GET;
-	if (strcmp(method, "POST") == 0) return HTTP_METHOD_POST;
-	if (strcmp(method, "PUT") == 0) return HTTP_METHOD_PUT;
-	if (strcmp(method, "DELETE") == 0) return HTTP_METHOD_DELETE;
+	if (strcmp(method, "GET") == 0) {
+		return HTTP_METHOD_GET;
+	}
+	if (strcmp(method, "POST") == 0) {
+		return HTTP_METHOD_POST;
+	}
+	if (strcmp(method, "PUT") == 0) {
+		return HTTP_METHOD_PUT;
+	}
+	if (strcmp(method, "DELETE") == 0) {
+		return HTTP_METHOD_DELETE;
+	}
 	return HTTP_METHOD_ANY;
 }
 
 /** Parse HTTP request */
-static int parse_request(const char* data, size_t len,
-                         char* method_out, char* path_out, char* query_out,
-                         char* headers_out, char* body_out) {
-	if (len < 14) return -1;  // Minimum: "GET / HTTP/1.0"
+static int parse_request(const char* data, size_t len, char* method_out, char* path_out, char* query_out,
+		char* headers_out, char* body_out) {
+	if (len < 14) {
+		return -1; // Minimum: "GET / HTTP/1.0"
+	}
 
 	// Parse request line
 	const char* p = data;
 	const char* line_end = strstr(p, "\r\n");
-	if (!line_end) return -1;
+	if (!line_end) {
+		return -1;
+	}
 
 	// Method
 	const char* method_end = strchr(p, ' ');
-	if (!method_end || method_end > line_end) return -1;
+	if (!method_end || method_end > line_end) {
+		return -1;
+	}
 	size_t method_len = (size_t)(method_end - p);
-	if (method_len > 15) return -1;
+	if (method_len > 15) {
+		return -1;
+	}
 	memcpy(method_out, p, method_len);
 	method_out[method_len] = '\0';
 
 	// Path (and query)
 	p = method_end + 1;
 	const char* path_end = strchr(p, ' ');
-	if (!path_end || path_end > line_end) return -1;
+	if (!path_end || path_end > line_end) {
+		return -1;
+	}
 
 	const char* query_start = strchr(p, '?');
 	if (query_start && query_start < path_end) {
@@ -316,21 +369,29 @@ static const char* find_header(const char* headers, const char* name, char* valu
 	while (*p) {
 		// Find line end
 		const char* line_end = strstr(p, "\r\n");
-		if (!line_end) line_end = p + strlen(p);
+		if (!line_end) {
+			line_end = p + strlen(p);
+		}
 
 		// Check if this line matches
 		if (strncasecmp(p, name, name_len) == 0 && p[name_len] == ':') {
 			const char* val = p + name_len + 1;
-			while (*val == ' ') val++;
+			while (*val == ' ') {
+				val++;
+			}
 			size_t val_len = (size_t)(line_end - val);
-			if (val_len >= max_len) val_len = max_len - 1;
+			if (val_len >= max_len) {
+				val_len = max_len - 1;
+			}
 			memcpy(value_out, val, val_len);
 			value_out[val_len] = '\0';
 			return value_out;
 		}
 
 		// Next line
-		if (*line_end == '\0') break;
+		if (*line_end == '\0') {
+			break;
+		}
 		p = line_end + 2;
 	}
 
@@ -349,7 +410,9 @@ static const char* find_param(const char* params, const char* name, char* value_
 			const char* val = p + name_len + 1;
 			const char* end = strchr(val, '\n');
 			size_t val_len = end ? (size_t)(end - val) : strlen(val);
-			if (val_len >= max_len) val_len = max_len - 1;
+			if (val_len >= max_len) {
+				val_len = max_len - 1;
+			}
 			memcpy(value_out, val, val_len);
 			value_out[val_len] = '\0';
 			return value_out;
@@ -357,7 +420,9 @@ static const char* find_param(const char* params, const char* name, char* value_
 
 		// Next line
 		const char* nl = strchr(p, '\n');
-		if (!nl) break;
+		if (!nl) {
+			break;
+		}
 		p = nl + 1;
 	}
 
@@ -376,7 +441,9 @@ static const char* find_query_param(const char* query, const char* name, char* v
 			const char* val = p + name_len + 1;
 			const char* end = strchr(val, '&');
 			size_t val_len = end ? (size_t)(end - val) : strlen(val);
-			if (val_len >= max_len) val_len = max_len - 1;
+			if (val_len >= max_len) {
+				val_len = max_len - 1;
+			}
 			memcpy(value_out, val, val_len);
 			value_out[val_len] = '\0';
 			return value_out;
@@ -384,7 +451,9 @@ static const char* find_query_param(const char* query, const char* name, char* v
 
 		// Next parameter
 		const char* amp = strchr(p, '&');
-		if (!amp) break;
+		if (!amp) {
+			break;
+		}
 		p = amp + 1;
 	}
 
@@ -393,25 +462,26 @@ static const char* find_query_param(const char* query, const char* name, char* v
 }
 
 /** Send HTTP response */
-static int send_response(int socket, int status, const char* extra_headers,
-                         const char* content_type, const char* body) {
+static int send_response(
+		int socket, int status, const char* extra_headers, const char* content_type, const char* body) {
 	char header[4096];
 	size_t body_len = body ? strlen(body) : 0;
 
 	int header_len = snprintf(header, sizeof(header),
-		"HTTP/1.1 %d %s\r\n"
-		"Content-Type: %s\r\n"
-		"Content-Length: %zu\r\n"
-		"Connection: close\r\n"
-		"%s"
-		"\r\n",
-		status, http_status_text(status),
-		content_type,
-		body_len,
-		extra_headers ? extra_headers : "");
+			"HTTP/1.1 %d %s\r\n"
+			"Content-Type: %s\r\n"
+			"Content-Length: %zu\r\n"
+			"Connection: close\r\n"
+			"%s"
+			"\r\n",
+			status, http_status_text(status), content_type, body_len, extra_headers ? extra_headers : "");
 
-	if (send(socket, header, (size_t)header_len, 0) < 0) return -1;
-	if (body_len > 0 && send(socket, body, body_len, 0) < 0) return -1;
+	if (send(socket, header, (size_t)header_len, 0) < 0) {
+		return -1;
+	}
+	if (body_len > 0 && send(socket, body, body_len, 0) < 0) {
+		return -1;
+	}
 
 	return 0;
 }
@@ -480,7 +550,7 @@ static int register_route(qd_context* ctx, http_method_t method) {
 	route->method = method;
 	route->path = strdup(qd_string_data(path_elem.value.s));
 	if (!route->path) {
-		engine->route_count--;  // Rollback
+		engine->route_count--; // Rollback
 		qd_string_release(path_elem.value.s);
 		fprintf(stderr, "Fatal error in http route registration: memory allocation failed\n");
 		abort();
@@ -592,8 +662,7 @@ static void handle_request(http_engine_t* engine, int client_fd, qd_context* ctx
 		// Build full path for grouped routes
 		char full_pattern[4096];
 		if (route->group_idx >= 0) {
-			snprintf(full_pattern, sizeof(full_pattern), "%s%s",
-			         engine->groups[route->group_idx].prefix, route->path);
+			snprintf(full_pattern, sizeof(full_pattern), "%s%s", engine->groups[route->group_idx].prefix, route->path);
 		} else {
 			strncpy(full_pattern, route->path, sizeof(full_pattern) - 1);
 			full_pattern[sizeof(full_pattern) - 1] = '\0';
@@ -628,7 +697,7 @@ static void handle_request(http_engine_t* engine, int client_fd, qd_context* ctx
 
 	// Note: response_headers in engine is NOT thread-safe.
 	// Each request runs in its own thread, so we don't use shared state.
-	(void)engine->response_headers;  // Intentionally unused in threaded mode
+	(void)engine->response_headers; // Intentionally unused in threaded mode
 
 	if (!matched_route) {
 		// 404
@@ -766,7 +835,9 @@ int usr_http_run(qd_context* ctx) {
 
 		int client_fd = accept(server_fd, (struct sockaddr*)&client_addr, &client_len);
 		if (client_fd < 0) {
-			if (!engine->running) break;
+			if (!engine->running) {
+				break;
+			}
 			continue;
 		}
 
@@ -818,7 +889,7 @@ int usr_http_handle_one(qd_context* ctx) {
 	pfd.fd = engine->server_fd;
 	pfd.events = POLLIN;
 
-	int ret = poll(&pfd, 1, 0);  // 0 timeout = non-blocking
+	int ret = poll(&pfd, 1, 0); // 0 timeout = non-blocking
 	if (ret <= 0) {
 		qd_push_i(ctx, 0);
 		return 0;
@@ -995,8 +1066,8 @@ static int send_response_internal(qd_context* ctx, const char* content_type) {
 	http_ctx_t* http_ctx = pop_ctx(ctx);
 
 	if (!http_ctx->responded) {
-		send_response((int)http_ctx->socket, (int)status_elem.value.i,
-		              http_ctx->response_headers, content_type, qd_string_data(body_elem.value.s));
+		send_response((int)http_ctx->socket, (int)status_elem.value.i, http_ctx->response_headers, content_type,
+				qd_string_data(body_elem.value.s));
 		http_ctx->responded = 1;
 	}
 
@@ -1042,7 +1113,7 @@ int usr_http_set_header(qd_context* ctx) {
 	const char* value = qd_string_data(value_elem.value.s);
 	size_t name_len = strlen(name);
 	size_t value_len = strlen(value);
-	size_t needed = name_len + 2 + value_len + 2;  // "Name: Value\r\n"
+	size_t needed = name_len + 2 + value_len + 2; // "Name: Value\r\n"
 
 	// Grow buffer if needed
 	if (http_ctx->response_headers_len + needed + 1 > http_ctx->response_headers_cap) {
@@ -1124,7 +1195,7 @@ int usr_http_group(qd_context* ctx) {
 	http_group_t* group = &engine->groups[group_idx];
 	group->prefix = strdup(qd_string_data(prefix_elem.value.s));
 	if (!group->prefix) {
-		engine->group_count--;  // Rollback
+		engine->group_count--; // Rollback
 		qd_string_release(prefix_elem.value.s);
 		fprintf(stderr, "Fatal error in http::group: memory allocation failed\n");
 		abort();
@@ -1138,7 +1209,7 @@ int usr_http_group(qd_context* ctx) {
 	int64_t* group_handle = malloc(sizeof(int64_t) * 2);
 	if (!group_handle) {
 		free(group->prefix);
-		engine->group_count--;  // Rollback
+		engine->group_count--; // Rollback
 		fprintf(stderr, "Fatal error in http::group: memory allocation failed\n");
 		abort();
 	}
@@ -1231,7 +1302,7 @@ static int register_group_route(qd_context* ctx, http_method_t method) {
 	route->method = method;
 	route->path = strdup(qd_string_data(path_elem.value.s));
 	if (!route->path) {
-		engine->route_count--;  // Rollback
+		engine->route_count--; // Rollback
 		qd_string_release(path_elem.value.s);
 		fprintf(stderr, "Fatal error in http group route registration: memory allocation failed\n");
 		abort();
@@ -1266,48 +1337,106 @@ int usr_http_group_DELETE(qd_context* ctx) {
 /** Get MIME type from file extension */
 static const char* get_mime_type(const char* path) {
 	const char* ext = strrchr(path, '.');
-	if (!ext) return "application/octet-stream";
-	ext++;  // Skip the dot
+	if (!ext) {
+		return "application/octet-stream";
+	}
+	ext++; // Skip the dot
 
 	// Common web types
-	if (strcasecmp(ext, "html") == 0 || strcasecmp(ext, "htm") == 0) return "text/html; charset=utf-8";
-	if (strcasecmp(ext, "css") == 0) return "text/css; charset=utf-8";
-	if (strcasecmp(ext, "js") == 0) return "application/javascript; charset=utf-8";
-	if (strcasecmp(ext, "json") == 0) return "application/json; charset=utf-8";
-	if (strcasecmp(ext, "xml") == 0) return "application/xml; charset=utf-8";
-	if (strcasecmp(ext, "txt") == 0) return "text/plain; charset=utf-8";
-	if (strcasecmp(ext, "csv") == 0) return "text/csv; charset=utf-8";
+	if (strcasecmp(ext, "html") == 0 || strcasecmp(ext, "htm") == 0) {
+		return "text/html; charset=utf-8";
+	}
+	if (strcasecmp(ext, "css") == 0) {
+		return "text/css; charset=utf-8";
+	}
+	if (strcasecmp(ext, "js") == 0) {
+		return "application/javascript; charset=utf-8";
+	}
+	if (strcasecmp(ext, "json") == 0) {
+		return "application/json; charset=utf-8";
+	}
+	if (strcasecmp(ext, "xml") == 0) {
+		return "application/xml; charset=utf-8";
+	}
+	if (strcasecmp(ext, "txt") == 0) {
+		return "text/plain; charset=utf-8";
+	}
+	if (strcasecmp(ext, "csv") == 0) {
+		return "text/csv; charset=utf-8";
+	}
 
 	// Images
-	if (strcasecmp(ext, "png") == 0) return "image/png";
-	if (strcasecmp(ext, "jpg") == 0 || strcasecmp(ext, "jpeg") == 0) return "image/jpeg";
-	if (strcasecmp(ext, "gif") == 0) return "image/gif";
-	if (strcasecmp(ext, "svg") == 0) return "image/svg+xml";
-	if (strcasecmp(ext, "ico") == 0) return "image/x-icon";
-	if (strcasecmp(ext, "webp") == 0) return "image/webp";
+	if (strcasecmp(ext, "png") == 0) {
+		return "image/png";
+	}
+	if (strcasecmp(ext, "jpg") == 0 || strcasecmp(ext, "jpeg") == 0) {
+		return "image/jpeg";
+	}
+	if (strcasecmp(ext, "gif") == 0) {
+		return "image/gif";
+	}
+	if (strcasecmp(ext, "svg") == 0) {
+		return "image/svg+xml";
+	}
+	if (strcasecmp(ext, "ico") == 0) {
+		return "image/x-icon";
+	}
+	if (strcasecmp(ext, "webp") == 0) {
+		return "image/webp";
+	}
 
 	// Fonts
-	if (strcasecmp(ext, "woff") == 0) return "font/woff";
-	if (strcasecmp(ext, "woff2") == 0) return "font/woff2";
-	if (strcasecmp(ext, "ttf") == 0) return "font/ttf";
-	if (strcasecmp(ext, "otf") == 0) return "font/otf";
-	if (strcasecmp(ext, "eot") == 0) return "application/vnd.ms-fontobject";
+	if (strcasecmp(ext, "woff") == 0) {
+		return "font/woff";
+	}
+	if (strcasecmp(ext, "woff2") == 0) {
+		return "font/woff2";
+	}
+	if (strcasecmp(ext, "ttf") == 0) {
+		return "font/ttf";
+	}
+	if (strcasecmp(ext, "otf") == 0) {
+		return "font/otf";
+	}
+	if (strcasecmp(ext, "eot") == 0) {
+		return "application/vnd.ms-fontobject";
+	}
 
 	// Audio/Video
-	if (strcasecmp(ext, "mp3") == 0) return "audio/mpeg";
-	if (strcasecmp(ext, "wav") == 0) return "audio/wav";
-	if (strcasecmp(ext, "mp4") == 0) return "video/mp4";
-	if (strcasecmp(ext, "webm") == 0) return "video/webm";
-	if (strcasecmp(ext, "ogg") == 0) return "audio/ogg";
+	if (strcasecmp(ext, "mp3") == 0) {
+		return "audio/mpeg";
+	}
+	if (strcasecmp(ext, "wav") == 0) {
+		return "audio/wav";
+	}
+	if (strcasecmp(ext, "mp4") == 0) {
+		return "video/mp4";
+	}
+	if (strcasecmp(ext, "webm") == 0) {
+		return "video/webm";
+	}
+	if (strcasecmp(ext, "ogg") == 0) {
+		return "audio/ogg";
+	}
 
 	// Documents
-	if (strcasecmp(ext, "pdf") == 0) return "application/pdf";
-	if (strcasecmp(ext, "zip") == 0) return "application/zip";
-	if (strcasecmp(ext, "gz") == 0) return "application/gzip";
-	if (strcasecmp(ext, "tar") == 0) return "application/x-tar";
+	if (strcasecmp(ext, "pdf") == 0) {
+		return "application/pdf";
+	}
+	if (strcasecmp(ext, "zip") == 0) {
+		return "application/zip";
+	}
+	if (strcasecmp(ext, "gz") == 0) {
+		return "application/gzip";
+	}
+	if (strcasecmp(ext, "tar") == 0) {
+		return "application/x-tar";
+	}
 
 	// WebAssembly
-	if (strcasecmp(ext, "wasm") == 0) return "application/wasm";
+	if (strcasecmp(ext, "wasm") == 0) {
+		return "application/wasm";
+	}
 
 	return "application/octet-stream";
 }
@@ -1317,7 +1446,7 @@ static int send_file_response(int socket, const char* filepath, const char* extr
 	// Open file
 	int fd = open(filepath, O_RDONLY);
 	if (fd < 0) {
-		return -1;  // File not found or permission denied
+		return -1; // File not found or permission denied
 	}
 
 	// Get file size
@@ -1332,7 +1461,7 @@ static int send_file_response(int socket, const char* filepath, const char* extr
 	char* file_data = malloc((size_t)file_size);
 	if (!file_data) {
 		close(fd);
-		return -2;  // Memory error
+		return -2; // Memory error
 	}
 
 	ssize_t bytes_read = read(fd, file_data, (size_t)file_size);
@@ -1349,15 +1478,13 @@ static int send_file_response(int socket, const char* filepath, const char* extr
 	// Build response header
 	char header[4096];
 	int header_len = snprintf(header, sizeof(header),
-		"HTTP/1.1 200 OK\r\n"
-		"Content-Type: %s\r\n"
-		"Content-Length: %zu\r\n"
-		"Connection: close\r\n"
-		"%s"
-		"\r\n",
-		content_type,
-		(size_t)file_size,
-		extra_headers ? extra_headers : "");
+			"HTTP/1.1 200 OK\r\n"
+			"Content-Type: %s\r\n"
+			"Content-Length: %zu\r\n"
+			"Connection: close\r\n"
+			"%s"
+			"\r\n",
+			content_type, (size_t)file_size, extra_headers ? extra_headers : "");
 
 	// Send response
 	if (send(socket, header, (size_t)header_len, 0) < 0) {
@@ -1394,8 +1521,7 @@ int usr_http_static_file(qd_context* ctx) {
 
 	// Security: prevent path traversal
 	if (strstr(filepath, "..") != NULL) {
-		send_response((int)http_ctx->socket, 403, http_ctx->response_headers,
-		              "text/plain", "Forbidden");
+		send_response((int)http_ctx->socket, 403, http_ctx->response_headers, "text/plain", "Forbidden");
 		http_ctx->responded = 1;
 		qd_string_release(path_elem.value.s);
 		return 0;
@@ -1403,8 +1529,7 @@ int usr_http_static_file(qd_context* ctx) {
 
 	int result = send_file_response((int)http_ctx->socket, filepath, http_ctx->response_headers);
 	if (result < 0) {
-		send_response((int)http_ctx->socket, 404, http_ctx->response_headers,
-		              "text/plain", "Not Found");
+		send_response((int)http_ctx->socket, 404, http_ctx->response_headers, "text/plain", "Not Found");
 	}
 	http_ctx->responded = 1;
 
@@ -1446,8 +1571,7 @@ int usr_http_static(qd_context* ctx) {
 	// Check if request path starts with prefix
 	size_t prefix_len = strlen(prefix);
 	if (strncmp(request_path, prefix, prefix_len) != 0) {
-		send_response((int)http_ctx->socket, 404, http_ctx->response_headers,
-		              "text/plain", "Not Found");
+		send_response((int)http_ctx->socket, 404, http_ctx->response_headers, "text/plain", "Not Found");
 		http_ctx->responded = 1;
 		qd_string_release(fs_path_elem.value.s);
 		qd_string_release(prefix_elem.value.s);
@@ -1456,12 +1580,13 @@ int usr_http_static(qd_context* ctx) {
 
 	// Get the relative path after the prefix
 	const char* rel_path = request_path + prefix_len;
-	if (*rel_path == '/') rel_path++;  // Skip leading slash
+	if (*rel_path == '/') {
+		rel_path++; // Skip leading slash
+	}
 
 	// Security: prevent path traversal
 	if (strstr(rel_path, "..") != NULL) {
-		send_response((int)http_ctx->socket, 403, http_ctx->response_headers,
-		              "text/plain", "Forbidden");
+		send_response((int)http_ctx->socket, 403, http_ctx->response_headers, "text/plain", "Forbidden");
 		http_ctx->responded = 1;
 		qd_string_release(fs_path_elem.value.s);
 		qd_string_release(prefix_elem.value.s);
@@ -1485,8 +1610,7 @@ int usr_http_static(qd_context* ctx) {
 
 	int result = send_file_response((int)http_ctx->socket, filepath, http_ctx->response_headers);
 	if (result < 0) {
-		send_response((int)http_ctx->socket, 404, http_ctx->response_headers,
-		              "text/plain", "Not Found");
+		send_response((int)http_ctx->socket, 404, http_ctx->response_headers, "text/plain", "Not Found");
 	}
 	http_ctx->responded = 1;
 
@@ -1504,19 +1628,19 @@ int usr_http_sse_start(qd_context* ctx) {
 	http_ctx_t* http_ctx = pop_ctx(ctx);
 
 	if (http_ctx->responded || http_ctx->sse_mode) {
-		return 0;  // Already responded or SSE already started
+		return 0; // Already responded or SSE already started
 	}
 
 	// Build SSE headers
 	char header[4096];
 	int header_len = snprintf(header, sizeof(header),
-		"HTTP/1.1 200 OK\r\n"
-		"Content-Type: text/event-stream\r\n"
-		"Cache-Control: no-cache\r\n"
-		"Connection: keep-alive\r\n"
-		"%s"
-		"\r\n",
-		http_ctx->response_headers ? http_ctx->response_headers : "");
+			"HTTP/1.1 200 OK\r\n"
+			"Content-Type: text/event-stream\r\n"
+			"Cache-Control: no-cache\r\n"
+			"Connection: keep-alive\r\n"
+			"%s"
+			"\r\n",
+			http_ctx->response_headers ? http_ctx->response_headers : "");
 
 	if (send((int)http_ctx->socket, header, (size_t)header_len, 0) < 0) {
 		http_ctx->responded = 1;
@@ -1541,7 +1665,7 @@ int usr_http_sse_send(qd_context* ctx) {
 
 	if (!http_ctx->sse_mode) {
 		qd_string_release(data_elem.value.s);
-		return 0;  // SSE not started
+		return 0; // SSE not started
 	}
 
 	const char* data = qd_string_data(data_elem.value.s);
@@ -1550,7 +1674,7 @@ int usr_http_sse_send(qd_context* ctx) {
 	// Format: "data: <content>\n\n"
 	// For multi-line data, each line needs "data: " prefix
 	// For simplicity, we send the whole thing as one data line
-	char* event = malloc(6 + data_len + 2 + 1);  // "data: " + data + "\n\n" + null
+	char* event = malloc(6 + data_len + 2 + 1); // "data: " + data + "\n\n" + null
 	if (!event) {
 		qd_string_release(data_elem.value.s);
 		fprintf(stderr, "Fatal error in http::sse_send: memory allocation failed\n");
@@ -1600,7 +1724,7 @@ int usr_http_sse_event(qd_context* ctx) {
 	if (!http_ctx->sse_mode) {
 		qd_string_release(data_elem.value.s);
 		qd_string_release(name_elem.value.s);
-		return 0;  // SSE not started
+		return 0; // SSE not started
 	}
 
 	const char* name = qd_string_data(name_elem.value.s);
@@ -1619,11 +1743,15 @@ int usr_http_sse_event(qd_context* ctx) {
 	}
 
 	char* p = event;
-	memcpy(p, "event: ", 7); p += 7;
-	memcpy(p, name, name_len); p += name_len;
+	memcpy(p, "event: ", 7);
+	p += 7;
+	memcpy(p, name, name_len);
+	p += name_len;
 	*p++ = '\n';
-	memcpy(p, "data: ", 6); p += 6;
-	memcpy(p, data, data_len); p += data_len;
+	memcpy(p, "data: ", 6);
+	p += 6;
+	memcpy(p, data, data_len);
+	p += data_len;
 	*p++ = '\n';
 	*p++ = '\n';
 	*p = '\0';

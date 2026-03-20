@@ -1,14 +1,15 @@
+#define _DEFAULT_SOURCE
+#include "os_fs.h"
+#include <errno.h>
 #include <quadrate/os/os.h>
 #include <quadrate/rt/runtime.h>
 #include <quadrate/rt/stack.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <errno.h>
 #include <sys/stat.h>
 #include <sys/wait.h>
 #include <unistd.h>
-#include "os_fs.h"
 
 /**
  * @brief Translate errno to os module error code
@@ -46,7 +47,6 @@ static int errno_to_os_error(int err) {
 }
 
 int usr_os_exit(qd_context* ctx) {
-
 	size_t stack_size = qd_stack_size(ctx->st);
 	if (stack_size < 1) {
 		fprintf(stderr, "Fatal error in os::exit: Stack underflow (required 1 element, have %zu)\n", stack_size);
@@ -78,7 +78,6 @@ int usr_os_exit(qd_context* ctx) {
 }
 
 int usr_os_system(qd_context* ctx) {
-
 	size_t stack_size = qd_stack_size(ctx->st);
 	if (stack_size < 1) {
 		fprintf(stderr, "Fatal error in os::system: Stack underflow (required 1 element, have %zu)\n", stack_size);
@@ -586,7 +585,7 @@ int usr_os_popen(qd_context* ctx) {
 		abort();
 	}
 
-	return (int){0};  // 0 = success
+	return (int){0}; // 0 = success
 }
 
 // os::exec - execute command and capture output: (cmd:str -- stdout:str exitcode:i64)!
@@ -1240,8 +1239,12 @@ int usr_os_chown(qd_context* ctx) {
 	gid_t gid = (gid_t)gid_elem.value.i;
 
 	// Allow -1 to mean "don't change"
-	if (uid_elem.value.i == -1) uid = (uid_t)-1;
-	if (gid_elem.value.i == -1) gid = (gid_t)-1;
+	if (uid_elem.value.i == -1) {
+		uid = (uid_t)-1;
+	}
+	if (gid_elem.value.i == -1) {
+		gid = (gid_t)-1;
+	}
 
 	if (chown(path, uid, gid) != 0) {
 		int error_code = errno_to_os_error(errno);
@@ -1280,7 +1283,7 @@ int usr_os_hostname(qd_context* ctx) {
 		qd_stack_push_int(ctx->st, (int64_t)error_code);
 		return (int){error_code};
 	}
-	hostname[sizeof(hostname) - 1] = '\0';  // Ensure null-termination
+	hostname[sizeof(hostname) - 1] = '\0'; // Ensure null-termination
 	qd_stack_push_str(ctx->st, hostname);
 	qd_stack_push_int(ctx->st, OS_ERR_OK);
 	return (int){0};

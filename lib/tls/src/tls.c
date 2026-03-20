@@ -1,3 +1,4 @@
+#define _DEFAULT_SOURCE
 /**
  * @file tls.c
  * @brief TLS module implementation for Quadrate
@@ -7,17 +8,19 @@
 
 #define _POSIX_C_SOURCE 200809L
 
-#include <quadrate/tls/tls.h>
+#include "platform/tls_platform.h"
 #include <quadrate/rt/runtime.h>
 #include <quadrate/rt/stack.h>
+#include <quadrate/tls/tls.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include "platform/tls_platform.h"
 
 /** Helper to safely set error message (handles strdup failure) */
 static void set_error_msg(qd_context* ctx, const char* msg) {
-	if (ctx->error_msg) free(ctx->error_msg);
+	if (ctx->error_msg) {
+		free(ctx->error_msg);
+	}
 	ctx->error_msg = strdup(msg);
 	// If strdup fails, error_msg will be NULL, which is acceptable
 	// (error_code still indicates the error condition)
@@ -38,14 +41,18 @@ int usr_tls_connect(qd_context* ctx) {
 	qd_stack_element_t socket_elem;
 	err = qd_stack_pop(ctx->st, &socket_elem);
 	if (err != QD_STACK_OK) {
-		if (hostname_elem.type == QD_STACK_TYPE_STR) qd_string_release(hostname_elem.value.s);
+		if (hostname_elem.type == QD_STACK_TYPE_STR) {
+			qd_string_release(hostname_elem.value.s);
+		}
 		fprintf(stderr, "Fatal error in tls::connect: stack underflow\n");
 		abort();
 	}
 
 	// Type checks
 	if (socket_elem.type != QD_STACK_TYPE_INT) {
-		if (hostname_elem.type == QD_STACK_TYPE_STR) qd_string_release(hostname_elem.value.s);
+		if (hostname_elem.type == QD_STACK_TYPE_STR) {
+			qd_string_release(hostname_elem.value.s);
+		}
 		fprintf(stderr, "Fatal error in tls::connect: socket must be an integer\n");
 		abort();
 	}
@@ -93,7 +100,9 @@ int usr_tls_connect_mtls(qd_context* ctx) {
 	qd_stack_element_t cert_elem;
 	err = qd_stack_pop(ctx->st, &cert_elem);
 	if (err != QD_STACK_OK) {
-		if (key_elem.type == QD_STACK_TYPE_STR) qd_string_release(key_elem.value.s);
+		if (key_elem.type == QD_STACK_TYPE_STR) {
+			qd_string_release(key_elem.value.s);
+		}
 		fprintf(stderr, "Fatal error in tls::connect_mtls: stack underflow\n");
 		abort();
 	}
@@ -102,8 +111,12 @@ int usr_tls_connect_mtls(qd_context* ctx) {
 	qd_stack_element_t hostname_elem;
 	err = qd_stack_pop(ctx->st, &hostname_elem);
 	if (err != QD_STACK_OK) {
-		if (key_elem.type == QD_STACK_TYPE_STR) qd_string_release(key_elem.value.s);
-		if (cert_elem.type == QD_STACK_TYPE_STR) qd_string_release(cert_elem.value.s);
+		if (key_elem.type == QD_STACK_TYPE_STR) {
+			qd_string_release(key_elem.value.s);
+		}
+		if (cert_elem.type == QD_STACK_TYPE_STR) {
+			qd_string_release(cert_elem.value.s);
+		}
 		fprintf(stderr, "Fatal error in tls::connect_mtls: stack underflow\n");
 		abort();
 	}
@@ -112,31 +125,49 @@ int usr_tls_connect_mtls(qd_context* ctx) {
 	qd_stack_element_t socket_elem;
 	err = qd_stack_pop(ctx->st, &socket_elem);
 	if (err != QD_STACK_OK) {
-		if (key_elem.type == QD_STACK_TYPE_STR) qd_string_release(key_elem.value.s);
-		if (cert_elem.type == QD_STACK_TYPE_STR) qd_string_release(cert_elem.value.s);
-		if (hostname_elem.type == QD_STACK_TYPE_STR) qd_string_release(hostname_elem.value.s);
+		if (key_elem.type == QD_STACK_TYPE_STR) {
+			qd_string_release(key_elem.value.s);
+		}
+		if (cert_elem.type == QD_STACK_TYPE_STR) {
+			qd_string_release(cert_elem.value.s);
+		}
+		if (hostname_elem.type == QD_STACK_TYPE_STR) {
+			qd_string_release(hostname_elem.value.s);
+		}
 		fprintf(stderr, "Fatal error in tls::connect_mtls: stack underflow\n");
 		abort();
 	}
 
 	// Type checks
 	if (socket_elem.type != QD_STACK_TYPE_INT) {
-		if (key_elem.type == QD_STACK_TYPE_STR) qd_string_release(key_elem.value.s);
-		if (cert_elem.type == QD_STACK_TYPE_STR) qd_string_release(cert_elem.value.s);
-		if (hostname_elem.type == QD_STACK_TYPE_STR) qd_string_release(hostname_elem.value.s);
+		if (key_elem.type == QD_STACK_TYPE_STR) {
+			qd_string_release(key_elem.value.s);
+		}
+		if (cert_elem.type == QD_STACK_TYPE_STR) {
+			qd_string_release(cert_elem.value.s);
+		}
+		if (hostname_elem.type == QD_STACK_TYPE_STR) {
+			qd_string_release(hostname_elem.value.s);
+		}
 		fprintf(stderr, "Fatal error in tls::connect_mtls: socket must be an integer\n");
 		abort();
 	}
 
 	if (hostname_elem.type != QD_STACK_TYPE_STR) {
-		if (key_elem.type == QD_STACK_TYPE_STR) qd_string_release(key_elem.value.s);
-		if (cert_elem.type == QD_STACK_TYPE_STR) qd_string_release(cert_elem.value.s);
+		if (key_elem.type == QD_STACK_TYPE_STR) {
+			qd_string_release(key_elem.value.s);
+		}
+		if (cert_elem.type == QD_STACK_TYPE_STR) {
+			qd_string_release(cert_elem.value.s);
+		}
 		fprintf(stderr, "Fatal error in tls::connect_mtls: hostname must be a string\n");
 		abort();
 	}
 
 	if (cert_elem.type != QD_STACK_TYPE_STR) {
-		if (key_elem.type == QD_STACK_TYPE_STR) qd_string_release(key_elem.value.s);
+		if (key_elem.type == QD_STACK_TYPE_STR) {
+			qd_string_release(key_elem.value.s);
+		}
 		qd_string_release(hostname_elem.value.s);
 		fprintf(stderr, "Fatal error in tls::connect_mtls: cert_path must be a string\n");
 		abort();
@@ -191,7 +222,9 @@ int usr_tls_accept(qd_context* ctx) {
 	qd_stack_element_t cert_elem;
 	err = qd_stack_pop(ctx->st, &cert_elem);
 	if (err != QD_STACK_OK) {
-		if (key_elem.type == QD_STACK_TYPE_STR) qd_string_release(key_elem.value.s);
+		if (key_elem.type == QD_STACK_TYPE_STR) {
+			qd_string_release(key_elem.value.s);
+		}
 		fprintf(stderr, "Fatal error in tls::accept: stack underflow\n");
 		abort();
 	}
@@ -200,22 +233,32 @@ int usr_tls_accept(qd_context* ctx) {
 	qd_stack_element_t socket_elem;
 	err = qd_stack_pop(ctx->st, &socket_elem);
 	if (err != QD_STACK_OK) {
-		if (key_elem.type == QD_STACK_TYPE_STR) qd_string_release(key_elem.value.s);
-		if (cert_elem.type == QD_STACK_TYPE_STR) qd_string_release(cert_elem.value.s);
+		if (key_elem.type == QD_STACK_TYPE_STR) {
+			qd_string_release(key_elem.value.s);
+		}
+		if (cert_elem.type == QD_STACK_TYPE_STR) {
+			qd_string_release(cert_elem.value.s);
+		}
 		fprintf(stderr, "Fatal error in tls::accept: stack underflow\n");
 		abort();
 	}
 
 	// Type checks
 	if (socket_elem.type != QD_STACK_TYPE_INT) {
-		if (key_elem.type == QD_STACK_TYPE_STR) qd_string_release(key_elem.value.s);
-		if (cert_elem.type == QD_STACK_TYPE_STR) qd_string_release(cert_elem.value.s);
+		if (key_elem.type == QD_STACK_TYPE_STR) {
+			qd_string_release(key_elem.value.s);
+		}
+		if (cert_elem.type == QD_STACK_TYPE_STR) {
+			qd_string_release(cert_elem.value.s);
+		}
 		fprintf(stderr, "Fatal error in tls::accept: socket must be an integer\n");
 		abort();
 	}
 
 	if (cert_elem.type != QD_STACK_TYPE_STR) {
-		if (key_elem.type == QD_STACK_TYPE_STR) qd_string_release(key_elem.value.s);
+		if (key_elem.type == QD_STACK_TYPE_STR) {
+			qd_string_release(key_elem.value.s);
+		}
 		fprintf(stderr, "Fatal error in tls::accept: cert_path must be a string\n");
 		abort();
 	}
@@ -266,14 +309,18 @@ int usr_tls_send(qd_context* ctx) {
 	qd_stack_element_t conn_elem;
 	err = qd_stack_pop(ctx->st, &conn_elem);
 	if (err != QD_STACK_OK) {
-		if (data_elem.type == QD_STACK_TYPE_STR) qd_string_release(data_elem.value.s);
+		if (data_elem.type == QD_STACK_TYPE_STR) {
+			qd_string_release(data_elem.value.s);
+		}
 		fprintf(stderr, "Fatal error in tls::send: stack underflow\n");
 		abort();
 	}
 
 	// Type checks
 	if (conn_elem.type != QD_STACK_TYPE_PTR) {
-		if (data_elem.type == QD_STACK_TYPE_STR) qd_string_release(data_elem.value.s);
+		if (data_elem.type == QD_STACK_TYPE_STR) {
+			qd_string_release(data_elem.value.s);
+		}
 		fprintf(stderr, "Fatal error in tls::send: connection must be a pointer\n");
 		abort();
 	}

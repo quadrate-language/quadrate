@@ -1,3 +1,4 @@
+#define _DEFAULT_SOURCE
 /**
  * @file http.c
  * @brief HTTP client implementation for Quadrate
@@ -8,12 +9,12 @@
 #include <quadrate/http/http.h>
 #include <quadrate/rt/runtime.h>
 #include <quadrate/rt/stack.h>
+#include <stdbool.h>
+#include <stddef.h> // for offsetof
+#include <stdint.h> // for uint8_t, uint64_t
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <stdbool.h>
-#include <stddef.h>  // for offsetof
-#include <stdint.h>  // for uint8_t, uint64_t
 
 /** HTTP Request structure */
 typedef struct {
@@ -23,8 +24,8 @@ typedef struct {
 	size_t headers_len;
 	size_t headers_cap;
 	char* body;
-	char* client_cert;  // Path to client certificate for mTLS
-	char* client_key;   // Path to client private key for mTLS
+	char* client_cert; // Path to client certificate for mTLS
+	char* client_key;  // Path to client private key for mTLS
 } http_request_t;
 
 /** HTTP Response structure - matches Quadrate LLVM struct layout
@@ -33,9 +34,9 @@ typedef struct {
  * - str fields: 8 bytes (pointer to qd_string)
  */
 typedef struct {
-	int64_t status;           // offset 0, 8 bytes
-	struct qd_string* headers;// offset 8, 8 bytes
-	struct qd_string* body;   // offset 16, 8 bytes
+	int64_t status;			   // offset 0, 8 bytes
+	struct qd_string* headers; // offset 8, 8 bytes
+	struct qd_string* body;	   // offset 16, 8 bytes
 } http_response_t;
 
 /** URL components */
@@ -255,9 +256,8 @@ int usr_http_header(qd_context* ctx) {
 		req->headers = new_headers;
 	}
 
-	int written = snprintf(req->headers + req->headers_len,
-	                       req->headers_cap - req->headers_len,
-	                       "%s: %s\r\n", name, value);
+	int written =
+			snprintf(req->headers + req->headers_len, req->headers_cap - req->headers_len, "%s: %s\r\n", name, value);
 	if (written > 0) {
 		req->headers_len += (size_t)written;
 	}
@@ -546,11 +546,10 @@ int usr_http_send(qd_context* ctx) {
 
 	// Check for overflow before adding
 	size_t fixed_overhead = 128; // "HTTP/1.1\r\nHost: \r\nConnection: close\r\nContent-Length: ...\r\n\r\n"
-	if (method_len > SIZE_MAX - path_len ||
-	    method_len + path_len > SIZE_MAX - host_len ||
-	    method_len + path_len + host_len > SIZE_MAX - req->headers_len ||
-	    method_len + path_len + host_len + req->headers_len > SIZE_MAX - body_len ||
-	    method_len + path_len + host_len + req->headers_len + body_len > SIZE_MAX - fixed_overhead) {
+	if (method_len > SIZE_MAX - path_len || method_len + path_len > SIZE_MAX - host_len ||
+			method_len + path_len + host_len > SIZE_MAX - req->headers_len ||
+			method_len + path_len + host_len + req->headers_len > SIZE_MAX - body_len ||
+			method_len + path_len + host_len + req->headers_len + body_len > SIZE_MAX - fixed_overhead) {
 		if (url.is_https) {
 			qd_push_p(ctx, tls_conn);
 			usr_tls_close(ctx);
@@ -576,24 +575,30 @@ int usr_http_send(qd_context* ctx) {
 		return HTTP_ERR_MEMORY;
 	}
 
-	int written = snprintf(request, request_size,
-	                       "%s %s HTTP/1.1\r\nHost: %s\r\nConnection: close\r\n",
-	                       req->method, url.path, url.host);
-	if (written < 0) written = 0;
+	int written = snprintf(request, request_size, "%s %s HTTP/1.1\r\nHost: %s\r\nConnection: close\r\n", req->method,
+			url.path, url.host);
+	if (written < 0) {
+		written = 0;
+	}
 	size_t pos = (size_t)written;
 
 	if (req->headers_len > 0 && pos < request_size) {
 		int n = snprintf(request + pos, request_size - pos, "%s", req->headers);
-		if (n > 0) pos += (size_t)n;
+		if (n > 0) {
+			pos += (size_t)n;
+		}
 	}
 
 	if (body_len > 0 && pos < request_size) {
-		int n = snprintf(request + pos, request_size - pos,
-		                 "Content-Length: %zu\r\n\r\n%s", body_len, req->body);
-		if (n > 0) pos += (size_t)n;
+		int n = snprintf(request + pos, request_size - pos, "Content-Length: %zu\r\n\r\n%s", body_len, req->body);
+		if (n > 0) {
+			pos += (size_t)n;
+		}
 	} else if (pos < request_size) {
 		int n = snprintf(request + pos, request_size - pos, "\r\n");
-		if (n > 0) pos += (size_t)n;
+		if (n > 0) {
+			pos += (size_t)n;
+		}
 	}
 	(void)pos; // Silence unused warning
 
@@ -838,8 +843,12 @@ int usr_http_close(qd_context* ctx) {
 
 	http_response_t* resp = (http_response_t*)resp_elem.value.p;
 	if (resp) {
-		if (resp->headers) qd_string_release(resp->headers);
-		if (resp->body) qd_string_release(resp->body);
+		if (resp->headers) {
+			qd_string_release(resp->headers);
+		}
+		if (resp->body) {
+			qd_string_release(resp->body);
+		}
 		free(resp);
 	}
 	return 0;

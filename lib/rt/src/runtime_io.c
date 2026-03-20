@@ -1,15 +1,16 @@
+#define _DEFAULT_SOURCE
 // I/O operations for Quadrate runtime
 // Split from runtime.c for maintainability
 
 #define _POSIX_C_SOURCE 200809L
 
-#include <quadrate/rt/runtime.h>
+#include "runtime_internal.h"
+#include <ctype.h>
 #include <quadrate/rt/qd_string.h>
+#include <quadrate/rt/runtime.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <ctype.h>
-#include "runtime_internal.h"
 
 // Helper function to check if string contains whitespace
 static bool has_whitespace(const char* str) {
@@ -121,25 +122,25 @@ int qd_print(qd_context* ctx) {
 	}
 
 	switch (val.type) {
-		case QD_STACK_TYPE_INT:
-			printf("%ld", val.value.i);
-			break;
-		case QD_STACK_TYPE_FLOAT:
-			printf("%g", val.value.f);
-			break;
-		case QD_STACK_TYPE_STR:
-			printf("%s", qd_string_data(val.value.s));
-			qd_string_release(val.value.s);  // Release the string reference after printing
-			break;
-		default:
-			return (int){-3};
+	case QD_STACK_TYPE_INT:
+		printf("%ld", val.value.i);
+		break;
+	case QD_STACK_TYPE_FLOAT:
+		printf("%g", val.value.f);
+		break;
+	case QD_STACK_TYPE_STR:
+		printf("%s", qd_string_data(val.value.s));
+		qd_string_release(val.value.s); // Release the string reference after printing
+		break;
+	default:
+		return (int){-3};
 	}
 
 	return (int){0};
 }
 
 int qd_nl(qd_context* ctx) {
-	(void)ctx;  // Unused parameter
+	(void)ctx; // Unused parameter
 	printf("\n");
 	return (int){0};
 }
@@ -161,24 +162,24 @@ int qd_prints(qd_context* ctx) {
 		}
 
 		switch (val.type) {
-			case QD_STACK_TYPE_INT:
-				printf("%ld", val.value.i);
-				break;
-			case QD_STACK_TYPE_FLOAT:
-				printf("%g", val.value.f);
-				break;
-			case QD_STACK_TYPE_STR: {
-				const char* str_data = qd_string_data(val.value.s);
-				// Smart quoting: only quote if string contains whitespace
-				if (has_whitespace(str_data)) {
-					printf("\"%s\"", str_data);
-				} else {
-					printf("%s", str_data);
-				}
-				break;
+		case QD_STACK_TYPE_INT:
+			printf("%ld", val.value.i);
+			break;
+		case QD_STACK_TYPE_FLOAT:
+			printf("%g", val.value.f);
+			break;
+		case QD_STACK_TYPE_STR: {
+			const char* str_data = qd_string_data(val.value.s);
+			// Smart quoting: only quote if string contains whitespace
+			if (has_whitespace(str_data)) {
+				printf("\"%s\"", str_data);
+			} else {
+				printf("%s", str_data);
 			}
-			default:
-				return (int){-3};
+			break;
+		}
+		default:
+			return (int){-3};
 		}
 	}
 
@@ -198,28 +199,28 @@ int qd_printv(qd_context* ctx) {
 	}
 
 	switch (val.type) {
-		case QD_STACK_TYPE_INT:
-			printf("int:%ld\n", val.value.i);
-			break;
-		case QD_STACK_TYPE_FLOAT:
-			printf("float:%g\n", val.value.f);
-			break;
-		case QD_STACK_TYPE_STR: {
-			const char* str_data = qd_string_data(val.value.s);
-			// Smart quoting: only quote if string contains whitespace
-			if (has_whitespace(str_data)) {
-				printf("string:\"%s\"\n", str_data);
-			} else {
-				printf("string:%s\n", str_data);
-			}
-			qd_string_release(val.value.s);  // Release the string reference after printing
-			break;
+	case QD_STACK_TYPE_INT:
+		printf("int:%ld\n", val.value.i);
+		break;
+	case QD_STACK_TYPE_FLOAT:
+		printf("float:%g\n", val.value.f);
+		break;
+	case QD_STACK_TYPE_STR: {
+		const char* str_data = qd_string_data(val.value.s);
+		// Smart quoting: only quote if string contains whitespace
+		if (has_whitespace(str_data)) {
+			printf("string:\"%s\"\n", str_data);
+		} else {
+			printf("string:%s\n", str_data);
 		}
-		case QD_STACK_TYPE_PTR:
-			printf("ptr:%p\n", val.value.p);
-			break;
-		default:
-			return (int){-3};
+		qd_string_release(val.value.s); // Release the string reference after printing
+		break;
+	}
+	case QD_STACK_TYPE_PTR:
+		printf("ptr:%p\n", val.value.p);
+		break;
+	default:
+		return (int){-3};
 	}
 
 	return (int){0};
@@ -242,27 +243,27 @@ int qd_printsv(qd_context* ctx) {
 		}
 
 		switch (val.type) {
-			case QD_STACK_TYPE_INT:
-				printf("int:%ld", val.value.i);
-				break;
-			case QD_STACK_TYPE_FLOAT:
-				printf("float:%g", val.value.f);
-				break;
-			case QD_STACK_TYPE_STR: {
-				const char* str_data = qd_string_data(val.value.s);
-				// Smart quoting: only quote if string contains whitespace
-				if (has_whitespace(str_data)) {
-					printf("string:\"%s\"", str_data);
-				} else {
-					printf("string:%s", str_data);
-				}
-				break;
+		case QD_STACK_TYPE_INT:
+			printf("int:%ld", val.value.i);
+			break;
+		case QD_STACK_TYPE_FLOAT:
+			printf("float:%g", val.value.f);
+			break;
+		case QD_STACK_TYPE_STR: {
+			const char* str_data = qd_string_data(val.value.s);
+			// Smart quoting: only quote if string contains whitespace
+			if (has_whitespace(str_data)) {
+				printf("string:\"%s\"", str_data);
+			} else {
+				printf("string:%s", str_data);
 			}
-			case QD_STACK_TYPE_PTR:
-				printf("ptr:%p", val.value.p);
-				break;
-			default:
-				return (int){-3};
+			break;
+		}
+		case QD_STACK_TYPE_PTR:
+			printf("ptr:%p", val.value.p);
+			break;
+		default:
+			return (int){-3};
 		}
 	}
 
@@ -328,4 +329,3 @@ int qd_read(qd_context* ctx) {
 
 	return (int){0};
 }
-

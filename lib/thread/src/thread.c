@@ -1,3 +1,4 @@
+#define _DEFAULT_SOURCE
 // Thread module implementation using C11 threads
 #include "quadrate/thread/thread.h"
 
@@ -6,7 +7,7 @@
 #include <quadrate/rt/stack.h>
 #include <stdlib.h>
 #include <string.h>
-#include <unistd.h>  // for sysconf
+#include <unistd.h> // for sysconf
 
 // Helper to push a stack element based on its type.
 // Takes ownership of the element (consumes string references).
@@ -32,7 +33,6 @@ static void push_element(qd_context* ctx, qd_stack_element_t elem) {
 		break;
 	}
 }
-
 
 typedef struct {
 	qd_stack_element_t func;
@@ -208,7 +208,6 @@ int usr_thread_raw_sleep(qd_context* ctx) {
 	return (int){0};
 }
 
-
 // new( -- mutex:ptr)!
 int usr_thread_raw_mutex_new(qd_context* ctx) {
 	qd_mutex* mutex = malloc(sizeof(qd_mutex));
@@ -333,11 +332,12 @@ int usr_thread_raw_mutex_free(qd_context* ctx) {
 	return (int){0};
 }
 
-
 // Helper: create channel with given capacity
 static qd_channel* channel_create(size_t capacity) {
 	qd_channel* ch = malloc(sizeof(qd_channel));
-	if (!ch) return NULL;
+	if (!ch) {
+		return NULL;
+	}
 
 	if (mtx_init(&ch->mutex, mtx_plain) != thrd_success) {
 		free(ch);
@@ -380,7 +380,7 @@ static qd_channel* channel_create(size_t capacity) {
 
 // new( -- ch:ptr)!
 int usr_thread_raw_chan_new(qd_context* ctx) {
-	qd_channel* ch = channel_create(0);  // unbuffered
+	qd_channel* ch = channel_create(0); // unbuffered
 	if (!ch) {
 		qd_set_error_msg(ctx, "channel::new: failed to create channel");
 		ctx->error_code = THREAD_ERR_CHANNEL;
@@ -404,7 +404,9 @@ int usr_thread_raw_chan_buffered(qd_context* ctx) {
 	}
 
 	int64_t capacity = elem.value.i;
-	if (capacity < 1) capacity = 1;
+	if (capacity < 1) {
+		capacity = 1;
+	}
 
 	qd_channel* ch = channel_create((size_t)capacity);
 	if (!ch) {
@@ -581,8 +583,8 @@ int usr_thread_raw_chan_try_recv(qd_context* ctx) {
 	qd_stack_error err = qd_stack_pop(ctx->st, &ch_elem);
 
 	if (err != QD_STACK_OK || ch_elem.type != QD_STACK_TYPE_PTR) {
-		qd_push_i(ctx, 0);  // dummy value
-		qd_push_i(ctx, 0);  // success = false
+		qd_push_i(ctx, 0); // dummy value
+		qd_push_i(ctx, 0); // success = false
 		return (int){0};
 	}
 
@@ -625,7 +627,9 @@ int usr_thread_raw_chan_close(qd_context* ctx) {
 	}
 
 	qd_channel* ch = (qd_channel*)elem.value.p;
-	if (!ch) return (int){0};
+	if (!ch) {
+		return (int){0};
+	}
 
 	mtx_lock(&ch->mutex);
 	ch->closed = true;
@@ -714,7 +718,9 @@ int usr_thread_raw_chan_free(qd_context* ctx) {
 	}
 
 	qd_channel* ch = (qd_channel*)elem.value.p;
-	if (!ch) return (int){0};
+	if (!ch) {
+		return (int){0};
+	}
 
 	mtx_lock(&ch->mutex);
 	ch->refcount--;
@@ -743,7 +749,6 @@ int usr_thread_raw_chan_free(qd_context* ctx) {
 
 	return (int){0};
 }
-
 
 // new( -- wg:ptr)!
 int usr_thread_raw_wg_new(qd_context* ctx) {
@@ -791,7 +796,9 @@ int usr_thread_raw_wg_add(qd_context* ctx) {
 	}
 
 	qd_waitgroup* wg = (qd_waitgroup*)wg_elem.value.p;
-	if (!wg) return (int){0};
+	if (!wg) {
+		return (int){0};
+	}
 
 	mtx_lock(&wg->mutex);
 	wg->count += (int)n_elem.value.i;
@@ -810,7 +817,9 @@ int usr_thread_raw_wg_done(qd_context* ctx) {
 	}
 
 	qd_waitgroup* wg = (qd_waitgroup*)elem.value.p;
-	if (!wg) return (int){0};
+	if (!wg) {
+		return (int){0};
+	}
 
 	mtx_lock(&wg->mutex);
 	wg->count--;
@@ -860,7 +869,9 @@ int usr_thread_raw_wg_free(qd_context* ctx) {
 	}
 
 	qd_waitgroup* wg = (qd_waitgroup*)elem.value.p;
-	if (!wg) return (int){0};
+	if (!wg) {
+		return (int){0};
+	}
 
 	cnd_destroy(&wg->done);
 	mtx_destroy(&wg->mutex);
@@ -868,7 +879,6 @@ int usr_thread_raw_wg_free(qd_context* ctx) {
 
 	return (int){0};
 }
-
 
 // ============================================================================
 // Once - run initialization code exactly once
@@ -913,7 +923,9 @@ int usr_thread_raw_once_do(qd_context* ctx) {
 	}
 
 	qd_once* once = (qd_once*)once_elem.value.p;
-	if (!once) return (int){0};
+	if (!once) {
+		return (int){0};
+	}
 
 	mtx_lock(&once->mutex);
 	if (!once->completed) {
@@ -972,7 +984,6 @@ int usr_thread_raw_once_free(qd_context* ctx) {
 	return (int){0};
 }
 
-
 // ============================================================================
 // Thread utilities
 // ============================================================================
@@ -995,11 +1006,12 @@ int usr_thread_raw_yield(qd_context* ctx) {
 // cpu_count( -- count:i64)
 int usr_thread_raw_cpu_count(qd_context* ctx) {
 	long count = sysconf(_SC_NPROCESSORS_ONLN);
-	if (count < 1) count = 1;
+	if (count < 1) {
+		count = 1;
+	}
 	qd_push_i(ctx, (int64_t)count);
 	return (int){0};
 }
-
 
 // ============================================================================
 // Barrier - synchronize threads at a point
@@ -1017,7 +1029,9 @@ int usr_thread_raw_barrier_new(qd_context* ctx) {
 	}
 
 	int64_t n = elem.value.i;
-	if (n < 1) n = 1;
+	if (n < 1) {
+		n = 1;
+	}
 
 	qd_barrier* barrier = malloc(sizeof(qd_barrier));
 	if (!barrier) {
@@ -1077,7 +1091,7 @@ int usr_thread_raw_barrier_wait(qd_context* ctx) {
 		barrier->count = 0;
 		cnd_broadcast(&barrier->cond);
 		mtx_unlock(&barrier->mutex);
-		qd_push_i(ctx, 1);  // This is the serial thread
+		qd_push_i(ctx, 1); // This is the serial thread
 		return (int){0};
 	}
 
@@ -1087,7 +1101,7 @@ int usr_thread_raw_barrier_wait(qd_context* ctx) {
 	}
 
 	mtx_unlock(&barrier->mutex);
-	qd_push_i(ctx, 0);  // Not the serial thread
+	qd_push_i(ctx, 0); // Not the serial thread
 	return (int){0};
 }
 
@@ -1101,7 +1115,9 @@ int usr_thread_raw_barrier_free(qd_context* ctx) {
 	}
 
 	qd_barrier* barrier = (qd_barrier*)elem.value.p;
-	if (!barrier) return (int){0};
+	if (!barrier) {
+		return (int){0};
+	}
 
 	cnd_destroy(&barrier->cond);
 	mtx_destroy(&barrier->mutex);
@@ -1109,7 +1125,6 @@ int usr_thread_raw_barrier_free(qd_context* ctx) {
 
 	return (int){0};
 }
-
 
 // ============================================================================
 // RwLock - read-write lock (multiple readers, single writer)
@@ -1360,7 +1375,9 @@ int usr_thread_raw_rwlock_free(qd_context* ctx) {
 	}
 
 	qd_rwlock* rw = (qd_rwlock*)elem.value.p;
-	if (!rw) return (int){0};
+	if (!rw) {
+		return (int){0};
+	}
 
 	cnd_destroy(&rw->write_cond);
 	cnd_destroy(&rw->read_cond);
