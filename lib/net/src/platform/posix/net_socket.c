@@ -1,13 +1,14 @@
+#define _DEFAULT_SOURCE
 // POSIX socket implementation
 #include "../net_platform.h"
+#include <arpa/inet.h>
+#include <netdb.h>
+#include <netinet/in.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <unistd.h>
-#include <netinet/in.h>
-#include <arpa/inet.h>
 #include <sys/socket.h>
-#include <netdb.h>
+#include <unistd.h>
 
 // Initialize networking (no-op on POSIX)
 int net_platform_init(void) {
