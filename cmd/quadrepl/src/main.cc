@@ -25,7 +25,7 @@ static std::string g_historyFile;
 
 // Completions for tab completion
 static const char* g_keywords[] = {"fn", "pub", "if", "else", "for", "while", "loop", "break", "continue", "return",
-		"use", "struct", "const", "defer", "switch", "case", "test", nullptr};
+		"use", "struct", "const", "defer", "switch", "case", "test", "as", nullptr};
 
 static const char* g_builtins[] = {
 		// Stack operations

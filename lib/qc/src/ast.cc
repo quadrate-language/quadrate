@@ -12,6 +12,7 @@
 #include <quadrate/qc/ast_node.h>
 #include <quadrate/qc/ast_node_anonymous_function.h>
 #include <quadrate/qc/ast_node_array.h>
+#include <quadrate/qc/ast_node_as_cast.h>
 #include <quadrate/qc/ast_node_break.h>
 #include <quadrate/qc/ast_node_constant.h>
 #include <quadrate/qc/ast_node_continue.h>
@@ -1010,6 +1011,35 @@ namespace Qd {
 				}
 			}
 
+			// Type narrowing cast: 'as TypeName'
+			if (strcmp(text, "as") == 0) {
+				token = u8t_scanner_scan(scanner);
+				if (token == U8T_IDENTIFIER) {
+					std::string typeName(u8t_scanner_token_text(scanner, n));
+					// Check for qualified type: module::Type
+					char32_t peekChar = u8t_scanner_peek(scanner);
+					if (peekChar == ':') {
+						u8t_scanner_scan(scanner); // Consume first ':'
+						char32_t secondColon = u8t_scanner_peek(scanner);
+						if (secondColon == ':') {
+							u8t_scanner_scan(scanner); // Consume second ':'
+							token = u8t_scanner_scan(scanner);
+							if (token == U8T_IDENTIFIER) {
+								typeName += "::";
+								typeName += u8t_scanner_token_text(scanner, n);
+							} else {
+								errorReporter->reportError(scanner, "Expected type name after '::'");
+							}
+						}
+					}
+					AstNodeAsCast* asCast = new AstNodeAsCast(typeName);
+					setNodePosition(asCast, scanner, src);
+					return asCast;
+				} else {
+					errorReporter->reportError(scanner, "Expected type name after 'as'");
+				}
+			}
+
 			if (isBuiltInInstruction(text)) {
 				std::string instrName(text);
 				// Check for generic type parameter: instruction<Type> or instruction<module::Type>
@@ -1962,6 +1992,33 @@ namespace Qd {
 					} else {
 						errorReporter->reportError(scanner, "Function declarations not allowed inside blocks. "
 															"Did you mean 'fn (...) { }' for an anonymous function?");
+					}
+				} else if (strcmp(text, "as") == 0) {
+					// Parse type narrowing cast: 'as TypeName'
+					token = u8t_scanner_scan(scanner);
+					if (token == U8T_IDENTIFIER) {
+						std::string typeName(u8t_scanner_token_text(scanner, &n));
+						// Check for qualified type: module::Type
+						char32_t peekChar = u8t_scanner_peek(scanner);
+						if (peekChar == ':') {
+							u8t_scanner_scan(scanner); // Consume first ':'
+							char32_t secondColon = u8t_scanner_peek(scanner);
+							if (secondColon == ':') {
+								u8t_scanner_scan(scanner); // Consume second ':'
+								token = u8t_scanner_scan(scanner);
+								if (token == U8T_IDENTIFIER) {
+									typeName += "::";
+									typeName += u8t_scanner_token_text(scanner, &n);
+								} else {
+									errorReporter->reportError(scanner, "Expected type name after '::'");
+								}
+							}
+						}
+						AstNodeAsCast* asCast = new AstNodeAsCast(typeName);
+						setNodePosition(asCast, scanner, src);
+						tempNodes.push_back(asCast);
+					} else {
+						errorReporter->reportError(scanner, "Expected type name after 'as'");
 					}
 				} else if (strcmp(text, "ctx") == 0) {
 					// Parse ctx block

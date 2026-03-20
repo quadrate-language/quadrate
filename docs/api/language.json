@@ -228,6 +228,16 @@
       ]
     },
     {
+      "name": "as",
+      "category": "Type",
+      "description": "Type narrowing cast for struct field access on ptr values. Compile-time only, no runtime cost.",
+      "syntax": "expr as TypeName",
+      "examples": [
+        "c as http::Ctx @body",
+        "ptr_val as MyStruct -> typed_local"
+      ]
+    },
+    {
       "name": "true",
       "category": "Literals",
       "description": "Boolean true literal (pushes 1 onto the stack)",

@@ -7,19 +7,24 @@ struct PersonWithInt {
 	value:i64
 }
 
-fn get_value(p:ptr -- v:f64) {
+fn get_float_value(p:ptr -- v:f64) {
 	-> obj
-	obj @value
+	obj as PersonWithFloat @value
+}
+
+fn get_int_value(p:ptr -- v:i64) {
+	-> obj
+	obj as PersonWithInt @value
 }
 
 fn test_same_field() {
 	// Float version - exact match
 	PersonWithFloat { value = 3.14 } -> p1
-	p1 get_value print nl
+	p1 get_float_value print nl
 
-	// Int version - implicit cast (with warning)
+	// Int version - using as to disambiguate
 	PersonWithInt { value = 42 } -> p2
-	p2 get_value print nl
+	p2 get_int_value print nl
 }
 
 fn main() {

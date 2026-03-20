@@ -1,0 +1,34 @@
+// Test basic 'as StructType' narrowing cast
+struct Dog {
+	name: str
+	age: i64
+}
+
+struct Cat {
+	name: str
+	lives: i64
+}
+
+fn get_dog_name(p:ptr -- n:str) {
+	-> p
+	p as Dog @name
+}
+
+fn get_dog_age(p:ptr -- a:i64) {
+	-> p
+	p as Dog @age
+}
+
+fn get_cat_lives(p:ptr -- l:i64) {
+	-> p
+	p as Cat @lives
+}
+
+fn main() {
+	Dog { name = "Rex" age = 5 } -> d
+	d get_dog_name print nl
+	d get_dog_age print nl
+
+	Cat { name = "Whiskers" lives = 9 } -> c
+	c get_cat_lives print nl
+}

@@ -1225,6 +1225,9 @@ std::string QuadrateLSP::getBuiltInDocumentation(const std::string& word) {
 					"}`\n\nMakes structs or functions visible to other modules."},
 			{"defer", "Defer execution until scope exit.\n\n**Syntax:** `defer { ... }`\n\nExecutes code block when "
 					  "function returns, useful for cleanup."},
+			{"as", "Type narrowing cast.\n\n**Syntax:** `expr as TypeName`\n\nNarrows a ptr value to a specific "
+				   "struct type for field access. Compile-time only, no runtime cost.\n\n**Example:** `c as "
+				   "http::Ctx @body`"},
 	};
 
 	auto it = docs.find(word);

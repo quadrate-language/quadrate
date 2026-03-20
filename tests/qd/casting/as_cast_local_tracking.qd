@@ -1,0 +1,23 @@
+// Test that 'as Type -> local' tracks the type for subsequent accesses
+struct Point {
+	x: i64
+	y: i64
+}
+
+struct Size {
+	x: i64
+	y: i64
+}
+
+fn process(p:ptr -- ) {
+	-> p
+	p as Point -> pt
+	// pt is now typed as Point, so @x and @y resolve without ambiguity
+	pt @x print " " print
+	pt @y print nl
+}
+
+fn main() {
+	Point { x = 10 y = 20 } -> p
+	p process
+}

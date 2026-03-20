@@ -611,9 +611,14 @@ namespace Qd {
 					}
 				}
 			}
-			if (matchCount > 1) {
-				std::cerr << "Warning: ambiguous field '" << fieldName << "' found in " << matchCount
-						  << " structs, using '" << selectedStruct << "'" << std::endl;
+			// Only error on ambiguity when no type info was available at all.
+			// If structTypeName was set, the specific lookup failed due to
+			// module aliasing — the fallback is a reasonable best-effort.
+			if (matchCount > 1 && structTypeName.empty()) {
+				std::cerr << "Error: ambiguous field '@" << fieldName << "' found in " << matchCount
+						  << " structs. Use 'as StructType' to disambiguate, e.g.: value as " << selectedStruct << " @"
+						  << fieldName << std::endl;
+				return;
 			}
 		}
 
@@ -798,9 +803,11 @@ namespace Qd {
 					}
 				}
 			}
-			if (matchCount > 1) {
-				std::cerr << "Warning: ambiguous field '" << fieldName << "' found in " << matchCount
-						  << " structs, using '" << selectedStruct << "'" << std::endl;
+			if (matchCount > 1 && structTypeName.empty()) {
+				std::cerr << "Error: ambiguous field '@" << fieldName << "' found in " << matchCount
+						  << " structs. Use 'as StructType' to disambiguate, e.g.: value as " << selectedStruct << " @"
+						  << fieldName << std::endl;
+				return;
 			}
 		}
 

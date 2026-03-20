@@ -1,0 +1,26 @@
+// Test that 'as' correctly disambiguates same-named fields
+struct Foo {
+	value: i64
+}
+
+struct Bar {
+	value: str
+}
+
+fn get_foo_value(p:ptr -- v:i64) {
+	-> p
+	p as Foo @value
+}
+
+fn get_bar_value(p:ptr -- v:str) {
+	-> p
+	p as Bar @value
+}
+
+fn main() {
+	Foo { value = 42 } -> f
+	"foo: " print f get_foo_value print nl
+
+	Bar { value = "hello" } -> b
+	"bar: " print b get_bar_value print nl
+}

@@ -79,7 +79,7 @@ inline bool looksLikeStructType(const std::string& typeName) {
 inline bool isReservedKeyword(const std::string& name) {
 	static const std::unordered_set<std::string> KEYWORDS = {"if", "else", "for", "while", "loop", "switch", "case",
 			"break", "continue", "return", "fn", "struct", "const", "pub", "test", "use", "import", "ctx", "defer",
-			"true", "false", "Ok", "Err", "i64", "f64", "str", "ptr", "void"};
+			"as", "true", "false", "Ok", "Err", "i64", "f64", "str", "ptr", "void"};
 	return KEYWORDS.find(name) != KEYWORDS.end();
 }
 
