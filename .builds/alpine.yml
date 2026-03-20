@@ -29,7 +29,7 @@ sources:
 
 tasks:
   - install_tree_sitter: |
-      npm install -g tree-sitter-cli
+      sudo npm install -g tree-sitter-cli
   - format: |
       cd quadrate
       make format
