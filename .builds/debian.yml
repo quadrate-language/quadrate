@@ -5,6 +5,7 @@ secrets:
 
 packages:
   - clang
+  - clang-format
   - libclang-rt-dev
   - libsqlite3-dev
   - libssl-dev
