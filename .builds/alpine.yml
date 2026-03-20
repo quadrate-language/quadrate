@@ -1,0 +1,47 @@
+image: alpine/edge
+
+packages:
+  - clang
+  - clang-dev
+  - clang-extra-tools
+  - compiler-rt
+  - llvm-dev
+  - meson
+  - musl-dev
+  - nodejs
+  - npm
+  - openssl-dev
+  - pkgconf
+  - readline-dev
+  - sqlite-dev
+  - zlib-dev
+
+sources:
+  - https://git.sr.ht/~klahr/quadrate
+  - https://git.sr.ht/~klahr/qdlog
+  - https://git.sr.ht/~klahr/qdcompress
+  - https://git.sr.ht/~klahr/qdtls
+  - https://git.sr.ht/~klahr/qdhttp
+  - https://git.sr.ht/~klahr/qdsqlite
+  - https://git.sr.ht/~klahr/qdjson
+  - https://git.sr.ht/~klahr/qdregex
+  - https://git.sr.ht/~klahr/qdcrypto
+
+tasks:
+  - install_tree_sitter: |
+      npm install -g tree-sitter-cli
+  - format: |
+      cd quadrate
+      make format
+      git diff --exit-code
+  - build: |
+      cd quadrate
+      make release
+  - test: |
+      cd quadrate
+      make tests
+
+triggers:
+  - action: email
+    condition: failure
+    to: klahr@r8.rs
