@@ -58,7 +58,7 @@ typedef struct {
 	/** @brief User-defined error context (prepended to error_msg on failure) */
 	char* error_context;
 
-	void* userdata;  ///< User-defined data pointer for embedders
+	void* userdata; ///< User-defined data pointer for embedders
 } qd_context;
 
 #ifdef __cplusplus

@@ -1,0 +1,27 @@
+// Test chaining generic function calls
+
+fn identity<T>(x:T -- y:T) {
+	-> val
+	val
+}
+
+fn wrap<T>(x:T -- y:T) {
+	-> val
+	val identity
+}
+
+fn main() {
+	// Chain generic calls with integers
+	42 identity identity identity print nl
+
+	// Chain generic calls with strings
+	"hello" wrap wrap print nl
+
+	// Chain generic calls with floats
+	3.14 identity wrap identity print nl
+
+	// Mixed types through separate chains
+	100 identity print " " print
+	"world" identity print " " print
+	2.718 identity print nl
+}

@@ -1,11 +1,11 @@
 #include <cstring>
 #include <iostream>
+#include <quadrate/cli/cli.h>
+#include <quadrate/cli/file_utils.h>
 #include <quadrate/qc/ast.h>
 #include <quadrate/qc/colors.h>
 #include <quadrate/qc/error_reporter.h>
 #include <quadrate/qc/formatter.h>
-#include <quadrate/cli/cli.h>
-#include <quadrate/cli/file_utils.h>
 #include <vector>
 
 using namespace Qd;

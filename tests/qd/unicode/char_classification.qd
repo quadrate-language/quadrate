@@ -1,0 +1,50 @@
+// Test unicode character classification functions
+use unicode
+
+fn main() {
+	// Digit classification
+	"=== is_digit ===" print nl
+	48 unicode::is_digit print nl   // '0' -> 1
+	57 unicode::is_digit print nl   // '9' -> 1
+	65 unicode::is_digit print nl   // 'A' -> 0
+	32 unicode::is_digit print nl   // ' ' -> 0
+
+	// Alpha classification
+	"=== is_alpha ===" print nl
+	65 unicode::is_alpha print nl   // 'A' -> 1
+	122 unicode::is_alpha print nl  // 'z' -> 1
+	48 unicode::is_alpha print nl   // '0' -> 0
+	33 unicode::is_alpha print nl   // '!' -> 0
+
+	// Upper/lower classification
+	"=== is_upper ===" print nl
+	65 unicode::is_upper print nl   // 'A' -> 1
+	90 unicode::is_upper print nl   // 'Z' -> 1
+	97 unicode::is_upper print nl   // 'a' -> 0
+	"=== is_lower ===" print nl
+	97 unicode::is_lower print nl   // 'a' -> 1
+	122 unicode::is_lower print nl  // 'z' -> 1
+	65 unicode::is_lower print nl   // 'A' -> 0
+
+	// Alnum classification
+	"=== is_alnum ===" print nl
+	65 unicode::is_alnum print nl   // 'A' -> 1
+	48 unicode::is_alnum print nl   // '0' -> 1
+	33 unicode::is_alnum print nl   // '!' -> 0
+
+	// Space classification
+	"=== is_space ===" print nl
+	32 unicode::is_space print nl   // ' ' -> 1
+	9 unicode::is_space print nl    // '\t' -> 1
+	10 unicode::is_space print nl   // '\n' -> 1
+	65 unicode::is_space print nl   // 'A' -> 0
+
+	// Hex digit classification
+	"=== is_hex_digit ===" print nl
+	48 unicode::is_hex_digit print nl   // '0' -> 1
+	70 unicode::is_hex_digit print nl   // 'F' -> 1
+	102 unicode::is_hex_digit print nl  // 'f' -> 1
+	71 unicode::is_hex_digit print nl   // 'G' -> 0
+
+	"done" print nl
+}

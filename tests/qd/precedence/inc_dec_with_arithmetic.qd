@@ -1,0 +1,36 @@
+// Test increment/decrement combined with arithmetic
+fn main() {
+	// Increment and decrement
+	"=== Inc/Dec ===" print nl
+	10 ++ print nl             // 11
+	10 -- print nl             // 9
+	0 ++ print nl              // 1
+	0 -- print nl              // -1
+
+	// Combined with arithmetic
+	"=== Inc/Dec with arithmetic ===" print nl
+	10 ++ 2 * print nl         // (10+1)*2 = 22
+	10 -- 3 + print nl         // (10-1)+3 = 12
+	5 ++ ++ ++ print nl        // 5+1+1+1 = 8
+	10 -- -- -- print nl       // 10-1-1-1 = 7
+
+	// With comparisons
+	"=== Inc/Dec with comparisons ===" print nl
+	5 ++ 6 eq print nl         // (5+1)==6 -> true
+	10 -- 9 eq print nl        // (10-1)==9 -> true
+	0 -- 0 lt print nl         // (0-1)<0 -> true
+
+	// Float increment/decrement
+	"=== Float inc/dec ===" print nl
+	3.14 ++ print nl           // 4.14
+	3.14 -- print nl           // 2.14
+
+	// Negate
+	"=== Negate ===" print nl
+	5 neg print nl             // -5
+	-5 neg print nl            // 5
+	0 neg print nl             // 0
+	3.14 neg print nl          // -3.14
+
+	"done" print nl
+}

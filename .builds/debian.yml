@@ -33,6 +33,10 @@ environment:
 tasks:
   - install_tree_sitter: |
       sudo npm install -g tree-sitter-cli
+  - format: |
+      cd quadrate
+      make format
+      git diff --exit-code
   - build: |
       cd quadrate
       make release

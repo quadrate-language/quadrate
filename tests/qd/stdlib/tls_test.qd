@@ -1,11 +1,38 @@
 // Unit tests for the tls module
-// Note: TLS error constants are defined inside the import block and not externally accessible.
-// All TLS functions require network connections and certificates, so comprehensive testing
-// requires integration tests with actual TLS servers.
 use tls
 use testing
 
 test "tls module loads" {
 	// Verify the module can be imported and linked successfully
 	1 testing::assert_true
+}
+
+test "tls error constants are defined" {
+	tls::ErrInit 2 testing::assert_eq
+	tls::ErrConnect 3 testing::assert_eq
+	tls::ErrAccept 4 testing::assert_eq
+	tls::ErrCertificate 5 testing::assert_eq
+	tls::ErrRead 6 testing::assert_eq
+	tls::ErrWrite 7 testing::assert_eq
+	tls::ErrClosed 8 testing::assert_eq
+	tls::ErrMemory 9 testing::assert_eq
+	tls::ErrInvalidArg 10 testing::assert_eq
+}
+
+test "tls error constants are distinct" {
+	tls::ErrInit tls::ErrConnect != testing::assert_true
+	tls::ErrConnect tls::ErrAccept != testing::assert_true
+	tls::ErrAccept tls::ErrCertificate != testing::assert_true
+	tls::ErrCertificate tls::ErrRead != testing::assert_true
+	tls::ErrRead tls::ErrWrite != testing::assert_true
+	tls::ErrWrite tls::ErrClosed != testing::assert_true
+	tls::ErrClosed tls::ErrMemory != testing::assert_true
+	tls::ErrMemory tls::ErrInvalidArg != testing::assert_true
+}
+
+test "tls error constants are positive" {
+	tls::ErrInit 0 > testing::assert_true
+	tls::ErrConnect 0 > testing::assert_true
+	tls::ErrClosed 0 > testing::assert_true
+	tls::ErrInvalidArg 0 > testing::assert_true
 }

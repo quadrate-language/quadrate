@@ -1,0 +1,29 @@
+=== Modulo ===
+1
+2
+0
+1
+3
+=== Bitwise AND ===
+15
+8
+0
+=== Bitwise OR ===
+15
+255
+255
+=== Bitwise XOR ===
+0
+255
+255
+=== Bitwise NOT ===
+-1
+=== Shifts ===
+16
+4
+255
+=== Combined ===
+1
+7
+15
+done

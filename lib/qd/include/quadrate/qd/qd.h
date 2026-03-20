@@ -78,8 +78,7 @@ typedef int (*qd_native_fn)(qd_context* ctx, void* userdata);
  * @param fn Function pointer (must not be NULL)
  * @param userdata User-defined data pointer passed to fn on each call
  */
-void qd_register_function(qd_module* mod, const char* name,
-                           const char* signature, qd_native_fn fn, void* userdata);
+void qd_register_function(qd_module* mod, const char* name, const char* signature, qd_native_fn fn, void* userdata);
 
 /**
  * @brief Compile all scripts added to the module

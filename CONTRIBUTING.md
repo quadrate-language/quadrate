@@ -54,7 +54,17 @@ make tests
 make valgrind
 ```
 
-Tests are located in `lib/*/tests/` directories and use Meson's built-in test framework.
+Tests are organized across multiple locations:
+- Language feature tests: `tests/qd/` (.qd files with expected outputs)
+- Standard library tests: `tests/qd/stdlib/` (unit tests using the `testing` module)
+- C/C++ unit tests: `lib/*/tests/` (Meson test framework)
+- Formatter tests: `tests/formatter/`
+- Linter tests: `tests/linter/`
+- Embedding tests: `tests/embed/`
+- LSP tests: `cmd/quadlsp/tests/` (Python)
+
+Run specific tests with `make tests TEST=arrays/make_basic` or suites with `make tests SUITE=qd`.
+Use `bash tests/run_all.sh --list` to see all available tests.
 
 ## Code style
 

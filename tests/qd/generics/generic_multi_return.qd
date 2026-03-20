@@ -1,0 +1,28 @@
+// Test generic functions with multiple return values
+
+fn dup_generic<T>(x:T -- x1:T x2:T) {
+	-> val
+	val val
+}
+
+fn make_triple<T>(x:T -- a:T b:T c:T) {
+	-> val
+	val val val
+}
+
+fn main() {
+	// Duplicate integer
+	42 dup_generic
+	-> a -> b
+	"int: " print a print " " print b print nl
+
+	// Duplicate string
+	"hi" dup_generic
+	-> c -> d
+	"str: " print c print " " print d print nl
+
+	// Triple float
+	1.5 make_triple
+	-> e -> f -> g
+	"float: " print e print " " print f print " " print g print nl
+}

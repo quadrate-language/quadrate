@@ -5,14 +5,14 @@
 #include <string.h>
 
 /* Macro for null pointer error handling */
-#define CHECK_NULL(ctx, ptr, op_name) \
-	do { \
-		if ((ptr) == NULL) { \
-			(ctx)->error_code = -1; \
-			free((ctx)->error_msg); \
-			(ctx)->error_msg = strdup("Null pointer in mem::" op_name); \
-			return (int){-1}; \
-		} \
+#define CHECK_NULL(ctx, ptr, op_name)                                                                                  \
+	do {                                                                                                               \
+		if ((ptr) == NULL) {                                                                                           \
+			(ctx)->error_code = -1;                                                                                    \
+			free((ctx)->error_msg);                                                                                    \
+			(ctx)->error_msg = strdup("Null pointer in mem::" op_name);                                                \
+			return (int){-1};                                                                                          \
+		}                                                                                                              \
 	} while (0)
 
 /* Helper: Pop integer from stack */
@@ -65,10 +65,19 @@ int qd_mem_alloc(qd_context* ctx) {
 	}
 
 	if (bytes < 0) {
-		return qd_push_p(ctx, NULL);
+		ctx->error_code = -1;
+		free(ctx->error_msg);
+		ctx->error_msg = strdup("Negative size in mem::alloc");
+		return (int){-1};
 	}
 
 	void* ptr = malloc((size_t)bytes);
+	if (ptr == NULL && bytes > 0) {
+		ctx->error_code = -1;
+		free(ctx->error_msg);
+		ctx->error_msg = strdup("Allocation failed in mem::alloc");
+		return (int){-1};
+	}
 	return qd_push_p(ctx, ptr);
 }
 
@@ -97,10 +106,17 @@ int qd_mem_realloc(qd_context* ctx) {
 	}
 
 	if (new_bytes < 0) {
-		return qd_push_p(ctx, NULL);
+		ctx->error_code = -1;
+		free(ctx->error_msg);
+		ctx->error_msg = strdup("Negative size in mem::realloc");
+		return (int){-1};
 	}
 
 	void* new_ptr = realloc(ptr, (size_t)new_bytes);
+	if (new_ptr == NULL && new_bytes > 0) {
+		/* Push the original pointer back so it is not leaked */
+		return qd_push_p(ctx, ptr);
+	}
 	return qd_push_p(ctx, new_ptr);
 }
 
@@ -109,8 +125,7 @@ int qd_mem_set_byte(qd_context* ctx) {
 	int64_t value, offset;
 	void* address;
 
-	if (pop_int(ctx, &value) != QD_STACK_OK ||
-			pop_int(ctx, &offset) != QD_STACK_OK ||
+	if (pop_int(ctx, &value) != QD_STACK_OK || pop_int(ctx, &offset) != QD_STACK_OK ||
 			pop_ptr(ctx, &address) != QD_STACK_OK) {
 		return (int){-1};
 	}
@@ -126,8 +141,7 @@ int qd_mem_get_byte(qd_context* ctx) {
 	int64_t offset;
 	void* address;
 
-	if (pop_int(ctx, &offset) != QD_STACK_OK ||
-			pop_ptr(ctx, &address) != QD_STACK_OK) {
+	if (pop_int(ctx, &offset) != QD_STACK_OK || pop_ptr(ctx, &address) != QD_STACK_OK) {
 		return (int){-1};
 	}
 
@@ -142,8 +156,7 @@ int qd_mem_set(qd_context* ctx) {
 	int64_t value, offset;
 	void* address;
 
-	if (pop_int(ctx, &value) != QD_STACK_OK ||
-			pop_int(ctx, &offset) != QD_STACK_OK ||
+	if (pop_int(ctx, &value) != QD_STACK_OK || pop_int(ctx, &offset) != QD_STACK_OK ||
 			pop_ptr(ctx, &address) != QD_STACK_OK) {
 		return (int){-1};
 	}
@@ -159,8 +172,7 @@ int qd_mem_get(qd_context* ctx) {
 	int64_t offset;
 	void* address;
 
-	if (pop_int(ctx, &offset) != QD_STACK_OK ||
-			pop_ptr(ctx, &address) != QD_STACK_OK) {
+	if (pop_int(ctx, &offset) != QD_STACK_OK || pop_ptr(ctx, &address) != QD_STACK_OK) {
 		return (int){-1};
 	}
 
@@ -177,8 +189,7 @@ int qd_mem_set_float(qd_context* ctx) {
 	int64_t offset;
 	void* address;
 
-	if (pop_float(ctx, &value) != QD_STACK_OK ||
-			pop_int(ctx, &offset) != QD_STACK_OK ||
+	if (pop_float(ctx, &value) != QD_STACK_OK || pop_int(ctx, &offset) != QD_STACK_OK ||
 			pop_ptr(ctx, &address) != QD_STACK_OK) {
 		return (int){-1};
 	}
@@ -194,8 +205,7 @@ int qd_mem_get_float(qd_context* ctx) {
 	int64_t offset;
 	void* address;
 
-	if (pop_int(ctx, &offset) != QD_STACK_OK ||
-			pop_ptr(ctx, &address) != QD_STACK_OK) {
+	if (pop_int(ctx, &offset) != QD_STACK_OK || pop_ptr(ctx, &address) != QD_STACK_OK) {
 		return (int){-1};
 	}
 
@@ -211,8 +221,7 @@ int qd_mem_set_ptr(qd_context* ctx) {
 	void *value, *address;
 	int64_t offset;
 
-	if (pop_ptr(ctx, &value) != QD_STACK_OK ||
-			pop_int(ctx, &offset) != QD_STACK_OK ||
+	if (pop_ptr(ctx, &value) != QD_STACK_OK || pop_int(ctx, &offset) != QD_STACK_OK ||
 			pop_ptr(ctx, &address) != QD_STACK_OK) {
 		return (int){-1};
 	}
@@ -228,8 +237,7 @@ int qd_mem_get_ptr(qd_context* ctx) {
 	int64_t offset;
 	void* address;
 
-	if (pop_int(ctx, &offset) != QD_STACK_OK ||
-			pop_ptr(ctx, &address) != QD_STACK_OK) {
+	if (pop_int(ctx, &offset) != QD_STACK_OK || pop_ptr(ctx, &address) != QD_STACK_OK) {
 		return (int){-1};
 	}
 
@@ -245,9 +253,7 @@ int qd_mem_copy(qd_context* ctx) {
 	int64_t bytes;
 	void *dst, *src;
 
-	if (pop_int(ctx, &bytes) != QD_STACK_OK ||
-			pop_ptr(ctx, &dst) != QD_STACK_OK ||
-			pop_ptr(ctx, &src) != QD_STACK_OK) {
+	if (pop_int(ctx, &bytes) != QD_STACK_OK || pop_ptr(ctx, &dst) != QD_STACK_OK || pop_ptr(ctx, &src) != QD_STACK_OK) {
 		return (int){-1};
 	}
 
@@ -270,8 +276,7 @@ int qd_mem_zero(qd_context* ctx) {
 	int64_t bytes;
 	void* address;
 
-	if (pop_int(ctx, &bytes) != QD_STACK_OK ||
-			pop_ptr(ctx, &address) != QD_STACK_OK) {
+	if (pop_int(ctx, &bytes) != QD_STACK_OK || pop_ptr(ctx, &address) != QD_STACK_OK) {
 		return (int){-1};
 	}
 
@@ -293,8 +298,7 @@ int qd_mem_fill(qd_context* ctx) {
 	int64_t value, bytes;
 	void* address;
 
-	if (pop_int(ctx, &value) != QD_STACK_OK ||
-			pop_int(ctx, &bytes) != QD_STACK_OK ||
+	if (pop_int(ctx, &value) != QD_STACK_OK || pop_int(ctx, &bytes) != QD_STACK_OK ||
 			pop_ptr(ctx, &address) != QD_STACK_OK) {
 		return (int){-1};
 	}

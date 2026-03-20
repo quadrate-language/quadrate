@@ -14,13 +14,29 @@ extern "C" {
 // and are handled separately.
 static bool isStdlibImport(const std::string& library) {
 	static const char* const stdlibLibs[] = {
-		"librt.a", "libfmt.a", "libio.a", "libmath.a", "libmem.a",
-		"libnet.a", "libos.a", "libsignal.a", "libstrings.a", "libstrconv.a",
-		"libtime.a", "libthread.a", "libtesting.a", "libtty.a", "libbits.a",
-		"libhttp.a", "libtls.a", "liblog.a",
+			"librt.a",
+			"libfmt.a",
+			"libio.a",
+			"libmath.a",
+			"libmem.a",
+			"libnet.a",
+			"libos.a",
+			"libsignal.a",
+			"libstrings.a",
+			"libstrconv.a",
+			"libtime.a",
+			"libthread.a",
+			"libtesting.a",
+			"libtty.a",
+			"libbits.a",
+			"libhttp.a",
+			"libtls.a",
+			"liblog.a",
 	};
 	for (const char* name : stdlibLibs) {
-		if (library == name) return true;
+		if (library == name) {
+			return true;
+		}
 	}
 	return false;
 }
@@ -2933,7 +2949,8 @@ namespace Qd {
 					continue;
 				}
 				std::string fn = entry.path().filename().string();
-				if ((fn.rfind("libqd", 0) == 0 || isStdlibImport(fn)) && fn.size() > 2 && fn.substr(fn.size() - 2) == ".a" && fn != "libqd.a") {
+				if ((fn.rfind("libqd", 0) == 0 || isStdlibImport(fn)) && fn.size() > 2 &&
+						fn.substr(fn.size() - 2) == ".a" && fn != "libqd.a") {
 					std::string libPath = entry.path().string();
 					if (!processedLibraries.count(libPath)) {
 						allDepsFlags += " " + libPath;

@@ -437,8 +437,7 @@ namespace Qd {
 					resolvedAsMethod = true;
 				} else if (lastStructConstructed.find("::") != std::string::npos) {
 					// Try unqualified struct name
-					std::string unqualified =
-							lastStructConstructed.substr(lastStructConstructed.rfind("::") + 2);
+					std::string unqualified = lastStructConstructed.substr(lastStructConstructed.rfind("::") + 2);
 					methodLookup = unqualified + "::" + name;
 					it = userFunctions.find(methodLookup);
 					if (it != userFunctions.end()) {

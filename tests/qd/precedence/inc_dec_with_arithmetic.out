@@ -1,0 +1,23 @@
+=== Inc/Dec ===
+11
+9
+1
+-1
+=== Inc/Dec with arithmetic ===
+22
+12
+8
+7
+=== Inc/Dec with comparisons ===
+1
+1
+1
+=== Float inc/dec ===
+4.14
+2.14
+=== Negate ===
+-5
+5
+0
+-3.14
+done

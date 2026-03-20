@@ -1,0 +1,46 @@
+// Test modulo and bitwise operations in expressions
+fn main() {
+	// Modulo
+	"=== Modulo ===" print nl
+	10 3 % print nl            // 1
+	17 5 % print nl            // 2
+	100 10 % print nl          // 0
+	7 2 % print nl             // 1
+	10 3 % 2 + print nl        // (10%3)+2 = 3
+
+	// Bitwise AND
+	"=== Bitwise AND ===" print nl
+	255 15 and print nl        // 15
+	12 10 and print nl         // 8
+	0 255 and print nl         // 0
+
+	// Bitwise OR
+	"=== Bitwise OR ===" print nl
+	12 3 or print nl           // 15
+	0 255 or print nl          // 255
+	170 85 or print nl         // 255
+
+	// Bitwise XOR
+	"=== Bitwise XOR ===" print nl
+	255 255 xor print nl       // 0
+	255 0 xor print nl         // 255
+	170 85 xor print nl        // 255
+
+	// Bitwise NOT
+	"=== Bitwise NOT ===" print nl
+	0 not print nl             // -1 (all bits set)
+
+	// Shift operations
+	"=== Shifts ===" print nl
+	1 4 shl print nl           // 16
+	16 2 shr print nl          // 4
+	255 4 shl 4 shr print nl   // 255
+
+	// Combined operations
+	"=== Combined ===" print nl
+	10 3 + 2 * 5 % print nl   // ((10+3)*2)%5 = 1
+	1 3 shl 1 - print nl      // (1<<3)-1 = 7
+	255 240 and 4 shr print nl // (255&240)>>4 = 15
+
+	"done" print nl
+}

@@ -1,7 +1,7 @@
+#include <quadrate/platform/platform.h>
 #include <quadrate/qc/ast.h>
 #include <quadrate/qc/colors.h>
 #include <quadrate/qd/qd.h>
-#include <quadrate/platform/platform.h>
 #include <quadrate/rt/stack.h>
 
 #include <csetjmp>
@@ -57,9 +57,10 @@ static const char* g_moduleFunctions[] = {
 		"math::round", "math::trunc", "math::min", "math::max", "math::clamp", "math::lerp", "math::sq", "math::hypot",
 		"math::PI", "math::E", "math::TAU",
 		// strings module
-		"strings::len", "strings::concat", "strings::substr", "strings::index", "strings::contains", "strings::starts_with", "strings::ends_with",
-		"strings::trim", "strings::ltrim", "strings::rtrim", "strings::upper", "strings::lower", "strings::replace", "strings::split", "strings::join",
-		"strings::repeat", "strings::reverse", "strings::compare", "strings::char_at", "strings::from_char",
+		"strings::len", "strings::concat", "strings::substr", "strings::index", "strings::contains",
+		"strings::starts_with", "strings::ends_with", "strings::trim", "strings::ltrim", "strings::rtrim",
+		"strings::upper", "strings::lower", "strings::replace", "strings::split", "strings::join", "strings::repeat",
+		"strings::reverse", "strings::compare", "strings::char_at", "strings::from_char",
 		// io module
 		"io::open", "io::close", "io::read", "io::write", "io::read_line", "io::read_file", "io::write_file",
 		"io::append_file", "io::exists", "io::remove", "io::rename", "io::mkdir", "io::rmdir", "io::ReadOnly",

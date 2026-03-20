@@ -3727,7 +3727,7 @@ namespace Qd {
 								isPublic = true;
 								token = u8t_scanner_scan(&scanner);
 								if (token != U8T_IDENTIFIER) {
-									errorReporter.reportError(&scanner, "Expected 'fn' after 'pub'");
+									errorReporter.reportError(&scanner, "Expected 'fn' or 'const' after 'pub'");
 									continue;
 								}
 								keyword = u8t_scanner_token_text(&scanner, &n);
@@ -3842,6 +3842,30 @@ namespace Qd {
 								}
 
 								importStmt->addFunction(func);
+							} else if (strcmp(keyword, "const") == 0) {
+								// Parse constant declaration inside import block
+								token = u8t_scanner_scan(&scanner);
+								if (token == U8T_IDENTIFIER) {
+									const char* constName = u8t_scanner_token_text(&scanner, &n);
+									std::string constNameStr(constName);
+									token = u8t_scanner_scan(&scanner);
+									if (token == '=') {
+										std::string value = parseConstantValue(&scanner, &errorReporter);
+										if (!value.empty()) {
+											AstNodeConstant* constDecl =
+													new AstNodeConstant(constNameStr, value.c_str(), isPublic);
+											setNodePosition(constDecl, &scanner, src);
+											constDecl->setParent(program);
+											program->addChild(constDecl);
+										}
+									} else {
+										errorReporter.reportError(
+												&scanner, "Expected '=' after constant name in import block");
+									}
+								} else {
+									errorReporter.reportError(
+											&scanner, "Expected constant name after 'const' in import block");
+								}
 							}
 						}
 					}

@@ -3,6 +3,8 @@
 #include <functional>
 #include <iostream>
 #include <jansson.h>
+#include <quadrate/cli/cli.h>
+#include <quadrate/cli/file_utils.h>
 #include <quadrate/qc/ast.h>
 #include <quadrate/qc/ast_node_for.h>
 #include <quadrate/qc/ast_node_function.h>
@@ -13,8 +15,6 @@
 #include <quadrate/qc/ast_node_local.h>
 #include <quadrate/qc/ast_node_struct.h>
 #include <quadrate/qc/colors.h>
-#include <quadrate/cli/cli.h>
-#include <quadrate/cli/file_utils.h>
 #include <set>
 #include <string>
 #include <unordered_map>

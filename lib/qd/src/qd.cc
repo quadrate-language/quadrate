@@ -6,8 +6,8 @@
 #include <filesystem>
 #include <fstream>
 #include <functional>
-#include <quadrate/llvmgen/generator.h>
 #include <memory>
+#include <quadrate/llvmgen/generator.h>
 #include <quadrate/qc/ast.h>
 #include <quadrate/qc/ast_node.h>
 #include <quadrate/qc/ast_node_use.h>
@@ -147,8 +147,8 @@ static std::string findLibraryDir() {
 				fs::path exePath = fs::canonical(exePathBuf);
 				fs::path exeDir = exePath.parent_path();
 				fs::path installedLib = exeDir / ".." / "lib";
-				if ((fs::exists(installedLib / "quadrate" / "librt.a") || fs::exists(installedLib / "libqdrt.so"))
-					&& fs::exists(installedLib / "quadrate" / "libqd.a")) {
+				if ((fs::exists(installedLib / "quadrate" / "librt.a") || fs::exists(installedLib / "libqdrt.so")) &&
+						fs::exists(installedLib / "quadrate" / "libqd.a")) {
 					return installedLib.string();
 				}
 			} catch (const std::filesystem::filesystem_error&) {
@@ -221,11 +221,13 @@ static const char* findCXX() {
 struct qd_module {
 	std::string name;
 	std::vector<std::string> scripts;
+
 	struct NativeFunction {
 		qd_native_fn fn;
 		void* userdata;
 		std::string signature; // Optional type signature, e.g. "( -- v:f64)"
 	};
+
 	std::unordered_map<std::string, NativeFunction> native_functions;
 	std::unordered_map<std::string, std::string> symbol_map; // function_name -> full_symbol_name
 	dynlib_handle_t dl_handle;								 // dynamic library handle
@@ -233,9 +235,10 @@ struct qd_module {
 	fs::path so_path;
 	bool compiled;
 	size_t warning_min_line; // Minimum line for warnings (0 = no suppression)
-	qd_context* owner_ctx;  // Context that owns this module (for qd_call_native)
+	qd_context* owner_ctx;	 // Context that owns this module (for qd_call_native)
 
-	qd_module(const std::string& n) : name(n), dl_handle(nullptr), compiled(false), warning_min_line(0), owner_ctx(nullptr) {
+	qd_module(const std::string& n)
+		: name(n), dl_handle(nullptr), compiled(false), warning_min_line(0), owner_ctx(nullptr) {
 	}
 
 	~qd_module() {
@@ -282,8 +285,7 @@ void qd_add_script(qd_module* mod, const char* script) {
 	mod->scripts.push_back(script);
 }
 
-void qd_register_function(qd_module* mod, const char* name,
-                           const char* signature, qd_native_fn fn, void* userdata) {
+void qd_register_function(qd_module* mod, const char* name, const char* signature, qd_native_fn fn, void* userdata) {
 	if (!mod || !name || !fn || !signature) {
 		return;
 	}
@@ -350,8 +352,12 @@ void qd_build(qd_module* mod) {
 			auto ctx_it = g_context_modules.find(mod->owner_ctx);
 			if (ctx_it != g_context_modules.end()) {
 				for (const auto& [modName, otherMod] : ctx_it->second) {
-					if (modName == mod->name) continue;
-					if (otherMod->native_functions.empty()) continue;
+					if (modName == mod->name) {
+						continue;
+					}
+					if (otherMod->native_functions.empty()) {
+						continue;
+					}
 
 					// Check if any functions have type signatures
 					bool hasTypedFunctions = false;
@@ -361,7 +367,9 @@ void qd_build(qd_module* mod) {
 							break;
 						}
 					}
-					if (!hasTypedFunctions) continue;
+					if (!hasTypedFunctions) {
+						continue;
+					}
 
 					// Create synthetic module directory and .qd file
 					fs::path synth_dir = mod->temp_dir / modName;
@@ -369,12 +377,13 @@ void qd_build(qd_module* mod) {
 					fs::path synth_file = synth_dir / (modName + ".qd");
 
 					FILE* sf = fopen(synth_file.c_str(), "w");
-					if (!sf) continue;
+					if (!sf) {
+						continue;
+					}
 
 					// Use libqd<name>.a naming to trigger usr_<ns>_<func> mangling
 					// in the LLVM generator (matches the C stubs generated below)
-					fprintf(sf, "import \"libqd%s.a\" as \"%s\" {\n",
-						modName.c_str(), modName.c_str());
+					fprintf(sf, "import \"libqd%s.a\" as \"%s\" {\n", modName.c_str(), modName.c_str());
 					for (const auto& [fname, nf] : otherMod->native_functions) {
 						if (!nf.signature.empty()) {
 							fprintf(sf, "\tpub fn %s%s\n", fname.c_str(), nf.signature.c_str());
@@ -487,7 +496,9 @@ void qd_build(qd_module* mod) {
 			// Collect all used module names from USE statements
 			std::unordered_set<std::string> usedModules;
 			std::function<void(Qd::IAstNode*)> collectUsedModules = [&](Qd::IAstNode* node) {
-				if (!node) return;
+				if (!node) {
+					return;
+				}
 				if (node->type() == Qd::IAstNode::Type::USE_STATEMENT) {
 					auto* useNode = static_cast<Qd::AstNodeUse*>(node);
 					usedModules.insert(useNode->module());
@@ -500,27 +511,36 @@ void qd_build(qd_module* mod) {
 
 			for (const auto& nativeModName : usedModules) {
 				// Check if this module exists in the owner context and has native functions
-				if (!mod->owner_ctx) continue;
+				if (!mod->owner_ctx) {
+					continue;
+				}
 				auto ctx_it = g_context_modules.find(mod->owner_ctx);
-				if (ctx_it == g_context_modules.end()) continue;
+				if (ctx_it == g_context_modules.end()) {
+					continue;
+				}
 				auto mod_it = ctx_it->second.find(nativeModName);
-				if (mod_it == ctx_it->second.end()) continue;
+				if (mod_it == ctx_it->second.end()) {
+					continue;
+				}
 				qd_module* nativeMod = mod_it->second;
-				if (nativeMod->native_functions.empty()) continue;
+				if (nativeMod->native_functions.empty()) {
+					continue;
+				}
 
 				// Generate C stub file
 				fs::path stub_c = mod->temp_dir / ("stub_" + nativeModName + ".c");
 				FILE* stub_f = fopen(stub_c.c_str(), "w");
-				if (!stub_f) continue;
+				if (!stub_f) {
+					continue;
+				}
 
 				fprintf(stub_f, "#include <quadrate/qd/qd.h>\n");
 				for (const auto& fn_pair : nativeMod->native_functions) {
 					fprintf(stub_f,
-						"int usr_%s_%s(qd_context* ctx) {\n"
-						"    return qd_call_native(ctx, \"%s\", \"%s\");\n"
-						"}\n",
-						nativeModName.c_str(), fn_pair.first.c_str(),
-						nativeModName.c_str(), fn_pair.first.c_str());
+							"int usr_%s_%s(qd_context* ctx) {\n"
+							"    return qd_call_native(ctx, \"%s\", \"%s\");\n"
+							"}\n",
+							nativeModName.c_str(), fn_pair.first.c_str(), nativeModName.c_str(), fn_pair.first.c_str());
 				}
 				fclose(stub_f);
 
@@ -554,7 +574,9 @@ void qd_build(qd_module* mod) {
 				stub_cmd += " " + stub_c.string() + " -o " + stub_o.string() + " 2>&1";
 
 				FILE* stub_output = popen(stub_cmd.c_str(), "r");
-				if (!stub_output) continue;
+				if (!stub_output) {
+					continue;
+				}
 
 				char sbuf[256];
 				std::string stub_errors;
@@ -563,8 +585,8 @@ void qd_build(qd_module* mod) {
 				}
 				int stub_result = pclose(stub_output);
 				if (stub_result != 0) {
-					fprintf(stderr, "qd_build: Failed to compile stub for module '%s':\n%s\n",
-						nativeModName.c_str(), stub_errors.c_str());
+					fprintf(stderr, "qd_build: Failed to compile stub for module '%s':\n%s\n", nativeModName.c_str(),
+							stub_errors.c_str());
 					continue;
 				}
 

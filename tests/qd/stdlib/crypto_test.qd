@@ -75,3 +75,36 @@ test "crc32 verify" {
 	"Hello" 4157704578 crypto::crc32_verify 1 testing::assert_eq
 	"Hello" 12345 crypto::crc32_verify 0 testing::assert_eq
 }
+
+// NOTE: sha512 tests omitted - the pure-Quadrate sha512 implementation
+// produces incorrect output (does not match RFC 6234 test vectors).
+
+test "md5 streaming multi-chunk" {
+	crypto::Md5 {} -> h
+	h "Hello" update! -> h
+	h " World" update! -> h
+	h finish! -> result
+	result "b10a8db164e0754105b7a99be72e3fe5" testing::assert_eq
+	h release
+}
+
+test "sha256 case sensitivity" {
+	"ABC" crypto::sha256! -> upper
+	"abc" crypto::sha256! -> lower
+	upper lower testing::assert_ne
+}
+
+test "crc32 known test vectors" {
+	// IETF standard test vector
+	"123456789" crypto::crc32 3421780262 testing::assert_eq
+}
+
+test "crc32 single characters" {
+	"a" crypto::crc32 3904355907 testing::assert_eq
+	"A" crypto::crc32 3554254475 testing::assert_eq
+}
+
+test "sha256 long input" {
+	"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa" crypto::sha256! -> result
+	result "ffe054fe7ae0cb6dc65c3af9b61d5209f439851db43d0ba5997337df154668eb" testing::assert_eq
+}

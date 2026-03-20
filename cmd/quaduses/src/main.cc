@@ -3,6 +3,8 @@
 #include <functional>
 #include <iostream>
 #include <map>
+#include <quadrate/cli/cli.h>
+#include <quadrate/cli/file_utils.h>
 #include <quadrate/qc/ast.h>
 #include <quadrate/qc/ast_node_import.h>
 #include <quadrate/qc/ast_node_parameter.h>
@@ -12,8 +14,6 @@
 #include <quadrate/qc/ast_node_struct_field.h>
 #include <quadrate/qc/ast_node_use.h>
 #include <quadrate/qc/formatter.h>
-#include <quadrate/cli/cli.h>
-#include <quadrate/cli/file_utils.h>
 #include <set>
 #include <sstream>
 #include <string>

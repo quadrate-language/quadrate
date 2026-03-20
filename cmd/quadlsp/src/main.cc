@@ -11,6 +11,7 @@
 #include <filesystem>
 #include <fstream>
 #include <iostream>
+#include <quadrate/platform/platform.h>
 #include <quadrate/qc/ast.h>
 #include <quadrate/qc/ast_node_constant.h>
 #include <quadrate/qc/ast_node_function.h>
@@ -23,7 +24,6 @@
 #include <quadrate/qc/ast_node_test.h>
 #include <quadrate/qc/error_reporter.h>
 #include <quadrate/qc/semantic_validator.h>
-#include <quadrate/platform/platform.h>
 #include <set>
 #include <sstream>
 

@@ -74,12 +74,118 @@ test "http middleware" {
 }
 
 
-test "http status constants" {
+test "http status constants 1xx" {
+	http::StatusContinue 100 testing::assert_eq
+	http::StatusSwitchingProtocols 101 testing::assert_eq
+	http::StatusProcessing 102 testing::assert_eq
+	http::StatusEarlyHints 103 testing::assert_eq
+}
+
+test "http status constants 2xx" {
 	http::StatusOK 200 testing::assert_eq
 	http::StatusCreated 201 testing::assert_eq
+	http::StatusAccepted 202 testing::assert_eq
+	http::StatusNoContent 204 testing::assert_eq
+	http::StatusPartialContent 206 testing::assert_eq
+}
+
+test "http status constants 3xx" {
+	http::StatusMovedPermanently 301 testing::assert_eq
+	http::StatusFound 302 testing::assert_eq
+	http::StatusNotModified 304 testing::assert_eq
+	http::StatusTemporaryRedirect 307 testing::assert_eq
+	http::StatusPermanentRedirect 308 testing::assert_eq
+}
+
+test "http status constants 4xx" {
 	http::StatusBadRequest 400 testing::assert_eq
+	http::StatusUnauthorized 401 testing::assert_eq
+	http::StatusForbidden 403 testing::assert_eq
 	http::StatusNotFound 404 testing::assert_eq
+	http::StatusMethodNotAllowed 405 testing::assert_eq
+	http::StatusConflict 409 testing::assert_eq
+	http::StatusGone 410 testing::assert_eq
+	http::StatusTeapot 418 testing::assert_eq
+	http::StatusTooManyRequests 429 testing::assert_eq
+	http::StatusUnavailableForLegalReasons 451 testing::assert_eq
+}
+
+test "http status constants 5xx" {
 	http::StatusInternalServerError 500 testing::assert_eq
+	http::StatusNotImplemented 501 testing::assert_eq
+	http::StatusBadGateway 502 testing::assert_eq
+	http::StatusServiceUnavailable 503 testing::assert_eq
+	http::StatusGatewayTimeout 504 testing::assert_eq
+}
+
+test "http error constants" {
+	http::ErrConnect 2 testing::assert_eq
+	http::ErrTls 3 testing::assert_eq
+	http::ErrTimeout 4 testing::assert_eq
+	http::ErrInvalidUrl 6 testing::assert_eq
+	http::ErrRedirect 7 testing::assert_eq
+	http::ErrMemory 8 testing::assert_eq
+	http::ErrSend 9 testing::assert_eq
+	http::ErrReceive 10 testing::assert_eq
+}
+
+test "http server error constants" {
+	http::ErrBind 20 testing::assert_eq
+	http::ErrAccept 21 testing::assert_eq
+}
+
+test "http PUT and DELETE registration" {
+	http::engine -> e
+	e "/items" &handle_root http::PUT
+	e "/items" &handle_root http::DELETE
+	1 testing::assert_true
+	e http::free_engine
+}
+
+test "http ANY method registration" {
+	http::engine -> e
+	e "/catch-all" &handle_root http::ANY
+	1 testing::assert_true
+	e http::free_engine
+}
+
+test "http multiple groups" {
+	http::engine -> e
+	e "/api/v1" http::group -> v1
+	e "/api/v2" http::group -> v2
+	v1 "/users" &handle_users http::group_GET
+	v2 "/users" &handle_users http::group_GET
+	v1 "/data" &handle_api_data http::group_POST
+	v2 "/data" &handle_api_data http::group_POST
+	1 testing::assert_true
+	e http::free_engine
+}
+
+test "http group PUT and DELETE" {
+	http::engine -> e
+	e "/api" http::group -> api
+	api "/items" &handle_root http::group_PUT
+	api "/items" &handle_root http::group_DELETE
+	1 testing::assert_true
+	e http::free_engine
+}
+
+test "http parameterized routes" {
+	http::engine -> e
+	e "/users/:id" &handle_user_by_id http::GET
+	e "/posts/:post_id/comments/:comment_id" &handle_root http::GET
+	1 testing::assert_true
+	e http::free_engine
+}
+
+test "http request builder" {
+	"https://example.com" http::new -> req
+	req 0 != testing::assert_true
+	req "POST" http::method
+	req "Content-Type" "application/json" http::header
+	req "Accept" "application/json" http::header
+	req "{}" http::body
+	req http::free_request
 }
 
 // ============================================================

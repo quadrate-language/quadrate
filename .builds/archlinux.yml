@@ -13,7 +13,7 @@ packages:
   - zlib
 
 sources:
-  - git://git@git.sr.ht:~klahr/quadrate
+  - https://git.sr.ht/~klahr/quadrate
   - https://git.sr.ht/~klahr/qdlog
   - https://git.sr.ht/~klahr/qdcompress
   - https://git.sr.ht/~klahr/qdtls
@@ -24,6 +24,10 @@ sources:
   - https://git.sr.ht/~klahr/qdcrypto
 
 tasks:
+  - format: |
+      cd quadrate
+      make format
+      git diff --exit-code
   - build: |
       cd quadrate
       make release

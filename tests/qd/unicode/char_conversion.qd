@@ -1,0 +1,44 @@
+// Test unicode character conversion functions
+use unicode
+
+fn main() {
+	// Case conversion
+	"=== to_lower ===" print nl
+	65 unicode::to_lower print nl    // 'A' -> 97 ('a')
+	90 unicode::to_lower print nl    // 'Z' -> 122 ('z')
+	97 unicode::to_lower print nl    // 'a' -> 97 (already lowercase)
+	48 unicode::to_lower print nl    // '0' -> 48 (non-letter unchanged)
+
+	"=== to_upper ===" print nl
+	97 unicode::to_upper print nl    // 'a' -> 65 ('A')
+	122 unicode::to_upper print nl   // 'z' -> 90 ('Z')
+	65 unicode::to_upper print nl    // 'A' -> 65 (already uppercase)
+	48 unicode::to_upper print nl    // '0' -> 48 (non-letter unchanged)
+
+	// Digit value extraction
+	"=== digit_value ===" print nl
+	48 unicode::digit_value print nl   // '0' -> 0
+	53 unicode::digit_value print nl   // '5' -> 5
+	57 unicode::digit_value print nl   // '9' -> 9
+	65 unicode::digit_value print nl   // 'A' -> -1 (not a digit)
+
+	// Hex digit value extraction
+	"=== hex_digit_value ===" print nl
+	48 unicode::hex_digit_value print nl    // '0' -> 0
+	57 unicode::hex_digit_value print nl    // '9' -> 9
+	65 unicode::hex_digit_value print nl    // 'A' -> 10
+	70 unicode::hex_digit_value print nl    // 'F' -> 15
+	97 unicode::hex_digit_value print nl    // 'a' -> 10
+	102 unicode::hex_digit_value print nl   // 'f' -> 15
+	103 unicode::hex_digit_value print nl   // 'g' -> -1
+
+	// UTF-8 sequence length
+	"=== utf8_seq_len ===" print nl
+	65 unicode::utf8_seq_len print nl    // ASCII -> 1 byte
+	194 unicode::utf8_seq_len print nl   // 2-byte start -> 2
+	224 unicode::utf8_seq_len print nl   // 3-byte start -> 3
+	240 unicode::utf8_seq_len print nl   // 4-byte start -> 4
+	128 unicode::utf8_seq_len print nl   // continuation byte -> 0 (invalid start)
+
+	"done" print nl
+}
