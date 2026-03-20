@@ -638,9 +638,9 @@ run_qd_tests() {
 
     # Find all test files
     local -a test_files=()
-    while IFS= read -r -d '' file; do
+    while IFS= read -r file; do
         test_files+=("$file")
-    done < <(find "$test_dir" -name "*.qd" -type f ! -path "*/network/*" -print0 | sort -z)
+    done <<< "$(find "$test_dir" -name "*.qd" -type f ! -path "*/network/*" | sort)"
 
     # Filter tests
     local -a filtered_tests=()
@@ -781,9 +781,9 @@ run_formatter_tests() {
 
     # Find all test files
     local -a test_files=()
-    while IFS= read -r -d '' file; do
+    while IFS= read -r file; do
         test_files+=("$file")
-    done < <(find "$test_dir" -maxdepth 1 -name "*.qd" -type f -print0 | sort -z)
+    done <<< "$(find "$test_dir" -maxdepth 1 -name "*.qd" -type f | sort)"
 
     # Filter tests
     local -a filtered_tests=()
@@ -895,7 +895,7 @@ run_linter_tests() {
             all_passed=false
             log_fail "$suite" "$full_test_name" "output mismatch" "Expected:\n$expected_output\n\nGot:\n$normalized_output"
         fi
-    done < <(find "$test_dir" -name "*.qd" -type f | sort)
+    done <<< "$(find "$test_dir" -name "*.qd" -type f | sort)"
 
     if [[ $test_count -eq 0 ]]; then
         log_skip "$suite" "linter_tests" "no tests found"
@@ -1487,9 +1487,9 @@ run_stdlib_tests() {
 
     # Find test files in tests/qd/stdlib/
     local test_files=""
-    while IFS= read -r -d '' f; do
-        test_files+=" $f"
-    done < <(find "$PROJECT_ROOT/tests/qd/stdlib" -maxdepth 1 -name '*_test.qd' -print0)
+    for f in "$PROJECT_ROOT/tests/qd/stdlib"/*_test.qd; do
+        [[ -f "$f" ]] && test_files+=" $f"
+    done
     output=$(cd "$PROJECT_ROOT" && \
         QUADRATE_ROOT="$QUADRATE_ROOT_DEFAULT" \
         QUADRATE_LIBDIR="$QUADRATE_LIBDIR_DEFAULT" \
@@ -1536,7 +1536,7 @@ run_helgrind_tests() {
         if grep -q 'use thread' "$test_file" 2>/dev/null; then
             thread_tests+=("$test_file")
         fi
-    done < <(find "$PROJECT_ROOT/lib" -name '*_test.qd' -type f 2>/dev/null)
+    done <<< "$(find "$PROJECT_ROOT/lib" -name '*_test.qd' -type f 2>/dev/null)"
 
     if [[ ${#thread_tests[@]} -eq 0 ]]; then
         log_skip "$suite" "helgrind" "no thread tests found"
