@@ -12,12 +12,18 @@ Quadrate requires the following build tools:
 
 ### Installing dependencies
 
-> **Note:** [Arch Linux](https://archlinux.org/), [Debian](https://www.debian.org/) and [Haiku](https://haiku-os.org/) are currently the only tested and supported platforms. Other platforms may work but are untested.
+> **Note:** [Arch Linux](https://archlinux.org/), [Alpine Linux](https://alpinelinux.org/) (musl), [Debian](https://www.debian.org/) and [Haiku](https://haiku-os.org/) are currently the only tested and supported platforms. Other platforms may work but are untested.
 
 #### <img src="https://archlinux.org/static/logos/archlinux-logo-dark-scalable.svg" alt="https://archlinux.org/" style="height: 40px"> Arch Linux
 
 ```bash
 pacman -S meson clang ninja llvm readline
+```
+
+#### <img src="https://alpinelinux.org/alpine-logo.ico" alt="https://alpinelinux.org/" style="height: 32px"> Alpine Linux
+
+```bash
+apk add bash clang clang-dev compiler-rt llvm-dev meson musl-dev readline-dev
 ```
 
 #### <img src="https://www.debian.org/logos/openlogo-nd.svg" alt="https://www.debian.org/" style="height: 32px"> Debian / Ubuntu
