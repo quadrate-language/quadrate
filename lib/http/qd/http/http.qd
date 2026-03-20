@@ -103,34 +103,43 @@ pub struct Ctx {
 	_responded: i64
 }
 
+/// Connection failed.
+pub const ErrConnect = 2
+
+/// TLS handshake failed.
+pub const ErrTls = 3
+
+/// Request timeout.
+pub const ErrTimeout = 4
+
+/// Response parse error.
+pub const ErrParse = 5
+
+/// Invalid URL format.
+pub const ErrInvalidUrl = 6
+
+/// Too many redirects.
+pub const ErrRedirect = 7
+
+/// Memory allocation failed.
+pub const ErrMemory = 8
+
+/// Send failed.
+pub const ErrSend = 9
+
+/// Receive failed.
+pub const ErrReceive = 10
+
+/// Server error: bind failed.
+pub const ErrBind = 20
+
+/// Server error: accept failed.
+pub const ErrAccept = 21
+
+/// Server error: parse failed.
+pub const ErrServerParse = 22
+
 import "libhttp.a" as "http" {
-	/// Connection failed.
-	pub const ErrConnect = 2
-
-	/// TLS handshake failed.
-	pub const ErrTls = 3
-
-	/// Request timeout.
-	pub const ErrTimeout = 4
-
-	/// Response parse error.
-	pub const ErrParse = 5
-
-	/// Invalid URL format.
-	pub const ErrInvalidUrl = 6
-
-	/// Too many redirects.
-	pub const ErrRedirect = 7
-
-	/// Memory allocation failed.
-	pub const ErrMemory = 8
-
-	/// Send failed.
-	pub const ErrSend = 9
-
-	/// Receive failed.
-	pub const ErrReceive = 10
-
 	/// Create new HTTP request builder.
 	/// @param url str The request URL (http:// or https://)
 	/// @return req ptr Request object
@@ -188,11 +197,6 @@ import "libhttp.a" as "http" {
 	// ============================================================
 	// Server API (Gin-inspired)
 	// ============================================================
-
-	/// Server error codes
-	pub const ErrBind = 20
-	pub const ErrAccept = 21
-	pub const ErrParse = 22
 
 	/// Create new HTTP engine.
 	/// @return engine ptr Engine handle

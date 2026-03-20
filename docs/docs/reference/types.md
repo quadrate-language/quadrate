@@ -6,7 +6,8 @@ Operations for converting between types.
 
 | Instruction | Signature | Description |
 |-------------|-----------|-------------|
-| `cast<T>` | `(val -- T)` | Convert to specified type |
+| `cast<T>` | `(val -- T)` | Convert to specified type (runtime) |
+| `as Type` | `(val -- val)` | Narrow ptr to struct type (compile-time) |
 
 ---
 
@@ -68,4 +69,57 @@ Quadrate does not perform implicit type conversions. Use explicit casts:
 
 // CORRECT: Explicit cast
 5 cast<f64> 3.0 + // 8
+```
+
+---
+
+## Type narrowing with as
+
+The `as` keyword narrows a `ptr` value to a specific struct type. This is a compile-time operation with no runtime cost — the pointer value on the stack is unchanged.
+
+**Syntax:** `value as StructType`
+
+```qd
+fn get_name(p:ptr -- name:str) {
+	-> p
+	p as Dog @name
+}
+```
+
+### When to use as
+
+Use `as` when the compiler cannot determine the struct type — typically when a value is typed as `ptr` and multiple structs share a field name:
+
+```qd
+struct Foo { value:i64 }
+struct Bar { value:str }
+
+fn read_foo(p:ptr -- v:i64) {
+	-> p
+	p as Foo @value   // disambiguates @value
+}
+```
+
+Without `as`, accessing `@value` on an untyped `ptr` when multiple structs define that field is a compile error.
+
+### as vs cast
+
+| Feature | `cast<T>` | `as Type` |
+|---------|-----------|-----------|
+| Purpose | Convert between primitive types | Narrow ptr to struct type |
+| Runtime cost | Yes (conversion code) | None (compile-time only) |
+| Changes value | Yes | No |
+| Target types | `i64`, `f64`, `str`, `ptr` | Any struct type |
+
+### Storing typed locals
+
+Combining `as` with `->` tracks the type for all subsequent accesses:
+
+```qd
+fn process(p:ptr -- ) {
+	-> p
+	p as Point -> pt   // pt is now typed as Point
+	pt @x print nl     // no ambiguity
+	pt @y print nl     // type still known
+}
 ```

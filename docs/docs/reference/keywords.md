@@ -25,7 +25,7 @@ Language keywords for declarations, control flow, and more.
 | [`->`](#arrow-) | Variable binding |
 | [`test`](#test) | Declares a test block |
 | [`import`](#import) | Imports a native C library |
-| [`as`](#as) | Specifies module name in import |
+| [`as`](#as) | Type narrowing cast / import module namespace |
 | [`Ok`](#ok) | Success literal (1) for switch matching |
 | [`Err`](#err) | Error literal (0) for switch matching |
 | [`true`](#true) | Boolean true (1) |
@@ -252,7 +252,26 @@ import "libmath.a" as "math" {
 
 ### as
 
-Specifies the module namespace in an `import` statement. See [import](#import).
+Has two uses:
+
+**1. Type narrowing cast** — Narrows a `ptr` value to a specific struct type for field access. This is compile-time only with no runtime cost.
+
+```qd
+fn get_body(c:ptr -- body:str) {
+	-> c
+	c as http::Ctx @body
+}
+```
+
+When multiple structs share a field name and the compiler cannot determine the type, `as` disambiguates:
+
+```qd
+c as MyStruct @value      // access @value on MyStruct specifically
+c as MyStruct -> typed_c  // bind as typed local for subsequent accesses
+typed_c @value            // type is known, no ambiguity
+```
+
+**2. Import namespace** — Specifies the module namespace in an `import` statement. See [import](#import).
 
 ### Ok
 

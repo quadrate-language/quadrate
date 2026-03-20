@@ -221,9 +221,12 @@ int my_function(qd_context* ctx) {
 }
 ```
 
-In Quadrate, use the `!` suffix for failable functions:
+In Quadrate, use the `!` suffix for failable functions. Define error code constants at module top-level alongside the import block:
 
 ```qd
+pub const ErrOverflow = 2
+pub const ErrTypeMismatch = 3
+
 import "libmylib.a" as "mylib" {
 	pub fn my_function(x:i64 -- result:i64)!
 }
@@ -232,6 +235,8 @@ fn main() {
 	42 mylib::my_function! -> result
 }
 ```
+
+The constants are accessible via `mylib::ErrOverflow` from any module that uses `mylib`.
 
 ## Memory management
 

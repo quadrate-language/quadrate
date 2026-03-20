@@ -60,6 +60,19 @@ fn main() {
 }
 ```
 
+### Type narrowing with as
+
+When working with raw `ptr` values (common in callbacks), use `as` to tell the compiler the struct type:
+
+```qd
+fn handler(data:ptr -- ) {
+	-> data
+	data as Config @debug print nl
+}
+```
+
+This is compile-time only — no runtime cost. It's required when multiple structs share a field name, as the compiler cannot guess which one you mean.
+
 ## Writing fields
 
 Use `.fieldname` to write:

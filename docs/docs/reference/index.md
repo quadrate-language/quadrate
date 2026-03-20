@@ -12,7 +12,7 @@ This section documents all Quadrate keywords and built-in instructions.
 - [Arrays](arrays.md) - Array creation and manipulation
 - [Structs](structs.md) - Struct definition, field access, methods
 - [Generics](generics.md) - Generic functions with `<T>`
-- [Type Casting](types.md) - `cast<T>`
+- [Type Casting](types.md) - `cast<T>`, `as TypeName`
 - [Input/Output](io.md) - `print`, `nl`, `read`
 - [Error Handling](errors.md) - `panic`
 - [Threading](threading.md) - `spawn`, `wait`, `detach`

@@ -296,6 +296,17 @@ Explicit casting via `cast<Type>`:
 
 **Implicit coercion**: Implementations MUST NOT perform implicit type coercion. All type conversions MUST be explicit.
 
+### 3.7 Type Narrowing
+
+The `as` keyword narrows a `ptr` value to a specific struct type. This is a compile-time annotation with no runtime cost:
+
+```quadrate
+value as StructType @field    // access field on specific struct type
+value as StructType -> local  // bind with tracked struct type
+```
+
+Implementations MUST produce an error when `@field` is used on an untyped `ptr` and the field name is ambiguous (exists in multiple struct definitions). The `as` keyword resolves this ambiguity.
+
 ---
 
 ## 4. Stack Machine Model
@@ -468,6 +479,8 @@ import "library.a" as "namespace" {
     ...
 }
 ```
+
+Import blocks declare bindings to native C functions. Only function declarations are allowed inside the block. Constants associated with the library (such as error codes) should be declared at module top-level using `pub const`.
 
 ### 5.7 Test Declarations
 
@@ -735,6 +748,12 @@ Use `@` operator:
 ```quadrate
 point @x        // Read field 'x' from point
 point @x @y     // Chained access (if x is a struct)
+```
+
+When the struct type cannot be determined (e.g., the value is typed as `ptr`) and the field name exists in multiple struct definitions, implementations MUST produce an error. Use `as` to disambiguate:
+
+```quadrate
+ptr_val as MyStruct @field
 ```
 
 ### 8.4 Field Set (Write)
@@ -1371,7 +1390,8 @@ defer_stmt      = "defer" ( block | statement ) ;
 
 expression      = literal | identifier | scoped_id | struct_const | array_lit
                 | field_access | field_set | local_bind | fn_call | anon_fn
-                | error_lit | operator | instruction ;
+                | error_lit | operator | instruction | as_cast ;
+as_cast         = "as" type ;
 
 error_lit       = "error" "{" "code" "=" expression "message" "=" expression "}" ;
 
@@ -1447,6 +1467,7 @@ instruction     = "dup" | "swap" | "drop" | "over" | "rot" | "nip" | "tuck"
 | `&` | Get function pointer |
 | `!` | Abort on error (after fallible call) |
 | `?` | Propagate error to caller (after fallible call) |
+| `as` | Type narrowing cast (compile-time, no runtime cost) |
 
 ---
 

@@ -145,3 +145,26 @@ Use `cast` for explicit conversion:
 ```qd
 2 cast<f64> math::sqrt print nl  // 1.41421
 ```
+
+## Ambiguous field access
+
+When multiple structs share a field name, accessing `@field` on an untyped `ptr` is an error:
+
+```qd
+struct Foo { value:i64 }
+struct Bar { value:str }
+
+fn read(p:ptr -- ) {
+	-> p
+	p @value   // Error: ambiguous field '@value'
+}
+```
+
+Use `as` to tell the compiler which struct you mean:
+
+```qd
+fn read(p:ptr -- ) {
+	-> p
+	p as Foo @value print nl  // OK
+}
+```

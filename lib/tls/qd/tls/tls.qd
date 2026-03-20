@@ -2,34 +2,34 @@
 /// Provides encryption layer on top of TCP sockets using OpenSSL.
 /// Error codes: Ok=1 (success), specific errors start at 2
 
+/// TLS initialization failed.
+pub const ErrInit = 2
+
+/// TLS handshake failed (client mode).
+pub const ErrConnect = 3
+
+/// TLS handshake failed (server mode).
+pub const ErrAccept = 4
+
+/// Certificate validation or loading error.
+pub const ErrCertificate = 5
+
+/// TLS read operation failed.
+pub const ErrRead = 6
+
+/// TLS write operation failed.
+pub const ErrWrite = 7
+
+/// Connection closed by peer.
+pub const ErrClosed = 8
+
+/// Memory allocation failed.
+pub const ErrMemory = 9
+
+/// Invalid argument provided.
+pub const ErrInvalidArg = 10
+
 import "libtls.a" as "tls" {
-	/// TLS initialization failed.
-	pub const ErrInit = 2
-
-	/// TLS handshake failed (client mode).
-	pub const ErrConnect = 3
-
-	/// TLS handshake failed (server mode).
-	pub const ErrAccept = 4
-
-	/// Certificate validation or loading error.
-	pub const ErrCertificate = 5
-
-	/// TLS read operation failed.
-	pub const ErrRead = 6
-
-	/// TLS write operation failed.
-	pub const ErrWrite = 7
-
-	/// Connection closed by peer.
-	pub const ErrClosed = 8
-
-	/// Memory allocation failed.
-	pub const ErrMemory = 9
-
-	/// Invalid argument provided.
-	pub const ErrInvalidArg = 10
-
 	/// Wrap a TCP socket with TLS encryption (client mode).
 	/// Performs TLS handshake and certificate verification.
 	/// @param socket i64 TCP socket from net::connect

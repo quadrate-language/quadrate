@@ -92,6 +92,21 @@ struct Line {
 line @start @x print nl  // read x from start point of line
 ```
 
+### Type narrowing for ptr values
+
+When a value is typed as `ptr` (e.g., in callback handlers), use `as` to tell the compiler which struct type it is:
+
+```qd
+fn handler(c:ptr -- ) {
+	-> c
+	c as http::Ctx @body -> body
+}
+```
+
+If multiple structs share a field name and the compiler cannot determine the type, accessing `@field` on an untyped `ptr` is a compile error. Use `as StructType` to disambiguate.
+
+See [Type Casting](types.md#type-narrowing-with-as) for details.
+
 ---
 
 ## Field set (write)
