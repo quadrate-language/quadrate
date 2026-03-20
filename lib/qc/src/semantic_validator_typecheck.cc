@@ -80,6 +80,10 @@ namespace Qd {
 			AstNodeInstruction* instr = static_cast<AstNodeInstruction*>(lastChild);
 			return instr->name() == "panic";
 		}
+		// Check if the block ends with `return`
+		if (lastChild->type() == IAstNode::Type::RETURN_STATEMENT) {
+			return true;
+		}
 		// Recursively check nested blocks (e.g., if the last child is another block)
 		if (lastChild->type() == IAstNode::Type::BLOCK) {
 			return blockEndsDiverging(lastChild);
@@ -398,6 +402,7 @@ namespace Qd {
 
 			// Track whether current function is fallible (for panic validation)
 			mCurrentFunctionFallible = func->throws();
+			mCurrentFunctionOutputCount = func->outputParameters().size();
 
 			// For methods, register the receiver as a local variable (it's implicitly bound)
 			if (func->hasReceiver()) {
@@ -412,8 +417,9 @@ namespace Qd {
 				typeCheckBlock(func->body(), typeStack, localVariables, structTypeStack);
 			}
 
-			// Reset fallible flag
+			// Reset function state
 			mCurrentFunctionFallible = false;
+			mCurrentFunctionOutputCount = 0;
 
 			// Clear type parameters after type checking
 			mCurrentTypeParams.clear();
@@ -2998,6 +3004,23 @@ namespace Qd {
 				typeStack.push_back(StackValueType::PTR);
 				structTypeStack.push_back(""); // Not a struct pointer
 				break;
+			}
+
+			case IAstNode::Type::RETURN_STATEMENT: {
+				// Validate that the stack has the expected number of return values
+				if (mCurrentFunctionOutputCount > 0 && typeStack.size() < mCurrentFunctionOutputCount) {
+					std::string errorMsg = "'return' in function expecting ";
+					errorMsg += std::to_string(mCurrentFunctionOutputCount);
+					errorMsg += " return value";
+					if (mCurrentFunctionOutputCount > 1) {
+						errorMsg += "s";
+					}
+					errorMsg += ", but stack has ";
+					errorMsg += std::to_string(typeStack.size());
+					reportError(child, errorMsg.c_str());
+				}
+				// Stop processing this block — code after return is unreachable
+				return;
 			}
 
 			default:

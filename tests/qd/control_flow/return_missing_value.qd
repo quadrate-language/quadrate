@@ -1,0 +1,10 @@
+fn bad( -- result:i64) {
+	1 1 == if {
+		return
+	}
+	42
+}
+
+fn main() {
+	bad print nl
+}

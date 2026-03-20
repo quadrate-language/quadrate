@@ -118,7 +118,10 @@ int usr_time_format(qd_context* ctx) {
 
 	// Buffer for strftime result (should be enough for most formats)
 	char buffer[256];
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wformat-nonliteral"
 	size_t len = strftime(buffer, sizeof(buffer), format, &tm_info);
+#pragma GCC diagnostic pop
 	if (len == 0 && format[0] != '\0') {
 		// strftime returns 0 if buffer too small or format error
 		qd_string_release(format_elem.value.s);

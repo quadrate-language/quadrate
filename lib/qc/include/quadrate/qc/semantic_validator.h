@@ -393,6 +393,10 @@ namespace Qd {
 		// Used to restrict 'panic' to only be called in fallible functions
 		bool mCurrentFunctionFallible;
 
+		// Number of output values the current function's signature expects
+		// Used to validate 'return' statements push the right number of values
+		size_t mCurrentFunctionOutputCount;
+
 		// Pending function signature - set when an anonymous function or function pointer
 		// with known signature is pushed onto the stack, used by 'call' instruction
 		std::optional<FunctionSignature> mPendingFnSignature;

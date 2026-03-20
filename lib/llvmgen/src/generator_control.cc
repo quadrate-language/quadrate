@@ -1136,15 +1136,15 @@ namespace Qd {
 			}
 			break;
 		case IAstNode::Type::RETURN_STATEMENT:
-			// Return from current function
+			// Return from current function — defers are executed in the return block itself
 			if (currentFunctionReturnBlock) {
+				// For native functions, store return value before branching
+				if (useCompileTimeStack && nativeReturnAlloca && !compileTimeStack.empty()) {
+					builder->CreateStore(compileTimeStack.back(), nativeReturnAlloca);
+				}
 				builder->CreateBr(currentFunctionReturnBlock);
 			}
 			break;
-			// Note: for native functions using compile-time stack, the return value
-			// is stored to the retval alloca before each branch to the return block.
-			// This happens in generateFunction's native path (before the final branch)
-			// and in the PHI merge logic of generateIf.
 		case IAstNode::Type::DEFER_STATEMENT:
 			// Collect defer statement for later execution at scope end
 			if (deferScopeStack.empty()) {

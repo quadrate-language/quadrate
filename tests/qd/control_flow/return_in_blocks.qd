@@ -1,0 +1,170 @@
+// Test return inside control flow blocks
+
+// Return from if body
+fn find_first_gt(threshold:i64 -- result:i64) {
+	-> t
+	0 10 1 for i {
+		i t > if {
+			i return
+		}
+	}
+	-1
+}
+
+// Return from multiple if blocks (early return pattern)
+fn classify(x:i64 -- label:str) {
+	-> n
+	n 0 > if {
+		"positive" return
+	}
+	n 0 < if {
+		"negative" return
+	}
+	"zero"
+}
+
+// Return from else branch
+fn abs(x:i64 -- result:i64) {
+	-> n
+	n 0 >= if {
+		n return
+	} else {
+		n neg return
+	}
+	0
+}
+
+// Return from nested if blocks
+fn clamp(x:i64 lo:i64 hi:i64 -- result:i64) {
+	-> max -> min -> n
+	n min < if {
+		min return
+	}
+	n max > if {
+		max return
+	}
+	n
+}
+
+// Return from loop
+fn loop_return( -- val:i64) {
+	0 -> i
+	loop {
+		i 5 == if {
+			i return
+		}
+		i 1 + -> i
+	}
+	-1
+}
+
+// Return from while
+fn while_return( -- val:i64) {
+	0 -> i
+	i 100 < while {
+		i 3 == if {
+			i return
+		}
+		i 1 + -> i
+		i 100 <
+	}
+	-1
+}
+
+// Return from switch/case
+fn day_type(d:i64 -- label:str) {
+	switch {
+		6 { "saturday" return }
+		7 { "sunday" return }
+		_ { "weekday" return }
+	}
+	"unknown"
+}
+
+// Void return from block (no return value)
+fn print_if_positive(x:i64 -- ) {
+	-> n
+	n 0 <= if {
+		return
+	}
+	n print nl
+}
+
+// Return with defer in enclosing function
+fn with_defer( -- val:i64) {
+	defer {
+		"defer" print nl
+	}
+	1 1 == if {
+		42 return
+	}
+	0
+}
+
+// Fallthrough: return not taken, normal exit
+fn fallthrough(x:i64 -- result:i64) {
+	-> n
+	n 100 > if {
+		999 return
+	}
+	n 2 *
+}
+
+// Multiple returns in same function
+fn multi_return(a:i64 b:i64 -- result:i64) {
+	-> y -> x
+	x 0 == if {
+		y return
+	}
+	y 0 == if {
+		x return
+	}
+	x y +
+}
+
+fn main() {
+	// Return from for+if
+	5 find_first_gt print nl
+	11 find_first_gt print nl
+
+	// Return from if (early return pattern)
+	-3 classify print nl
+	0 classify print nl
+	7 classify print nl
+
+	// Return from else
+	5 abs print nl
+	-5 abs print nl
+
+	// Return from nested if
+	50 0 100 clamp print nl
+	-10 0 100 clamp print nl
+	200 0 100 clamp print nl
+
+	// Return from loop
+	loop_return print nl
+
+	// Return from while
+	while_return print nl
+
+	// Return from switch
+	6 day_type print nl
+	7 day_type print nl
+	1 day_type print nl
+
+	// Void return
+	5 print_if_positive
+	-5 print_if_positive
+
+	// Return with defer
+	with_defer print nl
+
+	// Fallthrough (return not taken)
+	50 fallthrough print nl
+	200 fallthrough print nl
+
+	// Multiple returns
+	0 5 multi_return print nl
+	3 0 multi_return print nl
+	3 4 multi_return print nl
+}

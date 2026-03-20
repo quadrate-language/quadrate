@@ -961,13 +961,17 @@ namespace Qd {
 				return boolNode;
 			}
 
-			// break and continue are always allowed
+			// break, continue, and return are always allowed
 			if (strcmp(text, "break") == 0) {
 				IAstNode* node = new AstNodeBreak();
 				setNodePosition(node, scanner, src);
 				return node;
 			} else if (strcmp(text, "continue") == 0) {
 				IAstNode* node = new AstNodeContinue();
+				setNodePosition(node, scanner, src);
+				return node;
+			} else if (strcmp(text, "return") == 0) {
+				IAstNode* node = new AstNodeReturn();
 				setNodePosition(node, scanner, src);
 				return node;
 			}

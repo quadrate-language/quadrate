@@ -1,0 +1,11 @@
+fn bad(x:i64 -- a:i64 b:i64) {
+	-> n
+	n 0 > if {
+		n return
+	}
+	n n
+}
+
+fn main() {
+	5 bad print nl print nl
+}
