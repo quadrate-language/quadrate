@@ -289,4 +289,4 @@ mylib = static_library('mylib', 'mylib.c',
 
 ## What's next?
 
-Check out [Common Mistakes](../common-mistakes.md) to avoid common gotchas, then explore [Examples](../8-examples/file-processing.md) to see complete programs.
+Explore [Examples](../8-examples/file-processing.md) to see complete programs.
