@@ -951,7 +951,7 @@ run_embed_tests() {
 
         if [[ $USE_VALGRIND -eq 1 ]]; then
             local valgrind_log="$TEMP_DIR/embed_${test_name}.valgrind"
-            output=$(LD_LIBRARY_PATH="$PROJECT_ROOT/dist/lib${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}" valgrind $VALGRIND_FLAGS --error-exitcode=99 --log-file="$valgrind_log" "$test_exe" 2>&1)
+            output=$(QUADRATE_LIBDIR="$QUADRATE_LIBDIR_DEFAULT" LD_LIBRARY_PATH="$PROJECT_ROOT/dist/lib${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}" valgrind $VALGRIND_FLAGS --error-exitcode=99 --log-file="$valgrind_log" "$test_exe" 2>&1)
             exit_code=$?
 
             if [[ $exit_code -eq 99 ]]; then
@@ -961,7 +961,7 @@ run_embed_tests() {
                 continue
             fi
         else
-            output=$(LD_LIBRARY_PATH="$PROJECT_ROOT/dist/lib${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}" "$test_exe" 2>&1)
+            output=$(QUADRATE_LIBDIR="$QUADRATE_LIBDIR_DEFAULT" LD_LIBRARY_PATH="$PROJECT_ROOT/dist/lib${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}" "$test_exe" 2>&1)
             exit_code=$?
         fi
 

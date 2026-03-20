@@ -755,7 +755,12 @@ void qd_build(qd_module* mod) {
 		if (!stub_objects.empty()) {
 			// Link against libqd so qd_call_native resolves at dlopen time
 			// via the already-loaded shared library.
-			link_cmd += " -L" + lib_dir + " -lqd";
+			link_cmd += " -L" + lib_dir;
+			// In meson build tree, libqd.so lives in a qd/ subdirectory
+			if (fs::exists(fs::path(lib_dir) / "qd" / "libqd.so")) {
+				link_cmd += " -L" + lib_dir + "/qd";
+			}
+			link_cmd += " -lqd";
 		}
 		link_cmd += " 2>&1";
 
