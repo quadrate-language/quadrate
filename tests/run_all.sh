@@ -66,7 +66,7 @@ USE_HELGRIND=0
 FUZZ_TIME=10
 
 # Shared valgrind flags for all test types
-VALGRIND_FLAGS="--leak-check=full --show-leak-kinds=definite,indirect,possible --track-fds=yes --track-origins=yes --error-exitcode=1"
+VALGRIND_FLAGS="--leak-check=full --show-leak-kinds=definite,indirect,possible --errors-for-leak-kinds=definite,indirect --track-fds=yes --track-origins=yes --error-exitcode=1"
 
 while [[ $# -gt 0 ]]; do
     case $1 in
