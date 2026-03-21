@@ -1,0 +1,54 @@
+enum Color {
+	Red
+	Green
+	Blue
+}
+
+enum TokenType {
+	Int
+	Float
+	Str = 10
+	Ident
+	Plus = 20
+	Minus
+	Eof = -1
+}
+
+fn main() {
+	// Basic values
+	Color::Red print nl
+	Color::Green print nl
+	Color::Blue print nl
+
+	// Auto-increment
+	TokenType::Int print nl
+	TokenType::Float print nl
+
+	// Explicit value
+	TokenType::Str print nl
+	TokenType::Ident print nl
+
+	// Another explicit value
+	TokenType::Plus print nl
+	TokenType::Minus print nl
+
+	// Negative value
+	TokenType::Eof print nl
+
+	// Arithmetic — it's just i64
+	Color::Red Color::Blue + print nl
+
+	// Comparison
+	Color::Red Color::Green == if {
+		"same" print nl
+	} else {
+		"different" print nl
+	}
+
+	// Switch
+	TokenType::Str switch {
+		TokenType::Int { "int" print nl }
+		TokenType::Str { "str" print nl }
+		_ { "other" print nl }
+	}
+}

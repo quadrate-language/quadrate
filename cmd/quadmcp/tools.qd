@@ -39,7 +39,7 @@ fn mcp_tools_list(id:str -- response:str) {
 	"Get Quadrate language syntax reference: types, keywords, operators, and common patterns"
 	"" "" build_tool -> tool7
 
-	"name" "Keyword name (e.g., 'fn', 'if', 'for', 'struct', 'use', 'loop')" build_string_prop json::kv_raw json::obj -> props
+	"name" "Keyword name (e.g., 'fn', 'if', 'for', 'struct', 'enum', 'use', 'loop')" build_string_prop json::kv_raw json::obj -> props
 	"name" json::encode json::arr -> req
 	"quadrate_get_keyword"
 	"Get documentation for a specific Quadrate keyword. Search language.json keywords array."

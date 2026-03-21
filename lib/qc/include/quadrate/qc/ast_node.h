@@ -102,7 +102,8 @@ namespace Qd {
 			ARRAY_INDEX,
 			TEST_DECLARATION,
 			ANONYMOUS_FUNCTION,
-			AS_CAST
+			AS_CAST,
+			ENUM_DECLARATION
 		};
 		virtual ~IAstNode() = default;
 

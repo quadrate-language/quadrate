@@ -1,0 +1,19 @@
+// Multiple enums in same file, no conflicts
+enum Color { Red Green Blue }
+enum Fruit { Apple Orange Banana }
+enum Size { Small Medium Large }
+
+fn main() {
+	// Each enum has independent numbering
+	Color::Red print nl
+	Fruit::Apple print nl
+	Size::Small print nl
+
+	Color::Blue print nl
+	Fruit::Banana print nl
+	Size::Large print nl
+
+	// Can compare across enums (they're all i64)
+	Color::Red Fruit::Apple == print nl
+	Color::Green Size::Medium == print nl
+}

@@ -1899,11 +1899,36 @@ namespace Qd {
 			}
 		}
 
+		// Collect enum variants from all modules
+		for (const auto& modulePair : moduleASTs) {
+			const std::string& moduleName = modulePair.first;
+			IAstNode* moduleRoot = modulePair.second;
+			if (!moduleRoot) {
+				continue;
+			}
+			for (auto* child : moduleRoot->children()) {
+				if (auto enumNode = dynamic_cast<AstNodeEnumDeclaration*>(child)) {
+					for (const auto& variant : enumNode->variants()) {
+						std::string val = std::to_string(variant.value);
+						std::string enumScoped = enumNode->name() + "::" + variant.name;
+						moduleConstants[enumScoped] = val;
+						moduleConstants[moduleName + "::" + enumScoped] = val;
+					}
+				}
+			}
+		}
+
 		// Collect constants from main file
 		for (auto* child : root->children()) {
 			if (auto constNode = dynamic_cast<AstNodeConstant*>(child)) {
 				// Store constant with just the name (no scope prefix for main file)
 				moduleConstants[constNode->name()] = constNode->value();
+			}
+			if (auto enumNode = dynamic_cast<AstNodeEnumDeclaration*>(child)) {
+				for (const auto& variant : enumNode->variants()) {
+					std::string enumScoped = enumNode->name() + "::" + variant.name;
+					moduleConstants[enumScoped] = std::to_string(variant.value);
+				}
 			}
 		}
 

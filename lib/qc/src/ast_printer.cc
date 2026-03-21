@@ -80,6 +80,8 @@ namespace Qd {
 			return "FieldAccess";
 		case IAstNode::Type::AS_CAST:
 			return "AsCast";
+		case IAstNode::Type::ENUM_DECLARATION:
+			return "EnumDeclaration";
 		default:
 			return "Unknown";
 		}

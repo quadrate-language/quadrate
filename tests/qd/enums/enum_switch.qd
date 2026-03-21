@@ -1,0 +1,26 @@
+enum Level {
+	Debug
+	Info
+	Warn
+	Error
+}
+
+fn log(level:i64 msg:str -- ) {
+	-> m -> l
+	l switch {
+		Level::Debug { "[DEBUG] " print }
+		Level::Info { "[INFO] " print }
+		Level::Warn { "[WARN] " print }
+		Level::Error { "[ERROR] " print }
+		_ { "[?] " print }
+	}
+	m print nl
+}
+
+fn main() {
+	Level::Debug "starting up" log
+	Level::Info "ready" log
+	Level::Warn "low memory" log
+	Level::Error "disk full" log
+	99 "bogus level" log
+}

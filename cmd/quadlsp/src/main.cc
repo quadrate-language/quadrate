@@ -1220,9 +1220,13 @@ std::string QuadrateLSP::getBuiltInDocumentation(const std::string& word) {
 			{"struct", "Declare a struct type.\n\n**Syntax:** `struct Name { field1:type1 field2:type2 "
 					   "}`\n\nDefines a "
 					   "composite data type with named fields."},
+			{"enum",
+					"Declare an enum type.\n\n**Syntax:** `enum Name { Variant1 Variant2 = 10 "
+					"}`\n\nDefines scoped named integer constants. Values auto-increment from 0 or from "
+					"the last explicit value. Access with `Name::Variant`."},
 			{"pub", "Public visibility modifier.\n\n**Syntax:** `pub struct Name { ... }` or `pub fn name(...) { "
 					"... "
-					"}`\n\nMakes structs or functions visible to other modules."},
+					"}`\n\nMakes structs, enums, or functions visible to other modules."},
 			{"defer", "Defer execution until scope exit.\n\n**Syntax:** `defer { ... }`\n\nExecutes code block when "
 					  "function returns, useful for cleanup."},
 			{"as", "Type narrowing cast.\n\n**Syntax:** `expr as TypeName`\n\nNarrows a ptr value to a specific "
@@ -1818,9 +1822,9 @@ enum SemanticTokenModifier {
 
 // Helper to check if a word is a Quadrate keyword
 static bool isKeyword(const std::string& word) {
-	static const std::set<std::string> keywords = {"fn", "if", "else", "while", "for", "use", "struct", "const",
-			"return", "break", "continue", "defer", "switch", "case", "default", "true", "false", "nil", "and", "or",
-			"not", "in", "as", "test", "pub"};
+	static const std::set<std::string> keywords = {"fn", "if", "else", "while", "for", "use", "struct", "enum",
+			"const", "return", "break", "continue", "defer", "switch", "case", "default", "true", "false", "nil", "and",
+			"or", "not", "in", "as", "test", "pub"};
 	return keywords.count(word) > 0;
 }
 

@@ -1,0 +1,5 @@
+enum Color { Red Green Blue }
+
+fn main() {
+	Color::Yellow print nl
+}

@@ -37,7 +37,7 @@ nav:
       - 6. Data structures:
           - Arrays: learn/5-data-structures/arrays.md
           - Structs: learn/5-data-structures/structs.md
-          - Constants: learn/5-data-structures/constants.md
+          - Constants & Enums: learn/5-data-structures/constants.md
       - 7. Error handling:
           - Basics: learn/6-error-handling/basics.md
           - Patterns: learn/6-error-handling/patterns.md

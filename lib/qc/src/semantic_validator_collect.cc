@@ -13,6 +13,7 @@
 #include <quadrate/qc/ast_node_constant.h>
 #include <quadrate/qc/ast_node_ctx.h>
 #include <quadrate/qc/ast_node_defer.h>
+#include <quadrate/qc/ast_node_enum.h>
 #include <quadrate/qc/ast_node_field_access.h>
 #include <quadrate/qc/ast_node_field_set.h>
 #include <quadrate/qc/ast_node_for.h>
@@ -169,6 +170,30 @@ namespace Qd {
 
 			mDefinedConstants.insert(constant->name());
 			mConstantValues[constant->name()] = constant->value();
+		}
+
+		// If this is an enum declaration, register variants as scoped constants
+		if (node->type() == IAstNode::Type::ENUM_DECLARATION) {
+			AstNodeEnumDeclaration* enumDecl = static_cast<AstNodeEnumDeclaration*>(node);
+
+			if (isReservedKeyword(enumDecl->name())) {
+				std::string errorMsg =
+						"'" + enumDecl->name() + "' is a reserved keyword and cannot be used as an enum name";
+				reportError(enumDecl, errorMsg.c_str());
+				return;
+			}
+
+			if (mDefinedEnums.find(enumDecl->name()) != mDefinedEnums.end()) {
+				std::string errorMsg = "Duplicate enum definition: '" + enumDecl->name() + "'";
+				reportError(enumDecl, errorMsg.c_str());
+				return;
+			}
+
+			mDefinedEnums.insert(enumDecl->name());
+			for (const auto& variant : enumDecl->variants()) {
+				std::string scopedName = enumDecl->name() + "::" + variant.name;
+				mConstantValues[scopedName] = std::to_string(variant.value);
+			}
 		}
 
 		// If this is a struct declaration, add it to the symbol table and collect field types
@@ -731,6 +756,20 @@ namespace Qd {
 			const std::string& scopeName = scoped->scope();
 			const std::string& functionName = scoped->name();
 			std::string qualifiedName = scopeName + "::" + functionName;
+
+			// Check if this is an enum variant (e.g., TokenType::Int)
+			if (mDefinedEnums.find(scopeName) != mDefinedEnums.end()) {
+				if (mConstantValues.find(qualifiedName) != mConstantValues.end()) {
+					return; // Valid enum variant
+				}
+				std::string errorMsg = "Unknown variant '";
+				errorMsg += functionName;
+				errorMsg += "' in enum '";
+				errorMsg += scopeName;
+				errorMsg += "'";
+				reportError(scoped, errorMsg.c_str());
+				return;
+			}
 
 			// Check if this is an imported library function (e.g., std::printf)
 			if (mImportedLibraryFunctions.find(qualifiedName) != mImportedLibraryFunctions.end()) {

@@ -1,0 +1,38 @@
+enum Direction {
+	Up
+	Down
+	Left
+	Right
+}
+
+fn describe(d:i64 -- ) {
+	-> dir
+	dir switch {
+		Direction::Up { "up" print nl }
+		Direction::Down { "down" print nl }
+		Direction::Left { "left" print nl }
+		Direction::Right { "right" print nl }
+		_ { "unknown" print nl }
+	}
+}
+
+fn is_vertical(d:i64 -- result:i64) {
+	-> dir
+	dir Direction::Up == dir Direction::Down == or
+}
+
+fn main() {
+	Direction::Up describe
+	Direction::Left describe
+	Direction::Up is_vertical print nl
+	Direction::Left is_vertical print nl
+
+	// Store in local variable
+	Direction::Right -> d
+	d describe
+
+	// Use in for loop
+	0 4 1 for i {
+		i describe
+	}
+}

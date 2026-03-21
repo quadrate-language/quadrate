@@ -1889,9 +1889,10 @@ namespace Qd {
 					// Flush comments before import statement
 					flushCommentBuffer(prevTopLevelType == "fn_start");
 				} else if (startsWithKeyword(trimmed, "pub")) {
-					// Handle pub fn and pub const
+					// Handle pub fn, pub struct, pub enum, pub const
 					if (trimmed.find("pub fn") != std::string::npos ||
-							trimmed.find("pub struct") != std::string::npos) {
+							trimmed.find("pub struct") != std::string::npos ||
+							trimmed.find("pub enum") != std::string::npos) {
 						currentType = "fn_start";
 						inFunction = true;
 					} else if (trimmed.find("pub const") != std::string::npos) {
@@ -1902,8 +1903,8 @@ namespace Qd {
 				} else if (startsWithKeyword(trimmed, "fn")) {
 					currentType = "fn_start";
 					inFunction = true;
-				} else if (startsWithKeyword(trimmed, "struct")) {
-					currentType = "fn_start"; // Treat struct like fn for spacing
+				} else if (startsWithKeyword(trimmed, "struct") || startsWithKeyword(trimmed, "enum")) {
+					currentType = "fn_start"; // Treat struct/enum like fn for spacing
 					inFunction = true;
 				} else if (startsWithKeyword(trimmed, "test")) {
 					currentType = "fn_start"; // Treat test like fn for spacing
@@ -2086,9 +2087,11 @@ namespace Qd {
 				}
 			}
 
-			// Handle struct definition start
-			if (startsWithKeyword(trimmed, "struct") ||
-					(startsWithKeyword(trimmed, "pub") && trimmed.find("pub struct") != std::string::npos)) {
+			// Handle struct/enum definition start
+			if (startsWithKeyword(trimmed, "struct") || startsWithKeyword(trimmed, "enum") ||
+					(startsWithKeyword(trimmed, "pub") &&
+							(trimmed.find("pub struct") != std::string::npos ||
+									trimmed.find("pub enum") != std::string::npos))) {
 				// Output the struct header line
 				for (int i = 0; i < indentLevel; i++) {
 					output << '\t';

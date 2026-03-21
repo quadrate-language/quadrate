@@ -1,0 +1,32 @@
+enum Perm {
+	None
+	Read = 1
+	Write = 2
+	Execute = 4
+	ReadWrite = 3
+	All = 7
+}
+
+fn has_perm(flags:i64 perm:i64 -- result:i64) {
+	and 0 !=
+}
+
+fn main() {
+	// Bitwise operations
+	Perm::Read Perm::Write or print nl
+	Perm::All Perm::Execute and print nl
+	Perm::ReadWrite Perm::Read and 0 neq print nl
+
+	// Arithmetic
+	Perm::Read Perm::Write + print nl
+	Perm::All Perm::Execute - print nl
+
+	// Comparison
+	Perm::Read Perm::Write lt print nl
+	Perm::All Perm::All eq print nl
+	Perm::None 0 eq print nl
+
+	// Function with enum args
+	Perm::ReadWrite Perm::Read has_perm print nl
+	Perm::ReadWrite Perm::Execute has_perm print nl
+}

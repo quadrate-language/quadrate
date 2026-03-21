@@ -6,6 +6,7 @@
 #include <fstream>
 #include <quadrate/qc/ast.h>
 #include <quadrate/qc/ast_node_constant.h>
+#include <quadrate/qc/ast_node_enum.h>
 #include <quadrate/qc/ast_node_function.h>
 #include <quadrate/qc/ast_node_import.h>
 #include <quadrate/qc/ast_node_parameter.h>
@@ -564,10 +565,10 @@ void QuadrateLSP::handleCompletion(const std::string& id, const std::string& uri
 
 		if (topLevel) {
 			// At top level - show only declaration keywords
-			static const char* topLevelKeywords[] = {"use", "fn", "test", "struct", "const", "pub"};
+			static const char* topLevelKeywords[] = {"use", "fn", "test", "struct", "enum", "const", "pub"};
 			static const char* topLevelDescriptions[] = {"Import a module", "Declare a function",
-					"Declare a test function", "Declare a struct type", "Declare a constant",
-					"Make declaration public"};
+					"Declare a test function", "Declare a struct type", "Declare an enum type",
+					"Declare a constant", "Make declaration public"};
 
 			for (size_t i = 0; i < sizeof(topLevelKeywords) / sizeof(topLevelKeywords[0]); i++) {
 				json_t* item = json_object();
@@ -1210,6 +1211,22 @@ std::vector<ConstantInfo> QuadrateLSP::extractModuleConstants(const std::string&
 			info.value = constNode->value();
 
 			constants.push_back(info);
+		}
+
+		// Extract enum variants as constants (EnumName::Variant = value)
+		if (child && child->type() == Qd::IAstNode::Type::ENUM_DECLARATION) {
+			Qd::AstNodeEnumDeclaration* enumNode = static_cast<Qd::AstNodeEnumDeclaration*>(child);
+
+			if (!enumNode->isPublic()) {
+				continue;
+			}
+
+			for (const auto& variant : enumNode->variants()) {
+				ConstantInfo info;
+				info.name = enumNode->name() + "::" + variant.name;
+				info.value = std::to_string(variant.value);
+				constants.push_back(info);
+			}
 		}
 	}
 

@@ -1,0 +1,48 @@
+enum State {
+	Idle
+	Running
+	Paused
+	Done
+}
+
+fn advance(s:i64 -- next:i64) {
+	-> st
+	st switch {
+		State::Idle { State::Running }
+		State::Running { State::Paused }
+		State::Paused { State::Running }
+		_ { State::Done }
+	}
+}
+
+fn state_name(s:i64 -- ) {
+	-> st
+	st switch {
+		State::Idle { "idle" print nl }
+		State::Running { "running" print nl }
+		State::Paused { "paused" print nl }
+		State::Done { "done" print nl }
+		_ { "unknown" print nl }
+	}
+}
+
+fn main() {
+	// Store in local
+	State::Idle -> s
+
+	// Transition chain
+	s state_name
+	s advance -> s
+	s state_name
+	s advance -> s
+	s state_name
+	s advance -> s
+	s state_name
+	s advance -> s
+	s state_name
+
+	// Enum values used directly
+	State::Idle state_name
+	State::Running state_name
+	State::Done state_name
+}

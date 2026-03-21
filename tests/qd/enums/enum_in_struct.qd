@@ -1,0 +1,27 @@
+enum TokenType {
+	Int
+	Str
+	Eof
+}
+
+struct Token {
+	kind:i64
+	value:i64
+}
+
+fn main() {
+	Token { kind = TokenType::Int value = 42 } -> t
+	t @kind print nl
+	t @value print nl
+
+	Token { kind = TokenType::Str value = 0 } -> t2
+	t2 @kind TokenType::Str == print nl
+
+	Token { kind = TokenType::Eof value = 0 } -> t3
+	t3 @kind switch {
+		TokenType::Int { "int" print nl }
+		TokenType::Str { "str" print nl }
+		TokenType::Eof { "eof" print nl }
+		_ { "other" print nl }
+	}
+}

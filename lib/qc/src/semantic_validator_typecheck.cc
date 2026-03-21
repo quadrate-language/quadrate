@@ -2466,6 +2466,15 @@ namespace Qd {
 				const std::string& functionName = scoped->name();
 				std::string qualifiedName = moduleName + "::" + functionName;
 
+				// Check if this is a local enum variant (e.g., Color::Red)
+				if (mDefinedEnums.find(moduleName) != mDefinedEnums.end()) {
+					if (mConstantValues.find(qualifiedName) != mConstantValues.end()) {
+						typeStack.push_back(StackValueType::INT);
+						structTypeStack.push_back("");
+						break;
+					}
+				}
+
 				// Check if this is a constant first
 				auto constIt = mModuleConstants.find(moduleName);
 				if (constIt != mModuleConstants.end()) {

@@ -9,6 +9,7 @@
 #include <iostream>
 #include <quadrate/qc/ast.h>
 #include <quadrate/qc/ast_node_constant.h>
+#include <quadrate/qc/ast_node_enum.h>
 #include <quadrate/qc/ast_node_field_access.h>
 #include <quadrate/qc/ast_node_field_set.h>
 #include <quadrate/qc/ast_node_function.h>
@@ -398,6 +399,28 @@ json_t* QuadrateLSP::findDefinitionInModule(
 							end, "character", json_integer(static_cast<json_int_t>(structNode->name().length())));
 					json_object_set_new(range, "end", end);
 
+					json_object_set_new(location, "range", range);
+					return location;
+				}
+			} else if (symbolType == "constant" && child && child->type() == Qd::IAstNode::Type::ENUM_DECLARATION) {
+				Qd::AstNodeEnumDeclaration* enumNode = static_cast<Qd::AstNodeEnumDeclaration*>(child);
+				// Check if symbolName is EnumName::Variant or just EnumName
+				std::string enumPrefix = enumNode->name() + "::";
+				if (symbolName == enumNode->name() || symbolName.substr(0, enumPrefix.size()) == enumPrefix) {
+					json_t* location = json_object();
+					std::string moduleUri = "file://" + searchPath;
+					json_object_set_new(location, "uri", json_string(moduleUri.c_str()));
+					json_t* range = json_object();
+					json_t* start = json_object();
+					size_t lspLine = (enumNode->line() > 0) ? enumNode->line() - 1 : 0;
+					json_object_set_new(start, "line", json_integer(static_cast<json_int_t>(lspLine)));
+					json_object_set_new(start, "character", json_integer(0));
+					json_object_set_new(range, "start", start);
+					json_t* end = json_object();
+					json_object_set_new(end, "line", json_integer(static_cast<json_int_t>(lspLine)));
+					json_object_set_new(end, "character",
+							json_integer(static_cast<json_int_t>(enumNode->name().length())));
+					json_object_set_new(range, "end", end);
 					json_object_set_new(location, "range", range);
 					return location;
 				}
@@ -1081,6 +1104,26 @@ void QuadrateLSP::handleDefinition(const std::string& id, const std::string& uri
 									json_integer(static_cast<json_int_t>(structNode->name().length())));
 							json_object_set_new(range, "end", end);
 
+							json_object_set_new(location, "range", range);
+							result = location;
+							break;
+						}
+					} else if (child && child->type() == Qd::IAstNode::Type::ENUM_DECLARATION) {
+						Qd::AstNodeEnumDeclaration* enumNode = static_cast<Qd::AstNodeEnumDeclaration*>(child);
+						if (enumNode->name() == word) {
+							json_t* location = json_object();
+							json_object_set_new(location, "uri", json_string(uri.c_str()));
+							json_t* range = json_object();
+							json_t* start = json_object();
+							size_t lspLine = (enumNode->line() > 0) ? enumNode->line() - 1 : 0;
+							json_object_set_new(start, "line", json_integer(static_cast<json_int_t>(lspLine)));
+							json_object_set_new(start, "character", json_integer(0));
+							json_object_set_new(range, "start", start);
+							json_t* end = json_object();
+							json_object_set_new(end, "line", json_integer(static_cast<json_int_t>(lspLine)));
+							json_object_set_new(end, "character",
+									json_integer(static_cast<json_int_t>(enumNode->name().length())));
+							json_object_set_new(range, "end", end);
 							json_object_set_new(location, "range", range);
 							result = location;
 							break;

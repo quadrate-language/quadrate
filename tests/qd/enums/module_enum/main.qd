@@ -1,0 +1,12 @@
+use "module.qd"
+
+fn main() {
+	// Triple-scope: module::Enum::Variant
+	module::Status::Ok print nl
+	module::Status::Error print nl
+	module::Status::Pending print nl
+
+	module::Status::Ok module::status_name
+	module::Status::Error module::status_name
+	module::Status::Pending module::status_name
+}

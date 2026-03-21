@@ -80,7 +80,7 @@ Quadrate source files MUST be UTF-8 encoded. Identifiers MUST contain only ASCII
 #### 2.3.1 Keywords
 
 ```
-fn        pub       struct    use       import
+fn        pub       struct    enum      use       import
 if        else      for       while     loop
 switch    break     continue  return    defer
 const     test      ctx       as
@@ -425,6 +425,7 @@ program := declaration*
 
 declaration := use_statement
              | const_declaration
+             | enum_declaration
              | struct_declaration
              | function_declaration
              | import_declaration
@@ -449,7 +450,25 @@ const FROM_ENV = env("VAR_NAME")
 const WITH_DEFAULT = env("VAR", "default")
 ```
 
-### 5.4 Struct Declarations
+### 5.4 Enum Declarations
+
+```quadrate
+enum Name {
+    Variant1             // 0
+    Variant2             // 1
+    Variant3 = 10        // explicit value
+    Variant4             // 11 (auto-increment from previous)
+    Variant5 = -1        // negative values allowed
+}
+```
+
+Enums define scoped named integer constants. Values are `i64` aliases — fully interchangeable with `i64` in all operations. Variants auto-increment from 0 or from the last explicit value + 1.
+
+Access variants with `EnumName::Variant`. From modules: `module::EnumName::Variant`.
+
+Use `pub enum` to export from a module.
+
+### 5.5 Struct Declarations
 
 ```quadrate
 [pub] struct Name [<TypeParams>] {
@@ -459,7 +478,7 @@ const WITH_DEFAULT = env("VAR", "default")
 }
 ```
 
-### 5.5 Function Declarations
+### 5.6 Function Declarations
 
 ```quadrate
 [pub] fn name [<TypeParams>] (params -- returns) [!] {
@@ -471,7 +490,7 @@ const WITH_DEFAULT = env("VAR", "default")
 - `<TypeParams>`: Generic type parameters
 - `!`: Marks function as fallible (can fail with error)
 
-### 5.6 Import Declarations (FFI)
+### 5.7 Import Declarations (FFI)
 
 ```quadrate
 import "library.a" as "namespace" {
@@ -482,7 +501,7 @@ import "library.a" as "namespace" {
 
 Import blocks declare bindings to native C functions. Only function declarations are allowed inside the block. Constants associated with the library (such as error codes) should be declared at module top-level using `pub const`.
 
-### 5.7 Test Declarations
+### 5.8 Test Declarations
 
 ```quadrate
 test "test name" {

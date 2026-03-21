@@ -22,6 +22,7 @@ extern "C" {
 #include <quadrate/qc/ast_node_constant.h>
 #include <quadrate/qc/ast_node_ctx.h>
 #include <quadrate/qc/ast_node_defer.h>
+#include <quadrate/qc/ast_node_enum.h>
 #include <quadrate/qc/ast_node_field_access.h>
 #include <quadrate/qc/ast_node_field_set.h>
 #include <quadrate/qc/ast_node_for.h>
@@ -959,6 +960,15 @@ namespace Qd {
 			constants[constNode->name()] = constNode->isPublic();
 		}
 
+		// If this is an enum declaration, add variants as scoped constants
+		if (node->type() == IAstNode::Type::ENUM_DECLARATION) {
+			AstNodeEnumDeclaration* enumNode = static_cast<AstNodeEnumDeclaration*>(node);
+			for (const auto& variant : enumNode->variants()) {
+				std::string scopedName = enumNode->name() + "::" + variant.name;
+				constants[scopedName] = enumNode->isPublic();
+			}
+		}
+
 		// Recursively process children
 		for (auto* child : node->children()) {
 			collectModuleConstants(child, constants);
@@ -1151,6 +1161,20 @@ namespace Qd {
 				mModuleConstantValues[constNode->name()] = constNode->value();
 				// Also register in mConstantValues for direct unqualified lookup
 				mConstantValues[constNode->name()] = constNode->value();
+			}
+		}
+
+		// If this is an enum declaration, store variant values
+		if (node->type() == IAstNode::Type::ENUM_DECLARATION) {
+			AstNodeEnumDeclaration* enumNode = static_cast<AstNodeEnumDeclaration*>(node);
+			for (const auto& variant : enumNode->variants()) {
+				std::string scopedName = enumNode->name() + "::" + variant.name;
+				std::string qualifiedName = moduleName + "::" + scopedName;
+				mModuleConstantValues[qualifiedName] = std::to_string(variant.value);
+				if (mergeIntoMain) {
+					mModuleConstantValues[scopedName] = std::to_string(variant.value);
+					mConstantValues[scopedName] = std::to_string(variant.value);
+				}
 			}
 		}
 

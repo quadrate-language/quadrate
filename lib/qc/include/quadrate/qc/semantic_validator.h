@@ -269,6 +269,9 @@ namespace Qd {
 		// Symbol table: all defined structs
 		std::unordered_set<std::string> mDefinedStructs;
 
+		// Symbol table: all defined enums
+		std::unordered_set<std::string> mDefinedEnums;
+
 		// Pre-collected structs and constants from main file (for sibling namespace support)
 		// These are collected before sibling files are processed and should not trigger
 		// duplicate errors when collectDefinitions runs on the main file

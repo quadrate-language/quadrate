@@ -1,0 +1,60 @@
+// Test various explicit value patterns
+enum Gaps {
+	A
+	B
+	C = 100
+	D
+	E = 200
+	F
+	G = -5
+	H
+	I
+}
+
+enum Single {
+	Only = 42
+}
+
+enum ZeroBased {
+	First
+	Second
+	Third
+}
+
+enum Negative {
+	Err = -1
+	Ok = 0
+	Warn = 1
+}
+
+fn main() {
+	// Auto-increment from 0
+	Gaps::A print nl
+	Gaps::B print nl
+
+	// Jump to 100
+	Gaps::C print nl
+	Gaps::D print nl
+
+	// Jump to 200
+	Gaps::E print nl
+	Gaps::F print nl
+
+	// Negative and increment
+	Gaps::G print nl
+	Gaps::H print nl
+	Gaps::I print nl
+
+	// Single value
+	Single::Only print nl
+
+	// Zero-based
+	ZeroBased::First print nl
+	ZeroBased::Second print nl
+	ZeroBased::Third print nl
+
+	// Negative start
+	Negative::Err print nl
+	Negative::Ok print nl
+	Negative::Warn print nl
+}

@@ -1,6 +1,6 @@
-# Constants
+# Constants & Enums
 
-Constants define fixed values that cannot change.
+Constants and enums define fixed values that cannot change.
 
 ## Defining constants
 
@@ -196,6 +196,89 @@ use config
 
 fn main() {
 	"Version: " print config::AppVersion print nl
+}
+```
+
+## Enums
+
+Enums define a set of named integer constants under a common scope. Values auto-increment from 0, or can be set explicitly.
+
+```qd
+enum Color {
+	Red        // 0
+	Green      // 1
+	Blue       // 2
+}
+
+enum HttpStatus {
+	Ok = 200
+	NotFound = 404
+	ServerError = 500
+}
+```
+
+### Using enums
+
+Enum values are accessed with `EnumName::Variant` and are regular `i64` values:
+
+```qd
+enum Direction {
+	Up
+	Down
+	Left
+	Right
+}
+
+fn describe(d:i64 -- ) {
+	-> dir
+	dir switch {
+		Direction::Up { "up" print nl }
+		Direction::Down { "down" print nl }
+		Direction::Left { "left" print nl }
+		Direction::Right { "right" print nl }
+		_ { "unknown" print nl }
+	}
+}
+
+fn main() {
+	Direction::Up describe        // up
+	Direction::Left describe      // left
+
+	// Enums are i64 — arithmetic and comparison work
+	Direction::Up Direction::Down == if {
+		"same" print nl
+	} else {
+		"different" print nl
+	}
+}
+```
+
+### Explicit values
+
+Variants auto-increment from the previous value. Explicit values reset the counter:
+
+```qd
+enum Token {
+	Int            // 0
+	Float          // 1
+	Str = 10       // 10
+	Ident          // 11
+	Plus = 20      // 20
+	Minus          // 21
+	Eof = -1       // -1
+}
+```
+
+### Public enums
+
+Use `pub enum` to export from a module:
+
+```qd
+// status.qd
+pub enum Status {
+	Ok
+	Error = -1
+	Pending = 100
 }
 ```
 

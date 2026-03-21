@@ -18,6 +18,7 @@
 #include <quadrate/qc/ast_node_continue.h>
 #include <quadrate/qc/ast_node_ctx.h>
 #include <quadrate/qc/ast_node_defer.h>
+#include <quadrate/qc/ast_node_enum.h>
 #include <quadrate/qc/ast_node_for.h>
 #include <quadrate/qc/ast_node_function.h>
 #include <quadrate/qc/ast_node_function_pointer.h>
@@ -397,9 +398,10 @@ namespace Qd {
 				size_t n;
 				const char* text = u8t_scanner_token_text(scanner, &n);
 				if (strcmp(text, "fn") == 0 || strcmp(text, "const") == 0 || strcmp(text, "struct") == 0 ||
-						strcmp(text, "use") == 0 || strcmp(text, "import") == 0 || strcmp(text, "if") == 0 ||
-						strcmp(text, "for") == 0 || strcmp(text, "while") == 0 || strcmp(text, "loop") == 0 ||
-						strcmp(text, "switch") == 0 || strcmp(text, "return") == 0 || strcmp(text, "ctx") == 0) {
+						strcmp(text, "enum") == 0 || strcmp(text, "use") == 0 || strcmp(text, "import") == 0 ||
+						strcmp(text, "if") == 0 || strcmp(text, "for") == 0 || strcmp(text, "while") == 0 ||
+						strcmp(text, "loop") == 0 || strcmp(text, "switch") == 0 || strcmp(text, "return") == 0 ||
+						strcmp(text, "ctx") == 0) {
 					return;
 				}
 			}
@@ -752,6 +754,24 @@ namespace Qd {
 			if (sawColon && token == ':') {
 				// We have ::
 				sawColon = false;
+
+				// Triple scope: extend existing ScopedIdentifier (module::Enum::Variant)
+				if (!tempNodes.empty() && tempNodes.back()->type() == IAstNode::Type::SCOPED_IDENTIFIER) {
+					AstNodeScopedIdentifier* existing = static_cast<AstNodeScopedIdentifier*>(tempNodes.back());
+					token = u8t_scanner_scan(scanner);
+					if (token == U8T_IDENTIFIER) {
+						const char* extraName = u8t_scanner_token_text(scanner, &n);
+						std::string newName = existing->name() + "::" + extraName;
+						tempNodes.pop_back();
+						AstNodeScopedIdentifier* extended =
+								new AstNodeScopedIdentifier(existing->scope(), newName);
+						setNodePosition(extended, scanner, src);
+						delete existing;
+						tempNodes.push_back(extended);
+					}
+					continue;
+				}
+
 				if (!tempNodes.empty() && tempNodes.back()->type() == IAstNode::Type::IDENTIFIER) {
 					AstNodeIdentifier* scope = static_cast<AstNodeIdentifier*>(tempNodes.back());
 					tempNodes.pop_back();
@@ -760,7 +780,26 @@ namespace Qd {
 					token = u8t_scanner_scan(scanner);
 					if (token == U8T_IDENTIFIER) {
 						const char* memberName = u8t_scanner_token_text(scanner, &n);
-						AstNodeScopedIdentifier* scoped = new AstNodeScopedIdentifier(scope->name(), memberName);
+						std::string memberStr(memberName);
+
+						// Check for triple scope: module::Enum::Variant
+						char32_t peekColon3 = u8t_scanner_peek(scanner);
+						if (peekColon3 == ':') {
+							u8t_scanner_scan(scanner); // Consume first ':'
+							char32_t peekColon4 = u8t_scanner_peek(scanner);
+							if (peekColon4 == ':') {
+								u8t_scanner_scan(scanner); // Consume second ':'
+								char32_t thirdToken = u8t_scanner_scan(scanner);
+								if (thirdToken == U8T_IDENTIFIER) {
+									const char* variantName = u8t_scanner_token_text(scanner, &n);
+									memberStr += "::";
+									memberStr += variantName;
+								}
+							}
+						}
+
+						AstNodeScopedIdentifier* scoped =
+								new AstNodeScopedIdentifier(scope->name(), memberStr);
 						setNodePosition(scoped, scanner, src);
 						delete scope;
 						// Check for '!' or '?' suffix
@@ -1155,7 +1194,25 @@ namespace Qd {
 							return parseStructConstruction(fullName, {}, scanner, errorReporter, src, identPos);
 						}
 
-						AstNodeScopedIdentifier* scoped = new AstNodeScopedIdentifier(scopeName, memberName);
+						std::string memberStr(memberName);
+
+						// Check for triple scope: module::Enum::Variant
+						char32_t peekColon3 = u8t_scanner_peek(scanner);
+						if (peekColon3 == ':') {
+							u8t_scanner_scan(scanner); // Consume first ':'
+							char32_t peekColon4 = u8t_scanner_peek(scanner);
+							if (peekColon4 == ':') {
+								u8t_scanner_scan(scanner); // Consume second ':'
+								char32_t thirdToken = u8t_scanner_scan(scanner);
+								if (thirdToken == U8T_IDENTIFIER) {
+									const char* variantName = u8t_scanner_token_text(scanner, n);
+									memberStr += "::";
+									memberStr += variantName;
+								}
+							}
+						}
+
+						AstNodeScopedIdentifier* scoped = new AstNodeScopedIdentifier(scopeName, memberStr);
 						setNodePosition(scoped, scanner, src);
 						// Check for '!' or '?' suffix
 						char32_t suffixToken = u8t_scanner_peek(scanner);
@@ -1729,6 +1786,24 @@ namespace Qd {
 			if (sawColon && token == ':') {
 				// We have ::
 				sawColon = false;
+
+				// Triple scope: extend existing ScopedIdentifier (module::Enum::Variant)
+				if (!tempNodes.empty() && tempNodes.back()->type() == IAstNode::Type::SCOPED_IDENTIFIER) {
+					AstNodeScopedIdentifier* existing = static_cast<AstNodeScopedIdentifier*>(tempNodes.back());
+					token = u8t_scanner_scan(scanner);
+					if (token == U8T_IDENTIFIER) {
+						const char* extraName = u8t_scanner_token_text(scanner, &n);
+						std::string newName = existing->name() + "::" + extraName;
+						tempNodes.pop_back();
+						AstNodeScopedIdentifier* extended =
+								new AstNodeScopedIdentifier(existing->scope(), newName);
+						setNodePosition(extended, scanner, src);
+						delete existing;
+						tempNodes.push_back(extended);
+					}
+					continue;
+				}
+
 				if (!tempNodes.empty() && tempNodes.back()->type() == IAstNode::Type::IDENTIFIER) {
 					AstNodeIdentifier* scope = static_cast<AstNodeIdentifier*>(tempNodes.back());
 					tempNodes.pop_back();
@@ -2684,6 +2759,71 @@ namespace Qd {
 		return test;
 	}
 
+	static IAstNode* parseEnumDeclaration(
+			u8t_scanner* scanner, ErrorReporter* errorReporter, const char* src, bool isPublic = false) {
+		size_t n;
+		char32_t token = u8t_scanner_scan(scanner);
+		if (token != U8T_IDENTIFIER) {
+			errorReporter->reportError(scanner, "Expected enum name after 'enum'");
+			synchronize(scanner);
+			return nullptr;
+		}
+
+		const char* name = u8t_scanner_token_text(scanner, &n);
+		AstNodeEnumDeclaration* enumDecl = new AstNodeEnumDeclaration(name, isPublic);
+		setNodePosition(enumDecl, scanner, src);
+
+		token = u8t_scanner_scan(scanner);
+		if (token != '{') {
+			errorReporter->reportError(scanner, "Expected '{' after enum name");
+			synchronize(scanner);
+			delete enumDecl;
+			return nullptr;
+		}
+
+		int64_t nextValue = 0;
+		while ((token = u8t_scanner_scan(scanner)) != U8T_EOF) {
+			if (token == '}') {
+				break;
+			}
+
+			if (token == U8T_IDENTIFIER) {
+				const char* variantName = u8t_scanner_token_text(scanner, &n);
+				std::string variantNameStr(variantName);
+
+				// Check for explicit value: Name = <integer>
+				char32_t peek = peekNextNonWhitespace(scanner, src);
+				if (peek == '=') {
+					u8t_scanner_scan(scanner); // Consume '='
+					token = u8t_scanner_scan(scanner);
+					bool negative = false;
+					if (token == '-') {
+						negative = true;
+						token = u8t_scanner_scan(scanner);
+					}
+					if (token == U8T_INTEGER) {
+						const char* valText = u8t_scanner_token_text(scanner, &n);
+						int64_t val = static_cast<int64_t>(strtoll(valText, nullptr, 0));
+						if (negative) {
+							val = -val;
+						}
+						nextValue = val;
+					} else {
+						errorReporter->reportError(scanner, "Expected integer value after '=' in enum");
+					}
+				}
+
+				enumDecl->addVariant(variantNameStr, nextValue);
+				nextValue++;
+			} else {
+				// Skip comments or unexpected tokens
+				continue;
+			}
+		}
+
+		return enumDecl;
+	}
+
 	static IAstNode* parseStructDeclaration(
 			u8t_scanner* scanner, ErrorReporter* errorReporter, const char* src, bool isPublic = false) {
 		size_t n;
@@ -3617,6 +3757,12 @@ namespace Qd {
 								structDecl->setParent(program);
 								program->addChild(structDecl);
 							}
+						} else if (strcmp(nextText, "enum") == 0) {
+							IAstNode* enumDecl = parseEnumDeclaration(&scanner, &errorReporter, src, true);
+							if (enumDecl) {
+								enumDecl->setParent(program);
+								program->addChild(enumDecl);
+							}
 						} else if (strcmp(nextText, "const") == 0) {
 							// Parse public constant
 							token = u8t_scanner_scan(&scanner);
@@ -3641,11 +3787,13 @@ namespace Qd {
 								synchronize(&scanner);
 							}
 						} else {
-							errorReporter.reportError(&scanner, "Expected 'fn', 'struct', or 'const' after 'pub'");
+							errorReporter.reportError(
+									&scanner, "Expected 'fn', 'struct', 'enum', or 'const' after 'pub'");
 							synchronize(&scanner);
 						}
 					} else {
-						errorReporter.reportError(&scanner, "Expected 'fn', 'struct', or 'const' after 'pub'");
+						errorReporter.reportError(
+								&scanner, "Expected 'fn', 'struct', 'enum', or 'const' after 'pub'");
 						synchronize(&scanner);
 					}
 				} else if (strcmp(text, "fn") == 0) {
@@ -3659,6 +3807,12 @@ namespace Qd {
 					if (structDecl) {
 						structDecl->setParent(program);
 						program->addChild(structDecl);
+					}
+				} else if (strcmp(text, "enum") == 0) {
+					IAstNode* enumDecl = parseEnumDeclaration(&scanner, &errorReporter, src, false);
+					if (enumDecl) {
+						enumDecl->setParent(program);
+						program->addChild(enumDecl);
 					}
 				} else if (strcmp(text, "use") == 0) {
 					token = u8t_scanner_scan(&scanner);

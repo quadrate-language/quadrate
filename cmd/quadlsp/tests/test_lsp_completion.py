@@ -538,6 +538,39 @@ fn test(p:Point -- ) {
     # Run all tests
     # ============================================================================
 
+    # ============================================================================
+    # Enum completion tests
+    # ============================================================================
+
+    def test_top_level_enum_keyword(self):
+        """Test that top-level completions include 'enum'"""
+        print("\n=== Testing Top-Level Enum Keyword ===")
+
+        content = ""
+        uri = "file:///tmp/test_enum_toplevel.qd"
+        self.open_document(uri, content)
+
+        items = self.get_completions(uri, 0, 0)
+        labels = self.get_completion_labels(items)
+
+        self.assert_test("enum" in labels, "Top-level has 'enum' keyword")
+
+    def test_enum_not_in_function_body(self):
+        """Test that 'enum' is not offered inside function bodies"""
+        print("\n=== Testing Enum Not In Function Body ===")
+
+        content = """fn main() {
+
+}"""
+        uri = "file:///tmp/test_enum_body.qd"
+        self.open_document(uri, content)
+
+        items = self.get_completions(uri, 1, 0)
+        labels = self.get_completion_labels(items)
+
+        # enum is a top-level keyword, should NOT appear inside function body
+        self.assert_test("enum" not in labels, "Function body excludes 'enum' keyword")
+
     def run_all(self):
         """Run all completion tests"""
         print("\n" + "=" * 60)
@@ -573,6 +606,10 @@ fn test(p:Point -- ) {
 
             # Variable declaration tests
             self.test_type_after_arrow_var()
+
+            # Enum tests
+            self.test_top_level_enum_keyword()
+            self.test_enum_not_in_function_body()
 
         finally:
             self.teardown()

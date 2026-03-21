@@ -1,0 +1,18 @@
+pub enum Visibility {
+	Private
+	Internal
+	Public
+}
+
+enum Local {
+	A
+	B
+}
+
+fn main() {
+	Visibility::Private print nl
+	Visibility::Internal print nl
+	Visibility::Public print nl
+	Local::A print nl
+	Local::B print nl
+}
