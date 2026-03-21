@@ -28,7 +28,7 @@ test "generate IR for print" {
 	p parser::parse_program -> prog
 	prog codegen::generate -> ir
 	ir "qd_push_i(ptr %ctx, i64 42)" strings::contains testing::assert_true
-	ir "qd_prints(ptr %ctx)" strings::contains testing::assert_true
+	ir "qd_print(ptr %ctx)" strings::contains testing::assert_true
 	ir "qd_nl(ptr %ctx)" strings::contains testing::assert_true
 }
 

@@ -157,8 +157,8 @@ fn emit_node(s:ptr node:ptr locals:str -- s2:ptr) {
 	k ast::NodeType::Ident == if {
 		n @ntext -> fname
 		// Built-in stack instructions
-		fname "print" strings::compare 0 == if { o "  call i32 @qd_prints(ptr %ctx)\n" sb::append -> o  o st.code st return }
-		fname "prints" strings::compare 0 == if { o "  call i32 @qd_prints(ptr %ctx)\n" sb::append -> o  o st.code st return }
+		fname "print" strings::compare 0 == if { o "  call i32 @qd_print(ptr %ctx)\n" sb::append -> o  o st.code st return }
+		fname "prints" strings::compare 0 == if { o "  call i32 @qd_print(ptr %ctx)\n" sb::append -> o  o st.code st return }
 		fname "nl" strings::compare 0 == if { o "  call i32 @qd_nl(ptr %ctx)\n" sb::append -> o  o st.code st return }
 		fname "dup" strings::compare 0 == if { o "  call i32 @qd_dup(ptr %ctx)\n" sb::append -> o  o st.code st return }
 		fname "drop" strings::compare 0 == if { o "  call i32 @qd_drop(ptr %ctx)\n" sb::append -> o  o st.code st return }
@@ -976,7 +976,7 @@ pub fn generate(prog:ptr -- ir:str) {
 	o "declare i32 @qd_push_f(ptr, double)\n" sb::append -> o
 	o "declare i32 @qd_push_s(ptr, ptr)\n" sb::append -> o
 	o "declare i32 @qd_push_p(ptr, ptr)\n" sb::append -> o
-	o "declare i32 @qd_prints(ptr)\n" sb::append -> o
+	o "declare i32 @qd_print(ptr)\n" sb::append -> o
 	o "declare i32 @qd_nl(ptr)\n" sb::append -> o
 	o "declare i32 @qd_add(ptr)\n" sb::append -> o
 	o "declare i32 @qd_sub(ptr)\n" sb::append -> o

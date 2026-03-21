@@ -1,0 +1,55 @@
+/// quadc.qd — Self-hosted Quadrate compiler
+/// Usage: Set QUADC_INPUT=source.qd and QUADC_OUTPUT=output (optional)
+/// Then run this program.
+use strings
+use sb
+use io
+use os
+use "lexer.qd"
+use "ast.qd"
+use "parser.qd"
+use "codegen.qd"
+
+fn main() {
+	// Get input/output from environment
+	"QUADC_INPUT" os::getenv -> source_path
+	"QUADC_OUTPUT" os::getenv -> output_name
+
+	source_path strings::is_empty if {
+		"Error: set QUADC_INPUT=<source.qd>" print nl
+		"Example: QUADC_INPUT=hello.qd ./quadc" print nl
+		1 os::exit
+	}
+
+	output_name strings::is_empty if {
+		"a.out" -> output_name
+	}
+
+	// Read source file
+	source_path io::read_file! -> source
+
+	// Parse
+	source parser::new -> p
+	p parser::parse_program -> prog
+
+	// Generate LLVM IR
+	prog codegen::generate -> ir
+
+	// Write IR to temp file
+	"/tmp/quadc_output.ll" ir io::write_file!
+
+	// Compile with clang + link with libqdrt
+	sb::new -> cmd
+	cmd "clang /tmp/quadc_output.ll -lqdrt -lm -o " sb::append -> cmd
+	cmd output_name sb::append -> cmd
+	cmd " 2>&1" sb::append -> cmd
+	cmd sb::finish -> cmd_str
+
+	cmd_str os::system -> exit_code
+	exit_code 0 neq if {
+		"Compilation failed (exit code " print exit_code print ")" print nl
+		1 os::exit
+	}
+
+	source_path print " -> " print output_name print nl
+}
