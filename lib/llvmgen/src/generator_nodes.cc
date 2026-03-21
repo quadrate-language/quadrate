@@ -876,6 +876,21 @@ namespace Qd {
 		const std::string& scope = scopedIdent->scope();
 		const std::string& name = scopedIdent->name();
 
+		// Resolve sb::append_any at compile time based on the type of the value on the stack
+		if (scope == "sb" && name == "append_any") {
+			// Create a synthetic scoped identifier with the resolved name
+			std::string resolvedName;
+			if (lastPushedType == LastPushedType::STRING) {
+				resolvedName = "append";
+			} else {
+				resolvedName = "append_int";
+			}
+			AstNodeScopedIdentifier resolved("sb", resolvedName);
+			resolved.setPosition(scopedIdent->line(), scopedIdent->column());
+			generateScopedIdentifier(&resolved, ctx);
+			return;
+		}
+
 		// Look up scoped name: scope::name
 		std::string fullName = scope + "::" + name;
 

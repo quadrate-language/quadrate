@@ -1,0 +1,32 @@
+// Test string interpolation with $"..."
+fn main() {
+	// Basic string interpolation
+	"world" -> name
+	$"hello {name}" print nl
+
+	// Integer interpolation
+	42 -> age
+	$"age is {age}" print nl
+
+	// Multiple interpolations
+	"Alice" -> who
+	$"{who} is {age}" print nl
+
+	// No interpolation variables
+	$"plain string" print nl
+
+	// Adjacent interpolations
+	$"{who}{age}" print nl
+
+	// Interpolation at start
+	$"{age} years" print nl
+
+	// Interpolation at end
+	$"name: {who}" print nl
+
+	// Escape sequences preserved
+	$"tab\there" print nl
+
+	// Empty interpolation string
+	$"" print nl
+}

@@ -751,11 +751,7 @@ fn (p:Parser) parse_atom( -- n:ptr) {
 				p advance
 				p cur_text -> variant
 				p advance
-				sb::new -> b
-				b member sb::append -> b
-				b "::" sb::append -> b
-				b variant sb::append -> b
-				b sb::finish -> full_member
+				$"{member}::{variant}" -> full_member
 				// Check for ! or ? on triple scope
 				p cur_kind lexer::TokenType::Bang == if {
 					p advance

@@ -158,6 +158,17 @@
       ]
     },
     {
+      "name": "$\"...\"",
+      "category": "Expression",
+      "description": "String interpolation. Embeds variables in strings using {name} syntax. Desugars to sb::new/append/finish calls. The sb module is auto-imported.",
+      "syntax": "$\"text {variable} text\"",
+      "examples": [
+        "$\"hello {name}\"",
+        "$\"{x} + {y} = {sum}\"",
+        "$\"age: {age}\""
+      ]
+    },
+    {
       "name": "enum",
       "category": "Declaration",
       "description": "Declares scoped named integer constants. Values auto-increment from 0 or from the last explicit value.",

@@ -139,6 +139,15 @@ Escape sequences: `\n`, `\r`, `\t`, `\\`, `\"`
 
 Examples: `"hello"`, `"line1\nline2"`
 
+**String interpolation:**
+```
+interpolated_string := '$"' (character | '{' identifier '}')* '"'
+```
+
+String interpolation with `$"..."` desugars at compile time to `sb::new` / `sb::append` / `sb::append_int` / `sb::finish` calls. The `sb` module is automatically imported. Each `{expr}` is resolved to `sb::append` for string values or `sb::append_int` for integer values based on compile-time type analysis.
+
+Examples: `$"hello {name}"`, `$"{x} + {y} = {sum}"`
+
 #### 2.3.5 Operators and Punctuation
 
 **Arithmetic operators:**

@@ -200,7 +200,7 @@ static bool match_route(const char* pattern, const char* path, char* params_out,
 		if (*p == '/' && p[1] == '*' && p[2] == '\0') {
 			// Store rest of path as "_path" param
 			size_t rest_len = strlen(q);
-			size_t needed = (params_len > 0 ? 1 : 0) + 5 + 1 + rest_len + 1; // "_path=..."
+			size_t needed = (size_t)(params_len > 0 ? 1 : 0) + 5 + 1 + rest_len + 1; // "_path=..."
 			if (params_len + needed <= params_size) {
 				if (params_len > 0) {
 					params_out[params_len++] = '\n';
@@ -709,7 +709,8 @@ static void handle_request(http_engine_t* engine, int client_fd, qd_context* ctx
 			// Push context as struct fields
 			qd_push_p(ctx, http_ctx);
 			// Call middleware
-			void (*mw)(qd_context*) = (void (*)(qd_context*))engine->middlewares[i];
+			void (*mw)(qd_context*);
+			memcpy(&mw, &engine->middlewares[i], sizeof(mw));
 			mw(ctx);
 		}
 
@@ -718,7 +719,8 @@ static void handle_request(http_engine_t* engine, int client_fd, qd_context* ctx
 			http_group_t* group = &engine->groups[matched_route->group_idx];
 			for (int i = 0; i < group->middleware_count && !http_ctx->responded; i++) {
 				qd_push_p(ctx, http_ctx);
-				void (*mw)(qd_context*) = (void (*)(qd_context*))group->middlewares[i];
+				void (*mw)(qd_context*);
+				memcpy(&mw, &engine->middlewares[i], sizeof(mw));
 				mw(ctx);
 			}
 		}
@@ -726,7 +728,8 @@ static void handle_request(http_engine_t* engine, int client_fd, qd_context* ctx
 		// Run handler
 		if (!http_ctx->responded) {
 			qd_push_p(ctx, http_ctx);
-			void (*handler)(qd_context*) = (void (*)(qd_context*))matched_route->handler;
+			void (*handler)(qd_context*);
+			memcpy(&handler, &matched_route->handler, sizeof(handler));
 			handler(ctx);
 		}
 

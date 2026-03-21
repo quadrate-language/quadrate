@@ -863,20 +863,27 @@ namespace Qd {
 						}
 
 						if (!foundAsImport) {
-							std::string errorMsg = "Function, constant, or struct '";
-							errorMsg += functionName;
-							errorMsg += "' not found in module '";
-							errorMsg += scopeName;
-							errorMsg += "'";
-							// Try to suggest a similar name from the module
-							auto moduleFuncsIt = mModuleFunctions.find(scopeName);
-							if (moduleFuncsIt != mModuleFunctions.end()) {
-								std::string suggestion = findSimilarNameInMap(functionName, moduleFuncsIt->second);
-								if (!suggestion.empty()) {
-									errorMsg += "; did you mean '" + suggestion + "'?";
+							// sb::append_any is a compiler-generated call from $"..." string interpolation
+							// It's resolved at codegen time to sb::append or sb::append_int
+							if (scopeName == "sb" && functionName == "append_any") {
+								// Skip validation - handled by codegen
+							} else {
+								std::string errorMsg = "Function, constant, or struct '";
+								errorMsg += functionName;
+								errorMsg += "' not found in module '";
+								errorMsg += scopeName;
+								errorMsg += "'";
+								// Try to suggest a similar name from the module
+								auto moduleFuncsIt = mModuleFunctions.find(scopeName);
+								if (moduleFuncsIt != mModuleFunctions.end()) {
+									std::string suggestion =
+											findSimilarNameInMap(functionName, moduleFuncsIt->second);
+									if (!suggestion.empty()) {
+										errorMsg += "; did you mean '" + suggestion + "'?";
+									}
 								}
+								reportError(scoped, errorMsg.c_str());
 							}
-							reportError(scoped, errorMsg.c_str());
 						}
 					}
 				} else {

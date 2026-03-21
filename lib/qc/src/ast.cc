@@ -318,6 +318,82 @@ namespace Qd {
 		return 0;
 	}
 
+	// Parse string interpolation: $"hello {name} is {age}" desugars to
+	// sb::new "hello " sb::append name sb::append_int " is " sb::append age sb::append_int sb::finish
+	// Called after '$' and the string token have both been consumed.
+	static void parseStringInterpolation(
+			const std::string& raw, u8t_scanner* scanner, const char* src, std::vector<IAstNode*>& out) {
+		// sb::new
+		auto* sbNew = new AstNodeScopedIdentifier("sb", "new");
+		setNodePosition(sbNew, scanner, src);
+		out.push_back(sbNew);
+
+		std::string current;
+		for (size_t i = 0; i < raw.size(); i++) {
+			if (raw[i] == '{') {
+				// Emit accumulated literal part
+				if (!current.empty()) {
+					auto* lit = new AstNodeLiteral("\"" + current + "\"", AstNodeLiteral::LiteralType::STRING);
+					setNodePosition(lit, scanner, src);
+					out.push_back(lit);
+					auto* app = new AstNodeScopedIdentifier("sb", "append");
+					setNodePosition(app, scanner, src);
+					out.push_back(app);
+				}
+				current.clear();
+				// Find matching }
+				size_t j = i + 1;
+				std::string expr;
+				while (j < raw.size() && raw[j] != '}') {
+					expr += raw[j];
+					j++;
+				}
+				i = j; // Skip past }
+				// Emit the expression as an identifier + type-appropriate append
+				if (!expr.empty()) {
+					// Check if expr contains :: (scoped identifier)
+					auto colonPos = expr.find("::");
+					if (colonPos != std::string::npos) {
+						std::string mod = expr.substr(0, colonPos);
+						std::string func = expr.substr(colonPos + 2);
+						auto* scoped = new AstNodeScopedIdentifier(mod, func);
+						setNodePosition(scoped, scanner, src);
+						out.push_back(scoped);
+					} else {
+						auto* ident = new AstNodeIdentifier(expr);
+						setNodePosition(ident, scanner, src);
+						out.push_back(ident);
+					}
+					// Use sb::append_any — a special marker that the codegen
+					// will resolve to append or append_int based on runtime type
+					auto* appExpr = new AstNodeScopedIdentifier("sb", "append_any");
+					setNodePosition(appExpr, scanner, src);
+					out.push_back(appExpr);
+				}
+			} else if (raw[i] == '\\' && i + 1 < raw.size()) {
+				// Preserve escape sequences
+				current += raw[i];
+				current += raw[i + 1];
+				i++;
+			} else {
+				current += raw[i];
+			}
+		}
+		// Emit remaining literal
+		if (!current.empty()) {
+			auto* lit = new AstNodeLiteral("\"" + current + "\"", AstNodeLiteral::LiteralType::STRING);
+			setNodePosition(lit, scanner, src);
+			out.push_back(lit);
+			auto* app = new AstNodeScopedIdentifier("sb", "append");
+			setNodePosition(app, scanner, src);
+			out.push_back(app);
+		}
+		// sb::finish
+		auto* sbFinish = new AstNodeScopedIdentifier("sb", "finish");
+		setNodePosition(sbFinish, scanner, src);
+		out.push_back(sbFinish);
+	}
+
 	// Helper to peek the next non-whitespace character from source
 	// Returns the character or 0 if end of string
 	static char32_t peekNextNonWhitespace(u8t_scanner* scanner, const char* src) {
@@ -872,6 +948,31 @@ namespace Qd {
 			sawAt = (token == '@');
 			if (sawAt) {
 				continue; // Wait for next token to see if it's a field name
+			}
+
+			// Handle $ string interpolation: $"hello {name}"
+			if (token == '$') {
+				char32_t nextToken = u8t_scanner_scan(scanner);
+				if (nextToken == U8T_STRING) {
+					size_t sn;
+					const char* strText = u8t_scanner_token_text(scanner, &sn);
+					std::string raw(strText);
+					// Strip outer quotes
+					if (raw.size() >= 2 && raw.front() == '"' && raw.back() == '"') {
+						raw = raw.substr(1, raw.size() - 2);
+					}
+					// Flush existing temp nodes first
+					for (auto* node : tempNodes) {
+						node->setParent(block);
+						block->addChild(node);
+					}
+					tempNodes.clear();
+					parseStringInterpolation(raw, scanner, src, tempNodes);
+					continue;
+				} else {
+					errorReporter->reportError(scanner, "Expected string literal after '$' for string interpolation");
+					continue;
+				}
 			}
 
 			// Handle . field set operator: value variable.field
@@ -1880,6 +1981,29 @@ namespace Qd {
 			sawAt = (token == '@');
 			if (sawAt) {
 				continue; // Wait for next token to see if it's a field name
+			}
+
+			// Handle $ string interpolation: $"hello {name}"
+			if (token == '$') {
+				char32_t nextToken = u8t_scanner_scan(scanner);
+				if (nextToken == U8T_STRING) {
+					size_t sn;
+					const char* strText = u8t_scanner_token_text(scanner, &sn);
+					std::string raw(strText);
+					if (raw.size() >= 2 && raw.front() == '"' && raw.back() == '"') {
+						raw = raw.substr(1, raw.size() - 2);
+					}
+					for (auto* node : tempNodes) {
+						node->setParent(body);
+						body->addChild(node);
+					}
+					tempNodes.clear();
+					parseStringInterpolation(raw, scanner, src, tempNodes);
+					continue;
+				} else {
+					errorReporter->reportError(scanner, "Expected string literal after '$' for string interpolation");
+					continue;
+				}
 			}
 
 			// Handle . field set operator
@@ -3651,6 +3775,7 @@ namespace Qd {
 	}
 
 	IAstNode* Ast::generate(const char* src, bool dumpTokens, const char* filename) {
+
 		u8t_scanner scanner;
 		if (!u8t_scanner_init(&scanner, src)) {
 			// Invalid UTF-8 input - return empty program with error
@@ -3737,6 +3862,15 @@ namespace Qd {
 			}
 			scanner._str = src + skipBytes;
 			scanner._token_start = skipBytes;
+		}
+
+		// Auto-inject 'use sb' if source contains $"..." string interpolation
+		// and doesn't already have 'use sb'
+		if (strstr(src, "$\"") != nullptr && strstr(src, "use sb") == nullptr) {
+			auto* useSb = new AstNodeUse("sb");
+			useSb->setPosition(0, 0);
+			useSb->setParent(program);
+			program->addChild(useSb);
 		}
 
 		char32_t token;

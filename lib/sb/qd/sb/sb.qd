@@ -257,3 +257,4 @@ pub fn newline(sb:ptr -- sb:ptr) {
 pub fn space(sb:ptr -- sb:ptr) {
 	unicode::space append_char
 }
+
