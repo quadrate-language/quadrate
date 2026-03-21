@@ -2987,9 +2987,14 @@ namespace Qd {
 						defaultNodes.push_back(strNode);
 					} else if (valToken == U8T_IDENTIFIER) {
 						const char* idText = u8t_scanner_token_text(scanner, &n);
-						AstNodeIdentifier* ident = new AstNodeIdentifier(idText);
-						setNodePosition(ident, scanner, src);
-						defaultNodes.push_back(ident);
+						// Check for boolean/null literals
+						if (auto* boolNode = tryCreateBooleanLiteral(idText, scanner, src)) {
+							defaultNodes.push_back(boolNode);
+						} else {
+							AstNodeIdentifier* ident = new AstNodeIdentifier(idText);
+							setNodePosition(ident, scanner, src);
+							defaultNodes.push_back(ident);
+						}
 					} else if (valToken == '-') {
 						// Negative number
 						char32_t numToken = u8t_scanner_scan(scanner);
