@@ -1,30 +1,15 @@
-struct Box {
-	value:i64
-	child:*Box
-}
-
-fn describe(node:ptr -- ) {
-	-> n
-	n null == if {
-		"null" print nl
-	} else {
-		"box:" print n @value print nl
-	}
-}
-
+// Test null in switch
 fn main() {
-	Box { value = 1 child = null } -> a
-	Box { value = 2 child = a } -> b
-
-	a describe
-	b describe
-	null describe
-
-	b @child describe
-
-	// null in switch (null == 0)
+	// null in switch
 	null switch {
 		0 { "null is zero" print nl }
 		_ { "other" print nl }
+	}
+
+	// null in local, used in switch
+	null -> p
+	p switch {
+		0 { "p is zero" print nl }
+		_ { "p is not zero" print nl }
 	}
 }

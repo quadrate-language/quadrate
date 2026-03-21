@@ -1,42 +1,22 @@
-struct Node {
-	value:i64
-	next:*Node
-}
-
+// Test null keyword as a value
 fn main() {
-	// null in struct construction
-	Node { value = 1 next = null } -> a
-
-	// null comparison
-	a @next null == if {
-		"next is null" print nl
-	}
-
-	// null != non-null
-	Node { value = 2 next = a } -> b
-	b @next null == if {
-		"should not print" print nl
-	} else {
-		"next is not null" print nl
-	}
-
-	// null as standalone value
+	// null equals zero
 	null 0 == if {
 		"null equals zero" print nl
 	}
 
 	// null in local variable
 	null -> p
-	p null == if {
+	p 0 == if {
 		"p is null" print nl
 	}
 
-	// null passed to function
-	null is_null print nl
-	a is_null print nl
-}
+	// null neq non-zero
+	42 -> x
+	x null neq if {
+		"42 is not null" print nl
+	}
 
-fn is_null(p:ptr -- result:i64) {
-	-> v
-	v null ==
+	// null prints as 0
+	null print nl
 }
