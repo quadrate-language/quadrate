@@ -2477,6 +2477,13 @@ namespace Qd {
 					}
 				}
 
+				// Also check local constant values directly (for enum variants in module files)
+				if (mConstantValues.find(qualifiedName) != mConstantValues.end()) {
+					typeStack.push_back(StackValueType::INT);
+					structTypeStack.push_back("");
+					break;
+				}
+
 				// Check if this is a constant first
 				auto constIt = mModuleConstants.find(moduleName);
 				if (constIt != mModuleConstants.end()) {
@@ -2743,9 +2750,23 @@ namespace Qd {
 
 					// Check if receiver struct belongs to this module
 					// receiverStructType could be like "ct::Box<i64>" and moduleName is "ct"
-					if (receiverStructType.find(moduleName + "::") == 0) {
+					// Also check unqualified names (for merged module structs like "Lexer" from "lexer")
+					bool isModuleStruct = receiverStructType.find(moduleName + "::") == 0;
+					if (!isModuleStruct && !receiverStructType.empty()) {
+						// Try with module prefix for method lookup
+						std::string qualified = moduleName + "::" + receiverStructType;
+						if (mStructMethods.count(qualified) || mStructMethods.count(receiverStructType)) {
+							isModuleStruct = true;
+						}
+					}
+					if (isModuleStruct) {
 						// Find the registered struct type for method lookup
 						std::string registeredStructType = findMethodStructType(receiverStructType, functionName);
+						// Also try with module prefix if unqualified lookup fails
+						if (registeredStructType.empty() && receiverStructType.find("::") == std::string::npos) {
+							registeredStructType =
+									findMethodStructType(moduleName + "::" + receiverStructType, functionName);
+						}
 						if (!registeredStructType.empty()) {
 							// This is a module method call - look up the signature
 							std::string methodQualifiedName = registeredStructType + "::" + functionName;

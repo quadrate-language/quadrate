@@ -2784,10 +2784,24 @@ namespace Qd {
 		}
 
 		int64_t nextValue = 0;
+		size_t slashPos = SIZE_MAX;
 		while ((token = u8t_scanner_scan(scanner)) != U8T_EOF) {
 			if (token == '}') {
 				break;
 			}
+
+			// Handle comments
+			AstNodeComment* comment = parseComment(scanner, src, slashPos, token);
+			if (comment != nullptr) {
+				slashPos = SIZE_MAX;
+				delete comment;
+				continue;
+			}
+			if (token == '/') {
+				slashPos = u8t_scanner_token_start(scanner);
+				continue;
+			}
+			slashPos = SIZE_MAX;
 
 			if (token == U8T_IDENTIFIER) {
 				const char* variantName = u8t_scanner_token_text(scanner, &n);

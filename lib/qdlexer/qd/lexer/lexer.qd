@@ -1,0 +1,513 @@
+/// Quadrate lexer — tokenizes source text into a token stream.
+/// This is the first component of the self-hosted compiler.
+use strings
+use sb
+
+// Token types
+pub enum TokenType {
+	// Literals
+	Integer        // 123, 0xFF
+	Float          // 3.14, 1e10
+	String         // "hello"
+
+	// Identifiers and keywords
+	Ident          // foo, bar
+	KwFn           // fn
+	KwPub          // pub
+	KwIf           // if
+	KwElse         // else
+	KwFor          // for
+	KwWhile        // while
+	KwLoop         // loop
+	KwBreak        // break
+	KwContinue     // continue
+	KwReturn       // return
+	KwUse          // use
+	KwStruct       // struct
+	KwEnum         // enum
+	KwConst        // const
+	KwDefer        // defer
+	KwSwitch       // switch
+	KwTest         // test
+	KwAs           // as
+	KwTrue         // true
+	KwFalse        // false
+	KwOk           // Ok
+	KwErr          // Err
+	KwNull         // null
+	KwImport       // import
+	KwCtx          // ctx
+
+	// Punctuation
+	LParen         // (
+	RParen         // )
+	LBrace         // {
+	RBrace         // }
+	LBracket       // [
+	RBracket       // ]
+	Colon          // :
+	ColonColon     // ::
+	Arrow          // ->
+	Dot            // .
+	At             // @
+	Comma          // ,
+	Semicolon      // ;
+	Bang           // !
+	Question       // ?
+
+	// Operators
+	Plus           // +
+	Minus          // -
+	Star           // *
+	Slash          // /
+	Percent        // %
+	Eq             // ==
+	Neq            // !=
+	Lt             // <
+	Gt             // >
+	LtEq           // <=
+	GtEq           // >=
+	Assign         // =
+	Shl            // <<
+	Shr            // >>
+	PlusPlus       // ++
+	MinusMinus     // --
+
+	// Special
+	Newline        // \n (significant for some contexts)
+	Comment        // // ... or /* ... */
+	Eof            // end of input
+	Error          // invalid token
+}
+
+// Token: a single lexical unit
+pub struct Token {
+	kind:i64
+	text:str
+	line:i64
+	col:i64
+}
+
+// Lexer state
+pub struct Lexer {
+	src:str
+	pos:i64
+	line:i64
+	col:i64
+	src_len:i64
+}
+
+// Create a new lexer from source text
+pub fn new(source:str -- l:Lexer) {
+	-> s
+	Lexer {
+		src = s
+		pos = 0
+		line = 1
+		col = 1
+		src_len = s strings::len
+	}
+}
+
+// Peek at current character without advancing (returns -1 at EOF)
+fn (l:Lexer) peek( -- ch:i64) {
+	l @pos l @src_len >= if {
+		-1
+	} else {
+		l @src l @pos strings::char_at!
+	}
+}
+
+// Advance one character and return it (returns -1 at EOF)
+fn (l:Lexer) advance( -- ch:i64) {
+	l @pos l @src_len >= if {
+		-1
+	} else {
+		l @src l @pos strings::char_at! -> ch
+		l @pos 1 + l.pos
+		ch 10 == if {
+			l @line 1 + l.line
+			1 l.col
+		} else {
+			l @col 1 + l.col
+		}
+		ch
+	}
+}
+
+// Skip whitespace (but not newlines)
+fn (l:Lexer) skip_whitespace( -- ) {
+	l peek -> ch
+	ch 32 == ch 9 == or ch 13 == or while {
+		l advance drop
+		l peek -> ch
+		ch 32 == ch 9 == or ch 13 == or
+	}
+}
+
+// Skip to end of line (for // comments)
+fn (l:Lexer) skip_line( -- ) {
+	l peek -> ch
+	ch -1 neq ch 10 neq and while {
+		l advance drop
+		l peek -> ch
+		ch -1 neq ch 10 neq and
+	}
+}
+
+// Read an identifier or keyword
+fn (l:Lexer) read_ident(start_line:i64 start_col:i64 -- t:Token) {
+	-> sc -> sl
+	sb::new -> b
+	l peek -> ch
+	ch is_ident_char while {
+		b ch sb::append_char -> b
+		l advance drop
+		l peek -> ch
+		ch is_ident_char
+	}
+	b sb::finish -> text
+	text classify_keyword -> kind
+	Token { kind = kind text = text line = sl col = sc }
+}
+
+// Read a number (integer or float)
+fn (l:Lexer) read_number(start_line:i64 start_col:i64 -- t:Token) {
+	-> sc -> sl
+	sb::new -> b
+	0 -> is_float
+	l peek -> ch
+
+	// Check for hex: 0x...
+	ch 48 == if {
+		b ch sb::append_char -> b
+		l advance drop
+		l peek -> ch
+		ch 120 == ch 88 == or if {
+			b ch sb::append_char -> b
+			l advance drop
+			l peek -> ch
+			ch is_hex_digit while {
+				b ch sb::append_char -> b
+				l advance drop
+				l peek -> ch
+				ch is_hex_digit
+			}
+			b sb::finish -> text
+			Token { kind = TokenType::Integer text = text line = sl col = sc } return
+		}
+	}
+
+	// Decimal digits
+	ch is_digit while {
+		b ch sb::append_char -> b
+		l advance drop
+		l peek -> ch
+		ch is_digit
+	}
+
+	// Check for float: .digits
+	ch 46 == if {
+		1 -> is_float
+		b ch sb::append_char -> b
+		l advance drop
+		l peek -> ch
+		ch is_digit while {
+			b ch sb::append_char -> b
+			l advance drop
+			l peek -> ch
+			ch is_digit
+		}
+	}
+
+	// Check for exponent: e/E
+	ch 101 == ch 69 == or if {
+		1 -> is_float
+		b ch sb::append_char -> b
+		l advance drop
+		l peek -> ch
+		ch 43 == ch 45 == or if {
+			b ch sb::append_char -> b
+			l advance drop
+			l peek -> ch
+		}
+		ch is_digit while {
+			b ch sb::append_char -> b
+			l advance drop
+			l peek -> ch
+			ch is_digit
+		}
+	}
+
+	b sb::finish -> text
+	is_float if {
+		Token { kind = TokenType::Float text = text line = sl col = sc }
+	} else {
+		Token { kind = TokenType::Integer text = text line = sl col = sc }
+	}
+}
+
+// Read a string literal
+fn (l:Lexer) read_string(start_line:i64 start_col:i64 -- t:Token) {
+	-> sc -> sl
+	sb::new -> b
+	34 b swap sb::append_char -> b
+	l advance drop  // skip opening "
+
+	l peek -> ch
+	ch -1 neq ch 34 neq and while {
+		ch 92 == if {
+			// escape sequence
+			b ch sb::append_char -> b
+			l advance drop
+			l peek -> ch
+			ch -1 neq if {
+				b ch sb::append_char -> b
+				l advance drop
+			}
+		} else {
+			b ch sb::append_char -> b
+			l advance drop
+		}
+		l peek -> ch
+		ch -1 neq ch 34 neq and
+	}
+
+	// consume closing "
+	l peek 34 == if {
+		34 b swap sb::append_char -> b
+		l advance drop
+	}
+
+	b sb::finish -> text
+	Token { kind = TokenType::String text = text line = sl col = sc }
+}
+
+// Get the next token
+pub fn (l:Lexer) next( -- t:Token) {
+	l skip_whitespace
+
+	l @line -> sl
+	l @col -> sc
+
+	l peek -> ch
+
+	// EOF
+	ch -1 == if {
+		Token { kind = TokenType::Eof text = "" line = sl col = sc } return
+	}
+
+	// Newline
+	ch 10 == if {
+		l advance drop
+		Token { kind = TokenType::Newline text = "\n" line = sl col = sc } return
+	}
+
+	// Identifier or keyword
+	ch is_ident_start if {
+		l sl sc read_ident return
+	}
+
+	// Number
+	ch is_digit if {
+		l sl sc read_number return
+	}
+
+	// String
+	ch 34 == if {
+		l sl sc read_string return
+	}
+
+	// Two-character tokens
+	l advance -> ch
+
+	// ->
+	ch 45 == if {
+		l peek 62 == if {
+			l advance drop
+			Token { kind = TokenType::Arrow text = "->" line = sl col = sc } return
+		}
+		l peek 45 == if {
+			l advance drop
+			Token { kind = TokenType::MinusMinus text = "--" line = sl col = sc } return
+		}
+		Token { kind = TokenType::Minus text = "-" line = sl col = sc } return
+	}
+
+	// + ++
+	ch 43 == if {
+		l peek 43 == if {
+			l advance drop
+			Token { kind = TokenType::PlusPlus text = "++" line = sl col = sc } return
+		}
+		Token { kind = TokenType::Plus text = "+" line = sl col = sc } return
+	}
+
+	// = ==
+	ch 61 == if {
+		l peek 61 == if {
+			l advance drop
+			Token { kind = TokenType::Eq text = "==" line = sl col = sc } return
+		}
+		Token { kind = TokenType::Assign text = "=" line = sl col = sc } return
+	}
+
+	// ! !=
+	ch 33 == if {
+		l peek 61 == if {
+			l advance drop
+			Token { kind = TokenType::Neq text = "!=" line = sl col = sc } return
+		}
+		Token { kind = TokenType::Bang text = "!" line = sl col = sc } return
+	}
+
+	// < <= <<
+	ch 60 == if {
+		l peek 61 == if {
+			l advance drop
+			Token { kind = TokenType::LtEq text = "<=" line = sl col = sc } return
+		}
+		l peek 60 == if {
+			l advance drop
+			Token { kind = TokenType::Shl text = "<<" line = sl col = sc } return
+		}
+		Token { kind = TokenType::Lt text = "<" line = sl col = sc } return
+	}
+
+	// > >= >>
+	ch 62 == if {
+		l peek 61 == if {
+			l advance drop
+			Token { kind = TokenType::GtEq text = ">=" line = sl col = sc } return
+		}
+		l peek 62 == if {
+			l advance drop
+			Token { kind = TokenType::Shr text = ">>" line = sl col = sc } return
+		}
+		Token { kind = TokenType::Gt text = ">" line = sl col = sc } return
+	}
+
+	// : ::
+	ch 58 == if {
+		l peek 58 == if {
+			l advance drop
+			Token { kind = TokenType::ColonColon text = "::" line = sl col = sc } return
+		}
+		Token { kind = TokenType::Colon text = ":" line = sl col = sc } return
+	}
+
+	// / and comments
+	ch 47 == if {
+		l peek 47 == if {
+			// line comment
+			l skip_line
+			Token { kind = TokenType::Comment text = "//" line = sl col = sc } return
+		}
+		l peek 42 == if {
+			// block comment /* ... */
+			l advance drop  // skip *
+			l read_block_comment
+			Token { kind = TokenType::Comment text = "/*" line = sl col = sc } return
+		}
+		Token { kind = TokenType::Slash text = "/" line = sl col = sc } return
+	}
+
+	// Single-character tokens
+	ch 40 == if { Token { kind = TokenType::LParen text = "(" line = sl col = sc } return }
+	ch 41 == if { Token { kind = TokenType::RParen text = ")" line = sl col = sc } return }
+	ch 123 == if { Token { kind = TokenType::LBrace text = "{" line = sl col = sc } return }
+	ch 125 == if { Token { kind = TokenType::RBrace text = "}" line = sl col = sc } return }
+	ch 91 == if { Token { kind = TokenType::LBracket text = "[" line = sl col = sc } return }
+	ch 93 == if { Token { kind = TokenType::RBracket text = "]" line = sl col = sc } return }
+	ch 42 == if { Token { kind = TokenType::Star text = "*" line = sl col = sc } return }
+	ch 37 == if { Token { kind = TokenType::Percent text = "%" line = sl col = sc } return }
+	ch 46 == if { Token { kind = TokenType::Dot text = "." line = sl col = sc } return }
+	ch 64 == if { Token { kind = TokenType::At text = "@" line = sl col = sc } return }
+	ch 44 == if { Token { kind = TokenType::Comma text = "," line = sl col = sc } return }
+	ch 59 == if { Token { kind = TokenType::Semicolon text = ";" line = sl col = sc } return }
+	ch 63 == if { Token { kind = TokenType::Question text = "?" line = sl col = sc } return }
+
+	// Unknown character
+	sb::new -> eb
+	eb ch sb::append_char -> eb
+	eb sb::finish -> etext
+	Token { kind = TokenType::Error text = etext line = sl col = sc }
+}
+
+// Skip block comment /* ... */
+fn (l:Lexer) read_block_comment( -- ) {
+	l peek -> ch
+	ch -1 neq while {
+		ch 42 == if {
+			l advance drop
+			l peek 47 == if {
+				l advance drop
+				return
+			}
+		} else {
+			l advance drop
+		}
+		l peek -> ch
+		ch -1 neq
+	}
+}
+
+// Character classification helpers
+fn is_digit(ch:i64 -- result:i64) {
+	-> c
+	c 48 >= c 57 <= and
+}
+
+fn is_hex_digit(ch:i64 -- result:i64) {
+	-> c
+	c is_digit
+	c 65 >= c 70 <= and or
+	c 97 >= c 102 <= and or
+}
+
+fn is_alpha(ch:i64 -- result:i64) {
+	-> c
+	c 65 >= c 90 <= and
+	c 97 >= c 122 <= and or
+}
+
+fn is_ident_start(ch:i64 -- result:i64) {
+	-> c
+	c is_alpha c 95 == or
+}
+
+fn is_ident_char(ch:i64 -- result:i64) {
+	-> c
+	c is_alpha c is_digit or c 95 == or
+}
+
+// Classify an identifier as keyword or plain ident
+fn classify_keyword(text:str -- kind:i64) {
+	-> t
+	t "fn" strings::compare 0 == if { TokenType::KwFn return }
+	t "pub" strings::compare 0 == if { TokenType::KwPub return }
+	t "if" strings::compare 0 == if { TokenType::KwIf return }
+	t "else" strings::compare 0 == if { TokenType::KwElse return }
+	t "for" strings::compare 0 == if { TokenType::KwFor return }
+	t "while" strings::compare 0 == if { TokenType::KwWhile return }
+	t "loop" strings::compare 0 == if { TokenType::KwLoop return }
+	t "break" strings::compare 0 == if { TokenType::KwBreak return }
+	t "continue" strings::compare 0 == if { TokenType::KwContinue return }
+	t "return" strings::compare 0 == if { TokenType::KwReturn return }
+	t "use" strings::compare 0 == if { TokenType::KwUse return }
+	t "struct" strings::compare 0 == if { TokenType::KwStruct return }
+	t "enum" strings::compare 0 == if { TokenType::KwEnum return }
+	t "const" strings::compare 0 == if { TokenType::KwConst return }
+	t "defer" strings::compare 0 == if { TokenType::KwDefer return }
+	t "switch" strings::compare 0 == if { TokenType::KwSwitch return }
+	t "test" strings::compare 0 == if { TokenType::KwTest return }
+	t "as" strings::compare 0 == if { TokenType::KwAs return }
+	t "true" strings::compare 0 == if { TokenType::KwTrue return }
+	t "false" strings::compare 0 == if { TokenType::KwFalse return }
+	t "Ok" strings::compare 0 == if { TokenType::KwOk return }
+	t "Err" strings::compare 0 == if { TokenType::KwErr return }
+	t "null" strings::compare 0 == if { TokenType::KwNull return }
+	t "import" strings::compare 0 == if { TokenType::KwImport return }
+	t "ctx" strings::compare 0 == if { TokenType::KwCtx return }
+	TokenType::Ident
+}

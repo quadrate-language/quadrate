@@ -331,6 +331,34 @@ namespace Qd {
 			auto* scoped = static_cast<AstNodeScopedIdentifier*>(node);
 			std::string qualifiedName = scoped->scope() + "::" + scoped->name();
 			calledFunctions.insert(qualifiedName);
+
+			// Also mark as reachable with method-mangled names
+			// When the semantic validator marks a scoped identifier as a method call,
+			// add the StructType::method form so receiver methods are included
+			if (scoped->isMethodCall()) {
+				std::string methodName = scoped->receiverType() + "::" + scoped->name();
+				calledFunctions.insert(methodName);
+				calledFunctions.insert(scoped->scope() + "::" + methodName);
+			}
+
+			// For any module function, also try all struct types in that module
+			// as possible method calls (covers cases where semantic validator hasn't run)
+			const std::string& moduleName = scoped->scope();
+			const std::string& funcName = scoped->name();
+			for (const auto& modulePair : moduleASTs) {
+				if (modulePair.first == moduleName && modulePair.second) {
+					for (auto* child : modulePair.second->children()) {
+						if (auto funcNode = dynamic_cast<AstNodeFunctionDeclaration*>(child)) {
+							if (funcNode->hasReceiver() && funcNode->name() == funcName) {
+								std::string methodQualified =
+										moduleName + "::" + funcNode->receiverType() + "::" + funcName;
+								calledFunctions.insert(methodQualified);
+								calledFunctions.insert(funcNode->receiverType() + "::" + funcName);
+							}
+						}
+					}
+				}
+			}
 		}
 
 		// Check for identifier (local function call or module function)

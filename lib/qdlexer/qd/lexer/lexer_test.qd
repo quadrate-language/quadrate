@@ -1,0 +1,90 @@
+use testing
+use strings
+use "lexer.qd"
+
+test "tokenize simple function" {
+	"fn main() { 42 }" lexer::new -> l
+
+	l lexer::next -> t
+	t @kind lexer::TokenType::KwFn testing::assert_eq
+
+	l lexer::next -> t2
+	t2 @kind lexer::TokenType::Ident testing::assert_eq
+	t2 @text "main" strings::compare 0 testing::assert_eq
+
+	l lexer::next -> t3
+	t3 @kind lexer::TokenType::LParen testing::assert_eq
+
+	l lexer::next -> t4
+	t4 @kind lexer::TokenType::RParen testing::assert_eq
+
+	l lexer::next -> t5
+	t5 @kind lexer::TokenType::LBrace testing::assert_eq
+
+	l lexer::next -> t6
+	t6 @kind lexer::TokenType::Integer testing::assert_eq
+	t6 @text "42" strings::compare 0 testing::assert_eq
+
+	l lexer::next -> t7
+	t7 @kind lexer::TokenType::RBrace testing::assert_eq
+
+	l lexer::next -> t8
+	t8 @kind lexer::TokenType::Eof testing::assert_eq
+}
+
+test "tokenize operators" {
+	"+ - * / == != <- > :: =" lexer::new -> l
+
+	l lexer::next -> t1  t1 @kind lexer::TokenType::Plus testing::assert_eq
+	l lexer::next -> t2  t2 @kind lexer::TokenType::Minus testing::assert_eq
+	l lexer::next -> t3  t3 @kind lexer::TokenType::Star testing::assert_eq
+	l lexer::next -> t4  t4 @kind lexer::TokenType::Slash testing::assert_eq
+	l lexer::next -> t5  t5 @kind lexer::TokenType::Eq testing::assert_eq
+	l lexer::next -> t6  t6 @kind lexer::TokenType::Neq testing::assert_eq
+	l lexer::next -> t7  t7 @kind lexer::TokenType::Lt testing::assert_eq
+	l lexer::next -> t8  t8 @kind lexer::TokenType::Minus testing::assert_eq
+	l lexer::next -> t9  t9 @kind lexer::TokenType::Gt testing::assert_eq
+	l lexer::next -> t10  t10 @kind lexer::TokenType::ColonColon testing::assert_eq
+	l lexer::next -> t11  t11 @kind lexer::TokenType::Assign testing::assert_eq
+}
+
+test "tokenize keywords" {
+	"fn if else for struct enum const" lexer::new -> l
+
+	l lexer::next -> t1  t1 @kind lexer::TokenType::KwFn testing::assert_eq
+	l lexer::next -> t2  t2 @kind lexer::TokenType::KwIf testing::assert_eq
+	l lexer::next -> t3  t3 @kind lexer::TokenType::KwElse testing::assert_eq
+	l lexer::next -> t4  t4 @kind lexer::TokenType::KwFor testing::assert_eq
+	l lexer::next -> t5  t5 @kind lexer::TokenType::KwStruct testing::assert_eq
+	l lexer::next -> t6  t6 @kind lexer::TokenType::KwEnum testing::assert_eq
+	l lexer::next -> t7  t7 @kind lexer::TokenType::KwConst testing::assert_eq
+	l lexer::next -> t8  t8 @kind lexer::TokenType::Eof testing::assert_eq
+}
+
+test "tokenize numbers" {
+	"42 3.14 0xFF" lexer::new -> l
+
+	l lexer::next -> t1
+	t1 @kind lexer::TokenType::Integer testing::assert_eq
+	t1 @text "42" strings::compare 0 testing::assert_eq
+
+	l lexer::next -> t2
+	t2 @kind lexer::TokenType::Float testing::assert_eq
+
+	l lexer::next -> t3
+	t3 @kind lexer::TokenType::Integer testing::assert_eq
+}
+
+test "tokenize null and boolean" {
+	"true false null" lexer::new -> l
+
+	l lexer::next -> t1  t1 @kind lexer::TokenType::KwTrue testing::assert_eq
+	l lexer::next -> t2  t2 @kind lexer::TokenType::KwFalse testing::assert_eq
+	l lexer::next -> t3  t3 @kind lexer::TokenType::KwNull testing::assert_eq
+}
+
+test "empty input" {
+	"" lexer::new -> l
+	l lexer::next -> t1
+	t1 @kind lexer::TokenType::Eof testing::assert_eq
+}
