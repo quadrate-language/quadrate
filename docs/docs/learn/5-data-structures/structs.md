@@ -404,6 +404,60 @@ fn main() {
 }
 ```
 
+## Pointer fields and recursive structs
+
+Structs can contain pointers to other structs using `*StructName`. This enables linked lists, trees, and other recursive data structures.
+
+```qd
+struct Node {
+	value:i64
+	next:*Node
+}
+
+fn main() {
+	// Build a linked list: 3 -> 2 -> 1 -> null
+	Node { value = 1 next = null } -> a
+	Node { value = 2 next = a } -> b
+	Node { value = 3 next = b } -> c
+
+	// Traverse using @field access through pointers
+	c @value print nl         // 3
+	c @next @value print nl   // 2
+}
+```
+
+Use `null` for empty pointer fields. Check for null before accessing:
+
+```qd
+fn print_list(head:ptr -- ) {
+	-> cur
+	cur null neq while {
+		cur @value print nl
+		cur @next -> cur
+		cur null neq
+	}
+}
+```
+
+### Binary tree example
+
+```qd
+struct TreeNode {
+	value:i64
+	left:*TreeNode
+	right:*TreeNode
+}
+
+fn inorder(node:ptr -- ) {
+	-> n
+	n null neq if {
+		n @left inorder
+		n @value print nl
+		n @right inorder
+	}
+}
+```
+
 ## What's next?
 
-Learn about [Constants](constants.md) to define fixed values.
+Learn about [Constants & Enums](constants.md) to define fixed values.

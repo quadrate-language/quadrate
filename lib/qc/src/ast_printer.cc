@@ -171,6 +171,9 @@ namespace Qd {
 			case AstNodeLiteral::LiteralType::STRING:
 				typeStr = "String";
 				break;
+			case AstNodeLiteral::LiteralType::NULL_PTR:
+				typeStr = "Null";
+				break;
 			}
 			printf("\"literalType\":\"%s\",", typeStr);
 			printf("\"value\":\"");

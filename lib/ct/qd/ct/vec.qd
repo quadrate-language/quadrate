@@ -8,7 +8,7 @@
 ///
 /// Create an empty vector with zero initialization:
 ///
-///     Vec<i64> { data = 0 len = 0 cap = 0 } -> v
+///     Vec<i64> { data = null len = 0 cap = 0 } -> v
 ///
 /// ## Basic Operations
 ///

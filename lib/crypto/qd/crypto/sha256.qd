@@ -44,7 +44,7 @@ pub struct Sha256 {
 	h5:i64 = 2600822924
 	h6:i64 = 528734635
 	h7:i64 = 1541459225
-	buf:ptr = 0
+	buf:ptr = null
 	buflen:i64 = 0
 	total:i64 = 0
 }

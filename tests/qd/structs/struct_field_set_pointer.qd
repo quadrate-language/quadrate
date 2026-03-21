@@ -1,0 +1,23 @@
+// Mutating pointer fields with dot syntax
+struct Cell {
+	value:i64
+	next:*Cell
+}
+
+fn main() {
+	Cell { value = 1 next = null } -> a
+	Cell { value = 2 next = null } -> b
+
+	// Set pointer field: link b -> a
+	a b.next
+	b @next @value print nl
+
+	// Mutate value through pointer
+	b @next -> p
+	99 p.value
+	a @value print nl
+
+	// Chain: c -> b -> a
+	Cell { value = 3 next = b } -> c
+	c @next @next @value print nl
+}

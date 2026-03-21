@@ -33,7 +33,7 @@ pub struct Md5 {
 	b:i64 = 4023233417
 	c:i64 = 2562383102
 	d:i64 = 271733878
-	buf:ptr = 0
+	buf:ptr = null
 	buflen:i64 = 0
 	total:i64 = 0
 }

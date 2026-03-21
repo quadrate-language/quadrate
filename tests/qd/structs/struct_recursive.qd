@@ -1,0 +1,20 @@
+// Self-referential struct (linked list)
+struct Node {
+	value:i64
+	next:*Node
+}
+
+// Build a linked list and traverse it
+fn main() {
+	// Build list: 3 -> 2 -> 1 -> null
+	Node { value = 1 next = null } -> a
+	Node { value = 2 next = a } -> b
+	Node { value = 3 next = b } -> c
+
+	// Traverse and print
+	c @value print nl
+	c @next -> n
+	n @value print nl
+	n @next -> n2
+	n2 @value print nl
+}

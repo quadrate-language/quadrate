@@ -10,7 +10,8 @@ namespace Qd {
 		enum class LiteralType {
 			INTEGER,
 			FLOAT,
-			STRING
+			STRING,
+			NULL_PTR
 		};
 
 		AstNodeLiteral(const std::string& value, LiteralType literalType) : mValue(value), mLiteralType(literalType) {

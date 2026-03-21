@@ -79,7 +79,7 @@ inline bool looksLikeStructType(const std::string& typeName) {
 inline bool isReservedKeyword(const std::string& name) {
 	static const std::unordered_set<std::string> KEYWORDS = {"if", "else", "for", "while", "loop", "switch", "case",
 			"break", "continue", "return", "fn", "struct", "enum", "const", "pub", "test", "use", "import", "ctx",
-			"defer", "as", "true", "false", "Ok", "Err", "i64", "f64", "str", "ptr", "void"};
+			"defer", "as", "true", "false", "Ok", "Err", "null", "i64", "f64", "str", "ptr", "void"};
 	return KEYWORDS.find(name) != KEYWORDS.end();
 }
 
@@ -98,6 +98,8 @@ inline std::string serializeCaseValue(IAstNode* node) {
 			return "float:" + lit->value();
 		case AstNodeLiteral::LiteralType::STRING:
 			return "string:" + lit->value();
+		case AstNodeLiteral::LiteralType::NULL_PTR:
+			return "null:0";
 		}
 	}
 

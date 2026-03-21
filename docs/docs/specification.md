@@ -96,8 +96,9 @@ These identifiers are reserved and MUST evaluate to integer literals:
 | `false` | `0` | Boolean false |
 | `Ok` | `1` | Success result |
 | `Err` | `0` | Error result |
+| `null` | `0` | Null pointer |
 
-**Note**: `true`/`Ok` and `false`/`Err` are interchangeable pairs.
+**Note**: `true`/`Ok` and `false`/`Err` are interchangeable pairs. `null` pushes `0` with pointer type for use in struct pointer fields.
 
 #### 2.3.3 Identifiers
 

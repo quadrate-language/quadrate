@@ -122,6 +122,17 @@ namespace Qd {
 			lastPushedType = LastPushedType::STRING;
 			break;
 		}
+		case AstNodeLiteral::LiteralType::NULL_PTR: {
+			if (useCompileTimeStack) {
+				compileTimeStack.push_back(builder->getInt64(0));
+			} else if (debugInfoEnabled) {
+				builder->CreateCall(pushIntFn, {ctx, builder->getInt64(0)});
+			} else {
+				generateInlinePushInt(ctx, 0);
+			}
+			lastPushedType = LastPushedType::INTEGER;
+			break;
+		}
 		}
 	}
 

@@ -8,7 +8,7 @@
 ///
 /// Create an empty deque:
 ///
-///     Deque<i64> { data = 0 head = 0 tail = 0 len = 0 cap = 0 } -> d
+///     Deque<i64> { data = null head = 0 tail = 0 len = 0 cap = 0 } -> d
 ///
 /// ## Basic Operations
 ///

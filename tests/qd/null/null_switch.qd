@@ -1,0 +1,30 @@
+struct Box {
+	value:i64
+	child:*Box
+}
+
+fn describe(node:ptr -- ) {
+	-> n
+	n null == if {
+		"null" print nl
+	} else {
+		"box:" print n @value print nl
+	}
+}
+
+fn main() {
+	Box { value = 1 child = null } -> a
+	Box { value = 2 child = a } -> b
+
+	a describe
+	b describe
+	null describe
+
+	b @child describe
+
+	// null in switch (null == 0)
+	null switch {
+		0 { "null is zero" print nl }
+		_ { "other" print nl }
+	}
+}

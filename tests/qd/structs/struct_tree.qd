@@ -1,0 +1,48 @@
+// Binary tree with self-referential pointers
+struct TreeNode {
+	value:i64
+	left:*TreeNode
+	right:*TreeNode
+}
+
+// In-order traversal: left, self, right
+fn inorder(node:ptr -- ) {
+	-> n
+	n null neq if {
+		n @left inorder
+		n @value print nl
+		n @right inorder
+	}
+}
+
+// Count nodes
+fn count(node:ptr -- c:i64) {
+	-> n
+	n null == if {
+		0
+	} else {
+		n @left count
+		n @right count
+		+ 1 +
+	}
+}
+
+fn main() {
+	// Build tree:
+	//       4
+	//      / \
+	//     2   6
+	//    / \
+	//   1   3
+	TreeNode { value = 1 left = null right = null } -> n1
+	TreeNode { value = 3 left = null right = null } -> n3
+	TreeNode { value = 2 left = n1 right = n3 } -> n2
+	TreeNode { value = 6 left = null right = null } -> n6
+	TreeNode { value = 4 left = n2 right = n6 } -> root
+
+	// In-order traversal should print 1 2 3 4 6
+	root inorder
+
+	// Count nodes
+	root count print nl
+}

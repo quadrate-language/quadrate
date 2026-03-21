@@ -62,6 +62,28 @@ const AppName = "MyApp"
 | Scope | Global | Function |
 | Syntax | `const Name = value` | `value -> name` |
 
+## Built-in constants
+
+| Constant | Value | Type | Description |
+|----------|-------|------|-------------|
+| `true` | 1 | i64 | Boolean true |
+| `false` | 0 | i64 | Boolean false |
+| `Ok` | 1 | i64 | Success result |
+| `Err` | 0 | i64 | Error result |
+| `null` | 0 | ptr | Null pointer |
+
+Use `null` for pointer fields in structs:
+
+```qd
+struct Node {
+	value:i64
+	next:*Node
+}
+
+Node { value = 1 next = null } -> a
+a @next null == if { "end of list" print nl }
+```
+
 ## Naming convention
 
 Use PascalCase for constants:

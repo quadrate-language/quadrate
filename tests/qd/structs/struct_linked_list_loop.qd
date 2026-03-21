@@ -1,0 +1,41 @@
+// Traverse linked list with a loop
+struct Item {
+	value:i64
+	next:*Item
+}
+
+fn list_sum(head:ptr -- total:i64) {
+	-> cur
+	0 -> sum
+	cur null neq while {
+		sum cur @value + -> sum
+		cur @next -> cur
+		cur null neq
+	}
+	sum
+}
+
+fn list_len(head:ptr -- n:i64) {
+	-> cur
+	0 -> count
+	cur null neq while {
+		count 1 + -> count
+		cur @next -> cur
+		cur null neq
+	}
+	count
+}
+
+fn main() {
+	Item { value = 10 next = null } -> a
+	Item { value = 20 next = a } -> b
+	Item { value = 30 next = b } -> c
+	Item { value = 40 next = c } -> d
+
+	d list_len print nl
+	d list_sum print nl
+
+	// Empty list
+	null list_len print nl
+	null list_sum print nl
+}

@@ -1,0 +1,42 @@
+struct Node {
+	value:i64
+	next:*Node
+}
+
+fn main() {
+	// null in struct construction
+	Node { value = 1 next = null } -> a
+
+	// null comparison
+	a @next null == if {
+		"next is null" print nl
+	}
+
+	// null != non-null
+	Node { value = 2 next = a } -> b
+	b @next null == if {
+		"should not print" print nl
+	} else {
+		"next is not null" print nl
+	}
+
+	// null as standalone value
+	null 0 == if {
+		"null equals zero" print nl
+	}
+
+	// null in local variable
+	null -> p
+	p null == if {
+		"p is null" print nl
+	}
+
+	// null passed to function
+	null is_null print nl
+	a is_null print nl
+}
+
+fn is_null(p:ptr -- result:i64) {
+	-> v
+	v null ==
+}

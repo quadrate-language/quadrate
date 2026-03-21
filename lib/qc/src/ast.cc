@@ -380,6 +380,11 @@ namespace Qd {
 			setNodePosition(node, scanner, src);
 			return node;
 		}
+		if (strcmp(text, "null") == 0) {
+			IAstNode* node = new AstNodeLiteral("0", AstNodeLiteral::LiteralType::NULL_PTR);
+			setNodePosition(node, scanner, src);
+			return node;
+		}
 		return nullptr;
 	}
 
@@ -3225,6 +3230,12 @@ namespace Qd {
 				// Check for scoped identifier (module::something)
 				if (nextToken == ':') {
 					// Already handled above for field names
+				}
+
+				// Check for boolean/null literals (true, false, Ok, Err, null)
+				if (auto* boolNode = tryCreateBooleanLiteral(text, scanner, src)) {
+					currentFieldNodes.push_back(boolNode);
+					continue;
 				}
 
 				// Regular identifier or scoped identifier

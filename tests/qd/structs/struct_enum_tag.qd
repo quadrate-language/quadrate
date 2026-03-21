@@ -1,0 +1,47 @@
+// AST-like pattern: enum tag + recursive struct
+enum NodeType {
+	Num
+	Add
+	Mul
+}
+
+struct AstNode {
+	kind:i64
+	value:i64
+	left:*AstNode
+	right:*AstNode
+}
+
+fn eval(node:ptr -- result:i64) {
+	-> n
+	n @kind switch {
+		NodeType::Num { n @value }
+		NodeType::Add { n @left eval n @right eval + }
+		NodeType::Mul { n @left eval n @right eval * }
+		_ { 0 }
+	}
+}
+
+fn main() {
+	// Build expression: (2 + 3) * 4
+	AstNode { kind = NodeType::Num value = 2 left = null right = null } -> two
+	AstNode { kind = NodeType::Num value = 3 left = null right = null } -> three
+	AstNode { kind = NodeType::Num value = 4 left = null right = null } -> four
+	AstNode { kind = NodeType::Add value = 0 left = two right = three } -> add
+	AstNode { kind = NodeType::Mul value = 0 left = add right = four } -> mul
+
+	mul eval print nl
+
+	// Simple: just a number
+	two eval print nl
+
+	// Nested: (1 + 2) + (3 + 4)
+	AstNode { kind = NodeType::Num value = 1 left = null right = null } -> n1
+	AstNode { kind = NodeType::Num value = 2 left = null right = null } -> n2
+	AstNode { kind = NodeType::Num value = 3 left = null right = null } -> n3
+	AstNode { kind = NodeType::Num value = 4 left = null right = null } -> n4
+	AstNode { kind = NodeType::Add value = 0 left = n1 right = n2 } -> left
+	AstNode { kind = NodeType::Add value = 0 left = n3 right = n4 } -> right
+	AstNode { kind = NodeType::Add value = 0 left = left right = right } -> root
+	root eval print nl
+}

@@ -16,6 +16,6 @@ fn use_str_field(obj:WithStr -- ) {
 
 fn main() {
 	// Pass WithPtr to function expecting WithStr - type mismatch!
-	WithPtr { data = 0 } -> p
+	WithPtr { data = null } -> p
 	p use_str_field
 }

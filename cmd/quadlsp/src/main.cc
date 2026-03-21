@@ -1231,6 +1231,9 @@ std::string QuadrateLSP::getBuiltInDocumentation(const std::string& word) {
 			{"as", "Type narrowing cast.\n\n**Syntax:** `expr as TypeName`\n\nNarrows a ptr value to a specific "
 				   "struct type for field access. Compile-time only, no runtime cost.\n\n**Example:** `c as "
 				   "http::Ctx @body`"},
+			{"null", "Null pointer constant.\n\nPushes `0` with pointer type. Use for empty pointer fields in "
+					 "structs.\n\n**Example:** `Node { value = 1 next = null }`\n\n**Check:** `ptr null == if { "
+					 "... }`"},
 	};
 
 	auto it = docs.find(word);

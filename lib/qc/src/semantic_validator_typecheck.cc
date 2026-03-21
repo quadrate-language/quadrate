@@ -50,6 +50,8 @@ namespace Qd {
 			return StackValueType::FLOAT;
 		case AstNodeLiteral::LiteralType::STRING:
 			return StackValueType::STRING;
+		case AstNodeLiteral::LiteralType::NULL_PTR:
+			return StackValueType::PTR;
 		default:
 			return StackValueType::INT;
 		}

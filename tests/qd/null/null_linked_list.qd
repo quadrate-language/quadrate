@@ -1,0 +1,37 @@
+struct Item {
+	value:i64
+	next:*Item
+}
+
+fn print_list(head:ptr -- ) {
+	-> cur
+	cur null neq while {
+		cur @value print nl
+		cur @next -> cur
+		cur null neq
+	}
+}
+
+fn list_len(head:ptr -- n:i64) {
+	-> cur
+	0 -> count
+	cur null neq while {
+		count 1 + -> count
+		cur @next -> cur
+		cur null neq
+	}
+	count
+}
+
+fn main() {
+	Item { value = 10 next = null } -> a
+	Item { value = 20 next = a } -> b
+	Item { value = 30 next = b } -> c
+
+	c print_list
+	c list_len print nl
+
+	// Empty list
+	null print_list
+	null list_len print nl
+}

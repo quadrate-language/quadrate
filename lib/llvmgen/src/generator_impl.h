@@ -131,7 +131,8 @@ namespace Qd {
 			UNKNOWN,
 			INTEGER,
 			FLOAT,
-			STRING
+			STRING,
+			POINTER
 		};
 		LastPushedType lastPushedType = LastPushedType::UNKNOWN;
 

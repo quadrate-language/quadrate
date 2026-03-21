@@ -5,50 +5,104 @@
     {
       "name": "i64",
       "description": "64-bit signed integer",
-      "examples": ["42", "-17", "0xFF"]
+      "examples": [
+        "42",
+        "-17",
+        "0xFF"
+      ]
     },
     {
       "name": "f64",
       "description": "64-bit floating point number",
-      "examples": ["3.14", "-0.5", "1e10"]
+      "examples": [
+        "3.14",
+        "-0.5",
+        "1e10"
+      ]
     },
     {
       "name": "str",
       "description": "String (UTF-8 encoded)",
-      "examples": ["\"hello\"", "\"line1\\nline2\""]
+      "examples": [
+        "\"hello\"",
+        "\"line1\\nline2\""
+      ]
     },
     {
       "name": "ptr",
       "description": "Raw pointer to memory",
-      "examples": ["buffer", "handle"]
+      "examples": [
+        "buffer",
+        "handle"
+      ]
     },
     {
       "name": "bool",
       "description": "Boolean value (true=1, false=0)",
-      "examples": ["true", "false", "5 3 >"]
+      "examples": [
+        "true",
+        "false",
+        "5 3 >"
+      ]
     }
   ],
   "keywords": [
     {
-      "name": "fn",
-      "category": "Declaration",
-      "description": "Declares a function with a stack signature",
-      "syntax": "fn name(inputs -- outputs) { body }",
+      "name": "->",
+      "category": "Variables",
+      "description": "Pops a value from the stack and binds it to a local variable",
+      "syntax": "value -> varname",
       "examples": [
-        "fn add(a:i64 b:i64 -- sum:i64) { + }",
-        "fn greet() { \"Hello\" print nl }",
-        "fn square(x:f64 -- result:f64) { dup * }"
+        "42 -> x",
+        "\"hello\" -> greeting",
+        "compute_result -> result"
       ]
     },
     {
-      "name": "pub",
-      "category": "Declaration",
-      "description": "Makes a function, constant, or struct visible to other modules",
-      "syntax": "pub fn/const/struct ...",
+      "name": "Err",
+      "category": "Literal",
+      "description": "Error result constant. Equivalent to integer 0 (false).",
+      "syntax": "Err",
       "examples": [
-        "pub fn greet() { \"Hello\" print nl }",
-        "pub const PI = 3.14159",
-        "pub struct Point { x:f64 y:f64 }"
+        "result Err == if { \"failed\" print nl }"
+      ]
+    },
+    {
+      "name": "Ok",
+      "category": "Literal",
+      "description": "Success result constant. Equivalent to integer 1 (true).",
+      "syntax": "Ok",
+      "examples": [
+        "result Ok == if { \"success\" print nl }"
+      ]
+    },
+    {
+      "name": "_",
+      "category": "Control Flow",
+      "description": "Wildcard/default case in switch statements",
+      "syntax": "_ { default-block }",
+      "examples": [
+        "x switch { 1 { \"one\" } _ { \"not one\" } }"
+      ]
+    },
+    {
+      "name": "as",
+      "category": "Type",
+      "description": "Type narrowing cast for struct field access on ptr values. Compile-time only, no runtime cost.",
+      "syntax": "expr as TypeName",
+      "examples": [
+        "c as http::Ctx @body",
+        "ptr_val as MyStruct -> typed_local"
+      ]
+    },
+    {
+      "name": "break",
+      "category": "Control Flow",
+      "description": "Exits the innermost loop immediately",
+      "syntax": "break",
+      "examples": [
+        "loop { x 10 > if { break } }",
+        "0 100 1 for i { i found if { break } }"
       ]
     },
     {
@@ -63,100 +117,6 @@
       ]
     },
     {
-      "name": "struct",
-      "category": "Declaration",
-      "description": "Declares a structured data type with named fields",
-      "syntax": "struct Name { field1:type1 field2:type2 }",
-      "examples": [
-        "struct Point { x:f64 y:f64 }",
-        "struct Person { name:str age:i64 }",
-        "struct Node<T> { value:T next:ptr }"
-      ]
-    },
-    {
-      "name": "use",
-      "category": "Import",
-      "description": "Imports a module, making its functions available with module::function syntax",
-      "syntax": "use module_name",
-      "examples": [
-        "use math",
-        "use strings",
-        "use io"
-      ]
-    },
-    {
-      "name": "import",
-      "category": "Import",
-      "description": "Imports a C library, declaring its functions with Quadrate signatures",
-      "syntax": "import \"library\" as \"namespace\" { function declarations }",
-      "examples": [
-        "import \"libm.so\" as \"m\" { pub fn sin(x:f64 -- y:f64) }",
-        "import \"mylib.a\" as \"my\" { pub fn process(data:ptr len:i64 -- result:i64) }"
-      ]
-    },
-    {
-      "name": "if",
-      "category": "Control Flow",
-      "description": "Executes a block if the top of stack is true (non-zero)",
-      "syntax": "condition if { then-block }",
-      "examples": [
-        "5 3 > if { \"yes\" print nl }",
-        "x 0 == if { \"zero\" print }",
-        "valid if { process }"
-      ]
-    },
-    {
-      "name": "else",
-      "category": "Control Flow",
-      "description": "Provides an alternative block when the if condition is false",
-      "syntax": "condition if { then-block } else { else-block }",
-      "examples": [
-        "x 0 > if { \"positive\" } else { \"non-positive\" }",
-        "found if { value } else { -1 }"
-      ]
-    },
-    {
-      "name": "for",
-      "category": "Control Flow",
-      "description": "Iterates from start to end with a step, binding the iterator variable",
-      "syntax": "start end step for var { body }",
-      "examples": [
-        "0 10 1 for i { i print nl }",
-        "10 0 -1 for i { i print nl }",
-        "0 100 2 for even { even print \" \" print }"
-      ]
-    },
-    {
-      "name": "loop",
-      "category": "Control Flow",
-      "description": "Repeats a block indefinitely until break is called",
-      "syntax": "loop { body }",
-      "examples": [
-        "loop { input process done if { break } }",
-        "0 -> count loop { count inc -> count count 10 > if { break } }"
-      ]
-    },
-    {
-      "name": "while",
-      "category": "Control Flow",
-      "description": "Repeats a block while the condition on the stack is true",
-      "syntax": "condition while { body condition }",
-      "examples": [
-        "1 -> x x 10 < while { x print nl x 1 + -> x x 10 < }",
-        "has_more while { process_next has_more }"
-      ]
-    },
-    {
-      "name": "break",
-      "category": "Control Flow",
-      "description": "Exits the innermost loop immediately",
-      "syntax": "break",
-      "examples": [
-        "loop { x 10 > if { break } }",
-        "0 100 1 for i { i found if { break } }"
-      ]
-    },
-    {
       "name": "continue",
       "category": "Control Flow",
       "description": "Skips to the next iteration of the innermost loop",
@@ -167,13 +127,13 @@
       ]
     },
     {
-      "name": "return",
-      "category": "Control Flow",
-      "description": "Exits the current function immediately",
-      "syntax": "return",
+      "name": "ctx",
+      "category": "Stack",
+      "description": "Creates an isolated stack context; results are appended to parent stack",
+      "syntax": "ctx { isolated-body }",
       "examples": [
-        "fn early() { true if { return } \"not reached\" print }",
-        "fn find(x:i64 -- found:bool) { check if { true return } false }"
+        "1 2 3 ctx { + + } // Stack: [1, 2, 3, 6]",
+        "ctx { 10 20 + } // Computes 30 in isolation"
       ]
     },
     {
@@ -188,6 +148,132 @@
       ]
     },
     {
+      "name": "else",
+      "category": "Control Flow",
+      "description": "Provides an alternative block when the if condition is false",
+      "syntax": "condition if { then-block } else { else-block }",
+      "examples": [
+        "x 0 > if { \"positive\" } else { \"non-positive\" }",
+        "found if { value } else { -1 }"
+      ]
+    },
+    {
+      "name": "enum",
+      "category": "Declaration",
+      "description": "Declares scoped named integer constants. Values auto-increment from 0 or from the last explicit value.",
+      "syntax": "enum Name { Variant1 Variant2 = N }",
+      "examples": [
+        "enum Color { Red Green Blue }",
+        "enum HttpStatus { Ok = 200 NotFound = 404 }",
+        "Color::Red  // pushes 0"
+      ]
+    },
+    {
+      "name": "false",
+      "category": "Literals",
+      "description": "Boolean false literal (pushes 0 onto the stack)",
+      "syntax": "false",
+      "examples": [
+        "false if { } else { \"no\" print }",
+        "false -> done"
+      ]
+    },
+    {
+      "name": "fn",
+      "category": "Declaration",
+      "description": "Declares a function with a stack signature",
+      "syntax": "fn name(inputs -- outputs) { body }",
+      "examples": [
+        "fn add(a:i64 b:i64 -- sum:i64) { + }",
+        "fn greet() { \"Hello\" print nl }",
+        "fn square(x:f64 -- result:f64) { dup * }"
+      ]
+    },
+    {
+      "name": "for",
+      "category": "Control Flow",
+      "description": "Iterates from start to end with a step, binding the iterator variable",
+      "syntax": "start end step for var { body }",
+      "examples": [
+        "0 10 1 for i { i print nl }",
+        "10 0 -1 for i { i print nl }",
+        "0 100 2 for even { even print \" \" print }"
+      ]
+    },
+    {
+      "name": "if",
+      "category": "Control Flow",
+      "description": "Executes a block if the top of stack is true (non-zero)",
+      "syntax": "condition if { then-block }",
+      "examples": [
+        "5 3 > if { \"yes\" print nl }",
+        "x 0 == if { \"zero\" print }",
+        "valid if { process }"
+      ]
+    },
+    {
+      "name": "import",
+      "category": "Import",
+      "description": "Imports a C library, declaring its functions with Quadrate signatures",
+      "syntax": "import \"library\" as \"namespace\" { function declarations }",
+      "examples": [
+        "import \"libm.so\" as \"m\" { pub fn sin(x:f64 -- y:f64) }",
+        "import \"mylib.a\" as \"my\" { pub fn process(data:ptr len:i64 -- result:i64) }"
+      ]
+    },
+    {
+      "name": "loop",
+      "category": "Control Flow",
+      "description": "Repeats a block indefinitely until break is called",
+      "syntax": "loop { body }",
+      "examples": [
+        "loop { input process done if { break } }",
+        "0 -> count loop { count inc -> count count 10 > if { break } }"
+      ]
+    },
+    {
+      "name": "null",
+      "category": "Literal",
+      "description": "Null pointer constant. Pushes 0 with pointer type. Use for empty pointer fields in structs.",
+      "syntax": "null",
+      "examples": [
+        "Node { value = 1 next = null }",
+        "ptr null == if { \"is null\" print nl }"
+      ]
+    },
+    {
+      "name": "pub",
+      "category": "Declaration",
+      "description": "Makes a function, constant, or struct visible to other modules",
+      "syntax": "pub fn/const/struct ...",
+      "examples": [
+        "pub fn greet() { \"Hello\" print nl }",
+        "pub const PI = 3.14159",
+        "pub struct Point { x:f64 y:f64 }"
+      ]
+    },
+    {
+      "name": "return",
+      "category": "Control Flow",
+      "description": "Exits the current function immediately",
+      "syntax": "return",
+      "examples": [
+        "fn early() { true if { return } \"not reached\" print }",
+        "fn find(x:i64 -- found:bool) { check if { true return } false }"
+      ]
+    },
+    {
+      "name": "struct",
+      "category": "Declaration",
+      "description": "Declares a structured data type with named fields",
+      "syntax": "struct Name { field1:type1 field2:type2 }",
+      "examples": [
+        "struct Point { x:f64 y:f64 }",
+        "struct Person { name:str age:i64 }",
+        "struct Node<T> { value:T next:ptr }"
+      ]
+    },
+    {
       "name": "switch",
       "category": "Control Flow",
       "description": "Branches based on matching the top of stack against case values",
@@ -198,43 +284,12 @@
       ]
     },
     {
-      "name": "_",
-      "category": "Control Flow",
-      "description": "Wildcard/default case in switch statements",
-      "syntax": "_ { default-block }",
+      "name": "test",
+      "category": "Declaration",
+      "description": "Declares a test function. Tests are run with quadc --test or quad test.",
+      "syntax": "test \"description\" { body }",
       "examples": [
-        "x switch { 1 { \"one\" } _ { \"not one\" } }"
-      ]
-    },
-    {
-      "name": "ctx",
-      "category": "Stack",
-      "description": "Creates an isolated stack context; results are appended to parent stack",
-      "syntax": "ctx { isolated-body }",
-      "examples": [
-        "1 2 3 ctx { + + } // Stack: [1, 2, 3, 6]",
-        "ctx { 10 20 + } // Computes 30 in isolation"
-      ]
-    },
-    {
-      "name": "->",
-      "category": "Variables",
-      "description": "Pops a value from the stack and binds it to a local variable",
-      "syntax": "value -> varname",
-      "examples": [
-        "42 -> x",
-        "\"hello\" -> greeting",
-        "compute_result -> result"
-      ]
-    },
-    {
-      "name": "as",
-      "category": "Type",
-      "description": "Type narrowing cast for struct field access on ptr values. Compile-time only, no runtime cost.",
-      "syntax": "expr as TypeName",
-      "examples": [
-        "c as http::Ctx @body",
-        "ptr_val as MyStruct -> typed_local"
+        "test \"addition\" { 1 1 + 2 testing::assert_eq }"
       ]
     },
     {
@@ -248,13 +303,24 @@
       ]
     },
     {
-      "name": "false",
-      "category": "Literals",
-      "description": "Boolean false literal (pushes 0 onto the stack)",
-      "syntax": "false",
+      "name": "use",
+      "category": "Import",
+      "description": "Imports a module, making its functions available with module::function syntax",
+      "syntax": "use module_name",
       "examples": [
-        "false if { } else { \"no\" print }",
-        "false -> done"
+        "use math",
+        "use strings",
+        "use io"
+      ]
+    },
+    {
+      "name": "while",
+      "category": "Control Flow",
+      "description": "Repeats a block while the condition on the stack is true",
+      "syntax": "condition while { body condition }",
+      "examples": [
+        "1 -> x x 10 < while { x print nl x 1 + -> x x 10 < }",
+        "has_more while { process_next has_more }"
       ]
     }
   ],

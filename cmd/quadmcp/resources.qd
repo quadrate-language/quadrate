@@ -100,17 +100,17 @@ fn get_common_mistakes_content( -- content:str) {
 	s "  // OR if you need different values:\n" strings::concat -> s
 	s "  x 0 > if { 1 2 } else { 3 4 }  // Both: +2\n\n" strings::concat -> s
 
-	s "8. TRYING TO USE 'return'\n" strings::concat -> s
-	s "--------------------------\n" strings::concat -> s
-	s "Problem: Quadrate has no return keyword.\n\n" strings::concat -> s
+	s "8. USING 'return' CORRECTLY\n" strings::concat -> s
+	s "----------------------------\n" strings::concat -> s
+	s "return works inside blocks. Push the return value BEFORE return.\n\n" strings::concat -> s
 	s "WRONG:\n" strings::concat -> s
 	s "  fn foo(x:i64 -- r:i64) {\n" strings::concat -> s
-	s "    x 0 < if { return 0 }  // ERROR: no return\n" strings::concat -> s
-	s "    x 2 *\n" strings::concat -> s
+	s "    x 0 < if { return 0 }  // ERROR: 0 is an arg to return (not stack)\n" strings::concat -> s
 	s "  }\n\n" strings::concat -> s
 	s "RIGHT:\n" strings::concat -> s
 	s "  fn foo(x:i64 -- r:i64) {\n" strings::concat -> s
-	s "    x 0 < if { 0 } else { x 2 * }\n" strings::concat -> s
+	s "    x 0 < if { 0 return }  // Push 0, then return\n" strings::concat -> s
+	s "    x 2 *\n" strings::concat -> s
 	s "  }\n\n" strings::concat -> s
 
 	s "9. VARIABLE BINDING DIRECTION\n" strings::concat -> s
