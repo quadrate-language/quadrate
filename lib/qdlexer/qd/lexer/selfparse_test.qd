@@ -1,0 +1,36 @@
+/// Self-parse integration test
+use strings
+use sb
+use io
+use "lexer.qd"
+use "ast.qd"
+use "parser.qd"
+
+fn main() {
+	"/home/klarre/dev/sourcehut/~klahr/quadrate/lib/qdlexer/qd/lexer/lexer.qd" io::read_file! -> src1
+	src1 parser::new -> p1
+	p1 parser::parse_program -> prog1
+	"lexer.qd: " print src1 strings::len print " bytes, " print prog1 ast::child_count print " decls" print nl
+
+	"/home/klarre/dev/sourcehut/~klahr/quadrate/lib/qdlexer/qd/lexer/ast.qd" io::read_file! -> src2
+	src2 parser::new -> p2
+	p2 parser::parse_program -> prog2
+	"ast.qd: " print src2 strings::len print " bytes, " print prog2 ast::child_count print " decls" print nl
+
+	"/home/klarre/dev/sourcehut/~klahr/quadrate/lib/qdlexer/qd/lexer/parser.qd" io::read_file! -> src3
+	src3 parser::new -> p3
+	p3 parser::parse_program -> prog3
+	"parser.qd: " print src3 strings::len print " bytes, " print prog3 ast::child_count print " decls" print nl
+
+	"/home/klarre/dev/sourcehut/~klahr/quadrate/lib/ct/qd/ct/vec.qd" io::read_file! -> src4
+	src4 parser::new -> p4
+	p4 parser::parse_program -> prog4
+	"vec.qd: " print src4 strings::len print " bytes, " print prog4 ast::child_count print " decls" print nl
+
+	"/home/klarre/dev/sourcehut/~klahr/quadrate/lib/strings/qd/strings/strings.qd" io::read_file! -> src5
+	src5 parser::new -> p5
+	p5 parser::parse_program -> prog5
+	"strings.qd: " print src5 strings::len print " bytes, " print prog5 ast::child_count print " decls" print nl
+
+	"All files parsed successfully" print nl
+}

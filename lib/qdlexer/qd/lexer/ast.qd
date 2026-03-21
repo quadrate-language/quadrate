@@ -1,0 +1,127 @@
+/// AST node types and structures for the self-hosted parser.
+use strings
+
+// AST node types
+pub enum NodeType {
+	Program
+	FnDecl
+	Param
+	Block
+	IfStmt
+	ElseClause
+	ForStmt
+	WhileStmt
+	LoopStmt
+	SwitchStmt
+	CaseClause
+	DefaultClause
+	ReturnStmt
+	BreakStmt
+	ContinueStmt
+	DeferStmt
+	UseStmt
+	ConstDecl
+	EnumDecl
+	StructDecl
+	StructField
+	TestDecl
+	ImportDecl
+	IntLit
+	FloatLit
+	StrLit
+	Ident
+	ScopedIdent
+	Instruction
+	LocalDecl
+	FieldAccess
+	FieldSet
+	ArrayLit
+	StructConstruct
+	AnonFn
+	FnPtr
+	AsCast
+}
+
+// AST node — a tree node with a type, text, and up to 4 children.
+// Children beyond 4 use the `extra` linked list.
+pub struct AstNode {
+	nkind:i64
+	ntext:str
+	nline:i64
+	ncol:i64
+	child1:*AstNode
+	child2:*AstNode
+	child3:*AstNode
+	child4:*AstNode
+	extra:*AstNode
+	sibling:*AstNode
+}
+
+// Create a new AST node
+pub fn make_node(nkind:i64 ntext:str nline:i64 ncol:i64 -- n:AstNode) {
+	-> c -> l -> t -> k
+	AstNode {
+		nkind = k
+		ntext = t
+		nline = l
+		ncol = c
+		child1 = null
+		child2 = null
+		child3 = null
+		child4 = null
+		extra = null
+		sibling = null
+	}
+}
+
+// Create a leaf node (no children)
+pub fn leaf(nkind:i64 ntext:str nline:i64 ncol:i64 -- n:AstNode) {
+	make_node
+}
+
+// Add a child to a node (fills child1-4, then appends to extra list)
+// Standalone function: parent child add_child
+pub fn add_child(parent:ptr child:ptr -- ) {
+	-> ch -> p
+	p @child1 null == if {
+		ch p.child1 return
+	}
+	p @child2 null == if {
+		ch p.child2 return
+	}
+	p @child3 null == if {
+		ch p.child3 return
+	}
+	p @child4 null == if {
+		ch p.child4 return
+	}
+	// Append to extra linked list
+	p @extra null == if {
+		ch p.extra return
+	}
+	// Walk to end of extra list
+	p @extra -> cur
+	cur @sibling null neq while {
+		cur @sibling -> cur
+		cur @sibling null neq
+	}
+	ch cur.sibling
+}
+
+// Count children of a node
+// Standalone function: node child_count
+pub fn child_count(n:ptr -- count:i64) {
+	-> nd
+	0 -> c
+	nd @child1 null neq if { c 1 + -> c }
+	nd @child2 null neq if { c 1 + -> c }
+	nd @child3 null neq if { c 1 + -> c }
+	nd @child4 null neq if { c 1 + -> c }
+	nd @extra -> cur
+	cur null neq while {
+		c 1 + -> c
+		cur @sibling -> cur
+		cur null neq
+	}
+	c
+}

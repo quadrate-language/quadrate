@@ -651,14 +651,33 @@ namespace Qd {
 			llvm::Value* ptrValue = builder->CreateLoad(ptrTy, fieldPtr, "field_value");
 			builder->CreateCall(pushStrRefFn, {ctx, ptrValue});
 			lastFieldAccessResultType.clear(); // Not a struct type
-		} else if (matchingField->typeName == "ptr" || matchingField->typeName.find('*') != std::string::npos) {
-			// Handle ptr type and raw pointer types
+		} else if (matchingField->typeName == "ptr") {
+			// Raw ptr type
 			llvm::Value* fieldPtr = bytePtr;
 			llvm::Value* ptrValue = builder->CreateLoad(ptrTy, fieldPtr, "field_value");
-			// Retain the pointer before pushing (it could be an array/struct that will be released after use)
 			builder->CreateCall(qdPtrRetainFn, {ptrValue});
 			builder->CreateCall(pushPtrFn, {ctx, ptrValue});
-			lastFieldAccessResultType.clear(); // Raw pointer, not a known struct type
+			lastFieldAccessResultType.clear();
+		} else if (matchingField->typeName.find('*') != std::string::npos) {
+			// Typed pointer field (*StructName) — track the pointed-to struct type
+			llvm::Value* fieldPtr = bytePtr;
+			llvm::Value* ptrValue = builder->CreateLoad(ptrTy, fieldPtr, "field_value");
+			builder->CreateCall(qdPtrRetainFn, {ptrValue});
+			builder->CreateCall(pushPtrFn, {ctx, ptrValue});
+			// Extract struct name from *StructName or *module::StructName
+			std::string pointedType = matchingField->typeName.substr(1);
+			if (isKnownStruct(pointedType)) {
+				lastFieldAccessResultType = pointedType;
+			} else if (!currentModuleName.empty()) {
+				std::string qualified = currentModuleName + "::" + pointedType;
+				if (isKnownStruct(qualified)) {
+					lastFieldAccessResultType = qualified;
+				} else {
+					lastFieldAccessResultType.clear();
+				}
+			} else {
+				lastFieldAccessResultType.clear();
+			}
 		} else if (looksLikeStructType(matchingField->typeName) && isKnownStruct(matchingField->typeName)) {
 			// Struct-typed field - stored as pointer, push as PTR
 			llvm::Value* fieldPtr = bytePtr;

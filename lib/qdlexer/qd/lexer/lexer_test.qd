@@ -83,6 +83,40 @@ test "tokenize null and boolean" {
 	l lexer::next -> t3  t3 @kind lexer::TokenType::KwNull testing::assert_eq
 }
 
+test "tokenize ampersand and brackets" {
+	"&foo [1 2]" lexer::new -> l
+	l lexer::next -> t1  t1 @kind lexer::TokenType::Ampersand testing::assert_eq
+	l lexer::next -> t2  t2 @kind lexer::TokenType::Ident testing::assert_eq
+	l lexer::next -> t3  t3 @kind lexer::TokenType::LBracket testing::assert_eq
+	l lexer::next -> t4  t4 @kind lexer::TokenType::Integer testing::assert_eq
+	l lexer::next -> t5  t5 @kind lexer::TokenType::Integer testing::assert_eq
+	l lexer::next -> t6  t6 @kind lexer::TokenType::RBracket testing::assert_eq
+}
+
+test "tokenize arrow and double minus" {
+	"-> --" lexer::new -> l
+	l lexer::next -> t1  t1 @kind lexer::TokenType::Arrow testing::assert_eq
+	l lexer::next -> t2  t2 @kind lexer::TokenType::MinusMinus testing::assert_eq
+}
+
+test "tokenize string with escapes" {
+	"\"hello\\nworld\"" lexer::new -> l
+	l lexer::next -> t1  t1 @kind lexer::TokenType::String testing::assert_eq
+}
+
+test "tokenize block comment" {
+	"a /* comment */ b" lexer::new -> l
+	l lexer::next -> t1  t1 @kind lexer::TokenType::Ident testing::assert_eq
+	l lexer::next -> t2  t2 @kind lexer::TokenType::Comment testing::assert_eq
+	l lexer::next -> t3  t3 @kind lexer::TokenType::Ident testing::assert_eq
+	t3 @text "b" strings::compare 0 testing::assert_eq
+}
+
+test "unterminated string returns token" {
+	"\"unterminated" lexer::new -> l
+	l lexer::next -> t1  t1 @kind lexer::TokenType::String testing::assert_eq
+}
+
 test "empty input" {
 	"" lexer::new -> l
 	l lexer::next -> t1

@@ -372,7 +372,7 @@ namespace Qd {
 			}
 		}
 
-		// Check for instruction (could be a function call)
+		// Check for instruction (could be a function call or method call)
 		if (node->type() == IAstNode::Type::INSTRUCTION) {
 			auto* inst = static_cast<AstNodeInstruction*>(node);
 			const std::string& name = inst->name();
@@ -415,6 +415,26 @@ namespace Qd {
 			}
 		}
 
+		// Also collect calls from all merged module functions
+		// Merged modules are always fully included, so their dependencies must be reachable
+		for (const auto& modulePair : moduleASTs) {
+			const std::string& moduleName = modulePair.first;
+			if (mergedModules.count(moduleName) == 0) {
+				continue;
+			}
+			IAstNode* moduleRoot = modulePair.second;
+			if (!moduleRoot) {
+				continue;
+			}
+			for (auto* child : moduleRoot->children()) {
+				if (auto funcNode = dynamic_cast<AstNodeFunctionDeclaration*>(child)) {
+					if (funcNode->body()) {
+						collectCalledFunctions(funcNode->body(), moduleName, worklist);
+					}
+				}
+			}
+		}
+
 		// Process worklist until no new functions are found
 		while (!worklist.empty()) {
 			std::set<std::string> newWorklist;
@@ -445,7 +465,14 @@ namespace Qd {
 							if (funcName == qualifiedName || funcName == funcNode->name() || funcName == methodName ||
 									(!methodName.empty() &&
 											funcName == funcNode->receiverType() + "::" + funcNode->name())) {
-								// Found the function - collect its calls
+								// Found the function - mark ALL name variants as reachable
+								reachable.insert(qualifiedName);
+								if (!methodName.empty()) {
+									reachable.insert(methodName);
+									reachable.insert(funcNode->receiverType() + "::" + funcNode->name());
+								}
+								reachable.insert(funcNode->name());
+								// Collect its calls
 								if (funcNode->body()) {
 									collectCalledFunctions(funcNode->body(), moduleName, newWorklist);
 								}
@@ -2242,8 +2269,8 @@ namespace Qd {
 						}
 					}
 
-					// Skip declaring unreachable functions
-					if (useReachabilityAnalysis) {
+					// Skip declaring unreachable functions (but always declare merged module functions)
+					if (useReachabilityAnalysis && mergedModules.count(moduleName) == 0) {
 						bool isReachable =
 								reachableFunctions.count(qualifiedName) || reachableFunctions.count(funcNode->name()) ||
 								(funcNode->hasReceiver() &&
@@ -2282,8 +2309,8 @@ namespace Qd {
 						qualifiedName = moduleName + "::" + funcNode->name();
 					}
 
-					// Skip generating bodies for unreachable functions
-					if (useReachabilityAnalysis) {
+					// Skip generating bodies for unreachable functions (but always generate merged modules)
+					if (useReachabilityAnalysis && mergedModules.count(moduleName) == 0) {
 						bool isReachable =
 								reachableFunctions.count(qualifiedName) || reachableFunctions.count(funcNode->name()) ||
 								(funcNode->hasReceiver() &&

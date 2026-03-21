@@ -1,0 +1,16 @@
+use strings
+use sb
+use "lexer.qd"
+use "ast.qd"
+fn main() {
+	ast::NodeType::Program "test" 1 1 ast::make_node -> n
+	"node ok" print nl
+	n ast::child_count print nl
+	"count ok" print nl
+	ast::NodeType::Ident "x" 1 1 ast::leaf -> ch
+	"child ok" print nl
+	n ch ast::add_child
+	"add ok" print nl
+	n ast::child_count print nl
+	"done" print nl
+}

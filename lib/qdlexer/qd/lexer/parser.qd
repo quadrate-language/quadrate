@@ -1,0 +1,1050 @@
+/// Recursive descent parser for Quadrate.
+/// Consumes tokens from the lexer and builds an AST.
+use strings
+use sb
+use "lexer.qd"
+use "ast.qd"
+
+// Parser state
+pub struct Parser {
+	lex:*lexer::Lexer
+	cur:*lexer::Token
+	prev:*lexer::Token
+}
+
+// Create a new parser from source text
+pub fn new(source:str -- p:Parser) {
+	-> s
+	s lexer::new -> l
+	l lexer::next -> t
+	// Skip initial newlines and comments
+	t @kind lexer::TokenType::Newline == t @kind lexer::TokenType::Comment == or while {
+		l lexer::next -> t
+		t @kind lexer::TokenType::Newline == t @kind lexer::TokenType::Comment == or
+	}
+	Parser {
+		lex = l
+		cur = t
+		prev = null
+	}
+}
+
+// Advance to next token, skipping newlines and comments
+fn (p:Parser) advance( -- ) {
+	p @cur -> prev
+	prev p.prev
+	p @lex lexer::next -> t
+	// Skip newlines and comments
+	t @kind lexer::TokenType::Newline == t @kind lexer::TokenType::Comment == or while {
+		p @lex lexer::next -> t
+		t @kind lexer::TokenType::Newline == t @kind lexer::TokenType::Comment == or
+	}
+	t p.cur
+}
+
+// Check if current token matches a kind
+fn (p:Parser) check(kind:i64 -- result:i64) {
+	-> k
+	p @cur @kind k ==
+}
+
+// Consume current token if it matches, return success
+fn (p:Parser) match(kind:i64 -- result:i64) {
+	-> k
+	p @cur @kind k == if {
+		p advance
+		1
+	} else {
+		0
+	}
+}
+
+// Expect a token kind, error if not found
+fn (p:Parser) expect(kind:i64 -- ) {
+	-> k
+	p @cur @kind k neq if {
+		"Parse error at line " print
+		p @cur @line print
+		" col " print
+		p @cur @col print
+		": expected kind " print
+		k print
+		", got " print
+		p @cur @kind print
+		" '" print
+		p @cur @text print
+		"'" print nl
+	}
+	p advance
+}
+
+// Get current token info
+fn (p:Parser) cur_text( -- t:str) { p @cur @text }
+fn (p:Parser) cur_line( -- l:i64) { p @cur @line }
+fn (p:Parser) cur_col( -- c:i64) { p @cur @col }
+fn (p:Parser) cur_kind( -- k:i64) { p @cur @kind }
+
+// ============================================================
+// Top-level parsing
+// ============================================================
+
+// Parse a complete program
+pub fn (p:Parser) parse_program( -- prog:ptr) {
+	ast::NodeType::Program "" p cur_line p cur_col ast::make_node -> prog
+
+	p cur_kind lexer::TokenType::Eof neq while {
+		p parse_top_level -> item
+		item null neq if {
+			prog item ast::add_child
+		}
+		p cur_kind lexer::TokenType::Eof neq
+	}
+	prog
+}
+
+// Parse a top-level declaration
+fn (p:Parser) parse_top_level( -- n:ptr) {
+	p cur_kind -> k
+
+	// use statement
+	k lexer::TokenType::KwUse == if {
+		p parse_use return
+	}
+
+	// pub declaration
+	k lexer::TokenType::KwPub == if {
+		p advance
+		p cur_kind -> k2
+		k2 lexer::TokenType::KwFn == if { p 1 parse_fn return }
+		k2 lexer::TokenType::KwStruct == if { p 1 parse_struct return }
+		k2 lexer::TokenType::KwEnum == if { p 1 parse_enum return }
+		k2 lexer::TokenType::KwConst == if { p 1 parse_const return }
+		"Parse error: expected fn, struct, enum, or const after pub" print nl
+		p advance
+		null return
+	}
+
+	// fn
+	k lexer::TokenType::KwFn == if { p 0 parse_fn return }
+
+	// struct
+	k lexer::TokenType::KwStruct == if { p 0 parse_struct return }
+
+	// enum
+	k lexer::TokenType::KwEnum == if { p 0 parse_enum return }
+
+	// const
+	k lexer::TokenType::KwConst == if { p 0 parse_const return }
+
+	// test
+	k lexer::TokenType::KwTest == if { p parse_test return }
+
+	// import
+	k lexer::TokenType::KwImport == if { p parse_import return }
+
+	// Unknown token — skip
+	"Parse error: unexpected token at top level: " print
+	p cur_text print nl
+	p advance
+	null
+}
+
+// ============================================================
+// Declarations
+// ============================================================
+
+// Parse: use module_name | use "path.qd"
+fn (p:Parser) parse_use( -- n:ptr) {
+	p cur_line -> l
+	p cur_col -> c
+	p advance  // skip 'use'
+	p cur_text -> name
+	p advance  // skip module name/string
+	ast::NodeType::UseStmt name l c ast::leaf
+}
+
+// Parse a type annotation: ident, *ident, *module::ident, module::ident, fn(...)
+// Returns the type as a string
+fn (p:Parser) parse_type( -- t:str) {
+	// Check for pointer prefix *
+	p cur_kind lexer::TokenType::Star == if {
+		p advance
+		p cur_text -> base
+		p advance
+		// Check for qualified: *module::Type
+		p cur_kind lexer::TokenType::ColonColon == if {
+			p advance
+			p cur_text -> member
+			p advance
+			"*" base strings::concat "::" strings::concat member strings::concat return
+		}
+		"*" base strings::concat return
+	}
+	// Check for function type: fn(params -- outputs)
+	p cur_kind lexer::TokenType::KwFn == if {
+		p advance  // skip fn
+		sb::new -> b
+		b "fn" sb::append -> b
+		// Consume everything until matching )
+		p cur_kind lexer::TokenType::LParen == if {
+			b "(" sb::append -> b
+			p advance  // skip (
+			1 -> depth
+			depth 0 > p cur_kind lexer::TokenType::Eof neq and while {
+				p cur_kind lexer::TokenType::LParen == if { depth 1 + -> depth }
+				p cur_kind lexer::TokenType::RParen == if { depth 1 - -> depth }
+				depth 0 > if {
+					b p cur_text sb::append -> b
+					p advance
+				}
+				depth 0 > p cur_kind lexer::TokenType::Eof neq and
+			}
+			b ")" sb::append -> b
+			p cur_kind lexer::TokenType::RParen == if { p advance }
+		}
+		b sb::finish return
+	}
+	// Regular type or qualified type
+	p cur_text -> base
+	p advance
+	// Check for module::Type
+	p cur_kind lexer::TokenType::ColonColon == if {
+		p advance
+		p cur_text -> member
+		p advance
+		base "::" strings::concat member strings::concat -> base
+	}
+	// Check for generic params: Type<T, U>
+	p cur_kind lexer::TokenType::Lt == if {
+		p advance  // skip <
+		sb::new -> gb
+		gb base sb::append -> gb
+		gb "<" sb::append -> gb
+		1 -> first
+		p cur_kind lexer::TokenType::Gt neq p cur_kind lexer::TokenType::Eof neq and
+		p cur_kind lexer::TokenType::LBrace neq and while {
+			first 0 == if { gb "," sb::append -> gb }
+			0 -> first
+			gb p cur_text sb::append -> gb
+			p advance
+			p cur_kind lexer::TokenType::Gt neq p cur_kind lexer::TokenType::Eof neq and
+			p cur_kind lexer::TokenType::LBrace neq and
+		}
+		gb ">" sb::append -> gb
+		p cur_kind lexer::TokenType::Gt == if { p advance }
+		gb sb::finish return
+	}
+	base
+}
+
+// Parse signature parameters: (name:type name2:type -- out:type)
+// Returns a params container node with Param children
+fn (p:Parser) parse_signature( -- params:ptr) {
+	ast::NodeType::Block "" 0 0 ast::make_node -> params
+	0 -> is_output
+
+	p lexer::TokenType::LParen expect
+
+	p cur_kind lexer::TokenType::RParen neq while {
+		// Check for -- (output separator) — tokenized as MinusMinus
+		p cur_kind lexer::TokenType::MinusMinus == if {
+			p advance
+			1 -> is_output
+			p cur_kind lexer::TokenType::RParen neq
+		} else {
+			// Parse param: name:type or just name
+			p cur_text -> pname
+			p cur_line -> pl
+			p cur_col -> pc
+			p advance
+
+			"" -> ptype
+			p cur_kind lexer::TokenType::Colon == if {
+				p advance
+				p parse_type -> ptype
+			}
+
+			// Build param text: "name:type" or "out:name:type"
+			is_output if {
+				"out:" pname strings::concat ":" strings::concat ptype strings::concat -> ptxt
+			} else {
+				pname ":" strings::concat ptype strings::concat -> ptxt
+			}
+
+			ast::NodeType::Param ptxt pl pc ast::leaf -> param
+			params param ast::add_child
+
+			p cur_kind lexer::TokenType::RParen neq
+		}
+	}
+
+	p lexer::TokenType::RParen expect
+	params
+}
+
+// Parse: [pub] fn [(receiver:Type)] name(params -- outputs)[!] { body }
+fn (p:Parser) parse_fn(is_pub:i64 -- n:ptr) {
+	-> pub_flag
+	p cur_line -> l
+	p cur_col -> c
+	p advance  // skip 'fn'
+
+	null -> receiver
+	"" -> name
+
+	// Check for receiver: fn (r:Type) name(...)
+	p cur_kind lexer::TokenType::LParen == if {
+		// At top level, ( after fn means receiver
+		p parse_signature -> recv_params
+		p cur_text -> name
+		p advance
+		// Get receiver param text for type info (e.g. "l:Lexer")
+		"" -> recv_text
+		recv_params @child1 null neq if {
+			recv_params @child1 @ntext -> recv_text
+		}
+		ast::NodeType::Param recv_text l c ast::make_node -> receiver
+		receiver recv_params ast::add_child
+	} else {
+		// Regular function name
+		p cur_text -> name
+		p advance
+	}
+
+	// Skip generic type params on function name: fn name<T, U>(...)
+	p cur_kind lexer::TokenType::Lt == if {
+		p advance  // skip <
+		p cur_kind lexer::TokenType::Gt neq p cur_kind lexer::TokenType::Eof neq and
+		p cur_kind lexer::TokenType::LParen neq and while {
+			p advance
+			p cur_kind lexer::TokenType::Gt neq p cur_kind lexer::TokenType::Eof neq and
+			p cur_kind lexer::TokenType::LParen neq and
+		}
+		p cur_kind lexer::TokenType::Gt == if { p advance }
+	}
+
+	// Parse signature
+	null -> params
+	p cur_kind lexer::TokenType::LParen == if {
+		p parse_signature -> params
+	}
+
+	// Check for fallible marker !
+	0 -> is_throws
+	p cur_kind lexer::TokenType::Bang == if {
+		p advance
+		1 -> is_throws
+	}
+
+	// Build metadata text
+	"" -> meta
+	pub_flag if { "pub" -> meta }
+	is_throws if {
+		meta strings::is_empty if { "throws" -> meta }
+		else { meta ",throws" strings::concat -> meta }
+	}
+
+	// Build FnDecl node
+	// child1 = params, child2 = body, child3 = metadata, child4 = receiver
+	ast::NodeType::FnDecl name l c ast::make_node -> fn_node
+
+	// Add params (or empty container)
+	params null == if {
+		ast::NodeType::Block "" 0 0 ast::make_node -> params
+	}
+	fn_node params ast::add_child
+
+	// Parse and add body
+	p cur_kind lexer::TokenType::LBrace == if {
+		p parse_block -> body
+		fn_node body ast::add_child
+	}
+
+	// Add metadata if any
+	meta strings::is_empty 0 == if {
+		ast::NodeType::Ident meta l c ast::leaf -> meta_node
+		fn_node meta_node ast::add_child
+	}
+
+	// Add receiver if present
+	receiver null neq if {
+		fn_node receiver ast::add_child
+	}
+
+	fn_node
+}
+
+// Parse: [pub] struct Name { fields }
+fn (p:Parser) parse_struct(is_pub:i64 -- n:ptr) {
+	-> pub_flag
+	p cur_line -> l
+	p cur_col -> c
+	p advance  // skip 'struct'
+
+	p cur_text -> name
+	p advance
+
+	// Skip generic type params: <T, U, ...>
+	p cur_kind lexer::TokenType::Lt == if {
+		p advance  // skip <
+		sb::new -> gb
+		gb "<" sb::append -> gb
+		p cur_kind lexer::TokenType::Gt neq p cur_kind lexer::TokenType::Eof neq and
+		p cur_kind lexer::TokenType::LBrace neq and while {
+			gb p cur_text sb::append -> gb
+			p advance
+			p cur_kind lexer::TokenType::Gt neq p cur_kind lexer::TokenType::Eof neq and
+			p cur_kind lexer::TokenType::LBrace neq and
+		}
+		gb ">" sb::append -> gb
+		p cur_kind lexer::TokenType::Gt == if { p advance }
+		name gb sb::finish strings::concat -> name
+	}
+
+	ast::NodeType::StructDecl name l c ast::make_node -> s
+
+	p lexer::TokenType::LBrace expect
+	p cur_kind lexer::TokenType::RBrace neq while {
+		// field: name:type
+		p cur_text -> fname
+		p advance
+		p lexer::TokenType::Colon expect
+		p parse_type -> ftype
+
+		ast::NodeType::StructField fname l c ast::make_node -> field
+		ast::NodeType::Ident ftype p cur_line p cur_col ast::leaf -> type_node
+		field type_node ast::add_child
+
+		// Capture optional default value
+		p cur_kind lexer::TokenType::Assign == if {
+			p advance  // skip =
+			p parse_atom -> def_val
+			field def_val ast::add_child
+		}
+
+		s field ast::add_child
+
+		p cur_kind lexer::TokenType::RBrace neq
+	}
+	p lexer::TokenType::RBrace expect
+	s
+}
+
+// Parse: [pub] enum Name { variants }
+fn (p:Parser) parse_enum(is_pub:i64 -- n:ptr) {
+	-> pub_flag
+	p cur_line -> l
+	p cur_col -> c
+	p advance  // skip 'enum'
+
+	p cur_text -> name
+	p advance
+
+	ast::NodeType::EnumDecl name l c ast::make_node -> e
+
+	p lexer::TokenType::LBrace expect
+	p cur_kind lexer::TokenType::RBrace neq while {
+		// Accept identifiers and keywords as variant names (Ok, Err, etc.)
+		p cur_kind lexer::TokenType::Ident ==
+		p cur_kind lexer::TokenType::KwOk == or
+		p cur_kind lexer::TokenType::KwErr == or
+		p cur_kind lexer::TokenType::KwTrue == or
+		p cur_kind lexer::TokenType::KwFalse == or if {
+			p cur_text -> vname
+			ast::NodeType::Ident vname p cur_line p cur_col ast::make_node -> v
+			p advance
+
+			// Capture optional = value
+			p cur_kind lexer::TokenType::Assign == if {
+				p advance  // skip =
+				// Handle negative numbers
+				"" -> neg_prefix
+				p cur_kind lexer::TokenType::Minus == if {
+					"-" -> neg_prefix
+					p advance
+				}
+				p cur_text -> eval
+				neg_prefix eval strings::concat -> eval
+				p advance
+				ast::NodeType::IntLit eval p cur_line p cur_col ast::leaf -> eval_node
+				v eval_node ast::add_child
+			}
+
+			e v ast::add_child
+		} else {
+			p advance  // skip unknown token
+		}
+		p cur_kind lexer::TokenType::RBrace neq
+	}
+	p lexer::TokenType::RBrace expect
+	e
+}
+
+// Parse: [pub] const Name = value
+fn (p:Parser) parse_const(is_pub:i64 -- n:ptr) {
+	-> pub_flag
+	p cur_line -> l
+	p cur_col -> c
+	p advance  // skip 'const'
+
+	p cur_text -> name
+	p advance
+	p lexer::TokenType::Assign expect
+	p cur_text -> value
+	p advance
+
+	ast::NodeType::ConstDecl name l c ast::make_node -> c_node
+	ast::NodeType::IntLit value p cur_line p cur_col ast::leaf -> val
+	c_node val ast::add_child
+	pub_flag if {
+		ast::NodeType::Ident "pub" l c ast::leaf -> pub_node
+		c_node pub_node ast::add_child
+	}
+	c_node
+}
+
+// Parse: test "name" { body }
+fn (p:Parser) parse_test( -- n:ptr) {
+	p cur_line -> l
+	p cur_col -> c
+	p advance  // skip 'test'
+
+	p cur_text -> name
+	p advance  // skip test name string
+
+	ast::NodeType::TestDecl name l c ast::make_node -> t
+
+	p cur_kind lexer::TokenType::LBrace == if {
+		p parse_block -> body
+		t body ast::add_child
+	}
+
+	t
+}
+
+// Parse: import "lib.a" as "namespace" { pub fn name(sig) ... }
+fn (p:Parser) parse_import( -- n:ptr) {
+	p cur_line -> l
+	p cur_col -> c
+	p advance  // skip 'import'
+
+	// Read library path string
+	p cur_text -> lib_path
+	p advance
+
+	// Expect 'as'
+	p lexer::TokenType::KwAs expect
+
+	// Read namespace string
+	p cur_text -> ns_name
+	p advance
+
+	// Build import node text as "lib|namespace"
+	lib_path "|" strings::concat ns_name strings::concat -> import_text
+	ast::NodeType::ImportDecl import_text l c ast::make_node -> imp
+
+	// Parse function declarations inside { }
+	p lexer::TokenType::LBrace expect
+	p cur_kind lexer::TokenType::RBrace neq while {
+		// Skip optional 'pub'
+		0 -> is_pub
+		p cur_kind lexer::TokenType::KwPub == if {
+			p advance
+			1 -> is_pub
+		}
+
+		// Expect 'fn'
+		p cur_kind lexer::TokenType::KwFn == if {
+			p advance  // skip 'fn'
+			p cur_text -> fname
+			p advance
+
+			// Parse signature (no body)
+			p parse_signature -> fparams
+
+			// Check for !
+			0 -> fthrows
+			p cur_kind lexer::TokenType::Bang == if {
+				p advance
+				1 -> fthrows
+			}
+
+			ast::NodeType::FnDecl fname l c ast::make_node -> fdecl
+			fdecl fparams ast::add_child
+			imp fdecl ast::add_child
+		} else {
+			p advance  // skip unknown
+		}
+
+		p cur_kind lexer::TokenType::RBrace neq
+	}
+	p lexer::TokenType::RBrace expect
+	imp
+}
+
+// ============================================================
+// Block and statements
+// ============================================================
+
+// Parse: { ... }
+fn (p:Parser) parse_block( -- n:ptr) {
+	p cur_line -> l
+	p cur_col -> c
+	p lexer::TokenType::LBrace expect
+
+	ast::NodeType::Block "" l c ast::make_node -> blk
+
+	p cur_kind lexer::TokenType::RBrace neq p cur_kind lexer::TokenType::Eof neq and while {
+		p parse_stmt -> stmt
+		stmt null neq if {
+			blk stmt ast::add_child
+		}
+		p cur_kind lexer::TokenType::RBrace neq p cur_kind lexer::TokenType::Eof neq and
+	}
+
+	p lexer::TokenType::RBrace expect
+	blk
+}
+
+// Parse a single statement inside a block
+fn (p:Parser) parse_stmt( -- n:ptr) {
+	p cur_kind -> k
+
+	// Control flow
+	k lexer::TokenType::KwIf == if { p parse_if return }
+	k lexer::TokenType::KwFor == if { p parse_for return }
+	k lexer::TokenType::KwWhile == if { p parse_while return }
+	k lexer::TokenType::KwLoop == if { p parse_loop return }
+	k lexer::TokenType::KwSwitch == if { p parse_switch return }
+	k lexer::TokenType::KwReturn == if {
+		p cur_line -> l  p cur_col -> c
+		p advance
+		ast::NodeType::ReturnStmt "" l c ast::leaf return
+	}
+	k lexer::TokenType::KwBreak == if {
+		p cur_line -> l  p cur_col -> c
+		p advance
+		ast::NodeType::BreakStmt "" l c ast::leaf return
+	}
+	k lexer::TokenType::KwContinue == if {
+		p cur_line -> l  p cur_col -> c
+		p advance
+		ast::NodeType::ContinueStmt "" l c ast::leaf return
+	}
+	k lexer::TokenType::KwDefer == if { p parse_defer return }
+
+	// ctx block
+	k lexer::TokenType::KwCtx == if {
+		p cur_line -> l  p cur_col -> c
+		p advance  // skip 'ctx'
+		ast::NodeType::Block "ctx" l c ast::make_node -> ctx_node
+		p cur_kind lexer::TokenType::LBrace == if {
+			p parse_block -> ctx_body
+			ctx_node ctx_body ast::add_child
+		}
+		ctx_node return
+	}
+
+	// Anonymous function: fn(params -- outputs) { body }
+	k lexer::TokenType::KwFn == if {
+		p cur_line -> l  p cur_col -> c
+		p advance  // skip 'fn'
+		// Parse signature
+		p parse_signature -> anon_params
+		// Check for ! (fallible)
+		0 -> anon_throws
+		p cur_kind lexer::TokenType::Bang == if {
+			p advance
+			1 -> anon_throws
+		}
+		// Parse body
+		ast::NodeType::AnonFn "" l c ast::make_node -> anon
+		anon anon_params ast::add_child
+		p cur_kind lexer::TokenType::LBrace == if {
+			p parse_block -> anon_body
+			anon anon_body ast::add_child
+		}
+		anon_throws if {
+			ast::NodeType::Ident "throws" l c ast::leaf -> throws_node
+			anon throws_node ast::add_child
+		}
+		anon return
+	}
+
+	// Arrow (local variable declaration: -> name or -> _ for discard)
+	k lexer::TokenType::Arrow == if {
+		p cur_line -> l  p cur_col -> c
+		p advance  // skip ->
+		p cur_text -> name
+		p advance
+		// _ is a discard (like drop), but we store it as a normal LocalDecl
+		// The semantic validator/codegen handles _ specially
+		ast::NodeType::LocalDecl name l c ast::leaf return
+	}
+
+	// Expression / atom
+	p parse_atom
+}
+
+// Parse an atomic expression (literal, identifier, scoped, etc.)
+fn (p:Parser) parse_atom( -- n:ptr) {
+	p cur_kind -> k
+
+	// Literals
+	k lexer::TokenType::Integer == if {
+		p cur_text -> t  p cur_line -> l  p cur_col -> c
+		p advance
+		ast::NodeType::IntLit t l c ast::leaf return
+	}
+	k lexer::TokenType::Float == if {
+		p cur_text -> t  p cur_line -> l  p cur_col -> c
+		p advance
+		ast::NodeType::FloatLit t l c ast::leaf return
+	}
+	k lexer::TokenType::String == if {
+		p cur_text -> t  p cur_line -> l  p cur_col -> c
+		p advance
+		ast::NodeType::StrLit t l c ast::leaf return
+	}
+
+	// Keywords that are values
+	k lexer::TokenType::KwTrue == k lexer::TokenType::KwFalse == or
+	k lexer::TokenType::KwOk == or k lexer::TokenType::KwErr == or
+	k lexer::TokenType::KwNull == or if {
+		p cur_text -> t  p cur_line -> l  p cur_col -> c
+		p advance
+		ast::NodeType::IntLit t l c ast::leaf return
+	}
+
+	// Identifier (might be scoped with ::, or followed by .field for field set)
+	k lexer::TokenType::Ident == if {
+		p cur_text -> name  p cur_line -> l  p cur_col -> c
+		p advance
+
+		// Special: error { code = X message = Y } (anonymous error struct)
+		name "error" strings::compare 0 == p cur_kind lexer::TokenType::LBrace == and if {
+			ast::NodeType::StructConstruct "__error__" l c ast::make_node -> err_sc
+			p parse_block -> err_body
+			err_sc err_body ast::add_child
+			err_sc return
+		}
+
+		// Check for .field (field set): value var.field
+		p cur_kind lexer::TokenType::Dot == if {
+			p advance  // skip .
+			p cur_text -> fname
+			p advance
+			ast::NodeType::FieldSet name l c ast::make_node -> fs
+			ast::NodeType::Ident fname l c ast::leaf -> fn_node
+			fs fn_node ast::add_child
+			fs return
+		}
+
+		// Check for :: (scoped identifier)
+		p cur_kind lexer::TokenType::ColonColon == if {
+			p advance  // skip ::
+			p cur_text -> member
+			p advance
+
+			// Check for triple scope (module::Enum::Variant)
+			p cur_kind lexer::TokenType::ColonColon == if {
+				p advance
+				p cur_text -> variant
+				p advance
+				sb::new -> b
+				b member sb::append -> b
+				b "::" sb::append -> b
+				b variant sb::append -> b
+				b sb::finish -> full_member
+				// Check for ! or ? on triple scope
+				p cur_kind lexer::TokenType::Bang == if {
+					p advance
+					full_member "!" strings::concat -> full_member
+				}
+				p cur_kind lexer::TokenType::Question == if {
+					p advance
+					full_member "?" strings::concat -> full_member
+				}
+				ast::NodeType::ScopedIdent name l c ast::make_node -> s
+				ast::NodeType::Ident full_member l c ast::leaf -> m
+				s m ast::add_child
+				s return
+			}
+
+			// Check for ! or ? on scoped identifier
+			p cur_kind lexer::TokenType::Bang == if {
+				p advance
+				member "!" strings::concat -> member
+			}
+			p cur_kind lexer::TokenType::Question == if {
+				p advance
+				member "?" strings::concat -> member
+			}
+
+			ast::NodeType::ScopedIdent name l c ast::make_node -> s
+			ast::NodeType::Ident member l c ast::leaf -> m
+			s m ast::add_child
+			s return
+		}
+
+		// Check for ! or ? suffix (fallible call)
+		p cur_kind lexer::TokenType::Bang == if {
+			p advance
+			name "!" strings::concat -> name
+			ast::NodeType::Ident name l c ast::leaf return
+		}
+		p cur_kind lexer::TokenType::Question == if {
+			p advance
+			name "?" strings::concat -> name
+			ast::NodeType::Ident name l c ast::leaf return
+		}
+
+		// Check for generic instruction: cast<Type>, make<Type>, etc.
+		p cur_kind lexer::TokenType::Lt == if {
+			// Only for known generic instructions
+			name "cast" strings::compare 0 ==
+			name "make" strings::compare 0 == or
+			name "makei" strings::compare 0 == or
+			name "makef" strings::compare 0 == or
+			name "makes" strings::compare 0 == or
+			name "makep" strings::compare 0 == or
+			name "sizeof" strings::compare 0 == or if {
+				p advance  // skip <
+				p parse_type -> gtype
+				p lexer::TokenType::Gt expect
+				name "<" strings::concat gtype strings::concat ">" strings::concat -> gname
+				ast::NodeType::Instruction gname l c ast::leaf return
+			}
+		}
+
+		// Check for struct construction: Name { field = expr ... }
+		p cur_kind lexer::TokenType::LBrace == if {
+			// Only if name starts with uppercase
+			name 0 strings::char_at! -> ch2
+			ch2 65 >= ch2 90 <= and if {
+				ast::NodeType::StructConstruct name l c ast::make_node -> sc
+				p advance  // skip {
+				p cur_kind lexer::TokenType::RBrace neq p cur_kind lexer::TokenType::Eof neq and while {
+					// Expect: fieldname = value_expr...
+					p cur_text -> fname2
+					p cur_line -> fl
+					p cur_col -> fc
+					p advance
+					ast::NodeType::StructField fname2 fl fc ast::make_node -> finit
+					p cur_kind lexer::TokenType::Assign == if {
+						p advance  // skip =
+						// Parse value expressions until next field (ident + =) or }
+						p cur_kind lexer::TokenType::RBrace neq p cur_kind lexer::TokenType::Eof neq and while {
+							p parse_atom -> val_atom
+							finit val_atom ast::add_child
+							// Stop if next is } or if next is ident whose successor is =
+							// Simple heuristic: stop after each atom, let outer loop re-check
+							p cur_kind lexer::TokenType::RBrace == if { 0 } else {
+								// Check if current token is an ident that could be next field name
+								p cur_kind lexer::TokenType::Ident == if {
+									0  // could be next field or more value — stop conservatively
+								} else {
+									// Continue parsing value (operators, literals, etc.)
+									p cur_kind lexer::TokenType::RBrace neq p cur_kind lexer::TokenType::Eof neq and
+								}
+							}
+						}
+					}
+					sc finit ast::add_child
+					p cur_kind lexer::TokenType::RBrace neq p cur_kind lexer::TokenType::Eof neq and
+				}
+				p lexer::TokenType::RBrace expect
+				sc return
+			}
+		}
+
+		ast::NodeType::Ident name l c ast::leaf return
+	}
+
+	// Array literal [...]
+	k lexer::TokenType::LBracket == if {
+		p cur_line -> l  p cur_col -> c
+		p advance  // skip [
+		ast::NodeType::ArrayLit "" l c ast::make_node -> arr
+		p cur_kind lexer::TokenType::RBracket neq p cur_kind lexer::TokenType::Eof neq and while {
+			p parse_atom -> elem
+			arr elem ast::add_child
+			p cur_kind lexer::TokenType::RBracket neq p cur_kind lexer::TokenType::Eof neq and
+		}
+		p lexer::TokenType::RBracket expect
+		arr return
+	}
+
+	// Function pointer &name
+	k lexer::TokenType::Ampersand == if {
+		p cur_line -> l  p cur_col -> c
+		p advance  // skip &
+		p cur_text -> fname
+		p advance
+		// Check for scoped: &module::func
+		p cur_kind lexer::TokenType::ColonColon == if {
+			p advance
+			p cur_text -> member
+			p advance
+			fname "::" strings::concat member strings::concat -> fname
+		}
+		ast::NodeType::FnPtr fname l c ast::leaf return
+	}
+
+	// ++ and -- as instructions
+	k lexer::TokenType::PlusPlus == if {
+		p cur_text -> t  p cur_line -> l  p cur_col -> c
+		p advance
+		ast::NodeType::Instruction t l c ast::leaf return
+	}
+	k lexer::TokenType::MinusMinus == if {
+		p cur_text -> t  p cur_line -> l  p cur_col -> c
+		p advance
+		ast::NodeType::Instruction t l c ast::leaf return
+	}
+
+	// Operators as instructions
+	k lexer::TokenType::Plus == k lexer::TokenType::Minus == or
+	k lexer::TokenType::Star == or k lexer::TokenType::Slash == or
+	k lexer::TokenType::Percent == or k lexer::TokenType::Eq == or
+	k lexer::TokenType::Neq == or k lexer::TokenType::Lt == or
+	k lexer::TokenType::Gt == or k lexer::TokenType::LtEq == or
+	k lexer::TokenType::GtEq == or k lexer::TokenType::Shl == or
+	k lexer::TokenType::Shr == or if {
+		p cur_text -> t  p cur_line -> l  p cur_col -> c
+		p advance
+		ast::NodeType::Instruction t l c ast::leaf return
+	}
+
+	// @ field access
+	k lexer::TokenType::At == if {
+		p cur_line -> l  p cur_col -> c
+		p advance  // skip @
+		p cur_text -> fname
+		p advance
+		ast::NodeType::FieldAccess fname l c ast::leaf return
+	}
+
+	// as Type (type narrowing cast)
+	k lexer::TokenType::KwAs == if {
+		p cur_line -> l  p cur_col -> c
+		p advance  // skip 'as'
+		p parse_type -> tname
+		ast::NodeType::AsCast tname l c ast::leaf return
+	}
+
+	// Unknown — skip
+	p cur_text -> t  p cur_line -> l  p cur_col -> c
+	p advance
+	ast::NodeType::Ident t l c ast::leaf
+}
+
+// ============================================================
+// Control flow
+// ============================================================
+
+fn (p:Parser) parse_if( -- n:ptr) {
+	p cur_line -> l  p cur_col -> c
+	p advance  // skip 'if'
+
+	ast::NodeType::IfStmt "" l c ast::make_node -> if_node
+
+	// Parse then block
+	p parse_block -> then_body
+	if_node then_body ast::add_child
+
+	// Check for else
+	p cur_kind lexer::TokenType::KwElse == if {
+		p advance  // skip 'else'
+		p cur_kind lexer::TokenType::KwIf == if {
+			// else if — parse as nested if
+			p parse_if -> elif
+			ast::NodeType::ElseClause "" l c ast::make_node -> else_node
+			else_node elif ast::add_child
+			if_node else_node ast::add_child
+		} else {
+			// else { }
+			p parse_block -> else_body
+			ast::NodeType::ElseClause "" l c ast::make_node -> else_node
+			else_node else_body ast::add_child
+			if_node else_node ast::add_child
+		}
+	}
+
+	if_node
+}
+
+fn (p:Parser) parse_for( -- n:ptr) {
+	p cur_line -> l  p cur_col -> c
+	p advance  // skip 'for'
+
+	// Get iterator variable name
+	p cur_text -> var_name
+	p advance
+
+	ast::NodeType::ForStmt var_name l c ast::make_node -> for_node
+
+	p parse_block -> body
+	for_node body ast::add_child
+	for_node
+}
+
+fn (p:Parser) parse_while( -- n:ptr) {
+	p cur_line -> l  p cur_col -> c
+	p advance  // skip 'while'
+
+	ast::NodeType::WhileStmt "" l c ast::make_node -> while_node
+	p parse_block -> body
+	while_node body ast::add_child
+	while_node
+}
+
+fn (p:Parser) parse_loop( -- n:ptr) {
+	p cur_line -> l  p cur_col -> c
+	p advance  // skip 'loop'
+
+	ast::NodeType::LoopStmt "" l c ast::make_node -> loop_node
+	p parse_block -> body
+	loop_node body ast::add_child
+	loop_node
+}
+
+fn (p:Parser) parse_switch( -- n:ptr) {
+	p cur_line -> l  p cur_col -> c
+	p advance  // skip 'switch'
+
+	ast::NodeType::SwitchStmt "" l c ast::make_node -> sw
+	p lexer::TokenType::LBrace expect
+
+	p cur_kind lexer::TokenType::RBrace neq while {
+		// Default case: _
+		p cur_text "_" strings::compare 0 == if {
+			p advance  // skip _
+			p parse_block -> body
+			ast::NodeType::DefaultClause "" l c ast::make_node -> dc
+			dc body ast::add_child
+			sw dc ast::add_child
+		} else {
+			// Regular case: value { body }
+			p parse_atom -> val
+			p parse_block -> body
+			ast::NodeType::CaseClause "" l c ast::make_node -> cc
+			cc val ast::add_child
+			cc body ast::add_child
+			sw cc ast::add_child
+		}
+		p cur_kind lexer::TokenType::RBrace neq
+	}
+	p lexer::TokenType::RBrace expect
+	sw
+}
+
+fn (p:Parser) parse_defer( -- n:ptr) {
+	p cur_line -> l  p cur_col -> c
+	p advance  // skip 'defer'
+
+	ast::NodeType::DeferStmt "" l c ast::make_node -> d
+	p parse_block -> body
+	d body ast::add_child
+	d
+}

@@ -1006,6 +1006,23 @@ namespace Qd {
 		// Check if we have this function
 		llvm::Function* fn = module->getFunction(mangledName);
 		if (!fn) {
+			// Try method-mangled name: usr_scope_ReceiverType_name
+			auto it = userFunctions.find(fullName);
+			if (it == userFunctions.end()) {
+				// Search for a method with this name in the module
+				for (const auto& pair : userFunctions) {
+					// Look for pattern: scope::*::name (e.g., lexer::Lexer::next)
+					if (pair.first.find(scope + "::") == 0 && pair.first.size() > fullName.size() &&
+							pair.first.substr(pair.first.rfind("::") + 2) == name) {
+						fn = pair.second;
+						break;
+					}
+				}
+			} else {
+				fn = it->second;
+			}
+		}
+		if (!fn) {
 			// Function doesn't exist yet, declare it
 			// Use InternalLinkage for user functions unless in export mode (shared library compilation)
 			// InternalLinkage allows LLVM to eliminate unused functions via GlobalDCE

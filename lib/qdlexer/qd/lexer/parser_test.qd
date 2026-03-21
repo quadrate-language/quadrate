@@ -1,0 +1,362 @@
+use testing
+use strings
+use sb
+use "lexer.qd"
+use "ast.qd"
+use "parser.qd"
+
+test "parse empty program" {
+	"" parser::new -> p
+	p parser::parse_program -> prog
+	prog @nkind ast::NodeType::Program testing::assert_eq
+	prog ast::child_count 0 testing::assert_eq
+}
+
+test "parse use statement" {
+	"use math" parser::new -> p
+	p parser::parse_program -> prog
+	prog ast::child_count 1 testing::assert_eq
+	prog @child1 @nkind ast::NodeType::UseStmt testing::assert_eq
+	prog @child1 @ntext "math" strings::compare 0 testing::assert_eq
+}
+
+test "parse const declaration" {
+	"const Pi = 3" parser::new -> p
+	p parser::parse_program -> prog
+	prog @child1 @nkind ast::NodeType::ConstDecl testing::assert_eq
+	prog @child1 @ntext "Pi" strings::compare 0 testing::assert_eq
+}
+
+test "parse enum declaration" {
+	"enum Color { Red Green Blue }" parser::new -> p
+	p parser::parse_program -> prog
+	prog @child1 @nkind ast::NodeType::EnumDecl testing::assert_eq
+	prog @child1 @ntext "Color" strings::compare 0 testing::assert_eq
+	prog @child1 ast::child_count 3 testing::assert_eq
+}
+
+test "parse simple function" {
+	"fn main() { 42 print nl }" parser::new -> p
+	p parser::parse_program -> prog
+	prog @child1 @nkind ast::NodeType::FnDecl testing::assert_eq
+	prog @child1 @ntext "main" strings::compare 0 testing::assert_eq
+	// child1=params, child2=body
+	prog @child1 @child1 @nkind ast::NodeType::Block testing::assert_eq
+	prog @child1 @child2 @nkind ast::NodeType::Block testing::assert_eq
+}
+
+test "parse function with params" {
+	"fn add(x:i64 y:i64 -- sum:i64) { }" parser::new -> p
+	p parser::parse_program -> prog
+	prog @child1 @ntext "add" strings::compare 0 testing::assert_eq
+	prog @child1 @child1 ast::child_count 3 testing::assert_eq
+	prog @child1 @child1 @child1 @nkind ast::NodeType::Param testing::assert_eq
+	prog @child1 @child1 @child1 @ntext "x:i64" strings::compare 0 testing::assert_eq
+	prog @child1 @child1 @child2 @ntext "y:i64" strings::compare 0 testing::assert_eq
+	prog @child1 @child1 @child3 @ntext "out:sum:i64" strings::compare 0 testing::assert_eq
+}
+
+test "parse function with pointer type" {
+	"fn walk(n:*Node -- ) { }" parser::new -> p
+	p parser::parse_program -> prog
+	prog @child1 @child1 ast::child_count 1 testing::assert_eq
+	prog @child1 @child1 @child1 @ntext "n:*Node" strings::compare 0 testing::assert_eq
+}
+
+test "parse fallible function" {
+	"fn risky(x:i64 -- r:i64)! { }" parser::new -> p
+	p parser::parse_program -> prog
+	prog @child1 @ntext "risky" strings::compare 0 testing::assert_eq
+	prog @child1 @child3 @ntext "throws" strings::compare 0 testing::assert_eq
+}
+
+test "parse pub function" {
+	"pub fn greet( -- ) { }" parser::new -> p
+	p parser::parse_program -> prog
+	prog @child1 @ntext "greet" strings::compare 0 testing::assert_eq
+	prog @child1 @child3 @ntext "pub" strings::compare 0 testing::assert_eq
+}
+
+test "parse void function" {
+	"fn noop( -- ) { }" parser::new -> p
+	p parser::parse_program -> prog
+	prog @child1 @ntext "noop" strings::compare 0 testing::assert_eq
+	prog @child1 @child1 ast::child_count 0 testing::assert_eq
+}
+
+test "parse method receiver" {
+	"fn (l:Lexer) peek( -- ch:i64) { }" parser::new -> p
+	p parser::parse_program -> prog
+	prog @child1 @ntext "peek" strings::compare 0 testing::assert_eq
+	// receiver is child3 (no metadata for non-pub non-throws)
+	prog @child1 @child3 @nkind ast::NodeType::Param testing::assert_eq
+	prog @child1 @child3 @ntext "l:Lexer" strings::compare 0 testing::assert_eq
+}
+
+test "parse if else" {
+	"fn main() { 1 if { 42 } else { 0 } }" parser::new -> p
+	p parser::parse_program -> prog
+	// body.child1 = IntLit(1), body.child2 = IfStmt
+	prog @child1 @child2 @child2 @nkind ast::NodeType::IfStmt testing::assert_eq
+	// IfStmt has then block + else clause
+	prog @child1 @child2 @child2 ast::child_count 2 testing::assert_eq
+}
+
+test "parse else if" {
+	"fn main() { 1 if { 1 } else { 2 if { 2 } else { 3 } } }" parser::new -> p
+	p parser::parse_program -> prog
+	prog @child1 @child2 @child2 @nkind ast::NodeType::IfStmt testing::assert_eq
+}
+
+test "parse while loop" {
+	"fn main() { 1 while { 2 } }" parser::new -> p
+	p parser::parse_program -> prog
+	prog @child1 @child2 @child2 @nkind ast::NodeType::WhileStmt testing::assert_eq
+	prog @child1 @child2 @child2 @child1 @nkind ast::NodeType::Block testing::assert_eq
+}
+
+test "parse loop with break" {
+	"fn main() { loop { break } }" parser::new -> p
+	p parser::parse_program -> prog
+	prog @child1 @child2 @child1 @nkind ast::NodeType::LoopStmt testing::assert_eq
+	prog @child1 @child2 @child1 @child1 @child1 @nkind ast::NodeType::BreakStmt testing::assert_eq
+}
+
+test "parse for loop" {
+	"fn main() { 0 10 1 for i { i print nl } }" parser::new -> p
+	p parser::parse_program -> prog
+	prog @child1 @child2 @child4 @nkind ast::NodeType::ForStmt testing::assert_eq
+	prog @child1 @child2 @child4 @ntext "i" strings::compare 0 testing::assert_eq
+}
+
+test "parse switch with cases" {
+	"fn main() { 1 switch { 0 { } 1 { } _ { } } }" parser::new -> p
+	p parser::parse_program -> prog
+	prog @child1 @child2 @child2 @nkind ast::NodeType::SwitchStmt testing::assert_eq
+	prog @child1 @child2 @child2 ast::child_count 3 testing::assert_eq
+}
+
+test "parse defer" {
+	"fn main() { defer { 1 print nl } }" parser::new -> p
+	p parser::parse_program -> prog
+	prog @child1 @child2 @child1 @nkind ast::NodeType::DeferStmt testing::assert_eq
+	prog @child1 @child2 @child1 @child1 @nkind ast::NodeType::Block testing::assert_eq
+}
+
+test "parse field set" {
+	"fn main() { 42 x.value }" parser::new -> p
+	p parser::parse_program -> prog
+	prog @child1 @child2 @child2 @nkind ast::NodeType::FieldSet testing::assert_eq
+	prog @child1 @child2 @child2 @ntext "x" strings::compare 0 testing::assert_eq
+}
+
+test "parse array literal" {
+	"fn main() { [1 2 3] }" parser::new -> p
+	p parser::parse_program -> prog
+	prog @child1 @child2 @child1 @nkind ast::NodeType::ArrayLit testing::assert_eq
+	prog @child1 @child2 @child1 ast::child_count 3 testing::assert_eq
+}
+
+test "parse function pointer" {
+	"fn main() { &double }" parser::new -> p
+	p parser::parse_program -> prog
+	prog @child1 @child2 @child1 @nkind ast::NodeType::FnPtr testing::assert_eq
+	prog @child1 @child2 @child1 @ntext "double" strings::compare 0 testing::assert_eq
+}
+
+test "parse scoped function pointer" {
+	"fn main() { &math::sqrt }" parser::new -> p
+	p parser::parse_program -> prog
+	prog @child1 @child2 @child1 @ntext "math::sqrt" strings::compare 0 testing::assert_eq
+}
+
+test "parse fallible call with bang" {
+	"fn main() { risky! }" parser::new -> p
+	p parser::parse_program -> prog
+	prog @child1 @child2 @child1 @ntext "risky!" strings::compare 0 testing::assert_eq
+}
+
+test "parse scoped call with bang" {
+	"fn main() { io::read! }" parser::new -> p
+	p parser::parse_program -> prog
+	prog @child1 @child2 @child1 @nkind ast::NodeType::ScopedIdent testing::assert_eq
+	prog @child1 @child2 @child1 @child1 @ntext "read!" strings::compare 0 testing::assert_eq
+}
+
+test "parse question mark propagation" {
+	"fn outer( -- r:i64)! { inner? }" parser::new -> p
+	p parser::parse_program -> prog
+	prog @child1 @child2 @child1 @ntext "inner?" strings::compare 0 testing::assert_eq
+}
+
+test "parse increment decrement" {
+	"fn main() { ++ -- }" parser::new -> p
+	p parser::parse_program -> prog
+	prog @child1 @child2 @child1 @nkind ast::NodeType::Instruction testing::assert_eq
+	prog @child1 @child2 @child1 @ntext "++" strings::compare 0 testing::assert_eq
+}
+
+test "parse anonymous function" {
+	"fn main() { fn(x:i64 -- r:i64) { 2 * } }" parser::new -> p
+	p parser::parse_program -> prog
+	prog @child1 @child2 @child1 @nkind ast::NodeType::AnonFn testing::assert_eq
+	prog @child1 @child2 @child1 @child1 ast::child_count 2 testing::assert_eq
+}
+
+test "parse as cast" {
+	"fn main() { p as Node @value }" parser::new -> p
+	p parser::parse_program -> prog
+	prog @child1 @child2 @child2 @nkind ast::NodeType::AsCast testing::assert_eq
+	prog @child1 @child2 @child2 @ntext "Node" strings::compare 0 testing::assert_eq
+}
+
+test "parse cast generic" {
+	"fn main() { 3.14 cast<i64> }" parser::new -> p
+	p parser::parse_program -> prog
+	prog @child1 @child2 @child2 @ntext "cast<i64>" strings::compare 0 testing::assert_eq
+}
+
+test "parse struct with defaults" {
+	"struct Config { timeout:i64 = 30 }" parser::new -> p
+	p parser::parse_program -> prog
+	prog @child1 @nkind ast::NodeType::StructDecl testing::assert_eq
+	prog @child1 ast::child_count 1 testing::assert_eq
+}
+
+test "parse enum with explicit values" {
+	"enum Http { Ok = 200 Err = -1 }" parser::new -> p
+	p parser::parse_program -> prog
+	prog @child1 @nkind ast::NodeType::EnumDecl testing::assert_eq
+	prog @child1 ast::child_count 2 testing::assert_eq
+	prog @child1 @child1 @ntext "Ok" strings::compare 0 testing::assert_eq
+	prog @child1 @child2 @ntext "Err" strings::compare 0 testing::assert_eq
+}
+
+test "parse import block" {
+	"import \"libfmt.a\" as \"fmt\" { pub fn printf(format:str -- ) }" parser::new -> p
+	p parser::parse_program -> prog
+	prog @child1 @nkind ast::NodeType::ImportDecl testing::assert_eq
+	prog @child1 ast::child_count 1 testing::assert_eq
+	prog @child1 @child1 @ntext "printf" strings::compare 0 testing::assert_eq
+}
+
+test "parse struct declaration" {
+	"struct Point { x:f64 y:f64 }" parser::new -> p
+	p parser::parse_program -> prog
+	prog @child1 @nkind ast::NodeType::StructDecl testing::assert_eq
+	prog @child1 @ntext "Point" strings::compare 0 testing::assert_eq
+	prog @child1 ast::child_count 2 testing::assert_eq
+}
+
+test "parse generic struct" {
+	"struct Vec<T> { data:ptr len:i64 }" parser::new -> p
+	p parser::parse_program -> prog
+	prog @child1 @nkind ast::NodeType::StructDecl testing::assert_eq
+	prog @child1 ast::child_count 2 testing::assert_eq
+}
+
+test "parse multiple declarations" {
+	"use math\nconst Pi = 3\nfn main() { }" parser::new -> p
+	p parser::parse_program -> prog
+	prog ast::child_count 3 testing::assert_eq
+	prog @child1 @nkind ast::NodeType::UseStmt testing::assert_eq
+	prog @child2 @nkind ast::NodeType::ConstDecl testing::assert_eq
+	prog @child3 @nkind ast::NodeType::FnDecl testing::assert_eq
+}
+
+test "parse nested control flow" {
+	"fn main() { 1 if { 0 10 1 for i { i 5 == if { break } } } }" parser::new -> p
+	p parser::parse_program -> prog
+	// Just verify it doesn't crash and produces a valid AST
+	prog ast::child_count 1 testing::assert_eq
+	prog @child1 @nkind ast::NodeType::FnDecl testing::assert_eq
+}
+
+test "parse return in block" {
+	"fn classify(x:i64 -- s:str) { -> n\nn 0 > if { \"pos\" return }\n\"zero\" }" parser::new -> p
+	p parser::parse_program -> prog
+	prog @child1 @ntext "classify" strings::compare 0 testing::assert_eq
+}
+
+test "parse scoped call with question" {
+	"fn outer( -- r:i64)! { io::read? }" parser::new -> p
+	p parser::parse_program -> prog
+	prog @child1 @child2 @child1 @nkind ast::NodeType::ScopedIdent testing::assert_eq
+	prog @child1 @child2 @child1 @child1 @ntext "read?" strings::compare 0 testing::assert_eq
+}
+
+test "parse ctx block" {
+	"fn main() { ctx { 42 } print nl }" parser::new -> p
+	p parser::parse_program -> prog
+	prog @child1 @child2 @child1 @ntext "ctx" strings::compare 0 testing::assert_eq
+}
+
+// ============ Error handling tests ============
+
+test "parse struct construction with fields" {
+	"fn main() { Point { x = 1 y = 2 } }" parser::new -> p
+	p parser::parse_program -> prog
+	prog @child1 @child2 @child1 @nkind ast::NodeType::StructConstruct testing::assert_eq
+	prog @child1 @child2 @child1 @ntext "Point" strings::compare 0 testing::assert_eq
+	// Has 2 field initializers
+	prog @child1 @child2 @child1 ast::child_count 2 testing::assert_eq
+	prog @child1 @child2 @child1 @child1 @nkind ast::NodeType::StructField testing::assert_eq
+	prog @child1 @child2 @child1 @child1 @ntext "x" strings::compare 0 testing::assert_eq
+}
+
+test "parse discard binding" {
+	"fn main() { 42 -> _ }" parser::new -> p
+	p parser::parse_program -> prog
+	prog @child1 @child2 @child2 @nkind ast::NodeType::LocalDecl testing::assert_eq
+	prog @child1 @child2 @child2 @ntext "_" strings::compare 0 testing::assert_eq
+}
+
+test "parse pub const" {
+	"pub const MaxSize = 100" parser::new -> p
+	p parser::parse_program -> prog
+	prog @child1 @nkind ast::NodeType::ConstDecl testing::assert_eq
+	prog @child1 @ntext "MaxSize" strings::compare 0 testing::assert_eq
+	// Has pub metadata as child
+	prog @child1 ast::child_count 2 testing::assert_eq
+}
+
+test "parse error field access" {
+	"fn main() { error @code }" parser::new -> p
+	p parser::parse_program -> prog
+	prog @child1 @child2 @child1 @nkind ast::NodeType::Ident testing::assert_eq
+	prog @child1 @child2 @child1 @ntext "error" strings::compare 0 testing::assert_eq
+	prog @child1 @child2 @child2 @nkind ast::NodeType::FieldAccess testing::assert_eq
+}
+
+test "parse error struct construction" {
+	"fn main() { error { code = 1 message = \"fail\" } }" parser::new -> p
+	p parser::parse_program -> prog
+	prog @child1 @child2 @child1 @nkind ast::NodeType::StructConstruct testing::assert_eq
+	prog @child1 @child2 @child1 @ntext "__error__" strings::compare 0 testing::assert_eq
+}
+
+test "parse unterminated brace" {
+	"fn main() {" parser::new -> p
+	p parser::parse_program -> prog
+	// Should not crash, just produce incomplete AST
+	prog ast::child_count 1 testing::assert_eq
+}
+
+test "parse unterminated generic" {
+	"struct Vec<T { data:ptr }" parser::new -> p
+	p parser::parse_program -> prog
+	// Should not crash
+	prog @nkind ast::NodeType::Program testing::assert_eq
+}
+
+test "parse empty function body" {
+	"fn noop() { }" parser::new -> p
+	p parser::parse_program -> prog
+	prog @child1 @ntext "noop" strings::compare 0 testing::assert_eq
+}
+
+test "parse realistic program" {
+	"use strings\nuse sb\nenum TokenType {\n\tInt\n\tStr = 10\n\tEof = -1\n}\nstruct Token {\n\tkind:i64\n\ttext:str\n}\npub fn new(src:str -- l:Token) {\n\t-> s\n\tToken { kind = 0 text = s }\n}\nfn main() {\n\t\"hello\" new -> t\n\tt @kind print nl\n\tt @text print nl\n\t1 2 + print nl\n\t[1 2 3] -> arr\n\t1 1 == if {\n\t\t\"yes\" print nl\n\t} else {\n\t\t\"no\" print nl\n\t}\n}" parser::new -> p
+	p parser::parse_program -> prog
+	prog ast::child_count 6 testing::assert_eq
+}
