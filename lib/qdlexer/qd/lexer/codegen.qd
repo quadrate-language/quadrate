@@ -93,6 +93,42 @@ fn is_local(locals:str name:str -- result:i64) {
 	ls needle strings::contains
 }
 
+// Collect UNIQUE local names from AST and emit allocas.
+// Uses collect_locals to get all names (with duplicates), then deduplicates.
+fn emit_unique_allocas(s:ptr body:ptr -- s2:ptr) {
+	-> bnode -> st
+	bnode null == if { st return }
+	bnode sb::new collect_locals sb::finish -> all_locals
+	all_locals strings::len 2 < if { st return }
+	// all_locals is ",x,y,x,z," format — deduplicate
+	st @code -> o
+	"" -> seen
+	// Walk each name between commas (skip leading comma)
+	1 -> pos
+	all_locals strings::len -> alen
+	pos alen < while {
+		// Find next comma
+		pos -> end
+		end alen < while {
+			all_locals end strings::char_at! 44 == if { break }
+			end 1 + -> end
+			end alen <
+		}
+		end pos > if {
+			all_locals pos end pos - strings::substring! -> vn
+			$",{vn}," -> ck
+			seen ck strings::contains 0 == if {
+				o $"  %local.{vn} = alloca %qd_stack_element_t\n" sb::append -> o
+				seen ck strings::concat -> seen
+			}
+		}
+		end 1 + -> pos
+		pos alen <
+	}
+	o st.code
+	st
+}
+
 // Emit a single AST node
 fn emit_node(s:ptr node:ptr locals:str -- s2:ptr) {
 	-> loc -> n -> st
@@ -160,12 +196,12 @@ fn emit_node(s:ptr node:ptr locals:str -- s2:ptr) {
 		// This relies on the variable being previously declared with -> name
 		// Check if this identifier is a local variable
 		loc fname is_local if {
-			// Push local variable value onto runtime stack
+			// Push local variable value onto runtime stack (preserves type tag)
 			st next_label -> uid -> st
 			st @code -> o
-			o $"  %vp_{uid} = getelementptr %qd_stack_element_t, ptr %local.{fname}, i32 0, i32 0\n" sb::append -> o
-			o $"  %vi_{uid} = load i64, ptr %vp_{uid}\n" sb::append -> o
-			o $"  call i32 @qd_push_i(ptr %ctx, i64 %vi_{uid})\n" sb::append -> o
+			o $"  %stp_{uid} = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0\n" sb::append -> o
+			o $"  %stk_{uid} = load ptr, ptr %stp_{uid}\n" sb::append -> o
+			o $"  call i32 @qdrt_push_element(ptr %stk_{uid}, ptr %local.{fname})\n" sb::append -> o
 			o st.code
 			st return
 		}
@@ -191,7 +227,33 @@ fn emit_node(s:ptr node:ptr locals:str -- s2:ptr) {
 			st return
 		}
 		// Module function call: usr_module_func
+		// Check and strip ! and ? suffixes (fallible markers)
+		0 -> is_bang
+		member strings::len -> mlen
+		mlen 0 > if {
+			member mlen 1 - strings::char_at! -> last_ch
+			last_ch 33 == if { 1 -> is_bang  member 0 mlen 1 - strings::substring! -> member }
+			last_ch 63 == if { member 0 mlen 1 - strings::substring! -> member }
+		}
 		o $"  call i32 @usr_{scope}_{member}(ptr %ctx)\n" sb::append -> o
+		// Handle ! (abort on error): pop status code, abort if 0
+		is_bang if {
+			st next_label -> fuid -> st
+			o $"  %fe_{fuid} = alloca %qd_stack_element_t\n" sb::append -> o
+			o $"  %fstp_{fuid} = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0\n" sb::append -> o
+			o $"  %fstk_{fuid} = load ptr, ptr %fstp_{fuid}\n" sb::append -> o
+			o $"  call void @qd_stack_pop(ptr %fstk_{fuid}, ptr %fe_{fuid})\n" sb::append -> o
+			o $"  %fvp_{fuid} = getelementptr %qd_stack_element_t, ptr %fe_{fuid}, i32 0, i32 0\n" sb::append -> o
+			o $"  %fvi_{fuid} = load i64, ptr %fvp_{fuid}\n" sb::append -> o
+			o $"  %fok_{fuid} = icmp ne i64 %fvi_{fuid}, 0\n" sb::append -> o
+			st next_label -> ok_label -> st
+			st next_label -> fail_label -> st
+			o $"  br i1 %fok_{fuid}, label %{ok_label}, label %{fail_label}\n" sb::append -> o
+			o $"{fail_label}:\n" sb::append -> o
+			o "  call i32 @qd_panic(ptr %ctx)\n" sb::append -> o
+			o "  unreachable\n" sb::append -> o
+			o $"{ok_label}:\n" sb::append -> o
+		}
 		o st.code
 		st return
 	}
@@ -218,11 +280,11 @@ fn emit_node(s:ptr node:ptr locals:str -- s2:ptr) {
 	}
 
 	// Local variable declaration: -> name
+	// Alloca is emitted at function entry by emit_unique_allocas
 	k ast::NodeType::LocalDecl == if {
 		n @ntext -> vname
 		st next_label -> uid -> st
 		st @code -> o
-		o $"  %local.{vname} = alloca %qd_stack_element_t\n" sb::append -> o
 		o $"  %stp_{uid} = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0\n" sb::append -> o
 		o $"  %stk_{uid} = load ptr, ptr %stp_{uid}\n" sb::append -> o
 		o $"  call void @qd_stack_pop(ptr %stk_{uid}, ptr %local.{vname})\n" sb::append -> o
@@ -592,7 +654,7 @@ fn emit_for(s:ptr node:ptr locals:str -- s2:ptr) {
 	o $"  %for_step_e_{uid} = alloca %qd_stack_element_t\n" sb::append -> o
 	o $"  %for_end_e_{uid} = alloca %qd_stack_element_t\n" sb::append -> o
 	o $"  %for_start_e_{uid} = alloca %qd_stack_element_t\n" sb::append -> o
-	o $"  %local.{iter_var} = alloca %qd_stack_element_t\n" sb::append -> o
+	// Note: %local.{iter_var} alloca is emitted at function entry by emit_unique_allocas
 	// Get stack ptr
 	o $"  %for_stp_{uid} = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0\n" sb::append -> o
 	o $"  %for_stk_{uid} = load ptr, ptr %for_stp_{uid}\n" sb::append -> o
@@ -659,9 +721,13 @@ fn emit_function(s:ptr name:str body:ptr -- s2:ptr) {
 	}
 
 	st @code -> o
-	o $"define i32 @usr_main_{fname}(ptr %ctx) {\n" sb::append -> o
+	o "define i32 @usr_main_" sb::append -> o
+	o fname sb::append -> o
+	o "(ptr %ctx) {\n" sb::append -> o
 	o "entry:\n" sb::append -> o
 	o st.code
+	// Pre-allocate all unique local variables at function entry
+	st body_node emit_unique_allocas -> st
 	body_node null neq if { st body_node loc emit_block -> st }
 	st @code -> o
 	o "  br label %return\n" sb::append -> o
@@ -805,9 +871,61 @@ fn emit_main_entry(s:ptr -- s2:ptr) {
 	st
 }
 
-// Generate IR for a complete program AST
-pub fn generate(prog:ptr -- ir:str) {
-	-> root
+// Emit declarations for a stdlib module's functions.
+// mod_name: module name (e.g., "io")
+// func_names: comma-separated function names (e.g., "open,close,read_file,write_file")
+pub fn emit_module_declares(s:ptr mod_name:str func_names:str -- s2:ptr) {
+	-> fns -> mname -> st
+	fns strings::len 0 == if { st return }
+	st @code -> o
+	o $"\n; Module: {mname}\n" sb::append -> o
+	// Parse comma-separated function names
+	0 -> pos
+	fns strings::len -> flen
+	pos flen < while {
+		pos -> end
+		end flen < fns end strings::char_at! 44 neq and while {
+			end 1 + -> end
+			end flen < fns end strings::char_at! 44 neq and
+		}
+		end pos > if {
+			fns pos end pos - strings::substring! -> fname
+			o "declare i32 @usr_" sb::append -> o
+			o mname sb::append -> o
+			o "_" sb::append -> o
+			o fname sb::append -> o
+			o "(ptr)\n" sb::append -> o
+		}
+		end 1 + -> pos
+		pos flen <
+	}
+	o st.code
+	st
+}
+
+// Emit declarations and code for a merged .qd file's AST
+pub fn emit_merged_file(s:ptr file_ast:ptr -- s2:ptr) {
+	-> froot -> st
+	froot null == if { st return }
+	// Process all top-level declarations from the merged file
+	froot @child1 null neq if { st froot @child1 emit_top_level -> st }
+	froot @child2 null neq if { st froot @child2 emit_top_level -> st }
+	froot @child3 null neq if { st froot @child3 emit_top_level -> st }
+	froot @child4 null neq if { st froot @child4 emit_top_level -> st }
+	froot @extra -> cur
+	cur null neq while {
+		st cur emit_top_level -> st
+		cur @sibling -> cur
+		cur null neq
+	}
+	st
+}
+
+// Generate IR for a program AST, plus optional merged file ASTs and module declares.
+// merged_files: linked list of program ASTs (via @sibling) to merge, or null
+// module_declares: IR text for module declare statements, or ""
+pub fn generate_full(prog:ptr merged_files:ptr module_declares:str -- ir:str) {
+	-> mdecls -> merged -> root
 	new_state -> st
 
 	// Preamble (header emitted in final combine)
@@ -839,7 +957,13 @@ pub fn generate(prog:ptr -- ir:str) {
 	o "declare i32 @qd_swap(ptr)\n" sb::append -> o
 	o "declare i32 @qd_over(ptr)\n" sb::append -> o
 	o "declare i32 @qd_rot(ptr)\n" sb::append -> o
+	o "declare i32 @qd_nip(ptr)\n" sb::append -> o
+	o "declare i32 @qd_len(ptr)\n" sb::append -> o
+	o "declare i32 @qd_free(ptr)\n" sb::append -> o
+	o "declare i32 @qd_panic(ptr)\n" sb::append -> o
+	o "declare i32 @qd_err(ptr)\n" sb::append -> o
 	o "declare void @qd_stack_pop(ptr, ptr)\n" sb::append -> o
+	o "declare i32 @qdrt_push_element(ptr, ptr)\n" sb::append -> o
 	o "declare void @qd_push_call(ptr, ptr, ptr, i64)\n" sb::append -> o
 	o "declare void @qd_pop_call(ptr)\n" sb::append -> o
 	o "declare void @_exit(i32)\n" sb::append -> o
@@ -858,6 +982,20 @@ pub fn generate(prog:ptr -- ir:str) {
 		cur null neq
 	}
 
+	// Process merged file ASTs
+	merged null neq while {
+		st merged emit_merged_file -> st
+		merged @sibling -> merged
+		merged null neq
+	}
+
+	// Emit module declares (as IR text)
+	mdecls strings::len 0 > if {
+		st @code -> o
+		o mdecls sb::append -> o
+		o st.code
+	}
+
 	// Main entry
 	st emit_main_entry -> st
 
@@ -872,4 +1010,10 @@ pub fn generate(prog:ptr -- ir:str) {
 	final "\n" sb::append -> final
 	final code_str sb::append -> final
 	final sb::finish
+}
+
+// Simple wrapper for backward compatibility
+pub fn generate(prog:ptr -- ir:str) {
+	-> root
+	root null "" generate_full
 }

@@ -5,42 +5,263 @@ use strings
 use sb
 use io
 use os
+use path
 use "lexer.qd"
 use "ast.qd"
 use "parser.qd"
 use "codegen.qd"
 
+// Extract function names from a module's .qd file by scanning for "pub fn" inside import blocks.
+// Returns comma-separated function names: "open,close,read_file"
+fn extract_module_funcs(mod_path:str -- funcs:str) {
+	-> mpath
+	mpath io::read_file! -> msource
+
+	sb::new -> out
+	0 -> in_import
+	0 -> count
+
+	msource lexer::new -> ml
+	ml lexer::next -> mtok
+	mtok @kind lexer::TokenType::Eof neq while {
+		mtok @kind lexer::TokenType::KwImport == if { 1 -> in_import }
+		in_import mtok @kind lexer::TokenType::RBrace == and if { 0 -> in_import }
+		in_import mtok @kind lexer::TokenType::KwPub == and if {
+			ml lexer::next -> mt2
+			mt2 @kind lexer::TokenType::KwFn == if {
+				ml lexer::next -> mt3
+				mt3 @kind lexer::TokenType::Ident == if {
+					count 0 > if { out "," sb::append -> out }
+					out mt3 @text sb::append -> out
+					count 1 + -> count
+				}
+			}
+		}
+		ml lexer::next -> mtok
+		mtok @kind lexer::TokenType::Eof neq
+	}
+	out sb::finish
+}
+
+// Collect all use-statement module names from program AST.
+// Returns semicolon-separated list: "io;strings;\"file.qd\""
+fn collect_uses(prog:ptr -- uses:str) {
+	-> root
+	sb::new -> out
+	0 -> count
+	// Helper: check one child node
+	root @child1 null neq if { root @child1 @nkind ast::NodeType::UseStmt == if {
+		count 0 > if { out ";" sb::append -> out }
+		out root @child1 @ntext sb::append -> out
+		count 1 + -> count
+	} }
+	root @child2 null neq if { root @child2 @nkind ast::NodeType::UseStmt == if {
+		count 0 > if { out ";" sb::append -> out }
+		out root @child2 @ntext sb::append -> out
+		count 1 + -> count
+	} }
+	root @child3 null neq if { root @child3 @nkind ast::NodeType::UseStmt == if {
+		count 0 > if { out ";" sb::append -> out }
+		out root @child3 @ntext sb::append -> out
+		count 1 + -> count
+	} }
+	root @child4 null neq if { root @child4 @nkind ast::NodeType::UseStmt == if {
+		count 0 > if { out ";" sb::append -> out }
+		out root @child4 @ntext sb::append -> out
+		count 1 + -> count
+	} }
+	root @extra -> cur
+	cur null neq while {
+		cur @nkind ast::NodeType::UseStmt == if {
+			count 0 > if { out ";" sb::append -> out }
+			out cur @ntext sb::append -> out
+			count 1 + -> count
+		}
+		cur @sibling -> cur
+		cur null neq
+	}
+	out sb::finish
+}
+
+// Map module name to C symbol prefix (most match, "strings" -> "str" is the exception)
+fn module_c_prefix(mod_name:str -- prefix:str) {
+	-> m
+	m "strings" strings::compare 0 == if { "str" return }
+	m
+}
+
+// Map module name to link flag
+fn module_lib_flag(mod_name:str -- flag:str) {
+	-> m
+	m "io" strings::compare 0 == if { "-lqdio" return }
+	m "strings" strings::compare 0 == if { "-lqdstr" return }
+	m "os" strings::compare 0 == if { "-lqdos" return }
+	m "math" strings::compare 0 == if { "-lqdmath" return }
+	m "mem" strings::compare 0 == if { "-lqdmem" return }
+	m "fmt" strings::compare 0 == if { "-lqdfmt" return }
+	m "time" strings::compare 0 == if { "-lqdtime" return }
+	m "signal" strings::compare 0 == if { "-lqdsignal" return }
+	m "strconv" strings::compare 0 == if { "-lqdstrconv" return }
+	m "thread" strings::compare 0 == if { "-lqdthread" return }
+	m "testing" strings::compare 0 == if { "-lqdtesting" return }
+	m "tty" strings::compare 0 == if { "-lqdtty" return }
+	""
+}
+
+// Get the directory part of a file path
+fn dir_of(fpath:str -- dir:str) {
+	-> p
+	p strings::len -> plen
+	plen 1 - -> idx
+	idx 0 >= while {
+		p idx strings::char_at! 47 == if { break }
+		idx 1 - -> idx
+		idx 0 >=
+	}
+	idx 0 >= if {
+		p 0 idx strings::substring!
+	} else {
+		"."
+	}
+}
+
+// Emit LLVM declares for a module's functions.
+// Emits both the C symbol (usr_<c_prefix>_func) and an alias from the module name.
+fn emit_declares(mod_name:str func_names:str -- decl:str) {
+	-> fns -> mname
+	fns strings::len 0 == if { "" return }
+	mname module_c_prefix -> cprefix
+	sb::new -> out
+	0 -> pos
+	fns strings::len -> flen
+	pos flen < while {
+		pos -> end
+		end flen < while {
+			fns end strings::char_at! 44 == if { break }
+			end 1 + -> end
+			end flen <
+		}
+		end pos > if {
+			fns pos end pos - strings::substring! -> fn_name
+			// Declare the C function
+			out "declare i32 @usr_" sb::append -> out
+			out cprefix sb::append -> out
+			out "_" sb::append -> out
+			out fn_name sb::append -> out
+			out "(ptr)\n" sb::append -> out
+			// If module name differs from C prefix, emit a thin wrapper
+			mname cprefix strings::compare 0 neq if {
+				out "define i32 @usr_" sb::append -> out
+				out mname sb::append -> out
+				out "_" sb::append -> out
+				out fn_name sb::append -> out
+				out "(ptr %ctx) {\n  %r = tail call i32 @usr_" sb::append -> out
+				out cprefix sb::append -> out
+				out "_" sb::append -> out
+				out fn_name sb::append -> out
+				out "(ptr %ctx)\n  ret i32 %r\n}\n" sb::append -> out
+			}
+		}
+		end 1 + -> pos
+		pos flen <
+	}
+	out sb::finish
+}
+
 fn main() {
-	// Get input/output from environment
 	"QUADC_INPUT" os::getenv -> source_path
 	"QUADC_OUTPUT" os::getenv -> output_name
+	"QUADRATE_ROOT" os::getenv -> quad_root
+	"QUADRATE_LIBDIR" os::getenv -> quad_libdir
 
 	source_path strings::is_empty if {
 		"Error: set QUADC_INPUT=<source.qd>" print nl
-		"Example: QUADC_INPUT=hello.qd ./quadc" print nl
 		1 os::exit
 	}
+	output_name strings::is_empty if { "a.out" -> output_name }
+	quad_root strings::is_empty if { "/usr/share/quadrate" -> quad_root }
+	quad_libdir strings::is_empty if { "/usr/lib" -> quad_libdir }
 
-	output_name strings::is_empty if {
-		"a.out" -> output_name
-	}
-
-	// Read source file
+	// Read and parse main source file
 	source_path io::read_file! -> source
-
-	// Parse
 	source parser::new -> p
 	p parser::parse_program -> prog
+	source_path dir_of -> source_dir
 
-	// Generate LLVM IR
-	prog codegen::generate -> ir
+	// Collect use statements
+	prog collect_uses -> uses
+	sb::new -> extra_declares
+	sb::new -> extra_libs
+	null -> merged_head
+	null -> merged_tail
 
-	// Write IR to temp file
+	// Process each use statement (semicolon-separated)
+	0 -> upos
+	uses strings::len -> ulen
+	upos ulen < while {
+		upos -> uend
+		uend ulen < while {
+			uses uend strings::char_at! 59 == if { break }
+			uend 1 + -> uend
+			uend ulen <
+		}
+		uend upos > if {
+			uses upos uend upos - strings::substring! -> uname
+
+			// Check if it's a quoted string (use "file.qd")
+			uname 0 strings::char_at! 34 == if {
+				// File import: strip quotes, resolve path, parse
+				uname 1 uname strings::len 2 - strings::substring! -> rel_path
+				source_dir "/" strings::concat rel_path strings::concat -> full_path
+				full_path io::read_file! -> fsrc
+				fsrc parser::new -> fp
+				fp parser::parse_program -> fast
+				// Link into merged list
+				merged_head null == if {
+					fast -> merged_head
+					fast -> merged_tail
+				} else {
+					fast merged_tail.sibling
+					fast -> merged_tail
+				}
+			} else {
+				// Module import: find module, extract funcs, emit declares
+				quad_root "/" strings::concat uname strings::concat
+				"/" strings::concat uname strings::concat ".qd" strings::concat -> mod_path
+				mod_path extract_module_funcs -> func_names
+				func_names strings::len 0 > if {
+					uname func_names emit_declares -> decl
+					extra_declares decl sb::append -> extra_declares
+				}
+				uname module_lib_flag -> lflag
+				lflag strings::len 0 > if {
+					extra_libs " " sb::append -> extra_libs
+					extra_libs lflag sb::append -> extra_libs
+				}
+			}
+		}
+		uend 1 + -> upos
+		upos ulen <
+	}
+
+	extra_declares sb::finish -> decl_str
+
+	// Generate IR for main program + merged files + module declares
+	prog merged_head decl_str codegen::generate_full -> ir
+
+	// Write IR
 	"/tmp/quadc_output.ll" ir io::write_file!
 
-	// Compile with clang + link with libqdrt
+	// Compile: clang + link libs
 	sb::new -> cmd
-	cmd "clang /tmp/quadc_output.ll -lqdrt -lm -o " sb::append -> cmd
+	cmd "clang /tmp/quadc_output.ll -L" sb::append -> cmd
+	cmd quad_libdir sb::append -> cmd
+	cmd " -lqdrt -lm" sb::append -> cmd
+	extra_libs sb::finish -> el
+	el strings::len 0 > if {
+		cmd el sb::append -> cmd
+	}
+	cmd " -o " sb::append -> cmd
 	cmd output_name sb::append -> cmd
 	cmd " 2>&1" sb::append -> cmd
 	cmd sb::finish -> cmd_str

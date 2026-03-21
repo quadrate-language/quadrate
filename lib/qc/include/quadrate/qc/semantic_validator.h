@@ -272,6 +272,9 @@ namespace Qd {
 		// Symbol table: all defined enums
 		std::unordered_set<std::string> mDefinedEnums;
 
+		// Track $"..." interpolation nodes already resolved (avoid double-resolution in merged modules)
+		std::unordered_set<IAstNode*> mResolvedInterpolations;
+
 		// Pre-collected structs and constants from main file (for sibling namespace support)
 		// These are collected before sibling files are processed and should not trigger
 		// duplicate errors when collectDefinitions runs on the main file
