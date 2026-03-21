@@ -2089,9 +2089,8 @@ namespace Qd {
 
 			// Handle struct/enum definition start
 			if (startsWithKeyword(trimmed, "struct") || startsWithKeyword(trimmed, "enum") ||
-					(startsWithKeyword(trimmed, "pub") &&
-							(trimmed.find("pub struct") != std::string::npos ||
-									trimmed.find("pub enum") != std::string::npos))) {
+					(startsWithKeyword(trimmed, "pub") && (trimmed.find("pub struct") != std::string::npos ||
+																  trimmed.find("pub enum") != std::string::npos))) {
 				// Output the struct header line
 				for (int i = 0; i < indentLevel; i++) {
 					output << '\t';

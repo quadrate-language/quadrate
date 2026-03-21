@@ -6,14 +6,16 @@ use strings
 use unicode
 
 // NFA state types
-const STATE_CHAR = 0    // Match specific character
-const STATE_ANY = 1     // Match any character (.)
-const STATE_SPLIT = 2   // Epsilon split (for |, *, +, ?)
-const STATE_MATCH = 3   // Accepting state
-const STATE_CCLASS = 4  // Character class [...]
-const STATE_NCCLASS = 5 // Negated char class [^...]
-const STATE_BOL = 6     // Beginning of line ^
-const STATE_EOL = 7     // End of line $
+enum StateType {
+	Char     // Match specific character
+	Any      // Match any character (.)
+	Split    // Epsilon split (for |, *, +, ?)
+	Match    // Accepting state
+	Cclass   // Character class [...]
+	Ncclass  // Negated char class [^...]
+	Bol      // Beginning of line ^
+	Eol      // End of line $
+}
 // State structure offsets (48 bytes per state)
 const ST_TYPE = 0       // i64: state type
 const ST_CHAR = 8       // i64: character to match
@@ -253,9 +255,9 @@ fn parse_cclass(ps:ptr -- start:i64) {
 	}
 
 	negated if {
-		STATE_NCCLASS
+		StateType::Ncclass
 	} else {
-		STATE_CCLASS
+		StateType::Cclass
 	}
 	-> stype
 	re stype add_state -> start
@@ -286,7 +288,7 @@ fn parse_atom(ps:ptr -- start:i64 end:i64) {
 				nc -1 != nc unicode::pipe != and nc unicode::rparen != and
 				nc unicode::asterisk != and nc unicode::plus != and nc unicode::question != and if {
 					ps parser_next drop
-					re STATE_CHAR add_state -> nstate
+					re StateType::Char add_state -> nstate
 					re nstate ST_CHAR nc state_set
 					gstart -1 == if {
 						nstate -> gstart
@@ -317,26 +319,26 @@ fn parse_atom(ps:ptr -- start:i64 end:i64) {
 		unicode::dot {
 			// .
 			ps parser_next drop
-			re STATE_ANY add_state -> start
+			re StateType::Any add_state -> start
 			start start
 		}
 		unicode::caret {
 			// ^
 			ps parser_next drop
-			re STATE_BOL add_state -> start
+			re StateType::Bol add_state -> start
 			start start
 		}
 		unicode::dollar {
 			// $
 			ps parser_next drop
-			re STATE_EOL add_state -> start
+			re StateType::Eol add_state -> start
 			start start
 		}
 		unicode::backslash {
 			// \
 			ps parser_next drop
 			ps parse_escape -> c
-			re STATE_CHAR add_state -> start
+			re StateType::Char add_state -> start
 			re start ST_CHAR c state_set
 			start start
 		}
@@ -345,7 +347,7 @@ fn parse_atom(ps:ptr -- start:i64 end:i64) {
 			c -1 != c unicode::pipe != and c unicode::rparen != and
 			c unicode::asterisk != and c unicode::plus != and c unicode::question != and if {
 				ps parser_next drop
-				re STATE_CHAR add_state -> start
+				re StateType::Char add_state -> start
 				re start ST_CHAR c state_set
 				start start
 			} else {
@@ -358,7 +360,7 @@ fn parse_atom(ps:ptr -- start:i64 end:i64) {
 // Helper: connect state to next, using OUT2 for SPLIT states
 fn connect_state(re:ptr sidx:i64 next:i64 -- ) {
 	-> next -> sidx -> re
-	re sidx ST_TYPE state_get STATE_SPLIT == if {
+	re sidx ST_TYPE state_get StateType::Split == if {
 		re sidx ST_OUT2 next state_set
 	} else {
 		re sidx ST_OUT1 next state_set
@@ -378,7 +380,7 @@ fn parse_repeat(ps:ptr -- start:i64 end:i64) {
 			unicode::asterisk {
 				// *
 				ps parser_next drop
-				re STATE_SPLIT add_state -> split
+				re StateType::Split add_state -> split
 				re split ST_OUT1 astart state_set
 				re aend ST_OUT1 split state_set
 				split split
@@ -386,7 +388,7 @@ fn parse_repeat(ps:ptr -- start:i64 end:i64) {
 			unicode::plus {
 				// +
 				ps parser_next drop
-				re STATE_SPLIT add_state -> split
+				re StateType::Split add_state -> split
 				re aend ST_OUT1 split state_set
 				re split ST_OUT1 astart state_set
 				split astart
@@ -394,9 +396,9 @@ fn parse_repeat(ps:ptr -- start:i64 end:i64) {
 			unicode::question {
 				// ?
 				ps parser_next drop
-				re STATE_SPLIT add_state -> split
+				re StateType::Split add_state -> split
 				re split ST_OUT1 astart state_set
-				re STATE_SPLIT add_state -> join
+				re StateType::Split add_state -> join
 				re aend ST_OUT1 join state_set
 				re split ST_OUT2 join state_set
 				join split
@@ -449,11 +451,11 @@ fn parse_alt(ps:ptr -- start:i64 end:i64) {
 				break
 			}
 
-			re STATE_SPLIT add_state -> split
+			re StateType::Split add_state -> split
 			re split ST_OUT1 start state_set
 			re split ST_OUT2 astart state_set
 
-			re STATE_SPLIT add_state -> join
+			re StateType::Split add_state -> join
 			re end join connect_state
 			re aend join connect_state
 
@@ -475,7 +477,7 @@ pub fn compile(pattern:str -- re:ptr) {
 
 	ps parse_alt -> start -> end
 
-	re STATE_MATCH add_state -> match_state
+	re StateType::Match add_state -> match_state
 	end -1 != if {
 		re end match_state connect_state
 	}
@@ -524,7 +526,7 @@ fn addstate(re:ptr states:ptr visited:ptr idx:i64 listid:i64 -- ) {
 
 			// Follow epsilon transitions
 			re idx ST_TYPE state_get -> stype
-			stype STATE_SPLIT == if {
+			stype StateType::Split == if {
 				re idx ST_OUT1 state_get -> out1
 				re idx ST_OUT2 state_get -> out2
 				re states visited out1 listid addstate
@@ -538,13 +540,13 @@ fn addstate(re:ptr states:ptr visited:ptr idx:i64 listid:i64 -- ) {
 fn state_matches(re:ptr idx:i64 c:i64 -- result:i64) {
 	-> c -> idx -> re
 	re idx ST_TYPE state_get -> stype
-	stype STATE_CHAR == if {
+	stype StateType::Char == if {
 		re idx ST_CHAR state_get c ==
 	} else {
-		stype STATE_ANY == if {
+		stype StateType::Any == if {
 			c -1 !=
 		} else {
-			stype STATE_CCLASS == if {
+			stype StateType::Cclass == if {
 				c -1 != if {
 					re idx ST_CCLASS state_get -> ccidx
 					re ccidx get_cclass c cclass_test
@@ -552,7 +554,7 @@ fn state_matches(re:ptr idx:i64 c:i64 -- result:i64) {
 					0
 				}
 			} else {
-				stype STATE_NCCLASS == if {
+				stype StateType::Ncclass == if {
 					c -1 != if {
 						re idx ST_CCLASS state_get -> ccidx
 						re ccidx get_cclass c cclass_test 0 ==
@@ -633,7 +635,7 @@ pub fn matches(re:ptr s:str -- result:i64) {
 			break
 		}
 		clist i 1 + 8 * mem::get_i64 -> sidx
-		re sidx ST_TYPE state_get STATE_MATCH == if {
+		re sidx ST_TYPE state_get StateType::Match == if {
 			1 -> result
 		}
 		i 1 + -> i

@@ -57,9 +57,9 @@
 #include <quadrate/qc/ast_node_break.h>
 #include <quadrate/qc/ast_node_constant.h>
 #include <quadrate/qc/ast_node_continue.h>
-#include <quadrate/qc/ast_node_enum.h>
 #include <quadrate/qc/ast_node_ctx.h>
 #include <quadrate/qc/ast_node_defer.h>
+#include <quadrate/qc/ast_node_enum.h>
 #include <quadrate/qc/ast_node_for.h>
 #include <quadrate/qc/ast_node_function.h>
 #include <quadrate/qc/ast_node_function_pointer.h>

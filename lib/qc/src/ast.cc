@@ -763,8 +763,7 @@ namespace Qd {
 						const char* extraName = u8t_scanner_token_text(scanner, &n);
 						std::string newName = existing->name() + "::" + extraName;
 						tempNodes.pop_back();
-						AstNodeScopedIdentifier* extended =
-								new AstNodeScopedIdentifier(existing->scope(), newName);
+						AstNodeScopedIdentifier* extended = new AstNodeScopedIdentifier(existing->scope(), newName);
 						setNodePosition(extended, scanner, src);
 						delete existing;
 						tempNodes.push_back(extended);
@@ -798,8 +797,7 @@ namespace Qd {
 							}
 						}
 
-						AstNodeScopedIdentifier* scoped =
-								new AstNodeScopedIdentifier(scope->name(), memberStr);
+						AstNodeScopedIdentifier* scoped = new AstNodeScopedIdentifier(scope->name(), memberStr);
 						setNodePosition(scoped, scanner, src);
 						delete scope;
 						// Check for '!' or '?' suffix
@@ -1795,8 +1793,7 @@ namespace Qd {
 						const char* extraName = u8t_scanner_token_text(scanner, &n);
 						std::string newName = existing->name() + "::" + extraName;
 						tempNodes.pop_back();
-						AstNodeScopedIdentifier* extended =
-								new AstNodeScopedIdentifier(existing->scope(), newName);
+						AstNodeScopedIdentifier* extended = new AstNodeScopedIdentifier(existing->scope(), newName);
 						setNodePosition(extended, scanner, src);
 						delete existing;
 						tempNodes.push_back(extended);
@@ -3792,8 +3789,7 @@ namespace Qd {
 							synchronize(&scanner);
 						}
 					} else {
-						errorReporter.reportError(
-								&scanner, "Expected 'fn', 'struct', 'enum', or 'const' after 'pub'");
+						errorReporter.reportError(&scanner, "Expected 'fn', 'struct', 'enum', or 'const' after 'pub'");
 						synchronize(&scanner);
 					}
 				} else if (strcmp(text, "fn") == 0) {

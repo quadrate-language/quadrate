@@ -418,8 +418,8 @@ json_t* QuadrateLSP::findDefinitionInModule(
 					json_object_set_new(range, "start", start);
 					json_t* end = json_object();
 					json_object_set_new(end, "line", json_integer(static_cast<json_int_t>(lspLine)));
-					json_object_set_new(end, "character",
-							json_integer(static_cast<json_int_t>(enumNode->name().length())));
+					json_object_set_new(
+							end, "character", json_integer(static_cast<json_int_t>(enumNode->name().length())));
 					json_object_set_new(range, "end", end);
 					json_object_set_new(location, "range", range);
 					return location;
@@ -1121,8 +1121,8 @@ void QuadrateLSP::handleDefinition(const std::string& id, const std::string& uri
 							json_object_set_new(range, "start", start);
 							json_t* end = json_object();
 							json_object_set_new(end, "line", json_integer(static_cast<json_int_t>(lspLine)));
-							json_object_set_new(end, "character",
-									json_integer(static_cast<json_int_t>(enumNode->name().length())));
+							json_object_set_new(
+									end, "character", json_integer(static_cast<json_int_t>(enumNode->name().length())));
 							json_object_set_new(range, "end", end);
 							json_object_set_new(location, "range", range);
 							result = location;
