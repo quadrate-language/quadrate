@@ -30,7 +30,7 @@ const CRC32_INIT = 4294967295
 /// @field tbl Lookup table (allocated on first update)
 pub struct Crc32 {
 	state:i64 = 4294967295
-	tbl:ptr = null
+	tbl:ptr = 0
 }
 
 // Generate CRC32 lookup table entry
