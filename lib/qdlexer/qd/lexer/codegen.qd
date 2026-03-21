@@ -1,0 +1,1030 @@
+/// Textual LLVM IR emitter for Quadrate.
+/// Walks the AST and produces .ll text that can be compiled with llc + clang.
+use strings
+use sb
+use "ast.qd"
+
+// Codegen state passed through all emit functions
+pub struct CgState {
+	globals:ptr      // sb for global declarations (strings, etc.)
+	code:ptr         // sb for function code
+	counter:i64      // shared counter for strings and labels
+}
+
+pub fn new_state( -- s:CgState) {
+	CgState {
+		globals = sb::new
+		code = sb::new
+		counter = 0
+	}
+}
+
+// Add a string constant and return its IR name (@.str.N)
+fn add_string(s:ptr text:str -- s2:ptr name:str) {
+	-> raw -> st
+	st @counter -> n
+	n 1 + st.counter
+
+	// Build name: @.str.N
+	sb::new -> nb
+	nb "@.str." sb::append -> nb
+	nb n sb::append_int -> nb
+	nb sb::finish -> sname
+
+	// Strip quotes from the raw text if present
+	raw -> content
+	raw strings::len -> rlen
+	rlen 2 >= if {
+		raw 0 strings::char_at! -> fc
+		fc 34 == if {
+			// Remove surrounding quotes
+			raw 1 rlen 2 - strings::substring! -> content
+		}
+	}
+
+	// Emit global: @.str.N = private unnamed_addr constant [len+1 x i8] c"...\00"
+	content strings::len -> clen
+	st @globals -> g
+	g sname sb::append -> g
+	g " = private unnamed_addr constant [" sb::append -> g
+	g clen 1 + sb::append_int -> g
+	g " x i8] c\"" sb::append -> g
+	g content sb::append -> g
+	g "\\00\"\n" sb::append -> g
+	g st.globals
+
+	st sname
+}
+
+// Get a unique label
+fn next_label(s:ptr -- s2:ptr name:str) {
+	-> st
+	st @counter -> n
+	n 1 + st.counter
+	sb::new -> lb
+	lb "L" sb::append -> lb
+	lb n sb::append_int -> lb
+	st lb sb::finish
+}
+
+// Collect local variable names from a block (recursive)
+// Returns comma-separated string: ",x,y,z,"
+fn collect_locals(node:ptr result:ptr -- result2:ptr) {
+	-> buf -> n
+	n null == if { buf return }
+	n @nkind ast::NodeType::LocalDecl == if {
+		buf "," sb::append -> buf
+		buf n @ntext sb::append -> buf
+		buf "," sb::append -> buf
+	}
+	// For loop iterator variables are also locals
+	n @nkind ast::NodeType::ForStmt == if {
+		buf "," sb::append -> buf
+		buf n @ntext sb::append -> buf
+		buf "," sb::append -> buf
+	}
+	// Recurse into children
+	n @child1 null neq if { n @child1 buf collect_locals -> buf }
+	n @child2 null neq if { n @child2 buf collect_locals -> buf }
+	n @child3 null neq if { n @child3 buf collect_locals -> buf }
+	n @child4 null neq if { n @child4 buf collect_locals -> buf }
+	n @extra -> cur
+	cur null neq while {
+		cur buf collect_locals -> buf
+		cur @sibling -> cur
+		cur null neq
+	}
+	buf
+}
+
+// Check if a name is in the locals string
+fn is_local(locals:str name:str -- result:i64) {
+	-> n -> ls
+	sb::new -> nb
+	nb "," sb::append -> nb
+	nb n sb::append -> nb
+	nb "," sb::append -> nb
+	nb sb::finish -> needle
+	ls needle strings::contains
+}
+
+// Emit a single AST node
+fn emit_node(s:ptr node:ptr locals:str -- s2:ptr) {
+	-> loc -> n -> st
+	n null == if { st return }
+	st @code -> o
+	n @nkind -> k
+
+	// Integer literal
+	k ast::NodeType::IntLit == if {
+		o "  call i32 @qd_push_i(ptr %ctx, i64 " sb::append -> o
+		n @ntext -> val
+		val "true" strings::compare 0 == val "Ok" strings::compare 0 == or if {
+			o "1" sb::append -> o
+		} else {
+			val "false" strings::compare 0 == val "Err" strings::compare 0 == or
+			val "null" strings::compare 0 == or if {
+				o "0" sb::append -> o
+			} else {
+				o val sb::append -> o
+			}
+		}
+		o ")\n" sb::append -> o
+		o st.code
+		st return
+	}
+
+	// Float literal
+	k ast::NodeType::FloatLit == if {
+		o "  call i32 @qd_push_f(ptr %ctx, double " sb::append -> o
+		o n @ntext sb::append -> o
+		o ")\n" sb::append -> o
+		o st.code
+		st return
+	}
+
+	// String literal
+	k ast::NodeType::StrLit == if {
+		st n @ntext add_string -> sname -> st
+		o "  call i32 @qd_push_s(ptr %ctx, ptr " sb::append -> o
+		o sname sb::append -> o
+		o ")\n" sb::append -> o
+		o st.code
+		st return
+	}
+
+	// Identifier (builtin, local variable push, or function call)
+	k ast::NodeType::Ident == if {
+		n @ntext -> fname
+		// Built-in stack instructions
+		fname "print" strings::compare 0 == if { o "  call i32 @qd_prints(ptr %ctx)\n" sb::append -> o  o st.code st return }
+		fname "prints" strings::compare 0 == if { o "  call i32 @qd_prints(ptr %ctx)\n" sb::append -> o  o st.code st return }
+		fname "nl" strings::compare 0 == if { o "  call i32 @qd_nl(ptr %ctx)\n" sb::append -> o  o st.code st return }
+		fname "dup" strings::compare 0 == if { o "  call i32 @qd_dup(ptr %ctx)\n" sb::append -> o  o st.code st return }
+		fname "drop" strings::compare 0 == if { o "  call i32 @qd_drop(ptr %ctx)\n" sb::append -> o  o st.code st return }
+		fname "swap" strings::compare 0 == if { o "  call i32 @qd_swap(ptr %ctx)\n" sb::append -> o  o st.code st return }
+		fname "over" strings::compare 0 == if { o "  call i32 @qd_over(ptr %ctx)\n" sb::append -> o  o st.code st return }
+		fname "rot" strings::compare 0 == if { o "  call i32 @qd_rot(ptr %ctx)\n" sb::append -> o  o st.code st return }
+		fname "nip" strings::compare 0 == if { o "  call i32 @qd_nip(ptr %ctx)\n" sb::append -> o  o st.code st return }
+		fname "len" strings::compare 0 == if { o "  call i32 @qd_len(ptr %ctx)\n" sb::append -> o  o st.code st return }
+		fname "free" strings::compare 0 == if { o "  call i32 @qd_free(ptr %ctx)\n" sb::append -> o  o st.code st return }
+		fname "panic" strings::compare 0 == if { o "  call i32 @qd_panic(ptr %ctx)\n" sb::append -> o  o st.code st return }
+		fname "err" strings::compare 0 == if { o "  call i32 @qd_err(ptr %ctx)\n" sb::append -> o  o st.code st return }
+		// Check if it looks like a local variable (lowercase first char, not a known builtin)
+		// Emit: load value from alloca and push onto runtime stack
+		// This relies on the variable being previously declared with -> name
+		// Check if this identifier is a local variable
+		loc fname is_local if {
+			// Push local variable value onto runtime stack
+			st next_label -> uid -> st
+			st @code -> o
+			o "  %vp_" sb::append -> o  o uid sb::append -> o
+			o " = getelementptr %qd_stack_element_t, ptr %local." sb::append -> o
+			o fname sb::append -> o  o ", i32 0, i32 0\n" sb::append -> o
+			o "  %vi_" sb::append -> o  o uid sb::append -> o
+			o " = load i64, ptr %vp_" sb::append -> o  o uid sb::append -> o  o "\n" sb::append -> o
+			o "  call i32 @qd_push_i(ptr %ctx, i64 %vi_" sb::append -> o
+			o uid sb::append -> o  o ")\n" sb::append -> o
+			o st.code
+			st return
+		}
+		// Function call
+		o "  call i32 @usr_main_" sb::append -> o
+		o fname sb::append -> o
+		o "(ptr %ctx)\n" sb::append -> o
+		o st.code
+		st return
+		// Uppercase or unknown — function call
+		o "  call i32 @usr_main_" sb::append -> o
+		o fname sb::append -> o
+		o "(ptr %ctx)\n" sb::append -> o
+		o st.code
+		st return
+	}
+
+	// Scoped identifier (module::func or Enum::Variant)
+	k ast::NodeType::ScopedIdent == if {
+		n @ntext -> scope
+		n @child1 @ntext -> member
+		// Check if scope looks like an enum (starts with uppercase)
+		scope 0 strings::char_at! -> sc
+		sc 65 >= sc 90 <= and if {
+			// Enum variant — load from global constant
+			st next_label -> uid -> st
+			st @code -> o
+			o "  %ev_" sb::append -> o  o uid sb::append -> o
+			o " = load i64, ptr @__enum_" sb::append -> o
+			o scope sb::append -> o  o "_" sb::append -> o  o member sb::append -> o  o "\n" sb::append -> o
+			o "  call i32 @qd_push_i(ptr %ctx, i64 %ev_" sb::append -> o
+			o uid sb::append -> o  o ")\n" sb::append -> o
+			o st.code
+			st return
+		}
+		// Module function call: usr_module_func
+		o "  call i32 @usr_" sb::append -> o
+		o scope sb::append -> o
+		o "_" sb::append -> o
+		o member sb::append -> o
+		o "(ptr %ctx)\n" sb::append -> o
+		o st.code
+		st return
+	}
+
+	// Instruction (operator)
+	k ast::NodeType::Instruction == if {
+		n @ntext -> op
+		op "+" strings::compare 0 == op "add" strings::compare 0 == or if { o "  call i32 @qd_add(ptr %ctx)\n" sb::append -> o  o st.code st return }
+		op "-" strings::compare 0 == op "sub" strings::compare 0 == or if { o "  call i32 @qd_sub(ptr %ctx)\n" sb::append -> o  o st.code st return }
+		op "*" strings::compare 0 == op "mul" strings::compare 0 == or if { o "  call i32 @qd_mul(ptr %ctx)\n" sb::append -> o  o st.code st return }
+		op "/" strings::compare 0 == op "div" strings::compare 0 == or if { o "  call i32 @qd_div(ptr %ctx)\n" sb::append -> o  o st.code st return }
+		op "%" strings::compare 0 == op "mod" strings::compare 0 == or if { o "  call i32 @qd_mod(ptr %ctx)\n" sb::append -> o  o st.code st return }
+		op "==" strings::compare 0 == op "eq" strings::compare 0 == or if { o "  call i32 @qd_eq(ptr %ctx)\n" sb::append -> o  o st.code st return }
+		op "!=" strings::compare 0 == op "neq" strings::compare 0 == or if { o "  call i32 @qd_neq(ptr %ctx)\n" sb::append -> o  o st.code st return }
+		op "<" strings::compare 0 == op "lt" strings::compare 0 == or if { o "  call i32 @qd_lt(ptr %ctx)\n" sb::append -> o  o st.code st return }
+		op ">" strings::compare 0 == op "gt" strings::compare 0 == or if { o "  call i32 @qd_gt(ptr %ctx)\n" sb::append -> o  o st.code st return }
+		op "<=" strings::compare 0 == op "lte" strings::compare 0 == or if { o "  call i32 @qd_lte(ptr %ctx)\n" sb::append -> o  o st.code st return }
+		op ">=" strings::compare 0 == op "gte" strings::compare 0 == or if { o "  call i32 @qd_gte(ptr %ctx)\n" sb::append -> o  o st.code st return }
+		o "  ; TODO: instruction " sb::append -> o
+		o op sb::append -> o
+		o "\n" sb::append -> o
+		o st.code
+		st return
+	}
+
+	// Local variable declaration: -> name
+	k ast::NodeType::LocalDecl == if {
+		n @ntext -> vname
+		st next_label -> uid -> st
+		st @code -> o
+		o "  %local." sb::append -> o  o vname sb::append -> o
+		o " = alloca %qd_stack_element_t\n" sb::append -> o
+		o "  %stp_" sb::append -> o  o uid sb::append -> o
+		o " = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0\n" sb::append -> o
+		o "  %stk_" sb::append -> o  o uid sb::append -> o
+		o " = load ptr, ptr %stp_" sb::append -> o  o uid sb::append -> o  o "\n" sb::append -> o
+		o "  call void @qd_stack_pop(ptr %stk_" sb::append -> o  o uid sb::append -> o
+		o ", ptr %local." sb::append -> o  o vname sb::append -> o  o ")\n" sb::append -> o
+		o st.code
+		st return
+	}
+
+	// Block — recurse
+	k ast::NodeType::Block == if {
+		st n loc emit_block return
+	}
+
+	// If statement
+	k ast::NodeType::IfStmt == if {
+		st n loc emit_if return
+	}
+
+	// While loop
+	k ast::NodeType::WhileStmt == if {
+		st n loc emit_while return
+	}
+
+	// Loop (infinite)
+	k ast::NodeType::LoopStmt == if {
+		st n loc emit_loop return
+	}
+
+	// Switch statement
+	k ast::NodeType::SwitchStmt == if {
+		st n loc emit_switch return
+	}
+
+	// For loop
+	k ast::NodeType::ForStmt == if {
+		st n loc emit_for return
+	}
+
+	// Return statement
+	k ast::NodeType::ReturnStmt == if {
+		o "  br label %return\n" sb::append -> o
+		o st.code
+		st return
+	}
+
+	// Break statement
+	k ast::NodeType::BreakStmt == if {
+		o "  br label %loop_exit\n" sb::append -> o
+		o st.code
+		st return
+	}
+
+	// Continue statement
+	k ast::NodeType::ContinueStmt == if {
+		o "  br label %loop_cond\n" sb::append -> o
+		o st.code
+		st return
+	}
+
+	// Field access: @fieldname — pop struct ptr, load field, push value
+	// Uses struct layout stored in globals by emit_struct_decl
+	k ast::NodeType::FieldAccess == if {
+		st next_label -> uid -> st
+		st @code -> o
+		n @ntext -> fname
+		// Pop struct pointer from stack
+		o "  %fa_elem_" sb::append -> o  o uid sb::append -> o
+		o " = alloca %qd_stack_element_t\n" sb::append -> o
+		o "  %fa_stp_" sb::append -> o  o uid sb::append -> o
+		o " = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0\n" sb::append -> o
+		o "  %fa_stk_" sb::append -> o  o uid sb::append -> o
+		o " = load ptr, ptr %fa_stp_" sb::append -> o  o uid sb::append -> o  o "\n" sb::append -> o
+		o "  call void @qd_stack_pop(ptr %fa_stk_" sb::append -> o  o uid sb::append -> o
+		o ", ptr %fa_elem_" sb::append -> o  o uid sb::append -> o  o ")\n" sb::append -> o
+		// Load struct ptr value
+		o "  %fa_vp_" sb::append -> o  o uid sb::append -> o
+		o " = getelementptr %qd_stack_element_t, ptr %fa_elem_" sb::append -> o  o uid sb::append -> o
+		o ", i32 0, i32 0\n" sb::append -> o
+		o "  %fa_ptr_" sb::append -> o  o uid sb::append -> o
+		o " = load ptr, ptr %fa_vp_" sb::append -> o  o uid sb::append -> o  o "\n" sb::append -> o
+		// Compute field offset using field name lookup
+		// For simplicity: emit a call to a helper that resolves field name to offset
+		// Actually, we need the offset at compile time. Use struct_field_offset global.
+		// For bootstrap: just emit GEP with byte offset that we look up from struct decls
+		// For now: field offset is stored as @__offset_StructName_fieldname global
+		o "  %fa_off_" sb::append -> o  o uid sb::append -> o
+		o " = load i64, ptr @__offset_" sb::append -> o
+		o fname sb::append -> o  o "\n" sb::append -> o
+		o "  %fa_fp_" sb::append -> o  o uid sb::append -> o
+		o " = getelementptr i8, ptr %fa_ptr_" sb::append -> o  o uid sb::append -> o
+		o ", i64 %fa_off_" sb::append -> o  o uid sb::append -> o  o "\n" sb::append -> o
+		// Load field value as i64 and push
+		o "  %fa_val_" sb::append -> o  o uid sb::append -> o
+		o " = load i64, ptr %fa_fp_" sb::append -> o  o uid sb::append -> o  o "\n" sb::append -> o
+		o "  call i32 @qd_push_i(ptr %ctx, i64 %fa_val_" sb::append -> o
+		o uid sb::append -> o  o ")\n" sb::append -> o
+		o st.code
+		st return
+	}
+
+	// Field set: val var.field — pop value, load var (local), store at field offset
+	k ast::NodeType::FieldSet == if {
+		st next_label -> uid -> st
+		st @code -> o
+		n @ntext -> vname
+		n @child1 @ntext -> fname
+		// Pop value from stack
+		o "  %fs_elem_" sb::append -> o  o uid sb::append -> o
+		o " = alloca %qd_stack_element_t\n" sb::append -> o
+		o "  %fs_stp_" sb::append -> o  o uid sb::append -> o
+		o " = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0\n" sb::append -> o
+		o "  %fs_stk_" sb::append -> o  o uid sb::append -> o
+		o " = load ptr, ptr %fs_stp_" sb::append -> o  o uid sb::append -> o  o "\n" sb::append -> o
+		o "  call void @qd_stack_pop(ptr %fs_stk_" sb::append -> o  o uid sb::append -> o
+		o ", ptr %fs_elem_" sb::append -> o  o uid sb::append -> o  o ")\n" sb::append -> o
+		o "  %fs_vp_" sb::append -> o  o uid sb::append -> o
+		o " = getelementptr %qd_stack_element_t, ptr %fs_elem_" sb::append -> o  o uid sb::append -> o
+		o ", i32 0, i32 0\n" sb::append -> o
+		o "  %fs_val_" sb::append -> o  o uid sb::append -> o
+		o " = load i64, ptr %fs_vp_" sb::append -> o  o uid sb::append -> o  o "\n" sb::append -> o
+		// Load struct pointer from local variable
+		o "  %fs_svp_" sb::append -> o  o uid sb::append -> o
+		o " = getelementptr %qd_stack_element_t, ptr %local." sb::append -> o  o vname sb::append -> o
+		o ", i32 0, i32 0\n" sb::append -> o
+		o "  %fs_sptr_" sb::append -> o  o uid sb::append -> o
+		o " = load ptr, ptr %fs_svp_" sb::append -> o  o uid sb::append -> o  o "\n" sb::append -> o
+		// GEP to field offset and store
+		o "  %fs_off_" sb::append -> o  o uid sb::append -> o
+		o " = load i64, ptr @__offset_" sb::append -> o  o fname sb::append -> o  o "\n" sb::append -> o
+		o "  %fs_fp_" sb::append -> o  o uid sb::append -> o
+		o " = getelementptr i8, ptr %fs_sptr_" sb::append -> o  o uid sb::append -> o
+		o ", i64 %fs_off_" sb::append -> o  o uid sb::append -> o  o "\n" sb::append -> o
+		o "  store i64 %fs_val_" sb::append -> o  o uid sb::append -> o
+		o ", ptr %fs_fp_" sb::append -> o  o uid sb::append -> o  o "\n" sb::append -> o
+		o st.code
+		st return
+	}
+
+	// Struct construction: Name { field = value ... }
+	k ast::NodeType::StructConstruct == if {
+		st next_label -> uid -> st
+		st @code -> o
+		n @ntext -> sname
+		// Allocate struct: load size from @__size_StructName, call qd_struct_alloc
+		o "  %sz_" sb::append -> o  o uid sb::append -> o
+		o " = load i64, ptr @__size_" sb::append -> o  o sname sb::append -> o  o "\n" sb::append -> o
+		o "  %sp_" sb::append -> o  o uid sb::append -> o
+		o " = call ptr @qd_struct_alloc(i64 %sz_" sb::append -> o  o uid sb::append -> o
+		o ", ptr null)\n" sb::append -> o
+		o st.code
+		// Write field values: iterate StructField children
+		// Each StructField has ntext=fieldname, child1=value expression
+		n @child1 null neq if { st n @child1 uid sname loc emit_struct_field -> st }
+		n @child2 null neq if { st n @child2 uid sname loc emit_struct_field -> st }
+		n @child3 null neq if { st n @child3 uid sname loc emit_struct_field -> st }
+		n @child4 null neq if { st n @child4 uid sname loc emit_struct_field -> st }
+		n @extra -> cur
+		cur null neq while {
+			st cur uid sname loc emit_struct_field -> st
+			cur @sibling -> cur
+			cur null neq
+		}
+		// Push struct pointer onto stack
+		st @code -> o
+		o "  call i32 @qd_push_p(ptr %ctx, ptr %sp_" sb::append -> o
+		o uid sb::append -> o  o ")\n" sb::append -> o
+		o st.code
+		st return
+	}
+
+	// Anything else
+	o "  ; TODO: node kind " sb::append -> o
+	o k sb::append_int -> o
+	o "\n" sb::append -> o
+	o st.code
+	st
+}
+
+// Helper: emit an enum variant global constant
+fn emit_enum_variant(g:ptr ename:str vname:str val:i64 -- g2:ptr) {
+	-> v -> vn -> en -> buf
+	buf "@__enum_" sb::append -> buf
+	buf en sb::append -> buf
+	buf "_" sb::append -> buf
+	buf vn sb::append -> buf
+	buf " = private constant i64 " sb::append -> buf
+	buf v sb::append_int -> buf
+	buf "\n" sb::append -> buf
+	buf
+}
+
+// Helper: emit a struct field write (used during struct construction)
+fn emit_struct_field(s:ptr field:ptr struct_uid:str struct_name:str locals:str -- s2:ptr) {
+	-> loc -> sname -> suid -> fld -> st
+	fld null == if { st return }
+	fld @nkind ast::NodeType::StructField neq if { st return }
+	fld @ntext -> fname
+
+	// Evaluate the field value expression (child1 of StructField)
+	fld @child1 null neq if {
+		st fld @child1 loc emit_node -> st
+	}
+
+	// Pop value from runtime stack
+	st next_label -> uid -> st
+	st @code -> o
+	o "  %sf_elem_" sb::append -> o  o uid sb::append -> o
+	o " = alloca %qd_stack_element_t\n" sb::append -> o
+	o "  %sf_stp_" sb::append -> o  o uid sb::append -> o
+	o " = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0\n" sb::append -> o
+	o "  %sf_stk_" sb::append -> o  o uid sb::append -> o
+	o " = load ptr, ptr %sf_stp_" sb::append -> o  o uid sb::append -> o  o "\n" sb::append -> o
+	o "  call void @qd_stack_pop(ptr %sf_stk_" sb::append -> o  o uid sb::append -> o
+	o ", ptr %sf_elem_" sb::append -> o  o uid sb::append -> o  o ")\n" sb::append -> o
+	// Load value
+	o "  %sf_vp_" sb::append -> o  o uid sb::append -> o
+	o " = getelementptr %qd_stack_element_t, ptr %sf_elem_" sb::append -> o  o uid sb::append -> o
+	o ", i32 0, i32 0\n" sb::append -> o
+	o "  %sf_val_" sb::append -> o  o uid sb::append -> o
+	o " = load i64, ptr %sf_vp_" sb::append -> o  o uid sb::append -> o  o "\n" sb::append -> o
+	// Load field offset
+	o "  %sf_off_" sb::append -> o  o uid sb::append -> o
+	o " = load i64, ptr @__offset_" sb::append -> o  o fname sb::append -> o  o "\n" sb::append -> o
+	// GEP to field and store
+	o "  %sf_fp_" sb::append -> o  o uid sb::append -> o
+	o " = getelementptr i8, ptr %sp_" sb::append -> o  o suid sb::append -> o
+	o ", i64 %sf_off_" sb::append -> o  o uid sb::append -> o  o "\n" sb::append -> o
+	o "  store i64 %sf_val_" sb::append -> o  o uid sb::append -> o
+	o ", ptr %sf_fp_" sb::append -> o  o uid sb::append -> o  o "\n" sb::append -> o
+	o st.code
+	st
+}
+
+// Helper: emit pop-condition-and-branch pattern
+fn emit_pop_cond(s:ptr uid:str -- s2:ptr) {
+	-> id -> st
+	st @code -> o
+	o "  %ce_" sb::append -> o  o id sb::append -> o
+	o " = alloca %qd_stack_element_t\n" sb::append -> o
+	o "  %stp_" sb::append -> o  o id sb::append -> o
+	o " = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0\n" sb::append -> o
+	o "  %stk_" sb::append -> o  o id sb::append -> o
+	o " = load ptr, ptr %stp_" sb::append -> o  o id sb::append -> o  o "\n" sb::append -> o
+	o "  call void @qd_stack_pop(ptr %stk_" sb::append -> o  o id sb::append -> o
+	o ", ptr %ce_" sb::append -> o  o id sb::append -> o  o ")\n" sb::append -> o
+	o "  %cv_" sb::append -> o  o id sb::append -> o
+	o " = getelementptr %qd_stack_element_t, ptr %ce_" sb::append -> o  o id sb::append -> o
+	o ", i32 0, i32 0\n" sb::append -> o
+	o "  %ci_" sb::append -> o  o id sb::append -> o
+	o " = load i64, ptr %cv_" sb::append -> o  o id sb::append -> o  o "\n" sb::append -> o
+	o "  %cc_" sb::append -> o  o id sb::append -> o
+	o " = icmp ne i64 %ci_" sb::append -> o  o id sb::append -> o  o ", 0\n" sb::append -> o
+	o st.code
+	st
+}
+
+// Emit if/else
+fn emit_if(s:ptr node:ptr locals:str -- s2:ptr) {
+	-> loc -> n -> st
+	st next_label -> uid -> st
+	st next_label -> then_label -> st
+	st next_label -> else_label -> st
+	st next_label -> merge_label -> st
+
+	st uid emit_pop_cond -> st
+	st @code -> o
+
+	n ast::child_count 2 >= if {
+		o "  br i1 %cc_" sb::append -> o  o uid sb::append -> o
+		o ", label %" sb::append -> o  o then_label sb::append -> o
+		o ", label %" sb::append -> o  o else_label sb::append -> o  o "\n" sb::append -> o
+	} else {
+		o "  br i1 %cc_" sb::append -> o  o uid sb::append -> o
+		o ", label %" sb::append -> o  o then_label sb::append -> o
+		o ", label %" sb::append -> o  o merge_label sb::append -> o  o "\n" sb::append -> o
+	}
+
+	o then_label sb::append -> o  o ":\n" sb::append -> o  o st.code
+	st n @child1 loc emit_block -> st
+	st @code -> o
+	o "  br label %" sb::append -> o  o merge_label sb::append -> o  o "\n" sb::append -> o
+
+	n ast::child_count 2 >= if {
+		o else_label sb::append -> o  o ":\n" sb::append -> o  o st.code
+		st n @child2 loc emit_block -> st
+		st @code -> o
+		o "  br label %" sb::append -> o  o merge_label sb::append -> o  o "\n" sb::append -> o
+	}
+
+	o merge_label sb::append -> o  o ":\n" sb::append -> o  o st.code
+	st
+}
+
+// Emit while loop
+fn emit_while(s:ptr node:ptr locals:str -- s2:ptr) {
+	-> loc -> n -> st
+	st next_label -> uid -> st
+	st next_label -> cond_label -> st
+	st next_label -> body_label -> st
+	st next_label -> exit_label -> st
+
+	st @code -> o
+	// Pop initial condition (already on stack from before 'while')
+	st uid emit_pop_cond -> st
+	st @code -> o
+	o "  br i1 %cc_" sb::append -> o  o uid sb::append -> o
+	o ", label %" sb::append -> o  o body_label sb::append -> o
+	o ", label %" sb::append -> o  o exit_label sb::append -> o  o "\n" sb::append -> o
+
+	// Body
+	o body_label sb::append -> o  o ":\n" sb::append -> o  o st.code
+	st n @child1 loc emit_block -> st
+
+	// After body, pop new condition and loop back
+	st next_label -> uid2 -> st
+	st uid2 emit_pop_cond -> st
+	st @code -> o
+	o "  br i1 %cc_" sb::append -> o  o uid2 sb::append -> o
+	o ", label %" sb::append -> o  o body_label sb::append -> o
+	o ", label %" sb::append -> o  o exit_label sb::append -> o  o "\n" sb::append -> o
+
+	o exit_label sb::append -> o  o ":\n" sb::append -> o  o st.code
+	st
+}
+
+// Emit infinite loop
+fn emit_loop(s:ptr node:ptr locals:str -- s2:ptr) {
+	-> loc -> n -> st
+	st next_label -> body_label -> st
+	st next_label -> exit_label -> st
+
+	st @code -> o
+	o "  br label %" sb::append -> o  o body_label sb::append -> o  o "\n" sb::append -> o
+	o body_label sb::append -> o  o ":\n" sb::append -> o  o st.code
+
+	st n @child1 loc emit_block -> st
+
+	st @code -> o
+	o "  br label %" sb::append -> o  o body_label sb::append -> o  o "\n" sb::append -> o
+	o exit_label sb::append -> o  o ":\n" sb::append -> o  o st.code
+	st
+}
+
+// Emit switch statement (simplified: chain of if-else comparisons)
+fn emit_switch(s:ptr node:ptr locals:str -- s2:ptr) {
+	-> loc -> n -> st
+	st next_label -> uid -> st
+	st next_label -> exit_label -> st
+
+	// Pop switch value using emit_pop_cond — value is in %ci_uid
+	st uid emit_pop_cond -> st
+
+	// Emit case chain: for each CaseClause, compare and branch
+	// For each case: emit value, compare with switch value, branch to body or next case
+	st n exit_label uid loc emit_switch_cases -> st
+
+	st @code -> o
+	o "  br label %" sb::append -> o  o exit_label sb::append -> o  o "\n" sb::append -> o
+	o exit_label sb::append -> o  o ":\n" sb::append -> o  o st.code
+	st
+}
+
+// Emit switch case chain (iterates all children of switch node)
+fn emit_switch_cases(s:ptr node:ptr exit:str sw_uid:str locals:str -- s2:ptr) {
+	-> loc -> suid -> exit_label -> n -> st
+
+	// Process each child (CaseClause or DefaultClause)
+	n @child1 null neq if { st n @child1 exit_label suid loc emit_one_case -> st }
+	n @child2 null neq if { st n @child2 exit_label suid loc emit_one_case -> st }
+	n @child3 null neq if { st n @child3 exit_label suid loc emit_one_case -> st }
+	n @child4 null neq if { st n @child4 exit_label suid loc emit_one_case -> st }
+	n @extra -> cur
+	cur null neq while {
+		st cur exit_label suid loc emit_one_case -> st
+		cur @sibling -> cur
+		cur null neq
+	}
+	st
+}
+
+// Emit a single case or default clause
+fn emit_one_case(s:ptr case_node:ptr exit:str sw_uid:str locals:str -- s2:ptr) {
+	-> loc -> suid -> exit_label -> cn -> st
+	cn null == if { st return }
+
+	// Default clause: just emit body
+	cn @nkind ast::NodeType::DefaultClause == if {
+		cn @child1 null neq if { st cn @child1 loc emit_block -> st }
+		st @code -> o
+		o "  br label %" sb::append -> o  o exit_label sb::append -> o  o "\n" sb::append -> o
+		st next_label -> after -> st
+		o after sb::append -> o  o ":\n" sb::append -> o  o st.code
+		st return
+	}
+
+	// Case clause: child1=value, child2=body
+	cn @nkind ast::NodeType::CaseClause == if {
+		st next_label -> case_uid -> st
+		st next_label -> body_label -> st
+		st next_label -> next_label2 -> st
+		st @code -> o
+
+		// Evaluate case value — emit the value node, pop, compare with switch value
+		o st.code
+		st cn @child1 loc emit_node -> st
+		// Pop case value
+		st case_uid emit_pop_cond -> st
+		st @code -> o
+		// Compare: switch_val == case_val
+		o "  %cmp_" sb::append -> o  o case_uid sb::append -> o
+		o " = icmp eq i64 %ci_" sb::append -> o  o suid sb::append -> o
+		o ", %ci_" sb::append -> o  o case_uid sb::append -> o  o "\n" sb::append -> o
+		o "  br i1 %cmp_" sb::append -> o  o case_uid sb::append -> o
+		o ", label %" sb::append -> o  o body_label sb::append -> o
+		o ", label %" sb::append -> o  o next_label2 sb::append -> o  o "\n" sb::append -> o
+
+		// Body
+		o body_label sb::append -> o  o ":\n" sb::append -> o  o st.code
+		cn @child2 null neq if { st cn @child2 loc emit_block -> st }
+		st @code -> o
+		o "  br label %" sb::append -> o  o exit_label sb::append -> o  o "\n" sb::append -> o
+
+		// Next case
+		o next_label2 sb::append -> o  o ":\n" sb::append -> o  o st.code
+		st return
+	}
+
+	st
+}
+
+// Emit for loop: start end step for var { body }
+// The start/end/step values are already on the runtime stack (pushed before 'for')
+fn emit_for(s:ptr node:ptr locals:str -- s2:ptr) {
+	-> loc -> n -> st
+	st next_label -> uid -> st
+	st next_label -> cond_label -> st
+	st next_label -> body_label -> st
+	st next_label -> exit_label -> st
+	n @ntext -> iter_var
+
+	st @code -> o
+	// Pop step, end, start from stack
+	o "  %for_step_e_" sb::append -> o  o uid sb::append -> o  o " = alloca %qd_stack_element_t\n" sb::append -> o
+	o "  %for_end_e_" sb::append -> o  o uid sb::append -> o  o " = alloca %qd_stack_element_t\n" sb::append -> o
+	o "  %for_start_e_" sb::append -> o  o uid sb::append -> o  o " = alloca %qd_stack_element_t\n" sb::append -> o
+	o "  %local." sb::append -> o  o iter_var sb::append -> o  o " = alloca %qd_stack_element_t\n" sb::append -> o
+	// Get stack ptr
+	o "  %for_stp_" sb::append -> o  o uid sb::append -> o
+	o " = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0\n" sb::append -> o
+	o "  %for_stk_" sb::append -> o  o uid sb::append -> o
+	o " = load ptr, ptr %for_stp_" sb::append -> o  o uid sb::append -> o  o "\n" sb::append -> o
+	// Pop step
+	o "  call void @qd_stack_pop(ptr %for_stk_" sb::append -> o  o uid sb::append -> o
+	o ", ptr %for_step_e_" sb::append -> o  o uid sb::append -> o  o ")\n" sb::append -> o
+	// Pop end
+	o "  call void @qd_stack_pop(ptr %for_stk_" sb::append -> o  o uid sb::append -> o
+	o ", ptr %for_end_e_" sb::append -> o  o uid sb::append -> o  o ")\n" sb::append -> o
+	// Pop start
+	o "  call void @qd_stack_pop(ptr %for_stk_" sb::append -> o  o uid sb::append -> o
+	o ", ptr %for_start_e_" sb::append -> o  o uid sb::append -> o  o ")\n" sb::append -> o
+	// Load values
+	o "  %for_step_" sb::append -> o  o uid sb::append -> o
+	o " = load i64, ptr %for_step_e_" sb::append -> o  o uid sb::append -> o  o "\n" sb::append -> o
+	o "  %for_end_" sb::append -> o  o uid sb::append -> o
+	o " = load i64, ptr %for_end_e_" sb::append -> o  o uid sb::append -> o  o "\n" sb::append -> o
+	o "  %for_start_" sb::append -> o  o uid sb::append -> o
+	o " = load i64, ptr %for_start_e_" sb::append -> o  o uid sb::append -> o  o "\n" sb::append -> o
+	// Initialize iterator
+	o "  store i64 %for_start_" sb::append -> o  o uid sb::append -> o
+	o ", ptr %local." sb::append -> o  o iter_var sb::append -> o  o "\n" sb::append -> o
+	// Branch to condition
+	o "  br label %" sb::append -> o  o cond_label sb::append -> o  o "\n" sb::append -> o
+
+	// Condition: i < end
+	o cond_label sb::append -> o  o ":\n" sb::append -> o
+	o "  %for_i_" sb::append -> o  o uid sb::append -> o
+	o " = load i64, ptr %local." sb::append -> o  o iter_var sb::append -> o  o "\n" sb::append -> o
+	o "  %for_cmp_" sb::append -> o  o uid sb::append -> o
+	o " = icmp slt i64 %for_i_" sb::append -> o  o uid sb::append -> o
+	o ", %for_end_" sb::append -> o  o uid sb::append -> o  o "\n" sb::append -> o
+	o "  br i1 %for_cmp_" sb::append -> o  o uid sb::append -> o
+	o ", label %" sb::append -> o  o body_label sb::append -> o
+	o ", label %" sb::append -> o  o exit_label sb::append -> o  o "\n" sb::append -> o
+
+	// Body
+	o body_label sb::append -> o  o ":\n" sb::append -> o  o st.code
+	st n @child1 loc emit_block -> st
+	st @code -> o
+
+	// Increment: i += step
+	o "  %for_iv_" sb::append -> o  o uid sb::append -> o
+	o " = load i64, ptr %local." sb::append -> o  o iter_var sb::append -> o  o "\n" sb::append -> o
+	o "  %for_next_" sb::append -> o  o uid sb::append -> o
+	o " = add i64 %for_iv_" sb::append -> o  o uid sb::append -> o
+	o ", %for_step_" sb::append -> o  o uid sb::append -> o  o "\n" sb::append -> o
+	o "  store i64 %for_next_" sb::append -> o  o uid sb::append -> o
+	o ", ptr %local." sb::append -> o  o iter_var sb::append -> o  o "\n" sb::append -> o
+	o "  br label %" sb::append -> o  o cond_label sb::append -> o  o "\n" sb::append -> o
+
+	// Exit
+	o exit_label sb::append -> o  o ":\n" sb::append -> o  o st.code
+	st
+}
+
+// Emit a block — iterate all children
+fn emit_block(s:ptr block:ptr locals:str -- s2:ptr) {
+	-> loc -> blk -> st
+	blk null == if { st return }
+	blk @child1 null neq if { st blk @child1 loc emit_node -> st }
+	blk @child2 null neq if { st blk @child2 loc emit_node -> st }
+	blk @child3 null neq if { st blk @child3 loc emit_node -> st }
+	blk @child4 null neq if { st blk @child4 loc emit_node -> st }
+	blk @extra -> cur
+	cur null neq while {
+		st cur loc emit_node -> st
+		cur @sibling -> cur
+		cur null neq
+	}
+	st
+}
+
+// Emit a user function
+fn emit_function(s:ptr name:str body:ptr -- s2:ptr) {
+	-> body_node -> fname -> st
+
+	// Collect local variable names from function body
+	"" -> loc
+	body_node null neq if {
+		body_node sb::new collect_locals -> locals_buf
+		locals_buf sb::finish -> loc
+	}
+
+	st @code -> o
+	o "define i32 @usr_main_" sb::append -> o
+	o fname sb::append -> o
+	o "(ptr %ctx) {\n" sb::append -> o
+	o "entry:\n" sb::append -> o
+	o st.code
+	body_node null neq if { st body_node loc emit_block -> st }
+	st @code -> o
+	o "  br label %return\n" sb::append -> o
+	o "return:\n" sb::append -> o
+	o "  ret i32 0\n" sb::append -> o
+	o "}\n\n" sb::append -> o
+	o st.code
+	st
+}
+
+// Emit a top-level declaration
+fn emit_top_level(s:ptr node:ptr -- s2:ptr) {
+	-> n -> st
+	n null == if { st return }
+	n @nkind -> k
+	k ast::NodeType::FnDecl == if {
+		n @ntext -> fname
+		// Check for method receiver — adjust function name to include receiver type
+		// Receiver is child3 or child4 (depends on metadata presence)
+		// Receiver Param node has ntext like "l:Lexer"
+		n @child3 null neq if {
+			n @child3 @nkind ast::NodeType::Param == if {
+				n @child3 @ntext -> recv_text
+				// Extract type from "name:Type" — find ":" and take after it
+				recv_text ":" strings::index_of -> colon_pos
+				colon_pos 0 >= if {
+					recv_text colon_pos 1 + recv_text strings::len colon_pos 1 + - strings::substring! -> recv_type
+					recv_type "_" strings::concat fname strings::concat -> fname
+				}
+			}
+		}
+		n @child4 null neq if {
+			n @child4 @nkind ast::NodeType::Param == if {
+				n @child4 @ntext -> recv_text2
+				recv_text2 ":" strings::index_of -> colon_pos2
+				colon_pos2 0 >= if {
+					recv_text2 colon_pos2 1 + recv_text2 strings::len colon_pos2 1 + - strings::substring! -> recv_type2
+					recv_type2 "_" strings::concat fname strings::concat -> fname
+				}
+			}
+		}
+		st fname n @child2 emit_function return
+	}
+	// Struct declaration — emit field offset globals and size constant
+	k ast::NodeType::StructDecl == if {
+		st @globals -> g
+		n @ntext -> sname
+		0 -> offset
+		// Iterate fields (children of StructDecl)
+		n @child1 null neq if {
+			g "@__offset_" sb::append -> g
+			g n @child1 @ntext sb::append -> g
+			g " = private constant i64 " sb::append -> g
+			g offset sb::append_int -> g
+			g "\n" sb::append -> g
+			offset 8 + -> offset
+		}
+		n @child2 null neq if {
+			g "@__offset_" sb::append -> g
+			g n @child2 @ntext sb::append -> g
+			g " = private constant i64 " sb::append -> g
+			g offset sb::append_int -> g
+			g "\n" sb::append -> g
+			offset 8 + -> offset
+		}
+		n @child3 null neq if {
+			g "@__offset_" sb::append -> g
+			g n @child3 @ntext sb::append -> g
+			g " = private constant i64 " sb::append -> g
+			g offset sb::append_int -> g
+			g "\n" sb::append -> g
+			offset 8 + -> offset
+		}
+		n @child4 null neq if {
+			g "@__offset_" sb::append -> g
+			g n @child4 @ntext sb::append -> g
+			g " = private constant i64 " sb::append -> g
+			g offset sb::append_int -> g
+			g "\n" sb::append -> g
+			offset 8 + -> offset
+		}
+		// Extra fields
+		n @extra -> cur
+		cur null neq while {
+			g "@__offset_" sb::append -> g
+			g cur @ntext sb::append -> g
+			g " = private constant i64 " sb::append -> g
+			g offset sb::append_int -> g
+			g "\n" sb::append -> g
+			offset 8 + -> offset
+			cur @sibling -> cur
+			cur null neq
+		}
+		// Size constant
+		g "@__size_" sb::append -> g
+		g sname sb::append -> g
+		g " = private constant i64 " sb::append -> g
+		g offset sb::append_int -> g
+		g "\n" sb::append -> g
+		g st.globals
+		st return
+	}
+	// Enum declaration — emit variant value globals
+	k ast::NodeType::EnumDecl == if {
+		st @globals -> g
+		n @ntext -> ename
+		0 -> eval
+		n @child1 null neq if {
+			n @child1 @ntext -> vn1
+			g ename vn1 eval emit_enum_variant -> g
+			eval 1 + -> eval
+		}
+		n @child2 null neq if {
+			n @child2 @ntext -> vn2
+			g ename vn2 eval emit_enum_variant -> g
+			eval 1 + -> eval
+		}
+		n @child3 null neq if {
+			n @child3 @ntext -> vn3
+			g ename vn3 eval emit_enum_variant -> g
+			eval 1 + -> eval
+		}
+		n @child4 null neq if {
+			n @child4 @ntext -> vn4
+			g ename vn4 eval emit_enum_variant -> g
+			eval 1 + -> eval
+		}
+		n @extra -> cur
+		cur null neq while {
+			cur @ntext -> vnx
+			g ename vnx eval emit_enum_variant -> g
+			eval 1 + -> eval
+			cur @sibling -> cur
+			cur null neq
+		}
+		g st.globals
+		st return
+	}
+
+	st @code -> o
+	o "; skipped: " sb::append -> o
+	o n @ntext sb::append -> o
+	o "\n" sb::append -> o
+	o st.code
+	st
+}
+
+// Emit the main() entry point
+fn emit_main_entry(s:ptr -- s2:ptr) {
+	-> st
+	st @code -> o
+	o "define i32 @main(i32 %argc, ptr %argv) {\n" sb::append -> o
+	o "entry:\n" sb::append -> o
+	o "  %ctx = call ptr @qd_create_context(i64 1024)\n" sb::append -> o
+	o "  call i32 @usr_main_main(ptr %ctx)\n" sb::append -> o
+	o "  call void @qd_free_context(ptr %ctx)\n" sb::append -> o
+	o "  ret i32 0\n" sb::append -> o
+	o "}\n" sb::append -> o
+	o st.code
+	st
+}
+
+// Generate IR for a complete program AST
+pub fn generate(prog:ptr -- ir:str) {
+	-> root
+	new_state -> st
+
+	// Preamble (header emitted in final combine)
+	st @code -> o
+	o "%qd_context_t = type { ptr, i64, ptr, i32, ptr, ptr }\n" sb::append -> o
+	o "%qd_stack_t = type { ptr, i64, i64 }\n" sb::append -> o
+	o "%qd_stack_element_t = type { i64, i32, i8 }\n\n" sb::append -> o
+	o "declare ptr @qd_create_context(i64)\n" sb::append -> o
+	o "declare void @qd_free_context(ptr)\n" sb::append -> o
+	o "declare i32 @qd_push_i(ptr, i64)\n" sb::append -> o
+	o "declare i32 @qd_push_f(ptr, double)\n" sb::append -> o
+	o "declare i32 @qd_push_s(ptr, ptr)\n" sb::append -> o
+	o "declare i32 @qd_push_p(ptr, ptr)\n" sb::append -> o
+	o "declare i32 @qd_prints(ptr)\n" sb::append -> o
+	o "declare i32 @qd_nl(ptr)\n" sb::append -> o
+	o "declare i32 @qd_add(ptr)\n" sb::append -> o
+	o "declare i32 @qd_sub(ptr)\n" sb::append -> o
+	o "declare i32 @qd_mul(ptr)\n" sb::append -> o
+	o "declare i32 @qd_div(ptr)\n" sb::append -> o
+	o "declare i32 @qd_mod(ptr)\n" sb::append -> o
+	o "declare i32 @qd_eq(ptr)\n" sb::append -> o
+	o "declare i32 @qd_neq(ptr)\n" sb::append -> o
+	o "declare i32 @qd_lt(ptr)\n" sb::append -> o
+	o "declare i32 @qd_gt(ptr)\n" sb::append -> o
+	o "declare i32 @qd_lte(ptr)\n" sb::append -> o
+	o "declare i32 @qd_gte(ptr)\n" sb::append -> o
+	o "declare i32 @qd_dup(ptr)\n" sb::append -> o
+	o "declare i32 @qd_drop(ptr)\n" sb::append -> o
+	o "declare i32 @qd_swap(ptr)\n" sb::append -> o
+	o "declare i32 @qd_over(ptr)\n" sb::append -> o
+	o "declare i32 @qd_rot(ptr)\n" sb::append -> o
+	o "declare void @qd_stack_pop(ptr, ptr)\n" sb::append -> o
+	o "declare void @qd_push_call(ptr, ptr, ptr, i64)\n" sb::append -> o
+	o "declare void @qd_pop_call(ptr)\n" sb::append -> o
+	o "declare void @_exit(i32)\n" sb::append -> o
+	o "declare ptr @qd_struct_alloc(i64, ptr)\n\n" sb::append -> o
+	o st.code
+
+	// Top-level declarations
+	root @child1 null neq if { st root @child1 emit_top_level -> st }
+	root @child2 null neq if { st root @child2 emit_top_level -> st }
+	root @child3 null neq if { st root @child3 emit_top_level -> st }
+	root @child4 null neq if { st root @child4 emit_top_level -> st }
+	root @extra -> cur
+	cur null neq while {
+		st cur emit_top_level -> st
+		cur @sibling -> cur
+		cur null neq
+	}
+
+	// Main entry
+	st emit_main_entry -> st
+
+	// Combine: header + globals + code
+	st @globals sb::finish -> globals_str
+	st @code sb::finish -> code_str
+
+	sb::new -> final
+	final "; Generated by Quadrate self-hosted compiler\n" sb::append -> final
+	final "source_filename = \"quadrate\"\n\n" sb::append -> final
+	final globals_str sb::append -> final
+	final "\n" sb::append -> final
+	final code_str sb::append -> final
+	final sb::finish
+}
