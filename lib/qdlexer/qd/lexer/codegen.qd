@@ -794,16 +794,8 @@ fn emit_struct_field(s:ptr field:ptr struct_uid:str struct_name:str locals:str -
 	o $"  %sf_off_{uid} = load i64, ptr @__offset_{fname}\n" sb::append -> o
 	o $"  %sf_fp_{uid} = getelementptr i8, ptr %sp_{suid}, i64 %sf_off_{uid}\n" sb::append -> o
 	o $"  store i64 %sf_val_{uid}, ptr %sf_fp_{uid}\n" sb::append -> o
-	// Retain reference-counted values (strings and struct pointers)
-	loc fname lookup_field_type -> sftype
-	sftype "str" strings::compare 0 == if {
-		o $"  %sf_sptr_{uid} = inttoptr i64 %sf_val_{uid} to ptr\n" sb::append -> o
-		o $"  call void @qd_string_retain(ptr %sf_sptr_{uid})\n" sb::append -> o
-	}
-	sftype "ptr" strings::compare 0 == sftype "*" strings::starts_with or if {
-		o $"  %sf_pptr_{uid} = inttoptr i64 %sf_val_{uid} to ptr\n" sb::append -> o
-		o $"  call void @qd_ptr_retain(ptr %sf_pptr_{uid})\n" sb::append -> o
-	}
+	// Note: No retain calls here — the stack pop already handles ownership transfer.
+	// The raw i64 value is stored directly into the struct field.
 	o st.code
 	st
 }
@@ -1069,8 +1061,8 @@ fn emit_block(s:ptr block:ptr locals:str -- s2:ptr) {
 // Emit a user function
 // recv: receiver variable name (e.g., "p"), or "" for non-method functions
 // consts: constants registry string (from collect_constants)
-fn emit_function(s:ptr name:str body:ptr recv:str consts:str prefix:str -- s2:ptr) {
-	-> pfx -> cstr -> recv_name -> body_node -> fname -> st
+fn emit_function(s:ptr name:str body:ptr recv:str param_count:i64 consts:str prefix:str -- s2:ptr) {
+	-> pfx -> cstr -> nparams -> recv_name -> body_node -> fname -> st
 
 	// Collect local variable names from function body
 	// Append constants string so emit_node can resolve constants
@@ -1097,8 +1089,15 @@ fn emit_function(s:ptr name:str body:ptr recv:str consts:str prefix:str -- s2:pt
 	o "(ptr %ctx) {\n" sb::append -> o
 	o "entry:\n" sb::append -> o
 	// Emit receiver alloca + pop if this is a method
+	// If the method has params, the receiver is below them on the stack.
+	// Use qd_roll to bring it to the top before popping.
 	recv_name strings::len 0 > if {
 		o $"  %local.{recv_name} = alloca %qd_stack_element_t\n" sb::append -> o
+		nparams 0 > if {
+			// Roll receiver to top: push param_count, call qd_roll
+			o $"  call i32 @qd_push_i(ptr %ctx, i64 {nparams})\n" sb::append -> o
+			o "  call i32 @qd_roll(ptr %ctx)\n" sb::append -> o
+		}
 		st next_label -> ruid -> st
 		o $"  %rstp_{ruid} = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0\n" sb::append -> o
 		o $"  %rstk_{ruid} = load ptr, ptr %rstp_{ruid}\n" sb::append -> o
@@ -1151,7 +1150,29 @@ fn emit_top_level(s:ptr node:ptr consts:str prefix:str -- s2:ptr) {
 				}
 			}
 		}
-		st fname n @child2 recv_var cstr pfx emit_function -> st
+		// Count INPUT parameters only (exclude output params prefixed with "out:")
+		0 -> param_count
+		n @child1 null neq if {
+			n @child1 @child1 null neq if {
+				n @child1 @child1 @ntext "out:" strings::starts_with 0 == if { param_count 1 + -> param_count }
+			}
+			n @child1 @child2 null neq if {
+				n @child1 @child2 @ntext "out:" strings::starts_with 0 == if { param_count 1 + -> param_count }
+			}
+			n @child1 @child3 null neq if {
+				n @child1 @child3 @ntext "out:" strings::starts_with 0 == if { param_count 1 + -> param_count }
+			}
+			n @child1 @child4 null neq if {
+				n @child1 @child4 @ntext "out:" strings::starts_with 0 == if { param_count 1 + -> param_count }
+			}
+			n @child1 @extra -> pcur
+			pcur null neq while {
+				pcur @ntext "out:" strings::starts_with 0 == if { param_count 1 + -> param_count }
+				pcur @sibling -> pcur
+				pcur null neq
+			}
+		}
+		st fname n @child2 recv_var param_count cstr pfx emit_function -> st
 		// For methods, emit an unqualified wrapper so "c get" resolves
 		recv_var strings::len 0 > if {
 			n @ntext -> orig_name

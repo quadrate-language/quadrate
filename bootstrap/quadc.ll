@@ -776,273 +776,268 @@ source_filename = "quadrate"
 @.str.8639 = private unnamed_addr constant [21 x i8] c"  store i64 %sf_val_\00"
 @.str.8641 = private unnamed_addr constant [14 x i8] c", ptr %sf_fp_\00"
 @.str.8643 = private unnamed_addr constant [2 x i8] c"\0A\00"
-@.str.8649 = private unnamed_addr constant [4 x i8] c"str\00"
-@.str.8655 = private unnamed_addr constant [12 x i8] c"  %sf_sptr_\00"
-@.str.8657 = private unnamed_addr constant [25 x i8] c" = inttoptr i64 %sf_val_\00"
-@.str.8659 = private unnamed_addr constant [9 x i8] c" to ptr\0A\00"
-@.str.8662 = private unnamed_addr constant [44 x i8] c"  call void @qd_string_retain(ptr %sf_sptr_\00"
-@.str.8664 = private unnamed_addr constant [3 x i8] c")\0A\00"
-@.str.8667 = private unnamed_addr constant [4 x i8] c"ptr\00"
-@.str.8669 = private unnamed_addr constant [2 x i8] c"*\00"
-@.str.8675 = private unnamed_addr constant [12 x i8] c"  %sf_pptr_\00"
-@.str.8677 = private unnamed_addr constant [25 x i8] c" = inttoptr i64 %sf_val_\00"
-@.str.8679 = private unnamed_addr constant [9 x i8] c" to ptr\0A\00"
-@.str.8682 = private unnamed_addr constant [41 x i8] c"  call void @qd_ptr_retain(ptr %sf_pptr_\00"
-@.str.8684 = private unnamed_addr constant [3 x i8] c")\0A\00"
-@.str.8695 = private unnamed_addr constant [7 x i8] c"  %ce_\00"
-@.str.8697 = private unnamed_addr constant [31 x i8] c" = alloca %qd_stack_element_t\0A\00"
-@.str.8700 = private unnamed_addr constant [8 x i8] c"  %stp_\00"
-@.str.8702 = private unnamed_addr constant [56 x i8] c" = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0\0A\00"
-@.str.8705 = private unnamed_addr constant [8 x i8] c"  %stk_\00"
-@.str.8707 = private unnamed_addr constant [23 x i8] c" = load ptr, ptr %stp_\00"
-@.str.8709 = private unnamed_addr constant [2 x i8] c"\0A\00"
-@.str.8712 = private unnamed_addr constant [36 x i8] c"  call void @qd_stack_pop(ptr %stk_\00"
-@.str.8714 = private unnamed_addr constant [11 x i8] c", ptr %ce_\00"
-@.str.8716 = private unnamed_addr constant [3 x i8] c")\0A\00"
-@.str.8719 = private unnamed_addr constant [7 x i8] c"  %cv_\00"
-@.str.8721 = private unnamed_addr constant [47 x i8] c" = getelementptr %qd_stack_element_t, ptr %ce_\00"
-@.str.8723 = private unnamed_addr constant [16 x i8] c", i32 0, i32 0\0A\00"
-@.str.8726 = private unnamed_addr constant [7 x i8] c"  %ci_\00"
-@.str.8728 = private unnamed_addr constant [22 x i8] c" = load i64, ptr %cv_\00"
-@.str.8730 = private unnamed_addr constant [2 x i8] c"\0A\00"
-@.str.8733 = private unnamed_addr constant [7 x i8] c"  %cc_\00"
-@.str.8735 = private unnamed_addr constant [20 x i8] c" = icmp ne i64 %ci_\00"
-@.str.8737 = private unnamed_addr constant [5 x i8] c", 0\0A\00"
-@.str.8769 = private unnamed_addr constant [13 x i8] c"  br i1 %cc_\00"
-@.str.8771 = private unnamed_addr constant [10 x i8] c", label %\00"
-@.str.8773 = private unnamed_addr constant [10 x i8] c", label %\00"
-@.str.8775 = private unnamed_addr constant [2 x i8] c"\0A\00"
-@.str.8778 = private unnamed_addr constant [13 x i8] c"  br i1 %cc_\00"
-@.str.8780 = private unnamed_addr constant [10 x i8] c", label %\00"
-@.str.8782 = private unnamed_addr constant [10 x i8] c", label %\00"
-@.str.8784 = private unnamed_addr constant [2 x i8] c"\0A\00"
-@.str.8788 = private unnamed_addr constant [3 x i8] c":\0A\00"
-@.str.8801 = private unnamed_addr constant [13 x i8] c"  br label %\00"
-@.str.8803 = private unnamed_addr constant [2 x i8] c"\0A\00"
-@.str.8812 = private unnamed_addr constant [3 x i8] c":\0A\00"
-@.str.8825 = private unnamed_addr constant [13 x i8] c"  br label %\00"
-@.str.8827 = private unnamed_addr constant [2 x i8] c"\0A\00"
-@.str.8831 = private unnamed_addr constant [3 x i8] c":\0A\00"
-@.str.8852 = private unnamed_addr constant [7 x i8] c"#exit=\00"
-@.str.8854 = private unnamed_addr constant [7 x i8] c"#cond=\00"
+@.str.8654 = private unnamed_addr constant [7 x i8] c"  %ce_\00"
+@.str.8656 = private unnamed_addr constant [31 x i8] c" = alloca %qd_stack_element_t\0A\00"
+@.str.8659 = private unnamed_addr constant [8 x i8] c"  %stp_\00"
+@.str.8661 = private unnamed_addr constant [56 x i8] c" = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0\0A\00"
+@.str.8664 = private unnamed_addr constant [8 x i8] c"  %stk_\00"
+@.str.8666 = private unnamed_addr constant [23 x i8] c" = load ptr, ptr %stp_\00"
+@.str.8668 = private unnamed_addr constant [2 x i8] c"\0A\00"
+@.str.8671 = private unnamed_addr constant [36 x i8] c"  call void @qd_stack_pop(ptr %stk_\00"
+@.str.8673 = private unnamed_addr constant [11 x i8] c", ptr %ce_\00"
+@.str.8675 = private unnamed_addr constant [3 x i8] c")\0A\00"
+@.str.8678 = private unnamed_addr constant [7 x i8] c"  %cv_\00"
+@.str.8680 = private unnamed_addr constant [47 x i8] c" = getelementptr %qd_stack_element_t, ptr %ce_\00"
+@.str.8682 = private unnamed_addr constant [16 x i8] c", i32 0, i32 0\0A\00"
+@.str.8685 = private unnamed_addr constant [7 x i8] c"  %ci_\00"
+@.str.8687 = private unnamed_addr constant [22 x i8] c" = load i64, ptr %cv_\00"
+@.str.8689 = private unnamed_addr constant [2 x i8] c"\0A\00"
+@.str.8692 = private unnamed_addr constant [7 x i8] c"  %cc_\00"
+@.str.8694 = private unnamed_addr constant [20 x i8] c" = icmp ne i64 %ci_\00"
+@.str.8696 = private unnamed_addr constant [5 x i8] c", 0\0A\00"
+@.str.8728 = private unnamed_addr constant [13 x i8] c"  br i1 %cc_\00"
+@.str.8730 = private unnamed_addr constant [10 x i8] c", label %\00"
+@.str.8732 = private unnamed_addr constant [10 x i8] c", label %\00"
+@.str.8734 = private unnamed_addr constant [2 x i8] c"\0A\00"
+@.str.8737 = private unnamed_addr constant [13 x i8] c"  br i1 %cc_\00"
+@.str.8739 = private unnamed_addr constant [10 x i8] c", label %\00"
+@.str.8741 = private unnamed_addr constant [10 x i8] c", label %\00"
+@.str.8743 = private unnamed_addr constant [2 x i8] c"\0A\00"
+@.str.8747 = private unnamed_addr constant [3 x i8] c":\0A\00"
+@.str.8760 = private unnamed_addr constant [13 x i8] c"  br label %\00"
+@.str.8762 = private unnamed_addr constant [2 x i8] c"\0A\00"
+@.str.8771 = private unnamed_addr constant [3 x i8] c":\0A\00"
+@.str.8784 = private unnamed_addr constant [13 x i8] c"  br label %\00"
+@.str.8786 = private unnamed_addr constant [2 x i8] c"\0A\00"
+@.str.8790 = private unnamed_addr constant [3 x i8] c":\0A\00"
+@.str.8811 = private unnamed_addr constant [7 x i8] c"#exit=\00"
+@.str.8813 = private unnamed_addr constant [7 x i8] c"#cond=\00"
+@.str.8826 = private unnamed_addr constant [13 x i8] c"  br i1 %cc_\00"
+@.str.8828 = private unnamed_addr constant [10 x i8] c", label %\00"
+@.str.8830 = private unnamed_addr constant [10 x i8] c", label %\00"
+@.str.8832 = private unnamed_addr constant [2 x i8] c"\0A\00"
+@.str.8836 = private unnamed_addr constant [3 x i8] c":\0A\00"
+@.str.8849 = private unnamed_addr constant [13 x i8] c"  br label %\00"
+@.str.8851 = private unnamed_addr constant [2 x i8] c"\0A\00"
+@.str.8855 = private unnamed_addr constant [3 x i8] c":\0A\00"
 @.str.8867 = private unnamed_addr constant [13 x i8] c"  br i1 %cc_\00"
 @.str.8869 = private unnamed_addr constant [10 x i8] c", label %\00"
 @.str.8871 = private unnamed_addr constant [10 x i8] c", label %\00"
 @.str.8873 = private unnamed_addr constant [2 x i8] c"\0A\00"
 @.str.8877 = private unnamed_addr constant [3 x i8] c":\0A\00"
-@.str.8890 = private unnamed_addr constant [13 x i8] c"  br label %\00"
-@.str.8892 = private unnamed_addr constant [2 x i8] c"\0A\00"
-@.str.8896 = private unnamed_addr constant [3 x i8] c":\0A\00"
-@.str.8908 = private unnamed_addr constant [13 x i8] c"  br i1 %cc_\00"
-@.str.8910 = private unnamed_addr constant [10 x i8] c", label %\00"
-@.str.8912 = private unnamed_addr constant [10 x i8] c", label %\00"
-@.str.8914 = private unnamed_addr constant [2 x i8] c"\0A\00"
-@.str.8918 = private unnamed_addr constant [3 x i8] c":\0A\00"
-@.str.8933 = private unnamed_addr constant [7 x i8] c"#exit=\00"
-@.str.8935 = private unnamed_addr constant [7 x i8] c"#cond=\00"
-@.str.8942 = private unnamed_addr constant [13 x i8] c"  br label %\00"
-@.str.8944 = private unnamed_addr constant [2 x i8] c"\0A\00"
-@.str.8948 = private unnamed_addr constant [3 x i8] c":\0A\00"
-@.str.8961 = private unnamed_addr constant [13 x i8] c"  br label %\00"
-@.str.8963 = private unnamed_addr constant [2 x i8] c"\0A\00"
-@.str.8967 = private unnamed_addr constant [3 x i8] c":\0A\00"
-@.str.8994 = private unnamed_addr constant [13 x i8] c"  br label %\00"
-@.str.8996 = private unnamed_addr constant [2 x i8] c"\0A\00"
-@.str.9000 = private unnamed_addr constant [3 x i8] c":\0A\00"
-@.str.9115 = private unnamed_addr constant [13 x i8] c"  br label %\00"
-@.str.9117 = private unnamed_addr constant [2 x i8] c"\0A\00"
-@.str.9124 = private unnamed_addr constant [3 x i8] c":\0A\00"
-@.str.9162 = private unnamed_addr constant [8 x i8] c"  %cmp_\00"
-@.str.9164 = private unnamed_addr constant [20 x i8] c" = icmp eq i64 %ci_\00"
-@.str.9166 = private unnamed_addr constant [7 x i8] c", %ci_\00"
-@.str.9168 = private unnamed_addr constant [2 x i8] c"\0A\00"
-@.str.9171 = private unnamed_addr constant [14 x i8] c"  br i1 %cmp_\00"
-@.str.9173 = private unnamed_addr constant [10 x i8] c", label %\00"
-@.str.9175 = private unnamed_addr constant [10 x i8] c", label %\00"
-@.str.9177 = private unnamed_addr constant [2 x i8] c"\0A\00"
-@.str.9181 = private unnamed_addr constant [3 x i8] c":\0A\00"
-@.str.9200 = private unnamed_addr constant [13 x i8] c"  br label %\00"
-@.str.9202 = private unnamed_addr constant [2 x i8] c"\0A\00"
-@.str.9206 = private unnamed_addr constant [3 x i8] c":\0A\00"
-@.str.9231 = private unnamed_addr constant [7 x i8] c"#exit=\00"
-@.str.9233 = private unnamed_addr constant [7 x i8] c"#cond=\00"
-@.str.9240 = private unnamed_addr constant [15 x i8] c"  %for_step_e_\00"
-@.str.9242 = private unnamed_addr constant [31 x i8] c" = alloca %qd_stack_element_t\0A\00"
-@.str.9245 = private unnamed_addr constant [14 x i8] c"  %for_end_e_\00"
-@.str.9247 = private unnamed_addr constant [31 x i8] c" = alloca %qd_stack_element_t\0A\00"
-@.str.9250 = private unnamed_addr constant [16 x i8] c"  %for_start_e_\00"
-@.str.9252 = private unnamed_addr constant [31 x i8] c" = alloca %qd_stack_element_t\0A\00"
-@.str.9255 = private unnamed_addr constant [12 x i8] c"  %for_stp_\00"
-@.str.9257 = private unnamed_addr constant [56 x i8] c" = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0\0A\00"
-@.str.9260 = private unnamed_addr constant [12 x i8] c"  %for_stk_\00"
-@.str.9262 = private unnamed_addr constant [27 x i8] c" = load ptr, ptr %for_stp_\00"
-@.str.9264 = private unnamed_addr constant [2 x i8] c"\0A\00"
-@.str.9267 = private unnamed_addr constant [40 x i8] c"  call void @qd_stack_pop(ptr %for_stk_\00"
-@.str.9269 = private unnamed_addr constant [19 x i8] c", ptr %for_step_e_\00"
-@.str.9271 = private unnamed_addr constant [3 x i8] c")\0A\00"
-@.str.9274 = private unnamed_addr constant [40 x i8] c"  call void @qd_stack_pop(ptr %for_stk_\00"
-@.str.9276 = private unnamed_addr constant [18 x i8] c", ptr %for_end_e_\00"
-@.str.9278 = private unnamed_addr constant [3 x i8] c")\0A\00"
-@.str.9281 = private unnamed_addr constant [40 x i8] c"  call void @qd_stack_pop(ptr %for_stk_\00"
-@.str.9283 = private unnamed_addr constant [20 x i8] c", ptr %for_start_e_\00"
-@.str.9285 = private unnamed_addr constant [3 x i8] c")\0A\00"
-@.str.9288 = private unnamed_addr constant [13 x i8] c"  %for_step_\00"
-@.str.9290 = private unnamed_addr constant [30 x i8] c" = load i64, ptr %for_step_e_\00"
-@.str.9292 = private unnamed_addr constant [2 x i8] c"\0A\00"
-@.str.9295 = private unnamed_addr constant [12 x i8] c"  %for_end_\00"
-@.str.9297 = private unnamed_addr constant [29 x i8] c" = load i64, ptr %for_end_e_\00"
-@.str.9299 = private unnamed_addr constant [2 x i8] c"\0A\00"
-@.str.9302 = private unnamed_addr constant [14 x i8] c"  %for_start_\00"
-@.str.9304 = private unnamed_addr constant [31 x i8] c" = load i64, ptr %for_start_e_\00"
+@.str.8892 = private unnamed_addr constant [7 x i8] c"#exit=\00"
+@.str.8894 = private unnamed_addr constant [7 x i8] c"#cond=\00"
+@.str.8901 = private unnamed_addr constant [13 x i8] c"  br label %\00"
+@.str.8903 = private unnamed_addr constant [2 x i8] c"\0A\00"
+@.str.8907 = private unnamed_addr constant [3 x i8] c":\0A\00"
+@.str.8920 = private unnamed_addr constant [13 x i8] c"  br label %\00"
+@.str.8922 = private unnamed_addr constant [2 x i8] c"\0A\00"
+@.str.8926 = private unnamed_addr constant [3 x i8] c":\0A\00"
+@.str.8953 = private unnamed_addr constant [13 x i8] c"  br label %\00"
+@.str.8955 = private unnamed_addr constant [2 x i8] c"\0A\00"
+@.str.8959 = private unnamed_addr constant [3 x i8] c":\0A\00"
+@.str.9074 = private unnamed_addr constant [13 x i8] c"  br label %\00"
+@.str.9076 = private unnamed_addr constant [2 x i8] c"\0A\00"
+@.str.9083 = private unnamed_addr constant [3 x i8] c":\0A\00"
+@.str.9121 = private unnamed_addr constant [8 x i8] c"  %cmp_\00"
+@.str.9123 = private unnamed_addr constant [20 x i8] c" = icmp eq i64 %ci_\00"
+@.str.9125 = private unnamed_addr constant [7 x i8] c", %ci_\00"
+@.str.9127 = private unnamed_addr constant [2 x i8] c"\0A\00"
+@.str.9130 = private unnamed_addr constant [14 x i8] c"  br i1 %cmp_\00"
+@.str.9132 = private unnamed_addr constant [10 x i8] c", label %\00"
+@.str.9134 = private unnamed_addr constant [10 x i8] c", label %\00"
+@.str.9136 = private unnamed_addr constant [2 x i8] c"\0A\00"
+@.str.9140 = private unnamed_addr constant [3 x i8] c":\0A\00"
+@.str.9159 = private unnamed_addr constant [13 x i8] c"  br label %\00"
+@.str.9161 = private unnamed_addr constant [2 x i8] c"\0A\00"
+@.str.9165 = private unnamed_addr constant [3 x i8] c":\0A\00"
+@.str.9190 = private unnamed_addr constant [7 x i8] c"#exit=\00"
+@.str.9192 = private unnamed_addr constant [7 x i8] c"#cond=\00"
+@.str.9199 = private unnamed_addr constant [15 x i8] c"  %for_step_e_\00"
+@.str.9201 = private unnamed_addr constant [31 x i8] c" = alloca %qd_stack_element_t\0A\00"
+@.str.9204 = private unnamed_addr constant [14 x i8] c"  %for_end_e_\00"
+@.str.9206 = private unnamed_addr constant [31 x i8] c" = alloca %qd_stack_element_t\0A\00"
+@.str.9209 = private unnamed_addr constant [16 x i8] c"  %for_start_e_\00"
+@.str.9211 = private unnamed_addr constant [31 x i8] c" = alloca %qd_stack_element_t\0A\00"
+@.str.9214 = private unnamed_addr constant [12 x i8] c"  %for_stp_\00"
+@.str.9216 = private unnamed_addr constant [56 x i8] c" = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0\0A\00"
+@.str.9219 = private unnamed_addr constant [12 x i8] c"  %for_stk_\00"
+@.str.9221 = private unnamed_addr constant [27 x i8] c" = load ptr, ptr %for_stp_\00"
+@.str.9223 = private unnamed_addr constant [2 x i8] c"\0A\00"
+@.str.9226 = private unnamed_addr constant [40 x i8] c"  call void @qd_stack_pop(ptr %for_stk_\00"
+@.str.9228 = private unnamed_addr constant [19 x i8] c", ptr %for_step_e_\00"
+@.str.9230 = private unnamed_addr constant [3 x i8] c")\0A\00"
+@.str.9233 = private unnamed_addr constant [40 x i8] c"  call void @qd_stack_pop(ptr %for_stk_\00"
+@.str.9235 = private unnamed_addr constant [18 x i8] c", ptr %for_end_e_\00"
+@.str.9237 = private unnamed_addr constant [3 x i8] c")\0A\00"
+@.str.9240 = private unnamed_addr constant [40 x i8] c"  call void @qd_stack_pop(ptr %for_stk_\00"
+@.str.9242 = private unnamed_addr constant [20 x i8] c", ptr %for_start_e_\00"
+@.str.9244 = private unnamed_addr constant [3 x i8] c")\0A\00"
+@.str.9247 = private unnamed_addr constant [13 x i8] c"  %for_step_\00"
+@.str.9249 = private unnamed_addr constant [30 x i8] c" = load i64, ptr %for_step_e_\00"
+@.str.9251 = private unnamed_addr constant [2 x i8] c"\0A\00"
+@.str.9254 = private unnamed_addr constant [12 x i8] c"  %for_end_\00"
+@.str.9256 = private unnamed_addr constant [29 x i8] c" = load i64, ptr %for_end_e_\00"
+@.str.9258 = private unnamed_addr constant [2 x i8] c"\0A\00"
+@.str.9261 = private unnamed_addr constant [14 x i8] c"  %for_start_\00"
+@.str.9263 = private unnamed_addr constant [31 x i8] c" = load i64, ptr %for_start_e_\00"
+@.str.9265 = private unnamed_addr constant [2 x i8] c"\0A\00"
+@.str.9268 = private unnamed_addr constant [24 x i8] c"  store i64 %for_start_\00"
+@.str.9270 = private unnamed_addr constant [14 x i8] c", ptr %local.\00"
+@.str.9272 = private unnamed_addr constant [2 x i8] c"\0A\00"
+@.str.9275 = private unnamed_addr constant [13 x i8] c"  br label %\00"
+@.str.9277 = private unnamed_addr constant [2 x i8] c"\0A\00"
+@.str.9281 = private unnamed_addr constant [3 x i8] c":\0A\00"
+@.str.9284 = private unnamed_addr constant [10 x i8] c"  %for_i_\00"
+@.str.9286 = private unnamed_addr constant [25 x i8] c" = load i64, ptr %local.\00"
+@.str.9288 = private unnamed_addr constant [2 x i8] c"\0A\00"
+@.str.9291 = private unnamed_addr constant [12 x i8] c"  %for_cmp_\00"
+@.str.9293 = private unnamed_addr constant [24 x i8] c" = icmp slt i64 %for_i_\00"
+@.str.9295 = private unnamed_addr constant [12 x i8] c", %for_end_\00"
+@.str.9297 = private unnamed_addr constant [2 x i8] c"\0A\00"
+@.str.9300 = private unnamed_addr constant [18 x i8] c"  br i1 %for_cmp_\00"
+@.str.9302 = private unnamed_addr constant [10 x i8] c", label %\00"
+@.str.9304 = private unnamed_addr constant [10 x i8] c", label %\00"
 @.str.9306 = private unnamed_addr constant [2 x i8] c"\0A\00"
-@.str.9309 = private unnamed_addr constant [24 x i8] c"  store i64 %for_start_\00"
-@.str.9311 = private unnamed_addr constant [14 x i8] c", ptr %local.\00"
-@.str.9313 = private unnamed_addr constant [2 x i8] c"\0A\00"
-@.str.9316 = private unnamed_addr constant [13 x i8] c"  br label %\00"
-@.str.9318 = private unnamed_addr constant [2 x i8] c"\0A\00"
-@.str.9322 = private unnamed_addr constant [3 x i8] c":\0A\00"
-@.str.9325 = private unnamed_addr constant [10 x i8] c"  %for_i_\00"
-@.str.9327 = private unnamed_addr constant [25 x i8] c" = load i64, ptr %local.\00"
-@.str.9329 = private unnamed_addr constant [2 x i8] c"\0A\00"
-@.str.9332 = private unnamed_addr constant [12 x i8] c"  %for_cmp_\00"
-@.str.9334 = private unnamed_addr constant [24 x i8] c" = icmp slt i64 %for_i_\00"
-@.str.9336 = private unnamed_addr constant [12 x i8] c", %for_end_\00"
-@.str.9338 = private unnamed_addr constant [2 x i8] c"\0A\00"
-@.str.9341 = private unnamed_addr constant [18 x i8] c"  br i1 %for_cmp_\00"
-@.str.9343 = private unnamed_addr constant [10 x i8] c", label %\00"
-@.str.9345 = private unnamed_addr constant [10 x i8] c", label %\00"
-@.str.9347 = private unnamed_addr constant [2 x i8] c"\0A\00"
-@.str.9351 = private unnamed_addr constant [3 x i8] c":\0A\00"
-@.str.9364 = private unnamed_addr constant [11 x i8] c"  %for_iv_\00"
-@.str.9366 = private unnamed_addr constant [25 x i8] c" = load i64, ptr %local.\00"
-@.str.9368 = private unnamed_addr constant [2 x i8] c"\0A\00"
-@.str.9371 = private unnamed_addr constant [13 x i8] c"  %for_next_\00"
-@.str.9373 = private unnamed_addr constant [20 x i8] c" = add i64 %for_iv_\00"
-@.str.9375 = private unnamed_addr constant [13 x i8] c", %for_step_\00"
-@.str.9377 = private unnamed_addr constant [2 x i8] c"\0A\00"
-@.str.9380 = private unnamed_addr constant [23 x i8] c"  store i64 %for_next_\00"
-@.str.9382 = private unnamed_addr constant [14 x i8] c", ptr %local.\00"
-@.str.9384 = private unnamed_addr constant [2 x i8] c"\0A\00"
-@.str.9387 = private unnamed_addr constant [13 x i8] c"  br label %\00"
-@.str.9389 = private unnamed_addr constant [2 x i8] c"\0A\00"
-@.str.9393 = private unnamed_addr constant [3 x i8] c":\0A\00"
-@.str.9475 = private unnamed_addr constant [1 x i8] c"\00"
-@.str.9487 = private unnamed_addr constant [2 x i8] c"~\00"
-@.str.9492 = private unnamed_addr constant [2 x i8] c"!\00"
-@.str.9500 = private unnamed_addr constant [2 x i8] c",\00"
-@.str.9502 = private unnamed_addr constant [2 x i8] c",\00"
-@.str.9508 = private unnamed_addr constant [13 x i8] c"define i32 @\00"
-@.str.9517 = private unnamed_addr constant [14 x i8] c"(ptr %ctx) {\0A\00"
-@.str.9520 = private unnamed_addr constant [8 x i8] c"entry:\0A\00"
-@.str.9528 = private unnamed_addr constant [10 x i8] c"  %local.\00"
-@.str.9530 = private unnamed_addr constant [31 x i8] c" = alloca %qd_stack_element_t\0A\00"
-@.str.9536 = private unnamed_addr constant [9 x i8] c"  %rstp_\00"
-@.str.9538 = private unnamed_addr constant [56 x i8] c" = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0\0A\00"
-@.str.9541 = private unnamed_addr constant [9 x i8] c"  %rstk_\00"
-@.str.9543 = private unnamed_addr constant [24 x i8] c" = load ptr, ptr %rstp_\00"
-@.str.9545 = private unnamed_addr constant [2 x i8] c"\0A\00"
-@.str.9548 = private unnamed_addr constant [37 x i8] c"  call void @qd_stack_pop(ptr %rstk_\00"
-@.str.9550 = private unnamed_addr constant [14 x i8] c", ptr %local.\00"
-@.str.9552 = private unnamed_addr constant [3 x i8] c")\0A\00"
-@.str.9573 = private unnamed_addr constant [20 x i8] c"  br label %return\0A\00"
-@.str.9576 = private unnamed_addr constant [9 x i8] c"return:\0A\00"
-@.str.9579 = private unnamed_addr constant [13 x i8] c"  ret i32 0\0A\00"
-@.str.9582 = private unnamed_addr constant [4 x i8] c"}\0A\0A\00"
-@.str.9609 = private unnamed_addr constant [1 x i8] c"\00"
-@.str.9630 = private unnamed_addr constant [2 x i8] c":\00"
-@.str.9646 = private unnamed_addr constant [2 x i8] c"_\00"
-@.str.9674 = private unnamed_addr constant [2 x i8] c":\00"
-@.str.9690 = private unnamed_addr constant [2 x i8] c"_\00"
-@.str.9719 = private unnamed_addr constant [13 x i8] c"define i32 @\00"
-@.str.9728 = private unnamed_addr constant [36 x i8] c"(ptr %ctx) {\0A  %r = tail call i32 @\00"
-@.str.9737 = private unnamed_addr constant [27 x i8] c"(ptr %ctx)\0A  ret i32 %r\0A}\0A\00"
-@.str.9765 = private unnamed_addr constant [11 x i8] c"@__offset_\00"
-@.str.9776 = private unnamed_addr constant [25 x i8] c" = private constant i64 \00"
-@.str.9778 = private unnamed_addr constant [2 x i8] c"\0A\00"
-@.str.9792 = private unnamed_addr constant [11 x i8] c"@__offset_\00"
-@.str.9803 = private unnamed_addr constant [25 x i8] c" = private constant i64 \00"
-@.str.9805 = private unnamed_addr constant [2 x i8] c"\0A\00"
-@.str.9819 = private unnamed_addr constant [11 x i8] c"@__offset_\00"
-@.str.9830 = private unnamed_addr constant [25 x i8] c" = private constant i64 \00"
-@.str.9832 = private unnamed_addr constant [2 x i8] c"\0A\00"
-@.str.9846 = private unnamed_addr constant [11 x i8] c"@__offset_\00"
-@.str.9857 = private unnamed_addr constant [25 x i8] c" = private constant i64 \00"
-@.str.9859 = private unnamed_addr constant [2 x i8] c"\0A\00"
-@.str.9874 = private unnamed_addr constant [11 x i8] c"@__offset_\00"
-@.str.9885 = private unnamed_addr constant [25 x i8] c" = private constant i64 \00"
-@.str.9887 = private unnamed_addr constant [2 x i8] c"\0A\00"
-@.str.9897 = private unnamed_addr constant [9 x i8] c"@__size_\00"
-@.str.9899 = private unnamed_addr constant [25 x i8] c" = private constant i64 \00"
-@.str.9901 = private unnamed_addr constant [2 x i8] c"\0A\00"
-@.str.10089 = private unnamed_addr constant [12 x i8] c"; skipped: \00"
-@.str.10096 = private unnamed_addr constant [2 x i8] c"\0A\00"
-@.str.10106 = private unnamed_addr constant [42 x i8] c"define i32 @main(i32 %argc, ptr %argv) {\0A\00"
-@.str.10109 = private unnamed_addr constant [8 x i8] c"entry:\0A\00"
-@.str.10112 = private unnamed_addr constant [48 x i8] c"  %ctx = call ptr @qd_create_context(i64 1024)\0A\00"
-@.str.10115 = private unnamed_addr constant [37 x i8] c"  call i32 @usr_main_main(ptr %ctx)\0A\00"
-@.str.10118 = private unnamed_addr constant [40 x i8] c"  call void @qd_free_context(ptr %ctx)\0A\00"
-@.str.10121 = private unnamed_addr constant [13 x i8] c"  ret i32 0\0A\00"
-@.str.10124 = private unnamed_addr constant [3 x i8] c"}\0A\00"
-@.str.10142 = private unnamed_addr constant [12 x i8] c"\0A; Module: \00"
-@.str.10144 = private unnamed_addr constant [2 x i8] c"\0A\00"
-@.str.10193 = private unnamed_addr constant [18 x i8] c"declare i32 @usr_\00"
-@.str.10199 = private unnamed_addr constant [2 x i8] c"_\00"
-@.str.10205 = private unnamed_addr constant [7 x i8] c"(ptr)\0A\00"
-@.str.10300 = private unnamed_addr constant [55 x i8] c"%qd_context_t = type { ptr, i64, ptr, i32, ptr, ptr }\0A\00"
-@.str.10303 = private unnamed_addr constant [38 x i8] c"%qd_stack_t = type { ptr, i64, i64 }\0A\00"
-@.str.10306 = private unnamed_addr constant [46 x i8] c"%qd_stack_element_t = type { i64, i32, i8 }\0A\0A\00"
-@.str.10309 = private unnamed_addr constant [37 x i8] c"declare ptr @qd_create_context(i64)\0A\00"
-@.str.10312 = private unnamed_addr constant [36 x i8] c"declare void @qd_free_context(ptr)\0A\00"
-@.str.10315 = private unnamed_addr constant [34 x i8] c"declare i32 @qd_push_i(ptr, i64)\0A\00"
-@.str.10318 = private unnamed_addr constant [37 x i8] c"declare i32 @qd_push_f(ptr, double)\0A\00"
-@.str.10321 = private unnamed_addr constant [34 x i8] c"declare i32 @qd_push_s(ptr, ptr)\0A\00"
-@.str.10324 = private unnamed_addr constant [34 x i8] c"declare i32 @qd_push_p(ptr, ptr)\0A\00"
-@.str.10327 = private unnamed_addr constant [38 x i8] c"declare i32 @qd_push_s_ref(ptr, ptr)\0A\00"
-@.str.10330 = private unnamed_addr constant [37 x i8] c"declare void @qd_string_retain(ptr)\0A\00"
-@.str.10333 = private unnamed_addr constant [34 x i8] c"declare void @qd_ptr_retain(ptr)\0A\00"
-@.str.10336 = private unnamed_addr constant [28 x i8] c"declare i32 @qd_print(ptr)\0A\00"
-@.str.10339 = private unnamed_addr constant [25 x i8] c"declare i32 @qd_nl(ptr)\0A\00"
-@.str.10342 = private unnamed_addr constant [26 x i8] c"declare i32 @qd_add(ptr)\0A\00"
-@.str.10345 = private unnamed_addr constant [26 x i8] c"declare i32 @qd_sub(ptr)\0A\00"
-@.str.10348 = private unnamed_addr constant [26 x i8] c"declare i32 @qd_mul(ptr)\0A\00"
-@.str.10351 = private unnamed_addr constant [26 x i8] c"declare i32 @qd_div(ptr)\0A\00"
-@.str.10354 = private unnamed_addr constant [26 x i8] c"declare i32 @qd_mod(ptr)\0A\00"
-@.str.10357 = private unnamed_addr constant [25 x i8] c"declare i32 @qd_eq(ptr)\0A\00"
-@.str.10360 = private unnamed_addr constant [26 x i8] c"declare i32 @qd_neq(ptr)\0A\00"
-@.str.10363 = private unnamed_addr constant [25 x i8] c"declare i32 @qd_lt(ptr)\0A\00"
-@.str.10366 = private unnamed_addr constant [25 x i8] c"declare i32 @qd_gt(ptr)\0A\00"
-@.str.10369 = private unnamed_addr constant [26 x i8] c"declare i32 @qd_lte(ptr)\0A\00"
-@.str.10372 = private unnamed_addr constant [26 x i8] c"declare i32 @qd_gte(ptr)\0A\00"
-@.str.10375 = private unnamed_addr constant [26 x i8] c"declare i32 @qd_dup(ptr)\0A\00"
-@.str.10378 = private unnamed_addr constant [27 x i8] c"declare i32 @qd_drop(ptr)\0A\00"
-@.str.10381 = private unnamed_addr constant [27 x i8] c"declare i32 @qd_swap(ptr)\0A\00"
-@.str.10384 = private unnamed_addr constant [27 x i8] c"declare i32 @qd_over(ptr)\0A\00"
-@.str.10387 = private unnamed_addr constant [26 x i8] c"declare i32 @qd_rot(ptr)\0A\00"
-@.str.10390 = private unnamed_addr constant [26 x i8] c"declare i32 @qd_nip(ptr)\0A\00"
-@.str.10393 = private unnamed_addr constant [26 x i8] c"declare i32 @qd_len(ptr)\0A\00"
-@.str.10396 = private unnamed_addr constant [27 x i8] c"declare i32 @qd_free(ptr)\0A\00"
-@.str.10399 = private unnamed_addr constant [28 x i8] c"declare i32 @qd_panic(ptr)\0A\00"
-@.str.10402 = private unnamed_addr constant [26 x i8] c"declare i32 @qd_err(ptr)\0A\00"
-@.str.10405 = private unnamed_addr constant [26 x i8] c"declare i32 @qd_and(ptr)\0A\00"
-@.str.10408 = private unnamed_addr constant [25 x i8] c"declare i32 @qd_or(ptr)\0A\00"
-@.str.10411 = private unnamed_addr constant [26 x i8] c"declare i32 @qd_not(ptr)\0A\00"
-@.str.10414 = private unnamed_addr constant [26 x i8] c"declare i32 @qd_neg(ptr)\0A\00"
-@.str.10417 = private unnamed_addr constant [27 x i8] c"declare i32 @qd_tuck(ptr)\0A\00"
-@.str.10420 = private unnamed_addr constant [27 x i8] c"declare i32 @qd_pick(ptr)\0A\00"
-@.str.10423 = private unnamed_addr constant [27 x i8] c"declare i32 @qd_roll(ptr)\0A\00"
-@.str.10426 = private unnamed_addr constant [38 x i8] c"declare void @qd_stack_pop(ptr, ptr)\0A\00"
-@.str.10429 = private unnamed_addr constant [42 x i8] c"declare i32 @qdrt_push_element(ptr, ptr)\0A\00"
-@.str.10432 = private unnamed_addr constant [48 x i8] c"declare void @qd_push_call(ptr, ptr, ptr, i64)\0A\00"
-@.str.10435 = private unnamed_addr constant [32 x i8] c"declare void @qd_pop_call(ptr)\0A\00"
-@.str.10438 = private unnamed_addr constant [26 x i8] c"declare void @_exit(i32)\0A\00"
-@.str.10441 = private unnamed_addr constant [41 x i8] c"declare ptr @qd_struct_alloc(i64, ptr)\0A\0A\00"
-@.str.10481 = private unnamed_addr constant [2 x i8] c"!\00"
-@.str.10485 = private unnamed_addr constant [10 x i8] c"usr_main_\00"
-@.str.10566 = private unnamed_addr constant [10 x i8] c"usr_main_\00"
-@.str.10601 = private unnamed_addr constant [46 x i8] c"; Generated by Quadrate self-hosted compiler\0A\00"
-@.str.10604 = private unnamed_addr constant [31 x i8] c"source_filename = \22quadrate\22\0A\0A\00"
-@.str.10610 = private unnamed_addr constant [2 x i8] c"\0A\00"
-@.str.10618 = private unnamed_addr constant [1 x i8] c"\00"
+@.str.9310 = private unnamed_addr constant [3 x i8] c":\0A\00"
+@.str.9323 = private unnamed_addr constant [11 x i8] c"  %for_iv_\00"
+@.str.9325 = private unnamed_addr constant [25 x i8] c" = load i64, ptr %local.\00"
+@.str.9327 = private unnamed_addr constant [2 x i8] c"\0A\00"
+@.str.9330 = private unnamed_addr constant [13 x i8] c"  %for_next_\00"
+@.str.9332 = private unnamed_addr constant [20 x i8] c" = add i64 %for_iv_\00"
+@.str.9334 = private unnamed_addr constant [13 x i8] c", %for_step_\00"
+@.str.9336 = private unnamed_addr constant [2 x i8] c"\0A\00"
+@.str.9339 = private unnamed_addr constant [23 x i8] c"  store i64 %for_next_\00"
+@.str.9341 = private unnamed_addr constant [14 x i8] c", ptr %local.\00"
+@.str.9343 = private unnamed_addr constant [2 x i8] c"\0A\00"
+@.str.9346 = private unnamed_addr constant [13 x i8] c"  br label %\00"
+@.str.9348 = private unnamed_addr constant [2 x i8] c"\0A\00"
+@.str.9352 = private unnamed_addr constant [3 x i8] c":\0A\00"
+@.str.9435 = private unnamed_addr constant [1 x i8] c"\00"
+@.str.9447 = private unnamed_addr constant [2 x i8] c"~\00"
+@.str.9452 = private unnamed_addr constant [2 x i8] c"!\00"
+@.str.9460 = private unnamed_addr constant [2 x i8] c",\00"
+@.str.9462 = private unnamed_addr constant [2 x i8] c",\00"
+@.str.9468 = private unnamed_addr constant [13 x i8] c"define i32 @\00"
+@.str.9477 = private unnamed_addr constant [14 x i8] c"(ptr %ctx) {\0A\00"
+@.str.9480 = private unnamed_addr constant [8 x i8] c"entry:\0A\00"
+@.str.9488 = private unnamed_addr constant [10 x i8] c"  %local.\00"
+@.str.9490 = private unnamed_addr constant [31 x i8] c" = alloca %qd_stack_element_t\0A\00"
+@.str.9498 = private unnamed_addr constant [37 x i8] c"  call i32 @qd_push_i(ptr %ctx, i64 \00"
+@.str.9500 = private unnamed_addr constant [3 x i8] c")\0A\00"
+@.str.9503 = private unnamed_addr constant [31 x i8] c"  call i32 @qd_roll(ptr %ctx)\0A\00"
+@.str.9509 = private unnamed_addr constant [9 x i8] c"  %rstp_\00"
+@.str.9511 = private unnamed_addr constant [56 x i8] c" = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0\0A\00"
+@.str.9514 = private unnamed_addr constant [9 x i8] c"  %rstk_\00"
+@.str.9516 = private unnamed_addr constant [24 x i8] c" = load ptr, ptr %rstp_\00"
+@.str.9518 = private unnamed_addr constant [2 x i8] c"\0A\00"
+@.str.9521 = private unnamed_addr constant [37 x i8] c"  call void @qd_stack_pop(ptr %rstk_\00"
+@.str.9523 = private unnamed_addr constant [14 x i8] c", ptr %local.\00"
+@.str.9525 = private unnamed_addr constant [3 x i8] c")\0A\00"
+@.str.9546 = private unnamed_addr constant [20 x i8] c"  br label %return\0A\00"
+@.str.9549 = private unnamed_addr constant [9 x i8] c"return:\0A\00"
+@.str.9552 = private unnamed_addr constant [13 x i8] c"  ret i32 0\0A\00"
+@.str.9555 = private unnamed_addr constant [4 x i8] c"}\0A\0A\00"
+@.str.9582 = private unnamed_addr constant [1 x i8] c"\00"
+@.str.9603 = private unnamed_addr constant [2 x i8] c":\00"
+@.str.9619 = private unnamed_addr constant [2 x i8] c"_\00"
+@.str.9647 = private unnamed_addr constant [2 x i8] c":\00"
+@.str.9663 = private unnamed_addr constant [2 x i8] c"_\00"
+@.str.9690 = private unnamed_addr constant [5 x i8] c"out:\00"
+@.str.9708 = private unnamed_addr constant [5 x i8] c"out:\00"
+@.str.9726 = private unnamed_addr constant [5 x i8] c"out:\00"
+@.str.9744 = private unnamed_addr constant [5 x i8] c"out:\00"
+@.str.9762 = private unnamed_addr constant [5 x i8] c"out:\00"
+@.str.9795 = private unnamed_addr constant [13 x i8] c"define i32 @\00"
+@.str.9804 = private unnamed_addr constant [36 x i8] c"(ptr %ctx) {\0A  %r = tail call i32 @\00"
+@.str.9813 = private unnamed_addr constant [27 x i8] c"(ptr %ctx)\0A  ret i32 %r\0A}\0A\00"
+@.str.9841 = private unnamed_addr constant [11 x i8] c"@__offset_\00"
+@.str.9852 = private unnamed_addr constant [25 x i8] c" = private constant i64 \00"
+@.str.9854 = private unnamed_addr constant [2 x i8] c"\0A\00"
+@.str.9868 = private unnamed_addr constant [11 x i8] c"@__offset_\00"
+@.str.9879 = private unnamed_addr constant [25 x i8] c" = private constant i64 \00"
+@.str.9881 = private unnamed_addr constant [2 x i8] c"\0A\00"
+@.str.9895 = private unnamed_addr constant [11 x i8] c"@__offset_\00"
+@.str.9906 = private unnamed_addr constant [25 x i8] c" = private constant i64 \00"
+@.str.9908 = private unnamed_addr constant [2 x i8] c"\0A\00"
+@.str.9922 = private unnamed_addr constant [11 x i8] c"@__offset_\00"
+@.str.9933 = private unnamed_addr constant [25 x i8] c" = private constant i64 \00"
+@.str.9935 = private unnamed_addr constant [2 x i8] c"\0A\00"
+@.str.9950 = private unnamed_addr constant [11 x i8] c"@__offset_\00"
+@.str.9961 = private unnamed_addr constant [25 x i8] c" = private constant i64 \00"
+@.str.9963 = private unnamed_addr constant [2 x i8] c"\0A\00"
+@.str.9973 = private unnamed_addr constant [9 x i8] c"@__size_\00"
+@.str.9975 = private unnamed_addr constant [25 x i8] c" = private constant i64 \00"
+@.str.9977 = private unnamed_addr constant [2 x i8] c"\0A\00"
+@.str.10165 = private unnamed_addr constant [12 x i8] c"; skipped: \00"
+@.str.10172 = private unnamed_addr constant [2 x i8] c"\0A\00"
+@.str.10182 = private unnamed_addr constant [42 x i8] c"define i32 @main(i32 %argc, ptr %argv) {\0A\00"
+@.str.10185 = private unnamed_addr constant [8 x i8] c"entry:\0A\00"
+@.str.10188 = private unnamed_addr constant [48 x i8] c"  %ctx = call ptr @qd_create_context(i64 1024)\0A\00"
+@.str.10191 = private unnamed_addr constant [37 x i8] c"  call i32 @usr_main_main(ptr %ctx)\0A\00"
+@.str.10194 = private unnamed_addr constant [40 x i8] c"  call void @qd_free_context(ptr %ctx)\0A\00"
+@.str.10197 = private unnamed_addr constant [13 x i8] c"  ret i32 0\0A\00"
+@.str.10200 = private unnamed_addr constant [3 x i8] c"}\0A\00"
+@.str.10218 = private unnamed_addr constant [12 x i8] c"\0A; Module: \00"
+@.str.10220 = private unnamed_addr constant [2 x i8] c"\0A\00"
+@.str.10269 = private unnamed_addr constant [18 x i8] c"declare i32 @usr_\00"
+@.str.10275 = private unnamed_addr constant [2 x i8] c"_\00"
+@.str.10281 = private unnamed_addr constant [7 x i8] c"(ptr)\0A\00"
+@.str.10376 = private unnamed_addr constant [55 x i8] c"%qd_context_t = type { ptr, i64, ptr, i32, ptr, ptr }\0A\00"
+@.str.10379 = private unnamed_addr constant [38 x i8] c"%qd_stack_t = type { ptr, i64, i64 }\0A\00"
+@.str.10382 = private unnamed_addr constant [46 x i8] c"%qd_stack_element_t = type { i64, i32, i8 }\0A\0A\00"
+@.str.10385 = private unnamed_addr constant [37 x i8] c"declare ptr @qd_create_context(i64)\0A\00"
+@.str.10388 = private unnamed_addr constant [36 x i8] c"declare void @qd_free_context(ptr)\0A\00"
+@.str.10391 = private unnamed_addr constant [34 x i8] c"declare i32 @qd_push_i(ptr, i64)\0A\00"
+@.str.10394 = private unnamed_addr constant [37 x i8] c"declare i32 @qd_push_f(ptr, double)\0A\00"
+@.str.10397 = private unnamed_addr constant [34 x i8] c"declare i32 @qd_push_s(ptr, ptr)\0A\00"
+@.str.10400 = private unnamed_addr constant [34 x i8] c"declare i32 @qd_push_p(ptr, ptr)\0A\00"
+@.str.10403 = private unnamed_addr constant [38 x i8] c"declare i32 @qd_push_s_ref(ptr, ptr)\0A\00"
+@.str.10406 = private unnamed_addr constant [37 x i8] c"declare void @qd_string_retain(ptr)\0A\00"
+@.str.10409 = private unnamed_addr constant [34 x i8] c"declare void @qd_ptr_retain(ptr)\0A\00"
+@.str.10412 = private unnamed_addr constant [28 x i8] c"declare i32 @qd_print(ptr)\0A\00"
+@.str.10415 = private unnamed_addr constant [25 x i8] c"declare i32 @qd_nl(ptr)\0A\00"
+@.str.10418 = private unnamed_addr constant [26 x i8] c"declare i32 @qd_add(ptr)\0A\00"
+@.str.10421 = private unnamed_addr constant [26 x i8] c"declare i32 @qd_sub(ptr)\0A\00"
+@.str.10424 = private unnamed_addr constant [26 x i8] c"declare i32 @qd_mul(ptr)\0A\00"
+@.str.10427 = private unnamed_addr constant [26 x i8] c"declare i32 @qd_div(ptr)\0A\00"
+@.str.10430 = private unnamed_addr constant [26 x i8] c"declare i32 @qd_mod(ptr)\0A\00"
+@.str.10433 = private unnamed_addr constant [25 x i8] c"declare i32 @qd_eq(ptr)\0A\00"
+@.str.10436 = private unnamed_addr constant [26 x i8] c"declare i32 @qd_neq(ptr)\0A\00"
+@.str.10439 = private unnamed_addr constant [25 x i8] c"declare i32 @qd_lt(ptr)\0A\00"
+@.str.10442 = private unnamed_addr constant [25 x i8] c"declare i32 @qd_gt(ptr)\0A\00"
+@.str.10445 = private unnamed_addr constant [26 x i8] c"declare i32 @qd_lte(ptr)\0A\00"
+@.str.10448 = private unnamed_addr constant [26 x i8] c"declare i32 @qd_gte(ptr)\0A\00"
+@.str.10451 = private unnamed_addr constant [26 x i8] c"declare i32 @qd_dup(ptr)\0A\00"
+@.str.10454 = private unnamed_addr constant [27 x i8] c"declare i32 @qd_drop(ptr)\0A\00"
+@.str.10457 = private unnamed_addr constant [27 x i8] c"declare i32 @qd_swap(ptr)\0A\00"
+@.str.10460 = private unnamed_addr constant [27 x i8] c"declare i32 @qd_over(ptr)\0A\00"
+@.str.10463 = private unnamed_addr constant [26 x i8] c"declare i32 @qd_rot(ptr)\0A\00"
+@.str.10466 = private unnamed_addr constant [26 x i8] c"declare i32 @qd_nip(ptr)\0A\00"
+@.str.10469 = private unnamed_addr constant [26 x i8] c"declare i32 @qd_len(ptr)\0A\00"
+@.str.10472 = private unnamed_addr constant [27 x i8] c"declare i32 @qd_free(ptr)\0A\00"
+@.str.10475 = private unnamed_addr constant [28 x i8] c"declare i32 @qd_panic(ptr)\0A\00"
+@.str.10478 = private unnamed_addr constant [26 x i8] c"declare i32 @qd_err(ptr)\0A\00"
+@.str.10481 = private unnamed_addr constant [26 x i8] c"declare i32 @qd_and(ptr)\0A\00"
+@.str.10484 = private unnamed_addr constant [25 x i8] c"declare i32 @qd_or(ptr)\0A\00"
+@.str.10487 = private unnamed_addr constant [26 x i8] c"declare i32 @qd_not(ptr)\0A\00"
+@.str.10490 = private unnamed_addr constant [26 x i8] c"declare i32 @qd_neg(ptr)\0A\00"
+@.str.10493 = private unnamed_addr constant [27 x i8] c"declare i32 @qd_tuck(ptr)\0A\00"
+@.str.10496 = private unnamed_addr constant [27 x i8] c"declare i32 @qd_pick(ptr)\0A\00"
+@.str.10499 = private unnamed_addr constant [27 x i8] c"declare i32 @qd_roll(ptr)\0A\00"
+@.str.10502 = private unnamed_addr constant [38 x i8] c"declare void @qd_stack_pop(ptr, ptr)\0A\00"
+@.str.10505 = private unnamed_addr constant [42 x i8] c"declare i32 @qdrt_push_element(ptr, ptr)\0A\00"
+@.str.10508 = private unnamed_addr constant [48 x i8] c"declare void @qd_push_call(ptr, ptr, ptr, i64)\0A\00"
+@.str.10511 = private unnamed_addr constant [32 x i8] c"declare void @qd_pop_call(ptr)\0A\00"
+@.str.10514 = private unnamed_addr constant [26 x i8] c"declare void @_exit(i32)\0A\00"
+@.str.10517 = private unnamed_addr constant [41 x i8] c"declare ptr @qd_struct_alloc(i64, ptr)\0A\0A\00"
+@.str.10557 = private unnamed_addr constant [2 x i8] c"!\00"
+@.str.10561 = private unnamed_addr constant [10 x i8] c"usr_main_\00"
+@.str.10642 = private unnamed_addr constant [10 x i8] c"usr_main_\00"
+@.str.10677 = private unnamed_addr constant [46 x i8] c"; Generated by Quadrate self-hosted compiler\0A\00"
+@.str.10680 = private unnamed_addr constant [31 x i8] c"source_filename = \22quadrate\22\0A\0A\00"
+@.str.10686 = private unnamed_addr constant [2 x i8] c"\0A\00"
+@.str.10694 = private unnamed_addr constant [1 x i8] c"\00"
 
 %qd_context_t = type { ptr, i64, ptr, i32, ptr, ptr }
 %qd_stack_t = type { ptr, i64, i64 }
@@ -6807,8 +6802,6 @@ L1489:
   %sf_off_L1494 = load i64, ptr @__offset_buf
   %sf_fp_L1494 = getelementptr i8, ptr %sp_L1492, i64 %sf_off_L1494
   store i64 %sf_val_L1494, ptr %sf_fp_L1494
-  %sf_pptr_L1494 = inttoptr i64 %sf_val_L1494 to ptr
-  call void @qd_ptr_retain(ptr %sf_pptr_L1494)
   call i32 @qd_push_i(ptr %ctx, i64 0)
   %sf_elem_L1495 = alloca %qd_stack_element_t
   %sf_stp_L1495 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
@@ -6897,8 +6890,6 @@ L1507:
   %sf_off_L1512 = load i64, ptr @__offset_buf
   %sf_fp_L1512 = getelementptr i8, ptr %sp_L1510, i64 %sf_off_L1512
   store i64 %sf_val_L1512, ptr %sf_fp_L1512
-  %sf_pptr_L1512 = inttoptr i64 %sf_val_L1512 to ptr
-  call void @qd_ptr_retain(ptr %sf_pptr_L1512)
   call i32 @qd_push_i(ptr %ctx, i64 0)
   %sf_elem_L1513 = alloca %qd_stack_element_t
   %sf_stp_L1513 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
@@ -7165,8 +7156,6 @@ L1556:
   %sf_off_L1577 = load i64, ptr @__offset_buf
   %sf_fp_L1577 = getelementptr i8, ptr %sp_L1575, i64 %sf_off_L1577
   store i64 %sf_val_L1577, ptr %sf_fp_L1577
-  %sf_pptr_L1577 = inttoptr i64 %sf_val_L1577 to ptr
-  call void @qd_ptr_retain(ptr %sf_pptr_L1577)
   %stp_L1578 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
   %stk_L1578 = load ptr, ptr %stp_L1578
   call i32 @qdrt_push_element(ptr %stk_L1578, ptr %local.newlen)
@@ -7332,8 +7321,6 @@ L1598:
   %sf_off_L1612 = load i64, ptr @__offset_buf
   %sf_fp_L1612 = getelementptr i8, ptr %sp_L1610, i64 %sf_off_L1612
   store i64 %sf_val_L1612, ptr %sf_fp_L1612
-  %sf_pptr_L1612 = inttoptr i64 %sf_val_L1612 to ptr
-  call void @qd_ptr_retain(ptr %sf_pptr_L1612)
   %stp_L1613 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
   %stk_L1613 = load ptr, ptr %stp_L1613
   call i32 @qdrt_push_element(ptr %stk_L1613, ptr %local.curlen)
@@ -7693,8 +7680,6 @@ L1685:
   %sf_off_L1702 = load i64, ptr @__offset_buf
   %sf_fp_L1702 = getelementptr i8, ptr %sp_L1700, i64 %sf_off_L1702
   store i64 %sf_val_L1702, ptr %sf_fp_L1702
-  %sf_pptr_L1702 = inttoptr i64 %sf_val_L1702 to ptr
-  call void @qd_ptr_retain(ptr %sf_pptr_L1702)
   %stp_L1703 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
   %stk_L1703 = load ptr, ptr %stp_L1703
   call i32 @qdrt_push_element(ptr %stk_L1703, ptr %local.curlen)
@@ -10567,8 +10552,6 @@ entry:
   %sf_off_L2348 = load i64, ptr @__offset_src
   %sf_fp_L2348 = getelementptr i8, ptr %sp_L2346, i64 %sf_off_L2348
   store i64 %sf_val_L2348, ptr %sf_fp_L2348
-  %sf_sptr_L2348 = inttoptr i64 %sf_val_L2348 to ptr
-  call void @qd_string_retain(ptr %sf_sptr_L2348)
   call i32 @qd_push_i(ptr %ctx, i64 0)
   %sf_elem_L2349 = alloca %qd_stack_element_t
   %sf_stp_L2349 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
@@ -11088,6 +11071,8 @@ define i32 @usr_lexer_skip_line(ptr %ctx) {
 define i32 @usr_lexer_Lexer_read_ident(ptr %ctx) {
 entry:
   %local.l = alloca %qd_stack_element_t
+  call i32 @qd_push_i(ptr %ctx, i64 2)
+  call i32 @qd_roll(ptr %ctx)
   %rstp_L2435 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
   %rstk_L2435 = load ptr, ptr %rstp_L2435
   call void @qd_stack_pop(ptr %rstk_L2435, ptr %local.l)
@@ -11202,8 +11187,6 @@ L2444:
   %sf_off_L2462 = load i64, ptr @__offset_text
   %sf_fp_L2462 = getelementptr i8, ptr %sp_L2458, i64 %sf_off_L2462
   store i64 %sf_val_L2462, ptr %sf_fp_L2462
-  %sf_sptr_L2462 = inttoptr i64 %sf_val_L2462 to ptr
-  call void @qd_string_retain(ptr %sf_sptr_L2462)
   %stp_L2463 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
   %stk_L2463 = load ptr, ptr %stp_L2463
   call i32 @qdrt_push_element(ptr %stk_L2463, ptr %local.sl)
@@ -11241,6 +11224,8 @@ define i32 @usr_lexer_read_ident(ptr %ctx) {
 define i32 @usr_lexer_Lexer_read_number(ptr %ctx) {
 entry:
   %local.l = alloca %qd_stack_element_t
+  call i32 @qd_push_i(ptr %ctx, i64 2)
+  call i32 @qd_roll(ptr %ctx)
   %rstp_L2467 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
   %rstk_L2467 = load ptr, ptr %rstp_L2467
   call void @qd_stack_pop(ptr %rstk_L2467, ptr %local.l)
@@ -11429,8 +11414,6 @@ L2500:
   %sf_off_L2516 = load i64, ptr @__offset_text
   %sf_fp_L2516 = getelementptr i8, ptr %sp_L2512, i64 %sf_off_L2516
   store i64 %sf_val_L2516, ptr %sf_fp_L2516
-  %sf_sptr_L2516 = inttoptr i64 %sf_val_L2516 to ptr
-  call void @qd_string_retain(ptr %sf_sptr_L2516)
   %stp_L2517 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
   %stk_L2517 = load ptr, ptr %stp_L2517
   call i32 @qdrt_push_element(ptr %stk_L2517, ptr %local.sl)
@@ -11783,8 +11766,6 @@ L2601:
   %sf_off_L2608 = load i64, ptr @__offset_text
   %sf_fp_L2608 = getelementptr i8, ptr %sp_L2604, i64 %sf_off_L2608
   store i64 %sf_val_L2608, ptr %sf_fp_L2608
-  %sf_sptr_L2608 = inttoptr i64 %sf_val_L2608 to ptr
-  call void @qd_string_retain(ptr %sf_sptr_L2608)
   %stp_L2609 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
   %stk_L2609 = load ptr, ptr %stp_L2609
   call i32 @qdrt_push_element(ptr %stk_L2609, ptr %local.sl)
@@ -11837,8 +11818,6 @@ L2602:
   %sf_off_L2617 = load i64, ptr @__offset_text
   %sf_fp_L2617 = getelementptr i8, ptr %sp_L2613, i64 %sf_off_L2617
   store i64 %sf_val_L2617, ptr %sf_fp_L2617
-  %sf_sptr_L2617 = inttoptr i64 %sf_val_L2617 to ptr
-  call void @qd_string_retain(ptr %sf_sptr_L2617)
   %stp_L2618 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
   %stk_L2618 = load ptr, ptr %stp_L2618
   call i32 @qdrt_push_element(ptr %stk_L2618, ptr %local.sl)
@@ -11878,6 +11857,8 @@ define i32 @usr_lexer_read_number(ptr %ctx) {
 define i32 @usr_lexer_Lexer_read_string(ptr %ctx) {
 entry:
   %local.l = alloca %qd_stack_element_t
+  call i32 @qd_push_i(ptr %ctx, i64 2)
+  call i32 @qd_roll(ptr %ctx)
   %rstp_L2622 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
   %rstk_L2622 = load ptr, ptr %rstp_L2622
   call void @qd_stack_pop(ptr %rstk_L2622, ptr %local.l)
@@ -12113,8 +12094,6 @@ L2670:
   %sf_off_L2680 = load i64, ptr @__offset_text
   %sf_fp_L2680 = getelementptr i8, ptr %sp_L2676, i64 %sf_off_L2680
   store i64 %sf_val_L2680, ptr %sf_fp_L2680
-  %sf_sptr_L2680 = inttoptr i64 %sf_val_L2680 to ptr
-  call void @qd_string_retain(ptr %sf_sptr_L2680)
   %stp_L2681 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
   %stk_L2681 = load ptr, ptr %stp_L2681
   call i32 @qdrt_push_element(ptr %stk_L2681, ptr %local.sl)
@@ -12240,8 +12219,6 @@ L2697:
   %sf_off_L2704 = load i64, ptr @__offset_text
   %sf_fp_L2704 = getelementptr i8, ptr %sp_L2700, i64 %sf_off_L2704
   store i64 %sf_val_L2704, ptr %sf_fp_L2704
-  %sf_sptr_L2704 = inttoptr i64 %sf_val_L2704 to ptr
-  call void @qd_string_retain(ptr %sf_sptr_L2704)
   %stp_L2705 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
   %stk_L2705 = load ptr, ptr %stp_L2705
   call i32 @qdrt_push_element(ptr %stk_L2705, ptr %local.sl)
@@ -12312,8 +12289,6 @@ L2711:
   %sf_off_L2719 = load i64, ptr @__offset_text
   %sf_fp_L2719 = getelementptr i8, ptr %sp_L2715, i64 %sf_off_L2719
   store i64 %sf_val_L2719, ptr %sf_fp_L2719
-  %sf_sptr_L2719 = inttoptr i64 %sf_val_L2719 to ptr
-  call void @qd_string_retain(ptr %sf_sptr_L2719)
   %stp_L2720 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
   %stk_L2720 = load ptr, ptr %stp_L2720
   call i32 @qdrt_push_element(ptr %stk_L2720, ptr %local.sl)
@@ -12485,8 +12460,6 @@ L2757:
   %sf_off_L2765 = load i64, ptr @__offset_text
   %sf_fp_L2765 = getelementptr i8, ptr %sp_L2761, i64 %sf_off_L2765
   store i64 %sf_val_L2765, ptr %sf_fp_L2765
-  %sf_sptr_L2765 = inttoptr i64 %sf_val_L2765 to ptr
-  call void @qd_string_retain(ptr %sf_sptr_L2765)
   %stp_L2766 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
   %stk_L2766 = load ptr, ptr %stp_L2766
   call i32 @qdrt_push_element(ptr %stk_L2766, ptr %local.sl)
@@ -12558,8 +12531,6 @@ L2772:
   %sf_off_L2780 = load i64, ptr @__offset_text
   %sf_fp_L2780 = getelementptr i8, ptr %sp_L2776, i64 %sf_off_L2780
   store i64 %sf_val_L2780, ptr %sf_fp_L2780
-  %sf_sptr_L2780 = inttoptr i64 %sf_val_L2780 to ptr
-  call void @qd_string_retain(ptr %sf_sptr_L2780)
   %stp_L2781 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
   %stk_L2781 = load ptr, ptr %stp_L2781
   call i32 @qdrt_push_element(ptr %stk_L2781, ptr %local.sl)
@@ -12611,8 +12582,6 @@ L2774:
   %sf_off_L2789 = load i64, ptr @__offset_text
   %sf_fp_L2789 = getelementptr i8, ptr %sp_L2785, i64 %sf_off_L2789
   store i64 %sf_val_L2789, ptr %sf_fp_L2789
-  %sf_sptr_L2789 = inttoptr i64 %sf_val_L2789 to ptr
-  call void @qd_string_retain(ptr %sf_sptr_L2789)
   %stp_L2790 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
   %stk_L2790 = load ptr, ptr %stp_L2790
   call i32 @qdrt_push_element(ptr %stk_L2790, ptr %local.sl)
@@ -12698,8 +12667,6 @@ L2801:
   %sf_off_L2809 = load i64, ptr @__offset_text
   %sf_fp_L2809 = getelementptr i8, ptr %sp_L2805, i64 %sf_off_L2809
   store i64 %sf_val_L2809, ptr %sf_fp_L2809
-  %sf_sptr_L2809 = inttoptr i64 %sf_val_L2809 to ptr
-  call void @qd_string_retain(ptr %sf_sptr_L2809)
   %stp_L2810 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
   %stk_L2810 = load ptr, ptr %stp_L2810
   call i32 @qdrt_push_element(ptr %stk_L2810, ptr %local.sl)
@@ -12751,8 +12718,6 @@ L2803:
   %sf_off_L2818 = load i64, ptr @__offset_text
   %sf_fp_L2818 = getelementptr i8, ptr %sp_L2814, i64 %sf_off_L2818
   store i64 %sf_val_L2818, ptr %sf_fp_L2818
-  %sf_sptr_L2818 = inttoptr i64 %sf_val_L2818 to ptr
-  call void @qd_string_retain(ptr %sf_sptr_L2818)
   %stp_L2819 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
   %stk_L2819 = load ptr, ptr %stp_L2819
   call i32 @qdrt_push_element(ptr %stk_L2819, ptr %local.sl)
@@ -12838,8 +12803,6 @@ L2830:
   %sf_off_L2838 = load i64, ptr @__offset_text
   %sf_fp_L2838 = getelementptr i8, ptr %sp_L2834, i64 %sf_off_L2838
   store i64 %sf_val_L2838, ptr %sf_fp_L2838
-  %sf_sptr_L2838 = inttoptr i64 %sf_val_L2838 to ptr
-  call void @qd_string_retain(ptr %sf_sptr_L2838)
   %stp_L2839 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
   %stk_L2839 = load ptr, ptr %stp_L2839
   call i32 @qdrt_push_element(ptr %stk_L2839, ptr %local.sl)
@@ -12891,8 +12854,6 @@ L2832:
   %sf_off_L2847 = load i64, ptr @__offset_text
   %sf_fp_L2847 = getelementptr i8, ptr %sp_L2843, i64 %sf_off_L2847
   store i64 %sf_val_L2847, ptr %sf_fp_L2847
-  %sf_sptr_L2847 = inttoptr i64 %sf_val_L2847 to ptr
-  call void @qd_string_retain(ptr %sf_sptr_L2847)
   %stp_L2848 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
   %stk_L2848 = load ptr, ptr %stp_L2848
   call i32 @qdrt_push_element(ptr %stk_L2848, ptr %local.sl)
@@ -12978,8 +12939,6 @@ L2859:
   %sf_off_L2867 = load i64, ptr @__offset_text
   %sf_fp_L2867 = getelementptr i8, ptr %sp_L2863, i64 %sf_off_L2867
   store i64 %sf_val_L2867, ptr %sf_fp_L2867
-  %sf_sptr_L2867 = inttoptr i64 %sf_val_L2867 to ptr
-  call void @qd_string_retain(ptr %sf_sptr_L2867)
   %stp_L2868 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
   %stk_L2868 = load ptr, ptr %stp_L2868
   call i32 @qdrt_push_element(ptr %stk_L2868, ptr %local.sl)
@@ -13031,8 +12990,6 @@ L2861:
   %sf_off_L2876 = load i64, ptr @__offset_text
   %sf_fp_L2876 = getelementptr i8, ptr %sp_L2872, i64 %sf_off_L2876
   store i64 %sf_val_L2876, ptr %sf_fp_L2876
-  %sf_sptr_L2876 = inttoptr i64 %sf_val_L2876 to ptr
-  call void @qd_string_retain(ptr %sf_sptr_L2876)
   %stp_L2877 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
   %stk_L2877 = load ptr, ptr %stp_L2877
   call i32 @qdrt_push_element(ptr %stk_L2877, ptr %local.sl)
@@ -13118,8 +13075,6 @@ L2888:
   %sf_off_L2896 = load i64, ptr @__offset_text
   %sf_fp_L2896 = getelementptr i8, ptr %sp_L2892, i64 %sf_off_L2896
   store i64 %sf_val_L2896, ptr %sf_fp_L2896
-  %sf_sptr_L2896 = inttoptr i64 %sf_val_L2896 to ptr
-  call void @qd_string_retain(ptr %sf_sptr_L2896)
   %stp_L2897 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
   %stk_L2897 = load ptr, ptr %stp_L2897
   call i32 @qdrt_push_element(ptr %stk_L2897, ptr %local.sl)
@@ -13191,8 +13146,6 @@ L2903:
   %sf_off_L2911 = load i64, ptr @__offset_text
   %sf_fp_L2911 = getelementptr i8, ptr %sp_L2907, i64 %sf_off_L2911
   store i64 %sf_val_L2911, ptr %sf_fp_L2911
-  %sf_sptr_L2911 = inttoptr i64 %sf_val_L2911 to ptr
-  call void @qd_string_retain(ptr %sf_sptr_L2911)
   %stp_L2912 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
   %stk_L2912 = load ptr, ptr %stp_L2912
   call i32 @qdrt_push_element(ptr %stk_L2912, ptr %local.sl)
@@ -13244,8 +13197,6 @@ L2905:
   %sf_off_L2920 = load i64, ptr @__offset_text
   %sf_fp_L2920 = getelementptr i8, ptr %sp_L2916, i64 %sf_off_L2920
   store i64 %sf_val_L2920, ptr %sf_fp_L2920
-  %sf_sptr_L2920 = inttoptr i64 %sf_val_L2920 to ptr
-  call void @qd_string_retain(ptr %sf_sptr_L2920)
   %stp_L2921 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
   %stk_L2921 = load ptr, ptr %stp_L2921
   call i32 @qdrt_push_element(ptr %stk_L2921, ptr %local.sl)
@@ -13331,8 +13282,6 @@ L2932:
   %sf_off_L2940 = load i64, ptr @__offset_text
   %sf_fp_L2940 = getelementptr i8, ptr %sp_L2936, i64 %sf_off_L2940
   store i64 %sf_val_L2940, ptr %sf_fp_L2940
-  %sf_sptr_L2940 = inttoptr i64 %sf_val_L2940 to ptr
-  call void @qd_string_retain(ptr %sf_sptr_L2940)
   %stp_L2941 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
   %stk_L2941 = load ptr, ptr %stp_L2941
   call i32 @qdrt_push_element(ptr %stk_L2941, ptr %local.sl)
@@ -13404,8 +13353,6 @@ L2947:
   %sf_off_L2955 = load i64, ptr @__offset_text
   %sf_fp_L2955 = getelementptr i8, ptr %sp_L2951, i64 %sf_off_L2955
   store i64 %sf_val_L2955, ptr %sf_fp_L2955
-  %sf_sptr_L2955 = inttoptr i64 %sf_val_L2955 to ptr
-  call void @qd_string_retain(ptr %sf_sptr_L2955)
   %stp_L2956 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
   %stk_L2956 = load ptr, ptr %stp_L2956
   call i32 @qdrt_push_element(ptr %stk_L2956, ptr %local.sl)
@@ -13457,8 +13404,6 @@ L2949:
   %sf_off_L2964 = load i64, ptr @__offset_text
   %sf_fp_L2964 = getelementptr i8, ptr %sp_L2960, i64 %sf_off_L2964
   store i64 %sf_val_L2964, ptr %sf_fp_L2964
-  %sf_sptr_L2964 = inttoptr i64 %sf_val_L2964 to ptr
-  call void @qd_string_retain(ptr %sf_sptr_L2964)
   %stp_L2965 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
   %stk_L2965 = load ptr, ptr %stp_L2965
   call i32 @qdrt_push_element(ptr %stk_L2965, ptr %local.sl)
@@ -13544,8 +13489,6 @@ L2976:
   %sf_off_L2984 = load i64, ptr @__offset_text
   %sf_fp_L2984 = getelementptr i8, ptr %sp_L2980, i64 %sf_off_L2984
   store i64 %sf_val_L2984, ptr %sf_fp_L2984
-  %sf_sptr_L2984 = inttoptr i64 %sf_val_L2984 to ptr
-  call void @qd_string_retain(ptr %sf_sptr_L2984)
   %stp_L2985 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
   %stk_L2985 = load ptr, ptr %stp_L2985
   call i32 @qdrt_push_element(ptr %stk_L2985, ptr %local.sl)
@@ -13597,8 +13540,6 @@ L2978:
   %sf_off_L2993 = load i64, ptr @__offset_text
   %sf_fp_L2993 = getelementptr i8, ptr %sp_L2989, i64 %sf_off_L2993
   store i64 %sf_val_L2993, ptr %sf_fp_L2993
-  %sf_sptr_L2993 = inttoptr i64 %sf_val_L2993 to ptr
-  call void @qd_string_retain(ptr %sf_sptr_L2993)
   %stp_L2994 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
   %stk_L2994 = load ptr, ptr %stp_L2994
   call i32 @qdrt_push_element(ptr %stk_L2994, ptr %local.sl)
@@ -13683,8 +13624,6 @@ L3005:
   %sf_off_L3013 = load i64, ptr @__offset_text
   %sf_fp_L3013 = getelementptr i8, ptr %sp_L3009, i64 %sf_off_L3013
   store i64 %sf_val_L3013, ptr %sf_fp_L3013
-  %sf_sptr_L3013 = inttoptr i64 %sf_val_L3013 to ptr
-  call void @qd_string_retain(ptr %sf_sptr_L3013)
   %stp_L3014 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
   %stk_L3014 = load ptr, ptr %stp_L3014
   call i32 @qdrt_push_element(ptr %stk_L3014, ptr %local.sl)
@@ -13760,8 +13699,6 @@ L3020:
   %sf_off_L3029 = load i64, ptr @__offset_text
   %sf_fp_L3029 = getelementptr i8, ptr %sp_L3025, i64 %sf_off_L3029
   store i64 %sf_val_L3029, ptr %sf_fp_L3029
-  %sf_sptr_L3029 = inttoptr i64 %sf_val_L3029 to ptr
-  call void @qd_string_retain(ptr %sf_sptr_L3029)
   %stp_L3030 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
   %stk_L3030 = load ptr, ptr %stp_L3030
   call i32 @qdrt_push_element(ptr %stk_L3030, ptr %local.sl)
@@ -13813,8 +13750,6 @@ L3022:
   %sf_off_L3038 = load i64, ptr @__offset_text
   %sf_fp_L3038 = getelementptr i8, ptr %sp_L3034, i64 %sf_off_L3038
   store i64 %sf_val_L3038, ptr %sf_fp_L3038
-  %sf_sptr_L3038 = inttoptr i64 %sf_val_L3038 to ptr
-  call void @qd_string_retain(ptr %sf_sptr_L3038)
   %stp_L3039 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
   %stk_L3039 = load ptr, ptr %stp_L3039
   call i32 @qdrt_push_element(ptr %stk_L3039, ptr %local.sl)
@@ -13880,8 +13815,6 @@ L3045:
   %sf_off_L3052 = load i64, ptr @__offset_text
   %sf_fp_L3052 = getelementptr i8, ptr %sp_L3048, i64 %sf_off_L3052
   store i64 %sf_val_L3052, ptr %sf_fp_L3052
-  %sf_sptr_L3052 = inttoptr i64 %sf_val_L3052 to ptr
-  call void @qd_string_retain(ptr %sf_sptr_L3052)
   %stp_L3053 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
   %stk_L3053 = load ptr, ptr %stp_L3053
   call i32 @qdrt_push_element(ptr %stk_L3053, ptr %local.sl)
@@ -13947,8 +13880,6 @@ L3059:
   %sf_off_L3066 = load i64, ptr @__offset_text
   %sf_fp_L3066 = getelementptr i8, ptr %sp_L3062, i64 %sf_off_L3066
   store i64 %sf_val_L3066, ptr %sf_fp_L3066
-  %sf_sptr_L3066 = inttoptr i64 %sf_val_L3066 to ptr
-  call void @qd_string_retain(ptr %sf_sptr_L3066)
   %stp_L3067 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
   %stk_L3067 = load ptr, ptr %stp_L3067
   call i32 @qdrt_push_element(ptr %stk_L3067, ptr %local.sl)
@@ -14014,8 +13945,6 @@ L3073:
   %sf_off_L3080 = load i64, ptr @__offset_text
   %sf_fp_L3080 = getelementptr i8, ptr %sp_L3076, i64 %sf_off_L3080
   store i64 %sf_val_L3080, ptr %sf_fp_L3080
-  %sf_sptr_L3080 = inttoptr i64 %sf_val_L3080 to ptr
-  call void @qd_string_retain(ptr %sf_sptr_L3080)
   %stp_L3081 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
   %stk_L3081 = load ptr, ptr %stp_L3081
   call i32 @qdrt_push_element(ptr %stk_L3081, ptr %local.sl)
@@ -14081,8 +14010,6 @@ L3087:
   %sf_off_L3094 = load i64, ptr @__offset_text
   %sf_fp_L3094 = getelementptr i8, ptr %sp_L3090, i64 %sf_off_L3094
   store i64 %sf_val_L3094, ptr %sf_fp_L3094
-  %sf_sptr_L3094 = inttoptr i64 %sf_val_L3094 to ptr
-  call void @qd_string_retain(ptr %sf_sptr_L3094)
   %stp_L3095 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
   %stk_L3095 = load ptr, ptr %stp_L3095
   call i32 @qdrt_push_element(ptr %stk_L3095, ptr %local.sl)
@@ -14148,8 +14075,6 @@ L3101:
   %sf_off_L3108 = load i64, ptr @__offset_text
   %sf_fp_L3108 = getelementptr i8, ptr %sp_L3104, i64 %sf_off_L3108
   store i64 %sf_val_L3108, ptr %sf_fp_L3108
-  %sf_sptr_L3108 = inttoptr i64 %sf_val_L3108 to ptr
-  call void @qd_string_retain(ptr %sf_sptr_L3108)
   %stp_L3109 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
   %stk_L3109 = load ptr, ptr %stp_L3109
   call i32 @qdrt_push_element(ptr %stk_L3109, ptr %local.sl)
@@ -14215,8 +14140,6 @@ L3115:
   %sf_off_L3122 = load i64, ptr @__offset_text
   %sf_fp_L3122 = getelementptr i8, ptr %sp_L3118, i64 %sf_off_L3122
   store i64 %sf_val_L3122, ptr %sf_fp_L3122
-  %sf_sptr_L3122 = inttoptr i64 %sf_val_L3122 to ptr
-  call void @qd_string_retain(ptr %sf_sptr_L3122)
   %stp_L3123 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
   %stk_L3123 = load ptr, ptr %stp_L3123
   call i32 @qdrt_push_element(ptr %stk_L3123, ptr %local.sl)
@@ -14282,8 +14205,6 @@ L3129:
   %sf_off_L3136 = load i64, ptr @__offset_text
   %sf_fp_L3136 = getelementptr i8, ptr %sp_L3132, i64 %sf_off_L3136
   store i64 %sf_val_L3136, ptr %sf_fp_L3136
-  %sf_sptr_L3136 = inttoptr i64 %sf_val_L3136 to ptr
-  call void @qd_string_retain(ptr %sf_sptr_L3136)
   %stp_L3137 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
   %stk_L3137 = load ptr, ptr %stp_L3137
   call i32 @qdrt_push_element(ptr %stk_L3137, ptr %local.sl)
@@ -14349,8 +14270,6 @@ L3143:
   %sf_off_L3150 = load i64, ptr @__offset_text
   %sf_fp_L3150 = getelementptr i8, ptr %sp_L3146, i64 %sf_off_L3150
   store i64 %sf_val_L3150, ptr %sf_fp_L3150
-  %sf_sptr_L3150 = inttoptr i64 %sf_val_L3150 to ptr
-  call void @qd_string_retain(ptr %sf_sptr_L3150)
   %stp_L3151 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
   %stk_L3151 = load ptr, ptr %stp_L3151
   call i32 @qdrt_push_element(ptr %stk_L3151, ptr %local.sl)
@@ -14416,8 +14335,6 @@ L3157:
   %sf_off_L3164 = load i64, ptr @__offset_text
   %sf_fp_L3164 = getelementptr i8, ptr %sp_L3160, i64 %sf_off_L3164
   store i64 %sf_val_L3164, ptr %sf_fp_L3164
-  %sf_sptr_L3164 = inttoptr i64 %sf_val_L3164 to ptr
-  call void @qd_string_retain(ptr %sf_sptr_L3164)
   %stp_L3165 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
   %stk_L3165 = load ptr, ptr %stp_L3165
   call i32 @qdrt_push_element(ptr %stk_L3165, ptr %local.sl)
@@ -14483,8 +14400,6 @@ L3171:
   %sf_off_L3178 = load i64, ptr @__offset_text
   %sf_fp_L3178 = getelementptr i8, ptr %sp_L3174, i64 %sf_off_L3178
   store i64 %sf_val_L3178, ptr %sf_fp_L3178
-  %sf_sptr_L3178 = inttoptr i64 %sf_val_L3178 to ptr
-  call void @qd_string_retain(ptr %sf_sptr_L3178)
   %stp_L3179 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
   %stk_L3179 = load ptr, ptr %stp_L3179
   call i32 @qdrt_push_element(ptr %stk_L3179, ptr %local.sl)
@@ -14550,8 +14465,6 @@ L3185:
   %sf_off_L3192 = load i64, ptr @__offset_text
   %sf_fp_L3192 = getelementptr i8, ptr %sp_L3188, i64 %sf_off_L3192
   store i64 %sf_val_L3192, ptr %sf_fp_L3192
-  %sf_sptr_L3192 = inttoptr i64 %sf_val_L3192 to ptr
-  call void @qd_string_retain(ptr %sf_sptr_L3192)
   %stp_L3193 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
   %stk_L3193 = load ptr, ptr %stp_L3193
   call i32 @qdrt_push_element(ptr %stk_L3193, ptr %local.sl)
@@ -14617,8 +14530,6 @@ L3199:
   %sf_off_L3206 = load i64, ptr @__offset_text
   %sf_fp_L3206 = getelementptr i8, ptr %sp_L3202, i64 %sf_off_L3206
   store i64 %sf_val_L3206, ptr %sf_fp_L3206
-  %sf_sptr_L3206 = inttoptr i64 %sf_val_L3206 to ptr
-  call void @qd_string_retain(ptr %sf_sptr_L3206)
   %stp_L3207 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
   %stk_L3207 = load ptr, ptr %stp_L3207
   call i32 @qdrt_push_element(ptr %stk_L3207, ptr %local.sl)
@@ -14684,8 +14595,6 @@ L3213:
   %sf_off_L3220 = load i64, ptr @__offset_text
   %sf_fp_L3220 = getelementptr i8, ptr %sp_L3216, i64 %sf_off_L3220
   store i64 %sf_val_L3220, ptr %sf_fp_L3220
-  %sf_sptr_L3220 = inttoptr i64 %sf_val_L3220 to ptr
-  call void @qd_string_retain(ptr %sf_sptr_L3220)
   %stp_L3221 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
   %stk_L3221 = load ptr, ptr %stp_L3221
   call i32 @qdrt_push_element(ptr %stk_L3221, ptr %local.sl)
@@ -14751,8 +14660,6 @@ L3227:
   %sf_off_L3234 = load i64, ptr @__offset_text
   %sf_fp_L3234 = getelementptr i8, ptr %sp_L3230, i64 %sf_off_L3234
   store i64 %sf_val_L3234, ptr %sf_fp_L3234
-  %sf_sptr_L3234 = inttoptr i64 %sf_val_L3234 to ptr
-  call void @qd_string_retain(ptr %sf_sptr_L3234)
   %stp_L3235 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
   %stk_L3235 = load ptr, ptr %stp_L3235
   call i32 @qdrt_push_element(ptr %stk_L3235, ptr %local.sl)
@@ -14818,8 +14725,6 @@ L3241:
   %sf_off_L3248 = load i64, ptr @__offset_text
   %sf_fp_L3248 = getelementptr i8, ptr %sp_L3244, i64 %sf_off_L3248
   store i64 %sf_val_L3248, ptr %sf_fp_L3248
-  %sf_sptr_L3248 = inttoptr i64 %sf_val_L3248 to ptr
-  call void @qd_string_retain(ptr %sf_sptr_L3248)
   %stp_L3249 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
   %stk_L3249 = load ptr, ptr %stp_L3249
   call i32 @qdrt_push_element(ptr %stk_L3249, ptr %local.sl)
@@ -14894,8 +14799,6 @@ L3243:
   %sf_off_L3263 = load i64, ptr @__offset_text
   %sf_fp_L3263 = getelementptr i8, ptr %sp_L3259, i64 %sf_off_L3263
   store i64 %sf_val_L3263, ptr %sf_fp_L3263
-  %sf_sptr_L3263 = inttoptr i64 %sf_val_L3263 to ptr
-  call void @qd_string_retain(ptr %sf_sptr_L3263)
   %stp_L3264 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
   %stk_L3264 = load ptr, ptr %stp_L3264
   call i32 @qdrt_push_element(ptr %stk_L3264, ptr %local.sl)
@@ -15763,8 +15666,6 @@ entry:
   %sf_off_L3499 = load i64, ptr @__offset_ntext
   %sf_fp_L3499 = getelementptr i8, ptr %sp_L3495, i64 %sf_off_L3499
   store i64 %sf_val_L3499, ptr %sf_fp_L3499
-  %sf_sptr_L3499 = inttoptr i64 %sf_val_L3499 to ptr
-  call void @qd_string_retain(ptr %sf_sptr_L3499)
   %stp_L3500 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
   %stk_L3500 = load ptr, ptr %stp_L3500
   call i32 @qdrt_push_element(ptr %stk_L3500, ptr %local.l)
@@ -15799,8 +15700,6 @@ entry:
   %sf_off_L3504 = load i64, ptr @__offset_child1
   %sf_fp_L3504 = getelementptr i8, ptr %sp_L3495, i64 %sf_off_L3504
   store i64 %sf_val_L3504, ptr %sf_fp_L3504
-  %sf_pptr_L3504 = inttoptr i64 %sf_val_L3504 to ptr
-  call void @qd_ptr_retain(ptr %sf_pptr_L3504)
   call i32 @qd_push_i(ptr %ctx, i64 0)
   %sf_elem_L3505 = alloca %qd_stack_element_t
   %sf_stp_L3505 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
@@ -15811,8 +15710,6 @@ entry:
   %sf_off_L3505 = load i64, ptr @__offset_child2
   %sf_fp_L3505 = getelementptr i8, ptr %sp_L3495, i64 %sf_off_L3505
   store i64 %sf_val_L3505, ptr %sf_fp_L3505
-  %sf_pptr_L3505 = inttoptr i64 %sf_val_L3505 to ptr
-  call void @qd_ptr_retain(ptr %sf_pptr_L3505)
   call i32 @qd_push_i(ptr %ctx, i64 0)
   %sf_elem_L3506 = alloca %qd_stack_element_t
   %sf_stp_L3506 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
@@ -15823,8 +15720,6 @@ entry:
   %sf_off_L3506 = load i64, ptr @__offset_child3
   %sf_fp_L3506 = getelementptr i8, ptr %sp_L3495, i64 %sf_off_L3506
   store i64 %sf_val_L3506, ptr %sf_fp_L3506
-  %sf_pptr_L3506 = inttoptr i64 %sf_val_L3506 to ptr
-  call void @qd_ptr_retain(ptr %sf_pptr_L3506)
   call i32 @qd_push_i(ptr %ctx, i64 0)
   %sf_elem_L3507 = alloca %qd_stack_element_t
   %sf_stp_L3507 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
@@ -15835,8 +15730,6 @@ entry:
   %sf_off_L3507 = load i64, ptr @__offset_child4
   %sf_fp_L3507 = getelementptr i8, ptr %sp_L3495, i64 %sf_off_L3507
   store i64 %sf_val_L3507, ptr %sf_fp_L3507
-  %sf_pptr_L3507 = inttoptr i64 %sf_val_L3507 to ptr
-  call void @qd_ptr_retain(ptr %sf_pptr_L3507)
   call i32 @qd_push_i(ptr %ctx, i64 0)
   %sf_elem_L3508 = alloca %qd_stack_element_t
   %sf_stp_L3508 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
@@ -15847,8 +15740,6 @@ entry:
   %sf_off_L3508 = load i64, ptr @__offset_extra
   %sf_fp_L3508 = getelementptr i8, ptr %sp_L3495, i64 %sf_off_L3508
   store i64 %sf_val_L3508, ptr %sf_fp_L3508
-  %sf_pptr_L3508 = inttoptr i64 %sf_val_L3508 to ptr
-  call void @qd_ptr_retain(ptr %sf_pptr_L3508)
   call i32 @qd_push_i(ptr %ctx, i64 0)
   %sf_elem_L3509 = alloca %qd_stack_element_t
   %sf_stp_L3509 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
@@ -15859,8 +15750,6 @@ entry:
   %sf_off_L3509 = load i64, ptr @__offset_sibling
   %sf_fp_L3509 = getelementptr i8, ptr %sp_L3495, i64 %sf_off_L3509
   store i64 %sf_val_L3509, ptr %sf_fp_L3509
-  %sf_pptr_L3509 = inttoptr i64 %sf_val_L3509 to ptr
-  call void @qd_ptr_retain(ptr %sf_pptr_L3509)
   call i32 @qd_push_p(ptr %ctx, ptr %sp_L3495)
   br label %return
 return:
@@ -16541,8 +16430,6 @@ L3632:
   %sf_off_L3645 = load i64, ptr @__offset_lex
   %sf_fp_L3645 = getelementptr i8, ptr %sp_L3643, i64 %sf_off_L3645
   store i64 %sf_val_L3645, ptr %sf_fp_L3645
-  %sf_pptr_L3645 = inttoptr i64 %sf_val_L3645 to ptr
-  call void @qd_ptr_retain(ptr %sf_pptr_L3645)
   %stp_L3646 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
   %stk_L3646 = load ptr, ptr %stp_L3646
   call i32 @qdrt_push_element(ptr %stk_L3646, ptr %local.t)
@@ -16555,8 +16442,6 @@ L3632:
   %sf_off_L3647 = load i64, ptr @__offset_cur
   %sf_fp_L3647 = getelementptr i8, ptr %sp_L3643, i64 %sf_off_L3647
   store i64 %sf_val_L3647, ptr %sf_fp_L3647
-  %sf_pptr_L3647 = inttoptr i64 %sf_val_L3647 to ptr
-  call void @qd_ptr_retain(ptr %sf_pptr_L3647)
   call i32 @qd_push_i(ptr %ctx, i64 0)
   %sf_elem_L3648 = alloca %qd_stack_element_t
   %sf_stp_L3648 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
@@ -16567,8 +16452,6 @@ L3632:
   %sf_off_L3648 = load i64, ptr @__offset_prev
   %sf_fp_L3648 = getelementptr i8, ptr %sp_L3643, i64 %sf_off_L3648
   store i64 %sf_val_L3648, ptr %sf_fp_L3648
-  %sf_pptr_L3648 = inttoptr i64 %sf_val_L3648 to ptr
-  call void @qd_ptr_retain(ptr %sf_pptr_L3648)
   call i32 @qd_push_p(ptr %ctx, ptr %sp_L3643)
   br label %return
 return:
@@ -16757,6 +16640,8 @@ define i32 @usr_parser_advance(ptr %ctx) {
 define i32 @usr_parser_Parser_check(ptr %ctx) {
 entry:
   %local.p = alloca %qd_stack_element_t
+  call i32 @qd_push_i(ptr %ctx, i64 1)
+  call i32 @qd_roll(ptr %ctx)
   %rstp_L3680 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
   %rstk_L3680 = load ptr, ptr %rstp_L3680
   call void @qd_stack_pop(ptr %rstk_L3680, ptr %local.p)
@@ -16803,6 +16688,8 @@ define i32 @usr_parser_check(ptr %ctx) {
 define i32 @usr_parser_Parser_match(ptr %ctx) {
 entry:
   %local.p = alloca %qd_stack_element_t
+  call i32 @qd_push_i(ptr %ctx, i64 1)
+  call i32 @qd_roll(ptr %ctx)
   %rstp_L3686 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
   %rstk_L3686 = load ptr, ptr %rstp_L3686
   call void @qd_stack_pop(ptr %rstk_L3686, ptr %local.p)
@@ -16868,6 +16755,8 @@ define i32 @usr_parser_match(ptr %ctx) {
 define i32 @usr_parser_Parser_expect(ptr %ctx) {
 entry:
   %local.p = alloca %qd_stack_element_t
+  call i32 @qd_push_i(ptr %ctx, i64 1)
+  call i32 @qd_roll(ptr %ctx)
   %rstp_L3697 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
   %rstk_L3697 = load ptr, ptr %rstp_L3697
   call void @qd_stack_pop(ptr %rstk_L3697, ptr %local.p)
@@ -18498,6 +18387,8 @@ define i32 @usr_parser_parse_signature(ptr %ctx) {
 define i32 @usr_parser_Parser_parse_fn(ptr %ctx) {
 entry:
   %local.p = alloca %qd_stack_element_t
+  call i32 @qd_push_i(ptr %ctx, i64 1)
+  call i32 @qd_roll(ptr %ctx)
   %rstp_L4113 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
   %rstk_L4113 = load ptr, ptr %rstp_L4113
   call void @qd_stack_pop(ptr %rstk_L4113, ptr %local.p)
@@ -19062,6 +18953,8 @@ define i32 @usr_parser_parse_fn(ptr %ctx) {
 define i32 @usr_parser_Parser_parse_struct(ptr %ctx) {
 entry:
   %local.p = alloca %qd_stack_element_t
+  call i32 @qd_push_i(ptr %ctx, i64 1)
+  call i32 @qd_roll(ptr %ctx)
   %rstp_L4275 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
   %rstk_L4275 = load ptr, ptr %rstp_L4275
   call void @qd_stack_pop(ptr %rstk_L4275, ptr %local.p)
@@ -19442,6 +19335,8 @@ define i32 @usr_parser_parse_struct(ptr %ctx) {
 define i32 @usr_parser_Parser_parse_enum(ptr %ctx) {
 entry:
   %local.p = alloca %qd_stack_element_t
+  call i32 @qd_push_i(ptr %ctx, i64 1)
+  call i32 @qd_roll(ptr %ctx)
   %rstp_L4381 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
   %rstk_L4381 = load ptr, ptr %rstp_L4381
   call void @qd_stack_pop(ptr %rstk_L4381, ptr %local.p)
@@ -19749,6 +19644,8 @@ define i32 @usr_parser_parse_enum(ptr %ctx) {
 define i32 @usr_parser_Parser_parse_const(ptr %ctx) {
 entry:
   %local.p = alloca %qd_stack_element_t
+  call i32 @qd_push_i(ptr %ctx, i64 1)
+  call i32 @qd_roll(ptr %ctx)
   %rstp_L4466 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
   %rstk_L4466 = load ptr, ptr %rstp_L4466
   call void @qd_stack_pop(ptr %rstk_L4466, ptr %local.p)
@@ -24704,8 +24601,6 @@ entry:
   %sf_off_L5895 = load i64, ptr @__offset_globals
   %sf_fp_L5895 = getelementptr i8, ptr %sp_L5894, i64 %sf_off_L5895
   store i64 %sf_val_L5895, ptr %sf_fp_L5895
-  %sf_pptr_L5895 = inttoptr i64 %sf_val_L5895 to ptr
-  call void @qd_ptr_retain(ptr %sf_pptr_L5895)
   call i32 @usr_sb_new(ptr %ctx)
   %sf_elem_L5896 = alloca %qd_stack_element_t
   %sf_stp_L5896 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
@@ -24716,8 +24611,6 @@ entry:
   %sf_off_L5896 = load i64, ptr @__offset_code
   %sf_fp_L5896 = getelementptr i8, ptr %sp_L5894, i64 %sf_off_L5896
   store i64 %sf_val_L5896, ptr %sf_fp_L5896
-  %sf_pptr_L5896 = inttoptr i64 %sf_val_L5896 to ptr
-  call void @qd_ptr_retain(ptr %sf_pptr_L5896)
   call i32 @qd_push_i(ptr %ctx, i64 0)
   %sf_elem_L5897 = alloca %qd_stack_element_t
   %sf_stp_L5897 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
@@ -34546,7 +34439,6 @@ entry:
   %local.fcur = alloca %qd_stack_element_t
   %local.uid = alloca %qd_stack_element_t
   %local.o = alloca %qd_stack_element_t
-  %local.sftype = alloca %qd_stack_element_t
   %stp_L8495 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
   %stk_L8495 = load ptr, ptr %stp_L8495
   call void @qd_stack_pop(ptr %stk_L8495, ptr %local.loc)
@@ -35127,153 +35019,21 @@ L8567:
   call void @qd_stack_pop(ptr %stk_L8644, ptr %local.o)
   %stp_L8645 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
   %stk_L8645 = load ptr, ptr %stp_L8645
-  call i32 @qdrt_push_element(ptr %stk_L8645, ptr %local.loc)
-  %stp_L8646 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L8646 = load ptr, ptr %stp_L8646
-  call i32 @qdrt_push_element(ptr %stk_L8646, ptr %local.fname)
-  call i32 @usr_codegen_lookup_field_type(ptr %ctx)
+  call i32 @qdrt_push_element(ptr %stk_L8645, ptr %local.o)
+  %fs_elem_L8646 = alloca %qd_stack_element_t
+  %fs_stp_L8646 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %fs_stk_L8646 = load ptr, ptr %fs_stp_L8646
+  call void @qd_stack_pop(ptr %fs_stk_L8646, ptr %fs_elem_L8646)
+  %fs_vp_L8646 = getelementptr %qd_stack_element_t, ptr %fs_elem_L8646, i32 0, i32 0
+  %fs_val_L8646 = load i64, ptr %fs_vp_L8646
+  %fs_svp_L8646 = getelementptr %qd_stack_element_t, ptr %local.st, i32 0, i32 0
+  %fs_sptr_L8646 = load ptr, ptr %fs_svp_L8646
+  %fs_off_L8646 = load i64, ptr @__offset_code
+  %fs_fp_L8646 = getelementptr i8, ptr %fs_sptr_L8646, i64 %fs_off_L8646
+  store i64 %fs_val_L8646, ptr %fs_fp_L8646
   %stp_L8647 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
   %stk_L8647 = load ptr, ptr %stp_L8647
-  call void @qd_stack_pop(ptr %stk_L8647, ptr %local.sftype)
-  %stp_L8648 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L8648 = load ptr, ptr %stp_L8648
-  call i32 @qdrt_push_element(ptr %stk_L8648, ptr %local.sftype)
-  call i32 @qd_push_s(ptr %ctx, ptr @.str.8649)
-  call i32 @usr_strings_compare(ptr %ctx)
-  call i32 @qd_push_i(ptr %ctx, i64 0)
-  call i32 @qd_eq(ptr %ctx)
-  %ce_L8650 = alloca %qd_stack_element_t
-  %stp_L8650 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L8650 = load ptr, ptr %stp_L8650
-  call void @qd_stack_pop(ptr %stk_L8650, ptr %ce_L8650)
-  %cv_L8650 = getelementptr %qd_stack_element_t, ptr %ce_L8650, i32 0, i32 0
-  %ci_L8650 = load i64, ptr %cv_L8650
-  %cc_L8650 = icmp ne i64 %ci_L8650, 0
-  br i1 %cc_L8650, label %L8651, label %L8653
-L8651:
-  %stp_L8654 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L8654 = load ptr, ptr %stp_L8654
-  call i32 @qdrt_push_element(ptr %stk_L8654, ptr %local.o)
-  call i32 @usr_sb_new(ptr %ctx)
-  call i32 @qd_push_s(ptr %ctx, ptr @.str.8655)
-  call i32 @usr_sb_append(ptr %ctx)
-  %stp_L8656 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L8656 = load ptr, ptr %stp_L8656
-  call i32 @qdrt_push_element(ptr %stk_L8656, ptr %local.uid)
-  call i32 @usr_sb_append_int(ptr %ctx)
-  call i32 @qd_push_s(ptr %ctx, ptr @.str.8657)
-  call i32 @usr_sb_append(ptr %ctx)
-  %stp_L8658 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L8658 = load ptr, ptr %stp_L8658
-  call i32 @qdrt_push_element(ptr %stk_L8658, ptr %local.uid)
-  call i32 @usr_sb_append_int(ptr %ctx)
-  call i32 @qd_push_s(ptr %ctx, ptr @.str.8659)
-  call i32 @usr_sb_append(ptr %ctx)
-  call i32 @usr_sb_finish(ptr %ctx)
-  call i32 @usr_sb_append(ptr %ctx)
-  %stp_L8660 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L8660 = load ptr, ptr %stp_L8660
-  call void @qd_stack_pop(ptr %stk_L8660, ptr %local.o)
-  %stp_L8661 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L8661 = load ptr, ptr %stp_L8661
-  call i32 @qdrt_push_element(ptr %stk_L8661, ptr %local.o)
-  call i32 @usr_sb_new(ptr %ctx)
-  call i32 @qd_push_s(ptr %ctx, ptr @.str.8662)
-  call i32 @usr_sb_append(ptr %ctx)
-  %stp_L8663 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L8663 = load ptr, ptr %stp_L8663
-  call i32 @qdrt_push_element(ptr %stk_L8663, ptr %local.uid)
-  call i32 @usr_sb_append_int(ptr %ctx)
-  call i32 @qd_push_s(ptr %ctx, ptr @.str.8664)
-  call i32 @usr_sb_append(ptr %ctx)
-  call i32 @usr_sb_finish(ptr %ctx)
-  call i32 @usr_sb_append(ptr %ctx)
-  %stp_L8665 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L8665 = load ptr, ptr %stp_L8665
-  call void @qd_stack_pop(ptr %stk_L8665, ptr %local.o)
-  br label %L8653
-L8653:
-  %stp_L8666 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L8666 = load ptr, ptr %stp_L8666
-  call i32 @qdrt_push_element(ptr %stk_L8666, ptr %local.sftype)
-  call i32 @qd_push_s(ptr %ctx, ptr @.str.8667)
-  call i32 @usr_strings_compare(ptr %ctx)
-  call i32 @qd_push_i(ptr %ctx, i64 0)
-  call i32 @qd_eq(ptr %ctx)
-  %stp_L8668 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L8668 = load ptr, ptr %stp_L8668
-  call i32 @qdrt_push_element(ptr %stk_L8668, ptr %local.sftype)
-  call i32 @qd_push_s(ptr %ctx, ptr @.str.8669)
-  call i32 @usr_strings_starts_with(ptr %ctx)
-  call i32 @qd_or(ptr %ctx)
-  %ce_L8670 = alloca %qd_stack_element_t
-  %stp_L8670 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L8670 = load ptr, ptr %stp_L8670
-  call void @qd_stack_pop(ptr %stk_L8670, ptr %ce_L8670)
-  %cv_L8670 = getelementptr %qd_stack_element_t, ptr %ce_L8670, i32 0, i32 0
-  %ci_L8670 = load i64, ptr %cv_L8670
-  %cc_L8670 = icmp ne i64 %ci_L8670, 0
-  br i1 %cc_L8670, label %L8671, label %L8673
-L8671:
-  %stp_L8674 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L8674 = load ptr, ptr %stp_L8674
-  call i32 @qdrt_push_element(ptr %stk_L8674, ptr %local.o)
-  call i32 @usr_sb_new(ptr %ctx)
-  call i32 @qd_push_s(ptr %ctx, ptr @.str.8675)
-  call i32 @usr_sb_append(ptr %ctx)
-  %stp_L8676 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L8676 = load ptr, ptr %stp_L8676
-  call i32 @qdrt_push_element(ptr %stk_L8676, ptr %local.uid)
-  call i32 @usr_sb_append_int(ptr %ctx)
-  call i32 @qd_push_s(ptr %ctx, ptr @.str.8677)
-  call i32 @usr_sb_append(ptr %ctx)
-  %stp_L8678 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L8678 = load ptr, ptr %stp_L8678
-  call i32 @qdrt_push_element(ptr %stk_L8678, ptr %local.uid)
-  call i32 @usr_sb_append_int(ptr %ctx)
-  call i32 @qd_push_s(ptr %ctx, ptr @.str.8679)
-  call i32 @usr_sb_append(ptr %ctx)
-  call i32 @usr_sb_finish(ptr %ctx)
-  call i32 @usr_sb_append(ptr %ctx)
-  %stp_L8680 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L8680 = load ptr, ptr %stp_L8680
-  call void @qd_stack_pop(ptr %stk_L8680, ptr %local.o)
-  %stp_L8681 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L8681 = load ptr, ptr %stp_L8681
-  call i32 @qdrt_push_element(ptr %stk_L8681, ptr %local.o)
-  call i32 @usr_sb_new(ptr %ctx)
-  call i32 @qd_push_s(ptr %ctx, ptr @.str.8682)
-  call i32 @usr_sb_append(ptr %ctx)
-  %stp_L8683 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L8683 = load ptr, ptr %stp_L8683
-  call i32 @qdrt_push_element(ptr %stk_L8683, ptr %local.uid)
-  call i32 @usr_sb_append_int(ptr %ctx)
-  call i32 @qd_push_s(ptr %ctx, ptr @.str.8684)
-  call i32 @usr_sb_append(ptr %ctx)
-  call i32 @usr_sb_finish(ptr %ctx)
-  call i32 @usr_sb_append(ptr %ctx)
-  %stp_L8685 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L8685 = load ptr, ptr %stp_L8685
-  call void @qd_stack_pop(ptr %stk_L8685, ptr %local.o)
-  br label %L8673
-L8673:
-  %stp_L8686 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L8686 = load ptr, ptr %stp_L8686
-  call i32 @qdrt_push_element(ptr %stk_L8686, ptr %local.o)
-  %fs_elem_L8687 = alloca %qd_stack_element_t
-  %fs_stp_L8687 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %fs_stk_L8687 = load ptr, ptr %fs_stp_L8687
-  call void @qd_stack_pop(ptr %fs_stk_L8687, ptr %fs_elem_L8687)
-  %fs_vp_L8687 = getelementptr %qd_stack_element_t, ptr %fs_elem_L8687, i32 0, i32 0
-  %fs_val_L8687 = load i64, ptr %fs_vp_L8687
-  %fs_svp_L8687 = getelementptr %qd_stack_element_t, ptr %local.st, i32 0, i32 0
-  %fs_sptr_L8687 = load ptr, ptr %fs_svp_L8687
-  %fs_off_L8687 = load i64, ptr @__offset_code
-  %fs_fp_L8687 = getelementptr i8, ptr %fs_sptr_L8687, i64 %fs_off_L8687
-  store i64 %fs_val_L8687, ptr %fs_fp_L8687
-  %stp_L8688 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L8688 = load ptr, ptr %stp_L8688
-  call i32 @qdrt_push_element(ptr %stk_L8688, ptr %local.st)
+  call i32 @qdrt_push_element(ptr %stk_L8647, ptr %local.st)
   br label %return
 return:
   ret i32 0
@@ -35284,194 +35044,194 @@ entry:
   %local.id = alloca %qd_stack_element_t
   %local.st = alloca %qd_stack_element_t
   %local.o = alloca %qd_stack_element_t
-  %stp_L8689 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L8689 = load ptr, ptr %stp_L8689
-  call void @qd_stack_pop(ptr %stk_L8689, ptr %local.id)
+  %stp_L8648 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L8648 = load ptr, ptr %stp_L8648
+  call void @qd_stack_pop(ptr %stk_L8648, ptr %local.id)
+  %stp_L8649 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L8649 = load ptr, ptr %stp_L8649
+  call void @qd_stack_pop(ptr %stk_L8649, ptr %local.st)
+  %stp_L8650 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L8650 = load ptr, ptr %stp_L8650
+  call i32 @qdrt_push_element(ptr %stk_L8650, ptr %local.st)
+  %fa_elem_L8651 = alloca %qd_stack_element_t
+  %fa_stp_L8651 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %fa_stk_L8651 = load ptr, ptr %fa_stp_L8651
+  call void @qd_stack_pop(ptr %fa_stk_L8651, ptr %fa_elem_L8651)
+  %fa_vp_L8651 = getelementptr %qd_stack_element_t, ptr %fa_elem_L8651, i32 0, i32 0
+  %fa_ptr_L8651 = load ptr, ptr %fa_vp_L8651
+  %fa_off_L8651 = load i64, ptr @__offset_code
+  %fa_fp_L8651 = getelementptr i8, ptr %fa_ptr_L8651, i64 %fa_off_L8651
+  %fa_val_L8651 = load ptr, ptr %fa_fp_L8651
+  call i32 @qd_push_p(ptr %ctx, ptr %fa_val_L8651)
+  %stp_L8652 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L8652 = load ptr, ptr %stp_L8652
+  call void @qd_stack_pop(ptr %stk_L8652, ptr %local.o)
+  %stp_L8653 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L8653 = load ptr, ptr %stp_L8653
+  call i32 @qdrt_push_element(ptr %stk_L8653, ptr %local.o)
+  call i32 @usr_sb_new(ptr %ctx)
+  call i32 @qd_push_s(ptr %ctx, ptr @.str.8654)
+  call i32 @usr_sb_append(ptr %ctx)
+  %stp_L8655 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L8655 = load ptr, ptr %stp_L8655
+  call i32 @qdrt_push_element(ptr %stk_L8655, ptr %local.id)
+  call i32 @usr_sb_append_int(ptr %ctx)
+  call i32 @qd_push_s(ptr %ctx, ptr @.str.8656)
+  call i32 @usr_sb_append(ptr %ctx)
+  call i32 @usr_sb_finish(ptr %ctx)
+  call i32 @usr_sb_append(ptr %ctx)
+  %stp_L8657 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L8657 = load ptr, ptr %stp_L8657
+  call void @qd_stack_pop(ptr %stk_L8657, ptr %local.o)
+  %stp_L8658 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L8658 = load ptr, ptr %stp_L8658
+  call i32 @qdrt_push_element(ptr %stk_L8658, ptr %local.o)
+  call i32 @usr_sb_new(ptr %ctx)
+  call i32 @qd_push_s(ptr %ctx, ptr @.str.8659)
+  call i32 @usr_sb_append(ptr %ctx)
+  %stp_L8660 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L8660 = load ptr, ptr %stp_L8660
+  call i32 @qdrt_push_element(ptr %stk_L8660, ptr %local.id)
+  call i32 @usr_sb_append_int(ptr %ctx)
+  call i32 @qd_push_s(ptr %ctx, ptr @.str.8661)
+  call i32 @usr_sb_append(ptr %ctx)
+  call i32 @usr_sb_finish(ptr %ctx)
+  call i32 @usr_sb_append(ptr %ctx)
+  %stp_L8662 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L8662 = load ptr, ptr %stp_L8662
+  call void @qd_stack_pop(ptr %stk_L8662, ptr %local.o)
+  %stp_L8663 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L8663 = load ptr, ptr %stp_L8663
+  call i32 @qdrt_push_element(ptr %stk_L8663, ptr %local.o)
+  call i32 @usr_sb_new(ptr %ctx)
+  call i32 @qd_push_s(ptr %ctx, ptr @.str.8664)
+  call i32 @usr_sb_append(ptr %ctx)
+  %stp_L8665 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L8665 = load ptr, ptr %stp_L8665
+  call i32 @qdrt_push_element(ptr %stk_L8665, ptr %local.id)
+  call i32 @usr_sb_append_int(ptr %ctx)
+  call i32 @qd_push_s(ptr %ctx, ptr @.str.8666)
+  call i32 @usr_sb_append(ptr %ctx)
+  %stp_L8667 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L8667 = load ptr, ptr %stp_L8667
+  call i32 @qdrt_push_element(ptr %stk_L8667, ptr %local.id)
+  call i32 @usr_sb_append_int(ptr %ctx)
+  call i32 @qd_push_s(ptr %ctx, ptr @.str.8668)
+  call i32 @usr_sb_append(ptr %ctx)
+  call i32 @usr_sb_finish(ptr %ctx)
+  call i32 @usr_sb_append(ptr %ctx)
+  %stp_L8669 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L8669 = load ptr, ptr %stp_L8669
+  call void @qd_stack_pop(ptr %stk_L8669, ptr %local.o)
+  %stp_L8670 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L8670 = load ptr, ptr %stp_L8670
+  call i32 @qdrt_push_element(ptr %stk_L8670, ptr %local.o)
+  call i32 @usr_sb_new(ptr %ctx)
+  call i32 @qd_push_s(ptr %ctx, ptr @.str.8671)
+  call i32 @usr_sb_append(ptr %ctx)
+  %stp_L8672 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L8672 = load ptr, ptr %stp_L8672
+  call i32 @qdrt_push_element(ptr %stk_L8672, ptr %local.id)
+  call i32 @usr_sb_append_int(ptr %ctx)
+  call i32 @qd_push_s(ptr %ctx, ptr @.str.8673)
+  call i32 @usr_sb_append(ptr %ctx)
+  %stp_L8674 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L8674 = load ptr, ptr %stp_L8674
+  call i32 @qdrt_push_element(ptr %stk_L8674, ptr %local.id)
+  call i32 @usr_sb_append_int(ptr %ctx)
+  call i32 @qd_push_s(ptr %ctx, ptr @.str.8675)
+  call i32 @usr_sb_append(ptr %ctx)
+  call i32 @usr_sb_finish(ptr %ctx)
+  call i32 @usr_sb_append(ptr %ctx)
+  %stp_L8676 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L8676 = load ptr, ptr %stp_L8676
+  call void @qd_stack_pop(ptr %stk_L8676, ptr %local.o)
+  %stp_L8677 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L8677 = load ptr, ptr %stp_L8677
+  call i32 @qdrt_push_element(ptr %stk_L8677, ptr %local.o)
+  call i32 @usr_sb_new(ptr %ctx)
+  call i32 @qd_push_s(ptr %ctx, ptr @.str.8678)
+  call i32 @usr_sb_append(ptr %ctx)
+  %stp_L8679 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L8679 = load ptr, ptr %stp_L8679
+  call i32 @qdrt_push_element(ptr %stk_L8679, ptr %local.id)
+  call i32 @usr_sb_append_int(ptr %ctx)
+  call i32 @qd_push_s(ptr %ctx, ptr @.str.8680)
+  call i32 @usr_sb_append(ptr %ctx)
+  %stp_L8681 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L8681 = load ptr, ptr %stp_L8681
+  call i32 @qdrt_push_element(ptr %stk_L8681, ptr %local.id)
+  call i32 @usr_sb_append_int(ptr %ctx)
+  call i32 @qd_push_s(ptr %ctx, ptr @.str.8682)
+  call i32 @usr_sb_append(ptr %ctx)
+  call i32 @usr_sb_finish(ptr %ctx)
+  call i32 @usr_sb_append(ptr %ctx)
+  %stp_L8683 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L8683 = load ptr, ptr %stp_L8683
+  call void @qd_stack_pop(ptr %stk_L8683, ptr %local.o)
+  %stp_L8684 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L8684 = load ptr, ptr %stp_L8684
+  call i32 @qdrt_push_element(ptr %stk_L8684, ptr %local.o)
+  call i32 @usr_sb_new(ptr %ctx)
+  call i32 @qd_push_s(ptr %ctx, ptr @.str.8685)
+  call i32 @usr_sb_append(ptr %ctx)
+  %stp_L8686 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L8686 = load ptr, ptr %stp_L8686
+  call i32 @qdrt_push_element(ptr %stk_L8686, ptr %local.id)
+  call i32 @usr_sb_append_int(ptr %ctx)
+  call i32 @qd_push_s(ptr %ctx, ptr @.str.8687)
+  call i32 @usr_sb_append(ptr %ctx)
+  %stp_L8688 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L8688 = load ptr, ptr %stp_L8688
+  call i32 @qdrt_push_element(ptr %stk_L8688, ptr %local.id)
+  call i32 @usr_sb_append_int(ptr %ctx)
+  call i32 @qd_push_s(ptr %ctx, ptr @.str.8689)
+  call i32 @usr_sb_append(ptr %ctx)
+  call i32 @usr_sb_finish(ptr %ctx)
+  call i32 @usr_sb_append(ptr %ctx)
   %stp_L8690 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
   %stk_L8690 = load ptr, ptr %stp_L8690
-  call void @qd_stack_pop(ptr %stk_L8690, ptr %local.st)
+  call void @qd_stack_pop(ptr %stk_L8690, ptr %local.o)
   %stp_L8691 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
   %stk_L8691 = load ptr, ptr %stp_L8691
-  call i32 @qdrt_push_element(ptr %stk_L8691, ptr %local.st)
-  %fa_elem_L8692 = alloca %qd_stack_element_t
-  %fa_stp_L8692 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %fa_stk_L8692 = load ptr, ptr %fa_stp_L8692
-  call void @qd_stack_pop(ptr %fa_stk_L8692, ptr %fa_elem_L8692)
-  %fa_vp_L8692 = getelementptr %qd_stack_element_t, ptr %fa_elem_L8692, i32 0, i32 0
-  %fa_ptr_L8692 = load ptr, ptr %fa_vp_L8692
-  %fa_off_L8692 = load i64, ptr @__offset_code
-  %fa_fp_L8692 = getelementptr i8, ptr %fa_ptr_L8692, i64 %fa_off_L8692
-  %fa_val_L8692 = load ptr, ptr %fa_fp_L8692
-  call i32 @qd_push_p(ptr %ctx, ptr %fa_val_L8692)
+  call i32 @qdrt_push_element(ptr %stk_L8691, ptr %local.o)
+  call i32 @usr_sb_new(ptr %ctx)
+  call i32 @qd_push_s(ptr %ctx, ptr @.str.8692)
+  call i32 @usr_sb_append(ptr %ctx)
   %stp_L8693 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
   %stk_L8693 = load ptr, ptr %stp_L8693
-  call void @qd_stack_pop(ptr %stk_L8693, ptr %local.o)
-  %stp_L8694 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L8694 = load ptr, ptr %stp_L8694
-  call i32 @qdrt_push_element(ptr %stk_L8694, ptr %local.o)
-  call i32 @usr_sb_new(ptr %ctx)
-  call i32 @qd_push_s(ptr %ctx, ptr @.str.8695)
-  call i32 @usr_sb_append(ptr %ctx)
-  %stp_L8696 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L8696 = load ptr, ptr %stp_L8696
-  call i32 @qdrt_push_element(ptr %stk_L8696, ptr %local.id)
+  call i32 @qdrt_push_element(ptr %stk_L8693, ptr %local.id)
   call i32 @usr_sb_append_int(ptr %ctx)
-  call i32 @qd_push_s(ptr %ctx, ptr @.str.8697)
+  call i32 @qd_push_s(ptr %ctx, ptr @.str.8694)
+  call i32 @usr_sb_append(ptr %ctx)
+  %stp_L8695 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L8695 = load ptr, ptr %stp_L8695
+  call i32 @qdrt_push_element(ptr %stk_L8695, ptr %local.id)
+  call i32 @usr_sb_append_int(ptr %ctx)
+  call i32 @qd_push_s(ptr %ctx, ptr @.str.8696)
   call i32 @usr_sb_append(ptr %ctx)
   call i32 @usr_sb_finish(ptr %ctx)
   call i32 @usr_sb_append(ptr %ctx)
+  %stp_L8697 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L8697 = load ptr, ptr %stp_L8697
+  call void @qd_stack_pop(ptr %stk_L8697, ptr %local.o)
   %stp_L8698 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
   %stk_L8698 = load ptr, ptr %stp_L8698
-  call void @qd_stack_pop(ptr %stk_L8698, ptr %local.o)
-  %stp_L8699 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L8699 = load ptr, ptr %stp_L8699
-  call i32 @qdrt_push_element(ptr %stk_L8699, ptr %local.o)
-  call i32 @usr_sb_new(ptr %ctx)
-  call i32 @qd_push_s(ptr %ctx, ptr @.str.8700)
-  call i32 @usr_sb_append(ptr %ctx)
-  %stp_L8701 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L8701 = load ptr, ptr %stp_L8701
-  call i32 @qdrt_push_element(ptr %stk_L8701, ptr %local.id)
-  call i32 @usr_sb_append_int(ptr %ctx)
-  call i32 @qd_push_s(ptr %ctx, ptr @.str.8702)
-  call i32 @usr_sb_append(ptr %ctx)
-  call i32 @usr_sb_finish(ptr %ctx)
-  call i32 @usr_sb_append(ptr %ctx)
-  %stp_L8703 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L8703 = load ptr, ptr %stp_L8703
-  call void @qd_stack_pop(ptr %stk_L8703, ptr %local.o)
-  %stp_L8704 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L8704 = load ptr, ptr %stp_L8704
-  call i32 @qdrt_push_element(ptr %stk_L8704, ptr %local.o)
-  call i32 @usr_sb_new(ptr %ctx)
-  call i32 @qd_push_s(ptr %ctx, ptr @.str.8705)
-  call i32 @usr_sb_append(ptr %ctx)
-  %stp_L8706 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L8706 = load ptr, ptr %stp_L8706
-  call i32 @qdrt_push_element(ptr %stk_L8706, ptr %local.id)
-  call i32 @usr_sb_append_int(ptr %ctx)
-  call i32 @qd_push_s(ptr %ctx, ptr @.str.8707)
-  call i32 @usr_sb_append(ptr %ctx)
-  %stp_L8708 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L8708 = load ptr, ptr %stp_L8708
-  call i32 @qdrt_push_element(ptr %stk_L8708, ptr %local.id)
-  call i32 @usr_sb_append_int(ptr %ctx)
-  call i32 @qd_push_s(ptr %ctx, ptr @.str.8709)
-  call i32 @usr_sb_append(ptr %ctx)
-  call i32 @usr_sb_finish(ptr %ctx)
-  call i32 @usr_sb_append(ptr %ctx)
-  %stp_L8710 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L8710 = load ptr, ptr %stp_L8710
-  call void @qd_stack_pop(ptr %stk_L8710, ptr %local.o)
-  %stp_L8711 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L8711 = load ptr, ptr %stp_L8711
-  call i32 @qdrt_push_element(ptr %stk_L8711, ptr %local.o)
-  call i32 @usr_sb_new(ptr %ctx)
-  call i32 @qd_push_s(ptr %ctx, ptr @.str.8712)
-  call i32 @usr_sb_append(ptr %ctx)
-  %stp_L8713 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L8713 = load ptr, ptr %stp_L8713
-  call i32 @qdrt_push_element(ptr %stk_L8713, ptr %local.id)
-  call i32 @usr_sb_append_int(ptr %ctx)
-  call i32 @qd_push_s(ptr %ctx, ptr @.str.8714)
-  call i32 @usr_sb_append(ptr %ctx)
-  %stp_L8715 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L8715 = load ptr, ptr %stp_L8715
-  call i32 @qdrt_push_element(ptr %stk_L8715, ptr %local.id)
-  call i32 @usr_sb_append_int(ptr %ctx)
-  call i32 @qd_push_s(ptr %ctx, ptr @.str.8716)
-  call i32 @usr_sb_append(ptr %ctx)
-  call i32 @usr_sb_finish(ptr %ctx)
-  call i32 @usr_sb_append(ptr %ctx)
-  %stp_L8717 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L8717 = load ptr, ptr %stp_L8717
-  call void @qd_stack_pop(ptr %stk_L8717, ptr %local.o)
-  %stp_L8718 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L8718 = load ptr, ptr %stp_L8718
-  call i32 @qdrt_push_element(ptr %stk_L8718, ptr %local.o)
-  call i32 @usr_sb_new(ptr %ctx)
-  call i32 @qd_push_s(ptr %ctx, ptr @.str.8719)
-  call i32 @usr_sb_append(ptr %ctx)
-  %stp_L8720 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L8720 = load ptr, ptr %stp_L8720
-  call i32 @qdrt_push_element(ptr %stk_L8720, ptr %local.id)
-  call i32 @usr_sb_append_int(ptr %ctx)
-  call i32 @qd_push_s(ptr %ctx, ptr @.str.8721)
-  call i32 @usr_sb_append(ptr %ctx)
-  %stp_L8722 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L8722 = load ptr, ptr %stp_L8722
-  call i32 @qdrt_push_element(ptr %stk_L8722, ptr %local.id)
-  call i32 @usr_sb_append_int(ptr %ctx)
-  call i32 @qd_push_s(ptr %ctx, ptr @.str.8723)
-  call i32 @usr_sb_append(ptr %ctx)
-  call i32 @usr_sb_finish(ptr %ctx)
-  call i32 @usr_sb_append(ptr %ctx)
-  %stp_L8724 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L8724 = load ptr, ptr %stp_L8724
-  call void @qd_stack_pop(ptr %stk_L8724, ptr %local.o)
-  %stp_L8725 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L8725 = load ptr, ptr %stp_L8725
-  call i32 @qdrt_push_element(ptr %stk_L8725, ptr %local.o)
-  call i32 @usr_sb_new(ptr %ctx)
-  call i32 @qd_push_s(ptr %ctx, ptr @.str.8726)
-  call i32 @usr_sb_append(ptr %ctx)
-  %stp_L8727 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L8727 = load ptr, ptr %stp_L8727
-  call i32 @qdrt_push_element(ptr %stk_L8727, ptr %local.id)
-  call i32 @usr_sb_append_int(ptr %ctx)
-  call i32 @qd_push_s(ptr %ctx, ptr @.str.8728)
-  call i32 @usr_sb_append(ptr %ctx)
-  %stp_L8729 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L8729 = load ptr, ptr %stp_L8729
-  call i32 @qdrt_push_element(ptr %stk_L8729, ptr %local.id)
-  call i32 @usr_sb_append_int(ptr %ctx)
-  call i32 @qd_push_s(ptr %ctx, ptr @.str.8730)
-  call i32 @usr_sb_append(ptr %ctx)
-  call i32 @usr_sb_finish(ptr %ctx)
-  call i32 @usr_sb_append(ptr %ctx)
-  %stp_L8731 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L8731 = load ptr, ptr %stp_L8731
-  call void @qd_stack_pop(ptr %stk_L8731, ptr %local.o)
-  %stp_L8732 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L8732 = load ptr, ptr %stp_L8732
-  call i32 @qdrt_push_element(ptr %stk_L8732, ptr %local.o)
-  call i32 @usr_sb_new(ptr %ctx)
-  call i32 @qd_push_s(ptr %ctx, ptr @.str.8733)
-  call i32 @usr_sb_append(ptr %ctx)
-  %stp_L8734 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L8734 = load ptr, ptr %stp_L8734
-  call i32 @qdrt_push_element(ptr %stk_L8734, ptr %local.id)
-  call i32 @usr_sb_append_int(ptr %ctx)
-  call i32 @qd_push_s(ptr %ctx, ptr @.str.8735)
-  call i32 @usr_sb_append(ptr %ctx)
-  %stp_L8736 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L8736 = load ptr, ptr %stp_L8736
-  call i32 @qdrt_push_element(ptr %stk_L8736, ptr %local.id)
-  call i32 @usr_sb_append_int(ptr %ctx)
-  call i32 @qd_push_s(ptr %ctx, ptr @.str.8737)
-  call i32 @usr_sb_append(ptr %ctx)
-  call i32 @usr_sb_finish(ptr %ctx)
-  call i32 @usr_sb_append(ptr %ctx)
-  %stp_L8738 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L8738 = load ptr, ptr %stp_L8738
-  call void @qd_stack_pop(ptr %stk_L8738, ptr %local.o)
-  %stp_L8739 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L8739 = load ptr, ptr %stp_L8739
-  call i32 @qdrt_push_element(ptr %stk_L8739, ptr %local.o)
-  %fs_elem_L8740 = alloca %qd_stack_element_t
-  %fs_stp_L8740 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %fs_stk_L8740 = load ptr, ptr %fs_stp_L8740
-  call void @qd_stack_pop(ptr %fs_stk_L8740, ptr %fs_elem_L8740)
-  %fs_vp_L8740 = getelementptr %qd_stack_element_t, ptr %fs_elem_L8740, i32 0, i32 0
-  %fs_val_L8740 = load i64, ptr %fs_vp_L8740
-  %fs_svp_L8740 = getelementptr %qd_stack_element_t, ptr %local.st, i32 0, i32 0
-  %fs_sptr_L8740 = load ptr, ptr %fs_svp_L8740
-  %fs_off_L8740 = load i64, ptr @__offset_code
-  %fs_fp_L8740 = getelementptr i8, ptr %fs_sptr_L8740, i64 %fs_off_L8740
-  store i64 %fs_val_L8740, ptr %fs_fp_L8740
-  %stp_L8741 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L8741 = load ptr, ptr %stp_L8741
-  call i32 @qdrt_push_element(ptr %stk_L8741, ptr %local.st)
+  call i32 @qdrt_push_element(ptr %stk_L8698, ptr %local.o)
+  %fs_elem_L8699 = alloca %qd_stack_element_t
+  %fs_stp_L8699 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %fs_stk_L8699 = load ptr, ptr %fs_stp_L8699
+  call void @qd_stack_pop(ptr %fs_stk_L8699, ptr %fs_elem_L8699)
+  %fs_vp_L8699 = getelementptr %qd_stack_element_t, ptr %fs_elem_L8699, i32 0, i32 0
+  %fs_val_L8699 = load i64, ptr %fs_vp_L8699
+  %fs_svp_L8699 = getelementptr %qd_stack_element_t, ptr %local.st, i32 0, i32 0
+  %fs_sptr_L8699 = load ptr, ptr %fs_svp_L8699
+  %fs_off_L8699 = load i64, ptr @__offset_code
+  %fs_fp_L8699 = getelementptr i8, ptr %fs_sptr_L8699, i64 %fs_off_L8699
+  store i64 %fs_val_L8699, ptr %fs_fp_L8699
+  %stp_L8700 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L8700 = load ptr, ptr %stp_L8700
+  call i32 @qdrt_push_element(ptr %stk_L8700, ptr %local.st)
   br label %return
 return:
   ret i32 0
@@ -35487,377 +35247,377 @@ entry:
   %local.else_label = alloca %qd_stack_element_t
   %local.merge_label = alloca %qd_stack_element_t
   %local.o = alloca %qd_stack_element_t
+  %stp_L8701 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L8701 = load ptr, ptr %stp_L8701
+  call void @qd_stack_pop(ptr %stk_L8701, ptr %local.loc)
+  %stp_L8702 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L8702 = load ptr, ptr %stp_L8702
+  call void @qd_stack_pop(ptr %stk_L8702, ptr %local.n)
+  %stp_L8703 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L8703 = load ptr, ptr %stp_L8703
+  call void @qd_stack_pop(ptr %stk_L8703, ptr %local.st)
+  %stp_L8704 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L8704 = load ptr, ptr %stp_L8704
+  call i32 @qdrt_push_element(ptr %stk_L8704, ptr %local.st)
+  call i32 @usr_codegen_next_label(ptr %ctx)
+  %stp_L8705 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L8705 = load ptr, ptr %stp_L8705
+  call void @qd_stack_pop(ptr %stk_L8705, ptr %local.uid)
+  %stp_L8706 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L8706 = load ptr, ptr %stp_L8706
+  call void @qd_stack_pop(ptr %stk_L8706, ptr %local.st)
+  %stp_L8707 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L8707 = load ptr, ptr %stp_L8707
+  call i32 @qdrt_push_element(ptr %stk_L8707, ptr %local.st)
+  call i32 @usr_codegen_next_label(ptr %ctx)
+  %stp_L8708 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L8708 = load ptr, ptr %stp_L8708
+  call void @qd_stack_pop(ptr %stk_L8708, ptr %local.then_label)
+  %stp_L8709 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L8709 = load ptr, ptr %stp_L8709
+  call void @qd_stack_pop(ptr %stk_L8709, ptr %local.st)
+  %stp_L8710 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L8710 = load ptr, ptr %stp_L8710
+  call i32 @qdrt_push_element(ptr %stk_L8710, ptr %local.st)
+  call i32 @usr_codegen_next_label(ptr %ctx)
+  %stp_L8711 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L8711 = load ptr, ptr %stp_L8711
+  call void @qd_stack_pop(ptr %stk_L8711, ptr %local.else_label)
+  %stp_L8712 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L8712 = load ptr, ptr %stp_L8712
+  call void @qd_stack_pop(ptr %stk_L8712, ptr %local.st)
+  %stp_L8713 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L8713 = load ptr, ptr %stp_L8713
+  call i32 @qdrt_push_element(ptr %stk_L8713, ptr %local.st)
+  call i32 @usr_codegen_next_label(ptr %ctx)
+  %stp_L8714 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L8714 = load ptr, ptr %stp_L8714
+  call void @qd_stack_pop(ptr %stk_L8714, ptr %local.merge_label)
+  %stp_L8715 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L8715 = load ptr, ptr %stp_L8715
+  call void @qd_stack_pop(ptr %stk_L8715, ptr %local.st)
+  %stp_L8716 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L8716 = load ptr, ptr %stp_L8716
+  call i32 @qdrt_push_element(ptr %stk_L8716, ptr %local.st)
+  %stp_L8717 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L8717 = load ptr, ptr %stp_L8717
+  call i32 @qdrt_push_element(ptr %stk_L8717, ptr %local.uid)
+  call i32 @usr_codegen_emit_pop_cond(ptr %ctx)
+  %stp_L8718 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L8718 = load ptr, ptr %stp_L8718
+  call void @qd_stack_pop(ptr %stk_L8718, ptr %local.st)
+  %stp_L8719 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L8719 = load ptr, ptr %stp_L8719
+  call i32 @qdrt_push_element(ptr %stk_L8719, ptr %local.st)
+  %fa_elem_L8720 = alloca %qd_stack_element_t
+  %fa_stp_L8720 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %fa_stk_L8720 = load ptr, ptr %fa_stp_L8720
+  call void @qd_stack_pop(ptr %fa_stk_L8720, ptr %fa_elem_L8720)
+  %fa_vp_L8720 = getelementptr %qd_stack_element_t, ptr %fa_elem_L8720, i32 0, i32 0
+  %fa_ptr_L8720 = load ptr, ptr %fa_vp_L8720
+  %fa_off_L8720 = load i64, ptr @__offset_code
+  %fa_fp_L8720 = getelementptr i8, ptr %fa_ptr_L8720, i64 %fa_off_L8720
+  %fa_val_L8720 = load ptr, ptr %fa_fp_L8720
+  call i32 @qd_push_p(ptr %ctx, ptr %fa_val_L8720)
+  %stp_L8721 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L8721 = load ptr, ptr %stp_L8721
+  call void @qd_stack_pop(ptr %stk_L8721, ptr %local.o)
+  %stp_L8722 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L8722 = load ptr, ptr %stp_L8722
+  call i32 @qdrt_push_element(ptr %stk_L8722, ptr %local.n)
+  call i32 @usr_ast_child_count(ptr %ctx)
+  call i32 @qd_push_i(ptr %ctx, i64 2)
+  call i32 @qd_gte(ptr %ctx)
+  %ce_L8723 = alloca %qd_stack_element_t
+  %stp_L8723 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L8723 = load ptr, ptr %stp_L8723
+  call void @qd_stack_pop(ptr %stk_L8723, ptr %ce_L8723)
+  %cv_L8723 = getelementptr %qd_stack_element_t, ptr %ce_L8723, i32 0, i32 0
+  %ci_L8723 = load i64, ptr %cv_L8723
+  %cc_L8723 = icmp ne i64 %ci_L8723, 0
+  br i1 %cc_L8723, label %L8724, label %L8725
+L8724:
+  %stp_L8727 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L8727 = load ptr, ptr %stp_L8727
+  call i32 @qdrt_push_element(ptr %stk_L8727, ptr %local.o)
+  call i32 @usr_sb_new(ptr %ctx)
+  call i32 @qd_push_s(ptr %ctx, ptr @.str.8728)
+  call i32 @usr_sb_append(ptr %ctx)
+  %stp_L8729 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L8729 = load ptr, ptr %stp_L8729
+  call i32 @qdrt_push_element(ptr %stk_L8729, ptr %local.uid)
+  call i32 @usr_sb_append_int(ptr %ctx)
+  call i32 @qd_push_s(ptr %ctx, ptr @.str.8730)
+  call i32 @usr_sb_append(ptr %ctx)
+  %stp_L8731 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L8731 = load ptr, ptr %stp_L8731
+  call i32 @qdrt_push_element(ptr %stk_L8731, ptr %local.then_label)
+  call i32 @usr_sb_append_int(ptr %ctx)
+  call i32 @qd_push_s(ptr %ctx, ptr @.str.8732)
+  call i32 @usr_sb_append(ptr %ctx)
+  %stp_L8733 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L8733 = load ptr, ptr %stp_L8733
+  call i32 @qdrt_push_element(ptr %stk_L8733, ptr %local.else_label)
+  call i32 @usr_sb_append_int(ptr %ctx)
+  call i32 @qd_push_s(ptr %ctx, ptr @.str.8734)
+  call i32 @usr_sb_append(ptr %ctx)
+  call i32 @usr_sb_finish(ptr %ctx)
+  call i32 @usr_sb_append(ptr %ctx)
+  %stp_L8735 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L8735 = load ptr, ptr %stp_L8735
+  call void @qd_stack_pop(ptr %stk_L8735, ptr %local.o)
+  br label %L8726
+L8725:
+  %stp_L8736 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L8736 = load ptr, ptr %stp_L8736
+  call i32 @qdrt_push_element(ptr %stk_L8736, ptr %local.o)
+  call i32 @usr_sb_new(ptr %ctx)
+  call i32 @qd_push_s(ptr %ctx, ptr @.str.8737)
+  call i32 @usr_sb_append(ptr %ctx)
+  %stp_L8738 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L8738 = load ptr, ptr %stp_L8738
+  call i32 @qdrt_push_element(ptr %stk_L8738, ptr %local.uid)
+  call i32 @usr_sb_append_int(ptr %ctx)
+  call i32 @qd_push_s(ptr %ctx, ptr @.str.8739)
+  call i32 @usr_sb_append(ptr %ctx)
+  %stp_L8740 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L8740 = load ptr, ptr %stp_L8740
+  call i32 @qdrt_push_element(ptr %stk_L8740, ptr %local.then_label)
+  call i32 @usr_sb_append_int(ptr %ctx)
+  call i32 @qd_push_s(ptr %ctx, ptr @.str.8741)
+  call i32 @usr_sb_append(ptr %ctx)
   %stp_L8742 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
   %stk_L8742 = load ptr, ptr %stp_L8742
-  call void @qd_stack_pop(ptr %stk_L8742, ptr %local.loc)
-  %stp_L8743 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L8743 = load ptr, ptr %stp_L8743
-  call void @qd_stack_pop(ptr %stk_L8743, ptr %local.n)
+  call i32 @qdrt_push_element(ptr %stk_L8742, ptr %local.merge_label)
+  call i32 @usr_sb_append_int(ptr %ctx)
+  call i32 @qd_push_s(ptr %ctx, ptr @.str.8743)
+  call i32 @usr_sb_append(ptr %ctx)
+  call i32 @usr_sb_finish(ptr %ctx)
+  call i32 @usr_sb_append(ptr %ctx)
   %stp_L8744 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
   %stk_L8744 = load ptr, ptr %stp_L8744
-  call void @qd_stack_pop(ptr %stk_L8744, ptr %local.st)
+  call void @qd_stack_pop(ptr %stk_L8744, ptr %local.o)
+  br label %L8726
+L8726:
   %stp_L8745 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
   %stk_L8745 = load ptr, ptr %stp_L8745
-  call i32 @qdrt_push_element(ptr %stk_L8745, ptr %local.st)
-  call i32 @usr_codegen_next_label(ptr %ctx)
+  call i32 @qdrt_push_element(ptr %stk_L8745, ptr %local.o)
+  call i32 @usr_sb_new(ptr %ctx)
   %stp_L8746 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
   %stk_L8746 = load ptr, ptr %stp_L8746
-  call void @qd_stack_pop(ptr %stk_L8746, ptr %local.uid)
-  %stp_L8747 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L8747 = load ptr, ptr %stp_L8747
-  call void @qd_stack_pop(ptr %stk_L8747, ptr %local.st)
+  call i32 @qdrt_push_element(ptr %stk_L8746, ptr %local.then_label)
+  call i32 @usr_sb_append_int(ptr %ctx)
+  call i32 @qd_push_s(ptr %ctx, ptr @.str.8747)
+  call i32 @usr_sb_append(ptr %ctx)
+  call i32 @usr_sb_finish(ptr %ctx)
+  call i32 @usr_sb_append(ptr %ctx)
   %stp_L8748 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
   %stk_L8748 = load ptr, ptr %stp_L8748
-  call i32 @qdrt_push_element(ptr %stk_L8748, ptr %local.st)
-  call i32 @usr_codegen_next_label(ptr %ctx)
+  call void @qd_stack_pop(ptr %stk_L8748, ptr %local.o)
   %stp_L8749 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
   %stk_L8749 = load ptr, ptr %stp_L8749
-  call void @qd_stack_pop(ptr %stk_L8749, ptr %local.then_label)
-  %stp_L8750 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L8750 = load ptr, ptr %stp_L8750
-  call void @qd_stack_pop(ptr %stk_L8750, ptr %local.st)
+  call i32 @qdrt_push_element(ptr %stk_L8749, ptr %local.o)
+  %fs_elem_L8750 = alloca %qd_stack_element_t
+  %fs_stp_L8750 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %fs_stk_L8750 = load ptr, ptr %fs_stp_L8750
+  call void @qd_stack_pop(ptr %fs_stk_L8750, ptr %fs_elem_L8750)
+  %fs_vp_L8750 = getelementptr %qd_stack_element_t, ptr %fs_elem_L8750, i32 0, i32 0
+  %fs_val_L8750 = load i64, ptr %fs_vp_L8750
+  %fs_svp_L8750 = getelementptr %qd_stack_element_t, ptr %local.st, i32 0, i32 0
+  %fs_sptr_L8750 = load ptr, ptr %fs_svp_L8750
+  %fs_off_L8750 = load i64, ptr @__offset_code
+  %fs_fp_L8750 = getelementptr i8, ptr %fs_sptr_L8750, i64 %fs_off_L8750
+  store i64 %fs_val_L8750, ptr %fs_fp_L8750
   %stp_L8751 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
   %stk_L8751 = load ptr, ptr %stp_L8751
   call i32 @qdrt_push_element(ptr %stk_L8751, ptr %local.st)
-  call i32 @usr_codegen_next_label(ptr %ctx)
   %stp_L8752 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
   %stk_L8752 = load ptr, ptr %stp_L8752
-  call void @qd_stack_pop(ptr %stk_L8752, ptr %local.else_label)
-  %stp_L8753 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L8753 = load ptr, ptr %stp_L8753
-  call void @qd_stack_pop(ptr %stk_L8753, ptr %local.st)
+  call i32 @qdrt_push_element(ptr %stk_L8752, ptr %local.n)
+  %fa_elem_L8753 = alloca %qd_stack_element_t
+  %fa_stp_L8753 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %fa_stk_L8753 = load ptr, ptr %fa_stp_L8753
+  call void @qd_stack_pop(ptr %fa_stk_L8753, ptr %fa_elem_L8753)
+  %fa_vp_L8753 = getelementptr %qd_stack_element_t, ptr %fa_elem_L8753, i32 0, i32 0
+  %fa_ptr_L8753 = load ptr, ptr %fa_vp_L8753
+  %fa_off_L8753 = load i64, ptr @__offset_child1
+  %fa_fp_L8753 = getelementptr i8, ptr %fa_ptr_L8753, i64 %fa_off_L8753
+  %fa_val_L8753 = load ptr, ptr %fa_fp_L8753
+  call i32 @qd_push_p(ptr %ctx, ptr %fa_val_L8753)
   %stp_L8754 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
   %stk_L8754 = load ptr, ptr %stp_L8754
-  call i32 @qdrt_push_element(ptr %stk_L8754, ptr %local.st)
-  call i32 @usr_codegen_next_label(ptr %ctx)
+  call i32 @qdrt_push_element(ptr %stk_L8754, ptr %local.loc)
+  call i32 @usr_codegen_emit_block(ptr %ctx)
   %stp_L8755 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
   %stk_L8755 = load ptr, ptr %stp_L8755
-  call void @qd_stack_pop(ptr %stk_L8755, ptr %local.merge_label)
+  call void @qd_stack_pop(ptr %stk_L8755, ptr %local.st)
   %stp_L8756 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
   %stk_L8756 = load ptr, ptr %stp_L8756
-  call void @qd_stack_pop(ptr %stk_L8756, ptr %local.st)
-  %stp_L8757 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L8757 = load ptr, ptr %stp_L8757
-  call i32 @qdrt_push_element(ptr %stk_L8757, ptr %local.st)
+  call i32 @qdrt_push_element(ptr %stk_L8756, ptr %local.st)
+  %fa_elem_L8757 = alloca %qd_stack_element_t
+  %fa_stp_L8757 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %fa_stk_L8757 = load ptr, ptr %fa_stp_L8757
+  call void @qd_stack_pop(ptr %fa_stk_L8757, ptr %fa_elem_L8757)
+  %fa_vp_L8757 = getelementptr %qd_stack_element_t, ptr %fa_elem_L8757, i32 0, i32 0
+  %fa_ptr_L8757 = load ptr, ptr %fa_vp_L8757
+  %fa_off_L8757 = load i64, ptr @__offset_code
+  %fa_fp_L8757 = getelementptr i8, ptr %fa_ptr_L8757, i64 %fa_off_L8757
+  %fa_val_L8757 = load ptr, ptr %fa_fp_L8757
+  call i32 @qd_push_p(ptr %ctx, ptr %fa_val_L8757)
   %stp_L8758 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
   %stk_L8758 = load ptr, ptr %stp_L8758
-  call i32 @qdrt_push_element(ptr %stk_L8758, ptr %local.uid)
-  call i32 @usr_codegen_emit_pop_cond(ptr %ctx)
+  call void @qd_stack_pop(ptr %stk_L8758, ptr %local.o)
   %stp_L8759 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
   %stk_L8759 = load ptr, ptr %stp_L8759
-  call void @qd_stack_pop(ptr %stk_L8759, ptr %local.st)
-  %stp_L8760 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L8760 = load ptr, ptr %stp_L8760
-  call i32 @qdrt_push_element(ptr %stk_L8760, ptr %local.st)
-  %fa_elem_L8761 = alloca %qd_stack_element_t
-  %fa_stp_L8761 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %fa_stk_L8761 = load ptr, ptr %fa_stp_L8761
-  call void @qd_stack_pop(ptr %fa_stk_L8761, ptr %fa_elem_L8761)
-  %fa_vp_L8761 = getelementptr %qd_stack_element_t, ptr %fa_elem_L8761, i32 0, i32 0
-  %fa_ptr_L8761 = load ptr, ptr %fa_vp_L8761
-  %fa_off_L8761 = load i64, ptr @__offset_code
-  %fa_fp_L8761 = getelementptr i8, ptr %fa_ptr_L8761, i64 %fa_off_L8761
-  %fa_val_L8761 = load ptr, ptr %fa_fp_L8761
-  call i32 @qd_push_p(ptr %ctx, ptr %fa_val_L8761)
-  %stp_L8762 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L8762 = load ptr, ptr %stp_L8762
-  call void @qd_stack_pop(ptr %stk_L8762, ptr %local.o)
+  call i32 @qdrt_push_element(ptr %stk_L8759, ptr %local.o)
+  call i32 @usr_sb_new(ptr %ctx)
+  call i32 @qd_push_s(ptr %ctx, ptr @.str.8760)
+  call i32 @usr_sb_append(ptr %ctx)
+  %stp_L8761 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L8761 = load ptr, ptr %stp_L8761
+  call i32 @qdrt_push_element(ptr %stk_L8761, ptr %local.merge_label)
+  call i32 @usr_sb_append_int(ptr %ctx)
+  call i32 @qd_push_s(ptr %ctx, ptr @.str.8762)
+  call i32 @usr_sb_append(ptr %ctx)
+  call i32 @usr_sb_finish(ptr %ctx)
+  call i32 @usr_sb_append(ptr %ctx)
   %stp_L8763 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
   %stk_L8763 = load ptr, ptr %stp_L8763
-  call i32 @qdrt_push_element(ptr %stk_L8763, ptr %local.n)
+  call void @qd_stack_pop(ptr %stk_L8763, ptr %local.o)
+  %stp_L8764 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L8764 = load ptr, ptr %stp_L8764
+  call i32 @qdrt_push_element(ptr %stk_L8764, ptr %local.n)
   call i32 @usr_ast_child_count(ptr %ctx)
   call i32 @qd_push_i(ptr %ctx, i64 2)
   call i32 @qd_gte(ptr %ctx)
-  %ce_L8764 = alloca %qd_stack_element_t
-  %stp_L8764 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L8764 = load ptr, ptr %stp_L8764
-  call void @qd_stack_pop(ptr %stk_L8764, ptr %ce_L8764)
-  %cv_L8764 = getelementptr %qd_stack_element_t, ptr %ce_L8764, i32 0, i32 0
-  %ci_L8764 = load i64, ptr %cv_L8764
-  %cc_L8764 = icmp ne i64 %ci_L8764, 0
-  br i1 %cc_L8764, label %L8765, label %L8766
-L8765:
-  %stp_L8768 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L8768 = load ptr, ptr %stp_L8768
-  call i32 @qdrt_push_element(ptr %stk_L8768, ptr %local.o)
+  %ce_L8765 = alloca %qd_stack_element_t
+  %stp_L8765 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L8765 = load ptr, ptr %stp_L8765
+  call void @qd_stack_pop(ptr %stk_L8765, ptr %ce_L8765)
+  %cv_L8765 = getelementptr %qd_stack_element_t, ptr %ce_L8765, i32 0, i32 0
+  %ci_L8765 = load i64, ptr %cv_L8765
+  %cc_L8765 = icmp ne i64 %ci_L8765, 0
+  br i1 %cc_L8765, label %L8766, label %L8768
+L8766:
+  %stp_L8769 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L8769 = load ptr, ptr %stp_L8769
+  call i32 @qdrt_push_element(ptr %stk_L8769, ptr %local.o)
   call i32 @usr_sb_new(ptr %ctx)
-  call i32 @qd_push_s(ptr %ctx, ptr @.str.8769)
-  call i32 @usr_sb_append(ptr %ctx)
   %stp_L8770 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
   %stk_L8770 = load ptr, ptr %stp_L8770
-  call i32 @qdrt_push_element(ptr %stk_L8770, ptr %local.uid)
+  call i32 @qdrt_push_element(ptr %stk_L8770, ptr %local.else_label)
   call i32 @usr_sb_append_int(ptr %ctx)
   call i32 @qd_push_s(ptr %ctx, ptr @.str.8771)
   call i32 @usr_sb_append(ptr %ctx)
+  call i32 @usr_sb_finish(ptr %ctx)
+  call i32 @usr_sb_append(ptr %ctx)
   %stp_L8772 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
   %stk_L8772 = load ptr, ptr %stp_L8772
-  call i32 @qdrt_push_element(ptr %stk_L8772, ptr %local.then_label)
-  call i32 @usr_sb_append_int(ptr %ctx)
-  call i32 @qd_push_s(ptr %ctx, ptr @.str.8773)
-  call i32 @usr_sb_append(ptr %ctx)
-  %stp_L8774 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L8774 = load ptr, ptr %stp_L8774
-  call i32 @qdrt_push_element(ptr %stk_L8774, ptr %local.else_label)
-  call i32 @usr_sb_append_int(ptr %ctx)
-  call i32 @qd_push_s(ptr %ctx, ptr @.str.8775)
-  call i32 @usr_sb_append(ptr %ctx)
-  call i32 @usr_sb_finish(ptr %ctx)
-  call i32 @usr_sb_append(ptr %ctx)
+  call void @qd_stack_pop(ptr %stk_L8772, ptr %local.o)
+  %stp_L8773 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L8773 = load ptr, ptr %stp_L8773
+  call i32 @qdrt_push_element(ptr %stk_L8773, ptr %local.o)
+  %fs_elem_L8774 = alloca %qd_stack_element_t
+  %fs_stp_L8774 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %fs_stk_L8774 = load ptr, ptr %fs_stp_L8774
+  call void @qd_stack_pop(ptr %fs_stk_L8774, ptr %fs_elem_L8774)
+  %fs_vp_L8774 = getelementptr %qd_stack_element_t, ptr %fs_elem_L8774, i32 0, i32 0
+  %fs_val_L8774 = load i64, ptr %fs_vp_L8774
+  %fs_svp_L8774 = getelementptr %qd_stack_element_t, ptr %local.st, i32 0, i32 0
+  %fs_sptr_L8774 = load ptr, ptr %fs_svp_L8774
+  %fs_off_L8774 = load i64, ptr @__offset_code
+  %fs_fp_L8774 = getelementptr i8, ptr %fs_sptr_L8774, i64 %fs_off_L8774
+  store i64 %fs_val_L8774, ptr %fs_fp_L8774
+  %stp_L8775 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L8775 = load ptr, ptr %stp_L8775
+  call i32 @qdrt_push_element(ptr %stk_L8775, ptr %local.st)
   %stp_L8776 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
   %stk_L8776 = load ptr, ptr %stp_L8776
-  call void @qd_stack_pop(ptr %stk_L8776, ptr %local.o)
-  br label %L8767
-L8766:
-  %stp_L8777 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L8777 = load ptr, ptr %stp_L8777
-  call i32 @qdrt_push_element(ptr %stk_L8777, ptr %local.o)
-  call i32 @usr_sb_new(ptr %ctx)
-  call i32 @qd_push_s(ptr %ctx, ptr @.str.8778)
-  call i32 @usr_sb_append(ptr %ctx)
+  call i32 @qdrt_push_element(ptr %stk_L8776, ptr %local.n)
+  %fa_elem_L8777 = alloca %qd_stack_element_t
+  %fa_stp_L8777 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %fa_stk_L8777 = load ptr, ptr %fa_stp_L8777
+  call void @qd_stack_pop(ptr %fa_stk_L8777, ptr %fa_elem_L8777)
+  %fa_vp_L8777 = getelementptr %qd_stack_element_t, ptr %fa_elem_L8777, i32 0, i32 0
+  %fa_ptr_L8777 = load ptr, ptr %fa_vp_L8777
+  %fa_off_L8777 = load i64, ptr @__offset_child2
+  %fa_fp_L8777 = getelementptr i8, ptr %fa_ptr_L8777, i64 %fa_off_L8777
+  %fa_val_L8777 = load ptr, ptr %fa_fp_L8777
+  call i32 @qd_push_p(ptr %ctx, ptr %fa_val_L8777)
+  %stp_L8778 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L8778 = load ptr, ptr %stp_L8778
+  call i32 @qdrt_push_element(ptr %stk_L8778, ptr %local.loc)
+  call i32 @usr_codegen_emit_block(ptr %ctx)
   %stp_L8779 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
   %stk_L8779 = load ptr, ptr %stp_L8779
-  call i32 @qdrt_push_element(ptr %stk_L8779, ptr %local.uid)
-  call i32 @usr_sb_append_int(ptr %ctx)
-  call i32 @qd_push_s(ptr %ctx, ptr @.str.8780)
-  call i32 @usr_sb_append(ptr %ctx)
-  %stp_L8781 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L8781 = load ptr, ptr %stp_L8781
-  call i32 @qdrt_push_element(ptr %stk_L8781, ptr %local.then_label)
-  call i32 @usr_sb_append_int(ptr %ctx)
-  call i32 @qd_push_s(ptr %ctx, ptr @.str.8782)
-  call i32 @usr_sb_append(ptr %ctx)
+  call void @qd_stack_pop(ptr %stk_L8779, ptr %local.st)
+  %stp_L8780 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L8780 = load ptr, ptr %stp_L8780
+  call i32 @qdrt_push_element(ptr %stk_L8780, ptr %local.st)
+  %fa_elem_L8781 = alloca %qd_stack_element_t
+  %fa_stp_L8781 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %fa_stk_L8781 = load ptr, ptr %fa_stp_L8781
+  call void @qd_stack_pop(ptr %fa_stk_L8781, ptr %fa_elem_L8781)
+  %fa_vp_L8781 = getelementptr %qd_stack_element_t, ptr %fa_elem_L8781, i32 0, i32 0
+  %fa_ptr_L8781 = load ptr, ptr %fa_vp_L8781
+  %fa_off_L8781 = load i64, ptr @__offset_code
+  %fa_fp_L8781 = getelementptr i8, ptr %fa_ptr_L8781, i64 %fa_off_L8781
+  %fa_val_L8781 = load ptr, ptr %fa_fp_L8781
+  call i32 @qd_push_p(ptr %ctx, ptr %fa_val_L8781)
+  %stp_L8782 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L8782 = load ptr, ptr %stp_L8782
+  call void @qd_stack_pop(ptr %stk_L8782, ptr %local.o)
   %stp_L8783 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
   %stk_L8783 = load ptr, ptr %stp_L8783
-  call i32 @qdrt_push_element(ptr %stk_L8783, ptr %local.merge_label)
-  call i32 @usr_sb_append_int(ptr %ctx)
+  call i32 @qdrt_push_element(ptr %stk_L8783, ptr %local.o)
+  call i32 @usr_sb_new(ptr %ctx)
   call i32 @qd_push_s(ptr %ctx, ptr @.str.8784)
-  call i32 @usr_sb_append(ptr %ctx)
-  call i32 @usr_sb_finish(ptr %ctx)
   call i32 @usr_sb_append(ptr %ctx)
   %stp_L8785 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
   %stk_L8785 = load ptr, ptr %stp_L8785
-  call void @qd_stack_pop(ptr %stk_L8785, ptr %local.o)
-  br label %L8767
-L8767:
-  %stp_L8786 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L8786 = load ptr, ptr %stp_L8786
-  call i32 @qdrt_push_element(ptr %stk_L8786, ptr %local.o)
-  call i32 @usr_sb_new(ptr %ctx)
+  call i32 @qdrt_push_element(ptr %stk_L8785, ptr %local.merge_label)
+  call i32 @usr_sb_append_int(ptr %ctx)
+  call i32 @qd_push_s(ptr %ctx, ptr @.str.8786)
+  call i32 @usr_sb_append(ptr %ctx)
+  call i32 @usr_sb_finish(ptr %ctx)
+  call i32 @usr_sb_append(ptr %ctx)
   %stp_L8787 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
   %stk_L8787 = load ptr, ptr %stp_L8787
-  call i32 @qdrt_push_element(ptr %stk_L8787, ptr %local.then_label)
-  call i32 @usr_sb_append_int(ptr %ctx)
-  call i32 @qd_push_s(ptr %ctx, ptr @.str.8788)
-  call i32 @usr_sb_append(ptr %ctx)
-  call i32 @usr_sb_finish(ptr %ctx)
-  call i32 @usr_sb_append(ptr %ctx)
+  call void @qd_stack_pop(ptr %stk_L8787, ptr %local.o)
+  br label %L8768
+L8768:
+  %stp_L8788 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L8788 = load ptr, ptr %stp_L8788
+  call i32 @qdrt_push_element(ptr %stk_L8788, ptr %local.o)
+  call i32 @usr_sb_new(ptr %ctx)
   %stp_L8789 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
   %stk_L8789 = load ptr, ptr %stp_L8789
-  call void @qd_stack_pop(ptr %stk_L8789, ptr %local.o)
-  %stp_L8790 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L8790 = load ptr, ptr %stp_L8790
-  call i32 @qdrt_push_element(ptr %stk_L8790, ptr %local.o)
-  %fs_elem_L8791 = alloca %qd_stack_element_t
-  %fs_stp_L8791 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %fs_stk_L8791 = load ptr, ptr %fs_stp_L8791
-  call void @qd_stack_pop(ptr %fs_stk_L8791, ptr %fs_elem_L8791)
-  %fs_vp_L8791 = getelementptr %qd_stack_element_t, ptr %fs_elem_L8791, i32 0, i32 0
-  %fs_val_L8791 = load i64, ptr %fs_vp_L8791
-  %fs_svp_L8791 = getelementptr %qd_stack_element_t, ptr %local.st, i32 0, i32 0
-  %fs_sptr_L8791 = load ptr, ptr %fs_svp_L8791
-  %fs_off_L8791 = load i64, ptr @__offset_code
-  %fs_fp_L8791 = getelementptr i8, ptr %fs_sptr_L8791, i64 %fs_off_L8791
-  store i64 %fs_val_L8791, ptr %fs_fp_L8791
+  call i32 @qdrt_push_element(ptr %stk_L8789, ptr %local.merge_label)
+  call i32 @usr_sb_append_int(ptr %ctx)
+  call i32 @qd_push_s(ptr %ctx, ptr @.str.8790)
+  call i32 @usr_sb_append(ptr %ctx)
+  call i32 @usr_sb_finish(ptr %ctx)
+  call i32 @usr_sb_append(ptr %ctx)
+  %stp_L8791 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L8791 = load ptr, ptr %stp_L8791
+  call void @qd_stack_pop(ptr %stk_L8791, ptr %local.o)
   %stp_L8792 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
   %stk_L8792 = load ptr, ptr %stp_L8792
-  call i32 @qdrt_push_element(ptr %stk_L8792, ptr %local.st)
-  %stp_L8793 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L8793 = load ptr, ptr %stp_L8793
-  call i32 @qdrt_push_element(ptr %stk_L8793, ptr %local.n)
-  %fa_elem_L8794 = alloca %qd_stack_element_t
-  %fa_stp_L8794 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %fa_stk_L8794 = load ptr, ptr %fa_stp_L8794
-  call void @qd_stack_pop(ptr %fa_stk_L8794, ptr %fa_elem_L8794)
-  %fa_vp_L8794 = getelementptr %qd_stack_element_t, ptr %fa_elem_L8794, i32 0, i32 0
-  %fa_ptr_L8794 = load ptr, ptr %fa_vp_L8794
-  %fa_off_L8794 = load i64, ptr @__offset_child1
-  %fa_fp_L8794 = getelementptr i8, ptr %fa_ptr_L8794, i64 %fa_off_L8794
-  %fa_val_L8794 = load ptr, ptr %fa_fp_L8794
-  call i32 @qd_push_p(ptr %ctx, ptr %fa_val_L8794)
-  %stp_L8795 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L8795 = load ptr, ptr %stp_L8795
-  call i32 @qdrt_push_element(ptr %stk_L8795, ptr %local.loc)
-  call i32 @usr_codegen_emit_block(ptr %ctx)
-  %stp_L8796 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L8796 = load ptr, ptr %stp_L8796
-  call void @qd_stack_pop(ptr %stk_L8796, ptr %local.st)
-  %stp_L8797 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L8797 = load ptr, ptr %stp_L8797
-  call i32 @qdrt_push_element(ptr %stk_L8797, ptr %local.st)
-  %fa_elem_L8798 = alloca %qd_stack_element_t
-  %fa_stp_L8798 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %fa_stk_L8798 = load ptr, ptr %fa_stp_L8798
-  call void @qd_stack_pop(ptr %fa_stk_L8798, ptr %fa_elem_L8798)
-  %fa_vp_L8798 = getelementptr %qd_stack_element_t, ptr %fa_elem_L8798, i32 0, i32 0
-  %fa_ptr_L8798 = load ptr, ptr %fa_vp_L8798
-  %fa_off_L8798 = load i64, ptr @__offset_code
-  %fa_fp_L8798 = getelementptr i8, ptr %fa_ptr_L8798, i64 %fa_off_L8798
-  %fa_val_L8798 = load ptr, ptr %fa_fp_L8798
-  call i32 @qd_push_p(ptr %ctx, ptr %fa_val_L8798)
-  %stp_L8799 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L8799 = load ptr, ptr %stp_L8799
-  call void @qd_stack_pop(ptr %stk_L8799, ptr %local.o)
-  %stp_L8800 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L8800 = load ptr, ptr %stp_L8800
-  call i32 @qdrt_push_element(ptr %stk_L8800, ptr %local.o)
-  call i32 @usr_sb_new(ptr %ctx)
-  call i32 @qd_push_s(ptr %ctx, ptr @.str.8801)
-  call i32 @usr_sb_append(ptr %ctx)
-  %stp_L8802 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L8802 = load ptr, ptr %stp_L8802
-  call i32 @qdrt_push_element(ptr %stk_L8802, ptr %local.merge_label)
-  call i32 @usr_sb_append_int(ptr %ctx)
-  call i32 @qd_push_s(ptr %ctx, ptr @.str.8803)
-  call i32 @usr_sb_append(ptr %ctx)
-  call i32 @usr_sb_finish(ptr %ctx)
-  call i32 @usr_sb_append(ptr %ctx)
-  %stp_L8804 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L8804 = load ptr, ptr %stp_L8804
-  call void @qd_stack_pop(ptr %stk_L8804, ptr %local.o)
-  %stp_L8805 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L8805 = load ptr, ptr %stp_L8805
-  call i32 @qdrt_push_element(ptr %stk_L8805, ptr %local.n)
-  call i32 @usr_ast_child_count(ptr %ctx)
-  call i32 @qd_push_i(ptr %ctx, i64 2)
-  call i32 @qd_gte(ptr %ctx)
-  %ce_L8806 = alloca %qd_stack_element_t
-  %stp_L8806 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L8806 = load ptr, ptr %stp_L8806
-  call void @qd_stack_pop(ptr %stk_L8806, ptr %ce_L8806)
-  %cv_L8806 = getelementptr %qd_stack_element_t, ptr %ce_L8806, i32 0, i32 0
-  %ci_L8806 = load i64, ptr %cv_L8806
-  %cc_L8806 = icmp ne i64 %ci_L8806, 0
-  br i1 %cc_L8806, label %L8807, label %L8809
-L8807:
-  %stp_L8810 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L8810 = load ptr, ptr %stp_L8810
-  call i32 @qdrt_push_element(ptr %stk_L8810, ptr %local.o)
-  call i32 @usr_sb_new(ptr %ctx)
-  %stp_L8811 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L8811 = load ptr, ptr %stp_L8811
-  call i32 @qdrt_push_element(ptr %stk_L8811, ptr %local.else_label)
-  call i32 @usr_sb_append_int(ptr %ctx)
-  call i32 @qd_push_s(ptr %ctx, ptr @.str.8812)
-  call i32 @usr_sb_append(ptr %ctx)
-  call i32 @usr_sb_finish(ptr %ctx)
-  call i32 @usr_sb_append(ptr %ctx)
-  %stp_L8813 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L8813 = load ptr, ptr %stp_L8813
-  call void @qd_stack_pop(ptr %stk_L8813, ptr %local.o)
-  %stp_L8814 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L8814 = load ptr, ptr %stp_L8814
-  call i32 @qdrt_push_element(ptr %stk_L8814, ptr %local.o)
-  %fs_elem_L8815 = alloca %qd_stack_element_t
-  %fs_stp_L8815 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %fs_stk_L8815 = load ptr, ptr %fs_stp_L8815
-  call void @qd_stack_pop(ptr %fs_stk_L8815, ptr %fs_elem_L8815)
-  %fs_vp_L8815 = getelementptr %qd_stack_element_t, ptr %fs_elem_L8815, i32 0, i32 0
-  %fs_val_L8815 = load i64, ptr %fs_vp_L8815
-  %fs_svp_L8815 = getelementptr %qd_stack_element_t, ptr %local.st, i32 0, i32 0
-  %fs_sptr_L8815 = load ptr, ptr %fs_svp_L8815
-  %fs_off_L8815 = load i64, ptr @__offset_code
-  %fs_fp_L8815 = getelementptr i8, ptr %fs_sptr_L8815, i64 %fs_off_L8815
-  store i64 %fs_val_L8815, ptr %fs_fp_L8815
-  %stp_L8816 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L8816 = load ptr, ptr %stp_L8816
-  call i32 @qdrt_push_element(ptr %stk_L8816, ptr %local.st)
-  %stp_L8817 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L8817 = load ptr, ptr %stp_L8817
-  call i32 @qdrt_push_element(ptr %stk_L8817, ptr %local.n)
-  %fa_elem_L8818 = alloca %qd_stack_element_t
-  %fa_stp_L8818 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %fa_stk_L8818 = load ptr, ptr %fa_stp_L8818
-  call void @qd_stack_pop(ptr %fa_stk_L8818, ptr %fa_elem_L8818)
-  %fa_vp_L8818 = getelementptr %qd_stack_element_t, ptr %fa_elem_L8818, i32 0, i32 0
-  %fa_ptr_L8818 = load ptr, ptr %fa_vp_L8818
-  %fa_off_L8818 = load i64, ptr @__offset_child2
-  %fa_fp_L8818 = getelementptr i8, ptr %fa_ptr_L8818, i64 %fa_off_L8818
-  %fa_val_L8818 = load ptr, ptr %fa_fp_L8818
-  call i32 @qd_push_p(ptr %ctx, ptr %fa_val_L8818)
-  %stp_L8819 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L8819 = load ptr, ptr %stp_L8819
-  call i32 @qdrt_push_element(ptr %stk_L8819, ptr %local.loc)
-  call i32 @usr_codegen_emit_block(ptr %ctx)
-  %stp_L8820 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L8820 = load ptr, ptr %stp_L8820
-  call void @qd_stack_pop(ptr %stk_L8820, ptr %local.st)
-  %stp_L8821 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L8821 = load ptr, ptr %stp_L8821
-  call i32 @qdrt_push_element(ptr %stk_L8821, ptr %local.st)
-  %fa_elem_L8822 = alloca %qd_stack_element_t
-  %fa_stp_L8822 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %fa_stk_L8822 = load ptr, ptr %fa_stp_L8822
-  call void @qd_stack_pop(ptr %fa_stk_L8822, ptr %fa_elem_L8822)
-  %fa_vp_L8822 = getelementptr %qd_stack_element_t, ptr %fa_elem_L8822, i32 0, i32 0
-  %fa_ptr_L8822 = load ptr, ptr %fa_vp_L8822
-  %fa_off_L8822 = load i64, ptr @__offset_code
-  %fa_fp_L8822 = getelementptr i8, ptr %fa_ptr_L8822, i64 %fa_off_L8822
-  %fa_val_L8822 = load ptr, ptr %fa_fp_L8822
-  call i32 @qd_push_p(ptr %ctx, ptr %fa_val_L8822)
-  %stp_L8823 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L8823 = load ptr, ptr %stp_L8823
-  call void @qd_stack_pop(ptr %stk_L8823, ptr %local.o)
-  %stp_L8824 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L8824 = load ptr, ptr %stp_L8824
-  call i32 @qdrt_push_element(ptr %stk_L8824, ptr %local.o)
-  call i32 @usr_sb_new(ptr %ctx)
-  call i32 @qd_push_s(ptr %ctx, ptr @.str.8825)
-  call i32 @usr_sb_append(ptr %ctx)
-  %stp_L8826 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L8826 = load ptr, ptr %stp_L8826
-  call i32 @qdrt_push_element(ptr %stk_L8826, ptr %local.merge_label)
-  call i32 @usr_sb_append_int(ptr %ctx)
-  call i32 @qd_push_s(ptr %ctx, ptr @.str.8827)
-  call i32 @usr_sb_append(ptr %ctx)
-  call i32 @usr_sb_finish(ptr %ctx)
-  call i32 @usr_sb_append(ptr %ctx)
-  %stp_L8828 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L8828 = load ptr, ptr %stp_L8828
-  call void @qd_stack_pop(ptr %stk_L8828, ptr %local.o)
-  br label %L8809
-L8809:
-  %stp_L8829 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L8829 = load ptr, ptr %stp_L8829
-  call i32 @qdrt_push_element(ptr %stk_L8829, ptr %local.o)
-  call i32 @usr_sb_new(ptr %ctx)
-  %stp_L8830 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L8830 = load ptr, ptr %stp_L8830
-  call i32 @qdrt_push_element(ptr %stk_L8830, ptr %local.merge_label)
-  call i32 @usr_sb_append_int(ptr %ctx)
-  call i32 @qd_push_s(ptr %ctx, ptr @.str.8831)
-  call i32 @usr_sb_append(ptr %ctx)
-  call i32 @usr_sb_finish(ptr %ctx)
-  call i32 @usr_sb_append(ptr %ctx)
-  %stp_L8832 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L8832 = load ptr, ptr %stp_L8832
-  call void @qd_stack_pop(ptr %stk_L8832, ptr %local.o)
-  %stp_L8833 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L8833 = load ptr, ptr %stp_L8833
-  call i32 @qdrt_push_element(ptr %stk_L8833, ptr %local.o)
-  %fs_elem_L8834 = alloca %qd_stack_element_t
-  %fs_stp_L8834 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %fs_stk_L8834 = load ptr, ptr %fs_stp_L8834
-  call void @qd_stack_pop(ptr %fs_stk_L8834, ptr %fs_elem_L8834)
-  %fs_vp_L8834 = getelementptr %qd_stack_element_t, ptr %fs_elem_L8834, i32 0, i32 0
-  %fs_val_L8834 = load i64, ptr %fs_vp_L8834
-  %fs_svp_L8834 = getelementptr %qd_stack_element_t, ptr %local.st, i32 0, i32 0
-  %fs_sptr_L8834 = load ptr, ptr %fs_svp_L8834
-  %fs_off_L8834 = load i64, ptr @__offset_code
-  %fs_fp_L8834 = getelementptr i8, ptr %fs_sptr_L8834, i64 %fs_off_L8834
-  store i64 %fs_val_L8834, ptr %fs_fp_L8834
-  %stp_L8835 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L8835 = load ptr, ptr %stp_L8835
-  call i32 @qdrt_push_element(ptr %stk_L8835, ptr %local.st)
+  call i32 @qdrt_push_element(ptr %stk_L8792, ptr %local.o)
+  %fs_elem_L8793 = alloca %qd_stack_element_t
+  %fs_stp_L8793 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %fs_stk_L8793 = load ptr, ptr %fs_stp_L8793
+  call void @qd_stack_pop(ptr %fs_stk_L8793, ptr %fs_elem_L8793)
+  %fs_vp_L8793 = getelementptr %qd_stack_element_t, ptr %fs_elem_L8793, i32 0, i32 0
+  %fs_val_L8793 = load i64, ptr %fs_vp_L8793
+  %fs_svp_L8793 = getelementptr %qd_stack_element_t, ptr %local.st, i32 0, i32 0
+  %fs_sptr_L8793 = load ptr, ptr %fs_svp_L8793
+  %fs_off_L8793 = load i64, ptr @__offset_code
+  %fs_fp_L8793 = getelementptr i8, ptr %fs_sptr_L8793, i64 %fs_off_L8793
+  store i64 %fs_val_L8793, ptr %fs_fp_L8793
+  %stp_L8794 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L8794 = load ptr, ptr %stp_L8794
+  call i32 @qdrt_push_element(ptr %stk_L8794, ptr %local.st)
   br label %return
 return:
   ret i32 0
@@ -35875,98 +35635,263 @@ entry:
   %local.loop_loc = alloca %qd_stack_element_t
   %local.o = alloca %qd_stack_element_t
   %local.uid2 = alloca %qd_stack_element_t
-  %stp_L8836 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L8836 = load ptr, ptr %stp_L8836
-  call void @qd_stack_pop(ptr %stk_L8836, ptr %local.loc)
+  %stp_L8795 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L8795 = load ptr, ptr %stp_L8795
+  call void @qd_stack_pop(ptr %stk_L8795, ptr %local.loc)
+  %stp_L8796 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L8796 = load ptr, ptr %stp_L8796
+  call void @qd_stack_pop(ptr %stk_L8796, ptr %local.n)
+  %stp_L8797 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L8797 = load ptr, ptr %stp_L8797
+  call void @qd_stack_pop(ptr %stk_L8797, ptr %local.st)
+  %stp_L8798 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L8798 = load ptr, ptr %stp_L8798
+  call i32 @qdrt_push_element(ptr %stk_L8798, ptr %local.st)
+  call i32 @usr_codegen_next_label(ptr %ctx)
+  %stp_L8799 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L8799 = load ptr, ptr %stp_L8799
+  call void @qd_stack_pop(ptr %stk_L8799, ptr %local.uid)
+  %stp_L8800 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L8800 = load ptr, ptr %stp_L8800
+  call void @qd_stack_pop(ptr %stk_L8800, ptr %local.st)
+  %stp_L8801 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L8801 = load ptr, ptr %stp_L8801
+  call i32 @qdrt_push_element(ptr %stk_L8801, ptr %local.st)
+  call i32 @usr_codegen_next_label(ptr %ctx)
+  %stp_L8802 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L8802 = load ptr, ptr %stp_L8802
+  call void @qd_stack_pop(ptr %stk_L8802, ptr %local.body_label)
+  %stp_L8803 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L8803 = load ptr, ptr %stp_L8803
+  call void @qd_stack_pop(ptr %stk_L8803, ptr %local.st)
+  %stp_L8804 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L8804 = load ptr, ptr %stp_L8804
+  call i32 @qdrt_push_element(ptr %stk_L8804, ptr %local.st)
+  call i32 @usr_codegen_next_label(ptr %ctx)
+  %stp_L8805 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L8805 = load ptr, ptr %stp_L8805
+  call void @qd_stack_pop(ptr %stk_L8805, ptr %local.exit_label)
+  %stp_L8806 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L8806 = load ptr, ptr %stp_L8806
+  call void @qd_stack_pop(ptr %stk_L8806, ptr %local.st)
+  %stp_L8807 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L8807 = load ptr, ptr %stp_L8807
+  call i32 @qdrt_push_element(ptr %stk_L8807, ptr %local.st)
+  call i32 @usr_codegen_next_label(ptr %ctx)
+  %stp_L8808 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L8808 = load ptr, ptr %stp_L8808
+  call void @qd_stack_pop(ptr %stk_L8808, ptr %local.cond_label)
+  %stp_L8809 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L8809 = load ptr, ptr %stp_L8809
+  call void @qd_stack_pop(ptr %stk_L8809, ptr %local.st)
+  %stp_L8810 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L8810 = load ptr, ptr %stp_L8810
+  call i32 @qdrt_push_element(ptr %stk_L8810, ptr %local.loc)
+  call i32 @usr_sb_new(ptr %ctx)
+  call i32 @qd_push_s(ptr %ctx, ptr @.str.8811)
+  call i32 @usr_sb_append(ptr %ctx)
+  %stp_L8812 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L8812 = load ptr, ptr %stp_L8812
+  call i32 @qdrt_push_element(ptr %stk_L8812, ptr %local.exit_label)
+  call i32 @usr_sb_append_int(ptr %ctx)
+  call i32 @qd_push_s(ptr %ctx, ptr @.str.8813)
+  call i32 @usr_sb_append(ptr %ctx)
+  %stp_L8814 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L8814 = load ptr, ptr %stp_L8814
+  call i32 @qdrt_push_element(ptr %stk_L8814, ptr %local.cond_label)
+  call i32 @usr_sb_append_int(ptr %ctx)
+  call i32 @usr_sb_finish(ptr %ctx)
+  call i32 @usr_strings_concat(ptr %ctx)
+  %stp_L8815 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L8815 = load ptr, ptr %stp_L8815
+  call void @qd_stack_pop(ptr %stk_L8815, ptr %local.loop_loc)
+  %stp_L8816 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L8816 = load ptr, ptr %stp_L8816
+  call i32 @qdrt_push_element(ptr %stk_L8816, ptr %local.st)
+  %fa_elem_L8817 = alloca %qd_stack_element_t
+  %fa_stp_L8817 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %fa_stk_L8817 = load ptr, ptr %fa_stp_L8817
+  call void @qd_stack_pop(ptr %fa_stk_L8817, ptr %fa_elem_L8817)
+  %fa_vp_L8817 = getelementptr %qd_stack_element_t, ptr %fa_elem_L8817, i32 0, i32 0
+  %fa_ptr_L8817 = load ptr, ptr %fa_vp_L8817
+  %fa_off_L8817 = load i64, ptr @__offset_code
+  %fa_fp_L8817 = getelementptr i8, ptr %fa_ptr_L8817, i64 %fa_off_L8817
+  %fa_val_L8817 = load ptr, ptr %fa_fp_L8817
+  call i32 @qd_push_p(ptr %ctx, ptr %fa_val_L8817)
+  %stp_L8818 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L8818 = load ptr, ptr %stp_L8818
+  call void @qd_stack_pop(ptr %stk_L8818, ptr %local.o)
+  %stp_L8819 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L8819 = load ptr, ptr %stp_L8819
+  call i32 @qdrt_push_element(ptr %stk_L8819, ptr %local.st)
+  %stp_L8820 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L8820 = load ptr, ptr %stp_L8820
+  call i32 @qdrt_push_element(ptr %stk_L8820, ptr %local.uid)
+  call i32 @usr_codegen_emit_pop_cond(ptr %ctx)
+  %stp_L8821 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L8821 = load ptr, ptr %stp_L8821
+  call void @qd_stack_pop(ptr %stk_L8821, ptr %local.st)
+  %stp_L8822 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L8822 = load ptr, ptr %stp_L8822
+  call i32 @qdrt_push_element(ptr %stk_L8822, ptr %local.st)
+  %fa_elem_L8823 = alloca %qd_stack_element_t
+  %fa_stp_L8823 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %fa_stk_L8823 = load ptr, ptr %fa_stp_L8823
+  call void @qd_stack_pop(ptr %fa_stk_L8823, ptr %fa_elem_L8823)
+  %fa_vp_L8823 = getelementptr %qd_stack_element_t, ptr %fa_elem_L8823, i32 0, i32 0
+  %fa_ptr_L8823 = load ptr, ptr %fa_vp_L8823
+  %fa_off_L8823 = load i64, ptr @__offset_code
+  %fa_fp_L8823 = getelementptr i8, ptr %fa_ptr_L8823, i64 %fa_off_L8823
+  %fa_val_L8823 = load ptr, ptr %fa_fp_L8823
+  call i32 @qd_push_p(ptr %ctx, ptr %fa_val_L8823)
+  %stp_L8824 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L8824 = load ptr, ptr %stp_L8824
+  call void @qd_stack_pop(ptr %stk_L8824, ptr %local.o)
+  %stp_L8825 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L8825 = load ptr, ptr %stp_L8825
+  call i32 @qdrt_push_element(ptr %stk_L8825, ptr %local.o)
+  call i32 @usr_sb_new(ptr %ctx)
+  call i32 @qd_push_s(ptr %ctx, ptr @.str.8826)
+  call i32 @usr_sb_append(ptr %ctx)
+  %stp_L8827 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L8827 = load ptr, ptr %stp_L8827
+  call i32 @qdrt_push_element(ptr %stk_L8827, ptr %local.uid)
+  call i32 @usr_sb_append_int(ptr %ctx)
+  call i32 @qd_push_s(ptr %ctx, ptr @.str.8828)
+  call i32 @usr_sb_append(ptr %ctx)
+  %stp_L8829 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L8829 = load ptr, ptr %stp_L8829
+  call i32 @qdrt_push_element(ptr %stk_L8829, ptr %local.body_label)
+  call i32 @usr_sb_append_int(ptr %ctx)
+  call i32 @qd_push_s(ptr %ctx, ptr @.str.8830)
+  call i32 @usr_sb_append(ptr %ctx)
+  %stp_L8831 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L8831 = load ptr, ptr %stp_L8831
+  call i32 @qdrt_push_element(ptr %stk_L8831, ptr %local.exit_label)
+  call i32 @usr_sb_append_int(ptr %ctx)
+  call i32 @qd_push_s(ptr %ctx, ptr @.str.8832)
+  call i32 @usr_sb_append(ptr %ctx)
+  call i32 @usr_sb_finish(ptr %ctx)
+  call i32 @usr_sb_append(ptr %ctx)
+  %stp_L8833 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L8833 = load ptr, ptr %stp_L8833
+  call void @qd_stack_pop(ptr %stk_L8833, ptr %local.o)
+  %stp_L8834 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L8834 = load ptr, ptr %stp_L8834
+  call i32 @qdrt_push_element(ptr %stk_L8834, ptr %local.o)
+  call i32 @usr_sb_new(ptr %ctx)
+  %stp_L8835 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L8835 = load ptr, ptr %stp_L8835
+  call i32 @qdrt_push_element(ptr %stk_L8835, ptr %local.body_label)
+  call i32 @usr_sb_append_int(ptr %ctx)
+  call i32 @qd_push_s(ptr %ctx, ptr @.str.8836)
+  call i32 @usr_sb_append(ptr %ctx)
+  call i32 @usr_sb_finish(ptr %ctx)
+  call i32 @usr_sb_append(ptr %ctx)
   %stp_L8837 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
   %stk_L8837 = load ptr, ptr %stp_L8837
-  call void @qd_stack_pop(ptr %stk_L8837, ptr %local.n)
+  call void @qd_stack_pop(ptr %stk_L8837, ptr %local.o)
   %stp_L8838 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
   %stk_L8838 = load ptr, ptr %stp_L8838
-  call void @qd_stack_pop(ptr %stk_L8838, ptr %local.st)
-  %stp_L8839 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L8839 = load ptr, ptr %stp_L8839
-  call i32 @qdrt_push_element(ptr %stk_L8839, ptr %local.st)
-  call i32 @usr_codegen_next_label(ptr %ctx)
+  call i32 @qdrt_push_element(ptr %stk_L8838, ptr %local.o)
+  %fs_elem_L8839 = alloca %qd_stack_element_t
+  %fs_stp_L8839 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %fs_stk_L8839 = load ptr, ptr %fs_stp_L8839
+  call void @qd_stack_pop(ptr %fs_stk_L8839, ptr %fs_elem_L8839)
+  %fs_vp_L8839 = getelementptr %qd_stack_element_t, ptr %fs_elem_L8839, i32 0, i32 0
+  %fs_val_L8839 = load i64, ptr %fs_vp_L8839
+  %fs_svp_L8839 = getelementptr %qd_stack_element_t, ptr %local.st, i32 0, i32 0
+  %fs_sptr_L8839 = load ptr, ptr %fs_svp_L8839
+  %fs_off_L8839 = load i64, ptr @__offset_code
+  %fs_fp_L8839 = getelementptr i8, ptr %fs_sptr_L8839, i64 %fs_off_L8839
+  store i64 %fs_val_L8839, ptr %fs_fp_L8839
   %stp_L8840 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
   %stk_L8840 = load ptr, ptr %stp_L8840
-  call void @qd_stack_pop(ptr %stk_L8840, ptr %local.uid)
+  call i32 @qdrt_push_element(ptr %stk_L8840, ptr %local.st)
   %stp_L8841 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
   %stk_L8841 = load ptr, ptr %stp_L8841
-  call void @qd_stack_pop(ptr %stk_L8841, ptr %local.st)
-  %stp_L8842 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L8842 = load ptr, ptr %stp_L8842
-  call i32 @qdrt_push_element(ptr %stk_L8842, ptr %local.st)
-  call i32 @usr_codegen_next_label(ptr %ctx)
+  call i32 @qdrt_push_element(ptr %stk_L8841, ptr %local.n)
+  %fa_elem_L8842 = alloca %qd_stack_element_t
+  %fa_stp_L8842 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %fa_stk_L8842 = load ptr, ptr %fa_stp_L8842
+  call void @qd_stack_pop(ptr %fa_stk_L8842, ptr %fa_elem_L8842)
+  %fa_vp_L8842 = getelementptr %qd_stack_element_t, ptr %fa_elem_L8842, i32 0, i32 0
+  %fa_ptr_L8842 = load ptr, ptr %fa_vp_L8842
+  %fa_off_L8842 = load i64, ptr @__offset_child1
+  %fa_fp_L8842 = getelementptr i8, ptr %fa_ptr_L8842, i64 %fa_off_L8842
+  %fa_val_L8842 = load ptr, ptr %fa_fp_L8842
+  call i32 @qd_push_p(ptr %ctx, ptr %fa_val_L8842)
   %stp_L8843 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
   %stk_L8843 = load ptr, ptr %stp_L8843
-  call void @qd_stack_pop(ptr %stk_L8843, ptr %local.body_label)
+  call i32 @qdrt_push_element(ptr %stk_L8843, ptr %local.loop_loc)
+  call i32 @usr_codegen_emit_block(ptr %ctx)
   %stp_L8844 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
   %stk_L8844 = load ptr, ptr %stp_L8844
   call void @qd_stack_pop(ptr %stk_L8844, ptr %local.st)
   %stp_L8845 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
   %stk_L8845 = load ptr, ptr %stp_L8845
   call i32 @qdrt_push_element(ptr %stk_L8845, ptr %local.st)
-  call i32 @usr_codegen_next_label(ptr %ctx)
-  %stp_L8846 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L8846 = load ptr, ptr %stp_L8846
-  call void @qd_stack_pop(ptr %stk_L8846, ptr %local.exit_label)
+  %fa_elem_L8846 = alloca %qd_stack_element_t
+  %fa_stp_L8846 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %fa_stk_L8846 = load ptr, ptr %fa_stp_L8846
+  call void @qd_stack_pop(ptr %fa_stk_L8846, ptr %fa_elem_L8846)
+  %fa_vp_L8846 = getelementptr %qd_stack_element_t, ptr %fa_elem_L8846, i32 0, i32 0
+  %fa_ptr_L8846 = load ptr, ptr %fa_vp_L8846
+  %fa_off_L8846 = load i64, ptr @__offset_code
+  %fa_fp_L8846 = getelementptr i8, ptr %fa_ptr_L8846, i64 %fa_off_L8846
+  %fa_val_L8846 = load ptr, ptr %fa_fp_L8846
+  call i32 @qd_push_p(ptr %ctx, ptr %fa_val_L8846)
   %stp_L8847 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
   %stk_L8847 = load ptr, ptr %stp_L8847
-  call void @qd_stack_pop(ptr %stk_L8847, ptr %local.st)
+  call void @qd_stack_pop(ptr %stk_L8847, ptr %local.o)
   %stp_L8848 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
   %stk_L8848 = load ptr, ptr %stp_L8848
-  call i32 @qdrt_push_element(ptr %stk_L8848, ptr %local.st)
-  call i32 @usr_codegen_next_label(ptr %ctx)
-  %stp_L8849 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L8849 = load ptr, ptr %stp_L8849
-  call void @qd_stack_pop(ptr %stk_L8849, ptr %local.cond_label)
+  call i32 @qdrt_push_element(ptr %stk_L8848, ptr %local.o)
+  call i32 @usr_sb_new(ptr %ctx)
+  call i32 @qd_push_s(ptr %ctx, ptr @.str.8849)
+  call i32 @usr_sb_append(ptr %ctx)
   %stp_L8850 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
   %stk_L8850 = load ptr, ptr %stp_L8850
-  call void @qd_stack_pop(ptr %stk_L8850, ptr %local.st)
-  %stp_L8851 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L8851 = load ptr, ptr %stp_L8851
-  call i32 @qdrt_push_element(ptr %stk_L8851, ptr %local.loc)
-  call i32 @usr_sb_new(ptr %ctx)
-  call i32 @qd_push_s(ptr %ctx, ptr @.str.8852)
+  call i32 @qdrt_push_element(ptr %stk_L8850, ptr %local.cond_label)
+  call i32 @usr_sb_append_int(ptr %ctx)
+  call i32 @qd_push_s(ptr %ctx, ptr @.str.8851)
   call i32 @usr_sb_append(ptr %ctx)
+  call i32 @usr_sb_finish(ptr %ctx)
+  call i32 @usr_sb_append(ptr %ctx)
+  %stp_L8852 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L8852 = load ptr, ptr %stp_L8852
+  call void @qd_stack_pop(ptr %stk_L8852, ptr %local.o)
   %stp_L8853 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
   %stk_L8853 = load ptr, ptr %stp_L8853
-  call i32 @qdrt_push_element(ptr %stk_L8853, ptr %local.exit_label)
+  call i32 @qdrt_push_element(ptr %stk_L8853, ptr %local.o)
+  call i32 @usr_sb_new(ptr %ctx)
+  %stp_L8854 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L8854 = load ptr, ptr %stp_L8854
+  call i32 @qdrt_push_element(ptr %stk_L8854, ptr %local.cond_label)
   call i32 @usr_sb_append_int(ptr %ctx)
-  call i32 @qd_push_s(ptr %ctx, ptr @.str.8854)
+  call i32 @qd_push_s(ptr %ctx, ptr @.str.8855)
   call i32 @usr_sb_append(ptr %ctx)
-  %stp_L8855 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L8855 = load ptr, ptr %stp_L8855
-  call i32 @qdrt_push_element(ptr %stk_L8855, ptr %local.cond_label)
-  call i32 @usr_sb_append_int(ptr %ctx)
   call i32 @usr_sb_finish(ptr %ctx)
-  call i32 @usr_strings_concat(ptr %ctx)
+  call i32 @usr_sb_append(ptr %ctx)
   %stp_L8856 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
   %stk_L8856 = load ptr, ptr %stp_L8856
-  call void @qd_stack_pop(ptr %stk_L8856, ptr %local.loop_loc)
+  call void @qd_stack_pop(ptr %stk_L8856, ptr %local.o)
   %stp_L8857 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
   %stk_L8857 = load ptr, ptr %stp_L8857
   call i32 @qdrt_push_element(ptr %stk_L8857, ptr %local.st)
-  %fa_elem_L8858 = alloca %qd_stack_element_t
-  %fa_stp_L8858 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %fa_stk_L8858 = load ptr, ptr %fa_stp_L8858
-  call void @qd_stack_pop(ptr %fa_stk_L8858, ptr %fa_elem_L8858)
-  %fa_vp_L8858 = getelementptr %qd_stack_element_t, ptr %fa_elem_L8858, i32 0, i32 0
-  %fa_ptr_L8858 = load ptr, ptr %fa_vp_L8858
-  %fa_off_L8858 = load i64, ptr @__offset_code
-  %fa_fp_L8858 = getelementptr i8, ptr %fa_ptr_L8858, i64 %fa_off_L8858
-  %fa_val_L8858 = load ptr, ptr %fa_fp_L8858
-  call i32 @qd_push_p(ptr %ctx, ptr %fa_val_L8858)
+  call i32 @usr_codegen_next_label(ptr %ctx)
+  %stp_L8858 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L8858 = load ptr, ptr %stp_L8858
+  call void @qd_stack_pop(ptr %stk_L8858, ptr %local.uid2)
   %stp_L8859 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
   %stk_L8859 = load ptr, ptr %stp_L8859
-  call void @qd_stack_pop(ptr %stk_L8859, ptr %local.o)
+  call void @qd_stack_pop(ptr %stk_L8859, ptr %local.st)
   %stp_L8860 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
   %stk_L8860 = load ptr, ptr %stp_L8860
   call i32 @qdrt_push_element(ptr %stk_L8860, ptr %local.st)
   %stp_L8861 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
   %stk_L8861 = load ptr, ptr %stp_L8861
-  call i32 @qdrt_push_element(ptr %stk_L8861, ptr %local.uid)
+  call i32 @qdrt_push_element(ptr %stk_L8861, ptr %local.uid2)
   call i32 @usr_codegen_emit_pop_cond(ptr %ctx)
   %stp_L8862 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
   %stk_L8862 = load ptr, ptr %stp_L8862
@@ -35995,7 +35920,7 @@ entry:
   call i32 @usr_sb_append(ptr %ctx)
   %stp_L8868 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
   %stk_L8868 = load ptr, ptr %stp_L8868
-  call i32 @qdrt_push_element(ptr %stk_L8868, ptr %local.uid)
+  call i32 @qdrt_push_element(ptr %stk_L8868, ptr %local.uid2)
   call i32 @usr_sb_append_int(ptr %ctx)
   call i32 @qd_push_s(ptr %ctx, ptr @.str.8869)
   call i32 @usr_sb_append(ptr %ctx)
@@ -36022,7 +35947,7 @@ entry:
   call i32 @usr_sb_new(ptr %ctx)
   %stp_L8876 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
   %stk_L8876 = load ptr, ptr %stp_L8876
-  call i32 @qdrt_push_element(ptr %stk_L8876, ptr %local.body_label)
+  call i32 @qdrt_push_element(ptr %stk_L8876, ptr %local.exit_label)
   call i32 @usr_sb_append_int(ptr %ctx)
   call i32 @qd_push_s(ptr %ctx, ptr @.str.8877)
   call i32 @usr_sb_append(ptr %ctx)
@@ -36048,171 +35973,6 @@ entry:
   %stp_L8881 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
   %stk_L8881 = load ptr, ptr %stp_L8881
   call i32 @qdrt_push_element(ptr %stk_L8881, ptr %local.st)
-  %stp_L8882 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L8882 = load ptr, ptr %stp_L8882
-  call i32 @qdrt_push_element(ptr %stk_L8882, ptr %local.n)
-  %fa_elem_L8883 = alloca %qd_stack_element_t
-  %fa_stp_L8883 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %fa_stk_L8883 = load ptr, ptr %fa_stp_L8883
-  call void @qd_stack_pop(ptr %fa_stk_L8883, ptr %fa_elem_L8883)
-  %fa_vp_L8883 = getelementptr %qd_stack_element_t, ptr %fa_elem_L8883, i32 0, i32 0
-  %fa_ptr_L8883 = load ptr, ptr %fa_vp_L8883
-  %fa_off_L8883 = load i64, ptr @__offset_child1
-  %fa_fp_L8883 = getelementptr i8, ptr %fa_ptr_L8883, i64 %fa_off_L8883
-  %fa_val_L8883 = load ptr, ptr %fa_fp_L8883
-  call i32 @qd_push_p(ptr %ctx, ptr %fa_val_L8883)
-  %stp_L8884 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L8884 = load ptr, ptr %stp_L8884
-  call i32 @qdrt_push_element(ptr %stk_L8884, ptr %local.loop_loc)
-  call i32 @usr_codegen_emit_block(ptr %ctx)
-  %stp_L8885 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L8885 = load ptr, ptr %stp_L8885
-  call void @qd_stack_pop(ptr %stk_L8885, ptr %local.st)
-  %stp_L8886 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L8886 = load ptr, ptr %stp_L8886
-  call i32 @qdrt_push_element(ptr %stk_L8886, ptr %local.st)
-  %fa_elem_L8887 = alloca %qd_stack_element_t
-  %fa_stp_L8887 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %fa_stk_L8887 = load ptr, ptr %fa_stp_L8887
-  call void @qd_stack_pop(ptr %fa_stk_L8887, ptr %fa_elem_L8887)
-  %fa_vp_L8887 = getelementptr %qd_stack_element_t, ptr %fa_elem_L8887, i32 0, i32 0
-  %fa_ptr_L8887 = load ptr, ptr %fa_vp_L8887
-  %fa_off_L8887 = load i64, ptr @__offset_code
-  %fa_fp_L8887 = getelementptr i8, ptr %fa_ptr_L8887, i64 %fa_off_L8887
-  %fa_val_L8887 = load ptr, ptr %fa_fp_L8887
-  call i32 @qd_push_p(ptr %ctx, ptr %fa_val_L8887)
-  %stp_L8888 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L8888 = load ptr, ptr %stp_L8888
-  call void @qd_stack_pop(ptr %stk_L8888, ptr %local.o)
-  %stp_L8889 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L8889 = load ptr, ptr %stp_L8889
-  call i32 @qdrt_push_element(ptr %stk_L8889, ptr %local.o)
-  call i32 @usr_sb_new(ptr %ctx)
-  call i32 @qd_push_s(ptr %ctx, ptr @.str.8890)
-  call i32 @usr_sb_append(ptr %ctx)
-  %stp_L8891 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L8891 = load ptr, ptr %stp_L8891
-  call i32 @qdrt_push_element(ptr %stk_L8891, ptr %local.cond_label)
-  call i32 @usr_sb_append_int(ptr %ctx)
-  call i32 @qd_push_s(ptr %ctx, ptr @.str.8892)
-  call i32 @usr_sb_append(ptr %ctx)
-  call i32 @usr_sb_finish(ptr %ctx)
-  call i32 @usr_sb_append(ptr %ctx)
-  %stp_L8893 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L8893 = load ptr, ptr %stp_L8893
-  call void @qd_stack_pop(ptr %stk_L8893, ptr %local.o)
-  %stp_L8894 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L8894 = load ptr, ptr %stp_L8894
-  call i32 @qdrt_push_element(ptr %stk_L8894, ptr %local.o)
-  call i32 @usr_sb_new(ptr %ctx)
-  %stp_L8895 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L8895 = load ptr, ptr %stp_L8895
-  call i32 @qdrt_push_element(ptr %stk_L8895, ptr %local.cond_label)
-  call i32 @usr_sb_append_int(ptr %ctx)
-  call i32 @qd_push_s(ptr %ctx, ptr @.str.8896)
-  call i32 @usr_sb_append(ptr %ctx)
-  call i32 @usr_sb_finish(ptr %ctx)
-  call i32 @usr_sb_append(ptr %ctx)
-  %stp_L8897 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L8897 = load ptr, ptr %stp_L8897
-  call void @qd_stack_pop(ptr %stk_L8897, ptr %local.o)
-  %stp_L8898 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L8898 = load ptr, ptr %stp_L8898
-  call i32 @qdrt_push_element(ptr %stk_L8898, ptr %local.st)
-  call i32 @usr_codegen_next_label(ptr %ctx)
-  %stp_L8899 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L8899 = load ptr, ptr %stp_L8899
-  call void @qd_stack_pop(ptr %stk_L8899, ptr %local.uid2)
-  %stp_L8900 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L8900 = load ptr, ptr %stp_L8900
-  call void @qd_stack_pop(ptr %stk_L8900, ptr %local.st)
-  %stp_L8901 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L8901 = load ptr, ptr %stp_L8901
-  call i32 @qdrt_push_element(ptr %stk_L8901, ptr %local.st)
-  %stp_L8902 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L8902 = load ptr, ptr %stp_L8902
-  call i32 @qdrt_push_element(ptr %stk_L8902, ptr %local.uid2)
-  call i32 @usr_codegen_emit_pop_cond(ptr %ctx)
-  %stp_L8903 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L8903 = load ptr, ptr %stp_L8903
-  call void @qd_stack_pop(ptr %stk_L8903, ptr %local.st)
-  %stp_L8904 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L8904 = load ptr, ptr %stp_L8904
-  call i32 @qdrt_push_element(ptr %stk_L8904, ptr %local.st)
-  %fa_elem_L8905 = alloca %qd_stack_element_t
-  %fa_stp_L8905 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %fa_stk_L8905 = load ptr, ptr %fa_stp_L8905
-  call void @qd_stack_pop(ptr %fa_stk_L8905, ptr %fa_elem_L8905)
-  %fa_vp_L8905 = getelementptr %qd_stack_element_t, ptr %fa_elem_L8905, i32 0, i32 0
-  %fa_ptr_L8905 = load ptr, ptr %fa_vp_L8905
-  %fa_off_L8905 = load i64, ptr @__offset_code
-  %fa_fp_L8905 = getelementptr i8, ptr %fa_ptr_L8905, i64 %fa_off_L8905
-  %fa_val_L8905 = load ptr, ptr %fa_fp_L8905
-  call i32 @qd_push_p(ptr %ctx, ptr %fa_val_L8905)
-  %stp_L8906 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L8906 = load ptr, ptr %stp_L8906
-  call void @qd_stack_pop(ptr %stk_L8906, ptr %local.o)
-  %stp_L8907 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L8907 = load ptr, ptr %stp_L8907
-  call i32 @qdrt_push_element(ptr %stk_L8907, ptr %local.o)
-  call i32 @usr_sb_new(ptr %ctx)
-  call i32 @qd_push_s(ptr %ctx, ptr @.str.8908)
-  call i32 @usr_sb_append(ptr %ctx)
-  %stp_L8909 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L8909 = load ptr, ptr %stp_L8909
-  call i32 @qdrt_push_element(ptr %stk_L8909, ptr %local.uid2)
-  call i32 @usr_sb_append_int(ptr %ctx)
-  call i32 @qd_push_s(ptr %ctx, ptr @.str.8910)
-  call i32 @usr_sb_append(ptr %ctx)
-  %stp_L8911 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L8911 = load ptr, ptr %stp_L8911
-  call i32 @qdrt_push_element(ptr %stk_L8911, ptr %local.body_label)
-  call i32 @usr_sb_append_int(ptr %ctx)
-  call i32 @qd_push_s(ptr %ctx, ptr @.str.8912)
-  call i32 @usr_sb_append(ptr %ctx)
-  %stp_L8913 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L8913 = load ptr, ptr %stp_L8913
-  call i32 @qdrt_push_element(ptr %stk_L8913, ptr %local.exit_label)
-  call i32 @usr_sb_append_int(ptr %ctx)
-  call i32 @qd_push_s(ptr %ctx, ptr @.str.8914)
-  call i32 @usr_sb_append(ptr %ctx)
-  call i32 @usr_sb_finish(ptr %ctx)
-  call i32 @usr_sb_append(ptr %ctx)
-  %stp_L8915 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L8915 = load ptr, ptr %stp_L8915
-  call void @qd_stack_pop(ptr %stk_L8915, ptr %local.o)
-  %stp_L8916 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L8916 = load ptr, ptr %stp_L8916
-  call i32 @qdrt_push_element(ptr %stk_L8916, ptr %local.o)
-  call i32 @usr_sb_new(ptr %ctx)
-  %stp_L8917 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L8917 = load ptr, ptr %stp_L8917
-  call i32 @qdrt_push_element(ptr %stk_L8917, ptr %local.exit_label)
-  call i32 @usr_sb_append_int(ptr %ctx)
-  call i32 @qd_push_s(ptr %ctx, ptr @.str.8918)
-  call i32 @usr_sb_append(ptr %ctx)
-  call i32 @usr_sb_finish(ptr %ctx)
-  call i32 @usr_sb_append(ptr %ctx)
-  %stp_L8919 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L8919 = load ptr, ptr %stp_L8919
-  call void @qd_stack_pop(ptr %stk_L8919, ptr %local.o)
-  %stp_L8920 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L8920 = load ptr, ptr %stp_L8920
-  call i32 @qdrt_push_element(ptr %stk_L8920, ptr %local.o)
-  %fs_elem_L8921 = alloca %qd_stack_element_t
-  %fs_stp_L8921 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %fs_stk_L8921 = load ptr, ptr %fs_stp_L8921
-  call void @qd_stack_pop(ptr %fs_stk_L8921, ptr %fs_elem_L8921)
-  %fs_vp_L8921 = getelementptr %qd_stack_element_t, ptr %fs_elem_L8921, i32 0, i32 0
-  %fs_val_L8921 = load i64, ptr %fs_vp_L8921
-  %fs_svp_L8921 = getelementptr %qd_stack_element_t, ptr %local.st, i32 0, i32 0
-  %fs_sptr_L8921 = load ptr, ptr %fs_svp_L8921
-  %fs_off_L8921 = load i64, ptr @__offset_code
-  %fs_fp_L8921 = getelementptr i8, ptr %fs_sptr_L8921, i64 %fs_off_L8921
-  store i64 %fs_val_L8921, ptr %fs_fp_L8921
-  %stp_L8922 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L8922 = load ptr, ptr %stp_L8922
-  call i32 @qdrt_push_element(ptr %stk_L8922, ptr %local.st)
   br label %return
 return:
   ret i32 0
@@ -36227,206 +35987,206 @@ entry:
   %local.exit_label = alloca %qd_stack_element_t
   %local.loop_loc = alloca %qd_stack_element_t
   %local.o = alloca %qd_stack_element_t
-  %stp_L8923 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L8923 = load ptr, ptr %stp_L8923
-  call void @qd_stack_pop(ptr %stk_L8923, ptr %local.loc)
-  %stp_L8924 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L8924 = load ptr, ptr %stp_L8924
-  call void @qd_stack_pop(ptr %stk_L8924, ptr %local.n)
-  %stp_L8925 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L8925 = load ptr, ptr %stp_L8925
-  call void @qd_stack_pop(ptr %stk_L8925, ptr %local.st)
-  %stp_L8926 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L8926 = load ptr, ptr %stp_L8926
-  call i32 @qdrt_push_element(ptr %stk_L8926, ptr %local.st)
+  %stp_L8882 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L8882 = load ptr, ptr %stp_L8882
+  call void @qd_stack_pop(ptr %stk_L8882, ptr %local.loc)
+  %stp_L8883 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L8883 = load ptr, ptr %stp_L8883
+  call void @qd_stack_pop(ptr %stk_L8883, ptr %local.n)
+  %stp_L8884 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L8884 = load ptr, ptr %stp_L8884
+  call void @qd_stack_pop(ptr %stk_L8884, ptr %local.st)
+  %stp_L8885 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L8885 = load ptr, ptr %stp_L8885
+  call i32 @qdrt_push_element(ptr %stk_L8885, ptr %local.st)
   call i32 @usr_codegen_next_label(ptr %ctx)
-  %stp_L8927 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L8927 = load ptr, ptr %stp_L8927
-  call void @qd_stack_pop(ptr %stk_L8927, ptr %local.body_label)
-  %stp_L8928 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L8928 = load ptr, ptr %stp_L8928
-  call void @qd_stack_pop(ptr %stk_L8928, ptr %local.st)
-  %stp_L8929 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L8929 = load ptr, ptr %stp_L8929
-  call i32 @qdrt_push_element(ptr %stk_L8929, ptr %local.st)
+  %stp_L8886 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L8886 = load ptr, ptr %stp_L8886
+  call void @qd_stack_pop(ptr %stk_L8886, ptr %local.body_label)
+  %stp_L8887 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L8887 = load ptr, ptr %stp_L8887
+  call void @qd_stack_pop(ptr %stk_L8887, ptr %local.st)
+  %stp_L8888 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L8888 = load ptr, ptr %stp_L8888
+  call i32 @qdrt_push_element(ptr %stk_L8888, ptr %local.st)
   call i32 @usr_codegen_next_label(ptr %ctx)
-  %stp_L8930 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L8930 = load ptr, ptr %stp_L8930
-  call void @qd_stack_pop(ptr %stk_L8930, ptr %local.exit_label)
-  %stp_L8931 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L8931 = load ptr, ptr %stp_L8931
-  call void @qd_stack_pop(ptr %stk_L8931, ptr %local.st)
-  %stp_L8932 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L8932 = load ptr, ptr %stp_L8932
-  call i32 @qdrt_push_element(ptr %stk_L8932, ptr %local.loc)
+  %stp_L8889 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L8889 = load ptr, ptr %stp_L8889
+  call void @qd_stack_pop(ptr %stk_L8889, ptr %local.exit_label)
+  %stp_L8890 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L8890 = load ptr, ptr %stp_L8890
+  call void @qd_stack_pop(ptr %stk_L8890, ptr %local.st)
+  %stp_L8891 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L8891 = load ptr, ptr %stp_L8891
+  call i32 @qdrt_push_element(ptr %stk_L8891, ptr %local.loc)
   call i32 @usr_sb_new(ptr %ctx)
-  call i32 @qd_push_s(ptr %ctx, ptr @.str.8933)
+  call i32 @qd_push_s(ptr %ctx, ptr @.str.8892)
   call i32 @usr_sb_append(ptr %ctx)
-  %stp_L8934 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L8934 = load ptr, ptr %stp_L8934
-  call i32 @qdrt_push_element(ptr %stk_L8934, ptr %local.exit_label)
+  %stp_L8893 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L8893 = load ptr, ptr %stp_L8893
+  call i32 @qdrt_push_element(ptr %stk_L8893, ptr %local.exit_label)
   call i32 @usr_sb_append_int(ptr %ctx)
-  call i32 @qd_push_s(ptr %ctx, ptr @.str.8935)
+  call i32 @qd_push_s(ptr %ctx, ptr @.str.8894)
   call i32 @usr_sb_append(ptr %ctx)
-  %stp_L8936 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L8936 = load ptr, ptr %stp_L8936
-  call i32 @qdrt_push_element(ptr %stk_L8936, ptr %local.body_label)
+  %stp_L8895 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L8895 = load ptr, ptr %stp_L8895
+  call i32 @qdrt_push_element(ptr %stk_L8895, ptr %local.body_label)
   call i32 @usr_sb_append_int(ptr %ctx)
   call i32 @usr_sb_finish(ptr %ctx)
   call i32 @usr_strings_concat(ptr %ctx)
-  %stp_L8937 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L8937 = load ptr, ptr %stp_L8937
-  call void @qd_stack_pop(ptr %stk_L8937, ptr %local.loop_loc)
-  %stp_L8938 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L8938 = load ptr, ptr %stp_L8938
-  call i32 @qdrt_push_element(ptr %stk_L8938, ptr %local.st)
-  %fa_elem_L8939 = alloca %qd_stack_element_t
-  %fa_stp_L8939 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %fa_stk_L8939 = load ptr, ptr %fa_stp_L8939
-  call void @qd_stack_pop(ptr %fa_stk_L8939, ptr %fa_elem_L8939)
-  %fa_vp_L8939 = getelementptr %qd_stack_element_t, ptr %fa_elem_L8939, i32 0, i32 0
-  %fa_ptr_L8939 = load ptr, ptr %fa_vp_L8939
-  %fa_off_L8939 = load i64, ptr @__offset_code
-  %fa_fp_L8939 = getelementptr i8, ptr %fa_ptr_L8939, i64 %fa_off_L8939
-  %fa_val_L8939 = load ptr, ptr %fa_fp_L8939
-  call i32 @qd_push_p(ptr %ctx, ptr %fa_val_L8939)
-  %stp_L8940 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L8940 = load ptr, ptr %stp_L8940
-  call void @qd_stack_pop(ptr %stk_L8940, ptr %local.o)
-  %stp_L8941 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L8941 = load ptr, ptr %stp_L8941
-  call i32 @qdrt_push_element(ptr %stk_L8941, ptr %local.o)
+  %stp_L8896 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L8896 = load ptr, ptr %stp_L8896
+  call void @qd_stack_pop(ptr %stk_L8896, ptr %local.loop_loc)
+  %stp_L8897 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L8897 = load ptr, ptr %stp_L8897
+  call i32 @qdrt_push_element(ptr %stk_L8897, ptr %local.st)
+  %fa_elem_L8898 = alloca %qd_stack_element_t
+  %fa_stp_L8898 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %fa_stk_L8898 = load ptr, ptr %fa_stp_L8898
+  call void @qd_stack_pop(ptr %fa_stk_L8898, ptr %fa_elem_L8898)
+  %fa_vp_L8898 = getelementptr %qd_stack_element_t, ptr %fa_elem_L8898, i32 0, i32 0
+  %fa_ptr_L8898 = load ptr, ptr %fa_vp_L8898
+  %fa_off_L8898 = load i64, ptr @__offset_code
+  %fa_fp_L8898 = getelementptr i8, ptr %fa_ptr_L8898, i64 %fa_off_L8898
+  %fa_val_L8898 = load ptr, ptr %fa_fp_L8898
+  call i32 @qd_push_p(ptr %ctx, ptr %fa_val_L8898)
+  %stp_L8899 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L8899 = load ptr, ptr %stp_L8899
+  call void @qd_stack_pop(ptr %stk_L8899, ptr %local.o)
+  %stp_L8900 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L8900 = load ptr, ptr %stp_L8900
+  call i32 @qdrt_push_element(ptr %stk_L8900, ptr %local.o)
   call i32 @usr_sb_new(ptr %ctx)
-  call i32 @qd_push_s(ptr %ctx, ptr @.str.8942)
+  call i32 @qd_push_s(ptr %ctx, ptr @.str.8901)
   call i32 @usr_sb_append(ptr %ctx)
-  %stp_L8943 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L8943 = load ptr, ptr %stp_L8943
-  call i32 @qdrt_push_element(ptr %stk_L8943, ptr %local.body_label)
+  %stp_L8902 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L8902 = load ptr, ptr %stp_L8902
+  call i32 @qdrt_push_element(ptr %stk_L8902, ptr %local.body_label)
   call i32 @usr_sb_append_int(ptr %ctx)
-  call i32 @qd_push_s(ptr %ctx, ptr @.str.8944)
+  call i32 @qd_push_s(ptr %ctx, ptr @.str.8903)
   call i32 @usr_sb_append(ptr %ctx)
   call i32 @usr_sb_finish(ptr %ctx)
   call i32 @usr_sb_append(ptr %ctx)
-  %stp_L8945 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L8945 = load ptr, ptr %stp_L8945
-  call void @qd_stack_pop(ptr %stk_L8945, ptr %local.o)
-  %stp_L8946 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L8946 = load ptr, ptr %stp_L8946
-  call i32 @qdrt_push_element(ptr %stk_L8946, ptr %local.o)
+  %stp_L8904 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L8904 = load ptr, ptr %stp_L8904
+  call void @qd_stack_pop(ptr %stk_L8904, ptr %local.o)
+  %stp_L8905 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L8905 = load ptr, ptr %stp_L8905
+  call i32 @qdrt_push_element(ptr %stk_L8905, ptr %local.o)
   call i32 @usr_sb_new(ptr %ctx)
-  %stp_L8947 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L8947 = load ptr, ptr %stp_L8947
-  call i32 @qdrt_push_element(ptr %stk_L8947, ptr %local.body_label)
+  %stp_L8906 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L8906 = load ptr, ptr %stp_L8906
+  call i32 @qdrt_push_element(ptr %stk_L8906, ptr %local.body_label)
   call i32 @usr_sb_append_int(ptr %ctx)
-  call i32 @qd_push_s(ptr %ctx, ptr @.str.8948)
+  call i32 @qd_push_s(ptr %ctx, ptr @.str.8907)
   call i32 @usr_sb_append(ptr %ctx)
   call i32 @usr_sb_finish(ptr %ctx)
   call i32 @usr_sb_append(ptr %ctx)
-  %stp_L8949 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L8949 = load ptr, ptr %stp_L8949
-  call void @qd_stack_pop(ptr %stk_L8949, ptr %local.o)
-  %stp_L8950 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L8950 = load ptr, ptr %stp_L8950
-  call i32 @qdrt_push_element(ptr %stk_L8950, ptr %local.o)
-  %fs_elem_L8951 = alloca %qd_stack_element_t
-  %fs_stp_L8951 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %fs_stk_L8951 = load ptr, ptr %fs_stp_L8951
-  call void @qd_stack_pop(ptr %fs_stk_L8951, ptr %fs_elem_L8951)
-  %fs_vp_L8951 = getelementptr %qd_stack_element_t, ptr %fs_elem_L8951, i32 0, i32 0
-  %fs_val_L8951 = load i64, ptr %fs_vp_L8951
-  %fs_svp_L8951 = getelementptr %qd_stack_element_t, ptr %local.st, i32 0, i32 0
-  %fs_sptr_L8951 = load ptr, ptr %fs_svp_L8951
-  %fs_off_L8951 = load i64, ptr @__offset_code
-  %fs_fp_L8951 = getelementptr i8, ptr %fs_sptr_L8951, i64 %fs_off_L8951
-  store i64 %fs_val_L8951, ptr %fs_fp_L8951
-  %stp_L8952 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L8952 = load ptr, ptr %stp_L8952
-  call i32 @qdrt_push_element(ptr %stk_L8952, ptr %local.st)
-  %stp_L8953 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L8953 = load ptr, ptr %stp_L8953
-  call i32 @qdrt_push_element(ptr %stk_L8953, ptr %local.n)
-  %fa_elem_L8954 = alloca %qd_stack_element_t
-  %fa_stp_L8954 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %fa_stk_L8954 = load ptr, ptr %fa_stp_L8954
-  call void @qd_stack_pop(ptr %fa_stk_L8954, ptr %fa_elem_L8954)
-  %fa_vp_L8954 = getelementptr %qd_stack_element_t, ptr %fa_elem_L8954, i32 0, i32 0
-  %fa_ptr_L8954 = load ptr, ptr %fa_vp_L8954
-  %fa_off_L8954 = load i64, ptr @__offset_child1
-  %fa_fp_L8954 = getelementptr i8, ptr %fa_ptr_L8954, i64 %fa_off_L8954
-  %fa_val_L8954 = load ptr, ptr %fa_fp_L8954
-  call i32 @qd_push_p(ptr %ctx, ptr %fa_val_L8954)
-  %stp_L8955 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L8955 = load ptr, ptr %stp_L8955
-  call i32 @qdrt_push_element(ptr %stk_L8955, ptr %local.loop_loc)
+  %stp_L8908 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L8908 = load ptr, ptr %stp_L8908
+  call void @qd_stack_pop(ptr %stk_L8908, ptr %local.o)
+  %stp_L8909 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L8909 = load ptr, ptr %stp_L8909
+  call i32 @qdrt_push_element(ptr %stk_L8909, ptr %local.o)
+  %fs_elem_L8910 = alloca %qd_stack_element_t
+  %fs_stp_L8910 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %fs_stk_L8910 = load ptr, ptr %fs_stp_L8910
+  call void @qd_stack_pop(ptr %fs_stk_L8910, ptr %fs_elem_L8910)
+  %fs_vp_L8910 = getelementptr %qd_stack_element_t, ptr %fs_elem_L8910, i32 0, i32 0
+  %fs_val_L8910 = load i64, ptr %fs_vp_L8910
+  %fs_svp_L8910 = getelementptr %qd_stack_element_t, ptr %local.st, i32 0, i32 0
+  %fs_sptr_L8910 = load ptr, ptr %fs_svp_L8910
+  %fs_off_L8910 = load i64, ptr @__offset_code
+  %fs_fp_L8910 = getelementptr i8, ptr %fs_sptr_L8910, i64 %fs_off_L8910
+  store i64 %fs_val_L8910, ptr %fs_fp_L8910
+  %stp_L8911 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L8911 = load ptr, ptr %stp_L8911
+  call i32 @qdrt_push_element(ptr %stk_L8911, ptr %local.st)
+  %stp_L8912 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L8912 = load ptr, ptr %stp_L8912
+  call i32 @qdrt_push_element(ptr %stk_L8912, ptr %local.n)
+  %fa_elem_L8913 = alloca %qd_stack_element_t
+  %fa_stp_L8913 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %fa_stk_L8913 = load ptr, ptr %fa_stp_L8913
+  call void @qd_stack_pop(ptr %fa_stk_L8913, ptr %fa_elem_L8913)
+  %fa_vp_L8913 = getelementptr %qd_stack_element_t, ptr %fa_elem_L8913, i32 0, i32 0
+  %fa_ptr_L8913 = load ptr, ptr %fa_vp_L8913
+  %fa_off_L8913 = load i64, ptr @__offset_child1
+  %fa_fp_L8913 = getelementptr i8, ptr %fa_ptr_L8913, i64 %fa_off_L8913
+  %fa_val_L8913 = load ptr, ptr %fa_fp_L8913
+  call i32 @qd_push_p(ptr %ctx, ptr %fa_val_L8913)
+  %stp_L8914 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L8914 = load ptr, ptr %stp_L8914
+  call i32 @qdrt_push_element(ptr %stk_L8914, ptr %local.loop_loc)
   call i32 @usr_codegen_emit_block(ptr %ctx)
-  %stp_L8956 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L8956 = load ptr, ptr %stp_L8956
-  call void @qd_stack_pop(ptr %stk_L8956, ptr %local.st)
-  %stp_L8957 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L8957 = load ptr, ptr %stp_L8957
-  call i32 @qdrt_push_element(ptr %stk_L8957, ptr %local.st)
-  %fa_elem_L8958 = alloca %qd_stack_element_t
-  %fa_stp_L8958 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %fa_stk_L8958 = load ptr, ptr %fa_stp_L8958
-  call void @qd_stack_pop(ptr %fa_stk_L8958, ptr %fa_elem_L8958)
-  %fa_vp_L8958 = getelementptr %qd_stack_element_t, ptr %fa_elem_L8958, i32 0, i32 0
-  %fa_ptr_L8958 = load ptr, ptr %fa_vp_L8958
-  %fa_off_L8958 = load i64, ptr @__offset_code
-  %fa_fp_L8958 = getelementptr i8, ptr %fa_ptr_L8958, i64 %fa_off_L8958
-  %fa_val_L8958 = load ptr, ptr %fa_fp_L8958
-  call i32 @qd_push_p(ptr %ctx, ptr %fa_val_L8958)
-  %stp_L8959 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L8959 = load ptr, ptr %stp_L8959
-  call void @qd_stack_pop(ptr %stk_L8959, ptr %local.o)
-  %stp_L8960 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L8960 = load ptr, ptr %stp_L8960
-  call i32 @qdrt_push_element(ptr %stk_L8960, ptr %local.o)
+  %stp_L8915 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L8915 = load ptr, ptr %stp_L8915
+  call void @qd_stack_pop(ptr %stk_L8915, ptr %local.st)
+  %stp_L8916 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L8916 = load ptr, ptr %stp_L8916
+  call i32 @qdrt_push_element(ptr %stk_L8916, ptr %local.st)
+  %fa_elem_L8917 = alloca %qd_stack_element_t
+  %fa_stp_L8917 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %fa_stk_L8917 = load ptr, ptr %fa_stp_L8917
+  call void @qd_stack_pop(ptr %fa_stk_L8917, ptr %fa_elem_L8917)
+  %fa_vp_L8917 = getelementptr %qd_stack_element_t, ptr %fa_elem_L8917, i32 0, i32 0
+  %fa_ptr_L8917 = load ptr, ptr %fa_vp_L8917
+  %fa_off_L8917 = load i64, ptr @__offset_code
+  %fa_fp_L8917 = getelementptr i8, ptr %fa_ptr_L8917, i64 %fa_off_L8917
+  %fa_val_L8917 = load ptr, ptr %fa_fp_L8917
+  call i32 @qd_push_p(ptr %ctx, ptr %fa_val_L8917)
+  %stp_L8918 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L8918 = load ptr, ptr %stp_L8918
+  call void @qd_stack_pop(ptr %stk_L8918, ptr %local.o)
+  %stp_L8919 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L8919 = load ptr, ptr %stp_L8919
+  call i32 @qdrt_push_element(ptr %stk_L8919, ptr %local.o)
   call i32 @usr_sb_new(ptr %ctx)
-  call i32 @qd_push_s(ptr %ctx, ptr @.str.8961)
+  call i32 @qd_push_s(ptr %ctx, ptr @.str.8920)
   call i32 @usr_sb_append(ptr %ctx)
-  %stp_L8962 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L8962 = load ptr, ptr %stp_L8962
-  call i32 @qdrt_push_element(ptr %stk_L8962, ptr %local.body_label)
+  %stp_L8921 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L8921 = load ptr, ptr %stp_L8921
+  call i32 @qdrt_push_element(ptr %stk_L8921, ptr %local.body_label)
   call i32 @usr_sb_append_int(ptr %ctx)
-  call i32 @qd_push_s(ptr %ctx, ptr @.str.8963)
+  call i32 @qd_push_s(ptr %ctx, ptr @.str.8922)
   call i32 @usr_sb_append(ptr %ctx)
   call i32 @usr_sb_finish(ptr %ctx)
   call i32 @usr_sb_append(ptr %ctx)
-  %stp_L8964 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L8964 = load ptr, ptr %stp_L8964
-  call void @qd_stack_pop(ptr %stk_L8964, ptr %local.o)
-  %stp_L8965 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L8965 = load ptr, ptr %stp_L8965
-  call i32 @qdrt_push_element(ptr %stk_L8965, ptr %local.o)
+  %stp_L8923 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L8923 = load ptr, ptr %stp_L8923
+  call void @qd_stack_pop(ptr %stk_L8923, ptr %local.o)
+  %stp_L8924 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L8924 = load ptr, ptr %stp_L8924
+  call i32 @qdrt_push_element(ptr %stk_L8924, ptr %local.o)
   call i32 @usr_sb_new(ptr %ctx)
-  %stp_L8966 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L8966 = load ptr, ptr %stp_L8966
-  call i32 @qdrt_push_element(ptr %stk_L8966, ptr %local.exit_label)
+  %stp_L8925 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L8925 = load ptr, ptr %stp_L8925
+  call i32 @qdrt_push_element(ptr %stk_L8925, ptr %local.exit_label)
   call i32 @usr_sb_append_int(ptr %ctx)
-  call i32 @qd_push_s(ptr %ctx, ptr @.str.8967)
+  call i32 @qd_push_s(ptr %ctx, ptr @.str.8926)
   call i32 @usr_sb_append(ptr %ctx)
   call i32 @usr_sb_finish(ptr %ctx)
   call i32 @usr_sb_append(ptr %ctx)
-  %stp_L8968 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L8968 = load ptr, ptr %stp_L8968
-  call void @qd_stack_pop(ptr %stk_L8968, ptr %local.o)
-  %stp_L8969 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L8969 = load ptr, ptr %stp_L8969
-  call i32 @qdrt_push_element(ptr %stk_L8969, ptr %local.o)
-  %fs_elem_L8970 = alloca %qd_stack_element_t
-  %fs_stp_L8970 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %fs_stk_L8970 = load ptr, ptr %fs_stp_L8970
-  call void @qd_stack_pop(ptr %fs_stk_L8970, ptr %fs_elem_L8970)
-  %fs_vp_L8970 = getelementptr %qd_stack_element_t, ptr %fs_elem_L8970, i32 0, i32 0
-  %fs_val_L8970 = load i64, ptr %fs_vp_L8970
-  %fs_svp_L8970 = getelementptr %qd_stack_element_t, ptr %local.st, i32 0, i32 0
-  %fs_sptr_L8970 = load ptr, ptr %fs_svp_L8970
-  %fs_off_L8970 = load i64, ptr @__offset_code
-  %fs_fp_L8970 = getelementptr i8, ptr %fs_sptr_L8970, i64 %fs_off_L8970
-  store i64 %fs_val_L8970, ptr %fs_fp_L8970
-  %stp_L8971 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L8971 = load ptr, ptr %stp_L8971
-  call i32 @qdrt_push_element(ptr %stk_L8971, ptr %local.st)
+  %stp_L8927 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L8927 = load ptr, ptr %stp_L8927
+  call void @qd_stack_pop(ptr %stk_L8927, ptr %local.o)
+  %stp_L8928 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L8928 = load ptr, ptr %stp_L8928
+  call i32 @qdrt_push_element(ptr %stk_L8928, ptr %local.o)
+  %fs_elem_L8929 = alloca %qd_stack_element_t
+  %fs_stp_L8929 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %fs_stk_L8929 = load ptr, ptr %fs_stp_L8929
+  call void @qd_stack_pop(ptr %fs_stk_L8929, ptr %fs_elem_L8929)
+  %fs_vp_L8929 = getelementptr %qd_stack_element_t, ptr %fs_elem_L8929, i32 0, i32 0
+  %fs_val_L8929 = load i64, ptr %fs_vp_L8929
+  %fs_svp_L8929 = getelementptr %qd_stack_element_t, ptr %local.st, i32 0, i32 0
+  %fs_sptr_L8929 = load ptr, ptr %fs_svp_L8929
+  %fs_off_L8929 = load i64, ptr @__offset_code
+  %fs_fp_L8929 = getelementptr i8, ptr %fs_sptr_L8929, i64 %fs_off_L8929
+  store i64 %fs_val_L8929, ptr %fs_fp_L8929
+  %stp_L8930 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L8930 = load ptr, ptr %stp_L8930
+  call i32 @qdrt_push_element(ptr %stk_L8930, ptr %local.st)
   br label %return
 return:
   ret i32 0
@@ -36440,129 +36200,129 @@ entry:
   %local.uid = alloca %qd_stack_element_t
   %local.exit_label = alloca %qd_stack_element_t
   %local.o = alloca %qd_stack_element_t
-  %stp_L8972 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L8972 = load ptr, ptr %stp_L8972
-  call void @qd_stack_pop(ptr %stk_L8972, ptr %local.loc)
-  %stp_L8973 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L8973 = load ptr, ptr %stp_L8973
-  call void @qd_stack_pop(ptr %stk_L8973, ptr %local.n)
-  %stp_L8974 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L8974 = load ptr, ptr %stp_L8974
-  call void @qd_stack_pop(ptr %stk_L8974, ptr %local.st)
-  %stp_L8975 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L8975 = load ptr, ptr %stp_L8975
-  call i32 @qdrt_push_element(ptr %stk_L8975, ptr %local.st)
+  %stp_L8931 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L8931 = load ptr, ptr %stp_L8931
+  call void @qd_stack_pop(ptr %stk_L8931, ptr %local.loc)
+  %stp_L8932 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L8932 = load ptr, ptr %stp_L8932
+  call void @qd_stack_pop(ptr %stk_L8932, ptr %local.n)
+  %stp_L8933 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L8933 = load ptr, ptr %stp_L8933
+  call void @qd_stack_pop(ptr %stk_L8933, ptr %local.st)
+  %stp_L8934 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L8934 = load ptr, ptr %stp_L8934
+  call i32 @qdrt_push_element(ptr %stk_L8934, ptr %local.st)
   call i32 @usr_codegen_next_label(ptr %ctx)
-  %stp_L8976 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L8976 = load ptr, ptr %stp_L8976
-  call void @qd_stack_pop(ptr %stk_L8976, ptr %local.uid)
-  %stp_L8977 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L8977 = load ptr, ptr %stp_L8977
-  call void @qd_stack_pop(ptr %stk_L8977, ptr %local.st)
-  %stp_L8978 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L8978 = load ptr, ptr %stp_L8978
-  call i32 @qdrt_push_element(ptr %stk_L8978, ptr %local.st)
+  %stp_L8935 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L8935 = load ptr, ptr %stp_L8935
+  call void @qd_stack_pop(ptr %stk_L8935, ptr %local.uid)
+  %stp_L8936 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L8936 = load ptr, ptr %stp_L8936
+  call void @qd_stack_pop(ptr %stk_L8936, ptr %local.st)
+  %stp_L8937 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L8937 = load ptr, ptr %stp_L8937
+  call i32 @qdrt_push_element(ptr %stk_L8937, ptr %local.st)
   call i32 @usr_codegen_next_label(ptr %ctx)
-  %stp_L8979 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L8979 = load ptr, ptr %stp_L8979
-  call void @qd_stack_pop(ptr %stk_L8979, ptr %local.exit_label)
-  %stp_L8980 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L8980 = load ptr, ptr %stp_L8980
-  call void @qd_stack_pop(ptr %stk_L8980, ptr %local.st)
-  %stp_L8981 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L8981 = load ptr, ptr %stp_L8981
-  call i32 @qdrt_push_element(ptr %stk_L8981, ptr %local.st)
-  %stp_L8982 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L8982 = load ptr, ptr %stp_L8982
-  call i32 @qdrt_push_element(ptr %stk_L8982, ptr %local.uid)
+  %stp_L8938 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L8938 = load ptr, ptr %stp_L8938
+  call void @qd_stack_pop(ptr %stk_L8938, ptr %local.exit_label)
+  %stp_L8939 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L8939 = load ptr, ptr %stp_L8939
+  call void @qd_stack_pop(ptr %stk_L8939, ptr %local.st)
+  %stp_L8940 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L8940 = load ptr, ptr %stp_L8940
+  call i32 @qdrt_push_element(ptr %stk_L8940, ptr %local.st)
+  %stp_L8941 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L8941 = load ptr, ptr %stp_L8941
+  call i32 @qdrt_push_element(ptr %stk_L8941, ptr %local.uid)
   call i32 @usr_codegen_emit_pop_cond(ptr %ctx)
-  %stp_L8983 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L8983 = load ptr, ptr %stp_L8983
-  call void @qd_stack_pop(ptr %stk_L8983, ptr %local.st)
-  %stp_L8984 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L8984 = load ptr, ptr %stp_L8984
-  call i32 @qdrt_push_element(ptr %stk_L8984, ptr %local.st)
-  %stp_L8985 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L8985 = load ptr, ptr %stp_L8985
-  call i32 @qdrt_push_element(ptr %stk_L8985, ptr %local.n)
-  %stp_L8986 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L8986 = load ptr, ptr %stp_L8986
-  call i32 @qdrt_push_element(ptr %stk_L8986, ptr %local.exit_label)
-  %stp_L8987 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L8987 = load ptr, ptr %stp_L8987
-  call i32 @qdrt_push_element(ptr %stk_L8987, ptr %local.uid)
-  %stp_L8988 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L8988 = load ptr, ptr %stp_L8988
-  call i32 @qdrt_push_element(ptr %stk_L8988, ptr %local.loc)
+  %stp_L8942 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L8942 = load ptr, ptr %stp_L8942
+  call void @qd_stack_pop(ptr %stk_L8942, ptr %local.st)
+  %stp_L8943 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L8943 = load ptr, ptr %stp_L8943
+  call i32 @qdrt_push_element(ptr %stk_L8943, ptr %local.st)
+  %stp_L8944 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L8944 = load ptr, ptr %stp_L8944
+  call i32 @qdrt_push_element(ptr %stk_L8944, ptr %local.n)
+  %stp_L8945 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L8945 = load ptr, ptr %stp_L8945
+  call i32 @qdrt_push_element(ptr %stk_L8945, ptr %local.exit_label)
+  %stp_L8946 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L8946 = load ptr, ptr %stp_L8946
+  call i32 @qdrt_push_element(ptr %stk_L8946, ptr %local.uid)
+  %stp_L8947 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L8947 = load ptr, ptr %stp_L8947
+  call i32 @qdrt_push_element(ptr %stk_L8947, ptr %local.loc)
   call i32 @usr_codegen_emit_switch_cases(ptr %ctx)
-  %stp_L8989 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L8989 = load ptr, ptr %stp_L8989
-  call void @qd_stack_pop(ptr %stk_L8989, ptr %local.st)
-  %stp_L8990 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L8990 = load ptr, ptr %stp_L8990
-  call i32 @qdrt_push_element(ptr %stk_L8990, ptr %local.st)
-  %fa_elem_L8991 = alloca %qd_stack_element_t
-  %fa_stp_L8991 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %fa_stk_L8991 = load ptr, ptr %fa_stp_L8991
-  call void @qd_stack_pop(ptr %fa_stk_L8991, ptr %fa_elem_L8991)
-  %fa_vp_L8991 = getelementptr %qd_stack_element_t, ptr %fa_elem_L8991, i32 0, i32 0
-  %fa_ptr_L8991 = load ptr, ptr %fa_vp_L8991
-  %fa_off_L8991 = load i64, ptr @__offset_code
-  %fa_fp_L8991 = getelementptr i8, ptr %fa_ptr_L8991, i64 %fa_off_L8991
-  %fa_val_L8991 = load ptr, ptr %fa_fp_L8991
-  call i32 @qd_push_p(ptr %ctx, ptr %fa_val_L8991)
-  %stp_L8992 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L8992 = load ptr, ptr %stp_L8992
-  call void @qd_stack_pop(ptr %stk_L8992, ptr %local.o)
-  %stp_L8993 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L8993 = load ptr, ptr %stp_L8993
-  call i32 @qdrt_push_element(ptr %stk_L8993, ptr %local.o)
+  %stp_L8948 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L8948 = load ptr, ptr %stp_L8948
+  call void @qd_stack_pop(ptr %stk_L8948, ptr %local.st)
+  %stp_L8949 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L8949 = load ptr, ptr %stp_L8949
+  call i32 @qdrt_push_element(ptr %stk_L8949, ptr %local.st)
+  %fa_elem_L8950 = alloca %qd_stack_element_t
+  %fa_stp_L8950 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %fa_stk_L8950 = load ptr, ptr %fa_stp_L8950
+  call void @qd_stack_pop(ptr %fa_stk_L8950, ptr %fa_elem_L8950)
+  %fa_vp_L8950 = getelementptr %qd_stack_element_t, ptr %fa_elem_L8950, i32 0, i32 0
+  %fa_ptr_L8950 = load ptr, ptr %fa_vp_L8950
+  %fa_off_L8950 = load i64, ptr @__offset_code
+  %fa_fp_L8950 = getelementptr i8, ptr %fa_ptr_L8950, i64 %fa_off_L8950
+  %fa_val_L8950 = load ptr, ptr %fa_fp_L8950
+  call i32 @qd_push_p(ptr %ctx, ptr %fa_val_L8950)
+  %stp_L8951 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L8951 = load ptr, ptr %stp_L8951
+  call void @qd_stack_pop(ptr %stk_L8951, ptr %local.o)
+  %stp_L8952 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L8952 = load ptr, ptr %stp_L8952
+  call i32 @qdrt_push_element(ptr %stk_L8952, ptr %local.o)
   call i32 @usr_sb_new(ptr %ctx)
-  call i32 @qd_push_s(ptr %ctx, ptr @.str.8994)
+  call i32 @qd_push_s(ptr %ctx, ptr @.str.8953)
   call i32 @usr_sb_append(ptr %ctx)
-  %stp_L8995 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L8995 = load ptr, ptr %stp_L8995
-  call i32 @qdrt_push_element(ptr %stk_L8995, ptr %local.exit_label)
+  %stp_L8954 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L8954 = load ptr, ptr %stp_L8954
+  call i32 @qdrt_push_element(ptr %stk_L8954, ptr %local.exit_label)
   call i32 @usr_sb_append_int(ptr %ctx)
-  call i32 @qd_push_s(ptr %ctx, ptr @.str.8996)
+  call i32 @qd_push_s(ptr %ctx, ptr @.str.8955)
   call i32 @usr_sb_append(ptr %ctx)
   call i32 @usr_sb_finish(ptr %ctx)
   call i32 @usr_sb_append(ptr %ctx)
-  %stp_L8997 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L8997 = load ptr, ptr %stp_L8997
-  call void @qd_stack_pop(ptr %stk_L8997, ptr %local.o)
-  %stp_L8998 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L8998 = load ptr, ptr %stp_L8998
-  call i32 @qdrt_push_element(ptr %stk_L8998, ptr %local.o)
+  %stp_L8956 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L8956 = load ptr, ptr %stp_L8956
+  call void @qd_stack_pop(ptr %stk_L8956, ptr %local.o)
+  %stp_L8957 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L8957 = load ptr, ptr %stp_L8957
+  call i32 @qdrt_push_element(ptr %stk_L8957, ptr %local.o)
   call i32 @usr_sb_new(ptr %ctx)
-  %stp_L8999 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L8999 = load ptr, ptr %stp_L8999
-  call i32 @qdrt_push_element(ptr %stk_L8999, ptr %local.exit_label)
+  %stp_L8958 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L8958 = load ptr, ptr %stp_L8958
+  call i32 @qdrt_push_element(ptr %stk_L8958, ptr %local.exit_label)
   call i32 @usr_sb_append_int(ptr %ctx)
-  call i32 @qd_push_s(ptr %ctx, ptr @.str.9000)
+  call i32 @qd_push_s(ptr %ctx, ptr @.str.8959)
   call i32 @usr_sb_append(ptr %ctx)
   call i32 @usr_sb_finish(ptr %ctx)
   call i32 @usr_sb_append(ptr %ctx)
-  %stp_L9001 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L9001 = load ptr, ptr %stp_L9001
-  call void @qd_stack_pop(ptr %stk_L9001, ptr %local.o)
-  %stp_L9002 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L9002 = load ptr, ptr %stp_L9002
-  call i32 @qdrt_push_element(ptr %stk_L9002, ptr %local.o)
-  %fs_elem_L9003 = alloca %qd_stack_element_t
-  %fs_stp_L9003 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %fs_stk_L9003 = load ptr, ptr %fs_stp_L9003
-  call void @qd_stack_pop(ptr %fs_stk_L9003, ptr %fs_elem_L9003)
-  %fs_vp_L9003 = getelementptr %qd_stack_element_t, ptr %fs_elem_L9003, i32 0, i32 0
-  %fs_val_L9003 = load i64, ptr %fs_vp_L9003
-  %fs_svp_L9003 = getelementptr %qd_stack_element_t, ptr %local.st, i32 0, i32 0
-  %fs_sptr_L9003 = load ptr, ptr %fs_svp_L9003
-  %fs_off_L9003 = load i64, ptr @__offset_code
-  %fs_fp_L9003 = getelementptr i8, ptr %fs_sptr_L9003, i64 %fs_off_L9003
-  store i64 %fs_val_L9003, ptr %fs_fp_L9003
-  %stp_L9004 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L9004 = load ptr, ptr %stp_L9004
-  call i32 @qdrt_push_element(ptr %stk_L9004, ptr %local.st)
+  %stp_L8960 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L8960 = load ptr, ptr %stp_L8960
+  call void @qd_stack_pop(ptr %stk_L8960, ptr %local.o)
+  %stp_L8961 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L8961 = load ptr, ptr %stp_L8961
+  call i32 @qdrt_push_element(ptr %stk_L8961, ptr %local.o)
+  %fs_elem_L8962 = alloca %qd_stack_element_t
+  %fs_stp_L8962 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %fs_stk_L8962 = load ptr, ptr %fs_stp_L8962
+  call void @qd_stack_pop(ptr %fs_stk_L8962, ptr %fs_elem_L8962)
+  %fs_vp_L8962 = getelementptr %qd_stack_element_t, ptr %fs_elem_L8962, i32 0, i32 0
+  %fs_val_L8962 = load i64, ptr %fs_vp_L8962
+  %fs_svp_L8962 = getelementptr %qd_stack_element_t, ptr %local.st, i32 0, i32 0
+  %fs_sptr_L8962 = load ptr, ptr %fs_svp_L8962
+  %fs_off_L8962 = load i64, ptr @__offset_code
+  %fs_fp_L8962 = getelementptr i8, ptr %fs_sptr_L8962, i64 %fs_off_L8962
+  store i64 %fs_val_L8962, ptr %fs_fp_L8962
+  %stp_L8963 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L8963 = load ptr, ptr %stp_L8963
+  call i32 @qdrt_push_element(ptr %stk_L8963, ptr %local.st)
   br label %return
 return:
   ret i32 0
@@ -36576,89 +36336,260 @@ entry:
   %local.n = alloca %qd_stack_element_t
   %local.st = alloca %qd_stack_element_t
   %local.cur = alloca %qd_stack_element_t
-  %stp_L9005 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L9005 = load ptr, ptr %stp_L9005
-  call void @qd_stack_pop(ptr %stk_L9005, ptr %local.loc)
-  %stp_L9006 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L9006 = load ptr, ptr %stp_L9006
-  call void @qd_stack_pop(ptr %stk_L9006, ptr %local.suid)
-  %stp_L9007 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L9007 = load ptr, ptr %stp_L9007
-  call void @qd_stack_pop(ptr %stk_L9007, ptr %local.exit_label)
-  %stp_L9008 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L9008 = load ptr, ptr %stp_L9008
-  call void @qd_stack_pop(ptr %stk_L9008, ptr %local.n)
-  %stp_L9009 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L9009 = load ptr, ptr %stp_L9009
-  call void @qd_stack_pop(ptr %stk_L9009, ptr %local.st)
-  %stp_L9010 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L9010 = load ptr, ptr %stp_L9010
-  call i32 @qdrt_push_element(ptr %stk_L9010, ptr %local.n)
-  %fa_elem_L9011 = alloca %qd_stack_element_t
-  %fa_stp_L9011 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %fa_stk_L9011 = load ptr, ptr %fa_stp_L9011
-  call void @qd_stack_pop(ptr %fa_stk_L9011, ptr %fa_elem_L9011)
-  %fa_vp_L9011 = getelementptr %qd_stack_element_t, ptr %fa_elem_L9011, i32 0, i32 0
-  %fa_ptr_L9011 = load ptr, ptr %fa_vp_L9011
-  %fa_off_L9011 = load i64, ptr @__offset_child1
-  %fa_fp_L9011 = getelementptr i8, ptr %fa_ptr_L9011, i64 %fa_off_L9011
-  %fa_val_L9011 = load ptr, ptr %fa_fp_L9011
-  call i32 @qd_push_p(ptr %ctx, ptr %fa_val_L9011)
+  %stp_L8964 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L8964 = load ptr, ptr %stp_L8964
+  call void @qd_stack_pop(ptr %stk_L8964, ptr %local.loc)
+  %stp_L8965 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L8965 = load ptr, ptr %stp_L8965
+  call void @qd_stack_pop(ptr %stk_L8965, ptr %local.suid)
+  %stp_L8966 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L8966 = load ptr, ptr %stp_L8966
+  call void @qd_stack_pop(ptr %stk_L8966, ptr %local.exit_label)
+  %stp_L8967 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L8967 = load ptr, ptr %stp_L8967
+  call void @qd_stack_pop(ptr %stk_L8967, ptr %local.n)
+  %stp_L8968 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L8968 = load ptr, ptr %stp_L8968
+  call void @qd_stack_pop(ptr %stk_L8968, ptr %local.st)
+  %stp_L8969 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L8969 = load ptr, ptr %stp_L8969
+  call i32 @qdrt_push_element(ptr %stk_L8969, ptr %local.n)
+  %fa_elem_L8970 = alloca %qd_stack_element_t
+  %fa_stp_L8970 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %fa_stk_L8970 = load ptr, ptr %fa_stp_L8970
+  call void @qd_stack_pop(ptr %fa_stk_L8970, ptr %fa_elem_L8970)
+  %fa_vp_L8970 = getelementptr %qd_stack_element_t, ptr %fa_elem_L8970, i32 0, i32 0
+  %fa_ptr_L8970 = load ptr, ptr %fa_vp_L8970
+  %fa_off_L8970 = load i64, ptr @__offset_child1
+  %fa_fp_L8970 = getelementptr i8, ptr %fa_ptr_L8970, i64 %fa_off_L8970
+  %fa_val_L8970 = load ptr, ptr %fa_fp_L8970
+  call i32 @qd_push_p(ptr %ctx, ptr %fa_val_L8970)
   call i32 @qd_push_i(ptr %ctx, i64 0)
   call i32 @qd_neq(ptr %ctx)
-  %ce_L9012 = alloca %qd_stack_element_t
-  %stp_L9012 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L9012 = load ptr, ptr %stp_L9012
-  call void @qd_stack_pop(ptr %stk_L9012, ptr %ce_L9012)
-  %cv_L9012 = getelementptr %qd_stack_element_t, ptr %ce_L9012, i32 0, i32 0
-  %ci_L9012 = load i64, ptr %cv_L9012
-  %cc_L9012 = icmp ne i64 %ci_L9012, 0
-  br i1 %cc_L9012, label %L9013, label %L9015
-L9013:
-  %stp_L9016 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L9016 = load ptr, ptr %stp_L9016
-  call i32 @qdrt_push_element(ptr %stk_L9016, ptr %local.st)
+  %ce_L8971 = alloca %qd_stack_element_t
+  %stp_L8971 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L8971 = load ptr, ptr %stp_L8971
+  call void @qd_stack_pop(ptr %stk_L8971, ptr %ce_L8971)
+  %cv_L8971 = getelementptr %qd_stack_element_t, ptr %ce_L8971, i32 0, i32 0
+  %ci_L8971 = load i64, ptr %cv_L8971
+  %cc_L8971 = icmp ne i64 %ci_L8971, 0
+  br i1 %cc_L8971, label %L8972, label %L8974
+L8972:
+  %stp_L8975 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L8975 = load ptr, ptr %stp_L8975
+  call i32 @qdrt_push_element(ptr %stk_L8975, ptr %local.st)
+  %stp_L8976 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L8976 = load ptr, ptr %stp_L8976
+  call i32 @qdrt_push_element(ptr %stk_L8976, ptr %local.n)
+  %fa_elem_L8977 = alloca %qd_stack_element_t
+  %fa_stp_L8977 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %fa_stk_L8977 = load ptr, ptr %fa_stp_L8977
+  call void @qd_stack_pop(ptr %fa_stk_L8977, ptr %fa_elem_L8977)
+  %fa_vp_L8977 = getelementptr %qd_stack_element_t, ptr %fa_elem_L8977, i32 0, i32 0
+  %fa_ptr_L8977 = load ptr, ptr %fa_vp_L8977
+  %fa_off_L8977 = load i64, ptr @__offset_child1
+  %fa_fp_L8977 = getelementptr i8, ptr %fa_ptr_L8977, i64 %fa_off_L8977
+  %fa_val_L8977 = load ptr, ptr %fa_fp_L8977
+  call i32 @qd_push_p(ptr %ctx, ptr %fa_val_L8977)
+  %stp_L8978 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L8978 = load ptr, ptr %stp_L8978
+  call i32 @qdrt_push_element(ptr %stk_L8978, ptr %local.exit_label)
+  %stp_L8979 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L8979 = load ptr, ptr %stp_L8979
+  call i32 @qdrt_push_element(ptr %stk_L8979, ptr %local.suid)
+  %stp_L8980 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L8980 = load ptr, ptr %stp_L8980
+  call i32 @qdrt_push_element(ptr %stk_L8980, ptr %local.loc)
+  call i32 @usr_codegen_emit_one_case(ptr %ctx)
+  %stp_L8981 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L8981 = load ptr, ptr %stp_L8981
+  call void @qd_stack_pop(ptr %stk_L8981, ptr %local.st)
+  br label %L8974
+L8974:
+  %stp_L8982 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L8982 = load ptr, ptr %stp_L8982
+  call i32 @qdrt_push_element(ptr %stk_L8982, ptr %local.n)
+  %fa_elem_L8983 = alloca %qd_stack_element_t
+  %fa_stp_L8983 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %fa_stk_L8983 = load ptr, ptr %fa_stp_L8983
+  call void @qd_stack_pop(ptr %fa_stk_L8983, ptr %fa_elem_L8983)
+  %fa_vp_L8983 = getelementptr %qd_stack_element_t, ptr %fa_elem_L8983, i32 0, i32 0
+  %fa_ptr_L8983 = load ptr, ptr %fa_vp_L8983
+  %fa_off_L8983 = load i64, ptr @__offset_child2
+  %fa_fp_L8983 = getelementptr i8, ptr %fa_ptr_L8983, i64 %fa_off_L8983
+  %fa_val_L8983 = load ptr, ptr %fa_fp_L8983
+  call i32 @qd_push_p(ptr %ctx, ptr %fa_val_L8983)
+  call i32 @qd_push_i(ptr %ctx, i64 0)
+  call i32 @qd_neq(ptr %ctx)
+  %ce_L8984 = alloca %qd_stack_element_t
+  %stp_L8984 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L8984 = load ptr, ptr %stp_L8984
+  call void @qd_stack_pop(ptr %stk_L8984, ptr %ce_L8984)
+  %cv_L8984 = getelementptr %qd_stack_element_t, ptr %ce_L8984, i32 0, i32 0
+  %ci_L8984 = load i64, ptr %cv_L8984
+  %cc_L8984 = icmp ne i64 %ci_L8984, 0
+  br i1 %cc_L8984, label %L8985, label %L8987
+L8985:
+  %stp_L8988 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L8988 = load ptr, ptr %stp_L8988
+  call i32 @qdrt_push_element(ptr %stk_L8988, ptr %local.st)
+  %stp_L8989 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L8989 = load ptr, ptr %stp_L8989
+  call i32 @qdrt_push_element(ptr %stk_L8989, ptr %local.n)
+  %fa_elem_L8990 = alloca %qd_stack_element_t
+  %fa_stp_L8990 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %fa_stk_L8990 = load ptr, ptr %fa_stp_L8990
+  call void @qd_stack_pop(ptr %fa_stk_L8990, ptr %fa_elem_L8990)
+  %fa_vp_L8990 = getelementptr %qd_stack_element_t, ptr %fa_elem_L8990, i32 0, i32 0
+  %fa_ptr_L8990 = load ptr, ptr %fa_vp_L8990
+  %fa_off_L8990 = load i64, ptr @__offset_child2
+  %fa_fp_L8990 = getelementptr i8, ptr %fa_ptr_L8990, i64 %fa_off_L8990
+  %fa_val_L8990 = load ptr, ptr %fa_fp_L8990
+  call i32 @qd_push_p(ptr %ctx, ptr %fa_val_L8990)
+  %stp_L8991 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L8991 = load ptr, ptr %stp_L8991
+  call i32 @qdrt_push_element(ptr %stk_L8991, ptr %local.exit_label)
+  %stp_L8992 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L8992 = load ptr, ptr %stp_L8992
+  call i32 @qdrt_push_element(ptr %stk_L8992, ptr %local.suid)
+  %stp_L8993 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L8993 = load ptr, ptr %stp_L8993
+  call i32 @qdrt_push_element(ptr %stk_L8993, ptr %local.loc)
+  call i32 @usr_codegen_emit_one_case(ptr %ctx)
+  %stp_L8994 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L8994 = load ptr, ptr %stp_L8994
+  call void @qd_stack_pop(ptr %stk_L8994, ptr %local.st)
+  br label %L8987
+L8987:
+  %stp_L8995 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L8995 = load ptr, ptr %stp_L8995
+  call i32 @qdrt_push_element(ptr %stk_L8995, ptr %local.n)
+  %fa_elem_L8996 = alloca %qd_stack_element_t
+  %fa_stp_L8996 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %fa_stk_L8996 = load ptr, ptr %fa_stp_L8996
+  call void @qd_stack_pop(ptr %fa_stk_L8996, ptr %fa_elem_L8996)
+  %fa_vp_L8996 = getelementptr %qd_stack_element_t, ptr %fa_elem_L8996, i32 0, i32 0
+  %fa_ptr_L8996 = load ptr, ptr %fa_vp_L8996
+  %fa_off_L8996 = load i64, ptr @__offset_child3
+  %fa_fp_L8996 = getelementptr i8, ptr %fa_ptr_L8996, i64 %fa_off_L8996
+  %fa_val_L8996 = load ptr, ptr %fa_fp_L8996
+  call i32 @qd_push_p(ptr %ctx, ptr %fa_val_L8996)
+  call i32 @qd_push_i(ptr %ctx, i64 0)
+  call i32 @qd_neq(ptr %ctx)
+  %ce_L8997 = alloca %qd_stack_element_t
+  %stp_L8997 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L8997 = load ptr, ptr %stp_L8997
+  call void @qd_stack_pop(ptr %stk_L8997, ptr %ce_L8997)
+  %cv_L8997 = getelementptr %qd_stack_element_t, ptr %ce_L8997, i32 0, i32 0
+  %ci_L8997 = load i64, ptr %cv_L8997
+  %cc_L8997 = icmp ne i64 %ci_L8997, 0
+  br i1 %cc_L8997, label %L8998, label %L9000
+L8998:
+  %stp_L9001 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L9001 = load ptr, ptr %stp_L9001
+  call i32 @qdrt_push_element(ptr %stk_L9001, ptr %local.st)
+  %stp_L9002 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L9002 = load ptr, ptr %stp_L9002
+  call i32 @qdrt_push_element(ptr %stk_L9002, ptr %local.n)
+  %fa_elem_L9003 = alloca %qd_stack_element_t
+  %fa_stp_L9003 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %fa_stk_L9003 = load ptr, ptr %fa_stp_L9003
+  call void @qd_stack_pop(ptr %fa_stk_L9003, ptr %fa_elem_L9003)
+  %fa_vp_L9003 = getelementptr %qd_stack_element_t, ptr %fa_elem_L9003, i32 0, i32 0
+  %fa_ptr_L9003 = load ptr, ptr %fa_vp_L9003
+  %fa_off_L9003 = load i64, ptr @__offset_child3
+  %fa_fp_L9003 = getelementptr i8, ptr %fa_ptr_L9003, i64 %fa_off_L9003
+  %fa_val_L9003 = load ptr, ptr %fa_fp_L9003
+  call i32 @qd_push_p(ptr %ctx, ptr %fa_val_L9003)
+  %stp_L9004 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L9004 = load ptr, ptr %stp_L9004
+  call i32 @qdrt_push_element(ptr %stk_L9004, ptr %local.exit_label)
+  %stp_L9005 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L9005 = load ptr, ptr %stp_L9005
+  call i32 @qdrt_push_element(ptr %stk_L9005, ptr %local.suid)
+  %stp_L9006 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L9006 = load ptr, ptr %stp_L9006
+  call i32 @qdrt_push_element(ptr %stk_L9006, ptr %local.loc)
+  call i32 @usr_codegen_emit_one_case(ptr %ctx)
+  %stp_L9007 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L9007 = load ptr, ptr %stp_L9007
+  call void @qd_stack_pop(ptr %stk_L9007, ptr %local.st)
+  br label %L9000
+L9000:
+  %stp_L9008 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L9008 = load ptr, ptr %stp_L9008
+  call i32 @qdrt_push_element(ptr %stk_L9008, ptr %local.n)
+  %fa_elem_L9009 = alloca %qd_stack_element_t
+  %fa_stp_L9009 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %fa_stk_L9009 = load ptr, ptr %fa_stp_L9009
+  call void @qd_stack_pop(ptr %fa_stk_L9009, ptr %fa_elem_L9009)
+  %fa_vp_L9009 = getelementptr %qd_stack_element_t, ptr %fa_elem_L9009, i32 0, i32 0
+  %fa_ptr_L9009 = load ptr, ptr %fa_vp_L9009
+  %fa_off_L9009 = load i64, ptr @__offset_child4
+  %fa_fp_L9009 = getelementptr i8, ptr %fa_ptr_L9009, i64 %fa_off_L9009
+  %fa_val_L9009 = load ptr, ptr %fa_fp_L9009
+  call i32 @qd_push_p(ptr %ctx, ptr %fa_val_L9009)
+  call i32 @qd_push_i(ptr %ctx, i64 0)
+  call i32 @qd_neq(ptr %ctx)
+  %ce_L9010 = alloca %qd_stack_element_t
+  %stp_L9010 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L9010 = load ptr, ptr %stp_L9010
+  call void @qd_stack_pop(ptr %stk_L9010, ptr %ce_L9010)
+  %cv_L9010 = getelementptr %qd_stack_element_t, ptr %ce_L9010, i32 0, i32 0
+  %ci_L9010 = load i64, ptr %cv_L9010
+  %cc_L9010 = icmp ne i64 %ci_L9010, 0
+  br i1 %cc_L9010, label %L9011, label %L9013
+L9011:
+  %stp_L9014 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L9014 = load ptr, ptr %stp_L9014
+  call i32 @qdrt_push_element(ptr %stk_L9014, ptr %local.st)
+  %stp_L9015 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L9015 = load ptr, ptr %stp_L9015
+  call i32 @qdrt_push_element(ptr %stk_L9015, ptr %local.n)
+  %fa_elem_L9016 = alloca %qd_stack_element_t
+  %fa_stp_L9016 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %fa_stk_L9016 = load ptr, ptr %fa_stp_L9016
+  call void @qd_stack_pop(ptr %fa_stk_L9016, ptr %fa_elem_L9016)
+  %fa_vp_L9016 = getelementptr %qd_stack_element_t, ptr %fa_elem_L9016, i32 0, i32 0
+  %fa_ptr_L9016 = load ptr, ptr %fa_vp_L9016
+  %fa_off_L9016 = load i64, ptr @__offset_child4
+  %fa_fp_L9016 = getelementptr i8, ptr %fa_ptr_L9016, i64 %fa_off_L9016
+  %fa_val_L9016 = load ptr, ptr %fa_fp_L9016
+  call i32 @qd_push_p(ptr %ctx, ptr %fa_val_L9016)
   %stp_L9017 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
   %stk_L9017 = load ptr, ptr %stp_L9017
-  call i32 @qdrt_push_element(ptr %stk_L9017, ptr %local.n)
-  %fa_elem_L9018 = alloca %qd_stack_element_t
-  %fa_stp_L9018 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %fa_stk_L9018 = load ptr, ptr %fa_stp_L9018
-  call void @qd_stack_pop(ptr %fa_stk_L9018, ptr %fa_elem_L9018)
-  %fa_vp_L9018 = getelementptr %qd_stack_element_t, ptr %fa_elem_L9018, i32 0, i32 0
-  %fa_ptr_L9018 = load ptr, ptr %fa_vp_L9018
-  %fa_off_L9018 = load i64, ptr @__offset_child1
-  %fa_fp_L9018 = getelementptr i8, ptr %fa_ptr_L9018, i64 %fa_off_L9018
-  %fa_val_L9018 = load ptr, ptr %fa_fp_L9018
-  call i32 @qd_push_p(ptr %ctx, ptr %fa_val_L9018)
+  call i32 @qdrt_push_element(ptr %stk_L9017, ptr %local.exit_label)
+  %stp_L9018 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L9018 = load ptr, ptr %stp_L9018
+  call i32 @qdrt_push_element(ptr %stk_L9018, ptr %local.suid)
   %stp_L9019 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
   %stk_L9019 = load ptr, ptr %stp_L9019
-  call i32 @qdrt_push_element(ptr %stk_L9019, ptr %local.exit_label)
+  call i32 @qdrt_push_element(ptr %stk_L9019, ptr %local.loc)
+  call i32 @usr_codegen_emit_one_case(ptr %ctx)
   %stp_L9020 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
   %stk_L9020 = load ptr, ptr %stp_L9020
-  call i32 @qdrt_push_element(ptr %stk_L9020, ptr %local.suid)
+  call void @qd_stack_pop(ptr %stk_L9020, ptr %local.st)
+  br label %L9013
+L9013:
   %stp_L9021 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
   %stk_L9021 = load ptr, ptr %stp_L9021
-  call i32 @qdrt_push_element(ptr %stk_L9021, ptr %local.loc)
-  call i32 @usr_codegen_emit_one_case(ptr %ctx)
-  %stp_L9022 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L9022 = load ptr, ptr %stp_L9022
-  call void @qd_stack_pop(ptr %stk_L9022, ptr %local.st)
-  br label %L9015
-L9015:
+  call i32 @qdrt_push_element(ptr %stk_L9021, ptr %local.n)
+  %fa_elem_L9022 = alloca %qd_stack_element_t
+  %fa_stp_L9022 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %fa_stk_L9022 = load ptr, ptr %fa_stp_L9022
+  call void @qd_stack_pop(ptr %fa_stk_L9022, ptr %fa_elem_L9022)
+  %fa_vp_L9022 = getelementptr %qd_stack_element_t, ptr %fa_elem_L9022, i32 0, i32 0
+  %fa_ptr_L9022 = load ptr, ptr %fa_vp_L9022
+  %fa_off_L9022 = load i64, ptr @__offset_extra
+  %fa_fp_L9022 = getelementptr i8, ptr %fa_ptr_L9022, i64 %fa_off_L9022
+  %fa_val_L9022 = load ptr, ptr %fa_fp_L9022
+  call i32 @qd_push_p(ptr %ctx, ptr %fa_val_L9022)
   %stp_L9023 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
   %stk_L9023 = load ptr, ptr %stp_L9023
-  call i32 @qdrt_push_element(ptr %stk_L9023, ptr %local.n)
-  %fa_elem_L9024 = alloca %qd_stack_element_t
-  %fa_stp_L9024 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %fa_stk_L9024 = load ptr, ptr %fa_stp_L9024
-  call void @qd_stack_pop(ptr %fa_stk_L9024, ptr %fa_elem_L9024)
-  %fa_vp_L9024 = getelementptr %qd_stack_element_t, ptr %fa_elem_L9024, i32 0, i32 0
-  %fa_ptr_L9024 = load ptr, ptr %fa_vp_L9024
-  %fa_off_L9024 = load i64, ptr @__offset_child2
-  %fa_fp_L9024 = getelementptr i8, ptr %fa_ptr_L9024, i64 %fa_off_L9024
-  %fa_val_L9024 = load ptr, ptr %fa_fp_L9024
-  call i32 @qd_push_p(ptr %ctx, ptr %fa_val_L9024)
+  call void @qd_stack_pop(ptr %stk_L9023, ptr %local.cur)
+  %stp_L9024 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L9024 = load ptr, ptr %stp_L9024
+  call i32 @qdrt_push_element(ptr %stk_L9024, ptr %local.cur)
   call i32 @qd_push_i(ptr %ctx, i64 0)
   call i32 @qd_neq(ptr %ctx)
   %ce_L9025 = alloca %qd_stack_element_t
@@ -36668,231 +36599,60 @@ L9015:
   %cv_L9025 = getelementptr %qd_stack_element_t, ptr %ce_L9025, i32 0, i32 0
   %ci_L9025 = load i64, ptr %cv_L9025
   %cc_L9025 = icmp ne i64 %ci_L9025, 0
-  br i1 %cc_L9025, label %L9026, label %L9028
+  br i1 %cc_L9025, label %L9026, label %L9027
 L9026:
   %stp_L9029 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
   %stk_L9029 = load ptr, ptr %stp_L9029
   call i32 @qdrt_push_element(ptr %stk_L9029, ptr %local.st)
   %stp_L9030 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
   %stk_L9030 = load ptr, ptr %stp_L9030
-  call i32 @qdrt_push_element(ptr %stk_L9030, ptr %local.n)
-  %fa_elem_L9031 = alloca %qd_stack_element_t
-  %fa_stp_L9031 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %fa_stk_L9031 = load ptr, ptr %fa_stp_L9031
-  call void @qd_stack_pop(ptr %fa_stk_L9031, ptr %fa_elem_L9031)
-  %fa_vp_L9031 = getelementptr %qd_stack_element_t, ptr %fa_elem_L9031, i32 0, i32 0
-  %fa_ptr_L9031 = load ptr, ptr %fa_vp_L9031
-  %fa_off_L9031 = load i64, ptr @__offset_child2
-  %fa_fp_L9031 = getelementptr i8, ptr %fa_ptr_L9031, i64 %fa_off_L9031
-  %fa_val_L9031 = load ptr, ptr %fa_fp_L9031
-  call i32 @qd_push_p(ptr %ctx, ptr %fa_val_L9031)
+  call i32 @qdrt_push_element(ptr %stk_L9030, ptr %local.cur)
+  %stp_L9031 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L9031 = load ptr, ptr %stp_L9031
+  call i32 @qdrt_push_element(ptr %stk_L9031, ptr %local.exit_label)
   %stp_L9032 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
   %stk_L9032 = load ptr, ptr %stp_L9032
-  call i32 @qdrt_push_element(ptr %stk_L9032, ptr %local.exit_label)
+  call i32 @qdrt_push_element(ptr %stk_L9032, ptr %local.suid)
   %stp_L9033 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
   %stk_L9033 = load ptr, ptr %stp_L9033
-  call i32 @qdrt_push_element(ptr %stk_L9033, ptr %local.suid)
+  call i32 @qdrt_push_element(ptr %stk_L9033, ptr %local.loc)
+  call i32 @usr_codegen_emit_one_case(ptr %ctx)
   %stp_L9034 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
   %stk_L9034 = load ptr, ptr %stp_L9034
-  call i32 @qdrt_push_element(ptr %stk_L9034, ptr %local.loc)
-  call i32 @usr_codegen_emit_one_case(ptr %ctx)
+  call void @qd_stack_pop(ptr %stk_L9034, ptr %local.st)
   %stp_L9035 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
   %stk_L9035 = load ptr, ptr %stp_L9035
-  call void @qd_stack_pop(ptr %stk_L9035, ptr %local.st)
-  br label %L9028
-L9028:
-  %stp_L9036 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L9036 = load ptr, ptr %stp_L9036
-  call i32 @qdrt_push_element(ptr %stk_L9036, ptr %local.n)
-  %fa_elem_L9037 = alloca %qd_stack_element_t
-  %fa_stp_L9037 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %fa_stk_L9037 = load ptr, ptr %fa_stp_L9037
-  call void @qd_stack_pop(ptr %fa_stk_L9037, ptr %fa_elem_L9037)
-  %fa_vp_L9037 = getelementptr %qd_stack_element_t, ptr %fa_elem_L9037, i32 0, i32 0
-  %fa_ptr_L9037 = load ptr, ptr %fa_vp_L9037
-  %fa_off_L9037 = load i64, ptr @__offset_child3
-  %fa_fp_L9037 = getelementptr i8, ptr %fa_ptr_L9037, i64 %fa_off_L9037
-  %fa_val_L9037 = load ptr, ptr %fa_fp_L9037
-  call i32 @qd_push_p(ptr %ctx, ptr %fa_val_L9037)
-  call i32 @qd_push_i(ptr %ctx, i64 0)
-  call i32 @qd_neq(ptr %ctx)
-  %ce_L9038 = alloca %qd_stack_element_t
+  call i32 @qdrt_push_element(ptr %stk_L9035, ptr %local.cur)
+  %fa_elem_L9036 = alloca %qd_stack_element_t
+  %fa_stp_L9036 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %fa_stk_L9036 = load ptr, ptr %fa_stp_L9036
+  call void @qd_stack_pop(ptr %fa_stk_L9036, ptr %fa_elem_L9036)
+  %fa_vp_L9036 = getelementptr %qd_stack_element_t, ptr %fa_elem_L9036, i32 0, i32 0
+  %fa_ptr_L9036 = load ptr, ptr %fa_vp_L9036
+  %fa_off_L9036 = load i64, ptr @__offset_sibling
+  %fa_fp_L9036 = getelementptr i8, ptr %fa_ptr_L9036, i64 %fa_off_L9036
+  %fa_val_L9036 = load ptr, ptr %fa_fp_L9036
+  call i32 @qd_push_p(ptr %ctx, ptr %fa_val_L9036)
+  %stp_L9037 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L9037 = load ptr, ptr %stp_L9037
+  call void @qd_stack_pop(ptr %stk_L9037, ptr %local.cur)
   %stp_L9038 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
   %stk_L9038 = load ptr, ptr %stp_L9038
-  call void @qd_stack_pop(ptr %stk_L9038, ptr %ce_L9038)
-  %cv_L9038 = getelementptr %qd_stack_element_t, ptr %ce_L9038, i32 0, i32 0
-  %ci_L9038 = load i64, ptr %cv_L9038
-  %cc_L9038 = icmp ne i64 %ci_L9038, 0
-  br i1 %cc_L9038, label %L9039, label %L9041
-L9039:
-  %stp_L9042 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L9042 = load ptr, ptr %stp_L9042
-  call i32 @qdrt_push_element(ptr %stk_L9042, ptr %local.st)
-  %stp_L9043 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L9043 = load ptr, ptr %stp_L9043
-  call i32 @qdrt_push_element(ptr %stk_L9043, ptr %local.n)
-  %fa_elem_L9044 = alloca %qd_stack_element_t
-  %fa_stp_L9044 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %fa_stk_L9044 = load ptr, ptr %fa_stp_L9044
-  call void @qd_stack_pop(ptr %fa_stk_L9044, ptr %fa_elem_L9044)
-  %fa_vp_L9044 = getelementptr %qd_stack_element_t, ptr %fa_elem_L9044, i32 0, i32 0
-  %fa_ptr_L9044 = load ptr, ptr %fa_vp_L9044
-  %fa_off_L9044 = load i64, ptr @__offset_child3
-  %fa_fp_L9044 = getelementptr i8, ptr %fa_ptr_L9044, i64 %fa_off_L9044
-  %fa_val_L9044 = load ptr, ptr %fa_fp_L9044
-  call i32 @qd_push_p(ptr %ctx, ptr %fa_val_L9044)
-  %stp_L9045 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L9045 = load ptr, ptr %stp_L9045
-  call i32 @qdrt_push_element(ptr %stk_L9045, ptr %local.exit_label)
-  %stp_L9046 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L9046 = load ptr, ptr %stp_L9046
-  call i32 @qdrt_push_element(ptr %stk_L9046, ptr %local.suid)
-  %stp_L9047 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L9047 = load ptr, ptr %stp_L9047
-  call i32 @qdrt_push_element(ptr %stk_L9047, ptr %local.loc)
-  call i32 @usr_codegen_emit_one_case(ptr %ctx)
-  %stp_L9048 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L9048 = load ptr, ptr %stp_L9048
-  call void @qd_stack_pop(ptr %stk_L9048, ptr %local.st)
-  br label %L9041
-L9041:
-  %stp_L9049 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L9049 = load ptr, ptr %stp_L9049
-  call i32 @qdrt_push_element(ptr %stk_L9049, ptr %local.n)
-  %fa_elem_L9050 = alloca %qd_stack_element_t
-  %fa_stp_L9050 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %fa_stk_L9050 = load ptr, ptr %fa_stp_L9050
-  call void @qd_stack_pop(ptr %fa_stk_L9050, ptr %fa_elem_L9050)
-  %fa_vp_L9050 = getelementptr %qd_stack_element_t, ptr %fa_elem_L9050, i32 0, i32 0
-  %fa_ptr_L9050 = load ptr, ptr %fa_vp_L9050
-  %fa_off_L9050 = load i64, ptr @__offset_child4
-  %fa_fp_L9050 = getelementptr i8, ptr %fa_ptr_L9050, i64 %fa_off_L9050
-  %fa_val_L9050 = load ptr, ptr %fa_fp_L9050
-  call i32 @qd_push_p(ptr %ctx, ptr %fa_val_L9050)
+  call i32 @qdrt_push_element(ptr %stk_L9038, ptr %local.cur)
   call i32 @qd_push_i(ptr %ctx, i64 0)
   call i32 @qd_neq(ptr %ctx)
-  %ce_L9051 = alloca %qd_stack_element_t
-  %stp_L9051 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L9051 = load ptr, ptr %stp_L9051
-  call void @qd_stack_pop(ptr %stk_L9051, ptr %ce_L9051)
-  %cv_L9051 = getelementptr %qd_stack_element_t, ptr %ce_L9051, i32 0, i32 0
-  %ci_L9051 = load i64, ptr %cv_L9051
-  %cc_L9051 = icmp ne i64 %ci_L9051, 0
-  br i1 %cc_L9051, label %L9052, label %L9054
-L9052:
-  %stp_L9055 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L9055 = load ptr, ptr %stp_L9055
-  call i32 @qdrt_push_element(ptr %stk_L9055, ptr %local.st)
-  %stp_L9056 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L9056 = load ptr, ptr %stp_L9056
-  call i32 @qdrt_push_element(ptr %stk_L9056, ptr %local.n)
-  %fa_elem_L9057 = alloca %qd_stack_element_t
-  %fa_stp_L9057 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %fa_stk_L9057 = load ptr, ptr %fa_stp_L9057
-  call void @qd_stack_pop(ptr %fa_stk_L9057, ptr %fa_elem_L9057)
-  %fa_vp_L9057 = getelementptr %qd_stack_element_t, ptr %fa_elem_L9057, i32 0, i32 0
-  %fa_ptr_L9057 = load ptr, ptr %fa_vp_L9057
-  %fa_off_L9057 = load i64, ptr @__offset_child4
-  %fa_fp_L9057 = getelementptr i8, ptr %fa_ptr_L9057, i64 %fa_off_L9057
-  %fa_val_L9057 = load ptr, ptr %fa_fp_L9057
-  call i32 @qd_push_p(ptr %ctx, ptr %fa_val_L9057)
-  %stp_L9058 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L9058 = load ptr, ptr %stp_L9058
-  call i32 @qdrt_push_element(ptr %stk_L9058, ptr %local.exit_label)
-  %stp_L9059 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L9059 = load ptr, ptr %stp_L9059
-  call i32 @qdrt_push_element(ptr %stk_L9059, ptr %local.suid)
-  %stp_L9060 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L9060 = load ptr, ptr %stp_L9060
-  call i32 @qdrt_push_element(ptr %stk_L9060, ptr %local.loc)
-  call i32 @usr_codegen_emit_one_case(ptr %ctx)
-  %stp_L9061 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L9061 = load ptr, ptr %stp_L9061
-  call void @qd_stack_pop(ptr %stk_L9061, ptr %local.st)
-  br label %L9054
-L9054:
-  %stp_L9062 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L9062 = load ptr, ptr %stp_L9062
-  call i32 @qdrt_push_element(ptr %stk_L9062, ptr %local.n)
-  %fa_elem_L9063 = alloca %qd_stack_element_t
-  %fa_stp_L9063 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %fa_stk_L9063 = load ptr, ptr %fa_stp_L9063
-  call void @qd_stack_pop(ptr %fa_stk_L9063, ptr %fa_elem_L9063)
-  %fa_vp_L9063 = getelementptr %qd_stack_element_t, ptr %fa_elem_L9063, i32 0, i32 0
-  %fa_ptr_L9063 = load ptr, ptr %fa_vp_L9063
-  %fa_off_L9063 = load i64, ptr @__offset_extra
-  %fa_fp_L9063 = getelementptr i8, ptr %fa_ptr_L9063, i64 %fa_off_L9063
-  %fa_val_L9063 = load ptr, ptr %fa_fp_L9063
-  call i32 @qd_push_p(ptr %ctx, ptr %fa_val_L9063)
-  %stp_L9064 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L9064 = load ptr, ptr %stp_L9064
-  call void @qd_stack_pop(ptr %stk_L9064, ptr %local.cur)
-  %stp_L9065 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L9065 = load ptr, ptr %stp_L9065
-  call i32 @qdrt_push_element(ptr %stk_L9065, ptr %local.cur)
-  call i32 @qd_push_i(ptr %ctx, i64 0)
-  call i32 @qd_neq(ptr %ctx)
-  %ce_L9066 = alloca %qd_stack_element_t
-  %stp_L9066 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L9066 = load ptr, ptr %stp_L9066
-  call void @qd_stack_pop(ptr %stk_L9066, ptr %ce_L9066)
-  %cv_L9066 = getelementptr %qd_stack_element_t, ptr %ce_L9066, i32 0, i32 0
-  %ci_L9066 = load i64, ptr %cv_L9066
-  %cc_L9066 = icmp ne i64 %ci_L9066, 0
-  br i1 %cc_L9066, label %L9067, label %L9068
-L9067:
-  %stp_L9070 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L9070 = load ptr, ptr %stp_L9070
-  call i32 @qdrt_push_element(ptr %stk_L9070, ptr %local.st)
-  %stp_L9071 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L9071 = load ptr, ptr %stp_L9071
-  call i32 @qdrt_push_element(ptr %stk_L9071, ptr %local.cur)
-  %stp_L9072 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L9072 = load ptr, ptr %stp_L9072
-  call i32 @qdrt_push_element(ptr %stk_L9072, ptr %local.exit_label)
-  %stp_L9073 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L9073 = load ptr, ptr %stp_L9073
-  call i32 @qdrt_push_element(ptr %stk_L9073, ptr %local.suid)
-  %stp_L9074 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L9074 = load ptr, ptr %stp_L9074
-  call i32 @qdrt_push_element(ptr %stk_L9074, ptr %local.loc)
-  call i32 @usr_codegen_emit_one_case(ptr %ctx)
-  %stp_L9075 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L9075 = load ptr, ptr %stp_L9075
-  call void @qd_stack_pop(ptr %stk_L9075, ptr %local.st)
-  %stp_L9076 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L9076 = load ptr, ptr %stp_L9076
-  call i32 @qdrt_push_element(ptr %stk_L9076, ptr %local.cur)
-  %fa_elem_L9077 = alloca %qd_stack_element_t
-  %fa_stp_L9077 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %fa_stk_L9077 = load ptr, ptr %fa_stp_L9077
-  call void @qd_stack_pop(ptr %fa_stk_L9077, ptr %fa_elem_L9077)
-  %fa_vp_L9077 = getelementptr %qd_stack_element_t, ptr %fa_elem_L9077, i32 0, i32 0
-  %fa_ptr_L9077 = load ptr, ptr %fa_vp_L9077
-  %fa_off_L9077 = load i64, ptr @__offset_sibling
-  %fa_fp_L9077 = getelementptr i8, ptr %fa_ptr_L9077, i64 %fa_off_L9077
-  %fa_val_L9077 = load ptr, ptr %fa_fp_L9077
-  call i32 @qd_push_p(ptr %ctx, ptr %fa_val_L9077)
-  %stp_L9078 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L9078 = load ptr, ptr %stp_L9078
-  call void @qd_stack_pop(ptr %stk_L9078, ptr %local.cur)
-  %stp_L9079 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L9079 = load ptr, ptr %stp_L9079
-  call i32 @qdrt_push_element(ptr %stk_L9079, ptr %local.cur)
-  call i32 @qd_push_i(ptr %ctx, i64 0)
-  call i32 @qd_neq(ptr %ctx)
-  %ce_L9080 = alloca %qd_stack_element_t
-  %stp_L9080 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L9080 = load ptr, ptr %stp_L9080
-  call void @qd_stack_pop(ptr %stk_L9080, ptr %ce_L9080)
-  %cv_L9080 = getelementptr %qd_stack_element_t, ptr %ce_L9080, i32 0, i32 0
-  %ci_L9080 = load i64, ptr %cv_L9080
-  %cc_L9080 = icmp ne i64 %ci_L9080, 0
-  br i1 %cc_L9080, label %L9067, label %L9068
-L9068:
-  %stp_L9081 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L9081 = load ptr, ptr %stp_L9081
-  call i32 @qdrt_push_element(ptr %stk_L9081, ptr %local.st)
+  %ce_L9039 = alloca %qd_stack_element_t
+  %stp_L9039 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L9039 = load ptr, ptr %stp_L9039
+  call void @qd_stack_pop(ptr %stk_L9039, ptr %ce_L9039)
+  %cv_L9039 = getelementptr %qd_stack_element_t, ptr %ce_L9039, i32 0, i32 0
+  %ci_L9039 = load i64, ptr %cv_L9039
+  %cc_L9039 = icmp ne i64 %ci_L9039, 0
+  br i1 %cc_L9039, label %L9026, label %L9027
+L9027:
+  %stp_L9040 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L9040 = load ptr, ptr %stp_L9040
+  call i32 @qdrt_push_element(ptr %stk_L9040, ptr %local.st)
   br label %return
 return:
   ret i32 0
@@ -36910,278 +36670,438 @@ entry:
   %local.case_uid = alloca %qd_stack_element_t
   %local.body_label = alloca %qd_stack_element_t
   %local.next_label2 = alloca %qd_stack_element_t
-  %stp_L9082 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L9082 = load ptr, ptr %stp_L9082
-  call void @qd_stack_pop(ptr %stk_L9082, ptr %local.loc)
-  %stp_L9083 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L9083 = load ptr, ptr %stp_L9083
-  call void @qd_stack_pop(ptr %stk_L9083, ptr %local.suid)
-  %stp_L9084 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L9084 = load ptr, ptr %stp_L9084
-  call void @qd_stack_pop(ptr %stk_L9084, ptr %local.exit_label)
-  %stp_L9085 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L9085 = load ptr, ptr %stp_L9085
-  call void @qd_stack_pop(ptr %stk_L9085, ptr %local.cn)
-  %stp_L9086 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L9086 = load ptr, ptr %stp_L9086
-  call void @qd_stack_pop(ptr %stk_L9086, ptr %local.st)
-  %stp_L9087 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L9087 = load ptr, ptr %stp_L9087
-  call i32 @qdrt_push_element(ptr %stk_L9087, ptr %local.cn)
+  %stp_L9041 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L9041 = load ptr, ptr %stp_L9041
+  call void @qd_stack_pop(ptr %stk_L9041, ptr %local.loc)
+  %stp_L9042 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L9042 = load ptr, ptr %stp_L9042
+  call void @qd_stack_pop(ptr %stk_L9042, ptr %local.suid)
+  %stp_L9043 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L9043 = load ptr, ptr %stp_L9043
+  call void @qd_stack_pop(ptr %stk_L9043, ptr %local.exit_label)
+  %stp_L9044 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L9044 = load ptr, ptr %stp_L9044
+  call void @qd_stack_pop(ptr %stk_L9044, ptr %local.cn)
+  %stp_L9045 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L9045 = load ptr, ptr %stp_L9045
+  call void @qd_stack_pop(ptr %stk_L9045, ptr %local.st)
+  %stp_L9046 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L9046 = load ptr, ptr %stp_L9046
+  call i32 @qdrt_push_element(ptr %stk_L9046, ptr %local.cn)
   call i32 @qd_push_i(ptr %ctx, i64 0)
   call i32 @qd_eq(ptr %ctx)
-  %ce_L9088 = alloca %qd_stack_element_t
-  %stp_L9088 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L9088 = load ptr, ptr %stp_L9088
-  call void @qd_stack_pop(ptr %stk_L9088, ptr %ce_L9088)
-  %cv_L9088 = getelementptr %qd_stack_element_t, ptr %ce_L9088, i32 0, i32 0
-  %ci_L9088 = load i64, ptr %cv_L9088
-  %cc_L9088 = icmp ne i64 %ci_L9088, 0
-  br i1 %cc_L9088, label %L9089, label %L9091
-L9089:
-  %stp_L9092 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L9092 = load ptr, ptr %stp_L9092
-  call i32 @qdrt_push_element(ptr %stk_L9092, ptr %local.st)
+  %ce_L9047 = alloca %qd_stack_element_t
+  %stp_L9047 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L9047 = load ptr, ptr %stp_L9047
+  call void @qd_stack_pop(ptr %stk_L9047, ptr %ce_L9047)
+  %cv_L9047 = getelementptr %qd_stack_element_t, ptr %ce_L9047, i32 0, i32 0
+  %ci_L9047 = load i64, ptr %cv_L9047
+  %cc_L9047 = icmp ne i64 %ci_L9047, 0
+  br i1 %cc_L9047, label %L9048, label %L9050
+L9048:
+  %stp_L9051 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L9051 = load ptr, ptr %stp_L9051
+  call i32 @qdrt_push_element(ptr %stk_L9051, ptr %local.st)
   br label %return
-  br label %L9091
-L9091:
-  %stp_L9093 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L9093 = load ptr, ptr %stp_L9093
-  call i32 @qdrt_push_element(ptr %stk_L9093, ptr %local.cn)
-  %fa_elem_L9094 = alloca %qd_stack_element_t
-  %fa_stp_L9094 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %fa_stk_L9094 = load ptr, ptr %fa_stp_L9094
-  call void @qd_stack_pop(ptr %fa_stk_L9094, ptr %fa_elem_L9094)
-  %fa_vp_L9094 = getelementptr %qd_stack_element_t, ptr %fa_elem_L9094, i32 0, i32 0
-  %fa_ptr_L9094 = load ptr, ptr %fa_vp_L9094
-  %fa_off_L9094 = load i64, ptr @__offset_nkind
-  %fa_fp_L9094 = getelementptr i8, ptr %fa_ptr_L9094, i64 %fa_off_L9094
-  %fa_val_L9094 = load i64, ptr %fa_fp_L9094
-  call i32 @qd_push_i(ptr %ctx, i64 %fa_val_L9094)
-  %ev_L9095 = load i64, ptr @__enum_NodeType_DefaultClause
-  call i32 @qd_push_i(ptr %ctx, i64 %ev_L9095)
+  br label %L9050
+L9050:
+  %stp_L9052 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L9052 = load ptr, ptr %stp_L9052
+  call i32 @qdrt_push_element(ptr %stk_L9052, ptr %local.cn)
+  %fa_elem_L9053 = alloca %qd_stack_element_t
+  %fa_stp_L9053 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %fa_stk_L9053 = load ptr, ptr %fa_stp_L9053
+  call void @qd_stack_pop(ptr %fa_stk_L9053, ptr %fa_elem_L9053)
+  %fa_vp_L9053 = getelementptr %qd_stack_element_t, ptr %fa_elem_L9053, i32 0, i32 0
+  %fa_ptr_L9053 = load ptr, ptr %fa_vp_L9053
+  %fa_off_L9053 = load i64, ptr @__offset_nkind
+  %fa_fp_L9053 = getelementptr i8, ptr %fa_ptr_L9053, i64 %fa_off_L9053
+  %fa_val_L9053 = load i64, ptr %fa_fp_L9053
+  call i32 @qd_push_i(ptr %ctx, i64 %fa_val_L9053)
+  %ev_L9054 = load i64, ptr @__enum_NodeType_DefaultClause
+  call i32 @qd_push_i(ptr %ctx, i64 %ev_L9054)
   call i32 @qd_eq(ptr %ctx)
-  %ce_L9096 = alloca %qd_stack_element_t
-  %stp_L9096 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L9096 = load ptr, ptr %stp_L9096
-  call void @qd_stack_pop(ptr %stk_L9096, ptr %ce_L9096)
-  %cv_L9096 = getelementptr %qd_stack_element_t, ptr %ce_L9096, i32 0, i32 0
-  %ci_L9096 = load i64, ptr %cv_L9096
-  %cc_L9096 = icmp ne i64 %ci_L9096, 0
-  br i1 %cc_L9096, label %L9097, label %L9099
-L9097:
-  %stp_L9100 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L9100 = load ptr, ptr %stp_L9100
-  call i32 @qdrt_push_element(ptr %stk_L9100, ptr %local.cn)
-  %fa_elem_L9101 = alloca %qd_stack_element_t
-  %fa_stp_L9101 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %fa_stk_L9101 = load ptr, ptr %fa_stp_L9101
-  call void @qd_stack_pop(ptr %fa_stk_L9101, ptr %fa_elem_L9101)
-  %fa_vp_L9101 = getelementptr %qd_stack_element_t, ptr %fa_elem_L9101, i32 0, i32 0
-  %fa_ptr_L9101 = load ptr, ptr %fa_vp_L9101
-  %fa_off_L9101 = load i64, ptr @__offset_child1
-  %fa_fp_L9101 = getelementptr i8, ptr %fa_ptr_L9101, i64 %fa_off_L9101
-  %fa_val_L9101 = load ptr, ptr %fa_fp_L9101
-  call i32 @qd_push_p(ptr %ctx, ptr %fa_val_L9101)
+  %ce_L9055 = alloca %qd_stack_element_t
+  %stp_L9055 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L9055 = load ptr, ptr %stp_L9055
+  call void @qd_stack_pop(ptr %stk_L9055, ptr %ce_L9055)
+  %cv_L9055 = getelementptr %qd_stack_element_t, ptr %ce_L9055, i32 0, i32 0
+  %ci_L9055 = load i64, ptr %cv_L9055
+  %cc_L9055 = icmp ne i64 %ci_L9055, 0
+  br i1 %cc_L9055, label %L9056, label %L9058
+L9056:
+  %stp_L9059 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L9059 = load ptr, ptr %stp_L9059
+  call i32 @qdrt_push_element(ptr %stk_L9059, ptr %local.cn)
+  %fa_elem_L9060 = alloca %qd_stack_element_t
+  %fa_stp_L9060 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %fa_stk_L9060 = load ptr, ptr %fa_stp_L9060
+  call void @qd_stack_pop(ptr %fa_stk_L9060, ptr %fa_elem_L9060)
+  %fa_vp_L9060 = getelementptr %qd_stack_element_t, ptr %fa_elem_L9060, i32 0, i32 0
+  %fa_ptr_L9060 = load ptr, ptr %fa_vp_L9060
+  %fa_off_L9060 = load i64, ptr @__offset_child1
+  %fa_fp_L9060 = getelementptr i8, ptr %fa_ptr_L9060, i64 %fa_off_L9060
+  %fa_val_L9060 = load ptr, ptr %fa_fp_L9060
+  call i32 @qd_push_p(ptr %ctx, ptr %fa_val_L9060)
   call i32 @qd_push_i(ptr %ctx, i64 0)
   call i32 @qd_neq(ptr %ctx)
-  %ce_L9102 = alloca %qd_stack_element_t
+  %ce_L9061 = alloca %qd_stack_element_t
+  %stp_L9061 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L9061 = load ptr, ptr %stp_L9061
+  call void @qd_stack_pop(ptr %stk_L9061, ptr %ce_L9061)
+  %cv_L9061 = getelementptr %qd_stack_element_t, ptr %ce_L9061, i32 0, i32 0
+  %ci_L9061 = load i64, ptr %cv_L9061
+  %cc_L9061 = icmp ne i64 %ci_L9061, 0
+  br i1 %cc_L9061, label %L9062, label %L9064
+L9062:
+  %stp_L9065 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L9065 = load ptr, ptr %stp_L9065
+  call i32 @qdrt_push_element(ptr %stk_L9065, ptr %local.st)
+  %stp_L9066 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L9066 = load ptr, ptr %stp_L9066
+  call i32 @qdrt_push_element(ptr %stk_L9066, ptr %local.cn)
+  %fa_elem_L9067 = alloca %qd_stack_element_t
+  %fa_stp_L9067 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %fa_stk_L9067 = load ptr, ptr %fa_stp_L9067
+  call void @qd_stack_pop(ptr %fa_stk_L9067, ptr %fa_elem_L9067)
+  %fa_vp_L9067 = getelementptr %qd_stack_element_t, ptr %fa_elem_L9067, i32 0, i32 0
+  %fa_ptr_L9067 = load ptr, ptr %fa_vp_L9067
+  %fa_off_L9067 = load i64, ptr @__offset_child1
+  %fa_fp_L9067 = getelementptr i8, ptr %fa_ptr_L9067, i64 %fa_off_L9067
+  %fa_val_L9067 = load ptr, ptr %fa_fp_L9067
+  call i32 @qd_push_p(ptr %ctx, ptr %fa_val_L9067)
+  %stp_L9068 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L9068 = load ptr, ptr %stp_L9068
+  call i32 @qdrt_push_element(ptr %stk_L9068, ptr %local.loc)
+  call i32 @usr_codegen_emit_block(ptr %ctx)
+  %stp_L9069 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L9069 = load ptr, ptr %stp_L9069
+  call void @qd_stack_pop(ptr %stk_L9069, ptr %local.st)
+  br label %L9064
+L9064:
+  %stp_L9070 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L9070 = load ptr, ptr %stp_L9070
+  call i32 @qdrt_push_element(ptr %stk_L9070, ptr %local.st)
+  %fa_elem_L9071 = alloca %qd_stack_element_t
+  %fa_stp_L9071 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %fa_stk_L9071 = load ptr, ptr %fa_stp_L9071
+  call void @qd_stack_pop(ptr %fa_stk_L9071, ptr %fa_elem_L9071)
+  %fa_vp_L9071 = getelementptr %qd_stack_element_t, ptr %fa_elem_L9071, i32 0, i32 0
+  %fa_ptr_L9071 = load ptr, ptr %fa_vp_L9071
+  %fa_off_L9071 = load i64, ptr @__offset_code
+  %fa_fp_L9071 = getelementptr i8, ptr %fa_ptr_L9071, i64 %fa_off_L9071
+  %fa_val_L9071 = load ptr, ptr %fa_fp_L9071
+  call i32 @qd_push_p(ptr %ctx, ptr %fa_val_L9071)
+  %stp_L9072 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L9072 = load ptr, ptr %stp_L9072
+  call void @qd_stack_pop(ptr %stk_L9072, ptr %local.o)
+  %stp_L9073 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L9073 = load ptr, ptr %stp_L9073
+  call i32 @qdrt_push_element(ptr %stk_L9073, ptr %local.o)
+  call i32 @usr_sb_new(ptr %ctx)
+  call i32 @qd_push_s(ptr %ctx, ptr @.str.9074)
+  call i32 @usr_sb_append(ptr %ctx)
+  %stp_L9075 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L9075 = load ptr, ptr %stp_L9075
+  call i32 @qdrt_push_element(ptr %stk_L9075, ptr %local.exit_label)
+  call i32 @usr_sb_append_int(ptr %ctx)
+  call i32 @qd_push_s(ptr %ctx, ptr @.str.9076)
+  call i32 @usr_sb_append(ptr %ctx)
+  call i32 @usr_sb_finish(ptr %ctx)
+  call i32 @usr_sb_append(ptr %ctx)
+  %stp_L9077 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L9077 = load ptr, ptr %stp_L9077
+  call void @qd_stack_pop(ptr %stk_L9077, ptr %local.o)
+  %stp_L9078 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L9078 = load ptr, ptr %stp_L9078
+  call i32 @qdrt_push_element(ptr %stk_L9078, ptr %local.st)
+  call i32 @usr_codegen_next_label(ptr %ctx)
+  %stp_L9079 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L9079 = load ptr, ptr %stp_L9079
+  call void @qd_stack_pop(ptr %stk_L9079, ptr %local.after)
+  %stp_L9080 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L9080 = load ptr, ptr %stp_L9080
+  call void @qd_stack_pop(ptr %stk_L9080, ptr %local.st)
+  %stp_L9081 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L9081 = load ptr, ptr %stp_L9081
+  call i32 @qdrt_push_element(ptr %stk_L9081, ptr %local.o)
+  call i32 @usr_sb_new(ptr %ctx)
+  %stp_L9082 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L9082 = load ptr, ptr %stp_L9082
+  call i32 @qdrt_push_element(ptr %stk_L9082, ptr %local.after)
+  call i32 @usr_sb_append_int(ptr %ctx)
+  call i32 @qd_push_s(ptr %ctx, ptr @.str.9083)
+  call i32 @usr_sb_append(ptr %ctx)
+  call i32 @usr_sb_finish(ptr %ctx)
+  call i32 @usr_sb_append(ptr %ctx)
+  %stp_L9084 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L9084 = load ptr, ptr %stp_L9084
+  call void @qd_stack_pop(ptr %stk_L9084, ptr %local.o)
+  %stp_L9085 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L9085 = load ptr, ptr %stp_L9085
+  call i32 @qdrt_push_element(ptr %stk_L9085, ptr %local.o)
+  %fs_elem_L9086 = alloca %qd_stack_element_t
+  %fs_stp_L9086 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %fs_stk_L9086 = load ptr, ptr %fs_stp_L9086
+  call void @qd_stack_pop(ptr %fs_stk_L9086, ptr %fs_elem_L9086)
+  %fs_vp_L9086 = getelementptr %qd_stack_element_t, ptr %fs_elem_L9086, i32 0, i32 0
+  %fs_val_L9086 = load i64, ptr %fs_vp_L9086
+  %fs_svp_L9086 = getelementptr %qd_stack_element_t, ptr %local.st, i32 0, i32 0
+  %fs_sptr_L9086 = load ptr, ptr %fs_svp_L9086
+  %fs_off_L9086 = load i64, ptr @__offset_code
+  %fs_fp_L9086 = getelementptr i8, ptr %fs_sptr_L9086, i64 %fs_off_L9086
+  store i64 %fs_val_L9086, ptr %fs_fp_L9086
+  %stp_L9087 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L9087 = load ptr, ptr %stp_L9087
+  call i32 @qdrt_push_element(ptr %stk_L9087, ptr %local.st)
+  br label %return
+  br label %L9058
+L9058:
+  %stp_L9088 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L9088 = load ptr, ptr %stp_L9088
+  call i32 @qdrt_push_element(ptr %stk_L9088, ptr %local.cn)
+  %fa_elem_L9089 = alloca %qd_stack_element_t
+  %fa_stp_L9089 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %fa_stk_L9089 = load ptr, ptr %fa_stp_L9089
+  call void @qd_stack_pop(ptr %fa_stk_L9089, ptr %fa_elem_L9089)
+  %fa_vp_L9089 = getelementptr %qd_stack_element_t, ptr %fa_elem_L9089, i32 0, i32 0
+  %fa_ptr_L9089 = load ptr, ptr %fa_vp_L9089
+  %fa_off_L9089 = load i64, ptr @__offset_nkind
+  %fa_fp_L9089 = getelementptr i8, ptr %fa_ptr_L9089, i64 %fa_off_L9089
+  %fa_val_L9089 = load i64, ptr %fa_fp_L9089
+  call i32 @qd_push_i(ptr %ctx, i64 %fa_val_L9089)
+  %ev_L9090 = load i64, ptr @__enum_NodeType_CaseClause
+  call i32 @qd_push_i(ptr %ctx, i64 %ev_L9090)
+  call i32 @qd_eq(ptr %ctx)
+  %ce_L9091 = alloca %qd_stack_element_t
+  %stp_L9091 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L9091 = load ptr, ptr %stp_L9091
+  call void @qd_stack_pop(ptr %stk_L9091, ptr %ce_L9091)
+  %cv_L9091 = getelementptr %qd_stack_element_t, ptr %ce_L9091, i32 0, i32 0
+  %ci_L9091 = load i64, ptr %cv_L9091
+  %cc_L9091 = icmp ne i64 %ci_L9091, 0
+  br i1 %cc_L9091, label %L9092, label %L9094
+L9092:
+  %stp_L9095 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L9095 = load ptr, ptr %stp_L9095
+  call i32 @qdrt_push_element(ptr %stk_L9095, ptr %local.st)
+  call i32 @usr_codegen_next_label(ptr %ctx)
+  %stp_L9096 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L9096 = load ptr, ptr %stp_L9096
+  call void @qd_stack_pop(ptr %stk_L9096, ptr %local.case_uid)
+  %stp_L9097 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L9097 = load ptr, ptr %stp_L9097
+  call void @qd_stack_pop(ptr %stk_L9097, ptr %local.st)
+  %stp_L9098 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L9098 = load ptr, ptr %stp_L9098
+  call i32 @qdrt_push_element(ptr %stk_L9098, ptr %local.st)
+  call i32 @usr_codegen_next_label(ptr %ctx)
+  %stp_L9099 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L9099 = load ptr, ptr %stp_L9099
+  call void @qd_stack_pop(ptr %stk_L9099, ptr %local.body_label)
+  %stp_L9100 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L9100 = load ptr, ptr %stp_L9100
+  call void @qd_stack_pop(ptr %stk_L9100, ptr %local.st)
+  %stp_L9101 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L9101 = load ptr, ptr %stp_L9101
+  call i32 @qdrt_push_element(ptr %stk_L9101, ptr %local.st)
+  call i32 @usr_codegen_next_label(ptr %ctx)
   %stp_L9102 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
   %stk_L9102 = load ptr, ptr %stp_L9102
-  call void @qd_stack_pop(ptr %stk_L9102, ptr %ce_L9102)
-  %cv_L9102 = getelementptr %qd_stack_element_t, ptr %ce_L9102, i32 0, i32 0
-  %ci_L9102 = load i64, ptr %cv_L9102
-  %cc_L9102 = icmp ne i64 %ci_L9102, 0
-  br i1 %cc_L9102, label %L9103, label %L9105
-L9103:
+  call void @qd_stack_pop(ptr %stk_L9102, ptr %local.next_label2)
+  %stp_L9103 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L9103 = load ptr, ptr %stp_L9103
+  call void @qd_stack_pop(ptr %stk_L9103, ptr %local.st)
+  %stp_L9104 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L9104 = load ptr, ptr %stp_L9104
+  call i32 @qdrt_push_element(ptr %stk_L9104, ptr %local.st)
+  %fa_elem_L9105 = alloca %qd_stack_element_t
+  %fa_stp_L9105 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %fa_stk_L9105 = load ptr, ptr %fa_stp_L9105
+  call void @qd_stack_pop(ptr %fa_stk_L9105, ptr %fa_elem_L9105)
+  %fa_vp_L9105 = getelementptr %qd_stack_element_t, ptr %fa_elem_L9105, i32 0, i32 0
+  %fa_ptr_L9105 = load ptr, ptr %fa_vp_L9105
+  %fa_off_L9105 = load i64, ptr @__offset_code
+  %fa_fp_L9105 = getelementptr i8, ptr %fa_ptr_L9105, i64 %fa_off_L9105
+  %fa_val_L9105 = load ptr, ptr %fa_fp_L9105
+  call i32 @qd_push_p(ptr %ctx, ptr %fa_val_L9105)
   %stp_L9106 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
   %stk_L9106 = load ptr, ptr %stp_L9106
-  call i32 @qdrt_push_element(ptr %stk_L9106, ptr %local.st)
+  call void @qd_stack_pop(ptr %stk_L9106, ptr %local.o)
   %stp_L9107 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
   %stk_L9107 = load ptr, ptr %stp_L9107
-  call i32 @qdrt_push_element(ptr %stk_L9107, ptr %local.cn)
-  %fa_elem_L9108 = alloca %qd_stack_element_t
-  %fa_stp_L9108 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %fa_stk_L9108 = load ptr, ptr %fa_stp_L9108
-  call void @qd_stack_pop(ptr %fa_stk_L9108, ptr %fa_elem_L9108)
-  %fa_vp_L9108 = getelementptr %qd_stack_element_t, ptr %fa_elem_L9108, i32 0, i32 0
-  %fa_ptr_L9108 = load ptr, ptr %fa_vp_L9108
-  %fa_off_L9108 = load i64, ptr @__offset_child1
-  %fa_fp_L9108 = getelementptr i8, ptr %fa_ptr_L9108, i64 %fa_off_L9108
-  %fa_val_L9108 = load ptr, ptr %fa_fp_L9108
-  call i32 @qd_push_p(ptr %ctx, ptr %fa_val_L9108)
+  call i32 @qdrt_push_element(ptr %stk_L9107, ptr %local.o)
+  %fs_elem_L9108 = alloca %qd_stack_element_t
+  %fs_stp_L9108 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %fs_stk_L9108 = load ptr, ptr %fs_stp_L9108
+  call void @qd_stack_pop(ptr %fs_stk_L9108, ptr %fs_elem_L9108)
+  %fs_vp_L9108 = getelementptr %qd_stack_element_t, ptr %fs_elem_L9108, i32 0, i32 0
+  %fs_val_L9108 = load i64, ptr %fs_vp_L9108
+  %fs_svp_L9108 = getelementptr %qd_stack_element_t, ptr %local.st, i32 0, i32 0
+  %fs_sptr_L9108 = load ptr, ptr %fs_svp_L9108
+  %fs_off_L9108 = load i64, ptr @__offset_code
+  %fs_fp_L9108 = getelementptr i8, ptr %fs_sptr_L9108, i64 %fs_off_L9108
+  store i64 %fs_val_L9108, ptr %fs_fp_L9108
   %stp_L9109 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
   %stk_L9109 = load ptr, ptr %stp_L9109
-  call i32 @qdrt_push_element(ptr %stk_L9109, ptr %local.loc)
-  call i32 @usr_codegen_emit_block(ptr %ctx)
+  call i32 @qdrt_push_element(ptr %stk_L9109, ptr %local.st)
   %stp_L9110 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
   %stk_L9110 = load ptr, ptr %stp_L9110
-  call void @qd_stack_pop(ptr %stk_L9110, ptr %local.st)
-  br label %L9105
-L9105:
-  %stp_L9111 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L9111 = load ptr, ptr %stp_L9111
-  call i32 @qdrt_push_element(ptr %stk_L9111, ptr %local.st)
-  %fa_elem_L9112 = alloca %qd_stack_element_t
-  %fa_stp_L9112 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %fa_stk_L9112 = load ptr, ptr %fa_stp_L9112
-  call void @qd_stack_pop(ptr %fa_stk_L9112, ptr %fa_elem_L9112)
-  %fa_vp_L9112 = getelementptr %qd_stack_element_t, ptr %fa_elem_L9112, i32 0, i32 0
-  %fa_ptr_L9112 = load ptr, ptr %fa_vp_L9112
-  %fa_off_L9112 = load i64, ptr @__offset_code
-  %fa_fp_L9112 = getelementptr i8, ptr %fa_ptr_L9112, i64 %fa_off_L9112
-  %fa_val_L9112 = load ptr, ptr %fa_fp_L9112
-  call i32 @qd_push_p(ptr %ctx, ptr %fa_val_L9112)
+  call i32 @qdrt_push_element(ptr %stk_L9110, ptr %local.cn)
+  %fa_elem_L9111 = alloca %qd_stack_element_t
+  %fa_stp_L9111 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %fa_stk_L9111 = load ptr, ptr %fa_stp_L9111
+  call void @qd_stack_pop(ptr %fa_stk_L9111, ptr %fa_elem_L9111)
+  %fa_vp_L9111 = getelementptr %qd_stack_element_t, ptr %fa_elem_L9111, i32 0, i32 0
+  %fa_ptr_L9111 = load ptr, ptr %fa_vp_L9111
+  %fa_off_L9111 = load i64, ptr @__offset_child1
+  %fa_fp_L9111 = getelementptr i8, ptr %fa_ptr_L9111, i64 %fa_off_L9111
+  %fa_val_L9111 = load ptr, ptr %fa_fp_L9111
+  call i32 @qd_push_p(ptr %ctx, ptr %fa_val_L9111)
+  %stp_L9112 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L9112 = load ptr, ptr %stp_L9112
+  call i32 @qdrt_push_element(ptr %stk_L9112, ptr %local.loc)
+  call i32 @usr_codegen_emit_node(ptr %ctx)
   %stp_L9113 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
   %stk_L9113 = load ptr, ptr %stp_L9113
-  call void @qd_stack_pop(ptr %stk_L9113, ptr %local.o)
+  call void @qd_stack_pop(ptr %stk_L9113, ptr %local.st)
   %stp_L9114 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
   %stk_L9114 = load ptr, ptr %stp_L9114
-  call i32 @qdrt_push_element(ptr %stk_L9114, ptr %local.o)
-  call i32 @usr_sb_new(ptr %ctx)
-  call i32 @qd_push_s(ptr %ctx, ptr @.str.9115)
-  call i32 @usr_sb_append(ptr %ctx)
+  call i32 @qdrt_push_element(ptr %stk_L9114, ptr %local.st)
+  %stp_L9115 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L9115 = load ptr, ptr %stp_L9115
+  call i32 @qdrt_push_element(ptr %stk_L9115, ptr %local.case_uid)
+  call i32 @usr_codegen_emit_pop_cond(ptr %ctx)
   %stp_L9116 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
   %stk_L9116 = load ptr, ptr %stp_L9116
-  call i32 @qdrt_push_element(ptr %stk_L9116, ptr %local.exit_label)
-  call i32 @usr_sb_append_int(ptr %ctx)
-  call i32 @qd_push_s(ptr %ctx, ptr @.str.9117)
-  call i32 @usr_sb_append(ptr %ctx)
-  call i32 @usr_sb_finish(ptr %ctx)
-  call i32 @usr_sb_append(ptr %ctx)
-  %stp_L9118 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L9118 = load ptr, ptr %stp_L9118
-  call void @qd_stack_pop(ptr %stk_L9118, ptr %local.o)
+  call void @qd_stack_pop(ptr %stk_L9116, ptr %local.st)
+  %stp_L9117 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L9117 = load ptr, ptr %stp_L9117
+  call i32 @qdrt_push_element(ptr %stk_L9117, ptr %local.st)
+  %fa_elem_L9118 = alloca %qd_stack_element_t
+  %fa_stp_L9118 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %fa_stk_L9118 = load ptr, ptr %fa_stp_L9118
+  call void @qd_stack_pop(ptr %fa_stk_L9118, ptr %fa_elem_L9118)
+  %fa_vp_L9118 = getelementptr %qd_stack_element_t, ptr %fa_elem_L9118, i32 0, i32 0
+  %fa_ptr_L9118 = load ptr, ptr %fa_vp_L9118
+  %fa_off_L9118 = load i64, ptr @__offset_code
+  %fa_fp_L9118 = getelementptr i8, ptr %fa_ptr_L9118, i64 %fa_off_L9118
+  %fa_val_L9118 = load ptr, ptr %fa_fp_L9118
+  call i32 @qd_push_p(ptr %ctx, ptr %fa_val_L9118)
   %stp_L9119 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
   %stk_L9119 = load ptr, ptr %stp_L9119
-  call i32 @qdrt_push_element(ptr %stk_L9119, ptr %local.st)
-  call i32 @usr_codegen_next_label(ptr %ctx)
+  call void @qd_stack_pop(ptr %stk_L9119, ptr %local.o)
   %stp_L9120 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
   %stk_L9120 = load ptr, ptr %stp_L9120
-  call void @qd_stack_pop(ptr %stk_L9120, ptr %local.after)
-  %stp_L9121 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L9121 = load ptr, ptr %stp_L9121
-  call void @qd_stack_pop(ptr %stk_L9121, ptr %local.st)
+  call i32 @qdrt_push_element(ptr %stk_L9120, ptr %local.o)
+  call i32 @usr_sb_new(ptr %ctx)
+  call i32 @qd_push_s(ptr %ctx, ptr @.str.9121)
+  call i32 @usr_sb_append(ptr %ctx)
   %stp_L9122 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
   %stk_L9122 = load ptr, ptr %stp_L9122
-  call i32 @qdrt_push_element(ptr %stk_L9122, ptr %local.o)
-  call i32 @usr_sb_new(ptr %ctx)
-  %stp_L9123 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L9123 = load ptr, ptr %stp_L9123
-  call i32 @qdrt_push_element(ptr %stk_L9123, ptr %local.after)
+  call i32 @qdrt_push_element(ptr %stk_L9122, ptr %local.case_uid)
   call i32 @usr_sb_append_int(ptr %ctx)
-  call i32 @qd_push_s(ptr %ctx, ptr @.str.9124)
+  call i32 @qd_push_s(ptr %ctx, ptr @.str.9123)
+  call i32 @usr_sb_append(ptr %ctx)
+  %stp_L9124 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L9124 = load ptr, ptr %stp_L9124
+  call i32 @qdrt_push_element(ptr %stk_L9124, ptr %local.suid)
+  call i32 @usr_sb_append_int(ptr %ctx)
+  call i32 @qd_push_s(ptr %ctx, ptr @.str.9125)
+  call i32 @usr_sb_append(ptr %ctx)
+  %stp_L9126 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L9126 = load ptr, ptr %stp_L9126
+  call i32 @qdrt_push_element(ptr %stk_L9126, ptr %local.case_uid)
+  call i32 @usr_sb_append_int(ptr %ctx)
+  call i32 @qd_push_s(ptr %ctx, ptr @.str.9127)
   call i32 @usr_sb_append(ptr %ctx)
   call i32 @usr_sb_finish(ptr %ctx)
   call i32 @usr_sb_append(ptr %ctx)
-  %stp_L9125 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L9125 = load ptr, ptr %stp_L9125
-  call void @qd_stack_pop(ptr %stk_L9125, ptr %local.o)
-  %stp_L9126 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L9126 = load ptr, ptr %stp_L9126
-  call i32 @qdrt_push_element(ptr %stk_L9126, ptr %local.o)
-  %fs_elem_L9127 = alloca %qd_stack_element_t
-  %fs_stp_L9127 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %fs_stk_L9127 = load ptr, ptr %fs_stp_L9127
-  call void @qd_stack_pop(ptr %fs_stk_L9127, ptr %fs_elem_L9127)
-  %fs_vp_L9127 = getelementptr %qd_stack_element_t, ptr %fs_elem_L9127, i32 0, i32 0
-  %fs_val_L9127 = load i64, ptr %fs_vp_L9127
-  %fs_svp_L9127 = getelementptr %qd_stack_element_t, ptr %local.st, i32 0, i32 0
-  %fs_sptr_L9127 = load ptr, ptr %fs_svp_L9127
-  %fs_off_L9127 = load i64, ptr @__offset_code
-  %fs_fp_L9127 = getelementptr i8, ptr %fs_sptr_L9127, i64 %fs_off_L9127
-  store i64 %fs_val_L9127, ptr %fs_fp_L9127
   %stp_L9128 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
   %stk_L9128 = load ptr, ptr %stp_L9128
-  call i32 @qdrt_push_element(ptr %stk_L9128, ptr %local.st)
-  br label %return
-  br label %L9099
-L9099:
+  call void @qd_stack_pop(ptr %stk_L9128, ptr %local.o)
   %stp_L9129 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
   %stk_L9129 = load ptr, ptr %stp_L9129
-  call i32 @qdrt_push_element(ptr %stk_L9129, ptr %local.cn)
-  %fa_elem_L9130 = alloca %qd_stack_element_t
-  %fa_stp_L9130 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %fa_stk_L9130 = load ptr, ptr %fa_stp_L9130
-  call void @qd_stack_pop(ptr %fa_stk_L9130, ptr %fa_elem_L9130)
-  %fa_vp_L9130 = getelementptr %qd_stack_element_t, ptr %fa_elem_L9130, i32 0, i32 0
-  %fa_ptr_L9130 = load ptr, ptr %fa_vp_L9130
-  %fa_off_L9130 = load i64, ptr @__offset_nkind
-  %fa_fp_L9130 = getelementptr i8, ptr %fa_ptr_L9130, i64 %fa_off_L9130
-  %fa_val_L9130 = load i64, ptr %fa_fp_L9130
-  call i32 @qd_push_i(ptr %ctx, i64 %fa_val_L9130)
-  %ev_L9131 = load i64, ptr @__enum_NodeType_CaseClause
-  call i32 @qd_push_i(ptr %ctx, i64 %ev_L9131)
-  call i32 @qd_eq(ptr %ctx)
-  %ce_L9132 = alloca %qd_stack_element_t
-  %stp_L9132 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L9132 = load ptr, ptr %stp_L9132
-  call void @qd_stack_pop(ptr %stk_L9132, ptr %ce_L9132)
-  %cv_L9132 = getelementptr %qd_stack_element_t, ptr %ce_L9132, i32 0, i32 0
-  %ci_L9132 = load i64, ptr %cv_L9132
-  %cc_L9132 = icmp ne i64 %ci_L9132, 0
-  br i1 %cc_L9132, label %L9133, label %L9135
-L9133:
-  %stp_L9136 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L9136 = load ptr, ptr %stp_L9136
-  call i32 @qdrt_push_element(ptr %stk_L9136, ptr %local.st)
-  call i32 @usr_codegen_next_label(ptr %ctx)
+  call i32 @qdrt_push_element(ptr %stk_L9129, ptr %local.o)
+  call i32 @usr_sb_new(ptr %ctx)
+  call i32 @qd_push_s(ptr %ctx, ptr @.str.9130)
+  call i32 @usr_sb_append(ptr %ctx)
+  %stp_L9131 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L9131 = load ptr, ptr %stp_L9131
+  call i32 @qdrt_push_element(ptr %stk_L9131, ptr %local.case_uid)
+  call i32 @usr_sb_append_int(ptr %ctx)
+  call i32 @qd_push_s(ptr %ctx, ptr @.str.9132)
+  call i32 @usr_sb_append(ptr %ctx)
+  %stp_L9133 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L9133 = load ptr, ptr %stp_L9133
+  call i32 @qdrt_push_element(ptr %stk_L9133, ptr %local.body_label)
+  call i32 @usr_sb_append_int(ptr %ctx)
+  call i32 @qd_push_s(ptr %ctx, ptr @.str.9134)
+  call i32 @usr_sb_append(ptr %ctx)
+  %stp_L9135 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L9135 = load ptr, ptr %stp_L9135
+  call i32 @qdrt_push_element(ptr %stk_L9135, ptr %local.next_label2)
+  call i32 @usr_sb_append_int(ptr %ctx)
+  call i32 @qd_push_s(ptr %ctx, ptr @.str.9136)
+  call i32 @usr_sb_append(ptr %ctx)
+  call i32 @usr_sb_finish(ptr %ctx)
+  call i32 @usr_sb_append(ptr %ctx)
   %stp_L9137 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
   %stk_L9137 = load ptr, ptr %stp_L9137
-  call void @qd_stack_pop(ptr %stk_L9137, ptr %local.case_uid)
+  call void @qd_stack_pop(ptr %stk_L9137, ptr %local.o)
   %stp_L9138 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
   %stk_L9138 = load ptr, ptr %stp_L9138
-  call void @qd_stack_pop(ptr %stk_L9138, ptr %local.st)
+  call i32 @qdrt_push_element(ptr %stk_L9138, ptr %local.o)
+  call i32 @usr_sb_new(ptr %ctx)
   %stp_L9139 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
   %stk_L9139 = load ptr, ptr %stp_L9139
-  call i32 @qdrt_push_element(ptr %stk_L9139, ptr %local.st)
-  call i32 @usr_codegen_next_label(ptr %ctx)
-  %stp_L9140 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L9140 = load ptr, ptr %stp_L9140
-  call void @qd_stack_pop(ptr %stk_L9140, ptr %local.body_label)
+  call i32 @qdrt_push_element(ptr %stk_L9139, ptr %local.body_label)
+  call i32 @usr_sb_append_int(ptr %ctx)
+  call i32 @qd_push_s(ptr %ctx, ptr @.str.9140)
+  call i32 @usr_sb_append(ptr %ctx)
+  call i32 @usr_sb_finish(ptr %ctx)
+  call i32 @usr_sb_append(ptr %ctx)
   %stp_L9141 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
   %stk_L9141 = load ptr, ptr %stp_L9141
-  call void @qd_stack_pop(ptr %stk_L9141, ptr %local.st)
+  call void @qd_stack_pop(ptr %stk_L9141, ptr %local.o)
   %stp_L9142 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
   %stk_L9142 = load ptr, ptr %stp_L9142
-  call i32 @qdrt_push_element(ptr %stk_L9142, ptr %local.st)
-  call i32 @usr_codegen_next_label(ptr %ctx)
-  %stp_L9143 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L9143 = load ptr, ptr %stp_L9143
-  call void @qd_stack_pop(ptr %stk_L9143, ptr %local.next_label2)
+  call i32 @qdrt_push_element(ptr %stk_L9142, ptr %local.o)
+  %fs_elem_L9143 = alloca %qd_stack_element_t
+  %fs_stp_L9143 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %fs_stk_L9143 = load ptr, ptr %fs_stp_L9143
+  call void @qd_stack_pop(ptr %fs_stk_L9143, ptr %fs_elem_L9143)
+  %fs_vp_L9143 = getelementptr %qd_stack_element_t, ptr %fs_elem_L9143, i32 0, i32 0
+  %fs_val_L9143 = load i64, ptr %fs_vp_L9143
+  %fs_svp_L9143 = getelementptr %qd_stack_element_t, ptr %local.st, i32 0, i32 0
+  %fs_sptr_L9143 = load ptr, ptr %fs_svp_L9143
+  %fs_off_L9143 = load i64, ptr @__offset_code
+  %fs_fp_L9143 = getelementptr i8, ptr %fs_sptr_L9143, i64 %fs_off_L9143
+  store i64 %fs_val_L9143, ptr %fs_fp_L9143
   %stp_L9144 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
   %stk_L9144 = load ptr, ptr %stp_L9144
-  call void @qd_stack_pop(ptr %stk_L9144, ptr %local.st)
-  %stp_L9145 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L9145 = load ptr, ptr %stp_L9145
-  call i32 @qdrt_push_element(ptr %stk_L9145, ptr %local.st)
-  %fa_elem_L9146 = alloca %qd_stack_element_t
-  %fa_stp_L9146 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %fa_stk_L9146 = load ptr, ptr %fa_stp_L9146
-  call void @qd_stack_pop(ptr %fa_stk_L9146, ptr %fa_elem_L9146)
-  %fa_vp_L9146 = getelementptr %qd_stack_element_t, ptr %fa_elem_L9146, i32 0, i32 0
-  %fa_ptr_L9146 = load ptr, ptr %fa_vp_L9146
-  %fa_off_L9146 = load i64, ptr @__offset_code
-  %fa_fp_L9146 = getelementptr i8, ptr %fa_ptr_L9146, i64 %fa_off_L9146
-  %fa_val_L9146 = load ptr, ptr %fa_fp_L9146
-  call i32 @qd_push_p(ptr %ctx, ptr %fa_val_L9146)
-  %stp_L9147 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L9147 = load ptr, ptr %stp_L9147
-  call void @qd_stack_pop(ptr %stk_L9147, ptr %local.o)
-  %stp_L9148 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L9148 = load ptr, ptr %stp_L9148
-  call i32 @qdrt_push_element(ptr %stk_L9148, ptr %local.o)
-  %fs_elem_L9149 = alloca %qd_stack_element_t
-  %fs_stp_L9149 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %fs_stk_L9149 = load ptr, ptr %fs_stp_L9149
-  call void @qd_stack_pop(ptr %fs_stk_L9149, ptr %fs_elem_L9149)
-  %fs_vp_L9149 = getelementptr %qd_stack_element_t, ptr %fs_elem_L9149, i32 0, i32 0
-  %fs_val_L9149 = load i64, ptr %fs_vp_L9149
-  %fs_svp_L9149 = getelementptr %qd_stack_element_t, ptr %local.st, i32 0, i32 0
-  %fs_sptr_L9149 = load ptr, ptr %fs_svp_L9149
-  %fs_off_L9149 = load i64, ptr @__offset_code
-  %fs_fp_L9149 = getelementptr i8, ptr %fs_sptr_L9149, i64 %fs_off_L9149
-  store i64 %fs_val_L9149, ptr %fs_fp_L9149
+  call i32 @qdrt_push_element(ptr %stk_L9144, ptr %local.cn)
+  %fa_elem_L9145 = alloca %qd_stack_element_t
+  %fa_stp_L9145 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %fa_stk_L9145 = load ptr, ptr %fa_stp_L9145
+  call void @qd_stack_pop(ptr %fa_stk_L9145, ptr %fa_elem_L9145)
+  %fa_vp_L9145 = getelementptr %qd_stack_element_t, ptr %fa_elem_L9145, i32 0, i32 0
+  %fa_ptr_L9145 = load ptr, ptr %fa_vp_L9145
+  %fa_off_L9145 = load i64, ptr @__offset_child2
+  %fa_fp_L9145 = getelementptr i8, ptr %fa_ptr_L9145, i64 %fa_off_L9145
+  %fa_val_L9145 = load ptr, ptr %fa_fp_L9145
+  call i32 @qd_push_p(ptr %ctx, ptr %fa_val_L9145)
+  call i32 @qd_push_i(ptr %ctx, i64 0)
+  call i32 @qd_neq(ptr %ctx)
+  %ce_L9146 = alloca %qd_stack_element_t
+  %stp_L9146 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L9146 = load ptr, ptr %stp_L9146
+  call void @qd_stack_pop(ptr %stk_L9146, ptr %ce_L9146)
+  %cv_L9146 = getelementptr %qd_stack_element_t, ptr %ce_L9146, i32 0, i32 0
+  %ci_L9146 = load i64, ptr %cv_L9146
+  %cc_L9146 = icmp ne i64 %ci_L9146, 0
+  br i1 %cc_L9146, label %L9147, label %L9149
+L9147:
   %stp_L9150 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
   %stk_L9150 = load ptr, ptr %stp_L9150
   call i32 @qdrt_push_element(ptr %stk_L9150, ptr %local.st)
@@ -37194,250 +37114,90 @@ L9133:
   call void @qd_stack_pop(ptr %fa_stk_L9152, ptr %fa_elem_L9152)
   %fa_vp_L9152 = getelementptr %qd_stack_element_t, ptr %fa_elem_L9152, i32 0, i32 0
   %fa_ptr_L9152 = load ptr, ptr %fa_vp_L9152
-  %fa_off_L9152 = load i64, ptr @__offset_child1
+  %fa_off_L9152 = load i64, ptr @__offset_child2
   %fa_fp_L9152 = getelementptr i8, ptr %fa_ptr_L9152, i64 %fa_off_L9152
   %fa_val_L9152 = load ptr, ptr %fa_fp_L9152
   call i32 @qd_push_p(ptr %ctx, ptr %fa_val_L9152)
   %stp_L9153 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
   %stk_L9153 = load ptr, ptr %stp_L9153
   call i32 @qdrt_push_element(ptr %stk_L9153, ptr %local.loc)
-  call i32 @usr_codegen_emit_node(ptr %ctx)
+  call i32 @usr_codegen_emit_block(ptr %ctx)
   %stp_L9154 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
   %stk_L9154 = load ptr, ptr %stp_L9154
   call void @qd_stack_pop(ptr %stk_L9154, ptr %local.st)
+  br label %L9149
+L9149:
   %stp_L9155 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
   %stk_L9155 = load ptr, ptr %stp_L9155
   call i32 @qdrt_push_element(ptr %stk_L9155, ptr %local.st)
-  %stp_L9156 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L9156 = load ptr, ptr %stp_L9156
-  call i32 @qdrt_push_element(ptr %stk_L9156, ptr %local.case_uid)
-  call i32 @usr_codegen_emit_pop_cond(ptr %ctx)
+  %fa_elem_L9156 = alloca %qd_stack_element_t
+  %fa_stp_L9156 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %fa_stk_L9156 = load ptr, ptr %fa_stp_L9156
+  call void @qd_stack_pop(ptr %fa_stk_L9156, ptr %fa_elem_L9156)
+  %fa_vp_L9156 = getelementptr %qd_stack_element_t, ptr %fa_elem_L9156, i32 0, i32 0
+  %fa_ptr_L9156 = load ptr, ptr %fa_vp_L9156
+  %fa_off_L9156 = load i64, ptr @__offset_code
+  %fa_fp_L9156 = getelementptr i8, ptr %fa_ptr_L9156, i64 %fa_off_L9156
+  %fa_val_L9156 = load ptr, ptr %fa_fp_L9156
+  call i32 @qd_push_p(ptr %ctx, ptr %fa_val_L9156)
   %stp_L9157 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
   %stk_L9157 = load ptr, ptr %stp_L9157
-  call void @qd_stack_pop(ptr %stk_L9157, ptr %local.st)
+  call void @qd_stack_pop(ptr %stk_L9157, ptr %local.o)
   %stp_L9158 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
   %stk_L9158 = load ptr, ptr %stp_L9158
-  call i32 @qdrt_push_element(ptr %stk_L9158, ptr %local.st)
-  %fa_elem_L9159 = alloca %qd_stack_element_t
-  %fa_stp_L9159 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %fa_stk_L9159 = load ptr, ptr %fa_stp_L9159
-  call void @qd_stack_pop(ptr %fa_stk_L9159, ptr %fa_elem_L9159)
-  %fa_vp_L9159 = getelementptr %qd_stack_element_t, ptr %fa_elem_L9159, i32 0, i32 0
-  %fa_ptr_L9159 = load ptr, ptr %fa_vp_L9159
-  %fa_off_L9159 = load i64, ptr @__offset_code
-  %fa_fp_L9159 = getelementptr i8, ptr %fa_ptr_L9159, i64 %fa_off_L9159
-  %fa_val_L9159 = load ptr, ptr %fa_fp_L9159
-  call i32 @qd_push_p(ptr %ctx, ptr %fa_val_L9159)
+  call i32 @qdrt_push_element(ptr %stk_L9158, ptr %local.o)
+  call i32 @usr_sb_new(ptr %ctx)
+  call i32 @qd_push_s(ptr %ctx, ptr @.str.9159)
+  call i32 @usr_sb_append(ptr %ctx)
   %stp_L9160 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
   %stk_L9160 = load ptr, ptr %stp_L9160
-  call void @qd_stack_pop(ptr %stk_L9160, ptr %local.o)
-  %stp_L9161 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L9161 = load ptr, ptr %stp_L9161
-  call i32 @qdrt_push_element(ptr %stk_L9161, ptr %local.o)
-  call i32 @usr_sb_new(ptr %ctx)
-  call i32 @qd_push_s(ptr %ctx, ptr @.str.9162)
+  call i32 @qdrt_push_element(ptr %stk_L9160, ptr %local.exit_label)
+  call i32 @usr_sb_append_int(ptr %ctx)
+  call i32 @qd_push_s(ptr %ctx, ptr @.str.9161)
   call i32 @usr_sb_append(ptr %ctx)
+  call i32 @usr_sb_finish(ptr %ctx)
+  call i32 @usr_sb_append(ptr %ctx)
+  %stp_L9162 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L9162 = load ptr, ptr %stp_L9162
+  call void @qd_stack_pop(ptr %stk_L9162, ptr %local.o)
   %stp_L9163 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
   %stk_L9163 = load ptr, ptr %stp_L9163
-  call i32 @qdrt_push_element(ptr %stk_L9163, ptr %local.case_uid)
+  call i32 @qdrt_push_element(ptr %stk_L9163, ptr %local.o)
+  call i32 @usr_sb_new(ptr %ctx)
+  %stp_L9164 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L9164 = load ptr, ptr %stp_L9164
+  call i32 @qdrt_push_element(ptr %stk_L9164, ptr %local.next_label2)
   call i32 @usr_sb_append_int(ptr %ctx)
-  call i32 @qd_push_s(ptr %ctx, ptr @.str.9164)
+  call i32 @qd_push_s(ptr %ctx, ptr @.str.9165)
   call i32 @usr_sb_append(ptr %ctx)
-  %stp_L9165 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L9165 = load ptr, ptr %stp_L9165
-  call i32 @qdrt_push_element(ptr %stk_L9165, ptr %local.suid)
-  call i32 @usr_sb_append_int(ptr %ctx)
-  call i32 @qd_push_s(ptr %ctx, ptr @.str.9166)
+  call i32 @usr_sb_finish(ptr %ctx)
   call i32 @usr_sb_append(ptr %ctx)
+  %stp_L9166 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L9166 = load ptr, ptr %stp_L9166
+  call void @qd_stack_pop(ptr %stk_L9166, ptr %local.o)
   %stp_L9167 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
   %stk_L9167 = load ptr, ptr %stp_L9167
-  call i32 @qdrt_push_element(ptr %stk_L9167, ptr %local.case_uid)
-  call i32 @usr_sb_append_int(ptr %ctx)
-  call i32 @qd_push_s(ptr %ctx, ptr @.str.9168)
-  call i32 @usr_sb_append(ptr %ctx)
-  call i32 @usr_sb_finish(ptr %ctx)
-  call i32 @usr_sb_append(ptr %ctx)
+  call i32 @qdrt_push_element(ptr %stk_L9167, ptr %local.o)
+  %fs_elem_L9168 = alloca %qd_stack_element_t
+  %fs_stp_L9168 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %fs_stk_L9168 = load ptr, ptr %fs_stp_L9168
+  call void @qd_stack_pop(ptr %fs_stk_L9168, ptr %fs_elem_L9168)
+  %fs_vp_L9168 = getelementptr %qd_stack_element_t, ptr %fs_elem_L9168, i32 0, i32 0
+  %fs_val_L9168 = load i64, ptr %fs_vp_L9168
+  %fs_svp_L9168 = getelementptr %qd_stack_element_t, ptr %local.st, i32 0, i32 0
+  %fs_sptr_L9168 = load ptr, ptr %fs_svp_L9168
+  %fs_off_L9168 = load i64, ptr @__offset_code
+  %fs_fp_L9168 = getelementptr i8, ptr %fs_sptr_L9168, i64 %fs_off_L9168
+  store i64 %fs_val_L9168, ptr %fs_fp_L9168
   %stp_L9169 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
   %stk_L9169 = load ptr, ptr %stp_L9169
-  call void @qd_stack_pop(ptr %stk_L9169, ptr %local.o)
+  call i32 @qdrt_push_element(ptr %stk_L9169, ptr %local.st)
+  br label %return
+  br label %L9094
+L9094:
   %stp_L9170 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
   %stk_L9170 = load ptr, ptr %stp_L9170
-  call i32 @qdrt_push_element(ptr %stk_L9170, ptr %local.o)
-  call i32 @usr_sb_new(ptr %ctx)
-  call i32 @qd_push_s(ptr %ctx, ptr @.str.9171)
-  call i32 @usr_sb_append(ptr %ctx)
-  %stp_L9172 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L9172 = load ptr, ptr %stp_L9172
-  call i32 @qdrt_push_element(ptr %stk_L9172, ptr %local.case_uid)
-  call i32 @usr_sb_append_int(ptr %ctx)
-  call i32 @qd_push_s(ptr %ctx, ptr @.str.9173)
-  call i32 @usr_sb_append(ptr %ctx)
-  %stp_L9174 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L9174 = load ptr, ptr %stp_L9174
-  call i32 @qdrt_push_element(ptr %stk_L9174, ptr %local.body_label)
-  call i32 @usr_sb_append_int(ptr %ctx)
-  call i32 @qd_push_s(ptr %ctx, ptr @.str.9175)
-  call i32 @usr_sb_append(ptr %ctx)
-  %stp_L9176 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L9176 = load ptr, ptr %stp_L9176
-  call i32 @qdrt_push_element(ptr %stk_L9176, ptr %local.next_label2)
-  call i32 @usr_sb_append_int(ptr %ctx)
-  call i32 @qd_push_s(ptr %ctx, ptr @.str.9177)
-  call i32 @usr_sb_append(ptr %ctx)
-  call i32 @usr_sb_finish(ptr %ctx)
-  call i32 @usr_sb_append(ptr %ctx)
-  %stp_L9178 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L9178 = load ptr, ptr %stp_L9178
-  call void @qd_stack_pop(ptr %stk_L9178, ptr %local.o)
-  %stp_L9179 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L9179 = load ptr, ptr %stp_L9179
-  call i32 @qdrt_push_element(ptr %stk_L9179, ptr %local.o)
-  call i32 @usr_sb_new(ptr %ctx)
-  %stp_L9180 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L9180 = load ptr, ptr %stp_L9180
-  call i32 @qdrt_push_element(ptr %stk_L9180, ptr %local.body_label)
-  call i32 @usr_sb_append_int(ptr %ctx)
-  call i32 @qd_push_s(ptr %ctx, ptr @.str.9181)
-  call i32 @usr_sb_append(ptr %ctx)
-  call i32 @usr_sb_finish(ptr %ctx)
-  call i32 @usr_sb_append(ptr %ctx)
-  %stp_L9182 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L9182 = load ptr, ptr %stp_L9182
-  call void @qd_stack_pop(ptr %stk_L9182, ptr %local.o)
-  %stp_L9183 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L9183 = load ptr, ptr %stp_L9183
-  call i32 @qdrt_push_element(ptr %stk_L9183, ptr %local.o)
-  %fs_elem_L9184 = alloca %qd_stack_element_t
-  %fs_stp_L9184 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %fs_stk_L9184 = load ptr, ptr %fs_stp_L9184
-  call void @qd_stack_pop(ptr %fs_stk_L9184, ptr %fs_elem_L9184)
-  %fs_vp_L9184 = getelementptr %qd_stack_element_t, ptr %fs_elem_L9184, i32 0, i32 0
-  %fs_val_L9184 = load i64, ptr %fs_vp_L9184
-  %fs_svp_L9184 = getelementptr %qd_stack_element_t, ptr %local.st, i32 0, i32 0
-  %fs_sptr_L9184 = load ptr, ptr %fs_svp_L9184
-  %fs_off_L9184 = load i64, ptr @__offset_code
-  %fs_fp_L9184 = getelementptr i8, ptr %fs_sptr_L9184, i64 %fs_off_L9184
-  store i64 %fs_val_L9184, ptr %fs_fp_L9184
-  %stp_L9185 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L9185 = load ptr, ptr %stp_L9185
-  call i32 @qdrt_push_element(ptr %stk_L9185, ptr %local.cn)
-  %fa_elem_L9186 = alloca %qd_stack_element_t
-  %fa_stp_L9186 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %fa_stk_L9186 = load ptr, ptr %fa_stp_L9186
-  call void @qd_stack_pop(ptr %fa_stk_L9186, ptr %fa_elem_L9186)
-  %fa_vp_L9186 = getelementptr %qd_stack_element_t, ptr %fa_elem_L9186, i32 0, i32 0
-  %fa_ptr_L9186 = load ptr, ptr %fa_vp_L9186
-  %fa_off_L9186 = load i64, ptr @__offset_child2
-  %fa_fp_L9186 = getelementptr i8, ptr %fa_ptr_L9186, i64 %fa_off_L9186
-  %fa_val_L9186 = load ptr, ptr %fa_fp_L9186
-  call i32 @qd_push_p(ptr %ctx, ptr %fa_val_L9186)
-  call i32 @qd_push_i(ptr %ctx, i64 0)
-  call i32 @qd_neq(ptr %ctx)
-  %ce_L9187 = alloca %qd_stack_element_t
-  %stp_L9187 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L9187 = load ptr, ptr %stp_L9187
-  call void @qd_stack_pop(ptr %stk_L9187, ptr %ce_L9187)
-  %cv_L9187 = getelementptr %qd_stack_element_t, ptr %ce_L9187, i32 0, i32 0
-  %ci_L9187 = load i64, ptr %cv_L9187
-  %cc_L9187 = icmp ne i64 %ci_L9187, 0
-  br i1 %cc_L9187, label %L9188, label %L9190
-L9188:
-  %stp_L9191 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L9191 = load ptr, ptr %stp_L9191
-  call i32 @qdrt_push_element(ptr %stk_L9191, ptr %local.st)
-  %stp_L9192 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L9192 = load ptr, ptr %stp_L9192
-  call i32 @qdrt_push_element(ptr %stk_L9192, ptr %local.cn)
-  %fa_elem_L9193 = alloca %qd_stack_element_t
-  %fa_stp_L9193 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %fa_stk_L9193 = load ptr, ptr %fa_stp_L9193
-  call void @qd_stack_pop(ptr %fa_stk_L9193, ptr %fa_elem_L9193)
-  %fa_vp_L9193 = getelementptr %qd_stack_element_t, ptr %fa_elem_L9193, i32 0, i32 0
-  %fa_ptr_L9193 = load ptr, ptr %fa_vp_L9193
-  %fa_off_L9193 = load i64, ptr @__offset_child2
-  %fa_fp_L9193 = getelementptr i8, ptr %fa_ptr_L9193, i64 %fa_off_L9193
-  %fa_val_L9193 = load ptr, ptr %fa_fp_L9193
-  call i32 @qd_push_p(ptr %ctx, ptr %fa_val_L9193)
-  %stp_L9194 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L9194 = load ptr, ptr %stp_L9194
-  call i32 @qdrt_push_element(ptr %stk_L9194, ptr %local.loc)
-  call i32 @usr_codegen_emit_block(ptr %ctx)
-  %stp_L9195 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L9195 = load ptr, ptr %stp_L9195
-  call void @qd_stack_pop(ptr %stk_L9195, ptr %local.st)
-  br label %L9190
-L9190:
-  %stp_L9196 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L9196 = load ptr, ptr %stp_L9196
-  call i32 @qdrt_push_element(ptr %stk_L9196, ptr %local.st)
-  %fa_elem_L9197 = alloca %qd_stack_element_t
-  %fa_stp_L9197 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %fa_stk_L9197 = load ptr, ptr %fa_stp_L9197
-  call void @qd_stack_pop(ptr %fa_stk_L9197, ptr %fa_elem_L9197)
-  %fa_vp_L9197 = getelementptr %qd_stack_element_t, ptr %fa_elem_L9197, i32 0, i32 0
-  %fa_ptr_L9197 = load ptr, ptr %fa_vp_L9197
-  %fa_off_L9197 = load i64, ptr @__offset_code
-  %fa_fp_L9197 = getelementptr i8, ptr %fa_ptr_L9197, i64 %fa_off_L9197
-  %fa_val_L9197 = load ptr, ptr %fa_fp_L9197
-  call i32 @qd_push_p(ptr %ctx, ptr %fa_val_L9197)
-  %stp_L9198 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L9198 = load ptr, ptr %stp_L9198
-  call void @qd_stack_pop(ptr %stk_L9198, ptr %local.o)
-  %stp_L9199 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L9199 = load ptr, ptr %stp_L9199
-  call i32 @qdrt_push_element(ptr %stk_L9199, ptr %local.o)
-  call i32 @usr_sb_new(ptr %ctx)
-  call i32 @qd_push_s(ptr %ctx, ptr @.str.9200)
-  call i32 @usr_sb_append(ptr %ctx)
-  %stp_L9201 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L9201 = load ptr, ptr %stp_L9201
-  call i32 @qdrt_push_element(ptr %stk_L9201, ptr %local.exit_label)
-  call i32 @usr_sb_append_int(ptr %ctx)
-  call i32 @qd_push_s(ptr %ctx, ptr @.str.9202)
-  call i32 @usr_sb_append(ptr %ctx)
-  call i32 @usr_sb_finish(ptr %ctx)
-  call i32 @usr_sb_append(ptr %ctx)
-  %stp_L9203 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L9203 = load ptr, ptr %stp_L9203
-  call void @qd_stack_pop(ptr %stk_L9203, ptr %local.o)
-  %stp_L9204 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L9204 = load ptr, ptr %stp_L9204
-  call i32 @qdrt_push_element(ptr %stk_L9204, ptr %local.o)
-  call i32 @usr_sb_new(ptr %ctx)
-  %stp_L9205 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L9205 = load ptr, ptr %stp_L9205
-  call i32 @qdrt_push_element(ptr %stk_L9205, ptr %local.next_label2)
-  call i32 @usr_sb_append_int(ptr %ctx)
-  call i32 @qd_push_s(ptr %ctx, ptr @.str.9206)
-  call i32 @usr_sb_append(ptr %ctx)
-  call i32 @usr_sb_finish(ptr %ctx)
-  call i32 @usr_sb_append(ptr %ctx)
-  %stp_L9207 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L9207 = load ptr, ptr %stp_L9207
-  call void @qd_stack_pop(ptr %stk_L9207, ptr %local.o)
-  %stp_L9208 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L9208 = load ptr, ptr %stp_L9208
-  call i32 @qdrt_push_element(ptr %stk_L9208, ptr %local.o)
-  %fs_elem_L9209 = alloca %qd_stack_element_t
-  %fs_stp_L9209 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %fs_stk_L9209 = load ptr, ptr %fs_stp_L9209
-  call void @qd_stack_pop(ptr %fs_stk_L9209, ptr %fs_elem_L9209)
-  %fs_vp_L9209 = getelementptr %qd_stack_element_t, ptr %fs_elem_L9209, i32 0, i32 0
-  %fs_val_L9209 = load i64, ptr %fs_vp_L9209
-  %fs_svp_L9209 = getelementptr %qd_stack_element_t, ptr %local.st, i32 0, i32 0
-  %fs_sptr_L9209 = load ptr, ptr %fs_svp_L9209
-  %fs_off_L9209 = load i64, ptr @__offset_code
-  %fs_fp_L9209 = getelementptr i8, ptr %fs_sptr_L9209, i64 %fs_off_L9209
-  store i64 %fs_val_L9209, ptr %fs_fp_L9209
-  %stp_L9210 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L9210 = load ptr, ptr %stp_L9210
-  call i32 @qdrt_push_element(ptr %stk_L9210, ptr %local.st)
-  br label %return
-  br label %L9135
-L9135:
-  %stp_L9211 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L9211 = load ptr, ptr %stp_L9211
-  call i32 @qdrt_push_element(ptr %stk_L9211, ptr %local.st)
+  call i32 @qdrt_push_element(ptr %stk_L9170, ptr %local.st)
   br label %return
 return:
   ret i32 0
@@ -37455,105 +37215,242 @@ entry:
   %local.iter_var = alloca %qd_stack_element_t
   %local.loop_loc = alloca %qd_stack_element_t
   %local.o = alloca %qd_stack_element_t
+  %stp_L9171 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L9171 = load ptr, ptr %stp_L9171
+  call void @qd_stack_pop(ptr %stk_L9171, ptr %local.loc)
+  %stp_L9172 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L9172 = load ptr, ptr %stp_L9172
+  call void @qd_stack_pop(ptr %stk_L9172, ptr %local.n)
+  %stp_L9173 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L9173 = load ptr, ptr %stp_L9173
+  call void @qd_stack_pop(ptr %stk_L9173, ptr %local.st)
+  %stp_L9174 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L9174 = load ptr, ptr %stp_L9174
+  call i32 @qdrt_push_element(ptr %stk_L9174, ptr %local.st)
+  call i32 @usr_codegen_next_label(ptr %ctx)
+  %stp_L9175 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L9175 = load ptr, ptr %stp_L9175
+  call void @qd_stack_pop(ptr %stk_L9175, ptr %local.uid)
+  %stp_L9176 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L9176 = load ptr, ptr %stp_L9176
+  call void @qd_stack_pop(ptr %stk_L9176, ptr %local.st)
+  %stp_L9177 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L9177 = load ptr, ptr %stp_L9177
+  call i32 @qdrt_push_element(ptr %stk_L9177, ptr %local.st)
+  call i32 @usr_codegen_next_label(ptr %ctx)
+  %stp_L9178 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L9178 = load ptr, ptr %stp_L9178
+  call void @qd_stack_pop(ptr %stk_L9178, ptr %local.body_label)
+  %stp_L9179 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L9179 = load ptr, ptr %stp_L9179
+  call void @qd_stack_pop(ptr %stk_L9179, ptr %local.st)
+  %stp_L9180 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L9180 = load ptr, ptr %stp_L9180
+  call i32 @qdrt_push_element(ptr %stk_L9180, ptr %local.st)
+  call i32 @usr_codegen_next_label(ptr %ctx)
+  %stp_L9181 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L9181 = load ptr, ptr %stp_L9181
+  call void @qd_stack_pop(ptr %stk_L9181, ptr %local.exit_label)
+  %stp_L9182 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L9182 = load ptr, ptr %stp_L9182
+  call void @qd_stack_pop(ptr %stk_L9182, ptr %local.st)
+  %stp_L9183 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L9183 = load ptr, ptr %stp_L9183
+  call i32 @qdrt_push_element(ptr %stk_L9183, ptr %local.st)
+  call i32 @usr_codegen_next_label(ptr %ctx)
+  %stp_L9184 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L9184 = load ptr, ptr %stp_L9184
+  call void @qd_stack_pop(ptr %stk_L9184, ptr %local.cond_label)
+  %stp_L9185 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L9185 = load ptr, ptr %stp_L9185
+  call void @qd_stack_pop(ptr %stk_L9185, ptr %local.st)
+  %stp_L9186 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L9186 = load ptr, ptr %stp_L9186
+  call i32 @qdrt_push_element(ptr %stk_L9186, ptr %local.n)
+  %fa_elem_L9187 = alloca %qd_stack_element_t
+  %fa_stp_L9187 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %fa_stk_L9187 = load ptr, ptr %fa_stp_L9187
+  call void @qd_stack_pop(ptr %fa_stk_L9187, ptr %fa_elem_L9187)
+  %fa_vp_L9187 = getelementptr %qd_stack_element_t, ptr %fa_elem_L9187, i32 0, i32 0
+  %fa_ptr_L9187 = load ptr, ptr %fa_vp_L9187
+  %fa_off_L9187 = load i64, ptr @__offset_ntext
+  %fa_fp_L9187 = getelementptr i8, ptr %fa_ptr_L9187, i64 %fa_off_L9187
+  %fa_val_L9187 = load ptr, ptr %fa_fp_L9187
+  call i32 @qd_push_s_ref(ptr %ctx, ptr %fa_val_L9187)
+  %stp_L9188 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L9188 = load ptr, ptr %stp_L9188
+  call void @qd_stack_pop(ptr %stk_L9188, ptr %local.iter_var)
+  %stp_L9189 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L9189 = load ptr, ptr %stp_L9189
+  call i32 @qdrt_push_element(ptr %stk_L9189, ptr %local.loc)
+  call i32 @usr_sb_new(ptr %ctx)
+  call i32 @qd_push_s(ptr %ctx, ptr @.str.9190)
+  call i32 @usr_sb_append(ptr %ctx)
+  %stp_L9191 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L9191 = load ptr, ptr %stp_L9191
+  call i32 @qdrt_push_element(ptr %stk_L9191, ptr %local.exit_label)
+  call i32 @usr_sb_append_int(ptr %ctx)
+  call i32 @qd_push_s(ptr %ctx, ptr @.str.9192)
+  call i32 @usr_sb_append(ptr %ctx)
+  %stp_L9193 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L9193 = load ptr, ptr %stp_L9193
+  call i32 @qdrt_push_element(ptr %stk_L9193, ptr %local.cond_label)
+  call i32 @usr_sb_append_int(ptr %ctx)
+  call i32 @usr_sb_finish(ptr %ctx)
+  call i32 @usr_strings_concat(ptr %ctx)
+  %stp_L9194 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L9194 = load ptr, ptr %stp_L9194
+  call void @qd_stack_pop(ptr %stk_L9194, ptr %local.loop_loc)
+  %stp_L9195 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L9195 = load ptr, ptr %stp_L9195
+  call i32 @qdrt_push_element(ptr %stk_L9195, ptr %local.st)
+  %fa_elem_L9196 = alloca %qd_stack_element_t
+  %fa_stp_L9196 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %fa_stk_L9196 = load ptr, ptr %fa_stp_L9196
+  call void @qd_stack_pop(ptr %fa_stk_L9196, ptr %fa_elem_L9196)
+  %fa_vp_L9196 = getelementptr %qd_stack_element_t, ptr %fa_elem_L9196, i32 0, i32 0
+  %fa_ptr_L9196 = load ptr, ptr %fa_vp_L9196
+  %fa_off_L9196 = load i64, ptr @__offset_code
+  %fa_fp_L9196 = getelementptr i8, ptr %fa_ptr_L9196, i64 %fa_off_L9196
+  %fa_val_L9196 = load ptr, ptr %fa_fp_L9196
+  call i32 @qd_push_p(ptr %ctx, ptr %fa_val_L9196)
+  %stp_L9197 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L9197 = load ptr, ptr %stp_L9197
+  call void @qd_stack_pop(ptr %stk_L9197, ptr %local.o)
+  %stp_L9198 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L9198 = load ptr, ptr %stp_L9198
+  call i32 @qdrt_push_element(ptr %stk_L9198, ptr %local.o)
+  call i32 @usr_sb_new(ptr %ctx)
+  call i32 @qd_push_s(ptr %ctx, ptr @.str.9199)
+  call i32 @usr_sb_append(ptr %ctx)
+  %stp_L9200 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L9200 = load ptr, ptr %stp_L9200
+  call i32 @qdrt_push_element(ptr %stk_L9200, ptr %local.uid)
+  call i32 @usr_sb_append_int(ptr %ctx)
+  call i32 @qd_push_s(ptr %ctx, ptr @.str.9201)
+  call i32 @usr_sb_append(ptr %ctx)
+  call i32 @usr_sb_finish(ptr %ctx)
+  call i32 @usr_sb_append(ptr %ctx)
+  %stp_L9202 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L9202 = load ptr, ptr %stp_L9202
+  call void @qd_stack_pop(ptr %stk_L9202, ptr %local.o)
+  %stp_L9203 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L9203 = load ptr, ptr %stp_L9203
+  call i32 @qdrt_push_element(ptr %stk_L9203, ptr %local.o)
+  call i32 @usr_sb_new(ptr %ctx)
+  call i32 @qd_push_s(ptr %ctx, ptr @.str.9204)
+  call i32 @usr_sb_append(ptr %ctx)
+  %stp_L9205 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L9205 = load ptr, ptr %stp_L9205
+  call i32 @qdrt_push_element(ptr %stk_L9205, ptr %local.uid)
+  call i32 @usr_sb_append_int(ptr %ctx)
+  call i32 @qd_push_s(ptr %ctx, ptr @.str.9206)
+  call i32 @usr_sb_append(ptr %ctx)
+  call i32 @usr_sb_finish(ptr %ctx)
+  call i32 @usr_sb_append(ptr %ctx)
+  %stp_L9207 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L9207 = load ptr, ptr %stp_L9207
+  call void @qd_stack_pop(ptr %stk_L9207, ptr %local.o)
+  %stp_L9208 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L9208 = load ptr, ptr %stp_L9208
+  call i32 @qdrt_push_element(ptr %stk_L9208, ptr %local.o)
+  call i32 @usr_sb_new(ptr %ctx)
+  call i32 @qd_push_s(ptr %ctx, ptr @.str.9209)
+  call i32 @usr_sb_append(ptr %ctx)
+  %stp_L9210 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L9210 = load ptr, ptr %stp_L9210
+  call i32 @qdrt_push_element(ptr %stk_L9210, ptr %local.uid)
+  call i32 @usr_sb_append_int(ptr %ctx)
+  call i32 @qd_push_s(ptr %ctx, ptr @.str.9211)
+  call i32 @usr_sb_append(ptr %ctx)
+  call i32 @usr_sb_finish(ptr %ctx)
+  call i32 @usr_sb_append(ptr %ctx)
   %stp_L9212 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
   %stk_L9212 = load ptr, ptr %stp_L9212
-  call void @qd_stack_pop(ptr %stk_L9212, ptr %local.loc)
+  call void @qd_stack_pop(ptr %stk_L9212, ptr %local.o)
   %stp_L9213 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
   %stk_L9213 = load ptr, ptr %stp_L9213
-  call void @qd_stack_pop(ptr %stk_L9213, ptr %local.n)
-  %stp_L9214 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L9214 = load ptr, ptr %stp_L9214
-  call void @qd_stack_pop(ptr %stk_L9214, ptr %local.st)
+  call i32 @qdrt_push_element(ptr %stk_L9213, ptr %local.o)
+  call i32 @usr_sb_new(ptr %ctx)
+  call i32 @qd_push_s(ptr %ctx, ptr @.str.9214)
+  call i32 @usr_sb_append(ptr %ctx)
   %stp_L9215 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
   %stk_L9215 = load ptr, ptr %stp_L9215
-  call i32 @qdrt_push_element(ptr %stk_L9215, ptr %local.st)
-  call i32 @usr_codegen_next_label(ptr %ctx)
-  %stp_L9216 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L9216 = load ptr, ptr %stp_L9216
-  call void @qd_stack_pop(ptr %stk_L9216, ptr %local.uid)
+  call i32 @qdrt_push_element(ptr %stk_L9215, ptr %local.uid)
+  call i32 @usr_sb_append_int(ptr %ctx)
+  call i32 @qd_push_s(ptr %ctx, ptr @.str.9216)
+  call i32 @usr_sb_append(ptr %ctx)
+  call i32 @usr_sb_finish(ptr %ctx)
+  call i32 @usr_sb_append(ptr %ctx)
   %stp_L9217 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
   %stk_L9217 = load ptr, ptr %stp_L9217
-  call void @qd_stack_pop(ptr %stk_L9217, ptr %local.st)
+  call void @qd_stack_pop(ptr %stk_L9217, ptr %local.o)
   %stp_L9218 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
   %stk_L9218 = load ptr, ptr %stp_L9218
-  call i32 @qdrt_push_element(ptr %stk_L9218, ptr %local.st)
-  call i32 @usr_codegen_next_label(ptr %ctx)
-  %stp_L9219 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L9219 = load ptr, ptr %stp_L9219
-  call void @qd_stack_pop(ptr %stk_L9219, ptr %local.body_label)
+  call i32 @qdrt_push_element(ptr %stk_L9218, ptr %local.o)
+  call i32 @usr_sb_new(ptr %ctx)
+  call i32 @qd_push_s(ptr %ctx, ptr @.str.9219)
+  call i32 @usr_sb_append(ptr %ctx)
   %stp_L9220 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
   %stk_L9220 = load ptr, ptr %stp_L9220
-  call void @qd_stack_pop(ptr %stk_L9220, ptr %local.st)
-  %stp_L9221 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L9221 = load ptr, ptr %stp_L9221
-  call i32 @qdrt_push_element(ptr %stk_L9221, ptr %local.st)
-  call i32 @usr_codegen_next_label(ptr %ctx)
+  call i32 @qdrt_push_element(ptr %stk_L9220, ptr %local.uid)
+  call i32 @usr_sb_append_int(ptr %ctx)
+  call i32 @qd_push_s(ptr %ctx, ptr @.str.9221)
+  call i32 @usr_sb_append(ptr %ctx)
   %stp_L9222 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
   %stk_L9222 = load ptr, ptr %stp_L9222
-  call void @qd_stack_pop(ptr %stk_L9222, ptr %local.exit_label)
-  %stp_L9223 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L9223 = load ptr, ptr %stp_L9223
-  call void @qd_stack_pop(ptr %stk_L9223, ptr %local.st)
+  call i32 @qdrt_push_element(ptr %stk_L9222, ptr %local.uid)
+  call i32 @usr_sb_append_int(ptr %ctx)
+  call i32 @qd_push_s(ptr %ctx, ptr @.str.9223)
+  call i32 @usr_sb_append(ptr %ctx)
+  call i32 @usr_sb_finish(ptr %ctx)
+  call i32 @usr_sb_append(ptr %ctx)
   %stp_L9224 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
   %stk_L9224 = load ptr, ptr %stp_L9224
-  call i32 @qdrt_push_element(ptr %stk_L9224, ptr %local.st)
-  call i32 @usr_codegen_next_label(ptr %ctx)
+  call void @qd_stack_pop(ptr %stk_L9224, ptr %local.o)
   %stp_L9225 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
   %stk_L9225 = load ptr, ptr %stp_L9225
-  call void @qd_stack_pop(ptr %stk_L9225, ptr %local.cond_label)
-  %stp_L9226 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L9226 = load ptr, ptr %stp_L9226
-  call void @qd_stack_pop(ptr %stk_L9226, ptr %local.st)
+  call i32 @qdrt_push_element(ptr %stk_L9225, ptr %local.o)
+  call i32 @usr_sb_new(ptr %ctx)
+  call i32 @qd_push_s(ptr %ctx, ptr @.str.9226)
+  call i32 @usr_sb_append(ptr %ctx)
   %stp_L9227 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
   %stk_L9227 = load ptr, ptr %stp_L9227
-  call i32 @qdrt_push_element(ptr %stk_L9227, ptr %local.n)
-  %fa_elem_L9228 = alloca %qd_stack_element_t
-  %fa_stp_L9228 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %fa_stk_L9228 = load ptr, ptr %fa_stp_L9228
-  call void @qd_stack_pop(ptr %fa_stk_L9228, ptr %fa_elem_L9228)
-  %fa_vp_L9228 = getelementptr %qd_stack_element_t, ptr %fa_elem_L9228, i32 0, i32 0
-  %fa_ptr_L9228 = load ptr, ptr %fa_vp_L9228
-  %fa_off_L9228 = load i64, ptr @__offset_ntext
-  %fa_fp_L9228 = getelementptr i8, ptr %fa_ptr_L9228, i64 %fa_off_L9228
-  %fa_val_L9228 = load ptr, ptr %fa_fp_L9228
-  call i32 @qd_push_s_ref(ptr %ctx, ptr %fa_val_L9228)
+  call i32 @qdrt_push_element(ptr %stk_L9227, ptr %local.uid)
+  call i32 @usr_sb_append_int(ptr %ctx)
+  call i32 @qd_push_s(ptr %ctx, ptr @.str.9228)
+  call i32 @usr_sb_append(ptr %ctx)
   %stp_L9229 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
   %stk_L9229 = load ptr, ptr %stp_L9229
-  call void @qd_stack_pop(ptr %stk_L9229, ptr %local.iter_var)
-  %stp_L9230 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L9230 = load ptr, ptr %stp_L9230
-  call i32 @qdrt_push_element(ptr %stk_L9230, ptr %local.loc)
-  call i32 @usr_sb_new(ptr %ctx)
-  call i32 @qd_push_s(ptr %ctx, ptr @.str.9231)
+  call i32 @qdrt_push_element(ptr %stk_L9229, ptr %local.uid)
+  call i32 @usr_sb_append_int(ptr %ctx)
+  call i32 @qd_push_s(ptr %ctx, ptr @.str.9230)
   call i32 @usr_sb_append(ptr %ctx)
+  call i32 @usr_sb_finish(ptr %ctx)
+  call i32 @usr_sb_append(ptr %ctx)
+  %stp_L9231 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L9231 = load ptr, ptr %stp_L9231
+  call void @qd_stack_pop(ptr %stk_L9231, ptr %local.o)
   %stp_L9232 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
   %stk_L9232 = load ptr, ptr %stp_L9232
-  call i32 @qdrt_push_element(ptr %stk_L9232, ptr %local.exit_label)
-  call i32 @usr_sb_append_int(ptr %ctx)
+  call i32 @qdrt_push_element(ptr %stk_L9232, ptr %local.o)
+  call i32 @usr_sb_new(ptr %ctx)
   call i32 @qd_push_s(ptr %ctx, ptr @.str.9233)
   call i32 @usr_sb_append(ptr %ctx)
   %stp_L9234 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
   %stk_L9234 = load ptr, ptr %stp_L9234
-  call i32 @qdrt_push_element(ptr %stk_L9234, ptr %local.cond_label)
+  call i32 @qdrt_push_element(ptr %stk_L9234, ptr %local.uid)
   call i32 @usr_sb_append_int(ptr %ctx)
-  call i32 @usr_sb_finish(ptr %ctx)
-  call i32 @usr_strings_concat(ptr %ctx)
-  %stp_L9235 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L9235 = load ptr, ptr %stp_L9235
-  call void @qd_stack_pop(ptr %stk_L9235, ptr %local.loop_loc)
+  call i32 @qd_push_s(ptr %ctx, ptr @.str.9235)
+  call i32 @usr_sb_append(ptr %ctx)
   %stp_L9236 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
   %stk_L9236 = load ptr, ptr %stp_L9236
-  call i32 @qdrt_push_element(ptr %stk_L9236, ptr %local.st)
-  %fa_elem_L9237 = alloca %qd_stack_element_t
-  %fa_stp_L9237 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %fa_stk_L9237 = load ptr, ptr %fa_stp_L9237
-  call void @qd_stack_pop(ptr %fa_stk_L9237, ptr %fa_elem_L9237)
-  %fa_vp_L9237 = getelementptr %qd_stack_element_t, ptr %fa_elem_L9237, i32 0, i32 0
-  %fa_ptr_L9237 = load ptr, ptr %fa_vp_L9237
-  %fa_off_L9237 = load i64, ptr @__offset_code
-  %fa_fp_L9237 = getelementptr i8, ptr %fa_ptr_L9237, i64 %fa_off_L9237
-  %fa_val_L9237 = load ptr, ptr %fa_fp_L9237
-  call i32 @qd_push_p(ptr %ctx, ptr %fa_val_L9237)
+  call i32 @qdrt_push_element(ptr %stk_L9236, ptr %local.uid)
+  call i32 @usr_sb_append_int(ptr %ctx)
+  call i32 @qd_push_s(ptr %ctx, ptr @.str.9237)
+  call i32 @usr_sb_append(ptr %ctx)
+  call i32 @usr_sb_finish(ptr %ctx)
+  call i32 @usr_sb_append(ptr %ctx)
   %stp_L9238 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
   %stk_L9238 = load ptr, ptr %stp_L9238
   call void @qd_stack_pop(ptr %stk_L9238, ptr %local.o)
@@ -37569,181 +37466,180 @@ entry:
   call i32 @usr_sb_append_int(ptr %ctx)
   call i32 @qd_push_s(ptr %ctx, ptr @.str.9242)
   call i32 @usr_sb_append(ptr %ctx)
-  call i32 @usr_sb_finish(ptr %ctx)
-  call i32 @usr_sb_append(ptr %ctx)
   %stp_L9243 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
   %stk_L9243 = load ptr, ptr %stp_L9243
-  call void @qd_stack_pop(ptr %stk_L9243, ptr %local.o)
-  %stp_L9244 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L9244 = load ptr, ptr %stp_L9244
-  call i32 @qdrt_push_element(ptr %stk_L9244, ptr %local.o)
-  call i32 @usr_sb_new(ptr %ctx)
-  call i32 @qd_push_s(ptr %ctx, ptr @.str.9245)
-  call i32 @usr_sb_append(ptr %ctx)
-  %stp_L9246 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L9246 = load ptr, ptr %stp_L9246
-  call i32 @qdrt_push_element(ptr %stk_L9246, ptr %local.uid)
+  call i32 @qdrt_push_element(ptr %stk_L9243, ptr %local.uid)
   call i32 @usr_sb_append_int(ptr %ctx)
-  call i32 @qd_push_s(ptr %ctx, ptr @.str.9247)
+  call i32 @qd_push_s(ptr %ctx, ptr @.str.9244)
   call i32 @usr_sb_append(ptr %ctx)
   call i32 @usr_sb_finish(ptr %ctx)
+  call i32 @usr_sb_append(ptr %ctx)
+  %stp_L9245 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L9245 = load ptr, ptr %stp_L9245
+  call void @qd_stack_pop(ptr %stk_L9245, ptr %local.o)
+  %stp_L9246 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L9246 = load ptr, ptr %stp_L9246
+  call i32 @qdrt_push_element(ptr %stk_L9246, ptr %local.o)
+  call i32 @usr_sb_new(ptr %ctx)
+  call i32 @qd_push_s(ptr %ctx, ptr @.str.9247)
   call i32 @usr_sb_append(ptr %ctx)
   %stp_L9248 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
   %stk_L9248 = load ptr, ptr %stp_L9248
-  call void @qd_stack_pop(ptr %stk_L9248, ptr %local.o)
-  %stp_L9249 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L9249 = load ptr, ptr %stp_L9249
-  call i32 @qdrt_push_element(ptr %stk_L9249, ptr %local.o)
-  call i32 @usr_sb_new(ptr %ctx)
-  call i32 @qd_push_s(ptr %ctx, ptr @.str.9250)
-  call i32 @usr_sb_append(ptr %ctx)
-  %stp_L9251 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L9251 = load ptr, ptr %stp_L9251
-  call i32 @qdrt_push_element(ptr %stk_L9251, ptr %local.uid)
+  call i32 @qdrt_push_element(ptr %stk_L9248, ptr %local.uid)
   call i32 @usr_sb_append_int(ptr %ctx)
-  call i32 @qd_push_s(ptr %ctx, ptr @.str.9252)
+  call i32 @qd_push_s(ptr %ctx, ptr @.str.9249)
+  call i32 @usr_sb_append(ptr %ctx)
+  %stp_L9250 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L9250 = load ptr, ptr %stp_L9250
+  call i32 @qdrt_push_element(ptr %stk_L9250, ptr %local.uid)
+  call i32 @usr_sb_append_int(ptr %ctx)
+  call i32 @qd_push_s(ptr %ctx, ptr @.str.9251)
   call i32 @usr_sb_append(ptr %ctx)
   call i32 @usr_sb_finish(ptr %ctx)
   call i32 @usr_sb_append(ptr %ctx)
+  %stp_L9252 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L9252 = load ptr, ptr %stp_L9252
+  call void @qd_stack_pop(ptr %stk_L9252, ptr %local.o)
   %stp_L9253 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
   %stk_L9253 = load ptr, ptr %stp_L9253
-  call void @qd_stack_pop(ptr %stk_L9253, ptr %local.o)
-  %stp_L9254 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L9254 = load ptr, ptr %stp_L9254
-  call i32 @qdrt_push_element(ptr %stk_L9254, ptr %local.o)
+  call i32 @qdrt_push_element(ptr %stk_L9253, ptr %local.o)
   call i32 @usr_sb_new(ptr %ctx)
-  call i32 @qd_push_s(ptr %ctx, ptr @.str.9255)
+  call i32 @qd_push_s(ptr %ctx, ptr @.str.9254)
   call i32 @usr_sb_append(ptr %ctx)
-  %stp_L9256 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L9256 = load ptr, ptr %stp_L9256
-  call i32 @qdrt_push_element(ptr %stk_L9256, ptr %local.uid)
+  %stp_L9255 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L9255 = load ptr, ptr %stp_L9255
+  call i32 @qdrt_push_element(ptr %stk_L9255, ptr %local.uid)
   call i32 @usr_sb_append_int(ptr %ctx)
-  call i32 @qd_push_s(ptr %ctx, ptr @.str.9257)
+  call i32 @qd_push_s(ptr %ctx, ptr @.str.9256)
+  call i32 @usr_sb_append(ptr %ctx)
+  %stp_L9257 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L9257 = load ptr, ptr %stp_L9257
+  call i32 @qdrt_push_element(ptr %stk_L9257, ptr %local.uid)
+  call i32 @usr_sb_append_int(ptr %ctx)
+  call i32 @qd_push_s(ptr %ctx, ptr @.str.9258)
   call i32 @usr_sb_append(ptr %ctx)
   call i32 @usr_sb_finish(ptr %ctx)
   call i32 @usr_sb_append(ptr %ctx)
-  %stp_L9258 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L9258 = load ptr, ptr %stp_L9258
-  call void @qd_stack_pop(ptr %stk_L9258, ptr %local.o)
   %stp_L9259 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
   %stk_L9259 = load ptr, ptr %stp_L9259
-  call i32 @qdrt_push_element(ptr %stk_L9259, ptr %local.o)
+  call void @qd_stack_pop(ptr %stk_L9259, ptr %local.o)
+  %stp_L9260 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L9260 = load ptr, ptr %stp_L9260
+  call i32 @qdrt_push_element(ptr %stk_L9260, ptr %local.o)
   call i32 @usr_sb_new(ptr %ctx)
-  call i32 @qd_push_s(ptr %ctx, ptr @.str.9260)
+  call i32 @qd_push_s(ptr %ctx, ptr @.str.9261)
   call i32 @usr_sb_append(ptr %ctx)
-  %stp_L9261 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L9261 = load ptr, ptr %stp_L9261
-  call i32 @qdrt_push_element(ptr %stk_L9261, ptr %local.uid)
+  %stp_L9262 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L9262 = load ptr, ptr %stp_L9262
+  call i32 @qdrt_push_element(ptr %stk_L9262, ptr %local.uid)
   call i32 @usr_sb_append_int(ptr %ctx)
-  call i32 @qd_push_s(ptr %ctx, ptr @.str.9262)
+  call i32 @qd_push_s(ptr %ctx, ptr @.str.9263)
   call i32 @usr_sb_append(ptr %ctx)
-  %stp_L9263 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L9263 = load ptr, ptr %stp_L9263
-  call i32 @qdrt_push_element(ptr %stk_L9263, ptr %local.uid)
+  %stp_L9264 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L9264 = load ptr, ptr %stp_L9264
+  call i32 @qdrt_push_element(ptr %stk_L9264, ptr %local.uid)
   call i32 @usr_sb_append_int(ptr %ctx)
-  call i32 @qd_push_s(ptr %ctx, ptr @.str.9264)
+  call i32 @qd_push_s(ptr %ctx, ptr @.str.9265)
   call i32 @usr_sb_append(ptr %ctx)
   call i32 @usr_sb_finish(ptr %ctx)
   call i32 @usr_sb_append(ptr %ctx)
-  %stp_L9265 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L9265 = load ptr, ptr %stp_L9265
-  call void @qd_stack_pop(ptr %stk_L9265, ptr %local.o)
   %stp_L9266 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
   %stk_L9266 = load ptr, ptr %stp_L9266
-  call i32 @qdrt_push_element(ptr %stk_L9266, ptr %local.o)
+  call void @qd_stack_pop(ptr %stk_L9266, ptr %local.o)
+  %stp_L9267 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L9267 = load ptr, ptr %stp_L9267
+  call i32 @qdrt_push_element(ptr %stk_L9267, ptr %local.o)
   call i32 @usr_sb_new(ptr %ctx)
-  call i32 @qd_push_s(ptr %ctx, ptr @.str.9267)
+  call i32 @qd_push_s(ptr %ctx, ptr @.str.9268)
   call i32 @usr_sb_append(ptr %ctx)
-  %stp_L9268 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L9268 = load ptr, ptr %stp_L9268
-  call i32 @qdrt_push_element(ptr %stk_L9268, ptr %local.uid)
+  %stp_L9269 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L9269 = load ptr, ptr %stp_L9269
+  call i32 @qdrt_push_element(ptr %stk_L9269, ptr %local.uid)
   call i32 @usr_sb_append_int(ptr %ctx)
-  call i32 @qd_push_s(ptr %ctx, ptr @.str.9269)
+  call i32 @qd_push_s(ptr %ctx, ptr @.str.9270)
   call i32 @usr_sb_append(ptr %ctx)
-  %stp_L9270 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L9270 = load ptr, ptr %stp_L9270
-  call i32 @qdrt_push_element(ptr %stk_L9270, ptr %local.uid)
+  %stp_L9271 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L9271 = load ptr, ptr %stp_L9271
+  call i32 @qdrt_push_element(ptr %stk_L9271, ptr %local.iter_var)
   call i32 @usr_sb_append_int(ptr %ctx)
-  call i32 @qd_push_s(ptr %ctx, ptr @.str.9271)
+  call i32 @qd_push_s(ptr %ctx, ptr @.str.9272)
   call i32 @usr_sb_append(ptr %ctx)
   call i32 @usr_sb_finish(ptr %ctx)
   call i32 @usr_sb_append(ptr %ctx)
-  %stp_L9272 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L9272 = load ptr, ptr %stp_L9272
-  call void @qd_stack_pop(ptr %stk_L9272, ptr %local.o)
   %stp_L9273 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
   %stk_L9273 = load ptr, ptr %stp_L9273
-  call i32 @qdrt_push_element(ptr %stk_L9273, ptr %local.o)
+  call void @qd_stack_pop(ptr %stk_L9273, ptr %local.o)
+  %stp_L9274 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L9274 = load ptr, ptr %stp_L9274
+  call i32 @qdrt_push_element(ptr %stk_L9274, ptr %local.o)
   call i32 @usr_sb_new(ptr %ctx)
-  call i32 @qd_push_s(ptr %ctx, ptr @.str.9274)
+  call i32 @qd_push_s(ptr %ctx, ptr @.str.9275)
   call i32 @usr_sb_append(ptr %ctx)
-  %stp_L9275 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L9275 = load ptr, ptr %stp_L9275
-  call i32 @qdrt_push_element(ptr %stk_L9275, ptr %local.uid)
+  %stp_L9276 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L9276 = load ptr, ptr %stp_L9276
+  call i32 @qdrt_push_element(ptr %stk_L9276, ptr %local.cond_label)
   call i32 @usr_sb_append_int(ptr %ctx)
-  call i32 @qd_push_s(ptr %ctx, ptr @.str.9276)
-  call i32 @usr_sb_append(ptr %ctx)
-  %stp_L9277 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L9277 = load ptr, ptr %stp_L9277
-  call i32 @qdrt_push_element(ptr %stk_L9277, ptr %local.uid)
-  call i32 @usr_sb_append_int(ptr %ctx)
-  call i32 @qd_push_s(ptr %ctx, ptr @.str.9278)
+  call i32 @qd_push_s(ptr %ctx, ptr @.str.9277)
   call i32 @usr_sb_append(ptr %ctx)
   call i32 @usr_sb_finish(ptr %ctx)
   call i32 @usr_sb_append(ptr %ctx)
+  %stp_L9278 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L9278 = load ptr, ptr %stp_L9278
+  call void @qd_stack_pop(ptr %stk_L9278, ptr %local.o)
   %stp_L9279 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
   %stk_L9279 = load ptr, ptr %stp_L9279
-  call void @qd_stack_pop(ptr %stk_L9279, ptr %local.o)
+  call i32 @qdrt_push_element(ptr %stk_L9279, ptr %local.o)
+  call i32 @usr_sb_new(ptr %ctx)
   %stp_L9280 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
   %stk_L9280 = load ptr, ptr %stp_L9280
-  call i32 @qdrt_push_element(ptr %stk_L9280, ptr %local.o)
-  call i32 @usr_sb_new(ptr %ctx)
+  call i32 @qdrt_push_element(ptr %stk_L9280, ptr %local.cond_label)
+  call i32 @usr_sb_append_int(ptr %ctx)
   call i32 @qd_push_s(ptr %ctx, ptr @.str.9281)
+  call i32 @usr_sb_append(ptr %ctx)
+  call i32 @usr_sb_finish(ptr %ctx)
   call i32 @usr_sb_append(ptr %ctx)
   %stp_L9282 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
   %stk_L9282 = load ptr, ptr %stp_L9282
-  call i32 @qdrt_push_element(ptr %stk_L9282, ptr %local.uid)
+  call void @qd_stack_pop(ptr %stk_L9282, ptr %local.o)
+  %stp_L9283 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L9283 = load ptr, ptr %stp_L9283
+  call i32 @qdrt_push_element(ptr %stk_L9283, ptr %local.o)
+  call i32 @usr_sb_new(ptr %ctx)
+  call i32 @qd_push_s(ptr %ctx, ptr @.str.9284)
+  call i32 @usr_sb_append(ptr %ctx)
+  %stp_L9285 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L9285 = load ptr, ptr %stp_L9285
+  call i32 @qdrt_push_element(ptr %stk_L9285, ptr %local.uid)
   call i32 @usr_sb_append_int(ptr %ctx)
-  call i32 @qd_push_s(ptr %ctx, ptr @.str.9283)
+  call i32 @qd_push_s(ptr %ctx, ptr @.str.9286)
   call i32 @usr_sb_append(ptr %ctx)
-  %stp_L9284 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L9284 = load ptr, ptr %stp_L9284
-  call i32 @qdrt_push_element(ptr %stk_L9284, ptr %local.uid)
-  call i32 @usr_sb_append_int(ptr %ctx)
-  call i32 @qd_push_s(ptr %ctx, ptr @.str.9285)
-  call i32 @usr_sb_append(ptr %ctx)
-  call i32 @usr_sb_finish(ptr %ctx)
-  call i32 @usr_sb_append(ptr %ctx)
-  %stp_L9286 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L9286 = load ptr, ptr %stp_L9286
-  call void @qd_stack_pop(ptr %stk_L9286, ptr %local.o)
   %stp_L9287 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
   %stk_L9287 = load ptr, ptr %stp_L9287
-  call i32 @qdrt_push_element(ptr %stk_L9287, ptr %local.o)
-  call i32 @usr_sb_new(ptr %ctx)
+  call i32 @qdrt_push_element(ptr %stk_L9287, ptr %local.iter_var)
+  call i32 @usr_sb_append_int(ptr %ctx)
   call i32 @qd_push_s(ptr %ctx, ptr @.str.9288)
+  call i32 @usr_sb_append(ptr %ctx)
+  call i32 @usr_sb_finish(ptr %ctx)
   call i32 @usr_sb_append(ptr %ctx)
   %stp_L9289 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
   %stk_L9289 = load ptr, ptr %stp_L9289
-  call i32 @qdrt_push_element(ptr %stk_L9289, ptr %local.uid)
+  call void @qd_stack_pop(ptr %stk_L9289, ptr %local.o)
+  %stp_L9290 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L9290 = load ptr, ptr %stp_L9290
+  call i32 @qdrt_push_element(ptr %stk_L9290, ptr %local.o)
+  call i32 @usr_sb_new(ptr %ctx)
+  call i32 @qd_push_s(ptr %ctx, ptr @.str.9291)
+  call i32 @usr_sb_append(ptr %ctx)
+  %stp_L9292 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L9292 = load ptr, ptr %stp_L9292
+  call i32 @qdrt_push_element(ptr %stk_L9292, ptr %local.uid)
   call i32 @usr_sb_append_int(ptr %ctx)
-  call i32 @qd_push_s(ptr %ctx, ptr @.str.9290)
+  call i32 @qd_push_s(ptr %ctx, ptr @.str.9293)
   call i32 @usr_sb_append(ptr %ctx)
-  %stp_L9291 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L9291 = load ptr, ptr %stp_L9291
-  call i32 @qdrt_push_element(ptr %stk_L9291, ptr %local.uid)
-  call i32 @usr_sb_append_int(ptr %ctx)
-  call i32 @qd_push_s(ptr %ctx, ptr @.str.9292)
-  call i32 @usr_sb_append(ptr %ctx)
-  call i32 @usr_sb_finish(ptr %ctx)
-  call i32 @usr_sb_append(ptr %ctx)
-  %stp_L9293 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L9293 = load ptr, ptr %stp_L9293
-  call void @qd_stack_pop(ptr %stk_L9293, ptr %local.o)
   %stp_L9294 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
   %stk_L9294 = load ptr, ptr %stp_L9294
-  call i32 @qdrt_push_element(ptr %stk_L9294, ptr %local.o)
-  call i32 @usr_sb_new(ptr %ctx)
+  call i32 @qdrt_push_element(ptr %stk_L9294, ptr %local.uid)
+  call i32 @usr_sb_append_int(ptr %ctx)
   call i32 @qd_push_s(ptr %ctx, ptr @.str.9295)
   call i32 @usr_sb_append(ptr %ctx)
   %stp_L9296 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
@@ -37752,32 +37648,32 @@ entry:
   call i32 @usr_sb_append_int(ptr %ctx)
   call i32 @qd_push_s(ptr %ctx, ptr @.str.9297)
   call i32 @usr_sb_append(ptr %ctx)
-  %stp_L9298 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L9298 = load ptr, ptr %stp_L9298
-  call i32 @qdrt_push_element(ptr %stk_L9298, ptr %local.uid)
-  call i32 @usr_sb_append_int(ptr %ctx)
-  call i32 @qd_push_s(ptr %ctx, ptr @.str.9299)
-  call i32 @usr_sb_append(ptr %ctx)
   call i32 @usr_sb_finish(ptr %ctx)
   call i32 @usr_sb_append(ptr %ctx)
-  %stp_L9300 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L9300 = load ptr, ptr %stp_L9300
-  call void @qd_stack_pop(ptr %stk_L9300, ptr %local.o)
+  %stp_L9298 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L9298 = load ptr, ptr %stp_L9298
+  call void @qd_stack_pop(ptr %stk_L9298, ptr %local.o)
+  %stp_L9299 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L9299 = load ptr, ptr %stp_L9299
+  call i32 @qdrt_push_element(ptr %stk_L9299, ptr %local.o)
+  call i32 @usr_sb_new(ptr %ctx)
+  call i32 @qd_push_s(ptr %ctx, ptr @.str.9300)
+  call i32 @usr_sb_append(ptr %ctx)
   %stp_L9301 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
   %stk_L9301 = load ptr, ptr %stp_L9301
-  call i32 @qdrt_push_element(ptr %stk_L9301, ptr %local.o)
-  call i32 @usr_sb_new(ptr %ctx)
+  call i32 @qdrt_push_element(ptr %stk_L9301, ptr %local.uid)
+  call i32 @usr_sb_append_int(ptr %ctx)
   call i32 @qd_push_s(ptr %ctx, ptr @.str.9302)
   call i32 @usr_sb_append(ptr %ctx)
   %stp_L9303 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
   %stk_L9303 = load ptr, ptr %stp_L9303
-  call i32 @qdrt_push_element(ptr %stk_L9303, ptr %local.uid)
+  call i32 @qdrt_push_element(ptr %stk_L9303, ptr %local.body_label)
   call i32 @usr_sb_append_int(ptr %ctx)
   call i32 @qd_push_s(ptr %ctx, ptr @.str.9304)
   call i32 @usr_sb_append(ptr %ctx)
   %stp_L9305 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
   %stk_L9305 = load ptr, ptr %stp_L9305
-  call i32 @qdrt_push_element(ptr %stk_L9305, ptr %local.uid)
+  call i32 @qdrt_push_element(ptr %stk_L9305, ptr %local.exit_label)
   call i32 @usr_sb_append_int(ptr %ctx)
   call i32 @qd_push_s(ptr %ctx, ptr @.str.9306)
   call i32 @usr_sb_append(ptr %ctx)
@@ -37790,84 +37686,103 @@ entry:
   %stk_L9308 = load ptr, ptr %stp_L9308
   call i32 @qdrt_push_element(ptr %stk_L9308, ptr %local.o)
   call i32 @usr_sb_new(ptr %ctx)
-  call i32 @qd_push_s(ptr %ctx, ptr @.str.9309)
-  call i32 @usr_sb_append(ptr %ctx)
-  %stp_L9310 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L9310 = load ptr, ptr %stp_L9310
-  call i32 @qdrt_push_element(ptr %stk_L9310, ptr %local.uid)
+  %stp_L9309 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L9309 = load ptr, ptr %stp_L9309
+  call i32 @qdrt_push_element(ptr %stk_L9309, ptr %local.body_label)
   call i32 @usr_sb_append_int(ptr %ctx)
-  call i32 @qd_push_s(ptr %ctx, ptr @.str.9311)
+  call i32 @qd_push_s(ptr %ctx, ptr @.str.9310)
   call i32 @usr_sb_append(ptr %ctx)
+  call i32 @usr_sb_finish(ptr %ctx)
+  call i32 @usr_sb_append(ptr %ctx)
+  %stp_L9311 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L9311 = load ptr, ptr %stp_L9311
+  call void @qd_stack_pop(ptr %stk_L9311, ptr %local.o)
   %stp_L9312 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
   %stk_L9312 = load ptr, ptr %stp_L9312
-  call i32 @qdrt_push_element(ptr %stk_L9312, ptr %local.iter_var)
-  call i32 @usr_sb_append_int(ptr %ctx)
-  call i32 @qd_push_s(ptr %ctx, ptr @.str.9313)
-  call i32 @usr_sb_append(ptr %ctx)
-  call i32 @usr_sb_finish(ptr %ctx)
-  call i32 @usr_sb_append(ptr %ctx)
+  call i32 @qdrt_push_element(ptr %stk_L9312, ptr %local.o)
+  %fs_elem_L9313 = alloca %qd_stack_element_t
+  %fs_stp_L9313 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %fs_stk_L9313 = load ptr, ptr %fs_stp_L9313
+  call void @qd_stack_pop(ptr %fs_stk_L9313, ptr %fs_elem_L9313)
+  %fs_vp_L9313 = getelementptr %qd_stack_element_t, ptr %fs_elem_L9313, i32 0, i32 0
+  %fs_val_L9313 = load i64, ptr %fs_vp_L9313
+  %fs_svp_L9313 = getelementptr %qd_stack_element_t, ptr %local.st, i32 0, i32 0
+  %fs_sptr_L9313 = load ptr, ptr %fs_svp_L9313
+  %fs_off_L9313 = load i64, ptr @__offset_code
+  %fs_fp_L9313 = getelementptr i8, ptr %fs_sptr_L9313, i64 %fs_off_L9313
+  store i64 %fs_val_L9313, ptr %fs_fp_L9313
   %stp_L9314 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
   %stk_L9314 = load ptr, ptr %stp_L9314
-  call void @qd_stack_pop(ptr %stk_L9314, ptr %local.o)
+  call i32 @qdrt_push_element(ptr %stk_L9314, ptr %local.st)
   %stp_L9315 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
   %stk_L9315 = load ptr, ptr %stp_L9315
-  call i32 @qdrt_push_element(ptr %stk_L9315, ptr %local.o)
-  call i32 @usr_sb_new(ptr %ctx)
-  call i32 @qd_push_s(ptr %ctx, ptr @.str.9316)
-  call i32 @usr_sb_append(ptr %ctx)
+  call i32 @qdrt_push_element(ptr %stk_L9315, ptr %local.n)
+  %fa_elem_L9316 = alloca %qd_stack_element_t
+  %fa_stp_L9316 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %fa_stk_L9316 = load ptr, ptr %fa_stp_L9316
+  call void @qd_stack_pop(ptr %fa_stk_L9316, ptr %fa_elem_L9316)
+  %fa_vp_L9316 = getelementptr %qd_stack_element_t, ptr %fa_elem_L9316, i32 0, i32 0
+  %fa_ptr_L9316 = load ptr, ptr %fa_vp_L9316
+  %fa_off_L9316 = load i64, ptr @__offset_child1
+  %fa_fp_L9316 = getelementptr i8, ptr %fa_ptr_L9316, i64 %fa_off_L9316
+  %fa_val_L9316 = load ptr, ptr %fa_fp_L9316
+  call i32 @qd_push_p(ptr %ctx, ptr %fa_val_L9316)
   %stp_L9317 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
   %stk_L9317 = load ptr, ptr %stp_L9317
-  call i32 @qdrt_push_element(ptr %stk_L9317, ptr %local.cond_label)
-  call i32 @usr_sb_append_int(ptr %ctx)
-  call i32 @qd_push_s(ptr %ctx, ptr @.str.9318)
-  call i32 @usr_sb_append(ptr %ctx)
-  call i32 @usr_sb_finish(ptr %ctx)
-  call i32 @usr_sb_append(ptr %ctx)
+  call i32 @qdrt_push_element(ptr %stk_L9317, ptr %local.loop_loc)
+  call i32 @usr_codegen_emit_block(ptr %ctx)
+  %stp_L9318 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L9318 = load ptr, ptr %stp_L9318
+  call void @qd_stack_pop(ptr %stk_L9318, ptr %local.st)
   %stp_L9319 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
   %stk_L9319 = load ptr, ptr %stp_L9319
-  call void @qd_stack_pop(ptr %stk_L9319, ptr %local.o)
-  %stp_L9320 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L9320 = load ptr, ptr %stp_L9320
-  call i32 @qdrt_push_element(ptr %stk_L9320, ptr %local.o)
-  call i32 @usr_sb_new(ptr %ctx)
+  call i32 @qdrt_push_element(ptr %stk_L9319, ptr %local.st)
+  %fa_elem_L9320 = alloca %qd_stack_element_t
+  %fa_stp_L9320 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %fa_stk_L9320 = load ptr, ptr %fa_stp_L9320
+  call void @qd_stack_pop(ptr %fa_stk_L9320, ptr %fa_elem_L9320)
+  %fa_vp_L9320 = getelementptr %qd_stack_element_t, ptr %fa_elem_L9320, i32 0, i32 0
+  %fa_ptr_L9320 = load ptr, ptr %fa_vp_L9320
+  %fa_off_L9320 = load i64, ptr @__offset_code
+  %fa_fp_L9320 = getelementptr i8, ptr %fa_ptr_L9320, i64 %fa_off_L9320
+  %fa_val_L9320 = load ptr, ptr %fa_fp_L9320
+  call i32 @qd_push_p(ptr %ctx, ptr %fa_val_L9320)
   %stp_L9321 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
   %stk_L9321 = load ptr, ptr %stp_L9321
-  call i32 @qdrt_push_element(ptr %stk_L9321, ptr %local.cond_label)
-  call i32 @usr_sb_append_int(ptr %ctx)
-  call i32 @qd_push_s(ptr %ctx, ptr @.str.9322)
+  call void @qd_stack_pop(ptr %stk_L9321, ptr %local.o)
+  %stp_L9322 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L9322 = load ptr, ptr %stp_L9322
+  call i32 @qdrt_push_element(ptr %stk_L9322, ptr %local.o)
+  call i32 @usr_sb_new(ptr %ctx)
+  call i32 @qd_push_s(ptr %ctx, ptr @.str.9323)
   call i32 @usr_sb_append(ptr %ctx)
-  call i32 @usr_sb_finish(ptr %ctx)
-  call i32 @usr_sb_append(ptr %ctx)
-  %stp_L9323 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L9323 = load ptr, ptr %stp_L9323
-  call void @qd_stack_pop(ptr %stk_L9323, ptr %local.o)
   %stp_L9324 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
   %stk_L9324 = load ptr, ptr %stp_L9324
-  call i32 @qdrt_push_element(ptr %stk_L9324, ptr %local.o)
-  call i32 @usr_sb_new(ptr %ctx)
+  call i32 @qdrt_push_element(ptr %stk_L9324, ptr %local.uid)
+  call i32 @usr_sb_append_int(ptr %ctx)
   call i32 @qd_push_s(ptr %ctx, ptr @.str.9325)
   call i32 @usr_sb_append(ptr %ctx)
   %stp_L9326 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
   %stk_L9326 = load ptr, ptr %stp_L9326
-  call i32 @qdrt_push_element(ptr %stk_L9326, ptr %local.uid)
+  call i32 @qdrt_push_element(ptr %stk_L9326, ptr %local.iter_var)
   call i32 @usr_sb_append_int(ptr %ctx)
   call i32 @qd_push_s(ptr %ctx, ptr @.str.9327)
   call i32 @usr_sb_append(ptr %ctx)
-  %stp_L9328 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L9328 = load ptr, ptr %stp_L9328
-  call i32 @qdrt_push_element(ptr %stk_L9328, ptr %local.iter_var)
-  call i32 @usr_sb_append_int(ptr %ctx)
-  call i32 @qd_push_s(ptr %ctx, ptr @.str.9329)
-  call i32 @usr_sb_append(ptr %ctx)
   call i32 @usr_sb_finish(ptr %ctx)
   call i32 @usr_sb_append(ptr %ctx)
-  %stp_L9330 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L9330 = load ptr, ptr %stp_L9330
-  call void @qd_stack_pop(ptr %stk_L9330, ptr %local.o)
+  %stp_L9328 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L9328 = load ptr, ptr %stp_L9328
+  call void @qd_stack_pop(ptr %stk_L9328, ptr %local.o)
+  %stp_L9329 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L9329 = load ptr, ptr %stp_L9329
+  call i32 @qdrt_push_element(ptr %stk_L9329, ptr %local.o)
+  call i32 @usr_sb_new(ptr %ctx)
+  call i32 @qd_push_s(ptr %ctx, ptr @.str.9330)
+  call i32 @usr_sb_append(ptr %ctx)
   %stp_L9331 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
   %stk_L9331 = load ptr, ptr %stp_L9331
-  call i32 @qdrt_push_element(ptr %stk_L9331, ptr %local.o)
-  call i32 @usr_sb_new(ptr %ctx)
+  call i32 @qdrt_push_element(ptr %stk_L9331, ptr %local.uid)
+  call i32 @usr_sb_append_int(ptr %ctx)
   call i32 @qd_push_s(ptr %ctx, ptr @.str.9332)
   call i32 @usr_sb_append(ptr %ctx)
   %stp_L9333 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
@@ -37882,238 +37797,83 @@ entry:
   call i32 @usr_sb_append_int(ptr %ctx)
   call i32 @qd_push_s(ptr %ctx, ptr @.str.9336)
   call i32 @usr_sb_append(ptr %ctx)
-  %stp_L9337 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L9337 = load ptr, ptr %stp_L9337
-  call i32 @qdrt_push_element(ptr %stk_L9337, ptr %local.uid)
-  call i32 @usr_sb_append_int(ptr %ctx)
-  call i32 @qd_push_s(ptr %ctx, ptr @.str.9338)
-  call i32 @usr_sb_append(ptr %ctx)
   call i32 @usr_sb_finish(ptr %ctx)
   call i32 @usr_sb_append(ptr %ctx)
-  %stp_L9339 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L9339 = load ptr, ptr %stp_L9339
-  call void @qd_stack_pop(ptr %stk_L9339, ptr %local.o)
+  %stp_L9337 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L9337 = load ptr, ptr %stp_L9337
+  call void @qd_stack_pop(ptr %stk_L9337, ptr %local.o)
+  %stp_L9338 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L9338 = load ptr, ptr %stp_L9338
+  call i32 @qdrt_push_element(ptr %stk_L9338, ptr %local.o)
+  call i32 @usr_sb_new(ptr %ctx)
+  call i32 @qd_push_s(ptr %ctx, ptr @.str.9339)
+  call i32 @usr_sb_append(ptr %ctx)
   %stp_L9340 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
   %stk_L9340 = load ptr, ptr %stp_L9340
-  call i32 @qdrt_push_element(ptr %stk_L9340, ptr %local.o)
-  call i32 @usr_sb_new(ptr %ctx)
+  call i32 @qdrt_push_element(ptr %stk_L9340, ptr %local.uid)
+  call i32 @usr_sb_append_int(ptr %ctx)
   call i32 @qd_push_s(ptr %ctx, ptr @.str.9341)
   call i32 @usr_sb_append(ptr %ctx)
   %stp_L9342 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
   %stk_L9342 = load ptr, ptr %stp_L9342
-  call i32 @qdrt_push_element(ptr %stk_L9342, ptr %local.uid)
+  call i32 @qdrt_push_element(ptr %stk_L9342, ptr %local.iter_var)
   call i32 @usr_sb_append_int(ptr %ctx)
   call i32 @qd_push_s(ptr %ctx, ptr @.str.9343)
   call i32 @usr_sb_append(ptr %ctx)
+  call i32 @usr_sb_finish(ptr %ctx)
+  call i32 @usr_sb_append(ptr %ctx)
   %stp_L9344 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
   %stk_L9344 = load ptr, ptr %stp_L9344
-  call i32 @qdrt_push_element(ptr %stk_L9344, ptr %local.body_label)
-  call i32 @usr_sb_append_int(ptr %ctx)
-  call i32 @qd_push_s(ptr %ctx, ptr @.str.9345)
+  call void @qd_stack_pop(ptr %stk_L9344, ptr %local.o)
+  %stp_L9345 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L9345 = load ptr, ptr %stp_L9345
+  call i32 @qdrt_push_element(ptr %stk_L9345, ptr %local.o)
+  call i32 @usr_sb_new(ptr %ctx)
+  call i32 @qd_push_s(ptr %ctx, ptr @.str.9346)
   call i32 @usr_sb_append(ptr %ctx)
-  %stp_L9346 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L9346 = load ptr, ptr %stp_L9346
-  call i32 @qdrt_push_element(ptr %stk_L9346, ptr %local.exit_label)
+  %stp_L9347 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L9347 = load ptr, ptr %stp_L9347
+  call i32 @qdrt_push_element(ptr %stk_L9347, ptr %local.cond_label)
   call i32 @usr_sb_append_int(ptr %ctx)
-  call i32 @qd_push_s(ptr %ctx, ptr @.str.9347)
+  call i32 @qd_push_s(ptr %ctx, ptr @.str.9348)
   call i32 @usr_sb_append(ptr %ctx)
   call i32 @usr_sb_finish(ptr %ctx)
   call i32 @usr_sb_append(ptr %ctx)
-  %stp_L9348 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L9348 = load ptr, ptr %stp_L9348
-  call void @qd_stack_pop(ptr %stk_L9348, ptr %local.o)
   %stp_L9349 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
   %stk_L9349 = load ptr, ptr %stp_L9349
-  call i32 @qdrt_push_element(ptr %stk_L9349, ptr %local.o)
-  call i32 @usr_sb_new(ptr %ctx)
+  call void @qd_stack_pop(ptr %stk_L9349, ptr %local.o)
   %stp_L9350 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
   %stk_L9350 = load ptr, ptr %stp_L9350
-  call i32 @qdrt_push_element(ptr %stk_L9350, ptr %local.body_label)
+  call i32 @qdrt_push_element(ptr %stk_L9350, ptr %local.o)
+  call i32 @usr_sb_new(ptr %ctx)
+  %stp_L9351 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L9351 = load ptr, ptr %stp_L9351
+  call i32 @qdrt_push_element(ptr %stk_L9351, ptr %local.exit_label)
   call i32 @usr_sb_append_int(ptr %ctx)
-  call i32 @qd_push_s(ptr %ctx, ptr @.str.9351)
+  call i32 @qd_push_s(ptr %ctx, ptr @.str.9352)
   call i32 @usr_sb_append(ptr %ctx)
   call i32 @usr_sb_finish(ptr %ctx)
   call i32 @usr_sb_append(ptr %ctx)
-  %stp_L9352 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L9352 = load ptr, ptr %stp_L9352
-  call void @qd_stack_pop(ptr %stk_L9352, ptr %local.o)
   %stp_L9353 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
   %stk_L9353 = load ptr, ptr %stp_L9353
-  call i32 @qdrt_push_element(ptr %stk_L9353, ptr %local.o)
-  %fs_elem_L9354 = alloca %qd_stack_element_t
-  %fs_stp_L9354 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %fs_stk_L9354 = load ptr, ptr %fs_stp_L9354
-  call void @qd_stack_pop(ptr %fs_stk_L9354, ptr %fs_elem_L9354)
-  %fs_vp_L9354 = getelementptr %qd_stack_element_t, ptr %fs_elem_L9354, i32 0, i32 0
-  %fs_val_L9354 = load i64, ptr %fs_vp_L9354
-  %fs_svp_L9354 = getelementptr %qd_stack_element_t, ptr %local.st, i32 0, i32 0
-  %fs_sptr_L9354 = load ptr, ptr %fs_svp_L9354
-  %fs_off_L9354 = load i64, ptr @__offset_code
-  %fs_fp_L9354 = getelementptr i8, ptr %fs_sptr_L9354, i64 %fs_off_L9354
-  store i64 %fs_val_L9354, ptr %fs_fp_L9354
-  %stp_L9355 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L9355 = load ptr, ptr %stp_L9355
-  call i32 @qdrt_push_element(ptr %stk_L9355, ptr %local.st)
+  call void @qd_stack_pop(ptr %stk_L9353, ptr %local.o)
+  %stp_L9354 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L9354 = load ptr, ptr %stp_L9354
+  call i32 @qdrt_push_element(ptr %stk_L9354, ptr %local.o)
+  %fs_elem_L9355 = alloca %qd_stack_element_t
+  %fs_stp_L9355 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %fs_stk_L9355 = load ptr, ptr %fs_stp_L9355
+  call void @qd_stack_pop(ptr %fs_stk_L9355, ptr %fs_elem_L9355)
+  %fs_vp_L9355 = getelementptr %qd_stack_element_t, ptr %fs_elem_L9355, i32 0, i32 0
+  %fs_val_L9355 = load i64, ptr %fs_vp_L9355
+  %fs_svp_L9355 = getelementptr %qd_stack_element_t, ptr %local.st, i32 0, i32 0
+  %fs_sptr_L9355 = load ptr, ptr %fs_svp_L9355
+  %fs_off_L9355 = load i64, ptr @__offset_code
+  %fs_fp_L9355 = getelementptr i8, ptr %fs_sptr_L9355, i64 %fs_off_L9355
+  store i64 %fs_val_L9355, ptr %fs_fp_L9355
   %stp_L9356 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
   %stk_L9356 = load ptr, ptr %stp_L9356
-  call i32 @qdrt_push_element(ptr %stk_L9356, ptr %local.n)
-  %fa_elem_L9357 = alloca %qd_stack_element_t
-  %fa_stp_L9357 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %fa_stk_L9357 = load ptr, ptr %fa_stp_L9357
-  call void @qd_stack_pop(ptr %fa_stk_L9357, ptr %fa_elem_L9357)
-  %fa_vp_L9357 = getelementptr %qd_stack_element_t, ptr %fa_elem_L9357, i32 0, i32 0
-  %fa_ptr_L9357 = load ptr, ptr %fa_vp_L9357
-  %fa_off_L9357 = load i64, ptr @__offset_child1
-  %fa_fp_L9357 = getelementptr i8, ptr %fa_ptr_L9357, i64 %fa_off_L9357
-  %fa_val_L9357 = load ptr, ptr %fa_fp_L9357
-  call i32 @qd_push_p(ptr %ctx, ptr %fa_val_L9357)
-  %stp_L9358 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L9358 = load ptr, ptr %stp_L9358
-  call i32 @qdrt_push_element(ptr %stk_L9358, ptr %local.loop_loc)
-  call i32 @usr_codegen_emit_block(ptr %ctx)
-  %stp_L9359 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L9359 = load ptr, ptr %stp_L9359
-  call void @qd_stack_pop(ptr %stk_L9359, ptr %local.st)
-  %stp_L9360 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L9360 = load ptr, ptr %stp_L9360
-  call i32 @qdrt_push_element(ptr %stk_L9360, ptr %local.st)
-  %fa_elem_L9361 = alloca %qd_stack_element_t
-  %fa_stp_L9361 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %fa_stk_L9361 = load ptr, ptr %fa_stp_L9361
-  call void @qd_stack_pop(ptr %fa_stk_L9361, ptr %fa_elem_L9361)
-  %fa_vp_L9361 = getelementptr %qd_stack_element_t, ptr %fa_elem_L9361, i32 0, i32 0
-  %fa_ptr_L9361 = load ptr, ptr %fa_vp_L9361
-  %fa_off_L9361 = load i64, ptr @__offset_code
-  %fa_fp_L9361 = getelementptr i8, ptr %fa_ptr_L9361, i64 %fa_off_L9361
-  %fa_val_L9361 = load ptr, ptr %fa_fp_L9361
-  call i32 @qd_push_p(ptr %ctx, ptr %fa_val_L9361)
-  %stp_L9362 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L9362 = load ptr, ptr %stp_L9362
-  call void @qd_stack_pop(ptr %stk_L9362, ptr %local.o)
-  %stp_L9363 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L9363 = load ptr, ptr %stp_L9363
-  call i32 @qdrt_push_element(ptr %stk_L9363, ptr %local.o)
-  call i32 @usr_sb_new(ptr %ctx)
-  call i32 @qd_push_s(ptr %ctx, ptr @.str.9364)
-  call i32 @usr_sb_append(ptr %ctx)
-  %stp_L9365 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L9365 = load ptr, ptr %stp_L9365
-  call i32 @qdrt_push_element(ptr %stk_L9365, ptr %local.uid)
-  call i32 @usr_sb_append_int(ptr %ctx)
-  call i32 @qd_push_s(ptr %ctx, ptr @.str.9366)
-  call i32 @usr_sb_append(ptr %ctx)
-  %stp_L9367 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L9367 = load ptr, ptr %stp_L9367
-  call i32 @qdrt_push_element(ptr %stk_L9367, ptr %local.iter_var)
-  call i32 @usr_sb_append_int(ptr %ctx)
-  call i32 @qd_push_s(ptr %ctx, ptr @.str.9368)
-  call i32 @usr_sb_append(ptr %ctx)
-  call i32 @usr_sb_finish(ptr %ctx)
-  call i32 @usr_sb_append(ptr %ctx)
-  %stp_L9369 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L9369 = load ptr, ptr %stp_L9369
-  call void @qd_stack_pop(ptr %stk_L9369, ptr %local.o)
-  %stp_L9370 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L9370 = load ptr, ptr %stp_L9370
-  call i32 @qdrt_push_element(ptr %stk_L9370, ptr %local.o)
-  call i32 @usr_sb_new(ptr %ctx)
-  call i32 @qd_push_s(ptr %ctx, ptr @.str.9371)
-  call i32 @usr_sb_append(ptr %ctx)
-  %stp_L9372 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L9372 = load ptr, ptr %stp_L9372
-  call i32 @qdrt_push_element(ptr %stk_L9372, ptr %local.uid)
-  call i32 @usr_sb_append_int(ptr %ctx)
-  call i32 @qd_push_s(ptr %ctx, ptr @.str.9373)
-  call i32 @usr_sb_append(ptr %ctx)
-  %stp_L9374 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L9374 = load ptr, ptr %stp_L9374
-  call i32 @qdrt_push_element(ptr %stk_L9374, ptr %local.uid)
-  call i32 @usr_sb_append_int(ptr %ctx)
-  call i32 @qd_push_s(ptr %ctx, ptr @.str.9375)
-  call i32 @usr_sb_append(ptr %ctx)
-  %stp_L9376 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L9376 = load ptr, ptr %stp_L9376
-  call i32 @qdrt_push_element(ptr %stk_L9376, ptr %local.uid)
-  call i32 @usr_sb_append_int(ptr %ctx)
-  call i32 @qd_push_s(ptr %ctx, ptr @.str.9377)
-  call i32 @usr_sb_append(ptr %ctx)
-  call i32 @usr_sb_finish(ptr %ctx)
-  call i32 @usr_sb_append(ptr %ctx)
-  %stp_L9378 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L9378 = load ptr, ptr %stp_L9378
-  call void @qd_stack_pop(ptr %stk_L9378, ptr %local.o)
-  %stp_L9379 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L9379 = load ptr, ptr %stp_L9379
-  call i32 @qdrt_push_element(ptr %stk_L9379, ptr %local.o)
-  call i32 @usr_sb_new(ptr %ctx)
-  call i32 @qd_push_s(ptr %ctx, ptr @.str.9380)
-  call i32 @usr_sb_append(ptr %ctx)
-  %stp_L9381 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L9381 = load ptr, ptr %stp_L9381
-  call i32 @qdrt_push_element(ptr %stk_L9381, ptr %local.uid)
-  call i32 @usr_sb_append_int(ptr %ctx)
-  call i32 @qd_push_s(ptr %ctx, ptr @.str.9382)
-  call i32 @usr_sb_append(ptr %ctx)
-  %stp_L9383 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L9383 = load ptr, ptr %stp_L9383
-  call i32 @qdrt_push_element(ptr %stk_L9383, ptr %local.iter_var)
-  call i32 @usr_sb_append_int(ptr %ctx)
-  call i32 @qd_push_s(ptr %ctx, ptr @.str.9384)
-  call i32 @usr_sb_append(ptr %ctx)
-  call i32 @usr_sb_finish(ptr %ctx)
-  call i32 @usr_sb_append(ptr %ctx)
-  %stp_L9385 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L9385 = load ptr, ptr %stp_L9385
-  call void @qd_stack_pop(ptr %stk_L9385, ptr %local.o)
-  %stp_L9386 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L9386 = load ptr, ptr %stp_L9386
-  call i32 @qdrt_push_element(ptr %stk_L9386, ptr %local.o)
-  call i32 @usr_sb_new(ptr %ctx)
-  call i32 @qd_push_s(ptr %ctx, ptr @.str.9387)
-  call i32 @usr_sb_append(ptr %ctx)
-  %stp_L9388 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L9388 = load ptr, ptr %stp_L9388
-  call i32 @qdrt_push_element(ptr %stk_L9388, ptr %local.cond_label)
-  call i32 @usr_sb_append_int(ptr %ctx)
-  call i32 @qd_push_s(ptr %ctx, ptr @.str.9389)
-  call i32 @usr_sb_append(ptr %ctx)
-  call i32 @usr_sb_finish(ptr %ctx)
-  call i32 @usr_sb_append(ptr %ctx)
-  %stp_L9390 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L9390 = load ptr, ptr %stp_L9390
-  call void @qd_stack_pop(ptr %stk_L9390, ptr %local.o)
-  %stp_L9391 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L9391 = load ptr, ptr %stp_L9391
-  call i32 @qdrt_push_element(ptr %stk_L9391, ptr %local.o)
-  call i32 @usr_sb_new(ptr %ctx)
-  %stp_L9392 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L9392 = load ptr, ptr %stp_L9392
-  call i32 @qdrt_push_element(ptr %stk_L9392, ptr %local.exit_label)
-  call i32 @usr_sb_append_int(ptr %ctx)
-  call i32 @qd_push_s(ptr %ctx, ptr @.str.9393)
-  call i32 @usr_sb_append(ptr %ctx)
-  call i32 @usr_sb_finish(ptr %ctx)
-  call i32 @usr_sb_append(ptr %ctx)
-  %stp_L9394 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L9394 = load ptr, ptr %stp_L9394
-  call void @qd_stack_pop(ptr %stk_L9394, ptr %local.o)
-  %stp_L9395 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L9395 = load ptr, ptr %stp_L9395
-  call i32 @qdrt_push_element(ptr %stk_L9395, ptr %local.o)
-  %fs_elem_L9396 = alloca %qd_stack_element_t
-  %fs_stp_L9396 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %fs_stk_L9396 = load ptr, ptr %fs_stp_L9396
-  call void @qd_stack_pop(ptr %fs_stk_L9396, ptr %fs_elem_L9396)
-  %fs_vp_L9396 = getelementptr %qd_stack_element_t, ptr %fs_elem_L9396, i32 0, i32 0
-  %fs_val_L9396 = load i64, ptr %fs_vp_L9396
-  %fs_svp_L9396 = getelementptr %qd_stack_element_t, ptr %local.st, i32 0, i32 0
-  %fs_sptr_L9396 = load ptr, ptr %fs_svp_L9396
-  %fs_off_L9396 = load i64, ptr @__offset_code
-  %fs_fp_L9396 = getelementptr i8, ptr %fs_sptr_L9396, i64 %fs_off_L9396
-  store i64 %fs_val_L9396, ptr %fs_fp_L9396
-  %stp_L9397 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L9397 = load ptr, ptr %stp_L9397
-  call i32 @qdrt_push_element(ptr %stk_L9397, ptr %local.st)
+  call i32 @qdrt_push_element(ptr %stk_L9356, ptr %local.st)
   br label %return
 return:
   ret i32 0
@@ -38125,307 +37885,307 @@ entry:
   %local.blk = alloca %qd_stack_element_t
   %local.st = alloca %qd_stack_element_t
   %local.cur = alloca %qd_stack_element_t
-  %stp_L9398 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L9398 = load ptr, ptr %stp_L9398
-  call void @qd_stack_pop(ptr %stk_L9398, ptr %local.loc)
-  %stp_L9399 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L9399 = load ptr, ptr %stp_L9399
-  call void @qd_stack_pop(ptr %stk_L9399, ptr %local.blk)
-  %stp_L9400 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L9400 = load ptr, ptr %stp_L9400
-  call void @qd_stack_pop(ptr %stk_L9400, ptr %local.st)
-  %stp_L9401 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L9401 = load ptr, ptr %stp_L9401
-  call i32 @qdrt_push_element(ptr %stk_L9401, ptr %local.blk)
+  %stp_L9357 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L9357 = load ptr, ptr %stp_L9357
+  call void @qd_stack_pop(ptr %stk_L9357, ptr %local.loc)
+  %stp_L9358 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L9358 = load ptr, ptr %stp_L9358
+  call void @qd_stack_pop(ptr %stk_L9358, ptr %local.blk)
+  %stp_L9359 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L9359 = load ptr, ptr %stp_L9359
+  call void @qd_stack_pop(ptr %stk_L9359, ptr %local.st)
+  %stp_L9360 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L9360 = load ptr, ptr %stp_L9360
+  call i32 @qdrt_push_element(ptr %stk_L9360, ptr %local.blk)
   call i32 @qd_push_i(ptr %ctx, i64 0)
   call i32 @qd_eq(ptr %ctx)
-  %ce_L9402 = alloca %qd_stack_element_t
-  %stp_L9402 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L9402 = load ptr, ptr %stp_L9402
-  call void @qd_stack_pop(ptr %stk_L9402, ptr %ce_L9402)
-  %cv_L9402 = getelementptr %qd_stack_element_t, ptr %ce_L9402, i32 0, i32 0
-  %ci_L9402 = load i64, ptr %cv_L9402
-  %cc_L9402 = icmp ne i64 %ci_L9402, 0
-  br i1 %cc_L9402, label %L9403, label %L9405
-L9403:
+  %ce_L9361 = alloca %qd_stack_element_t
+  %stp_L9361 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L9361 = load ptr, ptr %stp_L9361
+  call void @qd_stack_pop(ptr %stk_L9361, ptr %ce_L9361)
+  %cv_L9361 = getelementptr %qd_stack_element_t, ptr %ce_L9361, i32 0, i32 0
+  %ci_L9361 = load i64, ptr %cv_L9361
+  %cc_L9361 = icmp ne i64 %ci_L9361, 0
+  br i1 %cc_L9361, label %L9362, label %L9364
+L9362:
+  %stp_L9365 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L9365 = load ptr, ptr %stp_L9365
+  call i32 @qdrt_push_element(ptr %stk_L9365, ptr %local.st)
+  br label %return
+  br label %L9364
+L9364:
+  %stp_L9366 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L9366 = load ptr, ptr %stp_L9366
+  call i32 @qdrt_push_element(ptr %stk_L9366, ptr %local.blk)
+  %fa_elem_L9367 = alloca %qd_stack_element_t
+  %fa_stp_L9367 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %fa_stk_L9367 = load ptr, ptr %fa_stp_L9367
+  call void @qd_stack_pop(ptr %fa_stk_L9367, ptr %fa_elem_L9367)
+  %fa_vp_L9367 = getelementptr %qd_stack_element_t, ptr %fa_elem_L9367, i32 0, i32 0
+  %fa_ptr_L9367 = load ptr, ptr %fa_vp_L9367
+  %fa_off_L9367 = load i64, ptr @__offset_child1
+  %fa_fp_L9367 = getelementptr i8, ptr %fa_ptr_L9367, i64 %fa_off_L9367
+  %fa_val_L9367 = load ptr, ptr %fa_fp_L9367
+  call i32 @qd_push_p(ptr %ctx, ptr %fa_val_L9367)
+  call i32 @qd_push_i(ptr %ctx, i64 0)
+  call i32 @qd_neq(ptr %ctx)
+  %ce_L9368 = alloca %qd_stack_element_t
+  %stp_L9368 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L9368 = load ptr, ptr %stp_L9368
+  call void @qd_stack_pop(ptr %stk_L9368, ptr %ce_L9368)
+  %cv_L9368 = getelementptr %qd_stack_element_t, ptr %ce_L9368, i32 0, i32 0
+  %ci_L9368 = load i64, ptr %cv_L9368
+  %cc_L9368 = icmp ne i64 %ci_L9368, 0
+  br i1 %cc_L9368, label %L9369, label %L9371
+L9369:
+  %stp_L9372 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L9372 = load ptr, ptr %stp_L9372
+  call i32 @qdrt_push_element(ptr %stk_L9372, ptr %local.st)
+  %stp_L9373 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L9373 = load ptr, ptr %stp_L9373
+  call i32 @qdrt_push_element(ptr %stk_L9373, ptr %local.blk)
+  %fa_elem_L9374 = alloca %qd_stack_element_t
+  %fa_stp_L9374 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %fa_stk_L9374 = load ptr, ptr %fa_stp_L9374
+  call void @qd_stack_pop(ptr %fa_stk_L9374, ptr %fa_elem_L9374)
+  %fa_vp_L9374 = getelementptr %qd_stack_element_t, ptr %fa_elem_L9374, i32 0, i32 0
+  %fa_ptr_L9374 = load ptr, ptr %fa_vp_L9374
+  %fa_off_L9374 = load i64, ptr @__offset_child1
+  %fa_fp_L9374 = getelementptr i8, ptr %fa_ptr_L9374, i64 %fa_off_L9374
+  %fa_val_L9374 = load ptr, ptr %fa_fp_L9374
+  call i32 @qd_push_p(ptr %ctx, ptr %fa_val_L9374)
+  %stp_L9375 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L9375 = load ptr, ptr %stp_L9375
+  call i32 @qdrt_push_element(ptr %stk_L9375, ptr %local.loc)
+  call i32 @usr_codegen_emit_node(ptr %ctx)
+  %stp_L9376 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L9376 = load ptr, ptr %stp_L9376
+  call void @qd_stack_pop(ptr %stk_L9376, ptr %local.st)
+  br label %L9371
+L9371:
+  %stp_L9377 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L9377 = load ptr, ptr %stp_L9377
+  call i32 @qdrt_push_element(ptr %stk_L9377, ptr %local.blk)
+  %fa_elem_L9378 = alloca %qd_stack_element_t
+  %fa_stp_L9378 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %fa_stk_L9378 = load ptr, ptr %fa_stp_L9378
+  call void @qd_stack_pop(ptr %fa_stk_L9378, ptr %fa_elem_L9378)
+  %fa_vp_L9378 = getelementptr %qd_stack_element_t, ptr %fa_elem_L9378, i32 0, i32 0
+  %fa_ptr_L9378 = load ptr, ptr %fa_vp_L9378
+  %fa_off_L9378 = load i64, ptr @__offset_child2
+  %fa_fp_L9378 = getelementptr i8, ptr %fa_ptr_L9378, i64 %fa_off_L9378
+  %fa_val_L9378 = load ptr, ptr %fa_fp_L9378
+  call i32 @qd_push_p(ptr %ctx, ptr %fa_val_L9378)
+  call i32 @qd_push_i(ptr %ctx, i64 0)
+  call i32 @qd_neq(ptr %ctx)
+  %ce_L9379 = alloca %qd_stack_element_t
+  %stp_L9379 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L9379 = load ptr, ptr %stp_L9379
+  call void @qd_stack_pop(ptr %stk_L9379, ptr %ce_L9379)
+  %cv_L9379 = getelementptr %qd_stack_element_t, ptr %ce_L9379, i32 0, i32 0
+  %ci_L9379 = load i64, ptr %cv_L9379
+  %cc_L9379 = icmp ne i64 %ci_L9379, 0
+  br i1 %cc_L9379, label %L9380, label %L9382
+L9380:
+  %stp_L9383 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L9383 = load ptr, ptr %stp_L9383
+  call i32 @qdrt_push_element(ptr %stk_L9383, ptr %local.st)
+  %stp_L9384 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L9384 = load ptr, ptr %stp_L9384
+  call i32 @qdrt_push_element(ptr %stk_L9384, ptr %local.blk)
+  %fa_elem_L9385 = alloca %qd_stack_element_t
+  %fa_stp_L9385 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %fa_stk_L9385 = load ptr, ptr %fa_stp_L9385
+  call void @qd_stack_pop(ptr %fa_stk_L9385, ptr %fa_elem_L9385)
+  %fa_vp_L9385 = getelementptr %qd_stack_element_t, ptr %fa_elem_L9385, i32 0, i32 0
+  %fa_ptr_L9385 = load ptr, ptr %fa_vp_L9385
+  %fa_off_L9385 = load i64, ptr @__offset_child2
+  %fa_fp_L9385 = getelementptr i8, ptr %fa_ptr_L9385, i64 %fa_off_L9385
+  %fa_val_L9385 = load ptr, ptr %fa_fp_L9385
+  call i32 @qd_push_p(ptr %ctx, ptr %fa_val_L9385)
+  %stp_L9386 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L9386 = load ptr, ptr %stp_L9386
+  call i32 @qdrt_push_element(ptr %stk_L9386, ptr %local.loc)
+  call i32 @usr_codegen_emit_node(ptr %ctx)
+  %stp_L9387 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L9387 = load ptr, ptr %stp_L9387
+  call void @qd_stack_pop(ptr %stk_L9387, ptr %local.st)
+  br label %L9382
+L9382:
+  %stp_L9388 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L9388 = load ptr, ptr %stp_L9388
+  call i32 @qdrt_push_element(ptr %stk_L9388, ptr %local.blk)
+  %fa_elem_L9389 = alloca %qd_stack_element_t
+  %fa_stp_L9389 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %fa_stk_L9389 = load ptr, ptr %fa_stp_L9389
+  call void @qd_stack_pop(ptr %fa_stk_L9389, ptr %fa_elem_L9389)
+  %fa_vp_L9389 = getelementptr %qd_stack_element_t, ptr %fa_elem_L9389, i32 0, i32 0
+  %fa_ptr_L9389 = load ptr, ptr %fa_vp_L9389
+  %fa_off_L9389 = load i64, ptr @__offset_child3
+  %fa_fp_L9389 = getelementptr i8, ptr %fa_ptr_L9389, i64 %fa_off_L9389
+  %fa_val_L9389 = load ptr, ptr %fa_fp_L9389
+  call i32 @qd_push_p(ptr %ctx, ptr %fa_val_L9389)
+  call i32 @qd_push_i(ptr %ctx, i64 0)
+  call i32 @qd_neq(ptr %ctx)
+  %ce_L9390 = alloca %qd_stack_element_t
+  %stp_L9390 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L9390 = load ptr, ptr %stp_L9390
+  call void @qd_stack_pop(ptr %stk_L9390, ptr %ce_L9390)
+  %cv_L9390 = getelementptr %qd_stack_element_t, ptr %ce_L9390, i32 0, i32 0
+  %ci_L9390 = load i64, ptr %cv_L9390
+  %cc_L9390 = icmp ne i64 %ci_L9390, 0
+  br i1 %cc_L9390, label %L9391, label %L9393
+L9391:
+  %stp_L9394 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L9394 = load ptr, ptr %stp_L9394
+  call i32 @qdrt_push_element(ptr %stk_L9394, ptr %local.st)
+  %stp_L9395 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L9395 = load ptr, ptr %stp_L9395
+  call i32 @qdrt_push_element(ptr %stk_L9395, ptr %local.blk)
+  %fa_elem_L9396 = alloca %qd_stack_element_t
+  %fa_stp_L9396 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %fa_stk_L9396 = load ptr, ptr %fa_stp_L9396
+  call void @qd_stack_pop(ptr %fa_stk_L9396, ptr %fa_elem_L9396)
+  %fa_vp_L9396 = getelementptr %qd_stack_element_t, ptr %fa_elem_L9396, i32 0, i32 0
+  %fa_ptr_L9396 = load ptr, ptr %fa_vp_L9396
+  %fa_off_L9396 = load i64, ptr @__offset_child3
+  %fa_fp_L9396 = getelementptr i8, ptr %fa_ptr_L9396, i64 %fa_off_L9396
+  %fa_val_L9396 = load ptr, ptr %fa_fp_L9396
+  call i32 @qd_push_p(ptr %ctx, ptr %fa_val_L9396)
+  %stp_L9397 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L9397 = load ptr, ptr %stp_L9397
+  call i32 @qdrt_push_element(ptr %stk_L9397, ptr %local.loc)
+  call i32 @usr_codegen_emit_node(ptr %ctx)
+  %stp_L9398 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L9398 = load ptr, ptr %stp_L9398
+  call void @qd_stack_pop(ptr %stk_L9398, ptr %local.st)
+  br label %L9393
+L9393:
+  %stp_L9399 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L9399 = load ptr, ptr %stp_L9399
+  call i32 @qdrt_push_element(ptr %stk_L9399, ptr %local.blk)
+  %fa_elem_L9400 = alloca %qd_stack_element_t
+  %fa_stp_L9400 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %fa_stk_L9400 = load ptr, ptr %fa_stp_L9400
+  call void @qd_stack_pop(ptr %fa_stk_L9400, ptr %fa_elem_L9400)
+  %fa_vp_L9400 = getelementptr %qd_stack_element_t, ptr %fa_elem_L9400, i32 0, i32 0
+  %fa_ptr_L9400 = load ptr, ptr %fa_vp_L9400
+  %fa_off_L9400 = load i64, ptr @__offset_child4
+  %fa_fp_L9400 = getelementptr i8, ptr %fa_ptr_L9400, i64 %fa_off_L9400
+  %fa_val_L9400 = load ptr, ptr %fa_fp_L9400
+  call i32 @qd_push_p(ptr %ctx, ptr %fa_val_L9400)
+  call i32 @qd_push_i(ptr %ctx, i64 0)
+  call i32 @qd_neq(ptr %ctx)
+  %ce_L9401 = alloca %qd_stack_element_t
+  %stp_L9401 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L9401 = load ptr, ptr %stp_L9401
+  call void @qd_stack_pop(ptr %stk_L9401, ptr %ce_L9401)
+  %cv_L9401 = getelementptr %qd_stack_element_t, ptr %ce_L9401, i32 0, i32 0
+  %ci_L9401 = load i64, ptr %cv_L9401
+  %cc_L9401 = icmp ne i64 %ci_L9401, 0
+  br i1 %cc_L9401, label %L9402, label %L9404
+L9402:
+  %stp_L9405 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L9405 = load ptr, ptr %stp_L9405
+  call i32 @qdrt_push_element(ptr %stk_L9405, ptr %local.st)
   %stp_L9406 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
   %stk_L9406 = load ptr, ptr %stp_L9406
-  call i32 @qdrt_push_element(ptr %stk_L9406, ptr %local.st)
-  br label %return
-  br label %L9405
-L9405:
-  %stp_L9407 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L9407 = load ptr, ptr %stp_L9407
-  call i32 @qdrt_push_element(ptr %stk_L9407, ptr %local.blk)
-  %fa_elem_L9408 = alloca %qd_stack_element_t
-  %fa_stp_L9408 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %fa_stk_L9408 = load ptr, ptr %fa_stp_L9408
-  call void @qd_stack_pop(ptr %fa_stk_L9408, ptr %fa_elem_L9408)
-  %fa_vp_L9408 = getelementptr %qd_stack_element_t, ptr %fa_elem_L9408, i32 0, i32 0
-  %fa_ptr_L9408 = load ptr, ptr %fa_vp_L9408
-  %fa_off_L9408 = load i64, ptr @__offset_child1
-  %fa_fp_L9408 = getelementptr i8, ptr %fa_ptr_L9408, i64 %fa_off_L9408
-  %fa_val_L9408 = load ptr, ptr %fa_fp_L9408
-  call i32 @qd_push_p(ptr %ctx, ptr %fa_val_L9408)
-  call i32 @qd_push_i(ptr %ctx, i64 0)
-  call i32 @qd_neq(ptr %ctx)
-  %ce_L9409 = alloca %qd_stack_element_t
+  call i32 @qdrt_push_element(ptr %stk_L9406, ptr %local.blk)
+  %fa_elem_L9407 = alloca %qd_stack_element_t
+  %fa_stp_L9407 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %fa_stk_L9407 = load ptr, ptr %fa_stp_L9407
+  call void @qd_stack_pop(ptr %fa_stk_L9407, ptr %fa_elem_L9407)
+  %fa_vp_L9407 = getelementptr %qd_stack_element_t, ptr %fa_elem_L9407, i32 0, i32 0
+  %fa_ptr_L9407 = load ptr, ptr %fa_vp_L9407
+  %fa_off_L9407 = load i64, ptr @__offset_child4
+  %fa_fp_L9407 = getelementptr i8, ptr %fa_ptr_L9407, i64 %fa_off_L9407
+  %fa_val_L9407 = load ptr, ptr %fa_fp_L9407
+  call i32 @qd_push_p(ptr %ctx, ptr %fa_val_L9407)
+  %stp_L9408 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L9408 = load ptr, ptr %stp_L9408
+  call i32 @qdrt_push_element(ptr %stk_L9408, ptr %local.loc)
+  call i32 @usr_codegen_emit_node(ptr %ctx)
   %stp_L9409 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
   %stk_L9409 = load ptr, ptr %stp_L9409
-  call void @qd_stack_pop(ptr %stk_L9409, ptr %ce_L9409)
-  %cv_L9409 = getelementptr %qd_stack_element_t, ptr %ce_L9409, i32 0, i32 0
-  %ci_L9409 = load i64, ptr %cv_L9409
-  %cc_L9409 = icmp ne i64 %ci_L9409, 0
-  br i1 %cc_L9409, label %L9410, label %L9412
-L9410:
+  call void @qd_stack_pop(ptr %stk_L9409, ptr %local.st)
+  br label %L9404
+L9404:
+  %stp_L9410 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L9410 = load ptr, ptr %stp_L9410
+  call i32 @qdrt_push_element(ptr %stk_L9410, ptr %local.blk)
+  %fa_elem_L9411 = alloca %qd_stack_element_t
+  %fa_stp_L9411 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %fa_stk_L9411 = load ptr, ptr %fa_stp_L9411
+  call void @qd_stack_pop(ptr %fa_stk_L9411, ptr %fa_elem_L9411)
+  %fa_vp_L9411 = getelementptr %qd_stack_element_t, ptr %fa_elem_L9411, i32 0, i32 0
+  %fa_ptr_L9411 = load ptr, ptr %fa_vp_L9411
+  %fa_off_L9411 = load i64, ptr @__offset_extra
+  %fa_fp_L9411 = getelementptr i8, ptr %fa_ptr_L9411, i64 %fa_off_L9411
+  %fa_val_L9411 = load ptr, ptr %fa_fp_L9411
+  call i32 @qd_push_p(ptr %ctx, ptr %fa_val_L9411)
+  %stp_L9412 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L9412 = load ptr, ptr %stp_L9412
+  call void @qd_stack_pop(ptr %stk_L9412, ptr %local.cur)
   %stp_L9413 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
   %stk_L9413 = load ptr, ptr %stp_L9413
-  call i32 @qdrt_push_element(ptr %stk_L9413, ptr %local.st)
+  call i32 @qdrt_push_element(ptr %stk_L9413, ptr %local.cur)
+  call i32 @qd_push_i(ptr %ctx, i64 0)
+  call i32 @qd_neq(ptr %ctx)
+  %ce_L9414 = alloca %qd_stack_element_t
   %stp_L9414 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
   %stk_L9414 = load ptr, ptr %stp_L9414
-  call i32 @qdrt_push_element(ptr %stk_L9414, ptr %local.blk)
-  %fa_elem_L9415 = alloca %qd_stack_element_t
-  %fa_stp_L9415 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %fa_stk_L9415 = load ptr, ptr %fa_stp_L9415
-  call void @qd_stack_pop(ptr %fa_stk_L9415, ptr %fa_elem_L9415)
-  %fa_vp_L9415 = getelementptr %qd_stack_element_t, ptr %fa_elem_L9415, i32 0, i32 0
-  %fa_ptr_L9415 = load ptr, ptr %fa_vp_L9415
-  %fa_off_L9415 = load i64, ptr @__offset_child1
-  %fa_fp_L9415 = getelementptr i8, ptr %fa_ptr_L9415, i64 %fa_off_L9415
-  %fa_val_L9415 = load ptr, ptr %fa_fp_L9415
-  call i32 @qd_push_p(ptr %ctx, ptr %fa_val_L9415)
-  %stp_L9416 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L9416 = load ptr, ptr %stp_L9416
-  call i32 @qdrt_push_element(ptr %stk_L9416, ptr %local.loc)
-  call i32 @usr_codegen_emit_node(ptr %ctx)
-  %stp_L9417 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L9417 = load ptr, ptr %stp_L9417
-  call void @qd_stack_pop(ptr %stk_L9417, ptr %local.st)
-  br label %L9412
-L9412:
+  call void @qd_stack_pop(ptr %stk_L9414, ptr %ce_L9414)
+  %cv_L9414 = getelementptr %qd_stack_element_t, ptr %ce_L9414, i32 0, i32 0
+  %ci_L9414 = load i64, ptr %cv_L9414
+  %cc_L9414 = icmp ne i64 %ci_L9414, 0
+  br i1 %cc_L9414, label %L9415, label %L9416
+L9415:
   %stp_L9418 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
   %stk_L9418 = load ptr, ptr %stp_L9418
-  call i32 @qdrt_push_element(ptr %stk_L9418, ptr %local.blk)
-  %fa_elem_L9419 = alloca %qd_stack_element_t
-  %fa_stp_L9419 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %fa_stk_L9419 = load ptr, ptr %fa_stp_L9419
-  call void @qd_stack_pop(ptr %fa_stk_L9419, ptr %fa_elem_L9419)
-  %fa_vp_L9419 = getelementptr %qd_stack_element_t, ptr %fa_elem_L9419, i32 0, i32 0
-  %fa_ptr_L9419 = load ptr, ptr %fa_vp_L9419
-  %fa_off_L9419 = load i64, ptr @__offset_child2
-  %fa_fp_L9419 = getelementptr i8, ptr %fa_ptr_L9419, i64 %fa_off_L9419
-  %fa_val_L9419 = load ptr, ptr %fa_fp_L9419
-  call i32 @qd_push_p(ptr %ctx, ptr %fa_val_L9419)
-  call i32 @qd_push_i(ptr %ctx, i64 0)
-  call i32 @qd_neq(ptr %ctx)
-  %ce_L9420 = alloca %qd_stack_element_t
+  call i32 @qdrt_push_element(ptr %stk_L9418, ptr %local.st)
+  %stp_L9419 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L9419 = load ptr, ptr %stp_L9419
+  call i32 @qdrt_push_element(ptr %stk_L9419, ptr %local.cur)
   %stp_L9420 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
   %stk_L9420 = load ptr, ptr %stp_L9420
-  call void @qd_stack_pop(ptr %stk_L9420, ptr %ce_L9420)
-  %cv_L9420 = getelementptr %qd_stack_element_t, ptr %ce_L9420, i32 0, i32 0
-  %ci_L9420 = load i64, ptr %cv_L9420
-  %cc_L9420 = icmp ne i64 %ci_L9420, 0
-  br i1 %cc_L9420, label %L9421, label %L9423
-L9421:
+  call i32 @qdrt_push_element(ptr %stk_L9420, ptr %local.loc)
+  call i32 @usr_codegen_emit_node(ptr %ctx)
+  %stp_L9421 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L9421 = load ptr, ptr %stp_L9421
+  call void @qd_stack_pop(ptr %stk_L9421, ptr %local.st)
+  %stp_L9422 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L9422 = load ptr, ptr %stp_L9422
+  call i32 @qdrt_push_element(ptr %stk_L9422, ptr %local.cur)
+  %fa_elem_L9423 = alloca %qd_stack_element_t
+  %fa_stp_L9423 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %fa_stk_L9423 = load ptr, ptr %fa_stp_L9423
+  call void @qd_stack_pop(ptr %fa_stk_L9423, ptr %fa_elem_L9423)
+  %fa_vp_L9423 = getelementptr %qd_stack_element_t, ptr %fa_elem_L9423, i32 0, i32 0
+  %fa_ptr_L9423 = load ptr, ptr %fa_vp_L9423
+  %fa_off_L9423 = load i64, ptr @__offset_sibling
+  %fa_fp_L9423 = getelementptr i8, ptr %fa_ptr_L9423, i64 %fa_off_L9423
+  %fa_val_L9423 = load ptr, ptr %fa_fp_L9423
+  call i32 @qd_push_p(ptr %ctx, ptr %fa_val_L9423)
   %stp_L9424 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
   %stk_L9424 = load ptr, ptr %stp_L9424
-  call i32 @qdrt_push_element(ptr %stk_L9424, ptr %local.st)
+  call void @qd_stack_pop(ptr %stk_L9424, ptr %local.cur)
   %stp_L9425 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
   %stk_L9425 = load ptr, ptr %stp_L9425
-  call i32 @qdrt_push_element(ptr %stk_L9425, ptr %local.blk)
-  %fa_elem_L9426 = alloca %qd_stack_element_t
-  %fa_stp_L9426 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %fa_stk_L9426 = load ptr, ptr %fa_stp_L9426
-  call void @qd_stack_pop(ptr %fa_stk_L9426, ptr %fa_elem_L9426)
-  %fa_vp_L9426 = getelementptr %qd_stack_element_t, ptr %fa_elem_L9426, i32 0, i32 0
-  %fa_ptr_L9426 = load ptr, ptr %fa_vp_L9426
-  %fa_off_L9426 = load i64, ptr @__offset_child2
-  %fa_fp_L9426 = getelementptr i8, ptr %fa_ptr_L9426, i64 %fa_off_L9426
-  %fa_val_L9426 = load ptr, ptr %fa_fp_L9426
-  call i32 @qd_push_p(ptr %ctx, ptr %fa_val_L9426)
+  call i32 @qdrt_push_element(ptr %stk_L9425, ptr %local.cur)
+  call i32 @qd_push_i(ptr %ctx, i64 0)
+  call i32 @qd_neq(ptr %ctx)
+  %ce_L9426 = alloca %qd_stack_element_t
+  %stp_L9426 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L9426 = load ptr, ptr %stp_L9426
+  call void @qd_stack_pop(ptr %stk_L9426, ptr %ce_L9426)
+  %cv_L9426 = getelementptr %qd_stack_element_t, ptr %ce_L9426, i32 0, i32 0
+  %ci_L9426 = load i64, ptr %cv_L9426
+  %cc_L9426 = icmp ne i64 %ci_L9426, 0
+  br i1 %cc_L9426, label %L9415, label %L9416
+L9416:
   %stp_L9427 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
   %stk_L9427 = load ptr, ptr %stp_L9427
-  call i32 @qdrt_push_element(ptr %stk_L9427, ptr %local.loc)
-  call i32 @usr_codegen_emit_node(ptr %ctx)
-  %stp_L9428 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L9428 = load ptr, ptr %stp_L9428
-  call void @qd_stack_pop(ptr %stk_L9428, ptr %local.st)
-  br label %L9423
-L9423:
-  %stp_L9429 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L9429 = load ptr, ptr %stp_L9429
-  call i32 @qdrt_push_element(ptr %stk_L9429, ptr %local.blk)
-  %fa_elem_L9430 = alloca %qd_stack_element_t
-  %fa_stp_L9430 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %fa_stk_L9430 = load ptr, ptr %fa_stp_L9430
-  call void @qd_stack_pop(ptr %fa_stk_L9430, ptr %fa_elem_L9430)
-  %fa_vp_L9430 = getelementptr %qd_stack_element_t, ptr %fa_elem_L9430, i32 0, i32 0
-  %fa_ptr_L9430 = load ptr, ptr %fa_vp_L9430
-  %fa_off_L9430 = load i64, ptr @__offset_child3
-  %fa_fp_L9430 = getelementptr i8, ptr %fa_ptr_L9430, i64 %fa_off_L9430
-  %fa_val_L9430 = load ptr, ptr %fa_fp_L9430
-  call i32 @qd_push_p(ptr %ctx, ptr %fa_val_L9430)
-  call i32 @qd_push_i(ptr %ctx, i64 0)
-  call i32 @qd_neq(ptr %ctx)
-  %ce_L9431 = alloca %qd_stack_element_t
-  %stp_L9431 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L9431 = load ptr, ptr %stp_L9431
-  call void @qd_stack_pop(ptr %stk_L9431, ptr %ce_L9431)
-  %cv_L9431 = getelementptr %qd_stack_element_t, ptr %ce_L9431, i32 0, i32 0
-  %ci_L9431 = load i64, ptr %cv_L9431
-  %cc_L9431 = icmp ne i64 %ci_L9431, 0
-  br i1 %cc_L9431, label %L9432, label %L9434
-L9432:
-  %stp_L9435 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L9435 = load ptr, ptr %stp_L9435
-  call i32 @qdrt_push_element(ptr %stk_L9435, ptr %local.st)
-  %stp_L9436 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L9436 = load ptr, ptr %stp_L9436
-  call i32 @qdrt_push_element(ptr %stk_L9436, ptr %local.blk)
-  %fa_elem_L9437 = alloca %qd_stack_element_t
-  %fa_stp_L9437 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %fa_stk_L9437 = load ptr, ptr %fa_stp_L9437
-  call void @qd_stack_pop(ptr %fa_stk_L9437, ptr %fa_elem_L9437)
-  %fa_vp_L9437 = getelementptr %qd_stack_element_t, ptr %fa_elem_L9437, i32 0, i32 0
-  %fa_ptr_L9437 = load ptr, ptr %fa_vp_L9437
-  %fa_off_L9437 = load i64, ptr @__offset_child3
-  %fa_fp_L9437 = getelementptr i8, ptr %fa_ptr_L9437, i64 %fa_off_L9437
-  %fa_val_L9437 = load ptr, ptr %fa_fp_L9437
-  call i32 @qd_push_p(ptr %ctx, ptr %fa_val_L9437)
-  %stp_L9438 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L9438 = load ptr, ptr %stp_L9438
-  call i32 @qdrt_push_element(ptr %stk_L9438, ptr %local.loc)
-  call i32 @usr_codegen_emit_node(ptr %ctx)
-  %stp_L9439 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L9439 = load ptr, ptr %stp_L9439
-  call void @qd_stack_pop(ptr %stk_L9439, ptr %local.st)
-  br label %L9434
-L9434:
-  %stp_L9440 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L9440 = load ptr, ptr %stp_L9440
-  call i32 @qdrt_push_element(ptr %stk_L9440, ptr %local.blk)
-  %fa_elem_L9441 = alloca %qd_stack_element_t
-  %fa_stp_L9441 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %fa_stk_L9441 = load ptr, ptr %fa_stp_L9441
-  call void @qd_stack_pop(ptr %fa_stk_L9441, ptr %fa_elem_L9441)
-  %fa_vp_L9441 = getelementptr %qd_stack_element_t, ptr %fa_elem_L9441, i32 0, i32 0
-  %fa_ptr_L9441 = load ptr, ptr %fa_vp_L9441
-  %fa_off_L9441 = load i64, ptr @__offset_child4
-  %fa_fp_L9441 = getelementptr i8, ptr %fa_ptr_L9441, i64 %fa_off_L9441
-  %fa_val_L9441 = load ptr, ptr %fa_fp_L9441
-  call i32 @qd_push_p(ptr %ctx, ptr %fa_val_L9441)
-  call i32 @qd_push_i(ptr %ctx, i64 0)
-  call i32 @qd_neq(ptr %ctx)
-  %ce_L9442 = alloca %qd_stack_element_t
-  %stp_L9442 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L9442 = load ptr, ptr %stp_L9442
-  call void @qd_stack_pop(ptr %stk_L9442, ptr %ce_L9442)
-  %cv_L9442 = getelementptr %qd_stack_element_t, ptr %ce_L9442, i32 0, i32 0
-  %ci_L9442 = load i64, ptr %cv_L9442
-  %cc_L9442 = icmp ne i64 %ci_L9442, 0
-  br i1 %cc_L9442, label %L9443, label %L9445
-L9443:
-  %stp_L9446 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L9446 = load ptr, ptr %stp_L9446
-  call i32 @qdrt_push_element(ptr %stk_L9446, ptr %local.st)
-  %stp_L9447 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L9447 = load ptr, ptr %stp_L9447
-  call i32 @qdrt_push_element(ptr %stk_L9447, ptr %local.blk)
-  %fa_elem_L9448 = alloca %qd_stack_element_t
-  %fa_stp_L9448 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %fa_stk_L9448 = load ptr, ptr %fa_stp_L9448
-  call void @qd_stack_pop(ptr %fa_stk_L9448, ptr %fa_elem_L9448)
-  %fa_vp_L9448 = getelementptr %qd_stack_element_t, ptr %fa_elem_L9448, i32 0, i32 0
-  %fa_ptr_L9448 = load ptr, ptr %fa_vp_L9448
-  %fa_off_L9448 = load i64, ptr @__offset_child4
-  %fa_fp_L9448 = getelementptr i8, ptr %fa_ptr_L9448, i64 %fa_off_L9448
-  %fa_val_L9448 = load ptr, ptr %fa_fp_L9448
-  call i32 @qd_push_p(ptr %ctx, ptr %fa_val_L9448)
-  %stp_L9449 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L9449 = load ptr, ptr %stp_L9449
-  call i32 @qdrt_push_element(ptr %stk_L9449, ptr %local.loc)
-  call i32 @usr_codegen_emit_node(ptr %ctx)
-  %stp_L9450 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L9450 = load ptr, ptr %stp_L9450
-  call void @qd_stack_pop(ptr %stk_L9450, ptr %local.st)
-  br label %L9445
-L9445:
-  %stp_L9451 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L9451 = load ptr, ptr %stp_L9451
-  call i32 @qdrt_push_element(ptr %stk_L9451, ptr %local.blk)
-  %fa_elem_L9452 = alloca %qd_stack_element_t
-  %fa_stp_L9452 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %fa_stk_L9452 = load ptr, ptr %fa_stp_L9452
-  call void @qd_stack_pop(ptr %fa_stk_L9452, ptr %fa_elem_L9452)
-  %fa_vp_L9452 = getelementptr %qd_stack_element_t, ptr %fa_elem_L9452, i32 0, i32 0
-  %fa_ptr_L9452 = load ptr, ptr %fa_vp_L9452
-  %fa_off_L9452 = load i64, ptr @__offset_extra
-  %fa_fp_L9452 = getelementptr i8, ptr %fa_ptr_L9452, i64 %fa_off_L9452
-  %fa_val_L9452 = load ptr, ptr %fa_fp_L9452
-  call i32 @qd_push_p(ptr %ctx, ptr %fa_val_L9452)
-  %stp_L9453 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L9453 = load ptr, ptr %stp_L9453
-  call void @qd_stack_pop(ptr %stk_L9453, ptr %local.cur)
-  %stp_L9454 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L9454 = load ptr, ptr %stp_L9454
-  call i32 @qdrt_push_element(ptr %stk_L9454, ptr %local.cur)
-  call i32 @qd_push_i(ptr %ctx, i64 0)
-  call i32 @qd_neq(ptr %ctx)
-  %ce_L9455 = alloca %qd_stack_element_t
-  %stp_L9455 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L9455 = load ptr, ptr %stp_L9455
-  call void @qd_stack_pop(ptr %stk_L9455, ptr %ce_L9455)
-  %cv_L9455 = getelementptr %qd_stack_element_t, ptr %ce_L9455, i32 0, i32 0
-  %ci_L9455 = load i64, ptr %cv_L9455
-  %cc_L9455 = icmp ne i64 %ci_L9455, 0
-  br i1 %cc_L9455, label %L9456, label %L9457
-L9456:
-  %stp_L9459 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L9459 = load ptr, ptr %stp_L9459
-  call i32 @qdrt_push_element(ptr %stk_L9459, ptr %local.st)
-  %stp_L9460 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L9460 = load ptr, ptr %stp_L9460
-  call i32 @qdrt_push_element(ptr %stk_L9460, ptr %local.cur)
-  %stp_L9461 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L9461 = load ptr, ptr %stp_L9461
-  call i32 @qdrt_push_element(ptr %stk_L9461, ptr %local.loc)
-  call i32 @usr_codegen_emit_node(ptr %ctx)
-  %stp_L9462 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L9462 = load ptr, ptr %stp_L9462
-  call void @qd_stack_pop(ptr %stk_L9462, ptr %local.st)
-  %stp_L9463 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L9463 = load ptr, ptr %stp_L9463
-  call i32 @qdrt_push_element(ptr %stk_L9463, ptr %local.cur)
-  %fa_elem_L9464 = alloca %qd_stack_element_t
-  %fa_stp_L9464 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %fa_stk_L9464 = load ptr, ptr %fa_stp_L9464
-  call void @qd_stack_pop(ptr %fa_stk_L9464, ptr %fa_elem_L9464)
-  %fa_vp_L9464 = getelementptr %qd_stack_element_t, ptr %fa_elem_L9464, i32 0, i32 0
-  %fa_ptr_L9464 = load ptr, ptr %fa_vp_L9464
-  %fa_off_L9464 = load i64, ptr @__offset_sibling
-  %fa_fp_L9464 = getelementptr i8, ptr %fa_ptr_L9464, i64 %fa_off_L9464
-  %fa_val_L9464 = load ptr, ptr %fa_fp_L9464
-  call i32 @qd_push_p(ptr %ctx, ptr %fa_val_L9464)
-  %stp_L9465 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L9465 = load ptr, ptr %stp_L9465
-  call void @qd_stack_pop(ptr %stk_L9465, ptr %local.cur)
-  %stp_L9466 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L9466 = load ptr, ptr %stp_L9466
-  call i32 @qdrt_push_element(ptr %stk_L9466, ptr %local.cur)
-  call i32 @qd_push_i(ptr %ctx, i64 0)
-  call i32 @qd_neq(ptr %ctx)
-  %ce_L9467 = alloca %qd_stack_element_t
-  %stp_L9467 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L9467 = load ptr, ptr %stp_L9467
-  call void @qd_stack_pop(ptr %stk_L9467, ptr %ce_L9467)
-  %cv_L9467 = getelementptr %qd_stack_element_t, ptr %ce_L9467, i32 0, i32 0
-  %ci_L9467 = load i64, ptr %cv_L9467
-  %cc_L9467 = icmp ne i64 %ci_L9467, 0
-  br i1 %cc_L9467, label %L9456, label %L9457
-L9457:
-  %stp_L9468 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L9468 = load ptr, ptr %stp_L9468
-  call i32 @qdrt_push_element(ptr %stk_L9468, ptr %local.st)
+  call i32 @qdrt_push_element(ptr %stk_L9427, ptr %local.st)
   br label %return
 return:
   ret i32 0
@@ -38435,6 +38195,7 @@ define i32 @usr_codegen_emit_function(ptr %ctx) {
 entry:
   %local.pfx = alloca %qd_stack_element_t
   %local.cstr = alloca %qd_stack_element_t
+  %local.nparams = alloca %qd_stack_element_t
   %local.recv_name = alloca %qd_stack_element_t
   %local.body_node = alloca %qd_stack_element_t
   %local.fname = alloca %qd_stack_element_t
@@ -38443,144 +38204,273 @@ entry:
   %local.locals_buf = alloca %qd_stack_element_t
   %local.o = alloca %qd_stack_element_t
   %local.ruid = alloca %qd_stack_element_t
-  %stp_L9469 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L9469 = load ptr, ptr %stp_L9469
-  call void @qd_stack_pop(ptr %stk_L9469, ptr %local.pfx)
-  %stp_L9470 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L9470 = load ptr, ptr %stp_L9470
-  call void @qd_stack_pop(ptr %stk_L9470, ptr %local.cstr)
-  %stp_L9471 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L9471 = load ptr, ptr %stp_L9471
-  call void @qd_stack_pop(ptr %stk_L9471, ptr %local.recv_name)
-  %stp_L9472 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L9472 = load ptr, ptr %stp_L9472
-  call void @qd_stack_pop(ptr %stk_L9472, ptr %local.body_node)
-  %stp_L9473 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L9473 = load ptr, ptr %stp_L9473
-  call void @qd_stack_pop(ptr %stk_L9473, ptr %local.fname)
-  %stp_L9474 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L9474 = load ptr, ptr %stp_L9474
-  call void @qd_stack_pop(ptr %stk_L9474, ptr %local.st)
-  call i32 @qd_push_s(ptr %ctx, ptr @.str.9475)
-  %stp_L9476 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L9476 = load ptr, ptr %stp_L9476
-  call void @qd_stack_pop(ptr %stk_L9476, ptr %local.loc)
-  %stp_L9477 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L9477 = load ptr, ptr %stp_L9477
-  call i32 @qdrt_push_element(ptr %stk_L9477, ptr %local.body_node)
+  %stp_L9428 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L9428 = load ptr, ptr %stp_L9428
+  call void @qd_stack_pop(ptr %stk_L9428, ptr %local.pfx)
+  %stp_L9429 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L9429 = load ptr, ptr %stp_L9429
+  call void @qd_stack_pop(ptr %stk_L9429, ptr %local.cstr)
+  %stp_L9430 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L9430 = load ptr, ptr %stp_L9430
+  call void @qd_stack_pop(ptr %stk_L9430, ptr %local.nparams)
+  %stp_L9431 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L9431 = load ptr, ptr %stp_L9431
+  call void @qd_stack_pop(ptr %stk_L9431, ptr %local.recv_name)
+  %stp_L9432 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L9432 = load ptr, ptr %stp_L9432
+  call void @qd_stack_pop(ptr %stk_L9432, ptr %local.body_node)
+  %stp_L9433 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L9433 = load ptr, ptr %stp_L9433
+  call void @qd_stack_pop(ptr %stk_L9433, ptr %local.fname)
+  %stp_L9434 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L9434 = load ptr, ptr %stp_L9434
+  call void @qd_stack_pop(ptr %stk_L9434, ptr %local.st)
+  call i32 @qd_push_s(ptr %ctx, ptr @.str.9435)
+  %stp_L9436 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L9436 = load ptr, ptr %stp_L9436
+  call void @qd_stack_pop(ptr %stk_L9436, ptr %local.loc)
+  %stp_L9437 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L9437 = load ptr, ptr %stp_L9437
+  call i32 @qdrt_push_element(ptr %stk_L9437, ptr %local.body_node)
   call i32 @qd_push_i(ptr %ctx, i64 0)
   call i32 @qd_neq(ptr %ctx)
-  %ce_L9478 = alloca %qd_stack_element_t
-  %stp_L9478 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L9478 = load ptr, ptr %stp_L9478
-  call void @qd_stack_pop(ptr %stk_L9478, ptr %ce_L9478)
-  %cv_L9478 = getelementptr %qd_stack_element_t, ptr %ce_L9478, i32 0, i32 0
-  %ci_L9478 = load i64, ptr %cv_L9478
-  %cc_L9478 = icmp ne i64 %ci_L9478, 0
-  br i1 %cc_L9478, label %L9479, label %L9481
-L9479:
-  %stp_L9482 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L9482 = load ptr, ptr %stp_L9482
-  call i32 @qdrt_push_element(ptr %stk_L9482, ptr %local.body_node)
+  %ce_L9438 = alloca %qd_stack_element_t
+  %stp_L9438 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L9438 = load ptr, ptr %stp_L9438
+  call void @qd_stack_pop(ptr %stk_L9438, ptr %ce_L9438)
+  %cv_L9438 = getelementptr %qd_stack_element_t, ptr %ce_L9438, i32 0, i32 0
+  %ci_L9438 = load i64, ptr %cv_L9438
+  %cc_L9438 = icmp ne i64 %ci_L9438, 0
+  br i1 %cc_L9438, label %L9439, label %L9441
+L9439:
+  %stp_L9442 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L9442 = load ptr, ptr %stp_L9442
+  call i32 @qdrt_push_element(ptr %stk_L9442, ptr %local.body_node)
   call i32 @usr_sb_new(ptr %ctx)
   call i32 @usr_codegen_collect_locals(ptr %ctx)
-  %stp_L9483 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L9483 = load ptr, ptr %stp_L9483
-  call void @qd_stack_pop(ptr %stk_L9483, ptr %local.locals_buf)
-  %stp_L9484 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L9484 = load ptr, ptr %stp_L9484
-  call i32 @qdrt_push_element(ptr %stk_L9484, ptr %local.locals_buf)
+  %stp_L9443 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L9443 = load ptr, ptr %stp_L9443
+  call void @qd_stack_pop(ptr %stk_L9443, ptr %local.locals_buf)
+  %stp_L9444 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L9444 = load ptr, ptr %stp_L9444
+  call i32 @qdrt_push_element(ptr %stk_L9444, ptr %local.locals_buf)
   call i32 @usr_sb_finish(ptr %ctx)
-  %stp_L9485 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L9485 = load ptr, ptr %stp_L9485
-  call void @qd_stack_pop(ptr %stk_L9485, ptr %local.loc)
-  br label %L9481
-L9481:
-  %stp_L9486 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L9486 = load ptr, ptr %stp_L9486
-  call i32 @qdrt_push_element(ptr %stk_L9486, ptr %local.loc)
-  call i32 @qd_push_s(ptr %ctx, ptr @.str.9487)
+  %stp_L9445 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L9445 = load ptr, ptr %stp_L9445
+  call void @qd_stack_pop(ptr %stk_L9445, ptr %local.loc)
+  br label %L9441
+L9441:
+  %stp_L9446 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L9446 = load ptr, ptr %stp_L9446
+  call i32 @qdrt_push_element(ptr %stk_L9446, ptr %local.loc)
+  call i32 @qd_push_s(ptr %ctx, ptr @.str.9447)
   call i32 @usr_strings_concat(ptr %ctx)
-  %stp_L9488 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L9488 = load ptr, ptr %stp_L9488
-  call i32 @qdrt_push_element(ptr %stk_L9488, ptr %local.pfx)
+  %stp_L9448 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L9448 = load ptr, ptr %stp_L9448
+  call i32 @qdrt_push_element(ptr %stk_L9448, ptr %local.pfx)
   call i32 @usr_strings_concat(ptr %ctx)
-  %stp_L9489 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L9489 = load ptr, ptr %stp_L9489
-  call void @qd_stack_pop(ptr %stk_L9489, ptr %local.loc)
-  %stp_L9490 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L9490 = load ptr, ptr %stp_L9490
-  call i32 @qdrt_push_element(ptr %stk_L9490, ptr %local.loc)
-  %stp_L9491 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L9491 = load ptr, ptr %stp_L9491
-  call i32 @qdrt_push_element(ptr %stk_L9491, ptr %local.cstr)
+  %stp_L9449 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L9449 = load ptr, ptr %stp_L9449
+  call void @qd_stack_pop(ptr %stk_L9449, ptr %local.loc)
+  %stp_L9450 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L9450 = load ptr, ptr %stp_L9450
+  call i32 @qdrt_push_element(ptr %stk_L9450, ptr %local.loc)
+  %stp_L9451 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L9451 = load ptr, ptr %stp_L9451
+  call i32 @qdrt_push_element(ptr %stk_L9451, ptr %local.cstr)
   call i32 @usr_strings_concat(ptr %ctx)
-  call i32 @qd_push_s(ptr %ctx, ptr @.str.9492)
+  call i32 @qd_push_s(ptr %ctx, ptr @.str.9452)
   call i32 @usr_strings_concat(ptr %ctx)
-  %stp_L9493 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L9493 = load ptr, ptr %stp_L9493
-  call void @qd_stack_pop(ptr %stk_L9493, ptr %local.loc)
-  %stp_L9494 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L9494 = load ptr, ptr %stp_L9494
-  call i32 @qdrt_push_element(ptr %stk_L9494, ptr %local.recv_name)
+  %stp_L9453 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L9453 = load ptr, ptr %stp_L9453
+  call void @qd_stack_pop(ptr %stk_L9453, ptr %local.loc)
+  %stp_L9454 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L9454 = load ptr, ptr %stp_L9454
+  call i32 @qdrt_push_element(ptr %stk_L9454, ptr %local.recv_name)
   call i32 @usr_strings_len(ptr %ctx)
   call i32 @qd_push_i(ptr %ctx, i64 0)
   call i32 @qd_gt(ptr %ctx)
-  %ce_L9495 = alloca %qd_stack_element_t
-  %stp_L9495 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L9495 = load ptr, ptr %stp_L9495
-  call void @qd_stack_pop(ptr %stk_L9495, ptr %ce_L9495)
-  %cv_L9495 = getelementptr %qd_stack_element_t, ptr %ce_L9495, i32 0, i32 0
-  %ci_L9495 = load i64, ptr %cv_L9495
-  %cc_L9495 = icmp ne i64 %ci_L9495, 0
-  br i1 %cc_L9495, label %L9496, label %L9498
-L9496:
+  %ce_L9455 = alloca %qd_stack_element_t
+  %stp_L9455 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L9455 = load ptr, ptr %stp_L9455
+  call void @qd_stack_pop(ptr %stk_L9455, ptr %ce_L9455)
+  %cv_L9455 = getelementptr %qd_stack_element_t, ptr %ce_L9455, i32 0, i32 0
+  %ci_L9455 = load i64, ptr %cv_L9455
+  %cc_L9455 = icmp ne i64 %ci_L9455, 0
+  br i1 %cc_L9455, label %L9456, label %L9458
+L9456:
+  %stp_L9459 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L9459 = load ptr, ptr %stp_L9459
+  call i32 @qdrt_push_element(ptr %stk_L9459, ptr %local.loc)
+  call i32 @qd_push_s(ptr %ctx, ptr @.str.9460)
+  call i32 @usr_strings_concat(ptr %ctx)
+  %stp_L9461 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L9461 = load ptr, ptr %stp_L9461
+  call i32 @qdrt_push_element(ptr %stk_L9461, ptr %local.recv_name)
+  call i32 @usr_strings_concat(ptr %ctx)
+  call i32 @qd_push_s(ptr %ctx, ptr @.str.9462)
+  call i32 @usr_strings_concat(ptr %ctx)
+  %stp_L9463 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L9463 = load ptr, ptr %stp_L9463
+  call void @qd_stack_pop(ptr %stk_L9463, ptr %local.loc)
+  br label %L9458
+L9458:
+  %stp_L9464 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L9464 = load ptr, ptr %stp_L9464
+  call i32 @qdrt_push_element(ptr %stk_L9464, ptr %local.st)
+  %fa_elem_L9465 = alloca %qd_stack_element_t
+  %fa_stp_L9465 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %fa_stk_L9465 = load ptr, ptr %fa_stp_L9465
+  call void @qd_stack_pop(ptr %fa_stk_L9465, ptr %fa_elem_L9465)
+  %fa_vp_L9465 = getelementptr %qd_stack_element_t, ptr %fa_elem_L9465, i32 0, i32 0
+  %fa_ptr_L9465 = load ptr, ptr %fa_vp_L9465
+  %fa_off_L9465 = load i64, ptr @__offset_code
+  %fa_fp_L9465 = getelementptr i8, ptr %fa_ptr_L9465, i64 %fa_off_L9465
+  %fa_val_L9465 = load ptr, ptr %fa_fp_L9465
+  call i32 @qd_push_p(ptr %ctx, ptr %fa_val_L9465)
+  %stp_L9466 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L9466 = load ptr, ptr %stp_L9466
+  call void @qd_stack_pop(ptr %stk_L9466, ptr %local.o)
+  %stp_L9467 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L9467 = load ptr, ptr %stp_L9467
+  call i32 @qdrt_push_element(ptr %stk_L9467, ptr %local.o)
+  call i32 @qd_push_s(ptr %ctx, ptr @.str.9468)
+  call i32 @usr_sb_append(ptr %ctx)
+  %stp_L9469 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L9469 = load ptr, ptr %stp_L9469
+  call void @qd_stack_pop(ptr %stk_L9469, ptr %local.o)
+  %stp_L9470 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L9470 = load ptr, ptr %stp_L9470
+  call i32 @qdrt_push_element(ptr %stk_L9470, ptr %local.o)
+  %stp_L9471 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L9471 = load ptr, ptr %stp_L9471
+  call i32 @qdrt_push_element(ptr %stk_L9471, ptr %local.pfx)
+  call i32 @usr_sb_append(ptr %ctx)
+  %stp_L9472 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L9472 = load ptr, ptr %stp_L9472
+  call void @qd_stack_pop(ptr %stk_L9472, ptr %local.o)
+  %stp_L9473 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L9473 = load ptr, ptr %stp_L9473
+  call i32 @qdrt_push_element(ptr %stk_L9473, ptr %local.o)
+  %stp_L9474 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L9474 = load ptr, ptr %stp_L9474
+  call i32 @qdrt_push_element(ptr %stk_L9474, ptr %local.fname)
+  call i32 @usr_sb_append(ptr %ctx)
+  %stp_L9475 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L9475 = load ptr, ptr %stp_L9475
+  call void @qd_stack_pop(ptr %stk_L9475, ptr %local.o)
+  %stp_L9476 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L9476 = load ptr, ptr %stp_L9476
+  call i32 @qdrt_push_element(ptr %stk_L9476, ptr %local.o)
+  call i32 @qd_push_s(ptr %ctx, ptr @.str.9477)
+  call i32 @usr_sb_append(ptr %ctx)
+  %stp_L9478 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L9478 = load ptr, ptr %stp_L9478
+  call void @qd_stack_pop(ptr %stk_L9478, ptr %local.o)
+  %stp_L9479 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L9479 = load ptr, ptr %stp_L9479
+  call i32 @qdrt_push_element(ptr %stk_L9479, ptr %local.o)
+  call i32 @qd_push_s(ptr %ctx, ptr @.str.9480)
+  call i32 @usr_sb_append(ptr %ctx)
+  %stp_L9481 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L9481 = load ptr, ptr %stp_L9481
+  call void @qd_stack_pop(ptr %stk_L9481, ptr %local.o)
+  %stp_L9482 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L9482 = load ptr, ptr %stp_L9482
+  call i32 @qdrt_push_element(ptr %stk_L9482, ptr %local.recv_name)
+  call i32 @usr_strings_len(ptr %ctx)
+  call i32 @qd_push_i(ptr %ctx, i64 0)
+  call i32 @qd_gt(ptr %ctx)
+  %ce_L9483 = alloca %qd_stack_element_t
+  %stp_L9483 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L9483 = load ptr, ptr %stp_L9483
+  call void @qd_stack_pop(ptr %stk_L9483, ptr %ce_L9483)
+  %cv_L9483 = getelementptr %qd_stack_element_t, ptr %ce_L9483, i32 0, i32 0
+  %ci_L9483 = load i64, ptr %cv_L9483
+  %cc_L9483 = icmp ne i64 %ci_L9483, 0
+  br i1 %cc_L9483, label %L9484, label %L9486
+L9484:
+  %stp_L9487 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L9487 = load ptr, ptr %stp_L9487
+  call i32 @qdrt_push_element(ptr %stk_L9487, ptr %local.o)
+  call i32 @usr_sb_new(ptr %ctx)
+  call i32 @qd_push_s(ptr %ctx, ptr @.str.9488)
+  call i32 @usr_sb_append(ptr %ctx)
+  %stp_L9489 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L9489 = load ptr, ptr %stp_L9489
+  call i32 @qdrt_push_element(ptr %stk_L9489, ptr %local.recv_name)
+  call i32 @usr_sb_append_int(ptr %ctx)
+  call i32 @qd_push_s(ptr %ctx, ptr @.str.9490)
+  call i32 @usr_sb_append(ptr %ctx)
+  call i32 @usr_sb_finish(ptr %ctx)
+  call i32 @usr_sb_append(ptr %ctx)
+  %stp_L9491 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L9491 = load ptr, ptr %stp_L9491
+  call void @qd_stack_pop(ptr %stk_L9491, ptr %local.o)
+  %stp_L9492 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L9492 = load ptr, ptr %stp_L9492
+  call i32 @qdrt_push_element(ptr %stk_L9492, ptr %local.nparams)
+  call i32 @qd_push_i(ptr %ctx, i64 0)
+  call i32 @qd_gt(ptr %ctx)
+  %ce_L9493 = alloca %qd_stack_element_t
+  %stp_L9493 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L9493 = load ptr, ptr %stp_L9493
+  call void @qd_stack_pop(ptr %stk_L9493, ptr %ce_L9493)
+  %cv_L9493 = getelementptr %qd_stack_element_t, ptr %ce_L9493, i32 0, i32 0
+  %ci_L9493 = load i64, ptr %cv_L9493
+  %cc_L9493 = icmp ne i64 %ci_L9493, 0
+  br i1 %cc_L9493, label %L9494, label %L9496
+L9494:
+  %stp_L9497 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L9497 = load ptr, ptr %stp_L9497
+  call i32 @qdrt_push_element(ptr %stk_L9497, ptr %local.o)
+  call i32 @usr_sb_new(ptr %ctx)
+  call i32 @qd_push_s(ptr %ctx, ptr @.str.9498)
+  call i32 @usr_sb_append(ptr %ctx)
   %stp_L9499 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
   %stk_L9499 = load ptr, ptr %stp_L9499
-  call i32 @qdrt_push_element(ptr %stk_L9499, ptr %local.loc)
+  call i32 @qdrt_push_element(ptr %stk_L9499, ptr %local.nparams)
+  call i32 @usr_sb_append_int(ptr %ctx)
   call i32 @qd_push_s(ptr %ctx, ptr @.str.9500)
-  call i32 @usr_strings_concat(ptr %ctx)
+  call i32 @usr_sb_append(ptr %ctx)
+  call i32 @usr_sb_finish(ptr %ctx)
+  call i32 @usr_sb_append(ptr %ctx)
   %stp_L9501 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
   %stk_L9501 = load ptr, ptr %stp_L9501
-  call i32 @qdrt_push_element(ptr %stk_L9501, ptr %local.recv_name)
-  call i32 @usr_strings_concat(ptr %ctx)
-  call i32 @qd_push_s(ptr %ctx, ptr @.str.9502)
-  call i32 @usr_strings_concat(ptr %ctx)
-  %stp_L9503 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L9503 = load ptr, ptr %stp_L9503
-  call void @qd_stack_pop(ptr %stk_L9503, ptr %local.loc)
-  br label %L9498
-L9498:
+  call void @qd_stack_pop(ptr %stk_L9501, ptr %local.o)
+  %stp_L9502 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L9502 = load ptr, ptr %stp_L9502
+  call i32 @qdrt_push_element(ptr %stk_L9502, ptr %local.o)
+  call i32 @qd_push_s(ptr %ctx, ptr @.str.9503)
+  call i32 @usr_sb_append(ptr %ctx)
   %stp_L9504 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
   %stk_L9504 = load ptr, ptr %stp_L9504
-  call i32 @qdrt_push_element(ptr %stk_L9504, ptr %local.st)
-  %fa_elem_L9505 = alloca %qd_stack_element_t
-  %fa_stp_L9505 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %fa_stk_L9505 = load ptr, ptr %fa_stp_L9505
-  call void @qd_stack_pop(ptr %fa_stk_L9505, ptr %fa_elem_L9505)
-  %fa_vp_L9505 = getelementptr %qd_stack_element_t, ptr %fa_elem_L9505, i32 0, i32 0
-  %fa_ptr_L9505 = load ptr, ptr %fa_vp_L9505
-  %fa_off_L9505 = load i64, ptr @__offset_code
-  %fa_fp_L9505 = getelementptr i8, ptr %fa_ptr_L9505, i64 %fa_off_L9505
-  %fa_val_L9505 = load ptr, ptr %fa_fp_L9505
-  call i32 @qd_push_p(ptr %ctx, ptr %fa_val_L9505)
+  call void @qd_stack_pop(ptr %stk_L9504, ptr %local.o)
+  br label %L9496
+L9496:
+  %stp_L9505 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L9505 = load ptr, ptr %stp_L9505
+  call i32 @qdrt_push_element(ptr %stk_L9505, ptr %local.st)
+  call i32 @usr_codegen_next_label(ptr %ctx)
   %stp_L9506 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
   %stk_L9506 = load ptr, ptr %stp_L9506
-  call void @qd_stack_pop(ptr %stk_L9506, ptr %local.o)
+  call void @qd_stack_pop(ptr %stk_L9506, ptr %local.ruid)
   %stp_L9507 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
   %stk_L9507 = load ptr, ptr %stp_L9507
-  call i32 @qdrt_push_element(ptr %stk_L9507, ptr %local.o)
-  call i32 @qd_push_s(ptr %ctx, ptr @.str.9508)
+  call void @qd_stack_pop(ptr %stk_L9507, ptr %local.st)
+  %stp_L9508 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L9508 = load ptr, ptr %stp_L9508
+  call i32 @qdrt_push_element(ptr %stk_L9508, ptr %local.o)
+  call i32 @usr_sb_new(ptr %ctx)
+  call i32 @qd_push_s(ptr %ctx, ptr @.str.9509)
   call i32 @usr_sb_append(ptr %ctx)
-  %stp_L9509 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L9509 = load ptr, ptr %stp_L9509
-  call void @qd_stack_pop(ptr %stk_L9509, ptr %local.o)
   %stp_L9510 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
   %stk_L9510 = load ptr, ptr %stp_L9510
-  call i32 @qdrt_push_element(ptr %stk_L9510, ptr %local.o)
-  %stp_L9511 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L9511 = load ptr, ptr %stp_L9511
-  call i32 @qdrt_push_element(ptr %stk_L9511, ptr %local.pfx)
+  call i32 @qdrt_push_element(ptr %stk_L9510, ptr %local.ruid)
+  call i32 @usr_sb_append_int(ptr %ctx)
+  call i32 @qd_push_s(ptr %ctx, ptr @.str.9511)
+  call i32 @usr_sb_append(ptr %ctx)
+  call i32 @usr_sb_finish(ptr %ctx)
   call i32 @usr_sb_append(ptr %ctx)
   %stp_L9512 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
   %stk_L9512 = load ptr, ptr %stp_L9512
@@ -38588,257 +38478,172 @@ L9498:
   %stp_L9513 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
   %stk_L9513 = load ptr, ptr %stp_L9513
   call i32 @qdrt_push_element(ptr %stk_L9513, ptr %local.o)
-  %stp_L9514 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L9514 = load ptr, ptr %stp_L9514
-  call i32 @qdrt_push_element(ptr %stk_L9514, ptr %local.fname)
+  call i32 @usr_sb_new(ptr %ctx)
+  call i32 @qd_push_s(ptr %ctx, ptr @.str.9514)
   call i32 @usr_sb_append(ptr %ctx)
   %stp_L9515 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
   %stk_L9515 = load ptr, ptr %stp_L9515
-  call void @qd_stack_pop(ptr %stk_L9515, ptr %local.o)
-  %stp_L9516 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L9516 = load ptr, ptr %stp_L9516
-  call i32 @qdrt_push_element(ptr %stk_L9516, ptr %local.o)
-  call i32 @qd_push_s(ptr %ctx, ptr @.str.9517)
+  call i32 @qdrt_push_element(ptr %stk_L9515, ptr %local.ruid)
+  call i32 @usr_sb_append_int(ptr %ctx)
+  call i32 @qd_push_s(ptr %ctx, ptr @.str.9516)
   call i32 @usr_sb_append(ptr %ctx)
-  %stp_L9518 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L9518 = load ptr, ptr %stp_L9518
-  call void @qd_stack_pop(ptr %stk_L9518, ptr %local.o)
+  %stp_L9517 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L9517 = load ptr, ptr %stp_L9517
+  call i32 @qdrt_push_element(ptr %stk_L9517, ptr %local.ruid)
+  call i32 @usr_sb_append_int(ptr %ctx)
+  call i32 @qd_push_s(ptr %ctx, ptr @.str.9518)
+  call i32 @usr_sb_append(ptr %ctx)
+  call i32 @usr_sb_finish(ptr %ctx)
+  call i32 @usr_sb_append(ptr %ctx)
   %stp_L9519 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
   %stk_L9519 = load ptr, ptr %stp_L9519
-  call i32 @qdrt_push_element(ptr %stk_L9519, ptr %local.o)
-  call i32 @qd_push_s(ptr %ctx, ptr @.str.9520)
+  call void @qd_stack_pop(ptr %stk_L9519, ptr %local.o)
+  %stp_L9520 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L9520 = load ptr, ptr %stp_L9520
+  call i32 @qdrt_push_element(ptr %stk_L9520, ptr %local.o)
+  call i32 @usr_sb_new(ptr %ctx)
+  call i32 @qd_push_s(ptr %ctx, ptr @.str.9521)
   call i32 @usr_sb_append(ptr %ctx)
-  %stp_L9521 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L9521 = load ptr, ptr %stp_L9521
-  call void @qd_stack_pop(ptr %stk_L9521, ptr %local.o)
   %stp_L9522 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
   %stk_L9522 = load ptr, ptr %stp_L9522
-  call i32 @qdrt_push_element(ptr %stk_L9522, ptr %local.recv_name)
-  call i32 @usr_strings_len(ptr %ctx)
-  call i32 @qd_push_i(ptr %ctx, i64 0)
-  call i32 @qd_gt(ptr %ctx)
-  %ce_L9523 = alloca %qd_stack_element_t
-  %stp_L9523 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L9523 = load ptr, ptr %stp_L9523
-  call void @qd_stack_pop(ptr %stk_L9523, ptr %ce_L9523)
-  %cv_L9523 = getelementptr %qd_stack_element_t, ptr %ce_L9523, i32 0, i32 0
-  %ci_L9523 = load i64, ptr %cv_L9523
-  %cc_L9523 = icmp ne i64 %ci_L9523, 0
-  br i1 %cc_L9523, label %L9524, label %L9526
-L9524:
+  call i32 @qdrt_push_element(ptr %stk_L9522, ptr %local.ruid)
+  call i32 @usr_sb_append_int(ptr %ctx)
+  call i32 @qd_push_s(ptr %ctx, ptr @.str.9523)
+  call i32 @usr_sb_append(ptr %ctx)
+  %stp_L9524 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L9524 = load ptr, ptr %stp_L9524
+  call i32 @qdrt_push_element(ptr %stk_L9524, ptr %local.recv_name)
+  call i32 @usr_sb_append_int(ptr %ctx)
+  call i32 @qd_push_s(ptr %ctx, ptr @.str.9525)
+  call i32 @usr_sb_append(ptr %ctx)
+  call i32 @usr_sb_finish(ptr %ctx)
+  call i32 @usr_sb_append(ptr %ctx)
+  %stp_L9526 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L9526 = load ptr, ptr %stp_L9526
+  call void @qd_stack_pop(ptr %stk_L9526, ptr %local.o)
+  br label %L9486
+L9486:
   %stp_L9527 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
   %stk_L9527 = load ptr, ptr %stp_L9527
   call i32 @qdrt_push_element(ptr %stk_L9527, ptr %local.o)
-  call i32 @usr_sb_new(ptr %ctx)
-  call i32 @qd_push_s(ptr %ctx, ptr @.str.9528)
-  call i32 @usr_sb_append(ptr %ctx)
+  %fs_elem_L9528 = alloca %qd_stack_element_t
+  %fs_stp_L9528 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %fs_stk_L9528 = load ptr, ptr %fs_stp_L9528
+  call void @qd_stack_pop(ptr %fs_stk_L9528, ptr %fs_elem_L9528)
+  %fs_vp_L9528 = getelementptr %qd_stack_element_t, ptr %fs_elem_L9528, i32 0, i32 0
+  %fs_val_L9528 = load i64, ptr %fs_vp_L9528
+  %fs_svp_L9528 = getelementptr %qd_stack_element_t, ptr %local.st, i32 0, i32 0
+  %fs_sptr_L9528 = load ptr, ptr %fs_svp_L9528
+  %fs_off_L9528 = load i64, ptr @__offset_code
+  %fs_fp_L9528 = getelementptr i8, ptr %fs_sptr_L9528, i64 %fs_off_L9528
+  store i64 %fs_val_L9528, ptr %fs_fp_L9528
   %stp_L9529 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
   %stk_L9529 = load ptr, ptr %stp_L9529
-  call i32 @qdrt_push_element(ptr %stk_L9529, ptr %local.recv_name)
-  call i32 @usr_sb_append_int(ptr %ctx)
-  call i32 @qd_push_s(ptr %ctx, ptr @.str.9530)
-  call i32 @usr_sb_append(ptr %ctx)
-  call i32 @usr_sb_finish(ptr %ctx)
-  call i32 @usr_sb_append(ptr %ctx)
+  call i32 @qdrt_push_element(ptr %stk_L9529, ptr %local.st)
+  %stp_L9530 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L9530 = load ptr, ptr %stp_L9530
+  call i32 @qdrt_push_element(ptr %stk_L9530, ptr %local.body_node)
   %stp_L9531 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
   %stk_L9531 = load ptr, ptr %stp_L9531
-  call void @qd_stack_pop(ptr %stk_L9531, ptr %local.o)
+  call i32 @qdrt_push_element(ptr %stk_L9531, ptr %local.recv_name)
+  call i32 @usr_codegen_emit_unique_allocas(ptr %ctx)
   %stp_L9532 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
   %stk_L9532 = load ptr, ptr %stp_L9532
-  call i32 @qdrt_push_element(ptr %stk_L9532, ptr %local.st)
-  call i32 @usr_codegen_next_label(ptr %ctx)
+  call void @qd_stack_pop(ptr %stk_L9532, ptr %local.st)
   %stp_L9533 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
   %stk_L9533 = load ptr, ptr %stp_L9533
-  call void @qd_stack_pop(ptr %stk_L9533, ptr %local.ruid)
+  call i32 @qdrt_push_element(ptr %stk_L9533, ptr %local.body_node)
+  call i32 @qd_push_i(ptr %ctx, i64 0)
+  call i32 @qd_neq(ptr %ctx)
+  %ce_L9534 = alloca %qd_stack_element_t
   %stp_L9534 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
   %stk_L9534 = load ptr, ptr %stp_L9534
-  call void @qd_stack_pop(ptr %stk_L9534, ptr %local.st)
-  %stp_L9535 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L9535 = load ptr, ptr %stp_L9535
-  call i32 @qdrt_push_element(ptr %stk_L9535, ptr %local.o)
-  call i32 @usr_sb_new(ptr %ctx)
-  call i32 @qd_push_s(ptr %ctx, ptr @.str.9536)
-  call i32 @usr_sb_append(ptr %ctx)
-  %stp_L9537 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L9537 = load ptr, ptr %stp_L9537
-  call i32 @qdrt_push_element(ptr %stk_L9537, ptr %local.ruid)
-  call i32 @usr_sb_append_int(ptr %ctx)
-  call i32 @qd_push_s(ptr %ctx, ptr @.str.9538)
-  call i32 @usr_sb_append(ptr %ctx)
-  call i32 @usr_sb_finish(ptr %ctx)
-  call i32 @usr_sb_append(ptr %ctx)
+  call void @qd_stack_pop(ptr %stk_L9534, ptr %ce_L9534)
+  %cv_L9534 = getelementptr %qd_stack_element_t, ptr %ce_L9534, i32 0, i32 0
+  %ci_L9534 = load i64, ptr %cv_L9534
+  %cc_L9534 = icmp ne i64 %ci_L9534, 0
+  br i1 %cc_L9534, label %L9535, label %L9537
+L9535:
+  %stp_L9538 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L9538 = load ptr, ptr %stp_L9538
+  call i32 @qdrt_push_element(ptr %stk_L9538, ptr %local.st)
   %stp_L9539 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
   %stk_L9539 = load ptr, ptr %stp_L9539
-  call void @qd_stack_pop(ptr %stk_L9539, ptr %local.o)
+  call i32 @qdrt_push_element(ptr %stk_L9539, ptr %local.body_node)
   %stp_L9540 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
   %stk_L9540 = load ptr, ptr %stp_L9540
-  call i32 @qdrt_push_element(ptr %stk_L9540, ptr %local.o)
-  call i32 @usr_sb_new(ptr %ctx)
-  call i32 @qd_push_s(ptr %ctx, ptr @.str.9541)
-  call i32 @usr_sb_append(ptr %ctx)
+  call i32 @qdrt_push_element(ptr %stk_L9540, ptr %local.loc)
+  call i32 @usr_codegen_emit_block(ptr %ctx)
+  %stp_L9541 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L9541 = load ptr, ptr %stp_L9541
+  call void @qd_stack_pop(ptr %stk_L9541, ptr %local.st)
+  br label %L9537
+L9537:
   %stp_L9542 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
   %stk_L9542 = load ptr, ptr %stp_L9542
-  call i32 @qdrt_push_element(ptr %stk_L9542, ptr %local.ruid)
-  call i32 @usr_sb_append_int(ptr %ctx)
-  call i32 @qd_push_s(ptr %ctx, ptr @.str.9543)
-  call i32 @usr_sb_append(ptr %ctx)
+  call i32 @qdrt_push_element(ptr %stk_L9542, ptr %local.st)
+  %fa_elem_L9543 = alloca %qd_stack_element_t
+  %fa_stp_L9543 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %fa_stk_L9543 = load ptr, ptr %fa_stp_L9543
+  call void @qd_stack_pop(ptr %fa_stk_L9543, ptr %fa_elem_L9543)
+  %fa_vp_L9543 = getelementptr %qd_stack_element_t, ptr %fa_elem_L9543, i32 0, i32 0
+  %fa_ptr_L9543 = load ptr, ptr %fa_vp_L9543
+  %fa_off_L9543 = load i64, ptr @__offset_code
+  %fa_fp_L9543 = getelementptr i8, ptr %fa_ptr_L9543, i64 %fa_off_L9543
+  %fa_val_L9543 = load ptr, ptr %fa_fp_L9543
+  call i32 @qd_push_p(ptr %ctx, ptr %fa_val_L9543)
   %stp_L9544 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
   %stk_L9544 = load ptr, ptr %stp_L9544
-  call i32 @qdrt_push_element(ptr %stk_L9544, ptr %local.ruid)
-  call i32 @usr_sb_append_int(ptr %ctx)
-  call i32 @qd_push_s(ptr %ctx, ptr @.str.9545)
+  call void @qd_stack_pop(ptr %stk_L9544, ptr %local.o)
+  %stp_L9545 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L9545 = load ptr, ptr %stp_L9545
+  call i32 @qdrt_push_element(ptr %stk_L9545, ptr %local.o)
+  call i32 @qd_push_s(ptr %ctx, ptr @.str.9546)
   call i32 @usr_sb_append(ptr %ctx)
-  call i32 @usr_sb_finish(ptr %ctx)
-  call i32 @usr_sb_append(ptr %ctx)
-  %stp_L9546 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L9546 = load ptr, ptr %stp_L9546
-  call void @qd_stack_pop(ptr %stk_L9546, ptr %local.o)
   %stp_L9547 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
   %stk_L9547 = load ptr, ptr %stp_L9547
-  call i32 @qdrt_push_element(ptr %stk_L9547, ptr %local.o)
-  call i32 @usr_sb_new(ptr %ctx)
-  call i32 @qd_push_s(ptr %ctx, ptr @.str.9548)
+  call void @qd_stack_pop(ptr %stk_L9547, ptr %local.o)
+  %stp_L9548 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L9548 = load ptr, ptr %stp_L9548
+  call i32 @qdrt_push_element(ptr %stk_L9548, ptr %local.o)
+  call i32 @qd_push_s(ptr %ctx, ptr @.str.9549)
   call i32 @usr_sb_append(ptr %ctx)
-  %stp_L9549 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L9549 = load ptr, ptr %stp_L9549
-  call i32 @qdrt_push_element(ptr %stk_L9549, ptr %local.ruid)
-  call i32 @usr_sb_append_int(ptr %ctx)
-  call i32 @qd_push_s(ptr %ctx, ptr @.str.9550)
-  call i32 @usr_sb_append(ptr %ctx)
+  %stp_L9550 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L9550 = load ptr, ptr %stp_L9550
+  call void @qd_stack_pop(ptr %stk_L9550, ptr %local.o)
   %stp_L9551 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
   %stk_L9551 = load ptr, ptr %stp_L9551
-  call i32 @qdrt_push_element(ptr %stk_L9551, ptr %local.recv_name)
-  call i32 @usr_sb_append_int(ptr %ctx)
+  call i32 @qdrt_push_element(ptr %stk_L9551, ptr %local.o)
   call i32 @qd_push_s(ptr %ctx, ptr @.str.9552)
-  call i32 @usr_sb_append(ptr %ctx)
-  call i32 @usr_sb_finish(ptr %ctx)
   call i32 @usr_sb_append(ptr %ctx)
   %stp_L9553 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
   %stk_L9553 = load ptr, ptr %stp_L9553
   call void @qd_stack_pop(ptr %stk_L9553, ptr %local.o)
-  br label %L9526
-L9526:
   %stp_L9554 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
   %stk_L9554 = load ptr, ptr %stp_L9554
   call i32 @qdrt_push_element(ptr %stk_L9554, ptr %local.o)
-  %fs_elem_L9555 = alloca %qd_stack_element_t
-  %fs_stp_L9555 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %fs_stk_L9555 = load ptr, ptr %fs_stp_L9555
-  call void @qd_stack_pop(ptr %fs_stk_L9555, ptr %fs_elem_L9555)
-  %fs_vp_L9555 = getelementptr %qd_stack_element_t, ptr %fs_elem_L9555, i32 0, i32 0
-  %fs_val_L9555 = load i64, ptr %fs_vp_L9555
-  %fs_svp_L9555 = getelementptr %qd_stack_element_t, ptr %local.st, i32 0, i32 0
-  %fs_sptr_L9555 = load ptr, ptr %fs_svp_L9555
-  %fs_off_L9555 = load i64, ptr @__offset_code
-  %fs_fp_L9555 = getelementptr i8, ptr %fs_sptr_L9555, i64 %fs_off_L9555
-  store i64 %fs_val_L9555, ptr %fs_fp_L9555
+  call i32 @qd_push_s(ptr %ctx, ptr @.str.9555)
+  call i32 @usr_sb_append(ptr %ctx)
   %stp_L9556 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
   %stk_L9556 = load ptr, ptr %stp_L9556
-  call i32 @qdrt_push_element(ptr %stk_L9556, ptr %local.st)
+  call void @qd_stack_pop(ptr %stk_L9556, ptr %local.o)
   %stp_L9557 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
   %stk_L9557 = load ptr, ptr %stp_L9557
-  call i32 @qdrt_push_element(ptr %stk_L9557, ptr %local.body_node)
-  %stp_L9558 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L9558 = load ptr, ptr %stp_L9558
-  call i32 @qdrt_push_element(ptr %stk_L9558, ptr %local.recv_name)
-  call i32 @usr_codegen_emit_unique_allocas(ptr %ctx)
+  call i32 @qdrt_push_element(ptr %stk_L9557, ptr %local.o)
+  %fs_elem_L9558 = alloca %qd_stack_element_t
+  %fs_stp_L9558 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %fs_stk_L9558 = load ptr, ptr %fs_stp_L9558
+  call void @qd_stack_pop(ptr %fs_stk_L9558, ptr %fs_elem_L9558)
+  %fs_vp_L9558 = getelementptr %qd_stack_element_t, ptr %fs_elem_L9558, i32 0, i32 0
+  %fs_val_L9558 = load i64, ptr %fs_vp_L9558
+  %fs_svp_L9558 = getelementptr %qd_stack_element_t, ptr %local.st, i32 0, i32 0
+  %fs_sptr_L9558 = load ptr, ptr %fs_svp_L9558
+  %fs_off_L9558 = load i64, ptr @__offset_code
+  %fs_fp_L9558 = getelementptr i8, ptr %fs_sptr_L9558, i64 %fs_off_L9558
+  store i64 %fs_val_L9558, ptr %fs_fp_L9558
   %stp_L9559 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
   %stk_L9559 = load ptr, ptr %stp_L9559
-  call void @qd_stack_pop(ptr %stk_L9559, ptr %local.st)
-  %stp_L9560 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L9560 = load ptr, ptr %stp_L9560
-  call i32 @qdrt_push_element(ptr %stk_L9560, ptr %local.body_node)
-  call i32 @qd_push_i(ptr %ctx, i64 0)
-  call i32 @qd_neq(ptr %ctx)
-  %ce_L9561 = alloca %qd_stack_element_t
-  %stp_L9561 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L9561 = load ptr, ptr %stp_L9561
-  call void @qd_stack_pop(ptr %stk_L9561, ptr %ce_L9561)
-  %cv_L9561 = getelementptr %qd_stack_element_t, ptr %ce_L9561, i32 0, i32 0
-  %ci_L9561 = load i64, ptr %cv_L9561
-  %cc_L9561 = icmp ne i64 %ci_L9561, 0
-  br i1 %cc_L9561, label %L9562, label %L9564
-L9562:
-  %stp_L9565 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L9565 = load ptr, ptr %stp_L9565
-  call i32 @qdrt_push_element(ptr %stk_L9565, ptr %local.st)
-  %stp_L9566 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L9566 = load ptr, ptr %stp_L9566
-  call i32 @qdrt_push_element(ptr %stk_L9566, ptr %local.body_node)
-  %stp_L9567 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L9567 = load ptr, ptr %stp_L9567
-  call i32 @qdrt_push_element(ptr %stk_L9567, ptr %local.loc)
-  call i32 @usr_codegen_emit_block(ptr %ctx)
-  %stp_L9568 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L9568 = load ptr, ptr %stp_L9568
-  call void @qd_stack_pop(ptr %stk_L9568, ptr %local.st)
-  br label %L9564
-L9564:
-  %stp_L9569 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L9569 = load ptr, ptr %stp_L9569
-  call i32 @qdrt_push_element(ptr %stk_L9569, ptr %local.st)
-  %fa_elem_L9570 = alloca %qd_stack_element_t
-  %fa_stp_L9570 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %fa_stk_L9570 = load ptr, ptr %fa_stp_L9570
-  call void @qd_stack_pop(ptr %fa_stk_L9570, ptr %fa_elem_L9570)
-  %fa_vp_L9570 = getelementptr %qd_stack_element_t, ptr %fa_elem_L9570, i32 0, i32 0
-  %fa_ptr_L9570 = load ptr, ptr %fa_vp_L9570
-  %fa_off_L9570 = load i64, ptr @__offset_code
-  %fa_fp_L9570 = getelementptr i8, ptr %fa_ptr_L9570, i64 %fa_off_L9570
-  %fa_val_L9570 = load ptr, ptr %fa_fp_L9570
-  call i32 @qd_push_p(ptr %ctx, ptr %fa_val_L9570)
-  %stp_L9571 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L9571 = load ptr, ptr %stp_L9571
-  call void @qd_stack_pop(ptr %stk_L9571, ptr %local.o)
-  %stp_L9572 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L9572 = load ptr, ptr %stp_L9572
-  call i32 @qdrt_push_element(ptr %stk_L9572, ptr %local.o)
-  call i32 @qd_push_s(ptr %ctx, ptr @.str.9573)
-  call i32 @usr_sb_append(ptr %ctx)
-  %stp_L9574 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L9574 = load ptr, ptr %stp_L9574
-  call void @qd_stack_pop(ptr %stk_L9574, ptr %local.o)
-  %stp_L9575 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L9575 = load ptr, ptr %stp_L9575
-  call i32 @qdrt_push_element(ptr %stk_L9575, ptr %local.o)
-  call i32 @qd_push_s(ptr %ctx, ptr @.str.9576)
-  call i32 @usr_sb_append(ptr %ctx)
-  %stp_L9577 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L9577 = load ptr, ptr %stp_L9577
-  call void @qd_stack_pop(ptr %stk_L9577, ptr %local.o)
-  %stp_L9578 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L9578 = load ptr, ptr %stp_L9578
-  call i32 @qdrt_push_element(ptr %stk_L9578, ptr %local.o)
-  call i32 @qd_push_s(ptr %ctx, ptr @.str.9579)
-  call i32 @usr_sb_append(ptr %ctx)
-  %stp_L9580 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L9580 = load ptr, ptr %stp_L9580
-  call void @qd_stack_pop(ptr %stk_L9580, ptr %local.o)
-  %stp_L9581 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L9581 = load ptr, ptr %stp_L9581
-  call i32 @qdrt_push_element(ptr %stk_L9581, ptr %local.o)
-  call i32 @qd_push_s(ptr %ctx, ptr @.str.9582)
-  call i32 @usr_sb_append(ptr %ctx)
-  %stp_L9583 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L9583 = load ptr, ptr %stp_L9583
-  call void @qd_stack_pop(ptr %stk_L9583, ptr %local.o)
-  %stp_L9584 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L9584 = load ptr, ptr %stp_L9584
-  call i32 @qdrt_push_element(ptr %stk_L9584, ptr %local.o)
-  %fs_elem_L9585 = alloca %qd_stack_element_t
-  %fs_stp_L9585 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %fs_stk_L9585 = load ptr, ptr %fs_stp_L9585
-  call void @qd_stack_pop(ptr %fs_stk_L9585, ptr %fs_elem_L9585)
-  %fs_vp_L9585 = getelementptr %qd_stack_element_t, ptr %fs_elem_L9585, i32 0, i32 0
-  %fs_val_L9585 = load i64, ptr %fs_vp_L9585
-  %fs_svp_L9585 = getelementptr %qd_stack_element_t, ptr %local.st, i32 0, i32 0
-  %fs_sptr_L9585 = load ptr, ptr %fs_svp_L9585
-  %fs_off_L9585 = load i64, ptr @__offset_code
-  %fs_fp_L9585 = getelementptr i8, ptr %fs_sptr_L9585, i64 %fs_off_L9585
-  store i64 %fs_val_L9585, ptr %fs_fp_L9585
-  %stp_L9586 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L9586 = load ptr, ptr %stp_L9586
-  call i32 @qdrt_push_element(ptr %stk_L9586, ptr %local.st)
+  call i32 @qdrt_push_element(ptr %stk_L9559, ptr %local.st)
   br label %return
 return:
   ret i32 0
@@ -38859,6 +38664,8 @@ entry:
   %local.recv_text2 = alloca %qd_stack_element_t
   %local.colon_pos2 = alloca %qd_stack_element_t
   %local.recv_type2 = alloca %qd_stack_element_t
+  %local.param_count = alloca %qd_stack_element_t
+  %local.pcur = alloca %qd_stack_element_t
   %local.orig_name = alloca %qd_stack_element_t
   %local.o = alloca %qd_stack_element_t
   %local.g = alloca %qd_stack_element_t
@@ -38888,649 +38695,849 @@ entry:
   %local.xch = alloca %qd_stack_element_t
   %local.hv = alloca %qd_stack_element_t
   %local.hvb = alloca %qd_stack_element_t
-  %stp_L9587 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L9587 = load ptr, ptr %stp_L9587
-  call void @qd_stack_pop(ptr %stk_L9587, ptr %local.pfx)
-  %stp_L9588 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L9588 = load ptr, ptr %stp_L9588
-  call void @qd_stack_pop(ptr %stk_L9588, ptr %local.cstr)
-  %stp_L9589 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L9589 = load ptr, ptr %stp_L9589
-  call void @qd_stack_pop(ptr %stk_L9589, ptr %local.n)
+  %stp_L9560 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L9560 = load ptr, ptr %stp_L9560
+  call void @qd_stack_pop(ptr %stk_L9560, ptr %local.pfx)
+  %stp_L9561 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L9561 = load ptr, ptr %stp_L9561
+  call void @qd_stack_pop(ptr %stk_L9561, ptr %local.cstr)
+  %stp_L9562 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L9562 = load ptr, ptr %stp_L9562
+  call void @qd_stack_pop(ptr %stk_L9562, ptr %local.n)
+  %stp_L9563 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L9563 = load ptr, ptr %stp_L9563
+  call void @qd_stack_pop(ptr %stk_L9563, ptr %local.st)
+  %stp_L9564 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L9564 = load ptr, ptr %stp_L9564
+  call i32 @qdrt_push_element(ptr %stk_L9564, ptr %local.n)
+  call i32 @qd_push_i(ptr %ctx, i64 0)
+  call i32 @qd_eq(ptr %ctx)
+  %ce_L9565 = alloca %qd_stack_element_t
+  %stp_L9565 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L9565 = load ptr, ptr %stp_L9565
+  call void @qd_stack_pop(ptr %stk_L9565, ptr %ce_L9565)
+  %cv_L9565 = getelementptr %qd_stack_element_t, ptr %ce_L9565, i32 0, i32 0
+  %ci_L9565 = load i64, ptr %cv_L9565
+  %cc_L9565 = icmp ne i64 %ci_L9565, 0
+  br i1 %cc_L9565, label %L9566, label %L9568
+L9566:
+  %stp_L9569 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L9569 = load ptr, ptr %stp_L9569
+  call i32 @qdrt_push_element(ptr %stk_L9569, ptr %local.st)
+  br label %return
+  br label %L9568
+L9568:
+  %stp_L9570 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L9570 = load ptr, ptr %stp_L9570
+  call i32 @qdrt_push_element(ptr %stk_L9570, ptr %local.n)
+  %fa_elem_L9571 = alloca %qd_stack_element_t
+  %fa_stp_L9571 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %fa_stk_L9571 = load ptr, ptr %fa_stp_L9571
+  call void @qd_stack_pop(ptr %fa_stk_L9571, ptr %fa_elem_L9571)
+  %fa_vp_L9571 = getelementptr %qd_stack_element_t, ptr %fa_elem_L9571, i32 0, i32 0
+  %fa_ptr_L9571 = load ptr, ptr %fa_vp_L9571
+  %fa_off_L9571 = load i64, ptr @__offset_nkind
+  %fa_fp_L9571 = getelementptr i8, ptr %fa_ptr_L9571, i64 %fa_off_L9571
+  %fa_val_L9571 = load i64, ptr %fa_fp_L9571
+  call i32 @qd_push_i(ptr %ctx, i64 %fa_val_L9571)
+  %stp_L9572 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L9572 = load ptr, ptr %stp_L9572
+  call void @qd_stack_pop(ptr %stk_L9572, ptr %local.k)
+  %stp_L9573 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L9573 = load ptr, ptr %stp_L9573
+  call i32 @qdrt_push_element(ptr %stk_L9573, ptr %local.k)
+  %ev_L9574 = load i64, ptr @__enum_NodeType_FnDecl
+  call i32 @qd_push_i(ptr %ctx, i64 %ev_L9574)
+  call i32 @qd_eq(ptr %ctx)
+  %ce_L9575 = alloca %qd_stack_element_t
+  %stp_L9575 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L9575 = load ptr, ptr %stp_L9575
+  call void @qd_stack_pop(ptr %stk_L9575, ptr %ce_L9575)
+  %cv_L9575 = getelementptr %qd_stack_element_t, ptr %ce_L9575, i32 0, i32 0
+  %ci_L9575 = load i64, ptr %cv_L9575
+  %cc_L9575 = icmp ne i64 %ci_L9575, 0
+  br i1 %cc_L9575, label %L9576, label %L9578
+L9576:
+  %stp_L9579 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L9579 = load ptr, ptr %stp_L9579
+  call i32 @qdrt_push_element(ptr %stk_L9579, ptr %local.n)
+  %fa_elem_L9580 = alloca %qd_stack_element_t
+  %fa_stp_L9580 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %fa_stk_L9580 = load ptr, ptr %fa_stp_L9580
+  call void @qd_stack_pop(ptr %fa_stk_L9580, ptr %fa_elem_L9580)
+  %fa_vp_L9580 = getelementptr %qd_stack_element_t, ptr %fa_elem_L9580, i32 0, i32 0
+  %fa_ptr_L9580 = load ptr, ptr %fa_vp_L9580
+  %fa_off_L9580 = load i64, ptr @__offset_ntext
+  %fa_fp_L9580 = getelementptr i8, ptr %fa_ptr_L9580, i64 %fa_off_L9580
+  %fa_val_L9580 = load ptr, ptr %fa_fp_L9580
+  call i32 @qd_push_s_ref(ptr %ctx, ptr %fa_val_L9580)
+  %stp_L9581 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L9581 = load ptr, ptr %stp_L9581
+  call void @qd_stack_pop(ptr %stk_L9581, ptr %local.fname)
+  call i32 @qd_push_s(ptr %ctx, ptr @.str.9582)
+  %stp_L9583 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L9583 = load ptr, ptr %stp_L9583
+  call void @qd_stack_pop(ptr %stk_L9583, ptr %local.recv_var)
+  %stp_L9584 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L9584 = load ptr, ptr %stp_L9584
+  call i32 @qdrt_push_element(ptr %stk_L9584, ptr %local.n)
+  %fa_elem_L9585 = alloca %qd_stack_element_t
+  %fa_stp_L9585 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %fa_stk_L9585 = load ptr, ptr %fa_stp_L9585
+  call void @qd_stack_pop(ptr %fa_stk_L9585, ptr %fa_elem_L9585)
+  %fa_vp_L9585 = getelementptr %qd_stack_element_t, ptr %fa_elem_L9585, i32 0, i32 0
+  %fa_ptr_L9585 = load ptr, ptr %fa_vp_L9585
+  %fa_off_L9585 = load i64, ptr @__offset_child3
+  %fa_fp_L9585 = getelementptr i8, ptr %fa_ptr_L9585, i64 %fa_off_L9585
+  %fa_val_L9585 = load ptr, ptr %fa_fp_L9585
+  call i32 @qd_push_p(ptr %ctx, ptr %fa_val_L9585)
+  call i32 @qd_push_i(ptr %ctx, i64 0)
+  call i32 @qd_neq(ptr %ctx)
+  %ce_L9586 = alloca %qd_stack_element_t
+  %stp_L9586 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L9586 = load ptr, ptr %stp_L9586
+  call void @qd_stack_pop(ptr %stk_L9586, ptr %ce_L9586)
+  %cv_L9586 = getelementptr %qd_stack_element_t, ptr %ce_L9586, i32 0, i32 0
+  %ci_L9586 = load i64, ptr %cv_L9586
+  %cc_L9586 = icmp ne i64 %ci_L9586, 0
+  br i1 %cc_L9586, label %L9587, label %L9589
+L9587:
   %stp_L9590 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
   %stk_L9590 = load ptr, ptr %stp_L9590
-  call void @qd_stack_pop(ptr %stk_L9590, ptr %local.st)
-  %stp_L9591 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L9591 = load ptr, ptr %stp_L9591
-  call i32 @qdrt_push_element(ptr %stk_L9591, ptr %local.n)
-  call i32 @qd_push_i(ptr %ctx, i64 0)
+  call i32 @qdrt_push_element(ptr %stk_L9590, ptr %local.n)
+  %fa_elem_L9591 = alloca %qd_stack_element_t
+  %fa_stp_L9591 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %fa_stk_L9591 = load ptr, ptr %fa_stp_L9591
+  call void @qd_stack_pop(ptr %fa_stk_L9591, ptr %fa_elem_L9591)
+  %fa_vp_L9591 = getelementptr %qd_stack_element_t, ptr %fa_elem_L9591, i32 0, i32 0
+  %fa_ptr_L9591 = load ptr, ptr %fa_vp_L9591
+  %fa_off_L9591 = load i64, ptr @__offset_child3
+  %fa_fp_L9591 = getelementptr i8, ptr %fa_ptr_L9591, i64 %fa_off_L9591
+  %fa_val_L9591 = load ptr, ptr %fa_fp_L9591
+  call i32 @qd_push_p(ptr %ctx, ptr %fa_val_L9591)
+  %fa_elem_L9592 = alloca %qd_stack_element_t
+  %fa_stp_L9592 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %fa_stk_L9592 = load ptr, ptr %fa_stp_L9592
+  call void @qd_stack_pop(ptr %fa_stk_L9592, ptr %fa_elem_L9592)
+  %fa_vp_L9592 = getelementptr %qd_stack_element_t, ptr %fa_elem_L9592, i32 0, i32 0
+  %fa_ptr_L9592 = load ptr, ptr %fa_vp_L9592
+  %fa_off_L9592 = load i64, ptr @__offset_nkind
+  %fa_fp_L9592 = getelementptr i8, ptr %fa_ptr_L9592, i64 %fa_off_L9592
+  %fa_val_L9592 = load i64, ptr %fa_fp_L9592
+  call i32 @qd_push_i(ptr %ctx, i64 %fa_val_L9592)
+  %ev_L9593 = load i64, ptr @__enum_NodeType_Param
+  call i32 @qd_push_i(ptr %ctx, i64 %ev_L9593)
   call i32 @qd_eq(ptr %ctx)
-  %ce_L9592 = alloca %qd_stack_element_t
-  %stp_L9592 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L9592 = load ptr, ptr %stp_L9592
-  call void @qd_stack_pop(ptr %stk_L9592, ptr %ce_L9592)
-  %cv_L9592 = getelementptr %qd_stack_element_t, ptr %ce_L9592, i32 0, i32 0
-  %ci_L9592 = load i64, ptr %cv_L9592
-  %cc_L9592 = icmp ne i64 %ci_L9592, 0
-  br i1 %cc_L9592, label %L9593, label %L9595
-L9593:
-  %stp_L9596 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L9596 = load ptr, ptr %stp_L9596
-  call i32 @qdrt_push_element(ptr %stk_L9596, ptr %local.st)
-  br label %return
-  br label %L9595
+  %ce_L9594 = alloca %qd_stack_element_t
+  %stp_L9594 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L9594 = load ptr, ptr %stp_L9594
+  call void @qd_stack_pop(ptr %stk_L9594, ptr %ce_L9594)
+  %cv_L9594 = getelementptr %qd_stack_element_t, ptr %ce_L9594, i32 0, i32 0
+  %ci_L9594 = load i64, ptr %cv_L9594
+  %cc_L9594 = icmp ne i64 %ci_L9594, 0
+  br i1 %cc_L9594, label %L9595, label %L9597
 L9595:
-  %stp_L9597 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L9597 = load ptr, ptr %stp_L9597
-  call i32 @qdrt_push_element(ptr %stk_L9597, ptr %local.n)
-  %fa_elem_L9598 = alloca %qd_stack_element_t
-  %fa_stp_L9598 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %fa_stk_L9598 = load ptr, ptr %fa_stp_L9598
-  call void @qd_stack_pop(ptr %fa_stk_L9598, ptr %fa_elem_L9598)
-  %fa_vp_L9598 = getelementptr %qd_stack_element_t, ptr %fa_elem_L9598, i32 0, i32 0
-  %fa_ptr_L9598 = load ptr, ptr %fa_vp_L9598
-  %fa_off_L9598 = load i64, ptr @__offset_nkind
-  %fa_fp_L9598 = getelementptr i8, ptr %fa_ptr_L9598, i64 %fa_off_L9598
-  %fa_val_L9598 = load i64, ptr %fa_fp_L9598
-  call i32 @qd_push_i(ptr %ctx, i64 %fa_val_L9598)
-  %stp_L9599 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L9599 = load ptr, ptr %stp_L9599
-  call void @qd_stack_pop(ptr %stk_L9599, ptr %local.k)
-  %stp_L9600 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L9600 = load ptr, ptr %stp_L9600
-  call i32 @qdrt_push_element(ptr %stk_L9600, ptr %local.k)
-  %ev_L9601 = load i64, ptr @__enum_NodeType_FnDecl
-  call i32 @qd_push_i(ptr %ctx, i64 %ev_L9601)
-  call i32 @qd_eq(ptr %ctx)
-  %ce_L9602 = alloca %qd_stack_element_t
+  %stp_L9598 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L9598 = load ptr, ptr %stp_L9598
+  call i32 @qdrt_push_element(ptr %stk_L9598, ptr %local.n)
+  %fa_elem_L9599 = alloca %qd_stack_element_t
+  %fa_stp_L9599 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %fa_stk_L9599 = load ptr, ptr %fa_stp_L9599
+  call void @qd_stack_pop(ptr %fa_stk_L9599, ptr %fa_elem_L9599)
+  %fa_vp_L9599 = getelementptr %qd_stack_element_t, ptr %fa_elem_L9599, i32 0, i32 0
+  %fa_ptr_L9599 = load ptr, ptr %fa_vp_L9599
+  %fa_off_L9599 = load i64, ptr @__offset_child3
+  %fa_fp_L9599 = getelementptr i8, ptr %fa_ptr_L9599, i64 %fa_off_L9599
+  %fa_val_L9599 = load ptr, ptr %fa_fp_L9599
+  call i32 @qd_push_p(ptr %ctx, ptr %fa_val_L9599)
+  %fa_elem_L9600 = alloca %qd_stack_element_t
+  %fa_stp_L9600 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %fa_stk_L9600 = load ptr, ptr %fa_stp_L9600
+  call void @qd_stack_pop(ptr %fa_stk_L9600, ptr %fa_elem_L9600)
+  %fa_vp_L9600 = getelementptr %qd_stack_element_t, ptr %fa_elem_L9600, i32 0, i32 0
+  %fa_ptr_L9600 = load ptr, ptr %fa_vp_L9600
+  %fa_off_L9600 = load i64, ptr @__offset_ntext
+  %fa_fp_L9600 = getelementptr i8, ptr %fa_ptr_L9600, i64 %fa_off_L9600
+  %fa_val_L9600 = load ptr, ptr %fa_fp_L9600
+  call i32 @qd_push_s_ref(ptr %ctx, ptr %fa_val_L9600)
+  %stp_L9601 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L9601 = load ptr, ptr %stp_L9601
+  call void @qd_stack_pop(ptr %stk_L9601, ptr %local.recv_text)
   %stp_L9602 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
   %stk_L9602 = load ptr, ptr %stp_L9602
-  call void @qd_stack_pop(ptr %stk_L9602, ptr %ce_L9602)
-  %cv_L9602 = getelementptr %qd_stack_element_t, ptr %ce_L9602, i32 0, i32 0
-  %ci_L9602 = load i64, ptr %cv_L9602
-  %cc_L9602 = icmp ne i64 %ci_L9602, 0
-  br i1 %cc_L9602, label %L9603, label %L9605
-L9603:
+  call i32 @qdrt_push_element(ptr %stk_L9602, ptr %local.recv_text)
+  call i32 @qd_push_s(ptr %ctx, ptr @.str.9603)
+  call i32 @usr_strings_index_of(ptr %ctx)
+  %stp_L9604 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L9604 = load ptr, ptr %stp_L9604
+  call void @qd_stack_pop(ptr %stk_L9604, ptr %local.colon_pos)
+  %stp_L9605 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L9605 = load ptr, ptr %stp_L9605
+  call i32 @qdrt_push_element(ptr %stk_L9605, ptr %local.colon_pos)
+  call i32 @qd_push_i(ptr %ctx, i64 0)
+  call i32 @qd_gte(ptr %ctx)
+  %ce_L9606 = alloca %qd_stack_element_t
   %stp_L9606 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
   %stk_L9606 = load ptr, ptr %stp_L9606
-  call i32 @qdrt_push_element(ptr %stk_L9606, ptr %local.n)
-  %fa_elem_L9607 = alloca %qd_stack_element_t
-  %fa_stp_L9607 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %fa_stk_L9607 = load ptr, ptr %fa_stp_L9607
-  call void @qd_stack_pop(ptr %fa_stk_L9607, ptr %fa_elem_L9607)
-  %fa_vp_L9607 = getelementptr %qd_stack_element_t, ptr %fa_elem_L9607, i32 0, i32 0
-  %fa_ptr_L9607 = load ptr, ptr %fa_vp_L9607
-  %fa_off_L9607 = load i64, ptr @__offset_ntext
-  %fa_fp_L9607 = getelementptr i8, ptr %fa_ptr_L9607, i64 %fa_off_L9607
-  %fa_val_L9607 = load ptr, ptr %fa_fp_L9607
-  call i32 @qd_push_s_ref(ptr %ctx, ptr %fa_val_L9607)
-  %stp_L9608 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L9608 = load ptr, ptr %stp_L9608
-  call void @qd_stack_pop(ptr %stk_L9608, ptr %local.fname)
-  call i32 @qd_push_s(ptr %ctx, ptr @.str.9609)
+  call void @qd_stack_pop(ptr %stk_L9606, ptr %ce_L9606)
+  %cv_L9606 = getelementptr %qd_stack_element_t, ptr %ce_L9606, i32 0, i32 0
+  %ci_L9606 = load i64, ptr %cv_L9606
+  %cc_L9606 = icmp ne i64 %ci_L9606, 0
+  br i1 %cc_L9606, label %L9607, label %L9609
+L9607:
   %stp_L9610 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
   %stk_L9610 = load ptr, ptr %stp_L9610
-  call void @qd_stack_pop(ptr %stk_L9610, ptr %local.recv_var)
+  call i32 @qdrt_push_element(ptr %stk_L9610, ptr %local.recv_text)
   %stp_L9611 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
   %stk_L9611 = load ptr, ptr %stp_L9611
-  call i32 @qdrt_push_element(ptr %stk_L9611, ptr %local.n)
-  %fa_elem_L9612 = alloca %qd_stack_element_t
-  %fa_stp_L9612 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %fa_stk_L9612 = load ptr, ptr %fa_stp_L9612
-  call void @qd_stack_pop(ptr %fa_stk_L9612, ptr %fa_elem_L9612)
-  %fa_vp_L9612 = getelementptr %qd_stack_element_t, ptr %fa_elem_L9612, i32 0, i32 0
-  %fa_ptr_L9612 = load ptr, ptr %fa_vp_L9612
-  %fa_off_L9612 = load i64, ptr @__offset_child3
-  %fa_fp_L9612 = getelementptr i8, ptr %fa_ptr_L9612, i64 %fa_off_L9612
-  %fa_val_L9612 = load ptr, ptr %fa_fp_L9612
-  call i32 @qd_push_p(ptr %ctx, ptr %fa_val_L9612)
-  call i32 @qd_push_i(ptr %ctx, i64 0)
-  call i32 @qd_neq(ptr %ctx)
-  %ce_L9613 = alloca %qd_stack_element_t
+  call i32 @qdrt_push_element(ptr %stk_L9611, ptr %local.colon_pos)
+  call i32 @qd_push_i(ptr %ctx, i64 1)
+  call i32 @qd_add(ptr %ctx)
+  %stp_L9612 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L9612 = load ptr, ptr %stp_L9612
+  call i32 @qdrt_push_element(ptr %stk_L9612, ptr %local.recv_text)
+  call i32 @usr_strings_len(ptr %ctx)
   %stp_L9613 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
   %stk_L9613 = load ptr, ptr %stp_L9613
-  call void @qd_stack_pop(ptr %stk_L9613, ptr %ce_L9613)
-  %cv_L9613 = getelementptr %qd_stack_element_t, ptr %ce_L9613, i32 0, i32 0
-  %ci_L9613 = load i64, ptr %cv_L9613
-  %cc_L9613 = icmp ne i64 %ci_L9613, 0
-  br i1 %cc_L9613, label %L9614, label %L9616
-L9614:
+  call i32 @qdrt_push_element(ptr %stk_L9613, ptr %local.colon_pos)
+  call i32 @qd_push_i(ptr %ctx, i64 1)
+  call i32 @qd_add(ptr %ctx)
+  call i32 @qd_sub(ptr %ctx)
+  call i32 @usr_strings_substring(ptr %ctx)
+  %fe_L9614 = alloca %qd_stack_element_t
+  %fstp_L9614 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %fstk_L9614 = load ptr, ptr %fstp_L9614
+  call void @qd_stack_pop(ptr %fstk_L9614, ptr %fe_L9614)
+  %fvp_L9614 = getelementptr %qd_stack_element_t, ptr %fe_L9614, i32 0, i32 0
+  %fvi_L9614 = load i64, ptr %fvp_L9614
+  %fok_L9614 = icmp ne i64 %fvi_L9614, 0
+  br i1 %fok_L9614, label %L9615, label %L9616
+L9616:
+  call i32 @qd_panic(ptr %ctx)
+  unreachable
+L9615:
   %stp_L9617 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
   %stk_L9617 = load ptr, ptr %stp_L9617
-  call i32 @qdrt_push_element(ptr %stk_L9617, ptr %local.n)
-  %fa_elem_L9618 = alloca %qd_stack_element_t
-  %fa_stp_L9618 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %fa_stk_L9618 = load ptr, ptr %fa_stp_L9618
-  call void @qd_stack_pop(ptr %fa_stk_L9618, ptr %fa_elem_L9618)
-  %fa_vp_L9618 = getelementptr %qd_stack_element_t, ptr %fa_elem_L9618, i32 0, i32 0
-  %fa_ptr_L9618 = load ptr, ptr %fa_vp_L9618
-  %fa_off_L9618 = load i64, ptr @__offset_child3
-  %fa_fp_L9618 = getelementptr i8, ptr %fa_ptr_L9618, i64 %fa_off_L9618
-  %fa_val_L9618 = load ptr, ptr %fa_fp_L9618
-  call i32 @qd_push_p(ptr %ctx, ptr %fa_val_L9618)
-  %fa_elem_L9619 = alloca %qd_stack_element_t
-  %fa_stp_L9619 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %fa_stk_L9619 = load ptr, ptr %fa_stp_L9619
-  call void @qd_stack_pop(ptr %fa_stk_L9619, ptr %fa_elem_L9619)
-  %fa_vp_L9619 = getelementptr %qd_stack_element_t, ptr %fa_elem_L9619, i32 0, i32 0
-  %fa_ptr_L9619 = load ptr, ptr %fa_vp_L9619
-  %fa_off_L9619 = load i64, ptr @__offset_nkind
-  %fa_fp_L9619 = getelementptr i8, ptr %fa_ptr_L9619, i64 %fa_off_L9619
-  %fa_val_L9619 = load i64, ptr %fa_fp_L9619
-  call i32 @qd_push_i(ptr %ctx, i64 %fa_val_L9619)
-  %ev_L9620 = load i64, ptr @__enum_NodeType_Param
-  call i32 @qd_push_i(ptr %ctx, i64 %ev_L9620)
-  call i32 @qd_eq(ptr %ctx)
-  %ce_L9621 = alloca %qd_stack_element_t
+  call void @qd_stack_pop(ptr %stk_L9617, ptr %local.recv_type)
+  %stp_L9618 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L9618 = load ptr, ptr %stp_L9618
+  call i32 @qdrt_push_element(ptr %stk_L9618, ptr %local.recv_type)
+  call i32 @qd_push_s(ptr %ctx, ptr @.str.9619)
+  call i32 @usr_strings_concat(ptr %ctx)
+  %stp_L9620 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L9620 = load ptr, ptr %stp_L9620
+  call i32 @qdrt_push_element(ptr %stk_L9620, ptr %local.fname)
+  call i32 @usr_strings_concat(ptr %ctx)
   %stp_L9621 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
   %stk_L9621 = load ptr, ptr %stp_L9621
-  call void @qd_stack_pop(ptr %stk_L9621, ptr %ce_L9621)
-  %cv_L9621 = getelementptr %qd_stack_element_t, ptr %ce_L9621, i32 0, i32 0
-  %ci_L9621 = load i64, ptr %cv_L9621
-  %cc_L9621 = icmp ne i64 %ci_L9621, 0
-  br i1 %cc_L9621, label %L9622, label %L9624
-L9622:
-  %stp_L9625 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L9625 = load ptr, ptr %stp_L9625
-  call i32 @qdrt_push_element(ptr %stk_L9625, ptr %local.n)
-  %fa_elem_L9626 = alloca %qd_stack_element_t
-  %fa_stp_L9626 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %fa_stk_L9626 = load ptr, ptr %fa_stp_L9626
-  call void @qd_stack_pop(ptr %fa_stk_L9626, ptr %fa_elem_L9626)
-  %fa_vp_L9626 = getelementptr %qd_stack_element_t, ptr %fa_elem_L9626, i32 0, i32 0
-  %fa_ptr_L9626 = load ptr, ptr %fa_vp_L9626
-  %fa_off_L9626 = load i64, ptr @__offset_child3
-  %fa_fp_L9626 = getelementptr i8, ptr %fa_ptr_L9626, i64 %fa_off_L9626
-  %fa_val_L9626 = load ptr, ptr %fa_fp_L9626
-  call i32 @qd_push_p(ptr %ctx, ptr %fa_val_L9626)
-  %fa_elem_L9627 = alloca %qd_stack_element_t
-  %fa_stp_L9627 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %fa_stk_L9627 = load ptr, ptr %fa_stp_L9627
-  call void @qd_stack_pop(ptr %fa_stk_L9627, ptr %fa_elem_L9627)
-  %fa_vp_L9627 = getelementptr %qd_stack_element_t, ptr %fa_elem_L9627, i32 0, i32 0
-  %fa_ptr_L9627 = load ptr, ptr %fa_vp_L9627
-  %fa_off_L9627 = load i64, ptr @__offset_ntext
-  %fa_fp_L9627 = getelementptr i8, ptr %fa_ptr_L9627, i64 %fa_off_L9627
-  %fa_val_L9627 = load ptr, ptr %fa_fp_L9627
-  call i32 @qd_push_s_ref(ptr %ctx, ptr %fa_val_L9627)
+  call void @qd_stack_pop(ptr %stk_L9621, ptr %local.fname)
+  %stp_L9622 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L9622 = load ptr, ptr %stp_L9622
+  call i32 @qdrt_push_element(ptr %stk_L9622, ptr %local.recv_text)
+  call i32 @qd_push_i(ptr %ctx, i64 0)
+  %stp_L9623 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L9623 = load ptr, ptr %stp_L9623
+  call i32 @qdrt_push_element(ptr %stk_L9623, ptr %local.colon_pos)
+  call i32 @usr_strings_substring(ptr %ctx)
+  %fe_L9624 = alloca %qd_stack_element_t
+  %fstp_L9624 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %fstk_L9624 = load ptr, ptr %fstp_L9624
+  call void @qd_stack_pop(ptr %fstk_L9624, ptr %fe_L9624)
+  %fvp_L9624 = getelementptr %qd_stack_element_t, ptr %fe_L9624, i32 0, i32 0
+  %fvi_L9624 = load i64, ptr %fvp_L9624
+  %fok_L9624 = icmp ne i64 %fvi_L9624, 0
+  br i1 %fok_L9624, label %L9625, label %L9626
+L9626:
+  call i32 @qd_panic(ptr %ctx)
+  unreachable
+L9625:
+  %stp_L9627 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L9627 = load ptr, ptr %stp_L9627
+  call void @qd_stack_pop(ptr %stk_L9627, ptr %local.recv_var)
+  br label %L9609
+L9609:
+  br label %L9597
+L9597:
+  br label %L9589
+L9589:
   %stp_L9628 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
   %stk_L9628 = load ptr, ptr %stp_L9628
-  call void @qd_stack_pop(ptr %stk_L9628, ptr %local.recv_text)
-  %stp_L9629 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L9629 = load ptr, ptr %stp_L9629
-  call i32 @qdrt_push_element(ptr %stk_L9629, ptr %local.recv_text)
-  call i32 @qd_push_s(ptr %ctx, ptr @.str.9630)
-  call i32 @usr_strings_index_of(ptr %ctx)
-  %stp_L9631 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L9631 = load ptr, ptr %stp_L9631
-  call void @qd_stack_pop(ptr %stk_L9631, ptr %local.colon_pos)
-  %stp_L9632 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L9632 = load ptr, ptr %stp_L9632
-  call i32 @qdrt_push_element(ptr %stk_L9632, ptr %local.colon_pos)
-  call i32 @qd_push_i(ptr %ctx, i64 0)
-  call i32 @qd_gte(ptr %ctx)
-  %ce_L9633 = alloca %qd_stack_element_t
-  %stp_L9633 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L9633 = load ptr, ptr %stp_L9633
-  call void @qd_stack_pop(ptr %stk_L9633, ptr %ce_L9633)
-  %cv_L9633 = getelementptr %qd_stack_element_t, ptr %ce_L9633, i32 0, i32 0
-  %ci_L9633 = load i64, ptr %cv_L9633
-  %cc_L9633 = icmp ne i64 %ci_L9633, 0
-  br i1 %cc_L9633, label %L9634, label %L9636
-L9634:
-  %stp_L9637 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L9637 = load ptr, ptr %stp_L9637
-  call i32 @qdrt_push_element(ptr %stk_L9637, ptr %local.recv_text)
-  %stp_L9638 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L9638 = load ptr, ptr %stp_L9638
-  call i32 @qdrt_push_element(ptr %stk_L9638, ptr %local.colon_pos)
-  call i32 @qd_push_i(ptr %ctx, i64 1)
-  call i32 @qd_add(ptr %ctx)
-  %stp_L9639 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L9639 = load ptr, ptr %stp_L9639
-  call i32 @qdrt_push_element(ptr %stk_L9639, ptr %local.recv_text)
-  call i32 @usr_strings_len(ptr %ctx)
-  %stp_L9640 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L9640 = load ptr, ptr %stp_L9640
-  call i32 @qdrt_push_element(ptr %stk_L9640, ptr %local.colon_pos)
-  call i32 @qd_push_i(ptr %ctx, i64 1)
-  call i32 @qd_add(ptr %ctx)
-  call i32 @qd_sub(ptr %ctx)
-  call i32 @usr_strings_substring(ptr %ctx)
-  %fe_L9641 = alloca %qd_stack_element_t
-  %fstp_L9641 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %fstk_L9641 = load ptr, ptr %fstp_L9641
-  call void @qd_stack_pop(ptr %fstk_L9641, ptr %fe_L9641)
-  %fvp_L9641 = getelementptr %qd_stack_element_t, ptr %fe_L9641, i32 0, i32 0
-  %fvi_L9641 = load i64, ptr %fvp_L9641
-  %fok_L9641 = icmp ne i64 %fvi_L9641, 0
-  br i1 %fok_L9641, label %L9642, label %L9643
-L9643:
-  call i32 @qd_panic(ptr %ctx)
-  unreachable
-L9642:
-  %stp_L9644 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L9644 = load ptr, ptr %stp_L9644
-  call void @qd_stack_pop(ptr %stk_L9644, ptr %local.recv_type)
-  %stp_L9645 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L9645 = load ptr, ptr %stp_L9645
-  call i32 @qdrt_push_element(ptr %stk_L9645, ptr %local.recv_type)
-  call i32 @qd_push_s(ptr %ctx, ptr @.str.9646)
-  call i32 @usr_strings_concat(ptr %ctx)
-  %stp_L9647 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L9647 = load ptr, ptr %stp_L9647
-  call i32 @qdrt_push_element(ptr %stk_L9647, ptr %local.fname)
-  call i32 @usr_strings_concat(ptr %ctx)
-  %stp_L9648 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L9648 = load ptr, ptr %stp_L9648
-  call void @qd_stack_pop(ptr %stk_L9648, ptr %local.fname)
-  %stp_L9649 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L9649 = load ptr, ptr %stp_L9649
-  call i32 @qdrt_push_element(ptr %stk_L9649, ptr %local.recv_text)
-  call i32 @qd_push_i(ptr %ctx, i64 0)
-  %stp_L9650 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L9650 = load ptr, ptr %stp_L9650
-  call i32 @qdrt_push_element(ptr %stk_L9650, ptr %local.colon_pos)
-  call i32 @usr_strings_substring(ptr %ctx)
-  %fe_L9651 = alloca %qd_stack_element_t
-  %fstp_L9651 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %fstk_L9651 = load ptr, ptr %fstp_L9651
-  call void @qd_stack_pop(ptr %fstk_L9651, ptr %fe_L9651)
-  %fvp_L9651 = getelementptr %qd_stack_element_t, ptr %fe_L9651, i32 0, i32 0
-  %fvi_L9651 = load i64, ptr %fvp_L9651
-  %fok_L9651 = icmp ne i64 %fvi_L9651, 0
-  br i1 %fok_L9651, label %L9652, label %L9653
-L9653:
-  call i32 @qd_panic(ptr %ctx)
-  unreachable
-L9652:
-  %stp_L9654 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L9654 = load ptr, ptr %stp_L9654
-  call void @qd_stack_pop(ptr %stk_L9654, ptr %local.recv_var)
-  br label %L9636
-L9636:
-  br label %L9624
-L9624:
-  br label %L9616
-L9616:
-  %stp_L9655 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L9655 = load ptr, ptr %stp_L9655
-  call i32 @qdrt_push_element(ptr %stk_L9655, ptr %local.n)
-  %fa_elem_L9656 = alloca %qd_stack_element_t
-  %fa_stp_L9656 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %fa_stk_L9656 = load ptr, ptr %fa_stp_L9656
-  call void @qd_stack_pop(ptr %fa_stk_L9656, ptr %fa_elem_L9656)
-  %fa_vp_L9656 = getelementptr %qd_stack_element_t, ptr %fa_elem_L9656, i32 0, i32 0
-  %fa_ptr_L9656 = load ptr, ptr %fa_vp_L9656
-  %fa_off_L9656 = load i64, ptr @__offset_child4
-  %fa_fp_L9656 = getelementptr i8, ptr %fa_ptr_L9656, i64 %fa_off_L9656
-  %fa_val_L9656 = load ptr, ptr %fa_fp_L9656
-  call i32 @qd_push_p(ptr %ctx, ptr %fa_val_L9656)
+  call i32 @qdrt_push_element(ptr %stk_L9628, ptr %local.n)
+  %fa_elem_L9629 = alloca %qd_stack_element_t
+  %fa_stp_L9629 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %fa_stk_L9629 = load ptr, ptr %fa_stp_L9629
+  call void @qd_stack_pop(ptr %fa_stk_L9629, ptr %fa_elem_L9629)
+  %fa_vp_L9629 = getelementptr %qd_stack_element_t, ptr %fa_elem_L9629, i32 0, i32 0
+  %fa_ptr_L9629 = load ptr, ptr %fa_vp_L9629
+  %fa_off_L9629 = load i64, ptr @__offset_child4
+  %fa_fp_L9629 = getelementptr i8, ptr %fa_ptr_L9629, i64 %fa_off_L9629
+  %fa_val_L9629 = load ptr, ptr %fa_fp_L9629
+  call i32 @qd_push_p(ptr %ctx, ptr %fa_val_L9629)
   call i32 @qd_push_i(ptr %ctx, i64 0)
   call i32 @qd_neq(ptr %ctx)
-  %ce_L9657 = alloca %qd_stack_element_t
-  %stp_L9657 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L9657 = load ptr, ptr %stp_L9657
-  call void @qd_stack_pop(ptr %stk_L9657, ptr %ce_L9657)
-  %cv_L9657 = getelementptr %qd_stack_element_t, ptr %ce_L9657, i32 0, i32 0
-  %ci_L9657 = load i64, ptr %cv_L9657
-  %cc_L9657 = icmp ne i64 %ci_L9657, 0
-  br i1 %cc_L9657, label %L9658, label %L9660
-L9658:
-  %stp_L9661 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L9661 = load ptr, ptr %stp_L9661
-  call i32 @qdrt_push_element(ptr %stk_L9661, ptr %local.n)
-  %fa_elem_L9662 = alloca %qd_stack_element_t
-  %fa_stp_L9662 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %fa_stk_L9662 = load ptr, ptr %fa_stp_L9662
-  call void @qd_stack_pop(ptr %fa_stk_L9662, ptr %fa_elem_L9662)
-  %fa_vp_L9662 = getelementptr %qd_stack_element_t, ptr %fa_elem_L9662, i32 0, i32 0
-  %fa_ptr_L9662 = load ptr, ptr %fa_vp_L9662
-  %fa_off_L9662 = load i64, ptr @__offset_child4
-  %fa_fp_L9662 = getelementptr i8, ptr %fa_ptr_L9662, i64 %fa_off_L9662
-  %fa_val_L9662 = load ptr, ptr %fa_fp_L9662
-  call i32 @qd_push_p(ptr %ctx, ptr %fa_val_L9662)
-  %fa_elem_L9663 = alloca %qd_stack_element_t
-  %fa_stp_L9663 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %fa_stk_L9663 = load ptr, ptr %fa_stp_L9663
-  call void @qd_stack_pop(ptr %fa_stk_L9663, ptr %fa_elem_L9663)
-  %fa_vp_L9663 = getelementptr %qd_stack_element_t, ptr %fa_elem_L9663, i32 0, i32 0
-  %fa_ptr_L9663 = load ptr, ptr %fa_vp_L9663
-  %fa_off_L9663 = load i64, ptr @__offset_nkind
-  %fa_fp_L9663 = getelementptr i8, ptr %fa_ptr_L9663, i64 %fa_off_L9663
-  %fa_val_L9663 = load i64, ptr %fa_fp_L9663
-  call i32 @qd_push_i(ptr %ctx, i64 %fa_val_L9663)
-  %ev_L9664 = load i64, ptr @__enum_NodeType_Param
-  call i32 @qd_push_i(ptr %ctx, i64 %ev_L9664)
+  %ce_L9630 = alloca %qd_stack_element_t
+  %stp_L9630 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L9630 = load ptr, ptr %stp_L9630
+  call void @qd_stack_pop(ptr %stk_L9630, ptr %ce_L9630)
+  %cv_L9630 = getelementptr %qd_stack_element_t, ptr %ce_L9630, i32 0, i32 0
+  %ci_L9630 = load i64, ptr %cv_L9630
+  %cc_L9630 = icmp ne i64 %ci_L9630, 0
+  br i1 %cc_L9630, label %L9631, label %L9633
+L9631:
+  %stp_L9634 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L9634 = load ptr, ptr %stp_L9634
+  call i32 @qdrt_push_element(ptr %stk_L9634, ptr %local.n)
+  %fa_elem_L9635 = alloca %qd_stack_element_t
+  %fa_stp_L9635 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %fa_stk_L9635 = load ptr, ptr %fa_stp_L9635
+  call void @qd_stack_pop(ptr %fa_stk_L9635, ptr %fa_elem_L9635)
+  %fa_vp_L9635 = getelementptr %qd_stack_element_t, ptr %fa_elem_L9635, i32 0, i32 0
+  %fa_ptr_L9635 = load ptr, ptr %fa_vp_L9635
+  %fa_off_L9635 = load i64, ptr @__offset_child4
+  %fa_fp_L9635 = getelementptr i8, ptr %fa_ptr_L9635, i64 %fa_off_L9635
+  %fa_val_L9635 = load ptr, ptr %fa_fp_L9635
+  call i32 @qd_push_p(ptr %ctx, ptr %fa_val_L9635)
+  %fa_elem_L9636 = alloca %qd_stack_element_t
+  %fa_stp_L9636 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %fa_stk_L9636 = load ptr, ptr %fa_stp_L9636
+  call void @qd_stack_pop(ptr %fa_stk_L9636, ptr %fa_elem_L9636)
+  %fa_vp_L9636 = getelementptr %qd_stack_element_t, ptr %fa_elem_L9636, i32 0, i32 0
+  %fa_ptr_L9636 = load ptr, ptr %fa_vp_L9636
+  %fa_off_L9636 = load i64, ptr @__offset_nkind
+  %fa_fp_L9636 = getelementptr i8, ptr %fa_ptr_L9636, i64 %fa_off_L9636
+  %fa_val_L9636 = load i64, ptr %fa_fp_L9636
+  call i32 @qd_push_i(ptr %ctx, i64 %fa_val_L9636)
+  %ev_L9637 = load i64, ptr @__enum_NodeType_Param
+  call i32 @qd_push_i(ptr %ctx, i64 %ev_L9637)
   call i32 @qd_eq(ptr %ctx)
-  %ce_L9665 = alloca %qd_stack_element_t
-  %stp_L9665 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L9665 = load ptr, ptr %stp_L9665
-  call void @qd_stack_pop(ptr %stk_L9665, ptr %ce_L9665)
-  %cv_L9665 = getelementptr %qd_stack_element_t, ptr %ce_L9665, i32 0, i32 0
-  %ci_L9665 = load i64, ptr %cv_L9665
-  %cc_L9665 = icmp ne i64 %ci_L9665, 0
-  br i1 %cc_L9665, label %L9666, label %L9668
-L9666:
-  %stp_L9669 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L9669 = load ptr, ptr %stp_L9669
-  call i32 @qdrt_push_element(ptr %stk_L9669, ptr %local.n)
-  %fa_elem_L9670 = alloca %qd_stack_element_t
-  %fa_stp_L9670 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %fa_stk_L9670 = load ptr, ptr %fa_stp_L9670
-  call void @qd_stack_pop(ptr %fa_stk_L9670, ptr %fa_elem_L9670)
-  %fa_vp_L9670 = getelementptr %qd_stack_element_t, ptr %fa_elem_L9670, i32 0, i32 0
-  %fa_ptr_L9670 = load ptr, ptr %fa_vp_L9670
-  %fa_off_L9670 = load i64, ptr @__offset_child4
-  %fa_fp_L9670 = getelementptr i8, ptr %fa_ptr_L9670, i64 %fa_off_L9670
-  %fa_val_L9670 = load ptr, ptr %fa_fp_L9670
-  call i32 @qd_push_p(ptr %ctx, ptr %fa_val_L9670)
-  %fa_elem_L9671 = alloca %qd_stack_element_t
-  %fa_stp_L9671 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %fa_stk_L9671 = load ptr, ptr %fa_stp_L9671
-  call void @qd_stack_pop(ptr %fa_stk_L9671, ptr %fa_elem_L9671)
-  %fa_vp_L9671 = getelementptr %qd_stack_element_t, ptr %fa_elem_L9671, i32 0, i32 0
-  %fa_ptr_L9671 = load ptr, ptr %fa_vp_L9671
-  %fa_off_L9671 = load i64, ptr @__offset_ntext
-  %fa_fp_L9671 = getelementptr i8, ptr %fa_ptr_L9671, i64 %fa_off_L9671
-  %fa_val_L9671 = load ptr, ptr %fa_fp_L9671
-  call i32 @qd_push_s_ref(ptr %ctx, ptr %fa_val_L9671)
-  %stp_L9672 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L9672 = load ptr, ptr %stp_L9672
-  call void @qd_stack_pop(ptr %stk_L9672, ptr %local.recv_text2)
-  %stp_L9673 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L9673 = load ptr, ptr %stp_L9673
-  call i32 @qdrt_push_element(ptr %stk_L9673, ptr %local.recv_text2)
-  call i32 @qd_push_s(ptr %ctx, ptr @.str.9674)
+  %ce_L9638 = alloca %qd_stack_element_t
+  %stp_L9638 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L9638 = load ptr, ptr %stp_L9638
+  call void @qd_stack_pop(ptr %stk_L9638, ptr %ce_L9638)
+  %cv_L9638 = getelementptr %qd_stack_element_t, ptr %ce_L9638, i32 0, i32 0
+  %ci_L9638 = load i64, ptr %cv_L9638
+  %cc_L9638 = icmp ne i64 %ci_L9638, 0
+  br i1 %cc_L9638, label %L9639, label %L9641
+L9639:
+  %stp_L9642 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L9642 = load ptr, ptr %stp_L9642
+  call i32 @qdrt_push_element(ptr %stk_L9642, ptr %local.n)
+  %fa_elem_L9643 = alloca %qd_stack_element_t
+  %fa_stp_L9643 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %fa_stk_L9643 = load ptr, ptr %fa_stp_L9643
+  call void @qd_stack_pop(ptr %fa_stk_L9643, ptr %fa_elem_L9643)
+  %fa_vp_L9643 = getelementptr %qd_stack_element_t, ptr %fa_elem_L9643, i32 0, i32 0
+  %fa_ptr_L9643 = load ptr, ptr %fa_vp_L9643
+  %fa_off_L9643 = load i64, ptr @__offset_child4
+  %fa_fp_L9643 = getelementptr i8, ptr %fa_ptr_L9643, i64 %fa_off_L9643
+  %fa_val_L9643 = load ptr, ptr %fa_fp_L9643
+  call i32 @qd_push_p(ptr %ctx, ptr %fa_val_L9643)
+  %fa_elem_L9644 = alloca %qd_stack_element_t
+  %fa_stp_L9644 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %fa_stk_L9644 = load ptr, ptr %fa_stp_L9644
+  call void @qd_stack_pop(ptr %fa_stk_L9644, ptr %fa_elem_L9644)
+  %fa_vp_L9644 = getelementptr %qd_stack_element_t, ptr %fa_elem_L9644, i32 0, i32 0
+  %fa_ptr_L9644 = load ptr, ptr %fa_vp_L9644
+  %fa_off_L9644 = load i64, ptr @__offset_ntext
+  %fa_fp_L9644 = getelementptr i8, ptr %fa_ptr_L9644, i64 %fa_off_L9644
+  %fa_val_L9644 = load ptr, ptr %fa_fp_L9644
+  call i32 @qd_push_s_ref(ptr %ctx, ptr %fa_val_L9644)
+  %stp_L9645 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L9645 = load ptr, ptr %stp_L9645
+  call void @qd_stack_pop(ptr %stk_L9645, ptr %local.recv_text2)
+  %stp_L9646 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L9646 = load ptr, ptr %stp_L9646
+  call i32 @qdrt_push_element(ptr %stk_L9646, ptr %local.recv_text2)
+  call i32 @qd_push_s(ptr %ctx, ptr @.str.9647)
   call i32 @usr_strings_index_of(ptr %ctx)
-  %stp_L9675 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L9675 = load ptr, ptr %stp_L9675
-  call void @qd_stack_pop(ptr %stk_L9675, ptr %local.colon_pos2)
-  %stp_L9676 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L9676 = load ptr, ptr %stp_L9676
-  call i32 @qdrt_push_element(ptr %stk_L9676, ptr %local.colon_pos2)
+  %stp_L9648 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L9648 = load ptr, ptr %stp_L9648
+  call void @qd_stack_pop(ptr %stk_L9648, ptr %local.colon_pos2)
+  %stp_L9649 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L9649 = load ptr, ptr %stp_L9649
+  call i32 @qdrt_push_element(ptr %stk_L9649, ptr %local.colon_pos2)
   call i32 @qd_push_i(ptr %ctx, i64 0)
   call i32 @qd_gte(ptr %ctx)
-  %ce_L9677 = alloca %qd_stack_element_t
-  %stp_L9677 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L9677 = load ptr, ptr %stp_L9677
-  call void @qd_stack_pop(ptr %stk_L9677, ptr %ce_L9677)
-  %cv_L9677 = getelementptr %qd_stack_element_t, ptr %ce_L9677, i32 0, i32 0
-  %ci_L9677 = load i64, ptr %cv_L9677
-  %cc_L9677 = icmp ne i64 %ci_L9677, 0
-  br i1 %cc_L9677, label %L9678, label %L9680
-L9678:
-  %stp_L9681 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L9681 = load ptr, ptr %stp_L9681
-  call i32 @qdrt_push_element(ptr %stk_L9681, ptr %local.recv_text2)
-  %stp_L9682 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L9682 = load ptr, ptr %stp_L9682
-  call i32 @qdrt_push_element(ptr %stk_L9682, ptr %local.colon_pos2)
+  %ce_L9650 = alloca %qd_stack_element_t
+  %stp_L9650 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L9650 = load ptr, ptr %stp_L9650
+  call void @qd_stack_pop(ptr %stk_L9650, ptr %ce_L9650)
+  %cv_L9650 = getelementptr %qd_stack_element_t, ptr %ce_L9650, i32 0, i32 0
+  %ci_L9650 = load i64, ptr %cv_L9650
+  %cc_L9650 = icmp ne i64 %ci_L9650, 0
+  br i1 %cc_L9650, label %L9651, label %L9653
+L9651:
+  %stp_L9654 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L9654 = load ptr, ptr %stp_L9654
+  call i32 @qdrt_push_element(ptr %stk_L9654, ptr %local.recv_text2)
+  %stp_L9655 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L9655 = load ptr, ptr %stp_L9655
+  call i32 @qdrt_push_element(ptr %stk_L9655, ptr %local.colon_pos2)
   call i32 @qd_push_i(ptr %ctx, i64 1)
   call i32 @qd_add(ptr %ctx)
-  %stp_L9683 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L9683 = load ptr, ptr %stp_L9683
-  call i32 @qdrt_push_element(ptr %stk_L9683, ptr %local.recv_text2)
+  %stp_L9656 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L9656 = load ptr, ptr %stp_L9656
+  call i32 @qdrt_push_element(ptr %stk_L9656, ptr %local.recv_text2)
   call i32 @usr_strings_len(ptr %ctx)
-  %stp_L9684 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L9684 = load ptr, ptr %stp_L9684
-  call i32 @qdrt_push_element(ptr %stk_L9684, ptr %local.colon_pos2)
+  %stp_L9657 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L9657 = load ptr, ptr %stp_L9657
+  call i32 @qdrt_push_element(ptr %stk_L9657, ptr %local.colon_pos2)
   call i32 @qd_push_i(ptr %ctx, i64 1)
   call i32 @qd_add(ptr %ctx)
   call i32 @qd_sub(ptr %ctx)
   call i32 @usr_strings_substring(ptr %ctx)
-  %fe_L9685 = alloca %qd_stack_element_t
-  %fstp_L9685 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %fstk_L9685 = load ptr, ptr %fstp_L9685
-  call void @qd_stack_pop(ptr %fstk_L9685, ptr %fe_L9685)
-  %fvp_L9685 = getelementptr %qd_stack_element_t, ptr %fe_L9685, i32 0, i32 0
-  %fvi_L9685 = load i64, ptr %fvp_L9685
-  %fok_L9685 = icmp ne i64 %fvi_L9685, 0
-  br i1 %fok_L9685, label %L9686, label %L9687
-L9687:
+  %fe_L9658 = alloca %qd_stack_element_t
+  %fstp_L9658 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %fstk_L9658 = load ptr, ptr %fstp_L9658
+  call void @qd_stack_pop(ptr %fstk_L9658, ptr %fe_L9658)
+  %fvp_L9658 = getelementptr %qd_stack_element_t, ptr %fe_L9658, i32 0, i32 0
+  %fvi_L9658 = load i64, ptr %fvp_L9658
+  %fok_L9658 = icmp ne i64 %fvi_L9658, 0
+  br i1 %fok_L9658, label %L9659, label %L9660
+L9660:
   call i32 @qd_panic(ptr %ctx)
   unreachable
-L9686:
-  %stp_L9688 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L9688 = load ptr, ptr %stp_L9688
-  call void @qd_stack_pop(ptr %stk_L9688, ptr %local.recv_type2)
-  %stp_L9689 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L9689 = load ptr, ptr %stp_L9689
-  call i32 @qdrt_push_element(ptr %stk_L9689, ptr %local.recv_type2)
-  call i32 @qd_push_s(ptr %ctx, ptr @.str.9690)
+L9659:
+  %stp_L9661 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L9661 = load ptr, ptr %stp_L9661
+  call void @qd_stack_pop(ptr %stk_L9661, ptr %local.recv_type2)
+  %stp_L9662 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L9662 = load ptr, ptr %stp_L9662
+  call i32 @qdrt_push_element(ptr %stk_L9662, ptr %local.recv_type2)
+  call i32 @qd_push_s(ptr %ctx, ptr @.str.9663)
   call i32 @usr_strings_concat(ptr %ctx)
+  %stp_L9664 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L9664 = load ptr, ptr %stp_L9664
+  call i32 @qdrt_push_element(ptr %stk_L9664, ptr %local.fname)
+  call i32 @usr_strings_concat(ptr %ctx)
+  %stp_L9665 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L9665 = load ptr, ptr %stp_L9665
+  call void @qd_stack_pop(ptr %stk_L9665, ptr %local.fname)
+  %stp_L9666 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L9666 = load ptr, ptr %stp_L9666
+  call i32 @qdrt_push_element(ptr %stk_L9666, ptr %local.recv_text2)
+  call i32 @qd_push_i(ptr %ctx, i64 0)
+  %stp_L9667 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L9667 = load ptr, ptr %stp_L9667
+  call i32 @qdrt_push_element(ptr %stk_L9667, ptr %local.colon_pos2)
+  call i32 @usr_strings_substring(ptr %ctx)
+  %fe_L9668 = alloca %qd_stack_element_t
+  %fstp_L9668 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %fstk_L9668 = load ptr, ptr %fstp_L9668
+  call void @qd_stack_pop(ptr %fstk_L9668, ptr %fe_L9668)
+  %fvp_L9668 = getelementptr %qd_stack_element_t, ptr %fe_L9668, i32 0, i32 0
+  %fvi_L9668 = load i64, ptr %fvp_L9668
+  %fok_L9668 = icmp ne i64 %fvi_L9668, 0
+  br i1 %fok_L9668, label %L9669, label %L9670
+L9670:
+  call i32 @qd_panic(ptr %ctx)
+  unreachable
+L9669:
+  %stp_L9671 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L9671 = load ptr, ptr %stp_L9671
+  call void @qd_stack_pop(ptr %stk_L9671, ptr %local.recv_var)
+  br label %L9653
+L9653:
+  br label %L9641
+L9641:
+  br label %L9633
+L9633:
+  call i32 @qd_push_i(ptr %ctx, i64 0)
+  %stp_L9672 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L9672 = load ptr, ptr %stp_L9672
+  call void @qd_stack_pop(ptr %stk_L9672, ptr %local.param_count)
+  %stp_L9673 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L9673 = load ptr, ptr %stp_L9673
+  call i32 @qdrt_push_element(ptr %stk_L9673, ptr %local.n)
+  %fa_elem_L9674 = alloca %qd_stack_element_t
+  %fa_stp_L9674 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %fa_stk_L9674 = load ptr, ptr %fa_stp_L9674
+  call void @qd_stack_pop(ptr %fa_stk_L9674, ptr %fa_elem_L9674)
+  %fa_vp_L9674 = getelementptr %qd_stack_element_t, ptr %fa_elem_L9674, i32 0, i32 0
+  %fa_ptr_L9674 = load ptr, ptr %fa_vp_L9674
+  %fa_off_L9674 = load i64, ptr @__offset_child1
+  %fa_fp_L9674 = getelementptr i8, ptr %fa_ptr_L9674, i64 %fa_off_L9674
+  %fa_val_L9674 = load ptr, ptr %fa_fp_L9674
+  call i32 @qd_push_p(ptr %ctx, ptr %fa_val_L9674)
+  call i32 @qd_push_i(ptr %ctx, i64 0)
+  call i32 @qd_neq(ptr %ctx)
+  %ce_L9675 = alloca %qd_stack_element_t
+  %stp_L9675 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L9675 = load ptr, ptr %stp_L9675
+  call void @qd_stack_pop(ptr %stk_L9675, ptr %ce_L9675)
+  %cv_L9675 = getelementptr %qd_stack_element_t, ptr %ce_L9675, i32 0, i32 0
+  %ci_L9675 = load i64, ptr %cv_L9675
+  %cc_L9675 = icmp ne i64 %ci_L9675, 0
+  br i1 %cc_L9675, label %L9676, label %L9678
+L9676:
+  %stp_L9679 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L9679 = load ptr, ptr %stp_L9679
+  call i32 @qdrt_push_element(ptr %stk_L9679, ptr %local.n)
+  %fa_elem_L9680 = alloca %qd_stack_element_t
+  %fa_stp_L9680 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %fa_stk_L9680 = load ptr, ptr %fa_stp_L9680
+  call void @qd_stack_pop(ptr %fa_stk_L9680, ptr %fa_elem_L9680)
+  %fa_vp_L9680 = getelementptr %qd_stack_element_t, ptr %fa_elem_L9680, i32 0, i32 0
+  %fa_ptr_L9680 = load ptr, ptr %fa_vp_L9680
+  %fa_off_L9680 = load i64, ptr @__offset_child1
+  %fa_fp_L9680 = getelementptr i8, ptr %fa_ptr_L9680, i64 %fa_off_L9680
+  %fa_val_L9680 = load ptr, ptr %fa_fp_L9680
+  call i32 @qd_push_p(ptr %ctx, ptr %fa_val_L9680)
+  %fa_elem_L9681 = alloca %qd_stack_element_t
+  %fa_stp_L9681 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %fa_stk_L9681 = load ptr, ptr %fa_stp_L9681
+  call void @qd_stack_pop(ptr %fa_stk_L9681, ptr %fa_elem_L9681)
+  %fa_vp_L9681 = getelementptr %qd_stack_element_t, ptr %fa_elem_L9681, i32 0, i32 0
+  %fa_ptr_L9681 = load ptr, ptr %fa_vp_L9681
+  %fa_off_L9681 = load i64, ptr @__offset_child1
+  %fa_fp_L9681 = getelementptr i8, ptr %fa_ptr_L9681, i64 %fa_off_L9681
+  %fa_val_L9681 = load ptr, ptr %fa_fp_L9681
+  call i32 @qd_push_p(ptr %ctx, ptr %fa_val_L9681)
+  call i32 @qd_push_i(ptr %ctx, i64 0)
+  call i32 @qd_neq(ptr %ctx)
+  %ce_L9682 = alloca %qd_stack_element_t
+  %stp_L9682 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L9682 = load ptr, ptr %stp_L9682
+  call void @qd_stack_pop(ptr %stk_L9682, ptr %ce_L9682)
+  %cv_L9682 = getelementptr %qd_stack_element_t, ptr %ce_L9682, i32 0, i32 0
+  %ci_L9682 = load i64, ptr %cv_L9682
+  %cc_L9682 = icmp ne i64 %ci_L9682, 0
+  br i1 %cc_L9682, label %L9683, label %L9685
+L9683:
+  %stp_L9686 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L9686 = load ptr, ptr %stp_L9686
+  call i32 @qdrt_push_element(ptr %stk_L9686, ptr %local.n)
+  %fa_elem_L9687 = alloca %qd_stack_element_t
+  %fa_stp_L9687 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %fa_stk_L9687 = load ptr, ptr %fa_stp_L9687
+  call void @qd_stack_pop(ptr %fa_stk_L9687, ptr %fa_elem_L9687)
+  %fa_vp_L9687 = getelementptr %qd_stack_element_t, ptr %fa_elem_L9687, i32 0, i32 0
+  %fa_ptr_L9687 = load ptr, ptr %fa_vp_L9687
+  %fa_off_L9687 = load i64, ptr @__offset_child1
+  %fa_fp_L9687 = getelementptr i8, ptr %fa_ptr_L9687, i64 %fa_off_L9687
+  %fa_val_L9687 = load ptr, ptr %fa_fp_L9687
+  call i32 @qd_push_p(ptr %ctx, ptr %fa_val_L9687)
+  %fa_elem_L9688 = alloca %qd_stack_element_t
+  %fa_stp_L9688 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %fa_stk_L9688 = load ptr, ptr %fa_stp_L9688
+  call void @qd_stack_pop(ptr %fa_stk_L9688, ptr %fa_elem_L9688)
+  %fa_vp_L9688 = getelementptr %qd_stack_element_t, ptr %fa_elem_L9688, i32 0, i32 0
+  %fa_ptr_L9688 = load ptr, ptr %fa_vp_L9688
+  %fa_off_L9688 = load i64, ptr @__offset_child1
+  %fa_fp_L9688 = getelementptr i8, ptr %fa_ptr_L9688, i64 %fa_off_L9688
+  %fa_val_L9688 = load ptr, ptr %fa_fp_L9688
+  call i32 @qd_push_p(ptr %ctx, ptr %fa_val_L9688)
+  %fa_elem_L9689 = alloca %qd_stack_element_t
+  %fa_stp_L9689 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %fa_stk_L9689 = load ptr, ptr %fa_stp_L9689
+  call void @qd_stack_pop(ptr %fa_stk_L9689, ptr %fa_elem_L9689)
+  %fa_vp_L9689 = getelementptr %qd_stack_element_t, ptr %fa_elem_L9689, i32 0, i32 0
+  %fa_ptr_L9689 = load ptr, ptr %fa_vp_L9689
+  %fa_off_L9689 = load i64, ptr @__offset_ntext
+  %fa_fp_L9689 = getelementptr i8, ptr %fa_ptr_L9689, i64 %fa_off_L9689
+  %fa_val_L9689 = load ptr, ptr %fa_fp_L9689
+  call i32 @qd_push_s_ref(ptr %ctx, ptr %fa_val_L9689)
+  call i32 @qd_push_s(ptr %ctx, ptr @.str.9690)
+  call i32 @usr_strings_starts_with(ptr %ctx)
+  call i32 @qd_push_i(ptr %ctx, i64 0)
+  call i32 @qd_eq(ptr %ctx)
+  %ce_L9691 = alloca %qd_stack_element_t
   %stp_L9691 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
   %stk_L9691 = load ptr, ptr %stp_L9691
-  call i32 @qdrt_push_element(ptr %stk_L9691, ptr %local.fname)
-  call i32 @usr_strings_concat(ptr %ctx)
-  %stp_L9692 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L9692 = load ptr, ptr %stp_L9692
-  call void @qd_stack_pop(ptr %stk_L9692, ptr %local.fname)
-  %stp_L9693 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L9693 = load ptr, ptr %stp_L9693
-  call i32 @qdrt_push_element(ptr %stk_L9693, ptr %local.recv_text2)
+  call void @qd_stack_pop(ptr %stk_L9691, ptr %ce_L9691)
+  %cv_L9691 = getelementptr %qd_stack_element_t, ptr %ce_L9691, i32 0, i32 0
+  %ci_L9691 = load i64, ptr %cv_L9691
+  %cc_L9691 = icmp ne i64 %ci_L9691, 0
+  br i1 %cc_L9691, label %L9692, label %L9694
+L9692:
+  %stp_L9695 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L9695 = load ptr, ptr %stp_L9695
+  call i32 @qdrt_push_element(ptr %stk_L9695, ptr %local.param_count)
+  call i32 @qd_push_i(ptr %ctx, i64 1)
+  call i32 @qd_add(ptr %ctx)
+  %stp_L9696 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L9696 = load ptr, ptr %stp_L9696
+  call void @qd_stack_pop(ptr %stk_L9696, ptr %local.param_count)
+  br label %L9694
+L9694:
+  br label %L9685
+L9685:
+  %stp_L9697 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L9697 = load ptr, ptr %stp_L9697
+  call i32 @qdrt_push_element(ptr %stk_L9697, ptr %local.n)
+  %fa_elem_L9698 = alloca %qd_stack_element_t
+  %fa_stp_L9698 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %fa_stk_L9698 = load ptr, ptr %fa_stp_L9698
+  call void @qd_stack_pop(ptr %fa_stk_L9698, ptr %fa_elem_L9698)
+  %fa_vp_L9698 = getelementptr %qd_stack_element_t, ptr %fa_elem_L9698, i32 0, i32 0
+  %fa_ptr_L9698 = load ptr, ptr %fa_vp_L9698
+  %fa_off_L9698 = load i64, ptr @__offset_child1
+  %fa_fp_L9698 = getelementptr i8, ptr %fa_ptr_L9698, i64 %fa_off_L9698
+  %fa_val_L9698 = load ptr, ptr %fa_fp_L9698
+  call i32 @qd_push_p(ptr %ctx, ptr %fa_val_L9698)
+  %fa_elem_L9699 = alloca %qd_stack_element_t
+  %fa_stp_L9699 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %fa_stk_L9699 = load ptr, ptr %fa_stp_L9699
+  call void @qd_stack_pop(ptr %fa_stk_L9699, ptr %fa_elem_L9699)
+  %fa_vp_L9699 = getelementptr %qd_stack_element_t, ptr %fa_elem_L9699, i32 0, i32 0
+  %fa_ptr_L9699 = load ptr, ptr %fa_vp_L9699
+  %fa_off_L9699 = load i64, ptr @__offset_child2
+  %fa_fp_L9699 = getelementptr i8, ptr %fa_ptr_L9699, i64 %fa_off_L9699
+  %fa_val_L9699 = load ptr, ptr %fa_fp_L9699
+  call i32 @qd_push_p(ptr %ctx, ptr %fa_val_L9699)
   call i32 @qd_push_i(ptr %ctx, i64 0)
-  %stp_L9694 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L9694 = load ptr, ptr %stp_L9694
-  call i32 @qdrt_push_element(ptr %stk_L9694, ptr %local.colon_pos2)
-  call i32 @usr_strings_substring(ptr %ctx)
-  %fe_L9695 = alloca %qd_stack_element_t
-  %fstp_L9695 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %fstk_L9695 = load ptr, ptr %fstp_L9695
-  call void @qd_stack_pop(ptr %fstk_L9695, ptr %fe_L9695)
-  %fvp_L9695 = getelementptr %qd_stack_element_t, ptr %fe_L9695, i32 0, i32 0
-  %fvi_L9695 = load i64, ptr %fvp_L9695
-  %fok_L9695 = icmp ne i64 %fvi_L9695, 0
-  br i1 %fok_L9695, label %L9696, label %L9697
-L9697:
-  call i32 @qd_panic(ptr %ctx)
-  unreachable
-L9696:
-  %stp_L9698 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L9698 = load ptr, ptr %stp_L9698
-  call void @qd_stack_pop(ptr %stk_L9698, ptr %local.recv_var)
-  br label %L9680
-L9680:
-  br label %L9668
-L9668:
-  br label %L9660
-L9660:
-  %stp_L9699 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L9699 = load ptr, ptr %stp_L9699
-  call i32 @qdrt_push_element(ptr %stk_L9699, ptr %local.st)
+  call i32 @qd_neq(ptr %ctx)
+  %ce_L9700 = alloca %qd_stack_element_t
   %stp_L9700 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
   %stk_L9700 = load ptr, ptr %stp_L9700
-  call i32 @qdrt_push_element(ptr %stk_L9700, ptr %local.fname)
-  %stp_L9701 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L9701 = load ptr, ptr %stp_L9701
-  call i32 @qdrt_push_element(ptr %stk_L9701, ptr %local.n)
-  %fa_elem_L9702 = alloca %qd_stack_element_t
-  %fa_stp_L9702 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %fa_stk_L9702 = load ptr, ptr %fa_stp_L9702
-  call void @qd_stack_pop(ptr %fa_stk_L9702, ptr %fa_elem_L9702)
-  %fa_vp_L9702 = getelementptr %qd_stack_element_t, ptr %fa_elem_L9702, i32 0, i32 0
-  %fa_ptr_L9702 = load ptr, ptr %fa_vp_L9702
-  %fa_off_L9702 = load i64, ptr @__offset_child2
-  %fa_fp_L9702 = getelementptr i8, ptr %fa_ptr_L9702, i64 %fa_off_L9702
-  %fa_val_L9702 = load ptr, ptr %fa_fp_L9702
-  call i32 @qd_push_p(ptr %ctx, ptr %fa_val_L9702)
-  %stp_L9703 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L9703 = load ptr, ptr %stp_L9703
-  call i32 @qdrt_push_element(ptr %stk_L9703, ptr %local.recv_var)
+  call void @qd_stack_pop(ptr %stk_L9700, ptr %ce_L9700)
+  %cv_L9700 = getelementptr %qd_stack_element_t, ptr %ce_L9700, i32 0, i32 0
+  %ci_L9700 = load i64, ptr %cv_L9700
+  %cc_L9700 = icmp ne i64 %ci_L9700, 0
+  br i1 %cc_L9700, label %L9701, label %L9703
+L9701:
   %stp_L9704 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
   %stk_L9704 = load ptr, ptr %stp_L9704
-  call i32 @qdrt_push_element(ptr %stk_L9704, ptr %local.cstr)
-  %stp_L9705 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L9705 = load ptr, ptr %stp_L9705
-  call i32 @qdrt_push_element(ptr %stk_L9705, ptr %local.pfx)
-  call i32 @usr_codegen_emit_function(ptr %ctx)
-  %stp_L9706 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L9706 = load ptr, ptr %stp_L9706
-  call void @qd_stack_pop(ptr %stk_L9706, ptr %local.st)
-  %stp_L9707 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L9707 = load ptr, ptr %stp_L9707
-  call i32 @qdrt_push_element(ptr %stk_L9707, ptr %local.recv_var)
-  call i32 @usr_strings_len(ptr %ctx)
+  call i32 @qdrt_push_element(ptr %stk_L9704, ptr %local.n)
+  %fa_elem_L9705 = alloca %qd_stack_element_t
+  %fa_stp_L9705 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %fa_stk_L9705 = load ptr, ptr %fa_stp_L9705
+  call void @qd_stack_pop(ptr %fa_stk_L9705, ptr %fa_elem_L9705)
+  %fa_vp_L9705 = getelementptr %qd_stack_element_t, ptr %fa_elem_L9705, i32 0, i32 0
+  %fa_ptr_L9705 = load ptr, ptr %fa_vp_L9705
+  %fa_off_L9705 = load i64, ptr @__offset_child1
+  %fa_fp_L9705 = getelementptr i8, ptr %fa_ptr_L9705, i64 %fa_off_L9705
+  %fa_val_L9705 = load ptr, ptr %fa_fp_L9705
+  call i32 @qd_push_p(ptr %ctx, ptr %fa_val_L9705)
+  %fa_elem_L9706 = alloca %qd_stack_element_t
+  %fa_stp_L9706 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %fa_stk_L9706 = load ptr, ptr %fa_stp_L9706
+  call void @qd_stack_pop(ptr %fa_stk_L9706, ptr %fa_elem_L9706)
+  %fa_vp_L9706 = getelementptr %qd_stack_element_t, ptr %fa_elem_L9706, i32 0, i32 0
+  %fa_ptr_L9706 = load ptr, ptr %fa_vp_L9706
+  %fa_off_L9706 = load i64, ptr @__offset_child2
+  %fa_fp_L9706 = getelementptr i8, ptr %fa_ptr_L9706, i64 %fa_off_L9706
+  %fa_val_L9706 = load ptr, ptr %fa_fp_L9706
+  call i32 @qd_push_p(ptr %ctx, ptr %fa_val_L9706)
+  %fa_elem_L9707 = alloca %qd_stack_element_t
+  %fa_stp_L9707 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %fa_stk_L9707 = load ptr, ptr %fa_stp_L9707
+  call void @qd_stack_pop(ptr %fa_stk_L9707, ptr %fa_elem_L9707)
+  %fa_vp_L9707 = getelementptr %qd_stack_element_t, ptr %fa_elem_L9707, i32 0, i32 0
+  %fa_ptr_L9707 = load ptr, ptr %fa_vp_L9707
+  %fa_off_L9707 = load i64, ptr @__offset_ntext
+  %fa_fp_L9707 = getelementptr i8, ptr %fa_ptr_L9707, i64 %fa_off_L9707
+  %fa_val_L9707 = load ptr, ptr %fa_fp_L9707
+  call i32 @qd_push_s_ref(ptr %ctx, ptr %fa_val_L9707)
+  call i32 @qd_push_s(ptr %ctx, ptr @.str.9708)
+  call i32 @usr_strings_starts_with(ptr %ctx)
   call i32 @qd_push_i(ptr %ctx, i64 0)
-  call i32 @qd_gt(ptr %ctx)
-  %ce_L9708 = alloca %qd_stack_element_t
-  %stp_L9708 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L9708 = load ptr, ptr %stp_L9708
-  call void @qd_stack_pop(ptr %stk_L9708, ptr %ce_L9708)
-  %cv_L9708 = getelementptr %qd_stack_element_t, ptr %ce_L9708, i32 0, i32 0
-  %ci_L9708 = load i64, ptr %cv_L9708
-  %cc_L9708 = icmp ne i64 %ci_L9708, 0
-  br i1 %cc_L9708, label %L9709, label %L9711
-L9709:
-  %stp_L9712 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L9712 = load ptr, ptr %stp_L9712
-  call i32 @qdrt_push_element(ptr %stk_L9712, ptr %local.n)
-  %fa_elem_L9713 = alloca %qd_stack_element_t
-  %fa_stp_L9713 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %fa_stk_L9713 = load ptr, ptr %fa_stp_L9713
-  call void @qd_stack_pop(ptr %fa_stk_L9713, ptr %fa_elem_L9713)
-  %fa_vp_L9713 = getelementptr %qd_stack_element_t, ptr %fa_elem_L9713, i32 0, i32 0
-  %fa_ptr_L9713 = load ptr, ptr %fa_vp_L9713
-  %fa_off_L9713 = load i64, ptr @__offset_ntext
-  %fa_fp_L9713 = getelementptr i8, ptr %fa_ptr_L9713, i64 %fa_off_L9713
-  %fa_val_L9713 = load ptr, ptr %fa_fp_L9713
-  call i32 @qd_push_s_ref(ptr %ctx, ptr %fa_val_L9713)
+  call i32 @qd_eq(ptr %ctx)
+  %ce_L9709 = alloca %qd_stack_element_t
+  %stp_L9709 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L9709 = load ptr, ptr %stp_L9709
+  call void @qd_stack_pop(ptr %stk_L9709, ptr %ce_L9709)
+  %cv_L9709 = getelementptr %qd_stack_element_t, ptr %ce_L9709, i32 0, i32 0
+  %ci_L9709 = load i64, ptr %cv_L9709
+  %cc_L9709 = icmp ne i64 %ci_L9709, 0
+  br i1 %cc_L9709, label %L9710, label %L9712
+L9710:
+  %stp_L9713 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L9713 = load ptr, ptr %stp_L9713
+  call i32 @qdrt_push_element(ptr %stk_L9713, ptr %local.param_count)
+  call i32 @qd_push_i(ptr %ctx, i64 1)
+  call i32 @qd_add(ptr %ctx)
   %stp_L9714 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
   %stk_L9714 = load ptr, ptr %stp_L9714
-  call void @qd_stack_pop(ptr %stk_L9714, ptr %local.orig_name)
+  call void @qd_stack_pop(ptr %stk_L9714, ptr %local.param_count)
+  br label %L9712
+L9712:
+  br label %L9703
+L9703:
   %stp_L9715 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
   %stk_L9715 = load ptr, ptr %stp_L9715
-  call i32 @qdrt_push_element(ptr %stk_L9715, ptr %local.st)
+  call i32 @qdrt_push_element(ptr %stk_L9715, ptr %local.n)
   %fa_elem_L9716 = alloca %qd_stack_element_t
   %fa_stp_L9716 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
   %fa_stk_L9716 = load ptr, ptr %fa_stp_L9716
   call void @qd_stack_pop(ptr %fa_stk_L9716, ptr %fa_elem_L9716)
   %fa_vp_L9716 = getelementptr %qd_stack_element_t, ptr %fa_elem_L9716, i32 0, i32 0
   %fa_ptr_L9716 = load ptr, ptr %fa_vp_L9716
-  %fa_off_L9716 = load i64, ptr @__offset_code
+  %fa_off_L9716 = load i64, ptr @__offset_child1
   %fa_fp_L9716 = getelementptr i8, ptr %fa_ptr_L9716, i64 %fa_off_L9716
   %fa_val_L9716 = load ptr, ptr %fa_fp_L9716
   call i32 @qd_push_p(ptr %ctx, ptr %fa_val_L9716)
-  %stp_L9717 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L9717 = load ptr, ptr %stp_L9717
-  call void @qd_stack_pop(ptr %stk_L9717, ptr %local.o)
+  %fa_elem_L9717 = alloca %qd_stack_element_t
+  %fa_stp_L9717 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %fa_stk_L9717 = load ptr, ptr %fa_stp_L9717
+  call void @qd_stack_pop(ptr %fa_stk_L9717, ptr %fa_elem_L9717)
+  %fa_vp_L9717 = getelementptr %qd_stack_element_t, ptr %fa_elem_L9717, i32 0, i32 0
+  %fa_ptr_L9717 = load ptr, ptr %fa_vp_L9717
+  %fa_off_L9717 = load i64, ptr @__offset_child3
+  %fa_fp_L9717 = getelementptr i8, ptr %fa_ptr_L9717, i64 %fa_off_L9717
+  %fa_val_L9717 = load ptr, ptr %fa_fp_L9717
+  call i32 @qd_push_p(ptr %ctx, ptr %fa_val_L9717)
+  call i32 @qd_push_i(ptr %ctx, i64 0)
+  call i32 @qd_neq(ptr %ctx)
+  %ce_L9718 = alloca %qd_stack_element_t
   %stp_L9718 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
   %stk_L9718 = load ptr, ptr %stp_L9718
-  call i32 @qdrt_push_element(ptr %stk_L9718, ptr %local.o)
-  call i32 @qd_push_s(ptr %ctx, ptr @.str.9719)
-  call i32 @usr_sb_append(ptr %ctx)
-  %stp_L9720 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L9720 = load ptr, ptr %stp_L9720
-  call void @qd_stack_pop(ptr %stk_L9720, ptr %local.o)
-  %stp_L9721 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L9721 = load ptr, ptr %stp_L9721
-  call i32 @qdrt_push_element(ptr %stk_L9721, ptr %local.o)
+  call void @qd_stack_pop(ptr %stk_L9718, ptr %ce_L9718)
+  %cv_L9718 = getelementptr %qd_stack_element_t, ptr %ce_L9718, i32 0, i32 0
+  %ci_L9718 = load i64, ptr %cv_L9718
+  %cc_L9718 = icmp ne i64 %ci_L9718, 0
+  br i1 %cc_L9718, label %L9719, label %L9721
+L9719:
   %stp_L9722 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
   %stk_L9722 = load ptr, ptr %stp_L9722
-  call i32 @qdrt_push_element(ptr %stk_L9722, ptr %local.pfx)
-  call i32 @usr_sb_append(ptr %ctx)
-  %stp_L9723 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L9723 = load ptr, ptr %stp_L9723
-  call void @qd_stack_pop(ptr %stk_L9723, ptr %local.o)
-  %stp_L9724 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L9724 = load ptr, ptr %stp_L9724
-  call i32 @qdrt_push_element(ptr %stk_L9724, ptr %local.o)
-  %stp_L9725 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L9725 = load ptr, ptr %stp_L9725
-  call i32 @qdrt_push_element(ptr %stk_L9725, ptr %local.orig_name)
-  call i32 @usr_sb_append(ptr %ctx)
-  %stp_L9726 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L9726 = load ptr, ptr %stp_L9726
-  call void @qd_stack_pop(ptr %stk_L9726, ptr %local.o)
+  call i32 @qdrt_push_element(ptr %stk_L9722, ptr %local.n)
+  %fa_elem_L9723 = alloca %qd_stack_element_t
+  %fa_stp_L9723 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %fa_stk_L9723 = load ptr, ptr %fa_stp_L9723
+  call void @qd_stack_pop(ptr %fa_stk_L9723, ptr %fa_elem_L9723)
+  %fa_vp_L9723 = getelementptr %qd_stack_element_t, ptr %fa_elem_L9723, i32 0, i32 0
+  %fa_ptr_L9723 = load ptr, ptr %fa_vp_L9723
+  %fa_off_L9723 = load i64, ptr @__offset_child1
+  %fa_fp_L9723 = getelementptr i8, ptr %fa_ptr_L9723, i64 %fa_off_L9723
+  %fa_val_L9723 = load ptr, ptr %fa_fp_L9723
+  call i32 @qd_push_p(ptr %ctx, ptr %fa_val_L9723)
+  %fa_elem_L9724 = alloca %qd_stack_element_t
+  %fa_stp_L9724 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %fa_stk_L9724 = load ptr, ptr %fa_stp_L9724
+  call void @qd_stack_pop(ptr %fa_stk_L9724, ptr %fa_elem_L9724)
+  %fa_vp_L9724 = getelementptr %qd_stack_element_t, ptr %fa_elem_L9724, i32 0, i32 0
+  %fa_ptr_L9724 = load ptr, ptr %fa_vp_L9724
+  %fa_off_L9724 = load i64, ptr @__offset_child3
+  %fa_fp_L9724 = getelementptr i8, ptr %fa_ptr_L9724, i64 %fa_off_L9724
+  %fa_val_L9724 = load ptr, ptr %fa_fp_L9724
+  call i32 @qd_push_p(ptr %ctx, ptr %fa_val_L9724)
+  %fa_elem_L9725 = alloca %qd_stack_element_t
+  %fa_stp_L9725 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %fa_stk_L9725 = load ptr, ptr %fa_stp_L9725
+  call void @qd_stack_pop(ptr %fa_stk_L9725, ptr %fa_elem_L9725)
+  %fa_vp_L9725 = getelementptr %qd_stack_element_t, ptr %fa_elem_L9725, i32 0, i32 0
+  %fa_ptr_L9725 = load ptr, ptr %fa_vp_L9725
+  %fa_off_L9725 = load i64, ptr @__offset_ntext
+  %fa_fp_L9725 = getelementptr i8, ptr %fa_ptr_L9725, i64 %fa_off_L9725
+  %fa_val_L9725 = load ptr, ptr %fa_fp_L9725
+  call i32 @qd_push_s_ref(ptr %ctx, ptr %fa_val_L9725)
+  call i32 @qd_push_s(ptr %ctx, ptr @.str.9726)
+  call i32 @usr_strings_starts_with(ptr %ctx)
+  call i32 @qd_push_i(ptr %ctx, i64 0)
+  call i32 @qd_eq(ptr %ctx)
+  %ce_L9727 = alloca %qd_stack_element_t
   %stp_L9727 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
   %stk_L9727 = load ptr, ptr %stp_L9727
-  call i32 @qdrt_push_element(ptr %stk_L9727, ptr %local.o)
-  call i32 @qd_push_s(ptr %ctx, ptr @.str.9728)
-  call i32 @usr_sb_append(ptr %ctx)
-  %stp_L9729 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L9729 = load ptr, ptr %stp_L9729
-  call void @qd_stack_pop(ptr %stk_L9729, ptr %local.o)
-  %stp_L9730 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L9730 = load ptr, ptr %stp_L9730
-  call i32 @qdrt_push_element(ptr %stk_L9730, ptr %local.o)
+  call void @qd_stack_pop(ptr %stk_L9727, ptr %ce_L9727)
+  %cv_L9727 = getelementptr %qd_stack_element_t, ptr %ce_L9727, i32 0, i32 0
+  %ci_L9727 = load i64, ptr %cv_L9727
+  %cc_L9727 = icmp ne i64 %ci_L9727, 0
+  br i1 %cc_L9727, label %L9728, label %L9730
+L9728:
   %stp_L9731 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
   %stk_L9731 = load ptr, ptr %stp_L9731
-  call i32 @qdrt_push_element(ptr %stk_L9731, ptr %local.pfx)
-  call i32 @usr_sb_append(ptr %ctx)
+  call i32 @qdrt_push_element(ptr %stk_L9731, ptr %local.param_count)
+  call i32 @qd_push_i(ptr %ctx, i64 1)
+  call i32 @qd_add(ptr %ctx)
   %stp_L9732 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
   %stk_L9732 = load ptr, ptr %stp_L9732
-  call void @qd_stack_pop(ptr %stk_L9732, ptr %local.o)
+  call void @qd_stack_pop(ptr %stk_L9732, ptr %local.param_count)
+  br label %L9730
+L9730:
+  br label %L9721
+L9721:
   %stp_L9733 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
   %stk_L9733 = load ptr, ptr %stp_L9733
-  call i32 @qdrt_push_element(ptr %stk_L9733, ptr %local.o)
-  %stp_L9734 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L9734 = load ptr, ptr %stp_L9734
-  call i32 @qdrt_push_element(ptr %stk_L9734, ptr %local.fname)
-  call i32 @usr_sb_append(ptr %ctx)
-  %stp_L9735 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L9735 = load ptr, ptr %stp_L9735
-  call void @qd_stack_pop(ptr %stk_L9735, ptr %local.o)
+  call i32 @qdrt_push_element(ptr %stk_L9733, ptr %local.n)
+  %fa_elem_L9734 = alloca %qd_stack_element_t
+  %fa_stp_L9734 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %fa_stk_L9734 = load ptr, ptr %fa_stp_L9734
+  call void @qd_stack_pop(ptr %fa_stk_L9734, ptr %fa_elem_L9734)
+  %fa_vp_L9734 = getelementptr %qd_stack_element_t, ptr %fa_elem_L9734, i32 0, i32 0
+  %fa_ptr_L9734 = load ptr, ptr %fa_vp_L9734
+  %fa_off_L9734 = load i64, ptr @__offset_child1
+  %fa_fp_L9734 = getelementptr i8, ptr %fa_ptr_L9734, i64 %fa_off_L9734
+  %fa_val_L9734 = load ptr, ptr %fa_fp_L9734
+  call i32 @qd_push_p(ptr %ctx, ptr %fa_val_L9734)
+  %fa_elem_L9735 = alloca %qd_stack_element_t
+  %fa_stp_L9735 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %fa_stk_L9735 = load ptr, ptr %fa_stp_L9735
+  call void @qd_stack_pop(ptr %fa_stk_L9735, ptr %fa_elem_L9735)
+  %fa_vp_L9735 = getelementptr %qd_stack_element_t, ptr %fa_elem_L9735, i32 0, i32 0
+  %fa_ptr_L9735 = load ptr, ptr %fa_vp_L9735
+  %fa_off_L9735 = load i64, ptr @__offset_child4
+  %fa_fp_L9735 = getelementptr i8, ptr %fa_ptr_L9735, i64 %fa_off_L9735
+  %fa_val_L9735 = load ptr, ptr %fa_fp_L9735
+  call i32 @qd_push_p(ptr %ctx, ptr %fa_val_L9735)
+  call i32 @qd_push_i(ptr %ctx, i64 0)
+  call i32 @qd_neq(ptr %ctx)
+  %ce_L9736 = alloca %qd_stack_element_t
   %stp_L9736 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
   %stk_L9736 = load ptr, ptr %stp_L9736
-  call i32 @qdrt_push_element(ptr %stk_L9736, ptr %local.o)
-  call i32 @qd_push_s(ptr %ctx, ptr @.str.9737)
-  call i32 @usr_sb_append(ptr %ctx)
-  %stp_L9738 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L9738 = load ptr, ptr %stp_L9738
-  call void @qd_stack_pop(ptr %stk_L9738, ptr %local.o)
-  %stp_L9739 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L9739 = load ptr, ptr %stp_L9739
-  call i32 @qdrt_push_element(ptr %stk_L9739, ptr %local.o)
-  %fs_elem_L9740 = alloca %qd_stack_element_t
-  %fs_stp_L9740 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %fs_stk_L9740 = load ptr, ptr %fs_stp_L9740
-  call void @qd_stack_pop(ptr %fs_stk_L9740, ptr %fs_elem_L9740)
-  %fs_vp_L9740 = getelementptr %qd_stack_element_t, ptr %fs_elem_L9740, i32 0, i32 0
-  %fs_val_L9740 = load i64, ptr %fs_vp_L9740
-  %fs_svp_L9740 = getelementptr %qd_stack_element_t, ptr %local.st, i32 0, i32 0
-  %fs_sptr_L9740 = load ptr, ptr %fs_svp_L9740
-  %fs_off_L9740 = load i64, ptr @__offset_code
-  %fs_fp_L9740 = getelementptr i8, ptr %fs_sptr_L9740, i64 %fs_off_L9740
-  store i64 %fs_val_L9740, ptr %fs_fp_L9740
-  br label %L9711
-L9711:
-  %stp_L9741 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L9741 = load ptr, ptr %stp_L9741
-  call i32 @qdrt_push_element(ptr %stk_L9741, ptr %local.st)
-  br label %return
-  br label %L9605
-L9605:
-  %stp_L9742 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L9742 = load ptr, ptr %stp_L9742
-  call i32 @qdrt_push_element(ptr %stk_L9742, ptr %local.k)
-  %ev_L9743 = load i64, ptr @__enum_NodeType_StructDecl
-  call i32 @qd_push_i(ptr %ctx, i64 %ev_L9743)
+  call void @qd_stack_pop(ptr %stk_L9736, ptr %ce_L9736)
+  %cv_L9736 = getelementptr %qd_stack_element_t, ptr %ce_L9736, i32 0, i32 0
+  %ci_L9736 = load i64, ptr %cv_L9736
+  %cc_L9736 = icmp ne i64 %ci_L9736, 0
+  br i1 %cc_L9736, label %L9737, label %L9739
+L9737:
+  %stp_L9740 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L9740 = load ptr, ptr %stp_L9740
+  call i32 @qdrt_push_element(ptr %stk_L9740, ptr %local.n)
+  %fa_elem_L9741 = alloca %qd_stack_element_t
+  %fa_stp_L9741 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %fa_stk_L9741 = load ptr, ptr %fa_stp_L9741
+  call void @qd_stack_pop(ptr %fa_stk_L9741, ptr %fa_elem_L9741)
+  %fa_vp_L9741 = getelementptr %qd_stack_element_t, ptr %fa_elem_L9741, i32 0, i32 0
+  %fa_ptr_L9741 = load ptr, ptr %fa_vp_L9741
+  %fa_off_L9741 = load i64, ptr @__offset_child1
+  %fa_fp_L9741 = getelementptr i8, ptr %fa_ptr_L9741, i64 %fa_off_L9741
+  %fa_val_L9741 = load ptr, ptr %fa_fp_L9741
+  call i32 @qd_push_p(ptr %ctx, ptr %fa_val_L9741)
+  %fa_elem_L9742 = alloca %qd_stack_element_t
+  %fa_stp_L9742 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %fa_stk_L9742 = load ptr, ptr %fa_stp_L9742
+  call void @qd_stack_pop(ptr %fa_stk_L9742, ptr %fa_elem_L9742)
+  %fa_vp_L9742 = getelementptr %qd_stack_element_t, ptr %fa_elem_L9742, i32 0, i32 0
+  %fa_ptr_L9742 = load ptr, ptr %fa_vp_L9742
+  %fa_off_L9742 = load i64, ptr @__offset_child4
+  %fa_fp_L9742 = getelementptr i8, ptr %fa_ptr_L9742, i64 %fa_off_L9742
+  %fa_val_L9742 = load ptr, ptr %fa_fp_L9742
+  call i32 @qd_push_p(ptr %ctx, ptr %fa_val_L9742)
+  %fa_elem_L9743 = alloca %qd_stack_element_t
+  %fa_stp_L9743 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %fa_stk_L9743 = load ptr, ptr %fa_stp_L9743
+  call void @qd_stack_pop(ptr %fa_stk_L9743, ptr %fa_elem_L9743)
+  %fa_vp_L9743 = getelementptr %qd_stack_element_t, ptr %fa_elem_L9743, i32 0, i32 0
+  %fa_ptr_L9743 = load ptr, ptr %fa_vp_L9743
+  %fa_off_L9743 = load i64, ptr @__offset_ntext
+  %fa_fp_L9743 = getelementptr i8, ptr %fa_ptr_L9743, i64 %fa_off_L9743
+  %fa_val_L9743 = load ptr, ptr %fa_fp_L9743
+  call i32 @qd_push_s_ref(ptr %ctx, ptr %fa_val_L9743)
+  call i32 @qd_push_s(ptr %ctx, ptr @.str.9744)
+  call i32 @usr_strings_starts_with(ptr %ctx)
+  call i32 @qd_push_i(ptr %ctx, i64 0)
   call i32 @qd_eq(ptr %ctx)
-  %ce_L9744 = alloca %qd_stack_element_t
-  %stp_L9744 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L9744 = load ptr, ptr %stp_L9744
-  call void @qd_stack_pop(ptr %stk_L9744, ptr %ce_L9744)
-  %cv_L9744 = getelementptr %qd_stack_element_t, ptr %ce_L9744, i32 0, i32 0
-  %ci_L9744 = load i64, ptr %cv_L9744
-  %cc_L9744 = icmp ne i64 %ci_L9744, 0
-  br i1 %cc_L9744, label %L9745, label %L9747
-L9745:
-  %stp_L9748 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L9748 = load ptr, ptr %stp_L9748
-  call i32 @qdrt_push_element(ptr %stk_L9748, ptr %local.st)
-  %fa_elem_L9749 = alloca %qd_stack_element_t
-  %fa_stp_L9749 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %fa_stk_L9749 = load ptr, ptr %fa_stp_L9749
-  call void @qd_stack_pop(ptr %fa_stk_L9749, ptr %fa_elem_L9749)
-  %fa_vp_L9749 = getelementptr %qd_stack_element_t, ptr %fa_elem_L9749, i32 0, i32 0
-  %fa_ptr_L9749 = load ptr, ptr %fa_vp_L9749
-  %fa_off_L9749 = load i64, ptr @__offset_globals
-  %fa_fp_L9749 = getelementptr i8, ptr %fa_ptr_L9749, i64 %fa_off_L9749
-  %fa_val_L9749 = load ptr, ptr %fa_fp_L9749
-  call i32 @qd_push_p(ptr %ctx, ptr %fa_val_L9749)
+  %ce_L9745 = alloca %qd_stack_element_t
+  %stp_L9745 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L9745 = load ptr, ptr %stp_L9745
+  call void @qd_stack_pop(ptr %stk_L9745, ptr %ce_L9745)
+  %cv_L9745 = getelementptr %qd_stack_element_t, ptr %ce_L9745, i32 0, i32 0
+  %ci_L9745 = load i64, ptr %cv_L9745
+  %cc_L9745 = icmp ne i64 %ci_L9745, 0
+  br i1 %cc_L9745, label %L9746, label %L9748
+L9746:
+  %stp_L9749 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L9749 = load ptr, ptr %stp_L9749
+  call i32 @qdrt_push_element(ptr %stk_L9749, ptr %local.param_count)
+  call i32 @qd_push_i(ptr %ctx, i64 1)
+  call i32 @qd_add(ptr %ctx)
   %stp_L9750 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
   %stk_L9750 = load ptr, ptr %stp_L9750
-  call void @qd_stack_pop(ptr %stk_L9750, ptr %local.g)
+  call void @qd_stack_pop(ptr %stk_L9750, ptr %local.param_count)
+  br label %L9748
+L9748:
+  br label %L9739
+L9739:
   %stp_L9751 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
   %stk_L9751 = load ptr, ptr %stp_L9751
   call i32 @qdrt_push_element(ptr %stk_L9751, ptr %local.n)
@@ -39540,145 +39547,146 @@ L9745:
   call void @qd_stack_pop(ptr %fa_stk_L9752, ptr %fa_elem_L9752)
   %fa_vp_L9752 = getelementptr %qd_stack_element_t, ptr %fa_elem_L9752, i32 0, i32 0
   %fa_ptr_L9752 = load ptr, ptr %fa_vp_L9752
-  %fa_off_L9752 = load i64, ptr @__offset_ntext
+  %fa_off_L9752 = load i64, ptr @__offset_child1
   %fa_fp_L9752 = getelementptr i8, ptr %fa_ptr_L9752, i64 %fa_off_L9752
   %fa_val_L9752 = load ptr, ptr %fa_fp_L9752
-  call i32 @qd_push_s_ref(ptr %ctx, ptr %fa_val_L9752)
-  %stp_L9753 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L9753 = load ptr, ptr %stp_L9753
-  call void @qd_stack_pop(ptr %stk_L9753, ptr %local.sname)
-  call i32 @qd_push_i(ptr %ctx, i64 0)
+  call i32 @qd_push_p(ptr %ctx, ptr %fa_val_L9752)
+  %fa_elem_L9753 = alloca %qd_stack_element_t
+  %fa_stp_L9753 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %fa_stk_L9753 = load ptr, ptr %fa_stp_L9753
+  call void @qd_stack_pop(ptr %fa_stk_L9753, ptr %fa_elem_L9753)
+  %fa_vp_L9753 = getelementptr %qd_stack_element_t, ptr %fa_elem_L9753, i32 0, i32 0
+  %fa_ptr_L9753 = load ptr, ptr %fa_vp_L9753
+  %fa_off_L9753 = load i64, ptr @__offset_extra
+  %fa_fp_L9753 = getelementptr i8, ptr %fa_ptr_L9753, i64 %fa_off_L9753
+  %fa_val_L9753 = load ptr, ptr %fa_fp_L9753
+  call i32 @qd_push_p(ptr %ctx, ptr %fa_val_L9753)
   %stp_L9754 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
   %stk_L9754 = load ptr, ptr %stp_L9754
-  call void @qd_stack_pop(ptr %stk_L9754, ptr %local.offset)
+  call void @qd_stack_pop(ptr %stk_L9754, ptr %local.pcur)
   %stp_L9755 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
   %stk_L9755 = load ptr, ptr %stp_L9755
-  call i32 @qdrt_push_element(ptr %stk_L9755, ptr %local.n)
-  %fa_elem_L9756 = alloca %qd_stack_element_t
-  %fa_stp_L9756 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %fa_stk_L9756 = load ptr, ptr %fa_stp_L9756
-  call void @qd_stack_pop(ptr %fa_stk_L9756, ptr %fa_elem_L9756)
-  %fa_vp_L9756 = getelementptr %qd_stack_element_t, ptr %fa_elem_L9756, i32 0, i32 0
-  %fa_ptr_L9756 = load ptr, ptr %fa_vp_L9756
-  %fa_off_L9756 = load i64, ptr @__offset_child1
-  %fa_fp_L9756 = getelementptr i8, ptr %fa_ptr_L9756, i64 %fa_off_L9756
-  %fa_val_L9756 = load ptr, ptr %fa_fp_L9756
-  call i32 @qd_push_p(ptr %ctx, ptr %fa_val_L9756)
+  call i32 @qdrt_push_element(ptr %stk_L9755, ptr %local.pcur)
   call i32 @qd_push_i(ptr %ctx, i64 0)
   call i32 @qd_neq(ptr %ctx)
-  %ce_L9757 = alloca %qd_stack_element_t
-  %stp_L9757 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L9757 = load ptr, ptr %stp_L9757
-  call void @qd_stack_pop(ptr %stk_L9757, ptr %ce_L9757)
-  %cv_L9757 = getelementptr %qd_stack_element_t, ptr %ce_L9757, i32 0, i32 0
-  %ci_L9757 = load i64, ptr %cv_L9757
-  %cc_L9757 = icmp ne i64 %ci_L9757, 0
-  br i1 %cc_L9757, label %L9758, label %L9760
-L9758:
-  %stp_L9761 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L9761 = load ptr, ptr %stp_L9761
-  call i32 @qdrt_push_element(ptr %stk_L9761, ptr %local.n)
-  %fa_elem_L9762 = alloca %qd_stack_element_t
-  %fa_stp_L9762 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %fa_stk_L9762 = load ptr, ptr %fa_stp_L9762
-  call void @qd_stack_pop(ptr %fa_stk_L9762, ptr %fa_elem_L9762)
-  %fa_vp_L9762 = getelementptr %qd_stack_element_t, ptr %fa_elem_L9762, i32 0, i32 0
-  %fa_ptr_L9762 = load ptr, ptr %fa_vp_L9762
-  %fa_off_L9762 = load i64, ptr @__offset_child1
-  %fa_fp_L9762 = getelementptr i8, ptr %fa_ptr_L9762, i64 %fa_off_L9762
-  %fa_val_L9762 = load ptr, ptr %fa_fp_L9762
-  call i32 @qd_push_p(ptr %ctx, ptr %fa_val_L9762)
-  %fa_elem_L9763 = alloca %qd_stack_element_t
-  %fa_stp_L9763 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %fa_stk_L9763 = load ptr, ptr %fa_stp_L9763
-  call void @qd_stack_pop(ptr %fa_stk_L9763, ptr %fa_elem_L9763)
-  %fa_vp_L9763 = getelementptr %qd_stack_element_t, ptr %fa_elem_L9763, i32 0, i32 0
-  %fa_ptr_L9763 = load ptr, ptr %fa_vp_L9763
-  %fa_off_L9763 = load i64, ptr @__offset_ntext
-  %fa_fp_L9763 = getelementptr i8, ptr %fa_ptr_L9763, i64 %fa_off_L9763
-  %fa_val_L9763 = load ptr, ptr %fa_fp_L9763
-  call i32 @qd_push_s_ref(ptr %ctx, ptr %fa_val_L9763)
-  %stp_L9764 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L9764 = load ptr, ptr %stp_L9764
-  call void @qd_stack_pop(ptr %stk_L9764, ptr %local.fn1)
-  call i32 @usr_sb_new(ptr %ctx)
-  call i32 @qd_push_s(ptr %ctx, ptr @.str.9765)
-  call i32 @usr_sb_append(ptr %ctx)
-  %stp_L9766 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L9766 = load ptr, ptr %stp_L9766
-  call i32 @qdrt_push_element(ptr %stk_L9766, ptr %local.fn1)
-  call i32 @usr_sb_append_int(ptr %ctx)
-  call i32 @usr_sb_finish(ptr %ctx)
-  %stp_L9767 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L9767 = load ptr, ptr %stp_L9767
-  call void @qd_stack_pop(ptr %stk_L9767, ptr %local.ocheck1)
-  %stp_L9768 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L9768 = load ptr, ptr %stp_L9768
-  call i32 @qdrt_push_element(ptr %stk_L9768, ptr %local.g)
-  call i32 @usr_sb_build(ptr %ctx)
-  %stp_L9769 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L9769 = load ptr, ptr %stp_L9769
-  call i32 @qdrt_push_element(ptr %stk_L9769, ptr %local.ocheck1)
-  call i32 @usr_strings_contains(ptr %ctx)
+  %ce_L9756 = alloca %qd_stack_element_t
+  %stp_L9756 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L9756 = load ptr, ptr %stp_L9756
+  call void @qd_stack_pop(ptr %stk_L9756, ptr %ce_L9756)
+  %cv_L9756 = getelementptr %qd_stack_element_t, ptr %ce_L9756, i32 0, i32 0
+  %ci_L9756 = load i64, ptr %cv_L9756
+  %cc_L9756 = icmp ne i64 %ci_L9756, 0
+  br i1 %cc_L9756, label %L9757, label %L9758
+L9757:
+  %stp_L9760 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L9760 = load ptr, ptr %stp_L9760
+  call i32 @qdrt_push_element(ptr %stk_L9760, ptr %local.pcur)
+  %fa_elem_L9761 = alloca %qd_stack_element_t
+  %fa_stp_L9761 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %fa_stk_L9761 = load ptr, ptr %fa_stp_L9761
+  call void @qd_stack_pop(ptr %fa_stk_L9761, ptr %fa_elem_L9761)
+  %fa_vp_L9761 = getelementptr %qd_stack_element_t, ptr %fa_elem_L9761, i32 0, i32 0
+  %fa_ptr_L9761 = load ptr, ptr %fa_vp_L9761
+  %fa_off_L9761 = load i64, ptr @__offset_ntext
+  %fa_fp_L9761 = getelementptr i8, ptr %fa_ptr_L9761, i64 %fa_off_L9761
+  %fa_val_L9761 = load ptr, ptr %fa_fp_L9761
+  call i32 @qd_push_s_ref(ptr %ctx, ptr %fa_val_L9761)
+  call i32 @qd_push_s(ptr %ctx, ptr @.str.9762)
+  call i32 @usr_strings_starts_with(ptr %ctx)
   call i32 @qd_push_i(ptr %ctx, i64 0)
   call i32 @qd_eq(ptr %ctx)
-  %ce_L9770 = alloca %qd_stack_element_t
-  %stp_L9770 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L9770 = load ptr, ptr %stp_L9770
-  call void @qd_stack_pop(ptr %stk_L9770, ptr %ce_L9770)
-  %cv_L9770 = getelementptr %qd_stack_element_t, ptr %ce_L9770, i32 0, i32 0
-  %ci_L9770 = load i64, ptr %cv_L9770
-  %cc_L9770 = icmp ne i64 %ci_L9770, 0
-  br i1 %cc_L9770, label %L9771, label %L9773
-L9771:
-  %stp_L9774 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L9774 = load ptr, ptr %stp_L9774
-  call i32 @qdrt_push_element(ptr %stk_L9774, ptr %local.g)
-  call i32 @usr_sb_new(ptr %ctx)
-  %stp_L9775 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L9775 = load ptr, ptr %stp_L9775
-  call i32 @qdrt_push_element(ptr %stk_L9775, ptr %local.ocheck1)
-  call i32 @usr_sb_append_int(ptr %ctx)
-  call i32 @qd_push_s(ptr %ctx, ptr @.str.9776)
-  call i32 @usr_sb_append(ptr %ctx)
-  %stp_L9777 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L9777 = load ptr, ptr %stp_L9777
-  call i32 @qdrt_push_element(ptr %stk_L9777, ptr %local.offset)
-  call i32 @usr_sb_append_int(ptr %ctx)
-  call i32 @qd_push_s(ptr %ctx, ptr @.str.9778)
-  call i32 @usr_sb_append(ptr %ctx)
-  call i32 @usr_sb_finish(ptr %ctx)
-  call i32 @usr_sb_append(ptr %ctx)
-  %stp_L9779 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L9779 = load ptr, ptr %stp_L9779
-  call void @qd_stack_pop(ptr %stk_L9779, ptr %local.g)
-  br label %L9773
-L9773:
-  %stp_L9780 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L9780 = load ptr, ptr %stp_L9780
-  call i32 @qdrt_push_element(ptr %stk_L9780, ptr %local.offset)
-  call i32 @qd_push_i(ptr %ctx, i64 8)
+  %ce_L9763 = alloca %qd_stack_element_t
+  %stp_L9763 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L9763 = load ptr, ptr %stp_L9763
+  call void @qd_stack_pop(ptr %stk_L9763, ptr %ce_L9763)
+  %cv_L9763 = getelementptr %qd_stack_element_t, ptr %ce_L9763, i32 0, i32 0
+  %ci_L9763 = load i64, ptr %cv_L9763
+  %cc_L9763 = icmp ne i64 %ci_L9763, 0
+  br i1 %cc_L9763, label %L9764, label %L9766
+L9764:
+  %stp_L9767 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L9767 = load ptr, ptr %stp_L9767
+  call i32 @qdrt_push_element(ptr %stk_L9767, ptr %local.param_count)
+  call i32 @qd_push_i(ptr %ctx, i64 1)
   call i32 @qd_add(ptr %ctx)
-  %stp_L9781 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L9781 = load ptr, ptr %stp_L9781
-  call void @qd_stack_pop(ptr %stk_L9781, ptr %local.offset)
-  br label %L9760
-L9760:
-  %stp_L9782 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L9782 = load ptr, ptr %stp_L9782
-  call i32 @qdrt_push_element(ptr %stk_L9782, ptr %local.n)
-  %fa_elem_L9783 = alloca %qd_stack_element_t
-  %fa_stp_L9783 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %fa_stk_L9783 = load ptr, ptr %fa_stp_L9783
-  call void @qd_stack_pop(ptr %fa_stk_L9783, ptr %fa_elem_L9783)
-  %fa_vp_L9783 = getelementptr %qd_stack_element_t, ptr %fa_elem_L9783, i32 0, i32 0
-  %fa_ptr_L9783 = load ptr, ptr %fa_vp_L9783
-  %fa_off_L9783 = load i64, ptr @__offset_child2
-  %fa_fp_L9783 = getelementptr i8, ptr %fa_ptr_L9783, i64 %fa_off_L9783
-  %fa_val_L9783 = load ptr, ptr %fa_fp_L9783
-  call i32 @qd_push_p(ptr %ctx, ptr %fa_val_L9783)
+  %stp_L9768 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L9768 = load ptr, ptr %stp_L9768
+  call void @qd_stack_pop(ptr %stk_L9768, ptr %local.param_count)
+  br label %L9766
+L9766:
+  %stp_L9769 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L9769 = load ptr, ptr %stp_L9769
+  call i32 @qdrt_push_element(ptr %stk_L9769, ptr %local.pcur)
+  %fa_elem_L9770 = alloca %qd_stack_element_t
+  %fa_stp_L9770 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %fa_stk_L9770 = load ptr, ptr %fa_stp_L9770
+  call void @qd_stack_pop(ptr %fa_stk_L9770, ptr %fa_elem_L9770)
+  %fa_vp_L9770 = getelementptr %qd_stack_element_t, ptr %fa_elem_L9770, i32 0, i32 0
+  %fa_ptr_L9770 = load ptr, ptr %fa_vp_L9770
+  %fa_off_L9770 = load i64, ptr @__offset_sibling
+  %fa_fp_L9770 = getelementptr i8, ptr %fa_ptr_L9770, i64 %fa_off_L9770
+  %fa_val_L9770 = load ptr, ptr %fa_fp_L9770
+  call i32 @qd_push_p(ptr %ctx, ptr %fa_val_L9770)
+  %stp_L9771 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L9771 = load ptr, ptr %stp_L9771
+  call void @qd_stack_pop(ptr %stk_L9771, ptr %local.pcur)
+  %stp_L9772 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L9772 = load ptr, ptr %stp_L9772
+  call i32 @qdrt_push_element(ptr %stk_L9772, ptr %local.pcur)
   call i32 @qd_push_i(ptr %ctx, i64 0)
   call i32 @qd_neq(ptr %ctx)
+  %ce_L9773 = alloca %qd_stack_element_t
+  %stp_L9773 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L9773 = load ptr, ptr %stp_L9773
+  call void @qd_stack_pop(ptr %stk_L9773, ptr %ce_L9773)
+  %cv_L9773 = getelementptr %qd_stack_element_t, ptr %ce_L9773, i32 0, i32 0
+  %ci_L9773 = load i64, ptr %cv_L9773
+  %cc_L9773 = icmp ne i64 %ci_L9773, 0
+  br i1 %cc_L9773, label %L9757, label %L9758
+L9758:
+  br label %L9678
+L9678:
+  %stp_L9774 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L9774 = load ptr, ptr %stp_L9774
+  call i32 @qdrt_push_element(ptr %stk_L9774, ptr %local.st)
+  %stp_L9775 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L9775 = load ptr, ptr %stp_L9775
+  call i32 @qdrt_push_element(ptr %stk_L9775, ptr %local.fname)
+  %stp_L9776 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L9776 = load ptr, ptr %stp_L9776
+  call i32 @qdrt_push_element(ptr %stk_L9776, ptr %local.n)
+  %fa_elem_L9777 = alloca %qd_stack_element_t
+  %fa_stp_L9777 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %fa_stk_L9777 = load ptr, ptr %fa_stp_L9777
+  call void @qd_stack_pop(ptr %fa_stk_L9777, ptr %fa_elem_L9777)
+  %fa_vp_L9777 = getelementptr %qd_stack_element_t, ptr %fa_elem_L9777, i32 0, i32 0
+  %fa_ptr_L9777 = load ptr, ptr %fa_vp_L9777
+  %fa_off_L9777 = load i64, ptr @__offset_child2
+  %fa_fp_L9777 = getelementptr i8, ptr %fa_ptr_L9777, i64 %fa_off_L9777
+  %fa_val_L9777 = load ptr, ptr %fa_fp_L9777
+  call i32 @qd_push_p(ptr %ctx, ptr %fa_val_L9777)
+  %stp_L9778 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L9778 = load ptr, ptr %stp_L9778
+  call i32 @qdrt_push_element(ptr %stk_L9778, ptr %local.recv_var)
+  %stp_L9779 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L9779 = load ptr, ptr %stp_L9779
+  call i32 @qdrt_push_element(ptr %stk_L9779, ptr %local.param_count)
+  %stp_L9780 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L9780 = load ptr, ptr %stp_L9780
+  call i32 @qdrt_push_element(ptr %stk_L9780, ptr %local.cstr)
+  %stp_L9781 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L9781 = load ptr, ptr %stp_L9781
+  call i32 @qdrt_push_element(ptr %stk_L9781, ptr %local.pfx)
+  call i32 @usr_codegen_emit_function(ptr %ctx)
+  %stp_L9782 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L9782 = load ptr, ptr %stp_L9782
+  call void @qd_stack_pop(ptr %stk_L9782, ptr %local.st)
+  %stp_L9783 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L9783 = load ptr, ptr %stp_L9783
+  call i32 @qdrt_push_element(ptr %stk_L9783, ptr %local.recv_var)
+  call i32 @usr_strings_len(ptr %ctx)
+  call i32 @qd_push_i(ptr %ctx, i64 0)
+  call i32 @qd_gt(ptr %ctx)
   %ce_L9784 = alloca %qd_stack_element_t
   %stp_L9784 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
   %stk_L9784 = load ptr, ptr %stp_L9784
@@ -39697,710 +39705,685 @@ L9785:
   call void @qd_stack_pop(ptr %fa_stk_L9789, ptr %fa_elem_L9789)
   %fa_vp_L9789 = getelementptr %qd_stack_element_t, ptr %fa_elem_L9789, i32 0, i32 0
   %fa_ptr_L9789 = load ptr, ptr %fa_vp_L9789
-  %fa_off_L9789 = load i64, ptr @__offset_child2
+  %fa_off_L9789 = load i64, ptr @__offset_ntext
   %fa_fp_L9789 = getelementptr i8, ptr %fa_ptr_L9789, i64 %fa_off_L9789
   %fa_val_L9789 = load ptr, ptr %fa_fp_L9789
-  call i32 @qd_push_p(ptr %ctx, ptr %fa_val_L9789)
-  %fa_elem_L9790 = alloca %qd_stack_element_t
-  %fa_stp_L9790 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %fa_stk_L9790 = load ptr, ptr %fa_stp_L9790
-  call void @qd_stack_pop(ptr %fa_stk_L9790, ptr %fa_elem_L9790)
-  %fa_vp_L9790 = getelementptr %qd_stack_element_t, ptr %fa_elem_L9790, i32 0, i32 0
-  %fa_ptr_L9790 = load ptr, ptr %fa_vp_L9790
-  %fa_off_L9790 = load i64, ptr @__offset_ntext
-  %fa_fp_L9790 = getelementptr i8, ptr %fa_ptr_L9790, i64 %fa_off_L9790
-  %fa_val_L9790 = load ptr, ptr %fa_fp_L9790
-  call i32 @qd_push_s_ref(ptr %ctx, ptr %fa_val_L9790)
+  call i32 @qd_push_s_ref(ptr %ctx, ptr %fa_val_L9789)
+  %stp_L9790 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L9790 = load ptr, ptr %stp_L9790
+  call void @qd_stack_pop(ptr %stk_L9790, ptr %local.orig_name)
   %stp_L9791 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
   %stk_L9791 = load ptr, ptr %stp_L9791
-  call void @qd_stack_pop(ptr %stk_L9791, ptr %local.fn2)
-  call i32 @usr_sb_new(ptr %ctx)
-  call i32 @qd_push_s(ptr %ctx, ptr @.str.9792)
-  call i32 @usr_sb_append(ptr %ctx)
+  call i32 @qdrt_push_element(ptr %stk_L9791, ptr %local.st)
+  %fa_elem_L9792 = alloca %qd_stack_element_t
+  %fa_stp_L9792 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %fa_stk_L9792 = load ptr, ptr %fa_stp_L9792
+  call void @qd_stack_pop(ptr %fa_stk_L9792, ptr %fa_elem_L9792)
+  %fa_vp_L9792 = getelementptr %qd_stack_element_t, ptr %fa_elem_L9792, i32 0, i32 0
+  %fa_ptr_L9792 = load ptr, ptr %fa_vp_L9792
+  %fa_off_L9792 = load i64, ptr @__offset_code
+  %fa_fp_L9792 = getelementptr i8, ptr %fa_ptr_L9792, i64 %fa_off_L9792
+  %fa_val_L9792 = load ptr, ptr %fa_fp_L9792
+  call i32 @qd_push_p(ptr %ctx, ptr %fa_val_L9792)
   %stp_L9793 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
   %stk_L9793 = load ptr, ptr %stp_L9793
-  call i32 @qdrt_push_element(ptr %stk_L9793, ptr %local.fn2)
-  call i32 @usr_sb_append_int(ptr %ctx)
-  call i32 @usr_sb_finish(ptr %ctx)
+  call void @qd_stack_pop(ptr %stk_L9793, ptr %local.o)
   %stp_L9794 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
   %stk_L9794 = load ptr, ptr %stp_L9794
-  call void @qd_stack_pop(ptr %stk_L9794, ptr %local.ocheck2)
-  %stp_L9795 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L9795 = load ptr, ptr %stp_L9795
-  call i32 @qdrt_push_element(ptr %stk_L9795, ptr %local.g)
-  call i32 @usr_sb_build(ptr %ctx)
+  call i32 @qdrt_push_element(ptr %stk_L9794, ptr %local.o)
+  call i32 @qd_push_s(ptr %ctx, ptr @.str.9795)
+  call i32 @usr_sb_append(ptr %ctx)
   %stp_L9796 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
   %stk_L9796 = load ptr, ptr %stp_L9796
-  call i32 @qdrt_push_element(ptr %stk_L9796, ptr %local.ocheck2)
-  call i32 @usr_strings_contains(ptr %ctx)
-  call i32 @qd_push_i(ptr %ctx, i64 0)
-  call i32 @qd_eq(ptr %ctx)
-  %ce_L9797 = alloca %qd_stack_element_t
+  call void @qd_stack_pop(ptr %stk_L9796, ptr %local.o)
   %stp_L9797 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
   %stk_L9797 = load ptr, ptr %stp_L9797
-  call void @qd_stack_pop(ptr %stk_L9797, ptr %ce_L9797)
-  %cv_L9797 = getelementptr %qd_stack_element_t, ptr %ce_L9797, i32 0, i32 0
-  %ci_L9797 = load i64, ptr %cv_L9797
-  %cc_L9797 = icmp ne i64 %ci_L9797, 0
-  br i1 %cc_L9797, label %L9798, label %L9800
-L9798:
+  call i32 @qdrt_push_element(ptr %stk_L9797, ptr %local.o)
+  %stp_L9798 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L9798 = load ptr, ptr %stp_L9798
+  call i32 @qdrt_push_element(ptr %stk_L9798, ptr %local.pfx)
+  call i32 @usr_sb_append(ptr %ctx)
+  %stp_L9799 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L9799 = load ptr, ptr %stp_L9799
+  call void @qd_stack_pop(ptr %stk_L9799, ptr %local.o)
+  %stp_L9800 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L9800 = load ptr, ptr %stp_L9800
+  call i32 @qdrt_push_element(ptr %stk_L9800, ptr %local.o)
   %stp_L9801 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
   %stk_L9801 = load ptr, ptr %stp_L9801
-  call i32 @qdrt_push_element(ptr %stk_L9801, ptr %local.g)
-  call i32 @usr_sb_new(ptr %ctx)
+  call i32 @qdrt_push_element(ptr %stk_L9801, ptr %local.orig_name)
+  call i32 @usr_sb_append(ptr %ctx)
   %stp_L9802 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
   %stk_L9802 = load ptr, ptr %stp_L9802
-  call i32 @qdrt_push_element(ptr %stk_L9802, ptr %local.ocheck2)
-  call i32 @usr_sb_append_int(ptr %ctx)
-  call i32 @qd_push_s(ptr %ctx, ptr @.str.9803)
+  call void @qd_stack_pop(ptr %stk_L9802, ptr %local.o)
+  %stp_L9803 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L9803 = load ptr, ptr %stp_L9803
+  call i32 @qdrt_push_element(ptr %stk_L9803, ptr %local.o)
+  call i32 @qd_push_s(ptr %ctx, ptr @.str.9804)
   call i32 @usr_sb_append(ptr %ctx)
-  %stp_L9804 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L9804 = load ptr, ptr %stp_L9804
-  call i32 @qdrt_push_element(ptr %stk_L9804, ptr %local.offset)
-  call i32 @usr_sb_append_int(ptr %ctx)
-  call i32 @qd_push_s(ptr %ctx, ptr @.str.9805)
-  call i32 @usr_sb_append(ptr %ctx)
-  call i32 @usr_sb_finish(ptr %ctx)
-  call i32 @usr_sb_append(ptr %ctx)
+  %stp_L9805 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L9805 = load ptr, ptr %stp_L9805
+  call void @qd_stack_pop(ptr %stk_L9805, ptr %local.o)
   %stp_L9806 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
   %stk_L9806 = load ptr, ptr %stp_L9806
-  call void @qd_stack_pop(ptr %stk_L9806, ptr %local.g)
-  br label %L9800
-L9800:
+  call i32 @qdrt_push_element(ptr %stk_L9806, ptr %local.o)
   %stp_L9807 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
   %stk_L9807 = load ptr, ptr %stp_L9807
-  call i32 @qdrt_push_element(ptr %stk_L9807, ptr %local.offset)
-  call i32 @qd_push_i(ptr %ctx, i64 8)
-  call i32 @qd_add(ptr %ctx)
+  call i32 @qdrt_push_element(ptr %stk_L9807, ptr %local.pfx)
+  call i32 @usr_sb_append(ptr %ctx)
   %stp_L9808 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
   %stk_L9808 = load ptr, ptr %stp_L9808
-  call void @qd_stack_pop(ptr %stk_L9808, ptr %local.offset)
-  br label %L9787
-L9787:
+  call void @qd_stack_pop(ptr %stk_L9808, ptr %local.o)
   %stp_L9809 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
   %stk_L9809 = load ptr, ptr %stp_L9809
-  call i32 @qdrt_push_element(ptr %stk_L9809, ptr %local.n)
-  %fa_elem_L9810 = alloca %qd_stack_element_t
-  %fa_stp_L9810 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %fa_stk_L9810 = load ptr, ptr %fa_stp_L9810
-  call void @qd_stack_pop(ptr %fa_stk_L9810, ptr %fa_elem_L9810)
-  %fa_vp_L9810 = getelementptr %qd_stack_element_t, ptr %fa_elem_L9810, i32 0, i32 0
-  %fa_ptr_L9810 = load ptr, ptr %fa_vp_L9810
-  %fa_off_L9810 = load i64, ptr @__offset_child3
-  %fa_fp_L9810 = getelementptr i8, ptr %fa_ptr_L9810, i64 %fa_off_L9810
-  %fa_val_L9810 = load ptr, ptr %fa_fp_L9810
-  call i32 @qd_push_p(ptr %ctx, ptr %fa_val_L9810)
-  call i32 @qd_push_i(ptr %ctx, i64 0)
-  call i32 @qd_neq(ptr %ctx)
-  %ce_L9811 = alloca %qd_stack_element_t
+  call i32 @qdrt_push_element(ptr %stk_L9809, ptr %local.o)
+  %stp_L9810 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L9810 = load ptr, ptr %stp_L9810
+  call i32 @qdrt_push_element(ptr %stk_L9810, ptr %local.fname)
+  call i32 @usr_sb_append(ptr %ctx)
   %stp_L9811 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
   %stk_L9811 = load ptr, ptr %stp_L9811
-  call void @qd_stack_pop(ptr %stk_L9811, ptr %ce_L9811)
-  %cv_L9811 = getelementptr %qd_stack_element_t, ptr %ce_L9811, i32 0, i32 0
-  %ci_L9811 = load i64, ptr %cv_L9811
-  %cc_L9811 = icmp ne i64 %ci_L9811, 0
-  br i1 %cc_L9811, label %L9812, label %L9814
-L9812:
+  call void @qd_stack_pop(ptr %stk_L9811, ptr %local.o)
+  %stp_L9812 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L9812 = load ptr, ptr %stp_L9812
+  call i32 @qdrt_push_element(ptr %stk_L9812, ptr %local.o)
+  call i32 @qd_push_s(ptr %ctx, ptr @.str.9813)
+  call i32 @usr_sb_append(ptr %ctx)
+  %stp_L9814 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L9814 = load ptr, ptr %stp_L9814
+  call void @qd_stack_pop(ptr %stk_L9814, ptr %local.o)
   %stp_L9815 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
   %stk_L9815 = load ptr, ptr %stp_L9815
-  call i32 @qdrt_push_element(ptr %stk_L9815, ptr %local.n)
-  %fa_elem_L9816 = alloca %qd_stack_element_t
-  %fa_stp_L9816 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %fa_stk_L9816 = load ptr, ptr %fa_stp_L9816
-  call void @qd_stack_pop(ptr %fa_stk_L9816, ptr %fa_elem_L9816)
-  %fa_vp_L9816 = getelementptr %qd_stack_element_t, ptr %fa_elem_L9816, i32 0, i32 0
-  %fa_ptr_L9816 = load ptr, ptr %fa_vp_L9816
-  %fa_off_L9816 = load i64, ptr @__offset_child3
-  %fa_fp_L9816 = getelementptr i8, ptr %fa_ptr_L9816, i64 %fa_off_L9816
-  %fa_val_L9816 = load ptr, ptr %fa_fp_L9816
-  call i32 @qd_push_p(ptr %ctx, ptr %fa_val_L9816)
-  %fa_elem_L9817 = alloca %qd_stack_element_t
-  %fa_stp_L9817 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %fa_stk_L9817 = load ptr, ptr %fa_stp_L9817
-  call void @qd_stack_pop(ptr %fa_stk_L9817, ptr %fa_elem_L9817)
-  %fa_vp_L9817 = getelementptr %qd_stack_element_t, ptr %fa_elem_L9817, i32 0, i32 0
-  %fa_ptr_L9817 = load ptr, ptr %fa_vp_L9817
-  %fa_off_L9817 = load i64, ptr @__offset_ntext
-  %fa_fp_L9817 = getelementptr i8, ptr %fa_ptr_L9817, i64 %fa_off_L9817
-  %fa_val_L9817 = load ptr, ptr %fa_fp_L9817
-  call i32 @qd_push_s_ref(ptr %ctx, ptr %fa_val_L9817)
+  call i32 @qdrt_push_element(ptr %stk_L9815, ptr %local.o)
+  %fs_elem_L9816 = alloca %qd_stack_element_t
+  %fs_stp_L9816 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %fs_stk_L9816 = load ptr, ptr %fs_stp_L9816
+  call void @qd_stack_pop(ptr %fs_stk_L9816, ptr %fs_elem_L9816)
+  %fs_vp_L9816 = getelementptr %qd_stack_element_t, ptr %fs_elem_L9816, i32 0, i32 0
+  %fs_val_L9816 = load i64, ptr %fs_vp_L9816
+  %fs_svp_L9816 = getelementptr %qd_stack_element_t, ptr %local.st, i32 0, i32 0
+  %fs_sptr_L9816 = load ptr, ptr %fs_svp_L9816
+  %fs_off_L9816 = load i64, ptr @__offset_code
+  %fs_fp_L9816 = getelementptr i8, ptr %fs_sptr_L9816, i64 %fs_off_L9816
+  store i64 %fs_val_L9816, ptr %fs_fp_L9816
+  br label %L9787
+L9787:
+  %stp_L9817 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L9817 = load ptr, ptr %stp_L9817
+  call i32 @qdrt_push_element(ptr %stk_L9817, ptr %local.st)
+  br label %return
+  br label %L9578
+L9578:
   %stp_L9818 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
   %stk_L9818 = load ptr, ptr %stp_L9818
-  call void @qd_stack_pop(ptr %stk_L9818, ptr %local.fn3)
-  call i32 @usr_sb_new(ptr %ctx)
-  call i32 @qd_push_s(ptr %ctx, ptr @.str.9819)
-  call i32 @usr_sb_append(ptr %ctx)
+  call i32 @qdrt_push_element(ptr %stk_L9818, ptr %local.k)
+  %ev_L9819 = load i64, ptr @__enum_NodeType_StructDecl
+  call i32 @qd_push_i(ptr %ctx, i64 %ev_L9819)
+  call i32 @qd_eq(ptr %ctx)
+  %ce_L9820 = alloca %qd_stack_element_t
   %stp_L9820 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
   %stk_L9820 = load ptr, ptr %stp_L9820
-  call i32 @qdrt_push_element(ptr %stk_L9820, ptr %local.fn3)
-  call i32 @usr_sb_append_int(ptr %ctx)
-  call i32 @usr_sb_finish(ptr %ctx)
-  %stp_L9821 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L9821 = load ptr, ptr %stp_L9821
-  call void @qd_stack_pop(ptr %stk_L9821, ptr %local.ocheck3)
-  %stp_L9822 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L9822 = load ptr, ptr %stp_L9822
-  call i32 @qdrt_push_element(ptr %stk_L9822, ptr %local.g)
-  call i32 @usr_sb_build(ptr %ctx)
-  %stp_L9823 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L9823 = load ptr, ptr %stp_L9823
-  call i32 @qdrt_push_element(ptr %stk_L9823, ptr %local.ocheck3)
-  call i32 @usr_strings_contains(ptr %ctx)
-  call i32 @qd_push_i(ptr %ctx, i64 0)
-  call i32 @qd_eq(ptr %ctx)
-  %ce_L9824 = alloca %qd_stack_element_t
+  call void @qd_stack_pop(ptr %stk_L9820, ptr %ce_L9820)
+  %cv_L9820 = getelementptr %qd_stack_element_t, ptr %ce_L9820, i32 0, i32 0
+  %ci_L9820 = load i64, ptr %cv_L9820
+  %cc_L9820 = icmp ne i64 %ci_L9820, 0
+  br i1 %cc_L9820, label %L9821, label %L9823
+L9821:
   %stp_L9824 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
   %stk_L9824 = load ptr, ptr %stp_L9824
-  call void @qd_stack_pop(ptr %stk_L9824, ptr %ce_L9824)
-  %cv_L9824 = getelementptr %qd_stack_element_t, ptr %ce_L9824, i32 0, i32 0
-  %ci_L9824 = load i64, ptr %cv_L9824
-  %cc_L9824 = icmp ne i64 %ci_L9824, 0
-  br i1 %cc_L9824, label %L9825, label %L9827
-L9825:
-  %stp_L9828 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L9828 = load ptr, ptr %stp_L9828
-  call i32 @qdrt_push_element(ptr %stk_L9828, ptr %local.g)
-  call i32 @usr_sb_new(ptr %ctx)
+  call i32 @qdrt_push_element(ptr %stk_L9824, ptr %local.st)
+  %fa_elem_L9825 = alloca %qd_stack_element_t
+  %fa_stp_L9825 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %fa_stk_L9825 = load ptr, ptr %fa_stp_L9825
+  call void @qd_stack_pop(ptr %fa_stk_L9825, ptr %fa_elem_L9825)
+  %fa_vp_L9825 = getelementptr %qd_stack_element_t, ptr %fa_elem_L9825, i32 0, i32 0
+  %fa_ptr_L9825 = load ptr, ptr %fa_vp_L9825
+  %fa_off_L9825 = load i64, ptr @__offset_globals
+  %fa_fp_L9825 = getelementptr i8, ptr %fa_ptr_L9825, i64 %fa_off_L9825
+  %fa_val_L9825 = load ptr, ptr %fa_fp_L9825
+  call i32 @qd_push_p(ptr %ctx, ptr %fa_val_L9825)
+  %stp_L9826 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L9826 = load ptr, ptr %stp_L9826
+  call void @qd_stack_pop(ptr %stk_L9826, ptr %local.g)
+  %stp_L9827 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L9827 = load ptr, ptr %stp_L9827
+  call i32 @qdrt_push_element(ptr %stk_L9827, ptr %local.n)
+  %fa_elem_L9828 = alloca %qd_stack_element_t
+  %fa_stp_L9828 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %fa_stk_L9828 = load ptr, ptr %fa_stp_L9828
+  call void @qd_stack_pop(ptr %fa_stk_L9828, ptr %fa_elem_L9828)
+  %fa_vp_L9828 = getelementptr %qd_stack_element_t, ptr %fa_elem_L9828, i32 0, i32 0
+  %fa_ptr_L9828 = load ptr, ptr %fa_vp_L9828
+  %fa_off_L9828 = load i64, ptr @__offset_ntext
+  %fa_fp_L9828 = getelementptr i8, ptr %fa_ptr_L9828, i64 %fa_off_L9828
+  %fa_val_L9828 = load ptr, ptr %fa_fp_L9828
+  call i32 @qd_push_s_ref(ptr %ctx, ptr %fa_val_L9828)
   %stp_L9829 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
   %stk_L9829 = load ptr, ptr %stp_L9829
-  call i32 @qdrt_push_element(ptr %stk_L9829, ptr %local.ocheck3)
-  call i32 @usr_sb_append_int(ptr %ctx)
-  call i32 @qd_push_s(ptr %ctx, ptr @.str.9830)
-  call i32 @usr_sb_append(ptr %ctx)
+  call void @qd_stack_pop(ptr %stk_L9829, ptr %local.sname)
+  call i32 @qd_push_i(ptr %ctx, i64 0)
+  %stp_L9830 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L9830 = load ptr, ptr %stp_L9830
+  call void @qd_stack_pop(ptr %stk_L9830, ptr %local.offset)
   %stp_L9831 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
   %stk_L9831 = load ptr, ptr %stp_L9831
-  call i32 @qdrt_push_element(ptr %stk_L9831, ptr %local.offset)
-  call i32 @usr_sb_append_int(ptr %ctx)
-  call i32 @qd_push_s(ptr %ctx, ptr @.str.9832)
-  call i32 @usr_sb_append(ptr %ctx)
-  call i32 @usr_sb_finish(ptr %ctx)
-  call i32 @usr_sb_append(ptr %ctx)
-  %stp_L9833 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L9833 = load ptr, ptr %stp_L9833
-  call void @qd_stack_pop(ptr %stk_L9833, ptr %local.g)
-  br label %L9827
-L9827:
-  %stp_L9834 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L9834 = load ptr, ptr %stp_L9834
-  call i32 @qdrt_push_element(ptr %stk_L9834, ptr %local.offset)
-  call i32 @qd_push_i(ptr %ctx, i64 8)
-  call i32 @qd_add(ptr %ctx)
-  %stp_L9835 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L9835 = load ptr, ptr %stp_L9835
-  call void @qd_stack_pop(ptr %stk_L9835, ptr %local.offset)
-  br label %L9814
-L9814:
-  %stp_L9836 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L9836 = load ptr, ptr %stp_L9836
-  call i32 @qdrt_push_element(ptr %stk_L9836, ptr %local.n)
-  %fa_elem_L9837 = alloca %qd_stack_element_t
-  %fa_stp_L9837 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %fa_stk_L9837 = load ptr, ptr %fa_stp_L9837
-  call void @qd_stack_pop(ptr %fa_stk_L9837, ptr %fa_elem_L9837)
-  %fa_vp_L9837 = getelementptr %qd_stack_element_t, ptr %fa_elem_L9837, i32 0, i32 0
-  %fa_ptr_L9837 = load ptr, ptr %fa_vp_L9837
-  %fa_off_L9837 = load i64, ptr @__offset_child4
-  %fa_fp_L9837 = getelementptr i8, ptr %fa_ptr_L9837, i64 %fa_off_L9837
-  %fa_val_L9837 = load ptr, ptr %fa_fp_L9837
-  call i32 @qd_push_p(ptr %ctx, ptr %fa_val_L9837)
+  call i32 @qdrt_push_element(ptr %stk_L9831, ptr %local.n)
+  %fa_elem_L9832 = alloca %qd_stack_element_t
+  %fa_stp_L9832 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %fa_stk_L9832 = load ptr, ptr %fa_stp_L9832
+  call void @qd_stack_pop(ptr %fa_stk_L9832, ptr %fa_elem_L9832)
+  %fa_vp_L9832 = getelementptr %qd_stack_element_t, ptr %fa_elem_L9832, i32 0, i32 0
+  %fa_ptr_L9832 = load ptr, ptr %fa_vp_L9832
+  %fa_off_L9832 = load i64, ptr @__offset_child1
+  %fa_fp_L9832 = getelementptr i8, ptr %fa_ptr_L9832, i64 %fa_off_L9832
+  %fa_val_L9832 = load ptr, ptr %fa_fp_L9832
+  call i32 @qd_push_p(ptr %ctx, ptr %fa_val_L9832)
   call i32 @qd_push_i(ptr %ctx, i64 0)
   call i32 @qd_neq(ptr %ctx)
-  %ce_L9838 = alloca %qd_stack_element_t
-  %stp_L9838 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L9838 = load ptr, ptr %stp_L9838
-  call void @qd_stack_pop(ptr %stk_L9838, ptr %ce_L9838)
-  %cv_L9838 = getelementptr %qd_stack_element_t, ptr %ce_L9838, i32 0, i32 0
-  %ci_L9838 = load i64, ptr %cv_L9838
-  %cc_L9838 = icmp ne i64 %ci_L9838, 0
-  br i1 %cc_L9838, label %L9839, label %L9841
-L9839:
+  %ce_L9833 = alloca %qd_stack_element_t
+  %stp_L9833 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L9833 = load ptr, ptr %stp_L9833
+  call void @qd_stack_pop(ptr %stk_L9833, ptr %ce_L9833)
+  %cv_L9833 = getelementptr %qd_stack_element_t, ptr %ce_L9833, i32 0, i32 0
+  %ci_L9833 = load i64, ptr %cv_L9833
+  %cc_L9833 = icmp ne i64 %ci_L9833, 0
+  br i1 %cc_L9833, label %L9834, label %L9836
+L9834:
+  %stp_L9837 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L9837 = load ptr, ptr %stp_L9837
+  call i32 @qdrt_push_element(ptr %stk_L9837, ptr %local.n)
+  %fa_elem_L9838 = alloca %qd_stack_element_t
+  %fa_stp_L9838 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %fa_stk_L9838 = load ptr, ptr %fa_stp_L9838
+  call void @qd_stack_pop(ptr %fa_stk_L9838, ptr %fa_elem_L9838)
+  %fa_vp_L9838 = getelementptr %qd_stack_element_t, ptr %fa_elem_L9838, i32 0, i32 0
+  %fa_ptr_L9838 = load ptr, ptr %fa_vp_L9838
+  %fa_off_L9838 = load i64, ptr @__offset_child1
+  %fa_fp_L9838 = getelementptr i8, ptr %fa_ptr_L9838, i64 %fa_off_L9838
+  %fa_val_L9838 = load ptr, ptr %fa_fp_L9838
+  call i32 @qd_push_p(ptr %ctx, ptr %fa_val_L9838)
+  %fa_elem_L9839 = alloca %qd_stack_element_t
+  %fa_stp_L9839 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %fa_stk_L9839 = load ptr, ptr %fa_stp_L9839
+  call void @qd_stack_pop(ptr %fa_stk_L9839, ptr %fa_elem_L9839)
+  %fa_vp_L9839 = getelementptr %qd_stack_element_t, ptr %fa_elem_L9839, i32 0, i32 0
+  %fa_ptr_L9839 = load ptr, ptr %fa_vp_L9839
+  %fa_off_L9839 = load i64, ptr @__offset_ntext
+  %fa_fp_L9839 = getelementptr i8, ptr %fa_ptr_L9839, i64 %fa_off_L9839
+  %fa_val_L9839 = load ptr, ptr %fa_fp_L9839
+  call i32 @qd_push_s_ref(ptr %ctx, ptr %fa_val_L9839)
+  %stp_L9840 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L9840 = load ptr, ptr %stp_L9840
+  call void @qd_stack_pop(ptr %stk_L9840, ptr %local.fn1)
+  call i32 @usr_sb_new(ptr %ctx)
+  call i32 @qd_push_s(ptr %ctx, ptr @.str.9841)
+  call i32 @usr_sb_append(ptr %ctx)
   %stp_L9842 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
   %stk_L9842 = load ptr, ptr %stp_L9842
-  call i32 @qdrt_push_element(ptr %stk_L9842, ptr %local.n)
-  %fa_elem_L9843 = alloca %qd_stack_element_t
-  %fa_stp_L9843 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %fa_stk_L9843 = load ptr, ptr %fa_stp_L9843
-  call void @qd_stack_pop(ptr %fa_stk_L9843, ptr %fa_elem_L9843)
-  %fa_vp_L9843 = getelementptr %qd_stack_element_t, ptr %fa_elem_L9843, i32 0, i32 0
-  %fa_ptr_L9843 = load ptr, ptr %fa_vp_L9843
-  %fa_off_L9843 = load i64, ptr @__offset_child4
-  %fa_fp_L9843 = getelementptr i8, ptr %fa_ptr_L9843, i64 %fa_off_L9843
-  %fa_val_L9843 = load ptr, ptr %fa_fp_L9843
-  call i32 @qd_push_p(ptr %ctx, ptr %fa_val_L9843)
-  %fa_elem_L9844 = alloca %qd_stack_element_t
-  %fa_stp_L9844 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %fa_stk_L9844 = load ptr, ptr %fa_stp_L9844
-  call void @qd_stack_pop(ptr %fa_stk_L9844, ptr %fa_elem_L9844)
-  %fa_vp_L9844 = getelementptr %qd_stack_element_t, ptr %fa_elem_L9844, i32 0, i32 0
-  %fa_ptr_L9844 = load ptr, ptr %fa_vp_L9844
-  %fa_off_L9844 = load i64, ptr @__offset_ntext
-  %fa_fp_L9844 = getelementptr i8, ptr %fa_ptr_L9844, i64 %fa_off_L9844
-  %fa_val_L9844 = load ptr, ptr %fa_fp_L9844
-  call i32 @qd_push_s_ref(ptr %ctx, ptr %fa_val_L9844)
-  %stp_L9845 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L9845 = load ptr, ptr %stp_L9845
-  call void @qd_stack_pop(ptr %stk_L9845, ptr %local.fn4)
-  call i32 @usr_sb_new(ptr %ctx)
-  call i32 @qd_push_s(ptr %ctx, ptr @.str.9846)
-  call i32 @usr_sb_append(ptr %ctx)
-  %stp_L9847 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L9847 = load ptr, ptr %stp_L9847
-  call i32 @qdrt_push_element(ptr %stk_L9847, ptr %local.fn4)
+  call i32 @qdrt_push_element(ptr %stk_L9842, ptr %local.fn1)
   call i32 @usr_sb_append_int(ptr %ctx)
   call i32 @usr_sb_finish(ptr %ctx)
-  %stp_L9848 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L9848 = load ptr, ptr %stp_L9848
-  call void @qd_stack_pop(ptr %stk_L9848, ptr %local.ocheck4)
-  %stp_L9849 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L9849 = load ptr, ptr %stp_L9849
-  call i32 @qdrt_push_element(ptr %stk_L9849, ptr %local.g)
+  %stp_L9843 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L9843 = load ptr, ptr %stp_L9843
+  call void @qd_stack_pop(ptr %stk_L9843, ptr %local.ocheck1)
+  %stp_L9844 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L9844 = load ptr, ptr %stp_L9844
+  call i32 @qdrt_push_element(ptr %stk_L9844, ptr %local.g)
   call i32 @usr_sb_build(ptr %ctx)
-  %stp_L9850 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L9850 = load ptr, ptr %stp_L9850
-  call i32 @qdrt_push_element(ptr %stk_L9850, ptr %local.ocheck4)
+  %stp_L9845 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L9845 = load ptr, ptr %stp_L9845
+  call i32 @qdrt_push_element(ptr %stk_L9845, ptr %local.ocheck1)
   call i32 @usr_strings_contains(ptr %ctx)
   call i32 @qd_push_i(ptr %ctx, i64 0)
   call i32 @qd_eq(ptr %ctx)
-  %ce_L9851 = alloca %qd_stack_element_t
+  %ce_L9846 = alloca %qd_stack_element_t
+  %stp_L9846 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L9846 = load ptr, ptr %stp_L9846
+  call void @qd_stack_pop(ptr %stk_L9846, ptr %ce_L9846)
+  %cv_L9846 = getelementptr %qd_stack_element_t, ptr %ce_L9846, i32 0, i32 0
+  %ci_L9846 = load i64, ptr %cv_L9846
+  %cc_L9846 = icmp ne i64 %ci_L9846, 0
+  br i1 %cc_L9846, label %L9847, label %L9849
+L9847:
+  %stp_L9850 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L9850 = load ptr, ptr %stp_L9850
+  call i32 @qdrt_push_element(ptr %stk_L9850, ptr %local.g)
+  call i32 @usr_sb_new(ptr %ctx)
   %stp_L9851 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
   %stk_L9851 = load ptr, ptr %stp_L9851
-  call void @qd_stack_pop(ptr %stk_L9851, ptr %ce_L9851)
-  %cv_L9851 = getelementptr %qd_stack_element_t, ptr %ce_L9851, i32 0, i32 0
-  %ci_L9851 = load i64, ptr %cv_L9851
-  %cc_L9851 = icmp ne i64 %ci_L9851, 0
-  br i1 %cc_L9851, label %L9852, label %L9854
-L9852:
+  call i32 @qdrt_push_element(ptr %stk_L9851, ptr %local.ocheck1)
+  call i32 @usr_sb_append_int(ptr %ctx)
+  call i32 @qd_push_s(ptr %ctx, ptr @.str.9852)
+  call i32 @usr_sb_append(ptr %ctx)
+  %stp_L9853 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L9853 = load ptr, ptr %stp_L9853
+  call i32 @qdrt_push_element(ptr %stk_L9853, ptr %local.offset)
+  call i32 @usr_sb_append_int(ptr %ctx)
+  call i32 @qd_push_s(ptr %ctx, ptr @.str.9854)
+  call i32 @usr_sb_append(ptr %ctx)
+  call i32 @usr_sb_finish(ptr %ctx)
+  call i32 @usr_sb_append(ptr %ctx)
   %stp_L9855 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
   %stk_L9855 = load ptr, ptr %stp_L9855
-  call i32 @qdrt_push_element(ptr %stk_L9855, ptr %local.g)
-  call i32 @usr_sb_new(ptr %ctx)
+  call void @qd_stack_pop(ptr %stk_L9855, ptr %local.g)
+  br label %L9849
+L9849:
   %stp_L9856 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
   %stk_L9856 = load ptr, ptr %stp_L9856
-  call i32 @qdrt_push_element(ptr %stk_L9856, ptr %local.ocheck4)
-  call i32 @usr_sb_append_int(ptr %ctx)
-  call i32 @qd_push_s(ptr %ctx, ptr @.str.9857)
-  call i32 @usr_sb_append(ptr %ctx)
-  %stp_L9858 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L9858 = load ptr, ptr %stp_L9858
-  call i32 @qdrt_push_element(ptr %stk_L9858, ptr %local.offset)
-  call i32 @usr_sb_append_int(ptr %ctx)
-  call i32 @qd_push_s(ptr %ctx, ptr @.str.9859)
-  call i32 @usr_sb_append(ptr %ctx)
-  call i32 @usr_sb_finish(ptr %ctx)
-  call i32 @usr_sb_append(ptr %ctx)
-  %stp_L9860 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L9860 = load ptr, ptr %stp_L9860
-  call void @qd_stack_pop(ptr %stk_L9860, ptr %local.g)
-  br label %L9854
-L9854:
-  %stp_L9861 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L9861 = load ptr, ptr %stp_L9861
-  call i32 @qdrt_push_element(ptr %stk_L9861, ptr %local.offset)
+  call i32 @qdrt_push_element(ptr %stk_L9856, ptr %local.offset)
   call i32 @qd_push_i(ptr %ctx, i64 8)
   call i32 @qd_add(ptr %ctx)
-  %stp_L9862 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L9862 = load ptr, ptr %stp_L9862
-  call void @qd_stack_pop(ptr %stk_L9862, ptr %local.offset)
-  br label %L9841
-L9841:
-  %stp_L9863 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L9863 = load ptr, ptr %stp_L9863
-  call i32 @qdrt_push_element(ptr %stk_L9863, ptr %local.n)
-  %fa_elem_L9864 = alloca %qd_stack_element_t
-  %fa_stp_L9864 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %fa_stk_L9864 = load ptr, ptr %fa_stp_L9864
-  call void @qd_stack_pop(ptr %fa_stk_L9864, ptr %fa_elem_L9864)
-  %fa_vp_L9864 = getelementptr %qd_stack_element_t, ptr %fa_elem_L9864, i32 0, i32 0
-  %fa_ptr_L9864 = load ptr, ptr %fa_vp_L9864
-  %fa_off_L9864 = load i64, ptr @__offset_extra
-  %fa_fp_L9864 = getelementptr i8, ptr %fa_ptr_L9864, i64 %fa_off_L9864
-  %fa_val_L9864 = load ptr, ptr %fa_fp_L9864
-  call i32 @qd_push_p(ptr %ctx, ptr %fa_val_L9864)
-  %stp_L9865 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L9865 = load ptr, ptr %stp_L9865
-  call void @qd_stack_pop(ptr %stk_L9865, ptr %local.cur)
-  %stp_L9866 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L9866 = load ptr, ptr %stp_L9866
-  call i32 @qdrt_push_element(ptr %stk_L9866, ptr %local.cur)
+  %stp_L9857 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L9857 = load ptr, ptr %stp_L9857
+  call void @qd_stack_pop(ptr %stk_L9857, ptr %local.offset)
+  br label %L9836
+L9836:
+  %stp_L9858 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L9858 = load ptr, ptr %stp_L9858
+  call i32 @qdrt_push_element(ptr %stk_L9858, ptr %local.n)
+  %fa_elem_L9859 = alloca %qd_stack_element_t
+  %fa_stp_L9859 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %fa_stk_L9859 = load ptr, ptr %fa_stp_L9859
+  call void @qd_stack_pop(ptr %fa_stk_L9859, ptr %fa_elem_L9859)
+  %fa_vp_L9859 = getelementptr %qd_stack_element_t, ptr %fa_elem_L9859, i32 0, i32 0
+  %fa_ptr_L9859 = load ptr, ptr %fa_vp_L9859
+  %fa_off_L9859 = load i64, ptr @__offset_child2
+  %fa_fp_L9859 = getelementptr i8, ptr %fa_ptr_L9859, i64 %fa_off_L9859
+  %fa_val_L9859 = load ptr, ptr %fa_fp_L9859
+  call i32 @qd_push_p(ptr %ctx, ptr %fa_val_L9859)
   call i32 @qd_push_i(ptr %ctx, i64 0)
   call i32 @qd_neq(ptr %ctx)
-  %ce_L9867 = alloca %qd_stack_element_t
+  %ce_L9860 = alloca %qd_stack_element_t
+  %stp_L9860 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L9860 = load ptr, ptr %stp_L9860
+  call void @qd_stack_pop(ptr %stk_L9860, ptr %ce_L9860)
+  %cv_L9860 = getelementptr %qd_stack_element_t, ptr %ce_L9860, i32 0, i32 0
+  %ci_L9860 = load i64, ptr %cv_L9860
+  %cc_L9860 = icmp ne i64 %ci_L9860, 0
+  br i1 %cc_L9860, label %L9861, label %L9863
+L9861:
+  %stp_L9864 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L9864 = load ptr, ptr %stp_L9864
+  call i32 @qdrt_push_element(ptr %stk_L9864, ptr %local.n)
+  %fa_elem_L9865 = alloca %qd_stack_element_t
+  %fa_stp_L9865 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %fa_stk_L9865 = load ptr, ptr %fa_stp_L9865
+  call void @qd_stack_pop(ptr %fa_stk_L9865, ptr %fa_elem_L9865)
+  %fa_vp_L9865 = getelementptr %qd_stack_element_t, ptr %fa_elem_L9865, i32 0, i32 0
+  %fa_ptr_L9865 = load ptr, ptr %fa_vp_L9865
+  %fa_off_L9865 = load i64, ptr @__offset_child2
+  %fa_fp_L9865 = getelementptr i8, ptr %fa_ptr_L9865, i64 %fa_off_L9865
+  %fa_val_L9865 = load ptr, ptr %fa_fp_L9865
+  call i32 @qd_push_p(ptr %ctx, ptr %fa_val_L9865)
+  %fa_elem_L9866 = alloca %qd_stack_element_t
+  %fa_stp_L9866 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %fa_stk_L9866 = load ptr, ptr %fa_stp_L9866
+  call void @qd_stack_pop(ptr %fa_stk_L9866, ptr %fa_elem_L9866)
+  %fa_vp_L9866 = getelementptr %qd_stack_element_t, ptr %fa_elem_L9866, i32 0, i32 0
+  %fa_ptr_L9866 = load ptr, ptr %fa_vp_L9866
+  %fa_off_L9866 = load i64, ptr @__offset_ntext
+  %fa_fp_L9866 = getelementptr i8, ptr %fa_ptr_L9866, i64 %fa_off_L9866
+  %fa_val_L9866 = load ptr, ptr %fa_fp_L9866
+  call i32 @qd_push_s_ref(ptr %ctx, ptr %fa_val_L9866)
   %stp_L9867 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
   %stk_L9867 = load ptr, ptr %stp_L9867
-  call void @qd_stack_pop(ptr %stk_L9867, ptr %ce_L9867)
-  %cv_L9867 = getelementptr %qd_stack_element_t, ptr %ce_L9867, i32 0, i32 0
-  %ci_L9867 = load i64, ptr %cv_L9867
-  %cc_L9867 = icmp ne i64 %ci_L9867, 0
-  br i1 %cc_L9867, label %L9868, label %L9869
-L9868:
-  %stp_L9871 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L9871 = load ptr, ptr %stp_L9871
-  call i32 @qdrt_push_element(ptr %stk_L9871, ptr %local.cur)
-  %fa_elem_L9872 = alloca %qd_stack_element_t
-  %fa_stp_L9872 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %fa_stk_L9872 = load ptr, ptr %fa_stp_L9872
-  call void @qd_stack_pop(ptr %fa_stk_L9872, ptr %fa_elem_L9872)
-  %fa_vp_L9872 = getelementptr %qd_stack_element_t, ptr %fa_elem_L9872, i32 0, i32 0
-  %fa_ptr_L9872 = load ptr, ptr %fa_vp_L9872
-  %fa_off_L9872 = load i64, ptr @__offset_ntext
-  %fa_fp_L9872 = getelementptr i8, ptr %fa_ptr_L9872, i64 %fa_off_L9872
-  %fa_val_L9872 = load ptr, ptr %fa_fp_L9872
-  call i32 @qd_push_s_ref(ptr %ctx, ptr %fa_val_L9872)
-  %stp_L9873 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L9873 = load ptr, ptr %stp_L9873
-  call void @qd_stack_pop(ptr %stk_L9873, ptr %local.cfn)
+  call void @qd_stack_pop(ptr %stk_L9867, ptr %local.fn2)
   call i32 @usr_sb_new(ptr %ctx)
-  call i32 @qd_push_s(ptr %ctx, ptr @.str.9874)
+  call i32 @qd_push_s(ptr %ctx, ptr @.str.9868)
   call i32 @usr_sb_append(ptr %ctx)
-  %stp_L9875 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L9875 = load ptr, ptr %stp_L9875
-  call i32 @qdrt_push_element(ptr %stk_L9875, ptr %local.cfn)
+  %stp_L9869 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L9869 = load ptr, ptr %stp_L9869
+  call i32 @qdrt_push_element(ptr %stk_L9869, ptr %local.fn2)
   call i32 @usr_sb_append_int(ptr %ctx)
   call i32 @usr_sb_finish(ptr %ctx)
-  %stp_L9876 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L9876 = load ptr, ptr %stp_L9876
-  call void @qd_stack_pop(ptr %stk_L9876, ptr %local.ocheckx)
+  %stp_L9870 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L9870 = load ptr, ptr %stp_L9870
+  call void @qd_stack_pop(ptr %stk_L9870, ptr %local.ocheck2)
+  %stp_L9871 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L9871 = load ptr, ptr %stp_L9871
+  call i32 @qdrt_push_element(ptr %stk_L9871, ptr %local.g)
+  call i32 @usr_sb_build(ptr %ctx)
+  %stp_L9872 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L9872 = load ptr, ptr %stp_L9872
+  call i32 @qdrt_push_element(ptr %stk_L9872, ptr %local.ocheck2)
+  call i32 @usr_strings_contains(ptr %ctx)
+  call i32 @qd_push_i(ptr %ctx, i64 0)
+  call i32 @qd_eq(ptr %ctx)
+  %ce_L9873 = alloca %qd_stack_element_t
+  %stp_L9873 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L9873 = load ptr, ptr %stp_L9873
+  call void @qd_stack_pop(ptr %stk_L9873, ptr %ce_L9873)
+  %cv_L9873 = getelementptr %qd_stack_element_t, ptr %ce_L9873, i32 0, i32 0
+  %ci_L9873 = load i64, ptr %cv_L9873
+  %cc_L9873 = icmp ne i64 %ci_L9873, 0
+  br i1 %cc_L9873, label %L9874, label %L9876
+L9874:
   %stp_L9877 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
   %stk_L9877 = load ptr, ptr %stp_L9877
   call i32 @qdrt_push_element(ptr %stk_L9877, ptr %local.g)
-  call i32 @usr_sb_build(ptr %ctx)
+  call i32 @usr_sb_new(ptr %ctx)
   %stp_L9878 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
   %stk_L9878 = load ptr, ptr %stp_L9878
-  call i32 @qdrt_push_element(ptr %stk_L9878, ptr %local.ocheckx)
-  call i32 @usr_strings_contains(ptr %ctx)
-  call i32 @qd_push_i(ptr %ctx, i64 0)
-  call i32 @qd_eq(ptr %ctx)
-  %ce_L9879 = alloca %qd_stack_element_t
-  %stp_L9879 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L9879 = load ptr, ptr %stp_L9879
-  call void @qd_stack_pop(ptr %stk_L9879, ptr %ce_L9879)
-  %cv_L9879 = getelementptr %qd_stack_element_t, ptr %ce_L9879, i32 0, i32 0
-  %ci_L9879 = load i64, ptr %cv_L9879
-  %cc_L9879 = icmp ne i64 %ci_L9879, 0
-  br i1 %cc_L9879, label %L9880, label %L9882
-L9880:
-  %stp_L9883 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L9883 = load ptr, ptr %stp_L9883
-  call i32 @qdrt_push_element(ptr %stk_L9883, ptr %local.g)
-  call i32 @usr_sb_new(ptr %ctx)
-  %stp_L9884 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L9884 = load ptr, ptr %stp_L9884
-  call i32 @qdrt_push_element(ptr %stk_L9884, ptr %local.ocheckx)
+  call i32 @qdrt_push_element(ptr %stk_L9878, ptr %local.ocheck2)
   call i32 @usr_sb_append_int(ptr %ctx)
-  call i32 @qd_push_s(ptr %ctx, ptr @.str.9885)
+  call i32 @qd_push_s(ptr %ctx, ptr @.str.9879)
   call i32 @usr_sb_append(ptr %ctx)
-  %stp_L9886 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L9886 = load ptr, ptr %stp_L9886
-  call i32 @qdrt_push_element(ptr %stk_L9886, ptr %local.offset)
+  %stp_L9880 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L9880 = load ptr, ptr %stp_L9880
+  call i32 @qdrt_push_element(ptr %stk_L9880, ptr %local.offset)
   call i32 @usr_sb_append_int(ptr %ctx)
-  call i32 @qd_push_s(ptr %ctx, ptr @.str.9887)
+  call i32 @qd_push_s(ptr %ctx, ptr @.str.9881)
   call i32 @usr_sb_append(ptr %ctx)
   call i32 @usr_sb_finish(ptr %ctx)
   call i32 @usr_sb_append(ptr %ctx)
-  %stp_L9888 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L9888 = load ptr, ptr %stp_L9888
-  call void @qd_stack_pop(ptr %stk_L9888, ptr %local.g)
-  br label %L9882
-L9882:
-  %stp_L9889 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L9889 = load ptr, ptr %stp_L9889
-  call i32 @qdrt_push_element(ptr %stk_L9889, ptr %local.offset)
+  %stp_L9882 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L9882 = load ptr, ptr %stp_L9882
+  call void @qd_stack_pop(ptr %stk_L9882, ptr %local.g)
+  br label %L9876
+L9876:
+  %stp_L9883 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L9883 = load ptr, ptr %stp_L9883
+  call i32 @qdrt_push_element(ptr %stk_L9883, ptr %local.offset)
   call i32 @qd_push_i(ptr %ctx, i64 8)
   call i32 @qd_add(ptr %ctx)
-  %stp_L9890 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L9890 = load ptr, ptr %stp_L9890
-  call void @qd_stack_pop(ptr %stk_L9890, ptr %local.offset)
+  %stp_L9884 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L9884 = load ptr, ptr %stp_L9884
+  call void @qd_stack_pop(ptr %stk_L9884, ptr %local.offset)
+  br label %L9863
+L9863:
+  %stp_L9885 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L9885 = load ptr, ptr %stp_L9885
+  call i32 @qdrt_push_element(ptr %stk_L9885, ptr %local.n)
+  %fa_elem_L9886 = alloca %qd_stack_element_t
+  %fa_stp_L9886 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %fa_stk_L9886 = load ptr, ptr %fa_stp_L9886
+  call void @qd_stack_pop(ptr %fa_stk_L9886, ptr %fa_elem_L9886)
+  %fa_vp_L9886 = getelementptr %qd_stack_element_t, ptr %fa_elem_L9886, i32 0, i32 0
+  %fa_ptr_L9886 = load ptr, ptr %fa_vp_L9886
+  %fa_off_L9886 = load i64, ptr @__offset_child3
+  %fa_fp_L9886 = getelementptr i8, ptr %fa_ptr_L9886, i64 %fa_off_L9886
+  %fa_val_L9886 = load ptr, ptr %fa_fp_L9886
+  call i32 @qd_push_p(ptr %ctx, ptr %fa_val_L9886)
+  call i32 @qd_push_i(ptr %ctx, i64 0)
+  call i32 @qd_neq(ptr %ctx)
+  %ce_L9887 = alloca %qd_stack_element_t
+  %stp_L9887 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L9887 = load ptr, ptr %stp_L9887
+  call void @qd_stack_pop(ptr %stk_L9887, ptr %ce_L9887)
+  %cv_L9887 = getelementptr %qd_stack_element_t, ptr %ce_L9887, i32 0, i32 0
+  %ci_L9887 = load i64, ptr %cv_L9887
+  %cc_L9887 = icmp ne i64 %ci_L9887, 0
+  br i1 %cc_L9887, label %L9888, label %L9890
+L9888:
   %stp_L9891 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
   %stk_L9891 = load ptr, ptr %stp_L9891
-  call i32 @qdrt_push_element(ptr %stk_L9891, ptr %local.cur)
+  call i32 @qdrt_push_element(ptr %stk_L9891, ptr %local.n)
   %fa_elem_L9892 = alloca %qd_stack_element_t
   %fa_stp_L9892 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
   %fa_stk_L9892 = load ptr, ptr %fa_stp_L9892
   call void @qd_stack_pop(ptr %fa_stk_L9892, ptr %fa_elem_L9892)
   %fa_vp_L9892 = getelementptr %qd_stack_element_t, ptr %fa_elem_L9892, i32 0, i32 0
   %fa_ptr_L9892 = load ptr, ptr %fa_vp_L9892
-  %fa_off_L9892 = load i64, ptr @__offset_sibling
+  %fa_off_L9892 = load i64, ptr @__offset_child3
   %fa_fp_L9892 = getelementptr i8, ptr %fa_ptr_L9892, i64 %fa_off_L9892
   %fa_val_L9892 = load ptr, ptr %fa_fp_L9892
   call i32 @qd_push_p(ptr %ctx, ptr %fa_val_L9892)
-  %stp_L9893 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L9893 = load ptr, ptr %stp_L9893
-  call void @qd_stack_pop(ptr %stk_L9893, ptr %local.cur)
+  %fa_elem_L9893 = alloca %qd_stack_element_t
+  %fa_stp_L9893 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %fa_stk_L9893 = load ptr, ptr %fa_stp_L9893
+  call void @qd_stack_pop(ptr %fa_stk_L9893, ptr %fa_elem_L9893)
+  %fa_vp_L9893 = getelementptr %qd_stack_element_t, ptr %fa_elem_L9893, i32 0, i32 0
+  %fa_ptr_L9893 = load ptr, ptr %fa_vp_L9893
+  %fa_off_L9893 = load i64, ptr @__offset_ntext
+  %fa_fp_L9893 = getelementptr i8, ptr %fa_ptr_L9893, i64 %fa_off_L9893
+  %fa_val_L9893 = load ptr, ptr %fa_fp_L9893
+  call i32 @qd_push_s_ref(ptr %ctx, ptr %fa_val_L9893)
   %stp_L9894 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
   %stk_L9894 = load ptr, ptr %stp_L9894
-  call i32 @qdrt_push_element(ptr %stk_L9894, ptr %local.cur)
-  call i32 @qd_push_i(ptr %ctx, i64 0)
-  call i32 @qd_neq(ptr %ctx)
-  %ce_L9895 = alloca %qd_stack_element_t
-  %stp_L9895 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L9895 = load ptr, ptr %stp_L9895
-  call void @qd_stack_pop(ptr %stk_L9895, ptr %ce_L9895)
-  %cv_L9895 = getelementptr %qd_stack_element_t, ptr %ce_L9895, i32 0, i32 0
-  %ci_L9895 = load i64, ptr %cv_L9895
-  %cc_L9895 = icmp ne i64 %ci_L9895, 0
-  br i1 %cc_L9895, label %L9868, label %L9869
-L9869:
+  call void @qd_stack_pop(ptr %stk_L9894, ptr %local.fn3)
+  call i32 @usr_sb_new(ptr %ctx)
+  call i32 @qd_push_s(ptr %ctx, ptr @.str.9895)
+  call i32 @usr_sb_append(ptr %ctx)
   %stp_L9896 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
   %stk_L9896 = load ptr, ptr %stp_L9896
-  call i32 @qdrt_push_element(ptr %stk_L9896, ptr %local.g)
-  call i32 @usr_sb_new(ptr %ctx)
-  call i32 @qd_push_s(ptr %ctx, ptr @.str.9897)
-  call i32 @usr_sb_append(ptr %ctx)
+  call i32 @qdrt_push_element(ptr %stk_L9896, ptr %local.fn3)
+  call i32 @usr_sb_append_int(ptr %ctx)
+  call i32 @usr_sb_finish(ptr %ctx)
+  %stp_L9897 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L9897 = load ptr, ptr %stp_L9897
+  call void @qd_stack_pop(ptr %stk_L9897, ptr %local.ocheck3)
   %stp_L9898 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
   %stk_L9898 = load ptr, ptr %stp_L9898
-  call i32 @qdrt_push_element(ptr %stk_L9898, ptr %local.sname)
-  call i32 @usr_sb_append_int(ptr %ctx)
-  call i32 @qd_push_s(ptr %ctx, ptr @.str.9899)
-  call i32 @usr_sb_append(ptr %ctx)
+  call i32 @qdrt_push_element(ptr %stk_L9898, ptr %local.g)
+  call i32 @usr_sb_build(ptr %ctx)
+  %stp_L9899 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L9899 = load ptr, ptr %stp_L9899
+  call i32 @qdrt_push_element(ptr %stk_L9899, ptr %local.ocheck3)
+  call i32 @usr_strings_contains(ptr %ctx)
+  call i32 @qd_push_i(ptr %ctx, i64 0)
+  call i32 @qd_eq(ptr %ctx)
+  %ce_L9900 = alloca %qd_stack_element_t
   %stp_L9900 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
   %stk_L9900 = load ptr, ptr %stp_L9900
-  call i32 @qdrt_push_element(ptr %stk_L9900, ptr %local.offset)
+  call void @qd_stack_pop(ptr %stk_L9900, ptr %ce_L9900)
+  %cv_L9900 = getelementptr %qd_stack_element_t, ptr %ce_L9900, i32 0, i32 0
+  %ci_L9900 = load i64, ptr %cv_L9900
+  %cc_L9900 = icmp ne i64 %ci_L9900, 0
+  br i1 %cc_L9900, label %L9901, label %L9903
+L9901:
+  %stp_L9904 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L9904 = load ptr, ptr %stp_L9904
+  call i32 @qdrt_push_element(ptr %stk_L9904, ptr %local.g)
+  call i32 @usr_sb_new(ptr %ctx)
+  %stp_L9905 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L9905 = load ptr, ptr %stp_L9905
+  call i32 @qdrt_push_element(ptr %stk_L9905, ptr %local.ocheck3)
   call i32 @usr_sb_append_int(ptr %ctx)
-  call i32 @qd_push_s(ptr %ctx, ptr @.str.9901)
+  call i32 @qd_push_s(ptr %ctx, ptr @.str.9906)
+  call i32 @usr_sb_append(ptr %ctx)
+  %stp_L9907 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L9907 = load ptr, ptr %stp_L9907
+  call i32 @qdrt_push_element(ptr %stk_L9907, ptr %local.offset)
+  call i32 @usr_sb_append_int(ptr %ctx)
+  call i32 @qd_push_s(ptr %ctx, ptr @.str.9908)
   call i32 @usr_sb_append(ptr %ctx)
   call i32 @usr_sb_finish(ptr %ctx)
   call i32 @usr_sb_append(ptr %ctx)
-  %stp_L9902 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L9902 = load ptr, ptr %stp_L9902
-  call void @qd_stack_pop(ptr %stk_L9902, ptr %local.g)
-  %stp_L9903 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L9903 = load ptr, ptr %stp_L9903
-  call i32 @qdrt_push_element(ptr %stk_L9903, ptr %local.g)
-  %fs_elem_L9904 = alloca %qd_stack_element_t
-  %fs_stp_L9904 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %fs_stk_L9904 = load ptr, ptr %fs_stp_L9904
-  call void @qd_stack_pop(ptr %fs_stk_L9904, ptr %fs_elem_L9904)
-  %fs_vp_L9904 = getelementptr %qd_stack_element_t, ptr %fs_elem_L9904, i32 0, i32 0
-  %fs_val_L9904 = load i64, ptr %fs_vp_L9904
-  %fs_svp_L9904 = getelementptr %qd_stack_element_t, ptr %local.st, i32 0, i32 0
-  %fs_sptr_L9904 = load ptr, ptr %fs_svp_L9904
-  %fs_off_L9904 = load i64, ptr @__offset_globals
-  %fs_fp_L9904 = getelementptr i8, ptr %fs_sptr_L9904, i64 %fs_off_L9904
-  store i64 %fs_val_L9904, ptr %fs_fp_L9904
-  %stp_L9905 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L9905 = load ptr, ptr %stp_L9905
-  call i32 @qdrt_push_element(ptr %stk_L9905, ptr %local.st)
-  br label %return
-  br label %L9747
-L9747:
-  %stp_L9906 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L9906 = load ptr, ptr %stp_L9906
-  call i32 @qdrt_push_element(ptr %stk_L9906, ptr %local.k)
-  %ev_L9907 = load i64, ptr @__enum_NodeType_EnumDecl
-  call i32 @qd_push_i(ptr %ctx, i64 %ev_L9907)
-  call i32 @qd_eq(ptr %ctx)
-  %ce_L9908 = alloca %qd_stack_element_t
-  %stp_L9908 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L9908 = load ptr, ptr %stp_L9908
-  call void @qd_stack_pop(ptr %stk_L9908, ptr %ce_L9908)
-  %cv_L9908 = getelementptr %qd_stack_element_t, ptr %ce_L9908, i32 0, i32 0
-  %ci_L9908 = load i64, ptr %cv_L9908
-  %cc_L9908 = icmp ne i64 %ci_L9908, 0
-  br i1 %cc_L9908, label %L9909, label %L9911
-L9909:
+  %stp_L9909 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L9909 = load ptr, ptr %stp_L9909
+  call void @qd_stack_pop(ptr %stk_L9909, ptr %local.g)
+  br label %L9903
+L9903:
+  %stp_L9910 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L9910 = load ptr, ptr %stp_L9910
+  call i32 @qdrt_push_element(ptr %stk_L9910, ptr %local.offset)
+  call i32 @qd_push_i(ptr %ctx, i64 8)
+  call i32 @qd_add(ptr %ctx)
+  %stp_L9911 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L9911 = load ptr, ptr %stp_L9911
+  call void @qd_stack_pop(ptr %stk_L9911, ptr %local.offset)
+  br label %L9890
+L9890:
   %stp_L9912 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
   %stk_L9912 = load ptr, ptr %stp_L9912
-  call i32 @qdrt_push_element(ptr %stk_L9912, ptr %local.st)
+  call i32 @qdrt_push_element(ptr %stk_L9912, ptr %local.n)
   %fa_elem_L9913 = alloca %qd_stack_element_t
   %fa_stp_L9913 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
   %fa_stk_L9913 = load ptr, ptr %fa_stp_L9913
   call void @qd_stack_pop(ptr %fa_stk_L9913, ptr %fa_elem_L9913)
   %fa_vp_L9913 = getelementptr %qd_stack_element_t, ptr %fa_elem_L9913, i32 0, i32 0
   %fa_ptr_L9913 = load ptr, ptr %fa_vp_L9913
-  %fa_off_L9913 = load i64, ptr @__offset_globals
+  %fa_off_L9913 = load i64, ptr @__offset_child4
   %fa_fp_L9913 = getelementptr i8, ptr %fa_ptr_L9913, i64 %fa_off_L9913
   %fa_val_L9913 = load ptr, ptr %fa_fp_L9913
   call i32 @qd_push_p(ptr %ctx, ptr %fa_val_L9913)
+  call i32 @qd_push_i(ptr %ctx, i64 0)
+  call i32 @qd_neq(ptr %ctx)
+  %ce_L9914 = alloca %qd_stack_element_t
   %stp_L9914 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
   %stk_L9914 = load ptr, ptr %stp_L9914
-  call void @qd_stack_pop(ptr %stk_L9914, ptr %local.g)
-  %stp_L9915 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L9915 = load ptr, ptr %stp_L9915
-  call i32 @qdrt_push_element(ptr %stk_L9915, ptr %local.n)
-  %fa_elem_L9916 = alloca %qd_stack_element_t
-  %fa_stp_L9916 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %fa_stk_L9916 = load ptr, ptr %fa_stp_L9916
-  call void @qd_stack_pop(ptr %fa_stk_L9916, ptr %fa_elem_L9916)
-  %fa_vp_L9916 = getelementptr %qd_stack_element_t, ptr %fa_elem_L9916, i32 0, i32 0
-  %fa_ptr_L9916 = load ptr, ptr %fa_vp_L9916
-  %fa_off_L9916 = load i64, ptr @__offset_ntext
-  %fa_fp_L9916 = getelementptr i8, ptr %fa_ptr_L9916, i64 %fa_off_L9916
-  %fa_val_L9916 = load ptr, ptr %fa_fp_L9916
-  call i32 @qd_push_s_ref(ptr %ctx, ptr %fa_val_L9916)
-  %stp_L9917 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L9917 = load ptr, ptr %stp_L9917
-  call void @qd_stack_pop(ptr %stk_L9917, ptr %local.ename)
-  call i32 @qd_push_i(ptr %ctx, i64 0)
+  call void @qd_stack_pop(ptr %stk_L9914, ptr %ce_L9914)
+  %cv_L9914 = getelementptr %qd_stack_element_t, ptr %ce_L9914, i32 0, i32 0
+  %ci_L9914 = load i64, ptr %cv_L9914
+  %cc_L9914 = icmp ne i64 %ci_L9914, 0
+  br i1 %cc_L9914, label %L9915, label %L9917
+L9915:
   %stp_L9918 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
   %stk_L9918 = load ptr, ptr %stp_L9918
-  call void @qd_stack_pop(ptr %stk_L9918, ptr %local.eval)
-  %stp_L9919 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L9919 = load ptr, ptr %stp_L9919
-  call i32 @qdrt_push_element(ptr %stk_L9919, ptr %local.n)
+  call i32 @qdrt_push_element(ptr %stk_L9918, ptr %local.n)
+  %fa_elem_L9919 = alloca %qd_stack_element_t
+  %fa_stp_L9919 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %fa_stk_L9919 = load ptr, ptr %fa_stp_L9919
+  call void @qd_stack_pop(ptr %fa_stk_L9919, ptr %fa_elem_L9919)
+  %fa_vp_L9919 = getelementptr %qd_stack_element_t, ptr %fa_elem_L9919, i32 0, i32 0
+  %fa_ptr_L9919 = load ptr, ptr %fa_vp_L9919
+  %fa_off_L9919 = load i64, ptr @__offset_child4
+  %fa_fp_L9919 = getelementptr i8, ptr %fa_ptr_L9919, i64 %fa_off_L9919
+  %fa_val_L9919 = load ptr, ptr %fa_fp_L9919
+  call i32 @qd_push_p(ptr %ctx, ptr %fa_val_L9919)
   %fa_elem_L9920 = alloca %qd_stack_element_t
   %fa_stp_L9920 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
   %fa_stk_L9920 = load ptr, ptr %fa_stp_L9920
   call void @qd_stack_pop(ptr %fa_stk_L9920, ptr %fa_elem_L9920)
   %fa_vp_L9920 = getelementptr %qd_stack_element_t, ptr %fa_elem_L9920, i32 0, i32 0
   %fa_ptr_L9920 = load ptr, ptr %fa_vp_L9920
-  %fa_off_L9920 = load i64, ptr @__offset_child1
+  %fa_off_L9920 = load i64, ptr @__offset_ntext
   %fa_fp_L9920 = getelementptr i8, ptr %fa_ptr_L9920, i64 %fa_off_L9920
   %fa_val_L9920 = load ptr, ptr %fa_fp_L9920
-  call i32 @qd_push_p(ptr %ctx, ptr %fa_val_L9920)
-  call i32 @qd_push_i(ptr %ctx, i64 0)
-  call i32 @qd_neq(ptr %ctx)
-  %ce_L9921 = alloca %qd_stack_element_t
+  call i32 @qd_push_s_ref(ptr %ctx, ptr %fa_val_L9920)
   %stp_L9921 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
   %stk_L9921 = load ptr, ptr %stp_L9921
-  call void @qd_stack_pop(ptr %stk_L9921, ptr %ce_L9921)
-  %cv_L9921 = getelementptr %qd_stack_element_t, ptr %ce_L9921, i32 0, i32 0
-  %ci_L9921 = load i64, ptr %cv_L9921
-  %cc_L9921 = icmp ne i64 %ci_L9921, 0
-  br i1 %cc_L9921, label %L9922, label %L9924
-L9922:
+  call void @qd_stack_pop(ptr %stk_L9921, ptr %local.fn4)
+  call i32 @usr_sb_new(ptr %ctx)
+  call i32 @qd_push_s(ptr %ctx, ptr @.str.9922)
+  call i32 @usr_sb_append(ptr %ctx)
+  %stp_L9923 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L9923 = load ptr, ptr %stp_L9923
+  call i32 @qdrt_push_element(ptr %stk_L9923, ptr %local.fn4)
+  call i32 @usr_sb_append_int(ptr %ctx)
+  call i32 @usr_sb_finish(ptr %ctx)
+  %stp_L9924 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L9924 = load ptr, ptr %stp_L9924
+  call void @qd_stack_pop(ptr %stk_L9924, ptr %local.ocheck4)
   %stp_L9925 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
   %stk_L9925 = load ptr, ptr %stp_L9925
-  call i32 @qdrt_push_element(ptr %stk_L9925, ptr %local.n)
-  %fa_elem_L9926 = alloca %qd_stack_element_t
-  %fa_stp_L9926 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %fa_stk_L9926 = load ptr, ptr %fa_stp_L9926
-  call void @qd_stack_pop(ptr %fa_stk_L9926, ptr %fa_elem_L9926)
-  %fa_vp_L9926 = getelementptr %qd_stack_element_t, ptr %fa_elem_L9926, i32 0, i32 0
-  %fa_ptr_L9926 = load ptr, ptr %fa_vp_L9926
-  %fa_off_L9926 = load i64, ptr @__offset_child1
-  %fa_fp_L9926 = getelementptr i8, ptr %fa_ptr_L9926, i64 %fa_off_L9926
-  %fa_val_L9926 = load ptr, ptr %fa_fp_L9926
-  call i32 @qd_push_p(ptr %ctx, ptr %fa_val_L9926)
-  %fa_elem_L9927 = alloca %qd_stack_element_t
-  %fa_stp_L9927 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %fa_stk_L9927 = load ptr, ptr %fa_stp_L9927
-  call void @qd_stack_pop(ptr %fa_stk_L9927, ptr %fa_elem_L9927)
-  %fa_vp_L9927 = getelementptr %qd_stack_element_t, ptr %fa_elem_L9927, i32 0, i32 0
-  %fa_ptr_L9927 = load ptr, ptr %fa_vp_L9927
-  %fa_off_L9927 = load i64, ptr @__offset_ntext
-  %fa_fp_L9927 = getelementptr i8, ptr %fa_ptr_L9927, i64 %fa_off_L9927
-  %fa_val_L9927 = load ptr, ptr %fa_fp_L9927
-  call i32 @qd_push_s_ref(ptr %ctx, ptr %fa_val_L9927)
-  %stp_L9928 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L9928 = load ptr, ptr %stp_L9928
-  call void @qd_stack_pop(ptr %stk_L9928, ptr %local.vn1)
-  %stp_L9929 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L9929 = load ptr, ptr %stp_L9929
-  call i32 @qdrt_push_element(ptr %stk_L9929, ptr %local.g)
-  %stp_L9930 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L9930 = load ptr, ptr %stp_L9930
-  call i32 @qdrt_push_element(ptr %stk_L9930, ptr %local.ename)
+  call i32 @qdrt_push_element(ptr %stk_L9925, ptr %local.g)
+  call i32 @usr_sb_build(ptr %ctx)
+  %stp_L9926 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L9926 = load ptr, ptr %stp_L9926
+  call i32 @qdrt_push_element(ptr %stk_L9926, ptr %local.ocheck4)
+  call i32 @usr_strings_contains(ptr %ctx)
+  call i32 @qd_push_i(ptr %ctx, i64 0)
+  call i32 @qd_eq(ptr %ctx)
+  %ce_L9927 = alloca %qd_stack_element_t
+  %stp_L9927 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L9927 = load ptr, ptr %stp_L9927
+  call void @qd_stack_pop(ptr %stk_L9927, ptr %ce_L9927)
+  %cv_L9927 = getelementptr %qd_stack_element_t, ptr %ce_L9927, i32 0, i32 0
+  %ci_L9927 = load i64, ptr %cv_L9927
+  %cc_L9927 = icmp ne i64 %ci_L9927, 0
+  br i1 %cc_L9927, label %L9928, label %L9930
+L9928:
   %stp_L9931 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
   %stk_L9931 = load ptr, ptr %stp_L9931
-  call i32 @qdrt_push_element(ptr %stk_L9931, ptr %local.vn1)
+  call i32 @qdrt_push_element(ptr %stk_L9931, ptr %local.g)
+  call i32 @usr_sb_new(ptr %ctx)
   %stp_L9932 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
   %stk_L9932 = load ptr, ptr %stp_L9932
-  call i32 @qdrt_push_element(ptr %stk_L9932, ptr %local.eval)
-  call i32 @usr_codegen_emit_enum_variant(ptr %ctx)
-  %stp_L9933 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L9933 = load ptr, ptr %stp_L9933
-  call void @qd_stack_pop(ptr %stk_L9933, ptr %local.g)
+  call i32 @qdrt_push_element(ptr %stk_L9932, ptr %local.ocheck4)
+  call i32 @usr_sb_append_int(ptr %ctx)
+  call i32 @qd_push_s(ptr %ctx, ptr @.str.9933)
+  call i32 @usr_sb_append(ptr %ctx)
   %stp_L9934 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
   %stk_L9934 = load ptr, ptr %stp_L9934
-  call i32 @qdrt_push_element(ptr %stk_L9934, ptr %local.eval)
-  call i32 @qd_push_i(ptr %ctx, i64 1)
-  call i32 @qd_add(ptr %ctx)
-  %stp_L9935 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L9935 = load ptr, ptr %stp_L9935
-  call void @qd_stack_pop(ptr %stk_L9935, ptr %local.eval)
-  br label %L9924
-L9924:
+  call i32 @qdrt_push_element(ptr %stk_L9934, ptr %local.offset)
+  call i32 @usr_sb_append_int(ptr %ctx)
+  call i32 @qd_push_s(ptr %ctx, ptr @.str.9935)
+  call i32 @usr_sb_append(ptr %ctx)
+  call i32 @usr_sb_finish(ptr %ctx)
+  call i32 @usr_sb_append(ptr %ctx)
   %stp_L9936 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
   %stk_L9936 = load ptr, ptr %stp_L9936
-  call i32 @qdrt_push_element(ptr %stk_L9936, ptr %local.n)
-  %fa_elem_L9937 = alloca %qd_stack_element_t
-  %fa_stp_L9937 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %fa_stk_L9937 = load ptr, ptr %fa_stp_L9937
-  call void @qd_stack_pop(ptr %fa_stk_L9937, ptr %fa_elem_L9937)
-  %fa_vp_L9937 = getelementptr %qd_stack_element_t, ptr %fa_elem_L9937, i32 0, i32 0
-  %fa_ptr_L9937 = load ptr, ptr %fa_vp_L9937
-  %fa_off_L9937 = load i64, ptr @__offset_child2
-  %fa_fp_L9937 = getelementptr i8, ptr %fa_ptr_L9937, i64 %fa_off_L9937
-  %fa_val_L9937 = load ptr, ptr %fa_fp_L9937
-  call i32 @qd_push_p(ptr %ctx, ptr %fa_val_L9937)
-  call i32 @qd_push_i(ptr %ctx, i64 0)
-  call i32 @qd_neq(ptr %ctx)
-  %ce_L9938 = alloca %qd_stack_element_t
+  call void @qd_stack_pop(ptr %stk_L9936, ptr %local.g)
+  br label %L9930
+L9930:
+  %stp_L9937 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L9937 = load ptr, ptr %stp_L9937
+  call i32 @qdrt_push_element(ptr %stk_L9937, ptr %local.offset)
+  call i32 @qd_push_i(ptr %ctx, i64 8)
+  call i32 @qd_add(ptr %ctx)
   %stp_L9938 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
   %stk_L9938 = load ptr, ptr %stp_L9938
-  call void @qd_stack_pop(ptr %stk_L9938, ptr %ce_L9938)
-  %cv_L9938 = getelementptr %qd_stack_element_t, ptr %ce_L9938, i32 0, i32 0
-  %ci_L9938 = load i64, ptr %cv_L9938
-  %cc_L9938 = icmp ne i64 %ci_L9938, 0
-  br i1 %cc_L9938, label %L9939, label %L9941
-L9939:
+  call void @qd_stack_pop(ptr %stk_L9938, ptr %local.offset)
+  br label %L9917
+L9917:
+  %stp_L9939 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L9939 = load ptr, ptr %stp_L9939
+  call i32 @qdrt_push_element(ptr %stk_L9939, ptr %local.n)
+  %fa_elem_L9940 = alloca %qd_stack_element_t
+  %fa_stp_L9940 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %fa_stk_L9940 = load ptr, ptr %fa_stp_L9940
+  call void @qd_stack_pop(ptr %fa_stk_L9940, ptr %fa_elem_L9940)
+  %fa_vp_L9940 = getelementptr %qd_stack_element_t, ptr %fa_elem_L9940, i32 0, i32 0
+  %fa_ptr_L9940 = load ptr, ptr %fa_vp_L9940
+  %fa_off_L9940 = load i64, ptr @__offset_extra
+  %fa_fp_L9940 = getelementptr i8, ptr %fa_ptr_L9940, i64 %fa_off_L9940
+  %fa_val_L9940 = load ptr, ptr %fa_fp_L9940
+  call i32 @qd_push_p(ptr %ctx, ptr %fa_val_L9940)
+  %stp_L9941 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L9941 = load ptr, ptr %stp_L9941
+  call void @qd_stack_pop(ptr %stk_L9941, ptr %local.cur)
   %stp_L9942 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
   %stk_L9942 = load ptr, ptr %stp_L9942
-  call i32 @qdrt_push_element(ptr %stk_L9942, ptr %local.n)
-  %fa_elem_L9943 = alloca %qd_stack_element_t
-  %fa_stp_L9943 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %fa_stk_L9943 = load ptr, ptr %fa_stp_L9943
-  call void @qd_stack_pop(ptr %fa_stk_L9943, ptr %fa_elem_L9943)
-  %fa_vp_L9943 = getelementptr %qd_stack_element_t, ptr %fa_elem_L9943, i32 0, i32 0
-  %fa_ptr_L9943 = load ptr, ptr %fa_vp_L9943
-  %fa_off_L9943 = load i64, ptr @__offset_child2
-  %fa_fp_L9943 = getelementptr i8, ptr %fa_ptr_L9943, i64 %fa_off_L9943
-  %fa_val_L9943 = load ptr, ptr %fa_fp_L9943
-  call i32 @qd_push_p(ptr %ctx, ptr %fa_val_L9943)
-  %fa_elem_L9944 = alloca %qd_stack_element_t
-  %fa_stp_L9944 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %fa_stk_L9944 = load ptr, ptr %fa_stp_L9944
-  call void @qd_stack_pop(ptr %fa_stk_L9944, ptr %fa_elem_L9944)
-  %fa_vp_L9944 = getelementptr %qd_stack_element_t, ptr %fa_elem_L9944, i32 0, i32 0
-  %fa_ptr_L9944 = load ptr, ptr %fa_vp_L9944
-  %fa_off_L9944 = load i64, ptr @__offset_ntext
-  %fa_fp_L9944 = getelementptr i8, ptr %fa_ptr_L9944, i64 %fa_off_L9944
-  %fa_val_L9944 = load ptr, ptr %fa_fp_L9944
-  call i32 @qd_push_s_ref(ptr %ctx, ptr %fa_val_L9944)
-  %stp_L9945 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L9945 = load ptr, ptr %stp_L9945
-  call void @qd_stack_pop(ptr %stk_L9945, ptr %local.vn2)
-  %stp_L9946 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L9946 = load ptr, ptr %stp_L9946
-  call i32 @qdrt_push_element(ptr %stk_L9946, ptr %local.g)
-  %stp_L9947 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L9947 = load ptr, ptr %stp_L9947
-  call i32 @qdrt_push_element(ptr %stk_L9947, ptr %local.ename)
-  %stp_L9948 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L9948 = load ptr, ptr %stp_L9948
-  call i32 @qdrt_push_element(ptr %stk_L9948, ptr %local.vn2)
-  %stp_L9949 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L9949 = load ptr, ptr %stp_L9949
-  call i32 @qdrt_push_element(ptr %stk_L9949, ptr %local.eval)
-  call i32 @usr_codegen_emit_enum_variant(ptr %ctx)
-  %stp_L9950 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L9950 = load ptr, ptr %stp_L9950
-  call void @qd_stack_pop(ptr %stk_L9950, ptr %local.g)
-  %stp_L9951 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L9951 = load ptr, ptr %stp_L9951
-  call i32 @qdrt_push_element(ptr %stk_L9951, ptr %local.eval)
-  call i32 @qd_push_i(ptr %ctx, i64 1)
-  call i32 @qd_add(ptr %ctx)
-  %stp_L9952 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L9952 = load ptr, ptr %stp_L9952
-  call void @qd_stack_pop(ptr %stk_L9952, ptr %local.eval)
-  br label %L9941
-L9941:
-  %stp_L9953 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L9953 = load ptr, ptr %stp_L9953
-  call i32 @qdrt_push_element(ptr %stk_L9953, ptr %local.n)
-  %fa_elem_L9954 = alloca %qd_stack_element_t
-  %fa_stp_L9954 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %fa_stk_L9954 = load ptr, ptr %fa_stp_L9954
-  call void @qd_stack_pop(ptr %fa_stk_L9954, ptr %fa_elem_L9954)
-  %fa_vp_L9954 = getelementptr %qd_stack_element_t, ptr %fa_elem_L9954, i32 0, i32 0
-  %fa_ptr_L9954 = load ptr, ptr %fa_vp_L9954
-  %fa_off_L9954 = load i64, ptr @__offset_child3
-  %fa_fp_L9954 = getelementptr i8, ptr %fa_ptr_L9954, i64 %fa_off_L9954
-  %fa_val_L9954 = load ptr, ptr %fa_fp_L9954
-  call i32 @qd_push_p(ptr %ctx, ptr %fa_val_L9954)
+  call i32 @qdrt_push_element(ptr %stk_L9942, ptr %local.cur)
   call i32 @qd_push_i(ptr %ctx, i64 0)
   call i32 @qd_neq(ptr %ctx)
+  %ce_L9943 = alloca %qd_stack_element_t
+  %stp_L9943 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L9943 = load ptr, ptr %stp_L9943
+  call void @qd_stack_pop(ptr %stk_L9943, ptr %ce_L9943)
+  %cv_L9943 = getelementptr %qd_stack_element_t, ptr %ce_L9943, i32 0, i32 0
+  %ci_L9943 = load i64, ptr %cv_L9943
+  %cc_L9943 = icmp ne i64 %ci_L9943, 0
+  br i1 %cc_L9943, label %L9944, label %L9945
+L9944:
+  %stp_L9947 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L9947 = load ptr, ptr %stp_L9947
+  call i32 @qdrt_push_element(ptr %stk_L9947, ptr %local.cur)
+  %fa_elem_L9948 = alloca %qd_stack_element_t
+  %fa_stp_L9948 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %fa_stk_L9948 = load ptr, ptr %fa_stp_L9948
+  call void @qd_stack_pop(ptr %fa_stk_L9948, ptr %fa_elem_L9948)
+  %fa_vp_L9948 = getelementptr %qd_stack_element_t, ptr %fa_elem_L9948, i32 0, i32 0
+  %fa_ptr_L9948 = load ptr, ptr %fa_vp_L9948
+  %fa_off_L9948 = load i64, ptr @__offset_ntext
+  %fa_fp_L9948 = getelementptr i8, ptr %fa_ptr_L9948, i64 %fa_off_L9948
+  %fa_val_L9948 = load ptr, ptr %fa_fp_L9948
+  call i32 @qd_push_s_ref(ptr %ctx, ptr %fa_val_L9948)
+  %stp_L9949 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L9949 = load ptr, ptr %stp_L9949
+  call void @qd_stack_pop(ptr %stk_L9949, ptr %local.cfn)
+  call i32 @usr_sb_new(ptr %ctx)
+  call i32 @qd_push_s(ptr %ctx, ptr @.str.9950)
+  call i32 @usr_sb_append(ptr %ctx)
+  %stp_L9951 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L9951 = load ptr, ptr %stp_L9951
+  call i32 @qdrt_push_element(ptr %stk_L9951, ptr %local.cfn)
+  call i32 @usr_sb_append_int(ptr %ctx)
+  call i32 @usr_sb_finish(ptr %ctx)
+  %stp_L9952 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L9952 = load ptr, ptr %stp_L9952
+  call void @qd_stack_pop(ptr %stk_L9952, ptr %local.ocheckx)
+  %stp_L9953 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L9953 = load ptr, ptr %stp_L9953
+  call i32 @qdrt_push_element(ptr %stk_L9953, ptr %local.g)
+  call i32 @usr_sb_build(ptr %ctx)
+  %stp_L9954 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L9954 = load ptr, ptr %stp_L9954
+  call i32 @qdrt_push_element(ptr %stk_L9954, ptr %local.ocheckx)
+  call i32 @usr_strings_contains(ptr %ctx)
+  call i32 @qd_push_i(ptr %ctx, i64 0)
+  call i32 @qd_eq(ptr %ctx)
   %ce_L9955 = alloca %qd_stack_element_t
   %stp_L9955 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
   %stk_L9955 = load ptr, ptr %stp_L9955
@@ -40412,270 +40395,272 @@ L9941:
 L9956:
   %stp_L9959 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
   %stk_L9959 = load ptr, ptr %stp_L9959
-  call i32 @qdrt_push_element(ptr %stk_L9959, ptr %local.n)
-  %fa_elem_L9960 = alloca %qd_stack_element_t
-  %fa_stp_L9960 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %fa_stk_L9960 = load ptr, ptr %fa_stp_L9960
-  call void @qd_stack_pop(ptr %fa_stk_L9960, ptr %fa_elem_L9960)
-  %fa_vp_L9960 = getelementptr %qd_stack_element_t, ptr %fa_elem_L9960, i32 0, i32 0
-  %fa_ptr_L9960 = load ptr, ptr %fa_vp_L9960
-  %fa_off_L9960 = load i64, ptr @__offset_child3
-  %fa_fp_L9960 = getelementptr i8, ptr %fa_ptr_L9960, i64 %fa_off_L9960
-  %fa_val_L9960 = load ptr, ptr %fa_fp_L9960
-  call i32 @qd_push_p(ptr %ctx, ptr %fa_val_L9960)
-  %fa_elem_L9961 = alloca %qd_stack_element_t
-  %fa_stp_L9961 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %fa_stk_L9961 = load ptr, ptr %fa_stp_L9961
-  call void @qd_stack_pop(ptr %fa_stk_L9961, ptr %fa_elem_L9961)
-  %fa_vp_L9961 = getelementptr %qd_stack_element_t, ptr %fa_elem_L9961, i32 0, i32 0
-  %fa_ptr_L9961 = load ptr, ptr %fa_vp_L9961
-  %fa_off_L9961 = load i64, ptr @__offset_ntext
-  %fa_fp_L9961 = getelementptr i8, ptr %fa_ptr_L9961, i64 %fa_off_L9961
-  %fa_val_L9961 = load ptr, ptr %fa_fp_L9961
-  call i32 @qd_push_s_ref(ptr %ctx, ptr %fa_val_L9961)
+  call i32 @qdrt_push_element(ptr %stk_L9959, ptr %local.g)
+  call i32 @usr_sb_new(ptr %ctx)
+  %stp_L9960 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L9960 = load ptr, ptr %stp_L9960
+  call i32 @qdrt_push_element(ptr %stk_L9960, ptr %local.ocheckx)
+  call i32 @usr_sb_append_int(ptr %ctx)
+  call i32 @qd_push_s(ptr %ctx, ptr @.str.9961)
+  call i32 @usr_sb_append(ptr %ctx)
   %stp_L9962 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
   %stk_L9962 = load ptr, ptr %stp_L9962
-  call void @qd_stack_pop(ptr %stk_L9962, ptr %local.vn3)
-  %stp_L9963 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L9963 = load ptr, ptr %stp_L9963
-  call i32 @qdrt_push_element(ptr %stk_L9963, ptr %local.g)
+  call i32 @qdrt_push_element(ptr %stk_L9962, ptr %local.offset)
+  call i32 @usr_sb_append_int(ptr %ctx)
+  call i32 @qd_push_s(ptr %ctx, ptr @.str.9963)
+  call i32 @usr_sb_append(ptr %ctx)
+  call i32 @usr_sb_finish(ptr %ctx)
+  call i32 @usr_sb_append(ptr %ctx)
   %stp_L9964 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
   %stk_L9964 = load ptr, ptr %stp_L9964
-  call i32 @qdrt_push_element(ptr %stk_L9964, ptr %local.ename)
-  %stp_L9965 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L9965 = load ptr, ptr %stp_L9965
-  call i32 @qdrt_push_element(ptr %stk_L9965, ptr %local.vn3)
-  %stp_L9966 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L9966 = load ptr, ptr %stp_L9966
-  call i32 @qdrt_push_element(ptr %stk_L9966, ptr %local.eval)
-  call i32 @usr_codegen_emit_enum_variant(ptr %ctx)
-  %stp_L9967 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L9967 = load ptr, ptr %stp_L9967
-  call void @qd_stack_pop(ptr %stk_L9967, ptr %local.g)
-  %stp_L9968 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L9968 = load ptr, ptr %stp_L9968
-  call i32 @qdrt_push_element(ptr %stk_L9968, ptr %local.eval)
-  call i32 @qd_push_i(ptr %ctx, i64 1)
-  call i32 @qd_add(ptr %ctx)
-  %stp_L9969 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L9969 = load ptr, ptr %stp_L9969
-  call void @qd_stack_pop(ptr %stk_L9969, ptr %local.eval)
+  call void @qd_stack_pop(ptr %stk_L9964, ptr %local.g)
   br label %L9958
 L9958:
+  %stp_L9965 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L9965 = load ptr, ptr %stp_L9965
+  call i32 @qdrt_push_element(ptr %stk_L9965, ptr %local.offset)
+  call i32 @qd_push_i(ptr %ctx, i64 8)
+  call i32 @qd_add(ptr %ctx)
+  %stp_L9966 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L9966 = load ptr, ptr %stp_L9966
+  call void @qd_stack_pop(ptr %stk_L9966, ptr %local.offset)
+  %stp_L9967 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L9967 = load ptr, ptr %stp_L9967
+  call i32 @qdrt_push_element(ptr %stk_L9967, ptr %local.cur)
+  %fa_elem_L9968 = alloca %qd_stack_element_t
+  %fa_stp_L9968 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %fa_stk_L9968 = load ptr, ptr %fa_stp_L9968
+  call void @qd_stack_pop(ptr %fa_stk_L9968, ptr %fa_elem_L9968)
+  %fa_vp_L9968 = getelementptr %qd_stack_element_t, ptr %fa_elem_L9968, i32 0, i32 0
+  %fa_ptr_L9968 = load ptr, ptr %fa_vp_L9968
+  %fa_off_L9968 = load i64, ptr @__offset_sibling
+  %fa_fp_L9968 = getelementptr i8, ptr %fa_ptr_L9968, i64 %fa_off_L9968
+  %fa_val_L9968 = load ptr, ptr %fa_fp_L9968
+  call i32 @qd_push_p(ptr %ctx, ptr %fa_val_L9968)
+  %stp_L9969 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L9969 = load ptr, ptr %stp_L9969
+  call void @qd_stack_pop(ptr %stk_L9969, ptr %local.cur)
   %stp_L9970 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
   %stk_L9970 = load ptr, ptr %stp_L9970
-  call i32 @qdrt_push_element(ptr %stk_L9970, ptr %local.n)
-  %fa_elem_L9971 = alloca %qd_stack_element_t
-  %fa_stp_L9971 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %fa_stk_L9971 = load ptr, ptr %fa_stp_L9971
-  call void @qd_stack_pop(ptr %fa_stk_L9971, ptr %fa_elem_L9971)
-  %fa_vp_L9971 = getelementptr %qd_stack_element_t, ptr %fa_elem_L9971, i32 0, i32 0
-  %fa_ptr_L9971 = load ptr, ptr %fa_vp_L9971
-  %fa_off_L9971 = load i64, ptr @__offset_child4
-  %fa_fp_L9971 = getelementptr i8, ptr %fa_ptr_L9971, i64 %fa_off_L9971
-  %fa_val_L9971 = load ptr, ptr %fa_fp_L9971
-  call i32 @qd_push_p(ptr %ctx, ptr %fa_val_L9971)
+  call i32 @qdrt_push_element(ptr %stk_L9970, ptr %local.cur)
   call i32 @qd_push_i(ptr %ctx, i64 0)
   call i32 @qd_neq(ptr %ctx)
-  %ce_L9972 = alloca %qd_stack_element_t
+  %ce_L9971 = alloca %qd_stack_element_t
+  %stp_L9971 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L9971 = load ptr, ptr %stp_L9971
+  call void @qd_stack_pop(ptr %stk_L9971, ptr %ce_L9971)
+  %cv_L9971 = getelementptr %qd_stack_element_t, ptr %ce_L9971, i32 0, i32 0
+  %ci_L9971 = load i64, ptr %cv_L9971
+  %cc_L9971 = icmp ne i64 %ci_L9971, 0
+  br i1 %cc_L9971, label %L9944, label %L9945
+L9945:
   %stp_L9972 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
   %stk_L9972 = load ptr, ptr %stp_L9972
-  call void @qd_stack_pop(ptr %stk_L9972, ptr %ce_L9972)
-  %cv_L9972 = getelementptr %qd_stack_element_t, ptr %ce_L9972, i32 0, i32 0
-  %ci_L9972 = load i64, ptr %cv_L9972
-  %cc_L9972 = icmp ne i64 %ci_L9972, 0
-  br i1 %cc_L9972, label %L9973, label %L9975
-L9973:
+  call i32 @qdrt_push_element(ptr %stk_L9972, ptr %local.g)
+  call i32 @usr_sb_new(ptr %ctx)
+  call i32 @qd_push_s(ptr %ctx, ptr @.str.9973)
+  call i32 @usr_sb_append(ptr %ctx)
+  %stp_L9974 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L9974 = load ptr, ptr %stp_L9974
+  call i32 @qdrt_push_element(ptr %stk_L9974, ptr %local.sname)
+  call i32 @usr_sb_append_int(ptr %ctx)
+  call i32 @qd_push_s(ptr %ctx, ptr @.str.9975)
+  call i32 @usr_sb_append(ptr %ctx)
   %stp_L9976 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
   %stk_L9976 = load ptr, ptr %stp_L9976
-  call i32 @qdrt_push_element(ptr %stk_L9976, ptr %local.n)
-  %fa_elem_L9977 = alloca %qd_stack_element_t
-  %fa_stp_L9977 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %fa_stk_L9977 = load ptr, ptr %fa_stp_L9977
-  call void @qd_stack_pop(ptr %fa_stk_L9977, ptr %fa_elem_L9977)
-  %fa_vp_L9977 = getelementptr %qd_stack_element_t, ptr %fa_elem_L9977, i32 0, i32 0
-  %fa_ptr_L9977 = load ptr, ptr %fa_vp_L9977
-  %fa_off_L9977 = load i64, ptr @__offset_child4
-  %fa_fp_L9977 = getelementptr i8, ptr %fa_ptr_L9977, i64 %fa_off_L9977
-  %fa_val_L9977 = load ptr, ptr %fa_fp_L9977
-  call i32 @qd_push_p(ptr %ctx, ptr %fa_val_L9977)
-  %fa_elem_L9978 = alloca %qd_stack_element_t
-  %fa_stp_L9978 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %fa_stk_L9978 = load ptr, ptr %fa_stp_L9978
-  call void @qd_stack_pop(ptr %fa_stk_L9978, ptr %fa_elem_L9978)
-  %fa_vp_L9978 = getelementptr %qd_stack_element_t, ptr %fa_elem_L9978, i32 0, i32 0
-  %fa_ptr_L9978 = load ptr, ptr %fa_vp_L9978
-  %fa_off_L9978 = load i64, ptr @__offset_ntext
-  %fa_fp_L9978 = getelementptr i8, ptr %fa_ptr_L9978, i64 %fa_off_L9978
-  %fa_val_L9978 = load ptr, ptr %fa_fp_L9978
-  call i32 @qd_push_s_ref(ptr %ctx, ptr %fa_val_L9978)
+  call i32 @qdrt_push_element(ptr %stk_L9976, ptr %local.offset)
+  call i32 @usr_sb_append_int(ptr %ctx)
+  call i32 @qd_push_s(ptr %ctx, ptr @.str.9977)
+  call i32 @usr_sb_append(ptr %ctx)
+  call i32 @usr_sb_finish(ptr %ctx)
+  call i32 @usr_sb_append(ptr %ctx)
+  %stp_L9978 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L9978 = load ptr, ptr %stp_L9978
+  call void @qd_stack_pop(ptr %stk_L9978, ptr %local.g)
   %stp_L9979 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
   %stk_L9979 = load ptr, ptr %stp_L9979
-  call void @qd_stack_pop(ptr %stk_L9979, ptr %local.vn4)
-  %stp_L9980 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L9980 = load ptr, ptr %stp_L9980
-  call i32 @qdrt_push_element(ptr %stk_L9980, ptr %local.g)
+  call i32 @qdrt_push_element(ptr %stk_L9979, ptr %local.g)
+  %fs_elem_L9980 = alloca %qd_stack_element_t
+  %fs_stp_L9980 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %fs_stk_L9980 = load ptr, ptr %fs_stp_L9980
+  call void @qd_stack_pop(ptr %fs_stk_L9980, ptr %fs_elem_L9980)
+  %fs_vp_L9980 = getelementptr %qd_stack_element_t, ptr %fs_elem_L9980, i32 0, i32 0
+  %fs_val_L9980 = load i64, ptr %fs_vp_L9980
+  %fs_svp_L9980 = getelementptr %qd_stack_element_t, ptr %local.st, i32 0, i32 0
+  %fs_sptr_L9980 = load ptr, ptr %fs_svp_L9980
+  %fs_off_L9980 = load i64, ptr @__offset_globals
+  %fs_fp_L9980 = getelementptr i8, ptr %fs_sptr_L9980, i64 %fs_off_L9980
+  store i64 %fs_val_L9980, ptr %fs_fp_L9980
   %stp_L9981 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
   %stk_L9981 = load ptr, ptr %stp_L9981
-  call i32 @qdrt_push_element(ptr %stk_L9981, ptr %local.ename)
+  call i32 @qdrt_push_element(ptr %stk_L9981, ptr %local.st)
+  br label %return
+  br label %L9823
+L9823:
   %stp_L9982 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
   %stk_L9982 = load ptr, ptr %stp_L9982
-  call i32 @qdrt_push_element(ptr %stk_L9982, ptr %local.vn4)
-  %stp_L9983 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L9983 = load ptr, ptr %stp_L9983
-  call i32 @qdrt_push_element(ptr %stk_L9983, ptr %local.eval)
-  call i32 @usr_codegen_emit_enum_variant(ptr %ctx)
+  call i32 @qdrt_push_element(ptr %stk_L9982, ptr %local.k)
+  %ev_L9983 = load i64, ptr @__enum_NodeType_EnumDecl
+  call i32 @qd_push_i(ptr %ctx, i64 %ev_L9983)
+  call i32 @qd_eq(ptr %ctx)
+  %ce_L9984 = alloca %qd_stack_element_t
   %stp_L9984 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
   %stk_L9984 = load ptr, ptr %stp_L9984
-  call void @qd_stack_pop(ptr %stk_L9984, ptr %local.g)
-  %stp_L9985 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L9985 = load ptr, ptr %stp_L9985
-  call i32 @qdrt_push_element(ptr %stk_L9985, ptr %local.eval)
-  call i32 @qd_push_i(ptr %ctx, i64 1)
-  call i32 @qd_add(ptr %ctx)
-  %stp_L9986 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L9986 = load ptr, ptr %stp_L9986
-  call void @qd_stack_pop(ptr %stk_L9986, ptr %local.eval)
-  br label %L9975
-L9975:
-  %stp_L9987 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L9987 = load ptr, ptr %stp_L9987
-  call i32 @qdrt_push_element(ptr %stk_L9987, ptr %local.n)
-  %fa_elem_L9988 = alloca %qd_stack_element_t
-  %fa_stp_L9988 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %fa_stk_L9988 = load ptr, ptr %fa_stp_L9988
-  call void @qd_stack_pop(ptr %fa_stk_L9988, ptr %fa_elem_L9988)
-  %fa_vp_L9988 = getelementptr %qd_stack_element_t, ptr %fa_elem_L9988, i32 0, i32 0
-  %fa_ptr_L9988 = load ptr, ptr %fa_vp_L9988
-  %fa_off_L9988 = load i64, ptr @__offset_extra
-  %fa_fp_L9988 = getelementptr i8, ptr %fa_ptr_L9988, i64 %fa_off_L9988
-  %fa_val_L9988 = load ptr, ptr %fa_fp_L9988
-  call i32 @qd_push_p(ptr %ctx, ptr %fa_val_L9988)
-  %stp_L9989 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L9989 = load ptr, ptr %stp_L9989
-  call void @qd_stack_pop(ptr %stk_L9989, ptr %local.cur)
+  call void @qd_stack_pop(ptr %stk_L9984, ptr %ce_L9984)
+  %cv_L9984 = getelementptr %qd_stack_element_t, ptr %ce_L9984, i32 0, i32 0
+  %ci_L9984 = load i64, ptr %cv_L9984
+  %cc_L9984 = icmp ne i64 %ci_L9984, 0
+  br i1 %cc_L9984, label %L9985, label %L9987
+L9985:
+  %stp_L9988 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L9988 = load ptr, ptr %stp_L9988
+  call i32 @qdrt_push_element(ptr %stk_L9988, ptr %local.st)
+  %fa_elem_L9989 = alloca %qd_stack_element_t
+  %fa_stp_L9989 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %fa_stk_L9989 = load ptr, ptr %fa_stp_L9989
+  call void @qd_stack_pop(ptr %fa_stk_L9989, ptr %fa_elem_L9989)
+  %fa_vp_L9989 = getelementptr %qd_stack_element_t, ptr %fa_elem_L9989, i32 0, i32 0
+  %fa_ptr_L9989 = load ptr, ptr %fa_vp_L9989
+  %fa_off_L9989 = load i64, ptr @__offset_globals
+  %fa_fp_L9989 = getelementptr i8, ptr %fa_ptr_L9989, i64 %fa_off_L9989
+  %fa_val_L9989 = load ptr, ptr %fa_fp_L9989
+  call i32 @qd_push_p(ptr %ctx, ptr %fa_val_L9989)
   %stp_L9990 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
   %stk_L9990 = load ptr, ptr %stp_L9990
-  call i32 @qdrt_push_element(ptr %stk_L9990, ptr %local.cur)
-  call i32 @qd_push_i(ptr %ctx, i64 0)
-  call i32 @qd_neq(ptr %ctx)
-  %ce_L9991 = alloca %qd_stack_element_t
+  call void @qd_stack_pop(ptr %stk_L9990, ptr %local.g)
   %stp_L9991 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
   %stk_L9991 = load ptr, ptr %stp_L9991
-  call void @qd_stack_pop(ptr %stk_L9991, ptr %ce_L9991)
-  %cv_L9991 = getelementptr %qd_stack_element_t, ptr %ce_L9991, i32 0, i32 0
-  %ci_L9991 = load i64, ptr %cv_L9991
-  %cc_L9991 = icmp ne i64 %ci_L9991, 0
-  br i1 %cc_L9991, label %L9992, label %L9993
-L9992:
+  call i32 @qdrt_push_element(ptr %stk_L9991, ptr %local.n)
+  %fa_elem_L9992 = alloca %qd_stack_element_t
+  %fa_stp_L9992 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %fa_stk_L9992 = load ptr, ptr %fa_stp_L9992
+  call void @qd_stack_pop(ptr %fa_stk_L9992, ptr %fa_elem_L9992)
+  %fa_vp_L9992 = getelementptr %qd_stack_element_t, ptr %fa_elem_L9992, i32 0, i32 0
+  %fa_ptr_L9992 = load ptr, ptr %fa_vp_L9992
+  %fa_off_L9992 = load i64, ptr @__offset_ntext
+  %fa_fp_L9992 = getelementptr i8, ptr %fa_ptr_L9992, i64 %fa_off_L9992
+  %fa_val_L9992 = load ptr, ptr %fa_fp_L9992
+  call i32 @qd_push_s_ref(ptr %ctx, ptr %fa_val_L9992)
+  %stp_L9993 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L9993 = load ptr, ptr %stp_L9993
+  call void @qd_stack_pop(ptr %stk_L9993, ptr %local.ename)
+  call i32 @qd_push_i(ptr %ctx, i64 0)
+  %stp_L9994 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L9994 = load ptr, ptr %stp_L9994
+  call void @qd_stack_pop(ptr %stk_L9994, ptr %local.eval)
   %stp_L9995 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
   %stk_L9995 = load ptr, ptr %stp_L9995
-  call i32 @qdrt_push_element(ptr %stk_L9995, ptr %local.cur)
+  call i32 @qdrt_push_element(ptr %stk_L9995, ptr %local.n)
   %fa_elem_L9996 = alloca %qd_stack_element_t
   %fa_stp_L9996 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
   %fa_stk_L9996 = load ptr, ptr %fa_stp_L9996
   call void @qd_stack_pop(ptr %fa_stk_L9996, ptr %fa_elem_L9996)
   %fa_vp_L9996 = getelementptr %qd_stack_element_t, ptr %fa_elem_L9996, i32 0, i32 0
   %fa_ptr_L9996 = load ptr, ptr %fa_vp_L9996
-  %fa_off_L9996 = load i64, ptr @__offset_ntext
+  %fa_off_L9996 = load i64, ptr @__offset_child1
   %fa_fp_L9996 = getelementptr i8, ptr %fa_ptr_L9996, i64 %fa_off_L9996
   %fa_val_L9996 = load ptr, ptr %fa_fp_L9996
-  call i32 @qd_push_s_ref(ptr %ctx, ptr %fa_val_L9996)
-  %stp_L9997 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L9997 = load ptr, ptr %stp_L9997
-  call void @qd_stack_pop(ptr %stk_L9997, ptr %local.vnx)
-  %stp_L9998 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L9998 = load ptr, ptr %stp_L9998
-  call i32 @qdrt_push_element(ptr %stk_L9998, ptr %local.g)
-  %stp_L9999 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L9999 = load ptr, ptr %stp_L9999
-  call i32 @qdrt_push_element(ptr %stk_L9999, ptr %local.ename)
-  %stp_L10000 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L10000 = load ptr, ptr %stp_L10000
-  call i32 @qdrt_push_element(ptr %stk_L10000, ptr %local.vnx)
-  %stp_L10001 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L10001 = load ptr, ptr %stp_L10001
-  call i32 @qdrt_push_element(ptr %stk_L10001, ptr %local.eval)
-  call i32 @usr_codegen_emit_enum_variant(ptr %ctx)
-  %stp_L10002 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L10002 = load ptr, ptr %stp_L10002
-  call void @qd_stack_pop(ptr %stk_L10002, ptr %local.g)
-  %stp_L10003 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L10003 = load ptr, ptr %stp_L10003
-  call i32 @qdrt_push_element(ptr %stk_L10003, ptr %local.eval)
-  call i32 @qd_push_i(ptr %ctx, i64 1)
-  call i32 @qd_add(ptr %ctx)
-  %stp_L10004 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L10004 = load ptr, ptr %stp_L10004
-  call void @qd_stack_pop(ptr %stk_L10004, ptr %local.eval)
-  %stp_L10005 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L10005 = load ptr, ptr %stp_L10005
-  call i32 @qdrt_push_element(ptr %stk_L10005, ptr %local.cur)
-  %fa_elem_L10006 = alloca %qd_stack_element_t
-  %fa_stp_L10006 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %fa_stk_L10006 = load ptr, ptr %fa_stp_L10006
-  call void @qd_stack_pop(ptr %fa_stk_L10006, ptr %fa_elem_L10006)
-  %fa_vp_L10006 = getelementptr %qd_stack_element_t, ptr %fa_elem_L10006, i32 0, i32 0
-  %fa_ptr_L10006 = load ptr, ptr %fa_vp_L10006
-  %fa_off_L10006 = load i64, ptr @__offset_sibling
-  %fa_fp_L10006 = getelementptr i8, ptr %fa_ptr_L10006, i64 %fa_off_L10006
-  %fa_val_L10006 = load ptr, ptr %fa_fp_L10006
-  call i32 @qd_push_p(ptr %ctx, ptr %fa_val_L10006)
-  %stp_L10007 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L10007 = load ptr, ptr %stp_L10007
-  call void @qd_stack_pop(ptr %stk_L10007, ptr %local.cur)
-  %stp_L10008 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L10008 = load ptr, ptr %stp_L10008
-  call i32 @qdrt_push_element(ptr %stk_L10008, ptr %local.cur)
+  call i32 @qd_push_p(ptr %ctx, ptr %fa_val_L9996)
   call i32 @qd_push_i(ptr %ctx, i64 0)
   call i32 @qd_neq(ptr %ctx)
-  %ce_L10009 = alloca %qd_stack_element_t
+  %ce_L9997 = alloca %qd_stack_element_t
+  %stp_L9997 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L9997 = load ptr, ptr %stp_L9997
+  call void @qd_stack_pop(ptr %stk_L9997, ptr %ce_L9997)
+  %cv_L9997 = getelementptr %qd_stack_element_t, ptr %ce_L9997, i32 0, i32 0
+  %ci_L9997 = load i64, ptr %cv_L9997
+  %cc_L9997 = icmp ne i64 %ci_L9997, 0
+  br i1 %cc_L9997, label %L9998, label %L10000
+L9998:
+  %stp_L10001 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L10001 = load ptr, ptr %stp_L10001
+  call i32 @qdrt_push_element(ptr %stk_L10001, ptr %local.n)
+  %fa_elem_L10002 = alloca %qd_stack_element_t
+  %fa_stp_L10002 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %fa_stk_L10002 = load ptr, ptr %fa_stp_L10002
+  call void @qd_stack_pop(ptr %fa_stk_L10002, ptr %fa_elem_L10002)
+  %fa_vp_L10002 = getelementptr %qd_stack_element_t, ptr %fa_elem_L10002, i32 0, i32 0
+  %fa_ptr_L10002 = load ptr, ptr %fa_vp_L10002
+  %fa_off_L10002 = load i64, ptr @__offset_child1
+  %fa_fp_L10002 = getelementptr i8, ptr %fa_ptr_L10002, i64 %fa_off_L10002
+  %fa_val_L10002 = load ptr, ptr %fa_fp_L10002
+  call i32 @qd_push_p(ptr %ctx, ptr %fa_val_L10002)
+  %fa_elem_L10003 = alloca %qd_stack_element_t
+  %fa_stp_L10003 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %fa_stk_L10003 = load ptr, ptr %fa_stp_L10003
+  call void @qd_stack_pop(ptr %fa_stk_L10003, ptr %fa_elem_L10003)
+  %fa_vp_L10003 = getelementptr %qd_stack_element_t, ptr %fa_elem_L10003, i32 0, i32 0
+  %fa_ptr_L10003 = load ptr, ptr %fa_vp_L10003
+  %fa_off_L10003 = load i64, ptr @__offset_ntext
+  %fa_fp_L10003 = getelementptr i8, ptr %fa_ptr_L10003, i64 %fa_off_L10003
+  %fa_val_L10003 = load ptr, ptr %fa_fp_L10003
+  call i32 @qd_push_s_ref(ptr %ctx, ptr %fa_val_L10003)
+  %stp_L10004 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L10004 = load ptr, ptr %stp_L10004
+  call void @qd_stack_pop(ptr %stk_L10004, ptr %local.vn1)
+  %stp_L10005 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L10005 = load ptr, ptr %stp_L10005
+  call i32 @qdrt_push_element(ptr %stk_L10005, ptr %local.g)
+  %stp_L10006 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L10006 = load ptr, ptr %stp_L10006
+  call i32 @qdrt_push_element(ptr %stk_L10006, ptr %local.ename)
+  %stp_L10007 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L10007 = load ptr, ptr %stp_L10007
+  call i32 @qdrt_push_element(ptr %stk_L10007, ptr %local.vn1)
+  %stp_L10008 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L10008 = load ptr, ptr %stp_L10008
+  call i32 @qdrt_push_element(ptr %stk_L10008, ptr %local.eval)
+  call i32 @usr_codegen_emit_enum_variant(ptr %ctx)
   %stp_L10009 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
   %stk_L10009 = load ptr, ptr %stp_L10009
-  call void @qd_stack_pop(ptr %stk_L10009, ptr %ce_L10009)
-  %cv_L10009 = getelementptr %qd_stack_element_t, ptr %ce_L10009, i32 0, i32 0
-  %ci_L10009 = load i64, ptr %cv_L10009
-  %cc_L10009 = icmp ne i64 %ci_L10009, 0
-  br i1 %cc_L10009, label %L9992, label %L9993
-L9993:
+  call void @qd_stack_pop(ptr %stk_L10009, ptr %local.g)
   %stp_L10010 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
   %stk_L10010 = load ptr, ptr %stp_L10010
-  call i32 @qdrt_push_element(ptr %stk_L10010, ptr %local.g)
-  %fs_elem_L10011 = alloca %qd_stack_element_t
-  %fs_stp_L10011 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %fs_stk_L10011 = load ptr, ptr %fs_stp_L10011
-  call void @qd_stack_pop(ptr %fs_stk_L10011, ptr %fs_elem_L10011)
-  %fs_vp_L10011 = getelementptr %qd_stack_element_t, ptr %fs_elem_L10011, i32 0, i32 0
-  %fs_val_L10011 = load i64, ptr %fs_vp_L10011
-  %fs_svp_L10011 = getelementptr %qd_stack_element_t, ptr %local.st, i32 0, i32 0
-  %fs_sptr_L10011 = load ptr, ptr %fs_svp_L10011
-  %fs_off_L10011 = load i64, ptr @__offset_globals
-  %fs_fp_L10011 = getelementptr i8, ptr %fs_sptr_L10011, i64 %fs_off_L10011
-  store i64 %fs_val_L10011, ptr %fs_fp_L10011
+  call i32 @qdrt_push_element(ptr %stk_L10010, ptr %local.eval)
+  call i32 @qd_push_i(ptr %ctx, i64 1)
+  call i32 @qd_add(ptr %ctx)
+  %stp_L10011 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L10011 = load ptr, ptr %stp_L10011
+  call void @qd_stack_pop(ptr %stk_L10011, ptr %local.eval)
+  br label %L10000
+L10000:
   %stp_L10012 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
   %stk_L10012 = load ptr, ptr %stp_L10012
-  call i32 @qdrt_push_element(ptr %stk_L10012, ptr %local.st)
-  br label %return
-  br label %L9911
-L9911:
-  %stp_L10013 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L10013 = load ptr, ptr %stp_L10013
-  call i32 @qdrt_push_element(ptr %stk_L10013, ptr %local.k)
-  %ev_L10014 = load i64, ptr @__enum_NodeType_ConstDecl
-  call i32 @qd_push_i(ptr %ctx, i64 %ev_L10014)
-  call i32 @qd_eq(ptr %ctx)
-  %ce_L10015 = alloca %qd_stack_element_t
-  %stp_L10015 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L10015 = load ptr, ptr %stp_L10015
-  call void @qd_stack_pop(ptr %stk_L10015, ptr %ce_L10015)
-  %cv_L10015 = getelementptr %qd_stack_element_t, ptr %ce_L10015, i32 0, i32 0
-  %ci_L10015 = load i64, ptr %cv_L10015
-  %cc_L10015 = icmp ne i64 %ci_L10015, 0
-  br i1 %cc_L10015, label %L10016, label %L10018
-L10016:
-  %stp_L10019 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L10019 = load ptr, ptr %stp_L10019
-  call i32 @qdrt_push_element(ptr %stk_L10019, ptr %local.n)
+  call i32 @qdrt_push_element(ptr %stk_L10012, ptr %local.n)
+  %fa_elem_L10013 = alloca %qd_stack_element_t
+  %fa_stp_L10013 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %fa_stk_L10013 = load ptr, ptr %fa_stp_L10013
+  call void @qd_stack_pop(ptr %fa_stk_L10013, ptr %fa_elem_L10013)
+  %fa_vp_L10013 = getelementptr %qd_stack_element_t, ptr %fa_elem_L10013, i32 0, i32 0
+  %fa_ptr_L10013 = load ptr, ptr %fa_vp_L10013
+  %fa_off_L10013 = load i64, ptr @__offset_child2
+  %fa_fp_L10013 = getelementptr i8, ptr %fa_ptr_L10013, i64 %fa_off_L10013
+  %fa_val_L10013 = load ptr, ptr %fa_fp_L10013
+  call i32 @qd_push_p(ptr %ctx, ptr %fa_val_L10013)
+  call i32 @qd_push_i(ptr %ctx, i64 0)
+  call i32 @qd_neq(ptr %ctx)
+  %ce_L10014 = alloca %qd_stack_element_t
+  %stp_L10014 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L10014 = load ptr, ptr %stp_L10014
+  call void @qd_stack_pop(ptr %stk_L10014, ptr %ce_L10014)
+  %cv_L10014 = getelementptr %qd_stack_element_t, ptr %ce_L10014, i32 0, i32 0
+  %ci_L10014 = load i64, ptr %cv_L10014
+  %cc_L10014 = icmp ne i64 %ci_L10014, 0
+  br i1 %cc_L10014, label %L10015, label %L10017
+L10015:
+  %stp_L10018 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L10018 = load ptr, ptr %stp_L10018
+  call i32 @qdrt_push_element(ptr %stk_L10018, ptr %local.n)
+  %fa_elem_L10019 = alloca %qd_stack_element_t
+  %fa_stp_L10019 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %fa_stk_L10019 = load ptr, ptr %fa_stp_L10019
+  call void @qd_stack_pop(ptr %fa_stk_L10019, ptr %fa_elem_L10019)
+  %fa_vp_L10019 = getelementptr %qd_stack_element_t, ptr %fa_elem_L10019, i32 0, i32 0
+  %fa_ptr_L10019 = load ptr, ptr %fa_vp_L10019
+  %fa_off_L10019 = load i64, ptr @__offset_child2
+  %fa_fp_L10019 = getelementptr i8, ptr %fa_ptr_L10019, i64 %fa_off_L10019
+  %fa_val_L10019 = load ptr, ptr %fa_fp_L10019
+  call i32 @qd_push_p(ptr %ctx, ptr %fa_val_L10019)
   %fa_elem_L10020 = alloca %qd_stack_element_t
   %fa_stp_L10020 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
   %fa_stk_L10020 = load ptr, ptr %fa_stp_L10020
@@ -40688,328 +40673,657 @@ L10016:
   call i32 @qd_push_s_ref(ptr %ctx, ptr %fa_val_L10020)
   %stp_L10021 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
   %stk_L10021 = load ptr, ptr %stp_L10021
-  call void @qd_stack_pop(ptr %stk_L10021, ptr %local.cname)
+  call void @qd_stack_pop(ptr %stk_L10021, ptr %local.vn2)
   %stp_L10022 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
   %stk_L10022 = load ptr, ptr %stp_L10022
-  call i32 @qdrt_push_element(ptr %stk_L10022, ptr %local.n)
-  %fa_elem_L10023 = alloca %qd_stack_element_t
-  %fa_stp_L10023 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %fa_stk_L10023 = load ptr, ptr %fa_stp_L10023
-  call void @qd_stack_pop(ptr %fa_stk_L10023, ptr %fa_elem_L10023)
-  %fa_vp_L10023 = getelementptr %qd_stack_element_t, ptr %fa_elem_L10023, i32 0, i32 0
-  %fa_ptr_L10023 = load ptr, ptr %fa_vp_L10023
-  %fa_off_L10023 = load i64, ptr @__offset_child1
-  %fa_fp_L10023 = getelementptr i8, ptr %fa_ptr_L10023, i64 %fa_off_L10023
-  %fa_val_L10023 = load ptr, ptr %fa_fp_L10023
-  call i32 @qd_push_p(ptr %ctx, ptr %fa_val_L10023)
-  call i32 @qd_push_i(ptr %ctx, i64 0)
-  call i32 @qd_neq(ptr %ctx)
-  %ce_L10024 = alloca %qd_stack_element_t
+  call i32 @qdrt_push_element(ptr %stk_L10022, ptr %local.g)
+  %stp_L10023 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L10023 = load ptr, ptr %stp_L10023
+  call i32 @qdrt_push_element(ptr %stk_L10023, ptr %local.ename)
   %stp_L10024 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
   %stk_L10024 = load ptr, ptr %stp_L10024
-  call void @qd_stack_pop(ptr %stk_L10024, ptr %ce_L10024)
-  %cv_L10024 = getelementptr %qd_stack_element_t, ptr %ce_L10024, i32 0, i32 0
-  %ci_L10024 = load i64, ptr %cv_L10024
-  %cc_L10024 = icmp ne i64 %ci_L10024, 0
-  br i1 %cc_L10024, label %L10025, label %L10027
-L10025:
+  call i32 @qdrt_push_element(ptr %stk_L10024, ptr %local.vn2)
+  %stp_L10025 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L10025 = load ptr, ptr %stp_L10025
+  call i32 @qdrt_push_element(ptr %stk_L10025, ptr %local.eval)
+  call i32 @usr_codegen_emit_enum_variant(ptr %ctx)
+  %stp_L10026 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L10026 = load ptr, ptr %stp_L10026
+  call void @qd_stack_pop(ptr %stk_L10026, ptr %local.g)
+  %stp_L10027 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L10027 = load ptr, ptr %stp_L10027
+  call i32 @qdrt_push_element(ptr %stk_L10027, ptr %local.eval)
+  call i32 @qd_push_i(ptr %ctx, i64 1)
+  call i32 @qd_add(ptr %ctx)
   %stp_L10028 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
   %stk_L10028 = load ptr, ptr %stp_L10028
-  call i32 @qdrt_push_element(ptr %stk_L10028, ptr %local.n)
-  %fa_elem_L10029 = alloca %qd_stack_element_t
-  %fa_stp_L10029 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %fa_stk_L10029 = load ptr, ptr %fa_stp_L10029
-  call void @qd_stack_pop(ptr %fa_stk_L10029, ptr %fa_elem_L10029)
-  %fa_vp_L10029 = getelementptr %qd_stack_element_t, ptr %fa_elem_L10029, i32 0, i32 0
-  %fa_ptr_L10029 = load ptr, ptr %fa_vp_L10029
-  %fa_off_L10029 = load i64, ptr @__offset_child1
-  %fa_fp_L10029 = getelementptr i8, ptr %fa_ptr_L10029, i64 %fa_off_L10029
-  %fa_val_L10029 = load ptr, ptr %fa_fp_L10029
-  call i32 @qd_push_p(ptr %ctx, ptr %fa_val_L10029)
+  call void @qd_stack_pop(ptr %stk_L10028, ptr %local.eval)
+  br label %L10017
+L10017:
+  %stp_L10029 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L10029 = load ptr, ptr %stp_L10029
+  call i32 @qdrt_push_element(ptr %stk_L10029, ptr %local.n)
   %fa_elem_L10030 = alloca %qd_stack_element_t
   %fa_stp_L10030 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
   %fa_stk_L10030 = load ptr, ptr %fa_stp_L10030
   call void @qd_stack_pop(ptr %fa_stk_L10030, ptr %fa_elem_L10030)
   %fa_vp_L10030 = getelementptr %qd_stack_element_t, ptr %fa_elem_L10030, i32 0, i32 0
   %fa_ptr_L10030 = load ptr, ptr %fa_vp_L10030
-  %fa_off_L10030 = load i64, ptr @__offset_ntext
+  %fa_off_L10030 = load i64, ptr @__offset_child3
   %fa_fp_L10030 = getelementptr i8, ptr %fa_ptr_L10030, i64 %fa_off_L10030
   %fa_val_L10030 = load ptr, ptr %fa_fp_L10030
-  call i32 @qd_push_s_ref(ptr %ctx, ptr %fa_val_L10030)
+  call i32 @qd_push_p(ptr %ctx, ptr %fa_val_L10030)
+  call i32 @qd_push_i(ptr %ctx, i64 0)
+  call i32 @qd_neq(ptr %ctx)
+  %ce_L10031 = alloca %qd_stack_element_t
   %stp_L10031 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
   %stk_L10031 = load ptr, ptr %stp_L10031
-  call void @qd_stack_pop(ptr %stk_L10031, ptr %local.cval)
-  %stp_L10032 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L10032 = load ptr, ptr %stp_L10032
-  call i32 @qdrt_push_element(ptr %stk_L10032, ptr %local.cval)
-  %stp_L10033 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L10033 = load ptr, ptr %stp_L10033
-  call void @qd_stack_pop(ptr %stk_L10033, ptr %local.cval_dec)
-  %stp_L10034 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L10034 = load ptr, ptr %stp_L10034
-  call i32 @qdrt_push_element(ptr %stk_L10034, ptr %local.n)
-  %fa_elem_L10035 = alloca %qd_stack_element_t
-  %fa_stp_L10035 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %fa_stk_L10035 = load ptr, ptr %fa_stp_L10035
-  call void @qd_stack_pop(ptr %fa_stk_L10035, ptr %fa_elem_L10035)
-  %fa_vp_L10035 = getelementptr %qd_stack_element_t, ptr %fa_elem_L10035, i32 0, i32 0
-  %fa_ptr_L10035 = load ptr, ptr %fa_vp_L10035
-  %fa_off_L10035 = load i64, ptr @__offset_child1
-  %fa_fp_L10035 = getelementptr i8, ptr %fa_ptr_L10035, i64 %fa_off_L10035
-  %fa_val_L10035 = load ptr, ptr %fa_fp_L10035
-  call i32 @qd_push_p(ptr %ctx, ptr %fa_val_L10035)
+  call void @qd_stack_pop(ptr %stk_L10031, ptr %ce_L10031)
+  %cv_L10031 = getelementptr %qd_stack_element_t, ptr %ce_L10031, i32 0, i32 0
+  %ci_L10031 = load i64, ptr %cv_L10031
+  %cc_L10031 = icmp ne i64 %ci_L10031, 0
+  br i1 %cc_L10031, label %L10032, label %L10034
+L10032:
+  %stp_L10035 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L10035 = load ptr, ptr %stp_L10035
+  call i32 @qdrt_push_element(ptr %stk_L10035, ptr %local.n)
   %fa_elem_L10036 = alloca %qd_stack_element_t
   %fa_stp_L10036 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
   %fa_stk_L10036 = load ptr, ptr %fa_stp_L10036
   call void @qd_stack_pop(ptr %fa_stk_L10036, ptr %fa_elem_L10036)
   %fa_vp_L10036 = getelementptr %qd_stack_element_t, ptr %fa_elem_L10036, i32 0, i32 0
   %fa_ptr_L10036 = load ptr, ptr %fa_vp_L10036
-  %fa_off_L10036 = load i64, ptr @__offset_nkind
+  %fa_off_L10036 = load i64, ptr @__offset_child3
   %fa_fp_L10036 = getelementptr i8, ptr %fa_ptr_L10036, i64 %fa_off_L10036
-  %fa_val_L10036 = load i64, ptr %fa_fp_L10036
-  call i32 @qd_push_i(ptr %ctx, i64 %fa_val_L10036)
-  %ev_L10037 = load i64, ptr @__enum_NodeType_IntLit
-  call i32 @qd_push_i(ptr %ctx, i64 %ev_L10037)
-  call i32 @qd_eq(ptr %ctx)
-  %ce_L10038 = alloca %qd_stack_element_t
+  %fa_val_L10036 = load ptr, ptr %fa_fp_L10036
+  call i32 @qd_push_p(ptr %ctx, ptr %fa_val_L10036)
+  %fa_elem_L10037 = alloca %qd_stack_element_t
+  %fa_stp_L10037 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %fa_stk_L10037 = load ptr, ptr %fa_stp_L10037
+  call void @qd_stack_pop(ptr %fa_stk_L10037, ptr %fa_elem_L10037)
+  %fa_vp_L10037 = getelementptr %qd_stack_element_t, ptr %fa_elem_L10037, i32 0, i32 0
+  %fa_ptr_L10037 = load ptr, ptr %fa_vp_L10037
+  %fa_off_L10037 = load i64, ptr @__offset_ntext
+  %fa_fp_L10037 = getelementptr i8, ptr %fa_ptr_L10037, i64 %fa_off_L10037
+  %fa_val_L10037 = load ptr, ptr %fa_fp_L10037
+  call i32 @qd_push_s_ref(ptr %ctx, ptr %fa_val_L10037)
   %stp_L10038 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
   %stk_L10038 = load ptr, ptr %stp_L10038
-  call void @qd_stack_pop(ptr %stk_L10038, ptr %ce_L10038)
-  %cv_L10038 = getelementptr %qd_stack_element_t, ptr %ce_L10038, i32 0, i32 0
-  %ci_L10038 = load i64, ptr %cv_L10038
-  %cc_L10038 = icmp ne i64 %ci_L10038, 0
-  br i1 %cc_L10038, label %L10039, label %L10041
-L10039:
+  call void @qd_stack_pop(ptr %stk_L10038, ptr %local.vn3)
+  %stp_L10039 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L10039 = load ptr, ptr %stp_L10039
+  call i32 @qdrt_push_element(ptr %stk_L10039, ptr %local.g)
+  %stp_L10040 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L10040 = load ptr, ptr %stp_L10040
+  call i32 @qdrt_push_element(ptr %stk_L10040, ptr %local.ename)
+  %stp_L10041 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L10041 = load ptr, ptr %stp_L10041
+  call i32 @qdrt_push_element(ptr %stk_L10041, ptr %local.vn3)
   %stp_L10042 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
   %stk_L10042 = load ptr, ptr %stp_L10042
-  call i32 @qdrt_push_element(ptr %stk_L10042, ptr %local.cval)
+  call i32 @qdrt_push_element(ptr %stk_L10042, ptr %local.eval)
+  call i32 @usr_codegen_emit_enum_variant(ptr %ctx)
+  %stp_L10043 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L10043 = load ptr, ptr %stp_L10043
+  call void @qd_stack_pop(ptr %stk_L10043, ptr %local.g)
+  %stp_L10044 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L10044 = load ptr, ptr %stp_L10044
+  call i32 @qdrt_push_element(ptr %stk_L10044, ptr %local.eval)
+  call i32 @qd_push_i(ptr %ctx, i64 1)
+  call i32 @qd_add(ptr %ctx)
+  %stp_L10045 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L10045 = load ptr, ptr %stp_L10045
+  call void @qd_stack_pop(ptr %stk_L10045, ptr %local.eval)
+  br label %L10034
+L10034:
+  %stp_L10046 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L10046 = load ptr, ptr %stp_L10046
+  call i32 @qdrt_push_element(ptr %stk_L10046, ptr %local.n)
+  %fa_elem_L10047 = alloca %qd_stack_element_t
+  %fa_stp_L10047 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %fa_stk_L10047 = load ptr, ptr %fa_stp_L10047
+  call void @qd_stack_pop(ptr %fa_stk_L10047, ptr %fa_elem_L10047)
+  %fa_vp_L10047 = getelementptr %qd_stack_element_t, ptr %fa_elem_L10047, i32 0, i32 0
+  %fa_ptr_L10047 = load ptr, ptr %fa_vp_L10047
+  %fa_off_L10047 = load i64, ptr @__offset_child4
+  %fa_fp_L10047 = getelementptr i8, ptr %fa_ptr_L10047, i64 %fa_off_L10047
+  %fa_val_L10047 = load ptr, ptr %fa_fp_L10047
+  call i32 @qd_push_p(ptr %ctx, ptr %fa_val_L10047)
+  call i32 @qd_push_i(ptr %ctx, i64 0)
+  call i32 @qd_neq(ptr %ctx)
+  %ce_L10048 = alloca %qd_stack_element_t
+  %stp_L10048 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L10048 = load ptr, ptr %stp_L10048
+  call void @qd_stack_pop(ptr %stk_L10048, ptr %ce_L10048)
+  %cv_L10048 = getelementptr %qd_stack_element_t, ptr %ce_L10048, i32 0, i32 0
+  %ci_L10048 = load i64, ptr %cv_L10048
+  %cc_L10048 = icmp ne i64 %ci_L10048, 0
+  br i1 %cc_L10048, label %L10049, label %L10051
+L10049:
+  %stp_L10052 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L10052 = load ptr, ptr %stp_L10052
+  call i32 @qdrt_push_element(ptr %stk_L10052, ptr %local.n)
+  %fa_elem_L10053 = alloca %qd_stack_element_t
+  %fa_stp_L10053 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %fa_stk_L10053 = load ptr, ptr %fa_stp_L10053
+  call void @qd_stack_pop(ptr %fa_stk_L10053, ptr %fa_elem_L10053)
+  %fa_vp_L10053 = getelementptr %qd_stack_element_t, ptr %fa_elem_L10053, i32 0, i32 0
+  %fa_ptr_L10053 = load ptr, ptr %fa_vp_L10053
+  %fa_off_L10053 = load i64, ptr @__offset_child4
+  %fa_fp_L10053 = getelementptr i8, ptr %fa_ptr_L10053, i64 %fa_off_L10053
+  %fa_val_L10053 = load ptr, ptr %fa_fp_L10053
+  call i32 @qd_push_p(ptr %ctx, ptr %fa_val_L10053)
+  %fa_elem_L10054 = alloca %qd_stack_element_t
+  %fa_stp_L10054 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %fa_stk_L10054 = load ptr, ptr %fa_stp_L10054
+  call void @qd_stack_pop(ptr %fa_stk_L10054, ptr %fa_elem_L10054)
+  %fa_vp_L10054 = getelementptr %qd_stack_element_t, ptr %fa_elem_L10054, i32 0, i32 0
+  %fa_ptr_L10054 = load ptr, ptr %fa_vp_L10054
+  %fa_off_L10054 = load i64, ptr @__offset_ntext
+  %fa_fp_L10054 = getelementptr i8, ptr %fa_ptr_L10054, i64 %fa_off_L10054
+  %fa_val_L10054 = load ptr, ptr %fa_fp_L10054
+  call i32 @qd_push_s_ref(ptr %ctx, ptr %fa_val_L10054)
+  %stp_L10055 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L10055 = load ptr, ptr %stp_L10055
+  call void @qd_stack_pop(ptr %stk_L10055, ptr %local.vn4)
+  %stp_L10056 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L10056 = load ptr, ptr %stp_L10056
+  call i32 @qdrt_push_element(ptr %stk_L10056, ptr %local.g)
+  %stp_L10057 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L10057 = load ptr, ptr %stp_L10057
+  call i32 @qdrt_push_element(ptr %stk_L10057, ptr %local.ename)
+  %stp_L10058 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L10058 = load ptr, ptr %stp_L10058
+  call i32 @qdrt_push_element(ptr %stk_L10058, ptr %local.vn4)
+  %stp_L10059 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L10059 = load ptr, ptr %stp_L10059
+  call i32 @qdrt_push_element(ptr %stk_L10059, ptr %local.eval)
+  call i32 @usr_codegen_emit_enum_variant(ptr %ctx)
+  %stp_L10060 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L10060 = load ptr, ptr %stp_L10060
+  call void @qd_stack_pop(ptr %stk_L10060, ptr %local.g)
+  %stp_L10061 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L10061 = load ptr, ptr %stp_L10061
+  call i32 @qdrt_push_element(ptr %stk_L10061, ptr %local.eval)
+  call i32 @qd_push_i(ptr %ctx, i64 1)
+  call i32 @qd_add(ptr %ctx)
+  %stp_L10062 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L10062 = load ptr, ptr %stp_L10062
+  call void @qd_stack_pop(ptr %stk_L10062, ptr %local.eval)
+  br label %L10051
+L10051:
+  %stp_L10063 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L10063 = load ptr, ptr %stp_L10063
+  call i32 @qdrt_push_element(ptr %stk_L10063, ptr %local.n)
+  %fa_elem_L10064 = alloca %qd_stack_element_t
+  %fa_stp_L10064 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %fa_stk_L10064 = load ptr, ptr %fa_stp_L10064
+  call void @qd_stack_pop(ptr %fa_stk_L10064, ptr %fa_elem_L10064)
+  %fa_vp_L10064 = getelementptr %qd_stack_element_t, ptr %fa_elem_L10064, i32 0, i32 0
+  %fa_ptr_L10064 = load ptr, ptr %fa_vp_L10064
+  %fa_off_L10064 = load i64, ptr @__offset_extra
+  %fa_fp_L10064 = getelementptr i8, ptr %fa_ptr_L10064, i64 %fa_off_L10064
+  %fa_val_L10064 = load ptr, ptr %fa_fp_L10064
+  call i32 @qd_push_p(ptr %ctx, ptr %fa_val_L10064)
+  %stp_L10065 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L10065 = load ptr, ptr %stp_L10065
+  call void @qd_stack_pop(ptr %stk_L10065, ptr %local.cur)
+  %stp_L10066 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L10066 = load ptr, ptr %stp_L10066
+  call i32 @qdrt_push_element(ptr %stk_L10066, ptr %local.cur)
+  call i32 @qd_push_i(ptr %ctx, i64 0)
+  call i32 @qd_neq(ptr %ctx)
+  %ce_L10067 = alloca %qd_stack_element_t
+  %stp_L10067 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L10067 = load ptr, ptr %stp_L10067
+  call void @qd_stack_pop(ptr %stk_L10067, ptr %ce_L10067)
+  %cv_L10067 = getelementptr %qd_stack_element_t, ptr %ce_L10067, i32 0, i32 0
+  %ci_L10067 = load i64, ptr %cv_L10067
+  %cc_L10067 = icmp ne i64 %ci_L10067, 0
+  br i1 %cc_L10067, label %L10068, label %L10069
+L10068:
+  %stp_L10071 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L10071 = load ptr, ptr %stp_L10071
+  call i32 @qdrt_push_element(ptr %stk_L10071, ptr %local.cur)
+  %fa_elem_L10072 = alloca %qd_stack_element_t
+  %fa_stp_L10072 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %fa_stk_L10072 = load ptr, ptr %fa_stp_L10072
+  call void @qd_stack_pop(ptr %fa_stk_L10072, ptr %fa_elem_L10072)
+  %fa_vp_L10072 = getelementptr %qd_stack_element_t, ptr %fa_elem_L10072, i32 0, i32 0
+  %fa_ptr_L10072 = load ptr, ptr %fa_vp_L10072
+  %fa_off_L10072 = load i64, ptr @__offset_ntext
+  %fa_fp_L10072 = getelementptr i8, ptr %fa_ptr_L10072, i64 %fa_off_L10072
+  %fa_val_L10072 = load ptr, ptr %fa_fp_L10072
+  call i32 @qd_push_s_ref(ptr %ctx, ptr %fa_val_L10072)
+  %stp_L10073 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L10073 = load ptr, ptr %stp_L10073
+  call void @qd_stack_pop(ptr %stk_L10073, ptr %local.vnx)
+  %stp_L10074 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L10074 = load ptr, ptr %stp_L10074
+  call i32 @qdrt_push_element(ptr %stk_L10074, ptr %local.g)
+  %stp_L10075 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L10075 = load ptr, ptr %stp_L10075
+  call i32 @qdrt_push_element(ptr %stk_L10075, ptr %local.ename)
+  %stp_L10076 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L10076 = load ptr, ptr %stp_L10076
+  call i32 @qdrt_push_element(ptr %stk_L10076, ptr %local.vnx)
+  %stp_L10077 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L10077 = load ptr, ptr %stp_L10077
+  call i32 @qdrt_push_element(ptr %stk_L10077, ptr %local.eval)
+  call i32 @usr_codegen_emit_enum_variant(ptr %ctx)
+  %stp_L10078 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L10078 = load ptr, ptr %stp_L10078
+  call void @qd_stack_pop(ptr %stk_L10078, ptr %local.g)
+  %stp_L10079 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L10079 = load ptr, ptr %stp_L10079
+  call i32 @qdrt_push_element(ptr %stk_L10079, ptr %local.eval)
+  call i32 @qd_push_i(ptr %ctx, i64 1)
+  call i32 @qd_add(ptr %ctx)
+  %stp_L10080 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L10080 = load ptr, ptr %stp_L10080
+  call void @qd_stack_pop(ptr %stk_L10080, ptr %local.eval)
+  %stp_L10081 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L10081 = load ptr, ptr %stp_L10081
+  call i32 @qdrt_push_element(ptr %stk_L10081, ptr %local.cur)
+  %fa_elem_L10082 = alloca %qd_stack_element_t
+  %fa_stp_L10082 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %fa_stk_L10082 = load ptr, ptr %fa_stp_L10082
+  call void @qd_stack_pop(ptr %fa_stk_L10082, ptr %fa_elem_L10082)
+  %fa_vp_L10082 = getelementptr %qd_stack_element_t, ptr %fa_elem_L10082, i32 0, i32 0
+  %fa_ptr_L10082 = load ptr, ptr %fa_vp_L10082
+  %fa_off_L10082 = load i64, ptr @__offset_sibling
+  %fa_fp_L10082 = getelementptr i8, ptr %fa_ptr_L10082, i64 %fa_off_L10082
+  %fa_val_L10082 = load ptr, ptr %fa_fp_L10082
+  call i32 @qd_push_p(ptr %ctx, ptr %fa_val_L10082)
+  %stp_L10083 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L10083 = load ptr, ptr %stp_L10083
+  call void @qd_stack_pop(ptr %stk_L10083, ptr %local.cur)
+  %stp_L10084 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L10084 = load ptr, ptr %stp_L10084
+  call i32 @qdrt_push_element(ptr %stk_L10084, ptr %local.cur)
+  call i32 @qd_push_i(ptr %ctx, i64 0)
+  call i32 @qd_neq(ptr %ctx)
+  %ce_L10085 = alloca %qd_stack_element_t
+  %stp_L10085 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L10085 = load ptr, ptr %stp_L10085
+  call void @qd_stack_pop(ptr %stk_L10085, ptr %ce_L10085)
+  %cv_L10085 = getelementptr %qd_stack_element_t, ptr %ce_L10085, i32 0, i32 0
+  %ci_L10085 = load i64, ptr %cv_L10085
+  %cc_L10085 = icmp ne i64 %ci_L10085, 0
+  br i1 %cc_L10085, label %L10068, label %L10069
+L10069:
+  %stp_L10086 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L10086 = load ptr, ptr %stp_L10086
+  call i32 @qdrt_push_element(ptr %stk_L10086, ptr %local.g)
+  %fs_elem_L10087 = alloca %qd_stack_element_t
+  %fs_stp_L10087 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %fs_stk_L10087 = load ptr, ptr %fs_stp_L10087
+  call void @qd_stack_pop(ptr %fs_stk_L10087, ptr %fs_elem_L10087)
+  %fs_vp_L10087 = getelementptr %qd_stack_element_t, ptr %fs_elem_L10087, i32 0, i32 0
+  %fs_val_L10087 = load i64, ptr %fs_vp_L10087
+  %fs_svp_L10087 = getelementptr %qd_stack_element_t, ptr %local.st, i32 0, i32 0
+  %fs_sptr_L10087 = load ptr, ptr %fs_svp_L10087
+  %fs_off_L10087 = load i64, ptr @__offset_globals
+  %fs_fp_L10087 = getelementptr i8, ptr %fs_sptr_L10087, i64 %fs_off_L10087
+  store i64 %fs_val_L10087, ptr %fs_fp_L10087
+  %stp_L10088 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L10088 = load ptr, ptr %stp_L10088
+  call i32 @qdrt_push_element(ptr %stk_L10088, ptr %local.st)
+  br label %return
+  br label %L9987
+L9987:
+  %stp_L10089 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L10089 = load ptr, ptr %stp_L10089
+  call i32 @qdrt_push_element(ptr %stk_L10089, ptr %local.k)
+  %ev_L10090 = load i64, ptr @__enum_NodeType_ConstDecl
+  call i32 @qd_push_i(ptr %ctx, i64 %ev_L10090)
+  call i32 @qd_eq(ptr %ctx)
+  %ce_L10091 = alloca %qd_stack_element_t
+  %stp_L10091 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L10091 = load ptr, ptr %stp_L10091
+  call void @qd_stack_pop(ptr %stk_L10091, ptr %ce_L10091)
+  %cv_L10091 = getelementptr %qd_stack_element_t, ptr %ce_L10091, i32 0, i32 0
+  %ci_L10091 = load i64, ptr %cv_L10091
+  %cc_L10091 = icmp ne i64 %ci_L10091, 0
+  br i1 %cc_L10091, label %L10092, label %L10094
+L10092:
+  %stp_L10095 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L10095 = load ptr, ptr %stp_L10095
+  call i32 @qdrt_push_element(ptr %stk_L10095, ptr %local.n)
+  %fa_elem_L10096 = alloca %qd_stack_element_t
+  %fa_stp_L10096 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %fa_stk_L10096 = load ptr, ptr %fa_stp_L10096
+  call void @qd_stack_pop(ptr %fa_stk_L10096, ptr %fa_elem_L10096)
+  %fa_vp_L10096 = getelementptr %qd_stack_element_t, ptr %fa_elem_L10096, i32 0, i32 0
+  %fa_ptr_L10096 = load ptr, ptr %fa_vp_L10096
+  %fa_off_L10096 = load i64, ptr @__offset_ntext
+  %fa_fp_L10096 = getelementptr i8, ptr %fa_ptr_L10096, i64 %fa_off_L10096
+  %fa_val_L10096 = load ptr, ptr %fa_fp_L10096
+  call i32 @qd_push_s_ref(ptr %ctx, ptr %fa_val_L10096)
+  %stp_L10097 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L10097 = load ptr, ptr %stp_L10097
+  call void @qd_stack_pop(ptr %stk_L10097, ptr %local.cname)
+  %stp_L10098 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L10098 = load ptr, ptr %stp_L10098
+  call i32 @qdrt_push_element(ptr %stk_L10098, ptr %local.n)
+  %fa_elem_L10099 = alloca %qd_stack_element_t
+  %fa_stp_L10099 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %fa_stk_L10099 = load ptr, ptr %fa_stp_L10099
+  call void @qd_stack_pop(ptr %fa_stk_L10099, ptr %fa_elem_L10099)
+  %fa_vp_L10099 = getelementptr %qd_stack_element_t, ptr %fa_elem_L10099, i32 0, i32 0
+  %fa_ptr_L10099 = load ptr, ptr %fa_vp_L10099
+  %fa_off_L10099 = load i64, ptr @__offset_child1
+  %fa_fp_L10099 = getelementptr i8, ptr %fa_ptr_L10099, i64 %fa_off_L10099
+  %fa_val_L10099 = load ptr, ptr %fa_fp_L10099
+  call i32 @qd_push_p(ptr %ctx, ptr %fa_val_L10099)
+  call i32 @qd_push_i(ptr %ctx, i64 0)
+  call i32 @qd_neq(ptr %ctx)
+  %ce_L10100 = alloca %qd_stack_element_t
+  %stp_L10100 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L10100 = load ptr, ptr %stp_L10100
+  call void @qd_stack_pop(ptr %stk_L10100, ptr %ce_L10100)
+  %cv_L10100 = getelementptr %qd_stack_element_t, ptr %ce_L10100, i32 0, i32 0
+  %ci_L10100 = load i64, ptr %cv_L10100
+  %cc_L10100 = icmp ne i64 %ci_L10100, 0
+  br i1 %cc_L10100, label %L10101, label %L10103
+L10101:
+  %stp_L10104 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L10104 = load ptr, ptr %stp_L10104
+  call i32 @qdrt_push_element(ptr %stk_L10104, ptr %local.n)
+  %fa_elem_L10105 = alloca %qd_stack_element_t
+  %fa_stp_L10105 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %fa_stk_L10105 = load ptr, ptr %fa_stp_L10105
+  call void @qd_stack_pop(ptr %fa_stk_L10105, ptr %fa_elem_L10105)
+  %fa_vp_L10105 = getelementptr %qd_stack_element_t, ptr %fa_elem_L10105, i32 0, i32 0
+  %fa_ptr_L10105 = load ptr, ptr %fa_vp_L10105
+  %fa_off_L10105 = load i64, ptr @__offset_child1
+  %fa_fp_L10105 = getelementptr i8, ptr %fa_ptr_L10105, i64 %fa_off_L10105
+  %fa_val_L10105 = load ptr, ptr %fa_fp_L10105
+  call i32 @qd_push_p(ptr %ctx, ptr %fa_val_L10105)
+  %fa_elem_L10106 = alloca %qd_stack_element_t
+  %fa_stp_L10106 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %fa_stk_L10106 = load ptr, ptr %fa_stp_L10106
+  call void @qd_stack_pop(ptr %fa_stk_L10106, ptr %fa_elem_L10106)
+  %fa_vp_L10106 = getelementptr %qd_stack_element_t, ptr %fa_elem_L10106, i32 0, i32 0
+  %fa_ptr_L10106 = load ptr, ptr %fa_vp_L10106
+  %fa_off_L10106 = load i64, ptr @__offset_ntext
+  %fa_fp_L10106 = getelementptr i8, ptr %fa_ptr_L10106, i64 %fa_off_L10106
+  %fa_val_L10106 = load ptr, ptr %fa_fp_L10106
+  call i32 @qd_push_s_ref(ptr %ctx, ptr %fa_val_L10106)
+  %stp_L10107 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L10107 = load ptr, ptr %stp_L10107
+  call void @qd_stack_pop(ptr %stk_L10107, ptr %local.cval)
+  %stp_L10108 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L10108 = load ptr, ptr %stp_L10108
+  call i32 @qdrt_push_element(ptr %stk_L10108, ptr %local.cval)
+  %stp_L10109 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L10109 = load ptr, ptr %stp_L10109
+  call void @qd_stack_pop(ptr %stk_L10109, ptr %local.cval_dec)
+  %stp_L10110 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L10110 = load ptr, ptr %stp_L10110
+  call i32 @qdrt_push_element(ptr %stk_L10110, ptr %local.n)
+  %fa_elem_L10111 = alloca %qd_stack_element_t
+  %fa_stp_L10111 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %fa_stk_L10111 = load ptr, ptr %fa_stp_L10111
+  call void @qd_stack_pop(ptr %fa_stk_L10111, ptr %fa_elem_L10111)
+  %fa_vp_L10111 = getelementptr %qd_stack_element_t, ptr %fa_elem_L10111, i32 0, i32 0
+  %fa_ptr_L10111 = load ptr, ptr %fa_vp_L10111
+  %fa_off_L10111 = load i64, ptr @__offset_child1
+  %fa_fp_L10111 = getelementptr i8, ptr %fa_ptr_L10111, i64 %fa_off_L10111
+  %fa_val_L10111 = load ptr, ptr %fa_fp_L10111
+  call i32 @qd_push_p(ptr %ctx, ptr %fa_val_L10111)
+  %fa_elem_L10112 = alloca %qd_stack_element_t
+  %fa_stp_L10112 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %fa_stk_L10112 = load ptr, ptr %fa_stp_L10112
+  call void @qd_stack_pop(ptr %fa_stk_L10112, ptr %fa_elem_L10112)
+  %fa_vp_L10112 = getelementptr %qd_stack_element_t, ptr %fa_elem_L10112, i32 0, i32 0
+  %fa_ptr_L10112 = load ptr, ptr %fa_vp_L10112
+  %fa_off_L10112 = load i64, ptr @__offset_nkind
+  %fa_fp_L10112 = getelementptr i8, ptr %fa_ptr_L10112, i64 %fa_off_L10112
+  %fa_val_L10112 = load i64, ptr %fa_fp_L10112
+  call i32 @qd_push_i(ptr %ctx, i64 %fa_val_L10112)
+  %ev_L10113 = load i64, ptr @__enum_NodeType_IntLit
+  call i32 @qd_push_i(ptr %ctx, i64 %ev_L10113)
+  call i32 @qd_eq(ptr %ctx)
+  %ce_L10114 = alloca %qd_stack_element_t
+  %stp_L10114 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L10114 = load ptr, ptr %stp_L10114
+  call void @qd_stack_pop(ptr %stk_L10114, ptr %ce_L10114)
+  %cv_L10114 = getelementptr %qd_stack_element_t, ptr %ce_L10114, i32 0, i32 0
+  %ci_L10114 = load i64, ptr %cv_L10114
+  %cc_L10114 = icmp ne i64 %ci_L10114, 0
+  br i1 %cc_L10114, label %L10115, label %L10117
+L10115:
+  %stp_L10118 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L10118 = load ptr, ptr %stp_L10118
+  call i32 @qdrt_push_element(ptr %stk_L10118, ptr %local.cval)
   call i32 @usr_strings_len(ptr %ctx)
   call i32 @qd_push_i(ptr %ctx, i64 2)
   call i32 @qd_gt(ptr %ctx)
-  %ce_L10043 = alloca %qd_stack_element_t
-  %stp_L10043 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L10043 = load ptr, ptr %stp_L10043
-  call void @qd_stack_pop(ptr %stk_L10043, ptr %ce_L10043)
-  %cv_L10043 = getelementptr %qd_stack_element_t, ptr %ce_L10043, i32 0, i32 0
-  %ci_L10043 = load i64, ptr %cv_L10043
-  %cc_L10043 = icmp ne i64 %ci_L10043, 0
-  br i1 %cc_L10043, label %L10044, label %L10046
-L10044:
-  %stp_L10047 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L10047 = load ptr, ptr %stp_L10047
-  call i32 @qdrt_push_element(ptr %stk_L10047, ptr %local.cval)
+  %ce_L10119 = alloca %qd_stack_element_t
+  %stp_L10119 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L10119 = load ptr, ptr %stp_L10119
+  call void @qd_stack_pop(ptr %stk_L10119, ptr %ce_L10119)
+  %cv_L10119 = getelementptr %qd_stack_element_t, ptr %ce_L10119, i32 0, i32 0
+  %ci_L10119 = load i64, ptr %cv_L10119
+  %cc_L10119 = icmp ne i64 %ci_L10119, 0
+  br i1 %cc_L10119, label %L10120, label %L10122
+L10120:
+  %stp_L10123 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L10123 = load ptr, ptr %stp_L10123
+  call i32 @qdrt_push_element(ptr %stk_L10123, ptr %local.cval)
   call i32 @qd_push_i(ptr %ctx, i64 0)
   call i32 @usr_strings_char_at(ptr %ctx)
-  %fe_L10048 = alloca %qd_stack_element_t
-  %fstp_L10048 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %fstk_L10048 = load ptr, ptr %fstp_L10048
-  call void @qd_stack_pop(ptr %fstk_L10048, ptr %fe_L10048)
-  %fvp_L10048 = getelementptr %qd_stack_element_t, ptr %fe_L10048, i32 0, i32 0
-  %fvi_L10048 = load i64, ptr %fvp_L10048
-  %fok_L10048 = icmp ne i64 %fvi_L10048, 0
-  br i1 %fok_L10048, label %L10049, label %L10050
-L10050:
+  %fe_L10124 = alloca %qd_stack_element_t
+  %fstp_L10124 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %fstk_L10124 = load ptr, ptr %fstp_L10124
+  call void @qd_stack_pop(ptr %fstk_L10124, ptr %fe_L10124)
+  %fvp_L10124 = getelementptr %qd_stack_element_t, ptr %fe_L10124, i32 0, i32 0
+  %fvi_L10124 = load i64, ptr %fvp_L10124
+  %fok_L10124 = icmp ne i64 %fvi_L10124, 0
+  br i1 %fok_L10124, label %L10125, label %L10126
+L10126:
   call i32 @qd_panic(ptr %ctx)
   unreachable
-L10049:
+L10125:
   call i32 @qd_push_i(ptr %ctx, i64 48)
   call i32 @qd_eq(ptr %ctx)
-  %ce_L10051 = alloca %qd_stack_element_t
-  %stp_L10051 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L10051 = load ptr, ptr %stp_L10051
-  call void @qd_stack_pop(ptr %stk_L10051, ptr %ce_L10051)
-  %cv_L10051 = getelementptr %qd_stack_element_t, ptr %ce_L10051, i32 0, i32 0
-  %ci_L10051 = load i64, ptr %cv_L10051
-  %cc_L10051 = icmp ne i64 %ci_L10051, 0
-  br i1 %cc_L10051, label %L10052, label %L10054
-L10052:
-  %stp_L10055 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L10055 = load ptr, ptr %stp_L10055
-  call i32 @qdrt_push_element(ptr %stk_L10055, ptr %local.cval)
+  %ce_L10127 = alloca %qd_stack_element_t
+  %stp_L10127 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L10127 = load ptr, ptr %stp_L10127
+  call void @qd_stack_pop(ptr %stk_L10127, ptr %ce_L10127)
+  %cv_L10127 = getelementptr %qd_stack_element_t, ptr %ce_L10127, i32 0, i32 0
+  %ci_L10127 = load i64, ptr %cv_L10127
+  %cc_L10127 = icmp ne i64 %ci_L10127, 0
+  br i1 %cc_L10127, label %L10128, label %L10130
+L10128:
+  %stp_L10131 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L10131 = load ptr, ptr %stp_L10131
+  call i32 @qdrt_push_element(ptr %stk_L10131, ptr %local.cval)
   call i32 @qd_push_i(ptr %ctx, i64 1)
   call i32 @usr_strings_char_at(ptr %ctx)
-  %fe_L10056 = alloca %qd_stack_element_t
-  %fstp_L10056 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %fstk_L10056 = load ptr, ptr %fstp_L10056
-  call void @qd_stack_pop(ptr %fstk_L10056, ptr %fe_L10056)
-  %fvp_L10056 = getelementptr %qd_stack_element_t, ptr %fe_L10056, i32 0, i32 0
-  %fvi_L10056 = load i64, ptr %fvp_L10056
-  %fok_L10056 = icmp ne i64 %fvi_L10056, 0
-  br i1 %fok_L10056, label %L10057, label %L10058
-L10058:
+  %fe_L10132 = alloca %qd_stack_element_t
+  %fstp_L10132 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %fstk_L10132 = load ptr, ptr %fstp_L10132
+  call void @qd_stack_pop(ptr %fstk_L10132, ptr %fe_L10132)
+  %fvp_L10132 = getelementptr %qd_stack_element_t, ptr %fe_L10132, i32 0, i32 0
+  %fvi_L10132 = load i64, ptr %fvp_L10132
+  %fok_L10132 = icmp ne i64 %fvi_L10132, 0
+  br i1 %fok_L10132, label %L10133, label %L10134
+L10134:
   call i32 @qd_panic(ptr %ctx)
   unreachable
-L10057:
-  %stp_L10059 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L10059 = load ptr, ptr %stp_L10059
-  call void @qd_stack_pop(ptr %stk_L10059, ptr %local.xch)
-  %stp_L10060 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L10060 = load ptr, ptr %stp_L10060
-  call i32 @qdrt_push_element(ptr %stk_L10060, ptr %local.xch)
+L10133:
+  %stp_L10135 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L10135 = load ptr, ptr %stp_L10135
+  call void @qd_stack_pop(ptr %stk_L10135, ptr %local.xch)
+  %stp_L10136 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L10136 = load ptr, ptr %stp_L10136
+  call i32 @qdrt_push_element(ptr %stk_L10136, ptr %local.xch)
   call i32 @qd_push_i(ptr %ctx, i64 120)
   call i32 @qd_eq(ptr %ctx)
-  %stp_L10061 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L10061 = load ptr, ptr %stp_L10061
-  call i32 @qdrt_push_element(ptr %stk_L10061, ptr %local.xch)
+  %stp_L10137 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L10137 = load ptr, ptr %stp_L10137
+  call i32 @qdrt_push_element(ptr %stk_L10137, ptr %local.xch)
   call i32 @qd_push_i(ptr %ctx, i64 88)
   call i32 @qd_eq(ptr %ctx)
   call i32 @qd_or(ptr %ctx)
-  %ce_L10062 = alloca %qd_stack_element_t
-  %stp_L10062 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L10062 = load ptr, ptr %stp_L10062
-  call void @qd_stack_pop(ptr %stk_L10062, ptr %ce_L10062)
-  %cv_L10062 = getelementptr %qd_stack_element_t, ptr %ce_L10062, i32 0, i32 0
-  %ci_L10062 = load i64, ptr %cv_L10062
-  %cc_L10062 = icmp ne i64 %ci_L10062, 0
-  br i1 %cc_L10062, label %L10063, label %L10065
-L10063:
-  %stp_L10066 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L10066 = load ptr, ptr %stp_L10066
-  call i32 @qdrt_push_element(ptr %stk_L10066, ptr %local.cval)
+  %ce_L10138 = alloca %qd_stack_element_t
+  %stp_L10138 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L10138 = load ptr, ptr %stp_L10138
+  call void @qd_stack_pop(ptr %stk_L10138, ptr %ce_L10138)
+  %cv_L10138 = getelementptr %qd_stack_element_t, ptr %ce_L10138, i32 0, i32 0
+  %ci_L10138 = load i64, ptr %cv_L10138
+  %cc_L10138 = icmp ne i64 %ci_L10138, 0
+  br i1 %cc_L10138, label %L10139, label %L10141
+L10139:
+  %stp_L10142 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L10142 = load ptr, ptr %stp_L10142
+  call i32 @qdrt_push_element(ptr %stk_L10142, ptr %local.cval)
   call i32 @qd_push_i(ptr %ctx, i64 16)
   call i32 @usr_strconv_parse_int(ptr %ctx)
-  %fe_L10067 = alloca %qd_stack_element_t
-  %fstp_L10067 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %fstk_L10067 = load ptr, ptr %fstp_L10067
-  call void @qd_stack_pop(ptr %fstk_L10067, ptr %fe_L10067)
-  %fvp_L10067 = getelementptr %qd_stack_element_t, ptr %fe_L10067, i32 0, i32 0
-  %fvi_L10067 = load i64, ptr %fvp_L10067
-  %fok_L10067 = icmp ne i64 %fvi_L10067, 0
-  br i1 %fok_L10067, label %L10068, label %L10069
-L10069:
+  %fe_L10143 = alloca %qd_stack_element_t
+  %fstp_L10143 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %fstk_L10143 = load ptr, ptr %fstp_L10143
+  call void @qd_stack_pop(ptr %fstk_L10143, ptr %fe_L10143)
+  %fvp_L10143 = getelementptr %qd_stack_element_t, ptr %fe_L10143, i32 0, i32 0
+  %fvi_L10143 = load i64, ptr %fvp_L10143
+  %fok_L10143 = icmp ne i64 %fvi_L10143, 0
+  br i1 %fok_L10143, label %L10144, label %L10145
+L10145:
   call i32 @qd_panic(ptr %ctx)
   unreachable
-L10068:
-  %stp_L10070 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L10070 = load ptr, ptr %stp_L10070
-  call void @qd_stack_pop(ptr %stk_L10070, ptr %local.hv)
+L10144:
+  %stp_L10146 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L10146 = load ptr, ptr %stp_L10146
+  call void @qd_stack_pop(ptr %stk_L10146, ptr %local.hv)
   call i32 @usr_sb_new(ptr %ctx)
-  %stp_L10071 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L10071 = load ptr, ptr %stp_L10071
-  call void @qd_stack_pop(ptr %stk_L10071, ptr %local.hvb)
-  %stp_L10072 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L10072 = load ptr, ptr %stp_L10072
-  call i32 @qdrt_push_element(ptr %stk_L10072, ptr %local.hvb)
-  %stp_L10073 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L10073 = load ptr, ptr %stp_L10073
-  call i32 @qdrt_push_element(ptr %stk_L10073, ptr %local.hv)
+  %stp_L10147 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L10147 = load ptr, ptr %stp_L10147
+  call void @qd_stack_pop(ptr %stk_L10147, ptr %local.hvb)
+  %stp_L10148 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L10148 = load ptr, ptr %stp_L10148
+  call i32 @qdrt_push_element(ptr %stk_L10148, ptr %local.hvb)
+  %stp_L10149 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L10149 = load ptr, ptr %stp_L10149
+  call i32 @qdrt_push_element(ptr %stk_L10149, ptr %local.hv)
   call i32 @usr_sb_append_int(ptr %ctx)
-  %stp_L10074 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L10074 = load ptr, ptr %stp_L10074
-  call void @qd_stack_pop(ptr %stk_L10074, ptr %local.hvb)
-  %stp_L10075 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L10075 = load ptr, ptr %stp_L10075
-  call i32 @qdrt_push_element(ptr %stk_L10075, ptr %local.hvb)
+  %stp_L10150 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L10150 = load ptr, ptr %stp_L10150
+  call void @qd_stack_pop(ptr %stk_L10150, ptr %local.hvb)
+  %stp_L10151 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L10151 = load ptr, ptr %stp_L10151
+  call i32 @qdrt_push_element(ptr %stk_L10151, ptr %local.hvb)
   call i32 @usr_sb_finish(ptr %ctx)
-  %stp_L10076 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L10076 = load ptr, ptr %stp_L10076
-  call void @qd_stack_pop(ptr %stk_L10076, ptr %local.cval_dec)
-  br label %L10065
-L10065:
-  br label %L10054
-L10054:
-  br label %L10046
-L10046:
-  br label %L10041
-L10041:
-  br label %L10027
-L10027:
-  %stp_L10077 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L10077 = load ptr, ptr %stp_L10077
-  call i32 @qdrt_push_element(ptr %stk_L10077, ptr %local.st)
+  %stp_L10152 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L10152 = load ptr, ptr %stp_L10152
+  call void @qd_stack_pop(ptr %stk_L10152, ptr %local.cval_dec)
+  br label %L10141
+L10141:
+  br label %L10130
+L10130:
+  br label %L10122
+L10122:
+  br label %L10117
+L10117:
+  br label %L10103
+L10103:
+  %stp_L10153 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L10153 = load ptr, ptr %stp_L10153
+  call i32 @qdrt_push_element(ptr %stk_L10153, ptr %local.st)
   br label %return
-  br label %L10018
-L10018:
-  %stp_L10078 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L10078 = load ptr, ptr %stp_L10078
-  call i32 @qdrt_push_element(ptr %stk_L10078, ptr %local.k)
-  %ev_L10079 = load i64, ptr @__enum_NodeType_UseStmt
-  call i32 @qd_push_i(ptr %ctx, i64 %ev_L10079)
+  br label %L10094
+L10094:
+  %stp_L10154 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L10154 = load ptr, ptr %stp_L10154
+  call i32 @qdrt_push_element(ptr %stk_L10154, ptr %local.k)
+  %ev_L10155 = load i64, ptr @__enum_NodeType_UseStmt
+  call i32 @qd_push_i(ptr %ctx, i64 %ev_L10155)
   call i32 @qd_eq(ptr %ctx)
-  %ce_L10080 = alloca %qd_stack_element_t
-  %stp_L10080 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L10080 = load ptr, ptr %stp_L10080
-  call void @qd_stack_pop(ptr %stk_L10080, ptr %ce_L10080)
-  %cv_L10080 = getelementptr %qd_stack_element_t, ptr %ce_L10080, i32 0, i32 0
-  %ci_L10080 = load i64, ptr %cv_L10080
-  %cc_L10080 = icmp ne i64 %ci_L10080, 0
-  br i1 %cc_L10080, label %L10081, label %L10083
-L10081:
-  %stp_L10084 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L10084 = load ptr, ptr %stp_L10084
-  call i32 @qdrt_push_element(ptr %stk_L10084, ptr %local.st)
+  %ce_L10156 = alloca %qd_stack_element_t
+  %stp_L10156 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L10156 = load ptr, ptr %stp_L10156
+  call void @qd_stack_pop(ptr %stk_L10156, ptr %ce_L10156)
+  %cv_L10156 = getelementptr %qd_stack_element_t, ptr %ce_L10156, i32 0, i32 0
+  %ci_L10156 = load i64, ptr %cv_L10156
+  %cc_L10156 = icmp ne i64 %ci_L10156, 0
+  br i1 %cc_L10156, label %L10157, label %L10159
+L10157:
+  %stp_L10160 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L10160 = load ptr, ptr %stp_L10160
+  call i32 @qdrt_push_element(ptr %stk_L10160, ptr %local.st)
   br label %return
-  br label %L10083
-L10083:
-  %stp_L10085 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L10085 = load ptr, ptr %stp_L10085
-  call i32 @qdrt_push_element(ptr %stk_L10085, ptr %local.st)
-  %fa_elem_L10086 = alloca %qd_stack_element_t
-  %fa_stp_L10086 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %fa_stk_L10086 = load ptr, ptr %fa_stp_L10086
-  call void @qd_stack_pop(ptr %fa_stk_L10086, ptr %fa_elem_L10086)
-  %fa_vp_L10086 = getelementptr %qd_stack_element_t, ptr %fa_elem_L10086, i32 0, i32 0
-  %fa_ptr_L10086 = load ptr, ptr %fa_vp_L10086
-  %fa_off_L10086 = load i64, ptr @__offset_code
-  %fa_fp_L10086 = getelementptr i8, ptr %fa_ptr_L10086, i64 %fa_off_L10086
-  %fa_val_L10086 = load ptr, ptr %fa_fp_L10086
-  call i32 @qd_push_p(ptr %ctx, ptr %fa_val_L10086)
-  %stp_L10087 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L10087 = load ptr, ptr %stp_L10087
-  call void @qd_stack_pop(ptr %stk_L10087, ptr %local.o)
-  %stp_L10088 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L10088 = load ptr, ptr %stp_L10088
-  call i32 @qdrt_push_element(ptr %stk_L10088, ptr %local.o)
-  call i32 @qd_push_s(ptr %ctx, ptr @.str.10089)
+  br label %L10159
+L10159:
+  %stp_L10161 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L10161 = load ptr, ptr %stp_L10161
+  call i32 @qdrt_push_element(ptr %stk_L10161, ptr %local.st)
+  %fa_elem_L10162 = alloca %qd_stack_element_t
+  %fa_stp_L10162 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %fa_stk_L10162 = load ptr, ptr %fa_stp_L10162
+  call void @qd_stack_pop(ptr %fa_stk_L10162, ptr %fa_elem_L10162)
+  %fa_vp_L10162 = getelementptr %qd_stack_element_t, ptr %fa_elem_L10162, i32 0, i32 0
+  %fa_ptr_L10162 = load ptr, ptr %fa_vp_L10162
+  %fa_off_L10162 = load i64, ptr @__offset_code
+  %fa_fp_L10162 = getelementptr i8, ptr %fa_ptr_L10162, i64 %fa_off_L10162
+  %fa_val_L10162 = load ptr, ptr %fa_fp_L10162
+  call i32 @qd_push_p(ptr %ctx, ptr %fa_val_L10162)
+  %stp_L10163 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L10163 = load ptr, ptr %stp_L10163
+  call void @qd_stack_pop(ptr %stk_L10163, ptr %local.o)
+  %stp_L10164 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L10164 = load ptr, ptr %stp_L10164
+  call i32 @qdrt_push_element(ptr %stk_L10164, ptr %local.o)
+  call i32 @qd_push_s(ptr %ctx, ptr @.str.10165)
   call i32 @usr_sb_append(ptr %ctx)
-  %stp_L10090 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L10090 = load ptr, ptr %stp_L10090
-  call void @qd_stack_pop(ptr %stk_L10090, ptr %local.o)
-  %stp_L10091 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L10091 = load ptr, ptr %stp_L10091
-  call i32 @qdrt_push_element(ptr %stk_L10091, ptr %local.o)
-  %stp_L10092 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L10092 = load ptr, ptr %stp_L10092
-  call i32 @qdrt_push_element(ptr %stk_L10092, ptr %local.n)
-  %fa_elem_L10093 = alloca %qd_stack_element_t
-  %fa_stp_L10093 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %fa_stk_L10093 = load ptr, ptr %fa_stp_L10093
-  call void @qd_stack_pop(ptr %fa_stk_L10093, ptr %fa_elem_L10093)
-  %fa_vp_L10093 = getelementptr %qd_stack_element_t, ptr %fa_elem_L10093, i32 0, i32 0
-  %fa_ptr_L10093 = load ptr, ptr %fa_vp_L10093
-  %fa_off_L10093 = load i64, ptr @__offset_ntext
-  %fa_fp_L10093 = getelementptr i8, ptr %fa_ptr_L10093, i64 %fa_off_L10093
-  %fa_val_L10093 = load ptr, ptr %fa_fp_L10093
-  call i32 @qd_push_s_ref(ptr %ctx, ptr %fa_val_L10093)
+  %stp_L10166 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L10166 = load ptr, ptr %stp_L10166
+  call void @qd_stack_pop(ptr %stk_L10166, ptr %local.o)
+  %stp_L10167 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L10167 = load ptr, ptr %stp_L10167
+  call i32 @qdrt_push_element(ptr %stk_L10167, ptr %local.o)
+  %stp_L10168 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L10168 = load ptr, ptr %stp_L10168
+  call i32 @qdrt_push_element(ptr %stk_L10168, ptr %local.n)
+  %fa_elem_L10169 = alloca %qd_stack_element_t
+  %fa_stp_L10169 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %fa_stk_L10169 = load ptr, ptr %fa_stp_L10169
+  call void @qd_stack_pop(ptr %fa_stk_L10169, ptr %fa_elem_L10169)
+  %fa_vp_L10169 = getelementptr %qd_stack_element_t, ptr %fa_elem_L10169, i32 0, i32 0
+  %fa_ptr_L10169 = load ptr, ptr %fa_vp_L10169
+  %fa_off_L10169 = load i64, ptr @__offset_ntext
+  %fa_fp_L10169 = getelementptr i8, ptr %fa_ptr_L10169, i64 %fa_off_L10169
+  %fa_val_L10169 = load ptr, ptr %fa_fp_L10169
+  call i32 @qd_push_s_ref(ptr %ctx, ptr %fa_val_L10169)
   call i32 @usr_sb_append(ptr %ctx)
-  %stp_L10094 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L10094 = load ptr, ptr %stp_L10094
-  call void @qd_stack_pop(ptr %stk_L10094, ptr %local.o)
-  %stp_L10095 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L10095 = load ptr, ptr %stp_L10095
-  call i32 @qdrt_push_element(ptr %stk_L10095, ptr %local.o)
-  call i32 @qd_push_s(ptr %ctx, ptr @.str.10096)
+  %stp_L10170 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L10170 = load ptr, ptr %stp_L10170
+  call void @qd_stack_pop(ptr %stk_L10170, ptr %local.o)
+  %stp_L10171 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L10171 = load ptr, ptr %stp_L10171
+  call i32 @qdrt_push_element(ptr %stk_L10171, ptr %local.o)
+  call i32 @qd_push_s(ptr %ctx, ptr @.str.10172)
   call i32 @usr_sb_append(ptr %ctx)
-  %stp_L10097 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L10097 = load ptr, ptr %stp_L10097
-  call void @qd_stack_pop(ptr %stk_L10097, ptr %local.o)
-  %stp_L10098 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L10098 = load ptr, ptr %stp_L10098
-  call i32 @qdrt_push_element(ptr %stk_L10098, ptr %local.o)
-  %fs_elem_L10099 = alloca %qd_stack_element_t
-  %fs_stp_L10099 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %fs_stk_L10099 = load ptr, ptr %fs_stp_L10099
-  call void @qd_stack_pop(ptr %fs_stk_L10099, ptr %fs_elem_L10099)
-  %fs_vp_L10099 = getelementptr %qd_stack_element_t, ptr %fs_elem_L10099, i32 0, i32 0
-  %fs_val_L10099 = load i64, ptr %fs_vp_L10099
-  %fs_svp_L10099 = getelementptr %qd_stack_element_t, ptr %local.st, i32 0, i32 0
-  %fs_sptr_L10099 = load ptr, ptr %fs_svp_L10099
-  %fs_off_L10099 = load i64, ptr @__offset_code
-  %fs_fp_L10099 = getelementptr i8, ptr %fs_sptr_L10099, i64 %fs_off_L10099
-  store i64 %fs_val_L10099, ptr %fs_fp_L10099
-  %stp_L10100 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L10100 = load ptr, ptr %stp_L10100
-  call i32 @qdrt_push_element(ptr %stk_L10100, ptr %local.st)
+  %stp_L10173 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L10173 = load ptr, ptr %stp_L10173
+  call void @qd_stack_pop(ptr %stk_L10173, ptr %local.o)
+  %stp_L10174 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L10174 = load ptr, ptr %stp_L10174
+  call i32 @qdrt_push_element(ptr %stk_L10174, ptr %local.o)
+  %fs_elem_L10175 = alloca %qd_stack_element_t
+  %fs_stp_L10175 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %fs_stk_L10175 = load ptr, ptr %fs_stp_L10175
+  call void @qd_stack_pop(ptr %fs_stk_L10175, ptr %fs_elem_L10175)
+  %fs_vp_L10175 = getelementptr %qd_stack_element_t, ptr %fs_elem_L10175, i32 0, i32 0
+  %fs_val_L10175 = load i64, ptr %fs_vp_L10175
+  %fs_svp_L10175 = getelementptr %qd_stack_element_t, ptr %local.st, i32 0, i32 0
+  %fs_sptr_L10175 = load ptr, ptr %fs_svp_L10175
+  %fs_off_L10175 = load i64, ptr @__offset_code
+  %fs_fp_L10175 = getelementptr i8, ptr %fs_sptr_L10175, i64 %fs_off_L10175
+  store i64 %fs_val_L10175, ptr %fs_fp_L10175
+  %stp_L10176 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L10176 = load ptr, ptr %stp_L10176
+  call i32 @qdrt_push_element(ptr %stk_L10176, ptr %local.st)
   br label %return
 return:
   ret i32 0
@@ -41019,98 +41333,98 @@ define i32 @usr_codegen_emit_main_entry(ptr %ctx) {
 entry:
   %local.st = alloca %qd_stack_element_t
   %local.o = alloca %qd_stack_element_t
-  %stp_L10101 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L10101 = load ptr, ptr %stp_L10101
-  call void @qd_stack_pop(ptr %stk_L10101, ptr %local.st)
-  %stp_L10102 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L10102 = load ptr, ptr %stp_L10102
-  call i32 @qdrt_push_element(ptr %stk_L10102, ptr %local.st)
-  %fa_elem_L10103 = alloca %qd_stack_element_t
-  %fa_stp_L10103 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %fa_stk_L10103 = load ptr, ptr %fa_stp_L10103
-  call void @qd_stack_pop(ptr %fa_stk_L10103, ptr %fa_elem_L10103)
-  %fa_vp_L10103 = getelementptr %qd_stack_element_t, ptr %fa_elem_L10103, i32 0, i32 0
-  %fa_ptr_L10103 = load ptr, ptr %fa_vp_L10103
-  %fa_off_L10103 = load i64, ptr @__offset_code
-  %fa_fp_L10103 = getelementptr i8, ptr %fa_ptr_L10103, i64 %fa_off_L10103
-  %fa_val_L10103 = load ptr, ptr %fa_fp_L10103
-  call i32 @qd_push_p(ptr %ctx, ptr %fa_val_L10103)
-  %stp_L10104 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L10104 = load ptr, ptr %stp_L10104
-  call void @qd_stack_pop(ptr %stk_L10104, ptr %local.o)
-  %stp_L10105 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L10105 = load ptr, ptr %stp_L10105
-  call i32 @qdrt_push_element(ptr %stk_L10105, ptr %local.o)
-  call i32 @qd_push_s(ptr %ctx, ptr @.str.10106)
+  %stp_L10177 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L10177 = load ptr, ptr %stp_L10177
+  call void @qd_stack_pop(ptr %stk_L10177, ptr %local.st)
+  %stp_L10178 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L10178 = load ptr, ptr %stp_L10178
+  call i32 @qdrt_push_element(ptr %stk_L10178, ptr %local.st)
+  %fa_elem_L10179 = alloca %qd_stack_element_t
+  %fa_stp_L10179 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %fa_stk_L10179 = load ptr, ptr %fa_stp_L10179
+  call void @qd_stack_pop(ptr %fa_stk_L10179, ptr %fa_elem_L10179)
+  %fa_vp_L10179 = getelementptr %qd_stack_element_t, ptr %fa_elem_L10179, i32 0, i32 0
+  %fa_ptr_L10179 = load ptr, ptr %fa_vp_L10179
+  %fa_off_L10179 = load i64, ptr @__offset_code
+  %fa_fp_L10179 = getelementptr i8, ptr %fa_ptr_L10179, i64 %fa_off_L10179
+  %fa_val_L10179 = load ptr, ptr %fa_fp_L10179
+  call i32 @qd_push_p(ptr %ctx, ptr %fa_val_L10179)
+  %stp_L10180 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L10180 = load ptr, ptr %stp_L10180
+  call void @qd_stack_pop(ptr %stk_L10180, ptr %local.o)
+  %stp_L10181 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L10181 = load ptr, ptr %stp_L10181
+  call i32 @qdrt_push_element(ptr %stk_L10181, ptr %local.o)
+  call i32 @qd_push_s(ptr %ctx, ptr @.str.10182)
   call i32 @usr_sb_append(ptr %ctx)
-  %stp_L10107 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L10107 = load ptr, ptr %stp_L10107
-  call void @qd_stack_pop(ptr %stk_L10107, ptr %local.o)
-  %stp_L10108 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L10108 = load ptr, ptr %stp_L10108
-  call i32 @qdrt_push_element(ptr %stk_L10108, ptr %local.o)
-  call i32 @qd_push_s(ptr %ctx, ptr @.str.10109)
+  %stp_L10183 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L10183 = load ptr, ptr %stp_L10183
+  call void @qd_stack_pop(ptr %stk_L10183, ptr %local.o)
+  %stp_L10184 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L10184 = load ptr, ptr %stp_L10184
+  call i32 @qdrt_push_element(ptr %stk_L10184, ptr %local.o)
+  call i32 @qd_push_s(ptr %ctx, ptr @.str.10185)
   call i32 @usr_sb_append(ptr %ctx)
-  %stp_L10110 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L10110 = load ptr, ptr %stp_L10110
-  call void @qd_stack_pop(ptr %stk_L10110, ptr %local.o)
-  %stp_L10111 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L10111 = load ptr, ptr %stp_L10111
-  call i32 @qdrt_push_element(ptr %stk_L10111, ptr %local.o)
-  call i32 @qd_push_s(ptr %ctx, ptr @.str.10112)
+  %stp_L10186 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L10186 = load ptr, ptr %stp_L10186
+  call void @qd_stack_pop(ptr %stk_L10186, ptr %local.o)
+  %stp_L10187 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L10187 = load ptr, ptr %stp_L10187
+  call i32 @qdrt_push_element(ptr %stk_L10187, ptr %local.o)
+  call i32 @qd_push_s(ptr %ctx, ptr @.str.10188)
   call i32 @usr_sb_append(ptr %ctx)
-  %stp_L10113 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L10113 = load ptr, ptr %stp_L10113
-  call void @qd_stack_pop(ptr %stk_L10113, ptr %local.o)
-  %stp_L10114 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L10114 = load ptr, ptr %stp_L10114
-  call i32 @qdrt_push_element(ptr %stk_L10114, ptr %local.o)
-  call i32 @qd_push_s(ptr %ctx, ptr @.str.10115)
+  %stp_L10189 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L10189 = load ptr, ptr %stp_L10189
+  call void @qd_stack_pop(ptr %stk_L10189, ptr %local.o)
+  %stp_L10190 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L10190 = load ptr, ptr %stp_L10190
+  call i32 @qdrt_push_element(ptr %stk_L10190, ptr %local.o)
+  call i32 @qd_push_s(ptr %ctx, ptr @.str.10191)
   call i32 @usr_sb_append(ptr %ctx)
-  %stp_L10116 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L10116 = load ptr, ptr %stp_L10116
-  call void @qd_stack_pop(ptr %stk_L10116, ptr %local.o)
-  %stp_L10117 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L10117 = load ptr, ptr %stp_L10117
-  call i32 @qdrt_push_element(ptr %stk_L10117, ptr %local.o)
-  call i32 @qd_push_s(ptr %ctx, ptr @.str.10118)
+  %stp_L10192 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L10192 = load ptr, ptr %stp_L10192
+  call void @qd_stack_pop(ptr %stk_L10192, ptr %local.o)
+  %stp_L10193 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L10193 = load ptr, ptr %stp_L10193
+  call i32 @qdrt_push_element(ptr %stk_L10193, ptr %local.o)
+  call i32 @qd_push_s(ptr %ctx, ptr @.str.10194)
   call i32 @usr_sb_append(ptr %ctx)
-  %stp_L10119 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L10119 = load ptr, ptr %stp_L10119
-  call void @qd_stack_pop(ptr %stk_L10119, ptr %local.o)
-  %stp_L10120 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L10120 = load ptr, ptr %stp_L10120
-  call i32 @qdrt_push_element(ptr %stk_L10120, ptr %local.o)
-  call i32 @qd_push_s(ptr %ctx, ptr @.str.10121)
+  %stp_L10195 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L10195 = load ptr, ptr %stp_L10195
+  call void @qd_stack_pop(ptr %stk_L10195, ptr %local.o)
+  %stp_L10196 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L10196 = load ptr, ptr %stp_L10196
+  call i32 @qdrt_push_element(ptr %stk_L10196, ptr %local.o)
+  call i32 @qd_push_s(ptr %ctx, ptr @.str.10197)
   call i32 @usr_sb_append(ptr %ctx)
-  %stp_L10122 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L10122 = load ptr, ptr %stp_L10122
-  call void @qd_stack_pop(ptr %stk_L10122, ptr %local.o)
-  %stp_L10123 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L10123 = load ptr, ptr %stp_L10123
-  call i32 @qdrt_push_element(ptr %stk_L10123, ptr %local.o)
-  call i32 @qd_push_s(ptr %ctx, ptr @.str.10124)
+  %stp_L10198 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L10198 = load ptr, ptr %stp_L10198
+  call void @qd_stack_pop(ptr %stk_L10198, ptr %local.o)
+  %stp_L10199 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L10199 = load ptr, ptr %stp_L10199
+  call i32 @qdrt_push_element(ptr %stk_L10199, ptr %local.o)
+  call i32 @qd_push_s(ptr %ctx, ptr @.str.10200)
   call i32 @usr_sb_append(ptr %ctx)
-  %stp_L10125 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L10125 = load ptr, ptr %stp_L10125
-  call void @qd_stack_pop(ptr %stk_L10125, ptr %local.o)
-  %stp_L10126 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L10126 = load ptr, ptr %stp_L10126
-  call i32 @qdrt_push_element(ptr %stk_L10126, ptr %local.o)
-  %fs_elem_L10127 = alloca %qd_stack_element_t
-  %fs_stp_L10127 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %fs_stk_L10127 = load ptr, ptr %fs_stp_L10127
-  call void @qd_stack_pop(ptr %fs_stk_L10127, ptr %fs_elem_L10127)
-  %fs_vp_L10127 = getelementptr %qd_stack_element_t, ptr %fs_elem_L10127, i32 0, i32 0
-  %fs_val_L10127 = load i64, ptr %fs_vp_L10127
-  %fs_svp_L10127 = getelementptr %qd_stack_element_t, ptr %local.st, i32 0, i32 0
-  %fs_sptr_L10127 = load ptr, ptr %fs_svp_L10127
-  %fs_off_L10127 = load i64, ptr @__offset_code
-  %fs_fp_L10127 = getelementptr i8, ptr %fs_sptr_L10127, i64 %fs_off_L10127
-  store i64 %fs_val_L10127, ptr %fs_fp_L10127
-  %stp_L10128 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L10128 = load ptr, ptr %stp_L10128
-  call i32 @qdrt_push_element(ptr %stk_L10128, ptr %local.st)
+  %stp_L10201 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L10201 = load ptr, ptr %stp_L10201
+  call void @qd_stack_pop(ptr %stk_L10201, ptr %local.o)
+  %stp_L10202 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L10202 = load ptr, ptr %stp_L10202
+  call i32 @qdrt_push_element(ptr %stk_L10202, ptr %local.o)
+  %fs_elem_L10203 = alloca %qd_stack_element_t
+  %fs_stp_L10203 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %fs_stk_L10203 = load ptr, ptr %fs_stp_L10203
+  call void @qd_stack_pop(ptr %fs_stk_L10203, ptr %fs_elem_L10203)
+  %fs_vp_L10203 = getelementptr %qd_stack_element_t, ptr %fs_elem_L10203, i32 0, i32 0
+  %fs_val_L10203 = load i64, ptr %fs_vp_L10203
+  %fs_svp_L10203 = getelementptr %qd_stack_element_t, ptr %local.st, i32 0, i32 0
+  %fs_sptr_L10203 = load ptr, ptr %fs_svp_L10203
+  %fs_off_L10203 = load i64, ptr @__offset_code
+  %fs_fp_L10203 = getelementptr i8, ptr %fs_sptr_L10203, i64 %fs_off_L10203
+  store i64 %fs_val_L10203, ptr %fs_fp_L10203
+  %stp_L10204 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L10204 = load ptr, ptr %stp_L10204
+  call i32 @qdrt_push_element(ptr %stk_L10204, ptr %local.st)
   br label %return
 return:
   ret i32 0
@@ -41126,318 +41440,318 @@ entry:
   %local.flen = alloca %qd_stack_element_t
   %local.end = alloca %qd_stack_element_t
   %local.fname = alloca %qd_stack_element_t
-  %stp_L10129 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L10129 = load ptr, ptr %stp_L10129
-  call void @qd_stack_pop(ptr %stk_L10129, ptr %local.fns)
-  %stp_L10130 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L10130 = load ptr, ptr %stp_L10130
-  call void @qd_stack_pop(ptr %stk_L10130, ptr %local.mname)
-  %stp_L10131 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L10131 = load ptr, ptr %stp_L10131
-  call void @qd_stack_pop(ptr %stk_L10131, ptr %local.st)
-  %stp_L10132 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L10132 = load ptr, ptr %stp_L10132
-  call i32 @qdrt_push_element(ptr %stk_L10132, ptr %local.fns)
+  %stp_L10205 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L10205 = load ptr, ptr %stp_L10205
+  call void @qd_stack_pop(ptr %stk_L10205, ptr %local.fns)
+  %stp_L10206 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L10206 = load ptr, ptr %stp_L10206
+  call void @qd_stack_pop(ptr %stk_L10206, ptr %local.mname)
+  %stp_L10207 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L10207 = load ptr, ptr %stp_L10207
+  call void @qd_stack_pop(ptr %stk_L10207, ptr %local.st)
+  %stp_L10208 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L10208 = load ptr, ptr %stp_L10208
+  call i32 @qdrt_push_element(ptr %stk_L10208, ptr %local.fns)
   call i32 @usr_strings_len(ptr %ctx)
   call i32 @qd_push_i(ptr %ctx, i64 0)
   call i32 @qd_eq(ptr %ctx)
-  %ce_L10133 = alloca %qd_stack_element_t
-  %stp_L10133 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L10133 = load ptr, ptr %stp_L10133
-  call void @qd_stack_pop(ptr %stk_L10133, ptr %ce_L10133)
-  %cv_L10133 = getelementptr %qd_stack_element_t, ptr %ce_L10133, i32 0, i32 0
-  %ci_L10133 = load i64, ptr %cv_L10133
-  %cc_L10133 = icmp ne i64 %ci_L10133, 0
-  br i1 %cc_L10133, label %L10134, label %L10136
-L10134:
-  %stp_L10137 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L10137 = load ptr, ptr %stp_L10137
-  call i32 @qdrt_push_element(ptr %stk_L10137, ptr %local.st)
-  br label %return
-  br label %L10136
-L10136:
-  %stp_L10138 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L10138 = load ptr, ptr %stp_L10138
-  call i32 @qdrt_push_element(ptr %stk_L10138, ptr %local.st)
-  %fa_elem_L10139 = alloca %qd_stack_element_t
-  %fa_stp_L10139 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %fa_stk_L10139 = load ptr, ptr %fa_stp_L10139
-  call void @qd_stack_pop(ptr %fa_stk_L10139, ptr %fa_elem_L10139)
-  %fa_vp_L10139 = getelementptr %qd_stack_element_t, ptr %fa_elem_L10139, i32 0, i32 0
-  %fa_ptr_L10139 = load ptr, ptr %fa_vp_L10139
-  %fa_off_L10139 = load i64, ptr @__offset_code
-  %fa_fp_L10139 = getelementptr i8, ptr %fa_ptr_L10139, i64 %fa_off_L10139
-  %fa_val_L10139 = load ptr, ptr %fa_fp_L10139
-  call i32 @qd_push_p(ptr %ctx, ptr %fa_val_L10139)
-  %stp_L10140 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L10140 = load ptr, ptr %stp_L10140
-  call void @qd_stack_pop(ptr %stk_L10140, ptr %local.o)
-  %stp_L10141 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L10141 = load ptr, ptr %stp_L10141
-  call i32 @qdrt_push_element(ptr %stk_L10141, ptr %local.o)
-  call i32 @usr_sb_new(ptr %ctx)
-  call i32 @qd_push_s(ptr %ctx, ptr @.str.10142)
-  call i32 @usr_sb_append(ptr %ctx)
-  %stp_L10143 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L10143 = load ptr, ptr %stp_L10143
-  call i32 @qdrt_push_element(ptr %stk_L10143, ptr %local.mname)
-  call i32 @usr_sb_append_int(ptr %ctx)
-  call i32 @qd_push_s(ptr %ctx, ptr @.str.10144)
-  call i32 @usr_sb_append(ptr %ctx)
-  call i32 @usr_sb_finish(ptr %ctx)
-  call i32 @usr_sb_append(ptr %ctx)
-  %stp_L10145 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L10145 = load ptr, ptr %stp_L10145
-  call void @qd_stack_pop(ptr %stk_L10145, ptr %local.o)
-  call i32 @qd_push_i(ptr %ctx, i64 0)
-  %stp_L10146 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L10146 = load ptr, ptr %stp_L10146
-  call void @qd_stack_pop(ptr %stk_L10146, ptr %local.pos)
-  %stp_L10147 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L10147 = load ptr, ptr %stp_L10147
-  call i32 @qdrt_push_element(ptr %stk_L10147, ptr %local.fns)
-  call i32 @usr_strings_len(ptr %ctx)
-  %stp_L10148 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L10148 = load ptr, ptr %stp_L10148
-  call void @qd_stack_pop(ptr %stk_L10148, ptr %local.flen)
-  %stp_L10149 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L10149 = load ptr, ptr %stp_L10149
-  call i32 @qdrt_push_element(ptr %stk_L10149, ptr %local.pos)
-  %stp_L10150 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L10150 = load ptr, ptr %stp_L10150
-  call i32 @qdrt_push_element(ptr %stk_L10150, ptr %local.flen)
-  call i32 @qd_lt(ptr %ctx)
-  %ce_L10151 = alloca %qd_stack_element_t
-  %stp_L10151 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L10151 = load ptr, ptr %stp_L10151
-  call void @qd_stack_pop(ptr %stk_L10151, ptr %ce_L10151)
-  %cv_L10151 = getelementptr %qd_stack_element_t, ptr %ce_L10151, i32 0, i32 0
-  %ci_L10151 = load i64, ptr %cv_L10151
-  %cc_L10151 = icmp ne i64 %ci_L10151, 0
-  br i1 %cc_L10151, label %L10152, label %L10153
-L10152:
-  %stp_L10155 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L10155 = load ptr, ptr %stp_L10155
-  call i32 @qdrt_push_element(ptr %stk_L10155, ptr %local.pos)
-  %stp_L10156 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L10156 = load ptr, ptr %stp_L10156
-  call void @qd_stack_pop(ptr %stk_L10156, ptr %local.end)
-  %stp_L10157 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L10157 = load ptr, ptr %stp_L10157
-  call i32 @qdrt_push_element(ptr %stk_L10157, ptr %local.end)
-  %stp_L10158 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L10158 = load ptr, ptr %stp_L10158
-  call i32 @qdrt_push_element(ptr %stk_L10158, ptr %local.flen)
-  call i32 @qd_lt(ptr %ctx)
-  %stp_L10159 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L10159 = load ptr, ptr %stp_L10159
-  call i32 @qdrt_push_element(ptr %stk_L10159, ptr %local.fns)
-  %stp_L10160 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L10160 = load ptr, ptr %stp_L10160
-  call i32 @qdrt_push_element(ptr %stk_L10160, ptr %local.end)
-  call i32 @usr_strings_char_at(ptr %ctx)
-  %fe_L10161 = alloca %qd_stack_element_t
-  %fstp_L10161 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %fstk_L10161 = load ptr, ptr %fstp_L10161
-  call void @qd_stack_pop(ptr %fstk_L10161, ptr %fe_L10161)
-  %fvp_L10161 = getelementptr %qd_stack_element_t, ptr %fe_L10161, i32 0, i32 0
-  %fvi_L10161 = load i64, ptr %fvp_L10161
-  %fok_L10161 = icmp ne i64 %fvi_L10161, 0
-  br i1 %fok_L10161, label %L10162, label %L10163
-L10163:
-  call i32 @qd_panic(ptr %ctx)
-  unreachable
-L10162:
-  call i32 @qd_push_i(ptr %ctx, i64 44)
-  call i32 @qd_neq(ptr %ctx)
-  call i32 @qd_and(ptr %ctx)
-  %ce_L10164 = alloca %qd_stack_element_t
-  %stp_L10164 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L10164 = load ptr, ptr %stp_L10164
-  call void @qd_stack_pop(ptr %stk_L10164, ptr %ce_L10164)
-  %cv_L10164 = getelementptr %qd_stack_element_t, ptr %ce_L10164, i32 0, i32 0
-  %ci_L10164 = load i64, ptr %cv_L10164
-  %cc_L10164 = icmp ne i64 %ci_L10164, 0
-  br i1 %cc_L10164, label %L10165, label %L10166
-L10165:
-  %stp_L10168 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L10168 = load ptr, ptr %stp_L10168
-  call i32 @qdrt_push_element(ptr %stk_L10168, ptr %local.end)
-  call i32 @qd_push_i(ptr %ctx, i64 1)
-  call i32 @qd_add(ptr %ctx)
-  %stp_L10169 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L10169 = load ptr, ptr %stp_L10169
-  call void @qd_stack_pop(ptr %stk_L10169, ptr %local.end)
-  %stp_L10170 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L10170 = load ptr, ptr %stp_L10170
-  call i32 @qdrt_push_element(ptr %stk_L10170, ptr %local.end)
-  %stp_L10171 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L10171 = load ptr, ptr %stp_L10171
-  call i32 @qdrt_push_element(ptr %stk_L10171, ptr %local.flen)
-  call i32 @qd_lt(ptr %ctx)
-  %stp_L10172 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L10172 = load ptr, ptr %stp_L10172
-  call i32 @qdrt_push_element(ptr %stk_L10172, ptr %local.fns)
-  %stp_L10173 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L10173 = load ptr, ptr %stp_L10173
-  call i32 @qdrt_push_element(ptr %stk_L10173, ptr %local.end)
-  call i32 @usr_strings_char_at(ptr %ctx)
-  %fe_L10174 = alloca %qd_stack_element_t
-  %fstp_L10174 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %fstk_L10174 = load ptr, ptr %fstp_L10174
-  call void @qd_stack_pop(ptr %fstk_L10174, ptr %fe_L10174)
-  %fvp_L10174 = getelementptr %qd_stack_element_t, ptr %fe_L10174, i32 0, i32 0
-  %fvi_L10174 = load i64, ptr %fvp_L10174
-  %fok_L10174 = icmp ne i64 %fvi_L10174, 0
-  br i1 %fok_L10174, label %L10175, label %L10176
-L10176:
-  call i32 @qd_panic(ptr %ctx)
-  unreachable
-L10175:
-  call i32 @qd_push_i(ptr %ctx, i64 44)
-  call i32 @qd_neq(ptr %ctx)
-  call i32 @qd_and(ptr %ctx)
-  %ce_L10177 = alloca %qd_stack_element_t
-  %stp_L10177 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L10177 = load ptr, ptr %stp_L10177
-  call void @qd_stack_pop(ptr %stk_L10177, ptr %ce_L10177)
-  %cv_L10177 = getelementptr %qd_stack_element_t, ptr %ce_L10177, i32 0, i32 0
-  %ci_L10177 = load i64, ptr %cv_L10177
-  %cc_L10177 = icmp ne i64 %ci_L10177, 0
-  br i1 %cc_L10177, label %L10165, label %L10166
-L10166:
-  %stp_L10178 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L10178 = load ptr, ptr %stp_L10178
-  call i32 @qdrt_push_element(ptr %stk_L10178, ptr %local.end)
-  %stp_L10179 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L10179 = load ptr, ptr %stp_L10179
-  call i32 @qdrt_push_element(ptr %stk_L10179, ptr %local.pos)
-  call i32 @qd_gt(ptr %ctx)
-  %ce_L10180 = alloca %qd_stack_element_t
-  %stp_L10180 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L10180 = load ptr, ptr %stp_L10180
-  call void @qd_stack_pop(ptr %stk_L10180, ptr %ce_L10180)
-  %cv_L10180 = getelementptr %qd_stack_element_t, ptr %ce_L10180, i32 0, i32 0
-  %ci_L10180 = load i64, ptr %cv_L10180
-  %cc_L10180 = icmp ne i64 %ci_L10180, 0
-  br i1 %cc_L10180, label %L10181, label %L10183
-L10181:
-  %stp_L10184 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L10184 = load ptr, ptr %stp_L10184
-  call i32 @qdrt_push_element(ptr %stk_L10184, ptr %local.fns)
-  %stp_L10185 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L10185 = load ptr, ptr %stp_L10185
-  call i32 @qdrt_push_element(ptr %stk_L10185, ptr %local.pos)
-  %stp_L10186 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L10186 = load ptr, ptr %stp_L10186
-  call i32 @qdrt_push_element(ptr %stk_L10186, ptr %local.end)
-  %stp_L10187 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L10187 = load ptr, ptr %stp_L10187
-  call i32 @qdrt_push_element(ptr %stk_L10187, ptr %local.pos)
-  call i32 @qd_sub(ptr %ctx)
-  call i32 @usr_strings_substring(ptr %ctx)
-  %fe_L10188 = alloca %qd_stack_element_t
-  %fstp_L10188 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %fstk_L10188 = load ptr, ptr %fstp_L10188
-  call void @qd_stack_pop(ptr %fstk_L10188, ptr %fe_L10188)
-  %fvp_L10188 = getelementptr %qd_stack_element_t, ptr %fe_L10188, i32 0, i32 0
-  %fvi_L10188 = load i64, ptr %fvp_L10188
-  %fok_L10188 = icmp ne i64 %fvi_L10188, 0
-  br i1 %fok_L10188, label %L10189, label %L10190
-L10190:
-  call i32 @qd_panic(ptr %ctx)
-  unreachable
-L10189:
-  %stp_L10191 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L10191 = load ptr, ptr %stp_L10191
-  call void @qd_stack_pop(ptr %stk_L10191, ptr %local.fname)
-  %stp_L10192 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L10192 = load ptr, ptr %stp_L10192
-  call i32 @qdrt_push_element(ptr %stk_L10192, ptr %local.o)
-  call i32 @qd_push_s(ptr %ctx, ptr @.str.10193)
-  call i32 @usr_sb_append(ptr %ctx)
-  %stp_L10194 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L10194 = load ptr, ptr %stp_L10194
-  call void @qd_stack_pop(ptr %stk_L10194, ptr %local.o)
-  %stp_L10195 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L10195 = load ptr, ptr %stp_L10195
-  call i32 @qdrt_push_element(ptr %stk_L10195, ptr %local.o)
-  %stp_L10196 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L10196 = load ptr, ptr %stp_L10196
-  call i32 @qdrt_push_element(ptr %stk_L10196, ptr %local.mname)
-  call i32 @usr_sb_append(ptr %ctx)
-  %stp_L10197 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L10197 = load ptr, ptr %stp_L10197
-  call void @qd_stack_pop(ptr %stk_L10197, ptr %local.o)
-  %stp_L10198 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L10198 = load ptr, ptr %stp_L10198
-  call i32 @qdrt_push_element(ptr %stk_L10198, ptr %local.o)
-  call i32 @qd_push_s(ptr %ctx, ptr @.str.10199)
-  call i32 @usr_sb_append(ptr %ctx)
-  %stp_L10200 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L10200 = load ptr, ptr %stp_L10200
-  call void @qd_stack_pop(ptr %stk_L10200, ptr %local.o)
-  %stp_L10201 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L10201 = load ptr, ptr %stp_L10201
-  call i32 @qdrt_push_element(ptr %stk_L10201, ptr %local.o)
-  %stp_L10202 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L10202 = load ptr, ptr %stp_L10202
-  call i32 @qdrt_push_element(ptr %stk_L10202, ptr %local.fname)
-  call i32 @usr_sb_append(ptr %ctx)
-  %stp_L10203 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L10203 = load ptr, ptr %stp_L10203
-  call void @qd_stack_pop(ptr %stk_L10203, ptr %local.o)
-  %stp_L10204 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L10204 = load ptr, ptr %stp_L10204
-  call i32 @qdrt_push_element(ptr %stk_L10204, ptr %local.o)
-  call i32 @qd_push_s(ptr %ctx, ptr @.str.10205)
-  call i32 @usr_sb_append(ptr %ctx)
-  %stp_L10206 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L10206 = load ptr, ptr %stp_L10206
-  call void @qd_stack_pop(ptr %stk_L10206, ptr %local.o)
-  br label %L10183
-L10183:
-  %stp_L10207 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L10207 = load ptr, ptr %stp_L10207
-  call i32 @qdrt_push_element(ptr %stk_L10207, ptr %local.end)
-  call i32 @qd_push_i(ptr %ctx, i64 1)
-  call i32 @qd_add(ptr %ctx)
-  %stp_L10208 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L10208 = load ptr, ptr %stp_L10208
-  call void @qd_stack_pop(ptr %stk_L10208, ptr %local.pos)
+  %ce_L10209 = alloca %qd_stack_element_t
   %stp_L10209 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
   %stk_L10209 = load ptr, ptr %stp_L10209
-  call i32 @qdrt_push_element(ptr %stk_L10209, ptr %local.pos)
-  %stp_L10210 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L10210 = load ptr, ptr %stp_L10210
-  call i32 @qdrt_push_element(ptr %stk_L10210, ptr %local.flen)
-  call i32 @qd_lt(ptr %ctx)
-  %ce_L10211 = alloca %qd_stack_element_t
-  %stp_L10211 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L10211 = load ptr, ptr %stp_L10211
-  call void @qd_stack_pop(ptr %stk_L10211, ptr %ce_L10211)
-  %cv_L10211 = getelementptr %qd_stack_element_t, ptr %ce_L10211, i32 0, i32 0
-  %ci_L10211 = load i64, ptr %cv_L10211
-  %cc_L10211 = icmp ne i64 %ci_L10211, 0
-  br i1 %cc_L10211, label %L10152, label %L10153
-L10153:
-  %stp_L10212 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L10212 = load ptr, ptr %stp_L10212
-  call i32 @qdrt_push_element(ptr %stk_L10212, ptr %local.o)
-  %fs_elem_L10213 = alloca %qd_stack_element_t
-  %fs_stp_L10213 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %fs_stk_L10213 = load ptr, ptr %fs_stp_L10213
-  call void @qd_stack_pop(ptr %fs_stk_L10213, ptr %fs_elem_L10213)
-  %fs_vp_L10213 = getelementptr %qd_stack_element_t, ptr %fs_elem_L10213, i32 0, i32 0
-  %fs_val_L10213 = load i64, ptr %fs_vp_L10213
-  %fs_svp_L10213 = getelementptr %qd_stack_element_t, ptr %local.st, i32 0, i32 0
-  %fs_sptr_L10213 = load ptr, ptr %fs_svp_L10213
-  %fs_off_L10213 = load i64, ptr @__offset_code
-  %fs_fp_L10213 = getelementptr i8, ptr %fs_sptr_L10213, i64 %fs_off_L10213
-  store i64 %fs_val_L10213, ptr %fs_fp_L10213
+  call void @qd_stack_pop(ptr %stk_L10209, ptr %ce_L10209)
+  %cv_L10209 = getelementptr %qd_stack_element_t, ptr %ce_L10209, i32 0, i32 0
+  %ci_L10209 = load i64, ptr %cv_L10209
+  %cc_L10209 = icmp ne i64 %ci_L10209, 0
+  br i1 %cc_L10209, label %L10210, label %L10212
+L10210:
+  %stp_L10213 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L10213 = load ptr, ptr %stp_L10213
+  call i32 @qdrt_push_element(ptr %stk_L10213, ptr %local.st)
+  br label %return
+  br label %L10212
+L10212:
   %stp_L10214 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
   %stk_L10214 = load ptr, ptr %stp_L10214
   call i32 @qdrt_push_element(ptr %stk_L10214, ptr %local.st)
+  %fa_elem_L10215 = alloca %qd_stack_element_t
+  %fa_stp_L10215 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %fa_stk_L10215 = load ptr, ptr %fa_stp_L10215
+  call void @qd_stack_pop(ptr %fa_stk_L10215, ptr %fa_elem_L10215)
+  %fa_vp_L10215 = getelementptr %qd_stack_element_t, ptr %fa_elem_L10215, i32 0, i32 0
+  %fa_ptr_L10215 = load ptr, ptr %fa_vp_L10215
+  %fa_off_L10215 = load i64, ptr @__offset_code
+  %fa_fp_L10215 = getelementptr i8, ptr %fa_ptr_L10215, i64 %fa_off_L10215
+  %fa_val_L10215 = load ptr, ptr %fa_fp_L10215
+  call i32 @qd_push_p(ptr %ctx, ptr %fa_val_L10215)
+  %stp_L10216 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L10216 = load ptr, ptr %stp_L10216
+  call void @qd_stack_pop(ptr %stk_L10216, ptr %local.o)
+  %stp_L10217 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L10217 = load ptr, ptr %stp_L10217
+  call i32 @qdrt_push_element(ptr %stk_L10217, ptr %local.o)
+  call i32 @usr_sb_new(ptr %ctx)
+  call i32 @qd_push_s(ptr %ctx, ptr @.str.10218)
+  call i32 @usr_sb_append(ptr %ctx)
+  %stp_L10219 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L10219 = load ptr, ptr %stp_L10219
+  call i32 @qdrt_push_element(ptr %stk_L10219, ptr %local.mname)
+  call i32 @usr_sb_append_int(ptr %ctx)
+  call i32 @qd_push_s(ptr %ctx, ptr @.str.10220)
+  call i32 @usr_sb_append(ptr %ctx)
+  call i32 @usr_sb_finish(ptr %ctx)
+  call i32 @usr_sb_append(ptr %ctx)
+  %stp_L10221 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L10221 = load ptr, ptr %stp_L10221
+  call void @qd_stack_pop(ptr %stk_L10221, ptr %local.o)
+  call i32 @qd_push_i(ptr %ctx, i64 0)
+  %stp_L10222 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L10222 = load ptr, ptr %stp_L10222
+  call void @qd_stack_pop(ptr %stk_L10222, ptr %local.pos)
+  %stp_L10223 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L10223 = load ptr, ptr %stp_L10223
+  call i32 @qdrt_push_element(ptr %stk_L10223, ptr %local.fns)
+  call i32 @usr_strings_len(ptr %ctx)
+  %stp_L10224 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L10224 = load ptr, ptr %stp_L10224
+  call void @qd_stack_pop(ptr %stk_L10224, ptr %local.flen)
+  %stp_L10225 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L10225 = load ptr, ptr %stp_L10225
+  call i32 @qdrt_push_element(ptr %stk_L10225, ptr %local.pos)
+  %stp_L10226 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L10226 = load ptr, ptr %stp_L10226
+  call i32 @qdrt_push_element(ptr %stk_L10226, ptr %local.flen)
+  call i32 @qd_lt(ptr %ctx)
+  %ce_L10227 = alloca %qd_stack_element_t
+  %stp_L10227 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L10227 = load ptr, ptr %stp_L10227
+  call void @qd_stack_pop(ptr %stk_L10227, ptr %ce_L10227)
+  %cv_L10227 = getelementptr %qd_stack_element_t, ptr %ce_L10227, i32 0, i32 0
+  %ci_L10227 = load i64, ptr %cv_L10227
+  %cc_L10227 = icmp ne i64 %ci_L10227, 0
+  br i1 %cc_L10227, label %L10228, label %L10229
+L10228:
+  %stp_L10231 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L10231 = load ptr, ptr %stp_L10231
+  call i32 @qdrt_push_element(ptr %stk_L10231, ptr %local.pos)
+  %stp_L10232 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L10232 = load ptr, ptr %stp_L10232
+  call void @qd_stack_pop(ptr %stk_L10232, ptr %local.end)
+  %stp_L10233 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L10233 = load ptr, ptr %stp_L10233
+  call i32 @qdrt_push_element(ptr %stk_L10233, ptr %local.end)
+  %stp_L10234 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L10234 = load ptr, ptr %stp_L10234
+  call i32 @qdrt_push_element(ptr %stk_L10234, ptr %local.flen)
+  call i32 @qd_lt(ptr %ctx)
+  %stp_L10235 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L10235 = load ptr, ptr %stp_L10235
+  call i32 @qdrt_push_element(ptr %stk_L10235, ptr %local.fns)
+  %stp_L10236 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L10236 = load ptr, ptr %stp_L10236
+  call i32 @qdrt_push_element(ptr %stk_L10236, ptr %local.end)
+  call i32 @usr_strings_char_at(ptr %ctx)
+  %fe_L10237 = alloca %qd_stack_element_t
+  %fstp_L10237 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %fstk_L10237 = load ptr, ptr %fstp_L10237
+  call void @qd_stack_pop(ptr %fstk_L10237, ptr %fe_L10237)
+  %fvp_L10237 = getelementptr %qd_stack_element_t, ptr %fe_L10237, i32 0, i32 0
+  %fvi_L10237 = load i64, ptr %fvp_L10237
+  %fok_L10237 = icmp ne i64 %fvi_L10237, 0
+  br i1 %fok_L10237, label %L10238, label %L10239
+L10239:
+  call i32 @qd_panic(ptr %ctx)
+  unreachable
+L10238:
+  call i32 @qd_push_i(ptr %ctx, i64 44)
+  call i32 @qd_neq(ptr %ctx)
+  call i32 @qd_and(ptr %ctx)
+  %ce_L10240 = alloca %qd_stack_element_t
+  %stp_L10240 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L10240 = load ptr, ptr %stp_L10240
+  call void @qd_stack_pop(ptr %stk_L10240, ptr %ce_L10240)
+  %cv_L10240 = getelementptr %qd_stack_element_t, ptr %ce_L10240, i32 0, i32 0
+  %ci_L10240 = load i64, ptr %cv_L10240
+  %cc_L10240 = icmp ne i64 %ci_L10240, 0
+  br i1 %cc_L10240, label %L10241, label %L10242
+L10241:
+  %stp_L10244 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L10244 = load ptr, ptr %stp_L10244
+  call i32 @qdrt_push_element(ptr %stk_L10244, ptr %local.end)
+  call i32 @qd_push_i(ptr %ctx, i64 1)
+  call i32 @qd_add(ptr %ctx)
+  %stp_L10245 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L10245 = load ptr, ptr %stp_L10245
+  call void @qd_stack_pop(ptr %stk_L10245, ptr %local.end)
+  %stp_L10246 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L10246 = load ptr, ptr %stp_L10246
+  call i32 @qdrt_push_element(ptr %stk_L10246, ptr %local.end)
+  %stp_L10247 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L10247 = load ptr, ptr %stp_L10247
+  call i32 @qdrt_push_element(ptr %stk_L10247, ptr %local.flen)
+  call i32 @qd_lt(ptr %ctx)
+  %stp_L10248 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L10248 = load ptr, ptr %stp_L10248
+  call i32 @qdrt_push_element(ptr %stk_L10248, ptr %local.fns)
+  %stp_L10249 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L10249 = load ptr, ptr %stp_L10249
+  call i32 @qdrt_push_element(ptr %stk_L10249, ptr %local.end)
+  call i32 @usr_strings_char_at(ptr %ctx)
+  %fe_L10250 = alloca %qd_stack_element_t
+  %fstp_L10250 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %fstk_L10250 = load ptr, ptr %fstp_L10250
+  call void @qd_stack_pop(ptr %fstk_L10250, ptr %fe_L10250)
+  %fvp_L10250 = getelementptr %qd_stack_element_t, ptr %fe_L10250, i32 0, i32 0
+  %fvi_L10250 = load i64, ptr %fvp_L10250
+  %fok_L10250 = icmp ne i64 %fvi_L10250, 0
+  br i1 %fok_L10250, label %L10251, label %L10252
+L10252:
+  call i32 @qd_panic(ptr %ctx)
+  unreachable
+L10251:
+  call i32 @qd_push_i(ptr %ctx, i64 44)
+  call i32 @qd_neq(ptr %ctx)
+  call i32 @qd_and(ptr %ctx)
+  %ce_L10253 = alloca %qd_stack_element_t
+  %stp_L10253 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L10253 = load ptr, ptr %stp_L10253
+  call void @qd_stack_pop(ptr %stk_L10253, ptr %ce_L10253)
+  %cv_L10253 = getelementptr %qd_stack_element_t, ptr %ce_L10253, i32 0, i32 0
+  %ci_L10253 = load i64, ptr %cv_L10253
+  %cc_L10253 = icmp ne i64 %ci_L10253, 0
+  br i1 %cc_L10253, label %L10241, label %L10242
+L10242:
+  %stp_L10254 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L10254 = load ptr, ptr %stp_L10254
+  call i32 @qdrt_push_element(ptr %stk_L10254, ptr %local.end)
+  %stp_L10255 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L10255 = load ptr, ptr %stp_L10255
+  call i32 @qdrt_push_element(ptr %stk_L10255, ptr %local.pos)
+  call i32 @qd_gt(ptr %ctx)
+  %ce_L10256 = alloca %qd_stack_element_t
+  %stp_L10256 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L10256 = load ptr, ptr %stp_L10256
+  call void @qd_stack_pop(ptr %stk_L10256, ptr %ce_L10256)
+  %cv_L10256 = getelementptr %qd_stack_element_t, ptr %ce_L10256, i32 0, i32 0
+  %ci_L10256 = load i64, ptr %cv_L10256
+  %cc_L10256 = icmp ne i64 %ci_L10256, 0
+  br i1 %cc_L10256, label %L10257, label %L10259
+L10257:
+  %stp_L10260 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L10260 = load ptr, ptr %stp_L10260
+  call i32 @qdrt_push_element(ptr %stk_L10260, ptr %local.fns)
+  %stp_L10261 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L10261 = load ptr, ptr %stp_L10261
+  call i32 @qdrt_push_element(ptr %stk_L10261, ptr %local.pos)
+  %stp_L10262 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L10262 = load ptr, ptr %stp_L10262
+  call i32 @qdrt_push_element(ptr %stk_L10262, ptr %local.end)
+  %stp_L10263 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L10263 = load ptr, ptr %stp_L10263
+  call i32 @qdrt_push_element(ptr %stk_L10263, ptr %local.pos)
+  call i32 @qd_sub(ptr %ctx)
+  call i32 @usr_strings_substring(ptr %ctx)
+  %fe_L10264 = alloca %qd_stack_element_t
+  %fstp_L10264 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %fstk_L10264 = load ptr, ptr %fstp_L10264
+  call void @qd_stack_pop(ptr %fstk_L10264, ptr %fe_L10264)
+  %fvp_L10264 = getelementptr %qd_stack_element_t, ptr %fe_L10264, i32 0, i32 0
+  %fvi_L10264 = load i64, ptr %fvp_L10264
+  %fok_L10264 = icmp ne i64 %fvi_L10264, 0
+  br i1 %fok_L10264, label %L10265, label %L10266
+L10266:
+  call i32 @qd_panic(ptr %ctx)
+  unreachable
+L10265:
+  %stp_L10267 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L10267 = load ptr, ptr %stp_L10267
+  call void @qd_stack_pop(ptr %stk_L10267, ptr %local.fname)
+  %stp_L10268 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L10268 = load ptr, ptr %stp_L10268
+  call i32 @qdrt_push_element(ptr %stk_L10268, ptr %local.o)
+  call i32 @qd_push_s(ptr %ctx, ptr @.str.10269)
+  call i32 @usr_sb_append(ptr %ctx)
+  %stp_L10270 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L10270 = load ptr, ptr %stp_L10270
+  call void @qd_stack_pop(ptr %stk_L10270, ptr %local.o)
+  %stp_L10271 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L10271 = load ptr, ptr %stp_L10271
+  call i32 @qdrt_push_element(ptr %stk_L10271, ptr %local.o)
+  %stp_L10272 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L10272 = load ptr, ptr %stp_L10272
+  call i32 @qdrt_push_element(ptr %stk_L10272, ptr %local.mname)
+  call i32 @usr_sb_append(ptr %ctx)
+  %stp_L10273 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L10273 = load ptr, ptr %stp_L10273
+  call void @qd_stack_pop(ptr %stk_L10273, ptr %local.o)
+  %stp_L10274 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L10274 = load ptr, ptr %stp_L10274
+  call i32 @qdrt_push_element(ptr %stk_L10274, ptr %local.o)
+  call i32 @qd_push_s(ptr %ctx, ptr @.str.10275)
+  call i32 @usr_sb_append(ptr %ctx)
+  %stp_L10276 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L10276 = load ptr, ptr %stp_L10276
+  call void @qd_stack_pop(ptr %stk_L10276, ptr %local.o)
+  %stp_L10277 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L10277 = load ptr, ptr %stp_L10277
+  call i32 @qdrt_push_element(ptr %stk_L10277, ptr %local.o)
+  %stp_L10278 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L10278 = load ptr, ptr %stp_L10278
+  call i32 @qdrt_push_element(ptr %stk_L10278, ptr %local.fname)
+  call i32 @usr_sb_append(ptr %ctx)
+  %stp_L10279 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L10279 = load ptr, ptr %stp_L10279
+  call void @qd_stack_pop(ptr %stk_L10279, ptr %local.o)
+  %stp_L10280 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L10280 = load ptr, ptr %stp_L10280
+  call i32 @qdrt_push_element(ptr %stk_L10280, ptr %local.o)
+  call i32 @qd_push_s(ptr %ctx, ptr @.str.10281)
+  call i32 @usr_sb_append(ptr %ctx)
+  %stp_L10282 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L10282 = load ptr, ptr %stp_L10282
+  call void @qd_stack_pop(ptr %stk_L10282, ptr %local.o)
+  br label %L10259
+L10259:
+  %stp_L10283 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L10283 = load ptr, ptr %stp_L10283
+  call i32 @qdrt_push_element(ptr %stk_L10283, ptr %local.end)
+  call i32 @qd_push_i(ptr %ctx, i64 1)
+  call i32 @qd_add(ptr %ctx)
+  %stp_L10284 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L10284 = load ptr, ptr %stp_L10284
+  call void @qd_stack_pop(ptr %stk_L10284, ptr %local.pos)
+  %stp_L10285 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L10285 = load ptr, ptr %stp_L10285
+  call i32 @qdrt_push_element(ptr %stk_L10285, ptr %local.pos)
+  %stp_L10286 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L10286 = load ptr, ptr %stp_L10286
+  call i32 @qdrt_push_element(ptr %stk_L10286, ptr %local.flen)
+  call i32 @qd_lt(ptr %ctx)
+  %ce_L10287 = alloca %qd_stack_element_t
+  %stp_L10287 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L10287 = load ptr, ptr %stp_L10287
+  call void @qd_stack_pop(ptr %stk_L10287, ptr %ce_L10287)
+  %cv_L10287 = getelementptr %qd_stack_element_t, ptr %ce_L10287, i32 0, i32 0
+  %ci_L10287 = load i64, ptr %cv_L10287
+  %cc_L10287 = icmp ne i64 %ci_L10287, 0
+  br i1 %cc_L10287, label %L10228, label %L10229
+L10229:
+  %stp_L10288 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L10288 = load ptr, ptr %stp_L10288
+  call i32 @qdrt_push_element(ptr %stk_L10288, ptr %local.o)
+  %fs_elem_L10289 = alloca %qd_stack_element_t
+  %fs_stp_L10289 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %fs_stk_L10289 = load ptr, ptr %fs_stp_L10289
+  call void @qd_stack_pop(ptr %fs_stk_L10289, ptr %fs_elem_L10289)
+  %fs_vp_L10289 = getelementptr %qd_stack_element_t, ptr %fs_elem_L10289, i32 0, i32 0
+  %fs_val_L10289 = load i64, ptr %fs_vp_L10289
+  %fs_svp_L10289 = getelementptr %qd_stack_element_t, ptr %local.st, i32 0, i32 0
+  %fs_sptr_L10289 = load ptr, ptr %fs_svp_L10289
+  %fs_off_L10289 = load i64, ptr @__offset_code
+  %fs_fp_L10289 = getelementptr i8, ptr %fs_sptr_L10289, i64 %fs_off_L10289
+  store i64 %fs_val_L10289, ptr %fs_fp_L10289
+  %stp_L10290 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L10290 = load ptr, ptr %stp_L10290
+  call i32 @qdrt_push_element(ptr %stk_L10290, ptr %local.st)
   br label %return
 return:
   ret i32 0
@@ -41450,325 +41764,325 @@ entry:
   %local.froot = alloca %qd_stack_element_t
   %local.st = alloca %qd_stack_element_t
   %local.cur = alloca %qd_stack_element_t
-  %stp_L10215 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L10215 = load ptr, ptr %stp_L10215
-  call void @qd_stack_pop(ptr %stk_L10215, ptr %local.pfx)
-  %stp_L10216 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L10216 = load ptr, ptr %stp_L10216
-  call void @qd_stack_pop(ptr %stk_L10216, ptr %local.cstr)
-  %stp_L10217 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L10217 = load ptr, ptr %stp_L10217
-  call void @qd_stack_pop(ptr %stk_L10217, ptr %local.froot)
-  %stp_L10218 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L10218 = load ptr, ptr %stp_L10218
-  call void @qd_stack_pop(ptr %stk_L10218, ptr %local.st)
-  %stp_L10219 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L10219 = load ptr, ptr %stp_L10219
-  call i32 @qdrt_push_element(ptr %stk_L10219, ptr %local.froot)
-  call i32 @qd_push_i(ptr %ctx, i64 0)
-  call i32 @qd_eq(ptr %ctx)
-  %ce_L10220 = alloca %qd_stack_element_t
-  %stp_L10220 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L10220 = load ptr, ptr %stp_L10220
-  call void @qd_stack_pop(ptr %stk_L10220, ptr %ce_L10220)
-  %cv_L10220 = getelementptr %qd_stack_element_t, ptr %ce_L10220, i32 0, i32 0
-  %ci_L10220 = load i64, ptr %cv_L10220
-  %cc_L10220 = icmp ne i64 %ci_L10220, 0
-  br i1 %cc_L10220, label %L10221, label %L10223
-L10221:
-  %stp_L10224 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L10224 = load ptr, ptr %stp_L10224
-  call i32 @qdrt_push_element(ptr %stk_L10224, ptr %local.st)
-  br label %return
-  br label %L10223
-L10223:
-  %stp_L10225 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L10225 = load ptr, ptr %stp_L10225
-  call i32 @qdrt_push_element(ptr %stk_L10225, ptr %local.froot)
-  %fa_elem_L10226 = alloca %qd_stack_element_t
-  %fa_stp_L10226 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %fa_stk_L10226 = load ptr, ptr %fa_stp_L10226
-  call void @qd_stack_pop(ptr %fa_stk_L10226, ptr %fa_elem_L10226)
-  %fa_vp_L10226 = getelementptr %qd_stack_element_t, ptr %fa_elem_L10226, i32 0, i32 0
-  %fa_ptr_L10226 = load ptr, ptr %fa_vp_L10226
-  %fa_off_L10226 = load i64, ptr @__offset_child1
-  %fa_fp_L10226 = getelementptr i8, ptr %fa_ptr_L10226, i64 %fa_off_L10226
-  %fa_val_L10226 = load ptr, ptr %fa_fp_L10226
-  call i32 @qd_push_p(ptr %ctx, ptr %fa_val_L10226)
-  call i32 @qd_push_i(ptr %ctx, i64 0)
-  call i32 @qd_neq(ptr %ctx)
-  %ce_L10227 = alloca %qd_stack_element_t
-  %stp_L10227 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L10227 = load ptr, ptr %stp_L10227
-  call void @qd_stack_pop(ptr %stk_L10227, ptr %ce_L10227)
-  %cv_L10227 = getelementptr %qd_stack_element_t, ptr %ce_L10227, i32 0, i32 0
-  %ci_L10227 = load i64, ptr %cv_L10227
-  %cc_L10227 = icmp ne i64 %ci_L10227, 0
-  br i1 %cc_L10227, label %L10228, label %L10230
-L10228:
-  %stp_L10231 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L10231 = load ptr, ptr %stp_L10231
-  call i32 @qdrt_push_element(ptr %stk_L10231, ptr %local.st)
-  %stp_L10232 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L10232 = load ptr, ptr %stp_L10232
-  call i32 @qdrt_push_element(ptr %stk_L10232, ptr %local.froot)
-  %fa_elem_L10233 = alloca %qd_stack_element_t
-  %fa_stp_L10233 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %fa_stk_L10233 = load ptr, ptr %fa_stp_L10233
-  call void @qd_stack_pop(ptr %fa_stk_L10233, ptr %fa_elem_L10233)
-  %fa_vp_L10233 = getelementptr %qd_stack_element_t, ptr %fa_elem_L10233, i32 0, i32 0
-  %fa_ptr_L10233 = load ptr, ptr %fa_vp_L10233
-  %fa_off_L10233 = load i64, ptr @__offset_child1
-  %fa_fp_L10233 = getelementptr i8, ptr %fa_ptr_L10233, i64 %fa_off_L10233
-  %fa_val_L10233 = load ptr, ptr %fa_fp_L10233
-  call i32 @qd_push_p(ptr %ctx, ptr %fa_val_L10233)
-  %stp_L10234 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L10234 = load ptr, ptr %stp_L10234
-  call i32 @qdrt_push_element(ptr %stk_L10234, ptr %local.cstr)
-  %stp_L10235 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L10235 = load ptr, ptr %stp_L10235
-  call i32 @qdrt_push_element(ptr %stk_L10235, ptr %local.pfx)
-  call i32 @usr_codegen_emit_top_level(ptr %ctx)
-  %stp_L10236 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L10236 = load ptr, ptr %stp_L10236
-  call void @qd_stack_pop(ptr %stk_L10236, ptr %local.st)
-  br label %L10230
-L10230:
-  %stp_L10237 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L10237 = load ptr, ptr %stp_L10237
-  call i32 @qdrt_push_element(ptr %stk_L10237, ptr %local.froot)
-  %fa_elem_L10238 = alloca %qd_stack_element_t
-  %fa_stp_L10238 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %fa_stk_L10238 = load ptr, ptr %fa_stp_L10238
-  call void @qd_stack_pop(ptr %fa_stk_L10238, ptr %fa_elem_L10238)
-  %fa_vp_L10238 = getelementptr %qd_stack_element_t, ptr %fa_elem_L10238, i32 0, i32 0
-  %fa_ptr_L10238 = load ptr, ptr %fa_vp_L10238
-  %fa_off_L10238 = load i64, ptr @__offset_child2
-  %fa_fp_L10238 = getelementptr i8, ptr %fa_ptr_L10238, i64 %fa_off_L10238
-  %fa_val_L10238 = load ptr, ptr %fa_fp_L10238
-  call i32 @qd_push_p(ptr %ctx, ptr %fa_val_L10238)
-  call i32 @qd_push_i(ptr %ctx, i64 0)
-  call i32 @qd_neq(ptr %ctx)
-  %ce_L10239 = alloca %qd_stack_element_t
-  %stp_L10239 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L10239 = load ptr, ptr %stp_L10239
-  call void @qd_stack_pop(ptr %stk_L10239, ptr %ce_L10239)
-  %cv_L10239 = getelementptr %qd_stack_element_t, ptr %ce_L10239, i32 0, i32 0
-  %ci_L10239 = load i64, ptr %cv_L10239
-  %cc_L10239 = icmp ne i64 %ci_L10239, 0
-  br i1 %cc_L10239, label %L10240, label %L10242
-L10240:
-  %stp_L10243 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L10243 = load ptr, ptr %stp_L10243
-  call i32 @qdrt_push_element(ptr %stk_L10243, ptr %local.st)
-  %stp_L10244 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L10244 = load ptr, ptr %stp_L10244
-  call i32 @qdrt_push_element(ptr %stk_L10244, ptr %local.froot)
-  %fa_elem_L10245 = alloca %qd_stack_element_t
-  %fa_stp_L10245 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %fa_stk_L10245 = load ptr, ptr %fa_stp_L10245
-  call void @qd_stack_pop(ptr %fa_stk_L10245, ptr %fa_elem_L10245)
-  %fa_vp_L10245 = getelementptr %qd_stack_element_t, ptr %fa_elem_L10245, i32 0, i32 0
-  %fa_ptr_L10245 = load ptr, ptr %fa_vp_L10245
-  %fa_off_L10245 = load i64, ptr @__offset_child2
-  %fa_fp_L10245 = getelementptr i8, ptr %fa_ptr_L10245, i64 %fa_off_L10245
-  %fa_val_L10245 = load ptr, ptr %fa_fp_L10245
-  call i32 @qd_push_p(ptr %ctx, ptr %fa_val_L10245)
-  %stp_L10246 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L10246 = load ptr, ptr %stp_L10246
-  call i32 @qdrt_push_element(ptr %stk_L10246, ptr %local.cstr)
-  %stp_L10247 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L10247 = load ptr, ptr %stp_L10247
-  call i32 @qdrt_push_element(ptr %stk_L10247, ptr %local.pfx)
-  call i32 @usr_codegen_emit_top_level(ptr %ctx)
-  %stp_L10248 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L10248 = load ptr, ptr %stp_L10248
-  call void @qd_stack_pop(ptr %stk_L10248, ptr %local.st)
-  br label %L10242
-L10242:
-  %stp_L10249 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L10249 = load ptr, ptr %stp_L10249
-  call i32 @qdrt_push_element(ptr %stk_L10249, ptr %local.froot)
-  %fa_elem_L10250 = alloca %qd_stack_element_t
-  %fa_stp_L10250 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %fa_stk_L10250 = load ptr, ptr %fa_stp_L10250
-  call void @qd_stack_pop(ptr %fa_stk_L10250, ptr %fa_elem_L10250)
-  %fa_vp_L10250 = getelementptr %qd_stack_element_t, ptr %fa_elem_L10250, i32 0, i32 0
-  %fa_ptr_L10250 = load ptr, ptr %fa_vp_L10250
-  %fa_off_L10250 = load i64, ptr @__offset_child3
-  %fa_fp_L10250 = getelementptr i8, ptr %fa_ptr_L10250, i64 %fa_off_L10250
-  %fa_val_L10250 = load ptr, ptr %fa_fp_L10250
-  call i32 @qd_push_p(ptr %ctx, ptr %fa_val_L10250)
-  call i32 @qd_push_i(ptr %ctx, i64 0)
-  call i32 @qd_neq(ptr %ctx)
-  %ce_L10251 = alloca %qd_stack_element_t
-  %stp_L10251 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L10251 = load ptr, ptr %stp_L10251
-  call void @qd_stack_pop(ptr %stk_L10251, ptr %ce_L10251)
-  %cv_L10251 = getelementptr %qd_stack_element_t, ptr %ce_L10251, i32 0, i32 0
-  %ci_L10251 = load i64, ptr %cv_L10251
-  %cc_L10251 = icmp ne i64 %ci_L10251, 0
-  br i1 %cc_L10251, label %L10252, label %L10254
-L10252:
-  %stp_L10255 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L10255 = load ptr, ptr %stp_L10255
-  call i32 @qdrt_push_element(ptr %stk_L10255, ptr %local.st)
-  %stp_L10256 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L10256 = load ptr, ptr %stp_L10256
-  call i32 @qdrt_push_element(ptr %stk_L10256, ptr %local.froot)
-  %fa_elem_L10257 = alloca %qd_stack_element_t
-  %fa_stp_L10257 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %fa_stk_L10257 = load ptr, ptr %fa_stp_L10257
-  call void @qd_stack_pop(ptr %fa_stk_L10257, ptr %fa_elem_L10257)
-  %fa_vp_L10257 = getelementptr %qd_stack_element_t, ptr %fa_elem_L10257, i32 0, i32 0
-  %fa_ptr_L10257 = load ptr, ptr %fa_vp_L10257
-  %fa_off_L10257 = load i64, ptr @__offset_child3
-  %fa_fp_L10257 = getelementptr i8, ptr %fa_ptr_L10257, i64 %fa_off_L10257
-  %fa_val_L10257 = load ptr, ptr %fa_fp_L10257
-  call i32 @qd_push_p(ptr %ctx, ptr %fa_val_L10257)
-  %stp_L10258 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L10258 = load ptr, ptr %stp_L10258
-  call i32 @qdrt_push_element(ptr %stk_L10258, ptr %local.cstr)
-  %stp_L10259 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L10259 = load ptr, ptr %stp_L10259
-  call i32 @qdrt_push_element(ptr %stk_L10259, ptr %local.pfx)
-  call i32 @usr_codegen_emit_top_level(ptr %ctx)
-  %stp_L10260 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L10260 = load ptr, ptr %stp_L10260
-  call void @qd_stack_pop(ptr %stk_L10260, ptr %local.st)
-  br label %L10254
-L10254:
-  %stp_L10261 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L10261 = load ptr, ptr %stp_L10261
-  call i32 @qdrt_push_element(ptr %stk_L10261, ptr %local.froot)
-  %fa_elem_L10262 = alloca %qd_stack_element_t
-  %fa_stp_L10262 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %fa_stk_L10262 = load ptr, ptr %fa_stp_L10262
-  call void @qd_stack_pop(ptr %fa_stk_L10262, ptr %fa_elem_L10262)
-  %fa_vp_L10262 = getelementptr %qd_stack_element_t, ptr %fa_elem_L10262, i32 0, i32 0
-  %fa_ptr_L10262 = load ptr, ptr %fa_vp_L10262
-  %fa_off_L10262 = load i64, ptr @__offset_child4
-  %fa_fp_L10262 = getelementptr i8, ptr %fa_ptr_L10262, i64 %fa_off_L10262
-  %fa_val_L10262 = load ptr, ptr %fa_fp_L10262
-  call i32 @qd_push_p(ptr %ctx, ptr %fa_val_L10262)
-  call i32 @qd_push_i(ptr %ctx, i64 0)
-  call i32 @qd_neq(ptr %ctx)
-  %ce_L10263 = alloca %qd_stack_element_t
-  %stp_L10263 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L10263 = load ptr, ptr %stp_L10263
-  call void @qd_stack_pop(ptr %stk_L10263, ptr %ce_L10263)
-  %cv_L10263 = getelementptr %qd_stack_element_t, ptr %ce_L10263, i32 0, i32 0
-  %ci_L10263 = load i64, ptr %cv_L10263
-  %cc_L10263 = icmp ne i64 %ci_L10263, 0
-  br i1 %cc_L10263, label %L10264, label %L10266
-L10264:
-  %stp_L10267 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L10267 = load ptr, ptr %stp_L10267
-  call i32 @qdrt_push_element(ptr %stk_L10267, ptr %local.st)
-  %stp_L10268 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L10268 = load ptr, ptr %stp_L10268
-  call i32 @qdrt_push_element(ptr %stk_L10268, ptr %local.froot)
-  %fa_elem_L10269 = alloca %qd_stack_element_t
-  %fa_stp_L10269 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %fa_stk_L10269 = load ptr, ptr %fa_stp_L10269
-  call void @qd_stack_pop(ptr %fa_stk_L10269, ptr %fa_elem_L10269)
-  %fa_vp_L10269 = getelementptr %qd_stack_element_t, ptr %fa_elem_L10269, i32 0, i32 0
-  %fa_ptr_L10269 = load ptr, ptr %fa_vp_L10269
-  %fa_off_L10269 = load i64, ptr @__offset_child4
-  %fa_fp_L10269 = getelementptr i8, ptr %fa_ptr_L10269, i64 %fa_off_L10269
-  %fa_val_L10269 = load ptr, ptr %fa_fp_L10269
-  call i32 @qd_push_p(ptr %ctx, ptr %fa_val_L10269)
-  %stp_L10270 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L10270 = load ptr, ptr %stp_L10270
-  call i32 @qdrt_push_element(ptr %stk_L10270, ptr %local.cstr)
-  %stp_L10271 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L10271 = load ptr, ptr %stp_L10271
-  call i32 @qdrt_push_element(ptr %stk_L10271, ptr %local.pfx)
-  call i32 @usr_codegen_emit_top_level(ptr %ctx)
-  %stp_L10272 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L10272 = load ptr, ptr %stp_L10272
-  call void @qd_stack_pop(ptr %stk_L10272, ptr %local.st)
-  br label %L10266
-L10266:
-  %stp_L10273 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L10273 = load ptr, ptr %stp_L10273
-  call i32 @qdrt_push_element(ptr %stk_L10273, ptr %local.froot)
-  %fa_elem_L10274 = alloca %qd_stack_element_t
-  %fa_stp_L10274 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %fa_stk_L10274 = load ptr, ptr %fa_stp_L10274
-  call void @qd_stack_pop(ptr %fa_stk_L10274, ptr %fa_elem_L10274)
-  %fa_vp_L10274 = getelementptr %qd_stack_element_t, ptr %fa_elem_L10274, i32 0, i32 0
-  %fa_ptr_L10274 = load ptr, ptr %fa_vp_L10274
-  %fa_off_L10274 = load i64, ptr @__offset_extra
-  %fa_fp_L10274 = getelementptr i8, ptr %fa_ptr_L10274, i64 %fa_off_L10274
-  %fa_val_L10274 = load ptr, ptr %fa_fp_L10274
-  call i32 @qd_push_p(ptr %ctx, ptr %fa_val_L10274)
-  %stp_L10275 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L10275 = load ptr, ptr %stp_L10275
-  call void @qd_stack_pop(ptr %stk_L10275, ptr %local.cur)
-  %stp_L10276 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L10276 = load ptr, ptr %stp_L10276
-  call i32 @qdrt_push_element(ptr %stk_L10276, ptr %local.cur)
-  call i32 @qd_push_i(ptr %ctx, i64 0)
-  call i32 @qd_neq(ptr %ctx)
-  %ce_L10277 = alloca %qd_stack_element_t
-  %stp_L10277 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L10277 = load ptr, ptr %stp_L10277
-  call void @qd_stack_pop(ptr %stk_L10277, ptr %ce_L10277)
-  %cv_L10277 = getelementptr %qd_stack_element_t, ptr %ce_L10277, i32 0, i32 0
-  %ci_L10277 = load i64, ptr %cv_L10277
-  %cc_L10277 = icmp ne i64 %ci_L10277, 0
-  br i1 %cc_L10277, label %L10278, label %L10279
-L10278:
-  %stp_L10281 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L10281 = load ptr, ptr %stp_L10281
-  call i32 @qdrt_push_element(ptr %stk_L10281, ptr %local.st)
-  %stp_L10282 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L10282 = load ptr, ptr %stp_L10282
-  call i32 @qdrt_push_element(ptr %stk_L10282, ptr %local.cur)
-  %stp_L10283 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L10283 = load ptr, ptr %stp_L10283
-  call i32 @qdrt_push_element(ptr %stk_L10283, ptr %local.cstr)
-  %stp_L10284 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L10284 = load ptr, ptr %stp_L10284
-  call i32 @qdrt_push_element(ptr %stk_L10284, ptr %local.pfx)
-  call i32 @usr_codegen_emit_top_level(ptr %ctx)
-  %stp_L10285 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L10285 = load ptr, ptr %stp_L10285
-  call void @qd_stack_pop(ptr %stk_L10285, ptr %local.st)
-  %stp_L10286 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L10286 = load ptr, ptr %stp_L10286
-  call i32 @qdrt_push_element(ptr %stk_L10286, ptr %local.cur)
-  %fa_elem_L10287 = alloca %qd_stack_element_t
-  %fa_stp_L10287 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %fa_stk_L10287 = load ptr, ptr %fa_stp_L10287
-  call void @qd_stack_pop(ptr %fa_stk_L10287, ptr %fa_elem_L10287)
-  %fa_vp_L10287 = getelementptr %qd_stack_element_t, ptr %fa_elem_L10287, i32 0, i32 0
-  %fa_ptr_L10287 = load ptr, ptr %fa_vp_L10287
-  %fa_off_L10287 = load i64, ptr @__offset_sibling
-  %fa_fp_L10287 = getelementptr i8, ptr %fa_ptr_L10287, i64 %fa_off_L10287
-  %fa_val_L10287 = load ptr, ptr %fa_fp_L10287
-  call i32 @qd_push_p(ptr %ctx, ptr %fa_val_L10287)
-  %stp_L10288 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L10288 = load ptr, ptr %stp_L10288
-  call void @qd_stack_pop(ptr %stk_L10288, ptr %local.cur)
-  %stp_L10289 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L10289 = load ptr, ptr %stp_L10289
-  call i32 @qdrt_push_element(ptr %stk_L10289, ptr %local.cur)
-  call i32 @qd_push_i(ptr %ctx, i64 0)
-  call i32 @qd_neq(ptr %ctx)
-  %ce_L10290 = alloca %qd_stack_element_t
-  %stp_L10290 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L10290 = load ptr, ptr %stp_L10290
-  call void @qd_stack_pop(ptr %stk_L10290, ptr %ce_L10290)
-  %cv_L10290 = getelementptr %qd_stack_element_t, ptr %ce_L10290, i32 0, i32 0
-  %ci_L10290 = load i64, ptr %cv_L10290
-  %cc_L10290 = icmp ne i64 %ci_L10290, 0
-  br i1 %cc_L10290, label %L10278, label %L10279
-L10279:
   %stp_L10291 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
   %stk_L10291 = load ptr, ptr %stp_L10291
-  call i32 @qdrt_push_element(ptr %stk_L10291, ptr %local.st)
+  call void @qd_stack_pop(ptr %stk_L10291, ptr %local.pfx)
+  %stp_L10292 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L10292 = load ptr, ptr %stp_L10292
+  call void @qd_stack_pop(ptr %stk_L10292, ptr %local.cstr)
+  %stp_L10293 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L10293 = load ptr, ptr %stp_L10293
+  call void @qd_stack_pop(ptr %stk_L10293, ptr %local.froot)
+  %stp_L10294 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L10294 = load ptr, ptr %stp_L10294
+  call void @qd_stack_pop(ptr %stk_L10294, ptr %local.st)
+  %stp_L10295 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L10295 = load ptr, ptr %stp_L10295
+  call i32 @qdrt_push_element(ptr %stk_L10295, ptr %local.froot)
+  call i32 @qd_push_i(ptr %ctx, i64 0)
+  call i32 @qd_eq(ptr %ctx)
+  %ce_L10296 = alloca %qd_stack_element_t
+  %stp_L10296 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L10296 = load ptr, ptr %stp_L10296
+  call void @qd_stack_pop(ptr %stk_L10296, ptr %ce_L10296)
+  %cv_L10296 = getelementptr %qd_stack_element_t, ptr %ce_L10296, i32 0, i32 0
+  %ci_L10296 = load i64, ptr %cv_L10296
+  %cc_L10296 = icmp ne i64 %ci_L10296, 0
+  br i1 %cc_L10296, label %L10297, label %L10299
+L10297:
+  %stp_L10300 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L10300 = load ptr, ptr %stp_L10300
+  call i32 @qdrt_push_element(ptr %stk_L10300, ptr %local.st)
+  br label %return
+  br label %L10299
+L10299:
+  %stp_L10301 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L10301 = load ptr, ptr %stp_L10301
+  call i32 @qdrt_push_element(ptr %stk_L10301, ptr %local.froot)
+  %fa_elem_L10302 = alloca %qd_stack_element_t
+  %fa_stp_L10302 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %fa_stk_L10302 = load ptr, ptr %fa_stp_L10302
+  call void @qd_stack_pop(ptr %fa_stk_L10302, ptr %fa_elem_L10302)
+  %fa_vp_L10302 = getelementptr %qd_stack_element_t, ptr %fa_elem_L10302, i32 0, i32 0
+  %fa_ptr_L10302 = load ptr, ptr %fa_vp_L10302
+  %fa_off_L10302 = load i64, ptr @__offset_child1
+  %fa_fp_L10302 = getelementptr i8, ptr %fa_ptr_L10302, i64 %fa_off_L10302
+  %fa_val_L10302 = load ptr, ptr %fa_fp_L10302
+  call i32 @qd_push_p(ptr %ctx, ptr %fa_val_L10302)
+  call i32 @qd_push_i(ptr %ctx, i64 0)
+  call i32 @qd_neq(ptr %ctx)
+  %ce_L10303 = alloca %qd_stack_element_t
+  %stp_L10303 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L10303 = load ptr, ptr %stp_L10303
+  call void @qd_stack_pop(ptr %stk_L10303, ptr %ce_L10303)
+  %cv_L10303 = getelementptr %qd_stack_element_t, ptr %ce_L10303, i32 0, i32 0
+  %ci_L10303 = load i64, ptr %cv_L10303
+  %cc_L10303 = icmp ne i64 %ci_L10303, 0
+  br i1 %cc_L10303, label %L10304, label %L10306
+L10304:
+  %stp_L10307 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L10307 = load ptr, ptr %stp_L10307
+  call i32 @qdrt_push_element(ptr %stk_L10307, ptr %local.st)
+  %stp_L10308 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L10308 = load ptr, ptr %stp_L10308
+  call i32 @qdrt_push_element(ptr %stk_L10308, ptr %local.froot)
+  %fa_elem_L10309 = alloca %qd_stack_element_t
+  %fa_stp_L10309 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %fa_stk_L10309 = load ptr, ptr %fa_stp_L10309
+  call void @qd_stack_pop(ptr %fa_stk_L10309, ptr %fa_elem_L10309)
+  %fa_vp_L10309 = getelementptr %qd_stack_element_t, ptr %fa_elem_L10309, i32 0, i32 0
+  %fa_ptr_L10309 = load ptr, ptr %fa_vp_L10309
+  %fa_off_L10309 = load i64, ptr @__offset_child1
+  %fa_fp_L10309 = getelementptr i8, ptr %fa_ptr_L10309, i64 %fa_off_L10309
+  %fa_val_L10309 = load ptr, ptr %fa_fp_L10309
+  call i32 @qd_push_p(ptr %ctx, ptr %fa_val_L10309)
+  %stp_L10310 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L10310 = load ptr, ptr %stp_L10310
+  call i32 @qdrt_push_element(ptr %stk_L10310, ptr %local.cstr)
+  %stp_L10311 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L10311 = load ptr, ptr %stp_L10311
+  call i32 @qdrt_push_element(ptr %stk_L10311, ptr %local.pfx)
+  call i32 @usr_codegen_emit_top_level(ptr %ctx)
+  %stp_L10312 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L10312 = load ptr, ptr %stp_L10312
+  call void @qd_stack_pop(ptr %stk_L10312, ptr %local.st)
+  br label %L10306
+L10306:
+  %stp_L10313 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L10313 = load ptr, ptr %stp_L10313
+  call i32 @qdrt_push_element(ptr %stk_L10313, ptr %local.froot)
+  %fa_elem_L10314 = alloca %qd_stack_element_t
+  %fa_stp_L10314 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %fa_stk_L10314 = load ptr, ptr %fa_stp_L10314
+  call void @qd_stack_pop(ptr %fa_stk_L10314, ptr %fa_elem_L10314)
+  %fa_vp_L10314 = getelementptr %qd_stack_element_t, ptr %fa_elem_L10314, i32 0, i32 0
+  %fa_ptr_L10314 = load ptr, ptr %fa_vp_L10314
+  %fa_off_L10314 = load i64, ptr @__offset_child2
+  %fa_fp_L10314 = getelementptr i8, ptr %fa_ptr_L10314, i64 %fa_off_L10314
+  %fa_val_L10314 = load ptr, ptr %fa_fp_L10314
+  call i32 @qd_push_p(ptr %ctx, ptr %fa_val_L10314)
+  call i32 @qd_push_i(ptr %ctx, i64 0)
+  call i32 @qd_neq(ptr %ctx)
+  %ce_L10315 = alloca %qd_stack_element_t
+  %stp_L10315 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L10315 = load ptr, ptr %stp_L10315
+  call void @qd_stack_pop(ptr %stk_L10315, ptr %ce_L10315)
+  %cv_L10315 = getelementptr %qd_stack_element_t, ptr %ce_L10315, i32 0, i32 0
+  %ci_L10315 = load i64, ptr %cv_L10315
+  %cc_L10315 = icmp ne i64 %ci_L10315, 0
+  br i1 %cc_L10315, label %L10316, label %L10318
+L10316:
+  %stp_L10319 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L10319 = load ptr, ptr %stp_L10319
+  call i32 @qdrt_push_element(ptr %stk_L10319, ptr %local.st)
+  %stp_L10320 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L10320 = load ptr, ptr %stp_L10320
+  call i32 @qdrt_push_element(ptr %stk_L10320, ptr %local.froot)
+  %fa_elem_L10321 = alloca %qd_stack_element_t
+  %fa_stp_L10321 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %fa_stk_L10321 = load ptr, ptr %fa_stp_L10321
+  call void @qd_stack_pop(ptr %fa_stk_L10321, ptr %fa_elem_L10321)
+  %fa_vp_L10321 = getelementptr %qd_stack_element_t, ptr %fa_elem_L10321, i32 0, i32 0
+  %fa_ptr_L10321 = load ptr, ptr %fa_vp_L10321
+  %fa_off_L10321 = load i64, ptr @__offset_child2
+  %fa_fp_L10321 = getelementptr i8, ptr %fa_ptr_L10321, i64 %fa_off_L10321
+  %fa_val_L10321 = load ptr, ptr %fa_fp_L10321
+  call i32 @qd_push_p(ptr %ctx, ptr %fa_val_L10321)
+  %stp_L10322 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L10322 = load ptr, ptr %stp_L10322
+  call i32 @qdrt_push_element(ptr %stk_L10322, ptr %local.cstr)
+  %stp_L10323 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L10323 = load ptr, ptr %stp_L10323
+  call i32 @qdrt_push_element(ptr %stk_L10323, ptr %local.pfx)
+  call i32 @usr_codegen_emit_top_level(ptr %ctx)
+  %stp_L10324 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L10324 = load ptr, ptr %stp_L10324
+  call void @qd_stack_pop(ptr %stk_L10324, ptr %local.st)
+  br label %L10318
+L10318:
+  %stp_L10325 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L10325 = load ptr, ptr %stp_L10325
+  call i32 @qdrt_push_element(ptr %stk_L10325, ptr %local.froot)
+  %fa_elem_L10326 = alloca %qd_stack_element_t
+  %fa_stp_L10326 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %fa_stk_L10326 = load ptr, ptr %fa_stp_L10326
+  call void @qd_stack_pop(ptr %fa_stk_L10326, ptr %fa_elem_L10326)
+  %fa_vp_L10326 = getelementptr %qd_stack_element_t, ptr %fa_elem_L10326, i32 0, i32 0
+  %fa_ptr_L10326 = load ptr, ptr %fa_vp_L10326
+  %fa_off_L10326 = load i64, ptr @__offset_child3
+  %fa_fp_L10326 = getelementptr i8, ptr %fa_ptr_L10326, i64 %fa_off_L10326
+  %fa_val_L10326 = load ptr, ptr %fa_fp_L10326
+  call i32 @qd_push_p(ptr %ctx, ptr %fa_val_L10326)
+  call i32 @qd_push_i(ptr %ctx, i64 0)
+  call i32 @qd_neq(ptr %ctx)
+  %ce_L10327 = alloca %qd_stack_element_t
+  %stp_L10327 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L10327 = load ptr, ptr %stp_L10327
+  call void @qd_stack_pop(ptr %stk_L10327, ptr %ce_L10327)
+  %cv_L10327 = getelementptr %qd_stack_element_t, ptr %ce_L10327, i32 0, i32 0
+  %ci_L10327 = load i64, ptr %cv_L10327
+  %cc_L10327 = icmp ne i64 %ci_L10327, 0
+  br i1 %cc_L10327, label %L10328, label %L10330
+L10328:
+  %stp_L10331 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L10331 = load ptr, ptr %stp_L10331
+  call i32 @qdrt_push_element(ptr %stk_L10331, ptr %local.st)
+  %stp_L10332 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L10332 = load ptr, ptr %stp_L10332
+  call i32 @qdrt_push_element(ptr %stk_L10332, ptr %local.froot)
+  %fa_elem_L10333 = alloca %qd_stack_element_t
+  %fa_stp_L10333 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %fa_stk_L10333 = load ptr, ptr %fa_stp_L10333
+  call void @qd_stack_pop(ptr %fa_stk_L10333, ptr %fa_elem_L10333)
+  %fa_vp_L10333 = getelementptr %qd_stack_element_t, ptr %fa_elem_L10333, i32 0, i32 0
+  %fa_ptr_L10333 = load ptr, ptr %fa_vp_L10333
+  %fa_off_L10333 = load i64, ptr @__offset_child3
+  %fa_fp_L10333 = getelementptr i8, ptr %fa_ptr_L10333, i64 %fa_off_L10333
+  %fa_val_L10333 = load ptr, ptr %fa_fp_L10333
+  call i32 @qd_push_p(ptr %ctx, ptr %fa_val_L10333)
+  %stp_L10334 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L10334 = load ptr, ptr %stp_L10334
+  call i32 @qdrt_push_element(ptr %stk_L10334, ptr %local.cstr)
+  %stp_L10335 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L10335 = load ptr, ptr %stp_L10335
+  call i32 @qdrt_push_element(ptr %stk_L10335, ptr %local.pfx)
+  call i32 @usr_codegen_emit_top_level(ptr %ctx)
+  %stp_L10336 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L10336 = load ptr, ptr %stp_L10336
+  call void @qd_stack_pop(ptr %stk_L10336, ptr %local.st)
+  br label %L10330
+L10330:
+  %stp_L10337 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L10337 = load ptr, ptr %stp_L10337
+  call i32 @qdrt_push_element(ptr %stk_L10337, ptr %local.froot)
+  %fa_elem_L10338 = alloca %qd_stack_element_t
+  %fa_stp_L10338 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %fa_stk_L10338 = load ptr, ptr %fa_stp_L10338
+  call void @qd_stack_pop(ptr %fa_stk_L10338, ptr %fa_elem_L10338)
+  %fa_vp_L10338 = getelementptr %qd_stack_element_t, ptr %fa_elem_L10338, i32 0, i32 0
+  %fa_ptr_L10338 = load ptr, ptr %fa_vp_L10338
+  %fa_off_L10338 = load i64, ptr @__offset_child4
+  %fa_fp_L10338 = getelementptr i8, ptr %fa_ptr_L10338, i64 %fa_off_L10338
+  %fa_val_L10338 = load ptr, ptr %fa_fp_L10338
+  call i32 @qd_push_p(ptr %ctx, ptr %fa_val_L10338)
+  call i32 @qd_push_i(ptr %ctx, i64 0)
+  call i32 @qd_neq(ptr %ctx)
+  %ce_L10339 = alloca %qd_stack_element_t
+  %stp_L10339 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L10339 = load ptr, ptr %stp_L10339
+  call void @qd_stack_pop(ptr %stk_L10339, ptr %ce_L10339)
+  %cv_L10339 = getelementptr %qd_stack_element_t, ptr %ce_L10339, i32 0, i32 0
+  %ci_L10339 = load i64, ptr %cv_L10339
+  %cc_L10339 = icmp ne i64 %ci_L10339, 0
+  br i1 %cc_L10339, label %L10340, label %L10342
+L10340:
+  %stp_L10343 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L10343 = load ptr, ptr %stp_L10343
+  call i32 @qdrt_push_element(ptr %stk_L10343, ptr %local.st)
+  %stp_L10344 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L10344 = load ptr, ptr %stp_L10344
+  call i32 @qdrt_push_element(ptr %stk_L10344, ptr %local.froot)
+  %fa_elem_L10345 = alloca %qd_stack_element_t
+  %fa_stp_L10345 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %fa_stk_L10345 = load ptr, ptr %fa_stp_L10345
+  call void @qd_stack_pop(ptr %fa_stk_L10345, ptr %fa_elem_L10345)
+  %fa_vp_L10345 = getelementptr %qd_stack_element_t, ptr %fa_elem_L10345, i32 0, i32 0
+  %fa_ptr_L10345 = load ptr, ptr %fa_vp_L10345
+  %fa_off_L10345 = load i64, ptr @__offset_child4
+  %fa_fp_L10345 = getelementptr i8, ptr %fa_ptr_L10345, i64 %fa_off_L10345
+  %fa_val_L10345 = load ptr, ptr %fa_fp_L10345
+  call i32 @qd_push_p(ptr %ctx, ptr %fa_val_L10345)
+  %stp_L10346 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L10346 = load ptr, ptr %stp_L10346
+  call i32 @qdrt_push_element(ptr %stk_L10346, ptr %local.cstr)
+  %stp_L10347 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L10347 = load ptr, ptr %stp_L10347
+  call i32 @qdrt_push_element(ptr %stk_L10347, ptr %local.pfx)
+  call i32 @usr_codegen_emit_top_level(ptr %ctx)
+  %stp_L10348 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L10348 = load ptr, ptr %stp_L10348
+  call void @qd_stack_pop(ptr %stk_L10348, ptr %local.st)
+  br label %L10342
+L10342:
+  %stp_L10349 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L10349 = load ptr, ptr %stp_L10349
+  call i32 @qdrt_push_element(ptr %stk_L10349, ptr %local.froot)
+  %fa_elem_L10350 = alloca %qd_stack_element_t
+  %fa_stp_L10350 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %fa_stk_L10350 = load ptr, ptr %fa_stp_L10350
+  call void @qd_stack_pop(ptr %fa_stk_L10350, ptr %fa_elem_L10350)
+  %fa_vp_L10350 = getelementptr %qd_stack_element_t, ptr %fa_elem_L10350, i32 0, i32 0
+  %fa_ptr_L10350 = load ptr, ptr %fa_vp_L10350
+  %fa_off_L10350 = load i64, ptr @__offset_extra
+  %fa_fp_L10350 = getelementptr i8, ptr %fa_ptr_L10350, i64 %fa_off_L10350
+  %fa_val_L10350 = load ptr, ptr %fa_fp_L10350
+  call i32 @qd_push_p(ptr %ctx, ptr %fa_val_L10350)
+  %stp_L10351 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L10351 = load ptr, ptr %stp_L10351
+  call void @qd_stack_pop(ptr %stk_L10351, ptr %local.cur)
+  %stp_L10352 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L10352 = load ptr, ptr %stp_L10352
+  call i32 @qdrt_push_element(ptr %stk_L10352, ptr %local.cur)
+  call i32 @qd_push_i(ptr %ctx, i64 0)
+  call i32 @qd_neq(ptr %ctx)
+  %ce_L10353 = alloca %qd_stack_element_t
+  %stp_L10353 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L10353 = load ptr, ptr %stp_L10353
+  call void @qd_stack_pop(ptr %stk_L10353, ptr %ce_L10353)
+  %cv_L10353 = getelementptr %qd_stack_element_t, ptr %ce_L10353, i32 0, i32 0
+  %ci_L10353 = load i64, ptr %cv_L10353
+  %cc_L10353 = icmp ne i64 %ci_L10353, 0
+  br i1 %cc_L10353, label %L10354, label %L10355
+L10354:
+  %stp_L10357 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L10357 = load ptr, ptr %stp_L10357
+  call i32 @qdrt_push_element(ptr %stk_L10357, ptr %local.st)
+  %stp_L10358 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L10358 = load ptr, ptr %stp_L10358
+  call i32 @qdrt_push_element(ptr %stk_L10358, ptr %local.cur)
+  %stp_L10359 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L10359 = load ptr, ptr %stp_L10359
+  call i32 @qdrt_push_element(ptr %stk_L10359, ptr %local.cstr)
+  %stp_L10360 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L10360 = load ptr, ptr %stp_L10360
+  call i32 @qdrt_push_element(ptr %stk_L10360, ptr %local.pfx)
+  call i32 @usr_codegen_emit_top_level(ptr %ctx)
+  %stp_L10361 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L10361 = load ptr, ptr %stp_L10361
+  call void @qd_stack_pop(ptr %stk_L10361, ptr %local.st)
+  %stp_L10362 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L10362 = load ptr, ptr %stp_L10362
+  call i32 @qdrt_push_element(ptr %stk_L10362, ptr %local.cur)
+  %fa_elem_L10363 = alloca %qd_stack_element_t
+  %fa_stp_L10363 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %fa_stk_L10363 = load ptr, ptr %fa_stp_L10363
+  call void @qd_stack_pop(ptr %fa_stk_L10363, ptr %fa_elem_L10363)
+  %fa_vp_L10363 = getelementptr %qd_stack_element_t, ptr %fa_elem_L10363, i32 0, i32 0
+  %fa_ptr_L10363 = load ptr, ptr %fa_vp_L10363
+  %fa_off_L10363 = load i64, ptr @__offset_sibling
+  %fa_fp_L10363 = getelementptr i8, ptr %fa_ptr_L10363, i64 %fa_off_L10363
+  %fa_val_L10363 = load ptr, ptr %fa_fp_L10363
+  call i32 @qd_push_p(ptr %ctx, ptr %fa_val_L10363)
+  %stp_L10364 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L10364 = load ptr, ptr %stp_L10364
+  call void @qd_stack_pop(ptr %stk_L10364, ptr %local.cur)
+  %stp_L10365 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L10365 = load ptr, ptr %stp_L10365
+  call i32 @qdrt_push_element(ptr %stk_L10365, ptr %local.cur)
+  call i32 @qd_push_i(ptr %ctx, i64 0)
+  call i32 @qd_neq(ptr %ctx)
+  %ce_L10366 = alloca %qd_stack_element_t
+  %stp_L10366 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L10366 = load ptr, ptr %stp_L10366
+  call void @qd_stack_pop(ptr %stk_L10366, ptr %ce_L10366)
+  %cv_L10366 = getelementptr %qd_stack_element_t, ptr %ce_L10366, i32 0, i32 0
+  %ci_L10366 = load i64, ptr %cv_L10366
+  %cc_L10366 = icmp ne i64 %ci_L10366, 0
+  br i1 %cc_L10366, label %L10354, label %L10355
+L10355:
+  %stp_L10367 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L10367 = load ptr, ptr %stp_L10367
+  call i32 @qdrt_push_element(ptr %stk_L10367, ptr %local.st)
   br label %return
 return:
   ret i32 0
@@ -41791,960 +42105,655 @@ entry:
   %local.globals_str = alloca %qd_stack_element_t
   %local.code_str = alloca %qd_stack_element_t
   %local.final = alloca %qd_stack_element_t
-  %stp_L10292 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L10292 = load ptr, ptr %stp_L10292
-  call void @qd_stack_pop(ptr %stk_L10292, ptr %local.mdecls)
-  %stp_L10293 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L10293 = load ptr, ptr %stp_L10293
-  call void @qd_stack_pop(ptr %stk_L10293, ptr %local.merged)
-  %stp_L10294 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L10294 = load ptr, ptr %stp_L10294
-  call void @qd_stack_pop(ptr %stk_L10294, ptr %local.root)
-  call i32 @usr_codegen_new_state(ptr %ctx)
-  %stp_L10295 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L10295 = load ptr, ptr %stp_L10295
-  call void @qd_stack_pop(ptr %stk_L10295, ptr %local.st)
-  %stp_L10296 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L10296 = load ptr, ptr %stp_L10296
-  call i32 @qdrt_push_element(ptr %stk_L10296, ptr %local.st)
-  %fa_elem_L10297 = alloca %qd_stack_element_t
-  %fa_stp_L10297 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %fa_stk_L10297 = load ptr, ptr %fa_stp_L10297
-  call void @qd_stack_pop(ptr %fa_stk_L10297, ptr %fa_elem_L10297)
-  %fa_vp_L10297 = getelementptr %qd_stack_element_t, ptr %fa_elem_L10297, i32 0, i32 0
-  %fa_ptr_L10297 = load ptr, ptr %fa_vp_L10297
-  %fa_off_L10297 = load i64, ptr @__offset_code
-  %fa_fp_L10297 = getelementptr i8, ptr %fa_ptr_L10297, i64 %fa_off_L10297
-  %fa_val_L10297 = load ptr, ptr %fa_fp_L10297
-  call i32 @qd_push_p(ptr %ctx, ptr %fa_val_L10297)
-  %stp_L10298 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L10298 = load ptr, ptr %stp_L10298
-  call void @qd_stack_pop(ptr %stk_L10298, ptr %local.o)
-  %stp_L10299 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L10299 = load ptr, ptr %stp_L10299
-  call i32 @qdrt_push_element(ptr %stk_L10299, ptr %local.o)
-  call i32 @qd_push_s(ptr %ctx, ptr @.str.10300)
-  call i32 @usr_sb_append(ptr %ctx)
-  %stp_L10301 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L10301 = load ptr, ptr %stp_L10301
-  call void @qd_stack_pop(ptr %stk_L10301, ptr %local.o)
-  %stp_L10302 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L10302 = load ptr, ptr %stp_L10302
-  call i32 @qdrt_push_element(ptr %stk_L10302, ptr %local.o)
-  call i32 @qd_push_s(ptr %ctx, ptr @.str.10303)
-  call i32 @usr_sb_append(ptr %ctx)
-  %stp_L10304 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L10304 = load ptr, ptr %stp_L10304
-  call void @qd_stack_pop(ptr %stk_L10304, ptr %local.o)
-  %stp_L10305 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L10305 = load ptr, ptr %stp_L10305
-  call i32 @qdrt_push_element(ptr %stk_L10305, ptr %local.o)
-  call i32 @qd_push_s(ptr %ctx, ptr @.str.10306)
-  call i32 @usr_sb_append(ptr %ctx)
-  %stp_L10307 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L10307 = load ptr, ptr %stp_L10307
-  call void @qd_stack_pop(ptr %stk_L10307, ptr %local.o)
-  %stp_L10308 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L10308 = load ptr, ptr %stp_L10308
-  call i32 @qdrt_push_element(ptr %stk_L10308, ptr %local.o)
-  call i32 @qd_push_s(ptr %ctx, ptr @.str.10309)
-  call i32 @usr_sb_append(ptr %ctx)
-  %stp_L10310 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L10310 = load ptr, ptr %stp_L10310
-  call void @qd_stack_pop(ptr %stk_L10310, ptr %local.o)
-  %stp_L10311 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L10311 = load ptr, ptr %stp_L10311
-  call i32 @qdrt_push_element(ptr %stk_L10311, ptr %local.o)
-  call i32 @qd_push_s(ptr %ctx, ptr @.str.10312)
-  call i32 @usr_sb_append(ptr %ctx)
-  %stp_L10313 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L10313 = load ptr, ptr %stp_L10313
-  call void @qd_stack_pop(ptr %stk_L10313, ptr %local.o)
-  %stp_L10314 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L10314 = load ptr, ptr %stp_L10314
-  call i32 @qdrt_push_element(ptr %stk_L10314, ptr %local.o)
-  call i32 @qd_push_s(ptr %ctx, ptr @.str.10315)
-  call i32 @usr_sb_append(ptr %ctx)
-  %stp_L10316 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L10316 = load ptr, ptr %stp_L10316
-  call void @qd_stack_pop(ptr %stk_L10316, ptr %local.o)
-  %stp_L10317 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L10317 = load ptr, ptr %stp_L10317
-  call i32 @qdrt_push_element(ptr %stk_L10317, ptr %local.o)
-  call i32 @qd_push_s(ptr %ctx, ptr @.str.10318)
-  call i32 @usr_sb_append(ptr %ctx)
-  %stp_L10319 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L10319 = load ptr, ptr %stp_L10319
-  call void @qd_stack_pop(ptr %stk_L10319, ptr %local.o)
-  %stp_L10320 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L10320 = load ptr, ptr %stp_L10320
-  call i32 @qdrt_push_element(ptr %stk_L10320, ptr %local.o)
-  call i32 @qd_push_s(ptr %ctx, ptr @.str.10321)
-  call i32 @usr_sb_append(ptr %ctx)
-  %stp_L10322 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L10322 = load ptr, ptr %stp_L10322
-  call void @qd_stack_pop(ptr %stk_L10322, ptr %local.o)
-  %stp_L10323 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L10323 = load ptr, ptr %stp_L10323
-  call i32 @qdrt_push_element(ptr %stk_L10323, ptr %local.o)
-  call i32 @qd_push_s(ptr %ctx, ptr @.str.10324)
-  call i32 @usr_sb_append(ptr %ctx)
-  %stp_L10325 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L10325 = load ptr, ptr %stp_L10325
-  call void @qd_stack_pop(ptr %stk_L10325, ptr %local.o)
-  %stp_L10326 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L10326 = load ptr, ptr %stp_L10326
-  call i32 @qdrt_push_element(ptr %stk_L10326, ptr %local.o)
-  call i32 @qd_push_s(ptr %ctx, ptr @.str.10327)
-  call i32 @usr_sb_append(ptr %ctx)
-  %stp_L10328 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L10328 = load ptr, ptr %stp_L10328
-  call void @qd_stack_pop(ptr %stk_L10328, ptr %local.o)
-  %stp_L10329 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L10329 = load ptr, ptr %stp_L10329
-  call i32 @qdrt_push_element(ptr %stk_L10329, ptr %local.o)
-  call i32 @qd_push_s(ptr %ctx, ptr @.str.10330)
-  call i32 @usr_sb_append(ptr %ctx)
-  %stp_L10331 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L10331 = load ptr, ptr %stp_L10331
-  call void @qd_stack_pop(ptr %stk_L10331, ptr %local.o)
-  %stp_L10332 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L10332 = load ptr, ptr %stp_L10332
-  call i32 @qdrt_push_element(ptr %stk_L10332, ptr %local.o)
-  call i32 @qd_push_s(ptr %ctx, ptr @.str.10333)
-  call i32 @usr_sb_append(ptr %ctx)
-  %stp_L10334 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L10334 = load ptr, ptr %stp_L10334
-  call void @qd_stack_pop(ptr %stk_L10334, ptr %local.o)
-  %stp_L10335 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L10335 = load ptr, ptr %stp_L10335
-  call i32 @qdrt_push_element(ptr %stk_L10335, ptr %local.o)
-  call i32 @qd_push_s(ptr %ctx, ptr @.str.10336)
-  call i32 @usr_sb_append(ptr %ctx)
-  %stp_L10337 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L10337 = load ptr, ptr %stp_L10337
-  call void @qd_stack_pop(ptr %stk_L10337, ptr %local.o)
-  %stp_L10338 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L10338 = load ptr, ptr %stp_L10338
-  call i32 @qdrt_push_element(ptr %stk_L10338, ptr %local.o)
-  call i32 @qd_push_s(ptr %ctx, ptr @.str.10339)
-  call i32 @usr_sb_append(ptr %ctx)
-  %stp_L10340 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L10340 = load ptr, ptr %stp_L10340
-  call void @qd_stack_pop(ptr %stk_L10340, ptr %local.o)
-  %stp_L10341 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L10341 = load ptr, ptr %stp_L10341
-  call i32 @qdrt_push_element(ptr %stk_L10341, ptr %local.o)
-  call i32 @qd_push_s(ptr %ctx, ptr @.str.10342)
-  call i32 @usr_sb_append(ptr %ctx)
-  %stp_L10343 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L10343 = load ptr, ptr %stp_L10343
-  call void @qd_stack_pop(ptr %stk_L10343, ptr %local.o)
-  %stp_L10344 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L10344 = load ptr, ptr %stp_L10344
-  call i32 @qdrt_push_element(ptr %stk_L10344, ptr %local.o)
-  call i32 @qd_push_s(ptr %ctx, ptr @.str.10345)
-  call i32 @usr_sb_append(ptr %ctx)
-  %stp_L10346 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L10346 = load ptr, ptr %stp_L10346
-  call void @qd_stack_pop(ptr %stk_L10346, ptr %local.o)
-  %stp_L10347 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L10347 = load ptr, ptr %stp_L10347
-  call i32 @qdrt_push_element(ptr %stk_L10347, ptr %local.o)
-  call i32 @qd_push_s(ptr %ctx, ptr @.str.10348)
-  call i32 @usr_sb_append(ptr %ctx)
-  %stp_L10349 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L10349 = load ptr, ptr %stp_L10349
-  call void @qd_stack_pop(ptr %stk_L10349, ptr %local.o)
-  %stp_L10350 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L10350 = load ptr, ptr %stp_L10350
-  call i32 @qdrt_push_element(ptr %stk_L10350, ptr %local.o)
-  call i32 @qd_push_s(ptr %ctx, ptr @.str.10351)
-  call i32 @usr_sb_append(ptr %ctx)
-  %stp_L10352 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L10352 = load ptr, ptr %stp_L10352
-  call void @qd_stack_pop(ptr %stk_L10352, ptr %local.o)
-  %stp_L10353 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L10353 = load ptr, ptr %stp_L10353
-  call i32 @qdrt_push_element(ptr %stk_L10353, ptr %local.o)
-  call i32 @qd_push_s(ptr %ctx, ptr @.str.10354)
-  call i32 @usr_sb_append(ptr %ctx)
-  %stp_L10355 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L10355 = load ptr, ptr %stp_L10355
-  call void @qd_stack_pop(ptr %stk_L10355, ptr %local.o)
-  %stp_L10356 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L10356 = load ptr, ptr %stp_L10356
-  call i32 @qdrt_push_element(ptr %stk_L10356, ptr %local.o)
-  call i32 @qd_push_s(ptr %ctx, ptr @.str.10357)
-  call i32 @usr_sb_append(ptr %ctx)
-  %stp_L10358 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L10358 = load ptr, ptr %stp_L10358
-  call void @qd_stack_pop(ptr %stk_L10358, ptr %local.o)
-  %stp_L10359 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L10359 = load ptr, ptr %stp_L10359
-  call i32 @qdrt_push_element(ptr %stk_L10359, ptr %local.o)
-  call i32 @qd_push_s(ptr %ctx, ptr @.str.10360)
-  call i32 @usr_sb_append(ptr %ctx)
-  %stp_L10361 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L10361 = load ptr, ptr %stp_L10361
-  call void @qd_stack_pop(ptr %stk_L10361, ptr %local.o)
-  %stp_L10362 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L10362 = load ptr, ptr %stp_L10362
-  call i32 @qdrt_push_element(ptr %stk_L10362, ptr %local.o)
-  call i32 @qd_push_s(ptr %ctx, ptr @.str.10363)
-  call i32 @usr_sb_append(ptr %ctx)
-  %stp_L10364 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L10364 = load ptr, ptr %stp_L10364
-  call void @qd_stack_pop(ptr %stk_L10364, ptr %local.o)
-  %stp_L10365 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L10365 = load ptr, ptr %stp_L10365
-  call i32 @qdrt_push_element(ptr %stk_L10365, ptr %local.o)
-  call i32 @qd_push_s(ptr %ctx, ptr @.str.10366)
-  call i32 @usr_sb_append(ptr %ctx)
-  %stp_L10367 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L10367 = load ptr, ptr %stp_L10367
-  call void @qd_stack_pop(ptr %stk_L10367, ptr %local.o)
   %stp_L10368 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
   %stk_L10368 = load ptr, ptr %stp_L10368
-  call i32 @qdrt_push_element(ptr %stk_L10368, ptr %local.o)
-  call i32 @qd_push_s(ptr %ctx, ptr @.str.10369)
-  call i32 @usr_sb_append(ptr %ctx)
+  call void @qd_stack_pop(ptr %stk_L10368, ptr %local.mdecls)
+  %stp_L10369 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L10369 = load ptr, ptr %stp_L10369
+  call void @qd_stack_pop(ptr %stk_L10369, ptr %local.merged)
   %stp_L10370 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
   %stk_L10370 = load ptr, ptr %stp_L10370
-  call void @qd_stack_pop(ptr %stk_L10370, ptr %local.o)
+  call void @qd_stack_pop(ptr %stk_L10370, ptr %local.root)
+  call i32 @usr_codegen_new_state(ptr %ctx)
   %stp_L10371 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
   %stk_L10371 = load ptr, ptr %stp_L10371
-  call i32 @qdrt_push_element(ptr %stk_L10371, ptr %local.o)
-  call i32 @qd_push_s(ptr %ctx, ptr @.str.10372)
-  call i32 @usr_sb_append(ptr %ctx)
-  %stp_L10373 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L10373 = load ptr, ptr %stp_L10373
-  call void @qd_stack_pop(ptr %stk_L10373, ptr %local.o)
+  call void @qd_stack_pop(ptr %stk_L10371, ptr %local.st)
+  %stp_L10372 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L10372 = load ptr, ptr %stp_L10372
+  call i32 @qdrt_push_element(ptr %stk_L10372, ptr %local.st)
+  %fa_elem_L10373 = alloca %qd_stack_element_t
+  %fa_stp_L10373 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %fa_stk_L10373 = load ptr, ptr %fa_stp_L10373
+  call void @qd_stack_pop(ptr %fa_stk_L10373, ptr %fa_elem_L10373)
+  %fa_vp_L10373 = getelementptr %qd_stack_element_t, ptr %fa_elem_L10373, i32 0, i32 0
+  %fa_ptr_L10373 = load ptr, ptr %fa_vp_L10373
+  %fa_off_L10373 = load i64, ptr @__offset_code
+  %fa_fp_L10373 = getelementptr i8, ptr %fa_ptr_L10373, i64 %fa_off_L10373
+  %fa_val_L10373 = load ptr, ptr %fa_fp_L10373
+  call i32 @qd_push_p(ptr %ctx, ptr %fa_val_L10373)
   %stp_L10374 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
   %stk_L10374 = load ptr, ptr %stp_L10374
-  call i32 @qdrt_push_element(ptr %stk_L10374, ptr %local.o)
-  call i32 @qd_push_s(ptr %ctx, ptr @.str.10375)
+  call void @qd_stack_pop(ptr %stk_L10374, ptr %local.o)
+  %stp_L10375 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L10375 = load ptr, ptr %stp_L10375
+  call i32 @qdrt_push_element(ptr %stk_L10375, ptr %local.o)
+  call i32 @qd_push_s(ptr %ctx, ptr @.str.10376)
   call i32 @usr_sb_append(ptr %ctx)
-  %stp_L10376 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L10376 = load ptr, ptr %stp_L10376
-  call void @qd_stack_pop(ptr %stk_L10376, ptr %local.o)
   %stp_L10377 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
   %stk_L10377 = load ptr, ptr %stp_L10377
-  call i32 @qdrt_push_element(ptr %stk_L10377, ptr %local.o)
-  call i32 @qd_push_s(ptr %ctx, ptr @.str.10378)
+  call void @qd_stack_pop(ptr %stk_L10377, ptr %local.o)
+  %stp_L10378 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L10378 = load ptr, ptr %stp_L10378
+  call i32 @qdrt_push_element(ptr %stk_L10378, ptr %local.o)
+  call i32 @qd_push_s(ptr %ctx, ptr @.str.10379)
   call i32 @usr_sb_append(ptr %ctx)
-  %stp_L10379 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L10379 = load ptr, ptr %stp_L10379
-  call void @qd_stack_pop(ptr %stk_L10379, ptr %local.o)
   %stp_L10380 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
   %stk_L10380 = load ptr, ptr %stp_L10380
-  call i32 @qdrt_push_element(ptr %stk_L10380, ptr %local.o)
-  call i32 @qd_push_s(ptr %ctx, ptr @.str.10381)
+  call void @qd_stack_pop(ptr %stk_L10380, ptr %local.o)
+  %stp_L10381 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L10381 = load ptr, ptr %stp_L10381
+  call i32 @qdrt_push_element(ptr %stk_L10381, ptr %local.o)
+  call i32 @qd_push_s(ptr %ctx, ptr @.str.10382)
   call i32 @usr_sb_append(ptr %ctx)
-  %stp_L10382 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L10382 = load ptr, ptr %stp_L10382
-  call void @qd_stack_pop(ptr %stk_L10382, ptr %local.o)
   %stp_L10383 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
   %stk_L10383 = load ptr, ptr %stp_L10383
-  call i32 @qdrt_push_element(ptr %stk_L10383, ptr %local.o)
-  call i32 @qd_push_s(ptr %ctx, ptr @.str.10384)
+  call void @qd_stack_pop(ptr %stk_L10383, ptr %local.o)
+  %stp_L10384 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L10384 = load ptr, ptr %stp_L10384
+  call i32 @qdrt_push_element(ptr %stk_L10384, ptr %local.o)
+  call i32 @qd_push_s(ptr %ctx, ptr @.str.10385)
   call i32 @usr_sb_append(ptr %ctx)
-  %stp_L10385 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L10385 = load ptr, ptr %stp_L10385
-  call void @qd_stack_pop(ptr %stk_L10385, ptr %local.o)
   %stp_L10386 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
   %stk_L10386 = load ptr, ptr %stp_L10386
-  call i32 @qdrt_push_element(ptr %stk_L10386, ptr %local.o)
-  call i32 @qd_push_s(ptr %ctx, ptr @.str.10387)
+  call void @qd_stack_pop(ptr %stk_L10386, ptr %local.o)
+  %stp_L10387 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L10387 = load ptr, ptr %stp_L10387
+  call i32 @qdrt_push_element(ptr %stk_L10387, ptr %local.o)
+  call i32 @qd_push_s(ptr %ctx, ptr @.str.10388)
   call i32 @usr_sb_append(ptr %ctx)
-  %stp_L10388 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L10388 = load ptr, ptr %stp_L10388
-  call void @qd_stack_pop(ptr %stk_L10388, ptr %local.o)
   %stp_L10389 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
   %stk_L10389 = load ptr, ptr %stp_L10389
-  call i32 @qdrt_push_element(ptr %stk_L10389, ptr %local.o)
-  call i32 @qd_push_s(ptr %ctx, ptr @.str.10390)
+  call void @qd_stack_pop(ptr %stk_L10389, ptr %local.o)
+  %stp_L10390 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L10390 = load ptr, ptr %stp_L10390
+  call i32 @qdrt_push_element(ptr %stk_L10390, ptr %local.o)
+  call i32 @qd_push_s(ptr %ctx, ptr @.str.10391)
   call i32 @usr_sb_append(ptr %ctx)
-  %stp_L10391 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L10391 = load ptr, ptr %stp_L10391
-  call void @qd_stack_pop(ptr %stk_L10391, ptr %local.o)
   %stp_L10392 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
   %stk_L10392 = load ptr, ptr %stp_L10392
-  call i32 @qdrt_push_element(ptr %stk_L10392, ptr %local.o)
-  call i32 @qd_push_s(ptr %ctx, ptr @.str.10393)
+  call void @qd_stack_pop(ptr %stk_L10392, ptr %local.o)
+  %stp_L10393 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L10393 = load ptr, ptr %stp_L10393
+  call i32 @qdrt_push_element(ptr %stk_L10393, ptr %local.o)
+  call i32 @qd_push_s(ptr %ctx, ptr @.str.10394)
   call i32 @usr_sb_append(ptr %ctx)
-  %stp_L10394 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L10394 = load ptr, ptr %stp_L10394
-  call void @qd_stack_pop(ptr %stk_L10394, ptr %local.o)
   %stp_L10395 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
   %stk_L10395 = load ptr, ptr %stp_L10395
-  call i32 @qdrt_push_element(ptr %stk_L10395, ptr %local.o)
-  call i32 @qd_push_s(ptr %ctx, ptr @.str.10396)
+  call void @qd_stack_pop(ptr %stk_L10395, ptr %local.o)
+  %stp_L10396 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L10396 = load ptr, ptr %stp_L10396
+  call i32 @qdrt_push_element(ptr %stk_L10396, ptr %local.o)
+  call i32 @qd_push_s(ptr %ctx, ptr @.str.10397)
   call i32 @usr_sb_append(ptr %ctx)
-  %stp_L10397 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L10397 = load ptr, ptr %stp_L10397
-  call void @qd_stack_pop(ptr %stk_L10397, ptr %local.o)
   %stp_L10398 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
   %stk_L10398 = load ptr, ptr %stp_L10398
-  call i32 @qdrt_push_element(ptr %stk_L10398, ptr %local.o)
-  call i32 @qd_push_s(ptr %ctx, ptr @.str.10399)
+  call void @qd_stack_pop(ptr %stk_L10398, ptr %local.o)
+  %stp_L10399 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L10399 = load ptr, ptr %stp_L10399
+  call i32 @qdrt_push_element(ptr %stk_L10399, ptr %local.o)
+  call i32 @qd_push_s(ptr %ctx, ptr @.str.10400)
   call i32 @usr_sb_append(ptr %ctx)
-  %stp_L10400 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L10400 = load ptr, ptr %stp_L10400
-  call void @qd_stack_pop(ptr %stk_L10400, ptr %local.o)
   %stp_L10401 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
   %stk_L10401 = load ptr, ptr %stp_L10401
-  call i32 @qdrt_push_element(ptr %stk_L10401, ptr %local.o)
-  call i32 @qd_push_s(ptr %ctx, ptr @.str.10402)
+  call void @qd_stack_pop(ptr %stk_L10401, ptr %local.o)
+  %stp_L10402 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L10402 = load ptr, ptr %stp_L10402
+  call i32 @qdrt_push_element(ptr %stk_L10402, ptr %local.o)
+  call i32 @qd_push_s(ptr %ctx, ptr @.str.10403)
   call i32 @usr_sb_append(ptr %ctx)
-  %stp_L10403 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L10403 = load ptr, ptr %stp_L10403
-  call void @qd_stack_pop(ptr %stk_L10403, ptr %local.o)
   %stp_L10404 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
   %stk_L10404 = load ptr, ptr %stp_L10404
-  call i32 @qdrt_push_element(ptr %stk_L10404, ptr %local.o)
-  call i32 @qd_push_s(ptr %ctx, ptr @.str.10405)
+  call void @qd_stack_pop(ptr %stk_L10404, ptr %local.o)
+  %stp_L10405 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L10405 = load ptr, ptr %stp_L10405
+  call i32 @qdrt_push_element(ptr %stk_L10405, ptr %local.o)
+  call i32 @qd_push_s(ptr %ctx, ptr @.str.10406)
   call i32 @usr_sb_append(ptr %ctx)
-  %stp_L10406 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L10406 = load ptr, ptr %stp_L10406
-  call void @qd_stack_pop(ptr %stk_L10406, ptr %local.o)
   %stp_L10407 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
   %stk_L10407 = load ptr, ptr %stp_L10407
-  call i32 @qdrt_push_element(ptr %stk_L10407, ptr %local.o)
-  call i32 @qd_push_s(ptr %ctx, ptr @.str.10408)
+  call void @qd_stack_pop(ptr %stk_L10407, ptr %local.o)
+  %stp_L10408 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L10408 = load ptr, ptr %stp_L10408
+  call i32 @qdrt_push_element(ptr %stk_L10408, ptr %local.o)
+  call i32 @qd_push_s(ptr %ctx, ptr @.str.10409)
   call i32 @usr_sb_append(ptr %ctx)
-  %stp_L10409 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L10409 = load ptr, ptr %stp_L10409
-  call void @qd_stack_pop(ptr %stk_L10409, ptr %local.o)
   %stp_L10410 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
   %stk_L10410 = load ptr, ptr %stp_L10410
-  call i32 @qdrt_push_element(ptr %stk_L10410, ptr %local.o)
-  call i32 @qd_push_s(ptr %ctx, ptr @.str.10411)
+  call void @qd_stack_pop(ptr %stk_L10410, ptr %local.o)
+  %stp_L10411 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L10411 = load ptr, ptr %stp_L10411
+  call i32 @qdrt_push_element(ptr %stk_L10411, ptr %local.o)
+  call i32 @qd_push_s(ptr %ctx, ptr @.str.10412)
   call i32 @usr_sb_append(ptr %ctx)
-  %stp_L10412 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L10412 = load ptr, ptr %stp_L10412
-  call void @qd_stack_pop(ptr %stk_L10412, ptr %local.o)
   %stp_L10413 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
   %stk_L10413 = load ptr, ptr %stp_L10413
-  call i32 @qdrt_push_element(ptr %stk_L10413, ptr %local.o)
-  call i32 @qd_push_s(ptr %ctx, ptr @.str.10414)
+  call void @qd_stack_pop(ptr %stk_L10413, ptr %local.o)
+  %stp_L10414 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L10414 = load ptr, ptr %stp_L10414
+  call i32 @qdrt_push_element(ptr %stk_L10414, ptr %local.o)
+  call i32 @qd_push_s(ptr %ctx, ptr @.str.10415)
   call i32 @usr_sb_append(ptr %ctx)
-  %stp_L10415 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L10415 = load ptr, ptr %stp_L10415
-  call void @qd_stack_pop(ptr %stk_L10415, ptr %local.o)
   %stp_L10416 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
   %stk_L10416 = load ptr, ptr %stp_L10416
-  call i32 @qdrt_push_element(ptr %stk_L10416, ptr %local.o)
-  call i32 @qd_push_s(ptr %ctx, ptr @.str.10417)
+  call void @qd_stack_pop(ptr %stk_L10416, ptr %local.o)
+  %stp_L10417 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L10417 = load ptr, ptr %stp_L10417
+  call i32 @qdrt_push_element(ptr %stk_L10417, ptr %local.o)
+  call i32 @qd_push_s(ptr %ctx, ptr @.str.10418)
   call i32 @usr_sb_append(ptr %ctx)
-  %stp_L10418 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L10418 = load ptr, ptr %stp_L10418
-  call void @qd_stack_pop(ptr %stk_L10418, ptr %local.o)
   %stp_L10419 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
   %stk_L10419 = load ptr, ptr %stp_L10419
-  call i32 @qdrt_push_element(ptr %stk_L10419, ptr %local.o)
-  call i32 @qd_push_s(ptr %ctx, ptr @.str.10420)
+  call void @qd_stack_pop(ptr %stk_L10419, ptr %local.o)
+  %stp_L10420 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L10420 = load ptr, ptr %stp_L10420
+  call i32 @qdrt_push_element(ptr %stk_L10420, ptr %local.o)
+  call i32 @qd_push_s(ptr %ctx, ptr @.str.10421)
   call i32 @usr_sb_append(ptr %ctx)
-  %stp_L10421 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L10421 = load ptr, ptr %stp_L10421
-  call void @qd_stack_pop(ptr %stk_L10421, ptr %local.o)
   %stp_L10422 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
   %stk_L10422 = load ptr, ptr %stp_L10422
-  call i32 @qdrt_push_element(ptr %stk_L10422, ptr %local.o)
-  call i32 @qd_push_s(ptr %ctx, ptr @.str.10423)
+  call void @qd_stack_pop(ptr %stk_L10422, ptr %local.o)
+  %stp_L10423 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L10423 = load ptr, ptr %stp_L10423
+  call i32 @qdrt_push_element(ptr %stk_L10423, ptr %local.o)
+  call i32 @qd_push_s(ptr %ctx, ptr @.str.10424)
   call i32 @usr_sb_append(ptr %ctx)
-  %stp_L10424 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L10424 = load ptr, ptr %stp_L10424
-  call void @qd_stack_pop(ptr %stk_L10424, ptr %local.o)
   %stp_L10425 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
   %stk_L10425 = load ptr, ptr %stp_L10425
-  call i32 @qdrt_push_element(ptr %stk_L10425, ptr %local.o)
-  call i32 @qd_push_s(ptr %ctx, ptr @.str.10426)
+  call void @qd_stack_pop(ptr %stk_L10425, ptr %local.o)
+  %stp_L10426 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L10426 = load ptr, ptr %stp_L10426
+  call i32 @qdrt_push_element(ptr %stk_L10426, ptr %local.o)
+  call i32 @qd_push_s(ptr %ctx, ptr @.str.10427)
   call i32 @usr_sb_append(ptr %ctx)
-  %stp_L10427 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L10427 = load ptr, ptr %stp_L10427
-  call void @qd_stack_pop(ptr %stk_L10427, ptr %local.o)
   %stp_L10428 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
   %stk_L10428 = load ptr, ptr %stp_L10428
-  call i32 @qdrt_push_element(ptr %stk_L10428, ptr %local.o)
-  call i32 @qd_push_s(ptr %ctx, ptr @.str.10429)
+  call void @qd_stack_pop(ptr %stk_L10428, ptr %local.o)
+  %stp_L10429 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L10429 = load ptr, ptr %stp_L10429
+  call i32 @qdrt_push_element(ptr %stk_L10429, ptr %local.o)
+  call i32 @qd_push_s(ptr %ctx, ptr @.str.10430)
   call i32 @usr_sb_append(ptr %ctx)
-  %stp_L10430 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L10430 = load ptr, ptr %stp_L10430
-  call void @qd_stack_pop(ptr %stk_L10430, ptr %local.o)
   %stp_L10431 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
   %stk_L10431 = load ptr, ptr %stp_L10431
-  call i32 @qdrt_push_element(ptr %stk_L10431, ptr %local.o)
-  call i32 @qd_push_s(ptr %ctx, ptr @.str.10432)
+  call void @qd_stack_pop(ptr %stk_L10431, ptr %local.o)
+  %stp_L10432 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L10432 = load ptr, ptr %stp_L10432
+  call i32 @qdrt_push_element(ptr %stk_L10432, ptr %local.o)
+  call i32 @qd_push_s(ptr %ctx, ptr @.str.10433)
   call i32 @usr_sb_append(ptr %ctx)
-  %stp_L10433 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L10433 = load ptr, ptr %stp_L10433
-  call void @qd_stack_pop(ptr %stk_L10433, ptr %local.o)
   %stp_L10434 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
   %stk_L10434 = load ptr, ptr %stp_L10434
-  call i32 @qdrt_push_element(ptr %stk_L10434, ptr %local.o)
-  call i32 @qd_push_s(ptr %ctx, ptr @.str.10435)
+  call void @qd_stack_pop(ptr %stk_L10434, ptr %local.o)
+  %stp_L10435 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L10435 = load ptr, ptr %stp_L10435
+  call i32 @qdrt_push_element(ptr %stk_L10435, ptr %local.o)
+  call i32 @qd_push_s(ptr %ctx, ptr @.str.10436)
   call i32 @usr_sb_append(ptr %ctx)
-  %stp_L10436 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L10436 = load ptr, ptr %stp_L10436
-  call void @qd_stack_pop(ptr %stk_L10436, ptr %local.o)
   %stp_L10437 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
   %stk_L10437 = load ptr, ptr %stp_L10437
-  call i32 @qdrt_push_element(ptr %stk_L10437, ptr %local.o)
-  call i32 @qd_push_s(ptr %ctx, ptr @.str.10438)
+  call void @qd_stack_pop(ptr %stk_L10437, ptr %local.o)
+  %stp_L10438 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L10438 = load ptr, ptr %stp_L10438
+  call i32 @qdrt_push_element(ptr %stk_L10438, ptr %local.o)
+  call i32 @qd_push_s(ptr %ctx, ptr @.str.10439)
   call i32 @usr_sb_append(ptr %ctx)
-  %stp_L10439 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L10439 = load ptr, ptr %stp_L10439
-  call void @qd_stack_pop(ptr %stk_L10439, ptr %local.o)
   %stp_L10440 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
   %stk_L10440 = load ptr, ptr %stp_L10440
-  call i32 @qdrt_push_element(ptr %stk_L10440, ptr %local.o)
-  call i32 @qd_push_s(ptr %ctx, ptr @.str.10441)
+  call void @qd_stack_pop(ptr %stk_L10440, ptr %local.o)
+  %stp_L10441 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L10441 = load ptr, ptr %stp_L10441
+  call i32 @qdrt_push_element(ptr %stk_L10441, ptr %local.o)
+  call i32 @qd_push_s(ptr %ctx, ptr @.str.10442)
   call i32 @usr_sb_append(ptr %ctx)
-  %stp_L10442 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L10442 = load ptr, ptr %stp_L10442
-  call void @qd_stack_pop(ptr %stk_L10442, ptr %local.o)
   %stp_L10443 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
   %stk_L10443 = load ptr, ptr %stp_L10443
-  call i32 @qdrt_push_element(ptr %stk_L10443, ptr %local.o)
-  %fs_elem_L10444 = alloca %qd_stack_element_t
-  %fs_stp_L10444 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %fs_stk_L10444 = load ptr, ptr %fs_stp_L10444
-  call void @qd_stack_pop(ptr %fs_stk_L10444, ptr %fs_elem_L10444)
-  %fs_vp_L10444 = getelementptr %qd_stack_element_t, ptr %fs_elem_L10444, i32 0, i32 0
-  %fs_val_L10444 = load i64, ptr %fs_vp_L10444
-  %fs_svp_L10444 = getelementptr %qd_stack_element_t, ptr %local.st, i32 0, i32 0
-  %fs_sptr_L10444 = load ptr, ptr %fs_svp_L10444
-  %fs_off_L10444 = load i64, ptr @__offset_code
-  %fs_fp_L10444 = getelementptr i8, ptr %fs_sptr_L10444, i64 %fs_off_L10444
-  store i64 %fs_val_L10444, ptr %fs_fp_L10444
-  %stp_L10445 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L10445 = load ptr, ptr %stp_L10445
-  call i32 @qdrt_push_element(ptr %stk_L10445, ptr %local.root)
-  call i32 @usr_sb_new(ptr %ctx)
-  call i32 @usr_codegen_collect_constants(ptr %ctx)
+  call void @qd_stack_pop(ptr %stk_L10443, ptr %local.o)
+  %stp_L10444 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L10444 = load ptr, ptr %stp_L10444
+  call i32 @qdrt_push_element(ptr %stk_L10444, ptr %local.o)
+  call i32 @qd_push_s(ptr %ctx, ptr @.str.10445)
+  call i32 @usr_sb_append(ptr %ctx)
   %stp_L10446 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
   %stk_L10446 = load ptr, ptr %stp_L10446
-  call void @qd_stack_pop(ptr %stk_L10446, ptr %local.cbuf)
+  call void @qd_stack_pop(ptr %stk_L10446, ptr %local.o)
   %stp_L10447 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
   %stk_L10447 = load ptr, ptr %stp_L10447
-  call i32 @qdrt_push_element(ptr %stk_L10447, ptr %local.merged)
-  %stp_L10448 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L10448 = load ptr, ptr %stp_L10448
-  call void @qd_stack_pop(ptr %stk_L10448, ptr %local.miter)
+  call i32 @qdrt_push_element(ptr %stk_L10447, ptr %local.o)
+  call i32 @qd_push_s(ptr %ctx, ptr @.str.10448)
+  call i32 @usr_sb_append(ptr %ctx)
   %stp_L10449 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
   %stk_L10449 = load ptr, ptr %stp_L10449
-  call i32 @qdrt_push_element(ptr %stk_L10449, ptr %local.miter)
-  call i32 @qd_push_i(ptr %ctx, i64 0)
-  call i32 @qd_neq(ptr %ctx)
-  %ce_L10450 = alloca %qd_stack_element_t
+  call void @qd_stack_pop(ptr %stk_L10449, ptr %local.o)
   %stp_L10450 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
   %stk_L10450 = load ptr, ptr %stp_L10450
-  call void @qd_stack_pop(ptr %stk_L10450, ptr %ce_L10450)
-  %cv_L10450 = getelementptr %qd_stack_element_t, ptr %ce_L10450, i32 0, i32 0
-  %ci_L10450 = load i64, ptr %cv_L10450
-  %cc_L10450 = icmp ne i64 %ci_L10450, 0
-  br i1 %cc_L10450, label %L10451, label %L10452
-L10451:
-  %stp_L10454 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L10454 = load ptr, ptr %stp_L10454
-  call i32 @qdrt_push_element(ptr %stk_L10454, ptr %local.miter)
+  call i32 @qdrt_push_element(ptr %stk_L10450, ptr %local.o)
+  call i32 @qd_push_s(ptr %ctx, ptr @.str.10451)
+  call i32 @usr_sb_append(ptr %ctx)
+  %stp_L10452 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L10452 = load ptr, ptr %stp_L10452
+  call void @qd_stack_pop(ptr %stk_L10452, ptr %local.o)
+  %stp_L10453 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L10453 = load ptr, ptr %stp_L10453
+  call i32 @qdrt_push_element(ptr %stk_L10453, ptr %local.o)
+  call i32 @qd_push_s(ptr %ctx, ptr @.str.10454)
+  call i32 @usr_sb_append(ptr %ctx)
   %stp_L10455 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
   %stk_L10455 = load ptr, ptr %stp_L10455
-  call i32 @qdrt_push_element(ptr %stk_L10455, ptr %local.cbuf)
-  call i32 @usr_codegen_collect_constants(ptr %ctx)
+  call void @qd_stack_pop(ptr %stk_L10455, ptr %local.o)
   %stp_L10456 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
   %stk_L10456 = load ptr, ptr %stp_L10456
-  call void @qd_stack_pop(ptr %stk_L10456, ptr %local.cbuf)
-  %stp_L10457 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L10457 = load ptr, ptr %stp_L10457
-  call i32 @qdrt_push_element(ptr %stk_L10457, ptr %local.miter)
-  %fa_elem_L10458 = alloca %qd_stack_element_t
-  %fa_stp_L10458 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %fa_stk_L10458 = load ptr, ptr %fa_stp_L10458
-  call void @qd_stack_pop(ptr %fa_stk_L10458, ptr %fa_elem_L10458)
-  %fa_vp_L10458 = getelementptr %qd_stack_element_t, ptr %fa_elem_L10458, i32 0, i32 0
-  %fa_ptr_L10458 = load ptr, ptr %fa_vp_L10458
-  %fa_off_L10458 = load i64, ptr @__offset_sibling
-  %fa_fp_L10458 = getelementptr i8, ptr %fa_ptr_L10458, i64 %fa_off_L10458
-  %fa_val_L10458 = load ptr, ptr %fa_fp_L10458
-  call i32 @qd_push_p(ptr %ctx, ptr %fa_val_L10458)
+  call i32 @qdrt_push_element(ptr %stk_L10456, ptr %local.o)
+  call i32 @qd_push_s(ptr %ctx, ptr @.str.10457)
+  call i32 @usr_sb_append(ptr %ctx)
+  %stp_L10458 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L10458 = load ptr, ptr %stp_L10458
+  call void @qd_stack_pop(ptr %stk_L10458, ptr %local.o)
   %stp_L10459 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
   %stk_L10459 = load ptr, ptr %stp_L10459
-  call void @qd_stack_pop(ptr %stk_L10459, ptr %local.miter)
-  %stp_L10460 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L10460 = load ptr, ptr %stp_L10460
-  call i32 @qdrt_push_element(ptr %stk_L10460, ptr %local.miter)
-  call i32 @qd_push_i(ptr %ctx, i64 0)
-  call i32 @qd_neq(ptr %ctx)
-  %ce_L10461 = alloca %qd_stack_element_t
+  call i32 @qdrt_push_element(ptr %stk_L10459, ptr %local.o)
+  call i32 @qd_push_s(ptr %ctx, ptr @.str.10460)
+  call i32 @usr_sb_append(ptr %ctx)
   %stp_L10461 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
   %stk_L10461 = load ptr, ptr %stp_L10461
-  call void @qd_stack_pop(ptr %stk_L10461, ptr %ce_L10461)
-  %cv_L10461 = getelementptr %qd_stack_element_t, ptr %ce_L10461, i32 0, i32 0
-  %ci_L10461 = load i64, ptr %cv_L10461
-  %cc_L10461 = icmp ne i64 %ci_L10461, 0
-  br i1 %cc_L10461, label %L10451, label %L10452
-L10452:
+  call void @qd_stack_pop(ptr %stk_L10461, ptr %local.o)
   %stp_L10462 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
   %stk_L10462 = load ptr, ptr %stp_L10462
-  call i32 @qdrt_push_element(ptr %stk_L10462, ptr %local.root)
-  %stp_L10463 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L10463 = load ptr, ptr %stp_L10463
-  call i32 @qdrt_push_element(ptr %stk_L10463, ptr %local.cbuf)
-  call i32 @usr_codegen_collect_field_types(ptr %ctx)
+  call i32 @qdrt_push_element(ptr %stk_L10462, ptr %local.o)
+  call i32 @qd_push_s(ptr %ctx, ptr @.str.10463)
+  call i32 @usr_sb_append(ptr %ctx)
   %stp_L10464 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
   %stk_L10464 = load ptr, ptr %stp_L10464
-  call void @qd_stack_pop(ptr %stk_L10464, ptr %local.cbuf)
+  call void @qd_stack_pop(ptr %stk_L10464, ptr %local.o)
   %stp_L10465 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
   %stk_L10465 = load ptr, ptr %stp_L10465
-  call i32 @qdrt_push_element(ptr %stk_L10465, ptr %local.merged)
-  %stp_L10466 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L10466 = load ptr, ptr %stp_L10466
-  call void @qd_stack_pop(ptr %stk_L10466, ptr %local.miter2)
+  call i32 @qdrt_push_element(ptr %stk_L10465, ptr %local.o)
+  call i32 @qd_push_s(ptr %ctx, ptr @.str.10466)
+  call i32 @usr_sb_append(ptr %ctx)
   %stp_L10467 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
   %stk_L10467 = load ptr, ptr %stp_L10467
-  call i32 @qdrt_push_element(ptr %stk_L10467, ptr %local.miter2)
-  call i32 @qd_push_i(ptr %ctx, i64 0)
-  call i32 @qd_neq(ptr %ctx)
-  %ce_L10468 = alloca %qd_stack_element_t
+  call void @qd_stack_pop(ptr %stk_L10467, ptr %local.o)
   %stp_L10468 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
   %stk_L10468 = load ptr, ptr %stp_L10468
-  call void @qd_stack_pop(ptr %stk_L10468, ptr %ce_L10468)
-  %cv_L10468 = getelementptr %qd_stack_element_t, ptr %ce_L10468, i32 0, i32 0
-  %ci_L10468 = load i64, ptr %cv_L10468
-  %cc_L10468 = icmp ne i64 %ci_L10468, 0
-  br i1 %cc_L10468, label %L10469, label %L10470
-L10469:
-  %stp_L10472 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L10472 = load ptr, ptr %stp_L10472
-  call i32 @qdrt_push_element(ptr %stk_L10472, ptr %local.miter2)
+  call i32 @qdrt_push_element(ptr %stk_L10468, ptr %local.o)
+  call i32 @qd_push_s(ptr %ctx, ptr @.str.10469)
+  call i32 @usr_sb_append(ptr %ctx)
+  %stp_L10470 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L10470 = load ptr, ptr %stp_L10470
+  call void @qd_stack_pop(ptr %stk_L10470, ptr %local.o)
+  %stp_L10471 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L10471 = load ptr, ptr %stp_L10471
+  call i32 @qdrt_push_element(ptr %stk_L10471, ptr %local.o)
+  call i32 @qd_push_s(ptr %ctx, ptr @.str.10472)
+  call i32 @usr_sb_append(ptr %ctx)
   %stp_L10473 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
   %stk_L10473 = load ptr, ptr %stp_L10473
-  call i32 @qdrt_push_element(ptr %stk_L10473, ptr %local.cbuf)
-  call i32 @usr_codegen_collect_field_types(ptr %ctx)
+  call void @qd_stack_pop(ptr %stk_L10473, ptr %local.o)
   %stp_L10474 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
   %stk_L10474 = load ptr, ptr %stp_L10474
-  call void @qd_stack_pop(ptr %stk_L10474, ptr %local.cbuf)
-  %stp_L10475 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L10475 = load ptr, ptr %stp_L10475
-  call i32 @qdrt_push_element(ptr %stk_L10475, ptr %local.miter2)
-  %fa_elem_L10476 = alloca %qd_stack_element_t
-  %fa_stp_L10476 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %fa_stk_L10476 = load ptr, ptr %fa_stp_L10476
-  call void @qd_stack_pop(ptr %fa_stk_L10476, ptr %fa_elem_L10476)
-  %fa_vp_L10476 = getelementptr %qd_stack_element_t, ptr %fa_elem_L10476, i32 0, i32 0
-  %fa_ptr_L10476 = load ptr, ptr %fa_vp_L10476
-  %fa_off_L10476 = load i64, ptr @__offset_sibling
-  %fa_fp_L10476 = getelementptr i8, ptr %fa_ptr_L10476, i64 %fa_off_L10476
-  %fa_val_L10476 = load ptr, ptr %fa_fp_L10476
-  call i32 @qd_push_p(ptr %ctx, ptr %fa_val_L10476)
+  call i32 @qdrt_push_element(ptr %stk_L10474, ptr %local.o)
+  call i32 @qd_push_s(ptr %ctx, ptr @.str.10475)
+  call i32 @usr_sb_append(ptr %ctx)
+  %stp_L10476 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L10476 = load ptr, ptr %stp_L10476
+  call void @qd_stack_pop(ptr %stk_L10476, ptr %local.o)
   %stp_L10477 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
   %stk_L10477 = load ptr, ptr %stp_L10477
-  call void @qd_stack_pop(ptr %stk_L10477, ptr %local.miter2)
-  %stp_L10478 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L10478 = load ptr, ptr %stp_L10478
-  call i32 @qdrt_push_element(ptr %stk_L10478, ptr %local.miter2)
-  call i32 @qd_push_i(ptr %ctx, i64 0)
-  call i32 @qd_neq(ptr %ctx)
-  %ce_L10479 = alloca %qd_stack_element_t
+  call i32 @qdrt_push_element(ptr %stk_L10477, ptr %local.o)
+  call i32 @qd_push_s(ptr %ctx, ptr @.str.10478)
+  call i32 @usr_sb_append(ptr %ctx)
   %stp_L10479 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
   %stk_L10479 = load ptr, ptr %stp_L10479
-  call void @qd_stack_pop(ptr %stk_L10479, ptr %ce_L10479)
-  %cv_L10479 = getelementptr %qd_stack_element_t, ptr %ce_L10479, i32 0, i32 0
-  %ci_L10479 = load i64, ptr %cv_L10479
-  %cc_L10479 = icmp ne i64 %ci_L10479, 0
-  br i1 %cc_L10479, label %L10469, label %L10470
-L10470:
+  call void @qd_stack_pop(ptr %stk_L10479, ptr %local.o)
   %stp_L10480 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
   %stk_L10480 = load ptr, ptr %stp_L10480
-  call i32 @qdrt_push_element(ptr %stk_L10480, ptr %local.cbuf)
+  call i32 @qdrt_push_element(ptr %stk_L10480, ptr %local.o)
   call i32 @qd_push_s(ptr %ctx, ptr @.str.10481)
   call i32 @usr_sb_append(ptr %ctx)
   %stp_L10482 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
   %stk_L10482 = load ptr, ptr %stp_L10482
-  call void @qd_stack_pop(ptr %stk_L10482, ptr %local.cbuf)
+  call void @qd_stack_pop(ptr %stk_L10482, ptr %local.o)
   %stp_L10483 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
   %stk_L10483 = load ptr, ptr %stp_L10483
-  call i32 @qdrt_push_element(ptr %stk_L10483, ptr %local.cbuf)
-  call i32 @usr_sb_finish(ptr %ctx)
-  %stp_L10484 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L10484 = load ptr, ptr %stp_L10484
-  call void @qd_stack_pop(ptr %stk_L10484, ptr %local.all_consts)
-  call i32 @qd_push_s(ptr %ctx, ptr @.str.10485)
+  call i32 @qdrt_push_element(ptr %stk_L10483, ptr %local.o)
+  call i32 @qd_push_s(ptr %ctx, ptr @.str.10484)
+  call i32 @usr_sb_append(ptr %ctx)
+  %stp_L10485 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L10485 = load ptr, ptr %stp_L10485
+  call void @qd_stack_pop(ptr %stk_L10485, ptr %local.o)
   %stp_L10486 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
   %stk_L10486 = load ptr, ptr %stp_L10486
-  call void @qd_stack_pop(ptr %stk_L10486, ptr %local.main_pfx)
-  %stp_L10487 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L10487 = load ptr, ptr %stp_L10487
-  call i32 @qdrt_push_element(ptr %stk_L10487, ptr %local.root)
-  %fa_elem_L10488 = alloca %qd_stack_element_t
-  %fa_stp_L10488 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %fa_stk_L10488 = load ptr, ptr %fa_stp_L10488
-  call void @qd_stack_pop(ptr %fa_stk_L10488, ptr %fa_elem_L10488)
-  %fa_vp_L10488 = getelementptr %qd_stack_element_t, ptr %fa_elem_L10488, i32 0, i32 0
-  %fa_ptr_L10488 = load ptr, ptr %fa_vp_L10488
-  %fa_off_L10488 = load i64, ptr @__offset_child1
-  %fa_fp_L10488 = getelementptr i8, ptr %fa_ptr_L10488, i64 %fa_off_L10488
-  %fa_val_L10488 = load ptr, ptr %fa_fp_L10488
-  call i32 @qd_push_p(ptr %ctx, ptr %fa_val_L10488)
-  call i32 @qd_push_i(ptr %ctx, i64 0)
-  call i32 @qd_neq(ptr %ctx)
-  %ce_L10489 = alloca %qd_stack_element_t
+  call i32 @qdrt_push_element(ptr %stk_L10486, ptr %local.o)
+  call i32 @qd_push_s(ptr %ctx, ptr @.str.10487)
+  call i32 @usr_sb_append(ptr %ctx)
+  %stp_L10488 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L10488 = load ptr, ptr %stp_L10488
+  call void @qd_stack_pop(ptr %stk_L10488, ptr %local.o)
   %stp_L10489 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
   %stk_L10489 = load ptr, ptr %stp_L10489
-  call void @qd_stack_pop(ptr %stk_L10489, ptr %ce_L10489)
-  %cv_L10489 = getelementptr %qd_stack_element_t, ptr %ce_L10489, i32 0, i32 0
-  %ci_L10489 = load i64, ptr %cv_L10489
-  %cc_L10489 = icmp ne i64 %ci_L10489, 0
-  br i1 %cc_L10489, label %L10490, label %L10492
-L10490:
-  %stp_L10493 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L10493 = load ptr, ptr %stp_L10493
-  call i32 @qdrt_push_element(ptr %stk_L10493, ptr %local.st)
+  call i32 @qdrt_push_element(ptr %stk_L10489, ptr %local.o)
+  call i32 @qd_push_s(ptr %ctx, ptr @.str.10490)
+  call i32 @usr_sb_append(ptr %ctx)
+  %stp_L10491 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L10491 = load ptr, ptr %stp_L10491
+  call void @qd_stack_pop(ptr %stk_L10491, ptr %local.o)
+  %stp_L10492 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L10492 = load ptr, ptr %stp_L10492
+  call i32 @qdrt_push_element(ptr %stk_L10492, ptr %local.o)
+  call i32 @qd_push_s(ptr %ctx, ptr @.str.10493)
+  call i32 @usr_sb_append(ptr %ctx)
   %stp_L10494 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
   %stk_L10494 = load ptr, ptr %stp_L10494
-  call i32 @qdrt_push_element(ptr %stk_L10494, ptr %local.root)
-  %fa_elem_L10495 = alloca %qd_stack_element_t
-  %fa_stp_L10495 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %fa_stk_L10495 = load ptr, ptr %fa_stp_L10495
-  call void @qd_stack_pop(ptr %fa_stk_L10495, ptr %fa_elem_L10495)
-  %fa_vp_L10495 = getelementptr %qd_stack_element_t, ptr %fa_elem_L10495, i32 0, i32 0
-  %fa_ptr_L10495 = load ptr, ptr %fa_vp_L10495
-  %fa_off_L10495 = load i64, ptr @__offset_child1
-  %fa_fp_L10495 = getelementptr i8, ptr %fa_ptr_L10495, i64 %fa_off_L10495
-  %fa_val_L10495 = load ptr, ptr %fa_fp_L10495
-  call i32 @qd_push_p(ptr %ctx, ptr %fa_val_L10495)
-  %stp_L10496 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L10496 = load ptr, ptr %stp_L10496
-  call i32 @qdrt_push_element(ptr %stk_L10496, ptr %local.all_consts)
+  call void @qd_stack_pop(ptr %stk_L10494, ptr %local.o)
+  %stp_L10495 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L10495 = load ptr, ptr %stp_L10495
+  call i32 @qdrt_push_element(ptr %stk_L10495, ptr %local.o)
+  call i32 @qd_push_s(ptr %ctx, ptr @.str.10496)
+  call i32 @usr_sb_append(ptr %ctx)
   %stp_L10497 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
   %stk_L10497 = load ptr, ptr %stp_L10497
-  call i32 @qdrt_push_element(ptr %stk_L10497, ptr %local.main_pfx)
-  call i32 @usr_codegen_emit_top_level(ptr %ctx)
+  call void @qd_stack_pop(ptr %stk_L10497, ptr %local.o)
   %stp_L10498 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
   %stk_L10498 = load ptr, ptr %stp_L10498
-  call void @qd_stack_pop(ptr %stk_L10498, ptr %local.st)
-  br label %L10492
-L10492:
-  %stp_L10499 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L10499 = load ptr, ptr %stp_L10499
-  call i32 @qdrt_push_element(ptr %stk_L10499, ptr %local.root)
-  %fa_elem_L10500 = alloca %qd_stack_element_t
-  %fa_stp_L10500 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %fa_stk_L10500 = load ptr, ptr %fa_stp_L10500
-  call void @qd_stack_pop(ptr %fa_stk_L10500, ptr %fa_elem_L10500)
-  %fa_vp_L10500 = getelementptr %qd_stack_element_t, ptr %fa_elem_L10500, i32 0, i32 0
-  %fa_ptr_L10500 = load ptr, ptr %fa_vp_L10500
-  %fa_off_L10500 = load i64, ptr @__offset_child2
-  %fa_fp_L10500 = getelementptr i8, ptr %fa_ptr_L10500, i64 %fa_off_L10500
-  %fa_val_L10500 = load ptr, ptr %fa_fp_L10500
-  call i32 @qd_push_p(ptr %ctx, ptr %fa_val_L10500)
-  call i32 @qd_push_i(ptr %ctx, i64 0)
-  call i32 @qd_neq(ptr %ctx)
-  %ce_L10501 = alloca %qd_stack_element_t
+  call i32 @qdrt_push_element(ptr %stk_L10498, ptr %local.o)
+  call i32 @qd_push_s(ptr %ctx, ptr @.str.10499)
+  call i32 @usr_sb_append(ptr %ctx)
+  %stp_L10500 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L10500 = load ptr, ptr %stp_L10500
+  call void @qd_stack_pop(ptr %stk_L10500, ptr %local.o)
   %stp_L10501 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
   %stk_L10501 = load ptr, ptr %stp_L10501
-  call void @qd_stack_pop(ptr %stk_L10501, ptr %ce_L10501)
-  %cv_L10501 = getelementptr %qd_stack_element_t, ptr %ce_L10501, i32 0, i32 0
-  %ci_L10501 = load i64, ptr %cv_L10501
-  %cc_L10501 = icmp ne i64 %ci_L10501, 0
-  br i1 %cc_L10501, label %L10502, label %L10504
-L10502:
-  %stp_L10505 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L10505 = load ptr, ptr %stp_L10505
-  call i32 @qdrt_push_element(ptr %stk_L10505, ptr %local.st)
+  call i32 @qdrt_push_element(ptr %stk_L10501, ptr %local.o)
+  call i32 @qd_push_s(ptr %ctx, ptr @.str.10502)
+  call i32 @usr_sb_append(ptr %ctx)
+  %stp_L10503 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L10503 = load ptr, ptr %stp_L10503
+  call void @qd_stack_pop(ptr %stk_L10503, ptr %local.o)
+  %stp_L10504 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L10504 = load ptr, ptr %stp_L10504
+  call i32 @qdrt_push_element(ptr %stk_L10504, ptr %local.o)
+  call i32 @qd_push_s(ptr %ctx, ptr @.str.10505)
+  call i32 @usr_sb_append(ptr %ctx)
   %stp_L10506 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
   %stk_L10506 = load ptr, ptr %stp_L10506
-  call i32 @qdrt_push_element(ptr %stk_L10506, ptr %local.root)
-  %fa_elem_L10507 = alloca %qd_stack_element_t
-  %fa_stp_L10507 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %fa_stk_L10507 = load ptr, ptr %fa_stp_L10507
-  call void @qd_stack_pop(ptr %fa_stk_L10507, ptr %fa_elem_L10507)
-  %fa_vp_L10507 = getelementptr %qd_stack_element_t, ptr %fa_elem_L10507, i32 0, i32 0
-  %fa_ptr_L10507 = load ptr, ptr %fa_vp_L10507
-  %fa_off_L10507 = load i64, ptr @__offset_child2
-  %fa_fp_L10507 = getelementptr i8, ptr %fa_ptr_L10507, i64 %fa_off_L10507
-  %fa_val_L10507 = load ptr, ptr %fa_fp_L10507
-  call i32 @qd_push_p(ptr %ctx, ptr %fa_val_L10507)
-  %stp_L10508 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L10508 = load ptr, ptr %stp_L10508
-  call i32 @qdrt_push_element(ptr %stk_L10508, ptr %local.all_consts)
+  call void @qd_stack_pop(ptr %stk_L10506, ptr %local.o)
+  %stp_L10507 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L10507 = load ptr, ptr %stp_L10507
+  call i32 @qdrt_push_element(ptr %stk_L10507, ptr %local.o)
+  call i32 @qd_push_s(ptr %ctx, ptr @.str.10508)
+  call i32 @usr_sb_append(ptr %ctx)
   %stp_L10509 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
   %stk_L10509 = load ptr, ptr %stp_L10509
-  call i32 @qdrt_push_element(ptr %stk_L10509, ptr %local.main_pfx)
-  call i32 @usr_codegen_emit_top_level(ptr %ctx)
+  call void @qd_stack_pop(ptr %stk_L10509, ptr %local.o)
   %stp_L10510 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
   %stk_L10510 = load ptr, ptr %stp_L10510
-  call void @qd_stack_pop(ptr %stk_L10510, ptr %local.st)
-  br label %L10504
-L10504:
-  %stp_L10511 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L10511 = load ptr, ptr %stp_L10511
-  call i32 @qdrt_push_element(ptr %stk_L10511, ptr %local.root)
-  %fa_elem_L10512 = alloca %qd_stack_element_t
-  %fa_stp_L10512 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %fa_stk_L10512 = load ptr, ptr %fa_stp_L10512
-  call void @qd_stack_pop(ptr %fa_stk_L10512, ptr %fa_elem_L10512)
-  %fa_vp_L10512 = getelementptr %qd_stack_element_t, ptr %fa_elem_L10512, i32 0, i32 0
-  %fa_ptr_L10512 = load ptr, ptr %fa_vp_L10512
-  %fa_off_L10512 = load i64, ptr @__offset_child3
-  %fa_fp_L10512 = getelementptr i8, ptr %fa_ptr_L10512, i64 %fa_off_L10512
-  %fa_val_L10512 = load ptr, ptr %fa_fp_L10512
-  call i32 @qd_push_p(ptr %ctx, ptr %fa_val_L10512)
-  call i32 @qd_push_i(ptr %ctx, i64 0)
-  call i32 @qd_neq(ptr %ctx)
-  %ce_L10513 = alloca %qd_stack_element_t
+  call i32 @qdrt_push_element(ptr %stk_L10510, ptr %local.o)
+  call i32 @qd_push_s(ptr %ctx, ptr @.str.10511)
+  call i32 @usr_sb_append(ptr %ctx)
+  %stp_L10512 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L10512 = load ptr, ptr %stp_L10512
+  call void @qd_stack_pop(ptr %stk_L10512, ptr %local.o)
   %stp_L10513 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
   %stk_L10513 = load ptr, ptr %stp_L10513
-  call void @qd_stack_pop(ptr %stk_L10513, ptr %ce_L10513)
-  %cv_L10513 = getelementptr %qd_stack_element_t, ptr %ce_L10513, i32 0, i32 0
-  %ci_L10513 = load i64, ptr %cv_L10513
-  %cc_L10513 = icmp ne i64 %ci_L10513, 0
-  br i1 %cc_L10513, label %L10514, label %L10516
-L10514:
-  %stp_L10517 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L10517 = load ptr, ptr %stp_L10517
-  call i32 @qdrt_push_element(ptr %stk_L10517, ptr %local.st)
+  call i32 @qdrt_push_element(ptr %stk_L10513, ptr %local.o)
+  call i32 @qd_push_s(ptr %ctx, ptr @.str.10514)
+  call i32 @usr_sb_append(ptr %ctx)
+  %stp_L10515 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L10515 = load ptr, ptr %stp_L10515
+  call void @qd_stack_pop(ptr %stk_L10515, ptr %local.o)
+  %stp_L10516 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L10516 = load ptr, ptr %stp_L10516
+  call i32 @qdrt_push_element(ptr %stk_L10516, ptr %local.o)
+  call i32 @qd_push_s(ptr %ctx, ptr @.str.10517)
+  call i32 @usr_sb_append(ptr %ctx)
   %stp_L10518 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
   %stk_L10518 = load ptr, ptr %stp_L10518
-  call i32 @qdrt_push_element(ptr %stk_L10518, ptr %local.root)
-  %fa_elem_L10519 = alloca %qd_stack_element_t
-  %fa_stp_L10519 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %fa_stk_L10519 = load ptr, ptr %fa_stp_L10519
-  call void @qd_stack_pop(ptr %fa_stk_L10519, ptr %fa_elem_L10519)
-  %fa_vp_L10519 = getelementptr %qd_stack_element_t, ptr %fa_elem_L10519, i32 0, i32 0
-  %fa_ptr_L10519 = load ptr, ptr %fa_vp_L10519
-  %fa_off_L10519 = load i64, ptr @__offset_child3
-  %fa_fp_L10519 = getelementptr i8, ptr %fa_ptr_L10519, i64 %fa_off_L10519
-  %fa_val_L10519 = load ptr, ptr %fa_fp_L10519
-  call i32 @qd_push_p(ptr %ctx, ptr %fa_val_L10519)
-  %stp_L10520 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L10520 = load ptr, ptr %stp_L10520
-  call i32 @qdrt_push_element(ptr %stk_L10520, ptr %local.all_consts)
+  call void @qd_stack_pop(ptr %stk_L10518, ptr %local.o)
+  %stp_L10519 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L10519 = load ptr, ptr %stp_L10519
+  call i32 @qdrt_push_element(ptr %stk_L10519, ptr %local.o)
+  %fs_elem_L10520 = alloca %qd_stack_element_t
+  %fs_stp_L10520 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %fs_stk_L10520 = load ptr, ptr %fs_stp_L10520
+  call void @qd_stack_pop(ptr %fs_stk_L10520, ptr %fs_elem_L10520)
+  %fs_vp_L10520 = getelementptr %qd_stack_element_t, ptr %fs_elem_L10520, i32 0, i32 0
+  %fs_val_L10520 = load i64, ptr %fs_vp_L10520
+  %fs_svp_L10520 = getelementptr %qd_stack_element_t, ptr %local.st, i32 0, i32 0
+  %fs_sptr_L10520 = load ptr, ptr %fs_svp_L10520
+  %fs_off_L10520 = load i64, ptr @__offset_code
+  %fs_fp_L10520 = getelementptr i8, ptr %fs_sptr_L10520, i64 %fs_off_L10520
+  store i64 %fs_val_L10520, ptr %fs_fp_L10520
   %stp_L10521 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
   %stk_L10521 = load ptr, ptr %stp_L10521
-  call i32 @qdrt_push_element(ptr %stk_L10521, ptr %local.main_pfx)
-  call i32 @usr_codegen_emit_top_level(ptr %ctx)
+  call i32 @qdrt_push_element(ptr %stk_L10521, ptr %local.root)
+  call i32 @usr_sb_new(ptr %ctx)
+  call i32 @usr_codegen_collect_constants(ptr %ctx)
   %stp_L10522 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
   %stk_L10522 = load ptr, ptr %stp_L10522
-  call void @qd_stack_pop(ptr %stk_L10522, ptr %local.st)
-  br label %L10516
-L10516:
+  call void @qd_stack_pop(ptr %stk_L10522, ptr %local.cbuf)
   %stp_L10523 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
   %stk_L10523 = load ptr, ptr %stp_L10523
-  call i32 @qdrt_push_element(ptr %stk_L10523, ptr %local.root)
-  %fa_elem_L10524 = alloca %qd_stack_element_t
-  %fa_stp_L10524 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %fa_stk_L10524 = load ptr, ptr %fa_stp_L10524
-  call void @qd_stack_pop(ptr %fa_stk_L10524, ptr %fa_elem_L10524)
-  %fa_vp_L10524 = getelementptr %qd_stack_element_t, ptr %fa_elem_L10524, i32 0, i32 0
-  %fa_ptr_L10524 = load ptr, ptr %fa_vp_L10524
-  %fa_off_L10524 = load i64, ptr @__offset_child4
-  %fa_fp_L10524 = getelementptr i8, ptr %fa_ptr_L10524, i64 %fa_off_L10524
-  %fa_val_L10524 = load ptr, ptr %fa_fp_L10524
-  call i32 @qd_push_p(ptr %ctx, ptr %fa_val_L10524)
-  call i32 @qd_push_i(ptr %ctx, i64 0)
-  call i32 @qd_neq(ptr %ctx)
-  %ce_L10525 = alloca %qd_stack_element_t
+  call i32 @qdrt_push_element(ptr %stk_L10523, ptr %local.merged)
+  %stp_L10524 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L10524 = load ptr, ptr %stp_L10524
+  call void @qd_stack_pop(ptr %stk_L10524, ptr %local.miter)
   %stp_L10525 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
   %stk_L10525 = load ptr, ptr %stp_L10525
-  call void @qd_stack_pop(ptr %stk_L10525, ptr %ce_L10525)
-  %cv_L10525 = getelementptr %qd_stack_element_t, ptr %ce_L10525, i32 0, i32 0
-  %ci_L10525 = load i64, ptr %cv_L10525
-  %cc_L10525 = icmp ne i64 %ci_L10525, 0
-  br i1 %cc_L10525, label %L10526, label %L10528
-L10526:
-  %stp_L10529 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L10529 = load ptr, ptr %stp_L10529
-  call i32 @qdrt_push_element(ptr %stk_L10529, ptr %local.st)
+  call i32 @qdrt_push_element(ptr %stk_L10525, ptr %local.miter)
+  call i32 @qd_push_i(ptr %ctx, i64 0)
+  call i32 @qd_neq(ptr %ctx)
+  %ce_L10526 = alloca %qd_stack_element_t
+  %stp_L10526 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L10526 = load ptr, ptr %stp_L10526
+  call void @qd_stack_pop(ptr %stk_L10526, ptr %ce_L10526)
+  %cv_L10526 = getelementptr %qd_stack_element_t, ptr %ce_L10526, i32 0, i32 0
+  %ci_L10526 = load i64, ptr %cv_L10526
+  %cc_L10526 = icmp ne i64 %ci_L10526, 0
+  br i1 %cc_L10526, label %L10527, label %L10528
+L10527:
   %stp_L10530 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
   %stk_L10530 = load ptr, ptr %stp_L10530
-  call i32 @qdrt_push_element(ptr %stk_L10530, ptr %local.root)
-  %fa_elem_L10531 = alloca %qd_stack_element_t
-  %fa_stp_L10531 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %fa_stk_L10531 = load ptr, ptr %fa_stp_L10531
-  call void @qd_stack_pop(ptr %fa_stk_L10531, ptr %fa_elem_L10531)
-  %fa_vp_L10531 = getelementptr %qd_stack_element_t, ptr %fa_elem_L10531, i32 0, i32 0
-  %fa_ptr_L10531 = load ptr, ptr %fa_vp_L10531
-  %fa_off_L10531 = load i64, ptr @__offset_child4
-  %fa_fp_L10531 = getelementptr i8, ptr %fa_ptr_L10531, i64 %fa_off_L10531
-  %fa_val_L10531 = load ptr, ptr %fa_fp_L10531
-  call i32 @qd_push_p(ptr %ctx, ptr %fa_val_L10531)
+  call i32 @qdrt_push_element(ptr %stk_L10530, ptr %local.miter)
+  %stp_L10531 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L10531 = load ptr, ptr %stp_L10531
+  call i32 @qdrt_push_element(ptr %stk_L10531, ptr %local.cbuf)
+  call i32 @usr_codegen_collect_constants(ptr %ctx)
   %stp_L10532 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
   %stk_L10532 = load ptr, ptr %stp_L10532
-  call i32 @qdrt_push_element(ptr %stk_L10532, ptr %local.all_consts)
+  call void @qd_stack_pop(ptr %stk_L10532, ptr %local.cbuf)
   %stp_L10533 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
   %stk_L10533 = load ptr, ptr %stp_L10533
-  call i32 @qdrt_push_element(ptr %stk_L10533, ptr %local.main_pfx)
-  call i32 @usr_codegen_emit_top_level(ptr %ctx)
-  %stp_L10534 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L10534 = load ptr, ptr %stp_L10534
-  call void @qd_stack_pop(ptr %stk_L10534, ptr %local.st)
-  br label %L10528
-L10528:
+  call i32 @qdrt_push_element(ptr %stk_L10533, ptr %local.miter)
+  %fa_elem_L10534 = alloca %qd_stack_element_t
+  %fa_stp_L10534 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %fa_stk_L10534 = load ptr, ptr %fa_stp_L10534
+  call void @qd_stack_pop(ptr %fa_stk_L10534, ptr %fa_elem_L10534)
+  %fa_vp_L10534 = getelementptr %qd_stack_element_t, ptr %fa_elem_L10534, i32 0, i32 0
+  %fa_ptr_L10534 = load ptr, ptr %fa_vp_L10534
+  %fa_off_L10534 = load i64, ptr @__offset_sibling
+  %fa_fp_L10534 = getelementptr i8, ptr %fa_ptr_L10534, i64 %fa_off_L10534
+  %fa_val_L10534 = load ptr, ptr %fa_fp_L10534
+  call i32 @qd_push_p(ptr %ctx, ptr %fa_val_L10534)
   %stp_L10535 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
   %stk_L10535 = load ptr, ptr %stp_L10535
-  call i32 @qdrt_push_element(ptr %stk_L10535, ptr %local.root)
-  %fa_elem_L10536 = alloca %qd_stack_element_t
-  %fa_stp_L10536 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %fa_stk_L10536 = load ptr, ptr %fa_stp_L10536
-  call void @qd_stack_pop(ptr %fa_stk_L10536, ptr %fa_elem_L10536)
-  %fa_vp_L10536 = getelementptr %qd_stack_element_t, ptr %fa_elem_L10536, i32 0, i32 0
-  %fa_ptr_L10536 = load ptr, ptr %fa_vp_L10536
-  %fa_off_L10536 = load i64, ptr @__offset_extra
-  %fa_fp_L10536 = getelementptr i8, ptr %fa_ptr_L10536, i64 %fa_off_L10536
-  %fa_val_L10536 = load ptr, ptr %fa_fp_L10536
-  call i32 @qd_push_p(ptr %ctx, ptr %fa_val_L10536)
+  call void @qd_stack_pop(ptr %stk_L10535, ptr %local.miter)
+  %stp_L10536 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L10536 = load ptr, ptr %stp_L10536
+  call i32 @qdrt_push_element(ptr %stk_L10536, ptr %local.miter)
+  call i32 @qd_push_i(ptr %ctx, i64 0)
+  call i32 @qd_neq(ptr %ctx)
+  %ce_L10537 = alloca %qd_stack_element_t
   %stp_L10537 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
   %stk_L10537 = load ptr, ptr %stp_L10537
-  call void @qd_stack_pop(ptr %stk_L10537, ptr %local.cur)
+  call void @qd_stack_pop(ptr %stk_L10537, ptr %ce_L10537)
+  %cv_L10537 = getelementptr %qd_stack_element_t, ptr %ce_L10537, i32 0, i32 0
+  %ci_L10537 = load i64, ptr %cv_L10537
+  %cc_L10537 = icmp ne i64 %ci_L10537, 0
+  br i1 %cc_L10537, label %L10527, label %L10528
+L10528:
   %stp_L10538 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
   %stk_L10538 = load ptr, ptr %stp_L10538
-  call i32 @qdrt_push_element(ptr %stk_L10538, ptr %local.cur)
-  call i32 @qd_push_i(ptr %ctx, i64 0)
-  call i32 @qd_neq(ptr %ctx)
-  %ce_L10539 = alloca %qd_stack_element_t
+  call i32 @qdrt_push_element(ptr %stk_L10538, ptr %local.root)
   %stp_L10539 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
   %stk_L10539 = load ptr, ptr %stp_L10539
-  call void @qd_stack_pop(ptr %stk_L10539, ptr %ce_L10539)
-  %cv_L10539 = getelementptr %qd_stack_element_t, ptr %ce_L10539, i32 0, i32 0
-  %ci_L10539 = load i64, ptr %cv_L10539
-  %cc_L10539 = icmp ne i64 %ci_L10539, 0
-  br i1 %cc_L10539, label %L10540, label %L10541
-L10540:
+  call i32 @qdrt_push_element(ptr %stk_L10539, ptr %local.cbuf)
+  call i32 @usr_codegen_collect_field_types(ptr %ctx)
+  %stp_L10540 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L10540 = load ptr, ptr %stp_L10540
+  call void @qd_stack_pop(ptr %stk_L10540, ptr %local.cbuf)
+  %stp_L10541 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L10541 = load ptr, ptr %stp_L10541
+  call i32 @qdrt_push_element(ptr %stk_L10541, ptr %local.merged)
+  %stp_L10542 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L10542 = load ptr, ptr %stp_L10542
+  call void @qd_stack_pop(ptr %stk_L10542, ptr %local.miter2)
   %stp_L10543 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
   %stk_L10543 = load ptr, ptr %stp_L10543
-  call i32 @qdrt_push_element(ptr %stk_L10543, ptr %local.st)
+  call i32 @qdrt_push_element(ptr %stk_L10543, ptr %local.miter2)
+  call i32 @qd_push_i(ptr %ctx, i64 0)
+  call i32 @qd_neq(ptr %ctx)
+  %ce_L10544 = alloca %qd_stack_element_t
   %stp_L10544 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
   %stk_L10544 = load ptr, ptr %stp_L10544
-  call i32 @qdrt_push_element(ptr %stk_L10544, ptr %local.cur)
-  %stp_L10545 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L10545 = load ptr, ptr %stp_L10545
-  call i32 @qdrt_push_element(ptr %stk_L10545, ptr %local.all_consts)
-  %stp_L10546 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L10546 = load ptr, ptr %stp_L10546
-  call i32 @qdrt_push_element(ptr %stk_L10546, ptr %local.main_pfx)
-  call i32 @usr_codegen_emit_top_level(ptr %ctx)
-  %stp_L10547 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L10547 = load ptr, ptr %stp_L10547
-  call void @qd_stack_pop(ptr %stk_L10547, ptr %local.st)
+  call void @qd_stack_pop(ptr %stk_L10544, ptr %ce_L10544)
+  %cv_L10544 = getelementptr %qd_stack_element_t, ptr %ce_L10544, i32 0, i32 0
+  %ci_L10544 = load i64, ptr %cv_L10544
+  %cc_L10544 = icmp ne i64 %ci_L10544, 0
+  br i1 %cc_L10544, label %L10545, label %L10546
+L10545:
   %stp_L10548 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
   %stk_L10548 = load ptr, ptr %stp_L10548
-  call i32 @qdrt_push_element(ptr %stk_L10548, ptr %local.cur)
-  %fa_elem_L10549 = alloca %qd_stack_element_t
-  %fa_stp_L10549 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %fa_stk_L10549 = load ptr, ptr %fa_stp_L10549
-  call void @qd_stack_pop(ptr %fa_stk_L10549, ptr %fa_elem_L10549)
-  %fa_vp_L10549 = getelementptr %qd_stack_element_t, ptr %fa_elem_L10549, i32 0, i32 0
-  %fa_ptr_L10549 = load ptr, ptr %fa_vp_L10549
-  %fa_off_L10549 = load i64, ptr @__offset_sibling
-  %fa_fp_L10549 = getelementptr i8, ptr %fa_ptr_L10549, i64 %fa_off_L10549
-  %fa_val_L10549 = load ptr, ptr %fa_fp_L10549
-  call i32 @qd_push_p(ptr %ctx, ptr %fa_val_L10549)
+  call i32 @qdrt_push_element(ptr %stk_L10548, ptr %local.miter2)
+  %stp_L10549 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L10549 = load ptr, ptr %stp_L10549
+  call i32 @qdrt_push_element(ptr %stk_L10549, ptr %local.cbuf)
+  call i32 @usr_codegen_collect_field_types(ptr %ctx)
   %stp_L10550 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
   %stk_L10550 = load ptr, ptr %stp_L10550
-  call void @qd_stack_pop(ptr %stk_L10550, ptr %local.cur)
+  call void @qd_stack_pop(ptr %stk_L10550, ptr %local.cbuf)
   %stp_L10551 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
   %stk_L10551 = load ptr, ptr %stp_L10551
-  call i32 @qdrt_push_element(ptr %stk_L10551, ptr %local.cur)
-  call i32 @qd_push_i(ptr %ctx, i64 0)
-  call i32 @qd_neq(ptr %ctx)
-  %ce_L10552 = alloca %qd_stack_element_t
-  %stp_L10552 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L10552 = load ptr, ptr %stp_L10552
-  call void @qd_stack_pop(ptr %stk_L10552, ptr %ce_L10552)
-  %cv_L10552 = getelementptr %qd_stack_element_t, ptr %ce_L10552, i32 0, i32 0
-  %ci_L10552 = load i64, ptr %cv_L10552
-  %cc_L10552 = icmp ne i64 %ci_L10552, 0
-  br i1 %cc_L10552, label %L10540, label %L10541
-L10541:
+  call i32 @qdrt_push_element(ptr %stk_L10551, ptr %local.miter2)
+  %fa_elem_L10552 = alloca %qd_stack_element_t
+  %fa_stp_L10552 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %fa_stk_L10552 = load ptr, ptr %fa_stp_L10552
+  call void @qd_stack_pop(ptr %fa_stk_L10552, ptr %fa_elem_L10552)
+  %fa_vp_L10552 = getelementptr %qd_stack_element_t, ptr %fa_elem_L10552, i32 0, i32 0
+  %fa_ptr_L10552 = load ptr, ptr %fa_vp_L10552
+  %fa_off_L10552 = load i64, ptr @__offset_sibling
+  %fa_fp_L10552 = getelementptr i8, ptr %fa_ptr_L10552, i64 %fa_off_L10552
+  %fa_val_L10552 = load ptr, ptr %fa_fp_L10552
+  call i32 @qd_push_p(ptr %ctx, ptr %fa_val_L10552)
   %stp_L10553 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
   %stk_L10553 = load ptr, ptr %stp_L10553
-  call i32 @qdrt_push_element(ptr %stk_L10553, ptr %local.merged)
-  call i32 @qd_push_i(ptr %ctx, i64 0)
-  call i32 @qd_neq(ptr %ctx)
-  %ce_L10554 = alloca %qd_stack_element_t
+  call void @qd_stack_pop(ptr %stk_L10553, ptr %local.miter2)
   %stp_L10554 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
   %stk_L10554 = load ptr, ptr %stp_L10554
-  call void @qd_stack_pop(ptr %stk_L10554, ptr %ce_L10554)
-  %cv_L10554 = getelementptr %qd_stack_element_t, ptr %ce_L10554, i32 0, i32 0
-  %ci_L10554 = load i64, ptr %cv_L10554
-  %cc_L10554 = icmp ne i64 %ci_L10554, 0
-  br i1 %cc_L10554, label %L10555, label %L10556
-L10555:
+  call i32 @qdrt_push_element(ptr %stk_L10554, ptr %local.miter2)
+  call i32 @qd_push_i(ptr %ctx, i64 0)
+  call i32 @qd_neq(ptr %ctx)
+  %ce_L10555 = alloca %qd_stack_element_t
+  %stp_L10555 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L10555 = load ptr, ptr %stp_L10555
+  call void @qd_stack_pop(ptr %stk_L10555, ptr %ce_L10555)
+  %cv_L10555 = getelementptr %qd_stack_element_t, ptr %ce_L10555, i32 0, i32 0
+  %ci_L10555 = load i64, ptr %cv_L10555
+  %cc_L10555 = icmp ne i64 %ci_L10555, 0
+  br i1 %cc_L10555, label %L10545, label %L10546
+L10546:
+  %stp_L10556 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L10556 = load ptr, ptr %stp_L10556
+  call i32 @qdrt_push_element(ptr %stk_L10556, ptr %local.cbuf)
+  call i32 @qd_push_s(ptr %ctx, ptr @.str.10557)
+  call i32 @usr_sb_append(ptr %ctx)
   %stp_L10558 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
   %stk_L10558 = load ptr, ptr %stp_L10558
-  call i32 @qdrt_push_element(ptr %stk_L10558, ptr %local.merged)
-  %fa_elem_L10559 = alloca %qd_stack_element_t
-  %fa_stp_L10559 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %fa_stk_L10559 = load ptr, ptr %fa_stp_L10559
-  call void @qd_stack_pop(ptr %fa_stk_L10559, ptr %fa_elem_L10559)
-  %fa_vp_L10559 = getelementptr %qd_stack_element_t, ptr %fa_elem_L10559, i32 0, i32 0
-  %fa_ptr_L10559 = load ptr, ptr %fa_vp_L10559
-  %fa_off_L10559 = load i64, ptr @__offset_ntext
-  %fa_fp_L10559 = getelementptr i8, ptr %fa_ptr_L10559, i64 %fa_off_L10559
-  %fa_val_L10559 = load ptr, ptr %fa_fp_L10559
-  call i32 @qd_push_s_ref(ptr %ctx, ptr %fa_val_L10559)
+  call void @qd_stack_pop(ptr %stk_L10558, ptr %local.cbuf)
+  %stp_L10559 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L10559 = load ptr, ptr %stp_L10559
+  call i32 @qdrt_push_element(ptr %stk_L10559, ptr %local.cbuf)
+  call i32 @usr_sb_finish(ptr %ctx)
   %stp_L10560 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
   %stk_L10560 = load ptr, ptr %stp_L10560
-  call void @qd_stack_pop(ptr %stk_L10560, ptr %local.mpfx)
-  %stp_L10561 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L10561 = load ptr, ptr %stp_L10561
-  call i32 @qdrt_push_element(ptr %stk_L10561, ptr %local.mpfx)
-  call i32 @usr_strings_len(ptr %ctx)
-  call i32 @qd_push_i(ptr %ctx, i64 0)
-  call i32 @qd_eq(ptr %ctx)
-  %ce_L10562 = alloca %qd_stack_element_t
+  call void @qd_stack_pop(ptr %stk_L10560, ptr %local.all_consts)
+  call i32 @qd_push_s(ptr %ctx, ptr @.str.10561)
   %stp_L10562 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
   %stk_L10562 = load ptr, ptr %stp_L10562
-  call void @qd_stack_pop(ptr %stk_L10562, ptr %ce_L10562)
-  %cv_L10562 = getelementptr %qd_stack_element_t, ptr %ce_L10562, i32 0, i32 0
-  %ci_L10562 = load i64, ptr %cv_L10562
-  %cc_L10562 = icmp ne i64 %ci_L10562, 0
-  br i1 %cc_L10562, label %L10563, label %L10565
-L10563:
-  call i32 @qd_push_s(ptr %ctx, ptr @.str.10566)
-  %stp_L10567 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L10567 = load ptr, ptr %stp_L10567
-  call void @qd_stack_pop(ptr %stk_L10567, ptr %local.mpfx)
-  br label %L10565
-L10565:
-  %stp_L10568 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L10568 = load ptr, ptr %stp_L10568
-  call i32 @qdrt_push_element(ptr %stk_L10568, ptr %local.st)
+  call void @qd_stack_pop(ptr %stk_L10562, ptr %local.main_pfx)
+  %stp_L10563 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L10563 = load ptr, ptr %stp_L10563
+  call i32 @qdrt_push_element(ptr %stk_L10563, ptr %local.root)
+  %fa_elem_L10564 = alloca %qd_stack_element_t
+  %fa_stp_L10564 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %fa_stk_L10564 = load ptr, ptr %fa_stp_L10564
+  call void @qd_stack_pop(ptr %fa_stk_L10564, ptr %fa_elem_L10564)
+  %fa_vp_L10564 = getelementptr %qd_stack_element_t, ptr %fa_elem_L10564, i32 0, i32 0
+  %fa_ptr_L10564 = load ptr, ptr %fa_vp_L10564
+  %fa_off_L10564 = load i64, ptr @__offset_child1
+  %fa_fp_L10564 = getelementptr i8, ptr %fa_ptr_L10564, i64 %fa_off_L10564
+  %fa_val_L10564 = load ptr, ptr %fa_fp_L10564
+  call i32 @qd_push_p(ptr %ctx, ptr %fa_val_L10564)
+  call i32 @qd_push_i(ptr %ctx, i64 0)
+  call i32 @qd_neq(ptr %ctx)
+  %ce_L10565 = alloca %qd_stack_element_t
+  %stp_L10565 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L10565 = load ptr, ptr %stp_L10565
+  call void @qd_stack_pop(ptr %stk_L10565, ptr %ce_L10565)
+  %cv_L10565 = getelementptr %qd_stack_element_t, ptr %ce_L10565, i32 0, i32 0
+  %ci_L10565 = load i64, ptr %cv_L10565
+  %cc_L10565 = icmp ne i64 %ci_L10565, 0
+  br i1 %cc_L10565, label %L10566, label %L10568
+L10566:
   %stp_L10569 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
   %stk_L10569 = load ptr, ptr %stp_L10569
-  call i32 @qdrt_push_element(ptr %stk_L10569, ptr %local.merged)
+  call i32 @qdrt_push_element(ptr %stk_L10569, ptr %local.st)
   %stp_L10570 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
   %stk_L10570 = load ptr, ptr %stp_L10570
-  call i32 @qdrt_push_element(ptr %stk_L10570, ptr %local.all_consts)
-  %stp_L10571 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L10571 = load ptr, ptr %stp_L10571
-  call i32 @qdrt_push_element(ptr %stk_L10571, ptr %local.mpfx)
-  call i32 @usr_codegen_emit_merged_file(ptr %ctx)
+  call i32 @qdrt_push_element(ptr %stk_L10570, ptr %local.root)
+  %fa_elem_L10571 = alloca %qd_stack_element_t
+  %fa_stp_L10571 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %fa_stk_L10571 = load ptr, ptr %fa_stp_L10571
+  call void @qd_stack_pop(ptr %fa_stk_L10571, ptr %fa_elem_L10571)
+  %fa_vp_L10571 = getelementptr %qd_stack_element_t, ptr %fa_elem_L10571, i32 0, i32 0
+  %fa_ptr_L10571 = load ptr, ptr %fa_vp_L10571
+  %fa_off_L10571 = load i64, ptr @__offset_child1
+  %fa_fp_L10571 = getelementptr i8, ptr %fa_ptr_L10571, i64 %fa_off_L10571
+  %fa_val_L10571 = load ptr, ptr %fa_fp_L10571
+  call i32 @qd_push_p(ptr %ctx, ptr %fa_val_L10571)
   %stp_L10572 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
   %stk_L10572 = load ptr, ptr %stp_L10572
-  call void @qd_stack_pop(ptr %stk_L10572, ptr %local.st)
+  call i32 @qdrt_push_element(ptr %stk_L10572, ptr %local.all_consts)
   %stp_L10573 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
   %stk_L10573 = load ptr, ptr %stp_L10573
-  call i32 @qdrt_push_element(ptr %stk_L10573, ptr %local.merged)
-  %fa_elem_L10574 = alloca %qd_stack_element_t
-  %fa_stp_L10574 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %fa_stk_L10574 = load ptr, ptr %fa_stp_L10574
-  call void @qd_stack_pop(ptr %fa_stk_L10574, ptr %fa_elem_L10574)
-  %fa_vp_L10574 = getelementptr %qd_stack_element_t, ptr %fa_elem_L10574, i32 0, i32 0
-  %fa_ptr_L10574 = load ptr, ptr %fa_vp_L10574
-  %fa_off_L10574 = load i64, ptr @__offset_sibling
-  %fa_fp_L10574 = getelementptr i8, ptr %fa_ptr_L10574, i64 %fa_off_L10574
-  %fa_val_L10574 = load ptr, ptr %fa_fp_L10574
-  call i32 @qd_push_p(ptr %ctx, ptr %fa_val_L10574)
+  call i32 @qdrt_push_element(ptr %stk_L10573, ptr %local.main_pfx)
+  call i32 @usr_codegen_emit_top_level(ptr %ctx)
+  %stp_L10574 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L10574 = load ptr, ptr %stp_L10574
+  call void @qd_stack_pop(ptr %stk_L10574, ptr %local.st)
+  br label %L10568
+L10568:
   %stp_L10575 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
   %stk_L10575 = load ptr, ptr %stp_L10575
-  call void @qd_stack_pop(ptr %stk_L10575, ptr %local.merged)
-  %stp_L10576 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L10576 = load ptr, ptr %stp_L10576
-  call i32 @qdrt_push_element(ptr %stk_L10576, ptr %local.merged)
+  call i32 @qdrt_push_element(ptr %stk_L10575, ptr %local.root)
+  %fa_elem_L10576 = alloca %qd_stack_element_t
+  %fa_stp_L10576 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %fa_stk_L10576 = load ptr, ptr %fa_stp_L10576
+  call void @qd_stack_pop(ptr %fa_stk_L10576, ptr %fa_elem_L10576)
+  %fa_vp_L10576 = getelementptr %qd_stack_element_t, ptr %fa_elem_L10576, i32 0, i32 0
+  %fa_ptr_L10576 = load ptr, ptr %fa_vp_L10576
+  %fa_off_L10576 = load i64, ptr @__offset_child2
+  %fa_fp_L10576 = getelementptr i8, ptr %fa_ptr_L10576, i64 %fa_off_L10576
+  %fa_val_L10576 = load ptr, ptr %fa_fp_L10576
+  call i32 @qd_push_p(ptr %ctx, ptr %fa_val_L10576)
   call i32 @qd_push_i(ptr %ctx, i64 0)
   call i32 @qd_neq(ptr %ctx)
   %ce_L10577 = alloca %qd_stack_element_t
@@ -42754,157 +42763,462 @@ L10565:
   %cv_L10577 = getelementptr %qd_stack_element_t, ptr %ce_L10577, i32 0, i32 0
   %ci_L10577 = load i64, ptr %cv_L10577
   %cc_L10577 = icmp ne i64 %ci_L10577, 0
-  br i1 %cc_L10577, label %L10555, label %L10556
-L10556:
-  %stp_L10578 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L10578 = load ptr, ptr %stp_L10578
-  call i32 @qdrt_push_element(ptr %stk_L10578, ptr %local.mdecls)
-  call i32 @usr_strings_len(ptr %ctx)
-  call i32 @qd_push_i(ptr %ctx, i64 0)
-  call i32 @qd_gt(ptr %ctx)
-  %ce_L10579 = alloca %qd_stack_element_t
-  %stp_L10579 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L10579 = load ptr, ptr %stp_L10579
-  call void @qd_stack_pop(ptr %stk_L10579, ptr %ce_L10579)
-  %cv_L10579 = getelementptr %qd_stack_element_t, ptr %ce_L10579, i32 0, i32 0
-  %ci_L10579 = load i64, ptr %cv_L10579
-  %cc_L10579 = icmp ne i64 %ci_L10579, 0
-  br i1 %cc_L10579, label %L10580, label %L10582
-L10580:
-  %stp_L10583 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L10583 = load ptr, ptr %stp_L10583
-  call i32 @qdrt_push_element(ptr %stk_L10583, ptr %local.st)
-  %fa_elem_L10584 = alloca %qd_stack_element_t
-  %fa_stp_L10584 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %fa_stk_L10584 = load ptr, ptr %fa_stp_L10584
-  call void @qd_stack_pop(ptr %fa_stk_L10584, ptr %fa_elem_L10584)
-  %fa_vp_L10584 = getelementptr %qd_stack_element_t, ptr %fa_elem_L10584, i32 0, i32 0
-  %fa_ptr_L10584 = load ptr, ptr %fa_vp_L10584
-  %fa_off_L10584 = load i64, ptr @__offset_code
-  %fa_fp_L10584 = getelementptr i8, ptr %fa_ptr_L10584, i64 %fa_off_L10584
-  %fa_val_L10584 = load ptr, ptr %fa_fp_L10584
-  call i32 @qd_push_p(ptr %ctx, ptr %fa_val_L10584)
+  br i1 %cc_L10577, label %L10578, label %L10580
+L10578:
+  %stp_L10581 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L10581 = load ptr, ptr %stp_L10581
+  call i32 @qdrt_push_element(ptr %stk_L10581, ptr %local.st)
+  %stp_L10582 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L10582 = load ptr, ptr %stp_L10582
+  call i32 @qdrt_push_element(ptr %stk_L10582, ptr %local.root)
+  %fa_elem_L10583 = alloca %qd_stack_element_t
+  %fa_stp_L10583 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %fa_stk_L10583 = load ptr, ptr %fa_stp_L10583
+  call void @qd_stack_pop(ptr %fa_stk_L10583, ptr %fa_elem_L10583)
+  %fa_vp_L10583 = getelementptr %qd_stack_element_t, ptr %fa_elem_L10583, i32 0, i32 0
+  %fa_ptr_L10583 = load ptr, ptr %fa_vp_L10583
+  %fa_off_L10583 = load i64, ptr @__offset_child2
+  %fa_fp_L10583 = getelementptr i8, ptr %fa_ptr_L10583, i64 %fa_off_L10583
+  %fa_val_L10583 = load ptr, ptr %fa_fp_L10583
+  call i32 @qd_push_p(ptr %ctx, ptr %fa_val_L10583)
+  %stp_L10584 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L10584 = load ptr, ptr %stp_L10584
+  call i32 @qdrt_push_element(ptr %stk_L10584, ptr %local.all_consts)
   %stp_L10585 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
   %stk_L10585 = load ptr, ptr %stp_L10585
-  call void @qd_stack_pop(ptr %stk_L10585, ptr %local.o)
+  call i32 @qdrt_push_element(ptr %stk_L10585, ptr %local.main_pfx)
+  call i32 @usr_codegen_emit_top_level(ptr %ctx)
   %stp_L10586 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
   %stk_L10586 = load ptr, ptr %stp_L10586
-  call i32 @qdrt_push_element(ptr %stk_L10586, ptr %local.o)
+  call void @qd_stack_pop(ptr %stk_L10586, ptr %local.st)
+  br label %L10580
+L10580:
   %stp_L10587 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
   %stk_L10587 = load ptr, ptr %stp_L10587
-  call i32 @qdrt_push_element(ptr %stk_L10587, ptr %local.mdecls)
-  call i32 @usr_sb_append(ptr %ctx)
-  %stp_L10588 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L10588 = load ptr, ptr %stp_L10588
-  call void @qd_stack_pop(ptr %stk_L10588, ptr %local.o)
+  call i32 @qdrt_push_element(ptr %stk_L10587, ptr %local.root)
+  %fa_elem_L10588 = alloca %qd_stack_element_t
+  %fa_stp_L10588 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %fa_stk_L10588 = load ptr, ptr %fa_stp_L10588
+  call void @qd_stack_pop(ptr %fa_stk_L10588, ptr %fa_elem_L10588)
+  %fa_vp_L10588 = getelementptr %qd_stack_element_t, ptr %fa_elem_L10588, i32 0, i32 0
+  %fa_ptr_L10588 = load ptr, ptr %fa_vp_L10588
+  %fa_off_L10588 = load i64, ptr @__offset_child3
+  %fa_fp_L10588 = getelementptr i8, ptr %fa_ptr_L10588, i64 %fa_off_L10588
+  %fa_val_L10588 = load ptr, ptr %fa_fp_L10588
+  call i32 @qd_push_p(ptr %ctx, ptr %fa_val_L10588)
+  call i32 @qd_push_i(ptr %ctx, i64 0)
+  call i32 @qd_neq(ptr %ctx)
+  %ce_L10589 = alloca %qd_stack_element_t
   %stp_L10589 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
   %stk_L10589 = load ptr, ptr %stp_L10589
-  call i32 @qdrt_push_element(ptr %stk_L10589, ptr %local.o)
-  %fs_elem_L10590 = alloca %qd_stack_element_t
-  %fs_stp_L10590 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %fs_stk_L10590 = load ptr, ptr %fs_stp_L10590
-  call void @qd_stack_pop(ptr %fs_stk_L10590, ptr %fs_elem_L10590)
-  %fs_vp_L10590 = getelementptr %qd_stack_element_t, ptr %fs_elem_L10590, i32 0, i32 0
-  %fs_val_L10590 = load i64, ptr %fs_vp_L10590
-  %fs_svp_L10590 = getelementptr %qd_stack_element_t, ptr %local.st, i32 0, i32 0
-  %fs_sptr_L10590 = load ptr, ptr %fs_svp_L10590
-  %fs_off_L10590 = load i64, ptr @__offset_code
-  %fs_fp_L10590 = getelementptr i8, ptr %fs_sptr_L10590, i64 %fs_off_L10590
-  store i64 %fs_val_L10590, ptr %fs_fp_L10590
-  br label %L10582
-L10582:
-  %stp_L10591 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L10591 = load ptr, ptr %stp_L10591
-  call i32 @qdrt_push_element(ptr %stk_L10591, ptr %local.st)
-  call i32 @usr_codegen_emit_main_entry(ptr %ctx)
-  %stp_L10592 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L10592 = load ptr, ptr %stp_L10592
-  call void @qd_stack_pop(ptr %stk_L10592, ptr %local.st)
+  call void @qd_stack_pop(ptr %stk_L10589, ptr %ce_L10589)
+  %cv_L10589 = getelementptr %qd_stack_element_t, ptr %ce_L10589, i32 0, i32 0
+  %ci_L10589 = load i64, ptr %cv_L10589
+  %cc_L10589 = icmp ne i64 %ci_L10589, 0
+  br i1 %cc_L10589, label %L10590, label %L10592
+L10590:
   %stp_L10593 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
   %stk_L10593 = load ptr, ptr %stp_L10593
   call i32 @qdrt_push_element(ptr %stk_L10593, ptr %local.st)
-  %fa_elem_L10594 = alloca %qd_stack_element_t
-  %fa_stp_L10594 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %fa_stk_L10594 = load ptr, ptr %fa_stp_L10594
-  call void @qd_stack_pop(ptr %fa_stk_L10594, ptr %fa_elem_L10594)
-  %fa_vp_L10594 = getelementptr %qd_stack_element_t, ptr %fa_elem_L10594, i32 0, i32 0
-  %fa_ptr_L10594 = load ptr, ptr %fa_vp_L10594
-  %fa_off_L10594 = load i64, ptr @__offset_globals
-  %fa_fp_L10594 = getelementptr i8, ptr %fa_ptr_L10594, i64 %fa_off_L10594
-  %fa_val_L10594 = load ptr, ptr %fa_fp_L10594
-  call i32 @qd_push_p(ptr %ctx, ptr %fa_val_L10594)
-  call i32 @usr_sb_finish(ptr %ctx)
-  %stp_L10595 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L10595 = load ptr, ptr %stp_L10595
-  call void @qd_stack_pop(ptr %stk_L10595, ptr %local.globals_str)
+  %stp_L10594 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L10594 = load ptr, ptr %stp_L10594
+  call i32 @qdrt_push_element(ptr %stk_L10594, ptr %local.root)
+  %fa_elem_L10595 = alloca %qd_stack_element_t
+  %fa_stp_L10595 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %fa_stk_L10595 = load ptr, ptr %fa_stp_L10595
+  call void @qd_stack_pop(ptr %fa_stk_L10595, ptr %fa_elem_L10595)
+  %fa_vp_L10595 = getelementptr %qd_stack_element_t, ptr %fa_elem_L10595, i32 0, i32 0
+  %fa_ptr_L10595 = load ptr, ptr %fa_vp_L10595
+  %fa_off_L10595 = load i64, ptr @__offset_child3
+  %fa_fp_L10595 = getelementptr i8, ptr %fa_ptr_L10595, i64 %fa_off_L10595
+  %fa_val_L10595 = load ptr, ptr %fa_fp_L10595
+  call i32 @qd_push_p(ptr %ctx, ptr %fa_val_L10595)
   %stp_L10596 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
   %stk_L10596 = load ptr, ptr %stp_L10596
-  call i32 @qdrt_push_element(ptr %stk_L10596, ptr %local.st)
-  %fa_elem_L10597 = alloca %qd_stack_element_t
-  %fa_stp_L10597 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %fa_stk_L10597 = load ptr, ptr %fa_stp_L10597
-  call void @qd_stack_pop(ptr %fa_stk_L10597, ptr %fa_elem_L10597)
-  %fa_vp_L10597 = getelementptr %qd_stack_element_t, ptr %fa_elem_L10597, i32 0, i32 0
-  %fa_ptr_L10597 = load ptr, ptr %fa_vp_L10597
-  %fa_off_L10597 = load i64, ptr @__offset_code
-  %fa_fp_L10597 = getelementptr i8, ptr %fa_ptr_L10597, i64 %fa_off_L10597
-  %fa_val_L10597 = load ptr, ptr %fa_fp_L10597
-  call i32 @qd_push_p(ptr %ctx, ptr %fa_val_L10597)
-  call i32 @usr_sb_finish(ptr %ctx)
+  call i32 @qdrt_push_element(ptr %stk_L10596, ptr %local.all_consts)
+  %stp_L10597 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L10597 = load ptr, ptr %stp_L10597
+  call i32 @qdrt_push_element(ptr %stk_L10597, ptr %local.main_pfx)
+  call i32 @usr_codegen_emit_top_level(ptr %ctx)
   %stp_L10598 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
   %stk_L10598 = load ptr, ptr %stp_L10598
-  call void @qd_stack_pop(ptr %stk_L10598, ptr %local.code_str)
-  call i32 @usr_sb_new(ptr %ctx)
+  call void @qd_stack_pop(ptr %stk_L10598, ptr %local.st)
+  br label %L10592
+L10592:
   %stp_L10599 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
   %stk_L10599 = load ptr, ptr %stp_L10599
-  call void @qd_stack_pop(ptr %stk_L10599, ptr %local.final)
-  %stp_L10600 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L10600 = load ptr, ptr %stp_L10600
-  call i32 @qdrt_push_element(ptr %stk_L10600, ptr %local.final)
-  call i32 @qd_push_s(ptr %ctx, ptr @.str.10601)
-  call i32 @usr_sb_append(ptr %ctx)
-  %stp_L10602 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L10602 = load ptr, ptr %stp_L10602
-  call void @qd_stack_pop(ptr %stk_L10602, ptr %local.final)
-  %stp_L10603 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L10603 = load ptr, ptr %stp_L10603
-  call i32 @qdrt_push_element(ptr %stk_L10603, ptr %local.final)
-  call i32 @qd_push_s(ptr %ctx, ptr @.str.10604)
-  call i32 @usr_sb_append(ptr %ctx)
+  call i32 @qdrt_push_element(ptr %stk_L10599, ptr %local.root)
+  %fa_elem_L10600 = alloca %qd_stack_element_t
+  %fa_stp_L10600 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %fa_stk_L10600 = load ptr, ptr %fa_stp_L10600
+  call void @qd_stack_pop(ptr %fa_stk_L10600, ptr %fa_elem_L10600)
+  %fa_vp_L10600 = getelementptr %qd_stack_element_t, ptr %fa_elem_L10600, i32 0, i32 0
+  %fa_ptr_L10600 = load ptr, ptr %fa_vp_L10600
+  %fa_off_L10600 = load i64, ptr @__offset_child4
+  %fa_fp_L10600 = getelementptr i8, ptr %fa_ptr_L10600, i64 %fa_off_L10600
+  %fa_val_L10600 = load ptr, ptr %fa_fp_L10600
+  call i32 @qd_push_p(ptr %ctx, ptr %fa_val_L10600)
+  call i32 @qd_push_i(ptr %ctx, i64 0)
+  call i32 @qd_neq(ptr %ctx)
+  %ce_L10601 = alloca %qd_stack_element_t
+  %stp_L10601 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L10601 = load ptr, ptr %stp_L10601
+  call void @qd_stack_pop(ptr %stk_L10601, ptr %ce_L10601)
+  %cv_L10601 = getelementptr %qd_stack_element_t, ptr %ce_L10601, i32 0, i32 0
+  %ci_L10601 = load i64, ptr %cv_L10601
+  %cc_L10601 = icmp ne i64 %ci_L10601, 0
+  br i1 %cc_L10601, label %L10602, label %L10604
+L10602:
   %stp_L10605 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
   %stk_L10605 = load ptr, ptr %stp_L10605
-  call void @qd_stack_pop(ptr %stk_L10605, ptr %local.final)
+  call i32 @qdrt_push_element(ptr %stk_L10605, ptr %local.st)
   %stp_L10606 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
   %stk_L10606 = load ptr, ptr %stp_L10606
-  call i32 @qdrt_push_element(ptr %stk_L10606, ptr %local.final)
-  %stp_L10607 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L10607 = load ptr, ptr %stp_L10607
-  call i32 @qdrt_push_element(ptr %stk_L10607, ptr %local.globals_str)
-  call i32 @usr_sb_append(ptr %ctx)
+  call i32 @qdrt_push_element(ptr %stk_L10606, ptr %local.root)
+  %fa_elem_L10607 = alloca %qd_stack_element_t
+  %fa_stp_L10607 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %fa_stk_L10607 = load ptr, ptr %fa_stp_L10607
+  call void @qd_stack_pop(ptr %fa_stk_L10607, ptr %fa_elem_L10607)
+  %fa_vp_L10607 = getelementptr %qd_stack_element_t, ptr %fa_elem_L10607, i32 0, i32 0
+  %fa_ptr_L10607 = load ptr, ptr %fa_vp_L10607
+  %fa_off_L10607 = load i64, ptr @__offset_child4
+  %fa_fp_L10607 = getelementptr i8, ptr %fa_ptr_L10607, i64 %fa_off_L10607
+  %fa_val_L10607 = load ptr, ptr %fa_fp_L10607
+  call i32 @qd_push_p(ptr %ctx, ptr %fa_val_L10607)
   %stp_L10608 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
   %stk_L10608 = load ptr, ptr %stp_L10608
-  call void @qd_stack_pop(ptr %stk_L10608, ptr %local.final)
+  call i32 @qdrt_push_element(ptr %stk_L10608, ptr %local.all_consts)
   %stp_L10609 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
   %stk_L10609 = load ptr, ptr %stp_L10609
-  call i32 @qdrt_push_element(ptr %stk_L10609, ptr %local.final)
-  call i32 @qd_push_s(ptr %ctx, ptr @.str.10610)
-  call i32 @usr_sb_append(ptr %ctx)
+  call i32 @qdrt_push_element(ptr %stk_L10609, ptr %local.main_pfx)
+  call i32 @usr_codegen_emit_top_level(ptr %ctx)
+  %stp_L10610 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L10610 = load ptr, ptr %stp_L10610
+  call void @qd_stack_pop(ptr %stk_L10610, ptr %local.st)
+  br label %L10604
+L10604:
   %stp_L10611 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
   %stk_L10611 = load ptr, ptr %stp_L10611
-  call void @qd_stack_pop(ptr %stk_L10611, ptr %local.final)
-  %stp_L10612 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L10612 = load ptr, ptr %stp_L10612
-  call i32 @qdrt_push_element(ptr %stk_L10612, ptr %local.final)
+  call i32 @qdrt_push_element(ptr %stk_L10611, ptr %local.root)
+  %fa_elem_L10612 = alloca %qd_stack_element_t
+  %fa_stp_L10612 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %fa_stk_L10612 = load ptr, ptr %fa_stp_L10612
+  call void @qd_stack_pop(ptr %fa_stk_L10612, ptr %fa_elem_L10612)
+  %fa_vp_L10612 = getelementptr %qd_stack_element_t, ptr %fa_elem_L10612, i32 0, i32 0
+  %fa_ptr_L10612 = load ptr, ptr %fa_vp_L10612
+  %fa_off_L10612 = load i64, ptr @__offset_extra
+  %fa_fp_L10612 = getelementptr i8, ptr %fa_ptr_L10612, i64 %fa_off_L10612
+  %fa_val_L10612 = load ptr, ptr %fa_fp_L10612
+  call i32 @qd_push_p(ptr %ctx, ptr %fa_val_L10612)
   %stp_L10613 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
   %stk_L10613 = load ptr, ptr %stp_L10613
-  call i32 @qdrt_push_element(ptr %stk_L10613, ptr %local.code_str)
-  call i32 @usr_sb_append(ptr %ctx)
+  call void @qd_stack_pop(ptr %stk_L10613, ptr %local.cur)
   %stp_L10614 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
   %stk_L10614 = load ptr, ptr %stp_L10614
-  call void @qd_stack_pop(ptr %stk_L10614, ptr %local.final)
+  call i32 @qdrt_push_element(ptr %stk_L10614, ptr %local.cur)
+  call i32 @qd_push_i(ptr %ctx, i64 0)
+  call i32 @qd_neq(ptr %ctx)
+  %ce_L10615 = alloca %qd_stack_element_t
   %stp_L10615 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
   %stk_L10615 = load ptr, ptr %stp_L10615
-  call i32 @qdrt_push_element(ptr %stk_L10615, ptr %local.final)
+  call void @qd_stack_pop(ptr %stk_L10615, ptr %ce_L10615)
+  %cv_L10615 = getelementptr %qd_stack_element_t, ptr %ce_L10615, i32 0, i32 0
+  %ci_L10615 = load i64, ptr %cv_L10615
+  %cc_L10615 = icmp ne i64 %ci_L10615, 0
+  br i1 %cc_L10615, label %L10616, label %L10617
+L10616:
+  %stp_L10619 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L10619 = load ptr, ptr %stp_L10619
+  call i32 @qdrt_push_element(ptr %stk_L10619, ptr %local.st)
+  %stp_L10620 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L10620 = load ptr, ptr %stp_L10620
+  call i32 @qdrt_push_element(ptr %stk_L10620, ptr %local.cur)
+  %stp_L10621 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L10621 = load ptr, ptr %stp_L10621
+  call i32 @qdrt_push_element(ptr %stk_L10621, ptr %local.all_consts)
+  %stp_L10622 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L10622 = load ptr, ptr %stp_L10622
+  call i32 @qdrt_push_element(ptr %stk_L10622, ptr %local.main_pfx)
+  call i32 @usr_codegen_emit_top_level(ptr %ctx)
+  %stp_L10623 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L10623 = load ptr, ptr %stp_L10623
+  call void @qd_stack_pop(ptr %stk_L10623, ptr %local.st)
+  %stp_L10624 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L10624 = load ptr, ptr %stp_L10624
+  call i32 @qdrt_push_element(ptr %stk_L10624, ptr %local.cur)
+  %fa_elem_L10625 = alloca %qd_stack_element_t
+  %fa_stp_L10625 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %fa_stk_L10625 = load ptr, ptr %fa_stp_L10625
+  call void @qd_stack_pop(ptr %fa_stk_L10625, ptr %fa_elem_L10625)
+  %fa_vp_L10625 = getelementptr %qd_stack_element_t, ptr %fa_elem_L10625, i32 0, i32 0
+  %fa_ptr_L10625 = load ptr, ptr %fa_vp_L10625
+  %fa_off_L10625 = load i64, ptr @__offset_sibling
+  %fa_fp_L10625 = getelementptr i8, ptr %fa_ptr_L10625, i64 %fa_off_L10625
+  %fa_val_L10625 = load ptr, ptr %fa_fp_L10625
+  call i32 @qd_push_p(ptr %ctx, ptr %fa_val_L10625)
+  %stp_L10626 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L10626 = load ptr, ptr %stp_L10626
+  call void @qd_stack_pop(ptr %stk_L10626, ptr %local.cur)
+  %stp_L10627 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L10627 = load ptr, ptr %stp_L10627
+  call i32 @qdrt_push_element(ptr %stk_L10627, ptr %local.cur)
+  call i32 @qd_push_i(ptr %ctx, i64 0)
+  call i32 @qd_neq(ptr %ctx)
+  %ce_L10628 = alloca %qd_stack_element_t
+  %stp_L10628 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L10628 = load ptr, ptr %stp_L10628
+  call void @qd_stack_pop(ptr %stk_L10628, ptr %ce_L10628)
+  %cv_L10628 = getelementptr %qd_stack_element_t, ptr %ce_L10628, i32 0, i32 0
+  %ci_L10628 = load i64, ptr %cv_L10628
+  %cc_L10628 = icmp ne i64 %ci_L10628, 0
+  br i1 %cc_L10628, label %L10616, label %L10617
+L10617:
+  %stp_L10629 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L10629 = load ptr, ptr %stp_L10629
+  call i32 @qdrt_push_element(ptr %stk_L10629, ptr %local.merged)
+  call i32 @qd_push_i(ptr %ctx, i64 0)
+  call i32 @qd_neq(ptr %ctx)
+  %ce_L10630 = alloca %qd_stack_element_t
+  %stp_L10630 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L10630 = load ptr, ptr %stp_L10630
+  call void @qd_stack_pop(ptr %stk_L10630, ptr %ce_L10630)
+  %cv_L10630 = getelementptr %qd_stack_element_t, ptr %ce_L10630, i32 0, i32 0
+  %ci_L10630 = load i64, ptr %cv_L10630
+  %cc_L10630 = icmp ne i64 %ci_L10630, 0
+  br i1 %cc_L10630, label %L10631, label %L10632
+L10631:
+  %stp_L10634 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L10634 = load ptr, ptr %stp_L10634
+  call i32 @qdrt_push_element(ptr %stk_L10634, ptr %local.merged)
+  %fa_elem_L10635 = alloca %qd_stack_element_t
+  %fa_stp_L10635 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %fa_stk_L10635 = load ptr, ptr %fa_stp_L10635
+  call void @qd_stack_pop(ptr %fa_stk_L10635, ptr %fa_elem_L10635)
+  %fa_vp_L10635 = getelementptr %qd_stack_element_t, ptr %fa_elem_L10635, i32 0, i32 0
+  %fa_ptr_L10635 = load ptr, ptr %fa_vp_L10635
+  %fa_off_L10635 = load i64, ptr @__offset_ntext
+  %fa_fp_L10635 = getelementptr i8, ptr %fa_ptr_L10635, i64 %fa_off_L10635
+  %fa_val_L10635 = load ptr, ptr %fa_fp_L10635
+  call i32 @qd_push_s_ref(ptr %ctx, ptr %fa_val_L10635)
+  %stp_L10636 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L10636 = load ptr, ptr %stp_L10636
+  call void @qd_stack_pop(ptr %stk_L10636, ptr %local.mpfx)
+  %stp_L10637 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L10637 = load ptr, ptr %stp_L10637
+  call i32 @qdrt_push_element(ptr %stk_L10637, ptr %local.mpfx)
+  call i32 @usr_strings_len(ptr %ctx)
+  call i32 @qd_push_i(ptr %ctx, i64 0)
+  call i32 @qd_eq(ptr %ctx)
+  %ce_L10638 = alloca %qd_stack_element_t
+  %stp_L10638 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L10638 = load ptr, ptr %stp_L10638
+  call void @qd_stack_pop(ptr %stk_L10638, ptr %ce_L10638)
+  %cv_L10638 = getelementptr %qd_stack_element_t, ptr %ce_L10638, i32 0, i32 0
+  %ci_L10638 = load i64, ptr %cv_L10638
+  %cc_L10638 = icmp ne i64 %ci_L10638, 0
+  br i1 %cc_L10638, label %L10639, label %L10641
+L10639:
+  call i32 @qd_push_s(ptr %ctx, ptr @.str.10642)
+  %stp_L10643 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L10643 = load ptr, ptr %stp_L10643
+  call void @qd_stack_pop(ptr %stk_L10643, ptr %local.mpfx)
+  br label %L10641
+L10641:
+  %stp_L10644 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L10644 = load ptr, ptr %stp_L10644
+  call i32 @qdrt_push_element(ptr %stk_L10644, ptr %local.st)
+  %stp_L10645 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L10645 = load ptr, ptr %stp_L10645
+  call i32 @qdrt_push_element(ptr %stk_L10645, ptr %local.merged)
+  %stp_L10646 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L10646 = load ptr, ptr %stp_L10646
+  call i32 @qdrt_push_element(ptr %stk_L10646, ptr %local.all_consts)
+  %stp_L10647 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L10647 = load ptr, ptr %stp_L10647
+  call i32 @qdrt_push_element(ptr %stk_L10647, ptr %local.mpfx)
+  call i32 @usr_codegen_emit_merged_file(ptr %ctx)
+  %stp_L10648 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L10648 = load ptr, ptr %stp_L10648
+  call void @qd_stack_pop(ptr %stk_L10648, ptr %local.st)
+  %stp_L10649 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L10649 = load ptr, ptr %stp_L10649
+  call i32 @qdrt_push_element(ptr %stk_L10649, ptr %local.merged)
+  %fa_elem_L10650 = alloca %qd_stack_element_t
+  %fa_stp_L10650 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %fa_stk_L10650 = load ptr, ptr %fa_stp_L10650
+  call void @qd_stack_pop(ptr %fa_stk_L10650, ptr %fa_elem_L10650)
+  %fa_vp_L10650 = getelementptr %qd_stack_element_t, ptr %fa_elem_L10650, i32 0, i32 0
+  %fa_ptr_L10650 = load ptr, ptr %fa_vp_L10650
+  %fa_off_L10650 = load i64, ptr @__offset_sibling
+  %fa_fp_L10650 = getelementptr i8, ptr %fa_ptr_L10650, i64 %fa_off_L10650
+  %fa_val_L10650 = load ptr, ptr %fa_fp_L10650
+  call i32 @qd_push_p(ptr %ctx, ptr %fa_val_L10650)
+  %stp_L10651 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L10651 = load ptr, ptr %stp_L10651
+  call void @qd_stack_pop(ptr %stk_L10651, ptr %local.merged)
+  %stp_L10652 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L10652 = load ptr, ptr %stp_L10652
+  call i32 @qdrt_push_element(ptr %stk_L10652, ptr %local.merged)
+  call i32 @qd_push_i(ptr %ctx, i64 0)
+  call i32 @qd_neq(ptr %ctx)
+  %ce_L10653 = alloca %qd_stack_element_t
+  %stp_L10653 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L10653 = load ptr, ptr %stp_L10653
+  call void @qd_stack_pop(ptr %stk_L10653, ptr %ce_L10653)
+  %cv_L10653 = getelementptr %qd_stack_element_t, ptr %ce_L10653, i32 0, i32 0
+  %ci_L10653 = load i64, ptr %cv_L10653
+  %cc_L10653 = icmp ne i64 %ci_L10653, 0
+  br i1 %cc_L10653, label %L10631, label %L10632
+L10632:
+  %stp_L10654 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L10654 = load ptr, ptr %stp_L10654
+  call i32 @qdrt_push_element(ptr %stk_L10654, ptr %local.mdecls)
+  call i32 @usr_strings_len(ptr %ctx)
+  call i32 @qd_push_i(ptr %ctx, i64 0)
+  call i32 @qd_gt(ptr %ctx)
+  %ce_L10655 = alloca %qd_stack_element_t
+  %stp_L10655 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L10655 = load ptr, ptr %stp_L10655
+  call void @qd_stack_pop(ptr %stk_L10655, ptr %ce_L10655)
+  %cv_L10655 = getelementptr %qd_stack_element_t, ptr %ce_L10655, i32 0, i32 0
+  %ci_L10655 = load i64, ptr %cv_L10655
+  %cc_L10655 = icmp ne i64 %ci_L10655, 0
+  br i1 %cc_L10655, label %L10656, label %L10658
+L10656:
+  %stp_L10659 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L10659 = load ptr, ptr %stp_L10659
+  call i32 @qdrt_push_element(ptr %stk_L10659, ptr %local.st)
+  %fa_elem_L10660 = alloca %qd_stack_element_t
+  %fa_stp_L10660 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %fa_stk_L10660 = load ptr, ptr %fa_stp_L10660
+  call void @qd_stack_pop(ptr %fa_stk_L10660, ptr %fa_elem_L10660)
+  %fa_vp_L10660 = getelementptr %qd_stack_element_t, ptr %fa_elem_L10660, i32 0, i32 0
+  %fa_ptr_L10660 = load ptr, ptr %fa_vp_L10660
+  %fa_off_L10660 = load i64, ptr @__offset_code
+  %fa_fp_L10660 = getelementptr i8, ptr %fa_ptr_L10660, i64 %fa_off_L10660
+  %fa_val_L10660 = load ptr, ptr %fa_fp_L10660
+  call i32 @qd_push_p(ptr %ctx, ptr %fa_val_L10660)
+  %stp_L10661 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L10661 = load ptr, ptr %stp_L10661
+  call void @qd_stack_pop(ptr %stk_L10661, ptr %local.o)
+  %stp_L10662 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L10662 = load ptr, ptr %stp_L10662
+  call i32 @qdrt_push_element(ptr %stk_L10662, ptr %local.o)
+  %stp_L10663 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L10663 = load ptr, ptr %stp_L10663
+  call i32 @qdrt_push_element(ptr %stk_L10663, ptr %local.mdecls)
+  call i32 @usr_sb_append(ptr %ctx)
+  %stp_L10664 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L10664 = load ptr, ptr %stp_L10664
+  call void @qd_stack_pop(ptr %stk_L10664, ptr %local.o)
+  %stp_L10665 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L10665 = load ptr, ptr %stp_L10665
+  call i32 @qdrt_push_element(ptr %stk_L10665, ptr %local.o)
+  %fs_elem_L10666 = alloca %qd_stack_element_t
+  %fs_stp_L10666 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %fs_stk_L10666 = load ptr, ptr %fs_stp_L10666
+  call void @qd_stack_pop(ptr %fs_stk_L10666, ptr %fs_elem_L10666)
+  %fs_vp_L10666 = getelementptr %qd_stack_element_t, ptr %fs_elem_L10666, i32 0, i32 0
+  %fs_val_L10666 = load i64, ptr %fs_vp_L10666
+  %fs_svp_L10666 = getelementptr %qd_stack_element_t, ptr %local.st, i32 0, i32 0
+  %fs_sptr_L10666 = load ptr, ptr %fs_svp_L10666
+  %fs_off_L10666 = load i64, ptr @__offset_code
+  %fs_fp_L10666 = getelementptr i8, ptr %fs_sptr_L10666, i64 %fs_off_L10666
+  store i64 %fs_val_L10666, ptr %fs_fp_L10666
+  br label %L10658
+L10658:
+  %stp_L10667 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L10667 = load ptr, ptr %stp_L10667
+  call i32 @qdrt_push_element(ptr %stk_L10667, ptr %local.st)
+  call i32 @usr_codegen_emit_main_entry(ptr %ctx)
+  %stp_L10668 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L10668 = load ptr, ptr %stp_L10668
+  call void @qd_stack_pop(ptr %stk_L10668, ptr %local.st)
+  %stp_L10669 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L10669 = load ptr, ptr %stp_L10669
+  call i32 @qdrt_push_element(ptr %stk_L10669, ptr %local.st)
+  %fa_elem_L10670 = alloca %qd_stack_element_t
+  %fa_stp_L10670 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %fa_stk_L10670 = load ptr, ptr %fa_stp_L10670
+  call void @qd_stack_pop(ptr %fa_stk_L10670, ptr %fa_elem_L10670)
+  %fa_vp_L10670 = getelementptr %qd_stack_element_t, ptr %fa_elem_L10670, i32 0, i32 0
+  %fa_ptr_L10670 = load ptr, ptr %fa_vp_L10670
+  %fa_off_L10670 = load i64, ptr @__offset_globals
+  %fa_fp_L10670 = getelementptr i8, ptr %fa_ptr_L10670, i64 %fa_off_L10670
+  %fa_val_L10670 = load ptr, ptr %fa_fp_L10670
+  call i32 @qd_push_p(ptr %ctx, ptr %fa_val_L10670)
+  call i32 @usr_sb_finish(ptr %ctx)
+  %stp_L10671 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L10671 = load ptr, ptr %stp_L10671
+  call void @qd_stack_pop(ptr %stk_L10671, ptr %local.globals_str)
+  %stp_L10672 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L10672 = load ptr, ptr %stp_L10672
+  call i32 @qdrt_push_element(ptr %stk_L10672, ptr %local.st)
+  %fa_elem_L10673 = alloca %qd_stack_element_t
+  %fa_stp_L10673 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %fa_stk_L10673 = load ptr, ptr %fa_stp_L10673
+  call void @qd_stack_pop(ptr %fa_stk_L10673, ptr %fa_elem_L10673)
+  %fa_vp_L10673 = getelementptr %qd_stack_element_t, ptr %fa_elem_L10673, i32 0, i32 0
+  %fa_ptr_L10673 = load ptr, ptr %fa_vp_L10673
+  %fa_off_L10673 = load i64, ptr @__offset_code
+  %fa_fp_L10673 = getelementptr i8, ptr %fa_ptr_L10673, i64 %fa_off_L10673
+  %fa_val_L10673 = load ptr, ptr %fa_fp_L10673
+  call i32 @qd_push_p(ptr %ctx, ptr %fa_val_L10673)
+  call i32 @usr_sb_finish(ptr %ctx)
+  %stp_L10674 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L10674 = load ptr, ptr %stp_L10674
+  call void @qd_stack_pop(ptr %stk_L10674, ptr %local.code_str)
+  call i32 @usr_sb_new(ptr %ctx)
+  %stp_L10675 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L10675 = load ptr, ptr %stp_L10675
+  call void @qd_stack_pop(ptr %stk_L10675, ptr %local.final)
+  %stp_L10676 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L10676 = load ptr, ptr %stp_L10676
+  call i32 @qdrt_push_element(ptr %stk_L10676, ptr %local.final)
+  call i32 @qd_push_s(ptr %ctx, ptr @.str.10677)
+  call i32 @usr_sb_append(ptr %ctx)
+  %stp_L10678 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L10678 = load ptr, ptr %stp_L10678
+  call void @qd_stack_pop(ptr %stk_L10678, ptr %local.final)
+  %stp_L10679 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L10679 = load ptr, ptr %stp_L10679
+  call i32 @qdrt_push_element(ptr %stk_L10679, ptr %local.final)
+  call i32 @qd_push_s(ptr %ctx, ptr @.str.10680)
+  call i32 @usr_sb_append(ptr %ctx)
+  %stp_L10681 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L10681 = load ptr, ptr %stp_L10681
+  call void @qd_stack_pop(ptr %stk_L10681, ptr %local.final)
+  %stp_L10682 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L10682 = load ptr, ptr %stp_L10682
+  call i32 @qdrt_push_element(ptr %stk_L10682, ptr %local.final)
+  %stp_L10683 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L10683 = load ptr, ptr %stp_L10683
+  call i32 @qdrt_push_element(ptr %stk_L10683, ptr %local.globals_str)
+  call i32 @usr_sb_append(ptr %ctx)
+  %stp_L10684 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L10684 = load ptr, ptr %stp_L10684
+  call void @qd_stack_pop(ptr %stk_L10684, ptr %local.final)
+  %stp_L10685 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L10685 = load ptr, ptr %stp_L10685
+  call i32 @qdrt_push_element(ptr %stk_L10685, ptr %local.final)
+  call i32 @qd_push_s(ptr %ctx, ptr @.str.10686)
+  call i32 @usr_sb_append(ptr %ctx)
+  %stp_L10687 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L10687 = load ptr, ptr %stp_L10687
+  call void @qd_stack_pop(ptr %stk_L10687, ptr %local.final)
+  %stp_L10688 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L10688 = load ptr, ptr %stp_L10688
+  call i32 @qdrt_push_element(ptr %stk_L10688, ptr %local.final)
+  %stp_L10689 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L10689 = load ptr, ptr %stp_L10689
+  call i32 @qdrt_push_element(ptr %stk_L10689, ptr %local.code_str)
+  call i32 @usr_sb_append(ptr %ctx)
+  %stp_L10690 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L10690 = load ptr, ptr %stp_L10690
+  call void @qd_stack_pop(ptr %stk_L10690, ptr %local.final)
+  %stp_L10691 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L10691 = load ptr, ptr %stp_L10691
+  call i32 @qdrt_push_element(ptr %stk_L10691, ptr %local.final)
   call i32 @usr_sb_finish(ptr %ctx)
   br label %return
 return:
@@ -42914,14 +43228,14 @@ return:
 define i32 @usr_codegen_generate(ptr %ctx) {
 entry:
   %local.root = alloca %qd_stack_element_t
-  %stp_L10616 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L10616 = load ptr, ptr %stp_L10616
-  call void @qd_stack_pop(ptr %stk_L10616, ptr %local.root)
-  %stp_L10617 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
-  %stk_L10617 = load ptr, ptr %stp_L10617
-  call i32 @qdrt_push_element(ptr %stk_L10617, ptr %local.root)
+  %stp_L10692 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L10692 = load ptr, ptr %stp_L10692
+  call void @qd_stack_pop(ptr %stk_L10692, ptr %local.root)
+  %stp_L10693 = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0
+  %stk_L10693 = load ptr, ptr %stp_L10693
+  call i32 @qdrt_push_element(ptr %stk_L10693, ptr %local.root)
   call i32 @qd_push_i(ptr %ctx, i64 0)
-  call i32 @qd_push_s(ptr %ctx, ptr @.str.10618)
+  call i32 @qd_push_s(ptr %ctx, ptr @.str.10694)
   call i32 @usr_codegen_generate_full(ptr %ctx)
   br label %return
 return:
