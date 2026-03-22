@@ -798,7 +798,7 @@ fn (p:Parser) parse_atom( -- n:ptr) {
 					}
 					// sb::append_any (resolved at codegen time)
 					ast::NodeType::ScopedIdent "sb" l c ast::make_node -> saany
-					ast::NodeType::Ident "append_int" l c ast::leaf -> saanyn
+					ast::NodeType::Ident "append" l c ast::leaf -> saanyn
 					saany saanyn ast::add_child
 					blk saany ast::add_child
 				} else {

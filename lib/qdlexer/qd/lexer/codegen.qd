@@ -27,7 +27,7 @@ fn add_string(s:ptr text:str -- s2:ptr name:str) {
 	n 1 + st.counter
 
 	// Build name: @.str.N
-	$"@.str.{n}" -> sname
+	sb::new -> snb  snb "@.str." sb::append -> snb  snb n sb::append_int -> snb  snb sb::finish -> sname
 
 	// Strip quotes from the raw text if present
 	raw -> content
@@ -99,7 +99,7 @@ fn next_label(s:ptr -- s2:ptr name:str) {
 	-> st
 	st @counter -> n
 	n 1 + st.counter
-	st $"L{n}"
+	sb::new -> lnb  lnb "L" sb::append -> lnb  lnb n sb::append_int -> lnb  st lnb sb::finish
 }
 
 // Collect local variable names from a block (recursive)
@@ -132,10 +132,20 @@ fn collect_locals(node:ptr result:ptr -- result2:ptr) {
 	buf
 }
 
+// Convert integer to string (for use in $"..." which expects strings)
+fn i2s(n:i64 -- s:str) {
+	-> v
+	sb::new -> b  b v sb::append_int -> b  b sb::finish
+}
+
 // Check if a name is in the locals string
 fn is_local(locals:str name:str -- result:i64) {
 	-> n -> ls
-	$",{n}," -> needle
+	sb::new -> ndb
+	ndb "," sb::append -> ndb
+	ndb n sb::append -> ndb
+	ndb "," sb::append -> ndb
+	ndb sb::finish -> needle
 	ls needle strings::contains
 }
 
@@ -172,7 +182,7 @@ fn emit_unique_allocas(s:ptr body:ptr skip_name:str -- s2:ptr) {
 	// Pre-seed seen with skip_name if provided
 	"" -> seen
 	skip strings::len 0 > if {
-		$",{skip}," -> seen
+		"," skip strings::concat "," strings::concat -> seen
 	}
 	// Walk each name between commas (skip leading comma)
 	1 -> pos
@@ -187,7 +197,7 @@ fn emit_unique_allocas(s:ptr body:ptr skip_name:str -- s2:ptr) {
 		}
 		end pos > if {
 			all_locals pos end pos - strings::substring! -> vn
-			$",{vn}," -> ck
+			"," vn strings::concat "," strings::concat -> ck
 			seen ck strings::contains 0 == if {
 				o $"  %local.{vn} = alloca %qd_stack_element_t\n" sb::append -> o
 				seen ck strings::concat -> seen
@@ -750,7 +760,8 @@ fn emit_node(s:ptr node:ptr locals:str -- s2:ptr) {
 	}
 
 	// Anything else
-	o $"  ; TODO: node kind {k}\n" sb::append -> o
+	k i2s -> ks
+	o $"  ; TODO: node kind {ks}\n" sb::append -> o
 	o st.code
 	st
 }
@@ -758,7 +769,8 @@ fn emit_node(s:ptr node:ptr locals:str -- s2:ptr) {
 // Helper: emit an enum variant global constant
 fn emit_enum_variant(g:ptr ename:str vname:str val:i64 -- g2:ptr) {
 	-> v -> vn -> en -> buf
-	buf $"@__enum_{en}_{vn} = private constant i64 {v}\n" sb::append -> buf
+	v i2s -> vs
+	buf $"@__enum_{en}_{vn} = private constant i64 {vs}\n" sb::append -> buf
 	buf
 }
 
@@ -1015,15 +1027,29 @@ fn emit_for(s:ptr node:ptr locals:str -- s2:ptr) {
 	o $"  %for_step_{uid} = load i64, ptr %for_step_e_{uid}\n" sb::append -> o
 	o $"  %for_end_{uid} = load i64, ptr %for_end_e_{uid}\n" sb::append -> o
 	o $"  %for_start_{uid} = load i64, ptr %for_start_e_{uid}\n" sb::append -> o
-	// Initialize iterator
-	o $"  store i64 %for_start_{uid}, ptr %local.{iter_var}\n" sb::append -> o
+	// Initialize iterator — push as int then pop into local to set type tag correctly
+	o $"  call i32 @qd_push_i(ptr %ctx, i64 %for_start_{uid})\n" sb::append -> o
+	st next_label -> fiuid -> st
+	o $"  %fistp_{fiuid} = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0\n" sb::append -> o
+	o $"  %fistk_{fiuid} = load ptr, ptr %fistp_{fiuid}\n" sb::append -> o
+	o $"  call void @qd_stack_pop(ptr %fistk_{fiuid}, ptr %local.{iter_var})\n" sb::append -> o
 	o $"  br label %{cond_label}\n" sb::append -> o
 
-	// Condition: i < end
+	// Condition: i < end — use runtime stack comparison
 	o $"{cond_label}:\n" sb::append -> o
-	o $"  %for_i_{uid} = load i64, ptr %local.{iter_var}\n" sb::append -> o
-	o $"  %for_cmp_{uid} = icmp slt i64 %for_i_{uid}, %for_end_{uid}\n" sb::append -> o
-	o $"  br i1 %for_cmp_{uid}, label %{body_label}, label %{exit_label}\n" sb::append -> o
+	st next_label -> fcuid -> st
+	o $"  %fcstp_{fcuid} = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0\n" sb::append -> o
+	o $"  %fcstk_{fcuid} = load ptr, ptr %fcstp_{fcuid}\n" sb::append -> o
+	o $"  call i32 @qdrt_push_element(ptr %fcstk_{fcuid}, ptr %local.{iter_var})\n" sb::append -> o
+	o $"  call i32 @qd_push_i(ptr %ctx, i64 %for_end_{uid})\n" sb::append -> o
+	o $"  call i32 @qd_lt(ptr %ctx)\n" sb::append -> o
+	// Pop condition result
+	o $"  %fcond_{fcuid} = alloca %qd_stack_element_t\n" sb::append -> o
+	o $"  call void @qd_stack_pop(ptr %fcstk_{fcuid}, ptr %fcond_{fcuid})\n" sb::append -> o
+	o $"  %fcv_{fcuid} = getelementptr %qd_stack_element_t, ptr %fcond_{fcuid}, i32 0, i32 0\n" sb::append -> o
+	o $"  %fci_{fcuid} = load i64, ptr %fcv_{fcuid}\n" sb::append -> o
+	o $"  %fcc_{fcuid} = icmp ne i64 %fci_{fcuid}, 0\n" sb::append -> o
+	o $"  br i1 %fcc_{fcuid}, label %{body_label}, label %{exit_label}\n" sb::append -> o
 
 	// Body
 	o $"{body_label}:\n" sb::append -> o  o st.code
@@ -1031,9 +1057,16 @@ fn emit_for(s:ptr node:ptr locals:str -- s2:ptr) {
 	st @code -> o
 
 	// Increment: i += step
-	o $"  %for_iv_{uid} = load i64, ptr %local.{iter_var}\n" sb::append -> o
+	// Load iterator value for increment
+	o $"  %for_ivp_{uid} = getelementptr %qd_stack_element_t, ptr %local.{iter_var}, i32 0, i32 0\n" sb::append -> o
+	o $"  %for_iv_{uid} = load i64, ptr %for_ivp_{uid}\n" sb::append -> o
 	o $"  %for_next_{uid} = add i64 %for_iv_{uid}, %for_step_{uid}\n" sb::append -> o
-	o $"  store i64 %for_next_{uid}, ptr %local.{iter_var}\n" sb::append -> o
+	// Store incremented value with proper type tag
+	o $"  call i32 @qd_push_i(ptr %ctx, i64 %for_next_{uid})\n" sb::append -> o
+	st next_label -> fuuid -> st
+	o $"  %fustp_{fuuid} = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0\n" sb::append -> o
+	o $"  %fustk_{fuuid} = load ptr, ptr %fustp_{fuuid}\n" sb::append -> o
+	o $"  call void @qd_stack_pop(ptr %fustk_{fuuid}, ptr %local.{iter_var})\n" sb::append -> o
 	o $"  br label %{cond_label}\n" sb::append -> o
 
 	// Exit
@@ -1095,7 +1128,8 @@ fn emit_function(s:ptr name:str body:ptr recv:str param_count:i64 consts:str pre
 		o $"  %local.{recv_name} = alloca %qd_stack_element_t\n" sb::append -> o
 		nparams 0 > if {
 			// Roll receiver to top: push param_count, call qd_roll
-			o $"  call i32 @qd_push_i(ptr %ctx, i64 {nparams})\n" sb::append -> o
+			nparams i2s -> np_s
+			o $"  call i32 @qd_push_i(ptr %ctx, i64 {np_s})\n" sb::append -> o
 			o "  call i32 @qd_roll(ptr %ctx)\n" sb::append -> o
 		}
 		st next_label -> ruid -> st
@@ -1197,32 +1231,36 @@ fn emit_top_level(s:ptr node:ptr consts:str prefix:str -- s2:ptr) {
 		n @child1 null neq if {
 			n @child1 @ntext -> fn1
 			$"@__offset_{fn1}" -> ocheck1
+			offset i2s -> off_s
 			g sb::build ocheck1 strings::contains 0 == if {
-				g $"{ocheck1} = private constant i64 {offset}\n" sb::append -> g
+				g $"{ocheck1} = private constant i64 {off_s}\n" sb::append -> g
 			}
 			offset 8 + -> offset
 		}
 		n @child2 null neq if {
 			n @child2 @ntext -> fn2
 			$"@__offset_{fn2}" -> ocheck2
+			offset i2s -> off_s
 			g sb::build ocheck2 strings::contains 0 == if {
-				g $"{ocheck2} = private constant i64 {offset}\n" sb::append -> g
+				g $"{ocheck2} = private constant i64 {off_s}\n" sb::append -> g
 			}
 			offset 8 + -> offset
 		}
 		n @child3 null neq if {
 			n @child3 @ntext -> fn3
 			$"@__offset_{fn3}" -> ocheck3
+			offset i2s -> off_s
 			g sb::build ocheck3 strings::contains 0 == if {
-				g $"{ocheck3} = private constant i64 {offset}\n" sb::append -> g
+				g $"{ocheck3} = private constant i64 {off_s}\n" sb::append -> g
 			}
 			offset 8 + -> offset
 		}
 		n @child4 null neq if {
 			n @child4 @ntext -> fn4
 			$"@__offset_{fn4}" -> ocheck4
+			offset i2s -> off_s
 			g sb::build ocheck4 strings::contains 0 == if {
-				g $"{ocheck4} = private constant i64 {offset}\n" sb::append -> g
+				g $"{ocheck4} = private constant i64 {off_s}\n" sb::append -> g
 			}
 			offset 8 + -> offset
 		}
@@ -1231,15 +1269,17 @@ fn emit_top_level(s:ptr node:ptr consts:str prefix:str -- s2:ptr) {
 		cur null neq while {
 			cur @ntext -> cfn
 			$"@__offset_{cfn}" -> ocheckx
+			offset i2s -> off_s
 			g sb::build ocheckx strings::contains 0 == if {
-				g $"{ocheckx} = private constant i64 {offset}\n" sb::append -> g
+				g $"{ocheckx} = private constant i64 {off_s}\n" sb::append -> g
 			}
 			offset 8 + -> offset
 			cur @sibling -> cur
 			cur null neq
 		}
 		// Size constant
-		g $"@__size_{sname} = private constant i64 {offset}\n" sb::append -> g
+		offset i2s -> off_s
+		g $"@__size_{sname} = private constant i64 {off_s}\n" sb::append -> g
 		g st.globals
 		st return
 	}
