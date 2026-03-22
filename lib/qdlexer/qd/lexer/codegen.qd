@@ -112,7 +112,6 @@ fn collect_locals(node:ptr result:ptr -- result2:ptr) {
 		buf n @ntext sb::append -> buf
 		buf "," sb::append -> buf
 	}
-	// For loop iterator variables are also locals
 	n @nkind ast::NodeType::ForStmt == if {
 		buf "," sb::append -> buf
 		buf n @ntext sb::append -> buf
@@ -216,11 +215,11 @@ fn emit_unique_allocas(s:ptr body:ptr skip_name:str -- s2:ptr) {
 pub fn collect_field_types(node:ptr buf:ptr -- buf2:ptr) {
 	-> out -> n
 	n null == if { out return }
-	n @nkind ast::NodeType::StructField == if {
+	n @nkind -> nk
+	nk ast::NodeType::StructField == if {
 		n @child1 null neq if {
 			n @ntext -> fname
 			n @child1 @ntext -> ftype
-			// Only store if not already present (first wins for dedup)
 			sb::new -> ftkey
 			ftkey "!@" sb::append -> ftkey
 			ftkey fname sb::append -> ftkey
@@ -234,16 +233,21 @@ pub fn collect_field_types(node:ptr buf:ptr -- buf2:ptr) {
 			}
 		}
 	}
-	// Recurse into children
-	n @child1 null neq if { n @child1 out collect_field_types -> out }
-	n @child2 null neq if { n @child2 out collect_field_types -> out }
-	n @child3 null neq if { n @child3 out collect_field_types -> out }
-	n @child4 null neq if { n @child4 out collect_field_types -> out }
-	n @extra -> cur
-	cur null neq while {
-		cur out collect_field_types -> out
-		cur @sibling -> cur
-		cur null neq
+	// Only recurse into structural nodes (Program, StructDecl, StructField)
+	nk ast::NodeType::Program == nk ast::NodeType::StructDecl == or
+	nk ast::NodeType::StructField == or nk ast::NodeType::FnDecl == or
+	nk ast::NodeType::Block == or nk ast::NodeType::ImportDecl == or
+	nk ast::NodeType::UseStmt == or if {
+		n @child1 null neq if { n @child1 out collect_field_types -> out }
+		n @child2 null neq if { n @child2 out collect_field_types -> out }
+		n @child3 null neq if { n @child3 out collect_field_types -> out }
+		n @child4 null neq if { n @child4 out collect_field_types -> out }
+		n @extra -> cur
+		cur null neq while {
+			cur out collect_field_types -> out
+			cur @sibling -> cur
+			cur null neq
+		}
 	}
 	out
 }
@@ -277,11 +281,16 @@ pub fn collect_constants(node:ptr buf:ptr -- buf2:ptr) {
 			out cval sb::append -> out
 		}
 	}
-	// Recurse into children
-	n @child1 null neq if { n @child1 out collect_constants -> out }
-	n @child2 null neq if { n @child2 out collect_constants -> out }
-	n @child3 null neq if { n @child3 out collect_constants -> out }
-	n @child4 null neq if { n @child4 out collect_constants -> out }
+	// Only recurse into top-level containers (not deep expression trees)
+	n @nkind -> nk2
+	nk2 ast::NodeType::Program == nk2 ast::NodeType::Block == or
+	nk2 ast::NodeType::FnDecl == or nk2 ast::NodeType::ConstDecl == or
+	nk2 ast::NodeType::EnumDecl == or nk2 ast::NodeType::ImportDecl == or if {
+		n @child1 null neq if { n @child1 out collect_constants -> out }
+		n @child2 null neq if { n @child2 out collect_constants -> out }
+		n @child3 null neq if { n @child3 out collect_constants -> out }
+		n @child4 null neq if { n @child4 out collect_constants -> out }
+	}
 	n @extra -> cur
 	cur null neq while {
 		cur out collect_constants -> out
@@ -1366,7 +1375,7 @@ fn emit_main_entry(s:ptr -- s2:ptr) {
 	st @code -> o
 	o "define i32 @main(i32 %argc, ptr %argv) {\n" sb::append -> o
 	o "entry:\n" sb::append -> o
-	o "  %ctx = call ptr @qd_create_context(i64 10485760)\n" sb::append -> o
+	o "  %ctx = call ptr @qd_create_context(i64 1024)\n" sb::append -> o
 	o "  call i32 @usr_main_main(ptr %ctx)\n" sb::append -> o
 	o "  call void @qd_free_context(ptr %ctx)\n" sb::append -> o
 	o "  ret i32 0\n" sb::append -> o
