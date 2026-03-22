@@ -200,6 +200,44 @@ fn emit_unique_allocas(s:ptr body:ptr skip_name:str -- s2:ptr) {
 	st
 }
 
+// Collect struct field types from a program AST.
+// Format: "!@fieldname=typename!" (@ prefix distinguishes from constants)
+// StructField has ntext=fieldname and child1=Ident(typename).
+pub fn collect_field_types(node:ptr buf:ptr -- buf2:ptr) {
+	-> out -> n
+	n null == if { out return }
+	n @nkind ast::NodeType::StructField == if {
+		n @child1 null neq if {
+			n @ntext -> fname
+			n @child1 @ntext -> ftype
+			// Only store if not already present (first wins for dedup)
+			sb::new -> ftkey
+			ftkey "!@" sb::append -> ftkey
+			ftkey fname sb::append -> ftkey
+			ftkey "=" sb::append -> ftkey
+			ftkey sb::build -> ftkeystr
+			out sb::build ftkeystr strings::contains 0 == if {
+				out "!@" sb::append -> out
+				out fname sb::append -> out
+				out "=" sb::append -> out
+				out ftype sb::append -> out
+			}
+		}
+	}
+	// Recurse into children
+	n @child1 null neq if { n @child1 out collect_field_types -> out }
+	n @child2 null neq if { n @child2 out collect_field_types -> out }
+	n @child3 null neq if { n @child3 out collect_field_types -> out }
+	n @child4 null neq if { n @child4 out collect_field_types -> out }
+	n @extra -> cur
+	cur null neq while {
+		cur out collect_field_types -> out
+		cur @sibling -> cur
+		cur null neq
+	}
+	out
+}
+
 // Collect all constants from a program AST into a registry string.
 // Format: "!name=value!name2=value2!" (! delimited, = separates name from value)
 pub fn collect_constants(node:ptr buf:ptr -- buf2:ptr) {
@@ -262,6 +300,28 @@ fn lookup_constant(consts:str name:str -- val:str) {
 	cs strings::len -> cslen
 	vend cslen < while {
 		cs vend strings::char_at! 33 == if { break }
+		vend 1 + -> vend
+		vend cslen <
+	}
+	cs vstart vend vstart - strings::substring!
+}
+
+// Look up a field's type from the constants registry.
+// Field types are stored as "!@fieldname=typename!" in the registry.
+fn lookup_field_type(consts:str name:str -- typename:str) {
+	-> n -> cs
+	sb::new -> nb
+	nb "!@" sb::append -> nb
+	nb n sb::append -> nb
+	nb "=" sb::append -> nb
+	nb sb::finish -> needle
+	cs needle strings::index_of -> idx
+	idx 0 < if { "i64" return }  // default to i64
+	idx needle strings::len + -> vstart
+	vstart -> vend
+	cs strings::len -> cslen
+	vend cslen < while {
+		cs vend strings::char_at! 33 == if { break }  // stop at !
 		vend 1 + -> vend
 		vend cslen <
 	}
@@ -610,13 +670,29 @@ fn emit_node(s:ptr node:ptr locals:str -- s2:ptr) {
 		// Load struct ptr value
 		o $"  %fa_vp_{uid} = getelementptr %qd_stack_element_t, ptr %fa_elem_{uid}, i32 0, i32 0\n" sb::append -> o
 		o $"  %fa_ptr_{uid} = load ptr, ptr %fa_vp_{uid}\n" sb::append -> o
-		// Field offset from global (16 bytes per field — full stack element with type tag)
+		// Field offset from global (8 bytes per field)
 		o $"  %fa_off_{uid} = load i64, ptr @__offset_{fname}\n" sb::append -> o
 		o $"  %fa_fp_{uid} = getelementptr i8, ptr %fa_ptr_{uid}, i64 %fa_off_{uid}\n" sb::append -> o
-		// Push the full stack element (preserves type tag)
-		o $"  %fa_stp2_{uid} = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0\n" sb::append -> o
-		o $"  %fa_stk2_{uid} = load ptr, ptr %fa_stp2_{uid}\n" sb::append -> o
-		o $"  call i32 @qdrt_push_element(ptr %fa_stk2_{uid}, ptr %fa_fp_{uid})\n" sb::append -> o
+		// Load value and push with type-appropriate function
+		loc fname lookup_field_type -> ftype
+		ftype "str" strings::compare 0 == if {
+			o $"  %fa_val_{uid} = load ptr, ptr %fa_fp_{uid}\n" sb::append -> o
+			o $"  call i32 @qd_push_s_ref(ptr %ctx, ptr %fa_val_{uid})\n" sb::append -> o
+		} else {
+			ftype "ptr" strings::compare 0 == ftype "*" strings::starts_with or if {
+				o $"  %fa_val_{uid} = load ptr, ptr %fa_fp_{uid}\n" sb::append -> o
+				o $"  call i32 @qd_push_p(ptr %ctx, ptr %fa_val_{uid})\n" sb::append -> o
+			} else {
+				ftype "f64" strings::compare 0 == if {
+					o $"  %fa_val_{uid} = load double, ptr %fa_fp_{uid}\n" sb::append -> o
+					o $"  call i32 @qd_push_f(ptr %ctx, double %fa_val_{uid})\n" sb::append -> o
+				} else {
+					// Default: i64
+					o $"  %fa_val_{uid} = load i64, ptr %fa_fp_{uid}\n" sb::append -> o
+					o $"  call i32 @qd_push_i(ptr %ctx, i64 %fa_val_{uid})\n" sb::append -> o
+				}
+			}
+		}
 		o st.code
 		st return
 	}
@@ -632,13 +708,15 @@ fn emit_node(s:ptr node:ptr locals:str -- s2:ptr) {
 		o $"  %fs_stp_{uid} = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0\n" sb::append -> o
 		o $"  %fs_stk_{uid} = load ptr, ptr %fs_stp_{uid}\n" sb::append -> o
 		o $"  call void @qd_stack_pop(ptr %fs_stk_{uid}, ptr %fs_elem_{uid})\n" sb::append -> o
+		o $"  %fs_vp_{uid} = getelementptr %qd_stack_element_t, ptr %fs_elem_{uid}, i32 0, i32 0\n" sb::append -> o
+		o $"  %fs_val_{uid} = load i64, ptr %fs_vp_{uid}\n" sb::append -> o
 		// Load struct pointer from local variable
 		o $"  %fs_svp_{uid} = getelementptr %qd_stack_element_t, ptr %local.{vname}, i32 0, i32 0\n" sb::append -> o
 		o $"  %fs_sptr_{uid} = load ptr, ptr %fs_svp_{uid}\n" sb::append -> o
-		// Copy full stack element (16 bytes) into struct field
+		// Store 8-byte value into struct field
 		o $"  %fs_off_{uid} = load i64, ptr @__offset_{fname}\n" sb::append -> o
 		o $"  %fs_fp_{uid} = getelementptr i8, ptr %fs_sptr_{uid}, i64 %fs_off_{uid}\n" sb::append -> o
-		o $"  call void @llvm.memcpy.p0.p0.i64(ptr %fs_fp_{uid}, ptr %fs_elem_{uid}, i64 16, i1 false)\n" sb::append -> o
+		o $"  store i64 %fs_val_{uid}, ptr %fs_fp_{uid}\n" sb::append -> o
 		o st.code
 		st return
 	}
@@ -691,9 +769,16 @@ fn emit_struct_field(s:ptr field:ptr struct_uid:str struct_name:str locals:str -
 	fld @nkind ast::NodeType::StructField neq if { st return }
 	fld @ntext -> fname
 
-	// Evaluate the field value expression (child1 of StructField)
-	fld @child1 null neq if {
-		st fld @child1 loc emit_node -> st
+	// Evaluate ALL field value expressions (children of StructField)
+	fld @child1 null neq if { st fld @child1 loc emit_node -> st }
+	fld @child2 null neq if { st fld @child2 loc emit_node -> st }
+	fld @child3 null neq if { st fld @child3 loc emit_node -> st }
+	fld @child4 null neq if { st fld @child4 loc emit_node -> st }
+	fld @extra -> fcur
+	fcur null neq while {
+		st fcur loc emit_node -> st
+		fcur @sibling -> fcur
+		fcur null neq
 	}
 
 	// Pop value from runtime stack
@@ -703,10 +788,22 @@ fn emit_struct_field(s:ptr field:ptr struct_uid:str struct_name:str locals:str -
 	o $"  %sf_stp_{uid} = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0\n" sb::append -> o
 	o $"  %sf_stk_{uid} = load ptr, ptr %sf_stp_{uid}\n" sb::append -> o
 	o $"  call void @qd_stack_pop(ptr %sf_stk_{uid}, ptr %sf_elem_{uid})\n" sb::append -> o
-	// Copy full stack element (16 bytes with type tag) into struct field
+	// Store the raw 8-byte value into the struct field
+	o $"  %sf_vp_{uid} = getelementptr %qd_stack_element_t, ptr %sf_elem_{uid}, i32 0, i32 0\n" sb::append -> o
+	o $"  %sf_val_{uid} = load i64, ptr %sf_vp_{uid}\n" sb::append -> o
 	o $"  %sf_off_{uid} = load i64, ptr @__offset_{fname}\n" sb::append -> o
 	o $"  %sf_fp_{uid} = getelementptr i8, ptr %sp_{suid}, i64 %sf_off_{uid}\n" sb::append -> o
-	o $"  call void @llvm.memcpy.p0.p0.i64(ptr %sf_fp_{uid}, ptr %sf_elem_{uid}, i64 16, i1 false)\n" sb::append -> o
+	o $"  store i64 %sf_val_{uid}, ptr %sf_fp_{uid}\n" sb::append -> o
+	// Retain reference-counted values (strings and struct pointers)
+	loc fname lookup_field_type -> sftype
+	sftype "str" strings::compare 0 == if {
+		o $"  %sf_sptr_{uid} = inttoptr i64 %sf_val_{uid} to ptr\n" sb::append -> o
+		o $"  call void @qd_string_retain(ptr %sf_sptr_{uid})\n" sb::append -> o
+	}
+	sftype "ptr" strings::compare 0 == sftype "*" strings::starts_with or if {
+		o $"  %sf_pptr_{uid} = inttoptr i64 %sf_val_{uid} to ptr\n" sb::append -> o
+		o $"  call void @qd_ptr_retain(ptr %sf_pptr_{uid})\n" sb::append -> o
+	}
 	o st.code
 	st
 }
@@ -1082,7 +1179,7 @@ fn emit_top_level(s:ptr node:ptr consts:str prefix:str -- s2:ptr) {
 			g sb::build ocheck1 strings::contains 0 == if {
 				g $"{ocheck1} = private constant i64 {offset}\n" sb::append -> g
 			}
-			offset 16 + -> offset
+			offset 8 + -> offset
 		}
 		n @child2 null neq if {
 			n @child2 @ntext -> fn2
@@ -1090,7 +1187,7 @@ fn emit_top_level(s:ptr node:ptr consts:str prefix:str -- s2:ptr) {
 			g sb::build ocheck2 strings::contains 0 == if {
 				g $"{ocheck2} = private constant i64 {offset}\n" sb::append -> g
 			}
-			offset 16 + -> offset
+			offset 8 + -> offset
 		}
 		n @child3 null neq if {
 			n @child3 @ntext -> fn3
@@ -1098,7 +1195,7 @@ fn emit_top_level(s:ptr node:ptr consts:str prefix:str -- s2:ptr) {
 			g sb::build ocheck3 strings::contains 0 == if {
 				g $"{ocheck3} = private constant i64 {offset}\n" sb::append -> g
 			}
-			offset 16 + -> offset
+			offset 8 + -> offset
 		}
 		n @child4 null neq if {
 			n @child4 @ntext -> fn4
@@ -1106,7 +1203,7 @@ fn emit_top_level(s:ptr node:ptr consts:str prefix:str -- s2:ptr) {
 			g sb::build ocheck4 strings::contains 0 == if {
 				g $"{ocheck4} = private constant i64 {offset}\n" sb::append -> g
 			}
-			offset 16 + -> offset
+			offset 8 + -> offset
 		}
 		// Extra fields
 		n @extra -> cur
@@ -1116,7 +1213,7 @@ fn emit_top_level(s:ptr node:ptr consts:str prefix:str -- s2:ptr) {
 			g sb::build ocheckx strings::contains 0 == if {
 				g $"{ocheckx} = private constant i64 {offset}\n" sb::append -> g
 			}
-			offset 16 + -> offset
+			offset 8 + -> offset
 			cur @sibling -> cur
 			cur null neq
 		}
@@ -1281,6 +1378,9 @@ pub fn generate_full(prog:ptr merged_files:ptr module_declares:str -- ir:str) {
 	o "declare i32 @qd_push_f(ptr, double)\n" sb::append -> o
 	o "declare i32 @qd_push_s(ptr, ptr)\n" sb::append -> o
 	o "declare i32 @qd_push_p(ptr, ptr)\n" sb::append -> o
+	o "declare i32 @qd_push_s_ref(ptr, ptr)\n" sb::append -> o
+	o "declare void @qd_string_retain(ptr)\n" sb::append -> o
+	o "declare void @qd_ptr_retain(ptr)\n" sb::append -> o
 	o "declare i32 @qd_print(ptr)\n" sb::append -> o
 	o "declare i32 @qd_nl(ptr)\n" sb::append -> o
 	o "declare i32 @qd_add(ptr)\n" sb::append -> o
@@ -1319,7 +1419,7 @@ pub fn generate_full(prog:ptr merged_files:ptr module_declares:str -- ir:str) {
 	o "declare ptr @qd_struct_alloc(i64, ptr)\n\n" sb::append -> o
 	o st.code
 
-	// Pre-pass: collect all constants from main and merged files
+	// Pre-pass: collect all constants and field types from main and merged files
 	root sb::new collect_constants -> cbuf
 	merged -> miter
 	miter null neq while {
@@ -1327,6 +1427,15 @@ pub fn generate_full(prog:ptr merged_files:ptr module_declares:str -- ir:str) {
 		miter @sibling -> miter
 		miter null neq
 	}
+	// Also collect struct field types (stored as !@fieldname=typename!)
+	root cbuf collect_field_types -> cbuf
+	merged -> miter2
+	miter2 null neq while {
+		miter2 cbuf collect_field_types -> cbuf
+		miter2 @sibling -> miter2
+		miter2 null neq
+	}
+	cbuf "!" sb::append -> cbuf  // terminator
 	cbuf sb::finish -> all_consts
 
 	// Top-level declarations (main file uses "usr_main_" prefix)

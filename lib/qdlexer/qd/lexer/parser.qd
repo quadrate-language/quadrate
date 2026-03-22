@@ -691,6 +691,24 @@ fn (p:Parser) parse_atom( -- n:ptr) {
 	p cur_kind -> k
 
 	// Literals
+	// Negative literal: - followed by number
+	k lexer::TokenType::Minus == if {
+		p cur_line -> l  p cur_col -> c
+		p advance
+		p cur_kind lexer::TokenType::Integer == if {
+			"-" p cur_text strings::concat -> nt
+			p advance
+			ast::NodeType::IntLit nt l c ast::leaf return
+		}
+		p cur_kind lexer::TokenType::Float == if {
+			"-" p cur_text strings::concat -> nt
+			p advance
+			ast::NodeType::FloatLit nt l c ast::leaf return
+		}
+		// Just a minus operator
+		ast::NodeType::Instruction "-" l c ast::leaf return
+	}
+
 	k lexer::TokenType::Integer == if {
 		p cur_text -> t  p cur_line -> l  p cur_col -> c
 		p advance

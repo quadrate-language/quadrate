@@ -255,6 +255,32 @@ docs:
 	@echo "Documentation built successfully!"
 	@echo "To serve locally: cd docs && mkdocs serve"
 
+# Bootstrap: compile the self-hosted compiler from its portable LLVM IR
+bootstrap: debug
+	@echo "=========================================="
+	@echo "  Building bootstrap compiler from IR"
+	@echo "=========================================="
+	@bash bootstrap/build.sh dist/bin/quadc-bootstrap
+
+# Verify the bootstrap: 3-stage build with fixed-point check
+bootstrap-verify: debug
+	@echo "=========================================="
+	@echo "  Verifying 3-stage bootstrap"
+	@echo "=========================================="
+	@bash bootstrap/verify.sh
+
+# Regenerate bootstrap/quadc.ll from the self-hosted compiler source
+bootstrap-update: debug
+	@echo "=========================================="
+	@echo "  Regenerating bootstrap IR"
+	@echo "=========================================="
+	@QUADRATE_LIBDIR=dist/lib QUADRATE_ROOT=dist/share/quadrate \
+		QUADC_INPUT=lib/qdlexer/qd/lexer/quadc.qd \
+		QUADC_OUTPUT=/dev/null \
+		dist/bin/quadc lib/qdlexer/qd/lexer/quadc.qd -r 2>/dev/null
+	@cp /tmp/quadc_output.ll bootstrap/quadc.ll
+	@echo "Updated bootstrap/quadc.ll ($$(wc -l < bootstrap/quadc.ll) lines)"
+
 clean:
 	rm -rf build
 	rm -rf dist
