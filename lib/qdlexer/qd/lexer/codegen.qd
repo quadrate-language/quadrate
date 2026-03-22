@@ -806,8 +806,12 @@ fn emit_struct_field(s:ptr field:ptr struct_uid:str struct_name:str locals:str -
 	o $"  %sf_off_{uid} = load i64, ptr @__offset_{fname}\n" sb::append -> o
 	o $"  %sf_fp_{uid} = getelementptr i8, ptr %sp_{suid}, i64 %sf_off_{uid}\n" sb::append -> o
 	o $"  store i64 %sf_val_{uid}, ptr %sf_fp_{uid}\n" sb::append -> o
-	// Note: No retain calls here — the stack pop already handles ownership transfer.
-	// The raw i64 value is stored directly into the struct field.
+	// Retain reference-counted string values stored in struct fields
+	loc fname lookup_field_type -> sftype
+	sftype "str" strings::compare 0 == if {
+		o $"  %sf_sptr_{uid} = inttoptr i64 %sf_val_{uid} to ptr\n" sb::append -> o
+		o $"  call void @qd_string_retain(ptr %sf_sptr_{uid})\n" sb::append -> o
+	}
 	o st.code
 	st
 }
@@ -1362,7 +1366,7 @@ fn emit_main_entry(s:ptr -- s2:ptr) {
 	st @code -> o
 	o "define i32 @main(i32 %argc, ptr %argv) {\n" sb::append -> o
 	o "entry:\n" sb::append -> o
-	o "  %ctx = call ptr @qd_create_context(i64 1024)\n" sb::append -> o
+	o "  %ctx = call ptr @qd_create_context(i64 10485760)\n" sb::append -> o
 	o "  call i32 @usr_main_main(ptr %ctx)\n" sb::append -> o
 	o "  call void @qd_free_context(ptr %ctx)\n" sb::append -> o
 	o "  ret i32 0\n" sb::append -> o

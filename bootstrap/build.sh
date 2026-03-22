@@ -7,6 +7,7 @@
 # Requires: clang, Quadrate runtime libraries in dist/lib/
 
 set -e
+ulimit -s unlimited 2>/dev/null || true
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 PROJECT_DIR="$(dirname "$SCRIPT_DIR")"
