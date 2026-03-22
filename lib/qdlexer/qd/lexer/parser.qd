@@ -821,29 +821,36 @@ fn (p:Parser) parse_atom( -- n:ptr) {
 				ast::NodeType::StructConstruct name l c ast::make_node -> sc
 				p advance  // skip {
 				p cur_kind lexer::TokenType::RBrace neq p cur_kind lexer::TokenType::Eof neq and while {
-					// Expect: fieldname = value_expr...
+					// Parse: fieldname = value_expr value_expr ...
+					// First token is the field name
 					p cur_text -> fname2
 					p cur_line -> fl
 					p cur_col -> fc
-					p advance
+					p advance  // consume field name
 					ast::NodeType::StructField fname2 fl fc ast::make_node -> finit
 					p cur_kind lexer::TokenType::Assign == if {
 						p advance  // skip =
-						// Parse value expressions until next field (ident + =) or }
-						p cur_kind lexer::TokenType::RBrace neq p cur_kind lexer::TokenType::Eof neq and while {
+						// Parse value atoms until next "ident =" or "}"
+						p cur_kind lexer::TokenType::RBrace neq
+						p cur_kind lexer::TokenType::Eof neq and while {
 							p parse_atom -> val_atom
-							finit val_atom ast::add_child
-							// Stop if next is } or if next is ident whose successor is =
-							// Simple heuristic: stop after each atom, let outer loop re-check
-							p cur_kind lexer::TokenType::RBrace == if { 0 } else {
-								// Check if current token is an ident that could be next field name
-								p cur_kind lexer::TokenType::Ident == if {
-									0  // could be next field or more value — stop conservatively
-								} else {
-									// Continue parsing value (operators, literals, etc.)
-									p cur_kind lexer::TokenType::RBrace neq p cur_kind lexer::TokenType::Eof neq and
-								}
+							// After parse_atom, check if current token is '='
+							// If so, the atom we just parsed was actually the next field name
+							p cur_kind lexer::TokenType::Assign == if {
+								// The last atom is a field name, not a value
+								// Don't add it as a child of current field
+								// Instead, create a new StructField from it
+								sc finit ast::add_child
+								val_atom @ntext -> fname2
+								val_atom @nline -> fl
+								val_atom @ncol -> fc
+								ast::NodeType::StructField fname2 fl fc ast::make_node -> finit
+								p advance  // skip =
+							} else {
+								finit val_atom ast::add_child
 							}
+							p cur_kind lexer::TokenType::RBrace neq
+							p cur_kind lexer::TokenType::Eof neq and
 						}
 					}
 					sc finit ast::add_child

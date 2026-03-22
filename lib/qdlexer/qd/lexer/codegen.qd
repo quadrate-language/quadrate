@@ -1,6 +1,7 @@
 /// Textual LLVM IR emitter for Quadrate.
 /// Walks the AST and produces .ll text that can be compiled with llc + clang.
 use strings
+use strconv
 use sb
 use "ast.qd"
 
@@ -39,10 +40,55 @@ fn add_string(s:ptr text:str -- s2:ptr name:str) {
 		}
 	}
 
+	// Process escape sequences: \n → \0A, \t → \09, etc. for LLVM IR
+	sb::new -> esc
+	0 -> real_bytes
+	0 -> ei
+	content strings::len -> clen
+	ei clen < while {
+		content ei strings::char_at! -> ch
+		0 -> did_escape
+		ch 92 == if {
+			ei 1 + clen < if {
+				content ei 1 + strings::char_at! -> ech
+				ech 110 == if { esc "\\0A" sb::append -> esc  1 -> did_escape }
+				ech 116 == did_escape 0 == and if { esc "\\09" sb::append -> esc  1 -> did_escape }
+				ech 114 == did_escape 0 == and if { esc "\\0D" sb::append -> esc  1 -> did_escape }
+				ech 92 == did_escape 0 == and if { esc "\\5C" sb::append -> esc  1 -> did_escape }
+				ech 34 == did_escape 0 == and if { esc "\\22" sb::append -> esc  1 -> did_escape }
+				ech 48 == did_escape 0 == and if { esc "\\00" sb::append -> esc  1 -> did_escape }
+				ech 101 == did_escape 0 == and if { esc "\\1B" sb::append -> esc  1 -> did_escape }
+				did_escape if {
+					real_bytes 1 + -> real_bytes
+					ei 2 + -> ei
+				} else {
+					esc "\\5C" sb::append -> esc
+					real_bytes 1 + -> real_bytes
+					ei 1 + -> ei
+				}
+			} else {
+				esc "\\5C" sb::append -> esc
+				real_bytes 1 + -> real_bytes
+				ei 1 + -> ei
+			}
+		} else {
+			esc ch sb::append_char -> esc
+			real_bytes 1 + -> real_bytes
+			ei 1 + -> ei
+		}
+		ei clen <
+	}
+	esc sb::finish -> escaped
+	real_bytes 1 + -> arr_size  // +1 for null terminator
+
 	// Emit global: @.str.N = private unnamed_addr constant [len+1 x i8] c"...\00"
-	content strings::len 1 + -> clen
 	st @globals -> g
-	g $"{sname} = private unnamed_addr constant [{clen} x i8] c\"{content}\\00\"\n" sb::append -> g
+	g sname sb::append -> g
+	g " = private unnamed_addr constant [" sb::append -> g
+	g arr_size sb::append_int -> g
+	g " x i8] c\"" sb::append -> g
+	g escaped sb::append -> g
+	g "\\00\"\n" sb::append -> g
 	g st.globals
 
 	st sname
@@ -93,16 +139,41 @@ fn is_local(locals:str name:str -- result:i64) {
 	ls needle strings::contains
 }
 
+// Extract function prefix from the locals string (stored as "~prefix!" in loc)
+fn get_prefix(locals:str -- prefix:str) {
+	-> ls
+	ls "~" strings::index_of -> idx
+	idx 0 >= if {
+		idx 1 + -> pstart
+		// Find end of prefix (next ! or end)
+		pstart -> pend
+		ls strings::len -> lslen
+		pend lslen < while {
+			ls pend strings::char_at! 33 == if { break }
+			pend 1 + -> pend
+			pend lslen <
+		}
+		ls pstart pend pstart - strings::substring!
+	} else {
+		"usr_main_"
+	}
+}
+
 // Collect UNIQUE local names from AST and emit allocas.
 // Uses collect_locals to get all names (with duplicates), then deduplicates.
-fn emit_unique_allocas(s:ptr body:ptr -- s2:ptr) {
-	-> bnode -> st
+// skip_name: if non-empty, skip this name (already allocated, e.g. receiver)
+fn emit_unique_allocas(s:ptr body:ptr skip_name:str -- s2:ptr) {
+	-> skip -> bnode -> st
 	bnode null == if { st return }
 	bnode sb::new collect_locals sb::finish -> all_locals
 	all_locals strings::len 2 < if { st return }
 	// all_locals is ",x,y,x,z," format — deduplicate
 	st @code -> o
+	// Pre-seed seen with skip_name if provided
 	"" -> seen
+	skip strings::len 0 > if {
+		$",{skip}," -> seen
+	}
 	// Walk each name between commas (skip leading comma)
 	1 -> pos
 	all_locals strings::len -> alen
@@ -129,6 +200,74 @@ fn emit_unique_allocas(s:ptr body:ptr -- s2:ptr) {
 	st
 }
 
+// Collect all constants from a program AST into a registry string.
+// Format: "!name=value!name2=value2!" (! delimited, = separates name from value)
+pub fn collect_constants(node:ptr buf:ptr -- buf2:ptr) {
+	-> out -> n
+	n null == if { out return }
+	n @nkind ast::NodeType::ConstDecl == if {
+		n @child1 null neq if {
+			n @ntext -> cname
+			n @child1 @ntext -> cval
+			// Convert hex to decimal
+			n @child1 @nkind ast::NodeType::IntLit == if {
+				cval strings::len 2 > if {
+					cval 0 strings::char_at! 48 == if {
+						cval 1 strings::char_at! -> xc
+						xc 120 == xc 88 == or if {
+							cval 16 strconv::parse_int! -> hv
+							sb::new -> hb
+							hb hv sb::append_int -> hb
+							hb sb::finish -> cval
+						}
+					}
+				}
+			}
+			out "!" sb::append -> out
+			out cname sb::append -> out
+			out "=" sb::append -> out
+			out cval sb::append -> out
+		}
+	}
+	// Recurse into children
+	n @child1 null neq if { n @child1 out collect_constants -> out }
+	n @child2 null neq if { n @child2 out collect_constants -> out }
+	n @child3 null neq if { n @child3 out collect_constants -> out }
+	n @child4 null neq if { n @child4 out collect_constants -> out }
+	n @extra -> cur
+	cur null neq while {
+		cur out collect_constants -> out
+		cur @sibling -> cur
+		cur null neq
+	}
+	out
+}
+
+// Look up a constant by name in the constants registry.
+// Returns the value string, or "" if not found.
+fn lookup_constant(consts:str name:str -- val:str) {
+	-> n -> cs
+	cs strings::len 0 == if { "" return }
+	// Search for !name= pattern
+	sb::new -> nb
+	nb "!" sb::append -> nb
+	nb n sb::append -> nb
+	nb "=" sb::append -> nb
+	nb sb::finish -> needle
+	cs needle strings::index_of -> idx
+	idx 0 < if { "" return }
+	// Found — extract value (from after = to next ! or end)
+	idx needle strings::len + -> vstart
+	vstart -> vend
+	cs strings::len -> cslen
+	vend cslen < while {
+		cs vend strings::char_at! 33 == if { break }
+		vend 1 + -> vend
+		vend cslen <
+	}
+	cs vstart vend vstart - strings::substring!
+}
+
 // Emit a single AST node
 fn emit_node(s:ptr node:ptr locals:str -- s2:ptr) {
 	-> loc -> n -> st
@@ -140,6 +279,18 @@ fn emit_node(s:ptr node:ptr locals:str -- s2:ptr) {
 	k ast::NodeType::IntLit == if {
 		o "  call i32 @qd_push_i(ptr %ctx, i64 " sb::append -> o
 		n @ntext -> val
+		// Convert hex literals (0x...) to decimal for LLVM IR
+		val strings::len 2 > if {
+			val 0 strings::char_at! 48 == if {
+				val 1 strings::char_at! -> xch
+				xch 120 == xch 88 == or if {
+					val 16 strconv::parse_int! -> hexval
+					sb::new -> hb
+					hb hexval sb::append_int -> hb
+					hb sb::finish -> val
+				}
+			}
+		}
 		val "true" strings::compare 0 == val "Ok" strings::compare 0 == or if {
 			o "1" sb::append -> o
 		} else {
@@ -191,6 +342,25 @@ fn emit_node(s:ptr node:ptr locals:str -- s2:ptr) {
 		fname "free" strings::compare 0 == if { o "  call i32 @qd_free(ptr %ctx)\n" sb::append -> o  o st.code st return }
 		fname "panic" strings::compare 0 == if { o "  call i32 @qd_panic(ptr %ctx)\n" sb::append -> o  o st.code st return }
 		fname "err" strings::compare 0 == if { o "  call i32 @qd_err(ptr %ctx)\n" sb::append -> o  o st.code st return }
+		fname "and" strings::compare 0 == if { o "  call i32 @qd_and(ptr %ctx)\n" sb::append -> o  o st.code st return }
+		fname "or" strings::compare 0 == if { o "  call i32 @qd_or(ptr %ctx)\n" sb::append -> o  o st.code st return }
+		fname "not" strings::compare 0 == if { o "  call i32 @qd_not(ptr %ctx)\n" sb::append -> o  o st.code st return }
+		fname "neg" strings::compare 0 == if { o "  call i32 @qd_neg(ptr %ctx)\n" sb::append -> o  o st.code st return }
+		fname "tuck" strings::compare 0 == if { o "  call i32 @qd_tuck(ptr %ctx)\n" sb::append -> o  o st.code st return }
+		fname "pick" strings::compare 0 == if { o "  call i32 @qd_pick(ptr %ctx)\n" sb::append -> o  o st.code st return }
+		fname "roll" strings::compare 0 == if { o "  call i32 @qd_roll(ptr %ctx)\n" sb::append -> o  o st.code st return }
+		fname "neq" strings::compare 0 == if { o "  call i32 @qd_neq(ptr %ctx)\n" sb::append -> o  o st.code st return }
+		fname "eq" strings::compare 0 == if { o "  call i32 @qd_eq(ptr %ctx)\n" sb::append -> o  o st.code st return }
+		fname "lt" strings::compare 0 == if { o "  call i32 @qd_lt(ptr %ctx)\n" sb::append -> o  o st.code st return }
+		fname "gt" strings::compare 0 == if { o "  call i32 @qd_gt(ptr %ctx)\n" sb::append -> o  o st.code st return }
+		fname "lte" strings::compare 0 == if { o "  call i32 @qd_lte(ptr %ctx)\n" sb::append -> o  o st.code st return }
+		fname "gte" strings::compare 0 == if { o "  call i32 @qd_gte(ptr %ctx)\n" sb::append -> o  o st.code st return }
+		fname "add" strings::compare 0 == if { o "  call i32 @qd_add(ptr %ctx)\n" sb::append -> o  o st.code st return }
+		fname "sub" strings::compare 0 == if { o "  call i32 @qd_sub(ptr %ctx)\n" sb::append -> o  o st.code st return }
+		fname "mul" strings::compare 0 == if { o "  call i32 @qd_mul(ptr %ctx)\n" sb::append -> o  o st.code st return }
+		fname "div" strings::compare 0 == if { o "  call i32 @qd_div(ptr %ctx)\n" sb::append -> o  o st.code st return }
+		fname "mod" strings::compare 0 == if { o "  call i32 @qd_mod(ptr %ctx)\n" sb::append -> o  o st.code st return }
+		fname "cast" strings::compare 0 == if { o st.code st return }  // no-op at runtime
 		// Check if it looks like a local variable (lowercase first char, not a known builtin)
 		// Emit: load value from alloca and push onto runtime stack
 		// This relies on the variable being previously declared with -> name
@@ -205,13 +375,24 @@ fn emit_node(s:ptr node:ptr locals:str -- s2:ptr) {
 			o st.code
 			st return
 		}
-		// Function call
-		o $"  call i32 @usr_main_{fname}(ptr %ctx)\n" sb::append -> o
+		// Check if it's a constant (lookup in the constants registry embedded in loc)
+		loc fname lookup_constant -> cval
+		cval strings::len 0 > if {
+			o $"  call i32 @qd_push_i(ptr %ctx, i64 {cval})\n" sb::append -> o
+			o st.code
+			st return
+		}
+		// Function call (use current module prefix)
+		loc get_prefix -> cur_pfx
+		o "  call i32 @" sb::append -> o
+		o cur_pfx sb::append -> o
+		o fname sb::append -> o
+		o "(ptr %ctx)\n" sb::append -> o
 		o st.code
 		st return
 	}
 
-	// Scoped identifier (module::func or Enum::Variant)
+	// Scoped identifier (module::func or Enum::Variant or module::Constant)
 	k ast::NodeType::ScopedIdent == if {
 		n @ntext -> scope
 		n @child1 @ntext -> member
@@ -223,6 +404,24 @@ fn emit_node(s:ptr node:ptr locals:str -- s2:ptr) {
 			st @code -> o
 			o $"  %ev_{uid} = load i64, ptr @__enum_{scope}_{member}\n" sb::append -> o
 			o $"  call i32 @qd_push_i(ptr %ctx, i64 %ev_{uid})\n" sb::append -> o
+			o st.code
+			st return
+		}
+		// Check if member starts with uppercase (module constant like io::ErrNotFound)
+		member 0 strings::char_at! -> mc
+		mc 65 >= mc 90 <= and if {
+			// Module constant — load from global
+			st next_label -> uid -> st
+			st @code -> o
+			o $"  %mc_{uid} = load i64, ptr @__const_{scope}_{member}\n" sb::append -> o
+			o $"  call i32 @qd_push_i(ptr %ctx, i64 %mc_{uid})\n" sb::append -> o
+			o st.code
+			st return
+		}
+		// Check if member is a constant (look up in constants registry embedded in loc)
+		loc member lookup_constant -> scval
+		scval strings::len 0 > if {
+			o $"  call i32 @qd_push_i(ptr %ctx, i64 {scval})\n" sb::append -> o
 			o st.code
 			st return
 		}
@@ -272,6 +471,14 @@ fn emit_node(s:ptr node:ptr locals:str -- s2:ptr) {
 		op ">" strings::compare 0 == op "gt" strings::compare 0 == or if { o "  call i32 @qd_gt(ptr %ctx)\n" sb::append -> o  o st.code st return }
 		op "<=" strings::compare 0 == op "lte" strings::compare 0 == or if { o "  call i32 @qd_lte(ptr %ctx)\n" sb::append -> o  o st.code st return }
 		op ">=" strings::compare 0 == op "gte" strings::compare 0 == or if { o "  call i32 @qd_gte(ptr %ctx)\n" sb::append -> o  o st.code st return }
+		op "and" strings::compare 0 == if { o "  call i32 @qd_and(ptr %ctx)\n" sb::append -> o  o st.code st return }
+		op "or" strings::compare 0 == if { o "  call i32 @qd_or(ptr %ctx)\n" sb::append -> o  o st.code st return }
+		op "not" strings::compare 0 == if { o "  call i32 @qd_not(ptr %ctx)\n" sb::append -> o  o st.code st return }
+		op "neg" strings::compare 0 == if { o "  call i32 @qd_neg(ptr %ctx)\n" sb::append -> o  o st.code st return }
+		op "tuck" strings::compare 0 == if { o "  call i32 @qd_tuck(ptr %ctx)\n" sb::append -> o  o st.code st return }
+		op "pick" strings::compare 0 == if { o "  call i32 @qd_pick(ptr %ctx)\n" sb::append -> o  o st.code st return }
+		op "roll" strings::compare 0 == if { o "  call i32 @qd_roll(ptr %ctx)\n" sb::append -> o  o st.code st return }
+		op "cast" strings::compare 0 == if { o st.code st return }  // cast is a no-op at runtime
 		o "  ; TODO: instruction " sb::append -> o
 		o op sb::append -> o
 		o "\n" sb::append -> o
@@ -331,14 +538,49 @@ fn emit_node(s:ptr node:ptr locals:str -- s2:ptr) {
 
 	// Break statement
 	k ast::NodeType::BreakStmt == if {
-		o "  br label %loop_exit\n" sb::append -> o
+		// Extract current loop exit label from loc (#exit=LABEL) — use last for nesting
+		loc "#exit=" strings::last_index_of -> bei
+		"loop_exit" -> brk_lbl
+		bei 0 >= if {
+			bei 6 + -> bes
+			bes -> bee
+			loc strings::len -> bll
+			bee bll < while {
+				loc bee strings::char_at! 35 == if { break }  // stop at next #
+				loc bee strings::char_at! 33 == if { break }  // stop at !
+				loc bee strings::char_at! 126 == if { break } // stop at ~
+				bee 1 + -> bee
+				bee bll <
+			}
+			loc bes bee bes - strings::substring! -> brk_lbl
+		}
+		o "  br label %" sb::append -> o
+		o brk_lbl sb::append -> o
+		o "\n" sb::append -> o
 		o st.code
 		st return
 	}
 
 	// Continue statement
 	k ast::NodeType::ContinueStmt == if {
-		o "  br label %loop_cond\n" sb::append -> o
+		loc "#cond=" strings::last_index_of -> cei
+		"loop_cond" -> cont_lbl
+		cei 0 >= if {
+			cei 6 + -> ces
+			ces -> cee
+			loc strings::len -> cll
+			cee cll < while {
+				loc cee strings::char_at! 35 == if { break }
+				loc cee strings::char_at! 33 == if { break }
+				loc cee strings::char_at! 126 == if { break }
+				cee 1 + -> cee
+				cee cll <
+			}
+			loc ces cee ces - strings::substring! -> cont_lbl
+		}
+		o "  br label %" sb::append -> o
+		o cont_lbl sb::append -> o
+		o "\n" sb::append -> o
 		o st.code
 		st return
 	}
@@ -515,9 +757,12 @@ fn emit_if(s:ptr node:ptr locals:str -- s2:ptr) {
 fn emit_while(s:ptr node:ptr locals:str -- s2:ptr) {
 	-> loc -> n -> st
 	st next_label -> uid -> st
-	st next_label -> cond_label -> st
 	st next_label -> body_label -> st
 	st next_label -> exit_label -> st
+	st next_label -> cond_label -> st
+
+	// Push loop labels into loc for break/continue
+	loc $"#exit={exit_label}#cond={cond_label}" strings::concat -> loop_loc
 
 	st @code -> o
 	// Pop initial condition (already on stack from before 'while')
@@ -527,9 +772,12 @@ fn emit_while(s:ptr node:ptr locals:str -- s2:ptr) {
 
 	// Body
 	o $"{body_label}:\n" sb::append -> o  o st.code
-	st n @child1 loc emit_block -> st
+	st n @child1 loop_loc emit_block -> st
 
 	// After body, pop new condition and loop back
+	st @code -> o
+	o $"  br label %{cond_label}\n" sb::append -> o
+	o $"{cond_label}:\n" sb::append -> o
 	st next_label -> uid2 -> st
 	st uid2 emit_pop_cond -> st
 	st @code -> o
@@ -545,11 +793,14 @@ fn emit_loop(s:ptr node:ptr locals:str -- s2:ptr) {
 	st next_label -> body_label -> st
 	st next_label -> exit_label -> st
 
+	// Push loop labels into loc for break/continue
+	loc $"#exit={exit_label}#cond={body_label}" strings::concat -> loop_loc
+
 	st @code -> o
 	o $"  br label %{body_label}\n" sb::append -> o
 	o $"{body_label}:\n" sb::append -> o  o st.code
 
-	st n @child1 loc emit_block -> st
+	st n @child1 loop_loc emit_block -> st
 
 	st @code -> o
 	o $"  br label %{body_label}\n" sb::append -> o
@@ -644,10 +895,13 @@ fn emit_one_case(s:ptr case_node:ptr exit:str sw_uid:str locals:str -- s2:ptr) {
 fn emit_for(s:ptr node:ptr locals:str -- s2:ptr) {
 	-> loc -> n -> st
 	st next_label -> uid -> st
-	st next_label -> cond_label -> st
 	st next_label -> body_label -> st
 	st next_label -> exit_label -> st
+	st next_label -> cond_label -> st
 	n @ntext -> iter_var
+
+	// Push loop labels into loc for break/continue
+	loc $"#exit={exit_label}#cond={cond_label}" strings::concat -> loop_loc
 
 	st @code -> o
 	// Pop step, end, start from stack
@@ -678,7 +932,7 @@ fn emit_for(s:ptr node:ptr locals:str -- s2:ptr) {
 
 	// Body
 	o $"{body_label}:\n" sb::append -> o  o st.code
-	st n @child1 loc emit_block -> st
+	st n @child1 loop_loc emit_block -> st
 	st @code -> o
 
 	// Increment: i += step
@@ -710,24 +964,47 @@ fn emit_block(s:ptr block:ptr locals:str -- s2:ptr) {
 }
 
 // Emit a user function
-fn emit_function(s:ptr name:str body:ptr -- s2:ptr) {
-	-> body_node -> fname -> st
+// recv: receiver variable name (e.g., "p"), or "" for non-method functions
+// consts: constants registry string (from collect_constants)
+fn emit_function(s:ptr name:str body:ptr recv:str consts:str prefix:str -- s2:ptr) {
+	-> pfx -> cstr -> recv_name -> body_node -> fname -> st
 
 	// Collect local variable names from function body
+	// Append constants string so emit_node can resolve constants
 	"" -> loc
 	body_node null neq if {
 		body_node sb::new collect_locals -> locals_buf
 		locals_buf sb::finish -> loc
 	}
+	// Store prefix first (before constants to avoid contamination)
+	loc "~" strings::concat pfx strings::concat -> loc
+
+	// Append constants to locals for threading through to emit_node
+	loc cstr strings::concat "!" strings::concat -> loc
+
+	// Add receiver to locals string so is_local recognizes it
+	recv_name strings::len 0 > if {
+		loc "," strings::concat recv_name strings::concat "," strings::concat -> loc
+	}
 
 	st @code -> o
-	o "define i32 @usr_main_" sb::append -> o
+	o "define i32 @" sb::append -> o
+	o pfx sb::append -> o
 	o fname sb::append -> o
 	o "(ptr %ctx) {\n" sb::append -> o
 	o "entry:\n" sb::append -> o
+	// Emit receiver alloca + pop if this is a method
+	recv_name strings::len 0 > if {
+		o $"  %local.{recv_name} = alloca %qd_stack_element_t\n" sb::append -> o
+		st next_label -> ruid -> st
+		o $"  %rstp_{ruid} = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0\n" sb::append -> o
+		o $"  %rstk_{ruid} = load ptr, ptr %rstp_{ruid}\n" sb::append -> o
+		o $"  call void @qd_stack_pop(ptr %rstk_{ruid}, ptr %local.{recv_name})\n" sb::append -> o
+	}
 	o st.code
 	// Pre-allocate all unique local variables at function entry
-	st body_node emit_unique_allocas -> st
+	// Skip receiver name to avoid duplicate alloca
+	st body_node recv_name emit_unique_allocas -> st
 	body_node null neq if { st body_node loc emit_block -> st }
 	st @code -> o
 	o "  br label %return\n" sb::append -> o
@@ -739,23 +1016,24 @@ fn emit_function(s:ptr name:str body:ptr -- s2:ptr) {
 }
 
 // Emit a top-level declaration
-fn emit_top_level(s:ptr node:ptr -- s2:ptr) {
-	-> n -> st
+fn emit_top_level(s:ptr node:ptr consts:str prefix:str -- s2:ptr) {
+	-> pfx -> cstr -> n -> st
 	n null == if { st return }
 	n @nkind -> k
 	k ast::NodeType::FnDecl == if {
 		n @ntext -> fname
+		"" -> recv_var
 		// Check for method receiver — adjust function name to include receiver type
 		// Receiver is child3 or child4 (depends on metadata presence)
 		// Receiver Param node has ntext like "l:Lexer"
 		n @child3 null neq if {
 			n @child3 @nkind ast::NodeType::Param == if {
 				n @child3 @ntext -> recv_text
-				// Extract type from "name:Type" — find ":" and take after it
 				recv_text ":" strings::index_of -> colon_pos
 				colon_pos 0 >= if {
 					recv_text colon_pos 1 + recv_text strings::len colon_pos 1 + - strings::substring! -> recv_type
 					recv_type "_" strings::concat fname strings::concat -> fname
+					recv_text 0 colon_pos strings::substring! -> recv_var
 				}
 			}
 		}
@@ -766,10 +1044,25 @@ fn emit_top_level(s:ptr node:ptr -- s2:ptr) {
 				colon_pos2 0 >= if {
 					recv_text2 colon_pos2 1 + recv_text2 strings::len colon_pos2 1 + - strings::substring! -> recv_type2
 					recv_type2 "_" strings::concat fname strings::concat -> fname
+					recv_text2 0 colon_pos2 strings::substring! -> recv_var
 				}
 			}
 		}
-		st fname n @child2 emit_function return
+		st fname n @child2 recv_var cstr pfx emit_function -> st
+		// For methods, emit an unqualified wrapper so "c get" resolves
+		recv_var strings::len 0 > if {
+			n @ntext -> orig_name
+			st @code -> o
+			o "define i32 @" sb::append -> o
+			o pfx sb::append -> o
+			o orig_name sb::append -> o
+			o "(ptr %ctx) {\n  %r = tail call i32 @" sb::append -> o
+			o pfx sb::append -> o
+			o fname sb::append -> o
+			o "(ptr %ctx)\n  ret i32 %r\n}\n" sb::append -> o
+			o st.code
+		}
+		st return
 	}
 	// Struct declaration — emit field offset globals and size constant
 	k ast::NodeType::StructDecl == if {
@@ -848,6 +1141,34 @@ fn emit_top_level(s:ptr node:ptr -- s2:ptr) {
 		st return
 	}
 
+	// Constant declaration: const Name = value
+	k ast::NodeType::ConstDecl == if {
+		n @ntext -> cname
+		n @child1 null neq if {
+			n @child1 @ntext -> cval
+			// Convert hex values to decimal
+			cval -> cval_dec
+			n @child1 @nkind ast::NodeType::IntLit == if {
+				cval strings::len 2 > if {
+					cval 0 strings::char_at! 48 == if {
+						cval 1 strings::char_at! -> xch
+						xch 120 == xch 88 == or if {
+							cval 16 strconv::parse_int! -> hv
+							sb::new -> hvb
+							hvb hv sb::append_int -> hvb
+							hvb sb::finish -> cval_dec
+						}
+					}
+				}
+			}
+			// Constants are collected by collect_constants pre-pass and
+			// inlined at usage site via the constants string
+		}
+		st return
+	}
+	// UseStmt — skip (handled by driver)
+	k ast::NodeType::UseStmt == if { st return }
+
 	st @code -> o
 	o "; skipped: " sb::append -> o
 	o n @ntext sb::append -> o
@@ -904,17 +1225,17 @@ pub fn emit_module_declares(s:ptr mod_name:str func_names:str -- s2:ptr) {
 }
 
 // Emit declarations and code for a merged .qd file's AST
-pub fn emit_merged_file(s:ptr file_ast:ptr -- s2:ptr) {
-	-> froot -> st
+pub fn emit_merged_file(s:ptr file_ast:ptr consts:str prefix:str -- s2:ptr) {
+	-> pfx -> cstr -> froot -> st
 	froot null == if { st return }
 	// Process all top-level declarations from the merged file
-	froot @child1 null neq if { st froot @child1 emit_top_level -> st }
-	froot @child2 null neq if { st froot @child2 emit_top_level -> st }
-	froot @child3 null neq if { st froot @child3 emit_top_level -> st }
-	froot @child4 null neq if { st froot @child4 emit_top_level -> st }
+	froot @child1 null neq if { st froot @child1 cstr pfx emit_top_level -> st }
+	froot @child2 null neq if { st froot @child2 cstr pfx emit_top_level -> st }
+	froot @child3 null neq if { st froot @child3 cstr pfx emit_top_level -> st }
+	froot @child4 null neq if { st froot @child4 cstr pfx emit_top_level -> st }
 	froot @extra -> cur
 	cur null neq while {
-		st cur emit_top_level -> st
+		st cur cstr pfx emit_top_level -> st
 		cur @sibling -> cur
 		cur null neq
 	}
@@ -962,6 +1283,13 @@ pub fn generate_full(prog:ptr merged_files:ptr module_declares:str -- ir:str) {
 	o "declare i32 @qd_free(ptr)\n" sb::append -> o
 	o "declare i32 @qd_panic(ptr)\n" sb::append -> o
 	o "declare i32 @qd_err(ptr)\n" sb::append -> o
+	o "declare i32 @qd_and(ptr)\n" sb::append -> o
+	o "declare i32 @qd_or(ptr)\n" sb::append -> o
+	o "declare i32 @qd_not(ptr)\n" sb::append -> o
+	o "declare i32 @qd_neg(ptr)\n" sb::append -> o
+	o "declare i32 @qd_tuck(ptr)\n" sb::append -> o
+	o "declare i32 @qd_pick(ptr)\n" sb::append -> o
+	o "declare i32 @qd_roll(ptr)\n" sb::append -> o
 	o "declare void @qd_stack_pop(ptr, ptr)\n" sb::append -> o
 	o "declare i32 @qdrt_push_element(ptr, ptr)\n" sb::append -> o
 	o "declare void @qd_push_call(ptr, ptr, ptr, i64)\n" sb::append -> o
@@ -970,21 +1298,35 @@ pub fn generate_full(prog:ptr merged_files:ptr module_declares:str -- ir:str) {
 	o "declare ptr @qd_struct_alloc(i64, ptr)\n\n" sb::append -> o
 	o st.code
 
-	// Top-level declarations
-	root @child1 null neq if { st root @child1 emit_top_level -> st }
-	root @child2 null neq if { st root @child2 emit_top_level -> st }
-	root @child3 null neq if { st root @child3 emit_top_level -> st }
-	root @child4 null neq if { st root @child4 emit_top_level -> st }
+	// Pre-pass: collect all constants from main and merged files
+	root sb::new collect_constants -> cbuf
+	merged -> miter
+	miter null neq while {
+		miter cbuf collect_constants -> cbuf
+		miter @sibling -> miter
+		miter null neq
+	}
+	cbuf sb::finish -> all_consts
+
+	// Top-level declarations (main file uses "usr_main_" prefix)
+	"usr_main_" -> main_pfx
+	root @child1 null neq if { st root @child1 all_consts main_pfx emit_top_level -> st }
+	root @child2 null neq if { st root @child2 all_consts main_pfx emit_top_level -> st }
+	root @child3 null neq if { st root @child3 all_consts main_pfx emit_top_level -> st }
+	root @child4 null neq if { st root @child4 all_consts main_pfx emit_top_level -> st }
 	root @extra -> cur
 	cur null neq while {
-		st cur emit_top_level -> st
+		st cur all_consts main_pfx emit_top_level -> st
 		cur @sibling -> cur
 		cur null neq
 	}
 
 	// Process merged file ASTs
+	// Each merged AST's ntext holds the prefix (set by driver), default to "usr_main_"
 	merged null neq while {
-		st merged emit_merged_file -> st
+		merged @ntext -> mpfx
+		mpfx strings::len 0 == if { "usr_main_" -> mpfx }
+		st merged all_consts mpfx emit_merged_file -> st
 		merged @sibling -> merged
 		merged null neq
 	}

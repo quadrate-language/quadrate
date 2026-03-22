@@ -43,6 +43,124 @@ fn extract_module_funcs(mod_path:str -- funcs:str) {
 	out sb::finish
 }
 
+// Extract ALL function names (both import and non-import) from a module .qd file.
+// Returns comma-separated: "alloc,realloc,free,is_null"
+fn extract_all_funcs(mod_path:str -- funcs:str) {
+	-> mpath
+	mpath io::read_file! -> msource
+
+	sb::new -> out
+	0 -> count
+
+	msource lexer::new -> ml
+	ml lexer::next -> mtok
+	mtok @kind lexer::TokenType::Eof neq while {
+		mtok @kind lexer::TokenType::KwPub == if {
+			ml lexer::next -> mt2
+			mt2 @kind lexer::TokenType::KwFn == if {
+				// Skip receiver if present: fn (recv:Type) name(...)
+				ml lexer::next -> mt3
+				mt3 @kind lexer::TokenType::LParen == if {
+					// Could be receiver — skip until matching )
+					1 -> depth
+					depth 0 > while {
+						ml lexer::next -> mt4
+						mt4 @kind lexer::TokenType::LParen == if { depth 1 + -> depth }
+						mt4 @kind lexer::TokenType::RParen == if { depth 1 - -> depth }
+						depth 0 >
+					}
+					ml lexer::next -> mt3  // now should be the actual function name
+				}
+				mt3 @kind lexer::TokenType::Ident == if {
+					count 0 > if { out "," sb::append -> out }
+					out mt3 @text sb::append -> out
+					count 1 + -> count
+				}
+			}
+		}
+		ml lexer::next -> mtok
+		mtok @kind lexer::TokenType::Eof neq
+	}
+	out sb::finish
+}
+
+// Extract pub const declarations from a module .qd file.
+// Returns semicolon-separated "name=value" pairs: "ErrNotFound=2;ErrPermission=3"
+fn extract_module_consts(mod_path:str -- consts:str) {
+	-> mpath
+	mpath io::read_file! -> msource
+
+	sb::new -> out
+	0 -> count
+
+	msource lexer::new -> ml
+	ml lexer::next -> mtok
+	mtok @kind lexer::TokenType::Eof neq while {
+		mtok @kind lexer::TokenType::KwPub == if {
+			ml lexer::next -> mt2
+			mt2 @kind lexer::TokenType::KwConst == if {
+				ml lexer::next -> mt3
+				mt3 @kind lexer::TokenType::Ident == if {
+					mt3 @text -> cname
+					ml lexer::next -> mt4  // skip =
+					ml lexer::next -> mt5  // value
+					mt5 @kind lexer::TokenType::Eof neq if {
+						count 0 > if { out ";" sb::append -> out }
+						out cname sb::append -> out
+						out "=" sb::append -> out
+						out mt5 @text sb::append -> out
+						count 1 + -> count
+					}
+				}
+			}
+		}
+		ml lexer::next -> mtok
+		mtok @kind lexer::TokenType::Eof neq
+	}
+	out sb::finish
+}
+
+// Emit LLVM globals for module constants
+fn emit_const_globals(mod_name:str consts:str -- decl:str) {
+	-> cs -> mname
+	cs strings::len 0 == if { "" return }
+	sb::new -> out
+	0 -> pos
+	cs strings::len -> cslen
+	pos cslen < while {
+		pos -> end
+		end cslen < while {
+			cs end strings::char_at! 59 == if { break }
+			end 1 + -> end
+			end cslen <
+		}
+		end pos > if {
+			cs pos end pos - strings::substring! -> pair
+			// Split on = to get name and value
+			pair "=" strings::index_of -> eq_pos
+			eq_pos 0 > if {
+				pair 0 eq_pos strings::substring! -> cname
+				pair eq_pos 1 + pair strings::len eq_pos 1 + - strings::substring! -> cval
+				// Check if value is a string (starts with ")
+				cval 0 strings::char_at! 34 == if {
+					// String constant — skip for now (complex)
+				} else {
+					out "@__const_" sb::append -> out
+					out mname sb::append -> out
+					out "_" sb::append -> out
+					out cname sb::append -> out
+					out " = private constant i64 " sb::append -> out
+					out cval sb::append -> out
+					out "\n" sb::append -> out
+				}
+			}
+		}
+		end 1 + -> pos
+		pos cslen <
+	}
+	out sb::finish
+}
+
 // Collect all use-statement module names from program AST.
 // Returns semicolon-separated list: "io;strings;\"file.qd\""
 fn collect_uses(prog:ptr -- uses:str) {
@@ -168,6 +286,70 @@ fn emit_declares(mod_name:str func_names:str -- decl:str) {
 	out sb::finish
 }
 
+// Emit scoped call aliases for a merged file.
+// Scans the AST for FnDecl nodes and emits thin wrappers from
+// usr_<basename>_<func> to usr_main_[RecvType_]<func>
+fn emit_merged_aliases(file_ast:ptr basename:str -- aliases:str) {
+	-> bname -> root
+	sb::new -> out
+
+	// Helper: process one node
+	root @child1 null neq if { root @child1 bname out emit_fn_alias -> out }
+	root @child2 null neq if { root @child2 bname out emit_fn_alias -> out }
+	root @child3 null neq if { root @child3 bname out emit_fn_alias -> out }
+	root @child4 null neq if { root @child4 bname out emit_fn_alias -> out }
+	root @extra -> cur
+	cur null neq while {
+		cur bname out emit_fn_alias -> out
+		cur @sibling -> cur
+		cur null neq
+	}
+	out sb::finish
+}
+
+// Emit one alias for a FnDecl node
+fn emit_fn_alias(node:ptr basename:str buf:ptr -- buf2:ptr) {
+	-> out -> bname -> n
+	n null == if { out return }
+	n @nkind ast::NodeType::FnDecl neq if { out return }
+
+	n @ntext -> fname
+	fname -> mangled
+
+	// Check for method receiver — adjust mangled name
+	n @child3 null neq if {
+		n @child3 @nkind ast::NodeType::Param == if {
+			n @child3 @ntext -> rt
+			rt ":" strings::index_of -> cp
+			cp 0 >= if {
+				rt cp 1 + rt strings::len cp 1 + - strings::substring! -> rtype
+				rtype "_" strings::concat fname strings::concat -> mangled
+			}
+		}
+	}
+	n @child4 null neq if {
+		n @child4 @nkind ast::NodeType::Param == if {
+			n @child4 @ntext -> rt2
+			rt2 ":" strings::index_of -> cp2
+			cp2 0 >= if {
+				rt2 cp2 1 + rt2 strings::len cp2 1 + - strings::substring! -> rtype2
+				rtype2 "_" strings::concat fname strings::concat -> mangled
+			}
+		}
+	}
+
+	// Emit wrapper: usr_<basename>_<func> -> usr_main_<mangled>
+	out "define i32 @usr_" sb::append -> out
+	out bname sb::append -> out
+	out "_" sb::append -> out
+	out fname sb::append -> out
+	out "(ptr %ctx) {\n  %r = tail call i32 @usr_main_" sb::append -> out
+	out mangled sb::append -> out
+	out "(ptr %ctx)\n  ret i32 %r\n}\n" sb::append -> out
+
+	out
+}
+
 fn main() {
 	"QUADC_INPUT" os::getenv -> source_path
 	"QUADC_OUTPUT" os::getenv -> output_name
@@ -216,6 +398,7 @@ fn main() {
 				full_path io::read_file! -> fsrc
 				fsrc parser::new -> fp
 				fp parser::parse_program -> fast
+				"usr_main_" fast.ntext
 				// Link into merged list
 				merged_head null == if {
 					fast -> merged_head
@@ -224,14 +407,133 @@ fn main() {
 					fast merged_tail.sibling
 					fast -> merged_tail
 				}
+				// Extract basename (strip .qd extension and path)
+				rel_path strings::len -> rplen
+				rplen 3 > if {
+					rel_path 0 rplen 3 - strings::substring! -> bname
+					// Strip directory prefix if present
+					bname "/" strings::last_index_of -> slash_pos
+					slash_pos 0 >= if {
+						bname slash_pos 1 + bname strings::len slash_pos 1 + - strings::substring! -> bname
+					}
+					// Emit scoped call aliases
+					fast bname emit_merged_aliases -> aliases
+					aliases strings::len 0 > if {
+						extra_declares aliases sb::append -> extra_declares
+					}
+				}
 			} else {
-				// Module import: find module, extract funcs, emit declares
+				// Module import: find module, check if native or pure
 				quad_root "/" strings::concat uname strings::concat
 				"/" strings::concat uname strings::concat ".qd" strings::concat -> mod_path
 				mod_path extract_module_funcs -> func_names
 				func_names strings::len 0 > if {
+					// Native module: emit declares for C functions, AND merge .qd for wrappers
 					uname func_names emit_declares -> decl
 					extra_declares decl sb::append -> extra_declares
+					// Also merge the .qd file to compile pure Quadrate wrappers
+					mod_path io::read_file! -> nmod_src
+					nmod_src parser::new -> nmp
+					nmp parser::parse_program -> nmast
+					$"usr_{uname}_" -> mod_pfx
+					mod_pfx nmast.ntext
+					merged_head null == if {
+						nmast -> merged_head
+						nmast -> merged_tail
+					} else {
+						nmast merged_tail.sibling
+						nmast -> merged_tail
+					}
+					// No separate wrappers needed — prefix parameterization handles naming
+				} else {
+					// Pure Quadrate module: read, parse, merge, emit aliases
+					// Also process transitive use statements
+					mod_path io::read_file! -> mod_src
+					mod_src parser::new -> mp
+					mp parser::parse_program -> mast
+					$"usr_{uname}_" -> pure_pfx
+					pure_pfx mast.ntext
+					// Link into merged list
+					merged_head null == if {
+						mast -> merged_head
+						mast -> merged_tail
+					} else {
+						mast merged_tail.sibling
+						mast -> merged_tail
+					}
+					// No aliases needed — prefix parameterization names functions correctly
+					// Process transitive dependencies of pure module
+					mast collect_uses -> mod_uses
+					0 -> mupos
+					mod_uses strings::len -> mulen
+					mupos mulen < while {
+						mupos -> muend
+						muend mulen < while {
+							mod_uses muend strings::char_at! 59 == if { break }
+							muend 1 + -> muend
+							muend mulen <
+						}
+						muend mupos > if {
+							mod_uses mupos muend mupos - strings::substring! -> dep_name
+							// Only handle non-file deps (module names)
+							dep_name 0 strings::char_at! 34 neq if {
+								quad_root "/" strings::concat dep_name strings::concat
+								"/" strings::concat dep_name strings::concat ".qd" strings::concat -> dep_path
+								dep_path extract_module_funcs -> dep_funcs
+								dep_funcs strings::len 0 > if {
+									dep_name dep_funcs emit_declares -> dep_decl
+									extra_declares dep_decl sb::append -> extra_declares
+									// Also merge the .qd file for pure wrapper functions
+									dep_path io::read_file! -> dep_mod_src
+									dep_mod_src parser::new -> dmp
+									dmp parser::parse_program -> dmast
+									$"usr_{dep_name}_" -> dep_pfx
+									dep_pfx dmast.ntext
+									merged_head null == if {
+										dmast -> merged_head
+										dmast -> merged_tail
+									} else {
+										dmast merged_tail.sibling
+										dmast -> merged_tail
+									}
+								} else {
+									// Transitive pure module
+									dep_path io::read_file! -> dep_src
+									dep_src parser::new -> dp
+									dp parser::parse_program -> dast
+									$"usr_{dep_name}_" -> tdep_pfx
+									tdep_pfx dast.ntext
+									merged_head null == if {
+										dast -> merged_head
+										dast -> merged_tail
+									} else {
+										dast merged_tail.sibling
+										dast -> merged_tail
+									}
+									// No aliases needed — prefix parameterization handles naming
+								}
+								// Emit constants from transitive dep
+								dep_path extract_module_consts -> dep_consts
+								dep_consts strings::len 0 > if {
+									dep_name dep_consts emit_const_globals -> dep_cdecl
+									extra_declares dep_cdecl sb::append -> extra_declares
+								}
+								dep_name module_lib_flag -> dep_lflag
+								dep_lflag strings::len 0 > if {
+									extra_libs " " sb::append -> extra_libs
+									extra_libs dep_lflag sb::append -> extra_libs
+								}
+							}
+						}
+						muend 1 + -> mupos
+						mupos mulen <
+					}
+				}
+				// Extract and emit module constants
+				mod_path extract_module_consts -> mod_consts
+				mod_consts strings::len 0 > if {
+					uname mod_consts emit_const_globals -> const_decl
+					extra_declares const_decl sb::append -> extra_declares
 				}
 				uname module_lib_flag -> lflag
 				lflag strings::len 0 > if {

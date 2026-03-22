@@ -970,7 +970,11 @@ namespace Qd {
 					parseStringInterpolation(raw, scanner, src, tempNodes);
 					continue;
 				} else {
-					errorReporter->reportError(scanner, "Expected string literal after '$' for string interpolation");
+					// Not a string after $ — treat $ as unknown and process the consumed token normally
+					IAstNode* extraNode = parseBlockStatement(nextToken, scanner, errorReporter, &n, src);
+					if (extraNode) {
+						tempNodes.push_back(extraNode);
+					}
 					continue;
 				}
 			}
@@ -2001,7 +2005,11 @@ namespace Qd {
 					parseStringInterpolation(raw, scanner, src, tempNodes);
 					continue;
 				} else {
-					errorReporter->reportError(scanner, "Expected string literal after '$' for string interpolation");
+					// Not a string after $ — treat $ as unknown and process the consumed token
+					IAstNode* extraNode = parseBlockStatement(nextToken, scanner, errorReporter, &n, src);
+					if (extraNode) {
+						tempNodes.push_back(extraNode);
+					}
 					continue;
 				}
 			}
