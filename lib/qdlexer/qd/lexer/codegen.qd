@@ -407,9 +407,20 @@ fn emit_node(s:ptr node:ptr locals:str -- s2:ptr) {
 			o st.code
 			st return
 		}
-		// Check if member starts with uppercase (module constant like io::ErrNotFound)
+		// Check if member starts with uppercase (enum variant or module constant)
 		member 0 strings::char_at! -> mc
 		mc 65 >= mc 90 <= and if {
+			// Check if it's a triple-scope enum variant (Enum::Variant)
+			member "::" strings::contains if {
+				// Replace :: with _ for the global name
+				member "::" "_" strings::replace! -> enum_name
+				st next_label -> uid -> st
+				st @code -> o
+				o $"  %ev_{uid} = load i64, ptr @__enum_{enum_name}\n" sb::append -> o
+				o $"  call i32 @qd_push_i(ptr %ctx, i64 %ev_{uid})\n" sb::append -> o
+				o st.code
+				st return
+			}
 			// Module constant — load from global
 			st next_label -> uid -> st
 			st @code -> o
@@ -599,12 +610,13 @@ fn emit_node(s:ptr node:ptr locals:str -- s2:ptr) {
 		// Load struct ptr value
 		o $"  %fa_vp_{uid} = getelementptr %qd_stack_element_t, ptr %fa_elem_{uid}, i32 0, i32 0\n" sb::append -> o
 		o $"  %fa_ptr_{uid} = load ptr, ptr %fa_vp_{uid}\n" sb::append -> o
-		// Field offset from global
+		// Field offset from global (16 bytes per field — full stack element with type tag)
 		o $"  %fa_off_{uid} = load i64, ptr @__offset_{fname}\n" sb::append -> o
 		o $"  %fa_fp_{uid} = getelementptr i8, ptr %fa_ptr_{uid}, i64 %fa_off_{uid}\n" sb::append -> o
-		// Load field value as i64 and push
-		o $"  %fa_val_{uid} = load i64, ptr %fa_fp_{uid}\n" sb::append -> o
-		o $"  call i32 @qd_push_i(ptr %ctx, i64 %fa_val_{uid})\n" sb::append -> o
+		// Push the full stack element (preserves type tag)
+		o $"  %fa_stp2_{uid} = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0\n" sb::append -> o
+		o $"  %fa_stk2_{uid} = load ptr, ptr %fa_stp2_{uid}\n" sb::append -> o
+		o $"  call i32 @qdrt_push_element(ptr %fa_stk2_{uid}, ptr %fa_fp_{uid})\n" sb::append -> o
 		o st.code
 		st return
 	}
@@ -620,15 +632,13 @@ fn emit_node(s:ptr node:ptr locals:str -- s2:ptr) {
 		o $"  %fs_stp_{uid} = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0\n" sb::append -> o
 		o $"  %fs_stk_{uid} = load ptr, ptr %fs_stp_{uid}\n" sb::append -> o
 		o $"  call void @qd_stack_pop(ptr %fs_stk_{uid}, ptr %fs_elem_{uid})\n" sb::append -> o
-		o $"  %fs_vp_{uid} = getelementptr %qd_stack_element_t, ptr %fs_elem_{uid}, i32 0, i32 0\n" sb::append -> o
-		o $"  %fs_val_{uid} = load i64, ptr %fs_vp_{uid}\n" sb::append -> o
 		// Load struct pointer from local variable
 		o $"  %fs_svp_{uid} = getelementptr %qd_stack_element_t, ptr %local.{vname}, i32 0, i32 0\n" sb::append -> o
 		o $"  %fs_sptr_{uid} = load ptr, ptr %fs_svp_{uid}\n" sb::append -> o
-		// GEP to field offset and store
+		// Copy full stack element (16 bytes) into struct field
 		o $"  %fs_off_{uid} = load i64, ptr @__offset_{fname}\n" sb::append -> o
 		o $"  %fs_fp_{uid} = getelementptr i8, ptr %fs_sptr_{uid}, i64 %fs_off_{uid}\n" sb::append -> o
-		o $"  store i64 %fs_val_{uid}, ptr %fs_fp_{uid}\n" sb::append -> o
+		o $"  call void @llvm.memcpy.p0.p0.i64(ptr %fs_fp_{uid}, ptr %fs_elem_{uid}, i64 16, i1 false)\n" sb::append -> o
 		o st.code
 		st return
 	}
@@ -693,14 +703,10 @@ fn emit_struct_field(s:ptr field:ptr struct_uid:str struct_name:str locals:str -
 	o $"  %sf_stp_{uid} = getelementptr %qd_context_t, ptr %ctx, i32 0, i32 0\n" sb::append -> o
 	o $"  %sf_stk_{uid} = load ptr, ptr %sf_stp_{uid}\n" sb::append -> o
 	o $"  call void @qd_stack_pop(ptr %sf_stk_{uid}, ptr %sf_elem_{uid})\n" sb::append -> o
-	// Load value
-	o $"  %sf_vp_{uid} = getelementptr %qd_stack_element_t, ptr %sf_elem_{uid}, i32 0, i32 0\n" sb::append -> o
-	o $"  %sf_val_{uid} = load i64, ptr %sf_vp_{uid}\n" sb::append -> o
-	// Load field offset
+	// Copy full stack element (16 bytes with type tag) into struct field
 	o $"  %sf_off_{uid} = load i64, ptr @__offset_{fname}\n" sb::append -> o
-	// GEP to field and store
 	o $"  %sf_fp_{uid} = getelementptr i8, ptr %sp_{suid}, i64 %sf_off_{uid}\n" sb::append -> o
-	o $"  store i64 %sf_val_{uid}, ptr %sf_fp_{uid}\n" sb::append -> o
+	o $"  call void @llvm.memcpy.p0.p0.i64(ptr %sf_fp_{uid}, ptr %sf_elem_{uid}, i64 16, i1 false)\n" sb::append -> o
 	o st.code
 	st
 }
@@ -1069,33 +1075,48 @@ fn emit_top_level(s:ptr node:ptr consts:str prefix:str -- s2:ptr) {
 		st @globals -> g
 		n @ntext -> sname
 		0 -> offset
-		// Iterate fields (children of StructDecl)
+		// Iterate fields — dedup by checking if @__offset_NAME already in globals
 		n @child1 null neq if {
 			n @child1 @ntext -> fn1
-			g $"@__offset_{fn1} = private constant i64 {offset}\n" sb::append -> g
-			offset 8 + -> offset
+			$"@__offset_{fn1}" -> ocheck1
+			g sb::build ocheck1 strings::contains 0 == if {
+				g $"{ocheck1} = private constant i64 {offset}\n" sb::append -> g
+			}
+			offset 16 + -> offset
 		}
 		n @child2 null neq if {
 			n @child2 @ntext -> fn2
-			g $"@__offset_{fn2} = private constant i64 {offset}\n" sb::append -> g
-			offset 8 + -> offset
+			$"@__offset_{fn2}" -> ocheck2
+			g sb::build ocheck2 strings::contains 0 == if {
+				g $"{ocheck2} = private constant i64 {offset}\n" sb::append -> g
+			}
+			offset 16 + -> offset
 		}
 		n @child3 null neq if {
 			n @child3 @ntext -> fn3
-			g $"@__offset_{fn3} = private constant i64 {offset}\n" sb::append -> g
-			offset 8 + -> offset
+			$"@__offset_{fn3}" -> ocheck3
+			g sb::build ocheck3 strings::contains 0 == if {
+				g $"{ocheck3} = private constant i64 {offset}\n" sb::append -> g
+			}
+			offset 16 + -> offset
 		}
 		n @child4 null neq if {
 			n @child4 @ntext -> fn4
-			g $"@__offset_{fn4} = private constant i64 {offset}\n" sb::append -> g
-			offset 8 + -> offset
+			$"@__offset_{fn4}" -> ocheck4
+			g sb::build ocheck4 strings::contains 0 == if {
+				g $"{ocheck4} = private constant i64 {offset}\n" sb::append -> g
+			}
+			offset 16 + -> offset
 		}
 		// Extra fields
 		n @extra -> cur
 		cur null neq while {
 			cur @ntext -> cfn
-			g $"@__offset_{cfn} = private constant i64 {offset}\n" sb::append -> g
-			offset 8 + -> offset
+			$"@__offset_{cfn}" -> ocheckx
+			g sb::build ocheckx strings::contains 0 == if {
+				g $"{ocheckx} = private constant i64 {offset}\n" sb::append -> g
+			}
+			offset 16 + -> offset
 			cur @sibling -> cur
 			cur null neq
 		}

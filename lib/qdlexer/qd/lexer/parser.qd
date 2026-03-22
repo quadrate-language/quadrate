@@ -716,6 +716,104 @@ fn (p:Parser) parse_atom( -- n:ptr) {
 		ast::NodeType::IntLit t l c ast::leaf return
 	}
 
+	// String interpolation: $"hello {name}" desugars to sb calls
+	k lexer::TokenType::Dollar == if {
+		p cur_line -> l  p cur_col -> c
+		p advance  // skip $
+		p cur_kind lexer::TokenType::String == if {
+			p cur_text -> raw
+			p advance  // skip string
+			// Strip quotes
+			raw strings::len 2 - -> rlen
+			raw 1 rlen strings::substring! -> content
+			// Build a Block node: sb::new, append calls, sb::finish
+			ast::NodeType::Block "" l c ast::make_node -> blk
+			ast::NodeType::ScopedIdent "sb" l c ast::make_node -> sbn
+			ast::NodeType::Ident "new" l c ast::leaf -> snew
+			sbn snew ast::add_child
+			blk sbn ast::add_child
+			// Parse content for {expr} interpolations
+			0 -> ci
+			content strings::len -> clen
+			sb::new -> lit
+			ci clen < while {
+				content ci strings::char_at! -> ch
+				ch 123 == if {
+					// Emit accumulated literal
+					lit sb::build strings::len 0 > if {
+						sb::new -> ql
+						ql 34 sb::append_char -> ql
+						ql lit sb::build sb::append -> ql
+						ql 34 sb::append_char -> ql
+						ql sb::finish -> qlit
+						ast::NodeType::StrLit qlit l c ast::leaf -> slit
+						blk slit ast::add_child
+						ast::NodeType::ScopedIdent "sb" l c ast::make_node -> sapp
+						ast::NodeType::Ident "append" l c ast::leaf -> sappn
+						sapp sappn ast::add_child
+						blk sapp ast::add_child
+					}
+					sb::new -> lit  // reset
+					// Extract expression between { and }
+					ci 1 + -> ci
+					sb::new -> expr
+					ci clen < while {
+						content ci strings::char_at! 125 == if { break }
+						expr content ci strings::char_at! sb::append_char -> expr
+						ci 1 + -> ci
+						ci clen <
+					}
+					ci 1 + -> ci  // skip }
+					expr sb::finish -> ename
+					// Check if expr contains ::
+					ename "::" strings::contains if {
+						ename "::" strings::index_of -> cp
+						ename 0 cp strings::substring! -> escope
+						ename cp 2 + ename strings::len cp 2 + - strings::substring! -> emember
+						ast::NodeType::ScopedIdent escope l c ast::make_node -> enode
+						ast::NodeType::Ident emember l c ast::leaf -> emn
+						enode emn ast::add_child
+						blk enode ast::add_child
+					} else {
+						ast::NodeType::Ident ename l c ast::leaf -> enode
+						blk enode ast::add_child
+					}
+					// sb::append_any (resolved at codegen time)
+					ast::NodeType::ScopedIdent "sb" l c ast::make_node -> saany
+					ast::NodeType::Ident "append_int" l c ast::leaf -> saanyn
+					saany saanyn ast::add_child
+					blk saany ast::add_child
+				} else {
+					lit ch sb::append_char -> lit
+					ci 1 + -> ci
+				}
+				ci clen <
+			}
+			// Emit remaining literal
+			lit sb::build strings::len 0 > if {
+				sb::new -> ql2
+				ql2 34 sb::append_char -> ql2
+				ql2 lit sb::build sb::append -> ql2
+				ql2 34 sb::append_char -> ql2
+				ql2 sb::finish -> qlit2
+				ast::NodeType::StrLit qlit2 l c ast::leaf -> slit2
+				blk slit2 ast::add_child
+				ast::NodeType::ScopedIdent "sb" l c ast::make_node -> sapp2
+				ast::NodeType::Ident "append" l c ast::leaf -> sappn2
+				sapp2 sappn2 ast::add_child
+				blk sapp2 ast::add_child
+			}
+			// sb::finish
+			ast::NodeType::ScopedIdent "sb" l c ast::make_node -> sfin
+			ast::NodeType::Ident "finish" l c ast::leaf -> sfinn
+			sfin sfinn ast::add_child
+			blk sfin ast::add_child
+			blk return
+		}
+		// Not followed by string — return error node
+		ast::NodeType::Ident "$" l c ast::leaf return
+	}
+
 	// Identifier (might be scoped with ::, or followed by .field for field set)
 	k lexer::TokenType::Ident == if {
 		p cur_text -> name  p cur_line -> l  p cur_col -> c

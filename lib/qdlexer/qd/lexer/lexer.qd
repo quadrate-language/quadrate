@@ -55,6 +55,7 @@ pub enum TokenType {
 	Bang           // !
 	Question       // ?
 	Ampersand      // &
+	Dollar         // $
 
 	// Operators
 	Plus           // +
@@ -428,6 +429,7 @@ pub fn (l:Lexer) next( -- t:Token) {
 	ch 59 == if { Token { kind = TokenType::Semicolon text = ";" line = sl col = sc } return }
 	ch 63 == if { Token { kind = TokenType::Question text = "?" line = sl col = sc } return }
 	ch 38 == if { Token { kind = TokenType::Ampersand text = "&" line = sl col = sc } return }
+	ch 36 == if { Token { kind = TokenType::Dollar text = "$" line = sl col = sc } return }
 
 	// Unknown character
 	sb::new -> eb

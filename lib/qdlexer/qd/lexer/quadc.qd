@@ -2,6 +2,7 @@
 /// Usage: Set QUADC_INPUT=source.qd and QUADC_OUTPUT=output (optional)
 /// Then run this program.
 use strings
+use strconv
 use sb
 use io
 use os
@@ -376,6 +377,7 @@ fn main() {
 	sb::new -> extra_libs
 	null -> merged_head
 	null -> merged_tail
+	"" -> loaded_modules  // Track loaded modules to avoid duplicates
 
 	// Process each use statement (semicolon-separated)
 	0 -> upos
@@ -398,7 +400,19 @@ fn main() {
 				full_path io::read_file! -> fsrc
 				fsrc parser::new -> fp
 				fp parser::parse_program -> fast
-				"usr_main_" fast.ntext
+				// Extract basename for prefix
+				rel_path strings::len -> rplen
+				"main" -> bname
+				rplen 3 > if {
+					rel_path 0 rplen 3 - strings::substring! -> bname
+					bname "/" strings::last_index_of -> slash_pos
+					slash_pos 0 >= if {
+						bname slash_pos 1 + bname strings::len slash_pos 1 + - strings::substring! -> bname
+					}
+				}
+				// Use file-qualified prefix to avoid collisions
+				$"usr_{bname}_" -> file_pfx
+				file_pfx fast.ntext
 				// Link into merged list
 				merged_head null == if {
 					fast -> merged_head
@@ -407,23 +421,15 @@ fn main() {
 					fast merged_tail.sibling
 					fast -> merged_tail
 				}
-				// Extract basename (strip .qd extension and path)
-				rel_path strings::len -> rplen
-				rplen 3 > if {
-					rel_path 0 rplen 3 - strings::substring! -> bname
-					// Strip directory prefix if present
-					bname "/" strings::last_index_of -> slash_pos
-					slash_pos 0 >= if {
-						bname slash_pos 1 + bname strings::len slash_pos 1 + - strings::substring! -> bname
-					}
-					// Emit scoped call aliases
-					fast bname emit_merged_aliases -> aliases
-					aliases strings::len 0 > if {
-						extra_declares aliases sb::append -> extra_declares
-					}
-				}
+				// No aliases needed — scoped calls (lexer::func) emit usr_<basename>_func
+				// which matches the function prefix directly
 			} else {
-				// Module import: find module, check if native or pure
+				// Module import: check if already loaded
+				$",{uname}," -> mod_check
+				loaded_modules mod_check strings::contains if {
+					// Already loaded — skip
+				} else {
+				loaded_modules mod_check strings::concat -> loaded_modules
 				quad_root "/" strings::concat uname strings::concat
 				"/" strings::concat uname strings::concat ".qd" strings::concat -> mod_path
 				mod_path extract_module_funcs -> func_names
@@ -477,6 +483,10 @@ fn main() {
 							mod_uses mupos muend mupos - strings::substring! -> dep_name
 							// Only handle non-file deps (module names)
 							dep_name 0 strings::char_at! 34 neq if {
+								// Dedup check for transitive deps
+								$",{dep_name}," -> dep_check
+								loaded_modules dep_check strings::contains 0 == if {
+								loaded_modules dep_check strings::concat -> loaded_modules
 								quad_root "/" strings::concat dep_name strings::concat
 								"/" strings::concat dep_name strings::concat ".qd" strings::concat -> dep_path
 								dep_path extract_module_funcs -> dep_funcs
@@ -518,6 +528,7 @@ fn main() {
 									dep_name dep_consts emit_const_globals -> dep_cdecl
 									extra_declares dep_cdecl sb::append -> extra_declares
 								}
+								} // end transitive dedup
 								dep_name module_lib_flag -> dep_lflag
 								dep_lflag strings::len 0 > if {
 									extra_libs " " sb::append -> extra_libs
@@ -540,6 +551,7 @@ fn main() {
 					extra_libs " " sb::append -> extra_libs
 					extra_libs lflag sb::append -> extra_libs
 				}
+				} // end dedup else
 			}
 		}
 		uend 1 + -> upos
@@ -558,7 +570,7 @@ fn main() {
 	sb::new -> cmd
 	cmd "clang /tmp/quadc_output.ll -L" sb::append -> cmd
 	cmd quad_libdir sb::append -> cmd
-	cmd " -lqdrt -lm" sb::append -> cmd
+	cmd " -lqdrt -lm -lstdc++" sb::append -> cmd
 	extra_libs sb::finish -> el
 	el strings::len 0 > if {
 		cmd el sb::append -> cmd
