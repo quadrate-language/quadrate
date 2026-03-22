@@ -591,7 +591,18 @@ fn emit_node(s:ptr node:ptr locals:str -- s2:ptr) {
 
 	// Block — recurse
 	k ast::NodeType::Block == if {
-		st n loc emit_block return
+		// Inline block iteration (avoids recursion depth for $"..." blocks)
+		n @child1 null neq if { st n @child1 loc emit_node -> st }
+		n @child2 null neq if { st n @child2 loc emit_node -> st }
+		n @child3 null neq if { st n @child3 loc emit_node -> st }
+		n @child4 null neq if { st n @child4 loc emit_node -> st }
+		n @extra -> blkcur
+		blkcur null neq while {
+			st blkcur loc emit_node -> st
+			blkcur @sibling -> blkcur
+			blkcur null neq
+		}
+		st return
 	}
 
 	// If statement
