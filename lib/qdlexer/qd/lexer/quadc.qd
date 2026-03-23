@@ -7,6 +7,8 @@ use sb
 use io
 use os
 use path
+use mem
+use llvmwrap
 use "lexer.qd"
 use "ast.qd"
 use "parser.qd"
@@ -184,6 +186,7 @@ fn module_lib_flag(mod_name:str -- flag:str) {
 	m "thread" strings::compare 0 == if { "-lthread" return }
 	m "testing" strings::compare 0 == if { "-ltesting" return }
 	m "tty" strings::compare 0 == if { "-ltty" return }
+	m "llvmwrap" strings::compare 0 == if { "-lllvmwrap -lLLVM-22" return }
 	""
 }
 

@@ -73,6 +73,10 @@ define do_build
 	@for dir in thread tls http; do \
 		if [ -f lib/$$dir/lib$$dir.deps ]; then cp lib/$$dir/lib$$dir.deps dist/lib/quadrate/; fi; \
 	done
+	@if [ -f $(1)/lib/llvmwrap/libllvmwrap.a ]; then \
+		(cd $(1)/lib/llvmwrap && ar rcs libllvmwrap_regular.a $$(ar -t libllvmwrap.a) && cp libllvmwrap_regular.a ../../../../dist/lib/quadrate/libllvmwrap.a) && echo "  libllvmwrap.a"; \
+		cp lib/llvmwrap/qd/llvmwrap/llvmwrap.deps dist/lib/quadrate/libllvmwrap.deps 2>/dev/null || echo "-lLLVM-22" > dist/lib/quadrate/libllvmwrap.deps; \
+	fi
 	@if [ "$$(uname -s)" = "Haiku" ]; then echo "-lnetwork" > dist/lib/quadrate/libnet.deps; fi
 	@for dir in $(LIBS_WITH_HEADERS); do \
 		cp -rf lib/$$dir/include/quadrate/$$dir dist/include/quadrate/; \

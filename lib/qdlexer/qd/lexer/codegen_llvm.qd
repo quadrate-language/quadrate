@@ -687,10 +687,6 @@ fn emit_node(st:LlvmCg cv:ptr node:ptr ectx:EmitCtx counter:i64 -- counter2:i64)
 		// Enum variant (scope starts with uppercase)
 		scope 0 strings::char_at! -> sc
 		sc 65 >= sc 90 <= and if {
-			// Load enum value from global
-			$"__enum_{scope}_{member}" -> gname
-			s @lmod gname llvmwrap::get_function -> existing_g
-			// Use metadata to find enum value
 			$"{scope}_{member}" -> enum_key
 			ec @metadata enum_key lookup_constant -> eval
 			eval strings::len 0 > if {
@@ -699,7 +695,16 @@ fn emit_node(st:LlvmCg cv:ptr node:ptr ectx:EmitCtx counter:i64 -- counter2:i64)
 				s ctxv cv2 push_int
 				cnt return
 			}
-			// Fallback: try loading from global
+			// Load from global @__enum_<Scope>_<Member>
+			$"__enum_{scope}_{member}" -> gname
+			s @lmod gname llvmwrap::get_global -> enum_g
+			enum_g null neq if {
+				c llvmwrap::int64_type -> ei64t
+				s @builder ei64t enum_g $"ev_{scope}_{member}" llvmwrap::build_load -> enum_val
+				s ctxv enum_val push_int
+				cnt return
+			}
+			// Fallback: push 0 (for enum variants that start at 0)
 			c llvmwrap::int64_type 0 llvmwrap::const_int -> cv2
 			s ctxv cv2 push_int
 			cnt return
@@ -716,6 +721,15 @@ fn emit_node(st:LlvmCg cv:ptr node:ptr ectx:EmitCtx counter:i64 -- counter2:i64)
 					s ctxv cv2 push_int
 					cnt return
 				}
+				// Try loading from global @__enum_<enum_name>
+				$"__enum_{enum_name}" -> enum_gname
+				s @lmod enum_gname llvmwrap::get_global -> enum_g
+				enum_g null neq if {
+					c llvmwrap::int64_type -> ei64t
+					s @builder ei64t enum_g $"ev_{enum_name}" llvmwrap::build_load -> enum_val
+					s ctxv enum_val push_int
+					cnt return
+				}
 			}
 			// Module constant
 			ec @metadata member lookup_constant -> mcval
@@ -723,6 +737,15 @@ fn emit_node(st:LlvmCg cv:ptr node:ptr ectx:EmitCtx counter:i64 -- counter2:i64)
 				mcval strconv::atoi! -> mciv
 				c llvmwrap::int64_type mciv llvmwrap::const_int -> cv2
 				s ctxv cv2 push_int
+				cnt return
+			}
+			// Try loading from global @__const_<scope>_<member>
+			$"__const_{scope}_{member}" -> const_gname
+			s @lmod const_gname llvmwrap::get_global -> const_g
+			const_g null neq if {
+				c llvmwrap::int64_type -> ci64t
+				s @builder ci64t const_g $"mc_{member}" llvmwrap::build_load -> const_val
+				s ctxv const_val push_int
 				cnt return
 			}
 			cnt return
@@ -1388,9 +1411,12 @@ fn emit_fn(st:LlvmCg name:str body:ptr recv:str param_count:i64 metadata:str pre
 	-> cnt -> pfx_str -> md -> nparams -> recv_name -> body_node -> fname -> s
 	s @lctx -> c  s @lmod -> m  s @builder -> b
 
-	// Create function: i32 fname(ptr %ctx)
+	// Create function or reuse existing declaration: i32 fname(ptr %ctx)
 	s std_fn_type -> ft
-	m fname ft llvmwrap::add_function -> lfn
+	m fname llvmwrap::get_function -> lfn
+	lfn null == if {
+		m fname ft llvmwrap::add_function -> lfn
+	}
 	c lfn "entry" llvmwrap::append_block -> entry
 	b entry llvmwrap::position_at_end
 
@@ -1540,19 +1566,20 @@ fn emit_top(st:LlvmCg node:ptr metadata:str prefix:str counter:i64 -- counter2:i
 			wnb sb::finish -> wname
 			// Create wrapper function that tail-calls the receiver-qualified version
 			s std_fn_type -> wft
-			s @lmod wname llvmwrap::get_function -> wexisting
-			wexisting null == if {
+			// Reuse existing declaration if present, otherwise create new
+			s @lmod wname llvmwrap::get_function -> wfn
+			wfn null == if {
 				s @lmod wname wft llvmwrap::add_function -> wfn
-				s @lctx wfn "entry" llvmwrap::append_block -> wentry
-				s @builder wentry llvmwrap::position_at_end
-				wfn 0 llvmwrap::get_param -> wctxv
-				s @lmod mname llvmwrap::get_function -> target_fn
-				1 llvmwrap::args_new -> wa
-				wa 0 wctxv llvmwrap::args_set
-				s @builder wft target_fn wa 1 "r" llvmwrap::build_call -> wret
-				wa llvmwrap::args_free
-				s @builder wret llvmwrap::build_ret drop
 			}
+			s @lctx wfn "entry" llvmwrap::append_block -> wentry
+			s @builder wentry llvmwrap::position_at_end
+			wfn 0 llvmwrap::get_param -> wctxv
+			s @lmod mname llvmwrap::get_function -> target_fn
+			1 llvmwrap::args_new -> wa
+			wa 0 wctxv llvmwrap::args_set
+			s @builder wft target_fn wa 1 "r" llvmwrap::build_call -> wret
+			wa llvmwrap::args_free
+			s @builder wret llvmwrap::build_ret drop
 		}
 		cnt return
 	}
@@ -1594,7 +1621,7 @@ fn emit_top(st:LlvmCg node:ptr metadata:str prefix:str counter:i64 -- counter2:i
 		}
 		// Size global
 		$"__size_{sname}" -> size_gname
-		s @lmod size_gname llvmwrap::get_function -> existing_sg
+		s @lmod size_gname llvmwrap::get_global -> existing_sg
 		existing_sg null == if {
 			s @lmod size_gname i64t llvmwrap::add_global -> sg
 			sg i64t offset llvmwrap::const_int llvmwrap::set_initializer
@@ -1653,8 +1680,7 @@ fn emit_offset_global(st:LlvmCg field_node:ptr fname:str offset:i64 -- ) {
 	$"__offset_{fn_name}" -> gname
 	s @lctx -> c
 	c llvmwrap::int64_type -> i64t
-	// Check if already exists (dedup)
-	s @lmod gname llvmwrap::get_function -> existing
+	s @lmod gname llvmwrap::get_global -> existing
 	existing null neq if { return }
 	s @lmod gname i64t llvmwrap::add_global -> g
 	g i64t off llvmwrap::const_int llvmwrap::set_initializer
@@ -1668,7 +1694,7 @@ fn emit_enum_global(st:LlvmCg variant_node:ptr ename:str val:i64 -- ) {
 	$"__enum_{en}_{vn}" -> gname
 	s @lctx -> c
 	c llvmwrap::int64_type -> i64t
-	s @lmod gname llvmwrap::get_function -> existing
+	s @lmod gname llvmwrap::get_global -> existing
 	existing null neq if { return }
 	s @lmod gname i64t llvmwrap::add_global -> g
 	g i64t ev llvmwrap::const_int llvmwrap::set_initializer
@@ -1855,6 +1881,33 @@ fn parse_text_declares(st:LlvmCg decls:str -- ) {
 	}
 }
 
+// Emit only struct/enum declarations from a single AST node (no functions)
+fn emit_decls_only(st:LlvmCg node:ptr metadata:str prefix:str counter:i64 -- counter2:i64) {
+	-> cnt -> pfx -> md -> n -> s
+	n null == if { cnt return }
+	n @nkind -> k
+	k ast::NodeType::StructDecl == if { s n md pfx cnt emit_top -> cnt  cnt return }
+	k ast::NodeType::EnumDecl == if { s n md pfx cnt emit_top -> cnt  cnt return }
+	cnt
+}
+
+// Pre-pass: emit struct/enum globals from an AST's top-level children
+fn emit_all_decls(st:LlvmCg root:ptr metadata:str prefix:str counter:i64 -- counter2:i64) {
+	-> cnt -> pfx -> md -> r -> s
+	r null == if { cnt return }
+	r @child1 null neq if { s r @child1 md pfx cnt emit_decls_only -> cnt }
+	r @child2 null neq if { s r @child2 md pfx cnt emit_decls_only -> cnt }
+	r @child3 null neq if { s r @child3 md pfx cnt emit_decls_only -> cnt }
+	r @child4 null neq if { s r @child4 md pfx cnt emit_decls_only -> cnt }
+	r @extra -> cur
+	cur null neq while {
+		s cur md pfx cnt emit_decls_only -> cnt
+		cur @sibling -> cur
+		cur null neq
+	}
+	cnt
+}
+
 pub fn generate_full(prog:ptr merged_files:ptr module_declares:str -- ir:str) {
 	-> mdecls -> merged -> root
 	new_state -> st
@@ -1864,7 +1917,6 @@ pub fn generate_full(prog:ptr merged_files:ptr module_declares:str -- ir:str) {
 	// Collect metadata from all ASTs
 	sb::new -> md_buf
 	root md_buf collect_metadata -> md_buf
-	// Collect from merged files too
 	merged -> miter
 	miter null neq while {
 		miter md_buf collect_metadata -> md_buf
@@ -1874,7 +1926,23 @@ pub fn generate_full(prog:ptr merged_files:ptr module_declares:str -- ir:str) {
 	md_buf "!" sb::append -> md_buf
 	md_buf sb::finish -> md
 
-	// Process main program top-level declarations
+	// Parse and declare module functions from textual declare lines (before any codegen)
+	mdecls strings::len 0 > if {
+		st mdecls parse_text_declares
+	}
+
+	// Pre-pass: emit ALL struct/enum globals before any function bodies
+	st root md "usr_main_" cnt emit_all_decls -> cnt
+	merged -> miter_decl
+	miter_decl null neq while {
+		miter_decl @ntext -> dpfx
+		dpfx strings::len 0 == if { "usr_main_" -> dpfx }
+		st miter_decl md dpfx cnt emit_all_decls -> cnt
+		miter_decl @sibling -> miter_decl
+		miter_decl null neq
+	}
+
+	// Now emit all top-level nodes (functions will find their struct globals already created)
 	root @child1 null neq if { st root @child1 md "usr_main_" cnt emit_top -> cnt }
 	root @child2 null neq if { st root @child2 md "usr_main_" cnt emit_top -> cnt }
 	root @child3 null neq if { st root @child3 md "usr_main_" cnt emit_top -> cnt }
@@ -1894,11 +1962,6 @@ pub fn generate_full(prog:ptr merged_files:ptr module_declares:str -- ir:str) {
 		st miter2 md mpfx cnt emit_merged_file -> cnt
 		miter2 @sibling -> miter2
 		miter2 null neq
-	}
-
-	// Parse and declare module functions from textual declare lines
-	mdecls strings::len 0 > if {
-		st mdecls parse_text_declares
 	}
 
 	// Emit main() entry

@@ -21,14 +21,14 @@ TMPDIR=$(mktemp -d)
 
 trap "rm -rf $TMPDIR" EXIT
 
-LIBS="-lqdrt -lm -lstdc++ -lqdio -lqdos -lqdstr -lqdstrconv -lqdmem"
+LIBS="-lrt -lm -lstdc++ -lio -los -lstrings -lstrconv -lmem -lllvmwrap -lLLVM-22"
 
 echo "=== Quadrate 3-Stage Bootstrap Verification ==="
 echo ""
 
 # Stage 0: Compile checked-in IR -> native binary
 echo "[Stage 0] Compiling bootstrap/quadc.ll -> quadc-stage0"
-clang "$SCRIPT_DIR/quadc.ll" -L"$LIBDIR" $LIBS -o "$TMPDIR/quadc-stage0" -Wno-override-module
+clang "$SCRIPT_DIR/quadc.ll" -L"$LIBDIR" -L"$LIBDIR/quadrate" $LIBS -o "$TMPDIR/quadc-stage0" -Wno-override-module
 echo "  OK"
 
 # Stage 1: Use stage0 to compile quadc.qd -> stage1.ll
@@ -45,7 +45,7 @@ echo "  OK ($(wc -l < "$TMPDIR/stage1.ll") lines)"
 
 # Stage 2: Compile stage1.ll -> native, use it to compile quadc.qd -> stage2.ll
 echo "[Stage 2] Compiling stage1.ll -> quadc-stage1"
-clang "$TMPDIR/stage1.ll" -L"$LIBDIR" $LIBS -o "$TMPDIR/quadc-stage1" -Wno-override-module 2>/dev/null || {
+clang "$TMPDIR/stage1.ll" -L"$LIBDIR" -L"$LIBDIR/quadrate" $LIBS -o "$TMPDIR/quadc-stage1" -Wno-override-module 2>/dev/null || {
     echo "  FAIL: stage1.ll failed to compile"
     exit 1
 }

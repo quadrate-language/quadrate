@@ -14,14 +14,12 @@ PROJECT_DIR="$(dirname "$SCRIPT_DIR")"
 OUTPUT="${1:-$PROJECT_DIR/dist/bin/quadc-bootstrap}"
 LIBDIR="${QUADRATE_LIBDIR:-$PROJECT_DIR/dist/lib}"
 
-# Core libraries needed by the self-hosted compiler
-LIBS="-lqdrt -lm -lstdc++"
-# Module libraries used by the compiler
-LIBS="$LIBS -lqdio -lqdos -lqdstr -lqdstrconv -lqdmem"
+# Core and module libraries needed by the self-hosted compiler
+LIBS="-lrt -lm -lstdc++ -lio -los -lstrings -lstrconv -lmem -lllvmwrap -lLLVM-22"
 
 echo "Compiling bootstrap IR -> $OUTPUT"
 clang "$SCRIPT_DIR/quadc.ll" \
-    -L"$LIBDIR" \
+    -L"$LIBDIR" -L"$LIBDIR/quadrate" \
     $LIBS \
     -o "$OUTPUT" \
     -Wno-override-module
