@@ -68,6 +68,22 @@ fn main() {
 | `\\` | Backslash |
 | `\"` | Double quote |
 
+### String interpolation
+
+Use `$"..."` to embed expressions in strings:
+
+```qd
+fn main() {
+	"World" -> name
+	42 -> age
+	$"Hello, {name}!" print nl     // Hello, World!
+	$"Age: {age}" print nl         // Age: 42
+	$"Sum: {age}" print nl         // Sum: 42
+}
+```
+
+Expressions in `{...}` are evaluated and converted to strings. String variables use `sb::append`, integer variables use `sb::append_int`. The `sb` module is auto-imported when `$"..."` is used.
+
 ## Pointer (ptr)
 
 Pointers reference data in memory. You'll use them with structs and arrays:

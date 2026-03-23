@@ -1,0 +1,21 @@
+// Test mem::ptr_add — pointer arithmetic
+use mem
+
+fn main() {
+	// Allocate buffer and write bytes at different offsets
+	16 mem::alloc! -> buf
+
+	42 buf 0 mem::set_byte
+	99 buf 4 mem::set_byte
+	7 buf 8 mem::set_byte
+
+	// Read back using ptr_add to offset the base pointer
+	buf 0 mem::ptr_add 0 mem::get_byte print nl
+	buf 4 mem::ptr_add 0 mem::get_byte print nl
+	buf 8 mem::ptr_add 0 mem::get_byte print nl
+
+	// ptr_add with 0 offset should be same as base
+	buf 0 mem::ptr_add 4 mem::get_byte print nl
+
+	buf mem::free
+}

@@ -1,0 +1,22 @@
+// Test strings::data — raw pointer access to string bytes
+use strings
+use mem
+
+fn main() {
+	"hello" -> s
+
+	// Get raw pointer
+	s strings::data -> rawp
+
+	// Read first byte (should be 'h' = 104)
+	rawp 0 mem::get_byte print nl
+
+	// Read second byte (should be 'e' = 101)
+	rawp 1 mem::get_byte print nl
+
+	// Read all 5 bytes
+	0 5 1 for i {
+		rawp i mem::get_byte print " " print
+	}
+	nl
+}

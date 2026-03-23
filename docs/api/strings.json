@@ -283,6 +283,16 @@
       "examples": ["\"hello hello\" \"hello\" strings::last_index_of print  // 6"]
     },
     {
+      "name": "data",
+      "signature": "(str:str -- ptr:ptr)",
+      "failable": false,
+      "description": "Get raw char pointer to the string's byte data. The pointer is valid as long as the string is alive. Useful for bulk memory operations.",
+      "params": [{"name": "str", "type": "str", "description": "Input string"}],
+      "returns": [{"name": "ptr", "type": "ptr", "description": "Raw pointer to string bytes"}],
+      "errors": [],
+      "examples": ["\"hello\" strings::data -> p  p 0 mem::get_byte  // 104 ('h')"]
+    },
+    {
       "name": "len",
       "signature": "(str:str -- len:i64)",
       "failable": false,

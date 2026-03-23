@@ -148,6 +148,16 @@
       "examples": ["buf 2048 mem::realloc! -> buf"]
     },
     {
+      "name": "ptr_add",
+      "signature": "(base:ptr offset:i64 -- result:ptr)",
+      "failable": false,
+      "description": "Pointer arithmetic: returns base + offset. Useful for navigating buffers and string data.",
+      "params": [{"name": "base", "type": "ptr", "description": "Base pointer"}, {"name": "offset", "type": "i64", "description": "Byte offset to add"}],
+      "returns": [{"name": "result", "type": "ptr", "description": "Offset pointer"}],
+      "errors": [],
+      "examples": ["buf 8 mem::ptr_add -> next_slot"]
+    },
+    {
       "name": "set_byte",
       "signature": "(value:i64 address:ptr offset:i64 -- )",
       "failable": false,

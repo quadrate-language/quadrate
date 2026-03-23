@@ -1,0 +1,31 @@
+// Test string interpolation $"..." syntax
+use strings
+
+fn main() {
+	// Basic variable interpolation
+	"World" -> name
+	$"Hello, {name}!" print nl
+
+	// Multiple interpolations
+	"Alice" -> first
+	"Smith" -> last
+	$"{first} {last}" print nl
+
+	// Integer interpolation
+	42 -> age
+	$"Age: {age}" print nl
+
+	// Just a variable
+	"test" -> x
+	$"{x}" print nl
+
+	// Interpolation with escaped chars
+	$"tab:\there" print nl
+
+	// Mixed literal and interpolated
+	$"value={age}" print nl
+
+	// Module scoped call in interpolation
+	"hello" strings::len -> slen
+	$"len={slen}" print nl
+}
