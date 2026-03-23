@@ -7,8 +7,7 @@ This directory contains the bootstrap artifact for the self-hosted Quadrate comp
 `quadc.ll` is a portable LLVM IR file that contains the self-hosted compiler. Any machine with `clang` and the Quadrate runtime libraries can compile it into a native binary:
 
 ```bash
-clang bootstrap/quadc.ll -Ldist/lib -lqdrt -lm -lstdc++ \
-  -lqdio -lqdos -lqdstr -lqdstrconv -lqdmem -o quadc
+bash bootstrap/build.sh
 ```
 
 This native `quadc` can then compile Quadrate source files, including the compiler's own source.
@@ -49,8 +48,8 @@ clang --target=aarch64-linux-gnu bootstrap/quadc.ll ...
 ## Source Files
 
 The self-hosted compiler source lives in `lib/qdlexer/qd/lexer/`:
-- `quadc.qd` — Driver (reads source, invokes parser/codegen, calls clang)
+- `quadc.qd` — Driver (reads source, invokes parser/codegen, links with cc)
 - `lexer.qd` — Tokenizer
 - `ast.qd` — AST node types
 - `parser.qd` — Recursive descent parser
-- `codegen.qd` — Textual LLVM IR emitter
+- `codegen_llvm.qd` — LLVM C API codegen (emits .o files via LLVMTargetMachineEmitToFile)

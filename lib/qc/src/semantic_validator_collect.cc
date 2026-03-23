@@ -876,8 +876,7 @@ namespace Qd {
 								// Try to suggest a similar name from the module
 								auto moduleFuncsIt = mModuleFunctions.find(scopeName);
 								if (moduleFuncsIt != mModuleFunctions.end()) {
-									std::string suggestion =
-											findSimilarNameInMap(functionName, moduleFuncsIt->second);
+									std::string suggestion = findSimilarNameInMap(functionName, moduleFuncsIt->second);
 									if (!suggestion.empty()) {
 										errorMsg += "; did you mean '" + suggestion + "'?";
 									}

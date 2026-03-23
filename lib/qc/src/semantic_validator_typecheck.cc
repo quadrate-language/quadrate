@@ -281,9 +281,13 @@ namespace Qd {
 				// In pass 1 (signature analysis), don't resolve sb::append_any —
 				// just apply the same stack effect as sb::append (ptr, any -> ptr)
 				if (scoped->scope() == "sb" && scoped->name() == "append_any") {
-					if (!typeStack.empty()) typeStack.pop_back(); // pop value
-					if (!typeStack.empty()) typeStack.pop_back(); // pop sb ptr
-					typeStack.push_back(StackValueType::PTR);     // push result sb ptr
+					if (!typeStack.empty()) {
+						typeStack.pop_back(); // pop value
+					}
+					if (!typeStack.empty()) {
+						typeStack.pop_back(); // pop sb ptr
+					}
+					typeStack.push_back(StackValueType::PTR); // push result sb ptr
 					break;
 				}
 

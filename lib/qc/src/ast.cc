@@ -3783,7 +3783,6 @@ namespace Qd {
 	}
 
 	IAstNode* Ast::generate(const char* src, bool dumpTokens, const char* filename) {
-
 		u8t_scanner scanner;
 		if (!u8t_scanner_init(&scanner, src)) {
 			// Invalid UTF-8 input - return empty program with error

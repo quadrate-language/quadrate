@@ -274,14 +274,18 @@ bootstrap-verify: debug
 	@bash bootstrap/verify.sh
 
 # Regenerate bootstrap/quadc.ll from the self-hosted compiler source
+# Uses C++ quadc to compile quadc.qd into a self-hosted binary,
+# then runs it to compile itself with QUADC_DUMP_IR=1 to capture the IR.
 bootstrap-update: debug
 	@echo "=========================================="
 	@echo "  Regenerating bootstrap IR"
 	@echo "=========================================="
-	@QUADRATE_LIBDIR=dist/lib QUADRATE_ROOT=dist/share/quadrate \
-		QUADC_INPUT=lib/qdlexer/qd/lexer/quadc.qd \
-		QUADC_OUTPUT=/dev/null \
-		dist/bin/quadc lib/qdlexer/qd/lexer/quadc.qd -r 2>/dev/null
+	@ulimit -s unlimited 2>/dev/null; \
+		QUADRATE_LIBDIR=dist/lib QUADRATE_ROOT=dist/share/quadrate \
+		dist/bin/quadc lib/qdlexer/qd/lexer/quadc.qd -o /tmp/quadc-bootstrap-tmp 2>/dev/null && \
+		QUADRATE_LIBDIR=dist/lib QUADRATE_ROOT=dist/share/quadrate \
+		QUADC_INPUT=lib/qdlexer/qd/lexer/quadc.qd QUADC_OUTPUT=/dev/null \
+		QUADC_DUMP_IR=1 /tmp/quadc-bootstrap-tmp 2>/dev/null; true
 	@cp /tmp/quadc_output.ll bootstrap/quadc.ll
 	@echo "Updated bootstrap/quadc.ll ($$(wc -l < bootstrap/quadc.ll) lines)"
 

@@ -283,6 +283,34 @@ int usr_llvmwrap_position_at_end(qd_context* ctx) {
 	return 0;
 }
 
+// Bulk call: build a 1-arg call without going through args array.
+// ( b:ptr fnty:ptr fn:ptr arg0:ptr -- )
+// No return value (result dropped). Optimized for rt_call pattern.
+int usr_llvmwrap_call1_void(qd_context* ctx) {
+	void *arg0, *fn, *fnty, *b;
+	pop_ptr(ctx, &arg0);
+	pop_ptr(ctx, &fn);
+	pop_ptr(ctx, &fnty);
+	pop_ptr(ctx, &b);
+	LLVMValueRef args[1] = { (LLVMValueRef)arg0 };
+	LLVMBuildCall2((LLVMBuilderRef)b, (LLVMTypeRef)fnty, (LLVMValueRef)fn, args, 1, "");
+	return 0;
+}
+
+// Bulk call: build a 2-arg call without going through args array.
+// ( b:ptr fnty:ptr fn:ptr arg0:ptr arg1:ptr -- )
+int usr_llvmwrap_call2_void(qd_context* ctx) {
+	void *arg1, *arg0, *fn, *fnty, *b;
+	pop_ptr(ctx, &arg1);
+	pop_ptr(ctx, &arg0);
+	pop_ptr(ctx, &fn);
+	pop_ptr(ctx, &fnty);
+	pop_ptr(ctx, &b);
+	LLVMValueRef args[2] = { (LLVMValueRef)arg0, (LLVMValueRef)arg1 };
+	LLVMBuildCall2((LLVMBuilderRef)b, (LLVMTypeRef)fnty, (LLVMValueRef)fn, args, 2, "");
+	return 0;
+}
+
 // ( b:ptr fnty:ptr fn:ptr args:ptr nargs:i64 name:str -- val:ptr )
 int usr_llvmwrap_build_call(qd_context* ctx) {
 	const char* name; qd_string_t* sref;

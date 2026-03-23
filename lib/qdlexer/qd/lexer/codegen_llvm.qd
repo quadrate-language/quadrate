@@ -11,6 +11,17 @@ pub struct LlvmCg {
 	lctx:ptr
 	lmod:ptr
 	builder:ptr
+	t_i8:ptr
+	t_i32:ptr
+	t_i64:ptr
+	t_f64:ptr
+	t_ptr:ptr
+	t_sft:ptr
+	a1:ptr
+	a2:ptr
+	ft_pi64:ptr
+	ft_pptr:ptr
+	ft_pf64:ptr
 }
 
 struct EmitCtx {
@@ -28,7 +39,39 @@ pub fn new_state( -- s:LlvmCg) {
 	llvmwrap::context_create -> lctx
 	"quadrate" lctx llvmwrap::module_create -> lmod
 	lctx llvmwrap::builder_create -> builder
-	LlvmCg { lctx = lctx lmod = lmod builder = builder }
+	// Cache frequently-used types
+	lctx llvmwrap::int8_type -> ti8
+	lctx llvmwrap::int32_type -> ti32
+	lctx llvmwrap::int64_type -> ti64
+	lctx llvmwrap::double_type -> tf64
+	lctx llvmwrap::ptr_type -> tptr
+	// Cache standard function type: i32 (ptr)
+	1 llvmwrap::types_new -> p
+	p 0 tptr llvmwrap::types_set
+	ti32 p 1 0 llvmwrap::fn_type -> sft
+	p llvmwrap::types_free
+	// Pre-allocate reusable args arrays
+	1 llvmwrap::args_new -> arg1
+	2 llvmwrap::args_new -> arg2
+	// Cache 2-param function types: i32(ptr,i64), i32(ptr,ptr), i32(ptr,f64)
+	2 llvmwrap::types_new -> tp1
+	tp1 0 tptr llvmwrap::types_set  tp1 1 ti64 llvmwrap::types_set
+	ti32 tp1 2 0 llvmwrap::fn_type -> fpi64
+	tp1 llvmwrap::types_free
+	2 llvmwrap::types_new -> tp2
+	tp2 0 tptr llvmwrap::types_set  tp2 1 tptr llvmwrap::types_set
+	ti32 tp2 2 0 llvmwrap::fn_type -> fpptr
+	tp2 llvmwrap::types_free
+	2 llvmwrap::types_new -> tp3
+	tp3 0 tptr llvmwrap::types_set  tp3 1 tf64 llvmwrap::types_set
+	ti32 tp3 2 0 llvmwrap::fn_type -> fpf64
+	tp3 llvmwrap::types_free
+	LlvmCg {
+		lctx = lctx lmod = lmod builder = builder
+		t_i8 = ti8 t_i32 = ti32 t_i64 = ti64 t_f64 = tf64 t_ptr = tptr
+		t_sft = sft a1 = arg1 a2 = arg2
+		ft_pi64 = fpi64 ft_pptr = fpptr ft_pf64 = fpf64
+	}
 }
 
 fn i2s(n:i64 -- s:str) {
@@ -36,15 +79,10 @@ fn i2s(n:i64 -- s:str) {
 	sb::new -> b  b v sb::append_int -> b  b sb::finish
 }
 
-// Standard function type: i32 (ptr)
+// Standard function type: i32 (ptr) — cached in LlvmCg.t_sft
 fn std_fn_type(st:LlvmCg -- ty:ptr) {
 	-> s
-	s @lctx -> c
-	1 llvmwrap::types_new -> p
-	p 0 c llvmwrap::ptr_type llvmwrap::types_set
-	c llvmwrap::int32_type p 1 0 llvmwrap::fn_type -> ft
-	p llvmwrap::types_free
-	ft
+	s @t_sft
 }
 
 // Declare or get an external i32(ptr) function
@@ -52,88 +90,43 @@ fn decl_fn(st:LlvmCg name:str -- f:ptr) {
 	-> nm -> s
 	s @lmod nm llvmwrap::get_function -> existing
 	existing null neq if { existing return }
-	s std_fn_type -> ft
+	s @t_sft -> ft
 	s @lmod nm ft llvmwrap::add_function
 }
 
-// Build call to runtime function with ctx as sole arg
+// Build call to runtime function with ctx as sole arg (bulk C call)
 fn rt_call(st:LlvmCg name:str ctx_val:ptr -- ) {
 	-> cv -> nm -> s
 	s nm decl_fn -> f
-	s std_fn_type -> ft
-	1 llvmwrap::args_new -> a
-	a 0 cv llvmwrap::args_set
-	s @builder ft f a 1 "" llvmwrap::build_call drop
-	a llvmwrap::args_free
+	s @builder s @t_sft f cv llvmwrap::call1_void
 }
 
 // Build a 2-arg call: fn(ptr, i64)
 fn call_ptr_i64(st:LlvmCg name:str ctx_val:ptr val:ptr -- ) {
 	-> v -> cv -> nm -> s
 	s nm decl_fn -> f
-	s @lctx -> c
-	c llvmwrap::int32_type -> i32t
-	2 llvmwrap::types_new -> p
-	p 0 c llvmwrap::ptr_type llvmwrap::types_set
-	p 1 c llvmwrap::int64_type llvmwrap::types_set
-	i32t p 2 0 llvmwrap::fn_type -> ft
-	p llvmwrap::types_free
-	2 llvmwrap::args_new -> a
-	a 0 cv llvmwrap::args_set
-	a 1 v llvmwrap::args_set
-	s @builder ft f a 2 "" llvmwrap::build_call drop
-	a llvmwrap::args_free
+	s @builder s @ft_pi64 f cv v llvmwrap::call2_void
 }
 
 // Build a 2-arg call: fn(ptr, ptr)
 fn call_ptr_ptr(st:LlvmCg name:str ctx_val:ptr val:ptr -- ) {
 	-> v -> cv -> nm -> s
 	s nm decl_fn -> f
-	s @lctx -> c
-	2 llvmwrap::types_new -> p
-	p 0 c llvmwrap::ptr_type llvmwrap::types_set
-	p 1 c llvmwrap::ptr_type llvmwrap::types_set
-	c llvmwrap::int32_type p 2 0 llvmwrap::fn_type -> ft
-	p llvmwrap::types_free
-	2 llvmwrap::args_new -> a
-	a 0 cv llvmwrap::args_set
-	a 1 v llvmwrap::args_set
-	s @builder ft f a 2 "" llvmwrap::build_call drop
-	a llvmwrap::args_free
+	s @builder s @ft_pptr f cv v llvmwrap::call2_void
 }
 
 // Build a 2-arg call: fn(ptr, f64)
 fn call_ptr_f64(st:LlvmCg name:str ctx_val:ptr val:ptr -- ) {
 	-> v -> cv -> nm -> s
 	s nm decl_fn -> f
-	s @lctx -> c
-	2 llvmwrap::types_new -> p
-	p 0 c llvmwrap::ptr_type llvmwrap::types_set
-	p 1 c llvmwrap::double_type llvmwrap::types_set
-	c llvmwrap::int32_type p 2 0 llvmwrap::fn_type -> ft
-	p llvmwrap::types_free
-	2 llvmwrap::args_new -> a
-	a 0 cv llvmwrap::args_set
-	a 1 v llvmwrap::args_set
-	s @builder ft f a 2 "" llvmwrap::build_call drop
-	a llvmwrap::args_free
+	s @builder s @ft_pf64 f cv v llvmwrap::call2_void
 }
 
 // Build a 2-arg void call: fn(ptr, ptr) -> void (like qd_stack_pop, qdrt_push_element)
 fn call2_void(st:LlvmCg name:str arg1:ptr arg2:ptr -- ) {
-	-> a2 -> a1 -> nm -> s
+	-> va2 -> va1 -> nm -> s
 	s @lmod nm llvmwrap::get_function -> f
-	s @lctx -> c
-	2 llvmwrap::types_new -> p
-	p 0 c llvmwrap::ptr_type llvmwrap::types_set
-	p 1 c llvmwrap::ptr_type llvmwrap::types_set
-	c llvmwrap::int32_type p 2 0 llvmwrap::fn_type -> ft
-	p llvmwrap::types_free
-	2 llvmwrap::args_new -> a
-	a 0 a1 llvmwrap::args_set
-	a 1 a2 llvmwrap::args_set
-	s @builder ft f a 2 "" llvmwrap::build_call drop
-	a llvmwrap::args_free
+	s @builder s @ft_pptr f va1 va2 llvmwrap::call2_void
 }
 
 fn push_int(st:LlvmCg ctx_val:ptr val:ptr -- ) {
@@ -159,28 +152,12 @@ fn push_float(st:LlvmCg ctx_val:ptr val:ptr -- ) {
 // Declare all runtime functions
 fn declare_runtime(st:LlvmCg -- ) {
 	-> s
-	s @lctx -> c
 	// qd_push_i(ptr, i64), qd_push_f(ptr, double), qd_push_s/p/s_ref(ptr, ptr)
-	2 llvmwrap::types_new -> pi
-	pi 0 c llvmwrap::ptr_type llvmwrap::types_set
-	pi 1 c llvmwrap::int64_type llvmwrap::types_set
-	c llvmwrap::int32_type pi 2 0 llvmwrap::fn_type -> pi_ft
-	pi llvmwrap::types_free
-	s @lmod "qd_push_i" pi_ft llvmwrap::add_function drop
-	2 llvmwrap::types_new -> pf
-	pf 0 c llvmwrap::ptr_type llvmwrap::types_set
-	pf 1 c llvmwrap::double_type llvmwrap::types_set
-	c llvmwrap::int32_type pf 2 0 llvmwrap::fn_type -> pf_ft
-	pf llvmwrap::types_free
-	s @lmod "qd_push_f" pf_ft llvmwrap::add_function drop
-	2 llvmwrap::types_new -> pp
-	pp 0 c llvmwrap::ptr_type llvmwrap::types_set
-	pp 1 c llvmwrap::ptr_type llvmwrap::types_set
-	c llvmwrap::int32_type pp 2 0 llvmwrap::fn_type -> pp_ft
-	pp llvmwrap::types_free
-	s @lmod "qd_push_s" pp_ft llvmwrap::add_function drop
-	s @lmod "qd_push_p" pp_ft llvmwrap::add_function drop
-	s @lmod "qd_push_s_ref" pp_ft llvmwrap::add_function drop
+	s @lmod "qd_push_i" s @ft_pi64 llvmwrap::add_function drop
+	s @lmod "qd_push_f" s @ft_pf64 llvmwrap::add_function drop
+	s @lmod "qd_push_s" s @ft_pptr llvmwrap::add_function drop
+	s @lmod "qd_push_p" s @ft_pptr llvmwrap::add_function drop
+	s @lmod "qd_push_s_ref" s @ft_pptr llvmwrap::add_function drop
 	s "qd_print" decl_fn drop    s "qd_nl" decl_fn drop
 	s "qd_add" decl_fn drop      s "qd_sub" decl_fn drop
 	s "qd_mul" decl_fn drop      s "qd_div" decl_fn drop
@@ -202,42 +179,29 @@ fn declare_runtime(st:LlvmCg -- ) {
 	// Array functions (non-standard signatures, declared inline when used)
 	s "qd_free_context" decl_fn drop
 	// qd_create_context(i64) -> ptr
-	s @lctx -> c
 	1 llvmwrap::types_new -> tp
-	tp 0 c llvmwrap::int64_type llvmwrap::types_set
-	c llvmwrap::ptr_type tp 1 0 llvmwrap::fn_type -> cft
+	tp 0 s @t_i64 llvmwrap::types_set
+	s @t_ptr tp 1 0 llvmwrap::fn_type -> cft
 	tp llvmwrap::types_free
 	s @lmod "qd_create_context" cft llvmwrap::add_function drop
 	// qd_stack_pop(ptr, ptr) and qdrt_push_element(ptr, ptr)
-	2 llvmwrap::types_new -> tp2
-	tp2 0 c llvmwrap::ptr_type llvmwrap::types_set
-	tp2 1 c llvmwrap::ptr_type llvmwrap::types_set
-	c llvmwrap::int32_type tp2 2 0 llvmwrap::fn_type -> ppft
-	tp2 llvmwrap::types_free
-	s @lmod "qd_stack_pop" ppft llvmwrap::add_function drop
-	s @lmod "qdrt_push_element" ppft llvmwrap::add_function drop
+	s @lmod "qd_stack_pop" s @ft_pptr llvmwrap::add_function drop
+	s @lmod "qdrt_push_element" s @ft_pptr llvmwrap::add_function drop
 	// qd_struct_alloc(i64, ptr) -> ptr
 	2 llvmwrap::types_new -> tp3
-	tp3 0 c llvmwrap::int64_type llvmwrap::types_set
-	tp3 1 c llvmwrap::ptr_type llvmwrap::types_set
-	c llvmwrap::ptr_type tp3 2 0 llvmwrap::fn_type -> saft
+	tp3 0 s @t_i64 llvmwrap::types_set
+	tp3 1 s @t_ptr llvmwrap::types_set
+	s @t_ptr tp3 2 0 llvmwrap::fn_type -> saft
 	tp3 llvmwrap::types_free
 	s @lmod "qd_struct_alloc" saft llvmwrap::add_function drop
 	// qd_string_retain(ptr)
-	1 llvmwrap::types_new -> tp4
-	tp4 0 c llvmwrap::ptr_type llvmwrap::types_set
-	c llvmwrap::int32_type tp4 1 0 llvmwrap::fn_type -> pft
-	tp4 llvmwrap::types_free
-	s @lmod "qd_string_retain" pft llvmwrap::add_function drop
+	s @lmod "qd_string_retain" s @t_sft llvmwrap::add_function drop
 }
 
 // Get stack pointer: load ptr from offset 0 of ctx
 fn get_stack_ptr(st:LlvmCg ctx_val:ptr name:str -- stkptr:ptr) {
 	-> nm -> cv -> s
-	s @builder -> b
-	s @lctx -> c
-	c llvmwrap::ptr_type -> pt
-	b pt cv $"stp_{nm}" llvmwrap::build_load
+	s @builder s @t_ptr cv $"stp_{nm}" llvmwrap::build_load
 }
 
 // Pop from stack into alloca
@@ -258,22 +222,14 @@ fn stack_push_elem(st:LlvmCg ctx_val:ptr alloca_val:ptr name:str -- ) {
 // Use [2 x i64] to provide 16 bytes of storage
 fn make_alloca(st:LlvmCg name:str -- val:ptr) {
 	-> nm -> s
-	s @builder -> b
-	s @lctx -> c
-	// Use [2 x i64] for 16 bytes
-	c llvmwrap::int64_type -> i64t
-	// Actually, just use two consecutive i64 allocas by using a ptr to i128
-	// Simpler: use i128 which is 16 bytes
-	// Simplest: LLVM alloca respects alignment, so alloca { i64, i64 }
-	// But we need llvm array type... let me use 2 separate i64 allocas...
-	// Actually, the cleanest way: use struct type. Create with empty name for anonymous.
+	// Use struct { i64, i32, i8 } to match qd_stack_element_t (16 bytes)
 	3 llvmwrap::types_new -> fields
-	fields 0 i64t llvmwrap::types_set
-	fields 1 c llvmwrap::int32_type llvmwrap::types_set
-	fields 2 c llvmwrap::int8_type llvmwrap::types_set
-	c "" fields 3 llvmwrap::struct_type -> se_type
+	fields 0 s @t_i64 llvmwrap::types_set
+	fields 1 s @t_i32 llvmwrap::types_set
+	fields 2 s @t_i8 llvmwrap::types_set
+	s @lctx "" fields 3 llvmwrap::struct_type -> se_type
 	fields llvmwrap::types_free
-	b se_type nm llvmwrap::build_alloca
+	s @builder se_type nm llvmwrap::build_alloca
 }
 
 // ============================================================
@@ -539,17 +495,12 @@ fn lookup_field_type(consts:str name:str -- typename:str) {
 
 fn pop_cond(st:LlvmCg cv:ptr counter:i64 -- counter2:i64 cond_val:ptr) {
 	-> cnt -> ctxv -> s
-	s @builder -> b
-	s @lctx -> c
 	cnt "ce" next_name -> sname -> cnt
 	s sname make_alloca -> elem
 	s ctxv elem sname stack_pop
-	// Load value from element (first field = i64 value)
-	c llvmwrap::int64_type -> i64t
-	b i64t elem $"cv_{sname}" llvmwrap::build_load -> ival
-	// icmp ne i64 val, 0
-	c llvmwrap::int64_type 0 llvmwrap::const_int -> zero
-	b 33 ival zero $"cc_{sname}" llvmwrap::build_icmp -> cond
+	s @builder s @t_i64 elem $"cv_{sname}" llvmwrap::build_load -> ival
+	s @t_i64 0 llvmwrap::const_int -> zero
+	s @builder 33 ival zero $"cc_{sname}" llvmwrap::build_icmp -> cond
 	cnt cond
 }
 
@@ -622,7 +573,32 @@ fn emit_node(st:LlvmCg cv:ptr node:ptr ectx:EmitCtx counter:i64 -- counter2:i64)
 	// Identifier
 	k ast::NodeType::Ident == if {
 		n @ntext -> fname
-		// Builtins
+
+		// Local variable — check FIRST (locals shadow builtins like nl, len, err)
+		ec @locals_names fname is_local if {
+			ec @locals_names ec @locals_ptrs fname lookup_local_alloca -> av
+			av null neq if {
+				s ctxv av fname stack_push_elem
+				cnt return
+			}
+		}
+
+		// Function pointer invocation: name! — push local, call qd_call
+		fname strings::len 1 > if {
+			fname fname strings::len 1 - strings::char_at! 33 == if {
+				fname 0 fname strings::len 1 - strings::substring! -> call_name
+				ec @locals_names call_name is_local if {
+					ec @locals_names ec @locals_ptrs call_name lookup_local_alloca -> call_av
+					call_av null neq if {
+						s ctxv call_av call_name stack_push_elem
+						s "qd_call" ctxv rt_call
+						cnt return
+					}
+				}
+			}
+		}
+
+		// Builtins (only reached if not a local variable)
 		fname "print" strings::compare 0 == if { s "qd_print" ctxv rt_call  cnt return }
 		fname "prints" strings::compare 0 == if { s "qd_print" ctxv rt_call  cnt return }
 		fname "nl" strings::compare 0 == if { s "qd_nl" ctxv rt_call  cnt return }
@@ -658,30 +634,6 @@ fn emit_node(st:LlvmCg cv:ptr node:ptr ectx:EmitCtx counter:i64 -- counter2:i64)
 		fname "nth" strings::compare 0 == if { s "qd_nth" ctxv rt_call  cnt return }
 		fname "type" strings::compare 0 == if { s "qd_type" ctxv rt_call  cnt return }
 		fname "size" strings::compare 0 == if { s "qd_size" ctxv rt_call  cnt return }
-
-		// Function pointer invocation: name! — push local, call qd_call
-		fname strings::len 1 > if {
-			fname fname strings::len 1 - strings::char_at! 33 == if {
-				fname 0 fname strings::len 1 - strings::substring! -> call_name
-				ec @locals_names call_name is_local if {
-					ec @locals_names ec @locals_ptrs call_name lookup_local_alloca -> call_av
-					call_av null neq if {
-						s ctxv call_av call_name stack_push_elem
-						s "qd_call" ctxv rt_call
-						cnt return
-					}
-				}
-			}
-		}
-
-		// Local variable — push from alloca
-		ec @locals_names fname is_local if {
-			ec @locals_names ec @locals_ptrs fname lookup_local_alloca -> av
-			av null neq if {
-				s ctxv av fname stack_push_elem
-				cnt return
-			}
-		}
 
 		// Constant lookup
 		ec @metadata fname lookup_constant -> cval

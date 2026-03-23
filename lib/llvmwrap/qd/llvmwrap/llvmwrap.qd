@@ -31,6 +31,8 @@ import "libqdllvmwrap.a" as "llvmwrap" {
 	// Builder
 	pub fn builder_create(ctx:ptr -- b:ptr)
 	pub fn position_at_end(b:ptr bb:ptr -- )
+	pub fn call1_void(b:ptr fnty:ptr fn:ptr arg0:ptr -- )
+	pub fn call2_void(b:ptr fnty:ptr fn:ptr arg0:ptr arg1:ptr -- )
 	pub fn build_call(b:ptr fnty:ptr fn:ptr args:ptr nargs:i64 name:str -- val:ptr)
 	pub fn build_ret(b:ptr val:ptr -- inst:ptr)
 	pub fn build_ret_void(b:ptr -- inst:ptr)
