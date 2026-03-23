@@ -212,10 +212,14 @@ fn emit_unique_allocas(s:ptr body:ptr skip_name:str -- s2:ptr) {
 // Collect struct field types from a program AST.
 // Format: "!@fieldname=typename!" (@ prefix distinguishes from constants)
 // StructField has ntext=fieldname and child1=Ident(typename).
-pub fn collect_field_types(node:ptr buf:ptr -- buf2:ptr) {
+// Collect both field types AND constants in a single AST traversal.
+// Field types: "!@fieldname=typename!" format
+// Constants: "!name=value!" format
+pub fn collect_metadata(node:ptr buf:ptr -- buf2:ptr) {
 	-> out -> n
 	n null == if { out return }
 	n @nkind -> nk
+	// Collect struct field types
 	nk ast::NodeType::StructField == if {
 		n @child1 null neq if {
 			n @ntext -> fname
@@ -233,35 +237,11 @@ pub fn collect_field_types(node:ptr buf:ptr -- buf2:ptr) {
 			}
 		}
 	}
-	// Only recurse into structural nodes (Program, StructDecl, StructField)
-	nk ast::NodeType::Program == nk ast::NodeType::StructDecl == or
-	nk ast::NodeType::StructField == or nk ast::NodeType::FnDecl == or
-	nk ast::NodeType::Block == or nk ast::NodeType::ImportDecl == or
-	nk ast::NodeType::UseStmt == or if {
-		n @child1 null neq if { n @child1 out collect_field_types -> out }
-		n @child2 null neq if { n @child2 out collect_field_types -> out }
-		n @child3 null neq if { n @child3 out collect_field_types -> out }
-		n @child4 null neq if { n @child4 out collect_field_types -> out }
-		n @extra -> cur
-		cur null neq while {
-			cur out collect_field_types -> out
-			cur @sibling -> cur
-			cur null neq
-		}
-	}
-	out
-}
-
-// Collect all constants from a program AST into a registry string.
-// Format: "!name=value!name2=value2!" (! delimited, = separates name from value)
-pub fn collect_constants(node:ptr buf:ptr -- buf2:ptr) {
-	-> out -> n
-	n null == if { out return }
-	n @nkind ast::NodeType::ConstDecl == if {
+	// Collect constants
+	nk ast::NodeType::ConstDecl == if {
 		n @child1 null neq if {
 			n @ntext -> cname
 			n @child1 @ntext -> cval
-			// Convert hex to decimal
 			n @child1 @nkind ast::NodeType::IntLit == if {
 				cval strings::len 2 > if {
 					cval 0 strings::char_at! 48 == if {
@@ -281,19 +261,20 @@ pub fn collect_constants(node:ptr buf:ptr -- buf2:ptr) {
 			out cval sb::append -> out
 		}
 	}
-	// Only recurse into top-level containers (not deep expression trees)
-	n @nkind -> nk2
-	nk2 ast::NodeType::Program == nk2 ast::NodeType::Block == or
-	nk2 ast::NodeType::FnDecl == or nk2 ast::NodeType::ConstDecl == or
-	nk2 ast::NodeType::EnumDecl == or nk2 ast::NodeType::ImportDecl == or if {
-		n @child1 null neq if { n @child1 out collect_constants -> out }
-		n @child2 null neq if { n @child2 out collect_constants -> out }
-		n @child3 null neq if { n @child3 out collect_constants -> out }
-		n @child4 null neq if { n @child4 out collect_constants -> out }
+	// Recurse into structural nodes (union of both traversal needs)
+	nk ast::NodeType::Program == nk ast::NodeType::Block == or
+	nk ast::NodeType::FnDecl == or nk ast::NodeType::StructDecl == or
+	nk ast::NodeType::StructField == or nk ast::NodeType::ConstDecl == or
+	nk ast::NodeType::EnumDecl == or nk ast::NodeType::ImportDecl == or
+	nk ast::NodeType::UseStmt == or if {
+		n @child1 null neq if { n @child1 out collect_metadata -> out }
+		n @child2 null neq if { n @child2 out collect_metadata -> out }
+		n @child3 null neq if { n @child3 out collect_metadata -> out }
+		n @child4 null neq if { n @child4 out collect_metadata -> out }
 	}
 	n @extra -> cur
 	cur null neq while {
-		cur out collect_constants -> out
+		cur out collect_metadata -> out
 		cur @sibling -> cur
 		cur null neq
 	}
@@ -1504,21 +1485,13 @@ pub fn generate_full(prog:ptr merged_files:ptr module_declares:str -- ir:str) {
 	o "declare ptr @qd_struct_alloc(i64, ptr)\n\n" sb::append -> o
 	o st.code
 
-	// Pre-pass: collect all constants and field types from main and merged files
-	root sb::new collect_constants -> cbuf
+	// Pre-pass: collect all constants and field types in one traversal
+	root sb::new collect_metadata -> cbuf
 	merged -> miter
 	miter null neq while {
-		miter cbuf collect_constants -> cbuf
+		miter cbuf collect_metadata -> cbuf
 		miter @sibling -> miter
 		miter null neq
-	}
-	// Also collect struct field types (stored as !@fieldname=typename!)
-	root cbuf collect_field_types -> cbuf
-	merged -> miter2
-	miter2 null neq while {
-		miter2 cbuf collect_field_types -> cbuf
-		miter2 @sibling -> miter2
-		miter2 null neq
 	}
 	cbuf "!" sb::append -> cbuf  // terminator
 	cbuf sb::finish -> all_consts

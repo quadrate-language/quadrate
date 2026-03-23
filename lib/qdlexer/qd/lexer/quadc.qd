@@ -44,47 +44,6 @@ fn extract_module_funcs(mod_path:str -- funcs:str) {
 	out sb::finish
 }
 
-// Extract ALL function names (both import and non-import) from a module .qd file.
-// Returns comma-separated: "alloc,realloc,free,is_null"
-fn extract_all_funcs(mod_path:str -- funcs:str) {
-	-> mpath
-	mpath io::read_file! -> msource
-
-	sb::new -> out
-	0 -> count
-
-	msource lexer::new -> ml
-	ml lexer::next -> mtok
-	mtok @kind lexer::TokenType::Eof neq while {
-		mtok @kind lexer::TokenType::KwPub == if {
-			ml lexer::next -> mt2
-			mt2 @kind lexer::TokenType::KwFn == if {
-				// Skip receiver if present: fn (recv:Type) name(...)
-				ml lexer::next -> mt3
-				mt3 @kind lexer::TokenType::LParen == if {
-					// Could be receiver — skip until matching )
-					1 -> depth
-					depth 0 > while {
-						ml lexer::next -> mt4
-						mt4 @kind lexer::TokenType::LParen == if { depth 1 + -> depth }
-						mt4 @kind lexer::TokenType::RParen == if { depth 1 - -> depth }
-						depth 0 >
-					}
-					ml lexer::next -> mt3  // now should be the actual function name
-				}
-				mt3 @kind lexer::TokenType::Ident == if {
-					count 0 > if { out "," sb::append -> out }
-					out mt3 @text sb::append -> out
-					count 1 + -> count
-				}
-			}
-		}
-		ml lexer::next -> mtok
-		mtok @kind lexer::TokenType::Eof neq
-	}
-	out sb::finish
-}
-
 // Extract pub const declarations from a module .qd file.
 // Returns semicolon-separated "name=value" pairs: "ErrNotFound=2;ErrPermission=3"
 fn extract_module_consts(mod_path:str -- consts:str) {

@@ -486,32 +486,52 @@ fn is_ident_char(ch:i64 -- result:i64) {
 }
 
 // Classify an identifier as keyword or plain ident
+// Uses length-based dispatch for fast rejection of non-keywords
 fn classify_keyword(text:str -- kind:i64) {
 	-> t
-	t "fn" strings::compare 0 == if { TokenType::KwFn return }
-	t "pub" strings::compare 0 == if { TokenType::KwPub return }
-	t "if" strings::compare 0 == if { TokenType::KwIf return }
-	t "else" strings::compare 0 == if { TokenType::KwElse return }
-	t "for" strings::compare 0 == if { TokenType::KwFor return }
-	t "while" strings::compare 0 == if { TokenType::KwWhile return }
-	t "loop" strings::compare 0 == if { TokenType::KwLoop return }
-	t "break" strings::compare 0 == if { TokenType::KwBreak return }
-	t "continue" strings::compare 0 == if { TokenType::KwContinue return }
-	t "return" strings::compare 0 == if { TokenType::KwReturn return }
-	t "use" strings::compare 0 == if { TokenType::KwUse return }
-	t "struct" strings::compare 0 == if { TokenType::KwStruct return }
-	t "enum" strings::compare 0 == if { TokenType::KwEnum return }
-	t "const" strings::compare 0 == if { TokenType::KwConst return }
-	t "defer" strings::compare 0 == if { TokenType::KwDefer return }
-	t "switch" strings::compare 0 == if { TokenType::KwSwitch return }
-	t "test" strings::compare 0 == if { TokenType::KwTest return }
-	t "as" strings::compare 0 == if { TokenType::KwAs return }
-	t "true" strings::compare 0 == if { TokenType::KwTrue return }
-	t "false" strings::compare 0 == if { TokenType::KwFalse return }
-	t "Ok" strings::compare 0 == if { TokenType::KwOk return }
-	t "Err" strings::compare 0 == if { TokenType::KwErr return }
-	t "null" strings::compare 0 == if { TokenType::KwNull return }
-	t "import" strings::compare 0 == if { TokenType::KwImport return }
-	t "ctx" strings::compare 0 == if { TokenType::KwCtx return }
+	t strings::len -> tlen
+	tlen 2 == if {
+		t "fn" strings::compare 0 == if { TokenType::KwFn return }
+		t "if" strings::compare 0 == if { TokenType::KwIf return }
+		t "as" strings::compare 0 == if { TokenType::KwAs return }
+		t "Ok" strings::compare 0 == if { TokenType::KwOk return }
+		TokenType::Ident return
+	}
+	tlen 3 == if {
+		t "pub" strings::compare 0 == if { TokenType::KwPub return }
+		t "for" strings::compare 0 == if { TokenType::KwFor return }
+		t "use" strings::compare 0 == if { TokenType::KwUse return }
+		t "Err" strings::compare 0 == if { TokenType::KwErr return }
+		t "ctx" strings::compare 0 == if { TokenType::KwCtx return }
+		TokenType::Ident return
+	}
+	tlen 4 == if {
+		t "else" strings::compare 0 == if { TokenType::KwElse return }
+		t "loop" strings::compare 0 == if { TokenType::KwLoop return }
+		t "true" strings::compare 0 == if { TokenType::KwTrue return }
+		t "null" strings::compare 0 == if { TokenType::KwNull return }
+		t "test" strings::compare 0 == if { TokenType::KwTest return }
+		t "enum" strings::compare 0 == if { TokenType::KwEnum return }
+		TokenType::Ident return
+	}
+	tlen 5 == if {
+		t "while" strings::compare 0 == if { TokenType::KwWhile return }
+		t "break" strings::compare 0 == if { TokenType::KwBreak return }
+		t "const" strings::compare 0 == if { TokenType::KwConst return }
+		t "defer" strings::compare 0 == if { TokenType::KwDefer return }
+		t "false" strings::compare 0 == if { TokenType::KwFalse return }
+		TokenType::Ident return
+	}
+	tlen 6 == if {
+		t "return" strings::compare 0 == if { TokenType::KwReturn return }
+		t "struct" strings::compare 0 == if { TokenType::KwStruct return }
+		t "switch" strings::compare 0 == if { TokenType::KwSwitch return }
+		t "import" strings::compare 0 == if { TokenType::KwImport return }
+		TokenType::Ident return
+	}
+	tlen 8 == if {
+		t "continue" strings::compare 0 == if { TokenType::KwContinue return }
+		TokenType::Ident return
+	}
 	TokenType::Ident
 }
