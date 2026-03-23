@@ -796,7 +796,7 @@ fn (p:Parser) parse_atom( -- n:ptr) {
 						ast::NodeType::Ident ename l c ast::leaf -> enode
 						blk enode ast::add_child
 					}
-					// sb::append_any (resolved at codegen time)
+					// sb::append (works for strings; for integers, use i2s helper in source)
 					ast::NodeType::ScopedIdent "sb" l c ast::make_node -> saany
 					ast::NodeType::Ident "append" l c ast::leaf -> saanyn
 					saany saanyn ast::add_child

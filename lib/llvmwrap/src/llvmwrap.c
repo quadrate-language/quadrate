@@ -435,6 +435,13 @@ int usr_llvmwrap_build_unreachable(qd_context* ctx) {
 	return 0;
 }
 
+// ( b:ptr -- bb:ptr ) Get the current insert block.
+int usr_llvmwrap_get_insert_block(qd_context* ctx) {
+	void* b; pop_ptr(ctx, &b);
+	qd_push_p(ctx, (void*)LLVMGetInsertBlock((LLVMBuilderRef)b));
+	return 0;
+}
+
 // ( b:ptr -- )
 int usr_llvmwrap_builder_dispose(qd_context* ctx) {
 	void* b; pop_ptr(ctx, &b);
@@ -602,6 +609,30 @@ int usr_llvmwrap_types_set(qd_context* ctx) {
 int usr_llvmwrap_types_free(qd_context* ctx) {
 	void* arr; pop_ptr(ctx, &arr);
 	free(arr);
+	return 0;
+}
+
+// ============================================================
+// Stack size
+// ============================================================
+
+#ifdef __linux__
+#include <sys/resource.h>
+#endif
+
+// ( size_mb:i64 -- ok:i64 ) Set stack size limit in megabytes. Returns 1 on success.
+int usr_llvmwrap_set_stack_size(qd_context* ctx) {
+	int64_t size_mb;
+	pop_int(ctx, &size_mb);
+#ifdef __linux__
+	struct rlimit rl;
+	rl.rlim_cur = (rlim_t)size_mb * 1024 * 1024;
+	rl.rlim_max = RLIM_INFINITY;
+	int ok = setrlimit(RLIMIT_STACK, &rl) == 0;
+	qd_push_i(ctx, ok ? 1 : 0);
+#else
+	qd_push_i(ctx, 0); // not supported
+#endif
 	return 0;
 }
 

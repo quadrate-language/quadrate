@@ -315,6 +315,9 @@ fn emit_fn_alias(node:ptr basename:str buf:ptr -- buf2:ptr) {
 }
 
 fn main() {
+	// Increase stack size to 64MB for deep recursion in codegen
+	64 llvmwrap::set_stack_size drop
+
 	"QUADC_INPUT" os::getenv -> source_path
 	"QUADC_OUTPUT" os::getenv -> output_name
 	"QUADRATE_ROOT" os::getenv -> quad_root
@@ -327,6 +330,9 @@ fn main() {
 	output_name strings::is_empty if { "a.out" -> output_name }
 	quad_root strings::is_empty if { "/usr/share/quadrate" -> quad_root }
 	quad_libdir strings::is_empty if { "/usr/lib" -> quad_libdir }
+	"QUADC_OPT" os::getenv -> opt_str
+	0 -> opt_level
+	opt_str strings::is_empty 0 == if { opt_str strconv::atoi! -> opt_level }
 
 	// Read and parse main source file
 	source_path io::read_file! -> source
@@ -529,9 +535,14 @@ fn main() {
 
 	extra_declares sb::finish -> decl_str
 
+	// Check test mode
+	"QUADC_TEST" os::getenv -> test_flag
+	0 -> is_test
+	test_flag strings::is_empty 0 == if { 1 -> is_test }
+
 	// Generate object file directly via LLVM
 	"/tmp/quadc_output.o" -> obj_path
-	prog merged_head decl_str obj_path codegen_llvm::generate_obj -> gen_ok
+	prog merged_head decl_str obj_path opt_level is_test codegen_llvm::generate_obj -> gen_ok
 	gen_ok 0 == if {
 		"Code generation failed" print nl
 		1 os::exit
@@ -540,7 +551,7 @@ fn main() {
 	// Write IR for bootstrap verification if QUADC_DUMP_IR is set
 	"QUADC_DUMP_IR" os::getenv -> dump_ir
 	dump_ir strings::is_empty 0 == if {
-		prog merged_head decl_str codegen_llvm::generate_full -> ir
+		prog merged_head decl_str is_test codegen_llvm::generate_full -> ir
 		"/tmp/quadc_output.ll" ir io::write_file!
 	}
 
@@ -568,5 +579,12 @@ fn main() {
 		1 os::exit
 	}
 
-	source_path print " -> " print output_name print nl
+	// Run mode: execute the binary if QUADC_RUN=1, otherwise print path
+	"QUADC_RUN" os::getenv -> run_flag
+	run_flag strings::is_empty 0 == if {
+		output_name os::system -> run_code
+		run_code os::exit
+	} else {
+		source_path print " -> " print output_name print nl
+	}
 }

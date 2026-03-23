@@ -43,6 +43,7 @@ import "libqdllvmwrap.a" as "llvmwrap" {
 	pub fn build_icmp(b:ptr pred:i64 lhs:ptr rhs:ptr name:str -- val:ptr)
 	pub fn build_inttoptr(b:ptr val:ptr ty:ptr name:str -- val:ptr)
 	pub fn build_unreachable(b:ptr -- )
+	pub fn get_insert_block(b:ptr -- bb:ptr)
 	pub fn builder_dispose(b:ptr -- )
 
 	// Constants
@@ -65,6 +66,9 @@ import "libqdllvmwrap.a" as "llvmwrap" {
 	pub fn get_global(mod:ptr name:str -- global:ptr)
 	pub fn set_initializer(global:ptr val:ptr -- )
 	pub fn set_global_constant(global:ptr -- )
+
+	// Stack size
+	pub fn set_stack_size(size_mb:i64 -- ok:i64)
 
 	// Target Machine (direct .o emission)
 	pub fn init_targets( -- )
