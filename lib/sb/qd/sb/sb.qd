@@ -72,23 +72,15 @@ pub fn append(sb:ptr s:str -- sb:ptr) {
 		buf cap mem::realloc! -> buf
 	}
 
-	// Copy string bytes one by one
-	0 -> i
-	loop {
-		i slen >= if {
-			break
-		}
-		s i strings::char_at! -> byte
-		byte buf curlen i + mem::set_byte
-		i 1 + -> i
-	}
+	// Bulk copy string data using memcpy
+	s strings::data -> sdata
+	buf curlen mem::ptr_add sdata slen mem::copy
 
-	// Return updated builder
-	StringBuilder {
-		buf = buf
-		len = newlen
-		cap = cap
-	}
+	// Update builder in-place and return
+	buf sb.buf
+	newlen sb.len
+	cap sb.cap
+	sb
 }
 
 /// Append a single character (by code point).
@@ -113,12 +105,11 @@ pub fn append_char(sb:ptr c:i64 -- sb:ptr) {
 	// Set the byte
 	c buf curlen mem::set_byte
 
-	// Return updated builder
-	StringBuilder {
-		buf = buf
-		len = curlen 1 +
-		cap = cap
-	}
+	// Update builder in-place
+	buf sb.buf
+	curlen 1 + sb.len
+	cap sb.cap
+	sb
 }
 
 /// Append an integer as string.
@@ -179,11 +170,11 @@ pub fn append_int(sb:ptr n:i64 -- sb:ptr) {
 			n 10 / -> n
 		}
 
-		StringBuilder {
-			buf = buf
-			len = curlen count +
-			cap = cap
-		}
+		// Update builder in-place
+		buf sb.buf
+		curlen count + sb.len
+		cap sb.cap
+		sb
 	}
 }
 

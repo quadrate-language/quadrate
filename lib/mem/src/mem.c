@@ -367,6 +367,21 @@ int usr_mem_copy(qd_context* ctx) {
 	return (int){0};
 }
 
+/* Pointer arithmetic: base + offset -> result */
+int usr_mem_ptr_add(qd_context* ctx) {
+	int64_t offset;
+	void* base;
+
+	if (pop_int(ctx, &offset) != QD_STACK_OK ||
+			pop_ptr(ctx, &base) != QD_STACK_OK) {
+		return (int){-1};
+	}
+
+	void* result = (char*)base + offset;
+	qd_push_p(ctx, result);
+	return (int){0};
+}
+
 /* Zero memory */
 int usr_mem_zero(qd_context* ctx) {
 	int64_t bytes;

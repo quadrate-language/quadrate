@@ -205,25 +205,26 @@ fn collect_uses(prog:ptr -- uses:str) {
 // Map module name to C symbol prefix (most match, "strings" -> "str" is the exception)
 fn module_c_prefix(mod_name:str -- prefix:str) {
 	-> m
-	m "strings" strings::compare 0 == if { "str" return }
+	// All module C functions now use the full module name as prefix
 	m
 }
 
 // Map module name to link flag
 fn module_lib_flag(mod_name:str -- flag:str) {
 	-> m
-	m "io" strings::compare 0 == if { "-lqdio" return }
-	m "strings" strings::compare 0 == if { "-lqdstr" return }
-	m "os" strings::compare 0 == if { "-lqdos" return }
-	m "math" strings::compare 0 == if { "-lqdmath" return }
-	m "mem" strings::compare 0 == if { "-lqdmem" return }
-	m "fmt" strings::compare 0 == if { "-lqdfmt" return }
-	m "time" strings::compare 0 == if { "-lqdtime" return }
-	m "signal" strings::compare 0 == if { "-lqdsignal" return }
-	m "strconv" strings::compare 0 == if { "-lqdstrconv" return }
-	m "thread" strings::compare 0 == if { "-lqdthread" return }
-	m "testing" strings::compare 0 == if { "-lqdtesting" return }
-	m "tty" strings::compare 0 == if { "-lqdtty" return }
+	// Native modules have libraries in $QUADRATE_LIBDIR/quadrate/lib<name>.a
+	m "io" strings::compare 0 == if { "-lio" return }
+	m "strings" strings::compare 0 == if { "-lstrings" return }
+	m "os" strings::compare 0 == if { "-los" return }
+	m "math" strings::compare 0 == if { "-lmath" return }
+	m "mem" strings::compare 0 == if { "-lmem" return }
+	m "fmt" strings::compare 0 == if { "-lfmt" return }
+	m "time" strings::compare 0 == if { "-ltime" return }
+	m "signal" strings::compare 0 == if { "-lsignal" return }
+	m "strconv" strings::compare 0 == if { "-lstrconv" return }
+	m "thread" strings::compare 0 == if { "-lthread" return }
+	m "testing" strings::compare 0 == if { "-ltesting" return }
+	m "tty" strings::compare 0 == if { "-ltty" return }
 	""
 }
 
@@ -576,7 +577,9 @@ fn main() {
 	sb::new -> cmd
 	cmd "clang /tmp/quadc_output.ll -L" sb::append -> cmd
 	cmd quad_libdir sb::append -> cmd
-	cmd " -lqdrt -lm -lstdc++" sb::append -> cmd
+	cmd " -L" sb::append -> cmd
+	cmd quad_libdir sb::append -> cmd
+	cmd "/quadrate -lrt -lm -lstdc++" sb::append -> cmd
 	extra_libs sb::finish -> el
 	el strings::len 0 > if {
 		cmd el sb::append -> cmd
