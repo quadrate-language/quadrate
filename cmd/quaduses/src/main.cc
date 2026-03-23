@@ -482,10 +482,7 @@ int main(int argc, char* argv[]) {
 	qdcli::BaseOptions base;
 	UsesOptions opts;
 
-	auto handler = [&opts](const char* arg, int& i, int argc, char* argv[]) -> bool {
-		(void)i;
-		(void)argc;
-		(void)argv;
+	auto handler = [&opts](const char* arg, int& /*i*/, int /*ac*/, char* /*av*/[]) -> bool {
 		if (strcmp(arg, "-w") == 0 || strcmp(arg, "--write") == 0) {
 			opts.inPlace = true;
 			return true;

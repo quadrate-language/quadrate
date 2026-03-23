@@ -15,6 +15,11 @@ import "libstrings.a" as "strings" {
 	/// @example "hello" strings::len print  // 5
 	pub fn len(str:str -- len:i64)
 
+	/// Get raw char pointer to string data.
+	/// @param str str Source string
+	/// @return ptr ptr Raw pointer to string bytes
+	pub fn data(str:str -- ptr:ptr)
+
 	/// Concatenate two strings.
 	/// @param str1 str First string
 	/// @param str2 str Second string

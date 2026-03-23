@@ -869,6 +869,14 @@ namespace Qd {
 			for (const auto& constant : moduleConstants) {
 				mDefinedConstants.insert(constant.first);
 			}
+			// Also register module enums in mDefinedEnums for type checking
+			for (size_t i = 0; i < moduleAstRoot->childCount(); i++) {
+				IAstNode* child = moduleAstRoot->child(i);
+				if (child && child->type() == IAstNode::Type::ENUM_DECLARATION) {
+					AstNodeEnumDeclaration* enumNode = static_cast<AstNodeEnumDeclaration*>(child);
+					mDefinedEnums.insert(enumNode->name());
+				}
+			}
 		}
 
 		// Also collect constant values

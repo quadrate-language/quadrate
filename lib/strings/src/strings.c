@@ -45,6 +45,29 @@ int usr_strings_len(qd_context* ctx) {
 	return (int){0};
 }
 
+// data - get raw char* pointer to string data ( s:str -- p:ptr )
+int usr_strings_data(qd_context* ctx) {
+	qd_stack_element_t val;
+	qd_stack_error err = qd_stack_pop(ctx->st, &val);
+
+	if (err != QD_STACK_OK) {
+		fprintf(stderr, "Fatal error in strings::data: Stack underflow\n");
+		abort();
+	}
+
+	if (val.type != QD_STACK_TYPE_STR) {
+		fprintf(stderr, "Fatal error in strings::data: Expected string, got type %d\n", val.type);
+		abort();
+	}
+
+	const char* data = qd_string_data(val.value.s);
+	// Push the raw pointer — caller's local variable still holds a reference
+	// so the string data remains valid
+	qd_push_p(ctx, (void*)data);
+	qd_string_release(val.value.s);
+	return (int){0};
+}
+
 // concat - concatenate two strings ( str1:s str2:s -- result:s )
 // Uses qd_string_concat_smart for in-place append when possible (refcount==1 && enough capacity)
 int usr_strings_concat(qd_context* ctx) {

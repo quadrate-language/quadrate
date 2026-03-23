@@ -104,7 +104,7 @@ int main(int argc, char* argv[]) {
 	qdcli::BaseOptions base;
 	FmtOptions opts;
 
-	auto handler = [&opts](const char* arg, int& i, int argc, char* argv[]) -> bool {
+	auto handler = [&opts](const char* arg, int& i, int ac, char* av[]) -> bool {
 		if (strcmp(arg, "-c") == 0 || strcmp(arg, "--check") == 0) {
 			opts.check = true;
 			return true;
@@ -114,11 +114,11 @@ int main(int argc, char* argv[]) {
 			return true;
 		}
 		if (strcmp(arg, "--line-width") == 0) {
-			if (i + 1 >= argc) {
+			if (i + 1 >= ac) {
 				std::cerr << "quadfmt: --line-width requires a value\n";
 				return false;
 			}
-			opts.lineWidth = std::stoi(argv[++i]);
+			opts.lineWidth = std::stoi(av[++i]);
 			return true;
 		}
 		if (strcmp(arg, "--no-sort-imports") == 0) {

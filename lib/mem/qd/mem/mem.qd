@@ -101,6 +101,12 @@ import "libmem.a" as "mem" {
 	/// @example dst src 100 mem::copy
 	pub fn copy(dst:ptr src:ptr bytes:i64 -- )
 
+	/// Pointer arithmetic: base + offset.
+	/// @param base ptr Base pointer
+	/// @param offset i64 Byte offset to add
+	/// @return result ptr Offset pointer
+	pub fn ptr_add(base:ptr offset:i64 -- result:ptr)
+
 	/// Zero out memory region.
 	/// @param address ptr Base address
 	/// @param bytes i64 Number of bytes to zero

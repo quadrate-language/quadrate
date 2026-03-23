@@ -98,6 +98,10 @@ namespace Qd {
 
 	private:
 		// Semantic validation setters (only accessible by SemanticValidator)
+		void setName(const std::string& name) {
+			mName = name;
+		}
+
 		void setParameterCasts(const std::vector<CastDirection>& casts) {
 			mParameterCasts = casts;
 		}

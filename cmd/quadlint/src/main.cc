@@ -822,7 +822,7 @@ int main(int argc, char* argv[]) {
 	qdcli::BaseOptions base;
 	LintOptions opts;
 
-	auto handler = [&opts](const char* arg, int& i, int argc, char* argv[]) -> bool {
+	auto handler = [&opts](const char* arg, int& i, int ac, char* av[]) -> bool {
 		if (strcmp(arg, "--no-unused-functions") == 0) {
 			opts.noUnusedFunctions = true;
 			return true;
@@ -876,11 +876,11 @@ int main(int argc, char* argv[]) {
 			return true;
 		}
 		if (strcmp(arg, "--max-nesting") == 0) {
-			if (i + 1 >= argc) {
+			if (i + 1 >= ac) {
 				std::cerr << "quadlint: --max-nesting requires an argument\n";
 				return false;
 			}
-			opts.maxNestingDepth = std::atoi(argv[++i]);
+			opts.maxNestingDepth = std::atoi(av[++i]);
 			if (opts.maxNestingDepth < 1) {
 				std::cerr << "quadlint: --max-nesting must be at least 1\n";
 				return false;
@@ -888,11 +888,11 @@ int main(int argc, char* argv[]) {
 			return true;
 		}
 		if (strcmp(arg, "--max-function-lines") == 0) {
-			if (i + 1 >= argc) {
+			if (i + 1 >= ac) {
 				std::cerr << "quadlint: --max-function-lines requires an argument\n";
 				return false;
 			}
-			opts.maxFunctionLines = std::atoi(argv[++i]);
+			opts.maxFunctionLines = std::atoi(av[++i]);
 			if (opts.maxFunctionLines < 1) {
 				std::cerr << "quadlint: --max-function-lines must be at least 1\n";
 				return false;
