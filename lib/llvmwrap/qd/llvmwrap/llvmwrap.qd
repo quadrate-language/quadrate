@@ -1,0 +1,68 @@
+/// LLVM C API wrappers for the Quadrate self-hosted compiler.
+/// Provides typed access to LLVM module creation, IR building, and code generation.
+
+import "libqdllvmwrap.a" as "llvmwrap" {
+	// Module/Context
+	pub fn context_create( -- ctx:ptr)
+	pub fn module_create(name:str ctx:ptr -- mod:ptr)
+	pub fn module_verify(mod:ptr -- ok:i64)
+	pub fn module_print(mod:ptr -- ir:str)
+	pub fn write_bitcode(mod:ptr path:str -- ok:i64)
+	pub fn module_dispose(mod:ptr -- )
+	pub fn context_dispose(ctx:ptr -- )
+
+	// Types
+	pub fn int1_type(ctx:ptr -- t:ptr)
+	pub fn int8_type(ctx:ptr -- t:ptr)
+	pub fn int32_type(ctx:ptr -- t:ptr)
+	pub fn int64_type(ctx:ptr -- t:ptr)
+	pub fn double_type(ctx:ptr -- t:ptr)
+	pub fn ptr_type(ctx:ptr -- t:ptr)
+	pub fn fn_type(ret:ptr params:ptr count:i64 variadic:i64 -- t:ptr)
+	pub fn struct_type(ctx:ptr name:str fields:ptr count:i64 -- t:ptr)
+
+	// Functions/Blocks
+	pub fn add_function(mod:ptr name:str ty:ptr -- fn:ptr)
+	pub fn append_block(ctx:ptr fn:ptr name:str -- bb:ptr)
+	pub fn set_linkage(fn:ptr linkage:i64 -- )
+	pub fn get_param(fn:ptr idx:i64 -- val:ptr)
+	pub fn get_function(mod:ptr name:str -- fn:ptr)
+
+	// Builder
+	pub fn builder_create(ctx:ptr -- b:ptr)
+	pub fn position_at_end(b:ptr bb:ptr -- )
+	pub fn build_call(b:ptr fnty:ptr fn:ptr args:ptr nargs:i64 name:str -- val:ptr)
+	pub fn build_ret(b:ptr val:ptr -- inst:ptr)
+	pub fn build_ret_void(b:ptr -- inst:ptr)
+	pub fn build_br(b:ptr bb:ptr -- inst:ptr)
+	pub fn build_cond_br(b:ptr cond:ptr then_bb:ptr else_bb:ptr -- inst:ptr)
+	pub fn build_alloca(b:ptr ty:ptr name:str -- val:ptr)
+	pub fn build_load(b:ptr ty:ptr ptr:ptr name:str -- val:ptr)
+	pub fn build_store(b:ptr val:ptr ptr:ptr -- inst:ptr)
+	pub fn build_gep(b:ptr ty:ptr ptr:ptr indices:ptr nidx:i64 name:str -- val:ptr)
+	pub fn build_icmp(b:ptr pred:i64 lhs:ptr rhs:ptr name:str -- val:ptr)
+	pub fn build_inttoptr(b:ptr val:ptr ty:ptr name:str -- val:ptr)
+	pub fn build_unreachable(b:ptr -- )
+	pub fn builder_dispose(b:ptr -- )
+
+	// Constants
+	pub fn const_int(ty:ptr val:i64 -- c:ptr)
+	pub fn const_real(ty:ptr val:f64 -- c:ptr)
+	pub fn const_null(ty:ptr -- c:ptr)
+	pub fn build_global_string(b:ptr str:str name:str -- val:ptr)
+
+	// Args/Types array helpers
+	pub fn args_new(cap:i64 -- arr:ptr)
+	pub fn args_set(arr:ptr idx:i64 val:ptr -- )
+	pub fn args_get(arr:ptr idx:i64 -- val:ptr)
+	pub fn args_free(arr:ptr -- )
+	pub fn types_new(cap:i64 -- arr:ptr)
+	pub fn types_set(arr:ptr idx:i64 ty:ptr -- )
+	pub fn types_free(arr:ptr -- )
+
+	// Globals
+	pub fn add_global(mod:ptr name:str ty:ptr -- global:ptr)
+	pub fn get_global(mod:ptr name:str -- global:ptr)
+	pub fn set_initializer(global:ptr val:ptr -- )
+	pub fn set_global_constant(global:ptr -- )
+}

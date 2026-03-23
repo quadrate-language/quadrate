@@ -1,0 +1,1915 @@
+/// LLVM IR codegen for Quadrate using the LLVM C API.
+/// Walks the AST and produces an LLVM module via llvmwrap:: calls.
+use strings
+use strconv
+use sb
+use mem
+use llvmwrap
+use "ast.qd"
+
+pub struct LlvmCg {
+	lctx:ptr
+	lmod:ptr
+	builder:ptr
+}
+
+struct EmitCtx {
+	lfn:ptr
+	retbb:ptr
+	break_bb:ptr
+	cont_bb:ptr
+	locals_names:str
+	locals_ptrs:ptr
+	metadata:str
+	prefix:str
+}
+
+pub fn new_state( -- s:LlvmCg) {
+	llvmwrap::context_create -> lctx
+	"quadrate" lctx llvmwrap::module_create -> lmod
+	lctx llvmwrap::builder_create -> builder
+	LlvmCg { lctx = lctx lmod = lmod builder = builder }
+}
+
+fn i2s(n:i64 -- s:str) {
+	-> v
+	sb::new -> b  b v sb::append_int -> b  b sb::finish
+}
+
+// Standard function type: i32 (ptr)
+fn std_fn_type(st:LlvmCg -- ty:ptr) {
+	-> s
+	s @lctx -> c
+	1 llvmwrap::types_new -> p
+	p 0 c llvmwrap::ptr_type llvmwrap::types_set
+	c llvmwrap::int32_type p 1 0 llvmwrap::fn_type -> ft
+	p llvmwrap::types_free
+	ft
+}
+
+// Declare or get an external i32(ptr) function
+fn decl_fn(st:LlvmCg name:str -- f:ptr) {
+	-> nm -> s
+	s @lmod nm llvmwrap::get_function -> existing
+	existing null neq if { existing return }
+	s std_fn_type -> ft
+	s @lmod nm ft llvmwrap::add_function
+}
+
+// Build call to runtime function with ctx as sole arg
+fn rt_call(st:LlvmCg name:str ctx_val:ptr -- ) {
+	-> cv -> nm -> s
+	s nm decl_fn -> f
+	s std_fn_type -> ft
+	1 llvmwrap::args_new -> a
+	a 0 cv llvmwrap::args_set
+	s @builder ft f a 1 "" llvmwrap::build_call drop
+	a llvmwrap::args_free
+}
+
+// Build a 2-arg call: fn(ptr, i64)
+fn call_ptr_i64(st:LlvmCg name:str ctx_val:ptr val:ptr -- ) {
+	-> v -> cv -> nm -> s
+	s nm decl_fn -> f
+	s @lctx -> c
+	c llvmwrap::int32_type -> i32t
+	2 llvmwrap::types_new -> p
+	p 0 c llvmwrap::ptr_type llvmwrap::types_set
+	p 1 c llvmwrap::int64_type llvmwrap::types_set
+	i32t p 2 0 llvmwrap::fn_type -> ft
+	p llvmwrap::types_free
+	2 llvmwrap::args_new -> a
+	a 0 cv llvmwrap::args_set
+	a 1 v llvmwrap::args_set
+	s @builder ft f a 2 "" llvmwrap::build_call drop
+	a llvmwrap::args_free
+}
+
+// Build a 2-arg call: fn(ptr, ptr)
+fn call_ptr_ptr(st:LlvmCg name:str ctx_val:ptr val:ptr -- ) {
+	-> v -> cv -> nm -> s
+	s nm decl_fn -> f
+	s @lctx -> c
+	2 llvmwrap::types_new -> p
+	p 0 c llvmwrap::ptr_type llvmwrap::types_set
+	p 1 c llvmwrap::ptr_type llvmwrap::types_set
+	c llvmwrap::int32_type p 2 0 llvmwrap::fn_type -> ft
+	p llvmwrap::types_free
+	2 llvmwrap::args_new -> a
+	a 0 cv llvmwrap::args_set
+	a 1 v llvmwrap::args_set
+	s @builder ft f a 2 "" llvmwrap::build_call drop
+	a llvmwrap::args_free
+}
+
+// Build a 2-arg call: fn(ptr, f64)
+fn call_ptr_f64(st:LlvmCg name:str ctx_val:ptr val:ptr -- ) {
+	-> v -> cv -> nm -> s
+	s nm decl_fn -> f
+	s @lctx -> c
+	2 llvmwrap::types_new -> p
+	p 0 c llvmwrap::ptr_type llvmwrap::types_set
+	p 1 c llvmwrap::double_type llvmwrap::types_set
+	c llvmwrap::int32_type p 2 0 llvmwrap::fn_type -> ft
+	p llvmwrap::types_free
+	2 llvmwrap::args_new -> a
+	a 0 cv llvmwrap::args_set
+	a 1 v llvmwrap::args_set
+	s @builder ft f a 2 "" llvmwrap::build_call drop
+	a llvmwrap::args_free
+}
+
+// Build a 2-arg void call: fn(ptr, ptr) -> void (like qd_stack_pop, qdrt_push_element)
+fn call2_void(st:LlvmCg name:str arg1:ptr arg2:ptr -- ) {
+	-> a2 -> a1 -> nm -> s
+	s @lmod nm llvmwrap::get_function -> f
+	s @lctx -> c
+	2 llvmwrap::types_new -> p
+	p 0 c llvmwrap::ptr_type llvmwrap::types_set
+	p 1 c llvmwrap::ptr_type llvmwrap::types_set
+	c llvmwrap::int32_type p 2 0 llvmwrap::fn_type -> ft
+	p llvmwrap::types_free
+	2 llvmwrap::args_new -> a
+	a 0 a1 llvmwrap::args_set
+	a 1 a2 llvmwrap::args_set
+	s @builder ft f a 2 "" llvmwrap::build_call drop
+	a llvmwrap::args_free
+}
+
+fn push_int(st:LlvmCg ctx_val:ptr val:ptr -- ) {
+	-> v -> cv -> s
+	s "qd_push_i" cv v call_ptr_i64
+}
+
+fn push_str(st:LlvmCg ctx_val:ptr val:ptr -- ) {
+	-> v -> cv -> s
+	s "qd_push_s" cv v call_ptr_ptr
+}
+
+fn push_ptr(st:LlvmCg ctx_val:ptr val:ptr -- ) {
+	-> v -> cv -> s
+	s "qd_push_p" cv v call_ptr_ptr
+}
+
+fn push_float(st:LlvmCg ctx_val:ptr val:ptr -- ) {
+	-> v -> cv -> s
+	s "qd_push_f" cv v call_ptr_f64
+}
+
+// Declare all runtime functions
+fn declare_runtime(st:LlvmCg -- ) {
+	-> s
+	s @lctx -> c
+	// qd_push_i(ptr, i64), qd_push_f(ptr, double), qd_push_s/p/s_ref(ptr, ptr)
+	2 llvmwrap::types_new -> pi
+	pi 0 c llvmwrap::ptr_type llvmwrap::types_set
+	pi 1 c llvmwrap::int64_type llvmwrap::types_set
+	c llvmwrap::int32_type pi 2 0 llvmwrap::fn_type -> pi_ft
+	pi llvmwrap::types_free
+	s @lmod "qd_push_i" pi_ft llvmwrap::add_function drop
+	2 llvmwrap::types_new -> pf
+	pf 0 c llvmwrap::ptr_type llvmwrap::types_set
+	pf 1 c llvmwrap::double_type llvmwrap::types_set
+	c llvmwrap::int32_type pf 2 0 llvmwrap::fn_type -> pf_ft
+	pf llvmwrap::types_free
+	s @lmod "qd_push_f" pf_ft llvmwrap::add_function drop
+	2 llvmwrap::types_new -> pp
+	pp 0 c llvmwrap::ptr_type llvmwrap::types_set
+	pp 1 c llvmwrap::ptr_type llvmwrap::types_set
+	c llvmwrap::int32_type pp 2 0 llvmwrap::fn_type -> pp_ft
+	pp llvmwrap::types_free
+	s @lmod "qd_push_s" pp_ft llvmwrap::add_function drop
+	s @lmod "qd_push_p" pp_ft llvmwrap::add_function drop
+	s @lmod "qd_push_s_ref" pp_ft llvmwrap::add_function drop
+	s "qd_print" decl_fn drop    s "qd_nl" decl_fn drop
+	s "qd_add" decl_fn drop      s "qd_sub" decl_fn drop
+	s "qd_mul" decl_fn drop      s "qd_div" decl_fn drop
+	s "qd_mod" decl_fn drop
+	s "qd_eq" decl_fn drop       s "qd_neq" decl_fn drop
+	s "qd_lt" decl_fn drop       s "qd_gt" decl_fn drop
+	s "qd_lte" decl_fn drop      s "qd_gte" decl_fn drop
+	s "qd_and" decl_fn drop      s "qd_or" decl_fn drop
+	s "qd_not" decl_fn drop      s "qd_neg" decl_fn drop
+	s "qd_dup" decl_fn drop      s "qd_drop" decl_fn drop
+	s "qd_swap" decl_fn drop     s "qd_over" decl_fn drop
+	s "qd_rot" decl_fn drop      s "qd_nip" decl_fn drop
+	s "qd_tuck" decl_fn drop     s "qd_pick" decl_fn drop
+	s "qd_roll" decl_fn drop
+	s "qd_len" decl_fn drop      s "qd_free" decl_fn drop
+	s "qd_panic" decl_fn drop    s "qd_err" decl_fn drop
+	s "qd_free_context" decl_fn drop
+	// qd_create_context(i64) -> ptr
+	s @lctx -> c
+	1 llvmwrap::types_new -> tp
+	tp 0 c llvmwrap::int64_type llvmwrap::types_set
+	c llvmwrap::ptr_type tp 1 0 llvmwrap::fn_type -> cft
+	tp llvmwrap::types_free
+	s @lmod "qd_create_context" cft llvmwrap::add_function drop
+	// qd_stack_pop(ptr, ptr) and qdrt_push_element(ptr, ptr)
+	2 llvmwrap::types_new -> tp2
+	tp2 0 c llvmwrap::ptr_type llvmwrap::types_set
+	tp2 1 c llvmwrap::ptr_type llvmwrap::types_set
+	c llvmwrap::int32_type tp2 2 0 llvmwrap::fn_type -> ppft
+	tp2 llvmwrap::types_free
+	s @lmod "qd_stack_pop" ppft llvmwrap::add_function drop
+	s @lmod "qdrt_push_element" ppft llvmwrap::add_function drop
+	// qd_struct_alloc(i64, ptr) -> ptr
+	2 llvmwrap::types_new -> tp3
+	tp3 0 c llvmwrap::int64_type llvmwrap::types_set
+	tp3 1 c llvmwrap::ptr_type llvmwrap::types_set
+	c llvmwrap::ptr_type tp3 2 0 llvmwrap::fn_type -> saft
+	tp3 llvmwrap::types_free
+	s @lmod "qd_struct_alloc" saft llvmwrap::add_function drop
+	// qd_string_retain(ptr)
+	1 llvmwrap::types_new -> tp4
+	tp4 0 c llvmwrap::ptr_type llvmwrap::types_set
+	c llvmwrap::int32_type tp4 1 0 llvmwrap::fn_type -> pft
+	tp4 llvmwrap::types_free
+	s @lmod "qd_string_retain" pft llvmwrap::add_function drop
+}
+
+// Get stack pointer: load ptr from offset 0 of ctx
+fn get_stack_ptr(st:LlvmCg ctx_val:ptr name:str -- stkptr:ptr) {
+	-> nm -> cv -> s
+	s @builder -> b
+	s @lctx -> c
+	c llvmwrap::ptr_type -> pt
+	b pt cv $"stp_{nm}" llvmwrap::build_load
+}
+
+// Pop from stack into alloca
+fn stack_pop(st:LlvmCg ctx_val:ptr alloca_val:ptr name:str -- ) {
+	-> nm -> av -> cv -> s
+	s cv nm get_stack_ptr -> stkp
+	s "qd_stack_pop" stkp av call2_void
+}
+
+// Push element from alloca onto stack
+fn stack_push_elem(st:LlvmCg ctx_val:ptr alloca_val:ptr name:str -- ) {
+	-> nm -> av -> cv -> s
+	s cv nm get_stack_ptr -> stkp
+	s "qdrt_push_element" stkp av call2_void
+}
+
+// Create alloca for a stack element (needs 16 bytes: i64 value + i32 type + i8 flags)
+// Use [2 x i64] to provide 16 bytes of storage
+fn make_alloca(st:LlvmCg name:str -- val:ptr) {
+	-> nm -> s
+	s @builder -> b
+	s @lctx -> c
+	// Use [2 x i64] for 16 bytes
+	c llvmwrap::int64_type -> i64t
+	// Actually, just use two consecutive i64 allocas by using a ptr to i128
+	// Simpler: use i128 which is 16 bytes
+	// Simplest: LLVM alloca respects alignment, so alloca { i64, i64 }
+	// But we need llvm array type... let me use 2 separate i64 allocas...
+	// Actually, the cleanest way: use struct type. Create with empty name for anonymous.
+	3 llvmwrap::types_new -> fields
+	fields 0 i64t llvmwrap::types_set
+	fields 1 c llvmwrap::int32_type llvmwrap::types_set
+	fields 2 c llvmwrap::int8_type llvmwrap::types_set
+	c "" fields 3 llvmwrap::struct_type -> se_type
+	fields llvmwrap::types_free
+	b se_type nm llvmwrap::build_alloca
+}
+
+// ============================================================
+// Unique name counter
+// ============================================================
+
+fn next_name(counter:i64 prefix:str -- counter2:i64 name:str) {
+	-> pfx -> n
+	sb::new -> b
+	b pfx sb::append -> b
+	b n sb::append_int -> b
+	n 1 + b sb::finish
+}
+
+// ============================================================
+// Local variable helpers
+// ============================================================
+
+// Collect local variable names from AST (recursive)
+// Returns comma-separated: ",x,y,z,"
+fn collect_locals(node:ptr result:ptr -- result2:ptr) {
+	-> buf -> n
+	n null == if { buf return }
+	n @nkind ast::NodeType::LocalDecl == if {
+		buf "," sb::append -> buf
+		buf n @ntext sb::append -> buf
+		buf "," sb::append -> buf
+	}
+	n @nkind ast::NodeType::ForStmt == if {
+		buf "," sb::append -> buf
+		buf n @ntext sb::append -> buf
+		buf "," sb::append -> buf
+	}
+	n @child1 null neq if { n @child1 buf collect_locals -> buf }
+	n @child2 null neq if { n @child2 buf collect_locals -> buf }
+	n @child3 null neq if { n @child3 buf collect_locals -> buf }
+	n @child4 null neq if { n @child4 buf collect_locals -> buf }
+	n @extra -> cur
+	cur null neq while {
+		cur buf collect_locals -> buf
+		cur @sibling -> cur
+		cur null neq
+	}
+	buf
+}
+
+// Check if name is in locals string
+fn is_local(locals:str name:str -- result:i64) {
+	-> n -> ls
+	sb::new -> ndb
+	ndb "," sb::append -> ndb
+	ndb n sb::append -> ndb
+	ndb "," sb::append -> ndb
+	ndb sb::finish -> needle
+	ls needle strings::contains
+}
+
+// Create allocas for unique locals, return names string and ptrs array
+// skip_name: name to skip (already allocated, e.g., receiver)
+fn create_allocas(st:LlvmCg body:ptr skip_name:str -- names:str ptrs:ptr count:i64) {
+	-> skip -> bnode -> s
+	bnode null == if { "" null 0 return }
+	bnode sb::new collect_locals sb::finish -> all_locals
+	all_locals strings::len 2 < if { "" null 0 return }
+	// Count unique names first
+	0 -> cnt
+	"" -> seen
+	skip strings::len 0 > if {
+		"," skip strings::concat "," strings::concat -> seen
+	}
+	1 -> pos
+	all_locals strings::len -> alen
+	pos alen < while {
+		pos -> end
+		end alen < while {
+			all_locals end strings::char_at! 44 == if { break }
+			end 1 + -> end
+			end alen <
+		}
+		end pos > if {
+			all_locals pos end pos - strings::substring! -> vn
+			"," vn strings::concat "," strings::concat -> ck
+			seen ck strings::contains 0 == if {
+				cnt 1 + -> cnt
+				seen ck strings::concat -> seen
+			}
+		}
+		end 1 + -> pos
+		pos alen <
+	}
+	cnt 0 == if { "" null 0 return }
+	// Now create allocas
+	cnt llvmwrap::args_new -> ptrs_arr
+	sb::new -> names_buf
+	0 -> idx
+	"" -> seen2
+	skip strings::len 0 > if {
+		"," skip strings::concat "," strings::concat -> seen2
+	}
+	1 -> pos2
+	pos2 alen < while {
+		pos2 -> end2
+		end2 alen < while {
+			all_locals end2 strings::char_at! 44 == if { break }
+			end2 1 + -> end2
+			end2 alen <
+		}
+		end2 pos2 > if {
+			all_locals pos2 end2 pos2 - strings::substring! -> vn2
+			"," vn2 strings::concat "," strings::concat -> ck2
+			seen2 ck2 strings::contains 0 == if {
+				s $"local.{vn2}" make_alloca -> av
+				ptrs_arr idx av llvmwrap::args_set
+				names_buf "," sb::append -> names_buf
+				names_buf vn2 sb::append -> names_buf
+				idx 1 + -> idx
+				seen2 ck2 strings::concat -> seen2
+			}
+		}
+		end2 1 + -> pos2
+		pos2 alen <
+	}
+	names_buf "," sb::append -> names_buf
+	names_buf sb::finish ptrs_arr idx
+}
+
+// Look up a local's alloca pointer by name
+fn lookup_local_alloca(names:str ptrs:ptr name:str -- alloca_ptr:ptr) {
+	-> nm -> ptrs_arr -> ns
+	ns strings::len 0 == if { null return }
+	// Find index of name in names string ",x,y,z,"
+	sb::new -> nb
+	nb "," sb::append -> nb
+	nb nm sb::append -> nb
+	nb "," sb::append -> nb
+	nb sb::finish -> needle
+	ns needle strings::index_of -> idx
+	idx 0 < if { null return }
+	// Count commas before idx to get array index
+	0 -> ci
+	0 -> count
+	ci idx < while {
+		ns ci strings::char_at! 44 == if { count 1 + -> count }
+		ci 1 + -> ci
+		ci idx <
+	}
+	ptrs_arr count llvmwrap::args_get
+}
+
+// ============================================================
+// Metadata helpers (constants, field types, struct sizes)
+// ============================================================
+
+// Collect metadata from AST: field types, constants, enum values, struct sizes
+pub fn collect_metadata(node:ptr buf:ptr -- buf2:ptr) {
+	-> out -> n
+	n null == if { out return }
+	n @nkind -> nk
+	nk ast::NodeType::StructField == if {
+		n @child1 null neq if {
+			n @ntext -> fname
+			n @child1 @ntext -> ftype
+			sb::new -> ftkey
+			ftkey "!@" sb::append -> ftkey
+			ftkey fname sb::append -> ftkey
+			ftkey "=" sb::append -> ftkey
+			ftkey sb::build -> ftkeystr
+			out sb::build ftkeystr strings::contains 0 == if {
+				out "!@" sb::append -> out
+				out fname sb::append -> out
+				out "=" sb::append -> out
+				out ftype sb::append -> out
+			}
+		}
+	}
+	nk ast::NodeType::ConstDecl == if {
+		n @child1 null neq if {
+			n @ntext -> cname
+			n @child1 @ntext -> cval
+			n @child1 @nkind ast::NodeType::IntLit == if {
+				cval strings::len 2 > if {
+					cval 0 strings::char_at! 48 == if {
+						cval 1 strings::char_at! -> xc
+						xc 120 == xc 88 == or if {
+							cval 16 strconv::parse_int! -> hv
+							sb::new -> hvb
+							hvb hv sb::append_int -> hvb
+							hvb sb::finish -> cval
+						}
+					}
+				}
+			}
+			out "!" sb::append -> out
+			out cname sb::append -> out
+			out "=" sb::append -> out
+			out cval sb::append -> out
+		}
+	}
+	nk ast::NodeType::Program == nk ast::NodeType::Block == or
+	nk ast::NodeType::FnDecl == or nk ast::NodeType::StructDecl == or
+	nk ast::NodeType::StructField == or nk ast::NodeType::ConstDecl == or
+	nk ast::NodeType::EnumDecl == or nk ast::NodeType::ImportDecl == or
+	nk ast::NodeType::UseStmt == or if {
+		n @child1 null neq if { n @child1 out collect_metadata -> out }
+		n @child2 null neq if { n @child2 out collect_metadata -> out }
+		n @child3 null neq if { n @child3 out collect_metadata -> out }
+		n @child4 null neq if { n @child4 out collect_metadata -> out }
+	}
+	n @extra -> cur
+	cur null neq while {
+		cur out collect_metadata -> out
+		cur @sibling -> cur
+		cur null neq
+	}
+	out
+}
+
+fn lookup_constant(consts:str name:str -- val:str) {
+	-> n -> cs
+	cs strings::len 0 == if { "" return }
+	sb::new -> nb
+	nb "!" sb::append -> nb
+	nb n sb::append -> nb
+	nb "=" sb::append -> nb
+	nb sb::finish -> needle
+	cs needle strings::index_of -> idx
+	idx 0 < if { "" return }
+	idx needle strings::len + -> vstart
+	vstart -> vend
+	cs strings::len -> cslen
+	vend cslen < while {
+		cs vend strings::char_at! 33 == if { break }
+		vend 1 + -> vend
+		vend cslen <
+	}
+	cs vstart vend vstart - strings::substring!
+}
+
+fn lookup_field_type(consts:str name:str -- typename:str) {
+	-> n -> cs
+	sb::new -> nb
+	nb "!@" sb::append -> nb
+	nb n sb::append -> nb
+	nb "=" sb::append -> nb
+	nb sb::finish -> needle
+	cs needle strings::index_of -> idx
+	idx 0 < if { "i64" return }
+	idx needle strings::len + -> vstart
+	vstart -> vend
+	cs strings::len -> cslen
+	vend cslen < while {
+		cs vend strings::char_at! 33 == if { break }
+		vend 1 + -> vend
+		vend cslen <
+	}
+	cs vstart vend vstart - strings::substring!
+}
+
+// ============================================================
+// Pop condition from stack: pop value, icmp ne 0
+// Returns an i1 value for use with build_cond_br
+// ============================================================
+
+fn pop_cond(st:LlvmCg cv:ptr counter:i64 -- counter2:i64 cond_val:ptr) {
+	-> cnt -> ctxv -> s
+	s @builder -> b
+	s @lctx -> c
+	cnt "ce" next_name -> sname -> cnt
+	s sname make_alloca -> elem
+	s ctxv elem sname stack_pop
+	// Load value from element (first field = i64 value)
+	c llvmwrap::int64_type -> i64t
+	b i64t elem $"cv_{sname}" llvmwrap::build_load -> ival
+	// icmp ne i64 val, 0
+	c llvmwrap::int64_type 0 llvmwrap::const_int -> zero
+	b 33 ival zero $"cc_{sname}" llvmwrap::build_icmp -> cond
+	cnt cond
+}
+
+// ============================================================
+// emit_node: maps AST nodes to LLVM IR instructions
+// ============================================================
+
+fn emit_node(st:LlvmCg cv:ptr node:ptr ectx:EmitCtx counter:i64 -- counter2:i64) {
+	-> cnt -> ec -> n -> ctxv -> s
+	n null == if { cnt return }
+	s @builder -> b
+	s @lctx -> c
+	n @nkind -> k
+
+	// Integer literal
+	k ast::NodeType::IntLit == if {
+		n @ntext -> val
+		val "true" strings::compare 0 == val "Ok" strings::compare 0 == or if {
+			c llvmwrap::int64_type 1 llvmwrap::const_int -> cv2
+			s ctxv cv2 push_int
+			cnt return
+		}
+		val "false" strings::compare 0 == val "Err" strings::compare 0 == or
+		val "null" strings::compare 0 == or if {
+			c llvmwrap::int64_type 0 llvmwrap::const_int -> cv2
+			s ctxv cv2 push_int
+			cnt return
+		}
+		val strings::len 2 > if {
+			val 0 strings::char_at! 48 == if {
+				val 1 strings::char_at! -> xc
+				xc 120 == xc 88 == or if {
+					val 16 strconv::parse_int! -> hv
+					c llvmwrap::int64_type hv llvmwrap::const_int -> cv2
+					s ctxv cv2 push_int
+					cnt return
+				}
+			}
+		}
+		val strconv::atoi! -> iv
+		c llvmwrap::int64_type iv llvmwrap::const_int -> cv2
+		s ctxv cv2 push_int
+		cnt return
+	}
+
+	// Float literal
+	k ast::NodeType::FloatLit == if {
+		n @ntext -> val
+		val strconv::parse_float! -> fv
+		c llvmwrap::double_type fv llvmwrap::const_real -> cv2
+		s ctxv cv2 push_float
+		cnt return
+	}
+
+	// String literal
+	k ast::NodeType::StrLit == if {
+		n @ntext -> raw
+		raw strings::len -> rlen
+		rlen 2 >= if {
+			raw 0 strings::char_at! 34 == if {
+				raw 1 rlen 2 - strings::substring! -> raw
+			}
+		}
+		cnt "str" next_name -> sname -> cnt
+		b raw sname llvmwrap::build_global_string -> sptr
+		s ctxv sptr push_str
+		cnt return
+	}
+
+	// Identifier
+	k ast::NodeType::Ident == if {
+		n @ntext -> fname
+		// Builtins
+		fname "print" strings::compare 0 == if { s "qd_print" ctxv rt_call  cnt return }
+		fname "prints" strings::compare 0 == if { s "qd_print" ctxv rt_call  cnt return }
+		fname "nl" strings::compare 0 == if { s "qd_nl" ctxv rt_call  cnt return }
+		fname "dup" strings::compare 0 == if { s "qd_dup" ctxv rt_call  cnt return }
+		fname "drop" strings::compare 0 == if { s "qd_drop" ctxv rt_call  cnt return }
+		fname "swap" strings::compare 0 == if { s "qd_swap" ctxv rt_call  cnt return }
+		fname "over" strings::compare 0 == if { s "qd_over" ctxv rt_call  cnt return }
+		fname "rot" strings::compare 0 == if { s "qd_rot" ctxv rt_call  cnt return }
+		fname "nip" strings::compare 0 == if { s "qd_nip" ctxv rt_call  cnt return }
+		fname "len" strings::compare 0 == if { s "qd_len" ctxv rt_call  cnt return }
+		fname "free" strings::compare 0 == if { s "qd_free" ctxv rt_call  cnt return }
+		fname "panic" strings::compare 0 == if { s "qd_panic" ctxv rt_call  cnt return }
+		fname "err" strings::compare 0 == if { s "qd_err" ctxv rt_call  cnt return }
+		fname "and" strings::compare 0 == if { s "qd_and" ctxv rt_call  cnt return }
+		fname "or" strings::compare 0 == if { s "qd_or" ctxv rt_call  cnt return }
+		fname "not" strings::compare 0 == if { s "qd_not" ctxv rt_call  cnt return }
+		fname "neg" strings::compare 0 == if { s "qd_neg" ctxv rt_call  cnt return }
+		fname "tuck" strings::compare 0 == if { s "qd_tuck" ctxv rt_call  cnt return }
+		fname "pick" strings::compare 0 == if { s "qd_pick" ctxv rt_call  cnt return }
+		fname "roll" strings::compare 0 == if { s "qd_roll" ctxv rt_call  cnt return }
+		fname "neq" strings::compare 0 == if { s "qd_neq" ctxv rt_call  cnt return }
+		fname "eq" strings::compare 0 == if { s "qd_eq" ctxv rt_call  cnt return }
+		fname "lt" strings::compare 0 == if { s "qd_lt" ctxv rt_call  cnt return }
+		fname "gt" strings::compare 0 == if { s "qd_gt" ctxv rt_call  cnt return }
+		fname "lte" strings::compare 0 == if { s "qd_lte" ctxv rt_call  cnt return }
+		fname "gte" strings::compare 0 == if { s "qd_gte" ctxv rt_call  cnt return }
+		fname "add" strings::compare 0 == if { s "qd_add" ctxv rt_call  cnt return }
+		fname "sub" strings::compare 0 == if { s "qd_sub" ctxv rt_call  cnt return }
+		fname "mul" strings::compare 0 == if { s "qd_mul" ctxv rt_call  cnt return }
+		fname "div" strings::compare 0 == if { s "qd_div" ctxv rt_call  cnt return }
+		fname "mod" strings::compare 0 == if { s "qd_mod" ctxv rt_call  cnt return }
+		fname "cast" strings::compare 0 == if { cnt return }
+
+		// Local variable — push from alloca
+		ec @locals_names fname is_local if {
+			ec @locals_names ec @locals_ptrs fname lookup_local_alloca -> av
+			av null neq if {
+				s ctxv av fname stack_push_elem
+				cnt return
+			}
+		}
+
+		// Constant lookup
+		ec @metadata fname lookup_constant -> cval
+		cval strings::len 0 > if {
+			cval strconv::atoi! -> civ
+			c llvmwrap::int64_type civ llvmwrap::const_int -> cv2
+			s ctxv cv2 push_int
+			cnt return
+		}
+
+		// Function call (use current prefix)
+		sb::new -> mnb
+		mnb ec @prefix sb::append -> mnb
+		mnb fname sb::append -> mnb
+		mnb sb::finish -> mname
+		s mname ctxv rt_call
+		cnt return
+	}
+
+	// Scoped identifier
+	k ast::NodeType::ScopedIdent == if {
+		n @ntext -> scope
+		n @child1 @ntext -> member
+		// Enum variant (scope starts with uppercase)
+		scope 0 strings::char_at! -> sc
+		sc 65 >= sc 90 <= and if {
+			// Load enum value from global
+			$"__enum_{scope}_{member}" -> gname
+			s @lmod gname llvmwrap::get_function -> existing_g
+			// Use metadata to find enum value
+			$"{scope}_{member}" -> enum_key
+			ec @metadata enum_key lookup_constant -> eval
+			eval strings::len 0 > if {
+				eval strconv::atoi! -> eiv
+				c llvmwrap::int64_type eiv llvmwrap::const_int -> cv2
+				s ctxv cv2 push_int
+				cnt return
+			}
+			// Fallback: try loading from global
+			c llvmwrap::int64_type 0 llvmwrap::const_int -> cv2
+			s ctxv cv2 push_int
+			cnt return
+		}
+		// Member starts with uppercase (module constant or enum)
+		member 0 strings::char_at! -> mc
+		mc 65 >= mc 90 <= and if {
+			member "::" strings::contains if {
+				member "::" "_" strings::replace! -> enum_name
+				ec @metadata enum_name lookup_constant -> eval2
+				eval2 strings::len 0 > if {
+					eval2 strconv::atoi! -> eiv2
+					c llvmwrap::int64_type eiv2 llvmwrap::const_int -> cv2
+					s ctxv cv2 push_int
+					cnt return
+				}
+			}
+			// Module constant
+			ec @metadata member lookup_constant -> mcval
+			mcval strings::len 0 > if {
+				mcval strconv::atoi! -> mciv
+				c llvmwrap::int64_type mciv llvmwrap::const_int -> cv2
+				s ctxv cv2 push_int
+				cnt return
+			}
+			cnt return
+		}
+		// Module constant lookup
+		ec @metadata member lookup_constant -> scval
+		scval strings::len 0 > if {
+			scval strconv::atoi! -> sciv
+			c llvmwrap::int64_type sciv llvmwrap::const_int -> cv2
+			s ctxv cv2 push_int
+			cnt return
+		}
+		// Handle ! suffix (fallible)
+		0 -> is_bang
+		member strings::len -> mlen
+		mlen 0 > if {
+			member mlen 1 - strings::char_at! -> last_ch
+			last_ch 33 == if { 1 -> is_bang  member 0 mlen 1 - strings::substring! -> member }
+			last_ch 63 == if { member 0 mlen 1 - strings::substring! -> member }
+		}
+		// Module function call
+		sb::new -> mnb
+		mnb "usr_" sb::append -> mnb
+		mnb scope sb::append -> mnb
+		mnb "_" sb::append -> mnb
+		mnb member sb::append -> mnb
+		mnb sb::finish -> mname
+		s mname ctxv rt_call
+		// Handle ! (abort on error)
+		is_bang if {
+			s ctxv cnt pop_cond -> cond -> cnt
+			cnt "fok" next_name -> ok_lbl -> cnt
+			cnt "ffail" next_name -> fail_lbl -> cnt
+			c ec @lfn ok_lbl llvmwrap::append_block -> ok_bb
+			c ec @lfn fail_lbl llvmwrap::append_block -> fail_bb
+			b cond ok_bb fail_bb llvmwrap::build_cond_br drop
+			b fail_bb llvmwrap::position_at_end
+			s "qd_panic" ctxv rt_call
+			b llvmwrap::build_unreachable
+			b ok_bb llvmwrap::position_at_end
+		}
+		cnt return
+	}
+
+	// Instruction (operator)
+	k ast::NodeType::Instruction == if {
+		n @ntext -> op
+		op "+" strings::compare 0 == op "add" strings::compare 0 == or if { s "qd_add" ctxv rt_call  cnt return }
+		op "-" strings::compare 0 == op "sub" strings::compare 0 == or if { s "qd_sub" ctxv rt_call  cnt return }
+		op "*" strings::compare 0 == op "mul" strings::compare 0 == or if { s "qd_mul" ctxv rt_call  cnt return }
+		op "/" strings::compare 0 == op "div" strings::compare 0 == or if { s "qd_div" ctxv rt_call  cnt return }
+		op "%" strings::compare 0 == op "mod" strings::compare 0 == or if { s "qd_mod" ctxv rt_call  cnt return }
+		op "==" strings::compare 0 == op "eq" strings::compare 0 == or if { s "qd_eq" ctxv rt_call  cnt return }
+		op "!=" strings::compare 0 == op "neq" strings::compare 0 == or if { s "qd_neq" ctxv rt_call  cnt return }
+		op "<" strings::compare 0 == op "lt" strings::compare 0 == or if { s "qd_lt" ctxv rt_call  cnt return }
+		op ">" strings::compare 0 == op "gt" strings::compare 0 == or if { s "qd_gt" ctxv rt_call  cnt return }
+		op "<=" strings::compare 0 == op "lte" strings::compare 0 == or if { s "qd_lte" ctxv rt_call  cnt return }
+		op ">=" strings::compare 0 == op "gte" strings::compare 0 == or if { s "qd_gte" ctxv rt_call  cnt return }
+		op "and" strings::compare 0 == if { s "qd_and" ctxv rt_call  cnt return }
+		op "or" strings::compare 0 == if { s "qd_or" ctxv rt_call  cnt return }
+		op "not" strings::compare 0 == if { s "qd_not" ctxv rt_call  cnt return }
+		op "neg" strings::compare 0 == if { s "qd_neg" ctxv rt_call  cnt return }
+		op "tuck" strings::compare 0 == if { s "qd_tuck" ctxv rt_call  cnt return }
+		op "pick" strings::compare 0 == if { s "qd_pick" ctxv rt_call  cnt return }
+		op "roll" strings::compare 0 == if { s "qd_roll" ctxv rt_call  cnt return }
+		op "cast" strings::compare 0 == if { cnt return }
+		cnt return
+	}
+
+	// Local variable declaration: -> name
+	k ast::NodeType::LocalDecl == if {
+		n @ntext -> vname
+		ec @locals_names ec @locals_ptrs vname lookup_local_alloca -> av
+		av null neq if {
+			s ctxv av vname stack_pop
+		}
+		cnt return
+	}
+
+	// Block: iterate children
+	k ast::NodeType::Block == if {
+		n @child1 null neq if { s ctxv n @child1 ec cnt emit_node -> cnt }
+		n @child2 null neq if { s ctxv n @child2 ec cnt emit_node -> cnt }
+		n @child3 null neq if { s ctxv n @child3 ec cnt emit_node -> cnt }
+		n @child4 null neq if { s ctxv n @child4 ec cnt emit_node -> cnt }
+		n @extra -> cur
+		cur null neq while {
+			s ctxv cur ec cnt emit_node -> cnt
+			cur @sibling -> cur
+			cur null neq
+		}
+		cnt return
+	}
+
+	// If statement
+	k ast::NodeType::IfStmt == if {
+		s ctxv n ec cnt emit_if -> cnt
+		cnt return
+	}
+
+	// While loop
+	k ast::NodeType::WhileStmt == if {
+		s ctxv n ec cnt emit_while -> cnt
+		cnt return
+	}
+
+	// Loop (infinite)
+	k ast::NodeType::LoopStmt == if {
+		s ctxv n ec cnt emit_loop -> cnt
+		cnt return
+	}
+
+	// For loop
+	k ast::NodeType::ForStmt == if {
+		s ctxv n ec cnt emit_for -> cnt
+		cnt return
+	}
+
+	// Switch statement
+	k ast::NodeType::SwitchStmt == if {
+		s ctxv n ec cnt emit_switch -> cnt
+		cnt return
+	}
+
+	// Return statement
+	k ast::NodeType::ReturnStmt == if {
+		b ec @retbb llvmwrap::build_br drop
+		// Create an unreachable continuation block (LLVM requires terminator)
+		cnt "after_ret" next_name -> ar_name -> cnt
+		c ec @lfn ar_name llvmwrap::append_block -> ar_bb
+		b ar_bb llvmwrap::position_at_end
+		cnt return
+	}
+
+	// Break statement
+	k ast::NodeType::BreakStmt == if {
+		ec @break_bb null neq if {
+			b ec @break_bb llvmwrap::build_br drop
+			cnt "after_brk" next_name -> ab_name -> cnt
+			c ec @lfn ab_name llvmwrap::append_block -> ab_bb
+			b ab_bb llvmwrap::position_at_end
+		}
+		cnt return
+	}
+
+	// Continue statement
+	k ast::NodeType::ContinueStmt == if {
+		ec @cont_bb null neq if {
+			b ec @cont_bb llvmwrap::build_br drop
+			cnt "after_cont" next_name -> ac_name -> cnt
+			c ec @lfn ac_name llvmwrap::append_block -> ac_bb
+			b ac_bb llvmwrap::position_at_end
+		}
+		cnt return
+	}
+
+	// Field access: @fieldname
+	k ast::NodeType::FieldAccess == if {
+		s ctxv n ec cnt emit_field_access -> cnt
+		cnt return
+	}
+
+	// Field set: val var.field
+	k ast::NodeType::FieldSet == if {
+		s ctxv n ec cnt emit_field_set -> cnt
+		cnt return
+	}
+
+	// Struct construction
+	k ast::NodeType::StructConstruct == if {
+		s ctxv n ec cnt emit_struct_construct -> cnt
+		cnt return
+	}
+
+	cnt
+}
+
+// Emit a block's children
+fn emit_block(st:LlvmCg cv:ptr block:ptr ectx:EmitCtx counter:i64 -- counter2:i64) {
+	-> cnt -> ec -> blk -> ctxv -> s
+	blk null == if { cnt return }
+	blk @child1 null neq if { s ctxv blk @child1 ec cnt emit_node -> cnt }
+	blk @child2 null neq if { s ctxv blk @child2 ec cnt emit_node -> cnt }
+	blk @child3 null neq if { s ctxv blk @child3 ec cnt emit_node -> cnt }
+	blk @child4 null neq if { s ctxv blk @child4 ec cnt emit_node -> cnt }
+	blk @extra -> cur
+	cur null neq while {
+		s ctxv cur ec cnt emit_node -> cnt
+		cur @sibling -> cur
+		cur null neq
+	}
+	cnt
+}
+
+// ============================================================
+// Control flow
+// ============================================================
+
+fn emit_if(st:LlvmCg cv:ptr node:ptr ectx:EmitCtx counter:i64 -- counter2:i64) {
+	-> cnt -> ec -> n -> ctxv -> s
+	s @builder -> b
+	s @lctx -> c
+
+	// Pop condition
+	s ctxv cnt pop_cond -> cond -> cnt
+
+	// Create basic blocks
+	cnt "then" next_name -> then_name -> cnt
+	cnt "merge" next_name -> merge_name -> cnt
+	c ec @lfn then_name llvmwrap::append_block -> then_bb
+	c ec @lfn merge_name llvmwrap::append_block -> merge_bb
+
+	// Has else?
+	n ast::child_count 2 >= if {
+		cnt "else" next_name -> else_name -> cnt
+		c ec @lfn else_name llvmwrap::append_block -> else_bb
+		b cond then_bb else_bb llvmwrap::build_cond_br drop
+
+		// Then block
+		b then_bb llvmwrap::position_at_end
+		s ctxv n @child1 ec cnt emit_block -> cnt
+		b merge_bb llvmwrap::build_br drop
+
+		// Else block
+		b else_bb llvmwrap::position_at_end
+		s ctxv n @child2 ec cnt emit_block -> cnt
+		b merge_bb llvmwrap::build_br drop
+	} else {
+		b cond then_bb merge_bb llvmwrap::build_cond_br drop
+
+		// Then block
+		b then_bb llvmwrap::position_at_end
+		s ctxv n @child1 ec cnt emit_block -> cnt
+		b merge_bb llvmwrap::build_br drop
+	}
+
+	// Continue at merge
+	b merge_bb llvmwrap::position_at_end
+	cnt
+}
+
+fn emit_while(st:LlvmCg cv:ptr node:ptr ectx:EmitCtx counter:i64 -- counter2:i64) {
+	-> cnt -> ec -> n -> ctxv -> s
+	s @builder -> b
+	s @lctx -> c
+
+	// Pop initial condition (already on stack)
+	s ctxv cnt pop_cond -> init_cond -> cnt
+
+	cnt "wbody" next_name -> body_name -> cnt
+	cnt "wexit" next_name -> exit_name -> cnt
+	cnt "wcond" next_name -> cond_name -> cnt
+	c ec @lfn body_name llvmwrap::append_block -> body_bb
+	c ec @lfn exit_name llvmwrap::append_block -> exit_bb
+	c ec @lfn cond_name llvmwrap::append_block -> cond_bb
+
+	// Branch on initial condition
+	b init_cond body_bb exit_bb llvmwrap::build_cond_br drop
+
+	// Body with updated break/continue targets
+	b body_bb llvmwrap::position_at_end
+	EmitCtx {
+		lfn = ec @lfn retbb = ec @retbb break_bb = exit_bb cont_bb = cond_bb
+		locals_names = ec @locals_names locals_ptrs = ec @locals_ptrs metadata = ec @metadata
+		prefix = ec @prefix
+	} -> loop_ec
+	s ctxv n @child1 loop_ec cnt emit_block -> cnt
+
+	// After body: branch to cond check
+	b cond_bb llvmwrap::build_br drop
+	b cond_bb llvmwrap::position_at_end
+
+	// Pop new condition (while body leaves condition on stack)
+	s ctxv cnt pop_cond -> loop_cond -> cnt
+	b loop_cond body_bb exit_bb llvmwrap::build_cond_br drop
+
+	b exit_bb llvmwrap::position_at_end
+	cnt
+}
+
+fn emit_loop(st:LlvmCg cv:ptr node:ptr ectx:EmitCtx counter:i64 -- counter2:i64) {
+	-> cnt -> ec -> n -> ctxv -> s
+	s @builder -> b
+	s @lctx -> c
+
+	cnt "lbody" next_name -> body_name -> cnt
+	cnt "lexit" next_name -> exit_name -> cnt
+	c ec @lfn body_name llvmwrap::append_block -> body_bb
+	c ec @lfn exit_name llvmwrap::append_block -> exit_bb
+
+	b body_bb llvmwrap::build_br drop
+	b body_bb llvmwrap::position_at_end
+
+	EmitCtx {
+		lfn = ec @lfn retbb = ec @retbb break_bb = exit_bb cont_bb = body_bb
+		locals_names = ec @locals_names locals_ptrs = ec @locals_ptrs metadata = ec @metadata
+		prefix = ec @prefix
+	} -> loop_ec
+	s ctxv n @child1 loop_ec cnt emit_block -> cnt
+
+	b body_bb llvmwrap::build_br drop
+	b exit_bb llvmwrap::position_at_end
+	cnt
+}
+
+fn emit_for(st:LlvmCg cv:ptr node:ptr ectx:EmitCtx counter:i64 -- counter2:i64) {
+	-> cnt -> ec -> n -> ctxv -> s
+	s @builder -> b
+	s @lctx -> c
+	n @ntext -> iter_var
+
+	// Pop step, end, start from runtime stack
+	cnt "fstep" next_name -> step_name -> cnt
+	cnt "fend" next_name -> end_name -> cnt
+	cnt "fstart" next_name -> start_name -> cnt
+	s step_name make_alloca -> step_alloca
+	s end_name make_alloca -> end_alloca
+	s start_name make_alloca -> start_alloca
+
+	s ctxv step_alloca step_name stack_pop
+	s ctxv end_alloca end_name stack_pop
+	s ctxv start_alloca start_name stack_pop
+
+	// Initialize iterator: push start as int, pop into local (preserves type tag)
+	c llvmwrap::int64_type -> i64t
+	b i64t start_alloca $"fstart_{start_name}" llvmwrap::build_load -> start_val
+	s ctxv start_val push_int
+	// Pop into iterator local
+	ec @locals_names ec @locals_ptrs iter_var lookup_local_alloca -> iter_alloca
+	iter_alloca null neq if {
+		s ctxv iter_alloca iter_var stack_pop
+	}
+
+	// Create blocks
+	cnt "fcond" next_name -> cond_name -> cnt
+	cnt "fbody" next_name -> body_name -> cnt
+	cnt "fexit" next_name -> exit_name -> cnt
+	c ec @lfn cond_name llvmwrap::append_block -> cond_bb
+	c ec @lfn body_name llvmwrap::append_block -> body_bb
+	c ec @lfn exit_name llvmwrap::append_block -> exit_bb
+
+	b cond_bb llvmwrap::build_br drop
+	b cond_bb llvmwrap::position_at_end
+
+	// Condition: push iter, push end, call qd_lt, pop result
+	iter_alloca null neq if {
+		s ctxv iter_alloca iter_var stack_push_elem
+	}
+	b i64t end_alloca $"fend_{end_name}" llvmwrap::build_load -> end_val
+	s ctxv end_val push_int
+	s "qd_lt" ctxv rt_call
+	s ctxv cnt pop_cond -> for_cond -> cnt
+	b for_cond body_bb exit_bb llvmwrap::build_cond_br drop
+
+	// Body
+	b body_bb llvmwrap::position_at_end
+	EmitCtx {
+		lfn = ec @lfn retbb = ec @retbb break_bb = exit_bb cont_bb = cond_bb
+		locals_names = ec @locals_names locals_ptrs = ec @locals_ptrs metadata = ec @metadata
+		prefix = ec @prefix
+	} -> loop_ec
+	s ctxv n @child1 loop_ec cnt emit_block -> cnt
+
+	// Increment: push iter, push step, add, pop back into local
+	iter_alloca null neq if {
+		s ctxv iter_alloca iter_var stack_push_elem
+		b i64t step_alloca $"fstep2_{iter_var}" llvmwrap::build_load -> step_val2
+		s ctxv step_val2 push_int
+		s "qd_add" ctxv rt_call
+		s ctxv iter_alloca iter_var stack_pop
+	}
+
+	b cond_bb llvmwrap::build_br drop
+	b exit_bb llvmwrap::position_at_end
+	cnt
+}
+
+fn emit_switch(st:LlvmCg cv:ptr node:ptr ectx:EmitCtx counter:i64 -- counter2:i64) {
+	-> cnt -> ec -> n -> ctxv -> s
+	s @builder -> b
+	s @lctx -> c
+
+	// Pop switch value into alloca
+	cnt "sw" next_name -> sw_name -> cnt
+	s sw_name make_alloca -> sw_alloca
+	s ctxv sw_alloca sw_name stack_pop
+
+	// Create exit block
+	cnt "sw_exit" next_name -> exit_name -> cnt
+	c ec @lfn exit_name llvmwrap::append_block -> exit_bb
+
+	// Process each case/default child
+	n @child1 null neq if { s ctxv n @child1 ec sw_alloca exit_bb cnt emit_one_case -> cnt }
+	n @child2 null neq if { s ctxv n @child2 ec sw_alloca exit_bb cnt emit_one_case -> cnt }
+	n @child3 null neq if { s ctxv n @child3 ec sw_alloca exit_bb cnt emit_one_case -> cnt }
+	n @child4 null neq if { s ctxv n @child4 ec sw_alloca exit_bb cnt emit_one_case -> cnt }
+	n @extra -> cur
+	cur null neq while {
+		s ctxv cur ec sw_alloca exit_bb cnt emit_one_case -> cnt
+		cur @sibling -> cur
+		cur null neq
+	}
+
+	b exit_bb llvmwrap::build_br drop
+	b exit_bb llvmwrap::position_at_end
+	cnt
+}
+
+fn emit_one_case(st:LlvmCg cv:ptr case_node:ptr ectx:EmitCtx sw_alloca:ptr exit_bb:ptr counter:i64 -- counter2:i64) {
+	-> cnt -> exit -> swa -> ec -> cn -> ctxv -> s
+	cn null == if { cnt return }
+	s @builder -> b
+	s @lctx -> c
+
+	// Default clause
+	cn @nkind ast::NodeType::DefaultClause == if {
+		cn @child1 null neq if { s ctxv cn @child1 ec cnt emit_block -> cnt }
+		b exit llvmwrap::build_br drop
+		cnt "sw_after_def" next_name -> ad_name -> cnt
+		c ec @lfn ad_name llvmwrap::append_block -> ad_bb
+		b ad_bb llvmwrap::position_at_end
+		cnt return
+	}
+
+	// Case clause
+	cn @nkind ast::NodeType::CaseClause == if {
+		// Evaluate case value expression
+		s ctxv cn @child1 ec cnt emit_node -> cnt
+		// Pop case value
+		cnt "case" next_name -> case_name -> cnt
+		s case_name make_alloca -> case_alloca
+		s ctxv case_alloca case_name stack_pop
+		// Load both switch value and case value, compare
+		c llvmwrap::int64_type -> i64t
+		b i64t swa $"swv_{case_name}" llvmwrap::build_load -> sw_val
+		b i64t case_alloca $"csv_{case_name}" llvmwrap::build_load -> cs_val
+		b 32 sw_val cs_val $"cmp_{case_name}" llvmwrap::build_icmp -> cmp
+		// Create body and next blocks
+		cnt "case_body" next_name -> body_name -> cnt
+		cnt "case_next" next_name -> next_name2 -> cnt
+		c ec @lfn body_name llvmwrap::append_block -> body_bb
+		c ec @lfn next_name2 llvmwrap::append_block -> next_bb
+		b cmp body_bb next_bb llvmwrap::build_cond_br drop
+		// Body
+		b body_bb llvmwrap::position_at_end
+		cn @child2 null neq if { s ctxv cn @child2 ec cnt emit_block -> cnt }
+		b exit llvmwrap::build_br drop
+		// Next
+		b next_bb llvmwrap::position_at_end
+		cnt return
+	}
+
+	cnt
+}
+
+// ============================================================
+// Struct operations
+// ============================================================
+
+fn emit_field_access(st:LlvmCg cv:ptr node:ptr ectx:EmitCtx counter:i64 -- counter2:i64) {
+	-> cnt -> ec -> n -> ctxv -> s
+	s @builder -> b
+	s @lctx -> c
+	n @ntext -> fname
+
+	// Pop struct pointer from stack
+	cnt "fa" next_name -> fa_name -> cnt
+	s fa_name make_alloca -> fa_alloca
+	s ctxv fa_alloca fa_name stack_pop
+
+	// Load struct ptr value
+	c llvmwrap::int64_type -> i64t
+	c llvmwrap::ptr_type -> pt
+	b i64t fa_alloca $"fa_vp_{fa_name}" llvmwrap::build_load -> struct_ptr_int
+	b struct_ptr_int pt $"fa_ptr_{fa_name}" llvmwrap::build_inttoptr -> struct_ptr
+
+	// Load field offset from global
+	c llvmwrap::int64_type -> field_i64t
+	$"__offset_{fname}" -> off_gname
+	s @lmod off_gname llvmwrap::get_global -> off_g
+	b field_i64t off_g $"fa_off_{fa_name}" llvmwrap::build_load -> off_val
+
+	// GEP to field: i8 offset from struct base
+	c llvmwrap::int8_type -> i8t
+	1 llvmwrap::args_new -> idx
+	idx 0 off_val llvmwrap::args_set
+	b i8t struct_ptr idx 1 $"fa_fp_{fa_name}" llvmwrap::build_gep -> field_ptr
+	idx llvmwrap::args_free
+
+	// Load value and push with type-appropriate function
+	ec @metadata fname lookup_field_type -> ftype
+	ftype "str" strings::compare 0 == if {
+		b pt field_ptr $"fa_val_{fa_name}" llvmwrap::build_load -> fval
+		s "qd_push_s_ref" ctxv fval call_ptr_ptr
+		cnt return
+	}
+	ftype "ptr" strings::compare 0 == ftype "*" strings::starts_with or if {
+		b pt field_ptr $"fa_val_{fa_name}" llvmwrap::build_load -> fval
+		s ctxv fval push_ptr
+		cnt return
+	}
+	ftype "f64" strings::compare 0 == if {
+		c llvmwrap::double_type -> f64t
+		b f64t field_ptr $"fa_val_{fa_name}" llvmwrap::build_load -> fval
+		s ctxv fval push_float
+		cnt return
+	}
+	// Default: i64
+	b i64t field_ptr $"fa_val_{fa_name}" llvmwrap::build_load -> fval
+	s ctxv fval push_int
+	cnt
+}
+
+fn emit_field_set(st:LlvmCg cv:ptr node:ptr ectx:EmitCtx counter:i64 -- counter2:i64) {
+	-> cnt -> ec -> n -> ctxv -> s
+	s @builder -> b
+	s @lctx -> c
+	n @ntext -> vname
+	n @child1 @ntext -> fname
+
+	// Pop value from stack
+	cnt "fs" next_name -> fs_name -> cnt
+	s fs_name make_alloca -> fs_alloca
+	s ctxv fs_alloca fs_name stack_pop
+
+	c llvmwrap::int64_type -> i64t
+
+	// Load value
+	b i64t fs_alloca $"fs_val_{fs_name}" llvmwrap::build_load -> val
+
+	// Load struct pointer from local variable
+	ec @locals_names ec @locals_ptrs vname lookup_local_alloca -> var_alloca
+	var_alloca null == if { cnt return }
+	b i64t var_alloca $"fs_svp_{fs_name}" llvmwrap::build_load -> sptr_int
+	c llvmwrap::ptr_type -> pt
+	b sptr_int pt $"fs_sptr_{fs_name}" llvmwrap::build_inttoptr -> sptr
+
+	// Load field offset from global
+	$"__offset_{fname}" -> fs_off_gname
+	s @lmod fs_off_gname llvmwrap::get_global -> fs_off_g
+	b i64t fs_off_g $"fs_off_{fs_name}" llvmwrap::build_load -> fs_off_val
+
+	// GEP + store
+	c llvmwrap::int8_type -> i8t
+	1 llvmwrap::args_new -> idx
+	idx 0 fs_off_val llvmwrap::args_set
+	b i8t sptr idx 1 $"fs_fp_{fs_name}" llvmwrap::build_gep -> field_ptr
+	idx llvmwrap::args_free
+	b val field_ptr llvmwrap::build_store drop
+	cnt
+}
+
+fn emit_struct_construct(st:LlvmCg cv:ptr node:ptr ectx:EmitCtx counter:i64 -- counter2:i64) {
+	-> cnt -> ec -> n -> ctxv -> s
+	s @builder -> b
+	s @lctx -> c
+	n @ntext -> sname
+
+	// Load struct size from global
+	s @lctx -> sc_ctx
+	sc_ctx llvmwrap::int64_type -> i64t
+	$"__size_{sname}" -> sz_gname
+	s @lmod sz_gname llvmwrap::get_global -> sz_g
+	s @builder i64t sz_g $"sz_{sname}" llvmwrap::build_load -> sz_const
+
+	// Call qd_struct_alloc(size, null)
+	s @lmod "qd_struct_alloc" llvmwrap::get_function -> alloc_fn
+	sc_ctx llvmwrap::ptr_type -> pt
+	2 llvmwrap::types_new -> atp
+	atp 0 i64t llvmwrap::types_set
+	atp 1 pt llvmwrap::types_set
+	pt atp 2 0 llvmwrap::fn_type -> saft
+	atp llvmwrap::types_free
+	pt llvmwrap::const_null -> null_ptr
+	2 llvmwrap::args_new -> sa_args
+	sa_args 0 sz_const llvmwrap::args_set
+	sa_args 1 null_ptr llvmwrap::args_set
+	cnt "sc" next_name -> sc_name -> cnt
+	b saft alloc_fn sa_args 2 $"sp_{sc_name}" llvmwrap::build_call -> struct_ptr
+	sa_args llvmwrap::args_free
+
+	// Write field values
+	n @child1 null neq if { s ctxv n @child1 ec struct_ptr cnt emit_struct_field_val -> cnt }
+	n @child2 null neq if { s ctxv n @child2 ec struct_ptr cnt emit_struct_field_val -> cnt }
+	n @child3 null neq if { s ctxv n @child3 ec struct_ptr cnt emit_struct_field_val -> cnt }
+	n @child4 null neq if { s ctxv n @child4 ec struct_ptr cnt emit_struct_field_val -> cnt }
+	n @extra -> cur
+	cur null neq while {
+		s ctxv cur ec struct_ptr cnt emit_struct_field_val -> cnt
+		cur @sibling -> cur
+		cur null neq
+	}
+
+	// Push struct pointer
+	s ctxv struct_ptr push_ptr
+	cnt
+}
+
+fn emit_struct_field_val(st:LlvmCg cv:ptr field:ptr ectx:EmitCtx struct_ptr:ptr counter:i64 -- counter2:i64) {
+	-> cnt -> sp -> ec -> fld -> ctxv -> s
+	fld null == if { cnt return }
+	fld @nkind ast::NodeType::StructField neq if { cnt return }
+	s @builder -> b
+	s @lctx -> c
+	fld @ntext -> fname
+
+	// Evaluate field value expression(s)
+	fld @child1 null neq if { s ctxv fld @child1 ec cnt emit_node -> cnt }
+	fld @child2 null neq if { s ctxv fld @child2 ec cnt emit_node -> cnt }
+	fld @child3 null neq if { s ctxv fld @child3 ec cnt emit_node -> cnt }
+	fld @child4 null neq if { s ctxv fld @child4 ec cnt emit_node -> cnt }
+	fld @extra -> fcur
+	fcur null neq while {
+		s ctxv fcur ec cnt emit_node -> cnt
+		fcur @sibling -> fcur
+		fcur null neq
+	}
+
+	// Pop value from stack
+	cnt "sf" next_name -> sf_name -> cnt
+	s sf_name make_alloca -> sf_alloca
+	s ctxv sf_alloca sf_name stack_pop
+
+	c llvmwrap::int64_type -> i64t
+	b i64t sf_alloca $"sf_val_{sf_name}" llvmwrap::build_load -> val
+
+	// Load field offset from global
+	$"__offset_{fname}" -> sf_off_gname
+	s @lmod sf_off_gname llvmwrap::get_global -> sf_off_g
+	b i64t sf_off_g $"sf_off_{sf_name}" llvmwrap::build_load -> sf_off_val
+
+	// GEP + store
+	c llvmwrap::int8_type -> i8t
+	1 llvmwrap::args_new -> idx
+	idx 0 sf_off_val llvmwrap::args_set
+	b i8t sp idx 1 $"sf_fp_{sf_name}" llvmwrap::build_gep -> field_ptr
+	idx llvmwrap::args_free
+	b val field_ptr llvmwrap::build_store drop
+
+	// Retain string fields
+	ec @metadata fname lookup_field_type -> sftype
+	sftype "str" strings::compare 0 == if {
+		c llvmwrap::ptr_type -> pt
+		b val pt $"sf_sptr_{sf_name}" llvmwrap::build_inttoptr -> str_ptr
+		s @lmod "qd_string_retain" llvmwrap::get_function -> retain_fn
+		1 llvmwrap::types_new -> rtp
+		rtp 0 pt llvmwrap::types_set
+		c llvmwrap::int32_type rtp 1 0 llvmwrap::fn_type -> rft
+		rtp llvmwrap::types_free
+		1 llvmwrap::args_new -> ra
+		ra 0 str_ptr llvmwrap::args_set
+		b rft retain_fn ra 1 "" llvmwrap::build_call drop
+		ra llvmwrap::args_free
+	}
+	cnt
+}
+
+// ============================================================
+// emit_function: compile a user function
+// ============================================================
+
+fn emit_fn(st:LlvmCg name:str body:ptr recv:str param_count:i64 metadata:str prefix:str counter:i64 -- counter2:i64) {
+	-> cnt -> pfx_str -> md -> nparams -> recv_name -> body_node -> fname -> s
+	s @lctx -> c  s @lmod -> m  s @builder -> b
+
+	// Create function: i32 fname(ptr %ctx)
+	s std_fn_type -> ft
+	m fname ft llvmwrap::add_function -> lfn
+	c lfn "entry" llvmwrap::append_block -> entry
+	b entry llvmwrap::position_at_end
+
+	// Get %ctx parameter
+	lfn 0 llvmwrap::get_param -> ctxv
+
+	// Create return block
+	c lfn "return" llvmwrap::append_block -> retbb
+
+	// Handle receiver
+	null -> recv_alloca
+	recv_name strings::len 0 > if {
+		s $"local.{recv_name}" make_alloca -> recv_alloca
+		nparams 0 > if {
+			c llvmwrap::int64_type nparams llvmwrap::const_int -> np_val
+			s ctxv np_val push_int
+			s "qd_roll" ctxv rt_call
+		}
+		s ctxv recv_alloca recv_name stack_pop
+	}
+
+	// Create allocas for local variables
+	s body_node recv_name create_allocas -> local_count -> local_ptrs -> local_names
+
+	// Add receiver to locals if present
+	recv_name strings::len 0 > if {
+		// Create new array with one extra slot for receiver
+		local_count 1 + llvmwrap::args_new -> new_ptrs
+		// Copy existing entries
+		0 -> ci
+		ci local_count < while {
+			local_ptrs ci llvmwrap::args_get -> cv2
+			new_ptrs ci 1 + cv2 llvmwrap::args_set
+			ci 1 + -> ci
+			ci local_count <
+		}
+		// Add receiver alloca at index 0
+		new_ptrs 0 recv_alloca llvmwrap::args_set
+		local_ptrs null neq if { local_ptrs llvmwrap::args_free }
+		new_ptrs -> local_ptrs
+		// Prepend receiver name to locals
+		sb::new -> rn
+		rn "," sb::append -> rn
+		rn recv_name sb::append -> rn
+		rn local_names sb::append -> rn
+		local_names strings::len 0 == if {
+			rn "," sb::append -> rn
+		}
+		rn sb::finish -> local_names
+		local_count 1 + -> local_count
+	}
+
+	// Build emit context
+	EmitCtx {
+		lfn = lfn retbb = retbb break_bb = null cont_bb = null
+		locals_names = local_names locals_ptrs = local_ptrs metadata = md
+		prefix = pfx_str
+	} -> ec
+
+	// Emit body
+	body_node null neq if {
+		s ctxv body_node ec cnt emit_block -> cnt
+	}
+
+	// Branch to return block + emit return
+	b retbb llvmwrap::build_br drop
+	b retbb llvmwrap::position_at_end
+	c llvmwrap::int32_type 0 llvmwrap::const_int -> zero
+	b zero llvmwrap::build_ret drop
+
+	// Free locals array
+	local_ptrs null neq if {
+		local_ptrs llvmwrap::args_free
+	}
+
+	cnt
+}
+
+// ============================================================
+// emit_top: process top-level AST nodes
+// ============================================================
+
+fn emit_top(st:LlvmCg node:ptr metadata:str prefix:str counter:i64 -- counter2:i64) {
+	-> cnt -> pfx -> md -> n -> s
+	n null == if { cnt return }
+	n @nkind -> k
+
+	k ast::NodeType::FnDecl == if {
+		n @ntext -> fname
+		"" -> recv_var
+		// Check for method receiver
+		n @child3 null neq if {
+			n @child3 @nkind ast::NodeType::Param == if {
+				n @child3 @ntext -> recv_text
+				recv_text ":" strings::index_of -> colon_pos
+				colon_pos 0 >= if {
+					recv_text colon_pos 1 + recv_text strings::len colon_pos 1 + - strings::substring! -> recv_type
+					recv_type "_" strings::concat fname strings::concat -> fname
+					recv_text 0 colon_pos strings::substring! -> recv_var
+				}
+			}
+		}
+		n @child4 null neq if {
+			n @child4 @nkind ast::NodeType::Param == if {
+				n @child4 @ntext -> recv_text2
+				recv_text2 ":" strings::index_of -> colon_pos2
+				colon_pos2 0 >= if {
+					recv_text2 colon_pos2 1 + recv_text2 strings::len colon_pos2 1 + - strings::substring! -> recv_type2
+					recv_type2 "_" strings::concat fname strings::concat -> fname
+					recv_text2 0 colon_pos2 strings::substring! -> recv_var
+				}
+			}
+		}
+		// Count input parameters
+		0 -> param_count
+		n @child1 null neq if {
+			n @child1 @child1 null neq if {
+				n @child1 @child1 @ntext "out:" strings::starts_with 0 == if { param_count 1 + -> param_count }
+			}
+			n @child1 @child2 null neq if {
+				n @child1 @child2 @ntext "out:" strings::starts_with 0 == if { param_count 1 + -> param_count }
+			}
+			n @child1 @child3 null neq if {
+				n @child1 @child3 @ntext "out:" strings::starts_with 0 == if { param_count 1 + -> param_count }
+			}
+			n @child1 @child4 null neq if {
+				n @child1 @child4 @ntext "out:" strings::starts_with 0 == if { param_count 1 + -> param_count }
+			}
+			n @child1 @extra -> pcur
+			pcur null neq while {
+				pcur @ntext "out:" strings::starts_with 0 == if { param_count 1 + -> param_count }
+				pcur @sibling -> pcur
+				pcur null neq
+			}
+		}
+		sb::new -> mnb
+		mnb pfx sb::append -> mnb
+		mnb fname sb::append -> mnb
+		mnb sb::finish -> mname
+		s mname n @child2 recv_var param_count md pfx cnt emit_fn -> cnt
+		// For methods, emit unqualified wrapper
+		recv_var strings::len 0 > if {
+			n @ntext -> orig_name
+			sb::new -> wnb
+			wnb pfx sb::append -> wnb
+			wnb orig_name sb::append -> wnb
+			wnb sb::finish -> wname
+			// Create wrapper function that tail-calls the receiver-qualified version
+			s std_fn_type -> wft
+			s @lmod wname llvmwrap::get_function -> wexisting
+			wexisting null == if {
+				s @lmod wname wft llvmwrap::add_function -> wfn
+				s @lctx wfn "entry" llvmwrap::append_block -> wentry
+				s @builder wentry llvmwrap::position_at_end
+				wfn 0 llvmwrap::get_param -> wctxv
+				s @lmod mname llvmwrap::get_function -> target_fn
+				1 llvmwrap::args_new -> wa
+				wa 0 wctxv llvmwrap::args_set
+				s @builder wft target_fn wa 1 "r" llvmwrap::build_call -> wret
+				wa llvmwrap::args_free
+				s @builder wret llvmwrap::build_ret drop
+			}
+		}
+		cnt return
+	}
+
+	// Struct declaration — emit field offset and size globals
+	k ast::NodeType::StructDecl == if {
+		s @lctx -> c
+		c llvmwrap::int64_type -> i64t
+		n @ntext -> sname
+		0 -> offset
+		// Emit offset globals for each field
+		n @child1 null neq if {
+			n @child1 @ntext -> fn1
+			s n @child1 fn1 offset emit_offset_global
+			offset 8 + -> offset
+		}
+		n @child2 null neq if {
+			n @child2 @ntext -> fn2
+			s n @child2 fn2 offset emit_offset_global
+			offset 8 + -> offset
+		}
+		n @child3 null neq if {
+			n @child3 @ntext -> fn3
+			s n @child3 fn3 offset emit_offset_global
+			offset 8 + -> offset
+		}
+		n @child4 null neq if {
+			n @child4 @ntext -> fn4
+			s n @child4 fn4 offset emit_offset_global
+			offset 8 + -> offset
+		}
+		n @extra -> cur
+		cur null neq while {
+			cur @ntext -> cfn
+			s cur cfn offset emit_offset_global
+			offset 8 + -> offset
+			cur @sibling -> cur
+			cur null neq
+		}
+		// Size global
+		$"__size_{sname}" -> size_gname
+		s @lmod size_gname llvmwrap::get_function -> existing_sg
+		existing_sg null == if {
+			s @lmod size_gname i64t llvmwrap::add_global -> sg
+			sg i64t offset llvmwrap::const_int llvmwrap::set_initializer
+			sg llvmwrap::set_global_constant
+			sg 9 llvmwrap::set_linkage
+		}
+		cnt return
+	}
+
+	// Enum declaration
+	k ast::NodeType::EnumDecl == if {
+		s @lctx -> c
+		c llvmwrap::int64_type -> i64t
+		n @ntext -> ename
+		0 -> eval
+		n @child1 null neq if {
+			s n @child1 ename eval emit_enum_global
+			eval 1 + -> eval
+		}
+		n @child2 null neq if {
+			s n @child2 ename eval emit_enum_global
+			eval 1 + -> eval
+		}
+		n @child3 null neq if {
+			s n @child3 ename eval emit_enum_global
+			eval 1 + -> eval
+		}
+		n @child4 null neq if {
+			s n @child4 ename eval emit_enum_global
+			eval 1 + -> eval
+		}
+		n @extra -> cur
+		cur null neq while {
+			s cur ename eval emit_enum_global
+			eval 1 + -> eval
+			cur @sibling -> cur
+			cur null neq
+		}
+		cnt return
+	}
+
+	// Const declaration — handled by metadata
+	k ast::NodeType::ConstDecl == if { cnt return }
+
+	// UseStmt — handled by driver
+	k ast::NodeType::UseStmt == if { cnt return }
+
+	// ImportDecl — skip
+	k ast::NodeType::ImportDecl == if { cnt return }
+
+	cnt
+}
+
+fn emit_offset_global(st:LlvmCg field_node:ptr fname:str offset:i64 -- ) {
+	-> off -> fn_name -> fnode -> s
+	$"__offset_{fn_name}" -> gname
+	s @lctx -> c
+	c llvmwrap::int64_type -> i64t
+	// Check if already exists (dedup)
+	s @lmod gname llvmwrap::get_function -> existing
+	existing null neq if { return }
+	s @lmod gname i64t llvmwrap::add_global -> g
+	g i64t off llvmwrap::const_int llvmwrap::set_initializer
+	g llvmwrap::set_global_constant
+	g 9 llvmwrap::set_linkage
+}
+
+fn emit_enum_global(st:LlvmCg variant_node:ptr ename:str val:i64 -- ) {
+	-> ev -> en -> vnode -> s
+	vnode @ntext -> vn
+	$"__enum_{en}_{vn}" -> gname
+	s @lctx -> c
+	c llvmwrap::int64_type -> i64t
+	s @lmod gname llvmwrap::get_function -> existing
+	existing null neq if { return }
+	s @lmod gname i64t llvmwrap::add_global -> g
+	g i64t ev llvmwrap::const_int llvmwrap::set_initializer
+	g llvmwrap::set_global_constant
+	g 9 llvmwrap::set_linkage
+}
+
+// ============================================================
+// Module declares
+// ============================================================
+
+pub fn emit_module_declares(st:LlvmCg mod_name:str func_names:str -- ) {
+	-> fns -> mname -> s
+	fns strings::len 0 == if { return }
+	0 -> pos
+	fns strings::len -> flen
+	pos flen < while {
+		pos -> end
+		end flen < fns end strings::char_at! 44 neq and while {
+			end 1 + -> end
+			end flen < fns end strings::char_at! 44 neq and
+		}
+		end pos > if {
+			fns pos end pos - strings::substring! -> fname
+			sb::new -> mnb
+			mnb "usr_" sb::append -> mnb
+			mnb mname sb::append -> mnb
+			mnb "_" sb::append -> mnb
+			mnb fname sb::append -> mnb
+			mnb sb::finish -> mname2
+			s mname2 decl_fn drop
+		}
+		end 1 + -> pos
+		pos flen <
+	}
+}
+
+// Emit merged file AST
+pub fn emit_merged_file(st:LlvmCg file_ast:ptr metadata:str prefix:str counter:i64 -- counter2:i64) {
+	-> cnt -> pfx -> md -> froot -> s
+	froot null == if { cnt return }
+	froot @child1 null neq if { s froot @child1 md pfx cnt emit_top -> cnt }
+	froot @child2 null neq if { s froot @child2 md pfx cnt emit_top -> cnt }
+	froot @child3 null neq if { s froot @child3 md pfx cnt emit_top -> cnt }
+	froot @child4 null neq if { s froot @child4 md pfx cnt emit_top -> cnt }
+	froot @extra -> cur
+	cur null neq while {
+		s cur md pfx cnt emit_top -> cnt
+		cur @sibling -> cur
+		cur null neq
+	}
+	cnt
+}
+
+// ============================================================
+// Main entry
+// ============================================================
+
+fn emit_main_entry(st:LlvmCg -- ) {
+	-> s
+	s @lctx -> c  s @lmod -> m  s @builder -> b
+
+	// main(i32, ptr) -> i32
+	2 llvmwrap::types_new -> p
+	p 0 c llvmwrap::int32_type llvmwrap::types_set
+	p 1 c llvmwrap::ptr_type llvmwrap::types_set
+	c llvmwrap::int32_type p 2 0 llvmwrap::fn_type -> mty
+	p llvmwrap::types_free
+
+	m "main" mty llvmwrap::add_function -> mfn
+	c mfn "entry" llvmwrap::append_block -> entry
+	b entry llvmwrap::position_at_end
+
+	// ctx = qd_create_context(1024)
+	m "qd_create_context" llvmwrap::get_function -> create_fn
+	1 llvmwrap::types_new -> cp
+	cp 0 c llvmwrap::int64_type llvmwrap::types_set
+	c llvmwrap::ptr_type cp 1 0 llvmwrap::fn_type -> cft
+	cp llvmwrap::types_free
+	c llvmwrap::int64_type 1024 llvmwrap::const_int -> sz
+	1 llvmwrap::args_new -> a1
+	a1 0 sz llvmwrap::args_set
+	b cft create_fn a1 1 "ctx" llvmwrap::build_call -> ctxv
+	a1 llvmwrap::args_free
+
+	// call usr_main_main(ctx)
+	s "usr_main_main" decl_fn -> mmf
+	s std_fn_type -> sft
+	1 llvmwrap::args_new -> a2
+	a2 0 ctxv llvmwrap::args_set
+	b sft mmf a2 1 "" llvmwrap::build_call drop
+	a2 llvmwrap::args_free
+
+	// qd_free_context(ctx)
+	s "qd_free_context" decl_fn -> ff
+	1 llvmwrap::args_new -> a3
+	a3 0 ctxv llvmwrap::args_set
+	b sft ff a3 1 "" llvmwrap::build_call drop
+	a3 llvmwrap::args_free
+
+	// ret 0
+	c llvmwrap::int32_type 0 llvmwrap::const_int -> zero
+	b zero llvmwrap::build_ret drop
+}
+
+// ============================================================
+// Public API
+// ============================================================
+
+pub fn generate(prog:ptr -- ir:str) {
+	-> root
+	root null "" generate_full
+}
+
+// Parse textual "declare i32 @func_name(ptr)\n" lines and declare each function
+fn parse_text_declares(st:LlvmCg decls:str -- ) {
+	-> text -> s
+	text strings::len 0 == if { return }
+	// Find each "declare i32 @" and extract function name
+	0 -> pos
+	text strings::len -> tlen
+	pos tlen < while {
+		text pos tlen pos - strings::substring! -> rest
+		rest "declare i32 @" strings::index_of -> didx
+		didx 0 < if {
+			// Also handle "@__const_" and "@__enum_" globals
+			rest "@__const_" strings::index_of -> cidx
+			cidx 0 >= if {
+				// Constant global: @__const_mod_Name = private constant i64 VALUE
+				cidx 9 + pos + -> nstart
+				nstart -> nend
+				nend tlen < while {
+					text nend strings::char_at! 32 == if { break }
+					nend 1 + -> nend
+					nend tlen <
+				}
+				text nstart nend nstart - strings::substring! -> cname
+				// Find value after "i64 "
+				rest "i64 " strings::index_of -> vi
+				vi 0 >= if {
+					vi 4 + pos + -> vstart
+					vstart -> vend
+					vend tlen < while {
+						text vend strings::char_at! 10 == if { break }
+						text vend strings::char_at! 32 == if { break }
+						vend 1 + -> vend
+						vend tlen <
+					}
+					text vstart vend vstart - strings::substring! -> vstr
+					vstr strconv::atoi! -> cival
+					s @lctx -> c
+					c llvmwrap::int64_type -> i64t
+					$"__const_{cname}" -> gname
+					s @lmod gname llvmwrap::get_function -> existing
+					existing null == if {
+						s @lmod gname i64t llvmwrap::add_global -> g
+						g i64t cival llvmwrap::const_int llvmwrap::set_initializer
+						g llvmwrap::set_global_constant
+						g 9 llvmwrap::set_linkage
+					}
+				}
+			}
+			// Move past this line
+			rest "\n" strings::index_of -> nlx
+			nlx 0 >= if { pos nlx 1 + + -> pos } else { tlen -> pos }
+		} else {
+			// "declare i32 @funcname(ptr)\n"
+			didx 13 + pos + -> fnstart
+			fnstart -> fnend
+			fnend tlen < while {
+				text fnend strings::char_at! 40 == if { break }
+				fnend 1 + -> fnend
+				fnend tlen <
+			}
+			fnend fnstart > if {
+				text fnstart fnend fnstart - strings::substring! -> fname
+				s fname decl_fn drop
+			}
+			// Move past this line
+			rest "\n" strings::index_of -> nl
+			nl 0 >= if { pos nl 1 + + -> pos } else { tlen -> pos }
+		}
+		pos tlen <
+	}
+}
+
+pub fn generate_full(prog:ptr merged_files:ptr module_declares:str -- ir:str) {
+	-> mdecls -> merged -> root
+	new_state -> st
+	st declare_runtime
+	0 -> cnt
+
+	// Collect metadata from all ASTs
+	sb::new -> md_buf
+	root md_buf collect_metadata -> md_buf
+	// Collect from merged files too
+	merged -> miter
+	miter null neq while {
+		miter md_buf collect_metadata -> md_buf
+		miter @sibling -> miter
+		miter null neq
+	}
+	md_buf "!" sb::append -> md_buf
+	md_buf sb::finish -> md
+
+	// Process main program top-level declarations
+	root @child1 null neq if { st root @child1 md "usr_main_" cnt emit_top -> cnt }
+	root @child2 null neq if { st root @child2 md "usr_main_" cnt emit_top -> cnt }
+	root @child3 null neq if { st root @child3 md "usr_main_" cnt emit_top -> cnt }
+	root @child4 null neq if { st root @child4 md "usr_main_" cnt emit_top -> cnt }
+	root @extra -> cur
+	cur null neq while {
+		st cur md "usr_main_" cnt emit_top -> cnt
+		cur @sibling -> cur
+		cur null neq
+	}
+
+	// Process merged file ASTs
+	merged -> miter2
+	miter2 null neq while {
+		miter2 @ntext -> mpfx
+		mpfx strings::len 0 == if { "usr_main_" -> mpfx }
+		st miter2 md mpfx cnt emit_merged_file -> cnt
+		miter2 @sibling -> miter2
+		miter2 null neq
+	}
+
+	// Parse and declare module functions from textual declare lines
+	mdecls strings::len 0 > if {
+		st mdecls parse_text_declares
+	}
+
+	// Emit main() entry
+	st emit_main_entry
+
+	// Verify and print
+	st @lmod llvmwrap::module_verify drop
+	st @lmod llvmwrap::module_print -> ir
+
+	st @builder llvmwrap::builder_dispose
+	st @lmod llvmwrap::module_dispose
+	st @lctx llvmwrap::context_dispose
+	ir
+}

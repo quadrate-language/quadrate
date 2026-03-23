@@ -10,7 +10,7 @@ use path
 use "lexer.qd"
 use "ast.qd"
 use "parser.qd"
-use "codegen.qd"
+use "codegen_llvm.qd"
 
 // Extract function names from a module's .qd file by scanning for "pub fn" inside import blocks.
 // Returns comma-separated function names: "open,close,read_file"
@@ -527,7 +527,7 @@ fn main() {
 	extra_declares sb::finish -> decl_str
 
 	// Generate IR for main program + merged files + module declares
-	prog merged_head decl_str codegen::generate_full -> ir
+	prog merged_head decl_str codegen_llvm::generate_full -> ir
 
 	// Write IR
 	"/tmp/quadc_output.ll" ir io::write_file!

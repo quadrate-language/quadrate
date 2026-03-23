@@ -1,0 +1,57 @@
+use testing
+use strings
+use llvmwrap
+
+test "create context and module" {
+	llvmwrap::context_create -> lctx
+	"test_module" lctx llvmwrap::module_create -> lmod
+
+	lctx null neq testing::assert_true
+	lmod null neq testing::assert_true
+
+	lmod llvmwrap::module_print -> ir
+	ir "test_module" strings::contains testing::assert_true
+
+	lmod llvmwrap::module_dispose
+	lctx llvmwrap::context_dispose
+}
+
+test "create function and emit IR" {
+	llvmwrap::context_create -> lctx
+	"test" lctx llvmwrap::module_create -> lmod
+
+	// Create function type: i32 (ptr)
+	lctx llvmwrap::int32_type -> i32ty
+	lctx llvmwrap::ptr_type -> ptrty
+
+	1 llvmwrap::types_new -> params
+	params 0 ptrty llvmwrap::types_set
+	i32ty params 1 0 llvmwrap::fn_type -> lft
+	params llvmwrap::types_free
+
+	// Add function
+	lmod "my_func" lft llvmwrap::add_function -> lfn
+	lfn null neq testing::assert_true
+
+	// Add entry block and builder
+	lctx lfn "entry" llvmwrap::append_block -> bb
+	lctx llvmwrap::builder_create -> builder
+	builder bb llvmwrap::position_at_end
+
+	// Build return 42
+	i32ty 42 llvmwrap::const_int -> retval
+	builder retval llvmwrap::build_ret drop
+
+	// Verify
+	lmod llvmwrap::module_verify -> ok
+	ok testing::assert_true
+
+	// Check output
+	lmod llvmwrap::module_print -> ir
+	ir "my_func" strings::contains testing::assert_true
+	ir "ret i32 42" strings::contains testing::assert_true
+
+	builder llvmwrap::builder_dispose
+	lmod llvmwrap::module_dispose
+	lctx llvmwrap::context_dispose
+}
