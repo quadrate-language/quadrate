@@ -65,4 +65,15 @@ import "libqdllvmwrap.a" as "llvmwrap" {
 	pub fn get_global(mod:ptr name:str -- global:ptr)
 	pub fn set_initializer(global:ptr val:ptr -- )
 	pub fn set_global_constant(global:ptr -- )
+
+	// Target Machine (direct .o emission)
+	pub fn init_targets( -- )
+	pub fn default_triple( -- triple:str)
+	pub fn get_target(triple:str -- target:ptr)
+	pub fn create_target_machine(target:ptr triple:str cpu:str features:str opt_level:i64 -- tm:ptr)
+	pub fn emit_obj(tm:ptr mod:ptr path:str -- ok:i64)
+	pub fn dispose_target_machine(tm:ptr -- )
+	pub fn set_target(mod:ptr triple:str -- )
+	pub fn target_data_layout(tm:ptr -- layout:str)
+	pub fn set_data_layout(mod:ptr layout:str -- )
 }

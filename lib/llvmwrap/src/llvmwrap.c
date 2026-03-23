@@ -12,6 +12,8 @@
 #include <llvm-c/Core.h>
 #include <llvm-c/Analysis.h>
 #include <llvm-c/BitWriter.h>
+#include <llvm-c/Target.h>
+#include <llvm-c/TargetMachine.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -600,5 +602,134 @@ int usr_llvmwrap_types_set(qd_context* ctx) {
 int usr_llvmwrap_types_free(qd_context* ctx) {
 	void* arr; pop_ptr(ctx, &arr);
 	free(arr);
+	return 0;
+}
+
+// ============================================================
+// Target Machine (for direct .o emission)
+// ============================================================
+
+// ( -- ) Initialize all targets. Call once before any target operations.
+int usr_llvmwrap_init_targets(qd_context* ctx) {
+	(void)ctx;
+	LLVMInitializeAllTargetInfos();
+	LLVMInitializeAllTargets();
+	LLVMInitializeAllTargetMCs();
+	LLVMInitializeAllAsmPrinters();
+	LLVMInitializeAllAsmParsers();
+	return 0;
+}
+
+// ( -- triple:str ) Get the default target triple for this host.
+int usr_llvmwrap_default_triple(qd_context* ctx) {
+	char* triple = LLVMGetDefaultTargetTriple();
+	qd_push_s(ctx, triple);
+	LLVMDisposeMessage(triple);
+	return 0;
+}
+
+// ( triple:str -- target:ptr ) Look up a target by triple.
+int usr_llvmwrap_get_target(qd_context* ctx) {
+	const char* triple; qd_string_t* sref;
+	pop_str(ctx, &triple, &sref);
+	LLVMTargetRef target = NULL;
+	char* error = NULL;
+	if (LLVMGetTargetFromTriple(triple, &target, &error)) {
+		fprintf(stderr, "llvmwrap: failed to get target for '%s': %s\n",
+				triple, error ? error : "(unknown)");
+		if (error) LLVMDisposeMessage(error);
+		qd_string_release(sref);
+		qd_push_p(ctx, NULL);
+		return 0;
+	}
+	if (error) LLVMDisposeMessage(error);
+	qd_string_release(sref);
+	qd_push_p(ctx, (void*)target);
+	return 0;
+}
+
+// ( target:ptr triple:str cpu:str features:str opt_level:i64 -- tm:ptr )
+// opt_level: 0=None, 1=Less, 2=Default, 3=Aggressive
+int usr_llvmwrap_create_target_machine(qd_context* ctx) {
+	int64_t opt_level;
+	const char *features, *cpu, *triple;
+	qd_string_t *sref_feat, *sref_cpu, *sref_triple;
+	void* target;
+	pop_int(ctx, &opt_level);
+	pop_str(ctx, &features, &sref_feat);
+	pop_str(ctx, &cpu, &sref_cpu);
+	pop_str(ctx, &triple, &sref_triple);
+	pop_ptr(ctx, &target);
+	LLVMTargetMachineRef tm = LLVMCreateTargetMachine(
+		(LLVMTargetRef)target, triple, cpu, features,
+		(LLVMCodeGenOptLevel)opt_level,
+		LLVMRelocPIC, LLVMCodeModelDefault);
+	qd_string_release(sref_feat);
+	qd_string_release(sref_cpu);
+	qd_string_release(sref_triple);
+	qd_push_p(ctx, (void*)tm);
+	return 0;
+}
+
+// ( tm:ptr mod:ptr path:str -- ok:i64 ) Emit object file.
+int usr_llvmwrap_emit_obj(qd_context* ctx) {
+	const char* path; qd_string_t* sref;
+	void *mod, *tm;
+	pop_str(ctx, &path, &sref);
+	pop_ptr(ctx, &mod);
+	pop_ptr(ctx, &tm);
+	char* error = NULL;
+	// Need a mutable copy of path for the API
+	char* path_mut = strdup(path);
+	LLVMBool failed = LLVMTargetMachineEmitToFile(
+		(LLVMTargetMachineRef)tm, (LLVMModuleRef)mod,
+		path_mut, LLVMObjectFile, &error);
+	free(path_mut);
+	if (failed) {
+		fprintf(stderr, "llvmwrap: emit failed: %s\n", error ? error : "(unknown)");
+	}
+	if (error) LLVMDisposeMessage(error);
+	qd_string_release(sref);
+	qd_push_i(ctx, failed ? 0 : 1);
+	return 0;
+}
+
+// ( tm:ptr -- ) Dispose target machine.
+int usr_llvmwrap_dispose_target_machine(qd_context* ctx) {
+	void* tm; pop_ptr(ctx, &tm);
+	LLVMDisposeTargetMachine((LLVMTargetMachineRef)tm);
+	return 0;
+}
+
+// ( mod:ptr triple:str -- ) Set the target triple on a module.
+int usr_llvmwrap_set_target(qd_context* ctx) {
+	const char* triple; qd_string_t* sref;
+	void* mod;
+	pop_str(ctx, &triple, &sref);
+	pop_ptr(ctx, &mod);
+	LLVMSetTarget((LLVMModuleRef)mod, triple);
+	qd_string_release(sref);
+	return 0;
+}
+
+// ( tm:ptr -- layout:str ) Get the data layout string from target machine.
+int usr_llvmwrap_target_data_layout(qd_context* ctx) {
+	void* tm; pop_ptr(ctx, &tm);
+	LLVMTargetDataRef dl = LLVMCreateTargetDataLayout((LLVMTargetMachineRef)tm);
+	char* str = LLVMCopyStringRepOfTargetData(dl);
+	qd_push_s(ctx, str);
+	LLVMDisposeMessage(str);
+	LLVMDisposeTargetData(dl);
+	return 0;
+}
+
+// ( mod:ptr layout:str -- ) Set the data layout on a module.
+int usr_llvmwrap_set_data_layout(qd_context* ctx) {
+	const char* layout; qd_string_t* sref;
+	void* mod;
+	pop_str(ctx, &layout, &sref);
+	pop_ptr(ctx, &mod);
+	LLVMSetDataLayout((LLVMModuleRef)mod, layout);
+	qd_string_release(sref);
 	return 0;
 }

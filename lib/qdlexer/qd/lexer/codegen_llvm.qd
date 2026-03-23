@@ -1908,7 +1908,8 @@ fn emit_all_decls(st:LlvmCg root:ptr metadata:str prefix:str counter:i64 -- coun
 	cnt
 }
 
-pub fn generate_full(prog:ptr merged_files:ptr module_declares:str -- ir:str) {
+// Build the LLVM module from ASTs (shared between generate_full and generate_obj)
+fn build_module(prog:ptr merged_files:ptr module_declares:str -- st:LlvmCg) {
 	-> mdecls -> merged -> root
 	new_state -> st
 	st declare_runtime
@@ -1966,8 +1967,13 @@ pub fn generate_full(prog:ptr merged_files:ptr module_declares:str -- ir:str) {
 
 	// Emit main() entry
 	st emit_main_entry
+	st
+}
 
-	// Verify and print
+pub fn generate_full(prog:ptr merged_files:ptr module_declares:str -- ir:str) {
+	build_module -> st
+
+	// Verify and print IR
 	st @lmod llvmwrap::module_verify drop
 	st @lmod llvmwrap::module_print -> ir
 
@@ -1975,4 +1981,44 @@ pub fn generate_full(prog:ptr merged_files:ptr module_declares:str -- ir:str) {
 	st @lmod llvmwrap::module_dispose
 	st @lctx llvmwrap::context_dispose
 	ir
+}
+
+// Emit object file directly via LLVM target machine (no clang needed for compilation)
+pub fn generate_obj(prog:ptr merged_files:ptr module_declares:str obj_path:str -- ok:i64) {
+	-> opath
+	build_module -> st
+
+	// Initialize targets
+	llvmwrap::init_targets
+
+	// Set up target machine
+	llvmwrap::default_triple -> triple
+	triple llvmwrap::get_target -> target
+	target null == if {
+		st @builder llvmwrap::builder_dispose
+		st @lmod llvmwrap::module_dispose
+		st @lctx llvmwrap::context_dispose
+		0 return
+	}
+
+	// Create target machine (opt level 0 = None for now)
+	target triple "" "" 0 llvmwrap::create_target_machine -> tm
+
+	// Set module target triple and data layout
+	st @lmod triple llvmwrap::set_target
+	tm llvmwrap::target_data_layout -> layout
+	st @lmod layout llvmwrap::set_data_layout
+
+	// Verify module
+	st @lmod llvmwrap::module_verify drop
+
+	// Emit object file
+	tm st @lmod opath llvmwrap::emit_obj -> result
+
+	// Clean up
+	tm llvmwrap::dispose_target_machine
+	st @builder llvmwrap::builder_dispose
+	st @lmod llvmwrap::module_dispose
+	st @lctx llvmwrap::context_dispose
+	result
 }

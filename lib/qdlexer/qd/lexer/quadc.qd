@@ -529,15 +529,26 @@ fn main() {
 
 	extra_declares sb::finish -> decl_str
 
-	// Generate IR for main program + merged files + module declares
-	prog merged_head decl_str codegen_llvm::generate_full -> ir
+	// Generate object file directly via LLVM
+	"/tmp/quadc_output.o" -> obj_path
+	prog merged_head decl_str obj_path codegen_llvm::generate_obj -> gen_ok
+	gen_ok 0 == if {
+		"Code generation failed" print nl
+		1 os::exit
+	}
 
-	// Write IR
-	"/tmp/quadc_output.ll" ir io::write_file!
+	// Write IR for bootstrap verification if QUADC_DUMP_IR is set
+	"QUADC_DUMP_IR" os::getenv -> dump_ir
+	dump_ir strings::is_empty 0 == if {
+		prog merged_head decl_str codegen_llvm::generate_full -> ir
+		"/tmp/quadc_output.ll" ir io::write_file!
+	}
 
-	// Compile: clang + link libs
+	// Link: cc obj + libs -> executable
 	sb::new -> cmd
-	cmd "clang /tmp/quadc_output.ll -L" sb::append -> cmd
+	cmd "cc " sb::append -> cmd
+	cmd obj_path sb::append -> cmd
+	cmd " -L" sb::append -> cmd
 	cmd quad_libdir sb::append -> cmd
 	cmd " -L" sb::append -> cmd
 	cmd quad_libdir sb::append -> cmd
@@ -553,7 +564,7 @@ fn main() {
 
 	cmd_str os::system -> exit_code
 	exit_code 0 neq if {
-		"Compilation failed (exit code " print exit_code print ")" print nl
+		"Link failed (exit code " print exit_code print ")" print nl
 		1 os::exit
 	}
 

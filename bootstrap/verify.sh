@@ -33,7 +33,7 @@ echo "  OK"
 
 # Stage 1: Use stage0 to compile quadc.qd -> stage1.ll
 echo "[Stage 1] quadc-stage0 compiles quadc.qd -> stage1.ll"
-QUADRATE_LIBDIR="$LIBDIR" QUADRATE_ROOT="$QUADROOT" \
+QUADRATE_LIBDIR="$LIBDIR" QUADRATE_ROOT="$QUADROOT" QUADC_DUMP_IR=1 \
     QUADC_INPUT="$SRCDIR/quadc.qd" QUADC_OUTPUT="$TMPDIR/quadc-stage1-bin" \
     "$TMPDIR/quadc-stage0" 2>/dev/null || true
 # The IR is left in /tmp/quadc_output.ll by the self-hosted compiler
@@ -52,7 +52,7 @@ clang "$TMPDIR/stage1.ll" -L"$LIBDIR" -L"$LIBDIR/quadrate" $LIBS -o "$TMPDIR/qua
 echo "  OK"
 
 echo "[Stage 2] quadc-stage1 compiles quadc.qd -> stage2.ll"
-QUADRATE_LIBDIR="$LIBDIR" QUADRATE_ROOT="$QUADROOT" \
+QUADRATE_LIBDIR="$LIBDIR" QUADRATE_ROOT="$QUADROOT" QUADC_DUMP_IR=1 \
     QUADC_INPUT="$SRCDIR/quadc.qd" QUADC_OUTPUT="$TMPDIR/quadc-stage2-bin" \
     "$TMPDIR/quadc-stage1" 2>/dev/null || true
 cp /tmp/quadc_output.ll "$TMPDIR/stage2.ll" 2>/dev/null || {
