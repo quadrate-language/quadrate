@@ -17,6 +17,7 @@ RUN apt-get update && \
         meson \
         ninja-build \
         libreadline-dev \
+        libssl-dev \
         pkg-config \
         upx-ucl \
         git \
