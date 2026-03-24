@@ -138,6 +138,16 @@
       "examples": ["buf mem::is_null print  // 0"]
     },
     {
+      "name": "ptr_add",
+      "signature": "(base:ptr offset:i64 -- result:ptr)",
+      "failable": false,
+      "description": "Pointer arithmetic: base + offset.",
+      "params": [{"name": "base", "type": "ptr", "description": "Base pointer"}, {"name": "offset", "type": "i64", "description": "Byte offset to add"}],
+      "returns": [{"name": "result", "type": "ptr", "description": "Offset pointer"}],
+      "errors": [],
+      "examples": []
+    },
+    {
       "name": "realloc",
       "signature": "(address:ptr new_bytes:i64 -- new_address:ptr)",
       "failable": true,
@@ -146,16 +156,6 @@
       "returns": [{"name": "new_address", "type": "ptr", "description": "Reallocated memory address"}],
       "errors": [{"code": "ErrAlloc", "description": "Reallocation failed"}, {"code": "ErrInvalidArg", "description": "Invalid size (negative)"}],
       "examples": ["buf 2048 mem::realloc! -> buf"]
-    },
-    {
-      "name": "ptr_add",
-      "signature": "(base:ptr offset:i64 -- result:ptr)",
-      "failable": false,
-      "description": "Pointer arithmetic: returns base + offset. Useful for navigating buffers and string data.",
-      "params": [{"name": "base", "type": "ptr", "description": "Base pointer"}, {"name": "offset", "type": "i64", "description": "Byte offset to add"}],
-      "returns": [{"name": "result", "type": "ptr", "description": "Offset pointer"}],
-      "errors": [],
-      "examples": ["buf 8 mem::ptr_add -> next_slot"]
     },
     {
       "name": "set_byte",

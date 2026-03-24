@@ -274,6 +274,22 @@ buf mem::is_null print  // 0
 ```
 ---
 
+### `fn` ptr_add
+
+Pointer arithmetic: base + offset.
+
+**Signature:** `(base:ptr offset:i64 -- result:ptr)`
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `base` | `ptr` | Base pointer |
+| `offset` | `i64` | Byte offset to add |
+
+| Output | Type | Description |
+|--------|------|-------------|
+| `result` | `ptr` | Offset pointer |
+---
+
 ### `fn` realloc
 
 Reallocate memory to new size.

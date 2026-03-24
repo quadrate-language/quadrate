@@ -94,28 +94,30 @@ These modules ship with Quadrate and are always available:
 | `time` | Date and time |
 | `tty` | Terminal detection and dimensions |
 | `unicode` | Unicode utilities |
+| `base64` | Base64 encoding/decoding |
+| `crypto` | Cryptographic functions |
+| `ct` | Compile-time utilities |
+| `hex` | Hex encoding/decoding |
+| `hof` | Higher-order function combinators |
+| `http` | HTTP client and server |
+| `json` | JSON parsing and generation |
+| `log` | Logging |
+| `net` | Networking (TCP/UDP) |
+| `regex` | Regular expressions |
+| `sort` | Sorting |
+| `tls` | TLS/SSL |
+| `uri` | URI parsing |
+| `uuid` | UUID generation |
 
 ## External packages
-
-!!! note "Module not found?"
-    If you get an error like "unknown module" when using `use json`, `use http`, etc., you need to install the package first. See below.
 
 Additional modules are available as separate packages via `quadpm`. Install them with `quadpm get`:
 
 ```bash
-quadpm get https://git.sr.ht/~klahr/qdjson
+quadpm get https://git.sr.ht/~klahr/qdcompress
 ```
 
-After installing, use them like any standard library module:
-
-```qd
-use json
-
-fn main() {
-	"{\"name\": \"Alice\"}" json::parse! -> obj
-	obj "name" json::get_string print nl
-}
-```
+After installing, use them like any standard library module.
 
 For projects with multiple dependencies, list them in a `qd.json` file and run `quadpm install`:
 
@@ -123,8 +125,7 @@ For projects with multiple dependencies, list them in a `qd.json` file and run `
 {
 	"name": "myproject",
 	"dependencies": {
-		"json": "https://git.sr.ht/~klahr/qdjson",
-		"http": "https://git.sr.ht/~klahr/qdhttp"
+		"compress": "https://git.sr.ht/~klahr/qdcompress"
 	}
 }
 ```
@@ -135,22 +136,8 @@ quadpm install
 
 | Package | Install |
 |---------|---------|
-| `base64` | `quadpm get https://git.sr.ht/~klahr/qdbase64` |
 | `compress` | `quadpm get https://git.sr.ht/~klahr/qdcompress` |
-| `crypto` | `quadpm get https://git.sr.ht/~klahr/qdcrypto` |
-| `ct` | `quadpm get https://git.sr.ht/~klahr/qdct` |
-| `hex` | `quadpm get https://git.sr.ht/~klahr/qdhex` |
-| `hof` | `quadpm get https://git.sr.ht/~klahr/qdhof` |
-| `http` | `quadpm get https://git.sr.ht/~klahr/qdhttp` |
-| `json` | `quadpm get https://git.sr.ht/~klahr/qdjson` |
-| `log` | `quadpm get https://git.sr.ht/~klahr/qdlog` |
-| `net` | `quadpm get https://git.sr.ht/~klahr/qdnet` |
-| `regex` | `quadpm get https://git.sr.ht/~klahr/qdregex` |
-| `sort` | `quadpm get https://git.sr.ht/~klahr/qdsort` |
 | `sqlite` | `quadpm get https://git.sr.ht/~klahr/qdsqlite` |
-| `tls` | `quadpm get https://git.sr.ht/~klahr/qdtls` |
-| `uri` | `quadpm get https://git.sr.ht/~klahr/qduri` |
-| `uuid` | `quadpm get https://git.sr.ht/~klahr/qduuid` |
 
 See [External Packages](../../external-packages.md) for full documentation and examples.
 

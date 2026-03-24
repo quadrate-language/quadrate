@@ -210,6 +210,21 @@ Count occurrences of substring.
 ```
 ---
 
+### `fn` data
+
+Get raw char pointer to string data.
+
+**Signature:** `(str:str -- ptr:ptr)`
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `str` | `str` | Source string |
+
+| Output | Type | Description |
+|--------|------|-------------|
+| `ptr` | `ptr` | Raw pointer to string bytes |
+---
+
 ### `fn` ends_with
 
 Check if string ends with suffix.
