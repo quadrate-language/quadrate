@@ -52,7 +52,7 @@ done
 cp tools/playground/Dockerfile.sandbox "$TMPDIR/Dockerfile"
 
 echo "Building Docker image: $IMAGE_NAME"
-docker build -t "$IMAGE_NAME" "$TMPDIR"
+docker build --network=host -t "$IMAGE_NAME" "$TMPDIR"
 
 echo ""
 echo "Done! Run the playground with:"
