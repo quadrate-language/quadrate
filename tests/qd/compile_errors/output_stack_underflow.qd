@@ -1,0 +1,7 @@
+// Test: function declares outputs but body leaves too few values on the stack
+fn coerce( -- x:i64) {
+}
+
+fn main() {
+	coerce print nl
+}

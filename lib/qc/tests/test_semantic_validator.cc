@@ -509,7 +509,8 @@ TEST(WerrorCleanCodePasses) {
 TEST(MultipleImplicitCasts) {
 	const char* src = R"(
 		fn mix(a:i64 b:f64 c:i64 -- result:f64) {
-			drop drop
+			-> _ -> result -> _
+			result
 		}
 		fn main() {
 			10.5 20 30.5 mix printv

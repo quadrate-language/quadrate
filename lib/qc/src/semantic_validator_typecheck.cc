@@ -433,6 +433,57 @@ namespace Qd {
 				typeCheckBlock(func->body(), typeStack, localVariables, structTypeStack);
 			}
 
+			// Validate that the type stack matches declared output parameters
+			// Skip if the function body diverges (e.g., ends with panic or return)
+			if (func->body() && !blockEndsDiverging(func->body())) {
+				size_t expectedOutputs = func->outputParameters().size();
+				size_t actualOutputs = typeStack.size();
+
+				// Only error when fewer values than declared — the type stack simulation
+				// can over-count due to imprecise tracking of locals bound inside
+				// control flow branches (switch, if/else)
+				if (actualOutputs < expectedOutputs) {
+					std::string errorMsg = "Function '";
+					errorMsg += func->name();
+					errorMsg += "' declares ";
+					errorMsg += std::to_string(expectedOutputs);
+					errorMsg += " output(s) but body leaves ";
+					errorMsg += std::to_string(actualOutputs);
+					errorMsg += " value(s) on the stack";
+					reportError(func, errorMsg.c_str());
+				} else if (actualOutputs == expectedOutputs) {
+					// Check that types match
+					for (size_t i = 0; i < expectedOutputs; i++) {
+						AstNodeParameter* outParam = static_cast<AstNodeParameter*>(func->outputParameters()[i]);
+						StackValueType expectedType = stringToStackValueType(outParam->typeString());
+						StackValueType actualType = typeStack[i];
+
+						if (expectedType == StackValueType::ANY || expectedType == StackValueType::UNKNOWN ||
+								expectedType == StackValueType::TYPEVAR) {
+							continue;
+						}
+						if (actualType == StackValueType::UNKNOWN || actualType == StackValueType::ANY ||
+								actualType == StackValueType::TYPEVAR) {
+							continue;
+						}
+
+						if (actualType != expectedType) {
+							std::string errorMsg = "Function '";
+							errorMsg += func->name();
+							errorMsg += "' output ";
+							errorMsg += std::to_string(i + 1);
+							errorMsg += " ('";
+							errorMsg += outParam->name();
+							errorMsg += "') expects ";
+							errorMsg += stackValueTypeToString(expectedType);
+							errorMsg += " but got ";
+							errorMsg += stackValueTypeToString(actualType);
+							reportError(func, errorMsg.c_str());
+						}
+					}
+				}
+			}
+
 			// Reset function state
 			mCurrentFunctionFallible = false;
 			mCurrentFunctionOutputCount = 0;
