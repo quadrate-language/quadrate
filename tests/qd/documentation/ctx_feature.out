@@ -1,38 +1,29 @@
-"=== CTX Block Feature Demo ==="
+=== CTX Block Feature Demo ===
 
-
-"Demo 1: Basic Isolation"
-
+Demo 1: Basic Isolation
 7
 3
 2
 1
 
-"Demo 2: Deep Copy"
+Demo 2: Deep Copy
+modified
+original
 
-"Demo 2: Deep Copy" original modified
-
-"Demo 2: Deep Copy" original modified
-
-
-"Demo 3: Clear in ctx"
-
+Demo 3: Clear in ctx
 42
 300
 200
 100
 
-"Demo 4: Chained ctx blocks"
-
+Demo 4: Chained ctx blocks
 55
 60
 30
 
-"Demo 5: With control flow"
-
+Demo 5: With control flow
 999
 5
 10
 
-"=== All demos complete ==="
-
+=== All demos complete ===

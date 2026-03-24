@@ -1,0 +1,8 @@
+// Test: function declares 1 output but body leaves 2 values on the stack
+fn too_many( -- result:i64) {
+	1 2
+}
+
+fn main() {
+	too_many print nl
+}

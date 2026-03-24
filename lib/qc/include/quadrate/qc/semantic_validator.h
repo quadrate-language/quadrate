@@ -414,6 +414,11 @@ namespace Qd {
 		// When true, type errors are suppressed (but method calls are still marked)
 		bool mInLoopBody;
 
+		// Whether the current function has unpredictable stack effects
+		// When true, output validation is skipped (e.g., 'read' has dynamic stack effect,
+		// or unhandled instructions whose stack effects are unknown)
+		bool mHasUnpredictableStack;
+
 		// Source text for error context printing (optional, may be null)
 		const char* mSource;
 

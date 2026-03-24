@@ -1,6 +1,5 @@
 fn validate_positive(a:i64 -- result:i64)! {
 	dup 0 > if {
-		dup
 	} else {
 		0
 		"Error occurred" 1 panic

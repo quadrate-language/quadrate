@@ -106,6 +106,7 @@ namespace Qd {
 		// At compile-time, we use STRING type for arguments since that's the most common case.
 		static const int READ_INSTRUCTION_MAX_ARGS = 16; // Maximum expected command-line arguments
 		if (strcmp(name, "read") == 0) {
+			mHasUnpredictableStack = true;
 			typeStack.clear();
 			// Push 16 STRING-typed arguments (actual types determined at runtime)
 			for (int i = 0; i < READ_INSTRUCTION_MAX_ARGS; i++) {
@@ -136,6 +137,7 @@ namespace Qd {
 				return;
 			}
 			// Type remains the same (already on stack)
+			return;
 		}
 		// Trigonometric functions: sin, cos, tan, asin, acos, atan (always return float)
 		else if (strcmp(name, "sin") == 0 || strcmp(name, "cos") == 0 || strcmp(name, "tan") == 0 ||
@@ -160,6 +162,7 @@ namespace Qd {
 			// Pop and push float (trig functions always return float)
 			typeStack.pop_back();
 			typeStack.push_back(StackValueType::FLOAT);
+			return;
 		}
 		// Math functions: sqrt, cb, cbrt, ceil, floor, ln, log10, round (always return float)
 		else if (strcmp(name, "sqrt") == 0 || strcmp(name, "cb") == 0 || strcmp(name, "cbrt") == 0 ||
@@ -185,6 +188,7 @@ namespace Qd {
 			// Pop and push float (math functions always return float)
 			typeStack.pop_back();
 			typeStack.push_back(StackValueType::FLOAT);
+			return;
 		}
 		// Factorial function: fac (integer only, returns integer)
 		else if (strcmp(name, "fac") == 0) {
@@ -201,6 +205,7 @@ namespace Qd {
 				return;
 			}
 			// Type remains integer (already on stack)
+			return;
 		}
 		// Increment/Decrement functions: inc, dec (preserve type)
 		else if (strcmp(name, "inc") == 0 || strcmp(name, "dec") == 0) {
@@ -222,6 +227,7 @@ namespace Qd {
 				return;
 			}
 			// Type remains the same (already on stack)
+			return;
 		}
 		// Inverse function: inv (numeric input, returns float)
 		else if (strcmp(name, "inv") == 0) {
@@ -240,6 +246,7 @@ namespace Qd {
 			// Pop and push float (inv always returns float)
 			typeStack.pop_back();
 			typeStack.push_back(StackValueType::FLOAT);
+			return;
 		}
 		// Binary arithmetic operations: add, sub, mul, div, pow
 		else if (strcmp(name, "add") == 0 || strcmp(name, "sub") == 0 || strcmp(name, "mul") == 0 ||
@@ -278,6 +285,7 @@ namespace Qd {
 																							   : StackValueType::INT;
 			typeStack.push_back(result);
 			structTypeStack.push_back(""); // Arithmetic result is never a struct
+			return;
 		}
 		// Comparison operations: eq, neq, lt, gt, lte, gte (consume 2, produce int/bool)
 		else if (strcmp(name, "eq") == 0 || strcmp(name, "neq") == 0 || strcmp(name, "lt") == 0 ||
@@ -299,6 +307,7 @@ namespace Qd {
 			// Push result (always int/bool)
 			typeStack.push_back(StackValueType::INT);
 			structTypeStack.push_back("");
+			return;
 		}
 		// Logical operations: and, or (consume 2 bools, produce int/bool)
 		else if (strcmp(name, "and") == 0 || strcmp(name, "or") == 0) {
@@ -319,6 +328,7 @@ namespace Qd {
 			// Push result (always int/bool)
 			typeStack.push_back(StackValueType::INT);
 			structTypeStack.push_back("");
+			return;
 		}
 		// Logical negation: not (consume 1, produce int/bool)
 		else if (strcmp(name, "not") == 0) {
@@ -333,6 +343,7 @@ namespace Qd {
 			}
 			typeStack.push_back(StackValueType::INT);
 			structTypeStack.push_back("");
+			return;
 		}
 		// Bitwise shift and XOR operations: shl, shr, xor (consume 2 ints, produce int)
 		else if (strcmp(name, "shl") == 0 || strcmp(name, "shr") == 0 || strcmp(name, "xor") == 0) {
@@ -353,6 +364,7 @@ namespace Qd {
 			// Push result (always int)
 			typeStack.push_back(StackValueType::INT);
 			structTypeStack.push_back("");
+			return;
 		}
 		// Negation: neg (preserve numeric type)
 		else if (strcmp(name, "neg") == 0) {
@@ -362,6 +374,7 @@ namespace Qd {
 				return;
 			}
 			// Type stays the same
+			return;
 		}
 		// Type casting: cast<T> (convert to type T)
 		else if (strcmp(name, "cast") == 0) {
@@ -394,6 +407,7 @@ namespace Qd {
 			}
 			typeStack.push_back(resultType);
 			structTypeStack.push_back("");
+			return;
 		}
 		// Type size introspection: sizeof<T> or sizeof (on value)
 		else if (strcmp(name, "sizeof") == 0) {
@@ -416,8 +430,10 @@ namespace Qd {
 					}
 					typeStack.push_back(StackValueType::INT);
 					structTypeStack.push_back("");
+					return;
 				}
 			}
+			return;
 		}
 		// Modulo: mod (consume 2 ints, produce int)
 		else if (strcmp(name, "mod") == 0) {
@@ -436,6 +452,7 @@ namespace Qd {
 			// Push result (always int)
 			typeStack.push_back(StackValueType::INT);
 			structTypeStack.push_back("");
+			return;
 		}
 		// Print operations: print, printv
 		else if (strcmp(name, "print") == 0 || strcmp(name, "printv") == 0) {
@@ -450,10 +467,12 @@ namespace Qd {
 			if (!structTypeStack.empty()) {
 				structTypeStack.pop_back();
 			}
+			return;
 		}
 		// Non-destructive print: prints, printsv
-		else if (strcmp(name, "prints") == 0 || strcmp(name, "printsv") == 0) {
+		else if (strcmp(name, "prints") == 0 || strcmp(name, "printsv") == 0 || strcmp(name, "nl") == 0) {
 			// These don't modify the stack
+			return;
 		}
 		// Stack operations: dup
 		else if (strcmp(name, "dup") == 0) {
@@ -467,7 +486,9 @@ namespace Qd {
 			if (!structTypeStack.empty()) {
 				std::string topStruct = structTypeStack.back();
 				structTypeStack.push_back(topStruct);
+				return;
 			}
+			return;
 		}
 		// Stack operations: dup2 ( a b -- a b a b )
 		else if (strcmp(name, "dup2") == 0) {
@@ -487,7 +508,9 @@ namespace Qd {
 				std::string topStruct = structTypeStack.back();
 				structTypeStack.push_back(secondStruct);
 				structTypeStack.push_back(topStruct);
+				return;
 			}
+			return;
 		}
 		// Stack operations: dupd ( a b -- a a b )
 		else if (strcmp(name, "dupd") == 0) {
@@ -495,19 +518,14 @@ namespace Qd {
 				reportError(node, "Type error in 'dupd': Stack underflow (requires 2 values)");
 				return;
 			}
-			// Get the second and top elements
+			// Insert copy of second element before top: [a, b] -> [a, a, b]
 			StackValueType second = typeStack[typeStack.size() - 2];
-			StackValueType top = typeStack.back();
-			// Push: second (duplicate of second), then top
-			typeStack.push_back(second);
-			typeStack.push_back(top);
-			// Duplicate struct types as well
+			typeStack.insert(typeStack.end() - 1, second);
 			if (structTypeStack.size() >= 2) {
 				std::string secondStruct = structTypeStack[structTypeStack.size() - 2];
-				std::string topStruct = structTypeStack.back();
-				structTypeStack.push_back(secondStruct);
-				structTypeStack.push_back(topStruct);
+				structTypeStack.insert(structTypeStack.end() - 1, secondStruct);
 			}
+			return;
 		}
 		// Stack operations: swapd ( a b c -- b a c )
 		else if (strcmp(name, "swapd") == 0) {
@@ -538,7 +556,9 @@ namespace Qd {
 				structTypeStack.push_back(secondStruct);
 				structTypeStack.push_back(thirdStruct);
 				structTypeStack.push_back(topStruct);
+				return;
 			}
+			return;
 		}
 		// Stack operations: overd ( a b c -- a b a c )
 		else if (strcmp(name, "overd") == 0) {
@@ -554,7 +574,9 @@ namespace Qd {
 			if (structTypeStack.size() >= 3) {
 				std::string thirdStruct = structTypeStack[structTypeStack.size() - 3];
 				structTypeStack.push_back(thirdStruct);
+				return;
 			}
+			return;
 		}
 		// Stack operations: nipd ( a b c -- a c )
 		else if (strcmp(name, "nipd") == 0) {
@@ -575,7 +597,9 @@ namespace Qd {
 				structTypeStack.pop_back();
 				structTypeStack.pop_back();
 				structTypeStack.push_back(topStruct);
+				return;
 			}
+			return;
 		}
 		// Stack operations: swap
 		else if (strcmp(name, "swap") == 0) {
@@ -597,7 +621,9 @@ namespace Qd {
 				structTypeStack.pop_back();
 				structTypeStack.push_back(aStruct);
 				structTypeStack.push_back(bStruct);
+				return;
 			}
+			return;
 		}
 		// Stack operations: over ( a b -- a b a )
 		else if (strcmp(name, "over") == 0) {
@@ -613,7 +639,9 @@ namespace Qd {
 			if (structTypeStack.size() >= 2) {
 				std::string secondStruct = structTypeStack[structTypeStack.size() - 2];
 				structTypeStack.push_back(secondStruct);
+				return;
 			}
+			return;
 		}
 		// Stack operations: nip ( a b -- b )
 		else if (strcmp(name, "nip") == 0) {
@@ -631,7 +659,9 @@ namespace Qd {
 				structTypeStack.pop_back();
 				structTypeStack.pop_back();
 				structTypeStack.push_back(topStruct);
+				return;
 			}
+			return;
 		}
 		// Stack operations: drop ( a -- )
 		else if (strcmp(name, "drop") == 0) {
@@ -643,6 +673,7 @@ namespace Qd {
 			if (!structTypeStack.empty()) {
 				structTypeStack.pop_back();
 			}
+			return;
 		}
 		// Stack operations: drop2 ( a b -- )
 		else if (strcmp(name, "drop2") == 0) {
@@ -657,6 +688,7 @@ namespace Qd {
 				structTypeStack.pop_back();
 				structTypeStack.pop_back();
 			}
+			return;
 		}
 		// Stack operations: rot ( a b c -- b c a )
 		else if (strcmp(name, "rot") == 0) {
@@ -684,7 +716,9 @@ namespace Qd {
 				structTypeStack.push_back(bStruct);
 				structTypeStack.push_back(cStruct);
 				structTypeStack.push_back(aStruct);
+				return;
 			}
+			return;
 		}
 		// Stack operations: tuck ( a b -- b a b )
 		else if (strcmp(name, "tuck") == 0) {
@@ -708,7 +742,9 @@ namespace Qd {
 				structTypeStack.push_back(bStruct);
 				structTypeStack.push_back(aStruct);
 				structTypeStack.push_back(bStruct);
+				return;
 			}
+			return;
 		}
 		// Stack operations: clear (empties the entire stack)
 		else if (strcmp(name, "clear") == 0) {
@@ -716,6 +752,7 @@ namespace Qd {
 			typeStack.clear();
 			// Clear struct type stack as well
 			structTypeStack.clear();
+			return;
 		}
 		// Stack operations: depth (pushes the current stack depth as an integer)
 		else if (strcmp(name, "depth") == 0) {
@@ -723,6 +760,7 @@ namespace Qd {
 			typeStack.push_back(StackValueType::INT);
 			// Push empty struct type (int is not a struct)
 			structTypeStack.push_back("");
+			return;
 		}
 		// call - invoke function pointer from stack
 		else if (strcmp(name, "call") == 0) {
@@ -791,6 +829,7 @@ namespace Qd {
 			// Push pointer (array) - regardless of element type, result is always a pointer
 			typeStack.push_back(StackValueType::PTR);
 			structTypeStack.push_back("");
+			return;
 		}
 		// Array length: len ( arr -- len )
 		// Returns the length of an array, consuming the array reference
@@ -814,6 +853,7 @@ namespace Qd {
 			}
 			typeStack.push_back(StackValueType::INT);
 			structTypeStack.push_back("");
+			return;
 		}
 		// Array access: nth ( arr idx -- elem )
 		// Returns element at index, consuming the array reference
@@ -843,6 +883,7 @@ namespace Qd {
 			}
 			typeStack.push_back(StackValueType::ANY);
 			structTypeStack.push_back("");
+			return;
 		}
 		// Array set: set ( arr idx val -- )
 		// Sets element at index
@@ -861,6 +902,7 @@ namespace Qd {
 				structTypeStack.pop_back();
 				structTypeStack.pop_back();
 			}
+			return;
 		}
 		// Array append: append ( arr val -- arr' )
 		// Appends value to array and returns new array
@@ -884,6 +926,7 @@ namespace Qd {
 				return;
 			}
 			// Array stays on stack (as modified array), already PTR type
+			return;
 		}
 		// free - deallocate memory pointed to by a pointer
 		else if (strcmp(name, "free") == 0) {
@@ -905,7 +948,31 @@ namespace Qd {
 			if (!structTypeStack.empty()) {
 				structTypeStack.pop_back();
 			}
+			return;
 		}
+		// within: (value min max -- result:int)
+		else if (strcmp(name, "within") == 0) {
+			if (typeStack.size() < 3) {
+				reportErrorConditional(
+						node, "Type error in 'within': Stack underflow (requires 3 values)", reportErrors);
+				return;
+			}
+			typeStack.pop_back();
+			typeStack.pop_back();
+			typeStack.pop_back();
+			if (structTypeStack.size() >= 3) {
+				structTypeStack.pop_back();
+				structTypeStack.pop_back();
+				structTypeStack.pop_back();
+			}
+			typeStack.push_back(StackValueType::INT);
+			structTypeStack.push_back("");
+			return;
+		}
+
+		// Unhandled instruction — mark stack as unpredictable
+		// so the function output validation is skipped
+		mHasUnpredictableStack = true;
 	}
 
 } // namespace Qd

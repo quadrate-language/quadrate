@@ -14,6 +14,8 @@ fn main() {
 	// Test 4: If with stack operations
 	3 dup if {
 		print nl
+	} else {
+		drop
 	}
 	// Test 5: Sequential if statements
 	1 if {

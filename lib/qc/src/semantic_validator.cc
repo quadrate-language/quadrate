@@ -44,7 +44,7 @@ namespace Qd {
 	SemanticValidator::SemanticValidator()
 		: mFilename(nullptr), mErrorCount(0), mWarningCount(0), mWerror(false), mIsModuleFile(false),
 		  mStoreErrors(false), mWarningMinLine(0), mCurrentFunctionFallible(false), mCurrentFunctionOutputCount(0),
-		  mInLoopBody(false), mSource(nullptr) {
+		  mInLoopBody(false), mHasUnpredictableStack(false), mSource(nullptr) {
 	}
 
 	const std::unordered_map<std::string, StackValueType>* SemanticValidator::lookupStructFieldTypes(

@@ -1291,27 +1291,22 @@ namespace Qd {
 				}
 			}
 
-			// Build produces list: prefer declared output parameters, fall back to body analysis
-			// Using declared outputs is more reliable for functions with complex control flow
-			if (!func->outputParameters().empty()) {
-				size_t producesIdx = 0;
-				for (auto* paramNode : func->outputParameters()) {
-					AstNodeParameter* param = static_cast<AstNodeParameter*>(paramNode);
-					std::string typeStr = param->typeString();
+			// Build produces list from declared output parameters
+			// Always use declared params — body analysis is unreliable for control flow
+			size_t producesIdx = 0;
+			for (auto* paramNode : func->outputParameters()) {
+				AstNodeParameter* param = static_cast<AstNodeParameter*>(paramNode);
+				std::string typeStr = param->typeString();
 
-					// Use stringToStackValueType to handle all types including type parameters
-					StackValueType producedType = stringToStackValueType(typeStr);
-					sig.produces.push_back(producedType);
+				// Use stringToStackValueType to handle all types including type parameters
+				StackValueType producedType = stringToStackValueType(typeStr);
+				sig.produces.push_back(producedType);
 
-					// Track struct types for PTR return values
-					if (producedType == StackValueType::PTR && isStructTypeName(typeStr)) {
-						sig.producesStructTypes[producesIdx] = typeStr;
-					}
-					producesIdx++;
+				// Track struct types for PTR return values
+				if (producedType == StackValueType::PTR && isStructTypeName(typeStr)) {
+					sig.producesStructTypes[producesIdx] = typeStr;
 				}
-			} else {
-				// No declared outputs - use body analysis result
-				sig.produces = typeStack;
+				producesIdx++;
 			}
 			sig.throws = func->throws();
 

@@ -1,14 +1,14 @@
 fn mcp_prompts_list(id:str -- response:str) {
 	-> id
 
-	"code" "Quadrate code to explain" "The code snippet to analyze" 1 build_prompt_arg json::arr -> args1
+	"code" "The code snippet to analyze" 1 build_prompt_arg json::arr -> args1
 	"explain_code" "Explain Quadrate code step by step, including stack effects" args1 build_prompt -> p1
 
-	"code" "Quadrate code to improve" "The code to convert to idiomatic style" 1 build_prompt_arg json::arr -> args2
+	"code" "The code to convert to idiomatic style" 1 build_prompt_arg json::arr -> args2
 	"convert_to_idiomatic" "Convert Quadrate code to more idiomatic style using stack operations" args2 build_prompt -> p2
 
-	"code" "Quadrate code with stack issue" "The code experiencing stack problems" 1 build_prompt_arg
-	"error" "Error message or description" "The error or unexpected behavior" 0 build_prompt_arg json::join json::arr -> args3
+	"code" "The code experiencing stack problems" 1 build_prompt_arg
+	"error" "The error or unexpected behavior" 0 build_prompt_arg json::join json::arr -> args3
 	"debug_stack" "Help debug stack-related issues in Quadrate code" args3 build_prompt -> p3
 
 	p1 p2 json::join p3 json::join json::arr -> prompts_arr

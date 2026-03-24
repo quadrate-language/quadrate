@@ -10,6 +10,7 @@
 #include <quadrate/qc/ast.h>
 #include <quadrate/qc/ast_node.h>
 #include <quadrate/qc/ast_node_anonymous_function.h>
+#include <quadrate/qc/ast_node_as_cast.h>
 #include <quadrate/qc/ast_node_constant.h>
 #include <quadrate/qc/ast_node_ctx.h>
 #include <quadrate/qc/ast_node_defer.h>
@@ -419,6 +420,7 @@ namespace Qd {
 			// Track whether current function is fallible (for panic validation)
 			mCurrentFunctionFallible = func->throws();
 			mCurrentFunctionOutputCount = func->outputParameters().size();
+			mHasUnpredictableStack = false;
 
 			// For methods, register the receiver as a local variable (it's implicitly bound)
 			if (func->hasReceiver()) {
@@ -435,14 +437,12 @@ namespace Qd {
 
 			// Validate that the type stack matches declared output parameters
 			// Skip if the function body diverges (e.g., ends with panic or return)
-			if (func->body() && !blockEndsDiverging(func->body())) {
+			// Skip if stack effects are unpredictable (e.g., 'read' instruction or unhandled instructions)
+			if (func->body() && !blockEndsDiverging(func->body()) && !mHasUnpredictableStack) {
 				size_t expectedOutputs = func->outputParameters().size();
 				size_t actualOutputs = typeStack.size();
 
-				// Only error when fewer values than declared — the type stack simulation
-				// can over-count due to imprecise tracking of locals bound inside
-				// control flow branches (switch, if/else)
-				if (actualOutputs < expectedOutputs) {
+				if (actualOutputs != expectedOutputs) {
 					std::string errorMsg = "Function '";
 					errorMsg += func->name();
 					errorMsg += "' declares ";
@@ -729,12 +729,14 @@ namespace Qd {
 					// Stack effect mismatch is an error because it leaves the stack in an
 					// unpredictable state, making subsequent code incorrect.
 					// Exception: if one branch diverges, it never returns, so no mismatch.
-					if (thenEffect != elseEffect && !thenDiverges && !elseDiverges) {
-						std::string errorMsg = "Stack effect mismatch: 'if' branch changes stack by ";
-						errorMsg += std::to_string(thenEffect);
-						errorMsg += ", but 'else' branch changes stack by ";
-						errorMsg += std::to_string(elseEffect);
-						reportWarning(child, errorMsg.c_str());
+					if (thenDiverges && elseDiverges) {
+						// Both branches diverge (return/panic) — no effect on parent stack
+					} else if (thenEffect != elseEffect && !thenDiverges && !elseDiverges) {
+						// Effects disagree — common with fallible calls where the if branch
+						// gets the result value and the else branch doesn't.
+						// Use the if (success) branch as authoritative.
+						typeStack = thenStack;
+						structTypeStack = thenStructStack;
 					} else if (thenDiverges && !elseDiverges) {
 						// Only else branch returns, apply its effects
 						typeStack = elseStack;
@@ -820,6 +822,12 @@ namespace Qd {
 				int commonEffect = 0;
 				bool firstCase = true;
 				std::vector<StackValueType> firstCaseStack;
+				std::vector<std::string> firstCaseStructStack;
+				// Track Ok branch separately for fallible switch patterns
+				std::vector<StackValueType> okCaseStack;
+				std::vector<std::string> okCaseStructStack;
+				bool hasOkCase = false;
+				bool allDiverge = true;
 
 				for (const auto* caseNode : cases) {
 					if (caseNode->isDefault()) {
@@ -835,9 +843,30 @@ namespace Qd {
 
 						int caseEffect = static_cast<int>(caseStack.size()) - static_cast<int>(typeStack.size());
 
+						// Track if this branch diverges (return/panic)
+						if (!blockEndsDiverging(caseBody)) {
+							allDiverge = false;
+						}
+
+						// Detect Ok case for fallible switch patterns.
+						// Ok is parsed as literal integer 1 (true).
+						if (!caseNode->isDefault() && caseNode->value()) {
+							if (caseNode->value()->type() == IAstNode::Type::LITERAL) {
+								AstNodeLiteral* caseLit =
+										static_cast<AstNodeLiteral*>(caseNode->value());
+								if (caseLit->literalType() == AstNodeLiteral::LiteralType::INTEGER &&
+										caseLit->value() == "1") {
+									okCaseStack = caseStack;
+									okCaseStructStack = caseStructStack;
+									hasOkCase = true;
+								}
+							}
+						}
+
 						if (firstCase) {
 							commonEffect = caseEffect;
 							firstCaseStack = caseStack;
+							firstCaseStructStack = caseStructStack;
 							firstCase = false;
 						} else if (caseEffect != commonEffect) {
 							allSameEffect = false;
@@ -845,11 +874,20 @@ namespace Qd {
 					}
 				}
 
-				// If there's a default case and all cases have the same positive effect,
-				// apply that effect to the type stack
-				if (hasDefault && allSameEffect && commonEffect > 0 && !firstCase) {
-					for (size_t k = typeStack.size(); k < firstCaseStack.size(); k++) {
-						typeStack.push_back(firstCaseStack[k]);
+				// Apply stack effects from switch branches
+				if (hasDefault && !firstCase) {
+					if (allDiverge) {
+						// All branches diverge (return/panic) — no effect on parent stack
+					} else if (allSameEffect && commonEffect != 0) {
+						// All branches have the same effect — apply it
+						typeStack = firstCaseStack;
+						structTypeStack = firstCaseStructStack;
+					} else if (!allSameEffect && hasOkCase) {
+						// Fallible switch: branches disagree because the Ok branch gets
+						// the result value and error branches don't.
+						// Use Ok branch's state as authoritative.
+						typeStack = okCaseStack;
+						structTypeStack = okCaseStructStack;
 					}
 				}
 				break;
@@ -919,7 +957,8 @@ namespace Qd {
 			}
 
 			case IAstNode::Type::LOOP_STATEMENT: {
-				// Infinite loops: just type check body
+				// Infinite loops with break/continue have unpredictable stack effects
+				mHasUnpredictableStack = true;
 				std::vector<StackValueType> loopStack = typeStack;
 				std::unordered_map<std::string, StackValueType> loopVars = localVariables;
 				std::vector<std::string> loopStructStack = structTypeStack;
@@ -2203,8 +2242,8 @@ namespace Qd {
 						}
 					}
 				}
-				// If it's not a user function, it must be a built-in (already validated in pass 2)
-				// Built-ins are handled as Instructions, not Identifiers in the AST
+				// If it's not a user function, it could be unresolved — stack effects unknown
+				mHasUnpredictableStack = true;
 				break;
 			}
 
@@ -2213,6 +2252,60 @@ namespace Qd {
 				AstNodeFieldAccess* fieldAccess = static_cast<AstNodeFieldAccess*>(child);
 				const std::string& varName = fieldAccess->varName();
 				const std::string& fieldName = fieldAccess->fieldName();
+
+				// Stack-based field access (empty varName): pops struct from stack, pushes field
+				// This occurs after 'as' casts: "c as Type @field"
+				if (varName.empty()) {
+					// Pop the struct value from the stack
+					if (!typeStack.empty()) {
+						// Get struct type from the stack to look up field type
+						std::string structType = "";
+						if (!structTypeStack.empty()) {
+							structType = structTypeStack.back();
+						}
+						typeStack.pop_back();
+						if (!structTypeStack.empty()) {
+							structTypeStack.pop_back();
+						}
+
+						// Look up field type if we know the struct type
+						StackValueType fieldType = StackValueType::UNKNOWN;
+						std::string fieldStructType = "";
+						if (!structType.empty()) {
+							const auto* structFieldPtr = lookupStructFieldTypes(structType);
+							if (structFieldPtr != nullptr) {
+								auto fieldIt = structFieldPtr->find(fieldName);
+								if (fieldIt != structFieldPtr->end()) {
+									fieldType = fieldIt->second;
+									// Check if field is a struct type
+									auto fstIt = mStructFieldStructTypes.find(structType);
+									if (fstIt != mStructFieldStructTypes.end()) {
+										auto nameIt = fstIt->second.find(fieldName);
+										if (nameIt != fstIt->second.end()) {
+											fieldStructType = nameIt->second;
+										}
+									}
+								}
+							}
+						}
+						if (fieldType == StackValueType::UNKNOWN) {
+							// Unknown struct type — search all structs for this field
+							for (const auto& structEntry : mStructFieldTypes) {
+								auto it = structEntry.second.find(fieldName);
+								if (it != structEntry.second.end()) {
+									fieldType = it->second;
+									break;
+								}
+							}
+						}
+						typeStack.push_back(fieldType);
+						structTypeStack.push_back(fieldStructType);
+					} else {
+						typeStack.push_back(StackValueType::UNKNOWN);
+						structTypeStack.push_back("");
+					}
+					break;
+				}
 
 				// Special handling for global error access: error @code or error @message
 				if (varName == "__global_error__") {
@@ -2546,6 +2639,14 @@ namespace Qd {
 				const std::string& moduleName = scoped->scope();
 				const std::string& functionName = scoped->name();
 				std::string qualifiedName = moduleName + "::" + functionName;
+
+				// Imported C functions and variadic stdlib functions may have signatures
+				// that don't reflect all consumed values. Mark stack as unpredictable.
+				if (mImportedLibraryFunctions.find(qualifiedName) != mImportedLibraryFunctions.end() ||
+						qualifiedName == "fmt::printf" || qualifiedName == "fmt::sprintf" ||
+						qualifiedName == "flag::parse") {
+					mHasUnpredictableStack = true;
+				}
 
 				// Check if this is a local enum variant (e.g., Color::Red)
 				if (mDefinedEnums.find(moduleName) != mDefinedEnums.end()) {
@@ -3085,7 +3186,8 @@ namespace Qd {
 					}
 				}
 				// If signature not found, module wasn't loaded or analyzed
-				// This was already checked in validation pass, so we can skip silently
+				// Stack effects are unknown — skip strict output validation
+				mHasUnpredictableStack = true;
 				break;
 			}
 
@@ -3132,6 +3234,16 @@ namespace Qd {
 				}
 				// Stop processing this block — code after return is unreachable
 				return;
+			}
+
+			case IAstNode::Type::AS_CAST: {
+				// Type narrowing cast: updates struct type on top of stack
+				// No push/pop — just changes the type annotation
+				AstNodeAsCast* asCast = static_cast<AstNodeAsCast*>(child);
+				if (!structTypeStack.empty()) {
+					structTypeStack.back() = asCast->typeName();
+				}
+				break;
 			}
 
 			default:

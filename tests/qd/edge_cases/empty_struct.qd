@@ -3,5 +3,5 @@ struct Empty {
 }
 
 fn main() {
-	"Empty struct test passed" prints nl
+	"Empty struct test passed" print nl
 }

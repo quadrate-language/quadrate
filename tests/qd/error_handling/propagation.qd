@@ -21,7 +21,7 @@ fn triple_chain(x:i64 -- result:i64)! {
 	-> x
 	x might_fail if {
 		-> val
-		val 0 might_fail if {
+		0 might_fail if {
 			-> val2
 			val val2 +
 		} else {
