@@ -852,8 +852,7 @@ namespace Qd {
 						// Ok is parsed as literal integer 1 (true).
 						if (!caseNode->isDefault() && caseNode->value()) {
 							if (caseNode->value()->type() == IAstNode::Type::LITERAL) {
-								AstNodeLiteral* caseLit =
-										static_cast<AstNodeLiteral*>(caseNode->value());
+								AstNodeLiteral* caseLit = static_cast<AstNodeLiteral*>(caseNode->value());
 								if (caseLit->literalType() == AstNodeLiteral::LiteralType::INTEGER &&
 										caseLit->value() == "1") {
 									okCaseStack = caseStack;
