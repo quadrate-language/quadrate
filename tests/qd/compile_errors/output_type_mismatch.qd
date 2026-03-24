@@ -1,0 +1,8 @@
+// Test: function body leaves wrong type on the stack
+fn get_float( -- result:f64) {
+	42
+}
+
+fn main() {
+	get_float print nl
+}

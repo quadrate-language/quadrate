@@ -1,0 +1,8 @@
+// Test: function declares 2 outputs but body leaves only 1
+fn pair( -- a:i64 b:i64) {
+	1
+}
+
+fn main() {
+	pair print nl print nl
+}

@@ -335,6 +335,19 @@ namespace Qd {
 				iteratorVars.erase(iterName);
 			}
 
+			if (compileTimeStack.size() > preLoopStack.size()) {
+				for (size_t i = preLoopStack.size(); i < compileTimeStack.size(); i++) {
+					llvm::Value* val = compileTimeStack[i];
+					if (val->getType()->isDoubleTy()) {
+						generateInlinePushFloatValue(ctx, val);
+					} else {
+						generateInlinePushIntValue(ctx, val);
+					}
+				}
+				// Trim compile-time stack back to pre-loop size
+				compileTimeStack.resize(preLoopStack.size());
+			}
+
 			// Capture body-end state before branching to inc
 			auto bodyEndStack = compileTimeStack;
 			llvm::BasicBlock* bodyEndBlock = builder->GetInsertBlock();
