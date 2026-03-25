@@ -284,7 +284,58 @@ fn apply(x:i64 f:ptr -- result:i64) {
 | `TAINTED` | Internal: error-tainted value from fallible function |
 | `TYPEVAR` | Internal: type variable in generic context |
 
-### 3.6 Type Coercion
+### 3.6 Null
+
+The `null` keyword pushes the integer value `0` with pointer semantics. It is used to represent the absence of a value, particularly for pointer-typed struct fields.
+
+#### 3.6.1 Value Semantics
+
+`null` MUST evaluate to `0` and MUST be comparable with standard integer operations:
+
+```quadrate
+null 0 == if { "true" print nl }     // true — null equals 0
+42 null neq if { "true" print nl }   // true — non-zero is not null
+null print nl                         // prints: 0
+```
+
+#### 3.6.2 Pointer Fields
+
+`null` is used to initialize pointer-typed struct fields to indicate "no value":
+
+```quadrate
+struct Node {
+    value:i64
+    next:*Node
+}
+
+Node { value = 10 next = null } -> a
+Node { value = 20 next = a } -> b
+
+b @next @value print nl   // 10 — follow pointer chain
+```
+
+`null` MAY also be used as a default value in struct field definitions:
+
+```quadrate
+pub struct Crc32 {
+    state:i64 = 4294967295
+    tbl:ptr = null
+}
+```
+
+#### 3.6.3 Switch Behavior
+
+In switch statements, `null` matches the `0` case. There is no special `null` case:
+
+```quadrate
+null switch {
+    0 { "null/zero" print nl }
+    _ { "other" print nl }
+}
+// prints: null/zero
+```
+
+### 3.7 Type Coercion
 
 Explicit casting via `cast<Type>`:
 
@@ -297,7 +348,7 @@ Explicit casting via `cast<Type>`:
 
 **Implicit coercion**: Implementations MUST NOT perform implicit type coercion. All type conversions MUST be explicit.
 
-### 3.7 Type Narrowing
+### 3.8 Type Narrowing
 
 The `as` keyword narrows a `ptr` value to a specific struct type. This is a compile-time annotation with no runtime cost:
 
@@ -454,7 +505,7 @@ const WITH_DEFAULT = env("VAR", "default")
 ### 5.4 Enum Declarations
 
 ```quadrate
-enum Name {
+[pub] enum Name {
     Variant1             // 0
     Variant2             // 1
     Variant3 = 10        // explicit value
@@ -463,11 +514,98 @@ enum Name {
 }
 ```
 
-Enums define scoped named integer constants. Values are `i64` aliases — fully interchangeable with `i64` in all operations. Variants auto-increment from 0 or from the last explicit value + 1.
+Enums define scoped named integer constants. Each variant is an `i64` value, fully interchangeable with `i64` in all operations (arithmetic, bitwise, comparison).
 
-Access variants with `EnumName::Variant`. From modules: `module::EnumName::Variant`.
+#### 5.4.1 Value Assignment
 
-Use `pub enum` to export from a module.
+- Variants auto-increment from `0` unless explicitly assigned
+- After an explicit value, auto-increment continues from that value + 1
+- Negative values are allowed
+- Each enum has independent numbering
+
+```quadrate
+enum Color { Red Green Blue }           // Red=0, Green=1, Blue=2
+enum Token { Int Float Str = 10 Ident } // Int=0, Float=1, Str=10, Ident=11
+enum Result { Err = -1 Ok = 0 Warn }   // Err=-1, Ok=0, Warn=1
+```
+
+#### 5.4.2 Variant Access
+
+Access variants with `EnumName::Variant`:
+
+```quadrate
+Color::Red print nl     // 0
+Color::Blue print nl    // 2
+```
+
+From imported modules, use triple-scoped access: `module::EnumName::Variant`:
+
+```quadrate
+use mymod
+mymod::Status::Ok print nl
+```
+
+#### 5.4.3 Visibility
+
+Use `pub enum` to export an enum from a module. Without `pub`, the enum is private to its module:
+
+```quadrate
+pub enum Status { Ok Error Pending }    // Accessible from other modules
+enum Internal { A B C }                 // Private to this module
+```
+
+#### 5.4.4 Operations
+
+Enum values are `i64` and support all integer operations:
+
+```quadrate
+enum Perm { None Read = 1 Write = 2 Execute = 4 All = 7 }
+
+// Arithmetic
+Perm::Read Perm::Write + print nl     // 3
+
+// Bitwise (flags/bitmasks)
+Perm::All Perm::Execute and print nl  // 4
+
+// Comparison
+Color::Red Color::Blue < print nl     // 1
+```
+
+#### 5.4.5 Switch on Enums
+
+Enum variants can be used as switch cases:
+
+```quadrate
+direction switch {
+    Direction::Up    { "up" print nl }
+    Direction::Down  { "down" print nl }
+    Direction::Left  { "left" print nl }
+    Direction::Right { "right" print nl }
+    _ { "unknown" print nl }
+}
+```
+
+Since enums are `i64`, a non-enum integer value will match if it equals a variant's numeric value. The wildcard `_` case handles unmatched values.
+
+#### 5.4.6 Enums in Structs
+
+Enum values can be stored in struct fields (typed as `i64`):
+
+```quadrate
+struct Token {
+    kind:i64
+    value:i64
+}
+
+Token { kind = TokenType::Int value = 42 } -> t
+t @kind TokenType::Int == if { "integer token" print nl }
+```
+
+#### 5.4.7 Compile-Time Validation
+
+Implementations MUST reject:
+- **Duplicate enum definitions**: Two enums with the same name in the same scope
+- **Unknown variants**: Accessing a variant that does not exist in the enum (e.g., `Color::Yellow` when `Yellow` is not defined)
 
 ### 5.5 Struct Declarations
 
@@ -1292,18 +1430,34 @@ Low-level memory.
 
 ### 13.9 Additional Modules
 
-- `sb` - StringBuilder for efficient string building
-- `bytes` - Byte buffer operations
+- `base64` - Base64 encoding and decoding
 - `bits` - Bit manipulation utilities
-- `rand` - Random number generation (xorshift64*)
-- `path` - File path manipulation
-- `strconv` - String/number conversion
-- `unicode` - Unicode character constants
-- `limits` - Numeric type limits
-- `term` - Terminal control
-- `signal` - Signal handling
+- `bytes` - Byte buffer operations
+- `crypto` - Cryptographic hashes (SHA-256, SHA-512, MD5, CRC32)
+- `ct` - Generic containers (Vec, Map, Set, Queue, Deque)
 - `flag` - Command-line flag parsing
+- `fuzzy` - Fuzzy string matching (Levenshtein distance)
+- `hex` - Hexadecimal encoding and decoding
+- `hof` - Higher-order function combinators
+- `http` - HTTP client and server
+- `json` - JSON parsing and building
+- `limits` - Numeric type limits
+- `log` - Structured logging with rotation
+- `net` - TCP network sockets
+- `path` - File path manipulation
+- `rand` - Random number generation (xorshift64*)
+- `regex` - Regular expression matching (Thompson NFA)
+- `sb` - StringBuilder for efficient string building
+- `signal` - Signal handling
+- `sort` - Sorting and array utilities
+- `strconv` - String/number conversion
+- `term` - Terminal colors and formatting
 - `testing` - Unit testing utilities
+- `tls` - TLS/SSL secure sockets
+- `tty` - Terminal detection and dimensions
+- `unicode` - Unicode character constants
+- `uri` - URI encoding, decoding, and parsing
+- `uuid` - UUID v4 generation
 
 ---
 
@@ -1384,6 +1538,8 @@ declaration     = use_stmt | const_decl | struct_decl | fn_decl | import_decl | 
 
 use_stmt        = "use" ( identifier | string ) ;
 const_decl      = "const" identifier "=" expression ;
+enum_decl       = ["pub"] "enum" identifier "{" { enum_variant } "}" ;
+enum_variant    = identifier [ "=" integer ] ;
 struct_decl     = ["pub"] "struct" identifier [type_params] "{" { field_decl } "}" ;
 fn_decl         = ["pub"] "fn" identifier [type_params] signature ["!"] block ;
 import_decl     = "import" string "as" string "{" { import_fn } "}" ;
@@ -1415,7 +1571,7 @@ as_cast         = "as" type ;
 
 error_lit       = "error" "{" "code" "=" expression "message" "=" expression "}" ;
 
-literal         = integer | float | string | "true" | "false" | "Ok" | "Err" ;
+literal         = integer | float | string | "true" | "false" | "Ok" | "Err" | "null" ;
 scoped_id       = identifier "::" identifier ;
 struct_const    = identifier [type_args] "{" { field_init } "}" ;
 array_lit       = "[" { expression } "]" ;
