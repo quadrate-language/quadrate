@@ -7,21 +7,18 @@ use testing
 // Helper to build JSON strings (since Quadrate doesn't support \" escape)
 // q = 34 (double quote character)
 fn make_json_string(key:str val:str -- json:str) {
-	-> val -> key
 	34 -> q
 	"{" q strings::from_char strings::concat key strings::concat q strings::from_char strings::concat ": " strings::concat
 		q strings::from_char strings::concat val strings::concat q strings::from_char strings::concat "}" strings::concat
 }
 
 fn make_json_int(key:str val:i64 -- json:str) {
-	-> val -> key
 	34 -> q
 	"{" q strings::from_char strings::concat key strings::concat q strings::from_char strings::concat ": " strings::concat
 		val strconv::itoa strings::concat "}" strings::concat
 }
 
 fn make_json_bool(key:str val:i64 -- json:str) {
-	-> val -> key
 	34 -> q
 	"{" q strings::from_char strings::concat key strings::concat q strings::from_char strings::concat ": " strings::concat
 		val if { "true" } else { "false" } strings::concat "}" strings::concat

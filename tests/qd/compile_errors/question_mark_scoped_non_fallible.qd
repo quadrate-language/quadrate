@@ -2,7 +2,6 @@
 use math
 
 fn wrapper(x:f64 -- result:f64)! {
-	-> x
 	x math::sqrt?
 }
 

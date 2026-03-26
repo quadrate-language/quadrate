@@ -1,12 +1,10 @@
 // Test: ? with functions that have multiple return values
 fn divmod(a:i64 b:i64 -- quot:i64 rem:i64)! {
-	-> b -> a
 	b 0 == if { "division by zero" 1 panic }
 	a b / a b mod
 }
 
 fn compute(a:i64 b:i64 -- result:i64)! {
-	-> b -> a
 	a b divmod?
 	-> rem -> quot
 	quot 100 * rem +

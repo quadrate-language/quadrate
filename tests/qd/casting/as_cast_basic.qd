@@ -10,17 +10,14 @@ struct Cat {
 }
 
 fn get_dog_name(p:ptr -- n:str) {
-	-> p
 	p as Dog @name
 }
 
 fn get_dog_age(p:ptr -- a:i64) {
-	-> p
 	p as Dog @age
 }
 
 fn get_cat_lives(p:ptr -- l:i64) {
-	-> p
 	p as Cat @lives
 }
 

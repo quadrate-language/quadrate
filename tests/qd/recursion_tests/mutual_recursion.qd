@@ -1,6 +1,5 @@
 // Test indirect recursion through helper functions
 fn helper_even(n:i64 -- result:i64) {
-	-> n
 	n 0 == if {
 		1
 	} else {
@@ -9,7 +8,6 @@ fn helper_even(n:i64 -- result:i64) {
 }
 
 fn helper_odd(n:i64 -- result:i64) {
-	-> n
 	n 0 == if {
 		0
 	} else {
@@ -18,7 +16,6 @@ fn helper_odd(n:i64 -- result:i64) {
 }
 
 fn is_even(n:i64 -- result:i64) {
-	-> n
 	n 0 < if {
 		0 n - helper_even
 	} else {
@@ -27,7 +24,6 @@ fn is_even(n:i64 -- result:i64) {
 }
 
 fn is_odd(n:i64 -- result:i64) {
-	-> n
 	n 0 < if {
 		0 n - helper_odd
 	} else {

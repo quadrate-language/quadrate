@@ -1,16 +1,16 @@
 // Arithmetic operations
-pub fn increment(x:f64 -- y:f64) {
+pub fn increment(f64 -- f64) {
 	1.0 add
 }
 
-pub fn decrement(x:f64 -- y:f64) {
+pub fn decrement(f64 -- f64) {
 	1.0 sub
 }
 
-pub fn double(x:f64 -- y:f64) {
+pub fn double(f64 -- f64) {
 	2.0 mul
 }
 
-pub fn half(x:f64 -- y:f64) {
+pub fn half(f64 -- f64) {
 	2.0 div
 }

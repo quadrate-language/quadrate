@@ -10,7 +10,6 @@ use unicode
 /// @return hex str Hexadecimal string (uppercase)
 /// @example "Hello" hex::encode -> "48656C6C6F"
 pub fn encode(s:str -- hex:str) {
-	-> s
 	s strings::len -> slen
 
 	slen 0 == if {
@@ -63,7 +62,6 @@ pub fn encode(s:str -- hex:str) {
 /// @return hex str Hexadecimal string (lowercase)
 /// @example "Hello" hex::encode_lower -> "48656c6c6f"
 pub fn encode_lower(s:str -- hex:str) {
-	-> s
 	s strings::len -> slen
 
 	slen 0 == if {
@@ -112,7 +110,6 @@ pub fn encode_lower(s:str -- hex:str) {
 
 // Convert hex character to value (0-15), returns -1 for invalid
 fn hex_char_value(c:i64 -- v:i64) {
-	-> c
 	// '0'-'9'
 	c unicode::digit0 >= c unicode::digit9 <= and if {
 		c unicode::digit0 -
@@ -138,7 +135,6 @@ fn hex_char_value(c:i64 -- v:i64) {
 /// @return s str Decoded string
 /// @example "48656C6C6F" hex::decode -> "Hello"
 pub fn decode(hex:str -- s:str) {
-	-> hex
 	hex strings::len -> hlen
 
 	hlen 0 == if {
@@ -177,7 +173,6 @@ pub fn decode(hex:str -- s:str) {
 /// @return hex str Two-character hex string (uppercase)
 /// @example 65 hex::encode_byte -> "41"
 pub fn encode_byte(b:i64 -- hex:str) {
-	-> b
 	b 255 and -> b  // Clamp to byte range
 
 	2 mem::alloc! -> out
@@ -213,7 +208,6 @@ pub fn encode_byte(b:i64 -- hex:str) {
 /// @return b i64 Byte value (0-255) or -1 if invalid
 /// @example "41" hex::decode_byte -> 65
 pub fn decode_byte(hex:str -- b:i64) {
-	-> hex
 	hex strings::len 2 != if {
 		-1
 	} else {
@@ -235,7 +229,6 @@ pub fn decode_byte(hex:str -- b:i64) {
 /// @example "48656C6C6F" hex::is_valid -> 1
 /// @example "48ZZ" hex::is_valid -> 0
 pub fn is_valid(hex:str -- valid:i64) {
-	-> hex
 	hex strings::len -> hlen
 
 	// Empty string is valid (decodes to empty)
@@ -270,7 +263,6 @@ pub fn is_valid(hex:str -- valid:i64) {
 /// @return len i64 Decoded length in bytes, or -1 if invalid
 /// @example "48656C6C6F" hex::decoded_len -> 5
 pub fn decoded_len(hex:str -- len:i64) {
-	-> hex
 	hex strings::len -> hlen
 	hlen 2 mod 0 != if {
 		-1
@@ -284,6 +276,5 @@ pub fn decoded_len(hex:str -- len:i64) {
 /// @return len i64 Encoded length in characters
 /// @example "Hello" hex::encoded_len -> 10
 pub fn encoded_len(s:str -- len:i64) {
-	-> s
 	s strings::len 2 *
 }

@@ -106,7 +106,6 @@ fn main() {
 
 ```qd
 fn sum(arr:ptr -- total:i64) {
-	-> arr  // bind parameter
 	0 -> total
 	0 arr len 1 for i {
 		total arr i nth cast<i64> + -> total
@@ -123,7 +122,6 @@ fn main() {
 
 ```qd
 fn max(arr:ptr -- result:i64) {
-	-> arr  // bind parameter
 	arr 0 nth -> result
 	0 arr len 1 for i {
 		arr i nth result > if {
@@ -142,7 +140,6 @@ fn main() {
 
 ```qd
 fn count_if(arr:ptr value:i64 -- count:i64) {
-	-> value -> arr
 	0 -> count
 	0 arr len 1 for i {
 		arr i nth value == if {
@@ -187,7 +184,6 @@ Arrays are references. To copy:
 
 ```qd
 fn copy_array(src:ptr -- dst:ptr) {
-	-> src  // bind parameter
 	src len make<i64> -> dst
 	0 src len 1 for i {
 		dst i src i nth set
@@ -212,7 +208,6 @@ fn main() {
 
 ```qd
 fn fill(arr:ptr value:i64 -- ) {
-	-> value -> arr
 	0 arr len 1 for i {
 		arr i value set
 	}
@@ -232,7 +227,6 @@ fn main() {
 
 ```qd
 fn reverse(arr:ptr -- ) {
-	-> arr  // bind parameter
 	0 -> i
 	arr len 1 - -> j
 	loop {
@@ -259,7 +253,6 @@ fn main() {
 
 ```qd
 fn filter_positive(arr:ptr -- result:ptr) {
-	-> arr  // bind parameter
 	// First count positives
 	0 -> count
 	0 arr len 1 for i {

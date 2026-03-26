@@ -13,6 +13,7 @@ fn main() {
 	printsv   // int:1 int:2 int:3 (with type info)
 	printv    // int:3 (print and pop top value)
 	prints    // 1 2
+	drop drop
 }
 ```
 

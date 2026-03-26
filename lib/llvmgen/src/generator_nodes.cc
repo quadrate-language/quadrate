@@ -755,6 +755,42 @@ namespace Qd {
 		currentFunctionReturnBlock = returnBB;
 		currentFunctionIsFallible = false; // Anonymous functions are not fallible (yet)
 
+		// Auto-bind named input parameters as local variables
+		// Pop from stack in reverse order (stack is LIFO: last param on top)
+		// Only when ALL params are named (mixed named/unnamed all stay on stack)
+		{
+			const auto& inputs = anonFunc->inputParameters();
+			bool allNamed = true;
+			for (size_t i = 0; i < inputs.size(); i++) {
+				if (!static_cast<const AstNodeParameter*>(inputs[i])->hasName()) {
+					allNamed = false;
+					break;
+				}
+			}
+			for (int paramIdx = static_cast<int>(inputs.size()) - 1; allNamed && paramIdx >= 0; paramIdx--) {
+				const auto* param = static_cast<const AstNodeParameter*>(inputs[static_cast<size_t>(paramIdx)]);
+				const std::string& paramName = param->name();
+
+				// Create alloca in entry block
+				llvm::Function* currentFn = builder->GetInsertBlock()->getParent();
+				llvm::IRBuilder<> tmpBuilder(&currentFn->getEntryBlock(), currentFn->getEntryBlock().begin());
+				llvm::AllocaInst* paramAlloca = tmpBuilder.CreateAlloca(stackElementTy, nullptr, paramName);
+
+				// Initialize type field to -1 (uninitialized marker)
+				llvm::Value* typePtr =
+						tmpBuilder.CreateStructGEP(stackElementTy, paramAlloca, 1, paramName + "_init_type");
+				tmpBuilder.CreateStore(tmpBuilder.getInt32(static_cast<uint32_t>(-1)), typePtr);
+
+				// Store in local variables map
+				localVariables[paramName] = paramAlloca;
+
+				// Pop from runtime stack
+				llvm::Value* stackPtrPtr = builder->CreateStructGEP(contextStructTy, anonCtx, 0, "stack_ptr");
+				llvm::Value* stackPtr = builder->CreateLoad(ptrTy, stackPtrPtr, "stack");
+				builder->CreateCall(stackPopFn, {stackPtr, paramAlloca});
+			}
+		}
+
 		// Generate the body
 		if (anonFunc->body()) {
 			generateNode(anonFunc->body(), anonCtx);

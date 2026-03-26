@@ -33,13 +33,10 @@ fn stack_new( -- s:ptr) {
 }
 
 fn stack_free(s:ptr -- ) {
-	-> s
 	s @data mem::free
 }
 
 fn stack_push(s:ptr val:f64 -- ) {
-	-> val
-	-> s
 	s @size -> sz
 	s @capacity -> cap
 	sz cap >= if {
@@ -52,7 +49,6 @@ fn stack_push(s:ptr val:f64 -- ) {
 }
 
 fn stack_pop(s:ptr -- val:f64) {
-	-> s
 	s @size -> sz
 	sz 0 <= if {
 		"dc: stack empty" print nl
@@ -65,7 +61,6 @@ fn stack_pop(s:ptr -- val:f64) {
 }
 
 fn stack_peek(s:ptr -- val:f64) {
-	-> s
 	s @size -> sz
 	sz 0 <= if {
 		0.0
@@ -75,19 +70,15 @@ fn stack_peek(s:ptr -- val:f64) {
 }
 
 fn stack_depth(s:ptr -- n:i64) {
-	-> s
 	s @size
 }
 
 fn stack_clear(s:ptr -- ) {
-	-> s
 	0 s.size
 }
 
 // Check if stack has at least n items, print error if not
 fn stack_check(s:ptr n:i64 -- ok:i64) {
-	-> n
-	-> s
 	s @size n >= -> ok
 	ok 0 == if {
 		"dc: stack empty" print nl
@@ -97,8 +88,6 @@ fn stack_check(s:ptr n:i64 -- ok:i64) {
 
 // Check if value is non-zero, print error if not
 fn check_nonzero(val:f64 msg:str -- ok:i64) {
-	-> msg
-	-> val
 	val 0.0 != -> ok
 	ok 0 == if {
 		msg print nl
@@ -108,8 +97,6 @@ fn check_nonzero(val:f64 msg:str -- ok:i64) {
 
 // Check if value is non-negative, print error if not
 fn check_nonneg(val:f64 msg:str -- ok:i64) {
-	-> msg
-	-> val
 	val 0.0 >= -> ok
 	ok 0 == if {
 		msg print nl
@@ -118,7 +105,6 @@ fn check_nonneg(val:f64 msg:str -- ok:i64) {
 }
 
 fn stack_dup(s:ptr -- ) {
-	-> s
 	s 1 stack_check if {
 		s @size -> sz
 		s @data sz 1 - 8 * mem::get_f64 -> val
@@ -127,7 +113,6 @@ fn stack_dup(s:ptr -- ) {
 }
 
 fn stack_swap(s:ptr -- ) {
-	-> s
 	s 2 stack_check if {
 		s @size -> sz
 		s @data sz 1 - 8 * mem::get_f64 -> a
@@ -138,8 +123,6 @@ fn stack_swap(s:ptr -- ) {
 }
 
 fn stack_pick(s:ptr n:i64 -- val:f64) {
-	-> n
-	-> s
 	s @size -> sz
 	n sz >= n 0 < or if {
 		0.0
@@ -163,7 +146,6 @@ fn print_help() {
 }
 
 fn is_number(tok:str -- result:i64) {
-	-> tok
 	0 -> first
 	0 -> second
 	0 -> result
@@ -184,8 +166,6 @@ fn is_number(tok:str -- result:i64) {
 }
 
 fn process_token(s:ptr tok:str -- ) {
-	-> tok
-	-> s
 	tok is_number -> is_num
 	is_num if {
 		tok 0 strings::char_at! -> first
@@ -205,8 +185,6 @@ fn process_token(s:ptr tok:str -- ) {
 }
 
 fn process_operator(s:ptr op:str -- ) {
-	-> op
-	-> s
 	0 -> n
 	0.0 -> a
 	0.0 -> b
@@ -337,8 +315,6 @@ fn process_operator(s:ptr op:str -- ) {
 }
 
 fn process_line(s:ptr input:str -- ) {
-	-> input
-	-> s
 	0 -> comment_pos
 	"" -> trimmed
 	"" -> token
@@ -372,8 +348,6 @@ fn process_line(s:ptr input:str -- ) {
 }
 
 fn run_file(s:ptr path:str -- ) {
-	-> path
-	-> s
 	0 -> bytes_read
 	"" -> content
 	"" -> line
@@ -423,7 +397,6 @@ fn run_file(s:ptr path:str -- ) {
 }
 
 fn repl(s:ptr -- ) {
-	-> s
 	"" -> input
 	loop {
 		io::readline switch {

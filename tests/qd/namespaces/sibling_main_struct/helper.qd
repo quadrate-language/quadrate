@@ -2,11 +2,9 @@
 // Before the fix, this would fail with "Unknown type 'State'"
 
 fn process_state(s:State -- result:i64) {
-	-> s
 	s @value 2 *
 }
 
 fn create_state(val:i64 n:str -- s:State) {
-	-> n -> val
 	State { value = val name = n }
 }

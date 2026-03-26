@@ -1,7 +1,6 @@
 // Test basic error syntax with anonymous error { } and panic
 
 fn validate(x:i64 -- )! {
-    -> x
     x 0 < if {
         error { code = 100 message = "must be non-negative" } panic
     }

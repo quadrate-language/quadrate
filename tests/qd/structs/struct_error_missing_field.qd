@@ -4,8 +4,7 @@ struct Point {
 	y:f64
 }
 
-fn use_point(p:Point -- ) {
-	-> pt
+fn use_point(pt:Point -- ) {
 	pt @z drop  // ERROR: Point has no field 'z'
 }
 

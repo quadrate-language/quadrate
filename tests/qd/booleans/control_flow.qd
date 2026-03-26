@@ -21,9 +21,9 @@ fn main() {
 	"=== While loop ===" print nl
 	5 -> i
 	loop {
-		i 0 gt 0 == if { break }
+		i 0 <= if { break }
 		i print " " print
-		i 1 sub -> i
+		i -- -> i
 	}
 	nl
 

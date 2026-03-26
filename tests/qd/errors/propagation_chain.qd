@@ -1,30 +1,26 @@
 // Test error propagation through multiple function calls
-fn step1(x:i64 -- result:i64)! {
-	-> val
+fn step1(val:i64 -- result:i64)! {
 	val 0 < if {
 		0 "step1: negative input" 1 panic
 	}
 	val 10 +
 }
 
-fn step2(x:i64 -- result:i64)! {
-	-> val
+fn step2(val:i64 -- result:i64)! {
 	val 100 > if {
 		0 "step2: too large" 1 panic
 	}
 	val 2 *
 }
 
-fn step3(x:i64 -- result:i64)! {
-	-> val
+fn step3(val:i64 -- result:i64)! {
 	val 50 mod 0 eq if {
 		0 "step3: divisible by 50" 1 panic
 	}
 	val 1 +
 }
 
-fn pipeline(x:i64 -- result:i64)! {
-	-> val
+fn pipeline(val:i64 -- result:i64)! {
 	val step1 if {
 		step2 if {
 			step3 if {

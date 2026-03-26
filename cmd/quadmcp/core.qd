@@ -76,7 +76,6 @@ fn load_docs( -- ds:ptr) {
 }
 
 fn load_module(ds:ptr name:str -- content:str) {
-	-> name -> ds
 	ds @docs_dir "/" strings::concat name strings::concat ".json" strings::concat -> path
 	path io::read_file switch {
 		Ok {
@@ -88,7 +87,6 @@ fn load_module(ds:ptr name:str -- content:str) {
 }
 
 fn rpc_result(id:str result:str -- response:str) {
-	-> result -> id
 	"jsonrpc" "2.0" json::kv
 	"id" id json::kv_raw json::join
 	"result" result json::kv_raw json::join
@@ -96,7 +94,6 @@ fn rpc_result(id:str result:str -- response:str) {
 }
 
 fn rpc_error(id:str code:str msg:str -- response:str) {
-	-> msg -> code -> id
 	"code" code json::kv_raw
 	"message" msg json::kv json::join
 	json::obj
@@ -108,7 +105,6 @@ fn rpc_error(id:str code:str msg:str -- response:str) {
 }
 
 fn tool_text_result(text:str -- result:str) {
-	-> text
 	"type" "text" json::kv
 	"text" text json::kv json::join
 	json::obj json::arr
@@ -116,7 +112,6 @@ fn tool_text_result(text:str -- result:str) {
 }
 
 fn tool_error_result(msg:str -- result:str) {
-	-> msg
 	"type" "text" json::kv
 	"text" msg json::kv json::join
 	json::obj json::arr
@@ -126,7 +121,6 @@ fn tool_error_result(msg:str -- result:str) {
 }
 
 fn mcp_initialize(id:str -- response:str) {
-	-> id
 	"tools" json::empty_obj json::kv_raw
 	"prompts" json::empty_obj json::kv_raw json::join
 	"resources" json::empty_obj json::kv_raw json::join
@@ -145,8 +139,6 @@ fn mcp_initialize(id:str -- response:str) {
 }
 
 fn build_tool(name:str desc:str props:str required:str -- tool:str) {
-	-> required -> props -> desc -> name
-
 	"type" "object" json::kv
 	props strings::len 0 > if {
 		"properties" props json::kv_raw json::join
@@ -163,14 +155,12 @@ fn build_tool(name:str desc:str props:str required:str -- tool:str) {
 }
 
 fn build_string_prop(desc:str -- prop:str) {
-	-> desc
 	"type" "string" json::kv
 	"description" desc json::kv json::join
 	json::obj
 }
 
 fn build_prompt(name:str desc:str args:str -- prompt:str) {
-	-> args -> desc -> name
 	"name" name json::kv
 	"description" desc json::kv json::join
 	args strings::len 0 > if {
@@ -180,7 +170,6 @@ fn build_prompt(name:str desc:str args:str -- prompt:str) {
 }
 
 fn build_prompt_arg(name:str desc:str required:i64 -- arg:str) {
-	-> required -> desc -> name
 	"name" name json::kv
 	"description" desc json::kv json::join
 	required if {
@@ -190,7 +179,6 @@ fn build_prompt_arg(name:str desc:str required:i64 -- arg:str) {
 }
 
 fn build_resource(uri:str name:str desc:str mime:str -- resource:str) {
-	-> mime -> desc -> name -> uri
 	"uri" uri json::kv
 	"name" name json::kv json::join
 	"description" desc json::kv json::join

@@ -135,14 +135,12 @@ fn md5_make_k( -- k:ptr) {
 }
 
 fn md5_rotl32(x:i64 n:i64 -- result:i64) {
-	-> n -> x
 	x 32 bits::mask -> x
 	x n shl x 32 n - shr or 32 bits::mask
 }
 
 // Read 32-bit little-endian from buffer
 fn md5_read_u32_le(buf:ptr offset:i64 -- val:i64) {
-	-> offset -> buf
 	buf offset mem::get_byte
 	buf offset 1 + mem::get_byte 8 shl or
 	buf offset 2 + mem::get_byte 16 shl or
@@ -151,7 +149,6 @@ fn md5_read_u32_le(buf:ptr offset:i64 -- val:i64) {
 
 // Write 32-bit little-endian to buffer
 fn md5_write_u32_le(buf:ptr offset:i64 val:i64 -- ) {
-	-> val -> offset -> buf
 	val 255 and buf offset mem::set_byte
 	val 8 shr 255 and buf offset 1 + mem::set_byte
 	val 16 shr 255 and buf offset 2 + mem::set_byte
@@ -160,9 +157,6 @@ fn md5_write_u32_le(buf:ptr offset:i64 val:i64 -- ) {
 
 // Process a single 64-byte block
 fn md5_process_block(aa:i64 bb:i64 cc:i64 dd:i64 block:ptr -- ra:i64 rb:i64 rc:i64 rd:i64) {
-	-> block
-	-> dd -> cc -> bb -> aa
-
 	md5_make_k -> k
 	md5_make_s -> s
 
@@ -226,8 +220,6 @@ fn md5_process_block(aa:i64 bb:i64 cc:i64 dd:i64 block:ptr -- ra:i64 rb:i64 rc:i
 /// @param data str Data to hash
 /// @return h2 Md5 Updated hasher state
 pub fn (h:Md5) update(data:str -- h2:Md5)! {
-	-> data
-
 	h @a -> aa
 	h @b -> bb
 	h @c -> cc
@@ -385,7 +377,6 @@ pub fn (h:Md5) release( -- ) {
 /// @return hash str 32-character hex string
 /// @example "Hello" md5! -> hash
 pub fn md5(s:str -- hash:str)! {
-	-> s
 	Md5 {} -> h
 	h s update! -> h
 	h finish! -> result

@@ -1,8 +1,7 @@
 // Test: ? inside a for loop - should return from the function on error
 use strconv
 
-fn sum_strings(count:i64 -- total:i64)! {
-	-> n
+fn sum_strings(n:i64 -- total:i64)! {
 	0 -> total
 	// Parse string numbers and sum them; error propagates out of loop
 	0 n 1 for i {

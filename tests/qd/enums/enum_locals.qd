@@ -5,8 +5,7 @@ enum State {
 	Done
 }
 
-fn advance(s:i64 -- next:i64) {
-	-> st
+fn advance(st:i64 -- next:i64) {
 	st switch {
 		State::Idle { State::Running }
 		State::Running { State::Paused }
@@ -15,8 +14,7 @@ fn advance(s:i64 -- next:i64) {
 	}
 }
 
-fn state_name(s:i64 -- ) {
-	-> st
+fn state_name(st:i64 -- ) {
 	st switch {
 		State::Idle { "idle" print nl }
 		State::Running { "running" print nl }

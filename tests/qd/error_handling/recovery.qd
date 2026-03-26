@@ -1,6 +1,5 @@
 // Test error recovery patterns
 fn validate(x:i64 -- result:i64)! {
-	-> x
 	x 0 < if {
 		0 "negative" 1 panic
 	}
@@ -11,8 +10,6 @@ fn validate(x:i64 -- result:i64)! {
 }
 
 fn with_default(x:i64 default:i64 -- result:i64) {
-	-> default
-	-> x
 	x validate if {
 		// success, use value
 	} else {
@@ -22,7 +19,6 @@ fn with_default(x:i64 default:i64 -- result:i64) {
 }
 
 fn try_multiple(a:i64 b:i64 c:i64 -- result:i64) {
-	-> c -> b -> a
 	a validate if {
 		// a is valid
 	} else {

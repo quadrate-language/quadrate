@@ -1,6 +1,5 @@
 // Test deeper recursion patterns
 fn gcd(a:i64 b:i64 -- result:i64) {
-	-> b -> a
 	b 0 == if {
 		a
 	} else {
@@ -9,7 +8,6 @@ fn gcd(a:i64 b:i64 -- result:i64) {
 }
 
 fn power(base:i64 exp:i64 -- result:i64) {
-	-> exp -> base
 	exp 0 == if {
 		1
 	} else {
@@ -22,7 +20,6 @@ fn power(base:i64 exp:i64 -- result:i64) {
 }
 
 fn ackermann(m:i64 n:i64 -- result:i64) {
-	-> n -> m
 	m 0 == if {
 		n 1 +
 	} else {
@@ -35,7 +32,6 @@ fn ackermann(m:i64 n:i64 -- result:i64) {
 }
 
 fn digital_root(n:i64 -- result:i64) {
-	-> n
 	n 10 < if {
 		n
 	} else {

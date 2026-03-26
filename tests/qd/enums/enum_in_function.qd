@@ -5,8 +5,7 @@ enum Direction {
 	Right
 }
 
-fn describe(d:i64 -- ) {
-	-> dir
+fn describe(dir:i64 -- ) {
 	dir switch {
 		Direction::Up { "up" print nl }
 		Direction::Down { "down" print nl }
@@ -16,8 +15,7 @@ fn describe(d:i64 -- ) {
 	}
 }
 
-fn is_vertical(d:i64 -- result:i64) {
-	-> dir
+fn is_vertical(dir:i64 -- result:i64) {
 	dir Direction::Up == dir Direction::Down == or
 }
 

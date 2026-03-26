@@ -114,6 +114,7 @@ fn main() {
 	}
 	print nl  // 1
 
+	drop  // drop the c pointer pushed before ctx
 	c @value print nl  // 1 - parent sees the change!
 }
 ```

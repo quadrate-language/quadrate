@@ -7,11 +7,11 @@ use hof
 
 fn main(--) {
     // Double a value
-    5 fn (x:i64 -- r:i64) { 2 * } hof::apply print nl  // 10
+    5 fn (x:i64 -- r:i64) { x 2 * } hof::apply print nl  // 10
 
     // Sum an array with fold
     0 make<i64> 1 append 2 append 3 append 4 append 5 append -> arr
-    arr 5 0 fn (acc:i64 x:i64 -- r:i64) { -> x -> acc acc x + } hof::fold print nl  // 15
+    arr 5 0 fn (acc:i64 x:i64 -- r:i64) { acc x + } hof::fold print nl  // 15
     arr free
 }
 ```
@@ -38,7 +38,7 @@ Apply a function to a value.
 **Example:**
 
 ```qd
-5 fn (x:i64 -- r:i64) { 2 * } hof::apply  // 10
+5 fn (x:i64 -- r:i64) { x 2 * } hof::apply  // 10
 ```
 ---
 
@@ -62,7 +62,7 @@ Apply two functions to the same value.
 **Example:**
 
 ```qd
-5 fn (x:i64 -- r:i64) { 1 + } fn (x:i64 -- r:i64) { 2 * } hof::bi
+5 fn (x:i64 -- r:i64) { x 1 + } fn (x:i64 -- r:i64) { x 2 * } hof::bi
 -> b -> a  // a=6, b=10
 ```
 ---
@@ -107,7 +107,7 @@ Apply a function but preserve the original value on the stack.
 **Example:**
 
 ```qd
-5 fn (x:i64 -- r:i64) { 2 * } hof::keep  // Stack: 10 5
+5 fn (x:i64 -- r:i64) { x 2 * } hof::keep  // Stack: 10 5
 ```
 ---
 
@@ -150,7 +150,7 @@ Apply the same function to two values separately.
 **Example:**
 
 ```qd
-3 4 fn (x:i64 -- r:i64) { dup * } hof::both  // Stack: 9 16
+3 4 fn (x:i64 -- r:i64) { x x * } hof::both  // Stack: 9 16
 ```
 ---
 
@@ -195,8 +195,8 @@ Apply function only if condition is true, otherwise return value unchanged.
 **Example:**
 
 ```qd
-5 1 fn (x:i64 -- r:i64) { 2 * } hof::when   // 10
-5 0 fn (x:i64 -- r:i64) { 2 * } hof::when   // 5
+5 1 fn (x:i64 -- r:i64) { x 2 * } hof::when   // 10
+5 0 fn (x:i64 -- r:i64) { x 2 * } hof::when   // 5
 ```
 ---
 
@@ -237,7 +237,7 @@ Apply function n times to a value.
 **Example:**
 
 ```qd
-1 4 fn (x:i64 -- r:i64) { 2 * } hof::times   // 16
+1 4 fn (x:i64 -- r:i64) { x 2 * } hof::times   // 16
 ```
 ---
 
@@ -263,7 +263,7 @@ Fold/reduce an array left-to-right with a binary function.
 **Example:**
 
 ```qd
-arr 5 0 fn (acc:i64 x:i64 -- r:i64) { -> x -> acc acc x + } hof::fold  // sum
+arr 5 0 fn (acc:i64 x:i64 -- r:i64) { acc x + } hof::fold  // sum
 ```
 ---
 
@@ -306,7 +306,7 @@ Map a function over an array, returning a new array. The caller must free the re
 **Example:**
 
 ```qd
-arr 3 fn (x:i64 -- r:i64) { 2 * } hof::map -> count -> result
+arr 3 fn (x:i64 -- r:i64) { x 2 * } hof::map -> count -> result
 // result is a new array: [2, 4, 6]
 result free
 ```
@@ -332,7 +332,7 @@ Filter an array, keeping only elements that satisfy a predicate. The caller must
 **Example:**
 
 ```qd
-arr 5 fn (x:i64 -- r:i64) { 2 % 0 == } hof::filter -> count -> result
+arr 5 fn (x:i64 -- r:i64) { x 2 % 0 == } hof::filter -> count -> result
 // result contains only even numbers
 result free
 ```
@@ -394,7 +394,7 @@ Find the first element satisfying a predicate.
 **Example:**
 
 ```qd
-arr 4 fn (x:i64 -- r:i64) { 2 % 0 == } hof::find -> found -> elem
+arr 4 fn (x:i64 -- r:i64) { x 2 % 0 == } hof::find -> found -> elem
 found if {
     "first even: " print elem print nl
 }

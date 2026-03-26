@@ -1,11 +1,11 @@
 // Test anonymous function calling a named function
-fn helper(a:i64 -- r:i64) {
+fn helper(i64 -- i64) {
     10 +
 }
 
 fn main() {
     // Anonymous function that calls named function
-    fn (a:i64 -- r:i64) { helper 2 * } -> process
+    fn (i64 -- i64) { helper 2 * } -> process
 
     5 process call print nl
 }

@@ -1,5 +1,4 @@
-fn bad(x:i64 -- a:i64 b:i64) {
-	-> n
+fn bad(n:i64 -- a:i64 b:i64) {
 	n 0 > if {
 		n return
 	}

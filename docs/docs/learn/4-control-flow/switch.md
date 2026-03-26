@@ -6,7 +6,6 @@ Handle multiple conditions cleanly with `switch`.
 
 ```qd
 fn day_name(day:i64 -- name:str) {
-	-> day  // bind parameter
 	day switch {
 		1 {
 			"Monday"
@@ -46,7 +45,6 @@ Use `_` for the default (fallback) case:
 
 ```qd
 fn describe(n:i64 -- desc:str) {
-	-> n  // bind parameter
 	n switch {
 		0 {
 			"zero"

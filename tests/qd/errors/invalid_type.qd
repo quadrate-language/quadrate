@@ -1,4 +1,4 @@
-fn test(x:i65 -- result:i64) {
+fn test(i65 -- i64) {
 	dup
 }
 

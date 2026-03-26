@@ -10,7 +10,6 @@ struct Resource {
 }
 
 fn create_resource(id:i64 -- r:ptr) {
-	-> id
 	Resource {
 		id = id
 		value = id 100 *
@@ -18,7 +17,6 @@ fn create_resource(id:i64 -- r:ptr) {
 }
 
 fn destroy_resource(r:ptr -- ) {
-	-> r
 	"  Destroying resource " print r @id print nl
 	r free
 }

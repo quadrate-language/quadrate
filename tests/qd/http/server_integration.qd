@@ -3,34 +3,28 @@
 use http
 
 fn handle_hello(c:ptr -- ) {
-	-> c
 	c 200 "Hello, World!" http::string
 }
 
 fn handle_json(c:ptr -- ) {
-	-> c
 	c 200 "{}" http::json
 }
 
 fn handle_html(c:ptr -- ) {
-	-> c
 	c 200 "<h1>Hello</h1>" http::html
 }
 
 fn handle_user(c:ptr -- ) {
-	-> c
 	c "id" http::param -> id
 	c 200 id http::string
 }
 
 fn handle_search(c:ptr -- ) {
-	-> c
 	c "q" http::query_param -> q
 	c 200 q http::string
 }
 
 fn handle_echo_header(c:ptr -- ) {
-	-> c
 	c "X-Test" http::get_header -> val
 	c 200 val http::string
 }

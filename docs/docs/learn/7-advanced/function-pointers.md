@@ -8,7 +8,7 @@ Use `&` to get a pointer to a function:
 
 ```qd
 fn double(x:i64 -- result:i64) {
-	2 *
+	x 2 *
 }
 
 fn main() {
@@ -23,7 +23,7 @@ Use `call` to invoke a function pointer:
 
 ```qd
 fn double(x:i64 -- result:i64) {
-	2 *
+	x 2 *
 }
 
 fn main() {
@@ -36,13 +36,12 @@ fn main() {
 
 ```qd
 fn apply(x:i64 f:ptr -- result:i64) {
-	-> f -> x
 	x f call
 }
 
-fn double(x:i64 -- result:i64) { 2 * }
-fn square(x:i64 -- result:i64) { dup * }
-fn increment(x:i64 -- result:i64) { 1 + }
+fn double(x:i64 -- result:i64) { x 2 * }
+fn square(x:i64 -- result:i64) { x x * }
+fn increment(x:i64 -- result:i64) { x 1 + }
 
 fn main() {
 	5 &double apply print nl  // 10
@@ -55,19 +54,19 @@ fn main() {
 
 ```qd
 fn addition(a:i64 b:i64 -- r:i64) {
-	+
+	a b +
 }
 
 fn subtraction(a:i64 b:i64 -- r:i64) {
-	-
+	a b -
 }
 
 fn multiplication(a:i64 b:i64 -- r:i64) {
-	*
+	a b *
 }
 
 fn div_op(a:i64 b:i64 -- r:i64) {
-	/
+	a b /
 }
 
 fn main() {
@@ -90,14 +89,12 @@ Use function pointers for callbacks:
 
 ```qd
 fn for_each(arr:ptr callback:ptr -- ) {
-	-> callback -> arr
 	0 arr len 1 for i {
 		arr i nth callback call
 	}
 }
 
 fn print_item(x:i64 -- ) {
-	-> x  // bind parameter
 	x print " " print
 }
 
@@ -113,7 +110,6 @@ fn main() {
 
 ```qd
 fn map(arr:ptr f:ptr -- result:ptr) {
-	-> f -> arr
 	arr len make<i64> -> result
 	0 arr len 1 for i {
 		result i arr i nth f call set
@@ -121,7 +117,7 @@ fn map(arr:ptr f:ptr -- result:ptr) {
 	result
 }
 
-fn double(x:i64 -- r:i64) { 2 * }
+fn double(x:i64 -- r:i64) { x 2 * }
 
 fn main() {
 	[1 2 3 4 5] &double map -> doubled
@@ -136,8 +132,6 @@ fn main() {
 
 ```qd
 fn filter(arr:ptr pred:ptr -- result:ptr) {
-	-> pred -> arr
-
 	// Count matches
 	0 -> count
 	0 arr len 1 for i {
@@ -159,7 +153,6 @@ fn filter(arr:ptr pred:ptr -- result:ptr) {
 }
 
 fn is_even(x:i64 -- result:i64) {
-	-> x  // bind parameter
 	x 2 % 0 ==
 }
 
@@ -176,7 +169,7 @@ fn main() {
 
 ```qd
 fn reduce(arr:ptr initial:i64 f:ptr -- result:i64) {
-	-> f -> result -> arr
+	initial -> result
 	0 arr len 1 for i {
 		result arr i nth f call -> result
 	}
@@ -184,7 +177,7 @@ fn reduce(arr:ptr initial:i64 f:ptr -- result:i64) {
 }
 
 fn addition(a:i64 b:i64 -- r:i64) {
-	+
+	a b +
 }
 
 fn main() {
@@ -201,12 +194,10 @@ struct Handler {
 }
 
 fn greet(name:str -- ) {
-	-> name  // bind parameter
 	"Hello, " print name print nl
 }
 
 fn farewell(name:str -- ) {
-	-> name  // bind parameter
 	"Goodbye, " print name print nl
 }
 
@@ -231,8 +222,6 @@ Dispatch based on a selector:
 
 ```qd
 fn handle_cmd(cmd:i64 -- ) {
-	-> cmd  // bind parameter
-
 	4 make<ptr> -> handlers
 	handlers 0 &cmd_help set
 	handlers 1 &cmd_list set

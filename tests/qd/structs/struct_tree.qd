@@ -6,8 +6,7 @@ struct TreeNode {
 }
 
 // In-order traversal: left, self, right
-fn inorder(node:ptr -- ) {
-	-> n
+fn inorder(n:ptr -- ) {
 	n null neq if {
 		n @left inorder
 		n @value print nl
@@ -16,8 +15,7 @@ fn inorder(node:ptr -- ) {
 }
 
 // Count nodes
-fn count(node:ptr -- c:i64) {
-	-> n
+fn count(n:ptr -- c:i64) {
 	n null == if {
 		0
 	} else {

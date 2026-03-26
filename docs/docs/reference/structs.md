@@ -98,7 +98,6 @@ When a value is typed as `ptr` (e.g., in callback handlers), use `as` to tell th
 
 ```qd
 fn handler(c:ptr -- ) {
-	-> c
 	c as http::Ctx @body -> body
 }
 ```
@@ -156,8 +155,12 @@ The struct is consumed from the stack as the receiver.
 ### Methods with parameters
 
 ```qd
+struct Point {
+	x:f64
+	y:f64
+}
+
 fn (p:Point) translate(dx:f64 dy:f64 -- ) {
-	-> dy -> dx
 	p @x dx + p .x
 	p @y dy + p .y
 }
@@ -175,6 +178,10 @@ fn main() {
 Methods take precedence over global functions with the same name:
 
 ```qd
+struct Counter {
+	value:i64
+}
+
 fn (c:Counter) bump( -- result:i64) {
 	c @value 1 +
 }

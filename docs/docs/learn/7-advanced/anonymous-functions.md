@@ -9,7 +9,7 @@ Use `fn (signature) { body }` to create an anonymous function:
 ```qd
 fn main() {
 	// Define and store an anonymous function
-	fn (x:i64 -- r:i64) { 2 * } -> double
+	fn (x:i64 -- r:i64) { x 2 * } -> double
 
 	// Call it with 'call'
 	5 double call print nl  // 10
@@ -25,10 +25,10 @@ Anonymous functions can be used directly without storing them:
 ```qd
 fn main() {
 	// Define and call immediately
-	5 fn (x:i64 -- r:i64) { 2 * } call print nl  // 10
+	5 fn (x:i64 -- r:i64) { x 2 * } call print nl  // 10
 
 	// Multiple parameters
-	10 20 fn (a:i64 b:i64 -- r:i64) { + } call print nl  // 30
+	10 20 fn (a:i64 b:i64 -- r:i64) { a b + } call print nl  // 30
 }
 ```
 
@@ -52,7 +52,7 @@ Once stored, an anonymous function can be called multiple times:
 
 ```qd
 fn main() {
-	fn (x:i64 -- r:i64) { 2 * } -> double
+	fn (x:i64 -- r:i64) { x 2 * } -> double
 
 	// Use in a loop
 	1 6 1 for i {
@@ -69,7 +69,7 @@ Anonymous functions can contain conditionals and other control flow:
 ```qd
 fn main() {
 	fn (x:i64 -- r:i64) {
-		dup 0 > if {
+		x 0 > if {
 			10
 		} else {
 			0
@@ -90,7 +90,7 @@ fn main() {
 	10 -> multiplier
 
 	// This closure captures 'multiplier' from the outer scope
-	fn (x:i64 -- r:i64) { multiplier * } -> scale
+	fn (x:i64 -- r:i64) { x multiplier * } -> scale
 
 	5 scale call print nl   // 50
 	7 scale call print nl   // 70
@@ -168,9 +168,9 @@ fn main() {
 Functions can return closures that capture their local variables:
 
 ```qd
-fn make_adder(n:i64 -- adder:ptr) {
-	-> amount  // Store parameter in local variable
-	fn (x:i64 -- r:i64) { amount add }
+fn make_adder(i64 -- adder:ptr) {
+	-> n
+	fn (x:i64 -- r:i64) { x n + }
 }
 
 fn main() {
@@ -188,11 +188,11 @@ Anonymous functions can call regular named functions:
 
 ```qd
 fn helper(a:i64 -- r:i64) {
-	10 +
+	a 10 +
 }
 
 fn main() {
-	fn (a:i64 -- r:i64) { helper 2 * } -> process
+	fn (a:i64 -- r:i64) { a helper 2 * } -> process
 	5 process call print nl  // 30 (5+10=15, 15*2=30)
 }
 ```
@@ -203,7 +203,7 @@ Anonymous functions and function pointers both use `call`:
 
 ```qd
 // Named function with pointer
-fn double(x:i64 -- r:i64) { 2 * }
+fn double(x:i64 -- r:i64) { x 2 * }
 
 fn main() {
 	// Function pointer to named function
@@ -211,7 +211,7 @@ fn main() {
 	5 fp1 call print nl  // 10
 
 	// Anonymous function
-	fn (x:i64 -- r:i64) { 2 * } -> fp2
+	fn (x:i64 -- r:i64) { x 2 * } -> fp2
 	5 fp2 call print nl  // 10
 }
 ```

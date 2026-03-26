@@ -2,7 +2,7 @@ fn main() {
 	0 -> i
 	loop {
 		i 10 >= if { break }
-		i 1 + -> i
+		i ++ -> i
 		i 2 % 0 == if {
 			continue
 		}

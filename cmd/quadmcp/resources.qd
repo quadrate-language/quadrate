@@ -1,6 +1,4 @@
 fn mcp_resources_list(id:str -- response:str) {
-	-> id
-
 	"quadrate://snippets/hello-world" "Hello World" "Basic Quadrate hello world example" "text/plain" build_resource -> r1
 	"quadrate://snippets/file-io" "File I/O" "Reading and writing files in Quadrate" "text/plain" build_resource -> r2
 	"quadrate://snippets/error-handling" "Error Handling" "Failable functions and switch pattern" "text/plain" build_resource -> r3
@@ -407,7 +405,6 @@ fn get_cheatsheet_content( -- content:str) {
 }
 
 fn resource_uri_to_index(uri:str -- idx:i64) {
-	-> uri
 	0 -> idx
 	uri "quadrate://snippets/hello-world" strings::compare 0 == if { 1 -> idx }
 	idx 0 == uri "quadrate://snippets/file-io" strings::compare 0 == and if { 2 -> idx }
@@ -421,7 +418,7 @@ fn resource_uri_to_index(uri:str -- idx:i64) {
 	idx
 }
 
-fn get_snippet_content(uri:str -- content:str) {
+fn get_snippet_content(str -- str) {
 	resource_uri_to_index switch {
 		1 { "// Hello World\nfn main() {\n\t42 print nl\n}" }
 		2 { "// File I/O\nuse io\n\nfn read_example() {\n\tpath io::read_file switch {\n\t\tOk { -> content content print nl }\n\t\t_ { 1 os::exit }\n\t}\n}\n\nfn write_example() {\n\tpath data io::write_file!\n}" }
@@ -437,7 +434,6 @@ fn get_snippet_content(uri:str -- content:str) {
 }
 
 fn mcp_resources_read(id:str body:str -- response:str) {
-	-> body -> id
 	body "params" json::get_object -> _ -> params
 	params "uri" json::get_string -> found -> uri
 

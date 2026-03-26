@@ -44,7 +44,6 @@ fn make_hex_table( -- tbl:ptr) {
 
 // Hex digit to value (returns -1 for invalid)
 fn hex_value(c:i64 -- v:i64) {
-	-> c
 	// '0'-'9' -> 0-9
 	c unicode::digit0 >= c unicode::digit9 <= and if {
 		c unicode::digit0 -
@@ -65,7 +64,6 @@ fn hex_value(c:i64 -- v:i64) {
 
 // Check if character is unreserved (doesn't need encoding)
 fn is_unreserved(c:i64 -- result:i64) {
-	-> c
 	// A-Z
 	c unicode::A >= c unicode::Z <= and if {
 		1
@@ -94,7 +92,6 @@ fn is_unreserved(c:i64 -- result:i64) {
 /// @return encoded str Percent-encoded string
 /// @example "hello world" uri::encode -> encoded
 pub fn encode(s:str -- encoded:str) {
-	-> s
 	s strings::len -> slen
 
 	slen 0 == if {
@@ -146,7 +143,6 @@ pub fn encode(s:str -- encoded:str) {
 /// @return decoded str Decoded string
 /// @example "hello%20world" uri::decode -> decoded
 pub fn decode(s:str -- decoded:str) {
-	-> s
 	s strings::len -> slen
 
 	slen 0 == if {
@@ -198,9 +194,6 @@ pub fn decode(s:str -- decoded:str) {
 
 // Find character in string starting at position, returns -1 if not found
 fn find_char(s:str start:i64 c:i64 -- pos:i64) {
-	-> c
-	-> start
-	-> s
 	s strings::len -> slen
 	start -> i
 	-1 -> pos
@@ -222,7 +215,6 @@ fn find_char(s:str start:i64 c:i64 -- pos:i64) {
 /// @return u Uri Parsed URI struct
 /// @example "https://example.com:8080/path?q=1#top" uri::parse -> u
 pub fn parse(s:str -- u:ptr) {
-	-> s
 	s strings::len -> slen
 
 	"" -> scheme
@@ -364,8 +356,6 @@ pub fn parse(s:str -- u:ptr) {
 /// @return value str Parameter value (empty if not found)
 /// @example "foo=bar&x=1" "foo" uri::query_get -> val
 pub fn query_get(query:str key:str -- value:str) {
-	-> key
-	-> query
 	query strings::len -> qlen
 	key strings::len -> klen
 
@@ -410,8 +400,6 @@ pub fn query_get(query:str key:str -- value:str) {
 /// @return exists i64 1 if exists, 0 otherwise
 /// @example "foo=bar&x=1" "foo" uri::query_has -> exists
 pub fn query_has(query:str key:str -- exists:i64) {
-	-> key
-	-> query
 	query strings::len -> qlen
 	key strings::len -> klen
 
@@ -452,7 +440,6 @@ pub fn query_has(query:str key:str -- exists:i64) {
 /// @return s str URI string
 /// @example u uri::build -> url
 pub fn build(u:ptr -- s:str) {
-	-> u
 	u @scheme -> scheme
 	u @host -> host
 	u @port -> port

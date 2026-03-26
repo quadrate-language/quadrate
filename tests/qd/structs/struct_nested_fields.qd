@@ -4,13 +4,11 @@ struct Rectangle {
 	height:f64
 }
 
-fn area(r:Rectangle -- a:f64) {
-	-> rect
+fn area(rect:Rectangle -- a:f64) {
 	rect @width rect @height mul
 }
 
-fn perimeter(r:Rectangle -- p:f64) {
-	-> rect
+fn perimeter(rect:Rectangle -- p:f64) {
 	rect @width rect @height add 2.0 mul
 }
 

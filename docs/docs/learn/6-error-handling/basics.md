@@ -20,11 +20,10 @@ Use the `panic` instruction to signal an error:
 
 ```qd
 fn divide(a:i64 b:i64 -- result:i64)! {
-	dup 0 == if {
-		drop2
+	b 0 == if {
 		"division by zero" -1 panic
 	}
-	/
+	a b /
 }
 ```
 
@@ -38,6 +37,13 @@ The `panic` instruction takes (in push order):
 When you call a fallible function, you **must** handle the error with `if`:
 
 ```qd
+fn divide(a:i64 b:i64 -- result:i64)! {
+	b 0 == if {
+		"division by zero" -1 panic
+	}
+	a b /
+}
+
 fn main() {
 	10 2 divide if {
 		// Success: result is on stack
@@ -62,11 +68,10 @@ After calling a fallible function:
 
 ```qd
 fn divide(a:i64 b:i64 -- result:i64)! {
-	dup 0 == if {
-		drop2
+	b 0 == if {
 		"division by zero" -1 panic
 	}
-	/
+	a b /
 }
 
 fn main() {
@@ -98,7 +103,7 @@ Call a fallible function with `!` to abort the program on error:
 
 ```qd
 fn divide_and_double(a:i64 b:i64 -- result:i64)! {
-	divide!  // Aborts if divide fails
+	a b divide!  // Aborts if divide fails
 	2 *
 }
 ```
@@ -111,7 +116,7 @@ Call a fallible function with `?` to automatically propagate errors to the calle
 
 ```qd
 fn divide_and_double(a:i64 b:i64 -- result:i64)! {
-	divide?  // If divide fails, return the error to our caller
+	a b divide?  // If divide fails, return the error to our caller
 	2 *
 }
 ```
@@ -120,7 +125,7 @@ This is equivalent to the more verbose:
 
 ```qd
 fn divide_and_double(a:i64 b:i64 -- result:i64)! {
-	divide switch {
+	a b divide switch {
 		Ok { }
 		_ { err panic }
 	}
@@ -132,9 +137,9 @@ The `?` operator is useful when you want to let the caller handle the error inst
 
 ```qd
 fn pipeline(x:i64 -- result:i64)! {
-	step1?   // propagates step1 errors
-	step2?   // propagates step2 errors
-	step3?   // propagates step3 errors
+	x step1?   // propagates step1 errors
+	step2?     // propagates step2 errors
+	step3?     // propagates step3 errors
 }
 ```
 
@@ -191,11 +196,10 @@ Use the `err` instruction to retrieve the error message and code:
 
 ```qd
 fn divide(a:i64 b:i64 -- result:i64)! {
-	dup 0 == if {
-		drop2
+	b 0 == if {
 		"division by zero" 42 panic
 	}
-	/
+	a b /
 }
 
 fn main() {
@@ -220,9 +224,14 @@ The `err` instruction pushes `(-- msg code)`:
 This is useful with `switch` to handle different error codes:
 
 ```qd
+fn some_operation( -- result:i64)! {
+	"something went wrong" 2 panic
+}
+
 fn main() {
 	some_operation if {
 		// Success
+		drop
 	} else {
 		err switch {
 			1 {

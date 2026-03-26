@@ -1,4 +1,4 @@
-fn test(s:string -- result:str) {
+fn test(string -- str) {
 	// Should fail - 'string' is not a valid type
 }
 

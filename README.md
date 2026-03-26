@@ -17,7 +17,7 @@ Functions declare their stack effects with a signature: `(inputs -- outputs)`:
 
 ```quadrate
 fn square(x:i64 -- result:i64) {
-    dup *   // Duplicate top of stack, multiply
+    x x *   // Named params are auto-bound to locals
 }
 
 fn main() {

@@ -8,8 +8,7 @@ Use angle brackets `<T>` to define type parameters:
 
 ```qd
 fn identity<T>(x:T -- y:T) {
-    -> val
-    val
+    x
 }
 ```
 
@@ -19,8 +18,7 @@ The compiler automatically infers types based on the arguments:
 
 ```qd
 fn identity<T>(x:T -- y:T) {
-    -> val
-    val
+    x
 }
 
 fn main() {
@@ -36,9 +34,7 @@ Functions can have multiple type parameters:
 
 ```qd
 fn pair<A B>(a:A b:B -- a:A b:B) {
-    -> second
-    -> first
-    first second
+    a b
 }
 
 fn main() {
@@ -55,9 +51,7 @@ fn main() {
 
 ```qd
 fn swap<T>(a:T b:T -- b:T a:T) {
-    -> second
-    -> first
-    second first
+    b a
 }
 
 fn main() {
@@ -71,12 +65,11 @@ fn main() {
 
 ```qd
 fn apply<T>(x:T f:ptr -- result:T) {
-    -> f -> x
     x f call
 }
 
 fn main() {
-    5 fn (n:i64 -- r:i64) { 2 * } apply print nl  // 10
+    5 fn (n:i64 -- r:i64) { n 2 * } apply print nl  // 10
 }
 ```
 
@@ -98,7 +91,7 @@ fn main() {
 The compiler infers types at the call site. Each call can use different types:
 
 ```qd
-fn identity<T>(x:T -- y:T) { -> v v }
+fn identity<T>(x:T -- y:T) { x }
 
 fn main() {
     42 identity      // T = i64

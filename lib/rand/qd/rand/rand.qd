@@ -26,7 +26,6 @@ pub fn new( -- rng:ptr) {
 /// @return rng ptr New random number generator
 /// @example 12345 rand::with_seed -> rng
 pub fn with_seed(seed:i64 -- rng:ptr) {
-	-> seed
 	seed 0 == if {
 		1
 	} else {
@@ -42,7 +41,6 @@ pub fn with_seed(seed:i64 -- rng:ptr) {
 /// @return n i64 Random 64-bit integer
 /// @example rng rand::next -> rng n
 pub fn next(rng:ptr -- rng:ptr n:i64) {
-	-> rng
 	rng @state -> x
 
 	// xorshift64*
@@ -64,9 +62,6 @@ pub fn next(rng:ptr -- rng:ptr n:i64) {
 /// @return n i64 Random integer in [0, max)
 /// @example rng 100 rand::int -> rng n
 pub fn int(rng:ptr max:i64 -- rng:ptr n:i64) {
-	-> max
-	-> rng
-
 	// Handle edge case: max <= 0 returns 0
 	max 1 < if {
 		rng 0
@@ -92,9 +87,6 @@ pub fn int(rng:ptr max:i64 -- rng:ptr n:i64) {
 /// @return n i64 Random integer in [min, max)
 /// @example rng 10 20 rand::range -> rng n
 pub fn range(rng:ptr min:i64 max:i64 -- rng:ptr n:i64) {
-	-> max
-	-> min
-	-> rng
 	max min - -> diff
 	rng diff int -> n -> newrng
 	n min + -> result
@@ -108,7 +100,6 @@ pub fn range(rng:ptr min:i64 max:i64 -- rng:ptr n:i64) {
 /// @return b i64 Random boolean (0 or 1)
 /// @example rng rand::boolean -> rng b
 pub fn boolean(rng:ptr -- rng:ptr b:i64) {
-	-> rng
 	rng 2 int
 }
 
@@ -118,7 +109,6 @@ pub fn boolean(rng:ptr -- rng:ptr b:i64) {
 /// @return f f64 Random float in [0.0, 1.0)
 /// @example rng rand::float -> rng f
 pub fn float(rng:ptr -- rng:ptr f:f64) {
-	-> rng
 	rng next -> raw -> newrng
 	// Make positive
 	raw 0 < if {
@@ -141,9 +131,6 @@ pub fn float(rng:ptr -- rng:ptr f:f64) {
 /// @return f f64 Random float in [min, max)
 /// @example rng 0.0 10.0 rand::float_range -> rng f
 pub fn float_range(rng:ptr min:f64 max:f64 -- rng:ptr f:f64) {
-	-> max
-	-> min
-	-> rng
 	rng float -> f -> newrng
 	max min - f * min + -> result
 	newrng
@@ -158,10 +145,6 @@ pub fn float_range(rng:ptr min:f64 max:f64 -- rng:ptr f:f64) {
 /// @example rng arr len rand::shuffle -> rng
 pub fn shuffle(rng:ptr arr:ptr len:i64 -- rng:ptr) {
 	use mem
-
-	-> len
-	-> arr
-	-> rng
 
 	len 1 > if {
 		len 1 - -> i
@@ -193,10 +176,6 @@ pub fn shuffle(rng:ptr arr:ptr len:i64 -- rng:ptr) {
 pub fn choice(rng:ptr arr:ptr len:i64 -- rng:ptr val:i64) {
 	use mem
 
-	-> len
-	-> arr
-	-> rng
-
 	rng len int -> idx -> newrng
 	arr idx 8 * mem::get_i64 -> result
 
@@ -211,8 +190,6 @@ pub fn choice(rng:ptr arr:ptr len:i64 -- rng:ptr val:i64) {
 /// @return n f64 Random value from N(0,1)
 /// @example rng rand::normal -> rng n
 pub fn normal(rng:ptr -- rng:ptr n:f64) {
-	-> rng
-
 	// Box-Muller transform: generate two uniform randoms, produce one normal
 	rng float -> u1 -> rng
 	rng float -> u2 -> rng
@@ -240,10 +217,6 @@ pub fn normal(rng:ptr -- rng:ptr n:f64) {
 /// @return n f64 Random value from N(mean, stddev)
 /// @example rng 100.0 15.0 rand::normal_params -> rng n
 pub fn normal_params(rng:ptr mean:f64 stddev:f64 -- rng:ptr n:f64) {
-	-> stddev
-	-> mean
-	-> rng
-
 	rng normal -> z -> rng
 	z stddev * mean + -> result
 
@@ -258,9 +231,6 @@ pub fn normal_params(rng:ptr mean:f64 stddev:f64 -- rng:ptr n:f64) {
 /// @return n f64 Random value from Exp(lambda)
 /// @example rng 1.0 rand::exponential -> rng n
 pub fn exponential(rng:ptr lambda:f64 -- rng:ptr n:f64) {
-	-> lambda
-	-> rng
-
 	rng float -> u -> rng
 
 	// Avoid log(0)
@@ -287,12 +257,6 @@ pub fn exponential(rng:ptr lambda:f64 -- rng:ptr n:f64) {
 /// @example rng src 10 dst 3 rand::sample -> rng
 pub fn sample(rng:ptr src:ptr src_len:i64 dst:ptr n:i64 -- rng:ptr) {
 	use mem
-
-	-> n
-	-> dst
-	-> src_len
-	-> src
-	-> rng
 
 	// Handle edge cases
 	n 0 <= if { rng } else {

@@ -7,7 +7,6 @@ fn compute(x:i64 -- result:i64) {
 }
 
 fn format_value(x:i64 -- result:str) {
-	-> x
 	x "%d" fmt::sprintf -> num_str
 	PREFIX num_str strings::concat
 }

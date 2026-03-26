@@ -1,5 +1,6 @@
-// Test: using parameter names inside anonymous function body should fail
-// (parameter names are for documentation only, use stack operations)
+// Test: using parameter names inside anonymous function body should work
+// (named parameters are auto-bound as local variables)
 fn main() {
-    fn (x:i64 -- r:i64) { x 2 * } -> bad
+    fn (x:i64 -- r:i64) { x 2 * } -> double
+    5 double call print nl
 }

@@ -1,13 +1,11 @@
 // Sibling that uses constants from main in expressions
 
 fn compute(x:i64 -- result:i64) {
-	-> x
 	// Uses BASE, SCALE from main: BASE + x * SCALE
 	BASE x SCALE * +
 }
 
 fn scaled_offset(x:i64 -- result:i64) {
-	-> x
 	// Uses all three constants: (x * SCALE) + OFFSET
 	x SCALE * OFFSET +
 }

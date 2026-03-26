@@ -2,7 +2,6 @@
 // Shows the difference between ! (abort) and if/else (catch and propagate)
 
 fn validate(x:i64 -- result:i64)! {
-	-> x
 	x 0 < if {
 		"negative input" 1 panic
 	}
@@ -10,7 +9,6 @@ fn validate(x:i64 -- result:i64)! {
 }
 
 fn transform(x:i64 -- result:i64)! {
-	-> x
 	x 100 > if {
 		"too large" 2 panic
 	}
@@ -19,7 +17,6 @@ fn transform(x:i64 -- result:i64)! {
 
 // Chain with if/else - catches and re-panics to propagate errors
 fn pipeline(x:i64 -- result:i64)! {
-	-> x
 	x validate if {
 		transform if {
 			// success - result on stack

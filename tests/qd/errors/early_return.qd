@@ -1,6 +1,5 @@
 // Test early return on error
-fn process_list(count:i64 -- sum:i64)! {
-	-> n
+fn process_list(n:i64 -- sum:i64)! {
 	0 -> total
 	0 n 1 for i {
 		i 5 eq if {
@@ -11,9 +10,7 @@ fn process_list(count:i64 -- sum:i64)! {
 	total
 }
 
-fn safe_divide(a:i64 b:i64 -- result:i64)! {
-	-> divisor
-	-> dividend
+fn safe_divide(dividend:i64 divisor:i64 -- result:i64)! {
 	divisor 0 eq if {
 		0 "division by zero" 1 panic
 	}

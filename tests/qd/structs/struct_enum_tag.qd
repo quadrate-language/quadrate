@@ -12,8 +12,7 @@ struct AstNode {
 	right:*AstNode
 }
 
-fn eval(node:ptr -- result:i64) {
-	-> n
+fn eval(n:ptr -- result:i64) {
 	n @kind switch {
 		NodeType::Num { n @value }
 		NodeType::Add { n @left eval n @right eval + }

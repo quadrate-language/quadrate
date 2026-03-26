@@ -436,7 +436,7 @@ TEST(ScopedIdentifierModuleImported) {
 // Test implicit cast: int to float - should succeed with warning
 TEST(ImplicitCastIntToFloat) {
 	const char* src = R"(
-		fn add_float(a:f64 b:f64 -- result:f64) {
+		fn add_float(f64 f64 -- f64) {
 			+
 		}
 		fn main() {
@@ -454,7 +454,7 @@ TEST(ImplicitCastIntToFloat) {
 // Test implicit cast: float to int - should succeed with warning
 TEST(ImplicitCastFloatToInt) {
 	const char* src = R"(
-		fn add_int(a:i64 b:i64 -- result:i64) {
+		fn add_int(i64 i64 -- i64) {
 			+
 		}
 		fn main() {
@@ -472,7 +472,7 @@ TEST(ImplicitCastFloatToInt) {
 // Test werror: warnings treated as errors
 TEST(WerrorTreatsWarningsAsErrors) {
 	const char* src = R"(
-		fn add_float(a:f64 b:f64 -- result:f64) {
+		fn add_float(f64 f64 -- f64) {
 			+
 		}
 		fn main() {
@@ -490,7 +490,7 @@ TEST(WerrorTreatsWarningsAsErrors) {
 // Test werror: clean code still passes
 TEST(WerrorCleanCodePasses) {
 	const char* src = R"(
-		fn add_int(a:i64 b:i64 -- result:i64) {
+		fn add_int(i64 i64 -- i64) {
 			+
 		}
 		fn main() {
@@ -509,8 +509,7 @@ TEST(WerrorCleanCodePasses) {
 TEST(MultipleImplicitCasts) {
 	const char* src = R"(
 		fn mix(a:i64 b:f64 c:i64 -- result:f64) {
-			-> _ -> result -> _
-			result
+			b
 		}
 		fn main() {
 			10.5 20 30.5 mix printv
@@ -521,7 +520,7 @@ TEST(MultipleImplicitCasts) {
 	Qd::SemanticValidator validator;
 	size_t errors = validator.validate(root, "test.qd");
 	ASSERT(errors == 0, "multiple implicit casts should succeed");
-	ASSERT(validator.warningCount() == 3, "should have 3 warnings (all params need casts)");
+	ASSERT(validator.warningCount() == 5, "should have 5 warnings (3 implicit casts + 2 unused params)");
 }
 
 int main() {

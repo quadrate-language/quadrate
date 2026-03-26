@@ -41,7 +41,7 @@ Calls a function pointer obtained with `&funcname` syntax.
 
 ```qd
 fn double(x:i64 -- result:i64) {
-	2 *
+	x 2 *
 }
 
 fn main() {
@@ -77,14 +77,13 @@ Push arguments, then the pointer, then `call`:
 
 ```qd
 fn for_each(arr:ptr callback:ptr -- ) {
-	-> callback -> arr
 	0 arr len 1 for i {
 		arr i nth callback call
 	}
 }
 
 fn print_item(x:i64 -- ) {
-	print " " print
+	x print " " print
 }
 
 fn main() {
@@ -97,15 +96,15 @@ fn main() {
 
 ```qd
 fn op_add(a:i64 b:i64 -- r:i64) {
-	+
+	a b +
 }
 
 fn op_sub(a:i64 b:i64 -- r:i64) {
-	-
+	a b -
 }
 
 fn op_mul(a:i64 b:i64 -- r:i64) {
-	*
+	a b *
 }
 
 fn main() {
@@ -124,7 +123,6 @@ fn main() {
 
 ```qd
 fn map(arr:ptr f:ptr -- result:ptr) {
-	-> f -> arr
 	arr len make<i64> -> result
 	0 arr len 1 for i {
 		result i arr i nth f call set
@@ -132,11 +130,14 @@ fn map(arr:ptr f:ptr -- result:ptr) {
 	result
 }
 
-fn square(x:i64 -- r:i64) { dup * }
+fn square(x:i64 -- r:i64) { x x * }
 
 fn main() {
 	[1 2 3 4 5] &square map -> squared
-	// squared = [1, 4, 9, 16, 25]
+	0 squared len 1 for i {
+		squared i nth print " " print
+	}
+	nl  // 1 4 9 16 25
 }
 ```
 

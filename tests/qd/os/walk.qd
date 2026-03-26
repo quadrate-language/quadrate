@@ -20,11 +20,9 @@ fn main() {
 	0 -> count1
 	0 -> count2
 	"/tmp/qd_walk_test" fn (path:str isdir:i64 depth:i64 -- ) {
-		// Stack: path isdir depth (depth on top)
-		dup 0 == if { count0 1 + -> count0 }
-		dup 1 == if { count1 1 + -> count1 }
-		dup 2 == if { count2 1 + -> count2 }
-		drop drop drop  // clean up stack: depth isdir path
+		depth 0 == if { count0 1 + -> count0 }
+		depth 1 == if { count1 1 + -> count1 }
+		depth 2 == if { count2 1 + -> count2 }
 	} os::walk!
 
 	// Print counts for each depth

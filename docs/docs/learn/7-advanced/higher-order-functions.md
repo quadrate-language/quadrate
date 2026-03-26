@@ -28,7 +28,7 @@ With combinators, it's one line:
 use hof
 
 fn main() {
-	6 fn (x:i64 -- r:i64) { 0 > } fn (x:i64 -- r:i64) { 2 % 0 == } hof::bi and print nl  // 1
+	6 fn (x:i64 -- r:i64) { x 0 > } fn (x:i64 -- r:i64) { x 2 % 0 == } hof::bi and print nl  // 1
 }
 ```
 
@@ -42,7 +42,7 @@ Apply a single function to a value.
 use hof
 
 fn main() {
-	5 fn (x:i64 -- r:i64) { 2 * } hof::apply print nl  // 10
+	5 fn (x:i64 -- r:i64) { x 2 * } hof::apply print nl  // 10
 }
 ```
 
@@ -54,7 +54,7 @@ Apply **two** functions to the **same** value.
 use hof
 
 fn main() {
-	5 fn (x:i64 -- r:i64) { 2 * } fn (x:i64 -- r:i64) { 3 + } hof::bi
+	5 fn (x:i64 -- r:i64) { x 2 * } fn (x:i64 -- r:i64) { x 3 + } hof::bi
 	print nl print nl  // 8 then 10 (5+3=8, 5*2=10)
 }
 ```
@@ -67,7 +67,7 @@ Apply **three** functions to the **same** value.
 use hof
 
 fn main() {
-	5 fn (x:i64 -- r:i64) { 1 + } fn (x:i64 -- r:i64) { 2 * } fn (x:i64 -- r:i64) { dup * } hof::tri
+	5 fn (x:i64 -- r:i64) { x 1 + } fn (x:i64 -- r:i64) { x 2 * } fn (x:i64 -- r:i64) { x x * } hof::tri
 	print nl print nl print nl  // 25 then 10 then 6 (5*5=25, 5*2=10, 5+1=6)
 }
 ```
@@ -80,7 +80,7 @@ Apply a function but **preserve the original** value.
 use hof
 
 fn main() {
-	5 fn (x:i64 -- r:i64) { 2 * } hof::keep
+	5 fn (x:i64 -- r:i64) { x 2 * } hof::keep
 	print nl print nl  // 5 then 10 (original=5 preserved, result=10)
 }
 ```
@@ -93,7 +93,7 @@ Apply a function to the **second** element, preserving the **top**.
 use hof
 
 fn main() {
-	10 20 fn (x:i64 -- r:i64) { 2 * } hof::dip
+	10 20 fn (x:i64 -- r:i64) { x 2 * } hof::dip
 	print nl print nl  // 20 then 20 (kept 20 on top, doubled 10 to 20)
 }
 ```
@@ -106,7 +106,7 @@ Apply the **same** function to **two** values.
 use hof
 
 fn main() {
-	3 4 fn (x:i64 -- r:i64) { dup * } hof::both
+	3 4 fn (x:i64 -- r:i64) { x x * } hof::both
 	print nl print nl  // 16 then 9 (4*4=16, 3*3=9)
 }
 ```
@@ -119,7 +119,7 @@ Apply **different** functions to **two** values.
 use hof
 
 fn main() {
-	3 4 fn (x:i64 -- r:i64) { 1 + } fn (x:i64 -- r:i64) { 2 * } hof::bi_star
+	3 4 fn (x:i64 -- r:i64) { x 1 + } fn (x:i64 -- r:i64) { x 2 * } hof::bi_star
 	print nl print nl  // 8 then 4 (4*2=8, 3+1=4)
 }
 ```
@@ -132,8 +132,8 @@ Apply function **only if** condition is **true**.
 use hof
 
 fn main() {
-	5 1 fn (x:i64 -- r:i64) { 2 * } hof::when print nl  // 10 (condition true)
-	5 0 fn (x:i64 -- r:i64) { 2 * } hof::when print nl  // 5  (condition false, unchanged)
+	5 1 fn (x:i64 -- r:i64) { x 2 * } hof::when print nl  // 10 (condition true)
+	5 0 fn (x:i64 -- r:i64) { x 2 * } hof::when print nl  // 5  (condition false, unchanged)
 }
 ```
 
@@ -145,8 +145,8 @@ Apply function **only if** condition is **false** (opposite of `when`).
 use hof
 
 fn main() {
-	5 0 fn (x:i64 -- r:i64) { 2 * } hof::unless print nl  // 10 (condition false)
-	5 1 fn (x:i64 -- r:i64) { 2 * } hof::unless print nl  // 5  (condition true, unchanged)
+	5 0 fn (x:i64 -- r:i64) { x 2 * } hof::unless print nl  // 10 (condition false)
+	5 1 fn (x:i64 -- r:i64) { x 2 * } hof::unless print nl  // 5  (condition true, unchanged)
 }
 ```
 
@@ -158,9 +158,9 @@ Apply a function **n times** to an initial value.
 use hof
 
 fn main() {
-	1 5 fn (x:i64 -- r:i64) { 2 * } hof::times print nl  // 32 (1*2*2*2*2*2)
+	1 5 fn (x:i64 -- r:i64) { x 2 * } hof::times print nl  // 32 (1*2*2*2*2*2)
 
-	2 3 fn (x:i64 -- r:i64) { dup * } hof::times print nl  // 256 (2^2=4, 4^2=16, 16^2=256)
+	2 3 fn (x:i64 -- r:i64) { x x * } hof::times print nl  // 256 (2^2=4, 4^2=16, 16^2=256)
 }
 ```
 
@@ -172,10 +172,8 @@ fn main() {
 use hof
 
 fn validate_age( age:i64 -- valid:i64 ) {
-	-> age  // bind parameter
-
 	// Must be: positive AND >= 18 AND <= 120
-	age fn (x:i64 -- r:i64) { 0 > } fn (x:i64 -- r:i64) { 18 >= } hof::bi and
+	age fn (x:i64 -- r:i64) { x 0 > } fn (x:i64 -- r:i64) { x 18 >= } hof::bi and
 	age 120 <= and
 }
 
@@ -192,9 +190,10 @@ fn main() {
 use hof
 
 fn stats( n:i64 -- doubled:i64 squared:i64 incremented:i64 ) {
-	fn (x:i64 -- r:i64) { 2 * }
-	fn (x:i64 -- r:i64) { dup * }
-	fn (x:i64 -- r:i64) { 1 + }
+	n
+	fn (x:i64 -- r:i64) { x 2 * }
+	fn (x:i64 -- r:i64) { x x * }
+	fn (x:i64 -- r:i64) { x 1 + }
 	hof::tri
 }
 
@@ -211,7 +210,7 @@ use hof
 
 fn main() {
 	// Compute 2^10 by doubling 10 times
-	1 10 fn (x:i64 -- r:i64) { 2 * } hof::times
+	1 10 fn (x:i64 -- r:i64) { x 2 * } hof::times
 	print nl  // 1024
 
 	// Compute factorial(5) iteratively
@@ -229,8 +228,8 @@ Quadrate's combinators are inspired by [Factor](https://factorcode.org/), but wi
 
 | Factor | Quadrate |
 |--------|----------|
-| `[ 2 * ]` | `fn (x:i64 -- r:i64) { 2 * }` |
-| `5 [ 2 * ] [ 3 + ] bi` | `5 fn (...) { 2 * } fn (...) { 3 + } hof::bi` |
+| `[ 2 * ]` | `fn (x:i64 -- r:i64) { x 2 * }` |
+| `5 [ 2 * ] [ 3 + ] bi` | `5 fn (...) { x 2 * } fn (...) { x 3 + } hof::bi` |
 
 The signatures are more verbose but provide compile-time type checking.
 

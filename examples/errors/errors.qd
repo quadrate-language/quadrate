@@ -1,5 +1,5 @@
 // Example demonstrating fallible functions and error handling
-fn division(a:i64 b:i64 -- result:i64)! {
+fn division(i64 i64 -- i64)! {
 	dup 0 == if {
 		drop drop
 		0

@@ -9,7 +9,6 @@ struct Point {
 // Function with two of the same typed struct parameters
 // Parameters are bound in reverse stack order (last param = top of stack)
 fn distance(p1:Point p2:Point -- result:f64) {
-	-> p2 -> p1
 	p1 @x p2 @x - dup *
 	p1 @y p2 @y - dup *
 	+ math::sqrt
@@ -17,7 +16,6 @@ fn distance(p1:Point p2:Point -- result:f64) {
 
 // Function with two typed parameters plus a primitive
 fn weighted_midpoint(p1:Point p2:Point weight:f64 -- result:ptr) {
-	-> weight -> p2 -> p1
 	Point {
 		x = p1 @x weight * p2 @x 1.0 weight - * +
 		y = p1 @y weight * p2 @y 1.0 weight - * +
@@ -26,7 +24,6 @@ fn weighted_midpoint(p1:Point p2:Point weight:f64 -- result:ptr) {
 
 // Function to add two points
 fn add_points(a:Point b:Point -- result:ptr) {
-	-> b -> a
 	Point {
 		x = a @x b @x +
 		y = a @y b @y +

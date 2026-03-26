@@ -7,7 +7,7 @@ enum Perm {
 	All = 7
 }
 
-fn has_perm(flags:i64 perm:i64 -- result:i64) {
+fn has_perm(i64 i64 -- i64) {
 	and 0 !=
 }
 

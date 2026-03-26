@@ -131,43 +131,35 @@ fn sha512_make_k( -- k:ptr) {
 }
 
 fn sha512_rotr64(x:i64 n:i64 -- result:i64) {
-	-> n -> x
 	x n shr x 64 n - shl or
 }
 
 fn sha512_ch(x:i64 y:i64 z:i64 -- result:i64) {
-	-> z -> y -> x
 	x y and x not z and xor
 }
 
 fn sha512_maj(x:i64 y:i64 z:i64 -- result:i64) {
-	-> z -> y -> x
 	x y and x z and xor y z and xor
 }
 
 fn sha512_sigma0(x:i64 -- result:i64) {
-	-> x
 	x 28 sha512_rotr64 x 34 sha512_rotr64 xor x 39 sha512_rotr64 xor
 }
 
 fn sha512_sigma1(x:i64 -- result:i64) {
-	-> x
 	x 14 sha512_rotr64 x 18 sha512_rotr64 xor x 41 sha512_rotr64 xor
 }
 
 fn sha512_gamma0(x:i64 -- result:i64) {
-	-> x
 	x 1 sha512_rotr64 x 8 sha512_rotr64 xor x 7 shr xor
 }
 
 fn sha512_gamma1(x:i64 -- result:i64) {
-	-> x
 	x 19 sha512_rotr64 x 61 sha512_rotr64 xor x 6 shr xor
 }
 
 // Read 64-bit big-endian from buffer
 fn sha512_read_u64_be(buf:ptr offset:i64 -- val:i64) {
-	-> offset -> buf
 	buf offset mem::get_byte 56 shl
 	buf offset 1 + mem::get_byte 48 shl or
 	buf offset 2 + mem::get_byte 40 shl or
@@ -180,7 +172,6 @@ fn sha512_read_u64_be(buf:ptr offset:i64 -- val:i64) {
 
 // Write 64-bit big-endian to buffer
 fn sha512_write_u64_be(buf:ptr offset:i64 val:i64 -- ) {
-	-> val -> offset -> buf
 	val 56 shr 255 and buf offset mem::set_byte
 	val 48 shr 255 and buf offset 1 + mem::set_byte
 	val 40 shr 255 and buf offset 2 + mem::set_byte
@@ -196,9 +187,6 @@ fn sha512_process_block(
 	hh0:i64 hh1:i64 hh2:i64 hh3:i64 hh4:i64 hh5:i64 hh6:i64 hh7:i64 block:ptr --
 	r0:i64 r1:i64 r2:i64 r3:i64 r4:i64 r5:i64 r6:i64 r7:i64
 ) {
-	-> block
-	-> hh7 -> hh6 -> hh5 -> hh4 -> hh3 -> hh2 -> hh1 -> hh0
-
 	sha512_make_k -> k
 	640 mem::alloc! -> w
 
@@ -256,8 +244,6 @@ fn sha512_process_block(
 
 /// Update SHA-512 state with additional data.
 pub fn (h:Sha512) update(data:str -- h2:Sha512)! {
-	-> data
-
 	h @h0 -> hh0
 	h @h1 -> hh1
 	h @h2 -> hh2
@@ -426,7 +412,6 @@ pub fn (h:Sha512) release( -- ) {
 /// @param s str Input string
 /// @return hash str 128-character hex string
 pub fn sha512(s:str -- hash:str)! {
-	-> s
 	Sha512 {} -> h
 	h s update! -> h
 	h finish! -> result
@@ -439,8 +424,6 @@ pub fn sha512(s:str -- hash:str)! {
 /// @param length i64 Length of buffer in bytes
 /// @return hash str 128-character hex string
 pub fn sha512_bytes(buf:ptr length:i64 -- hash:str)! {
-	-> length -> buf
-
 	SHA512_H0 -> hh0
 	SHA512_H1 -> hh1
 	SHA512_H2 -> hh2

@@ -38,7 +38,6 @@ fn main() {
 
 ```qd
 fn abs(x:i64 -- result:i64) {
-	-> x  // bind parameter
 	x 0 < if {
 		x neg
 	} else {
@@ -113,7 +112,6 @@ Handle edge cases first with `if`/`else`:
 
 ```qd
 fn process(x:i64 -- result:i64) {
-	-> x  // bind parameter
 	x 0 < if {
 		0              // Return 0 for invalid input
 	} else {
@@ -126,7 +124,6 @@ fn process(x:i64 -- result:i64) {
 
 ```qd
 fn get_or_default(value:i64 default:i64 -- result:i64) {
-	-> default -> value
 	value 0 == if {
 		default
 	} else {
@@ -139,7 +136,6 @@ fn get_or_default(value:i64 default:i64 -- result:i64) {
 
 ```qd
 fn is_valid_age(age:i64 -- valid:i64) {
-	-> age  // bind parameter
 	age 0 >= age 150 <= and
 }
 

@@ -1,9 +1,9 @@
 // Test: compiler should report multiple errors at once
-fn safe_div(a:i64 b:i64 -- c:i64)! {
+fn safe_div(i64 i64 -- i64)! {
 	/
 }
 
-fn normal_func(x:i64 -- y:i64) {
+fn normal_func(i64 -- i64) {
 	++
 }
 

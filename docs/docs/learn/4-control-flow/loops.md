@@ -137,7 +137,6 @@ Build up a result:
 
 ```qd
 fn sum_to_n(n:i64 -- sum:i64) {
-	-> n  // bind parameter
 	0 -> sum
 	1 n 1 + 1 for i {
 		sum i + -> sum
@@ -156,7 +155,6 @@ Search with early exit:
 
 ```qd
 fn contains(arr:ptr value:i64 -- found:i64) {
-	-> value -> arr
 	0 -> found
 
 	0 arr len 1 for i {
@@ -180,7 +178,6 @@ fn main() {
 
 ```qd
 fn sum_array(arr:ptr -- total:i64) {
-	-> arr  // bind parameter
 	0 -> total
 	0 arr len 1 for i {
 		total arr i nth cast<i64> + -> total
@@ -193,7 +190,6 @@ fn sum_array(arr:ptr -- total:i64) {
 
 ```qd
 fn count_positive(arr:ptr -- count:i64) {
-	-> arr  // bind parameter
 	0 -> count
 	0 arr len 1 for i {
 		arr i nth 0 > if {

@@ -1,15 +1,12 @@
 // Test error recovery patterns
-fn might_fail(x:i64 -- result:i64)! {
-	-> val
+fn might_fail(val:i64 -- result:i64)! {
 	val 0 eq if {
 		0 "zero not allowed" 1 panic
 	}
 	100 val /
 }
 
-fn with_default(x:i64 default:i64 -- result:i64) {
-	-> def
-	-> val
+fn with_default(val:i64 def:i64 -- result:i64) {
 	val might_fail if {
 		// got result
 	} else {

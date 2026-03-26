@@ -127,7 +127,6 @@ pub fn (logger:Logger) free( -- ) {
 /// @param level i64 Minimum level (LevelDebug, LevelInfo, LevelWarn, LevelError, LevelOff)
 /// @example logger log::LevelWarn log::set_level
 pub fn (logger:Logger) set_level(level:i64 -- ) {
-	-> level
 	level logger @handle log::raw_set_level
 }
 
@@ -144,7 +143,6 @@ pub fn (logger:Logger) get_level( -- level:i64) {
 /// @param format i64 Format (FormatText or FormatJson)
 /// @example logger log::FormatJson log::set_format
 pub fn (logger:Logger) set_format(format:i64 -- ) {
-	-> format
 	format logger @handle log::raw_set_format
 }
 
@@ -168,7 +166,6 @@ pub fn (logger:Logger) disable_stdout( -- ) {
 /// @error ErrFile Failed to open file
 /// @example logger "/var/log/app.log" log::add_file!
 pub fn (logger:Logger) add_file(path:str -- )! {
-	-> path
 	path logger @handle log::raw_add_file -> err
 	err 0 neq if {
 		"failed to open log file" err panic
@@ -184,10 +181,6 @@ pub fn (logger:Logger) add_file(path:str -- )! {
 /// @error ErrFile Failed to open file
 /// @example logger "/var/log/app.log" log::RotateDaily 0 7 log::add_file_rotate!
 pub fn (logger:Logger) add_file_rotate(path:str mode:i64 max_size:i64 max_files:i64 -- )! {
-	-> max_files
-	-> max_size
-	-> mode
-	-> path
 	max_files max_size mode path logger @handle log::raw_add_file_rotate -> err
 	err 0 neq if {
 		"failed to open log file" err panic
@@ -199,7 +192,6 @@ pub fn (logger:Logger) add_file_rotate(path:str mode:i64 max_size:i64 max_files:
 /// @param msg str Message to log
 /// @example logger "processing item" log::debug
 pub fn (logger:Logger) debug(msg:str -- ) {
-	-> msg
 	msg LevelDebug logger @handle log::raw_log
 }
 
@@ -208,7 +200,6 @@ pub fn (logger:Logger) debug(msg:str -- ) {
 /// @param msg str Message to log
 /// @example logger "server started" log::info
 pub fn (logger:Logger) info(msg:str -- ) {
-	-> msg
 	msg LevelInfo logger @handle log::raw_log
 }
 
@@ -217,7 +208,6 @@ pub fn (logger:Logger) info(msg:str -- ) {
 /// @param msg str Message to log
 /// @example logger "connection timeout" log::warn
 pub fn (logger:Logger) warn(msg:str -- ) {
-	-> msg
 	msg LevelWarn logger @handle log::raw_log
 }
 
@@ -226,7 +216,6 @@ pub fn (logger:Logger) warn(msg:str -- ) {
 /// @param msg str Message to log
 /// @example logger "connection failed" log::error
 pub fn (logger:Logger) error(msg:str -- ) {
-	-> msg
 	msg LevelError logger @handle log::raw_log
 }
 
@@ -236,8 +225,6 @@ pub fn (logger:Logger) error(msg:str -- ) {
 /// @param msg str Message to log
 /// @example logger log::LevelInfo "custom message" log::log
 pub fn (logger:Logger) log(level:i64 msg:str -- ) {
-	-> msg
-	-> level
 	msg level logger @handle log::raw_log
 }
 

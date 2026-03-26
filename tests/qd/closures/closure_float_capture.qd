@@ -3,7 +3,6 @@ fn main() {
     3.14159 -> pi
 
     fn (r:f64 -- area:f64) {
-        -> r
         r r mul pi mul
     } -> circle_area
 

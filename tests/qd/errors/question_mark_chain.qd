@@ -1,18 +1,15 @@
 // Test: ? operator chained through multiple levels
-fn step1(x:i64 -- result:i64)! {
-	-> val
+fn step1(val:i64 -- result:i64)! {
 	val 0 < if { "step1: negative" 1 panic }
 	val 10 +
 }
 
-fn step2(x:i64 -- result:i64)! {
-	-> val
+fn step2(val:i64 -- result:i64)! {
 	val step1?
 	2 *
 }
 
-fn step3(x:i64 -- result:i64)! {
-	-> val
+fn step3(val:i64 -- result:i64)! {
 	val step2?
 	1 +
 }

@@ -4,37 +4,32 @@ use testing
 
 // Handler functions for testing
 fn handle_root(c:ptr -- ) {
-	-> c
 	c 200 "Hello" http::string
 }
 
 fn handle_users(c:ptr -- ) {
-	-> c
 	c 200 "Users list" http::string
 }
 
 fn handle_users_post(c:ptr -- ) {
-	-> c
 	c 201 "Created" http::string
 }
 
 fn handle_user_by_id(c:ptr -- ) {
-	-> c
 	c "id" http::param -> id
 	c 200 id http::string
 }
 
 fn handle_api_data(c:ptr -- ) {
-	-> c
 	c 200 "Data" http::json
 }
 
-fn global_middleware(c:ptr -- ) {
-	-> c
+fn global_middleware(ptr -- ) {
+	drop
 }
 
-fn group_middleware(c:ptr -- ) {
-	-> c
+fn group_middleware(ptr -- ) {
+	drop
 }
 
 test "http engine creation" {
@@ -194,14 +189,12 @@ test "http request builder" {
 
 // SSE handler functions for testing
 fn handle_sse_basic(c:ptr -- ) {
-	-> c
 	c http::sse_start
 	c "hello" http::sse_send
 	c http::sse_end
 }
 
 fn handle_sse_multiple(c:ptr -- ) {
-	-> c
 	c http::sse_start
 	c "first" http::sse_send
 	c "second" http::sse_send
@@ -210,7 +203,6 @@ fn handle_sse_multiple(c:ptr -- ) {
 }
 
 fn handle_sse_named_events(c:ptr -- ) {
-	-> c
 	c http::sse_start
 	c "message" "hello" http::sse_event
 	c "update" "data" http::sse_event
@@ -218,7 +210,6 @@ fn handle_sse_named_events(c:ptr -- ) {
 }
 
 fn handle_sse_mixed(c:ptr -- ) {
-	-> c
 	c http::sse_start
 	c "anonymous data" http::sse_send
 	c "status" "processing" http::sse_event
@@ -228,7 +219,6 @@ fn handle_sse_mixed(c:ptr -- ) {
 }
 
 fn handle_sse_with_loop(c:ptr -- ) {
-	-> c
 	c http::sse_start
 	0 5 1 for i {
 		c "iteration" http::sse_send
@@ -237,7 +227,6 @@ fn handle_sse_with_loop(c:ptr -- ) {
 }
 
 fn handle_sse_empty(c:ptr -- ) {
-	-> c
 	c http::sse_start
 	// No events sent
 	c http::sse_end

@@ -6,7 +6,7 @@ In Quadrate, you call functions by simply writing their name.
 
 ```qd
 fn double(x:i64 -- result:i64) {
-	2 *
+	x 2 *
 }
 
 fn main() {
@@ -22,15 +22,15 @@ Functions naturally chain together:
 
 ```qd
 fn double(x:i64 -- result:i64) {
-	2 *
+	x 2 *
 }
 
 fn square(x:i64 -- result:i64) {
-	dup *
+	x x *
 }
 
 fn add_one(x:i64 -- result:i64) {
-	1 +
+	x 1 +
 }
 
 fn main() {
@@ -47,7 +47,7 @@ Push all arguments before calling:
 
 ```qd
 fn add3(a:i64 b:i64 c:i64 -- sum:i64) {
-	+ +
+	a b + c +
 }
 
 fn main() {
@@ -64,7 +64,6 @@ Capture multiple outputs:
 
 ```qd
 fn minmax(a:i64 b:i64 -- min:i64 max:i64) {
-	-> b -> a  // bind parameters
 	a b < if {
 		a b
 	} else {
@@ -86,7 +85,7 @@ You can immediately use outputs:
 
 ```qd
 fn square(x:i64 -- result:i64) {
-	dup *
+	x x *
 }
 
 fn main() {
@@ -94,7 +93,8 @@ fn main() {
 	3 square 4 square + print nl  // 9 + 16 = 25
 
 	// Use result multiple times
-	5 square dup print nl print nl  // 25, 25
+	5 square -> s
+	s print nl s print nl  // 25, 25
 
 	// Store result
 	7 square -> sqd
@@ -108,7 +108,6 @@ Functions can call themselves:
 
 ```qd
 fn factorial(n:i64 -- result:i64) {
-	-> n  // bind parameter
 	n 1 <= if {
 		1
 	} else {
@@ -127,7 +126,6 @@ Functions can call each other:
 
 ```qd
 fn is_even(n:i64 -- result:i64) {
-	-> n  // bind parameter
 	n 0 == if {
 		1
 	} else {
@@ -136,7 +134,6 @@ fn is_even(n:i64 -- result:i64) {
 }
 
 fn is_odd(n:i64 -- result:i64) {
-	-> n  // bind parameter
 	n 0 == if {
 		0
 	} else {
@@ -156,11 +153,11 @@ Functions can call other functions:
 
 ```qd
 fn inner(x:i64 -- result:i64) {
-	1 +
+	x 1 +
 }
 
 fn outer(x:i64 -- result:i64) {
-	inner 10 *
+	x inner 10 *
 }
 
 fn main() {

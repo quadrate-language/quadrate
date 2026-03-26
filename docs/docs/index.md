@@ -24,11 +24,10 @@ Values are pushed onto a stack, then operations consume them. The compiler valid
 
 ```qd
 fn factorial(n:i64 -- result:i64) {
-	dup 1 <= if {
-		drop
+	n 1 <= if {
 		1
 	} else {
-		dup -- factorial *
+		n n 1 - factorial *
 	}
 }
 

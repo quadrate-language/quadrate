@@ -8,16 +8,14 @@ Return a default value when an error occurs:
 
 ```qd
 fn divide(a:i64 b:i64 -- result:i64)! {
-	dup 0 == if {
-		drop2
+	b 0 == if {
 		"division by zero" -1 panic
 	}
-	/
+	a b /
 }
 
 fn safe_divide(a:i64 b:i64 default:i64 -- result:i64) {
-	-> default  // bind parameter
-	divide if {
+	a b divide if {
 		// Success - return result
 	} else {
 		default  // Return default on error
@@ -40,7 +38,6 @@ fn try_parse(s:str -- value:i64)! {
 }
 
 fn parse_with_fallback(primary:str fallback:str -- value:i64) {
-	-> fallback -> primary  // bind parameters
 	primary try_parse if {
 		// Primary succeeded
 	} else {
@@ -59,11 +56,10 @@ Continue despite errors, collect successes:
 
 ```qd
 fn divide(a:i64 b:i64 -- result:i64)! {
-	dup 0 == if {
-		drop2
+	b 0 == if {
 		"division by zero" -1 panic
 	}
-	/
+	a b /
 }
 
 fn try_all( -- success_count:i64) {
@@ -98,7 +94,6 @@ Propagate errors through multiple operations:
 
 ```qd
 fn step1(x:i64 -- y:i64)! {
-	-> x
 	x 0 < if {
 		"negative input" 1 panic
 	}
@@ -106,7 +101,6 @@ fn step1(x:i64 -- y:i64)! {
 }
 
 fn step2(x:i64 -- y:i64)! {
-	-> x
 	x 100 > if {
 		"overflow" 2 panic
 	}
@@ -114,7 +108,6 @@ fn step2(x:i64 -- y:i64)! {
 }
 
 fn pipeline(x:i64 -- result:i64)! {
-	-> x  // bind parameter
 	x step1 if {
 		step2 if {
 			// Both succeeded
@@ -136,8 +129,6 @@ use io
 use mem
 
 fn read_file(path:str -- content:str)! {
-	-> path  // bind parameter
-
 	path io::Read io::open! -> file
 	defer {
 		// Always runs
@@ -169,7 +160,6 @@ struct File {
 }
 
 fn file_open(path:str -- f:ptr)! {
-	-> path  // bind parameter
 	path io::Read io::open switch {
 		Ok {
 			-> handle  // bind handle
@@ -185,12 +175,10 @@ fn file_open(path:str -- f:ptr)! {
 }
 
 fn file_close(f:ptr -- ) {
-	-> f  // bind parameter
 	f @handle io::close
 }
 
 fn with_file(path:str -- ) {
-	-> path  // bind parameter
 	path file_open if {
 		-> f  // bind file
 		defer {
@@ -207,7 +195,6 @@ Validate before processing:
 
 ```qd
 fn validate_input(x:i64 -- )! {
-	-> x  // bind parameter
 	x 0 < if {
 		"negative not allowed" 1 panic
 	}
@@ -217,9 +204,8 @@ fn validate_input(x:i64 -- )! {
 }
 
 fn process(x:i64 -- result:i64)! {
-	-> x  // bind parameter
 	x validate_input if {
-		x dup *  // Safe to process
+		x x *  // Safe to process
 	} else {
 		"validation failed" 1 panic
 	}
@@ -236,7 +222,6 @@ fn unreliable_op( -- result:i64)! {
 }
 
 fn retry(max_attempts:i64 -- result:i64)! {
-	-> max_attempts  // bind parameter
 	0 -> attempts
 	0 -> success
 	0 -> last_result
@@ -264,7 +249,6 @@ Add context to errors:
 
 ```qd
 fn parse_config(path:str -- cfg:ptr)! {
-	-> path  // bind parameter
 	path read_file if {
 		-> content  // bind content
 		content parse_json if {
@@ -284,7 +268,6 @@ Process items, log failures:
 
 ```qd
 fn process_batch(items:ptr -- processed:i64 failed:i64) {
-	-> items  // bind parameter
 	0 -> processed
 	0 -> failed
 

@@ -13,29 +13,24 @@ struct Triangle {
 }
 
 fn make_line(p1:Point2D p2:Point2D -- l:Line) {
-	-> p2 -> p1
 	Line { start = p1 end = p2 }
 }
 
 fn make_triangle(p1:Point2D p2:Point2D p3:Point2D -- t:Triangle) {
-	-> p3 -> p2 -> p1
 	Triangle { a = p1 b = p2 c = p3 }
 }
 
 fn point2d_dist(v1:Point2D v2:Point2D -- d:f64) {
-	-> v2 -> v1
 	v2 @x v1 @x - -> dx
 	v2 @y v1 @y - -> dy
 	dx dx * dy dy * + math::sqrt
 }
 
 fn line_length(l:Line -- len:f64) {
-	-> l
 	l @start l @end point2d_dist
 }
 
 fn triangle_perimeter(t:Triangle -- p:f64) {
-	-> t
 	t @a t @b point2d_dist -> ab
 	t @b t @c point2d_dist -> bc
 	t @c t @a point2d_dist -> ca

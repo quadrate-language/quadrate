@@ -17,7 +17,6 @@ pub const Array = 4
 pub const Object = 5
 
 fn skip_ws(json:str pos:i64 -- new_pos:i64) {
-	-> pos -> json
 	0 -> slen
 	0 -> ch
 	json strings::len -> slen
@@ -41,7 +40,6 @@ fn skip_ws(json:str pos:i64 -- new_pos:i64) {
 /// @param pos i64 Position of opening quote
 /// @return end_pos i64 Position after closing quote
 pub fn find_str_end(json:str pos:i64 -- end_pos:i64) {
-	-> pos -> json
 	0 -> slen
 	0 -> ch
 	json strings::len -> slen
@@ -67,7 +65,6 @@ pub fn find_str_end(json:str pos:i64 -- end_pos:i64) {
 }
 
 fn find_num_end(json:str pos:i64 -- end_pos:i64) {
-	-> pos -> json
 	0 -> slen
 	0 -> ch
 	json strings::len -> slen
@@ -93,7 +90,6 @@ fn find_num_end(json:str pos:i64 -- end_pos:i64) {
 }
 
 fn find_bracket(json:str pos:i64 -- end_pos:i64) {
-	-> pos -> json
 	0 -> slen
 	0 -> open_ch
 	0 -> close_ch
@@ -140,7 +136,6 @@ fn find_bracket(json:str pos:i64 -- end_pos:i64) {
 /// @return type i64 Type constant (Null, Bool, Number, String, Array, Object)
 /// @example "{\"a\":1}" 5 json::type_at print  // 2 (Number)
 pub fn type_at(json:str pos:i64 -- type:i64) {
-	-> pos -> json
 	json pos skip_ws -> pos
 	json strings::len -> slen
 	pos slen >= if {
@@ -180,7 +175,6 @@ pub fn type_at(json:str pos:i64 -- type:i64) {
 /// @param pos i64 Position of opening quote
 /// @return value str Extracted string
 pub fn extract_str(json:str pos:i64 -- value:str) {
-	-> pos -> json
 	pos 1 + -> start
 	json pos find_str_end -> after_end
 	after_end 1 - -> end_pos
@@ -193,7 +187,6 @@ pub fn extract_str(json:str pos:i64 -- value:str) {
 }
 
 fn skip_value(json:str pos:i64 -- new_pos:i64) {
-	-> pos -> json
 	0 -> slen
 	0 -> val_type
 	0 -> ch
@@ -223,7 +216,6 @@ fn skip_value(json:str pos:i64 -- new_pos:i64) {
 }
 
 fn find_key(json:str pos:i64 key:str -- value_pos:i64) {
-	-> key -> pos -> json
 	0 -> slen
 	0 -> result
 	0 -> ch
@@ -288,7 +280,6 @@ fn find_key(json:str pos:i64 key:str -- value_pos:i64) {
 }
 
 fn parse_int(num_str:str -- value:i64) {
-	-> num_str
 	0 -> num_len
 	0 -> value
 	0 -> i
@@ -324,7 +315,6 @@ fn parse_int(num_str:str -- value:i64) {
 /// @return found i64 1 if found, 0 otherwise
 /// @example "{\"name\":\"Bob\"}" "name" json::get_string  // "Bob" 1
 pub fn get_string(json:str key:str -- value:str found:i64) {
-	-> key -> json
 	json 0 key find_key -> pos
 	pos 0 < if {
 		"" 0
@@ -340,7 +330,6 @@ pub fn get_string(json:str key:str -- value:str found:i64) {
 /// @return found i64 1 if found, 0 otherwise
 /// @example "{\"age\":42}" "age" json::get_int  // 42 1
 pub fn get_int(json:str key:str -- value:i64 found:i64) {
-	-> key -> json
 	0 -> start
 	0 -> end_pos
 	0 -> length
@@ -369,7 +358,6 @@ pub fn get_int(json:str key:str -- value:i64 found:i64) {
 /// @return found i64 1 if found, 0 otherwise
 /// @example "{\"pi\":3.14}" "pi" json::get_float  // 3.14 1
 pub fn get_float(json:str key:str -- value:f64 found:i64) {
-	-> key -> json
 	0 -> start
 	0 -> end_pos
 	0 -> length
@@ -399,7 +387,6 @@ pub fn get_float(json:str key:str -- value:f64 found:i64) {
 /// @return found i64 1 if found, 0 otherwise
 /// @example "{\"ok\":true}" "ok" json::get_bool  // 1 1
 pub fn get_bool(json:str key:str -- value:i64 found:i64) {
-	-> key -> json
 	0 -> ch
 	json 0 key find_key -> pos
 	pos 0 < if {
@@ -425,7 +412,6 @@ pub fn get_bool(json:str key:str -- value:i64 found:i64) {
 /// @return exists i64 1 if exists, 0 otherwise
 /// @example "{\"a\":1}" "a" json::has_key print  // 1
 pub fn has_key(json:str key:str -- exists:i64) {
-	-> key -> json
 	json 0 key find_key 0 >= if {
 		1
 	} else {
@@ -440,7 +426,6 @@ pub fn has_key(json:str key:str -- exists:i64) {
 /// @return found i64 1 if found, 0 otherwise
 /// @example "{\"obj\":{\"x\":1}}" "obj" json::get_object  // "{\"x\":1}" 1
 pub fn get_object(json:str key:str -- value:str found:i64) {
-	-> key -> json
 	0 -> end_pos
 	0 -> length
 	json 0 key find_key -> pos
@@ -469,7 +454,6 @@ pub fn get_object(json:str key:str -- value:str found:i64) {
 /// @return found i64 1 if found, 0 otherwise
 /// @example "{\"arr\":[1,2]}" "arr" json::get_array  // "[1,2]" 1
 pub fn get_array(json:str key:str -- value:str found:i64) {
-	-> key -> json
 	0 -> end_pos
 	0 -> length
 	json 0 key find_key -> pos
@@ -492,7 +476,6 @@ pub fn get_array(json:str key:str -- value:str found:i64) {
 }
 
 fn find_elem(json:str pos:i64 index:i64 -- elem_pos:i64) {
-	-> index -> pos -> json
 	0 -> slen
 	0 -> current_index
 	0 -> result
@@ -545,7 +528,6 @@ fn find_elem(json:str pos:i64 index:i64 -- elem_pos:i64) {
 /// @return found i64 1 if found, 0 otherwise
 /// @example "[\"a\",\"b\"]" 1 json::array_get_string  // "b" 1
 pub fn array_get_string(json:str index:i64 -- value:str found:i64) {
-	-> index -> json
 	json 0 index find_elem -> pos
 	pos 0 < if {
 		"" 0
@@ -561,7 +543,6 @@ pub fn array_get_string(json:str index:i64 -- value:str found:i64) {
 /// @return found i64 1 if found, 0 otherwise
 /// @example "[10,20,30]" 2 json::array_get_int  // 30 1
 pub fn array_get_int(json:str index:i64 -- value:i64 found:i64) {
-	-> index -> json
 	0 -> start
 	0 -> end_pos
 	0 -> length
@@ -590,7 +571,6 @@ pub fn array_get_int(json:str index:i64 -- value:i64 found:i64) {
 /// @return found i64 1 if found, 0 otherwise
 /// @example "[1.5,2.5]" 0 json::array_get_float  // 1.5 1
 pub fn array_get_float(json:str index:i64 -- value:f64 found:i64) {
-	-> index -> json
 	0 -> start
 	0 -> end_pos
 	0 -> length
@@ -620,7 +600,6 @@ pub fn array_get_float(json:str index:i64 -- value:f64 found:i64) {
 /// @return found i64 1 if found, 0 otherwise
 /// @example "[{\"a\":1},{\"b\":2}]" 1 json::array_get_object  // "{\"b\":2}" 1
 pub fn array_get_object(json:str index:i64 -- value:str found:i64) {
-	-> index -> json
 	0 -> end_pos
 	0 -> length
 	json 0 index find_elem -> pos
@@ -649,7 +628,6 @@ pub fn array_get_object(json:str index:i64 -- value:str found:i64) {
 /// @return found i64 1 if found, 0 otherwise
 /// @example "[[1,2],[3,4]]" 0 json::array_get_array  // "[1,2]" 1
 pub fn array_get_array(json:str index:i64 -- value:str found:i64) {
-	-> index -> json
 	0 -> end_pos
 	0 -> length
 	json 0 index find_elem -> pos
@@ -676,7 +654,6 @@ pub fn array_get_array(json:str index:i64 -- value:str found:i64) {
 /// @return length i64 Number of elements
 /// @example "[1,2,3]" json::array_len print  // 3
 pub fn array_len(json:str -- length:i64) {
-	-> json
 	0 -> pos
 	0 -> slen
 	0 -> count
@@ -725,7 +702,6 @@ pub fn array_len(json:str -- length:i64) {
 /// @return is_null i64 1 if null, 0 otherwise
 /// @example "null" 0 json::is_null_at print  // 1
 pub fn is_null_at(json:str pos:i64 -- is_null:i64) {
-	-> pos -> json
 	json pos skip_ws -> pos
 	json strings::len -> slen
 	pos slen >= if {
@@ -751,7 +727,6 @@ fn quote( -- q:str) { "\x22" }
 /// @return encoded str JSON-encoded string with quotes
 /// @example "hello" json::encode print  // "hello"
 pub fn encode(s:str -- encoded:str) {
-	-> s
 	s "\\" "\\\\" strings::replace!
 	"\x22" "\\\x22" strings::replace!
 	"\n" "\\n" strings::replace!
@@ -767,7 +742,6 @@ pub fn encode(s:str -- encoded:str) {
 /// @return kv str JSON key-value pair
 /// @example "name" "Bob" json::kv print  // "name":"Bob"
 pub fn kv(key:str value:str -- kv:str) {
-	-> value -> key
 	key encode ":" strings::concat value encode strings::concat
 }
 
@@ -777,7 +751,6 @@ pub fn kv(key:str value:str -- kv:str) {
 /// @return kv str JSON key-value pair
 /// @example "age" 42 json::kv_int print  // "age":42
 pub fn kv_int(key:str value:i64 -- kv:str) {
-	-> value -> key
 	key encode ":" strings::concat
 	0 -> neg
 	value 0 < if {
@@ -809,7 +782,6 @@ pub fn kv_int(key:str value:i64 -- kv:str) {
 /// @return kv str JSON key-value pair
 /// @example "active" 1 json::kv_bool print  // "active":true
 pub fn kv_bool(key:str value:i64 -- kv:str) {
-	-> value -> key
 	key encode ":" strings::concat
 	value 0 != if { "true" } else { "false" }
 	strings::concat
@@ -821,7 +793,6 @@ pub fn kv_bool(key:str value:i64 -- kv:str) {
 /// @return kv str JSON key-value pair
 /// @example "data" "{}" json::kv_raw print  // "data":{}
 pub fn kv_raw(key:str value:str -- kv:str) {
-	-> value -> key
 	key encode ":" strings::concat value strings::concat
 }
 
@@ -830,7 +801,6 @@ pub fn kv_raw(key:str value:str -- kv:str) {
 /// @return obj str JSON object
 /// @example "\"a\":1,\"b\":2" json::obj print  // {"a":1,"b":2}
 pub fn obj(content:str -- obj:str) {
-	-> content
 	"{" content strings::concat "}" strings::concat
 }
 
@@ -844,7 +814,6 @@ pub fn empty_obj( -- obj:str) { "{}" }
 /// @return arr str JSON array
 /// @example "1,2,3" json::arr print  // [1,2,3]
 pub fn arr(content:str -- arr:str) {
-	-> content
 	"[" content strings::concat "]" strings::concat
 }
 
@@ -859,6 +828,5 @@ pub fn empty_arr( -- arr:str) { "[]" }
 /// @return joined str Comma-joined fragments
 /// @example "\"a\":1" "\"b\":2" json::join print  // "a":1,"b":2
 pub fn join(a:str b:str -- joined:str) {
-	-> b -> a
 	a "," strings::concat b strings::concat
 }

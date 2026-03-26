@@ -1,17 +1,13 @@
 // Test type coercion in function calls
-fn take_float(x:f64 -- result:f64) {
-	-> val
+fn take_float(val:f64 -- result:f64) {
 	val 2.0 *
 }
 
-fn take_int(x:i64 -- result:i64) {
-	-> val
+fn take_int(val:i64 -- result:i64) {
 	val 2 *
 }
 
-fn mixed_args(a:i64 b:f64 -- result:f64) {
-	-> float_val
-	-> int_val
+fn mixed_args(int_val:i64 float_val:f64 -- result:f64) {
 	int_val cast<f64> float_val +
 }
 

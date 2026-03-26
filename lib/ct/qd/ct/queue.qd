@@ -57,8 +57,6 @@ pub struct Queue<T> {
 ///
 /// Stack: (q val -- q2)
 pub fn (q:Queue<T>) enqueue<T>(val:T -- q2:Queue<T>)! {
-	-> val
-
 	q @data -> data
 	q @head -> head
 	q @tail -> tail

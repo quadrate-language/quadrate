@@ -165,6 +165,7 @@ Index 0 is the top, 1 is second, etc. (same as `pick`).
 fn main() {
 	1 2 3
 	depth print nl  // 3
+	drop drop drop
 }
 ```
 

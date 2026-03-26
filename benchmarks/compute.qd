@@ -3,27 +3,25 @@ use time
 
 // Collatz conjecture: length of chain starting at n
 fn collatz_len(n:i64 -- len:i64) {
-	-> n
 	0 -> len
 	loop {
-		n 1 gt 0 eq if { break }
-		n 2 mod 0 eq if {
-			n 2 div -> n
+		n 1 <= if { break }
+		n 2 % 0 == if {
+			n 2 / -> n
 		} else {
-			n 3 mul 1 add -> n
+			n 3 * 1 + -> n
 		}
-		len 1 add -> len
+		len ++ -> len
 	}
 	len
 }
 
 // Longest Collatz chain under limit
 fn longest_collatz(limit:i64 -- best:i64) {
-	-> limit
 	0 -> best
 	1 limit 1 for i {
 		i collatz_len -> len
-		len best gt if {
+		len best > if {
 			len -> best
 		}
 	}
@@ -32,27 +30,24 @@ fn longest_collatz(limit:i64 -- best:i64) {
 
 // Trial division primality test
 fn is_prime(n:i64 -- result:i64) {
-	-> n
-	n 2 lt if {
+	n 2 < if {
 		0
 	} else {
-		n 2 eq if {
+		n 2 == if {
 			1
 		} else {
-			n 2 mod 0 eq if {
+			n 2 % 0 == if {
 				0
 			} else {
 				1 -> result
 				3 -> d
 				loop {
-					d d mul n gt if {
-						break
-					}
-					n d mod 0 eq if {
+					d d * n > if { break }
+					n d % 0 == if {
 						0 -> result
 						break
 					}
-					d 2 add -> d
+					d 2 + -> d
 				}
 				result
 			}
@@ -62,11 +57,10 @@ fn is_prime(n:i64 -- result:i64) {
 
 // Count primes under limit
 fn count_primes(limit:i64 -- count:i64) {
-	-> limit
 	0 -> count
 	2 limit 1 for i {
 		i is_prime if {
-			count 1 add -> count
+			count ++ -> count
 		}
 	}
 	count
@@ -74,25 +68,23 @@ fn count_primes(limit:i64 -- count:i64) {
 
 // Ackermann function
 fn ack(m:i64 n:i64 -- result:i64) {
-	-> n -> m
-	m 0 eq if {
-		n 1 add
+	m 0 == if {
+		n 1 +
 	} else {
-		n 0 eq if {
-			m 1 sub 1 ack
+		n 0 == if {
+			m 1 - 1 ack
 		} else {
-			m 1 sub m n 1 sub ack ack
+			m 1 - m n 1 - ack ack
 		}
 	}
 }
 
 // Popcount: count set bits in n
 fn popcount(n:i64 -- count:i64) {
-	-> n
 	0 -> count
 	loop {
-		n 0 gt 0 eq if { break }
-		n 1 and count add -> count
+		n 0 <= if { break }
+		n 1 and count + -> count
 		n 1 shr -> n
 	}
 	count
@@ -100,33 +92,30 @@ fn popcount(n:i64 -- count:i64) {
 
 // Total popcount from 1 to limit
 fn total_popcount(limit:i64 -- total:i64) {
-	-> limit
 	0 -> total
-	1 limit 1 add 1 for i {
-		i popcount total add -> total
+	1 limit 1 + 1 for i {
+		i popcount total + -> total
 	}
 	total
 }
 
 // Takeuchi function
 fn tak(x:i64 y:i64 z:i64 -- result:i64) {
-	-> z -> y -> x
-	x y gt 0 eq if {
+	x y <= if {
 		z
 	} else {
-		x 1 sub y z tak
-		y 1 sub z x tak
-		z 1 sub x y tak
+		x 1 - y z tak
+		y 1 - z x tak
+		z 1 - x y tak
 		tak
 	}
 }
 
 // GCD using Euclidean algorithm
 fn gcd(a:i64 b:i64 -- result:i64) {
-	-> b -> a
 	loop {
-		b 0 eq if { break }
-		a b mod -> t
+		b 0 == if { break }
+		a b % -> t
 		b -> a
 		t -> b
 	}
@@ -135,11 +124,10 @@ fn gcd(a:i64 b:i64 -- result:i64) {
 
 // Euler's totient: count integers 1..n-1 coprime to n
 fn euler_totient(n:i64 -- count:i64) {
-	-> n
 	0 -> count
 	1 n 1 for i {
-		i n gcd 1 eq if {
-			count 1 add -> count
+		i n gcd 1 == if {
+			count ++ -> count
 		}
 	}
 	count
@@ -147,32 +135,29 @@ fn euler_totient(n:i64 -- count:i64) {
 
 // Sum of totients 1..limit
 fn sum_totients(limit:i64 -- total:i64) {
-	-> limit
 	0 -> total
-	1 limit 1 add 1 for i {
-		i euler_totient total add -> total
+	1 limit 1 + 1 for i {
+		i euler_totient total + -> total
 	}
 	total
 }
 
 // Sum of digits of n
 fn digit_sum(n:i64 -- sum:i64) {
-	-> n
 	0 -> sum
 	loop {
-		n 0 gt 0 eq if { break }
-		n 10 mod sum add -> sum
-		n 10 div -> n
+		n 0 <= if { break }
+		n 10 % sum + -> sum
+		n 10 / -> n
 	}
 	sum
 }
 
 // Total digit sum from 1 to limit
 fn total_digit_sum(limit:i64 -- total:i64) {
-	-> limit
 	0 -> total
-	1 limit 1 add 1 for i {
-		i digit_sum total add -> total
+	1 limit 1 + 1 for i {
+		i digit_sum total + -> total
 	}
 	total
 }
@@ -189,13 +174,13 @@ fn main() {
 		time::now -> start
 		limit longest_collatz -> r
 		time::now start - -> elapsed
-		elapsed best lt if {
+		elapsed best < if {
 			elapsed -> best
 			r -> result
 		}
 	}
 	limit "Collatz longest chain under %d:\n" fmt::printf
-	best 1000000 div "  Time: %d ms\n" fmt::printf
+	best 1000000 / "  Time: %d ms\n" fmt::printf
 	result "  Result: %d\n" fmt::printf
 
 	// Benchmark 2: Prime counting
@@ -206,13 +191,13 @@ fn main() {
 		time::now -> start
 		limit count_primes -> r
 		time::now start - -> elapsed
-		elapsed best lt if {
+		elapsed best < if {
 			elapsed -> best
 			r -> result
 		}
 	}
 	limit "Prime count under %d:\n" fmt::printf
-	best 1000000 div "  Time: %d ms\n" fmt::printf
+	best 1000000 / "  Time: %d ms\n" fmt::printf
 	result "  Result: %d\n" fmt::printf
 
 	// Benchmark 3: Ackermann
@@ -224,13 +209,13 @@ fn main() {
 		time::now -> start
 		m n ack -> r
 		time::now start - -> elapsed
-		elapsed best lt if {
+		elapsed best < if {
 			elapsed -> best
 			r -> result
 		}
 	}
 	m n "Ackermann(%d, %d):\n" fmt::printf
-	best 1000000 div "  Time: %d ms\n" fmt::printf
+	best 1000000 / "  Time: %d ms\n" fmt::printf
 	result "  Result: %d\n" fmt::printf
 
 	// Benchmark 4: Popcount
@@ -241,13 +226,13 @@ fn main() {
 		time::now -> start
 		limit total_popcount -> r
 		time::now start - -> elapsed
-		elapsed best lt if {
+		elapsed best < if {
 			elapsed -> best
 			r -> result
 		}
 	}
 	limit "Popcount sum 1..%d:\n" fmt::printf
-	best 1000000 div "  Time: %d ms\n" fmt::printf
+	best 1000000 / "  Time: %d ms\n" fmt::printf
 	result "  Result: %d\n" fmt::printf
 
 	// Benchmark 5: Takeuchi
@@ -260,13 +245,13 @@ fn main() {
 		time::now -> start
 		x y z tak -> r
 		time::now start - -> elapsed
-		elapsed best lt if {
+		elapsed best < if {
 			elapsed -> best
 			r -> result
 		}
 	}
 	x y z "Tak(%d, %d, %d):\n" fmt::printf
-	best 1000000 div "  Time: %d ms\n" fmt::printf
+	best 1000000 / "  Time: %d ms\n" fmt::printf
 	result "  Result: %d\n" fmt::printf
 
 	// Benchmark 6: Euler totient sum
@@ -277,13 +262,13 @@ fn main() {
 		time::now -> start
 		limit sum_totients -> r
 		time::now start - -> elapsed
-		elapsed best lt if {
+		elapsed best < if {
 			elapsed -> best
 			r -> result
 		}
 	}
 	limit "Euler totient sum(1..%d):\n" fmt::printf
-	best 1000000 div "  Time: %d ms\n" fmt::printf
+	best 1000000 / "  Time: %d ms\n" fmt::printf
 	result "  Result: %d\n" fmt::printf
 
 	// Benchmark 7: Digit sum
@@ -294,12 +279,12 @@ fn main() {
 		time::now -> start
 		limit total_digit_sum -> r
 		time::now start - -> elapsed
-		elapsed best lt if {
+		elapsed best < if {
 			elapsed -> best
 			r -> result
 		}
 	}
 	limit "Digit sum(1..%d):\n" fmt::printf
-	best 1000000 div "  Time: %d ms\n" fmt::printf
+	best 1000000 / "  Time: %d ms\n" fmt::printf
 	result "  Result: %d\n" fmt::printf
 }

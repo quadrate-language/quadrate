@@ -7,11 +7,9 @@ struct Circle {
 }
 
 fn make_circle(p:Point r:f64 -- c:Circle) {
-	-> r -> p
 	Circle { center = p radius = r }
 }
 
 fn circle_area(c:Circle -- area:f64) {
-	-> c
 	math::Pi c @radius c @radius * *
 }

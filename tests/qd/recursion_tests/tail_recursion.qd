@@ -1,7 +1,5 @@
 // Test tail-recursive patterns (might be optimized)
-fn factorial_tail(n:i64 acc:i64 -- result:i64) {
-	-> accumulator
-	-> num
+fn factorial_tail(num:i64 accumulator:i64 -- result:i64) {
 	num 1 <= if {
 		accumulator
 	} else {
@@ -9,9 +7,7 @@ fn factorial_tail(n:i64 acc:i64 -- result:i64) {
 	}
 }
 
-fn sum_tail(n:i64 acc:i64 -- result:i64) {
-	-> accumulator
-	-> num
+fn sum_tail(num:i64 accumulator:i64 -- result:i64) {
 	num 0 <= if {
 		accumulator
 	} else {
@@ -19,8 +15,7 @@ fn sum_tail(n:i64 acc:i64 -- result:i64) {
 	}
 }
 
-fn countdown_tail(n:i64 -- ) {
-	-> num
+fn countdown_tail(num:i64 -- ) {
 	num 0 <= if {
 		// done
 	} else {

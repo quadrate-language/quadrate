@@ -58,8 +58,6 @@ pub struct Deque<T> {
 ///
 /// Stack: (d val -- d2)
 pub fn (d:Deque<T>) push_back<T>(val:T -- d2:Deque<T>)! {
-	-> val
-
 	d @data -> data
 	d @head -> head
 	d @tail -> tail
@@ -104,8 +102,6 @@ pub fn (d:Deque<T>) push_back<T>(val:T -- d2:Deque<T>)! {
 ///
 /// Stack: (d val -- d2)
 pub fn (d:Deque<T>) push_front<T>(val:T -- d2:Deque<T>)! {
-	-> val
-
 	d @data -> data
 	d @head -> head
 	d @tail -> tail

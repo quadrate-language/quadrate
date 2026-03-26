@@ -1,6 +1,6 @@
 // Test: Anonymous function with no captures (plain function pointer)
 fn main() {
-    fn (a:i64 b:i64 -- r:i64) { -> b -> a a b add } -> add_fn
+    fn (a:i64 b:i64 -- r:i64) { a b add } -> add_fn
 
     3 4 add_fn call print nl
     10 20 add_fn call print nl

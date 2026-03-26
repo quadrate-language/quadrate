@@ -59,8 +59,6 @@ pub struct Vec<T> {
 ///
 /// Stack: (v elem -- v2)
 pub fn (v:Vec<T>) push<T>(elem:T -- v2:Vec<T>)! {
-	-> elem
-
 	v @len -> len
 	v @cap -> cap
 	v @data -> data
@@ -112,8 +110,6 @@ pub fn (v:Vec<T>) pop<T>(-- elem:T v2:Vec<T>)! {
 ///
 /// Stack: (v idx -- elem)
 pub fn (v:Vec<T>) get<T>(idx:i64 -- elem:T)! {
-	-> idx
-
 	v @len -> len
 	v @data -> data
 
@@ -134,9 +130,6 @@ pub fn (v:Vec<T>) get<T>(idx:i64 -- elem:T)! {
 ///
 /// Stack: (v idx elem -- v2)
 pub fn (v:Vec<T>) set<T>(idx:i64 elem:T -- v2:Vec<T>)! {
-	-> elem
-	-> idx
-
 	v @len -> len
 	v @cap -> cap
 	v @data -> data

@@ -4,8 +4,7 @@ struct Item {
 	next:*Item
 }
 
-fn list_sum(head:ptr -- total:i64) {
-	-> cur
+fn list_sum(cur:ptr -- total:i64) {
 	0 -> sum
 	loop {
 		cur null eq if { break }
@@ -15,12 +14,11 @@ fn list_sum(head:ptr -- total:i64) {
 	sum
 }
 
-fn list_len(head:ptr -- n:i64) {
-	-> cur
+fn list_len(cur:ptr -- n:i64) {
 	0 -> count
 	loop {
 		cur null eq if { break }
-		count 1 + -> count
+		count ++ -> count
 		cur @next -> cur
 	}
 	count

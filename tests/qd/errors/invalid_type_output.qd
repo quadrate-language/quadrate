@@ -1,4 +1,4 @@
-fn test(x:i64 -- result:float64) {
+fn test(i64 -- float64) {
 	dup
 }
 

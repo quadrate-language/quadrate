@@ -2,7 +2,6 @@
 use io
 
 fn read_or_default(path:str -- content:str) {
-	-> path
 	"" -> content
 	path io::read_file switch {
 		Ok { -> content }

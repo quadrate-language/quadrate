@@ -8,8 +8,7 @@ Add type parameters in angle brackets after the function name:
 
 ```qd
 fn identity<T>(x:T -- y:T) {
-	-> val
-	val
+	x
 }
 
 fn main() {
@@ -27,8 +26,7 @@ Functions can have more than one type parameter:
 
 ```qd
 fn pair<A, B>(a:A b:B -- a:A b:B) {
-	-> second -> first
-	first second
+	a b
 }
 
 fn main() {

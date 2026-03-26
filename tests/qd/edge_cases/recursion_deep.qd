@@ -1,5 +1,4 @@
-fn countdown(n:i64 -- ) {
-	-> num
+fn countdown(num:i64 -- ) {
 	num 0 gt
 	if {
 		num print nl
