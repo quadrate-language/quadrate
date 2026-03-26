@@ -4,8 +4,7 @@ pub enum Status {
 	Pending = 100
 }
 
-pub fn status_name(s:i64 -- ) {
-	-> st
+pub fn status_name(st:i64 -- ) {
 	st switch {
 		Status::Ok { "ok" print nl }
 		Status::Error { "error" print nl }

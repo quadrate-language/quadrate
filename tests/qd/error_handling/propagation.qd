@@ -1,6 +1,5 @@
 // Test error propagation patterns
 fn might_fail(should_fail:i64 -- result:i64)! {
-	-> should_fail
 	should_fail if {
 		0 "intentional failure" 99 panic
 	}
@@ -8,7 +7,6 @@ fn might_fail(should_fail:i64 -- result:i64)! {
 }
 
 fn double_it(x:i64 -- result:i64)! {
-	-> x
 	x might_fail if {
 		-> val
 		val 2 *
@@ -18,7 +16,6 @@ fn double_it(x:i64 -- result:i64)! {
 }
 
 fn triple_chain(x:i64 -- result:i64)! {
-	-> x
 	x might_fail if {
 		-> val
 		0 might_fail if {

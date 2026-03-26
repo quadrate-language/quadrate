@@ -9,7 +9,6 @@ use testing
 // Ray-sphere intersection (half-b optimization)
 // Returns closest t > 0.001, or -1.0 if no hit
 fn hit(origin:math::Vec3 dir:math::Vec3 center:math::Vec3 rad:f64 -- t:f64) {
-	-> rad -> center -> dir -> origin
 	origin center subtract -> oc
 	dir oc dot -> half_b
 	half_b half_b * oc length_sq - rad rad * + -> disc
@@ -33,7 +32,6 @@ fn hit(origin:math::Vec3 dir:math::Vec3 center:math::Vec3 rad:f64 -- t:f64) {
 
 // Clamp float to [0, 255] integer
 fn to_byte(v:f64 -- b:i64) {
-	-> v
 	v 0.0 < if {
 		0
 	} else {

@@ -2,7 +2,6 @@
 use math
 
 fn approx_eq(a:f64 b:f64 -- result:i64) {
-	-> b -> a
 	a b - math::abs 0.001 <
 }
 

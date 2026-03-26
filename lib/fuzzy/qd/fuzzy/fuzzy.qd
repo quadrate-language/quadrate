@@ -2,17 +2,17 @@ use mem
 use strings
 
 /// Minimum of two integers.
-fn min2(a:i64 b:i64 -- min:i64) {
+fn min2(i64 i64 -- i64) {
 	dup2 < if { drop } else { nip }
 }
 
 /// Minimum of three integers.
-fn min3(a:i64 b:i64 c:i64 -- min:i64) {
+fn min3(i64 i64 i64 -- i64) {
 	min2 min2
 }
 
 /// Maximum of two integers.
-fn max2(a:i64 b:i64 -- max:i64) {
+fn max2(i64 i64 -- i64) {
 	dup2 > if { drop } else { nip }
 }
 
@@ -26,7 +26,6 @@ fn max2(a:i64 b:i64 -- max:i64) {
 /// @example "hello" "hello" fuzzy::distance -> 0
 /// @example "" "abc" fuzzy::distance -> 3
 pub fn distance(a:str b:str -- dist:i64) {
-	-> b -> a
 	a strings::len -> len_a
 	b strings::len -> len_b
 
@@ -105,7 +104,6 @@ pub fn distance(a:str b:str -- dist:i64) {
 /// @example "hello" "hallo" fuzzy::similarity -> 0.8
 /// @example "abc" "xyz" fuzzy::similarity -> 0.0
 pub fn similarity(a:str b:str -- sim:f64) {
-	-> b -> a
 	a strings::len -> len_a
 	b strings::len -> len_b
 
@@ -124,7 +122,7 @@ pub fn similarity(a:str b:str -- sim:f64) {
 /// @return matches i64 1 if similarity >= threshold, 0 otherwise
 /// @example "helo" "hello" 0.7 fuzzy::matches -> 1
 /// @example "xyz" "hello" 0.7 fuzzy::matches -> 0
-pub fn matches(query:str target:str threshold:f64 -- matches:i64) {
+pub fn matches(str str f64 -- i64) {
 	rot rot similarity swap >= if { 1 } else { 0 }
 }
 
@@ -143,8 +141,6 @@ pub fn matches(query:str target:str threshold:f64 -- matches:i64) {
 /// @example "sin" "asin" fuzzy::score -> ~350 (substring)
 /// @example "rf" "read_file" fuzzy::score -> 200 (word boundary)
 pub fn score(query:str target:str -- score:i64) {
-	-> target -> query
-
 	query strings::len -> qlen
 	target strings::len -> tlen
 
@@ -192,7 +188,6 @@ pub fn score(query:str target:str -- score:i64) {
 /// @param target str Target string with potential word boundaries
 /// @return matches i64 1 if all query chars match at boundaries, 0 otherwise
 fn word_boundary_match(query:str target:str -- matches:i64) {
-	-> target -> query
 	query strings::len -> qlen
 	target strings::len -> tlen
 
@@ -237,8 +232,6 @@ fn word_boundary_match(query:str target:str -- matches:i64) {
 /// @return results ptr Array of matching strings (caller must free)
 /// @return count i64 Number of results
 pub fn best(query:str items:ptr max_results:i64 -- results:ptr count:i64) {
-	-> max_results -> items -> query
-
 	items len -> num_items
 
 	// Create arrays for (score, index) pairs using raw memory
@@ -318,7 +311,7 @@ pub fn best(query:str items:ptr max_results:i64 -- results:ptr count:i64) {
 /// @param s str String to check
 /// @param prefix str Prefix to look for
 /// @return starts i64 1 if s starts with prefix, 0 otherwise
-pub fn starts_with_ci(s:str prefix:str -- starts:i64) {
+pub fn starts_with_ci(str str -- i64) {
 	swap strings::lower swap strings::lower strings::starts_with
 }
 
@@ -326,6 +319,6 @@ pub fn starts_with_ci(s:str prefix:str -- starts:i64) {
 /// @param s str String to search in
 /// @param substr str Substring to look for
 /// @return contains i64 1 if s contains substr, 0 otherwise
-pub fn contains_ci(s:str substr:str -- contains:i64) {
+pub fn contains_ci(str str -- i64) {
 	swap strings::lower swap strings::lower strings::contains
 }

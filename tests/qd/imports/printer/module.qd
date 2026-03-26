@@ -3,11 +3,11 @@ import "libfmt.a" as "fmt" {
 	fn printf(format:str -- )
 }
 
-pub fn print_number(num:i64 -- ) {
+pub fn print_number(i64 -- ) {
 	"Number: %d\n" fmt::printf
 }
 
-pub fn print_message(msg:str -- ) {
+pub fn print_message(str -- ) {
 	"Message: %s\n" fmt::printf
 }
 

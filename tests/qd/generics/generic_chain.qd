@@ -1,12 +1,10 @@
 // Test chaining generic function calls
 
-fn identity<T>(x:T -- y:T) {
-	-> val
+fn identity<T>(val:T -- y:T) {
 	val
 }
 
-fn wrap<T>(x:T -- y:T) {
-	-> val
+fn wrap<T>(val:T -- y:T) {
 	val identity
 }
 

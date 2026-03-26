@@ -3,7 +3,6 @@ use strconv
 use strings
 
 fn parse_two(a:str b:str -- x:i64 y:i64)! {
-	-> b -> a
 	a strconv::atoi?
 	-> x
 	b strconv::atoi?
@@ -12,7 +11,6 @@ fn parse_two(a:str b:str -- x:i64 y:i64)! {
 }
 
 fn safe_char_at(s:str idx:i64 -- ch:i64)! {
-	-> idx -> s
 	s idx strings::char_at?
 }
 

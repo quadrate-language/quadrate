@@ -2,23 +2,19 @@
 use http
 
 fn global_middleware(c:ptr -- ) {
-	-> c
 	// Middleware can set headers, log, etc.
 	// For this test we just verify it's called
 }
 
 fn group_middleware(c:ptr -- ) {
-	-> c
 	// Group-specific middleware
 }
 
 fn handle_home(c:ptr -- ) {
-	-> c
 	c 200 "Home" http::string
 }
 
 fn handle_api_data(c:ptr -- ) {
-	-> c
 	c 200 "Data" http::json
 }
 

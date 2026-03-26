@@ -9,8 +9,7 @@ struct Point {
 	y:f64
 }
 
-fn get_age(p:Person -- age:f64) {
-	-> person
+fn get_age(person:Person -- age:f64) {
 	person @age  // Expects 'age' field
 }
 

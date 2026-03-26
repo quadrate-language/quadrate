@@ -27,7 +27,7 @@ fi
 QUADRATE_ROOT_DEFAULT="$PROJECT_ROOT/$DIST_DATADIR/quadrate"
 QUADRATE_LIBDIR_DEFAULT="$PROJECT_ROOT/dist/lib"
 FAILED_TESTS_FILE="$PROJECT_ROOT/.failed_tests"
-TEMP_DIR="/tmp/quadrate_tests_$$"
+TEMP_DIR="${QUADRATE_TEST_TMPDIR:-/tmp}/quadrate_tests_$$"
 PARALLEL_JOBS="${PARALLEL_JOBS:-$(nproc 2>/dev/null || echo 4)}"
 
 # Note: Don't export QUADRATE_ROOT/LIBDIR globally - only for qd tests

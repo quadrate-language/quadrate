@@ -2,22 +2,18 @@
 use http
 
 fn handle_root(c:ptr -- ) {
-	-> c
 	c 200 "Hello" http::string
 }
 
 fn handle_users(c:ptr -- ) {
-	-> c
 	c 200 "Users list" http::string
 }
 
 fn handle_users_post(c:ptr -- ) {
-	-> c
 	c 201 "Created" http::string
 }
 
 fn handle_user_by_id(c:ptr -- ) {
-	-> c
 	c "id" http::param -> id
 	c 200 id http::string
 }

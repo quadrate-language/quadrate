@@ -1,11 +1,9 @@
 fn bar(x:i64 -- result:i64)! {
-	-> x
 	x 0 < if { "bar: negative" 1 panic }
 	x 10 +
 }
 
 fn foo(x:i64 -- result:i64)! {
-	-> x
 	x bar switch {
 		Ok { }
 		_ { err panic }

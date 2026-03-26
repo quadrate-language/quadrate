@@ -56,7 +56,6 @@ fn make_dec_table( -- tbl:ptr) {
 /// @return encoded str Base64-encoded string
 /// @example "Hello" base64::encode -> b64
 pub fn encode(input:str -- encoded:str) {
-	-> input
 	input mem::from_string -> inlen -> buf
 
 	// Build lookup table
@@ -136,7 +135,6 @@ pub fn encode(input:str -- encoded:str) {
 /// @return decoded str Decoded string
 /// @example "SGVsbG8=" base64::decode -> text
 pub fn decode(encoded:str -- decoded:str) {
-	-> encoded
 	encoded mem::from_string -> enclen -> inbuf
 
 	enclen 0 == if {

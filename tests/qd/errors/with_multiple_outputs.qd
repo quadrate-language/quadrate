@@ -1,8 +1,8 @@
-fn add_and_sub(a:i64 b:i64 -- sum:i64 diff:i64)! {
+fn add_and_sub(i64 i64 -- i64 i64)! {
 	swap dup rot dup rot add rot rot sub
 }
 
-fn divide_and_double(a:i64 b:i64 -- quotient:i64 doubled:i64)! {
+fn divide_and_double(i64 i64 -- i64 i64)! {
 	dup 0 > if {
 		/ dup 2 mul
 	} else {

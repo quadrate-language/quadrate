@@ -1,7 +1,6 @@
 // Test generic identity function with different types
 
-fn identity<T>(x:T -- y:T) {
-	-> val
+fn identity<T>(val:T -- y:T) {
 	val
 }
 

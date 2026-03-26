@@ -15,8 +15,7 @@ struct Person {
 }
 
 // Section 3.3 - Generic Types
-fn identity<T>(x:T -- y:T) {
-    -> val
+fn identity<T>(val:T -- y:T) {
     val
 }
 
@@ -30,25 +29,24 @@ struct Pair<A, B> {
 }
 
 // Section 3.4 - Function Types
-fn double(x:i64 -- r:i64) {
+fn double(i64 -- i64) {
     2 *
 }
 
-fn apply(x:i64 f:ptr -- result:i64) {
-    -> func -> val
+fn apply(val:i64 func:ptr -- result:i64) {
     val func call
 }
 
 // Section 4.3 - Stack Effect Signatures
-fn add(a:i64 b:i64 -- sum:i64) {
+fn add(i64 i64 -- i64) {
     +
 }
 
-fn swap_pair(a:i64 b:i64 -- r1:i64 r2:i64) {
+fn swap_pair(i64 i64 -- i64 i64) {
     swap
 }
 
-fn print_value(x:i64 -- ) {
+fn print_value(i64 -- ) {
     print nl
 }
 
@@ -57,9 +55,7 @@ fn get_constant( -- c:i64) {
 }
 
 // Section 4.4 - Local Variables
-fn example_locals(x:i64 y:i64 -- result:i64) {
-    -> b
-    -> a
+fn example_locals(a:i64 b:i64 -- result:i64) {
     a b +
 }
 
@@ -67,12 +63,11 @@ fn example_locals(x:i64 y:i64 -- result:i64) {
 struct Vec2 { x:f64 y:f64 }
 
 fn length(v:Vec2 -- len:f64) {
-    -> v
     v @x v @x * v @y v @y * + math::sqrt
 }
 
 // Section 10.1 - Fallible Functions
-fn divide(a:i64 b:i64 -- result:i64)! {
+fn divide(i64 i64 -- i64)! {
     dup 0 == if {
         drop drop
         "division by zero" -1 panic
@@ -168,7 +163,7 @@ fn main() {
     fn ( -- r:i64) { a b + } -> sum_fn
     sum_fn call print nl        // 30
 
-    fn (x:i64 y:i64 -- r:i64) { -> bb -> aa aa bb + } -> add_fn
+    fn (aa:i64 bb:i64 -- r:i64) { aa bb + } -> add_fn
     3 4 add_fn call print nl    // 7
 
     // Section 7.6 - Function Pointers

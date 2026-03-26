@@ -7,7 +7,7 @@
 /// @param num_bits i64 Number of bits to keep from LSB
 /// @return result i64 Masked value
 /// @example 0xFF 4 bits::mask print  // 15
-pub fn mask(value:i64 num_bits:i64 -- result:i64) {
+pub fn mask(i64 i64 -- result:i64) {
 	dup 64 >= if {
 		drop
 	} else {
@@ -21,7 +21,7 @@ pub fn mask(value:i64 num_bits:i64 -- result:i64) {
 /// @param num_bits i64 Number of bits to extract
 /// @return result i64 Extracted bits, right-aligned
 /// @example 0b11010110 2 3 bits::extract print  // 5
-pub fn extract(value:i64 start_bit:i64 num_bits:i64 -- result:i64) {
+pub fn extract(i64 i64 i64 -- result:i64) {
 	rot rot shr swap mask
 }
 
@@ -32,8 +32,7 @@ pub fn extract(value:i64 start_bit:i64 num_bits:i64 -- result:i64) {
 /// @param num_bits i64 Number of bits to set
 /// @return result i64 Modified target
 /// @example 0 0b101 2 3 bits::set_bits print  // 20 (0b10100)
-pub fn set_bits(target:i64 value:i64 start_bit:i64 num_bits:i64 -- result:i64) {
-	-> nb -> sb -> val -> tgt
+pub fn set_bits(tgt:i64 val:i64 sb:i64 nb:i64 -- result:i64) {
 	1 nb shl 1 sub -> bit_mask
 	bit_mask sb shl -> positioned_mask
 	positioned_mask not tgt and -> cleared
@@ -46,8 +45,7 @@ pub fn set_bits(target:i64 value:i64 start_bit:i64 num_bits:i64 -- result:i64) {
 /// @param width i64 Bit width to rotate within
 /// @return result i64 Rotated value
 /// @example 0b0011 1 4 bits::rotate_left print  // 6 (0b0110)
-pub fn rotate_left(value:i64 bits:i64 width:i64 -- result:i64) {
-	-> w -> b -> v
+pub fn rotate_left(v:i64 b:i64 w:i64 -- result:i64) {
 	v w b sub shr -> high
 	v b shl w mask -> low
 	high low or
@@ -59,8 +57,7 @@ pub fn rotate_left(value:i64 bits:i64 width:i64 -- result:i64) {
 /// @param width i64 Bit width to rotate within
 /// @return result i64 Rotated value
 /// @example 0b0110 1 4 bits::rotate_right print  // 3 (0b0011)
-pub fn rotate_right(value:i64 bits:i64 width:i64 -- result:i64) {
-	-> w -> b -> v
+pub fn rotate_right(v:i64 b:i64 w:i64 -- result:i64) {
 	v b mask w b sub shl -> low
 	v b shr w mask -> high
 	high low or
@@ -70,7 +67,7 @@ pub fn rotate_right(value:i64 bits:i64 width:i64 -- result:i64) {
 /// @param value i64 Value to count
 /// @return count i64 Number of 1 bits
 /// @example 0b1010110 bits::popcount print  // 4
-pub fn popcount(value:i64 -- count:i64) {
+pub fn popcount(i64 -- count:i64) {
 	0 swap
 	0 64 1 for it {
 		dup 1 and rot add swap 1 shr
@@ -83,8 +80,7 @@ pub fn popcount(value:i64 -- count:i64) {
 /// @param width i64 Number of bits to reverse
 /// @return result i64 Reversed value
 /// @example 0b1011 4 bits::reverse_bits print  // 13 (0b1101)
-pub fn reverse_bits(value:i64 width:i64 -- result:i64) {
-	-> w -> v
+pub fn reverse_bits(v:i64 w:i64 -- result:i64) {
 	0 -> result
 	0 w 1 for it {
 		result 1 shl v 1 and or -> result
@@ -98,7 +94,7 @@ pub fn reverse_bits(value:i64 width:i64 -- result:i64) {
 /// @param bit_pos i64 Bit position (0 = LSB)
 /// @return flag i64 1 if set, 0 if not
 /// @example 0b1010 1 bits::has_bit print  // 1
-pub fn has_bit(value:i64 bit_pos:i64 -- flag:i64) {
+pub fn has_bit(i64 i64 -- flag:i64) {
 	shr 1 and
 }
 
@@ -107,7 +103,7 @@ pub fn has_bit(value:i64 bit_pos:i64 -- flag:i64) {
 /// @param bit_pos i64 Bit position to set
 /// @return result i64 Value with bit set
 /// @example 0b1000 1 bits::set_bit print  // 10 (0b1010)
-pub fn set_bit(value:i64 bit_pos:i64 -- result:i64) {
+pub fn set_bit(i64 i64 -- result:i64) {
 	1 swap shl or
 }
 
@@ -116,7 +112,7 @@ pub fn set_bit(value:i64 bit_pos:i64 -- result:i64) {
 /// @param bit_pos i64 Bit position to clear
 /// @return result i64 Value with bit cleared
 /// @example 0b1010 1 bits::clear_bit print  // 8 (0b1000)
-pub fn clear_bit(value:i64 bit_pos:i64 -- result:i64) {
+pub fn clear_bit(i64 i64 -- result:i64) {
 	1 swap shl not and
 }
 
@@ -125,7 +121,7 @@ pub fn clear_bit(value:i64 bit_pos:i64 -- result:i64) {
 /// @param bit_pos i64 Bit position to toggle
 /// @return result i64 Value with bit toggled
 /// @example 0b1010 0 bits::toggle_bit print  // 11 (0b1011)
-pub fn toggle_bit(value:i64 bit_pos:i64 -- result:i64) {
+pub fn toggle_bit(i64 i64 -- result:i64) {
 	1 swap shl xor
 }
 
@@ -133,8 +129,7 @@ pub fn toggle_bit(value:i64 bit_pos:i64 -- result:i64) {
 /// @param value i64 Value to count
 /// @return count i64 Number of leading zero bits (0-64)
 /// @example 0x0F00000000000000 bits::clz print  // 4
-pub fn clz(value:i64 -- count:i64) {
-	-> v
+pub fn clz(v:i64 -- count:i64) {
 	v 0 == if {
 		64
 	} else {
@@ -152,8 +147,7 @@ pub fn clz(value:i64 -- count:i64) {
 /// @param value i64 Value to count
 /// @return count i64 Number of trailing zero bits (0-64)
 /// @example 0x100 bits::ctz print  // 8
-pub fn ctz(value:i64 -- count:i64) {
-	-> v
+pub fn ctz(v:i64 -- count:i64) {
 	v 0 == if {
 		64
 	} else {
@@ -172,8 +166,7 @@ pub fn ctz(value:i64 -- count:i64) {
 /// @return flag i64 1 if power of two, 0 otherwise
 /// @example 8 bits::is_power_of_two print  // 1
 /// @example 7 bits::is_power_of_two print  // 0
-pub fn is_power_of_two(value:i64 -- flag:i64) {
-	-> v
+pub fn is_power_of_two(v:i64 -- flag:i64) {
 	v 0 > v v 1 - and 0 == and
 }
 
@@ -182,8 +175,7 @@ pub fn is_power_of_two(value:i64 -- flag:i64) {
 /// @return result i64 Next power of two
 /// @example 5 bits::next_power_of_two print  // 8
 /// @example 8 bits::next_power_of_two print  // 8
-pub fn next_power_of_two(value:i64 -- result:i64) {
-	-> v
+pub fn next_power_of_two(v:i64 -- result:i64) {
 	v 1 <= if {
 		1
 	} else {
@@ -203,8 +195,7 @@ pub fn next_power_of_two(value:i64 -- result:i64) {
 /// @return result i64 Floor of log2(value)
 /// @example 8 bits::log2 print  // 3
 /// @example 15 bits::log2 print  // 3
-pub fn log2(value:i64 -- result:i64) {
-	-> v
+pub fn log2(v:i64 -- result:i64) {
 	v 0 <= if {
 		-1
 	} else {
@@ -216,8 +207,7 @@ pub fn log2(value:i64 -- result:i64) {
 /// @param value i64 Input value
 /// @return result i64 Highest set bit as power of two, 0 if input is 0
 /// @example 0b1010 bits::highest_bit print  // 8 (0b1000)
-pub fn highest_bit(value:i64 -- result:i64) {
-	-> v
+pub fn highest_bit(v:i64 -- result:i64) {
 	v 0 == if {
 		0
 	} else {
@@ -229,7 +219,6 @@ pub fn highest_bit(value:i64 -- result:i64) {
 /// @param value i64 Input value
 /// @return result i64 Lowest set bit as power of two, 0 if input is 0
 /// @example 0b1010 bits::lowest_bit print  // 2 (0b0010)
-pub fn lowest_bit(value:i64 -- result:i64) {
-	-> v
+pub fn lowest_bit(v:i64 -- result:i64) {
 	v v neg and
 }

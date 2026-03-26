@@ -5,25 +5,21 @@ use http
 
 // Handler for the root path
 fn handle_home(c:ptr -- ) {
-	-> c
 	c http::StatusOK "<h1>Welcome to Quadrate!</h1><p>Try these routes:</p><ul><li><a href='/hello'>/hello</a></li><li><a href='/json'>/json</a></li><li><a href='/users/42'>/users/42</a></li></ul>" http::html
 }
 
 // Handler for /hello
 fn handle_hello(c:ptr -- ) {
-	-> c
 	c http::StatusOK "Hello, World!" http::string
 }
 
 // Handler for /json - returns JSON response
 fn handle_json(c:ptr -- ) {
-	-> c
 	c http::StatusOK "{}" http::json
 }
 
 // Handler with path parameter: /users/:id
 fn handle_user(c:ptr -- ) {
-	-> c
 	c "id" http::param -> id
 	c http::StatusOK id http::string
 }

@@ -114,7 +114,6 @@ import "libthread.a" as "thread" {
 /// @param ms i64 Sleep duration in milliseconds
 /// @example 1000 thread::sleep  // Sleep 1 second
 pub fn sleep(ms:i64 -- ) {
-	-> ms
 	ms thread::raw_sleep
 }
 
@@ -134,7 +133,6 @@ pub struct Thread {
 /// @error ErrCreate Failed to create thread
 /// @example &worker thread::spawn! -> t
 pub fn spawn(func:ptr -- t:Thread)! {
-	-> func
 	func thread::raw_spawn! -> h
 	Thread { handle = h }
 }
@@ -235,7 +233,6 @@ pub fn chan_new( -- ch:Channel)! {
 /// @error ErrChannel Failed to create channel
 /// @example 10 thread::chan_buffered! -> ch
 pub fn chan_buffered(capacity:i64 -- ch:Channel)! {
-	-> capacity
 	capacity thread::raw_chan_buffered! -> h
 	Channel { handle = h }
 }
@@ -246,7 +243,6 @@ pub fn chan_buffered(capacity:i64 -- ch:Channel)! {
 /// @error ErrClosed Cannot send on closed channel
 /// @example ch 42 send!
 pub fn (ch:Channel) send(val:i64 -- )! {
-	-> val
 	val ch @handle thread::raw_chan_send!
 }
 
@@ -265,7 +261,6 @@ pub fn (ch:Channel) recv( -- val:i64)! {
 /// @return success i64 1 if sent, 0 if would block
 /// @example ch 42 try_send -> sent
 pub fn (ch:Channel) try_send(val:i64 -- success:i64) {
-	-> val
 	val ch @handle thread::raw_chan_try_send
 }
 
@@ -340,7 +335,6 @@ pub fn wg_new( -- wg:WaitGroup)! {
 /// @param n i64 Number to add (usually 1 per thread)
 /// @example wg 2 add
 pub fn (wg:WaitGroup) add(n:i64 -- ) {
-	-> n
 	n wg @handle thread::raw_wg_add
 }
 
@@ -392,7 +386,6 @@ pub fn once_new( -- o:Once)! {
 /// @param func ptr Function to execute once
 /// @example o &init_stuff do
 pub fn (o:Once) do(func:ptr -- ) {
-	-> func
 	func o @handle thread::raw_once_do
 }
 
@@ -456,7 +449,6 @@ pub struct Barrier {
 /// @error ErrCreate Failed to create Barrier
 /// @example 4 thread::barrier_new! -> b
 pub fn barrier_new(n:i64 -- b:Barrier)! {
-	-> n
 	n thread::raw_barrier_new! -> h
 	Barrier { handle = h }
 }

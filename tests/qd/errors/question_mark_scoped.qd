@@ -2,7 +2,6 @@
 use strconv
 
 fn parse_and_double(s:str -- result:i64)! {
-	-> s
 	s strconv::atoi?
 	2 *
 }

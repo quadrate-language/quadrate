@@ -7,14 +7,12 @@ struct State {
 
 // Test calling method that returns f64 (works correctly)
 fn get_magnitude(s:State -- mag:f64) {
-	-> s
 	s @pos -> p
 	p length
 }
 
 // Test calling method that returns f64
 fn get_dot(s:State other:math::Vec3 -- d:f64) {
-	-> other -> s
 	s @pos -> p
 	p other dot
 }

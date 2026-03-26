@@ -1,4 +1,4 @@
 // Test: named function inside block should fail
 fn main() {
-    fn inner(x:i64 -- r:i64) { 2 * }
+    fn inner(i64 -- i64) { 2 * }
 }

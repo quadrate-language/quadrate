@@ -15,7 +15,6 @@ use time
 
 /// Basic SSE: single data event
 fn test_single_event(c:ptr -- ) {
-	-> c
 	c http::sse_start
 	c "hello world" http::sse_send
 	c http::sse_end
@@ -23,7 +22,6 @@ fn test_single_event(c:ptr -- ) {
 
 /// Multiple data events in sequence
 fn test_multiple_events(c:ptr -- ) {
-	-> c
 	c http::sse_start
 	c "first" http::sse_send
 	c "second" http::sse_send
@@ -33,7 +31,6 @@ fn test_multiple_events(c:ptr -- ) {
 
 /// Named events with event: prefix
 fn test_named_events(c:ptr -- ) {
-	-> c
 	c http::sse_start
 	c "greeting" "hello" http::sse_event
 	c "farewell" "goodbye" http::sse_event
@@ -42,7 +39,6 @@ fn test_named_events(c:ptr -- ) {
 
 /// Mix of data-only and named events
 fn test_mixed_events(c:ptr -- ) {
-	-> c
 	c http::sse_start
 	c "data only" http::sse_send
 	c "status" "ok" http::sse_event
@@ -53,7 +49,6 @@ fn test_mixed_events(c:ptr -- ) {
 
 /// SSE with for loop
 fn test_loop_events(c:ptr -- ) {
-	-> c
 	c http::sse_start
 	1 6 1 for i {
 		c i strconv::itoa http::sse_send
@@ -63,7 +58,6 @@ fn test_loop_events(c:ptr -- ) {
 
 /// SSE with delays (streaming behavior)
 fn test_streaming(c:ptr -- ) {
-	-> c
 	c http::sse_start
 	1 4 1 for i {
 		c i strconv::itoa http::sse_send
@@ -75,14 +69,12 @@ fn test_streaming(c:ptr -- ) {
 
 /// Empty SSE stream (start + end, no events)
 fn test_empty_stream(c:ptr -- ) {
-	-> c
 	c http::sse_start
 	c http::sse_end
 }
 
 /// JSON data in SSE
 fn test_json_data(c:ptr -- ) {
-	-> c
 	c http::sse_start
 	c "{'type':'init','id':1}" http::sse_send
 	c "{'type':'update','value':42}" http::sse_send
@@ -92,7 +84,6 @@ fn test_json_data(c:ptr -- ) {
 
 /// Long data payload
 fn test_long_payload(c:ptr -- ) {
-	-> c
 	c http::sse_start
 	c "This is a longer message that contains more data than a typical short event. It tests that the SSE implementation handles larger payloads correctly without truncation or corruption." http::sse_send
 	c http::sse_end
@@ -100,7 +91,6 @@ fn test_long_payload(c:ptr -- ) {
 
 /// Special characters in data
 fn test_special_chars(c:ptr -- ) {
-	-> c
 	c http::sse_start
 	c "hello:world" http::sse_send
 	c "key=value" http::sse_send
@@ -110,7 +100,6 @@ fn test_special_chars(c:ptr -- ) {
 
 /// Counter pattern (common use case)
 fn test_counter(c:ptr -- ) {
-	-> c
 	c http::sse_start
 	0 -> count
 	loop {
@@ -125,7 +114,6 @@ fn test_counter(c:ptr -- ) {
 
 /// Progress updates pattern
 fn test_progress(c:ptr -- ) {
-	-> c
 	c http::sse_start
 	c "progress" "0" http::sse_event
 	c "progress" "25" http::sse_event
@@ -138,7 +126,6 @@ fn test_progress(c:ptr -- ) {
 
 /// Root handler with test menu
 fn handle_root(c:ptr -- ) {
-	-> c
 	c 200 "SSE Integration Tests
 
 Available endpoints:

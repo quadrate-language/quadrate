@@ -47,7 +47,6 @@ struct Rectangle {
 }
 
 fn area(rect:Rectangle -- a:f64) {
-	-> rect  // bind parameter
 	rect @width rect @height *
 }
 
@@ -66,7 +65,6 @@ When working with raw `ptr` values (common in callbacks), use `as` to tell the c
 
 ```qd
 fn handler(data:ptr -- ) {
-	-> data
 	data as Config @debug print nl
 }
 ```
@@ -190,7 +188,6 @@ fn (p:Point) magnitude( -- m:f64) {
 }
 
 fn (p:Point) move(dx:f64 dy:f64 -- ) {
-	-> dy -> dx  // bind parameters
 	p @x dx + p .x
 	p @y dy + p .y
 }
@@ -247,7 +244,6 @@ struct Point {
 }
 
 fn point_distance(p1:Point p2:Point -- d:f64) {
-	-> p2 -> p1  // bind parameters
 	p2 @x p1 @x - dup *
 	p2 @y p1 @y - dup *
 	+ math::sqrt
@@ -281,7 +277,6 @@ fn config_new( -- cfg:Config) {
 }
 
 fn config_set_debug(cfg:Config value:i64 -- cfg:Config) {
-	-> value -> cfg
 	value cfg .debug
 	cfg
 }
@@ -301,7 +296,6 @@ struct Node {
 }
 
 fn node_new(value:i64 -- node:ptr) {
-	-> value  // bind parameter
 	Node {
 		value = value
 		next = 0
@@ -337,7 +331,6 @@ struct Stack {
 }
 
 fn stack_new(capacity:i64 -- s:Stack) {
-	-> capacity  // bind parameter
 	capacity make<i64> -> data
 	Stack {
 		data = data
@@ -347,13 +340,11 @@ fn stack_new(capacity:i64 -- s:Stack) {
 }
 
 fn stack_push(s:Stack value:i64 -- ) {
-	-> value -> s
 	s @data s @top value set
 	s @top 1 + s .top
 }
 
 fn stack_pop(s:Stack -- value:i64) {
-	-> s  // bind parameter
 	s @top 1 - s .top
 	s @data s @top nth
 }
@@ -381,7 +372,6 @@ struct Point {
 }
 
 fn points_equal(a:Point b:Point -- equal:i64) {
-	-> b -> a
 	a @x b @x == a @y b @y == and
 }
 
@@ -429,8 +419,7 @@ fn main() {
 Use `null` for empty pointer fields. Check for null before accessing:
 
 ```qd
-fn print_list(head:ptr -- ) {
-	-> cur
+fn print_list(cur:ptr -- ) {
 	loop {
 		cur null eq if { break }
 		cur @value print nl
@@ -448,8 +437,7 @@ struct TreeNode {
 	right:*TreeNode
 }
 
-fn inorder(node:ptr -- ) {
-	-> n
+fn inorder(n:ptr -- ) {
 	n null neq if {
 		n @left inorder
 		n @value print nl

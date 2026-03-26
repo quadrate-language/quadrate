@@ -32,7 +32,6 @@ pub fn new( -- sb:ptr) {
 /// @return sb ptr New empty builder
 /// @example 1024 sb::with_capacity -> builder
 pub fn with_capacity(capacity:i64 -- sb:ptr) {
-	-> capacity
 	capacity 16 < if {
 		16 -> capacity
 	}
@@ -50,9 +49,6 @@ pub fn with_capacity(capacity:i64 -- sb:ptr) {
 /// @return sb ptr Updated builder
 /// @example builder "hello" sb::append -> builder
 pub fn append(sb:ptr s:str -- sb:ptr) {
-	-> s
-	-> sb
-
 	sb @buf -> buf
 	sb @len -> curlen
 	sb @cap -> cap
@@ -89,9 +85,6 @@ pub fn append(sb:ptr s:str -- sb:ptr) {
 /// @return sb ptr Updated builder
 /// @example builder 65 sb::append_char -> builder
 pub fn append_char(sb:ptr c:i64 -- sb:ptr) {
-	-> c
-	-> sb
-
 	sb @buf -> buf
 	sb @len -> curlen
 	sb @cap -> cap
@@ -118,9 +111,6 @@ pub fn append_char(sb:ptr c:i64 -- sb:ptr) {
 /// @return sb ptr Updated builder
 /// @example builder 42 sb::append_int -> builder
 pub fn append_int(sb:ptr n:i64 -- sb:ptr) {
-	-> n
-	-> sb
-
 	// Handle negative
 	n 0 < if {
 		sb unicode::minus append_char -> sb
@@ -183,7 +173,6 @@ pub fn append_int(sb:ptr n:i64 -- sb:ptr) {
 /// @return sblen i64 Current content length
 /// @example builder sb::len -> sblen
 pub fn len(sb:ptr -- sblen:i64) {
-	-> sb
 	sb @len
 }
 
@@ -192,7 +181,6 @@ pub fn len(sb:ptr -- sblen:i64) {
 /// @return s str Built string
 /// @example builder sb::build -> result
 pub fn build(sb:ptr -- s:str) {
-	-> sb
 	sb @buf sb @len mem::to_string
 }
 
@@ -200,7 +188,6 @@ pub fn build(sb:ptr -- s:str) {
 /// @param sb ptr Builder to free
 /// @example builder sb::free
 pub fn free(sb:ptr -- ) {
-	-> sb
 	sb @buf mem::free
 }
 
@@ -209,7 +196,6 @@ pub fn free(sb:ptr -- ) {
 /// @return s str Built string
 /// @example builder sb::finish -> result
 pub fn finish(sb:ptr -- s:str) {
-	-> sb
 	sb @buf sb @len mem::to_string -> result
 	sb @buf mem::free
 	result
@@ -220,7 +206,6 @@ pub fn finish(sb:ptr -- s:str) {
 /// @return cap i64 Current buffer capacity
 /// @example builder sb::capacity -> cap
 pub fn capacity(sb:ptr -- cap:i64) {
-	-> sb
 	sb @cap
 }
 
@@ -229,7 +214,6 @@ pub fn capacity(sb:ptr -- cap:i64) {
 /// @return empty i64 1 if empty, 0 otherwise
 /// @example builder sb::is_empty -> empty
 pub fn is_empty(sb:ptr -- empty:i64) {
-	-> sb
 	sb @len 0 ==
 }
 
@@ -237,7 +221,7 @@ pub fn is_empty(sb:ptr -- empty:i64) {
 /// @param sb ptr Builder to append to
 /// @return sb ptr Updated builder
 /// @example builder sb::newline -> builder
-pub fn newline(sb:ptr -- sb:ptr) {
+pub fn newline(ptr -- ptr) {
 	unicode::newline append_char
 }
 
@@ -245,7 +229,7 @@ pub fn newline(sb:ptr -- sb:ptr) {
 /// @param sb ptr Builder to append to
 /// @return sb ptr Updated builder
 /// @example builder sb::space -> builder
-pub fn space(sb:ptr -- sb:ptr) {
+pub fn space(ptr -- ptr) {
 	unicode::space append_char
 }
 

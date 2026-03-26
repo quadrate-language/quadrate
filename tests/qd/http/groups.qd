@@ -2,12 +2,10 @@
 use http
 
 fn handle_api_users(c:ptr -- ) {
-	-> c
 	c 200 "API Users" http::string
 }
 
 fn handle_api_posts(c:ptr -- ) {
-	-> c
 	c 200 "API Posts" http::string
 }
 

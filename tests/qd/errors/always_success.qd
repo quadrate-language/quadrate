@@ -1,4 +1,4 @@
-fn always_ok(a:i64 -- result:i64)! {
+fn always_ok(i64 -- i64)! {
 }
 
 fn main() {

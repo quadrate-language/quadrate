@@ -1,8 +1,8 @@
 // Trigonometric functions
-pub fn double_angle(x:f64 -- y:f64) {
+pub fn double_angle(f64 -- f64) {
 	2.0 mul
 }
 
-pub fn add_pi(x:f64 -- y:f64) {
+pub fn add_pi(f64 -- f64) {
 	3.141592653589793 add
 }

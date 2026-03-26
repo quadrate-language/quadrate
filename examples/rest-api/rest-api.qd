@@ -17,53 +17,43 @@
 use http
 
 fn logger_middleware(c:ptr -- ) {
-	-> c
 }
 
 fn api_middleware(c:ptr -- ) {
-	-> c
 }
 
 fn handle_root(c:ptr -- ) {
-	-> c
 	c http::StatusOK "Welcome to the REST API. Try /api/users or /api/posts" http::string
 }
 
 fn handle_search(c:ptr -- ) {
-	-> c
 	c "q" http::query_param -> query
 	c http::StatusOK query http::string
 }
 
 fn handle_list_users(c:ptr -- ) {
-	-> c
 	c http::StatusOK "[]" http::json
 }
 
 fn handle_get_user(c:ptr -- ) {
-	-> c
 	c "id" http::param -> id
 	c http::StatusOK id http::json
 }
 
 fn handle_create_user(c:ptr -- ) {
-	-> c
 	c http::StatusCreated "{}" http::json
 }
 
 fn handle_delete_user(c:ptr -- ) {
-	-> c
 	c "id" http::param -> id
 	c http::StatusOK "{}" http::json
 }
 
 fn handle_list_posts(c:ptr -- ) {
-	-> c
 	c http::StatusOK "[]" http::json
 }
 
 fn handle_get_post(c:ptr -- ) {
-	-> c
 	c "id" http::param -> id
 	c http::StatusOK id http::json
 }

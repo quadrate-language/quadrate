@@ -948,6 +948,7 @@ namespace Qd {
 					nativeFuncInfo.erase(funcNode->name());
 				}
 				nativeIt = nativeFunctions.end(); // Invalidate iterator
+				currentFunctionIsIntegerOnly = false;
 			}
 			if (nativeIt != nativeFunctions.end() && !debugInfoEnabled && nativeIt->second->empty()) {
 				// === NATIVE CALLING CONVENTION PATH ===
@@ -998,6 +999,28 @@ namespace Qd {
 						param->setName(paramNode->name());
 					}
 					compileTimeStack.push_back(param);
+				}
+
+				// Auto-bind named input parameters as local variables (native path)
+				// For native functions, params are LLVM function args on the compileTimeStack.
+				// Bind named params to nativeLocalVariables so they can be referenced by name.
+				// Values stay on the compileTimeStack too (native codegen uses them positionally).
+				{
+					const auto& inputs = funcNode->inputParameters();
+					for (size_t i = 0; i < inputs.size() && i < compileTimeStack.size(); i++) {
+						const auto* paramNode = static_cast<const AstNodeParameter*>(inputs[i]);
+						if (!paramNode->hasName()) {
+							continue;
+						}
+						const std::string& paramName = paramNode->name();
+						llvm::Value* val = compileTimeStack[i];
+
+						llvm::Function* currentFn = builder->GetInsertBlock()->getParent();
+						llvm::IRBuilder<> tmpBuilder(&currentFn->getEntryBlock(), currentFn->getEntryBlock().begin());
+						auto* alloca = tmpBuilder.CreateAlloca(val->getType(), nullptr, paramName);
+						nativeLocalVariables[paramName] = alloca;
+						builder->CreateStore(val, alloca);
+					}
 				}
 
 				// Create return value alloca in entry block (LLVM mem2reg will promote to SSA)
@@ -1116,8 +1139,12 @@ namespace Qd {
 			} else {
 				// === NORMAL (NON-NATIVE) PATH ===
 
+				// If this function was considered integer-only but ended up here
+				// (e.g., fallible function, or callees not all native), clear the flag
+				// so auto-binding, call tracking, and type checking are not skipped.
+				currentFunctionIsIntegerOnly = false;
+
 				// Push function name onto call stack for debugging
-				// Skip for integer-only functions for performance (stack traces less useful for pure int math)
 				std::string fullFuncName = namePrefix + "::" + funcNode->name();
 				llvm::Value* funcNameStr = nullptr;
 				if (!currentFunctionIsIntegerOnly) {
@@ -1229,6 +1256,52 @@ namespace Qd {
 				auto body = funcNode->body();
 				if (body) {
 					collectAllCapturesFromAST(body, heapAllocatedCaptures);
+				}
+
+				// Auto-bind named input parameters as local variables
+				// Pop from stack in reverse order (stack is LIFO: last param on top)
+				// Only auto-bind when ALL input params are named (mixed named/unnamed
+				// would require complex stack reordering)
+				if (!currentFunctionIsIntegerOnly) {
+					const auto& inputs = funcNode->inputParameters();
+					bool allNamed = true;
+					for (size_t i = 0; i < inputs.size(); i++) {
+						if (!static_cast<const AstNodeParameter*>(inputs[i])->hasName()) {
+							allNamed = false;
+							break;
+						}
+					}
+					for (int paramIdx = static_cast<int>(inputs.size()) - 1; allNamed && paramIdx >= 0; paramIdx--) {
+						const auto* param = static_cast<const AstNodeParameter*>(inputs[static_cast<size_t>(paramIdx)]);
+						const std::string& paramName = param->name();
+
+						// Create alloca in entry block
+						llvm::Function* currentFn = builder->GetInsertBlock()->getParent();
+						llvm::IRBuilder<> tmpBuilder(&currentFn->getEntryBlock(), currentFn->getEntryBlock().begin());
+						llvm::AllocaInst* paramAlloca = tmpBuilder.CreateAlloca(stackElementTy, nullptr, paramName);
+
+						// Initialize type field to -1 (uninitialized marker)
+						llvm::Value* typePtr =
+								tmpBuilder.CreateStructGEP(stackElementTy, paramAlloca, 1, paramName + "_init_type");
+						tmpBuilder.CreateStore(tmpBuilder.getInt32(static_cast<uint32_t>(-1)), typePtr);
+
+						// Store in local variables map
+						localVariables[paramName] = paramAlloca;
+
+						// Track struct type if applicable
+						const std::string& typeStr = param->typeString();
+						if (!typeStr.empty() && typeStr != "i" && typeStr != "i64" && typeStr != "int" &&
+								typeStr != "int64" && typeStr != "f" && typeStr != "f64" && typeStr != "float" &&
+								typeStr != "s" && typeStr != "str" && typeStr != "string" && typeStr != "p" &&
+								typeStr != "ptr" && typeStr != "pointer") {
+							localVariableStructTypes[paramName] = extractStructName(typeStr);
+						}
+
+						// Pop from runtime stack
+						llvm::Value* stackPtrPtr = builder->CreateStructGEP(contextStructTy, ctx, 0, "stack_ptr");
+						llvm::Value* stackPtr = builder->CreateLoad(ptrTy, stackPtrPtr, "stack");
+						builder->CreateCall(stackPopFn, {stackPtr, paramAlloca});
+					}
 				}
 
 				// Generate function body

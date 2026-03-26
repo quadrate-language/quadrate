@@ -8,8 +8,6 @@ use strings
 /// @param count i64 Number of elements
 /// @example arr count sort::ints
 pub fn ints(arr:ptr count:i64 -- ) {
-	-> count
-	-> arr
 	// Insertion sort
 	1 count 1 for it {
 		it -> i
@@ -36,8 +34,6 @@ pub fn ints(arr:ptr count:i64 -- ) {
 /// @param count i64 Number of elements
 /// @example arr count sort::ints_desc
 pub fn ints_desc(arr:ptr count:i64 -- ) {
-	-> count
-	-> arr
 	// Insertion sort descending
 	1 count 1 for it {
 		it -> i
@@ -65,8 +61,6 @@ pub fn ints_desc(arr:ptr count:i64 -- ) {
 /// @return minval i64 Minimum value
 /// @example arr count sort::min -> val
 pub fn min(arr:ptr count:i64 -- minval:i64) {
-	-> count
-	-> arr
 	arr 0 mem::get_i64 -> result
 	1 count 1 for it {
 		it -> i
@@ -84,8 +78,6 @@ pub fn min(arr:ptr count:i64 -- minval:i64) {
 /// @return maxval i64 Maximum value
 /// @example arr count sort::max -> val
 pub fn max(arr:ptr count:i64 -- maxval:i64) {
-	-> count
-	-> arr
 	arr 0 mem::get_i64 -> result
 	1 count 1 for it {
 		it -> i
@@ -103,8 +95,6 @@ pub fn max(arr:ptr count:i64 -- maxval:i64) {
 /// @return sorted i64 1 if sorted, 0 otherwise
 /// @example arr count sort::is_sorted -> result
 pub fn is_sorted(arr:ptr count:i64 -- sorted:i64) {
-	-> count
-	-> arr
 	1 -> result
 	count 2 < if {
 		result
@@ -127,8 +117,6 @@ pub fn is_sorted(arr:ptr count:i64 -- sorted:i64) {
 /// @param count i64 Number of elements
 /// @example arr count sort::reverse
 pub fn reverse(arr:ptr count:i64 -- ) {
-	-> count
-	-> arr
 	0 -> left
 	count 1 - -> right
 	loop {
@@ -152,9 +140,6 @@ pub fn reverse(arr:ptr count:i64 -- ) {
 /// @return idx i64 Index if found, -1 otherwise
 /// @example arr count 42 sort::search -> idx
 pub fn search(arr:ptr count:i64 needle:i64 -- idx:i64) {
-	-> needle
-	-> count
-	-> arr
 	0 -> left
 	count -> right
 	-1 -> result
@@ -182,8 +167,6 @@ pub fn search(arr:ptr count:i64 needle:i64 -- idx:i64) {
 /// @param count i64 Number of elements
 /// @example strs count sort::strings
 pub fn strings(arr:ptr count:i64 -- ) {
-	-> count
-	-> arr
 	// Insertion sort
 	1 count 1 for it {
 		it -> i
@@ -210,8 +193,6 @@ pub fn strings(arr:ptr count:i64 -- ) {
 /// @param count i64 Number of elements
 /// @example strs count sort::strings_desc
 pub fn strings_desc(arr:ptr count:i64 -- ) {
-	-> count
-	-> arr
 	// Insertion sort descending
 	1 count 1 for it {
 		it -> i

@@ -64,7 +64,6 @@ Capture multiple outputs:
 
 ```qd
 fn minmax(a:i64 b:i64 -- min:i64 max:i64) {
-	-> b -> a  // bind parameters
 	a b < if {
 		a b
 	} else {
@@ -108,7 +107,6 @@ Functions can call themselves:
 
 ```qd
 fn factorial(n:i64 -- result:i64) {
-	-> n  // bind parameter
 	n 1 <= if {
 		1
 	} else {
@@ -127,7 +125,6 @@ Functions can call each other:
 
 ```qd
 fn is_even(n:i64 -- result:i64) {
-	-> n  // bind parameter
 	n 0 == if {
 		1
 	} else {
@@ -136,7 +133,6 @@ fn is_even(n:i64 -- result:i64) {
 }
 
 fn is_odd(n:i64 -- result:i64) {
-	-> n  // bind parameter
 	n 0 == if {
 		0
 	} else {

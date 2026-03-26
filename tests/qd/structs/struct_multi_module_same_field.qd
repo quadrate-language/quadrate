@@ -6,35 +6,29 @@ use math
 
 // Function that takes math::Vec2 and accesses its fields
 fn get_vec2_x(v:math::Vec2 -- result:f64) {
-	-> v
 	v @x
 }
 
 fn get_vec2_y(v:math::Vec2 -- result:f64) {
-	-> v
 	v @y
 }
 
 // Function that takes math::Vec3 and accesses its fields
 fn get_vec3_x(v:math::Vec3 -- result:f64) {
-	-> v
 	v @x
 }
 
 fn get_vec3_z(v:math::Vec3 -- result:f64) {
-	-> v
 	v @z
 }
 
 // Function that takes math::Vec4 and accesses its fields
 fn get_vec4_w(v:math::Vec4 -- result:f64) {
-	-> v
 	v @w
 }
 
 // Function that takes math::Quat and accesses its fields
 fn get_quat_w(q:math::Quat -- result:f64) {
-	-> q
 	q @w
 }
 

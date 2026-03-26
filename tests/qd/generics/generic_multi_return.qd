@@ -1,12 +1,10 @@
 // Test generic functions with multiple return values
 
-fn dup_generic<T>(x:T -- x1:T x2:T) {
-	-> val
+fn dup_generic<T>(val:T -- x1:T x2:T) {
 	val val
 }
 
-fn make_triple<T>(x:T -- a:T b:T c:T) {
-	-> val
+fn make_triple<T>(val:T -- a:T b:T c:T) {
 	val val val
 }
 

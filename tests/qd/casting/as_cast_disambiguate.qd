@@ -8,12 +8,10 @@ struct Bar {
 }
 
 fn get_foo_value(p:ptr -- v:i64) {
-	-> p
 	p as Foo @value
 }
 
 fn get_bar_value(p:ptr -- v:str) {
-	-> p
 	p as Bar @value
 }
 

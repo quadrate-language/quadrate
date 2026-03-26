@@ -8,8 +8,7 @@
 /// @return r i64 Result of f(x)
 /// @example 5 fn (x:i64 -- r:i64) { 2 * } hof::apply print nl  // 10
 pub fn apply(x:i64 f:ptr -- r:i64) {
-	-> f
-	f call
+	x f call
 }
 
 /// Apply two functions to the same value.
@@ -20,9 +19,6 @@ pub fn apply(x:i64 f:ptr -- r:i64) {
 /// @return b i64 Result of g(x)
 /// @example 5 fn (x:i64 -- r:i64) { 2 * } fn (x:i64 -- r:i64) { 3 + } hof::bi  // Stack: 10 8
 pub fn bi(x:i64 f:ptr g:ptr -- a:i64 b:i64) {
-	-> g
-	-> f
-	-> x
 	x f call -> a
 	x g call -> b
 	a b
@@ -38,10 +34,6 @@ pub fn bi(x:i64 f:ptr g:ptr -- a:i64 b:i64) {
 /// @return c i64 Result of h(x)
 /// @example 5 fn (x:i64 -- r:i64) { 1 + } fn (x:i64 -- r:i64) { 2 * } fn (x:i64 -- r:i64) { dup * } hof::tri  // Stack: 6 10 25
 pub fn tri(x:i64 f:ptr g:ptr h:ptr -- a:i64 b:i64 c:i64) {
-	-> h
-	-> g
-	-> f
-	-> x
 	x f call -> a
 	x g call -> b
 	x h call -> c
@@ -55,8 +47,6 @@ pub fn tri(x:i64 f:ptr g:ptr h:ptr -- a:i64 b:i64 c:i64) {
 /// @return x i64 Original value (preserved)
 /// @example 5 fn (x:i64 -- r:i64) { 2 * } hof::keep  // Stack: 10 5
 pub fn keep(x:i64 f:ptr -- r:i64 orig:i64) {
-	-> f
-	-> x
 	x f call
 	x
 }
@@ -69,9 +59,7 @@ pub fn keep(x:i64 f:ptr -- r:i64 orig:i64) {
 /// @return y i64 Original top value (preserved)
 /// @example 10 20 fn (x:i64 -- r:i64) { 2 * } hof::dip  // Stack: 20 20
 pub fn dip(x:i64 y:i64 f:ptr -- r:i64 top:i64) {
-	-> f
-	-> y
-	f call
+	x f call
 	y
 }
 
@@ -83,9 +71,6 @@ pub fn dip(x:i64 y:i64 f:ptr -- r:i64 top:i64) {
 /// @return b i64 Result of f(y)
 /// @example 3 4 fn (x:i64 -- r:i64) { dup * } hof::both  // Stack: 9 16
 pub fn both(x:i64 y:i64 f:ptr -- a:i64 b:i64) {
-	-> f
-	-> y
-	-> x
 	x f call -> a
 	y f call -> b
 	a b
@@ -100,10 +85,6 @@ pub fn both(x:i64 y:i64 f:ptr -- a:i64 b:i64) {
 /// @return b i64 Result of g(y)
 /// @example 3 4 fn (x:i64 -- r:i64) { 1 + } fn (x:i64 -- r:i64) { 2 * } hof::bi_star  // Stack: 4 8
 pub fn bi_star(x:i64 y:i64 f:ptr g:ptr -- a:i64 b:i64) {
-	-> g
-	-> f
-	-> y
-	-> x
 	x f call -> a
 	y g call -> b
 	a b
@@ -117,8 +98,7 @@ pub fn bi_star(x:i64 y:i64 f:ptr g:ptr -- a:i64 b:i64) {
 /// @example 5 1 fn (x:i64 -- r:i64) { 2 * } hof::when print nl  // 10
 /// @example 5 0 fn (x:i64 -- r:i64) { 2 * } hof::when print nl  // 5
 pub fn when(x:i64 cond:i64 f:ptr -- r:i64) {
-	-> f
-	-> cond
+	x
 	cond 0 != if {
 		f call
 	}
@@ -132,8 +112,7 @@ pub fn when(x:i64 cond:i64 f:ptr -- r:i64) {
 /// @example 5 0 fn (x:i64 -- r:i64) { 2 * } hof::unless print nl  // 10
 /// @example 5 1 fn (x:i64 -- r:i64) { 2 * } hof::unless print nl  // 5
 pub fn unless(x:i64 cond:i64 f:ptr -- r:i64) {
-	-> f
-	-> cond
+	x
 	cond 0 == if {
 		f call
 	}
@@ -146,8 +125,7 @@ pub fn unless(x:i64 cond:i64 f:ptr -- r:i64) {
 /// @return r i64 Result after n applications
 /// @example 2 4 fn (x:i64 -- r:i64) { dup * } hof::times print nl  // 65536 (2^16)
 pub fn times(x:i64 n:i64 f:ptr -- r:i64) {
-	-> f
-	-> n
+	x
 	0 n 1 for i {
 		f call
 	}
@@ -160,11 +138,7 @@ pub fn times(x:i64 n:i64 f:ptr -- r:i64) {
 /// @param f ptr Binary function pointer (acc:i64 elem:i64 -- acc:i64)
 /// @return result i64 Final accumulated value
 /// @example arr count 0 fn (acc:i64 x:i64 -- r:i64) { + } hof::fold  // sum of array
-pub fn fold(arr:ptr count:i64 init:i64 f:ptr -- result:i64) {
-	-> f
-	-> acc
-	-> count
-	-> arr
+pub fn fold(arr:ptr count:i64 acc:i64 f:ptr -- result:i64) {
 	0 count 1 for i {
 		arr i nth acc swap f call -> acc
 	}
@@ -178,11 +152,7 @@ pub fn fold(arr:ptr count:i64 init:i64 f:ptr -- result:i64) {
 /// @param f ptr Binary function pointer (elem:i64 acc:i64 -- acc:i64)
 /// @return result i64 Final accumulated value
 /// @example arr count 0 fn (x:i64 acc:i64 -- r:i64) { + } hof::fold_right  // sum of array
-pub fn fold_right(arr:ptr count:i64 init:i64 f:ptr -- result:i64) {
-	-> f
-	-> acc
-	-> count
-	-> arr
+pub fn fold_right(arr:ptr count:i64 acc:i64 f:ptr -- result:i64) {
 	count 1 - -1 -1 for i {
 		arr i nth acc f call -> acc
 	}
@@ -197,9 +167,6 @@ pub fn fold_right(arr:ptr count:i64 init:i64 f:ptr -- result:i64) {
 /// @return out_count i64 Array length (unchanged)
 /// @example arr count fn (x:i64 -- r:i64) { 2 * } hof::map  // double each element
 pub fn map(arr:ptr count:i64 f:ptr -- result:ptr out_count:i64) {
-	-> f
-	-> count
-	-> arr
 	0 make<i64> -> out
 	0 count 1 for i {
 		arr i nth f call out swap append -> out
@@ -215,9 +182,6 @@ pub fn map(arr:ptr count:i64 f:ptr -- result:ptr out_count:i64) {
 /// @return out_count i64 Length of filtered array
 /// @example arr count fn (x:i64 -- r:i64) { 2 mod 0 == } hof::filter  // keep evens
 pub fn filter(arr:ptr count:i64 pred:ptr -- result:ptr out_count:i64) {
-	-> pred
-	-> count
-	-> arr
 	0 make<i64> -> out
 	0 -> out_count
 	0 count 1 for i {
@@ -237,9 +201,6 @@ pub fn filter(arr:ptr count:i64 pred:ptr -- result:ptr out_count:i64) {
 /// @return result i64 1 if any element satisfies pred, 0 otherwise
 /// @example arr count fn (x:i64 -- r:i64) { 0 > } hof::any  // any positive?
 pub fn any(arr:ptr count:i64 pred:ptr -- result:i64) {
-	-> pred
-	-> count
-	-> arr
 	0 -> result
 	0 count 1 for i {
 		arr i nth pred call if {
@@ -257,9 +218,6 @@ pub fn any(arr:ptr count:i64 pred:ptr -- result:i64) {
 /// @return result i64 1 if all elements satisfy pred, 0 otherwise
 /// @example arr count fn (x:i64 -- r:i64) { 0 > } hof::all  // all positive?
 pub fn all(arr:ptr count:i64 pred:ptr -- result:i64) {
-	-> pred
-	-> count
-	-> arr
 	1 -> result
 	0 count 1 for i {
 		arr i nth pred call 0 == if {
@@ -278,9 +236,6 @@ pub fn all(arr:ptr count:i64 pred:ptr -- result:i64) {
 /// @return found i64 1 if found, 0 otherwise
 /// @example arr count fn (x:i64 -- r:i64) { 10 > } hof::find  // first > 10
 pub fn find(arr:ptr count:i64 pred:ptr -- elem:i64 found:i64) {
-	-> pred
-	-> count
-	-> arr
 	0 -> elem
 	0 -> found
 	0 count 1 for i {

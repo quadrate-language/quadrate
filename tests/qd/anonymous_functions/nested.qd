@@ -1,7 +1,7 @@
 // Test using anonymous function multiple times
 fn main() {
     // Define a doubling function
-    fn (x:i64 -- r:i64) { 2 * } -> double
+    fn (i64 -- i64) { 2 * } -> double
 
     // Call it twice with different inputs
     5 double call print nl

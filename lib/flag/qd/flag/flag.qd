@@ -25,7 +25,6 @@ pub struct Flag {
 /// @return Flag struct on stack
 /// @example read flag::parse -> f
 pub fn parse(argc:i64 -- ) {
-	-> argc
 	"" -> argv
 	"" -> arg
 	"" -> old_argv
@@ -61,7 +60,6 @@ pub fn parse(argc:i64 -- ) {
 /// @param f ptr Flag struct to free
 /// @example f flag::destroy
 pub fn destroy(f:ptr -- ) {
-	-> f
 	f @argv drop
 	f free
 }
@@ -72,9 +70,6 @@ pub fn destroy(f:ptr -- ) {
 /// @return present i64 1 if found, 0 otherwise
 /// @example f "--verbose" flag::boolean if { "verbose" print nl }
 pub fn boolean(f:ptr name:str -- present:i64) {
-	-> name
-	-> f
-
 	"\n" name strings::concat -> pattern
 	pattern "\n" strings::concat -> pattern
 
@@ -89,8 +84,6 @@ pub fn boolean(f:ptr name:str -- present:i64) {
 /// @error ErrNoValue Flag exists but has no value
 /// @example f "--name" flag::string! -> name
 pub fn string(f:ptr name:str -- value:str)! {
-	-> name
-	-> f
 	"" -> value
 	"" -> pattern
 	"" -> argv
@@ -127,8 +120,6 @@ pub fn string(f:ptr name:str -- value:str)! {
 /// @error ErrNotFound Flag not found
 /// @example f "--count" flag::int! -> count
 pub fn int(f:ptr name:str -- value:i64)! {
-	-> name
-	-> f
 	"" -> s
 
 	f name string if {
@@ -148,9 +139,6 @@ pub fn int(f:ptr name:str -- value:i64)! {
 /// @error ErrNotFound Flag not found
 /// @example f "--rate" flag::float! -> rate
 pub fn float(f:ptr name:str -- value:f64)! {
-	-> name
-	-> f
-
 	f name string if {
 		-> s
 		s parse_float
@@ -167,8 +155,6 @@ pub fn float(f:ptr name:str -- value:f64)! {
 /// @return value str Positional argument
 /// @error ErrNotFound Index out of bounds
 pub fn positional(f:ptr index:i64 -- value:str)! {
-	-> index
-	-> f
 	"" -> result
 	0 -> pos_idx
 	0 -> start
@@ -237,7 +223,6 @@ pub fn positional(f:ptr index:i64 -- value:str)! {
 }
 
 fn parse_int(s:str -- value:i64) {
-	-> s
 	0 -> value
 	0 -> i
 	1 -> sign
@@ -268,7 +253,6 @@ fn parse_int(s:str -- value:i64) {
 }
 
 fn parse_float(s:str -- value:f64) {
-	-> s
 	0.0 -> value
 	0 -> i
 	1.0 -> sign

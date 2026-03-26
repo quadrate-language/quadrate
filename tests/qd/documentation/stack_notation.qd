@@ -4,33 +4,33 @@
 use math
 
 // Basic arithmetic with stack notation
-fn add_numbers(a:i64 b:i64 -- result:i64) {
+fn add_numbers(i64 i64 -- i64) {
 	// a and b are consumed from stack, result is produced
 	+
 }
 
-fn multiply_then_add(a:i64 b:i64 c:i64 -- result:i64) {
+fn multiply_then_add(i64 i64 i64 -- i64) {
 	// Stack is [a, b, c] with c on top
 	// Computes (b * c) + a
 	* +
 }
 
 // Functions with float parameters
-fn multiply_floats(a:f64 b:f64 -- result:f64) {
+fn multiply_floats(f64 f64 -- f64) {
 	*
 }
 
-fn divide_floats(a:f64 b:f64 -- result:f64) {
+fn divide_floats(f64 f64 -- f64) {
 	/
 }
 
 // Stack manipulation operations
-fn swap_values(a:i64 b:i64 -- b:i64 a:i64) {
+fn swap_values(i64 i64 -- i64 i64) {
 	swap
 }
 
 // Functions demonstrating stack effects
-fn square_and_double(x:i64 -- x2:i64 x_times_2:i64) {
+fn square_and_double(i64 -- i64 i64) {
 	// Returns x*x and x*2
 	dup
 	dup mul swap
@@ -38,39 +38,39 @@ fn square_and_double(x:i64 -- x2:i64 x_times_2:i64) {
 }
 
 // Min/max operations with stack notation
-fn triple_min(a:i64 b:i64 c:i64 -- min:i64) {
+fn triple_min(i64 i64 i64 -- i64) {
 	math::min
 	math::min
 }
 
-fn triple_max(a:i64 b:i64 c:i64 -- max:i64) {
+fn triple_max(i64 i64 i64 -- i64) {
 	math::max
 	math::max
 }
 
 // Logical operations
-fn bitwise_and_or(a:i64 b:i64 c:i64 -- result:i64) {
+fn bitwise_and_or(i64 i64 i64 -- i64) {
 	and
 	or
 }
 
 // Functions demonstrating drop
-fn keep_first(a:i64 b:i64 -- a:i64) {
+fn keep_first(i64 i64 -- i64) {
 	drop
 }
 
-fn keep_first_of_four(a:i64 b:i64 c:i64 d:i64 -- a:i64) {
+fn keep_first_of_four(i64 i64 i64 i64 -- i64) {
 	drop2
 	drop
 }
 
 // Rotation example
-fn rotate_three(a:i64 b:i64 c:i64 -- b:i64 c:i64 a:i64) {
+fn rotate_three(i64 i64 i64 -- i64 i64 i64) {
 	rot
 }
 
 // Mixed types
-fn int_to_float_calc(a:i64 b:f64 -- result:f64) {
+fn int_to_float_calc(i64 f64 -- f64) {
 	// Integer is automatically promoted to float
 	+
 }
@@ -81,7 +81,7 @@ fn get_answer( -- answer:i64) {
 }
 
 // Consume but produce nothing
-fn consume_two(a:i64 b:i64 -- ) {
+fn consume_two(i64 i64 -- ) {
 	drop
 	drop
 }

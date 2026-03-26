@@ -7,7 +7,6 @@ pub const Sep = "/"
 
 /// Find last occurrence of slash in string.
 fn find_last_slash(s:str -- idx:i64) {
-	-> s
 	s strings::len -> slen
 	-1 -> result
 	0 slen 1 for it {
@@ -21,7 +20,6 @@ fn find_last_slash(s:str -- idx:i64) {
 
 /// Find last occurrence of dot in string.
 fn find_last_dot(s:str -- idx:i64) {
-	-> s
 	s strings::len -> slen
 	-1 -> result
 	0 slen 1 for it {
@@ -38,7 +36,6 @@ fn find_last_dot(s:str -- idx:i64) {
 /// @return dir str Directory component
 /// @example "/home/user/file.txt" path::dirname -> "/home/user"
 pub fn dirname(path:str -- dir:str) {
-	-> path
 	path find_last_slash -> last_slash
 	"." -> result
 	last_slash 0 == if {
@@ -55,7 +52,6 @@ pub fn dirname(path:str -- dir:str) {
 /// @return name str Filename component
 /// @example "/home/user/file.txt" path::basename -> "file.txt"
 pub fn basename(path:str -- name:str) {
-	-> path
 	path find_last_slash -> last_slash
 	path -> result
 	last_slash -1 != if {
@@ -75,7 +71,6 @@ pub fn basename(path:str -- name:str) {
 /// @return ext str Extension including dot, empty if none
 /// @example "file.txt" path::ext -> ".txt"
 pub fn ext(path:str -- ext:str) {
-	-> path
 	// Inline basename logic to avoid type inference issues
 	path find_last_slash -> last_slash
 	path -> name
@@ -103,7 +98,6 @@ pub fn ext(path:str -- ext:str) {
 /// @return stem str Filename without extension
 /// @example "file.txt" path::stem -> "file"
 pub fn stem(path:str -- stem:str) {
-	-> path
 	// Inline basename logic to avoid type inference issues
 	path find_last_slash -> last_slash
 	path -> name
@@ -131,8 +125,6 @@ pub fn stem(path:str -- stem:str) {
 /// @return joined str Joined path
 /// @example "/home" "user" path::join -> "/home/user"
 pub fn join(p1:str p2:str -- joined:str) {
-	-> p2
-	-> p1
 	p1 -> result
 	p2 "/" strings::starts_with if {
 		p2 -> result
@@ -156,7 +148,6 @@ pub fn join(p1:str p2:str -- joined:str) {
 /// @return result i64 1 if absolute, 0 otherwise
 /// @example "/home/user" path::is_absolute -> 1
 pub fn is_absolute(path:str -- result:i64) {
-	-> path
 	path "/" strings::starts_with
 }
 
@@ -165,7 +156,6 @@ pub fn is_absolute(path:str -- result:i64) {
 /// @return norm str Normalized path
 /// @example "/home//user/" path::normalize -> "/home/user"
 pub fn normalize(path:str -- norm:str) {
-	-> path
 	// Loop to handle triple+ slashes (/// -> // -> /)
 	path -> result
 	loop {
@@ -187,8 +177,6 @@ pub fn normalize(path:str -- norm:str) {
 /// @return result str Path with new extension
 /// @example "file.txt" ".md" path::with_ext -> "file.md"
 pub fn with_ext(path:str newext:str -- result:str) {
-	-> newext
-	-> path
 	// Get the stem (filename without extension)
 	path stem -> base
 	// Get directory
@@ -212,7 +200,6 @@ pub fn with_ext(path:str newext:str -- result:str) {
 /// @return result i64 1 if has extension, 0 otherwise
 /// @example "file.txt" path::has_ext -> 1
 pub fn has_ext(path:str -- result:i64) {
-	-> path
 	path ext strings::len 0 >
 }
 
@@ -221,7 +208,7 @@ pub fn has_ext(path:str -- result:i64) {
 /// @return parent str Parent directory
 /// @example "/home/user/file.txt" path::parent -> "/home/user"
 pub fn parent(path:str -- parent:str) {
-	dirname
+	path dirname
 }
 
 /// Check if path is relative (not absolute).
@@ -229,7 +216,7 @@ pub fn parent(path:str -- parent:str) {
 /// @return result i64 1 if relative, 0 otherwise
 /// @example "home/user" path::is_relative -> 1
 pub fn is_relative(path:str -- result:i64) {
-	is_absolute 0 ==
+	path is_absolute 0 ==
 }
 
 /// Check if a path matches a simple extension filter.
@@ -238,7 +225,6 @@ pub fn is_relative(path:str -- result:i64) {
 /// @return result i64 1 if matches, 0 otherwise
 /// @example "file.txt" "txt" path::has_extension -> 1
 pub fn has_extension(path:str extension:str -- result:i64) {
-	-> extension -> path
 	// Normalize extension to include dot
 	extension strings::len 0 > if {
 		extension 0 strings::char_at! 46 != if {
@@ -253,7 +239,6 @@ pub fn has_extension(path:str extension:str -- result:i64) {
 /// @return depth i64 Number of path components
 /// @example "/home/user/file.txt" path::depth -> 3
 pub fn depth(path:str -- depth:i64) {
-	-> path
 	path strings::len -> plen
 	plen 0 == if {
 		0
@@ -286,7 +271,6 @@ pub fn depth(path:str -- depth:i64) {
 /// @return result i64 1 if starts with prefix, 0 otherwise
 /// @example "/home/user/file.txt" "/home" path::starts_with -> 1
 pub fn starts_with(path:str prefix:str -- result:i64) {
-	-> prefix -> path
 	path prefix strings::starts_with -> result
 	// Also check it's at a path boundary
 	result if {
@@ -309,7 +293,6 @@ pub fn starts_with(path:str prefix:str -- result:i64) {
 /// @return result str Path without prefix
 /// @example "/home/user/file.txt" "/home" path::strip_prefix -> "user/file.txt"
 pub fn strip_prefix(path:str prefix:str -- result:str) {
-	-> prefix -> path
 	path prefix starts_with if {
 		prefix strings::len -> plen
 		path strings::len -> pathlen

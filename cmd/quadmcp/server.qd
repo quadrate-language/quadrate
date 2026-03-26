@@ -1,6 +1,4 @@
 fn mcp_prompts_list(id:str -- response:str) {
-	-> id
-
 	"code" "The code snippet to analyze" 1 build_prompt_arg json::arr -> args1
 	"explain_code" "Explain Quadrate code step by step, including stack effects" args1 build_prompt -> p1
 
@@ -18,7 +16,6 @@ fn mcp_prompts_list(id:str -- response:str) {
 }
 
 fn mcp_prompts_get(id:str body:str -- response:str) {
-	-> body -> id
 	body "params" json::get_object -> _ -> params
 	params "name" json::get_string -> found -> name
 	params "arguments" json::get_object -> _ -> args
@@ -62,12 +59,10 @@ fn mcp_prompts_get(id:str body:str -- response:str) {
 }
 
 fn mcp_ping(id:str -- response:str) {
-	-> id
 	id "{}" rpc_result
 }
 
 fn is_notification(method:str -- is_notif:i64) {
-	-> method
 	method strings::len 14 >= if {
 		method 0 14 strings::substring! "notifications/" strings::compare 0 ==
 	} else {
@@ -76,8 +71,6 @@ fn is_notification(method:str -- is_notif:i64) {
 }
 
 fn dispatch(ds:ptr method:str id:str body:str -- response:str) {
-	-> body -> id -> method -> ds
-
 	method is_notification if {
 		""
 	} else {
@@ -96,7 +89,6 @@ fn dispatch(ds:ptr method:str id:str body:str -- response:str) {
 }
 
 fn extract_id(body:str -- id:str) {
-	-> body
 	body "id" json::get_int -> found -> id_int
 	found if {
 		id_int strconv::itoa
@@ -106,7 +98,6 @@ fn extract_id(body:str -- id:str) {
 }
 
 fn run_stdio(ds:ptr -- ) {
-	-> ds
 	loop {
 		io::readline switch {
 			Ok { -> line line strings::len 0 > if { line "method" json::get_string -> found -> method found 0 == if { "null" "-32600" "Invalid request: missing method" rpc_error print nl io::flush } else { line extract_id -> id ds method id line dispatch -> response response strings::len 0 > if { response print nl io::flush } } } }
@@ -116,7 +107,6 @@ fn run_stdio(ds:ptr -- ) {
 }
 
 fn handle_mcp(c:ptr -- ) {
-	-> c
 	load_docs -> ds
 	defer {
 		ds free
@@ -140,14 +130,12 @@ fn handle_mcp(c:ptr -- ) {
 }
 
 fn handle_sse(c:ptr -- ) {
-	-> c
 	c http::sse_start
 	c "endpoint" "/mcp" http::sse_event
 	c http::sse_end
 }
 
 fn handle_root(c:ptr -- ) {
-	-> c
 	c http::StatusOK
 	"name" SERVER_NAME json::kv
 	"version" SERVER_VERSION json::kv json::join
@@ -156,7 +144,6 @@ fn handle_root(c:ptr -- ) {
 }
 
 fn run_http(ds:ptr port:str -- ) {
-	-> port -> ds
 	"quadmcp v" print SERVER_VERSION print " (HTTP mode)" print nl
 	"Protocol: " print PROTOCOL_VERSION print nl
 	"Docs: " print ds @docs_dir print nl

@@ -5,8 +5,7 @@ enum Level {
 	Error
 }
 
-fn log(level:i64 msg:str -- ) {
-	-> m -> l
+fn log(l:i64 m:str -- ) {
 	l switch {
 		Level::Debug { "[DEBUG] " print }
 		Level::Info { "[INFO] " print }

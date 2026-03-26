@@ -36,7 +36,6 @@ fn main() {
 
 ```qd
 fn apply(x:i64 f:ptr -- result:i64) {
-	-> f -> x
 	x f call
 }
 

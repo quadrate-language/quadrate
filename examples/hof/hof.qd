@@ -11,10 +11,10 @@ fn main() {
 	// bi: Apply two functions to the same value
 	"bi - Apply two functions to same value:" print nl
 	"  5 doubled and plus-3: " print
-	5 fn (x:i64 -- r:i64) {
+	5 fn (i64 -- i64) {
 		2 *
 	}
-		fn (x:i64 -- r:i64) {
+		fn (i64 -- i64) {
 		3 +
 	}
 	hof::bi
@@ -22,10 +22,10 @@ fn main() {
 
 	// Practical: check if a number is both positive AND even
 	"  Is 6 positive AND even? " print
-	6 fn (x:i64 -- r:i64) {
+	6 fn (i64 -- i64) {
 		0 >
 	}
-		fn (x:i64 -- r:i64) {
+		fn (i64 -- i64) {
 		2 % 0 ==
 	}
 	hof::bi
@@ -40,7 +40,7 @@ fn main() {
 	// keep: Apply function but preserve original
 	"keep - Apply but preserve original:" print nl
 	"  5 doubled, keeping original: " print
-	5 fn (x:i64 -- r:i64) {
+	5 fn (i64 -- i64) {
 		2 *
 	}
 	hof::keep
@@ -51,7 +51,7 @@ fn main() {
 	// dip: Apply to second element, preserve top
 	"dip - Apply to second, preserve top:" print nl
 	"  Stack [10, 20], double the 10: " print
-	10 20 fn (x:i64 -- r:i64) {
+	10 20 fn (i64 -- i64) {
 		2 *
 	}
 	hof::dip
@@ -61,7 +61,7 @@ fn main() {
 	// both: Apply same function to two values
 	"both - Apply same function to two values:" print nl
 	"  Square both 3 and 4: " print
-	3 4 fn (x:i64 -- r:i64) {
+	3 4 fn (i64 -- i64) {
 		dup *
 	}
 	hof::both
@@ -71,22 +71,22 @@ fn main() {
 	// when/unless: Conditional application
 	"when/unless - Conditional application:" print nl
 	"  Double 5 when true: " print
-	5 1 fn (x:i64 -- r:i64) {
+	5 1 fn (i64 -- i64) {
 		2 *
 	}
 	hof::when print nl
 	"  Double 5 when false: " print
-	5 0 fn (x:i64 -- r:i64) {
+	5 0 fn (i64 -- i64) {
 		2 *
 	}
 	hof::when print nl
 	"  Double 5 unless true: " print
-	5 1 fn (x:i64 -- r:i64) {
+	5 1 fn (i64 -- i64) {
 		2 *
 	}
 	hof::unless print nl
 	"  Double 5 unless false: " print
-	5 0 fn (x:i64 -- r:i64) {
+	5 0 fn (i64 -- i64) {
 		2 *
 	}
 	hof::unless print nl
@@ -95,12 +95,12 @@ fn main() {
 	// times: Apply function n times
 	"times - Apply function n times:" print nl
 	"  Double 1 five times (1*2*2*2*2*2 = 32): " print
-	1 5 fn (x:i64 -- r:i64) {
+	1 5 fn (i64 -- i64) {
 		2 *
 	}
 	hof::times print nl
 	"  Square 2 three times (2^8 = 256): " print
-	2 3 fn (x:i64 -- r:i64) {
+	2 3 fn (i64 -- i64) {
 		dup *
 	}
 	hof::times print nl
@@ -111,8 +111,8 @@ fn main() {
 	25 -> age
 
 	age
-	fn (x:i64 -- r:i64) { 0 > }
-	fn (x:i64 -- r:i64) { 18 >= }
+	fn (i64 -- i64) { 0 > }
+	fn (i64 -- i64) { 18 >= }
 	hof::bi and
 	age 120 <=
 	and if {

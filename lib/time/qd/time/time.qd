@@ -87,7 +87,6 @@ import "libtime.a" as "time" {
 /// @return is_leap i64 1 if leap year, 0 otherwise
 /// @example 2024 time::is_leap_year print  // 1
 pub fn is_leap_year(yr:i64 -- is_leap:i64) {
-	-> yr
 	yr 400 % 0 == if {
 		1
 	} else {
@@ -109,8 +108,6 @@ pub fn is_leap_year(yr:i64 -- is_leap:i64) {
 /// @return days i64 Number of days in the month
 /// @example 2024 2 time::days_in_month print  // 29
 pub fn days_in_month(yr:i64 mon:i64 -- days:i64) {
-	-> mon
-	-> yr
 	mon 1 == if {
 		31
 	}
@@ -176,7 +173,6 @@ pub fn days_in_month(yr:i64 mon:i64 -- days:i64) {
 // Internal: decompose unix timestamp into year, month, day in a single pass.
 // Avoids redundant year/month iteration when multiple components are needed.
 fn decompose(ts:i64 -- yr:i64 mon:i64 d:i64) {
-	-> ts
 	1970 -> yr
 	ts 0 >= if {
 		loop {
@@ -216,7 +212,7 @@ fn decompose(ts:i64 -- yr:i64 mon:i64 d:i64) {
 /// @return yr i64 Year (e.g., 2024)
 /// @example time::unix time::year .
 pub fn year(ts:i64 -- yr:i64) {
-	decompose drop drop
+	ts decompose drop drop
 }
 
 /// Extract month from Unix timestamp (1-12).
@@ -224,7 +220,7 @@ pub fn year(ts:i64 -- yr:i64) {
 /// @return mon i64 Month (1=January, 12=December)
 /// @example time::unix time::month .
 pub fn month(ts:i64 -- mon:i64) {
-	decompose drop nip
+	ts decompose drop nip
 }
 
 /// Extract day of month from Unix timestamp (1-31).
@@ -232,7 +228,7 @@ pub fn month(ts:i64 -- mon:i64) {
 /// @return d i64 Day of month
 /// @example time::unix time::day .
 pub fn day(ts:i64 -- d:i64) {
-	decompose nip nip
+	ts decompose nip nip
 }
 
 /// Extract hour from Unix timestamp (0-23).
@@ -240,7 +236,6 @@ pub fn day(ts:i64 -- d:i64) {
 /// @return h i64 Hour
 /// @example time::unix time::hour .
 pub fn hour(ts:i64 -- h:i64) {
-	-> ts
 	ts 0 < if {
 		ts 86400 % 86400 + 86400 % -> ts
 	} else {
@@ -254,7 +249,6 @@ pub fn hour(ts:i64 -- h:i64) {
 /// @return m i64 Minute
 /// @example time::unix time::minute .
 pub fn minute(ts:i64 -- m:i64) {
-	-> ts
 	ts 0 < if {
 		ts 86400 % 86400 + 86400 % -> ts
 	} else {
@@ -268,7 +262,6 @@ pub fn minute(ts:i64 -- m:i64) {
 /// @return s i64 Second
 /// @example time::unix time::second .
 pub fn second(ts:i64 -- s:i64) {
-	-> ts
 	ts 0 < if {
 		ts 60 % 60 + 60 % -> ts
 		ts
@@ -282,7 +275,6 @@ pub fn second(ts:i64 -- s:i64) {
 /// @return wd i64 Weekday (0=Sunday)
 /// @example time::unix time::weekday .
 pub fn weekday(ts:i64 -- wd:i64) {
-	-> ts
 	// Jan 1, 1970 was Thursday (4)
 	ts 86400 / 4 + -> days
 	days 0 < if {
@@ -297,7 +289,7 @@ pub fn weekday(ts:i64 -- wd:i64) {
 /// @return yd i64 Day of year
 /// @example time::unix time::year_day .
 pub fn year_day(ts:i64 -- yd:i64) {
-	decompose -> d -> mon -> yr
+	ts decompose -> d -> mon -> yr
 	0 -> total
 	1 -> m
 	loop {
@@ -318,8 +310,6 @@ pub fn year_day(ts:i64 -- yd:i64) {
 /// @return ts i64 Unix timestamp in seconds
 /// @example 2024 1 15 12 30 0 time::date .
 pub fn date(yr:i64 mon:i64 d:i64 h:i64 m:i64 s:i64 -- ts:i64) {
-	-> s -> m -> h -> d -> mon -> yr
-
 	0 -> total
 
 	// Add years
@@ -378,7 +368,6 @@ pub fn date(yr:i64 mon:i64 d:i64 h:i64 m:i64 s:i64 -- ts:i64) {
 /// @return new_ts i64 New timestamp
 /// @example time::now time::Day 4 * time::add .
 pub fn add(ts:i64 duration:i64 -- new_ts:i64) {
-	-> duration -> ts
 	ts duration +
 }
 
@@ -388,7 +377,6 @@ pub fn add(ts:i64 duration:i64 -- new_ts:i64) {
 /// @return before i64 1 if ts1 < ts2, 0 otherwise
 /// @example ts1 ts2 time::before .
 pub fn before(ts1:i64 ts2:i64 -- before:i64) {
-	-> ts2 -> ts1
 	ts1 ts2 < if {
 		1
 	} else {
@@ -402,7 +390,6 @@ pub fn before(ts1:i64 ts2:i64 -- before:i64) {
 /// @return after i64 1 if ts1 > ts2, 0 otherwise
 /// @example ts1 ts2 time::after .
 pub fn after(ts1:i64 ts2:i64 -- after:i64) {
-	-> ts2 -> ts1
 	ts1 ts2 > if {
 		1
 	} else {
@@ -416,7 +403,6 @@ pub fn after(ts1:i64 ts2:i64 -- after:i64) {
 /// @return diff i64 ts1 - ts2 in seconds
 /// @example end_time start_time time::sub .
 pub fn sub(ts1:i64 ts2:i64 -- diff:i64) {
-	-> ts2 -> ts1
 	ts1 ts2 -
 }
 
@@ -425,7 +411,6 @@ pub fn sub(ts1:i64 ts2:i64 -- diff:i64) {
 /// @return is_wknd i64 1 if weekend, 0 otherwise
 /// @example time::unix time::weekday time::is_weekend .
 pub fn is_weekend(wd:i64 -- is_wknd:i64) {
-	-> wd
 	wd Sunday == wd Saturday == or
 }
 
@@ -434,7 +419,7 @@ pub fn is_weekend(wd:i64 -- is_wknd:i64) {
 /// @return is_wkday i64 1 if weekday, 0 otherwise
 /// @example time::unix time::weekday time::is_weekday .
 pub fn is_weekday(wd:i64 -- is_wkday:i64) {
-	is_weekend 0 ==
+	wd is_weekend 0 ==
 }
 
 /// Get number of days in a year.
@@ -442,7 +427,7 @@ pub fn is_weekday(wd:i64 -- is_wkday:i64) {
 /// @return days i64 365 or 366 for leap year
 /// @example 2024 time::days_in_year .  // 366
 pub fn days_in_year(yr:i64 -- days:i64) {
-	is_leap_year if { 366 } else { 365 }
+	yr is_leap_year if { 366 } else { 365 }
 }
 
 /// Add days to a timestamp.
@@ -451,7 +436,6 @@ pub fn days_in_year(yr:i64 -- days:i64) {
 /// @return new_ts i64 New timestamp
 /// @example time::unix 7 time::add_days .
 pub fn add_days(ts:i64 days:i64 -- new_ts:i64) {
-	-> days -> ts
 	ts days 86400 * +
 }
 
@@ -461,7 +445,6 @@ pub fn add_days(ts:i64 days:i64 -- new_ts:i64) {
 /// @return new_ts i64 New timestamp
 /// @example time::unix 2 time::add_hours .
 pub fn add_hours(ts:i64 hours:i64 -- new_ts:i64) {
-	-> hours -> ts
 	ts hours 3600 * +
 }
 
@@ -471,7 +454,6 @@ pub fn add_hours(ts:i64 hours:i64 -- new_ts:i64) {
 /// @return new_ts i64 New timestamp
 /// @example time::unix 30 time::add_minutes .
 pub fn add_minutes(ts:i64 mins:i64 -- new_ts:i64) {
-	-> mins -> ts
 	ts mins 60 * +
 }
 
@@ -481,7 +463,6 @@ pub fn add_minutes(ts:i64 mins:i64 -- new_ts:i64) {
 /// @return days i64 Number of full days between timestamps (absolute)
 /// @example end_ts start_ts time::days_between .
 pub fn days_between(ts1:i64 ts2:i64 -- days:i64) {
-	-> ts2 -> ts1
 	ts1 ts2 - -> diff
 	diff 0 < if { 0 diff - -> diff }
 	diff 86400 /
@@ -493,7 +474,6 @@ pub fn days_between(ts1:i64 ts2:i64 -- days:i64) {
 /// @return hours i64 Number of full hours between timestamps (absolute)
 /// @example end_ts start_ts time::hours_between .
 pub fn hours_between(ts1:i64 ts2:i64 -- hours:i64) {
-	-> ts2 -> ts1
 	ts1 ts2 - -> diff
 	diff 0 < if { 0 diff - -> diff }
 	diff 3600 /
@@ -504,7 +484,7 @@ pub fn hours_between(ts1:i64 ts2:i64 -- hours:i64) {
 /// @return midnight_ts i64 Timestamp at midnight of same day
 /// @example time::unix time::start_of_day .
 pub fn start_of_day(ts:i64 -- midnight_ts:i64) {
-	decompose -> d -> mon -> yr
+	ts decompose -> d -> mon -> yr
 	yr mon d 0 0 0 date
 }
 
@@ -513,7 +493,7 @@ pub fn start_of_day(ts:i64 -- midnight_ts:i64) {
 /// @return end_ts i64 Timestamp at 23:59:59 of same day
 /// @example time::unix time::end_of_day .
 pub fn end_of_day(ts:i64 -- end_ts:i64) {
-	decompose -> d -> mon -> yr
+	ts decompose -> d -> mon -> yr
 	yr mon d 23 59 59 date
 }
 
@@ -522,7 +502,6 @@ pub fn end_of_day(ts:i64 -- end_ts:i64) {
 /// @return week i64 ISO week number
 /// @example time::unix time::iso_week .
 pub fn iso_week(ts:i64 -- week:i64) {
-	-> ts
 	ts year_day -> yd
 	ts weekday -> wd
 	// Adjust weekday so Monday=1, Sunday=7
@@ -540,7 +519,6 @@ pub fn iso_week(ts:i64 -- week:i64) {
 /// @return same i64 1 if same day, 0 otherwise
 /// @example ts1 ts2 time::same_day .
 pub fn same_day(ts1:i64 ts2:i64 -- same:i64) {
-	-> ts2 -> ts1
 	ts1 decompose -> d1 -> mon1 -> yr1
 	ts2 decompose -> d2 -> mon2 -> yr2
 	yr1 yr2 == mon1 mon2 == and d1 d2 == and

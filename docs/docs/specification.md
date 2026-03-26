@@ -260,8 +260,7 @@ Functions and structs can be parameterized over types:
 
 ```quadrate
 fn identity<T>(x:T -- y:T) {
-    -> val
-    val
+    x
 }
 
 struct Box<T> {
@@ -282,8 +281,7 @@ Function pointers MUST be represented as `ptr`:
 
 ```quadrate
 fn apply(x:i64 f:ptr -- result:i64) {
-    -> func -> val
-    val func call
+    x f call
 }
 
 // Get function pointer
@@ -802,12 +800,10 @@ Functions are called by name; arguments must already be on stack:
 
 ```quadrate
 fn identity<T>(x:T -- y:T) {
-    -> val
-    val
+    x
 }
 
 fn pair<A, B>(a:A b:B -- first:A second:B) {
-    -> b -> a
     a b
 }
 ```
@@ -854,7 +850,7 @@ sum call print nl                // Prints 30
 
 **Closure without captures** (plain function pointer):
 ```quadrate
-fn (x:i64 y:i64 -- r:i64) { -> b -> a a b + } -> add_fn
+fn (x:i64 y:i64 -- r:i64) { x y + } -> add_fn
 3 4 add_fn call print nl         // Prints 7
 ```
 

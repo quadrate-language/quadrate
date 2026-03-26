@@ -161,7 +161,7 @@ test "os::exec exit code" {
 
 test "os::popen line by line" {
 	0 -> count
-	"echo -e 'line1\nline2\nline3'" fn (line:str -- ) {
+	"echo -e 'line1\nline2\nline3'" fn (str -- ) {
 		count 1 + -> count
 	} os::popen! -> exitcode
 	exitcode 0 testing::assert_eq
@@ -211,7 +211,7 @@ test "os::walk visits all entries" {
 	sub2 os::mkdir!
 
 	0 -> visited
-	tmpdir fn (path:str is_dir:i64 depth:i64 -- ) {
+	tmpdir fn (str i64 i64 -- ) {
 		visited 1 + -> visited
 	} os::walk!
 

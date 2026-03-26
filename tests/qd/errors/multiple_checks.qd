@@ -1,4 +1,4 @@
-fn might_fail(a:i64 -- result:i64)! {
+fn might_fail(i64 -- i64)! {
 	dup 10 > if {
 		"Error occurred" 1 panic
 	}

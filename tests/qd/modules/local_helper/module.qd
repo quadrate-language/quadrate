@@ -3,7 +3,7 @@
 use "math_helpers.qd"
 use "string_helpers.qd"
 
-pub fn process(x:i64 -- y:i64) {
+pub fn process(i64 -- i64) {
 	// Use functions from local helpers (no prefix needed inside module)
 	double_it
 	add_ten

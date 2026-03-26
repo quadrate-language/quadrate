@@ -112,7 +112,6 @@ pub fn assert_le(a:i64 b:i64 -- ) {
 /// @param max i64 Maximum value (inclusive)
 /// @example 5 0 10 testing::assert_in_range  // passes
 pub fn assert_in_range(value:i64 min:i64 max:i64 -- ) {
-	-> max -> min -> value
 	value min >= value max <= and assert_true
 }
 

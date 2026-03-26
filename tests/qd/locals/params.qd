@@ -1,8 +1,5 @@
 // Test using stack parameters as local variables
-fn calculate(a:i64 b:i64 c:i64 -- result:i64) {
-	-> z
-	-> y
-	-> x
+fn calculate(x:i64 y:i64 z:i64 -- result:i64) {
 	// Now compute: x * y + z
 	x y mul z add
 }

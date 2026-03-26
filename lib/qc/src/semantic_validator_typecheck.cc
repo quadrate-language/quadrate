@@ -42,6 +42,35 @@ namespace Qd {
 
 #include "semantic_validator_internal.h"
 
+	// Helper: Collect all identifier references in an AST subtree (for unused param detection)
+	static void collectIdentifierRefs(const IAstNode* node, std::unordered_set<std::string>& refs,
+			const std::unordered_set<std::string>& paramNames) {
+		if (!node) {
+			return;
+		}
+		if (node->type() == IAstNode::Type::IDENTIFIER) {
+			const auto* ident = static_cast<const AstNodeIdentifier*>(node);
+			refs.insert(ident->name());
+		}
+		if (node->type() == IAstNode::Type::FIELD_ACCESS) {
+			const auto* fieldAccess = static_cast<const AstNodeFieldAccess*>(node);
+			refs.insert(fieldAccess->varName());
+		}
+		if (node->type() == IAstNode::Type::FIELD_SET) {
+			const auto* fieldSet = static_cast<const AstNodeFieldSet*>(node);
+			refs.insert(fieldSet->varName());
+		}
+		if (node->type() == IAstNode::Type::INSTRUCTION) {
+			const auto* instr = static_cast<const AstNodeInstruction*>(node);
+			if (paramNames.count(instr->name())) {
+				refs.insert(instr->name());
+			}
+		}
+		for (size_t i = 0; i < node->childCount(); i++) {
+			collectIdentifierRefs(node->child(i), refs, paramNames);
+		}
+	}
+
 	// Helper: Convert literal type to stack value type
 	static StackValueType getLiteralStackType(AstNodeLiteral::LiteralType litType) {
 		switch (litType) {
@@ -391,18 +420,27 @@ namespace Qd {
 			mLocalVariableStructTypes.clear();
 
 			// Initialize type stack with input parameters
-			// Input parameters are on the stack when the function starts
-			// Note: Parameters are NOT registered as local variables - they must be
-			// explicitly bound with -> before use
+			// Named parameters are auto-bound as local variables at function entry,
+			// but only when ALL params are named (mixed named/unnamed all stay on stack)
+			bool allParamsNamed = true;
+			for (size_t i = 0; i < func->inputParameters().size(); i++) {
+				if (!static_cast<AstNodeParameter*>(func->inputParameters()[i])->hasName()) {
+					allParamsNamed = false;
+					break;
+				}
+			}
 			for (size_t i = 0; i < func->inputParameters().size(); i++) {
 				AstNodeParameter* param = static_cast<AstNodeParameter*>(func->inputParameters()[i]);
 				const std::string& typeStr = param->typeString();
 
 				// Validate type name
 				if (!isValidTypeName(typeStr)) {
-					reportError(param, ("Invalid type '" + typeStr + "' in parameter '" + param->name() +
-											   "'. Valid types are: i64, f64, str, ptr, any, or a struct name")
-											   .c_str());
+					std::string errorMsg = "Invalid type '" + typeStr + "'";
+					if (param->hasName()) {
+						errorMsg += " in parameter '" + param->name() + "'";
+					}
+					errorMsg += ". Valid types are: i64, f64, str, ptr, any, or a struct name";
+					reportError(param, errorMsg.c_str());
 				}
 
 				StackValueType paramType = stringToStackValueType(typeStr);
@@ -413,8 +451,17 @@ namespace Qd {
 					structType = typeStr;
 				}
 
-				typeStack.push_back(paramType);
-				structTypeStack.push_back(structType);
+				if (allParamsNamed && param->hasName()) {
+					// Named parameter: auto-bound as a local variable
+					localVariables[param->name()] = paramType;
+					if (!structType.empty()) {
+						mLocalVariableStructTypes[param->name()] = structType;
+					}
+				} else {
+					// Unnamed parameter: stays on the stack
+					typeStack.push_back(paramType);
+					structTypeStack.push_back(structType);
+				}
 			}
 
 			// Track whether current function is fallible (for panic validation)
@@ -433,6 +480,28 @@ namespace Qd {
 			// Type check the function body
 			if (func->body()) {
 				typeCheckBlock(func->body(), typeStack, localVariables, structTypeStack);
+			}
+
+			// Warn about unused named parameters
+			if (func->body()) {
+				// Collect named param names
+				std::unordered_set<std::string> paramNames;
+				for (size_t i = 0; i < func->inputParameters().size(); i++) {
+					AstNodeParameter* param = static_cast<AstNodeParameter*>(func->inputParameters()[i]);
+					if (param->hasName() && param->name()[0] != '_') {
+						paramNames.insert(param->name());
+					}
+				}
+				if (!paramNames.empty()) {
+					std::unordered_set<std::string> refs;
+					collectIdentifierRefs(func->body(), refs, paramNames);
+					for (size_t i = 0; i < func->inputParameters().size(); i++) {
+						AstNodeParameter* param = static_cast<AstNodeParameter*>(func->inputParameters()[i]);
+						if (param->hasName() && param->name()[0] != '_' && refs.find(param->name()) == refs.end()) {
+							reportWarning(param, ("Unused parameter '" + param->name() + "'").c_str());
+						}
+					}
+				}
 			}
 
 			// Validate that the type stack matches declared output parameters

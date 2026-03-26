@@ -8,37 +8,31 @@ struct Point {
 
 // Helper to get magnitude
 fn magnitude(v:Point -- result:f64) {
-	-> v
 	v @x dup * v @y dup * + math::sqrt
 }
 
 // Helper to get x component
 fn get_x(v:Point -- result:f64) {
-	-> v
 	v @x
 }
 
 // Helper to get y component
 fn get_y(v:Point -- result:f64) {
-	-> v
 	v @y
 }
 
 // Function that calls other typed functions
 fn sum_components(v:Point -- result:f64) {
-	-> v
 	v get_x v get_y +
 }
 
 // Chain of nested calls
 fn double_sum(v:Point -- result:f64) {
-	-> v
 	v sum_components 2.0 *
 }
 
 // Call different functions on same parameter
 fn describe_vec(v:Point -- ) {
-	-> v
 	"Vector: x=" print v get_x print
 	" y=" print v get_y print
 	" magnitude=" print v magnitude print

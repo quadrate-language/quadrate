@@ -3,21 +3,21 @@ use os
 
 fn main() {
 	// Test basic output streaming
-	"printf 'line1\nline2\nline3\n'" fn (line:str -- ) {
+	"printf 'line1\nline2\nline3\n'" fn (str -- ) {
 		print nl
 	} os::popen! -> exitcode
 	"exit:" print exitcode print nl
 
 	// Test with closure capturing variable
 	0 -> count
-	"printf 'a\nb\nc\nd\n'" fn (line:str -- ) {
+	"printf 'a\nb\nc\nd\n'" fn (str -- ) {
 		count 1 + -> count
 		drop
 	} os::popen! drop
 	"count:" print count print nl
 
 	// Test non-zero exit code
-	"exit 42" fn (line:str -- ) {
+	"exit 42" fn (str -- ) {
 		drop
 	} os::popen! -> code
 	"code:" print code print nl

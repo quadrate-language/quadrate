@@ -14,18 +14,15 @@ struct Rectangle {
 
 // Both have x and y, but typed parameter scopes correctly
 fn get_circle_x(c:Circle -- result:f64) {
-	-> c
 	c @x
 }
 
 fn get_rect_x(r:Rectangle -- result:f64) {
-	-> r
 	r @x
 }
 
 // This should error because Circle has no 'width' field
 fn get_circle_width(c:Circle -- result:f64) {
-	-> c
 	c @width
 }
 

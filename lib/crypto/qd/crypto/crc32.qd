@@ -35,7 +35,6 @@ pub struct Crc32 {
 
 // Generate CRC32 lookup table entry
 fn crc32_make_entry(index:i64 -- entry:i64) {
-	-> index
 	index -> crc
 	0 8 1 for j {
 		crc 1 shr -> shifted
@@ -64,8 +63,6 @@ fn crc32_make_table( -- tbl:ptr) {
 /// @param data str Data to hash
 /// @return c2 Crc32 Updated hasher state
 pub fn (c:Crc32) update(data:str -- c2:Crc32) {
-	-> data
-
 	c @state -> state
 	c @tbl -> tbl
 
@@ -130,7 +127,6 @@ pub fn (c:Crc32) release( -- ) {
 /// @return crc i64 CRC32 checksum
 /// @example "Hello" crc32 -> crc
 pub fn crc32(s:str -- crc:i64) {
-	-> s
 	Crc32 {} -> c
 	c s update -> c
 	c value -> result
@@ -142,7 +138,6 @@ pub fn crc32(s:str -- crc:i64) {
 /// @param s str Input string
 /// @return hex str CRC32 as 8-character hex string
 pub fn crc32_hex(s:str -- hex:str) {
-	-> s
 	Crc32 {} -> c
 	c s update -> c
 	c hex -> result
@@ -155,6 +150,5 @@ pub fn crc32_hex(s:str -- hex:str) {
 /// @param expected i64 Expected CRC32 value
 /// @return ok i64 1 if matches, 0 otherwise
 pub fn crc32_verify(s:str expected:i64 -- ok:i64) {
-	-> expected -> s
 	s crc32 expected == if { 1 } else { 0 }
 }

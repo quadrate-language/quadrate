@@ -1,6 +1,4 @@
 fn mcp_tools_list(id:str -- response:str) {
-	-> id
-
 	"quadrate_list_modules"
 	"List all available Quadrate standard library modules (returns JSON with name, description, function count)"
 	"" "" build_tool -> tool1
@@ -123,7 +121,6 @@ fn mcp_tools_list(id:str -- response:str) {
 const MODULE_LIST = "bits,bytes,ct,flag,fmt,hof,io,limits,math,mem,net,os,path,rand,sb,signal,sort,str,strconv,term,testing,thread,time,unicode"
 
 fn module_entry(ds:ptr name:str -- entry:str) {
-	-> name -> ds
 	ds name load_module -> m
 
 	m "description" json::get_string -> _ -> desc
@@ -142,7 +139,6 @@ fn module_entry(ds:ptr name:str -- entry:str) {
 }
 
 fn tool_list_modules(ds:ptr -- result:str) {
-	-> ds
 	ds "bits" module_entry
 	ds "bytes" module_entry json::join
 	ds "ct" module_entry json::join
@@ -172,7 +168,6 @@ fn tool_list_modules(ds:ptr -- result:str) {
 }
 
 fn tool_get_module(ds:ptr args:str -- result:str) {
-	-> args -> ds
 	args "name" json::get_string -> found -> mod_name
 	found 0 == if {
 		"Missing required parameter: name" tool_error_result
@@ -188,7 +183,6 @@ fn tool_get_module(ds:ptr args:str -- result:str) {
 }
 
 fn find_in_array(arr:str name:str -- item:str found:i64) {
-	-> name -> arr
 	arr json::array_len -> len
 	0 -> i
 	"" -> result
@@ -209,7 +203,6 @@ fn find_in_array(arr:str name:str -- item:str found:i64) {
 }
 
 fn find_related_functions(funcs:str current_name:str -- related:str) {
-	-> current_name -> funcs
 	funcs json::array_len -> len
 	"" -> result
 	0 -> count
@@ -238,7 +231,6 @@ fn find_related_functions(funcs:str current_name:str -- related:str) {
 }
 
 fn tool_get_function(ds:ptr args:str -- result:str) {
-	-> args -> ds
 	args "module" json::get_string -> found -> mod_name
 	found 0 == if {
 		"Missing required parameter: module" tool_error_result
@@ -269,7 +261,6 @@ fn tool_get_function(ds:ptr args:str -- result:str) {
 }
 
 fn search_module(ds:ptr name:str query:str result:str -- new_result:str) {
-	-> result -> query -> name -> ds
 	ds name load_module -> m
 	m query fuzzy::contains_ci if {
 		result "=== " strings::concat name strings::concat " module ===\n" strings::concat m strings::concat "\n\n" strings::concat
@@ -279,7 +270,6 @@ fn search_module(ds:ptr name:str query:str result:str -- new_result:str) {
 }
 
 fn tool_search(ds:ptr args:str -- result:str) {
-	-> args -> ds
 	args "query" json::get_string -> found -> query
 	found 0 == if {
 		"Missing required parameter: query" tool_error_result
@@ -325,7 +315,6 @@ fn tool_search(ds:ptr args:str -- result:str) {
 }
 
 fn tool_get_builtins(ds:ptr -- result:str) {
-	-> ds
 	ds @builtins dup strings::len 2 > if {
 		tool_text_result
 	} else {
@@ -334,7 +323,6 @@ fn tool_get_builtins(ds:ptr -- result:str) {
 }
 
 fn find_builtin(builtins:str name:str -- item:str found:i64) {
-	-> name -> builtins
 	builtins "categories" json::get_array -> ok -> cats
 	ok 0 == if {
 		"" 0
@@ -378,7 +366,6 @@ fn find_builtin(builtins:str name:str -- item:str found:i64) {
 }
 
 fn tool_get_builtin(ds:ptr args:str -- result:str) {
-	-> args -> ds
 	args "name" json::get_string -> found -> name
 	found 0 == if {
 		"Missing required parameter: name" tool_error_result
@@ -393,7 +380,6 @@ fn tool_get_builtin(ds:ptr args:str -- result:str) {
 }
 
 fn tool_get_syntax(ds:ptr -- result:str) {
-	-> ds
 	ds @language dup strings::len 2 > if {
 		tool_text_result
 	} else {
@@ -402,7 +388,6 @@ fn tool_get_syntax(ds:ptr -- result:str) {
 }
 
 fn tool_get_keyword(ds:ptr args:str -- result:str) {
-	-> args -> ds
 	args "name" json::get_string -> found -> name
 	found 0 == if {
 		"Missing required parameter: name" tool_error_result
@@ -422,7 +407,6 @@ fn tool_get_keyword(ds:ptr args:str -- result:str) {
 }
 
 fn find_with_alias(arr:str name:str -- item:str found:i64) {
-	-> name -> arr
 	arr json::array_len -> len
 	0 -> i
 	"" -> result
@@ -449,7 +433,6 @@ fn find_with_alias(arr:str name:str -- item:str found:i64) {
 }
 
 fn tool_get_operator(ds:ptr args:str -- result:str) {
-	-> args -> ds
 	args "name" json::get_string -> found -> name
 	found 0 == if {
 		"Missing required parameter: name" tool_error_result
@@ -469,7 +452,6 @@ fn tool_get_operator(ds:ptr args:str -- result:str) {
 }
 
 fn fuzzy_find_in_module(ds:ptr mod_name:str query:str results:str count:i64 -- new_results:str new_count:i64) {
-	-> count -> results -> query -> mod_name -> ds
 	count 10 >= if {
 		results count
 	} else {
@@ -505,7 +487,6 @@ fn fuzzy_find_in_module(ds:ptr mod_name:str query:str results:str count:i64 -- n
 }
 
 fn tool_find_function(ds:ptr args:str -- result:str) {
-	-> args -> ds
 	args "query" json::get_string -> found -> query
 	found 0 == if {
 		"Missing required parameter: query" tool_error_result
@@ -554,12 +535,10 @@ fn tool_find_function(ds:ptr args:str -- result:str) {
 }
 
 fn sig_matches_pattern(sig:str pattern:str -- matches:i64) {
-	-> pattern -> sig
 	sig pattern fuzzy::contains_ci
 }
 
 fn search_by_sig_in_module(ds:ptr mod_name:str pattern:str results:str count:i64 -- new_results:str new_count:i64) {
-	-> count -> results -> pattern -> mod_name -> ds
 	count 15 >= if {
 		results count
 	} else {
@@ -594,7 +573,6 @@ fn search_by_sig_in_module(ds:ptr mod_name:str pattern:str results:str count:i64
 }
 
 fn tool_search_by_signature(ds:ptr args:str -- result:str) {
-	-> args -> ds
 	args "signature" json::get_string -> found -> pattern
 	found 0 == if {
 		"Missing required parameter: signature" tool_error_result
@@ -637,7 +615,6 @@ fn tool_search_by_signature(ds:ptr args:str -- result:str) {
 }
 
 fn tool_get_error(ds:ptr args:str -- result:str) {
-	-> args -> ds
 	args "module" json::get_string -> found -> mod_name
 	found 0 == if {
 		"Missing required parameter: module" tool_error_result
@@ -677,7 +654,6 @@ fn tool_get_error(ds:ptr args:str -- result:str) {
 }
 
 fn tool_trace_stack(args:str -- result:str) {
-	-> args
 	args "code" json::get_string -> found -> code
 	found 0 == if {
 		"Missing required parameter: code" tool_error_result
@@ -749,7 +725,6 @@ fn tool_trace_stack(args:str -- result:str) {
 }
 
 fn tool_generate_template(args:str -- result:str) {
-	-> args
 	args "template" json::get_string -> found -> template
 	found 0 == if {
 		"Missing required parameter: template" tool_error_result
@@ -791,7 +766,6 @@ fn tool_generate_template(args:str -- result:str) {
 }
 
 fn tool_explain_signature(args:str -- result:str) {
-	-> args
 	args "signature" json::get_string -> found -> sig
 	found 0 == if {
 		"Missing required parameter: signature" tool_error_result
@@ -867,7 +841,6 @@ fn tool_explain_signature(args:str -- result:str) {
 }
 
 fn tool_type_conversion(args:str -- result:str) {
-	-> args
 	args "from" json::get_string -> found_from -> from_type
 	args "to" json::get_string -> found_to -> to_type
 	found_from 0 == found_to 0 == or if {
@@ -961,7 +934,6 @@ fn tool_type_conversion(args:str -- result:str) {
 }
 
 fn mcp_tools_call(ds:ptr id:str body:str -- response:str) {
-	-> body -> id -> ds
 	body "params" json::get_object -> found -> params
 	params "name" json::get_string -> found -> tool_name
 	params "arguments" json::get_object -> found -> args

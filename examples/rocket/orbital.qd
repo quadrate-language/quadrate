@@ -3,14 +3,12 @@
 use math
 
 fn orbital_energy(state:State -- energy:f64) {
-	-> state
 	state @vel length -> vmag
 	state @pos length -> r
 	vmag vmag * 2.0 / MuEarth r / -
 }
 
 fn eccentricity(state:State -- ecc:f64) {
-	-> state
 	state @vel -> v
 	state @pos -> r
 
@@ -26,7 +24,6 @@ fn eccentricity(state:State -- ecc:f64) {
 }
 
 fn semi_major(state:State -- a:f64) {
-	-> state
 	state orbital_energy -> energy
 	energy 0.0 >= if {
 		-1.0
@@ -36,7 +33,6 @@ fn semi_major(state:State -- a:f64) {
 }
 
 pub fn apoapsis(state:State -- alt:f64) {
-	-> state
 	state eccentricity -> ecc
 	ecc 1.0 >= if {
 		-1.0
@@ -47,7 +43,6 @@ pub fn apoapsis(state:State -- alt:f64) {
 }
 
 pub fn periapsis(state:State -- alt:f64) {
-	-> state
 	state eccentricity -> ecc
 	state semi_major -> a
 	a 0.0 < if {
@@ -58,7 +53,6 @@ pub fn periapsis(state:State -- alt:f64) {
 }
 
 pub fn inclination(state:State -- inc:f64) {
-	-> state
 	state @pos state @vel cross -> h
 	h @z h length / math::acos
 }

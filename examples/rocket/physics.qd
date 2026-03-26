@@ -3,7 +3,6 @@
 use math
 
 fn atm_density(alt:f64 -- rho:f64) {
-	-> alt
 	alt 0.0 < if {
 		AtmRho0
 	} else {
@@ -22,8 +21,6 @@ struct Deriv {
 }
 
 pub fn compute_deriv(stage:Stage state:State -- d:Deriv) {
-	-> state -> stage
-
 	state @pos -> pos
 	state @vel -> vel
 	state @mass -> mass

@@ -1,7 +1,7 @@
 // Test control flow inside anonymous functions
 fn main() {
     // Anonymous function with conditional (uses stack, not named params)
-    fn (x:i64 -- r:i64) {
+    fn (i64 -- i64) {
         dup 0 > if {
             2 *
         } else {

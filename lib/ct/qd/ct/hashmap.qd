@@ -55,7 +55,6 @@ pub struct Map<V> {
 
 // Internal: DJB2 hash a string key to an index
 fn hash_key(key:str cap:i64 -- idx:i64) {
-	-> cap -> key
 	key mem::from_string -> klen -> buf
 	5381 -> hash
 	0 klen 1 for i {
@@ -73,11 +72,6 @@ fn hash_key(key:str cap:i64 -- idx:i64) {
 // Internal: Find slot for key (for insertion or lookup)
 // Returns: slot index, and whether key was found (1) or empty slot (0)
 fn find_slot(keys:ptr states:ptr cap:i64 key:str -- slot:i64 found:i64) {
-	-> key
-	-> cap
-	-> states
-	-> keys
-
 	key cap hash_key -> start
 	start -> idx
 	-1 -> first_deleted
@@ -127,8 +121,6 @@ fn find_slot(keys:ptr states:ptr cap:i64 key:str -- slot:i64 found:i64) {
 // Internal: Rehash all entries into new arrays of given capacity.
 // Returns new_keys, new_values, new_states pointers.
 fn rehash(old_keys:ptr old_values:ptr old_states:ptr old_cap:i64 new_cap:i64 -- new_keys:ptr new_values:ptr new_states:ptr)! {
-	-> new_cap -> old_cap -> old_states -> old_values -> old_keys
-
 	new_cap 8 * mem::alloc! -> new_keys
 	new_cap 8 * mem::alloc! -> new_values
 	new_cap 8 * mem::alloc! -> new_states
@@ -177,9 +169,6 @@ fn rehash(old_keys:ptr old_values:ptr old_states:ptr old_cap:i64 new_cap:i64 -- 
 ///
 /// Stack: (m key value -- m2)
 pub fn (m:Map<V>) insert<V>(key:str value:V -- m2:Map<V>)! {
-	-> value
-	-> key
-
 	m @keys -> keys
 	m @values -> values
 	m @states -> states
@@ -231,8 +220,6 @@ pub fn (m:Map<V>) insert<V>(key:str value:V -- m2:Map<V>)! {
 ///
 /// Stack: (m key -- value)
 pub fn (m:Map<V>) get<V>(key:str -- value:V)! {
-	-> key
-
 	m @values -> values
 	m @keys -> keys
 	m @states -> states
@@ -258,8 +245,6 @@ pub fn (m:Map<V>) get<V>(key:str -- value:V)! {
 ///
 /// Stack: (m key -- exists)
 pub fn (m:Map<V>) has<V>(key:str -- exists:i64) {
-	-> key
-
 	m @cap -> cap
 
 	cap 0 == if {
@@ -283,8 +268,6 @@ pub fn (m:Map<V>) has<V>(key:str -- exists:i64) {
 ///
 /// Stack: (m key -- m2)
 pub fn (m:Map<V>) remove<V>(key:str -- m2:Map<V>)! {
-	-> key
-
 	m @keys -> keys
 	m @values -> values
 	m @states -> states

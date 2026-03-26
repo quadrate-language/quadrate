@@ -191,7 +191,7 @@ TEST(LoopStatement) {
 TEST(SimpleFunctionCall) {
 	const char* src = R"(
 		fn add_one( x:i64 -- y:i64 ) {
-			1 +
+			x 1 +
 		}
 		fn main() {
 			41 add_one print
@@ -204,7 +204,7 @@ TEST(SimpleFunctionCall) {
 
 TEST(FunctionMultipleParams) {
 	const char* src = R"(
-		fn add_three( a:i64 b:i64 c:i64 -- sum:i64 ) {
+		fn add_three( i64 i64 i64 -- sum:i64 ) {
 			+ +
 		}
 		fn main() {
@@ -231,11 +231,10 @@ TEST(FunctionMultipleReturns) {
 TEST(RecursiveFunction) {
 	const char* src = R"(
 		fn factorial( n:i64 -- r:i64 ) {
-			-> num
-			num 1 lte if {
+			n 1 lte if {
 				1
 			} else {
-				num num 1 sub factorial mul
+				n n 1 sub factorial mul
 			}
 		}
 		fn main() {
@@ -519,7 +518,6 @@ TEST(StructAsParameter) {
 			y:i64
 		}
 		fn distance_squared(p:Point -- d:i64) {
-			-> p
 			p @x p @x * p @y p @y * +
 		}
 		fn main() {
@@ -600,11 +598,10 @@ TEST(NestedDeferScopes) {
 TEST(SimpleAnonymousFunction) {
 	const char* src = R"(
 		fn apply(x:i64 f:ptr -- r:i64) {
-			-> f -> x
 			x f call
 		}
 		fn main() {
-			fn (n:i64 -- r:i64) { -> n n 2 * } -> doubler
+			fn (n:i64 -- r:i64) { n 2 * } -> doubler
 			5 doubler apply print
 		}
 	)";
@@ -616,7 +613,7 @@ TEST(ClosureWithCapture) {
 	const char* src = R"(
 		fn main() {
 			10 -> multiplier
-			fn (x:i64 -- r:i64) { -> x x multiplier mul } -> times_mult
+			fn (x:i64 -- r:i64) { x multiplier mul } -> times_mult
 			5 times_mult call print
 		}
 	)";
@@ -627,12 +624,11 @@ TEST(ClosureWithCapture) {
 TEST(HigherOrderFunction) {
 	const char* src = R"(
 		fn apply(x:i64 f:ptr -- r:i64) {
-			-> f -> x
 			x f call
 		}
-		fn double(n:i64 -- r:i64) { -> n n 2 * }
+		fn double(n:i64 -- r:i64) { n 2 * }
 		fn main() {
-			fn (n:i64 -- r:i64) { -> n n 2 * } -> doubler
+			fn (n:i64 -- r:i64) { n 2 * } -> doubler
 			5 doubler apply print
 		}
 	)";
@@ -644,7 +640,7 @@ TEST(HigherOrderFunction) {
 TEST(ClosureNoCapture) {
 	const char* src = R"(
 		fn main() {
-			fn (a:i64 b:i64 -- r:i64) { -> b -> a a b add } -> add_fn
+			fn (a:i64 b:i64 -- r:i64) { a b add } -> add_fn
 			3 4 add_fn call print
 		}
 	)";
@@ -826,7 +822,7 @@ TEST(ModuloOperator) {
 
 TEST(MultipleReturnValuesUsed) {
 	const char* src = R"(
-		fn divmod(a:i64 b:i64 -- quot:i64 rem:i64) {
+		fn divmod(i64 i64 -- quot:i64 rem:i64) {
 			over over div
 			rot rot mod
 		}
@@ -934,7 +930,7 @@ TEST(StructMethodSum) {
 
 TEST(PublicFunction) {
 	const char* src = R"(
-		pub fn exported(x:i64 -- r:i64) { 2 mul }
+		pub fn exported(x:i64 -- r:i64) { x 2 * }
 		fn main() {
 			5 exported print
 		}

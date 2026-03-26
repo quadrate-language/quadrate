@@ -3,7 +3,7 @@ import "libfmt.a" as "fmt" {
 	fn printf(format:str -- )
 }
 
-fn greet(name:str -- ) {
+fn greet(str -- ) {
 	"Hello from function, %s!\n" fmt::printf
 }
 

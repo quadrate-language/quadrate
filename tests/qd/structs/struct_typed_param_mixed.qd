@@ -12,7 +12,6 @@ struct Config {
 // Mix typed struct with primitives
 // Binding order is reversed (last param = top of stack)
 fn scale_point(p:Point factor:f64 -- result:Point) {
-	-> factor -> p
 	Point {
 		x = p @x factor *
 		y = p @y factor *
@@ -21,14 +20,12 @@ fn scale_point(p:Point factor:f64 -- result:Point) {
 
 // Mix typed struct with another struct
 fn copy_to(src:Point dest:Point -- ) {
-	-> dest -> src
 	// Just demonstrate both work - src is typed, dest is generic ptr
 	"Copying from typed Point" print nl
 }
 
 // Mix multiple types - simpler version
 fn apply_scale(p:Point c:Config -- result:f64) {
-	-> c -> p
 	c @enabled if {
 		p @x c @scale * p @y c @scale * +
 	} else {
@@ -38,7 +35,6 @@ fn apply_scale(p:Point c:Config -- result:f64) {
 
 // Typed first, primitives after
 fn offset_point(p:Point dx:f64 dy:f64 -- result:Point) {
-	-> dy -> dx -> p
 	Point {
 		x = p @x dx +
 		y = p @y dy +

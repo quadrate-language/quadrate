@@ -932,7 +932,7 @@ namespace Qd {
 		// When entering a function declaration, create a new scope for the function body
 		// Parameters must be explicitly bound with -> before use
 		if (node->type() == IAstNode::Type::FUNCTION_DECLARATION) {
-			// Create a new scope for the function body (parameters NOT pre-registered)
+			// Create a new scope for the function body
 			std::unordered_set<std::string> funcLocalVariables = localVariables;
 			std::unordered_set<std::string> funcIterators; // Empty - no iterators in function scope by default
 
@@ -940,6 +940,24 @@ namespace Qd {
 			AstNodeFunctionDeclaration* func = static_cast<AstNodeFunctionDeclaration*>(node);
 			if (func->hasReceiver()) {
 				funcLocalVariables.insert(func->receiverName());
+			}
+
+			// Named parameters are auto-bound as local variables
+			// (only when ALL params are named; mixed stays on stack)
+			bool allNamed = true;
+			for (auto* paramNode : func->inputParameters()) {
+				if (!static_cast<AstNodeParameter*>(paramNode)->hasName()) {
+					allNamed = false;
+					break;
+				}
+			}
+			if (allNamed) {
+				for (auto* paramNode : func->inputParameters()) {
+					AstNodeParameter* param = static_cast<AstNodeParameter*>(paramNode);
+					if (param->hasName()) {
+						funcLocalVariables.insert(param->name());
+					}
+				}
 			}
 
 			// Process function body
@@ -991,6 +1009,24 @@ namespace Qd {
 			std::unordered_set<std::string> validatedLocals;
 			for (const auto& captured : anonFunc->capturedVariables()) {
 				validatedLocals.insert(captured);
+			}
+
+			// Named parameters are auto-bound as local variables
+			// (only when ALL params are named)
+			bool allAnonNamed = true;
+			for (auto* paramNode : anonFunc->inputParameters()) {
+				if (!static_cast<AstNodeParameter*>(paramNode)->hasName()) {
+					allAnonNamed = false;
+					break;
+				}
+			}
+			if (allAnonNamed) {
+				for (auto* paramNode : anonFunc->inputParameters()) {
+					AstNodeParameter* param = static_cast<AstNodeParameter*>(paramNode);
+					if (param->hasName()) {
+						validatedLocals.insert(param->name());
+					}
+				}
 			}
 
 			// Note: anonLocals already contains variables defined with -> in the body

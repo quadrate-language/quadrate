@@ -13,6 +13,7 @@
 #include <quadrate/qc/ast_node_instruction.h>
 #include <quadrate/qc/ast_node_literal.h>
 #include <quadrate/qc/ast_node_local.h>
+#include <quadrate/qc/ast_node_parameter.h>
 #include <quadrate/qc/ast_node_struct.h>
 #include <quadrate/qc/colors.h>
 #include <set>
@@ -701,6 +702,15 @@ std::vector<LintIssue> lintFile(const std::string& filename, const LintOptions& 
 
 					// Collect locals and usages only within this function
 					collectLocalBindings(child, locals);
+
+					// Also register named function parameters as implicit locals
+					Qd::AstNodeFunctionDeclaration* func = static_cast<Qd::AstNodeFunctionDeclaration*>(child);
+					for (size_t j = 0; j < func->inputParameters().size(); j++) {
+						Qd::AstNodeParameter* param = static_cast<Qd::AstNodeParameter*>(func->inputParameters()[j]);
+						if (param->hasName() && param->name()[0] != '_') {
+							locals[param->name()] = param;
+						}
+					}
 
 					// Build set of local variable names for instruction shadowing detection
 					std::unordered_set<std::string> localNames;

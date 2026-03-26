@@ -1,11 +1,9 @@
 // Sibling file defining functions that operate on Counter struct from main
 
 fn counter_increment(c:Counter -- result:Counter) {
-	-> c
 	Counter { value = c @value 1 + }
 }
 
 fn counter_double(c:Counter -- result:Counter) {
-	-> c
 	Counter { value = c @value 2 * }
 }

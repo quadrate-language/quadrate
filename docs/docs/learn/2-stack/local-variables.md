@@ -29,7 +29,6 @@ fn diff_of_squares(x:i64 y:i64 -- result:i64) {
 
 ```qd
 fn diff_of_squares(x:i64 y:i64 -- result:i64) {
-	-> y -> x  // bind parameters
 	x y - x y + *
 }
 ```
@@ -148,7 +147,6 @@ fn main() {
 
 ```qd
 fn quadratic(a:f64 b:f64 c:f64 x:f64 -- result:f64) {
-	-> x -> c -> b -> a  // bind parameters
 	a x dup * * -> ax2   // ax^2
 	b x * -> bx         // bx
 	ax2 bx + c +        // ax^2 + bx + c

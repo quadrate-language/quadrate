@@ -6,7 +6,6 @@ struct Item {
 }
 
 fn create_item(cfg:Config val:i64 -- item:Item) {
-	-> val -> cfg
 	// Apply config's multiplier to value
 	Item { config = cfg value = val cfg @multiplier * }
 }
