@@ -318,10 +318,10 @@ fn main() {
 
 	// Traverse
 	first -> current
-	current 0 != while {
+	loop {
+		current 0 == if { break }
 		current @value print nl
 		current @next -> current
-		current 0 !=
 	}
 	// Output: 10 20 30
 }
@@ -431,10 +431,10 @@ Use `null` for empty pointer fields. Check for null before accessing:
 ```qd
 fn print_list(head:ptr -- ) {
 	-> cur
-	cur null neq while {
+	loop {
+		cur null eq if { break }
 		cur @value print nl
 		cur @next -> cur
-		cur null neq
 	}
 }
 ```

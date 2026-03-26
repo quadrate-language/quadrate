@@ -697,19 +697,19 @@ TEST(ConstantFolding) {
 	ASSERT(!ir.empty(), "should have IR output");
 }
 
-TEST(WhileLoop) {
+TEST(LoopWithCondition) {
 	const char* src = R"(
 		fn main() {
 			0 -> i
-			i 5 lt while {
+			loop {
+				i 5 gte if { break }
 				i print
 				i 1 + -> i
-				i 5 lt
 			}
 		}
 	)";
 	std::string ir = generateIR(src);
-	ASSERT(!ir.empty(), "should generate IR for while loop");
+	ASSERT(!ir.empty(), "should generate IR for loop with condition");
 }
 
 TEST(BreakInLoop) {

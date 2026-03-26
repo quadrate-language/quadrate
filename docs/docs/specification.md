@@ -81,7 +81,7 @@ Quadrate source files MUST be UTF-8 encoded. Identifiers MUST contain only ASCII
 
 ```
 fn        pub       struct    enum      use       import
-if        else      for       while     loop
+if        else      for       loop
 switch    break     continue  return    defer
 const     test      ctx       as
 ```
@@ -138,6 +138,21 @@ string := '"' character* '"'
 Escape sequences: `\n`, `\r`, `\t`, `\\`, `\"`
 
 Examples: `"hello"`, `"line1\nline2"`
+
+**String interpolation:**
+```
+interp_string := '$"' (character | '{' expression '}')* '"'
+```
+
+Interpolated strings are prefixed with `$`. Expressions inside `{...}` are evaluated and converted to strings. The compiler desugars `$"..."` into `sb::new` / `sb::append` / `sb::finish` calls (the `sb` module is auto-imported).
+
+Examples:
+```quadrate
+$"Hello, {name}!"              // Variable interpolation
+$"{first} {last}"              // Multiple expressions
+$"Age: {age}"                  // Integer auto-converted to string
+$"result={x + y}"             // Expression interpolation
+```
 
 #### 2.3.5 Operators and Punctuation
 
@@ -698,28 +713,7 @@ start end step for iterator {
 }
 ```
 
-### 6.3 While Loops
-
-```quadrate
-condition while {
-    // body
-    condition  // last expression becomes condition for next iteration
-}
-```
-
-The initial condition MUST be on the stack before `while`. The block MUST execute if the condition is true (non-zero). The block's last expression MUST become the condition for the next iteration.
-
-**Example:**
-```quadrate
-0 -> i
-i 5 < while {
-    i print nl
-    i 1 + -> i
-    i 5 <        // condition for next iteration
-}
-```
-
-### 6.4 Infinite Loops
+### 6.3 Infinite Loops
 
 ```quadrate
 loop {
@@ -728,7 +722,7 @@ loop {
 }
 ```
 
-### 6.5 Switch-Case
+### 6.4 Switch-Case
 
 ```quadrate
 value switch {
@@ -745,14 +739,14 @@ Cases can match:
 - Constants (including scoped: `module::Constant`)
 - Wildcard `_` for default
 
-### 6.6 Break and Continue
+### 6.5 Break and Continue
 
 ```quadrate
 break      // Exit innermost loop
 continue   // Skip to next iteration
 ```
 
-### 6.7 Defer
+### 6.6 Defer
 
 Deferred code MUST execute when scope exits in LIFO order:
 
@@ -1553,12 +1547,11 @@ field_decl      = identifier ":" type [ "=" expression ] ;
 import_fn       = ["pub"] "fn" identifier signature ["!"] ;
 
 block           = "{" { statement } "}" ;
-statement       = expression | if_stmt | for_stmt | while_stmt | loop_stmt
+statement       = expression | if_stmt | for_stmt | loop_stmt
                 | switch_stmt | defer_stmt | "break" | "continue" ;
 
 if_stmt         = expression "if" block [ "else" block ] ;
 for_stmt        = expression expression expression "for" identifier block ;
-while_stmt      = expression "while" block ;  /* block's last expr is next condition */
 loop_stmt       = "loop" block ;
 switch_stmt     = expression "switch" "{" { case_clause } "}" ;
 case_clause     = ( literal | identifier | "_" ) block ;
@@ -1566,7 +1559,8 @@ defer_stmt      = "defer" ( block | statement ) ;
 
 expression      = literal | identifier | scoped_id | struct_const | array_lit
                 | field_access | field_set | local_bind | fn_call | anon_fn
-                | error_lit | operator | instruction | as_cast ;
+                | error_lit | operator | instruction | as_cast | interp_string ;
+interp_string   = "$\"" { character | "{" expression "}" } "\"" ;
 as_cast         = "as" type ;
 
 error_lit       = "error" "{" "code" "=" expression "message" "=" expression "}" ;

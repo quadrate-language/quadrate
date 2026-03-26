@@ -485,12 +485,14 @@ TEST(SwitchDefaultOnly) {
 	ASSERT(root != nullptr, "root should not be null");
 }
 
-TEST(WhileLoop) {
+TEST(WhileLoopRemoved) {
 	Qd::Ast ast;
 	const char* src = "fn main() { 1 while { drop 0 } }";
 	Qd::IAstNode* root = ast.generate(src, false, nullptr);
 
-	ASSERT(root != nullptr, "root should not be null");
+	// while is removed; parser should emit error and return null or partial AST
+	// Just verify it doesn't crash
+	(void)root;
 }
 
 TEST(InfiniteLoop) {

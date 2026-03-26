@@ -16,7 +16,8 @@ fn main() {
 	// Query and check actual types
 	"SELECT id, val, typeof(val) FROM flexible ORDER BY id" db sqlite::prepare! -> q
 
-	q sqlite::step! while {
+	loop {
+		q sqlite::step! 0 == if { break }
 		0 q sqlite::column_int -> id
 		1 q sqlite::column_type -> typ
 
@@ -37,7 +38,6 @@ fn main() {
 		}
 
 		nl
-		q sqlite::step!
 	}
 
 	q sqlite::finalize

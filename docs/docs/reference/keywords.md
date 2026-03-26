@@ -14,7 +14,6 @@ Language keywords for declarations, control flow, and more.
 | [`if`](#if) | Conditional execution |
 | [`else`](#else) | Alternative block when if condition is false |
 | [`for`](#for) | Iteration with counter |
-| [`while`](#while) | Conditional loop |
 | [`loop`](#loop) | Infinite loop |
 | [`break`](#break) | Exit loop |
 | [`continue`](#continue) | Skip to next iteration |
@@ -25,7 +24,10 @@ Language keywords for declarations, control flow, and more.
 | [`->`](#arrow-) | Variable binding |
 | [`test`](#test) | Declares a test block |
 | [`import`](#import) | Imports a native C library |
+| [`enum`](#enum) | Declares an enumeration type |
 | [`as`](#as) | Type narrowing cast / import module namespace |
+| [`null`](#null) | Null pointer literal (0) |
+| [`$"..."`](#string-interpolation) | String interpolation |
 | [`Ok`](#ok) | Success literal (1) for switch matching |
 | [`Err`](#err) | Error literal (0) for switch matching |
 | [`true`](#true) | Boolean true (1) |
@@ -119,19 +121,6 @@ Iterates from start to end with a step, binding the iterator variable.
 ```qd
 0 10 1 for i {
 	i print nl
-}
-```
-
-### while
-
-Repeats a block while the condition is true. The condition is evaluated before entering and at the end of each iteration.
-
-```qd
-0 -> i
-i 5 < while {
-	i print nl
-	i 1 + -> i
-	i 5 <          // condition for next iteration
 }
 ```
 
@@ -272,6 +261,44 @@ typed_c @value            // type is known, no ambiguity
 ```
 
 **2. Import namespace** — Specifies the module namespace in an `import` statement. See [import](#import).
+
+### enum
+
+Declares an enumeration with named integer constants. Values auto-increment from 0 unless explicitly assigned.
+
+```qd
+enum Color { Red Green Blue }
+enum Token { Int Float Str = 10 Ident }
+```
+
+Access variants with `EnumName::Variant`. Use `pub enum` to export from a module.
+
+```qd
+Color::Red print nl     // 0
+Color::Blue print nl    // 2
+```
+
+### null
+
+Pushes 0 with pointer semantics. Used to represent the absence of a value in pointer fields.
+
+```qd
+struct Node { value:i64 next:*Node }
+Node { value = 10 next = null } -> n
+null 0 == if { "true" print nl }   // true
+```
+
+### String interpolation
+
+The `$"..."` syntax embeds expressions in strings. Expressions inside `{...}` are evaluated and converted to strings.
+
+```qd
+"World" -> name
+42 -> age
+$"Hello, {name}! Age: {age}" print nl
+```
+
+Desugars to `sb::new` / `sb::append` / `sb::finish` calls. The `sb` module is auto-imported.
 
 ### Ok
 

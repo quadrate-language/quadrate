@@ -16,7 +16,6 @@ This page documents all Quadrate keywords and built-in instructions.
 | [`else`](#else) | Provides an alternative block when the if condition is false. |
 | [`for`](#for) | Iterates from start to end with a step, binding the iterator variable. |
 | [`loop`](#loop) | Repeats a block indefinitely until break is called. |
-| [`while`](#while) | Repeats a block while the condition on the stack is true. |
 | [`break`](#break) | Exits the innermost loop immediately. |
 | [`continue`](#continue) | Skips to the next iteration of the innermost loop. |
 | [`return`](#return) | Exits the current function immediately. |
@@ -144,18 +143,6 @@ Repeats a block indefinitely until break is called.
 
 ```qd
 loop { "forever" print nl }
-```
-
----
-
-### while
-
-Repeats a block while the condition on the stack is true.
-
-**Example:**
-
-```qd
-1 -> x  x 10 < while { x print nl  x 1 + -> x  x 10 < }
 ```
 
 ---

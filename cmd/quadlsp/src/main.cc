@@ -1212,9 +1212,7 @@ std::string QuadrateLSP::getBuiltInDocumentation(const std::string& word) {
 			{"tan", "Tangent function.\n\n**Stack effect:** `a -- result`"},
 			{"if", "Conditional execution.\n\n**Syntax:** `condition if { ... } else { ... }`"},
 			{"for", "Loop construct.\n\n**Syntax:** `start end step for name { ... }`"},
-			{"while", "Conditional loop.\n\n**Syntax:** `condition while { ... next-condition }`\n\nPops and checks "
-					  "condition each iteration. Continues while truthy."},
-			{"loop", "Infinite loop.\n\n**Syntax:** `loop { ... }`"},
+			{"loop", "Infinite loop.\n\n**Syntax:** `loop { ... }`\n\nUse `if { break }` for conditional exit."},
 			{"free", "Free allocated memory.\n\n**Stack effect:** `ptr --`\n\nFrees memory allocated for structs or "
 					 "strings. Automatically frees nested string fields in structs."},
 			{"struct", "Declare a struct type.\n\n**Syntax:** `struct Name { field1:type1 field2:type2 "
@@ -1824,7 +1822,7 @@ enum SemanticTokenModifier {
 
 // Helper to check if a word is a Quadrate keyword
 static bool isKeyword(const std::string& word) {
-	static const std::set<std::string> keywords = {"fn", "if", "else", "while", "for", "use", "struct", "enum", "const",
+	static const std::set<std::string> keywords = {"fn", "if", "else", "for", "use", "struct", "enum", "const",
 			"return", "break", "continue", "defer", "switch", "case", "default", "true", "false", "nil", "and", "or",
 			"not", "in", "as", "test", "pub"};
 	return keywords.count(word) > 0;

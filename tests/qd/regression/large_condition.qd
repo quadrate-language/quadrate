@@ -1,5 +1,5 @@
 // Bug #1: Condition truncation to i32
-// Values > 2^32 should be truthy in if/while
+// Values > 2^32 should be truthy in if/loop conditions
 fn main() {
 	// 2^32 = 4294967296, this should be truthy but was truncated to 0
 	4294967296 if {
@@ -15,7 +15,7 @@ fn main() {
 		"neg_false" print nl
 	}
 
-	// Test while with large value
+	// Test loop with large value
 	4294967296 -> counter
 	counter if {
 		"while_true" print nl

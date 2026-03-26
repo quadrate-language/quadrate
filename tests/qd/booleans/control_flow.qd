@@ -17,13 +17,13 @@ fn main() {
 	3 5 gt if { "3 > 5" print nl }
 	"done" print nl
 
-	// Boolean in while (must leave condition on stack)
+	// Boolean in loop with condition check
 	"=== While loop ===" print nl
 	5 -> i
-	i 0 gt while {
+	loop {
+		i 0 gt 0 == if { break }
 		i print " " print
 		i 1 sub -> i
-		i 0 gt
 	}
 	nl
 

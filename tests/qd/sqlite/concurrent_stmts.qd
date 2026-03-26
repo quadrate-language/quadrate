@@ -17,21 +17,21 @@ fn main() {
 	"SELECT value FROM data WHERE category = ? ORDER BY value" db sqlite::prepare! -> vals
 
 	// Nested iteration - for each category, get all values
-	cats sqlite::step! while {
+	loop {
+		cats sqlite::step! 0 == if { break }
 		0 cats sqlite::column_text -> cat
 		cat print ": " print
 
 		// Use second statement while first is active
 		cat 1 vals sqlite::bind_text!
-		vals sqlite::step! while {
+		loop {
+			vals sqlite::step! 0 == if { break }
 			0 vals sqlite::column_int -> val
 			val print " " print
-			vals sqlite::step!
 		}
 		vals sqlite::reset!
 
 		nl
-		cats sqlite::step!
 	}
 
 	cats sqlite::finalize

@@ -18,13 +18,13 @@ fn main() {
 	"SELECT category, COUNT(*), SUM(amount), AVG(amount) FROM sales GROUP BY category ORDER BY category"
 	db sqlite::prepare! -> query
 
-	query sqlite::step! while {
+	loop {
+		query sqlite::step! 0 == if { break }
 		0 query sqlite::column_text -> cat
 		1 query sqlite::column_int -> cnt
 		2 query sqlite::column_float -> sum
 		3 query sqlite::column_float -> avg
 		cat print ": count=" print cnt print " sum=" print sum print " avg=" print avg print nl
-		query sqlite::step!
 	}
 
 	query sqlite::finalize

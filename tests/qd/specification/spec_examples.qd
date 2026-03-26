@@ -127,13 +127,13 @@ fn main() {
         i print nl
     }
 
-    // Section 6.3 - While Loops
+    // Testing loop with condition...
     "Testing while loops..." print nl
     0 -> i
-    i 3 < while {
+    loop {
+        i 3 >= if { break }
         i print nl
         i 1 + -> i
-        i 3 <
     }
 
     // Section 6.5 - Switch-Case

@@ -235,13 +235,13 @@ fn reverse(arr:ptr -- ) {
 	-> arr  // bind parameter
 	0 -> i
 	arr len 1 - -> j
-	i j < while {
+	loop {
+		i j >= if { break }
 		arr i nth -> temp
 		arr i arr j nth set
 		arr j temp set
 		i 1 + -> i
 		j 1 - -> j
-		i j <
 	}
 }
 

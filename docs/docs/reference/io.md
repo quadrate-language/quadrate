@@ -100,6 +100,18 @@ Arguments are pushed onto the stack with the count on top.
 "x = " print x print nl
 ```
 
+### String interpolation
+
+Use `$"..."` to embed expressions directly in strings:
+
+```qd
+"World" -> name
+42 -> age
+$"Hello, {name}! Age: {age}" print nl
+```
+
+Expressions inside `{...}` are evaluated and converted to strings automatically. The `sb` module is auto-imported when `$"..."` is used.
+
 ### Debug output
 
 ```qd

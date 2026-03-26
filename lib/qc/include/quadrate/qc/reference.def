@@ -50,10 +50,6 @@ KEYWORD(for, "Iterates from start to end with a step, binding the iterator varia
 /// @example loop { "forever" print nl }
 KEYWORD(loop, "Repeats a block indefinitely until break is called.")
 
-/// Conditional loop keyword.
-/// @example 1 -> x  x 10 < while { x print nl  x 1 + -> x  x 10 < }
-KEYWORD(while, "Repeats a block while the condition on the stack is true.")
-
 /// Loop exit keyword.
 /// @example loop { x 10 > if { break } }
 KEYWORD(break, "Exits the innermost loop immediately.")

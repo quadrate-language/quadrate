@@ -32,14 +32,13 @@ fn main() {
 	// Query and check types
 	"SELECT id, name, value FROM nullable ORDER BY id" db sqlite::prepare! -> query
 
-	query sqlite::step! while {
+	loop {
+		query sqlite::step! 0 == if { break }
 		0 query sqlite::column_int -> id
 		1 query sqlite::column_type -> name_type
 		2 query sqlite::column_type -> value_type
 
 		id print ": name_type=" print name_type print " value_type=" print value_type print nl
-
-		query sqlite::step!
 	}
 
 	query sqlite::finalize

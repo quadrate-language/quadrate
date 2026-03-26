@@ -21,11 +21,11 @@ fn main() {
 	"SELECT b.title, a.name FROM books b JOIN authors a ON b.author_id = a.id ORDER BY b.id"
 	db sqlite::prepare! -> query
 
-	query sqlite::step! while {
+	loop {
+		query sqlite::step! 0 == if { break }
 		0 query sqlite::column_text -> title
 		1 query sqlite::column_text -> author
 		title print " by " print author print nl
-		query sqlite::step!
 	}
 
 	query sqlite::finalize

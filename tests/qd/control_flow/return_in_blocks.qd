@@ -58,15 +58,15 @@ fn loop_return( -- val:i64) {
 	-1
 }
 
-// Return from while
-fn while_return( -- val:i64) {
+// Return from loop with condition
+fn loop_return2( -- val:i64) {
 	0 -> i
-	i 100 < while {
+	loop {
+		i 100 >= if { break }
 		i 3 == if {
 			i return
 		}
 		i 1 + -> i
-		i 100 <
 	}
 	-1
 }
@@ -144,8 +144,8 @@ fn main() {
 	// Return from loop
 	loop_return print nl
 
-	// Return from while
-	while_return print nl
+	// Return from loop with condition
+	loop_return2 print nl
 
 	// Return from switch
 	6 day_type print nl

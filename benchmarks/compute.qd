@@ -5,14 +5,14 @@ use time
 fn collatz_len(n:i64 -- len:i64) {
 	-> n
 	0 -> len
-	n 1 gt while {
+	loop {
+		n 1 gt 0 eq if { break }
 		n 2 mod 0 eq if {
 			n 2 div -> n
 		} else {
 			n 3 mul 1 add -> n
 		}
 		len 1 add -> len
-		n 1 gt
 	}
 	len
 }
@@ -90,10 +90,10 @@ fn ack(m:i64 n:i64 -- result:i64) {
 fn popcount(n:i64 -- count:i64) {
 	-> n
 	0 -> count
-	n 0 gt while {
+	loop {
+		n 0 gt 0 eq if { break }
 		n 1 and count add -> count
 		n 1 shr -> n
-		n 0 gt
 	}
 	count
 }
@@ -124,11 +124,11 @@ fn tak(x:i64 y:i64 z:i64 -- result:i64) {
 // GCD using Euclidean algorithm
 fn gcd(a:i64 b:i64 -- result:i64) {
 	-> b -> a
-	b 0 neq while {
+	loop {
+		b 0 eq if { break }
 		a b mod -> t
 		b -> a
 		t -> b
-		b 0 neq
 	}
 	a
 }
@@ -159,10 +159,10 @@ fn sum_totients(limit:i64 -- total:i64) {
 fn digit_sum(n:i64 -- sum:i64) {
 	-> n
 	0 -> sum
-	n 0 gt while {
+	loop {
+		n 0 gt 0 eq if { break }
 		n 10 mod sum add -> sum
 		n 10 div -> n
-		n 0 gt
 	}
 	sum
 }

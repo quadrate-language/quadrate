@@ -23,11 +23,11 @@ fn main() {
 	// Verify balances
 	"SELECT id, balance FROM accounts ORDER BY id" db sqlite::prepare! -> query
 
-	query sqlite::step! while {
+	loop {
+		query sqlite::step! 0 == if { break }
 		0 query sqlite::column_int -> id
 		1 query sqlite::column_int -> balance
 		"Account " print id print ": " print balance print nl
-		query sqlite::step!
 	}
 
 	query sqlite::finalize

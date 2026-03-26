@@ -201,7 +201,6 @@ namespace Qd {
 	}
 
 	static IAstNode* parseForStatement(u8t_scanner* scanner, ErrorReporter* errorReporter, const char* src);
-	static IAstNode* parseWhileStatement(u8t_scanner* scanner, ErrorReporter* errorReporter, const char* src);
 	static IAstNode* parseLoopStatement(u8t_scanner* scanner, ErrorReporter* errorReporter, const char* src);
 	static IAstNode* parseIfStatement(u8t_scanner* scanner, ErrorReporter* errorReporter, const char* src);
 	static IAstNode* parseSwitchStatement(u8t_scanner* scanner, ErrorReporter* errorReporter, const char* src);
@@ -1150,7 +1149,10 @@ namespace Qd {
 				} else if (strcmp(text, "for") == 0) {
 					return parseForStatement(scanner, errorReporter, src);
 				} else if (strcmp(text, "while") == 0) {
-					return parseWhileStatement(scanner, errorReporter, src);
+					errorReporter->reportError(scanner,
+							"'while' has been removed; use 'loop' with 'if'/'break' instead");
+					synchronize(scanner);
+					return nullptr;
 				} else if (strcmp(text, "loop") == 0) {
 					return parseLoopStatement(scanner, errorReporter, src);
 				} else if (strcmp(text, "switch") == 0) {
@@ -2060,17 +2062,9 @@ namespace Qd {
 						body->addChild(forStmt);
 					}
 				} else if (strcmp(text, "while") == 0) {
-					IAstNode* whileStmt = parseWhileStatement(scanner, errorReporter, src);
-					if (whileStmt) {
-						for (auto* node : tempNodes) {
-							node->setParent(body);
-							body->addChild(node);
-						}
-						tempNodes.clear();
-
-						whileStmt->setParent(body);
-						body->addChild(whileStmt);
-					}
+					errorReporter->reportError(scanner,
+							"'while' has been removed; use 'loop' with 'if'/'break' instead");
+					synchronize(scanner);
 				} else if (strcmp(text, "loop") == 0) {
 					IAstNode* loopStmt = parseLoopStatement(scanner, errorReporter, src);
 					if (loopStmt) {
@@ -3575,35 +3569,6 @@ namespace Qd {
 		forStmt->setBody(body);
 
 		return forStmt;
-	}
-
-	static IAstNode* parseWhileStatement(u8t_scanner* scanner, ErrorReporter* errorReporter, const char* src) {
-		char32_t token = u8t_scanner_scan(scanner);
-
-		if (token != '{') {
-			errorReporter->reportError(scanner, "Expected '{' after 'while'");
-			// Recovery: create empty while statement and synchronize
-			AstNodeWhileStatement* whileStmt = new AstNodeWhileStatement();
-			setNodePosition(whileStmt, scanner, src);
-			AstNodeBlock* body = new AstNodeBlock();
-			setNodePosition(body, scanner, src);
-			body->setParent(whileStmt);
-			whileStmt->setBody(body);
-			synchronize(scanner);
-			return whileStmt;
-		}
-
-		AstNodeWhileStatement* whileStmt = new AstNodeWhileStatement();
-		setNodePosition(whileStmt, scanner, src);
-		AstNodeBlock* body = new AstNodeBlock();
-		setNodePosition(body, scanner, src);
-
-		parseBlockBody(body, scanner, errorReporter, src);
-
-		body->setParent(whileStmt);
-		whileStmt->setBody(body);
-
-		return whileStmt;
 	}
 
 	static IAstNode* parseLoopStatement(u8t_scanner* scanner, ErrorReporter* errorReporter, const char* src) {

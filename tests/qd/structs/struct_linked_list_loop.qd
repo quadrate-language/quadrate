@@ -7,10 +7,10 @@ struct Item {
 fn list_sum(head:ptr -- total:i64) {
 	-> cur
 	0 -> sum
-	cur null neq while {
+	loop {
+		cur null eq if { break }
 		sum cur @value + -> sum
 		cur @next -> cur
-		cur null neq
 	}
 	sum
 }
@@ -18,10 +18,10 @@ fn list_sum(head:ptr -- total:i64) {
 fn list_len(head:ptr -- n:i64) {
 	-> cur
 	0 -> count
-	cur null neq while {
+	loop {
+		cur null eq if { break }
 		count 1 + -> count
 		cur @next -> cur
-		cur null neq
 	}
 	count
 }

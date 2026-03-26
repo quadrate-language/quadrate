@@ -27,8 +27,8 @@ Performance benchmarks comparing Quadrate to other languages.
 - **Ackermann(3,11)** - deep recursion stress test
 - **Popcount** - total set bits 1..10M
 - **Tak(24,16,8)** - Takeuchi function, triple recursion
-- **Euler Totient** - sum of totients 1..10K (nested while via GCD)
-- **Digit Sum** - sum of digit sums 1..10M (while inside for)
+- **Euler Totient** - sum of totients 1..10K (nested loop via GCD)
+- **Digit Sum** - sum of digit sums 1..10M (loop inside for)
 
 ### Float
 

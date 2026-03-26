@@ -36,10 +36,10 @@ fn main() {
 	// Query back and verify
 	"SELECT val FROM bigints ORDER BY id" db sqlite::prepare! -> q
 
-	q sqlite::step! while {
+	loop {
+		q sqlite::step! 0 == if { break }
 		0 q sqlite::column_int -> val
 		val print nl
-		q sqlite::step!
 	}
 
 	q sqlite::finalize

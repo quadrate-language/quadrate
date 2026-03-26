@@ -4,10 +4,10 @@ fn test_loops() {
 	}
 
 	10 -> x
-	x 0 > while {
+	loop {
+		x 0 <= if { break }
 		x print nl
 		x 1 - -> x
-		x 0 >
 	}
 
 	0 -> count

@@ -27,12 +27,12 @@ fn main() {
 	// Query back
 	"SELECT id, val, LENGTH(val) FROM strings ORDER BY id" db sqlite::prepare! -> q
 
-	q sqlite::step! while {
+	loop {
+		q sqlite::step! 0 == if { break }
 		0 q sqlite::column_int -> id
 		1 q sqlite::column_text -> val
 		2 q sqlite::column_int -> len
 		id print ": '" print val print "' len=" print len print nl
-		q sqlite::step!
 	}
 
 	q sqlite::finalize

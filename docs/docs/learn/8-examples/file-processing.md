@@ -179,7 +179,8 @@ fn copy_file(src:str dst:str -- total:i64)! {
 	0 -> total_copied
 	1 -> copying
 
-	copying while {
+	loop {
+		copying 0 == if { break }
 		src_file buf BufferSize io::read! -> bytes_read
 		bytes_read 0 == if {
 			0 -> copying
@@ -187,7 +188,6 @@ fn copy_file(src:str dst:str -- total:i64)! {
 			dst_file buf bytes_read io::write! drop
 			total_copied bytes_read + -> total_copied
 		}
-		copying
 	}
 
 	total_copied

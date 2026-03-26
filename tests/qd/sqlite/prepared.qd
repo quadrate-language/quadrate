@@ -29,11 +29,11 @@ fn main() {
 
 	5.0 1 query sqlite::bind_float!
 
-	query sqlite::step! while {
+	loop {
+		query sqlite::step! 0 == if { break }
 		0 query sqlite::column_text -> name
 		1 query sqlite::column_float -> price
 		name print "=" print price print nl
-		query sqlite::step!
 	}
 
 	query sqlite::finalize

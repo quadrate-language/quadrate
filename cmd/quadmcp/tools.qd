@@ -193,7 +193,8 @@ fn find_in_array(arr:str name:str -- item:str found:i64) {
 	0 -> i
 	"" -> result
 	0 -> found
-	i len < found 0 == * while {
+	loop {
+		i len < found 0 == * 0 == if { break }
 		arr i json::array_get_object -> ok -> obj
 		ok if {
 			obj "name" json::get_string -> ok -> obj_name
@@ -203,7 +204,6 @@ fn find_in_array(arr:str name:str -- item:str found:i64) {
 			}
 		}
 		i 1 + -> i
-		i len < found 0 == *
 	}
 	result found
 }
@@ -343,14 +343,16 @@ fn find_builtin(builtins:str name:str -- item:str found:i64) {
 		0 -> i
 		"" -> result
 		0 -> found
-		i num_cats < found 0 == * while {
+		loop {
+			i num_cats < found 0 == * 0 == if { break }
 			cats i json::array_get_object -> ok -> cat
 			ok if {
 				cat "instructions" json::get_array -> ok -> instrs
 				ok if {
 					instrs json::array_len -> num_instrs
 					0 -> j
-					j num_instrs < found 0 == * while {
+					loop {
+						j num_instrs < found 0 == * 0 == if { break }
 						instrs j json::array_get_object -> ok -> instr
 						ok if {
 							instr "name" json::get_string -> ok -> instr_name
@@ -366,12 +368,10 @@ fn find_builtin(builtins:str name:str -- item:str found:i64) {
 							}
 						}
 						j 1 + -> j
-						j num_instrs < found 0 == *
 					}
 				}
 			}
 			i 1 + -> i
-			i num_cats < found 0 == *
 		}
 		result found
 	}
@@ -415,7 +415,7 @@ fn tool_get_keyword(ds:ptr args:str -- result:str) {
 			found if {
 				kw_obj tool_text_result
 			} else {
-				"Keyword '" name strings::concat "' not found. Try: fn, if, else, loop, while, for, struct, use, const, pub" strings::concat tool_error_result
+				"Keyword '" name strings::concat "' not found. Try: fn, if, else, loop, for, struct, use, const, pub" strings::concat tool_error_result
 			}
 		}
 	}
@@ -427,7 +427,8 @@ fn find_with_alias(arr:str name:str -- item:str found:i64) {
 	0 -> i
 	"" -> result
 	0 -> found
-	i len < found 0 == * while {
+	loop {
+		i len < found 0 == * 0 == if { break }
 		arr i json::array_get_object -> ok -> obj
 		ok if {
 			obj "name" json::get_string -> ok -> obj_name
@@ -443,7 +444,6 @@ fn find_with_alias(arr:str name:str -- item:str found:i64) {
 			}
 		}
 		i 1 + -> i
-		i len < found 0 == *
 	}
 	result found
 }

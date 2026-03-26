@@ -84,24 +84,6 @@ fn main() {
 }
 ```
 
-## while - conditional loop
-
-Loop while a condition is true:
-
-```qd
-fn main() {
-	0 -> count
-	count 5 < while {
-		count print nl
-		count 1 + -> count
-		count 5 <  // condition for next iteration
-	}
-	// Output: 0 1 2 3 4
-}
-```
-
-The `while` pops a condition from the stack. If true, it executes the body. The body must leave a new condition on the stack for the next iteration.
-
 ## break - exit loop
 
 Exit immediately:
