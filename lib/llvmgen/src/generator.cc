@@ -587,7 +587,7 @@ namespace Qd {
 			if (const auto* param = dynamic_cast<const AstNodeParameter*>(paramNode)) {
 				const std::string& paramName = param->name();
 				const std::string& typeStr = param->typeString();
-				if (!typeStr.empty()) {
+				if (!paramName.empty() && !typeStr.empty()) {
 					localVariableTypeHints[paramName] = typeStr;
 				}
 			}
@@ -1186,7 +1186,9 @@ namespace Qd {
 								typeStr != "ptr" && typeStr != "pointer") {
 							// This is a struct type - mark the parameter name as a struct local
 							// so it gets released at function cleanup (use full qualified name)
-							localVariableStructTypes[param->name()] = extractStructName(typeStr);
+							if (!param->name().empty()) {
+								localVariableStructTypes[param->name()] = extractStructName(typeStr);
+							}
 						}
 					}
 				}

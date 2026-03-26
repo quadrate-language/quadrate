@@ -977,7 +977,7 @@ std::vector<FunctionInfo> QuadrateLSP::extractModuleFunctions(const std::string&
 			const auto& inputs = funcNode->inputParameters();
 			for (size_t j = 0; j < inputs.size(); j++) {
 				Qd::AstNodeParameter* param = static_cast<Qd::AstNodeParameter*>(inputs[j]);
-				std::string paramStr = param->name() + ":" + param->typeString();
+				std::string paramStr = param->displayString();
 				info.inputParams.push_back(paramStr);
 
 				if (j > 0) {
@@ -992,7 +992,7 @@ std::vector<FunctionInfo> QuadrateLSP::extractModuleFunctions(const std::string&
 			const auto& outputs = funcNode->outputParameters();
 			for (size_t j = 0; j < outputs.size(); j++) {
 				Qd::AstNodeParameter* param = static_cast<Qd::AstNodeParameter*>(outputs[j]);
-				std::string paramStr = param->name() + ":" + param->typeString();
+				std::string paramStr = param->displayString();
 				info.outputParams.push_back(paramStr);
 
 				if (j > 0) {
@@ -1051,7 +1051,7 @@ std::vector<FunctionInfo> QuadrateLSP::extractModuleFunctions(const std::string&
 				const auto& inputs = importedFunc->inputParameters;
 				for (size_t j = 0; j < inputs.size(); j++) {
 					Qd::AstNodeParameter* param = inputs[j];
-					std::string paramStr = param->name() + ":" + param->typeString();
+					std::string paramStr = param->displayString();
 					info.inputParams.push_back(paramStr);
 
 					if (j > 0) {
@@ -1066,7 +1066,7 @@ std::vector<FunctionInfo> QuadrateLSP::extractModuleFunctions(const std::string&
 				const auto& outputs = importedFunc->outputParameters;
 				for (size_t j = 0; j < outputs.size(); j++) {
 					Qd::AstNodeParameter* param = outputs[j];
-					std::string paramStr = param->name() + ":" + param->typeString();
+					std::string paramStr = param->displayString();
 					info.outputParams.push_back(paramStr);
 
 					if (j > 0) {

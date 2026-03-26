@@ -1,0 +1,14 @@
+// Test unnamed parameters with all built-in types
+fn pass_int(i64 -- i64) { }
+fn pass_float(f64 -- f64) { }
+fn pass_str(str -- str) { }
+
+// Test unnamed output parameters
+fn make_pair( -- i64 i64) { 10 20 }
+
+fn main() {
+	42 pass_int print nl
+	3.14 pass_float print nl
+	"hello" pass_str print nl
+	make_pair print nl print nl
+}

@@ -3893,7 +3893,7 @@ void QuadrateLSP::handleHover(const std::string& id, const std::string& uri, siz
 												}
 												Qd::AstNodeParameter* param =
 														static_cast<Qd::AstNodeParameter*>(inputs[j]);
-												docStream << param->name() << ":" << param->typeString();
+												docStream << param->displayString();
 											}
 
 											docStream << " -- ";
@@ -3906,7 +3906,7 @@ void QuadrateLSP::handleHover(const std::string& id, const std::string& uri, siz
 												}
 												Qd::AstNodeParameter* param =
 														static_cast<Qd::AstNodeParameter*>(outputs[j]);
-												docStream << param->name() << ":" << param->typeString();
+												docStream << param->displayString();
 											}
 
 											docStream << ")";
@@ -3956,7 +3956,7 @@ void QuadrateLSP::handleHover(const std::string& id, const std::string& uri, siz
 														docStream << " ";
 													}
 													const auto* param = importedFunc->inputParameters[j];
-													docStream << param->name() << ":" << param->typeString();
+													docStream << param->displayString();
 												}
 
 												docStream << " -- ";
@@ -3967,7 +3967,7 @@ void QuadrateLSP::handleHover(const std::string& id, const std::string& uri, siz
 														docStream << " ";
 													}
 													const auto* param = importedFunc->outputParameters[j];
-													docStream << param->name() << ":" << param->typeString();
+													docStream << param->displayString();
 												}
 
 												docStream << ")`";
@@ -4145,7 +4145,7 @@ void QuadrateLSP::handleSignatureHelp(const std::string& id, const std::string& 
 													}
 													Qd::AstNodeParameter* param =
 															static_cast<Qd::AstNodeParameter*>(inputs[j]);
-													sigStream << param->name() << ":" << param->typeString();
+													sigStream << param->displayString();
 												}
 
 												sigStream << " -- ";
@@ -4157,7 +4157,7 @@ void QuadrateLSP::handleSignatureHelp(const std::string& id, const std::string& 
 													}
 													Qd::AstNodeParameter* param =
 															static_cast<Qd::AstNodeParameter*>(outputs[j]);
-													sigStream << param->name() << ":" << param->typeString();
+													sigStream << param->displayString();
 												}
 
 												sigStream << ")";
@@ -4177,7 +4177,7 @@ void QuadrateLSP::handleSignatureHelp(const std::string& id, const std::string& 
 															sigStream << " ";
 														}
 														const auto* param = importedFunc->inputParameters[j];
-														sigStream << param->name() << ":" << param->typeString();
+														sigStream << param->displayString();
 													}
 
 													sigStream << " -- ";
@@ -4187,7 +4187,7 @@ void QuadrateLSP::handleSignatureHelp(const std::string& id, const std::string& 
 															sigStream << " ";
 														}
 														const auto* param = importedFunc->outputParameters[j];
-														sigStream << param->name() << ":" << param->typeString();
+														sigStream << param->displayString();
 													}
 
 													sigStream << ")";
@@ -4282,7 +4282,7 @@ void QuadrateLSP::handleDocumentSymbols(const std::string& id, const std::string
 							detail << " ";
 						}
 						Qd::AstNodeParameter* param = static_cast<Qd::AstNodeParameter*>(inputs[j]);
-						detail << param->name() << ":" << param->typeString();
+						detail << param->displayString();
 					}
 					detail << " -- ";
 					const auto& outputs = funcNode->outputParameters();
@@ -4291,7 +4291,7 @@ void QuadrateLSP::handleDocumentSymbols(const std::string& id, const std::string
 							detail << " ";
 						}
 						Qd::AstNodeParameter* param = static_cast<Qd::AstNodeParameter*>(outputs[j]);
-						detail << param->name() << ":" << param->typeString();
+						detail << param->displayString();
 					}
 					detail << ")";
 					json_object_set_new(symbol, "detail", json_string(detail.str().c_str()));
@@ -4502,7 +4502,7 @@ std::vector<FunctionInfo> QuadrateLSP::extractFunctions(const std::string& text)
 			const auto& inputs = funcNode->inputParameters();
 			for (size_t j = 0; j < inputs.size(); j++) {
 				Qd::AstNodeParameter* param = static_cast<Qd::AstNodeParameter*>(inputs[j]);
-				std::string paramStr = param->name() + ":" + param->typeString();
+				std::string paramStr = param->displayString();
 				info.inputParams.push_back(paramStr);
 
 				if (j > 0) {
@@ -4517,7 +4517,7 @@ std::vector<FunctionInfo> QuadrateLSP::extractFunctions(const std::string& text)
 			const auto& outputs = funcNode->outputParameters();
 			for (size_t j = 0; j < outputs.size(); j++) {
 				Qd::AstNodeParameter* param = static_cast<Qd::AstNodeParameter*>(outputs[j]);
-				std::string paramStr = param->name() + ":" + param->typeString();
+				std::string paramStr = param->displayString();
 				info.outputParams.push_back(paramStr);
 
 				if (j > 0) {
@@ -4576,7 +4576,7 @@ std::vector<FunctionInfo> QuadrateLSP::extractFunctions(const std::string& text)
 				const auto& inputs = importedFunc->inputParameters;
 				for (size_t j = 0; j < inputs.size(); j++) {
 					Qd::AstNodeParameter* param = inputs[j];
-					std::string paramStr = param->name() + ":" + param->typeString();
+					std::string paramStr = param->displayString();
 					info.inputParams.push_back(paramStr);
 
 					if (j > 0) {
@@ -4591,7 +4591,7 @@ std::vector<FunctionInfo> QuadrateLSP::extractFunctions(const std::string& text)
 				const auto& outputs = importedFunc->outputParameters;
 				for (size_t j = 0; j < outputs.size(); j++) {
 					Qd::AstNodeParameter* param = outputs[j];
-					std::string paramStr = param->name() + ":" + param->typeString();
+					std::string paramStr = param->displayString();
 					info.outputParams.push_back(paramStr);
 
 					if (j > 0) {

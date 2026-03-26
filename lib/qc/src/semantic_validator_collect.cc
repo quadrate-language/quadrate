@@ -64,7 +64,7 @@ namespace Qd {
 			// Check parameter names for reserved keywords
 			for (auto* paramNode : func->inputParameters()) {
 				AstNodeParameter* param = static_cast<AstNodeParameter*>(paramNode);
-				if (isReservedKeyword(param->name())) {
+				if (param->hasName() && isReservedKeyword(param->name())) {
 					std::string errorMsg =
 							"'" + param->name() + "' is a reserved keyword and cannot be used as a parameter name";
 					reportError(param, errorMsg.c_str());
@@ -72,7 +72,7 @@ namespace Qd {
 			}
 			for (auto* paramNode : func->outputParameters()) {
 				AstNodeParameter* param = static_cast<AstNodeParameter*>(paramNode);
-				if (isReservedKeyword(param->name())) {
+				if (param->hasName() && isReservedKeyword(param->name())) {
 					std::string errorMsg =
 							"'" + param->name() + "' is a reserved keyword and cannot be used as a parameter name";
 					reportError(param, errorMsg.c_str());

@@ -92,6 +92,11 @@ namespace Qd {
 		node->setPosition(line, column);
 	}
 
+	// Check if an identifier is a built-in type name (used for unnamed parameter disambiguation)
+	static bool isTypeName(const std::string& name) {
+		return name == "i64" || name == "f64" || name == "str" || name == "ptr" || name == "any";
+	}
+
 	// Helper to parse a comment (// or /* */)
 	// Returns the comment node, or nullptr if not a comment
 	// firstSlashPos: character position of the first slash (SIZE_MAX if no slash was seen)
@@ -1561,6 +1566,46 @@ namespace Qd {
 							func->addInputParameter(param);
 						}
 					}
+				} else if (isTypeName(paramNameStr)) {
+					// Unnamed typed parameter (e.g., fn (i64 -- i64) { ... })
+					AstNodeParameter* param = new AstNodeParameter("", paramNameStr, isOutput);
+					setNodePosition(param, scanner, src);
+					param->setParent(func);
+					if (isOutput) {
+						func->addOutputParameter(param);
+					} else {
+						func->addInputParameter(param);
+					}
+				} else if (paramPeek == '<') {
+					// Unnamed generic type parameter (e.g., fn (Vec<i64> -- ) { ... })
+					std::string typeStr = paramNameStr;
+					u8t_scanner_scan(scanner); // consume '<'
+					typeStr += "<";
+					int depth = 1;
+					while (depth > 0) {
+						token = u8t_scanner_scan(scanner);
+						if (token == '<') {
+							depth++;
+							typeStr += "<";
+						} else if (token == '>') {
+							depth--;
+							typeStr += ">";
+						} else if (token == ',') {
+							typeStr += ",";
+						} else if (token == U8T_IDENTIFIER) {
+							typeStr += std::string(u8t_scanner_token_text(scanner, &n));
+						} else if (token == U8T_EOF) {
+							break;
+						}
+					}
+					AstNodeParameter* param = new AstNodeParameter("", typeStr, isOutput);
+					setNodePosition(param, scanner, src);
+					param->setParent(func);
+					if (isOutput) {
+						func->addOutputParameter(param);
+					} else {
+						func->addInputParameter(param);
+					}
 				} else {
 					// Untyped parameter - use empty string as type
 					AstNodeParameter* param = new AstNodeParameter(paramNameStr, "", isOutput);
@@ -1813,6 +1858,46 @@ namespace Qd {
 						} else {
 							func->addInputParameter(param);
 						}
+					}
+				} else if (isTypeName(paramNameStr)) {
+					// Unnamed typed parameter (e.g., fn foo(i64 f64 -- i64))
+					AstNodeParameter* param = new AstNodeParameter("", paramNameStr, isOutput);
+					setNodePosition(param, scanner, src);
+					param->setParent(func);
+					if (isOutput) {
+						func->addOutputParameter(param);
+					} else {
+						func->addInputParameter(param);
+					}
+				} else if (paramPeek == '<') {
+					// Unnamed generic type parameter (e.g., fn foo(Vec<i64> -- ))
+					std::string typeStr = paramNameStr;
+					u8t_scanner_scan(scanner); // consume '<'
+					typeStr += "<";
+					int depth = 1;
+					while (depth > 0) {
+						token = u8t_scanner_scan(scanner);
+						if (token == '<') {
+							depth++;
+							typeStr += "<";
+						} else if (token == '>') {
+							depth--;
+							typeStr += ">";
+						} else if (token == ',') {
+							typeStr += ",";
+						} else if (token == U8T_IDENTIFIER) {
+							typeStr += std::string(u8t_scanner_token_text(scanner, &n));
+						} else if (token == U8T_EOF) {
+							break;
+						}
+					}
+					AstNodeParameter* param = new AstNodeParameter("", typeStr, isOutput);
+					setNodePosition(param, scanner, src);
+					param->setParent(func);
+					if (isOutput) {
+						func->addOutputParameter(param);
+					} else {
+						func->addInputParameter(param);
 					}
 				} else {
 					// Untyped parameter - use empty string as type
@@ -4124,9 +4209,10 @@ namespace Qd {
 												if (token == U8T_IDENTIFIER) {
 													const char* paramName = u8t_scanner_token_text(&scanner, &n);
 													std::string paramNameStr(paramName);
-													// Expect ':'
-													token = u8t_scanner_scan(&scanner);
-													if (token == ':') {
+													char32_t paramPeek = u8t_scanner_peek(&scanner);
+													if (paramPeek == ':') {
+														// Named typed parameter: name:type
+														token = u8t_scanner_scan(&scanner);
 														token = u8t_scanner_scan(&scanner);
 														if (token == U8T_IDENTIFIER) {
 															const char* paramType =
@@ -4136,6 +4222,11 @@ namespace Qd {
 																	paramNameStr, paramTypeStr, true);
 															func->outputParameters.push_back(param);
 														}
+													} else if (isTypeName(paramNameStr)) {
+														// Unnamed typed parameter: i64
+														AstNodeParameter* param =
+																new AstNodeParameter("", paramNameStr, true);
+														func->outputParameters.push_back(param);
 													}
 												}
 											}
@@ -4148,9 +4239,10 @@ namespace Qd {
 									if (token == U8T_IDENTIFIER) {
 										const char* paramName = u8t_scanner_token_text(&scanner, &n);
 										std::string paramNameStr(paramName);
-										// Expect ':'
-										token = u8t_scanner_scan(&scanner);
-										if (token == ':') {
+										char32_t paramPeek = u8t_scanner_peek(&scanner);
+										if (paramPeek == ':') {
+											// Named typed parameter: name:type
+											token = u8t_scanner_scan(&scanner); // consume ':'
 											token = u8t_scanner_scan(&scanner);
 											if (token == U8T_IDENTIFIER) {
 												const char* paramType = u8t_scanner_token_text(&scanner, &n);
@@ -4174,6 +4266,10 @@ namespace Qd {
 														new AstNodeParameter(paramNameStr, paramTypeStr, false);
 												func->inputParameters.push_back(param);
 											}
+										} else if (isTypeName(paramNameStr)) {
+											// Unnamed typed parameter: i64
+											AstNodeParameter* param = new AstNodeParameter("", paramNameStr, false);
+											func->inputParameters.push_back(param);
 										}
 									}
 								}

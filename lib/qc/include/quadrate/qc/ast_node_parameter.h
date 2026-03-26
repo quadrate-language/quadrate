@@ -56,6 +56,20 @@ namespace Qd {
 			return mIsOutput;
 		}
 
+		bool hasName() const {
+			return !mName.empty();
+		}
+
+		std::string displayString() const {
+			if (mName.empty()) {
+				return mType;
+			}
+			if (mType.empty()) {
+				return mName;
+			}
+			return mName + ":" + mType;
+		}
+
 	private:
 		std::string mName;
 		std::string mType;

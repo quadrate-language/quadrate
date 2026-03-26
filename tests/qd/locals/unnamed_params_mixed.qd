@@ -1,0 +1,11 @@
+// Test mixed named and unnamed parameters
+fn greet(name:str i64 -- ) {
+	-> count -> name
+	0 count 1 for i {
+		"Hello, " print name print nl
+	}
+}
+
+fn main() {
+	"World" 3 greet
+}

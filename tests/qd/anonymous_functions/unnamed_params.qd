@@ -1,0 +1,8 @@
+// Test anonymous functions with unnamed parameters
+fn main() {
+	fn (i64 i64 -- i64) { + } -> add
+	3 4 add call print nl
+
+	fn (i64 -- i64) { dup * } -> square
+	5 square call print nl
+}
