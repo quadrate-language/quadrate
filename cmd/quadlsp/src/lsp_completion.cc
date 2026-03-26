@@ -163,8 +163,8 @@ void QuadrateLSP::handleCompletion(const std::string& id, const std::string& uri
 	static const char* instructions[] = {"add", "sub", "mul", "div", "dup", "swap", "drop", "over", "rot", "print",
 			"prints", "eq", "neq", "lt", "gt", "lte", "gte", "and", "or", "not", "inc", "dec", "abs", "sqrt", "sq",
 			"sin", "cos", "tan", "asin", "acos", "atan", "ln", "log10", "pow", "min", "max", "ceil", "floor", "round",
-			"if", "for", "loop", "switch", "case", "default", "break", "continue", "defer", "free", "struct",
-			"pub", "as"};
+			"if", "for", "loop", "switch", "case", "default", "break", "continue", "defer", "free", "struct", "pub",
+			"as"};
 
 	json_t* response = json_object();
 	json_object_set_new(response, "jsonrpc", json_string("2.0"));

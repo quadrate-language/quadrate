@@ -1149,8 +1149,8 @@ namespace Qd {
 				} else if (strcmp(text, "for") == 0) {
 					return parseForStatement(scanner, errorReporter, src);
 				} else if (strcmp(text, "while") == 0) {
-					errorReporter->reportError(scanner,
-							"'while' has been removed; use 'loop' with 'if'/'break' instead");
+					errorReporter->reportError(
+							scanner, "'while' has been removed; use 'loop' with 'if'/'break' instead");
 					synchronize(scanner);
 					return nullptr;
 				} else if (strcmp(text, "loop") == 0) {
@@ -2062,8 +2062,8 @@ namespace Qd {
 						body->addChild(forStmt);
 					}
 				} else if (strcmp(text, "while") == 0) {
-					errorReporter->reportError(scanner,
-							"'while' has been removed; use 'loop' with 'if'/'break' instead");
+					errorReporter->reportError(
+							scanner, "'while' has been removed; use 'loop' with 'if'/'break' instead");
 					synchronize(scanner);
 				} else if (strcmp(text, "loop") == 0) {
 					IAstNode* loopStmt = parseLoopStatement(scanner, errorReporter, src);

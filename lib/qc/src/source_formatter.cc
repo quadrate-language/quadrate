@@ -2165,10 +2165,9 @@ namespace Qd {
 
 			// Handle control flow keywords - keep on same line, fix indentation
 			if (startsWithKeyword(trimmed, "if") || startsWithKeyword(trimmed, "for") ||
-					startsWithKeyword(trimmed, "loop") ||
-					startsWithKeyword(trimmed, "else") || startsWithKeyword(trimmed, "switch") ||
-					startsWithKeyword(trimmed, "case") || startsWithKeyword(trimmed, "default") ||
-					startsWithKeyword(trimmed, "defer")) {
+					startsWithKeyword(trimmed, "loop") || startsWithKeyword(trimmed, "else") ||
+					startsWithKeyword(trimmed, "switch") || startsWithKeyword(trimmed, "case") ||
+					startsWithKeyword(trimmed, "default") || startsWithKeyword(trimmed, "defer")) {
 				// Write with current indent
 				for (int i = 0; i < indentLevel; i++) {
 					output << '\t';
