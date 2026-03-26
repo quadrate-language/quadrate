@@ -470,13 +470,17 @@
                     </div>
                     <div class="quick-ref-section">
                         <h4>Functions</h4>
-                        <p>Define with inputs and outputs separated by <code>--</code></p>
+                        <p>Define with inputs and outputs separated by <code>--</code>. Named params are auto-bound as locals.</p>
                         <div class="quick-ref-example">
-                            <code>fn add(a:i64 b:i64 -- sum:i64)</code>
+                            <code>fn add(a:i64 b:i64 -- i64)</code>
                             <span class="result">takes 2 ints, returns 1</span>
                         </div>
                         <div class="quick-ref-example">
-                            <code>fn greet(--) { "Hi" print }</code>
+                            <code>fn double(i64 -- i64)</code>
+                            <span class="result">unnamed params use the stack</span>
+                        </div>
+                        <div class="quick-ref-example">
+                            <code>fn greet() { "Hi" print }</code>
                             <span class="result">no inputs, no outputs</span>
                         </div>
                     </div>
@@ -512,10 +516,6 @@
                     </div>
                     <div class="quick-ref-section">
                         <h4>More Loops</h4>
-                        <div class="quick-ref-example">
-                            <code>cond while { body; cond }</code>
-                            <span class="result">body must re-push condition</span>
-                        </div>
                         <div class="quick-ref-example">
                             <code>loop { ... break }</code>
                             <span class="result">infinite loop, use break</span>
@@ -651,7 +651,7 @@
         let errorLines = new Set();
 
         // Quadrate syntax highlighting
-        const keywords = ['fn', 'pub', 'if', 'else', 'for', 'while', 'loop', 'break', 'continue', 'return', 'use', 'struct', 'const', 'defer', 'true', 'false', 'and', 'or', 'not'];
+        const keywords = ['fn', 'pub', 'if', 'else', 'for', 'loop', 'break', 'continue', 'return', 'use', 'struct', 'const', 'defer', 'true', 'false', 'and', 'or', 'not'];
         const types = ['i64', 'f64', 'str', 'ptr', 'any'];
         const builtins = ['dup', 'swap', 'drop', 'over', 'rot', 'nip', 'tuck', 'print', 'nl', 'it', 'len', 'push', 'pop', 'get', 'set', 'call', 'eq', 'neq', 'lt', 'gt', 'lte', 'gte', 'abs', 'neg', 'sin', 'cos', 'tan', 'sqrt', 'floor', 'ceil', 'round', 'min', 'max', 'mod'];
 
@@ -807,10 +807,10 @@ fn main() {
 	42 -> answer
 	"The answer is " print answer print nl
 
-	// Variables can be reused
+	// Variables can be reassigned
 	10 -> x
-	x x * -> x_squared
-	"10 squared is " print x_squared print nl
+	x x * -> x
+	"10 squared is " print x print nl
 
 	// Use in calculations
 	5 -> width
@@ -844,7 +844,7 @@ fn main() {
 	}
 }`,
 
-            loops: `// Loops: for loops and while loops
+            loops: `// Loops: for loops and loop/break
 fn main() {
 	// For loop: start end step for var { body }
 	"Counting: " print
@@ -866,23 +866,32 @@ fn main() {
 		n n * print " " print
 	}
 	nl
+
+	// Infinite loop with break
+	"Loop: " print
+	0 -> x
+	loop {
+		x 5 >= if { break }
+		x print " " print
+		x 1 + -> x
+	}
+	nl
 }`,
 
             functions: `// Functions take inputs and produce outputs
 // Signature: fn name(inputs -- outputs)
-fn double(x:i64 -- result:i64) {
-	// Parameter x is on the stack, use it directly
-	2 *
+// Named params are auto-bound as local variables
+fn double(x:i64 -- i64) {
+	x 2 *
 }
 
-fn greet(name:str -- ) {
-	-> name    // pop parameter into local variable
+fn greet(name:str) {
 	"Hello, " print name print "!" print nl
 }
 
-fn add(a:i64 b:i64 -- sum:i64) {
-	// Both a and b are on stack: [a b]
-	+    // just add them
+// Unnamed params just use the stack
+fn add(i64 i64 -- i64) {
+	+
 }
 
 fn main() {
@@ -911,14 +920,12 @@ fn main() {
 }`,
 
             factorial: `// Factorial: n! = n * (n-1) * ... * 1
-fn factorial(n:i64 -- result:i64) {
-	-> n                        // pop parameter into local
-	1 -> acc                    // accumulator starts at 1
+fn factorial(n:i64 -- i64) {
+	1 -> acc
 	1 n ++ 1 for i {
-		// loop from 1 to n
-		acc i * -> acc          // acc = acc * i
+		acc i * -> acc
 	}
-	acc                         // return accumulator
+	acc
 }
 
 fn main() {
@@ -932,30 +939,23 @@ fn main() {
             multireturn: `// Functions can return multiple values on the stack
 // The stack naturally supports this - no tuples needed!
 // Returns BOTH quotient AND remainder
-fn divmod(a:i64 b:i64 -- quot:i64 rem:i64) {
-	-> b -> a              // pop parameters
+fn divmod(a:i64 b:i64 -- i64 i64) {
 	a b /                  // push quotient
 	a b %                  // push remainder
-	// Stack now has 2 values: [quot rem]
 }
 
 // Swap values using pure stack (no variables!)
-fn swap_pair(a:i64 b:i64 -- b:i64 a:i64) {
-	// Input:  [a b]
+fn swap_pair(i64 i64 -- i64 i64) {
 	swap
-	// Output: [b a]
 }
 
 // Return min AND max using stack operations
-fn minmax(a:i64 b:i64 -- min:i64 max:i64) {
-	// Duplicate both values: [a b] -> [a b a b]
+fn minmax(i64 i64 -- i64 i64) {
 	over over
-	// Compare the copies
 	< if {
-		// a < b: return [a b]
-		// already correct order
+		// a < b: already correct order
 	} else {
-		// a >= b: return [b a]
+		// a >= b: swap
 		swap
 	}
 }
@@ -966,7 +966,7 @@ fn main() {
 
 	// divmod returns 2 values
 	"17 divided by 5:" print nl
-	17 5 divmod -> rem -> quot    // pop both
+	17 5 divmod -> rem -> quot
 	"  Quotient:  " print quot print nl
 	"  Remainder: " print rem print nl
 	nl
@@ -1001,18 +1001,15 @@ fn (p:Point) show() {
 }
 
 // Method using stack ops to compute distance
-fn (p:Point) magnitude( -- dist:f64) {
-	// x*x + y*y, then sqrt
-	p @x dup *    // x squared on stack
-	p @y dup *    // y squared on stack
+fn (p:Point) magnitude( -- f64) {
+	p @x dup *    // x squared
+	p @y dup *    // y squared
 	+             // add them
 	math::sqrt    // square root
 }
 
-// Method with another Point as parameter
-fn (p:Point) distance_to(other:Point -- dist:f64) {
-	-> other
-	// Stack-based: (x2-x1)^2 + (y2-y1)^2, sqrt
+// Method with named parameter
+fn (p:Point) distance_to(other:Point -- f64) {
 	other @x p @x - dup *    // dx squared
 	other @y p @y - dup *    // dy squared
 	+ math::sqrt
@@ -1061,30 +1058,25 @@ fn main() {
 // No arrays - just creative stack manipulation!
 // Shows: dup, swap, over, rot, drop
 // Compare and swap top two: ensure smaller is below larger
-// Stack: [... a b] -> [... min max] where min <= max
-fn order2(a:i64 b:i64 -- min:i64 max:i64) {
+fn order2(i64 i64 -- i64 i64) {
 	over over    // [a b a b]
 	> if {
-		// if a > b
 		swap     // [b a] - swapped!
 	}
 }
 
 // Sort 3 values using bubble sort passes
-// Stack: [a b c] -> [min mid max]
-fn sort3(a:i64 b:i64 c:i64 -- x:i64 y:i64 z:i64) {
-	// Bubble sort: compare adjacent pairs, repeat
-	// Pass 1: compare top two (positions 1,2)
-	order2              // [a b' c'] where b' <= c'
+fn sort3(i64 i64 i64 -- i64 i64 i64) {
+	// Pass 1: compare top two
+	order2
 
-	// Pass 2: compare bottom two (positions 0,1)
-	// Need to rotate to access them
-	rot rot             // [a b' c'] -> [b' c' a] -> [c' a b']
-	order2              // [c' a' b''] where a' <= b''
-	rot                 // [a' b'' c']
+	// Pass 2: compare bottom two
+	rot rot
+	order2
+	rot
 
 	// Pass 3: compare top two again
-	order2              // [a' b''' c''] - fully sorted!
+	order2
 }
 
 fn main() {
@@ -1094,29 +1086,25 @@ fn main() {
 
 	// Sort 2 values
 	"Sort [5, 3]: " print
-	5 3              // push onto stack
-	order2           // sort them
-	-> b -> a        // pop to print in order
+	5 3 order2
+	-> b -> a
 	a print " " print b print nl
 
 	// Sort 3 values
 	"Sort [7, 2, 9]: " print
-	7 2 9            // push [7 2 9] (9 is top)
-	sort3            // sort them
-	-> c -> b -> a   // pop all three
+	7 2 9 sort3
+	-> c -> b -> a
 	a print " " print b print " " print c print nl
 
 	// Reverse order
 	"Sort [9, 5, 1]: " print
-	9 5 1
-	sort3
+	9 5 1 sort3
 	-> c -> b -> a
 	a print " " print b print " " print c print nl
 
 	// Already sorted
 	"Sort [1, 2, 3]: " print
-	1 2 3
-	sort3
+	1 2 3 sort3
 	-> c -> b -> a
 	a print " " print b print " " print c print nl
 
