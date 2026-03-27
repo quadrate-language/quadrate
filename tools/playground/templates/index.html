@@ -441,6 +441,18 @@
                             <code>over</code>
                             <span class="result">copy second: [a b] → [a b a]</span>
                         </div>
+                        <div class="quick-ref-example">
+                            <code>rot</code>
+                            <span class="result">rotate third to top: [a b c] → [b c a]</span>
+                        </div>
+                        <div class="quick-ref-example">
+                            <code>dup2 swap2 drop2</code>
+                            <span class="result">2-element variants</span>
+                        </div>
+                        <div class="quick-ref-example">
+                            <code>dupd overd nipd</code>
+                            <span class="result">operate on element below top</span>
+                        </div>
                     </div>
                     <div class="quick-ref-section">
                         <h4>Math & Comparison</h4>
@@ -485,14 +497,41 @@
                         </div>
                     </div>
                     <div class="quick-ref-section">
+                        <h4>Structs & Fields</h4>
+                        <div class="quick-ref-example">
+                            <code>struct Point { x:f64 y:f64 }</code>
+                            <span class="result">define a struct</span>
+                        </div>
+                        <div class="quick-ref-example">
+                            <code>Point { x = 1.0 y = 2.0 }</code>
+                            <span class="result">create an instance</span>
+                        </div>
+                        <div class="quick-ref-example">
+                            <code>p &lt;&lt;x</code>
+                            <span class="result">read field x from p</span>
+                        </div>
+                        <div class="quick-ref-example">
+                            <code>p 5.0 &gt;&gt;x -> p</code>
+                            <span class="result">write field x (returns struct)</span>
+                        </div>
+                        <div class="quick-ref-example">
+                            <code>p 5.0 &gt;&gt;x!</code>
+                            <span class="result">write field x (no return)</span>
+                        </div>
+                        <div class="quick-ref-example">
+                            <code>Point {} 1.0 &gt;&gt;x 2.0 &gt;&gt;y</code>
+                            <span class="result">chained writes</span>
+                        </div>
+                    </div>
+                    <div class="quick-ref-section">
                         <h4>Strings</h4>
                         <div class="quick-ref-example">
                             <code>"Hello" print</code>
                             <span class="result">print a string</span>
                         </div>
                         <div class="quick-ref-example">
-                            <code>"Hello" strings::len</code>
-                            <span class="result">string length → 5 (use strings)</span>
+                            <code>$"Hello {name}!"</code>
+                            <span class="result">string interpolation</span>
                         </div>
                         <div class="quick-ref-example">
                             <code>"a" "b" strings::concat</code>
@@ -512,6 +551,43 @@
                         <div class="quick-ref-example">
                             <code>" " print</code>
                             <span class="result">print space separator</span>
+                        </div>
+                    </div>
+                    <div class="quick-ref-section">
+                        <h4>Error Handling</h4>
+                        <div class="quick-ref-example">
+                            <code>fn divide(i64 i64 -- i64)!</code>
+                            <span class="result">fallible function (may fail)</span>
+                        </div>
+                        <div class="quick-ref-example">
+                            <code>10 0 divide if { ... } else { ... }</code>
+                            <span class="result">check success/failure</span>
+                        </div>
+                        <div class="quick-ref-example">
+                            <code>10 0 divide?</code>
+                            <span class="result">propagate error to caller with ?</span>
+                        </div>
+                        <div class="quick-ref-example">
+                            <code>"msg" -1 panic</code>
+                            <span class="result">signal an error</span>
+                        </div>
+                    </div>
+                    <div class="quick-ref-section">
+                        <h4>Switch</h4>
+                        <div class="quick-ref-example">
+                            <code>x switch { 1 { "one" } 2 { "two" } }</code>
+                            <span class="result">match value against cases</span>
+                        </div>
+                    </div>
+                    <div class="quick-ref-section">
+                        <h4>Generics</h4>
+                        <div class="quick-ref-example">
+                            <code>struct Box&lt;T&gt; { value:T }</code>
+                            <span class="result">generic struct</span>
+                        </div>
+                        <div class="quick-ref-example">
+                            <code>42 Box -> b</code>
+                            <span class="result">type inferred from value</span>
                         </div>
                     </div>
                     <div class="quick-ref-section">

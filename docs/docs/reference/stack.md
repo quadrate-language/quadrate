@@ -26,6 +26,11 @@ Operations for manipulating values on the stack.
 | `clear` | `(... --)` | Remove all |
 | `depth` | `(... -- ... n)` | Count values |
 
+**Naming convention:**
+- Base name: operates on top element (`dup`, `swap`, `drop`, `over`, `nip`)
+- `2` suffix: operates on top pair (`dup2`, `swap2`, `drop2`, `over2`)
+- `d` suffix: operates on the element below top (`dupd`, `swapd`, `overd`, `nipd`)
+
 ---
 
 ## Duplication

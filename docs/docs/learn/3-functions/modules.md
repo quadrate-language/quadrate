@@ -276,6 +276,12 @@ Quadrate looks for modules in:
 2. `$QUADRATE_ROOT` if set
 3. Standard library locations
 
+## Conventions
+
+- Always use `module::function` for stdlib calls — e.g., `math::sqrt`, `strings::len`
+- Functions you define in the same directory are called without a namespace
+- Use `pub fn` to export functions from a module; `fn` is private by default
+
 ## Avoiding name conflicts
 
 Module namespaces prevent conflicts:

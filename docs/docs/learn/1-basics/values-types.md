@@ -84,6 +84,14 @@ fn main() {
 
 Expressions in `{...}` are evaluated and converted to strings. String variables use `sb::append`, integer variables use `sb::append_int`. The `sb` module is auto-imported when `$"..."` is used.
 
+### Choosing a string method
+
+| Method | Best for |
+|--------|----------|
+| `$"Hello {name}"` | Formatting with embedded values |
+| `"a" "b" strings::concat` | Simple two-string join |
+| `sb::new` / `sb::append` / `sb::build` | Building strings in loops or incrementally |
+
 ## Pointer (ptr)
 
 Pointers reference data in memory. You'll use them with structs and arrays:

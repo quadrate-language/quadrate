@@ -81,6 +81,24 @@ fn add(a:i64 b:i64 -- sum:i64) {
 }
 ```
 
+## Unnamed parameters
+
+Parameters can omit names — they stay on the stack for direct manipulation:
+
+```qd
+fn double(i64 -- i64) {
+	2 *       // operates directly on the stack value
+}
+
+fn add(i64 i64 -- i64) {
+	+         // adds the two values on the stack
+}
+```
+
+**When to use which:**
+- **Named** (`a:i64`) — when you reference the value multiple times or the meaning isn't obvious
+- **Unnamed** (`i64`) — for simple stack operations where the body is a single expression
+
 ## Multiple outputs
 
 Functions can have multiple outputs:
