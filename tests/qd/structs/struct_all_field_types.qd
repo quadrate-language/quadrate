@@ -14,8 +14,8 @@ fn test_all_types() {
 		pointer_field = 0
 	} -> obj
 
-	obj @int_field print nl
-	obj @float_field print nl
+	obj <<int_field print nl
+	obj <<float_field print nl
 }
 
 fn main() {

@@ -58,11 +58,11 @@ pub struct Deque<T> {
 ///
 /// Stack: (d val -- d2)
 pub fn (d:Deque<T>) push_back<T>(val:T -- d2:Deque<T>)! {
-	d @data -> data
-	d @head -> head
-	d @tail -> tail
-	d @len -> len
-	d @cap -> cap
+	d <<data -> data
+	d <<head -> head
+	d <<tail -> tail
+	d <<len -> len
+	d <<cap -> cap
 
 	// Grow capacity if full
 	len cap >= cap 0 == or if {
@@ -102,11 +102,11 @@ pub fn (d:Deque<T>) push_back<T>(val:T -- d2:Deque<T>)! {
 ///
 /// Stack: (d val -- d2)
 pub fn (d:Deque<T>) push_front<T>(val:T -- d2:Deque<T>)! {
-	d @data -> data
-	d @head -> head
-	d @tail -> tail
-	d @len -> len
-	d @cap -> cap
+	d <<data -> data
+	d <<head -> head
+	d <<tail -> tail
+	d <<len -> len
+	d <<cap -> cap
 
 	// Grow capacity if full
 	len cap >= cap 0 == or if {
@@ -150,16 +150,16 @@ pub fn (d:Deque<T>) push_front<T>(val:T -- d2:Deque<T>)! {
 ///
 /// Stack: (d -- val d2)
 pub fn (d:Deque<T>) pop_front<T>(-- val:T d2:Deque<T>)! {
-	d @len -> len
+	d <<len -> len
 
 	len 0 == if {
 		"pop_front: deque is empty" 1 err
 	}
 
-	d @data -> data
-	d @head -> head
-	d @tail -> tail
-	d @cap -> cap
+	d <<data -> data
+	d <<head -> head
+	d <<tail -> tail
+	d <<cap -> cap
 
 	data head 8 * mem::get_i64 -> val
 
@@ -176,16 +176,16 @@ pub fn (d:Deque<T>) pop_front<T>(-- val:T d2:Deque<T>)! {
 ///
 /// Stack: (d -- val d2)
 pub fn (d:Deque<T>) pop_back<T>(-- val:T d2:Deque<T>)! {
-	d @len -> len
+	d <<len -> len
 
 	len 0 == if {
 		"pop_back: deque is empty" 1 err
 	}
 
-	d @data -> data
-	d @head -> head
-	d @tail -> tail
-	d @cap -> cap
+	d <<data -> data
+	d <<head -> head
+	d <<tail -> tail
+	d <<cap -> cap
 
 	// Move tail backwards to get last element
 	tail 1 - -> new_tail
@@ -203,14 +203,14 @@ pub fn (d:Deque<T>) pop_back<T>(-- val:T d2:Deque<T>)! {
 ///
 /// Stack: (d -- val)
 pub fn (d:Deque<T>) peek_front<T>(-- val:T)! {
-	d @len -> len
+	d <<len -> len
 
 	len 0 == if {
 		"peek_front: deque is empty" 1 err
 	}
 
-	d @data -> data
-	d @head -> head
+	d <<data -> data
+	d <<head -> head
 
 	data head 8 * mem::get_i64
 }
@@ -219,15 +219,15 @@ pub fn (d:Deque<T>) peek_front<T>(-- val:T)! {
 ///
 /// Stack: (d -- val)
 pub fn (d:Deque<T>) peek_back<T>(-- val:T)! {
-	d @len -> len
+	d <<len -> len
 
 	len 0 == if {
 		"peek_back: deque is empty" 1 err
 	}
 
-	d @data -> data
-	d @tail -> tail
-	d @cap -> cap
+	d <<data -> data
+	d <<tail -> tail
+	d <<cap -> cap
 
 	tail 1 - -> back_idx
 	back_idx 0 < if {
@@ -241,20 +241,20 @@ pub fn (d:Deque<T>) peek_back<T>(-- val:T)! {
 ///
 /// Stack: (d -- n)
 pub fn (d:Deque<T>) length<T>(-- n:i64) {
-	d @len
+	d <<len
 }
 
 /// Check if the deque is empty.
 ///
 /// Stack: (d -- bool)
 pub fn (d:Deque<T>) is_empty<T>(-- b:i64) {
-	d @len 0 ==
+	d <<len 0 ==
 }
 
 /// Free the deque's memory.
 ///
 /// Stack: (d --)
 pub fn (d:Deque<T>) release<T>(--) {
-	d @data -> data
+	d <<data -> data
 	data 0 neq if { data mem::free }
 }

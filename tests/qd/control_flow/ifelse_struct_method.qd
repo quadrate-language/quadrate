@@ -9,11 +9,11 @@ struct Point {
 }
 
 fn (p:Point) get_x( -- x:i64) {
-	p @x
+	p <<x
 }
 
 fn (p:Point) get_y( -- y:i64) {
-	p @y
+	p <<y
 }
 
 fn main() {

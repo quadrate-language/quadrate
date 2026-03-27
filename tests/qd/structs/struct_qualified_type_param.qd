@@ -5,18 +5,18 @@ use math
 
 // Function with qualified struct type parameter
 fn print_vec(v:math::Vec2 -- ) {
-	"Vec2(" print v @x print "," print v @y print ")" print nl
+	"Vec2(" print v <<x print "," print v <<y print ")" print nl
 }
 
 // Function with multiple qualified struct type parameters
 fn add_vecs(a:math::Vec2 b:math::Vec2 -- sumx:f64 sumy:f64) {
-	a @x b @x +
-	a @y b @y +
+	a <<x b <<x +
+	a <<y b <<y +
 }
 
 // Function with mixed qualified and primitive parameters
 fn scale_x(v:math::Vec2 factor:f64 -- result:f64) {
-	v @x factor *
+	v <<x factor *
 }
 
 fn main() {

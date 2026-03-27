@@ -41,7 +41,7 @@ pub fn with_seed(seed:i64 -- rng:ptr) {
 /// @return n i64 Random 64-bit integer
 /// @example rng rand::next -> rng n
 pub fn next(rng:ptr -- rng:ptr n:i64) {
-	rng @state -> x
+	rng <<state -> x
 
 	// xorshift64*
 	x x 12 shl xor -> x

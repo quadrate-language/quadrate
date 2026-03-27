@@ -11,8 +11,6 @@ namespace Qd {
 			"!=", "<", "<=", "==", ">", ">=",
 			// Arithmetic operators (also available as symbols)
 			"%", "*", "+", "++", "-", "--", "/",
-			// Bitwise operators (also available as symbols)
-			"<<", ">>",
 			// Arithmetic instructions
 			"add", "dec", "div", "inc", "mod", "mul", "neg", "sub",
 			// Bitwise operations

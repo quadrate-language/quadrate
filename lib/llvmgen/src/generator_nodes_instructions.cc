@@ -260,7 +260,7 @@ namespace Qd {
 				compileTimeStack.push_back(builder->CreateNot(a, "not"));
 				return;
 			}
-			if (name == "shl" || name == "<<") {
+			if (name == "shl") {
 				llvm::Value* b = compileTimeStack.back();
 				compileTimeStack.pop_back();
 				llvm::Value* a = compileTimeStack.back();
@@ -268,7 +268,7 @@ namespace Qd {
 				compileTimeStack.push_back(builder->CreateShl(a, b, "shl"));
 				return;
 			}
-			if (name == "shr" || name == ">>") {
+			if (name == "shr") {
 				llvm::Value* b = compileTimeStack.back();
 				compileTimeStack.pop_back();
 				llvm::Value* a = compileTimeStack.back();
@@ -915,10 +915,6 @@ namespace Qd {
 				fnName = "qd_inc";
 			} else if (name == "--") {
 				fnName = "qd_dec";
-			} else if (name == "<<") {
-				fnName = "qd_shl";
-			} else if (name == ">>") {
-				fnName = "qd_shr";
 			} else {
 				fnName = "qd_" + name;
 			}

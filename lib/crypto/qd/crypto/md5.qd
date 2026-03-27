@@ -220,13 +220,13 @@ fn md5_process_block(aa:i64 bb:i64 cc:i64 dd:i64 block:ptr -- ra:i64 rb:i64 rc:i
 /// @param data str Data to hash
 /// @return h2 Md5 Updated hasher state
 pub fn (h:Md5) update(data:str -- h2:Md5)! {
-	h @a -> aa
-	h @b -> bb
-	h @c -> cc
-	h @d -> dd
-	h @buf -> buf
-	h @buflen -> buflen
-	h @total -> total
+	h <<a -> aa
+	h <<b -> bb
+	h <<c -> cc
+	h <<d -> dd
+	h <<buf -> buf
+	h <<buflen -> buflen
+	h <<total -> total
 
 	// Lazy init buffer
 	buf 0 == if {
@@ -266,13 +266,13 @@ pub fn (h:Md5) update(data:str -- h2:Md5)! {
 /// @param h Md5 The hasher state
 /// @return hash str 32-character hex string (lowercase)
 pub fn (h:Md5) finish( -- hash:str)! {
-	h @a -> aa
-	h @b -> bb
-	h @c -> cc
-	h @d -> dd
-	h @buf -> buf
-	h @buflen -> buflen
-	h @total -> total
+	h <<a -> aa
+	h <<b -> bb
+	h <<c -> cc
+	h <<d -> dd
+	h <<buf -> buf
+	h <<buflen -> buflen
+	h <<total -> total
 
 	buf 0 == if {
 		64 mem::alloc! -> buf
@@ -365,7 +365,7 @@ pub fn (h:Md5) finish( -- hash:str)! {
 /// Free resources used by MD5 hasher.
 /// @param h Md5 The hasher state to free
 pub fn (h:Md5) release( -- ) {
-	h @buf -> buf
+	h <<buf -> buf
 	buf 0 != if {
 		buf mem::free
 	}

@@ -377,7 +377,7 @@ TEST(StructConstruction) {
 TEST(StructFieldAccess) {
 	const char* src = R"(
 		struct Point { x:i64 y:i64 }
-		fn main() { Point { x = 10 y = 20 } -> p p @x print }
+		fn main() { Point { x = 10 y = 20 } -> p p <<x print }
 	)";
 	size_t errors = validateCode(src);
 	ASSERT(errors == 0, "struct field access should succeed");
@@ -386,7 +386,7 @@ TEST(StructFieldAccess) {
 TEST(StructFieldSet) {
 	const char* src = R"(
 		struct Point { x:i64 y:i64 }
-		fn main() { Point { x = 10 y = 20 } -> p 30 p @x! p @x print }
+		fn main() { Point { x = 10 y = 20 } -> p p 30 >>x drop p <<x print }
 	)";
 	size_t errors = validateCode(src);
 	ASSERT(errors == 0, "struct field set should succeed");
@@ -395,7 +395,7 @@ TEST(StructFieldSet) {
 TEST(StructUndefinedField) {
 	const char* src = R"(
 		struct Point { x:i64 y:i64 }
-		fn main() { Point { x = 10 y = 20 } -> p p @z print }
+		fn main() { Point { x = 10 y = 20 } -> p p <<z print }
 	)";
 	size_t errors = validateCode(src);
 	ASSERT(errors >= 1, "undefined struct field should error");

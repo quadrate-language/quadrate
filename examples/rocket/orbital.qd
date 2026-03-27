@@ -3,14 +3,14 @@
 use math
 
 fn orbital_energy(state:State -- energy:f64) {
-	state @vel length -> vmag
-	state @pos length -> r
+	state <<vel length -> vmag
+	state <<pos length -> r
 	vmag vmag * 2.0 / MuEarth r / -
 }
 
 fn eccentricity(state:State -- ecc:f64) {
-	state @vel -> v
-	state @pos -> r
+	state <<vel -> v
+	state <<pos -> r
 
 	// h = r × v
 	r v cross -> h
@@ -53,6 +53,6 @@ pub fn periapsis(state:State -- alt:f64) {
 }
 
 pub fn inclination(state:State -- inc:f64) {
-	state @pos state @vel cross -> h
-	h @z h length / math::acos
+	state <<pos state <<vel cross -> h
+	h <<z h length / math::acos
 }

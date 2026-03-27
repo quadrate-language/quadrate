@@ -10,8 +10,8 @@ Custom data types that group related fields together.
 | `pub struct Name { fields }` | Define a public struct (visible to other modules) |
 | `struct Name<T> { fields }` | Define a generic struct |
 | `Name { field = value }` | Create an instance |
-| `@field` | Read a field |
-| `value struct.field` | Write a field |
+| `<<field` | Read a field |
+| `struct value >>field` | Write a field (pushes modified struct back) |
 | `fn (s:Name) method(...)` | Define a method |
 
 ---
@@ -40,7 +40,7 @@ struct Config {
 
 fn main() {
 	Config {} -> cfg           // all defaults
-	cfg @max_retries print nl  // 3
+	cfg <<max_retries print nl  // 3
 }
 ```
 
@@ -71,17 +71,17 @@ All fields without defaults must be provided. Order does not matter.
 
 ## Field access (read)
 
-Use `@fieldname` to read a field value. The struct is consumed from the stack and the field value is pushed.
+Use `<<fieldname` to read a field value. The struct is consumed from the stack and the field value is pushed. The `<<` indicates data flows left (out of the struct).
 
-**Syntax:** `struct @field` → pushes field value
+**Syntax:** `struct <<field` → pushes field value
 
 ```qd
-p @x print nl  // read x from p
+p <<x print nl  // read x from p
 ```
 
 ### Chained access
 
-For nested structs, chain `@` operators:
+For nested structs, chain `<<` operators:
 
 ```qd
 struct Line {
@@ -89,7 +89,7 @@ struct Line {
 	end:Point
 }
 
-line @start @x print nl  // read x from start point of line
+line <<start <<x print nl  // read x from start point of line
 ```
 
 ### Type narrowing for ptr values
@@ -98,11 +98,11 @@ When a value is typed as `ptr` (e.g., in callback handlers), use `as` to tell th
 
 ```qd
 fn handler(c:ptr -- ) {
-	c as http::Ctx @body -> body
+	c as http::Ctx <<body -> body
 }
 ```
 
-If multiple structs share a field name and the compiler cannot determine the type, accessing `@field` on an untyped `ptr` is a compile error. Use `as StructType` to disambiguate.
+If multiple structs share a field name and the compiler cannot determine the type, accessing `<<field` on an untyped `ptr` is a compile error. Use `as StructType` to disambiguate.
 
 See [Type Casting](types.md#type-narrowing-with-as) for details.
 
@@ -110,13 +110,13 @@ See [Type Casting](types.md#type-narrowing-with-as) for details.
 
 ## Field set (write)
 
-Use `.fieldname` to write a field value. The value to set must be on the stack before the struct.
+Use `>>fieldname` to write a field value. The struct must be on the stack, followed by the value. The `>>` indicates data flows right (into the struct). The modified struct is pushed back onto the stack.
 
-**Syntax:** `value struct.field`
+**Syntax:** `struct value >>field`
 
 ```qd
-5.0 p.x       // set p.x to 5.0
-10.0 p.y      // set p.y to 10.0
+p 5.0 >>x -> p    // set p.x to 5.0
+p 10.0 >>y -> p   // set p.y to 10.0
 ```
 
 ---
@@ -133,7 +133,7 @@ struct Circle {
 }
 
 fn (c:Circle) area( -- a:f64) {
-	c @radius dup * 3.14159 *
+	c <<radius dup * 3.14159 *
 }
 
 fn main() {
@@ -160,16 +160,15 @@ struct Point {
 	y:f64
 }
 
-fn (p:Point) translate(dx:f64 dy:f64 -- ) {
-	p @x dx + p .x
-	p @y dy + p .y
+fn (p:Point) translate(dx:f64 dy:f64 -- result:Point) {
+	p p <<x dx + >>x p <<y dy + >>y
 }
 
 fn main() {
 	Point { x = 1.0 y = 2.0 } -> p
-	p 3.0 4.0 translate
-	p @x print nl  // 4
-	p @y print nl  // 6
+	p 3.0 4.0 translate -> p
+	p <<x print nl  // 4
+	p <<y print nl  // 6
 }
 ```
 
@@ -183,7 +182,7 @@ struct Counter {
 }
 
 fn (c:Counter) bump( -- result:i64) {
-	c @value 1 +
+	c <<value 1 +
 }
 
 fn bump( -- result:i64) {
@@ -210,7 +209,7 @@ struct Box<T> {
 
 fn main() {
 	Box<i64> { value = 42 } -> b
-	b @value print nl  // 42
+	b <<value print nl  // 42
 }
 ```
 

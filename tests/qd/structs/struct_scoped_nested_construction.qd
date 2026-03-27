@@ -13,8 +13,8 @@ fn main() {
 			z = 3.0
 		}
 	} -> c
-	c @vec @x print nl
-	c @vec @y print nl
-	c @vec @z print nl
+	c <<vec <<x print nl
+	c <<vec <<y print nl
+	c <<vec <<z print nl
 	c free
 }

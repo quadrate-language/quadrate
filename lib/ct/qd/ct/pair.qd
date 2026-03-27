@@ -10,8 +10,8 @@
 ///
 /// ## Accessing Elements
 ///
-///     p @first -> key
-///     p @second -> value
+///     p <<first -> key
+///     p <<second -> value
 ///
 /// ## Unpacking Both Elements
 ///
@@ -34,7 +34,7 @@ pub struct Pair<T, U> {
 ///
 /// Stack: (p -- a)
 pub fn (p:Pair<T, U>) first<T, U>(-- a:T) {
-	p @first
+	p <<first
 }
 
 /// Get the second element of a pair.
@@ -44,7 +44,7 @@ pub fn (p:Pair<T, U>) first<T, U>(-- a:T) {
 ///
 /// Stack: (p -- b)
 pub fn (p:Pair<T, U>) second<T, U>(-- b:U) {
-	p @second
+	p <<second
 }
 
 /// Unpack a pair onto the stack.
@@ -56,6 +56,6 @@ pub fn (p:Pair<T, U>) second<T, U>(-- b:U) {
 ///
 /// Stack: (p -- a b)
 pub fn (p:Pair<T, U>) unpack<T, U>(-- a:T b:U) {
-	p @first
-	p @second
+	p <<first
+	p <<second
 }

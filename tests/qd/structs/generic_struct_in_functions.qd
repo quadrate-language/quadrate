@@ -2,7 +2,7 @@
 struct Box<T> { value:T }
 
 fn print_box(b:ptr -- ) {
-	b @value print nl
+	b <<value print nl
 }
 
 fn make_int_box(x:i64 -- result:ptr) {
@@ -20,14 +20,14 @@ fn main() {
 
 	// Return generic struct from function
 	99 make_int_box -> b2
-	b2 @value print nl
+	b2 <<value print nl
 
 	3.14 make_float_box -> b3
-	b3 @value print nl
+	b3 <<value print nl
 
 	// Multiple boxes in a loop
 	0 5 1 for i {
 		i Box -> tmp
-		tmp @value print nl
+		tmp <<value print nl
 	}
 }

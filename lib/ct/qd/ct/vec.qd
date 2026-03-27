@@ -59,9 +59,9 @@ pub struct Vec<T> {
 ///
 /// Stack: (v elem -- v2)
 pub fn (v:Vec<T>) push<T>(elem:T -- v2:Vec<T>)! {
-	v @len -> len
-	v @cap -> cap
-	v @data -> data
+	v <<len -> len
+	v <<cap -> cap
+	v <<data -> data
 
 	// Grow capacity if full
 	len cap >= if {
@@ -86,9 +86,9 @@ pub fn (v:Vec<T>) push<T>(elem:T -- v2:Vec<T>)! {
 ///
 /// Stack: (v -- elem v2)
 pub fn (v:Vec<T>) pop<T>(-- elem:T v2:Vec<T>)! {
-	v @len -> len
-	v @cap -> cap
-	v @data -> data
+	v <<len -> len
+	v <<cap -> cap
+	v <<data -> data
 
 	len 0 <= if {
 		"pop: vector is empty" 1 panic
@@ -110,8 +110,8 @@ pub fn (v:Vec<T>) pop<T>(-- elem:T v2:Vec<T>)! {
 ///
 /// Stack: (v idx -- elem)
 pub fn (v:Vec<T>) get<T>(idx:i64 -- elem:T)! {
-	v @len -> len
-	v @data -> data
+	v <<len -> len
+	v <<data -> data
 
 	idx 0 < idx len >= or if {
 		"get: index out of bounds" 1 panic
@@ -130,9 +130,9 @@ pub fn (v:Vec<T>) get<T>(idx:i64 -- elem:T)! {
 ///
 /// Stack: (v idx elem -- v2)
 pub fn (v:Vec<T>) set<T>(idx:i64 elem:T -- v2:Vec<T>)! {
-	v @len -> len
-	v @cap -> cap
-	v @data -> data
+	v <<len -> len
+	v <<cap -> cap
+	v <<data -> data
 
 	idx 0 < idx len >= or if {
 		"set: index out of bounds" 1 panic
@@ -150,7 +150,7 @@ pub fn (v:Vec<T>) set<T>(idx:i64 elem:T -- v2:Vec<T>)! {
 ///
 /// Stack: (v -- n)
 pub fn (v:Vec<T>) length<T>(-- n:i64) {
-	v @len
+	v <<len
 }
 
 /// Get the allocated capacity.
@@ -163,7 +163,7 @@ pub fn (v:Vec<T>) length<T>(-- n:i64) {
 ///
 /// Stack: (v -- n)
 pub fn (v:Vec<T>) capacity<T>(-- n:i64) {
-	v @cap
+	v <<cap
 }
 
 /// Check if the vector is empty (length == 0).
@@ -173,7 +173,7 @@ pub fn (v:Vec<T>) capacity<T>(-- n:i64) {
 ///
 /// Stack: (v -- bool)
 pub fn (v:Vec<T>) is_empty<T>(-- b:i64) {
-	v @len 0 ==
+	v <<len 0 ==
 }
 
 /// Remove all elements, keeping allocated capacity.
@@ -185,8 +185,8 @@ pub fn (v:Vec<T>) is_empty<T>(-- b:i64) {
 ///
 /// Stack: (v -- v2)
 pub fn (v:Vec<T>) reset<T>(-- v2:Vec<T>) {
-	v @cap -> cap
-	v @data -> data
+	v <<cap -> cap
+	v <<data -> data
 	Vec<T> { data = data len = 0 cap = cap }
 }
 
@@ -201,7 +201,7 @@ pub fn (v:Vec<T>) reset<T>(-- v2:Vec<T>) {
 ///
 /// Stack: (v --)
 pub fn (v:Vec<T>) release<T>(--) {
-	v @data -> data
+	v <<data -> data
 	data 0 neq if {
 		data mem::free
 	}

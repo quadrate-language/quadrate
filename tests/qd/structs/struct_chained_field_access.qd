@@ -1,4 +1,4 @@
-// Test chained field access (rect @origin @x or rect @origin@x)
+// Test chained field access (rect <<origin <<x or rect <<origin <<x)
 struct Point {
 	x:f64
 	y:f64
@@ -19,14 +19,14 @@ fn main() {
 	} -> rect
 
 	// Chained field access with spaces
-	rect @origin @x print nl
-	rect @origin @y print nl
+	rect <<origin <<x print nl
+	rect <<origin <<y print nl
 
 	// Compact syntax without spaces
-	rect @origin@x print nl
-	rect @origin@y print nl
+	rect <<origin <<x print nl
+	rect <<origin <<y print nl
 
 	// Regular field access
-	rect @width print nl
-	rect @height print nl
+	rect <<width print nl
+	rect <<height print nl
 }

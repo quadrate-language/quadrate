@@ -19,8 +19,8 @@ fn main() {
 	} -> rect
 
 	// Access nested struct fields using chained access
-	rect @origin @x print nl
-	rect @origin @y print nl
-	rect @width print nl
-	rect @height print nl
+	rect <<origin <<x print nl
+	rect <<origin <<y print nl
+	rect <<width print nl
+	rect <<height print nl
 }

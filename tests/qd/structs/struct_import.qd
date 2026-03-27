@@ -8,8 +8,8 @@ fn test_import() {
 	} -> r
 
 	// Access and print fields
-	r @width print nl
-	r @height print nl
+	r <<width print nl
+	r <<height print nl
 }
 
 fn main() {

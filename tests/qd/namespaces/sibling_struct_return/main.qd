@@ -8,13 +8,13 @@ fn main() {
 
 	// Direct normalize works
 	pos normalize -> n1
-	n1 @x "Direct: %.2f " fmt::printf
-	n1 @y "%.2f " fmt::printf
-	n1 @z "%.2f\n" fmt::printf
+	n1 <<x "Direct: %.2f " fmt::printf
+	n1 <<y "%.2f " fmt::printf
+	n1 <<z "%.2f\n" fmt::printf
 
 	// Through sibling function - should produce same result
 	s normalize_pos -> n2
-	n2 @x "Sibling: %.2f " fmt::printf
-	n2 @y "%.2f " fmt::printf
-	n2 @z "%.2f\n" fmt::printf
+	n2 <<x "Sibling: %.2f " fmt::printf
+	n2 <<y "%.2f " fmt::printf
+	n2 <<z "%.2f\n" fmt::printf
 }

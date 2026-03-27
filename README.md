@@ -52,7 +52,7 @@ Requires: Meson, C++20 compiler, LLVM 14+
 ## Contributing
 
 - **Issues**: https://todo.sr.ht/~klahr/quadrate
-- **Patches**: ~klahr/quadrate@lists.sr.ht
+- **Patches**: ~klahr/quadrate<<lists.sr.ht
 
 ## License
 

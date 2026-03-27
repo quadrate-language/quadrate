@@ -63,7 +63,7 @@ fn example_locals(a:i64 b:i64 -- result:i64) {
 struct Vec2 { x:f64 y:f64 }
 
 fn length(v:Vec2 -- len:f64) {
-    v @x v @x * v @y v @y * + math::sqrt
+    v <<x v <<x * v <<y v <<y * + math::sqrt
 }
 
 // Section 10.1 - Fallible Functions
@@ -174,14 +174,14 @@ fn main() {
     // Section 8.2-8.4 - Struct construction and field access
     "Testing structs..." print nl
     Point { x = 1.5 y = 2.5 } -> p
-    p @x print nl               // 1.5
-    p @y print nl               // 2.5
-    5.0 p.x
-    p @x print nl               // 5
+    p <<x print nl               // 1.5
+    p <<y print nl               // 2.5
+    p 5.0 >>x -> p
+    p <<x print nl               // 5
 
     // Section 8.5 - Generic Structs
     Box<i64> { value = 100 } -> box
-    box @value print nl         // 100
+    box <<value print nl         // 100
 
     // Section 10.3 - Error handling
     "Testing error handling..." print nl

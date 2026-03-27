@@ -9,8 +9,8 @@ struct WithPtr {
 }
 
 fn use_str_field(x:WithStr -- ) {
-	x @data drop  // Expects str field
-	x @name drop  // Expects name field (unique to WithStr)
+	x <<data drop  // Expects str field
+	x <<name drop  // Expects name field (unique to WithStr)
 }
 
 fn main() {

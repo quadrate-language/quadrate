@@ -5,7 +5,7 @@ struct Point {
 }
 
 fn use_point(pt:Point -- ) {
-	pt @z drop  // ERROR: Point has no field 'z'
+	pt <<z drop  // ERROR: Point has no field 'z'
 }
 
 fn main() {

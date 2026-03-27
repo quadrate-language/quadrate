@@ -14,23 +14,23 @@ struct Point {
 
 // Method: Calculate distance from origin using Pythagorean theorem
 fn (p:Point) distance_from_origin( -- dist:f64) {
-	p @x dup *
-	p @y dup *
+	p <<x dup *
+	p <<y dup *
 	+
 	math::sqrt
 }
 
 // Method: Calculate distance to another point
 fn (p:Point) distance_to(other:Point -- dist:f64) {
-	other @x p @x - dup *
-	other @y p @y - dup *
+	other <<x p <<x - dup *
+	other <<y p <<y - dup *
 	+
 	math::sqrt
 }
 
 // Method: Print a point as (x, y)
 fn (p:Point) print_point() {
-	"(" print p @x print ", " print p @y print ")" print
+	"(" print p <<x print ", " print p <<y print ")" print
 }
 
 // Factory function: Create a point at origin
@@ -70,10 +70,10 @@ fn main() {
 	"  p3 = " print p3 print_point nl
 	nl
 
-	// Access struct fields with @fieldname syntax
+	// Access struct fields with <<fieldname syntax
 	"Field access:" print nl
-	"  p2.x = " print p2 @x print nl
-	"  p2.y = " print p2 @y print nl
+	"  p2.x = " print p2 <<x print nl
+	"  p2.y = " print p2 <<y print nl
 	nl
 
 	// Calculate distances using methods

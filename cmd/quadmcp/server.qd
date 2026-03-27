@@ -112,7 +112,7 @@ fn handle_mcp(c:ptr -- ) {
 		ds free
 	}
 
-	c as http::Ctx @body -> body
+	c as http::Ctx <<body -> body
 	body "method" json::get_string -> _ -> method
 
 	body extract_id -> id
@@ -146,7 +146,7 @@ fn handle_root(c:ptr -- ) {
 fn run_http(ds:ptr port:str -- ) {
 	"quadmcp v" print SERVER_VERSION print " (HTTP mode)" print nl
 	"Protocol: " print PROTOCOL_VERSION print nl
-	"Docs: " print ds @docs_dir print nl
+	"Docs: " print ds <<docs_dir print nl
 	"http://localhost" print port print nl
 
 	http::engine -> e

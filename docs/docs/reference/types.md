@@ -82,7 +82,7 @@ The `as` keyword narrows a `ptr` value to a specific struct type. This is a comp
 ```qd
 fn get_name(p:ptr -- name:str) {
 	-> p
-	p as Dog @name
+	p as Dog <<name
 }
 ```
 
@@ -96,11 +96,11 @@ struct Bar { value:str }
 
 fn read_foo(p:ptr -- v:i64) {
 	-> p
-	p as Foo @value   // disambiguates @value
+	p as Foo <<value   // disambiguates <<value
 }
 ```
 
-Without `as`, accessing `@value` on an untyped `ptr` when multiple structs define that field is a compile error.
+Without `as`, accessing `<<value` on an untyped `ptr` when multiple structs define that field is a compile error.
 
 ### as vs cast
 
@@ -119,7 +119,7 @@ Combining `as` with `->` tracks the type for all subsequent accesses:
 fn process(p:ptr -- ) {
 	-> p
 	p as Point -> pt   // pt is now typed as Point
-	pt @x print nl     // no ambiguity
-	pt @y print nl     // type still known
+	pt <<x print nl     // no ambiguity
+	pt <<y print nl     // type still known
 }
 ```

@@ -6,38 +6,38 @@ struct Bounded<T> { lo:f64 hi:f64 value:T }
 fn main() {
 	// Concrete i64 + generic i64
 	1 42 Tagged -> t1
-	t1 @tag print nl
-	t1 @value print nl
+	t1 <<tag print nl
+	t1 <<value print nl
 
 	// Concrete i64 + generic f64
 	2 3.14 Tagged -> t2
-	t2 @tag print nl
-	t2 @value print nl
+	t2 <<tag print nl
+	t2 <<value print nl
 
 	// Concrete i64 + generic str
 	3 "hello" Tagged -> t3
-	t3 @tag print nl
-	t3 @value print nl
+	t3 <<tag print nl
+	t3 <<value print nl
 
 	// Concrete str + generic f64
 	"pi" 3.14159 Named -> n1
-	n1 @name print nl
-	n1 @value print nl
+	n1 <<name print nl
+	n1 <<value print nl
 
 	// Concrete str + generic i64
 	"count" 100 Named -> n2
-	n2 @name print nl
-	n2 @value print nl
+	n2 <<name print nl
+	n2 <<value print nl
 
 	// Two concrete f64 + generic str
 	0.0 1.0 "mid" Bounded -> bd1
-	bd1 @lo print nl
-	bd1 @hi print nl
-	bd1 @value print nl
+	bd1 <<lo print nl
+	bd1 <<hi print nl
+	bd1 <<value print nl
 
 	// Two concrete f64 + generic i64
 	-10.0 10.0 5 Bounded -> bd2
-	bd2 @lo print nl
-	bd2 @hi print nl
-	bd2 @value print nl
+	bd2 <<lo print nl
+	bd2 <<hi print nl
+	bd2 <<value print nl
 }

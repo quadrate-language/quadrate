@@ -8,12 +8,12 @@ struct Point {
 
 // Function with typed struct parameter
 fn magnitude(p:Point -- result:f64) {
-	p @x dup * p @y dup * + math::sqrt
+	p <<x dup * p <<y dup * + math::sqrt
 }
 
 // Function with typed struct parameter that modifies nothing
 fn print_point(p:Point -- ) {
-	"Point(" print p @x print ", " print p @y print ")" print nl
+	"Point(" print p <<x print ", " print p <<y print ")" print nl
 }
 
 fn main() {

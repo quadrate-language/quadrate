@@ -11,8 +11,8 @@ struct Color {
 }
 
 fn distance_from_origin(point:Point -- d:f64) {
-	point @x point @x mul
-	point @y point @y mul
+	point <<x point <<x mul
+	point <<y point <<y mul
 	add sqrt
 }
 

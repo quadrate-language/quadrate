@@ -13,8 +13,8 @@ struct Config {
 // Binding order is reversed (last param = top of stack)
 fn scale_point(p:Point factor:f64 -- result:Point) {
 	Point {
-		x = p @x factor *
-		y = p @y factor *
+		x = p <<x factor *
+		y = p <<y factor *
 	}
 }
 
@@ -26,8 +26,8 @@ fn copy_to(src:Point dest:Point -- ) {
 
 // Mix multiple types - simpler version
 fn apply_scale(p:Point c:Config -- result:f64) {
-	c @enabled if {
-		p @x c @scale * p @y c @scale * +
+	c <<enabled if {
+		p <<x c <<scale * p <<y c <<scale * +
 	} else {
 		0.0
 	}
@@ -36,8 +36,8 @@ fn apply_scale(p:Point c:Config -- result:f64) {
 // Typed first, primitives after
 fn offset_point(p:Point dx:f64 dy:f64 -- result:Point) {
 	Point {
-		x = p @x dx +
-		y = p @y dy +
+		x = p <<x dx +
+		y = p <<y dy +
 	}
 }
 
@@ -48,7 +48,7 @@ fn main() {
 		y = 4.0
 	} -> pt
 	pt 2.0 scale_point -> scaled
-	"Scaled (3,4) by 2: (" print scaled @x print ", " print scaled @y print ")" print nl
+	"Scaled (3,4) by 2: (" print scaled <<x print ", " print scaled <<y print ")" print nl
 
 	// Test apply_scale
 	Config {
@@ -65,5 +65,5 @@ fn main() {
 
 	// Test offset
 	pt 10.0 20.0 offset_point -> offset
-	"Offset: (" print offset @x print ", " print offset @y print ")" print nl
+	"Offset: (" print offset <<x print ", " print offset <<y print ")" print nl
 }

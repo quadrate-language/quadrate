@@ -49,9 +49,9 @@ pub fn with_capacity(capacity:i64 -- sb:ptr) {
 /// @return sb ptr Updated builder
 /// @example builder "hello" sb::append -> builder
 pub fn append(sb:ptr s:str -- sb:ptr) {
-	sb @buf -> buf
-	sb @len -> curlen
-	sb @cap -> cap
+	sb <<buf -> buf
+	sb <<len -> curlen
+	sb <<cap -> cap
 
 	s strings::len -> slen
 
@@ -73,9 +73,9 @@ pub fn append(sb:ptr s:str -- sb:ptr) {
 	buf curlen mem::ptr_add sdata slen mem::copy
 
 	// Update builder in-place and return
-	buf sb.buf
-	newlen sb.len
-	cap sb.cap
+	sb buf >>buf
+	sb newlen >>len
+	sb cap >>cap
 	sb
 }
 
@@ -85,9 +85,9 @@ pub fn append(sb:ptr s:str -- sb:ptr) {
 /// @return sb ptr Updated builder
 /// @example builder 65 sb::append_char -> builder
 pub fn append_char(sb:ptr c:i64 -- sb:ptr) {
-	sb @buf -> buf
-	sb @len -> curlen
-	sb @cap -> cap
+	sb <<buf -> buf
+	sb <<len -> curlen
+	sb <<cap -> cap
 
 	// Check if we need to grow
 	curlen 1 + cap > if {
@@ -99,9 +99,9 @@ pub fn append_char(sb:ptr c:i64 -- sb:ptr) {
 	c buf curlen mem::set_byte
 
 	// Update builder in-place
-	buf sb.buf
-	curlen 1 + sb.len
-	cap sb.cap
+	sb buf >>buf
+	sb curlen 1 + >>len
+	sb cap >>cap
 	sb
 }
 
@@ -133,9 +133,9 @@ pub fn append_int(sb:ptr n:i64 -- sb:ptr) {
 		}
 
 		// Get current position
-		sb @buf -> buf
-		sb @len -> curlen
-		sb @cap -> cap
+		sb <<buf -> buf
+		sb <<len -> curlen
+		sb <<cap -> cap
 
 		// Ensure capacity
 		curlen count + cap > if {
@@ -161,9 +161,9 @@ pub fn append_int(sb:ptr n:i64 -- sb:ptr) {
 		}
 
 		// Update builder in-place
-		buf sb.buf
-		curlen count + sb.len
-		cap sb.cap
+		sb buf >>buf
+		sb curlen count + >>len
+		sb cap >>cap
 		sb
 	}
 }
@@ -173,7 +173,7 @@ pub fn append_int(sb:ptr n:i64 -- sb:ptr) {
 /// @return sblen i64 Current content length
 /// @example builder sb::len -> sblen
 pub fn len(sb:ptr -- sblen:i64) {
-	sb @len
+	sb <<len
 }
 
 /// Build the final string (does not consume builder).
@@ -181,14 +181,14 @@ pub fn len(sb:ptr -- sblen:i64) {
 /// @return s str Built string
 /// @example builder sb::build -> result
 pub fn build(sb:ptr -- s:str) {
-	sb @buf sb @len mem::to_string
+	sb <<buf sb <<len mem::to_string
 }
 
 /// Free the builder's resources.
 /// @param sb ptr Builder to free
 /// @example builder sb::free
 pub fn free(sb:ptr -- ) {
-	sb @buf mem::free
+	sb <<buf mem::free
 }
 
 /// Build string and free builder in one call.
@@ -196,8 +196,8 @@ pub fn free(sb:ptr -- ) {
 /// @return s str Built string
 /// @example builder sb::finish -> result
 pub fn finish(sb:ptr -- s:str) {
-	sb @buf sb @len mem::to_string -> result
-	sb @buf mem::free
+	sb <<buf sb <<len mem::to_string -> result
+	sb <<buf mem::free
 	result
 }
 
@@ -206,7 +206,7 @@ pub fn finish(sb:ptr -- s:str) {
 /// @return cap i64 Current buffer capacity
 /// @example builder sb::capacity -> cap
 pub fn capacity(sb:ptr -- cap:i64) {
-	sb @cap
+	sb <<cap
 }
 
 /// Check if the builder is empty.
@@ -214,7 +214,7 @@ pub fn capacity(sb:ptr -- cap:i64) {
 /// @return empty i64 1 if empty, 0 otherwise
 /// @example builder sb::is_empty -> empty
 pub fn is_empty(sb:ptr -- empty:i64) {
-	sb @len 0 ==
+	sb <<len 0 ==
 }
 
 /// Append a newline character.

@@ -183,7 +183,7 @@ fn main() {
 		pos = init_pos
 		vel = init_vel
 		mass = init_mass
-		fuel = stage1 @fuel_mass
+		fuel = stage1 <<fuel_mass
 		pitch = 90.0 math::deg_to_rad
 	} -> state
 
@@ -191,12 +191,12 @@ fn main() {
 
 	0.1 -> dt
 	0.0 -> last_display
-	stage1 @fuel_mass -> s1_max_fuel
+	stage1 <<fuel_mass -> s1_max_fuel
 	1 -> first_print
 
 	// Stage 1 burn
 	loop {
-		state @fuel 0.0 <= state @t 300.0 > or if {
+		state <<fuel 0.0 <= state <<t 300.0 > or if {
 			break
 		}
 
@@ -210,15 +210,15 @@ fn main() {
 			}
 			target_deg math::deg_to_rad -> new_pitch
 
-			state @pos -> p_copy
-			state @vel -> v_copy
+			state <<pos -> p_copy
+			state <<vel -> v_copy
 
 			State {
-				t = state @t
+				t = state <<t
 				pos = p_copy
 				vel = v_copy
-				mass = state @mass
-				fuel = state @fuel
+				mass = state <<mass
+				fuel = state <<fuel
 				pitch = new_pitch
 			} -> state
 		}
@@ -226,10 +226,10 @@ fn main() {
 		stage1 state dt step -> state
 
 		// Update display periodically
-		state @t last_display - PrintIntervalF >= if {
-			"S1" state @t state altitude state speed state @fuel s1_max_fuel state @pitch first_print print_telemetry
+		state <<t last_display - PrintIntervalF >= if {
+			"S1" state <<t state altitude state speed state <<fuel s1_max_fuel state <<pitch first_print print_telemetry
 			0 -> first_print
-			state @t -> last_display
+			state <<t -> last_display
 
 			// Sleep for realtime effect
 			MsPerSimSec PrintInterval * time::Millisecond * time::sleep
@@ -239,7 +239,7 @@ fn main() {
 	// Show MECO
 	nl
 	term::Bold print term::BrightRed print
-	state @t state altitude 1000.0 / state speed
+	state <<t state altitude 1000.0 / state speed
 	"T+%.0fs  === MECO ===  Alt: %.1f km  Vel: %.0f m/s" fmt::sprintf print
 	term::Reset print nl
 
@@ -247,18 +247,18 @@ fn main() {
 
 	// Stage separation
 	"STAGE SEPARATION" print_header
-	state @mass stage1 stage_dry - -> sep_mass
+	state <<mass stage1 stage_dry - -> sep_mass
 
-	state @pos -> p_sep
-	state @vel -> v_sep
+	state <<pos -> p_sep
+	state <<vel -> v_sep
 
 	State {
-		t = state @t
+		t = state <<t
 		pos = p_sep
 		vel = v_sep
 		mass = sep_mass
-		fuel = stage2 @fuel_mass
-		pitch = state @pitch
+		fuel = stage2 <<fuel_mass
+		pitch = state <<pitch
 	} -> state
 
 	time::Second time::sleep
@@ -266,12 +266,12 @@ fn main() {
 	"STAGE 2 IGNITION" print_header
 
 	0.0 -> last_display
-	stage2 @fuel_mass -> s2_max_fuel
+	stage2 <<fuel_mass -> s2_max_fuel
 	1 -> first_print
 
 	// Stage 2 burn with guidance
 	loop {
-		state @fuel 0.0 <= state @t 700.0 > or if {
+		state <<fuel 0.0 <= state <<t 700.0 > or if {
 			break
 		}
 
@@ -279,23 +279,23 @@ fn main() {
 
 		alt 80000.0 > if {
 			// Compute radial velocity
-			state @pos -> p_now
+			state <<pos -> p_now
 			p_now length -> r_now
 			p_now normalize -> up_now
-			state @vel -> v_now
+			state <<vel -> v_now
 			up_now v_now dot -> v_rad
 
-			state @fuel -> fuel_now
-			state @mass -> mass_now
+			state <<fuel -> fuel_now
+			state <<mass -> mass_now
 
-			stage2 @eng -> eng2
-			eng2 @thrust eng2 @isp_vac G0 * / -> mdot
+			stage2 <<eng -> eng2
+			eng2 <<thrust eng2 <<isp_vac G0 * / -> mdot
 			fuel_now mdot / -> t_rem
 			t_rem 10.0 < if {
 				10.0 -> t_rem
 			}
 
-			eng2 @thrust mass_now / -> accel
+			eng2 <<thrust mass_now / -> accel
 			MuEarth r_now r_now * / -> g_now
 
 			// Target vertical acceleration to zero radial velocity at burnout
@@ -323,15 +323,15 @@ fn main() {
 				45.0 math::deg_to_rad -> target_pitch
 			}
 
-			state @pos -> p_g
-			state @vel -> v_g
+			state <<pos -> p_g
+			state <<vel -> v_g
 
 			State {
-				t = state @t
+				t = state <<t
 				pos = p_g
 				vel = v_g
-				mass = state @mass
-				fuel = state @fuel
+				mass = state <<mass
+				fuel = state <<fuel
 				pitch = target_pitch
 			} -> state
 		}
@@ -339,10 +339,10 @@ fn main() {
 		stage2 state dt step -> state
 
 		// Update display periodically
-		state @t last_display - PrintIntervalF >= if {
-			"S2" state @t state altitude state speed state @fuel s2_max_fuel state @pitch first_print print_telemetry
+		state <<t last_display - PrintIntervalF >= if {
+			"S2" state <<t state altitude state speed state <<fuel s2_max_fuel state <<pitch first_print print_telemetry
 			0 -> first_print
-			state @t -> last_display
+			state <<t -> last_display
 
 			// Sleep for realtime effect
 			MsPerSimSec PrintInterval * time::Millisecond * time::sleep
@@ -352,7 +352,7 @@ fn main() {
 	// Show SECO
 	nl
 	term::Bold print term::BrightRed print
-	state @t state altitude 1000.0 / state speed
+	state <<t state altitude 1000.0 / state speed
 	"T+%.0fs  === SECO ===  Alt: %.1f km  Vel: %.0f m/s" fmt::sprintf print
 	term::Reset print nl
 
@@ -365,9 +365,9 @@ fn main() {
 	term::Reset print nl nl
 
 	// Final velocity components
-	state @pos -> p_f
+	state <<pos -> p_f
 	p_f normalize -> up_f
-	state @vel -> v_f
+	state <<vel -> v_f
 	up_f v_f dot -> v_rad_f
 	v_f length -> v_tot
 	v_tot v_tot * v_rad_f v_rad_f * - math::sqrt -> v_hor_f

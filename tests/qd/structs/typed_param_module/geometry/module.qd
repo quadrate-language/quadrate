@@ -7,21 +7,21 @@ pub struct Vec2 {
 
 // Function with typed struct parameter from this module
 pub fn length(v:Vec2 -- result:f64) {
-	v @x dup * v @y dup * + math::sqrt
+	v <<x dup * v <<y dup * + math::sqrt
 }
 
 // Function that adds two Vec2s
 pub fn add(a:Vec2 b:Vec2 -- result:ptr) {
 	Vec2 {
-		x = a @x b @x +
-		y = a @y b @y +
+		x = a <<x b <<x +
+		y = a <<y b <<y +
 	}
 }
 
 // Function to scale a vector
 pub fn scale(v:Vec2 factor:f64 -- result:ptr) {
 	Vec2 {
-		x = v @x factor *
-		y = v @y factor *
+		x = v <<x factor *
+		y = v <<y factor *
 	}
 }

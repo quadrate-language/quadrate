@@ -16,6 +16,6 @@ fn main() {
 
 	// Create a Wrapper (from sibling) that contains Parent
 	p "wrapped" make_wrapper -> w
-	w @parent @value print nl
-	w @label print nl
+	w <<parent <<value print nl
+	w <<label print nl
 }

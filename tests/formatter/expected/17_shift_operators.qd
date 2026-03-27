@@ -1,13 +1,7 @@
-// Test << and >> operator formatting
+// Test shl and shr operator formatting
 fn main() {
-	1 4 << print nl
-	16 2 >> print nl
-	1 4 << print nl
-	16 2 >> print nl
-	1 4 << print nl
-	16 2 >> print nl
-	1 4 << print nl
-	16 2 >> print nl
-	// Don't touch << in comments
-	/* Block comment with >> */
+	1 4 shl print nl
+	16 2 shr print nl
+	// Don't touch shl in comments
+	/* Block comment with shr */
 }

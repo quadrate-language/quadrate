@@ -57,11 +57,11 @@ pub struct Queue<T> {
 ///
 /// Stack: (q val -- q2)
 pub fn (q:Queue<T>) enqueue<T>(val:T -- q2:Queue<T>)! {
-	q @data -> data
-	q @head -> head
-	q @tail -> tail
-	q @len -> len
-	q @cap -> cap
+	q <<data -> data
+	q <<head -> head
+	q <<tail -> tail
+	q <<len -> len
+	q <<cap -> cap
 
 	// Grow capacity if full
 	len cap >= cap 0 == or if {
@@ -104,16 +104,16 @@ pub fn (q:Queue<T>) enqueue<T>(val:T -- q2:Queue<T>)! {
 ///
 /// Stack: (q -- val q2)
 pub fn (q:Queue<T>) dequeue<T>(-- val:T q2:Queue<T>)! {
-	q @len -> len
+	q <<len -> len
 
 	len 0 == if {
 		"dequeue: queue is empty" 1 err
 	}
 
-	q @data -> data
-	q @head -> head
-	q @tail -> tail
-	q @cap -> cap
+	q <<data -> data
+	q <<head -> head
+	q <<tail -> tail
+	q <<cap -> cap
 
 	data head 8 * mem::get_i64 -> val
 
@@ -132,14 +132,14 @@ pub fn (q:Queue<T>) dequeue<T>(-- val:T q2:Queue<T>)! {
 ///
 /// Stack: (q -- val)
 pub fn (q:Queue<T>) peek<T>(-- val:T)! {
-	q @len -> len
+	q <<len -> len
 
 	len 0 == if {
 		"peek: queue is empty" 1 err
 	}
 
-	q @data -> data
-	q @head -> head
+	q <<data -> data
+	q <<head -> head
 
 	data head 8 * mem::get_i64
 }
@@ -148,20 +148,20 @@ pub fn (q:Queue<T>) peek<T>(-- val:T)! {
 ///
 /// Stack: (q -- n)
 pub fn (q:Queue<T>) length<T>(-- n:i64) {
-	q @len
+	q <<len
 }
 
 /// Check if the queue is empty.
 ///
 /// Stack: (q -- bool)
 pub fn (q:Queue<T>) is_empty<T>(-- b:i64) {
-	q @len 0 ==
+	q <<len 0 ==
 }
 
 /// Free the queue's memory.
 ///
 /// Stack: (q --)
 pub fn (q:Queue<T>) release<T>(--) {
-	q @data -> data
+	q <<data -> data
 	data 0 neq if { data mem::free }
 }

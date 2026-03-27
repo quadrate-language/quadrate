@@ -10,8 +10,8 @@ fn main() {
     10 20 Point -> p
 
     // Capture struct in closure
-    fn ( -- r:i64) { p@x p@y add } -> get_sum
+    fn ( -- r:i64) { p <<x p <<y add } -> get_sum
 
     get_sum call print nl
-    p@x print nl
+    p <<x print nl
 }

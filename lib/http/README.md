@@ -24,8 +24,8 @@ use http
 fn main() {
     // Simple GET request
     "https://example.com" http::get! -> resp
-    resp @status print nl
-    resp @body print nl
+    resp <<status print nl
+    resp <<body print nl
     resp http::close
 }
 ```
@@ -43,8 +43,8 @@ fn main() {
     req "{\"key\":\"value\"}" http::body
 
     req http::send! -> resp
-    resp @status print nl
-    resp @body print nl
+    resp <<status print nl
+    resp <<body print nl
 
     req http::free_request
     resp http::close

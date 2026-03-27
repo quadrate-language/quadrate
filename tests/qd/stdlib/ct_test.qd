@@ -383,8 +383,8 @@ test "Pair first and second methods" {
 
 test "Pair basic" {
 	Pair<i64, i64> { first = 42 second = 99 } -> p
-	p @first 42 testing::assert_eq
-	p @second 99 testing::assert_eq
+	p <<first 42 testing::assert_eq
+	p <<second 99 testing::assert_eq
 }
 
 test "Pair unpack" {

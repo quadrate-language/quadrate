@@ -8,5 +8,5 @@ fn main() {
 		x = 1.0
 		y = 2.0
 	} -> p
-	p @z print nl
+	p <<z print nl
 }

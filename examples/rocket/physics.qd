@@ -21,11 +21,11 @@ struct Deriv {
 }
 
 pub fn compute_deriv(stage:Stage state:State -- d:Deriv) {
-	state @pos -> pos
-	state @vel -> vel
-	state @mass -> mass
-	state @fuel -> fuel
-	state @pitch -> pitch
+	state <<pos -> pos
+	state <<vel -> vel
+	state <<mass -> mass
+	state <<fuel -> fuel
+	state <<pitch -> pitch
 
 	state altitude -> alt
 	vel length -> vmag
@@ -67,9 +67,9 @@ pub fn compute_deriv(stage:Stage state:State -- d:Deriv) {
 	math::vec3_zero -> drag_accel
 	alt atm_density -> rho
 	vmag 0.001 > rho 0.0 > and if {
-		stage @diameter 2.0 / -> rad
+		stage <<diameter 2.0 / -> rad
 		math::Pi rad rad * * -> area
-		0.5 rho * vmag vmag * * stage @cd * area * -> drag_mag
+		0.5 rho * vmag vmag * * stage <<cd * area * -> drag_mag
 		vel normalize -> vel_unit
 		vel_unit neg -> drag_dir
 		drag_dir drag_mag mass / scale -> drag_accel
@@ -81,8 +81,8 @@ pub fn compute_deriv(stage:Stage state:State -- d:Deriv) {
 	// Mass flow
 	0.0 -> dm
 	fuel 0.0 > if {
-		stage @eng -> e
-		stage stage_thrust e @isp_vac G0 * / -1.0 * -> dm
+		stage <<eng -> e
+		stage stage_thrust e <<isp_vac G0 * / -1.0 * -> dm
 	}
 
 	Deriv {

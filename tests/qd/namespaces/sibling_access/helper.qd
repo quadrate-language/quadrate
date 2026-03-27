@@ -12,5 +12,5 @@ struct Point {
 }
 
 fn point_sum(p:Point -- sum:i64) {
-	p @x p @y +
+	p <<x p <<y +
 }

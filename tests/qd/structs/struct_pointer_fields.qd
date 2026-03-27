@@ -18,13 +18,13 @@ fn test_pointer_fields() {
 	} -> o
 
 	// Access the scale from outer
-	o @scale print nl
+	o <<scale print nl
 
 	// Access the inner pointer from outer
-	o @inner -> inner_ptr
+	o <<inner -> inner_ptr
 
 	// Access value from inner via pointer
-	inner_ptr @value print nl
+	inner_ptr <<value print nl
 }
 
 fn main() {

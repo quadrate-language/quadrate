@@ -169,11 +169,11 @@ fn rehash(old_keys:ptr old_values:ptr old_states:ptr old_cap:i64 new_cap:i64 -- 
 ///
 /// Stack: (m key value -- m2)
 pub fn (m:Map<V>) insert<V>(key:str value:V -- m2:Map<V>)! {
-	m @keys -> keys
-	m @values -> values
-	m @states -> states
-	m @len -> len
-	m @cap -> cap
+	m <<keys -> keys
+	m <<values -> values
+	m <<states -> states
+	m <<len -> len
+	m <<cap -> cap
 
 	// Check load factor and grow if needed (threshold: 70%)
 	len 10 * cap 7 * >= cap 0 == or if {
@@ -220,10 +220,10 @@ pub fn (m:Map<V>) insert<V>(key:str value:V -- m2:Map<V>)! {
 ///
 /// Stack: (m key -- value)
 pub fn (m:Map<V>) get<V>(key:str -- value:V)! {
-	m @values -> values
-	m @keys -> keys
-	m @states -> states
-	m @cap -> cap
+	m <<values -> values
+	m <<keys -> keys
+	m <<states -> states
+	m <<cap -> cap
 
 	cap 0 == if {
 		"get: map is empty" 1 err
@@ -245,13 +245,13 @@ pub fn (m:Map<V>) get<V>(key:str -- value:V)! {
 ///
 /// Stack: (m key -- exists)
 pub fn (m:Map<V>) has<V>(key:str -- exists:i64) {
-	m @cap -> cap
+	m <<cap -> cap
 
 	cap 0 == if {
 		0
 	} else {
-		m @keys -> keys
-		m @states -> states
+		m <<keys -> keys
+		m <<states -> states
 		keys states cap key find_slot -> found -> slot
 		// slot is unused, found indicates if key exists
 		found
@@ -268,11 +268,11 @@ pub fn (m:Map<V>) has<V>(key:str -- exists:i64) {
 ///
 /// Stack: (m key -- m2)
 pub fn (m:Map<V>) remove<V>(key:str -- m2:Map<V>)! {
-	m @keys -> keys
-	m @values -> values
-	m @states -> states
-	m @len -> len
-	m @cap -> cap
+	m <<keys -> keys
+	m <<values -> values
+	m <<states -> states
+	m <<len -> len
+	m <<cap -> cap
 
 	cap 0 == if {
 		"remove: map is empty" 1 err
@@ -300,7 +300,7 @@ pub fn (m:Map<V>) remove<V>(key:str -- m2:Map<V>)! {
 ///
 /// Stack: (m -- n)
 pub fn (m:Map<V>) length<V>(-- n:i64) {
-	m @len
+	m <<len
 }
 
 /// Check if the map is empty.
@@ -310,7 +310,7 @@ pub fn (m:Map<V>) length<V>(-- n:i64) {
 ///
 /// Stack: (m -- bool)
 pub fn (m:Map<V>) is_empty<V>(-- b:i64) {
-	m @len 0 ==
+	m <<len 0 ==
 }
 
 /// Free the map's memory.
@@ -324,10 +324,10 @@ pub fn (m:Map<V>) is_empty<V>(-- b:i64) {
 ///
 /// Stack: (m --)
 pub fn (m:Map<V>) release<V>(--) {
-	m @keys -> keys
-	m @values -> values
-	m @states -> states
-	m @cap -> cap
+	m <<keys -> keys
+	m <<values -> values
+	m <<states -> states
+	m <<cap -> cap
 
 	// Free key strings
 	cap 0 > if {

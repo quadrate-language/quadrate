@@ -26,12 +26,12 @@ fn main() {
 	containers 1 c2 set
 
 	// Verify
-	containers 0 nth @value print nl      // Should print = 1
-	containers 1 nth @value print nl      // Should print = 2
+	containers 0 nth <<value print nl      // Should print = 1
+	containers 1 nth <<value print nl      // Should print = 2
 
 	// Access inner arrays
-	containers 0 nth @data 1 nth print nl // Should print = 20
-	containers 1 nth @data 0 nth print nl // Should print = 100
+	containers 0 nth <<data 1 nth print nl // Should print = 20
+	containers 1 nth <<data 0 nth print nl // Should print = 100
 
 	// Free inner arrays and container array
 	arr1 free

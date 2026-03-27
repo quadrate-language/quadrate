@@ -244,17 +244,17 @@ fn sha512_process_block(
 
 /// Update SHA-512 state with additional data.
 pub fn (h:Sha512) update(data:str -- h2:Sha512)! {
-	h @h0 -> hh0
-	h @h1 -> hh1
-	h @h2 -> hh2
-	h @h3 -> hh3
-	h @h4 -> hh4
-	h @h5 -> hh5
-	h @h6 -> hh6
-	h @h7 -> hh7
-	h @buf -> buf
-	h @buflen -> buflen
-	h @total -> total
+	h <<h0 -> hh0
+	h <<h1 -> hh1
+	h <<h2 -> hh2
+	h <<h3 -> hh3
+	h <<h4 -> hh4
+	h <<h5 -> hh5
+	h <<h6 -> hh6
+	h <<h7 -> hh7
+	h <<buf -> buf
+	h <<buflen -> buflen
+	h <<total -> total
 
 	// Lazy init buffer (128 bytes for SHA-512)
 	buf 0 == if {
@@ -294,17 +294,17 @@ pub fn (h:Sha512) update(data:str -- h2:Sha512)! {
 
 /// Finalize SHA-512 and get result as hex string.
 pub fn (h:Sha512) finish( -- hash:str)! {
-	h @h0 -> hh0
-	h @h1 -> hh1
-	h @h2 -> hh2
-	h @h3 -> hh3
-	h @h4 -> hh4
-	h @h5 -> hh5
-	h @h6 -> hh6
-	h @h7 -> hh7
-	h @buf -> buf
-	h @buflen -> buflen
-	h @total -> total
+	h <<h0 -> hh0
+	h <<h1 -> hh1
+	h <<h2 -> hh2
+	h <<h3 -> hh3
+	h <<h4 -> hh4
+	h <<h5 -> hh5
+	h <<h6 -> hh6
+	h <<h7 -> hh7
+	h <<buf -> buf
+	h <<buflen -> buflen
+	h <<total -> total
 
 	buf 0 == if {
 		128 mem::alloc! -> buf
@@ -402,7 +402,7 @@ pub fn (h:Sha512) finish( -- hash:str)! {
 
 /// Free resources used by SHA-512 hasher.
 pub fn (h:Sha512) release( -- ) {
-	h @buf -> buf
+	h <<buf -> buf
 	buf 0 != if {
 		buf mem::free
 	}

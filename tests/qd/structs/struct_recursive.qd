@@ -12,9 +12,9 @@ fn main() {
 	Node { value = 3 next = b } -> c
 
 	// Traverse and print
-	c @value print nl
-	c @next -> n
-	n @value print nl
-	n @next -> n2
-	n2 @value print nl
+	c <<value print nl
+	c <<next -> n
+	n <<value print nl
+	n <<next -> n2
+	n2 <<value print nl
 }

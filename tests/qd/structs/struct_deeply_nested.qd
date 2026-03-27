@@ -26,8 +26,8 @@ fn main() {
 	-> win
 
 	// Access deeply nested fields using chained access
-	win @bounds @origin @x print nl
-	win @bounds @origin @y print nl
-	win @bounds @size @width print nl
-	win @bounds @size @height print nl
+	win <<bounds <<origin <<x print nl
+	win <<bounds <<origin <<y print nl
+	win <<bounds <<size <<width print nl
+	win <<bounds <<size <<height print nl
 }

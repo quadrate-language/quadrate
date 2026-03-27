@@ -440,12 +440,12 @@ pub fn query_has(query:str key:str -- exists:i64) {
 /// @return s str URI string
 /// @example u uri::build -> url
 pub fn build(u:ptr -- s:str) {
-	u @scheme -> scheme
-	u @host -> host
-	u @port -> port
-	u @path -> path
-	u @query -> query
-	u @fragment -> fragment
+	u <<scheme -> scheme
+	u <<host -> host
+	u <<port -> port
+	u <<path -> path
+	u <<query -> query
+	u <<fragment -> fragment
 
 	"" -> result
 

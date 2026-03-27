@@ -17,7 +17,7 @@ fn create_resource(id:i64 -- r:ptr) {
 }
 
 fn destroy_resource(r:ptr -- ) {
-	"  Destroying resource " print r @id print nl
+	"  Destroying resource " print r <<id print nl
 	r free
 }
 
@@ -80,7 +80,7 @@ fn resource_cleanup() {
 
 	// Do some work with resources
 	"  Working with resources..." print nl
-	"  new Resource IDs: " print r1 @id print ", " print r2 @id print ", " print r3 @id print nl
+	"  new Resource IDs: " print r1 <<id print ", " print r2 <<id print ", " print r3 <<id print nl
 
 	"  Function ending, defers will clean up:" print nl
 	// Resources are automatically freed in reverse order (3, 2, 1)

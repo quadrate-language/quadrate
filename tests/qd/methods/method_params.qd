@@ -3,7 +3,7 @@ struct Counter {
 }
 
 fn (c:Counter) plus(n_val:i64 -- result:i64) {
-	c @value n_val +
+	c <<value n_val +
 }
 
 fn main() {

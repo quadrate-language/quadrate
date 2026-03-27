@@ -6,21 +6,21 @@ struct Pair<A, B> { first:A second:B }
 fn main() {
 	// i64 arithmetic via cast
 	42 Box -> b1
-	b1 @value cast<i64> 8 + print nl
-	b1 @value cast<i64> 2 * print nl
-	b1 @value cast<i64> b1 @value cast<i64> + print nl
+	b1 <<value cast<i64> 8 + print nl
+	b1 <<value cast<i64> 2 * print nl
+	b1 <<value cast<i64> b1 <<value cast<i64> + print nl
 
 	// f64 arithmetic via cast
 	3.14 Box -> b2
-	b2 @value cast<f64> 1.0 + print nl
-	b2 @value cast<f64> 2.0 * print nl
+	b2 <<value cast<f64> 1.0 + print nl
+	b2 <<value cast<f64> 2.0 * print nl
 
 	// Pair field arithmetic via cast
 	10 20 Pair -> p1
-	p1 @first cast<i64> p1 @second cast<i64> + print nl
+	p1 <<first cast<i64> p1 <<second cast<i64> + print nl
 
 	// Mixed pair: access each independently
 	5 2.5 Pair -> p2
-	p2 @first cast<i64> print nl
-	p2 @second cast<f64> print nl
+	p2 <<first cast<i64> print nl
+	p2 <<second cast<f64> print nl
 }

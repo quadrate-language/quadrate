@@ -17,10 +17,10 @@ fn main() {
 	} -> line
 
 	// Verify the values
-	line @start @x print nl
-	line @start @y print nl
-	line @end @x print nl
-	line @end @y print nl
+	line <<start <<x print nl
+	line <<start <<y print nl
+	line <<end <<x print nl
+	line <<end <<y print nl
 
 	line free
 }

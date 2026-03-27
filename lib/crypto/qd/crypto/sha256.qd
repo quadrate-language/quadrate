@@ -235,17 +235,17 @@ fn sha256_process_block(
 /// @param data str Data to hash
 /// @return h2 Sha256 Updated hasher state
 pub fn (h:Sha256) update(data:str -- h2:Sha256)! {
-	h @h0 -> hh0
-	h @h1 -> hh1
-	h @h2 -> hh2
-	h @h3 -> hh3
-	h @h4 -> hh4
-	h @h5 -> hh5
-	h @h6 -> hh6
-	h @h7 -> hh7
-	h @buf -> buf
-	h @buflen -> buflen
-	h @total -> total
+	h <<h0 -> hh0
+	h <<h1 -> hh1
+	h <<h2 -> hh2
+	h <<h3 -> hh3
+	h <<h4 -> hh4
+	h <<h5 -> hh5
+	h <<h6 -> hh6
+	h <<h7 -> hh7
+	h <<buf -> buf
+	h <<buflen -> buflen
+	h <<total -> total
 
 	// Lazy init buffer
 	buf 0 == if {
@@ -296,17 +296,17 @@ pub fn (h:Sha256) update(data:str -- h2:Sha256)! {
 /// @param h Sha256 The hasher state
 /// @return hash str 64-character hex string (lowercase)
 pub fn (h:Sha256) finish( -- hash:str)! {
-	h @h0 -> hh0
-	h @h1 -> hh1
-	h @h2 -> hh2
-	h @h3 -> hh3
-	h @h4 -> hh4
-	h @h5 -> hh5
-	h @h6 -> hh6
-	h @h7 -> hh7
-	h @buf -> buf
-	h @buflen -> buflen
-	h @total -> total
+	h <<h0 -> hh0
+	h <<h1 -> hh1
+	h <<h2 -> hh2
+	h <<h3 -> hh3
+	h <<h4 -> hh4
+	h <<h5 -> hh5
+	h <<h6 -> hh6
+	h <<h7 -> hh7
+	h <<buf -> buf
+	h <<buflen -> buflen
+	h <<total -> total
 
 	buf 0 == if {
 		64 mem::alloc! -> buf
@@ -406,7 +406,7 @@ pub fn (h:Sha256) finish( -- hash:str)! {
 /// Free resources used by SHA-256 hasher.
 /// @param h Sha256 The hasher state to free
 pub fn (h:Sha256) release( -- ) {
-	h @buf -> buf
+	h <<buf -> buf
 	buf 0 != if {
 		buf mem::free
 	}

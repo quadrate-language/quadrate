@@ -13,6 +13,6 @@ fn main() {
 	p point_sum print nl
 
 	// Direct field access
-	p @x print nl
-	p @y print nl
+	p <<x print nl
+	p <<y print nl
 }

@@ -296,11 +296,22 @@ namespace Qd {
 				break;
 			}
 			case IAstNode::Type::FIELD_SET: {
-				// Field set pops a value from the stack and stores it in the field
-				// Validation is done in the main type checking pass (case at line ~3415)
-				// Here we just handle the stack effect for signature analysis
-				if (!typeStack.empty()) {
-					typeStack.pop_back();
+				// Field set: stack-based (<<field) pops value and struct, pushes struct back
+				// Variable-based (legacy) just pops value
+				AstNodeFieldSet* fs = static_cast<AstNodeFieldSet*>(child);
+				if (fs->varName().empty()) {
+					// Stack-based: pop value, pop struct, push struct back (net: -1)
+					if (typeStack.size() >= 2) {
+						typeStack.pop_back(); // pop value
+											  // struct stays (pop + push = no change)
+					} else if (!typeStack.empty()) {
+						typeStack.pop_back();
+					}
+				} else {
+					// Variable-based: just pop value
+					if (!typeStack.empty()) {
+						typeStack.pop_back();
+					}
 				}
 				break;
 			}
@@ -2583,16 +2594,26 @@ namespace Qd {
 			}
 
 			case IAstNode::Type::FIELD_SET: {
-				// Field set: value variable.fieldName - pops value from stack and stores in field
+				// Field set: <<field (stack-based)
 				AstNodeFieldSet* fieldSet = static_cast<AstNodeFieldSet*>(child);
 				const std::string& varName = fieldSet->varName();
 				const std::string& fieldName = fieldSet->fieldName();
 
 				// Look up which struct type this variable holds
 				std::string structType = "";
-				auto structTypeIt = mLocalVariableStructTypes.find(varName);
-				if (structTypeIt != mLocalVariableStructTypes.end()) {
-					structType = structTypeIt->second;
+				if (varName.empty()) {
+					// Stack-based field set: struct type from struct type stack
+					if (!structTypeStack.empty()) {
+						// Value is on top, struct below — peek at second from top
+						if (structTypeStack.size() >= 2) {
+							structType = structTypeStack[structTypeStack.size() - 2];
+						}
+					}
+				} else {
+					auto structTypeIt = mLocalVariableStructTypes.find(varName);
+					if (structTypeIt != mLocalVariableStructTypes.end()) {
+						structType = structTypeIt->second;
+					}
 				}
 
 				// Validate the field exists on this struct type
@@ -2678,10 +2699,21 @@ namespace Qd {
 				}
 
 				// Pop the value being assigned from the stack
-				if (!typeStack.empty()) {
-					typeStack.pop_back();
-					if (!structTypeStack.empty()) {
-						structTypeStack.pop_back();
+				if (varName.empty()) {
+					// Stack-based: pop value, struct stays (was popped and pushed back by codegen)
+					if (!typeStack.empty()) {
+						typeStack.pop_back(); // pop value
+						if (!structTypeStack.empty()) {
+							structTypeStack.pop_back(); // pop value's struct type
+						}
+					}
+				} else {
+					// Variable-based: just pop value
+					if (!typeStack.empty()) {
+						typeStack.pop_back();
+						if (!structTypeStack.empty()) {
+							structTypeStack.pop_back();
+						}
 					}
 				}
 				break;

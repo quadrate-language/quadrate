@@ -31,14 +31,14 @@ fn main() {
 		x = 10.0
 		y = 20.0
 	} -> p
-	p @x print nl  // 10
-	p @y print nl  // 20
+	p <<x print nl  // 10
+	p <<y print nl  // 20
 }
 ```
 
 ## Reading fields
 
-Use `@fieldname` to read:
+Use `<<fieldname` to read:
 
 ```qd
 struct Rectangle {
@@ -47,7 +47,7 @@ struct Rectangle {
 }
 
 fn area(rect:Rectangle -- a:f64) {
-	rect @width rect @height *
+	rect <<width rect <<height *
 }
 
 fn main() {
@@ -65,7 +65,7 @@ When working with raw `ptr` values (common in callbacks), use `as` to tell the c
 
 ```qd
 fn handler(data:ptr -- ) {
-	data as Config @debug print nl
+	data as Config <<debug print nl
 }
 ```
 
@@ -73,7 +73,7 @@ This is compile-time only — no runtime cost. It's required when multiple struc
 
 ## Writing fields
 
-Use `.fieldname` to write:
+Use `>>fieldname` to write. The struct must be on the stack, then the value, then `>>field`. The modified struct is pushed back:
 
 ```qd
 struct Counter {
@@ -85,14 +85,19 @@ fn main() {
 		value = 0
 	} -> c
 
-	c @value print nl  // 0
+	c <<value print nl  // 0
 
-	10 c.value
-	c @value print nl  // 10
+	c 10 >>value -> c
+	c <<value print nl  // 10
 
-	c @value inc c.value
-	c @value print nl  // 11
+	c c <<value inc >>value -> c
+	c <<value print nl  // 11
 }
+```
+
+Chain writes without rebinding:
+```qd
+Point { x = 0.0 y = 0.0 } 1.0 >>x 2.0 >>y -> p
 ```
 
 ## Nested structs
@@ -125,8 +130,8 @@ fn main() {
 		end = p2
 	} -> line
 
-	line @start @x print nl  // 0
-	line @end @x print nl    // 10
+	line <<start <<x print nl  // 0
+	line <<end <<x print nl    // 10
 }
 ```
 
@@ -166,7 +171,7 @@ fn main() {
 		count = 3
 	} -> triangle
 
-	triangle @count print nl  // 3
+	triangle <<count print nl  // 3
 }
 ```
 
@@ -184,12 +189,12 @@ struct Point {
 
 // Method with receiver syntax: fn (receiver:Type) name(params -- returns)
 fn (p:Point) magnitude( -- m:f64) {
-	p @x dup * p @y dup * + math::sqrt
+	p <<x dup * p <<y dup * + math::sqrt
 }
 
 fn (p:Point) move(dx:f64 dy:f64 -- ) {
-	p @x dx + p.x
-	p @y dy + p.y
+	p p <<x dx + >>x -> p
+	p p <<y dy + >>y -> p
 }
 
 fn main() {
@@ -203,7 +208,7 @@ fn main() {
 
 	// Method with parameters
 	pt 1.0 1.0 move
-	pt @x print nl  // 4
+	pt <<x print nl  // 4
 }
 ```
 
@@ -217,7 +222,7 @@ struct Counter {
 }
 
 fn (c:Counter) bump( -- result:i64) {
-	c @value 1 +
+	c <<value 1 +
 }
 
 fn bump( -- result:i64) {
@@ -244,8 +249,8 @@ struct Point {
 }
 
 fn point_distance(p1:Point p2:Point -- d:f64) {
-	p2 @x p1 @x - dup *
-	p2 @y p1 @y - dup *
+	p2 <<x p1 <<x - dup *
+	p2 <<y p1 <<y - dup *
 	+ math::sqrt
 }
 
@@ -277,13 +282,13 @@ fn config_new( -- cfg:Config) {
 }
 
 fn config_set_debug(cfg:Config value:i64 -- cfg:Config) {
-	value cfg.debug
+	cfg value >>debug -> cfg
 	cfg
 }
 
 fn main() {
 	config_new 1 config_set_debug -> cfg
-	cfg @debug print nl  // 1
+	cfg <<debug print nl  // 1
 }
 ```
 
@@ -307,15 +312,15 @@ fn main() {
 	20 node_new -> second
 	30 node_new -> third
 
-	second first.next
-	third second.next
+	first second >>next -> first
+	second third >>next -> second
 
 	// Traverse
 	first -> current
 	loop {
 		current 0 == if { break }
-		current @value print nl
-		current @next -> current
+		current <<value print nl
+		current <<next -> current
 	}
 	// Output: 10 20 30
 }
@@ -340,13 +345,13 @@ fn stack_new(capacity:i64 -- s:Stack) {
 }
 
 fn stack_push(s:Stack value:i64 -- ) {
-	s @data s @top value set
-	s @top 1 + s.top
+	s <<data s <<top value set
+	s s <<top 1 + >>top -> s
 }
 
 fn stack_pop(s:Stack -- value:i64) {
-	s @top 1 - s.top
-	s @data s @top nth
+	s s <<top 1 - >>top -> s
+	s <<data s <<top nth
 }
 
 fn main() {
@@ -372,7 +377,7 @@ struct Point {
 }
 
 fn points_equal(a:Point b:Point -- equal:i64) {
-	a @x b @x == a @y b @y == and
+	a <<x b <<x == a <<y b <<y == and
 }
 
 fn main() {
@@ -410,9 +415,9 @@ fn main() {
 	Node { value = 2 next = a } -> b
 	Node { value = 3 next = b } -> c
 
-	// Traverse using @field access through pointers
-	c @value print nl         // 3
-	c @next @value print nl   // 2
+	// Traverse using <<field access through pointers
+	c <<value print nl         // 3
+	c <<next <<value print nl   // 2
 }
 ```
 
@@ -422,8 +427,8 @@ Use `null` for empty pointer fields. Check for null before accessing:
 fn print_list(cur:ptr -- ) {
 	loop {
 		cur null eq if { break }
-		cur @value print nl
-		cur @next -> cur
+		cur <<value print nl
+		cur <<next -> cur
 	}
 }
 ```
@@ -439,9 +444,9 @@ struct TreeNode {
 
 fn inorder(n:ptr -- ) {
 	n null neq if {
-		n @left inorder
-		n @value print nl
-		n @right inorder
+		n <<left inorder
+		n <<value print nl
+		n <<right inorder
 	}
 }
 ```

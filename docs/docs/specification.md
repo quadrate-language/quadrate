@@ -179,12 +179,10 @@ $"result={x + y}"             // Expression interpolation
 ```
 ++    Increment
 --    Decrement
-<<    Shift left
->>    Shift right
+<<    Field access (read): struct <<field
+>>    Field set (write): struct value >>field
 ->    Local variable binding
 ::    Scope resolution
-@     Field access (read)
-.     Field set (write)
 &     Function pointer prefix
 !     Abort-on-error suffix
 ```
@@ -198,7 +196,7 @@ $"result={x + y}"             // Expression interpolation
 [ ]   Array literals
 ```
 
-**Note**: Bitwise operators `and`, `or`, `xor`, `not` MUST use named forms (no symbolic equivalents). Shift operators support both symbolic (`<<`, `>>`) and named (`shl`, `shr`) forms.
+**Note**: Bitwise operators `and`, `or`, `xor`, `not` MUST use named forms (no symbolic equivalents). Shift operators use `shl` and `shr`.
 
 ### 2.4 Whitespace
 
@@ -324,7 +322,7 @@ struct Node {
 Node { value = 10 next = null } -> a
 Node { value = 20 next = a } -> b
 
-b @next @value print nl   // 10 — follow pointer chain
+b <<next <<value print nl   // 10 — follow pointer chain
 ```
 
 `null` MAY also be used as a default value in struct field definitions:
@@ -366,11 +364,11 @@ Explicit casting via `cast<Type>`:
 The `as` keyword narrows a `ptr` value to a specific struct type. This is a compile-time annotation with no runtime cost:
 
 ```quadrate
-value as StructType @field    // access field on specific struct type
+value as StructType <<field    // access field on specific struct type
 value as StructType -> local  // bind with tracked struct type
 ```
 
-Implementations MUST produce an error when `@field` is used on an untyped `ptr` and the field name is ambiguous (exists in multiple struct definitions). The `as` keyword resolves this ambiguity.
+Implementations MUST produce an error when `<<field` is used on an untyped `ptr` and the field name is ambiguous (exists in multiple struct definitions). The `as` keyword resolves this ambiguity.
 
 ---
 
@@ -611,7 +609,7 @@ struct Token {
 }
 
 Token { kind = TokenType::Int value = 42 } -> t
-t @kind TokenType::Int == if { "integer token" print nl }
+t <<kind TokenType::Int == if { "integer token" print nl }
 ```
 
 #### 5.4.7 Compile-Time Validation
@@ -818,7 +816,7 @@ Methods are functions with a receiver parameter in parentheses before the functi
 struct Vec2 { x:f64 y:f64 }
 
 fn (v:Vec2) length( -- len:f64) {
-    v @x v @x * v @y v @y * + math::sqrt
+    v <<x v <<x * v <<y v <<y * + math::sqrt
 }
 
 // Call as method
@@ -891,32 +889,32 @@ Pair<str, i64> { first = "key" second = 100 }
 
 ### 8.3 Field Access (Read)
 
-Use `@` operator:
+Use `<<` operator (data flows left, out of struct):
 
 ```quadrate
-point @x        // Read field 'x' from point
-point @x @y     // Chained access (if x is a struct)
+point <<x         // Read field 'x' from point
+point <<x <<y     // Chained access (if x is a struct)
 ```
 
 When the struct type cannot be determined (e.g., the value is typed as `ptr`) and the field name exists in multiple struct definitions, implementations MUST produce an error. Use `as` to disambiguate:
 
 ```quadrate
-ptr_val as MyStruct @field
+ptr_val as MyStruct <<field
 ```
 
 ### 8.4 Field Set (Write)
 
-Use `.` operator:
+Use `>>` operator (data flows right, into struct). The struct is popped from the stack along with the value, and the modified struct is pushed back:
 
 ```quadrate
-value struct.field    // Set field to value
+struct value >>field    // Set field, push modified struct back
 ```
 
 **Example:**
 ```quadrate
 Point { x = 0.0 y = 0.0 } -> p
-5.0 p.x      // Set p.x to 5.0
-10.0 p.y     // Set p.y to 10.0
+p 5.0 >>x -> p    // Set p.x to 5.0
+p 10.0 >>y -> p   // Set p.y to 10.0
 ```
 
 ### 8.5 Generic Structs
@@ -1280,8 +1278,8 @@ fn process(path:str -- )! {
 | `or` | | `(a b -- c)` | Bitwise OR |
 | `xor` | | `(a b -- c)` | Bitwise XOR |
 | `not` | | `(a -- b)` | Bitwise NOT |
-| `shl` | `<<` | `(a n -- b)` | Shift left |
-| `shr` | `>>` | `(a n -- b)` | Shift right |
+| `shl` | | `(a n -- b)` | Shift left |
+| `shr` | | `(a n -- b)` | Shift right |
 
 ### 12.4 Stack Manipulation
 
@@ -1565,8 +1563,8 @@ literal         = integer | float | string | "true" | "false" | "Ok" | "Err" | "
 scoped_id       = identifier "::" identifier ;
 struct_const    = identifier [type_args] "{" { field_init } "}" ;
 array_lit       = "[" { expression } "]" ;
-field_access    = "@" identifier ;
-field_set       = expression identifier "." identifier ;
+field_access    = "<<" identifier ;
+field_set       = ">>" identifier ;
 local_bind      = "->" identifier ;
 anon_fn         = "fn" signature block ;  /* captures are implicit */
 fn_call         = identifier [ "!" ] ;
@@ -1576,7 +1574,7 @@ type_args       = "<" type { "," type } ">" ;
 
 operator        = "+" | "-" | "*" | "/" | "%" | "++" | "--"
                 | "<" | ">" | "==" | "!=" | "<=" | ">="
-                | "<<" | ">>" ;
+                ;
 
 instruction     = "dup" | "swap" | "drop" | "over" | "rot" | "nip" | "tuck"
                 | "pick" | "roll" | "nth" | "len" | "append" | "set"
@@ -1615,8 +1613,8 @@ instruction     = "dup" | "swap" | "drop" | "over" | "rot" | "nip" | "tuck"
 
 | Operator | Named | Stack Effect | Description |
 |----------|-------|--------------|-------------|
-| `<<` | `shl` | `(a n -- b)` | a << n |
-| `>>` | `shr` | `(a n -- b)` | a >> n |
+| `shl` | | `(a n -- b)` | Shift left |
+| `shr` | | `(a n -- b)` | Shift right |
 | | `and` | `(a b -- c)` | a & b |
 | | `or` | `(a b -- c)` | a \| b |
 | | `xor` | `(a b -- c)` | a ^ b |
@@ -1628,8 +1626,8 @@ instruction     = "dup" | "swap" | "drop" | "over" | "rot" | "nip" | "tuck"
 |----------|-------------|
 | `->` | Bind top of stack to local variable |
 | `::` | Scope resolution (module::member) |
-| `@` | Field access (read) |
-| `.` | Field set (write) |
+| `<<` | Field access (read): `struct <<field` |
+| `>>` | Field set (write): `struct value >>field` |
 | `&` | Get function pointer |
 | `!` | Abort on error (after fallible call) |
 | `?` | Propagate error to caller (after fallible call) |

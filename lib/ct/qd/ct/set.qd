@@ -146,10 +146,10 @@ fn set_rehash(old_keys:ptr old_states:ptr old_cap:i64 new_cap:i64 -- new_keys:pt
 ///
 /// Stack: (s key -- s2)
 pub fn (s:Set) add(key:str -- s2:Set)! {
-	s @keys -> keys
-	s @states -> states
-	s @len -> len
-	s @cap -> cap
+	s <<keys -> keys
+	s <<states -> states
+	s <<len -> len
+	s <<cap -> cap
 
 	len 10 * cap 7 * >= cap 0 == or if {
 		8 -> new_cap
@@ -188,13 +188,13 @@ pub fn (s:Set) add(key:str -- s2:Set)! {
 ///
 /// Stack: (s key -- exists)
 pub fn (s:Set) contains(key:str -- exists:i64) {
-	s @cap -> cap
+	s <<cap -> cap
 
 	cap 0 == if {
 		0
 	} else {
-		s @keys -> keys
-		s @states -> states
+		s <<keys -> keys
+		s <<states -> states
 		keys states cap key set_find_slot -> found -> slot
 		found
 	}
@@ -210,10 +210,10 @@ pub fn (s:Set) contains(key:str -- exists:i64) {
 ///
 /// Stack: (s key -- s2)
 pub fn (s:Set) remove(key:str -- s2:Set)! {
-	s @keys -> keys
-	s @states -> states
-	s @len -> len
-	s @cap -> cap
+	s <<keys -> keys
+	s <<states -> states
+	s <<len -> len
+	s <<cap -> cap
 
 	cap 0 == if {
 		"remove: set is empty" 1 err
@@ -238,7 +238,7 @@ pub fn (s:Set) remove(key:str -- s2:Set)! {
 ///
 /// Stack: (s -- n)
 pub fn (s:Set) length(-- n:i64) {
-	s @len
+	s <<len
 }
 
 /// Check if the set is empty.
@@ -248,7 +248,7 @@ pub fn (s:Set) length(-- n:i64) {
 ///
 /// Stack: (s -- bool)
 pub fn (s:Set) is_empty(-- b:i64) {
-	s @len 0 ==
+	s <<len 0 ==
 }
 
 /// Free the set's memory.
@@ -261,9 +261,9 @@ pub fn (s:Set) is_empty(-- b:i64) {
 ///
 /// Stack: (s --)
 pub fn (s:Set) release(--) {
-	s @keys -> keys
-	s @states -> states
-	s @cap -> cap
+	s <<keys -> keys
+	s <<states -> states
+	s <<cap -> cap
 
 	cap 0 > if {
 		0 -> i

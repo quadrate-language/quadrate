@@ -9,24 +9,24 @@ struct Point {
 // Function with two of the same typed struct parameters
 // Parameters are bound in reverse stack order (last param = top of stack)
 fn distance(p1:Point p2:Point -- result:f64) {
-	p1 @x p2 @x - dup *
-	p1 @y p2 @y - dup *
+	p1 <<x p2 <<x - dup *
+	p1 <<y p2 <<y - dup *
 	+ math::sqrt
 }
 
 // Function with two typed parameters plus a primitive
 fn weighted_midpoint(p1:Point p2:Point weight:f64 -- result:ptr) {
 	Point {
-		x = p1 @x weight * p2 @x 1.0 weight - * +
-		y = p1 @y weight * p2 @y 1.0 weight - * +
+		x = p1 <<x weight * p2 <<x 1.0 weight - * +
+		y = p1 <<y weight * p2 <<y 1.0 weight - * +
 	}
 }
 
 // Function to add two points
 fn add_points(a:Point b:Point -- result:ptr) {
 	Point {
-		x = a @x b @x +
-		y = a @y b @y +
+		x = a <<x b <<x +
+		y = a <<y b <<y +
 	}
 }
 
@@ -55,15 +55,15 @@ fn main() {
 
 	// Test add_points
 	pt1 pt2 add_points -> sum
-	"Sum of (3,4) + (6,8): (" print sum @x print ", " print sum @y print ")" print nl
+	"Sum of (3,4) + (6,8): (" print sum <<x print ", " print sum <<y print ")" print nl
 
 	// Test weighted midpoint (0.5 = regular midpoint)
 	pt1 pt2 0.5 weighted_midpoint -> mid
-	"Midpoint: (" print mid @x print ", " print mid @y print ")" print nl
+	"Midpoint: (" print mid <<x print ", " print mid <<y print ")" print nl
 
 	// Test weighted more towards pt1
 	pt1 pt2 0.75 weighted_midpoint -> w1
-	"75% towards pt1: (" print w1 @x print ", " print w1 @y print ")" print nl
+	"75% towards pt1: (" print w1 <<x print ", " print w1 <<y print ")" print nl
 
 	// Structs are automatically released at end of scope
 }

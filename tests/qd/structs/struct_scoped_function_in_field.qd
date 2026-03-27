@@ -10,17 +10,17 @@ fn main() {
 	Container {
 		vec = math::vec3_zero
 	} -> c1
-	c1 @vec @x print nl
-	c1 @vec @y print nl
-	c1 @vec @z print nl
+	c1 <<vec <<x print nl
+	c1 <<vec <<y print nl
+	c1 <<vec <<z print nl
 	c1 free
 
 	// Use math::vec3_one to initialize field
 	Container {
 		vec = math::vec3_one
 	} -> c2
-	c2 @vec @x print nl
-	c2 @vec @y print nl
-	c2 @vec @z print nl
+	c2 <<vec <<x print nl
+	c2 <<vec <<y print nl
+	c2 <<vec <<z print nl
 	c2 free
 }

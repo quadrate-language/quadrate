@@ -93,7 +93,7 @@ void QuadrateLSP::findIdentifiersInNode(
 			}
 		}
 	}
-	// Check if this node is a field access (e.g., p.x or p @x)
+	// Check if this node is a field access (e.g., p <<x)
 	else if (node->type() == Qd::IAstNode::Type::FIELD_ACCESS) {
 		Qd::AstNodeFieldAccess* access = static_cast<Qd::AstNodeFieldAccess*>(node);
 		if (access->fieldName() == targetName) {
@@ -638,7 +638,7 @@ std::string QuadrateLSP::findStructTypeOfVariable(Qd::IAstNode* root, const std:
 json_t* QuadrateLSP::handleFieldAccessDefinition(
 		Qd::IAstNode* root, const std::string& uri, size_t line, bool cursorOnVariable) {
 	// Find the field access or field set node at the target line
-	// Both @field (FIELD_ACCESS) and .field (FIELD_SET) should navigate to field definition
+	// Both <<field (FIELD_ACCESS) and >>field (FIELD_SET) should navigate to field definition
 	std::string foundVarName;
 	std::string foundFieldName;
 	Qd::IAstNode* foundNode = nullptr;
@@ -977,7 +977,7 @@ void QuadrateLSP::handleDefinition(const std::string& id, const std::string& uri
 			// Note: We proceed even with AST errors for some lookups (like imported module methods)
 			// because imports may still be parseable even if other parts have errors
 			if (root && root->type() == Qd::IAstNode::Type::PROGRAM) {
-				// Check if we're in a field access expression (v@x)
+				// Check if we're in a field access expression (v <<x)
 				// Find the character at the cursor position to see if @ is nearby
 				std::vector<std::string> lines;
 				std::istringstream stream(documentText);
@@ -992,7 +992,7 @@ void QuadrateLSP::handleDefinition(const std::string& id, const std::string& uri
 					bool inFieldAccess = false;
 					bool cursorOnVariable = false;
 
-					// Search for @ (field read) or . (field set) near the cursor
+					// Search for <<field (read) or >>field (write) near the cursor
 					for (size_t i = 0; i < targetLine.length(); i++) {
 						if (targetLine[i] == '@') {
 							// Check if cursor is near this @
@@ -1012,7 +1012,7 @@ void QuadrateLSP::handleDefinition(const std::string& id, const std::string& uri
 								}
 							}
 						} else if (targetLine[i] == '.') {
-							// Check if this looks like field set syntax (varname.fieldname)
+							// Check if this looks like field set syntax (>>fieldname)
 							// Need to verify it's not a floating point number
 							bool isFloat = false;
 							if (i > 0 && std::isdigit(targetLine[i - 1])) {
@@ -1874,7 +1874,7 @@ void QuadrateLSP::handleRename(
 							}
 						}
 					}
-					// For field access (e.g., p.x or p @x)
+					// For field access (e.g., p <<x)
 					else if (ref->type() == Qd::IAstNode::Type::FIELD_ACCESS) {
 						std::istringstream lineStream(documentText);
 						std::string lineText;
@@ -1884,7 +1884,7 @@ void QuadrateLSP::handleRename(
 								break;
 							}
 						}
-						// Find the field name after . or @
+						// Find the field name after << or >>
 						size_t dotPos = lineText.find('.');
 						size_t atPos = lineText.find('@');
 						size_t accessPos = (dotPos != std::string::npos) ? dotPos : atPos;

@@ -46,7 +46,7 @@ fn main() {
 		f20 = 20.0
 	} -> s
 
-	s @f1 print nl
-	s @f10 print nl
-	s @f20 print nl
+	s <<f1 print nl
+	s <<f10 print nl
+	s <<f20 print nl
 }

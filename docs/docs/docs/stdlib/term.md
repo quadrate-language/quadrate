@@ -2,7 +2,7 @@
 
 Terminal colors and formatting using ANSI escape codes.
 Use these constants to colorize terminal output.
-@example term::Green print "PASS" print term::Reset print nl
+<<example term::Green print "PASS" print term::Reset print nl
 
 ## Constants
 

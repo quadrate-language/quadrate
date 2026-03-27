@@ -152,17 +152,17 @@ fn sb_new(capacity:i64 -- sb:ptr) {
 }
 
 fn sb_free(sb:ptr -- ) {
-	sb @data mem::free
+	sb <<data mem::free
 }
 
 fn sb_append_byte(sb:ptr byte:i64 -- ) {
-	sb @len sb @capacity >= if {
+	sb <<len sb <<capacity >= if {
 		// Need to grow
-		sb @data sb @capacity 2 * mem::realloc! sb.data
-		sb @capacity 2 * sb.capacity
+		sb <<data sb <<capacity 2 * mem::realloc! sb.data
+		sb <<capacity 2 * sb.capacity
 	}
-	byte sb @data sb @len mem::set_byte
-	sb @len 1 + sb.len
+	byte sb <<data sb <<len mem::set_byte
+	sb <<len 1 + sb.len
 }
 
 fn main() {
@@ -179,8 +179,8 @@ fn main() {
 	sb 111 sb_append_byte  // o
 
 	// Print length and contents
-	"len: " print sb @len print nl
-	sb @data sb @len mem::to_string print nl  // Hello
+	"len: " print sb <<len print nl
+	sb <<data sb <<len mem::to_string print nl  // Hello
 }
 ```
 
@@ -205,9 +205,9 @@ fn pool_new(size:i64 -- pool:ptr) {
 }
 
 fn pool_alloc(pool:ptr bytes:i64 -- offset:i64) {
-	pool @used bytes + pool @size <= if {
-		pool @used -> offset
-		pool @used bytes + pool.used
+	pool <<used bytes + pool <<size <= if {
+		pool <<used -> offset
+		pool pool <<used bytes + >>used -> pool
 		offset
 	} else {
 		-1  // Out of memory
@@ -219,7 +219,7 @@ fn pool_reset(pool:ptr -- ) {
 }
 
 fn pool_free(pool:ptr -- ) {
-	pool @memory mem::free
+	pool <<memory mem::free
 }
 
 fn main() {
@@ -234,19 +234,19 @@ fn main() {
 
 	"off1: " print off1 print nl          // 0
 	"off2: " print off2 print nl          // 100
-	"pool used: " print pool @used print nl  // 300
+	"pool used: " print pool <<used print nl  // 300
 
 	// Write to allocated regions
-	42 pool @memory off1 mem::set_i64
-	99 pool @memory off2 mem::set_i64
+	42 pool <<memory off1 mem::set_i64
+	99 pool <<memory off2 mem::set_i64
 
 	// Read back
-	pool @memory off1 mem::get_i64 print nl  // 42
-	pool @memory off2 mem::get_i64 print nl  // 99
+	pool <<memory off1 mem::get_i64 print nl  // 42
+	pool <<memory off2 mem::get_i64 print nl  // 99
 
 	// Reset pool for reuse
 	pool pool_reset
-	"after reset: " print pool @used print nl  // 0
+	"after reset: " print pool <<used print nl  // 0
 }
 ```
 

@@ -17,6 +17,6 @@ fn main() {
 
 	// Call another helper that returns State
 	100 "created" create_state -> s2
-	s2 @value print nl
-	s2 @name print nl
+	s2 <<value print nl
+	s2 <<name print nl
 }

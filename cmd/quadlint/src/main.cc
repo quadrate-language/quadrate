@@ -152,7 +152,7 @@ void collectVariableUsages(
 		usages.insert(ident->name());
 	}
 
-	// Also check field access nodes (v@x uses variable v)
+	// Also check field access nodes (v <<x uses variable v)
 	if (node->type() == IAstNode::Type::FIELD_ACCESS) {
 		AstNodeFieldAccess* fieldAccess = static_cast<AstNodeFieldAccess*>(node);
 		usages.insert(fieldAccess->varName());

@@ -11,5 +11,5 @@ fn make_circle(p:Point r:f64 -- c:Circle) {
 }
 
 fn circle_area(c:Circle -- area:f64) {
-	math::Pi c @radius c @radius * *
+	math::Pi c <<radius c <<radius * *
 }

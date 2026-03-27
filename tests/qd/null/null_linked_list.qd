@@ -7,16 +7,16 @@ struct Item {
 fn main() {
 	// null as pointer field
 	Item { value = 10 next = null } -> a
-	a @value print nl
+	a <<value print nl
 
 	// Chain structs
 	Item { value = 20 next = a } -> b
-	b @value print nl
+	b <<value print nl
 
 	// Access through pointer field
-	b @next @value print nl
+	b <<next <<value print nl
 
 	// Three-deep chain
 	Item { value = 30 next = b } -> c
-	c @next @next @value print nl
+	c <<next <<next <<value print nl
 }

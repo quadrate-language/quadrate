@@ -3,8 +3,8 @@ use fmt
 use strings
 
 fn format_item(item:Item -- result:str) {
-	item @config @prefix -> prefix
-	item @value -> val
+	item <<config <<prefix -> prefix
+	item <<value -> val
 	val "%d" fmt::sprintf -> val_str
 	prefix val_str strings::concat
 }

@@ -55,7 +55,7 @@ Highlights:
 - Comments (`//` and `///`)
 - Module syntax (`module::function`)
 - Function pointers (`&funcname`)
-- Field access (`@field`, `!field`)
+- Field access (`<<field`, `!field`)
 
 ## License
 

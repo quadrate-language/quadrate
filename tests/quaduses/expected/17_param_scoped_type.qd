@@ -3,7 +3,7 @@ use math
 
 fn process(v: math::Vec3 -- result: f64) {
 	-> v
-	v @x v @y + v @z +
+	v <<x v <<y + v <<z +
 }
 
 fn main() {

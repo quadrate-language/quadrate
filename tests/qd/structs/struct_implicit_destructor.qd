@@ -18,8 +18,8 @@ fn main() {
 	} -> o
 
 	// Access nested fields
-	o @inner @value print nl
-	o @inner @name print nl
-	o @data print nl
+	o <<inner <<value print nl
+	o <<inner <<name print nl
+	o <<data print nl
 	// Auto-released - implicit destructor frees inner and string
 }

@@ -10,7 +10,7 @@ struct Container {
 
 fn process(v: math::Vec3 -- len: f64) {
 	-> v
-	v @x dup * v @y dup * + v @z dup * + math::sqrt
+	v <<x dup * v <<y dup * + v <<z dup * + math::sqrt
 }
 
 fn main() {

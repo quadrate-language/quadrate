@@ -175,7 +175,7 @@ fn file_open(path:str -- f:ptr)! {
 }
 
 fn file_close(f:ptr -- ) {
-	f @handle io::close
+	f <<handle io::close
 }
 
 fn with_file(path:str -- ) {

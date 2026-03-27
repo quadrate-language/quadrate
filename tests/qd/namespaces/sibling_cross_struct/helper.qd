@@ -6,11 +6,11 @@ struct Wrapper {
 }
 
 fn get_parent_value(p:Parent -- v:i64) {
-	p @value
+	p <<value
 }
 
 fn get_parent_name(p:Parent -- n:str) {
-	p @name
+	p <<name
 }
 
 fn make_wrapper(p:Parent lbl:str -- w:Wrapper) {

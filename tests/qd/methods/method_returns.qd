@@ -6,11 +6,11 @@ struct Point2D {
 }
 
 fn (v:Point2D) length( -- len:f64) {
-	v @x dup * v @y dup * + math::sqrt
+	v <<x dup * v <<y dup * + math::sqrt
 }
 
 fn (v:Point2D) lengthSquared( -- len2:f64) {
-	v @x dup * v @y dup * +
+	v <<x dup * v <<y dup * +
 }
 
 fn main() {

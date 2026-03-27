@@ -21,18 +21,18 @@ fn make_triangle(p1:Point2D p2:Point2D p3:Point2D -- t:Triangle) {
 }
 
 fn point2d_dist(v1:Point2D v2:Point2D -- d:f64) {
-	v2 @x v1 @x - -> dx
-	v2 @y v1 @y - -> dy
+	v2 <<x v1 <<x - -> dx
+	v2 <<y v1 <<y - -> dy
 	dx dx * dy dy * + math::sqrt
 }
 
 fn line_length(l:Line -- len:f64) {
-	l @start l @end point2d_dist
+	l <<start l <<end point2d_dist
 }
 
 fn triangle_perimeter(t:Triangle -- p:f64) {
-	t @a t @b point2d_dist -> ab
-	t @b t @c point2d_dist -> bc
-	t @c t @a point2d_dist -> ca
+	t <<a t <<b point2d_dist -> ab
+	t <<b t <<c point2d_dist -> bc
+	t <<c t <<a point2d_dist -> ca
 	ab bc + ca +
 }

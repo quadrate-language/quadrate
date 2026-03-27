@@ -13,9 +13,9 @@ fn main() {
 	p 5.0 make_circle -> c
 
 	// Access nested struct
-	c @center @x print nl
-	c @center @y print nl
-	c @radius print nl
+	c <<center <<x print nl
+	c <<center <<y print nl
+	c <<radius print nl
 
 	// Use helper function
 	c circle_area print nl

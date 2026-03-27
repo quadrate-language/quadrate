@@ -60,7 +60,7 @@ pub fn parse(argc:i64 -- ) {
 /// @param f ptr Flag struct to free
 /// @example f flag::destroy
 pub fn destroy(f:ptr -- ) {
-	f @argv drop
+	f <<argv drop
 	f free
 }
 
@@ -73,7 +73,7 @@ pub fn boolean(f:ptr name:str -- present:i64) {
 	"\n" name strings::concat -> pattern
 	pattern "\n" strings::concat -> pattern
 
-	f @argv pattern strings::contains
+	f <<argv pattern strings::contains
 }
 
 /// Get string value of a flag.
@@ -96,13 +96,13 @@ pub fn string(f:ptr name:str -- value:str)! {
 	pattern "\n" strings::concat -> tmp
 	tmp -> pattern
 
-	f @argv pattern strings::index_of -> idx
+	f <<argv pattern strings::index_of -> idx
 	idx 0 < if {
 		"flag not found: " name strings::concat ErrNotFound panic
 	}
 
 	idx 1 + name strings::len + 1 + -> start
-	f @argv -> argv
+	f <<argv -> argv
 
 	argv "\n" start strings::index_of_from -> end_idx
 	end_idx 0 < if {
@@ -160,7 +160,7 @@ pub fn positional(f:ptr index:i64 -- value:str)! {
 	0 -> start
 	0 -> end_idx
 	0 -> found
-	f @argv -> argv
+	f <<argv -> argv
 	argv strings::len -> len
 
 	// Skip initial newline

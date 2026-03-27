@@ -494,7 +494,7 @@ fn main() {{
 }
 
 fn test(p:Point -- ) {
-    p@x
+    p <<x
 }"""
         uri = "file:///tmp/test_field_access.qd"
         self.open_document(uri, content)

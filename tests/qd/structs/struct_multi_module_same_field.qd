@@ -6,30 +6,30 @@ use math
 
 // Function that takes math::Vec2 and accesses its fields
 fn get_vec2_x(v:math::Vec2 -- result:f64) {
-	v @x
+	v <<x
 }
 
 fn get_vec2_y(v:math::Vec2 -- result:f64) {
-	v @y
+	v <<y
 }
 
 // Function that takes math::Vec3 and accesses its fields
 fn get_vec3_x(v:math::Vec3 -- result:f64) {
-	v @x
+	v <<x
 }
 
 fn get_vec3_z(v:math::Vec3 -- result:f64) {
-	v @z
+	v <<z
 }
 
 // Function that takes math::Vec4 and accesses its fields
 fn get_vec4_w(v:math::Vec4 -- result:f64) {
-	v @w
+	v <<w
 }
 
 // Function that takes math::Quat and accesses its fields
 fn get_quat_w(q:math::Quat -- result:f64) {
-	q @w
+	q <<w
 }
 
 fn main() {
@@ -54,8 +54,8 @@ fn main() {
 	"quat w:" print q get_quat_w print nl
 
 	// Test direct field access (should still work)
-	"direct v2.x:" print v2 @x print nl
-	"direct v3.z:" print v3 @z print nl
-	"direct v4.w:" print v4 @w print nl
-	"direct q.w:" print q @w print nl
+	"direct v2.x:" print v2 <<x print nl
+	"direct v3.z:" print v3 <<z print nl
+	"direct v4.w:" print v4 <<w print nl
+	"direct q.w:" print q <<w print nl
 }

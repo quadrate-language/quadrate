@@ -26,8 +26,8 @@ fn main() {
 		}
 	} -> l3
 
-	l3 @inner @inner @vec @x print nl
-	l3 @inner @inner @vec @y print nl
-	l3 @inner @inner @vec @z print nl
+	l3 <<inner <<inner <<vec <<x print nl
+	l3 <<inner <<inner <<vec <<y print nl
+	l3 <<inner <<inner <<vec <<z print nl
 	l3 free
 }

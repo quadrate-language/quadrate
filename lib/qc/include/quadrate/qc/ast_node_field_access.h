@@ -8,7 +8,7 @@ namespace Qd {
 	/**
 	 * @brief AST node representing field access
 	 *
-	 * Example: v @x
+	 * Example: v <<x
 	 * Accesses field 'x' from struct in local variable 'v'
 	 */
 	class AstNodeFieldAccess : public IAstNode {

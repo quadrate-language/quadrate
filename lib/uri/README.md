@@ -25,10 +25,10 @@ fn main() {
     // Parse a URI
     "https://example.com:8080/path?q=1#top" uri::parse -> u
     u @scheme print nl  // "https"
-    u @host print nl    // "example.com"
-    u @port print nl    // 8080
-    u @path print nl    // "/path"
-    u @query print nl   // "q=1"
+    u <<host print nl    // "example.com"
+    u <<port print nl    // 8080
+    u <<path print nl    // "/path"
+    u <<query print nl   // "q=1"
 
     // Query parameter access
     "foo=bar&x=1" "foo" uri::query_get -> val

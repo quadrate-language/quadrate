@@ -8,7 +8,7 @@ namespace Qd {
 	/**
 	 * @brief AST node representing array element access
 	 *
-	 * Example: p@skills 0 nth
+	 * Example: p <<skills 0 nth
 	 * Stack: ( array index -- value )
 	 */
 	class AstNodeArrayIndex : public IAstNode {

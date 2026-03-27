@@ -50,7 +50,7 @@ struct Point {
 
 fn point_add(a:Point b:Point -- c:Point) {
 	-> b -> a
-	Point { x = a @x b @x + y = a @y b @y + }
+	Point { x = a <<x b <<x + y = a <<y b <<y + }
 }
 ```
 
@@ -61,7 +61,7 @@ fn main() {
 	Point { x = 1.0 y = 2.0 } -> p1
 	Point { x = 3.0 y = 4.0 } -> p2
 	p1 p2 point_add -> p3
-	p3 @x print nl  // 4.0
+	p3 <<x print nl  // 4.0
 }
 ```
 

@@ -175,7 +175,7 @@ import "libhttp.a" as "http" {
 	/// Execute HTTP request.
 	/// @param req ptr Request object
 	/// @return resp Response Response struct with status, headers, body
-	/// @example req http::send! -> resp  resp @status print
+	/// @example req http::send! -> resp  resp <<status print
 	pub fn send(req:ptr -- resp:Response)!
 
 	/// Free request object (call after send).

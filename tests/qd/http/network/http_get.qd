@@ -6,11 +6,11 @@ fn main( -- ) {
 	"https://example.com" http::get switch {
 		Ok {
 			-> resp
-			resp @status 200 eq
+			resp <<status 200 eq
 			if {
 				"status ok" print nl
 			}
-			"body length:" print resp @body strings::len print nl
+			"body length:" print resp <<body strings::len print nl
 			resp http::close
 		}
 		_ {

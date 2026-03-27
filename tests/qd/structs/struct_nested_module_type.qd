@@ -14,16 +14,16 @@ fn main() {
 	Container { v = vec scalar = 42.0 } -> c
 
 	// Access scalar field (should be 42)
-	c @scalar print nl
+	c <<scalar print nl
 
 	// Access nested Vec3 fields
-	c @v -> vptr
-	vptr @x print nl
-	vptr @y print nl
-	vptr @z print nl
+	c <<v -> vptr
+	vptr <<x print nl
+	vptr <<y print nl
+	vptr <<z print nl
 
 	// Verify via chained access
-	c @v @x print nl
-	c @v @y print nl
-	c @v @z print nl
+	c <<v <<x print nl
+	c <<v <<y print nl
+	c <<v <<z print nl
 }

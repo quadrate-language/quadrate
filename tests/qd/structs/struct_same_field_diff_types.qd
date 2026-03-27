@@ -8,11 +8,11 @@ struct PersonWithInt {
 }
 
 fn get_float_value(obj:ptr -- v:f64) {
-	obj as PersonWithFloat @value
+	obj as PersonWithFloat <<value
 }
 
 fn get_int_value(obj:ptr -- v:i64) {
-	obj as PersonWithInt @value
+	obj as PersonWithInt <<value
 }
 
 fn test_same_field() {

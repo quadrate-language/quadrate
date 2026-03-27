@@ -187,9 +187,9 @@ fn get_best_practices_content( -- content:str) {
 
 	s "5. STRUCT FIELD ACCESS\n" strings::concat -> s
 	s "-----------------------\n" strings::concat -> s
-	s "Use @ to read fields, # to update (creates new struct).\n\n" strings::concat -> s
+	s "Use << to read fields (<<x), >> to write (>>x), # to update (creates new struct).\n\n" strings::concat -> s
 	s "GOOD:\n" strings::concat -> s
-	s "  point @x @y +              // Read x and y, add them\n" strings::concat -> s
+	s "  point <<x <<y +              // Read x and y, add them\n" strings::concat -> s
 	s "  point new_x #x -> point2   // Update x field\n\n" strings::concat -> s
 	s "PATTERN - Chained updates:\n" strings::concat -> s
 	s "  point 10.0 #x 20.0 #y -> updated_point\n\n" strings::concat -> s
@@ -423,7 +423,7 @@ fn get_snippet_content(str -- str) {
 		1 { "// Hello World\nfn main() {\n\t42 print nl\n}" }
 		2 { "// File I/O\nuse io\n\nfn read_example() {\n\tpath io::read_file switch {\n\t\tOk { -> content content print nl }\n\t\t_ { 1 os::exit }\n\t}\n}\n\nfn write_example() {\n\tpath data io::write_file!\n}" }
 		3 { "// Error Handling\n\n// Method 1: ! suffix panics on error\npath io::read_file! -> content\n\n// Method 2: ? propagates error to caller (caller must be fallible !)\npath io::read_file? -> content\n\n// Method 3: switch handles error\npath io::read_file switch {\n\tOk { -> content }\n\t_ { err -> code -> msg }\n}" }
-		4 { "// Structs\n\nstruct Point {\n\tx: f64\n\ty: f64\n}\n\nfn main() {\n\tPoint { x = 10.0 y = 20.0 } -> p\n\tp @x print nl  // 10.0\n\tp 30.0 #x -> p2 // update x\n}" }
+		4 { "// Structs\n\nstruct Point {\n\tx: f64\n\ty: f64\n}\n\nfn main() {\n\tPoint { x = 10.0 y = 20.0 } -> p\n\tp <<x print nl  // 10.0\n\tp 30.0 #x -> p2 // update x\n}" }
 		5 { "// Loops\n\n// For loop\n0 10 1 for i { i print nl }\n\n// Loop with break\n0 -> x\nloop { x 5 >= if { break }  x print nl  x 1 + -> x }\n\n// Loop with continue\nloop { cond if { break } }" }
 		6 { "// Stack Operations\n\n5 dup      // 5 5 (duplicate)\n1 2 swap   // 2 1 (swap top two)\n1 2 drop   // 1 (remove top)\n1 2 over   // 1 2 1 (copy second)\n1 2 3 rot  // 2 3 1 (rotate)\n1 2 nip    // 2 (remove second)\n42 -> x    // bind to variable" }
 		7 { get_common_mistakes_content }

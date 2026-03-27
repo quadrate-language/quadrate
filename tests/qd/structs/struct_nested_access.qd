@@ -11,15 +11,15 @@ fn test_nested_access() {
 	} -> p
 
 	// Access x twice
-	p @x print nl
-	p @x print nl
+	p <<x print nl
+	p <<x print nl
 
 	// Access y
-	p @y print nl
+	p <<y print nl
 
 	// Access x and y separately (adding field access results doesn't work due to type checker limitation)
-	p @x print nl
-	p @y print nl
+	p <<x print nl
+	p <<y print nl
 }
 
 fn main() {

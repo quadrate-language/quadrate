@@ -276,12 +276,12 @@ fn tool_search(ds:ptr args:str -- result:str) {
 	} else {
 		"Search results for: " query strings::concat "\n\n" strings::concat -> r
 
-		ds @builtins query fuzzy::contains_ci if {
-			r "=== Builtins ===\n" strings::concat ds @builtins strings::concat "\n\n" strings::concat -> r
+		ds <<builtins query fuzzy::contains_ci if {
+			r "=== Builtins ===\n" strings::concat ds <<builtins strings::concat "\n\n" strings::concat -> r
 		}
 
-		ds @language query fuzzy::contains_ci if {
-			r "=== Language Reference ===\n" strings::concat ds @language strings::concat "\n\n" strings::concat -> r
+		ds <<language query fuzzy::contains_ci if {
+			r "=== Language Reference ===\n" strings::concat ds <<language strings::concat "\n\n" strings::concat -> r
 		}
 
 		ds "bits" query r search_module -> r
@@ -315,7 +315,7 @@ fn tool_search(ds:ptr args:str -- result:str) {
 }
 
 fn tool_get_builtins(ds:ptr -- result:str) {
-	ds @builtins dup strings::len 2 > if {
+	ds <<builtins dup strings::len 2 > if {
 		tool_text_result
 	} else {
 		drop "Builtins documentation not available" tool_error_result
@@ -370,7 +370,7 @@ fn tool_get_builtin(ds:ptr args:str -- result:str) {
 	found 0 == if {
 		"Missing required parameter: name" tool_error_result
 	} else {
-		ds @builtins name find_builtin -> found -> builtin_obj
+		ds <<builtins name find_builtin -> found -> builtin_obj
 		found if {
 			builtin_obj tool_text_result
 		} else {
@@ -380,7 +380,7 @@ fn tool_get_builtin(ds:ptr args:str -- result:str) {
 }
 
 fn tool_get_syntax(ds:ptr -- result:str) {
-	ds @language dup strings::len 2 > if {
+	ds <<language dup strings::len 2 > if {
 		tool_text_result
 	} else {
 		drop "Language reference not available" tool_error_result
@@ -392,7 +392,7 @@ fn tool_get_keyword(ds:ptr args:str -- result:str) {
 	found 0 == if {
 		"Missing required parameter: name" tool_error_result
 	} else {
-		ds @language "keywords" json::get_array -> found -> keywords
+		ds <<language "keywords" json::get_array -> found -> keywords
 		found 0 == if {
 			"Language reference not available" tool_error_result
 		} else {
@@ -437,7 +437,7 @@ fn tool_get_operator(ds:ptr args:str -- result:str) {
 	found 0 == if {
 		"Missing required parameter: name" tool_error_result
 	} else {
-		ds @language "operators" json::get_array -> found -> operators
+		ds <<language "operators" json::get_array -> found -> operators
 		found 0 == if {
 			"Language reference not available" tool_error_result
 		} else {
@@ -739,13 +739,13 @@ fn tool_generate_template(args:str -- result:str) {
 					"JSON PARSE TEMPLATE\n===================\nuse json\n\nfn parse_json(data:str -- obj:str) {\n    data json::parse! -> obj\n    \n    // Get string: obj key json::get_string -> found -> value\n    // Get int:    obj key json::get_int -> found -> value\n    // Get bool:   obj key json::get_bool -> found -> value\n    // Get object: obj key json::get_object -> found -> value\n    // Get array:  obj key json::get_array -> found -> arr\n    \n    obj\n}" tool_text_result
 				} else {
 					template "http-get" strings::compare 0 == if {
-						"HTTP GET TEMPLATE\n=================\nuse http\n\nfn fetch(url:str -- body:str) {\n    url http::get switch {\n        Ok { -> resp\n            resp @status 200 == if {\n                resp @body\n            } else { empty }\n        }\n        Err { -> _ -> _ empty }\n    }\n}" tool_text_result
+						"HTTP GET TEMPLATE\n=================\nuse http\n\nfn fetch(url:str -- body:str) {\n    url http::get switch {\n        Ok { -> resp\n            resp <<status 200 == if {\n                resp <<body\n            } else { empty }\n        }\n        Err { -> _ -> _ empty }\n    }\n}" tool_text_result
 					} else {
 						template "cli-args" strings::compare 0 == if {
 							"CLI ARGS TEMPLATE\n=================\nuse os\n\nfn main() {\n    os::args -> args\n    args len -> argc\n    \n    1 -> i\n    loop {\n        i argc >= if { break }\n        args i nth -> arg\n        arg print nl\n        i 1 + -> i\n    }\n}" tool_text_result
 						} else {
 							template "struct-crud" strings::compare 0 == if {
-								"STRUCT CRUD TEMPLATE\n====================\n\nstruct Item {\n    id: i64\n    name: str\n    count: i64\n}\n\n// Create\nfn new_item(id:i64 name:str -- item:Item) {\n    Item { id = id name = name count = 0 }\n}\n\n// Read: item @field_name\n// Update: item value #field_name\n\nfn main() {\n    1 name new_item -> item\n    item @name print nl\n    item 10 #count -> item\n    item @count print nl\n}" tool_text_result
+								"STRUCT CRUD TEMPLATE\n====================\n\nstruct Item {\n    id: i64\n    name: str\n    count: i64\n}\n\n// Create\nfn new_item(id:i64 name:str -- item:Item) {\n    Item { id = id name = name count = 0 }\n}\n\n// Read: item <<field_name\n// Update: item value #field_name\n\nfn main() {\n    1 name new_item -> item\n    item <<name print nl\n    item 10 #count -> item\n    item <<count print nl\n}" tool_text_result
 							} else {
 								template "error-handling" strings::compare 0 == if {
 									"ERROR HANDLING TEMPLATE\n=======================\nuse io\n\n// Method 1: Panic with !\n//   path io::read_file!\n\n// Method 2: Propagate with ? (caller must be fallible !)\nfn read_file(path:str -- content:str)! {\n    path io::read_file? -> content\n    content\n}\n\n// Method 3: Switch on result\nfn try_read(path:str -- content:str ok:i64) {\n    path io::read_file switch {\n        Ok { -> content content 1 }\n        _ { empty 0 }\n    }\n}\n\n// Method 4: Default on error\nfn read_or(path:str default:str -- content:str) {\n    path io::read_file switch {\n        Ok { -> content content }\n        _ { default }\n    }\n}" tool_text_result

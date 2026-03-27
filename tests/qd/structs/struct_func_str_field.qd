@@ -5,7 +5,7 @@ struct Person {
 }
 
 fn get_age(person:Person -- age:f64) {
-	person @age
+	person <<age
 }
 
 fn test_str_field() {

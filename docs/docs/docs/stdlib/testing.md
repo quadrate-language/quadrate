@@ -6,7 +6,7 @@ Provides assertion functions for writing test cases.
 Tests are defined using the `test` keyword and assertions
 check that conditions are met.
 
-@example
+<<example
 use testing
 
 test "addition works" {

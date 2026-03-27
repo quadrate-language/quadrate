@@ -29,7 +29,7 @@ fn main() {
 		y = 7.0
 	} -> v
 
-	p2 @x print nl
-	p3 @z print nl
-	v @y print nl
+	p2 <<x print nl
+	p3 <<z print nl
+	v <<y print nl
 }

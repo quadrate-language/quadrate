@@ -12,9 +12,9 @@ fn process_point() {
 	0 5 1 for it {
 		it 3 lt
 		if {
-			p @x print nl
+			p <<x print nl
 		} else {
-			p @y print nl
+			p <<y print nl
 		}
 	}
 }

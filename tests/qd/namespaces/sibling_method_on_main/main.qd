@@ -9,13 +9,13 @@ fn main() {
 
 	// Use function defined in sibling file
 	c counter_increment -> c2
-	c2 @value print nl
+	c2 <<value print nl
 
 	c2 counter_increment -> c3
 	c3 counter_increment -> c3
-	c3 @value print nl
+	c3 <<value print nl
 
 	// Use another function from sibling
 	c3 counter_double -> c4
-	c4 @value print nl
+	c4 <<value print nl
 }

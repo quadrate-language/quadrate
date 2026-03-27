@@ -76,7 +76,7 @@ fn load_docs( -- ds:ptr) {
 }
 
 fn load_module(ds:ptr name:str -- content:str) {
-	ds @docs_dir "/" strings::concat name strings::concat ".json" strings::concat -> path
+	ds <<docs_dir "/" strings::concat name strings::concat ".json" strings::concat -> path
 	path io::read_file switch {
 		Ok {
 		}

@@ -11,8 +11,8 @@ fn test_vec2() {
 	} -> v
 
 	// Access and print fields
-	v @x print nl
-	v @y print nl
+	v <<x print nl
+	v <<y print nl
 	// Struct auto-released at function end
 }
 

@@ -271,37 +271,37 @@ test "math::rad_to_deg" {
 
 test "math::vec2_zero" {
 	math::vec2_zero -> v
-	v @x 0.0 testing::assert_eq
-	v @y 0.0 testing::assert_eq
+	v <<x 0.0 testing::assert_eq
+	v <<y 0.0 testing::assert_eq
 }
 
 test "math::vec2_one" {
 	math::vec2_one -> v
-	v @x 1.0 testing::assert_eq
-	v @y 1.0 testing::assert_eq
+	v <<x 1.0 testing::assert_eq
+	v <<y 1.0 testing::assert_eq
 }
 
 test "math::Vec2 add" {
 	math::Vec2 { x = 1.0 y = 2.0 } -> a
 	math::Vec2 { x = 3.0 y = 4.0 } -> b
 	b a add -> c
-	c @x 4.0 testing::assert_eq
-	c @y 6.0 testing::assert_eq
+	c <<x 4.0 testing::assert_eq
+	c <<y 6.0 testing::assert_eq
 }
 
 test "math::Vec2 subtract" {
 	math::Vec2 { x = 5.0 y = 7.0 } -> a
 	math::Vec2 { x = 2.0 y = 3.0 } -> b
 	a b subtract -> c
-	c @x 3.0 testing::assert_eq
-	c @y 4.0 testing::assert_eq
+	c <<x 3.0 testing::assert_eq
+	c <<y 4.0 testing::assert_eq
 }
 
 test "math::Vec2 scale" {
 	math::Vec2 { x = 2.0 y = 3.0 } -> v
 	v 2.0 scale -> s
-	s @x 4.0 testing::assert_eq
-	s @y 6.0 testing::assert_eq
+	s <<x 4.0 testing::assert_eq
+	s <<y 6.0 testing::assert_eq
 }
 
 test "math::Vec2 dot" {
@@ -329,25 +329,25 @@ test "math::Vec2 distance" {
 
 test "math::vec3_zero" {
 	math::vec3_zero -> v
-	v @x 0.0 testing::assert_eq
-	v @y 0.0 testing::assert_eq
-	v @z 0.0 testing::assert_eq
+	v <<x 0.0 testing::assert_eq
+	v <<y 0.0 testing::assert_eq
+	v <<z 0.0 testing::assert_eq
 }
 
 test "math::vec3_one" {
 	math::vec3_one -> v
-	v @x 1.0 testing::assert_eq
-	v @y 1.0 testing::assert_eq
-	v @z 1.0 testing::assert_eq
+	v <<x 1.0 testing::assert_eq
+	v <<y 1.0 testing::assert_eq
+	v <<z 1.0 testing::assert_eq
 }
 
 test "math::Vec3 add" {
 	math::Vec3 { x = 1.0 y = 2.0 z = 3.0 } -> a
 	math::Vec3 { x = 4.0 y = 5.0 z = 6.0 } -> b
 	b a add -> c
-	c @x 5.0 testing::assert_eq
-	c @y 7.0 testing::assert_eq
-	c @z 9.0 testing::assert_eq
+	c <<x 5.0 testing::assert_eq
+	c <<y 7.0 testing::assert_eq
+	c <<z 9.0 testing::assert_eq
 }
 
 test "math::Vec3 dot" {
@@ -360,9 +360,9 @@ test "math::Vec3 cross" {
 	math::Vec3 { x = 1.0 y = 0.0 z = 0.0 } -> a
 	math::Vec3 { x = 0.0 y = 1.0 z = 0.0 } -> b
 	a b cross -> c
-	c @x 0.0 testing::assert_eq
-	c @y 0.0 testing::assert_eq
-	c @z 1.0 testing::assert_eq
+	c <<x 0.0 testing::assert_eq
+	c <<y 0.0 testing::assert_eq
+	c <<z 1.0 testing::assert_eq
 }
 
 test "math::Vec3 length" {
@@ -378,10 +378,10 @@ test "math::Vec3 normalize" {
 
 test "math::vec4_zero" {
 	math::vec4_zero -> v
-	v @x 0.0 testing::assert_eq
-	v @y 0.0 testing::assert_eq
-	v @z 0.0 testing::assert_eq
-	v @w 0.0 testing::assert_eq
+	v <<x 0.0 testing::assert_eq
+	v <<y 0.0 testing::assert_eq
+	v <<z 0.0 testing::assert_eq
+	v <<w 0.0 testing::assert_eq
 }
 
 test "math::Vec4 dot" {
@@ -397,10 +397,10 @@ test "math::Vec4 length" {
 
 test "math::quat_identity" {
 	math::quat_identity -> q
-	q @w 1.0 testing::assert_eq
-	q @x 0.0 testing::assert_eq
-	q @y 0.0 testing::assert_eq
-	q @z 0.0 testing::assert_eq
+	q <<w 1.0 testing::assert_eq
+	q <<x 0.0 testing::assert_eq
+	q <<y 0.0 testing::assert_eq
+	q <<z 0.0 testing::assert_eq
 }
 
 test "math::Quat length" {
@@ -412,16 +412,16 @@ test "math::Quat normalize" {
 	math::Quat { w = 2.0 x = 0.0 y = 0.0 z = 0.0 } -> q
 	q normalize -> n
 	n length 1.0 0.0001 testing::assert_approx_eq
-	n @w 1.0 0.0001 testing::assert_approx_eq
+	n <<w 1.0 0.0001 testing::assert_approx_eq
 }
 
 test "math::Quat conjugate" {
 	math::Quat { w = 1.0 x = 2.0 y = 3.0 z = 4.0 } -> q
 	q conjugate -> c
-	c @w 1.0 testing::assert_eq
-	c @x -2.0 testing::assert_eq
-	c @y -3.0 testing::assert_eq
-	c @z -4.0 testing::assert_eq
+	c <<w 1.0 testing::assert_eq
+	c <<x -2.0 testing::assert_eq
+	c <<y -3.0 testing::assert_eq
+	c <<z -4.0 testing::assert_eq
 }
 
 test "math::quat_from_axis_angle" {
@@ -432,19 +432,19 @@ test "math::quat_from_axis_angle" {
 
 test "math::mat4_identity" {
 	math::mat4_identity -> m
-	m @m00 1.0 testing::assert_eq
-	m @m11 1.0 testing::assert_eq
-	m @m22 1.0 testing::assert_eq
-	m @m33 1.0 testing::assert_eq
-	m @m01 0.0 testing::assert_eq
-	m @m10 0.0 testing::assert_eq
+	m <<m00 1.0 testing::assert_eq
+	m <<m11 1.0 testing::assert_eq
+	m <<m22 1.0 testing::assert_eq
+	m <<m33 1.0 testing::assert_eq
+	m <<m01 0.0 testing::assert_eq
+	m <<m10 0.0 testing::assert_eq
 }
 
 test "math::mat4_zero" {
 	math::mat4_zero -> m
-	m @m00 0.0 testing::assert_eq
-	m @m11 0.0 testing::assert_eq
-	m @m33 0.0 testing::assert_eq
+	m <<m00 0.0 testing::assert_eq
+	m <<m11 0.0 testing::assert_eq
+	m <<m33 0.0 testing::assert_eq
 }
 
 test "math::Mat4 determinant identity" {
@@ -455,37 +455,37 @@ test "math::Mat4 determinant identity" {
 test "math::Mat4 mul identity" {
 	math::mat4_identity -> m
 	m m mul -> r
-	r @m00 1.0 testing::assert_eq
-	r @m11 1.0 testing::assert_eq
-	r @m22 1.0 testing::assert_eq
+	r <<m00 1.0 testing::assert_eq
+	r <<m11 1.0 testing::assert_eq
+	r <<m22 1.0 testing::assert_eq
 }
 
 test "math::mat4_translation" {
 	1.0 2.0 3.0 math::mat4_translation -> m
-	m @m30 1.0 testing::assert_eq
-	m @m31 2.0 testing::assert_eq
-	m @m32 3.0 testing::assert_eq
+	m <<m30 1.0 testing::assert_eq
+	m <<m31 2.0 testing::assert_eq
+	m <<m32 3.0 testing::assert_eq
 }
 
 test "math::mat4_scaling" {
 	2.0 3.0 4.0 math::mat4_scaling -> m
-	m @m00 2.0 testing::assert_eq
-	m @m11 3.0 testing::assert_eq
-	m @m22 4.0 testing::assert_eq
+	m <<m00 2.0 testing::assert_eq
+	m <<m11 3.0 testing::assert_eq
+	m <<m22 4.0 testing::assert_eq
 }
 
 test "math::Mat4 transpose" {
 	math::mat4_identity -> m
 	m transpose -> t
-	t @m00 1.0 testing::assert_eq
-	t @m11 1.0 testing::assert_eq
+	t <<m00 1.0 testing::assert_eq
+	t <<m11 1.0 testing::assert_eq
 }
 
 test "math::Mat4 inverse identity" {
 	math::mat4_identity -> m
 	m inverse -> inv
-	inv @m00 1.0 0.0001 testing::assert_approx_eq
-	inv @m11 1.0 0.0001 testing::assert_approx_eq
+	inv <<m00 1.0 0.0001 testing::assert_approx_eq
+	inv <<m11 1.0 0.0001 testing::assert_approx_eq
 }
 
 test "math::cubic_hermite" {
@@ -505,20 +505,20 @@ test "math::Vec2 length_sq" {
 test "math::Vec2 neg" {
 	math::Vec2 { x = 3.0 y = -4.0 } -> v
 	v neg -> n
-	n @x -3.0 0.0001 testing::assert_approx_eq
-	n @y 4.0 0.0001 testing::assert_approx_eq
+	n <<x -3.0 0.0001 testing::assert_approx_eq
+	n <<y 4.0 0.0001 testing::assert_approx_eq
 }
 
 test "math::Vec2 lerp" {
 	math::Vec2 { x = 0.0 y = 0.0 } -> a
 	math::Vec2 { x = 10.0 y = 20.0 } -> b
 	a b 0.5 lerp -> mid
-	mid @x 5.0 0.0001 testing::assert_approx_eq
-	mid @y 10.0 0.0001 testing::assert_approx_eq
+	mid <<x 5.0 0.0001 testing::assert_approx_eq
+	mid <<y 10.0 0.0001 testing::assert_approx_eq
 	a b 0.0 lerp -> start
-	start @x 0.0 0.0001 testing::assert_approx_eq
+	start <<x 0.0 0.0001 testing::assert_approx_eq
 	a b 1.0 lerp -> end
-	end @x 10.0 0.0001 testing::assert_approx_eq
+	end <<x 10.0 0.0001 testing::assert_approx_eq
 }
 
 test "math::Vec2 angle" {
@@ -531,15 +531,15 @@ test "math::Vec2 angle" {
 test "math::Vec2 rotate" {
 	math::Vec2 { x = 1.0 y = 0.0 } -> v
 	v math::Pi 2.0 / rotate -> r
-	r @x 0.0 0.001 testing::assert_approx_eq
-	r @y 1.0 0.001 testing::assert_approx_eq
+	r <<x 0.0 0.001 testing::assert_approx_eq
+	r <<y 1.0 0.001 testing::assert_approx_eq
 }
 
 test "math::Vec2 perpendicular" {
 	math::Vec2 { x = 1.0 y = 0.0 } -> v
 	v perpendicular -> p
-	p @x 0.0 0.0001 testing::assert_approx_eq
-	p @y 1.0 0.0001 testing::assert_approx_eq
+	p <<x 0.0 0.0001 testing::assert_approx_eq
+	p <<y 1.0 0.0001 testing::assert_approx_eq
 }
 
 // ============================================================================
@@ -548,40 +548,40 @@ test "math::Vec2 perpendicular" {
 
 test "math::vec3_unit_x" {
 	math::vec3_unit_x -> v
-	v @x 1.0 testing::assert_eq
-	v @y 0.0 testing::assert_eq
-	v @z 0.0 testing::assert_eq
+	v <<x 1.0 testing::assert_eq
+	v <<y 0.0 testing::assert_eq
+	v <<z 0.0 testing::assert_eq
 }
 
 test "math::vec3_unit_y" {
 	math::vec3_unit_y -> v
-	v @x 0.0 testing::assert_eq
-	v @y 1.0 testing::assert_eq
-	v @z 0.0 testing::assert_eq
+	v <<x 0.0 testing::assert_eq
+	v <<y 1.0 testing::assert_eq
+	v <<z 0.0 testing::assert_eq
 }
 
 test "math::vec3_unit_z" {
 	math::vec3_unit_z -> v
-	v @x 0.0 testing::assert_eq
-	v @y 0.0 testing::assert_eq
-	v @z 1.0 testing::assert_eq
+	v <<x 0.0 testing::assert_eq
+	v <<y 0.0 testing::assert_eq
+	v <<z 1.0 testing::assert_eq
 }
 
 test "math::Vec3 subtract" {
 	math::Vec3 { x = 5.0 y = 7.0 z = 9.0 } -> a
 	math::Vec3 { x = 2.0 y = 3.0 z = 4.0 } -> b
 	a b subtract -> c
-	c @x 3.0 testing::assert_eq
-	c @y 4.0 testing::assert_eq
-	c @z 5.0 testing::assert_eq
+	c <<x 3.0 testing::assert_eq
+	c <<y 4.0 testing::assert_eq
+	c <<z 5.0 testing::assert_eq
 }
 
 test "math::Vec3 scale" {
 	math::Vec3 { x = 1.0 y = 2.0 z = 3.0 } -> v
 	v 2.0 scale -> s
-	s @x 2.0 testing::assert_eq
-	s @y 4.0 testing::assert_eq
-	s @z 6.0 testing::assert_eq
+	s <<x 2.0 testing::assert_eq
+	s <<y 4.0 testing::assert_eq
+	s <<z 6.0 testing::assert_eq
 }
 
 test "math::Vec3 length_sq" {
@@ -592,27 +592,27 @@ test "math::Vec3 length_sq" {
 test "math::Vec3 neg" {
 	math::Vec3 { x = 1.0 y = -2.0 z = 3.0 } -> v
 	v neg -> n
-	n @x -1.0 0.0001 testing::assert_approx_eq
-	n @y 2.0 0.0001 testing::assert_approx_eq
-	n @z -3.0 0.0001 testing::assert_approx_eq
+	n <<x -1.0 0.0001 testing::assert_approx_eq
+	n <<y 2.0 0.0001 testing::assert_approx_eq
+	n <<z -3.0 0.0001 testing::assert_approx_eq
 }
 
 test "math::Vec3 lerp" {
 	math::Vec3 { x = 0.0 y = 0.0 z = 0.0 } -> a
 	math::Vec3 { x = 10.0 y = 20.0 z = 30.0 } -> b
 	a b 0.5 lerp -> mid
-	mid @x 5.0 0.0001 testing::assert_approx_eq
-	mid @y 10.0 0.0001 testing::assert_approx_eq
-	mid @z 15.0 0.0001 testing::assert_approx_eq
+	mid <<x 5.0 0.0001 testing::assert_approx_eq
+	mid <<y 10.0 0.0001 testing::assert_approx_eq
+	mid <<z 15.0 0.0001 testing::assert_approx_eq
 }
 
 test "math::Vec3 reflect" {
 	math::Vec3 { x = 1.0 y = -1.0 z = 0.0 } -> v
 	math::Vec3 { x = 0.0 y = 1.0 z = 0.0 } -> n
 	v n reflect -> r
-	r @x 1.0 0.0001 testing::assert_approx_eq
-	r @y 1.0 0.0001 testing::assert_approx_eq
-	r @z 0.0 0.0001 testing::assert_approx_eq
+	r <<x 1.0 0.0001 testing::assert_approx_eq
+	r <<y 1.0 0.0001 testing::assert_approx_eq
+	r <<z 0.0 0.0001 testing::assert_approx_eq
 }
 
 test "math::Vec3 distance" {
@@ -633,39 +633,39 @@ test "math::Vec3 angle_between" {
 
 test "math::vec4_one" {
 	math::vec4_one -> v
-	v @x 1.0 testing::assert_eq
-	v @y 1.0 testing::assert_eq
-	v @z 1.0 testing::assert_eq
-	v @w 1.0 testing::assert_eq
+	v <<x 1.0 testing::assert_eq
+	v <<y 1.0 testing::assert_eq
+	v <<z 1.0 testing::assert_eq
+	v <<w 1.0 testing::assert_eq
 }
 
 test "math::Vec4 add" {
 	math::Vec4 { x = 1.0 y = 2.0 z = 3.0 w = 4.0 } -> a
 	math::Vec4 { x = 5.0 y = 6.0 z = 7.0 w = 8.0 } -> b
 	b a add -> c
-	c @x 6.0 testing::assert_eq
-	c @y 8.0 testing::assert_eq
-	c @z 10.0 testing::assert_eq
-	c @w 12.0 testing::assert_eq
+	c <<x 6.0 testing::assert_eq
+	c <<y 8.0 testing::assert_eq
+	c <<z 10.0 testing::assert_eq
+	c <<w 12.0 testing::assert_eq
 }
 
 test "math::Vec4 subtract" {
 	math::Vec4 { x = 5.0 y = 7.0 z = 9.0 w = 11.0 } -> a
 	math::Vec4 { x = 1.0 y = 2.0 z = 3.0 w = 4.0 } -> b
 	a b subtract -> c
-	c @x 4.0 testing::assert_eq
-	c @y 5.0 testing::assert_eq
-	c @z 6.0 testing::assert_eq
-	c @w 7.0 testing::assert_eq
+	c <<x 4.0 testing::assert_eq
+	c <<y 5.0 testing::assert_eq
+	c <<z 6.0 testing::assert_eq
+	c <<w 7.0 testing::assert_eq
 }
 
 test "math::Vec4 scale" {
 	math::Vec4 { x = 1.0 y = 2.0 z = 3.0 w = 4.0 } -> v
 	v 2.0 scale -> s
-	s @x 2.0 testing::assert_eq
-	s @y 4.0 testing::assert_eq
-	s @z 6.0 testing::assert_eq
-	s @w 8.0 testing::assert_eq
+	s <<x 2.0 testing::assert_eq
+	s <<y 4.0 testing::assert_eq
+	s <<z 6.0 testing::assert_eq
+	s <<w 8.0 testing::assert_eq
 }
 
 test "math::Vec4 length_sq" {
@@ -682,20 +682,20 @@ test "math::Vec4 normalize" {
 test "math::Vec4 neg" {
 	math::Vec4 { x = 1.0 y = -2.0 z = 3.0 w = -4.0 } -> v
 	v neg -> n
-	n @x -1.0 0.0001 testing::assert_approx_eq
-	n @y 2.0 0.0001 testing::assert_approx_eq
-	n @z -3.0 0.0001 testing::assert_approx_eq
-	n @w 4.0 0.0001 testing::assert_approx_eq
+	n <<x -1.0 0.0001 testing::assert_approx_eq
+	n <<y 2.0 0.0001 testing::assert_approx_eq
+	n <<z -3.0 0.0001 testing::assert_approx_eq
+	n <<w 4.0 0.0001 testing::assert_approx_eq
 }
 
 test "math::Vec4 lerp" {
 	math::Vec4 { x = 0.0 y = 0.0 z = 0.0 w = 0.0 } -> a
 	math::Vec4 { x = 10.0 y = 20.0 z = 30.0 w = 40.0 } -> b
 	a b 0.5 lerp -> mid
-	mid @x 5.0 0.0001 testing::assert_approx_eq
-	mid @y 10.0 0.0001 testing::assert_approx_eq
-	mid @z 15.0 0.0001 testing::assert_approx_eq
-	mid @w 20.0 0.0001 testing::assert_approx_eq
+	mid <<x 5.0 0.0001 testing::assert_approx_eq
+	mid <<y 10.0 0.0001 testing::assert_approx_eq
+	mid <<z 15.0 0.0001 testing::assert_approx_eq
+	mid <<w 20.0 0.0001 testing::assert_approx_eq
 }
 
 // ============================================================================
@@ -706,10 +706,10 @@ test "math::Quat mul" {
 	math::quat_identity -> a
 	math::quat_identity -> b
 	b a mul -> c
-	c @w 1.0 0.0001 testing::assert_approx_eq
-	c @x 0.0 0.0001 testing::assert_approx_eq
-	c @y 0.0 0.0001 testing::assert_approx_eq
-	c @z 0.0 0.0001 testing::assert_approx_eq
+	c <<w 1.0 0.0001 testing::assert_approx_eq
+	c <<x 0.0 0.0001 testing::assert_approx_eq
+	c <<y 0.0 0.0001 testing::assert_approx_eq
+	c <<z 0.0 0.0001 testing::assert_approx_eq
 }
 
 test "math::Quat dot" {
@@ -721,10 +721,10 @@ test "math::Quat dot" {
 test "math::Quat inverse" {
 	math::quat_identity -> q
 	q inverse -> inv
-	inv @w 1.0 0.0001 testing::assert_approx_eq
-	inv @x 0.0 0.0001 testing::assert_approx_eq
-	inv @y 0.0 0.0001 testing::assert_approx_eq
-	inv @z 0.0 0.0001 testing::assert_approx_eq
+	inv <<w 1.0 0.0001 testing::assert_approx_eq
+	inv <<x 0.0 0.0001 testing::assert_approx_eq
+	inv <<y 0.0 0.0001 testing::assert_approx_eq
+	inv <<z 0.0 0.0001 testing::assert_approx_eq
 }
 
 test "math::Quat length_sq" {
@@ -740,7 +740,7 @@ test "math::Quat slerp" {
 	axis math::Pi 2.0 / math::quat_from_axis_angle -> b
 	// slerp at t=0 should give a
 	a b 0.0 slerp -> s0
-	s0 @w 1.0 0.001 testing::assert_approx_eq
+	s0 <<w 1.0 0.001 testing::assert_approx_eq
 	// slerp at t=1 should give b
 	a b 1.0 slerp -> s1
 	s1 length 1.0 0.001 testing::assert_approx_eq
@@ -752,18 +752,18 @@ test "math::Quat rotate_vec3" {
 	axis math::Pi 2.0 / math::quat_from_axis_angle -> q
 	math::Vec3 { x = 1.0 y = 0.0 z = 0.0 } -> v
 	q v rotate_vec3 -> r
-	r @x 0.0 0.001 testing::assert_approx_eq
-	r @y 0.0 0.001 testing::assert_approx_eq
-	r @z -1.0 0.001 testing::assert_approx_eq
+	r <<x 0.0 0.001 testing::assert_approx_eq
+	r <<y 0.0 0.001 testing::assert_approx_eq
+	r <<z -1.0 0.001 testing::assert_approx_eq
 }
 
 test "math::quat_from_euler" {
 	// Zero rotation should give identity
 	0.0 0.0 0.0 math::quat_from_euler -> q
-	q @w 1.0 0.0001 testing::assert_approx_eq
-	q @x 0.0 0.0001 testing::assert_approx_eq
-	q @y 0.0 0.0001 testing::assert_approx_eq
-	q @z 0.0 0.0001 testing::assert_approx_eq
+	q <<w 1.0 0.0001 testing::assert_approx_eq
+	q <<x 0.0 0.0001 testing::assert_approx_eq
+	q <<y 0.0 0.0001 testing::assert_approx_eq
+	q <<z 0.0 0.0001 testing::assert_approx_eq
 }
 
 // ============================================================================
@@ -775,19 +775,19 @@ test "math::Mat4 transform_point" {
 	1.0 2.0 3.0 math::mat4_translation -> m
 	math::Vec3 { x = 0.0 y = 0.0 z = 0.0 } -> p
 	m p transform_point -> r
-	r @x 1.0 0.0001 testing::assert_approx_eq
-	r @y 2.0 0.0001 testing::assert_approx_eq
-	r @z 3.0 0.0001 testing::assert_approx_eq
+	r <<x 1.0 0.0001 testing::assert_approx_eq
+	r <<y 2.0 0.0001 testing::assert_approx_eq
+	r <<z 3.0 0.0001 testing::assert_approx_eq
 }
 
 test "math::Mat4 transform_vec4" {
 	math::mat4_identity -> m
 	math::Vec4 { x = 1.0 y = 2.0 z = 3.0 w = 1.0 } -> v
 	m v transform_vec4 -> r
-	r @x 1.0 0.0001 testing::assert_approx_eq
-	r @y 2.0 0.0001 testing::assert_approx_eq
-	r @z 3.0 0.0001 testing::assert_approx_eq
-	r @w 1.0 0.0001 testing::assert_approx_eq
+	r <<x 1.0 0.0001 testing::assert_approx_eq
+	r <<y 2.0 0.0001 testing::assert_approx_eq
+	r <<z 3.0 0.0001 testing::assert_approx_eq
+	r <<w 1.0 0.0001 testing::assert_approx_eq
 }
 
 test "math::mat4_look_at" {
@@ -801,48 +801,48 @@ test "math::mat4_look_at" {
 
 test "math::mat4_perspective" {
 	1.047 1.777 0.1 100.0 math::mat4_perspective -> m
-	m @m23 -1.0 0.0001 testing::assert_approx_eq
-	m @m33 0.0 0.0001 testing::assert_approx_eq
+	m <<m23 -1.0 0.0001 testing::assert_approx_eq
+	m <<m33 0.0 0.0001 testing::assert_approx_eq
 }
 
 test "math::mat4_orthographic" {
 	-1.0 1.0 -1.0 1.0 0.1 100.0 math::mat4_orthographic -> m
-	m @m00 1.0 0.0001 testing::assert_approx_eq
-	m @m11 1.0 0.0001 testing::assert_approx_eq
-	m @m33 1.0 0.0001 testing::assert_approx_eq
+	m <<m00 1.0 0.0001 testing::assert_approx_eq
+	m <<m11 1.0 0.0001 testing::assert_approx_eq
+	m <<m33 1.0 0.0001 testing::assert_approx_eq
 }
 
 test "math::mat4_rotation_x" {
 	math::Pi 2.0 / math::mat4_rotation_x -> m
-	m @m00 1.0 0.0001 testing::assert_approx_eq
-	m @m11 0.0 0.001 testing::assert_approx_eq
-	m @m22 0.0 0.001 testing::assert_approx_eq
+	m <<m00 1.0 0.0001 testing::assert_approx_eq
+	m <<m11 0.0 0.001 testing::assert_approx_eq
+	m <<m22 0.0 0.001 testing::assert_approx_eq
 }
 
 test "math::mat4_rotation_y" {
 	math::Pi 2.0 / math::mat4_rotation_y -> m
-	m @m11 1.0 0.0001 testing::assert_approx_eq
-	m @m00 0.0 0.001 testing::assert_approx_eq
-	m @m22 0.0 0.001 testing::assert_approx_eq
+	m <<m11 1.0 0.0001 testing::assert_approx_eq
+	m <<m00 0.0 0.001 testing::assert_approx_eq
+	m <<m22 0.0 0.001 testing::assert_approx_eq
 }
 
 test "math::mat4_rotation_z" {
 	math::Pi 2.0 / math::mat4_rotation_z -> m
-	m @m22 1.0 0.0001 testing::assert_approx_eq
-	m @m00 0.0 0.001 testing::assert_approx_eq
-	m @m11 0.0 0.001 testing::assert_approx_eq
+	m <<m22 1.0 0.0001 testing::assert_approx_eq
+	m <<m00 0.0 0.001 testing::assert_approx_eq
+	m <<m11 0.0 0.001 testing::assert_approx_eq
 }
 
 test "math::mat4_from_quat" {
 	// Identity quaternion should give identity matrix
 	math::quat_identity -> q
 	q math::mat4_from_quat -> m
-	m @m00 1.0 0.0001 testing::assert_approx_eq
-	m @m11 1.0 0.0001 testing::assert_approx_eq
-	m @m22 1.0 0.0001 testing::assert_approx_eq
-	m @m33 1.0 0.0001 testing::assert_approx_eq
-	m @m01 0.0 0.0001 testing::assert_approx_eq
-	m @m10 0.0 0.0001 testing::assert_approx_eq
+	m <<m00 1.0 0.0001 testing::assert_approx_eq
+	m <<m11 1.0 0.0001 testing::assert_approx_eq
+	m <<m22 1.0 0.0001 testing::assert_approx_eq
+	m <<m33 1.0 0.0001 testing::assert_approx_eq
+	m <<m01 0.0 0.0001 testing::assert_approx_eq
+	m <<m10 0.0 0.0001 testing::assert_approx_eq
 }
 
 // ============================================================================
@@ -854,11 +854,11 @@ test "math::bezier2_vec2" {
 	math::Vec2 { x = 0.5 y = 1.0 } -> p1
 	math::Vec2 { x = 1.0 y = 0.0 } -> p2
 	p0 p1 p2 0.0 math::bezier2_vec2 -> r0
-	r0 @x 0.0 0.0001 testing::assert_approx_eq
-	r0 @y 0.0 0.0001 testing::assert_approx_eq
+	r0 <<x 0.0 0.0001 testing::assert_approx_eq
+	r0 <<y 0.0 0.0001 testing::assert_approx_eq
 	p0 p1 p2 1.0 math::bezier2_vec2 -> r1
-	r1 @x 1.0 0.0001 testing::assert_approx_eq
-	r1 @y 0.0 0.0001 testing::assert_approx_eq
+	r1 <<x 1.0 0.0001 testing::assert_approx_eq
+	r1 <<y 0.0 0.0001 testing::assert_approx_eq
 }
 
 test "math::bezier3_vec2" {
@@ -867,11 +867,11 @@ test "math::bezier3_vec2" {
 	math::Vec2 { x = 0.75 y = 0.5 } -> p2
 	math::Vec2 { x = 1.0 y = 0.0 } -> p3
 	p0 p1 p2 p3 0.0 math::bezier3_vec2 -> r0
-	r0 @x 0.0 0.0001 testing::assert_approx_eq
-	r0 @y 0.0 0.0001 testing::assert_approx_eq
+	r0 <<x 0.0 0.0001 testing::assert_approx_eq
+	r0 <<y 0.0 0.0001 testing::assert_approx_eq
 	p0 p1 p2 p3 1.0 math::bezier3_vec2 -> r1
-	r1 @x 1.0 0.0001 testing::assert_approx_eq
-	r1 @y 0.0 0.0001 testing::assert_approx_eq
+	r1 <<x 1.0 0.0001 testing::assert_approx_eq
+	r1 <<y 0.0 0.0001 testing::assert_approx_eq
 }
 
 test "math::bezier3_vec3" {
@@ -880,11 +880,11 @@ test "math::bezier3_vec3" {
 	math::Vec3 { x = 0.75 y = 0.5 z = 0.0 } -> p2
 	math::Vec3 { x = 1.0 y = 0.0 z = 0.0 } -> p3
 	p0 p1 p2 p3 0.0 math::bezier3_vec3 -> r0
-	r0 @x 0.0 0.0001 testing::assert_approx_eq
-	r0 @y 0.0 0.0001 testing::assert_approx_eq
-	r0 @z 0.0 0.0001 testing::assert_approx_eq
+	r0 <<x 0.0 0.0001 testing::assert_approx_eq
+	r0 <<y 0.0 0.0001 testing::assert_approx_eq
+	r0 <<z 0.0 0.0001 testing::assert_approx_eq
 	p0 p1 p2 p3 1.0 math::bezier3_vec3 -> r1
-	r1 @x 1.0 0.0001 testing::assert_approx_eq
-	r1 @y 0.0 0.0001 testing::assert_approx_eq
-	r1 @z 0.0 0.0001 testing::assert_approx_eq
+	r1 <<x 1.0 0.0001 testing::assert_approx_eq
+	r1 <<y 0.0 0.0001 testing::assert_approx_eq
+	r1 <<z 0.0 0.0001 testing::assert_approx_eq
 }

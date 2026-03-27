@@ -167,7 +167,7 @@ Use `///` for documentation:
 ```qd
 /// Calculates the factorial of n
 /// @param n The number to calculate factorial of
-/// @output The factorial result
+/// <<output The factorial result
 fn factorial(n:i64 -- result:i64) {
 	n 1 <= if {
 		1

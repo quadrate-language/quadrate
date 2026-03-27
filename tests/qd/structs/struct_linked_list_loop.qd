@@ -8,8 +8,8 @@ fn list_sum(cur:ptr -- total:i64) {
 	0 -> sum
 	loop {
 		cur null eq if { break }
-		sum cur @value + -> sum
-		cur @next -> cur
+		sum cur <<value + -> sum
+		cur <<next -> cur
 	}
 	sum
 }
@@ -19,7 +19,7 @@ fn list_len(cur:ptr -- n:i64) {
 	loop {
 		cur null eq if { break }
 		count ++ -> count
-		cur @next -> cur
+		cur <<next -> cur
 	}
 	count
 }

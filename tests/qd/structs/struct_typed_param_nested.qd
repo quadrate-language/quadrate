@@ -8,17 +8,17 @@ struct Point {
 
 // Helper to get magnitude
 fn magnitude(v:Point -- result:f64) {
-	v @x dup * v @y dup * + math::sqrt
+	v <<x dup * v <<y dup * + math::sqrt
 }
 
 // Helper to get x component
 fn get_x(v:Point -- result:f64) {
-	v @x
+	v <<x
 }
 
 // Helper to get y component
 fn get_y(v:Point -- result:f64) {
-	v @y
+	v <<y
 }
 
 // Function that calls other typed functions

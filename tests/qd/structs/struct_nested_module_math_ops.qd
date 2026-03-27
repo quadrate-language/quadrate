@@ -17,16 +17,16 @@ fn main() {
 	State { pos = p vel = v mass = 42.0 } -> s
 
 	// Access scalar field
-	s @mass print nl
+	s <<mass print nl
 
 	// Access nested Vec3 and use its fields
-	s @pos -> pos
-	pos @x print nl
-	pos @y print nl
-	pos @z print nl
+	s <<pos -> pos
+	pos <<x print nl
+	pos <<y print nl
+	pos <<z print nl
 
 	// Chained access
-	s @vel @x print nl
-	s @vel @y print nl
-	s @vel @z print nl
+	s <<vel <<x print nl
+	s <<vel <<y print nl
+	s <<vel <<z print nl
 }

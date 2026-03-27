@@ -141,14 +141,14 @@ pub fn spawn(func:ptr -- t:Thread)! {
 ///
 /// @example t join!
 pub fn (t:Thread) join( -- )! {
-	t @handle thread::raw_join!
+	t <<handle thread::raw_join!
 }
 
 /// Detach the thread.
 ///
 /// @example t detach!
 pub fn (t:Thread) detach( -- )! {
-	t @handle thread::raw_detach!
+	t <<handle thread::raw_detach!
 }
 
 /// Check if the thread is still alive.
@@ -156,7 +156,7 @@ pub fn (t:Thread) detach( -- )! {
 /// @return alive i64 1 if running, 0 if completed
 /// @example t is_alive -> running
 pub fn (t:Thread) is_alive( -- alive:i64) {
-	t @handle thread::raw_is_alive
+	t <<handle thread::raw_is_alive
 }
 
 // ============================================================================
@@ -182,14 +182,14 @@ pub fn mutex_new( -- m:Mutex)! {
 ///
 /// @example m lock!
 pub fn (m:Mutex) lock( -- )! {
-	m @handle thread::raw_mutex_lock!
+	m <<handle thread::raw_mutex_lock!
 }
 
 /// Unlock the mutex.
 ///
 /// @example m unlock!
 pub fn (m:Mutex) unlock( -- )! {
-	m @handle thread::raw_mutex_unlock!
+	m <<handle thread::raw_mutex_unlock!
 }
 
 /// Try to lock the mutex without blocking.
@@ -197,14 +197,14 @@ pub fn (m:Mutex) unlock( -- )! {
 /// @return success i64 1 if locked, 0 if already held
 /// @example m try_lock -> got
 pub fn (m:Mutex) try_lock( -- success:i64) {
-	m @handle thread::raw_mutex_try_lock
+	m <<handle thread::raw_mutex_try_lock
 }
 
 /// Free the mutex.
 ///
 /// @example m free
 pub fn (m:Mutex) free( -- ) {
-	m @handle thread::raw_mutex_free
+	m <<handle thread::raw_mutex_free
 }
 
 // ============================================================================
@@ -243,7 +243,7 @@ pub fn chan_buffered(capacity:i64 -- ch:Channel)! {
 /// @error ErrClosed Cannot send on closed channel
 /// @example ch 42 send!
 pub fn (ch:Channel) send(val:i64 -- )! {
-	val ch @handle thread::raw_chan_send!
+	val ch <<handle thread::raw_chan_send!
 }
 
 /// Receive a value from the channel.
@@ -252,7 +252,7 @@ pub fn (ch:Channel) send(val:i64 -- )! {
 /// @error ErrClosed Channel closed with no values
 /// @example ch recv! -> val
 pub fn (ch:Channel) recv( -- val:i64)! {
-	ch @handle thread::raw_chan_recv!
+	ch <<handle thread::raw_chan_recv!
 }
 
 /// Try to send without blocking.
@@ -261,7 +261,7 @@ pub fn (ch:Channel) recv( -- val:i64)! {
 /// @return success i64 1 if sent, 0 if would block
 /// @example ch 42 try_send -> sent
 pub fn (ch:Channel) try_send(val:i64 -- success:i64) {
-	val ch @handle thread::raw_chan_try_send
+	val ch <<handle thread::raw_chan_try_send
 }
 
 /// Try to receive without blocking.
@@ -270,14 +270,14 @@ pub fn (ch:Channel) try_send(val:i64 -- success:i64) {
 /// @return success i64 1 if received, 0 if would block
 /// @example ch try_recv -> success -> val
 pub fn (ch:Channel) try_recv( -- val:i64 success:i64) {
-	ch @handle thread::raw_chan_try_recv
+	ch <<handle thread::raw_chan_try_recv
 }
 
 /// Close the channel.
 ///
 /// @example ch close
 pub fn (ch:Channel) close( -- ) {
-	ch @handle thread::raw_chan_close
+	ch <<handle thread::raw_chan_close
 }
 
 /// Check if the channel is closed.
@@ -285,7 +285,7 @@ pub fn (ch:Channel) close( -- ) {
 /// @return closed i64 1 if closed, 0 if open
 /// @example ch is_closed -> done
 pub fn (ch:Channel) is_closed( -- closed:i64) {
-	ch @handle thread::raw_chan_is_closed
+	ch <<handle thread::raw_chan_is_closed
 }
 
 /// Get number of values in channel buffer.
@@ -293,7 +293,7 @@ pub fn (ch:Channel) is_closed( -- closed:i64) {
 /// @return n i64 Number of buffered values
 /// @example ch len -> n
 pub fn (ch:Channel) len( -- n:i64) {
-	ch @handle thread::raw_chan_len
+	ch <<handle thread::raw_chan_len
 }
 
 /// Get channel capacity.
@@ -301,14 +301,14 @@ pub fn (ch:Channel) len( -- n:i64) {
 /// @return cap i64 Buffer capacity (0 for unbuffered)
 /// @example ch cap -> c
 pub fn (ch:Channel) cap( -- c:i64) {
-	ch @handle thread::raw_chan_cap
+	ch <<handle thread::raw_chan_cap
 }
 
 /// Free the channel.
 ///
 /// @example ch free
 pub fn (ch:Channel) free( -- ) {
-	ch @handle thread::raw_chan_free
+	ch <<handle thread::raw_chan_free
 }
 
 // ============================================================================
@@ -335,14 +335,14 @@ pub fn wg_new( -- wg:WaitGroup)! {
 /// @param n i64 Number to add (usually 1 per thread)
 /// @example wg 2 add
 pub fn (wg:WaitGroup) add(n:i64 -- ) {
-	n wg @handle thread::raw_wg_add
+	n wg <<handle thread::raw_wg_add
 }
 
 /// Mark one unit of work as done.
 ///
 /// @example wg done
 pub fn (wg:WaitGroup) done( -- ) {
-	wg @handle thread::raw_wg_done
+	wg <<handle thread::raw_wg_done
 }
 
 /// Wait for all threads to complete.
@@ -350,14 +350,14 @@ pub fn (wg:WaitGroup) done( -- ) {
 /// @error ErrCreate Invalid WaitGroup
 /// @example wg wait!
 pub fn (wg:WaitGroup) wait( -- )! {
-	wg @handle thread::raw_wg_wait!
+	wg <<handle thread::raw_wg_wait!
 }
 
 /// Free the WaitGroup.
 ///
 /// @example wg free
 pub fn (wg:WaitGroup) free( -- ) {
-	wg @handle thread::raw_wg_free
+	wg <<handle thread::raw_wg_free
 }
 
 // ============================================================================
@@ -386,7 +386,7 @@ pub fn once_new( -- o:Once)! {
 /// @param func ptr Function to execute once
 /// @example o &init_stuff do
 pub fn (o:Once) do(func:ptr -- ) {
-	func o @handle thread::raw_once_do
+	func o <<handle thread::raw_once_do
 }
 
 /// Check if the function has been executed.
@@ -394,14 +394,14 @@ pub fn (o:Once) do(func:ptr -- ) {
 /// @return done i64 1 if executed, 0 if not yet
 /// @example o is_done -> executed
 pub fn (o:Once) is_done( -- done:i64) {
-	o @handle thread::raw_once_done
+	o <<handle thread::raw_once_done
 }
 
 /// Free the Once.
 ///
 /// @example o free
 pub fn (o:Once) free( -- ) {
-	o @handle thread::raw_once_free
+	o <<handle thread::raw_once_free
 }
 
 // ============================================================================
@@ -461,14 +461,14 @@ pub fn barrier_new(n:i64 -- b:Barrier)! {
 /// @return is_serial i64 1 for serial thread, 0 otherwise
 /// @example b wait -> serial
 pub fn (b:Barrier) wait( -- is_serial:i64) {
-	b @handle thread::raw_barrier_wait
+	b <<handle thread::raw_barrier_wait
 }
 
 /// Free the Barrier.
 ///
 /// @example b free
 pub fn (b:Barrier) free( -- ) {
-	b @handle thread::raw_barrier_free
+	b <<handle thread::raw_barrier_free
 }
 
 // ============================================================================
@@ -497,14 +497,14 @@ pub fn rwlock_new( -- rw:RwLock)! {
 ///
 /// @example rw read_lock!
 pub fn (rw:RwLock) read_lock( -- )! {
-	rw @handle thread::raw_rwlock_read_lock!
+	rw <<handle thread::raw_rwlock_read_lock!
 }
 
 /// Release a read lock.
 ///
 /// @example rw read_unlock!
 pub fn (rw:RwLock) read_unlock( -- )! {
-	rw @handle thread::raw_rwlock_read_unlock!
+	rw <<handle thread::raw_rwlock_read_unlock!
 }
 
 /// Acquire a write lock.
@@ -513,14 +513,14 @@ pub fn (rw:RwLock) read_unlock( -- )! {
 ///
 /// @example rw write_lock!
 pub fn (rw:RwLock) write_lock( -- )! {
-	rw @handle thread::raw_rwlock_write_lock!
+	rw <<handle thread::raw_rwlock_write_lock!
 }
 
 /// Release a write lock.
 ///
 /// @example rw write_unlock!
 pub fn (rw:RwLock) write_unlock( -- )! {
-	rw @handle thread::raw_rwlock_write_unlock!
+	rw <<handle thread::raw_rwlock_write_unlock!
 }
 
 /// Try to acquire a read lock without blocking.
@@ -528,7 +528,7 @@ pub fn (rw:RwLock) write_unlock( -- )! {
 /// @return success i64 1 if acquired, 0 otherwise
 /// @example rw try_read -> got
 pub fn (rw:RwLock) try_read( -- success:i64) {
-	rw @handle thread::raw_rwlock_try_read
+	rw <<handle thread::raw_rwlock_try_read
 }
 
 /// Try to acquire a write lock without blocking.
@@ -536,12 +536,12 @@ pub fn (rw:RwLock) try_read( -- success:i64) {
 /// @return success i64 1 if acquired, 0 otherwise
 /// @example rw try_write -> got
 pub fn (rw:RwLock) try_write( -- success:i64) {
-	rw @handle thread::raw_rwlock_try_write
+	rw <<handle thread::raw_rwlock_try_write
 }
 
 /// Free the RwLock.
 ///
 /// @example rw free
 pub fn (rw:RwLock) free( -- ) {
-	rw @handle thread::raw_rwlock_free
+	rw <<handle thread::raw_rwlock_free
 }

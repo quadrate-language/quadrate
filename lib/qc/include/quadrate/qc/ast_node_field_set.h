@@ -8,7 +8,7 @@ namespace Qd {
 	/**
 	 * @brief AST node representing field mutation (set)
 	 *
-	 * Example: 42 foo.x
+	 * Example: foo 42 >>x
 	 * Sets field 'x' of struct in local variable 'foo' to 42 (from stack)
 	 */
 	class AstNodeFieldSet : public IAstNode {

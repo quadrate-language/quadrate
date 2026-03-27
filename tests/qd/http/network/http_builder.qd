@@ -13,7 +13,7 @@ fn main( -- ) {
 	req http::send switch {
 		Ok {
 			-> resp
-			"status:" print resp @status print nl
+			"status:" print resp <<status print nl
 			resp http::close
 		}
 		_ {

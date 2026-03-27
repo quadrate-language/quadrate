@@ -11,9 +11,9 @@ struct Size {
 
 fn process(p:ptr -- ) {
 	p as Point -> pt
-	// pt is now typed as Point, so @x and @y resolve without ambiguity
-	pt @x print " " print
-	pt @y print nl
+	// pt is now typed as Point, so <<x and <<y resolve without ambiguity
+	pt <<x print " " print
+	pt <<y print nl
 }
 
 fn main() {

@@ -8,9 +8,9 @@ struct TreeNode {
 // In-order traversal: left, self, right
 fn inorder(n:ptr -- ) {
 	n null neq if {
-		n @left inorder
-		n @value print nl
-		n @right inorder
+		n <<left inorder
+		n <<value print nl
+		n <<right inorder
 	}
 }
 
@@ -19,8 +19,8 @@ fn count(n:ptr -- c:i64) {
 	n null == if {
 		0
 	} else {
-		n @left count
-		n @right count
+		n <<left count
+		n <<right count
 		+ 1 +
 	}
 }

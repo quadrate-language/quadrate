@@ -529,27 +529,8 @@ namespace Qd {
 			}
 		}
 
-		// Special handling for '<' to check for '<<' (shift left)
-		if (token == '<') {
-			char32_t nextToken = u8t_scanner_peek(scanner);
-			if (nextToken == '<') {
-				u8t_scanner_scan(scanner); // Consume second '<'
-				IAstNode* node = new AstNodeInstruction("<<");
-				setNodePosition(node, scanner, src);
-				return node;
-			}
-		}
-
-		// Special handling for '>' to check for '>>' (shift right)
-		if (token == '>') {
-			char32_t nextToken = u8t_scanner_peek(scanner);
-			if (nextToken == '>') {
-				u8t_scanner_scan(scanner); // Consume second '>'
-				IAstNode* node = new AstNodeInstruction(">>");
-				setNodePosition(node, scanner, src);
-				return node;
-			}
-		}
+		// Note: << and >> are reserved for field operations (>>field / <<field)
+		// They are handled in parseBlockBody, not here as operators.
 
 		// Map of operator tokens to their instruction names
 		static const struct {
@@ -708,18 +689,53 @@ namespace Qd {
 				setNodePosition(node, scanner, src);
 				return node;
 			}
+			if (nextToken == '<') {
+				// <<field (field read, Factor-style)
+				u8t_scanner_scan(scanner); // Consume second <
+				char32_t fieldStart = u8t_scanner_peek(scanner);
+				if ((fieldStart >= 'a' && fieldStart <= 'z') || (fieldStart >= 'A' && fieldStart <= 'Z') ||
+						fieldStart == '_') {
+					char32_t identToken = u8t_scanner_scan(scanner);
+					if (identToken == U8T_IDENTIFIER) {
+						const char* fieldName = u8t_scanner_token_text(scanner, n);
+						AstNodeFieldAccess* fieldAccess = new AstNodeFieldAccess("", fieldName);
+						setNodePosition(fieldAccess, scanner, src);
+						return fieldAccess;
+					}
+				}
+				// << not followed by identifier — error
+				errorReporter->reportError(scanner, "Expected field name after '<<'");
+				return nullptr;
+			}
 			// Handle '<' as alias for 'lt'
 			IAstNode* node = new AstNodeInstruction("<");
 			setNodePosition(node, scanner, src);
 			return node;
 		} else if (token == '>') {
-			// Check if next token is '=' for '>='
 			char32_t nextToken = u8t_scanner_peek(scanner);
 			if (nextToken == '=') {
 				u8t_scanner_scan(scanner); // Consume '='
 				IAstNode* node = new AstNodeInstruction(">=");
 				setNodePosition(node, scanner, src);
 				return node;
+			}
+			if (nextToken == '>') {
+				// >>field (field set / write, Factor-style)
+				u8t_scanner_scan(scanner); // Consume second >
+				char32_t fieldStart = u8t_scanner_peek(scanner);
+				if ((fieldStart >= 'a' && fieldStart <= 'z') || (fieldStart >= 'A' && fieldStart <= 'Z') ||
+						fieldStart == '_') {
+					char32_t identToken = u8t_scanner_scan(scanner);
+					if (identToken == U8T_IDENTIFIER) {
+						const char* fieldName = u8t_scanner_token_text(scanner, n);
+						AstNodeFieldSet* fieldSet = new AstNodeFieldSet("", fieldName);
+						setNodePosition(fieldSet, scanner, src);
+						return fieldSet;
+					}
+				}
+				// >> not followed by identifier — error
+				errorReporter->reportError(scanner, "Expected field name after '>>'");
+				return nullptr;
 			}
 			// Handle '>' as alias for 'gt'
 			IAstNode* node = new AstNodeInstruction(">");
@@ -779,62 +795,9 @@ namespace Qd {
 		char32_t token;
 		size_t slashPos = SIZE_MAX; // Position of first slash for comment detection
 		bool sawColon = false;
-		bool sawAt = false;
-		bool sawDot = false;
-		std::string dotVarName; // Variable name before the dot for field set
 		std::vector<IAstNode*> tempNodes;
 
 		while ((token = u8t_scanner_scan(scanner)) != U8T_EOF) {
-			// Handle @ field access operator
-			if (sawAt && token == U8T_IDENTIFIER) {
-				sawAt = false;
-				// Get the field name
-				const char* fieldName = u8t_scanner_token_text(scanner, &n);
-
-				if (!tempNodes.empty() && tempNodes.back()->type() == IAstNode::Type::IDENTIFIER) {
-					// We have: identifier @field
-					AstNodeIdentifier* varIdent = static_cast<AstNodeIdentifier*>(tempNodes.back());
-					tempNodes.pop_back();
-
-					// Special handling for 'error @field' - access global error struct
-					std::string varName = varIdent->name();
-					if (varName == "error") {
-						varName = "__global_error__";
-					}
-					AstNodeFieldAccess* fieldAccess = new AstNodeFieldAccess(varName, fieldName);
-					setNodePosition(fieldAccess, scanner, src);
-					delete varIdent;
-					tempNodes.push_back(fieldAccess);
-				} else if (!tempNodes.empty() && tempNodes.back()->type() == IAstNode::Type::FIELD_ACCESS) {
-					// Chained field access: previous @field followed by @field2
-					// Use empty varName to indicate stack-based access
-					AstNodeFieldAccess* fieldAccess = new AstNodeFieldAccess("", fieldName);
-					setNodePosition(fieldAccess, scanner, src);
-					tempNodes.push_back(fieldAccess);
-				} else {
-					// Stack-based field access: @field after struct construction, function call, etc.
-					// Use empty varName to indicate stack-based access (pops struct from stack)
-					AstNodeFieldAccess* fieldAccess = new AstNodeFieldAccess("", fieldName);
-					setNodePosition(fieldAccess, scanner, src);
-					tempNodes.push_back(fieldAccess);
-				}
-				continue;
-			}
-
-			// Handle . field set operator
-			if (sawDot && token == U8T_IDENTIFIER) {
-				sawDot = false;
-				// Get the field name
-				const char* fieldName = u8t_scanner_token_text(scanner, &n);
-
-				// Create field set node with the stored variable name
-				AstNodeFieldSet* fieldSet = new AstNodeFieldSet(dotVarName, fieldName);
-				setNodePosition(fieldSet, scanner, src);
-				tempNodes.push_back(fieldSet);
-				dotVarName.clear();
-				continue;
-			}
-
 			// Handle :: scope operator
 			if (sawColon && token == ':') {
 				// We have ::
@@ -929,13 +892,6 @@ namespace Qd {
 			}
 
 			if (token == '}') {
-				// Check for incomplete operators before exiting
-				if (sawDot) {
-					errorReporter->reportError(scanner, "Expected field name after '.'");
-				}
-				if (sawAt) {
-					errorReporter->reportError(scanner, "Expected field name after '@'");
-				}
 				break;
 			}
 
@@ -949,9 +905,49 @@ namespace Qd {
 				continue; // Wait for next token to see if it's another colon
 			}
 
-			sawAt = (token == '@');
-			if (sawAt) {
-				continue; // Wait for next token to see if it's a field name
+			// Handle <<field (field read)
+			if (token == '<') {
+				char32_t nextChar = u8t_scanner_peek(scanner);
+				if (nextChar == '<') {
+					u8t_scanner_scan(scanner); // Consume second <
+					char32_t fieldStart = u8t_scanner_peek(scanner);
+					if ((fieldStart >= 'a' && fieldStart <= 'z') || (fieldStart >= 'A' && fieldStart <= 'Z') ||
+							fieldStart == '_') {
+						char32_t identToken = u8t_scanner_scan(scanner);
+						if (identToken == U8T_IDENTIFIER) {
+							const char* fieldName = u8t_scanner_token_text(scanner, &n);
+
+							if (!tempNodes.empty() && tempNodes.back()->type() == IAstNode::Type::IDENTIFIER) {
+								// We have: identifier <<field
+								AstNodeIdentifier* varIdent = static_cast<AstNodeIdentifier*>(tempNodes.back());
+								tempNodes.pop_back();
+
+								// Special handling for 'error <<field' - access global error struct
+								std::string varName = varIdent->name();
+								if (varName == "error") {
+									varName = "__global_error__";
+								}
+								AstNodeFieldAccess* fieldAccess = new AstNodeFieldAccess(varName, fieldName);
+								setNodePosition(fieldAccess, scanner, src);
+								delete varIdent;
+								tempNodes.push_back(fieldAccess);
+							} else if (!tempNodes.empty() && tempNodes.back()->type() == IAstNode::Type::FIELD_ACCESS) {
+								// Chained field access: previous <<field followed by <<field2
+								AstNodeFieldAccess* fieldAccess = new AstNodeFieldAccess("", fieldName);
+								setNodePosition(fieldAccess, scanner, src);
+								tempNodes.push_back(fieldAccess);
+							} else {
+								// Stack-based field access: <<field after struct construction, function call, etc.
+								AstNodeFieldAccess* fieldAccess = new AstNodeFieldAccess("", fieldName);
+								setNodePosition(fieldAccess, scanner, src);
+								tempNodes.push_back(fieldAccess);
+							}
+							continue;
+						}
+					}
+					errorReporter->reportError(scanner, "Expected field name after '<<'");
+					continue;
+				}
 			}
 
 			// Handle $ string interpolation: $"hello {name}"
@@ -979,22 +975,6 @@ namespace Qd {
 					if (extraNode) {
 						tempNodes.push_back(extraNode);
 					}
-					continue;
-				}
-			}
-
-			// Handle . field set operator: value variable.field
-			if (token == '.') {
-				// The variable must be the previous identifier in tempNodes
-				if (!tempNodes.empty() && tempNodes.back()->type() == IAstNode::Type::IDENTIFIER) {
-					AstNodeIdentifier* varIdent = static_cast<AstNodeIdentifier*>(tempNodes.back());
-					tempNodes.pop_back();
-					dotVarName = varIdent->name();
-					delete varIdent;
-					sawDot = true;
-					continue; // Wait for next token to get the field name
-				} else {
-					errorReporter->reportError(scanner, "Expected variable name before '.' in field set");
 					continue;
 				}
 			}
@@ -1255,7 +1235,7 @@ namespace Qd {
 					// Parse as anonymous error struct using special name __error__
 					return parseStructConstruction("__error__", {}, scanner, errorReporter, src, identPos);
 				}
-				// Note: error @field is handled in parseBlockBody via sawAt flag
+				// Note: error <<field is handled in parseBlockBody via <<field handler
 			}
 
 			// Check for scoped identifier (module::function, module::constant, or module::StructName)
@@ -1937,9 +1917,6 @@ namespace Qd {
 		std::vector<IAstNode*> tempNodes;
 		bool sawColon = false;
 		size_t slashPos = SIZE_MAX; // Position of first slash for comment detection
-		bool sawAt = false;
-		bool sawDot = false;
-		std::string dotVarName; // Variable name before the dot for field set
 		bool foundClosingBrace = false;
 
 		while ((token = u8t_scanner_scan(scanner)) != U8T_EOF) {
@@ -1962,12 +1939,6 @@ namespace Qd {
 
 			if (token == '}') {
 				// Check for incomplete operators before exiting
-				if (sawDot) {
-					errorReporter->reportError(scanner, "Expected field name after '.'");
-				}
-				if (sawAt) {
-					errorReporter->reportError(scanner, "Expected field name after '@'");
-				}
 				foundClosingBrace = true;
 				break;
 			}
@@ -2033,45 +2004,71 @@ namespace Qd {
 				continue; // Wait for next token to see if it's another colon
 			}
 
-			// Handle @ field access operator
-			if (sawAt && token == U8T_IDENTIFIER) {
-				sawAt = false;
-				// Get the field name
-				const char* fieldName = u8t_scanner_token_text(scanner, &n);
-
-				if (!tempNodes.empty() && tempNodes.back()->type() == IAstNode::Type::IDENTIFIER) {
-					// We have: identifier @field
-					AstNodeIdentifier* varIdent = static_cast<AstNodeIdentifier*>(tempNodes.back());
-					tempNodes.pop_back();
-
-					// Special handling for 'error @field' - access global error struct
-					std::string varName = varIdent->name();
-					if (varName == "error") {
-						varName = "__global_error__";
+			// Handle >>field (field set / write, Factor-style)
+			if (token == '>') {
+				char32_t nextChar = u8t_scanner_peek(scanner);
+				if (nextChar == '>') {
+					u8t_scanner_scan(scanner); // Consume second >
+					char32_t fieldStart = u8t_scanner_peek(scanner);
+					if ((fieldStart >= 'a' && fieldStart <= 'z') || (fieldStart >= 'A' && fieldStart <= 'Z') ||
+							fieldStart == '_') {
+						char32_t identToken = u8t_scanner_scan(scanner);
+						if (identToken == U8T_IDENTIFIER) {
+							const char* fieldName = u8t_scanner_token_text(scanner, &n);
+							AstNodeFieldSet* fieldSet = new AstNodeFieldSet("", fieldName);
+							setNodePosition(fieldSet, scanner, src);
+							tempNodes.push_back(fieldSet);
+							continue;
+						}
 					}
-					AstNodeFieldAccess* fieldAccess = new AstNodeFieldAccess(varName, fieldName);
-					setNodePosition(fieldAccess, scanner, src);
-					delete varIdent;
-					tempNodes.push_back(fieldAccess);
-				} else if (!tempNodes.empty() && tempNodes.back()->type() == IAstNode::Type::FIELD_ACCESS) {
-					// Chained field access: previous @field followed by @field2
-					// Use empty varName to indicate stack-based access
-					AstNodeFieldAccess* fieldAccess = new AstNodeFieldAccess("", fieldName);
-					setNodePosition(fieldAccess, scanner, src);
-					tempNodes.push_back(fieldAccess);
-				} else {
-					// Stack-based field access: @field after struct construction, function call, etc.
-					// Use empty varName to indicate stack-based access (pops struct from stack)
-					AstNodeFieldAccess* fieldAccess = new AstNodeFieldAccess("", fieldName);
-					setNodePosition(fieldAccess, scanner, src);
-					tempNodes.push_back(fieldAccess);
+					errorReporter->reportError(scanner, "Expected field name after '>>'");
+					continue;
 				}
-				continue;
 			}
 
-			sawAt = (token == '@');
-			if (sawAt) {
-				continue; // Wait for next token to see if it's a field name
+			// Handle <<field (field read, Factor-style)
+			if (token == '<') {
+				char32_t nextChar = u8t_scanner_peek(scanner);
+				if (nextChar == '<') {
+					u8t_scanner_scan(scanner); // Consume second <
+					char32_t fieldStart = u8t_scanner_peek(scanner);
+					if ((fieldStart >= 'a' && fieldStart <= 'z') || (fieldStart >= 'A' && fieldStart <= 'Z') ||
+							fieldStart == '_') {
+						char32_t identToken = u8t_scanner_scan(scanner);
+						if (identToken == U8T_IDENTIFIER) {
+							const char* fieldName = u8t_scanner_token_text(scanner, &n);
+
+							if (!tempNodes.empty() && tempNodes.back()->type() == IAstNode::Type::IDENTIFIER) {
+								// We have: identifier <<field
+								AstNodeIdentifier* varIdent = static_cast<AstNodeIdentifier*>(tempNodes.back());
+								tempNodes.pop_back();
+
+								// Special handling for 'error <<field' - access global error struct
+								std::string varName = varIdent->name();
+								if (varName == "error") {
+									varName = "__global_error__";
+								}
+								AstNodeFieldAccess* fieldAccess = new AstNodeFieldAccess(varName, fieldName);
+								setNodePosition(fieldAccess, scanner, src);
+								delete varIdent;
+								tempNodes.push_back(fieldAccess);
+							} else if (!tempNodes.empty() && tempNodes.back()->type() == IAstNode::Type::FIELD_ACCESS) {
+								// Chained field access: previous <<field followed by <<field2
+								AstNodeFieldAccess* fieldAccess = new AstNodeFieldAccess("", fieldName);
+								setNodePosition(fieldAccess, scanner, src);
+								tempNodes.push_back(fieldAccess);
+							} else {
+								// Stack-based field access: <<field after struct construction, function call, etc.
+								AstNodeFieldAccess* fieldAccess = new AstNodeFieldAccess("", fieldName);
+								setNodePosition(fieldAccess, scanner, src);
+								tempNodes.push_back(fieldAccess);
+							}
+							continue;
+						}
+					}
+					errorReporter->reportError(scanner, "Expected field name after '<<'");
+					continue;
+				}
 			}
 
 			// Handle $ string interpolation: $"hello {name}"
@@ -2097,36 +2094,6 @@ namespace Qd {
 					if (extraNode) {
 						tempNodes.push_back(extraNode);
 					}
-					continue;
-				}
-			}
-
-			// Handle . field set operator
-			if (sawDot && token == U8T_IDENTIFIER) {
-				sawDot = false;
-				// Get the field name
-				const char* fieldName = u8t_scanner_token_text(scanner, &n);
-
-				// Create field set node with the stored variable name
-				AstNodeFieldSet* fieldSet = new AstNodeFieldSet(dotVarName, fieldName);
-				setNodePosition(fieldSet, scanner, src);
-				tempNodes.push_back(fieldSet);
-				dotVarName.clear();
-				continue;
-			}
-
-			// Handle . field set operator: value variable.field
-			if (token == '.') {
-				// The variable must be the previous identifier in tempNodes
-				if (!tempNodes.empty() && tempNodes.back()->type() == IAstNode::Type::IDENTIFIER) {
-					AstNodeIdentifier* varIdent = static_cast<AstNodeIdentifier*>(tempNodes.back());
-					tempNodes.pop_back();
-					dotVarName = varIdent->name();
-					delete varIdent;
-					sawDot = true;
-					continue; // Wait for next token to get the field name
-				} else {
-					errorReporter->reportError(scanner, "Expected variable name before '.' in field set");
 					continue;
 				}
 			}
@@ -3265,49 +3232,82 @@ namespace Qd {
 		std::string currentFieldName;
 		std::vector<IAstNode*> currentFieldNodes;
 		size_t slashPos = SIZE_MAX;
-		bool sawAt = false;
 
 		char32_t token;
 		while ((token = u8t_scanner_scan(scanner)) != U8T_EOF) {
-			// Handle @ field access operator
-			if (sawAt && token == U8T_IDENTIFIER) {
-				sawAt = false;
-				size_t n;
-				const char* fieldName = u8t_scanner_token_text(scanner, &n);
-
-				if (!currentFieldNodes.empty() && currentFieldNodes.back()->type() == IAstNode::Type::IDENTIFIER) {
-					// We have: identifier @field
-					AstNodeIdentifier* varIdent = static_cast<AstNodeIdentifier*>(currentFieldNodes.back());
-					currentFieldNodes.pop_back();
-
-					// Special handling for 'error @field' - access global error struct
-					std::string varName = varIdent->name();
-					if (varName == "error") {
-						varName = "__global_error__";
+			// Handle > and >> in struct construction
+			if (token == '>') {
+				char32_t nextChar = u8t_scanner_peek(scanner);
+				if (nextChar == '>') {
+					u8t_scanner_scan(scanner); // Consume second >
+					char32_t fieldStart = u8t_scanner_peek(scanner);
+					if ((fieldStart >= 'a' && fieldStart <= 'z') || (fieldStart >= 'A' && fieldStart <= 'Z') ||
+							fieldStart == '_') {
+						char32_t identToken = u8t_scanner_scan(scanner);
+						if (identToken == U8T_IDENTIFIER) {
+							size_t fn;
+							const char* fieldName = u8t_scanner_token_text(scanner, &fn);
+							// >>field in struct construction = field set (write)
+							AstNodeFieldSet* fieldSet = new AstNodeFieldSet("", fieldName);
+							setNodePosition(fieldSet, scanner, src);
+							currentFieldNodes.push_back(fieldSet);
+							continue;
+						}
 					}
-					AstNodeFieldAccess* fieldAccess = new AstNodeFieldAccess(varName, fieldName);
-					setNodePosition(fieldAccess, scanner, src);
-					delete varIdent;
-					currentFieldNodes.push_back(fieldAccess);
-				} else if (!currentFieldNodes.empty() &&
-						   currentFieldNodes.back()->type() == IAstNode::Type::FIELD_ACCESS) {
-					// Chained field access
-					AstNodeFieldAccess* fieldAccess = new AstNodeFieldAccess("", fieldName);
-					setNodePosition(fieldAccess, scanner, src);
-					currentFieldNodes.push_back(fieldAccess);
-				} else {
-					// Stack-based field access
-					AstNodeFieldAccess* fieldAccess = new AstNodeFieldAccess("", fieldName);
-					setNodePosition(fieldAccess, scanner, src);
-					currentFieldNodes.push_back(fieldAccess);
 				}
+				// Single > — treat as comparison
+				AstNodeInstruction* instr = new AstNodeInstruction(">");
+				setNodePosition(instr, scanner, src);
+				currentFieldNodes.push_back(instr);
 				continue;
 			}
 
-			if (token == '@') {
-				sawAt = true;
+			// Handle < and << in struct construction
+			if (token == '<') {
+				char32_t nextChar = u8t_scanner_peek(scanner);
+				if (nextChar == '<') {
+					u8t_scanner_scan(scanner); // Consume second <
+					char32_t fieldStart = u8t_scanner_peek(scanner);
+					if ((fieldStart >= 'a' && fieldStart <= 'z') || (fieldStart >= 'A' && fieldStart <= 'Z') ||
+							fieldStart == '_') {
+						char32_t identToken = u8t_scanner_scan(scanner);
+						if (identToken == U8T_IDENTIFIER) {
+							size_t fn;
+							const char* fieldName = u8t_scanner_token_text(scanner, &fn);
+							// <<field in struct construction = field read
+							if (!currentFieldNodes.empty() &&
+									currentFieldNodes.back()->type() == IAstNode::Type::IDENTIFIER) {
+								AstNodeIdentifier* varIdent = static_cast<AstNodeIdentifier*>(currentFieldNodes.back());
+								currentFieldNodes.pop_back();
+								std::string varName = varIdent->name();
+								if (varName == "error") {
+									varName = "__global_error__";
+								}
+								delete varIdent;
+								AstNodeFieldAccess* fieldAccess = new AstNodeFieldAccess(varName, fieldName);
+								setNodePosition(fieldAccess, scanner, src);
+								currentFieldNodes.push_back(fieldAccess);
+							} else if (!currentFieldNodes.empty() &&
+									   currentFieldNodes.back()->type() == IAstNode::Type::FIELD_ACCESS) {
+								AstNodeFieldAccess* fieldAccess = new AstNodeFieldAccess("", fieldName);
+								setNodePosition(fieldAccess, scanner, src);
+								currentFieldNodes.push_back(fieldAccess);
+							} else {
+								AstNodeFieldAccess* fieldAccess = new AstNodeFieldAccess("", fieldName);
+								setNodePosition(fieldAccess, scanner, src);
+								currentFieldNodes.push_back(fieldAccess);
+							}
+							continue;
+						}
+					}
+				}
+				// Single < — treat as comparison
+				AstNodeInstruction* instr = new AstNodeInstruction("<");
+				setNodePosition(instr, scanner, src);
+				currentFieldNodes.push_back(instr);
 				continue;
 			}
+
 			// Handle comments
 			AstNodeComment* comment = parseComment(scanner, src, slashPos, token);
 			if (comment != nullptr) {

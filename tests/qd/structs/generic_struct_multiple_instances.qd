@@ -14,26 +14,26 @@ fn main() {
 	"three" Box -> c3
 
 	// Read back all values - verifies no cross-contamination
-	a1 @value print nl
-	a2 @value print nl
-	a3 @value print nl
-	b1 @value print nl
-	b2 @value print nl
-	b3 @value print nl
-	c1 @value print nl
-	c2 @value print nl
-	c3 @value print nl
+	a1 <<value print nl
+	a2 <<value print nl
+	a3 <<value print nl
+	b1 <<value print nl
+	b2 <<value print nl
+	b3 <<value print nl
+	c1 <<value print nl
+	c2 <<value print nl
+	c3 <<value print nl
 
 	// Overwrite some and re-read
-	99 a1.value
-	9.9 a2.value
-	"nine" a3.value
-	a1 @value print nl
-	a2 @value print nl
-	a3 @value print nl
+	a1 99 >>value -> a1
+	a2 9.9 >>value -> a2
+	a3 "nine" >>value -> a3
+	a1 <<value print nl
+	a2 <<value print nl
+	a3 <<value print nl
 
 	// Verify others unchanged
-	b1 @value print nl
-	b2 @value print nl
-	b3 @value print nl
+	b1 <<value print nl
+	b2 <<value print nl
+	b3 <<value print nl
 }

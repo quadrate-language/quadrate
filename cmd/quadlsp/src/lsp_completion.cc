@@ -277,7 +277,7 @@ void QuadrateLSP::handleCompletion(const std::string& id, const std::string& uri
 			}
 		}
 	}
-	// Check if we're completing after field access (e.g., "v@")
+	// Check if we're completing after field access (e.g., "v<<")
 	else if (std::string fieldAccessVar = getFieldAccessVariableAtPosition(documentText, line, character);
 			!fieldAccessVar.empty() && !documentText.empty()) {
 		// Field access completion - need to find the struct type and show its fields
@@ -832,7 +832,7 @@ std::string QuadrateLSP::getFieldAccessVariableAtPosition(const std::string& tex
 	// Check if the characters before cursor end with "@"
 	size_t pos = character;
 
-	// Skip back over any partial field name being typed after @
+	// Skip back over any partial field name being typed after <<
 	while (pos > 0 && (isalnum(targetLine[pos - 1]) || targetLine[pos - 1] == '_')) {
 		pos--;
 	}

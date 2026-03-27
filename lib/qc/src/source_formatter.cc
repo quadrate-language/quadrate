@@ -1129,61 +1129,8 @@ namespace Qd {
 				continue;
 			}
 
-			// Check for << operator (shift left)
-			if (c == '<' && i + 1 < line.length() && line[i + 1] == '<') {
-				// Remove trailing whitespace from result, then add single space
-				while (!result.empty() && (result.back() == ' ' || result.back() == '\t')) {
-					result.pop_back();
-				}
-				if (!result.empty()) {
-					result += ' ';
-				}
-				result += "<<";
-				i++; // Skip second <
-
-				// Check if there's more non-whitespace content after
-				size_t next = i + 1;
-				while (next < line.length() && std::isspace(static_cast<unsigned char>(line[next]))) {
-					next++;
-				}
-				// Add space after if there's more content (that's not a closing brace/paren or end of line)
-				if (next < line.length() && line[next] != ')' && line[next] != '}') {
-					result += ' ';
-					// Skip any existing whitespace
-					while (i + 1 < line.length() && std::isspace(static_cast<unsigned char>(line[i + 1]))) {
-						i++;
-					}
-				}
-				continue;
-			}
-
-			// Check for >> operator (shift right)
-			if (c == '>' && i + 1 < line.length() && line[i + 1] == '>') {
-				// Remove trailing whitespace from result, then add single space
-				while (!result.empty() && (result.back() == ' ' || result.back() == '\t')) {
-					result.pop_back();
-				}
-				if (!result.empty()) {
-					result += ' ';
-				}
-				result += ">>";
-				i++; // Skip second >
-
-				// Check if there's more non-whitespace content after
-				size_t next = i + 1;
-				while (next < line.length() && std::isspace(static_cast<unsigned char>(line[next]))) {
-					next++;
-				}
-				// Add space after if there's more content (that's not a closing brace/paren or end of line)
-				if (next < line.length() && line[next] != ')' && line[next] != '}') {
-					result += ' ';
-					// Skip any existing whitespace
-					while (i + 1 < line.length() && std::isspace(static_cast<unsigned char>(line[i + 1]))) {
-						i++;
-					}
-				}
-				continue;
-			}
+			// Note: << and >> are now field operators (<<field / >>field)
+			// They are handled as part of the @/. field access formatting below.
 
 			result += c;
 		}

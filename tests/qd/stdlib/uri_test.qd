@@ -4,19 +4,19 @@ use testing
 
 test "uri::parse full URL" {
 	"https://example.com:8080/path?q=1#top" uri::parse -> u
-	u @scheme "https" testing::assert_eq
-	u @host "example.com" testing::assert_eq
-	u @port 8080 testing::assert_eq
-	u @path "/path" testing::assert_eq
-	u @query "q=1" testing::assert_eq
-	u @fragment "top" testing::assert_eq
+	u <<scheme "https" testing::assert_eq
+	u <<host "example.com" testing::assert_eq
+	u <<port 8080 testing::assert_eq
+	u <<path "/path" testing::assert_eq
+	u <<query "q=1" testing::assert_eq
+	u <<fragment "top" testing::assert_eq
 }
 
 test "uri::parse simple URL" {
 	"http://test.org/page" uri::parse -> u
-	u @scheme "http" testing::assert_eq
-	u @host "test.org" testing::assert_eq
-	u @path "/page" testing::assert_eq
+	u <<scheme "http" testing::assert_eq
+	u <<host "test.org" testing::assert_eq
+	u <<path "/page" testing::assert_eq
 }
 
 test "uri::encode" {
@@ -59,14 +59,14 @@ test "uri::query_has" {
 
 test "uri IPv6 addresses" {
 	"http://[::1]:8080/path" uri::parse -> u
-	u @host "::1" testing::assert_eq
-	u @port 8080 testing::assert_eq
+	u <<host "::1" testing::assert_eq
+	u <<port 8080 testing::assert_eq
 }
 
 test "uri port validation" {
 	// Valid max port
 	"http://host:65535/path" uri::parse -> u
-	u @port 65535 testing::assert_eq
+	u <<port 65535 testing::assert_eq
 }
 
 test "uri decode edge cases" {

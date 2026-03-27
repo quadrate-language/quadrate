@@ -15,8 +15,8 @@ fn test_multiple() {
 		x = 1.0
 		y = 2.0
 	} -> v2
-	v2 @x print nl
-	v2 @y print nl
+	v2 <<x print nl
+	v2 <<y print nl
 
 	// Test Vec3
 	Vec3 {
@@ -24,9 +24,9 @@ fn test_multiple() {
 		y = 20.0
 		z = 30.0
 	} -> v3
-	v3 @x print nl
-	v3 @y print nl
-	v3 @z print nl
+	v3 <<x print nl
+	v3 <<y print nl
+	v3 <<z print nl
 }
 
 fn main() {

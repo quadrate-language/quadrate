@@ -506,8 +506,8 @@ Pair<i64, i64> { first = 42 second = 99 } -> p
 Read fields with `@`:
 
 ```qd
-p @first -> a
-p @second -> b
+p <<first -> a
+p <<second -> b
 ```
 
 ### `fn` first

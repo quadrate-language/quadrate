@@ -11,10 +11,10 @@ fn main() {
 	// Create another and add them
 	1.0 2.0 new geometry::Vec2 -> v2
 	v1 v2 geometry::add -> v3
-	"Added (3,4) + (1,2): (" print v3 @x print ", " print v3 @y print ")" print nl
+	"Added (3,4) + (1,2): (" print v3 <<x print ", " print v3 <<y print ")" print nl
 	"Length of sum: " print v3 geometry::length print nl
 
 	// Scale a vector
 	v1 2.0 geometry::scale -> v4
-	"Scaled (3,4) by 2: (" print v4 @x print ", " print v4 @y print ")" print nl
+	"Scaled (3,4) by 2: (" print v4 <<x print ", " print v4 <<y print ")" print nl
 }

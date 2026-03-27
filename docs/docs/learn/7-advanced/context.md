@@ -109,13 +109,13 @@ fn main() {
 
 	c ctx {
 		-> c2  // bind context value
-		c2 @value 1 + c2 .value  // Increment the struct's value
-		c2 @value  // Output the new value
+		c2 <<value 1 + c2 .value  // Increment the struct's value
+		c2 <<value  // Output the new value
 	}
 	print nl  // 1
 
 	drop  // drop the c pointer pushed before ctx
-	c @value print nl  // 1 - parent sees the change!
+	c <<value print nl  // 1 - parent sees the change!
 }
 ```
 

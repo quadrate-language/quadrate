@@ -10,7 +10,7 @@ quadpm <command> [args]
 
 ## Commands
 
-- `get <url>[@version]` - Install module from Git
+- `get <url>[<<version]` - Install module from Git
 - `list`, `ls` - List installed modules
 
 ## Examples

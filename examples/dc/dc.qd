@@ -33,53 +33,53 @@ fn stack_new( -- s:ptr) {
 }
 
 fn stack_free(s:ptr -- ) {
-	s @data mem::free
+	s <<data mem::free
 }
 
 fn stack_push(s:ptr val:f64 -- ) {
-	s @size -> sz
-	s @capacity -> cap
+	s <<size -> sz
+	s <<capacity -> cap
 	sz cap >= if {
 		// Stack overflow - just ignore for now
 		"dc: stack overflow" print nl
 	} else {
-		val s @data sz 8 * mem::set_f64
-		sz 1 + s.size
+		val s <<data sz 8 * mem::set_f64
+		s sz 1 + >>size drop
 	}
 }
 
 fn stack_pop(s:ptr -- val:f64) {
-	s @size -> sz
+	s <<size -> sz
 	sz 0 <= if {
 		"dc: stack empty" print nl
 		0.0
 	} else {
 		sz 1 - -> sz
-		sz s.size
-		s @data sz 8 * mem::get_f64
+		s sz >>size drop
+		s <<data sz 8 * mem::get_f64
 	}
 }
 
 fn stack_peek(s:ptr -- val:f64) {
-	s @size -> sz
+	s <<size -> sz
 	sz 0 <= if {
 		0.0
 	} else {
-		s @data sz 1 - 8 * mem::get_f64
+		s <<data sz 1 - 8 * mem::get_f64
 	}
 }
 
 fn stack_depth(s:ptr -- n:i64) {
-	s @size
+	s <<size
 }
 
 fn stack_clear(s:ptr -- ) {
-	0 s.size
+	s 0 >>size drop
 }
 
 // Check if stack has at least n items, print error if not
 fn stack_check(s:ptr n:i64 -- ok:i64) {
-	s @size n >= -> ok
+	s <<size n >= -> ok
 	ok 0 == if {
 		"dc: stack empty" print nl
 	}
@@ -106,28 +106,28 @@ fn check_nonneg(val:f64 msg:str -- ok:i64) {
 
 fn stack_dup(s:ptr -- ) {
 	s 1 stack_check if {
-		s @size -> sz
-		s @data sz 1 - 8 * mem::get_f64 -> val
+		s <<size -> sz
+		s <<data sz 1 - 8 * mem::get_f64 -> val
 		s val stack_push
 	}
 }
 
 fn stack_swap(s:ptr -- ) {
 	s 2 stack_check if {
-		s @size -> sz
-		s @data sz 1 - 8 * mem::get_f64 -> a
-		s @data sz 2 - 8 * mem::get_f64 -> b
-		b s @data sz 1 - 8 * mem::set_f64
-		a s @data sz 2 - 8 * mem::set_f64
+		s <<size -> sz
+		s <<data sz 1 - 8 * mem::get_f64 -> a
+		s <<data sz 2 - 8 * mem::get_f64 -> b
+		b s <<data sz 1 - 8 * mem::set_f64
+		a s <<data sz 2 - 8 * mem::set_f64
 	}
 }
 
 fn stack_pick(s:ptr n:i64 -- val:f64) {
-	s @size -> sz
+	s <<size -> sz
 	n sz >= n 0 < or if {
 		0.0
 	} else {
-		s @data sz 1 - n - 8 * mem::get_f64
+		s <<data sz 1 - n - 8 * mem::get_f64
 	}
 }
 
@@ -142,7 +142,7 @@ fn print_help() {
 	"  -h, --help               display this help and exit" print nl
 	"  -V, --version            output version information and exit" print nl
 	nl
-	"Email bug reports to:  ~klahr/quadrate@lists.sr.ht" print nl
+	"Email bug reports to:  ~klahr/<<quadratelists.sr.ht" print nl
 }
 
 fn is_number(tok:str -- result:i64) {

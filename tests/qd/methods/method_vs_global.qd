@@ -3,7 +3,7 @@ struct Counter {
 }
 
 fn (c:Counter) bump( -- result:i64) {
-	c @value 1 +
+	c <<value 1 +
 }
 
 fn bump( -- result:i64) {

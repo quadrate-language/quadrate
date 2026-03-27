@@ -294,7 +294,7 @@ TEST(StructDefinition) {
 				x = 10
 				y = 20
 			} -> p
-			p @x p @y add print
+			p <<x p <<y add print
 		}
 	)";
 	std::string ir = generateIR(src);
@@ -450,15 +450,15 @@ TEST(TargetTripleWithComplexCode) {
 		}
 		fn add_points(a:Point b:Point -- c:Point) {
 			Point {
-				x = a @x b @x +
-				y = a @y b @y +
+				x = a <<x b <<x +
+				y = a <<y b <<y +
 			}
 		}
 		fn main() {
 			Point { x = 10 y = 20 } -> p1
 			Point { x = 5 y = 15 } -> p2
 			p1 p2 add_points -> result
-			result @x print nl
+			result <<x print nl
 		}
 	)";
 	Qd::Ast ast;
@@ -467,7 +467,7 @@ TEST(TargetTripleWithComplexCode) {
 
 	Qd::SemanticValidator validator;
 	size_t errors = validator.validate(root, "test.qd");
-	// Note: struct construction with field access inside (a @x b @x +) causes
+	// Note: struct construction with field access inside (a <<x b <<x +) causes
 	// type stack over-count in the validator; the code is correct
 	(void)errors;
 
@@ -489,7 +489,7 @@ TEST(NestedStructAccess) {
 		fn main() {
 			Inner { value = 42 } -> i
 			Outer { inner = i count = 1 } -> o
-			o @inner @value print
+			o <<inner <<value print
 		}
 	)";
 	std::string ir = generateIR(src);
@@ -504,7 +504,7 @@ TEST(StructFieldAccess) {
 		}
 		fn main() {
 			Counter { value = 10 } -> c
-			c @value 1 + print
+			c <<value 1 + print
 		}
 	)";
 	std::string ir = generateIR(src);
@@ -518,7 +518,7 @@ TEST(StructAsParameter) {
 			y:i64
 		}
 		fn distance_squared(p:Point -- d:i64) {
-			p @x p @x * p @y p @y * +
+			p <<x p <<x * p <<y p <<y * +
 		}
 		fn main() {
 			Point { x = 3 y = 4 } distance_squared print
@@ -536,7 +536,7 @@ TEST(StructWithStringField) {
 		}
 		fn main() {
 			Person { name = "Alice" age = 30 } -> p
-			p @name print
+			p <<name print
 		}
 	)";
 	std::string ir = generateIR(src);
@@ -767,7 +767,7 @@ TEST(NestedControlFlow) {
 TEST(MethodCallOnStruct) {
 	const char* src = R"(
 		struct Counter { value:i64 }
-		fn (c:Counter) getValue(-- r:i64) { c @value }
+		fn (c:Counter) getValue(-- r:i64) { c <<value }
 		fn main() {
 			Counter { value = 5 } -> c
 			c getValue print
@@ -918,7 +918,7 @@ TEST(StackNipTuck) {
 TEST(StructMethodSum) {
 	const char* src = R"(
 		struct Point { x:i64 y:i64 }
-		fn (p:Point) sum(-- s:i64) { p @x p @y add }
+		fn (p:Point) sum(-- s:i64) { p <<x p <<y add }
 		fn main() {
 			Point { x = 3 y = 4 } -> pt
 			pt sum print

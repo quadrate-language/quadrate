@@ -18,8 +18,8 @@ fn main() {
 	} -> o
 
 	// Access values
-	o @inner @x print nl
-	o @inner @y print nl
-	o @z print nl
+	o <<inner <<x print nl
+	o <<inner <<y print nl
+	o <<z print nl
 	// Auto-released at function end - destructor frees nested inner struct
 }

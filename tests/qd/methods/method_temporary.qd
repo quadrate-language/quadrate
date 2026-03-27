@@ -6,7 +6,7 @@ struct Point {
 }
 
 fn (p:Point) magnitude( -- m:f64) {
-	p @x dup * p @y dup * + math::sqrt
+	p <<x dup * p <<y dup * + math::sqrt
 }
 
 fn main() {

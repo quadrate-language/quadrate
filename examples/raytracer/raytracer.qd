@@ -321,7 +321,7 @@ fn main() {
 				// Material color
 				math::vec3_zero -> mat
 				best_id 0 == if {
-					hp @x math::floor cast<i64> hp @z math::floor cast<i64> + 2 mod 0 == if {
+					hp <<x math::floor cast<i64> hp <<z math::floor cast<i64> + 2 mod 0 == if {
 						math::Vec3 {
 							x = 0.9
 							y = 0.9
@@ -341,13 +341,13 @@ fn main() {
 
 				// Ambient + diffuse
 				mat 0.1 diff 0.9 * + scale -> color
-				color @x to_byte
-				color @y to_byte
-				color @z to_byte
+				color <<x to_byte
+				color <<y to_byte
+				color <<z to_byte
 				"%d %d %d\n" fmt::printf
 			} else {
 				// Sky gradient
-				dir @y 0.5 * 0.5 + -> sky_t
+				dir <<y 0.5 * 0.5 + -> sky_t
 				1.0 sky_t - sky_t 0.5 * + to_byte
 				1.0 sky_t - sky_t 0.7 * + to_byte
 				255

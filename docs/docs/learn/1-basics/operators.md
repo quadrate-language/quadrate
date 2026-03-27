@@ -117,12 +117,10 @@ fn main() {
 	0b1100 0b1010 or print nl   // 14 (0b1110)
 	0b1100 0b1010 xor print nl  // 6 (0b0110)
 	0b1111 not print nl         // -16 (bitwise NOT)
-	1 4 << print nl             // 16 (shift left)
-	16 2 >> print nl            // 4 (shift right)
+	1 4 shl print nl            // 16 (shift left)
+	16 2 shr print nl           // 4 (shift right)
 }
 ```
-
-You can also use `shl` and `shr` as word forms for `<<` and `>>`.
 
 **Note:** `and`, `or`, and `not` are bitwise operators. For logical operations on boolean values (0/1), `and` and `or` work correctly. For logical NOT, use `0 ==` instead.
 

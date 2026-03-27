@@ -114,7 +114,7 @@ Module manager for installing third-party modules from Git repositories.
 
 ```bash
 quadpm list                              # List installed modules
-quadpm get <url>[@ref]                   # Install a module from Git
+quadpm get <url>[<<ref]                   # Install a module from Git
 quadpm update [name]                     # Update installed module(s)
 quadpm remove <name>                     # Remove an installed module
 quadpm build                             # Build C sources in current module

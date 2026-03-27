@@ -211,8 +211,8 @@ fn main() {
 		func = &farewell
 	} -> h2
 
-	"Alice" h1 @func call
-	"Bob" h2 @func call
+	"Alice" h1 <<func call
+	"Bob" h2 <<func call
 }
 ```
 

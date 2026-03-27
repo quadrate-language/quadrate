@@ -10,7 +10,7 @@ struct Point {
 }
 
 fn get_age(person:Person -- age:f64) {
-	person @age  // Expects 'age' field
+	person <<age  // Expects 'age' field
 }
 
 fn main() {

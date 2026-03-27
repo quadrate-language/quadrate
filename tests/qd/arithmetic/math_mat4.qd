@@ -9,52 +9,52 @@ fn main() {
 	// Identity and zero
 	"=== Mat4 Constructors ===" print nl
 	math::mat4_identity -> id
-	id @m00 1.0 approx_eq print nl                 // 1
-	id @m11 1.0 approx_eq print nl                 // 1
-	id @m22 1.0 approx_eq print nl                 // 1
-	id @m33 1.0 approx_eq print nl                 // 1
-	id @m01 0.0 approx_eq print nl                 // 1 (off-diagonal)
+	id <<m00 1.0 approx_eq print nl                 // 1
+	id <<m11 1.0 approx_eq print nl                 // 1
+	id <<m22 1.0 approx_eq print nl                 // 1
+	id <<m33 1.0 approx_eq print nl                 // 1
+	id <<m01 0.0 approx_eq print nl                 // 1 (off-diagonal)
 
 	math::mat4_zero -> z
-	z @m00 0.0 approx_eq print nl                  // 1
-	z @m33 0.0 approx_eq print nl                  // 1
+	z <<m00 0.0 approx_eq print nl                  // 1
+	z <<m33 0.0 approx_eq print nl                  // 1
 
 	// Translation
 	"=== Mat4 Translation ===" print nl
 	1.0 2.0 3.0 math::mat4_translation -> t
-	t @m30 1.0 approx_eq print nl                  // 1
-	t @m31 2.0 approx_eq print nl                  // 1
-	t @m32 3.0 approx_eq print nl                  // 1
-	t @m00 1.0 approx_eq print nl                  // 1 (diagonal still 1)
+	t <<m30 1.0 approx_eq print nl                  // 1
+	t <<m31 2.0 approx_eq print nl                  // 1
+	t <<m32 3.0 approx_eq print nl                  // 1
+	t <<m00 1.0 approx_eq print nl                  // 1 (diagonal still 1)
 
 	// Scaling
 	"=== Mat4 Scaling ===" print nl
 	2.0 3.0 4.0 math::mat4_scaling -> s
-	s @m00 2.0 approx_eq print nl                  // 1
-	s @m11 3.0 approx_eq print nl                  // 1
-	s @m22 4.0 approx_eq print nl                  // 1
-	s @m33 1.0 approx_eq print nl                  // 1
+	s <<m00 2.0 approx_eq print nl                  // 1
+	s <<m11 3.0 approx_eq print nl                  // 1
+	s <<m22 4.0 approx_eq print nl                  // 1
+	s <<m33 1.0 approx_eq print nl                  // 1
 
 	// Rotation around Z
 	"=== Mat4 Rotation ===" print nl
 	math::Pi 2.0 / math::mat4_rotation_z -> rz     // 90° around Z
-	rz @m00 0.0 approx_eq print nl                 // 1 (cos(90°) = 0)
-	rz @m01 1.0 approx_eq print nl                 // 1 (sin(90°) = 1)
-	rz @m10 -1.0 approx_eq print nl                // 1 (-sin(90°) = -1)
+	rz <<m00 0.0 approx_eq print nl                 // 1 (cos(90°) = 0)
+	rz <<m01 1.0 approx_eq print nl                 // 1 (sin(90°) = 1)
+	rz <<m10 -1.0 approx_eq print nl                // 1 (-sin(90°) = -1)
 
 	// Transpose
 	"=== Mat4 Transpose ===" print nl
 	t transpose -> t_t
-	t_t @m03 1.0 approx_eq print nl                // 1 (was m30)
-	t_t @m13 2.0 approx_eq print nl                // 1 (was m31)
-	t_t @m23 3.0 approx_eq print nl                // 1 (was m32)
+	t_t <<m03 1.0 approx_eq print nl                // 1 (was m30)
+	t_t <<m13 2.0 approx_eq print nl                // 1 (was m31)
+	t_t <<m23 3.0 approx_eq print nl                // 1 (was m32)
 
 	// Multiply (identity * m = m)
 	"=== Mat4 Multiply ===" print nl
 	t id mul -> prod
-	prod @m30 1.0 approx_eq print nl               // 1
-	prod @m31 2.0 approx_eq print nl               // 1
-	prod @m32 3.0 approx_eq print nl               // 1
+	prod <<m30 1.0 approx_eq print nl               // 1
+	prod <<m31 2.0 approx_eq print nl               // 1
+	prod <<m32 3.0 approx_eq print nl               // 1
 
 	// Determinant
 	"=== Mat4 Determinant ===" print nl
@@ -66,26 +66,26 @@ fn main() {
 	"=== Mat4 Inverse ===" print nl
 	t inverse -> t_inv
 	t t_inv mul -> should_be_id
-	should_be_id @m00 1.0 approx_eq print nl       // 1
-	should_be_id @m11 1.0 approx_eq print nl       // 1
-	should_be_id @m30 0.0 approx_eq print nl       // 1 (translation cancelled)
+	should_be_id <<m00 1.0 approx_eq print nl       // 1
+	should_be_id <<m11 1.0 approx_eq print nl       // 1
+	should_be_id <<m30 0.0 approx_eq print nl       // 1 (translation cancelled)
 
 	// Transform point
 	"=== Mat4 Transform Point ===" print nl
 	math::Vec3 { x = 0.0 y = 0.0 z = 0.0 } -> origin
 	t origin transform_point -> moved              // matrix.transform_point(origin)
-	moved @x 1.0 approx_eq print nl                // 1
-	moved @y 2.0 approx_eq print nl                // 1
-	moved @z 3.0 approx_eq print nl                // 1
+	moved <<x 1.0 approx_eq print nl                // 1
+	moved <<y 2.0 approx_eq print nl                // 1
+	moved <<z 3.0 approx_eq print nl                // 1
 
 	// Transform Vec4
 	"=== Mat4 Transform Vec4 ===" print nl
 	math::Vec4 { x = 1.0 y = 0.0 z = 0.0 w = 1.0 } -> v4
 	t v4 transform_vec4 -> v4_moved                // matrix.transform_vec4(v4)
-	v4_moved @x 2.0 approx_eq print nl             // 1 (1 + 1)
-	v4_moved @y 2.0 approx_eq print nl             // 1 (0 + 2)
-	v4_moved @z 3.0 approx_eq print nl             // 1 (0 + 3)
-	v4_moved @w 1.0 approx_eq print nl             // 1
+	v4_moved <<x 2.0 approx_eq print nl             // 1 (1 + 1)
+	v4_moved <<y 2.0 approx_eq print nl             // 1 (0 + 2)
+	v4_moved <<z 3.0 approx_eq print nl             // 1 (0 + 3)
+	v4_moved <<w 1.0 approx_eq print nl             // 1
 
 	// Look-at
 	"=== Mat4 Look-At ===" print nl
@@ -98,21 +98,21 @@ fn main() {
 	// Perspective
 	"=== Mat4 Perspective ===" print nl
 	1.047 1.777 0.1 100.0 math::mat4_perspective -> proj
-	proj @m00 0.0 gt print nl                      // 1 (positive focal length)
-	proj @m23 -1.0 approx_eq print nl              // 1 (perspective divide)
+	proj <<m00 0.0 gt print nl                      // 1 (positive focal length)
+	proj <<m23 -1.0 approx_eq print nl              // 1 (perspective divide)
 
 	// Orthographic
 	"=== Mat4 Orthographic ===" print nl
 	-1.0 1.0 -1.0 1.0 0.1 100.0 math::mat4_orthographic -> ortho
-	ortho @m00 1.0 approx_eq print nl              // 1 (2 / (1 - -1) = 1)
-	ortho @m11 1.0 approx_eq print nl              // 1
+	ortho <<m00 1.0 approx_eq print nl              // 1 (2 / (1 - -1) = 1)
+	ortho <<m11 1.0 approx_eq print nl              // 1
 
 	// From quaternion
 	"=== Mat4 From Quat ===" print nl
 	math::quat_identity math::mat4_from_quat -> rot_id
-	rot_id @m00 1.0 approx_eq print nl             // 1
-	rot_id @m11 1.0 approx_eq print nl             // 1
-	rot_id @m22 1.0 approx_eq print nl             // 1
+	rot_id <<m00 1.0 approx_eq print nl             // 1
+	rot_id <<m11 1.0 approx_eq print nl             // 1
+	rot_id <<m22 1.0 approx_eq print nl             // 1
 
 	"done" print nl
 }

@@ -9,6 +9,6 @@ fn main() {
 	Config {
 		value = math::Pi
 	} -> c
-	c @value print nl
+	c <<value print nl
 	c free
 }

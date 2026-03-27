@@ -1184,7 +1184,7 @@ run_test "Generate template: http-get has http module" \
 
 run_test "Generate template: http-get checks status" \
     '{"jsonrpc":"2.0","method":"tools/call","id":407,"params":{"name":"quadrate_generate_template","arguments":{"template":"http-get"}}}' \
-    '@status'
+    '<<status'
 
 run_test "Generate template: cli-args has os module" \
     '{"jsonrpc":"2.0","method":"tools/call","id":408,"params":{"name":"quadrate_generate_template","arguments":{"template":"cli-args"}}}' \
@@ -1200,7 +1200,7 @@ run_test "Generate template: struct-crud has struct keyword" \
 
 run_test "Generate template: struct-crud shows field access" \
     '{"jsonrpc":"2.0","method":"tools/call","id":411,"params":{"name":"quadrate_generate_template","arguments":{"template":"struct-crud"}}}' \
-    '@field_name'
+    '<<field_name'
 
 run_test "Generate template: struct-crud shows field set" \
     '{"jsonrpc":"2.0","method":"tools/call","id":412,"params":{"name":"quadrate_generate_template","arguments":{"template":"struct-crud"}}}' \

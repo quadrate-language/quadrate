@@ -2165,7 +2165,7 @@ void QuadrateLSP::handleSemanticTokens(const std::string& id, const std::string&
 							modifiers = MOD_DECLARATION;
 						}
 					}
-					// Check if this is a struct field access (after @)
+					// Check if this is a struct field access (after <<)
 					else if (startI > 0 && documentText[startI - 1] == '@') {
 						tokenType = TOKEN_PROPERTY;
 					}

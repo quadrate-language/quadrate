@@ -63,8 +63,8 @@ fn crc32_make_table( -- tbl:ptr) {
 /// @param data str Data to hash
 /// @return c2 Crc32 Updated hasher state
 pub fn (c:Crc32) update(data:str -- c2:Crc32) {
-	c @state -> state
-	c @tbl -> tbl
+	c <<state -> state
+	c <<tbl -> tbl
 
 	// Lazy init table
 	tbl 0 == if {
@@ -87,7 +87,7 @@ pub fn (c:Crc32) update(data:str -- c2:Crc32) {
 /// @param c Crc32 The hasher state
 /// @return crc i64 Current CRC32 checksum
 pub fn (c:Crc32) value( -- crc:i64) {
-	c @state CRC32_INIT xor 32 bits::mask
+	c <<state CRC32_INIT xor 32 bits::mask
 }
 
 /// Get CRC32 as 8-character hex string.
@@ -116,7 +116,7 @@ pub fn (c:Crc32) hex( -- hex:str) {
 /// Free resources used by CRC32 hasher.
 /// @param c Crc32 The hasher state to free
 pub fn (c:Crc32) release( -- ) {
-	c @tbl -> tbl
+	c <<tbl -> tbl
 	tbl 0 != if {
 		tbl mem::free
 	}

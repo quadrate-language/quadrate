@@ -5,21 +5,21 @@ struct Pair<A, B> { first:A second:B }
 fn main() {
 	// Basic types: i64, f64, str
 	42 Box -> b1
-	b1 @value print nl
+	b1 <<value print nl
 	3.14 Box -> b2
-	b2 @value print nl
+	b2 <<value print nl
 	"hello" Box -> b3
-	b3 @value print nl
+	b3 <<value print nl
 
 	// Pair with mixed types
 	42 3.14 Pair -> p1
-	p1 @first print nl
-	p1 @second print nl
+	p1 <<first print nl
+	p1 <<second print nl
 	"world" 99 Pair -> p2
-	p2 @first print nl
-	p2 @second print nl
+	p2 <<first print nl
+	p2 <<second print nl
 
 	// Field set: change type of generic field
-	2.718 b1.value
-	b1 @value print nl
+	b1 2.718 >>value -> b1
+	b1 <<value print nl
 }
