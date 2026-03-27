@@ -993,46 +993,21 @@ void QuadrateLSP::handleDefinition(const std::string& id, const std::string& uri
 					bool cursorOnVariable = false;
 
 					// Search for <<field (read) or >>field (write) near the cursor
-					for (size_t i = 0; i < targetLine.length(); i++) {
-						if (targetLine[i] == '@') {
-							// Check if cursor is near this @
-							if (i >= character) {
-								// @ is at or after cursor - cursor might be on variable
-								if (i - character <= word.length()) {
-									inFieldAccess = true;
-									cursorOnVariable = true;
-									break;
-								}
-							} else {
-								// @ is before cursor - cursor might be on field name
-								if (character - i <= word.length() + 1) {
-									inFieldAccess = true;
-									cursorOnVariable = false;
-									break;
-								}
-							}
-						} else if (targetLine[i] == '.') {
-							// Check if this looks like field set syntax (>>fieldname)
-							// Need to verify it's not a floating point number
-							bool isFloat = false;
-							if (i > 0 && std::isdigit(targetLine[i - 1])) {
-								// Could be a float like 1.0 - check if there's a digit after
-								if (i + 1 < targetLine.length() && std::isdigit(targetLine[i + 1])) {
-									isFloat = true;
-								}
-							}
-							if (!isFloat) {
-								// Check if cursor is near this .
+					for (size_t i = 0; i + 1 < targetLine.length(); i++) {
+						if ((targetLine[i] == '<' && targetLine[i + 1] == '<') ||
+								(targetLine[i] == '>' && targetLine[i + 1] == '>')) {
+							// Check if followed by an identifier (field name)
+							if (i + 2 < targetLine.length() &&
+									(std::isalpha(targetLine[i + 2]) || targetLine[i + 2] == '_')) {
+								// Check if cursor is near this field operator
 								if (i >= character) {
-									// . is at or after cursor - cursor might be on variable
 									if (i - character <= word.length()) {
 										inFieldAccess = true;
 										cursorOnVariable = true;
 										break;
 									}
 								} else {
-									// . is before cursor - cursor might be on field name
-									if (character - i <= word.length() + 1) {
+									if (character - i <= word.length() + 2) {
 										inFieldAccess = true;
 										cursorOnVariable = false;
 										break;
@@ -1885,11 +1860,11 @@ void QuadrateLSP::handleRename(
 							}
 						}
 						// Find the field name after << or >>
-						size_t dotPos = lineText.find('.');
-						size_t atPos = lineText.find('@');
-						size_t accessPos = (dotPos != std::string::npos) ? dotPos : atPos;
+						size_t readPos = lineText.find("<<");
+						size_t writePos = lineText.find(">>");
+						size_t accessPos = (readPos != std::string::npos) ? readPos : writePos;
 						if (accessPos != std::string::npos) {
-							size_t fieldPos = lineText.find(word, accessPos + 1);
+							size_t fieldPos = lineText.find(word, accessPos + 2);
 							if (fieldPos != std::string::npos) {
 								lspCol = fieldPos;
 							}
@@ -2075,11 +2050,11 @@ void QuadrateLSP::handleRename(
 										break;
 									}
 								}
-								size_t dotPos = lineText.find('.');
-								size_t atPos = lineText.find('@');
-								size_t accessPos = (dotPos != std::string::npos) ? dotPos : atPos;
+								size_t readPos = lineText.find("<<");
+								size_t writePos = lineText.find(">>");
+								size_t accessPos = (readPos != std::string::npos) ? readPos : writePos;
 								if (accessPos != std::string::npos) {
-									size_t fieldPos = lineText.find(word, accessPos + 1);
+									size_t fieldPos = lineText.find(word, accessPos + 2);
 									if (fieldPos != std::string::npos) {
 										lspCol = fieldPos;
 									}

@@ -296,19 +296,25 @@ namespace Qd {
 				break;
 			}
 			case IAstNode::Type::FIELD_SET: {
-				// Field set: stack-based (<<field) pops value and struct, pushes struct back
-				// Variable-based (legacy) just pops value
 				AstNodeFieldSet* fs = static_cast<AstNodeFieldSet*>(child);
 				if (fs->varName().empty()) {
-					// Stack-based: pop value, pop struct, push struct back (net: -1)
-					if (typeStack.size() >= 2) {
-						typeStack.pop_back(); // pop value
-											  // struct stays (pop + push = no change)
-					} else if (!typeStack.empty()) {
-						typeStack.pop_back();
+					if (fs->noReturn()) {
+						// >>field! : pop value, pop struct, push nothing (net: -2)
+						if (typeStack.size() >= 2) {
+							typeStack.pop_back(); // pop value
+							typeStack.pop_back(); // pop struct
+						} else if (!typeStack.empty()) {
+							typeStack.pop_back();
+						}
+					} else {
+						// >>field : pop value, struct stays (net: -1)
+						if (typeStack.size() >= 2) {
+							typeStack.pop_back(); // pop value
+						} else if (!typeStack.empty()) {
+							typeStack.pop_back();
+						}
 					}
 				} else {
-					// Variable-based: just pop value
 					if (!typeStack.empty()) {
 						typeStack.pop_back();
 					}
@@ -2451,7 +2457,7 @@ namespace Qd {
 					} else {
 						std::string errorMsg = "Type error in field access '";
 						errorMsg += varName;
-						errorMsg += " @";
+						errorMsg += " <<";
 						errorMsg += fieldName;
 						errorMsg += "': Struct '";
 						errorMsg += varName;
@@ -2489,7 +2495,7 @@ namespace Qd {
 							// Field doesn't exist on this struct type!
 							std::string errorMsg = "Type error in field access '";
 							errorMsg += varName;
-							errorMsg += " @";
+							errorMsg += " <<";
 							errorMsg += fieldName;
 							errorMsg += "': Struct '";
 							errorMsg += structType;
@@ -2517,7 +2523,7 @@ namespace Qd {
 						// Variable is definitely a scalar type - this is an error
 						std::string errorMsg = "Type error in field access '";
 						errorMsg += varName;
-						errorMsg += " @";
+						errorMsg += " <<";
 						errorMsg += fieldName;
 						errorMsg += "': Variable '";
 						errorMsg += varName;
@@ -2539,7 +2545,7 @@ namespace Qd {
 						if (!fieldFound) {
 							std::string errorMsg = "Type error in field access '";
 							errorMsg += varName;
-							errorMsg += " @";
+							errorMsg += " <<";
 							errorMsg += fieldName;
 							errorMsg += "': Unknown variable or field";
 							// Try to suggest a similar variable name first
@@ -2586,7 +2592,7 @@ namespace Qd {
 				structTypeStack.push_back(fieldStructType);
 				static bool debug = std::getenv("QUADC_DEBUG_MERGE") != nullptr;
 				if (debug) {
-					std::cerr << "[DEBUG TC] Field access " << varName << " @" << fieldName
+					std::cerr << "[DEBUG TC] Field access " << varName << " <<" << fieldName
 							  << " -> struct type: " << fieldStructType << " (var struct type was: " << structType
 							  << ")" << std::endl;
 				}
@@ -2700,15 +2706,22 @@ namespace Qd {
 
 				// Pop the value being assigned from the stack
 				if (varName.empty()) {
-					// Stack-based: pop value, struct stays (was popped and pushed back by codegen)
 					if (!typeStack.empty()) {
 						typeStack.pop_back(); // pop value
 						if (!structTypeStack.empty()) {
-							structTypeStack.pop_back(); // pop value's struct type
+							structTypeStack.pop_back();
+						}
+					}
+					// >>field! also pops the struct
+					if (fieldSet->noReturn()) {
+						if (!typeStack.empty()) {
+							typeStack.pop_back(); // pop struct
+							if (!structTypeStack.empty()) {
+								structTypeStack.pop_back();
+							}
 						}
 					}
 				} else {
-					// Variable-based: just pop value
 					if (!typeStack.empty()) {
 						typeStack.pop_back();
 						if (!structTypeStack.empty()) {

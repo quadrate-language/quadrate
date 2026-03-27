@@ -615,8 +615,8 @@ namespace Qd {
 			// If structTypeName was set, the specific lookup failed due to
 			// module aliasing — the fallback is a reasonable best-effort.
 			if (matchCount > 1 && structTypeName.empty()) {
-				std::cerr << "Error: ambiguous field '@" << fieldName << "' found in " << matchCount
-						  << " structs. Use 'as StructType' to disambiguate, e.g.: value as " << selectedStruct << " @"
+				std::cerr << "Error: ambiguous field '<<" << fieldName << "' found in " << matchCount
+						  << " structs. Use 'as StructType' to disambiguate, e.g.: value as " << selectedStruct << " <<"
 						  << fieldName << std::endl;
 				return;
 			}
@@ -849,13 +849,14 @@ namespace Qd {
 				builder->CreateStore(intValue, bytePtr);
 			}
 
-			// Push the struct back onto the stack for chaining
-			// Ensure pushPtrFn is declared
-			if (!pushPtrFn) {
-				auto fnTy = llvm::FunctionType::get(execResultTy, {contextPtrTy, ptrTy}, false);
-				pushPtrFn = llvm::Function::Create(fnTy, llvm::Function::ExternalLinkage, "qd_push_p", *module);
+			// Push the struct back onto the stack for chaining (unless noReturn)
+			if (!fieldSet->noReturn()) {
+				if (!pushPtrFn) {
+					auto fnTy = llvm::FunctionType::get(execResultTy, {contextPtrTy, ptrTy}, false);
+					pushPtrFn = llvm::Function::Create(fnTy, llvm::Function::ExternalLinkage, "qd_push_p", *module);
+				}
+				builder->CreateCall(pushPtrFn, {ctx, structPtr});
 			}
-			builder->CreateCall(pushPtrFn, {ctx, structPtr});
 
 			return;
 		}
@@ -935,8 +936,8 @@ namespace Qd {
 				}
 			}
 			if (matchCount > 1 && structTypeName.empty()) {
-				std::cerr << "Error: ambiguous field '@" << fieldName << "' found in " << matchCount
-						  << " structs. Use 'as StructType' to disambiguate, e.g.: value as " << selectedStruct << " @"
+				std::cerr << "Error: ambiguous field '<<" << fieldName << "' found in " << matchCount
+						  << " structs. Use 'as StructType' to disambiguate, e.g.: value as " << selectedStruct << " <<"
 						  << fieldName << std::endl;
 				return;
 			}

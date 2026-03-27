@@ -13,8 +13,8 @@ namespace Qd {
 	 */
 	class AstNodeFieldSet : public IAstNode {
 	public:
-		AstNodeFieldSet(const std::string& varName, const std::string& fieldName)
-			: mVarName(varName), mFieldName(fieldName), mParent(nullptr), mLine(0), mColumn(0) {
+		AstNodeFieldSet(const std::string& varName, const std::string& fieldName, bool noReturn = false)
+			: mVarName(varName), mFieldName(fieldName), mNoReturn(noReturn), mParent(nullptr), mLine(0), mColumn(0) {
 		}
 
 		IAstNode::Type type() const override {
@@ -58,9 +58,14 @@ namespace Qd {
 			return mFieldName;
 		}
 
+		bool noReturn() const {
+			return mNoReturn;
+		}
+
 	private:
 		std::string mVarName;
 		std::string mFieldName;
+		bool mNoReturn;
 		IAstNode* mParent;
 		size_t mLine;
 		size_t mColumn;

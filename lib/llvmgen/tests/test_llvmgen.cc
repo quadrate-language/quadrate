@@ -511,6 +511,33 @@ TEST(StructFieldAccess) {
 	ASSERT(!ir.empty(), "should generate IR for struct field access");
 }
 
+TEST(StructFieldSetChaining) {
+	const char* src = R"(
+		struct Point { x:i64 y:i64 }
+		fn main() {
+			Point { x = 0 y = 0 } 10 >>x 20 >>y -> p
+			p <<x print nl
+			p <<y print nl
+		}
+	)";
+	std::string ir = generateIR(src);
+	ASSERT(!ir.empty(), "should generate IR for chained field set");
+	ASSERT(irContains(ir, "qd_push_p"), "chained >>field should push struct back");
+}
+
+TEST(StructFieldSetNoReturn) {
+	const char* src = R"(
+		struct Point { x:i64 y:i64 }
+		fn main() {
+			Point { x = 1 y = 2 } -> p
+			p 99 >>x!
+			p <<x print nl
+		}
+	)";
+	std::string ir = generateIR(src);
+	ASSERT(!ir.empty(), "should generate IR for >>field! (no return)");
+}
+
 TEST(StructAsParameter) {
 	const char* src = R"(
 		struct Point {

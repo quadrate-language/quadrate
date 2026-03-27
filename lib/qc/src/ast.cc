@@ -727,8 +727,12 @@ namespace Qd {
 						fieldStart == '_') {
 					char32_t identToken = u8t_scanner_scan(scanner);
 					if (identToken == U8T_IDENTIFIER) {
-						const char* fieldName = u8t_scanner_token_text(scanner, n);
-						AstNodeFieldSet* fieldSet = new AstNodeFieldSet("", fieldName);
+						std::string fieldName(u8t_scanner_token_text(scanner, n));
+						bool noReturn = (peekNextChar(scanner, src) == '!');
+						if (noReturn) {
+							u8t_scanner_scan(scanner);
+						}
+						AstNodeFieldSet* fieldSet = new AstNodeFieldSet("", fieldName, noReturn);
 						setNodePosition(fieldSet, scanner, src);
 						return fieldSet;
 					}
@@ -2014,8 +2018,12 @@ namespace Qd {
 							fieldStart == '_') {
 						char32_t identToken = u8t_scanner_scan(scanner);
 						if (identToken == U8T_IDENTIFIER) {
-							const char* fieldName = u8t_scanner_token_text(scanner, &n);
-							AstNodeFieldSet* fieldSet = new AstNodeFieldSet("", fieldName);
+							std::string fieldName(u8t_scanner_token_text(scanner, &n));
+							bool noReturn = (u8t_scanner_peek(scanner) == '!');
+							if (noReturn) {
+								u8t_scanner_scan(scanner);
+							}
+							AstNodeFieldSet* fieldSet = new AstNodeFieldSet("", fieldName, noReturn);
 							setNodePosition(fieldSet, scanner, src);
 							tempNodes.push_back(fieldSet);
 							continue;
@@ -3246,9 +3254,13 @@ namespace Qd {
 						char32_t identToken = u8t_scanner_scan(scanner);
 						if (identToken == U8T_IDENTIFIER) {
 							size_t fn;
-							const char* fieldName = u8t_scanner_token_text(scanner, &fn);
+							std::string fieldName(u8t_scanner_token_text(scanner, &fn));
+							bool noReturn = (u8t_scanner_peek(scanner) == '!');
+							if (noReturn) {
+								u8t_scanner_scan(scanner);
+							}
 							// >>field in struct construction = field set (write)
-							AstNodeFieldSet* fieldSet = new AstNodeFieldSet("", fieldName);
+							AstNodeFieldSet* fieldSet = new AstNodeFieldSet("", fieldName, noReturn);
 							setNodePosition(fieldSet, scanner, src);
 							currentFieldNodes.push_back(fieldSet);
 							continue;

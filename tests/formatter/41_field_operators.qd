@@ -1,0 +1,15 @@
+// Test <<field >>field >>field! formatting
+struct Point {
+	x: i64
+	y: i64
+}
+
+fn main() {
+	Point { x = 1 y = 2 } -> p
+	p <<x print nl
+	p <<y print nl
+	p 10 >>x -> p
+	p 20 >>y!
+	Point { x = 0 y = 0 } 1 >>x 2 >>y -> q
+	q <<x q <<y + print nl
+}

@@ -904,17 +904,26 @@ ptr_val as MyStruct <<field
 
 ### 8.4 Field Set (Write)
 
-Use `>>` operator (data flows right, into struct). The struct is popped from the stack along with the value, and the modified struct is pushed back:
+Use `>>` operator (data flows right, into struct). The struct and value are popped from the stack:
+
+- `>>field` — sets field, pushes modified struct back (for chaining)
+- `>>field!` — sets field, discards struct (for standalone mutation)
 
 ```quadrate
-struct value >>field    // Set field, push modified struct back
+struct value >>field     // Set field, push modified struct back
+struct value >>field!    // Set field, discard struct
 ```
 
 **Example:**
 ```quadrate
-Point { x = 0.0 y = 0.0 } -> p
-p 5.0 >>x -> p    // Set p.x to 5.0
-p 10.0 >>y -> p   // Set p.y to 10.0
+// Chaining writes
+Point { x = 0.0 y = 0.0 } 5.0 >>x 10.0 >>y -> p
+
+// Standalone mutation (no return)
+p 99 >>x!
+
+// Write with rebind
+p 42 >>x -> p
 ```
 
 ### 8.5 Generic Structs
@@ -1564,7 +1573,7 @@ scoped_id       = identifier "::" identifier ;
 struct_const    = identifier [type_args] "{" { field_init } "}" ;
 array_lit       = "[" { expression } "]" ;
 field_access    = "<<" identifier ;
-field_set       = ">>" identifier ;
+field_set       = ">>" identifier [ "!" ] ;
 local_bind      = "->" identifier ;
 anon_fn         = "fn" signature block ;  /* captures are implicit */
 fn_call         = identifier [ "!" ] ;
@@ -1627,7 +1636,7 @@ instruction     = "dup" | "swap" | "drop" | "over" | "rot" | "nip" | "tuck"
 | `->` | Bind top of stack to local variable |
 | `::` | Scope resolution (module::member) |
 | `<<` | Field access (read): `struct <<field` |
-| `>>` | Field set (write): `struct value >>field` |
+| `>>` | Field set (write): `struct value >>field` (returns struct) or `>>field!` (no return) |
 | `&` | Get function pointer |
 | `!` | Abort on error (after fallible call) |
 | `?` | Propagate error to caller (after fallible call) |

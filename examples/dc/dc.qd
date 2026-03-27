@@ -44,7 +44,7 @@ fn stack_push(s:ptr val:f64 -- ) {
 		"dc: stack overflow" print nl
 	} else {
 		val s <<data sz 8 * mem::set_f64
-		s sz 1 + >>size drop
+		s sz 1 + >>size!
 	}
 }
 
@@ -55,7 +55,7 @@ fn stack_pop(s:ptr -- val:f64) {
 		0.0
 	} else {
 		sz 1 - -> sz
-		s sz >>size drop
+		s sz >>size!
 		s <<data sz 8 * mem::get_f64
 	}
 }
@@ -74,7 +74,7 @@ fn stack_depth(s:ptr -- n:i64) {
 }
 
 fn stack_clear(s:ptr -- ) {
-	s 0 >>size drop
+	s 0 >>size!
 }
 
 // Check if stack has at least n items, print error if not

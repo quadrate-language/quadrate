@@ -73,7 +73,10 @@ This is compile-time only — no runtime cost. It's required when multiple struc
 
 ## Writing fields
 
-Use `>>fieldname` to write. The struct must be on the stack, then the value, then `>>field`. The modified struct is pushed back:
+Use `>>fieldname` to write. Two variants:
+
+- `>>field` — pushes modified struct back (for chaining)
+- `>>field!` — discards struct (for standalone mutation)
 
 ```qd
 struct Counter {
@@ -87,15 +90,17 @@ fn main() {
 
 	c <<value print nl  // 0
 
-	c 10 >>value -> c
+	// >>field! for standalone mutation
+	c 10 >>value!
 	c <<value print nl  // 10
 
+	// >>field with rebind
 	c c <<value inc >>value -> c
 	c <<value print nl  // 11
 }
 ```
 
-Chain writes without rebinding:
+Chain writes during construction:
 ```qd
 Point { x = 0.0 y = 0.0 } 1.0 >>x 2.0 >>y -> p
 ```

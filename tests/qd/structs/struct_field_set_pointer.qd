@@ -9,12 +9,12 @@ fn main() {
 	Cell { value = 2 next = null } -> b
 
 	// Set pointer field: link b -> a
-	b a >>next drop
+	b a >>next!
 	b <<next <<value print nl
 
 	// Mutate value through pointer
 	b <<next -> p
-	p 99 >>value drop
+	p 99 >>value!
 	a <<value print nl
 
 	// Chain: c -> b -> a

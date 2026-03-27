@@ -829,7 +829,7 @@ std::string QuadrateLSP::getFieldAccessVariableAtPosition(const std::string& tex
 		return "";
 	}
 
-	// Check if the characters before cursor end with "@"
+	// Check if the characters before cursor end with "<<" (field read operator)
 	size_t pos = character;
 
 	// Skip back over any partial field name being typed after <<
@@ -837,12 +837,12 @@ std::string QuadrateLSP::getFieldAccessVariableAtPosition(const std::string& tex
 		pos--;
 	}
 
-	// Now check if we have "@" before that
-	if (pos >= 1 && targetLine[pos - 1] == '@') {
-		// Found "@", now extract the variable name before it
-		size_t atPos = pos - 1;
-		size_t varEnd = atPos;
-		size_t varStart = atPos;
+	// Now check if we have "<<" before that
+	if (pos >= 2 && targetLine[pos - 1] == '<' && targetLine[pos - 2] == '<') {
+		// Found "<<", now extract the variable name before it
+		size_t opPos = pos - 2;
+		size_t varEnd = opPos;
+		size_t varStart = opPos;
 
 		// Move back to find start of variable name
 		while (varStart > 0 && (isalnum(targetLine[varStart - 1]) || targetLine[varStart - 1] == '_')) {

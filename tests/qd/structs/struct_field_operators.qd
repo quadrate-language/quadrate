@@ -1,0 +1,70 @@
+// Comprehensive test for <<field (read), >>field (write), >>field! (write no-return)
+struct Point {
+	x: i64
+	y: i64
+}
+
+struct Line {
+	start: Point
+	end: Point
+}
+
+struct Box<T> {
+	value: T
+}
+
+fn main() {
+	// === <<field (read) ===
+
+	// Basic read
+	Point { x = 10 y = 20 } -> p
+	p <<x print nl   // 10
+	p <<y print nl   // 20
+
+	// Chained read (nested structs)
+	Line {
+		start = Point { x = 1 y = 2 }
+		end = Point { x = 3 y = 4 }
+	} -> line
+	line <<start <<x print nl  // 1
+	line <<end <<y print nl    // 4
+
+	// Read from inline struct construction
+	Point { x = 99 y = 88 } <<x print nl  // 99
+
+	// Read generic field
+	42 Box -> b
+	b <<value print nl  // 42
+
+	// === >>field (write, returns struct for chaining) ===
+
+	// Chained construction
+	Point { x = 0 y = 0 } 5 >>x 10 >>y -> q
+	q <<x print nl  // 5
+	q <<y print nl  // 10
+
+	// Write and rebind
+	q 99 >>x -> q
+	q <<x print nl  // 99
+
+	// Write generic field
+	b 100 >>value -> b
+	b <<value print nl  // 100
+
+	// Write generic field with type change (i64 -> str)
+	b "hello" >>value -> b
+	b <<value print nl  // hello
+
+	// === >>field! (write, no return) ===
+
+	// Standalone mutation
+	Point { x = 1 y = 2 } -> r
+	r 50 >>x!
+	r <<x print nl  // 50
+
+	r 60 >>y!
+	r <<y print nl  // 60
+
+	// >>field! doesn't leave anything on the stack
+	// (this would fail with "body leaves N values" if it pushed)
+}

@@ -11,7 +11,8 @@ Custom data types that group related fields together.
 | `struct Name<T> { fields }` | Define a generic struct |
 | `Name { field = value }` | Create an instance |
 | `<<field` | Read a field |
-| `struct value >>field` | Write a field (pushes modified struct back) |
+| `struct value >>field` | Write a field (pushes modified struct back for chaining) |
+| `struct value >>field!` | Write a field (discards struct, for standalone mutation) |
 | `fn (s:Name) method(...)` | Define a method |
 
 ---
@@ -112,11 +113,23 @@ See [Type Casting](types.md#type-narrowing-with-as) for details.
 
 Use `>>fieldname` to write a field value. The struct must be on the stack, followed by the value. The `>>` indicates data flows right (into the struct). The modified struct is pushed back onto the stack.
 
-**Syntax:** `struct value >>field`
+**Syntax:** `struct value >>field` — returns modified struct (for chaining)
 
 ```qd
-p 5.0 >>x -> p    // set p.x to 5.0
-p 10.0 >>y -> p   // set p.y to 10.0
+// Chaining — struct stays on stack
+Point { x = 0.0 y = 0.0 } 1.0 >>x 2.0 >>y -> p
+
+// Rebind after write
+p 5.0 >>x -> p
+```
+
+Use `>>field!` (with `!`) when you don't need the struct back — for standalone mutations:
+
+**Syntax:** `struct value >>field!` — discards struct after write
+
+```qd
+p 99 >>x!           // mutate, don't push struct back
+s sz 1 + >>size!    // common in imperative code
 ```
 
 ---

@@ -392,6 +392,47 @@ TEST(StructFieldSet) {
 	ASSERT(errors == 0, "struct field set should succeed");
 }
 
+TEST(StructFieldSetChaining) {
+	const char* src = R"(
+		struct Point { x:i64 y:i64 }
+		fn main() { Point { x = 0 y = 0 } 10 >>x 20 >>y -> p p <<x print p <<y print }
+	)";
+	size_t errors = validateCode(src);
+	ASSERT(errors == 0, "struct field set chaining should succeed");
+}
+
+TEST(StructFieldSetNoReturn) {
+	const char* src = R"(
+		struct Point { x:i64 y:i64 }
+		fn main() { Point { x = 10 y = 20 } -> p p 99 >>x! p <<x print }
+	)";
+	size_t errors = validateCode(src);
+	ASSERT(errors == 0, "struct field set with ! (no return) should succeed");
+}
+
+TEST(StructFieldSetNoReturnStackClean) {
+	const char* src = R"(
+		struct Point { x:i64 y:i64 }
+		fn helper(p:Point) { p 1 >>x! p 2 >>y! }
+		fn main() { Point { x = 0 y = 0 } -> p p helper }
+	)";
+	size_t errors = validateCode(src);
+	ASSERT(errors == 0, ">>field! should not leave values on stack");
+}
+
+TEST(StructChainedFieldRead) {
+	const char* src = R"(
+		struct Inner { value:i64 }
+		struct Outer { inner:Inner }
+		fn main() {
+			Outer { inner = Inner { value = 42 } } -> o
+			o <<inner <<value print
+		}
+	)";
+	size_t errors = validateCode(src);
+	ASSERT(errors == 0, "chained field read should succeed");
+}
+
 TEST(StructUndefinedField) {
 	const char* src = R"(
 		struct Point { x:i64 y:i64 }

@@ -484,7 +484,7 @@ fn main() {{
     # ============================================================================
 
     def test_field_access_completion(self):
-        """Test completions after @ for field access"""
+        """Test completions after << for field access"""
         print("\n=== Testing Field Access Completion ===")
 
         # Test with a function parameter that has a struct type
