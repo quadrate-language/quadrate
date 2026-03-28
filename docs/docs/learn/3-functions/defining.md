@@ -99,6 +99,8 @@ fn add(i64 i64 -- i64) {
 - **Named** (`a:i64`) — when you reference the value multiple times or the meaning isn't obvious
 - **Unnamed** (`i64`) — for simple stack operations where the body is a single expression
 
+The same applies to return types: name them for clarity in public APIs (`-- result:i64`), leave unnamed in lambdas and trivial functions (`-- i64`).
+
 ## Multiple outputs
 
 Functions can have multiple outputs:
