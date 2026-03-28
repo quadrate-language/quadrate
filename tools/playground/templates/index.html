@@ -695,9 +695,11 @@
             <div class="panel-header">
                 <h2>Output</h2>
                 <div class="toolbar">
+                    <button id="share-btn" onclick="shareCode()">Share</button>
+                    <button id="fmt-btn" onclick="formatCode()">Format</button>
                     <button id="clear-btn" onclick="clearOutput()">Clear</button>
                     <button id="run-btn" onclick="runCode()">Run</button>
-                    <span class="keyboard-hint">Ctrl+Enter</span>
+                    <span class="keyboard-hint">Ctrl/Cmd+Enter</span>
                 </div>
             </div>
             <div id="output"></div>
@@ -791,8 +793,21 @@
                     continue;
                 }
 
+                // Field operators: <<field and >>field (and >>field!)
+                if ((code[i] === '<' || code[i] === '>') && code[i + 1] === code[i]) {
+                    const op = code[i];
+                    if (i + 2 < code.length && /[a-zA-Z_]/.test(code[i + 2])) {
+                        let end = i + 2;
+                        while (end < code.length && /[a-zA-Z0-9_]/.test(code[end])) end++;
+                        if (end < code.length && code[end] === '!') end++; // include ! suffix
+                        result += `<span class="hl-operator">${escapeHtml(code.slice(i, end))}</span>`;
+                        i = end;
+                        continue;
+                    }
+                }
+
                 // Operators
-                if ('+-*/%@'.includes(code[i])) {
+                if ('+-*/%'.includes(code[i])) {
                     result += `<span class="hl-operator">${escapeHtml(code[i])}</span>`;
                     i++;
                     continue;
@@ -1275,10 +1290,15 @@ fn main() {
         editor.addEventListener('scroll', syncScroll);
 
         editor.addEventListener('keydown', (e) => {
-            // Ctrl+Enter to run
-            if (e.ctrlKey && e.key === 'Enter') {
+            // Ctrl+Enter / Cmd+Enter to run
+            if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
                 e.preventDefault();
                 runCode();
+            }
+            // Ctrl+Shift+F / Cmd+Shift+F to format
+            if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key === 'F') {
+                e.preventDefault();
+                formatCode();
             }
             // Tab to indent
             if (e.key === 'Tab') {
@@ -1290,6 +1310,116 @@ fn main() {
                 clearErrorHighlights();
             }
         });
+
+        // === Share: encode code in URL hash using deflate + base64url ===
+        async function compressToHash(code) {
+            const stream = new Blob([code]).stream().pipeThrough(new CompressionStream('deflate'));
+            const buf = await new Response(stream).arrayBuffer();
+            const bytes = new Uint8Array(buf);
+            let binary = '';
+            for (let i = 0; i < bytes.length; i++) binary += String.fromCharCode(bytes[i]);
+            return btoa(binary).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+        }
+
+        async function decompressFromHash(hash) {
+            const base64 = hash.replace(/-/g, '+').replace(/_/g, '/');
+            const binary = atob(base64);
+            const bytes = new Uint8Array(binary.length);
+            for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+            const stream = new Blob([bytes]).stream().pipeThrough(new DecompressionStream('deflate'));
+            return await new Response(stream).text();
+        }
+
+        async function shareCode() {
+            const code = editor.value;
+            if (!code.trim()) return;
+            const shareBtn = document.getElementById('share-btn');
+            try {
+                const hash = await compressToHash(code);
+                const url = window.location.origin + window.location.pathname + '#' + hash;
+                await navigator.clipboard.writeText(url);
+                shareBtn.textContent = 'Copied!';
+                history.replaceState(null, '', '#' + hash);
+            } catch (err) {
+                shareBtn.textContent = 'Error';
+            }
+            setTimeout(() => { shareBtn.textContent = 'Share'; }, 2000);
+        }
+
+        // Load shared code from URL hash on page load
+        async function loadFromHash() {
+            const hash = window.location.hash.slice(1);
+            if (hash) {
+                try {
+                    const code = await decompressFromHash(hash);
+                    editor.value = code;
+                    updateHighlight();
+                } catch (e) {
+                    // Invalid hash, ignore
+                }
+            }
+        }
+
+        // === Format: send code to server for formatting ===
+        async function formatCode() {
+            const code = editor.value;
+            if (!code.trim()) return;
+            const fmtBtn = document.getElementById('fmt-btn');
+            fmtBtn.disabled = true;
+            fmtBtn.textContent = 'Formatting...';
+            try {
+                const resp = await fetch('fmt', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({code})
+                });
+                const result = await resp.json();
+                if (result.code) {
+                    const pos = editor.selectionStart;
+                    editor.value = result.code;
+                    editor.selectionStart = editor.selectionEnd = Math.min(pos, result.code.length);
+                    updateHighlight();
+                    saveToLocal();
+                }
+                if (result.error) {
+                    output.textContent = result.error;
+                    output.classList.add('error');
+                }
+            } catch (err) {
+                output.textContent = 'Format failed: ' + err.message;
+                output.classList.add('error');
+            } finally {
+                fmtBtn.disabled = false;
+                fmtBtn.textContent = 'Format';
+            }
+        }
+
+        // === Auto-save to localStorage ===
+        function saveToLocal() {
+            try {
+                localStorage.setItem('quadrate-playground-code', editor.value);
+            } catch (e) {}
+        }
+
+        function loadFromLocal() {
+            try {
+                const saved = localStorage.getItem('quadrate-playground-code');
+                if (saved && !window.location.hash) {
+                    editor.value = saved;
+                }
+            } catch (e) {}
+        }
+
+        // Save on every edit (debounced)
+        let saveTimer;
+        editor.addEventListener('input', () => {
+            clearTimeout(saveTimer);
+            saveTimer = setTimeout(saveToLocal, 500);
+        });
+
+        // Initialize: load from hash (shared link) or localStorage (auto-save)
+        loadFromLocal();
+        loadFromHash();
 
         // Initial highlight
         updateHighlight();

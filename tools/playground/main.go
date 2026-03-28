@@ -70,6 +70,7 @@ func main() {
 	})
 
 	http.HandleFunc("/run", handleRun)
+	http.HandleFunc("/fmt", handleFmt)
 
 	log.Printf("Quadrate Playground listening on %s (image: %s)", addr, sandboxImage)
 	log.Fatal(http.ListenAndServe(addr, nil))
@@ -166,6 +167,63 @@ func runCode(code string) (string, error) {
 	}
 
 	return output, nil
+}
+
+type FmtResponse struct {
+	Code  string `json:"code,omitempty"`
+	Error string `json:"error,omitempty"`
+}
+
+func handleFmt(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	var req RunRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		writeJSON(w, http.StatusBadRequest, FmtResponse{Error: "invalid request"})
+		return
+	}
+
+	if req.Code == "" {
+		writeJSON(w, http.StatusBadRequest, FmtResponse{Error: "no code provided"})
+		return
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	cmd := exec.CommandContext(ctx, "docker", "run",
+		"--rm",
+		"--network", "none",
+		"--read-only",
+		"--memory", "32m",
+		"--cpus", "0.25",
+		"--pids-limit", "8",
+		"--security-opt", "no-new-privileges",
+		"--cap-drop", "ALL",
+		"-i",
+		"-e", "NO_COLOR=1",
+		sandboxImage,
+		"quadfmt", "-",
+	)
+
+	cmd.Stdin = bytes.NewReader([]byte(req.Code))
+	var stdout, stderr bytes.Buffer
+	cmd.Stdout = &stdout
+	cmd.Stderr = &stderr
+
+	if err := cmd.Run(); err != nil {
+		errMsg := stderr.String()
+		if errMsg == "" {
+			errMsg = "formatting failed"
+		}
+		writeJSON(w, http.StatusOK, FmtResponse{Error: errMsg})
+		return
+	}
+
+	writeJSON(w, http.StatusOK, FmtResponse{Code: stdout.String()})
 }
 
 func writeJSON(w http.ResponseWriter, status int, v any) {
