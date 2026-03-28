@@ -54,4 +54,8 @@ namespace qdcli {
 		return false;
 	}
 
+	bool noColor() {
+		return std::getenv("NO_COLOR") != nullptr;
+	}
+
 } // namespace qdcli

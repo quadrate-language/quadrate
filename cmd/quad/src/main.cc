@@ -687,7 +687,7 @@ int handleHelp(const std::vector<std::string>& args) {
 
 int main(int argc, char* argv[]) {
 	// Configure colored output - honor NO_COLOR environment variable
-	const bool noColors = std::getenv("NO_COLOR") != nullptr;
+	const bool noColors = qdcli::noColor();
 	Colors::setEnabled(!noColors);
 
 	if (argc < 2) {

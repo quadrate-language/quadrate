@@ -11,6 +11,7 @@
 #include <filesystem>
 #include <fstream>
 #include <iostream>
+#include <quadrate/cli/cli.h>
 #include <quadrate/platform/platform.h>
 #include <quadrate/qc/ast.h>
 #include <quadrate/qc/ast_node_constant.h>
@@ -4719,7 +4720,7 @@ void printHelp() {
 }
 
 void printVersion() {
-	std::cout << quadrate_version_string("quadlsp") << "\n";
+	qdcli::printVersion("quadlsp");
 }
 
 int main(int argc, char* argv[]) {

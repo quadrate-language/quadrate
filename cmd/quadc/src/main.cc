@@ -8,6 +8,7 @@
 #include <cstring>
 #include <filesystem>
 #include <iostream>
+#include <quadrate/cli/cli.h>
 #include <quadrate/llvmgen/generator.h>
 #include <quadrate/qc/ast.h>
 #include <quadrate/qc/ast_node.h>
@@ -104,7 +105,7 @@ int main(int argc, char** argv) {
 	}
 
 	// Configure colored output - check NO_COLOR environment variable
-	const bool noColors = std::getenv("NO_COLOR") != nullptr;
+	const bool noColors = qdcli::noColor();
 	Qd::Colors::setEnabled(!noColors);
 
 	const std::string outputDir = createTempDir(opts.saveTemps);

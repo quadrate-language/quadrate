@@ -36,6 +36,9 @@ namespace qdcli {
 	// Returns true if paths is empty (caller should return 1)
 	bool checkNoInputFiles(const BaseOptions& opts, const char* toolName);
 
+	// Returns true if colors should be disabled (NO_COLOR env var is set)
+	bool noColor();
+
 } // namespace qdcli
 
 #endif // QDCLI_CLI_H

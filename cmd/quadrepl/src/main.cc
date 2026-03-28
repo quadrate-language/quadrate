@@ -463,7 +463,7 @@ public:
 		}
 
 		// Re-enable colors for interactive mode (unless NO_COLOR is set)
-		if (!std::getenv("NO_COLOR")) {
+		if (!qdcli::noColor()) {
 			Qd::Colors::setEnabled(true);
 		}
 
@@ -1366,7 +1366,7 @@ int main(int argc, char* argv[]) {
 
 	// Configure colored output - disable if piped or NO_COLOR is set
 	const bool isPiped = !isatty(STDIN_FILENO);
-	const bool noColors = std::getenv("NO_COLOR") != nullptr || isPiped;
+	const bool noColors = qdcli::noColor() || isPiped;
 	Qd::Colors::setEnabled(!noColors);
 
 	// Run the REPL
