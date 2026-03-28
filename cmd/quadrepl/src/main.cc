@@ -8,6 +8,7 @@
 #include <csignal>
 #include <cstdio>
 #include <cstdlib>
+#include <fcntl.h>
 #include <fstream>
 #include <iostream>
 #include <pwd.h>
@@ -1157,21 +1158,65 @@ private:
 
 		std::string source = buildSource(testHistory);
 
-		// Get a fresh module for this execution
+		// Suppress stderr during compilation attempts (errors printed on final failure)
+		// Save stderr, redirect to /dev/null for probing
+		int savedStderr = dup(STDERR_FILENO);
+		int devNull = open("/dev/null", O_WRONLY);
+
+		// First try: compile as-is (silently)
+		dup2(devNull, STDERR_FILENO);
 		qd_module* execMod = qd_get_module(ctx, moduleName.c_str());
 		qd_add_script(execMod, source.c_str());
-
-		// Suppress warnings for previously compiled code
-		// The new expression starts at line getExpressionLineNumber(lastSuccessfulExprCount)
 		if (lastSuccessfulExprCount > 0) {
 			qd_set_warning_min_line(execMod, getExpressionLineNumber(lastSuccessfulExprCount));
 		}
-
 		qd_build(execMod);
 
-		// Only proceed if compilation succeeded
+		// If compilation failed, try adding print+drop for leftover stack values
 		if (!qd_is_compiled(execMod)) {
-			return; // Don't add to history on compile failure
+			for (int drops = 1; drops <= 8; drops++) {
+				std::string cleanup = "print nl";
+				for (int i = 1; i < drops; i++) {
+					cleanup += " drop";
+				}
+
+				std::vector<std::string> retryHistory = history;
+				retryHistory.push_back(processedCode);
+				retryHistory.push_back(cleanup);
+				std::string retrySource = buildSource(retryHistory);
+
+				std::string retryName = "repl_" + std::to_string(moduleCounter++);
+				execMod = qd_get_module(ctx, retryName.c_str());
+				qd_add_script(execMod, retrySource.c_str());
+				if (lastSuccessfulExprCount > 0) {
+					qd_set_warning_min_line(execMod, getExpressionLineNumber(lastSuccessfulExprCount));
+				}
+				qd_build(execMod);
+
+				if (qd_is_compiled(execMod)) {
+					moduleName = retryName;
+					processedCode += "\n" + cleanup;
+					break;
+				}
+			}
+		}
+
+		// Restore stderr
+		dup2(savedStderr, STDERR_FILENO);
+		close(savedStderr);
+		close(devNull);
+
+		// If still not compiled, re-compile with errors visible
+		if (!qd_is_compiled(execMod)) {
+			// Recompile once more with stderr visible so user sees the error
+			std::string failName = "repl_" + std::to_string(moduleCounter++);
+			qd_module* failMod = qd_get_module(ctx, failName.c_str());
+			qd_add_script(failMod, source.c_str());
+			if (lastSuccessfulExprCount > 0) {
+				qd_set_warning_min_line(failMod, getExpressionLineNumber(lastSuccessfulExprCount));
+			}
+			qd_build(failMod);
+			return;
 		}
 
 		// Clear the stack before execution (we re-execute all history)

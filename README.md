@@ -49,10 +49,16 @@ make release && sudo make install
 
 Requires: Meson, C++20 compiler, LLVM 14+
 
+## Editor Support
+
+- **VS Code**: [quadrate-vscode](https://git.sr.ht/~klahr/quadrate-vscode) — syntax highlighting, LSP integration
+- **Neovim**: [quadrate.nvim](https://git.sr.ht/~klahr/quadrate.nvim) — TreeSitter highlighting, LSP
+- **Any editor with LSP**: run `quad lsp` for diagnostics, completion, go-to-definition, rename
+
 ## Contributing
 
 - **Issues**: https://todo.sr.ht/~klahr/quadrate
-- **Patches**: ~klahr/quadrate<<lists.sr.ht
+- **Patches**: ~klahr/quadrate@lists.sr.ht
 
 ## License
 
