@@ -5,12 +5,8 @@
 #include "version.h"
 #include <cstring>
 #include <iostream>
+#include <quadrate/cli/cli.h>
 #include <string>
-
-// Print version information
-static void printVersion() {
-	std::cout << quadrate_version_string("quadpm") << "\n";
-}
 
 // Print usage information
 static void printUsage() {
@@ -89,7 +85,7 @@ int main(int argc, char** argv) {
 	}
 
 	if (command == "-v" || command == "--version") {
-		printVersion();
+		qdcli::printVersion("quadpm");
 		return 0;
 	}
 

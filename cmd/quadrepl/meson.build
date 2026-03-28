@@ -16,7 +16,7 @@ if qd_static_dep.found()
 		quadrepl_exe = executable('quadrepl',
 			quadrepl_sources,
 			include_directories: [version_inc, qdplatform_inc],
-			dependencies: [qd_static_dep, qc_dep, readline_dep],
+			dependencies: [qd_static_dep, qc_dep, qdcli_dep, readline_dep],
 			install: false
 		)
 	else

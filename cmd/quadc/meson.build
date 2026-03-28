@@ -17,7 +17,7 @@ if llvmgen_dep.found()
 	quadc_exe = executable('quadc',
 		quadc_sources,
 		include_directories: [qdrt_src_inc, version_inc],
-		dependencies: [qc_dep, llvmgen_dep, qdrt_dep, jansson_dep],
+		dependencies: [qc_dep, qdcli_dep, llvmgen_dep, qdrt_dep, jansson_dep],
 		install: false
 	)
 

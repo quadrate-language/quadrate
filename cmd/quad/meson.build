@@ -10,6 +10,6 @@ qdrt_src_inc = include_directories('../../lib/rt')
 quad_exe = executable('quad',
 	quad_sources,
 	include_directories: [qdrt_src_inc, version_inc],
-	dependencies: [qc_dep, qdrt_dep],
+	dependencies: [qc_dep, qdcli_dep, qdrt_dep],
 	install: false
 )

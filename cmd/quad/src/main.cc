@@ -4,6 +4,7 @@
 #include <filesystem>
 #include <fstream>
 #include <iostream>
+#include <quadrate/cli/cli.h>
 #include <quadrate/qc/colors.h>
 #include <string>
 #include <vector>
@@ -79,7 +80,7 @@ void printHelp() {
 }
 
 void printVersion() {
-	std::cout << quadrate_version_string("quad") << "\n";
+	qdcli::printVersion("quad");
 }
 
 // Get the directory where the quad binary is located

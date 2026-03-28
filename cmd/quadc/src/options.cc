@@ -3,6 +3,7 @@
 #include <cstdio>
 #include <filesystem>
 #include <iostream>
+#include <quadrate/cli/cli.h>
 #include <unistd.h>
 
 namespace fs = std::filesystem;
@@ -44,7 +45,7 @@ void printHelp() {
 }
 
 void printVersion() {
-	std::cout << quadrate_version_string("quadc") << "\n";
+	qdcli::printVersion("quadc");
 }
 
 bool parseArgs(int argc, char* argv[], Options& opts) {

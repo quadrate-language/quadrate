@@ -1,3 +1,4 @@
+#include <quadrate/cli/cli.h>
 #include <quadrate/platform/platform.h>
 #include <quadrate/qc/ast.h>
 #include <quadrate/qc/colors.h>
@@ -1329,44 +1330,38 @@ private:
 	}
 };
 
-void printVersion() {
-	printf("%s\n", quadrate_version_string("quadrepl"));
-}
-
-void printHelp() {
-	printf("quadrepl - Quadrate REPL\n\n");
-	printf("Interactive Read-Eval-Print Loop for Quadrate.\n\n");
-	printf("Usage: quadrepl [options]\n\n");
-	printf("Options:\n");
-	printf("  -h, --help       Show this help message\n");
-	printf("  -v, --version    Show version information\n");
-	printf("  -p, --print      Print stack to stdout on exit\n");
-	printf("\n");
-	printf("Piping:\n");
-	printf("  echo \"1 2 3\" | quadrepl      Start with values on stack\n");
-	printf("  echo \"1 2 add\" | quadrepl -p  Compute and print result\n");
-	printf("\n");
-}
-
 int main(int argc, char* argv[]) {
 	bool printOnExit = false;
 
-	for (int i = 1; i < argc; i++) {
-		std::string arg = argv[i];
-
-		if (arg == "-h" || arg == "--help") {
-			printHelp();
-			return 0;
-		} else if (arg == "-v" || arg == "--version") {
-			printVersion();
-			return 0;
-		} else if (arg == "-p" || arg == "--print") {
+	qdcli::BaseOptions base;
+	bool parsed = qdcli::parseArgs(argc, argv, base, "quadrepl", [&](const char* arg, int&, int, char*[]) -> bool {
+		std::string a(arg);
+		if (a == "-p" || a == "--print") {
 			printOnExit = true;
-		} else {
-			fprintf(stderr, "quadrepl: unknown option: %s\n", arg.c_str());
-			fprintf(stderr, "Try 'quadrepl --help' for more information.\n");
-			return 1;
+			return true;
 		}
+		return false;
+	});
+
+	if (!parsed) {
+		return 1;
+	}
+	if (base.help) {
+		printf("quadrepl - Quadrate REPL\n\n");
+		printf("Interactive Read-Eval-Print Loop for Quadrate.\n\n");
+		printf("Usage: quadrepl [options]\n\n");
+		printf("Options:\n");
+		printf("  -h, --help       Show this help message\n");
+		printf("  -v, --version    Show version information\n");
+		printf("  -p, --print      Print stack to stdout on exit\n");
+		printf("\nPiping:\n");
+		printf("  echo \"1 2 3\" | quadrepl      Start with values on stack\n");
+		printf("  echo \"1 2 add\" | quadrepl -p  Compute and print result\n\n");
+		return 0;
+	}
+	if (base.version) {
+		qdcli::printVersion("quadrepl");
+		return 0;
 	}
 
 	// Configure colored output - disable if piped or NO_COLOR is set

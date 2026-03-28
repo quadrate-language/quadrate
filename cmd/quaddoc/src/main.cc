@@ -1,4 +1,6 @@
 // quaddoc - Generate HTML documentation from Quadrate source files
+#include <quadrate/cli/cli.h>
+
 #include <algorithm>
 #include <cstring>
 #include <filesystem>
@@ -500,53 +502,56 @@ static int generate(const std::vector<Module>& modules, const std::string& outDi
 
 // --- Main ---
 
-static void printHelp() {
-	std::cout << "quaddoc - Generate HTML documentation from Quadrate source files\n\n"
-			  << "Usage: quaddoc [options] <directory>\n\n"
-			  << "Options:\n"
-			  << "  -h, --help         Show this help message\n"
-			  << "  -v, --version      Show version information\n"
-			  << "  -o <dir>           Output directory (default: docs)\n"
-			  << "  -q, --quiet        Quiet mode — no output except errors\n"
-			  << "  --title <str>      Project title (default: \"Quadrate API\")\n"
-			  << "  --css <file>       Append custom CSS file after default styles\n\n"
-			  << "Examples:\n"
-			  << "  quaddoc                          # Scan current dir, output to docs/\n"
-			  << "  quaddoc -o api lib/              # Scan lib/, output to api/\n"
-			  << "  quaddoc --title \"My Project\" .   # Custom title\n"
-			  << "  quaddoc --css custom.css lib/    # Custom styling\n";
-}
-
 int main(int argc, char* argv[]) {
 	std::string outDir = "docs";
 	std::string title = "Quadrate API";
 	std::string customCSS;
-	std::string dir = ".";
 	bool quiet = false;
 
-	for (int i = 1; i < argc; i++) {
-		std::string arg = argv[i];
-		if (arg == "-h" || arg == "--help") {
-			printHelp();
-			return 0;
-		} else if (arg == "-v" || arg == "--version") {
-			std::cout << "quaddoc " << QUADRATE_VERSION << "\n";
-			return 0;
-		} else if (arg == "-o" && i + 1 < argc) {
-			outDir = argv[++i];
-		} else if (arg == "-q" || arg == "--quiet") {
-			quiet = true;
-		} else if (arg == "--title" && i + 1 < argc) {
-			title = argv[++i];
-		} else if (arg == "--css" && i + 1 < argc) {
-			customCSS = argv[++i];
-		} else if (arg[0] != '-') {
-			dir = arg;
-		} else {
-			std::cerr << "quaddoc: unknown option: " << arg << "\n";
-			return 1;
-		}
+	qdcli::BaseOptions base;
+	bool parsed =
+			qdcli::parseArgs(argc, argv, base, "quaddoc", [&](const char* arg, int& i, int ac, char* av[]) -> bool {
+				std::string a(arg);
+				if (a == "-o" && i + 1 < ac) {
+					outDir = av[++i];
+				} else if (a == "-q" || a == "--quiet") {
+					quiet = true;
+				} else if (a == "--title" && i + 1 < ac) {
+					title = av[++i];
+				} else if (a == "--css" && i + 1 < ac) {
+					customCSS = av[++i];
+				} else {
+					return false;
+				}
+				return true;
+			});
+
+	if (!parsed) {
+		return 1;
 	}
+	if (base.help) {
+		std::cout << "quaddoc - Generate HTML documentation from Quadrate source files\n\n"
+				  << "Usage: quaddoc [options] <directory>\n\n"
+				  << "Options:\n"
+				  << "  -h, --help         Show this help message\n"
+				  << "  -v, --version      Show version information\n"
+				  << "  -o <dir>           Output directory (default: docs)\n"
+				  << "  -q, --quiet        Quiet mode — no output except errors\n"
+				  << "  --title <str>      Project title (default: \"Quadrate API\")\n"
+				  << "  --css <file>       Append custom CSS file after default styles\n\n"
+				  << "Examples:\n"
+				  << "  quaddoc                          # Scan current dir, output to docs/\n"
+				  << "  quaddoc -o api lib/              # Scan lib/, output to api/\n"
+				  << "  quaddoc --title \"My Project\" .   # Custom title\n"
+				  << "  quaddoc --css custom.css lib/    # Custom styling\n";
+		return 0;
+	}
+	if (base.version) {
+		qdcli::printVersion("quaddoc");
+		return 0;
+	}
+
+	std::string dir = base.paths.empty() ? "." : base.paths[0];
 
 	if (!quiet) {
 		std::cout << "Scanning " << dir << "...\n";

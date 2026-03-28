@@ -7,7 +7,7 @@ test_options = executable('test_options',
 	'test_options.cc',
 	'../src/options.cc',
 	include_directories: [version_inc],
-	dependencies: [unit_check_dep],
+	dependencies: [unit_check_dep, qdcli_dep],
 )
 
 test('test_options', test_options)
