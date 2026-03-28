@@ -1232,14 +1232,16 @@ namespace Qd {
 
 				// Generate code for message first (goes on stack first)
 				if (messageInit) {
-					for (IAstNode* valueNode : messageInit->valueNodes) {
+					for (const auto& valueNodePtr : messageInit->valueNodes) {
+						IAstNode* valueNode = valueNodePtr.get();
 						generateNode(valueNode, ctx);
 					}
 				}
 
 				// Then generate code for code (goes on top of stack)
 				if (codeInit) {
-					for (IAstNode* valueNode : codeInit->valueNodes) {
+					for (const auto& valueNodePtr : codeInit->valueNodes) {
+						IAstNode* valueNode = valueNodePtr.get();
 						generateNode(valueNode, ctx);
 					}
 				}
@@ -1267,7 +1269,8 @@ namespace Qd {
 				auto initIt = initMap.find(field.name);
 				if (initIt != initMap.end()) {
 					// Generate code for the field initializer expression
-					for (IAstNode* valueNode : initIt->second->valueNodes) {
+					for (const auto& valueNodePtr : initIt->second->valueNodes) {
+						IAstNode* valueNode = valueNodePtr.get();
 						generateNode(valueNode, ctx);
 					}
 				} else if (!field.defaultValue.empty()) {

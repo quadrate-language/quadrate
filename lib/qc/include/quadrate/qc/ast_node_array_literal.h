@@ -2,6 +2,7 @@
 #define QD_QC_AST_NODE_ARRAY_LITERAL_H
 
 #include "ast_node.h"
+#include <memory>
 #include <vector>
 
 namespace Qd {
@@ -17,11 +18,7 @@ namespace Qd {
 		AstNodeArrayLiteral() : mParent(nullptr), mLine(0), mColumn(0) {
 		}
 
-		~AstNodeArrayLiteral() {
-			for (auto* element : mElements) {
-				delete element;
-			}
-		}
+		~AstNodeArrayLiteral() = default;
 
 		IAstNode::Type type() const override {
 			return Type::ARRAY_LITERAL;
@@ -33,7 +30,7 @@ namespace Qd {
 
 		IAstNode* child(size_t index) const override {
 			if (index < mElements.size()) {
-				return mElements[index];
+				return mElements[index].get();
 			}
 			return nullptr;
 		}
@@ -61,15 +58,15 @@ namespace Qd {
 
 		void addElement(IAstNode* element) {
 			element->setParent(this);
-			mElements.push_back(element);
+			mElements.emplace_back(element);
 		}
 
-		const std::vector<IAstNode*>& elements() const {
+		const std::vector<std::unique_ptr<IAstNode>>& elements() const {
 			return mElements;
 		}
 
 	private:
-		std::vector<IAstNode*> mElements;
+		std::vector<std::unique_ptr<IAstNode>> mElements;
 		IAstNode* mParent;
 		size_t mLine;
 		size_t mColumn;

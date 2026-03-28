@@ -2,17 +2,16 @@
 #define QD_QC_AST_NODE_FOR_H
 
 #include "ast_node_base.h"
+#include <memory>
 #include <string>
 
 namespace Qd {
 	class AstNodeForStatement : public AstNodeBase<IAstNode::Type::FOR_STATEMENT> {
 	public:
-		AstNodeForStatement() : mBody(nullptr), mIteratorName("it") {
+		AstNodeForStatement() : mIteratorName("it") {
 		}
 
-		~AstNodeForStatement() {
-			delete mBody;
-		}
+		~AstNodeForStatement() = default;
 
 		size_t childCount() const override {
 			return mBody ? 1 : 0;
@@ -20,17 +19,17 @@ namespace Qd {
 
 		IAstNode* child(size_t index) const override {
 			if (index == 0 && mBody) {
-				return mBody;
+				return mBody.get();
 			}
 			return nullptr;
 		}
 
 		void setBody(IAstNode* body) {
-			mBody = body;
+			mBody.reset(body);
 		}
 
 		IAstNode* body() const {
-			return mBody;
+			return mBody.get();
 		}
 
 		void setIteratorName(const std::string& name) {
@@ -42,7 +41,7 @@ namespace Qd {
 		}
 
 	private:
-		IAstNode* mBody;
+		std::unique_ptr<IAstNode> mBody;
 		std::string mIteratorName;
 	};
 }

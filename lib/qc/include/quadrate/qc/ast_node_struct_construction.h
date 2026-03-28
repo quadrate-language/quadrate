@@ -2,6 +2,7 @@
 #define QD_QC_AST_NODE_STRUCT_CONSTRUCTION_H
 
 #include "ast_node.h"
+#include <memory>
 #include <string>
 #include <vector>
 
@@ -14,7 +15,7 @@ namespace Qd {
 	 */
 	struct StructFieldInit {
 		std::string fieldName;
-		std::vector<IAstNode*> valueNodes; // Expression nodes that produce the field value
+		std::vector<std::unique_ptr<IAstNode>> valueNodes; // Expression nodes that produce the field value
 	};
 
 	/**
@@ -33,13 +34,7 @@ namespace Qd {
 			: mStructName(structName), mTypeArgs(typeArgs), mParent(nullptr), mLine(0), mColumn(0) {
 		}
 
-		~AstNodeStructConstruction() {
-			for (auto& init : mFieldInits) {
-				for (auto* node : init.valueNodes) {
-					delete node;
-				}
-			}
-		}
+		~AstNodeStructConstruction() = default;
 
 		IAstNode::Type type() const override {
 			return Type::STRUCT_CONSTRUCTION;
@@ -57,7 +52,7 @@ namespace Qd {
 			size_t current = 0;
 			for (const auto& init : mFieldInits) {
 				if (index < current + init.valueNodes.size()) {
-					return init.valueNodes[index - current];
+					return init.valueNodes[index - current].get();
 				}
 				current += init.valueNodes.size();
 			}
@@ -92,9 +87,9 @@ namespace Qd {
 		void addFieldInit(const std::string& fieldName, std::vector<IAstNode*> valueNodes) {
 			StructFieldInit init;
 			init.fieldName = fieldName;
-			init.valueNodes = std::move(valueNodes);
-			for (auto* node : init.valueNodes) {
+			for (auto* node : valueNodes) {
 				node->setParent(this);
+				init.valueNodes.emplace_back(node);
 			}
 			mFieldInits.push_back(std::move(init));
 		}

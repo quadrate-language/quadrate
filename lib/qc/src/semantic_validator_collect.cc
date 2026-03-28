@@ -62,16 +62,16 @@ namespace Qd {
 			}
 
 			// Check parameter names for reserved keywords
-			for (auto* paramNode : func->inputParameters()) {
-				AstNodeParameter* param = static_cast<AstNodeParameter*>(paramNode);
+			for (const auto& paramNode : func->inputParameters()) {
+				AstNodeParameter* param = static_cast<AstNodeParameter*>(paramNode.get());
 				if (param->hasName() && isReservedKeyword(param->name())) {
 					std::string errorMsg =
 							"'" + param->name() + "' is a reserved keyword and cannot be used as a parameter name";
 					reportError(param, errorMsg.c_str());
 				}
 			}
-			for (auto* paramNode : func->outputParameters()) {
-				AstNodeParameter* param = static_cast<AstNodeParameter*>(paramNode);
+			for (const auto& paramNode : func->outputParameters()) {
+				AstNodeParameter* param = static_cast<AstNodeParameter*>(paramNode.get());
 				if (param->hasName() && isReservedKeyword(param->name())) {
 					std::string errorMsg =
 							"'" + param->name() + "' is a reserved keyword and cannot be used as a parameter name";
@@ -337,7 +337,7 @@ namespace Qd {
 			AstNodeImport* import = static_cast<AstNodeImport*>(node);
 			mImportedLibraries[import->namespaceName()] = import->library();
 			// Register all imported functions as namespace::function
-			for (const auto* func : import->functions()) {
+			for (const auto& func : import->functions()) {
 				std::string qualifiedName = import->namespaceName() + "::" + func->name;
 				mImportedLibraryFunctions.insert(qualifiedName);
 				// Also register unqualified name for use within the same module
@@ -347,7 +347,7 @@ namespace Qd {
 				FunctionSignature sig;
 
 				// Process input parameters
-				for (const auto* param : func->inputParameters) {
+				for (const auto& param : func->inputParameters) {
 					std::string typeStr = param->typeString();
 					if (typeStr == "i32" || typeStr == "i64" || typeStr == "u8" || typeStr == "u16" ||
 							typeStr == "u32" || typeStr == "u64") {
@@ -365,7 +365,7 @@ namespace Qd {
 
 				// Process output parameters
 				size_t producesIdx = 0;
-				for (const auto* param : func->outputParameters) {
+				for (const auto& param : func->outputParameters) {
 					std::string typeStr = param->typeString();
 					if (typeStr == "i32" || typeStr == "i64" || typeStr == "u8" || typeStr == "u16" ||
 							typeStr == "u32" || typeStr == "u64") {
@@ -673,8 +673,8 @@ namespace Qd {
 			if (structName == "__error__") {
 				// Validate field initializer expressions
 				for (const auto& fieldInit : construct->fieldInits()) {
-					for (IAstNode* valueNode : fieldInit.valueNodes) {
-						validateReferencesInternal(valueNode, localVariables, iteratorNames);
+					for (const auto& valueNode : fieldInit.valueNodes) {
+						validateReferencesInternal(valueNode.get(), localVariables, iteratorNames);
 					}
 				}
 				return;
@@ -732,8 +732,8 @@ namespace Qd {
 			if (validStruct) {
 				// Validate field initializer expressions
 				for (const auto& fieldInit : construct->fieldInits()) {
-					for (IAstNode* valueNode : fieldInit.valueNodes) {
-						validateReferencesInternal(valueNode, localVariables, iteratorNames);
+					for (const auto& valueNode : fieldInit.valueNodes) {
+						validateReferencesInternal(valueNode.get(), localVariables, iteratorNames);
 					}
 				}
 				return;
@@ -945,15 +945,15 @@ namespace Qd {
 			// Named parameters are auto-bound as local variables
 			// (only when ALL params are named; mixed stays on stack)
 			bool allNamed = true;
-			for (auto* paramNode : func->inputParameters()) {
-				if (!static_cast<AstNodeParameter*>(paramNode)->hasName()) {
+			for (const auto& paramNode : func->inputParameters()) {
+				if (!static_cast<AstNodeParameter*>(paramNode.get())->hasName()) {
 					allNamed = false;
 					break;
 				}
 			}
 			if (allNamed) {
-				for (auto* paramNode : func->inputParameters()) {
-					AstNodeParameter* param = static_cast<AstNodeParameter*>(paramNode);
+				for (const auto& paramNode : func->inputParameters()) {
+					AstNodeParameter* param = static_cast<AstNodeParameter*>(paramNode.get());
 					if (param->hasName()) {
 						funcLocalVariables.insert(param->name());
 					}
@@ -1014,15 +1014,15 @@ namespace Qd {
 			// Named parameters are auto-bound as local variables
 			// (only when ALL params are named)
 			bool allAnonNamed = true;
-			for (auto* paramNode : anonFunc->inputParameters()) {
-				if (!static_cast<AstNodeParameter*>(paramNode)->hasName()) {
+			for (const auto& paramNode : anonFunc->inputParameters()) {
+				if (!static_cast<AstNodeParameter*>(paramNode.get())->hasName()) {
 					allAnonNamed = false;
 					break;
 				}
 			}
 			if (allAnonNamed) {
-				for (auto* paramNode : anonFunc->inputParameters()) {
-					AstNodeParameter* param = static_cast<AstNodeParameter*>(paramNode);
+				for (const auto& paramNode : anonFunc->inputParameters()) {
+					AstNodeParameter* param = static_cast<AstNodeParameter*>(paramNode.get());
 					if (param->hasName()) {
 						validatedLocals.insert(param->name());
 					}
@@ -1244,8 +1244,8 @@ namespace Qd {
 			// The input parameters ARE on the runtime stack when the function starts,
 			// but parameter names must be explicitly bound with -> before use
 			std::vector<std::string> paramNames;
-			for (auto* paramNode : func->inputParameters()) {
-				AstNodeParameter* param = static_cast<AstNodeParameter*>(paramNode);
+			for (const auto& paramNode : func->inputParameters()) {
+				AstNodeParameter* param = static_cast<AstNodeParameter*>(paramNode.get());
 				paramNames.push_back(param->name());
 
 				// Validate type name
@@ -1274,7 +1274,7 @@ namespace Qd {
 
 			// Build consumes list from input parameters
 			for (size_t paramIdx = 0; paramIdx < func->inputParameters().size(); paramIdx++) {
-				AstNodeParameter* param = static_cast<AstNodeParameter*>(func->inputParameters()[paramIdx]);
+				AstNodeParameter* param = static_cast<AstNodeParameter*>(func->inputParameters()[paramIdx].get());
 				std::string typeStr = param->typeString();
 
 				// Validate type name
@@ -1294,8 +1294,8 @@ namespace Qd {
 			}
 
 			// Validate declared output parameter types
-			for (auto* paramNode : func->outputParameters()) {
-				AstNodeParameter* param = static_cast<AstNodeParameter*>(paramNode);
+			for (const auto& paramNode : func->outputParameters()) {
+				AstNodeParameter* param = static_cast<AstNodeParameter*>(paramNode.get());
 				std::string typeStr = param->typeString();
 
 				// Validate type name
@@ -1330,8 +1330,8 @@ namespace Qd {
 			// Build produces list from declared output parameters
 			// Always use declared params — body analysis is unreliable for control flow
 			size_t producesIdx = 0;
-			for (auto* paramNode : func->outputParameters()) {
-				AstNodeParameter* param = static_cast<AstNodeParameter*>(paramNode);
+			for (const auto& paramNode : func->outputParameters()) {
+				AstNodeParameter* param = static_cast<AstNodeParameter*>(paramNode.get());
 				std::string typeStr = param->typeString();
 
 				// Use stringToStackValueType to handle all types including type parameters

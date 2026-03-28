@@ -171,9 +171,9 @@ bool QuadrateLSP::isLocalVariableOrParameter(Qd::IAstNode* funcNode, const std::
 	Qd::AstNodeFunctionDeclaration* func = static_cast<Qd::AstNodeFunctionDeclaration*>(funcNode);
 
 	// Check input parameters
-	for (const auto* param : func->inputParameters()) {
+	for (const auto& param : func->inputParameters()) {
 		if (param->type() == Qd::IAstNode::Type::VARIABLE_DECLARATION) {
-			const Qd::AstNodeParameter* p = static_cast<const Qd::AstNodeParameter*>(param);
+			const Qd::AstNodeParameter* p = static_cast<const Qd::AstNodeParameter*>(param.get());
 			if (p->name() == name) {
 				return true;
 			}
@@ -181,9 +181,9 @@ bool QuadrateLSP::isLocalVariableOrParameter(Qd::IAstNode* funcNode, const std::
 	}
 
 	// Check output parameters
-	for (const auto* param : func->outputParameters()) {
+	for (const auto& param : func->outputParameters()) {
 		if (param->type() == Qd::IAstNode::Type::VARIABLE_DECLARATION) {
-			const Qd::AstNodeParameter* p = static_cast<const Qd::AstNodeParameter*>(param);
+			const Qd::AstNodeParameter* p = static_cast<const Qd::AstNodeParameter*>(param.get());
 			if (p->name() == name) {
 				return true;
 			}
@@ -428,7 +428,7 @@ json_t* QuadrateLSP::findDefinitionInModule(
 				// Check for imported functions (like those in stdlib modules)
 				Qd::AstNodeImport* importNode = static_cast<Qd::AstNodeImport*>(child);
 				const auto& importedFuncs = importNode->functions();
-				for (const auto* importedFunc : importedFuncs) {
+				for (const auto& importedFunc : importedFuncs) {
 					if (importedFunc->name == symbolName) {
 						// Found the imported function declaration
 						json_t* location = json_object();
@@ -543,9 +543,9 @@ std::string QuadrateLSP::findStructTypeOfVariable(Qd::IAstNode* root, const std:
 	}
 
 	// First, check if the variable is a function parameter
-	for (auto* paramNode : functionNode->inputParameters()) {
+	for (const auto& paramNode : functionNode->inputParameters()) {
 		if (paramNode) {
-			Qd::AstNodeParameter* param = static_cast<Qd::AstNodeParameter*>(paramNode);
+			Qd::AstNodeParameter* param = static_cast<Qd::AstNodeParameter*>(paramNode.get());
 			if (param->name() == varName) {
 				std::string paramType = param->typeString();
 				if (!paramType.empty()) {
@@ -756,7 +756,7 @@ json_t* QuadrateLSP::handleFieldAccessDefinition(
 								if (structNode->name() == structName) {
 									// Found the struct - now find the field
 									const auto& fields = structNode->fields();
-									for (const auto* field : fields) {
+									for (const auto& field : fields) {
 										if (field->name() == foundFieldName) {
 											// Found the field!
 											json_t* location = json_object();
@@ -801,7 +801,7 @@ json_t* QuadrateLSP::handleFieldAccessDefinition(
 						if (structNode->name() == structType) {
 							// Found the struct - now find the field
 							const auto& fields = structNode->fields();
-							for (const auto* field : fields) {
+							for (const auto& field : fields) {
 								if (field->name() == foundFieldName) {
 									// Found the field!
 									json_t* location = json_object();
@@ -1109,7 +1109,7 @@ void QuadrateLSP::handleDefinition(const std::string& id, const std::string& uri
 						std::string namespaceName = importNode->namespaceName();
 
 						const auto& importedFuncs = importNode->functions();
-						for (const auto* importedFunc : importedFuncs) {
+						for (const auto& importedFunc : importedFuncs) {
 							std::string fullName = namespaceName + "::" + importedFunc->name;
 							if (fullName == word || importedFunc->name == word) {
 								// Found the imported function declaration

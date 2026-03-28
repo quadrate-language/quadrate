@@ -2,16 +2,15 @@
 #define QD_QC_AST_NODE_WHILE_H
 
 #include "ast_node_base.h"
+#include <memory>
 
 namespace Qd {
 	class AstNodeWhileStatement : public AstNodeBase<IAstNode::Type::WHILE_STATEMENT> {
 	public:
-		AstNodeWhileStatement() : mBody(nullptr) {
+		AstNodeWhileStatement() {
 		}
 
-		~AstNodeWhileStatement() {
-			delete mBody;
-		}
+		~AstNodeWhileStatement() = default;
 
 		size_t childCount() const override {
 			return mBody ? 1 : 0;
@@ -19,21 +18,21 @@ namespace Qd {
 
 		IAstNode* child(size_t index) const override {
 			if (index == 0 && mBody) {
-				return mBody;
+				return mBody.get();
 			}
 			return nullptr;
 		}
 
 		void setBody(IAstNode* body) {
-			mBody = body;
+			mBody.reset(body);
 		}
 
 		IAstNode* body() const {
-			return mBody;
+			return mBody.get();
 		}
 
 	private:
-		IAstNode* mBody;
+		std::unique_ptr<IAstNode> mBody;
 	};
 }
 

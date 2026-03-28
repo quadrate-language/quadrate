@@ -441,13 +441,13 @@ namespace Qd {
 			// but only when ALL params are named (mixed named/unnamed all stay on stack)
 			bool allParamsNamed = true;
 			for (size_t i = 0; i < func->inputParameters().size(); i++) {
-				if (!static_cast<AstNodeParameter*>(func->inputParameters()[i])->hasName()) {
+				if (!static_cast<AstNodeParameter*>(func->inputParameters()[i].get())->hasName()) {
 					allParamsNamed = false;
 					break;
 				}
 			}
 			for (size_t i = 0; i < func->inputParameters().size(); i++) {
-				AstNodeParameter* param = static_cast<AstNodeParameter*>(func->inputParameters()[i]);
+				AstNodeParameter* param = static_cast<AstNodeParameter*>(func->inputParameters()[i].get());
 				const std::string& typeStr = param->typeString();
 
 				// Validate type name
@@ -504,7 +504,7 @@ namespace Qd {
 				// Collect named param names
 				std::unordered_set<std::string> paramNames;
 				for (size_t i = 0; i < func->inputParameters().size(); i++) {
-					AstNodeParameter* param = static_cast<AstNodeParameter*>(func->inputParameters()[i]);
+					AstNodeParameter* param = static_cast<AstNodeParameter*>(func->inputParameters()[i].get());
 					if (param->hasName() && param->name()[0] != '_') {
 						paramNames.insert(param->name());
 					}
@@ -513,7 +513,7 @@ namespace Qd {
 					std::unordered_set<std::string> refs;
 					collectIdentifierRefs(func->body(), refs, paramNames);
 					for (size_t i = 0; i < func->inputParameters().size(); i++) {
-						AstNodeParameter* param = static_cast<AstNodeParameter*>(func->inputParameters()[i]);
+						AstNodeParameter* param = static_cast<AstNodeParameter*>(func->inputParameters()[i].get());
 						if (param->hasName() && param->name()[0] != '_' && refs.find(param->name()) == refs.end()) {
 							reportWarning(param, ("Unused parameter '" + param->name() + "'").c_str());
 						}
@@ -540,7 +540,7 @@ namespace Qd {
 				} else if (actualOutputs == expectedOutputs) {
 					// Check that types match
 					for (size_t i = 0; i < expectedOutputs; i++) {
-						AstNodeParameter* outParam = static_cast<AstNodeParameter*>(func->outputParameters()[i]);
+						AstNodeParameter* outParam = static_cast<AstNodeParameter*>(func->outputParameters()[i].get());
 						StackValueType expectedType = stringToStackValueType(outParam->typeString());
 						StackValueType actualType = typeStack[i];
 
@@ -1265,7 +1265,8 @@ namespace Qd {
 						std::vector<StackValueType> exprTypeStack;
 						std::vector<std::string> exprStructTypeStack;
 
-						for (IAstNode* exprNode : fieldInit.valueNodes) {
+						for (const auto& exprNodePtr : fieldInit.valueNodes) {
+							IAstNode* exprNode = exprNodePtr.get();
 							// Recursively type-check the expression node
 							// For simplicity, we simulate basic type inference here
 							switch (exprNode->type()) {
@@ -1517,7 +1518,7 @@ namespace Qd {
 								StackValueType actual = typeStack[stackIdx];
 								std::string actualStructType =
 										(stackIdx < structTypeStack.size()) ? structTypeStack[stackIdx] : "";
-								const AstNodeStructField* field = fields[fi];
+								const AstNodeStructField* field = fields[fi].get();
 								const std::string& fieldName = field->name();
 
 								// Get expected type from mStructFieldTypes
@@ -1650,7 +1651,7 @@ namespace Qd {
 								for (size_t fi = 0; fi < fieldCount; fi++) {
 									size_t stackIdx = typeStack.size() - fieldCount + fi;
 									StackValueType actual = typeStack[stackIdx];
-									const AstNodeStructField* field = fields[fi];
+									const AstNodeStructField* field = fields[fi].get();
 									const std::string& fieldName = field->name();
 
 									// Get expected type from mStructFieldTypes
@@ -3315,12 +3316,12 @@ namespace Qd {
 
 				// Extract the function signature from input/output parameters
 				FunctionSignature sig;
-				for (const auto* paramNode : anonFunc->inputParameters()) {
-					AstNodeParameter* param = static_cast<AstNodeParameter*>(const_cast<IAstNode*>(paramNode));
+				for (const auto& paramNode : anonFunc->inputParameters()) {
+					AstNodeParameter* param = static_cast<AstNodeParameter*>(paramNode.get());
 					sig.consumes.push_back(stringToStackValueType(param->typeString()));
 				}
-				for (const auto* paramNode : anonFunc->outputParameters()) {
-					AstNodeParameter* param = static_cast<AstNodeParameter*>(const_cast<IAstNode*>(paramNode));
+				for (const auto& paramNode : anonFunc->outputParameters()) {
+					AstNodeParameter* param = static_cast<AstNodeParameter*>(paramNode.get());
 					sig.produces.push_back(stringToStackValueType(param->typeString()));
 				}
 

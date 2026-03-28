@@ -332,7 +332,7 @@ void QuadrateLSP::handleCompletion(const std::string& id, const std::string& uri
 						if (importNode->namespaceName() == modulePrefix) {
 							foundFfiImport = true;
 							// Add functions from FFI import block
-							for (const auto* func : importNode->functions()) {
+							for (const auto& func : importNode->functions()) {
 								json_t* item = json_object();
 								json_object_set_new(item, "label", json_string(func->name.c_str()));
 								json_object_set_new(item, "kind", json_integer(3)); // Function
@@ -976,7 +976,7 @@ std::vector<FunctionInfo> QuadrateLSP::extractModuleFunctions(const std::string&
 			// Extract input parameters
 			const auto& inputs = funcNode->inputParameters();
 			for (size_t j = 0; j < inputs.size(); j++) {
-				Qd::AstNodeParameter* param = static_cast<Qd::AstNodeParameter*>(inputs[j]);
+				Qd::AstNodeParameter* param = static_cast<Qd::AstNodeParameter*>(inputs[j].get());
 				std::string paramStr = param->displayString();
 				info.inputParams.push_back(paramStr);
 
@@ -991,7 +991,7 @@ std::vector<FunctionInfo> QuadrateLSP::extractModuleFunctions(const std::string&
 			// Extract output parameters
 			const auto& outputs = funcNode->outputParameters();
 			for (size_t j = 0; j < outputs.size(); j++) {
-				Qd::AstNodeParameter* param = static_cast<Qd::AstNodeParameter*>(outputs[j]);
+				Qd::AstNodeParameter* param = static_cast<Qd::AstNodeParameter*>(outputs[j].get());
 				std::string paramStr = param->displayString();
 				info.outputParams.push_back(paramStr);
 
@@ -1034,7 +1034,7 @@ std::vector<FunctionInfo> QuadrateLSP::extractModuleFunctions(const std::string&
 			// Handle imported native functions (e.g., from C libraries)
 			Qd::AstNodeImport* importNode = static_cast<Qd::AstNodeImport*>(child);
 
-			for (const auto* importedFunc : importNode->functions()) {
+			for (const auto& importedFunc : importNode->functions()) {
 				// Only include public imported functions
 				if (!importedFunc->isPublic) {
 					continue;
@@ -1050,7 +1050,7 @@ std::vector<FunctionInfo> QuadrateLSP::extractModuleFunctions(const std::string&
 				// Extract input parameters
 				const auto& inputs = importedFunc->inputParameters;
 				for (size_t j = 0; j < inputs.size(); j++) {
-					Qd::AstNodeParameter* param = inputs[j];
+					Qd::AstNodeParameter* param = inputs[j].get();
 					std::string paramStr = param->displayString();
 					info.inputParams.push_back(paramStr);
 
@@ -1065,7 +1065,7 @@ std::vector<FunctionInfo> QuadrateLSP::extractModuleFunctions(const std::string&
 				// Extract output parameters
 				const auto& outputs = importedFunc->outputParameters;
 				for (size_t j = 0; j < outputs.size(); j++) {
-					Qd::AstNodeParameter* param = outputs[j];
+					Qd::AstNodeParameter* param = outputs[j].get();
 					std::string paramStr = param->displayString();
 					info.outputParams.push_back(paramStr);
 
@@ -1161,8 +1161,8 @@ std::vector<StructInfo> QuadrateLSP::extractModuleStructs(const std::string& mod
 			}
 
 			sig << " { ";
-			for (const auto* field : structNode->fields()) {
-				const Qd::AstNodeStructField* structField = static_cast<const Qd::AstNodeStructField*>(field);
+			for (const auto& field : structNode->fields()) {
+				const Qd::AstNodeStructField* structField = static_cast<const Qd::AstNodeStructField*>(field.get());
 				info.fields.push_back({structField->name(), structField->typeName()});
 				sig << structField->name() << ":" << structField->typeName() << " ";
 			}

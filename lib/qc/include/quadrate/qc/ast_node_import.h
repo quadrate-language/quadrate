@@ -3,28 +3,22 @@
 
 #include "ast_node.h"
 #include "ast_node_parameter.h"
+#include <memory>
 #include <string>
 #include <vector>
 
 namespace Qd {
 	// Represents a function declaration within an import statement
 	struct ImportedFunction {
-		std::string name;								 // Function name in Quadrate (e.g., "printf")
-		std::vector<AstNodeParameter*> inputParameters;	 // Input parameters
-		std::vector<AstNodeParameter*> outputParameters; // Output parameters
-		bool throws = false;							 // Whether the function can throw errors (marked with '!')
-		bool isPublic = false;							 // Whether the function is public (marked with 'pub')
+		std::string name;												 // Function name in Quadrate (e.g., "printf")
+		std::vector<std::unique_ptr<AstNodeParameter>> inputParameters;	 // Input parameters
+		std::vector<std::unique_ptr<AstNodeParameter>> outputParameters; // Output parameters
+		bool throws = false;   // Whether the function can throw errors (marked with '!')
+		bool isPublic = false; // Whether the function is public (marked with 'pub')
 		size_t line;
 		size_t column;
 
-		~ImportedFunction() {
-			for (auto* param : inputParameters) {
-				delete param;
-			}
-			for (auto* param : outputParameters) {
-				delete param;
-			}
-		}
+		~ImportedFunction() = default;
 	};
 
 	class AstNodeImport : public IAstNode {
@@ -33,11 +27,7 @@ namespace Qd {
 			: mLibrary(library), mNamespace(namespaceName), mParent(nullptr), mLine(0), mColumn(0) {
 		}
 
-		~AstNodeImport() {
-			for (auto* func : mFunctions) {
-				delete func;
-			}
-		}
+		~AstNodeImport() = default;
 
 		IAstNode::Type type() const override {
 			return Type::IMPORT_STATEMENT;
@@ -81,17 +71,17 @@ namespace Qd {
 		}
 
 		void addFunction(ImportedFunction* func) {
-			mFunctions.push_back(func);
+			mFunctions.emplace_back(func);
 		}
 
-		const std::vector<ImportedFunction*>& functions() const {
+		const std::vector<std::unique_ptr<ImportedFunction>>& functions() const {
 			return mFunctions;
 		}
 
 	private:
-		std::string mLibrary;					   // Library file (e.g., "libstdqd.so")
-		std::string mNamespace;					   // Namespace (e.g., "std")
-		std::vector<ImportedFunction*> mFunctions; // Declared functions
+		std::string mLibrary;									   // Library file (e.g., "libstdqd.so")
+		std::string mNamespace;									   // Namespace (e.g., "std")
+		std::vector<std::unique_ptr<ImportedFunction>> mFunctions; // Declared functions
 		IAstNode* mParent;
 		size_t mLine;
 		size_t mColumn;

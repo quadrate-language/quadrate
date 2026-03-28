@@ -2,6 +2,7 @@
 #define QD_QC_AST_NODE_CTX_H
 
 #include "ast_node_base.h"
+#include <memory>
 #include <vector>
 
 namespace Qd {
@@ -17,14 +18,10 @@ namespace Qd {
 	 */
 	class AstNodeCtx : public AstNodeBase<IAstNode::Type::CTX_STATEMENT> {
 	public:
-		~AstNodeCtx() override {
-			for (auto* child : mChildren) {
-				delete child;
-			}
-		}
+		~AstNodeCtx() override = default;
 
 		void addChild(IAstNode* child) {
-			mChildren.push_back(child);
+			mChildren.emplace_back(child);
 		}
 
 		size_t childCount() const override {
@@ -33,13 +30,13 @@ namespace Qd {
 
 		IAstNode* child(size_t index) const override {
 			if (index < mChildren.size()) {
-				return mChildren[index];
+				return mChildren[index].get();
 			}
 			return nullptr;
 		}
 
 	private:
-		std::vector<IAstNode*> mChildren;
+		std::vector<std::unique_ptr<IAstNode>> mChildren;
 	};
 }
 

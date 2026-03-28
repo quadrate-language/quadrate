@@ -2,17 +2,15 @@
 #define QD_QC_AST_NODE_IF_H
 
 #include "ast_node_base.h"
+#include <memory>
 
 namespace Qd {
 	class AstNodeIfStatement : public AstNodeBase<IAstNode::Type::IF_STATEMENT> {
 	public:
-		AstNodeIfStatement() : mThenBody(nullptr), mElseBody(nullptr) {
+		AstNodeIfStatement() {
 		}
 
-		~AstNodeIfStatement() {
-			delete mThenBody;
-			delete mElseBody;
-		}
+		~AstNodeIfStatement() = default;
 
 		size_t childCount() const override {
 			size_t count = 0;
@@ -28,33 +26,33 @@ namespace Qd {
 		IAstNode* child(size_t index) const override {
 			size_t currentIndex = 0;
 			if (mThenBody && index == currentIndex++) {
-				return mThenBody;
+				return mThenBody.get();
 			}
 			if (mElseBody && index == currentIndex++) {
-				return mElseBody;
+				return mElseBody.get();
 			}
 			return nullptr;
 		}
 
 		void setThenBody(IAstNode* thenBody) {
-			mThenBody = thenBody;
+			mThenBody.reset(thenBody);
 		}
 
 		void setElseBody(IAstNode* elseBody) {
-			mElseBody = elseBody;
+			mElseBody.reset(elseBody);
 		}
 
 		IAstNode* thenBody() const {
-			return mThenBody;
+			return mThenBody.get();
 		}
 
 		IAstNode* elseBody() const {
-			return mElseBody;
+			return mElseBody.get();
 		}
 
 	private:
-		IAstNode* mThenBody;
-		IAstNode* mElseBody;
+		std::unique_ptr<IAstNode> mThenBody;
+		std::unique_ptr<IAstNode> mElseBody;
 	};
 }
 

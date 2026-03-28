@@ -706,7 +706,8 @@ std::vector<LintIssue> lintFile(const std::string& filename, const LintOptions& 
 					// Also register named function parameters as implicit locals
 					Qd::AstNodeFunctionDeclaration* func = static_cast<Qd::AstNodeFunctionDeclaration*>(child);
 					for (size_t j = 0; j < func->inputParameters().size(); j++) {
-						Qd::AstNodeParameter* param = static_cast<Qd::AstNodeParameter*>(func->inputParameters()[j]);
+						Qd::AstNodeParameter* param =
+								static_cast<Qd::AstNodeParameter*>(func->inputParameters()[j].get());
 						if (param->hasName() && param->name()[0] != '_') {
 							locals[param->name()] = param;
 						}

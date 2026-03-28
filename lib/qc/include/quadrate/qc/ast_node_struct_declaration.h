@@ -3,6 +3,7 @@
 
 #include "ast_node.h"
 #include "ast_node_struct_field.h"
+#include <memory>
 #include <string>
 #include <vector>
 
@@ -24,11 +25,7 @@ namespace Qd {
 			: mName(name), mTypeParams(typeParams), mIsPublic(isPublic), mParent(nullptr), mLine(0), mColumn(0) {
 		}
 
-		~AstNodeStructDeclaration() {
-			for (auto* field : mFields) {
-				delete field;
-			}
-		}
+		~AstNodeStructDeclaration() = default;
 
 		IAstNode::Type type() const override {
 			return Type::STRUCT_DECLARATION;
@@ -40,7 +37,7 @@ namespace Qd {
 
 		IAstNode* child(size_t index) const override {
 			if (index < mFields.size()) {
-				return mFields[index];
+				return mFields[index].get();
 			}
 			return nullptr;
 		}
@@ -75,10 +72,10 @@ namespace Qd {
 		}
 
 		void addField(AstNodeStructField* field) {
-			mFields.push_back(field);
+			mFields.emplace_back(field);
 		}
 
-		const std::vector<AstNodeStructField*>& fields() const {
+		const std::vector<std::unique_ptr<AstNodeStructField>>& fields() const {
 			return mFields;
 		}
 
@@ -98,7 +95,7 @@ namespace Qd {
 		std::string mName;
 		std::vector<std::string> mTypeParams;
 		bool mIsPublic;
-		std::vector<AstNodeStructField*> mFields;
+		std::vector<std::unique_ptr<AstNodeStructField>> mFields;
 		IAstNode* mParent;
 		size_t mLine;
 		size_t mColumn;

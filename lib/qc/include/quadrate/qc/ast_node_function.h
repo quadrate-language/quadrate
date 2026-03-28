@@ -2,6 +2,7 @@
 #define QD_QC_AST_NODE_FUNCTION_H
 
 #include "ast_node.h"
+#include <memory>
 #include <string>
 #include <vector>
 
@@ -9,26 +10,16 @@ namespace Qd {
 	class AstNodeFunctionDeclaration : public IAstNode {
 	public:
 		AstNodeFunctionDeclaration(const std::string& name, bool isPublic = false)
-			: mName(name), mParent(nullptr), mBody(nullptr), mThrows(false), mIsPublic(isPublic), mLine(0), mColumn(0) {
+			: mName(name), mParent(nullptr), mThrows(false), mIsPublic(isPublic), mLine(0), mColumn(0) {
 		}
 
 		AstNodeFunctionDeclaration(
 				const std::string& name, const std::vector<std::string>& typeParams, bool isPublic = false)
-			: mName(name), mTypeParams(typeParams), mParent(nullptr), mBody(nullptr), mThrows(false),
-			  mIsPublic(isPublic), mLine(0), mColumn(0) {
+			: mName(name), mTypeParams(typeParams), mParent(nullptr), mThrows(false), mIsPublic(isPublic), mLine(0),
+			  mColumn(0) {
 		}
 
-		~AstNodeFunctionDeclaration() {
-			if (mBody) {
-				delete mBody;
-			}
-			for (auto* param : mInputParameters) {
-				delete param;
-			}
-			for (auto* param : mOutputParameters) {
-				delete param;
-			}
-		}
+		~AstNodeFunctionDeclaration() = default;
 
 		IAstNode::Type type() const override {
 			return Type::FUNCTION_DECLARATION;
@@ -46,18 +37,18 @@ namespace Qd {
 
 		IAstNode* child(size_t index) const override {
 			size_t currentIndex = 0;
-			for (auto* param : mInputParameters) {
+			for (const auto& param : mInputParameters) {
 				if (index == currentIndex++) {
-					return param;
+					return param.get();
 				}
 			}
-			for (auto* param : mOutputParameters) {
+			for (const auto& param : mOutputParameters) {
 				if (index == currentIndex++) {
-					return param;
+					return param.get();
 				}
 			}
 			if (mBody && index == currentIndex++) {
-				return mBody;
+				return mBody.get();
 			}
 			return nullptr;
 		}
@@ -88,26 +79,26 @@ namespace Qd {
 		}
 
 		void setBody(IAstNode* body) {
-			mBody = body;
+			mBody.reset(body);
 		}
 
 		IAstNode* body() const {
-			return mBody;
+			return mBody.get();
 		}
 
 		void addInputParameter(IAstNode* param) {
-			mInputParameters.push_back(param);
+			mInputParameters.emplace_back(param);
 		}
 
 		void addOutputParameter(IAstNode* param) {
-			mOutputParameters.push_back(param);
+			mOutputParameters.emplace_back(param);
 		}
 
-		const std::vector<IAstNode*>& inputParameters() const {
+		const std::vector<std::unique_ptr<IAstNode>>& inputParameters() const {
 			return mInputParameters;
 		}
 
-		const std::vector<IAstNode*>& outputParameters() const {
+		const std::vector<std::unique_ptr<IAstNode>>& outputParameters() const {
 			return mOutputParameters;
 		}
 
@@ -177,9 +168,9 @@ namespace Qd {
 		std::string mName;
 		std::vector<std::string> mTypeParams;
 		IAstNode* mParent;
-		IAstNode* mBody;
-		std::vector<IAstNode*> mInputParameters;
-		std::vector<IAstNode*> mOutputParameters;
+		std::unique_ptr<IAstNode> mBody;
+		std::vector<std::unique_ptr<IAstNode>> mInputParameters;
+		std::vector<std::unique_ptr<IAstNode>> mOutputParameters;
 		bool mThrows;
 		bool mIsPublic;
 		size_t mLine;

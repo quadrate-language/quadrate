@@ -3,11 +3,33 @@
 #include "ast_node_label.h"
 #include "instructions.h"
 #include "source_utils.h"
+
+// RAII guard for temporary AST node vectors — deletes unflushed nodes on scope exit
+class TempNodeGuard {
+	std::vector<Qd::IAstNode*>& mNodes;
+
+public:
+	explicit TempNodeGuard(std::vector<Qd::IAstNode*>& nodes) : mNodes(nodes) {
+	}
+
+	~TempNodeGuard() {
+		for (auto* node : mNodes) {
+			delete node;
+		}
+	}
+
+	// Call after flushing nodes to parent — clears without deleting
+	void release() {
+		mNodes.clear();
+	}
+};
+
 #include <cstdint>
 #include <cstdlib>
 #include <cstring>
 #include <fstream>
 #include <iostream>
+#include <memory>
 #include <quadrate/qc/ast.h>
 #include <quadrate/qc/ast_node.h>
 #include <quadrate/qc/ast_node_anonymous_function.h>
@@ -800,6 +822,7 @@ namespace Qd {
 		size_t slashPos = SIZE_MAX; // Position of first slash for comment detection
 		bool sawColon = false;
 		std::vector<IAstNode*> tempNodes;
+		TempNodeGuard guard(tempNodes); // Auto-deletes unflushed nodes on scope exit
 
 		while ((token = u8t_scanner_scan(scanner)) != U8T_EOF) {
 			// Handle :: scope operator
@@ -809,23 +832,27 @@ namespace Qd {
 
 				// Triple scope: extend existing ScopedIdentifier (module::Enum::Variant)
 				if (!tempNodes.empty() && tempNodes.back()->type() == IAstNode::Type::SCOPED_IDENTIFIER) {
-					AstNodeScopedIdentifier* existing = static_cast<AstNodeScopedIdentifier*>(tempNodes.back());
+					std::unique_ptr<IAstNode> existingOwner(tempNodes.back());
+					tempNodes.pop_back();
+					auto* existing = static_cast<AstNodeScopedIdentifier*>(existingOwner.get());
 					token = u8t_scanner_scan(scanner);
 					if (token == U8T_IDENTIFIER) {
 						const char* extraName = u8t_scanner_token_text(scanner, &n);
 						std::string newName = existing->name() + "::" + extraName;
-						tempNodes.pop_back();
 						AstNodeScopedIdentifier* extended = new AstNodeScopedIdentifier(existing->scope(), newName);
 						setNodePosition(extended, scanner, src);
-						delete existing;
 						tempNodes.push_back(extended);
+					} else {
+						// Put it back — unique_ptr must release ownership
+						tempNodes.push_back(existingOwner.release());
 					}
 					continue;
 				}
 
 				if (!tempNodes.empty() && tempNodes.back()->type() == IAstNode::Type::IDENTIFIER) {
-					AstNodeIdentifier* scope = static_cast<AstNodeIdentifier*>(tempNodes.back());
+					std::unique_ptr<IAstNode> scopeOwner(tempNodes.back());
 					tempNodes.pop_back();
+					auto* scope = static_cast<AstNodeIdentifier*>(scopeOwner.get());
 
 					// Get the next identifier after ::
 					token = u8t_scanner_scan(scanner);
@@ -851,7 +878,7 @@ namespace Qd {
 
 						AstNodeScopedIdentifier* scoped = new AstNodeScopedIdentifier(scope->name(), memberStr);
 						setNodePosition(scoped, scanner, src);
-						delete scope;
+						// scopeOwner auto-deletes old node
 						// Check for '!' or '?' suffix
 						char32_t nextToken = u8t_scanner_peek(scanner);
 						if (nextToken == '!') {
@@ -864,7 +891,7 @@ namespace Qd {
 						tempNodes.push_back(scoped);
 					} else {
 						// No identifier after ::, put scope back
-						tempNodes.push_back(scope);
+						tempNodes.push_back(scopeOwner.release());
 					}
 				}
 				continue;
@@ -923,8 +950,9 @@ namespace Qd {
 
 							if (!tempNodes.empty() && tempNodes.back()->type() == IAstNode::Type::IDENTIFIER) {
 								// We have: identifier <<field
-								AstNodeIdentifier* varIdent = static_cast<AstNodeIdentifier*>(tempNodes.back());
+								std::unique_ptr<IAstNode> varOwner(tempNodes.back());
 								tempNodes.pop_back();
+								auto* varIdent = static_cast<AstNodeIdentifier*>(varOwner.get());
 
 								// Special handling for 'error <<field' - access global error struct
 								std::string varName = varIdent->name();
@@ -933,8 +961,8 @@ namespace Qd {
 								}
 								AstNodeFieldAccess* fieldAccess = new AstNodeFieldAccess(varName, fieldName);
 								setNodePosition(fieldAccess, scanner, src);
-								delete varIdent;
 								tempNodes.push_back(fieldAccess);
+								// varOwner auto-deletes old node
 							} else if (!tempNodes.empty() && tempNodes.back()->type() == IAstNode::Type::FIELD_ACCESS) {
 								// Chained field access: previous <<field followed by <<field2
 								AstNodeFieldAccess* fieldAccess = new AstNodeFieldAccess("", fieldName);
@@ -1041,11 +1069,12 @@ namespace Qd {
 			}
 		}
 
-		// Flush remaining tempNodes
+		// Flush remaining tempNodes to block (block takes ownership)
 		for (auto* node : tempNodes) {
 			node->setParent(block);
 			block->addChild(node);
 		}
+		tempNodes.clear(); // Prevent guard from double-deleting
 	}
 
 	// Helper to parse statements inside a block (handles if, break, continue, nested structures)
@@ -1449,12 +1478,7 @@ namespace Qd {
 		return parseSimpleToken(token, scanner, errorReporter, n, src);
 	}
 
-	Ast::~Ast() {
-		if (mRoot) {
-			delete mRoot;
-			mRoot = nullptr;
-		}
-	}
+	Ast::~Ast() = default;
 
 	/**
 	 * Parse an anonymous function: fn (params -- outputs) { body }
@@ -1466,13 +1490,12 @@ namespace Qd {
 	 * scope will be captured implicitly.
 	 */
 	static IAstNode* parseAnonymousFunction(u8t_scanner* scanner, ErrorReporter* errorReporter, const char* src) {
-		AstNodeAnonymousFunction* func = new AstNodeAnonymousFunction();
-		setNodePosition(func, scanner, src);
+		auto func = std::make_unique<AstNodeAnonymousFunction>();
+		setNodePosition(func.get(), scanner, src);
 
 		char32_t token = u8t_scanner_scan(scanner);
 		if (token != '(') {
 			errorReporter->reportError(scanner, "Expected '(' after 'fn' for anonymous function");
-			delete func;
 			return nullptr;
 		}
 
@@ -1543,7 +1566,7 @@ namespace Qd {
 						}
 						AstNodeParameter* param = new AstNodeParameter(paramNameStr, paramTypeStr, isOutput);
 						setNodePosition(param, scanner, src);
-						param->setParent(func);
+						param->setParent(func.get());
 						if (isOutput) {
 							func->addOutputParameter(param);
 						} else {
@@ -1554,7 +1577,7 @@ namespace Qd {
 					// Unnamed typed parameter (e.g., fn (i64 -- i64) { ... })
 					AstNodeParameter* param = new AstNodeParameter("", paramNameStr, isOutput);
 					setNodePosition(param, scanner, src);
-					param->setParent(func);
+					param->setParent(func.get());
 					if (isOutput) {
 						func->addOutputParameter(param);
 					} else {
@@ -1584,7 +1607,7 @@ namespace Qd {
 					}
 					AstNodeParameter* param = new AstNodeParameter("", typeStr, isOutput);
 					setNodePosition(param, scanner, src);
-					param->setParent(func);
+					param->setParent(func.get());
 					if (isOutput) {
 						func->addOutputParameter(param);
 					} else {
@@ -1594,7 +1617,7 @@ namespace Qd {
 					// Untyped parameter - use empty string as type
 					AstNodeParameter* param = new AstNodeParameter(paramNameStr, "", isOutput);
 					setNodePosition(param, scanner, src);
-					param->setParent(func);
+					param->setParent(func.get());
 					if (isOutput) {
 						func->addOutputParameter(param);
 					} else {
@@ -1608,7 +1631,6 @@ namespace Qd {
 		token = u8t_scanner_scan(scanner);
 		if (token != '{') {
 			errorReporter->reportError(scanner, "Expected '{' after anonymous function signature");
-			delete func;
 			return nullptr;
 		}
 
@@ -1617,10 +1639,10 @@ namespace Qd {
 		setNodePosition(body, scanner, src);
 		parseBlockBody(body, scanner, errorReporter, src);
 
-		body->setParent(func);
+		body->setParent(func.get());
 		func->setBody(body);
 
-		return func;
+		return func.release();
 	}
 
 	static IAstNode* parseFunctionDeclaration(
@@ -1731,8 +1753,8 @@ namespace Qd {
 
 		size_t n;
 		const char* name = u8t_scanner_token_text(scanner, &n);
-		AstNodeFunctionDeclaration* func = new AstNodeFunctionDeclaration(name, isPublic);
-		setNodePosition(func, scanner, src);
+		auto func = std::make_unique<AstNodeFunctionDeclaration>(name, isPublic);
+		setNodePosition(func.get(), scanner, src);
 
 		// Set receiver if present
 		if (hasReceiver) {
@@ -1768,7 +1790,6 @@ namespace Qd {
 		if (token != '(') {
 			errorReporter->reportError(scanner, "Expected '(' after function name");
 			synchronize(scanner);
-			delete func;
 			return nullptr;
 		}
 
@@ -1836,7 +1857,7 @@ namespace Qd {
 						}
 						AstNodeParameter* param = new AstNodeParameter(paramNameStr, paramTypeStr, isOutput);
 						setNodePosition(param, scanner, src);
-						param->setParent(func);
+						param->setParent(func.get());
 						if (isOutput) {
 							func->addOutputParameter(param);
 						} else {
@@ -1847,7 +1868,7 @@ namespace Qd {
 					// Unnamed typed parameter (e.g., fn foo(i64 f64 -- i64))
 					AstNodeParameter* param = new AstNodeParameter("", paramNameStr, isOutput);
 					setNodePosition(param, scanner, src);
-					param->setParent(func);
+					param->setParent(func.get());
 					if (isOutput) {
 						func->addOutputParameter(param);
 					} else {
@@ -1877,7 +1898,7 @@ namespace Qd {
 					}
 					AstNodeParameter* param = new AstNodeParameter("", typeStr, isOutput);
 					setNodePosition(param, scanner, src);
-					param->setParent(func);
+					param->setParent(func.get());
 					if (isOutput) {
 						func->addOutputParameter(param);
 					} else {
@@ -1887,7 +1908,7 @@ namespace Qd {
 					// Untyped parameter - use empty string as type
 					AstNodeParameter* param = new AstNodeParameter(paramNameStr, "", isOutput);
 					setNodePosition(param, scanner, src);
-					param->setParent(func);
+					param->setParent(func.get());
 					if (isOutput) {
 						func->addOutputParameter(param);
 					} else {
@@ -1909,16 +1930,17 @@ namespace Qd {
 			// Recovery: create empty body and return partial function
 			AstNodeBlock* body = new AstNodeBlock();
 			setNodePosition(body, scanner, src);
-			body->setParent(func);
+			body->setParent(func.get());
 			func->setBody(body);
 			synchronize(scanner);
-			return func;
+			return func.release();
 		}
 
 		AstNodeBlock* body = new AstNodeBlock();
 		setNodePosition(body, scanner, src);
 
 		std::vector<IAstNode*> tempNodes;
+		TempNodeGuard guard(tempNodes); // Auto-deletes unflushed nodes on scope exit
 		bool sawColon = false;
 		size_t slashPos = SIZE_MAX; // Position of first slash for comment detection
 		bool foundClosingBrace = false;
@@ -1959,23 +1981,27 @@ namespace Qd {
 
 				// Triple scope: extend existing ScopedIdentifier (module::Enum::Variant)
 				if (!tempNodes.empty() && tempNodes.back()->type() == IAstNode::Type::SCOPED_IDENTIFIER) {
-					AstNodeScopedIdentifier* existing = static_cast<AstNodeScopedIdentifier*>(tempNodes.back());
+					std::unique_ptr<IAstNode> existingOwner(tempNodes.back());
+					tempNodes.pop_back();
+					auto* existing = static_cast<AstNodeScopedIdentifier*>(existingOwner.get());
 					token = u8t_scanner_scan(scanner);
 					if (token == U8T_IDENTIFIER) {
 						const char* extraName = u8t_scanner_token_text(scanner, &n);
 						std::string newName = existing->name() + "::" + extraName;
-						tempNodes.pop_back();
 						AstNodeScopedIdentifier* extended = new AstNodeScopedIdentifier(existing->scope(), newName);
 						setNodePosition(extended, scanner, src);
-						delete existing;
 						tempNodes.push_back(extended);
+					} else {
+						// Put it back — unique_ptr must release ownership
+						tempNodes.push_back(existingOwner.release());
 					}
 					continue;
 				}
 
 				if (!tempNodes.empty() && tempNodes.back()->type() == IAstNode::Type::IDENTIFIER) {
-					AstNodeIdentifier* scope = static_cast<AstNodeIdentifier*>(tempNodes.back());
+					std::unique_ptr<IAstNode> scopeOwner(tempNodes.back());
 					tempNodes.pop_back();
+					auto* scope = static_cast<AstNodeIdentifier*>(scopeOwner.get());
 
 					// Get the next identifier after ::
 					token = u8t_scanner_scan(scanner);
@@ -1983,7 +2009,7 @@ namespace Qd {
 						const char* memberName = u8t_scanner_token_text(scanner, &n);
 						AstNodeScopedIdentifier* scoped = new AstNodeScopedIdentifier(scope->name(), memberName);
 						setNodePosition(scoped, scanner, src);
-						delete scope;
+						// scopeOwner auto-deletes old node
 						// Check for '!' or '?' suffix
 						char32_t nextToken = u8t_scanner_peek(scanner);
 						if (nextToken == '!') {
@@ -1996,7 +2022,7 @@ namespace Qd {
 						tempNodes.push_back(scoped);
 					} else {
 						// No identifier after ::, put tokens back
-						tempNodes.push_back(scope);
+						tempNodes.push_back(scopeOwner.release());
 						// Can't really handle this case properly without putback
 					}
 				}
@@ -2048,8 +2074,9 @@ namespace Qd {
 
 							if (!tempNodes.empty() && tempNodes.back()->type() == IAstNode::Type::IDENTIFIER) {
 								// We have: identifier <<field
-								AstNodeIdentifier* varIdent = static_cast<AstNodeIdentifier*>(tempNodes.back());
+								std::unique_ptr<IAstNode> varOwner(tempNodes.back());
 								tempNodes.pop_back();
+								auto* varIdent = static_cast<AstNodeIdentifier*>(varOwner.get());
 
 								// Special handling for 'error <<field' - access global error struct
 								std::string varName = varIdent->name();
@@ -2058,8 +2085,8 @@ namespace Qd {
 								}
 								AstNodeFieldAccess* fieldAccess = new AstNodeFieldAccess(varName, fieldName);
 								setNodePosition(fieldAccess, scanner, src);
-								delete varIdent;
 								tempNodes.push_back(fieldAccess);
+								// varOwner auto-deletes old node
 							} else if (!tempNodes.empty() && tempNodes.back()->type() == IAstNode::Type::FIELD_ACCESS) {
 								// Chained field access: previous <<field followed by <<field2
 								AstNodeFieldAccess* fieldAccess = new AstNodeFieldAccess("", fieldName);
@@ -2291,18 +2318,18 @@ namespace Qd {
 					}
 					tempNodes.clear();
 
-					AstNodeCtx* ctxStmt = new AstNodeCtx();
-					setNodePosition(ctxStmt, scanner, src);
+					auto ctxStmt = std::make_unique<AstNodeCtx>();
+					setNodePosition(ctxStmt.get(), scanner, src);
 					token = u8t_scanner_scan(scanner);
 
 					// ctx requires a block
 					if (token != '{') {
 						errorReporter->reportError(scanner, "Expected '{' after 'ctx'");
-						delete ctxStmt;
 					} else {
 						// Parse ctx block inline
 						// ctx blocks can contain control flow statements
 						std::vector<IAstNode*> ctxTempNodes;
+						TempNodeGuard ctxGuard(ctxTempNodes);
 						size_t ctxSlashPos = SIZE_MAX;
 						bool ctxSawColon = false;
 
@@ -2312,11 +2339,11 @@ namespace Qd {
 							if (ctxComment != nullptr) {
 								ctxSlashPos = SIZE_MAX;
 								for (auto* node : ctxTempNodes) {
-									node->setParent(ctxStmt);
+									node->setParent(ctxStmt.get());
 									ctxStmt->addChild(node);
 								}
 								ctxTempNodes.clear();
-								ctxComment->setParent(ctxStmt);
+								ctxComment->setParent(ctxStmt.get());
 								ctxStmt->addChild(ctxComment);
 								continue;
 							}
@@ -2381,17 +2408,17 @@ namespace Qd {
 											const char* fieldName = u8t_scanner_token_text(scanner, &n);
 											if (!ctxTempNodes.empty() &&
 													ctxTempNodes.back()->type() == IAstNode::Type::IDENTIFIER) {
-												AstNodeIdentifier* varIdent =
-														static_cast<AstNodeIdentifier*>(ctxTempNodes.back());
+												std::unique_ptr<IAstNode> varOwner(ctxTempNodes.back());
 												ctxTempNodes.pop_back();
+												auto* varIdent = static_cast<AstNodeIdentifier*>(varOwner.get());
 												std::string varName = varIdent->name();
 												if (varName == "error") {
 													varName = "__global_error__";
 												}
 												AstNodeFieldAccess* fa = new AstNodeFieldAccess(varName, fieldName);
 												setNodePosition(fa, scanner, src);
-												delete varIdent;
 												ctxTempNodes.push_back(fa);
+												// varOwner auto-deletes old node
 											} else if (!ctxTempNodes.empty() &&
 													   ctxTempNodes.back()->type() == IAstNode::Type::FIELD_ACCESS) {
 												AstNodeFieldAccess* fa = new AstNodeFieldAccess("", fieldName);
@@ -2416,7 +2443,7 @@ namespace Qd {
 								if (strcmp(tokenText, "else") == 0) {
 									// Flush ctxTempNodes before handling else
 									for (auto* node : ctxTempNodes) {
-										node->setParent(ctxStmt);
+										node->setParent(ctxStmt.get());
 										ctxStmt->addChild(node);
 									}
 									ctxTempNodes.clear();
@@ -2472,12 +2499,13 @@ namespace Qd {
 						}
 
 						for (auto* node : ctxTempNodes) {
-							node->setParent(ctxStmt);
+							node->setParent(ctxStmt.get());
 							ctxStmt->addChild(node);
 						}
+						ctxTempNodes.clear(); // Prevent guard from double-deleting
 
 						ctxStmt->setParent(body);
-						body->addChild(ctxStmt);
+						body->addChild(ctxStmt.release());
 					}
 					continue; // Skip fallthrough after ctx parsing
 				} else {
@@ -2901,11 +2929,12 @@ namespace Qd {
 			node->setParent(body);
 			body->addChild(node);
 		}
+		tempNodes.clear(); // Prevent guard from double-deleting
 
-		body->setParent(func);
+		body->setParent(func.get());
 		func->setBody(body);
 
-		return func;
+		return func.release();
 	}
 
 	static IAstNode* parseTestDeclaration(u8t_scanner* scanner, ErrorReporter* errorReporter, const char* src) {
@@ -2924,14 +2953,13 @@ namespace Qd {
 			testName = testName.substr(1, testName.length() - 2);
 		}
 
-		AstNodeTest* test = new AstNodeTest(testName);
-		setNodePosition(test, scanner, src);
+		auto test = std::make_unique<AstNodeTest>(testName);
+		setNodePosition(test.get(), scanner, src);
 
 		token = u8t_scanner_scan(scanner);
 		if (token != '{') {
 			errorReporter->reportError(scanner, "Expected '{' after test name");
 			synchronize(scanner);
-			delete test;
 			return nullptr;
 		}
 
@@ -2940,10 +2968,10 @@ namespace Qd {
 
 		parseBlockBody(body, scanner, errorReporter, src);
 
-		body->setParent(test);
+		body->setParent(test.get());
 		test->setBody(body);
 
-		return test;
+		return test.release();
 	}
 
 	static IAstNode* parseEnumDeclaration(
@@ -2957,14 +2985,13 @@ namespace Qd {
 		}
 
 		const char* name = u8t_scanner_token_text(scanner, &n);
-		AstNodeEnumDeclaration* enumDecl = new AstNodeEnumDeclaration(name, isPublic);
-		setNodePosition(enumDecl, scanner, src);
+		auto enumDecl = std::make_unique<AstNodeEnumDeclaration>(name, isPublic);
+		setNodePosition(enumDecl.get(), scanner, src);
 
 		token = u8t_scanner_scan(scanner);
 		if (token != '{') {
 			errorReporter->reportError(scanner, "Expected '{' after enum name");
 			synchronize(scanner);
-			delete enumDecl;
 			return nullptr;
 		}
 
@@ -2976,10 +3003,9 @@ namespace Qd {
 			}
 
 			// Handle comments
-			AstNodeComment* comment = parseComment(scanner, src, slashPos, token);
+			auto comment = std::unique_ptr<AstNodeComment>(parseComment(scanner, src, slashPos, token));
 			if (comment != nullptr) {
 				slashPos = SIZE_MAX;
-				delete comment;
 				continue;
 			}
 			if (token == '/') {
@@ -3022,7 +3048,7 @@ namespace Qd {
 			}
 		}
 
-		return enumDecl;
+		return enumDecl.release();
 	}
 
 	static IAstNode* parseStructDeclaration(
@@ -3036,8 +3062,8 @@ namespace Qd {
 		}
 
 		const char* name = u8t_scanner_token_text(scanner, &n);
-		AstNodeStructDeclaration* structDecl = new AstNodeStructDeclaration(name, isPublic);
-		setNodePosition(structDecl, scanner, src);
+		auto structDecl = std::make_unique<AstNodeStructDeclaration>(name, isPublic);
+		setNodePosition(structDecl.get(), scanner, src);
 
 		// Check for generic type parameters: struct Name<T, U> { ... }
 		char32_t peek = peekNextNonWhitespace(scanner, src);
@@ -3068,7 +3094,6 @@ namespace Qd {
 		if (token != '{') {
 			errorReporter->reportError(scanner, "Expected '{' after struct name");
 			synchronize(scanner);
-			delete structDecl;
 			return nullptr;
 		}
 
@@ -3157,7 +3182,7 @@ namespace Qd {
 
 				AstNodeStructField* field = new AstNodeStructField(fieldNameStr, fieldType);
 				setNodePosition(field, scanner, src);
-				field->setParent(structDecl);
+				field->setParent(structDecl.get());
 
 				// Check for default value: field:type = expr
 				// For simplicity, only support single-token defaults (literals or identifiers)
@@ -3221,7 +3246,7 @@ namespace Qd {
 			}
 		}
 
-		return structDecl;
+		return structDecl.release();
 	}
 
 	// Parse struct construction body: StructName { field1: expr1 field2: expr2 ... }
@@ -3288,16 +3313,17 @@ namespace Qd {
 							// <<field in struct construction = field read
 							if (!currentFieldNodes.empty() &&
 									currentFieldNodes.back()->type() == IAstNode::Type::IDENTIFIER) {
-								AstNodeIdentifier* varIdent = static_cast<AstNodeIdentifier*>(currentFieldNodes.back());
+								std::unique_ptr<IAstNode> varOwner(currentFieldNodes.back());
 								currentFieldNodes.pop_back();
+								auto* varIdent = static_cast<AstNodeIdentifier*>(varOwner.get());
 								std::string varName = varIdent->name();
 								if (varName == "error") {
 									varName = "__global_error__";
 								}
-								delete varIdent;
 								AstNodeFieldAccess* fieldAccess = new AstNodeFieldAccess(varName, fieldName);
 								setNodePosition(fieldAccess, scanner, src);
 								currentFieldNodes.push_back(fieldAccess);
+								// varOwner auto-deletes old node
 							} else if (!currentFieldNodes.empty() &&
 									   currentFieldNodes.back()->type() == IAstNode::Type::FIELD_ACCESS) {
 								AstNodeFieldAccess* fieldAccess = new AstNodeFieldAccess("", fieldName);
@@ -3618,7 +3644,7 @@ namespace Qd {
 		// Clean up any remaining nodes that weren't added to a field
 		// (can happen with malformed input)
 		for (IAstNode* node : currentFieldNodes) {
-			delete node;
+			auto cleanup = std::unique_ptr<IAstNode>(node);
 		}
 		currentFieldNodes.clear();
 
@@ -3773,19 +3799,19 @@ namespace Qd {
 			}
 
 			// Parse case value (no 'case' keyword)
-			IAstNode* caseValue = nullptr;
+			std::unique_ptr<IAstNode> caseValue;
 			if (token == U8T_INTEGER) {
 				const char* valueText = u8t_scanner_token_text(scanner, &n);
-				caseValue = new AstNodeLiteral(valueText, AstNodeLiteral::LiteralType::INTEGER);
-				setNodePosition(caseValue, scanner, src);
+				caseValue.reset(new AstNodeLiteral(valueText, AstNodeLiteral::LiteralType::INTEGER));
+				setNodePosition(caseValue.get(), scanner, src);
 			} else if (token == U8T_FLOAT) {
 				const char* valueText = u8t_scanner_token_text(scanner, &n);
-				caseValue = new AstNodeLiteral(valueText, AstNodeLiteral::LiteralType::FLOAT);
-				setNodePosition(caseValue, scanner, src);
+				caseValue.reset(new AstNodeLiteral(valueText, AstNodeLiteral::LiteralType::FLOAT));
+				setNodePosition(caseValue.get(), scanner, src);
 			} else if (token == U8T_STRING) {
 				const char* valueText = u8t_scanner_token_text(scanner, &n);
-				caseValue = new AstNodeLiteral(valueText, AstNodeLiteral::LiteralType::STRING);
-				setNodePosition(caseValue, scanner, src);
+				caseValue.reset(new AstNodeLiteral(valueText, AstNodeLiteral::LiteralType::STRING));
+				setNodePosition(caseValue.get(), scanner, src);
 			} else if (token == U8T_IDENTIFIER) {
 				const char* valueText = u8t_scanner_token_text(scanner, &n);
 				// Check for scoped identifier (module::constant)
@@ -3800,18 +3826,18 @@ namespace Qd {
 						char32_t nameToken = u8t_scanner_scan(scanner);
 						if (nameToken == U8T_IDENTIFIER) {
 							const char* nameText = u8t_scanner_token_text(scanner, &n);
-							caseValue = new AstNodeScopedIdentifier(scopeName, nameText);
-							setNodePosition(caseValue, scanner, src);
+							caseValue.reset(new AstNodeScopedIdentifier(scopeName, nameText));
+							setNodePosition(caseValue.get(), scanner, src);
 						}
 					}
 				} else {
 					// Handle boolean literals and result constants in switch cases
-					caseValue = tryCreateBooleanLiteral(valueText, scanner, src);
+					caseValue.reset(tryCreateBooleanLiteral(valueText, scanner, src));
 					if (!caseValue) {
-						caseValue = isBuiltInInstruction(valueText)
-											? static_cast<IAstNode*>(new AstNodeInstruction(valueText))
-											: static_cast<IAstNode*>(new AstNodeIdentifier(valueText));
-						setNodePosition(caseValue, scanner, src);
+						caseValue.reset(isBuiltInInstruction(valueText)
+												? static_cast<IAstNode*>(new AstNodeInstruction(valueText))
+												: static_cast<IAstNode*>(new AstNodeIdentifier(valueText)));
+						setNodePosition(caseValue.get(), scanner, src);
 					}
 				}
 			}
@@ -3824,7 +3850,6 @@ namespace Qd {
 			token = u8t_scanner_scan(scanner);
 			if (token != '{') {
 				errorReporter->reportError(scanner, "Expected '{' after case value");
-				delete caseValue;
 				continue;
 			}
 
@@ -3832,7 +3857,7 @@ namespace Qd {
 			setNodePosition(caseBody, scanner, src);
 			parseBlockBody(caseBody, scanner, errorReporter, src);
 
-			AstNodeCase* caseNode = new AstNodeCase(caseValue, false);
+			AstNodeCase* caseNode = new AstNodeCase(caseValue.release(), false);
 			setNodePosition(caseNode, scanner, src);
 			caseBody->setParent(caseNode);
 			caseNode->setBody(caseBody);
@@ -3849,11 +3874,8 @@ namespace Qd {
 			// Invalid UTF-8 input - return empty program with error
 			ErrorReporter errorReporter(src, filename);
 			errorReporter.reportError(0, 0, "Invalid UTF-8 encoding in source file");
-			if (mRoot) {
-				delete mRoot;
-			}
-			mRoot = new AstProgram();
-			return mRoot;
+			mRoot = std::make_unique<AstProgram>();
+			return mRoot.get();
 		}
 
 		// Build source position lookup tables - O(n) once, then O(log n) for each lookup
@@ -3900,12 +3922,9 @@ namespace Qd {
 		ErrorReporter errorReporter(src, filename);
 		errorReporter.setStoreErrors(true);
 
-		if (mRoot) {
-			delete mRoot;
-		}
-		AstProgram* program = new AstProgram();
-		setNodePosition(program, &scanner, src);
-		mRoot = program;
+		mRoot = std::make_unique<AstProgram>();
+		setNodePosition(mRoot.get(), &scanner, src);
+		AstProgram* program = static_cast<AstProgram*>(mRoot.get());
 
 		// Check for shebang at the very beginning of the file
 		// Shebang must be on the first line, starting with #!
@@ -4183,7 +4202,7 @@ namespace Qd {
 									continue;
 								}
 								const char* funcName = u8t_scanner_token_text(&scanner, &n);
-								ImportedFunction* func = new ImportedFunction();
+								auto func = std::make_unique<ImportedFunction>();
 								func->name = funcName;
 								func->isPublic = isPublic;
 
@@ -4197,8 +4216,7 @@ namespace Qd {
 								token = u8t_scanner_scan(&scanner);
 								if (token != '(') {
 									errorReporter.reportError(&scanner, "Expected '(' after function name");
-									delete func;
-									continue;
+									continue; // func auto-deleted by unique_ptr
 								}
 
 								// Parse parameters (simplified - name:type format)
@@ -4231,13 +4249,13 @@ namespace Qd {
 															std::string paramTypeStr(paramType);
 															AstNodeParameter* param = new AstNodeParameter(
 																	paramNameStr, paramTypeStr, true);
-															func->outputParameters.push_back(param);
+															func->outputParameters.emplace_back(param);
 														}
 													} else if (isTypeName(paramNameStr)) {
 														// Unnamed typed parameter: i64
 														AstNodeParameter* param =
 																new AstNodeParameter("", paramNameStr, true);
-														func->outputParameters.push_back(param);
+														func->outputParameters.emplace_back(param);
 													}
 												}
 											}
@@ -4275,12 +4293,12 @@ namespace Qd {
 												}
 												AstNodeParameter* param =
 														new AstNodeParameter(paramNameStr, paramTypeStr, false);
-												func->inputParameters.push_back(param);
+												func->inputParameters.emplace_back(param);
 											}
 										} else if (isTypeName(paramNameStr)) {
 											// Unnamed typed parameter: i64
 											AstNodeParameter* param = new AstNodeParameter("", paramNameStr, false);
-											func->inputParameters.push_back(param);
+											func->inputParameters.emplace_back(param);
 										}
 									}
 								}
@@ -4295,7 +4313,7 @@ namespace Qd {
 									// The outer loop at line 1574 will scan the next token
 								}
 
-								importStmt->addFunction(func);
+								importStmt->addFunction(func.release());
 							}
 						}
 					}
@@ -4356,6 +4374,6 @@ namespace Qd {
 		// Clear thread-local source maps pointer
 		tCurrentSourceMaps = nullptr;
 
-		return mRoot;
+		return mRoot.get();
 	}
 }

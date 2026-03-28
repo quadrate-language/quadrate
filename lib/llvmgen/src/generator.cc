@@ -583,8 +583,8 @@ namespace Qd {
 
 		// Populate type hints from function input parameters
 		// This allows debug info to show proper types for locals
-		for (const auto* paramNode : funcNode->inputParameters()) {
-			if (const auto* param = dynamic_cast<const AstNodeParameter*>(paramNode)) {
+		for (const auto& paramNode : funcNode->inputParameters()) {
+			if (const auto* param = dynamic_cast<const AstNodeParameter*>(paramNode.get())) {
 				const std::string& paramName = param->name();
 				const std::string& typeStr = param->typeString();
 				if (!paramName.empty() && !typeStr.empty()) {
@@ -879,8 +879,8 @@ namespace Qd {
 			// AND the body contains no floats, strings, or module calls.
 			// This enables fast inline integer operations (no type checking needed).
 			currentFunctionIsIntegerOnly = true;
-			for (const auto* param : funcNode->inputParameters()) {
-				if (const auto* paramNode = dynamic_cast<const AstNodeParameter*>(param)) {
+			for (const auto& param : funcNode->inputParameters()) {
+				if (const auto* paramNode = dynamic_cast<const AstNodeParameter*>(param.get())) {
 					const std::string& typeStr = paramNode->typeString();
 					if (!typeStr.empty() && typeStr != "i64" && typeStr != "int" && typeStr != "int64" &&
 							typeStr != "i") {
@@ -890,8 +890,8 @@ namespace Qd {
 				}
 			}
 			if (currentFunctionIsIntegerOnly) {
-				for (const auto* param : funcNode->outputParameters()) {
-					if (const auto* paramNode = dynamic_cast<const AstNodeParameter*>(param)) {
+				for (const auto& param : funcNode->outputParameters()) {
+					if (const auto* paramNode = dynamic_cast<const AstNodeParameter*>(param.get())) {
 						const std::string& typeStr = paramNode->typeString();
 						if (!typeStr.empty() && typeStr != "i64" && typeStr != "int" && typeStr != "int64" &&
 								typeStr != "i") {
@@ -995,7 +995,7 @@ namespace Qd {
 					llvm::Value* param = nativeFn->getArg(static_cast<unsigned>(i + 1));
 					// Name the parameter after the input parameter name
 					if (i < funcNode->inputParameters().size()) {
-						auto* paramNode = static_cast<AstNodeParameter*>(funcNode->inputParameters()[i]);
+						auto* paramNode = static_cast<AstNodeParameter*>(funcNode->inputParameters()[i].get());
 						param->setName(paramNode->name());
 					}
 					compileTimeStack.push_back(param);
@@ -1008,7 +1008,7 @@ namespace Qd {
 				{
 					const auto& inputs = funcNode->inputParameters();
 					for (size_t i = 0; i < inputs.size() && i < compileTimeStack.size(); i++) {
-						const auto* paramNode = static_cast<const AstNodeParameter*>(inputs[i]);
+						const auto* paramNode = static_cast<const AstNodeParameter*>(inputs[i].get());
 						if (!paramNode->hasName()) {
 							continue;
 						}
@@ -1165,8 +1165,8 @@ namespace Qd {
 				if (!funcNode->inputParameters().empty() && !currentFunctionIsIntegerOnly) {
 					// Create array of types
 					std::vector<llvm::Constant*> typeValues;
-					for (auto* paramNode : funcNode->inputParameters()) {
-						AstNodeParameter* param = static_cast<AstNodeParameter*>(paramNode);
+					for (const auto& paramNode : funcNode->inputParameters()) {
+						AstNodeParameter* param = static_cast<AstNodeParameter*>(paramNode.get());
 						std::string typeStr = param->typeString();
 						uint32_t typeValue;
 						if (typeStr.empty()) {
@@ -1203,8 +1203,8 @@ namespace Qd {
 
 				// Pre-register struct-typed parameters so they get released at cleanup
 				// Parameters with struct type annotations will be stored via `-> name` in the body
-				for (const auto* paramNode : funcNode->inputParameters()) {
-					if (const auto* param = dynamic_cast<const AstNodeParameter*>(paramNode)) {
+				for (const auto& paramNode : funcNode->inputParameters()) {
+					if (const auto* param = dynamic_cast<const AstNodeParameter*>(paramNode.get())) {
 						const std::string& typeStr = param->typeString();
 						// Check if this is a struct type (not a primitive type)
 						if (!typeStr.empty() && typeStr != "i" && typeStr != "i64" && typeStr != "int" &&
@@ -1266,13 +1266,14 @@ namespace Qd {
 					const auto& inputs = funcNode->inputParameters();
 					bool allNamed = true;
 					for (size_t i = 0; i < inputs.size(); i++) {
-						if (!static_cast<const AstNodeParameter*>(inputs[i])->hasName()) {
+						if (!static_cast<const AstNodeParameter*>(inputs[i].get())->hasName()) {
 							allNamed = false;
 							break;
 						}
 					}
 					for (int paramIdx = static_cast<int>(inputs.size()) - 1; allNamed && paramIdx >= 0; paramIdx--) {
-						const auto* param = static_cast<const AstNodeParameter*>(inputs[static_cast<size_t>(paramIdx)]);
+						const auto* param =
+								static_cast<const AstNodeParameter*>(inputs[static_cast<size_t>(paramIdx)].get());
 						const std::string& paramName = param->name();
 
 						// Create alloca in entry block
@@ -1412,8 +1413,8 @@ namespace Qd {
 		if (!funcNode->hasReceiver() && !funcNode->throws()) {
 			bool allParamsNumeric = true;
 			std::vector<NativeParamType> inputTypes;
-			for (const auto* param : funcNode->inputParameters()) {
-				if (const auto* paramNode = dynamic_cast<const AstNodeParameter*>(param)) {
+			for (const auto& param : funcNode->inputParameters()) {
+				if (const auto* paramNode = dynamic_cast<const AstNodeParameter*>(param.get())) {
 					const std::string& typeStr = paramNode->typeString();
 					if (typeStr == "f64" || typeStr == "float" || typeStr == "float64" || typeStr == "f") {
 						inputTypes.push_back(NativeParamType::F64);
@@ -1428,8 +1429,8 @@ namespace Qd {
 			}
 			NativeParamType outputType = NativeParamType::I64;
 			if (allParamsNumeric) {
-				for (const auto* param : funcNode->outputParameters()) {
-					if (const auto* paramNode = dynamic_cast<const AstNodeParameter*>(param)) {
+				for (const auto& param : funcNode->outputParameters()) {
+					if (const auto* paramNode = dynamic_cast<const AstNodeParameter*>(param.get())) {
 						const std::string& typeStr = paramNode->typeString();
 						if (typeStr == "f64" || typeStr == "float" || typeStr == "float64" || typeStr == "f") {
 							outputType = NativeParamType::F64;
@@ -1749,7 +1750,7 @@ namespace Qd {
 					// Track library for linking
 					importedLibraries.insert(library);
 
-					for (const auto* func : importNode->functions()) {
+					for (const auto& func : importNode->functions()) {
 						// Determine mangled name based on library
 						std::string mangledName;
 						if (library == "libstdqd.so") {
@@ -1780,7 +1781,7 @@ namespace Qd {
 						importedCFunctions.insert(fullName);
 
 						// Track return struct type for imported functions
-						for (auto* outParam : func->outputParameters) {
+						for (const auto& outParam : func->outputParameters) {
 							const std::string& typeStr = outParam->typeString();
 							if (looksLikeStructType(typeStr)) {
 								// Qualify with module name if needed
@@ -1819,7 +1820,7 @@ namespace Qd {
 							importedCFunctions.insert(crossModuleName);
 
 							// Track return struct type for cross-module access
-							for (auto* outParam : func->outputParameters) {
+							for (const auto& outParam : func->outputParameters) {
 								const std::string& typeStr = outParam->typeString();
 								if (looksLikeStructType(typeStr)) {
 									// Qualify with module name if needed
@@ -1847,7 +1848,7 @@ namespace Qd {
 						if (!func->throws) {
 							bool allNumeric = true;
 							std::vector<NativeParamType> bridgeInputTypes;
-							for (const auto* param : func->inputParameters) {
+							for (const auto& param : func->inputParameters) {
 								const std::string& typeStr = param->typeString();
 								if (typeStr == "f64" || typeStr == "float" || typeStr == "float64" || typeStr == "f") {
 									bridgeInputTypes.push_back(NativeParamType::F64);
@@ -1862,7 +1863,7 @@ namespace Qd {
 							NativeParamType bridgeOutputType = NativeParamType::I64;
 							size_t bridgeOutputCount = func->outputParameters.size();
 							if (allNumeric && bridgeOutputCount <= 1) {
-								for (const auto* param : func->outputParameters) {
+								for (const auto& param : func->outputParameters) {
 									const std::string& typeStr = param->typeString();
 									if (typeStr == "f64" || typeStr == "float" || typeStr == "float64" ||
 											typeStr == "f") {
@@ -2044,7 +2045,7 @@ namespace Qd {
 				// Track library for linking
 				importedLibraries.insert(library);
 
-				for (const auto* func : importNode->functions()) {
+				for (const auto& func : importNode->functions()) {
 					std::string mangledName;
 					if (library == "libstdqd.so") {
 						mangledName = "qd_stdqd_" + func->name;
@@ -2131,8 +2132,8 @@ namespace Qd {
 				// Track return struct type if output parameter is a struct
 				const auto& outputs = funcNode->outputParameters();
 				bool foundExplicitStructType = false;
-				for (auto* outParam : outputs) {
-					if (auto* param = dynamic_cast<AstNodeParameter*>(outParam)) {
+				for (const auto& outParam : outputs) {
+					if (auto* param = dynamic_cast<AstNodeParameter*>(outParam.get())) {
 						const std::string& typeStr = param->typeString();
 						if (looksLikeStructType(typeStr)) {
 							// Store the unqualified struct name for lookup
@@ -2154,8 +2155,8 @@ namespace Qd {
 				if (!funcNode->hasReceiver() && !funcNode->throws()) {
 					bool allParamsNumeric = true;
 					std::vector<NativeParamType> inputTypes;
-					for (const auto* param : funcNode->inputParameters()) {
-						if (const auto* paramNode = dynamic_cast<const AstNodeParameter*>(param)) {
+					for (const auto& param : funcNode->inputParameters()) {
+						if (const auto* paramNode = dynamic_cast<const AstNodeParameter*>(param.get())) {
 							const std::string& typeStr = paramNode->typeString();
 							if (typeStr == "f64" || typeStr == "float" || typeStr == "float64" || typeStr == "f") {
 								inputTypes.push_back(NativeParamType::F64);
@@ -2170,8 +2171,8 @@ namespace Qd {
 					}
 					NativeParamType outputType = NativeParamType::I64;
 					if (allParamsNumeric) {
-						for (const auto* param : funcNode->outputParameters()) {
-							if (const auto* paramNode = dynamic_cast<const AstNodeParameter*>(param)) {
+						for (const auto& param : funcNode->outputParameters()) {
+							if (const auto* paramNode = dynamic_cast<const AstNodeParameter*>(param.get())) {
 								const std::string& typeStr = paramNode->typeString();
 								if (typeStr == "f64" || typeStr == "float" || typeStr == "float64" || typeStr == "f") {
 									outputType = NativeParamType::F64;
@@ -2262,8 +2263,8 @@ namespace Qd {
 					}
 					const auto& outputs = funcNode->outputParameters();
 					bool foundExplicitStructType = false;
-					for (auto* outParam : outputs) {
-						if (auto* param = dynamic_cast<AstNodeParameter*>(outParam)) {
+					for (const auto& outParam : outputs) {
+						if (auto* param = dynamic_cast<AstNodeParameter*>(outParam.get())) {
 							const std::string& typeStr = param->typeString();
 							if (looksLikeStructType(typeStr)) {
 								functionReturnStructType[qualifiedName] = extractStructName(typeStr);

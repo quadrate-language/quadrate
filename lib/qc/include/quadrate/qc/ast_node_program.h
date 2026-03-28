@@ -2,16 +2,13 @@
 #define QD_QC_AST_NODE_PROGRAM_H
 
 #include "ast_node.h"
+#include <memory>
 #include <vector>
 
 namespace Qd {
 	class AstProgram : public IAstNode {
 	public:
-		~AstProgram() {
-			for (auto* child : mChildren) {
-				delete child;
-			}
-		}
+		~AstProgram() = default;
 
 		IAstNode::Type type() const override {
 			return Type::PROGRAM;
@@ -23,7 +20,7 @@ namespace Qd {
 
 		virtual IAstNode* child(size_t index) const override {
 			if (index < mChildren.size()) {
-				return mChildren[index];
+				return mChildren[index].get();
 			}
 			return nullptr;
 		}
@@ -49,11 +46,11 @@ namespace Qd {
 		}
 
 		void addChild(IAstNode* node) {
-			mChildren.push_back(node);
+			mChildren.emplace_back(node);
 		}
 
 	private:
-		std::vector<IAstNode*> mChildren;
+		std::vector<std::unique_ptr<IAstNode>> mChildren;
 		size_t mLine = 0;
 		size_t mColumn = 0;
 	};

@@ -56,7 +56,7 @@ namespace Qd {
 		layout.totalSize = 0;
 
 		// Calculate field offsets
-		for (const auto* field : structDecl->fields()) {
+		for (const auto& field : structDecl->fields()) {
 			FieldInfo fieldInfo;
 			fieldInfo.name = field->name();
 			fieldInfo.typeName = field->typeName();
@@ -76,8 +76,8 @@ namespace Qd {
 
 			// Copy default value nodes (we don't own them, just reference)
 			if (field->hasDefaultValue()) {
-				for (auto* node : field->defaultValue()) {
-					fieldInfo.defaultValue.push_back(node);
+				for (const auto& node : field->defaultValue()) {
+					fieldInfo.defaultValue.push_back(node.get());
 				}
 			}
 
@@ -1054,7 +1054,7 @@ namespace Qd {
 		// Determine array element type from first element
 		// QD_ARRAY_TYPE_INT = 0, QD_ARRAY_TYPE_FLOAT = 1, QD_ARRAY_TYPE_STR = 2, QD_ARRAY_TYPE_PTR = 3
 		int32_t arrayType = 0; // Default to INT
-		IAstNode* firstElem = elements[0];
+		IAstNode* firstElem = elements[0].get();
 		if (firstElem->type() == IAstNode::Type::LITERAL) {
 			auto* lit = static_cast<AstNodeLiteral*>(firstElem);
 			if (lit->literalType() == AstNodeLiteral::LiteralType::FLOAT) {
@@ -1095,7 +1095,8 @@ namespace Qd {
 				{builder->getInt64(numElements), builder->getInt32(static_cast<uint32_t>(arrayType))}, "arr_ptr");
 
 		// Push elements to the array
-		for (IAstNode* elem : elements) {
+		for (const auto& elemPtr : elements) {
+			IAstNode* elem = elemPtr.get();
 			if (elem->type() == IAstNode::Type::LITERAL) {
 				auto* lit = static_cast<AstNodeLiteral*>(elem);
 				if (lit->literalType() == AstNodeLiteral::LiteralType::INTEGER) {

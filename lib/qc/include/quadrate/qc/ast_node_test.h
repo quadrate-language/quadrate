@@ -2,19 +2,16 @@
 #define QD_QC_AST_NODE_TEST_H
 
 #include "ast_node.h"
+#include <memory>
 #include <string>
 
 namespace Qd {
 	class AstNodeTest : public IAstNode {
 	public:
-		AstNodeTest(const std::string& name) : mName(name), mParent(nullptr), mBody(nullptr), mLine(0), mColumn(0) {
+		AstNodeTest(const std::string& name) : mName(name), mParent(nullptr), mLine(0), mColumn(0) {
 		}
 
-		~AstNodeTest() {
-			if (mBody) {
-				delete mBody;
-			}
-		}
+		~AstNodeTest() = default;
 
 		IAstNode::Type type() const override {
 			return Type::TEST_DECLARATION;
@@ -26,7 +23,7 @@ namespace Qd {
 
 		IAstNode* child(size_t index) const override {
 			if (index == 0 && mBody) {
-				return mBody;
+				return mBody.get();
 			}
 			return nullptr;
 		}
@@ -57,17 +54,17 @@ namespace Qd {
 		}
 
 		void setBody(IAstNode* body) {
-			mBody = body;
+			mBody.reset(body);
 		}
 
 		IAstNode* body() const {
-			return mBody;
+			return mBody.get();
 		}
 
 	private:
 		std::string mName;
 		IAstNode* mParent;
-		IAstNode* mBody;
+		std::unique_ptr<IAstNode> mBody;
 		size_t mLine;
 		size_t mColumn;
 	};

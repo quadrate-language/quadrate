@@ -762,13 +762,13 @@ namespace Qd {
 			const auto& inputs = anonFunc->inputParameters();
 			bool allNamed = true;
 			for (size_t i = 0; i < inputs.size(); i++) {
-				if (!static_cast<const AstNodeParameter*>(inputs[i])->hasName()) {
+				if (!static_cast<const AstNodeParameter*>(inputs[i].get())->hasName()) {
 					allNamed = false;
 					break;
 				}
 			}
 			for (int paramIdx = static_cast<int>(inputs.size()) - 1; allNamed && paramIdx >= 0; paramIdx--) {
-				const auto* param = static_cast<const AstNodeParameter*>(inputs[static_cast<size_t>(paramIdx)]);
+				const auto* param = static_cast<const AstNodeParameter*>(inputs[static_cast<size_t>(paramIdx)].get());
 				const std::string& paramName = param->name();
 
 				// Create alloca in entry block

@@ -2,6 +2,7 @@
 #define QD_QC_AST_NODE_STRUCT_FIELD_H
 
 #include "ast_node.h"
+#include <memory>
 #include <string>
 #include <vector>
 
@@ -17,11 +18,7 @@ namespace Qd {
 			: mName(name), mTypeName(typeName), mParent(nullptr), mLine(0), mColumn(0) {
 		}
 
-		~AstNodeStructField() {
-			for (auto* node : mDefaultValue) {
-				delete node;
-			}
-		}
+		~AstNodeStructField() = default;
 
 		IAstNode::Type type() const override {
 			return Type::STRUCT_FIELD;
@@ -33,7 +30,7 @@ namespace Qd {
 
 		IAstNode* child(size_t index) const override {
 			if (index < mDefaultValue.size()) {
-				return mDefaultValue[index];
+				return mDefaultValue[index].get();
 			}
 			return nullptr;
 		}
@@ -71,21 +68,22 @@ namespace Qd {
 			return !mDefaultValue.empty();
 		}
 
-		const std::vector<IAstNode*>& defaultValue() const {
+		const std::vector<std::unique_ptr<IAstNode>>& defaultValue() const {
 			return mDefaultValue;
 		}
 
 		void setDefaultValue(std::vector<IAstNode*> nodes) {
-			mDefaultValue = std::move(nodes);
-			for (auto* node : mDefaultValue) {
+			mDefaultValue.clear();
+			for (auto* node : nodes) {
 				node->setParent(this);
+				mDefaultValue.emplace_back(node);
 			}
 		}
 
 	private:
 		std::string mName;
 		std::string mTypeName;
-		std::vector<IAstNode*> mDefaultValue;
+		std::vector<std::unique_ptr<IAstNode>> mDefaultValue;
 		IAstNode* mParent;
 		size_t mLine;
 		size_t mColumn;

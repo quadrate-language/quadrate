@@ -946,7 +946,7 @@ namespace Qd {
 		else if (node->type() == IAstNode::Type::IMPORT_STATEMENT) {
 			AstNodeImport* import = static_cast<AstNodeImport*>(node);
 			const auto& importedFuncs = import->functions();
-			for (const auto* func : importedFuncs) {
+			for (const auto& func : importedFuncs) {
 				functions[func->name] = func->isPublic;
 			}
 		}
@@ -1058,12 +1058,12 @@ namespace Qd {
 			std::vector<std::string> fieldOrder;
 			std::unordered_set<std::string> seenFieldNames;
 
-			for (const auto* field : structDecl->fields()) {
+			for (const auto& field : structDecl->fields()) {
 				// Check for duplicate field names
 				if (seenFieldNames.count(field->name())) {
 					std::string errorMsg =
 							"Duplicate field name '" + field->name() + "' in struct '" + structDecl->name() + "'";
-					reportError(field, errorMsg.c_str());
+					reportError(field.get(), errorMsg.c_str());
 					return;
 				}
 				seenFieldNames.insert(field->name());
@@ -1135,7 +1135,7 @@ namespace Qd {
 			const std::string& library = import->library();
 			const std::string& importNamespace = import->namespaceName();
 
-			for (const auto* func : import->functions()) {
+			for (const auto& func : import->functions()) {
 				if (func->isPublic) {
 					ImportedFunctionInfo info;
 					info.library = library;
@@ -1219,7 +1219,7 @@ namespace Qd {
 			// Initialize type stack with input parameters
 			// Input parameters are on the stack when the function starts
 			for (size_t i = 0; i < func->inputParameters().size(); i++) {
-				AstNodeParameter* param = static_cast<AstNodeParameter*>(func->inputParameters()[i]);
+				AstNodeParameter* param = static_cast<AstNodeParameter*>(func->inputParameters()[i].get());
 				const std::string& typeStr = param->typeString();
 
 				// Validate type name
@@ -1253,7 +1253,7 @@ namespace Qd {
 
 			// Build consumes list from input parameters
 			for (size_t i = 0; i < func->inputParameters().size(); i++) {
-				AstNodeParameter* param = static_cast<AstNodeParameter*>(func->inputParameters()[i]);
+				AstNodeParameter* param = static_cast<AstNodeParameter*>(func->inputParameters()[i].get());
 				const std::string& typeStr = param->typeString();
 
 				if (typeStr == "i64") {
@@ -1288,7 +1288,7 @@ namespace Qd {
 			// Using declared outputs is more reliable for functions with complex control flow
 			if (!func->outputParameters().empty()) {
 				for (size_t i = 0; i < func->outputParameters().size(); i++) {
-					AstNodeParameter* param = static_cast<AstNodeParameter*>(func->outputParameters()[i]);
+					AstNodeParameter* param = static_cast<AstNodeParameter*>(func->outputParameters()[i].get());
 					const std::string& typeStr = param->typeString();
 
 					if (typeStr == "i64") {
@@ -1371,12 +1371,12 @@ namespace Qd {
 			AstNodeImport* import = static_cast<AstNodeImport*>(node);
 			const auto& importedFuncs = import->functions();
 
-			for (const auto* func : importedFuncs) {
+			for (const auto& func : importedFuncs) {
 				FunctionSignature sig;
 
 				// Build consumes list from input parameters
 				for (size_t i = 0; i < func->inputParameters.size(); i++) {
-					AstNodeParameter* param = func->inputParameters[i];
+					AstNodeParameter* param = func->inputParameters[i].get();
 					const std::string& typeStr = param->typeString();
 
 					// Validate type name
@@ -1416,7 +1416,7 @@ namespace Qd {
 
 				// Build produces list from output parameters
 				for (size_t i = 0; i < func->outputParameters.size(); i++) {
-					AstNodeParameter* param = func->outputParameters[i];
+					AstNodeParameter* param = func->outputParameters[i].get();
 					const std::string& typeStr = param->typeString();
 
 					// Validate type name

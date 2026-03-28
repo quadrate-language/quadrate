@@ -10,6 +10,7 @@
 
 #include "ast_node.h"
 #include "error_reporter.h"
+#include <memory>
 #include <vector>
 
 namespace Qd {
@@ -92,9 +93,9 @@ namespace Qd {
 		}
 
 	private:
-		IAstNode* mRoot = nullptr;		///< Root node of the AST
-		size_t mErrorCount = 0;			///< Number of errors encountered
-		std::vector<ErrorInfo> mErrors; ///< Detailed error information
+		std::unique_ptr<IAstNode> mRoot; ///< Root node of the AST
+		size_t mErrorCount = 0;			 ///< Number of errors encountered
+		std::vector<ErrorInfo> mErrors;	 ///< Detailed error information
 	};
 
 } // namespace Qd
