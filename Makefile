@@ -29,7 +29,7 @@ else
 endif
 
 # Commands to copy
-CMDS := quad quadc quadfmt quadlint quadlsp quadpm quaduses
+CMDS := quad quadc quadfmt quadlint quadlsp quadpm quaduses quaddoc
 
 # Libraries with C components (directory names under lib/)
 LIBS_WITH_C := rt qd fmt io math mem net os signal strings strconv time thread testing tty tls http log

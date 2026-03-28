@@ -34,6 +34,7 @@ static const Command commands[] = {
 		{"repl", "quadrepl", "Start interactive REPL"},
 		{"uses", "quaduses", "Analyze module dependencies"},
 		{"lsp", "quadlsp", "Start language server"},
+		{"doc", "quaddoc", "Generate HTML documentation"},
 		{"init", nullptr, "Initialize a new Quadrate project"},
 		{"clean", nullptr, "Remove build artifacts"},
 		{"version", nullptr, "Show version information"},
@@ -54,6 +55,7 @@ void printHelp() {
 	std::cout << "  " << Colors::green() << "repl" << Colors::reset() << "      Start interactive REPL\n";
 	std::cout << "  " << Colors::green() << "uses" << Colors::reset() << "      Analyze module dependencies\n";
 	std::cout << "  " << Colors::green() << "lsp" << Colors::reset() << "       Start language server\n";
+	std::cout << "  " << Colors::green() << "doc" << Colors::reset() << "       Generate HTML documentation\n";
 	std::cout << "  " << Colors::green() << "init" << Colors::reset() << "      Initialize a new Quadrate project\n";
 	std::cout << "  " << Colors::green() << "clean" << Colors::reset() << "     Remove build artifacts\n";
 	std::cout << "  " << Colors::green() << "help" << Colors::reset() << "      Show help for a command\n";
@@ -520,6 +522,15 @@ int handleLsp(const std::vector<std::string>& args) {
 	return execTool(toolPath, args);
 }
 
+int handleDoc(const std::vector<std::string>& args) {
+	std::string toolPath = findTool("quaddoc");
+	if (toolPath.empty()) {
+		std::cerr << "quad: quaddoc not found\n";
+		return 1;
+	}
+	return execTool(toolPath, args);
+}
+
 int handleInit(const std::vector<std::string>& args) {
 	std::string projectName = "myproject";
 
@@ -742,6 +753,9 @@ int main(int argc, char* argv[]) {
 	}
 	if (command == "lsp") {
 		return handleLsp(args);
+	}
+	if (command == "doc") {
+		return handleDoc(args);
 	}
 	if (command == "init") {
 		return handleInit(args);
