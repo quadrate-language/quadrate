@@ -1,0 +1,29 @@
+// Test >>field! (no return) — nothing left on stack
+struct Counter { value: i64 }
+
+fn bump(c:Counter) {
+	c c <<value 1 + >>value!
+}
+
+fn reset(c:Counter) {
+	c 0 >>value!
+}
+
+fn main() {
+	Counter { value = 0 } -> c
+
+	// >>field! in function with no outputs
+	c bump
+	c <<value print nl   // 1
+
+	c bump
+	c bump
+	c <<value print nl   // 3
+
+	c reset
+	c <<value print nl   // 0
+
+	// >>field! inline
+	c 42 >>value!
+	c <<value print nl   // 42
+}

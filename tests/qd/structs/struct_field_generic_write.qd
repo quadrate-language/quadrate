@@ -1,0 +1,24 @@
+// Test >>field and >>field! on generic structs with type changes
+struct Box<T> { value: T }
+
+fn main() {
+	// Write same type
+	10 Box -> b
+	b <<value print nl       // 10
+	b 20 >>value -> b
+	b <<value print nl       // 20
+
+	// Write with type change i64 -> f64
+	b 3.14 >>value -> b
+	b <<value print nl       // 3.14
+
+	// Write with type change f64 -> str
+	b "hello" >>value -> b
+	b <<value print nl       // hello
+
+	// >>field! on generic
+	"world" Box -> c
+	c <<value print nl       // world
+	c 42 >>value!
+	c <<value print nl       // 42
+}

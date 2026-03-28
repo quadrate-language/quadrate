@@ -1,0 +1,22 @@
+// Test deeply chained <<field reads
+struct Inner { value: i64 }
+struct Middle { inner: Inner }
+struct Outer { middle: Middle }
+
+fn main() {
+	Outer {
+		middle = Middle {
+			inner = Inner { value = 42 }
+		}
+	} -> o
+
+	// 3-level chain
+	o <<middle <<inner <<value print nl   // 42
+
+	// Intermediate access
+	o <<middle -> m
+	m <<inner <<value print nl            // 42
+
+	o <<middle <<inner -> i
+	i <<value print nl                    // 42
+}

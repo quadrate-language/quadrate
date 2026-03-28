@@ -1,0 +1,23 @@
+// Test field operators inside loops
+struct Acc { total: i64  count: i64 }
+
+fn main() {
+	Acc { total = 0 count = 0 } -> a
+
+	// Accumulate in loop using >>field!
+	0 10 1 for i {
+		a a <<total i + >>total!
+		a a <<count 1 + >>count!
+	}
+
+	a <<total print nl    // 45 (0+1+2+...+9)
+	a <<count print nl    // 10
+
+	// Rebuild with chaining
+	Acc { total = 0 count = 0 } -> b
+	0 5 1 for i {
+		b b <<total i + >>total b <<count 1 + >>count -> b
+	}
+	b <<total print nl    // 10 (0+1+2+3+4)
+	b <<count print nl    // 5
+}

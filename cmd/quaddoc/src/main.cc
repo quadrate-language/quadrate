@@ -340,29 +340,38 @@ pre code { background: none; padding: 0; color: inherit; }
 .module-card h3 { margin: 0 0 0.3rem; }
 .module-card p { font-size: 0.85rem; color: #666; }
 .module-card .count { font-size: 0.8rem; color: #999; }
+dl { margin: 0.5rem 0 1rem 1rem; }
+dt { font-weight: 500; margin-top: 0.4rem; }
+dd { margin-left: 1rem; color: #555; }
+hr { border: none; border-top: 1px solid #eee; margin: 1.5rem 0; }
 )";
 
-static void writeParamTable(std::ofstream& f, const char* header, const std::vector<Param>& params) {
+static void writeParamList(std::ofstream& f, const char* header, const std::vector<Param>& params) {
 	if (params.empty()) {
 		return;
 	}
-	f << "<table><tr><th>" << header << "</th><th>Type</th><th>Description</th></tr>\n";
+	f << "<p><strong>" << header << ":</strong></p>\n<dl>\n";
 	for (auto& p : params) {
-		f << "<tr><td><code>" << htmlEscape(p.name) << "</code></td><td><code>" << htmlEscape(p.type)
-		  << "</code></td><td>" << htmlEscape(p.desc) << "</td></tr>\n";
+		f << "<dt><code>" << htmlEscape(p.name) << "</code> <code>" << htmlEscape(p.type) << "</code></dt>\n";
+		if (!p.desc.empty()) {
+			f << "<dd>" << htmlEscape(p.desc) << "</dd>\n";
+		}
 	}
-	f << "</table>\n";
+	f << "</dl>\n";
 }
 
-static void writeErrorTable(std::ofstream& f, const std::vector<Param>& errors) {
+static void writeErrorList(std::ofstream& f, const std::vector<Param>& errors) {
 	if (errors.empty()) {
 		return;
 	}
-	f << "<table><tr><th>Error</th><th>Description</th></tr>\n";
+	f << "<p><strong>Errors:</strong></p>\n<dl>\n";
 	for (auto& e : errors) {
-		f << "<tr><td><code>" << htmlEscape(e.name) << "</code></td><td>" << htmlEscape(e.desc) << "</td></tr>\n";
+		f << "<dt><code>" << htmlEscape(e.name) << "</code></dt>\n";
+		if (!e.desc.empty()) {
+			f << "<dd>" << htmlEscape(e.desc) << "</dd>\n";
+		}
 	}
-	f << "</table>\n";
+	f << "</dl>\n";
 }
 
 static int generate(const std::vector<Module>& modules, const std::string& outDir, const std::string& title,
@@ -386,23 +395,24 @@ static int generate(const std::vector<Module>& modules, const std::string& outDi
 	// Write index
 	{
 		std::ofstream f(outDir + "/index.html");
-		f << "<!DOCTYPE html><html><head><meta charset=\"utf-8\"><title>" << htmlEscape(title)
-		  << "</title><link rel=\"stylesheet\" href=\"style.css\"></head><body>\n"
+		f << "<!DOCTYPE html>\n<html><head><meta charset=\"utf-8\"><title>" << htmlEscape(title)
+		  << "</title>\n<link rel=\"stylesheet\" href=\"style.css\"></head>\n<body>\n"
 		  << "<nav><h1>" << htmlEscape(title) << " Documentation</h1></nav>\n"
-		  << "<div class=\"container\"><h2>Modules</h2><div class=\"module-list\">\n";
+		  << "<div class=\"container\">\n<h2>Modules</h2>\n<div class=\"module-list\">\n";
 		for (auto& mod : modules) {
-			f << "<div class=\"module-card\"><h3><a href=\"" << mod.name << ".html\">" << htmlEscape(mod.name)
-			  << "</a></h3><p>" << htmlEscape(mod.desc) << "</p><span class=\"count\">" << mod.functions.size()
-			  << " functions";
+			f << "<div class=\"module-card\">\n"
+			  << "<h3><a href=\"" << mod.name << ".html\">" << htmlEscape(mod.name) << "</a></h3>\n"
+			  << "<p>" << htmlEscape(mod.desc) << "</p>\n"
+			  << "<span class=\"count\">" << mod.functions.size() << " functions";
 			if (!mod.structs.empty()) {
 				f << ", " << mod.structs.size() << " structs";
 			}
 			if (!mod.constants.empty()) {
 				f << ", " << mod.constants.size() << " constants";
 			}
-			f << "</span></div>\n";
+			f << "</span>\n</div>\n";
 		}
-		f << "</div></div></body></html>\n";
+		f << "</div>\n</div>\n</body></html>\n";
 	}
 
 	// Write module pages
@@ -422,47 +432,58 @@ static int generate(const std::vector<Module>& modules, const std::string& outDi
 			for (auto& s : mod.structs) {
 				f << "<h3 id=\"" << s.name << "\"><code>" << htmlEscape(s.name) << "</code></h3>\n";
 				if (!s.desc.empty()) {
-					f << "<p class=\"desc\">" << htmlEscape(s.desc) << "</p>\n";
+					f << "<p>" << htmlEscape(s.desc) << "</p>\n";
 				}
 				if (!s.fields.empty()) {
-					f << "<table><tr><th>Field</th><th>Type</th><th>Description</th></tr>\n";
+					f << "<dl>\n";
 					for (auto& fld : s.fields) {
-						f << "<tr><td><code>" << htmlEscape(fld.name) << "</code></td><td><code>"
-						  << htmlEscape(fld.type) << "</code></td><td>" << htmlEscape(fld.desc) << "</td></tr>\n";
+						f << "<dt><code>" << htmlEscape(fld.name) << "</code> <code>" << htmlEscape(fld.type)
+						  << "</code></dt>\n";
+						if (!fld.desc.empty()) {
+							f << "<dd>" << htmlEscape(fld.desc) << "</dd>\n";
+						}
 					}
-					f << "</table>\n";
+					f << "</dl>\n";
 				}
 			}
 		}
 
 		// Constants
 		if (!mod.constants.empty()) {
-			f << "<h2>Constants</h2>\n<table><tr><th>Name</th><th>Value</th><th>Description</th></tr>\n";
+			f << "<h2>Constants</h2>\n<dl>\n";
 			for (auto& c : mod.constants) {
-				f << "<tr><td><code>" << htmlEscape(c.name) << "</code></td><td><code>" << htmlEscape(c.value)
-				  << "</code></td><td>" << htmlEscape(c.desc) << "</td></tr>\n";
+				f << "<dt><code>" << htmlEscape(c.name) << "</code> = <code>" << htmlEscape(c.value)
+				  << "</code></dt>\n";
+				if (!c.desc.empty()) {
+					f << "<dd>" << htmlEscape(c.desc) << "</dd>\n";
+				}
 			}
-			f << "</table>\n";
+			f << "</dl>\n";
 		}
 
 		// Functions
 		if (!mod.functions.empty()) {
 			f << "<h2>Functions</h2>\n";
+			bool first = true;
 			for (auto& fn : mod.functions) {
+				if (!first) {
+					f << "<hr>\n";
+				}
+				first = false;
 				f << "<div class=\"fn" << (fn.fallible ? " fallible" : "") << "\" id=\"" << fn.name << "\">\n"
 				  << "<h3>" << htmlEscape(fn.name);
 				if (fn.fallible) {
-					f << " <span class=\"tag tag-fallible\">fallible</span>";
+					f << " [fallible]";
 				}
-				f << "</h3>\n<code class=\"sig\">fn " << htmlEscape(fn.signature) << "</code>\n";
+				f << "</h3>\n<pre><code>fn " << htmlEscape(fn.signature) << "</code></pre>\n";
 				if (!fn.desc.empty()) {
-					f << "<p class=\"desc\">" << htmlEscape(fn.desc) << "</p>\n";
+					f << "<p>" << htmlEscape(fn.desc) << "</p>\n";
 				}
-				writeParamTable(f, "Param", fn.params);
-				writeParamTable(f, "Return", fn.returns);
-				writeErrorTable(f, fn.errors);
+				writeParamList(f, "Parameters", fn.params);
+				writeParamList(f, "Returns", fn.returns);
+				writeErrorList(f, fn.errors);
 				if (!fn.examples.empty()) {
-					f << "<strong>Examples:</strong>\n";
+					f << "<p><strong>Examples:</strong></p>\n";
 					for (auto& ex : fn.examples) {
 						f << "<pre><code>" << htmlEscape(ex) << "</code></pre>\n";
 					}

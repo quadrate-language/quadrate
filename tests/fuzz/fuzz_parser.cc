@@ -12,7 +12,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <cstring>
-#include <qc/ast.h>
+#include <quadrate/qc/ast.h>
 
 /**
  * @brief libFuzzer entry point

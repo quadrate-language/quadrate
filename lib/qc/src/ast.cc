@@ -2303,51 +2303,10 @@ namespace Qd {
 						// Parse ctx block inline
 						// ctx blocks can contain control flow statements
 						std::vector<IAstNode*> ctxTempNodes;
-						size_t ctxSlashPos = SIZE_MAX; // Position of first slash for comment detection
+						size_t ctxSlashPos = SIZE_MAX;
 						bool ctxSawColon = false;
-						bool ctxSawAt = false;
-						bool ctxSawDot = false;
-						std::string ctxDotVarName;
 
 						while ((token = u8t_scanner_scan(scanner)) != U8T_EOF) {
-							// Handle @ field access operator
-							if (ctxSawAt && token == U8T_IDENTIFIER) {
-								ctxSawAt = false;
-								const char* fieldName = u8t_scanner_token_text(scanner, &n);
-
-								if (!ctxTempNodes.empty() &&
-										ctxTempNodes.back()->type() == IAstNode::Type::IDENTIFIER) {
-									AstNodeIdentifier* varIdent = static_cast<AstNodeIdentifier*>(ctxTempNodes.back());
-									ctxTempNodes.pop_back();
-									AstNodeFieldAccess* fieldAccess =
-											new AstNodeFieldAccess(varIdent->name(), fieldName);
-									setNodePosition(fieldAccess, scanner, src);
-									delete varIdent;
-									ctxTempNodes.push_back(fieldAccess);
-								} else if (!ctxTempNodes.empty() &&
-										   ctxTempNodes.back()->type() == IAstNode::Type::FIELD_ACCESS) {
-									AstNodeFieldAccess* fieldAccess = new AstNodeFieldAccess("", fieldName);
-									setNodePosition(fieldAccess, scanner, src);
-									ctxTempNodes.push_back(fieldAccess);
-								} else {
-									AstNodeFieldAccess* fieldAccess = new AstNodeFieldAccess("", fieldName);
-									setNodePosition(fieldAccess, scanner, src);
-									ctxTempNodes.push_back(fieldAccess);
-								}
-								continue;
-							}
-
-							// Handle . field set operator
-							if (ctxSawDot && token == U8T_IDENTIFIER) {
-								ctxSawDot = false;
-								const char* fieldName = u8t_scanner_token_text(scanner, &n);
-								AstNodeFieldSet* fieldSet = new AstNodeFieldSet(ctxDotVarName, fieldName);
-								setNodePosition(fieldSet, scanner, src);
-								ctxTempNodes.push_back(fieldSet);
-								ctxDotVarName.clear();
-								continue;
-							}
-
 							// Handle comments
 							AstNodeComment* ctxComment = parseComment(scanner, src, ctxSlashPos, token);
 							if (ctxComment != nullptr) {
@@ -2370,12 +2329,6 @@ namespace Qd {
 							}
 
 							if (token == '}') {
-								if (ctxSawDot) {
-									errorReporter->reportError(scanner, "Expected field name after '.'");
-								}
-								if (ctxSawAt) {
-									errorReporter->reportError(scanner, "Expected field name after '@'");
-								}
 								break;
 							}
 
@@ -2389,24 +2342,70 @@ namespace Qd {
 								continue;
 							}
 
-							ctxSawAt = (token == '@');
-							if (ctxSawAt) {
-								continue;
+							// Handle >>field / >>field! (field set / write)
+							if (token == '>') {
+								char32_t nextChar = u8t_scanner_peek(scanner);
+								if (nextChar == '>') {
+									u8t_scanner_scan(scanner);
+									char32_t fieldStart = u8t_scanner_peek(scanner);
+									if ((fieldStart >= 'a' && fieldStart <= 'z') ||
+											(fieldStart >= 'A' && fieldStart <= 'Z') || fieldStart == '_') {
+										char32_t identToken = u8t_scanner_scan(scanner);
+										if (identToken == U8T_IDENTIFIER) {
+											std::string fieldName(u8t_scanner_token_text(scanner, &n));
+											bool noReturn = (u8t_scanner_peek(scanner) == '!');
+											if (noReturn) {
+												u8t_scanner_scan(scanner);
+											}
+											AstNodeFieldSet* fieldSet = new AstNodeFieldSet("", fieldName, noReturn);
+											setNodePosition(fieldSet, scanner, src);
+											ctxTempNodes.push_back(fieldSet);
+											continue;
+										}
+									}
+									errorReporter->reportError(scanner, "Expected field name after '>>'");
+									continue;
+								}
 							}
 
-							// Handle . field set operator
-							if (token == '.') {
-								if (!ctxTempNodes.empty() &&
-										ctxTempNodes.back()->type() == IAstNode::Type::IDENTIFIER) {
-									AstNodeIdentifier* varIdent = static_cast<AstNodeIdentifier*>(ctxTempNodes.back());
-									ctxTempNodes.pop_back();
-									ctxDotVarName = varIdent->name();
-									delete varIdent;
-									ctxSawDot = true;
-									continue;
-								} else {
-									errorReporter->reportError(
-											scanner, "Expected variable name before '.' in field set");
+							// Handle <<field (field read)
+							if (token == '<') {
+								char32_t nextChar = u8t_scanner_peek(scanner);
+								if (nextChar == '<') {
+									u8t_scanner_scan(scanner);
+									char32_t fieldStart = u8t_scanner_peek(scanner);
+									if ((fieldStart >= 'a' && fieldStart <= 'z') ||
+											(fieldStart >= 'A' && fieldStart <= 'Z') || fieldStart == '_') {
+										char32_t identToken = u8t_scanner_scan(scanner);
+										if (identToken == U8T_IDENTIFIER) {
+											const char* fieldName = u8t_scanner_token_text(scanner, &n);
+											if (!ctxTempNodes.empty() &&
+													ctxTempNodes.back()->type() == IAstNode::Type::IDENTIFIER) {
+												AstNodeIdentifier* varIdent =
+														static_cast<AstNodeIdentifier*>(ctxTempNodes.back());
+												ctxTempNodes.pop_back();
+												std::string varName = varIdent->name();
+												if (varName == "error") {
+													varName = "__global_error__";
+												}
+												AstNodeFieldAccess* fa = new AstNodeFieldAccess(varName, fieldName);
+												setNodePosition(fa, scanner, src);
+												delete varIdent;
+												ctxTempNodes.push_back(fa);
+											} else if (!ctxTempNodes.empty() &&
+													   ctxTempNodes.back()->type() == IAstNode::Type::FIELD_ACCESS) {
+												AstNodeFieldAccess* fa = new AstNodeFieldAccess("", fieldName);
+												setNodePosition(fa, scanner, src);
+												ctxTempNodes.push_back(fa);
+											} else {
+												AstNodeFieldAccess* fa = new AstNodeFieldAccess("", fieldName);
+												setNodePosition(fa, scanner, src);
+												ctxTempNodes.push_back(fa);
+											}
+											continue;
+										}
+									}
+									errorReporter->reportError(scanner, "Expected field name after '<<'");
 									continue;
 								}
 							}

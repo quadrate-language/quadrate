@@ -1,0 +1,16 @@
+// Test >>field chaining — struct stays on stack
+struct Vec3 { x: f64  y: f64  z: f64 }
+
+fn main() {
+	// Chain construction
+	Vec3 { x = 0.0 y = 0.0 z = 0.0 } 1.0 >>x 2.0 >>y 3.0 >>z -> v
+	v <<x print nl   // 1
+	v <<y print nl   // 2
+	v <<z print nl   // 3
+
+	// Chain rebind
+	v 10.0 >>x 20.0 >>y 30.0 >>z -> v
+	v <<x print nl   // 10
+	v <<y print nl   // 20
+	v <<z print nl   // 30
+}
