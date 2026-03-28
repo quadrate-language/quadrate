@@ -1,5 +1,9 @@
 qc_sources = files(
 		'src/ast.cc',
+		'src/ast_statements.cc',
+		'src/ast_expressions.cc',
+		'src/ast_declarations.cc',
+		'src/ast_types.cc',
 		'src/ast_printer.cc',
 		'src/colors.cc',
 		'src/error_reporter.cc',
