@@ -1,5 +1,5 @@
 # Bash completion for Quadrate toolchain
-# Generated for quad, quadc, quadfmt, quadlint, quadlsp, quadpm, quadrepl, quaduses
+# Generated for quad, quadc, quaddoc, quadfmt, quadlint, quadlsp, quadmcp, quadpm, quadrepl, quaduses
 
 # Helper function to find .qd files and directories
 _quad_qd_files() {
@@ -13,7 +13,7 @@ _quad() {
     local cur prev words cword
     _init_completion || return
 
-    local commands="build run test fmt lint repl uses lsp help version"
+    local commands="build run test fmt lint repl uses lsp doc init clean help version"
 
     if [[ $cword -eq 1 ]]; then
         COMPREPLY=( $(compgen -W "$commands" -- "$cur") )
@@ -231,9 +231,30 @@ _quaduses() {
     fi
 }
 
+# quaddoc completion
+_quaddoc() {
+    local cur prev words cword
+    _init_completion || return
+    case "$prev" in
+        -o)
+            COMPREPLY=( $(compgen -d -- "$cur") )
+            return
+            ;;
+        --title)
+            return
+            ;;
+    esac
+    if [[ "$cur" == -* ]]; then
+        COMPREPLY=( $(compgen -W "-h --help -v --version -o -q --quiet --title" -- "$cur") )
+    else
+        COMPREPLY=( $(compgen -d -- "$cur") )
+    fi
+}
+
 # Register completions
 complete -F _quad quad
 complete -F _quadc quadc
+complete -F _quaddoc quaddoc
 complete -F _quadfmt quadfmt
 complete -F _quadlint quadlint
 complete -F _quadlsp quadlsp
