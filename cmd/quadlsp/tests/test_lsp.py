@@ -111,7 +111,13 @@ class LSPTester:
 
         serverInfo = result.get("serverInfo", {})
         self.assert_equal(serverInfo.get("name"), "quadlsp", "Initialize: Server name")
-        self.assert_equal(serverInfo.get("version"), "2.0.0-alpha", "Initialize: Server version")
+        # Version should match VERSION file
+        version_file = Path(__file__).parent.parent.parent.parent / "VERSION"
+        if version_file.exists():
+            expected_version = version_file.read_text().strip()
+            self.assert_equal(serverInfo.get("version"), expected_version, "Initialize: Server version")
+        else:
+            self.assert_true(len(serverInfo.get("version", "")) > 0, "Initialize: Server version non-empty")
 
     def test_shutdown(self):
         """Test LSP shutdown request"""
