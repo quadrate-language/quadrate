@@ -908,7 +908,7 @@ namespace Qd {
 				}
 
 				int deferEffect = static_cast<int>(typeStack.size()) - static_cast<int>(stackSizeBefore);
-				if (deferEffect != 0) {
+				if (deferEffect != 0 && !mHasUnpredictableStack) {
 					std::string errorMsg = "Stack effect error in 'defer': block must have zero net stack effect, but "
 										   "changes stack by ";
 					errorMsg += std::to_string(deferEffect);
