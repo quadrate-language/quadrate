@@ -171,28 +171,21 @@ Explain what changed and why, not how (the diff shows how).
 
 ## Releasing
 
-```bash
-# 1. Update CHANGELOG.md
-# 2. Bump version and tag
-make tag BUMP=patch   # 0.2.0 -> 0.2.1
-make tag BUMP=minor   # 0.2.0 -> 0.3.0
-make tag BUMP=major   # 0.2.0 -> 1.0.0
+1. Update `CHANGELOG.md`
+2. Bump version and tag:
+   ```bash
+   make tag BUMP=patch   # 0.2.0 -> 0.2.1
+   make tag BUMP=minor   # 0.2.0 -> 0.3.0
+   make tag BUMP=major   # 0.2.0 -> 1.0.0
+   ```
+3. Push code and tag:
+   ```bash
+   git push && git push origin <tag>
+   ```
+4. CI builds on Alpine, Debian, and Arch Linux. Tagged commits produce release tarballs as build artifacts on builds.sr.ht.
+5. Download the tarballs from the CI job page and attach them to the tag on git.sr.ht.
 
-# 3. Push
-git push && git push origin <tag>
-
-# 4. CI builds on Alpine, Debian, Arch
-#    Tagged builds produce release tarballs as artifacts
-
-# 5. Attach tarballs to the tag on git.sr.ht
-```
-
-To build a release tarball locally:
-
-```bash
-make dist
-# -> quadrate-0.2.0-linux-x86_64.tar.gz
-```
+To build a release tarball locally (e.g. for testing): `make dist`
 
 ## Reporting issues
 

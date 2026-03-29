@@ -61,14 +61,11 @@ make fuzz                           # Fuzz testing (requires clang)
 ## Releasing
 
 ```bash
-make tag BUMP=patch                 # Bump version (0.2.0 -> 0.2.1)
-git push && git push origin 0.2.1  # Push code + tag
-make dist                           # Build release tarball
+make tag BUMP=patch                 # Bump version, commit, tag (0.2.0 -> 0.2.1)
+git push && git push origin 0.2.1  # CI builds tarballs on tagged commits
 ```
 
-CI builds on Alpine, Debian, and Arch Linux. Tagged commits produce release tarballs as build artifacts.
-
-See [CONTRIBUTING.md](./CONTRIBUTING.md) for the full workflow.
+See [CONTRIBUTING.md](./CONTRIBUTING.md) for the full release workflow.
 
 ## Links
 
