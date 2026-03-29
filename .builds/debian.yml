@@ -31,9 +31,6 @@ sources:
 environment:
   GIT_SSH_COMMAND: "ssh -o StrictHostKeyChecking=no"
 
-artifacts:
-  - quadrate/quadrate-*.tar.gz
-
 tasks:
   - install_tree_sitter: |
       sudo npm install -g tree-sitter-cli

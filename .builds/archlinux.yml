@@ -23,9 +23,6 @@ sources:
   - https://git.sr.ht/~klahr/qdregex
   - https://git.sr.ht/~klahr/qdcrypto
 
-artifacts:
-  - quadrate/quadrate-*.tar.gz
-
 tasks:
   - format: |
       cd quadrate

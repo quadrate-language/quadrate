@@ -28,9 +28,6 @@ sources:
   - https://git.sr.ht/~klahr/qdregex
   - https://git.sr.ht/~klahr/qdcrypto
 
-artifacts:
-  - quadrate/quadrate-*.tar.gz
-
 tasks:
   - install_tree_sitter: |
       sudo npm install -g tree-sitter-cli
