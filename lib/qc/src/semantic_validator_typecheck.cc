@@ -354,8 +354,46 @@ namespace Qd {
 					for (const auto& type : sig.produces) {
 						typeStack.push_back(type);
 					}
+				} else {
+					// Try as a method call — search module's struct methods
+					bool foundMethod = false;
+					for (const auto& structEntry : mStructMethods) {
+						const std::string& structType = structEntry.first;
+						// Check if struct belongs to this module
+						if (structType.find(moduleName + "::") != 0 &&
+								!mStructMethods.count(moduleName + "::" + structType)) {
+							// Also check unqualified struct names from this module
+							bool belongsToModule = false;
+							for (const auto& methodEntry : structEntry.second) {
+								std::string methodKey = structType + "::" + methodEntry.first;
+								if (mFunctionSignatures.count(methodKey)) {
+									belongsToModule = true;
+									break;
+								}
+							}
+							if (!belongsToModule) {
+								continue;
+							}
+						}
+						if (structEntry.second.count(functionName)) {
+							std::string methodKey = structType + "::" + functionName;
+							auto methodSigIt = mFunctionSignatures.find(methodKey);
+							if (methodSigIt != mFunctionSignatures.end()) {
+								const FunctionSignature& sig = methodSigIt->second;
+								for (size_t j = 0; j < sig.consumes.size() && !typeStack.empty(); j++) {
+									typeStack.pop_back();
+								}
+								for (const auto& type : sig.produces) {
+									typeStack.push_back(type);
+								}
+								foundMethod = true;
+								break;
+							}
+						}
+					}
+					// If not found, skip (will be resolved in next iteration)
+					(void)foundMethod;
 				}
-				// If signature not known yet, skip (will be resolved in next iteration)
 				break;
 			}
 
@@ -3037,85 +3075,98 @@ namespace Qd {
 					}
 				}
 
-				// Check if this is a module method call (e.g., ct::unwrap on a ct::Box)
-				// The stack top should be a struct from the same module
-				if (!typeStack.empty() && typeStack.back() == StackValueType::PTR && !structTypeStack.empty()) {
-					std::string receiverStructType = structTypeStack.back();
-
-					// Check if receiver struct belongs to this module
-					// receiverStructType could be like "ct::Box<i64>" and moduleName is "ct"
-					// Also check unqualified names (for merged module structs like "Lexer" from "lexer")
-					bool isModuleStruct = receiverStructType.find(moduleName + "::") == 0;
-					if (!isModuleStruct && !receiverStructType.empty()) {
-						// Try with module prefix for method lookup
-						std::string qualified = moduleName + "::" + receiverStructType;
-						if (mStructMethods.count(qualified) || mStructMethods.count(receiverStructType)) {
-							isModuleStruct = true;
+				// Check if this is a module method call (e.g., sb::append on a StringBuilder)
+				// Search the type stack for a struct from this module at the expected depth
+				if (!typeStack.empty() && !structTypeStack.empty()) {
+					// Try to find a method with this name on any struct from this module
+					// by searching the structTypeStack from top down
+					bool foundModuleMethod = false;
+					for (size_t searchDepth = 0; searchDepth < typeStack.size() && !foundModuleMethod; searchDepth++) {
+						size_t stackIdx = typeStack.size() - 1 - searchDepth;
+						if (typeStack[stackIdx] != StackValueType::PTR) {
+							continue;
 						}
-					}
-					if (isModuleStruct) {
+						if (stackIdx >= structTypeStack.size()) {
+							continue;
+						}
+						std::string receiverStructType = structTypeStack[stackIdx];
+						if (receiverStructType.empty()) {
+							continue;
+						}
+
+						// Check if receiver struct belongs to this module
+						bool isModuleStruct = receiverStructType.find(moduleName + "::") == 0;
+						if (!isModuleStruct) {
+							std::string qualified = moduleName + "::" + receiverStructType;
+							if (mStructMethods.count(qualified) || mStructMethods.count(receiverStructType)) {
+								isModuleStruct = true;
+							}
+						}
+						if (!isModuleStruct) {
+							continue;
+						}
+
 						// Find the registered struct type for method lookup
 						std::string registeredStructType = findMethodStructType(receiverStructType, functionName);
-						// Also try with module prefix if unqualified lookup fails
 						if (registeredStructType.empty() && receiverStructType.find("::") == std::string::npos) {
 							registeredStructType =
 									findMethodStructType(moduleName + "::" + receiverStructType, functionName);
 						}
-						if (!registeredStructType.empty()) {
-							// This is a module method call - look up the signature
-							std::string methodQualifiedName = registeredStructType + "::" + functionName;
-							auto methodSigIt = mFunctionSignatures.find(methodQualifiedName);
-							if (methodSigIt != mFunctionSignatures.end()) {
-								const FunctionSignature& sig = methodSigIt->second;
+						if (registeredStructType.empty()) {
+							continue;
+						}
 
-								// Validate '!' and '?' usage
-								if ((scoped->abortOnError() || scoped->propagateOnError()) && !sig.throws) {
-									std::string op = scoped->abortOnError() ? "!" : "?";
-									std::string errorMsg = "Cannot use '" + op + "' operator on method '" +
-														   functionName + "' which is not marked as fallible";
-									reportError(scoped, errorMsg.c_str());
-								}
+						// Found a method — verify parameter count matches receiver position
+						std::string methodQualifiedName = registeredStructType + "::" + functionName;
+						auto methodSigIt = mFunctionSignatures.find(methodQualifiedName);
+						if (methodSigIt == mFunctionSignatures.end()) {
+							continue;
+						}
+						const FunctionSignature& sig = methodSigIt->second;
+						size_t additionalParams = sig.consumes.size() > 0 ? sig.consumes.size() - 1 : 0;
 
-								// Check '?' requires caller to be fallible
-								if (scoped->propagateOnError() && !mCurrentFunctionFallible) {
-									std::string errorMsg =
-											"Cannot use '?' operator on method '" + functionName +
-											"': enclosing function must be fallible (add '!' to function signature)";
-									reportError(scoped, errorMsg.c_str());
-								}
+						// Receiver should be at exactly additionalParams from top
+						if (searchDepth != additionalParams) {
+							continue;
+						}
 
-								// Check if stack has enough values (receiver + params)
-								size_t additionalParams = sig.consumes.size() > 0 ? sig.consumes.size() - 1 : 0;
-								if (typeStack.size() < 1 + additionalParams) {
-									std::string errorMsg = "Type error in method call '";
-									errorMsg += functionName;
-									errorMsg += "': Stack underflow (requires receiver + ";
-									errorMsg += std::to_string(additionalParams);
-									errorMsg += " values)";
-									reportError(scoped, errorMsg.c_str());
-									break;
-								}
+						// Validate '!' and '?' usage
+						if ((scoped->abortOnError() || scoped->propagateOnError()) && !sig.throws) {
+							std::string op = scoped->abortOnError() ? "!" : "?";
+							std::string errorMsg = "Cannot use '" + op + "' operator on method '" + functionName +
+												   "' which is not marked as fallible";
+							reportError(scoped, errorMsg.c_str());
+						}
 
-								// Pop all consumed values (receiver + params)
-								for (size_t j = 0; j < sig.consumes.size(); j++) {
-									typeStack.pop_back();
-									if (!structTypeStack.empty()) {
-										structTypeStack.pop_back();
-									}
-								}
+						// Check '?' requires caller to be fallible
+						if (scoped->propagateOnError() && !mCurrentFunctionFallible) {
+							std::string errorMsg =
+									"Cannot use '?' operator on method '" + functionName +
+									"': enclosing function must be fallible (add '!' to function signature)";
+							reportError(scoped, errorMsg.c_str());
+						}
 
-								// Push return values
-								pushProducesTypes(sig, typeStack, structTypeStack);
-
-								// Mark as method call for code generation
-								scoped->setIsMethodCall(true);
-								scoped->setReceiverType(registeredStructType);
-								scoped->setMethodInputParamCount(additionalParams);
-								// For module method calls, receiver is always on top of stack
-								scoped->setMethodReceiverPositionFromTop(0);
-								break;
+						// Pop all consumed values (receiver + params)
+						for (size_t j = 0; j < sig.consumes.size(); j++) {
+							typeStack.pop_back();
+							if (!structTypeStack.empty()) {
+								structTypeStack.pop_back();
 							}
 						}
+
+						// Push return values
+						pushProducesTypes(sig, typeStack, structTypeStack);
+
+						// Mark as method call for code generation
+						scoped->setIsMethodCall(true);
+						scoped->setReceiverType(registeredStructType);
+						scoped->setMethodInputParamCount(additionalParams);
+						scoped->setMethodReceiverPositionFromTop(additionalParams);
+						foundModuleMethod = true;
+						break;
+					}
+					if (foundModuleMethod) {
+						break;
 					}
 				}
 

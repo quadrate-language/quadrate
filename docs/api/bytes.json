@@ -20,7 +20,7 @@
     },
     {
       "name": "contains",
-      "signature": "(buf:ptr offset:i64 count:i64 value:i64 -- result:i64)",
+      "signature": "(ptr i64 i64 i64 -- i64)",
       "failable": false,
       "description": "Check if a byte value exists in a buffer.",
       "params": [{"name": "buf", "type": "ptr", "description": "Buffer to search"}, {"name": "offset", "type": "i64", "description": "Starting offset"}, {"name": "count", "type": "i64", "description": "Number of bytes to search"}, {"name": "value", "type": "i64", "description": "Byte value to find"}],
@@ -50,7 +50,7 @@
     },
     {
       "name": "equals",
-      "signature": "(a:ptr a_off:i64 b:ptr b_off:i64 count:i64 -- result:i64)",
+      "signature": "(ptr i64 ptr i64 i64 -- i64)",
       "failable": false,
       "description": "Check if two byte buffers are equal.",
       "params": [{"name": "a", "type": "ptr", "description": "First buffer"}, {"name": "a_off", "type": "i64", "description": "First buffer offset"}, {"name": "b", "type": "ptr", "description": "Second buffer"}, {"name": "b_off", "type": "i64", "description": "Second buffer offset"}, {"name": "count", "type": "i64", "description": "Number of bytes to compare"}],

@@ -8,6 +8,8 @@
 | `August` | `8` |  |
 | `Day` | `86400000000000` | Duration = 1 day (24 hours). |
 | `December` | `12` |  |
+| `ErrFormat` | `2` | Error: Format operation failed. |
+| `ErrParse` | `3` | Error: Parse operation failed. |
 | `February` | `2` |  |
 | `Friday` | `5` |  |
 | `Hour` | `3600000000000` | Duration = 1 hour (60 minutes). |
@@ -33,6 +35,72 @@
 | `Week` | `604800000000000` | Duration = 1 week (7 days). |
 
 ## Functions
+
+### `fn` add_days
+
+Add days to a timestamp.
+
+**Signature:** `(ts:i64 days:i64 -- new_ts:i64)`
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `ts` | `i64` | Unix timestamp in seconds |
+| `days` | `i64` | Number of days to add |
+
+| Output | Type | Description |
+|--------|------|-------------|
+| `new_ts` | `i64` | New timestamp |
+
+**Example:**
+
+```qd
+time::unix 7 time::add_days .
+```
+---
+
+### `fn` add_hours
+
+Add hours to a timestamp.
+
+**Signature:** `(ts:i64 hours:i64 -- new_ts:i64)`
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `ts` | `i64` | Unix timestamp in seconds |
+| `hours` | `i64` | Number of hours to add |
+
+| Output | Type | Description |
+|--------|------|-------------|
+| `new_ts` | `i64` | New timestamp |
+
+**Example:**
+
+```qd
+time::unix 2 time::add_hours .
+```
+---
+
+### `fn` add_minutes
+
+Add minutes to a timestamp.
+
+**Signature:** `(ts:i64 mins:i64 -- new_ts:i64)`
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `ts` | `i64` | Unix timestamp in seconds |
+| `mins` | `i64` | Number of minutes to add |
+
+| Output | Type | Description |
+|--------|------|-------------|
+| `new_ts` | `i64` | New timestamp |
+
+**Example:**
+
+```qd
+time::unix 30 time::add_minutes .
+```
+---
 
 ### `fn` add
 
@@ -126,6 +194,28 @@ Create Unix timestamp from date components.
 ```
 ---
 
+### `fn` days_between
+
+Get number of full days between two timestamps.
+
+**Signature:** `(ts1:i64 ts2:i64 -- days:i64)`
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `ts1` | `i64` | First timestamp in seconds |
+| `ts2` | `i64` | Second timestamp in seconds |
+
+| Output | Type | Description |
+|--------|------|-------------|
+| `days` | `i64` | Number of full days between timestamps (absolute) |
+
+**Example:**
+
+```qd
+end_ts start_ts time::days_between .
+```
+---
+
 ### `fn` days_in_month
 
 Get number of days in a month.
@@ -148,6 +238,27 @@ Get number of days in a month.
 ```
 ---
 
+### `fn` days_in_year
+
+Get number of days in a year.
+
+**Signature:** `(yr:i64 -- days:i64)`
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `yr` | `i64` | Year |
+
+| Output | Type | Description |
+|--------|------|-------------|
+| `days` | `i64` | 365 or 366 for leap year |
+
+**Example:**
+
+```qd
+2024 time::days_in_year .  // 366
+```
+---
+
 ### `fn` day
 
 Extract day of month from Unix timestamp (1-31).
@@ -166,6 +277,75 @@ Extract day of month from Unix timestamp (1-31).
 
 ```qd
 time::unix time::day .
+```
+---
+
+### `fn` end_of_day
+
+Get end of day (23:59:59) for a timestamp.
+
+**Signature:** `(ts:i64 -- end_ts:i64)`
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `ts` | `i64` | Unix timestamp in seconds |
+
+| Output | Type | Description |
+|--------|------|-------------|
+| `end_ts` | `i64` | Timestamp at 23:59:59 of same day |
+
+**Example:**
+
+```qd
+time::unix time::end_of_day .
+```
+---
+
+### `fn` format
+
+Format timestamp using strftime format string. Common format specifiers: - %Y: 4-digit year, %m: month (01-12), %d: day (01-31) - %H: hour (00-23), %M: minute (00-59), %S: second (00-59) - %F: date (YYYY-MM-DD), %T: time (HH:MM:SS) - %A: weekday name, %B: month name
+
+**Signature:** `(timestamp:i64 format:str -- result:str)!`
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `timestamp` | `i64` | Unix timestamp in seconds |
+| `format` | `str` | strftime format string |
+
+| Output | Type | Description |
+|--------|------|-------------|
+| `result` | `str` | Formatted time string |
+
+| Error | Description |
+|-------|-------------|
+| `time::ErrFormat` | Format error or invalid timestamp |
+
+**Example:**
+
+```qd
+time::unix "%Y-%m-%d %H:%M:%S" time::format! print
+```
+---
+
+### `fn` hours_between
+
+Get number of full hours between two timestamps.
+
+**Signature:** `(ts1:i64 ts2:i64 -- hours:i64)`
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `ts1` | `i64` | First timestamp in seconds |
+| `ts2` | `i64` | Second timestamp in seconds |
+
+| Output | Type | Description |
+|--------|------|-------------|
+| `hours` | `i64` | Number of full hours between timestamps (absolute) |
+
+**Example:**
+
+```qd
+end_ts start_ts time::hours_between .
 ```
 ---
 
@@ -208,6 +388,103 @@ Check if year is a leap year.
 
 ```qd
 2024 time::is_leap_year print  // 1
+```
+---
+
+### `fn` iso_week
+
+Get ISO week number (1-53).
+
+**Signature:** `(ts:i64 -- week:i64)`
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `ts` | `i64` | Unix timestamp in seconds |
+
+| Output | Type | Description |
+|--------|------|-------------|
+| `week` | `i64` | ISO week number |
+
+**Example:**
+
+```qd
+time::unix time::iso_week .
+```
+---
+
+### `fn` is_weekday
+
+Check if weekday is a weekday (Monday-Friday).
+
+**Signature:** `(wd:i64 -- is_wkday:i64)`
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `wd` | `i64` | Weekday (0=Sunday, 6=Saturday) |
+
+| Output | Type | Description |
+|--------|------|-------------|
+| `is_wkday` | `i64` | 1 if weekday, 0 otherwise |
+
+**Example:**
+
+```qd
+time::unix time::weekday time::is_weekday .
+```
+---
+
+### `fn` is_weekend
+
+Check if weekday is a weekend day (Saturday or Sunday).
+
+**Signature:** `(wd:i64 -- is_wknd:i64)`
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `wd` | `i64` | Weekday (0=Sunday, 6=Saturday) |
+
+| Output | Type | Description |
+|--------|------|-------------|
+| `is_wknd` | `i64` | 1 if weekend, 0 otherwise |
+
+**Example:**
+
+```qd
+time::unix time::weekday time::is_weekend .
+```
+---
+
+### `fn` micros
+
+Get current time in microseconds since epoch.
+
+**Signature:** `( -- microseconds:i64)`
+
+| Output | Type | Description |
+|--------|------|-------------|
+| `microseconds` | `i64` | Microseconds since 1970-01-01 00:00:00 UTC |
+
+**Example:**
+
+```qd
+time::micros  // us
+```
+---
+
+### `fn` millis
+
+Get current time in milliseconds since epoch.
+
+**Signature:** `( -- milliseconds:i64)`
+
+| Output | Type | Description |
+|--------|------|-------------|
+| `milliseconds` | `i64` | Milliseconds since 1970-01-01 00:00:00 UTC |
+
+**Example:**
+
+```qd
+time::millis  // ms
 ```
 ---
 
@@ -270,6 +547,54 @@ time::now  // start
 ```
 ---
 
+### `fn` parse
+
+Parse string to timestamp using strptime format string.
+
+**Signature:** `(input:str format:str -- timestamp:i64)!`
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `input` | `str` | String to parse |
+| `format` | `str` | strptime format string |
+
+| Output | Type | Description |
+|--------|------|-------------|
+| `timestamp` | `i64` | Unix timestamp in seconds |
+
+| Error | Description |
+|-------|-------------|
+| `time::ErrParse` | Parse failed or invalid format |
+
+**Example:**
+
+```qd
+"2024-01-15" "%Y-%m-%d" time::parse!  // ts
+```
+---
+
+### `fn` same_day
+
+Check if two timestamps are on the same day.
+
+**Signature:** `(ts1:i64 ts2:i64 -- same:i64)`
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `ts1` | `i64` | First timestamp |
+| `ts2` | `i64` | Second timestamp |
+
+| Output | Type | Description |
+|--------|------|-------------|
+| `same` | `i64` | 1 if same day, 0 otherwise |
+
+**Example:**
+
+```qd
+ts1 ts2 time::same_day .
+```
+---
+
 ### `fn` second
 
 Extract second from Unix timestamp (0-59).
@@ -305,6 +630,27 @@ Sleep for duration in nanoseconds.
 
 ```qd
 time::Second time::sleep
+```
+---
+
+### `fn` start_of_day
+
+Get start of day (midnight) for a timestamp.
+
+**Signature:** `(ts:i64 -- midnight_ts:i64)`
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `ts` | `i64` | Unix timestamp in seconds |
+
+| Output | Type | Description |
+|--------|------|-------------|
+| `midnight_ts` | `i64` | Timestamp at midnight of same day |
+
+**Example:**
+
+```qd
+time::unix time::start_of_day .
 ```
 ---
 

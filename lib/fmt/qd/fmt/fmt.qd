@@ -8,6 +8,33 @@ import "libfmt.a" as "fmt" {
 	/// Format a string with printf-style specifiers.
 	/// @param format str Format string with % specifiers
 	/// @return result str Formatted string
-	/// @example "world" "Hello %s\n" fmt::sprintf  // "Hello world\n"
+	/// @example "world" "Hello %s" fmt::sprintf  // "Hello world"
 	pub fn sprintf(format:str -- result:str)
+
+	/// Print a string to stdout (no newline appended).
+	/// @param s str String to print
+	/// @example "hello" fmt::print
+	pub fn print(s:str -- )
+
+	/// Print a string to stdout followed by a newline.
+	/// @param s str String to print
+	/// @example "hello" fmt::println  // hello\n
+	pub fn println(s:str -- )
+
+	/// Print a string to stderr followed by a newline.
+	/// @param s str String to print
+	/// @example "error occurred" fmt::eprintln
+	pub fn eprintln(s:str -- )
+
+	/// Append a newline to a string and return the result.
+	/// @param s str Input string
+	/// @return result str String with newline appended
+	/// @example "hello" fmt::sprintln  // "hello\n"
+	pub fn sprintln(s:str -- result:str)
+
+	/// Print formatted output to a file descriptor.
+	/// @param fd i64 File descriptor (1=stdout, 2=stderr)
+	/// @param format str Format string with % specifiers
+	/// @example "error: %s\n" "not found" 2 fmt::fprintf
+	pub fn fprintf(fd:i64 format:str -- )
 }

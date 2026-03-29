@@ -1,51 +1,43 @@
 # `use` fmt
 
-Formatted output functions using printf-style format specifiers.
-
-## Format specifiers
-
-| Specifier | Type | Description |
-|-----------|------|-------------|
-| `%s` | `str` | String |
-| `%d` | `i64` | Signed decimal integer |
-| `%i` | `i64` | Signed decimal integer (same as `%d`) |
-| `%u` | `i64` | Unsigned decimal integer |
-| `%x` | `i64` | Hexadecimal lowercase |
-| `%X` | `i64` | Hexadecimal uppercase |
-| `%o` | `i64` | Octal |
-| `%f` | `f64` | Floating-point decimal |
-| `%e` | `f64` | Scientific notation lowercase |
-| `%E` | `f64` | Scientific notation uppercase |
-| `%g` | `f64` | Shortest of `%f` or `%e` |
-| `%G` | `f64` | Shortest of `%f` or `%E` |
-| `%c` | `i64` | Character (ASCII value) |
-| `%p` | `ptr` | Pointer address |
-| `%%` | — | Literal percent sign |
-
-### Modifiers
-
-- **Width**: `"%5d"` pads to 5 characters
-- **Precision**: `"%.2f"` limits to 2 decimal places
-- **Zero-pad**: `"%05d"` pads with zeros
-- **Left-align**: `"%-5d"` left-aligns within width
-- **Sign**: `"%+d"` always shows sign
-
-```qd
-use fmt
-
-fn main() {
-	42 "%d" fmt::printf nl             // 42
-	255 "%x" fmt::printf nl            // ff
-	3.14159 "%.2f" fmt::printf nl      // 3.14
-	42 "%05d" fmt::printf nl           // 00042
-	65 "%c" fmt::printf nl             // A
-	"test" 42 "%s = %d" fmt::printf nl // test = 42
-}
-```
-
-Arguments are pushed onto the stack before the format string, in the order they appear in the format string.
+Formatted output functions.
 
 ## Functions
+
+### `fn` eprintln
+
+Print a string to stderr followed by a newline.
+
+**Signature:** `(s:str -- )`
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `s` | `str` | String to print |
+
+**Example:**
+
+```qd
+"error occurred" fmt::eprintln
+```
+---
+
+### `fn` fprintf
+
+Print formatted output to a file descriptor.
+
+**Signature:** `(fd:i64 format:str -- )`
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `fd` | `i64` | File descriptor (1=stdout, 2=stderr) |
+| `format` | `str` | Format string with % specifiers |
+
+**Example:**
+
+```qd
+"error: %s\n" "not found" 2 fmt::fprintf
+```
+---
 
 ### `fn` printf
 
@@ -61,6 +53,40 @@ Print formatted output to stdout.
 
 ```qd
 "world" "Hello %s\n" fmt::printf  // Hello world
+```
+---
+
+### `fn` println
+
+Print a string to stdout followed by a newline.
+
+**Signature:** `(s:str -- )`
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `s` | `str` | String to print |
+
+**Example:**
+
+```qd
+"hello" fmt::println  // hello\n
+```
+---
+
+### `fn` print
+
+Print a string to stdout (no newline appended).
+
+**Signature:** `(s:str -- )`
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `s` | `str` | String to print |
+
+**Example:**
+
+```qd
+"hello" fmt::print
 ```
 ---
 
@@ -81,5 +107,26 @@ Format a string with printf-style specifiers.
 **Example:**
 
 ```qd
-"world" "Hello %s\n" fmt::sprintf  // "Hello world\n"
+"world" "Hello %s" fmt::sprintf  // "Hello world"
+```
+---
+
+### `fn` sprintln
+
+Append a newline to a string and return the result.
+
+**Signature:** `(s:str -- result:str)`
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `s` | `str` | Input string |
+
+| Output | Type | Description |
+|--------|------|-------------|
+| `result` | `str` | String with newline appended |
+
+**Example:**
+
+```qd
+"hello" fmt::sprintln  // "hello\n"
 ```

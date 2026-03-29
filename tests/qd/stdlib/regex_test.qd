@@ -63,3 +63,53 @@ test "regex whitespace via class" {
 	"[ ]+" "   " regex::is_match testing::assert_true
 	"[ ]+" "abc" regex::is_match testing::assert_false
 }
+
+test "regex find first match" {
+	"[0-9]+" regex::compile -> re
+	re "abc123def" regex::find -> start -> end
+	start 3 testing::assert_eq
+	end 6 testing::assert_eq
+	re regex::release
+}
+
+test "regex find no match" {
+	"[0-9]+" regex::compile -> re
+	re "abcdef" regex::find -> start -> end
+	start -1 testing::assert_eq
+	end -1 testing::assert_eq
+	re regex::release
+}
+
+test "regex find at start" {
+	"[a-z]+" regex::compile -> re
+	re "hello123" regex::find -> start -> end
+	start 0 testing::assert_eq
+	end 5 testing::assert_eq
+	re regex::release
+}
+
+test "regex match_count" {
+	"[0-9]+" regex::compile -> re
+	re "a1b22c333" regex::match_count 3 testing::assert_eq
+	re regex::release
+}
+
+test "regex match_count none" {
+	"[0-9]+" regex::compile -> re
+	re "abcdef" regex::match_count 0 testing::assert_eq
+	re regex::release
+}
+
+test "regex replace" {
+	"[0-9]+" regex::compile -> re
+	re "abc123def456" "#" regex::replace -> result
+	result "abc#def#" testing::assert_eq
+	re regex::release
+}
+
+test "regex replace no match" {
+	"[0-9]+" regex::compile -> re
+	re "abcdef" "#" regex::replace -> result
+	result "abcdef" testing::assert_eq
+	re regex::release
+}

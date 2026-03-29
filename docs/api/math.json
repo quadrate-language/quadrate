@@ -117,7 +117,7 @@
   "functions": [
     {
       "name": "abs",
-      "signature": "(x:f64 -- result:f64)",
+      "signature": "(f64 -- f64)",
       "failable": false,
       "description": "Absolute value.",
       "params": [{"name": "x", "type": "f64", "description": "Any value"}],
@@ -296,6 +296,16 @@
       "examples": []
     },
     {
+      "name": "cb",
+      "signature": "(f64 -- f64)",
+      "failable": false,
+      "description": "Cube a number.",
+      "params": [{"name": "x", "type": "f64", "description": "Value to cube"}],
+      "returns": [{"name": "result", "type": "f64", "description": "x * x * x"}],
+      "errors": [],
+      "examples": ["2.0 math::cb print  // 8.0"]
+    },
+    {
       "name": "cbrt",
       "signature": "(x:f64 -- result:f64)",
       "failable": false,
@@ -304,16 +314,6 @@
       "returns": [{"name": "result", "type": "f64", "description": "Cube root of x"}],
       "errors": [],
       "examples": ["8.0 math::cbrt print  // 2.0"]
-    },
-    {
-      "name": "cb",
-      "signature": "(x:f64 -- result:f64)",
-      "failable": false,
-      "description": "Cube a number.",
-      "params": [{"name": "x", "type": "f64", "description": "Value to cube"}],
-      "returns": [{"name": "result", "type": "f64", "description": "x * x * x"}],
-      "errors": [],
-      "examples": ["2.0 math::cb print  // 8.0"]
     },
     {
       "name": "ceil",
@@ -387,7 +387,7 @@
     },
     {
       "name": "deg_to_rad",
-      "signature": "(degrees:f64 -- radians:f64)",
+      "signature": "(f64 -- f64)",
       "failable": false,
       "description": "Convert degrees to radians.",
       "params": [{"name": "degrees", "type": "f64", "description": "Angle in degrees"}],
@@ -557,7 +557,7 @@
     },
     {
       "name": "inv",
-      "signature": "(x:f64 -- result:f64)",
+      "signature": "(f64 -- f64)",
       "failable": false,
       "description": "Reciprocal (1/x).",
       "params": [{"name": "x", "type": "f64", "description": "Non-zero value"}],
@@ -807,7 +807,7 @@
     },
     {
       "name": "mat4_scaling",
-      "signature": "(sx:f64 sy:f64 sz:f64 -- m:Mat4)",
+      "signature": "(sx_v:f64 sy_v:f64 sz_v:f64 -- m:Mat4)",
       "failable": false,
       "description": "Create scale Mat4.",
       "params": [{"name": "sx", "type": "f64", "description": "X scale factor"}, {"name": "sy", "type": "f64", "description": "Y scale factor"}, {"name": "sz", "type": "f64", "description": "Z scale factor"}],
@@ -817,7 +817,7 @@
     },
     {
       "name": "mat4_translation",
-      "signature": "(x:f64 y:f64 z:f64 -- m:Mat4)",
+      "signature": "(x_v:f64 y_v:f64 z_v:f64 -- m:Mat4)",
       "failable": false,
       "description": "Create translation Mat4.",
       "params": [{"name": "x", "type": "f64", "description": "X translation"}, {"name": "y", "type": "f64", "description": "Y translation"}, {"name": "z", "type": "f64", "description": "Z translation"}],
@@ -837,7 +837,7 @@
     },
     {
       "name": "max",
-      "signature": "(a:any b:any -- result:any)",
+      "signature": "(any any -- any)",
       "failable": false,
       "description": "Maximum of two values.",
       "params": [{"name": "a", "type": "any", "description": "First value"}, {"name": "b", "type": "any", "description": "Second value"}],
@@ -847,7 +847,7 @@
     },
     {
       "name": "min",
-      "signature": "(a:any b:any -- result:any)",
+      "signature": "(any any -- any)",
       "failable": false,
       "description": "Minimum of two values.",
       "params": [{"name": "a", "type": "any", "description": "First value"}, {"name": "b", "type": "any", "description": "Second value"}],
@@ -997,7 +997,7 @@
     },
     {
       "name": "rad_to_deg",
-      "signature": "(radians:f64 -- degrees:f64)",
+      "signature": "(f64 -- f64)",
       "failable": false,
       "description": "Convert radians to degrees.",
       "params": [{"name": "radians", "type": "f64", "description": "Angle in radians"}],
@@ -1127,7 +1127,7 @@
     },
     {
       "name": "smootherstep",
-      "signature": "(edge0:f64 edge1:f64 x:f64 -- result:f64)",
+      "signature": "(edge0:f64 edge1:f64 x_v:f64 -- result:f64)",
       "failable": false,
       "description": "Smoother step interpolation (quintic, zero first and second derivatives at edges).",
       "params": [{"name": "edge0", "type": "f64", "description": "Lower edge"}, {"name": "edge1", "type": "f64", "description": "Upper edge"}, {"name": "x", "type": "f64", "description": "Value to interpolate"}],
@@ -1137,13 +1137,23 @@
     },
     {
       "name": "smoothstep",
-      "signature": "(edge0:f64 edge1:f64 x:f64 -- result:f64)",
+      "signature": "(edge0:f64 edge1:f64 x_v:f64 -- result:f64)",
       "failable": false,
       "description": "Smooth step interpolation (cubic Hermite, zero derivatives at edges).",
       "params": [{"name": "edge0", "type": "f64", "description": "Lower edge"}, {"name": "edge1", "type": "f64", "description": "Upper edge"}, {"name": "x", "type": "f64", "description": "Value to interpolate"}],
       "returns": [{"name": "result", "type": "f64", "description": "Smoothly interpolated value [0, 1]"}],
       "errors": [],
       "examples": ["0.0 1.0 0.5 math::smoothstep print  // 0.5"]
+    },
+    {
+      "name": "sq",
+      "signature": "(f64 -- f64)",
+      "failable": false,
+      "description": "Square a number.",
+      "params": [{"name": "x", "type": "f64", "description": "Value to square"}],
+      "returns": [{"name": "result", "type": "f64", "description": "x * x"}],
+      "errors": [],
+      "examples": ["3.0 math::sq print  // 9.0"]
     },
     {
       "name": "sqrt",
@@ -1154,16 +1164,6 @@
       "returns": [{"name": "result", "type": "f64", "description": "Square root of x"}],
       "errors": [],
       "examples": ["4.0 math::sqrt print  // 2.0"]
-    },
-    {
-      "name": "sq",
-      "signature": "(x:f64 -- result:f64)",
-      "failable": false,
-      "description": "Square a number.",
-      "params": [{"name": "x", "type": "f64", "description": "Value to square"}],
-      "returns": [{"name": "result", "type": "f64", "description": "x * x"}],
-      "errors": [],
-      "examples": ["3.0 math::sq print  // 9.0"]
     },
     {
       "name": "subtract",

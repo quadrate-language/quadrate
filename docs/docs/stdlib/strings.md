@@ -13,6 +13,50 @@ Error codes: Ok=1 (success), specific errors start at 2
 
 ## Functions
 
+### `fn` capitalize
+
+Capitalize first character, lowercase rest.
+
+**Signature:** `(s:str -- result:str)`
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `s` | `str` | Input string |
+
+| Output | Type | Description |
+|--------|------|-------------|
+| `result` | `str` | Capitalized string |
+
+**Example:**
+
+```qd
+"hELLO" strings::capitalize print  // "Hello"
+```
+---
+
+### `fn` center
+
+Center string with padding on both sides.
+
+**Signature:** `(s:str len:i64 ch:str -- result:str)`
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `s` | `str` | Input string |
+| `len` | `i64` | Target length |
+| `ch` | `str` | Padding character |
+
+| Output | Type | Description |
+|--------|------|-------------|
+| `result` | `str` | Centered string |
+
+**Example:**
+
+```qd
+"hi" 6 "-" strings::center print  // "--hi--"
+```
+---
+
 ### `fn` char_at
 
 Get character code at index.
@@ -37,6 +81,45 @@ Get character code at index.
 ```qd
 "hello" 0 strings::char_at! print  // 104 ('h')
 ```
+---
+
+### `fn` char_count
+
+Count UTF-8 codepoints (characters, not bytes).
+
+**Signature:** `(s:str -- count:i64)`
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `s` | `str` | Input string |
+
+| Output | Type | Description |
+|--------|------|-------------|
+| `count` | `i64` | Number of UTF-8 codepoints |
+
+**Example:**
+
+```qd
+"héllo" strings::char_count print  // 5
+```
+---
+
+### `fn` column
+
+Format strings into columns.
+
+**Signature:** `(arr:ptr count:i64 widths:ptr num_cols:i64 -- result:str)`
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `arr` | `ptr` | Array of strings |
+| `count` | `i64` | Number of strings |
+| `widths` | `ptr` | Array of column widths |
+| `num_cols` | `i64` | Number of columns |
+
+| Output | Type | Description |
+|--------|------|-------------|
+| `result` | `str` | Formatted column output |
 ---
 
 ### `fn` compare
@@ -107,7 +190,7 @@ Check if string contains substring.
 
 ### `fn` count
 
-Count non-overlapping occurrences of substring.
+Count occurrences of substring.
 
 **Signature:** `(haystack:str needle:str -- count:i64)`
 
@@ -123,9 +206,23 @@ Count non-overlapping occurrences of substring.
 **Example:**
 
 ```qd
-"ababa" "a" strings::count print  // 3
-"aaa" "aa" strings::count print   // 1 (non-overlapping)
+"ababa" "aba" strings::count print  // 1 (non-overlapping)
 ```
+---
+
+### `fn` data
+
+Get raw char pointer to string data.
+
+**Signature:** `(str:str -- ptr:ptr)`
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `str` | `str` | Source string |
+
+| Output | Type | Description |
+|--------|------|-------------|
+| `ptr` | `ptr` | Raw pointer to string bytes |
 ---
 
 ### `fn` ends_with
@@ -147,6 +244,28 @@ Check if string ends with suffix.
 
 ```qd
 "hello" "lo" strings::ends_with print  // 1
+```
+---
+
+### `fn` equals_ignore_case
+
+Case-insensitive string comparison.
+
+**Signature:** `(a:str b:str -- result:i64)`
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `a` | `str` | First string |
+| `b` | `str` | Second string |
+
+| Output | Type | Description |
+|--------|------|-------------|
+| `result` | `i64` | 1 if equal (ignoring case), 0 otherwise |
+
+**Example:**
+
+```qd
+"Hello" "HELLO" strings::equals_ignore_case print  // 1
 ```
 ---
 
@@ -237,6 +356,197 @@ Find first occurrence of substring.
 ```
 ---
 
+### `fn` insert
+
+Insert string at position.
+
+**Signature:** `(s:str pos:i64 ins:str -- result:str)`
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `s` | `str` | Original string |
+| `pos` | `i64` | Insert position |
+| `ins` | `str` | String to insert |
+
+| Output | Type | Description |
+|--------|------|-------------|
+| `result` | `str` | String with insertion |
+
+**Example:**
+
+```qd
+"hello" 2 "XX" strings::insert print  // "heXXllo"
+```
+---
+
+### `fn` is_alphanumeric
+
+Check if string contains only letters and digits.
+
+**Signature:** `(s:str -- result:i64)`
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `s` | `str` | Input string |
+
+| Output | Type | Description |
+|--------|------|-------------|
+| `result` | `i64` | 1 if alphanumeric, 0 otherwise |
+
+**Example:**
+
+```qd
+"Hello123" strings::is_alphanumeric print  // 1
+```
+---
+
+### `fn` is_alpha
+
+Check if string contains only letters.
+
+**Signature:** `(s:str -- result:i64)`
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `s` | `str` | Input string |
+
+| Output | Type | Description |
+|--------|------|-------------|
+| `result` | `i64` | 1 if alphabetic, 0 otherwise |
+
+**Example:**
+
+```qd
+"Hello" strings::is_alpha print  // 1
+```
+---
+
+### `fn` is_ascii
+
+Check if all characters are ASCII (0-127).
+
+**Signature:** `(s:str -- result:i64)`
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `s` | `str` | Input string |
+
+| Output | Type | Description |
+|--------|------|-------------|
+| `result` | `i64` | 1 if all ASCII, 0 otherwise |
+
+**Example:**
+
+```qd
+"hello" strings::is_ascii print  // 1
+```
+---
+
+### `fn` is_blank
+
+Check if string is empty or only whitespace.
+
+**Signature:** `(s:str -- result:i64)`
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `s` | `str` | Input string |
+
+| Output | Type | Description |
+|--------|------|-------------|
+| `result` | `i64` | 1 if blank, 0 otherwise |
+
+**Example:**
+
+```qd
+"  " strings::is_blank print  // 1
+```
+---
+
+### `fn` is_empty
+
+Check if string is empty.
+
+**Signature:** `(s:str -- result:i64)`
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `s` | `str` | Input string |
+
+| Output | Type | Description |
+|--------|------|-------------|
+| `result` | `i64` | 1 if empty, 0 otherwise |
+
+**Example:**
+
+```qd
+"" strings::is_empty print  // 1
+```
+---
+
+### `fn` is_lowercase
+
+Check if all letters are lowercase.
+
+**Signature:** `(s:str -- result:i64)`
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `s` | `str` | Input string |
+
+| Output | Type | Description |
+|--------|------|-------------|
+| `result` | `i64` | 1 if lowercase, 0 otherwise |
+
+**Example:**
+
+```qd
+"hello" strings::is_lowercase print  // 1
+```
+---
+
+### `fn` is_numeric
+
+Check if string contains only digits.
+
+**Signature:** `(s:str -- result:i64)`
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `s` | `str` | Input string |
+
+| Output | Type | Description |
+|--------|------|-------------|
+| `result` | `i64` | 1 if numeric, 0 otherwise |
+
+**Example:**
+
+```qd
+"12345" strings::is_numeric print  // 1
+```
+---
+
+### `fn` is_uppercase
+
+Check if all letters are uppercase.
+
+**Signature:** `(s:str -- result:i64)`
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `s` | `str` | Input string |
+
+| Output | Type | Description |
+|--------|------|-------------|
+| `result` | `i64` | 1 if uppercase, 0 otherwise |
+
+**Example:**
+
+```qd
+"HELLO" strings::is_uppercase print  // 1
+```
+---
+
 ### `fn` join
 
 Join array of strings with delimiter.
@@ -264,6 +574,28 @@ parts count "/" strings::join!  // path
 ```
 ---
 
+### `fn` last_index_of
+
+Find last occurrence of substring.
+
+**Signature:** `(haystack:str needle:str -- index:i64)`
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `haystack` | `str` | String to search in |
+| `needle` | `str` | Substring to find |
+
+| Output | Type | Description |
+|--------|------|-------------|
+| `index` | `i64` | Index of last match, -1 if not found |
+
+**Example:**
+
+```qd
+"hello hello" "hello" strings::last_index_of print  // 6
+```
+---
+
 ### `fn` len
 
 Get string length in bytes.
@@ -285,25 +617,29 @@ Get string length in bytes.
 ```
 ---
 
-### `fn` last_index_of
+### `fn` lines
 
-Find last occurrence of substring.
+Split string by newlines.
 
-**Signature:** `(haystack:str needle:str -- index:i64)`
+**Signature:** `(s:str -- arr:ptr count:i64)!`
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
-| `haystack` | `str` | String to search in |
-| `needle` | `str` | Substring to find |
+| `s` | `str` | Input string |
 
 | Output | Type | Description |
 |--------|------|-------------|
-| `index` | `i64` | Index of last match, -1 if not found |
+| `arr` | `ptr` | Array of line strings |
+| `count` | `i64` | Number of lines |
+
+| Error | Description |
+|-------|-------------|
+| `strings::ErrAlloc` | Memory allocation failed |
 
 **Example:**
 
 ```qd
-"hello hello" "hello" strings::last_index_of print  // 6
+"a\nb\nc" strings::lines!  // ["a", "b", "c"]
 ```
 ---
 
@@ -328,6 +664,75 @@ Convert string to lowercase.
 ```
 ---
 
+### `fn` pad_left
+
+Left-pad string to target length.
+
+**Signature:** `(s:str len:i64 ch:str -- result:str)`
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `s` | `str` | Input string |
+| `len` | `i64` | Target length |
+| `ch` | `str` | Padding character |
+
+| Output | Type | Description |
+|--------|------|-------------|
+| `result` | `str` | Padded string |
+
+**Example:**
+
+```qd
+"42" 5 "0" strings::pad_left print  // "00042"
+```
+---
+
+### `fn` pad_right
+
+Right-pad string to target length.
+
+**Signature:** `(s:str len:i64 ch:str -- result:str)`
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `s` | `str` | Input string |
+| `len` | `i64` | Target length |
+| `ch` | `str` | Padding character |
+
+| Output | Type | Description |
+|--------|------|-------------|
+| `result` | `str` | Padded string |
+
+**Example:**
+
+```qd
+"hi" 5 "." strings::pad_right print  // "hi..."
+```
+---
+
+### `fn` remove_range
+
+Remove range from string.
+
+**Signature:** `(s:str start:i64 len:i64 -- result:str)`
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `s` | `str` | Input string |
+| `start` | `i64` | Start position |
+| `len` | `i64` | Number of characters to remove |
+
+| Output | Type | Description |
+|--------|------|-------------|
+| `result` | `str` | String with range removed |
+
+**Example:**
+
+```qd
+"hello" 1 3 strings::remove_range print  // "ho"
+```
+---
+
 ### `fn` repeat
 
 Repeat string n times.
@@ -336,7 +741,7 @@ Repeat string n times.
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
-| `str` | `str` | String to repeat |
+| `str` | `str` | Input string |
 | `n` | `i64` | Number of repetitions |
 
 | Output | Type | Description |
@@ -350,24 +755,26 @@ Repeat string n times.
 ```
 ---
 
-### `fn` reverse
+### `fn` replace_first
 
-Reverse a string.
+Replace first occurrence only.
 
-**Signature:** `(str:str -- result:str)`
+**Signature:** `(s:str old:str new:str -- result:str)`
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
-| `str` | `str` | Input string |
+| `s` | `str` | Source string |
+| `old` | `str` | Substring to replace |
+| `new` | `str` | Replacement string |
 
 | Output | Type | Description |
 |--------|------|-------------|
-| `result` | `str` | Reversed string |
+| `result` | `str` | String with first occurrence replaced |
 
 **Example:**
 
 ```qd
-"hello" strings::reverse print  // "olleh"
+"abab" "ab" "X" strings::replace_first print  // "Xab"
 ```
 ---
 
@@ -395,6 +802,50 @@ Replace all occurrences of substring.
 
 ```qd
 "hello" "l" "L" strings::replace! print  // "heLLo"
+```
+---
+
+### `fn` reverse
+
+Reverse a string.
+
+**Signature:** `(str:str -- result:str)`
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `str` | `str` | Input string |
+
+| Output | Type | Description |
+|--------|------|-------------|
+| `result` | `str` | Reversed string |
+
+**Example:**
+
+```qd
+"hello" strings::reverse print  // "olleh"
+```
+---
+
+### `fn` slice
+
+Slice with negative index support (Python-style).
+
+**Signature:** `(s:str start:i64 end:i64 -- result:str)`
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `s` | `str` | Input string |
+| `start` | `i64` | Start index (negative counts from end) |
+| `end` | `i64` | End index (negative counts from end) |
+
+| Output | Type | Description |
+|--------|------|-------------|
+| `result` | `str` | Sliced substring |
+
+**Example:**
+
+```qd
+"hello" 1 -1 strings::slice print  // "ell"
 ```
 ---
 
@@ -431,6 +882,34 @@ Sort array of strings in descending alphabetical order.
 
 ```qd
 entries count strings::sort_desc
+```
+---
+
+### `fn` split_n
+
+Split into at most n parts.
+
+**Signature:** `(s:str delim:str n:i64 -- parts:ptr count:i64)!`
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `s` | `str` | String to split |
+| `delim` | `str` | Delimiter |
+| `n` | `i64` | Maximum number of parts |
+
+| Output | Type | Description |
+|--------|------|-------------|
+| `parts` | `ptr` | Array of string parts |
+| `count` | `i64` | Number of parts |
+
+| Error | Description |
+|-------|-------------|
+| `strings::ErrAlloc` | Memory allocation failed |
+
+**Example:**
+
+```qd
+"a:b:c:d" ":" 2 strings::split_n!  // ["a", "b:c:d"]
 ```
 ---
 
@@ -510,246 +989,6 @@ Extract substring.
 ```
 ---
 
-### `fn` trim
-
-Remove leading and trailing whitespace.
-
-**Signature:** `(str:str -- result:str)`
-
-| Parameter | Type | Description |
-|-----------|------|-------------|
-| `str` | `str` | Input string |
-
-| Output | Type | Description |
-|--------|------|-------------|
-| `result` | `str` | Trimmed string |
-
-**Example:**
-
-```qd
-"  hello  " strings::trim print  // "hello"
-```
----
-
-### `fn` trim_left
-
-Remove leading whitespace only.
-
-**Signature:** `(str:str -- result:str)`
-
-| Parameter | Type | Description |
-|-----------|------|-------------|
-| `str` | `str` | Input string |
-
-| Output | Type | Description |
-|--------|------|-------------|
-| `result` | `str` | String with leading whitespace removed |
-
-**Example:**
-
-```qd
-"  hello  " strings::trim_left print  // "hello  "
-```
----
-
-### `fn` trim_right
-
-Remove trailing whitespace only.
-
-**Signature:** `(str:str -- result:str)`
-
-| Parameter | Type | Description |
-|-----------|------|-------------|
-| `str` | `str` | Input string |
-
-| Output | Type | Description |
-|--------|------|-------------|
-| `result` | `str` | String with trailing whitespace removed |
-
-**Example:**
-
-```qd
-"  hello  " strings::trim_right print  // "  hello"
-```
----
-
-### `fn` upper
-
-Convert string to uppercase.
-
-**Signature:** `(str:str -- result:str)`
-
-| Parameter | Type | Description |
-|-----------|------|-------------|
-| `str` | `str` | Input string |
-
-| Output | Type | Description |
-|--------|------|-------------|
-| `result` | `str` | Uppercase string |
-
-**Example:**
-
-```qd
-"hello" strings::upper print  // "HELLO"
-```
----
-
-### `fn` is_empty
-
-Check if string is empty.
-
-**Signature:** `(s:str -- result:i64)`
-
-| Parameter | Type | Description |
-|-----------|------|-------------|
-| `s` | `str` | Input string |
-
-| Output | Type | Description |
-|--------|------|-------------|
-| `result` | `i64` | 1 if empty, 0 otherwise |
-
-**Example:**
-
-```qd
-"" strings::is_empty print     // 1
-"hello" strings::is_empty print // 0
-```
----
-
-### `fn` is_blank
-
-Check if string is empty or contains only whitespace.
-
-**Signature:** `(s:str -- result:i64)`
-
-| Parameter | Type | Description |
-|-----------|------|-------------|
-| `s` | `str` | Input string |
-
-| Output | Type | Description |
-|--------|------|-------------|
-| `result` | `i64` | 1 if blank, 0 otherwise |
-
-**Example:**
-
-```qd
-"   " strings::is_blank print  // 1
-"hi" strings::is_blank print   // 0
-```
----
-
-### `fn` equals_ignore_case
-
-Case-insensitive string comparison.
-
-**Signature:** `(a:str b:str -- result:i64)`
-
-| Parameter | Type | Description |
-|-----------|------|-------------|
-| `a` | `str` | First string |
-| `b` | `str` | Second string |
-
-| Output | Type | Description |
-|--------|------|-------------|
-| `result` | `i64` | 1 if equal ignoring case, 0 otherwise |
-
-**Example:**
-
-```qd
-"Hello" "HELLO" strings::equals_ignore_case print  // 1
-```
----
-
-### `fn` pad_left
-
-Left-pad string to target length.
-
-**Signature:** `(s:str len:i64 ch:str -- result:str)`
-
-| Parameter | Type | Description |
-|-----------|------|-------------|
-| `s` | `str` | Input string |
-| `len` | `i64` | Target length |
-| `ch` | `str` | Padding character |
-
-| Output | Type | Description |
-|--------|------|-------------|
-| `result` | `str` | Padded string |
-
-**Example:**
-
-```qd
-"42" 5 "0" strings::pad_left print  // "00042"
-```
----
-
-### `fn` pad_right
-
-Right-pad string to target length.
-
-**Signature:** `(s:str len:i64 ch:str -- result:str)`
-
-| Parameter | Type | Description |
-|-----------|------|-------------|
-| `s` | `str` | Input string |
-| `len` | `i64` | Target length |
-| `ch` | `str` | Padding character |
-
-| Output | Type | Description |
-|--------|------|-------------|
-| `result` | `str` | Padded string |
-
-**Example:**
-
-```qd
-"hi" 5 "." strings::pad_right print  // "hi..."
-```
----
-
-### `fn` center
-
-Center string with padding on both sides.
-
-**Signature:** `(s:str len:i64 ch:str -- result:str)`
-
-| Parameter | Type | Description |
-|-----------|------|-------------|
-| `s` | `str` | Input string |
-| `len` | `i64` | Target length |
-| `ch` | `str` | Padding character |
-
-| Output | Type | Description |
-|--------|------|-------------|
-| `result` | `str` | Centered string |
-
-**Example:**
-
-```qd
-"hi" 6 "-" strings::center print  // "--hi--"
-```
----
-
-### `fn` capitalize
-
-Capitalize first character, lowercase the rest.
-
-**Signature:** `(s:str -- result:str)`
-
-| Parameter | Type | Description |
-|-----------|------|-------------|
-| `s` | `str` | Input string |
-
-| Output | Type | Description |
-|--------|------|-------------|
-| `result` | `str` | Capitalized string |
-
-**Example:**
-
-```qd
-"hELLO" strings::capitalize print  // "Hello"
-```
----
-
 ### `fn` title
 
 Title case - capitalize first letter of each word.
@@ -768,6 +1007,27 @@ Title case - capitalize first letter of each word.
 
 ```qd
 "hello world" strings::title print  // "Hello World"
+```
+---
+
+### `fn` trim_left
+
+Remove leading whitespace.
+
+**Signature:** `(str:str -- result:str)`
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `str` | `str` | Input string |
+
+| Output | Type | Description |
+|--------|------|-------------|
+| `result` | `str` | String with leading whitespace removed |
+
+**Example:**
+
+```qd
+"  hello" strings::trim_left print  // "hello"
 ```
 ---
 
@@ -793,6 +1053,48 @@ Remove prefix if present.
 ```
 ---
 
+### `fn` trim_right
+
+Remove trailing whitespace.
+
+**Signature:** `(str:str -- result:str)`
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `str` | `str` | Input string |
+
+| Output | Type | Description |
+|--------|------|-------------|
+| `result` | `str` | String with trailing whitespace removed |
+
+**Example:**
+
+```qd
+"hello  " strings::trim_right print  // "hello"
+```
+---
+
+### `fn` trim
+
+Remove leading and trailing whitespace.
+
+**Signature:** `(str:str -- result:str)`
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `str` | `str` | Input string |
+
+| Output | Type | Description |
+|--------|------|-------------|
+| `result` | `str` | Trimmed string |
+
+**Example:**
+
+```qd
+"  hello  " strings::trim print  // "hello"
+```
+---
+
 ### `fn` trim_suffix
 
 Remove suffix if present.
@@ -815,75 +1117,6 @@ Remove suffix if present.
 ```
 ---
 
-### `fn` replace_first
-
-Replace first occurrence only.
-
-**Signature:** `(s:str old:str new:str -- result:str)`
-
-| Parameter | Type | Description |
-|-----------|------|-------------|
-| `s` | `str` | Source string |
-| `old` | `str` | Substring to replace |
-| `new` | `str` | Replacement string |
-
-| Output | Type | Description |
-|--------|------|-------------|
-| `result` | `str` | String with first occurrence replaced |
-
-**Example:**
-
-```qd
-"abab" "ab" "X" strings::replace_first print  // "Xab"
-```
----
-
-### `fn` insert
-
-Insert string at position.
-
-**Signature:** `(s:str pos:i64 ins:str -- result:str)`
-
-| Parameter | Type | Description |
-|-----------|------|-------------|
-| `s` | `str` | Original string |
-| `pos` | `i64` | Insert position |
-| `ins` | `str` | String to insert |
-
-| Output | Type | Description |
-|--------|------|-------------|
-| `result` | `str` | String with insertion |
-
-**Example:**
-
-```qd
-"hello" 2 "XX" strings::insert print  // "heXXllo"
-```
----
-
-### `fn` remove_range
-
-Remove range from string.
-
-**Signature:** `(s:str start:i64 len:i64 -- result:str)`
-
-| Parameter | Type | Description |
-|-----------|------|-------------|
-| `s` | `str` | Input string |
-| `start` | `i64` | Start position |
-| `len` | `i64` | Characters to remove |
-
-| Output | Type | Description |
-|--------|------|-------------|
-| `result` | `str` | String with range removed |
-
-**Example:**
-
-```qd
-"hello" 1 3 strings::remove_range print  // "ho"
-```
----
-
 ### `fn` truncate
 
 Truncate to max length with optional suffix.
@@ -894,7 +1127,7 @@ Truncate to max length with optional suffix.
 |-----------|------|-------------|
 | `s` | `str` | Input string |
 | `max` | `i64` | Maximum length |
-| `suffix` | `str` | Suffix when truncated (e.g. "...") |
+| `suffix` | `str` | Suffix to append when truncated (e.g. "...") |
 
 | Output | Type | Description |
 |--------|------|-------------|
@@ -907,26 +1140,24 @@ Truncate to max length with optional suffix.
 ```
 ---
 
-### `fn` lines
+### `fn` upper
 
-Split string by newlines.
+Convert string to uppercase.
 
-**Signature:** `(s:str -- arr:ptr count:i64)!`
+**Signature:** `(str:str -- result:str)`
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
-| `s` | `str` | Input string |
+| `str` | `str` | Input string |
 
 | Output | Type | Description |
 |--------|------|-------------|
-| `arr` | `ptr` | Array of line strings |
-| `count` | `i64` | Number of lines |
+| `result` | `str` | Uppercase string |
 
 **Example:**
 
 ```qd
-"a\nb\nc" strings::lines! -> count -> arr
-// arr contains ["a", "b", "c"], count = 3
+"hello" strings::upper print  // "HELLO"
 ```
 ---
 
@@ -945,237 +1176,12 @@ Split string by whitespace.
 | `arr` | `ptr` | Array of word strings |
 | `count` | `i64` | Number of words |
 
-**Example:**
-
-```qd
-"hello  world" strings::words! -> count -> arr
-// arr contains ["hello", "world"], count = 2
-```
----
-
-### `fn` split_n
-
-Split into at most n parts.
-
-**Signature:** `(s:str delim:str n:i64 -- parts:ptr count:i64)!`
-
-| Parameter | Type | Description |
-|-----------|------|-------------|
-| `s` | `str` | String to split |
-| `delim` | `str` | Delimiter |
-| `n` | `i64` | Maximum number of parts |
-
-| Output | Type | Description |
-|--------|------|-------------|
-| `parts` | `ptr` | Array of string parts |
-| `count` | `i64` | Number of parts |
+| Error | Description |
+|-------|-------------|
+| `strings::ErrAlloc` | Memory allocation failed |
 
 **Example:**
 
 ```qd
-"a:b:c:d" ":" 2 strings::split_n! -> count -> arr
-// arr contains ["a", "b:c:d"], count = 2
-```
----
-
-### `fn` is_numeric
-
-Check if string contains only digits.
-
-**Signature:** `(s:str -- result:i64)`
-
-| Parameter | Type | Description |
-|-----------|------|-------------|
-| `s` | `str` | Input string |
-
-| Output | Type | Description |
-|--------|------|-------------|
-| `result` | `i64` | 1 if numeric, 0 otherwise |
-
-**Example:**
-
-```qd
-"12345" strings::is_numeric print  // 1
-"12.34" strings::is_numeric print  // 0
-```
----
-
-### `fn` is_alpha
-
-Check if string contains only letters.
-
-**Signature:** `(s:str -- result:i64)`
-
-| Parameter | Type | Description |
-|-----------|------|-------------|
-| `s` | `str` | Input string |
-
-| Output | Type | Description |
-|--------|------|-------------|
-| `result` | `i64` | 1 if alphabetic, 0 otherwise |
-
-**Example:**
-
-```qd
-"Hello" strings::is_alpha print    // 1
-"Hello123" strings::is_alpha print // 0
-```
----
-
-### `fn` is_alphanumeric
-
-Check if string contains only letters and digits.
-
-**Signature:** `(s:str -- result:i64)`
-
-| Parameter | Type | Description |
-|-----------|------|-------------|
-| `s` | `str` | Input string |
-
-| Output | Type | Description |
-|--------|------|-------------|
-| `result` | `i64` | 1 if alphanumeric, 0 otherwise |
-
-**Example:**
-
-```qd
-"Hello123" strings::is_alphanumeric print  // 1
-"Hello!" strings::is_alphanumeric print    // 0
-```
----
-
-### `fn` is_ascii
-
-Check if all characters are ASCII (0-127).
-
-**Signature:** `(s:str -- result:i64)`
-
-| Parameter | Type | Description |
-|-----------|------|-------------|
-| `s` | `str` | Input string |
-
-| Output | Type | Description |
-|--------|------|-------------|
-| `result` | `i64` | 1 if all ASCII, 0 otherwise |
-
-**Example:**
-
-```qd
-"hello" strings::is_ascii print  // 1
-```
----
-
-### `fn` is_lowercase
-
-Check if all letters are lowercase.
-
-**Signature:** `(s:str -- result:i64)`
-
-| Parameter | Type | Description |
-|-----------|------|-------------|
-| `s` | `str` | Input string |
-
-| Output | Type | Description |
-|--------|------|-------------|
-| `result` | `i64` | 1 if lowercase, 0 otherwise |
-
-**Example:**
-
-```qd
-"hello" strings::is_lowercase print  // 1
-"Hello" strings::is_lowercase print  // 0
-```
----
-
-### `fn` is_uppercase
-
-Check if all letters are uppercase.
-
-**Signature:** `(s:str -- result:i64)`
-
-| Parameter | Type | Description |
-|-----------|------|-------------|
-| `s` | `str` | Input string |
-
-| Output | Type | Description |
-|--------|------|-------------|
-| `result` | `i64` | 1 if uppercase, 0 otherwise |
-
-**Example:**
-
-```qd
-"HELLO" strings::is_uppercase print  // 1
-"Hello" strings::is_uppercase print  // 0
-```
----
-
-### `fn` char_count
-
-Count UTF-8 codepoints (characters, not bytes).
-
-**Signature:** `(s:str -- count:i64)`
-
-| Parameter | Type | Description |
-|-----------|------|-------------|
-| `s` | `str` | Input string |
-
-| Output | Type | Description |
-|--------|------|-------------|
-| `count` | `i64` | Number of UTF-8 codepoints |
-
-**Example:**
-
-```qd
-"hello" strings::char_count print  // 5
-"héllo" strings::char_count print  // 5 (é is 2 bytes but 1 char)
-```
----
-
-### `fn` slice
-
-Substring with negative index support (Python-style).
-
-**Signature:** `(s:str start:i64 end:i64 -- result:str)`
-
-| Parameter | Type | Description |
-|-----------|------|-------------|
-| `s` | `str` | Input string |
-| `start` | `i64` | Start index (negative counts from end) |
-| `end` | `i64` | End index (negative counts from end) |
-
-| Output | Type | Description |
-|--------|------|-------------|
-| `result` | `str` | Sliced substring |
-
-**Example:**
-
-```qd
-"hello" 1 4 strings::slice print   // "ell"
-"hello" -3 -1 strings::slice print // "ll"
-"hello" 1 -1 strings::slice print  // "ell"
-```
----
-
-### `fn` column
-
-Format strings into columns.
-
-**Signature:** `(arr:ptr count:i64 widths:ptr num_cols:i64 -- result:str)`
-
-| Parameter | Type | Description |
-|-----------|------|-------------|
-| `arr` | `ptr` | Array of strings |
-| `count` | `i64` | Number of strings |
-| `widths` | `ptr` | Array of column widths |
-| `num_cols` | `i64` | Number of columns |
-
-| Output | Type | Description |
-|--------|------|-------------|
-| `result` | `str` | Formatted column output |
-
-**Example:**
-
-```qd
-// Format names into 2 columns of width 10
-names count widths 2 strings::column print
+"hello  world" strings::words!  // ["hello", "world"]
 ```

@@ -1,0 +1,125 @@
+/// HMAC (Hash-based Message Authentication Code)
+/// =============================================
+///
+/// HMAC-SHA256 and HMAC-SHA512 implementations per RFC 2104.
+///
+/// @example
+/// use crypto
+///
+/// "my-secret-key" "Hello World" hmac_sha256! -> mac
+/// mac print  // prints 64-char hex HMAC
+
+use mem
+use strings
+use hex
+
+// SHA-256 block size = 64 bytes, output size = 32 bytes
+// SHA-512 block size = 128 bytes, output size = 64 bytes
+const SHA256_BLOCK = 64
+const SHA256_OUT = 32
+const SHA512_BLOCK = 128
+const SHA512_OUT = 64
+
+// Build inner or outer padded buffer: (key_pad XOR pad_byte) || message_bytes
+// Returns a ptr and its length. Caller must free the ptr.
+fn build_hmac_input(key:str block_size:i64 pad_byte:i64 msg_buf:ptr msg_len:i64 -- result:ptr result_len:i64)! {
+	key mem::from_string -> klen -> kbuf
+
+	// Prepare key block (zero-padded to block_size)
+	block_size mem::alloc! -> kpad
+	kpad block_size mem::zero
+
+	klen block_size > if {
+		// Key too long: hash it first
+		block_size SHA256_BLOCK == if {
+			kbuf klen sha256_bytes! -> khex
+			khex hex::decode -> kraw
+			kraw mem::from_string -> rawlen -> rawbuf
+			kpad rawbuf rawlen mem::copy
+			rawbuf mem::free
+		} else {
+			kbuf klen sha512_bytes! -> khex
+			khex hex::decode -> kraw
+			kraw mem::from_string -> rawlen -> rawbuf
+			kpad rawbuf rawlen mem::copy
+			rawbuf mem::free
+		}
+	} else {
+		kpad kbuf klen mem::copy
+	}
+	kbuf mem::free
+
+	// XOR key with pad byte
+	0 -> i
+	loop {
+		i block_size >= if { break }
+		kpad i mem::get_byte pad_byte xor -> xored
+		xored kpad i mem::set_byte
+		i 1 + -> i
+	}
+
+	// Allocate result: block_size + msg_len
+	block_size msg_len + -> total
+	total mem::alloc! -> result
+	// Copy key pad into first block_size bytes
+	result kpad block_size mem::copy
+	// Copy message after key pad
+	result block_size mem::ptr_add msg_buf msg_len mem::copy
+	kpad mem::free
+
+	total result
+}
+
+/// Compute HMAC-SHA256.
+/// @param key str Secret key
+/// @param message str Message to authenticate
+/// @return mac str 64-character hex HMAC
+/// @example "Jefe" "what do ya want for nothing?" crypto::hmac_sha256! -> mac
+pub fn hmac_sha256(key:str message:str -- mac:str)! {
+	message mem::from_string -> mlen -> mbuf
+
+	// Inner: SHA256((key XOR ipad) || message)
+	key SHA256_BLOCK 54 mbuf mlen build_hmac_input! -> inner_buf -> inner_len
+	inner_buf inner_len sha256_bytes! -> inner_hex
+	mbuf mem::free
+	inner_buf mem::free
+
+	// Decode inner hash from hex to raw bytes
+	inner_hex hex::decode -> inner_raw
+	inner_raw mem::from_string -> inner_raw_len -> inner_raw_buf
+
+	// Outer: SHA256((key XOR opad) || inner_hash_bytes)
+	key SHA256_BLOCK 92 inner_raw_buf inner_raw_len build_hmac_input! -> outer_buf -> outer_len
+	outer_buf outer_len sha256_bytes! -> mac
+	inner_raw_buf mem::free
+	outer_buf mem::free
+
+	mac
+}
+
+/// Compute HMAC-SHA512.
+/// @param key str Secret key
+/// @param message str Message to authenticate
+/// @return mac str 128-character hex HMAC
+/// @example "Jefe" "what do ya want for nothing?" crypto::hmac_sha512! -> mac
+pub fn hmac_sha512(key:str message:str -- mac:str)! {
+	message mem::from_string -> mlen -> mbuf
+
+	// Inner: SHA512((key XOR ipad) || message)
+	key SHA512_BLOCK 54 mbuf mlen build_hmac_input! -> inner_buf -> inner_len
+	inner_buf inner_len sha512_bytes! -> inner_hex
+	mbuf mem::free
+	inner_buf mem::free
+
+	// Decode inner hash from hex to raw bytes
+	inner_hex hex::decode -> inner_raw
+	inner_raw mem::from_string -> inner_raw_len -> inner_raw_buf
+
+	// Outer: SHA512((key XOR opad) || inner_hash_bytes)
+	key SHA512_BLOCK 92 inner_raw_buf inner_raw_len build_hmac_input! -> outer_buf -> outer_len
+	outer_buf outer_len sha512_bytes! -> mac
+	inner_raw_buf mem::free
+	outer_buf mem::free
+
+	mac
+}

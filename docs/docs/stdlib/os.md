@@ -23,6 +23,76 @@ Error codes: Ok=1 (success), specific errors start at 2
 
 ## Functions
 
+### `fn` chdir
+
+Change the current working directory.
+
+**Signature:** `(path:str -- )!`
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `path` | `str` | Directory path |
+
+| Error | Description |
+|-------|-------------|
+| `os::ErrNotFound` | Directory not found |
+| `os::ErrPermission` | Permission denied |
+| `os::ErrNotDirectory` | Path is not a directory |
+
+**Example:**
+
+```qd
+"/tmp" os::chdir!
+```
+---
+
+### `fn` chmod
+
+Change file permissions. Mode is specified as Unix permission bits (e.g., 0o644, 0o755).
+
+**Signature:** `(path:str mode:i64 -- )!`
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `path` | `str` | File or directory path |
+| `mode` | `i64` | Permission mode (e.g., 420 for 0o644) |
+
+| Error | Description |
+|-------|-------------|
+| `os::ErrNotFound` | File not found |
+| `os::ErrPermission` | Permission denied |
+
+**Example:**
+
+```qd
+"/tmp/script.sh" 0o755 os::chmod!
+```
+---
+
+### `fn` chown
+
+Change file owner and group. Use -1 for uid or gid to leave unchanged.
+
+**Signature:** `(path:str uid:i64 gid:i64 -- )!`
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `path` | `str` | File or directory path |
+| `uid` | `i64` | User ID (-1 to not change) |
+| `gid` | `i64` | Group ID (-1 to not change) |
+
+| Error | Description |
+|-------|-------------|
+| `os::ErrNotFound` | File not found |
+| `os::ErrPermission` | Permission denied (usually requires root) |
+
+**Example:**
+
+```qd
+"/tmp/myfile" 1000 1000 os::chown!
+```
+---
+
 ### `fn` copy
 
 Copy a file.
@@ -175,6 +245,23 @@ Get environment variable value.
 ```
 ---
 
+### `fn` getgid
+
+Get the current group ID.
+
+**Signature:** `( -- gid:i64)`
+
+| Output | Type | Description |
+|--------|------|-------------|
+| `gid` | `i64` | Real group ID of the calling process |
+
+**Example:**
+
+```qd
+os::getgid print
+```
+---
+
 ### `fn` getpid
 
 Get the current process ID.
@@ -189,6 +276,23 @@ Get the current process ID.
 
 ```qd
 os::getpid print nl
+```
+---
+
+### `fn` getuid
+
+Get the current user ID.
+
+**Signature:** `( -- uid:i64)`
+
+| Output | Type | Description |
+|--------|------|-------------|
+| `uid` | `i64` | Real user ID of the calling process |
+
+**Example:**
+
+```qd
+os::getuid print
 ```
 ---
 
@@ -211,6 +315,27 @@ Match files using glob pattern. Supports *, ?, and ** for recursive matching.
 
 ```qd
 "*.qd" os::glob! -> count  // entries
+```
+---
+
+### `fn` hostname
+
+Get the system hostname.
+
+**Signature:** `( -- hostname:str)!`
+
+| Output | Type | Description |
+|--------|------|-------------|
+| `hostname` | `str` | Hostname of the current system |
+
+| Error | Description |
+|-------|-------------|
+| `os::ErrIo` | Failed to get hostname |
+
+**Example:**
+
+```qd
+os::hostname! print
 ```
 ---
 
@@ -253,6 +378,27 @@ Check if path is a regular file.
 
 ```qd
 "/etc/passwd" os::is_file print  // 1
+```
+---
+
+### `fn` is_symlink
+
+Check if path is a symbolic link. Does not follow the link to check if the target exists.
+
+**Signature:** `(path:str -- is_symlink:i64)`
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `path` | `str` | Path to check |
+
+| Output | Type | Description |
+|--------|------|-------------|
+| `is_symlink` | `i64` | 1 if symbolic link, 0 otherwise |
+
+**Example:**
+
+```qd
+"/tmp/mylink" os::is_symlink print
 ```
 ---
 
@@ -351,6 +497,32 @@ Execute a command and stream output line-by-line to a callback. The callback is 
 ```
 ---
 
+### `fn` readlink
+
+Read the target of a symbolic link.
+
+**Signature:** `(path:str -- target:str)!`
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `path` | `str` | Path to the symbolic link |
+
+| Output | Type | Description |
+|--------|------|-------------|
+| `target` | `str` | Path that the link points to |
+
+| Error | Description |
+|-------|-------------|
+| `os::ErrNotFound` | Link not found |
+| `os::ErrInvalidArg` | Path is not a symbolic link |
+
+**Example:**
+
+```qd
+"/tmp/mylink" os::readlink!  // target
+```
+---
+
 ### `fn` rename
 
 Rename or move a file.
@@ -414,6 +586,29 @@ Set environment variable.
 ```
 ---
 
+### `fn` symlink
+
+Create a symbolic link.
+
+**Signature:** `(target:str linkpath:str -- )!`
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `target` | `str` | Path that the link points to |
+| `linkpath` | `str` | Path where the link will be created |
+
+| Error | Description |
+|-------|-------------|
+| `os::ErrExists` | Link path already exists |
+| `os::ErrPermission` | Permission denied |
+
+**Example:**
+
+```qd
+"/usr/bin/python3" "/tmp/python" os::symlink!
+```
+---
+
 ### `fn` system
 
 Execute a shell command.
@@ -432,6 +627,23 @@ Execute a shell command.
 
 ```qd
 "ls -la" os::system  // code
+```
+---
+
+### `fn` unsetenv
+
+Unset environment variable.
+
+**Signature:** `(name:str -- )`
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `name` | `str` | Variable name to remove |
+
+**Example:**
+
+```qd
+"MY_VAR" os::unsetenv
 ```
 ---
 

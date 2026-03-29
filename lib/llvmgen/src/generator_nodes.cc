@@ -1039,15 +1039,44 @@ namespace Qd {
 		// Not a constant or struct, must be a function
 		std::string mangledName = "usr_" + scope + "_" + name;
 
-		// Check if we have this function
+		// Check if we have this function (first as regular function, then as method)
 		llvm::Function* fn = module->getFunction(mangledName);
+		bool isMethodFallback = false;
+		size_t methodParamCount = 0;
 		if (!fn) {
-			// Function doesn't exist yet, declare it
-			// Use InternalLinkage for user functions unless in export mode (shared library compilation)
-			// InternalLinkage allows LLVM to eliminate unused functions via GlobalDCE
+			// Function not found with plain mangling — check if it's a method
+			// that the validator couldn't resolve (cross-module method calls)
+			// Try looking up in userFunctions with method-mangled names
+			for (const auto& entry : userFunctions) {
+				// Match pattern: "scope::StructType::methodName" where methodName == name
+				const std::string& key = entry.first;
+				if (key.size() > name.size() + 2 && key.substr(key.size() - name.size()) == name &&
+						key[key.size() - name.size() - 2] == ':' && key[key.size() - name.size() - 1] == ':' &&
+						key.find(scope + "::") == 0) {
+					fn = entry.second;
+					isMethodFallback = true;
+					// Get receiver position from methodReceiverPosition map
+					auto posIt = methodReceiverPosition.find(key);
+					if (posIt != methodReceiverPosition.end()) {
+						methodParamCount = posIt->second;
+					}
+					break;
+				}
+			}
+		}
+		if (!fn) {
+			// Still not found — declare it as external
 			auto linkage = exportMode ? llvm::Function::ExternalLinkage : llvm::Function::InternalLinkage;
 			auto fnTy = llvm::FunctionType::get(execResultTy, {contextPtrTy}, false);
 			fn = llvm::Function::Create(fnTy, linkage, mangledName, *module);
+		}
+
+		// If this is a method found via fallback, roll the receiver to top of stack
+		if (isMethodFallback && methodParamCount > 0) {
+			builder->CreateCall(pushIntFn, {ctx, builder->getInt64(methodParamCount)});
+			auto rollFnTy = llvm::FunctionType::get(execResultTy, {contextPtrTy}, false);
+			auto rollFn = module->getOrInsertFunction("qd_roll", rollFnTy);
+			builder->CreateCall(rollFn, {ctx});
 		}
 
 		// Compile-time stack path: call native bridge directly if available

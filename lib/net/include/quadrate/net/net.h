@@ -84,6 +84,18 @@ int usr_net_shutdown(qd_context* ctx);
  */
 int usr_net_close(qd_context* ctx);
 
+/** Set send/receive timeout on socket. */
+int usr_net_set_timeout(qd_context* ctx);
+
+/** Enable/disable TCP keepalive. */
+int usr_net_set_keepalive(qd_context* ctx);
+
+/** DNS lookup: resolve hostname to IP address. */
+int usr_net_lookup(qd_context* ctx);
+
+/** Get remote address and port of connected socket. */
+int usr_net_get_peer_addr(qd_context* ctx);
+
 #ifdef __cplusplus
 }
 #endif

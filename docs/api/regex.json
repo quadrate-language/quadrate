@@ -1,0 +1,92 @@
+{
+  "name": "regex",
+  "description": "Regular expression matching using Thompson NFA. Supports . * + ? | () [] [^] [a-z] ^ $ and escapes. Note: Nested groups and alternation inside groups not yet supported.",
+  "constants": [
+
+  ],
+  "structs": [
+
+  ],
+  "functions": [
+    {
+      "name": "compile",
+      "signature": "(pattern:str -- re:ptr)",
+      "failable": false,
+      "description": "Compile a regex pattern.",
+      "params": [{"name": "pattern", "type": "str", "description": "Regular expression pattern"}],
+      "returns": [{"name": "re", "type": "ptr", "description": "Compiled regex (null on error)"}],
+      "errors": [],
+      "examples": []
+    },
+    {
+      "name": "find_all",
+      "signature": "(re:ptr s:str max:i64 -- results:ptr count:i64)",
+      "failable": false,
+      "description": "Find all non-overlapping matches. Returns array of start/end pairs and count. Caller must free the returned array with mem::free.",
+      "params": [{"name": "re", "type": "ptr", "description": "Compiled regex"}, {"name": "s", "type": "str", "description": "String to search"}, {"name": "max", "type": "i64", "description": "Maximum matches to find (-1 for unlimited)"}],
+      "returns": [{"name": "results", "type": "ptr", "description": "Array of i64 pairs [start0, end0, start1, end1, ...]"}, {"name": "count", "type": "i64", "description": "Number of matches found"}],
+      "errors": [],
+      "examples": ["\"[0-9]+\" regex::compile -> re  re \"a1b22c333\" -1 regex::find_all -> results -> count"]
+    },
+    {
+      "name": "find",
+      "signature": "(re:ptr s:str -- start:i64 end:i64)",
+      "failable": false,
+      "description": "Find first match in string. Returns start and end (exclusive) indices. Returns -1 -1 if no match found.",
+      "params": [{"name": "re", "type": "ptr", "description": "Compiled regex"}, {"name": "s", "type": "str", "description": "String to search"}],
+      "returns": [{"name": "start", "type": "i64", "description": "Start index of match (-1 if none)"}, {"name": "end", "type": "i64", "description": "End index of match, exclusive (-1 if none)"}],
+      "errors": [],
+      "examples": ["\"[0-9]+\" regex::compile -> re  re \"abc123def\" regex::find -> start -> end"]
+    },
+    {
+      "name": "is_match",
+      "signature": "(pattern:str s:str -- result:i64)",
+      "failable": false,
+      "description": "Compile and test if pattern matches string.",
+      "params": [{"name": "pattern", "type": "str", "description": "Regex pattern"}, {"name": "s", "type": "str", "description": "String to match"}],
+      "returns": [{"name": "result", "type": "i64", "description": "1 if matches, 0 otherwise"}],
+      "errors": [],
+      "examples": ["\"hello.*\" \"hello world\" regex::is_match -> result"]
+    },
+    {
+      "name": "match_count",
+      "signature": "(re:ptr s:str -- count:i64)",
+      "failable": false,
+      "description": "Count non-overlapping matches in string.",
+      "params": [{"name": "re", "type": "ptr", "description": "Compiled regex"}, {"name": "s", "type": "str", "description": "String to search"}],
+      "returns": [{"name": "count", "type": "i64", "description": "Number of matches"}],
+      "errors": [],
+      "examples": ["\"[0-9]+\" regex::compile -> re  re \"a1b22c333\" regex::match_count -> n"]
+    },
+    {
+      "name": "matches",
+      "signature": "(re:ptr s:str -- result:i64)",
+      "failable": false,
+      "description": "Test if a string matches a compiled regex (full match).",
+      "params": [{"name": "re", "type": "ptr", "description": "Compiled regex"}, {"name": "s", "type": "str", "description": "String to match"}],
+      "returns": [{"name": "matches", "type": "i64", "description": "1 if matches, 0 otherwise"}],
+      "errors": [],
+      "examples": []
+    },
+    {
+      "name": "release",
+      "signature": "(re:ptr -- )",
+      "failable": false,
+      "description": "Free a compiled regex.",
+      "params": [],
+      "returns": [],
+      "errors": [],
+      "examples": []
+    },
+    {
+      "name": "replace",
+      "signature": "(re:ptr s:str repl:str -- result:str)",
+      "failable": false,
+      "description": "Replace all matches with replacement string.",
+      "params": [{"name": "re", "type": "ptr", "description": "Compiled regex"}, {"name": "s", "type": "str", "description": "Input string"}, {"name": "repl", "type": "str", "description": "Replacement string"}],
+      "returns": [{"name": "result", "type": "str", "description": "String with all matches replaced"}],
+      "errors": [],
+      "examples": ["\"[0-9]+\" regex::compile -> re  re \"abc123def456\" \"#\" regex::replace -> result"]
+    }
+  ]
+}

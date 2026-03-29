@@ -13,6 +13,10 @@ pub const ErrSend = 5
 pub const ErrReceive = 6
 /// Error: Invalid argument.
 pub const ErrInvalidArg = 7
+/// Error: Timeout setting failed.
+pub const ErrTimeout = 8
+/// Error: DNS lookup failed.
+pub const ErrLookup = 9
 
 import "libnet.a" as "net" {
 	/// Start listening for connections on a port.
@@ -63,4 +67,33 @@ import "libnet.a" as "net" {
 	/// @param socket i64 Socket descriptor
 	/// @example sock net::close
 	pub fn close(socket:i64 -- )
+
+	/// Set send and receive timeout on a socket.
+	/// @param socket i64 Socket descriptor
+	/// @param ms i64 Timeout in milliseconds
+	/// @error ErrTimeout Failed to set timeout
+	/// @example sock 5000 net::set_timeout!
+	pub fn set_timeout(socket:i64 ms:i64 -- )!
+
+	/// Enable or disable TCP keepalive on a socket.
+	/// @param socket i64 Socket descriptor
+	/// @param enable i64 1 to enable, 0 to disable
+	/// @error ErrInvalidArg Failed to set keepalive
+	/// @example sock 1 net::set_keepalive!
+	pub fn set_keepalive(socket:i64 enable:i64 -- )!
+
+	/// Resolve a hostname to an IP address via DNS.
+	/// @param hostname str Hostname to resolve
+	/// @return ip str IP address string
+	/// @error ErrLookup DNS resolution failed
+	/// @example "example.com" net::lookup! -> ip
+	pub fn lookup(hostname:str -- ip:str)!
+
+	/// Get the remote address and port of a connected socket.
+	/// @param socket i64 Socket descriptor
+	/// @return addr str Remote IP address
+	/// @return port i64 Remote port number
+	/// @error ErrInvalidArg Failed to get peer address
+	/// @example sock net::get_peer_addr! -> port -> addr
+	pub fn get_peer_addr(socket:i64 -- addr:str port:i64)!
 }

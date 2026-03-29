@@ -215,8 +215,8 @@ fn get_best_practices_content( -- content:str) {
 	s "  a b strings::concat c strings::concat d strings::concat\n\n" strings::concat -> s
 	s "GOOD - String builder:\n" strings::concat -> s
 	s "  sb::new -> builder\n" strings::concat -> s
-	s "  builder a sb::append b sb::append c sb::append\n" strings::concat -> s
-	s "  sb::to_string\n\n" strings::concat -> s
+	s "  builder a append b append c append\n" strings::concat -> s
+	s "  finish\n\n" strings::concat -> s
 
 	s "8. VALIDATE EARLY\n" strings::concat -> s
 	s "------------------\n" strings::concat -> s
@@ -368,19 +368,20 @@ fn get_cheatsheet_content( -- content:str) {
 
 	s "RANDOM (use rand)\n" strings::concat -> s
 	s "-----------------\n" strings::concat -> s
-	s "rand::int          -- i                   Random integer\n" strings::concat -> s
-	s "rand::float        -- f                   Random float 0.0-1.0\n" strings::concat -> s
-	s "rand::range        min max -- i           Random in range\n" strings::concat -> s
-	s "rand::seed         s --                   Set random seed\n\n" strings::concat -> s
+	s "rand::new           -- rng                 Create RNG (time-seeded)\n" strings::concat -> s
+	s "rng int             max -- rng i           Random integer [0,max)\n" strings::concat -> s
+	s "rng float           -- rng f               Random float [0.0,1.0)\n" strings::concat -> s
+	s "rng range           min max -- rng i       Random in range\n" strings::concat -> s
+	s "rng boolean         -- rng b               Random 0 or 1\n\n" strings::concat -> s
 
 	s "STRING BUILDER (use sb)\n" strings::concat -> s
 	s "-----------------------\n" strings::concat -> s
-	s "sb::new            -- builder             Create builder\n" strings::concat -> s
-	s "sb::append         b s -- b               Append string\n" strings::concat -> s
-	s "sb::append_char    b c -- b               Append char code\n" strings::concat -> s
-	s "sb::to_string      b -- s                 Get result string\n" strings::concat -> s
-	s "sb::clear          b -- b                 Clear builder\n" strings::concat -> s
-	s "sb::len            b -- len               Current length\n\n" strings::concat -> s
+	s "sb::new             -- builder             Create builder\n" strings::concat -> s
+	s "builder append      s -- builder           Append string\n" strings::concat -> s
+	s "builder append_char c -- builder           Append char code\n" strings::concat -> s
+	s "builder append_int  n -- builder           Append integer\n" strings::concat -> s
+	s "builder finish      -- s                   Get string and free\n" strings::concat -> s
+	s "builder len         -- len                 Current length\n\n" strings::concat -> s
 
 	s "OUTPUT (builtins)\n" strings::concat -> s
 	s "-----------------\n" strings::concat -> s

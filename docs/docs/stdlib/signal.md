@@ -24,30 +24,6 @@ fn main() {
 }
 ```
 
-## Constants
-
-| Name | Value | Description |
-|------|-------|-------------|
-| `SigAbrt` | `6` | Abort signal. |
-| `SigAlrm` | `14` | Alarm clock. |
-| `SigChld` | `17` | Child process stopped or terminated. |
-| `SigCont` | `18` | Continue if stopped. |
-| `SigFpe` | `8` | Floating point exception. |
-| `SigHup` | `1` | Hangup signal (terminal closed). |
-| `SigIll` | `4` | Illegal instruction. |
-| `SigInt` | `2` | Interrupt signal (Ctrl+C). |
-| `SigKill` | `9` | Kill signal (cannot be caught). |
-| `SigPipe` | `13` | Broken pipe. |
-| `SigQuit` | `3` | Quit signal (Ctrl+\). |
-| `SigSegv` | `11` | Segmentation fault. |
-| `SigStop` | `19` | Stop signal (cannot be caught). |
-| `SigTerm` | `15` | Termination signal. |
-| `SigTstp` | `20` | Terminal stop (Ctrl+Z). |
-| `SigTtin` | `21` | Background read from terminal. |
-| `SigTtou` | `22` | Background write to terminal. |
-| `SigUsr1` | `10` | User-defined signal 1. |
-| `SigUsr2` | `12` | User-defined signal 2. |
-
 ## Functions
 
 ### `fn` clear
@@ -84,6 +60,28 @@ signal::SigPipe signal::ignore
 ```
 ---
 
+### `fn` kill
+
+Send a signal to another process.
+
+**Signature:** `(pid:i64 signum:i64 -- result:i64)`
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `pid` | `i64` | Process ID to signal |
+| `signum` | `i64` | Signal number to send |
+
+| Output | Type | Description |
+|--------|------|-------------|
+| `result` | `i64` | 0 on success, -1 on error |
+
+**Example:**
+
+```qd
+1234 signal::SigTerm signal::kill drop
+```
+---
+
 ### `fn` pending
 
 Check if a signal is pending (received but not cleared). Returns 1 if pending, 0 otherwise. Does not clear the flag.
@@ -105,6 +103,27 @@ signal::SigInt signal::pending
 ```
 ---
 
+### `fn` raise
+
+Send a signal to the current process.
+
+**Signature:** `(signum:i64 -- result:i64)`
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `signum` | `i64` | Signal number to send |
+
+| Output | Type | Description |
+|--------|------|-------------|
+| `result` | `i64` | 0 on success, -1 on error |
+
+**Example:**
+
+```qd
+signal::SigUsr1 signal::raise drop
+```
+---
+
 ### `fn` reset
 
 Reset signal to default behavior.
@@ -120,6 +139,139 @@ Reset signal to default behavior.
 ```qd
 signal::SigInt signal::reset
 ```
+---
+
+### `fn` SigAbrt
+
+Abort signal.
+
+**Signature:** `( -- val:i64)`
+---
+
+### `fn` SigAlrm
+
+Alarm clock.
+
+**Signature:** `( -- val:i64)`
+---
+
+### `fn` SigChld
+
+Child process stopped or terminated.
+
+**Signature:** `( -- val:i64)`
+---
+
+### `fn` SigCont
+
+Continue if stopped.
+
+**Signature:** `( -- val:i64)`
+---
+
+### `fn` SigFpe
+
+Floating point exception.
+
+**Signature:** `( -- val:i64)`
+---
+
+### `fn` SigHup
+
+Hangup signal (terminal closed).
+
+**Signature:** `( -- val:i64)`
+---
+
+### `fn` SigIll
+
+Illegal instruction.
+
+**Signature:** `( -- val:i64)`
+---
+
+### `fn` SigInt
+
+Interrupt signal (Ctrl+C).
+
+**Signature:** `( -- val:i64)`
+---
+
+### `fn` SigKill
+
+Kill signal (cannot be caught).
+
+**Signature:** `( -- val:i64)`
+---
+
+### `fn` SigPipe
+
+Broken pipe.
+
+**Signature:** `( -- val:i64)`
+---
+
+### `fn` SigQuit
+
+Quit signal (Ctrl+\).
+
+**Signature:** `( -- val:i64)`
+---
+
+### `fn` SigSegv
+
+Segmentation fault.
+
+**Signature:** `( -- val:i64)`
+---
+
+### `fn` SigStop
+
+Stop signal (cannot be caught).
+
+**Signature:** `( -- val:i64)`
+---
+
+### `fn` SigTerm
+
+Termination signal.
+
+**Signature:** `( -- val:i64)`
+---
+
+### `fn` SigTstp
+
+Terminal stop (Ctrl+Z).
+
+**Signature:** `( -- val:i64)`
+---
+
+### `fn` SigTtin
+
+Background read from terminal.
+
+**Signature:** `( -- val:i64)`
+---
+
+### `fn` SigTtou
+
+Background write to terminal.
+
+**Signature:** `( -- val:i64)`
+---
+
+### `fn` SigUsr1
+
+User-defined signal 1.
+
+**Signature:** `( -- val:i64)`
+---
+
+### `fn` SigUsr2
+
+User-defined signal 2.
+
+**Signature:** `( -- val:i64)`
 ---
 
 ### `fn` trap

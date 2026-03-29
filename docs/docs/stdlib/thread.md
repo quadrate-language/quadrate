@@ -56,6 +56,40 @@ Provides:
 
 ## Functions
 
+### `fn` cpu_count
+
+Get the number of online CPUs/cores. Useful for determining how many threads to spawn. 
+
+**Signature:** `( -- count:i64)`
+
+| Output | Type | Description |
+|--------|------|-------------|
+| `count` | `i64` | Number of CPUs |
+
+**Example:**
+
+```qd
+thread::cpu_count  // n
+```
+---
+
+### `fn` self
+
+Get the current thread's ID. The ID is implementation-defined but can be used for comparison. 
+
+**Signature:** `( -- id:i64)`
+
+| Output | Type | Description |
+|--------|------|-------------|
+| `id` | `i64` | Current thread ID |
+
+**Example:**
+
+```qd
+thread::self  // id
+```
+---
+
 ### `fn` sleep
 
 Sleep the current thread for the specified duration in milliseconds. 
@@ -71,6 +105,86 @@ Sleep the current thread for the specified duration in milliseconds.
 ```qd
 1000 thread::sleep  // Sleep 1 second
 ```
+---
+
+### `fn` yield
+
+Yield the CPU to allow other threads to run. 
+
+**Signature:** `( -- )`
+
+**Example:**
+
+```qd
+thread::yield
+```
+## Barrier
+
+A Barrier synchronizes multiple threads at a point.
+
+### Struct
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `handle` | `ptr` |  |
+
+### Constructors
+
+#### `fn` barrier_new
+
+Create a new Barrier for n threads. 
+
+**Signature:** `(n:i64 -- b:Barrier)!`
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `n` | `i64` | Number of threads that must reach the barrier |
+
+| Output | Type | Description |
+|--------|------|-------------|
+| `b` | `Barrier` | New Barrier handle |
+
+| Error | Description |
+|-------|-------------|
+| `thread::ErrCreate` | Failed to create Barrier |
+
+**Example:**
+
+```qd
+4 thread::barrier_new!  // b
+```
+
+### Methods
+
+#### `fn` free
+
+Free the Barrier. 
+
+**Signature:** `(b:Barrier) free( -- )`
+
+**Example:**
+
+```qd
+b free
+```
+---
+
+#### `fn` wait
+
+Wait at the barrier until all threads arrive. Returns 1 for exactly one thread (the "serial thread"), 0 for all other threads. This can be used to have one thread perform serial work after the barrier. 
+
+**Signature:** `(b:Barrier) wait( -- is_serial:i64)`
+
+| Output | Type | Description |
+|--------|------|-------------|
+| `is_serial` | `i64` | 1 for serial thread, 0 otherwise |
+
+**Example:**
+
+```qd
+b wait  // serial
+```
+
 ## Channel
 
 A channel for thread communication.
@@ -374,6 +488,218 @@ Unlock the mutex.
 
 ```qd
 m unlock!
+```
+
+## Once
+
+A Once ensures a function is executed only once.
+
+### Struct
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `handle` | `ptr` |  |
+
+### Constructors
+
+#### `fn` once_new
+
+Create a new Once. 
+
+**Signature:** `( -- o:Once)!`
+
+| Output | Type | Description |
+|--------|------|-------------|
+| `o` | `Once` | New Once handle |
+
+| Error | Description |
+|-------|-------------|
+| `thread::ErrCreate` | Failed to create Once |
+
+**Example:**
+
+```qd
+thread::once_new!  // o
+```
+
+### Methods
+
+#### `fn` do
+
+Execute the function exactly once. If multiple threads call this concurrently, only one will execute the function; the others will wait until it completes. 
+
+**Signature:** `(o:Once) do(func:ptr -- )`
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `func` | `ptr` | Function to execute once |
+
+**Example:**
+
+```qd
+o &init_stuff do
+```
+---
+
+#### `fn` free
+
+Free the Once. 
+
+**Signature:** `(o:Once) free( -- )`
+
+**Example:**
+
+```qd
+o free
+```
+---
+
+#### `fn` is_done
+
+Check if the function has been executed. 
+
+**Signature:** `(o:Once) is_done( -- done:i64)`
+
+| Output | Type | Description |
+|--------|------|-------------|
+| `done` | `i64` | 1 if executed, 0 if not yet |
+
+**Example:**
+
+```qd
+o is_done  // executed
+```
+
+## RwLock
+
+A RwLock allows multiple readers or one writer. Writers are prioritized to prevent starvation.
+
+### Struct
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `handle` | `ptr` |  |
+
+### Constructors
+
+#### `fn` rwlock_new
+
+Create a new RwLock. 
+
+**Signature:** `( -- rw:RwLock)!`
+
+| Output | Type | Description |
+|--------|------|-------------|
+| `rw` | `RwLock` | New RwLock handle |
+
+| Error | Description |
+|-------|-------------|
+| `thread::ErrCreate` | Failed to create RwLock |
+
+**Example:**
+
+```qd
+thread::rwlock_new!  // rw
+```
+
+### Methods
+
+#### `fn` free
+
+Free the RwLock. 
+
+**Signature:** `(rw:RwLock) free( -- )`
+
+**Example:**
+
+```qd
+rw free
+```
+---
+
+#### `fn` read_lock
+
+Acquire a read lock. Multiple threads can hold read locks simultaneously. Blocks if a writer is active or waiting. 
+
+**Signature:** `(rw:RwLock) read_lock( -- )!`
+
+**Example:**
+
+```qd
+rw read_lock!
+```
+---
+
+#### `fn` read_unlock
+
+Release a read lock. 
+
+**Signature:** `(rw:RwLock) read_unlock( -- )!`
+
+**Example:**
+
+```qd
+rw read_unlock!
+```
+---
+
+#### `fn` try_read
+
+Try to acquire a read lock without blocking. 
+
+**Signature:** `(rw:RwLock) try_read( -- success:i64)`
+
+| Output | Type | Description |
+|--------|------|-------------|
+| `success` | `i64` | 1 if acquired, 0 otherwise |
+
+**Example:**
+
+```qd
+rw try_read  // got
+```
+---
+
+#### `fn` try_write
+
+Try to acquire a write lock without blocking. 
+
+**Signature:** `(rw:RwLock) try_write( -- success:i64)`
+
+| Output | Type | Description |
+|--------|------|-------------|
+| `success` | `i64` | 1 if acquired, 0 otherwise |
+
+**Example:**
+
+```qd
+rw try_write  // got
+```
+---
+
+#### `fn` write_lock
+
+Acquire a write lock. Only one thread can hold the write lock. Blocks until all readers and writers release. 
+
+**Signature:** `(rw:RwLock) write_lock( -- )!`
+
+**Example:**
+
+```qd
+rw write_lock!
+```
+---
+
+#### `fn` write_unlock
+
+Release a write lock. 
+
+**Signature:** `(rw:RwLock) write_unlock( -- )!`
+
+**Example:**
+
+```qd
+rw write_unlock!
 ```
 
 ## Thread

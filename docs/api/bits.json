@@ -10,7 +10,7 @@
   "functions": [
     {
       "name": "clear_bit",
-      "signature": "(value:i64 bit_pos:i64 -- result:i64)",
+      "signature": "(i64 i64 -- result:i64)",
       "failable": false,
       "description": "Clear a bit to 0.",
       "params": [{"name": "value", "type": "i64", "description": "Input value"}, {"name": "bit_pos", "type": "i64", "description": "Bit position to clear"}],
@@ -20,7 +20,7 @@
     },
     {
       "name": "clz",
-      "signature": "(value:i64 -- count:i64)",
+      "signature": "(v:i64 -- count:i64)",
       "failable": false,
       "description": "Count leading zeros (from MSB).",
       "params": [{"name": "value", "type": "i64", "description": "Value to count"}],
@@ -30,7 +30,7 @@
     },
     {
       "name": "ctz",
-      "signature": "(value:i64 -- count:i64)",
+      "signature": "(v:i64 -- count:i64)",
       "failable": false,
       "description": "Count trailing zeros (from LSB).",
       "params": [{"name": "value", "type": "i64", "description": "Value to count"}],
@@ -40,7 +40,7 @@
     },
     {
       "name": "extract",
-      "signature": "(value:i64 start_bit:i64 num_bits:i64 -- result:i64)",
+      "signature": "(i64 i64 i64 -- result:i64)",
       "failable": false,
       "description": "Extract a bit field from a value.",
       "params": [{"name": "value", "type": "i64", "description": "Source value"}, {"name": "start_bit", "type": "i64", "description": "Start position (0 = LSB)"}, {"name": "num_bits", "type": "i64", "description": "Number of bits to extract"}],
@@ -50,7 +50,7 @@
     },
     {
       "name": "has_bit",
-      "signature": "(value:i64 bit_pos:i64 -- flag:i64)",
+      "signature": "(i64 i64 -- flag:i64)",
       "failable": false,
       "description": "Check if a bit is set.",
       "params": [{"name": "value", "type": "i64", "description": "Value to check"}, {"name": "bit_pos", "type": "i64", "description": "Bit position (0 = LSB)"}],
@@ -60,7 +60,7 @@
     },
     {
       "name": "highest_bit",
-      "signature": "(value:i64 -- result:i64)",
+      "signature": "(v:i64 -- result:i64)",
       "failable": false,
       "description": "Get the highest set bit as a value (isolate highest bit).",
       "params": [{"name": "value", "type": "i64", "description": "Input value"}],
@@ -70,7 +70,7 @@
     },
     {
       "name": "is_power_of_two",
-      "signature": "(value:i64 -- flag:i64)",
+      "signature": "(v:i64 -- flag:i64)",
       "failable": false,
       "description": "Check if value is a power of two.",
       "params": [{"name": "value", "type": "i64", "description": "Value to check"}],
@@ -80,7 +80,7 @@
     },
     {
       "name": "log2",
-      "signature": "(value:i64 -- result:i64)",
+      "signature": "(v:i64 -- result:i64)",
       "failable": false,
       "description": "Integer log base 2 (position of highest set bit).",
       "params": [{"name": "value", "type": "i64", "description": "Value (must be > 0)"}],
@@ -90,7 +90,7 @@
     },
     {
       "name": "lowest_bit",
-      "signature": "(value:i64 -- result:i64)",
+      "signature": "(v:i64 -- result:i64)",
       "failable": false,
       "description": "Get the lowest set bit as a value (isolate lowest bit).",
       "params": [{"name": "value", "type": "i64", "description": "Input value"}],
@@ -100,7 +100,7 @@
     },
     {
       "name": "mask",
-      "signature": "(value:i64 num_bits:i64 -- result:i64)",
+      "signature": "(i64 i64 -- result:i64)",
       "failable": false,
       "description": "Bitwise operations for integer manipulation.  Core operations (and, or, xor, not, shl, shr) are builtins. This module provides higher-level bit manipulation functions. Keep only the bottom N bits.",
       "params": [{"name": "value", "type": "i64", "description": "Input value"}, {"name": "num_bits", "type": "i64", "description": "Number of bits to keep from LSB"}],
@@ -110,7 +110,7 @@
     },
     {
       "name": "next_power_of_two",
-      "signature": "(value:i64 -- result:i64)",
+      "signature": "(v:i64 -- result:i64)",
       "failable": false,
       "description": "Find the next power of two greater than or equal to value.",
       "params": [{"name": "value", "type": "i64", "description": "Input value"}],
@@ -120,7 +120,7 @@
     },
     {
       "name": "popcount",
-      "signature": "(value:i64 -- count:i64)",
+      "signature": "(i64 -- count:i64)",
       "failable": false,
       "description": "Count set bits (population count).",
       "params": [{"name": "value", "type": "i64", "description": "Value to count"}],
@@ -130,7 +130,7 @@
     },
     {
       "name": "reverse_bits",
-      "signature": "(value:i64 width:i64 -- result:i64)",
+      "signature": "(v:i64 w:i64 -- result:i64)",
       "failable": false,
       "description": "Reverse the bottom N bits.",
       "params": [{"name": "value", "type": "i64", "description": "Value to reverse"}, {"name": "width", "type": "i64", "description": "Number of bits to reverse"}],
@@ -140,7 +140,7 @@
     },
     {
       "name": "rotate_left",
-      "signature": "(value:i64 bits:i64 width:i64 -- result:i64)",
+      "signature": "(v:i64 b:i64 w:i64 -- result:i64)",
       "failable": false,
       "description": "Rotate bits left within a width.",
       "params": [{"name": "value", "type": "i64", "description": "Value to rotate"}, {"name": "bits", "type": "i64", "description": "Positions to rotate"}, {"name": "width", "type": "i64", "description": "Bit width to rotate within"}],
@@ -150,7 +150,7 @@
     },
     {
       "name": "rotate_right",
-      "signature": "(value:i64 bits:i64 width:i64 -- result:i64)",
+      "signature": "(v:i64 b:i64 w:i64 -- result:i64)",
       "failable": false,
       "description": "Rotate bits right within a width.",
       "params": [{"name": "value", "type": "i64", "description": "Value to rotate"}, {"name": "bits", "type": "i64", "description": "Positions to rotate"}, {"name": "width", "type": "i64", "description": "Bit width to rotate within"}],
@@ -159,18 +159,8 @@
       "examples": ["0b0110 1 4 bits::rotate_right print  // 3 (0b0011)"]
     },
     {
-      "name": "set_bits",
-      "signature": "(target:i64 value:i64 start_bit:i64 num_bits:i64 -- result:i64)",
-      "failable": false,
-      "description": "Set a bit field in a value.",
-      "params": [{"name": "target", "type": "i64", "description": "Target value to modify"}, {"name": "value", "type": "i64", "description": "Value to insert"}, {"name": "start_bit", "type": "i64", "description": "Start position (0 = LSB)"}, {"name": "num_bits", "type": "i64", "description": "Number of bits to set"}],
-      "returns": [{"name": "result", "type": "i64", "description": "Modified target"}],
-      "errors": [],
-      "examples": ["0 0b101 2 3 bits::set_bits print  // 20 (0b10100)"]
-    },
-    {
       "name": "set_bit",
-      "signature": "(value:i64 bit_pos:i64 -- result:i64)",
+      "signature": "(i64 i64 -- result:i64)",
       "failable": false,
       "description": "Set a bit to 1.",
       "params": [{"name": "value", "type": "i64", "description": "Input value"}, {"name": "bit_pos", "type": "i64", "description": "Bit position to set"}],
@@ -179,8 +169,18 @@
       "examples": ["0b1000 1 bits::set_bit print  // 10 (0b1010)"]
     },
     {
+      "name": "set_bits",
+      "signature": "(tgt:i64 val:i64 sb:i64 nb:i64 -- result:i64)",
+      "failable": false,
+      "description": "Set a bit field in a value.",
+      "params": [{"name": "target", "type": "i64", "description": "Target value to modify"}, {"name": "value", "type": "i64", "description": "Value to insert"}, {"name": "start_bit", "type": "i64", "description": "Start position (0 = LSB)"}, {"name": "num_bits", "type": "i64", "description": "Number of bits to set"}],
+      "returns": [{"name": "result", "type": "i64", "description": "Modified target"}],
+      "errors": [],
+      "examples": ["0 0b101 2 3 bits::set_bits print  // 20 (0b10100)"]
+    },
+    {
       "name": "toggle_bit",
-      "signature": "(value:i64 bit_pos:i64 -- result:i64)",
+      "signature": "(i64 i64 -- result:i64)",
       "failable": false,
       "description": "Toggle a bit.",
       "params": [{"name": "value", "type": "i64", "description": "Input value"}, {"name": "bit_pos", "type": "i64", "description": "Bit position to toggle"}],

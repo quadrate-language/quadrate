@@ -1,6 +1,6 @@
 {
   "name": "tty",
-  "description": "Terminal detection and information. Use these functions to check if standard streams are connected to a terminal (TTY) and to get terminal dimensions. Useful for writing CLI tools that behave differently when piped vs interactive. @example tty::is_stdout if { term::Green print } \"output\" print tty::is_stdout if { term::Reset print } nl",
+  "description": "Terminal detection and information. Provides functions to check if file descriptors are connected to terminals and to get terminal dimensions.  @example tty::is_stdout if {     term::Green print \"Success\" print term::Reset print nl } else {     \"Success\" print nl }",
   "constants": [
 
   ],
@@ -12,9 +12,9 @@
       "name": "height",
       "signature": "( -- rows:i64)",
       "failable": false,
-      "description": "Get terminal height in rows. Returns 0 if not a terminal or size cannot be determined.",
+      "description": "Get terminal height in rows. Returns 0 if not a terminal.",
       "params": [],
-      "returns": [{"name": "rows", "type": "i64", "description": "Terminal height in rows, or 0"}],
+      "returns": [{"name": "rows", "type": "i64", "description": "Terminal height"}],
       "errors": [],
       "examples": ["tty::height -> rows"]
     },
@@ -22,52 +22,49 @@
       "name": "is_stderr",
       "signature": "( -- is_tty:i64)",
       "failable": false,
-      "description": "Check if stderr is connected to a terminal (TTY). Returns 1 if stderr is a TTY, 0 otherwise.",
+      "description": "Check if stderr is connected to a terminal.",
       "params": [],
-      "returns": [{"name": "is_tty", "type": "i64", "description": "1 if TTY, 0 otherwise"}],
+      "returns": [{"name": "is_tty", "type": "i64", "description": "1 if terminal, 0 otherwise"}],
       "errors": [],
-      "examples": ["tty::is_stderr if { \"interactive stderr\" print nl }"]
+      "examples": ["tty::is_stderr if { \"Error output to terminal\" print nl }"]
     },
     {
       "name": "is_stdin",
       "signature": "( -- is_tty:i64)",
       "failable": false,
-      "description": "Check if stdin is connected to a terminal (TTY). Returns 1 if stdin is a TTY, 0 otherwise. Useful for detecting if input is from keyboard vs pipe.",
+      "description": "Check if stdin is connected to a terminal. Useful for detecting if input is piped.",
       "params": [],
-      "returns": [{"name": "is_tty", "type": "i64", "description": "1 if TTY, 0 otherwise"}],
+      "returns": [{"name": "is_tty", "type": "i64", "description": "1 if terminal, 0 otherwise"}],
       "errors": [],
-      "examples": ["tty::is_stdin if { \"Enter input: \" print }"]
+      "examples": ["tty::is_stdin 0 == if { \"Reading from pipe\" print nl }"]
     },
     {
       "name": "is_stdout",
       "signature": "( -- is_tty:i64)",
       "failable": false,
-      "description": "Check if stdout is connected to a terminal (TTY). Returns 1 if stdout is a TTY, 0 otherwise. Useful for disabling colors when output is piped.",
+      "description": "Check if stdout is connected to a terminal.",
       "params": [],
-      "returns": [{"name": "is_tty", "type": "i64", "description": "1 if TTY, 0 otherwise"}],
+      "returns": [{"name": "is_tty", "type": "i64", "description": "1 if terminal, 0 otherwise"}],
       "errors": [],
-      "examples": ["tty::is_stdout if { term::Green print } \"PASS\" print tty::is_stdout if { term::Reset print }"]
+      "examples": ["tty::is_stdout if { \"Colors enabled\" print nl }"]
     },
     {
       "name": "size",
       "signature": "( -- rows:i64 cols:i64)",
       "failable": false,
-      "description": "Get terminal dimensions (rows and columns). Returns 0 for both values if not a terminal or size cannot be determined. Tries stdout, stderr, stdin in order, then falls back to LINES/COLUMNS environment variables.",
+      "description": "Get terminal dimensions. Returns 0, 0 if not a terminal.",
       "params": [],
-      "returns": [
-        {"name": "rows", "type": "i64", "description": "Terminal height in rows, or 0"},
-        {"name": "cols", "type": "i64", "description": "Terminal width in columns, or 0"}
-      ],
+      "returns": [{"name": "rows", "type": "i64", "description": "Terminal height in rows"}, {"name": "cols", "type": "i64", "description": "Terminal width in columns"}],
       "errors": [],
-      "examples": ["tty::size -> cols -> rows", "tty::size -> cols drop // just get cols"]
+      "examples": ["tty::size -> cols -> rows"]
     },
     {
       "name": "width",
       "signature": "( -- cols:i64)",
       "failable": false,
-      "description": "Get terminal width in columns. Returns 0 if not a terminal or size cannot be determined.",
+      "description": "Get terminal width in columns. Returns 0 if not a terminal.",
       "params": [],
-      "returns": [{"name": "cols", "type": "i64", "description": "Terminal width in columns, or 0"}],
+      "returns": [{"name": "cols", "type": "i64", "description": "Terminal width"}],
       "errors": [],
       "examples": ["tty::width -> cols"]
     }

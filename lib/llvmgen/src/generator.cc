@@ -2295,7 +2295,8 @@ namespace Qd {
 						bool isReachable =
 								reachableFunctions.count(qualifiedName) || reachableFunctions.count(funcNode->name()) ||
 								(funcNode->hasReceiver() &&
-										reachableFunctions.count(funcNode->receiverType() + "::" + funcNode->name()));
+										(reachableFunctions.count(funcNode->receiverType() + "::" + funcNode->name()) ||
+												reachableFunctions.count(moduleName + "::" + funcNode->name())));
 						if (!isReachable) {
 							continue;
 						}
@@ -2335,7 +2336,8 @@ namespace Qd {
 						bool isReachable =
 								reachableFunctions.count(qualifiedName) || reachableFunctions.count(funcNode->name()) ||
 								(funcNode->hasReceiver() &&
-										reachableFunctions.count(funcNode->receiverType() + "::" + funcNode->name()));
+										(reachableFunctions.count(funcNode->receiverType() + "::" + funcNode->name()) ||
+												reachableFunctions.count(moduleName + "::" + funcNode->name())));
 						if (!isReachable) {
 							continue;
 						}

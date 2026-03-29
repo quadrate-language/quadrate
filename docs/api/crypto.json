@@ -1,0 +1,288 @@
+{
+  "name": "crypto",
+  "description": "Cryptographic hash functions, checksums, and HMAC. Provides SHA-256, SHA-512, MD5, CRC32, and HMAC implementations.  Each hash algorithm supports both one-shot hashing and streaming (incremental) mode. HMAC provides message authentication using SHA-256 or SHA-512.",
+  "constants": [
+
+  ],
+  "structs": [
+    {
+      "name": "Crc32",
+      "description": "CRC32 hasher state for streaming computation.",
+      "fields": [
+        {"name": "state", "type": "Current", "description": "CRC state"},
+        {"name": "tbl", "type": "Lookup", "description": "table (allocated on first update)"}
+      ]
+    },
+    {
+      "name": "Md5",
+      "description": "MD5 hasher state for streaming computation.",
+      "fields": [
+        {"name": "a", "type": "i64", "description": ""},
+        {"name": "b", "type": "i64", "description": ""},
+        {"name": "c", "type": "i64", "description": ""},
+        {"name": "d", "type": "i64", "description": ""},
+        {"name": "buf", "type": "ptr", "description": ""},
+        {"name": "buflen", "type": "i64", "description": ""},
+        {"name": "total", "type": "i64", "description": ""}
+      ]
+    },
+    {
+      "name": "Sha256",
+      "description": "SHA-256 hasher state for streaming computation.",
+      "fields": [
+        {"name": "buf", "type": "Buffer", "description": "for incomplete blocks"},
+        {"name": "buflen", "type": "Current", "description": "buffer fill level"},
+        {"name": "total", "type": "Total", "description": "bytes processed"}
+      ]
+    },
+    {
+      "name": "Sha512",
+      "description": "SHA-512 hasher state for streaming computation.",
+      "fields": [
+        {"name": "h0", "type": "i64", "description": ""},
+        {"name": "h1", "type": "i64", "description": ""},
+        {"name": "h2", "type": "i64", "description": ""},
+        {"name": "h3", "type": "i64", "description": ""},
+        {"name": "h4", "type": "i64", "description": ""},
+        {"name": "h5", "type": "i64", "description": ""},
+        {"name": "h6", "type": "i64", "description": ""},
+        {"name": "h7", "type": "i64", "description": ""},
+        {"name": "buf", "type": "ptr", "description": ""},
+        {"name": "buflen", "type": "i64", "description": ""},
+        {"name": "total", "type": "i64", "description": ""}
+      ]
+    }
+  ],
+  "functions": [
+    {
+      "name": "crc32_hex",
+      "signature": "(s:str -- hex:str)",
+      "failable": false,
+      "description": "One-shot CRC32 as hex string.",
+      "params": [{"name": "s", "type": "str", "description": "Input string"}],
+      "returns": [{"name": "hex", "type": "str", "description": "CRC32 as 8-character hex string"}],
+      "errors": [],
+      "examples": []
+    },
+    {
+      "name": "crc32",
+      "signature": "(s:str -- crc:i64)",
+      "failable": false,
+      "description": "One-shot CRC32 of a string.",
+      "params": [{"name": "s", "type": "str", "description": "Input string"}],
+      "returns": [{"name": "crc", "type": "i64", "description": "CRC32 checksum"}],
+      "errors": [],
+      "examples": ["\"Hello\" crc32 -> crc"]
+    },
+    {
+      "name": "crc32_verify",
+      "signature": "(s:str expected:i64 -- ok:i64)",
+      "failable": false,
+      "description": "Verify data against expected CRC32.",
+      "params": [{"name": "s", "type": "str", "description": "Data to verify"}, {"name": "expected", "type": "i64", "description": "Expected CRC32 value"}],
+      "returns": [{"name": "ok", "type": "i64", "description": "1 if matches, 0 otherwise"}],
+      "errors": [],
+      "examples": []
+    },
+    {
+      "name": "finish",
+      "signature": "(h:Md5) finish( -- hash:str)",
+      "failable": true,
+      "description": "Finalize MD5 and get result as hex string.",
+      "params": [{"name": "h", "type": "Md5", "description": "The hasher state"}],
+      "returns": [{"name": "hash", "type": "str", "description": "32-character hex string (lowercase)"}],
+      "errors": [],
+      "examples": []
+    },
+    {
+      "name": "finish",
+      "signature": "(h:Sha256) finish( -- hash:str)",
+      "failable": true,
+      "description": "Finalize SHA-256 and get result as hex string.",
+      "params": [{"name": "h", "type": "Sha256", "description": "The hasher state"}],
+      "returns": [{"name": "hash", "type": "str", "description": "64-character hex string (lowercase)"}],
+      "errors": [],
+      "examples": []
+    },
+    {
+      "name": "finish",
+      "signature": "(h:Sha512) finish( -- hash:str)",
+      "failable": true,
+      "description": "Finalize SHA-512 and get result as hex string.",
+      "params": [],
+      "returns": [],
+      "errors": [],
+      "examples": []
+    },
+    {
+      "name": "hex",
+      "signature": "(c:Crc32) hex( -- hex:str)",
+      "failable": false,
+      "description": "Get CRC32 as 8-character hex string.",
+      "params": [{"name": "c", "type": "Crc32", "description": "The hasher state"}],
+      "returns": [{"name": "hex", "type": "str", "description": "CRC32 as lowercase hex string"}],
+      "errors": [],
+      "examples": []
+    },
+    {
+      "name": "hmac_sha256",
+      "signature": "(key:str message:str -- mac:str)",
+      "failable": true,
+      "description": "Compute HMAC-SHA256.",
+      "params": [{"name": "key", "type": "str", "description": "Secret key"}, {"name": "message", "type": "str", "description": "Message to authenticate"}],
+      "returns": [{"name": "mac", "type": "str", "description": "64-character hex HMAC"}],
+      "errors": [],
+      "examples": ["\"Jefe\" \"what do ya want for nothing?\" crypto::hmac_sha256! -> mac"]
+    },
+    {
+      "name": "hmac_sha512",
+      "signature": "(key:str message:str -- mac:str)",
+      "failable": true,
+      "description": "Compute HMAC-SHA512.",
+      "params": [{"name": "key", "type": "str", "description": "Secret key"}, {"name": "message", "type": "str", "description": "Message to authenticate"}],
+      "returns": [{"name": "mac", "type": "str", "description": "128-character hex HMAC"}],
+      "errors": [],
+      "examples": ["\"Jefe\" \"what do ya want for nothing?\" crypto::hmac_sha512! -> mac"]
+    },
+    {
+      "name": "md5",
+      "signature": "(s:str -- hash:str)",
+      "failable": true,
+      "description": "One-shot MD5 of a string. Note: MD5 is cryptographically broken. Use only for checksums, not security.",
+      "params": [{"name": "s", "type": "str", "description": "Input string"}],
+      "returns": [{"name": "hash", "type": "str", "description": "32-character hex string"}],
+      "errors": [],
+      "examples": ["\"Hello\" md5! -> hash"]
+    },
+    {
+      "name": "release",
+      "signature": "(c:Crc32) release( -- )",
+      "failable": false,
+      "description": "Free resources used by CRC32 hasher.",
+      "params": [{"name": "c", "type": "Crc32", "description": "The hasher state to free"}],
+      "returns": [],
+      "errors": [],
+      "examples": []
+    },
+    {
+      "name": "release",
+      "signature": "(h:Md5) release( -- )",
+      "failable": false,
+      "description": "Free resources used by MD5 hasher.",
+      "params": [{"name": "h", "type": "Md5", "description": "The hasher state to free"}],
+      "returns": [],
+      "errors": [],
+      "examples": []
+    },
+    {
+      "name": "release",
+      "signature": "(h:Sha256) release( -- )",
+      "failable": false,
+      "description": "Free resources used by SHA-256 hasher.",
+      "params": [{"name": "h", "type": "Sha256", "description": "The hasher state to free"}],
+      "returns": [],
+      "errors": [],
+      "examples": []
+    },
+    {
+      "name": "release",
+      "signature": "(h:Sha512) release( -- )",
+      "failable": false,
+      "description": "Free resources used by SHA-512 hasher.",
+      "params": [],
+      "returns": [],
+      "errors": [],
+      "examples": []
+    },
+    {
+      "name": "sha256_bytes",
+      "signature": "(buf:ptr length:i64 -- hash:str)",
+      "failable": true,
+      "description": "Calculate SHA-256 hash of raw bytes.",
+      "params": [{"name": "buf", "type": "ptr", "description": "Input buffer"}, {"name": "length", "type": "i64", "description": "Length of buffer in bytes"}],
+      "returns": [{"name": "hash", "type": "str", "description": "64-character hex string (lowercase)"}],
+      "errors": [],
+      "examples": []
+    },
+    {
+      "name": "sha256",
+      "signature": "(s:str -- hash:str)",
+      "failable": true,
+      "description": "One-shot SHA-256 of a string.",
+      "params": [{"name": "s", "type": "str", "description": "Input string"}],
+      "returns": [{"name": "hash", "type": "str", "description": "64-character hex string"}],
+      "errors": [],
+      "examples": ["\"Hello\" sha256! -> hash"]
+    },
+    {
+      "name": "sha512_bytes",
+      "signature": "(buf:ptr length:i64 -- hash:str)",
+      "failable": true,
+      "description": "Calculate SHA-512 hash of raw bytes.",
+      "params": [{"name": "buf", "type": "ptr", "description": "Input buffer"}, {"name": "length", "type": "i64", "description": "Length of buffer in bytes"}],
+      "returns": [{"name": "hash", "type": "str", "description": "128-character hex string"}],
+      "errors": [],
+      "examples": []
+    },
+    {
+      "name": "sha512",
+      "signature": "(s:str -- hash:str)",
+      "failable": true,
+      "description": "One-shot SHA-512 of a string.",
+      "params": [{"name": "s", "type": "str", "description": "Input string"}],
+      "returns": [{"name": "hash", "type": "str", "description": "128-character hex string"}],
+      "errors": [],
+      "examples": []
+    },
+    {
+      "name": "update",
+      "signature": "(c:Crc32) update(data:str -- c2:Crc32)",
+      "failable": false,
+      "description": "Update CRC32 state with additional data.",
+      "params": [{"name": "c", "type": "Crc32", "description": "The hasher state"}, {"name": "data", "type": "str", "description": "Data to hash"}],
+      "returns": [{"name": "c2", "type": "Crc32", "description": "Updated hasher state"}],
+      "errors": [],
+      "examples": []
+    },
+    {
+      "name": "update",
+      "signature": "(h:Md5) update(data:str -- h2:Md5)",
+      "failable": true,
+      "description": "Update MD5 state with additional data.",
+      "params": [{"name": "h", "type": "Md5", "description": "The hasher state"}, {"name": "data", "type": "str", "description": "Data to hash"}],
+      "returns": [{"name": "h2", "type": "Md5", "description": "Updated hasher state"}],
+      "errors": [],
+      "examples": []
+    },
+    {
+      "name": "update",
+      "signature": "(h:Sha256) update(data:str -- h2:Sha256)",
+      "failable": true,
+      "description": "Update SHA-256 state with additional data.",
+      "params": [{"name": "h", "type": "Sha256", "description": "The hasher state"}, {"name": "data", "type": "str", "description": "Data to hash"}],
+      "returns": [{"name": "h2", "type": "Sha256", "description": "Updated hasher state"}],
+      "errors": [],
+      "examples": []
+    },
+    {
+      "name": "update",
+      "signature": "(h:Sha512) update(data:str -- h2:Sha512)",
+      "failable": true,
+      "description": "Update SHA-512 state with additional data.",
+      "params": [],
+      "returns": [],
+      "errors": [],
+      "examples": []
+    },
+    {
+      "name": "value",
+      "signature": "(c:Crc32) value( -- crc:i64)",
+      "failable": false,
+      "description": "Get the current CRC32 value.",
+      "params": [{"name": "c", "type": "Crc32", "description": "The hasher state"}],
+      "returns": [{"name": "crc", "type": "i64", "description": "Current CRC32 checksum"}],
+      "errors": [],
+      "examples": []
+    }
+  ]
+}

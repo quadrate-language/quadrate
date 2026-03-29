@@ -15,9 +15,9 @@ pub struct StringBuilder {
 }
 
 /// Create a new StringBuilder with default capacity.
-/// @return sb ptr New empty builder
+/// @return sb StringBuilder New empty builder
 /// @example sb::new -> builder
-pub fn new( -- sb:ptr) {
+pub fn new( -- sb:StringBuilder) {
 	64 -> cap
 	cap mem::alloc! -> buf
 	StringBuilder {
@@ -29,9 +29,9 @@ pub fn new( -- sb:ptr) {
 
 /// Create a StringBuilder with specific initial capacity.
 /// @param capacity i64 Initial buffer size
-/// @return sb ptr New empty builder
+/// @return sb StringBuilder New empty builder
 /// @example 1024 sb::with_capacity -> builder
-pub fn with_capacity(capacity:i64 -- sb:ptr) {
+pub fn with_capacity(capacity:i64 -- sb:StringBuilder) {
 	capacity 16 < if {
 		16 -> capacity
 	}
@@ -44,11 +44,10 @@ pub fn with_capacity(capacity:i64 -- sb:ptr) {
 }
 
 /// Append a string to the builder.
-/// @param sb ptr Builder to append to
 /// @param s str String to append
-/// @return sb ptr Updated builder
+/// @return sb2 StringBuilder Updated builder
 /// @example builder "hello" sb::append -> builder
-pub fn append(sb:ptr s:str -- sb:ptr) {
+pub fn (sb:StringBuilder) append(s:str -- sb2:StringBuilder) {
 	sb <<buf -> buf
 	sb <<len -> curlen
 	sb <<cap -> cap
@@ -80,11 +79,10 @@ pub fn append(sb:ptr s:str -- sb:ptr) {
 }
 
 /// Append a single character (by code point).
-/// @param sb ptr Builder to append to
 /// @param c i64 Character code to append
-/// @return sb ptr Updated builder
+/// @return sb2 StringBuilder Updated builder
 /// @example builder 65 sb::append_char -> builder
-pub fn append_char(sb:ptr c:i64 -- sb:ptr) {
+pub fn (sb:StringBuilder) append_char(c:i64 -- sb2:StringBuilder) {
 	sb <<buf -> buf
 	sb <<len -> curlen
 	sb <<cap -> cap
@@ -106,11 +104,10 @@ pub fn append_char(sb:ptr c:i64 -- sb:ptr) {
 }
 
 /// Append an integer as string.
-/// @param sb ptr Builder to append to
 /// @param n i64 Integer to append
-/// @return sb ptr Updated builder
+/// @return sb2 StringBuilder Updated builder
 /// @example builder 42 sb::append_int -> builder
-pub fn append_int(sb:ptr n:i64 -- sb:ptr) {
+pub fn (sb:StringBuilder) append_int(n:i64 -- sb2:StringBuilder) {
 	// Handle negative
 	n 0 < if {
 		sb unicode::minus append_char -> sb
@@ -169,67 +166,58 @@ pub fn append_int(sb:ptr n:i64 -- sb:ptr) {
 }
 
 /// Get current length of builder content.
-/// @param sb ptr Builder to check
 /// @return sblen i64 Current content length
 /// @example builder sb::len -> sblen
-pub fn len(sb:ptr -- sblen:i64) {
+pub fn (sb:StringBuilder) len( -- sblen:i64) {
 	sb <<len
 }
 
 /// Build the final string (does not consume builder).
-/// @param sb ptr Builder to convert
 /// @return s str Built string
 /// @example builder sb::build -> result
-pub fn build(sb:ptr -- s:str) {
+pub fn (sb:StringBuilder) build( -- s:str) {
 	sb <<buf sb <<len mem::to_string
 }
 
 /// Free the builder's resources.
-/// @param sb ptr Builder to free
 /// @example builder sb::free
-pub fn free(sb:ptr -- ) {
+pub fn (sb:StringBuilder) free( -- ) {
 	sb <<buf mem::free
 }
 
 /// Build string and free builder in one call.
-/// @param sb ptr Builder to finish
 /// @return s str Built string
 /// @example builder sb::finish -> result
-pub fn finish(sb:ptr -- s:str) {
+pub fn (sb:StringBuilder) finish( -- s:str) {
 	sb <<buf sb <<len mem::to_string -> result
 	sb <<buf mem::free
 	result
 }
 
 /// Get the current capacity of the builder.
-/// @param sb ptr Builder to check
 /// @return cap i64 Current buffer capacity
 /// @example builder sb::capacity -> cap
-pub fn capacity(sb:ptr -- cap:i64) {
+pub fn (sb:StringBuilder) capacity( -- cap:i64) {
 	sb <<cap
 }
 
 /// Check if the builder is empty.
-/// @param sb ptr Builder to check
 /// @return empty i64 1 if empty, 0 otherwise
 /// @example builder sb::is_empty -> empty
-pub fn is_empty(sb:ptr -- empty:i64) {
+pub fn (sb:StringBuilder) is_empty( -- empty:i64) {
 	sb <<len 0 ==
 }
 
 /// Append a newline character.
-/// @param sb ptr Builder to append to
-/// @return sb ptr Updated builder
+/// @return sb2 StringBuilder Updated builder
 /// @example builder sb::newline -> builder
-pub fn newline(ptr -- ptr) {
-	unicode::newline append_char
+pub fn (sb:StringBuilder) newline( -- sb2:StringBuilder) {
+	sb unicode::newline append_char
 }
 
 /// Append a space character.
-/// @param sb ptr Builder to append to
-/// @return sb ptr Updated builder
+/// @return sb2 StringBuilder Updated builder
 /// @example builder sb::space -> builder
-pub fn space(ptr -- ptr) {
-	unicode::space append_char
+pub fn (sb:StringBuilder) space( -- sb2:StringBuilder) {
+	sb unicode::space append_char
 }
-

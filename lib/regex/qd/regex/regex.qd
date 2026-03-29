@@ -4,6 +4,7 @@
 use mem
 use strings
 use unicode
+use sb
 
 // NFA state types
 enum StateType {
@@ -633,4 +634,235 @@ pub fn is_match(pattern:str s:str -- result:i64) {
 	re s matches -> result
 	re release
 	result
+}
+
+// Internal: find first match of compiled regex starting at or after 'from'.
+// Returns start/end indices (end is exclusive), or -1/-1 if no match.
+// This works by trying the NFA from each start position.
+fn find_from(re:ptr s:str from:i64 -- start:i64 end:i64) {
+	s strings::len -> slen
+	re RE_NSTATES mem::get_i64 -> nstates
+
+	nstates 1 + 8 * mem::alloc! -> clist
+	nstates 1 + 8 * mem::alloc! -> nlist
+	nstates 8 * mem::alloc! -> visited
+	visited nstates 8 * mem::zero
+
+	-1 -> mstart
+	-1 -> mend
+	1 -> listid
+
+	from -> trypos
+	loop {
+		trypos slen > mstart -1 != or if {
+			break
+		}
+
+		// Seed NFA at this start position
+		listid 1 + -> listid
+		0 clist 0 mem::set_i64
+		re clist visited re RE_START mem::get_i64 listid addstate
+
+		// Check if start state already matches (zero-width)
+		clist 0 mem::get_i64 -> n
+		0 -> i
+		loop {
+			i n >= if { break }
+			clist i 1 + 8 * mem::get_i64 -> sidx
+			re sidx ST_TYPE state_get StateType::Match == if {
+				trypos -> mstart
+				trypos -> mend
+			}
+			i 1 + -> i
+		}
+
+		// Walk characters from trypos
+		trypos -> pos
+		loop {
+			pos slen >= if { break }
+			clist 0 mem::get_i64 -> cn
+			cn 0 == if { break }
+
+			s pos strings::char_at! -> c
+			listid 1 + -> listid
+
+			0 nlist 0 mem::set_i64
+			0 -> i
+			loop {
+				i cn >= if { break }
+				clist i 1 + 8 * mem::get_i64 -> sidx
+				re sidx c state_matches if {
+					re sidx ST_OUT1 state_get -> out
+					re nlist visited out listid addstate
+				}
+				i 1 + -> i
+			}
+
+			// Swap
+			clist -> tmp
+			nlist -> clist
+			tmp -> nlist
+
+			pos 1 + -> pos
+
+			// Check for match in new state set
+			clist 0 mem::get_i64 -> n2
+			0 -> i
+			loop {
+				i n2 >= if { break }
+				clist i 1 + 8 * mem::get_i64 -> sidx
+				re sidx ST_TYPE state_get StateType::Match == if {
+					mstart -1 == if {
+						trypos -> mstart
+					}
+					pos -> mend
+				}
+				i 1 + -> i
+			}
+		}
+
+		mstart -1 != if {
+			break
+		}
+
+		trypos 1 + -> trypos
+	}
+
+	clist mem::free
+	nlist mem::free
+	visited mem::free
+
+	mend mstart
+}
+
+/// Find first match in string. Returns start and end (exclusive) indices.
+/// Returns -1 -1 if no match found.
+/// @param re ptr Compiled regex
+/// @param s str String to search
+/// @return start i64 Start index of match (-1 if none)
+/// @return end i64 End index of match, exclusive (-1 if none)
+/// @example "[0-9]+" regex::compile -> re  re "abc123def" regex::find -> start -> end
+pub fn find(re:ptr s:str -- start:i64 end:i64) {
+	re s 0 find_from
+}
+
+/// Find all non-overlapping matches. Returns array of start/end pairs and count.
+/// Caller must free the returned array with mem::free.
+/// @param re ptr Compiled regex
+/// @param s str String to search
+/// @param max i64 Maximum matches to find (-1 for unlimited)
+/// @return results ptr Array of i64 pairs [start0, end0, start1, end1, ...]
+/// @return count i64 Number of matches found
+/// @example "[0-9]+" regex::compile -> re  re "a1b22c333" -1 regex::find_all -> results -> count
+pub fn find_all(re:ptr s:str max:i64 -- results:ptr count:i64) {
+	// Allocate initial results array (grow as needed)
+	64 -> cap
+	cap 2 * 8 * mem::alloc! -> results
+	0 -> count
+	0 -> pos
+
+	loop {
+		max -1 != count max >= and if { break }
+
+		re s pos find_from -> fstart -> fend
+		fstart -1 == if { break }
+
+		// Grow if needed
+		count cap >= if {
+			cap 2 * -> cap
+			cap 2 * 8 * -> newsize
+			newsize mem::alloc! -> newbuf
+			results newbuf count 2 * 8 * mem::copy
+			results mem::free
+			newbuf -> results
+		}
+
+		fstart results count 2 * 8 * mem::set_i64
+		fend results count 2 * 1 + 8 * mem::set_i64
+		count 1 + -> count
+
+		// Advance past this match (at least 1 char to avoid infinite loop on zero-width)
+		fend pos == if {
+			fend 1 + -> pos
+		} else {
+			fend -> pos
+		}
+	}
+
+	count results
+}
+
+/// Replace all matches with replacement string.
+/// @param re ptr Compiled regex
+/// @param s str Input string
+/// @param repl str Replacement string
+/// @return result str String with all matches replaced
+/// @example "[0-9]+" regex::compile -> re  re "abc123def456" "#" regex::replace -> result
+pub fn replace(re:ptr s:str repl:str -- result:str) {
+	s strings::len -> slen
+	sb::new -> out
+	0 -> pos
+
+	loop {
+		re s pos find_from -> fstart -> fend
+		fstart -1 == if {
+			// Append remaining
+			pos slen < if {
+				s pos slen pos - strings::substring! -> tail
+				out tail sb::append -> out
+			}
+			break
+		}
+
+		// Append text before match
+		fstart pos > if {
+			s pos fstart pos - strings::substring! -> before
+			out before sb::append -> out
+		}
+
+		// Append replacement
+		out repl sb::append -> out
+
+		// Advance past match
+		fend pos == if {
+			// Zero-width match: copy one char and advance
+			pos slen < if {
+				s pos 1 strings::substring! -> ch
+				out ch sb::append -> out
+			}
+			fend 1 + -> pos
+		} else {
+			fend -> pos
+		}
+
+		pos slen > if { break }
+	}
+
+	out sb::finish -> result
+	result
+}
+
+
+/// Count non-overlapping matches in string.
+/// @param re ptr Compiled regex
+/// @param s str String to search
+/// @return count i64 Number of matches
+/// @example "[0-9]+" regex::compile -> re  re "a1b22c333" regex::match_count -> n
+pub fn match_count(re:ptr s:str -- count:i64) {
+	0 -> count
+	0 -> pos
+
+	loop {
+		re s pos find_from -> fstart -> fend
+		fstart -1 == if { break }
+		count 1 + -> count
+		fend pos == if {
+			fend 1 + -> pos
+		} else {
+			fend -> pos
+		}
+		pos s strings::len > if { break }
+	}
+
+	count
 }

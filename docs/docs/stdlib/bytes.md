@@ -31,6 +31,30 @@ buf1 0 buf2 0 10 bytes::compare  // result
 ```
 ---
 
+### `fn` contains
+
+Check if a byte value exists in a buffer.
+
+**Signature:** `(ptr i64 i64 i64 -- i64)`
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `buf` | `ptr` | Buffer to search |
+| `offset` | `i64` | Starting offset |
+| `count` | `i64` | Number of bytes to search |
+| `value` | `i64` | Byte value to find |
+
+| Output | Type | Description |
+|--------|------|-------------|
+| `result` | `i64` | 1 if found, 0 otherwise |
+
+**Example:**
+
+```qd
+buf 0 10 0x41 bytes::contains  // found
+```
+---
+
 ### `fn` copy
 
 Copy bytes from one buffer to another.
@@ -52,6 +76,55 @@ dst 0 src 0 10 bytes::copy
 ```
 ---
 
+### `fn` count
+
+Count occurrences of a byte value in a buffer.
+
+**Signature:** `(buf:ptr offset:i64 len:i64 value:i64 -- result:i64)`
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `buf` | `ptr` | Buffer to search |
+| `offset` | `i64` | Starting offset |
+| `count` | `i64` | Number of bytes to search |
+| `value` | `i64` | Byte value to count |
+
+| Output | Type | Description |
+|--------|------|-------------|
+| `result` | `i64` | Number of occurrences |
+
+**Example:**
+
+```qd
+buf 0 10 0x41 bytes::count  // n
+```
+---
+
+### `fn` equals
+
+Check if two byte buffers are equal.
+
+**Signature:** `(ptr i64 ptr i64 i64 -- i64)`
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `a` | `ptr` | First buffer |
+| `a_off` | `i64` | First buffer offset |
+| `b` | `ptr` | Second buffer |
+| `b_off` | `i64` | Second buffer offset |
+| `count` | `i64` | Number of bytes to compare |
+
+| Output | Type | Description |
+|--------|------|-------------|
+| `result` | `i64` | 1 if equal, 0 otherwise |
+
+**Example:**
+
+```qd
+buf1 0 buf2 0 10 bytes::equals  // result
+```
+---
+
 ### `fn` fill
 
 Fill a buffer with a byte value.
@@ -69,6 +142,30 @@ Fill a buffer with a byte value.
 
 ```qd
 0 buf 0 10 bytes::fill
+```
+---
+
+### `fn` find
+
+Find the first occurrence of a byte value in a buffer.
+
+**Signature:** `(buf:ptr offset:i64 count:i64 value:i64 -- result:i64)`
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `buf` | `ptr` | Buffer to search |
+| `offset` | `i64` | Starting offset |
+| `count` | `i64` | Number of bytes to search |
+| `value` | `i64` | Byte value to find |
+
+| Output | Type | Description |
+|--------|------|-------------|
+| `result` | `i64` | Index of first occurrence, or -1 if not found |
+
+**Example:**
+
+```qd
+buf 0 10 0x41 bytes::find  // idx
 ```
 ---
 
@@ -201,6 +298,25 @@ Read a 64-bit unsigned integer from memory in little-endian order.
 
 ```qd
 buf 0 bytes::read_u64_le  // val
+```
+---
+
+### `fn` reverse
+
+Reverse the byte order in a buffer region.
+
+**Signature:** `(buf:ptr offset:i64 count:i64 -- )`
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `buf` | `ptr` | Buffer to reverse |
+| `offset` | `i64` | Starting offset |
+| `count` | `i64` | Number of bytes to reverse |
+
+**Example:**
+
+```qd
+buf 0 10 bytes::reverse
 ```
 ---
 
@@ -378,4 +494,25 @@ Write a 64-bit unsigned integer to memory in little-endian order.
 
 ```qd
 buf 0 0x123456789ABCDEF0 bytes::write_u64_le
+```
+---
+
+### `fn` xor
+
+XOR two byte buffers, storing result in first buffer.
+
+**Signature:** `(dst:ptr dst_off:i64 src:ptr src_off:i64 count:i64 -- )`
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `dst` | `ptr` | Destination buffer (also first operand) |
+| `dst_off` | `i64` | Destination offset |
+| `src` | `ptr` | Source buffer (second operand) |
+| `src_off` | `i64` | Source offset |
+| `count` | `i64` | Number of bytes to XOR |
+
+**Example:**
+
+```qd
+dst 0 src 0 10 bytes::xor
 ```

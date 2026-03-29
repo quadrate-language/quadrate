@@ -19,7 +19,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(dirname "$SCRIPT_DIR")"
 
 # Output directories
-DOCS_DIR="$PROJECT_ROOT/docs/docs/docs/stdlib"
+DOCS_DIR="$PROJECT_ROOT/docs/docs/stdlib"
 JSON_DIR="$PROJECT_ROOT/docs/api"
 
 # Standard library modules (core modules only - external packages are not included)
@@ -44,6 +44,22 @@ declare -A STDLIB_MODULES=(
     ["thread"]="lib/thread/qd/thread/thread.qd"
     ["time"]="lib/time/qd/time/time.qd"
     ["unicode"]="lib/unicode/qd/unicode/unicode.qd"
+    ["crypto"]="lib/crypto/qd/crypto/crypto.qd"
+    ["json"]="lib/json/qd/json/json.qd"
+    ["http"]="lib/http/qd/http/http.qd"
+    ["tls"]="lib/tls/qd/tls/tls.qd"
+    ["regex"]="lib/regex/qd/regex/regex.qd"
+    ["log"]="lib/log/qd/log/log.qd"
+    ["base64"]="lib/base64/qd/base64/base64.qd"
+    ["uri"]="lib/uri/qd/uri/uri.qd"
+    ["uuid"]="lib/uuid/qd/uuid/uuid.qd"
+    ["hex"]="lib/hex/qd/hex/hex.qd"
+    ["fuzzy"]="lib/fuzzy/qd/fuzzy/fuzzy.qd"
+    ["ct"]="lib/ct/qd/ct/ct.qd"
+    ["hof"]="lib/hof/qd/hof/hof.qd"
+    ["sort"]="lib/sort/qd/sort/sort.qd"
+    ["net"]="lib/net/qd/net/net.qd"
+    ["tty"]="lib/tty/qd/tty/tty.qd"
 )
 
 # Get module name from file path
@@ -148,12 +164,13 @@ parse_module() {
         fi
 
         # Parse function (including method syntax)
-        local fn_regex='fn[[:space:]]+(\([^)]*\)[[:space:]]+)?([a-zA-Z_][a-zA-Z0-9_]*)[[:space:]]*\(([^)]*)\)[[:space:]]*(!?)'
+        local fn_regex='fn[[:space:]]+(\([^)]*\)[[:space:]]+)?([a-zA-Z_][a-zA-Z0-9_]*)(<[^>]*>)?[[:space:]]*\(([^)]*)\)[[:space:]]*(!?)'
         if [[ "$trimmed" =~ $fn_regex ]]; then
             local fn_receiver="${BASH_REMATCH[1]}"
             local fn_name="${BASH_REMATCH[2]}"
-            local fn_sig="${BASH_REMATCH[3]}"
-            local fn_failable="${BASH_REMATCH[4]}"
+            local fn_type_params="${BASH_REMATCH[3]}"
+            local fn_sig="${BASH_REMATCH[4]}"
+            local fn_failable="${BASH_REMATCH[5]}"
 
             if [[ $is_public -eq 1 ]]; then
                 # Parse doc comment
@@ -195,7 +212,7 @@ parse_module() {
                 # For methods, prepend receiver to signature display
                 if [[ -n "$fn_receiver" ]]; then
                     fn_receiver="${fn_receiver%% }"
-                    sig_str="$fn_receiver $fn_name$sig_str"
+                    sig_str="$fn_receiver $fn_name${fn_type_params}$sig_str"
                 fi
 
                 functions+=("$fn_name|$sig_str|$fn_failable|$desc|$params|$returns|$errors|$examples")
@@ -899,7 +916,7 @@ generate_reference() {
     done
 
     # Write reference
-    local ref_path="$PROJECT_ROOT/docs/docs/docs/reference.md"
+    local ref_path="$PROJECT_ROOT/docs/docs/reference.md"
     echo -n "$output" > "$ref_path"
 
     echo "  ${#keywords[@]} keywords, ${#builtins[@]} built-in instructions"

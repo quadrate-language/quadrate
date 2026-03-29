@@ -1,83 +1,99 @@
 {
   "name": "sort",
-  "description": "Sorting algorithms for arrays. Provides in-place sorting (ascending and descending) for integer and string arrays, plus binary search, min/max, reverse, and sorted-check utilities. Arrays are represented as pointers to contiguous 8-byte values.",
-  "constants": [],
-  "structs": [],
+  "description": "Sorting algorithms for arrays. Arrays are pointers to contiguous i64 values, f64 values, or string pointers.",
+  "constants": [
+
+  ],
+  "structs": [
+
+  ],
   "functions": [
     {
-      "name": "ints",
-      "signature": "(arr:ptr count:i64 --)",
+      "name": "floats",
+      "signature": "(arr:ptr count:i64 -- )",
       "failable": false,
-      "description": "Sort an array of i64 in ascending order using insertion sort. Modifies the array in place.",
-      "params": [
-        {"name": "arr", "type": "ptr", "description": "Array of i64 values"},
-        {"name": "count", "type": "i64", "description": "Number of elements"}
-      ],
+      "description": "Sort an array of f64 in ascending order (quicksort).",
+      "params": [{"name": "arr", "type": "ptr", "description": "Array of f64 values"}, {"name": "count", "type": "i64", "description": "Number of elements"}],
+      "returns": [],
+      "errors": [],
+      "examples": ["arr count sort::floats"]
+    },
+    {
+      "name": "floats_desc",
+      "signature": "(arr:ptr count:i64 -- )",
+      "failable": false,
+      "description": "Sort an array of f64 in descending order (quicksort).",
+      "params": [{"name": "arr", "type": "ptr", "description": "Array of f64 values"}, {"name": "count", "type": "i64", "description": "Number of elements"}],
+      "returns": [],
+      "errors": [],
+      "examples": ["arr count sort::floats_desc"]
+    },
+    {
+      "name": "ints",
+      "signature": "(arr:ptr count:i64 -- )",
+      "failable": false,
+      "description": "Sort an array of i64 in ascending order (quicksort).",
+      "params": [{"name": "arr", "type": "ptr", "description": "Array of i64 values"}, {"name": "count", "type": "i64", "description": "Number of elements"}],
       "returns": [],
       "errors": [],
       "examples": ["arr count sort::ints"]
     },
     {
       "name": "ints_desc",
-      "signature": "(arr:ptr count:i64 --)",
+      "signature": "(arr:ptr count:i64 -- )",
       "failable": false,
-      "description": "Sort an array of i64 in descending order using insertion sort. Modifies the array in place.",
-      "params": [
-        {"name": "arr", "type": "ptr", "description": "Array of i64 values"},
-        {"name": "count", "type": "i64", "description": "Number of elements"}
-      ],
+      "description": "Sort an array of i64 in descending order (quicksort).",
+      "params": [{"name": "arr", "type": "ptr", "description": "Array of i64 values"}, {"name": "count", "type": "i64", "description": "Number of elements"}],
       "returns": [],
       "errors": [],
       "examples": ["arr count sort::ints_desc"]
     },
     {
-      "name": "min",
-      "signature": "(arr:ptr count:i64 -- minval:i64)",
+      "name": "is_sorted",
+      "signature": "(arr:ptr count:i64 -- sorted:i64)",
       "failable": false,
-      "description": "Find the minimum value in an array. Count must be greater than 0.",
-      "params": [
-        {"name": "arr", "type": "ptr", "description": "Array of i64 values"},
-        {"name": "count", "type": "i64", "description": "Number of elements (must be > 0)"}
-      ],
-      "returns": [{"name": "minval", "type": "i64", "description": "Minimum value in the array"}],
+      "description": "Check if array of i64 is sorted in ascending order.",
+      "params": [{"name": "arr", "type": "ptr", "description": "Array of i64 values"}, {"name": "count", "type": "i64", "description": "Number of elements"}],
+      "returns": [{"name": "sorted", "type": "i64", "description": "1 if sorted, 0 otherwise"}],
       "errors": [],
-      "examples": ["arr count sort::min -> val"]
+      "examples": ["arr count sort::is_sorted -> result"]
+    },
+    {
+      "name": "is_sorted_floats",
+      "signature": "(arr:ptr count:i64 -- sorted:i64)",
+      "failable": false,
+      "description": "Check if array of f64 is sorted in ascending order.",
+      "params": [{"name": "arr", "type": "ptr", "description": "Array of f64 values"}, {"name": "count", "type": "i64", "description": "Number of elements"}],
+      "returns": [{"name": "sorted", "type": "i64", "description": "1 if sorted, 0 otherwise"}],
+      "errors": [],
+      "examples": ["arr count sort::is_sorted_floats -> result"]
     },
     {
       "name": "max",
       "signature": "(arr:ptr count:i64 -- maxval:i64)",
       "failable": false,
-      "description": "Find the maximum value in an array. Count must be greater than 0.",
-      "params": [
-        {"name": "arr", "type": "ptr", "description": "Array of i64 values"},
-        {"name": "count", "type": "i64", "description": "Number of elements (must be > 0)"}
-      ],
-      "returns": [{"name": "maxval", "type": "i64", "description": "Maximum value in the array"}],
+      "description": "Find maximum value in array.",
+      "params": [{"name": "arr", "type": "ptr", "description": "Array of i64 values"}, {"name": "count", "type": "i64", "description": "Number of elements (must be > 0)"}],
+      "returns": [{"name": "maxval", "type": "i64", "description": "Maximum value"}],
       "errors": [],
       "examples": ["arr count sort::max -> val"]
     },
     {
-      "name": "is_sorted",
-      "signature": "(arr:ptr count:i64 -- sorted:i64)",
+      "name": "min",
+      "signature": "(arr:ptr count:i64 -- minval:i64)",
       "failable": false,
-      "description": "Check if an array is sorted in ascending order. Returns 1 if sorted, 0 otherwise. Arrays with 0 or 1 elements are always sorted.",
-      "params": [
-        {"name": "arr", "type": "ptr", "description": "Array of i64 values"},
-        {"name": "count", "type": "i64", "description": "Number of elements"}
-      ],
-      "returns": [{"name": "sorted", "type": "i64", "description": "1 if sorted ascending, 0 otherwise"}],
+      "description": "Find minimum value in array.",
+      "params": [{"name": "arr", "type": "ptr", "description": "Array of i64 values"}, {"name": "count", "type": "i64", "description": "Number of elements (must be > 0)"}],
+      "returns": [{"name": "minval", "type": "i64", "description": "Minimum value"}],
       "errors": [],
-      "examples": ["arr count sort::is_sorted -> result"]
+      "examples": ["arr count sort::min -> val"]
     },
     {
       "name": "reverse",
-      "signature": "(arr:ptr count:i64 --)",
+      "signature": "(arr:ptr count:i64 -- )",
       "failable": false,
       "description": "Reverse an array in place.",
-      "params": [
-        {"name": "arr", "type": "ptr", "description": "Array of i64 values"},
-        {"name": "count", "type": "i64", "description": "Number of elements"}
-      ],
+      "params": [{"name": "arr", "type": "ptr", "description": "Array of i64 values"}, {"name": "count", "type": "i64", "description": "Number of elements"}],
       "returns": [],
       "errors": [],
       "examples": ["arr count sort::reverse"]
@@ -86,41 +102,41 @@
       "name": "search",
       "signature": "(arr:ptr count:i64 needle:i64 -- idx:i64)",
       "failable": false,
-      "description": "Binary search for a value in a sorted array. The array must be sorted in ascending order. Returns the index of the element if found, or -1 if not found.",
-      "params": [
-        {"name": "arr", "type": "ptr", "description": "Sorted array of i64 values"},
-        {"name": "count", "type": "i64", "description": "Number of elements"},
-        {"name": "needle", "type": "i64", "description": "Value to search for"}
-      ],
-      "returns": [{"name": "idx", "type": "i64", "description": "Index of element, or -1 if not found"}],
+      "description": "Binary search for value in sorted array.",
+      "params": [{"name": "arr", "type": "ptr", "description": "Sorted array of i64 values"}, {"name": "count", "type": "i64", "description": "Number of elements"}, {"name": "needle", "type": "i64", "description": "Value to find"}],
+      "returns": [{"name": "idx", "type": "i64", "description": "Index if found, -1 otherwise"}],
       "errors": [],
       "examples": ["arr count 42 sort::search -> idx"]
     },
     {
       "name": "strings",
-      "signature": "(arr:ptr count:i64 --)",
+      "signature": "(arr:ptr count:i64 -- )",
       "failable": false,
-      "description": "Sort an array of strings in ascending alphabetical order using insertion sort. Modifies the array in place. Uses strings::compare for ordering.",
-      "params": [
-        {"name": "arr", "type": "ptr", "description": "Array of string pointers"},
-        {"name": "count", "type": "i64", "description": "Number of elements"}
-      ],
+      "description": "Sort an array of strings in ascending alphabetical order (insertion sort).",
+      "params": [{"name": "arr", "type": "ptr", "description": "Array of string pointers"}, {"name": "count", "type": "i64", "description": "Number of elements"}],
       "returns": [],
       "errors": [],
       "examples": ["strs count sort::strings"]
     },
     {
       "name": "strings_desc",
-      "signature": "(arr:ptr count:i64 --)",
+      "signature": "(arr:ptr count:i64 -- )",
       "failable": false,
-      "description": "Sort an array of strings in descending alphabetical order using insertion sort. Modifies the array in place. Uses strings::compare for ordering.",
-      "params": [
-        {"name": "arr", "type": "ptr", "description": "Array of string pointers"},
-        {"name": "count", "type": "i64", "description": "Number of elements"}
-      ],
+      "description": "Sort an array of strings in descending alphabetical order.",
+      "params": [{"name": "arr", "type": "ptr", "description": "Array of string pointers"}, {"name": "count", "type": "i64", "description": "Number of elements"}],
       "returns": [],
       "errors": [],
       "examples": ["strs count sort::strings_desc"]
+    },
+    {
+      "name": "unique",
+      "signature": "(arr:ptr count:i64 -- new_count:i64)",
+      "failable": false,
+      "description": "Remove adjacent duplicate i64 values in-place (array must be sorted).",
+      "params": [{"name": "arr", "type": "ptr", "description": "Sorted array of i64 values"}, {"name": "count", "type": "i64", "description": "Number of elements"}],
+      "returns": [{"name": "new_count", "type": "i64", "description": "Number of unique elements"}],
+      "errors": [],
+      "examples": ["arr count sort::unique -> new_count"]
     }
   ]
 }

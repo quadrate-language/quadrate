@@ -78,10 +78,14 @@ nav:
           - fmt: stdlib/fmt.md
           - sb: stdlib/sb.md
           - unicode: stdlib/unicode.md
+          - regex: stdlib/regex.md
       - Data:
           - bytes: stdlib/bytes.md
           - ct: stdlib/ct.md
           - sort: stdlib/sort.md
+          - json: stdlib/json.md
+          - base64: stdlib/base64.md
+          - hex: stdlib/hex.md
       - Math & numbers:
           - math: stdlib/math.md
           - math (vectors): stdlib/math-vectors.md
@@ -92,6 +96,8 @@ nav:
       - I/O & system:
           - io: stdlib/io.md
           - net: stdlib/net.md
+          - http: stdlib/http.md
+          - tls: stdlib/tls.md
           - os: stdlib/os.md
           - path: stdlib/path.md
       - Time:
@@ -100,12 +106,19 @@ nav:
           - thread: stdlib/thread.md
       - Functional:
           - hof: stdlib/hof.md
+      - Crypto:
+          - crypto: stdlib/crypto.md
       - Utilities:
           - mem: stdlib/mem.md
           - flag: stdlib/flag.md
           - testing: stdlib/testing.md
+          - log: stdlib/log.md
+          - uri: stdlib/uri.md
+          - uuid: stdlib/uuid.md
+          - fuzzy: stdlib/fuzzy.md
       - Terminal:
           - tty: stdlib/tty.md
+          - term: stdlib/term.md
       - Signal handling:
           - signal: stdlib/signal.md
   - Language specification: specification.md

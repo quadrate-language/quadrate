@@ -1,0 +1,32 @@
+{
+  "name": "base64",
+  "description": "Base64 encoding and decoding. Optimized with lookup tables and direct buffer writes.",
+  "constants": [
+
+  ],
+  "structs": [
+
+  ],
+  "functions": [
+    {
+      "name": "decode",
+      "signature": "(encoded:str -- decoded:str)",
+      "failable": false,
+      "description": "Decode a base64 string.",
+      "params": [{"name": "encoded", "type": "str", "description": "Base64-encoded string"}],
+      "returns": [{"name": "decoded", "type": "str", "description": "Decoded string"}],
+      "errors": [],
+      "examples": ["\"SGVsbG8=\" base64::decode -> text"]
+    },
+    {
+      "name": "encode",
+      "signature": "(input:str -- encoded:str)",
+      "failable": false,
+      "description": "Encode a string to base64.",
+      "params": [{"name": "input", "type": "str", "description": "String to encode"}],
+      "returns": [{"name": "encoded", "type": "str", "description": "Base64-encoded string"}],
+      "errors": [],
+      "examples": ["\"Hello\" base64::encode -> b64"]
+    }
+  ]
+}

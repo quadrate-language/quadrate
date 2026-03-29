@@ -8,6 +8,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <sys/socket.h>
+#include <sys/time.h>
 #include <unistd.h>
 
 // Initialize networking (no-op on POSIX)
@@ -114,4 +115,81 @@ int net_platform_shutdown(net_socket_t socket) {
 // Close a socket
 int net_platform_close(net_socket_t socket) {
 	return close(socket);
+}
+
+// Set send/receive timeout
+int net_platform_set_timeout(net_socket_t socket, int ms) {
+	struct timeval tv;
+	tv.tv_sec = ms / 1000;
+	tv.tv_usec = (ms % 1000) * 1000;
+	if (setsockopt(socket, SOL_SOCKET, SO_RCVTIMEO, &tv, sizeof(tv)) < 0) {
+		return NET_ERROR;
+	}
+	if (setsockopt(socket, SOL_SOCKET, SO_SNDTIMEO, &tv, sizeof(tv)) < 0) {
+		return NET_ERROR;
+	}
+	return NET_SUCCESS;
+}
+
+// Enable/disable TCP keepalive
+int net_platform_set_keepalive(net_socket_t socket, int enable) {
+	int val = enable ? 1 : 0;
+	if (setsockopt(socket, SOL_SOCKET, SO_KEEPALIVE, &val, sizeof(val)) < 0) {
+		return NET_ERROR;
+	}
+	return NET_SUCCESS;
+}
+
+// DNS lookup
+int net_platform_lookup(const char* hostname, char* ip_buf, size_t ip_buf_len) {
+	struct addrinfo hints, *result;
+	memset(&hints, 0, sizeof(hints));
+	hints.ai_family = AF_UNSPEC;
+	hints.ai_socktype = SOCK_STREAM;
+
+	int ret = getaddrinfo(hostname, NULL, &hints, &result);
+	if (ret != 0) {
+		return NET_ERROR;
+	}
+
+	// Use first result — copy via memcpy to avoid alignment warnings
+	if (result->ai_family == AF_INET) {
+		struct sockaddr_in addr;
+		memcpy(&addr, result->ai_addr, sizeof(addr));
+		inet_ntop(AF_INET, &addr.sin_addr, ip_buf, (socklen_t)ip_buf_len);
+	} else if (result->ai_family == AF_INET6) {
+		struct sockaddr_in6 addr;
+		memcpy(&addr, result->ai_addr, sizeof(addr));
+		inet_ntop(AF_INET6, &addr.sin6_addr, ip_buf, (socklen_t)ip_buf_len);
+	} else {
+		freeaddrinfo(result);
+		return NET_ERROR;
+	}
+
+	freeaddrinfo(result);
+	return NET_SUCCESS;
+}
+
+// Get peer address
+int net_platform_get_peer_addr(net_socket_t socket, char* addr_buf, size_t addr_buf_len, int* port) {
+	struct sockaddr_storage addr;
+	socklen_t addr_len = sizeof(addr);
+
+	if (getpeername(socket, (struct sockaddr*)&addr, &addr_len) < 0) {
+		return NET_ERROR;
+	}
+
+	if (addr.ss_family == AF_INET) {
+		struct sockaddr_in* sin = (struct sockaddr_in*)&addr;
+		inet_ntop(AF_INET, &sin->sin_addr, addr_buf, (socklen_t)addr_buf_len);
+		*port = ntohs(sin->sin_port);
+	} else if (addr.ss_family == AF_INET6) {
+		struct sockaddr_in6* sin6 = (struct sockaddr_in6*)&addr;
+		inet_ntop(AF_INET6, &sin6->sin6_addr, addr_buf, (socklen_t)addr_buf_len);
+		*port = ntohs(sin6->sin6_port);
+	} else {
+		return NET_ERROR;
+	}
+
+	return NET_SUCCESS;
 }

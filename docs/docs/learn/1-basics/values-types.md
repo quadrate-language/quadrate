@@ -90,7 +90,7 @@ Expressions in `{...}` are evaluated and converted to strings. String variables 
 |--------|----------|
 | `$"Hello {name}"` | Formatting with embedded values |
 | `"a" "b" strings::concat` | Simple two-string join |
-| `sb::new` / `sb::append` / `sb::build` | Building strings in loops or incrementally |
+| `sb::new` / `append` / `finish` | Building strings in loops or incrementally |
 
 ## Pointer (ptr)
 

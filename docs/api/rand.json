@@ -16,7 +16,7 @@
   "functions": [
     {
       "name": "boolean",
-      "signature": "(rng:ptr -- rng:ptr b:i64)",
+      "signature": "(rng:Rng) boolean( -- rng2:Rng b:i64)",
       "failable": false,
       "description": "Generate random boolean.",
       "params": [{"name": "rng", "type": "ptr", "description": "RNG state"}],
@@ -26,7 +26,7 @@
     },
     {
       "name": "choice",
-      "signature": "(rng:ptr arr:ptr len:i64 -- rng:ptr val:i64)",
+      "signature": "(rng:Rng) choice(arr:ptr len:i64 -- rng2:Rng val:i64)",
       "failable": false,
       "description": "Pick a random element from array.",
       "params": [{"name": "rng", "type": "ptr", "description": "RNG state"}, {"name": "arr", "type": "ptr", "description": "Array of i64 values"}, {"name": "len", "type": "i64", "description": "Array length"}],
@@ -36,7 +36,7 @@
     },
     {
       "name": "exponential",
-      "signature": "(rng:ptr lambda:f64 -- rng:ptr n:f64)",
+      "signature": "(rng:Rng) exponential(lambda:f64 -- rng2:Rng n:f64)",
       "failable": false,
       "description": "Generate random f64 from exponential distribution.",
       "params": [{"name": "rng", "type": "ptr", "description": "RNG state"}, {"name": "lambda", "type": "f64", "description": "Rate parameter (1/mean)"}],
@@ -46,7 +46,7 @@
     },
     {
       "name": "float_range",
-      "signature": "(rng:ptr min:f64 max:f64 -- rng:ptr f:f64)",
+      "signature": "(rng:Rng) float_range(min:f64 max:f64 -- rng2:Rng f:f64)",
       "failable": false,
       "description": "Generate random f64 in range [min, max).",
       "params": [{"name": "rng", "type": "ptr", "description": "RNG state"}, {"name": "min", "type": "f64", "description": "Lower bound (inclusive)"}, {"name": "max", "type": "f64", "description": "Upper bound (exclusive)"}],
@@ -56,7 +56,7 @@
     },
     {
       "name": "float",
-      "signature": "(rng:ptr -- rng:ptr f:f64)",
+      "signature": "(rng:Rng) float( -- rng2:Rng f:f64)",
       "failable": false,
       "description": "Generate random f64 in range [0.0, 1.0).",
       "params": [{"name": "rng", "type": "ptr", "description": "RNG state"}],
@@ -66,7 +66,7 @@
     },
     {
       "name": "int",
-      "signature": "(rng:ptr max:i64 -- rng:ptr n:i64)",
+      "signature": "(rng:Rng) int(max:i64 -- rng2:Rng n:i64)",
       "failable": false,
       "description": "Generate random i64 in range [0, max).",
       "params": [{"name": "rng", "type": "ptr", "description": "RNG state"}, {"name": "max", "type": "i64", "description": "Upper bound (exclusive)"}],
@@ -76,7 +76,7 @@
     },
     {
       "name": "new",
-      "signature": "( -- rng:ptr)",
+      "signature": "( -- rng:Rng)",
       "failable": false,
       "description": "Create a new RNG seeded from current time.",
       "params": [],
@@ -86,7 +86,7 @@
     },
     {
       "name": "next",
-      "signature": "(rng:ptr -- rng:ptr n:i64)",
+      "signature": "(rng:Rng) next( -- rng2:Rng n:i64)",
       "failable": false,
       "description": "Generate next random i64.",
       "params": [{"name": "rng", "type": "ptr", "description": "RNG state"}],
@@ -96,7 +96,7 @@
     },
     {
       "name": "normal_params",
-      "signature": "(rng:ptr mean:f64 stddev:f64 -- rng:ptr n:f64)",
+      "signature": "(rng:Rng) normal_params(mean:f64 stddev:f64 -- rng2:Rng n:f64)",
       "failable": false,
       "description": "Generate random f64 from normal distribution with given mean and stddev.",
       "params": [{"name": "rng", "type": "ptr", "description": "RNG state"}, {"name": "mean", "type": "f64", "description": "Distribution mean"}, {"name": "stddev", "type": "f64", "description": "Distribution standard deviation"}],
@@ -106,7 +106,7 @@
     },
     {
       "name": "normal",
-      "signature": "(rng:ptr -- rng:ptr n:f64)",
+      "signature": "(rng:Rng) normal( -- rng2:Rng n:f64)",
       "failable": false,
       "description": "Generate random f64 from standard normal distribution (mean=0, stddev=1). Uses Box-Muller transform.",
       "params": [{"name": "rng", "type": "ptr", "description": "RNG state"}],
@@ -116,7 +116,7 @@
     },
     {
       "name": "range",
-      "signature": "(rng:ptr min:i64 max:i64 -- rng:ptr n:i64)",
+      "signature": "(rng:Rng) range(min:i64 max:i64 -- rng2:Rng n:i64)",
       "failable": false,
       "description": "Generate random i64 in range [min, max).",
       "params": [{"name": "rng", "type": "ptr", "description": "RNG state"}, {"name": "min", "type": "i64", "description": "Lower bound (inclusive)"}, {"name": "max", "type": "i64", "description": "Upper bound (exclusive)"}],
@@ -126,7 +126,7 @@
     },
     {
       "name": "sample",
-      "signature": "(rng:ptr src:ptr src_len:i64 dst:ptr n:i64 -- rng:ptr)",
+      "signature": "(rng:Rng) sample(src:ptr src_len:i64 dst:ptr n:i64 -- rng2:Rng)",
       "failable": false,
       "description": "Pick n random elements from array without replacement. Uses partial Fisher-Yates algorithm. Output array must have space for n elements.",
       "params": [{"name": "rng", "type": "ptr", "description": "RNG state"}, {"name": "src", "type": "ptr", "description": "Source array of i64 values"}, {"name": "src_len", "type": "i64", "description": "Source array length"}, {"name": "dst", "type": "ptr", "description": "Destination array (must have space for n i64 values)"}, {"name": "n", "type": "i64", "description": "Number of elements to pick"}],
@@ -136,7 +136,7 @@
     },
     {
       "name": "shuffle",
-      "signature": "(rng:ptr arr:ptr len:i64 -- rng:ptr)",
+      "signature": "(rng:Rng) shuffle(arr:ptr len:i64 -- rng2:Rng)",
       "failable": false,
       "description": "Shuffle array in place using Fisher-Yates algorithm.",
       "params": [{"name": "rng", "type": "ptr", "description": "RNG state"}, {"name": "arr", "type": "ptr", "description": "Array of i64 values"}, {"name": "len", "type": "i64", "description": "Array length"}],
@@ -146,7 +146,7 @@
     },
     {
       "name": "with_seed",
-      "signature": "(seed:i64 -- rng:ptr)",
+      "signature": "(seed:i64 -- rng:Rng)",
       "failable": false,
       "description": "Create a new RNG with specific seed.",
       "params": [{"name": "seed", "type": "i64", "description": "Initial seed value (must be non-zero)"}],

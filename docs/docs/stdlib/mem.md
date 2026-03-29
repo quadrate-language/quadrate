@@ -14,6 +14,33 @@ Improper use can cause segmentation faults and memory corruption.
 
 ## Functions
 
+### `fn` alloc_aligned
+
+Allocate aligned memory. The returned pointer is aligned to the specified boundary. Use standard mem::free to deallocate.
+
+**Signature:** `(alignment:i64 bytes:i64 -- address:ptr)!`
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `alignment` | `i64` | Alignment boundary (must be power of 2, e.g., 16, 32, 64) |
+| `bytes` | `i64` | Number of bytes to allocate |
+
+| Output | Type | Description |
+|--------|------|-------------|
+| `address` | `ptr` | Aligned memory address |
+
+| Error | Description |
+|-------|-------------|
+| `mem::ErrAlloc` | Allocation failed |
+| `mem::ErrInvalidArg` | Invalid alignment or size |
+
+**Example:**
+
+```qd
+64 1024 mem::alloc_aligned!  // buf  // 64-byte aligned
+```
+---
+
 ### `fn` alloc
 
 Allocate memory.
@@ -205,6 +232,27 @@ buf 0 mem::get_ptr  // p
 ```
 ---
 
+### `fn` is_not_null
+
+Check if pointer is not null.
+
+**Signature:** `(address:ptr -- not_null:i64)`
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `address` | `ptr` | Pointer to check |
+
+| Output | Type | Description |
+|--------|------|-------------|
+| `not_null` | `i64` | 1 if not null, 0 otherwise |
+
+**Example:**
+
+```qd
+buf mem::is_not_null print  // 1
+```
+---
+
 ### `fn` is_null
 
 Check if pointer is null.
@@ -224,6 +272,22 @@ Check if pointer is null.
 ```qd
 buf mem::is_null print  // 0
 ```
+---
+
+### `fn` ptr_add
+
+Pointer arithmetic: base + offset.
+
+**Signature:** `(base:ptr offset:i64 -- result:ptr)`
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `base` | `ptr` | Base pointer |
+| `offset` | `i64` | Byte offset to add |
+
+| Output | Type | Description |
+|--------|------|-------------|
+| `result` | `ptr` | Offset pointer |
 ---
 
 ### `fn` realloc

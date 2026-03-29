@@ -1,586 +1,364 @@
 # `use` ct
 
-Container types for Quadrate: dynamic arrays, queues, sets, hash maps, and pairs.
+Generic container types.
+Provides Vec, HashMap, Set, Queue, Deque, and Pair.
 
-All container types manage their own memory. Mutating operations return an
-updated copy of the container that must be captured with `->`. Always call
-`release` when you are done with a container to free its memory.
-
-```qd
-use ct
-
-Vec<i64> { data = 0 len = 0 cap = 0 } -> v
-v 10 push! -> v
-v 20 push! -> v
-v 0 get! print nl  // 10
-v release
-```
-
----
-
-## Vec\<T\> - Dynamic Array
-
-A growable array that doubles in capacity when full.
-
-```qd
-pub struct Vec<T> {
-	data: ptr
-	len: i64
-	cap: i64
-}
-```
-
-Create an empty vector:
-
-```qd
-Vec<i64> { data = 0 len = 0 cap = 0 } -> v
-```
-
-### `fn` push
-
-Append an element. Grows capacity automatically.
-
-**Signature:** `(v:Vec<T> elem:T -- v2:Vec<T>)!`
-
-**Example:**
-
-```qd
-v 42 push! -> v
-```
-
----
-
-### `fn` pop
-
-Remove and return the last element.
-
-**Signature:** `(v:Vec<T> -- elem:T v2:Vec<T>)!`
-
-**Example:**
-
-```qd
-v pop! -> v -> elem
-```
-
----
-
-### `fn` get
-
-Get element at index.
-
-**Signature:** `(v:Vec<T> idx:i64 -- elem:T)!`
-
-**Example:**
-
-```qd
-v 0 get! -> first
-```
-
----
-
-### `fn` set
-
-Replace element at index.
-
-**Signature:** `(v:Vec<T> idx:i64 elem:T -- v2:Vec<T>)!`
-
-**Example:**
-
-```qd
-v 0 100 set! -> v
-```
-
----
-
-### `fn` length
-
-**Signature:** `(v:Vec<T> -- n:i64)`
-
-```qd
-v length -> n
-```
-
----
+## Functions
 
 ### `fn` capacity
 
-Get allocated capacity (may be larger than length).
+Get the allocated capacity.  Capacity is always >= length. The vector can hold up to 'capacity' elements before needing to reallocate.  Example:     v capacity -> cap  Stack: (v -- n)
 
-**Signature:** `(v:Vec<T> -- n:i64)`
-
----
-
-### `fn` is_empty
-
-**Signature:** `(v:Vec<T> -- b:i64)`
-
-Returns 1 if the vector has no elements.
-
----
-
-### `fn` reset
-
-Remove all elements but keep allocated memory.
-
-**Signature:** `(v:Vec<T> -- v2:Vec<T>)`
-
-```qd
-v reset -> v
-v length print nl  // 0
-```
-
----
-
-### `fn` release
-
-Free the vector's memory. Always call this when done.
-
-**Signature:** `(v:Vec<T> --)`
-
----
-
-## Deque\<T\> - Double-Ended Queue
-
-O(1) push and pop from both ends, backed by a circular buffer.
-
-```qd
-pub struct Deque<T> {
-	data: ptr
-	head: i64
-	tail: i64
-	len: i64
-	cap: i64
-}
-```
-
-Create an empty deque:
-
-```qd
-Deque<i64> { data = 0 head = 0 tail = 0 len = 0 cap = 0 } -> d
-```
-
-### `fn` push_back
-
-**Signature:** `(d:Deque<T> val:T -- d2:Deque<T>)!`
-
-```qd
-d 42 push_back! -> d
-```
-
----
-
-### `fn` push_front
-
-**Signature:** `(d:Deque<T> val:T -- d2:Deque<T>)!`
-
-```qd
-d 10 push_front! -> d
-```
-
----
-
-### `fn` pop_front
-
-Remove and return the front element.
-
-**Signature:** `(d:Deque<T> -- val:T d2:Deque<T>)!`
-
-```qd
-d pop_front! -> d -> val
-```
-
----
-
-### `fn` pop_back
-
-Remove and return the back element.
-
-**Signature:** `(d:Deque<T> -- val:T d2:Deque<T>)!`
-
-```qd
-d pop_back! -> d -> val
-```
-
----
-
-### `fn` peek_front
-
-View front element without removing it.
-
-**Signature:** `(d:Deque<T> -- val:T)!`
-
----
-
-### `fn` peek_back
-
-View back element without removing it.
-
-**Signature:** `(d:Deque<T> -- val:T)!`
-
----
-
-### `fn` length
-
-**Signature:** `(d:Deque<T> -- n:i64)`
-
----
-
-### `fn` is_empty
-
-**Signature:** `(d:Deque<T> -- b:i64)`
-
----
-
-### `fn` release
-
-**Signature:** `(d:Deque<T> --)`
-
----
-
-## Queue\<T\> - FIFO Queue
-
-First-in, first-out queue backed by a circular buffer.
-
-```qd
-pub struct Queue<T> {
-	data: ptr
-	head: i64
-	tail: i64
-	len: i64
-	cap: i64
-}
-```
-
-Create an empty queue:
-
-```qd
-Queue<i64> { data = 0 head = 0 tail = 0 len = 0 cap = 0 } -> q
-```
-
-### `fn` enqueue
-
-Add an element to the back of the queue.
-
-**Signature:** `(q:Queue<T> val:T -- q2:Queue<T>)!`
-
-**Example:**
-
-```qd
-q 42 enqueue! -> q
-```
-
+**Signature:** `(v:Vec<T>) capacity<T>(-- n:i64)`
 ---
 
 ### `fn` dequeue
 
-Remove and return the front element.
+Remove and return the front element.  Returns error if queue is empty. Returns the value and updated queue.  Example:     q dequeue! -> q -> val  Stack: (q -- val q2)
 
-**Signature:** `(q:Queue<T> -- val:T q2:Queue<T>)!`
-
-**Example:**
-
-```qd
-q dequeue! -> q -> val
-```
-
+**Signature:** `(q:Queue<T>) dequeue<T>(-- val:T q2:Queue<T>)!`
 ---
 
-### `fn` peek
+### `fn` enqueue
 
-View front element without removing it.
+Add an element to the back of the queue.  Returns the updated queue which must be captured.  Example:     q 42 enqueue! -> q  Stack: (q val -- q2)
 
-**Signature:** `(q:Queue<T> -- val:T)!`
-
+**Signature:** `(q:Queue<T>) enqueue<T>(val:T -- q2:Queue<T>)!`
 ---
 
-### `fn` length
+### `fn` first
 
-**Signature:** `(q:Queue<T> -- n:i64)`
+Get the first element of a pair.  Example:     p first -> a  Stack: (p -- a)
 
----
-
-### `fn` is_empty
-
-**Signature:** `(q:Queue<T> -- b:i64)`
-
----
-
-### `fn` release
-
-**Signature:** `(q:Queue<T> --)`
-
----
-
-## Set - String Set
-
-A set of unique strings with O(1) average-case lookup.
-Uses open addressing with linear probing and tombstone deletion.
-
-```qd
-pub struct Set {
-	keys: ptr
-	states: ptr
-	len: i64
-	cap: i64
-}
-```
-
-Create an empty set:
-
-```qd
-Set { keys = 0 states = 0 len = 0 cap = 0 } -> s
-```
-
-### `fn` add
-
-Add a string element. Duplicates are silently ignored.
-
-**Signature:** `(s:Set key:str -- s2:Set)!`
-
-**Example:**
-
-```qd
-s "alice" add! -> s
-s "alice" add! -> s  // no effect, already present
-```
-
----
-
-### `fn` contains
-
-Check if a string is in the set.
-
-**Signature:** `(s:Set key:str -- exists:i64)`
-
-| Output | Type | Description |
-|--------|------|-------------|
-| `exists` | `i64` | 1 if found, 0 otherwise |
-
-**Example:**
-
-```qd
-s "alice" contains if { "found" print nl }
-```
-
----
-
-### `fn` remove
-
-Remove a string from the set. Errors if not found.
-
-**Signature:** `(s:Set key:str -- s2:Set)!`
-
----
-
-### `fn` length
-
-**Signature:** `(s:Set -- n:i64)`
-
----
-
-### `fn` is_empty
-
-**Signature:** `(s:Set -- b:i64)`
-
----
-
-### `fn` release
-
-**Signature:** `(s:Set --)`
-
----
-
-## Map\<V\> - String-Keyed Hash Map
-
-A hash map where keys are strings and values can be any type V.
-O(1) average-case lookup using open addressing with linear probing.
-
-```qd
-pub struct Map<V> {
-	keys: ptr
-	values: ptr
-	states: ptr
-	len: i64
-	cap: i64
-}
-```
-
-Create an empty map:
-
-```qd
-Map<i64> { keys = 0 values = 0 states = 0 len = 0 cap = 0 } -> m
-```
-
-### `fn` insert
-
-Insert or update a key-value pair.
-
-**Signature:** `(m:Map<V> key:str value:V -- m2:Map<V>)!`
-
-**Example:**
-
-```qd
-m "alice" 42 insert! -> m
-m "alice" 99 insert! -> m  // overwrites, length stays 1
-```
-
+**Signature:** `(p:Pair<T, U>) first<T, U>(-- a:T)`
 ---
 
 ### `fn` get
 
-Look up a value by key. Errors if the key does not exist.
+Get the value for a key.  Returns an error if the key is not found.  Example:     m "alice" get! -> age  Stack: (m key -- value)
 
-**Signature:** `(m:Map<V> key:str -- value:V)!`
+**Signature:** `(m:Map<V>) get<V>(key:str -- value:V)!`
+---
 
-**Example:**
+### `fn` get
 
-```qd
-m "alice" get! -> age
-```
+Get element at index.  Panics if index is out of bounds (< 0 or >= len).  Example:     v 0 get! -> first  Stack: (v idx -- elem)
 
+**Signature:** `(v:Vec<T>) get<T>(idx:i64 -- elem:T)!`
 ---
 
 ### `fn` has
 
-Check if a key exists without retrieving its value.
+Check if a key exists in the map.  Example:     m "alice" has if { "found!" print nl }  Stack: (m key -- exists)
 
-**Signature:** `(m:Map<V> key:str -- exists:i64)`
-
-| Output | Type | Description |
-|--------|------|-------------|
-| `exists` | `i64` | 1 if found, 0 otherwise |
-
-**Example:**
-
-```qd
-m "alice" has if { "found" print nl }
-```
-
+**Signature:** `(m:Map<V>) has<V>(key:str -- exists:i64)`
 ---
 
-### `fn` remove
+### `fn` insert
 
-Remove a key. Errors if the key does not exist.
+Insert a key-value pair into the map.  If the key already exists, the value is updated. Returns the updated map which must be captured.  Example:     m "alice" 42 insert! -> m  Stack: (m key value -- m2)
 
-**Signature:** `(m:Map<V> key:str -- m2:Map<V>)!`
-
----
-
-### `fn` length
-
-**Signature:** `(m:Map<V> -- n:i64)`
-
+**Signature:** `(m:Map<V>) insert<V>(key:str value:V -- m2:Map<V>)!`
 ---
 
 ### `fn` is_empty
 
-**Signature:** `(m:Map<V> -- b:i64)`
+Check if the deque is empty.  Stack: (d -- bool)
 
+**Signature:** `(d:Deque<T>) is_empty<T>(-- b:i64)`
+---
+
+### `fn` is_empty
+
+Check if the map is empty.  Example:     m is_empty if { "empty!" print nl }  Stack: (m -- bool)
+
+**Signature:** `(m:Map<V>) is_empty<V>(-- b:i64)`
+---
+
+### `fn` is_empty
+
+Check if the queue is empty.  Stack: (q -- bool)
+
+**Signature:** `(q:Queue<T>) is_empty<T>(-- b:i64)`
+---
+
+### `fn` is_empty
+
+Check if the vector is empty (length == 0).  Example:     v is_empty if { "empty!" print nl }  Stack: (v -- bool)
+
+**Signature:** `(v:Vec<T>) is_empty<T>(-- b:i64)`
+---
+
+### `fn` length
+
+Get the number of elements.  Stack: (d -- n)
+
+**Signature:** `(d:Deque<T>) length<T>(-- n:i64)`
+---
+
+### `fn` length
+
+Get the number of entries in the map.  Example:     m length -> n  Stack: (m -- n)
+
+**Signature:** `(m:Map<V>) length<V>(-- n:i64)`
+---
+
+### `fn` length
+
+Get the number of elements in the queue.  Stack: (q -- n)
+
+**Signature:** `(q:Queue<T>) length<T>(-- n:i64)`
+---
+
+### `fn` length
+
+Get the number of elements in the vector.  Example:     v length -> n  Stack: (v -- n)
+
+**Signature:** `(v:Vec<T>) length<T>(-- n:i64)`
+---
+
+### `fn` peek_back
+
+View the back element without removing it.  Stack: (d -- val)
+
+**Signature:** `(d:Deque<T>) peek_back<T>(-- val:T)!`
+---
+
+### `fn` peek_front
+
+View the front element without removing it.  Stack: (d -- val)
+
+**Signature:** `(d:Deque<T>) peek_front<T>(-- val:T)!`
+---
+
+### `fn` peek
+
+View the front element without removing it.  Returns error if queue is empty.  Example:     q peek! -> val  Stack: (q -- val)
+
+**Signature:** `(q:Queue<T>) peek<T>(-- val:T)!`
+---
+
+### `fn` pop_back
+
+Remove and return the back element.  Example:     d pop_back! -> d -> val  Stack: (d -- val d2)
+
+**Signature:** `(d:Deque<T>) pop_back<T>(-- val:T d2:Deque<T>)!`
+---
+
+### `fn` pop_front
+
+Remove and return the front element.  Example:     d pop_front! -> d -> val  Stack: (d -- val d2)
+
+**Signature:** `(d:Deque<T>) pop_front<T>(-- val:T d2:Deque<T>)!`
+---
+
+### `fn` pop
+
+Pop and return the last element.  Panics if the vector is empty. Returns both the element and the updated vector.  Example:     v pop! -> v -> elem  Stack: (v -- elem v2)
+
+**Signature:** `(v:Vec<T>) pop<T>(-- elem:T v2:Vec<T>)!`
+---
+
+### `fn` push_back
+
+Push an element to the back.  Example:     d 42 push_back! -> d  Stack: (d val -- d2)
+
+**Signature:** `(d:Deque<T>) push_back<T>(val:T -- d2:Deque<T>)!`
+---
+
+### `fn` push_front
+
+Push an element to the front.  Example:     d 42 push_front! -> d  Stack: (d val -- d2)
+
+**Signature:** `(d:Deque<T>) push_front<T>(val:T -- d2:Deque<T>)!`
+---
+
+### `fn` push
+
+Push an element to the end of the vector.  Automatically grows capacity when full (doubles size, starting at 8). Returns the updated vector which must be captured.  Example:     v 42 push! -> v  Stack: (v elem -- v2)
+
+**Signature:** `(v:Vec<T>) push<T>(elem:T -- v2:Vec<T>)!`
 ---
 
 ### `fn` release
 
-**Signature:** `(m:Map<V> --)`
+Free the deque's memory.  Stack: (d --)
 
+**Signature:** `(d:Deque<T>) release<T>(--)`
 ---
 
-## Pair\<T, U\> - Two-Element Tuple
+### `fn` release
 
-A generic pair holding two values of possibly different types.
+Free the map's memory.  IMPORTANT: Always call this when done with a map to prevent memory leaks. After calling release, the map should not be used.  Example:     m release  Stack: (m --)
 
-```qd
-pub struct Pair<T, U> {
-	first: T
-	second: U
-}
-```
+**Signature:** `(m:Map<V>) release<V>(--)`
+---
 
-Create a pair:
+### `fn` release
 
-```qd
-Pair<i64, i64> { first = 42 second = 99 } -> p
-```
+Free the queue's memory.  Stack: (q --)
 
-### Accessing fields
+**Signature:** `(q:Queue<T>) release<T>(--)`
+---
 
-Read fields with `@`:
+### `fn` release
 
-```qd
-p <<first -> a
-p <<second -> b
-```
+Free the vector's memory.  IMPORTANT: Always call this when done with a vector to prevent memory leaks. After calling release, the vector should not be used.  Example:     v release  Stack: (v --)
 
-### `fn` first
+**Signature:** `(v:Vec<T>) release<T>(--)`
+---
 
-**Signature:** `(p:Pair<T,U> -- a:T)`
+### `fn` remove
+
+Remove a key from the map.  Returns error if the key is not found. Returns the updated map which must be captured.  Example:     m "alice" remove! -> m  Stack: (m key -- m2)
+
+**Signature:** `(m:Map<V>) remove<V>(key:str -- m2:Map<V>)!`
+---
+
+### `fn` reset
+
+Remove all elements, keeping allocated capacity.  Useful for reusing a vector without reallocating.  Example:     v reset -> v  Stack: (v -- v2)
+
+**Signature:** `(v:Vec<T>) reset<T>(-- v2:Vec<T>)`
+---
 
 ### `fn` second
 
-**Signature:** `(p:Pair<T,U> -- b:U)`
+Get the second element of a pair.  Example:     p second -> b  Stack: (p -- b)
+
+**Signature:** `(p:Pair<T, U>) second<T, U>(-- b:U)`
+---
+
+### `fn` set
+
+Set element at index.  Panics if index is out of bounds (< 0 or >= len). Returns the updated vector which must be captured.  Example:     v 0 100 set! -> v  Stack: (v idx elem -- v2)
+
+**Signature:** `(v:Vec<T>) set<T>(idx:i64 elem:T -- v2:Vec<T>)!`
+---
 
 ### `fn` unpack
 
-Get both elements at once.
+Unpack a pair onto the stack.  Returns both elements: first is deeper, second on top.  Example:     p unpack -> first_val -> second_val  Stack: (p -- a b)
 
-**Signature:** `(p:Pair<T,U> -- a:T b:U)`
+**Signature:** `(p:Pair<T, U>) unpack<T, U>(-- a:T b:U)`
+## Deque
 
-**Example:**
+Double-ended queue with elements of type T.  Fields:   data - Pointer to circular buffer   head - Index of front element   tail - Index after last element   len  - Number of elements   cap  - Buffer capacity
 
-```qd
-p unpack -> b -> a
-```
+### Struct
 
+| Field | Type | Description |
+|-------|------|-------------|
+| `data` | `ptr` |  |
+| `head` | `i64` |  |
+| `tail` | `i64` |  |
+| `len` | `i64` |  |
+| `cap` | `i64` |  |
+
+## Map
+
+Hash map with string keys and values of type V.  Fields:   keys   - Array of string key pointers   values - Array of V values   states - Array of slot states (0=empty, 1=occupied, 2=deleted)   len    - Number of entries   cap    - Allocated capacity
+
+### Struct
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `keys` | `ptr` |  |
+| `values` | `ptr` |  |
+| `states` | `ptr` |  |
+| `len` | `i64` |  |
+| `cap` | `i64` |  |
+
+## Pair
+
+Pair<T, U> - A Generic Two-Element Tuple ========================================  Pair holds two values of potentially different types. Useful for returning multiple values or key-value associations.  ## Creating a Pair      Pair<i64, str> { first = 42 second = "hello" } -> p  ## Accessing Elements      p <<first -> key     p <<second -> value  ## Unpacking Both Elements      p unpack -> a -> b A pair of two values.  Fields:   first  - The first element of type T   second - The second element of type U
+
+### Struct
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `first` | `T` |  |
+| `second` | `U` |  |
+
+## Queue
+
+FIFO Queue with elements of type T.  Fields:   data - Pointer to circular buffer   head - Index of front element   tail - Index after last element   len  - Number of elements   cap  - Buffer capacity
+
+### Struct
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `data` | `ptr` |  |
+| `head` | `i64` |  |
+| `tail` | `i64` |  |
+| `len` | `i64` |  |
+| `cap` | `i64` |  |
+
+## Set
+
+Set of unique string elements.  Fields:   keys   - Array of string key pointers   states - Array of slot states (0=empty, 1=occupied, 2=deleted)   len    - Number of elements   cap    - Allocated capacity
+
+### Struct
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `keys` | `ptr` |  |
+| `states` | `ptr` |  |
+| `len` | `i64` |  |
+| `cap` | `i64` |  |
+
+### Methods
+
+#### `fn` add
+
+Add an element to the set.  If the element already exists, the set is unchanged. Returns the updated set which must be captured.  Example:     s "alice" add! -> s  Stack: (s key -- s2)
+
+**Signature:** `(s:Set) add(key:str -- s2:Set)!`
 ---
 
-## Complete example
+#### `fn` contains
 
-```qd
-use ct
+Check if an element exists in the set.  Example:     s "alice" contains if { "found!" print nl }  Stack: (s key -- exists)
 
-fn main() {
-	// Build a Vec of scores
-	Vec<i64> { data = 0 len = 0 cap = 0 } -> scores
-	scores 10 push! -> scores
-	scores 20 push! -> scores
-	scores 30 push! -> scores
-	scores 1 get! print nl  // 20
-	scores release
+**Signature:** `(s:Set) contains(key:str -- exists:i64)`
+---
 
-	// Use a Deque as a sliding window
-	Deque<i64> { data = 0 head = 0 tail = 0 len = 0 cap = 0 } -> window
-	window 1 push_back! -> window
-	window 2 push_back! -> window
-	window 3 push_back! -> window
-	window pop_front! -> window -> oldest
-	oldest print nl  // 1
-	window release
+#### `fn` is_empty
 
-	// Process jobs in order with a Queue
-	Queue<i64> { data = 0 head = 0 tail = 0 len = 0 cap = 0 } -> jobs
-	jobs 100 enqueue! -> jobs
-	jobs 200 enqueue! -> jobs
-	jobs dequeue! -> jobs -> job
-	job print nl  // 100
-	jobs release
+Check if the set is empty.  Example:     s is_empty if { "empty!" print nl }  Stack: (s -- bool)
 
-	// Track unique visitors with a Set
-	Set { keys = 0 states = 0 len = 0 cap = 0 } -> visitors
-	visitors "alice" add! -> visitors
-	visitors "bob" add! -> visitors
-	visitors "alice" add! -> visitors  // duplicate, ignored
-	visitors length print nl  // 2
-	visitors release
+**Signature:** `(s:Set) is_empty(-- b:i64)`
+---
 
-	// Store ages in a Map
-	Map<i64> { keys = 0 values = 0 states = 0 len = 0 cap = 0 } -> ages
-	ages "alice" 30 insert! -> ages
-	ages "bob" 25 insert! -> ages
-	ages "alice" get! print nl  // 30
-	ages release
+#### `fn` length
 
-	// Bundle two values with a Pair
-	Pair<i64, i64> { first = 640 second = 480 } -> size
-	size unpack -> h -> w
-	w print " x " print h print nl  // 640 x 480
-}
-```
+Get the number of elements in the set.  Example:     s length -> n  Stack: (s -- n)
+
+**Signature:** `(s:Set) length(-- n:i64)`
+---
+
+#### `fn` release
+
+Free the set's memory.  IMPORTANT: Always call this when done with a set to prevent memory leaks.  Example:     s release  Stack: (s --)
+
+**Signature:** `(s:Set) release(--)`
+---
+
+#### `fn` remove
+
+Remove an element from the set.  Returns error if the element is not found. Returns the updated set which must be captured.  Example:     s "alice" remove! -> s  Stack: (s key -- s2)
+
+**Signature:** `(s:Set) remove(key:str -- s2:Set)!`
+
+## Vec
+
+Dynamic array (vector) structure.  Fields:   data - Pointer to contiguous element storage   len  - Current number of elements (0 to cap)   cap  - Allocated capacity in elements
+
+### Struct
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `data` | `ptr` |  |
+| `len` | `i64` |  |
+| `cap` | `i64` |  |
+

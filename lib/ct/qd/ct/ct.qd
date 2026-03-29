@@ -1,0 +1,9 @@
+/// Generic container types.
+/// Provides Vec, HashMap, Set, Queue, Deque, and Pair.
+
+use vec.qd
+use hashmap.qd
+use set.qd
+use queue.qd
+use deque.qd
+use pair.qd

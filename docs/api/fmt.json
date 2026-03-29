@@ -9,6 +9,26 @@
   ],
   "functions": [
     {
+      "name": "eprintln",
+      "signature": "(s:str -- )",
+      "failable": false,
+      "description": "Print a string to stderr followed by a newline.",
+      "params": [{"name": "s", "type": "str", "description": "String to print"}],
+      "returns": [],
+      "errors": [],
+      "examples": ["\"error occurred\" fmt::eprintln"]
+    },
+    {
+      "name": "fprintf",
+      "signature": "(fd:i64 format:str -- )",
+      "failable": false,
+      "description": "Print formatted output to a file descriptor.",
+      "params": [{"name": "fd", "type": "i64", "description": "File descriptor (1=stdout, 2=stderr)"}, {"name": "format", "type": "str", "description": "Format string with % specifiers"}],
+      "returns": [],
+      "errors": [],
+      "examples": ["\"error: %s\\n\" \"not found\" 2 fmt::fprintf"]
+    },
+    {
       "name": "printf",
       "signature": "(format:str -- )",
       "failable": false,
@@ -19,6 +39,26 @@
       "examples": ["\"world\" \"Hello %s\\n\" fmt::printf  // Hello world"]
     },
     {
+      "name": "println",
+      "signature": "(s:str -- )",
+      "failable": false,
+      "description": "Print a string to stdout followed by a newline.",
+      "params": [{"name": "s", "type": "str", "description": "String to print"}],
+      "returns": [],
+      "errors": [],
+      "examples": ["\"hello\" fmt::println  // hello\\n"]
+    },
+    {
+      "name": "print",
+      "signature": "(s:str -- )",
+      "failable": false,
+      "description": "Print a string to stdout (no newline appended).",
+      "params": [{"name": "s", "type": "str", "description": "String to print"}],
+      "returns": [],
+      "errors": [],
+      "examples": ["\"hello\" fmt::print"]
+    },
+    {
       "name": "sprintf",
       "signature": "(format:str -- result:str)",
       "failable": false,
@@ -26,7 +66,17 @@
       "params": [{"name": "format", "type": "str", "description": "Format string with % specifiers"}],
       "returns": [{"name": "result", "type": "str", "description": "Formatted string"}],
       "errors": [],
-      "examples": ["\"world\" \"Hello %s\\n\" fmt::sprintf  // \"Hello world\\n\""]
+      "examples": ["\"world\" \"Hello %s\" fmt::sprintf  // \"Hello world\""]
+    },
+    {
+      "name": "sprintln",
+      "signature": "(s:str -- result:str)",
+      "failable": false,
+      "description": "Append a newline to a string and return the result.",
+      "params": [{"name": "s", "type": "str", "description": "Input string"}],
+      "returns": [{"name": "result", "type": "str", "description": "String with newline appended"}],
+      "errors": [],
+      "examples": ["\"hello\" fmt::sprintln  // \"hello\\n\""]
     }
   ]
 }

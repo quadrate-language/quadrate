@@ -32,6 +32,27 @@ Get the filename part of a path.
 ```
 ---
 
+### `fn` depth
+
+Get the depth of a path (number of components).
+
+**Signature:** `(path:str -- depth:i64)`
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `path` | `str` | File path |
+
+| Output | Type | Description |
+|--------|------|-------------|
+| `depth` | `i64` | Number of path components |
+
+**Example:**
+
+```qd
+"/home/user/file.txt" path::depth  // 3
+```
+---
+
 ### `fn` dirname
 
 Get the directory part of a path.
@@ -74,9 +95,31 @@ Get the file extension (including dot).
 ```
 ---
 
+### `fn` has_extension
+
+Check if a path matches a simple extension filter.
+
+**Signature:** `(path:str extension:str -- result:i64)`
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `path` | `str` | File path |
+| `extension` | `str` | Extension to match (with or without dot) |
+
+| Output | Type | Description |
+|--------|------|-------------|
+| `result` | `i64` | 1 if matches, 0 otherwise |
+
+**Example:**
+
+```qd
+"file.txt" "txt" path::has_extension  // 1
+```
+---
+
 ### `fn` has_ext
 
-Check if path has any file extension.
+Check if path has an extension.
 
 **Signature:** `(path:str -- result:i64)`
 
@@ -86,37 +129,12 @@ Check if path has any file extension.
 
 | Output | Type | Description |
 |--------|------|-------------|
-| `result` | `i64` | 1 if path has an extension, 0 otherwise |
+| `result` | `i64` | 1 if has extension, 0 otherwise |
 
 **Example:**
 
 ```qd
-"file.txt" path::has_ext print   // 1
-"Makefile" path::has_ext print   // 0
-```
----
-
-### `fn` has_extension
-
-Check if path has a specific extension.
-
-**Signature:** `(path:str extension:str -- result:i64)`
-
-| Parameter | Type | Description |
-|-----------|------|-------------|
-| `path` | `str` | File path |
-| `extension` | `str` | Extension to check (with or without dot) |
-
-| Output | Type | Description |
-|--------|------|-------------|
-| `result` | `i64` | 1 if extension matches, 0 otherwise |
-
-**Example:**
-
-```qd
-"file.txt" ".txt" path::has_extension print  // 1
-"file.txt" "txt" path::has_extension print   // 1
-"file.qd" ".txt" path::has_extension print   // 0
+"file.txt" path::has_ext  // 1
 ```
 ---
 
@@ -138,6 +156,27 @@ Check if path is absolute.
 
 ```qd
 "/home/user" path::is_absolute  // 1
+```
+---
+
+### `fn` is_relative
+
+Check if path is relative (not absolute).
+
+**Signature:** `(path:str -- result:i64)`
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `path` | `str` | File path |
+
+| Output | Type | Description |
+|--------|------|-------------|
+| `result` | `i64` | 1 if relative, 0 otherwise |
+
+**Example:**
+
+```qd
+"home/user" path::is_relative  // 1
 ```
 ---
 
@@ -186,7 +225,7 @@ Normalize a path (remove redundant separators).
 
 ### `fn` parent
 
-Get the parent directory of a path (alias for dirname).
+Get parent directory (same as dirname but clearer name).
 
 **Signature:** `(path:str -- parent:str)`
 
@@ -201,8 +240,29 @@ Get the parent directory of a path (alias for dirname).
 **Example:**
 
 ```qd
-"/home/user/file.txt" path::parent print  // "/home/user"
-"/home/user" path::parent print           // "/home"
+"/home/user/file.txt" path::parent  // "/home/user"
+```
+---
+
+### `fn` starts_with
+
+Check if path starts with a given prefix path.
+
+**Signature:** `(path:str prefix:str -- result:i64)`
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `path` | `str` | File path to check |
+| `prefix` | `str` | Prefix path |
+
+| Output | Type | Description |
+|--------|------|-------------|
+| `result` | `i64` | 1 if starts with prefix, 0 otherwise |
+
+**Example:**
+
+```qd
+"/home/user/file.txt" "/home" path::starts_with  // 1
 ```
 ---
 
@@ -227,95 +287,6 @@ Get filename without extension.
 ```
 ---
 
-### `fn` with_ext
-
-Replace or add file extension.
-
-**Signature:** `(path:str newext:str -- result:str)`
-
-| Parameter | Type | Description |
-|-----------|------|-------------|
-| `path` | `str` | File path |
-| `newext` | `str` | New extension (with or without dot) |
-
-| Output | Type | Description |
-|--------|------|-------------|
-| `result` | `str` | Path with new extension |
-
-**Example:**
-
-```qd
-"file.txt" ".qd" path::with_ext print   // "file.qd"
-"file.txt" "md" path::with_ext print    // "file.md"
-"/home/user/test.c" ".h" path::with_ext print  // "/home/user/test.h"
-```
----
-
-### `fn` is_relative
-
-Check if path is relative (not absolute).
-
-**Signature:** `(path:str -- result:i64)`
-
-| Parameter | Type | Description |
-|-----------|------|-------------|
-| `path` | `str` | File path |
-
-| Output | Type | Description |
-|--------|------|-------------|
-| `result` | `i64` | 1 if relative, 0 otherwise |
-
-**Example:**
-
-```qd
-"home/user" path::is_relative print  // 1
-"/home/user" path::is_relative print  // 0
-```
----
-
-### `fn` depth
-
-Get the depth of a path (number of components).
-
-**Signature:** `(path:str -- depth:i64)`
-
-| Parameter | Type | Description |
-|-----------|------|-------------|
-| `path` | `str` | File path |
-
-| Output | Type | Description |
-|--------|------|-------------|
-| `depth` | `i64` | Number of path components |
-
-**Example:**
-
-```qd
-"/home/user/file.txt" path::depth print  // 3
-```
----
-
-### `fn` starts_with
-
-Check if path starts with a given prefix path.
-
-**Signature:** `(path:str prefix:str -- result:i64)`
-
-| Parameter | Type | Description |
-|-----------|------|-------------|
-| `path` | `str` | File path to check |
-| `prefix` | `str` | Prefix path |
-
-| Output | Type | Description |
-|--------|------|-------------|
-| `result` | `i64` | 1 if starts with prefix, 0 otherwise |
-
-**Example:**
-
-```qd
-"/home/user/file.txt" "/home" path::starts_with print  // 1
-```
----
-
 ### `fn` strip_prefix
 
 Remove a prefix from a path if it exists.
@@ -334,5 +305,27 @@ Remove a prefix from a path if it exists.
 **Example:**
 
 ```qd
-"/home/user/file.txt" "/home" path::strip_prefix print  // "user/file.txt"
+"/home/user/file.txt" "/home" path::strip_prefix  // "user/file.txt"
+```
+---
+
+### `fn` with_ext
+
+Change or add file extension.
+
+**Signature:** `(path:str newext:str -- result:str)`
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `path` | `str` | File path |
+| `newext` | `str` | New extension (with or without leading dot) |
+
+| Output | Type | Description |
+|--------|------|-------------|
+| `result` | `str` | Path with new extension |
+
+**Example:**
+
+```qd
+"file.txt" ".md" path::with_ext  // "file.md"
 ```

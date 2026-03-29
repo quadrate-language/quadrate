@@ -1,0 +1,247 @@
+{
+  "name": "log",
+  "description": "Logging module - structured logging with levels and rotation.  Provides: - Log levels: Debug, Info, Warn, Error - Structured key-value logging - Multiple outputs (stdout, files) - Log rotation (by size, daily, hourly) - Text and JSON formats  ## Example      use log      fn main() {         // Create logger         log::new! -> logger          // Basic logging         logger \"server started\" log::info         logger \"connection failed\" log::error          // Set minimum level         logger log::LevelWarn log::set_level          // Add file output with rotation         logger \"/var/log/app.log\" log::RotateDaily 0 7 log::add_file_rotate!          // Structured logging with key-value pairs         logger \"user login\" \"user\" \"alice\" \"ip\" \"192.168.1.1\" 2 log::info_kv          // JSON format         logger log::FormatJson log::set_format          // Cleanup         logger log::free     }",
+  "constants": [
+    {
+      "name": "ErrAlloc",
+      "value": "2",
+      "description": "Error: Memory allocation failed."
+    },
+    {
+      "name": "ErrFile",
+      "value": "3",
+      "description": "Error: File operation failed."
+    },
+    {
+      "name": "ErrInvalid",
+      "value": "4",
+      "description": "Error: Invalid argument."
+    },
+    {
+      "name": "FormatJson",
+      "value": "1",
+      "description": "Output format: JSON lines."
+    },
+    {
+      "name": "FormatText",
+      "value": "0",
+      "description": "Output format: human-readable text."
+    },
+    {
+      "name": "LevelDebug",
+      "value": "0",
+      "description": "Log level: Debug (most verbose)."
+    },
+    {
+      "name": "LevelError",
+      "value": "3",
+      "description": "Log level: Error (errors only)."
+    },
+    {
+      "name": "LevelInfo",
+      "value": "1",
+      "description": "Log level: Info (normal messages)."
+    },
+    {
+      "name": "LevelOff",
+      "value": "4",
+      "description": "Log level: Off (no logging)."
+    },
+    {
+      "name": "LevelWarn",
+      "value": "2",
+      "description": "Log level: Warn (warnings)."
+    },
+    {
+      "name": "RotateDaily",
+      "value": "2",
+      "description": "Rotation mode: rotate daily."
+    },
+    {
+      "name": "RotateHourly",
+      "value": "3",
+      "description": "Rotation mode: rotate hourly."
+    },
+    {
+      "name": "RotateNone",
+      "value": "0",
+      "description": "Rotation mode: no rotation."
+    },
+    {
+      "name": "RotateSize",
+      "value": "1",
+      "description": "Rotation mode: rotate by file size."
+    }
+  ],
+  "structs": [
+    {
+      "name": "Logger",
+      "description": "Logger handle.",
+      "fields": [
+        {"name": "handle", "type": "ptr", "description": ""}
+      ]
+    }
+  ],
+  "functions": [
+    {
+      "name": "add_file",
+      "signature": "(logger:Logger) add_file(path:str -- )",
+      "failable": true,
+      "description": "Add file output (no rotation). ",
+      "params": [{"name": "path", "type": "str", "description": "Log file path"}],
+      "returns": [],
+      "errors": [{"code": "ErrFile", "description": "Failed to open file"}],
+      "examples": ["logger \"/var/log/app.log\" log::add_file!"]
+    },
+    {
+      "name": "add_file_rotate",
+      "signature": "(logger:Logger) add_file_rotate(path:str mode:i64 max_size:i64 max_files:i64 -- )",
+      "failable": true,
+      "description": "Add file output with rotation. ",
+      "params": [{"name": "path", "type": "str", "description": "Base log file path"}, {"name": "mode", "type": "i64", "description": "Rotation mode (RotateNone, RotateSize, RotateDaily, RotateHourly)"}, {"name": "max_size", "type": "i64", "description": "Max file size for RotateSize (bytes), 0 for time-based"}, {"name": "max_files", "type": "i64", "description": "Max rotated files to keep (0 = unlimited)"}],
+      "returns": [],
+      "errors": [{"code": "ErrFile", "description": "Failed to open file"}],
+      "examples": ["logger \"/var/log/app.log\" log::RotateDaily 0 7 log::add_file_rotate!"]
+    },
+    {
+      "name": "check_rotate",
+      "signature": "(logger:Logger) check_rotate( -- )",
+      "failable": false,
+      "description": "Check and perform rotation if needed.  Called automatically before each log, but can be called manually. ",
+      "params": [],
+      "returns": [],
+      "errors": [],
+      "examples": ["logger log::check_rotate"]
+    },
+    {
+      "name": "debug",
+      "signature": "(logger:Logger) debug(msg:str -- )",
+      "failable": false,
+      "description": "Log a debug message. ",
+      "params": [{"name": "msg", "type": "str", "description": "Message to log"}],
+      "returns": [],
+      "errors": [],
+      "examples": ["logger \"processing item\" log::debug"]
+    },
+    {
+      "name": "disable_stdout",
+      "signature": "(logger:Logger) disable_stdout( -- )",
+      "failable": false,
+      "description": "Disable stdout output. ",
+      "params": [],
+      "returns": [],
+      "errors": [],
+      "examples": ["logger log::disable_stdout"]
+    },
+    {
+      "name": "enable_stdout",
+      "signature": "(logger:Logger) enable_stdout( -- )",
+      "failable": false,
+      "description": "Enable stdout output (default). ",
+      "params": [],
+      "returns": [],
+      "errors": [],
+      "examples": ["logger log::enable_stdout"]
+    },
+    {
+      "name": "error",
+      "signature": "(logger:Logger) error(msg:str -- )",
+      "failable": false,
+      "description": "Log an error message. ",
+      "params": [{"name": "msg", "type": "str", "description": "Message to log"}],
+      "returns": [],
+      "errors": [],
+      "examples": ["logger \"connection failed\" log::error"]
+    },
+    {
+      "name": "flush",
+      "signature": "(logger:Logger) flush( -- )",
+      "failable": false,
+      "description": "Flush all outputs. ",
+      "params": [],
+      "returns": [],
+      "errors": [],
+      "examples": ["logger log::flush"]
+    },
+    {
+      "name": "free",
+      "signature": "(logger:Logger) free( -- )",
+      "failable": false,
+      "description": "Free logger resources. ",
+      "params": [],
+      "returns": [],
+      "errors": [],
+      "examples": ["logger log::free"]
+    },
+    {
+      "name": "get_level",
+      "signature": "(logger:Logger) get_level( -- level:i64)",
+      "failable": false,
+      "description": "Get current log level. ",
+      "params": [],
+      "returns": [{"name": "level", "type": "i64", "description": "Current minimum level"}],
+      "errors": [],
+      "examples": ["logger log::get_level -> level"]
+    },
+    {
+      "name": "info",
+      "signature": "(logger:Logger) info(msg:str -- )",
+      "failable": false,
+      "description": "Log an info message. ",
+      "params": [{"name": "msg", "type": "str", "description": "Message to log"}],
+      "returns": [],
+      "errors": [],
+      "examples": ["logger \"server started\" log::info"]
+    },
+    {
+      "name": "log",
+      "signature": "(logger:Logger) log(level:i64 msg:str -- )",
+      "failable": false,
+      "description": "Log a message at specified level. ",
+      "params": [{"name": "level", "type": "i64", "description": "Log level"}, {"name": "msg", "type": "str", "description": "Message to log"}],
+      "returns": [],
+      "errors": [],
+      "examples": ["logger log::LevelInfo \"custom message\" log::log"]
+    },
+    {
+      "name": "new",
+      "signature": "( -- logger:Logger)",
+      "failable": true,
+      "description": "Create a new logger.  By default logs to stdout at Info level in text format. ",
+      "params": [],
+      "returns": [{"name": "logger", "type": "Logger", "description": "New logger handle"}],
+      "errors": [],
+      "examples": ["log::new! -> logger"]
+    },
+    {
+      "name": "set_format",
+      "signature": "(logger:Logger) set_format(format:i64 -- )",
+      "failable": false,
+      "description": "Set output format. ",
+      "params": [{"name": "format", "type": "i64", "description": "Format (FormatText or FormatJson)"}],
+      "returns": [],
+      "errors": [],
+      "examples": ["logger log::FormatJson log::set_format"]
+    },
+    {
+      "name": "set_level",
+      "signature": "(logger:Logger) set_level(level:i64 -- )",
+      "failable": false,
+      "description": "Set minimum log level.  Messages below this level are ignored. ",
+      "params": [{"name": "level", "type": "i64", "description": "Minimum level (LevelDebug, LevelInfo, LevelWarn, LevelError, LevelOff)"}],
+      "returns": [],
+      "errors": [],
+      "examples": ["logger log::LevelWarn log::set_level"]
+    },
+    {
+      "name": "warn",
+      "signature": "(logger:Logger) warn(msg:str -- )",
+      "failable": false,
+      "description": "Log a warning message. ",
+      "params": [{"name": "msg", "type": "str", "description": "Message to log"}],
+      "returns": [],
+      "errors": [],
+      "examples": ["logger \"connection timeout\" log::warn"]
+    }
+  ]
+}

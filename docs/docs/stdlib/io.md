@@ -18,6 +18,7 @@ Error codes: Ok=1 (success), specific errors start at 2
 | `ErrPermission` | `3` | Error: Permission denied. |
 | `ErrRead` | `5` | Error: Read operation failed. |
 | `ErrSeek` | `7` | Error: Seek operation failed. |
+| `ErrStat` | `10` | Error: Stat operation failed. |
 | `ErrWrite` | `6` | Error: Write operation failed. |
 | `ReadBinary` | `"rb"` | Open mode: read binary. |
 | `Read` | `"r"` | Open mode: read only. |
@@ -32,6 +33,29 @@ Error codes: Ok=1 (success), specific errors start at 2
 | `Write` | `"w"` | Open mode: write (truncate). |
 
 ## Functions
+
+### `fn` append_file
+
+Append string contents to a file. Creates the file if it doesn't exist.
+
+**Signature:** `(path:str contents:str -- )!`
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `path` | `str` | File path |
+| `contents` | `str` | String to append |
+
+| Error | Description |
+|-------|-------------|
+| `io::ErrPermission` | Permission denied or cannot open file |
+| `io::ErrWrite` | Write operation failed |
+
+**Example:**
+
+```qd
+"/tmp/log.txt" "New line\n" io::append_file!
+```
+---
 
 ### `fn` close
 
@@ -69,6 +93,19 @@ Check if at end of file.
 
 ```qd
 f io::eof -> f  // at_end
+```
+---
+
+### `fn` flush
+
+Flush stdout buffer. Ensures all pending output is written immediately. Useful for progress indicators that don't use newlines.
+
+**Signature:** `( -- )`
+
+**Example:**
+
+```qd
+"Loading..." print io::flush
 ```
 ---
 
@@ -199,6 +236,114 @@ Seek to position in file.
 
 ```qd
 f 0 io::SeekSet io::seek! drop
+```
+---
+
+### `fn` stat_atime
+
+Get file access time.
+
+**Signature:** `(path:str -- atime:i64)!`
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `path` | `str` | File path |
+
+| Output | Type | Description |
+|--------|------|-------------|
+| `atime` | `i64` | Last access time as Unix timestamp |
+
+| Error | Description |
+|-------|-------------|
+| `io::ErrNotFound` | File not found |
+| `io::ErrPermission` | Permission denied |
+| `io::ErrStat` | Stat operation failed |
+
+**Example:**
+
+```qd
+"/etc/hostname" io::stat_atime!  // atime
+```
+---
+
+### `fn` stat_mode
+
+Get file permissions (Unix mode).
+
+**Signature:** `(path:str -- mode:i64)!`
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `path` | `str` | File path |
+
+| Output | Type | Description |
+|--------|------|-------------|
+| `mode` | `i64` | Unix permission mode (e.g., 0644) |
+
+| Error | Description |
+|-------|-------------|
+| `io::ErrNotFound` | File not found |
+| `io::ErrPermission` | Permission denied |
+| `io::ErrStat` | Stat operation failed |
+
+**Example:**
+
+```qd
+"/etc/hostname" io::stat_mode!  // mode
+```
+---
+
+### `fn` stat_mtime
+
+Get file modification time.
+
+**Signature:** `(path:str -- mtime:i64)!`
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `path` | `str` | File path |
+
+| Output | Type | Description |
+|--------|------|-------------|
+| `mtime` | `i64` | Last modification time as Unix timestamp |
+
+| Error | Description |
+|-------|-------------|
+| `io::ErrNotFound` | File not found |
+| `io::ErrPermission` | Permission denied |
+| `io::ErrStat` | Stat operation failed |
+
+**Example:**
+
+```qd
+"/etc/hostname" io::stat_mtime!  // mtime
+```
+---
+
+### `fn` stat_size
+
+Get file size in bytes.
+
+**Signature:** `(path:str -- size:i64)!`
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `path` | `str` | File path |
+
+| Output | Type | Description |
+|--------|------|-------------|
+| `size` | `i64` | File size in bytes |
+
+| Error | Description |
+|-------|-------------|
+| `io::ErrNotFound` | File not found |
+| `io::ErrPermission` | Permission denied |
+| `io::ErrStat` | Stat operation failed |
+
+**Example:**
+
+```qd
+"/etc/hostname" io::stat_size!  // size
 ```
 ---
 

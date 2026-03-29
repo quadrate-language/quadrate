@@ -273,3 +273,89 @@ int usr_net_close(qd_context* ctx) {
 
 	return 0;
 }
+
+#define NET_ERR_TIMEOUT 8
+#define NET_ERR_LOOKUP 9
+
+// Stack signature: ( socket:i ms:i -- )!
+int usr_net_set_timeout(qd_context* ctx) {
+	qd_stack_element_t ms_elem, socket_elem;
+	qd_stack_pop(ctx->st, &ms_elem);
+	qd_stack_pop(ctx->st, &socket_elem);
+
+	if (socket_elem.type != QD_STACK_TYPE_INT || ms_elem.type != QD_STACK_TYPE_INT) {
+		qd_push_i(ctx, NET_ERR_INVALID_ARG);
+		return 0;
+	}
+
+	int result = net_platform_set_timeout((net_socket_t)socket_elem.value.i, (int)ms_elem.value.i);
+	qd_push_i(ctx, result == NET_SUCCESS ? NET_ERR_OK : NET_ERR_TIMEOUT);
+	return 0;
+}
+
+// Stack signature: ( socket:i enable:i -- )!
+int usr_net_set_keepalive(qd_context* ctx) {
+	qd_stack_element_t enable_elem, socket_elem;
+	qd_stack_pop(ctx->st, &enable_elem);
+	qd_stack_pop(ctx->st, &socket_elem);
+
+	if (socket_elem.type != QD_STACK_TYPE_INT || enable_elem.type != QD_STACK_TYPE_INT) {
+		qd_push_i(ctx, NET_ERR_INVALID_ARG);
+		return 0;
+	}
+
+	int result = net_platform_set_keepalive((net_socket_t)socket_elem.value.i, (int)enable_elem.value.i);
+	qd_push_i(ctx, result == NET_SUCCESS ? NET_ERR_OK : NET_ERR_INVALID_ARG);
+	return 0;
+}
+
+// Stack signature: ( hostname:s -- ip:s )!
+int usr_net_lookup(qd_context* ctx) {
+	qd_stack_element_t host_elem;
+	qd_stack_pop(ctx->st, &host_elem);
+
+	if (host_elem.type != QD_STACK_TYPE_STR) {
+		qd_push_i(ctx, NET_ERR_INVALID_ARG);
+		return 0;
+	}
+
+	const char* hostname = qd_string_data(host_elem.value.s);
+	char ip_buf[64];
+
+	int result = net_platform_lookup(hostname, ip_buf, sizeof(ip_buf));
+	qd_string_release(host_elem.value.s);
+
+	if (result != NET_SUCCESS) {
+		qd_push_i(ctx, NET_ERR_LOOKUP);
+		return 0;
+	}
+
+	qd_stack_push_str(ctx->st, ip_buf);
+	qd_push_i(ctx, NET_ERR_OK);
+	return 0;
+}
+
+// Stack signature: ( socket:i -- addr:s port:i )!
+int usr_net_get_peer_addr(qd_context* ctx) {
+	qd_stack_element_t socket_elem;
+	qd_stack_pop(ctx->st, &socket_elem);
+
+	if (socket_elem.type != QD_STACK_TYPE_INT) {
+		qd_push_i(ctx, NET_ERR_INVALID_ARG);
+		return 0;
+	}
+
+	char addr_buf[64];
+	int port = 0;
+	int result = net_platform_get_peer_addr((net_socket_t)socket_elem.value.i, addr_buf, sizeof(addr_buf), &port);
+
+	if (result != NET_SUCCESS) {
+		qd_push_i(ctx, NET_ERR_INVALID_ARG);
+		return 0;
+	}
+
+	qd_stack_push_str(ctx->st, addr_buf);
+	qd_push_i(ctx, (int64_t)port);
+	qd_push_i(ctx, NET_ERR_OK);
+	return 0;
+}

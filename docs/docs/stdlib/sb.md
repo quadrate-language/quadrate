@@ -3,22 +3,72 @@
 StringBuilder - Efficient string building.
 Avoids O(n²) cost of repeated strings::concat.
 
-## Functions
+## StringBuilder
 
-### `fn` append_char
+Growable string buffer for efficient string building.
 
-Append a single character (by code point).
+### Struct
 
-**Signature:** `(sb:ptr c:i64 -- sb:ptr)`
+| Field | Type | Description |
+|-------|------|-------------|
+| `buf` | `ptr` | Internal buffer |
+| `len` | `i64` | Current length |
+| `cap` | `i64` | Buffer capacity |
+
+### Constructors
+
+#### `fn` new
+
+Create a new StringBuilder with default capacity.
+
+**Signature:** `( -- sb:StringBuilder)`
+
+| Output | Type | Description |
+|--------|------|-------------|
+| `sb` | `StringBuilder` | New empty builder |
+
+**Example:**
+
+```qd
+sb::new  // builder
+```
+---
+
+#### `fn` with_capacity
+
+Create a StringBuilder with specific initial capacity.
+
+**Signature:** `(capacity:i64 -- sb:StringBuilder)`
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
-| `sb` | `ptr` | Builder to append to |
+| `capacity` | `i64` | Initial buffer size |
+
+| Output | Type | Description |
+|--------|------|-------------|
+| `sb` | `StringBuilder` | New empty builder |
+
+**Example:**
+
+```qd
+1024 sb::with_capacity  // builder
+```
+
+### Methods
+
+#### `fn` append_char
+
+Append a single character (by code point).
+
+**Signature:** `(sb:StringBuilder) append_char(c:i64 -- sb2:StringBuilder)`
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
 | `c` | `i64` | Character code to append |
 
 | Output | Type | Description |
 |--------|------|-------------|
-| `sb` | `ptr` | Updated builder |
+| `sb2` | `StringBuilder` | Updated builder |
 
 **Example:**
 
@@ -27,20 +77,19 @@ builder 65 sb::append_char  // builder
 ```
 ---
 
-### `fn` append_int
+#### `fn` append_int
 
 Append an integer as string.
 
-**Signature:** `(sb:ptr n:i64 -- sb:ptr)`
+**Signature:** `(sb:StringBuilder) append_int(n:i64 -- sb2:StringBuilder)`
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
-| `sb` | `ptr` | Builder to append to |
 | `n` | `i64` | Integer to append |
 
 | Output | Type | Description |
 |--------|------|-------------|
-| `sb` | `ptr` | Updated builder |
+| `sb2` | `StringBuilder` | Updated builder |
 
 **Example:**
 
@@ -49,20 +98,19 @@ builder 42 sb::append_int  // builder
 ```
 ---
 
-### `fn` append
+#### `fn` append
 
 Append a string to the builder.
 
-**Signature:** `(sb:ptr s:str -- sb:ptr)`
+**Signature:** `(sb:StringBuilder) append(s:str -- sb2:StringBuilder)`
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
-| `sb` | `ptr` | Builder to append to |
 | `s` | `str` | String to append |
 
 | Output | Type | Description |
 |--------|------|-------------|
-| `sb` | `ptr` | Updated builder |
+| `sb2` | `StringBuilder` | Updated builder |
 
 **Example:**
 
@@ -71,15 +119,11 @@ builder "hello" sb::append  // builder
 ```
 ---
 
-### `fn` build
+#### `fn` build
 
 Build the final string (does not consume builder).
 
-**Signature:** `(sb:ptr -- s:str)`
-
-| Parameter | Type | Description |
-|-----------|------|-------------|
-| `sb` | `ptr` | Builder to convert |
+**Signature:** `(sb:StringBuilder) build( -- s:str)`
 
 | Output | Type | Description |
 |--------|------|-------------|
@@ -92,15 +136,28 @@ builder sb::build  // result
 ```
 ---
 
-### `fn` finish
+#### `fn` capacity
+
+Get the current capacity of the builder.
+
+**Signature:** `(sb:StringBuilder) capacity( -- cap:i64)`
+
+| Output | Type | Description |
+|--------|------|-------------|
+| `cap` | `i64` | Current buffer capacity |
+
+**Example:**
+
+```qd
+builder sb::capacity  // cap
+```
+---
+
+#### `fn` finish
 
 Build string and free builder in one call.
 
-**Signature:** `(sb:ptr -- s:str)`
-
-| Parameter | Type | Description |
-|-----------|------|-------------|
-| `sb` | `ptr` | Builder to finish |
+**Signature:** `(sb:StringBuilder) finish( -- s:str)`
 
 | Output | Type | Description |
 |--------|------|-------------|
@@ -113,15 +170,11 @@ builder sb::finish  // result
 ```
 ---
 
-### `fn` free
+#### `fn` free
 
 Free the builder's resources.
 
-**Signature:** `(sb:ptr -- )`
-
-| Parameter | Type | Description |
-|-----------|------|-------------|
-| `sb` | `ptr` | Builder to free |
+**Signature:** `(sb:StringBuilder) free( -- )`
 
 **Example:**
 
@@ -130,15 +183,28 @@ builder sb::free
 ```
 ---
 
-### `fn` len
+#### `fn` is_empty
+
+Check if the builder is empty.
+
+**Signature:** `(sb:StringBuilder) is_empty( -- empty:i64)`
+
+| Output | Type | Description |
+|--------|------|-------------|
+| `empty` | `i64` | 1 if empty, 0 otherwise |
+
+**Example:**
+
+```qd
+builder sb::is_empty  // empty
+```
+---
+
+#### `fn` len
 
 Get current length of builder content.
 
-**Signature:** `(sb:ptr -- sblen:i64)`
-
-| Parameter | Type | Description |
-|-----------|------|-------------|
-| `sb` | `ptr` | Builder to check |
+**Signature:** `(sb:StringBuilder) len( -- sblen:i64)`
 
 | Output | Type | Description |
 |--------|------|-------------|
@@ -151,51 +217,36 @@ builder sb::len  // sblen
 ```
 ---
 
-### `fn` new
+#### `fn` newline
 
-Create a new StringBuilder with default capacity.
+Append a newline character.
 
-**Signature:** `( -- sb:ptr)`
+**Signature:** `(sb:StringBuilder) newline( -- sb2:StringBuilder)`
 
 | Output | Type | Description |
 |--------|------|-------------|
-| `sb` | `ptr` | New empty builder |
+| `sb2` | `StringBuilder` | Updated builder |
 
 **Example:**
 
 ```qd
-sb::new  // builder
+builder sb::newline  // builder
 ```
 ---
 
-### `fn` with_capacity
+#### `fn` space
 
-Create a StringBuilder with specific initial capacity.
+Append a space character.
 
-**Signature:** `(capacity:i64 -- sb:ptr)`
-
-| Parameter | Type | Description |
-|-----------|------|-------------|
-| `capacity` | `i64` | Initial buffer size |
+**Signature:** `(sb:StringBuilder) space( -- sb2:StringBuilder)`
 
 | Output | Type | Description |
 |--------|------|-------------|
-| `sb` | `ptr` | New empty builder |
+| `sb2` | `StringBuilder` | Updated builder |
 
 **Example:**
 
 ```qd
-1024 sb::with_capacity  // builder
+builder sb::space  // builder
 ```
-## StringBuilder
-
-Growable string buffer for efficient string building.
-
-### Struct
-
-| Field | Type | Description |
-|-------|------|-------------|
-| `buf` | `ptr` | Internal buffer |
-| `len` | `i64` | Current length |
-| `cap` | `i64` | Buffer capacity |
 

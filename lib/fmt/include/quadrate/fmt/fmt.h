@@ -76,6 +76,21 @@ int usr_fmt_printf(qd_context* ctx);
  */
 int usr_fmt_sprintf(qd_context* ctx);
 
+/** Print a string to stdout (no newline). */
+int usr_fmt_print(qd_context* ctx);
+
+/** Print a string to stdout followed by a newline. */
+int usr_fmt_println(qd_context* ctx);
+
+/** Print a string to stderr followed by a newline. */
+int usr_fmt_eprintln(qd_context* ctx);
+
+/** Append a newline to a string and return the result. */
+int usr_fmt_sprintln(qd_context* ctx);
+
+/** Formatted print to a file descriptor. */
+int usr_fmt_fprintf(qd_context* ctx);
+
 #ifdef __cplusplus
 }
 #endif

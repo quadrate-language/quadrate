@@ -134,7 +134,7 @@ Get positional argument at index.
 | Parameter | Type | Description |
 |-----------|------|-------------|
 | `f` | `ptr` | Flag struct |
-| `index` | `i64` | Position (0-based) |
+| `index` | `i64` | Position (0-based, skips flags starting with -) |
 
 | Output | Type | Description |
 |--------|------|-------------|

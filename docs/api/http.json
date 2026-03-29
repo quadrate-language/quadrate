@@ -1,0 +1,813 @@
+{
+  "name": "http",
+  "description": "HTTP module. Provides HTTP client and server functionality. Error codes: Ok=1 (success), specific errors start at 2",
+  "constants": [
+    {
+      "name": "ErrAccept",
+      "value": "21",
+      "description": "Server error: accept failed."
+    },
+    {
+      "name": "ErrBind",
+      "value": "20",
+      "description": "Server error: bind failed."
+    },
+    {
+      "name": "ErrConnect",
+      "value": "2",
+      "description": "Connection failed."
+    },
+    {
+      "name": "ErrInvalidUrl",
+      "value": "6",
+      "description": "Invalid URL format."
+    },
+    {
+      "name": "ErrMemory",
+      "value": "8",
+      "description": "Memory allocation failed."
+    },
+    {
+      "name": "ErrParse",
+      "value": "5",
+      "description": "Response parse error."
+    },
+    {
+      "name": "ErrReceive",
+      "value": "10",
+      "description": "Receive failed."
+    },
+    {
+      "name": "ErrRedirect",
+      "value": "7",
+      "description": "Too many redirects."
+    },
+    {
+      "name": "ErrSend",
+      "value": "9",
+      "description": "Send failed."
+    },
+    {
+      "name": "ErrServerParse",
+      "value": "22",
+      "description": "Server error: parse failed."
+    },
+    {
+      "name": "ErrTimeout",
+      "value": "4",
+      "description": "Request timeout."
+    },
+    {
+      "name": "ErrTls",
+      "value": "3",
+      "description": "TLS handshake failed."
+    },
+    {
+      "name": "StatusAccepted",
+      "value": "202",
+      "description": ""
+    },
+    {
+      "name": "StatusAlreadyReported",
+      "value": "208",
+      "description": ""
+    },
+    {
+      "name": "StatusBadGateway",
+      "value": "502",
+      "description": ""
+    },
+    {
+      "name": "StatusBadRequest",
+      "value": "400",
+      "description": ""
+    },
+    {
+      "name": "StatusConflict",
+      "value": "409",
+      "description": ""
+    },
+    {
+      "name": "StatusContinue",
+      "value": "100",
+      "description": ""
+    },
+    {
+      "name": "StatusCreated",
+      "value": "201",
+      "description": ""
+    },
+    {
+      "name": "StatusEarlyHints",
+      "value": "103",
+      "description": ""
+    },
+    {
+      "name": "StatusExpectationFailed",
+      "value": "417",
+      "description": ""
+    },
+    {
+      "name": "StatusFailedDependency",
+      "value": "424",
+      "description": ""
+    },
+    {
+      "name": "StatusForbidden",
+      "value": "403",
+      "description": ""
+    },
+    {
+      "name": "StatusFound",
+      "value": "302",
+      "description": ""
+    },
+    {
+      "name": "StatusGatewayTimeout",
+      "value": "504",
+      "description": ""
+    },
+    {
+      "name": "StatusGone",
+      "value": "410",
+      "description": ""
+    },
+    {
+      "name": "StatusHTTPVersionNotSupported",
+      "value": "505",
+      "description": ""
+    },
+    {
+      "name": "StatusIMUsed",
+      "value": "226",
+      "description": ""
+    },
+    {
+      "name": "StatusInsufficientStorage",
+      "value": "507",
+      "description": ""
+    },
+    {
+      "name": "StatusInternalServerError",
+      "value": "500",
+      "description": ""
+    },
+    {
+      "name": "StatusLengthRequired",
+      "value": "411",
+      "description": ""
+    },
+    {
+      "name": "StatusLocked",
+      "value": "423",
+      "description": ""
+    },
+    {
+      "name": "StatusLoopDetected",
+      "value": "508",
+      "description": ""
+    },
+    {
+      "name": "StatusMethodNotAllowed",
+      "value": "405",
+      "description": ""
+    },
+    {
+      "name": "StatusMisdirectedRequest",
+      "value": "421",
+      "description": ""
+    },
+    {
+      "name": "StatusMovedPermanently",
+      "value": "301",
+      "description": ""
+    },
+    {
+      "name": "StatusMultipleChoices",
+      "value": "300",
+      "description": ""
+    },
+    {
+      "name": "StatusMultiStatus",
+      "value": "207",
+      "description": ""
+    },
+    {
+      "name": "StatusNetworkAuthRequired",
+      "value": "511",
+      "description": ""
+    },
+    {
+      "name": "StatusNoContent",
+      "value": "204",
+      "description": ""
+    },
+    {
+      "name": "StatusNonAuthoritativeInfo",
+      "value": "203",
+      "description": ""
+    },
+    {
+      "name": "StatusNotAcceptable",
+      "value": "406",
+      "description": ""
+    },
+    {
+      "name": "StatusNotExtended",
+      "value": "510",
+      "description": ""
+    },
+    {
+      "name": "StatusNotFound",
+      "value": "404",
+      "description": ""
+    },
+    {
+      "name": "StatusNotImplemented",
+      "value": "501",
+      "description": ""
+    },
+    {
+      "name": "StatusNotModified",
+      "value": "304",
+      "description": ""
+    },
+    {
+      "name": "StatusOK",
+      "value": "200",
+      "description": ""
+    },
+    {
+      "name": "StatusPartialContent",
+      "value": "206",
+      "description": ""
+    },
+    {
+      "name": "StatusPayloadTooLarge",
+      "value": "413",
+      "description": ""
+    },
+    {
+      "name": "StatusPaymentRequired",
+      "value": "402",
+      "description": ""
+    },
+    {
+      "name": "StatusPermanentRedirect",
+      "value": "308",
+      "description": ""
+    },
+    {
+      "name": "StatusPreconditionFailed",
+      "value": "412",
+      "description": ""
+    },
+    {
+      "name": "StatusPreconditionRequired",
+      "value": "428",
+      "description": ""
+    },
+    {
+      "name": "StatusProcessing",
+      "value": "102",
+      "description": ""
+    },
+    {
+      "name": "StatusProxyAuthRequired",
+      "value": "407",
+      "description": ""
+    },
+    {
+      "name": "StatusRangeNotSatisfiable",
+      "value": "416",
+      "description": ""
+    },
+    {
+      "name": "StatusRequestHeaderFieldsTooLarge",
+      "value": "431",
+      "description": ""
+    },
+    {
+      "name": "StatusRequestTimeout",
+      "value": "408",
+      "description": ""
+    },
+    {
+      "name": "StatusResetContent",
+      "value": "205",
+      "description": ""
+    },
+    {
+      "name": "StatusSeeOther",
+      "value": "303",
+      "description": ""
+    },
+    {
+      "name": "StatusServiceUnavailable",
+      "value": "503",
+      "description": ""
+    },
+    {
+      "name": "StatusSwitchingProtocols",
+      "value": "101",
+      "description": ""
+    },
+    {
+      "name": "StatusTeapot",
+      "value": "418",
+      "description": ""
+    },
+    {
+      "name": "StatusTemporaryRedirect",
+      "value": "307",
+      "description": ""
+    },
+    {
+      "name": "StatusTooEarly",
+      "value": "425",
+      "description": ""
+    },
+    {
+      "name": "StatusTooManyRequests",
+      "value": "429",
+      "description": ""
+    },
+    {
+      "name": "StatusUnauthorized",
+      "value": "401",
+      "description": ""
+    },
+    {
+      "name": "StatusUnavailableForLegalReasons",
+      "value": "451",
+      "description": ""
+    },
+    {
+      "name": "StatusUnprocessableEntity",
+      "value": "422",
+      "description": ""
+    },
+    {
+      "name": "StatusUnsupportedMediaType",
+      "value": "415",
+      "description": ""
+    },
+    {
+      "name": "StatusUpgradeRequired",
+      "value": "426",
+      "description": ""
+    },
+    {
+      "name": "StatusURITooLong",
+      "value": "414",
+      "description": ""
+    },
+    {
+      "name": "StatusUseProxy",
+      "value": "305",
+      "description": ""
+    },
+    {
+      "name": "StatusVariantAlsoNegotiates",
+      "value": "506",
+      "description": ""
+    }
+  ],
+  "structs": [
+    {
+      "name": "Ctx",
+      "description": "HTTP Context structure (for server handlers). Passed to route handlers, contains request data and response methods. Fields:   method - GET, POST, PUT, DELETE, etc.   path - /users/123 (path without query string)   query - Raw query string (foo=bar&baz=qux)   headers - Request headers   body - Request body   params - Path parameters as \"key=val\\nkey2=val2\"   _socket - Internal: client socket   _responded - Internal: response sent flag",
+      "fields": [
+        {"name": "method", "type": "str", "description": ""},
+        {"name": "path", "type": "str", "description": ""},
+        {"name": "query", "type": "str", "description": ""},
+        {"name": "headers", "type": "str", "description": ""},
+        {"name": "body", "type": "str", "description": ""},
+        {"name": "params", "type": "str", "description": ""},
+        {"name": "_socket", "type": "i64", "description": ""},
+        {"name": "_responded", "type": "i64", "description": ""}
+      ]
+    },
+    {
+      "name": "Response",
+      "description": "HTTP Response structure (for client)",
+      "fields": [
+        {"name": "status", "type": "i64", "description": ""},
+        {"name": "headers", "type": "str", "description": ""},
+        {"name": "body", "type": "str", "description": ""}
+      ]
+    }
+  ],
+  "functions": [
+    {
+      "name": "abort",
+      "signature": "(c:Ctx status:i64 body:str -- )",
+      "failable": false,
+      "description": "Abort request processing and send error response. Prevents further middleware/handlers from running.",
+      "params": [{"name": "c", "type": "Ctx", "description": "Context"}, {"name": "status", "type": "i64", "description": "HTTP status code"}, {"name": "body", "type": "str", "description": "Error message"}],
+      "returns": [],
+      "errors": [],
+      "examples": ["c 401 \"Unauthorized\" http::abort"]
+    },
+    {
+      "name": "ANY",
+      "signature": "(engine:ptr path:str handler:ptr -- )",
+      "failable": false,
+      "description": "Register handler for any HTTP method.",
+      "params": [{"name": "engine", "type": "ptr", "description": "Engine"}, {"name": "path", "type": "str", "description": "Route path"}, {"name": "handler", "type": "ptr", "description": "Handler function"}],
+      "returns": [],
+      "errors": [],
+      "examples": []
+    },
+    {
+      "name": "body",
+      "signature": "(req:ptr body:str -- )",
+      "failable": false,
+      "description": "Set request body.",
+      "params": [{"name": "req", "type": "ptr", "description": "Request object"}, {"name": "body", "type": "str", "description": "Request body content"}],
+      "returns": [],
+      "errors": [],
+      "examples": ["req \"{\\\"key\\\":\\\"value\\\"}\" http::body"]
+    },
+    {
+      "name": "cert",
+      "signature": "(req:ptr cert_path:str key_path:str -- )",
+      "failable": false,
+      "description": "Set client certificate for mTLS (mutual TLS).",
+      "params": [{"name": "req", "type": "ptr", "description": "Request object"}, {"name": "cert_path", "type": "str", "description": "Path to PEM client certificate file"}, {"name": "key_path", "type": "str", "description": "Path to PEM client private key file"}],
+      "returns": [],
+      "errors": [],
+      "examples": ["req \"/path/client.crt\" \"/path/client.key\" http::cert"]
+    },
+    {
+      "name": "close",
+      "signature": "(resp:Response -- )",
+      "failable": false,
+      "description": "Close and free response.",
+      "params": [{"name": "resp", "type": "Response", "description": "Response object"}],
+      "returns": [],
+      "errors": [],
+      "examples": ["resp http::close"]
+    },
+    {
+      "name": "DELETE",
+      "signature": "(engine:ptr path:str handler:ptr -- )",
+      "failable": false,
+      "description": "Register DELETE route.",
+      "params": [{"name": "engine", "type": "ptr", "description": "Engine"}, {"name": "path", "type": "str", "description": "Route path"}, {"name": "handler", "type": "ptr", "description": "Handler function"}],
+      "returns": [],
+      "errors": [],
+      "examples": []
+    },
+    {
+      "name": "engine",
+      "signature": "( -- engine:ptr)",
+      "failable": false,
+      "description": "Create new HTTP engine.",
+      "params": [],
+      "returns": [{"name": "engine", "type": "ptr", "description": "Engine handle"}],
+      "errors": [],
+      "examples": ["http::engine -> e"]
+    },
+    {
+      "name": "free_engine",
+      "signature": "(engine:ptr -- )",
+      "failable": false,
+      "description": "Free engine resources.",
+      "params": [{"name": "engine", "type": "ptr", "description": "Engine"}],
+      "returns": [],
+      "errors": [],
+      "examples": ["e http::free_engine"]
+    },
+    {
+      "name": "free_request",
+      "signature": "(req:ptr -- )",
+      "failable": false,
+      "description": "Free request object (call after send).",
+      "params": [{"name": "req", "type": "ptr", "description": "Request object"}],
+      "returns": [],
+      "errors": [],
+      "examples": ["req http::free_request"]
+    },
+    {
+      "name": "GET",
+      "signature": "(engine:ptr path:str handler:ptr -- )",
+      "failable": false,
+      "description": "Register GET route.   - :param for path parameters (e.g., \"/users/:id\")   - /* for wildcard suffix (e.g., \"/static/*\" matches /static/anything)",
+      "params": [{"name": "engine", "type": "ptr", "description": "Engine"}, {"name": "path", "type": "str", "description": "Route path. Supports"}, {"name": "handler", "type": "ptr", "description": "Handler function receiving Ctx"}],
+      "returns": [],
+      "errors": [],
+      "examples": ["e \"/\" fn(c:Ctx -- ) { c 200 \"Hello\" http::string } http::GET"]
+    },
+    {
+      "name": "get_header",
+      "signature": "(c:Ctx name:str -- value:str)",
+      "failable": false,
+      "description": "Get header value by name.",
+      "params": [{"name": "c", "type": "Ctx", "description": "Context"}, {"name": "name", "type": "str", "description": "Header name (case-insensitive)"}],
+      "returns": [{"name": "value", "type": "str", "description": "Header value (empty if not found)"}],
+      "errors": [],
+      "examples": ["c \"Content-Type\" http::get_header -> ct"]
+    },
+    {
+      "name": "get",
+      "signature": "(url:str -- resp:Response)",
+      "failable": true,
+      "description": "Simple GET request.",
+      "params": [{"name": "url", "type": "str", "description": "The request URL"}],
+      "returns": [{"name": "resp", "type": "Response", "description": "Response struct"}],
+      "errors": [],
+      "examples": ["\"https://example.com\" http::get! -> resp"]
+    },
+    {
+      "name": "group_DELETE",
+      "signature": "(group:ptr path:str handler:ptr -- )",
+      "failable": false,
+      "description": "Register DELETE on group.",
+      "params": [],
+      "returns": [],
+      "errors": [],
+      "examples": []
+    },
+    {
+      "name": "group",
+      "signature": "(engine:ptr prefix:str -- group:ptr)",
+      "failable": false,
+      "description": "Create route group with prefix.",
+      "params": [{"name": "engine", "type": "ptr", "description": "Engine"}, {"name": "prefix", "type": "str", "description": "Path prefix (e.g., \"/api\")"}],
+      "returns": [{"name": "group", "type": "ptr", "description": "Group handle"}],
+      "errors": [],
+      "examples": ["e \"/api\" http::group -> api"]
+    },
+    {
+      "name": "group_GET",
+      "signature": "(group:ptr path:str handler:ptr -- )",
+      "failable": false,
+      "description": "Register GET on group.",
+      "params": [{"name": "group", "type": "ptr", "description": "Group handle"}, {"name": "path", "type": "str", "description": "Route path (relative to group prefix)"}, {"name": "handler", "type": "ptr", "description": "Handler function"}],
+      "returns": [],
+      "errors": [],
+      "examples": ["api \"/users\" fn(c:Ctx -- ) { ... } http::group_GET"]
+    },
+    {
+      "name": "group_POST",
+      "signature": "(group:ptr path:str handler:ptr -- )",
+      "failable": false,
+      "description": "Register POST on group.",
+      "params": [],
+      "returns": [],
+      "errors": [],
+      "examples": []
+    },
+    {
+      "name": "group_PUT",
+      "signature": "(group:ptr path:str handler:ptr -- )",
+      "failable": false,
+      "description": "Register PUT on group.",
+      "params": [],
+      "returns": [],
+      "errors": [],
+      "examples": []
+    },
+    {
+      "name": "group_use",
+      "signature": "(group:ptr middleware:ptr -- )",
+      "failable": false,
+      "description": "Add middleware to group.",
+      "params": [{"name": "group", "type": "ptr", "description": "Group handle"}, {"name": "middleware", "type": "ptr", "description": "Middleware function"}],
+      "returns": [],
+      "errors": [],
+      "examples": ["api fn(c:Ctx -- ) { ... } http::group_use"]
+    },
+    {
+      "name": "handle_one",
+      "signature": "(engine:ptr -- handled:i64)",
+      "failable": false,
+      "description": "Handle a single request (non-blocking alternative to run). Returns 0 if no request pending, 1 if request handled.",
+      "params": [{"name": "engine", "type": "ptr", "description": "Engine"}],
+      "returns": [{"name": "handled", "type": "i64", "description": "1 if request was handled, 0 otherwise"}],
+      "errors": [],
+      "examples": ["e http::handle_one -> handled"]
+    },
+    {
+      "name": "header",
+      "signature": "(req:ptr name:str value:str -- )",
+      "failable": false,
+      "description": "Add request header.",
+      "params": [{"name": "req", "type": "ptr", "description": "Request object"}, {"name": "name", "type": "str", "description": "Header name"}, {"name": "value", "type": "str", "description": "Header value"}],
+      "returns": [],
+      "errors": [],
+      "examples": ["req \"Content-Type\" \"application/json\" http::header"]
+    },
+    {
+      "name": "html",
+      "signature": "(c:Ctx status:i64 body:str -- )",
+      "failable": false,
+      "description": "Send HTML response (sets Content-Type: text/html).",
+      "params": [{"name": "c", "type": "Ctx", "description": "Context"}, {"name": "status", "type": "i64", "description": "HTTP status code"}, {"name": "body", "type": "str", "description": "HTML body"}],
+      "returns": [],
+      "errors": [],
+      "examples": ["c 200 \"<h1>Hello</h1>\" http::html"]
+    },
+    {
+      "name": "is_responded",
+      "signature": "(c:Ctx -- sent:i64)",
+      "failable": false,
+      "description": "Check if response has already been sent.",
+      "params": [{"name": "c", "type": "Ctx", "description": "Context"}],
+      "returns": [{"name": "sent", "type": "i64", "description": "1 if sent, 0 otherwise"}],
+      "errors": [],
+      "examples": ["c http::is_responded -> sent"]
+    },
+    {
+      "name": "json",
+      "signature": "(c:Ctx status:i64 body:str -- )",
+      "failable": false,
+      "description": "Send JSON response (sets Content-Type: application/json).",
+      "params": [{"name": "c", "type": "Ctx", "description": "Context"}, {"name": "status", "type": "i64", "description": "HTTP status code"}, {"name": "body", "type": "str", "description": "JSON body"}],
+      "returns": [],
+      "errors": [],
+      "examples": ["c 200 \"{\\\"ok\\\":true}\" http::json"]
+    },
+    {
+      "name": "method",
+      "signature": "(req:ptr method:str -- )",
+      "failable": false,
+      "description": "Set request HTTP method.",
+      "params": [{"name": "req", "type": "ptr", "description": "Request object"}, {"name": "method", "type": "str", "description": "HTTP method (GET, POST, PUT, DELETE, etc.)"}],
+      "returns": [],
+      "errors": [],
+      "examples": ["req \"POST\" http::method"]
+    },
+    {
+      "name": "new",
+      "signature": "(url:str -- req:ptr)",
+      "failable": false,
+      "description": "Create new HTTP request builder.",
+      "params": [{"name": "url", "type": "str", "description": "The request URL (http:// or https://)"}],
+      "returns": [{"name": "req", "type": "ptr", "description": "Request object"}],
+      "errors": [],
+      "examples": ["\"https://example.com\" http::new -> req"]
+    },
+    {
+      "name": "param",
+      "signature": "(c:Ctx name:str -- value:str)",
+      "failable": false,
+      "description": "Get path parameter by name.",
+      "params": [{"name": "c", "type": "Ctx", "description": "Context"}, {"name": "name", "type": "str", "description": "Parameter name (e.g., \"id\" for route \"/users/:id\")"}],
+      "returns": [{"name": "value", "type": "str", "description": "Parameter value"}],
+      "errors": [],
+      "examples": ["c \"id\" http::param -> id"]
+    },
+    {
+      "name": "POST",
+      "signature": "(engine:ptr path:str handler:ptr -- )",
+      "failable": false,
+      "description": "Register POST route.",
+      "params": [{"name": "engine", "type": "ptr", "description": "Engine"}, {"name": "path", "type": "str", "description": "Route path"}, {"name": "handler", "type": "ptr", "description": "Handler function"}],
+      "returns": [],
+      "errors": [],
+      "examples": ["e \"/api/users\" fn(c:Ctx -- ) { ... } http::POST"]
+    },
+    {
+      "name": "PUT",
+      "signature": "(engine:ptr path:str handler:ptr -- )",
+      "failable": false,
+      "description": "Register PUT route.",
+      "params": [{"name": "engine", "type": "ptr", "description": "Engine"}, {"name": "path", "type": "str", "description": "Route path"}, {"name": "handler", "type": "ptr", "description": "Handler function"}],
+      "returns": [],
+      "errors": [],
+      "examples": []
+    },
+    {
+      "name": "query_param",
+      "signature": "(c:Ctx name:str -- value:str)",
+      "failable": false,
+      "description": "Get query parameter by name.",
+      "params": [{"name": "c", "type": "Ctx", "description": "Context"}, {"name": "name", "type": "str", "description": "Parameter name"}],
+      "returns": [{"name": "value", "type": "str", "description": "Parameter value (empty if not found)"}],
+      "errors": [],
+      "examples": ["c \"page\" http::query_param -> page"]
+    },
+    {
+      "name": "run",
+      "signature": "(engine:ptr addr:str -- )",
+      "failable": true,
+      "description": "Start server (blocking).",
+      "params": [{"name": "engine", "type": "ptr", "description": "Engine"}, {"name": "addr", "type": "str", "description": "Address like \":8080\" or \"127.0.0.1:3000\""}],
+      "returns": [],
+      "errors": [{"code": "ErrBind", "description": "Failed to bind to address"}],
+      "examples": ["e \":8080\" http::run!"]
+    },
+    {
+      "name": "send",
+      "signature": "(req:ptr -- resp:Response)",
+      "failable": true,
+      "description": "Execute HTTP request.",
+      "params": [{"name": "req", "type": "ptr", "description": "Request object"}],
+      "returns": [{"name": "resp", "type": "Response", "description": "Response struct with status, headers, body"}],
+      "errors": [],
+      "examples": ["req http::send! -> resp  resp <<status print"]
+    },
+    {
+      "name": "set_header",
+      "signature": "(c:Ctx name:str value:str -- )",
+      "failable": false,
+      "description": "Set response header. Must be called before sending response body.",
+      "params": [{"name": "c", "type": "Ctx", "description": "Context"}, {"name": "name", "type": "str", "description": "Header name"}, {"name": "value", "type": "str", "description": "Header value"}],
+      "returns": [],
+      "errors": [],
+      "examples": ["c \"X-Custom\" \"value\" http::set_header"]
+    },
+    {
+      "name": "sse_end",
+      "signature": "(c:Ctx -- )",
+      "failable": false,
+      "description": "End the SSE stream. Marks the stream as complete. The connection will be closed after the handler returns.",
+      "params": [{"name": "c", "type": "Ctx", "description": "Context"}],
+      "returns": [],
+      "errors": [],
+      "examples": ["c http::sse_end"]
+    },
+    {
+      "name": "sse_event",
+      "signature": "(c:Ctx name:str data:str -- )",
+      "failable": false,
+      "description": "Send a named SSE event. The event is sent as \"event: <name>\\ndata: <content>\\n\\n\". Clients can listen for specific event types with addEventListener.",
+      "params": [{"name": "c", "type": "Ctx", "description": "Context"}, {"name": "name", "type": "str", "description": "Event name"}, {"name": "data", "type": "str", "description": "Event data (typically JSON)"}],
+      "returns": [],
+      "errors": [],
+      "examples": ["c \"progress\" \"{\\\"percent\\\": 50}\" http::sse_event"]
+    },
+    {
+      "name": "sse_send",
+      "signature": "(c:Ctx data:str -- )",
+      "failable": false,
+      "description": "Send a data-only SSE event. The data is sent as \"data: <content>\\n\\n\".",
+      "params": [{"name": "c", "type": "Ctx", "description": "Context"}, {"name": "data", "type": "str", "description": "Event data (typically JSON)"}],
+      "returns": [],
+      "errors": [],
+      "examples": ["c \"{\\\"count\\\": 1}\" http::sse_send"]
+    },
+    {
+      "name": "sse_start",
+      "signature": "(c:Ctx -- )",
+      "failable": false,
+      "description": "Start an SSE (Server-Sent Events) stream. Sends SSE headers and keeps the connection open for streaming events. Must be called before sse_send or sse_event.",
+      "params": [{"name": "c", "type": "Ctx", "description": "Context"}],
+      "returns": [],
+      "errors": [],
+      "examples": ["c http::sse_start"]
+    },
+    {
+      "name": "static",
+      "signature": "(c:Ctx prefix:str fs_path:str -- )",
+      "failable": false,
+      "description": "Serve files from a directory. Maps URL paths to filesystem paths. Use with a wildcard route (/*). Automatically serves index.html for directory requests. Returns 404 if file not found, 403 for path traversal attempts. // Serve files from ./public at /static/* fn handle_static(c:ptr -- ) {     -> c     c \"/static\" \"./public\" http::static } e \"/static/*\" &handle_static http::GET",
+      "params": [{"name": "c", "type": "Ctx", "description": "Context"}, {"name": "prefix", "type": "str", "description": "URL prefix to strip (e.g., \"/static\")"}, {"name": "fs_path", "type": "str", "description": "Filesystem directory path (e.g., \"./public\")"}],
+      "returns": [],
+      "errors": [],
+      "examples": []
+    },
+    {
+      "name": "static_file",
+      "signature": "(c:Ctx filepath:str -- )",
+      "failable": false,
+      "description": "Serve a single file from the filesystem. Automatically detects MIME type from file extension. Returns 404 if file not found, 403 for path traversal attempts.",
+      "params": [{"name": "c", "type": "Ctx", "description": "Context"}, {"name": "filepath", "type": "str", "description": "Path to file on filesystem"}],
+      "returns": [],
+      "errors": [],
+      "examples": ["c \"/var/www/index.html\" http::static_file"]
+    },
+    {
+      "name": "stop",
+      "signature": "(engine:ptr -- )",
+      "failable": false,
+      "description": "Stop the server.",
+      "params": [{"name": "engine", "type": "ptr", "description": "Engine"}],
+      "returns": [],
+      "errors": [],
+      "examples": ["e http::stop"]
+    },
+    {
+      "name": "string",
+      "signature": "(c:Ctx status:i64 body:str -- )",
+      "failable": false,
+      "description": "Send plain text response.",
+      "params": [{"name": "c", "type": "Ctx", "description": "Context"}, {"name": "status", "type": "i64", "description": "HTTP status code"}, {"name": "body", "type": "str", "description": "Response body"}],
+      "returns": [],
+      "errors": [],
+      "examples": ["c 200 \"Hello, World!\" http::string"]
+    },
+    {
+      "name": "use",
+      "signature": "(engine:ptr middleware:ptr -- )",
+      "failable": false,
+      "description": "Add middleware to engine. Middleware runs before route handlers on every request.",
+      "params": [{"name": "engine", "type": "ptr", "description": "Engine"}, {"name": "middleware", "type": "ptr", "description": "Middleware function"}],
+      "returns": [],
+      "errors": [],
+      "examples": ["e fn(c:Ctx -- ) { c \"X-Server\" \"Quadrate\" http::set_header } http::use"]
+    }
+  ]
+}

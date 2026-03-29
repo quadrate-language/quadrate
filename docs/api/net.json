@@ -1,121 +1,161 @@
 {
   "name": "net",
-  "description": "TCP network socket operations. Provides functions for creating TCP servers, connecting to remote hosts, and sending/receiving data over sockets. Sockets are represented as integer file descriptors.  Example (client):   use net    \"localhost\" 8080 net::connect! -> sock   sock \"Hello\" net::send! -> _   sock 1024 net::receive! -> _ -> data   data print nl   sock net::close  Example (server):   use net    8080 net::listen! -> server   server net::accept! -> client   client 1024 net::receive! -> _ -> data   client data net::send! -> _   client net::close   server net::close",
+  "description": "TCP network operations. Error codes: Ok=1 (success), specific errors start at 2",
   "constants": [
-    {
-      "name": "ErrListen",
-      "value": "2",
-      "description": "Listen/bind failed. Port may be in use or permission denied."
-    },
     {
       "name": "ErrAccept",
       "value": "3",
-      "description": "Accept failed. Could not accept incoming connection."
+      "description": "Error: Accept failed."
     },
     {
       "name": "ErrConnect",
       "value": "4",
-      "description": "Connection failed. Host unreachable or connection refused."
-    },
-    {
-      "name": "ErrSend",
-      "value": "5",
-      "description": "Send failed. Could not send data over socket."
-    },
-    {
-      "name": "ErrReceive",
-      "value": "6",
-      "description": "Receive failed. Could not receive data from socket."
+      "description": "Error: Connection failed."
     },
     {
       "name": "ErrInvalidArg",
       "value": "7",
-      "description": "Invalid argument passed to function."
+      "description": "Error: Invalid argument."
+    },
+    {
+      "name": "ErrListen",
+      "value": "2",
+      "description": "Error: Listen/bind failed."
+    },
+    {
+      "name": "ErrLookup",
+      "value": "9",
+      "description": "Error: DNS lookup failed."
+    },
+    {
+      "name": "ErrReceive",
+      "value": "6",
+      "description": "Error: Receive failed."
+    },
+    {
+      "name": "ErrSend",
+      "value": "5",
+      "description": "Error: Send failed."
+    },
+    {
+      "name": "ErrTimeout",
+      "value": "8",
+      "description": "Error: Timeout setting failed."
     }
   ],
-  "structs": [],
+  "structs": [
+
+  ],
   "functions": [
     {
-      "name": "listen",
-      "signature": "(port:i64 -- socket:i64)!",
-      "failable": true,
-      "description": "Create a TCP server socket, bind to the specified port, and start listening for connections. Sets SO_REUSEADDR and uses a backlog of 128.",
-      "params": [{"name": "port", "type": "i64", "description": "Port number to listen on"}],
-      "returns": [{"name": "socket", "type": "i64", "description": "Server socket descriptor"}],
-      "errors": ["ErrListen - Port may be in use or permission denied"],
-      "examples": ["8080 net::listen! -> server"]
-    },
-    {
       "name": "accept",
-      "signature": "(server_socket:i64 -- client_socket:i64)!",
+      "signature": "(server_socket:i64 -- client_socket:i64)",
       "failable": true,
-      "description": "Accept an incoming connection on a server socket. Blocks until a client connects.",
+      "description": "Accept an incoming connection.",
       "params": [{"name": "server_socket", "type": "i64", "description": "Server socket from listen"}],
-      "returns": [{"name": "client_socket", "type": "i64", "description": "Connected client socket descriptor"}],
-      "errors": ["ErrAccept - Failed to accept connection"],
+      "returns": [{"name": "client_socket", "type": "i64", "description": "Connected client socket"}],
+      "errors": [{"code": "ErrAccept", "description": "Failed to accept connection"}],
       "examples": ["server net::accept! -> client"]
-    },
-    {
-      "name": "connect",
-      "signature": "(host:str port:i64 -- socket:i64)!",
-      "failable": true,
-      "description": "Connect to a remote host. Resolves hostnames via DNS. Returns a connected socket descriptor.",
-      "params": [
-        {"name": "host", "type": "str", "description": "Hostname or IP address"},
-        {"name": "port", "type": "i64", "description": "Port number"}
-      ],
-      "returns": [{"name": "socket", "type": "i64", "description": "Connected socket descriptor"}],
-      "errors": ["ErrConnect - Host unreachable or connection refused"],
-      "examples": ["\"localhost\" 8080 net::connect! -> sock"]
-    },
-    {
-      "name": "send",
-      "signature": "(socket:i64 data:str -- bytes_sent:i64)!",
-      "failable": true,
-      "description": "Send data over a connected socket.",
-      "params": [
-        {"name": "socket", "type": "i64", "description": "Socket descriptor"},
-        {"name": "data", "type": "str", "description": "Data to send"}
-      ],
-      "returns": [{"name": "bytes_sent", "type": "i64", "description": "Number of bytes actually sent"}],
-      "errors": ["ErrSend - Failed to send data"],
-      "examples": ["sock \"Hello\" net::send! -> n"]
-    },
-    {
-      "name": "receive",
-      "signature": "(socket:i64 max_bytes:i64 -- data:str bytes_read:i64)!",
-      "failable": true,
-      "description": "Receive data from a connected socket. Reads up to max_bytes (maximum 1MB). Returns the received data as a string and the actual number of bytes read.",
-      "params": [
-        {"name": "socket", "type": "i64", "description": "Socket descriptor"},
-        {"name": "max_bytes", "type": "i64", "description": "Maximum bytes to receive (1 to 1048576)"}
-      ],
-      "returns": [
-        {"name": "data", "type": "str", "description": "Received data"},
-        {"name": "bytes_read", "type": "i64", "description": "Actual bytes received"}
-      ],
-      "errors": ["ErrReceive - Failed to receive data"],
-      "examples": ["sock 1024 net::receive! -> n -> data"]
-    },
-    {
-      "name": "shutdown",
-      "signature": "(socket:i64 -- )",
-      "failable": false,
-      "description": "Gracefully shut down a socket for writing (SHUT_WR). Use before close for clean TCP teardown.",
-      "params": [{"name": "socket", "type": "i64", "description": "Socket descriptor"}],
-      "returns": [],
-      "errors": [],
-      "examples": ["sock net::shutdown"]
     },
     {
       "name": "close",
       "signature": "(socket:i64 -- )",
       "failable": false,
-      "description": "Close a socket and release associated resources.",
+      "description": "Close socket and release resources.",
       "params": [{"name": "socket", "type": "i64", "description": "Socket descriptor"}],
       "returns": [],
       "errors": [],
       "examples": ["sock net::close"]
+    },
+    {
+      "name": "connect",
+      "signature": "(host:str port:i64 -- socket:i64)",
+      "failable": true,
+      "description": "Connect to a remote host.",
+      "params": [{"name": "host", "type": "str", "description": "Hostname or IP address"}, {"name": "port", "type": "i64", "description": "Port number"}],
+      "returns": [{"name": "socket", "type": "i64", "description": "Connected socket descriptor"}],
+      "errors": [{"code": "ErrConnect", "description": "Host unreachable or connection refused"}],
+      "examples": ["\"localhost\" 8080 net::connect! -> sock"]
+    },
+    {
+      "name": "get_peer_addr",
+      "signature": "(socket:i64 -- addr:str port:i64)",
+      "failable": true,
+      "description": "Get the remote address and port of a connected socket.",
+      "params": [{"name": "socket", "type": "i64", "description": "Socket descriptor"}],
+      "returns": [{"name": "addr", "type": "str", "description": "Remote IP address"}, {"name": "port", "type": "i64", "description": "Remote port number"}],
+      "errors": [{"code": "ErrInvalidArg", "description": "Failed to get peer address"}],
+      "examples": ["sock net::get_peer_addr! -> port -> addr"]
+    },
+    {
+      "name": "listen",
+      "signature": "(port:i64 -- socket:i64)",
+      "failable": true,
+      "description": "Start listening for connections on a port.",
+      "params": [{"name": "port", "type": "i64", "description": "Port number to listen on"}],
+      "returns": [{"name": "socket", "type": "i64", "description": "Server socket descriptor"}],
+      "errors": [{"code": "ErrListen", "description": "Port may be in use or permission denied"}],
+      "examples": ["8080 net::listen! -> server"]
+    },
+    {
+      "name": "lookup",
+      "signature": "(hostname:str -- ip:str)",
+      "failable": true,
+      "description": "Resolve a hostname to an IP address via DNS.",
+      "params": [{"name": "hostname", "type": "str", "description": "Hostname to resolve"}],
+      "returns": [{"name": "ip", "type": "str", "description": "IP address string"}],
+      "errors": [{"code": "ErrLookup", "description": "DNS resolution failed"}],
+      "examples": ["\"example.com\" net::lookup! -> ip"]
+    },
+    {
+      "name": "receive",
+      "signature": "(socket:i64 max_bytes:i64 -- data:str bytes_read:i64)",
+      "failable": true,
+      "description": "Receive data from socket.",
+      "params": [{"name": "socket", "type": "i64", "description": "Socket descriptor"}, {"name": "max_bytes", "type": "i64", "description": "Maximum bytes to receive"}],
+      "returns": [{"name": "data", "type": "str", "description": "Received data"}, {"name": "bytes_read", "type": "i64", "description": "Actual bytes received"}],
+      "errors": [{"code": "ErrReceive", "description": "Failed to receive data"}],
+      "examples": ["sock 1024 net::receive! -> n -> data"]
+    },
+    {
+      "name": "send",
+      "signature": "(socket:i64 data:str -- bytes_sent:i64)",
+      "failable": true,
+      "description": "Send data over socket.",
+      "params": [{"name": "socket", "type": "i64", "description": "Socket descriptor"}, {"name": "data", "type": "str", "description": "Data to send"}],
+      "returns": [{"name": "bytes_sent", "type": "i64", "description": "Number of bytes sent"}],
+      "errors": [{"code": "ErrSend", "description": "Failed to send data"}],
+      "examples": ["sock \"Hello\" net::send! -> n"]
+    },
+    {
+      "name": "set_keepalive",
+      "signature": "(socket:i64 enable:i64 -- )",
+      "failable": true,
+      "description": "Enable or disable TCP keepalive on a socket.",
+      "params": [{"name": "socket", "type": "i64", "description": "Socket descriptor"}, {"name": "enable", "type": "i64", "description": "1 to enable, 0 to disable"}],
+      "returns": [],
+      "errors": [{"code": "ErrInvalidArg", "description": "Failed to set keepalive"}],
+      "examples": ["sock 1 net::set_keepalive!"]
+    },
+    {
+      "name": "set_timeout",
+      "signature": "(socket:i64 ms:i64 -- )",
+      "failable": true,
+      "description": "Set send and receive timeout on a socket.",
+      "params": [{"name": "socket", "type": "i64", "description": "Socket descriptor"}, {"name": "ms", "type": "i64", "description": "Timeout in milliseconds"}],
+      "returns": [],
+      "errors": [{"code": "ErrTimeout", "description": "Failed to set timeout"}],
+      "examples": ["sock 5000 net::set_timeout!"]
+    },
+    {
+      "name": "shutdown",
+      "signature": "(socket:i64 -- )",
+      "failable": false,
+      "description": "Shutdown socket for reading/writing.",
+      "params": [{"name": "socket", "type": "i64", "description": "Socket descriptor"}],
+      "returns": [],
+      "errors": [],
+      "examples": ["sock net::shutdown"]
     }
   ]
 }

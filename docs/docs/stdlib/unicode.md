@@ -107,6 +107,132 @@
 
 ## Functions
 
+### `fn` digit_value
+
+Convert digit character to its numeric value.
+
+**Signature:** `(c:i64 -- result:i64)`
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `c` | `i64` | Character code (must be a digit) |
+
+| Output | Type | Description |
+|--------|------|-------------|
+| `result` | `i64` | Numeric value (0-9), or -1 if not a digit |
+
+**Example:**
+
+```qd
+53 unicode::digit_value print  // 5
+```
+---
+
+### `fn` hex_digit_value
+
+Convert hex digit character to its numeric value.
+
+**Signature:** `(c:i64 -- result:i64)`
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `c` | `i64` | Character code (must be a hex digit) |
+
+| Output | Type | Description |
+|--------|------|-------------|
+| `result` | `i64` | Numeric value (0-15), or -1 if not a hex digit |
+
+**Example:**
+
+```qd
+65 unicode::hex_digit_value print  // 10 (A)
+```
+---
+
+### `fn` is_alnum
+
+Check if character is alphanumeric (A-Z, a-z, or 0-9).
+
+**Signature:** `(c:i64 -- result:i64)`
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `c` | `i64` | Character code |
+
+| Output | Type | Description |
+|--------|------|-------------|
+| `result` | `i64` | 1 if alphanumeric, 0 otherwise |
+
+**Example:**
+
+```qd
+65 unicode::is_alnum print  // 1
+```
+---
+
+### `fn` is_alpha
+
+Check if character is an alphabetic letter (A-Z or a-z).
+
+**Signature:** `(c:i64 -- result:i64)`
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `c` | `i64` | Character code |
+
+| Output | Type | Description |
+|--------|------|-------------|
+| `result` | `i64` | 1 if alphabetic, 0 otherwise |
+
+**Example:**
+
+```qd
+65 unicode::is_alpha print  // 1
+```
+---
+
+### `fn` is_ascii
+
+Check if character is ASCII (0-127).
+
+**Signature:** `(c:i64 -- result:i64)`
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `c` | `i64` | Character code |
+
+| Output | Type | Description |
+|--------|------|-------------|
+| `result` | `i64` | 1 if ASCII, 0 otherwise |
+
+**Example:**
+
+```qd
+65 unicode::is_ascii print  // 1
+```
+---
+
+### `fn` is_control
+
+Check if character is a control character (ASCII 0-31 and 127).
+
+**Signature:** `(c:i64 -- result:i64)`
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `c` | `i64` | Character code |
+
+| Output | Type | Description |
+|--------|------|-------------|
+| `result` | `i64` | 1 if control character, 0 otherwise |
+
+**Example:**
+
+```qd
+10 unicode::is_control print  // 1 (newline)
+```
+---
+
 ### `fn` is_digit
 
 Check if character is a digit (0-9).
@@ -125,4 +251,319 @@ Check if character is a digit (0-9).
 
 ```qd
 48 unicode::is_digit print  // 1
+```
+---
+
+### `fn` is_hex_digit
+
+Check if character is a hexadecimal digit (0-9, A-F, a-f).
+
+**Signature:** `(c:i64 -- result:i64)`
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `c` | `i64` | Character code |
+
+| Output | Type | Description |
+|--------|------|-------------|
+| `result` | `i64` | 1 if hex digit, 0 otherwise |
+
+**Example:**
+
+```qd
+65 unicode::is_hex_digit print  // 1 (A)
+```
+---
+
+### `fn` is_ident_cont
+
+Check if character is a valid identifier continuation (letter, digit, or underscore).
+
+**Signature:** `(c:i64 -- result:i64)`
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `c` | `i64` | Character code |
+
+| Output | Type | Description |
+|--------|------|-------------|
+| `result` | `i64` | 1 if valid identifier continuation, 0 otherwise |
+
+**Example:**
+
+```qd
+95 unicode::is_ident_cont print  // 1 (_)
+```
+---
+
+### `fn` is_ident_start
+
+Check if character is a valid identifier start (letter or underscore).
+
+**Signature:** `(c:i64 -- result:i64)`
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `c` | `i64` | Character code |
+
+| Output | Type | Description |
+|--------|------|-------------|
+| `result` | `i64` | 1 if valid identifier start, 0 otherwise |
+
+**Example:**
+
+```qd
+95 unicode::is_ident_start print  // 1 (_)
+```
+---
+
+### `fn` is_lower
+
+Check if character is a lowercase letter (a-z).
+
+**Signature:** `(c:i64 -- result:i64)`
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `c` | `i64` | Character code |
+
+| Output | Type | Description |
+|--------|------|-------------|
+| `result` | `i64` | 1 if lowercase, 0 otherwise |
+
+**Example:**
+
+```qd
+97 unicode::is_lower print  // 1
+```
+---
+
+### `fn` is_print
+
+Check if character is printable (space through tilde, ASCII 32-126).
+
+**Signature:** `(c:i64 -- result:i64)`
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `c` | `i64` | Character code |
+
+| Output | Type | Description |
+|--------|------|-------------|
+| `result` | `i64` | 1 if printable, 0 otherwise |
+
+**Example:**
+
+```qd
+65 unicode::is_print print  // 1
+```
+---
+
+### `fn` is_punct
+
+Check if character is punctuation (printable but not alphanumeric or space).
+
+**Signature:** `(c:i64 -- result:i64)`
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `c` | `i64` | Character code |
+
+| Output | Type | Description |
+|--------|------|-------------|
+| `result` | `i64` | 1 if punctuation, 0 otherwise |
+
+**Example:**
+
+```qd
+33 unicode::is_punct print  // 1 (!)
+```
+---
+
+### `fn` is_space
+
+Check if character is whitespace (space, tab, newline, carriage return).
+
+**Signature:** `(c:i64 -- result:i64)`
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `c` | `i64` | Character code |
+
+| Output | Type | Description |
+|--------|------|-------------|
+| `result` | `i64` | 1 if whitespace, 0 otherwise |
+
+**Example:**
+
+```qd
+32 unicode::is_space print  // 1
+```
+---
+
+### `fn` is_upper
+
+Check if character is an uppercase letter (A-Z).
+
+**Signature:** `(c:i64 -- result:i64)`
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `c` | `i64` | Character code |
+
+| Output | Type | Description |
+|--------|------|-------------|
+| `result` | `i64` | 1 if uppercase, 0 otherwise |
+
+**Example:**
+
+```qd
+65 unicode::is_upper print  // 1
+```
+---
+
+### `fn` is_utf8_cont
+
+Check if byte is a UTF-8 continuation byte (10xxxxxx).
+
+**Signature:** `(b:i64 -- result:i64)`
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `b` | `i64` | Byte value |
+
+| Output | Type | Description |
+|--------|------|-------------|
+| `result` | `i64` | 1 if continuation byte, 0 otherwise |
+
+**Example:**
+
+```qd
+0x80 unicode::is_utf8_cont print  // 1
+```
+---
+
+### `fn` is_utf8_start
+
+Check if byte is the start of a UTF-8 sequence.
+
+**Signature:** `(b:i64 -- result:i64)`
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `b` | `i64` | Byte value |
+
+| Output | Type | Description |
+|--------|------|-------------|
+| `result` | `i64` | 1 if start byte, 0 otherwise |
+
+**Example:**
+
+```qd
+0xC2 unicode::is_utf8_start print  // 1
+```
+---
+
+### `fn` is_valid_codepoint
+
+Check if a codepoint is valid Unicode.
+
+**Signature:** `(cp:i64 -- valid:i64)`
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `cp` | `i64` | Codepoint to check |
+
+| Output | Type | Description |
+|--------|------|-------------|
+| `valid` | `i64` | 1 if valid, 0 otherwise |
+
+**Example:**
+
+```qd
+0x1F600 unicode::is_valid_codepoint print  // 1 (😀)
+```
+---
+
+### `fn` to_lower
+
+Convert uppercase letter to lowercase.
+
+**Signature:** `(c:i64 -- result:i64)`
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `c` | `i64` | Character code |
+
+| Output | Type | Description |
+|--------|------|-------------|
+| `result` | `i64` | Lowercase character code (unchanged if not uppercase) |
+
+**Example:**
+
+```qd
+65 unicode::to_lower print  // 97
+```
+---
+
+### `fn` to_upper
+
+Convert lowercase letter to uppercase.
+
+**Signature:** `(c:i64 -- result:i64)`
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `c` | `i64` | Character code |
+
+| Output | Type | Description |
+|--------|------|-------------|
+| `result` | `i64` | Uppercase character code (unchanged if not lowercase) |
+
+**Example:**
+
+```qd
+97 unicode::to_upper print  // 65
+```
+---
+
+### `fn` utf8_encode_len
+
+Get the number of UTF-8 bytes needed to encode a codepoint.
+
+**Signature:** `(cp:i64 -- len:i64)`
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `cp` | `i64` | Unicode codepoint |
+
+| Output | Type | Description |
+|--------|------|-------------|
+| `len` | `i64` | Number of bytes needed (1-4), or 0 if invalid |
+
+**Example:**
+
+```qd
+0x00E9 unicode::utf8_encode_len print  // 2 (é)
+```
+---
+
+### `fn` utf8_seq_len
+
+Get the number of bytes in a UTF-8 sequence based on the first byte. Returns 1 for ASCII, 2-4 for multi-byte sequences, 0 for invalid.
+
+**Signature:** `(b:i64 -- len:i64)`
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `b` | `i64` | First byte of UTF-8 sequence |
+
+| Output | Type | Description |
+|--------|------|-------------|
+| `len` | `i64` | Number of bytes (1-4), or 0 if invalid |
+
+**Example:**
+
+```qd
+0xC2 unicode::utf8_seq_len print  // 2
 ```

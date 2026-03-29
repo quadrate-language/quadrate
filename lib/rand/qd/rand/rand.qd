@@ -12,7 +12,7 @@ pub struct Rng {
 /// Create a new RNG seeded from current time.
 /// @return rng ptr New random number generator
 /// @example rand::new -> rng
-pub fn new( -- rng:ptr) {
+pub fn new( -- rng:Rng) {
 	time::now -> seed
 	// Ensure non-zero seed
 	seed 0 == if {
@@ -25,7 +25,7 @@ pub fn new( -- rng:ptr) {
 /// @param seed i64 Initial seed value (must be non-zero)
 /// @return rng ptr New random number generator
 /// @example 12345 rand::with_seed -> rng
-pub fn with_seed(seed:i64 -- rng:ptr) {
+pub fn with_seed(seed:i64 -- rng:Rng) {
 	seed 0 == if {
 		1
 	} else {
@@ -40,7 +40,7 @@ pub fn with_seed(seed:i64 -- rng:ptr) {
 /// @return rng ptr Updated RNG state
 /// @return n i64 Random 64-bit integer
 /// @example rng rand::next -> rng n
-pub fn next(rng:ptr -- rng:ptr n:i64) {
+pub fn (rng:Rng) next( -- rng2:Rng n:i64) {
 	rng <<state -> x
 
 	// xorshift64*
@@ -61,7 +61,7 @@ pub fn next(rng:ptr -- rng:ptr n:i64) {
 /// @return rng ptr Updated RNG state
 /// @return n i64 Random integer in [0, max)
 /// @example rng 100 rand::int -> rng n
-pub fn int(rng:ptr max:i64 -- rng:ptr n:i64) {
+pub fn (rng:Rng) int(max:i64 -- rng2:Rng n:i64) {
 	// Handle edge case: max <= 0 returns 0
 	max 1 < if {
 		rng 0
@@ -86,7 +86,7 @@ pub fn int(rng:ptr max:i64 -- rng:ptr n:i64) {
 /// @return rng ptr Updated RNG state
 /// @return n i64 Random integer in [min, max)
 /// @example rng 10 20 rand::range -> rng n
-pub fn range(rng:ptr min:i64 max:i64 -- rng:ptr n:i64) {
+pub fn (rng:Rng) range(min:i64 max:i64 -- rng2:Rng n:i64) {
 	max min - -> diff
 	rng diff int -> n -> newrng
 	n min + -> result
@@ -99,7 +99,7 @@ pub fn range(rng:ptr min:i64 max:i64 -- rng:ptr n:i64) {
 /// @return rng ptr Updated RNG state
 /// @return b i64 Random boolean (0 or 1)
 /// @example rng rand::boolean -> rng b
-pub fn boolean(rng:ptr -- rng:ptr b:i64) {
+pub fn (rng:Rng) boolean( -- rng2:Rng b:i64) {
 	rng 2 int
 }
 
@@ -108,7 +108,7 @@ pub fn boolean(rng:ptr -- rng:ptr b:i64) {
 /// @return rng ptr Updated RNG state
 /// @return f f64 Random float in [0.0, 1.0)
 /// @example rng rand::float -> rng f
-pub fn float(rng:ptr -- rng:ptr f:f64) {
+pub fn (rng:Rng) float( -- rng2:Rng f:f64) {
 	rng next -> raw -> newrng
 	// Make positive
 	raw 0 < if {
@@ -130,7 +130,7 @@ pub fn float(rng:ptr -- rng:ptr f:f64) {
 /// @return rng ptr Updated RNG state
 /// @return f f64 Random float in [min, max)
 /// @example rng 0.0 10.0 rand::float_range -> rng f
-pub fn float_range(rng:ptr min:f64 max:f64 -- rng:ptr f:f64) {
+pub fn (rng:Rng) float_range(min:f64 max:f64 -- rng2:Rng f:f64) {
 	rng float -> f -> newrng
 	max min - f * min + -> result
 	newrng
@@ -143,7 +143,7 @@ pub fn float_range(rng:ptr min:f64 max:f64 -- rng:ptr f:f64) {
 /// @param len i64 Array length
 /// @return rng ptr Updated RNG state
 /// @example rng arr len rand::shuffle -> rng
-pub fn shuffle(rng:ptr arr:ptr len:i64 -- rng:ptr) {
+pub fn (rng:Rng) shuffle(arr:ptr len:i64 -- rng2:Rng) {
 	use mem
 
 	len 1 > if {
@@ -173,7 +173,7 @@ pub fn shuffle(rng:ptr arr:ptr len:i64 -- rng:ptr) {
 /// @return rng ptr Updated RNG state
 /// @return val i64 Random element from array
 /// @example rng arr len rand::choice -> rng val
-pub fn choice(rng:ptr arr:ptr len:i64 -- rng:ptr val:i64) {
+pub fn (rng:Rng) choice(arr:ptr len:i64 -- rng2:Rng val:i64) {
 	use mem
 
 	rng len int -> idx -> newrng
@@ -189,7 +189,7 @@ pub fn choice(rng:ptr arr:ptr len:i64 -- rng:ptr val:i64) {
 /// @return rng ptr Updated RNG state
 /// @return n f64 Random value from N(0,1)
 /// @example rng rand::normal -> rng n
-pub fn normal(rng:ptr -- rng:ptr n:f64) {
+pub fn (rng:Rng) normal( -- rng2:Rng n:f64) {
 	// Box-Muller transform: generate two uniform randoms, produce one normal
 	rng float -> u1 -> rng
 	rng float -> u2 -> rng
@@ -216,7 +216,7 @@ pub fn normal(rng:ptr -- rng:ptr n:f64) {
 /// @return rng ptr Updated RNG state
 /// @return n f64 Random value from N(mean, stddev)
 /// @example rng 100.0 15.0 rand::normal_params -> rng n
-pub fn normal_params(rng:ptr mean:f64 stddev:f64 -- rng:ptr n:f64) {
+pub fn (rng:Rng) normal_params(mean:f64 stddev:f64 -- rng2:Rng n:f64) {
 	rng normal -> z -> rng
 	z stddev * mean + -> result
 
@@ -230,7 +230,7 @@ pub fn normal_params(rng:ptr mean:f64 stddev:f64 -- rng:ptr n:f64) {
 /// @return rng ptr Updated RNG state
 /// @return n f64 Random value from Exp(lambda)
 /// @example rng 1.0 rand::exponential -> rng n
-pub fn exponential(rng:ptr lambda:f64 -- rng:ptr n:f64) {
+pub fn (rng:Rng) exponential(lambda:f64 -- rng2:Rng n:f64) {
 	rng float -> u -> rng
 
 	// Avoid log(0)
@@ -255,7 +255,7 @@ pub fn exponential(rng:ptr lambda:f64 -- rng:ptr n:f64) {
 /// @param n i64 Number of elements to pick
 /// @return rng ptr Updated RNG state
 /// @example rng src 10 dst 3 rand::sample -> rng
-pub fn sample(rng:ptr src:ptr src_len:i64 dst:ptr n:i64 -- rng:ptr) {
+pub fn (rng:Rng) sample(src:ptr src_len:i64 dst:ptr n:i64 -- rng2:Rng) {
 	use mem
 
 	// Handle edge cases

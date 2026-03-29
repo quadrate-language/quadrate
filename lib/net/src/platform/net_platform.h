@@ -51,6 +51,24 @@ int net_platform_shutdown(net_socket_t socket);
 // Returns 0 on success, -1 on failure
 int net_platform_close(net_socket_t socket);
 
+// Set send/receive timeout on a socket (milliseconds)
+// Returns 0 on success, -1 on failure
+int net_platform_set_timeout(net_socket_t socket, int ms);
+
+// Enable or disable TCP keepalive on a socket
+// Returns 0 on success, -1 on failure
+int net_platform_set_keepalive(net_socket_t socket, int enable);
+
+// DNS lookup: resolve hostname to IP address string
+// Writes IP address to ip_buf (must be at least 46 bytes for IPv6)
+// Returns 0 on success, -1 on failure
+int net_platform_lookup(const char* hostname, char* ip_buf, size_t ip_buf_len);
+
+// Get peer address and port from connected socket
+// Writes address string to addr_buf
+// Returns 0 on success, -1 on failure
+int net_platform_get_peer_addr(net_socket_t socket, char* addr_buf, size_t addr_buf_len, int* port);
+
 #ifdef __cplusplus
 }
 #endif

@@ -1,0 +1,116 @@
+{
+  "name": "tls",
+  "description": "TLS/SSL secure socket operations. Provides encryption layer on top of TCP sockets using OpenSSL. Error codes: Ok=1 (success), specific errors start at 2",
+  "constants": [
+    {
+      "name": "ErrAccept",
+      "value": "4",
+      "description": "TLS handshake failed (server mode)."
+    },
+    {
+      "name": "ErrCertificate",
+      "value": "5",
+      "description": "Certificate validation or loading error."
+    },
+    {
+      "name": "ErrClosed",
+      "value": "8",
+      "description": "Connection closed by peer."
+    },
+    {
+      "name": "ErrConnect",
+      "value": "3",
+      "description": "TLS handshake failed (client mode)."
+    },
+    {
+      "name": "ErrInit",
+      "value": "2",
+      "description": "TLS initialization failed."
+    },
+    {
+      "name": "ErrInvalidArg",
+      "value": "10",
+      "description": "Invalid argument provided."
+    },
+    {
+      "name": "ErrMemory",
+      "value": "9",
+      "description": "Memory allocation failed."
+    },
+    {
+      "name": "ErrRead",
+      "value": "6",
+      "description": "TLS read operation failed."
+    },
+    {
+      "name": "ErrWrite",
+      "value": "7",
+      "description": "TLS write operation failed."
+    }
+  ],
+  "structs": [
+
+  ],
+  "functions": [
+    {
+      "name": "accept",
+      "signature": "(socket:i64 cert_path:str key_path:str -- conn:ptr)",
+      "failable": true,
+      "description": "Wrap a TCP socket with TLS encryption (server mode). Loads certificate and key, then performs TLS handshake.",
+      "params": [{"name": "socket", "type": "i64", "description": "TCP socket from net::accept"}, {"name": "cert_path", "type": "str", "description": "Path to PEM certificate file"}, {"name": "key_path", "type": "str", "description": "Path to PEM private key file"}],
+      "returns": [{"name": "conn", "type": "ptr", "description": "TLS connection handle"}],
+      "errors": [],
+      "examples": ["client_sock \"/path/cert.pem\" \"/path/key.pem\" tls::accept! -> conn"]
+    },
+    {
+      "name": "close",
+      "signature": "(conn:ptr -- )",
+      "failable": false,
+      "description": "Close TLS connection and free resources. Performs TLS shutdown handshake. Does NOT close underlying socket. Call net::close separately to close the socket.",
+      "params": [{"name": "conn", "type": "ptr", "description": "TLS connection handle"}],
+      "returns": [],
+      "errors": [],
+      "examples": ["conn tls::close  sock net::close"]
+    },
+    {
+      "name": "connect_mtls",
+      "signature": "(socket:i64 hostname:str cert_path:str key_path:str -- conn:ptr)",
+      "failable": true,
+      "description": "Wrap a TCP socket with TLS encryption using client certificate (mTLS). Performs TLS handshake with client certificate authentication.",
+      "params": [{"name": "socket", "type": "i64", "description": "TCP socket from net::connect"}, {"name": "hostname", "type": "str", "description": "Server hostname for SNI and certificate verification"}, {"name": "cert_path", "type": "str", "description": "Path to PEM client certificate file"}, {"name": "key_path", "type": "str", "description": "Path to PEM client private key file"}],
+      "returns": [{"name": "conn", "type": "ptr", "description": "TLS connection handle"}],
+      "errors": [],
+      "examples": ["sock \"api.example.com\" \"/path/client.crt\" \"/path/client.key\" tls::connect_mtls! -> conn"]
+    },
+    {
+      "name": "connect",
+      "signature": "(socket:i64 hostname:str -- conn:ptr)",
+      "failable": true,
+      "description": "Wrap a TCP socket with TLS encryption (client mode). Performs TLS handshake and certificate verification.",
+      "params": [{"name": "socket", "type": "i64", "description": "TCP socket from net::connect"}, {"name": "hostname", "type": "str", "description": "Server hostname for SNI and certificate verification"}],
+      "returns": [{"name": "conn", "type": "ptr", "description": "TLS connection handle"}],
+      "errors": [],
+      "examples": ["\"example.com\" 443 net::connect -> sock  sock \"example.com\" tls::connect! -> conn"]
+    },
+    {
+      "name": "receive",
+      "signature": "(conn:ptr max_bytes:i64 -- data:str bytes_read:i64)",
+      "failable": true,
+      "description": "Receive data from TLS connection. Data is decrypted after reception.",
+      "params": [{"name": "conn", "type": "ptr", "description": "TLS connection handle"}, {"name": "max_bytes", "type": "i64", "description": "Maximum bytes to receive"}],
+      "returns": [{"name": "data", "type": "str", "description": "Received and decrypted data"}, {"name": "bytes_read", "type": "i64", "description": "Actual bytes received"}],
+      "errors": [],
+      "examples": ["conn 4096 tls::receive! -> data -> n"]
+    },
+    {
+      "name": "send",
+      "signature": "(conn:ptr data:str -- bytes_sent:i64)",
+      "failable": true,
+      "description": "Send data over TLS connection. Data is encrypted before transmission.",
+      "params": [{"name": "conn", "type": "ptr", "description": "TLS connection handle"}, {"name": "data", "type": "str", "description": "Data to send"}],
+      "returns": [{"name": "bytes_sent", "type": "i64", "description": "Number of bytes sent"}],
+      "errors": [],
+      "examples": ["conn \"GET / HTTP/1.1\\r\\n\\r\\n\" tls::send! -> n"]
+    }
+  ]
+}
