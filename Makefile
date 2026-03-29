@@ -283,7 +283,7 @@ tag:
 	fi
 	@VERSION=$$(cat VERSION) && \
 	BASE=$$(echo "$$VERSION" | sed 's/-.*//' ) && \
-	SUFFIX=$$(echo "$$VERSION" | sed -n 's/[0-9]*\.[0-9]*\.[0-9]*//' p) && \
+	SUFFIX=$$(echo "$$VERSION" | sed -n 's/[0-9]*\.[0-9]*\.[0-9]*//p') && \
 	MAJOR=$$(echo "$$BASE" | cut -d. -f1) && \
 	MINOR=$$(echo "$$BASE" | cut -d. -f2) && \
 	PATCH=$$(echo "$$BASE" | cut -d. -f3) && \
