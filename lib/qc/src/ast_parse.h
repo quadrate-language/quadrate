@@ -493,7 +493,8 @@ namespace Qd {
 			const char* src, bool allowControlFlow = true);
 
 	// ast_statements.cc
-	void parseBlockBody(AstNodeBlock* block, u8t_scanner* scanner, ErrorReporter* errorReporter, const char* src);
+	void parseBlockBody(AstNodeBlock* block, u8t_scanner* scanner, ErrorReporter* errorReporter, const char* src,
+			bool inFunctionBody = false);
 	IAstNode* parseForStatement(u8t_scanner* scanner, ErrorReporter* errorReporter, const char* src);
 	IAstNode* parseLoopStatement(u8t_scanner* scanner, ErrorReporter* errorReporter, const char* src);
 	IAstNode* parseIfStatement(u8t_scanner* scanner, ErrorReporter* errorReporter, const char* src);

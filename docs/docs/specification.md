@@ -180,7 +180,8 @@ $"result={x + y}"             // Expression interpolation
 ++    Increment
 --    Decrement
 <<    Field access (read): struct <<field
->>    Field set (write): struct value >>field
+>>    Field set (write): struct value >>field  (returns updated struct)
+>>!   Field set (write): struct value >>field! (no return, consumes struct)
 ->    Local variable binding
 ::    Scope resolution
 &     Function pointer prefix

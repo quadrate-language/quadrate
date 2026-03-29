@@ -134,6 +134,18 @@ quaduses -w src/         # Update all .qd files in directory recursively
 
 Note: `quad uses` automatically adds `-w` to update files in place. Use `quad uses --check` for dry run.
 
+## quaddoc
+
+Generates HTML documentation from Quadrate source files. Parses `///` doc comments with `@param`, `@return`, `@error`, `@example`, and `@field` tags.
+
+```bash
+quaddoc lib/                        # Generate docs for all modules in lib/
+quaddoc -o api-docs lib/            # Output to custom directory
+quaddoc --title "My API" src/       # Custom project title
+```
+
+The generated documentation includes function signatures, parameter tables, return values, error conditions, and code examples.
+
 ## quadmcp
 
 Model Context Protocol server for AI assistants. Provides language documentation, code examples, and standard library reference to MCP-compatible tools.

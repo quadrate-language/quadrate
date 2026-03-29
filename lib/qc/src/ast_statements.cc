@@ -2,12 +2,15 @@
 
 namespace Qd {
 
-	// Helper function to parse a block body with proper else-handling
-	void parseBlockBody(AstNodeBlock* block, u8t_scanner* scanner, ErrorReporter* errorReporter, const char* src) {
+	// Helper function to parse a block body with proper else-handling.
+	// When inFunctionBody is true, also handles >>field, ctx blocks, and EOF detection.
+	void parseBlockBody(AstNodeBlock* block, u8t_scanner* scanner, ErrorReporter* errorReporter, const char* src,
+			bool inFunctionBody) {
 		size_t n;
 		char32_t token;
 		size_t slashPos = SIZE_MAX; // Position of first slash for comment detection
 		bool sawColon = false;
+		bool foundClosingBrace = false;
 		std::vector<IAstNode*> tempNodes;
 		TempNodeGuard guard(tempNodes); // Auto-deletes unflushed nodes on scope exit
 
@@ -88,15 +91,19 @@ namespace Qd {
 			AstNodeComment* comment = parseComment(scanner, src, slashPos, token);
 			if (comment != nullptr) {
 				slashPos = SIZE_MAX;
-				// Flush tempNodes before adding comment
-				for (auto* node : tempNodes) {
-					node->setParent(block);
-					block->addChild(node);
+				if (inFunctionBody) {
+					// In function bodies, comments are part of the token stream
+					tempNodes.push_back(comment);
+				} else {
+					// In blocks, flush tempNodes before adding comment
+					for (auto* node : tempNodes) {
+						node->setParent(block);
+						block->addChild(node);
+					}
+					tempNodes.clear();
+					comment->setParent(block);
+					block->addChild(comment);
 				}
-				tempNodes.clear();
-				// Add comment to block
-				comment->setParent(block);
-				block->addChild(comment);
 				continue;
 			}
 
@@ -110,6 +117,7 @@ namespace Qd {
 			}
 
 			if (token == '}') {
+				foundClosingBrace = true;
 				break;
 			}
 
@@ -121,6 +129,32 @@ namespace Qd {
 			sawColon = (token == ':');
 			if (sawColon) {
 				continue; // Wait for next token to see if it's another colon
+			}
+
+			// Handle >>field (field set / write) — only in function bodies
+			if (inFunctionBody && token == '>') {
+				char32_t nextChar = u8t_scanner_peek(scanner);
+				if (nextChar == '>') {
+					u8t_scanner_scan(scanner); // Consume second >
+					char32_t fieldStart = u8t_scanner_peek(scanner);
+					if ((fieldStart >= 'a' && fieldStart <= 'z') || (fieldStart >= 'A' && fieldStart <= 'Z') ||
+							fieldStart == '_') {
+						char32_t identToken = u8t_scanner_scan(scanner);
+						if (identToken == U8T_IDENTIFIER) {
+							std::string fieldName(u8t_scanner_token_text(scanner, &n));
+							bool noReturn = (u8t_scanner_peek(scanner) == '!');
+							if (noReturn) {
+								u8t_scanner_scan(scanner);
+							}
+							AstNodeFieldSet* fieldSet = new AstNodeFieldSet("", fieldName, noReturn);
+							setNodePosition(fieldSet, scanner, src);
+							tempNodes.push_back(fieldSet);
+							continue;
+						}
+					}
+					errorReporter->reportError(scanner, "Expected field name after '>>'");
+					continue;
+				}
 			}
 
 			// Handle <<field (field read)
@@ -198,7 +232,7 @@ namespace Qd {
 				}
 			}
 
-			// Check if this token is an "else" keyword
+			// Check if this token is a keyword
 			if (token == U8T_IDENTIFIER) {
 				const char* tokenText = u8t_scanner_token_text(scanner, &n);
 				if (strcmp(tokenText, "else") == 0) {
@@ -223,7 +257,7 @@ namespace Qd {
 							setNodePosition(elseBody, scanner, src);
 
 							// Recursively parse the else body
-							parseBlockBody(elseBody, scanner, errorReporter, src);
+							parseBlockBody(elseBody, scanner, errorReporter, src, inFunctionBody);
 
 							elseBody->setParent(ifStmt);
 							ifStmt->setElseBody(elseBody);
@@ -247,6 +281,69 @@ namespace Qd {
 															"Did you mean 'fn (...) { }' for an anonymous function?");
 						continue;
 					}
+				} else if (inFunctionBody && strcmp(tokenText, "ctx") == 0) {
+					// Parse ctx block — only in function bodies
+					// ctx blocks add children directly (not wrapped in a block node)
+					for (auto* node : tempNodes) {
+						node->setParent(block);
+						block->addChild(node);
+					}
+					tempNodes.clear();
+
+					auto ctxStmt = std::make_unique<AstNodeCtx>();
+					setNodePosition(ctxStmt.get(), scanner, src);
+					token = u8t_scanner_scan(scanner);
+
+					if (token != '{') {
+						errorReporter->reportError(scanner, "Expected '{' after 'ctx'");
+					} else {
+						// Parse ctx body using shared parser, collecting into a temporary block
+						auto* ctxBody = new AstNodeBlock();
+						setNodePosition(ctxBody, scanner, src);
+						parseBlockBody(ctxBody, scanner, errorReporter, src, true);
+
+						// The ctx body block IS the ctx's content — attach it directly
+						ctxBody->setParent(ctxStmt.get());
+						ctxStmt->addChild(ctxBody);
+
+						ctxStmt->setParent(block);
+						block->addChild(ctxStmt.release());
+					}
+					continue;
+				}
+			}
+
+			// In function bodies, handle standalone '?' and '!' as postfix error operators
+			if (inFunctionBody && token == '?' && !tempNodes.empty()) {
+				IAstNode* prevNode = tempNodes.back();
+				if (prevNode->type() == IAstNode::Type::IDENTIFIER) {
+					static_cast<AstNodeIdentifier*>(prevNode)->setPropagateOnError(true);
+				} else if (prevNode->type() == IAstNode::Type::INSTRUCTION) {
+					static_cast<AstNodeInstruction*>(prevNode)->setPropagateOnError(true);
+				} else if (prevNode->type() == IAstNode::Type::SCOPED_IDENTIFIER) {
+					static_cast<AstNodeScopedIdentifier*>(prevNode)->setPropagateOnError(true);
+				}
+				continue;
+			}
+
+			if (inFunctionBody && token == '!' && !tempNodes.empty()) {
+				// Check if next token is '=' for '!='
+				char32_t nextToken = u8t_scanner_peek(scanner);
+				if (nextToken != '=') {
+					IAstNode* prevNode = tempNodes.back();
+					if (prevNode->type() == IAstNode::Type::IDENTIFIER) {
+						static_cast<AstNodeIdentifier*>(prevNode)->setAbortOnError(true);
+					} else if (prevNode->type() == IAstNode::Type::INSTRUCTION) {
+						static_cast<AstNodeInstruction*>(prevNode)->setAbortOnError(true);
+					} else if (prevNode->type() == IAstNode::Type::SCOPED_IDENTIFIER) {
+						static_cast<AstNodeScopedIdentifier*>(prevNode)->setAbortOnError(true);
+					} else {
+						// Fall back to creating 'not' instruction
+						AstNodeInstruction* instr = new AstNodeInstruction("not");
+						setNodePosition(instr, scanner, src);
+						tempNodes.push_back(instr);
+					}
+					continue;
 				}
 			}
 
@@ -254,6 +351,11 @@ namespace Qd {
 			if (node) {
 				tempNodes.push_back(node);
 			}
+		}
+
+		// Check if we hit EOF without finding closing brace (function bodies only)
+		if (inFunctionBody && !foundClosingBrace) {
+			errorReporter->reportError(scanner, "Expected '}' to close function body (reached end of file)");
 		}
 
 		// Flush remaining tempNodes to block (block takes ownership)
