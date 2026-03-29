@@ -56,3 +56,4 @@ tests/fuzz/corpus/
 /benchmarks/mat4x4_qd
 /benchmarks/mat4x4_go
 /benchmarks/mat4x4_c
+/*.tar.gz

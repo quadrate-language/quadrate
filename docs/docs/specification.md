@@ -1,6 +1,6 @@
 # Quadrate Language Specification
 
-**Version 2.0.0-alpha**
+**Version 0.2.0**
 
 <small>SPDX-License-Identifier: CC0-1.0 — This specification is released into the public domain. Anyone may implement the Quadrate language without royalty or restriction.</small>
 
@@ -1647,6 +1647,7 @@ instruction     = "dup" | "swap" | "drop" | "over" | "rot" | "nip" | "tuck"
 
 ## Document History
 
+- **0.2.0**: Method syntax for stdlib, expanded regex/fmt/sort/crypto/net, unified block parsers
 - **2.0.0-alpha**: Initial specification document
 
 ---

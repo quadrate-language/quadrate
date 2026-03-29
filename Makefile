@@ -255,6 +255,52 @@ docs:
 	@echo "Documentation built successfully!"
 	@echo "To serve locally: cd docs && mkdocs serve"
 
+dist: release
+	@VERSION=$$(cat VERSION) && \
+	ARCH=$$(uname -m) && \
+	OS=$$(uname -s | tr '[:upper:]' '[:lower:]') && \
+	TARNAME="quadrate-$$VERSION-$$OS-$$ARCH" && \
+	rm -rf "$$TARNAME" && \
+	mkdir -p "$$TARNAME/bin" "$$TARNAME/lib" "$$TARNAME/share" && \
+	cp -r dist/bin/* "$$TARNAME/bin/" && \
+	cp -r dist/lib/* "$$TARNAME/lib/" && \
+	cp -r dist/share/* "$$TARNAME/share/" 2>/dev/null || true && \
+	cp -r dist/include "$$TARNAME/" 2>/dev/null || true && \
+	cp completions/quad.bash "$$TARNAME/" && \
+	cp LICENSE README.md "$$TARNAME/" && \
+	sha256sum "$$TARNAME"/bin/* > "$$TARNAME/SHA256SUMS" && \
+	tar czf "$$TARNAME.tar.gz" "$$TARNAME" && \
+	rm -rf "$$TARNAME" && \
+	echo "Created $$TARNAME.tar.gz" && \
+	sha256sum "$$TARNAME.tar.gz"
+
+BUMP ?=
+tag:
+	@if [ -z "$(BUMP)" ]; then \
+		echo "Usage: make tag BUMP=major|minor|patch"; \
+		echo "Current version: $$(cat VERSION)"; \
+		exit 1; \
+	fi
+	@VERSION=$$(cat VERSION) && \
+	BASE=$$(echo "$$VERSION" | sed 's/-.*//' ) && \
+	SUFFIX=$$(echo "$$VERSION" | sed -n 's/[0-9]*\.[0-9]*\.[0-9]*//' p) && \
+	MAJOR=$$(echo "$$BASE" | cut -d. -f1) && \
+	MINOR=$$(echo "$$BASE" | cut -d. -f2) && \
+	PATCH=$$(echo "$$BASE" | cut -d. -f3) && \
+	case "$(BUMP)" in \
+		major) MAJOR=$$((MAJOR + 1)); MINOR=0; PATCH=0; SUFFIX="" ;; \
+		minor) MINOR=$$((MINOR + 1)); PATCH=0; SUFFIX="" ;; \
+		patch) PATCH=$$((PATCH + 1)); SUFFIX="" ;; \
+		*) echo "Error: BUMP must be major, minor, or patch"; exit 1 ;; \
+	esac && \
+	NEW="$$MAJOR.$$MINOR.$$PATCH$$SUFFIX" && \
+	echo "$$NEW" > VERSION && \
+	git add VERSION && \
+	git commit -m "Bump version to $$NEW" && \
+	git tag -a "$$NEW" -m "Release $$NEW" && \
+	echo "$$VERSION -> $$NEW" && \
+	echo "Push with: git push && git push origin $$NEW"
+
 clean:
 	rm -rf build
 	rm -rf dist

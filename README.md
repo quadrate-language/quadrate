@@ -2,7 +2,7 @@
 
 A stack-based language that compiles to native code via LLVM.
 
-> **Status:** 2.0.0-alpha — usable but APIs may change.
+> **Status:** 0.2.0 — usable but APIs may change.
 
 **Documentation**: https://quad.r8.rs | **Playground**: https://quad.r8.rs/play/
 

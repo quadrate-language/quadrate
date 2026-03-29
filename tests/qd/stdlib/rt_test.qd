@@ -10,6 +10,6 @@ test "version_api returns positive number" {
 	rt::version_api 0 > testing::assert_true
 }
 
-test "version_api is at least 20000 (v2.0.0)" {
-	rt::version_api 20000 >= testing::assert_true
+test "version_api is at least 200 (v0.2.0)" {
+	rt::version_api 200 >= testing::assert_true
 }
