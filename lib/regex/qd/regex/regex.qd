@@ -6,6 +6,12 @@ use strings
 use unicode
 use sb
 
+/// Compiled regular expression.
+/// @field re ptr Internal NFA state
+pub struct Regex {
+	re: ptr
+}
+
 // NFA state types
 enum StateType {
 	Char     // Match specific character
@@ -452,27 +458,30 @@ fn parse_alt(ps:ptr -- start:i64 end:i64) {
 
 /// Compile a regex pattern.
 /// @param pattern str Regular expression pattern
-/// @return re ptr Compiled regex (null on error)
-pub fn compile(pattern:str -- re:ptr) {
-	regex_new -> re
-	pattern re parser_new -> ps
+/// @return re Regex Compiled regex
+/// @example "[0-9]+" regex::compile -> re
+pub fn compile(pattern:str -- re:Regex) {
+	regex_new -> raw
+	pattern raw parser_new -> ps
 
 	ps parse_alt -> start -> end
 
-	re StateType::Match add_state -> match_state
+	raw StateType::Match add_state -> match_state
 	end -1 != if {
-		re end match_state connect_state
+		raw end match_state connect_state
 	}
 	start -1 != if {
-		start re RE_START mem::set_i64
+		start raw RE_START mem::set_i64
 	}
 
 	ps parser_free
-	re
+	Regex { re = raw }
 }
 
 /// Free a compiled regex.
-pub fn release(re:ptr -- ) {
+/// @example re regex::release
+pub fn (self:Regex) release( -- ) {
+	self <<re -> re
 	// Free character classes
 	re RE_NCCLASS mem::get_i64 -> n
 	0 -> i
@@ -548,10 +557,10 @@ fn state_matches(re:ptr idx:i64 c:i64 -- result:i64) {
 }
 
 /// Test if a string matches a compiled regex (full match).
-/// @param re ptr Compiled regex
 /// @param s str String to match
-/// @return matches i64 1 if matches, 0 otherwise
-pub fn matches(re:ptr s:str -- result:i64) {
+/// @return result i64 1 if matches, 0 otherwise
+pub fn (self:Regex) matches(s:str -- result:i64) {
+	self <<re -> re
 	s strings::len -> slen
 	re RE_NSTATES mem::get_i64 -> nstates
 
@@ -634,6 +643,11 @@ pub fn is_match(pattern:str s:str -- result:i64) {
 	re s matches -> result
 	re release
 	result
+}
+
+// Internal: unwrap Regex for internal functions that take raw ptr
+fn unwrap_re(self:Regex -- re:ptr) {
+	self <<re
 }
 
 // Internal: find first match of compiled regex starting at or after 'from'.
@@ -737,24 +751,23 @@ fn find_from(re:ptr s:str from:i64 -- start:i64 end:i64) {
 
 /// Find first match in string. Returns start and end (exclusive) indices.
 /// Returns -1 -1 if no match found.
-/// @param re ptr Compiled regex
 /// @param s str String to search
 /// @return start i64 Start index of match (-1 if none)
 /// @return end i64 End index of match, exclusive (-1 if none)
-/// @example "[0-9]+" regex::compile -> re  re "abc123def" regex::find -> start -> end
-pub fn find(re:ptr s:str -- start:i64 end:i64) {
-	re s 0 find_from
+/// @example "[0-9]+" regex::compile -> re  re "abc123def" regex::find -> end -> start
+pub fn (self:Regex) find(s:str -- start:i64 end:i64) {
+	self <<re s 0 find_from
 }
 
 /// Find all non-overlapping matches. Returns array of start/end pairs and count.
 /// Caller must free the returned array with mem::free.
-/// @param re ptr Compiled regex
 /// @param s str String to search
 /// @param max i64 Maximum matches to find (-1 for unlimited)
 /// @return results ptr Array of i64 pairs [start0, end0, start1, end1, ...]
 /// @return count i64 Number of matches found
-/// @example "[0-9]+" regex::compile -> re  re "a1b22c333" -1 regex::find_all -> results -> count
-pub fn find_all(re:ptr s:str max:i64 -- results:ptr count:i64) {
+/// @example "[0-9]+" regex::compile -> re  re "a1b22c333" -1 regex::find_all -> count -> results
+pub fn (self:Regex) find_all(s:str max:i64 -- results:ptr count:i64) {
+	self <<re -> re
 	// Allocate initial results array (grow as needed)
 	64 -> cap
 	cap 2 * 8 * mem::alloc! -> results
@@ -793,12 +806,12 @@ pub fn find_all(re:ptr s:str max:i64 -- results:ptr count:i64) {
 }
 
 /// Replace all matches with replacement string.
-/// @param re ptr Compiled regex
 /// @param s str Input string
 /// @param repl str Replacement string
 /// @return result str String with all matches replaced
 /// @example "[0-9]+" regex::compile -> re  re "abc123def456" "#" regex::replace -> result
-pub fn replace(re:ptr s:str repl:str -- result:str) {
+pub fn (self:Regex) replace(s:str repl:str -- result:str) {
+	self <<re -> re
 	s strings::len -> slen
 	sb::new -> out
 	0 -> pos
@@ -844,11 +857,11 @@ pub fn replace(re:ptr s:str repl:str -- result:str) {
 
 
 /// Count non-overlapping matches in string.
-/// @param re ptr Compiled regex
 /// @param s str String to search
 /// @return count i64 Number of matches
 /// @example "[0-9]+" regex::compile -> re  re "a1b22c333" regex::match_count -> n
-pub fn match_count(re:ptr s:str -- count:i64) {
+pub fn (self:Regex) match_count(s:str -- count:i64) {
+	self <<re -> re
 	0 -> count
 	0 -> pos
 

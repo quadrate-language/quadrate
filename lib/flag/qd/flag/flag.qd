@@ -22,9 +22,9 @@ pub struct Flag {
 
 /// Parse arguments from read instruction.
 /// @param argc i64 Argument count from read
-/// @return Flag struct on stack
+/// @return f Flag Parsed flags
 /// @example read flag::parse -> f
-pub fn parse(argc:i64 -- ) {
+pub fn parse(argc:i64 -- f:Flag) {
 	"" -> argv
 	"" -> arg
 	"" -> old_argv
@@ -57,9 +57,8 @@ pub fn parse(argc:i64 -- ) {
 }
 
 /// Free a Flag struct and its argv string.
-/// @param f ptr Flag struct to free
 /// @example f flag::destroy
-pub fn destroy(f:ptr -- ) {
+pub fn (f:Flag) destroy( -- ) {
 	f <<argv drop
 	f free
 }
@@ -69,7 +68,7 @@ pub fn destroy(f:ptr -- ) {
 /// @param name str Flag name (e.g., "--verbose")
 /// @return present i64 1 if found, 0 otherwise
 /// @example f "--verbose" flag::boolean if { "verbose" print nl }
-pub fn boolean(f:ptr name:str -- present:i64) {
+pub fn (f:Flag) boolean(name:str -- present:i64) {
 	"\n" name strings::concat -> pattern
 	pattern "\n" strings::concat -> pattern
 
@@ -83,7 +82,7 @@ pub fn boolean(f:ptr name:str -- present:i64) {
 /// @error ErrNotFound Flag not found
 /// @error ErrNoValue Flag exists but has no value
 /// @example f "--name" flag::string! -> name
-pub fn string(f:ptr name:str -- value:str)! {
+pub fn (f:Flag) string(name:str -- value:str)! {
 	"" -> value
 	"" -> pattern
 	"" -> argv
@@ -119,7 +118,7 @@ pub fn string(f:ptr name:str -- value:str)! {
 /// @return value i64 Flag value as integer
 /// @error ErrNotFound Flag not found
 /// @example f "--count" flag::int! -> count
-pub fn int(f:ptr name:str -- value:i64)! {
+pub fn (f:Flag) int(name:str -- value:i64)! {
 	"" -> s
 
 	f name string if {
@@ -138,7 +137,7 @@ pub fn int(f:ptr name:str -- value:i64)! {
 /// @return value f64 Flag value as float
 /// @error ErrNotFound Flag not found
 /// @example f "--rate" flag::float! -> rate
-pub fn float(f:ptr name:str -- value:f64)! {
+pub fn (f:Flag) float(name:str -- value:f64)! {
 	f name string if {
 		-> s
 		s parse_float
@@ -154,7 +153,7 @@ pub fn float(f:ptr name:str -- value:f64)! {
 /// @param index i64 Position (0-based, skips flags starting with -)
 /// @return value str Positional argument
 /// @error ErrNotFound Index out of bounds
-pub fn positional(f:ptr index:i64 -- value:str)! {
+pub fn (f:Flag) positional(index:i64 -- value:str)! {
 	"" -> result
 	0 -> pos_idx
 	0 -> start

@@ -7,13 +7,9 @@ fn main() {
 	flag::ErrNoValue print nl
 	flag::ErrInvalidValue print nl
 
-	"=== Manual Flag struct ===" print nl
-	// Manually create a Flag with test data
-	// argv format is "\narg1\narg2\n..."
-	flag::Flag {
-		argc = 4
-		argv = "\n--verbose\n--name\ntest\n--count\n42\n"
-	} -> f
+	"=== Parsed flags ===" print nl
+	// Parse test data via flag::parse
+	"--verbose" "--name" "test" "--count" "42" 5 flag::parse -> f
 
 	"=== boolean ===" print nl
 	f "--verbose" flag::boolean print nl

@@ -6,68 +6,6 @@ Note: Nested groups and alternation inside groups not yet supported.
 
 ## Functions
 
-### `fn` compile
-
-Compile a regex pattern.
-
-**Signature:** `(pattern:str -- re:ptr)`
-
-| Parameter | Type | Description |
-|-----------|------|-------------|
-| `pattern` | `str` | Regular expression pattern |
-
-| Output | Type | Description |
-|--------|------|-------------|
-| `re` | `ptr` | Compiled regex (null on error) |
----
-
-### `fn` find_all
-
-Find all non-overlapping matches. Returns array of start/end pairs and count. Caller must free the returned array with mem::free.
-
-**Signature:** `(re:ptr s:str max:i64 -- results:ptr count:i64)`
-
-| Parameter | Type | Description |
-|-----------|------|-------------|
-| `re` | `ptr` | Compiled regex |
-| `s` | `str` | String to search |
-| `max` | `i64` | Maximum matches to find (-1 for unlimited) |
-
-| Output | Type | Description |
-|--------|------|-------------|
-| `results` | `ptr` | Array of i64 pairs [start0, end0, start1, end1, ...] |
-| `count` | `i64` | Number of matches found |
-
-**Example:**
-
-```qd
-"[0-9]+" regex::compile -> re  re "a1b22c333" -1 regex::find_all -> results  // count
-```
----
-
-### `fn` find
-
-Find first match in string. Returns start and end (exclusive) indices. Returns -1 -1 if no match found.
-
-**Signature:** `(re:ptr s:str -- start:i64 end:i64)`
-
-| Parameter | Type | Description |
-|-----------|------|-------------|
-| `re` | `ptr` | Compiled regex |
-| `s` | `str` | String to search |
-
-| Output | Type | Description |
-|--------|------|-------------|
-| `start` | `i64` | Start index of match (-1 if none) |
-| `end` | `i64` | End index of match, exclusive (-1 if none) |
-
-**Example:**
-
-```qd
-"[0-9]+" regex::compile -> re  re "abc123def" regex::find -> start  // end
-```
----
-
 ### `fn` is_match
 
 Compile and test if pattern matches string.
@@ -88,17 +26,93 @@ Compile and test if pattern matches string.
 ```qd
 "hello.*" "hello world" regex::is_match  // result
 ```
----
+## Regex
 
-### `fn` match_count
+Compiled regular expression.
 
-Count non-overlapping matches in string.
+### Struct
 
-**Signature:** `(re:ptr s:str -- count:i64)`
+| Field | Type | Description |
+|-------|------|-------------|
+| `re` | `ptr` | Internal NFA state |
+
+### Constructors
+
+#### `fn` compile
+
+Compile a regex pattern.
+
+**Signature:** `(pattern:str -- re:Regex)`
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
-| `re` | `ptr` | Compiled regex |
+| `pattern` | `str` | Regular expression pattern |
+
+| Output | Type | Description |
+|--------|------|-------------|
+| `re` | `Regex` | Compiled regex |
+
+**Example:**
+
+```qd
+"[0-9]+" regex::compile  // re
+```
+
+### Methods
+
+#### `fn` find_all
+
+Find all non-overlapping matches. Returns array of start/end pairs and count. Caller must free the returned array with mem::free.
+
+**Signature:** `(self:Regex) find_all(s:str max:i64 -- results:ptr count:i64)`
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `s` | `str` | String to search |
+| `max` | `i64` | Maximum matches to find (-1 for unlimited) |
+
+| Output | Type | Description |
+|--------|------|-------------|
+| `results` | `ptr` | Array of i64 pairs [start0, end0, start1, end1, ...] |
+| `count` | `i64` | Number of matches found |
+
+**Example:**
+
+```qd
+"[0-9]+" regex::compile -> re  re "a1b22c333" -1 regex::find_all -> count  // results
+```
+---
+
+#### `fn` find
+
+Find first match in string. Returns start and end (exclusive) indices. Returns -1 -1 if no match found.
+
+**Signature:** `(self:Regex) find(s:str -- start:i64 end:i64)`
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `s` | `str` | String to search |
+
+| Output | Type | Description |
+|--------|------|-------------|
+| `start` | `i64` | Start index of match (-1 if none) |
+| `end` | `i64` | End index of match, exclusive (-1 if none) |
+
+**Example:**
+
+```qd
+"[0-9]+" regex::compile -> re  re "abc123def" regex::find -> end  // start
+```
+---
+
+#### `fn` match_count
+
+Count non-overlapping matches in string.
+
+**Signature:** `(self:Regex) match_count(s:str -- count:i64)`
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
 | `s` | `str` | String to search |
 
 | Output | Type | Description |
@@ -112,38 +126,42 @@ Count non-overlapping matches in string.
 ```
 ---
 
-### `fn` matches
+#### `fn` matches
 
 Test if a string matches a compiled regex (full match).
 
-**Signature:** `(re:ptr s:str -- result:i64)`
+**Signature:** `(self:Regex) matches(s:str -- result:i64)`
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
-| `re` | `ptr` | Compiled regex |
 | `s` | `str` | String to match |
 
 | Output | Type | Description |
 |--------|------|-------------|
-| `matches` | `i64` | 1 if matches, 0 otherwise |
+| `result` | `i64` | 1 if matches, 0 otherwise |
 ---
 
-### `fn` release
+#### `fn` release
 
 Free a compiled regex.
 
-**Signature:** `(re:ptr -- )`
+**Signature:** `(self:Regex) release( -- )`
+
+**Example:**
+
+```qd
+re regex::release
+```
 ---
 
-### `fn` replace
+#### `fn` replace
 
 Replace all matches with replacement string.
 
-**Signature:** `(re:ptr s:str repl:str -- result:str)`
+**Signature:** `(self:Regex) replace(s:str repl:str -- result:str)`
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
-| `re` | `ptr` | Compiled regex |
 | `s` | `str` | Input string |
 | `repl` | `str` | Replacement string |
 
@@ -156,3 +174,4 @@ Replace all matches with replacement string.
 ```qd
 "[0-9]+" regex::compile -> re  re "abc123def456" "#" regex::replace  // result
 ```
+
