@@ -31,6 +31,9 @@ sources:
 environment:
   GIT_SSH_COMMAND: "ssh -o StrictHostKeyChecking=no"
 
+artifacts:
+  - quadrate/quadrate-*.tar.gz
+
 tasks:
   - install_tree_sitter: |
       sudo npm install -g tree-sitter-cli
@@ -47,6 +50,13 @@ tasks:
   - valgrind: |
       cd quadrate
       make valgrind
+  - dist: |
+      cd quadrate
+      if git describe --exact-match HEAD 2>/dev/null; then
+        make dist
+      else
+        echo "Not a tagged commit, skipping dist"
+      fi
 
 triggers:
   - action: email

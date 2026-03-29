@@ -23,6 +23,9 @@ sources:
   - https://git.sr.ht/~klahr/qdregex
   - https://git.sr.ht/~klahr/qdcrypto
 
+artifacts:
+  - quadrate/quadrate-*.tar.gz
+
 tasks:
   - format: |
       cd quadrate
@@ -38,6 +41,13 @@ tasks:
       cd quadrate
       export DEBUGINFOD_URLS="https://debuginfod.archlinux.org"
       make valgrind
+  - dist: |
+      cd quadrate
+      if git describe --exact-match HEAD 2>/dev/null; then
+        make dist
+      else
+        echo "Not a tagged commit, skipping dist"
+      fi
 
 triggers:
   - action: email

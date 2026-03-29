@@ -28,6 +28,9 @@ sources:
   - https://git.sr.ht/~klahr/qdregex
   - https://git.sr.ht/~klahr/qdcrypto
 
+artifacts:
+  - quadrate/quadrate-*.tar.gz
+
 tasks:
   - install_tree_sitter: |
       sudo npm install -g tree-sitter-cli
@@ -41,6 +44,13 @@ tasks:
   - test: |
       cd quadrate
       make tests
+  - dist: |
+      cd quadrate
+      if git describe --exact-match HEAD 2>/dev/null; then
+        make dist
+      else
+        echo "Not a tagged commit, skipping dist"
+      fi
 
 triggers:
   - action: email

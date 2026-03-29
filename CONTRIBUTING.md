@@ -169,6 +169,31 @@ Explain what changed and why, not how (the diff shows how).
 - [ ] New features include tests
 - [ ] Public API changes are documented
 
+## Releasing
+
+```bash
+# 1. Update CHANGELOG.md
+# 2. Bump version and tag
+make tag BUMP=patch   # 0.2.0 -> 0.2.1
+make tag BUMP=minor   # 0.2.0 -> 0.3.0
+make tag BUMP=major   # 0.2.0 -> 1.0.0
+
+# 3. Push
+git push && git push origin <tag>
+
+# 4. CI builds on Alpine, Debian, Arch
+#    Tagged builds produce release tarballs as artifacts
+
+# 5. Attach tarballs to the tag on git.sr.ht
+```
+
+To build a release tarball locally:
+
+```bash
+make dist
+# -> quadrate-0.2.0-linux-x86_64.tar.gz
+```
+
 ## Reporting issues
 
 Report bugs and request features via the [issue tracker](https://todo.sr.ht/~klahr/quadrate) or by sending email to the mailing list.
