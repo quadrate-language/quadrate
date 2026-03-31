@@ -1,0 +1,31 @@
+pub fn add(a:i64 b:i64 -- result:i64) {
+	a b +
+}
+
+pub fn greet() {
+	"hello" print nl
+}
+
+pub fn get_value( -- val:i64) {
+	42
+}
+
+pub struct Color {
+	r:     i64
+	g:     i64
+	b:     i64
+	alpha: f64
+}
+
+pub enum Direction {
+	North
+	South
+	East
+	West
+}
+
+pub const MAX_SIZE = 1024
+
+pub fn fallible(x:i64 -- result:i64)! {
+	x
+}

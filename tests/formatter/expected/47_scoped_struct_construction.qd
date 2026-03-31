@@ -1,0 +1,18 @@
+fn main() {
+	math::Vec3 {
+		x = 1.0
+		y = 2.0
+		z = 3.0
+	} -> v
+	v print nl
+}
+
+fn make_color() {
+	gfx::Color {
+		r = 255
+		g = 128
+		b = 0
+		alpha = 1.0
+	} -> c
+	c
+}

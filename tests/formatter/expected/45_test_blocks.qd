@@ -1,0 +1,18 @@
+test "addition works" {
+	1 2 + 3 assert_eq
+}
+
+test "subtraction" {
+	5 3 - 2 assert_eq
+}
+
+test "empty test" {
+}
+
+fn helper() {
+	42
+}
+
+test "uses helper" {
+	helper 42 assert_eq
+}

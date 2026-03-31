@@ -193,6 +193,29 @@ namespace Qd {
 		return str.substr(start, end - start);
 	}
 
+	// Collapse runs of multiple spaces into single spaces (outside string literals)
+	static std::string collapseSpaces(const std::string& s) {
+		std::string result;
+		bool inString = false;
+		bool prevSpace = false;
+		for (size_t i = 0; i < s.length(); i++) {
+			char c = s[i];
+			if (c == '"' && (i == 0 || s[i - 1] != '\\')) {
+				inString = !inString;
+			}
+			if (!inString && c == ' ') {
+				if (!prevSpace) {
+					result += c;
+				}
+				prevSpace = true;
+			} else {
+				result += c;
+				prevSpace = false;
+			}
+		}
+		return result;
+	}
+
 	// Find position of substring outside of string literals
 	// Returns std::string::npos if not found outside strings
 	static size_t findOutsideStrings(const std::string& s, const std::string& needle) {
@@ -654,13 +677,13 @@ namespace Qd {
 			return line;
 		}
 
-		// Find "fn " position
-		size_t fnPos = workingLine.find("fn ");
+		// Find "fn" position - may be followed by space or directly by '('
+		size_t fnPos = workingLine.find("fn");
 		if (fnPos == std::string::npos) {
 			return line;
 		}
 
-		size_t pos = fnPos + 3;
+		size_t pos = fnPos + 2;
 		while (pos < workingLine.length() && std::isspace(static_cast<unsigned char>(workingLine[pos]))) {
 			pos++;
 		}
@@ -711,7 +734,7 @@ namespace Qd {
 			size_t closeAnglePos = findMatchingAngleBracket(workingLine, pos);
 			if (closeAnglePos != std::string::npos) {
 				std::string typeParamsContent = workingLine.substr(pos + 1, closeAnglePos - pos - 1);
-				typeParams = "<" + trim(typeParamsContent) + ">";
+				typeParams = "<" + collapseSpaces(trim(typeParamsContent)) + ">";
 				pos = closeAnglePos + 1;
 				// Skip whitespace after type params
 				while (pos < workingLine.length() && std::isspace(static_cast<unsigned char>(workingLine[pos]))) {
@@ -735,7 +758,7 @@ namespace Qd {
 
 		// Extract signature part (everything between parens)
 		std::string signature = workingLine.substr(parenPos + 1, closeParenPos - parenPos - 1);
-		std::string formattedSig = trim(signature);
+		std::string formattedSig = collapseSpaces(trim(signature));
 
 		// Find the "--" separator to determine if inputs/outputs are present
 		size_t dashPos = formattedSig.find("--");
@@ -745,12 +768,12 @@ namespace Qd {
 		if (dashPos != std::string::npos) {
 			// Check if there are non-whitespace characters before "--"
 			std::string beforeDash = formattedSig.substr(0, dashPos);
-			std::string trimmedInputs = trim(beforeDash);
+			std::string trimmedInputs = collapseSpaces(trim(beforeDash));
 			hasInputs = (trimmedInputs.length() > 0);
 
 			// Check if there are non-whitespace characters after "--"
 			std::string afterDash = formattedSig.substr(dashPos + 2);
-			std::string trimmedOutputs = trim(afterDash);
+			std::string trimmedOutputs = collapseSpaces(trim(afterDash));
 			hasOutputs = (trimmedOutputs.length() > 0);
 
 			// If both inputs and outputs are empty, use empty signature
@@ -2038,13 +2061,14 @@ namespace Qd {
 			if (startsWithKeyword(trimmed, "struct") || startsWithKeyword(trimmed, "enum") ||
 					(startsWithKeyword(trimmed, "pub") && (trimmed.find("pub struct") != std::string::npos ||
 																  trimmed.find("pub enum") != std::string::npos))) {
-				// Output the struct header line
+				// Output the struct header line with normalized whitespace
+				std::string normalizedHeader = collapseSpaces(trimmed);
 				for (int i = 0; i < indentLevel; i++) {
 					output << '\t';
 				}
-				output << trimmed << '\n';
+				output << normalizedHeader << '\n';
 
-				if (trimmed.find('{') != std::string::npos) {
+				if (normalizedHeader.find('{') != std::string::npos) {
 					indentLevel++;
 					// Start buffering struct fields
 					inStructDef = true;

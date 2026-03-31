@@ -1,0 +1,25 @@
+enum Color {
+	Red
+	Green
+	Blue
+}
+
+enum Result {
+	Ok
+	Err
+}
+
+enum Token {
+	Number
+	String
+	Identifier
+	Operator
+}
+
+pub enum Weekday {
+	Monday
+	Tuesday
+	Wednesday
+	Thursday
+	Friday
+}

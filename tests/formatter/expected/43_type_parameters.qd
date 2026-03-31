@@ -1,0 +1,15 @@
+fn identity<T>(x:T -- result:T) {
+	x
+}
+
+fn pair<T,U>(a:T b:U -- first:T second:U) {
+	a b
+}
+
+fn transform<T>(items:ptr -- result:ptr) {
+	items
+}
+
+pub fn map<T, U>(f:ptr list:ptr -- result:ptr) {
+	list
+}
