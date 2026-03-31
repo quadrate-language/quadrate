@@ -52,6 +52,20 @@ namespace Qd {
 			mChildren.emplace_back(node);
 		}
 
+		// Replace the child at index with multiple new children (takes ownership)
+		void replaceChildWithMany(size_t index, std::vector<IAstNode*>& newChildren) {
+			if (index >= mChildren.size()) {
+				return;
+			}
+			// Remove the old child (unique_ptr deletes it)
+			mChildren.erase(mChildren.begin() + static_cast<std::ptrdiff_t>(index));
+			// Insert new children at the same position
+			for (size_t i = 0; i < newChildren.size(); i++) {
+				mChildren.insert(mChildren.begin() + static_cast<std::ptrdiff_t>(index + i),
+						std::unique_ptr<IAstNode>(newChildren[i]));
+			}
+		}
+
 	private:
 		IAstNode* mParent = nullptr;
 		std::vector<std::unique_ptr<IAstNode>> mChildren;

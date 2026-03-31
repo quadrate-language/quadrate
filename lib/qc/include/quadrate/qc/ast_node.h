@@ -103,7 +103,8 @@ namespace Qd {
 			TEST_DECLARATION,
 			ANONYMOUS_FUNCTION,
 			AS_CAST,
-			ENUM_DECLARATION
+			ENUM_DECLARATION,
+			STRING_INTERPOLATION
 		};
 		virtual ~IAstNode() = default;
 

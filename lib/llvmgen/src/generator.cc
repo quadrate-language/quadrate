@@ -460,6 +460,7 @@ namespace Qd {
 			auto* lit = static_cast<AstNodeLiteral*>(node);
 			// INTEGER literals always allowed; FLOAT only when allowFloat is true
 			if (lit->literalType() != AstNodeLiteral::LiteralType::INTEGER &&
+					lit->literalType() != AstNodeLiteral::LiteralType::BOOL &&
 					(!allowFloat || lit->literalType() != AstNodeLiteral::LiteralType::FLOAT)) {
 				return false;
 			}

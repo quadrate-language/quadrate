@@ -41,6 +41,7 @@
 #include <quadrate/qc/ast_node_program.h>
 #include <quadrate/qc/ast_node_return.h>
 #include <quadrate/qc/ast_node_scoped.h>
+#include <quadrate/qc/ast_node_string_interpolation.h>
 #include <quadrate/qc/ast_node_struct.h>
 #include <quadrate/qc/ast_node_switch.h>
 #include <quadrate/qc/ast_node_test.h>
@@ -255,55 +256,63 @@ namespace Qd {
 	// Called after '$' and the string token have both been consumed.
 	inline void parseStringInterpolation(
 			const std::string& raw, u8t_scanner* scanner, const char* src, std::vector<IAstNode*>& out) {
-		// sb::new
+		// Create a STRING_INTERPOLATION node that preserves the template text.
+		// It gets expanded to sb::new/append/finish nodes after parsing (in Ast::generate)
+		// so that semantic validation and codegen see the expanded form.
+		auto* node = new AstNodeStringInterpolation(raw);
+		setNodePosition(node, scanner, src);
+		out.push_back(node);
+	}
+
+	// Expand a STRING_INTERPOLATION node into sb::new/append/finish nodes.
+	// Returns the expanded nodes (caller takes ownership).
+	static inline std::vector<IAstNode*> expandStringInterpolation(AstNodeStringInterpolation* interpNode) {
+		std::vector<IAstNode*> out;
+		const std::string& raw = interpNode->templateString();
+		size_t line = interpNode->line();
+		size_t col = interpNode->column();
+
 		auto* sbNew = new AstNodeScopedIdentifier("sb", "new");
-		setNodePosition(sbNew, scanner, src);
+		sbNew->setPosition(line, col);
 		out.push_back(sbNew);
 
 		std::string current;
 		for (size_t i = 0; i < raw.size(); i++) {
 			if (raw[i] == '{') {
-				// Emit accumulated literal part
 				if (!current.empty()) {
 					auto* lit = new AstNodeLiteral("\"" + current + "\"", AstNodeLiteral::LiteralType::STRING);
-					setNodePosition(lit, scanner, src);
+					lit->setPosition(line, col);
 					out.push_back(lit);
 					auto* app = new AstNodeScopedIdentifier("sb", "append");
-					setNodePosition(app, scanner, src);
+					app->setPosition(line, col);
 					out.push_back(app);
 				}
 				current.clear();
-				// Find matching }
 				size_t j = i + 1;
 				std::string expr;
 				while (j < raw.size() && raw[j] != '}') {
 					expr += raw[j];
 					j++;
 				}
-				i = j; // Skip past }
-				// Emit the expression as an identifier + type-appropriate append
+				i = j;
 				if (!expr.empty()) {
-					// Check if expr contains :: (scoped identifier)
 					auto colonPos = expr.find("::");
 					if (colonPos != std::string::npos) {
 						std::string mod = expr.substr(0, colonPos);
 						std::string func = expr.substr(colonPos + 2);
 						auto* scoped = new AstNodeScopedIdentifier(mod, func);
-						setNodePosition(scoped, scanner, src);
+						scoped->setPosition(line, col);
 						out.push_back(scoped);
 					} else {
 						auto* ident = new AstNodeIdentifier(expr);
-						setNodePosition(ident, scanner, src);
+						ident->setPosition(line, col);
 						out.push_back(ident);
 					}
-					// Use sb::append_any — a special marker that the codegen
-					// will resolve to append or append_int based on runtime type
 					auto* appExpr = new AstNodeScopedIdentifier("sb", "append_any");
-					setNodePosition(appExpr, scanner, src);
+					appExpr->setPosition(line, col);
 					out.push_back(appExpr);
 				}
 			} else if (raw[i] == '\\' && i + 1 < raw.size()) {
-				// Preserve escape sequences
 				current += raw[i];
 				current += raw[i + 1];
 				i++;
@@ -311,19 +320,53 @@ namespace Qd {
 				current += raw[i];
 			}
 		}
-		// Emit remaining literal
 		if (!current.empty()) {
 			auto* lit = new AstNodeLiteral("\"" + current + "\"", AstNodeLiteral::LiteralType::STRING);
-			setNodePosition(lit, scanner, src);
+			lit->setPosition(line, col);
 			out.push_back(lit);
 			auto* app = new AstNodeScopedIdentifier("sb", "append");
-			setNodePosition(app, scanner, src);
+			app->setPosition(line, col);
 			out.push_back(app);
 		}
-		// sb::finish
 		auto* sbFinish = new AstNodeScopedIdentifier("sb", "finish");
-		setNodePosition(sbFinish, scanner, src);
+		sbFinish->setPosition(line, col);
 		out.push_back(sbFinish);
+
+		return out;
+	}
+
+	// Recursively walk the AST and expand all STRING_INTERPOLATION nodes in blocks
+	static inline void expandAllStringInterpolations(IAstNode* node) {
+		if (!node) {
+			return;
+		}
+
+		if (node->type() == IAstNode::Type::BLOCK) {
+			auto* block = static_cast<AstNodeBlock*>(node);
+			// Walk children in reverse so indices stay valid after replacement
+			for (size_t i = block->childCount(); i > 0; i--) {
+				IAstNode* child = block->child(i - 1);
+				if (child->type() == IAstNode::Type::STRING_INTERPOLATION) {
+					auto expanded = expandStringInterpolation(static_cast<AstNodeStringInterpolation*>(child));
+					for (auto* n : expanded) {
+						n->setParent(block);
+					}
+					block->replaceChildWithMany(i - 1, expanded);
+				} else {
+					expandAllStringInterpolations(child);
+				}
+			}
+		} else if (node->type() == IAstNode::Type::PROGRAM) {
+			// Program children can contain blocks (function bodies, test bodies)
+			for (size_t i = 0; i < node->childCount(); i++) {
+				expandAllStringInterpolations(node->child(i));
+			}
+		} else {
+			// Recurse into children of other node types
+			for (size_t i = 0; i < node->childCount(); i++) {
+				expandAllStringInterpolations(node->child(i));
+			}
+		}
 	}
 
 	// Helper to peek the next non-whitespace character from source
@@ -378,18 +421,14 @@ namespace Qd {
 	// Helper to create boolean/result constant literals (true, false, Ok, Err)
 	// Returns nullptr if text is not a boolean/result constant
 	inline IAstNode* tryCreateBooleanLiteral(const char* text, u8t_scanner* scanner, const char* src) {
-		if (strcmp(text, "true") == 0 || strcmp(text, "Ok") == 0) {
-			IAstNode* node = new AstNodeLiteral("1", AstNodeLiteral::LiteralType::INTEGER);
-			setNodePosition(node, scanner, src);
-			return node;
-		}
-		if (strcmp(text, "false") == 0 || strcmp(text, "Err") == 0) {
-			IAstNode* node = new AstNodeLiteral("0", AstNodeLiteral::LiteralType::INTEGER);
+		if (strcmp(text, "true") == 0 || strcmp(text, "Ok") == 0 || strcmp(text, "false") == 0 ||
+				strcmp(text, "Err") == 0) {
+			IAstNode* node = new AstNodeLiteral(text, AstNodeLiteral::LiteralType::BOOL);
 			setNodePosition(node, scanner, src);
 			return node;
 		}
 		if (strcmp(text, "null") == 0) {
-			IAstNode* node = new AstNodeLiteral("0", AstNodeLiteral::LiteralType::NULL_PTR);
+			IAstNode* node = new AstNodeLiteral("null", AstNodeLiteral::LiteralType::NULL_PTR);
 			setNodePosition(node, scanner, src);
 			return node;
 		}

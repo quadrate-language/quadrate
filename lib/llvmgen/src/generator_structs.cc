@@ -1099,9 +1099,14 @@ namespace Qd {
 			IAstNode* elem = elemPtr.get();
 			if (elem->type() == IAstNode::Type::LITERAL) {
 				auto* lit = static_cast<AstNodeLiteral*>(elem);
-				if (lit->literalType() == AstNodeLiteral::LiteralType::INTEGER) {
+				if (lit->literalType() == AstNodeLiteral::LiteralType::INTEGER ||
+						lit->literalType() == AstNodeLiteral::LiteralType::BOOL) {
 					int64_t val = 0;
-					safeParseInt64(lit->value(), val);
+					if (lit->literalType() == AstNodeLiteral::LiteralType::BOOL) {
+						val = (lit->value() == "true" || lit->value() == "Ok") ? 1 : 0;
+					} else {
+						safeParseInt64(lit->value(), val);
+					}
 					if (arrayType == 1) {
 						// Coerce int to float
 						builder->CreateCall(pushFloatArrFn,

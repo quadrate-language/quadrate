@@ -2,7 +2,7 @@ fn identity<T>(x:T -- result:T) {
 	x
 }
 
-fn pair<T,U>(a:T b:U -- first:T second:U) {
+fn pair<T, U>(a:T b:U -- first:T second:U) {
 	a b
 }
 

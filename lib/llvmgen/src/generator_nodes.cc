@@ -122,6 +122,19 @@ namespace Qd {
 			lastPushedType = LastPushedType::STRING;
 			break;
 		}
+		case AstNodeLiteral::LiteralType::BOOL: {
+			// true/Ok → 1, false/Err → 0
+			int64_t val = (value == "true" || value == "Ok") ? 1 : 0;
+			if (useCompileTimeStack) {
+				compileTimeStack.push_back(builder->getInt64(static_cast<uint64_t>(val)));
+			} else if (debugInfoEnabled) {
+				builder->CreateCall(pushIntFn, {ctx, builder->getInt64(static_cast<uint64_t>(val))});
+			} else {
+				generateInlinePushInt(ctx, val);
+			}
+			lastPushedType = LastPushedType::INTEGER;
+			break;
+		}
 		case AstNodeLiteral::LiteralType::NULL_PTR: {
 			if (useCompileTimeStack) {
 				compileTimeStack.push_back(builder->getInt64(0));
@@ -1336,13 +1349,16 @@ namespace Qd {
 			if (caseValue->type() == IAstNode::Type::LITERAL) {
 				AstNodeLiteral* lit = static_cast<AstNodeLiteral*>(caseValue);
 
-				if (lit->literalType() == AstNodeLiteral::LiteralType::INTEGER) {
-					// Compare switch value with case value (integer)
+				if (lit->literalType() == AstNodeLiteral::LiteralType::INTEGER ||
+						lit->literalType() == AstNodeLiteral::LiteralType::BOOL) {
+					// Compare switch value with case value (integer or bool)
 					auto valuePtr = builder->CreateStructGEP(switchElemTy, switchElem, 0, "value_ptr");
 					auto switchVal = builder->CreateLoad(int64Ty, valuePtr, "switch_val");
 
 					int64_t parsedVal = 0;
-					if (!safeParseInt64(lit->value(), parsedVal)) {
+					if (lit->literalType() == AstNodeLiteral::LiteralType::BOOL) {
+						parsedVal = (lit->value() == "true" || lit->value() == "Ok") ? 1 : 0;
+					} else if (!safeParseInt64(lit->value(), parsedVal)) {
 						std::cerr << "quadc: error: Invalid integer case label '" << lit->value()
 								  << "' (out of range or invalid format)" << std::endl;
 						compilationFailed = true;

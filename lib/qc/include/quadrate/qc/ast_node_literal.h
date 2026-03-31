@@ -11,7 +11,8 @@ namespace Qd {
 			INTEGER,
 			FLOAT,
 			STRING,
-			NULL_PTR
+			NULL_PTR,
+			BOOL // true, false, Ok, Err - preserves original keyword text
 		};
 
 		AstNodeLiteral(const std::string& value, LiteralType literalType) : mValue(value), mLiteralType(literalType) {

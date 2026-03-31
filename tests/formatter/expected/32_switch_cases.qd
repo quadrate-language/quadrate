@@ -10,8 +10,6 @@ fn test_switch(val:i64) {
 fn test_result() {
 	do_something switch {
 		Ok { -> x x process }
-		Err {
-			err -> code -> msg "Error: " print msg print nl
-		}
+		Err { err -> code -> msg "Error: " print msg print nl }
 	}
 }

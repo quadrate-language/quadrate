@@ -76,6 +76,8 @@ namespace Qd {
 		switch (litType) {
 		case AstNodeLiteral::LiteralType::INTEGER:
 			return StackValueType::INT;
+		case AstNodeLiteral::LiteralType::BOOL:
+			return StackValueType::INT;
 		case AstNodeLiteral::LiteralType::FLOAT:
 			return StackValueType::FLOAT;
 		case AstNodeLiteral::LiteralType::STRING:
@@ -977,8 +979,11 @@ namespace Qd {
 						if (!caseNode->isDefault() && caseNode->value()) {
 							if (caseNode->value()->type() == IAstNode::Type::LITERAL) {
 								AstNodeLiteral* caseLit = static_cast<AstNodeLiteral*>(caseNode->value());
-								if (caseLit->literalType() == AstNodeLiteral::LiteralType::INTEGER &&
-										caseLit->value() == "1") {
+								bool isOk = (caseLit->literalType() == AstNodeLiteral::LiteralType::INTEGER &&
+													caseLit->value() == "1") ||
+											(caseLit->literalType() == AstNodeLiteral::LiteralType::BOOL &&
+													(caseLit->value() == "Ok" || caseLit->value() == "true"));
+								if (isOk) {
 									okCaseStack = caseStack;
 									okCaseStructStack = caseStructStack;
 									hasOkCase = true;

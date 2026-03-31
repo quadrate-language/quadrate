@@ -597,6 +597,9 @@ namespace Qd {
 			}
 		}
 
+		// Expand STRING_INTERPOLATION nodes before semantic validation sees them
+		expandAllStringInterpolations(mRoot.get());
+
 		// Store the error count and details for later checking
 		mErrorCount = errorReporter.errorCount();
 		mErrors = errorReporter.getErrors();

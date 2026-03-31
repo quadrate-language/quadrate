@@ -3,8 +3,6 @@
 #include <quadrate/cli/cli.h>
 #include <quadrate/cli/file_utils.h>
 #include <quadrate/qc/ast.h>
-#include <quadrate/qc/colors.h>
-#include <quadrate/qc/error_reporter.h>
 #include <quadrate/qc/formatter.h>
 #include <vector>
 
@@ -56,24 +54,23 @@ bool formatFile(const std::string& filename, const FmtOptions& opts, const Forma
 			return false;
 		}
 
-		// Parse to check for errors
-		Ast ast;
-		IAstNode* root = ast.generate(source.c_str(), false, filename.c_str());
-
-		if (!root || ast.hasErrors()) {
-			std::cerr << "quadfmt: " << filename << ": failed to parse (contains errors)\n";
-			return false;
-		}
-
-		// Format using source-based formatter with options
+		// Format using AST-based formatter
+		// Returns original unchanged if file has parse errors
 		std::string formatted = formatSource(source, fmtOpts);
 
-		// Validate formatted output by parsing it again
+		// Validate formatted output by parsing it
 		Ast validationAst;
 		IAstNode* validationRoot = validationAst.generate(formatted.c_str(), false, filename.c_str());
 
 		if (!validationRoot || validationAst.hasErrors()) {
-			std::cerr << "quadfmt: " << filename << ": formatter produced invalid output, not saving\n";
+			// Distinguish parse errors in source vs formatter bugs
+			Ast sourceAst;
+			sourceAst.generate(source.c_str(), false, filename.c_str());
+			if (sourceAst.hasErrors()) {
+				std::cerr << "quadfmt: " << filename << ": failed to parse (contains errors)\n";
+			} else {
+				std::cerr << "quadfmt: " << filename << ": formatter produced invalid output, not saving\n";
+			}
 			return false;
 		}
 

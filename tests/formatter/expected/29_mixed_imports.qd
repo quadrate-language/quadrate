@@ -1,6 +1,6 @@
-use "another_local.qd"
-use "local_module.qd"
+use another_local.qd
 use io
+use local_module.qd
 use strings
 use time
 

@@ -12,8 +12,7 @@ fn caller() {
 
 fn propagate(x:i64 -- result:i64)! {
 	x may_fail switch {
-		Ok {
-		}
+		Ok { }
 		_ { err panic }
 	}
 }

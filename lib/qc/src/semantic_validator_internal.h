@@ -100,6 +100,8 @@ inline std::string serializeCaseValue(IAstNode* node) {
 			return "string:" + lit->value();
 		case AstNodeLiteral::LiteralType::NULL_PTR:
 			return "null:0";
+		case AstNodeLiteral::LiteralType::BOOL:
+			return "bool:" + lit->value();
 		}
 	}
 
