@@ -214,7 +214,7 @@ fn find_char(s:str start:i64 c:i64 -- pos:i64) {
 /// @param s str URI string to parse
 /// @return u Uri Parsed URI struct
 /// @example "https://example.com:8080/path?q=1#top" uri::parse -> u
-pub fn parse(s:str -- u:ptr) {
+pub fn parse(s:str -- u:Uri) {
 	s strings::len -> slen
 
 	"" -> scheme
@@ -436,10 +436,9 @@ pub fn query_has(query:str key:str -- exists:i64) {
 }
 
 /// Build a URI string from components.
-/// @param u Uri URI struct
 /// @return s str URI string
-/// @example u uri::build -> url
-pub fn build(u:ptr -- s:str) {
+/// @example u .build -> url
+pub fn (u:Uri) build( -- s:str) {
 	u <<scheme -> scheme
 	u <<host -> host
 	u <<port -> port
