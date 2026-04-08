@@ -1,0 +1,5 @@
+// Test: setting string in []i64 should fail
+fn main() {
+	[1 2 3] -> arr
+	arr 0 "hello" set
+}

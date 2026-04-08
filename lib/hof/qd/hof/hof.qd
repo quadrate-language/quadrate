@@ -132,77 +132,68 @@ pub fn times(x:i64 n:i64 f:ptr -- r:i64) {
 }
 
 /// Fold/reduce an array left-to-right with a binary function.
-/// @param arr ptr Array pointer
-/// @param count i64 Array length
+/// @param arr []i64 Array
 /// @param init i64 Initial accumulator value
 /// @param f ptr Binary function pointer (acc:i64 elem:i64 -- acc:i64)
 /// @return result i64 Final accumulated value
-/// @example arr count 0 fn (acc:i64 x:i64 -- r:i64) { + } hof::fold  // sum of array
-pub fn fold(arr:ptr count:i64 acc:i64 f:ptr -- result:i64) {
-	0 count 1 for i {
+/// @example arr 0 fn (acc:i64 x:i64 -- r:i64) { + } hof::fold  // sum of array
+pub fn fold(arr:[]i64 acc:i64 f:ptr -- result:i64) {
+	0 arr len 1 for i {
 		arr i nth acc swap f call -> acc
 	}
 	acc
 }
 
 /// Fold/reduce an array right-to-left with a binary function.
-/// @param arr ptr Array pointer
-/// @param count i64 Array length
+/// @param arr []i64 Array
 /// @param init i64 Initial accumulator value
 /// @param f ptr Binary function pointer (elem:i64 acc:i64 -- acc:i64)
 /// @return result i64 Final accumulated value
-/// @example arr count 0 fn (x:i64 acc:i64 -- r:i64) { + } hof::fold_right  // sum of array
-pub fn fold_right(arr:ptr count:i64 acc:i64 f:ptr -- result:i64) {
-	count 1 - -1 -1 for i {
+/// @example arr 0 fn (x:i64 acc:i64 -- r:i64) { + } hof::fold_right  // sum of array
+pub fn fold_right(arr:[]i64 acc:i64 f:ptr -- result:i64) {
+	arr len 1 - -1 -1 for i {
 		arr i nth acc f call -> acc
 	}
 	acc
 }
 
 /// Map a function over an array, returning a new array.
-/// @param arr ptr Input array pointer
-/// @param count i64 Array length
+/// @param arr []i64 Input array
 /// @param f ptr Function pointer (i64 -- i64)
-/// @return result ptr New array with mapped values
-/// @return out_count i64 Array length (unchanged)
-/// @example arr count fn (x:i64 -- r:i64) { 2 * } hof::map  // double each element
-pub fn map(arr:ptr count:i64 f:ptr -- result:ptr out_count:i64) {
+/// @return result []i64 New array with mapped values
+/// @example arr fn (x:i64 -- r:i64) { 2 * } hof::map  // double each element
+pub fn map(arr:[]i64 f:ptr -- result:[]i64) {
 	0 make<i64> -> out
-	0 count 1 for i {
+	0 arr len 1 for i {
 		arr i nth f call out swap append -> out
 	}
-	out count
+	out
 }
 
 /// Filter an array, keeping only elements that satisfy a predicate.
-/// @param arr ptr Input array pointer
-/// @param count i64 Array length
+/// @param arr []i64 Input array
 /// @param pred ptr Predicate function pointer (i64 -- bool:i64)
-/// @return result ptr New array with filtered values
-/// @return out_count i64 Length of filtered array
-/// @example arr count fn (x:i64 -- r:i64) { 2 mod 0 == } hof::filter  // keep evens
-pub fn filter(arr:ptr count:i64 pred:ptr -- result:ptr out_count:i64) {
+/// @return result []i64 New array with filtered values
+/// @example arr fn (x:i64 -- r:i64) { 2 mod 0 == } hof::filter  // keep evens
+pub fn filter(arr:[]i64 pred:ptr -- result:[]i64) {
 	0 make<i64> -> out
-	0 -> out_count
-	0 count 1 for i {
+	0 arr len 1 for i {
 		arr i nth -> elem
 		elem pred call if {
 			out elem append -> out
-			out_count 1 + -> out_count
 		}
 	}
-	out out_count
+	out
 }
 
 /// Check if any element satisfies a predicate.
-/// @param arr ptr Array pointer
-/// @param count i64 Array length
+/// @param arr []i64 Array
 /// @param pred ptr Predicate function pointer (i64 -- bool:i64)
 /// @return result i64 1 if any element satisfies pred, 0 otherwise
-/// @example arr count fn (x:i64 -- r:i64) { 0 > } hof::any  // any positive?
-pub fn any(arr:ptr count:i64 pred:ptr -- result:i64) {
+/// @example arr fn (x:i64 -- r:i64) { 0 > } hof::any  // any positive?
+pub fn any(arr:[]i64 pred:ptr -- result:i64) {
 	0 -> result
-	0 count 1 for i {
+	0 arr len 1 for i {
 		arr i nth pred call if {
 			1 -> result
 			break
@@ -212,14 +203,13 @@ pub fn any(arr:ptr count:i64 pred:ptr -- result:i64) {
 }
 
 /// Check if all elements satisfy a predicate.
-/// @param arr ptr Array pointer
-/// @param count i64 Array length
+/// @param arr []i64 Array
 /// @param pred ptr Predicate function pointer (i64 -- bool:i64)
 /// @return result i64 1 if all elements satisfy pred, 0 otherwise
-/// @example arr count fn (x:i64 -- r:i64) { 0 > } hof::all  // all positive?
-pub fn all(arr:ptr count:i64 pred:ptr -- result:i64) {
+/// @example arr fn (x:i64 -- r:i64) { 0 > } hof::all  // all positive?
+pub fn all(arr:[]i64 pred:ptr -- result:i64) {
 	1 -> result
-	0 count 1 for i {
+	0 arr len 1 for i {
 		arr i nth pred call 0 == if {
 			0 -> result
 			break
@@ -229,16 +219,15 @@ pub fn all(arr:ptr count:i64 pred:ptr -- result:i64) {
 }
 
 /// Find the first element satisfying a predicate.
-/// @param arr ptr Array pointer
-/// @param count i64 Array length
+/// @param arr []i64 Array
 /// @param pred ptr Predicate function pointer (i64 -- bool:i64)
 /// @return elem i64 The found element (or 0 if not found)
 /// @return found i64 1 if found, 0 otherwise
-/// @example arr count fn (x:i64 -- r:i64) { 10 > } hof::find  // first > 10
-pub fn find(arr:ptr count:i64 pred:ptr -- elem:i64 found:i64) {
+/// @example arr fn (x:i64 -- r:i64) { 10 > } hof::find  // first > 10
+pub fn find(arr:[]i64 pred:ptr -- elem:i64 found:i64) {
 	0 -> elem
 	0 -> found
-	0 count 1 for i {
+	0 arr len 1 for i {
 		arr i nth -> x
 		x pred call if {
 			x -> elem

@@ -1,0 +1,7 @@
+// Test: passing []i64 where []str expected should fail
+fn names(arr:[]str -- ) {
+}
+
+fn main() {
+	[1 2 3] names
+}

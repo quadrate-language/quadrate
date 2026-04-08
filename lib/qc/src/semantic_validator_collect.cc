@@ -270,6 +270,10 @@ namespace Qd {
 						fieldType = StackValueType::STRING;
 					} else if (typeName == "ptr" || typeName.find('*') != std::string::npos) {
 						fieldType = StackValueType::PTR;
+					} else if (typeName.size() > 2 && typeName[0] == '[' && typeName[1] == ']') {
+						// Array type: []T - treat as PTR and track the array type
+						fieldType = StackValueType::PTR;
+						mStructFieldStructTypes[structDecl->name()][field->name()] = typeName;
 					} else if (!typeName.empty() && std::isupper(typeName[0])) {
 						// Unqualified struct type - treat as PTR and record the struct type name
 						fieldType = StackValueType::PTR;
@@ -497,6 +501,17 @@ namespace Qd {
 						std::string baseTypeName = typeName;
 						if (!baseTypeName.empty() && baseTypeName[0] == '*') {
 							baseTypeName = baseTypeName.substr(1);
+						}
+
+						// Array types: []T - validate the element type
+						if (baseTypeName.size() > 2 && baseTypeName[0] == '[' && baseTypeName[1] == ']') {
+							std::string elemType = baseTypeName.substr(2);
+							if (!isValidTypeName(elemType)) {
+								std::string errorMsg = "Unknown element type '" + elemType + "' in array field '" +
+													   field->name() + "'";
+								reportError(field, errorMsg.c_str());
+							}
+							continue;
 						}
 
 						// Primitive types: f64, i64, str, ptr, bool, u8, i8, u16, i16, u32, i32, u64
@@ -1287,8 +1302,9 @@ namespace Qd {
 				StackValueType paramType = stringToStackValueType(typeStr);
 				sig.consumes.push_back(paramType);
 
-				// Track struct types for PTR parameters
-				if (paramType == StackValueType::PTR && isStructTypeName(typeStr)) {
+				// Track struct/array types for PTR parameters
+				if (paramType == StackValueType::PTR &&
+						(isStructTypeName(typeStr) || (typeStr.size() > 2 && typeStr[0] == '[' && typeStr[1] == ']'))) {
 					sig.parameterStructTypes[paramIdx] = typeStr;
 				}
 			}
@@ -1338,8 +1354,9 @@ namespace Qd {
 				StackValueType producedType = stringToStackValueType(typeStr);
 				sig.produces.push_back(producedType);
 
-				// Track struct types for PTR return values
-				if (producedType == StackValueType::PTR && isStructTypeName(typeStr)) {
+				// Track struct/array types for PTR return values
+				if (producedType == StackValueType::PTR &&
+						(isStructTypeName(typeStr) || (typeStr.size() > 2 && typeStr[0] == '[' && typeStr[1] == ']'))) {
 					sig.producesStructTypes[producesIdx] = typeStr;
 				}
 				producesIdx++;

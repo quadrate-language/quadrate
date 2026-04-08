@@ -1,0 +1,8 @@
+// Test: passing []f64 where []i64 expected should fail
+fn sum(arr:[]i64 -- total:i64) {
+	0
+}
+
+fn main() {
+	[1.0 2.0 3.0] sum print nl
+}

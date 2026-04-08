@@ -1,0 +1,7 @@
+// Test: struct with unknown element type in array field should fail
+struct Bad {
+	data:[]Nonexistent
+}
+
+fn main() {
+}

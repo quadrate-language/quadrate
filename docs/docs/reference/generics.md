@@ -102,7 +102,7 @@ fn main() {
 
 ## Limitations
 
-- Type parameters must be concrete types (`i64`, `f64`, `str`, `ptr`)
+- Type parameters must be concrete types (`i64`, `f64`, `str`, `ptr`, `[]T`)
 - No type constraints (all types are accepted)
 - Generic structs are supported but currently work best with `i64` fields
 

@@ -1,0 +1,8 @@
+// Test: make<f64> array passed to []i64 parameter should fail
+fn process(arr:[]i64 -- ) {
+}
+
+fn main() {
+	3 make<f64> -> x
+	x process
+}

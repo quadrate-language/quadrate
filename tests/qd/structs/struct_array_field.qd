@@ -1,0 +1,19 @@
+// Test: struct with []T field type
+struct Polygon {
+	points:[]i64
+	name:str
+}
+
+fn main() {
+	[10 20 30] -> pts
+
+	Polygon {
+		points = pts
+		name = "triangle"
+	} -> p
+
+	p <<points 0 nth print nl
+	p <<points 1 nth print nl
+	p <<points len print nl
+	p <<name print nl
+}

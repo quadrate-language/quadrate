@@ -1,0 +1,5 @@
+// Test: appending int to []str should fail
+fn main() {
+	["a" "b"] -> arr
+	arr 42 append -> arr
+}

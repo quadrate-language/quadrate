@@ -154,7 +154,7 @@ fn main() {
 Search with early exit:
 
 ```qd
-fn contains(arr:ptr value:i64 -- found:i64) {
+fn contains(arr:[]i64 value:i64 -- found:i64) {
 	0 -> found
 
 	0 arr len 1 for i {
@@ -177,7 +177,7 @@ fn main() {
 ### Sum array
 
 ```qd
-fn sum_array(arr:ptr -- total:i64) {
+fn sum_array(arr:[]i64 -- total:i64) {
 	0 -> total
 	0 arr len 1 for i {
 		total arr i nth cast<i64> + -> total
@@ -189,7 +189,7 @@ fn sum_array(arr:ptr -- total:i64) {
 ### Count matches
 
 ```qd
-fn count_positive(arr:ptr -- count:i64) {
+fn count_positive(arr:[]i64 -- count:i64) {
 	0 -> count
 	0 arr len 1 for i {
 		arr i nth 0 > if {

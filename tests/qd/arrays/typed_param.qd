@@ -1,0 +1,12 @@
+// Test: []i64 parameter type accepts integer arrays
+fn sum(arr:[]i64 -- total:i64) {
+	0 -> total
+	0 arr len 1 for i {
+		total arr i nth + -> total
+	}
+	total
+}
+
+fn main() {
+	[10 20 30] sum print nl
+}

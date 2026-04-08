@@ -6,6 +6,10 @@ namespace Qd {
 		return findStructDefinition(typeName) != nullptr;
 	}
 
+	bool isArrayType(const std::string& typeStr) {
+		return typeStr.size() > 2 && typeStr[0] == '[' && typeStr[1] == ']';
+	}
+
 	bool looksLikeStructType(const std::string& typeStr) {
 		if (typeStr.empty()) {
 			return false;
@@ -381,13 +385,10 @@ namespace Qd {
 				llvm::Value* truncValue = builder->CreateTrunc(intValue, int32Ty, "int32_val");
 				builder->CreateStore(truncValue, bytePtr);
 			} else if (field.typeName == "ptr" || field.typeName == "str" ||
-					   field.typeName.find('*') != std::string::npos ||
+					   field.typeName.find('*') != std::string::npos || isArrayType(field.typeName) ||
 					   (looksLikeStructType(field.typeName) && isKnownStruct(field.typeName))) {
-				// Pointer type (including ptr, str, raw pointers, and struct-typed fields)
+				// Pointer type (including ptr, str, raw pointers, arrays, and struct-typed fields)
 				llvm::Value* ptrValue = builder->CreateLoad(ptrTy, valuePtr, "ptr_val");
-				// NOTE: We do NOT retain nested struct fields here.
-				// Retain happens when pushing a local to the stack (in generateIdentifier).
-				// The containing struct's destructor will release nested structs.
 				builder->CreateStore(ptrValue, bytePtr);
 			} else if (field.isTypeParam) {
 				// Generic type parameter field - store raw 8-byte value + type tag
@@ -414,6 +415,8 @@ namespace Qd {
 		// Track that we just constructed this struct type
 		lastStructConstructed = structName;
 		lastStructWasConstructedInPlace = !currentFunctionReturnsPtr;
+		// Reset array flag — the struct is not an array, even if a field value was
+		lastPushedWasArray = false;
 	}
 
 	void LlvmGenerator::Impl::generateFieldAccess(AstNodeFieldAccess* fieldAccess, llvm::Value* ctx) {
@@ -651,14 +654,15 @@ namespace Qd {
 			llvm::Value* ptrValue = builder->CreateLoad(ptrTy, fieldPtr, "field_value");
 			builder->CreateCall(pushStrRefFn, {ctx, ptrValue});
 			lastFieldAccessResultType.clear(); // Not a struct type
-		} else if (matchingField->typeName == "ptr" || matchingField->typeName.find('*') != std::string::npos) {
-			// Handle ptr type and raw pointer types
+		} else if (matchingField->typeName == "ptr" || matchingField->typeName.find('*') != std::string::npos ||
+				   isArrayType(matchingField->typeName)) {
+			// Handle ptr type, raw pointer types, and array types
 			llvm::Value* fieldPtr = bytePtr;
 			llvm::Value* ptrValue = builder->CreateLoad(ptrTy, fieldPtr, "field_value");
 			// Retain the pointer before pushing (it could be an array/struct that will be released after use)
 			builder->CreateCall(qdPtrRetainFn, {ptrValue});
 			builder->CreateCall(pushPtrFn, {ctx, ptrValue});
-			lastFieldAccessResultType.clear(); // Raw pointer, not a known struct type
+			lastFieldAccessResultType.clear(); // Raw pointer/array, not a known struct type
 		} else if (looksLikeStructType(matchingField->typeName) && isKnownStruct(matchingField->typeName)) {
 			// Struct-typed field - stored as pointer, push as PTR
 			llvm::Value* fieldPtr = bytePtr;
@@ -805,7 +809,7 @@ namespace Qd {
 				llvm::Value* truncValue = builder->CreateTrunc(intValue, int32Ty, "int32_val");
 				builder->CreateStore(truncValue, bytePtr);
 			} else if (matchingField->typeName == "ptr" || matchingField->typeName == "str" ||
-					   matchingField->typeName.find('*') != std::string::npos ||
+					   matchingField->typeName.find('*') != std::string::npos || isArrayType(matchingField->typeName) ||
 					   (looksLikeStructType(matchingField->typeName) && isKnownStruct(matchingField->typeName))) {
 				llvm::Value* ptrValue = builder->CreateLoad(ptrTy, valuePtr, "ptr_val");
 				builder->CreateStore(ptrValue, bytePtr);

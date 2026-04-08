@@ -1,0 +1,2 @@
+Parameter 1 expects type '[]i64' but got '[]str'
+Parameter 2 expects type '[]str' but got '[]i64'

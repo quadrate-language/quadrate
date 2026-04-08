@@ -149,8 +149,7 @@ struct Point {
 }
 
 struct Polygon {
-	points:ptr
-	count:i64
+	points:[]Point
 }
 
 fn main() {
@@ -173,10 +172,9 @@ fn main() {
 
 	Polygon {
 		points = pts
-		count = 3
 	} -> triangle
 
-	triangle <<count print nl  // 3
+	triangle <<points len print nl  // 3
 }
 ```
 

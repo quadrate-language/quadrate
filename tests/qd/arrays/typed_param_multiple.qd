@@ -1,0 +1,8 @@
+// Test: multiple typed array parameters in one function
+fn combine_lengths(nums:[]i64 floats:[]f64 names:[]str -- total:i64) {
+	nums len floats len + names len +
+}
+
+fn main() {
+	[1 2 3] [1.0 2.0] ["a" "b" "c" "d"] combine_lengths print nl
+}

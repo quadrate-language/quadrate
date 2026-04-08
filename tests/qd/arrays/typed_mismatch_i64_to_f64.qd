@@ -1,0 +1,7 @@
+// Test: passing []i64 where []f64 expected should fail
+fn process(arr:[]f64 -- ) {
+}
+
+fn main() {
+	[1 2 3] process
+}

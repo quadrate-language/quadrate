@@ -1,0 +1,7 @@
+// Test: passing scalar string where []str expected should fail
+fn process(arr:[]str -- ) {
+}
+
+fn main() {
+	"hello" process
+}

@@ -1,0 +1,13 @@
+// Test: passing struct where []i64 expected should fail
+struct Point {
+	x:i64
+	y:i64
+}
+
+fn process(arr:[]i64 -- ) {
+}
+
+fn main() {
+	Point { x = 1 y = 2 } -> p
+	p process
+}

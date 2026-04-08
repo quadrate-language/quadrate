@@ -1,0 +1,7 @@
+// Test: passing []str where []f64 expected should fail
+fn process(arr:[]f64 -- ) {
+}
+
+fn main() {
+	["a" "b"] process
+}

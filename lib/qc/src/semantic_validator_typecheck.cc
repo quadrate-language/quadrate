@@ -10,6 +10,7 @@
 #include <quadrate/qc/ast.h>
 #include <quadrate/qc/ast_node.h>
 #include <quadrate/qc/ast_node_anonymous_function.h>
+#include <quadrate/qc/ast_node_array_literal.h>
 #include <quadrate/qc/ast_node_as_cast.h>
 #include <quadrate/qc/ast_node_constant.h>
 #include <quadrate/qc/ast_node_ctx.h>
@@ -496,15 +497,16 @@ namespace Qd {
 					if (param->hasName()) {
 						errorMsg += " in parameter '" + param->name() + "'";
 					}
-					errorMsg += ". Valid types are: i64, f64, str, ptr, any, or a struct name";
+					errorMsg += ". Valid types are: i64, f64, str, ptr, any, []T, or a struct name";
 					reportError(param, errorMsg.c_str());
 				}
 
 				StackValueType paramType = stringToStackValueType(typeStr);
 				std::string structType = "";
 
-				// Track struct types for PTR parameters
-				if (paramType == StackValueType::PTR && isStructTypeName(typeStr)) {
+				// Track struct/array types for PTR parameters
+				if (paramType == StackValueType::PTR &&
+						(isStructTypeName(typeStr) || (typeStr.size() > 2 && typeStr[0] == '[' && typeStr[1] == ']'))) {
 					structType = typeStr;
 				}
 
@@ -605,6 +607,26 @@ namespace Qd {
 							errorMsg += " but got ";
 							errorMsg += stackValueTypeToString(actualType);
 							reportError(func, errorMsg.c_str());
+						} else if (actualType == StackValueType::PTR) {
+							// Both are PTR — check array/struct subtype
+							std::string expectedStructType = outParam->typeString();
+							std::string actualStructType = (i < structTypeStack.size()) ? structTypeStack[i] : "";
+							bool expectedIsArray = expectedStructType.size() > 2 && expectedStructType[0] == '[' &&
+												   expectedStructType[1] == ']';
+							bool actualIsArray = actualStructType.size() > 2 && actualStructType[0] == '[' &&
+												 actualStructType[1] == ']';
+							if (expectedIsArray && actualIsArray && expectedStructType != actualStructType) {
+								std::string errorMsg = "Function '";
+								errorMsg += func->name();
+								errorMsg += "' output '";
+								errorMsg += outParam->name();
+								errorMsg += "' expects type '";
+								errorMsg += expectedStructType;
+								errorMsg += "' but got '";
+								errorMsg += actualStructType;
+								errorMsg += "'";
+								reportError(func, errorMsg.c_str());
+							}
 						}
 					}
 				}
@@ -673,7 +695,33 @@ namespace Qd {
 			case IAstNode::Type::ARRAY_LITERAL: {
 				// Array literal pushes a pointer (array reference) onto the stack
 				typeStack.push_back(StackValueType::PTR);
-				structTypeStack.push_back("");
+				// Infer array element type from first element
+				AstNodeArrayLiteral* arrLit = static_cast<AstNodeArrayLiteral*>(child);
+				if (arrLit->elements().empty()) {
+					structTypeStack.push_back("[]any");
+				} else {
+					IAstNode* firstElem = arrLit->elements()[0].get();
+					if (firstElem->type() == IAstNode::Type::LITERAL) {
+						auto* lit = static_cast<AstNodeLiteral*>(firstElem);
+						switch (lit->literalType()) {
+						case AstNodeLiteral::LiteralType::INTEGER:
+						case AstNodeLiteral::LiteralType::BOOL:
+							structTypeStack.push_back("[]i64");
+							break;
+						case AstNodeLiteral::LiteralType::FLOAT:
+							structTypeStack.push_back("[]f64");
+							break;
+						case AstNodeLiteral::LiteralType::STRING:
+							structTypeStack.push_back("[]str");
+							break;
+						default:
+							structTypeStack.push_back("[]any");
+							break;
+						}
+					} else {
+						structTypeStack.push_back("[]any");
+					}
+				}
 				break;
 			}
 
@@ -1357,6 +1405,37 @@ namespace Qd {
 									}
 								}
 								exprStructTypeStack.push_back(nestedStructName);
+								break;
+							}
+							case IAstNode::Type::ARRAY_LITERAL: {
+								// Array literal pushes a pointer with element type info
+								AstNodeArrayLiteral* arrLit = static_cast<AstNodeArrayLiteral*>(exprNode);
+								exprTypeStack.push_back(StackValueType::PTR);
+								if (arrLit->elements().empty()) {
+									exprStructTypeStack.push_back("[]any");
+								} else {
+									IAstNode* firstElem = arrLit->elements()[0].get();
+									if (firstElem->type() == IAstNode::Type::LITERAL) {
+										auto* lit = static_cast<AstNodeLiteral*>(firstElem);
+										switch (lit->literalType()) {
+										case AstNodeLiteral::LiteralType::INTEGER:
+										case AstNodeLiteral::LiteralType::BOOL:
+											exprStructTypeStack.push_back("[]i64");
+											break;
+										case AstNodeLiteral::LiteralType::FLOAT:
+											exprStructTypeStack.push_back("[]f64");
+											break;
+										case AstNodeLiteral::LiteralType::STRING:
+											exprStructTypeStack.push_back("[]str");
+											break;
+										default:
+											exprStructTypeStack.push_back("[]any");
+											break;
+										}
+									} else {
+										exprStructTypeStack.push_back("[]any");
+									}
+								}
 								break;
 							}
 							case IAstNode::Type::INSTRUCTION: {
@@ -2251,7 +2330,7 @@ namespace Qd {
 								errorMsg += name;
 								errorMsg += "': Parameter ";
 								errorMsg += std::to_string(paramIdx + 1);
-								errorMsg += " expects struct type '";
+								errorMsg += " expects type '";
 								errorMsg += expectedStruct;
 								errorMsg += "' but got '";
 								errorMsg += actualStruct;

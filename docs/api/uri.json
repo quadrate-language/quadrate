@@ -21,7 +21,7 @@
   "functions": [
     {
       "name": "build",
-      "signature": "(u:ptr -- s:str)",
+      "signature": "(u:Uri) build( -- s:str)",
       "failable": false,
       "description": "Build a URI string from components.",
       "params": [{"name": "u", "type": "Uri", "description": "URI struct"}],
@@ -51,7 +51,7 @@
     },
     {
       "name": "parse",
-      "signature": "(s:str -- u:ptr)",
+      "signature": "(s:str -- u:Uri)",
       "failable": false,
       "description": "Parse a URI string into components.",
       "params": [{"name": "s", "type": "str", "description": "URI string to parse"}],

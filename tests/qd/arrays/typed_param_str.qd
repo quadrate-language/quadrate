@@ -1,0 +1,10 @@
+// Test: []str parameter type accepts string arrays
+fn print_all(arr:[]str -- ) {
+	0 arr len 1 for i {
+		arr i nth print nl
+	}
+}
+
+fn main() {
+	["hello" "world" "test"] print_all
+}

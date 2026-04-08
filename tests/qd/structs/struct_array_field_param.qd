@@ -1,0 +1,25 @@
+// Test: passing struct with []T field to function
+struct Matrix {
+	data:[]i64
+	rows:i64
+	cols:i64
+}
+
+fn sum_matrix(m:Matrix -- total:i64) {
+	0 -> total
+	0 m <<data len 1 for i {
+		total m <<data i nth + -> total
+	}
+	total
+}
+
+fn main() {
+	[1 2 3 4 5 6] -> d
+	Matrix {
+		data = d
+		rows = 2
+		cols = 3
+	} -> m
+
+	m sum_matrix print nl
+}

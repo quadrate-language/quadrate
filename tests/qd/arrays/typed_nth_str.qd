@@ -1,0 +1,8 @@
+// Test: nth on []str returns string element type
+fn get_first(arr:[]str -- val:str) {
+	arr 0 nth
+}
+
+fn main() {
+	["hello" "world"] get_first print nl
+}

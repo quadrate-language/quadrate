@@ -46,7 +46,25 @@ namespace Qd {
 					u8t_scanner_scan(scanner);
 					// Get the type
 					token = u8t_scanner_scan(scanner);
-					if (token == U8T_IDENTIFIER) {
+					if (token == '[') {
+						// Array type: []T
+						token = u8t_scanner_scan(scanner);
+						if (token == ']') {
+							token = u8t_scanner_scan(scanner);
+							if (token == U8T_IDENTIFIER) {
+								const char* elemType = u8t_scanner_token_text(scanner, &n);
+								std::string paramTypeStr = "[]" + std::string(elemType);
+								AstNodeParameter* param = new AstNodeParameter(paramNameStr, paramTypeStr, isOutput);
+								setNodePosition(param, scanner, src);
+								param->setParent(func.get());
+								if (isOutput) {
+									func->addOutputParameter(param);
+								} else {
+									func->addInputParameter(param);
+								}
+							}
+						}
+					} else if (token == U8T_IDENTIFIER) {
 						const char* paramType = u8t_scanner_token_text(scanner, &n);
 						std::string paramTypeStr(paramType);
 						// Check for qualified type name (module::Type)
@@ -144,6 +162,24 @@ namespace Qd {
 						func->addOutputParameter(param);
 					} else {
 						func->addInputParameter(param);
+					}
+				}
+			} else if (token == '[') {
+				// Unnamed array type parameter: []T
+				token = u8t_scanner_scan(scanner);
+				if (token == ']') {
+					token = u8t_scanner_scan(scanner);
+					if (token == U8T_IDENTIFIER) {
+						const char* elemType = u8t_scanner_token_text(scanner, &n);
+						std::string typeStr = "[]" + std::string(elemType);
+						AstNodeParameter* param = new AstNodeParameter("", typeStr, isOutput);
+						setNodePosition(param, scanner, src);
+						param->setParent(func.get());
+						if (isOutput) {
+							func->addOutputParameter(param);
+						} else {
+							func->addInputParameter(param);
+						}
 					}
 				}
 			}
@@ -337,7 +373,25 @@ namespace Qd {
 					u8t_scanner_scan(scanner);
 					// Get the type
 					token = u8t_scanner_scan(scanner);
-					if (token == U8T_IDENTIFIER) {
+					if (token == '[') {
+						// Array type: []T
+						token = u8t_scanner_scan(scanner);
+						if (token == ']') {
+							token = u8t_scanner_scan(scanner);
+							if (token == U8T_IDENTIFIER) {
+								const char* elemType = u8t_scanner_token_text(scanner, &n);
+								std::string paramTypeStr = "[]" + std::string(elemType);
+								AstNodeParameter* param = new AstNodeParameter(paramNameStr, paramTypeStr, isOutput);
+								setNodePosition(param, scanner, src);
+								param->setParent(func.get());
+								if (isOutput) {
+									func->addOutputParameter(param);
+								} else {
+									func->addInputParameter(param);
+								}
+							}
+						}
+					} else if (token == U8T_IDENTIFIER) {
 						const char* paramType = u8t_scanner_token_text(scanner, &n);
 						std::string paramTypeStr(paramType);
 						// Check for qualified type name (module::Type)
@@ -435,6 +489,24 @@ namespace Qd {
 						func->addOutputParameter(param);
 					} else {
 						func->addInputParameter(param);
+					}
+				}
+			} else if (token == '[') {
+				// Unnamed array type parameter: []T
+				token = u8t_scanner_scan(scanner);
+				if (token == ']') {
+					token = u8t_scanner_scan(scanner);
+					if (token == U8T_IDENTIFIER) {
+						const char* elemType = u8t_scanner_token_text(scanner, &n);
+						std::string typeStr = "[]" + std::string(elemType);
+						AstNodeParameter* param = new AstNodeParameter("", typeStr, isOutput);
+						setNodePosition(param, scanner, src);
+						param->setParent(func.get());
+						if (isOutput) {
+							func->addOutputParameter(param);
+						} else {
+							func->addInputParameter(param);
+						}
 					}
 				}
 			}

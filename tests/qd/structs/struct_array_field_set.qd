@@ -1,0 +1,16 @@
+// Test: struct >>field set with []T array field
+struct Container {
+	items:[]i64
+}
+
+fn main() {
+	[1 2 3] -> a
+	Container { items = a } -> c
+	c <<items 0 nth print nl
+
+	[10 20 30] -> b
+	c b >>items -> c
+	c <<items 0 nth print nl
+	c <<items 1 nth print nl
+	c <<items len print nl
+}

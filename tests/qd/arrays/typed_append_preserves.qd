@@ -1,0 +1,17 @@
+// Test: append preserves array type through typed parameter
+fn sum(arr:[]i64 -- total:i64) {
+	0 -> total
+	0 arr len 1 for i {
+		total arr i nth + -> total
+	}
+	total
+}
+
+fn main() {
+	0 make<i64> -> arr
+	arr 1 append -> arr
+	arr 2 append -> arr
+	arr 3 append -> arr
+	arr sum print nl
+	arr len print nl
+}

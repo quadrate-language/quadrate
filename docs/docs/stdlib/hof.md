@@ -10,12 +10,11 @@ They enable functional programming without explicit temporary variables.
 
 Check if all elements satisfy a predicate.
 
-**Signature:** `(arr:ptr count:i64 pred:ptr -- result:i64)`
+**Signature:** `(arr:[]i64 pred:ptr -- result:i64)`
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
-| `arr` | `ptr` | Array pointer |
-| `count` | `i64` | Array length |
+| `arr` | `[]i64` | Array |
 | `pred` | `ptr` | Predicate function pointer (i64 -- bool:i64) |
 
 | Output | Type | Description |
@@ -25,7 +24,7 @@ Check if all elements satisfy a predicate.
 **Example:**
 
 ```qd
-arr count fn (x:i64 -- r:i64) { 0 > } hof::all  // all positive?
+arr fn (x:i64 -- r:i64) { 0 > } hof::all  // all positive?
 ```
 ---
 
@@ -33,12 +32,11 @@ arr count fn (x:i64 -- r:i64) { 0 > } hof::all  // all positive?
 
 Check if any element satisfies a predicate.
 
-**Signature:** `(arr:ptr count:i64 pred:ptr -- result:i64)`
+**Signature:** `(arr:[]i64 pred:ptr -- result:i64)`
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
-| `arr` | `ptr` | Array pointer |
-| `count` | `i64` | Array length |
+| `arr` | `[]i64` | Array |
 | `pred` | `ptr` | Predicate function pointer (i64 -- bool:i64) |
 
 | Output | Type | Description |
@@ -48,7 +46,7 @@ Check if any element satisfies a predicate.
 **Example:**
 
 ```qd
-arr count fn (x:i64 -- r:i64) { 0 > } hof::any  // any positive?
+arr fn (x:i64 -- r:i64) { 0 > } hof::any  // any positive?
 ```
 ---
 
@@ -175,23 +173,21 @@ Apply a function to the second stack element, preserving the top.
 
 Filter an array, keeping only elements that satisfy a predicate.
 
-**Signature:** `(arr:ptr count:i64 pred:ptr -- result:ptr out_count:i64)`
+**Signature:** `(arr:[]i64 pred:ptr -- result:[]i64)`
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
-| `arr` | `ptr` | Input array pointer |
-| `count` | `i64` | Array length |
+| `arr` | `[]i64` | Input array |
 | `pred` | `ptr` | Predicate function pointer (i64 -- bool:i64) |
 
 | Output | Type | Description |
 |--------|------|-------------|
-| `result` | `ptr` | New array with filtered values |
-| `out_count` | `i64` | Length of filtered array |
+| `result` | `[]i64` | New array with filtered values |
 
 **Example:**
 
 ```qd
-arr count fn (x:i64 -- r:i64) { 2 mod 0 == } hof::filter  // keep evens
+arr fn (x:i64 -- r:i64) { 2 mod 0 == } hof::filter  // keep evens
 ```
 ---
 
@@ -199,12 +195,11 @@ arr count fn (x:i64 -- r:i64) { 2 mod 0 == } hof::filter  // keep evens
 
 Find the first element satisfying a predicate.
 
-**Signature:** `(arr:ptr count:i64 pred:ptr -- elem:i64 found:i64)`
+**Signature:** `(arr:[]i64 pred:ptr -- elem:i64 found:i64)`
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
-| `arr` | `ptr` | Array pointer |
-| `count` | `i64` | Array length |
+| `arr` | `[]i64` | Array |
 | `pred` | `ptr` | Predicate function pointer (i64 -- bool:i64) |
 
 | Output | Type | Description |
@@ -215,7 +210,7 @@ Find the first element satisfying a predicate.
 **Example:**
 
 ```qd
-arr count fn (x:i64 -- r:i64) { 10 > } hof::find  // first > 10
+arr fn (x:i64 -- r:i64) { 10 > } hof::find  // first > 10
 ```
 ---
 
@@ -223,12 +218,11 @@ arr count fn (x:i64 -- r:i64) { 10 > } hof::find  // first > 10
 
 Fold/reduce an array left-to-right with a binary function.
 
-**Signature:** `(arr:ptr count:i64 acc:i64 f:ptr -- result:i64)`
+**Signature:** `(arr:[]i64 acc:i64 f:ptr -- result:i64)`
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
-| `arr` | `ptr` | Array pointer |
-| `count` | `i64` | Array length |
+| `arr` | `[]i64` | Array |
 | `init` | `i64` | Initial accumulator value |
 | `f` | `ptr` | Binary function pointer (acc:i64 elem:i64 -- acc:i64) |
 
@@ -239,7 +233,7 @@ Fold/reduce an array left-to-right with a binary function.
 **Example:**
 
 ```qd
-arr count 0 fn (acc:i64 x:i64 -- r:i64) { + } hof::fold  // sum of array
+arr 0 fn (acc:i64 x:i64 -- r:i64) { + } hof::fold  // sum of array
 ```
 ---
 
@@ -247,12 +241,11 @@ arr count 0 fn (acc:i64 x:i64 -- r:i64) { + } hof::fold  // sum of array
 
 Fold/reduce an array right-to-left with a binary function.
 
-**Signature:** `(arr:ptr count:i64 acc:i64 f:ptr -- result:i64)`
+**Signature:** `(arr:[]i64 acc:i64 f:ptr -- result:i64)`
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
-| `arr` | `ptr` | Array pointer |
-| `count` | `i64` | Array length |
+| `arr` | `[]i64` | Array |
 | `init` | `i64` | Initial accumulator value |
 | `f` | `ptr` | Binary function pointer (elem:i64 acc:i64 -- acc:i64) |
 
@@ -263,7 +256,7 @@ Fold/reduce an array right-to-left with a binary function.
 **Example:**
 
 ```qd
-arr count 0 fn (x:i64 acc:i64 -- r:i64) { + } hof::fold_right  // sum of array
+arr 0 fn (x:i64 acc:i64 -- r:i64) { + } hof::fold_right  // sum of array
 ```
 ---
 
@@ -294,23 +287,21 @@ Apply a function but keep the original value.
 
 Map a function over an array, returning a new array.
 
-**Signature:** `(arr:ptr count:i64 f:ptr -- result:ptr out_count:i64)`
+**Signature:** `(arr:[]i64 f:ptr -- result:[]i64)`
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
-| `arr` | `ptr` | Input array pointer |
-| `count` | `i64` | Array length |
+| `arr` | `[]i64` | Input array |
 | `f` | `ptr` | Function pointer (i64 -- i64) |
 
 | Output | Type | Description |
 |--------|------|-------------|
-| `result` | `ptr` | New array with mapped values |
-| `out_count` | `i64` | Array length (unchanged) |
+| `result` | `[]i64` | New array with mapped values |
 
 **Example:**
 
 ```qd
-arr count fn (x:i64 -- r:i64) { 2 * } hof::map  // double each element
+arr fn (x:i64 -- r:i64) { 2 * } hof::map  // double each element
 ```
 ---
 

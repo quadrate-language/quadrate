@@ -1,0 +1,19 @@
+// Test: struct with []f64 field type
+struct Measurements {
+	values:[]f64
+	label:str
+}
+
+fn main() {
+	[1.5 2.5 3.0] -> vals
+
+	Measurements {
+		values = vals
+		label = "temps"
+	} -> m
+
+	m <<values 0 nth cast<f64> print nl
+	m <<values 1 nth cast<f64> print nl
+	m <<values len print nl
+	m <<label print nl
+}

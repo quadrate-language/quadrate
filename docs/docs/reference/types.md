@@ -43,6 +43,7 @@ Converts a value to the specified type using the `cast<T>` syntax.
 | `f64` | 64-bit floating-point | 8 bytes |
 | `str` | String | Variable |
 | `ptr` | Pointer | 8 bytes |
+| `[]T` | Typed array (e.g., `[]i64`, `[]f64`, `[]str`) | 8 bytes (pointer) |
 | `bool` | Boolean (alias for i64) | 8 bytes |
 
 ### Type declarations
@@ -50,8 +51,18 @@ Converts a value to the specified type using the `cast<T>` syntax.
 In function signatures:
 
 ```qd
-fn process(x:i64 y:f64 name:str data:ptr -- result:i64) {
+fn process(x:i64 y:f64 name:str data:[]i64 -- result:i64) {
 	// ...
+}
+```
+
+In struct fields:
+
+```qd
+struct Matrix {
+	data:[]f64
+	rows:i64
+	cols:i64
 }
 ```
 

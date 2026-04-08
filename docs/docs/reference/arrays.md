@@ -19,7 +19,7 @@ Operations for creating and manipulating arrays.
 
 ### make<T>
 
-Creates an array of size pointers.
+Creates a typed array with the specified number of elements.
 
 **Signature:** `(size -- arr)`
 

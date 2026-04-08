@@ -1,0 +1,16 @@
+// Test: old ptr variable to []i64 struct field should fail
+struct Container {
+	data:[]i64
+}
+
+fn old_make( -- arr:ptr) {
+	[1 2 3]
+}
+
+fn main() {
+	old_make -> x
+	Container {
+		data = x
+	} -> c
+	c <<data len print nl
+}

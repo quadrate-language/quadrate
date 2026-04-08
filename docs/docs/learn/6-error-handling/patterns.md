@@ -267,7 +267,7 @@ fn parse_config(path:str -- cfg:ptr)! {
 Process items, log failures:
 
 ```qd
-fn process_batch(items:ptr -- processed:i64 failed:i64) {
+fn process_batch(items:[]i64 -- processed:i64 failed:i64) {
 	0 -> processed
 	0 -> failed
 

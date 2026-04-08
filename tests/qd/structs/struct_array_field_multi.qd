@@ -1,0 +1,25 @@
+// Test: struct with multiple typed array fields
+struct Data {
+	ints:[]i64
+	floats:[]f64
+	labels:[]str
+}
+
+fn main() {
+	[1 2 3] -> i
+	[1.5 2.5] -> f
+	["a" "b" "c" "d"] -> l
+
+	Data {
+		ints = i
+		floats = f
+		labels = l
+	} -> d
+
+	d <<ints len print nl
+	d <<floats len print nl
+	d <<labels len print nl
+	d <<ints 0 nth print nl
+	d <<floats 0 nth cast<f64> print nl
+	d <<labels 1 nth print nl
+}

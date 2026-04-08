@@ -251,7 +251,7 @@ Dynamic arrays are created via array literals or `make<T>` instruction:
 [[1 2] [3 4]]         // Nested array
 ```
 
-Arrays MUST be represented as `ptr` on the stack.
+Arrays MUST be represented as `ptr` on the stack. In type annotations, arrays MAY be written as `[]T` (e.g., `[]i64`, `[]f64`, `[]str`) to indicate the element type. This is a compile-time annotation; at runtime, arrays are pointers.
 
 ### 3.3 Generic Types
 
@@ -1579,7 +1579,7 @@ local_bind      = "->" identifier ;
 anon_fn         = "fn" signature block ;  /* captures are implicit */
 fn_call         = identifier [ "!" ] ;
 
-type            = "i64" | "f64" | "str" | "ptr" | identifier [type_args] | "*" type ;
+type            = "i64" | "f64" | "str" | "ptr" | "[]" type | identifier [type_args] | "*" type ;
 type_args       = "<" type { "," type } ">" ;
 
 operator        = "+" | "-" | "*" | "/" | "%" | "++" | "--"

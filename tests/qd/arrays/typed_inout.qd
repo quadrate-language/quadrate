@@ -1,0 +1,15 @@
+// Test: typed array as both input and output parameter
+fn double_all(arr:[]i64 -- result:[]i64) {
+	arr len make<i64> -> result
+	0 arr len 1 for i {
+		result i arr i nth 2 * set
+	}
+	result
+}
+
+fn main() {
+	[10 20 30] double_all -> r
+	r 0 nth print nl
+	r 1 nth print nl
+	r 2 nth print nl
+}

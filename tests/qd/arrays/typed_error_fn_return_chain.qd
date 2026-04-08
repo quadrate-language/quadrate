@@ -1,0 +1,12 @@
+// Test: function returning []str passed to function expecting []i64 should fail
+fn get_names( -- arr:[]str) {
+	["a" "b"]
+}
+
+fn sum(arr:[]i64 -- total:i64) {
+	0
+}
+
+fn main() {
+	get_names sum print nl
+}

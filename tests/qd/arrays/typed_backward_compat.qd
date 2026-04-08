@@ -1,0 +1,8 @@
+// Test: []i64 can be passed to ptr parameter (backward compat)
+fn old_style(arr:ptr -- ) {
+	arr len print nl
+}
+
+fn main() {
+	[1 2 3] old_style
+}

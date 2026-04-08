@@ -1,0 +1,11 @@
+// Test: function returning []i64
+fn make_array( -- result:[]i64) {
+	[1 2 3]
+}
+
+fn main() {
+	make_array -> arr
+	arr 0 nth print nl
+	arr 1 nth print nl
+	arr 2 nth print nl
+}

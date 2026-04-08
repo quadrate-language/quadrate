@@ -1,0 +1,6 @@
+// Test: unknown type in []T parameter should fail
+fn process(arr:[]badtype -- ) {
+}
+
+fn main() {
+}

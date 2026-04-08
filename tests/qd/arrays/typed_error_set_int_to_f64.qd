@@ -1,0 +1,5 @@
+// Test: setting int in []f64 should fail
+fn main() {
+	[1.0 2.0] -> arr
+	arr 0 42 set
+}

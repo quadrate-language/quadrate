@@ -1079,6 +1079,13 @@ namespace Qd {
 					fieldType = StackValueType::STRING;
 				} else if (typeName == "ptr" || typeName.find('*') != std::string::npos) {
 					fieldType = StackValueType::PTR;
+				} else if (typeName.size() > 2 && typeName[0] == '[' && typeName[1] == ']') {
+					// Array type: []T - treat as PTR and track the array type
+					fieldType = StackValueType::PTR;
+					mStructFieldStructTypes[qualifiedName][field->name()] = typeName;
+					if (mergeIntoMain) {
+						mStructFieldStructTypes[unqualifiedName][field->name()] = typeName;
+					}
 				} else if (looksLikeStructType(typeName)) {
 					// Struct type - treat as PTR and record the struct type name
 					fieldType = StackValueType::PTR;
@@ -1264,6 +1271,10 @@ namespace Qd {
 					sig.consumes.push_back(StackValueType::STRING);
 				} else if (typeStr == "ptr") {
 					sig.consumes.push_back(StackValueType::PTR);
+				} else if (typeStr.size() > 2 && typeStr[0] == '[' && typeStr[1] == ']') {
+					// Array type - treat as PTR but track the array type
+					sig.consumes.push_back(StackValueType::PTR);
+					sig.parameterStructTypes[i] = typeStr;
 				} else if (isStructTypeName(typeStr)) {
 					// Struct type - treat as PTR but track the struct type
 					sig.consumes.push_back(StackValueType::PTR);
@@ -1299,6 +1310,10 @@ namespace Qd {
 						sig.produces.push_back(StackValueType::STRING);
 					} else if (typeStr == "ptr") {
 						sig.produces.push_back(StackValueType::PTR);
+					} else if (typeStr.size() > 2 && typeStr[0] == '[' && typeStr[1] == ']') {
+						// Array type
+						sig.produces.push_back(StackValueType::PTR);
+						sig.producesStructTypes[i] = typeStr;
 					} else if (isStructTypeName(typeStr)) {
 						sig.produces.push_back(StackValueType::PTR);
 						// Qualify struct type with module name if not already qualified
@@ -1394,6 +1409,10 @@ namespace Qd {
 						sig.consumes.push_back(StackValueType::STRING);
 					} else if (typeStr == "ptr") {
 						sig.consumes.push_back(StackValueType::PTR);
+					} else if (typeStr.size() > 2 && typeStr[0] == '[' && typeStr[1] == ']') {
+						// Array type
+						sig.consumes.push_back(StackValueType::PTR);
+						sig.parameterStructTypes[i] = typeStr;
 					} else if (isStructTypeName(typeStr)) {
 						// Struct type - treat as PTR but track the struct type
 						sig.consumes.push_back(StackValueType::PTR);
@@ -1434,6 +1453,10 @@ namespace Qd {
 						sig.produces.push_back(StackValueType::STRING);
 					} else if (typeStr == "ptr") {
 						sig.produces.push_back(StackValueType::PTR);
+					} else if (typeStr.size() > 2 && typeStr[0] == '[' && typeStr[1] == ']') {
+						// Array type
+						sig.produces.push_back(StackValueType::PTR);
+						sig.producesStructTypes[i] = typeStr;
 					} else if (isStructTypeName(typeStr)) {
 						sig.produces.push_back(StackValueType::PTR);
 						// Qualify struct type with module name if not already qualified

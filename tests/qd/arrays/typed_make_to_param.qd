@@ -1,0 +1,16 @@
+// Test: make<T> produces array that flows into typed parameter
+fn total(arr:[]i64 -- sum:i64) {
+	0 -> sum
+	0 arr len 1 for i {
+		sum arr i nth + -> sum
+	}
+	sum
+}
+
+fn main() {
+	3 make<i64> -> arr
+	arr 0 10 set
+	arr 1 20 set
+	arr 2 30 set
+	arr total print nl
+}

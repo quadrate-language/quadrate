@@ -1,0 +1,9 @@
+// Test: make<i64> produces typed array
+fn main() {
+	3 make<i64> -> arr
+	arr 0 100 set
+	arr 1 200 set
+	arr 2 300 set
+	arr 0 nth 1 + print nl
+	arr 1 nth print nl
+}

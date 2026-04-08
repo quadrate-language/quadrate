@@ -5,15 +5,11 @@ Handles percent-encoding and URI component extraction.
 
 ## Functions
 
-### `fn` build
+### `fn` (u:Uri) build
 
 Build a URI string from components.
 
-**Signature:** `(u:ptr -- s:str)`
-
-| Parameter | Type | Description |
-|-----------|------|-------------|
-| `u` | `Uri` | URI struct |
+**Signature:** `(u:Uri) build( -- s:str)`
 
 | Output | Type | Description |
 |--------|------|-------------|
@@ -131,7 +127,7 @@ Parsed URI components.
 
 Parse a URI string into components.
 
-**Signature:** `(s:str -- u:ptr)`
+**Signature:** `(s:str -- u:Uri)`
 
 | Parameter | Type | Description |
 |-----------|------|-------------|

@@ -1,0 +1,18 @@
+// Test: struct with []str field type
+struct Names {
+	items:[]str
+	count:i64
+}
+
+fn main() {
+	["alice" "bob" "charlie"] -> ns
+
+	Names {
+		items = ns
+		count = 3
+	} -> n
+
+	n <<items 0 nth print nl
+	n <<items 2 nth print nl
+	n <<count print nl
+}

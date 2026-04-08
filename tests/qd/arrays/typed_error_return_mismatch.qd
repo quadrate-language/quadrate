@@ -1,0 +1,8 @@
+// Test: function declares []i64 return but body returns []str should fail
+fn create_ints( -- result:[]i64) {
+	["a" "b"]
+}
+
+fn main() {
+	create_ints -> x
+}

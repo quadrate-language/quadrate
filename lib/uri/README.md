@@ -24,7 +24,7 @@ fn main() {
 
     // Parse a URI
     "https://example.com:8080/path?q=1#top" uri::parse -> u
-    u @scheme print nl  // "https"
+    u <<scheme print nl  // "https"
     u <<host print nl    // "example.com"
     u <<port print nl    // 8080
     u <<path print nl    // "/path"
@@ -50,8 +50,8 @@ fn main() {
 
 - `encode(s:str -- encoded:str)` - Percent-encode a string
 - `decode(s:str -- decoded:str)` - Decode a percent-encoded string
-- `parse(s:str -- u:ptr)` - Parse a URI string into components
-- `build(u:ptr -- s:str)` - Build a URI string from components
+- `parse(s:str -- u:Uri)` - Parse a URI string into components
+- `(u:Uri) build( -- s:str)` - Build a URI string from components
 - `query_get(query:str key:str -- value:str)` - Get query parameter value
 - `query_has(query:str key:str -- exists:i64)` - Check if query parameter exists
 

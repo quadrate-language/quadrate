@@ -1,0 +1,8 @@
+// Test: function declares []f64 return but body returns []i64 should fail
+fn create_floats( -- result:[]f64) {
+	[1 2 3]
+}
+
+fn main() {
+	create_floats -> x
+}

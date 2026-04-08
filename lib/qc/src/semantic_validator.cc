@@ -121,6 +121,10 @@ namespace Qd {
 		if (typeStr == "i64" || typeStr == "f64" || typeStr == "str" || typeStr == "ptr" || typeStr == "any") {
 			return true;
 		}
+		// Array types: []i64, []f64, []str, []StructName
+		if (typeStr.size() > 2 && typeStr[0] == '[' && typeStr[1] == ']') {
+			return isValidTypeName(typeStr.substr(2));
+		}
 		// Type parameters (for generic functions)
 		for (const auto& typeParam : mCurrentTypeParams) {
 			if (typeStr == typeParam) {
@@ -775,6 +779,10 @@ namespace Qd {
 	}
 
 	StackValueType SemanticValidator::stringToStackValueType(const std::string& typeStr) const {
+		// Array types: []i64, []f64, etc. - all map to PTR on the stack
+		if (typeStr.size() > 2 && typeStr[0] == '[' && typeStr[1] == ']') {
+			return StackValueType::PTR;
+		}
 		if (typeStr == "i64") {
 			return StackValueType::INT;
 		}

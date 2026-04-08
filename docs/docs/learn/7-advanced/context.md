@@ -109,7 +109,7 @@ fn main() {
 
 	c ctx {
 		-> c2  // bind context value
-		c2 <<value 1 + c2 .value  // Increment the struct's value
+		c2 c2 <<value 1 + >>value!  // Increment the struct's value in place
 		c2 <<value  // Output the new value
 	}
 	print nl  // 1
@@ -185,7 +185,7 @@ fn main() {
 Compute a value without affecting the current stack:
 
 ```qd
-fn compute_average(arr:ptr -- avg:f64) {
+fn compute_average(arr:[]i64 -- avg:f64) {
 	-> arr  // bind parameter
 	arr ctx {
 		0.0 -> sum

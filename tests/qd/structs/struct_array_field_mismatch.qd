@@ -1,0 +1,12 @@
+// Test: passing wrong array type to struct with []i64 field should fail
+struct Container {
+	data:[]i64
+}
+
+fn main() {
+	["a" "b" "c"] -> arr
+	Container {
+		data = arr
+	} -> c
+	c <<data len print nl
+}

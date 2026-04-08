@@ -1,0 +1,12 @@
+// Test: passing []i64 where struct field expects []f64 should fail
+struct Sensor {
+	readings:[]f64
+}
+
+fn main() {
+	[1 2 3] -> arr
+	Sensor {
+		readings = arr
+	} -> s
+	s <<readings len print nl
+}

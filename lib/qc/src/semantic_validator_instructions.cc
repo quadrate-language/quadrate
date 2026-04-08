@@ -822,9 +822,27 @@ namespace Qd {
 			if (!structTypeStack.empty()) {
 				structTypeStack.pop_back();
 			}
-			// Push pointer (array) - regardless of element type, result is always a pointer
+			// Push pointer (array) with element type tracking
 			typeStack.push_back(StackValueType::PTR);
-			structTypeStack.push_back("");
+			if (strcmp(name, "makei") == 0) {
+				structTypeStack.push_back("[]i64");
+			} else if (strcmp(name, "makef") == 0) {
+				structTypeStack.push_back("[]f64");
+			} else if (strcmp(name, "makes") == 0) {
+				structTypeStack.push_back("[]str");
+			} else if (strcmp(name, "makep") == 0) {
+				structTypeStack.push_back("[]ptr");
+			} else if (strcmp(name, "make") == 0) {
+				// Generic make<T>: read type param from instruction node
+				auto* inst = static_cast<AstNodeInstruction*>(node);
+				if (!inst->typeParam().empty()) {
+					structTypeStack.push_back("[]" + inst->typeParam());
+				} else {
+					structTypeStack.push_back("[]i64"); // default
+				}
+			} else {
+				structTypeStack.push_back("");
+			}
 			return;
 		}
 		// Array length: len ( arr -- len )
@@ -872,13 +890,37 @@ namespace Qd {
 				reportErrorConditional(node, errorMsg.c_str(), reportErrors);
 				return;
 			}
-			// Pop array, push element (ANY since we don't track element types)
-			typeStack.pop_back();
+			// Pop array, push element type based on array's tracked element type
+			std::string arrayType = "";
 			if (!structTypeStack.empty()) {
+				arrayType = structTypeStack.back();
 				structTypeStack.pop_back();
 			}
-			typeStack.push_back(StackValueType::ANY);
-			structTypeStack.push_back("");
+			typeStack.pop_back();
+			if (arrayType.size() > 2 && arrayType[0] == '[' && arrayType[1] == ']') {
+				std::string elemType = arrayType.substr(2);
+				if (elemType == "i64") {
+					typeStack.push_back(StackValueType::INT);
+					structTypeStack.push_back("");
+				} else if (elemType == "f64") {
+					typeStack.push_back(StackValueType::FLOAT);
+					structTypeStack.push_back("");
+				} else if (elemType == "str") {
+					typeStack.push_back(StackValueType::STRING);
+					structTypeStack.push_back("");
+				} else if (elemType == "ptr" || elemType == "any") {
+					typeStack.push_back(StackValueType::ANY);
+					structTypeStack.push_back("");
+				} else {
+					// Struct element type
+					typeStack.push_back(StackValueType::PTR);
+					structTypeStack.push_back(elemType);
+				}
+			} else {
+				// Unknown array type, fall back to ANY
+				typeStack.push_back(StackValueType::ANY);
+				structTypeStack.push_back("");
+			}
 			return;
 		}
 		// Array set: set ( arr idx val -- )
@@ -888,6 +930,32 @@ namespace Qd {
 				reportErrorConditional(
 						node, "Type error in 'set': Stack underflow (requires array, index, and value)", reportErrors);
 				return;
+			}
+			// Check element type against typed array
+			StackValueType valType = typeStack.back();
+			// Array is 3rd from top (arr idx val)
+			size_t arrIdx = typeStack.size() - 3;
+			if (arrIdx < structTypeStack.size()) {
+				const std::string& arrayType = structTypeStack[arrIdx];
+				if (arrayType.size() > 2 && arrayType[0] == '[' && arrayType[1] == ']') {
+					std::string elemType = arrayType.substr(2);
+					StackValueType expectedElemType = StackValueType::ANY;
+					if (elemType == "i64") {
+						expectedElemType = StackValueType::INT;
+					} else if (elemType == "f64") {
+						expectedElemType = StackValueType::FLOAT;
+					} else if (elemType == "str") {
+						expectedElemType = StackValueType::STRING;
+					}
+					if (expectedElemType != StackValueType::ANY && valType != StackValueType::ANY &&
+							valType != StackValueType::UNKNOWN && valType != expectedElemType) {
+						std::string errorMsg = "Type error in 'set': Array is '";
+						errorMsg += arrayType;
+						errorMsg += "' but value is ";
+						errorMsg += stackValueTypeToString(valType);
+						reportErrorConditional(node, errorMsg.c_str(), reportErrors);
+					}
+				}
 			}
 			// Pop value, index, array
 			typeStack.pop_back(); // value
@@ -907,6 +975,32 @@ namespace Qd {
 				reportErrorConditional(
 						node, "Type error in 'append': Stack underflow (requires array and value)", reportErrors);
 				return;
+			}
+			// Check element type against typed array before popping
+			StackValueType valType = typeStack.back();
+			// Array is 2nd from top (arr val)
+			size_t arrIdx = typeStack.size() - 2;
+			if (arrIdx < structTypeStack.size()) {
+				const std::string& arrayType = structTypeStack[arrIdx];
+				if (arrayType.size() > 2 && arrayType[0] == '[' && arrayType[1] == ']') {
+					std::string elemType = arrayType.substr(2);
+					StackValueType expectedElemType = StackValueType::ANY;
+					if (elemType == "i64") {
+						expectedElemType = StackValueType::INT;
+					} else if (elemType == "f64") {
+						expectedElemType = StackValueType::FLOAT;
+					} else if (elemType == "str") {
+						expectedElemType = StackValueType::STRING;
+					}
+					if (expectedElemType != StackValueType::ANY && valType != StackValueType::ANY &&
+							valType != StackValueType::UNKNOWN && valType != expectedElemType) {
+						std::string errorMsg = "Type error in 'append': Array is '";
+						errorMsg += arrayType;
+						errorMsg += "' but value is ";
+						errorMsg += stackValueTypeToString(valType);
+						reportErrorConditional(node, errorMsg.c_str(), reportErrors);
+					}
+				}
 			}
 			// Pop value
 			typeStack.pop_back();

@@ -1,0 +1,18 @@
+// Test: inline array literal in struct construction
+struct Container {
+	items:[]i64
+	label:str
+}
+
+fn main() {
+	Container {
+		items = [10 20 30]
+		label = "data"
+	} -> c
+
+	c <<items 0 nth print nl
+	c <<items 1 nth print nl
+	c <<items 2 nth print nl
+	c <<items len print nl
+	c <<label print nl
+}

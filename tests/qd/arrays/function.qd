@@ -1,5 +1,5 @@
 // Arrays returned from functions
-fn make_array( -- arr:ptr) {
+fn make_array( -- arr:[]i64) {
 	[1 2 3 4 5]
 }
 

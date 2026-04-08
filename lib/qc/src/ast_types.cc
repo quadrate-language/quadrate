@@ -1,4 +1,5 @@
 #include "ast_parse.h"
+#include <quadrate/qc/ast_node_array_literal.h>
 
 namespace Qd {
 
@@ -142,13 +143,29 @@ namespace Qd {
 				}
 
 				token = u8t_scanner_scan(scanner);
-				if (token != U8T_IDENTIFIER && token != '*') {
+				if (token != U8T_IDENTIFIER && token != '*' && token != '[') {
 					errorReporter->reportError(scanner, "Expected type after ':'");
 					continue;
 				}
 
 				std::string fieldType;
-				if (token == '*') {
+				if (token == '[') {
+					// Array type: []T
+					token = u8t_scanner_scan(scanner);
+					if (token == ']') {
+						token = u8t_scanner_scan(scanner);
+						if (token == U8T_IDENTIFIER) {
+							const char* elemType = u8t_scanner_token_text(scanner, &n);
+							fieldType = "[]" + std::string(elemType);
+						} else {
+							errorReporter->reportError(scanner, "Expected element type after '[]'");
+							continue;
+						}
+					} else {
+						errorReporter->reportError(scanner, "Expected ']' after '['");
+						continue;
+					}
+				} else if (token == '*') {
 					// Pointer type: *StructName
 					fieldType = "*";
 					token = u8t_scanner_scan(scanner);
@@ -650,6 +667,78 @@ namespace Qd {
 					currentFieldNodes.push_back(node);
 				}
 				// If not followed by identifier, silently ignore (error will be caught by semantic validator)
+			} else if (token == '[') {
+				// Array literal inside struct construction: [elem1 elem2 ...]
+				size_t bracketPos = u8t_scanner_token_start(scanner);
+				AstNodeArrayLiteral* arrNode = new AstNodeArrayLiteral();
+				size_t arrLine, arrColumn;
+				size_t bracketPosByte = fastCharToByteOffset(src, bracketPos);
+				fastLineColumn(src, bracketPosByte, &arrLine, &arrColumn);
+				arrNode->setPosition(arrLine, arrColumn);
+
+				char32_t elemToken;
+				while ((elemToken = u8t_scanner_scan(scanner)) != U8T_EOF) {
+					if (elemToken == ']') {
+						break;
+					}
+					size_t en;
+					if (elemToken == U8T_INTEGER) {
+						const char* etext = u8t_scanner_token_text(scanner, &en);
+						AstNodeLiteral* lit = new AstNodeLiteral(etext, AstNodeLiteral::LiteralType::INTEGER);
+						setNodePosition(lit, scanner, src);
+						arrNode->addElement(lit);
+					} else if (elemToken == U8T_FLOAT) {
+						const char* etext = u8t_scanner_token_text(scanner, &en);
+						AstNodeLiteral* lit = new AstNodeLiteral(etext, AstNodeLiteral::LiteralType::FLOAT);
+						setNodePosition(lit, scanner, src);
+						arrNode->addElement(lit);
+					} else if (elemToken == U8T_STRING) {
+						const char* etext = u8t_scanner_token_text(scanner, &en);
+						AstNodeLiteral* lit = new AstNodeLiteral(etext, AstNodeLiteral::LiteralType::STRING);
+						setNodePosition(lit, scanner, src);
+						arrNode->addElement(lit);
+					} else if (elemToken == U8T_IDENTIFIER) {
+						const char* etext = u8t_scanner_token_text(scanner, &en);
+						if (auto* boolNode = tryCreateBooleanLiteral(etext, scanner, src)) {
+							arrNode->addElement(boolNode);
+						} else {
+							AstNodeIdentifier* ident = new AstNodeIdentifier(etext);
+							setNodePosition(ident, scanner, src);
+							arrNode->addElement(ident);
+						}
+					} else if (elemToken == '[') {
+						// Nested array literal — recursively parse
+						// Push back and let the outer loop handle it
+						// For simplicity, create a nested array literal inline
+						AstNodeArrayLiteral* nested = new AstNodeArrayLiteral();
+						setNodePosition(nested, scanner, src);
+						char32_t nestedToken;
+						while ((nestedToken = u8t_scanner_scan(scanner)) != U8T_EOF) {
+							if (nestedToken == ']') {
+								break;
+							}
+							size_t nn;
+							if (nestedToken == U8T_INTEGER) {
+								const char* nt = u8t_scanner_token_text(scanner, &nn);
+								AstNodeLiteral* lit = new AstNodeLiteral(nt, AstNodeLiteral::LiteralType::INTEGER);
+								setNodePosition(lit, scanner, src);
+								nested->addElement(lit);
+							} else if (nestedToken == U8T_FLOAT) {
+								const char* nt = u8t_scanner_token_text(scanner, &nn);
+								AstNodeLiteral* lit = new AstNodeLiteral(nt, AstNodeLiteral::LiteralType::FLOAT);
+								setNodePosition(lit, scanner, src);
+								nested->addElement(lit);
+							} else if (nestedToken == U8T_STRING) {
+								const char* nt = u8t_scanner_token_text(scanner, &nn);
+								AstNodeLiteral* lit = new AstNodeLiteral(nt, AstNodeLiteral::LiteralType::STRING);
+								setNodePosition(lit, scanner, src);
+								nested->addElement(lit);
+							}
+						}
+						arrNode->addElement(nested);
+					}
+				}
+				currentFieldNodes.push_back(arrNode);
 			} else if (token == ',') {
 				// Commas are not part of struct instantiation syntax
 				size_t errPos = u8t_scanner_token_start(scanner);
