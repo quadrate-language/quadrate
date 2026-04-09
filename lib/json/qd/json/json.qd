@@ -133,9 +133,9 @@ fn find_bracket(json:str pos:i64 -- end_pos:i64) {
 /// Get JSON value type at position.
 /// @param json str JSON string
 /// @param pos i64 Position to check
-/// @return type i64 Type constant (Null, Bool, Number, String, Array, Object)
+/// @return result i64 Type constant (Null, Bool, Number, String, Array, Object)
 /// @example "{\"a\":1}" 5 json::type_at print  // 2 (Number)
-pub fn type_at(json:str pos:i64 -- type:i64) {
+pub fn type_at(json:str pos:i64 -- result:i64) {
 	json pos skip_ws -> pos
 	json strings::len -> slen
 	pos slen >= if {
