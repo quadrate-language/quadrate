@@ -241,6 +241,12 @@ namespace Qd {
 								enumDecl->setParent(program);
 								program->addChild(enumDecl);
 							}
+						} else if (strcmp(nextText, "type") == 0) {
+							IAstNode* typeAlias = parseTypeAliasDeclaration(&scanner, &errorReporter, src, true);
+							if (typeAlias) {
+								typeAlias->setParent(program);
+								program->addChild(typeAlias);
+							}
 						} else if (strcmp(nextText, "const") == 0) {
 							// Parse public constant
 							token = u8t_scanner_scan(&scanner);
@@ -266,11 +272,12 @@ namespace Qd {
 							}
 						} else {
 							errorReporter.reportError(
-									&scanner, "Expected 'fn', 'struct', 'enum', or 'const' after 'pub'");
+									&scanner, "Expected 'fn', 'struct', 'enum', 'type', or 'const' after 'pub'");
 							synchronize(&scanner);
 						}
 					} else {
-						errorReporter.reportError(&scanner, "Expected 'fn', 'struct', 'enum', or 'const' after 'pub'");
+						errorReporter.reportError(
+								&scanner, "Expected 'fn', 'struct', 'enum', 'type', or 'const' after 'pub'");
 						synchronize(&scanner);
 					}
 				} else if (strcmp(text, "fn") == 0) {
@@ -290,6 +297,12 @@ namespace Qd {
 					if (enumDecl) {
 						enumDecl->setParent(program);
 						program->addChild(enumDecl);
+					}
+				} else if (strcmp(text, "type") == 0) {
+					IAstNode* typeAlias = parseTypeAliasDeclaration(&scanner, &errorReporter, src, false);
+					if (typeAlias) {
+						typeAlias->setParent(program);
+						program->addChild(typeAlias);
 					}
 				} else if (strcmp(text, "use") == 0) {
 					token = u8t_scanner_scan(&scanner);

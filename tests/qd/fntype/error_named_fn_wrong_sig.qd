@@ -1,0 +1,7 @@
+// Test: &named_fn with wrong signature should fail
+fn add(a:i64 b:i64 -- r:i64) { a b + }
+fn apply(x:i64 f:fn(i64 -- i64) -- r:i64) { x f call }
+
+fn main() {
+	5 &add apply print nl
+}

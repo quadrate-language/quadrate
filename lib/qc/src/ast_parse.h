@@ -45,6 +45,7 @@
 #include <quadrate/qc/ast_node_struct.h>
 #include <quadrate/qc/ast_node_switch.h>
 #include <quadrate/qc/ast_node_test.h>
+#include <quadrate/qc/ast_node_type_alias.h>
 #include <quadrate/qc/ast_node_use.h>
 #include <quadrate/qc/ast_node_while.h>
 #include <quadrate/qc/colors.h>
@@ -450,10 +451,10 @@ namespace Qd {
 				size_t n;
 				const char* text = u8t_scanner_token_text(scanner, &n);
 				if (strcmp(text, "fn") == 0 || strcmp(text, "const") == 0 || strcmp(text, "struct") == 0 ||
-						strcmp(text, "enum") == 0 || strcmp(text, "use") == 0 || strcmp(text, "import") == 0 ||
-						strcmp(text, "if") == 0 || strcmp(text, "for") == 0 || strcmp(text, "while") == 0 ||
-						strcmp(text, "loop") == 0 || strcmp(text, "switch") == 0 || strcmp(text, "return") == 0 ||
-						strcmp(text, "ctx") == 0) {
+						strcmp(text, "enum") == 0 || strcmp(text, "type") == 0 || strcmp(text, "use") == 0 ||
+						strcmp(text, "import") == 0 || strcmp(text, "if") == 0 || strcmp(text, "for") == 0 ||
+						strcmp(text, "while") == 0 || strcmp(text, "loop") == 0 || strcmp(text, "switch") == 0 ||
+						strcmp(text, "return") == 0 || strcmp(text, "ctx") == 0) {
 					return;
 				}
 			}
@@ -549,6 +550,8 @@ namespace Qd {
 	IAstNode* parseStructDeclaration(
 			u8t_scanner* scanner, ErrorReporter* errorReporter, const char* src, bool isPublic = false);
 	IAstNode* parseEnumDeclaration(
+			u8t_scanner* scanner, ErrorReporter* errorReporter, const char* src, bool isPublic = false);
+	IAstNode* parseTypeAliasDeclaration(
 			u8t_scanner* scanner, ErrorReporter* errorReporter, const char* src, bool isPublic = false);
 	AstNodeStructConstruction* parseStructConstruction(const std::string& structName,
 			const std::vector<std::string>& typeArgs, u8t_scanner* scanner, ErrorReporter* errorReporter,

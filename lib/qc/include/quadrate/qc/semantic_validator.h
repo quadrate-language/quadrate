@@ -272,6 +272,9 @@ namespace Qd {
 		// Symbol table: all defined enums
 		std::unordered_set<std::string> mDefinedEnums;
 
+		// Symbol table: type aliases (name → target type string)
+		std::unordered_map<std::string, std::string> mTypeAliases;
+
 		// Track $"..." interpolation nodes already resolved (avoid double-resolution in merged modules)
 		std::unordered_set<IAstNode*> mResolvedInterpolations;
 

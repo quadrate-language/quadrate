@@ -1,0 +1,14 @@
+// Test: type alias used in struct field
+type Callback = fn(i64 -- i64)
+
+struct Handler {
+	f:Callback
+	name:str
+}
+
+fn main() {
+	fn (x:i64 -- r:i64) { x 3 * } -> cb
+	Handler { f = cb name = "triple" } -> h
+	7 h <<f call print nl
+	h <<name print nl
+}

@@ -1,0 +1,9 @@
+// Test: fn(i64 i64 -- i64) reducer pattern
+fn fold(acc:i64 x:i64 f:fn(i64 i64 -- i64) -- result:i64) {
+	acc x f call
+}
+
+fn main() {
+	10 3 fn (a:i64 b:i64 -- r:i64) { a b + } fold print nl
+	10 3 fn (a:i64 b:i64 -- r:i64) { a b * } fold print nl
+}

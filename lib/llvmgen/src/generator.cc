@@ -1,6 +1,7 @@
 #include "generator_impl.h"
 #include <chrono>
 #include <dlfcn.h>
+#include <quadrate/qc/ast_node_type_alias.h>
 #include <thread>
 
 // Platform abstractions
@@ -2020,9 +2021,19 @@ namespace Qd {
 			}
 
 			for (auto* child : moduleRoot->children()) {
+				if (auto typeAlias = dynamic_cast<AstNodeTypeAlias*>(child)) {
+					typeAliases[typeAlias->name()] = typeAlias->targetType();
+				}
 				if (auto structNode = dynamic_cast<AstNodeStructDeclaration*>(child)) {
 					processStructDeclaration(structNode, moduleName);
 				}
+			}
+		}
+
+		// Collect type aliases from main file
+		for (auto* child : root->children()) {
+			if (auto typeAlias = dynamic_cast<AstNodeTypeAlias*>(child)) {
+				typeAliases[typeAlias->name()] = typeAlias->targetType();
 			}
 		}
 

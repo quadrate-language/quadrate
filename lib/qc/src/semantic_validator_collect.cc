@@ -30,6 +30,7 @@
 #include <quadrate/qc/ast_node_struct.h>
 #include <quadrate/qc/ast_node_switch.h>
 #include <quadrate/qc/ast_node_test.h>
+#include <quadrate/qc/ast_node_type_alias.h>
 #include <quadrate/qc/ast_node_use.h>
 #include <quadrate/qc/ast_node_while.h>
 #include <quadrate/qc/colors.h>
@@ -196,6 +197,18 @@ namespace Qd {
 			}
 		}
 
+		// If this is a type alias declaration, register it
+		if (node->type() == IAstNode::Type::TYPE_ALIAS_DECLARATION) {
+			AstNodeTypeAlias* typeAlias = static_cast<AstNodeTypeAlias*>(node);
+			if (isReservedKeyword(typeAlias->name())) {
+				std::string errorMsg =
+						"'" + typeAlias->name() + "' is a reserved keyword and cannot be used as a type alias";
+				reportError(typeAlias, errorMsg.c_str());
+				return;
+			}
+			mTypeAliases[typeAlias->name()] = typeAlias->targetType();
+		}
+
 		// If this is a struct declaration, add it to the symbol table and collect field types
 		if (node->type() == IAstNode::Type::STRUCT_DECLARATION) {
 			AstNodeStructDeclaration* structDecl = static_cast<AstNodeStructDeclaration*>(node);
@@ -262,19 +275,31 @@ namespace Qd {
 
 					StackValueType fieldType = StackValueType::UNKNOWN;
 					const std::string& typeName = field->typeName();
-					if (typeName == "f64") {
+					// Resolve type aliases
+					std::string resolvedTypeName = typeName;
+					auto fieldAliasIt = mTypeAliases.find(typeName);
+					if (fieldAliasIt != mTypeAliases.end()) {
+						resolvedTypeName = fieldAliasIt->second;
+					}
+
+					if (resolvedTypeName == "f64") {
 						fieldType = StackValueType::FLOAT;
-					} else if (typeName == "i64") {
+					} else if (resolvedTypeName == "i64") {
 						fieldType = StackValueType::INT;
-					} else if (typeName == "str") {
+					} else if (resolvedTypeName == "str") {
 						fieldType = StackValueType::STRING;
-					} else if (typeName == "ptr" || typeName.find('*') != std::string::npos) {
+					} else if (resolvedTypeName == "ptr" || resolvedTypeName.find('*') != std::string::npos) {
 						fieldType = StackValueType::PTR;
-					} else if (typeName.size() > 2 && typeName[0] == '[' && typeName[1] == ']') {
+					} else if (resolvedTypeName.size() > 2 && resolvedTypeName[0] == '[' &&
+							   resolvedTypeName[1] == ']') {
 						// Array type: []T - treat as PTR and track the array type
 						fieldType = StackValueType::PTR;
-						mStructFieldStructTypes[structDecl->name()][field->name()] = typeName;
-					} else if (!typeName.empty() && std::isupper(typeName[0])) {
+						mStructFieldStructTypes[structDecl->name()][field->name()] = resolvedTypeName;
+					} else if (resolvedTypeName.size() > 3 && resolvedTypeName.substr(0, 3) == "fn(") {
+						// Function pointer type: fn(i64 -- i64) - treat as PTR
+						fieldType = StackValueType::PTR;
+						mStructFieldStructTypes[structDecl->name()][field->name()] = resolvedTypeName;
+					} else if (!resolvedTypeName.empty() && std::isupper(resolvedTypeName[0])) {
 						// Unqualified struct type - treat as PTR and record the struct type name
 						fieldType = StackValueType::PTR;
 						mStructFieldStructTypes[structDecl->name()][field->name()] = typeName;
@@ -501,6 +526,16 @@ namespace Qd {
 						std::string baseTypeName = typeName;
 						if (!baseTypeName.empty() && baseTypeName[0] == '*') {
 							baseTypeName = baseTypeName.substr(1);
+						}
+
+						// Type aliases - valid
+						if (mTypeAliases.find(baseTypeName) != mTypeAliases.end()) {
+							continue;
+						}
+
+						// Function pointer types: fn(i64 -- i64) - valid
+						if (baseTypeName.size() > 3 && baseTypeName.substr(0, 3) == "fn(") {
+							continue;
 						}
 
 						// Array types: []T - validate the element type
@@ -1299,13 +1334,22 @@ namespace Qd {
 											   .c_str());
 				}
 
-				StackValueType paramType = stringToStackValueType(typeStr);
+				// Resolve type aliases
+				std::string resolvedType = typeStr;
+				auto aliasIt = mTypeAliases.find(typeStr);
+				if (aliasIt != mTypeAliases.end()) {
+					resolvedType = aliasIt->second;
+				}
+
+				StackValueType paramType = stringToStackValueType(resolvedType);
 				sig.consumes.push_back(paramType);
 
-				// Track struct/array types for PTR parameters
+				// Track struct/array/fn types for PTR parameters
 				if (paramType == StackValueType::PTR &&
-						(isStructTypeName(typeStr) || (typeStr.size() > 2 && typeStr[0] == '[' && typeStr[1] == ']'))) {
-					sig.parameterStructTypes[paramIdx] = typeStr;
+						(isStructTypeName(resolvedType) ||
+								(resolvedType.size() > 2 && resolvedType[0] == '[' && resolvedType[1] == ']') ||
+								(resolvedType.size() > 3 && resolvedType.substr(0, 3) == "fn("))) {
+					sig.parameterStructTypes[paramIdx] = resolvedType;
 				}
 			}
 
@@ -1350,13 +1394,20 @@ namespace Qd {
 				AstNodeParameter* param = static_cast<AstNodeParameter*>(paramNode.get());
 				std::string typeStr = param->typeString();
 
+				// Resolve type aliases
+				auto outAliasIt = mTypeAliases.find(typeStr);
+				if (outAliasIt != mTypeAliases.end()) {
+					typeStr = outAliasIt->second;
+				}
+
 				// Use stringToStackValueType to handle all types including type parameters
 				StackValueType producedType = stringToStackValueType(typeStr);
 				sig.produces.push_back(producedType);
 
-				// Track struct/array types for PTR return values
+				// Track struct/array/fn types for PTR return values
 				if (producedType == StackValueType::PTR &&
-						(isStructTypeName(typeStr) || (typeStr.size() > 2 && typeStr[0] == '[' && typeStr[1] == ']'))) {
+						(isStructTypeName(typeStr) || (typeStr.size() > 2 && typeStr[0] == '[' && typeStr[1] == ']') ||
+								(typeStr.size() > 3 && typeStr.substr(0, 3) == "fn("))) {
 					sig.producesStructTypes[producesIdx] = typeStr;
 				}
 				producesIdx++;

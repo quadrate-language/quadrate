@@ -80,7 +80,7 @@ Quadrate source files MUST be UTF-8 encoded. Identifiers MUST contain only ASCII
 #### 2.3.1 Keywords
 
 ```
-fn        pub       struct    enum      use       import
+fn        pub       struct    enum      type      use       import
 if        else      for       loop
 switch    break     continue  return    defer
 const     test      ctx       as
@@ -276,16 +276,18 @@ Type parameters SHOULD be single uppercase letters or short uppercase names.
 
 ### 3.4 Function Types
 
-Function pointers MUST be represented as `ptr`:
+Function pointers MUST be represented using typed `fn(...)` syntax:
 
 ```quadrate
-fn apply(x:i64 f:ptr -- result:i64) {
+fn apply(x:i64 f:fn(i64 -- i64) -- result:i64) {
     x f call
 }
 
 // Get function pointer
 &double -> func_ptr
 ```
+
+The `fn(...)` type specifies the full signature of the function pointer, including parameter types and return types. Using `ptr` for function pointers is permitted but `fn(...)` is preferred as it enables compile-time type checking of `call` arguments.
 
 ### 3.5 Special Types
 
@@ -490,6 +492,7 @@ program := declaration*
 declaration := use_statement
              | const_declaration
              | enum_declaration
+             | type_alias_declaration
              | struct_declaration
              | function_declaration
              | import_declaration
@@ -619,7 +622,23 @@ Implementations MUST reject:
 - **Duplicate enum definitions**: Two enums with the same name in the same scope
 - **Unknown variants**: Accessing a variant that does not exist in the enum (e.g., `Color::Yellow` when `Yellow` is not defined)
 
-### 5.5 Struct Declarations
+### 5.5 Type Alias Declarations
+
+```quadrate
+[pub] type Name = ExistingType
+```
+
+Type aliases create a new name for an existing type. The alias is fully interchangeable with its underlying type.
+
+```quadrate
+type Transform = fn(i64 -- i64)
+type IntList = []i64
+pub type Callback = fn(str -- bool)
+```
+
+Type aliases are resolved at compile time and carry no runtime overhead. They are especially useful for giving readable names to complex function pointer types.
+
+### 5.6 Struct Declarations
 
 ```quadrate
 [pub] struct Name [<TypeParams>] {
@@ -629,7 +648,7 @@ Implementations MUST reject:
 }
 ```
 
-### 5.6 Function Declarations
+### 5.7 Function Declarations
 
 ```quadrate
 [pub] fn name [<TypeParams>] (params -- returns) [!] {
@@ -641,7 +660,7 @@ Implementations MUST reject:
 - `<TypeParams>`: Generic type parameters
 - `!`: Marks function as fallible (can fail with error)
 
-### 5.7 Import Declarations (FFI)
+### 5.8 Import Declarations (FFI)
 
 ```quadrate
 import "library.a" as "namespace" {
@@ -652,7 +671,7 @@ import "library.a" as "namespace" {
 
 Import blocks declare bindings to native C functions. Only function declarations are allowed inside the block. Constants associated with the library (such as error codes) should be declared at module top-level using `pub const`.
 
-### 5.8 Test Declarations
+### 5.9 Test Declarations
 
 ```quadrate
 test "test name" {
@@ -1532,12 +1551,13 @@ Implementations MUST provide the following runtime functions:
 
 ```ebnf
 program         = { declaration } ;
-declaration     = use_stmt | const_decl | struct_decl | fn_decl | import_decl | test_decl ;
+declaration     = use_stmt | const_decl | enum_decl | type_alias_decl | struct_decl | fn_decl | import_decl | test_decl ;
 
 use_stmt        = "use" ( identifier | string ) ;
 const_decl      = "const" identifier "=" expression ;
 enum_decl       = ["pub"] "enum" identifier "{" { enum_variant } "}" ;
 enum_variant    = identifier [ "=" integer ] ;
+type_alias_decl = ["pub"] "type" identifier "=" type ;
 struct_decl     = ["pub"] "struct" identifier [type_params] "{" { field_decl } "}" ;
 fn_decl         = ["pub"] "fn" identifier [type_params] signature ["!"] block ;
 import_decl     = "import" string "as" string "{" { import_fn } "}" ;

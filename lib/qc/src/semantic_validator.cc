@@ -125,6 +125,14 @@ namespace Qd {
 		if (typeStr.size() > 2 && typeStr[0] == '[' && typeStr[1] == ']') {
 			return isValidTypeName(typeStr.substr(2));
 		}
+		// Function pointer types: fn(i64 -- i64), fn(i64 i64 -- i64), fn(i64 --), etc.
+		if (typeStr.size() > 3 && typeStr.substr(0, 3) == "fn(") {
+			return true; // Detailed validation of inner types happens at call sites
+		}
+		// Type aliases
+		if (mTypeAliases.find(typeStr) != mTypeAliases.end()) {
+			return true;
+		}
 		// Type parameters (for generic functions)
 		for (const auto& typeParam : mCurrentTypeParams) {
 			if (typeStr == typeParam) {
@@ -779,8 +787,17 @@ namespace Qd {
 	}
 
 	StackValueType SemanticValidator::stringToStackValueType(const std::string& typeStr) const {
+		// Resolve type aliases first
+		auto aliasIt = mTypeAliases.find(typeStr);
+		if (aliasIt != mTypeAliases.end()) {
+			return stringToStackValueType(aliasIt->second);
+		}
 		// Array types: []i64, []f64, etc. - all map to PTR on the stack
 		if (typeStr.size() > 2 && typeStr[0] == '[' && typeStr[1] == ']') {
+			return StackValueType::PTR;
+		}
+		// Function pointer types: fn(i64 -- i64) - map to PTR on the stack
+		if (typeStr.size() > 3 && typeStr.substr(0, 3) == "fn(") {
 			return StackValueType::PTR;
 		}
 		if (typeStr == "i64") {

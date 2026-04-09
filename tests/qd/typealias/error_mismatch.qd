@@ -1,0 +1,8 @@
+// Test: passing wrong fn type through alias should fail
+type Mapper = fn(i64 -- i64)
+
+fn apply(x:i64 f:Mapper -- r:i64) { x f call }
+
+fn main() {
+	5 fn (a:i64 b:i64 -- r:i64) { a b + } apply print nl
+}

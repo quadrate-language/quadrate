@@ -1,0 +1,7 @@
+// Test: fn(-- i64) thunk pattern (no inputs, returns value)
+fn run(f:fn(-- i64) -- r:i64) { f call }
+
+fn main() {
+	fn ( -- r:i64) { 42 } run print nl
+	fn ( -- r:i64) { 7 3 * } run print nl
+}

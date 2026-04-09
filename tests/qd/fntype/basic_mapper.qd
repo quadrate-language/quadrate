@@ -1,0 +1,9 @@
+// Test: fn(i64 -- i64) parameter accepts matching lambda
+fn apply(x:i64 f:fn(i64 -- i64) -- result:i64) {
+	x f call
+}
+
+fn main() {
+	5 fn (x:i64 -- r:i64) { x 2 * } apply print nl
+	10 fn (x:i64 -- r:i64) { x 1 + } apply print nl
+}

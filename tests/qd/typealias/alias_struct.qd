@@ -1,0 +1,10 @@
+// Test: type alias for struct
+struct Point { x:i64 y:i64 }
+type Pt = Point
+
+fn get_x(p:Pt -- r:i64) { p <<x }
+
+fn main() {
+	Point { x = 10 y = 20 } -> p
+	p get_x print nl
+}

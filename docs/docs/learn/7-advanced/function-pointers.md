@@ -35,7 +35,7 @@ fn main() {
 ## Passing functions as arguments
 
 ```qd
-fn apply(x:i64 f:ptr -- result:i64) {
+fn apply(x:i64 f:fn(i64 -- i64) -- result:i64) {
 	x f call
 }
 
@@ -88,7 +88,7 @@ fn main() {
 Use function pointers for callbacks:
 
 ```qd
-fn for_each(arr:[]i64 callback:ptr -- ) {
+fn for_each(arr:[]i64 callback:fn(i64 --) -- ) {
 	0 arr len 1 for i {
 		arr i nth callback call
 	}
@@ -109,7 +109,7 @@ fn main() {
 ### Map
 
 ```qd
-fn map(arr:[]i64 f:ptr -- result:[]i64) {
+fn map(arr:[]i64 f:fn(i64 -- i64) -- result:[]i64) {
 	arr len make<i64> -> result
 	0 arr len 1 for i {
 		result i arr i nth f call set
@@ -131,7 +131,7 @@ fn main() {
 ### Filter
 
 ```qd
-fn filter(arr:[]i64 pred:ptr -- result:[]i64) {
+fn filter(arr:[]i64 pred:fn(i64 -- i64) -- result:[]i64) {
 	// Count matches
 	0 -> count
 	0 arr len 1 for i {
@@ -168,7 +168,7 @@ fn main() {
 ### Reduce
 
 ```qd
-fn reduce(arr:[]i64 initial:i64 f:ptr -- result:i64) {
+fn reduce(arr:[]i64 initial:i64 f:fn(i64 i64 -- i64) -- result:i64) {
 	initial -> result
 	0 arr len 1 for i {
 		result arr i nth f call -> result
@@ -250,6 +250,17 @@ fn cmd_add() {
 fn cmd_quit() {
 	"Quitting" print nl
 }
+```
+
+## Type aliases
+
+Use `type` to create readable names for function pointer types:
+
+```qd
+type Predicate = fn(i64 -- i64)
+type Reducer = fn(i64 i64 -- i64)
+
+fn filter(arr:[]i64 pred:Predicate -- result:[]i64) { ... }
 ```
 
 ## What's next?

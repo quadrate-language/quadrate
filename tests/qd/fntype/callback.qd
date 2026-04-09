@@ -1,0 +1,9 @@
+// Test: fn(i64 --) void callback pattern
+fn do_it(x:i64 f:fn(i64 --) -- ) {
+	x f call
+}
+
+fn main() {
+	42 fn (x:i64 -- ) { x print nl } do_it
+	99 fn (x:i64 -- ) { x 1 + print nl } do_it
+}

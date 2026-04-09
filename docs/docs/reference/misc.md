@@ -76,7 +76,7 @@ Push arguments, then the pointer, then `call`:
 ### Callbacks
 
 ```qd
-fn for_each(arr:[]i64 callback:ptr -- ) {
+fn for_each(arr:[]i64 callback:fn(i64 --) -- ) {
 	0 arr len 1 for i {
 		arr i nth callback call
 	}
@@ -122,7 +122,7 @@ fn main() {
 ### Higher-order functions
 
 ```qd
-fn map(arr:[]i64 f:ptr -- result:[]i64) {
+fn map(arr:[]i64 f:fn(i64 -- i64) -- result:[]i64) {
 	arr len make<i64> -> result
 	0 arr len 1 for i {
 		result i arr i nth f call set

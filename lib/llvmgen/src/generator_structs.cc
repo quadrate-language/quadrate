@@ -6,6 +6,10 @@ namespace Qd {
 		return findStructDefinition(typeName) != nullptr;
 	}
 
+	bool isFnType(const std::string& typeStr) {
+		return typeStr.size() > 3 && typeStr[0] == 'f' && typeStr[1] == 'n' && typeStr[2] == '(';
+	}
+
 	bool isArrayType(const std::string& typeStr) {
 		return typeStr.size() > 2 && typeStr[0] == '[' && typeStr[1] == ']';
 	}
@@ -63,9 +67,15 @@ namespace Qd {
 		for (const auto& field : structDecl->fields()) {
 			FieldInfo fieldInfo;
 			fieldInfo.name = field->name();
-			fieldInfo.typeName = field->typeName();
+			// Resolve type aliases
+			std::string resolvedType = field->typeName();
+			auto aliasIt = typeAliases.find(resolvedType);
+			if (aliasIt != typeAliases.end()) {
+				resolvedType = aliasIt->second;
+			}
+			fieldInfo.typeName = resolvedType;
 			fieldInfo.offset = layout.totalSize;
-			fieldInfo.size = getTypeSize(field->typeName());
+			fieldInfo.size = getTypeSize(resolvedType);
 
 			// Check if this field is a type parameter (generic field)
 			if (structDecl->isGeneric()) {
@@ -386,6 +396,7 @@ namespace Qd {
 				builder->CreateStore(truncValue, bytePtr);
 			} else if (field.typeName == "ptr" || field.typeName == "str" ||
 					   field.typeName.find('*') != std::string::npos || isArrayType(field.typeName) ||
+					   isFnType(field.typeName) ||
 					   (looksLikeStructType(field.typeName) && isKnownStruct(field.typeName))) {
 				// Pointer type (including ptr, str, raw pointers, arrays, and struct-typed fields)
 				llvm::Value* ptrValue = builder->CreateLoad(ptrTy, valuePtr, "ptr_val");
@@ -655,7 +666,7 @@ namespace Qd {
 			builder->CreateCall(pushStrRefFn, {ctx, ptrValue});
 			lastFieldAccessResultType.clear(); // Not a struct type
 		} else if (matchingField->typeName == "ptr" || matchingField->typeName.find('*') != std::string::npos ||
-				   isArrayType(matchingField->typeName)) {
+				   isArrayType(matchingField->typeName) || isFnType(matchingField->typeName)) {
 			// Handle ptr type, raw pointer types, and array types
 			llvm::Value* fieldPtr = bytePtr;
 			llvm::Value* ptrValue = builder->CreateLoad(ptrTy, fieldPtr, "field_value");

@@ -1,0 +1,8 @@
+// Test: untyped ptr passed to fn(...) param should warn
+fn make_fn( -- f:ptr) { &double }
+fn double(x:i64 -- r:i64) { x 2 * }
+fn apply(x:i64 f:fn(i64 -- i64) -- r:i64) { x f call }
+
+fn main() {
+	5 make_fn apply print nl
+}

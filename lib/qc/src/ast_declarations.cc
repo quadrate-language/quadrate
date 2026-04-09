@@ -2,6 +2,57 @@
 
 namespace Qd {
 
+	// Try to parse a fn(...) type annotation.
+	// Called after scanning an identifier that equals "fn".
+	// If the next token is '(', consumes until matching ')' and returns "fn(i64 -- i64)" etc.
+	// Otherwise returns empty string (nothing consumed).
+	static std::string tryParseFnType(u8t_scanner* scanner) {
+		char32_t peek = u8t_scanner_peek(scanner);
+		if (peek != '(') {
+			return "";
+		}
+
+		u8t_scanner_scan(scanner); // consume '('
+		std::string typeStr = "fn(";
+		bool needSpace = false;
+
+		while (true) {
+			char32_t tok = u8t_scanner_scan(scanner);
+			if (tok == U8T_EOF || tok == ')') {
+				break;
+			}
+
+			if (tok == '-') {
+				char32_t next = u8t_scanner_peek(scanner);
+				if (next == '-') {
+					u8t_scanner_scan(scanner); // consume second '-'
+					if (needSpace) {
+						typeStr += " ";
+					}
+					typeStr += "-- ";
+					needSpace = false;
+					continue;
+				}
+			}
+
+			if (tok == U8T_IDENTIFIER) {
+				size_t n;
+				const char* text = u8t_scanner_token_text(scanner, &n);
+				if (needSpace) {
+					typeStr += " ";
+				}
+				typeStr += text;
+				needSpace = true;
+			}
+		}
+		// Trim trailing space
+		if (!typeStr.empty() && typeStr.back() == ' ') {
+			typeStr.pop_back();
+		}
+		typeStr += ")";
+		return typeStr;
+	}
+
 	/**
 	 * Parse an anonymous function: fn (params -- outputs) { body }
 	 * Called when 'fn' keyword is followed by '(' (no identifier name).
@@ -67,6 +118,21 @@ namespace Qd {
 					} else if (token == U8T_IDENTIFIER) {
 						const char* paramType = u8t_scanner_token_text(scanner, &n);
 						std::string paramTypeStr(paramType);
+						// Check for fn(...) type: fn(i64 -- i64)
+						if (paramTypeStr == "fn") {
+							std::string fnType = tryParseFnType(scanner);
+							if (!fnType.empty()) {
+								AstNodeParameter* param = new AstNodeParameter(paramNameStr, fnType, isOutput);
+								setNodePosition(param, scanner, src);
+								param->setParent(func.get());
+								if (isOutput) {
+									func->addOutputParameter(param);
+								} else {
+									func->addInputParameter(param);
+								}
+								continue;
+							}
+						}
 						// Check for qualified type name (module::Type)
 						char32_t peek1 = u8t_scanner_peek(scanner);
 						if (peek1 == ':') {
@@ -173,6 +239,22 @@ namespace Qd {
 						const char* elemType = u8t_scanner_token_text(scanner, &n);
 						std::string typeStr = "[]" + std::string(elemType);
 						AstNodeParameter* param = new AstNodeParameter("", typeStr, isOutput);
+						setNodePosition(param, scanner, src);
+						param->setParent(func.get());
+						if (isOutput) {
+							func->addOutputParameter(param);
+						} else {
+							func->addInputParameter(param);
+						}
+					}
+				}
+			} else if (token == U8T_IDENTIFIER) {
+				// Check for unnamed fn(...) type parameter
+				const char* typeName = u8t_scanner_token_text(scanner, &n);
+				if (strcmp(typeName, "fn") == 0) {
+					std::string fnType = tryParseFnType(scanner);
+					if (!fnType.empty()) {
+						AstNodeParameter* param = new AstNodeParameter("", fnType, isOutput);
 						setNodePosition(param, scanner, src);
 						param->setParent(func.get());
 						if (isOutput) {
@@ -394,6 +476,21 @@ namespace Qd {
 					} else if (token == U8T_IDENTIFIER) {
 						const char* paramType = u8t_scanner_token_text(scanner, &n);
 						std::string paramTypeStr(paramType);
+						// Check for fn(...) type: fn(i64 -- i64)
+						if (paramTypeStr == "fn") {
+							std::string fnType = tryParseFnType(scanner);
+							if (!fnType.empty()) {
+								AstNodeParameter* param = new AstNodeParameter(paramNameStr, fnType, isOutput);
+								setNodePosition(param, scanner, src);
+								param->setParent(func.get());
+								if (isOutput) {
+									func->addOutputParameter(param);
+								} else {
+									func->addInputParameter(param);
+								}
+								continue;
+							}
+						}
 						// Check for qualified type name (module::Type)
 						char32_t peek1 = u8t_scanner_peek(scanner);
 						if (peek1 == ':') {
@@ -500,6 +597,22 @@ namespace Qd {
 						const char* elemType = u8t_scanner_token_text(scanner, &n);
 						std::string typeStr = "[]" + std::string(elemType);
 						AstNodeParameter* param = new AstNodeParameter("", typeStr, isOutput);
+						setNodePosition(param, scanner, src);
+						param->setParent(func.get());
+						if (isOutput) {
+							func->addOutputParameter(param);
+						} else {
+							func->addInputParameter(param);
+						}
+					}
+				}
+			} else if (token == U8T_IDENTIFIER) {
+				// Check for unnamed fn(...) type parameter
+				const char* typeName = u8t_scanner_token_text(scanner, &n);
+				if (strcmp(typeName, "fn") == 0) {
+					std::string fnType = tryParseFnType(scanner);
+					if (!fnType.empty()) {
+						AstNodeParameter* param = new AstNodeParameter("", fnType, isOutput);
 						setNodePosition(param, scanner, src);
 						param->setParent(func.get());
 						if (isOutput) {

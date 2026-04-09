@@ -1,0 +1,4 @@
+// Test: using reserved keyword as type alias name should fail
+type if = i64
+
+fn main() { }

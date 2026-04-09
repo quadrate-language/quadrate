@@ -1,0 +1,11 @@
+// Test: type alias for fn pointer
+type Mapper = fn(i64 -- i64)
+
+fn apply(x:i64 f:Mapper -- result:i64) {
+	x f call
+}
+
+fn main() {
+	5 fn (x:i64 -- r:i64) { x 2 * } apply print nl
+	10 fn (x:i64 -- r:i64) { x 1 + } apply print nl
+}

@@ -43,6 +43,51 @@ namespace Qd {
 
 #include "semantic_validator_internal.h"
 
+	// Helper: Convert StackValueType to Quadrate type name
+	static const char* stackTypeToQdType(StackValueType type) {
+		switch (type) {
+		case StackValueType::INT:
+			return "i64";
+		case StackValueType::FLOAT:
+			return "f64";
+		case StackValueType::STRING:
+			return "str";
+		case StackValueType::PTR:
+			return "ptr";
+		default:
+			return "any";
+		}
+	}
+
+	// Helper: Build fn type string from FunctionSignature, e.g. "fn(i64 -- i64)"
+	static std::string buildFnTypeString(const FunctionSignature& sig) {
+		std::string s = "fn(";
+		bool first = true;
+		for (const auto& t : sig.consumes) {
+			if (!first) {
+				s += " ";
+			}
+			s += stackTypeToQdType(t);
+			first = false;
+		}
+		if (!sig.consumes.empty()) {
+			s += " ";
+		}
+		s += "--";
+		first = true;
+		for (const auto& t : sig.produces) {
+			if (first) {
+				s += " ";
+			} else {
+				s += " ";
+			}
+			s += stackTypeToQdType(t);
+			first = false;
+		}
+		s += ")";
+		return s;
+	}
+
 	// Helper: Collect all identifier references in an AST subtree (for unused param detection)
 	static void collectIdentifierRefs(const IAstNode* node, std::unordered_set<std::string>& refs,
 			const std::unordered_set<std::string>& paramNames) {
@@ -497,17 +542,26 @@ namespace Qd {
 					if (param->hasName()) {
 						errorMsg += " in parameter '" + param->name() + "'";
 					}
-					errorMsg += ". Valid types are: i64, f64, str, ptr, any, []T, or a struct name";
+					errorMsg += ". Valid types are: i64, f64, str, ptr, any, []T, fn(...), or a struct name";
 					reportError(param, errorMsg.c_str());
 				}
 
-				StackValueType paramType = stringToStackValueType(typeStr);
+				// Resolve type aliases
+				std::string resolvedType = typeStr;
+				auto tcAliasIt = mTypeAliases.find(typeStr);
+				if (tcAliasIt != mTypeAliases.end()) {
+					resolvedType = tcAliasIt->second;
+				}
+
+				StackValueType paramType = stringToStackValueType(resolvedType);
 				std::string structType = "";
 
-				// Track struct/array types for PTR parameters
+				// Track struct/array/fn types for PTR parameters
 				if (paramType == StackValueType::PTR &&
-						(isStructTypeName(typeStr) || (typeStr.size() > 2 && typeStr[0] == '[' && typeStr[1] == ']'))) {
-					structType = typeStr;
+						(isStructTypeName(resolvedType) ||
+								(resolvedType.size() > 2 && resolvedType[0] == '[' && resolvedType[1] == ']') ||
+								(resolvedType.size() > 3 && resolvedType.substr(0, 3) == "fn("))) {
+					structType = resolvedType;
 				}
 
 				if (allParamsNamed && param->hasName()) {
@@ -2336,6 +2390,17 @@ namespace Qd {
 								errorMsg += actualStruct;
 								errorMsg += "'";
 								reportError(ident, errorMsg.c_str());
+							} else if (actualStruct.empty() && expectedStruct.size() > 3 &&
+									   expectedStruct.substr(0, 3) == "fn(") {
+								// Untyped ptr passed where typed fn(...) expected
+								std::string warnMsg = "Untyped 'ptr' passed to function '";
+								warnMsg += name;
+								warnMsg += "': Parameter ";
+								warnMsg += std::to_string(paramIdx + 1);
+								warnMsg += " expects '";
+								warnMsg += expectedStruct;
+								warnMsg += "'. Consider adding a type annotation";
+								reportWarning(ident, warnMsg.c_str());
 							}
 						}
 					}
@@ -3440,10 +3505,20 @@ namespace Qd {
 				break;
 			}
 
-			case IAstNode::Type::FUNCTION_POINTER_REFERENCE:
+			case IAstNode::Type::FUNCTION_POINTER_REFERENCE: {
 				// Function pointer references push a pointer type onto the stack
+				AstNodeFunctionPointerReference* fnRef = static_cast<AstNodeFunctionPointerReference*>(child);
 				typeStack.push_back(StackValueType::PTR);
+				// Look up the function's signature and build fn type string
+				std::string fnTypeStr = "";
+				auto sigIt = mFunctionSignatures.find(fnRef->functionName());
+				if (sigIt != mFunctionSignatures.end()) {
+					mPendingFnSignature = sigIt->second;
+					fnTypeStr = buildFnTypeString(sigIt->second);
+				}
+				structTypeStack.push_back(fnTypeStr);
 				break;
+			}
 
 			case IAstNode::Type::ANONYMOUS_FUNCTION: {
 				// Anonymous functions push a function pointer onto the stack
@@ -3459,12 +3534,13 @@ namespace Qd {
 					AstNodeParameter* param = static_cast<AstNodeParameter*>(paramNode.get());
 					sig.produces.push_back(stringToStackValueType(param->typeString()));
 				}
+				std::string fnTypeStr = buildFnTypeString(sig);
 
 				// Store as pending signature for subsequent LOCAL or call
 				mPendingFnSignature = sig;
 
 				typeStack.push_back(StackValueType::PTR);
-				structTypeStack.push_back(""); // Not a struct pointer
+				structTypeStack.push_back(fnTypeStr);
 				break;
 			}
 

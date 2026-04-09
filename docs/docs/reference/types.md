@@ -44,6 +44,7 @@ Converts a value to the specified type using the `cast<T>` syntax.
 | `str` | String | Variable |
 | `ptr` | Pointer | 8 bytes |
 | `[]T` | Typed array (e.g., `[]i64`, `[]f64`, `[]str`) | 8 bytes (pointer) |
+| `fn(...)` | Typed function pointer (e.g., `fn(i64 -- i64)`) | 8 bytes (pointer) |
 | `bool` | Boolean (alias for i64) | 8 bytes |
 
 ### Type declarations
@@ -56,6 +57,14 @@ fn process(x:i64 y:f64 name:str data:[]i64 -- result:i64) {
 }
 ```
 
+With function pointer types:
+
+```qd
+fn apply(x:i64 f:fn(i64 -- i64) -- result:i64) {
+	x f call
+}
+```
+
 In struct fields:
 
 ```qd
@@ -65,6 +74,17 @@ struct Matrix {
 	cols:i64
 }
 ```
+
+### Type aliases
+
+The `type` keyword creates a name for an existing type:
+
+```qd
+type Transform = fn(i64 -- i64)
+type IntList = []i64
+```
+
+Type aliases are interchangeable with their underlying type.
 
 ### Type checking
 

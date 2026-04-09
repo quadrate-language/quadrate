@@ -1,0 +1,6 @@
+// Test: passing []i64 where fn(i64 -- i64) expected should fail
+fn apply(x:i64 f:fn(i64 -- i64) -- r:i64) { x f call }
+
+fn main() {
+	5 [1 2 3] apply print nl
+}

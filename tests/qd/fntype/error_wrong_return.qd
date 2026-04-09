@@ -1,0 +1,8 @@
+// Test: passing fn(i64 -- f64) where fn(i64 -- i64) expected should fail
+fn apply(x:i64 f:fn(i64 -- i64) -- result:i64) {
+	x f call
+}
+
+fn main() {
+	5 fn (x:i64 -- r:f64) { x cast<f64> } apply print nl
+}

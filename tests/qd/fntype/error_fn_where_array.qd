@@ -1,0 +1,6 @@
+// Test: passing fn where []i64 expected should fail
+fn sum(arr:[]i64 -- r:i64) { 0 }
+
+fn main() {
+	fn (x:i64 -- r:i64) { x } sum print nl
+}

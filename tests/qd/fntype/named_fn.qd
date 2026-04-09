@@ -1,0 +1,12 @@
+// Test: &named_fn passed to typed fn parameter
+fn double(x:i64 -- r:i64) { x 2 * }
+fn negate(x:i64 -- r:i64) { 0 x - }
+
+fn apply(x:i64 f:fn(i64 -- i64) -- result:i64) {
+	x f call
+}
+
+fn main() {
+	5 &double apply print nl
+	7 &negate apply print nl
+}

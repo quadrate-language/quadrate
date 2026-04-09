@@ -1823,7 +1823,7 @@ enum SemanticTokenModifier {
 
 // Helper to check if a word is a Quadrate keyword
 static bool isKeyword(const std::string& word) {
-	static const std::set<std::string> keywords = {"fn", "if", "else", "for", "use", "struct", "enum", "const",
+	static const std::set<std::string> keywords = {"fn", "if", "else", "for", "use", "struct", "enum", "type", "const",
 			"return", "break", "continue", "defer", "switch", "case", "default", "true", "false", "nil", "and", "or",
 			"not", "in", "as", "test", "pub"};
 	return keywords.count(word) > 0;

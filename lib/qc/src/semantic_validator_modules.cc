@@ -1086,6 +1086,13 @@ namespace Qd {
 					if (mergeIntoMain) {
 						mStructFieldStructTypes[unqualifiedName][field->name()] = typeName;
 					}
+				} else if (typeName.size() > 3 && typeName.substr(0, 3) == "fn(") {
+					// Function pointer type: fn(i64 -- i64) - treat as PTR
+					fieldType = StackValueType::PTR;
+					mStructFieldStructTypes[qualifiedName][field->name()] = typeName;
+					if (mergeIntoMain) {
+						mStructFieldStructTypes[unqualifiedName][field->name()] = typeName;
+					}
 				} else if (looksLikeStructType(typeName)) {
 					// Struct type - treat as PTR and record the struct type name
 					fieldType = StackValueType::PTR;
@@ -1275,6 +1282,10 @@ namespace Qd {
 					// Array type - treat as PTR but track the array type
 					sig.consumes.push_back(StackValueType::PTR);
 					sig.parameterStructTypes[i] = typeStr;
+				} else if (typeStr.size() > 3 && typeStr.substr(0, 3) == "fn(") {
+					// Function pointer type - treat as PTR but track the fn type
+					sig.consumes.push_back(StackValueType::PTR);
+					sig.parameterStructTypes[i] = typeStr;
 				} else if (isStructTypeName(typeStr)) {
 					// Struct type - treat as PTR but track the struct type
 					sig.consumes.push_back(StackValueType::PTR);
@@ -1312,6 +1323,10 @@ namespace Qd {
 						sig.produces.push_back(StackValueType::PTR);
 					} else if (typeStr.size() > 2 && typeStr[0] == '[' && typeStr[1] == ']') {
 						// Array type
+						sig.produces.push_back(StackValueType::PTR);
+						sig.producesStructTypes[i] = typeStr;
+					} else if (typeStr.size() > 3 && typeStr.substr(0, 3) == "fn(") {
+						// Function pointer type
 						sig.produces.push_back(StackValueType::PTR);
 						sig.producesStructTypes[i] = typeStr;
 					} else if (isStructTypeName(typeStr)) {
@@ -1413,6 +1428,10 @@ namespace Qd {
 						// Array type
 						sig.consumes.push_back(StackValueType::PTR);
 						sig.parameterStructTypes[i] = typeStr;
+					} else if (typeStr.size() > 3 && typeStr.substr(0, 3) == "fn(") {
+						// Function pointer type
+						sig.consumes.push_back(StackValueType::PTR);
+						sig.parameterStructTypes[i] = typeStr;
 					} else if (isStructTypeName(typeStr)) {
 						// Struct type - treat as PTR but track the struct type
 						sig.consumes.push_back(StackValueType::PTR);
@@ -1455,6 +1474,10 @@ namespace Qd {
 						sig.produces.push_back(StackValueType::PTR);
 					} else if (typeStr.size() > 2 && typeStr[0] == '[' && typeStr[1] == ']') {
 						// Array type
+						sig.produces.push_back(StackValueType::PTR);
+						sig.producesStructTypes[i] = typeStr;
+					} else if (typeStr.size() > 3 && typeStr.substr(0, 3) == "fn(") {
+						// Function pointer type
 						sig.produces.push_back(StackValueType::PTR);
 						sig.producesStructTypes[i] = typeStr;
 					} else if (isStructTypeName(typeStr)) {

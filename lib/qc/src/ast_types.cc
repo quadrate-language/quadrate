@@ -202,6 +202,47 @@ namespace Qd {
 					const char* typeName = u8t_scanner_token_text(scanner, &n);
 					fieldType = typeName;
 
+					// Check for fn(...) type: fn(i64 -- i64)
+					if (fieldType == "fn") {
+						char32_t fnPeek = u8t_scanner_peek(scanner);
+						if (fnPeek == '(') {
+							u8t_scanner_scan(scanner); // consume '('
+							fieldType = "fn(";
+							bool needSpace = false;
+							while (true) {
+								char32_t ftok = u8t_scanner_scan(scanner);
+								if (ftok == U8T_EOF || ftok == ')') {
+									break;
+								}
+								if (ftok == '-') {
+									char32_t next = u8t_scanner_peek(scanner);
+									if (next == '-') {
+										u8t_scanner_scan(scanner);
+										if (needSpace) {
+											fieldType += " ";
+										}
+										fieldType += "-- ";
+										needSpace = false;
+										continue;
+									}
+								}
+								if (ftok == U8T_IDENTIFIER) {
+									size_t fn;
+									const char* ft = u8t_scanner_token_text(scanner, &fn);
+									if (needSpace) {
+										fieldType += " ";
+									}
+									fieldType += ft;
+									needSpace = true;
+								}
+							}
+							if (!fieldType.empty() && fieldType.back() == ' ') {
+								fieldType.pop_back();
+							}
+							fieldType += ")";
+						}
+					}
+
 					// Check for qualified name: module::StructName
 					char32_t peekChar = u8t_scanner_peek(scanner);
 					if (peekChar == ':') {
@@ -765,6 +806,116 @@ namespace Qd {
 		currentFieldNodes.clear();
 
 		return structConstruct;
+	}
+
+	IAstNode* parseTypeAliasDeclaration(
+			u8t_scanner* scanner, ErrorReporter* errorReporter, const char* src, bool isPublic) {
+		size_t n;
+		char32_t token = u8t_scanner_scan(scanner);
+		if (token != U8T_IDENTIFIER) {
+			errorReporter->reportError(scanner, "Expected type alias name after 'type'");
+			synchronize(scanner);
+			return nullptr;
+		}
+
+		const char* name = u8t_scanner_token_text(scanner, &n);
+		std::string aliasName(name);
+
+		// Expect '='
+		token = u8t_scanner_scan(scanner);
+		if (token != '=') {
+			errorReporter->reportError(scanner, "Expected '=' after type alias name");
+			synchronize(scanner);
+			return nullptr;
+		}
+
+		// Parse the target type
+		token = u8t_scanner_scan(scanner);
+		std::string targetType;
+
+		if (token == '[') {
+			// Array type: []T
+			token = u8t_scanner_scan(scanner);
+			if (token == ']') {
+				token = u8t_scanner_scan(scanner);
+				if (token == U8T_IDENTIFIER) {
+					const char* elemType = u8t_scanner_token_text(scanner, &n);
+					targetType = "[]" + std::string(elemType);
+				}
+			}
+		} else if (token == U8T_IDENTIFIER) {
+			const char* typeName = u8t_scanner_token_text(scanner, &n);
+			targetType = typeName;
+
+			// Check for fn(...) type
+			if (targetType == "fn") {
+				char32_t peek = u8t_scanner_peek(scanner);
+				if (peek == '(') {
+					u8t_scanner_scan(scanner); // consume '('
+					targetType = "fn(";
+					bool needSpace = false;
+					while (true) {
+						char32_t ftok = u8t_scanner_scan(scanner);
+						if (ftok == U8T_EOF || ftok == ')') {
+							break;
+						}
+						if (ftok == '-') {
+							char32_t next = u8t_scanner_peek(scanner);
+							if (next == '-') {
+								u8t_scanner_scan(scanner);
+								if (needSpace) {
+									targetType += " ";
+								}
+								targetType += "-- ";
+								needSpace = false;
+								continue;
+							}
+						}
+						if (ftok == U8T_IDENTIFIER) {
+							size_t fn;
+							const char* ft = u8t_scanner_token_text(scanner, &fn);
+							if (needSpace) {
+								targetType += " ";
+							}
+							targetType += ft;
+							needSpace = true;
+						}
+					}
+					if (!targetType.empty() && targetType.back() == ' ') {
+						targetType.pop_back();
+					}
+					targetType += ")";
+				}
+			}
+
+			// Check for qualified name: module::Type
+			if (targetType.find("fn(") == std::string::npos) {
+				char32_t peek = u8t_scanner_peek(scanner);
+				if (peek == ':') {
+					u8t_scanner_scan(scanner);
+					char32_t peek2 = u8t_scanner_peek(scanner);
+					if (peek2 == ':') {
+						u8t_scanner_scan(scanner);
+						token = u8t_scanner_scan(scanner);
+						if (token == U8T_IDENTIFIER) {
+							const char* qualName = u8t_scanner_token_text(scanner, &n);
+							targetType += "::";
+							targetType += qualName;
+						}
+					}
+				}
+			}
+		}
+
+		if (targetType.empty()) {
+			errorReporter->reportError(scanner, "Expected type after '=' in type alias");
+			synchronize(scanner);
+			return nullptr;
+		}
+
+		auto alias = std::make_unique<AstNodeTypeAlias>(aliasName, targetType, isPublic);
+		setNodePosition(alias.get(), scanner, src);
+		return alias.release();
 	}
 
 } // namespace Qd

@@ -25,6 +25,7 @@ Language keywords for declarations, control flow, and more.
 | [`test`](#test) | Declares a test block |
 | [`import`](#import) | Imports a native C library |
 | [`enum`](#enum) | Declares an enumeration type |
+| [`type`](#type) | Declares a type alias |
 | [`as`](#as) | Type narrowing cast / import module namespace |
 | [`null`](#null) | Null pointer literal (0) |
 | [`$"..."`](#string-interpolation) | String interpolation |
@@ -276,6 +277,22 @@ Access variants with `EnumName::Variant`. Use `pub enum` to export from a module
 ```qd
 Color::Red print nl     // 0
 Color::Blue print nl    // 2
+```
+
+### type
+
+Declares a type alias. The alias is resolved at compile time with no runtime cost.
+
+```qd
+type Predicate = fn(i64 -- i64)
+type IntArray = []i64
+type Number = i64
+```
+
+Use `pub type` to export from a module.
+
+```qd
+fn filter(arr:IntArray pred:Predicate -- result:IntArray) { ... }
 ```
 
 ### null

@@ -1,0 +1,1 @@
+expects type 'fn(i64 -- i64)' but got 'fn(i64 -- f64)'

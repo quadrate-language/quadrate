@@ -169,6 +169,17 @@
       ]
     },
     {
+      "name": "type",
+      "category": "Declaration",
+      "description": "Declares a type alias. The alias is resolved at compile time with no runtime cost.",
+      "syntax": "type Name = TargetType",
+      "examples": [
+        "type Predicate = fn(i64 -- i64)",
+        "type IntArray = []i64",
+        "type Number = i64"
+      ]
+    },
+    {
       "name": "false",
       "category": "Literals",
       "description": "Boolean false literal (pushes 0 onto the stack)",

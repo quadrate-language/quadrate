@@ -1,0 +1,14 @@
+// Test: type alias for []i64
+type IntArray = []i64
+
+fn sum(arr:IntArray -- total:i64) {
+	0 -> total
+	0 arr len 1 for i {
+		total arr i nth + -> total
+	}
+	total
+}
+
+fn main() {
+	[1 2 3 4] sum print nl
+}

@@ -1,0 +1,9 @@
+// Test: alias of alias (chained resolution)
+type Number = i64
+type MyNum = Number
+
+fn double(x:MyNum -- r:MyNum) { x 2 * }
+
+fn main() {
+	5 double print nl
+}

@@ -1,0 +1,6 @@
+// Test: passing fn(i64 -- i64) where fn(i64 --) expected should fail
+fn do_it(x:i64 f:fn(i64 --) -- ) { x f call }
+
+fn main() {
+	5 fn (x:i64 -- r:i64) { x 2 * } do_it
+}

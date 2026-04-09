@@ -1,0 +1,14 @@
+// Test: type alias for primitive types
+type Number = i64
+type Text = str
+type Real = f64
+
+fn double(x:Number -- r:Number) { x 2 * }
+fn greet(name:Text -- msg:Text) { name }
+fn half(x:Real -- r:Real) { x 2.0 / }
+
+fn main() {
+	21 double print nl
+	"hello" greet print nl
+	10.0 half print nl
+}

@@ -376,6 +376,7 @@ namespace Qd {
 
 		std::map<std::string, StructLayout> structDefinitions;
 		std::map<std::string, llvm::Function*> structDestructors;
+		std::unordered_map<std::string, std::string> typeAliases; // name → resolved type
 		std::string currentModuleName;
 
 		// Test mode
