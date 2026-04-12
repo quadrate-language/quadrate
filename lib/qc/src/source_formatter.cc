@@ -468,7 +468,7 @@ namespace Qd {
 					}
 				}
 			}
-			found_end:
+		found_end:
 
 			// Emit lines from source, normalizing fn signatures for --
 			for (size_t i = startLine; i <= endLine; i++) {
@@ -653,7 +653,7 @@ namespace Qd {
 						}
 					}
 				}
-				struct_end:
+			struct_end:
 				for (size_t i = startLine; i <= endLine; i++) {
 					mOutput << getSourceLine(i) << "\n";
 				}

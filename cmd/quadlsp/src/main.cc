@@ -3964,7 +3964,8 @@ void QuadrateLSP::handleHover(const std::string& id, const std::string& uri, siz
 													docStream << param->displayString();
 												}
 
-												if (!importedFunc->inputParameters.empty() || !importedFunc->outputParameters.empty()) {
+												if (!importedFunc->inputParameters.empty() ||
+														!importedFunc->outputParameters.empty()) {
 													docStream << " -- ";
 												}
 
@@ -4189,7 +4190,8 @@ void QuadrateLSP::handleSignatureHelp(const std::string& id, const std::string& 
 														sigStream << param->displayString();
 													}
 
-													if (!importedFunc->inputParameters.empty() || !importedFunc->outputParameters.empty()) {
+													if (!importedFunc->inputParameters.empty() ||
+															!importedFunc->outputParameters.empty()) {
 														sigStream << " -- ";
 													}
 
