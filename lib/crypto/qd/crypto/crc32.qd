@@ -80,7 +80,10 @@ pub fn (c:Crc32) update(data:str -- c2:Crc32) {
 	}
 
 	// Return new Crc32 with updated state
-	Crc32 { state = state tbl = tbl }
+	Crc32 {
+		state = state
+		tbl = tbl
+	}
 }
 
 /// Get the current CRC32 value.
@@ -115,7 +118,7 @@ pub fn (c:Crc32) hex( -- hex:str) {
 
 /// Free resources used by CRC32 hasher.
 /// @param c Crc32 The hasher state to free
-pub fn (c:Crc32) release( -- ) {
+pub fn (c:Crc32) release() {
 	c <<tbl -> tbl
 	tbl 0 != if {
 		tbl mem::free

@@ -110,13 +110,15 @@ pub fn new( -- logger:Logger)! {
 	h 0 eq if {
 		"failed to create logger" ErrAlloc panic
 	}
-	Logger { handle = h }
+	Logger {
+		handle = h
+	}
 }
 
 /// Free logger resources.
 ///
 /// @example logger log::free
-pub fn (logger:Logger) free( -- ) {
+pub fn (logger:Logger) free() {
 	logger <<handle log::raw_free
 }
 
@@ -149,14 +151,14 @@ pub fn (logger:Logger) set_format(format:i64 -- ) {
 /// Enable stdout output (default).
 ///
 /// @example logger log::enable_stdout
-pub fn (logger:Logger) enable_stdout( -- ) {
+pub fn (logger:Logger) enable_stdout() {
 	logger <<handle log::raw_enable_stdout
 }
 
 /// Disable stdout output.
 ///
 /// @example logger log::disable_stdout
-pub fn (logger:Logger) disable_stdout( -- ) {
+pub fn (logger:Logger) disable_stdout() {
 	logger <<handle log::raw_disable_stdout
 }
 
@@ -231,7 +233,7 @@ pub fn (logger:Logger) log(level:i64 msg:str -- ) {
 /// Flush all outputs.
 ///
 /// @example logger log::flush
-pub fn (logger:Logger) flush( -- ) {
+pub fn (logger:Logger) flush() {
 	logger <<handle log::raw_flush
 }
 
@@ -240,6 +242,6 @@ pub fn (logger:Logger) flush( -- ) {
 /// Called automatically before each log, but can be called manually.
 ///
 /// @example logger log::check_rotate
-pub fn (logger:Logger) check_rotate( -- ) {
+pub fn (logger:Logger) check_rotate() {
 	logger <<handle log::raw_check_rotate
 }

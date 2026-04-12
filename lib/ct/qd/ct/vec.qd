@@ -45,8 +45,8 @@ use mem
 ///   cap  - Allocated capacity in elements
 pub struct Vec<T> {
 	data: ptr
-	len: i64
-	cap: i64
+	len:  i64
+	cap:  i64
 }
 
 /// Push an element to the end of the vector.
@@ -85,7 +85,7 @@ pub fn (v:Vec<T>) push<T>(elem:T -- v2:Vec<T>)! {
 ///     v pop! -> v -> elem
 ///
 /// Stack: (v -- elem v2)
-pub fn (v:Vec<T>) pop<T>(-- elem:T v2:Vec<T>)! {
+pub fn (v:Vec<T>) pop<T>( -- elem:T v2:Vec<T>)! {
 	v <<len -> len
 	v <<cap -> cap
 	v <<data -> data
@@ -149,7 +149,7 @@ pub fn (v:Vec<T>) set<T>(idx:i64 elem:T -- v2:Vec<T>)! {
 ///     v length -> n
 ///
 /// Stack: (v -- n)
-pub fn (v:Vec<T>) length<T>(-- n:i64) {
+pub fn (v:Vec<T>) length<T>( -- n:i64) {
 	v <<len
 }
 
@@ -162,7 +162,7 @@ pub fn (v:Vec<T>) length<T>(-- n:i64) {
 ///     v capacity -> cap
 ///
 /// Stack: (v -- n)
-pub fn (v:Vec<T>) capacity<T>(-- n:i64) {
+pub fn (v:Vec<T>) capacity<T>( -- n:i64) {
 	v <<cap
 }
 
@@ -172,7 +172,7 @@ pub fn (v:Vec<T>) capacity<T>(-- n:i64) {
 ///     v is_empty if { "empty!" print nl }
 ///
 /// Stack: (v -- bool)
-pub fn (v:Vec<T>) is_empty<T>(-- b:i64) {
+pub fn (v:Vec<T>) is_empty<T>( -- b:i64) {
 	v <<len 0 ==
 }
 
@@ -184,7 +184,7 @@ pub fn (v:Vec<T>) is_empty<T>(-- b:i64) {
 ///     v reset -> v
 ///
 /// Stack: (v -- v2)
-pub fn (v:Vec<T>) reset<T>(-- v2:Vec<T>) {
+pub fn (v:Vec<T>) reset<T>( -- v2:Vec<T>) {
 	v <<cap -> cap
 	v <<data -> data
 	Vec<T> { data = data len = 0 cap = cap }
@@ -200,7 +200,7 @@ pub fn (v:Vec<T>) reset<T>(-- v2:Vec<T>) {
 ///     v release
 ///
 /// Stack: (v --)
-pub fn (v:Vec<T>) release<T>(--) {
+pub fn (v:Vec<T>) release<T>() {
 	v <<data -> data
 	data 0 neq if {
 		data mem::free

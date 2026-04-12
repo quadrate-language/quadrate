@@ -76,9 +76,9 @@ pub const StatusNetworkAuthRequired = 511
 
 /// HTTP Response structure (for client)
 pub struct Response {
-	status: i64
+	status:  i64
 	headers: str
-	body: str
+	body:    str
 }
 
 /// HTTP Context structure (for server handlers).
@@ -93,13 +93,13 @@ pub struct Response {
 ///   _socket - Internal: client socket
 ///   _responded - Internal: response sent flag
 pub struct Ctx {
-	method: str
-	path: str
-	query: str
-	headers: str
-	body: str
-	params: str
-	_socket: i64
+	method:     str
+	path:       str
+	query:      str
+	headers:    str
+	body:       str
+	params:     str
+	_socket:    i64
 	_responded: i64
 }
 

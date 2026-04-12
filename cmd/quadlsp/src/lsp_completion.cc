@@ -351,7 +351,9 @@ void QuadrateLSP::handleCompletion(const std::string& id, const std::string& uri
 									sigStream << func->inputParameters[j]->name() << ":"
 											  << func->inputParameters[j]->typeString();
 								}
-								sigStream << " -- ";
+								if (!func->inputParameters.empty() || !func->outputParameters.empty()) {
+									sigStream << " -- ";
+								}
 								for (size_t j = 0; j < func->outputParameters.size(); j++) {
 									if (j > 0) {
 										sigStream << " ";
@@ -986,7 +988,9 @@ std::vector<FunctionInfo> QuadrateLSP::extractModuleFunctions(const std::string&
 				sigStream << paramStr;
 			}
 
-			sigStream << " -- ";
+			if (!inputs.empty() || !funcNode->outputParameters().empty()) {
+				sigStream << " -- ";
+			}
 
 			// Extract output parameters
 			const auto& outputs = funcNode->outputParameters();
@@ -1060,7 +1064,9 @@ std::vector<FunctionInfo> QuadrateLSP::extractModuleFunctions(const std::string&
 					sigStream << paramStr;
 				}
 
-				sigStream << " -- ";
+				if (!inputs.empty() || !importedFunc->outputParameters.empty()) {
+					sigStream << " -- ";
+				}
 
 				// Extract output parameters
 				const auto& outputs = importedFunc->outputParameters;

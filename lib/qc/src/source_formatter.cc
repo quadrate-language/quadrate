@@ -155,6 +155,7 @@ namespace Qd {
 			std::vector<IAstNode*> useBuffer;
 			std::vector<IAstNode*> commentBuffer;
 			std::string prevType;
+			size_t prevLine = 0;
 
 			for (size_t i = 0; i < children.size(); i++) {
 				IAstNode* node = children[i];
@@ -165,7 +166,8 @@ namespace Qd {
 				}
 
 				if (!useBuffer.empty()) {
-					flushUseStatements(useBuffer, commentBuffer, prevType);
+					flushUseStatements(useBuffer, commentBuffer, prevType, prevLine);
+					prevLine = useBuffer.back()->line();
 					useBuffer.clear();
 					commentBuffer.clear();
 					prevType = "use";
@@ -194,20 +196,22 @@ namespace Qd {
 				// Flush pending comments
 				if (!commentBuffer.empty()) {
 					for (auto* c : commentBuffer) {
-						addTopLevelSpacing(prevType, "comment");
+						addTopLevelSpacing(prevType, "comment", prevLine, c->line());
 						emitComment(static_cast<AstNodeComment*>(c));
 						prevType = "comment";
+						prevLine = c->line();
 					}
 					commentBuffer.clear();
 				}
 
-				addTopLevelSpacing(prevType, curType);
+				addTopLevelSpacing(prevType, curType, prevLine, node->line());
 				emitTopLevelNode(node);
 				prevType = curType;
+				prevLine = node->line();
 			}
 
 			if (!useBuffer.empty()) {
-				flushUseStatements(useBuffer, commentBuffer, prevType);
+				flushUseStatements(useBuffer, commentBuffer, prevType, prevLine);
 			} else if (!commentBuffer.empty()) {
 				for (auto* c : commentBuffer) {
 					addTopLevelSpacing(prevType, "comment");
@@ -285,7 +289,8 @@ namespace Qd {
 			}
 		}
 
-		void addTopLevelSpacing(const std::string& prevType, const std::string& curType) {
+		void addTopLevelSpacing(
+				const std::string& prevType, const std::string& curType, size_t prevLine = 0, size_t curLine = 0) {
 			if (prevType.empty()) {
 				return;
 			}
@@ -300,6 +305,19 @@ namespace Qd {
 					   (curType == "fn_start" || curType == "use" || curType == "const" || curType == "comment")) {
 				needsBlank = true;
 			}
+
+			// Preserve blank lines from original source between same-type declarations.
+			// If the original source had a blank line between prevLine and curLine, keep it.
+			if (!needsBlank && prevLine > 0 && curLine > prevLine) {
+				for (size_t i = prevLine; i < curLine; i++) {
+					const std::string& line = getSourceLine(i);
+					if (trim(line).empty()) {
+						needsBlank = true;
+						break;
+					}
+				}
+			}
+
 			if (needsBlank) {
 				mOutput << '\n';
 			}
@@ -309,15 +327,18 @@ namespace Qd {
 		// Use statement sorting
 		// ============================================================
 
-		void flushUseStatements(
-				std::vector<IAstNode*>& useNodes, std::vector<IAstNode*>& comments, const std::string& prevType) {
+		void flushUseStatements(std::vector<IAstNode*>& useNodes, std::vector<IAstNode*>& comments,
+				const std::string& prevType, size_t prevLine = 0) {
 			std::string prevT = prevType;
+			size_t prevL = prevLine;
 			for (auto* c : comments) {
-				addTopLevelSpacing(prevT, "comment");
+				addTopLevelSpacing(prevT, "comment", prevL, c->line());
 				emitComment(static_cast<AstNodeComment*>(c));
 				prevT = "comment";
+				prevL = c->line();
 			}
-			addTopLevelSpacing(prevT, "use");
+			size_t firstUseLine = useNodes.empty() ? 0 : useNodes.front()->line();
+			addTopLevelSpacing(prevT, "use", prevL, firstUseLine);
 
 			if (mOpts.sortImports) {
 				std::vector<std::string> quotedUses;
@@ -424,36 +445,56 @@ namespace Qd {
 		// ============================================================
 
 		void emitImportStatement(AstNodeImport* node) {
-			mOutput << "import \"" << node->library() << "\" as \"" << node->namespaceName() << "\" {\n";
-			mIndent++;
-			for (const auto& func : node->functions()) {
-				emitIndent();
-				if (func->isPublic) {
-					mOutput << "pub ";
+			// Preserve original source text for import blocks to keep doc comments.
+			// Only normalize the -- separator in fn signatures.
+			size_t startLine = node->line();
+			size_t endLine = startLine;
+			int depth = 0;
+			bool foundOpen = false;
+
+			// Find the closing brace by scanning source lines
+			for (size_t i = startLine; i <= mSourceLines.size(); i++) {
+				const std::string& line = getSourceLine(i);
+				for (char c : line) {
+					if (c == '{') {
+						depth++;
+						foundOpen = true;
+					} else if (c == '}') {
+						depth--;
+						if (foundOpen && depth == 0) {
+							endLine = i;
+							goto found_end;
+						}
+					}
 				}
-				mOutput << "fn " << func->name << "(";
-				bool hasInputs = !func->inputParameters.empty();
-				bool hasOutputs = !func->outputParameters.empty();
-				if (!hasInputs && !hasOutputs) {
-					// empty
-				} else if (!hasInputs && hasOutputs) {
-					mOutput << " -- ";
-					emitParamList(func->outputParameters);
-				} else if (hasInputs && !hasOutputs) {
-					emitParamList(func->inputParameters);
-				} else {
-					emitParamList(func->inputParameters);
-					mOutput << " -- ";
-					emitParamList(func->outputParameters);
-				}
-				mOutput << ")";
-				if (func->throws) {
-					mOutput << "!";
-				}
-				mOutput << "\n";
 			}
-			mIndent--;
-			mOutput << "}\n";
+			found_end:
+
+			// Emit lines from source, normalizing fn signatures for --
+			for (size_t i = startLine; i <= endLine; i++) {
+				std::string line = getSourceLine(i);
+
+				// Check if this line has a fn declaration without --
+				// Pattern: "pub fn name(params)" or "fn name(params)" where params exist but no --
+				size_t fnPos = line.find("fn ");
+				if (fnPos != std::string::npos) {
+					size_t parenOpen = line.find('(', fnPos);
+					size_t parenClose = line.rfind(')');
+					if (parenOpen != std::string::npos && parenClose != std::string::npos && parenClose > parenOpen) {
+						std::string sig = line.substr(parenOpen + 1, parenClose - parenOpen - 1);
+						std::string trimmedSig = trim(sig);
+						// If there are params but no --, add it
+						if (!trimmedSig.empty() && trimmedSig.find("--") == std::string::npos) {
+							// Has inputs, no outputs, no -- : add " -- " before closing paren
+							std::string before = line.substr(0, parenClose);
+							std::string after = line.substr(parenClose);
+							line = before + " -- " + after;
+						}
+					}
+				}
+
+				mOutput << line << "\n";
+			}
 		}
 
 		void emitParamList(const std::vector<std::unique_ptr<AstNodeParameter>>& params) {
@@ -549,13 +590,14 @@ namespace Qd {
 					mOutput << static_cast<AstNodeParameter*>(outputs[i].get())->displayString();
 				}
 			} else if (hasInputs && !hasOutputs) {
-				// fn foo(x:i64 b:i64)
+				// fn foo(x:i64 b:i64 -- )
 				for (size_t i = 0; i < inputs.size(); i++) {
 					if (i > 0) {
 						mOutput << " ";
 					}
 					mOutput << static_cast<AstNodeParameter*>(inputs[i].get())->displayString();
 				}
+				mOutput << " -- ";
 			} else {
 				for (size_t i = 0; i < inputs.size(); i++) {
 					if (i > 0) {
@@ -579,6 +621,45 @@ namespace Qd {
 		// ============================================================
 
 		void emitStructDecl(AstNodeStructDeclaration* node) {
+			// Check if any field has a default value — if so, preserve original source
+			// since reconstructing default value expressions from the AST is complex.
+			const auto& fields = node->fields();
+			bool hasDefaults = false;
+			for (const auto& f : fields) {
+				if (f->hasDefaultValue()) {
+					hasDefaults = true;
+					break;
+				}
+			}
+
+			if (hasDefaults) {
+				// Preserve original source lines for struct with default values
+				size_t startLine = node->line();
+				size_t endLine = startLine;
+				int depth = 0;
+				bool foundOpen = false;
+				for (size_t i = startLine; i <= mSourceLines.size(); i++) {
+					const std::string& line = getSourceLine(i);
+					for (char c : line) {
+						if (c == '{') {
+							depth++;
+							foundOpen = true;
+						} else if (c == '}') {
+							depth--;
+							if (foundOpen && depth == 0) {
+								endLine = i;
+								goto struct_end;
+							}
+						}
+					}
+				}
+				struct_end:
+				for (size_t i = startLine; i <= endLine; i++) {
+					mOutput << getSourceLine(i) << "\n";
+				}
+				return;
+			}
+
 			emitIndent();
 			if (node->isPublic()) {
 				mOutput << "pub ";
@@ -597,7 +678,6 @@ namespace Qd {
 			}
 			mOutput << " {\n";
 			mIndent++;
-			const auto& fields = node->fields();
 			if (mOpts.alignStructFields && fields.size() > 2) {
 				size_t maxNameLen = 0;
 				for (const auto& f : fields) {
@@ -893,6 +973,10 @@ namespace Qd {
 				if (inStr) {
 					continue;
 				}
+				// Skip line comments — braces in comments aren't struct constructions
+				if (i + 1 < line.length() && line[i] == '/' && line[i + 1] == '/') {
+					return false;
+				}
 
 				if (line[i] == '{' && i > 0) {
 					// Check if preceded by an uppercase identifier (possibly scoped)
@@ -916,6 +1000,11 @@ namespace Qd {
 					size_t lastColon = name.rfind("::");
 					std::string lastComponent = (lastColon != std::string::npos) ? name.substr(lastColon + 2) : name;
 					if (lastComponent.empty() || !std::isupper(static_cast<unsigned char>(lastComponent[0]))) {
+						continue;
+					}
+					// Only expand if the struct construction starts at the beginning of the line.
+					// Inline constructions embedded in larger expressions stay compact.
+					if (nameStart > 0) {
 						continue;
 					}
 					// Check it has "field = value" pattern inside

@@ -11,8 +11,8 @@ use io
 use math
 use mem
 use os
-use strings
 use strconv
+use strings
 use unicode
 
 // Calculator stack - using an explicit array
@@ -440,7 +440,7 @@ fn main() {
 		0 os::exit
 	}
 
-	// Check for -e / --expression
+	// Check for -e / -- expression
 	"" -> expr
 	f "-e" flag::boolean if {
 		f "-e" flag::string! -> expr
@@ -453,7 +453,7 @@ fn main() {
 		0 os::exit
 	}
 
-	// Check for -f / --file
+	// Check for -f / -- file
 	"" -> filepath
 	f "-f" flag::boolean if {
 		f "-f" flag::string! -> filepath

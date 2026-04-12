@@ -8,16 +8,16 @@ pub const ErrNoValue = 3
 /// Error: Invalid value format.
 pub const ErrInvalidValue = 4
 
-use strings
 use strconv
+use strings
 use unicode
 
 /// Parsed command-line arguments.
 /// @field argc i64 Argument count
 /// @field argv str Arguments string
 pub struct Flag {
-	argc:i64
-	argv:str
+	argc: i64
+	argv: str
 }
 
 /// Parse arguments from read instruction.
@@ -58,7 +58,7 @@ pub fn parse(argc:i64 -- f:Flag) {
 
 /// Free a Flag struct and its argv string.
 /// @example f flag::destroy
-pub fn (f:Flag) destroy( -- ) {
+pub fn (f:Flag) destroy() {
 	f <<argv drop
 	f free
 }

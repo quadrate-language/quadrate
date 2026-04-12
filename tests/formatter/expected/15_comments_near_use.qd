@@ -4,6 +4,7 @@ use std
 /* use another_fake
 use math
 use yet_another */
+
 fn main() {
 	// use commented_module
 	5 10 add

@@ -9,9 +9,9 @@
 /// "my-secret-key" "Hello World" hmac_sha256! -> mac
 /// mac print  // prints 64-char hex HMAC
 
+use hex
 use mem
 use strings
-use hex
 
 // SHA-256 block size = 64 bytes, output size = 32 bytes
 // SHA-512 block size = 128 bytes, output size = 64 bytes

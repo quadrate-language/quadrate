@@ -44,8 +44,8 @@ pub struct Queue<T> {
 	data: ptr
 	head: i64
 	tail: i64
-	len: i64
-	cap: i64
+	len:  i64
+	cap:  i64
 }
 
 /// Add an element to the back of the queue.
@@ -103,7 +103,7 @@ pub fn (q:Queue<T>) enqueue<T>(val:T -- q2:Queue<T>)! {
 ///     q dequeue! -> q -> val
 ///
 /// Stack: (q -- val q2)
-pub fn (q:Queue<T>) dequeue<T>(-- val:T q2:Queue<T>)! {
+pub fn (q:Queue<T>) dequeue<T>( -- val:T q2:Queue<T>)! {
 	q <<len -> len
 
 	len 0 == if {
@@ -131,7 +131,7 @@ pub fn (q:Queue<T>) dequeue<T>(-- val:T q2:Queue<T>)! {
 ///     q peek! -> val
 ///
 /// Stack: (q -- val)
-pub fn (q:Queue<T>) peek<T>(-- val:T)! {
+pub fn (q:Queue<T>) peek<T>( -- val:T)! {
 	q <<len -> len
 
 	len 0 == if {
@@ -147,21 +147,21 @@ pub fn (q:Queue<T>) peek<T>(-- val:T)! {
 /// Get the number of elements in the queue.
 ///
 /// Stack: (q -- n)
-pub fn (q:Queue<T>) length<T>(-- n:i64) {
+pub fn (q:Queue<T>) length<T>( -- n:i64) {
 	q <<len
 }
 
 /// Check if the queue is empty.
 ///
 /// Stack: (q -- bool)
-pub fn (q:Queue<T>) is_empty<T>(-- b:i64) {
+pub fn (q:Queue<T>) is_empty<T>( -- b:i64) {
 	q <<len 0 ==
 }
 
 /// Free the queue's memory.
 ///
 /// Stack: (q --)
-pub fn (q:Queue<T>) release<T>(--) {
+pub fn (q:Queue<T>) release<T>() {
 	q <<data -> data
 	data 0 neq if { data mem::free }
 }

@@ -181,7 +181,7 @@ pub fn (sb:StringBuilder) build( -- s:str) {
 
 /// Free the builder's resources.
 /// @example builder sb::free
-pub fn (sb:StringBuilder) free( -- ) {
+pub fn (sb:StringBuilder) free() {
 	sb <<buf mem::free
 }
 

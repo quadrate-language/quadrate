@@ -47,8 +47,8 @@ pub struct Deque<T> {
 	data: ptr
 	head: i64
 	tail: i64
-	len: i64
-	cap: i64
+	len:  i64
+	cap:  i64
 }
 
 /// Push an element to the back.
@@ -149,7 +149,7 @@ pub fn (d:Deque<T>) push_front<T>(val:T -- d2:Deque<T>)! {
 ///     d pop_front! -> d -> val
 ///
 /// Stack: (d -- val d2)
-pub fn (d:Deque<T>) pop_front<T>(-- val:T d2:Deque<T>)! {
+pub fn (d:Deque<T>) pop_front<T>( -- val:T d2:Deque<T>)! {
 	d <<len -> len
 
 	len 0 == if {
@@ -175,7 +175,7 @@ pub fn (d:Deque<T>) pop_front<T>(-- val:T d2:Deque<T>)! {
 ///     d pop_back! -> d -> val
 ///
 /// Stack: (d -- val d2)
-pub fn (d:Deque<T>) pop_back<T>(-- val:T d2:Deque<T>)! {
+pub fn (d:Deque<T>) pop_back<T>( -- val:T d2:Deque<T>)! {
 	d <<len -> len
 
 	len 0 == if {
@@ -202,7 +202,7 @@ pub fn (d:Deque<T>) pop_back<T>(-- val:T d2:Deque<T>)! {
 /// View the front element without removing it.
 ///
 /// Stack: (d -- val)
-pub fn (d:Deque<T>) peek_front<T>(-- val:T)! {
+pub fn (d:Deque<T>) peek_front<T>( -- val:T)! {
 	d <<len -> len
 
 	len 0 == if {
@@ -218,7 +218,7 @@ pub fn (d:Deque<T>) peek_front<T>(-- val:T)! {
 /// View the back element without removing it.
 ///
 /// Stack: (d -- val)
-pub fn (d:Deque<T>) peek_back<T>(-- val:T)! {
+pub fn (d:Deque<T>) peek_back<T>( -- val:T)! {
 	d <<len -> len
 
 	len 0 == if {
@@ -240,21 +240,21 @@ pub fn (d:Deque<T>) peek_back<T>(-- val:T)! {
 /// Get the number of elements.
 ///
 /// Stack: (d -- n)
-pub fn (d:Deque<T>) length<T>(-- n:i64) {
+pub fn (d:Deque<T>) length<T>( -- n:i64) {
 	d <<len
 }
 
 /// Check if the deque is empty.
 ///
 /// Stack: (d -- bool)
-pub fn (d:Deque<T>) is_empty<T>(-- b:i64) {
+pub fn (d:Deque<T>) is_empty<T>( -- b:i64) {
 	d <<len 0 ==
 }
 
 /// Free the deque's memory.
 ///
 /// Stack: (d --)
-pub fn (d:Deque<T>) release<T>(--) {
+pub fn (d:Deque<T>) release<T>() {
 	d <<data -> data
 	data 0 neq if { data mem::free }
 }

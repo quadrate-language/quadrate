@@ -183,10 +183,7 @@ fn sha512_write_u64_be(buf:ptr offset:i64 val:i64 -- ) {
 }
 
 // Process a single 128-byte block
-fn sha512_process_block(
-	hh0:i64 hh1:i64 hh2:i64 hh3:i64 hh4:i64 hh5:i64 hh6:i64 hh7:i64 block:ptr --
-	r0:i64 r1:i64 r2:i64 r3:i64 r4:i64 r5:i64 r6:i64 r7:i64
-) {
+fn sha512_process_block(hh0:i64 hh1:i64 hh2:i64 hh3:i64 hh4:i64 hh5:i64 hh6:i64 hh7:i64 block:ptr -- r0:i64 r1:i64 r2:i64 r3:i64 r4:i64 r5:i64 r6:i64 r7:i64) {
 	sha512_make_k -> k
 	640 mem::alloc! -> w
 
@@ -401,7 +398,7 @@ pub fn (h:Sha512) finish( -- hash:str)! {
 }
 
 /// Free resources used by SHA-512 hasher.
-pub fn (h:Sha512) release( -- ) {
+pub fn (h:Sha512) release() {
 	h <<buf -> buf
 	buf 0 != if {
 		buf mem::free

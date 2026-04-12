@@ -2,7 +2,7 @@ fn no_args() {
 	42 print nl
 }
 
-fn inputs_only(a:i64 b:i64 c:i64) {
+fn inputs_only(a:i64 b:i64 c:i64 -- ) {
 	a b c + + print nl
 }
 

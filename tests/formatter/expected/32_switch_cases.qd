@@ -1,4 +1,4 @@
-fn test_switch(val:i64) {
+fn test_switch(val:i64 -- ) {
 	val switch {
 		0 { "zero" print nl }
 		1 { "one" print nl }

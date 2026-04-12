@@ -2387,7 +2387,9 @@ void QuadrateLSP::handlePrepareCallHierarchy(
 						}
 						detail += func.inputParams[i];
 					}
-					detail += " -- ";
+					if (!func.inputParams.empty() || !func.outputParams.empty()) {
+						detail += " -- ";
+					}
 					for (size_t i = 0; i < func.outputParams.size(); i++) {
 						if (i > 0) {
 							detail += ", ";
@@ -3897,7 +3899,9 @@ void QuadrateLSP::handleHover(const std::string& id, const std::string& uri, siz
 												docStream << param->displayString();
 											}
 
-											docStream << " -- ";
+											if (!inputs.empty() || !funcNode->outputParameters().empty()) {
+												docStream << " -- ";
+											}
 
 											// Output parameters
 											const auto& outputs = funcNode->outputParameters();
@@ -3960,7 +3964,9 @@ void QuadrateLSP::handleHover(const std::string& id, const std::string& uri, siz
 													docStream << param->displayString();
 												}
 
-												docStream << " -- ";
+												if (!importedFunc->inputParameters.empty() || !importedFunc->outputParameters.empty()) {
+													docStream << " -- ";
+												}
 
 												// Output parameters
 												for (size_t j = 0; j < importedFunc->outputParameters.size(); j++) {
@@ -4149,7 +4155,9 @@ void QuadrateLSP::handleSignatureHelp(const std::string& id, const std::string& 
 													sigStream << param->displayString();
 												}
 
-												sigStream << " -- ";
+												if (!inputs.empty() || !funcNode->outputParameters().empty()) {
+													sigStream << " -- ";
+												}
 
 												const auto& outputs = funcNode->outputParameters();
 												for (size_t j = 0; j < outputs.size(); j++) {
@@ -4181,7 +4189,9 @@ void QuadrateLSP::handleSignatureHelp(const std::string& id, const std::string& 
 														sigStream << param->displayString();
 													}
 
-													sigStream << " -- ";
+													if (!importedFunc->inputParameters.empty() || !importedFunc->outputParameters.empty()) {
+														sigStream << " -- ";
+													}
 
 													for (size_t j = 0; j < importedFunc->outputParameters.size(); j++) {
 														if (j > 0) {
@@ -4285,7 +4295,9 @@ void QuadrateLSP::handleDocumentSymbols(const std::string& id, const std::string
 						Qd::AstNodeParameter* param = static_cast<Qd::AstNodeParameter*>(inputs[j].get());
 						detail << param->displayString();
 					}
-					detail << " -- ";
+					if (!inputs.empty() || !funcNode->outputParameters().empty()) {
+						detail << " -- ";
+					}
 					const auto& outputs = funcNode->outputParameters();
 					for (size_t j = 0; j < outputs.size(); j++) {
 						if (j > 0) {
@@ -4513,7 +4525,9 @@ std::vector<FunctionInfo> QuadrateLSP::extractFunctions(const std::string& text)
 				sigStream << paramStr;
 			}
 
-			sigStream << " -- ";
+			if (!inputs.empty() || !funcNode->outputParameters().empty()) {
+				sigStream << " -- ";
+			}
 
 			// Extract output parameters
 			const auto& outputs = funcNode->outputParameters();
@@ -4587,7 +4601,9 @@ std::vector<FunctionInfo> QuadrateLSP::extractFunctions(const std::string& text)
 					sigStream << paramStr;
 				}
 
-				sigStream << " -- ";
+				if (!inputs.empty() || !importedFunc->outputParameters.empty()) {
+					sigStream << " -- ";
+				}
 
 				// Extract output parameters
 				const auto& outputs = importedFunc->outputParameters;

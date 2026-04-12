@@ -1,7 +1,7 @@
 /// Random number generation using xorshift64* algorithm.
 /// Fast, high-quality PRNG suitable for most applications.
-use time
 use math
+use time
 
 /// Random number generator state.
 /// @field state i64 Internal RNG state
@@ -18,7 +18,9 @@ pub fn new( -- rng:Rng) {
 	seed 0 == if {
 		1 -> seed
 	}
-	Rng { state = seed }
+	Rng {
+		state = seed
+	}
 }
 
 /// Create a new RNG with specific seed.
@@ -32,7 +34,9 @@ pub fn with_seed(seed:i64 -- rng:Rng) {
 		seed
 	}
 	-> s
-	Rng { state = s }
+	Rng {
+		state = s
+	}
 }
 
 /// Generate next random i64.
@@ -50,7 +54,9 @@ pub fn (rng:Rng) next( -- rng2:Rng n:i64) {
 
 	// Return new state (rng) first, then random number (n) on top
 	x 2685821657736338717 * -> result
-	Rng { state = x } -> newrng
+	Rng {
+		state = x
+	} -> newrng
 	newrng
 	result
 }

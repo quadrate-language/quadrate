@@ -337,7 +337,6 @@ pub fn rad_to_deg(f64 -- f64) {
 	180 mul 3.141592653589793 div
 }
 
-
 // ============================================================================
 // Vec2 - 2D vector math operations
 // ============================================================================
@@ -346,8 +345,8 @@ pub fn rad_to_deg(f64 -- f64) {
 /// @field x f64 X component
 /// @field y f64 Y component
 pub struct Vec2 {
-	x:f64
-	y:f64
+	x: f64
+	y: f64
 }
 
 /// Create a Vec2 with all components set to zero.
@@ -510,9 +509,9 @@ pub fn (v:Vec2) perpendicular( -- result:Vec2) {
 /// @field y f64 Y component
 /// @field z f64 Z component
 pub struct Vec3 {
-	x:f64
-	y:f64
-	z:f64
+	x: f64
+	y: f64
+	z: f64
 }
 
 /// Create a Vec3 with all components set to zero.
@@ -726,10 +725,10 @@ pub fn (v:Vec3) angle_between(other:Vec3 -- result:f64) {
 /// @field z f64 Z component
 /// @field w f64 W component
 pub struct Vec4 {
-	x:f64
-	y:f64
-	z:f64
-	w:f64
+	x: f64
+	y: f64
+	z: f64
+	w: f64
 }
 
 /// Create a Vec4 with all components set to zero.
@@ -872,10 +871,10 @@ pub fn (v:Vec4) lerp(other:Vec4 t:f64 -- result:Vec4) {
 /// @field y f64 Y component of vector part
 /// @field z f64 Z component of vector part
 pub struct Quat {
-	w:f64
-	x:f64
-	y:f64
-	z:f64
+	w: f64
+	x: f64
+	y: f64
+	z: f64
 }
 
 /// Create identity quaternion (no rotation).
@@ -1002,7 +1001,12 @@ pub fn (q:Quat) slerp(other:Quat t:f64 -- result:Quat) {
 		theta_t math::cos q <<x * sin_t other <<x q <<x dot_val * - * sin_theta / + -> x_r
 		theta_t math::cos q <<y * sin_t other <<y q <<y dot_val * - * sin_theta / + -> y_r
 		theta_t math::cos q <<z * sin_t other <<z q <<z dot_val * - * sin_theta / + -> z_r
-		Quat { w = w_r x = x_r y = y_r z = z_r }
+		Quat {
+			w = w_r
+			x = x_r
+			y = y_r
+			z = z_r
+		}
 	}
 }
 
@@ -1092,22 +1096,22 @@ pub fn quat_from_euler(pitch:f64 yaw:f64 roll:f64 -- result:Quat) {
 /// @field m32 f64 Element at row 2, column 3
 /// @field m33 f64 Element at row 3, column 3
 pub struct Mat4 {
-	m00:f64
-	m01:f64
-	m02:f64
-	m03:f64
-	m10:f64
-	m11:f64
-	m12:f64
-	m13:f64
-	m20:f64
-	m21:f64
-	m22:f64
-	m23:f64
-	m30:f64
-	m31:f64
-	m32:f64
-	m33:f64
+	m00: f64
+	m01: f64
+	m02: f64
+	m03: f64
+	m10: f64
+	m11: f64
+	m12: f64
+	m13: f64
+	m20: f64
+	m21: f64
+	m22: f64
+	m23: f64
+	m30: f64
+	m31: f64
+	m32: f64
+	m33: f64
 }
 
 /// Create identity Mat4.
@@ -1443,9 +1447,17 @@ pub fn (m:Mat4) transform_point(v:Vec3 -- result:Vec3) {
 	m <<m02 v <<x * m <<m12 v <<y * + m <<m22 v <<z * + m <<m32 + -> rz
 	m <<m03 v <<x * m <<m13 v <<y * + m <<m23 v <<z * + m <<m33 + -> rw
 	rw math::abs 0.000001 gt if {
-		Vec3 { x = rx rw / y = ry rw / z = rz rw / }
+		Vec3 {
+			x = rx rw /
+			y = ry rw /
+			z = rz rw /
+		}
 	} else {
-		Vec3 { x = rx y = ry z = rz }
+		Vec3 {
+			x = rx
+			y = ry
+			z = rz
+		}
 	}
 }
 

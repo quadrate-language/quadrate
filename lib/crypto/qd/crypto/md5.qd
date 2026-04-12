@@ -364,7 +364,7 @@ pub fn (h:Md5) finish( -- hash:str)! {
 
 /// Free resources used by MD5 hasher.
 /// @param h Md5 The hasher state to free
-pub fn (h:Md5) release( -- ) {
+pub fn (h:Md5) release() {
 	h <<buf -> buf
 	buf 0 != if {
 		buf mem::free

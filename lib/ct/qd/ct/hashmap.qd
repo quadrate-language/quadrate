@@ -46,11 +46,11 @@ use strings
 ///   len    - Number of entries
 ///   cap    - Allocated capacity
 pub struct Map<V> {
-	keys: ptr
+	keys:   ptr
 	values: ptr
 	states: ptr
-	len: i64
-	cap: i64
+	len:    i64
+	cap:    i64
 }
 
 // Internal: DJB2 hash a string key to an index
@@ -299,7 +299,7 @@ pub fn (m:Map<V>) remove<V>(key:str -- m2:Map<V>)! {
 ///     m length -> n
 ///
 /// Stack: (m -- n)
-pub fn (m:Map<V>) length<V>(-- n:i64) {
+pub fn (m:Map<V>) length<V>( -- n:i64) {
 	m <<len
 }
 
@@ -309,7 +309,7 @@ pub fn (m:Map<V>) length<V>(-- n:i64) {
 ///     m is_empty if { "empty!" print nl }
 ///
 /// Stack: (m -- bool)
-pub fn (m:Map<V>) is_empty<V>(-- b:i64) {
+pub fn (m:Map<V>) is_empty<V>( -- b:i64) {
 	m <<len 0 ==
 }
 
@@ -323,7 +323,7 @@ pub fn (m:Map<V>) is_empty<V>(-- b:i64) {
 ///     m release
 ///
 /// Stack: (m --)
-pub fn (m:Map<V>) release<V>(--) {
+pub fn (m:Map<V>) release<V>() {
 	m <<keys -> keys
 	m <<values -> values
 	m <<states -> states

@@ -7,7 +7,9 @@
 
 /// Minimum value for i64 (Quadrate's native integer type).
 /// Note: -9223372036854775808 cannot be a literal (parser overflows), so we compute it.
-pub fn I64Min( -- result:i64) { -9223372036854775807 1 - }
+pub fn I64Min( -- result:i64) {
+	-9223372036854775807 1 -
+}
 
 /// Maximum value for i64 (Quadrate's native integer type).
 pub const I64Max = 9223372036854775807

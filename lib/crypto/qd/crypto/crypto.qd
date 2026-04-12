@@ -4,8 +4,8 @@
 /// Each hash algorithm supports both one-shot hashing and streaming (incremental) mode.
 /// HMAC provides message authentication using SHA-256 or SHA-512.
 
-use sha256.qd
-use sha512.qd
-use md5.qd
 use crc32.qd
 use hmac.qd
+use md5.qd
+use sha256.qd
+use sha512.qd

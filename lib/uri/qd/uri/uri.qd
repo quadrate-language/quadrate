@@ -12,11 +12,11 @@ use unicode
 /// @field query str Query string (without leading "?")
 /// @field fragment str Fragment (without leading "#")
 pub struct Uri {
-	scheme: str
-	host: str
-	port: i64
-	path: str
-	query: str
+	scheme:   str
+	host:     str
+	port:     i64
+	path:     str
+	query:    str
 	fragment: str
 }
 

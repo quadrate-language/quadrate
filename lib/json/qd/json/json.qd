@@ -1,6 +1,6 @@
 /// JSON parsing and querying without AST construction.
-use strings
 use strconv
+use strings
 use unicode
 
 /// Type: Null value.
@@ -720,7 +720,9 @@ pub fn is_null_at(json:str pos:i64 -- is_null:i64) {
 // ============================================================
 
 /// Quote character for JSON strings.
-fn quote( -- q:str) { "\x22" }
+fn quote( -- q:str) {
+	"\x22"
+}
 
 /// Encode a string for JSON (add quotes and escape special chars).
 /// @param s str String to encode
@@ -807,7 +809,9 @@ pub fn obj(content:str -- obj:str) {
 /// Build an empty JSON object.
 /// @return obj str Empty JSON object
 /// @example json::empty_obj print  // {}
-pub fn empty_obj( -- obj:str) { "{}" }
+pub fn empty_obj( -- obj:str) {
+	"{}"
+}
 
 /// Build a JSON array from comma-separated elements.
 /// @param content str Comma-separated elements
@@ -820,7 +824,9 @@ pub fn arr(content:str -- arr:str) {
 /// Build an empty JSON array.
 /// @return arr str Empty JSON array
 /// @example json::empty_arr print  // []
-pub fn empty_arr( -- arr:str) { "[]" }
+pub fn empty_arr( -- arr:str) {
+	"[]"
+}
 
 /// Join multiple JSON fragments with commas.
 /// @param a str First fragment

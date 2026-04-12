@@ -2,9 +2,9 @@
 /// Supports . * + ? | () [] [^] [a-z] ^ $ and escapes.
 /// Note: Nested groups and alternation inside groups not yet supported.
 use mem
+use sb
 use strings
 use unicode
-use sb
 
 /// Compiled regular expression.
 /// @field re ptr Internal NFA state
@@ -14,31 +14,42 @@ pub struct Regex {
 
 // NFA state types
 enum StateType {
-	Char     // Match specific character
-	Any      // Match any character (.)
-	Split    // Epsilon split (for |, *, +, ?)
-	Match    // Accepting state
-	Cclass   // Character class [...]
-	Ncclass  // Negated char class [^...]
-	Bol      // Beginning of line ^
-	Eol      // End of line $
+	Char
+	Any
+	Split
+	Match
+	Cclass
+	Ncclass
+	Bol
+	Eol
 }
+
 // State structure offsets (48 bytes per state)
-const ST_TYPE = 0       // i64: state type
-const ST_CHAR = 8       // i64: character to match
-const ST_OUT1 = 16      // i64: first out state index (-1 = none)
-const ST_OUT2 = 24      // i64: second out state index (for SPLIT)
-const ST_CCLASS = 32    // i64: cclass index in cclass array
+const ST_TYPE = 0
+// i64: state type
+const ST_CHAR = 8
+// i64: character to match
+const ST_OUT1 = 16
+// i64: first out state index (-1 = none)
+const ST_OUT2 = 24
+// i64: second out state index (for SPLIT)
+const ST_CCLASS = 32
+// i64: cclass index in cclass array
 const STATE_SIZE = 40
 // Max states and character classes
 const MAX_STATES = 256
 const MAX_CCLASS = 32
 // Regex structure offsets
-const RE_STATES = 0     // ptr: states array
-const RE_NSTATES = 8    // i64: number of states
-const RE_START = 16     // i64: start state index
-const RE_CCLASSES = 24  // ptr: array of cclass pointers
-const RE_NCCLASS = 32   // i64: number of cclasses
+const RE_STATES = 0
+// ptr: states array
+const RE_NSTATES = 8
+// i64: number of states
+const RE_START = 16
+// i64: start state index
+const RE_CCLASSES = 24
+// ptr: array of cclass pointers
+const RE_NCCLASS = 32
+// i64: number of cclasses
 const REGEX_SIZE = 40
 
 // Allocate a new regex structure
@@ -129,7 +140,8 @@ fn cclass_test(cc:ptr c:i64 -- result:i64) {
 }
 
 // Parser state (stored in memory)
-const PS_PAT = 0        // str stored as ptr
+const PS_PAT = 0
+// str stored as ptr
 const PS_POS = 8
 const PS_LEN = 16
 const PS_RE = 24
@@ -475,12 +487,14 @@ pub fn compile(pattern:str -- re:Regex) {
 	}
 
 	ps parser_free
-	Regex { re = raw }
+	Regex {
+		re = raw
+	}
 }
 
 /// Free a compiled regex.
 /// @example re regex::release
-pub fn (self:Regex) release( -- ) {
+pub fn (self:Regex) release() {
 	self <<re -> re
 	// Free character classes
 	re RE_NCCLASS mem::get_i64 -> n
@@ -854,7 +868,6 @@ pub fn (self:Regex) replace(s:str repl:str -- result:str) {
 	out sb::finish -> result
 	result
 }
-
 
 /// Count non-overlapping matches in string.
 /// @param s str String to search

@@ -38,7 +38,9 @@ fn print_version() {
 
 fn read_file(path:str -- content:ptr length:i64)! {
 	path io::ReadBinary io::open switch {
-		Ok { -> f 4096 -> chunk_size chunk_size mem::alloc! -> chunk_buf 0 -> total_len 0 mem::alloc! -> result_buf loop { f chunk_buf chunk_size io::read switch { Ok { -> bytes_read bytes_read 0 == if { break } result_buf total_len bytes_read + mem::realloc! -> result_buf result_buf total_len chunk_buf 0 bytes_read bytes::copy total_len bytes_read + -> total_len } _ { chunk_buf mem::free result_buf mem::free f io::close "Read error" 1 panic } } } chunk_buf mem::free f io::close result_buf total_len }
+		Ok {
+			-> f 4096 -> chunk_size chunk_size mem::alloc! -> chunk_buf 0 -> total_len 0 mem::alloc! -> result_buf loop { f chunk_buf chunk_size io::read switch { Ok { -> bytes_read bytes_read 0 = = if { break } result_buf total_len bytes_read + mem::realloc! -> result_buf result_buf total_len chunk_buf 0 bytes_read bytes::copy total_len bytes_read + -> total_len } _ { chunk_buf mem::free result_buf mem::free f io::close "Read error" 1 panic } } } chunk_buf mem::free f io::close result_buf total_len
+		}
 		_ {
 			"No such file or directory" 1 panic
 		}
@@ -47,7 +49,9 @@ fn read_file(path:str -- content:ptr length:i64)! {
 
 fn hash_file(path:str binary_mode:i64 tag_mode:i64 zero_mode:i64 -- ) {
 	path read_file switch {
-		Ok { -> length -> buf buf length crypto::sha256_bytes! -> hash_str tag_mode if { "SHA256 (" print path print ") = " print hash_str print } else { hash_str print binary_mode if { " *" } else { "  " } print path print } zero_mode if { 0 strings::from_char print } else { nl } buf mem::free }
+		Ok {
+			-> length -> buf buf length crypto::sha256_bytes! -> hash_str tag_mode if { "SHA256 (" print path print ") = " print hash_str print } else { hash_str print binary_mode if { " *" } else { "  " } print path print } zero_mode if { 0 strings::from_char print } else { nl } buf mem::free
+		}
 		_ {
 			"sha256sum: " print path print ": No such file or directory" print nl
 		}
@@ -114,7 +118,9 @@ fn check_file(path:str quiet:i64 status_mode:i64 warn_mode:i64 ignore_missing:i6
 	0 -> failures
 
 	path read_file switch {
-		Ok { -> length -> buf buf length mem::to_string -> content 0 -> pos 0 -> line_num loop { pos length >= if { break } pos -> line_start loop { pos length >= if { break } buf pos mem::get_byte 10 == if { break } pos 1 + -> pos } pos line_start - -> line_len line_len 0 > if { content line_start pos extract_line -> line line_num 1 + -> line_num line parse_checksum_line -> valid -> expected_file -> expected_hash valid if { expected_file read_file switch { Ok { -> file_len -> file_buf file_buf file_len crypto::sha256_bytes -> actual_hash file_buf mem::free actual_hash expected_hash strings::compare 0 == if { status_mode 0 == quiet 0 == and if { expected_file print ": OK" print nl } } else { status_mode 0 == if { expected_file print ": FAILED" print nl } failures 1 + -> failures } } _ { ignore_missing 0 == if { status_mode 0 == if { "sha256sum: " print expected_file print ": No such file or directory" print nl } failures 1 + -> failures } } } } valid 0 == if { warn_mode status_mode 0 == and if { "sha256sum: " print path print ":" print line_num print ": improperly formatted SHA256 checksum line" print nl } strict if { failures 1 + -> failures } } } pos 1 + -> pos } buf mem::free content drop }
+		Ok {
+			-> length -> buf buf length mem::to_string -> content 0 -> pos 0 -> line_num loop { pos length > = if { break } pos -> line_start loop { pos length >= if { break } buf pos mem::get_byte 10 == if { break } pos 1 + -> pos } pos line_start - -> line_len line_len 0 > if { content line_start pos extract_line -> line line_num 1 + -> line_num line parse_checksum_line -> valid -> expected_file -> expected_hash valid if { expected_file read_file switch { Ok { -> file_len -> file_buf file_buf file_len crypto::sha256_bytes -> actual_hash file_buf mem::free actual_hash expected_hash strings::compare 0 == if { status_mode 0 == quiet 0 == and if { expected_file print ": OK" print nl } } else { status_mode 0 == if { expected_file print ": FAILED" print nl } failures 1 + -> failures } } _ { ignore_missing 0 == if { status_mode 0 == if { "sha256sum: " print expected_file print ": No such file or directory" print nl } failures 1 + -> failures } } } } valid 0 == if { warn_mode status_mode 0 == and if { "sha256sum: " print path print ":" print line_num print ": improperly formatted SHA256 checksum line" print nl } strict if { failures 1 + -> failures } } } pos 1 + -> pos } buf mem::free content drop
+		}
 		_ {
 			status_mode 0 == if {
 				"sha256sum: " print path print ": No such file or directory" print nl

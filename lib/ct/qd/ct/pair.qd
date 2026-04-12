@@ -33,7 +33,7 @@ pub struct Pair<T, U> {
 ///     p first -> a
 ///
 /// Stack: (p -- a)
-pub fn (p:Pair<T, U>) first<T, U>(-- a:T) {
+pub fn (p:Pair<T, U>) first<T, U>( -- a:T) {
 	p <<first
 }
 
@@ -43,7 +43,7 @@ pub fn (p:Pair<T, U>) first<T, U>(-- a:T) {
 ///     p second -> b
 ///
 /// Stack: (p -- b)
-pub fn (p:Pair<T, U>) second<T, U>(-- b:U) {
+pub fn (p:Pair<T, U>) second<T, U>( -- b:U) {
 	p <<second
 }
 
@@ -55,7 +55,7 @@ pub fn (p:Pair<T, U>) second<T, U>(-- b:U) {
 ///     p unpack -> first_val -> second_val
 ///
 /// Stack: (p -- a b)
-pub fn (p:Pair<T, U>) unpack<T, U>(-- a:T b:U) {
+pub fn (p:Pair<T, U>) unpack<T, U>( -- a:T b:U) {
 	p <<first
 	p <<second
 }
