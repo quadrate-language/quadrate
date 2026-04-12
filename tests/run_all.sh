@@ -5,7 +5,7 @@
 #   ./tests/run_all.sh                    # Run all tests
 #   ./tests/run_all.sh --failed           # Run only previously failed tests
 #   ./tests/run_all.sh --test NAME        # Run specific test
-#   ./tests/run_all.sh --suite SUITE      # Run specific suite (cpp, lsp, qd, formatter, linter, embed, quadpm, quadmcp, args, crosscompile, stdlib, mtls, fuzz)
+#   ./tests/run_all.sh --suite SUITE      # Run specific suite (cpp, lsp, qd, formatter, linter, embed, quadpm, build_cache, quadmcp, args, crosscompile, stdlib, mtls, fuzz)
 #   ./tests/run_all.sh --clear            # Clear failed tests file
 #   ./tests/run_all.sh --list             # List all available tests
 
@@ -112,7 +112,7 @@ while [[ $# -gt 0 ]]; do
             echo "Options:"
             echo "  --failed, -f       Run only previously failed tests"
             echo "  --test, -t NAME    Run specific test by name"
-            echo "  --suite, -s SUITE  Run specific suite (cpp, lsp, qd, formatter, linter, embed, quadpm, quadmcp, args, crosscompile, stdlib, mtls, fuzz)"
+            echo "  --suite, -s SUITE  Run specific suite (cpp, lsp, qd, formatter, linter, embed, quadpm, build_cache, quadmcp, args, crosscompile, stdlib, mtls, fuzz)"
             echo "  --fuzz-time SECS   Fuzz test duration in seconds (default: 10)"
             echo "  --list, -l         List all available tests"
             echo "  --clear, -c        Clear failed tests file"
@@ -877,12 +877,19 @@ run_linter_tests() {
 
         test_count=$((test_count + 1))
 
+        # Read extra flags from .flags file if present
+        local flags_file="${test_file%.qd}.flags"
+        local extra_flags=""
+        if [[ -f "$flags_file" ]]; then
+            extra_flags=$(cat "$flags_file")
+        fi
+
         # Run linter and capture output
         local actual_output
         if [[ -n "$valgrind_cmd" ]]; then
-            actual_output=$($valgrind_cmd "$quadlint" "$test_file" 2>&1) || true
+            actual_output=$($valgrind_cmd "$quadlint" $extra_flags "$test_file" 2>&1) || true
         else
-            actual_output=$("$quadlint" "$test_file" 2>&1) || true
+            actual_output=$("$quadlint" $extra_flags "$test_file" 2>&1) || true
         fi
 
         # Compare output (normalize absolute paths to relative)
@@ -995,6 +1002,44 @@ run_quadpm_tests() {
     else
         local error_msg=$(echo "$output" | grep -A 50 "FAIL\|error\|Error" | head -20)
         log_fail "$suite" "quadpm_tests" "test failed" "$error_msg"
+    fi
+}
+
+# Run build cache tests
+run_build_cache_tests() {
+    local suite="build_cache"
+    local test_script="$PROJECT_ROOT/tests/build_cache/test_build_cache.sh"
+
+    if ! should_run_test "$suite" "build_cache"; then
+        return
+    fi
+
+    print_header "Build Cache Tests"
+
+    if [[ ! -x "$test_script" ]]; then
+        log_skip "$suite" "build_cache" "test script not found"
+        return
+    fi
+
+    local output
+    local exit_code
+    output=$(cd "$PROJECT_ROOT" && QUADC="$PROJECT_ROOT/$BUILD_DIR/cmd/quadc/quadc" QUADRATE_ROOT="$PROJECT_ROOT" QUADRATE_LIBDIR="$PROJECT_ROOT/dist/lib" bash "$test_script" 2>&1)
+    exit_code=$?
+
+    if [[ $exit_code -eq 0 ]]; then
+        # Count pass/fail from output
+        local passed=$(echo "$output" | grep -c "✓")
+        local failed=$(echo "$output" | grep -c "✗")
+        local i=0
+        while [[ $i -lt $passed ]]; do
+            log_pass "$suite" "build_cache_$i"
+            i=$((i + 1))
+        done
+        if [[ $failed -gt 0 ]]; then
+            log_fail "$suite" "build_cache" "test failed" "$output"
+        fi
+    else
+        log_fail "$suite" "build_cache" "test failed" "$output"
     fi
 }
 
@@ -1701,7 +1746,7 @@ print_summary() {
     echo -e "${BOLD}═══════════════════════════════════════════════════════════════════════════════${NC}"
 
     # Print per-suite summary
-    for suite in cpp lsp qd formatter linter embed quadpm quadmcp stdlib mtls fuzz; do
+    for suite in cpp lsp qd formatter linter embed quadpm build_cache quadmcp stdlib mtls fuzz; do
         local passed=${SUITE_PASSED[$suite]:-0}
         local failed=${SUITE_FAILED[$suite]:-0}
         local skipped=${SUITE_SKIPPED[$suite]:-0}
@@ -1718,6 +1763,7 @@ print_summary() {
             linter) suite_name="Linter" ;;
             embed) suite_name="Embed" ;;
             quadpm) suite_name="Package Manager" ;;
+            build_cache) suite_name="Build Cache" ;;
             quadmcp) suite_name="MCP Server" ;;
             stdlib) suite_name="Stdlib Unit Tests" ;;
             mtls) suite_name="mTLS" ;;
@@ -1832,6 +1878,10 @@ main() {
 
     if [[ -z "$SPECIFIC_SUITE" ]] || [[ "$SPECIFIC_SUITE" == "quadpm" ]]; then
         run_quadpm_tests
+    fi
+
+    if [[ -z "$SPECIFIC_SUITE" ]] || [[ "$SPECIFIC_SUITE" == "build_cache" ]]; then
+        run_build_cache_tests
     fi
 
     if [[ -z "$SPECIFIC_SUITE" ]] || [[ "$SPECIFIC_SUITE" == "quadmcp" ]]; then

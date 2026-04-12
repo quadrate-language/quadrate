@@ -1,4 +1,5 @@
 #include "ast_cache.h"
+#include "build_cache.h"
 #include "diagnostics.h"
 #include "module_resolver.h"
 #include "options.h"
@@ -476,6 +477,43 @@ int main(int argc, char** argv) {
 			} // end for each file in module
 		}
 
+		// Build cache: check if we can skip compilation entirely
+		// Skip cache for stdin, test mode, JIT, and when dumping debug output
+		bool useCache = !opts.readStdin && !opts.testMode && !opts.dumpAst && !opts.dumpIR && !opts.dumpTokens
+						&& !opts.saveTemps && !opts.verbose;
+		BuildCache buildCache;
+		if (useCache) {
+			// Hash all source files (main + all modules)
+			for (const auto& mod : parsedModules) {
+				buildCache.addSourceFile(mod.name);
+			}
+			// Hash compiler options that affect output
+			buildCache.addOption("opt:" + std::to_string(opts.optLevel));
+			buildCache.addOption("stack:" + std::to_string(opts.stackSize));
+			buildCache.addOption("target:" + opts.targetTriple);
+			buildCache.addOption("debug:" + std::to_string(opts.debugInfo ? 1 : 0));
+
+			// Check cache before doing expensive codegen
+			if (buildCache.restore(outputPath)) {
+				if (timing) {
+					auto now = std::chrono::steady_clock::now();
+					auto totalMs =
+							std::chrono::duration_cast<std::chrono::milliseconds>(now - timeStart).count();
+					std::cerr << "[TIMING] total (cached): " << totalMs << "ms" << std::endl;
+				}
+				// If running, execute the cached binary
+				if (opts.run) {
+					std::string cmd = outputPath;
+					for (const auto& arg : opts.runArgs) {
+						cmd += " " + arg;
+					}
+					int status = system(cmd.c_str());
+					return WIFEXITED(status) ? WEXITSTATUS(status) : -1;
+				}
+				return 0;
+			}
+		}
+
 		// Now generate LLVM IR from all parsed modules
 		Qd::LlvmGenerator generator;
 
@@ -655,6 +693,11 @@ int main(int argc, char** argv) {
 		if (!generator.writeExecutable(outputPath)) {
 			printError("failed to create executable");
 			return 1;
+		}
+
+		// Store in build cache for future runs
+		if (useCache) {
+			buildCache.store(outputPath);
 		}
 
 		if (opts.verbose) {

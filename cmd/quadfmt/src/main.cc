@@ -11,7 +11,6 @@ using namespace Qd;
 struct FmtOptions {
 	bool check = false;
 	bool inPlace = false;
-	int lineWidth = -1; // -1 means use default or config file
 	bool noSortImports = false;
 };
 
@@ -24,13 +23,11 @@ void printHelp() {
 	std::cout << "  -v, --version        Show version information\n";
 	std::cout << "  -c, --check          Check if files are formatted (exit 1 if not)\n";
 	std::cout << "  -w, --write          Format files in-place\n";
-	std::cout << "  --line-width <N>     Max line width (default: 100)\n";
 	std::cout << "  --no-sort-imports    Don't sort use statements\n";
 	std::cout << "\n";
 	std::cout << "Configuration:\n";
 	std::cout << "  Options can be set in .quadfmt.json (searches current dir and parents):\n";
 	std::cout << "  {\n";
-	std::cout << "    \"lineWidth\": 100,\n";
 	std::cout << "    \"sortImports\": true,\n";
 	std::cout << "    \"alignStructFields\": true\n";
 	std::cout << "  }\n";
@@ -40,7 +37,7 @@ void printHelp() {
 	std::cout << "  quadfmt -w file.qd           Format in-place\n";
 	std::cout << "  quadfmt -w src/              Format all .qd files in directory recursively\n";
 	std::cout << "  quadfmt -c *.qd              Check if files need formatting\n";
-	std::cout << "  quadfmt --line-width 80 f.qd Format with 80 char line width\n";
+	std::cout << "  quadfmt --no-sort-imports f.qd Format without sorting imports\n";
 }
 
 bool formatFile(const std::string& filename, const FmtOptions& opts, const FormatOptions& fmtOpts) {
@@ -101,21 +98,13 @@ int main(int argc, char* argv[]) {
 	qdcli::BaseOptions base;
 	FmtOptions opts;
 
-	auto handler = [&opts](const char* arg, int& i, int ac, char* av[]) -> bool {
+	auto handler = [&opts](const char* arg, int& /*i*/, int /*ac*/, char* /*av*/[]) -> bool {
 		if (strcmp(arg, "-c") == 0 || strcmp(arg, "--check") == 0) {
 			opts.check = true;
 			return true;
 		}
 		if (strcmp(arg, "-w") == 0 || strcmp(arg, "--write") == 0) {
 			opts.inPlace = true;
-			return true;
-		}
-		if (strcmp(arg, "--line-width") == 0) {
-			if (i + 1 >= ac) {
-				std::cerr << "quadfmt: --line-width requires a value\n";
-				return false;
-			}
-			opts.lineWidth = std::stoi(av[++i]);
 			return true;
 		}
 		if (strcmp(arg, "--no-sort-imports") == 0) {
@@ -154,9 +143,6 @@ int main(int argc, char* argv[]) {
 	FormatOptions fmtOpts = FormatOptions::loadFromFile(".");
 
 	// Command-line options override config file
-	if (opts.lineWidth > 0) {
-		fmtOpts.lineWidth = opts.lineWidth;
-	}
 	if (opts.noSortImports) {
 		fmtOpts.sortImports = false;
 	}

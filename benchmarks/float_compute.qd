@@ -4,7 +4,6 @@ use time
 
 // Basel problem: sum of 1/i^2 for i=1..n
 fn sum_inv_squares(n:i64 -- result:f64) {
-	-> n
 	0.0 -> sum
 	1 n 1 for i {
 		i cast<f64> -> fi
@@ -15,7 +14,6 @@ fn sum_inv_squares(n:i64 -- result:f64) {
 
 // Leibniz formula for pi: pi/4 = 1 - 1/3 + 1/5 - 1/7 + ...
 fn leibniz_pi(n:i64 -- result:f64) {
-	-> n
 	0.0 -> sum
 	1.0 -> sign
 	1 n 1 for i {
@@ -28,7 +26,6 @@ fn leibniz_pi(n:i64 -- result:f64) {
 
 // Mandelbrot escape iteration
 fn mandelbrot_iter(cr:f64 ci:f64 max_iter:i64 -- iters:i64) {
-	-> max_iter -> ci -> cr
 	0.0 -> zr
 	0.0 -> zi
 	max_iter -> result
@@ -46,13 +43,13 @@ fn mandelbrot_iter(cr:f64 ci:f64 max_iter:i64 -- iters:i64) {
 
 // Euclidean distance using math::sqrt
 fn distance(x1:f64 y1:f64 x2:f64 y2:f64 -- d:f64) {
-	-> y2 -> x2 -> y1 -> x1
-	x2 x1 - dup *  y2 y1 - dup *  + math::sqrt
+	x2 x1 - -> dx
+	y2 y1 - -> dy
+	dx dx * dy dy * + math::sqrt
 }
 
 // Sum of distances over n iterations
 fn distance_sum(n:i64 -- result:f64) {
-	-> n
 	0.0 -> sum
 	0 n 1 for i {
 		i cast<f64> 0.001 * -> x
@@ -63,7 +60,6 @@ fn distance_sum(n:i64 -- result:f64) {
 
 // Sum of sin(x) + cos(x) for x = 0..n*0.001
 fn trig_sum(n:i64 -- result:f64) {
-	-> n
 	0.0 -> sum
 	0 n 1 for i {
 		i cast<f64> 0.001 * -> x
@@ -87,7 +83,7 @@ fn main() {
 		elapsed best lt if { elapsed -> best  r -> result_f }
 	}
 	n "Basel sum(1/i^2, 1..%d):\n" fmt::printf
-	best 1000000 div "  Time: %d ms\n" fmt::printf
+	best 1000000 / "  Time: %d ms\n" fmt::printf
 	result_f "  Result: %.10f\n" fmt::printf
 
 	// Benchmark 2: Leibniz pi
@@ -101,7 +97,7 @@ fn main() {
 		elapsed best lt if { elapsed -> best  r -> result_f }
 	}
 	n "Leibniz pi(%d terms):\n" fmt::printf
-	best 1000000 div "  Time: %d ms\n" fmt::printf
+	best 1000000 / "  Time: %d ms\n" fmt::printf
 	result_f "  Result: %.10f\n" fmt::printf
 
 	// Benchmark 3: Mandelbrot grid
@@ -128,7 +124,7 @@ fn main() {
 		elapsed best lt if { elapsed -> best  t -> total }
 	}
 	size size "Mandelbrot %dx%d:\n" fmt::printf
-	best 1000000 div "  Time: %d ms\n" fmt::printf
+	best 1000000 / "  Time: %d ms\n" fmt::printf
 	total "  Result: %d\n" fmt::printf
 
 	// Benchmark 4: Distance computation (uses math::sqrt)
@@ -142,7 +138,7 @@ fn main() {
 		elapsed best lt if { elapsed -> best  r -> result_f }
 	}
 	n "Distance (%d iterations):\n" fmt::printf
-	best 1000000 div "  Time: %d ms\n" fmt::printf
+	best 1000000 / "  Time: %d ms\n" fmt::printf
 	result_f "  Result: %.10f\n" fmt::printf
 
 	// Benchmark 5: Trig computation (uses math::sin, math::cos)
@@ -156,6 +152,6 @@ fn main() {
 		elapsed best lt if { elapsed -> best  r -> result_f }
 	}
 	n "Trig sum(%d):\n" fmt::printf
-	best 1000000 div "  Time: %d ms\n" fmt::printf
+	best 1000000 / "  Time: %d ms\n" fmt::printf
 	result_f "  Result: %.10f\n" fmt::printf
 }

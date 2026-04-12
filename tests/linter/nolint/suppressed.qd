@@ -1,0 +1,15 @@
+// Test: //nolint suppresses warnings
+fn suppressed_function() { //nolint
+	1 2 add
+}
+
+fn suppressed_specific() { //nolint:unused-functions
+	3 4 add
+}
+
+fn not_suppressed() {
+	5 6 add
+}
+
+fn main() {
+}

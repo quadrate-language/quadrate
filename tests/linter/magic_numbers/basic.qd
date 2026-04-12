@@ -1,0 +1,9 @@
+// Test: Magic number detection
+const MAX = 100
+
+fn main() {
+	0 -> a
+	1 -> b
+	42 -> c
+	MAX -> d
+}

@@ -1,0 +1,3 @@
+[1mtests/linter/long_functions/basic.qd:6:4:[0m [1m[1;35mwarning:[0m [1mFunction 'long_func' is too long (13 lines, max: 5)[0m
+
+1 issue found

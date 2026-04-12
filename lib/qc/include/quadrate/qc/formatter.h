@@ -16,7 +16,6 @@ namespace Qd {
 	 * @brief Formatting options for the Quadrate formatter
 	 */
 	struct FormatOptions {
-		int lineWidth = 100;		   // Max line width before expanding blocks
 		bool sortImports = true;	   // Sort and group use statements
 		bool alignStructFields = true; // Align struct field types
 

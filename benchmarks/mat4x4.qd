@@ -11,12 +11,6 @@ fn mat4_bench(
 	b30:f64 b31:f64 b32:f64 b33:f64
 	-- checksum:f64
 ) {
-	-> b33 -> b32 -> b31 -> b30
-	-> b23 -> b22 -> b21 -> b20
-	-> b13 -> b12 -> b11 -> b10
-	-> b03 -> b02 -> b01 -> b00
-	-> n
-
 	// A = identity
 	1.0 -> a00  0.0 -> a01  0.0 -> a02  0.0 -> a03
 	0.0 -> a10  1.0 -> a11  0.0 -> a12  0.0 -> a13
@@ -83,6 +77,6 @@ fn main() {
 		}
 	}
 	n "Mat4x4 multiply (%d iterations):\n" fmt::printf
-	best 1000000 div "  Time: %d ms\n" fmt::printf
+	best 1000000 / "  Time: %d ms\n" fmt::printf
 	checksum "  Result: %.10f\n" fmt::printf
 }

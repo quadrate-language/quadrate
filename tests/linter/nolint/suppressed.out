@@ -1,0 +1,3 @@
+[1mtests/linter/nolint/suppressed.qd:10:4:[0m [1m[1;35mwarning:[0m [1mUnused function 'not_suppressed'[0m
+
+1 issue found

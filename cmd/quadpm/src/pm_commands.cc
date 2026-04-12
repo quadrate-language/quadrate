@@ -474,21 +474,80 @@ void listModules() {
 }
 
 // Update a single module by running git pull
-bool updateModule(const std::string& moduleDir) {
+// Update a module using semver resolution when a version constraint is available.
+// Falls back to git pull for branch-based dependencies.
+bool updateModule(const std::string& moduleDir, const Dependency* dep) {
+	std::string modulesDir = getModulesDir();
 	std::string name = fs::path(moduleDir).filename().string();
 
-	// Parse module@version format for display
-	std::string displayName = name;
+	// Parse module@version format
 	std::string moduleName = name;
+	std::string currentVersion;
 	size_t atPos = name.find('@');
 	if (atPos != std::string::npos) {
 		moduleName = name.substr(0, atPos);
-		displayName = moduleName + " @ " + name.substr(atPos + 1);
+		currentVersion = name.substr(atPos + 1);
 	}
 
+	std::string displayName = currentVersion.empty() ? moduleName : moduleName + " @ " + currentVersion;
+
+	// If we have a semver-constrained dependency, resolve to newest compatible version
+	if (dep && dep->isSemVer && !dep->version.empty() && isSemVer(currentVersion)) {
+		std::cout << COLOR_CYAN << "Updating " << COLOR_BOLD << displayName << COLOR_RESET
+				  << " (constraint: " << dep->version << ")...\n";
+
+		std::string resolvedTag = resolveSemVerRange(dep->url, dep->version);
+		if (resolvedTag.empty()) {
+			std::cerr << COLOR_RED << "  ✗ Failed to resolve version range" << COLOR_RESET << "\n";
+			return false;
+		}
+
+		// Check if already at the best version
+		SemVer currentSV = parseSemVer(currentVersion);
+		SemVer resolvedSV = parseSemVer(resolvedTag);
+		if (currentSV.isValid() && resolvedSV.isValid() && !(resolvedSV > currentSV)) {
+			std::cout << COLOR_GREEN << "  ✓ Already at newest compatible version (" << currentVersion << ")"
+					  << COLOR_RESET << "\n";
+			return true;
+		}
+
+		// Install at the new version
+		std::string hostPath = extractHostPath(dep->url);
+		std::string newDirName = getInstalledDirName(hostPath, resolvedTag);
+		std::string newDir = modulesDir + "/" + newDirName;
+
+		if (fs::exists(newDir)) {
+			std::cout << COLOR_GREEN << "  ✓ Version " << resolvedTag << " already installed" << COLOR_RESET << "\n";
+		} else {
+			GitRef gitRef;
+			gitRef.url = dep->url;
+			gitRef.ref = resolvedTag;
+			gitRef.moduleName = moduleName;
+			gitRef.hostPath = hostPath;
+			std::string installed = gitClone(gitRef);
+			if (installed.empty()) {
+				return false;
+			}
+		}
+
+		// Remove old version directory
+		std::error_code ec;
+		fs::remove_all(moduleDir, ec);
+		if (ec) {
+			std::cerr << COLOR_YELLOW << "  ⚠ Could not remove old version: " << ec.message() << COLOR_RESET << "\n";
+		}
+
+		// Update namespace symlink
+		ensureNamespaceSymlink(newDir, newDirName, moduleName);
+
+		std::cout << COLOR_GREEN << "  ✓ Updated " << moduleName << " " << currentVersion << " → " << resolvedTag
+				  << COLOR_RESET << "\n";
+		return true;
+	}
+
+	// Fallback: git pull for branch-based or unconstrained deps
 	std::cout << COLOR_CYAN << "Updating " << COLOR_BOLD << displayName << COLOR_RESET << "...\n";
 
-	// Run git pull in the module directory
 	int result = execCommandLive({"git", "-C", moduleDir, "pull"});
 
 	if (result != 0) {
@@ -1127,6 +1186,16 @@ int updateModules(const std::string& targetModuleName) {
 		return 1;
 	}
 
+	// Load dependency constraints from qd.json (if present) for semver resolution
+	std::map<std::string, Dependency> depsByName;
+	std::string manifestPath = "qd.json";
+	if (fs::exists(manifestPath)) {
+		auto deps = parseDependencies(manifestPath);
+		for (auto& dep : deps) {
+			depsByName[dep.name] = dep;
+		}
+	}
+
 	bool found = false;
 	int failures = 0;
 
@@ -1156,7 +1225,14 @@ int updateModules(const std::string& targetModuleName) {
 		}
 
 		found = true;
-		if (!updateModule(entry.path().string())) {
+
+		// Find matching dependency constraint
+		size_t atPos = name.find('@');
+		std::string moduleName = (atPos != std::string::npos) ? name.substr(0, atPos) : name;
+		auto depIt = depsByName.find(moduleName);
+		const Dependency* dep = (depIt != depsByName.end()) ? &depIt->second : nullptr;
+
+		if (!updateModule(entry.path().string(), dep)) {
 			failures++;
 		}
 	}

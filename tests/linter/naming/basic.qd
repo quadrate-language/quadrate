@@ -1,0 +1,21 @@
+// Test: Naming convention checks
+struct goodName {
+	x:i64
+}
+
+struct BadName {
+	x:i64
+}
+
+fn camelCase() {
+	1 2 add
+}
+
+fn snake_case() {
+	3 4 add
+}
+
+fn main() {
+	camelCase
+	snake_case
+}

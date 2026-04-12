@@ -89,26 +89,7 @@ namespace Qd {
 		std::ifstream f(configPath);
 		std::string content((std::istreambuf_iterator<char>(f)), std::istreambuf_iterator<char>());
 
-		size_t pos = content.find("\"lineWidth\"");
-		if (pos != std::string::npos) {
-			pos = content.find(':', pos);
-			if (pos != std::string::npos) {
-				pos++;
-				while (pos < content.length() && std::isspace(content[pos])) {
-					pos++;
-				}
-				int val = 0;
-				while (pos < content.length() && std::isdigit(content[pos])) {
-					val = val * 10 + (content[pos] - '0');
-					pos++;
-				}
-				if (val > 0) {
-					opts.lineWidth = val;
-				}
-			}
-		}
-
-		pos = content.find("\"sortImports\"");
+		size_t pos = content.find("\"sortImports\"");
 		if (pos != std::string::npos) {
 			pos = content.find(':', pos);
 			if (pos != std::string::npos) {

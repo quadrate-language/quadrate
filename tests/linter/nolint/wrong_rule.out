@@ -1,0 +1,3 @@
+[1mtests/linter/nolint/wrong_rule.qd:2:4:[0m [1m[1;35mwarning:[0m [1mUnused function 'still_warned'[0m
+
+1 issue found

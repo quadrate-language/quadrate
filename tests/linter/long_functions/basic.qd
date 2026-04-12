@@ -1,0 +1,24 @@
+// Test: Long function detection
+fn short_func() {
+	1 2 add
+}
+
+fn long_func() {
+	1
+	2
+	3
+	4
+	5
+	6
+	7
+	8
+	9
+	10
+	11
+	12
+}
+
+fn main() {
+	short_func
+	long_func
+}

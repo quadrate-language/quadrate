@@ -3,7 +3,6 @@ use strings
 use time
 
 fn benchmark_concat(limit:i64 -- result:i64) {
-	-> limit
 	"" -> s
 	0 limit 1 for it {
 		s "a" strings::concat -> s
@@ -15,7 +14,6 @@ fn main() {
 	"=== Quadrate String Benchmarks ===\n" fmt::printf
 
 	// Benchmark: String Concatenation
-	// This tests the overhead of allocation/copying in the current string implementation
 	50000 -> iterations
 
 	// Warmup
@@ -35,6 +33,6 @@ fn main() {
 	iterations benchmark_concat -> result
 
 	iterations "String Concat (%d iterations):\n" fmt::printf
-	best 1000000 div "  Time: %d ms\n" fmt::printf
+	best 1000000 / "  Time: %d ms\n" fmt::printf
 	result "  Final Length: %d\n" fmt::printf
 }

@@ -1,3 +1,4 @@
+#include <algorithm>
 #include <cstdint>
 #include <cstring>
 #include <functional>
@@ -50,7 +51,57 @@ struct LintIssue {
 	size_t column;
 	std::string message;
 	std::string level; // "warning", "error"
+	std::string rule;  // e.g. "unused-functions", "dead-code"
 };
+
+// Check if a source line contains a //nolint directive that suppresses the given rule.
+// Supports: //nolint (suppresses all), //nolint:rule1,rule2 (suppresses named rules)
+static bool isNolint(const std::string& sourceLine, const std::string& rule) {
+	size_t pos = sourceLine.find("//nolint");
+	if (pos == std::string::npos) {
+		return false;
+	}
+	pos += 8; // skip "//nolint"
+	if (pos >= sourceLine.size() || sourceLine[pos] != ':') {
+		return true; // bare //nolint — suppresses everything
+	}
+	// Parse comma-separated rule names after the colon
+	pos++; // skip ':'
+	size_t end = sourceLine.size();
+	while (pos < end) {
+		size_t comma = sourceLine.find(',', pos);
+		if (comma == std::string::npos) {
+			comma = end;
+		}
+		// Trim whitespace from rule name
+		size_t start = pos;
+		while (start < comma && std::isspace(sourceLine[start])) start++;
+		size_t rend = comma;
+		while (rend > start && std::isspace(sourceLine[rend - 1])) rend--;
+		if (sourceLine.substr(start, rend - start) == rule) {
+			return true;
+		}
+		pos = comma + 1;
+	}
+	return false;
+}
+
+// Split source into lines (1-indexed: lines[1] is the first line)
+static std::vector<std::string> splitLines(const std::string& source) {
+	std::vector<std::string> lines;
+	lines.push_back(""); // index 0 unused (lines are 1-based)
+	size_t start = 0;
+	while (start < source.size()) {
+		size_t nl = source.find('\n', start);
+		if (nl == std::string::npos) {
+			lines.push_back(source.substr(start));
+			break;
+		}
+		lines.push_back(source.substr(start, nl - start));
+		start = nl + 1;
+	}
+	return lines;
+}
 
 void printHelp() {
 	std::cout << "quadlint - Quadrate code linter\n\n";
@@ -75,6 +126,12 @@ void printHelp() {
 	std::cout << "  --check-long-functions    Enable long function detection\n";
 	std::cout << "  --check-naming            Enable naming convention checks\n";
 	std::cout << "  --max-function-lines <N>  Maximum function lines (default: 50)\n";
+	std::cout << "\nInline suppression:\n";
+	std::cout << "  Add //nolint on a line to suppress all warnings on that line.\n";
+	std::cout << "  Add //nolint:rule1,rule2 to suppress specific rules.\n";
+	std::cout << "  Rules: unused-functions, unused-variables, dead-code, deep-nesting,\n";
+	std::cout << "         missing-defer, shadow-variables, empty-blocks, constant-conditions,\n";
+	std::cout << "         magic-numbers, long-functions, naming\n";
 	std::cout << "\nExamples:\n";
 	std::cout << "  quadlint file.qd          Lint a single file\n";
 	std::cout << "  quadlint src/             Lint all .qd files in directory recursively\n";
@@ -204,6 +261,7 @@ void detectDeadCode(IAstNode* node, const std::string& filename, std::vector<Lin
 											: terminator->type() == IAstNode::Type::BREAK_STATEMENT ? "break"
 																									: "continue");
 				issue.level = "warning";
+				issue.rule = "dead-code";
 				issues.push_back(issue);
 				break; // Only report first unreachable statement
 			}
@@ -243,6 +301,7 @@ void detectDeepNesting(IAstNode* node, const std::string& filename, int maxDepth
 			issue.message = "Deep nesting detected (depth: " + std::to_string(currentDepth) +
 							", max: " + std::to_string(maxDepth) + ")";
 			issue.level = "warning";
+			issue.rule = "deep-nesting";
 			issues.push_back(issue);
 		}
 	}
@@ -296,6 +355,7 @@ void detectMissingDefer(IAstNode* node, const std::string& filename, std::vector
 			issue.column = node->column();
 			issue.message = "Potential struct allocation without defer - consider using defer for cleanup";
 			issue.level = "warning";
+			issue.rule = "missing-defer";
 			issues.push_back(issue);
 		}
 	}
@@ -345,6 +405,7 @@ void detectShadowVariables(IAstNode* node, const std::string& filename, std::vec
 			issue.column = node->column();
 			issue.message = "Variable '" + iterName + "' shadows variable from outer scope";
 			issue.level = "warning";
+			issue.rule = "shadow-variables";
 			issues.push_back(issue);
 		}
 
@@ -422,6 +483,7 @@ void detectEmptyBlocks(IAstNode* node, const std::string& filename, std::vector<
 																						 : "block";
 				issue.message = "Empty '" + blockType + "' block";
 				issue.level = "warning";
+				issue.rule = "empty-blocks";
 				issues.push_back(issue);
 				break;
 			}
@@ -464,6 +526,7 @@ void detectConstantConditions(IAstNode* node, const std::string& filename, std::
 					issue.message =
 							"Constant condition: expression is always " + std::string(isAlwaysTrue ? "true" : "false");
 					issue.level = "warning";
+					issue.rule = "constant-conditions";
 					issues.push_back(issue);
 				}
 			}
@@ -506,6 +569,7 @@ void detectMagicNumbers(IAstNode* node, const std::string& filename, std::vector
 					issue.column = node->column();
 					issue.message = "Magic number '" + value + "' - consider using a named constant";
 					issue.level = "warning";
+					issue.rule = "magic-numbers";
 					issues.push_back(issue);
 				}
 			}
@@ -553,6 +617,7 @@ void detectLongFunctions(IAstNode* node, const std::string& filename, int maxLin
 			issue.message = "Function '" + func->name() + "' is too long (" + std::to_string(functionLines) +
 							" lines, max: " + std::to_string(maxLines) + ")";
 			issue.level = "warning";
+			issue.rule = "long-functions";
 			issues.push_back(issue);
 		}
 	}
@@ -617,6 +682,7 @@ void detectNamingConventions(IAstNode* node, const std::string& filename, std::v
 			issue.column = func->column();
 			issue.message = "Function '" + name + "' should use snake_case";
 			issue.level = "warning";
+			issue.rule = "naming";
 			issues.push_back(issue);
 		}
 	}
@@ -631,6 +697,7 @@ void detectNamingConventions(IAstNode* node, const std::string& filename, std::v
 			issue.column = structDecl->column();
 			issue.message = "Struct '" + name + "' should use PascalCase";
 			issue.level = "warning";
+			issue.rule = "naming";
 			issues.push_back(issue);
 		}
 	}
@@ -686,6 +753,7 @@ std::vector<LintIssue> lintFile(const std::string& filename, const LintOptions& 
 					issue.column = funcNode->column();
 					issue.message = "Unused function '" + funcName + "'";
 					issue.level = "warning";
+					issue.rule = "unused-functions";
 					issues.push_back(issue);
 				}
 			}
@@ -733,6 +801,7 @@ std::vector<LintIssue> lintFile(const std::string& filename, const LintOptions& 
 							issue.column = varNode->column();
 							issue.message = "Unused local variable '" + varName + "'";
 							issue.level = "warning";
+							issue.rule = "unused-variables";
 							issues.push_back(issue);
 						}
 					}
@@ -786,6 +855,18 @@ std::vector<LintIssue> lintFile(const std::string& filename, const LintOptions& 
 			detectNamingConventions(root, filename, issues);
 		}
 
+		// Filter out issues suppressed by //nolint directives
+		auto lines = splitLines(source);
+		issues.erase(
+				std::remove_if(issues.begin(), issues.end(),
+						[&lines](const LintIssue& issue) {
+							if (issue.line > 0 && issue.line < lines.size()) {
+								return isNolint(lines[issue.line], issue.rule);
+							}
+							return false;
+						}),
+				issues.end());
+
 	} catch (const std::exception& e) {
 		// Silently skip files that can't be read/parsed
 	}
@@ -817,6 +898,7 @@ void printIssuesJson(const std::vector<LintIssue>& issues) {
 		json_object_set_new(obj, "line", json_integer(static_cast<json_int_t>(issue.line)));
 		json_object_set_new(obj, "column", json_integer(static_cast<json_int_t>(issue.column)));
 		json_object_set_new(obj, "level", json_string(issue.level.c_str()));
+		json_object_set_new(obj, "rule", json_string(issue.rule.c_str()));
 		json_object_set_new(obj, "message", json_string(issue.message.c_str()));
 		json_array_append_new(array, obj);
 	}

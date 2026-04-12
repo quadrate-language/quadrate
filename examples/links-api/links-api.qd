@@ -1,0 +1,129 @@
+// links-api — A bookmark store as a JSON HTTP API
+//
+// Demonstrates: http server with routing, json building,
+// string builder, path parameters, query parameters, switch.
+//
+// Usage:
+//   quad run links-api.qd
+//
+// Endpoints:
+//   GET /              — service info
+//   GET /links         — list all links
+//   GET /links/:id     — get a link by id
+//   GET /search?q=...  — search links by title
+
+use http
+use json
+use sb
+use strings
+use strconv
+
+// Data store as constants (4 links)
+const COUNT = 4
+
+fn get_url(id:i64 -- url:str) {
+	id switch {
+		0 { "https://quad.r8.rs" }
+		1 { "https://sr.ht" }
+		2 { "https://llvm.org" }
+		3 { "https://en.wikipedia.org/wiki/Forth_(programming_language)" }
+		_ { "" }
+	}
+}
+
+fn get_title(id:i64 -- title:str) {
+	id switch {
+		0 { "Quadrate docs" }
+		1 { "Sourcehut" }
+		2 { "LLVM Project" }
+		3 { "Forth on Wikipedia" }
+		_ { "" }
+	}
+}
+
+fn link_json(id:i64 -- result:str) {
+	"id" id json::kv_int -> s
+	s "url" id get_url json::kv json::join -> s
+	s "title" id get_title json::kv json::join -> s
+	s json::obj
+}
+
+fn handle_root(c:ptr -- ) {
+	"service" "links-api" json::kv -> s
+	s "version" "1.0" json::kv json::join -> s
+	s "links" COUNT json::kv_int json::join -> s
+	c 200 s json::obj http::json
+}
+
+fn handle_list(c:ptr -- ) {
+	sb::new -> out
+	out "[" append -> out
+	0 -> i
+	loop {
+		i COUNT lt if {
+			i 0 > if { out "," append -> out }
+			out i link_json append -> out
+			i 1 + -> i
+		} else {
+			break
+		}
+	}
+	out "]" append -> out
+	out build -> body
+	c 200 body http::json
+}
+
+fn handle_get_one(c:ptr -- ) {
+	c "id" http::param 10 strconv::parse_int! -> id
+	id 0 >= id COUNT lt and if {
+		c 200 id link_json http::json
+	} else {
+		c 404 "{\"error\":\"not found\"}" http::json
+	}
+}
+
+fn handle_search(c:ptr -- ) {
+	c "q" http::query_param -> query
+	query strings::len 0 == if {
+		c 400 "{\"error\":\"missing q parameter\"}" http::json
+	} else {
+		sb::new -> out
+		out "[" append -> out
+		0 -> i
+		1 -> first
+		query strings::lower -> q
+		loop {
+			i COUNT lt if {
+				i get_title strings::lower q strings::contains if {
+					first 0 == if { out "," append -> out }
+					out i link_json append -> out
+					0 -> first
+				}
+				i 1 + -> i
+			} else {
+				break
+			}
+		}
+		out "]" append -> out
+		out build -> body
+		c 200 body http::json
+	}
+}
+
+fn main() {
+	http::engine -> e
+
+	e "/" &handle_root http::GET
+	e "/links" &handle_list http::GET
+	e "/links/:id" &handle_get_one http::GET
+	e "/search" &handle_search http::GET
+
+	"Links API listening on :8080" print nl
+	"  GET /              - service info" print nl
+	"  GET /links         - list all links" print nl
+	"  GET /links/:id     - get a link" print nl
+	"  GET /search?q=...  - search by title" print nl
+
+	e ":8080" http::run!
+	e http::free_engine
+}

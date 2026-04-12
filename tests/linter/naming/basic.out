@@ -1,0 +1,4 @@
+[1mtests/linter/naming/basic.qd:2:8:[0m [1m[1;35mwarning:[0m [1mStruct 'goodName' should use PascalCase[0m
+[1mtests/linter/naming/basic.qd:10:4:[0m [1m[1;35mwarning:[0m [1mFunction 'camelCase' should use snake_case[0m
+
+2 issues found

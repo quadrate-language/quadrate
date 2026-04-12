@@ -4,20 +4,20 @@ use time
 // Benchmark: tight arithmetic loop
 fn benchmark_arithmetic(iterations:i64 -- result:i64) {
 	0 -> sum
-	0 swap 1 for it {
-		sum it add it mul 3 add 7 mod -> sum
+	0 iterations 1 for it {
+		sum it + it * 3 + 7 % -> sum
 	}
 	sum
 }
 
 // Benchmark: recursive fibonacci
 fn fib(n:i64 -- result:i64) {
-	dup 2 lt if {
-		// n < 2, return n
+	n 2 lt if {
+		n
 	} else {
-		dup 1 sub fib
-		swap 2 sub fib
-		add
+		n 1 - fib
+		n 2 - fib
+		+
 	}
 }
 
@@ -39,7 +39,7 @@ fn main() {
 		}
 	}
 	iterations "Arithmetic loop (%d iterations):\n" fmt::printf
-	best 1000000 div "  Time: %d ms\n" fmt::printf
+	best 1000000 / "  Time: %d ms\n" fmt::printf
 	result "  Result: %d\n" fmt::printf
 
 	// Benchmark 2: Recursive fibonacci
@@ -56,6 +56,6 @@ fn main() {
 		}
 	}
 	n "Fibonacci (n=%d):\n" fmt::printf
-	best 1000000 div "  Time: %d ms\n" fmt::printf
+	best 1000000 / "  Time: %d ms\n" fmt::printf
 	result "  Result: %d\n" fmt::printf
 }
