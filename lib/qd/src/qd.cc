@@ -285,6 +285,31 @@ void qd_add_script(qd_module* mod, const char* script) {
 	mod->scripts.push_back(script);
 }
 
+int qd_load_file(qd_module* mod, const char* path) {
+	if (!mod || !path) {
+		return -1;
+	}
+
+	std::ifstream file(path, std::ios::in | std::ios::ate);
+	if (!file.is_open()) {
+		fprintf(stderr, "qd_load_file: Could not open '%s'\n", path);
+		return -1;
+	}
+
+	auto pos = file.tellg();
+	if (pos < 0) {
+		return -1;
+	}
+	size_t size = static_cast<size_t>(pos);
+	file.seekg(0);
+
+	std::string contents(size, '\0');
+	file.read(&contents[0], static_cast<std::streamsize>(size));
+
+	mod->scripts.push_back(std::move(contents));
+	return 0;
+}
+
 void qd_register_function(qd_module* mod, const char* name, const char* signature, qd_native_fn fn, void* userdata) {
 	if (!mod || !name || !fn || !signature) {
 		return;

@@ -1,5 +1,4 @@
 #include <quadrate/qd/qd.h>
-#include <quadrate/rt/stack.h>
 #include <stdio.h>
 #include <string.h>
 #include <math.h>
@@ -17,28 +16,23 @@ static void check(const char* name, bool condition) {
 }
 
 int native_add(qd_context* ctx, void*) {
-	qd_stack_element_t b, a;
-	qd_stack_pop(ctx->st, &b);
-	qd_stack_pop(ctx->st, &a);
-	return qd_push_i(ctx, a.value.i + b.value.i);
+	int64_t b, a;
+	qd_pop_i(ctx, &b);
+	qd_pop_i(ctx, &a);
+	return qd_push_i(ctx, a + b);
 }
 
 int native_hypot(qd_context* ctx, void*) {
-	qd_stack_element_t y, x;
-	qd_stack_pop(ctx->st, &y);
-	qd_stack_pop(ctx->st, &x);
-	return qd_push_f(ctx, sqrt(x.value.f * x.value.f + y.value.f * y.value.f));
+	double y, x;
+	qd_pop_f(ctx, &y);
+	qd_pop_f(ctx, &x);
+	return qd_push_f(ctx, sqrt(x * x + y * y));
 }
 
 int native_strlen(qd_context* ctx, void*) {
-	qd_stack_element_t s;
-	qd_stack_pop(ctx->st, &s);
-	int64_t len = 0;
-	if (s.type == QD_STACK_TYPE_STR) {
-		len = static_cast<int64_t>(strlen(qd_string_data(s.value.s)));
-		qd_string_release(s.value.s);
-	}
-	return qd_push_i(ctx, len);
+	char buf[4096];
+	qd_pop_s(ctx, buf, sizeof(buf));
+	return qd_push_i(ctx, static_cast<int64_t>(strlen(buf)));
 }
 
 struct Config {
@@ -53,9 +47,9 @@ int native_get_prefix(qd_context* ctx, void* userdata) {
 
 int native_scale(qd_context* ctx, void* userdata) {
 	Config* cfg = static_cast<Config*>(userdata);
-	qd_stack_element_t x;
-	qd_stack_pop(ctx->st, &x);
-	return qd_push_i(ctx, x.value.i * cfg->multiplier);
+	int64_t x;
+	qd_pop_i(ctx, &x);
+	return qd_push_i(ctx, x * cfg->multiplier);
 }
 
 int native_origin(qd_context* ctx, void*) {
@@ -65,20 +59,14 @@ int native_origin(qd_context* ctx, void*) {
 }
 
 int native_concat(qd_context* ctx, void*) {
-	qd_stack_element_t b_elem, a_elem;
-	qd_stack_pop(ctx->st, &b_elem);
-	qd_stack_pop(ctx->st, &a_elem);
+	char a_buf[256], b_buf[256];
+	qd_pop_s(ctx, b_buf, sizeof(b_buf));
+	qd_pop_s(ctx, a_buf, sizeof(a_buf));
 
-	const char* a_str = (a_elem.type == QD_STACK_TYPE_STR) ? qd_string_data(a_elem.value.s) : "";
-	const char* b_str = (b_elem.type == QD_STACK_TYPE_STR) ? qd_string_data(b_elem.value.s) : "";
+	char result[512];
+	snprintf(result, sizeof(result), "%s%s", a_buf, b_buf);
 
-	char buf[512];
-	snprintf(buf, sizeof(buf), "%s%s", a_str, b_str);
-
-	if (a_elem.type == QD_STACK_TYPE_STR) qd_string_release(a_elem.value.s);
-	if (b_elem.type == QD_STACK_TYPE_STR) qd_string_release(b_elem.value.s);
-
-	return qd_push_s(ctx, buf);
+	return qd_push_s(ctx, result);
 }
 
 void test_native_with_inputs(qd_context* ctx) {

@@ -93,6 +93,79 @@ int qd_push_p(qd_context* ctx, void* value) {
 	return (int){0};
 }
 
+int qd_pop_i(qd_context* ctx, int64_t* value) {
+	if (!ctx || !value) {
+		return QD_ERR_NULL_POINTER;
+	}
+	qd_stack_element_t elem;
+	qd_stack_error err = qd_stack_pop(ctx->st, &elem);
+	if (err != QD_STACK_OK) {
+		return QD_ERR_GENERIC;
+	}
+	if (elem.type != QD_STACK_TYPE_INT) {
+		return QD_ERR_TYPE_MISMATCH;
+	}
+	*value = elem.value.i;
+	return QD_OK;
+}
+
+int qd_pop_f(qd_context* ctx, double* value) {
+	if (!ctx || !value) {
+		return QD_ERR_NULL_POINTER;
+	}
+	qd_stack_element_t elem;
+	qd_stack_error err = qd_stack_pop(ctx->st, &elem);
+	if (err != QD_STACK_OK) {
+		return QD_ERR_GENERIC;
+	}
+	if (elem.type != QD_STACK_TYPE_FLOAT) {
+		return QD_ERR_TYPE_MISMATCH;
+	}
+	*value = elem.value.f;
+	return QD_OK;
+}
+
+int qd_pop_s(qd_context* ctx, char* buf, size_t buf_size) {
+	if (!ctx || !buf || buf_size == 0) {
+		return QD_ERR_NULL_POINTER;
+	}
+	qd_stack_element_t elem;
+	qd_stack_error err = qd_stack_pop(ctx->st, &elem);
+	if (err != QD_STACK_OK) {
+		return QD_ERR_GENERIC;
+	}
+	if (elem.type != QD_STACK_TYPE_STR) {
+		return QD_ERR_TYPE_MISMATCH;
+	}
+	const char* str = qd_string_data(elem.value.s);
+	size_t len = qd_string_length(elem.value.s);
+	int result = QD_OK;
+	if (len >= buf_size) {
+		len = buf_size - 1;
+		result = QD_ERR_GENERIC;
+	}
+	memcpy(buf, str, len);
+	buf[len] = '\0';
+	qd_string_release(elem.value.s);
+	return result;
+}
+
+int qd_pop_p(qd_context* ctx, void** value) {
+	if (!ctx || !value) {
+		return QD_ERR_NULL_POINTER;
+	}
+	qd_stack_element_t elem;
+	qd_stack_error err = qd_stack_pop(ctx->st, &elem);
+	if (err != QD_STACK_OK) {
+		return QD_ERR_GENERIC;
+	}
+	if (elem.type != QD_STACK_TYPE_PTR) {
+		return QD_ERR_TYPE_MISMATCH;
+	}
+	*value = elem.value.p;
+	return QD_OK;
+}
+
 // Helper function to check if string contains whitespace
 int qd_peek(qd_context* ctx) {
 	qd_stack_element_t val;
@@ -868,9 +941,38 @@ int qd_panic(qd_context* ctx) {
 	return (int){0};
 }
 
-// Helper function to check if string is an integer
-// Helper function to check if string is a float
-// Helper function to remove quotes from a string
+int64_t qd_error_code(const qd_context* ctx) {
+	if (!ctx) {
+		return 0;
+	}
+	return ctx->error_code;
+}
+
+const char* qd_error_message(const qd_context* ctx) {
+	if (!ctx) {
+		return NULL;
+	}
+	return ctx->error_msg;
+}
+
+void qd_clear_error(qd_context* ctx) {
+	if (!ctx) {
+		return;
+	}
+	ctx->error_code = 0;
+	if (ctx->error_msg) {
+		free(ctx->error_msg);
+		ctx->error_msg = NULL;
+	}
+}
+
+size_t qd_context_stack_size(const qd_context* ctx) {
+	if (!ctx || !ctx->st) {
+		return 0;
+	}
+	return qd_stack_size(ctx->st);
+}
+
 // Context management functions
 qd_context* qd_create_context(size_t stack_size) {
 	qd_context* ctx = (qd_context*)malloc(sizeof(qd_context));

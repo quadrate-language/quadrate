@@ -136,39 +136,29 @@ qd_register_function(mod, "reset", "( -- )", my_reset, NULL);
 
 ### Reading Arguments from the Stack
 
-Use `qd_stack_pop` to read arguments:
+Use the typed pop functions to read arguments. They handle type checking and string cleanup automatically:
 
 ```c
-#include <quadrate/rt/stack.h>
-
-// Native function: (a b -- sum)
+// Native function: (a:i64 b:i64 -- sum:i64)
 int native_add(qd_context* ctx, void* userdata) {
-    qd_stack_element_t b, a;
-
-    // Pop in reverse order (b is on top)
-    qd_stack_pop(ctx->st, &b);
-    qd_stack_pop(ctx->st, &a);
-
-    int64_t sum = a.value.i + b.value.i;
-    return qd_push_i(ctx, sum);
+    int64_t b, a;
+    qd_pop_i(ctx, &b);  // Pop b (top)
+    qd_pop_i(ctx, &a);  // Pop a (below b)
+    return qd_push_i(ctx, a + b);
 }
 ```
 
-### Stack Element Types
-
-The `qd_stack_element_t` structure:
+### Pop Functions
 
 ```c
-typedef struct {
-    union {
-        int64_t i;       // Integer value
-        double f;        // Float value
-        qd_string_t* s;  // String value (reference counted)
-        void* p;         // Pointer value
-    } value;
-    qd_stack_type type;  // QD_STACK_TYPE_INT, _FLOAT, _STR, _PTR
-} qd_stack_element_t;
+int64_t i;  qd_pop_i(ctx, &i);              // Pop integer
+double f;   qd_pop_f(ctx, &f);              // Pop float
+char buf[256]; qd_pop_s(ctx, buf, sizeof(buf)); // Pop string into buffer
+void* p;    qd_pop_p(ctx, &p);              // Pop pointer
 ```
+
+All pop functions return `QD_OK` on success, or an error code on underflow/type mismatch.
+`qd_pop_s` copies the string into your buffer and releases the internal reference automatically.
 
 ### Push Functions
 
@@ -355,7 +345,6 @@ void engine_move(GameState* game, int64_t id, double dx, double dy) {
 // scripting.c
 #include <quadrate/qd/qd.h>
 #include <quadrate/rt/runtime.h>
-#include <quadrate/rt/stack.h>
 #include "engine.h"
 #include <stdio.h>
 #include <math.h>
@@ -374,10 +363,10 @@ int script_self(qd_context* ctx, void* userdata) {
 // Get entity position (id -- x y)
 int script_get_pos(qd_context* ctx, void* userdata) {
     GameState* game = (GameState*)userdata;
-    qd_stack_element_t id_elem;
-    qd_stack_pop(ctx->st, &id_elem);
+    int64_t id;
+    qd_pop_i(ctx, &id);
 
-    Entity* e = engine_get_entity(game, id_elem.value.i);
+    Entity* e = engine_get_entity(game, id);
     if (!e) {
         qd_push_f(ctx, 0.0);
         qd_push_f(ctx, 0.0);
@@ -391,46 +380,47 @@ int script_get_pos(qd_context* ctx, void* userdata) {
 // Get entity health (id -- health)
 int script_get_health(qd_context* ctx, void* userdata) {
     GameState* game = (GameState*)userdata;
-    qd_stack_element_t id_elem;
-    qd_stack_pop(ctx->st, &id_elem);
+    int64_t id;
+    qd_pop_i(ctx, &id);
 
-    Entity* e = engine_get_entity(game, id_elem.value.i);
+    Entity* e = engine_get_entity(game, id);
     return qd_push_i(ctx, e ? e->health : 0);
 }
 
 // Move entity (id dx dy --)
 int script_move(qd_context* ctx, void* userdata) {
     GameState* game = (GameState*)userdata;
-    qd_stack_element_t dy_elem, dx_elem, id_elem;
-    qd_stack_pop(ctx->st, &dy_elem);
-    qd_stack_pop(ctx->st, &dx_elem);
-    qd_stack_pop(ctx->st, &id_elem);
+    double dy, dx;
+    int64_t id;
+    qd_pop_f(ctx, &dy);
+    qd_pop_f(ctx, &dx);
+    qd_pop_i(ctx, &id);
 
-    engine_move(game, id_elem.value.i, dx_elem.value.f, dy_elem.value.f);
+    engine_move(game, id, dx, dy);
     return QD_OK;
 }
 
 // Damage entity (id amount --)
 int script_damage(qd_context* ctx, void* userdata) {
     GameState* game = (GameState*)userdata;
-    qd_stack_element_t amount_elem, id_elem;
-    qd_stack_pop(ctx->st, &amount_elem);
-    qd_stack_pop(ctx->st, &id_elem);
+    int64_t amount, id;
+    qd_pop_i(ctx, &amount);
+    qd_pop_i(ctx, &id);
 
-    engine_damage(game, id_elem.value.i, amount_elem.value.i);
+    engine_damage(game, id, amount);
     return QD_OK;
 }
 
 // Spawn new entity (x y health -- id)
 int script_spawn(qd_context* ctx, void* userdata) {
     GameState* game = (GameState*)userdata;
-    qd_stack_element_t health_elem, y_elem, x_elem;
-    qd_stack_pop(ctx->st, &health_elem);
-    qd_stack_pop(ctx->st, &y_elem);
-    qd_stack_pop(ctx->st, &x_elem);
+    int64_t health;
+    double y, x;
+    qd_pop_i(ctx, &health);
+    qd_pop_f(ctx, &y);
+    qd_pop_f(ctx, &x);
 
-    Entity* e = engine_spawn(game, x_elem.value.f, y_elem.value.f,
-                             health_elem.value.i, NULL);
+    Entity* e = engine_spawn(game, x, y, health, NULL);
     return qd_push_i(ctx, e ? e->id : -1);
 }
 
@@ -442,26 +432,22 @@ int script_delta_time(qd_context* ctx, void* userdata) {
 
 // Calculate distance between two points (x1 y1 x2 y2 -- dist)
 int script_distance(qd_context* ctx, void* userdata) {
-    qd_stack_element_t y2, x2, y1, x1;
-    qd_stack_pop(ctx->st, &y2);
-    qd_stack_pop(ctx->st, &x2);
-    qd_stack_pop(ctx->st, &y1);
-    qd_stack_pop(ctx->st, &x1);
+    double y2, x2, y1, x1;
+    qd_pop_f(ctx, &y2);
+    qd_pop_f(ctx, &x2);
+    qd_pop_f(ctx, &y1);
+    qd_pop_f(ctx, &x1);
 
-    double dx = x2.value.f - x1.value.f;
-    double dy = y2.value.f - y1.value.f;
+    double dx = x2 - x1;
+    double dy = y2 - y1;
     return qd_push_f(ctx, sqrt(dx*dx + dy*dy));
 }
 
 // Log a message (msg --)
 int script_log(qd_context* ctx, void* userdata) {
-    qd_stack_element_t msg;
-    qd_stack_pop(ctx->st, &msg);
-
-    if (msg.type == QD_STACK_TYPE_STR) {
-        printf("[Script] %s\n", qd_string_data(msg.value.s));
-        qd_string_release(msg.value.s);  // Release reference
-    }
+    char msg[1024];
+    qd_pop_s(ctx, msg, sizeof(msg));
+    printf("[Script] %s\n", msg);
     return QD_OK;
 }
 
@@ -714,43 +700,29 @@ clean:
 | `qd_push_f(ctx, val)` | Push float |
 | `qd_push_s(ctx, str)` | Push string (copied) |
 | `qd_push_p(ctx, ptr)` | Push pointer |
-| `qd_stack_pop(ctx->st, &elem)` | Pop element |
-| `qd_stack_peek(ctx->st, &elem)` | Peek top element |
+| `qd_pop_i(ctx, &val)` | Pop integer |
+| `qd_pop_f(ctx, &val)` | Pop float |
+| `qd_pop_s(ctx, buf, size)` | Pop string into buffer |
+| `qd_pop_p(ctx, &val)` | Pop pointer |
+| `qd_context_stack_size(ctx)` | Get number of elements on stack |
 
-### Stack Element Access
+### Error Inspection
 
-```c
-qd_stack_element_t elem;
-qd_stack_pop(ctx->st, &elem);
-
-switch (elem.type) {
-    case QD_STACK_TYPE_INT:
-        printf("Integer: %lld\n", elem.value.i);
-        break;
-    case QD_STACK_TYPE_FLOAT:
-        printf("Float: %f\n", elem.value.f);
-        break;
-    case QD_STACK_TYPE_STR:
-        printf("String: %s\n", qd_string_data(elem.value.s));
-        qd_string_release(elem.value.s);  // Don't forget!
-        break;
-    case QD_STACK_TYPE_PTR:
-        printf("Pointer: %p\n", elem.value.p);
-        break;
-}
-```
+| Function | Description |
+|----------|-------------|
+| `qd_error_code(ctx)` | Get current error code (0 = no error) |
+| `qd_error_message(ctx)` | Get current error message |
+| `qd_clear_error(ctx)` | Reset error state |
 
 ## Best Practices
 
-1. **Error Handling**: Always check `qd_is_compiled()` after building modules.
+1. **Error Handling**: Always check `qd_is_compiled()` after building modules. Check return codes from `qd_pop_*` functions.
 
-2. **String Memory**: When popping strings, call `qd_string_release()` when done.
+2. **Stack Balance**: Native functions must leave the stack balanced according to their signature.
 
-3. **Stack Balance**: Native functions must leave the stack balanced according to their signature.
+3. **Thread Safety**: Each thread should have its own `qd_context`.
 
-4. **Thread Safety**: Each thread should have its own `qd_context`.
-
-5. **Hot Reloading**: To reload scripts, create a new module with the same name and rebuild.
+4. **Hot Reloading**: To reload scripts, create a new module with the same name and rebuild.
 
 ## Common Patterns
 
@@ -779,12 +751,16 @@ fn process() {
 
 ```c
 int native_might_fail(qd_context* ctx, void* userdata) {
-    if (error_condition) {
-        // Set error state
-        ctx->error_code = 1;
-        return -1;
+    int64_t val;
+    int rc = qd_pop_i(ctx, &val);
+    if (rc != QD_OK) {
+        return rc;  // Propagate underflow/type error
     }
-    return qd_push_i(ctx, result);
+    if (val < 0) {
+        qd_set_error_msg(ctx, "value must be non-negative");
+        return QD_ERR_GENERIC;
+    }
+    return qd_push_i(ctx, val * 2);
 }
 ```
 

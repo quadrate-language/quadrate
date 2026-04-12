@@ -10,10 +10,10 @@
  * #include <quadrate/rt/ffi.h>
  *
  * int my_function(qd_context* ctx) {
- *     qd_stack_element_t elem;
- *     qd_stack_pop(ctx->st, &elem);
- *     // ... process elem ...
- *     return (int){0};
+ *     int64_t val;
+ *     qd_pop_i(ctx, &val);
+ *     // ... process val ...
+ *     return qd_push_i(ctx, val * 2);
  * }
  * @endcode
  */
@@ -21,8 +21,6 @@
 #ifndef QD_QUADRATE_RUNTIME_FFI_H
 #define QD_QUADRATE_RUNTIME_FFI_H
 
-#include <quadrate/rt/context.h>
-#include <quadrate/rt/exec_result.h>
-#include <quadrate/rt/stack.h>
+#include <quadrate/rt/runtime.h>
 
 #endif /* QD_QUADRATE_RUNTIME_FFI_H */

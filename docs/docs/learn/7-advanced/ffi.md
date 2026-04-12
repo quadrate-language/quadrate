@@ -20,15 +20,12 @@ Create `greet.c`:
 #include <stdio.h>
 
 int hello(qd_context* ctx) {
-	// Pop a string from the stack
-	qd_stack_element_t elem;
-	qd_stack_pop(ctx->st, &elem);
+	// Pop the string argument from the stack
+	char name[256];
+	qd_pop_s(ctx, name, sizeof(name));
 
 	// Print the greeting
-	printf("Hello, %s!\n", qd_string_data(elem.value.s));
-
-	// Release the string (required for memory management)
-	qd_string_release(elem.value.s);
+	printf("Hello, %s!\n", name);
 
 	return QD_OK;
 }
@@ -87,57 +84,37 @@ The function name in C must match the name declared in the Quadrate import block
 ### Popping values
 
 ```c
-qd_stack_element_t elem;
-qd_stack_error err = qd_stack_pop(ctx->st, &elem);
+// Pop a typed value — returns QD_OK on success, error code on failure
+int64_t i;
+qd_pop_i(ctx, &i);
 
-if (err != QD_STACK_OK) {
-	// Handle stack underflow
-	return -1;
-}
+double f;
+qd_pop_f(ctx, &f);
 
-// Check the type
-switch (elem.type) {
-	case QD_STACK_TYPE_INT:
-		int64_t i = elem.value.i;
-		break;
-	case QD_STACK_TYPE_FLOAT:
-		double f = elem.value.f;
-		break;
-	case QD_STACK_TYPE_STR:
-		const char* s = qd_string_data(elem.value.s);
-		// Don't forget to release!
-		qd_string_release(elem.value.s);
-		break;
-	case QD_STACK_TYPE_PTR:
-		void* p = elem.value.p;
-		break;
-}
+char buf[256];
+qd_pop_s(ctx, buf, sizeof(buf));  // copies string into buffer, releases it
+
+void* p;
+qd_pop_p(ctx, &p);
 ```
 
 ### Pushing values
 
 ```c
-// Push an integer
-qd_stack_push_int(ctx->st, 42);
-
-// Push a float
-qd_stack_push_float(ctx->st, 3.14);
-
-// Push a string (copies the string)
-qd_stack_push_str(ctx->st, "hello");
-
-// Push a pointer
-qd_stack_push_ptr(ctx->st, some_pointer);
+qd_push_i(ctx, 42);
+qd_push_f(ctx, 3.14);
+qd_push_s(ctx, "hello");
+qd_push_p(ctx, some_pointer);
 ```
 
 ## Type mapping
 
-| Quadrate | C Type | Stack Field | Type Constant |
-|----------|--------|-------------|---------------|
-| `i64` | `int64_t` | `elem.value.i` | `QD_STACK_TYPE_INT` |
-| `f64` | `double` | `elem.value.f` | `QD_STACK_TYPE_FLOAT` |
-| `str` | `qd_string*` | `elem.value.s` | `QD_STACK_TYPE_STR` |
-| `ptr` | `void*` | `elem.value.p` | `QD_STACK_TYPE_PTR` |
+| Quadrate | C Type | Pop | Push |
+|----------|--------|-----|------|
+| `i64` | `int64_t` | `qd_pop_i(ctx, &val)` | `qd_push_i(ctx, val)` |
+| `f64` | `double` | `qd_pop_f(ctx, &val)` | `qd_push_f(ctx, val)` |
+| `str` | `char*` | `qd_pop_s(ctx, buf, size)` | `qd_push_s(ctx, str)` |
+| `ptr` | `void*` | `qd_pop_p(ctx, &val)` | `qd_push_p(ctx, ptr)` |
 
 ## Complete example: math operations
 
@@ -151,29 +128,23 @@ Here's a more complete example with multiple functions and return values.
 
 // Calculate hypotenuse: ( a:f64 b:f64 -- c:f64 )
 int hypot(qd_context* ctx) {
-	qd_stack_element_t b, a;
-	qd_stack_pop(ctx->st, &b);  // Pop b (top)
-	qd_stack_pop(ctx->st, &a);  // Pop a (below b)
-
-	double result = sqrt(a.value.f * a.value.f + b.value.f * b.value.f);
-	qd_stack_push_float(ctx->st, result);
-
-	return QD_OK;
+	double b, a;
+	qd_pop_f(ctx, &b);
+	qd_pop_f(ctx, &a);
+	return qd_push_f(ctx, sqrt(a * a + b * b));
 }
 
 // Factorial: ( n:i64 -- result:i64 )
 int factorial(qd_context* ctx) {
-	qd_stack_element_t elem;
-	qd_stack_pop(ctx->st, &elem);
+	int64_t n;
+	qd_pop_i(ctx, &n);
 
-	int64_t n = elem.value.i;
 	int64_t result = 1;
 	for (int64_t i = 2; i <= n; i++) {
 		result *= i;
 	}
 
-	qd_stack_push_int(ctx->st, result);
-	return QD_OK;
+	return qd_push_i(ctx, result);
 }
 ```
 
@@ -198,21 +169,16 @@ fn main() {
 
 ## Error handling
 
-Return a non-zero error code to indicate failure:
+Return a non-zero error code to indicate failure. The `qd_pop_*` functions
+return error codes for underflow and type mismatch:
 
 ```c
 int my_function(qd_context* ctx) {
-	qd_stack_element_t elem;
-	qd_stack_error err = qd_stack_pop(ctx->st, &elem);
-
-	if (err != QD_STACK_OK) {
-		fprintf(stderr, "my_function: stack underflow\n");
-		return QD_ERR_STACK_OVERFLOW;
-	}
-
-	if (elem.type != QD_STACK_TYPE_INT) {
+	int64_t val;
+	int rc = qd_pop_i(ctx, &val);
+	if (rc != QD_OK) {
 		fprintf(stderr, "my_function: expected integer\n");
-		return QD_ERR_TYPE_MISMATCH;
+		return rc;
 	}
 
 	// ... do work ...
@@ -240,20 +206,14 @@ The constants are accessible via `mylib::ErrOverflow` from any module that uses 
 
 ## Memory management
 
-**Important:** Always release strings after use:
+The `qd_pop_s` function copies the string into your buffer and releases
+the reference-counted string automatically. No manual cleanup needed:
 
 ```c
-qd_stack_element_t elem;
-qd_stack_pop(ctx->st, &elem);
-
-if (elem.type == QD_STACK_TYPE_STR) {
-	const char* str = qd_string_data(elem.value.s);
-	// ... use the string ...
-	qd_string_release(elem.value.s);  // Required!
-}
+char buf[256];
+qd_pop_s(ctx, buf, sizeof(buf));
+// buf is a plain C string — use it freely, no release needed
 ```
-
-Failure to release strings will cause memory leaks.
 
 ## Build integration
 
@@ -281,11 +241,10 @@ mylib = static_library('mylib', 'mylib.c',
 
 ## Tips
 
-1. **Check stack size** before popping to avoid crashes
-2. **Validate types** - don't assume the stack contains what you expect
-3. **Release strings** - memory leaks are easy to introduce
-4. **Use descriptive error messages** - they help debugging
-5. **Keep functions small** - easier to test and maintain
+1. **Check return codes** - `qd_pop_*` returns non-zero on underflow or type mismatch
+2. **Use typed pop functions** - `qd_pop_i`, `qd_pop_f`, `qd_pop_s`, `qd_pop_p` handle type checking and string cleanup for you
+3. **Use descriptive error messages** - they help debugging
+4. **Keep functions small** - easier to test and maintain
 
 ## What's next?
 

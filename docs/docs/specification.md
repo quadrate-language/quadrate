@@ -1524,7 +1524,10 @@ Implementations MUST provide the following runtime functions:
 - `qd_push_s(ctx, string)` - Push string (copy)
 - `qd_push_s_ref(ctx, string)` - Push string (reference)
 - `qd_push_p(ctx, ptr)` - Push pointer
-- `qd_stack_pop(stack, elem_ptr)` - Pop element
+- `qd_pop_i(ctx, &val)` - Pop integer
+- `qd_pop_f(ctx, &val)` - Pop float
+- `qd_pop_s(ctx, buf, size)` - Pop string into buffer
+- `qd_pop_p(ctx, &val)` - Pop pointer
 
 **Operations:**
 - `qd_add`, `qd_sub`, `qd_mul`, `qd_div`, `qd_mod` - Arithmetic

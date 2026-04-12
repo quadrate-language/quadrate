@@ -83,6 +83,57 @@ int qd_push_p(qd_context* ctx, void* value);
 /** @} */ // end of StackPush group
 
 /**
+ * @defgroup StackPop Stack Pop Operations
+ * @brief Functions for popping values from the stack
+ * @{
+ */
+
+/**
+ * @brief Pop a 64-bit integer from the stack
+ *
+ * @param ctx Execution context
+ * @param[out] value Receives the integer value
+ * @return 0 on success, non-zero on error (underflow or type mismatch)
+ */
+int qd_pop_i(qd_context* ctx, int64_t* value);
+
+/**
+ * @brief Pop a double-precision float from the stack
+ *
+ * @param ctx Execution context
+ * @param[out] value Receives the float value
+ * @return 0 on success, non-zero on error (underflow or type mismatch)
+ */
+int qd_pop_f(qd_context* ctx, double* value);
+
+/**
+ * @brief Pop a string from the stack
+ *
+ * The returned string is copied into the provided buffer. The reference-counted
+ * string on the stack is released automatically.
+ *
+ * @param ctx Execution context
+ * @param[out] buf Buffer to receive the string
+ * @param buf_size Size of the buffer
+ * @return 0 on success, non-zero on error (underflow, type mismatch, or truncation)
+ *
+ * @note The string is null-terminated. If the buffer is too small, the string
+ *       is truncated and the function returns QD_ERR_GENERIC.
+ */
+int qd_pop_s(qd_context* ctx, char* buf, size_t buf_size);
+
+/**
+ * @brief Pop a pointer from the stack
+ *
+ * @param ctx Execution context
+ * @param[out] value Receives the pointer value
+ * @return 0 on success, non-zero on error (underflow or type mismatch)
+ */
+int qd_pop_p(qd_context* ctx, void** value);
+
+/** @} */ // end of StackPop group
+
+/**
  * @defgroup IO Input/Output Operations
  * @brief Functions for I/O operations
  * @{
@@ -632,6 +683,33 @@ int qd_err(qd_context* ctx);
  */
 int qd_panic(qd_context* ctx);
 
+/**
+ * @brief Get the current error code from the context
+ *
+ * @param ctx Execution context
+ * @return Error code (0 = no error)
+ */
+int64_t qd_error_code(const qd_context* ctx);
+
+/**
+ * @brief Get the current error message from the context
+ *
+ * @param ctx Execution context
+ * @return Error message string, or NULL if no error
+ *
+ * @note The returned pointer is valid until the next error or qd_clear_error()
+ */
+const char* qd_error_message(const qd_context* ctx);
+
+/**
+ * @brief Clear the error state on the context
+ *
+ * Resets error_code to 0 and frees error_msg.
+ *
+ * @param ctx Execution context
+ */
+void qd_clear_error(qd_context* ctx);
+
 /** @} */ // end of ErrorHandling group
 
 /**
@@ -717,6 +795,14 @@ void qd_set_userdata(qd_context* ctx, void* userdata);
  * @return User data pointer, or NULL if not set
  */
 void* qd_get_userdata(qd_context* ctx);
+
+/**
+ * @brief Get the number of elements on the context's stack
+ *
+ * @param ctx Execution context
+ * @return Number of elements currently on the stack
+ */
+size_t qd_context_stack_size(const qd_context* ctx);
 
 /** @} */ // end of ContextManagement group
 

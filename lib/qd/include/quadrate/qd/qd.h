@@ -81,6 +81,20 @@ typedef int (*qd_native_fn)(qd_context* ctx, void* userdata);
 void qd_register_function(qd_module* mod, const char* name, const char* signature, qd_native_fn fn, void* userdata);
 
 /**
+ * @brief Load a Quadrate source file into a module
+ *
+ * Reads the file at the given path and adds its contents to the module,
+ * equivalent to reading the file and calling qd_add_script().
+ *
+ * @param mod Target module
+ * @param path Path to the .qd source file (must not be NULL)
+ * @return 0 on success, non-zero on error (file not found, read error)
+ *
+ * @note The file is read once and its contents are copied
+ */
+int qd_load_file(qd_module* mod, const char* path);
+
+/**
  * @brief Compile all scripts added to the module
  *
  * Compiles all scripts that have been added to the module via qd_add_script().

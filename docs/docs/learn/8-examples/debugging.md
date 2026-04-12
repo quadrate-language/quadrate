@@ -43,7 +43,14 @@ Break at a specific line in your `.qd` source:
 
 ### Inspecting the stack
 
-The runtime stack is accessible through the context variable:
+Use the runtime debug helper to print the full stack:
+
+```
+(gdb) call (void)qd_debug_print_stack(ctx)
+(gdb) print qd_context_stack_size(ctx)
+```
+
+For low-level inspection, the internal stack structure is also accessible:
 
 ```
 (gdb) print ctx->st->size
