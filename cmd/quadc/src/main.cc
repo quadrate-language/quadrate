@@ -479,8 +479,8 @@ int main(int argc, char** argv) {
 
 		// Build cache: check if we can skip compilation entirely
 		// Skip cache for stdin, test mode, JIT, and when dumping debug output
-		bool useCache = !opts.readStdin && !opts.testMode && !opts.dumpAst && !opts.dumpIR && !opts.dumpTokens
-						&& !opts.saveTemps && !opts.verbose;
+		bool useCache = !opts.readStdin && !opts.testMode && !opts.dumpAst && !opts.dumpIR && !opts.dumpTokens &&
+						!opts.saveTemps && !opts.verbose;
 		BuildCache buildCache;
 		if (useCache) {
 			// Hash all source files (main + all modules)
@@ -497,8 +497,7 @@ int main(int argc, char** argv) {
 			if (buildCache.restore(outputPath)) {
 				if (timing) {
 					auto now = std::chrono::steady_clock::now();
-					auto totalMs =
-							std::chrono::duration_cast<std::chrono::milliseconds>(now - timeStart).count();
+					auto totalMs = std::chrono::duration_cast<std::chrono::milliseconds>(now - timeStart).count();
 					std::cerr << "[TIMING] total (cached): " << totalMs << "ms" << std::endl;
 				}
 				// If running, execute the cached binary

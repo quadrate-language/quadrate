@@ -75,9 +75,13 @@ static bool isNolint(const std::string& sourceLine, const std::string& rule) {
 		}
 		// Trim whitespace from rule name
 		size_t start = pos;
-		while (start < comma && std::isspace(sourceLine[start])) start++;
+		while (start < comma && std::isspace(sourceLine[start])) {
+			start++;
+		}
 		size_t rend = comma;
-		while (rend > start && std::isspace(sourceLine[rend - 1])) rend--;
+		while (rend > start && std::isspace(sourceLine[rend - 1])) {
+			rend--;
+		}
 		if (sourceLine.substr(start, rend - start) == rule) {
 			return true;
 		}
@@ -857,14 +861,13 @@ std::vector<LintIssue> lintFile(const std::string& filename, const LintOptions& 
 
 		// Filter out issues suppressed by //nolint directives
 		auto lines = splitLines(source);
-		issues.erase(
-				std::remove_if(issues.begin(), issues.end(),
-						[&lines](const LintIssue& issue) {
-							if (issue.line > 0 && issue.line < lines.size()) {
-								return isNolint(lines[issue.line], issue.rule);
-							}
-							return false;
-						}),
+		issues.erase(std::remove_if(issues.begin(), issues.end(),
+							 [&lines](const LintIssue& issue) {
+								 if (issue.line > 0 && issue.line < lines.size()) {
+									 return isNolint(lines[issue.line], issue.rule);
+								 }
+								 return false;
+							 }),
 				issues.end());
 
 	} catch (const std::exception& e) {
