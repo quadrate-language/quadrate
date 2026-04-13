@@ -471,32 +471,50 @@ namespace Qd {
 		if (inst->isMethodCall()) {
 			const std::string& receiverType = inst->receiverType();
 			if (!receiverType.empty()) {
-				// Generate method call - use qualified function name
-				// For intra-module method calls, the semantic validator may return an unqualified
-				// receiver type (e.g., "Sha256" instead of "crypto::Sha256"). We need to qualify
-				// it with the current module name to find the correct LLVM function.
-				std::string qualifiedReceiverType = receiverType;
-				if (receiverType.find("::") == std::string::npos && !currentModuleName.empty()) {
-					qualifiedReceiverType = currentModuleName + "::" + receiverType;
+				// Generate method call. The identifier path uses the userFunctions map
+				// which is populated with both qualified and unqualified method keys
+				// (see generator.cc:812-817). We use the same lookup so method calls
+				// that were parsed as AstNodeInstruction (because their name collides
+				// with a builtin instruction, e.g. "depth", "clear", "len") resolve
+				// consistently with the identifier path.
+				llvm::Function* methodFn = nullptr;
+				std::string methodKey = receiverType + "::" + name;
+				auto userFnIt = userFunctions.find(methodKey);
+				if (userFnIt != userFunctions.end()) {
+					methodFn = userFnIt->second;
 				}
-				std::string mangledFnName = "usr_" + qualifiedReceiverType + "_" + name;
-				// Replace :: with _ for valid function names
-				for (size_t pos = 0; (pos = mangledFnName.find("::")) != std::string::npos;) {
-					mangledFnName.replace(pos, 2, "_");
-				}
-
-				llvm::Function* methodFn = module->getFunction(mangledFnName);
-				if (!methodFn) {
-					// Try without module prefix as fallback (e.g., for main module methods)
-					std::string fallbackFnName = "usr_" + receiverType + "_" + name;
-					for (size_t pos = 0; (pos = fallbackFnName.find("::")) != std::string::npos;) {
-						fallbackFnName.replace(pos, 2, "_");
+				if (!methodFn && !currentModuleName.empty() &&
+						receiverType.find("::") == std::string::npos) {
+					// Try with current module qualifier
+					std::string qualifiedKey = currentModuleName + "::" + receiverType + "::" + name;
+					userFnIt = userFunctions.find(qualifiedKey);
+					if (userFnIt != userFunctions.end()) {
+						methodFn = userFnIt->second;
 					}
-					methodFn = module->getFunction(fallbackFnName);
+				}
+				// Legacy fallback: construct mangled LLVM name directly
+				std::string mangledFnName;
+				if (!methodFn) {
+					std::string qualifiedReceiverType = receiverType;
+					if (receiverType.find("::") == std::string::npos && !currentModuleName.empty()) {
+						qualifiedReceiverType = currentModuleName + "::" + receiverType;
+					}
+					mangledFnName = "usr_" + qualifiedReceiverType + "_" + name;
+					for (size_t pos = 0; (pos = mangledFnName.find("::")) != std::string::npos;) {
+						mangledFnName.replace(pos, 2, "_");
+					}
+					methodFn = module->getFunction(mangledFnName);
+					if (!methodFn) {
+						std::string fallbackFnName = "usr_" + receiverType + "_" + name;
+						for (size_t pos = 0; (pos = fallbackFnName.find("::")) != std::string::npos;) {
+							fallbackFnName.replace(pos, 2, "_");
+						}
+						methodFn = module->getFunction(fallbackFnName);
+					}
 				}
 				if (!methodFn) {
 					// Method not found - this shouldn't happen if validation passed
-					llvm::errs() << "Method function not found: " << mangledFnName << "\n";
+					llvm::errs() << "Method function not found: " << methodKey << "\n";
 					return;
 				}
 

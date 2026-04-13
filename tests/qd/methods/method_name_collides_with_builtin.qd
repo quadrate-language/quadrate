@@ -1,0 +1,29 @@
+// Regression: methods whose names collide with builtin instruction names
+// (e.g. `depth`, `clear`, `len`, `drop`) must still dispatch correctly.
+// Previously, the parser produced an AstNodeInstruction for these names,
+// and the llvmgen instruction path constructed the function name via
+// string concatenation without the module prefix, so the method call
+// looked up a symbol that didn't exist.
+
+struct Stack {
+	top: i64
+}
+
+fn (s:Stack) depth( -- n:i64) {
+	s <<top 2 *
+}
+
+fn (s:Stack) clear( -- n:i64) {
+	s <<top 0 *
+}
+
+fn (s:Stack) len( -- n:i64) {
+	s <<top
+}
+
+fn main() {
+	Stack { top = 21 } -> s
+	s depth print nl
+	s clear print nl
+	s len print nl
+}

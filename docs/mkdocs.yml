@@ -56,6 +56,7 @@ nav:
           - User input: learn/8-examples/user-input.md
           - Writing tests: learn/8-examples/testing.md
           - Debugging: learn/8-examples/debugging.md
+          - Walkthrough - dc calculator: learn/8-examples/dc-walkthrough.md
   - Reference:
       - Overview: reference/index.md
       - Keywords: reference/keywords.md
