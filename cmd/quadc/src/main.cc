@@ -504,7 +504,22 @@ int main(int argc, char** argv) {
 				if (opts.run) {
 					std::string cmd = outputPath;
 					for (const auto& arg : opts.runArgs) {
-						cmd += " " + arg;
+						// Quote arguments that contain spaces or special characters
+						bool needsQuote = arg.find(' ') != std::string::npos || arg.find('\t') != std::string::npos ||
+										  arg.find('"') != std::string::npos || arg.find('\\') != std::string::npos ||
+										  arg.find('$') != std::string::npos;
+						if (needsQuote) {
+							cmd += " \"";
+							for (char c : arg) {
+								if (c == '"' || c == '\\' || c == '$') {
+									cmd += '\\';
+								}
+								cmd += c;
+							}
+							cmd += "\"";
+						} else {
+							cmd += " " + arg;
+						}
 					}
 					int status = system(cmd.c_str());
 					return WIFEXITED(status) ? WEXITSTATUS(status) : -1;

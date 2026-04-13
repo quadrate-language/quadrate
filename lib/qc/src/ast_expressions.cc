@@ -516,20 +516,20 @@ namespace Qd {
 
 			// Check if this is struct construction: StructName { ... } or StructName<T> { ... }
 			nextToken = peekNextNonWhitespace(scanner, src);
-			// Only treat '<' as generic type args if identifier looks like a struct name (PascalCase)
-			// and it's not followed by '=' (which would make it '<=' operator)
+			// Only treat '<' as generic type args if:
+			// 1. Identifier looks like a struct name (PascalCase)
+			// 2. '<' is immediately adjacent (no whitespace) — so Vec3<T> is generic but COUNT < x is comparison
+			// 3. Not followed by '=' (which would be '<=' operator)
 			bool identLooksLikeStruct = !identName.empty() && std::isupper(identName[0]);
 			bool isGenericBracketIdent = false;
-			if (nextToken == '<' && identLooksLikeStruct) {
-				// Check if this is '<=' operator by looking at character after '<'
-				const char* currentPosIdent = scanner->_str;
-				// Skip whitespace and find '<'
-				while (*currentPosIdent &&
-						(*currentPosIdent == ' ' || *currentPosIdent == '\t' || *currentPosIdent == '\n')) {
-					currentPosIdent++;
-				}
-				if (*currentPosIdent == '<' && *(currentPosIdent + 1) != '=') {
-					isGenericBracketIdent = true;
+			if (identLooksLikeStruct) {
+				char32_t immediateNext = peekNextChar(scanner, src);
+				if (immediateNext == '<') {
+					// Check it's not '<=' operator
+					const char* afterLt = scanner->_str;
+					if (*afterLt == '<' && *(afterLt + 1) != '=') {
+						isGenericBracketIdent = true;
+					}
 				}
 			}
 			if (isGenericBracketIdent) {

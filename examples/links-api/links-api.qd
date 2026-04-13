@@ -60,7 +60,7 @@ fn handle_list(c:ptr -- ) {
 	out "[" append -> out
 	0 -> i
 	loop {
-		i COUNT lt if {
+		i COUNT < if {
 			i 0 > if { out "," append -> out }
 			out i link_json append -> out
 			i 1 + -> i
@@ -75,7 +75,7 @@ fn handle_list(c:ptr -- ) {
 
 fn handle_get_one(c:ptr -- ) {
 	c "id" http::param 10 strconv::parse_int! -> id
-	id 0 >= id COUNT lt and if {
+	id 0 >= id COUNT < and if {
 		c 200 id link_json http::json
 	} else {
 		c 404 "{\"error\":\"not found\"}" http::json
@@ -93,7 +93,7 @@ fn handle_search(c:ptr -- ) {
 		1 -> first
 		query strings::lower -> q
 		loop {
-			i COUNT lt if {
+			i COUNT < if {
 				i get_title strings::lower q strings::contains if {
 					first 0 == if { out "," append -> out }
 					out i link_json append -> out
