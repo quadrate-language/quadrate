@@ -545,6 +545,9 @@ int main(int argc, char** argv) {
 		// Enable test mode if requested
 		if (opts.testMode) {
 			generator.setTestMode(true);
+			if (opts.coverage) {
+				generator.setCoverageMode(true);
+			}
 		}
 
 		// Set target triple for cross-compilation if specified

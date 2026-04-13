@@ -1102,6 +1102,60 @@ void qd_pop_call(qd_context* ctx) {
 	}
 }
 
+// ---------------------------------------------------------------------------
+// Coverage tracking (test-mode only; instrumentation is opt-in via -coverage).
+// We use plain global state because coverage runs in a single test-runner
+// process and gets reported at exit.
+// ---------------------------------------------------------------------------
+#define QD_MAX_COVERED_FUNCS 16384
+static const char* g_coverage_names[QD_MAX_COVERED_FUNCS];
+static unsigned char g_coverage_called[QD_MAX_COVERED_FUNCS];
+static int g_coverage_count = 0;
+
+int qd_coverage_register(const char* name) {
+	if (g_coverage_count >= QD_MAX_COVERED_FUNCS) {
+		return -1;
+	}
+	int idx = g_coverage_count++;
+	g_coverage_names[idx] = name;
+	g_coverage_called[idx] = 0;
+	return idx;
+}
+
+void qd_coverage_mark(int idx) {
+	if (idx >= 0 && idx < g_coverage_count) {
+		g_coverage_called[idx] = 1;
+	}
+}
+
+void qd_coverage_report(int use_color) {
+	// Flush stdout so the test summary (printed via printf to stdout) appears
+	// before the coverage report (printed via fprintf to stderr).
+	fflush(stdout);
+
+	int called = 0;
+	for (int i = 0; i < g_coverage_count; i++) {
+		if (g_coverage_called[i]) {
+			called++;
+		}
+	}
+	int pct = g_coverage_count > 0 ? (called * 100 / g_coverage_count) : 0;
+	const char* hdr_color = use_color ? "\x1b[1;36m" : "";
+	const char* ok_color = use_color ? "\x1b[32m" : "";
+	const char* miss_color = use_color ? "\x1b[33m" : "";
+	const char* end_color = use_color ? "\x1b[0m" : "";
+	fprintf(stderr, "\n%sFunction coverage:%s %s%d/%d called (%d%%)%s\n", hdr_color, end_color,
+			(called == g_coverage_count) ? ok_color : miss_color, called, g_coverage_count, pct, end_color);
+	if (called < g_coverage_count) {
+		fprintf(stderr, "%sUncalled functions:%s\n", miss_color, end_color);
+		for (int i = 0; i < g_coverage_count; i++) {
+			if (!g_coverage_called[i]) {
+				fprintf(stderr, "  %s\n", g_coverage_names[i]);
+			}
+		}
+	}
+}
+
 void qd_print_stack_trace(qd_context* ctx) {
 	// Check NO_COLOR environment variable
 	const bool use_color = getenv("NO_COLOR") == NULL;

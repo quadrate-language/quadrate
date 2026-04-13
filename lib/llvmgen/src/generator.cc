@@ -1162,6 +1162,20 @@ namespace Qd {
 					builder->CreateCall(pushCallFn, {ctx, funcNameStr, sourceFileStr, lineNum});
 				}
 
+				// Coverage instrumentation: emit qd_coverage_mark(idx) at the
+				// start of every user function body. The matching
+				// qd_coverage_register call is emitted in the test runner main
+				// in the same order, so compile-time idx = runtime idx.
+				// Only the main module's functions are tracked, since stdlib
+				// functions don't have meaningful "covered by test" semantics.
+				if (coverageMode && testMode && namePrefix == mainModuleName) {
+					uint32_t covIdx = static_cast<uint32_t>(coverageFunctionNames.size());
+					coverageFunctionNames.push_back(fullFuncName);
+					auto markFnTy = llvm::FunctionType::get(builder->getVoidTy(), {int32Ty}, false);
+					auto markFn = module->getOrInsertFunction("qd_coverage_mark", markFnTy);
+					builder->CreateCall(markFn, {builder->getInt32(covIdx)});
+				}
+
 				// Generate type check for input parameters
 				// Skip for integer-only functions - semantic validator has already verified types
 				if (!funcNode->inputParameters().empty() && !currentFunctionIsIntegerOnly) {
@@ -1629,6 +1643,18 @@ namespace Qd {
 		auto printfFnTy = llvm::FunctionType::get(int32Ty, {ptrTy}, true);
 		auto printfFn = module->getOrInsertFunction("printf", printfFnTy);
 
+		// Coverage instrumentation: register every user function with the
+		// runtime tracker, in the same order they were assigned compile-time
+		// coverage indices, so registration idx == compile-time idx.
+		if (coverageMode) {
+			auto regFnTy = llvm::FunctionType::get(int32Ty, {ptrTy}, false);
+			auto regFn = module->getOrInsertFunction("qd_coverage_register", regFnTy);
+			for (const auto& name : coverageFunctionNames) {
+				auto nameStr = builder->CreateGlobalString(name);
+				builder->CreateCall(regFn, {nameStr});
+			}
+		}
+
 		// Counters for passed/failed tests
 		auto passedCountAlloca = builder->CreateAlloca(int32Ty, nullptr, "passed_count");
 		auto failedCountAlloca = builder->CreateAlloca(int32Ty, nullptr, "failed_count");
@@ -1702,6 +1728,14 @@ namespace Qd {
 		auto summaryFmtPlain = builder->CreateGlobalString("\n%d passed, %d failed\n", "summary_plain");
 		auto summaryFmt = builder->CreateSelect(useColor, summaryFmtColor, summaryFmtPlain, "summary_fmt");
 		builder->CreateCall(printfFn, {summaryFmt, finalPassed, finalFailed});
+
+		// Coverage report after the test summary, before context teardown.
+		if (coverageMode) {
+			auto reportFnTy = llvm::FunctionType::get(builder->getVoidTy(), {int32Ty}, false);
+			auto reportFn = module->getOrInsertFunction("qd_coverage_report", reportFnTy);
+			auto useColorI32 = builder->CreateZExt(useColor, int32Ty, "use_color_i32");
+			builder->CreateCall(reportFn, {useColorI32});
+		}
 
 		// Free context
 		builder->CreateCall(freeContextFn, {ctx});
@@ -2540,6 +2574,13 @@ namespace Qd {
 			mImpl = std::make_unique<Impl>("temp");
 		}
 		mImpl->testMode = enabled;
+	}
+
+	void LlvmGenerator::setCoverageMode(bool enabled) {
+		if (!mImpl) {
+			mImpl = std::make_unique<Impl>("temp");
+		}
+		mImpl->coverageMode = enabled;
 	}
 
 	void LlvmGenerator::setTargetTriple(const std::string& triple) {

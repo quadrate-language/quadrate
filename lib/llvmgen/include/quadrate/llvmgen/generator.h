@@ -236,6 +236,20 @@ namespace Qd {
 		void setTestMode(bool enabled);
 
 		/**
+		 * @brief Enable function-entry coverage instrumentation.
+		 *
+		 * When enabled (along with test mode), the generated test runner
+		 * registers each user-defined function with the runtime coverage
+		 * tracker, every user function entry calls qd_coverage_mark(idx),
+		 * and after all tests finish qd_coverage_report() is invoked.
+		 *
+		 * @param enabled True to instrument, false to skip (default).
+		 *
+		 * @note Must be called before generate()
+		 */
+		void setCoverageMode(bool enabled);
+
+		/**
 		 * @brief Set target triple for cross-compilation
 		 *
 		 * Sets the LLVM target triple for cross-compilation. When not set,

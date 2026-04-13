@@ -31,6 +31,7 @@ void printHelp() {
 	std::cout << "  -r, --run          Compile and run immediately (uses JIT by default)\n";
 	std::cout << "  --no-jit           Disable JIT execution for -r mode (use traditional linking)\n";
 	std::cout << "  --test             Compile and run tests\n";
+	std::cout << "  --coverage         Print function coverage report (use with --test)\n";
 	std::cout << "  --dump-ir          Print generated LLVM IR\n";
 	std::cout << "  --werror           Treat warnings as errors\n";
 	std::cout << "  --target <triple>  Cross-compile for target (e.g., aarch64-linux-gnu)\n";
@@ -91,6 +92,8 @@ bool parseArgs(int argc, char* argv[], Options& opts) {
 		} else if (arg == "--test") {
 			opts.testMode = true;
 			opts.run = true; // Tests should be run automatically
+		} else if (arg == "--coverage") {
+			opts.coverage = true;
 		} else if (arg == "-g") {
 			opts.debugInfo = true;
 		} else if (arg == "-I") {

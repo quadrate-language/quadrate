@@ -26,6 +26,7 @@ struct Options {
 	bool werror = false;
 	bool readStdin = false;										 // Read source from stdin
 	bool testMode = false;										 // Compile and run tests
+	bool coverage = false;										 // Function coverage report (--coverage with --test)
 	bool noJIT = false;											 // Disable JIT for -r mode
 	std::string targetTriple;									 // Cross-compilation target (e.g., aarch64-linux-gnu)
 	std::unordered_map<std::string, std::string> moduleVersions; // module name -> version

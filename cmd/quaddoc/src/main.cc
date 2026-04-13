@@ -7,8 +7,11 @@
 #include <fstream>
 #include <iostream>
 #include <regex>
+#include <set>
 #include <sstream>
 #include <string>
+#include <unordered_map>
+#include <unordered_set>
 #include <vector>
 
 #include "version.h"
@@ -30,6 +33,14 @@ struct Function {
 	bool fallible = false;
 	std::vector<Param> params, returns, errors;
 	std::vector<std::string> examples;
+	// Raw function body text, captured during parseModule. Used by
+	// buildCallGraph to extract qualified `module::name` and unqualified
+	// `name` references for the cross-reference UI.
+	std::string body;
+	// Cross-module references, populated by buildCallGraph after all
+	// modules are parsed. Each entry is "module::function". Sorted, deduped.
+	std::vector<std::string> calls;
+	std::vector<std::string> calledBy;
 };
 
 struct Struct {
@@ -185,12 +196,60 @@ static Module parseModule(const std::string& path) {
 	bool inStruct = false;
 	bool structIsPub = false;
 	Struct curStruct;
+	// Body capture for the most recently parsed function. We append lines
+	// while braceDepth > 0; the body becomes the back() function's `body`.
+	int braceDepth = 0;
+	bool capturingBody = false;
+
+	// Count braces on a line, ignoring those inside strings or comments.
+	auto countBraces = [](const std::string& s) -> std::pair<int, int> {
+		int opens = 0, closes = 0;
+		bool inStr = false;
+		bool inLC = false;
+		for (size_t i = 0; i < s.size(); i++) {
+			if (inLC) {
+				break;
+			}
+			char c = s[i];
+			if (!inStr && i + 1 < s.size() && c == '/' && s[i + 1] == '/') {
+				inLC = true;
+				break;
+			}
+			if (c == '"' && (i == 0 || s[i - 1] != '\\')) {
+				inStr = !inStr;
+			}
+			if (inStr) {
+				continue;
+			}
+			if (c == '{') {
+				opens++;
+			} else if (c == '}') {
+				closes++;
+			}
+		}
+		return {opens, closes};
+	};
 
 	std::istringstream stream(content);
 	std::string line;
 	while (std::getline(stream, line)) {
 		auto trimmed = trim(line);
 		std::smatch m;
+
+		// Capture function body: keep appending until braces balance back to 0.
+		if (capturingBody) {
+			auto [opens, closes] = countBraces(line);
+			braceDepth += opens - closes;
+			if (!mod.functions.empty()) {
+				mod.functions.back().body += line;
+				mod.functions.back().body += '\n';
+			}
+			if (braceDepth <= 0) {
+				capturingBody = false;
+				braceDepth = 0;
+			}
+			continue;
+		}
 
 		// Doc comments
 		if (std::regex_search(line, m, docRe)) {
@@ -253,6 +312,15 @@ static Module parseModule(const std::string& path) {
 
 			mod.functions.push_back(fn);
 			docBuf.clear();
+
+			// Start capturing body if `{` is on this line.
+			auto [opens, closes] = countBraces(line);
+			if (opens > 0) {
+				braceDepth = opens - closes;
+				if (braceDepth > 0) {
+					capturingBody = true;
+				}
+			}
 			continue;
 		}
 
@@ -296,6 +364,98 @@ static Module parseModule(const std::string& path) {
 	}
 
 	return mod;
+}
+
+// Walk every function body, collect references to other documented functions,
+// and populate Function::calls and Function::calledBy across all modules. We
+// recognize two reference forms:
+//   - module::name  → cross-module call
+//   - name          → same-module call (only matched if the module defines a
+//                     function/constant/struct of that name, to avoid noise
+//                     from local variables and stack ops)
+static void buildCallGraph(std::vector<Module>& modules) {
+	// Index: qualified "mod::name" → (module index, function index).
+	std::unordered_map<std::string, std::pair<size_t, size_t>> index;
+	// Per-module symbol set so we can resolve unqualified references.
+	std::unordered_map<std::string, std::unordered_set<std::string>> moduleSymbols;
+	for (size_t mi = 0; mi < modules.size(); mi++) {
+		auto& mod = modules[mi];
+		for (size_t fi = 0; fi < mod.functions.size(); fi++) {
+			std::string qn = mod.name + "::" + mod.functions[fi].name;
+			index[qn] = {mi, fi};
+			moduleSymbols[mod.name].insert(mod.functions[fi].name);
+		}
+	}
+
+	std::regex qualRefRe(R"((\w+)::(\w+))");
+	std::regex unqualRefRe(R"(\b([a-zA-Z_]\w*)\b)");
+
+	for (auto& mod : modules) {
+		for (auto& fn : mod.functions) {
+			if (fn.body.empty()) {
+				continue;
+			}
+			std::set<std::string> callees;
+			std::string self = mod.name + "::" + fn.name;
+			std::set<size_t> spans;
+
+			// Qualified `module::name` references.
+			for (auto it = std::sregex_iterator(fn.body.begin(), fn.body.end(), qualRefRe);
+					it != std::sregex_iterator(); ++it) {
+				std::string qn = (*it)[1].str() + "::" + (*it)[2].str();
+				if (qn != self && index.count(qn)) {
+					callees.insert(qn);
+				}
+				spans.insert(static_cast<size_t>(it->position()));
+				spans.insert(static_cast<size_t>(it->position() + it->length()));
+			}
+
+			// Same-module unqualified references that match a known symbol in
+			// THIS module. We skip identifiers that are part of a `mod::name`
+			// match (already counted) by checking the spans set crudely.
+			auto& syms = moduleSymbols[mod.name];
+			for (auto it = std::sregex_iterator(fn.body.begin(), fn.body.end(), unqualRefRe);
+					it != std::sregex_iterator(); ++it) {
+				std::string name = (*it)[1].str();
+				if (name == fn.name) {
+					continue;
+				}
+				if (!syms.count(name)) {
+					continue;
+				}
+				// Skip if this position was already part of a qualified match.
+				size_t pos = static_cast<size_t>(it->position());
+				if (spans.count(pos) || spans.count(pos + static_cast<size_t>(it->length()))) {
+					continue;
+				}
+				callees.insert(mod.name + "::" + name);
+			}
+
+			fn.calls.assign(callees.begin(), callees.end());
+		}
+	}
+
+	// Now invert calls → calledBy.
+	for (auto& mod : modules) {
+		for (auto& fn : mod.functions) {
+			std::string self = mod.name + "::" + fn.name;
+			for (const auto& callee : fn.calls) {
+				auto it = index.find(callee);
+				if (it == index.end()) {
+					continue;
+				}
+				modules[it->second.first].functions[it->second.second].calledBy.push_back(self);
+			}
+		}
+	}
+
+	// Dedupe + sort calledBy lists.
+	for (auto& mod : modules) {
+		for (auto& fn : mod.functions) {
+			std::sort(fn.calledBy.begin(), fn.calledBy.end());
+			fn.calledBy.erase(std::unique(fn.calledBy.begin(), fn.calledBy.end()), fn.calledBy.end());
+		}
+	}
 }
 
 static std::vector<Module> scanDirectory(const std::string& dir) {
@@ -346,6 +506,9 @@ dl { margin: 0.5rem 0 1rem 1rem; }
 dt { font-weight: 500; margin-top: 0.4rem; }
 dd { margin-left: 1rem; color: #555; }
 hr { border: none; border-top: 1px solid #eee; margin: 1.5rem 0; }
+.xref { font-size: 0.9rem; color: #666; }
+.xref a { text-decoration: none; }
+.xref a:hover { text-decoration: underline; }
 )";
 
 static void writeParamList(std::ofstream& f, const char* header, const std::vector<Param>& params) {
@@ -490,6 +653,27 @@ static int generate(const std::vector<Module>& modules, const std::string& outDi
 						f << "<pre><code>" << htmlEscape(ex) << "</code></pre>\n";
 					}
 				}
+				auto renderRefs = [&f](const char* label, const std::vector<std::string>& refs) {
+					if (refs.empty()) {
+						return;
+					}
+					f << "<p class=\"xref\"><strong>" << label << ":</strong> ";
+					bool first = true;
+					for (const auto& qn : refs) {
+						if (!first) {
+							f << ", ";
+						}
+						first = false;
+						auto pos = qn.find("::");
+						std::string targetMod = pos == std::string::npos ? "" : qn.substr(0, pos);
+						std::string targetFn = pos == std::string::npos ? qn : qn.substr(pos + 2);
+						f << "<a href=\"" << htmlEscape(targetMod) << ".html#" << htmlEscape(targetFn) << "\"><code>"
+						  << htmlEscape(qn) << "</code></a>";
+					}
+					f << "</p>\n";
+				};
+				renderRefs("Calls", fn.calls);
+				renderRefs("Called by", fn.calledBy);
 				f << "</div>\n";
 			}
 		}
@@ -562,6 +746,8 @@ int main(int argc, char* argv[]) {
 		std::cout << "No documented modules found.\n";
 		return 0;
 	}
+
+	buildCallGraph(modules);
 
 	int err = generate(modules, outDir, title, customCSS);
 	if (err) {

@@ -843,6 +843,34 @@ void qd_pop_call(qd_context* ctx);
 void qd_print_stack_trace(qd_context* ctx);
 
 /**
+ * @brief Register a user-defined function for coverage tracking.
+ *
+ * Called once per user function at the start of a coverage-instrumented
+ * test runner, before any tests execute. The runtime keeps a list of
+ * registered names; qd_coverage_mark marks one as called.
+ *
+ * @param name Function name (e.g. "module::func"). Must outlive the run.
+ * @return Index of the registered function (use with qd_coverage_mark).
+ */
+int qd_coverage_register(const char* name);
+
+/**
+ * @brief Mark a registered function as called.
+ *
+ * Emitted at the start of each user function body in coverage mode.
+ *
+ * @param idx Index returned by qd_coverage_register.
+ */
+void qd_coverage_mark(int idx);
+
+/**
+ * @brief Print the coverage report (called/total + uncalled list).
+ *
+ * @param use_color Non-zero to use ANSI color codes in the report.
+ */
+void qd_coverage_report(int use_color);
+
+/**
  * @brief Print a formatted error message for a failed function
  *
  * Prints "Fatal error: function 'name' failed: <error_msg>" to stderr.

@@ -384,6 +384,13 @@ namespace Qd {
 		std::vector<std::pair<std::string, std::string>> collectedTestNames;
 		llvm::Value* testErrorAlloca = nullptr;
 
+		// Coverage mode (only meaningful when testMode is also true).
+		bool coverageMode = false;
+		// Names of user functions whose bodies were instrumented for coverage,
+		// in the order they were registered. Index in this vector is the
+		// runtime coverage idx passed to qd_coverage_mark.
+		std::vector<std::string> coverageFunctionNames;
+
 		// Iterator variables
 		std::unordered_map<std::string, llvm::Value*> iteratorVars;
 
