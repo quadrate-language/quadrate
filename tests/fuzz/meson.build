@@ -71,3 +71,14 @@ fuzz_formatter = executable('fuzz_formatter',
 	link_args: fuzz_link_args,
 	build_by_default: true,
 )
+
+# LSP text-position fuzz target - exercises position-based word lookup
+# on arbitrary document text + line/character. Pure-text helper, no
+# jansson or qc deps required.
+fuzz_lsp_text = executable('fuzz_lsp_text',
+	'fuzz_lsp_text.cc',
+	files(meson.project_source_root() / 'cmd' / 'quadlsp' / 'src' / 'lsp_text.cc'),
+	cpp_args: fuzz_args,
+	link_args: fuzz_link_args,
+	build_by_default: true,
+)

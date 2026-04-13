@@ -1304,12 +1304,29 @@ namespace Qd {
 				endLine = mSourceLines.size();
 			}
 
-			// Handle inline bodies: fn main() { body } on a single line
+			// Handle inline bodies: fn main() { body } on a single line.
+			// The closing brace we want is the one that matches the body's
+			// opening `{` — not the LAST `}` on the line, which may belong
+			// to an unrelated trailing block. Walk the line tracking depth.
 			if (endLine == bodyLine) {
-				// Extract content between { and }
 				const std::string& line = getSourceLine(bodyLine);
 				size_t braceOpen = line.find('{');
-				size_t braceClose = line.rfind('}');
+				size_t braceClose = std::string::npos;
+				if (braceOpen != std::string::npos) {
+					int d = 0;
+					for (size_t k = braceOpen; k < line.length(); k++) {
+						char c = line[k];
+						if (c == '{') {
+							d++;
+						} else if (c == '}') {
+							d--;
+							if (d == 0) {
+								braceClose = k;
+								break;
+							}
+						}
+					}
+				}
 				if (braceOpen != std::string::npos && braceClose != std::string::npos && braceClose > braceOpen) {
 					std::string content = trim(line.substr(braceOpen + 1, braceClose - braceOpen - 1));
 					if (!content.empty()) {
@@ -1322,6 +1339,24 @@ namespace Qd {
 			}
 
 			size_t startLine = bodyLine + 1;
+
+			// Edge case: body content lives on the same line as the closing
+			// brace (e.g. malformed input like `fn x() {\n\tbody }\n`). The
+			// loop below processes lines [startLine, endLine), which would
+			// be empty here. Emit the prefix-of-endLine content directly.
+			if (startLine == endLine) {
+				const std::string& closeLine = getSourceLine(endLine);
+				size_t braceClose = closeLine.find('}');
+				if (braceClose != std::string::npos) {
+					std::string content = trim(closeLine.substr(0, braceClose));
+					if (!content.empty()) {
+						std::string normalized = normalizeLine(content);
+						emitIndent();
+						mOutput << normalized << "\n";
+					}
+				}
+				return;
+			}
 
 			int braceDepth = 0;
 			bool inMultilineString = false;

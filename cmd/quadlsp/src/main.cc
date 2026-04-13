@@ -1243,58 +1243,7 @@ std::string QuadrateLSP::getBuiltInDocumentation(const std::string& word) {
 }
 
 std::string QuadrateLSP::getWordAtPosition(const std::string& text, size_t line, size_t character) {
-	// Split text into lines
-	std::vector<std::string> lines;
-	std::istringstream stream(text);
-	std::string currentLine;
-	while (std::getline(stream, currentLine)) {
-		lines.push_back(currentLine);
-	}
-
-	if (line >= lines.size()) {
-		return "";
-	}
-
-	const std::string& targetLine = lines[line];
-	if (character >= targetLine.length()) {
-		return "";
-	}
-
-	// Find word boundaries
-	size_t start = character;
-	size_t end = character;
-
-	// Move start backward to beginning of word
-	// Include :: for scoped identifiers, but not single : (type annotations)
-	while (start > 0) {
-		char c = targetLine[start - 1];
-		if (isalnum(c) || c == '_') {
-			start--;
-		} else if (c == ':' && start >= 2 && targetLine[start - 2] == ':') {
-			// Include :: for scoped identifiers
-			start -= 2;
-		} else {
-			break;
-		}
-	}
-
-	// Move end forward to end of word
-	while (end < targetLine.length()) {
-		char c = targetLine[end];
-		if (isalnum(c) || c == '_') {
-			end++;
-		} else if (c == ':' && end + 1 < targetLine.length() && targetLine[end + 1] == ':') {
-			// Include :: for scoped identifiers
-			end += 2;
-		} else {
-			break;
-		}
-	}
-
-	if (end > start) {
-		return targetLine.substr(start, end - start);
-	}
-	return "";
+	return lspGetWordAtPosition(text, line, character);
 }
 
 std::string QuadrateLSP::getPackagesDir() {

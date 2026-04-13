@@ -20,13 +20,6 @@
 //   -h, --help    show this help
 //   --version     print version
 //
-// Note: this tool parses argv manually instead of using flag::parse
-// because the runtime `read` instruction infers types on argv and
-// pushes numeric-looking args as i64; flag::parse then crashes when it
-// tries to concat them. As a consequence, csvcut also cannot accept a
-// bare integer COLUMNS arg — pass `1,1` (or include a non-digit) for
-// single-column extraction. Tracked separately in TODO.md.
-//
 // Demonstrates: file I/O, CSV parsing with quote handling, sb (string
 // builder) for output assembly, manual argv handling, stdin fallback.
 
@@ -238,23 +231,14 @@ fn slurp(path:str -- text:str ok:i64) {
 fn main() {
 	read -> argc
 
-	// Pop args from the stack into a flat newline-joined string. We treat
-	// each item as a string; if it was inferred as int by `read`, we
-	// convert it back via strconv::itoa. (See note at top of file.)
+	// Pop args from the stack into a flat newline-joined string. Args come
+	// off the stack in reverse order so we prepend each one to keep input
+	// order in `joined`.
 	"" -> joined
 	argc 0 > if {
 		argc -> remaining
 		loop {
 			remaining 0 <= if { break }
-			// Build "arg\n..." in reverse order, then we'll iterate.
-			// We can't tell the type at runtime here; instead, we pop the
-			// arg into a temp local. Quadrate locals are typed by their
-			// first assignment. To avoid a type clash we route ints
-			// through arg_to_str (which expects i64) and use a separate
-			// pop for strings. Easiest: try `arg_to_str` for everything
-			// — but that expects i64. Since we can't introspect, we
-			// require all args to be string-typed here. This means -f
-			// must NOT be a bare integer. We document that in the help.
 			-> arg
 			arg "\n" strings::concat joined strings::concat -> joined
 			remaining 1 - -> remaining

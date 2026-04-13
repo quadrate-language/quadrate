@@ -23,77 +23,6 @@ static bool has_whitespace(const char* str) {
 	return false;
 }
 
-// Helper function to check if string is an integer
-static bool is_integer(const char* str) {
-	if (!str || *str == '\0') {
-		return false;
-	}
-
-	// Handle optional negative sign
-	if (*str == '-') {
-		str++;
-		if (*str == '\0') {
-			return false;
-		}
-	}
-
-	// Check all remaining chars are digits
-	while (*str) {
-		if (*str < '0' || *str > '9') {
-			return false;
-		}
-		str++;
-	}
-
-	return true;
-}
-
-// Helper function to check if string is a float
-static bool is_float(const char* str) {
-	if (!str || *str == '\0') {
-		return false;
-	}
-
-	// Handle optional negative sign
-	if (*str == '-') {
-		str++;
-		if (*str == '\0') {
-			return false;
-		}
-	}
-
-	// Must have digits before decimal point
-	if (*str < '0' || *str > '9') {
-		return false;
-	}
-
-	// Skip digits before decimal point
-	while (*str >= '0' && *str <= '9') {
-		str++;
-	}
-
-	// Must have decimal point
-	if (*str != '.') {
-		return false;
-	}
-	str++;
-
-	// Must have at least one digit after decimal point
-	if (*str < '0' || *str > '9') {
-		return false;
-	}
-
-	// Check remaining digits
-	while (*str) {
-		if (*str < '0' || *str > '9') {
-			return false;
-		}
-		str++;
-	}
-
-	return true;
-}
-
 // Helper function to remove quotes from a string
 static char* remove_quotes(const char* str) {
 	size_t len = strlen(str);
@@ -275,10 +204,17 @@ int qd_printsv(qd_context* ctx) {
 }
 
 int qd_read(qd_context* ctx) {
-	// Read command-line arguments and push onto stack with type inference
-	// argv[0] (program name) is saved to ctx->program_name, not pushed to stack
+	// Read command-line arguments and push onto stack as strings.
+	// argv[0] (program name) is saved to ctx->program_name, not pushed to stack.
 	// Stack before: (empty or anything)
 	// Stack after: arg1 arg2 ... argN (argc-1)
+	//
+	// Note: an earlier version did type inference here (pushing numeric
+	// looking args as i64/f64). That broke every consumer that wanted to
+	// treat argv as text — most importantly flag::parse, which calls
+	// strings::concat on each arg and crashes on non-string operands.
+	// Since the inferred form had no working consumer in the stdlib, we
+	// now always push strings and let callers parse types explicitly.
 
 	if (ctx->argc == 0 || ctx->argv == NULL) {
 		// No arguments, just push 0
@@ -296,31 +232,17 @@ int qd_read(qd_context* ctx) {
 		}
 	}
 
-	// Push arguments argv[1] onwards onto stack with type inference
+	// Push arguments argv[1] onwards onto stack as strings (with shell-style
+	// quote stripping for backwards compatibility with the previous behavior).
 	for (int i = 1; i < ctx->argc; i++) {
 		const char* arg = ctx->argv[i];
-
-		// Try integer first
-		if (is_integer(arg)) {
-			int64_t value = atoll(arg);
-			qd_push_i(ctx, value);
-		}
-		// Try float
-		else if (is_float(arg)) {
-			double value = atof(arg);
-			qd_push_f(ctx, value);
-		}
-		// String (quoted or unquoted)
-		else {
-			char* str = remove_quotes(arg);
-			if (str) {
-				qd_push_s(ctx, str);
-				free(str);
-			} else {
-				// Memory allocation failed
-				fprintf(stderr, "Fatal error in read: Memory allocation failed\n");
-				abort();
-			}
+		char* str = remove_quotes(arg);
+		if (str) {
+			qd_push_s(ctx, str);
+			free(str);
+		} else {
+			fprintf(stderr, "Fatal error in read: Memory allocation failed\n");
+			abort();
 		}
 	}
 

@@ -17,6 +17,12 @@ static const int ERROR_SPAN_LENGTH = 10;
 // Expand tilde (~) in file paths
 std::string expandTilde(const std::string& path);
 
+// Return the word at the given line/character position, including '::'
+// for scoped identifiers. Returns "" if the position is out of range or
+// no word exists there. Free function so it can be linked into fuzz
+// targets without the rest of the LSP server.
+std::string lspGetWordAtPosition(const std::string& text, size_t line, size_t character);
+
 // Load dependencies from qd.json and return include paths
 std::vector<std::string> loadDependenciesFromManifest(const std::string& manifestDir);
 
