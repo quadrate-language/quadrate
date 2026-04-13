@@ -293,6 +293,13 @@ import "libhttp.a" as "http" {
 	/// @example c "Content-Type" http::get_header -> ct
 	pub fn get_header(c:Ctx name:str -- value:str)
 
+	/// Get the raw request body as a string.
+	/// Useful for reading JSON payloads in POST/PUT handlers.
+	/// @param c Ctx Context
+	/// @return body str Request body (empty if no body)
+	/// @example c http::request_body -> json_payload
+	pub fn request_body(c:Ctx -- body:str)
+
 	/// Send plain text response.
 	/// @param c Ctx Context
 	/// @param status i64 HTTP status code

@@ -21,6 +21,7 @@ nav:
       - 1. Hello world: learn/1-basics/hello-world.md
       - 2. The stack:
           - How it works: learn/2-stack/how-it-works.md
+          - Thinking in stack-based: learn/2-stack/thinking-in-stack.md
           - Stack manipulation: learn/2-stack/manipulation.md
           - Local variables: learn/2-stack/local-variables.md
       - 3. Basics:

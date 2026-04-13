@@ -22,6 +22,9 @@ curl http://localhost:8080/links/0
 
 # Search by title
 curl http://localhost:8080/search?q=quadrate
+
+# POST a JSON body (echoed back)
+curl -X POST http://localhost:8080/echo -d '{"hello":"world"}'
 ```
 
 ## Features

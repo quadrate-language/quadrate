@@ -1023,6 +1023,18 @@ int usr_http_query_param(qd_context* ctx) {
 	return 0;
 }
 
+int usr_http_request_body(qd_context* ctx) {
+	// Pop ctx
+	http_ctx_t* http_ctx = pop_ctx(ctx);
+
+	if (http_ctx->body) {
+		qd_push_s(ctx, qd_string_data(http_ctx->body));
+	} else {
+		qd_push_s(ctx, "");
+	}
+	return 0;
+}
+
 int usr_http_get_header(qd_context* ctx) {
 	// Pop name
 	qd_stack_element_t name_elem;

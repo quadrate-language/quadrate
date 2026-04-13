@@ -7,10 +7,11 @@
 //   quad run links-api.qd
 //
 // Endpoints:
-//   GET /              — service info
-//   GET /links         — list all links
-//   GET /links/:id     — get a link by id
-//   GET /search?q=...  — search links by title
+//   GET  /              — service info
+//   GET  /links         — list all links
+//   GET  /links/:id     — get a link by id
+//   GET  /search?q=...  — search links by title
+//   POST /echo          — echo request body (demonstrates http::request_body)
 
 use http
 use json
@@ -110,6 +111,15 @@ fn handle_search(c:ptr -- ) {
 	}
 }
 
+fn handle_echo(c:ptr -- ) {
+	c http::request_body -> body
+	body strings::len 0 == if {
+		c 400 "{\"error\":\"empty body\"}" http::json
+	} else {
+		c 200 body http::json
+	}
+}
+
 fn main() {
 	http::engine -> e
 
@@ -117,12 +127,14 @@ fn main() {
 	e "/links" &handle_list http::GET
 	e "/links/:id" &handle_get_one http::GET
 	e "/search" &handle_search http::GET
+	e "/echo" &handle_echo http::POST
 
 	"Links API listening on :8080" print nl
-	"  GET /              - service info" print nl
-	"  GET /links         - list all links" print nl
-	"  GET /links/:id     - get a link" print nl
-	"  GET /search?q=...  - search by title" print nl
+	"  GET  /              - service info" print nl
+	"  GET  /links         - list all links" print nl
+	"  GET  /links/:id     - get a link" print nl
+	"  GET  /search?q=...  - search by title" print nl
+	"  POST /echo          - echo JSON body back" print nl
 
 	e ":8080" http::run!
 	e http::free_engine
