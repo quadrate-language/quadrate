@@ -989,6 +989,31 @@ EOF
 }
 
 # Main
+# Generate docs/api/modules.json — JSON array of stdlib module names.
+# Consumed by quadmcp instead of a hardcoded list, so adding/removing a
+# stdlib module is a one-line change in STDLIB_MODULES rather than also
+# touching cmd/quadmcp/tools.qd.
+generate_modules_index_json() {
+    local out="$JSON_DIR/modules.json"
+    local first=1
+    {
+        echo -n "["
+        for name in $(echo "${!STDLIB_MODULES[@]}" | tr ' ' '\n' | sort); do
+            local path="${STDLIB_MODULES[$name]}"
+            local filepath="$PROJECT_ROOT/$path"
+            [[ -f "$filepath" ]] || continue
+            if (( first )); then
+                first=0
+            else
+                echo -n ","
+            fi
+            echo -n "\"$name\""
+        done
+        echo "]"
+    } > "$out"
+    echo "Modules index: $out"
+}
+
 main() {
     if [[ $# -gt 0 ]]; then
         # Single file mode
@@ -1032,6 +1057,9 @@ main() {
 
         # Generate reference
         generate_reference
+
+        # Generate modules index JSON for quadmcp
+        generate_modules_index_json
 
         echo ""
         echo "Generated ${#STDLIB_MODULES[@]} module docs + index"

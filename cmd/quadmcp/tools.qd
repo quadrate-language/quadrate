@@ -118,8 +118,6 @@ fn mcp_tools_list(id:str -- response:str) {
 	id result rpc_result
 }
 
-const MODULE_LIST = "bits,bytes,ct,flag,fmt,hof,io,limits,math,mem,net,os,path,rand,sb,signal,sort,str,strconv,term,testing,thread,time,unicode"
-
 fn module_entry(ds:ptr name:str -- entry:str) {
 	ds name load_module -> m
 
@@ -138,33 +136,46 @@ fn module_entry(ds:ptr name:str -- entry:str) {
 	json::obj
 }
 
+// Build a comma-separated module list from the loaded modules.json.
+// Used in error messages (e.g. "Available: bits,bytes,...").
+fn module_list_csv(ds:ptr -- csv:str) {
+	ds <<modules -> mods
+	"" -> result
+	mods json::array_len -> n
+	0 -> i
+	loop {
+		i n >= if { break }
+		mods i json::array_get_string -> ok -> name
+		ok if {
+			result strings::len 0 == if {
+				name -> result
+			} else {
+				result "," name strings::concat strings::concat -> result
+			}
+		}
+		i 1 + -> i
+	}
+	result
+}
+
 fn tool_list_modules(ds:ptr -- result:str) {
-	ds "bits" module_entry
-	ds "bytes" module_entry json::join
-	ds "ct" module_entry json::join
-	ds "flag" module_entry json::join
-	ds "fmt" module_entry json::join
-	ds "hof" module_entry json::join
-	ds "io" module_entry json::join
-	ds "limits" module_entry json::join
-	ds "math" module_entry json::join
-	ds "mem" module_entry json::join
-	ds "net" module_entry json::join
-	ds "os" module_entry json::join
-	ds "path" module_entry json::join
-	ds "rand" module_entry json::join
-	ds "sb" module_entry json::join
-	ds "signal" module_entry json::join
-	ds "sort" module_entry json::join
-	ds "strings" module_entry json::join
-	ds "strconv" module_entry json::join
-	ds "term" module_entry json::join
-	ds "testing" module_entry json::join
-	ds "thread" module_entry json::join
-	ds "time" module_entry json::join
-	ds "tty" module_entry json::join
-	ds "unicode" module_entry json::join
-	json::arr tool_text_result
+	ds <<modules -> mods
+	mods json::array_len -> n
+	"" -> arr_body
+	0 -> i
+	loop {
+		i n >= if { break }
+		mods i json::array_get_string -> ok -> name
+		ok if {
+			arr_body strings::len 0 == if {
+				ds name module_entry -> arr_body
+			} else {
+				arr_body ds name module_entry json::join -> arr_body
+			}
+		}
+		i 1 + -> i
+	}
+	arr_body json::arr tool_text_result
 }
 
 fn tool_get_module(ds:ptr args:str -- result:str) {
@@ -175,7 +186,7 @@ fn tool_get_module(ds:ptr args:str -- result:str) {
 		ds mod_name load_module -> mod_json
 		mod_json "name" json::get_string -> found -> _
 		found 0 == if {
-			"Module '" mod_name strings::concat "' not found. Available: " strings::concat MODULE_LIST strings::concat tool_error_result
+			"Module '" mod_name strings::concat "' not found. Available: " strings::concat ds module_list_csv strings::concat tool_error_result
 		} else {
 			mod_json tool_text_result
 		}
@@ -284,31 +295,17 @@ fn tool_search(ds:ptr args:str -- result:str) {
 			r "=== Language Reference ===\n" strings::concat ds <<language strings::concat "\n\n" strings::concat -> r
 		}
 
-		ds "bits" query r search_module -> r
-		ds "bytes" query r search_module -> r
-		ds "ct" query r search_module -> r
-		ds "flag" query r search_module -> r
-		ds "fmt" query r search_module -> r
-		ds "hof" query r search_module -> r
-		ds "io" query r search_module -> r
-		ds "limits" query r search_module -> r
-		ds "math" query r search_module -> r
-		ds "mem" query r search_module -> r
-		ds "net" query r search_module -> r
-		ds "os" query r search_module -> r
-		ds "path" query r search_module -> r
-		ds "rand" query r search_module -> r
-		ds "sb" query r search_module -> r
-		ds "signal" query r search_module -> r
-		ds "sort" query r search_module -> r
-		ds "strings" query r search_module -> r
-		ds "strconv" query r search_module -> r
-		ds "term" query r search_module -> r
-		ds "testing" query r search_module -> r
-		ds "thread" query r search_module -> r
-		ds "time" query r search_module -> r
-		ds "tty" query r search_module -> r
-		ds "unicode" query r search_module -> r
+		ds <<modules -> mods
+		mods json::array_len -> n
+		0 -> i
+		loop {
+			i n >= if { break }
+			mods i json::array_get_string -> ok -> name
+			ok if {
+				ds name query r search_module -> r
+			}
+			i 1 + -> i
+		}
 
 		r tool_text_result
 	}
@@ -499,31 +496,17 @@ fn tool_find_function(ds:ptr args:str -- result:str) {
 		has_mod if {
 			ds specific_mod query r count fuzzy_find_in_module -> count -> r
 		} else {
-			ds "bits" query r count fuzzy_find_in_module -> count -> r
-			ds "bytes" query r count fuzzy_find_in_module -> count -> r
-			ds "ct" query r count fuzzy_find_in_module -> count -> r
-			ds "flag" query r count fuzzy_find_in_module -> count -> r
-			ds "fmt" query r count fuzzy_find_in_module -> count -> r
-			ds "hof" query r count fuzzy_find_in_module -> count -> r
-			ds "io" query r count fuzzy_find_in_module -> count -> r
-			ds "limits" query r count fuzzy_find_in_module -> count -> r
-			ds "math" query r count fuzzy_find_in_module -> count -> r
-			ds "mem" query r count fuzzy_find_in_module -> count -> r
-			ds "net" query r count fuzzy_find_in_module -> count -> r
-			ds "os" query r count fuzzy_find_in_module -> count -> r
-			ds "path" query r count fuzzy_find_in_module -> count -> r
-			ds "rand" query r count fuzzy_find_in_module -> count -> r
-			ds "sb" query r count fuzzy_find_in_module -> count -> r
-			ds "signal" query r count fuzzy_find_in_module -> count -> r
-			ds "sort" query r count fuzzy_find_in_module -> count -> r
-			ds "strings" query r count fuzzy_find_in_module -> count -> r
-			ds "strconv" query r count fuzzy_find_in_module -> count -> r
-			ds "term" query r count fuzzy_find_in_module -> count -> r
-			ds "testing" query r count fuzzy_find_in_module -> count -> r
-			ds "thread" query r count fuzzy_find_in_module -> count -> r
-			ds "time" query r count fuzzy_find_in_module -> count -> r
-			ds "tty" query r count fuzzy_find_in_module -> count -> r
-			ds "unicode" query r count fuzzy_find_in_module -> count -> r
+			ds <<modules -> mods
+			mods json::array_len -> n
+			0 -> i
+			loop {
+				i n >= if { break }
+				mods i json::array_get_string -> ok -> name
+				ok if {
+					ds name query r count fuzzy_find_in_module -> count -> r
+				}
+				i 1 + -> i
+			}
 		}
 
 		count 0 == if {
@@ -580,31 +563,17 @@ fn tool_search_by_signature(ds:ptr args:str -- result:str) {
 		"Functions matching signature pattern '" pattern strings::concat "':\n\n" strings::concat -> r
 		0 -> count
 
-		ds "bits" pattern r count search_by_sig_in_module -> count -> r
-		ds "bytes" pattern r count search_by_sig_in_module -> count -> r
-		ds "ct" pattern r count search_by_sig_in_module -> count -> r
-		ds "flag" pattern r count search_by_sig_in_module -> count -> r
-		ds "fmt" pattern r count search_by_sig_in_module -> count -> r
-		ds "hof" pattern r count search_by_sig_in_module -> count -> r
-		ds "io" pattern r count search_by_sig_in_module -> count -> r
-		ds "limits" pattern r count search_by_sig_in_module -> count -> r
-		ds "math" pattern r count search_by_sig_in_module -> count -> r
-		ds "mem" pattern r count search_by_sig_in_module -> count -> r
-		ds "net" pattern r count search_by_sig_in_module -> count -> r
-		ds "os" pattern r count search_by_sig_in_module -> count -> r
-		ds "path" pattern r count search_by_sig_in_module -> count -> r
-		ds "rand" pattern r count search_by_sig_in_module -> count -> r
-		ds "sb" pattern r count search_by_sig_in_module -> count -> r
-		ds "signal" pattern r count search_by_sig_in_module -> count -> r
-		ds "sort" pattern r count search_by_sig_in_module -> count -> r
-		ds "strings" pattern r count search_by_sig_in_module -> count -> r
-		ds "strconv" pattern r count search_by_sig_in_module -> count -> r
-		ds "term" pattern r count search_by_sig_in_module -> count -> r
-		ds "testing" pattern r count search_by_sig_in_module -> count -> r
-		ds "thread" pattern r count search_by_sig_in_module -> count -> r
-		ds "time" pattern r count search_by_sig_in_module -> count -> r
-		ds "tty" pattern r count search_by_sig_in_module -> count -> r
-		ds "unicode" pattern r count search_by_sig_in_module -> count -> r
+		ds <<modules -> mods
+		mods json::array_len -> n
+		0 -> i
+		loop {
+			i n >= if { break }
+			mods i json::array_get_string -> ok -> name
+			ok if {
+				ds name pattern r count search_by_sig_in_module -> count -> r
+			}
+			i 1 + -> i
+		}
 
 		count 0 == if {
 			r "No functions found with signature matching '" strings::concat pattern strings::concat "'\n\nTry patterns like: 'str -- i64', 'f64 -- f64', 'ptr'" strings::concat -> r

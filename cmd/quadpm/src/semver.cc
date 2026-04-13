@@ -443,6 +443,74 @@ void sortVersionsDesc(std::vector<SemVer>& versions) {
 	std::sort(versions.begin(), versions.end(), [](const SemVer& a, const SemVer& b) { return a > b; });
 }
 
+bool rangesHaveCommonVersion(const std::vector<VersionRange>& ranges) {
+	if (ranges.empty()) {
+		return true;
+	}
+	if (ranges.size() == 1) {
+		return ranges[0].isValid();
+	}
+
+	auto mk = [](int M, int m, int p) {
+		SemVer s;
+		s.major = M;
+		s.minor = m;
+		s.patch = p;
+		return s;
+	};
+
+	std::vector<SemVer> candidates;
+	auto addCand = [&](const SemVer& v) {
+		if (v.major < 0 || v.minor < 0 || v.patch < 0) {
+			return;
+		}
+		candidates.push_back(v);
+	};
+
+	// Always probe the lowest possible version — useful when ranges only
+	// have upper bounds.
+	addCand(mk(0, 0, 0));
+
+	for (const auto& r : ranges) {
+		for (const auto& alt : r.alternatives) {
+			for (const auto& c : alt) {
+				if (c.op == ConstraintOp::ANY) {
+					addCand(mk(1, 0, 0));
+					continue;
+				}
+				const SemVer& v = c.version;
+				addCand(v);
+				addCand(mk(v.major, v.minor, v.patch + 1));
+				addCand(mk(v.major, v.minor + 1, 0));
+				addCand(mk(v.major + 1, 0, 0));
+				if (v.patch > 0) {
+					addCand(mk(v.major, v.minor, v.patch - 1));
+				}
+				if (v.minor > 0) {
+					addCand(mk(v.major, v.minor - 1, 0));
+				}
+				if (v.major > 0) {
+					addCand(mk(v.major - 1, 0, 0));
+				}
+			}
+		}
+	}
+
+	for (const auto& v : candidates) {
+		bool allSat = true;
+		for (const auto& r : ranges) {
+			if (!r.satisfies(v)) {
+				allSat = false;
+				break;
+			}
+		}
+		if (allSat) {
+			return true;
+		}
+	}
+	return false;
+}
+
 SemVer findBestMatch(const VersionRange& range, const std::vector<SemVer>& versions) {
 	// Make a sorted copy (newest first)
 	std::vector<SemVer> sorted = versions;

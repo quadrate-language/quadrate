@@ -244,6 +244,74 @@ TEST(SemVerToStringFullTest) {
 	ASSERT_STR_EQ("1.2.3-beta.1+build.456", v.toString().c_str(), "toString full");
 }
 
+// rangesHaveCommonVersion: pair of caret ranges with same major — compatible.
+TEST(ConflictCaretSameMajorTest) {
+	std::vector<VersionRange> rs = {parseVersionRange("^1.2.0"), parseVersionRange("^1.5.0")};
+	ASSERT_TRUE(rangesHaveCommonVersion(rs), "^1.2.0 and ^1.5.0 share 1.5.0");
+}
+
+// rangesHaveCommonVersion: caret with different majors — conflict.
+TEST(ConflictCaretDifferentMajorTest) {
+	std::vector<VersionRange> rs = {parseVersionRange("^1.0.0"), parseVersionRange("^2.0.0")};
+	ASSERT_FALSE(rangesHaveCommonVersion(rs), "^1.0.0 and ^2.0.0 conflict");
+}
+
+// rangesHaveCommonVersion: tilde with different minors — conflict.
+TEST(ConflictTildeDifferentMinorTest) {
+	std::vector<VersionRange> rs = {parseVersionRange("~1.2.0"), parseVersionRange("~1.3.0")};
+	ASSERT_FALSE(rangesHaveCommonVersion(rs), "~1.2.0 and ~1.3.0 conflict");
+}
+
+// rangesHaveCommonVersion: gt-vs-lt non-overlapping — conflict.
+TEST(ConflictGtLtNonOverlapTest) {
+	std::vector<VersionRange> rs = {parseVersionRange(">=2.0.0"), parseVersionRange("<1.5.0")};
+	ASSERT_FALSE(rangesHaveCommonVersion(rs), ">=2.0.0 and <1.5.0 conflict");
+}
+
+// rangesHaveCommonVersion: gt-vs-lt overlapping — compatible.
+TEST(ConflictGtLtOverlapTest) {
+	std::vector<VersionRange> rs = {parseVersionRange(">=1.0.0"), parseVersionRange("<2.0.0")};
+	ASSERT_TRUE(rangesHaveCommonVersion(rs), ">=1.0.0 and <2.0.0 overlap");
+}
+
+// rangesHaveCommonVersion: exact-vs-caret matching — compatible.
+TEST(ConflictExactCaretMatchTest) {
+	std::vector<VersionRange> rs = {parseVersionRange("=1.2.3"), parseVersionRange("^1.0.0")};
+	ASSERT_TRUE(rangesHaveCommonVersion(rs), "=1.2.3 satisfies ^1.0.0");
+}
+
+// rangesHaveCommonVersion: exact-vs-caret out of range — conflict.
+TEST(ConflictExactCaretMismatchTest) {
+	std::vector<VersionRange> rs = {parseVersionRange("=2.0.0"), parseVersionRange("^1.0.0")};
+	ASSERT_FALSE(rangesHaveCommonVersion(rs), "=2.0.0 outside ^1.0.0");
+}
+
+// rangesHaveCommonVersion: exact-vs-exact mismatch — conflict.
+TEST(ConflictExactExactTest) {
+	std::vector<VersionRange> rs = {parseVersionRange("=1.2.3"), parseVersionRange("=1.2.4")};
+	ASSERT_FALSE(rangesHaveCommonVersion(rs), "=1.2.3 and =1.2.4 conflict");
+}
+
+// rangesHaveCommonVersion: ANY range is compatible with anything.
+TEST(ConflictAnyCompatibleTest) {
+	std::vector<VersionRange> rs = {parseVersionRange("*"), parseVersionRange("^2.0.0")};
+	ASSERT_TRUE(rangesHaveCommonVersion(rs), "* satisfies any range");
+}
+
+// rangesHaveCommonVersion: three-way satisfiable.
+TEST(ConflictThreeWayCompatibleTest) {
+	std::vector<VersionRange> rs = {
+			parseVersionRange("^1.0.0"), parseVersionRange(">=1.2.0"), parseVersionRange("<1.5.0")};
+	ASSERT_TRUE(rangesHaveCommonVersion(rs), "1.2.0..<1.5.0 within ^1.0.0");
+}
+
+// rangesHaveCommonVersion: three-way unsatisfiable.
+TEST(ConflictThreeWayUnsatisfiableTest) {
+	std::vector<VersionRange> rs = {
+			parseVersionRange("^1.0.0"), parseVersionRange(">=1.5.0"), parseVersionRange("<1.5.0")};
+	ASSERT_FALSE(rangesHaveCommonVersion(rs), ">=1.5.0 and <1.5.0 conflict");
+}
+
 int main(void) {
 	return UC_PrintResults();
 }

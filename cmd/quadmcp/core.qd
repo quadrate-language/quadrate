@@ -11,10 +11,13 @@ const PROTOCOL_VERSION = "2024-11-05"
 const SERVER_NAME = "quadmcp"
 const SERVER_VERSION = "0.2.0"
 
+// modules holds a JSON array of stdlib module names
+// (e.g. ["bits","bytes",...]) loaded from docs/api/modules.json.
 struct DocStore {
 	docs_dir: str
 	builtins: str
 	language: str
+	modules:  str
 }
 
 fn find_docs_dir( -- dir:str) {
@@ -53,6 +56,7 @@ fn load_docs( -- ds:ptr) {
 	find_docs_dir -> docs_dir
 	"" -> builtins
 	"" -> language
+	"" -> modules
 
 	docs_dir "/builtins.json" strings::concat io::read_file switch {
 		Ok { -> builtins }
@@ -68,10 +72,18 @@ fn load_docs( -- ds:ptr) {
 		}
 	}
 
+	docs_dir "/modules.json" strings::concat io::read_file switch {
+		Ok { -> modules }
+		_ {
+			"[]" -> modules
+		}
+	}
+
 	DocStore {
 		docs_dir = docs_dir
 		builtins = builtins
 		language = language
+		modules = modules
 	}
 }
 

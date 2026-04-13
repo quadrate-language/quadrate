@@ -1310,54 +1310,28 @@ std::vector<VersionConflict> detectVersionConflicts(
 			continue; // No potential conflict with single requirement
 		}
 
-		// Check if all version ranges are compatible
-		// Two ranges conflict if there's no version that can satisfy both
-		bool hasConflict = false;
-		std::string firstRange;
-		VersionRange firstParsed;
-
-		for (size_t i = 0; i < reqs.size(); i++) {
-			const std::string& range = reqs[i].second;
-
-			// Skip non-semver requirements (branches, commits)
-			if (!isSemVerRange(range)) {
-				continue;
+		// Check if all version ranges have a common satisfying version.
+		// rangesHaveCommonVersion (in semver.cc) probes a set of boundary
+		// candidate versions and reports false only when no satisfying
+		// version exists across all ranges.
+		std::vector<VersionRange> parsedRanges;
+		std::vector<std::pair<std::string, std::string>> semverReqs;
+		for (const auto& req : reqs) {
+			if (!isSemVerRange(req.second)) {
+				continue; // ignore branches/commits
 			}
-
-			if (firstRange.empty()) {
-				firstRange = range;
-				firstParsed = parseVersionRange(range);
-				continue;
-			}
-
-			VersionRange currentRange = parseVersionRange(range);
-
-			// Check if there's any overlap between ranges
-			// For simplicity, we detect obvious conflicts:
-			// - Different major versions with caret (^1.0.0 vs ^2.0.0)
-			// - Non-overlapping explicit ranges (>=2.0.0 vs <1.5.0)
-
-			// Get the constraints from both ranges
-			for (const auto& alt1 : firstParsed.alternatives) {
-				for (const auto& c1 : alt1) {
-					if (c1.op == ConstraintOp::CARET) {
-						// Check if current range requires different major
-						for (const auto& alt2 : currentRange.alternatives) {
-							for (const auto& c2 : alt2) {
-								if (c2.op == ConstraintOp::CARET && c1.version.major != c2.version.major) {
-									hasConflict = true;
-								}
-							}
-						}
-					}
-				}
-			}
+			parsedRanges.push_back(parseVersionRange(req.second));
+			semverReqs.push_back(req);
 		}
 
-		if (hasConflict) {
+		if (parsedRanges.size() < 2) {
+			continue;
+		}
+
+		if (!rangesHaveCommonVersion(parsedRanges)) {
 			VersionConflict conflict;
 			conflict.packageName = pkgName;
-			conflict.requirements = reqs;
+			conflict.requirements = semverReqs;
 			conflicts.push_back(conflict);
 		}
 	}

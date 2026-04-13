@@ -105,4 +105,12 @@ SemVer findBestMatch(const VersionRange& range, const std::vector<SemVer>& versi
 // Sort versions in descending order (newest first)
 void sortVersionsDesc(std::vector<SemVer>& versions);
 
+// Check whether a set of version ranges has any common satisfying version.
+// Returns true if there exists at least one SemVer that satisfies every
+// range, false if the ranges are mutually unsatisfiable. Uses a candidate
+// probe over boundary versions derived from the constraints — exact for
+// real-world ranges, conservative (may report compatible) only for
+// pathological constructions far outside any constraint's neighbourhood.
+bool rangesHaveCommonVersion(const std::vector<VersionRange>& ranges);
+
 #endif
