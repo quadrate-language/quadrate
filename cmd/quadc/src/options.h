@@ -27,6 +27,7 @@ struct Options {
 	bool readStdin = false;										 // Read source from stdin
 	bool testMode = false;										 // Compile and run tests
 	bool coverage = false;										 // Function coverage report (--coverage with --test)
+	bool freestanding = false;									 // No hosted runtime (no libc, no auto-main)
 	bool noJIT = false;											 // Disable JIT for -r mode
 	std::string targetTriple;									 // Cross-compilation target (e.g., aarch64-linux-gnu)
 	std::unordered_map<std::string, std::string> moduleVersions; // module name -> version

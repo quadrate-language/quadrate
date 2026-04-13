@@ -2141,9 +2141,11 @@ namespace Qd {
 			}
 		}
 		// Only generate C main for standalone mode (main module is "main" or a file path)
-		// but NOT for REPL modules (which have names like "repl_0", "repl_1", etc.)
+		// but NOT for REPL modules (which have names like "repl_0", "repl_1", etc.).
+		// In freestanding mode we never generate a C main; the user provides
+		// their own entry (typically `_start`) and we emit a thin shim below.
 		bool isReplModule = (mainModuleName.find("repl_") == 0);
-		bool generateCMain = hasMainFunction && !isReplModule;
+		bool generateCMain = hasMainFunction && !isReplModule && !freestandingMode;
 
 		// Pre-pass: declare all user-defined functions from main file (for forward references)
 		// This ensures functions can call each other regardless of definition order
@@ -2497,6 +2499,69 @@ namespace Qd {
 			}
 		}
 
+		// Freestanding mode: emit a C-callable `_start` shim that calls the
+		// user's `pub fn _start( -- )` (or `pub fn main( -- )` as a fallback)
+		// using a runtime-provided static context. The freestanding runtime
+		// (libqdrt-freestanding.a) provides:
+		//   extern qd_context qd_freestanding_ctx;   // statically allocated
+		//   extern void qd_freestanding_halt(void);  // weak; user override
+		if (freestandingMode && !testMode) {
+			// Find the user entry function: prefer "_start", fall back to "main".
+			AstNodeFunctionDeclaration* entryFn = nullptr;
+			for (auto* child : root->children()) {
+				if (auto fn = dynamic_cast<AstNodeFunctionDeclaration*>(child)) {
+					if (fn->name() == "_start") {
+						entryFn = fn;
+						break;
+					}
+				}
+			}
+			if (!entryFn) {
+				for (auto* child : root->children()) {
+					if (auto fn = dynamic_cast<AstNodeFunctionDeclaration*>(child)) {
+						if (fn->name() == "main") {
+							entryFn = fn;
+							break;
+						}
+					}
+				}
+			}
+			if (!entryFn) {
+				std::cerr << "Error: --freestanding requires a 'pub fn _start( -- )' "
+							 "or 'pub fn main( -- )' in the main module\n";
+				return false;
+			}
+
+			// Look up the already-generated user function: usr_<mainModuleName>__start (or _main).
+			std::string userFnName = "usr_" + mainModuleName + "_" + entryFn->name();
+			llvm::Function* userFn = module->getFunction(userFnName);
+			if (!userFn) {
+				std::cerr << "Error: --freestanding could not find generated entry function '" << userFnName << "'\n";
+				return false;
+			}
+			// Promote to external linkage so the linker can keep it.
+			userFn->setLinkage(llvm::Function::ExternalLinkage);
+
+			// Declare the freestanding runtime's static context as an external
+			// global. The runtime side is just `qd_context qd_freestanding_ctx;`.
+			auto ctxGlobal = new llvm::GlobalVariable(*module, contextStructTy,
+					/*isConstant=*/false, llvm::GlobalValue::ExternalLinkage,
+					/*Initializer=*/nullptr, "qd_freestanding_ctx");
+
+			// Declare the halt hook (weak so user can override).
+			auto haltFnTy = llvm::FunctionType::get(builder->getVoidTy(), {}, false);
+			auto haltFn = module->getOrInsertFunction("qd_freestanding_halt", haltFnTy);
+
+			// Emit `void _start(void)`.
+			auto startFnTy = llvm::FunctionType::get(builder->getVoidTy(), {}, false);
+			auto startFn = llvm::Function::Create(startFnTy, llvm::Function::ExternalLinkage, "_start", *module);
+			auto startBB = llvm::BasicBlock::Create(*context, "entry", startFn);
+			builder->SetInsertPoint(startBB);
+			builder->CreateCall(userFn, {ctxGlobal});
+			builder->CreateCall(haltFn);
+			builder->CreateUnreachable();
+		}
+
 		printTiming("generateCMain");
 
 		// Verify module
@@ -2581,6 +2646,13 @@ namespace Qd {
 			mImpl = std::make_unique<Impl>("temp");
 		}
 		mImpl->coverageMode = enabled;
+	}
+
+	void LlvmGenerator::setFreestandingMode(bool enabled) {
+		if (!mImpl) {
+			mImpl = std::make_unique<Impl>("temp");
+		}
+		mImpl->freestandingMode = enabled;
 	}
 
 	void LlvmGenerator::setTargetTriple(const std::string& triple) {

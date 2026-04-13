@@ -344,6 +344,22 @@ namespace Qd {
 		if (node->type() == IAstNode::Type::USE_STATEMENT) {
 			AstNodeUse* use = static_cast<AstNodeUse*>(node);
 			std::string moduleName = use->module();
+
+			// Freestanding mode: only `bits` and `limits` from the stdlib
+			// are usable. Everything else either allocates or calls libc.
+			// User .qd file imports (containing `/` or `.qd`) are allowed
+			// since the user controls what those files contain.
+			if (mFreestandingMode) {
+				bool isUserImport = moduleName.find('/') != std::string::npos ||
+									(moduleName.size() > 3 && moduleName.substr(moduleName.size() - 3) == ".qd");
+				if (!isUserImport && moduleName != "bits" && moduleName != "limits") {
+					std::string err = "module '" + moduleName +
+									  "' is not available in --freestanding mode "
+									  "(allocates or depends on libc)";
+					reportError(node, err.c_str());
+				}
+			}
+
 			mImportedModules.insert(moduleName);
 
 			// For top-level file imports (not intra-module imports), also register the derived namespace

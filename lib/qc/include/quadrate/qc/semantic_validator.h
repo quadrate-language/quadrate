@@ -132,6 +132,15 @@ namespace Qd {
 			mIncludePaths = paths;
 		}
 
+		// Freestanding mode: reject `use` of stdlib modules that allocate or
+		// call libc, and reject builtins (`print`, `nl`, `read`, `panic`,
+		// etc.) that aren't usable without a hosted runtime. Only `bits`
+		// and `limits` from the stdlib are allowed; everything else either
+		// allocates, calls libc, or both.
+		void setFreestandingMode(bool enabled) {
+			mFreestandingMode = enabled;
+		}
+
 		// Set source text for error context printing
 		void setSource(const char* source) {
 			mSource = source;
@@ -412,6 +421,9 @@ namespace Qd {
 
 		// Additional module search paths from -I flags
 		std::vector<std::string> mIncludePaths;
+
+		// Freestanding mode: see setFreestandingMode().
+		bool mFreestandingMode = false;
 
 		// Whether we're currently type checking inside a loop body
 		// When true, type errors are suppressed (but method calls are still marked)

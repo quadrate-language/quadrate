@@ -162,6 +162,7 @@ int main(int argc, char** argv) {
 			Qd::SemanticValidator validator;
 			validator.setIncludePaths(opts.includePaths);
 			validator.setSource(buffer.c_str());
+			validator.setFreestandingMode(opts.freestanding);
 			size_t errorCount = validator.validate(root, "<stdin>", false, opts.werror);
 			if (errorCount > 0) {
 				// Validation failed - do not proceed
@@ -220,6 +221,7 @@ int main(int argc, char** argv) {
 			validator.setIncludePaths(opts.includePaths);
 			validator.setSource(buffer.c_str());
 			validator.setSiblingFiles(siblingFiles);
+			validator.setFreestandingMode(opts.freestanding);
 			size_t errorCount = validator.validate(root, file.c_str(), false, opts.werror);
 			printTiming("semantic");
 			if (errorCount > 0) {
@@ -550,6 +552,15 @@ int main(int argc, char** argv) {
 			}
 		}
 
+		// Freestanding mode: no auto-main, no libc, emit _start shim instead.
+		if (opts.freestanding) {
+			if (opts.testMode) {
+				printError("--freestanding is incompatible with --test");
+				return 1;
+			}
+			generator.setFreestandingMode(true);
+		}
+
 		// Set target triple for cross-compilation if specified
 		if (!opts.targetTriple.empty()) {
 			generator.setTargetTriple(opts.targetTriple);
@@ -604,8 +615,9 @@ int main(int argc, char** argv) {
 			return 1;
 		}
 
-		// Check if main function exists in main module (unless in test mode)
-		if (!opts.testMode) {
+		// Check if main function exists in main module (unless in test mode
+		// or freestanding mode, which use different entry-point conventions).
+		if (!opts.testMode && !opts.freestanding) {
 			bool hasMainFunction = false;
 			for (auto* child : mainRoot->children()) {
 				if (child && child->type() == Qd::IAstNode::Type::FUNCTION_DECLARATION) {
@@ -620,6 +632,22 @@ int main(int argc, char** argv) {
 			if (!hasMainFunction) {
 				printError("no 'main' function found in main module");
 				printNote("a Quadrate program must have a 'main' function as the entry point");
+				return 1;
+			}
+		} else if (opts.freestanding) {
+			// Freestanding requires either _start or main as the entry function.
+			bool hasEntry = false;
+			for (auto* child : mainRoot->children()) {
+				if (child && child->type() == Qd::IAstNode::Type::FUNCTION_DECLARATION) {
+					auto* funcDecl = static_cast<Qd::AstNodeFunctionDeclaration*>(child);
+					if (funcDecl->name() == "_start" || funcDecl->name() == "main") {
+						hasEntry = true;
+						break;
+					}
+				}
+			}
+			if (!hasEntry) {
+				printError("--freestanding requires '_start' or 'main' as entry function");
 				return 1;
 			}
 		} else {
@@ -704,6 +732,23 @@ int main(int argc, char** argv) {
 				std::cerr << "[TIMING] jit: " << jitMs << "ms" << std::endl;
 			}
 			return exitCode;
+		}
+
+		// Freestanding path: just emit the object file. The user runs their
+		// own linker against libqdrt-freestanding.a + their boot code.
+		if (opts.freestanding) {
+			std::string objPath = outputPath;
+			if (objPath.size() < 2 || objPath.substr(objPath.size() - 2) != ".o") {
+				objPath += ".o";
+			}
+			if (!generator.writeObject(objPath)) {
+				printError("failed to write object file");
+				return 1;
+			}
+			if (opts.verbose) {
+				std::cout << "Written object to " << objPath << std::endl;
+			}
+			return 0;
 		}
 
 		// Traditional path: write executable to disk

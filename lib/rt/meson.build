@@ -91,6 +91,17 @@ qdrt_static_dep = declare_dependency(
 		include_directories: qdrt_inc
 )
 
+# Freestanding (no-libc, no-OS) runtime variant. Built with -ffreestanding
+# and without optimizations that pull in libc helpers. Used by
+# `quadc --freestanding` builds for kernels, bootloaders, etc.
+qdrt_freestanding = static_library('qdrt-freestanding',
+		files('src/freestanding.c'),
+		include_directories: qdrt_inc,
+		c_args: ['-ffreestanding', '-fno-builtin', '-ffunction-sections', '-fdata-sections',
+				'-Wno-unused-parameter'],
+		install: false
+)
+
 # Tests
 if get_option('build_tests')
 	subdir('tests')

@@ -250,6 +250,29 @@ namespace Qd {
 		void setCoverageMode(bool enabled);
 
 		/**
+		 * @brief Enable freestanding (no-libc, no-OS) mode.
+		 *
+		 * In freestanding mode the generator:
+		 *   - does NOT emit a C `int main(int, char**)` wrapper,
+		 *   - exports a `_start` function (extern void _start(void)) that
+		 *     references a freestanding-runtime-provided static qd_context
+		 *     and calls the user's `pub fn _start( -- )`,
+		 *   - skips coverage and call-stack instrumentation (which depend
+		 *     on libc-backed runtime calls).
+		 *
+		 * Intended for kernels, bootloaders, microcontrollers, and any
+		 * target where the standard library may not exist. The user is
+		 * expected to provide their own boot code (typically a `boot.S`
+		 * that sets up the stack and jumps to `_start`) and to link
+		 * against `libqdrt-freestanding.a` instead of `libqdrt.a`.
+		 *
+		 * @param enabled True to enable freestanding mode.
+		 *
+		 * @note Must be called before generate(). Incompatible with --test.
+		 */
+		void setFreestandingMode(bool enabled);
+
+		/**
 		 * @brief Set target triple for cross-compilation
 		 *
 		 * Sets the LLVM target triple for cross-compilation. When not set,

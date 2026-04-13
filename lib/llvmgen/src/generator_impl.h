@@ -391,6 +391,9 @@ namespace Qd {
 		// runtime coverage idx passed to qd_coverage_mark.
 		std::vector<std::string> coverageFunctionNames;
 
+		// Freestanding mode: no libc, no auto-main, exports _start instead.
+		bool freestandingMode = false;
+
 		// Iterator variables
 		std::unordered_map<std::string, llvm::Value*> iteratorVars;
 

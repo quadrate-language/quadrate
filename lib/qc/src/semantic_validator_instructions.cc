@@ -59,6 +59,20 @@ namespace Qd {
 			name = "dec";
 		}
 
+		// Freestanding mode: reject builtins that need libc / hosted I/O.
+		// Pure stack/arithmetic/control-flow ops are still allowed.
+		if (mFreestandingMode) {
+			static const char* kUnsafeBuiltins[] = {"print", "prints", "printv", "printsv", "nl", "read", "panic",
+					"err", "spawn", "wait", "detach", nullptr};
+			for (size_t i = 0; kUnsafeBuiltins[i] != nullptr; i++) {
+				if (strcmp(name, kUnsafeBuiltins[i]) == 0) {
+					std::string err = "builtin '" + std::string(name) + "' is not available in --freestanding mode";
+					reportErrorConditional(node, err.c_str(), reportErrors);
+					return;
+				}
+			}
+		}
+
 		// panic instruction: ( msg code -- ) sets error flag and returns from function
 		// Can only be called inside fallible functions (marked with !)
 		if (strcmp(name, "panic") == 0) {
