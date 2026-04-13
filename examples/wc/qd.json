@@ -1,0 +1,5 @@
+{
+  "name": "wc",
+  "version": "1.0.0",
+  "description": "Word, line, and byte counter (Unix wc clone)"
+}

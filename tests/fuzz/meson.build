@@ -40,7 +40,11 @@ u8t_dep = subproject('u8t').get_variable('u8t_dep')
 # Compile qc sources directly with fuzzer instrumentation
 fuzz_qc_sources = files(
 	qc_src_dir / 'ast.cc',
+	qc_src_dir / 'ast_declarations.cc',
+	qc_src_dir / 'ast_expressions.cc',
 	qc_src_dir / 'ast_printer.cc',
+	qc_src_dir / 'ast_statements.cc',
+	qc_src_dir / 'ast_types.cc',
 	qc_src_dir / 'colors.cc',
 	qc_src_dir / 'error_reporter.cc',
 	qc_src_dir / 'source_formatter.cc',
@@ -49,6 +53,17 @@ fuzz_qc_sources = files(
 # Parser fuzz target - compiles qc sources with fuzzer instrumentation
 fuzz_parser = executable('fuzz_parser',
 	'fuzz_parser.cc',
+	fuzz_qc_sources,
+	include_directories: qc_inc,
+	dependencies: [u8t_dep],
+	cpp_args: fuzz_args,
+	link_args: fuzz_link_args,
+	build_by_default: true,
+)
+
+# Formatter fuzz target - checks idempotency and crash-freedom
+fuzz_formatter = executable('fuzz_formatter',
+	'fuzz_formatter.cc',
 	fuzz_qc_sources,
 	include_directories: qc_inc,
 	dependencies: [u8t_dep],

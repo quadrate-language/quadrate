@@ -1,0 +1,5 @@
+{
+  "name": "csvcut",
+  "version": "1.0.0",
+  "description": "Extract columns from a CSV file"
+}

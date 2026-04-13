@@ -1,0 +1,257 @@
+// wc - word, line, byte, and character counter
+//
+// A clone of the classic Unix `wc` tool. Reads each named file (or stdin
+// if none given) and prints counts of newlines, words, and bytes.
+//
+// Demonstrates: file I/O, byte-level scanning, command-line flags,
+// stdin fallback, accumulating totals across multiple files.
+//
+// Usage:
+//   wc [-l] [-w] [-c] [FILE]...
+//   wc < input.txt
+//
+//   -l, --lines    print the newline counts
+//   -w, --words    print the word counts
+//   -c, --bytes    print the byte counts
+//   -h, --help     show this help
+//
+// With no count flags, all three counts are printed.
+// With multiple files, totals are printed at the end.
+
+use flag
+use io
+use mem
+use strconv
+use strings
+
+const VERSION = "1.0.0"
+
+fn print_help() {
+	"Usage: wc [OPTION]... [FILE]..." print nl
+	"Print newline, word, and byte counts for each FILE." print nl
+	"With no FILE, or when FILE is -, read standard input." print nl
+	nl
+	"  -l, --lines    print the newline counts" print nl
+	"  -w, --words    print the word counts" print nl
+	"  -c, --bytes    print the byte counts" print nl
+	"  -h, --help     display this help and exit" print nl
+	"      --version  output version information and exit" print nl
+}
+
+// Count lines, words, and bytes in a buffer.
+// A "word" is any maximal run of non-whitespace bytes (matches POSIX wc).
+fn count_buffer(buf:ptr length:i64 -- lines:i64 words:i64 bytes:i64) {
+	0 -> lines
+	0 -> words
+	0 -> in_word
+	0 -> i
+	loop {
+		i length >= if {
+			break
+		}
+		buf i mem::get_byte -> b
+		b 10 == if {
+			lines 1 + -> lines
+		}
+		// Whitespace: space (32), tab (9), newline (10), CR (13), VT (11), FF (12)
+		b 32 == b 9 == or b 10 == or b 13 == or b 11 == or b 12 == or -> is_ws
+		is_ws if {
+			in_word if {
+				words 1 + -> words
+				0 -> in_word
+			}
+		} else {
+			1 -> in_word
+		}
+		i 1 + -> i
+	}
+	// Flush trailing word
+	in_word if {
+		words 1 + -> words
+	}
+	lines words length
+}
+
+// Read an entire file (or all of stdin) into a freshly-allocated buffer.
+// Returns (buf, length, ok). On failure, ok=0 and buf is null. Caller must
+// mem::free buf if ok=1. We use a plain ok flag rather than the `!`
+// fallible mechanism because io::readline keeps the error code set after
+// EOF, which would leak into our caller's error state.
+fn slurp_file(path:str -- buf:ptr length:i64 ok:i64) {
+	path "-" strings::compare 0 == if {
+		// Read stdin to EOF using io::readline. readline strips the trailing
+		// newline, so we re-add it to make the byte count match `wc`.
+		1 mem::alloc switch {
+			Ok {
+				-> out
+				0 -> total
+				loop {
+					io::readline switch {
+						Ok {
+							-> line
+							line strings::len -> line_len
+							out total line_len 1 + + mem::realloc switch {
+								Ok { -> out }
+								_ { break }
+							}
+							0 -> i
+							loop {
+								i line_len >= if { break }
+								line strings::data i mem::get_byte -> b
+								b out total i + mem::set_byte
+								i 1 + -> i
+							}
+							10 out total line_len + mem::set_byte
+							total line_len 1 + + -> total
+						}
+						_ {
+							break
+						}
+					}
+				}
+				out total 1
+			}
+			_ { 0 0 0 }
+		}
+	} else {
+		path io::read_file switch {
+			Ok {
+				-> contents
+				contents strings::len -> n
+				n mem::alloc switch {
+					Ok {
+						-> buf
+						0 -> i
+						loop {
+							i n >= if { break }
+							contents strings::data i mem::get_byte -> b
+							b buf i mem::set_byte
+							i 1 + -> i
+						}
+						buf n 1
+					}
+					_ { 0 0 0 }
+				}
+			}
+			_ { 0 0 0 }
+		}
+	}
+}
+
+fn print_count(n:i64 width:i64 -- ) {
+	// Right-pad with spaces to a minimum width for column alignment.
+	n strconv::itoa -> s
+	s strings::len -> slen
+	width slen - -> pad
+	loop {
+		pad 0 <= if {
+			break
+		}
+		" " print
+		pad 1 - -> pad
+	}
+	s print
+}
+
+fn print_row(lines:i64 words:i64 bytes:i64 label:str want_l:i64 want_w:i64 want_c:i64 -- ) {
+	want_l if {
+		lines 7 print_count " " print
+	}
+	want_w if {
+		words 7 print_count " " print
+	}
+	want_c if {
+		bytes 7 print_count " " print
+	}
+	label print nl
+}
+
+fn main() {
+	read flag::parse -> f
+
+	f "-h" flag::boolean f "--help" flag::boolean or if {
+		print_help
+		f flag::destroy
+	} else {
+		f "--version" flag::boolean if {
+			"wc (quadrate) " print VERSION print nl
+			f flag::destroy
+		} else {
+			f "-l" flag::boolean f "--lines" flag::boolean or -> want_l
+			f "-w" flag::boolean f "--words" flag::boolean or -> want_w
+			f "-c" flag::boolean f "--bytes" flag::boolean or -> want_c
+
+			// If no specific count requested, show all three.
+			want_l want_w or want_c or 0 == if {
+				1 -> want_l
+				1 -> want_w
+				1 -> want_c
+			}
+
+			0 -> file_count
+			0 -> total_l
+			0 -> total_w
+			0 -> total_c
+
+			// Iterate positional args (files) in input order by walking the
+			// flag::Flag's internal argv string, which is "\n"-separated.
+			// Skip entries starting with '-' (flags). We accept argument values
+			// after ` -- ` as a way to pass a literal "-l" filename.
+			f <<argv -> argv
+			argv strings::len -> alen
+			1 -> start
+			0 -> after_ddash
+			loop {
+				start alen >= if { break }
+				argv "\n" start strings::index_of_from -> end_pos
+				end_pos 0 < if { alen -> end_pos }
+				end_pos start == if { start 1 + -> start continue }
+				argv start end_pos start - strings::substring! -> arg
+				end_pos 1 + -> start
+
+				after_ddash 0 == if {
+					arg "--" strings::compare 0 == if {
+						1 -> after_ddash
+						continue
+					}
+					arg strings::len 0 > if {
+						arg 0 strings::char_at! 45 == if {
+							continue
+						}
+					}
+				}
+
+				arg slurp_file -> ok -> length -> buf
+				ok if {
+					buf length count_buffer -> bytes_n -> words_n -> lines_n
+					lines_n words_n bytes_n arg want_l want_w want_c print_row
+					buf mem::free
+					total_l lines_n + -> total_l
+					total_w words_n + -> total_w
+					total_c bytes_n + -> total_c
+					file_count 1 + -> file_count
+				} else {
+					"wc: " print arg print ": cannot read file" print nl
+				}
+			}
+
+			f flag::destroy
+
+			file_count 0 == if {
+				// No files given - read from stdin.
+				"-" slurp_file -> ok -> length -> buf
+				ok if {
+					buf length count_buffer -> bytes_n -> words_n -> lines_n
+					lines_n words_n bytes_n "" want_l want_w want_c print_row
+					buf mem::free
+				} else {
+					"wc: stdin: read error" print nl
+				}
+			} else {
+				file_count 1 > if {
+					total_l total_w total_c "total" want_l want_w want_c print_row
+				}
+			}
+		}
+	}
+}

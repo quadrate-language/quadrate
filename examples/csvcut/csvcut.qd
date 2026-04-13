@@ -1,0 +1,370 @@
+// csvcut - extract columns from a CSV file
+//
+// A small `cut`-like tool for CSV. Reads a CSV file (or stdin), parses
+// each row according to RFC-4180-ish rules (commas separate fields,
+// double-quoted fields may contain commas and escaped quotes ""), and
+// prints the selected columns.
+//
+// Usage:
+//   csvcut COLUMNS [FILE]
+//   csvcut 1,3 data.csv
+//   csvcut 2 < data.csv
+//   csvcut -d ';' 1,3 data.csv
+//
+// Args:
+//   COLUMNS       comma-separated 1-based column indices (required)
+//   FILE          input CSV (default: stdin)
+//
+// Flags:
+//   -d CHAR       field delimiter (default ',')
+//   -h, --help    show this help
+//   --version     print version
+//
+// Note: this tool parses argv manually instead of using flag::parse
+// because the runtime `read` instruction infers types on argv and
+// pushes numeric-looking args as i64; flag::parse then crashes when it
+// tries to concat them. As a consequence, csvcut also cannot accept a
+// bare integer COLUMNS arg — pass `1,1` (or include a non-digit) for
+// single-column extraction. Tracked separately in TODO.md.
+//
+// Demonstrates: file I/O, CSV parsing with quote handling, sb (string
+// builder) for output assembly, manual argv handling, stdin fallback.
+
+use io
+use mem
+use sb
+use strings
+
+const VERSION = "1.0.0"
+
+fn print_help() {
+	"Usage: csvcut [OPTION]... COLUMNS [FILE]" print nl
+	"Extract selected columns from a CSV input." print nl
+	"With no FILE, or when FILE is -, read standard input." print nl
+	nl
+	"Args:" print nl
+	"  COLUMNS       comma-separated 1-based column indices (required)" print nl
+	"  FILE          input CSV (default: stdin)" print nl
+	nl
+	"Options:" print nl
+	"  -d CHAR       field delimiter (default ',')" print nl
+	"  -h, --help    display this help and exit" print nl
+	"      --version output version information and exit" print nl
+}
+
+// Parse the column spec string ("1,3,5") into an array of i64 indices
+// (0-based internally). Returns (cols:ptr, count:i64, ok:i64).
+// Caller frees cols with mem::free if ok=1.
+fn parse_columns(spec:str -- cols:ptr count:i64 ok:i64) {
+	spec strings::len -> n
+	n 0 == if {
+		0 0 0
+	} else {
+		// Upper bound on count: n bytes can have at most (n+1)/2 numbers
+		n 1 + 2 / 1 + 8 * mem::alloc switch {
+			Ok {
+				-> buf
+				0 -> count
+				0 -> i
+				0 -> num
+				0 -> in_num
+				loop {
+					i n >= if { break }
+					spec i strings::char_at! -> ch
+					ch 48 >= ch 57 <= and if {
+						num 10 * ch 48 - + -> num
+						1 -> in_num
+					} else {
+						ch 44 == if {
+							in_num if {
+								num 1 - buf count 8 * mem::set_i64
+								count 1 + -> count
+							}
+							0 -> num
+							0 -> in_num
+						}
+					}
+					i 1 + -> i
+				}
+				in_num if {
+					num 1 - buf count 8 * mem::set_i64
+					count 1 + -> count
+				}
+				count 0 == if {
+					buf mem::free
+					0 0 0
+				} else {
+					buf count 1
+				}
+			}
+			_ { 0 0 0 }
+		}
+	}
+}
+
+// Append one parsed CSV row's selected columns to `out`. Returns updated sb.
+fn emit_row(text:str start:i64 end_pos:i64 cols:ptr ncols:i64 delim:i64 out:StringBuilder -- out2:StringBuilder) {
+	out -> b
+	0 -> field_idx
+	start -> pos
+	0 -> emitted
+	loop {
+		pos end_pos >= if { break }
+
+		0 -> want
+		0 -> ci
+		loop {
+			ci ncols >= if { break }
+			cols ci 8 * mem::get_i64 field_idx == if {
+				1 -> want
+				break
+			}
+			ci 1 + -> ci
+		}
+
+		"" -> field
+		text pos strings::char_at! 34 == if {
+			pos 1 + -> pos
+			loop {
+				pos end_pos >= if { break }
+				text pos strings::char_at! -> ch
+				ch 34 == if {
+					pos 1 + end_pos < if {
+						text pos 1 + strings::char_at! 34 == if {
+							field "\"" strings::concat -> field
+							pos 2 + -> pos
+							continue
+						}
+					}
+					pos 1 + -> pos
+					break
+				}
+				ch strings::from_char -> chs
+				field chs strings::concat -> field
+				pos 1 + -> pos
+			}
+			loop {
+				pos end_pos >= if { break }
+				text pos strings::char_at! delim == if { break }
+				pos 1 + -> pos
+			}
+		} else {
+			loop {
+				pos end_pos >= if { break }
+				text pos strings::char_at! -> ch
+				ch delim == if { break }
+				ch strings::from_char -> chs
+				field chs strings::concat -> field
+				pos 1 + -> pos
+			}
+		}
+
+		want if {
+			emitted if {
+				b delim sb::append_char -> b
+			}
+			b field sb::append -> b
+			1 -> emitted
+		}
+
+		pos end_pos < if {
+			text pos strings::char_at! delim == if {
+				pos 1 + -> pos
+			}
+		}
+		field_idx 1 + -> field_idx
+	}
+	b "\n" sb::append
+}
+
+// Find the end of the current row, handling quoted fields that may
+// contain literal newlines. Returns the position of the byte AFTER the
+// row terminator (newline), or text_len if at EOF.
+fn find_row_end(text:str start:i64 text_len:i64 -- end_pos:i64) {
+	start -> pos
+	0 -> in_quotes
+	loop {
+		pos text_len >= if { break }
+		text pos strings::char_at! -> ch
+		ch 34 == if {
+			in_quotes if {
+				pos 1 + text_len < if {
+					text pos 1 + strings::char_at! 34 == if {
+						pos 2 + -> pos
+						continue
+					}
+				}
+				0 -> in_quotes
+			} else {
+				1 -> in_quotes
+			}
+		}
+		in_quotes 0 == ch 10 == and if {
+			pos 1 + -> pos
+			break
+		}
+		pos 1 + -> pos
+	}
+	pos
+}
+
+// Read entire input (file path or "-" for stdin) into a string.
+// Returns (text, ok). On failure ok=0.
+fn slurp(path:str -- text:str ok:i64) {
+	path "-" strings::compare 0 == if {
+		sb::new -> b
+		1 -> first
+		loop {
+			io::readline switch {
+				Ok {
+					-> line
+					first 0 == if { b "\n" sb::append -> b }
+					b line sb::append -> b
+					0 -> first
+				}
+				_ { break }
+			}
+		}
+		b sb::finish -> result
+		result 1
+	} else {
+		path io::read_file switch {
+			Ok { -> contents contents 1 }
+			_ { "" 0 }
+		}
+	}
+}
+
+fn main() {
+	read -> argc
+
+	// Pop args from the stack into a flat newline-joined string. We treat
+	// each item as a string; if it was inferred as int by `read`, we
+	// convert it back via strconv::itoa. (See note at top of file.)
+	"" -> joined
+	argc 0 > if {
+		argc -> remaining
+		loop {
+			remaining 0 <= if { break }
+			// Build "arg\n..." in reverse order, then we'll iterate.
+			// We can't tell the type at runtime here; instead, we pop the
+			// arg into a temp local. Quadrate locals are typed by their
+			// first assignment. To avoid a type clash we route ints
+			// through arg_to_str (which expects i64) and use a separate
+			// pop for strings. Easiest: try `arg_to_str` for everything
+			// — but that expects i64. Since we can't introspect, we
+			// require all args to be string-typed here. This means -f
+			// must NOT be a bare integer. We document that in the help.
+			-> arg
+			arg "\n" strings::concat joined strings::concat -> joined
+			remaining 1 - -> remaining
+		}
+	}
+
+	// Walk joined args ("arg\narg\n...") in input order.
+	joined strings::len -> jlen
+	"" -> spec
+	"-" -> path
+	44 -> delim
+	0 -> show_help
+	0 -> show_version
+	0 -> got_spec
+	0 -> got_file
+	0 -> after_ddash
+
+	0 -> i
+	loop {
+		i jlen >= if { break }
+		joined "\n" i strings::index_of_from -> ep
+		ep 0 < if { jlen -> ep }
+		ep i == if { i 1 + -> i continue }
+		joined i ep i - strings::substring! -> a
+		ep 1 + -> i
+
+		after_ddash 0 == if {
+			a "-h" strings::compare 0 == a "--help" strings::compare 0 == or if {
+				1 -> show_help
+				continue
+			}
+			a "--version" strings::compare 0 == if {
+				1 -> show_version
+				continue
+			}
+			a "-d" strings::compare 0 == if {
+				// Take the next token as the delim
+				i jlen >= if { continue }
+				joined "\n" i strings::index_of_from -> ep2
+				ep2 0 < if { jlen -> ep2 }
+				ep2 i > if {
+					joined i ep2 i - strings::substring! -> dstr
+					dstr strings::len 0 > if {
+						dstr 0 strings::char_at! -> delim
+					}
+				}
+				ep2 1 + -> i
+				continue
+			}
+			a "--" strings::compare 0 == if {
+				1 -> after_ddash
+				continue
+			}
+			a strings::len 0 > if {
+				a 0 strings::char_at! 45 == if {
+					"csvcut: unknown option: " print a print nl
+					continue
+				}
+			}
+		}
+
+		got_spec 0 == if {
+			a -> spec
+			1 -> got_spec
+		} else {
+			got_file 0 == if {
+				a -> path
+				1 -> got_file
+			}
+		}
+	}
+
+	show_help if {
+		print_help
+	} else {
+		show_version if {
+			"csvcut (quadrate) " print VERSION print nl
+		} else {
+			spec strings::len 0 == if {
+				"csvcut: missing required COLUMNS argument" print nl
+				"Try 'csvcut --help' for more information." print nl
+			} else {
+				spec parse_columns -> ok -> ncols -> cols
+				ok if {
+					path slurp -> ok2 -> text
+					ok2 if {
+						text strings::len -> tlen
+						sb::new -> out
+						0 -> pos
+						loop {
+							pos tlen >= if { break }
+							text pos tlen find_row_end -> rend
+							rend pos > if {
+								text rend 1 - strings::char_at! 10 == if {
+									text pos rend 1 - cols ncols delim out emit_row -> out
+								} else {
+									text pos rend cols ncols delim out emit_row -> out
+								}
+							}
+							rend -> pos
+						}
+						out sb::finish print
+					} else {
+						"csvcut: " print path print ": cannot read file" print nl
+					}
+					cols mem::free
+				} else {
+					"csvcut: invalid column spec: " print spec print nl
+				}
+			}
+		}
+	}
+}

@@ -1224,7 +1224,10 @@ namespace Qd {
 		// content while fixing structural indentation.
 		// ============================================================
 
-		// Find the closing brace line of a block by scanning source
+		// Find the closing brace line of a block by scanning source.
+		// Returns 0 if no matching } can be found (e.g. malformed input
+		// with unbalanced braces) so callers can detect that case rather
+		// than misinterpret a fallback value as an inline body.
 		size_t findBlockEndLine(IAstNode* blockNode) {
 			if (!blockNode) {
 				return 0;
@@ -1283,7 +1286,7 @@ namespace Qd {
 					}
 				}
 			}
-			return startLine;
+			return 0;
 		}
 
 		void emitBlockBody(IAstNode* body) {
@@ -1293,6 +1296,13 @@ namespace Qd {
 
 			size_t bodyLine = body->line();
 			size_t endLine = findBlockEndLine(body);
+
+			// Malformed input: braces never balanced. Fall back to scanning
+			// to end of source so we still re-indent something rather than
+			// misinterpreting the start line as an inline body.
+			if (endLine == 0) {
+				endLine = mSourceLines.size();
+			}
 
 			// Handle inline bodies: fn main() { body } on a single line
 			if (endLine == bodyLine) {
