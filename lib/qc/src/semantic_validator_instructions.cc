@@ -445,6 +445,45 @@ namespace Qd {
 			}
 			return;
 		}
+		// Raw memory stores: store_u8/u16/u32/u64
+		// (addr:i64 offset:i64 value:i64 -- )
+		else if (strcmp(name, "store_u8") == 0 || strcmp(name, "store_u16") == 0 || strcmp(name, "store_u32") == 0 ||
+				 strcmp(name, "store_u64") == 0) {
+			if (typeStack.size() < 3) {
+				std::string err = "Type error in '";
+				err += name;
+				err += "': Stack underflow (requires addr offset value)";
+				reportErrorConditional(node, err.c_str(), reportErrors);
+				return;
+			}
+			typeStack.pop_back(); // value
+			typeStack.pop_back(); // offset
+			typeStack.pop_back(); // addr
+			for (int i = 0; i < 3 && !structTypeStack.empty(); i++) {
+				structTypeStack.pop_back();
+			}
+			return;
+		}
+		// Raw memory loads: load_u8/u16/u32/u64
+		// (addr:i64 offset:i64 -- value:i64) — value is zero-extended.
+		else if (strcmp(name, "load_u8") == 0 || strcmp(name, "load_u16") == 0 || strcmp(name, "load_u32") == 0 ||
+				 strcmp(name, "load_u64") == 0) {
+			if (typeStack.size() < 2) {
+				std::string err = "Type error in '";
+				err += name;
+				err += "': Stack underflow (requires addr offset)";
+				reportErrorConditional(node, err.c_str(), reportErrors);
+				return;
+			}
+			typeStack.pop_back(); // offset
+			typeStack.pop_back(); // addr
+			for (int i = 0; i < 2 && !structTypeStack.empty(); i++) {
+				structTypeStack.pop_back();
+			}
+			typeStack.push_back(StackValueType::INT);
+			structTypeStack.push_back("");
+			return;
+		}
 		// Modulo: mod (consume 2 ints, produce int)
 		else if (strcmp(name, "mod") == 0) {
 			if (typeStack.size() < 2) {

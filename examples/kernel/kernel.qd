@@ -1,0 +1,73 @@
+// kernel.qd — bare-metal i686 multiboot kernel in Quadrate.
+//
+// Boots under any multiboot1 loader (GRUB, qemu -kernel), prints
+// "Hello, Quadrate kernel!" to VGA text mode, then halts.
+//
+// Compile with:    quadc --freestanding --target i686-unknown-none-elf
+// Run with:        make run     (see Makefile)
+//
+// VGA text-mode buffer is at 0xB8000. Each cell is two bytes:
+// low byte = ASCII char, high byte = attribute byte (color).
+//
+// We use both `mem::set_byte` (from the freestanding-safe libmem
+// variant — no libc, no heap) for per-byte writes, and the `store_u16`
+// builtin for whole-cell writes. Both compile to direct memory stores.
+
+use mem
+
+const VGA_BASE = 0xB8000
+// White on black, as a bare attribute byte (e.g. for mem::set_byte).
+const ATTR_W = 0x0F
+// White on black, pre-shifted into the high half of a 16-bit cell
+// (e.g. for ORing with a char before store_u16).
+const ATTR_HI = 0x0F00
+
+// Write one character at (row, col): char in low byte, attr in high byte.
+// Demonstrates per-byte writes via mem::set_byte (freestanding-safe).
+fn put(row:i64 col:i64 ch:i64 -- ) {
+	row 80 * col + 2 * -> off
+	ch VGA_BASE cast<ptr> off mem::set_byte
+	ATTR_W VGA_BASE cast<ptr> off 1 + mem::set_byte
+}
+
+// Clear the 80x25 screen by writing a space cell to every position.
+// Uses store_u16 for one-instruction whole-cell writes.
+fn clear_screen() {
+	0 -> i
+	loop {
+		i 80 25 * >= if {
+			break
+		}
+		VGA_BASE i 2 * 32 ATTR_HI or store_u16
+		i 1 + -> i
+	}
+}
+
+fn _start() {
+	clear_screen
+
+	// "Hello, Quadrate kernel!" — 23 chars on row 0.
+	0 0 72 put     // H
+	0 1 101 put    // e
+	0 2 108 put    // l
+	0 3 108 put    // l
+	0 4 111 put    // o
+	0 5 44 put     // ,
+	0 6 32 put     // (space)
+	0 7 81 put     // Q
+	0 8 117 put    // u
+	0 9 97 put     // a
+	0 10 100 put   // d
+	0 11 114 put   // r
+	0 12 97 put    // a
+	0 13 116 put   // t
+	0 14 101 put   // e
+	0 15 32 put    // (space)
+	0 16 107 put   // k
+	0 17 101 put   // e
+	0 18 114 put   // r
+	0 19 110 put   // n
+	0 20 101 put   // e
+	0 21 108 put   // l
+	0 22 33 put    // !
+}

@@ -24,6 +24,11 @@ namespace Qd {
 			"append", "make", "makef", "makei", "makep", "makes", "set",
 			// Type casting and introspection
 			"cast", "sizeof",
+			// Raw memory stores/loads — lower directly to LLVM store/load.
+			// Useful in freestanding mode where mem::* (libc-backed) is
+			// unavailable. (addr:i64 offset:i64 value:i64 -- ) for stores;
+			// (addr:i64 offset:i64 -- value:i64) for loads (zero-extended).
+			"load_u8", "load_u16", "load_u32", "load_u64", "store_u8", "store_u16", "store_u32", "store_u64",
 			// I/O
 			"nl", "print", "prints", "printsv", "printv", "read",
 			// Threading

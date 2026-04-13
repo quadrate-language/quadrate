@@ -700,6 +700,34 @@ namespace Qd {
 			return;
 		}
 
+		// Raw memory stores: addr offset value store_uN
+		// Lower directly to LLVM `store` — no runtime call, no libc.
+		if (name == "store_u8" || name == "store_u16" || name == "store_u32" || name == "store_u64") {
+			unsigned bits = (name == "store_u8") ? 8 : (name == "store_u16") ? 16 : (name == "store_u32") ? 32 : 64;
+			llvm::Value* value = generateInlinePopInt(ctx);
+			llvm::Value* offset = generateInlinePopInt(ctx);
+			llvm::Value* addr = generateInlinePopInt(ctx);
+			llvm::Value* effective = builder->CreateAdd(addr, offset);
+			llvm::Value* ptr = builder->CreateIntToPtr(effective, ptrTy);
+			llvm::Type* storeTy = llvm::Type::getIntNTy(*context, bits);
+			llvm::Value* truncated = (bits == 64) ? value : builder->CreateTrunc(value, storeTy);
+			builder->CreateAlignedStore(truncated, ptr, llvm::Align(1));
+			return;
+		}
+		// Raw memory loads: addr offset load_uN -- value (zero-extended to i64).
+		if (name == "load_u8" || name == "load_u16" || name == "load_u32" || name == "load_u64") {
+			unsigned bits = (name == "load_u8") ? 8 : (name == "load_u16") ? 16 : (name == "load_u32") ? 32 : 64;
+			llvm::Value* offset = generateInlinePopInt(ctx);
+			llvm::Value* addr = generateInlinePopInt(ctx);
+			llvm::Value* effective = builder->CreateAdd(addr, offset);
+			llvm::Value* ptr = builder->CreateIntToPtr(effective, ptrTy);
+			llvm::Type* loadTy = llvm::Type::getIntNTy(*context, bits);
+			llvm::Value* loaded = builder->CreateAlignedLoad(loadTy, ptr, llvm::Align(1));
+			llvm::Value* extended = (bits == 64) ? loaded : builder->CreateZExt(loaded, int64Ty);
+			generateInlinePushIntValue(ctx, extended);
+			return;
+		}
+
 		if (name == "prints") {
 			builder->CreateCall(printsFn, {ctx});
 		} else if (name == "nl") {
