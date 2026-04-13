@@ -483,8 +483,7 @@ namespace Qd {
 				if (userFnIt != userFunctions.end()) {
 					methodFn = userFnIt->second;
 				}
-				if (!methodFn && !currentModuleName.empty() &&
-						receiverType.find("::") == std::string::npos) {
+				if (!methodFn && !currentModuleName.empty() && receiverType.find("::") == std::string::npos) {
 					// Try with current module qualifier
 					std::string qualifiedKey = currentModuleName + "::" + receiverType + "::" + name;
 					userFnIt = userFunctions.find(qualifiedKey);

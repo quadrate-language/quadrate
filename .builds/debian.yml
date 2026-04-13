@@ -41,6 +41,9 @@ tasks:
   - build: |
       cd quadrate
       make release
+  - fmtcheck: |
+      cd quadrate
+      make fmtcheck
   - test: |
       cd quadrate
       make tests

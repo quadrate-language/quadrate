@@ -40,7 +40,7 @@ LIBS_WITH_HEADERS := rt qd fmt io math mem net os signal strings strconv time th
 # Standard library modules (auto-discovered from lib/*/qd/*/)
 STDLIB_MODULES := $(shell find lib/*/qd -maxdepth 1 -mindepth 1 -type d -exec basename {} \; 2>/dev/null | sort -u)
 
-.PHONY: all debug release docker-x64 docker-arm64 docker-all tests tests-failed tests-clear valgrind asan fuzz examples format install uninstall clean docs quadmcp playground
+.PHONY: all debug release docker-x64 docker-arm64 docker-all tests tests-failed tests-clear valgrind asan fuzz examples format fmtcheck install uninstall clean docs quadmcp playground
 
 all: debug
 
@@ -179,6 +179,9 @@ examples: debug
 
 format:
 	find cmd lib examples -type f \( -name '*.cc' -o -name '*.h' \) -exec clang-format -i {} +
+
+fmtcheck: release
+	$(BUILD_DIR_RELEASE)/cmd/quadfmt/quadfmt -c lib examples
 
 # Build quadmcp (MCP server for AI assistants)
 quadmcp: debug
