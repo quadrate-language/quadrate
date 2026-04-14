@@ -238,7 +238,11 @@ int handleRun(const std::vector<std::string>& args) {
 		if (it != files.end()) {
 			toolArgs.push_back(*it);
 		} else {
-			toolArgs.push_back(files[0]);
+			// No main.qd found — compile all .qd files together
+			// (consistent with build, which also compiles all)
+			for (const auto& f : files) {
+				toolArgs.push_back(f);
+			}
 		}
 	} else {
 		for (const auto& arg : args) {
@@ -349,6 +353,7 @@ int handleTest(const std::vector<std::string>& args) {
 	}
 
 	// Run each test file separately (quadc --test only processes one file at a time)
+	// Preserve the first non-zero exit code for diagnostics
 	int result = 0;
 	for (const auto& file : testFiles) {
 		std::vector<std::string> toolArgs;
@@ -359,7 +364,7 @@ int handleTest(const std::vector<std::string>& args) {
 		toolArgs.push_back(file);
 
 		int r = execTool(toolPath, toolArgs);
-		if (r != 0) {
+		if (r != 0 && result == 0) {
 			result = r;
 		}
 	}

@@ -22,7 +22,19 @@
 #include <sys/wait.h>
 #include <unordered_map>
 #include <unordered_set>
+#include <utility>
 #include <vector>
+
+// Deduplicate diagnostics by line:column:message before printing
+static void printDeduplicatedErrors(const std::string& file, const auto& errors) {
+	std::set<std::string> seen;
+	for (const auto& error : errors) {
+		std::string key = std::to_string(error.line) + ":" + std::to_string(error.column) + ":" + error.message;
+		if (seen.insert(key).second) {
+			printError(file, error.line, error.column, error.message);
+		}
+	}
+}
 
 // Stdlib modules that have native code and require linking
 // JIT execution doesn't support these - must fall back to disk compilation
@@ -143,10 +155,8 @@ int main(int argc, char** argv) {
 			auto ast = std::make_unique<Qd::Ast>();
 			auto root = ast->generate(buffer.c_str(), opts.dumpTokens, "<stdin>");
 			if (!root || ast->hasErrors()) {
-				// Print stored parsing errors
-				for (const auto& error : ast->getErrors()) {
-					printError("<stdin>", error.line, error.column, error.message);
-				}
+				// Print stored parsing errors (deduplicated)
+				printDeduplicatedErrors("<stdin>", ast->getErrors());
 				printParseFailure("<stdin>", ast->errorCount());
 				return 1;
 			}
@@ -198,10 +208,8 @@ int main(int argc, char** argv) {
 			auto root = ast->generate(buffer.c_str(), opts.dumpTokens, file.c_str());
 			printTiming("parse");
 			if (!root || ast->hasErrors()) {
-				// Print stored parsing errors
-				for (const auto& error : ast->getErrors()) {
-					printError(file, error.line, error.column, error.message);
-				}
+				// Print stored parsing errors (deduplicated)
+				printDeduplicatedErrors(file, ast->getErrors());
 				printParseFailure(file, ast->errorCount());
 				return 1;
 			}
@@ -346,11 +354,9 @@ int main(int argc, char** argv) {
 				}
 				if (!root) {
 					printError("failed to parse module: " + moduleName);
-					// Print stored parse errors if available
+					// Print stored parse errors if available (deduplicated)
 					if (ast) {
-						for (const auto& error : ast->getErrors()) {
-							printError(moduleFilePath, error.line, error.column, error.message);
-						}
+						printDeduplicatedErrors(moduleFilePath, ast->getErrors());
 					}
 					return 1;
 				}
