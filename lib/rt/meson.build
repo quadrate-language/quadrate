@@ -102,6 +102,11 @@ qdrt_freestanding = static_library('qdrt-freestanding',
 		install: false
 )
 
+qdrt_freestanding_dep = declare_dependency(
+		link_with: qdrt_freestanding,
+		include_directories: qdrt_inc
+)
+
 # Tests
 if get_option('build_tests')
 	subdir('tests')

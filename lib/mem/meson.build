@@ -36,6 +36,7 @@ qdmem_dep = declare_dependency(
 qdmem_freestanding = static_library('mem-freestanding',
 	qdmem_safe_sources,
 	include_directories: qdmem_inc,
+	dependencies: qdrt_freestanding_dep,
 	c_args: ['-ffreestanding', '-fno-builtin', '-ffunction-sections', '-fdata-sections'],
 	install: false
 )
