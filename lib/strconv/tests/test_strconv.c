@@ -71,6 +71,11 @@ TEST(StrconvAtoiPositiveTest) {
 	qd_push_s(ctx, "42");
 	usr_strconv_atoi(ctx);
 
+	// atoi pushes [value, status] - pop status first
+	qd_stack_element_t status;
+	qd_stack_pop(ctx->st, &status);
+	ASSERT_EQ(1, (int)status.value.i, "atoi status should be Ok");
+
 	qd_stack_element_t elem;
 	qd_stack_pop(ctx->st, &elem);
 	ASSERT_EQ(QD_STACK_TYPE_INT, elem.type, "result should be int");
@@ -85,6 +90,9 @@ TEST(StrconvAtoiNegativeTest) {
 	qd_push_s(ctx, "-123");
 	usr_strconv_atoi(ctx);
 
+	qd_stack_element_t status;
+	qd_stack_pop(ctx->st, &status);
+
 	qd_stack_element_t elem;
 	qd_stack_pop(ctx->st, &elem);
 	ASSERT_EQ(-123, (int)elem.value.i, "atoi(\"-123\")");
@@ -97,6 +105,9 @@ TEST(StrconvAtoiZeroTest) {
 
 	qd_push_s(ctx, "0");
 	usr_strconv_atoi(ctx);
+
+	qd_stack_element_t status;
+	qd_stack_pop(ctx->st, &status);
 
 	qd_stack_element_t elem;
 	qd_stack_pop(ctx->st, &elem);
@@ -159,6 +170,10 @@ TEST(StrconvParseIntHexTest) {
 	qd_push_i(ctx, 16);  // hex
 	usr_strconv_parse_int(ctx);
 
+	// parse_int pushes [value, status] - pop status first
+	qd_stack_element_t status;
+	qd_stack_pop(ctx->st, &status);
+
 	qd_stack_element_t elem;
 	qd_stack_pop(ctx->st, &elem);
 	ASSERT_EQ(255, (int)elem.value.i, "parse_int(\"ff\", 16)");
@@ -173,6 +188,9 @@ TEST(StrconvParseIntBinaryTest) {
 	qd_push_i(ctx, 2);  // binary
 	usr_strconv_parse_int(ctx);
 
+	qd_stack_element_t status;
+	qd_stack_pop(ctx->st, &status);
+
 	qd_stack_element_t elem;
 	qd_stack_pop(ctx->st, &elem);
 	ASSERT_EQ(10, (int)elem.value.i, "parse_int(\"1010\", 2)");
@@ -186,6 +204,9 @@ TEST(StrconvParseIntOctalTest) {
 	qd_push_s(ctx, "100");
 	qd_push_i(ctx, 8);  // octal
 	usr_strconv_parse_int(ctx);
+
+	qd_stack_element_t status;
+	qd_stack_pop(ctx->st, &status);
 
 	qd_stack_element_t elem;
 	qd_stack_pop(ctx->st, &elem);
@@ -202,6 +223,10 @@ TEST(StrconvRoundtripDecimalTest) {
 	qd_push_i(ctx, 12345);
 	usr_strconv_itoa(ctx);
 	usr_strconv_atoi(ctx);
+
+	// pop atoi status
+	qd_stack_element_t status;
+	qd_stack_pop(ctx->st, &status);
 
 	qd_stack_element_t elem;
 	qd_stack_pop(ctx->st, &elem);
@@ -220,6 +245,10 @@ TEST(StrconvRoundtripHexTest) {
 
 	qd_push_i(ctx, 16);
 	usr_strconv_parse_int(ctx);
+
+	// pop parse_int status
+	qd_stack_element_t status;
+	qd_stack_pop(ctx->st, &status);
 
 	qd_stack_element_t elem;
 	qd_stack_pop(ctx->st, &elem);

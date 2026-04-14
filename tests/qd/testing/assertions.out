@@ -1,0 +1,22 @@
+Running 19 tests...
+  ✓ assertions.qd::assert_eq with various types
+  ✓ assertions.qd::assert_ne with various types
+  ✓ assertions.qd::assert_true with truthy values
+  ✓ assertions.qd::assert_false with falsy values
+  ✓ assertions.qd::assert_gt
+  ✓ assertions.qd::assert_lt
+  ✓ assertions.qd::assert_ge
+  ✓ assertions.qd::assert_le
+  ✓ assertions.qd::assert_approx_eq
+  ✓ assertions.qd::assert_contains
+  ✓ assertions.qd::assert_starts_with
+  ✓ assertions.qd::assert_ends_with
+  ✓ assertions.qd::assert_in_range
+  ✓ assertions.qd::assert_positive
+  ✓ assertions.qd::assert_negative
+  ✓ assertions.qd::assert_zero
+  ✓ assertions.qd::assert_nonzero
+  ✓ assertions.qd::assert_gt_f
+  ✓ assertions.qd::assert_lt_f
+
+19 passed, 0 failed

@@ -21,3 +21,8 @@ qdmath_dep = declare_dependency(
 	link_with: qdmath_static,
 	include_directories: qdmath_inc
 )
+
+# Tests
+if get_option('build_tests')
+	subdir('tests')
+endif

@@ -10,6 +10,7 @@
 #include <unit-check/uc.h>
 #include <stdlib.h>
 #include <string.h>
+#include <stdint.h>
 
 // Helper function to create a context
 static qd_context* create_test_context(void) {
@@ -375,6 +376,75 @@ TEST(FromStringTest) {
 
 	destroy_test_context(ctx);
 }
+
+TEST(ReallocTest) {
+	qd_context* ctx = create_test_context();
+
+	// Allocate 16 bytes
+	qd_push_i(ctx, 16);
+	int result = usr_mem_alloc(ctx);
+	ASSERT_EQ(result, 0, "alloc should succeed");
+
+	qd_stack_element_t status;
+	qd_stack_pop(ctx->st, &status);
+	ASSERT_EQ((int)status.value.i, 1, "alloc status should be Ok");
+
+	qd_stack_element_t ptr_elem;
+	qd_stack_pop(ctx->st, &ptr_elem);
+	void* ptr = ptr_elem.value.p;
+	ASSERT(ptr != NULL, "alloc pointer should not be null");
+
+	// Write data to verify it survives realloc
+	memset(ptr, 0xAB, 16);
+
+	// Realloc to 64 bytes: push ptr then new_bytes
+	qd_push_p(ctx, ptr);
+	qd_push_i(ctx, 64);
+	result = usr_mem_realloc(ctx);
+	ASSERT_EQ(result, 0, "realloc should succeed");
+
+	qd_stack_pop(ctx->st, &status);
+	ASSERT_EQ((int)status.value.i, 1, "realloc status should be Ok");
+
+	qd_stack_pop(ctx->st, &ptr_elem);
+	ASSERT(ptr_elem.value.p != NULL, "realloc pointer should not be null");
+
+	// Verify original data survived
+	unsigned char* data = (unsigned char*)ptr_elem.value.p;
+	ASSERT_EQ((int)data[0], 0xAB, "first byte should survive realloc");
+	ASSERT_EQ((int)data[15], 0xAB, "last original byte should survive realloc");
+
+	free(ptr_elem.value.p);
+	destroy_test_context(ctx);
+}
+
+
+TEST(AllocAlignedTest) {
+	qd_context* ctx = create_test_context();
+
+	// alloc_aligned pops bytes then alignment
+	// Push alignment first, then bytes (alignment popped second)
+	qd_push_i(ctx, 16);  // alignment
+	qd_push_i(ctx, 64);  // bytes
+	int result = usr_mem_alloc_aligned(ctx);
+	ASSERT_EQ(result, 0, "alloc_aligned should succeed");
+
+	qd_stack_element_t status;
+	qd_stack_pop(ctx->st, &status);
+	ASSERT_EQ((int)status.value.i, 1, "alloc_aligned status should be Ok");
+
+	qd_stack_element_t ptr_elem;
+	qd_stack_pop(ctx->st, &ptr_elem);
+	ASSERT_EQ(ptr_elem.type, QD_STACK_TYPE_PTR, "result should be ptr");
+	ASSERT(ptr_elem.value.p != NULL, "aligned pointer should not be null");
+
+	// Verify 16-byte alignment
+	ASSERT(((uintptr_t)ptr_elem.value.p % 16) == 0, "pointer should be 16-byte aligned");
+
+	free(ptr_elem.value.p);
+	destroy_test_context(ctx);
+}
+
 
 // Main - required for test executable
 int main(void) {

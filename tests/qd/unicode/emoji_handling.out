@@ -1,0 +1,21 @@
+=== Basic emoji ===
+Hello 🌍
+🎉 Party!
+👍
+=== Emoji byte lengths ===
+4
+4
+4
+=== Multiple emoji ===
+12
+🌍🎉👍
+=== Mixed emoji and text ===
+8
+6
+=== Contains emoji ===
+1
+0
+=== Starts/ends with emoji ===
+1
+1
+done

@@ -1,0 +1,29 @@
+// Regression: defer stack effect check with error-handling functions (2df9992)
+// Defer blocks in functions that call fallible functions should not
+// falsely trigger stack effect errors.
+
+fn might_fail(x:i64 -- result:i64)! {
+	x 0 < if { "negative" 1 panic }
+	x 2 *
+}
+
+fn with_defer(x:i64 -- result:i64)! {
+	defer {
+		"cleanup" print nl
+	}
+	x might_fail?
+}
+
+fn main() {
+	// Success path - defer runs after function body
+	5 with_defer switch {
+		Ok { "result: " print print nl }
+		_ { err -> c -> m "error: " print m print nl }
+	}
+
+	// Error path - defer still runs
+	-1 with_defer switch {
+		Ok { "result: " print print nl }
+		_ { err -> c -> m "error: " print m print nl }
+	}
+}

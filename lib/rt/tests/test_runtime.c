@@ -3,11 +3,23 @@
 #include <quadrate/rt/stack.h>
 #include <unit-check/uc.h>
 #include <stdlib.h>
+#include <string.h>
 #include <math.h>
+#include <stdint.h>
 
 // Helper to compare floats with tolerance
 static int float_eq(double a, double b) {
 	return fabs(a - b) < 0.0001;
+}
+
+// Helper to duplicate a string (strdup is POSIX, not C11)
+static char* qd_test_strdup(const char* s) {
+	size_t len = strlen(s) + 1;
+	char* dup = (char*)malloc(len);
+	if (dup) {
+		memcpy(dup, s, len);
+	}
+	return dup;
 }
 
 // Helper function to create a context
@@ -379,6 +391,810 @@ TEST(SubTypeErrorTest) {
 	destroy_test_context(ctx);
 	ASSERT(1, "Type error test documented");
 }
+
+// ============================================================
+// Bitwise operations
+// ============================================================
+
+TEST(AndBasicTest) {
+	qd_context* ctx = create_test_context();
+
+	// 0xFF00 & 0x0FF0 = 0x0F00
+	qd_push_i(ctx, 0xFF00);
+	qd_push_i(ctx, 0x0FF0);
+
+	int result = qd_and(ctx);
+	ASSERT_EQ(result, 0, "and should succeed");
+
+	qd_stack_element_t elem;
+	qd_stack_pop(ctx->st, &elem);
+	ASSERT_EQ(elem.type, QD_STACK_TYPE_INT, "and result should be int");
+	ASSERT_EQ((int)elem.value.i, 0x0F00, "0xFF00 & 0x0FF0 should be 0x0F00");
+
+	destroy_test_context(ctx);
+}
+
+TEST(OrBasicTest) {
+	qd_context* ctx = create_test_context();
+
+	// 0xF0 | 0x0F = 0xFF
+	qd_push_i(ctx, 0xF0);
+	qd_push_i(ctx, 0x0F);
+
+	int result = qd_or(ctx);
+	ASSERT_EQ(result, 0, "or should succeed");
+
+	qd_stack_element_t elem;
+	qd_stack_pop(ctx->st, &elem);
+	ASSERT_EQ(elem.type, QD_STACK_TYPE_INT, "or result should be int");
+	ASSERT_EQ((int)elem.value.i, 0xFF, "0xF0 | 0x0F should be 0xFF");
+
+	destroy_test_context(ctx);
+}
+
+TEST(XorBasicTest) {
+	qd_context* ctx = create_test_context();
+
+	// 0xFF ^ 0x0F = 0xF0
+	qd_push_i(ctx, 0xFF);
+	qd_push_i(ctx, 0x0F);
+
+	int result = qd_xor(ctx);
+	ASSERT_EQ(result, 0, "xor should succeed");
+
+	qd_stack_element_t elem;
+	qd_stack_pop(ctx->st, &elem);
+	ASSERT_EQ(elem.type, QD_STACK_TYPE_INT, "xor result should be int");
+	ASSERT_EQ((int)elem.value.i, 0xF0, "0xFF ^ 0x0F should be 0xF0");
+
+	destroy_test_context(ctx);
+}
+
+TEST(ShlBasicTest) {
+	qd_context* ctx = create_test_context();
+
+	// 1 << 4 = 16
+	qd_push_i(ctx, 1);
+	qd_push_i(ctx, 4);
+
+	int result = qd_shl(ctx);
+	ASSERT_EQ(result, 0, "shl should succeed");
+
+	qd_stack_element_t elem;
+	qd_stack_pop(ctx->st, &elem);
+	ASSERT_EQ(elem.type, QD_STACK_TYPE_INT, "shl result should be int");
+	ASSERT_EQ((int)elem.value.i, 16, "1 << 4 should be 16");
+
+	destroy_test_context(ctx);
+}
+
+TEST(ShrBasicTest) {
+	qd_context* ctx = create_test_context();
+
+	// 256 >> 4 = 16
+	qd_push_i(ctx, 256);
+	qd_push_i(ctx, 4);
+
+	int result = qd_shr(ctx);
+	ASSERT_EQ(result, 0, "shr should succeed");
+
+	qd_stack_element_t elem;
+	qd_stack_pop(ctx->st, &elem);
+	ASSERT_EQ(elem.type, QD_STACK_TYPE_INT, "shr result should be int");
+	ASSERT_EQ((int)elem.value.i, 16, "256 >> 4 should be 16");
+
+	destroy_test_context(ctx);
+}
+
+TEST(NotBasicTest) {
+	qd_context* ctx = create_test_context();
+
+	// ~0 = -1 on two's complement 64-bit
+	qd_push_i(ctx, 0);
+
+	int result = qd_not(ctx);
+	ASSERT_EQ(result, 0, "not should succeed");
+
+	qd_stack_element_t elem;
+	qd_stack_pop(ctx->st, &elem);
+	ASSERT_EQ(elem.type, QD_STACK_TYPE_INT, "not result should be int");
+	ASSERT_EQ((int)elem.value.i, -1, "~0 should be -1");
+
+	destroy_test_context(ctx);
+}
+
+TEST(BitwisePreservesStackTest) {
+	qd_context* ctx = create_test_context();
+
+	// Verify bitwise ops only consume the top 2 elements
+	qd_push_i(ctx, 100);
+	qd_push_i(ctx, 0xFF);
+	qd_push_i(ctx, 0x0F);
+
+	qd_and(ctx);
+	ASSERT_EQ((int)qd_stack_size(ctx->st), 2, "stack should have 2 elements after and");
+
+	qd_stack_element_t elem;
+	qd_stack_pop(ctx->st, &elem);
+	ASSERT_EQ((int)elem.value.i, 0x0F, "0xFF & 0x0F should be 0x0F");
+
+	qd_stack_pop(ctx->st, &elem);
+	ASSERT_EQ((int)elem.value.i, 100, "bottom element should be preserved");
+
+	destroy_test_context(ctx);
+}
+
+// ============================================================
+// Type casting operations
+// ============================================================
+
+TEST(CastiFromFloatTest) {
+	qd_context* ctx = create_test_context();
+
+	// Cast 3.7 (float) to int -> 3 (truncated)
+	qd_push_f(ctx, 3.7);
+	int result = qd_casti(ctx);
+	ASSERT_EQ(result, 0, "casti should succeed");
+
+	qd_stack_element_t elem;
+	qd_stack_pop(ctx->st, &elem);
+	ASSERT_EQ(elem.type, QD_STACK_TYPE_INT, "casti result should be int");
+	ASSERT_EQ((int)elem.value.i, 3, "casti(3.7) should be 3");
+
+	destroy_test_context(ctx);
+}
+
+TEST(CastiFromIntTest) {
+	qd_context* ctx = create_test_context();
+
+	// Cast int to int -> identity
+	qd_push_i(ctx, 42);
+	int result = qd_casti(ctx);
+	ASSERT_EQ(result, 0, "casti should succeed");
+
+	qd_stack_element_t elem;
+	qd_stack_pop(ctx->st, &elem);
+	ASSERT_EQ(elem.type, QD_STACK_TYPE_INT, "casti result should be int");
+	ASSERT_EQ((int)elem.value.i, 42, "casti(42) should be 42");
+
+	destroy_test_context(ctx);
+}
+
+TEST(CastiNegativeFloatTest) {
+	qd_context* ctx = create_test_context();
+
+	// Cast -3.9 to int -> -3 (truncated toward zero)
+	qd_push_f(ctx, -3.9);
+	int result = qd_casti(ctx);
+	ASSERT_EQ(result, 0, "casti should succeed");
+
+	qd_stack_element_t elem;
+	qd_stack_pop(ctx->st, &elem);
+	ASSERT_EQ(elem.type, QD_STACK_TYPE_INT, "casti result should be int");
+	ASSERT_EQ((int)elem.value.i, -3, "casti(-3.9) should be -3");
+
+	destroy_test_context(ctx);
+}
+
+TEST(CastfFromIntTest) {
+	qd_context* ctx = create_test_context();
+
+	// Cast 42 (int) to float -> 42.0
+	qd_push_i(ctx, 42);
+	int result = qd_castf(ctx);
+	ASSERT_EQ(result, 0, "castf should succeed");
+
+	qd_stack_element_t elem;
+	qd_stack_pop(ctx->st, &elem);
+	ASSERT_EQ(elem.type, QD_STACK_TYPE_FLOAT, "castf result should be float");
+	ASSERT(float_eq(elem.value.f, 42.0), "castf(42) should be 42.0");
+
+	destroy_test_context(ctx);
+}
+
+TEST(CastfFromFloatTest) {
+	qd_context* ctx = create_test_context();
+
+	// Cast float to float -> identity
+	qd_push_f(ctx, 3.14);
+	int result = qd_castf(ctx);
+	ASSERT_EQ(result, 0, "castf should succeed");
+
+	qd_stack_element_t elem;
+	qd_stack_pop(ctx->st, &elem);
+	ASSERT_EQ(elem.type, QD_STACK_TYPE_FLOAT, "castf result should be float");
+	ASSERT(float_eq(elem.value.f, 3.14), "castf(3.14) should be 3.14");
+
+	destroy_test_context(ctx);
+}
+
+TEST(CastpFromIntTest) {
+	qd_context* ctx = create_test_context();
+
+	// Cast int to pointer
+	qd_push_i(ctx, 0x12345678);
+	int result = qd_castp(ctx);
+	ASSERT_EQ(result, 0, "castp should succeed");
+
+	qd_stack_element_t elem;
+	qd_stack_pop(ctx->st, &elem);
+	ASSERT_EQ(elem.type, QD_STACK_TYPE_PTR, "castp result should be ptr");
+	ASSERT(elem.value.p == (void*)(intptr_t)0x12345678, "castp should preserve int value as pointer");
+
+	destroy_test_context(ctx);
+}
+
+TEST(CastpFromPtrTest) {
+	qd_context* ctx = create_test_context();
+
+	// Cast ptr to ptr -> identity
+	int dummy = 42;
+	qd_push_p(ctx, &dummy);
+	int result = qd_castp(ctx);
+	ASSERT_EQ(result, 0, "castp should succeed");
+
+	qd_stack_element_t elem;
+	qd_stack_pop(ctx->st, &elem);
+	ASSERT_EQ(elem.type, QD_STACK_TYPE_PTR, "castp result should be ptr");
+	ASSERT(elem.value.p == &dummy, "castp(ptr) should be identity");
+
+	destroy_test_context(ctx);
+}
+
+// ============================================================
+// Deep stack variants
+// ============================================================
+
+TEST(DupdTest) {
+	qd_context* ctx = create_test_context();
+
+	// dupd: ( a b -- a a b )
+	qd_push_i(ctx, 10);
+	qd_push_i(ctx, 20);
+
+	int result = qd_dupd(ctx);
+	ASSERT_EQ(result, 0, "dupd should succeed");
+	ASSERT_EQ((int)qd_stack_size(ctx->st), 3, "stack should have 3 elements after dupd");
+
+	// Verify: bottom to top: 10, 10, 20
+	qd_stack_element_t elem;
+	qd_stack_pop(ctx->st, &elem);
+	ASSERT_EQ((int)elem.value.i, 20, "top should be 20");
+	qd_stack_pop(ctx->st, &elem);
+	ASSERT_EQ((int)elem.value.i, 10, "second should be 10 (duplicate)");
+	qd_stack_pop(ctx->st, &elem);
+	ASSERT_EQ((int)elem.value.i, 10, "third should be 10 (original)");
+
+	destroy_test_context(ctx);
+}
+
+TEST(DupdMixedTypesTest) {
+	qd_context* ctx = create_test_context();
+
+	// dupd with mixed types: ( 3.14 42 -- 3.14 3.14 42 )
+	qd_push_f(ctx, 3.14);
+	qd_push_i(ctx, 42);
+
+	int result = qd_dupd(ctx);
+	ASSERT_EQ(result, 0, "dupd should succeed with mixed types");
+	ASSERT_EQ((int)qd_stack_size(ctx->st), 3, "stack should have 3 elements");
+
+	qd_stack_element_t elem;
+	qd_stack_pop(ctx->st, &elem);
+	ASSERT_EQ(elem.type, QD_STACK_TYPE_INT, "top should be int");
+	ASSERT_EQ((int)elem.value.i, 42, "top should be 42");
+
+	qd_stack_pop(ctx->st, &elem);
+	ASSERT_EQ(elem.type, QD_STACK_TYPE_FLOAT, "second should be float");
+	ASSERT(float_eq(elem.value.f, 3.14), "second should be 3.14");
+
+	qd_stack_pop(ctx->st, &elem);
+	ASSERT_EQ(elem.type, QD_STACK_TYPE_FLOAT, "third should be float");
+	ASSERT(float_eq(elem.value.f, 3.14), "third should be 3.14");
+
+	destroy_test_context(ctx);
+}
+
+TEST(SwapdTest) {
+	qd_context* ctx = create_test_context();
+
+	// swapd: ( a b c -- b a c )
+	qd_push_i(ctx, 10);
+	qd_push_i(ctx, 20);
+	qd_push_i(ctx, 30);
+
+	int result = qd_swapd(ctx);
+	ASSERT_EQ(result, 0, "swapd should succeed");
+	ASSERT_EQ((int)qd_stack_size(ctx->st), 3, "stack should have 3 elements");
+
+	// Verify: bottom to top: 20, 10, 30
+	qd_stack_element_t elem;
+	qd_stack_pop(ctx->st, &elem);
+	ASSERT_EQ((int)elem.value.i, 30, "top should be 30");
+	qd_stack_pop(ctx->st, &elem);
+	ASSERT_EQ((int)elem.value.i, 10, "second should be 10");
+	qd_stack_pop(ctx->st, &elem);
+	ASSERT_EQ((int)elem.value.i, 20, "third should be 20");
+
+	destroy_test_context(ctx);
+}
+
+TEST(SwapdPreservesRestTest) {
+	qd_context* ctx = create_test_context();
+
+	// swapd with extra elements: ( 1 2 3 4 -- 1 3 2 4 )
+	qd_push_i(ctx, 1);
+	qd_push_i(ctx, 2);
+	qd_push_i(ctx, 3);
+	qd_push_i(ctx, 4);
+
+	int result = qd_swapd(ctx);
+	ASSERT_EQ(result, 0, "swapd should succeed");
+	ASSERT_EQ((int)qd_stack_size(ctx->st), 4, "stack should have 4 elements");
+
+	qd_stack_element_t elem;
+	qd_stack_pop(ctx->st, &elem);
+	ASSERT_EQ((int)elem.value.i, 4, "top should be 4");
+	qd_stack_pop(ctx->st, &elem);
+	ASSERT_EQ((int)elem.value.i, 2, "second should be 2");
+	qd_stack_pop(ctx->st, &elem);
+	ASSERT_EQ((int)elem.value.i, 3, "third should be 3");
+	qd_stack_pop(ctx->st, &elem);
+	ASSERT_EQ((int)elem.value.i, 1, "fourth should be 1");
+
+	destroy_test_context(ctx);
+}
+
+TEST(OverdTest) {
+	qd_context* ctx = create_test_context();
+
+	// overd: ( a b c -- a b a c )
+	qd_push_i(ctx, 10);
+	qd_push_i(ctx, 20);
+	qd_push_i(ctx, 30);
+
+	int result = qd_overd(ctx);
+	ASSERT_EQ(result, 0, "overd should succeed");
+	ASSERT_EQ((int)qd_stack_size(ctx->st), 4, "stack should have 4 elements after overd");
+
+	// Verify: bottom to top: 10, 20, 10, 30
+	qd_stack_element_t elem;
+	qd_stack_pop(ctx->st, &elem);
+	ASSERT_EQ((int)elem.value.i, 30, "top should be 30");
+	qd_stack_pop(ctx->st, &elem);
+	ASSERT_EQ((int)elem.value.i, 10, "second should be 10 (copy of third)");
+	qd_stack_pop(ctx->st, &elem);
+	ASSERT_EQ((int)elem.value.i, 20, "third should be 20");
+	qd_stack_pop(ctx->st, &elem);
+	ASSERT_EQ((int)elem.value.i, 10, "fourth should be 10");
+
+	destroy_test_context(ctx);
+}
+
+TEST(NipdTest) {
+	qd_context* ctx = create_test_context();
+
+	// nipd: ( a b c -- a c )
+	qd_push_i(ctx, 10);
+	qd_push_i(ctx, 20);
+	qd_push_i(ctx, 30);
+
+	int result = qd_nipd(ctx);
+	ASSERT_EQ(result, 0, "nipd should succeed");
+	ASSERT_EQ((int)qd_stack_size(ctx->st), 2, "stack should have 2 elements after nipd");
+
+	// Verify: bottom to top: 10, 30
+	qd_stack_element_t elem;
+	qd_stack_pop(ctx->st, &elem);
+	ASSERT_EQ((int)elem.value.i, 30, "top should be 30");
+	qd_stack_pop(ctx->st, &elem);
+	ASSERT_EQ((int)elem.value.i, 10, "second should be 10 (b removed)");
+
+	destroy_test_context(ctx);
+}
+
+TEST(NipdPreservesRestTest) {
+	qd_context* ctx = create_test_context();
+
+	// nipd with extra: ( 1 2 3 4 -- 1 2 4 )
+	qd_push_i(ctx, 1);
+	qd_push_i(ctx, 2);
+	qd_push_i(ctx, 3);
+	qd_push_i(ctx, 4);
+
+	int result = qd_nipd(ctx);
+	ASSERT_EQ(result, 0, "nipd should succeed");
+	ASSERT_EQ((int)qd_stack_size(ctx->st), 3, "stack should have 3 elements");
+
+	qd_stack_element_t elem;
+	qd_stack_pop(ctx->st, &elem);
+	ASSERT_EQ((int)elem.value.i, 4, "top should be 4");
+	qd_stack_pop(ctx->st, &elem);
+	ASSERT_EQ((int)elem.value.i, 2, "second should be 2 (3 removed)");
+	qd_stack_pop(ctx->st, &elem);
+	ASSERT_EQ((int)elem.value.i, 1, "third should be 1");
+
+	destroy_test_context(ctx);
+}
+
+// ============================================================
+// Array operations (C API, not stack-based)
+// ============================================================
+
+TEST(ArrayCreateAndReleaseTest) {
+	qd_array_t* arr = qd_array_create(10, QD_ARRAY_TYPE_INT);
+	ASSERT(arr != NULL, "array create should not return NULL");
+	ASSERT_EQ((int)qd_array_length(arr), 0, "new array should have length 0");
+	qd_array_release(arr);
+}
+
+TEST(ArrayPushAndGetIntTest) {
+	qd_array_t* arr = qd_array_create(4, QD_ARRAY_TYPE_INT);
+	ASSERT(arr != NULL, "array create should succeed");
+
+	int rc = qd_array_push_int(arr, 42);
+	ASSERT_EQ(rc, 0, "push_int should succeed");
+	rc = qd_array_push_int(arr, 100);
+	ASSERT_EQ(rc, 0, "push_int should succeed");
+	rc = qd_array_push_int(arr, -7);
+	ASSERT_EQ(rc, 0, "push_int should succeed");
+
+	ASSERT_EQ((int)qd_array_length(arr), 3, "array should have 3 elements");
+
+	int64_t val;
+	rc = qd_array_get_int(arr, 0, &val);
+	ASSERT_EQ(rc, 0, "get_int should succeed");
+	ASSERT_EQ((int)val, 42, "element 0 should be 42");
+
+	rc = qd_array_get_int(arr, 1, &val);
+	ASSERT_EQ(rc, 0, "get_int should succeed");
+	ASSERT_EQ((int)val, 100, "element 1 should be 100");
+
+	rc = qd_array_get_int(arr, 2, &val);
+	ASSERT_EQ(rc, 0, "get_int should succeed");
+	ASSERT_EQ((int)val, -7, "element 2 should be -7");
+
+	qd_array_release(arr);
+}
+
+TEST(ArrayPushAndGetFloatTest) {
+	qd_array_t* arr = qd_array_create(4, QD_ARRAY_TYPE_FLOAT);
+	ASSERT(arr != NULL, "array create should succeed");
+
+	int rc = qd_array_push_float(arr, 3.14);
+	ASSERT_EQ(rc, 0, "push_float should succeed");
+	rc = qd_array_push_float(arr, 2.71);
+	ASSERT_EQ(rc, 0, "push_float should succeed");
+
+	ASSERT_EQ((int)qd_array_length(arr), 2, "array should have 2 elements");
+
+	double val;
+	rc = qd_array_get_float(arr, 0, &val);
+	ASSERT_EQ(rc, 0, "get_float should succeed");
+	ASSERT(float_eq(val, 3.14), "element 0 should be 3.14");
+
+	rc = qd_array_get_float(arr, 1, &val);
+	ASSERT_EQ(rc, 0, "get_float should succeed");
+	ASSERT(float_eq(val, 2.71), "element 1 should be 2.71");
+
+	qd_array_release(arr);
+}
+
+TEST(ArrayPushPtrTest) {
+	qd_array_t* arr = qd_array_create(4, QD_ARRAY_TYPE_PTR);
+	ASSERT(arr != NULL, "array create should succeed");
+
+	int dummy1 = 1;
+	int dummy2 = 2;
+	int rc = qd_array_push_ptr(arr, &dummy1);
+	ASSERT_EQ(rc, 0, "push_ptr should succeed");
+	rc = qd_array_push_ptr(arr, &dummy2);
+	ASSERT_EQ(rc, 0, "push_ptr should succeed");
+
+	ASSERT_EQ((int)qd_array_length(arr), 2, "array should have 2 elements");
+
+	void* val;
+	rc = qd_array_get_ptr(arr, 0, &val);
+	ASSERT_EQ(rc, 0, "get_ptr should succeed");
+	ASSERT(val == &dummy1, "element 0 should be &dummy1");
+
+	rc = qd_array_get_ptr(arr, 1, &val);
+	ASSERT_EQ(rc, 0, "get_ptr should succeed");
+	ASSERT(val == &dummy2, "element 1 should be &dummy2");
+
+	qd_array_release(arr);
+}
+
+TEST(ArraySetIntTest) {
+	qd_array_t* arr = qd_array_create(4, QD_ARRAY_TYPE_INT);
+
+	qd_array_push_int(arr, 0);
+	qd_array_push_int(arr, 0);
+	qd_array_push_int(arr, 0);
+
+	// Overwrite element 1
+	int rc = qd_array_set_int(arr, 1, 99);
+	ASSERT_EQ(rc, 0, "set_int should succeed");
+
+	int64_t val;
+	qd_array_get_int(arr, 1, &val);
+	ASSERT_EQ((int)val, 99, "element 1 should be 99 after set");
+
+	// Verify other elements unchanged
+	qd_array_get_int(arr, 0, &val);
+	ASSERT_EQ((int)val, 0, "element 0 should still be 0");
+	qd_array_get_int(arr, 2, &val);
+	ASSERT_EQ((int)val, 0, "element 2 should still be 0");
+
+	qd_array_release(arr);
+}
+
+TEST(ArraySetFloatTest) {
+	qd_array_t* arr = qd_array_create(4, QD_ARRAY_TYPE_FLOAT);
+
+	qd_array_push_float(arr, 0.0);
+	qd_array_push_float(arr, 0.0);
+
+	// Overwrite element 0
+	int rc = qd_array_set_float(arr, 0, 9.81);
+	ASSERT_EQ(rc, 0, "set_float should succeed");
+
+	double val;
+	qd_array_get_float(arr, 0, &val);
+	ASSERT(float_eq(val, 9.81), "element 0 should be 9.81 after set");
+
+	// Verify other element unchanged
+	qd_array_get_float(arr, 1, &val);
+	ASSERT(float_eq(val, 0.0), "element 1 should still be 0.0");
+
+	qd_array_release(arr);
+}
+
+TEST(ArrayLengthGrowsTest) {
+	qd_array_t* arr = qd_array_create(2, QD_ARRAY_TYPE_INT);
+	ASSERT_EQ((int)qd_array_length(arr), 0, "length should be 0 initially");
+
+	qd_array_push_int(arr, 1);
+	ASSERT_EQ((int)qd_array_length(arr), 1, "length should be 1 after one push");
+
+	qd_array_push_int(arr, 2);
+	ASSERT_EQ((int)qd_array_length(arr), 2, "length should be 2 after two pushes");
+
+	// Push beyond initial capacity to test growth
+	qd_array_push_int(arr, 3);
+	ASSERT_EQ((int)qd_array_length(arr), 3, "length should be 3 after growing");
+
+	int64_t val;
+	qd_array_get_int(arr, 2, &val);
+	ASSERT_EQ((int)val, 3, "element 2 should be 3 after growth");
+
+	qd_array_release(arr);
+}
+
+TEST(ArrayGetOutOfBoundsTest) {
+	qd_array_t* arr = qd_array_create(4, QD_ARRAY_TYPE_INT);
+	qd_array_push_int(arr, 42);
+
+	int64_t val;
+	int rc = qd_array_get_int(arr, 1, &val);
+	ASSERT(rc != 0, "get_int out of bounds should fail");
+
+	rc = qd_array_get_int(arr, 100, &val);
+	ASSERT(rc != 0, "get_int far out of bounds should fail");
+
+	qd_array_release(arr);
+}
+
+TEST(ArraySetOutOfBoundsTest) {
+	qd_array_t* arr = qd_array_create(4, QD_ARRAY_TYPE_INT);
+	qd_array_push_int(arr, 42);
+
+	int rc = qd_array_set_int(arr, 1, 99);
+	ASSERT(rc != 0, "set_int out of bounds should fail");
+
+	qd_array_release(arr);
+}
+
+TEST(ArrayTypeMismatchTest) {
+	// Create an int array but try to get as float
+	qd_array_t* arr = qd_array_create(4, QD_ARRAY_TYPE_INT);
+	qd_array_push_int(arr, 42);
+
+	double fval;
+	int rc = qd_array_get_float(arr, 0, &fval);
+	ASSERT(rc != 0, "get_float from int array should fail");
+
+	// Create a float array but try to push int
+	qd_array_t* farr = qd_array_create(4, QD_ARRAY_TYPE_FLOAT);
+	rc = qd_array_push_int(farr, 42);
+	ASSERT(rc != 0, "push_int to float array should fail");
+
+	qd_array_release(arr);
+	qd_array_release(farr);
+}
+
+TEST(ArrayRetainReleaseTest) {
+	qd_array_t* arr = qd_array_create(4, QD_ARRAY_TYPE_INT);
+	qd_array_push_int(arr, 42);
+
+	// Retain increases refcount; a second release should be safe
+	qd_array_retain(arr);
+
+	// First release - should not free (refcount was 2, now 1)
+	qd_array_release(arr);
+
+	// Array should still be valid
+	int64_t val;
+	int rc = qd_array_get_int(arr, 0, &val);
+	ASSERT_EQ(rc, 0, "array should still be valid after retain+release");
+	ASSERT_EQ((int)val, 42, "value should still be 42");
+
+	// Final release
+	qd_array_release(arr);
+}
+
+// ============================================================
+// Error handling
+// ============================================================
+
+TEST(ErrNoErrorTest) {
+	qd_context* ctx = qd_create_context(256);
+	ASSERT(ctx != NULL, "create_context should succeed");
+
+	// With no error, qd_err should push "" and 0
+	int result = qd_err(ctx);
+	ASSERT_EQ(result, 0, "err should succeed");
+
+	// Stack should have 2 elements: msg (string), code (int)
+	ASSERT_EQ((int)qd_stack_size(ctx->st), 2, "stack should have 2 elements after err");
+
+	// Top is the error code
+	qd_stack_element_t elem;
+	qd_stack_pop(ctx->st, &elem);
+	ASSERT_EQ(elem.type, QD_STACK_TYPE_INT, "error code should be int");
+	ASSERT_EQ((int)elem.value.i, 0, "error code should be 0 when no error");
+
+	// Second is the error message
+	qd_stack_pop(ctx->st, &elem);
+	ASSERT_EQ(elem.type, QD_STACK_TYPE_STR, "error message should be string");
+	ASSERT_STR_EQ(qd_string_data(elem.value.s), "", "error message should be empty");
+	qd_string_release(elem.value.s);
+
+	qd_free_context(ctx);
+}
+
+TEST(ErrWithErrorStateTest) {
+	qd_context* ctx = qd_create_context(256);
+	ASSERT(ctx != NULL, "create_context should succeed");
+
+	// Simulate an error state
+	ctx->error_code = 42;
+	ctx->error_msg = qd_test_strdup("test error");
+
+	int result = qd_err(ctx);
+	ASSERT_EQ(result, 0, "err should succeed");
+
+	// Top is the error code
+	qd_stack_element_t elem;
+	qd_stack_pop(ctx->st, &elem);
+	ASSERT_EQ(elem.type, QD_STACK_TYPE_INT, "error code should be int");
+	ASSERT_EQ((int)elem.value.i, 42, "error code should be 42");
+
+	// Second is the error message
+	qd_stack_pop(ctx->st, &elem);
+	ASSERT_EQ(elem.type, QD_STACK_TYPE_STR, "error message should be string");
+	ASSERT_STR_EQ(qd_string_data(elem.value.s), "test error", "error message should match");
+	qd_string_release(elem.value.s);
+
+	// After qd_err, error state should be cleared
+	ASSERT_EQ((int)ctx->error_code, 0, "error code should be cleared after err");
+	ASSERT(ctx->error_msg == NULL, "error msg should be NULL after err");
+
+	qd_free_context(ctx);
+}
+
+TEST(ClearErrorTest) {
+	qd_context* ctx = qd_create_context(256);
+	ASSERT(ctx != NULL, "create_context should succeed");
+
+	// Set error state
+	ctx->error_code = 99;
+	ctx->error_msg = qd_test_strdup("some error");
+
+	// Clear it
+	qd_clear_error(ctx);
+
+	ASSERT_EQ((int)ctx->error_code, 0, "error code should be 0 after clear_error");
+	ASSERT(ctx->error_msg == NULL, "error msg should be NULL after clear_error");
+
+	// Clearing again should be safe (no double-free)
+	qd_clear_error(ctx);
+	ASSERT_EQ((int)ctx->error_code, 0, "error code should still be 0");
+
+	qd_free_context(ctx);
+}
+
+TEST(ClearErrorNullCtxTest) {
+	// qd_clear_error(NULL) should not crash
+	qd_clear_error(NULL);
+	ASSERT(1, "clear_error(NULL) should not crash");
+}
+
+// ============================================================
+// String operations
+// ============================================================
+
+TEST(NlDoesNotAffectStackTest) {
+	qd_context* ctx = create_test_context();
+
+	qd_push_i(ctx, 42);
+	int result = qd_nl(ctx);
+	ASSERT_EQ(result, 0, "nl should succeed");
+	ASSERT_EQ((int)qd_stack_size(ctx->st), 1, "stack should be unchanged after nl");
+
+	qd_stack_element_t elem;
+	qd_stack_pop(ctx->st, &elem);
+	ASSERT_EQ((int)elem.value.i, 42, "value should be preserved after nl");
+
+	destroy_test_context(ctx);
+}
+
+TEST(NlEmptyStackTest) {
+	qd_context* ctx = create_test_context();
+
+	int result = qd_nl(ctx);
+	ASSERT_EQ(result, 0, "nl on empty stack should succeed");
+	ASSERT_EQ((int)qd_stack_size(ctx->st), 0, "stack should remain empty after nl");
+
+	destroy_test_context(ctx);
+}
+
+// ============================================================
+// Stack query operations
+// ============================================================
+
+TEST(StackIsEmptyTest) {
+	qd_context* ctx = create_test_context();
+
+	ASSERT_TRUE(qd_stack_is_empty(ctx->st), "new stack should be empty");
+
+	qd_push_i(ctx, 1);
+	ASSERT_FALSE(qd_stack_is_empty(ctx->st), "stack with element should not be empty");
+
+	qd_stack_element_t elem;
+	qd_stack_pop(ctx->st, &elem);
+	ASSERT_TRUE(qd_stack_is_empty(ctx->st), "stack should be empty after popping last element");
+
+	destroy_test_context(ctx);
+}
+
+TEST(StackCapacityTest) {
+	qd_context* ctx = create_test_context();
+
+	// create_test_context creates stack with capacity 256
+	ASSERT_EQ((int)qd_stack_capacity(ctx->st), 256, "stack capacity should be 256");
+
+	// Pushing should not change capacity
+	qd_push_i(ctx, 1);
+	ASSERT_EQ((int)qd_stack_capacity(ctx->st), 256, "capacity should remain 256 after push");
+
+	destroy_test_context(ctx);
+}
+
+TEST(StackIsEmptyAfterClearTest) {
+	qd_context* ctx = create_test_context();
+
+	qd_push_i(ctx, 1);
+	qd_push_i(ctx, 2);
+	qd_push_i(ctx, 3);
+	ASSERT_FALSE(qd_stack_is_empty(ctx->st), "stack should not be empty");
+
+	qd_clear(ctx);
+	ASSERT_TRUE(qd_stack_is_empty(ctx->st), "stack should be empty after clear");
+
+	destroy_test_context(ctx);
+}
+
 
 int main(void) {
 	return UC_PrintResults();

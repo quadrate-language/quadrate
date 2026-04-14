@@ -21,3 +21,8 @@ qdtesting_dep = declare_dependency(
 	link_with: qdtesting_static,
 	include_directories: qdtesting_inc
 )
+
+# Tests
+if get_option('build_tests')
+	subdir('tests')
+endif

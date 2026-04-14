@@ -1,0 +1,14 @@
+Running 11 tests...
+  ✓ string_assertions.qd::assert_contains basic
+  ✓ string_assertions.qd::assert_contains single char
+  ✓ string_assertions.qd::assert_contains full string
+  ✓ string_assertions.qd::assert_starts_with basic
+  ✓ string_assertions.qd::assert_starts_with full match
+  ✓ string_assertions.qd::assert_starts_with empty prefix
+  ✓ string_assertions.qd::assert_ends_with basic
+  ✓ string_assertions.qd::assert_ends_with full match
+  ✓ string_assertions.qd::assert_ends_with empty suffix
+  ✓ string_assertions.qd::assert_eq with computed strings
+  ✓ string_assertions.qd::assert_ne with different strings
+
+11 passed, 0 failed

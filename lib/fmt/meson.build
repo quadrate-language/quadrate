@@ -21,3 +21,7 @@ qdfmt_dep = declare_dependency(
 	link_with: qdfmt_static,
 	include_directories: qdfmt_inc
 )
+
+if get_option('build_tests')
+	subdir('tests')
+endif

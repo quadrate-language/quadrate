@@ -1,0 +1,59 @@
+// Test string-related assertion functions in the testing module
+use testing
+
+test "assert_contains basic" {
+	"hello world" "hello" testing::assert_contains
+	"hello world" "world" testing::assert_contains
+	"hello world" "lo wo" testing::assert_contains
+	"abcdefghij" "efg" testing::assert_contains
+}
+
+test "assert_contains single char" {
+	"hello" "h" testing::assert_contains
+	"hello" "o" testing::assert_contains
+	"abc" "b" testing::assert_contains
+}
+
+test "assert_contains full string" {
+	"hello" "hello" testing::assert_contains
+	"" "" testing::assert_contains
+}
+
+test "assert_starts_with basic" {
+	"hello world" "hello" testing::assert_starts_with
+	"testing" "test" testing::assert_starts_with
+	"abc" "a" testing::assert_starts_with
+}
+
+test "assert_starts_with full match" {
+	"hello" "hello" testing::assert_starts_with
+}
+
+test "assert_starts_with empty prefix" {
+	"hello" "" testing::assert_starts_with
+}
+
+test "assert_ends_with basic" {
+	"hello world" "world" testing::assert_ends_with
+	"testing" "ing" testing::assert_ends_with
+	"abc" "c" testing::assert_ends_with
+}
+
+test "assert_ends_with full match" {
+	"hello" "hello" testing::assert_ends_with
+}
+
+test "assert_ends_with empty suffix" {
+	"hello" "" testing::assert_ends_with
+}
+
+test "assert_eq with computed strings" {
+	"hello" "hello" testing::assert_eq
+	"world" "world" testing::assert_eq
+}
+
+test "assert_ne with different strings" {
+	"hello" "world" testing::assert_ne
+	"abc" "def" testing::assert_ne
+	"Hello" "hello" testing::assert_ne
+}

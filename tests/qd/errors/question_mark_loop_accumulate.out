@@ -1,0 +1,3 @@
+failed: strconv::atoi: invalid number format
+sum(0..4): 10
+failed: strconv::atoi: invalid number format

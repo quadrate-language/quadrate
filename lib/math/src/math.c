@@ -1055,3 +1055,173 @@ int usr_math_trunc(qd_context* ctx) {
 	return (err != QD_STACK_OK) ? (int){-2} : (int){0};
 }
 
+// sq - square (x^2)
+int usr_math_sq(qd_context* ctx) {
+	size_t stack_size = qd_stack_size(ctx->st);
+	if (stack_size < 1) {
+		fprintf(stderr, "Fatal error in math::sq: Stack underflow\n");
+		abort();
+	}
+
+	qd_stack_element_t elem;
+	qd_stack_error err = qd_stack_pop(ctx->st, &elem);
+	if (err != QD_STACK_OK) return (int){-2};
+
+	double value = (elem.type == QD_STACK_TYPE_INT) ? (double)elem.value.i : elem.value.f;
+	err = qd_stack_push_float(ctx->st, value * value);
+	return (err != QD_STACK_OK) ? (int){-2} : (int){0};
+}
+
+// cb - cube (x^3)
+int usr_math_cb(qd_context* ctx) {
+	size_t stack_size = qd_stack_size(ctx->st);
+	if (stack_size < 1) {
+		fprintf(stderr, "Fatal error in math::cb: Stack underflow\n");
+		abort();
+	}
+
+	qd_stack_element_t elem;
+	qd_stack_error err = qd_stack_pop(ctx->st, &elem);
+	if (err != QD_STACK_OK) return (int){-2};
+
+	double value = (elem.type == QD_STACK_TYPE_INT) ? (double)elem.value.i : elem.value.f;
+	err = qd_stack_push_float(ctx->st, value * value * value);
+	return (err != QD_STACK_OK) ? (int){-2} : (int){0};
+}
+
+// abs - absolute value
+int usr_math_abs(qd_context* ctx) {
+	size_t stack_size = qd_stack_size(ctx->st);
+	if (stack_size < 1) {
+		fprintf(stderr, "Fatal error in math::abs: Stack underflow\n");
+		abort();
+	}
+
+	qd_stack_element_t elem;
+	qd_stack_error err = qd_stack_pop(ctx->st, &elem);
+	if (err != QD_STACK_OK) return (int){-2};
+
+	double value = (elem.type == QD_STACK_TYPE_INT) ? (double)elem.value.i : elem.value.f;
+	err = qd_stack_push_float(ctx->st, fabs(value));
+	return (err != QD_STACK_OK) ? (int){-2} : (int){0};
+}
+
+// min - minimum of two values
+int usr_math_min(qd_context* ctx) {
+	// Stack: ( a b -- min(a,b) )
+	size_t stack_size = qd_stack_size(ctx->st);
+	if (stack_size < 2) {
+		fprintf(stderr, "Fatal error in math::min: Stack underflow (requires 2 values)\n");
+		qd_dump_stack(ctx);
+		qd_print_stack_trace(ctx);
+		abort();
+	}
+
+	qd_stack_element_t b_elem;
+	qd_stack_error err = qd_stack_pop(ctx->st, &b_elem);
+	if (err != QD_STACK_OK) {
+		fprintf(stderr, "Fatal error in math::min: Failed to pop b\n");
+		abort();
+	}
+
+	qd_stack_element_t a_elem;
+	err = qd_stack_pop(ctx->st, &a_elem);
+	if (err != QD_STACK_OK) {
+		fprintf(stderr, "Fatal error in math::min: Failed to pop a\n");
+		abort();
+	}
+
+	double a = (a_elem.type == QD_STACK_TYPE_INT) ? (double)a_elem.value.i : a_elem.value.f;
+	double b = (b_elem.type == QD_STACK_TYPE_INT) ? (double)b_elem.value.i : b_elem.value.f;
+
+	err = qd_stack_push_float(ctx->st, (a < b) ? a : b);
+	return (err != QD_STACK_OK) ? (int){-2} : (int){0};
+}
+
+// max - maximum of two values
+int usr_math_max(qd_context* ctx) {
+	// Stack: ( a b -- max(a,b) )
+	size_t stack_size = qd_stack_size(ctx->st);
+	if (stack_size < 2) {
+		fprintf(stderr, "Fatal error in math::max: Stack underflow (requires 2 values)\n");
+		qd_dump_stack(ctx);
+		qd_print_stack_trace(ctx);
+		abort();
+	}
+
+	qd_stack_element_t b_elem;
+	qd_stack_error err = qd_stack_pop(ctx->st, &b_elem);
+	if (err != QD_STACK_OK) {
+		fprintf(stderr, "Fatal error in math::max: Failed to pop b\n");
+		abort();
+	}
+
+	qd_stack_element_t a_elem;
+	err = qd_stack_pop(ctx->st, &a_elem);
+	if (err != QD_STACK_OK) {
+		fprintf(stderr, "Fatal error in math::max: Failed to pop a\n");
+		abort();
+	}
+
+	double a = (a_elem.type == QD_STACK_TYPE_INT) ? (double)a_elem.value.i : a_elem.value.f;
+	double b = (b_elem.type == QD_STACK_TYPE_INT) ? (double)b_elem.value.i : b_elem.value.f;
+
+	err = qd_stack_push_float(ctx->st, (a > b) ? a : b);
+	return (err != QD_STACK_OK) ? (int){-2} : (int){0};
+}
+
+// fac - factorial
+int usr_math_fac(qd_context* ctx) {
+	// Stack: ( n:i -- n!:i )
+	size_t stack_size = qd_stack_size(ctx->st);
+	if (stack_size < 1) {
+		fprintf(stderr, "Fatal error in math::fac: Stack underflow\n");
+		abort();
+	}
+
+	qd_stack_element_t elem;
+	qd_stack_error err = qd_stack_pop(ctx->st, &elem);
+	if (err != QD_STACK_OK) return (int){-2};
+
+	if (elem.type != QD_STACK_TYPE_INT) {
+		fprintf(stderr, "Fatal error in math::fac: Type error (expected int)\n");
+		abort();
+	}
+
+	int64_t n = elem.value.i;
+	if (n < 0) {
+		fprintf(stderr, "Fatal error in math::fac: Domain error (requires non-negative integer)\n");
+		abort();
+	}
+
+	int64_t result = 1;
+	for (int64_t i = 2; i <= n; i++) {
+		result *= i;
+	}
+
+	err = qd_stack_push_int(ctx->st, result);
+	return (err != QD_STACK_OK) ? (int){-2} : (int){0};
+}
+
+// inv - reciprocal (1/x)
+int usr_math_inv(qd_context* ctx) {
+	size_t stack_size = qd_stack_size(ctx->st);
+	if (stack_size < 1) {
+		fprintf(stderr, "Fatal error in math::inv: Stack underflow\n");
+		abort();
+	}
+
+	qd_stack_element_t elem;
+	qd_stack_error err = qd_stack_pop(ctx->st, &elem);
+	if (err != QD_STACK_OK) return (int){-2};
+
+	double value = (elem.type == QD_STACK_TYPE_INT) ? (double)elem.value.i : elem.value.f;
+	if (value == 0.0) {
+		fprintf(stderr, "Fatal error in math::inv: Division by zero\n");
+		abort();
+	}
+
+	err = qd_stack_push_float(ctx->st, 1.0 / value);
+	return (err != QD_STACK_OK) ? (int){-2} : (int){0};
+}
+

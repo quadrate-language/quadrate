@@ -1,0 +1,5 @@
+5 -> 20
+err(100): negative input
+err(200): too large
+0 -> 10
+1000 -> 2010

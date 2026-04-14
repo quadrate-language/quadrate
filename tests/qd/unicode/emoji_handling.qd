@@ -1,0 +1,38 @@
+// Test emoji characters in strings
+use strings
+
+fn main() {
+	// Basic emoji in strings
+	"=== Basic emoji ===" print nl
+	"Hello 🌍" print nl
+	"🎉 Party!" print nl
+	"👍" print nl
+
+	// Emoji byte lengths (emoji are 4 bytes in UTF-8)
+	"=== Emoji byte lengths ===" print nl
+	"🌍" strings::len print nl         // 4
+	"🎉" strings::len print nl         // 4
+	"👍" strings::len print nl         // 4
+
+	// Strings with multiple emoji
+	"=== Multiple emoji ===" print nl
+	"🌍🎉👍" strings::len print nl     // 12 (3 * 4)
+	"🌍🎉👍" print nl
+
+	// Mixed emoji and ASCII
+	"=== Mixed emoji and text ===" print nl
+	"Hi 🌍!" strings::len print nl     // 3 + 4 + 1 = 8
+	"A🎉B" strings::len print nl       // 1 + 4 + 1 = 6
+
+	// Contains with emoji
+	"=== Contains emoji ===" print nl
+	"Hello 🌍 world" "🌍" strings::contains print nl   // 1
+	"Hello world" "🌍" strings::contains print nl       // 0
+
+	// Starts/ends with emoji
+	"=== Starts/ends with emoji ===" print nl
+	"🌍 Earth" "🌍" strings::starts_with print nl      // 1
+	"Earth 🌍" "🌍" strings::ends_with print nl        // 1
+
+	"done" print nl
+}

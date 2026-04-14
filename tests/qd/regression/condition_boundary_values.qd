@@ -1,0 +1,46 @@
+// Regression: Condition evaluation with boundary values
+// Ensure various boundary values are correctly evaluated as truthy/falsy
+
+fn main() {
+	// Zero should be falsy
+	0 if {
+		"zero_true" print nl
+	} else {
+		"zero_false" print nl
+	}
+
+	// One should be truthy
+	1 if {
+		"one_true" print nl
+	} else {
+		"one_false" print nl
+	}
+
+	// Max i32 should be truthy
+	2147483647 if {
+		"max_i32_true" print nl
+	} else {
+		"max_i32_false" print nl
+	}
+
+	// Min i32 should be truthy (negative)
+	-2147483648 if {
+		"min_i32_true" print nl
+	} else {
+		"min_i32_false" print nl
+	}
+
+	// Value just beyond i32 range
+	2147483648 if {
+		"beyond_i32_true" print nl
+	} else {
+		"beyond_i32_false" print nl
+	}
+
+	// i64 max (approximately)
+	9223372036854775807 if {
+		"max_i64_true" print nl
+	} else {
+		"max_i64_false" print nl
+	}
+}

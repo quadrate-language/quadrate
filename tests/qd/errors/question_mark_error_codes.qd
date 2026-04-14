@@ -1,0 +1,43 @@
+// Test: ? operator preserves distinct error codes and messages
+fn op_a(x:i64 -- result:i64)! {
+	x 0 < if { "negative input" 100 panic }
+	x 1000 > if { "too large" 200 panic }
+	x 2 *
+}
+
+fn op_b(x:i64 -- result:i64)! {
+	x op_a?
+	10 +
+}
+
+fn main() {
+	// Success
+	5 op_b switch {
+		Ok { "5 -> " print print nl }
+		_ { err -> c -> m "err(" print c print "): " print m print nl }
+	}
+
+	// Error code 100 (negative)
+	-3 op_b switch {
+		Ok { "-3 -> " print print nl }
+		_ { err -> c -> m "err(" print c print "): " print m print nl }
+	}
+
+	// Error code 200 (too large)
+	1001 op_b switch {
+		Ok { "1001 -> " print print nl }
+		_ { err -> c -> m "err(" print c print "): " print m print nl }
+	}
+
+	// Boundary: exactly 0
+	0 op_b switch {
+		Ok { "0 -> " print print nl }
+		_ { err -> c -> m "err(" print c print "): " print m print nl }
+	}
+
+	// Boundary: exactly 1000
+	1000 op_b switch {
+		Ok { "1000 -> " print print nl }
+		_ { err -> c -> m "err(" print c print "): " print m print nl }
+	}
+}

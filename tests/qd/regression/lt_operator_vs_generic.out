@@ -1,0 +1,6 @@
+Count < 20: true
+Max > 3: true
+Total > Half: true
+Half < Total: true
+Value == 42: true
+done

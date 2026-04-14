@@ -1,0 +1,38 @@
+// Test mixing ASCII and non-ASCII scripts in strings
+use strings
+
+fn main() {
+	// Latin + Cyrillic
+	"=== Latin + Cyrillic ===" print nl
+	"Hello Мир" print nl
+	"Hello Мир" strings::len print nl       // 5 + 1 + 6 = 12 (Мир = 3 chars * 2 bytes)
+
+	// Latin + CJK
+	"=== Latin + CJK ===" print nl
+	"Hello 世界" print nl
+	"Hello 世界" strings::len print nl      // 5 + 1 + 6 = 12 (世界 = 2 chars * 3 bytes)
+
+	// Latin + Arabic
+	"=== Latin + Arabic ===" print nl
+	"Hello مرحبا" print nl
+	"Hello مرحبا" strings::len print nl     // 5 + 1 + 10 = 16 (مرحبا = 5 chars * 2 bytes)
+
+	// Mixed script contains
+	"=== Mixed contains ===" print nl
+	"Hello 世界 world" "世界" strings::contains print nl     // 1
+	"Привет мир" "мир" strings::contains print nl            // 1
+	"Hello world" "世界" strings::contains print nl           // 0
+
+	// Mixed script comparison
+	"=== Mixed comparison ===" print nl
+	"Hello" "Hello" eq print nl         // 1
+	"Мир" "Мир" eq print nl             // 1
+	"Hello" "Мир" eq print nl           // 0
+
+	// All scripts in one string
+	"=== All scripts ===" print nl
+	"ABC Мир 世界" print nl
+	"ABC Мир 世界" strings::len print nl         // 3 + 1 + 6 + 1 + 6 = 17
+
+	"done" print nl
+}

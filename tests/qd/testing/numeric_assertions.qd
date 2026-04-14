@@ -1,0 +1,75 @@
+// Test numeric assertion functions: assert_positive, assert_negative, assert_zero, etc.
+use testing
+
+test "assert_positive" {
+	1 testing::assert_positive
+	42 testing::assert_positive
+	100 testing::assert_positive
+	2147483647 testing::assert_positive
+}
+
+test "assert_negative" {
+	-1 testing::assert_negative
+	-42 testing::assert_negative
+	-100 testing::assert_negative
+	-2147483648 testing::assert_negative
+}
+
+test "assert_zero" {
+	0 testing::assert_zero
+}
+
+test "assert_nonzero" {
+	1 testing::assert_nonzero
+	-1 testing::assert_nonzero
+	42 testing::assert_nonzero
+	-42 testing::assert_nonzero
+}
+
+test "assert_in_range basic" {
+	5 0 10 testing::assert_in_range
+	0 0 10 testing::assert_in_range
+	10 0 10 testing::assert_in_range
+}
+
+test "assert_in_range negative" {
+	-5 -10 0 testing::assert_in_range
+	-10 -10 0 testing::assert_in_range
+	0 -10 0 testing::assert_in_range
+}
+
+test "assert_in_range single value" {
+	5 5 5 testing::assert_in_range
+	0 0 0 testing::assert_in_range
+	-1 -1 -1 testing::assert_in_range
+}
+
+test "assert_gt_f" {
+	5.0 3.0 testing::assert_gt_f
+	0.001 0.0 testing::assert_gt_f
+	-1.0 -2.0 testing::assert_gt_f
+	100.5 100.4 testing::assert_gt_f
+}
+
+test "assert_lt_f" {
+	3.0 5.0 testing::assert_lt_f
+	0.0 0.001 testing::assert_lt_f
+	-2.0 -1.0 testing::assert_lt_f
+	100.4 100.5 testing::assert_lt_f
+}
+
+test "assert_approx_eq basic" {
+	1.0 1.0 0.001 testing::assert_approx_eq
+	3.14 3.14 0.001 testing::assert_approx_eq
+}
+
+test "assert_approx_eq within epsilon" {
+	1.0 1.0001 0.001 testing::assert_approx_eq
+	3.14 3.141 0.01 testing::assert_approx_eq
+	-2.5 -2.50001 0.001 testing::assert_approx_eq
+}
+
+test "assert_approx_eq float arithmetic" {
+	0.1 0.2 + 0.3 0.0001 testing::assert_approx_eq
+	1.0 3.0 / 0.333333 0.001 testing::assert_approx_eq
+}

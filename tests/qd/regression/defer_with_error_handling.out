@@ -1,0 +1,4 @@
+cleanup
+result: 10
+cleanup
+error: negative

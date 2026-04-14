@@ -1,0 +1,15 @@
+Running 12 tests...
+  ✓ numeric_assertions.qd::assert_positive
+  ✓ numeric_assertions.qd::assert_negative
+  ✓ numeric_assertions.qd::assert_zero
+  ✓ numeric_assertions.qd::assert_nonzero
+  ✓ numeric_assertions.qd::assert_in_range basic
+  ✓ numeric_assertions.qd::assert_in_range negative
+  ✓ numeric_assertions.qd::assert_in_range single value
+  ✓ numeric_assertions.qd::assert_gt_f
+  ✓ numeric_assertions.qd::assert_lt_f
+  ✓ numeric_assertions.qd::assert_approx_eq basic
+  ✓ numeric_assertions.qd::assert_approx_eq within epsilon
+  ✓ numeric_assertions.qd::assert_approx_eq float arithmetic
+
+12 passed, 0 failed

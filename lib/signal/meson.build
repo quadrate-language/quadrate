@@ -21,3 +21,7 @@ qdsignal_dep = declare_dependency(
 	link_with: qdsignal_static,
 	include_directories: qdsignal_inc
 )
+
+if get_option('build_tests')
+	subdir('tests')
+endif

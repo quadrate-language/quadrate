@@ -22,3 +22,7 @@ qdlog_dep = declare_dependency(
 	link_with: qdlog_static,
 	include_directories: qdlog_inc
 )
+
+if get_option('build_tests')
+	subdir('tests')
+endif

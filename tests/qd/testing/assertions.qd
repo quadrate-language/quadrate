@@ -1,0 +1,143 @@
+// Test all assertion functions in the testing module
+use testing
+
+test "assert_eq with various types" {
+	// Integers
+	42 42 testing::assert_eq
+	0 0 testing::assert_eq
+	-100 -100 testing::assert_eq
+
+	// Floats
+	3.14 3.14 testing::assert_eq
+	-2.5 -2.5 testing::assert_eq
+	0.0 0.0 testing::assert_eq
+
+	// Strings
+	"hello" "hello" testing::assert_eq
+	"" "" testing::assert_eq
+	"hello world" "hello world" testing::assert_eq
+}
+
+test "assert_ne with various types" {
+	// Integers
+	1 2 testing::assert_ne
+	-1 1 testing::assert_ne
+	0 42 testing::assert_ne
+
+	// Floats
+	3.14 2.71 testing::assert_ne
+	1.0 -1.0 testing::assert_ne
+
+	// Strings
+	"hello" "world" testing::assert_ne
+	"" "notempty" testing::assert_ne
+	"abc" "ABC" testing::assert_ne
+}
+
+test "assert_true with truthy values" {
+	1 testing::assert_true
+	42 testing::assert_true
+	-1 testing::assert_true
+	999999 testing::assert_true
+	"notempty" testing::assert_true
+	1.0 testing::assert_true
+	-0.5 testing::assert_true
+}
+
+test "assert_false with falsy values" {
+	0 testing::assert_false
+	"" testing::assert_false
+	0.0 testing::assert_false
+}
+
+test "assert_gt" {
+	5 3 testing::assert_gt
+	0 -1 testing::assert_gt
+	100 99 testing::assert_gt
+}
+
+test "assert_lt" {
+	3 5 testing::assert_lt
+	-1 0 testing::assert_lt
+	99 100 testing::assert_lt
+}
+
+test "assert_ge" {
+	5 5 testing::assert_ge
+	6 5 testing::assert_ge
+	0 -1 testing::assert_ge
+	0 0 testing::assert_ge
+}
+
+test "assert_le" {
+	5 5 testing::assert_le
+	5 6 testing::assert_le
+	-1 0 testing::assert_le
+	0 0 testing::assert_le
+}
+
+test "assert_approx_eq" {
+	3.14159 3.14160 0.001 testing::assert_approx_eq
+	1.0 1.0 0.0001 testing::assert_approx_eq
+	0.1 0.2 + 0.3 0.0001 testing::assert_approx_eq
+}
+
+test "assert_contains" {
+	"hello world" "world" testing::assert_contains
+	"hello world" "hello" testing::assert_contains
+	"abcdef" "cd" testing::assert_contains
+	"testing" "test" testing::assert_contains
+}
+
+test "assert_starts_with" {
+	"hello world" "hello" testing::assert_starts_with
+	"abcdef" "abc" testing::assert_starts_with
+	"test" "t" testing::assert_starts_with
+}
+
+test "assert_ends_with" {
+	"hello world" "world" testing::assert_ends_with
+	"abcdef" "def" testing::assert_ends_with
+	"test" "t" testing::assert_ends_with
+}
+
+test "assert_in_range" {
+	5 0 10 testing::assert_in_range
+	0 0 10 testing::assert_in_range
+	10 0 10 testing::assert_in_range
+	-5 -10 0 testing::assert_in_range
+}
+
+test "assert_positive" {
+	1 testing::assert_positive
+	42 testing::assert_positive
+	999 testing::assert_positive
+}
+
+test "assert_negative" {
+	-1 testing::assert_negative
+	-42 testing::assert_negative
+	-999 testing::assert_negative
+}
+
+test "assert_zero" {
+	0 testing::assert_zero
+}
+
+test "assert_nonzero" {
+	1 testing::assert_nonzero
+	-1 testing::assert_nonzero
+	42 testing::assert_nonzero
+}
+
+test "assert_gt_f" {
+	5.0 3.0 testing::assert_gt_f
+	0.1 0.0 testing::assert_gt_f
+	-1.0 -2.0 testing::assert_gt_f
+}
+
+test "assert_lt_f" {
+	3.0 5.0 testing::assert_lt_f
+	0.0 0.1 testing::assert_lt_f
+	-2.0 -1.0 testing::assert_lt_f
+}

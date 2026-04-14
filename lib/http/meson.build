@@ -22,3 +22,7 @@ qdhttp_dep = declare_dependency(
 	link_with: qdhttp_static,
 	include_directories: qdhttp_inc
 )
+
+if get_option('build_tests')
+	subdir('tests')
+endif

@@ -14,6 +14,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
+#include <sys/stat.h>
 
 // Helper function to create a context
 static qd_context* create_test_context(void) {
@@ -528,6 +529,140 @@ TEST(IoMemoryTest) {
 	unlink(path);
 	destroy_test_context(ctx);
 }
+
+TEST(IoFlushTest) {
+	qd_context* ctx = create_test_context();
+
+	// Flush should simply not crash
+	int result = usr_io_flush(ctx);
+	ASSERT_EQ(result, 0, "flush should succeed");
+
+	destroy_test_context(ctx);
+}
+
+
+TEST(IoStatMtimeTest) {
+	qd_context* ctx = create_test_context();
+	char* path = create_temp_path("stat_mtime.txt");
+
+	// Create a file so we can stat it
+	FILE* fp = fopen(path, "w");
+	ASSERT(fp != NULL, "should create test file");
+	fputs("mtime test", fp);
+	fclose(fp);
+
+	// Get mtime
+	qd_push_s(ctx, path);
+	int result = usr_io_stat_mtime(ctx);
+	ASSERT_EQ(result, 0, "stat_mtime should succeed");
+
+	// Pop status (should be Ok=1)
+	qd_stack_element_t status;
+	qd_stack_pop(ctx->st, &status);
+	ASSERT_EQ((int)status.value.i, 1, "stat_mtime status should be Ok");
+
+	// Pop mtime value
+	qd_stack_element_t mtime_elem;
+	qd_stack_pop(ctx->st, &mtime_elem);
+	ASSERT_EQ(mtime_elem.type, QD_STACK_TYPE_INT, "mtime should be int");
+	ASSERT(mtime_elem.value.i > 0, "mtime should be positive");
+
+	unlink(path);
+	destroy_test_context(ctx);
+}
+
+
+TEST(IoStatAtimeTest) {
+	qd_context* ctx = create_test_context();
+	char* path = create_temp_path("stat_atime.txt");
+
+	// Create a file so we can stat it
+	FILE* fp = fopen(path, "w");
+	ASSERT(fp != NULL, "should create test file");
+	fputs("atime test", fp);
+	fclose(fp);
+
+	// Get atime
+	qd_push_s(ctx, path);
+	int result = usr_io_stat_atime(ctx);
+	ASSERT_EQ(result, 0, "stat_atime should succeed");
+
+	// Pop status (should be Ok=1)
+	qd_stack_element_t status;
+	qd_stack_pop(ctx->st, &status);
+	ASSERT_EQ((int)status.value.i, 1, "stat_atime status should be Ok");
+
+	// Pop atime value
+	qd_stack_element_t atime_elem;
+	qd_stack_pop(ctx->st, &atime_elem);
+	ASSERT_EQ(atime_elem.type, QD_STACK_TYPE_INT, "atime should be int");
+	ASSERT(atime_elem.value.i > 0, "atime should be positive");
+
+	unlink(path);
+	destroy_test_context(ctx);
+}
+
+
+TEST(IoStatModeTest) {
+	qd_context* ctx = create_test_context();
+	char* path = create_temp_path("stat_mode.txt");
+
+	// Create a file so we can stat it
+	FILE* fp = fopen(path, "w");
+	ASSERT(fp != NULL, "should create test file");
+	fputs("mode test", fp);
+	fclose(fp);
+
+	// Get mode
+	qd_push_s(ctx, path);
+	int result = usr_io_stat_mode(ctx);
+	ASSERT_EQ(result, 0, "stat_mode should succeed");
+
+	// Pop status (should be Ok=1)
+	qd_stack_element_t status;
+	qd_stack_pop(ctx->st, &status);
+	ASSERT_EQ((int)status.value.i, 1, "stat_mode status should be Ok");
+
+	// Pop mode value
+	qd_stack_element_t mode_elem;
+	qd_stack_pop(ctx->st, &mode_elem);
+	ASSERT_EQ(mode_elem.type, QD_STACK_TYPE_INT, "mode should be int");
+
+	// Verify the file is owner-readable (0400 bit set)
+	int mode = (int)mode_elem.value.i;
+	ASSERT((mode & 0400) != 0, "file should be owner-readable");
+
+	// Cross-check with C stat
+	struct stat st;
+	// File was already unlinked? No, not yet. Re-stat it.
+	// Actually we need to stat before unlink.
+	// The path was already consumed by usr_io_stat_mode, but we can
+	// use the same path string for C stat.
+	int stat_result = stat(path, &st);
+	ASSERT_EQ(stat_result, 0, "C stat should succeed");
+	ASSERT_EQ(mode, (int)(st.st_mode & 07777), "mode should match C stat");
+
+	unlink(path);
+	destroy_test_context(ctx);
+}
+
+
+TEST(IoStatMtimeNotFoundTest) {
+	qd_context* ctx = create_test_context();
+
+	// Stat a nonexistent file
+	qd_push_s(ctx, "/nonexistent/path/no_such_file.txt");
+	int result = usr_io_stat_mtime(ctx);
+	ASSERT(result != 0, "stat_mtime should fail for missing file");
+
+	// Pop error code
+	qd_stack_element_t err_elem;
+	qd_stack_pop(ctx->st, &err_elem);
+	ASSERT_EQ((int)err_elem.value.i, 2, "should return NotFound (2)");
+
+	destroy_test_context(ctx);
+}
+
 
 // Main - required for test executable
 int main(void) {

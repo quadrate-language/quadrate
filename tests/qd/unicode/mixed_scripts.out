@@ -1,0 +1,21 @@
+=== Latin + Cyrillic ===
+Hello Мир
+12
+=== Latin + CJK ===
+Hello 世界
+12
+=== Latin + Arabic ===
+Hello مرحبا
+16
+=== Mixed contains ===
+1
+1
+0
+=== Mixed comparison ===
+1
+1
+0
+=== All scripts ===
+ABC Мир 世界
+17
+done
