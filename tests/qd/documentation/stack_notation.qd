@@ -1,4 +1,4 @@
-// This test demonstrates Quadrate's stack notation in function declarations
+// Test: This test demonstrates Quadrate's stack notation in function declarations
 // Format: fn name(inputs -- outputs)
 // Where inputs and outputs have name:type annotations
 use math

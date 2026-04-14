@@ -1,4 +1,4 @@
-// Inline array access without storing
+// Test: Inline array access without storing
 fn main() {
 	[10 20 30] 0 nth print nl
 	[10 20 30] 1 nth print nl

@@ -1,4 +1,4 @@
-// Test modulo and bitwise operations in expressions
+// Test: modulo and bitwise operations in expressions
 fn main() {
 	// Modulo
 	"=== Modulo ===" print nl

@@ -1,4 +1,4 @@
-// Test boolean comparisons
+// Test: boolean comparisons
 fn main() {
 	// Equality
 	"=== Equality ===" print nl

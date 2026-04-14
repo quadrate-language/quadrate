@@ -1,4 +1,4 @@
-// Test increment/decrement combined with arithmetic
+// Test: increment/decrement combined with arithmetic
 fn main() {
 	// Increment and decrement
 	"=== Inc/Dec ===" print nl

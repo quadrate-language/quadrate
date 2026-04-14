@@ -1,4 +1,4 @@
-// Test discard with multi-value function returns
+// Test: discard with multi-value function returns
 // Common use case: ignoring status/found flags
 
 /// Returns value and a success flag

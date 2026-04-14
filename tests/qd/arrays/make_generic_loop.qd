@@ -1,4 +1,4 @@
-// Test make<T> inside loop - create multiple arrays
+// Test: make<T> inside loop - create multiple arrays
 fn main() {
 	0 -> total
 	0 3 1 for i {

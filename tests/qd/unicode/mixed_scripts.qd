@@ -1,4 +1,4 @@
-// Test mixing ASCII and non-ASCII scripts in strings
+// Test: mixing ASCII and non-ASCII scripts in strings
 use strings
 
 fn main() {

@@ -1,4 +1,4 @@
-// Test struct returns from sibling functions work correctly
+// Test: struct returns from sibling functions work correctly
 use math
 use fmt
 

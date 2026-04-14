@@ -1,4 +1,4 @@
-// Test sb (StringBuilder) module
+// Test: sb (StringBuilder) module
 use sb
 
 fn main() {

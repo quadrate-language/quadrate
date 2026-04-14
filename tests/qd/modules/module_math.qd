@@ -1,3 +1,4 @@
+// Test: module math
 use math
 
 fn main() {

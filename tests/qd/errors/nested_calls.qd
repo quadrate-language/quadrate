@@ -1,3 +1,4 @@
+// Test: nested calls
 fn validate(i64 -- i64)! {
 	dup 0 < if {
 		0

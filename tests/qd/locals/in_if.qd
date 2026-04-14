@@ -1,4 +1,4 @@
-// Test local variable with if statement
+// Test: local variable with if statement
 fn main() {
 	10 -> x
 	x 5 gt if {

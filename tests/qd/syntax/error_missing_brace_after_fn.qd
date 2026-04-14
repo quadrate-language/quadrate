@@ -1,1 +1,2 @@
+// Test: error missing brace after fn
 fn main()

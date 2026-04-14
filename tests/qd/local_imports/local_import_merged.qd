@@ -1,4 +1,4 @@
-// Test local file import from top-level file
+// Test: local file import from top-level file
 // Functions and constants should be merged into main namespace
 use "helper.qd"
 

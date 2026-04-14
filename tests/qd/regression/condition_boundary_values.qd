@@ -1,4 +1,4 @@
-// Regression: Condition evaluation with boundary values
+// Test: Regression: Condition evaluation with boundary values
 // Ensure various boundary values are correctly evaluated as truthy/falsy
 
 fn main() {

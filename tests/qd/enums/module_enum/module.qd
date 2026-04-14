@@ -1,3 +1,4 @@
+// module
 pub enum Status {
 	Ok
 	Error = -1

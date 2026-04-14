@@ -1,4 +1,4 @@
-// Test os::is_file function
+// Test: os::is_file function
 use os
 
 fn main() {

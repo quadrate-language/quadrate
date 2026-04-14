@@ -1,4 +1,4 @@
-// Test struct with nested struct from imported module
+// Test: struct with nested struct from imported module
 // This tests that field offsets are correct when the nested type
 // comes from a different module (like math::Vec3)
 use math

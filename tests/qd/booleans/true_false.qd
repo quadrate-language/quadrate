@@ -1,3 +1,4 @@
+// Test: true false
 fn main() {
     true print nl
     false print nl

@@ -1,3 +1,4 @@
+// Test: method temporary
 use math
 
 struct Point {

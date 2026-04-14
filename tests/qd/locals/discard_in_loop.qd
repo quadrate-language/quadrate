@@ -1,4 +1,4 @@
-// Test discard inside loops
+// Test: discard inside loops
 // Verifies -> _ works correctly with repeated execution
 fn main() {
 	0 -> i

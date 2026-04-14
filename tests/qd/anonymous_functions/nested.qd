@@ -1,4 +1,4 @@
-// Test using anonymous function multiple times
+// Test: using anonymous function multiple times
 fn main() {
     // Define a doubling function
     fn (i64 -- i64) { 2 * } -> double

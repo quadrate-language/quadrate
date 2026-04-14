@@ -1,3 +1,4 @@
+// Test: recursion deep
 fn countdown(num:i64 -- ) {
 	num 0 gt
 	if {

@@ -1,4 +1,4 @@
-// Test bit mask operations
+// Test: bit mask operations
 fn main() {
 	// Create masks
 	"=== Create masks ===" print nl

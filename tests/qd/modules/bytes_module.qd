@@ -1,4 +1,4 @@
-// Test bytes module - endianness and buffer operations
+// Test: bytes module - endianness and buffer operations
 use bytes
 use mem
 

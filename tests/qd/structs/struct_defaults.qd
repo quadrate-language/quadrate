@@ -1,4 +1,4 @@
-// Test struct field default values
+// Test: struct field default values
 
 struct Point {
     x:i64 = 0

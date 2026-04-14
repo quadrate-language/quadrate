@@ -1,3 +1,4 @@
+// Test: error duplicate functions
 fn foo() {
 	"First foo" prints nl
 }

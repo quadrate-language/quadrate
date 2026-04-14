@@ -1,4 +1,4 @@
-// Test nipd (remove second element): ( a b c -- a c )
+// Test: nipd (remove second element): ( a b c -- a c )
 fn main() {
 	// Test with integers
 	10 20 30 nipd

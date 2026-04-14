@@ -1,3 +1,4 @@
+// Test: main
 use "module.qd"
 
 fn main() {

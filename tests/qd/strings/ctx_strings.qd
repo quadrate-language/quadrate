@@ -1,4 +1,4 @@
-// Test ctx with strings
+// Test: ctx with strings
 fn test_ctx_string_return() {
 	// Test: Return string from ctx
 	ctx {

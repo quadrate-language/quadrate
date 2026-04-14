@@ -1,4 +1,4 @@
-// Test time::unix function
+// Test: time::unix function
 use os
 use time
 

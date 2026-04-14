@@ -1,4 +1,4 @@
-// Basic import test - single function call
+// Test: Basic import test - single function call
 import "libfmt.a" as "fmt" {
 	fn printf(format:str -- )
 }

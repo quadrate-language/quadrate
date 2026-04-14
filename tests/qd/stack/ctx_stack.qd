@@ -1,4 +1,4 @@
-// Test ctx with stack operations
+// Test: ctx with stack operations
 fn test_ctx_dup() {
 	// Test: dup inside ctx
 	10

@@ -1,4 +1,4 @@
-// Test using the same local variable multiple times
+// Test: using the same local variable multiple times
 fn main() {
 	5 -> x
 	x x add print nl

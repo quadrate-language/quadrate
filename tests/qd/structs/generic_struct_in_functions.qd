@@ -1,4 +1,4 @@
-// Test generic structs passed to and returned from functions
+// Test: generic structs passed to and returned from functions
 struct Box<T> { value:T }
 
 fn print_box(b:ptr -- ) {

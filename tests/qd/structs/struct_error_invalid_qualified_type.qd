@@ -1,4 +1,4 @@
-// Test error for invalid qualified struct type name
+// Test: error for invalid qualified struct type name
 
 use vec2
 

@@ -1,4 +1,4 @@
-// Test float precision edge cases
+// Test: float precision edge cases
 use limits
 
 fn main() {

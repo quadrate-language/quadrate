@@ -1,3 +1,4 @@
+// Test: error fn inside block
 fn main() {
 	fn inner() {
 		1 print nl

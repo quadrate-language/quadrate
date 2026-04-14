@@ -1,4 +1,4 @@
-// Test return inside control flow blocks
+// Test: return inside control flow blocks
 
 // Return from if body
 fn find_first_gt(t:i64 -- result:i64) {

@@ -1,4 +1,4 @@
-// Test append with float array
+// Test: append with float array
 fn main() {
 	// Create empty array and append floats
 	0 makef 1.5 append 2.5 append 3.5 append -> arr

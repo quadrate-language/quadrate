@@ -1,4 +1,4 @@
-// Regression: defer stack effect check with error-handling functions (2df9992)
+// Test: Regression: defer stack effect check with error-handling functions (2df9992)
 // Defer blocks in functions that call fallible functions should not
 // falsely trigger stack effect errors.
 

@@ -1,4 +1,4 @@
-// Arrays returned from functions
+// Test: Arrays returned from functions
 fn make_array( -- arr:[]i64) {
 	[1 2 3 4 5]
 }

@@ -1,4 +1,4 @@
-// Negative test: method on undefined struct type
+// Test: Negative test: method on undefined struct type
 
 fn (p:UndefinedStruct) foo( -- ) {
 	1 print nl

@@ -1,4 +1,4 @@
-// Test anonymous function calling a named function
+// Test: anonymous function calling a named function
 fn helper(i64 -- i64) {
     10 +
 }

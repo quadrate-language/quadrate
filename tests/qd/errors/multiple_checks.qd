@@ -1,3 +1,4 @@
+// Test: multiple checks
 fn might_fail(i64 -- i64)! {
 	dup 10 > if {
 		"Error occurred" 1 panic

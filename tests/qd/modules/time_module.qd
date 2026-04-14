@@ -1,4 +1,4 @@
-// Test time module - time constants and date functions
+// Test: time module - time constants and date functions
 use time
 
 fn main() {

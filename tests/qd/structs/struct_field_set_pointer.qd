@@ -1,4 +1,4 @@
-// Mutating pointer fields with dot syntax
+// Test: Mutating pointer fields with dot syntax
 struct Cell {
 	value:i64
 	next:*Cell

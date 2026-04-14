@@ -1,4 +1,4 @@
-// Test basic type casting operations
+// Test: basic type casting operations
 fn main() {
 	// Test cast<i64> - cast float to int (truncates)
 	3.14 cast<i64> print nl

@@ -1,4 +1,4 @@
-// Import test - multiple function calls
+// Test: Import test - multiple function calls
 import "libfmt.a" as "fmt" {
 	fn printf(format:str -- )
 }

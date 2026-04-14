@@ -1,4 +1,4 @@
-// Test all assertion functions in the testing module
+// Test: all assertion functions in the testing module
 use testing
 
 test "assert_eq with various types" {

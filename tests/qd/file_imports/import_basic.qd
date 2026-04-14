@@ -1,4 +1,4 @@
-// Test basic file import with simple filename
+// Test: basic file import with simple filename
 use helper.qd
 
 fn main() {

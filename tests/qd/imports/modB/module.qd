@@ -1,4 +1,4 @@
-// Module B - also imports libstdqd as "io" (same namespace!)
+// Test: Module B - also imports libstdqd as "io" (same namespace!)
 import "libfmt.a" as "fmt" {
 	fn printf(format:str -- )
 }

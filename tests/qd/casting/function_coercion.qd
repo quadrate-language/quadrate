@@ -1,4 +1,4 @@
-// Test type coercion in function calls
+// Test: type coercion in function calls
 fn take_float(val:f64 -- result:f64) {
 	val 2.0 *
 }

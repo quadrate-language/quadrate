@@ -1,4 +1,4 @@
-// Test make<T> arrays - basic operations in function context
+// Test: make<T> arrays - basic operations in function context
 fn create_and_fill() {
 	// Create array locally
 	5 make<i64> -> arr

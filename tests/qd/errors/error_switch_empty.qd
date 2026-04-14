@@ -1,3 +1,4 @@
+// Test: error switch empty
 fn main() {
 	1 switch {
 	}

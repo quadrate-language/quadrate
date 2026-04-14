@@ -1,4 +1,4 @@
-// Test file import from subdirectory (requires quotes)
+// Test: file import from subdirectory (requires quotes)
 use "utils/math.qd"
 
 fn main() {

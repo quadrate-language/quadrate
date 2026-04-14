@@ -1,3 +1,4 @@
+// Test: basic failure
 fn safe_operation(i64 -- i64)! {
 	dup 0 > if {
 		dup mul

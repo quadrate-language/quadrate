@@ -1,4 +1,4 @@
-// Test multiple database connections
+// Test: multiple database connections
 use sqlite
 
 fn main() {

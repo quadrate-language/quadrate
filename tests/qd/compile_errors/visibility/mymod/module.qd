@@ -1,3 +1,4 @@
+// module
 pub fn public_func(x:i64 -- y:i64) {
 	x 2 *
 }

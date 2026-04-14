@@ -1,4 +1,4 @@
-// Test os::cwd - get current working directory
+// Test: os::cwd - get current working directory
 use os
 use strings
 

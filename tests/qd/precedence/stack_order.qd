@@ -1,4 +1,4 @@
-// Test stack evaluation order
+// Test: stack evaluation order
 fn main() {
 	// Basic stack order (left to right)
 	"=== Basic stack order ===" print nl

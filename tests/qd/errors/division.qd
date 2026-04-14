@@ -1,3 +1,4 @@
+// Test: division
 fn safe_divide(i64 i64 -- i64)! {
 	dup 0 > if {
 		/

@@ -1,4 +1,4 @@
-// Test append with string array
+// Test: append with string array
 fn main() {
 	// Create empty array and append strings
 	0 makes "hello" append "world" append "test" append -> arr

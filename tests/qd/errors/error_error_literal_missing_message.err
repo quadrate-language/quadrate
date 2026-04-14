@@ -1,1 +1,1 @@
-[1mquadc: [0m[1mtests/qd/errors/error_error_literal_missing_message.qd:2:2:[0m [1m[1;31merror:[0m [1mError literal requires 'message' field[0m
+[1mquadc: [0m[1mtests/qd/errors/error_error_literal_missing_message.qd:3:2:[0m [1m[1;31merror:[0m [1mError literal requires 'message' field[0m

@@ -1,4 +1,4 @@
-// Test anonymous function with empty signature
+// Test: anonymous function with empty signature
 fn main() {
     // Side-effect only function
     fn () { "hello" print nl } -> greet

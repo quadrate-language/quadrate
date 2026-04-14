@@ -1,3 +1,4 @@
+// Test: error nonexistent field
 struct Point {
 	x:f64
 	y:f64

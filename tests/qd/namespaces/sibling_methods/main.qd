@@ -1,4 +1,4 @@
-// Test method calls from sibling files work correctly
+// Test: method calls from sibling files work correctly
 use math
 use fmt
 

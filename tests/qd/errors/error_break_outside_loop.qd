@@ -1,3 +1,4 @@
+// Test: error break outside loop
 fn main() {
 	break
 }

@@ -1,4 +1,4 @@
-// Test chained field access (rect <<origin <<x or rect <<origin <<x)
+// Test: chained field access (rect <<origin <<x or rect <<origin <<x)
 struct Point {
 	x:f64
 	y:f64

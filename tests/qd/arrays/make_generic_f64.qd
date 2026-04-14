@@ -1,4 +1,4 @@
-// Test make<f64> - create float array with generic syntax
+// Test: make<f64> - create float array with generic syntax
 fn main() {
 	3 make<f64> -> arr
 	arr 0 3.14 set

@@ -1,4 +1,4 @@
-// Test large integer values (INT64 bounds)
+// Test: large integer values (INT64 bounds)
 use sqlite
 
 fn main() {

@@ -1,3 +1,4 @@
+// Test: basic
 fn main() {
 	// Test dup - duplicate top element
 	5 dup print nl print nl

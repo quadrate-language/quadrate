@@ -1,3 +1,4 @@
+// Test: operations
 fn main() {
 	// Test printing strings with print (.)
 	"Basic print test" print nl

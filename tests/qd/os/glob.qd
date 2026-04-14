@@ -1,4 +1,4 @@
-// Test os::glob function (pattern matching)
+// Test: os::glob function (pattern matching)
 use os
 use mem
 

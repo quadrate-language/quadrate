@@ -1,3 +1,4 @@
+// Test: imported fallible missing if
 use io
 
 fn main() {

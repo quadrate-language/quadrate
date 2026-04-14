@@ -1,4 +1,4 @@
-// Test rand module - random number generation
+// Test: rand module - random number generation
 use rand
 
 fn main() {

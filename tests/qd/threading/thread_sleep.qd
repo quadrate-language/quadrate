@@ -1,4 +1,4 @@
-// Test thread sleep
+// Test: thread sleep
 use thread
 
 fn main() {

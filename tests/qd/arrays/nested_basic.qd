@@ -1,4 +1,4 @@
-// Test basic nested arrays (array of arrays)
+// Test: basic nested arrays (array of arrays)
 
 fn main() {
 	// Create outer array to hold 1 inner array

@@ -1,4 +1,4 @@
-// Test arithmetic on values retrieved from generic struct fields
+// Test: arithmetic on values retrieved from generic struct fields
 // Generic fields are ptr at compile time, need cast for arithmetic
 struct Box<T> { value:T }
 struct Pair<A, B> { first:A second:B }

@@ -1,4 +1,4 @@
-// Test long string handling
+// Test: long string handling
 use sqlite
 
 fn main() {

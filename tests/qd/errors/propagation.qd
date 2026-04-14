@@ -1,4 +1,4 @@
-// Test error propagation patterns
+// Test: error propagation patterns
 fn might_fail(should_fail:i64 -- result:i64)! {
 	should_fail if {
 		0 "intentional failure" 99 panic

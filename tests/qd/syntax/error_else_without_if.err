@@ -1,1 +1,1 @@
-[1mquadc: [0m[1mtests/qd/syntax/error_else_without_if.qd:2:2:[0m [1m[1;31merror:[0m [1m'else' without preceding 'if'[0m
+[1mquadc: [0m[1mtests/qd/syntax/error_else_without_if.qd:3:2:[0m [1m[1;31merror:[0m [1m'else' without preceding 'if'[0m

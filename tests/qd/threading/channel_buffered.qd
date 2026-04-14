@@ -1,4 +1,4 @@
-// Test buffered channel operations
+// Test: buffered channel operations
 use thread
 
 fn main() {

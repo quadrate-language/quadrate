@@ -1,4 +1,4 @@
-// Test field set operations on generic struct fields
+// Test: field set operations on generic struct fields
 struct Box<T> { value:T }
 struct Pair<A, B> { first:A second:B }
 

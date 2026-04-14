@@ -1,4 +1,4 @@
-// Test basic typed struct parameter syntax
+// Test: basic typed struct parameter syntax
 use math
 
 struct Point {

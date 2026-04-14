@@ -1,3 +1,4 @@
+// Test: utf8 basic
 fn main() {
 	// Test basic ASCII string
 	"Hello, World!" print nl

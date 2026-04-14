@@ -1,4 +1,4 @@
-/// Test that net::connect returns error on failure instead of crashing.
+// Test: Test that net::connect returns error on failure instead of crashing.
 use net
 
 fn main( -- ) {

@@ -1,4 +1,4 @@
-// Test deeply nested structs
+// Test: deeply nested structs
 struct Point {
 	x:f64
 	y:f64

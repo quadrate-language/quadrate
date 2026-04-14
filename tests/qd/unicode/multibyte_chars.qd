@@ -1,4 +1,4 @@
-// Test multi-byte UTF-8 character handling
+// Test: multi-byte UTF-8 character handling
 use strings
 
 fn main() {

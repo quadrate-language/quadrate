@@ -1,4 +1,4 @@
-// Test multiple file imports
+// Test: multiple file imports
 use "utils/math.qd"
 use helper.qd
 

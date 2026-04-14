@@ -1,4 +1,4 @@
-// Test basic mutex operations
+// Test: basic mutex operations
 use thread
 
 fn main() {

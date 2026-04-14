@@ -1,4 +1,4 @@
-// Test multiple ctx blocks
+// Test: multiple ctx blocks
 fn test_ctx_multiple() {
 	// Test: Multiple ctx blocks at same level
 	10

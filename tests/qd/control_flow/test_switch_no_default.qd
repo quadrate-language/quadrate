@@ -1,3 +1,4 @@
+// Test: test switch no default
 fn main() {
 	// Test switch without default case
 	42 switch {

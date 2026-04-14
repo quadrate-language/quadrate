@@ -1,4 +1,4 @@
-// Test that private functions cannot be accessed from outside
+// Test: that private functions cannot be accessed from outside
 use mymod
 
 fn main() {

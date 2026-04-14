@@ -1,4 +1,4 @@
-// Test strings::data — raw pointer access to string bytes
+// Test: strings::data — raw pointer access to string bytes
 use strings
 use mem
 

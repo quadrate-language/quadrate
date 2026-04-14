@@ -1,4 +1,4 @@
-// Test qualified struct type names in function parameters
+// Test: qualified struct type names in function parameters
 // This tests the syntax: fn foo(param:module::StructName -- )
 
 use math

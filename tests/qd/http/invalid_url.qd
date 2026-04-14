@@ -1,4 +1,4 @@
-// Test HTTP with invalid URL
+// Test: HTTP with invalid URL
 use http
 
 fn main( -- ) {

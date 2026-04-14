@@ -1,4 +1,4 @@
-// Test float literal parsing
+// Test: float literal parsing
 fn main() {
 	// Basic floats
 	"=== Basic floats ===" print nl

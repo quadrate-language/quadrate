@@ -1,4 +1,4 @@
-// Bug #12: Signed left-shift of negative value
+// Test: Bug #12: Signed left-shift of negative value
 // Should produce defined results, not UB
 fn main() {
 	// -1 << 2 should be -4 (arithmetic shift)

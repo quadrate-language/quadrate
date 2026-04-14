@@ -1,3 +1,4 @@
+// module
 use math
 
 pub struct Vec2 {

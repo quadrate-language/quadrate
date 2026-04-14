@@ -1,4 +1,4 @@
-// Test defer executes even with early return
+// Test: defer executes even with early return
 fn test_return() {
 	1 print nl
 	defer {

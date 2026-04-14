@@ -1,4 +1,4 @@
-// Test edge cases in comment handling
+// Test: edge cases in comment handling
 fn main() {
 	// Empty comment follows:
 	//

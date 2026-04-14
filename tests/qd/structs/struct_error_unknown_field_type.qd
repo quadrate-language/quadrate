@@ -1,4 +1,4 @@
-// Negative test: unknown type in struct field
+// Test: Negative test: unknown type in struct field
 struct Container {
 	value: UnknownType
 }

@@ -1,4 +1,4 @@
-// Test last_insert_rowid and changes
+// Test: last_insert_rowid and changes
 use sqlite
 
 fn main() {

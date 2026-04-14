@@ -1,4 +1,4 @@
-// Test shift operations edge cases
+// Test: shift operations edge cases
 fn main() {
 	// Shift by 0 (no change)
 	"=== Shift by 0 ===" print nl

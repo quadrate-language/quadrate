@@ -1,4 +1,4 @@
-/// Integration test for HTTP server
+// Test: Integration test for HTTP server
 /// This test starts a server and handles requests
 use http
 

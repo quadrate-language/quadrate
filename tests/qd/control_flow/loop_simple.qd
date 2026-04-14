@@ -1,3 +1,4 @@
+// Test: loop simple
 fn main() {
 	// Test simple infinite loop with break
 	0

@@ -1,4 +1,4 @@
-// Test multiple consecutive discards: -> _ -> _
+// Test: multiple consecutive discards: -> _ -> _
 // Useful for discarding multiple return values
 fn main() {
 	// Discard two values

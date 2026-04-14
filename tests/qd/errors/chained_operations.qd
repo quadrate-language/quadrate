@@ -1,3 +1,4 @@
+// Test: chained operations
 fn validate_positive(i64 -- i64)! {
 	dup 0 > if {
 	} else {

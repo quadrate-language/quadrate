@@ -1,3 +1,4 @@
+// Test: error if stack underflow
 fn main() {
 	if {
 		1 print nl

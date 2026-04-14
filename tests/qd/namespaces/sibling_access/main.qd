@@ -1,4 +1,4 @@
-// Test directory-based namespace: sibling files share namespace
+// Test: directory-based namespace: sibling files share namespace
 // No explicit imports needed for files in same directory
 
 fn main() {

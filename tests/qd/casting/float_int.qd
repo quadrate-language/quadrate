@@ -1,4 +1,4 @@
-// Test float to int casting (truncation behavior)
+// Test: float to int casting (truncation behavior)
 fn main() {
 	// Positive floats - truncates toward zero
 	"=== Positive floats ===" print nl

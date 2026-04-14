@@ -1,4 +1,4 @@
-// Test multiple local variables
+// Test: multiple local variables
 fn main() {
 	10 -> x
 	20 -> y

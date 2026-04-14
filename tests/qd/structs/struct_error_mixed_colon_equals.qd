@@ -1,4 +1,4 @@
-// Negative test: mixing ':' and '=' in struct field initializers
+// Test: Negative test: mixing ':' and '=' in struct field initializers
 struct Point {
 	x: f64
 	y: f64

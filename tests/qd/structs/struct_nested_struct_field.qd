@@ -1,4 +1,4 @@
-// Test struct with nested struct field (custom datatype)
+// Test: struct with nested struct field (custom datatype)
 struct Point {
 	x:f64
 	y:f64

@@ -1,4 +1,4 @@
-// Test nested anonymous function calling outer function pointer variable
+// Test: nested anonymous function calling outer function pointer variable
 fn main() {
     fn (i64 -- i64) { 2 * } -> double
     fn (i64 -- i64) { double call 1 + } -> double_plus_one

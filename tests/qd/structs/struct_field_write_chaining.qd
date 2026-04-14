@@ -1,4 +1,4 @@
-// Test >>field chaining — struct stays on stack
+// Test: >>field chaining — struct stays on stack
 struct Vec3 { x: f64  y: f64  z: f64 }
 
 fn main() {

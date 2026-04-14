@@ -1,4 +1,4 @@
-// Test math module functions
+// Test: math module functions
 use math
 
 fn main() {

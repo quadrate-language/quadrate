@@ -1,4 +1,4 @@
-// Test make<T> with append operations
+// Test: make<T> with append operations
 fn main() {
 	// Start with empty array and append
 	0 make<i64> -> arr

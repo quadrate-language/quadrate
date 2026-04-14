@@ -1,4 +1,4 @@
-// Test defer blocks in modules
+// Test: defer blocks in modules
 use defer_ops
 
 fn main() {

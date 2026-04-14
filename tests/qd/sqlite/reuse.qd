@@ -1,4 +1,4 @@
-// Test statement reuse with reset
+// Test: statement reuse with reset
 use sqlite
 
 fn main() {

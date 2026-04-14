@@ -1,4 +1,4 @@
-// Test os::is_dir function
+// Test: os::is_dir function
 use os
 
 fn main() {

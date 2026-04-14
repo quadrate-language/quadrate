@@ -1,4 +1,4 @@
-// Multiple enums in same file, no conflicts
+// Test: Multiple enums in same file, no conflicts
 enum Color { Red Green Blue }
 enum Fruit { Apple Orange Banana }
 enum Size { Small Medium Large }

@@ -1,4 +1,4 @@
-// Test string to numeric casting
+// Test: string to numeric casting
 fn main() {
 	// String to int
 	"=== String to int ===" print nl

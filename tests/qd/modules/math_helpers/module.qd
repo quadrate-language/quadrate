@@ -1,21 +1,4 @@
-// Math helper functions
-pub fn abs(f64 -- f64) {
-	dup 0.0 lt
-	if {
-		neg
-	}
-}
-
-pub fn max(f64 f64 -- f64) {
-	dup rot dup rot
-	gt
-	if {
-		nip
-	} else {
-		drop
-	}
-}
-
+// Helper functions for module import tests
 pub fn square(f64 -- f64) {
 	dup mul
 }

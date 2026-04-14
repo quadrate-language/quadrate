@@ -1,4 +1,4 @@
-// Test limits module - numeric limits constants
+// Test: limits module - numeric limits constants
 use limits
 
 fn main() {

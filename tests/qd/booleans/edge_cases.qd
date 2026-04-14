@@ -1,4 +1,4 @@
-// Test boolean edge cases
+// Test: boolean edge cases
 fn main() {
 	// Logical negation using "0 eq" pattern (since 'not' is bitwise)
 	"=== Logical negation ===" print nl

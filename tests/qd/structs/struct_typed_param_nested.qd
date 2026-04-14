@@ -1,4 +1,4 @@
-// Test nested function calls with typed struct parameters
+// Test: nested function calls with typed struct parameters
 use math
 
 struct Point {

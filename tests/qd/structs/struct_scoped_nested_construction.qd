@@ -1,4 +1,4 @@
-// Test scoped struct construction inside field initializers
+// Test: scoped struct construction inside field initializers
 use math
 
 struct Container {

@@ -1,4 +1,4 @@
-// Test function accessing str field
+// Test: function accessing str field
 struct Person {
 	name:str
 	age:f64

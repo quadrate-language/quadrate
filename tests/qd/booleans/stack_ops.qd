@@ -1,4 +1,4 @@
-// Test booleans with stack operations
+// Test: booleans with stack operations
 fn main() {
 	// dup with booleans
 	"=== dup ===" print nl

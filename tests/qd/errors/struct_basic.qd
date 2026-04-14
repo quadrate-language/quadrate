@@ -1,4 +1,4 @@
-// Test basic error syntax with anonymous error { } and panic
+// Test: basic error syntax with anonymous error { } and panic
 
 fn validate(x:i64 -- )! {
     x 0 < if {

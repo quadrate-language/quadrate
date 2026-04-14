@@ -1,4 +1,4 @@
-// Test custom error messages and codes
+// Test: custom error messages and codes
 fn divide(i64 i64 -- i64)! {
 	dup 0 eq if {
 		drop drop

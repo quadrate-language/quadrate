@@ -1,4 +1,4 @@
-// Test make<T> inside conditionals
+// Test: make<T> inside conditionals
 fn main() {
 	1 -> use_floats
 

@@ -1,4 +1,4 @@
-// Regression: values pushed in a for loop inside a function persist on the stack
+// Test: Regression: values pushed in a for loop inside a function persist on the stack
 fn replicate(i64 -- ) {
 	0 -1 for i {
 		i print nl

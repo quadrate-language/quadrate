@@ -1,3 +1,4 @@
+// Test: struct pointer fields
 struct Inner {
 	value:f64
 }

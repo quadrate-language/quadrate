@@ -1,4 +1,4 @@
-// Test early return on error
+// Test: early return on error
 fn process_list(n:i64 -- sum:i64)! {
 	0 -> total
 	0 n 1 for i {

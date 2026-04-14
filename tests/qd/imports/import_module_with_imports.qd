@@ -1,4 +1,4 @@
-// Test importing a module that itself uses imports
+// Test: importing a module that itself uses imports
 use printer
 
 fn main() {

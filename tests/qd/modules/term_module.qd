@@ -1,4 +1,4 @@
-// Test term module - ANSI escape codes
+// Test: term module - ANSI escape codes
 use term
 use strings
 

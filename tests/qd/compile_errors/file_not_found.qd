@@ -1,4 +1,4 @@
-// Test error message for missing file
+// Test: error message for missing file
 use "nonexistent.qd"
 
 fn main() {

@@ -1,4 +1,4 @@
-// Test building array in a loop
+// Test: building array in a loop
 fn main() {
 	0 makei -> arr
 	0 5 1 for it {

@@ -1,4 +1,4 @@
-// Test generic functions with multiple return values
+// Test: generic functions with multiple return values
 
 fn dup_generic<T>(val:T -- x1:T x2:T) {
 	val val

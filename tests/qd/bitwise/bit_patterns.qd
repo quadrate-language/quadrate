@@ -1,4 +1,4 @@
-// Test common bit manipulation patterns
+// Test: common bit manipulation patterns
 fn main() {
 	// Set specific bit
 	"=== Set bit ===" print nl

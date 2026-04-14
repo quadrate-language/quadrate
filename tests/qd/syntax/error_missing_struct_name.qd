@@ -1,3 +1,4 @@
+// Test: error missing struct name
 struct {
 	x:i64
 }

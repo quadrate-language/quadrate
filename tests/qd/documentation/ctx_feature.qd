@@ -1,4 +1,4 @@
-// Comprehensive ctx block feature demonstration
+// Test: Comprehensive ctx block feature demonstration
 // ctx blocks execute code in an isolated context
 // Syntax: ctx { ... }
 // Stack effect: ( S -- S r ) where r is the single returned value

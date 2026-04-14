@@ -1,4 +1,4 @@
-// Test basic module functionality
+// Test: basic module functionality
 use simple_math
 
 fn main() {

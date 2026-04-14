@@ -1,4 +1,4 @@
-// Test TLS send and receive
+// Test: TLS send and receive
 use net
 use tls
 

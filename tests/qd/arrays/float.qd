@@ -1,4 +1,4 @@
-// Float array
+// Test: Float array
 fn main() {
 	[1.5 2.5 3.5] -> arr
 	arr 0 nth print nl

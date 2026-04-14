@@ -1,4 +1,4 @@
-// Test unicode module - constants and character classification
+// Test: unicode module - constants and character classification
 use unicode
 use strings
 

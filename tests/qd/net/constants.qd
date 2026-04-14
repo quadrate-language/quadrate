@@ -1,4 +1,4 @@
-// Test net module error constants
+// Test: net module error constants
 use net
 
 fn main() {

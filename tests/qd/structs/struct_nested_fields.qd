@@ -1,4 +1,4 @@
-// Test multiple field accesses on same struct
+// Test: multiple field accesses on same struct
 struct Rectangle {
 	width:f64
 	height:f64

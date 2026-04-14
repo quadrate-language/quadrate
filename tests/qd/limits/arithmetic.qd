@@ -1,4 +1,4 @@
-// Test arithmetic at limits
+// Test: arithmetic at limits
 use limits
 
 fn main() {

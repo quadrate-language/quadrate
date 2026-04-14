@@ -1,4 +1,4 @@
-// Test generic structs created and accessed inside loops
+// Test: generic structs created and accessed inside loops
 struct Box<T> { value:T }
 
 fn main() {

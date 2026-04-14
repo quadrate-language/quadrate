@@ -1,4 +1,4 @@
-// Negative test: str vs ptr type mismatch
+// Test: Negative test: str vs ptr type mismatch
 struct WithStr {
 	data:str
 	name:str

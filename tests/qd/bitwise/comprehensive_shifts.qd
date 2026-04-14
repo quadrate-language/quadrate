@@ -1,4 +1,4 @@
-// Comprehensive bit shift tests
+// Test: Comprehensive bit shift tests
 fn main() {
 	// Left shift basics
 	"=== Left shift ===" print nl

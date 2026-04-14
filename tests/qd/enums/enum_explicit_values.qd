@@ -1,4 +1,4 @@
-// Test various explicit value patterns
+// Test: various explicit value patterns
 enum Gaps {
 	A
 	B

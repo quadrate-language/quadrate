@@ -1,4 +1,4 @@
-// AST-like pattern: enum tag + recursive struct
+// Test: AST-like pattern: enum tag + recursive struct
 enum NodeType {
 	Num
 	Add

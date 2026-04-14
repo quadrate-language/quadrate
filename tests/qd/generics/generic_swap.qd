@@ -1,4 +1,4 @@
-// Test generic swap function with different types
+// Test: generic swap function with different types
 
 fn swap<T>(first:T second:T -- b:T a:T) {
 	second first

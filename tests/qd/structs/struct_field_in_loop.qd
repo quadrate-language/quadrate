@@ -1,4 +1,4 @@
-// Test field operators inside loops
+// Test: field operators inside loops
 struct Acc { total: i64  count: i64 }
 
 fn main() {

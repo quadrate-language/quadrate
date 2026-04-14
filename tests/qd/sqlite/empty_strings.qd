@@ -1,4 +1,4 @@
-// Test empty string handling
+// Test: empty string handling
 use sqlite
 
 fn main() {

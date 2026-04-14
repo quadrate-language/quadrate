@@ -1,4 +1,4 @@
-// Test makef - create float array
+// Test: makef - create float array
 fn main() {
 	// Create array with 2 elements
 	2 makef -> arr

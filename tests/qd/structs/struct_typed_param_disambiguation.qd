@@ -1,4 +1,4 @@
-// Test that typed parameters correctly disambiguate same-named fields
+// Test: that typed parameters correctly disambiguate same-named fields
 struct Circle {
 	x:f64
 	y:f64

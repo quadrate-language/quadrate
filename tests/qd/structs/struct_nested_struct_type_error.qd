@@ -1,4 +1,4 @@
-// Test type error when passing wrong struct type to a struct field
+// Test: type error when passing wrong struct type to a struct field
 struct Point {
 	x:f64
 	y:f64

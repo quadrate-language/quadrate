@@ -1,4 +1,4 @@
-// Test makei - create integer array
+// Test: makei - create integer array
 fn main() {
 	// Create array with 3 elements
 	3 makei -> arr

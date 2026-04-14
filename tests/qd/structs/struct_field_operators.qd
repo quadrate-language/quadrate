@@ -1,4 +1,4 @@
-// Comprehensive test for <<field (read), >>field (write), >>field! (write no-return)
+// Test: Comprehensive test for <<field (read), >>field (write), >>field! (write no-return)
 struct Point {
 	x: i64
 	y: i64

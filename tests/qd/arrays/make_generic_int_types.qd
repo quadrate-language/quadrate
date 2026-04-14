@@ -1,4 +1,4 @@
-// Test make<T> with various integer types
+// Test: make<T> with various integer types
 fn main() {
 	// All these should map to makei
 	2 make<i32> -> arr1

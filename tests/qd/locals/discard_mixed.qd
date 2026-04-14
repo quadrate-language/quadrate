@@ -1,4 +1,4 @@
-// Test mixing discard with variable assignment
+// Test: mixing discard with variable assignment
 // Common pattern for ignoring some return values
 fn main() {
 	// Keep middle value: 10 20 30 -> discard 30, keep 20, discard 10

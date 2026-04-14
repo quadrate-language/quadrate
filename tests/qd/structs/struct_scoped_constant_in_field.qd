@@ -1,4 +1,4 @@
-// Test scoped constants inside struct field initializers
+// Test: scoped constants inside struct field initializers
 use math
 
 struct Config {

@@ -1,4 +1,4 @@
-// Test nested arrays with string elements
+// Test: nested arrays with string elements
 
 fn main() {
 	// Create array of one string array

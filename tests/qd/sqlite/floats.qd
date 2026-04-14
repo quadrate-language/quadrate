@@ -1,4 +1,4 @@
-// Test float handling and precision
+// Test: float handling and precision
 use sqlite
 
 fn main() {

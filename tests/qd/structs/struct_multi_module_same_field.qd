@@ -1,4 +1,4 @@
-// Test field access with multiple structs that have same-named fields
+// Test: field access with multiple structs that have same-named fields
 // This specifically tests that the correct struct layout is used when
 // multiple structs have fields like 'x', 'y', 'z', 'w'
 

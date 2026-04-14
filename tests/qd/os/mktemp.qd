@@ -1,4 +1,4 @@
-// Test os::mktemp - create temporary directory
+// Test: os::mktemp - create temporary directory
 use os
 use strings
 

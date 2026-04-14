@@ -1,4 +1,4 @@
-// Test Ok and Err builtin constants
+// Test: Ok and Err builtin constants
 fn main() {
     // Test values
     "Ok=" print Ok print nl

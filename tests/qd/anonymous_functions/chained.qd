@@ -1,4 +1,4 @@
-// Test chained anonymous function calls (same function)
+// Test: chained anonymous function calls (same function)
 fn main() {
     fn (i64 -- i64) { 2 * } -> double
 

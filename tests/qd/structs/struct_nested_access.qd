@@ -1,3 +1,4 @@
+// Test: struct nested access
 struct Point {
 	x:f64
 	y:f64

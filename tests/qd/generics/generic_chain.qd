@@ -1,4 +1,4 @@
-// Test chaining generic function calls
+// Test: chaining generic function calls
 
 fn identity<T>(val:T -- y:T) {
 	val

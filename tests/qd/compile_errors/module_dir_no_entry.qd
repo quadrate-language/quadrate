@@ -1,4 +1,4 @@
-// Test error message for directory without module.qd
+// Test: error message for directory without module.qd
 use badmodule
 
 fn main() {

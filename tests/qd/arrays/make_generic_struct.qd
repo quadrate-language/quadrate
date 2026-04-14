@@ -1,4 +1,4 @@
-// Test make<StructName> - create pointer array with generic syntax
+// Test: make<StructName> - create pointer array with generic syntax
 struct Point {
 	x:f64
 	y:f64

@@ -1,2 +1,3 @@
+// Test: error missing paren after fn name
 fn main {
 }

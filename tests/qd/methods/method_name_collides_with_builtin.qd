@@ -1,4 +1,4 @@
-// Regression: methods whose names collide with builtin instruction names
+// Test: Regression: methods whose names collide with builtin instruction names
 // (e.g. `depth`, `clear`, `len`, `drop`) must still dispatch correctly.
 // Previously, the parser produced an AstNodeInstruction for these names,
 // and the llvmgen instruction path constructed the function name via

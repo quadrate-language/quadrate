@@ -1,4 +1,4 @@
-// Test basic SQLite operations
+// Test: basic SQLite operations
 use sqlite
 
 fn main() {

@@ -1,4 +1,4 @@
-// Test scoped function calls inside struct field initializers
+// Test: scoped function calls inside struct field initializers
 use math
 
 struct Container {

@@ -1,3 +1,4 @@
+// Test: loop nested
 fn main() {
 	// Test nested loops
 	0

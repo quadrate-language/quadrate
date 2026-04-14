@@ -1,4 +1,4 @@
-// Import test - using imported function from helper function
+// Test: Import test - using imported function from helper function
 import "libfmt.a" as "fmt" {
 	fn printf(format:str -- )
 }

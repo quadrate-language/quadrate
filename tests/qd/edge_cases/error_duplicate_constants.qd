@@ -1,3 +1,4 @@
+// Test: error duplicate constants
 const PI = 3.14
 const PI = 3.14159
 

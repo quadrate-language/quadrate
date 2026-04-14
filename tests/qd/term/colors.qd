@@ -1,4 +1,4 @@
-// Test term module - terminal colors
+// Test: term module - terminal colors
 use term
 use strings
 

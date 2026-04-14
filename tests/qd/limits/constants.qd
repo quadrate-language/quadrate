@@ -1,4 +1,4 @@
-// Test limits module constants
+// Test: limits module constants
 use limits
 
 fn main() {

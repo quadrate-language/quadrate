@@ -1,4 +1,4 @@
-// Test thread module - threading primitives
+// Test: thread module - threading primitives
 use thread
 
 fn main() {

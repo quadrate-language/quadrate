@@ -1,4 +1,4 @@
-// Test mem::ptr_add — pointer arithmetic
+// Test: mem::ptr_add — pointer arithmetic
 use mem
 
 fn main() {

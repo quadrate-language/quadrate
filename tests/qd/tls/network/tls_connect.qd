@@ -1,4 +1,4 @@
-// Test TLS connection to HTTPS server
+// Test: TLS connection to HTTPS server
 use net
 use tls
 

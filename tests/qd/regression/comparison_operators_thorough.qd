@@ -1,4 +1,4 @@
-// Regression: Thorough test of all comparison operators
+// Test: Regression: Thorough test of all comparison operators
 // Ensures eq, neq, lt, gt, lteq, gteq all work correctly
 
 fn main() {

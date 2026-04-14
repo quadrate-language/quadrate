@@ -1,4 +1,4 @@
-/// Test HTTP middleware registration
+// Test: Test HTTP middleware registration
 use http
 
 fn global_middleware(c:ptr -- ) {

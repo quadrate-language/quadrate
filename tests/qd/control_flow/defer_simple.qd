@@ -1,4 +1,4 @@
-// Test simple defer functionality
+// Test: simple defer functionality
 fn test_defer_basic() {
 	1 print nl
 	defer {

@@ -1,4 +1,4 @@
-// Test overd (copy third to second position): ( a b c -- a b a c )
+// Test: overd (copy third to second position): ( a b c -- a b a c )
 fn main() {
 	// Test with integers
 	10 20 30 overd

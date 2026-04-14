@@ -1,4 +1,4 @@
-// Test make<str> - create string array
+// Test: make<str> - create string array
 fn main() {
 	3 make<str> -> arr
 	arr 0 "hello" set

@@ -1,4 +1,4 @@
-// Negative test: direct field access with wrong field name
+// Test: Negative test: direct field access with wrong field name
 struct Point {
 	x:f64
 	y:f64

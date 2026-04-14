@@ -1,3 +1,4 @@
+// Test: enum locals
 enum State {
 	Idle
 	Running

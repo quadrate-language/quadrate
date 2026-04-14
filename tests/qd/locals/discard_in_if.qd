@@ -1,4 +1,4 @@
-// Test discard inside conditional blocks
+// Test: discard inside conditional blocks
 fn main() {
 	1 -> cond
 

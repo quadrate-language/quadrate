@@ -1,4 +1,4 @@
-// Test error recovery patterns
+// Test: error recovery patterns
 fn validate(x:i64 -- result:i64)! {
 	x 0 < if {
 		0 "negative" 1 panic

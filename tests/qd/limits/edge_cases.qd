@@ -1,4 +1,4 @@
-// Test limits edge cases
+// Test: limits edge cases
 use limits
 
 fn main() {

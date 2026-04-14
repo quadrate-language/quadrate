@@ -1,4 +1,4 @@
-// Test signal constants are accessible and have expected values
+// Test: signal constants are accessible and have expected values
 use signal
 
 fn main() {

@@ -1,4 +1,4 @@
-// Test bulk inserts with transaction
+// Test: bulk inserts with transaction
 use sqlite
 
 fn main() {

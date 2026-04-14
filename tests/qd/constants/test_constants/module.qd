@@ -1,4 +1,4 @@
-// Test constants module for constants_scoped test
+// Test: constants module for constants_scoped test
 pub const MaxValue = 100
 pub const Pi = 3.14159
 pub const AppName = "Quadrate"

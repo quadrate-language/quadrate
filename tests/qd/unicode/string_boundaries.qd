@@ -1,4 +1,4 @@
-// Test string boundary conditions
+// Test: string boundary conditions
 use strings
 
 fn main() {

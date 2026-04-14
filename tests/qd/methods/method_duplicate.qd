@@ -1,4 +1,4 @@
-// Negative test: duplicate method definition
+// Test: Negative test: duplicate method definition
 
 struct Point {
 	x:f64

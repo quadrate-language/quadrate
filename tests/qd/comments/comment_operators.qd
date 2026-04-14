@@ -1,4 +1,4 @@
-// Test that ++ and -- in comments don't affect parsing
+// Test: that ++ and -- in comments don't affect parsing
 fn main() {
 	// i++ style comments shouldn't break anything
 	5 print nl

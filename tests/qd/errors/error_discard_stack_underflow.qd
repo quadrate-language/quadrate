@@ -1,3 +1,4 @@
+// Test: error discard stack underflow
 fn main() {
 	-> _
 }

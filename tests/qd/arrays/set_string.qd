@@ -1,4 +1,4 @@
-// Test set with string array
+// Test: set with string array
 fn main() {
 	// Create string array and set elements
 	3 makes -> arr

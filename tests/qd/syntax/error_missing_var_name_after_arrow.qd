@@ -1,3 +1,4 @@
+// Test: error missing var name after arrow
 fn main() {
 	5 ->
 }

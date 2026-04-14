@@ -1,4 +1,4 @@
-// Test strings::join - join array of strings with os::list results
+// Test: strings::join - join array of strings with os::list results
 use strings
 use os
 use io

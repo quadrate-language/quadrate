@@ -1,4 +1,4 @@
-// Test signal module - signal constants and basic operations
+// Test: signal module - signal constants and basic operations
 use signal
 
 fn main() {

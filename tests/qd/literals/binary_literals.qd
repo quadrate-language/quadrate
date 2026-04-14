@@ -1,4 +1,4 @@
-// Test binary literal parsing
+// Test: binary literal parsing
 fn main() {
 	// Basic binary values
 	"=== Basic binary ===" print nl

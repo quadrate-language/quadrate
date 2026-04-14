@@ -1,4 +1,4 @@
-// Test implicit destructors for nested structs and strings
+// Test: implicit destructors for nested structs and strings
 // When freeing a struct, nested struct fields and string fields are automatically freed
 struct Inner {
 	value:i64

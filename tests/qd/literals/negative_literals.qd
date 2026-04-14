@@ -1,4 +1,4 @@
-// Test negative number literals
+// Test: negative number literals
 fn main() {
 	// Basic negative integers
 	"=== Negative integers ===" print nl

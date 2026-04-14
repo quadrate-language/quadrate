@@ -1,3 +1,4 @@
+// Test: for loop simple
 fn main() {
 	// Simple for loop from 0 to 4
 	0 5 1 for it {

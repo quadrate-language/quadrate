@@ -1,4 +1,4 @@
-// Test control flow in modules
+// Test: control flow in modules
 use control_flow
 
 fn main() {

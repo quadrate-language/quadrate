@@ -1,4 +1,4 @@
-// Test flag parsing module
+// Test: flag parsing module
 use flag
 
 fn main() {

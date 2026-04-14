@@ -1,3 +1,4 @@
+// Test: error unknown variant
 enum Color { Red Green Blue }
 
 fn main() {

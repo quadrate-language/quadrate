@@ -1,4 +1,4 @@
-// Empty array
+// Test: Empty array
 fn main() {
 	[] -> arr
 	arr len print nl

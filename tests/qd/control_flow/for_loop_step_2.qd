@@ -1,3 +1,4 @@
+// Test: for loop step 2
 fn main() {
 	// For loop with step of 2
 	0 10 2 for it {

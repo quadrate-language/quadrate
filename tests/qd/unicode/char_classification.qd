@@ -1,4 +1,4 @@
-// Test unicode character classification functions
+// Test: unicode character classification functions
 use unicode
 
 fn main() {

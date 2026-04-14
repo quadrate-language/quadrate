@@ -1,4 +1,4 @@
-// Test using local variable in arithmetic operations
+// Test: using local variable in arithmetic operations
 fn main() {
 	10 -> x
 	x 5 add print nl

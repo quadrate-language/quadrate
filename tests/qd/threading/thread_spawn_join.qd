@@ -1,4 +1,4 @@
-// Test basic thread spawn and join
+// Test: basic thread spawn and join
 use thread
 
 fn worker() {

@@ -1,4 +1,4 @@
-// Test popping values from stack into local variables
+// Test: popping values from stack into local variables
 fn helper(a:i64 b:i64 -- z:i64) {
 	a b add
 }

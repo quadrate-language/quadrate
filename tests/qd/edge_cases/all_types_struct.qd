@@ -1,3 +1,4 @@
+// Test: all types struct
 struct AllTypes {
 	i_val:i64
 	f_val:f64

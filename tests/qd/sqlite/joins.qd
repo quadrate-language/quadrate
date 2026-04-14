@@ -1,4 +1,4 @@
-// Test multiple tables with JOINs
+// Test: multiple tables with JOINs
 use sqlite
 
 fn main() {

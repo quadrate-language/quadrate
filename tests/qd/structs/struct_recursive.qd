@@ -1,4 +1,4 @@
-// Self-referential struct (linked list)
+// Test: Self-referential struct (linked list)
 struct Node {
 	value:i64
 	next:*Node

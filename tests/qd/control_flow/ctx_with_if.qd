@@ -1,4 +1,4 @@
-// Test ctx with if statement
+// Test: ctx with if statement
 fn test_ctx_simple_if_true() {
 	// Test: Simple if inside ctx (true)
 	ctx {

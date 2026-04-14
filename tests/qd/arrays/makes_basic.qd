@@ -1,4 +1,4 @@
-// Test makes - create string array
+// Test: makes - create string array
 fn main() {
 	// Create array with 2 elements (initialized to empty strings)
 	2 makes -> arr

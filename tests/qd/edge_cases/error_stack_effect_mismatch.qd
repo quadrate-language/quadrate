@@ -1,3 +1,4 @@
+// Test: error stack effect mismatch
 fn bad_function(f64 f64 -- f64) {
 	add add
 	// This uses 3 values but signature only provides 2!

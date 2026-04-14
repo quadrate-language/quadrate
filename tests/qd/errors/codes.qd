@@ -1,4 +1,4 @@
-// Test programmatic error handling with error codes
+// Test: programmatic error handling with error codes
 use io
 use strings
 

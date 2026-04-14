@@ -1,4 +1,4 @@
-// Test multiple typed struct parameters in one function
+// Test: multiple typed struct parameters in one function
 use math
 
 struct Point {

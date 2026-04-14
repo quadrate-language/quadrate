@@ -1,4 +1,4 @@
-// Test tail-recursive patterns (might be optimized)
+// Test: tail-recursive patterns (might be optimized)
 fn factorial_tail(num:i64 accumulator:i64 -- result:i64) {
 	num 1 <= if {
 		accumulator

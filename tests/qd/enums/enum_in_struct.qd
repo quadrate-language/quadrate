@@ -1,3 +1,4 @@
+// Test: enum in struct
 enum TokenType {
 	Int
 	Str

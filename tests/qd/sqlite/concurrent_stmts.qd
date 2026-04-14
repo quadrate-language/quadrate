@@ -1,4 +1,4 @@
-// Test multiple concurrent prepared statements
+// Test: multiple concurrent prepared statements
 use sqlite
 
 fn main() {

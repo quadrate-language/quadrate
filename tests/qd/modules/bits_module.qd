@@ -1,4 +1,4 @@
-// Test bits module - bitwise operations
+// Test: bits module - bitwise operations
 use bits
 
 fn main() {

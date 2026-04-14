@@ -1,4 +1,4 @@
-// Test that module's local file imports stay in module namespace
+// Test: that module's local file imports stay in module namespace
 use local_helper
 
 fn main() {

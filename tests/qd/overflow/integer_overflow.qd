@@ -1,4 +1,4 @@
-// Test integer overflow behavior
+// Test: integer overflow behavior
 use limits
 
 fn main() {

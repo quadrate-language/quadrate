@@ -1,4 +1,4 @@
-// Test strings::compare
+// Test: strings::compare
 use strings
 
 fn main() {

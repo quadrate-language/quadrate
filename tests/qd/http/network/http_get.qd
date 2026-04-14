@@ -1,4 +1,4 @@
-// Test HTTP GET request
+// Test: HTTP GET request
 use http
 use strings
 

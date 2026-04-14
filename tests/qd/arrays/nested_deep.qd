@@ -1,4 +1,4 @@
-// Test deeply nested arrays (2 levels with one element each)
+// Test: deeply nested arrays (2 levels with one element each)
 
 fn main() {
 	// Create 1x1x4 nested structure

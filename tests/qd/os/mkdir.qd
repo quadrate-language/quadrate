@@ -1,4 +1,4 @@
-// Test os::mkdir function (create directory with parents)
+// Test: os::mkdir function (create directory with parents)
 use os
 
 fn main() {

@@ -1,4 +1,4 @@
-// Regression: fallible switch Ok branch must properly consume result value
+// Test: Regression: fallible switch Ok branch must properly consume result value
 use io
 
 fn read_or_default(path:str -- content:str) {

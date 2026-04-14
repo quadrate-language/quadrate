@@ -1,4 +1,4 @@
-// Arrays in control flow
+// Test: Arrays in control flow
 fn main() {
 	// Array in if block
 	1 if {

@@ -1,3 +1,4 @@
+// Test: functions
 use math
 
 fn main() {

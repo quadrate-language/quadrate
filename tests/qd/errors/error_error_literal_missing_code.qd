@@ -1,3 +1,4 @@
+// Test: error error literal missing code
 fn main() {
 	error { message = "oops" }
 }

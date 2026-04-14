@@ -1,4 +1,4 @@
-// Test loops inside anonymous functions
+// Test: loops inside anonymous functions
 fn main() {
     // Print 3 numbers using a loop inside anonymous function
     fn () {

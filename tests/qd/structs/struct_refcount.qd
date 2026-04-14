@@ -1,4 +1,4 @@
-// Test reference counting for structs
+// Test: reference counting for structs
 // Structs with nested struct fields are automatically freed via destructors
 struct Inner {
 	x:i64

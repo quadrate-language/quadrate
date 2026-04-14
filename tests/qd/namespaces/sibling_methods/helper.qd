@@ -1,4 +1,4 @@
-// Test method calls from sibling files using external module types
+// Test: method calls from sibling files using external module types
 use math
 
 struct State {

@@ -1,3 +1,4 @@
+// Test: error func const conflict
 const MyValue = 42
 
 fn MyValue() {

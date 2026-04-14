@@ -1,3 +1,4 @@
+// Test: basic
 enum Color {
 	Red
 	Green

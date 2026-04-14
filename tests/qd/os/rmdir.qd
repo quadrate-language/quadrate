@@ -1,4 +1,4 @@
-// Test os::rmdir function (remove directory recursively)
+// Test: os::rmdir function (remove directory recursively)
 use os
 
 fn main() {

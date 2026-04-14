@@ -1,4 +1,4 @@
-// Test integer underflow behavior
+// Test: integer underflow behavior
 use limits
 
 fn main() {

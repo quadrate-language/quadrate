@@ -1,4 +1,4 @@
-// Test unicode and special characters
+// Test: unicode and special characters
 use sqlite
 
 fn main() {

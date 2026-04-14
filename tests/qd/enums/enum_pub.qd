@@ -1,3 +1,4 @@
+// Test: enum pub
 pub enum Visibility {
 	Private
 	Internal

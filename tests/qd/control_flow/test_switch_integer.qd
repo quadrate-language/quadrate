@@ -1,3 +1,4 @@
+// Test: test switch integer
 fn main() {
 	// Test integer switch
 	42 switch {

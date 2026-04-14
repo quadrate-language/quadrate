@@ -1,4 +1,4 @@
-// Test module with multiple .qd file imports
+// Test: module with multiple .qd file imports
 use multi_file
 
 fn main() {

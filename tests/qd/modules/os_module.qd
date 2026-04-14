@@ -1,4 +1,4 @@
-// Test os module - operating system interface
+// Test: os module - operating system interface
 use os
 use strings
 

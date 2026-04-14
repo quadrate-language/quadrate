@@ -1,4 +1,4 @@
-// Test string interpolation $"..." syntax
+// Test: string interpolation $"..." syntax
 use strings
 
 fn main() {

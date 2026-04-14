@@ -1,3 +1,4 @@
+// Test: long identifiers
 fn this_is_a_very_long_function_name_that_tests_identifier_length_limits() {
 	"Long name works" print nl
 }

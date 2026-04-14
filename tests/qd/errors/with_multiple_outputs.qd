@@ -1,3 +1,4 @@
+// Test: with multiple outputs
 fn add_and_sub(i64 i64 -- i64 i64)! {
 	swap dup rot dup rot add rot rot sub
 }

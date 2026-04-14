@@ -1,3 +1,4 @@
+// Test: basic
 fn main() {
 	// Test basic arithmetic operations
 	// Addition

@@ -1,3 +1,4 @@
+// Test: struct import
 use "shapes.qd"
 
 fn test_import() {

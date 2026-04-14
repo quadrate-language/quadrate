@@ -1,4 +1,4 @@
-// Test deeply nested scoped struct constructions
+// Test: deeply nested scoped struct constructions
 use math
 
 struct Level1 {

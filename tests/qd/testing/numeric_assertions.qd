@@ -1,4 +1,4 @@
-// Test numeric assertion functions: assert_positive, assert_negative, assert_zero, etc.
+// Test: numeric assertion functions: assert_positive, assert_negative, assert_zero, etc.
 use testing
 
 test "assert_positive" {

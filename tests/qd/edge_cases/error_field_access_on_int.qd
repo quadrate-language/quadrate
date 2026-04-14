@@ -1,3 +1,4 @@
+// Test: error field access on int
 fn main() {
 	42 -> x
 	x <<foo print nl

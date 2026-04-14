@@ -1,4 +1,4 @@
-// Bug #1: Condition truncation to i32
+// Test: Bug #1: Condition truncation to i32
 // Values > 2^32 should be truthy in if/loop conditions
 fn main() {
 	// 2^32 = 4294967296, this should be truthy but was truncated to 0

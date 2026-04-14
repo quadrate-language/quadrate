@@ -1,3 +1,4 @@
+// Test: function pointers
 fn greet() {
 	"Hello from greet!" print nl
 }

@@ -1,3 +1,4 @@
+// Test: bitwise
 fn main() {
 	// Test and - bitwise AND
 	12 10 and print nl

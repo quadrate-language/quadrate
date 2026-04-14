@@ -1,3 +1,4 @@
+// Test: error over stack underflow
 fn main() {
 	1 over
 }

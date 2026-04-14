@@ -1,4 +1,4 @@
-// Test error when accessing field that doesn't exist on declared struct type
+// Test: error when accessing field that doesn't exist on declared struct type
 struct Point {
 	x:f64
 	y:f64

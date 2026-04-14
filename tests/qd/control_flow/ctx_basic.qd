@@ -1,4 +1,4 @@
-// Test basic ctx functionality
+// Test: basic ctx functionality
 fn test_ctx_simple() {
 	// Test 1: Simple computation
 	10 20 30

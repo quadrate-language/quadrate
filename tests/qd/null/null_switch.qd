@@ -1,4 +1,4 @@
-// Test null in switch
+// Test: null in switch
 fn main() {
 	// null in switch
 	null switch {

@@ -1,4 +1,4 @@
-// Test increment (++) and decrement (--) aliases
+// Test: increment (++) and decrement (--) aliases
 fn main() {
 	// Basic ++ (increment) tests
 	5 ++ print nl          // 6

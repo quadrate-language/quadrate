@@ -1,3 +1,4 @@
+// Test: multiple structs same fields
 struct Point2D {
 	x:f64
 	y:f64

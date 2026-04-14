@@ -1,4 +1,4 @@
-// Test structs with both generic and concrete fields
+// Test: structs with both generic and concrete fields
 struct Tagged<T> { tag:i64 value:T }
 struct Named<T> { name:str value:T }
 struct Bounded<T> { lo:f64 hi:f64 value:T }

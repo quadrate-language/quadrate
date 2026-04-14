@@ -1,4 +1,4 @@
-// Test >>field! (no return) — nothing left on stack
+// Test: >>field! (no return) — nothing left on stack
 struct Counter { value: i64 }
 
 fn bump(c:Counter) {

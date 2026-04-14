@@ -1,4 +1,4 @@
-// Test rt module - runtime version information
+// Test: rt module - runtime version information
 use rt
 use strings
 

@@ -1,4 +1,4 @@
-// Negative test: passing wrong struct type
+// Test: Negative test: passing wrong struct type
 struct Person {
 	name:str
 	age:f64

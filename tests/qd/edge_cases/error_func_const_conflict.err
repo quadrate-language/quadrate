@@ -1,1 +1,1 @@
-[1mquadc: [0m[1mtests/qd/edge_cases/error_func_const_conflict.qd:3:4:[0m [1m[1;31merror:[0m [1mFunction 'MyValue' conflicts with constant name[0m
+[1mquadc: [0m[1mtests/qd/edge_cases/error_func_const_conflict.qd:4:4:[0m [1m[1;31merror:[0m [1mFunction 'MyValue' conflicts with constant name[0m

@@ -1,4 +1,4 @@
-// Test storing result of expression in local variable
+// Test: storing result of expression in local variable
 fn main() {
 	5 3 add -> result
 	result print nl

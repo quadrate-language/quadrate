@@ -1,4 +1,4 @@
-// Test nested module struct with basic field access
+// Test: nested module struct with basic field access
 // Ensures Vec3 from math module can be stored in struct and accessed
 use math
 

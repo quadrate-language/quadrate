@@ -1,4 +1,4 @@
-// Test os::walk function (walk directory tree recursively)
+// Test: os::walk function (walk directory tree recursively)
 use os
 
 fn main() {

@@ -1,3 +1,4 @@
+// Test: enum arithmetic
 enum Perm {
 	None
 	Read = 1

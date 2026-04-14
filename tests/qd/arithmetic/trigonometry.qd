@@ -1,3 +1,4 @@
+// Test: trigonometry
 use math
 
 fn main() {

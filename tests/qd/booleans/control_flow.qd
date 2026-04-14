@@ -1,4 +1,4 @@
-// Test booleans in control flow
+// Test: booleans in control flow
 fn main() {
 	// Simple if with true/false
 	"=== Simple if ===" print nl

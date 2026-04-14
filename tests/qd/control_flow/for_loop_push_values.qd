@@ -1,4 +1,4 @@
-// Regression: values pushed inside a for loop body must persist after the loop
+// Test: Regression: values pushed inside a for loop body must persist after the loop
 fn main() {
 	0 3 1 for i {
 		i print nl

@@ -1,4 +1,4 @@
-// Test NULL value handling
+// Test: NULL value handling
 use sqlite
 
 fn main() {

@@ -1,4 +1,4 @@
-// Test that 'as' correctly disambiguates same-named fields
+// Test: that 'as' correctly disambiguates same-named fields
 struct Foo {
 	value: i64
 }

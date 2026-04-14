@@ -1,4 +1,4 @@
-// Test basic discard syntax: -> _
+// Test: basic discard syntax: -> _
 // The underscore discards a value from the stack (equivalent to drop)
 fn main() {
 	// Discard single value, print what remains

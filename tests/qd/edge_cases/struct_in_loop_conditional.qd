@@ -1,3 +1,4 @@
+// Test: struct in loop conditional
 struct Counter {
 	value:i64
 }

@@ -1,4 +1,4 @@
-// Test non-blocking channel operations
+// Test: non-blocking channel operations
 use thread
 
 fn main() {

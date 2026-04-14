@@ -1,3 +1,4 @@
+// Test: invalid type string
 fn test(string -- str) {
 	// Should fail - 'string' is not a valid type
 }

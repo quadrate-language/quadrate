@@ -1,3 +1,4 @@
+// Test: error duplicate enum
 enum Color { Red Green Blue }
 enum Color { Cyan Magenta Yellow }
 

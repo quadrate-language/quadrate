@@ -1,4 +1,4 @@
-// Test make<T> with nested structs
+// Test: make<T> with nested structs
 struct Container {
 	value:i64
 	data:ptr

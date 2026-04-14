@@ -1,4 +1,4 @@
-// Test aggregate functions and GROUP BY
+// Test: aggregate functions and GROUP BY
 use sqlite
 
 fn main() {

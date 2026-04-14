@@ -1,4 +1,4 @@
-// Test basic 'as StructType' narrowing cast
+// Test: basic 'as StructType' narrowing cast
 struct Dog {
 	name: str
 	age: i64

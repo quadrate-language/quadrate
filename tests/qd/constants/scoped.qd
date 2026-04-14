@@ -1,3 +1,4 @@
+// Test: scoped
 use test_constants
 
 fn main() {

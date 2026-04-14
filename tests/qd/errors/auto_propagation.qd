@@ -1,4 +1,4 @@
-// Test error propagation patterns
+// Test: error propagation patterns
 // Shows the difference between ! (abort) and if/else (catch and propagate)
 
 fn validate(x:i64 -- result:i64)! {

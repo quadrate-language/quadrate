@@ -1,4 +1,4 @@
-// Test generic identity function with different types
+// Test: generic identity function with different types
 
 fn identity<T>(val:T -- y:T) {
 	val

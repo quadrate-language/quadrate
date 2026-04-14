@@ -1,4 +1,4 @@
-// Negative test: struct missing multiple required fields
+// Test: Negative test: struct missing multiple required fields
 struct Point {
 	x:f64
 	y:f64

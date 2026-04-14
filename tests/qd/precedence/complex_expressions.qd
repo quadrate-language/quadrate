@@ -1,4 +1,4 @@
-// Test complex expression evaluation
+// Test: complex expression evaluation
 fn main() {
 	// Chained arithmetic
 	"=== Chained arithmetic ===" print nl

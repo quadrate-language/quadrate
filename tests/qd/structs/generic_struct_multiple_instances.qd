@@ -1,4 +1,4 @@
-// Test creating many generic struct instances to verify no memory/tag corruption
+// Test: creating many generic struct instances to verify no memory/tag corruption
 struct Box<T> { value:T }
 
 fn main() {

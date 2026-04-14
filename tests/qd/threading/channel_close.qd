@@ -1,4 +1,4 @@
-// Test channel close
+// Test: channel close
 use thread
 
 fn main() {

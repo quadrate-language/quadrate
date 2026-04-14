@@ -1,4 +1,4 @@
-// Test path module functions
+// Test: path module functions
 use path
 
 fn main() {

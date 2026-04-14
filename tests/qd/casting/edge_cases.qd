@@ -1,4 +1,4 @@
-// Test casting edge cases
+// Test: casting edge cases
 use limits
 
 fn main() {

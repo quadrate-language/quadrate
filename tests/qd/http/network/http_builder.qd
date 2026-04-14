@@ -1,4 +1,4 @@
-// Test HTTP builder pattern
+// Test: HTTP builder pattern
 use http
 
 fn main( -- ) {

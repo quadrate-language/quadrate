@@ -1,4 +1,4 @@
-// Test >>field and >>field! on generic structs with type changes
+// Test: >>field and >>field! on generic structs with type changes
 struct Box<T> { value: T }
 
 fn main() {

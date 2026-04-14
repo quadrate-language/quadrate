@@ -1,4 +1,4 @@
-// Test compile-time constants
+// Test: compile-time constants
 const A = 10
 const B = 20
 const STR = "hello"

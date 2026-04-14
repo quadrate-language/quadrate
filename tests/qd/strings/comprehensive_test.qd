@@ -1,4 +1,4 @@
-// Comprehensive string module tests
+// Test: Comprehensive string module tests
 use strings
 
 fn main() {

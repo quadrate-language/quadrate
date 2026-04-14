@@ -1,4 +1,4 @@
-// Test strings::join edge cases
+// Test: strings::join edge cases
 use strings
 use os
 use mem

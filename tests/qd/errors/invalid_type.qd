@@ -1,3 +1,4 @@
+// Test: invalid type
 fn test(i65 -- i64) {
 	dup
 }

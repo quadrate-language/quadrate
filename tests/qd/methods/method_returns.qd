@@ -1,3 +1,4 @@
+// Test: method returns
 use math
 
 struct Point2D {

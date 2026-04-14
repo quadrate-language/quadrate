@@ -1,4 +1,4 @@
-// Comprehensive tests for generic struct type parameter fields
+// Test: Comprehensive tests for generic struct type parameter fields
 struct Box<T> { value:T }
 struct Pair<A, B> { first:A second:B }
 

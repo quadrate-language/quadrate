@@ -1,29 +1,30 @@
-// Test importing multiple modules simultaneously
+// Test: importing multiple modules simultaneously
+use math
 use math_helpers
 use validators
 
 fn main() {
-	// Test math_helpers::abs
-	-5.5 math_helpers::abs
+	// Test math::abs (stdlib)
+	-5.5 math::abs
 	print nl
-	3.2 math_helpers::abs
+	3.2 math::abs
 	print nl
-	// Test math_helpers::max
-	10.0 20.0 math_helpers::max
+	// Test math::max (stdlib)
+	10.0 20.0 math::max
 	print nl
-	50.0 30.0 math_helpers::max
+	50.0 30.0 math::max
 	print nl
-	// Test math_helpers::square
+	// Test math_helpers::square (user module)
 	5.0 math_helpers::square
 	print nl
 	7.0 math_helpers::square
 	print nl
-	// Test math_helpers::add_ten
+	// Test math_helpers::add_ten (user module)
 	15.0 math_helpers::add_ten
 	print nl
 	-5.0 math_helpers::add_ten
 	print nl
-	// Test validators::is_positive
+	// Test validators::is_positive (user module)
 	5.0 validators::is_positive
 	print nl
 	-3.0 validators::is_positive

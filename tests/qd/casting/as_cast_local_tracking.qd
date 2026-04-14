@@ -1,4 +1,4 @@
-// Test that 'as Type -> local' tracks the type for subsequent accesses
+// Test: that 'as Type -> local' tracks the type for subsequent accesses
 struct Point {
 	x: i64
 	y: i64

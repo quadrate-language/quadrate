@@ -1,1 +1,1 @@
-[1mquadc: [0m[1mtests/qd/syntax/error_missing_struct_name.qd:1:8:[0m [1m[1;31merror:[0m [1mExpected struct name after 'struct'[0m
+[1mquadc: [0m[1mtests/qd/syntax/error_missing_struct_name.qd:2:8:[0m [1m[1;31merror:[0m [1mExpected struct name after 'struct'[0m

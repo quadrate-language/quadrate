@@ -1,3 +1,4 @@
+// Test: error missing brace after loop
 fn main() {
 	loop
 		break

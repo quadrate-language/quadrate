@@ -1,4 +1,4 @@
-// Test deeply chained <<field reads
+// Test: deeply chained <<field reads
 struct Inner { value: i64 }
 struct Middle { inner: Inner }
 struct Outer { middle: Middle }

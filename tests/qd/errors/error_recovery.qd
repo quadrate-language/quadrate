@@ -1,4 +1,4 @@
-// Test error recovery patterns
+// Test: error recovery patterns
 fn might_fail(val:i64 -- result:i64)! {
 	val 0 eq if {
 		0 "zero not allowed" 1 panic

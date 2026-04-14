@@ -1,3 +1,4 @@
+// Test: test switch string
 fn main() {
 	// Test string switch
 	"hello" switch {

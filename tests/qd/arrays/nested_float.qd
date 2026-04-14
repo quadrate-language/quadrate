@@ -1,4 +1,4 @@
-// Test nested arrays with float elements
+// Test: nested arrays with float elements
 
 fn main() {
 	// Create 2x3 matrix of floats

@@ -1,4 +1,4 @@
-// Test emoji characters in strings
+// Test: emoji characters in strings
 use strings
 
 fn main() {

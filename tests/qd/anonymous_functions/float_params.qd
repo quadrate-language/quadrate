@@ -1,4 +1,4 @@
-// Test anonymous functions with float parameters
+// Test: anonymous functions with float parameters
 fn main() {
     fn (f64 -- f64) { 2.0 * } -> double_f
 

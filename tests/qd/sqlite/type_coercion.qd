@@ -1,4 +1,4 @@
-// Test SQLite type affinity and coercion
+// Test: SQLite type affinity and coercion
 use sqlite
 
 fn main() {

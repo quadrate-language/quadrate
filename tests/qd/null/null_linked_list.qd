@@ -1,4 +1,4 @@
-// Test null in struct pointer fields
+// Test: null in struct pointer fields
 struct Item {
 	value:i64
 	next:*Item

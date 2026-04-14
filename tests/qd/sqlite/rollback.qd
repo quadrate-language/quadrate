@@ -1,4 +1,4 @@
-// Test transaction rollback
+// Test: transaction rollback
 use sqlite
 
 fn main() {

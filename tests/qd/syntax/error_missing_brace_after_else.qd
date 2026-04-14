@@ -1,3 +1,4 @@
+// Test: error missing brace after else
 fn main() {
 	1 if {
 		1 print nl

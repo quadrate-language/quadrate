@@ -1,4 +1,4 @@
-// Regression: Fix < operator bug (fbd0a29)
+// Test: Regression: Fix < operator bug (fbd0a29)
 // The < token was being misinterpreted as generic type args when used
 // as a comparison operator with PascalCase identifiers.
 // The fix checks that '<' is immediately adjacent (no whitespace) for generics.

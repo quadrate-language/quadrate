@@ -1,4 +1,4 @@
-// Test overwriting a local variable
+// Test: overwriting a local variable
 fn main() {
 	10 -> x
 	x print nl

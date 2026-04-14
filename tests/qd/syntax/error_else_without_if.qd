@@ -1,3 +1,4 @@
+// Test: error else without if
 fn main() {
 	else {
 		1 print nl

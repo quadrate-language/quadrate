@@ -1,4 +1,4 @@
-// Test empty result sets and empty tables
+// Test: empty result sets and empty tables
 use sqlite
 
 fn main() {

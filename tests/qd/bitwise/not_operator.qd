@@ -1,4 +1,4 @@
-// Test bitwise NOT operator
+// Test: bitwise NOT operator
 fn main() {
 	// Basic NOT
 	0 not print nl              // -1 (all 1s)

@@ -1,4 +1,4 @@
-// Edge case: same field name in different structs with compatible types
+// Test: Edge case: same field name in different structs with compatible types
 struct PersonWithFloat {
 	value:f64
 }

@@ -1,4 +1,4 @@
-// Test struct returns from sibling function calls work correctly
+// Test: struct returns from sibling function calls work correctly
 use math
 
 struct State {

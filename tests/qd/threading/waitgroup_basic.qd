@@ -1,4 +1,4 @@
-// Test basic WaitGroup operations
+// Test: basic WaitGroup operations
 use thread
 
 fn main() {

@@ -1,4 +1,4 @@
-// Test character-level string operations
+// Test: character-level string operations
 use strings
 
 fn main() {

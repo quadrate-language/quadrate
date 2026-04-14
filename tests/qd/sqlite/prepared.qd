@@ -1,4 +1,4 @@
-// Test prepared statements with parameter binding
+// Test: prepared statements with parameter binding
 use sqlite
 
 fn main() {

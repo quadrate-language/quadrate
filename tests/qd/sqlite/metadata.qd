@@ -1,4 +1,4 @@
-// Test column metadata functions
+// Test: column metadata functions
 use sqlite
 
 fn main() {

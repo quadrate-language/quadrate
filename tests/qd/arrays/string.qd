@@ -1,4 +1,4 @@
-// String array
+// Test: String array
 fn main() {
 	["hello" "world" "test"] -> arr
 	arr 0 nth print nl

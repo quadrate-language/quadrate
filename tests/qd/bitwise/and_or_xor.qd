@@ -1,4 +1,4 @@
-// Test bitwise AND, OR, XOR operators
+// Test: bitwise AND, OR, XOR operators
 fn main() {
 	// AND tests
 	"=== AND ===" print nl

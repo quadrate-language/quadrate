@@ -1,4 +1,4 @@
-// Test hexadecimal literal parsing
+// Test: hexadecimal literal parsing
 fn main() {
 	// Basic hex values
 	"=== Basic hex ===" print nl

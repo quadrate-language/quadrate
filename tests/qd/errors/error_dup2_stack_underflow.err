@@ -1,1 +1,1 @@
-[1mquadc: [0m[1mtests/qd/errors/error_dup2_stack_underflow.qd:2:4:[0m [1m[1;31merror:[0m [1mType error in 'dup2': Stack underflow (requires 2 values)[0m
+[1mquadc: [0m[1mtests/qd/errors/error_dup2_stack_underflow.qd:3:4:[0m [1m[1;31merror:[0m [1mType error in 'dup2': Stack underflow (requires 2 values)[0m

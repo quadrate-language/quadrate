@@ -1,4 +1,4 @@
-// Test that if/else returning values doesn't break struct method resolution
+// Test: that if/else returning values doesn't break struct method resolution
 // This was a bug where structTypeStack wasn't synced with typeStack
 
 use mem

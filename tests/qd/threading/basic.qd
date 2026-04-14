@@ -1,4 +1,4 @@
-// Basic threading test - spawn and join
+// Test: Basic threading test - spawn and join
 use thread
 
 fn worker() {

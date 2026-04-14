@@ -1,4 +1,4 @@
-// Test fmt module - printf and sprintf
+// Test: fmt module - printf and sprintf
 use fmt
 
 fn main() {

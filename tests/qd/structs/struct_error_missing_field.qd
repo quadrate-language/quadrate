@@ -1,4 +1,4 @@
-// Negative test: accessing non-existent field
+// Test: Negative test: accessing non-existent field
 struct Point {
 	x:f64
 	y:f64

@@ -1,4 +1,4 @@
-// Test basic recursion patterns
+// Test: basic recursion patterns
 fn factorial(num:i64 -- result:i64) {
 	num 1 <= if {
 		1

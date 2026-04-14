@@ -1,4 +1,4 @@
-// Test unnamed parameters with all built-in types
+// Test: unnamed parameters with all built-in types
 fn pass_int(i64 -- i64) { }
 fn pass_float(f64 -- f64) { }
 fn pass_str(str -- str) { }

@@ -1,4 +1,4 @@
-// Test transactions
+// Test: transactions
 use sqlite
 
 fn main() {

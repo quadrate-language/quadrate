@@ -1,3 +1,4 @@
+// Test: local var scoping
 fn test1() {
 	42 -> x
 	x print nl

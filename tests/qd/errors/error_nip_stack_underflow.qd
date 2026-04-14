@@ -1,3 +1,4 @@
+// Test: error nip stack underflow
 fn main() {
 	1 nip
 }

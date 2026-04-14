@@ -1,4 +1,4 @@
-// Test time::now function (returns nanoseconds since epoch)
+// Test: time::now function (returns nanoseconds since epoch)
 use os
 use time
 

@@ -1,4 +1,4 @@
-// Test multiple make<T> calls in same function
+// Test: multiple make<T> calls in same function
 fn main() {
 	// Multiple different types
 	3 make<i64> -> ints

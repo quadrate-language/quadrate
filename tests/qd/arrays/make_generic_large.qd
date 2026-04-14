@@ -1,4 +1,4 @@
-// Test make<T> with larger array size
+// Test: make<T> with larger array size
 fn main() {
 	100 make<i64> -> arr
 	arr len print nl          // Should print = 100

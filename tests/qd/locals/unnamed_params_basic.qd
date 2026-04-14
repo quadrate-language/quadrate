@@ -1,4 +1,4 @@
-// Test unnamed parameters - values stay on the stack
+// Test: unnamed parameters - values stay on the stack
 fn add(i64 i64 -- i64) { + }
 
 fn double(i64 -- i64) { dup + }

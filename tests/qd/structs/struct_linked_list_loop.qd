@@ -1,4 +1,4 @@
-// Traverse linked list with a loop
+// Test: Traverse linked list with a loop
 struct Item {
 	value:i64
 	next:*Item

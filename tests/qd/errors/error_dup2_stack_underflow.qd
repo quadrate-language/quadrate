@@ -1,3 +1,4 @@
+// Test: error dup2 stack underflow
 fn main() {
 	1 dup2
 }

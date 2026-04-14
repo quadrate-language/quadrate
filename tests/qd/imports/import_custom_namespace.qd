@@ -1,4 +1,4 @@
-// Import test - custom namespace name
+// Test: Import test - custom namespace name
 import "libfmt.a" as "fmt" {
 	fn printf(format:str -- )
 }

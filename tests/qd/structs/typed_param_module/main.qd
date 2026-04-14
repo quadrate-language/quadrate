@@ -1,4 +1,4 @@
-// Test cross-module typed struct parameters
+// Test: cross-module typed struct parameters
 use geometry
 
 fn main() {

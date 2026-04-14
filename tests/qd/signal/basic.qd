@@ -1,3 +1,4 @@
+// Test: basic
 use signal
 
 fn main() {

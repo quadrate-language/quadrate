@@ -1,4 +1,4 @@
-// Test mixing typed struct params with regular ptr and other types
+// Test: mixing typed struct params with regular ptr and other types
 struct Point {
 	x:f64
 	y:f64

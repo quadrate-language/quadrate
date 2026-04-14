@@ -1,4 +1,4 @@
-// Test deeper recursion patterns
+// Test: deeper recursion patterns
 fn gcd(a:i64 b:i64 -- result:i64) {
 	b 0 == if {
 		a

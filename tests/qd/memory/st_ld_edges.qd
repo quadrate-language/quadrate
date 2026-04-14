@@ -1,4 +1,4 @@
-// Test edge cases for st/ld builtins: byte access, max values, overwrite
+// Test: edge cases for st/ld builtins: byte access, max values, overwrite
 use mem
 
 fn main() {

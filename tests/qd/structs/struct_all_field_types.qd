@@ -1,4 +1,4 @@
-// Test all supported field types
+// Test: all supported field types
 struct AllTypes {
 	int_field:i64
 	float_field:f64

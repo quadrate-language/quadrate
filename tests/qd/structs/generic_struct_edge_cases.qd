@@ -1,4 +1,4 @@
-// Edge case tests for generic structs
+// Test: Edge case tests for generic structs
 struct Box<T> { value:T }
 struct Pair<A, B> { first:A second:B }
 struct Triple<X, Y, Z> { x:X y:Y z:Z }

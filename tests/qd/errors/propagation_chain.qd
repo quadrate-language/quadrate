@@ -1,4 +1,4 @@
-// Test error propagation through multiple function calls
+// Test: error propagation through multiple function calls
 fn step1(val:i64 -- result:i64)! {
 	val 0 < if {
 		0 "step1: negative input" 1 panic

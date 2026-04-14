@@ -1,4 +1,4 @@
-// Test switch with fallible functions (alternative to if)
+// Test: switch with fallible functions (alternative to if)
 use io
 
 fn main() {

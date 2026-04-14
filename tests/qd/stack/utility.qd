@@ -1,3 +1,4 @@
+// Test: utility
 fn main() {
 	// Test depth - get stack size
 	clear

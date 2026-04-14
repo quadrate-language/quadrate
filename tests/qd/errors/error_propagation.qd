@@ -1,3 +1,4 @@
+// Test: error propagation
 fn bar(x:i64 -- result:i64)! {
 	x 0 < if { "bar: negative" 1 panic }
 	x 10 +

@@ -1,4 +1,4 @@
-// Test string-related assertion functions in the testing module
+// Test: string-related assertion functions in the testing module
 use testing
 
 test "assert_contains basic" {

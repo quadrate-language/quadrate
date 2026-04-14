@@ -1,4 +1,4 @@
-// Test shl and shr shift operations
+// Test: shl and shr shift operations
 fn main() {
 	// Basic shift left with shl
 	1 4 shl print nl  // 16
