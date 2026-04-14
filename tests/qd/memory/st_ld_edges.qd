@@ -37,5 +37,6 @@ fn main() {
 	buf 0 4294967295 st32
 	buf 0 ld32 print nl
 
+	buf free
 	"done" print nl
 }

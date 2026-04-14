@@ -21,5 +21,6 @@ fn main() {
 	buf 24 9223372036854775807 st64
 	buf 24 ld64 print nl
 
+	buf free
 	"done" print nl
 }
