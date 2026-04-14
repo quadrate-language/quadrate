@@ -10,9 +10,9 @@ pub fn max(f64 f64 -- f64) {
 	dup rot dup rot
 	gt
 	if {
-		drop
-	} else {
 		nip
+	} else {
+		drop
 	}
 }
 
