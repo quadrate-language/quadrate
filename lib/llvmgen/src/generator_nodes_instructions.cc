@@ -700,10 +700,10 @@ namespace Qd {
 			return;
 		}
 
-		// Raw memory stores: addr offset value store_uN
+		// Raw memory stores: addr offset value st8/st16/st32/st64
 		// Lower directly to LLVM `store` — no runtime call, no libc.
-		if (name == "store_u8" || name == "store_u16" || name == "store_u32" || name == "store_u64") {
-			unsigned bits = (name == "store_u8") ? 8 : (name == "store_u16") ? 16 : (name == "store_u32") ? 32 : 64;
+		if (name == "st8" || name == "st16" || name == "st32" || name == "st64") {
+			unsigned bits = (name == "st8") ? 8 : (name == "st16") ? 16 : (name == "st32") ? 32 : 64;
 			llvm::Value* value = generateInlinePopInt(ctx);
 			llvm::Value* offset = generateInlinePopInt(ctx);
 			llvm::Value* addr = generateInlinePopInt(ctx);
@@ -714,9 +714,9 @@ namespace Qd {
 			builder->CreateAlignedStore(truncated, ptr, llvm::Align(1));
 			return;
 		}
-		// Raw memory loads: addr offset load_uN -- value (zero-extended to i64).
-		if (name == "load_u8" || name == "load_u16" || name == "load_u32" || name == "load_u64") {
-			unsigned bits = (name == "load_u8") ? 8 : (name == "load_u16") ? 16 : (name == "load_u32") ? 32 : 64;
+		// Raw memory loads: addr offset ld8/ld16/ld32/ld64 -- value (zero-extended to i64).
+		if (name == "ld8" || name == "ld16" || name == "ld32" || name == "ld64") {
+			unsigned bits = (name == "ld8") ? 8 : (name == "ld16") ? 16 : (name == "ld32") ? 32 : 64;
 			llvm::Value* offset = generateInlinePopInt(ctx);
 			llvm::Value* addr = generateInlinePopInt(ctx);
 			llvm::Value* effective = builder->CreateAdd(addr, offset);

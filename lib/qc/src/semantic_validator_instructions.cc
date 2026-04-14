@@ -445,10 +445,10 @@ namespace Qd {
 			}
 			return;
 		}
-		// Raw memory stores: store_u8/u16/u32/u64
+		// Raw memory stores: st8/st16/st32/st64
 		// (addr:i64 offset:i64 value:i64 -- )
-		else if (strcmp(name, "store_u8") == 0 || strcmp(name, "store_u16") == 0 || strcmp(name, "store_u32") == 0 ||
-				 strcmp(name, "store_u64") == 0) {
+		else if (strcmp(name, "st8") == 0 || strcmp(name, "st16") == 0 || strcmp(name, "st32") == 0 ||
+				 strcmp(name, "st64") == 0) {
 			if (typeStack.size() < 3) {
 				std::string err = "Type error in '";
 				err += name;
@@ -464,10 +464,10 @@ namespace Qd {
 			}
 			return;
 		}
-		// Raw memory loads: load_u8/u16/u32/u64
+		// Raw memory loads: ld8/ld16/ld32/ld64
 		// (addr:i64 offset:i64 -- value:i64) — value is zero-extended.
-		else if (strcmp(name, "load_u8") == 0 || strcmp(name, "load_u16") == 0 || strcmp(name, "load_u32") == 0 ||
-				 strcmp(name, "load_u64") == 0) {
+		else if (strcmp(name, "ld8") == 0 || strcmp(name, "ld16") == 0 || strcmp(name, "ld32") == 0 ||
+				 strcmp(name, "ld64") == 0) {
 			if (typeStack.size() < 2) {
 				std::string err = "Type error in '";
 				err += name;

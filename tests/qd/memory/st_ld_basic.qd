@@ -1,0 +1,25 @@
+// Test st8/ld8, st16/ld16, st32/ld32, st64/ld64 builtins
+// These lower directly to LLVM store/load — zero overhead.
+use mem
+
+fn main() {
+	64 mem::alloc! -> buf
+
+	// st8 / ld8: store and load a single byte
+	buf 0 42 st8
+	buf 0 ld8 print nl
+
+	// st16 / ld16: store and load 16 bits
+	buf 8 4660 st16
+	buf 8 ld16 print nl
+
+	// st32 / ld32: store and load 32 bits
+	buf 16 3735928559 st32
+	buf 16 ld32 print nl
+
+	// st64 / ld64: store and load 64 bits
+	buf 24 9223372036854775807 st64
+	buf 24 ld64 print nl
+
+	"done" print nl
+}

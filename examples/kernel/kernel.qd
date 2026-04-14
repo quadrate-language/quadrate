@@ -17,7 +17,7 @@ fn clear_screen() {
 	0 -> i
 	loop {
 		i 80 25 * >= if { break }
-		VGA_BASE i 2 * 32 ATTR_HI or store_u16
+		VGA_BASE i 2 * 32 ATTR_HI or st16
 		i 1 + -> i
 	}
 }

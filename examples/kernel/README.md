@@ -23,7 +23,7 @@ Needs `qemu-system-i386`.
 ## Features
 
 - `quadc --freestanding` compilation (no libc, no auto-main)
-- `store_u16` builtin for direct memory writes
+- `st16` builtin for direct memory writes
 - `mem::set_byte` from the freestanding-safe libmem (no heap)
 - `cast<ptr>` for integer-to-pointer conversion
 - Multiboot1 boot protocol
