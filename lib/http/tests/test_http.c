@@ -706,6 +706,386 @@ TEST(HttpEngineFullLifecycleTest) {
 	destroy_test_context(ctx);
 }
 
+/* ================================================================== */
+/* Additional tests -- HTTP methods, edge cases, stress                */
+/* ================================================================== */
+
+/* ------------------------------------------------------------------ */
+/* Test 21: Create request with each HTTP method                      */
+/* ------------------------------------------------------------------ */
+
+TEST(HttpAllMethodsTest) {
+	qd_context* ctx = create_test_context();
+
+	const char* methods[] = {
+		"GET", "POST", "PUT", "DELETE", "PATCH", "HEAD", "OPTIONS"
+	};
+	int n = (int)(sizeof(methods) / sizeof(methods[0]));
+
+	for (int i = 0; i < n; i++) {
+		qd_push_s(ctx, "http://example.com/resource");
+		usr_http_new(ctx);
+
+		qd_stack_element_t req_elem;
+		qd_stack_pop(ctx->st, &req_elem);
+		void* req = req_elem.value.p;
+
+		qd_stack_push_ptr(ctx->st, req);
+		qd_push_s(ctx, methods[i]);
+		usr_http_method(ctx);
+
+		qd_stack_push_ptr(ctx->st, req);
+		usr_http_free_request(ctx);
+	}
+
+	ASSERT_EQ(0, (int)qd_stack_size(ctx->st),
+		"stack should be empty after cycling all HTTP methods");
+
+	destroy_test_context(ctx);
+}
+
+/* ------------------------------------------------------------------ */
+/* Test 22: Add many headers (10+) to the same request                */
+/* ------------------------------------------------------------------ */
+
+TEST(HttpManyHeadersTest) {
+	qd_context* ctx = create_test_context();
+
+	qd_push_s(ctx, "http://example.com");
+	usr_http_new(ctx);
+
+	qd_stack_element_t req_elem;
+	qd_stack_pop(ctx->st, &req_elem);
+	void* req = req_elem.value.p;
+
+	const char* names[] = {
+		"Content-Type", "Authorization", "Accept", "Accept-Language",
+		"Accept-Encoding", "Cache-Control", "Connection", "Cookie",
+		"Host", "User-Agent", "X-Request-Id", "X-Custom-One"
+	};
+	const char* values[] = {
+		"application/json", "Bearer tok", "*/*", "en-US",
+		"gzip", "no-cache", "keep-alive", "session=abc",
+		"example.com", "quadrate/1.0", "req-42", "custom-val"
+	};
+	int n = (int)(sizeof(names) / sizeof(names[0]));
+
+	for (int i = 0; i < n; i++) {
+		qd_stack_push_ptr(ctx->st, req);
+		qd_push_s(ctx, names[i]);
+		qd_push_s(ctx, values[i]);
+		usr_http_header(ctx);
+	}
+
+	ASSERT_EQ(0, (int)qd_stack_size(ctx->st),
+		"stack should be empty after adding 12 headers");
+
+	qd_stack_push_ptr(ctx->st, req);
+	usr_http_free_request(ctx);
+
+	ASSERT_EQ(0, (int)qd_stack_size(ctx->st),
+		"stack should be empty after freeing request with many headers");
+
+	destroy_test_context(ctx);
+}
+
+/* ------------------------------------------------------------------ */
+/* Test 23: Set body to empty string                                  */
+/* ------------------------------------------------------------------ */
+
+TEST(HttpEmptyBodyTest) {
+	qd_context* ctx = create_test_context();
+
+	qd_push_s(ctx, "http://example.com");
+	usr_http_new(ctx);
+
+	qd_stack_element_t req_elem;
+	qd_stack_pop(ctx->st, &req_elem);
+	void* req = req_elem.value.p;
+
+	qd_stack_push_ptr(ctx->st, req);
+	qd_push_s(ctx, "");
+	usr_http_body(ctx);
+
+	ASSERT_EQ(0, (int)qd_stack_size(ctx->st),
+		"stack should be empty after setting empty body");
+
+	qd_stack_push_ptr(ctx->st, req);
+	usr_http_free_request(ctx);
+
+	destroy_test_context(ctx);
+}
+
+/* ------------------------------------------------------------------ */
+/* Test 24: Set body to a very long string                            */
+/* ------------------------------------------------------------------ */
+
+TEST(HttpLongBodyTest) {
+	qd_context* ctx = create_test_context();
+
+	qd_push_s(ctx, "http://example.com");
+	usr_http_new(ctx);
+
+	qd_stack_element_t req_elem;
+	qd_stack_pop(ctx->st, &req_elem);
+	void* req = req_elem.value.p;
+
+	/* Build a 10 000-character body. */
+	char* long_body = malloc(10001);
+	ASSERT_TRUE(long_body != NULL, "allocation of long body should succeed");
+	memset(long_body, 'A', 10000);
+	long_body[10000] = '\0';
+
+	qd_stack_push_ptr(ctx->st, req);
+	qd_push_s(ctx, long_body);
+	usr_http_body(ctx);
+
+	free(long_body);
+
+	ASSERT_EQ(0, (int)qd_stack_size(ctx->st),
+		"stack should be empty after setting long body");
+
+	qd_stack_push_ptr(ctx->st, req);
+	usr_http_free_request(ctx);
+
+	destroy_test_context(ctx);
+}
+
+/* ------------------------------------------------------------------ */
+/* Test 25: Engine with many routes (10+)                             */
+/* ------------------------------------------------------------------ */
+
+TEST(HttpEngineManyRoutesTest) {
+	qd_context* ctx = create_test_context();
+
+	usr_http_engine(ctx);
+	qd_stack_element_t eng_elem;
+	qd_stack_pop(ctx->st, &eng_elem);
+	void* engine = eng_elem.value.p;
+
+	const char* paths[] = {
+		"/a", "/b", "/c", "/d", "/e",
+		"/f", "/g", "/h", "/i", "/j",
+		"/k", "/l"
+	};
+	int n = (int)(sizeof(paths) / sizeof(paths[0]));
+
+	for (int i = 0; i < n; i++) {
+		qd_stack_push_ptr(ctx->st, engine);
+		qd_push_s(ctx, paths[i]);
+		qd_stack_push_ptr(ctx->st, dummy_handler);
+		usr_http_GET(ctx);
+	}
+
+	ASSERT_EQ(0, (int)qd_stack_size(ctx->st),
+		"stack should be empty after registering 12 GET routes");
+
+	qd_stack_push_ptr(ctx->st, engine);
+	usr_http_free_engine(ctx);
+
+	ASSERT_EQ(0, (int)qd_stack_size(ctx->st),
+		"stack should be empty after freeing engine with many routes");
+
+	destroy_test_context(ctx);
+}
+
+/* ------------------------------------------------------------------ */
+/* Test 26: Multiple groups on the same engine                        */
+/* ------------------------------------------------------------------ */
+
+TEST(HttpEngineMultipleGroupsTest) {
+	qd_context* ctx = create_test_context();
+
+	usr_http_engine(ctx);
+	qd_stack_element_t eng_elem;
+	qd_stack_pop(ctx->st, &eng_elem);
+	void* engine = eng_elem.value.p;
+
+	/* Group A */
+	qd_stack_push_ptr(ctx->st, engine);
+	qd_push_s(ctx, "/api/v1");
+	usr_http_group(ctx);
+
+	qd_stack_element_t grp_a_elem;
+	qd_stack_pop(ctx->st, &grp_a_elem);
+	void* group_a = grp_a_elem.value.p;
+	ASSERT_TRUE(group_a != NULL, "group A pointer should be non-NULL");
+
+	/* Group B */
+	qd_stack_push_ptr(ctx->st, engine);
+	qd_push_s(ctx, "/api/v2");
+	usr_http_group(ctx);
+
+	qd_stack_element_t grp_b_elem;
+	qd_stack_pop(ctx->st, &grp_b_elem);
+	void* group_b = grp_b_elem.value.p;
+	ASSERT_TRUE(group_b != NULL, "group B pointer should be non-NULL");
+
+	/* Group C */
+	qd_stack_push_ptr(ctx->st, engine);
+	qd_push_s(ctx, "/admin");
+	usr_http_group(ctx);
+
+	qd_stack_element_t grp_c_elem;
+	qd_stack_pop(ctx->st, &grp_c_elem);
+	void* group_c = grp_c_elem.value.p;
+	ASSERT_TRUE(group_c != NULL, "group C pointer should be non-NULL");
+
+	ASSERT_EQ(0, (int)qd_stack_size(ctx->st),
+		"stack should be empty after creating three groups");
+
+	qd_stack_push_ptr(ctx->st, engine);
+	usr_http_free_engine(ctx);
+
+	destroy_test_context(ctx);
+}
+
+/* ------------------------------------------------------------------ */
+/* Test 27: Nested-style groups (two groups each with their routes)   */
+/* ------------------------------------------------------------------ */
+
+TEST(HttpNestedGroupsWithRoutesTest) {
+	qd_context* ctx = create_test_context();
+
+	usr_http_engine(ctx);
+	qd_stack_element_t eng_elem;
+	qd_stack_pop(ctx->st, &eng_elem);
+	void* engine = eng_elem.value.p;
+
+	/* Group A: /api -- with several routes */
+	qd_stack_push_ptr(ctx->st, engine);
+	qd_push_s(ctx, "/api");
+	usr_http_group(ctx);
+
+	qd_stack_element_t grp_a_elem;
+	qd_stack_pop(ctx->st, &grp_a_elem);
+	void* group_a = grp_a_elem.value.p;
+
+	qd_stack_push_ptr(ctx->st, group_a);
+	qd_push_s(ctx, "/users");
+	qd_stack_push_ptr(ctx->st, dummy_handler);
+	usr_http_group_GET(ctx);
+
+	qd_stack_push_ptr(ctx->st, group_a);
+	qd_push_s(ctx, "/users");
+	qd_stack_push_ptr(ctx->st, dummy_handler);
+	usr_http_group_POST(ctx);
+
+	qd_stack_push_ptr(ctx->st, group_a);
+	qd_push_s(ctx, "/users/:id");
+	qd_stack_push_ptr(ctx->st, dummy_handler);
+	usr_http_group_DELETE(ctx);
+
+	/* Group B: /internal -- with middleware and routes */
+	qd_stack_push_ptr(ctx->st, engine);
+	qd_push_s(ctx, "/internal");
+	usr_http_group(ctx);
+
+	qd_stack_element_t grp_b_elem;
+	qd_stack_pop(ctx->st, &grp_b_elem);
+	void* group_b = grp_b_elem.value.p;
+
+	qd_stack_push_ptr(ctx->st, group_b);
+	qd_stack_push_ptr(ctx->st, dummy_handler);
+	usr_http_group_use(ctx);
+
+	qd_stack_push_ptr(ctx->st, group_b);
+	qd_push_s(ctx, "/metrics");
+	qd_stack_push_ptr(ctx->st, dummy_handler);
+	usr_http_group_GET(ctx);
+
+	qd_stack_push_ptr(ctx->st, group_b);
+	qd_push_s(ctx, "/config");
+	qd_stack_push_ptr(ctx->st, dummy_handler);
+	usr_http_group_PUT(ctx);
+
+	ASSERT_EQ(0, (int)qd_stack_size(ctx->st),
+		"stack should be empty after nested groups with routes");
+
+	qd_stack_push_ptr(ctx->st, engine);
+	usr_http_free_engine(ctx);
+
+	ASSERT_EQ(0, (int)qd_stack_size(ctx->st),
+		"stack should be empty after freeing engine with nested groups");
+
+	destroy_test_context(ctx);
+}
+
+/* ------------------------------------------------------------------ */
+/* Test 28: Create and free many engines in a loop (stress/leak test) */
+/* ------------------------------------------------------------------ */
+
+TEST(HttpEngineStressTest) {
+	qd_context* ctx = create_test_context();
+
+	for (int i = 0; i < 50; i++) {
+		usr_http_engine(ctx);
+
+		qd_stack_element_t eng_elem;
+		qd_stack_pop(ctx->st, &eng_elem);
+		void* engine = eng_elem.value.p;
+
+		/* Add a route and a group to each engine so it is non-trivial. */
+		qd_stack_push_ptr(ctx->st, engine);
+		qd_push_s(ctx, "/ping");
+		qd_stack_push_ptr(ctx->st, dummy_handler);
+		usr_http_GET(ctx);
+
+		qd_stack_push_ptr(ctx->st, engine);
+		qd_push_s(ctx, "/grp");
+		usr_http_group(ctx);
+		/* Pop group pointer -- we do not need it. */
+		qd_stack_element_t grp_elem;
+		qd_stack_pop(ctx->st, &grp_elem);
+
+		qd_stack_push_ptr(ctx->st, engine);
+		usr_http_free_engine(ctx);
+	}
+
+	ASSERT_EQ(0, (int)qd_stack_size(ctx->st),
+		"stack should be empty after 50 engine create/free cycles");
+
+	destroy_test_context(ctx);
+}
+
+/* ------------------------------------------------------------------ */
+/* Test 29: Request with empty URL string                             */
+/* ------------------------------------------------------------------ */
+
+TEST(HttpEmptyUrlRequestTest) {
+	qd_context* ctx = create_test_context();
+
+	qd_push_s(ctx, "");
+	usr_http_new(ctx);
+
+	ASSERT_EQ(1, (int)qd_stack_size(ctx->st),
+		"stack should have 1 element after new with empty url");
+
+	qd_stack_element_t req_elem;
+	qd_stack_pop(ctx->st, &req_elem);
+	ASSERT_EQ(QD_STACK_TYPE_PTR, req_elem.type,
+		"new with empty url should still push a pointer");
+	ASSERT_TRUE(req_elem.value.p != NULL,
+		"request pointer from empty url should be non-NULL");
+
+	/* Set method and body on it -- should not crash. */
+	qd_stack_push_ptr(ctx->st, req_elem.value.p);
+	qd_push_s(ctx, "POST");
+	usr_http_method(ctx);
+
+	qd_stack_push_ptr(ctx->st, req_elem.value.p);
+	qd_push_s(ctx, "data");
+	usr_http_body(ctx);
+
+	qd_stack_push_ptr(ctx->st, req_elem.value.p);
+	usr_http_free_request(ctx);
+
+	ASSERT_EQ(0, (int)qd_stack_size(ctx->st),
+		"stack should be empty after freeing empty-url request");
+
+	destroy_test_context(ctx);
+}
+
 int main(void) {
 	return UC_PrintResults();
 }
