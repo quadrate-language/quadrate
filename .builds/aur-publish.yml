@@ -40,12 +40,12 @@ tasks:
       makepkg --printsrcinfo > .SRCINFO
   - push-aur: |
       cd aur
-      if git diff --quiet; then
+      git add PKGBUILD .SRCINFO
+      if git diff --cached --quiet HEAD -- PKGBUILD .SRCINFO 2>/dev/null; then
         echo "AUR PKGBUILD already at $(cat /tmp/aur-tag) — nothing to push."
       else
-        git add PKGBUILD .SRCINFO
         git commit -m "Bump to $(cat /tmp/aur-tag)"
-        git push origin master
+        git push origin HEAD:master
       fi
 
 triggers:
