@@ -1,5 +1,7 @@
 project('quadrate', ['c', 'cpp'],
-		version: files('VERSION'),
+		version: run_command('sh', '-c',
+				'cd "$MESON_SOURCE_ROOT" && (git describe --tags --abbrev=0 2>/dev/null || echo 0.0.0-unknown)',
+				check: true).stdout().strip(),
 		default_options: [
 				'c_std=c11',
 				'cpp_std=c++20',

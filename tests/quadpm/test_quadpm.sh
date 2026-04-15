@@ -75,8 +75,8 @@ fi
 # Test 2: Version output
 echo ""
 echo "Test 2: Version output"
-# Read expected version from VERSION file
-EXPECTED_VERSION=$(cat "$SCRIPT_DIR/../../VERSION" 2>/dev/null || echo "2.0.0-alpha")
+# Read expected version from the latest git tag (same source used by meson.build)
+EXPECTED_VERSION=$(git -C "$SCRIPT_DIR/../.." describe --tags --abbrev=0 2>/dev/null || echo "0.0.0-unknown")
 if output=$("$QUADPM" --version 2>&1); then
     if echo "$output" | grep -q "quadpm $EXPECTED_VERSION"; then
         pass "Version displays correctly"

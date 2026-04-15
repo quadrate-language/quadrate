@@ -111,12 +111,15 @@ class LSPTester:
 
         serverInfo = result.get("serverInfo", {})
         self.assert_equal(serverInfo.get("name"), "quadlsp", "Initialize: Server name")
-        # Version should match VERSION file
-        version_file = Path(__file__).parent.parent.parent.parent / "VERSION"
-        if version_file.exists():
-            expected_version = version_file.read_text().strip()
+        # Version should match the latest git tag (same source used by meson.build)
+        repo_root = Path(__file__).parent.parent.parent.parent
+        try:
+            expected_version = subprocess.check_output(
+                ["git", "describe", "--tags", "--abbrev=0"],
+                cwd=repo_root, stderr=subprocess.DEVNULL
+            ).decode().strip()
             self.assert_equal(serverInfo.get("version"), expected_version, "Initialize: Server version")
-        else:
+        except (subprocess.CalledProcessError, FileNotFoundError):
             self.assert_true(len(serverInfo.get("version", "")) > 0, "Initialize: Server version non-empty")
 
     def test_shutdown(self):

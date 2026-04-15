@@ -259,7 +259,7 @@ docs:
 	@echo "To serve locally: cd docs && mkdocs serve"
 
 dist: release
-	@VERSION=$$(cat VERSION) && \
+	@VERSION=$$(git describe --tags --abbrev=0 2>/dev/null || echo 0.0.0-unknown) && \
 	ARCH=$$(uname -m) && \
 	OS=$$(uname -s | tr '[:upper:]' '[:lower:]') && \
 	TARNAME="quadrate-$$VERSION-$$OS-$$ARCH" && \
@@ -281,10 +281,10 @@ BUMP ?=
 tag:
 	@if [ -z "$(BUMP)" ]; then \
 		echo "Usage: make tag BUMP=major|minor|patch"; \
-		echo "Current version: $$(cat VERSION)"; \
+		echo "Current version: $$(git describe --tags --abbrev=0 2>/dev/null || echo 0.0.0)"; \
 		exit 1; \
 	fi
-	@VERSION=$$(cat VERSION) && \
+	@VERSION=$$(git describe --tags --abbrev=0 2>/dev/null || echo 0.0.0) && \
 	BASE=$$(echo "$$VERSION" | sed 's/-.*//' ) && \
 	SUFFIX=$$(echo "$$VERSION" | sed -n 's/[0-9]*\.[0-9]*\.[0-9]*//p') && \
 	MAJOR=$$(echo "$$BASE" | cut -d. -f1) && \
@@ -297,12 +297,9 @@ tag:
 		*) echo "Error: BUMP must be major, minor, or patch"; exit 1 ;; \
 	esac && \
 	NEW="$$MAJOR.$$MINOR.$$PATCH$$SUFFIX" && \
-	echo "$$NEW" > VERSION && \
-	git add VERSION && \
-	git commit -m "Bump version to $$NEW" && \
 	git tag -a "$$NEW" -m "Release $$NEW" && \
 	echo "$$VERSION -> $$NEW" && \
-	echo "Push with: git push && git push origin $$NEW"
+	echo "Push with: git push origin $$NEW"
 
 clean:
 	rm -rf build
