@@ -1,6 +1,6 @@
 # Maintainer: Joachim Klahr <klahr@r8.rs>
 pkgname=quadrate
-pkgver=0.2.3
+pkgver=0.3.0
 pkgrel=1
 pkgdesc="Stack-based programming language that compiles to native code via LLVM"
 arch=('x86_64')
