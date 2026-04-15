@@ -55,7 +55,7 @@ echo ""
 # ---- Version / Help ----
 
 output=$("$QUAD" version 2>&1)
-if echo "$output" | grep -q "quad.*2\."; then
+if echo "$output" | grep -qE "quad [0-9]+\.[0-9]+"; then
     pass "quad version shows version"
 else
     fail "quad version shows version" "got: $output"
