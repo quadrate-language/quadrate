@@ -1,0 +1,51 @@
+image: archlinux
+
+secrets:
+  - 2a26057b-bad9-44a3-b040-ae78efe6dd18
+
+packages:
+  - base-devel
+  - git
+  - openssh
+
+sources:
+  - https://git.sr.ht/~klahr/quadrate
+
+tasks:
+  - check-tag: |
+      cd quadrate
+      if ! TAG=$(git describe --exact-match HEAD 2>/dev/null); then
+        echo "HEAD is not a tagged commit — nothing to publish."
+        complete-build
+      fi
+      echo "$TAG" > /tmp/aur-tag
+      echo "Publishing $TAG to AUR"
+  - clone-aur: |
+      ssh-keyscan aur.archlinux.org >> ~/.ssh/known_hosts
+      git config --global user.email "klahr@r8.rs"
+      git config --global user.name  "Quadrate Release Bot"
+      git clone ssh://aur@aur.archlinux.org/quadrate.git aur
+  - bump-pkgbuild: |
+      TAG=$(cat /tmp/aur-tag)
+      # The repo-side PKGBUILD is the source of truth; copy it over and stamp
+      # the version fields from the tag.
+      cp quadrate/pkg/aur/quadrate/PKGBUILD aur/PKGBUILD
+      cd aur
+      sed -i "s/^pkgver=.*/pkgver=$TAG/" PKGBUILD
+      sed -i "s/^_gittag=.*/_gittag=$TAG/" PKGBUILD
+      sed -i "s/^pkgrel=.*/pkgrel=1/" PKGBUILD
+      makepkg --printsrcinfo > .SRCINFO
+  - push-aur: |
+      cd aur
+      if git diff --quiet; then
+        echo "AUR PKGBUILD already at $(cat /tmp/aur-tag) — nothing to push."
+      else
+        git add PKGBUILD .SRCINFO
+        git commit -m "Bump to $(cat /tmp/aur-tag)"
+        git push origin master
+      fi
+
+triggers:
+  - action: email
+    condition: failure
+    to: klahr@r8.rs
