@@ -39,6 +39,18 @@ pkgman install meson llvm21 llvm21_clang readline_devel
 
 ## Installation
 
+### From the AUR (Arch Linux)
+
+Quadrate is published to the [AUR](https://aur.archlinux.org/packages/quadrate) as `quadrate`. Install it with any AUR helper:
+
+```bash
+# yay
+yay -S quadrate
+
+# paru
+paru -S quadrate
+```
+
 ### From source
 
 Clone the repository and build:
