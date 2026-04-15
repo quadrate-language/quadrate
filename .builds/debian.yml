@@ -1,8 +1,5 @@
 image: debian/testing
 
-secrets:
-  - ea8ca0d9-1859-4db5-bb99-8f12baf60b59
-
 packages:
   - clang
   - clang-format
@@ -11,29 +8,19 @@ packages:
   - libssl-dev
   - llvm-dev
   - meson
-  - nodejs
-  - npm
   - pkg-config
   - valgrind
   - zlib1g-dev
 
 sources:
-  - git+ssh://git@git.sr.ht/~klahr/quadrate
-  - https://git.sr.ht/~klahr/qdlog
+  - https://git.sr.ht/~klahr/quadrate
   - https://git.sr.ht/~klahr/qdcompress
   - https://git.sr.ht/~klahr/qdtls
   - https://git.sr.ht/~klahr/qdhttp
   - https://git.sr.ht/~klahr/qdsqlite
   - https://git.sr.ht/~klahr/qdjson
-  - https://git.sr.ht/~klahr/qdregex
-  - https://git.sr.ht/~klahr/qdcrypto
-
-environment:
-  GIT_SSH_COMMAND: "ssh -o StrictHostKeyChecking=no"
 
 tasks:
-  - install_tree_sitter: |
-      sudo npm install -g tree-sitter-cli
   - format: |
       cd quadrate
       make format

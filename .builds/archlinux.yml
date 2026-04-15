@@ -4,24 +4,19 @@ packages:
   - clang
   - llvm
   - meson
-  - nodejs
   - openssl
   - pkgconf
   - sqlite
-  - tree-sitter-cli
   - valgrind
   - zlib
 
 sources:
   - https://git.sr.ht/~klahr/quadrate
-  - https://git.sr.ht/~klahr/qdlog
   - https://git.sr.ht/~klahr/qdcompress
   - https://git.sr.ht/~klahr/qdtls
   - https://git.sr.ht/~klahr/qdhttp
   - https://git.sr.ht/~klahr/qdsqlite
   - https://git.sr.ht/~klahr/qdjson
-  - https://git.sr.ht/~klahr/qdregex
-  - https://git.sr.ht/~klahr/qdcrypto
 
 tasks:
   - format: |
