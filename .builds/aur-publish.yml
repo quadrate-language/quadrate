@@ -20,8 +20,11 @@ tasks:
       fi
       echo "$TAG" > /tmp/aur-tag
       echo "Publishing $TAG to AUR"
-  - clone-aur: |
+  - debug-ssh: |
+      ls -la ~/.ssh/ || true
       ssh-keyscan aur.archlinux.org >> ~/.ssh/known_hosts
+      ssh -vT -o StrictHostKeyChecking=accept-new aur@aur.archlinux.org 2>&1 | tail -40 || true
+  - clone-aur: |
       git config --global user.email "klahr@r8.rs"
       git config --global user.name  "Quadrate Release Bot"
       git clone ssh://aur@aur.archlinux.org/quadrate.git aur
