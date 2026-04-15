@@ -1,7 +1,7 @@
 image: archlinux
 
 secrets:
-  - 2a26057b-bad9-44a3-b040-ae78efe6dd18
+  - f66123d6-ce21-4a3d-b7c4-921fb5e32fd0
 
 packages:
   - base-devel
