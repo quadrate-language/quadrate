@@ -1,6 +1,7 @@
 #include <quadrate/fmt/fmt.h>
 #include <quadrate/rt/qd_string.h>
 #include <quadrate/rt/stack.h>
+#include <errno.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -713,8 +714,17 @@ int usr_fmt_fprintf(qd_context* ctx) {
 	if (result) {
 		const char* out = qd_string_data(result);
 		size_t out_len = strlen(out);
-		// Use write() for fd-based output
-		write(fd, out, out_len);
+		// Use write() for fd-based output. Loop to handle partial
+		// writes and EINTR; give up on unrecoverable errors.
+		size_t written = 0;
+		while (written < out_len) {
+			ssize_t n = write(fd, out + written, out_len - written);
+			if (n < 0) {
+				if (errno == EINTR) continue;
+				break;
+			}
+			written += (size_t)n;
+		}
 		qd_string_release(result);
 	}
 
