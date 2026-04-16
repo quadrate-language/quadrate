@@ -38,7 +38,8 @@ pdpt:
 pdt:
 	.skip 4096
 
-// ---- 64-bit stack ----
+// ---- 64-bit stack (placed at end of BSS to avoid colliding with runtime data) ----
+.section .bss.stack, "aw", @nobits
 .align 16
 stack_bottom:
 	.skip 16384
@@ -77,10 +78,16 @@ _kernel_entry:
 	movl $0x200083, (pdt + 8)
 	movl $0, (pdt + 12)
 
-	// ---- Enable PAE (CR4.PAE = bit 5) ----
+	// ---- Enable PAE (CR4.PAE = bit 5) + SSE (CR4.OSFXSR = bit 9) ----
 	movl %cr4, %eax
-	orl $0x20, %eax
+	orl $0x220, %eax              // PAE (bit 5) + OSFXSR (bit 9)
 	movl %eax, %cr4
+
+	// ---- Enable SSE: clear CR0.EM (bit 2), set CR0.MP (bit 1) ----
+	movl %cr0, %eax
+	andl $0xFFFFFFFB, %eax        // clear EM
+	orl $0x2, %eax                // set MP
+	movl %eax, %cr0
 
 	// ---- Load PML4 into CR3 ----
 	movl $pml4, %eax

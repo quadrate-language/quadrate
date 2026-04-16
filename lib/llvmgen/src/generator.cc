@@ -1795,12 +1795,10 @@ namespace Qd {
 			if (tgt) {
 #if LLVM_VERSION_MAJOR >= 21
 				auto tm = std::unique_ptr<llvm::TargetMachine>(tgt->createTargetMachine(
-						triple, "generic", "", llvm::TargetOptions(),
-						std::optional<llvm::Reloc::Model>()));
+						triple, "generic", "", llvm::TargetOptions(), std::optional<llvm::Reloc::Model>()));
 #else
 				auto tm = std::unique_ptr<llvm::TargetMachine>(tgt->createTargetMachine(
-						triple.getTriple(), "generic", "", llvm::TargetOptions(),
-						std::optional<llvm::Reloc::Model>()));
+						triple.getTriple(), "generic", "", llvm::TargetOptions(), std::optional<llvm::Reloc::Model>()));
 #endif
 				if (tm) {
 					auto dl = tm->createDataLayout();
@@ -2900,7 +2898,11 @@ namespace Qd {
 
 			llvm::ModulePassManager npm;
 			npm.addPass(llvm::AlwaysInlinerPass());
-			npm.addPass(llvm::GlobalDCEPass());
+			// Only run DCE if not freestanding — freestanding pub functions may be
+			// called from assembly/C and must not be removed.
+			if (!mImpl->freestandingMode) {
+				npm.addPass(llvm::GlobalDCEPass());
+			}
 			npm.run(*mImpl->module, mam);
 		}
 		printTiming("alwaysInlineAndDCE");

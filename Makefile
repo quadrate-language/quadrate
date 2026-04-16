@@ -177,8 +177,9 @@ examples: debug
 	@cp -f $(BUILD_DIR_DEBUG)/lib/qd/libqd.so dist/lib/
 	@cp -f $(BUILD_DIR_DEBUG)/lib/rt/libqdrt.so dist/lib/
 
-format:
+format: debug
 	find cmd lib examples -type f \( -name '*.cc' -o -name '*.h' \) -exec clang-format -i {} +
+	$(BUILD_DIR_DEBUG)/cmd/quadfmt/quadfmt -w lib examples
 
 fmtcheck: release
 	$(BUILD_DIR_RELEASE)/cmd/quadfmt/quadfmt -c lib examples

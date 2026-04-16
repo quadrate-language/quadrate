@@ -28,6 +28,8 @@ SECTIONS {
 		*(COMMON)
 		*(.bss)
 		*(.bss.*)
+		/* CPU stack last — grows downward from stack_top, must not overlap runtime data */
+		*(.bss.stack)
 	}
 
 	/DISCARD/ : { *(.comment) *(.note*) *(.eh_frame*) }
