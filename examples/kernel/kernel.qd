@@ -1,7 +1,6 @@
 // Bare-metal x86_64 multiboot kernel with interrupt support.
 // Demonstrates: GDT, IDT, PIC remapping, PIT timer, PS/2 keyboard.
 
-
 // ---------------------------------------------------------------------------
 // FFI: assembly helpers (interrupts.S + interrupt_glue.c)
 // ---------------------------------------------------------------------------
