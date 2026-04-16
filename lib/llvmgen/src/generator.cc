@@ -1390,6 +1390,9 @@ namespace Qd {
 			fn->addParamAttr(0, llvm::Attribute::NonNull);
 			fn->addParamAttr(0, llvm::Attribute::NoAlias);
 			fn->addFnAttr(llvm::Attribute::NoUnwind);
+			if (funcNode->isInline()) {
+				fn->addFnAttr(llvm::Attribute::AlwaysInline);
+			}
 		}
 
 		// Register the function with appropriate scope

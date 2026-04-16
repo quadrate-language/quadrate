@@ -50,15 +50,15 @@ const IDT_PRESENT_INT32 = 0x8E
 // VGA text mode
 // ---------------------------------------------------------------------------
 fn vga_put(row:i64 col:i64 ch:i64 -- ) {
-	VGA_BASE cast<ptr> row VGA_COLS * col + 2 * ch sys::st8
-	VGA_BASE cast<ptr> row VGA_COLS * col + 2 * 1 + ATTR_WHITE sys::st8
+	VGA_BASE row VGA_COLS * col + 2 * + 0 ch __st8
+	VGA_BASE row VGA_COLS * col + 2 * + 1 ATTR_WHITE __st8
 }
 
 fn vga_clear() {
 	0 -> i
 	loop {
 		i VGA_COLS VGA_ROWS * >= if { break }
-		VGA_BASE cast<ptr> i 2 * 32 ATTR_HI or sys::st16
+		VGA_BASE i 2 * + 0 32 ATTR_HI or __st16
 		i 1 + -> i
 	}
 }

@@ -70,8 +70,8 @@ typedef struct {
  */
 typedef struct qd_stack {
 	qd_stack_element_t* data; ///< Array of stack elements
-	size_t capacity;		  ///< Maximum stack capacity
-	size_t size;			  ///< Current number of elements
+	uint64_t capacity;		  ///< Maximum stack capacity (64-bit to match LLVM codegen)
+	uint64_t size;			  ///< Current number of elements (64-bit to match LLVM codegen)
 } qd_stack;
 
 /**
