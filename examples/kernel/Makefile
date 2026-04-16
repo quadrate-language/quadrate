@@ -1,4 +1,4 @@
-TARGET   := i686-unknown-none-elf
+TARGET   := x86_64-unknown-none-elf
 CFLAGS   := --target=$(TARGET) -ffreestanding -fno-builtin -nostdlib \
             -fno-stack-protector -mno-red-zone -O2 -Wall -Wextra
 ASFLAGS  := --target=$(TARGET) -ffreestanding -nostdlib
@@ -32,8 +32,13 @@ freestanding.o: $(FREESTANDING_RT)
 mem.o: $(MEM_SRC)
 	clang $(CFLAGS) -I$(RT_INC) -I$(MEM_INC) -c $< -o $@
 
-kernel.elf: $(OBJS) linker.ld
-	ld -m elf_i386 -nostdlib -T linker.ld -o $@ $(OBJS)
+kernel64.elf: $(OBJS) linker.ld
+	ld -nostdlib -T linker.ld -o $@ $(OBJS)
+
+# QEMU's multiboot1 loader requires ELF32. Convert the 64-bit ELF to 32-bit.
+# The binary content is identical — only the ELF container changes.
+kernel.elf: kernel64.elf
+	objcopy -O elf32-i386 $< $@
 	@echo "Built $@ ($$(wc -c < $@) bytes)"
 
 isodir/boot/grub:
@@ -51,11 +56,11 @@ kernel.iso: isodir/boot/kernel.elf isodir/boot/grub/grub.cfg
 	@echo "Built $@ ($$(wc -c < $@) bytes)"
 
 run: kernel.elf
-	qemu-system-i386 -kernel kernel.elf -display curses
+	qemu-system-x86_64 -kernel kernel.elf -display curses
 
 run-iso: kernel.iso
-	qemu-system-i386 -cdrom kernel.iso -display curses
+	qemu-system-x86_64 -cdrom kernel.iso -display curses
 
 clean:
-	rm -f *.o kernel.elf kernel.iso
+	rm -f *.o kernel.elf kernel64.elf kernel.iso
 	rm -rf isodir

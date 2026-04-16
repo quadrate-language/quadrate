@@ -1775,12 +1775,51 @@ namespace Qd {
 			return false;
 		}
 
-		// Set target triple early so codegen can check it (e.g., x86 port I/O builtins).
-		// writeObject() sets it again with full target machine setup; this is just for
-		// arch checks during IR generation.
+		// Set target triple and data layout early so codegen generates correct
+		// struct layouts and alignments for the target (especially i386 vs x86_64).
+		// writeObject() sets these again with the full target machine; this is for
+		// correct IR generation before that point.
 		if (!targetTriple.empty()) {
+			llvm::InitializeAllTargetInfos();
+			llvm::InitializeAllTargets();
+			llvm::InitializeAllTargetMCs();
+			std::string tripleErr;
+			llvm::Triple triple(targetTriple);
+#if LLVM_VERSION_MAJOR >= 21
+			auto* tgt = llvm::TargetRegistry::lookupTarget(triple, tripleErr);
+#elif LLVM_VERSION_MAJOR >= 20
+			auto* tgt = llvm::TargetRegistry::lookupTarget(triple.getTriple(), tripleErr);
+#else
+			auto* tgt = llvm::TargetRegistry::lookupTarget(targetTriple, tripleErr);
+#endif
+			if (tgt) {
+#if LLVM_VERSION_MAJOR >= 21
+				auto tm = std::unique_ptr<llvm::TargetMachine>(tgt->createTargetMachine(
+						triple, "generic", "", llvm::TargetOptions(),
+						std::optional<llvm::Reloc::Model>()));
+#else
+				auto tm = std::unique_ptr<llvm::TargetMachine>(tgt->createTargetMachine(
+						triple.getTriple(), "generic", "", llvm::TargetOptions(),
+						std::optional<llvm::Reloc::Model>()));
+#endif
+				if (tm) {
+					auto dl = tm->createDataLayout();
+					// On i686 (and other 32-bit x86), the System V ABI uses 4-byte
+					// alignment for int64_t/uint64_t. LLVM's default DataLayout for
+					// i686 doesn't include i64:32:64, causing LLVM struct layouts to
+					// disagree with C struct layouts. Patch the DataLayout to match.
+					if (triple.getArch() == llvm::Triple::x86) {
+						std::string dlStr = dl.getStringRepresentation();
+						if (dlStr.find("i64:") == std::string::npos) {
+							dlStr += "-i64:32:64";
+							dl = llvm::DataLayout(dlStr);
+						}
+					}
+					module->setDataLayout(dl);
+				}
+			}
 #if LLVM_VERSION_MAJOR >= 20
-			module->setTargetTriple(llvm::Triple(targetTriple));
+			module->setTargetTriple(triple);
 #else
 			module->setTargetTriple(targetTriple);
 #endif

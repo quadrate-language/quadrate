@@ -1,89 +1,82 @@
-// Interrupt infrastructure: GDT/IDT storage, ISR stubs, helper functions.
-//
-// ISR stubs save registers, store the interrupt number, call the Quadrate
-// handler, restore registers, and iret. This is inherently assembly — the
-// CPU pushes a specific interrupt frame that must be handled before any
-// calling convention applies.
+// x86_64 interrupt infrastructure: GDT/IDT storage, ISR stubs, helpers.
 
 // ---------------------------------------------------------------------------
-// BSS: GDT, IDT, and kernel state
+// BSS
 // ---------------------------------------------------------------------------
 .section .bss
 .align 16
 
-// GDT: 6 entries x 8 bytes = 48 bytes (null, kcode, kdata, + 3 spare)
+// GDT: 6 entries x 8 bytes = 48 bytes
 .global gdt_entries
 gdt_entries:
 	.skip 48
 
-// GDT descriptor (6 bytes: 2-byte limit + 4-byte base)
+// GDT descriptor (10 bytes: 2-byte limit + 8-byte base)
 .global gdt_descriptor
 gdt_descriptor:
-	.skip 6
+	.skip 10
 
-// IDT: 256 entries x 8 bytes = 2048 bytes
+// IDT: 256 entries x 16 bytes = 4096 bytes (x86_64 IDT entries are 16 bytes)
 .global idt_entries
 idt_entries:
-	.skip 2048
+	.skip 4096
 
-// IDT descriptor (6 bytes: 2-byte limit + 4-byte base)
+// IDT descriptor (10 bytes: 2-byte limit + 8-byte base)
 .global idt_descriptor
 idt_descriptor:
-	.skip 6
+	.skip 10
 
-// Current interrupt number (written by ISR stub, read by Quadrate handler)
+// Current interrupt number
 .global interrupt_number
 interrupt_number:
-	.skip 4
+	.skip 8
 
 // Timer tick counter
 .global tick_count
 tick_count:
-	.skip 4
+	.skip 8
 
-// Keyboard cursor column position
+// Keyboard cursor position
 .global cursor_col
 cursor_col:
-	.skip 4
+	.skip 8
 
-// Keyboard cursor row position
 .global cursor_row
 cursor_row:
-	.skip 4
+	.skip 8
 
 // ---------------------------------------------------------------------------
-// DATA: ISR address table (for IDT population from Quadrate)
+// DATA: ISR address table (64-bit pointers)
 // ---------------------------------------------------------------------------
 .section .data
-.align 4
+.align 8
 .global isr_table
 isr_table:
-	.long isr0,  isr1,  isr2,  isr3,  isr4,  isr5,  isr6,  isr7
-	.long isr8,  isr9,  isr10, isr11, isr12, isr13, isr14, isr15
-	.long isr16, isr17, isr18, isr19, isr20, isr21, isr22, isr23
-	.long isr24, isr25, isr26, isr27, isr28, isr29, isr30, isr31
-	.long isr32, isr33, isr34, isr35, isr36, isr37, isr38, isr39
-	.long isr40, isr41, isr42, isr43, isr44, isr45, isr46, isr47
+	.quad isr0,  isr1,  isr2,  isr3,  isr4,  isr5,  isr6,  isr7
+	.quad isr8,  isr9,  isr10, isr11, isr12, isr13, isr14, isr15
+	.quad isr16, isr17, isr18, isr19, isr20, isr21, isr22, isr23
+	.quad isr24, isr25, isr26, isr27, isr28, isr29, isr30, isr31
+	.quad isr32, isr33, isr34, isr35, isr36, isr37, isr38, isr39
+	.quad isr40, isr41, isr42, isr43, isr44, isr45, isr46, isr47
 
 // ---------------------------------------------------------------------------
-// TEXT: Helper functions
+// TEXT: Helper functions (bare C names — Quadrate import generates wrappers)
 // ---------------------------------------------------------------------------
-// These use bare C names (lgdt, lidt, gdt_addr, etc.) matching what the
-// Quadrate import mechanism expects. The import generates usr_hw_* wrappers
-// that handle the runtime stack, then call these with direct C arguments.
 .section .text
 
-// --- lgdt: load GDT and reload segment registers ---
-// C signature: void lgdt(int64_t descriptor_addr)
-// On i686 cdecl, first i64 arg is at 4(%esp) (low 32 bits).
+// lgdt: void lgdt(int64_t descriptor_addr)
+// SysV x86_64: first arg in %rdi
 .global lgdt
 .type lgdt, @function
 lgdt:
-	movl 4(%esp), %eax
-	lgdt (%eax)
-	ljmp $0x08, $.Lgdt_flush    // 0x08 = kernel code segment
+	lgdt (%rdi)
+	// Reload segment registers
+	pushq $0x08
+	leaq .Lgdt_flush(%rip), %rax
+	pushq %rax
+	lretq
 .Lgdt_flush:
-	movw $0x10, %ax              // 0x10 = kernel data segment
+	movw $0x10, %ax
 	movw %ax, %ds
 	movw %ax, %es
 	movw %ax, %fs
@@ -92,25 +85,20 @@ lgdt:
 	ret
 .size lgdt, . - lgdt
 
-// --- lidt: load IDT ---
-// C signature: void lidt(int64_t descriptor_addr)
+// lidt: void lidt(int64_t descriptor_addr)
 .global lidt
 .type lidt, @function
 lidt:
-	movl 4(%esp), %eax
-	lidt (%eax)
+	lidt (%rdi)
 	ret
 .size lidt, . - lidt
 
-// ---------------------------------------------------------------------------
-// Address getters: return BSS symbol addresses.
-// C signature: int64_t name(void) — returns address in %eax (low 32 bits).
-// ---------------------------------------------------------------------------
+// Address getters
 .macro ADDR_GETTER name, symbol
 .global \name
 .type \name, @function
 \name:
-	movl $\symbol, %eax
+	leaq \symbol(%rip), %rax
 	ret
 .size \name, . - \name
 .endm
@@ -126,52 +114,50 @@ ADDR_GETTER cursor_col_addr, cursor_col
 ADDR_GETTER cursor_row_addr, cursor_row
 
 // ---------------------------------------------------------------------------
-// ISR stubs: 48 entries (exceptions 0-31, IRQs 32-47)
+// ISR stubs (x86_64)
 // ---------------------------------------------------------------------------
 
-// ISR without error code: push dummy 0, then interrupt number
 .macro ISR_NOERRCODE num
 .global isr\num
 .type isr\num, @function
 isr\num:
-	pushl $0            // dummy error code
-	pushl $\num         // interrupt number
+	pushq $0
+	pushq $\num
 	jmp isr_common
 .size isr\num, . - isr\num
 .endm
 
-// ISR with error code: CPU already pushed it, just push interrupt number
 .macro ISR_ERRCODE num
 .global isr\num
 .type isr\num, @function
 isr\num:
-	pushl $\num         // interrupt number (error code already on stack)
+	pushq $\num
 	jmp isr_common
 .size isr\num, . - isr\num
 .endm
 
-// CPU exceptions (0-31)
-ISR_NOERRCODE 0     // Division by zero
-ISR_NOERRCODE 1     // Debug
-ISR_NOERRCODE 2     // NMI
-ISR_NOERRCODE 3     // Breakpoint
-ISR_NOERRCODE 4     // Overflow
-ISR_NOERRCODE 5     // Bound range exceeded
-ISR_NOERRCODE 6     // Invalid opcode
-ISR_NOERRCODE 7     // Device not available
-ISR_ERRCODE   8     // Double fault
-ISR_NOERRCODE 9     // Coprocessor segment overrun
-ISR_ERRCODE   10    // Invalid TSS
-ISR_ERRCODE   11    // Segment not present
-ISR_ERRCODE   12    // Stack-segment fault
-ISR_ERRCODE   13    // General protection fault
-ISR_ERRCODE   14    // Page fault
-ISR_NOERRCODE 15    // Reserved
-ISR_NOERRCODE 16    // x87 FP exception
-ISR_ERRCODE   17    // Alignment check
-ISR_NOERRCODE 18    // Machine check
-ISR_NOERRCODE 19    // SIMD FP exception
-ISR_NOERRCODE 20    // Virtualization exception
+// CPU exceptions
+ISR_NOERRCODE 0
+ISR_NOERRCODE 1
+ISR_NOERRCODE 2
+ISR_NOERRCODE 3
+ISR_NOERRCODE 4
+ISR_NOERRCODE 5
+ISR_NOERRCODE 6
+ISR_NOERRCODE 7
+ISR_ERRCODE   8
+ISR_NOERRCODE 9
+ISR_ERRCODE   10
+ISR_ERRCODE   11
+ISR_ERRCODE   12
+ISR_ERRCODE   13
+ISR_ERRCODE   14
+ISR_NOERRCODE 15
+ISR_NOERRCODE 16
+ISR_ERRCODE   17
+ISR_NOERRCODE 18
+ISR_NOERRCODE 19
+ISR_NOERRCODE 20
 ISR_NOERRCODE 21
 ISR_NOERRCODE 22
 ISR_NOERRCODE 23
@@ -184,42 +170,74 @@ ISR_NOERRCODE 29
 ISR_NOERRCODE 30
 ISR_NOERRCODE 31
 
-// Hardware IRQs (remapped to vectors 32-47)
-ISR_NOERRCODE 32    // IRQ0: PIT timer
-ISR_NOERRCODE 33    // IRQ1: Keyboard
-ISR_NOERRCODE 34    // IRQ2: Cascade
-ISR_NOERRCODE 35    // IRQ3: COM2
-ISR_NOERRCODE 36    // IRQ4: COM1
-ISR_NOERRCODE 37    // IRQ5: LPT2
-ISR_NOERRCODE 38    // IRQ6: Floppy
-ISR_NOERRCODE 39    // IRQ7: LPT1 / spurious
-ISR_NOERRCODE 40    // IRQ8: CMOS RTC
-ISR_NOERRCODE 41    // IRQ9
-ISR_NOERRCODE 42    // IRQ10
-ISR_NOERRCODE 43    // IRQ11
-ISR_NOERRCODE 44    // IRQ12: PS/2 mouse
-ISR_NOERRCODE 45    // IRQ13: FPU
-ISR_NOERRCODE 46    // IRQ14: Primary ATA
-ISR_NOERRCODE 47    // IRQ15: Secondary ATA
+// Hardware IRQs
+ISR_NOERRCODE 32
+ISR_NOERRCODE 33
+ISR_NOERRCODE 34
+ISR_NOERRCODE 35
+ISR_NOERRCODE 36
+ISR_NOERRCODE 37
+ISR_NOERRCODE 38
+ISR_NOERRCODE 39
+ISR_NOERRCODE 40
+ISR_NOERRCODE 41
+ISR_NOERRCODE 42
+ISR_NOERRCODE 43
+ISR_NOERRCODE 44
+ISR_NOERRCODE 45
+ISR_NOERRCODE 46
+ISR_NOERRCODE 47
 
 // ---------------------------------------------------------------------------
-// Common ISR handler: save registers, call Quadrate, restore, iret
+// Common ISR handler (x86_64)
 // ---------------------------------------------------------------------------
 .extern qd_freestanding_ctx
 .extern usr_kernel.qd_handle_interrupt
 
 isr_common:
-	pusha                           // save edi, esi, ebp, esp, ebx, edx, ecx, eax
+	// Save all general-purpose registers
+	pushq %rax
+	pushq %rbx
+	pushq %rcx
+	pushq %rdx
+	pushq %rsi
+	pushq %rdi
+	pushq %rbp
+	pushq %r8
+	pushq %r9
+	pushq %r10
+	pushq %r11
+	pushq %r12
+	pushq %r13
+	pushq %r14
+	pushq %r15
 
-	// Store interrupt number to BSS (Quadrate reads it from there)
-	movl 32(%esp), %eax             // int_no is at esp+32 (after pusha=8 regs * 4 bytes)
-	movl %eax, (interrupt_number)
+	// Store interrupt number (at rsp + 15*8 = 120, then int_no, then err_code)
+	movq 120(%rsp), %rax
+	movq %rax, interrupt_number(%rip)
 
 	// Call Quadrate handler: usr_kernel.qd_handle_interrupt(qd_freestanding_ctx*)
-	pushl $qd_freestanding_ctx
+	// SysV x86_64: first arg in %rdi
+	leaq qd_freestanding_ctx(%rip), %rdi
 	call usr_kernel.qd_handle_interrupt
-	addl $4, %esp
 
-	popa                            // restore all registers
-	addl $8, %esp                   // pop int_no + error_code
-	iret
+	// Restore registers
+	popq %r15
+	popq %r14
+	popq %r13
+	popq %r12
+	popq %r11
+	popq %r10
+	popq %r9
+	popq %r8
+	popq %rbp
+	popq %rdi
+	popq %rsi
+	popq %rdx
+	popq %rcx
+	popq %rbx
+	popq %rax
+
+	// Pop int_no + error_code
+	addq $16, %rsp
+	iretq

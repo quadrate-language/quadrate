@@ -1,4 +1,4 @@
-// Bare-metal i686 multiboot kernel with interrupt support.
+// Bare-metal x86_64 multiboot kernel with interrupt support.
 // Demonstrates: GDT, IDT, PIC remapping, PIT timer, PS/2 keyboard.
 
 use sys
@@ -84,28 +84,39 @@ fn setup_gdt() {
 
 	// Entry 0: Null descriptor
 	gdt 0 0 0 0 0 gdt_set_entry
-	// Entry 1: Kernel code (0x08) — present, ring0, code, readable, 4K gran, 32-bit
-	gdt 1 0 0xFFFFF 0x9A 0x0C gdt_set_entry
-	// Entry 2: Kernel data (0x10) — present, ring0, data, writable, 4K gran, 32-bit
-	gdt 2 0 0xFFFFF 0x92 0x0C gdt_set_entry
+	// Entry 1: 64-bit kernel code (0x08) — present, ring0, code, L=1, D=0
+	gdt 1 0 0xFFFFF 0x9A 0x0A gdt_set_entry
+	// Entry 2: 64-bit kernel data (0x10) — present, ring0, data, writable
+	gdt 2 0 0xFFFFF 0x92 0x0A gdt_set_entry
 
-	// GDT descriptor: limit (2 bytes) + base (4 bytes)
-	desc cast<ptr> 0 23 sys::st16
-	desc 2 + cast<ptr> 0 gdt sys::st32
+	// GDT descriptor: limit (2 bytes) + base (8 bytes on x86_64)
+	desc cast<ptr> 0 23 __st16
+	desc 2 + cast<ptr> 0 gdt __st64
 
 	desc hw::lgdt
 }
 
 // ---------------------------------------------------------------------------
-// IDT setup
+// IDT setup (x86_64: entries are 16 bytes, pointers are 64-bit)
 // ---------------------------------------------------------------------------
+// x86_64 IDT entry (16 bytes):
+//   bytes 0-1:   offset low 16 bits
+//   bytes 2-3:   selector
+//   byte 4:      IST (0 = none)
+//   byte 5:      type_attr
+//   bytes 6-7:   offset mid 16 bits
+//   bytes 8-11:  offset high 32 bits
+//   bytes 12-15: reserved (0)
+
 fn idt_set_entry(base:i64 idx:i64 handler:i64 selector:i64 type_attr:i64 -- ) {
-	base cast<ptr> idx 8 * -> off
-	off 0 + cast<ptr> 0 handler 0xFFFF and sys::st16
-	off 2 + cast<ptr> 0 selector sys::st16
-	off 4 + cast<ptr> 0 0 sys::st8
-	off 5 + cast<ptr> 0 type_attr sys::st8
-	off 6 + cast<ptr> 0 handler 16 shr 0xFFFF and sys::st16
+	base idx 16 * + -> off
+	off 0 + cast<ptr> 0 handler 0xFFFF and __st16
+	off 2 + cast<ptr> 0 selector __st16
+	off 4 + cast<ptr> 0 0 __st8
+	off 5 + cast<ptr> 0 type_attr __st8
+	off 6 + cast<ptr> 0 handler 16 shr 0xFFFF and __st16
+	off 8 + cast<ptr> 0 handler 32 shr 0xFFFFFFFF and __st32
+	off 12 + cast<ptr> 0 0 __st32
 }
 
 fn setup_idt() {
@@ -116,14 +127,15 @@ fn setup_idt() {
 	0 -> i
 	loop {
 		i 48 >= if { break }
-		isrs cast<ptr> i 4 * sys::ld32 -> handler
+		// ISR table has 64-bit pointers on x86_64
+		isrs cast<ptr> i 8 * sys::ld64 -> handler
 		idt i handler SEG_KCODE IDT_PRESENT_INT32 idt_set_entry
 		i 1 + -> i
 	}
 
-	// IDT descriptor: limit = 256*8-1 = 2047
-	desc cast<ptr> 0 2047 sys::st16
-	desc 2 + cast<ptr> 0 idt sys::st32
+	// IDT descriptor: limit = 256*16-1 = 4095, base = 8 bytes
+	desc cast<ptr> 0 4095 __st16
+	desc 2 + cast<ptr> 0 idt __st64
 
 	desc hw::lidt
 }
@@ -149,7 +161,7 @@ fn remap_pic() {
 // Interrupt handler (called from ISR stub)
 // ---------------------------------------------------------------------------
 pub fn handle_interrupt() {
-	hw::int_num_addr cast<ptr> 0 sys::ld32 -> int_no
+	hw::int_num_addr cast<ptr> 0 sys::ld64 -> int_no
 
 	int_no 32 == if { handle_timer }
 	int_no 33 == if { handle_keyboard }
@@ -164,8 +176,8 @@ pub fn handle_interrupt() {
 // ---------------------------------------------------------------------------
 fn handle_timer() {
 	hw::tick_addr -> addr
-	addr cast<ptr> 0 sys::ld32 1 + -> ticks
-	addr cast<ptr> 0 ticks sys::st32
+	addr cast<ptr> 0 sys::ld64 1 + -> ticks
+	addr cast<ptr> 0 ticks sys::st64
 }
 
 // ---------------------------------------------------------------------------
@@ -220,12 +232,12 @@ fn handle_keyboard() {
 	scancode scancode_to_ascii -> ch
 	ch 0 == if { return }
 
-	hw::cursor_row_addr cast<ptr> 0 sys::ld32 -> row
-	hw::cursor_col_addr cast<ptr> 0 sys::ld32 -> col
+	hw::cursor_row_addr cast<ptr> 0 sys::ld64 -> row
+	hw::cursor_col_addr cast<ptr> 0 sys::ld64 -> col
 
 	ch 10 == if {
-		hw::cursor_row_addr cast<ptr> 0 row 1 + sys::st32
-		hw::cursor_col_addr cast<ptr> 0 0 sys::st32
+		hw::cursor_row_addr cast<ptr> 0 row 1 + sys::st64
+		hw::cursor_col_addr cast<ptr> 0 0 sys::st64
 		return
 	}
 
@@ -238,8 +250,8 @@ fn handle_keyboard() {
 	}
 	row VGA_ROWS >= if { 0 -> row }
 
-	hw::cursor_col_addr cast<ptr> 0 col sys::st32
-	hw::cursor_row_addr cast<ptr> 0 row sys::st32
+	hw::cursor_col_addr cast<ptr> 0 col sys::st64
+	hw::cursor_row_addr cast<ptr> 0 row sys::st64
 }
 
 // ---------------------------------------------------------------------------
@@ -278,8 +290,8 @@ fn _start() {
 	0 22 33 vga_put
 
 	// Cursor starts at row 2
-	hw::cursor_row_addr cast<ptr> 0 2 sys::st32
-	hw::cursor_col_addr cast<ptr> 0 0 sys::st32
+	hw::cursor_row_addr cast<ptr> 0 2 sys::st64
+	hw::cursor_col_addr cast<ptr> 0 0 sys::st64
 
 	sys::sti
 	loop { sys::hlt }
