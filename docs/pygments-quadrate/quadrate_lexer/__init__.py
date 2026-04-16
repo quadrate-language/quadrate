@@ -2,7 +2,7 @@
 
 from pygments.lexer import RegexLexer, bygroups, words
 from pygments.token import (
-    Comment, Keyword, Name, Number, Operator, Punctuation, String, Text, Whitespace
+    Comment, Keyword, Name, Number, Operator, Punctuation, String, Whitespace
 )
 
 __all__ = ['QuadrateLexer']
@@ -18,10 +18,11 @@ class QuadrateLexer(RegexLexer):
 
     # Keywords
     keywords = (
-        'fn', 'pub', 'const', 'struct', 'use', 'import', 'as', 'test',
+        'fn', 'pub', 'inline', 'const', 'struct', 'enum', 'type',
+        'use', 'import', 'as', 'test',
         'if', 'else', 'for', 'loop', 'while', 'break', 'continue', 'return',
         'defer', 'switch', 'ctx',
-        'true', 'false', 'Ok', 'Err',
+        'true', 'false', 'null', 'Ok', 'Err',
     )
 
     # Built-in stack operations
@@ -57,7 +58,7 @@ class QuadrateLexer(RegexLexer):
 
     # Built-in type casting
     builtins_cast = (
-        'cast',
+        'cast', 'sizeof',
     )
 
     # Built-in I/O
@@ -87,9 +88,10 @@ class QuadrateLexer(RegexLexer):
             # Whitespace
             (r'\s+', Whitespace),
 
-            # Comments
-            (r'//.*$', Comment.Single),
+            # Comments (doc comments must come before single-line)
             (r'///.*$', Comment.Doc),
+            (r'//.*$', Comment.Single),
+            (r'/\*', Comment.Multiline, 'block_comment'),
 
             # Strings
             (r'"', String.Double, 'string'),
@@ -104,11 +106,18 @@ class QuadrateLexer(RegexLexer):
             (r'-?\d+\.\d+', Number.Float),
             (r'-?\d+', Number.Integer),
 
-            # Function definition
+            # Function definition (with optional inline)
+            (r'(inline)(\s+)(fn)(\s+)(\w+)', bygroups(Keyword, Whitespace, Keyword, Whitespace, Name.Function)),
             (r'(fn)(\s+)(\w+)', bygroups(Keyword, Whitespace, Name.Function)),
 
             # Struct definition
             (r'(struct)(\s+)(\w+)', bygroups(Keyword, Whitespace, Name.Class)),
+
+            # Enum definition
+            (r'(enum)(\s+)(\w+)', bygroups(Keyword, Whitespace, Name.Class)),
+
+            # Type alias
+            (r'(type)(\s+)(\w+)', bygroups(Keyword, Whitespace, Keyword.Type)),
 
             # Module usage
             (r'(use)(\s+)(\w+)', bygroups(Keyword.Namespace, Whitespace, Name.Namespace)),
@@ -165,5 +174,10 @@ class QuadrateLexer(RegexLexer):
             (r'\\[nrt\\"]', String.Escape),
             (r'[^"\\]+', String.Double),
             (r'"', String.Double, '#pop'),
+        ],
+        'block_comment': [
+            (r'\*/', Comment.Multiline, '#pop'),
+            (r'[^*]+', Comment.Multiline),
+            (r'\*', Comment.Multiline),
         ],
     }

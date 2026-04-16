@@ -737,9 +737,22 @@
         let errorLines = new Set();
 
         // Quadrate syntax highlighting
-        const keywords = ['fn', 'pub', 'if', 'else', 'for', 'loop', 'break', 'continue', 'return', 'use', 'struct', 'enum', 'type', 'const', 'defer', 'switch', 'case', 'test', 'true', 'false', 'and', 'or', 'not'];
-        const types = ['i64', 'f64', 'str', 'ptr', 'any'];
-        const builtins = ['dup', 'swap', 'drop', 'over', 'rot', 'nip', 'tuck', 'print', 'nl', 'it', 'len', 'push', 'pop', 'get', 'set', 'call', 'eq', 'neq', 'lt', 'gt', 'lte', 'gte', 'abs', 'neg', 'sin', 'cos', 'tan', 'sqrt', 'floor', 'ceil', 'round', 'min', 'max', 'mod'];
+        const keywords = ['fn', 'pub', 'inline', 'if', 'else', 'for', 'loop', 'break', 'continue', 'return', 'use', 'import', 'as', 'struct', 'enum', 'type', 'const', 'defer', 'switch', 'ctx', 'test', 'true', 'false', 'null', 'Ok', 'Err'];
+        const types = ['i64', 'f64', 'str', 'ptr', 'any', 'bool'];
+        const builtins = [
+            'dup', 'dup2', 'dupd', 'drop', 'drop2', 'swap', 'swap2', 'swapd',
+            'over', 'over2', 'overd', 'rot', 'nip', 'nipd', 'tuck', 'pick', 'roll', 'clear', 'depth',
+            'add', 'sub', 'mul', 'div', 'mod', 'neg', 'inc', 'dec',
+            'eq', 'neq', 'lt', 'lte', 'gt', 'gte', 'within',
+            'and', 'or', 'xor', 'not', 'shl', 'shr',
+            'makei', 'makef', 'makes', 'makep', 'make', 'len', 'nth', 'set', 'append',
+            'cast', 'sizeof',
+            'print', 'printv', 'prints', 'printsv', 'nl', 'read',
+            'err', 'panic', 'spawn', 'wait', 'detach', 'call', 'free',
+            'abs', 'acos', 'asin', 'atan', 'atan2', 'cb', 'cbrt', 'ceil', 'cos',
+            'exp', 'fac', 'floor', 'inv', 'ln', 'log', 'log10', 'max', 'min',
+            'pow', 'round', 'sin', 'sq', 'sqrt', 'tan',
+        ];
 
         function escapeHtml(text) {
             return text
@@ -993,6 +1006,11 @@ fn add(i64 i64 -- i64) {
 	+
 }
 
+// Inline functions are expanded at each call site
+inline fn square(x:i64 -- i64) {
+	x x *
+}
+
 fn main() {
 	5 double print nl       // prints 10
 
@@ -1002,6 +1020,9 @@ fn main() {
 
 	// Chain function calls
 	10 double double print nl   // prints 40
+
+	// Inline function call
+	6 square print nl       // prints 36
 }`,
 
             fibonacci: `// Fibonacci sequence using stack operations
@@ -1020,11 +1041,11 @@ fn main() {
 
             factorial: `// Factorial: n! = n * (n-1) * ... * 1
 fn factorial(n:i64 -- i64) {
-	1 -> acc
-	1 n ++ 1 for i {
-		acc i * -> acc
+	1 -> result
+	1 n 1 + 1 for i {
+		result i * -> result
 	}
-	acc
+	result
 }
 
 fn main() {
@@ -1043,19 +1064,17 @@ fn divmod(a:i64 b:i64 -- i64 i64) {
 	a b %                  // push remainder
 }
 
-// Swap values using pure stack (no variables!)
-fn swap_pair(i64 i64 -- i64 i64) {
-	swap
+// Named params make the swap explicit
+fn swap_pair(a:i64 b:i64 -- i64 i64) {
+	b a
 }
 
-// Return min AND max using stack operations
-fn minmax(i64 i64 -- i64 i64) {
-	over over
-	< if {
-		// a < b: already correct order
+// Return min AND max
+fn minmax(a:i64 b:i64 -- i64 i64) {
+	a b < if {
+		a b
 	} else {
-		// a >= b: swap
-		swap
+		b a
 	}
 }
 
@@ -1070,7 +1089,7 @@ fn main() {
 	"  Remainder: " print rem print nl
 	nl
 
-	// Swap without variables - pure stack!
+	// Named params make the swap clear
 	"Swap 10 and 20: " print
 	10 20 swap_pair
 	print " " print print nl
@@ -1153,34 +1172,34 @@ fn main() {
 	p origin distance_to print nl
 }`,
 
-            bubblesort: `// Bubble Sort using pure stack operations
-// No arrays - just creative stack manipulation!
-// Shows: dup, swap, over, rot, drop
-// Compare and swap top two: ensure smaller is below larger
-fn order2(i64 i64 -- i64 i64) {
-	over over    // [a b a b]
-	> if {
-		swap     // [b a] - swapped!
+            bubblesort: `// Bubble Sort using named parameters
+// Shows how auto-bound variables make sorting logic clear
+// Compare and order two values: return smaller first
+fn order2(a:i64 b:i64 -- i64 i64) {
+	a b > if {
+		b a
+	} else {
+		a b
 	}
 }
 
 // Sort 3 values using bubble sort passes
-fn sort3(i64 i64 i64 -- i64 i64 i64) {
-	// Pass 1: compare top two
-	order2
+fn sort3(a:i64 b:i64 c:i64 -- i64 i64 i64) {
+	// Pass 1: order b and c
+	b c order2 -> c -> b
 
-	// Pass 2: compare bottom two
-	rot rot
-	order2
-	rot
+	// Pass 2: order a and b
+	a b order2 -> b -> a
 
-	// Pass 3: compare top two again
-	order2
+	// Pass 3: order b and c again
+	b c order2 -> c -> b
+
+	a b c
 }
 
 fn main() {
-	"=== Stack-Based Bubble Sort ===" print nl
-	"Sorting values using only stack operations!" print nl
+	"=== Bubble Sort ===" print nl
+	"Sorting values using auto-bound variables!" print nl
 	nl
 
 	// Sort 2 values
@@ -1208,7 +1227,7 @@ fn main() {
 	a print " " print b print " " print c print nl
 
 	nl
-	"Stack operations used: over, swap, rot" print nl
+	"Named params make the logic readable!" print nl
 }`,
         };
 

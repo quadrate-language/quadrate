@@ -223,6 +223,16 @@
       ]
     },
     {
+      "name": "inline",
+      "category": "Declaration",
+      "description": "Requests the compiler to inline a function at call sites, eliminating function call overhead. Can be combined with pub.",
+      "syntax": "inline fn name(inputs -- outputs) { body }",
+      "examples": [
+        "inline fn double(x:i64 -- result:i64) { x 2 * }",
+        "pub inline fn inc(x:i64 -- result:i64) { x 1 + }"
+      ]
+    },
+    {
       "name": "import",
       "category": "Import",
       "description": "Imports a C library, declaring its functions with Quadrate signatures",
