@@ -64,11 +64,11 @@ isr_table:
 // ---------------------------------------------------------------------------
 .section .text
 
-// lgdt: void lgdt(int64_t descriptor_addr)
+// asm_lgdt: void asm_lgdt(void* descriptor_addr)
 // SysV x86_64: first arg in %rdi
-.global lgdt
-.type lgdt, @function
-lgdt:
+.global asm_lgdt
+.type asm_lgdt, @function
+asm_lgdt:
 	lgdt (%rdi)
 	// Reload segment registers
 	pushq $0x08
@@ -83,24 +83,24 @@ lgdt:
 	movw %ax, %gs
 	movw %ax, %ss
 	ret
-.size lgdt, . - lgdt
+.size asm_lgdt, . - asm_lgdt
 
-// lidt: void lidt(int64_t descriptor_addr)
-.global lidt
-.type lidt, @function
-lidt:
+// asm_lidt: void asm_lidt(void* descriptor_addr)
+.global asm_lidt
+.type asm_lidt, @function
+asm_lidt:
 	lidt (%rdi)
 	ret
-.size lidt, . - lidt
+.size asm_lidt, . - asm_lidt
 
 // Address getters
 .macro ADDR_GETTER name, symbol
-.global \name
-.type \name, @function
-\name:
+.global asm_\name
+.type asm_\name, @function
+asm_\name:
 	leaq \symbol(%rip), %rax
 	ret
-.size \name, . - \name
+.size asm_\name, . - asm_\name
 .endm
 
 ADDR_GETTER gdt_addr,       gdt_entries

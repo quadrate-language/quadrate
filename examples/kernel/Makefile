@@ -10,7 +10,7 @@ MEM_SRC         := $(REPO_ROOT)/lib/mem/src/mem.c
 RT_INC          := $(REPO_ROOT)/lib/rt/include
 MEM_INC         := $(REPO_ROOT)/lib/mem/include
 
-OBJS := boot.o interrupts.o kernel.o freestanding.o mem.o
+OBJS := boot.o interrupts.o interrupt_glue.o kernel.o freestanding.o mem.o
 
 .PHONY: all iso run run-iso clean
 
@@ -25,6 +25,9 @@ boot.o: boot.S
 
 interrupts.o: interrupts.S
 	clang $(ASFLAGS) -c $< -o $@
+
+interrupt_glue.o: interrupt_glue.c
+	clang $(CFLAGS) -I$(RT_INC) -c $< -o $@
 
 freestanding.o: $(FREESTANDING_RT)
 	clang $(CFLAGS) -I$(RT_INC) -c $< -o $@
