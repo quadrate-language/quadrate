@@ -60,17 +60,49 @@ isr_table:
 	.quad isr40, isr41, isr42, isr43, isr44, isr45, isr46, isr47
 
 // ---------------------------------------------------------------------------
-// TEXT: Helper functions (bare C names — Quadrate import generates wrappers)
+// TEXT: Helper functions (Quadrate calling convention — no C glue needed)
 // ---------------------------------------------------------------------------
+// Each function: int fn(qd_context* ctx) with ctx in %rdi.
+// Pop/push via the runtime stack.
+//
+// Runtime stack layout (x86_64):
+//   ctx+0:  qd_stack* st
+//   st+0:   data ptr    st+8: capacity    st+16: size
+//   element: 16 bytes (value:i64, type:i32, tainted:i8, pad:3)
 .section .text
 
-// asm_lgdt: void asm_lgdt(void* descriptor_addr)
-// SysV x86_64: first arg in %rdi
-.global asm_lgdt
-.type asm_lgdt, @function
-asm_lgdt:
-	lgdt (%rdi)
-	// Reload segment registers
+// Pop i64 from runtime stack. ctx in %rdi → value in %rax. Clobbers %rcx, %rdx.
+.macro RT_POP
+	movq (%rdi), %rcx           // rcx = ctx->st
+	movq 16(%rcx), %rdx         // rdx = size
+	decq %rdx
+	movq %rdx, 16(%rcx)         // size--
+	movq (%rcx), %rax           // rax = data
+	shlq $4, %rdx               // rdx = size * 16
+	movq (%rax,%rdx), %rax      // rax = data[size].value
+.endm
+
+// Push i64 to runtime stack. ctx in %rdi, value in %rsi. Clobbers %rcx, %rdx, %rax, %r8.
+.macro RT_PUSH
+	movq (%rdi), %rcx           // rcx = ctx->st
+	movq 16(%rcx), %rdx         // rdx = size
+	movq (%rcx), %rax           // rax = data
+	movq %rdx, %r8
+	shlq $4, %r8                // r8 = size * 16
+	movq %rsi, (%rax,%r8)       // data[size].value = rsi
+	movl $0, 8(%rax,%r8)        // type = INT
+	movb $0, 12(%rax,%r8)       // tainted = false
+	incq %rdx
+	movq %rdx, 16(%rcx)         // size++
+.endm
+
+// lgdt: pop descriptor address, load GDT, reload segments
+.global lgdt
+.type lgdt, @function
+lgdt:
+	pushq %rdi                  // save ctx (will be clobbered by lretq stack manip)
+	RT_POP                       // rax = descriptor address
+	lgdt (%rax)
 	pushq $0x08
 	leaq .Lgdt_flush(%rip), %rax
 	pushq %rax
@@ -82,25 +114,31 @@ asm_lgdt:
 	movw %ax, %fs
 	movw %ax, %gs
 	movw %ax, %ss
+	popq %rdi                   // restore ctx
+	xorl %eax, %eax
 	ret
-.size asm_lgdt, . - asm_lgdt
+.size lgdt, . - lgdt
 
-// asm_lidt: void asm_lidt(void* descriptor_addr)
-.global asm_lidt
-.type asm_lidt, @function
-asm_lidt:
-	lidt (%rdi)
+// lidt: pop descriptor address, load IDT
+.global lidt
+.type lidt, @function
+lidt:
+	RT_POP
+	lidt (%rax)
+	xorl %eax, %eax
 	ret
-.size asm_lidt, . - asm_lidt
+.size lidt, . - lidt
 
-// Address getters
+// Address getters: push BSS symbol address
 .macro ADDR_GETTER name, symbol
-.global asm_\name
-.type asm_\name, @function
-asm_\name:
-	leaq \symbol(%rip), %rax
+.global \name
+.type \name, @function
+\name:
+	leaq \symbol(%rip), %rsi
+	RT_PUSH
+	xorl %eax, %eax
 	ret
-.size asm_\name, . - asm_\name
+.size \name, . - \name
 .endm
 
 ADDR_GETTER gdt_addr,       gdt_entries
