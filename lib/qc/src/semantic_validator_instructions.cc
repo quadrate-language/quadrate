@@ -73,8 +73,6 @@ namespace Qd {
 			}
 		}
 
-
-
 		// panic instruction: ( msg code -- ) sets error flag and returns from function
 		// Can only be called inside fallible functions (marked with !)
 		if (strcmp(name, "panic") == 0) {

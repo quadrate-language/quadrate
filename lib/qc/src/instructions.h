@@ -33,8 +33,7 @@ namespace Qd {
 			// x86 I/O port operations — lower to inline asm (outb/inb etc.).
 			// Freestanding-only, x86/x86_64 targets only. Internal: use sys module.
 			// port_out: (port:i64 value:i64 --)   port_in: (port:i64 -- value:i64)
-			"__port_in8", "__port_in16", "__port_in32",
-			"__port_out8", "__port_out16", "__port_out32",
+			"__port_in8", "__port_in16", "__port_in32", "__port_out8", "__port_out16", "__port_out32",
 			// CPU control — lower to single inline asm. Freestanding-only.
 			"__cli", "__hlt", "__sti",
 			// I/O

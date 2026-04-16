@@ -395,8 +395,7 @@ namespace Qd {
 			// Raw memory stores: st8/st16/st32/st64 — compile-time stack path.
 			// (addr:i64 offset:i64 value:i64 -- )
 			if (name == "__st8" || name == "__st16" || name == "__st32" || name == "__st64") {
-				unsigned bits =
-						(name == "__st8") ? 8 : (name == "__st16") ? 16 : (name == "__st32") ? 32 : 64;
+				unsigned bits = (name == "__st8") ? 8 : (name == "__st16") ? 16 : (name == "__st32") ? 32 : 64;
 				llvm::Value* value = compileTimeStack.back();
 				compileTimeStack.pop_back();
 				llvm::Value* offset = compileTimeStack.back();
@@ -413,8 +412,7 @@ namespace Qd {
 			// Raw memory loads: ld8/ld16/ld32/ld64 — compile-time stack path.
 			// (addr:i64 offset:i64 -- value:i64) — value is zero-extended.
 			if (name == "__ld8" || name == "__ld16" || name == "__ld32" || name == "__ld64") {
-				unsigned bits =
-						(name == "__ld8") ? 8 : (name == "__ld16") ? 16 : (name == "__ld32") ? 32 : 64;
+				unsigned bits = (name == "__ld8") ? 8 : (name == "__ld16") ? 16 : (name == "__ld32") ? 32 : 64;
 				llvm::Value* offset = compileTimeStack.back();
 				compileTimeStack.pop_back();
 				llvm::Value* addr = compileTimeStack.back();
@@ -446,10 +444,9 @@ namespace Qd {
 				llvm::Type* valTy = llvm::Type::getIntNTy(*context, bits);
 				llvm::Value* truncVal = builder->CreateTrunc(value, valTy, "val");
 				const char* asmStr = (bits == 8) ? "outb %al, %dx" : (bits == 16) ? "outw %ax, %dx" : "outl %eax, %dx";
-				const char* regStr =
-						(bits == 8) ? "{al},{dx},~{dirflag},~{fpsr},~{flags}"
-						: (bits == 16) ? "{ax},{dx},~{dirflag},~{fpsr},~{flags}"
-									   : "{eax},{dx},~{dirflag},~{fpsr},~{flags}";
+				const char* regStr = (bits == 8)	? "{al},{dx},~{dirflag},~{fpsr},~{flags}"
+									 : (bits == 16) ? "{ax},{dx},~{dirflag},~{fpsr},~{flags}"
+													: "{eax},{dx},~{dirflag},~{fpsr},~{flags}";
 				auto* asmFnTy = llvm::FunctionType::get(builder->getVoidTy(), {valTy, int16Ty}, false);
 				auto* ia = llvm::InlineAsm::get(asmFnTy, asmStr, regStr, /*hasSideEffects=*/true);
 				builder->CreateCall(ia, {truncVal, truncPort});
@@ -471,10 +468,9 @@ namespace Qd {
 				llvm::Value* truncPort = builder->CreateTrunc(port, int16Ty, "port16");
 				llvm::Type* valTy = llvm::Type::getIntNTy(*context, bits);
 				const char* asmStr = (bits == 8) ? "inb %dx, %al" : (bits == 16) ? "inw %dx, %ax" : "inl %dx, %eax";
-				const char* regStr =
-						(bits == 8) ? "={al},{dx},~{dirflag},~{fpsr},~{flags}"
-						: (bits == 16) ? "={ax},{dx},~{dirflag},~{fpsr},~{flags}"
-									   : "={eax},{dx},~{dirflag},~{fpsr},~{flags}";
+				const char* regStr = (bits == 8)	? "={al},{dx},~{dirflag},~{fpsr},~{flags}"
+									 : (bits == 16) ? "={ax},{dx},~{dirflag},~{fpsr},~{flags}"
+													: "={eax},{dx},~{dirflag},~{fpsr},~{flags}";
 				auto* asmFnTy = llvm::FunctionType::get(valTy, {int16Ty}, false);
 				auto* ia = llvm::InlineAsm::get(asmFnTy, asmStr, regStr, /*hasSideEffects=*/true);
 				llvm::Value* result = builder->CreateCall(ia, {truncPort});
@@ -848,11 +844,10 @@ namespace Qd {
 			llvm::Value* truncPort = builder->CreateTrunc(port, int16Ty, "port16");
 			llvm::Type* valTy = llvm::Type::getIntNTy(*context, bits);
 			llvm::Value* truncVal = builder->CreateTrunc(value, valTy, "val");
-			const char* asmStr =
-					(bits == 8) ? "outb %al, %dx" : (bits == 16) ? "outw %ax, %dx" : "outl %eax, %dx";
-			const char* regStr = (bits == 8)    ? "{al},{dx},~{dirflag},~{fpsr},~{flags}"
+			const char* asmStr = (bits == 8) ? "outb %al, %dx" : (bits == 16) ? "outw %ax, %dx" : "outl %eax, %dx";
+			const char* regStr = (bits == 8)	? "{al},{dx},~{dirflag},~{fpsr},~{flags}"
 								 : (bits == 16) ? "{ax},{dx},~{dirflag},~{fpsr},~{flags}"
-												 : "{eax},{dx},~{dirflag},~{fpsr},~{flags}";
+												: "{eax},{dx},~{dirflag},~{fpsr},~{flags}";
 			auto* asmFnTy = llvm::FunctionType::get(builder->getVoidTy(), {valTy, int16Ty}, false);
 			auto* ia = llvm::InlineAsm::get(asmFnTy, asmStr, regStr, /*hasSideEffects=*/true);
 			builder->CreateCall(ia, {truncVal, truncPort});
@@ -871,11 +866,10 @@ namespace Qd {
 			llvm::Type* int16Ty = llvm::Type::getInt16Ty(*context);
 			llvm::Value* truncPort = builder->CreateTrunc(port, int16Ty, "port16");
 			llvm::Type* valTy = llvm::Type::getIntNTy(*context, bits);
-			const char* asmStr =
-					(bits == 8) ? "inb %dx, %al" : (bits == 16) ? "inw %dx, %ax" : "inl %dx, %eax";
-			const char* regStr = (bits == 8)    ? "={al},{dx},~{dirflag},~{fpsr},~{flags}"
+			const char* asmStr = (bits == 8) ? "inb %dx, %al" : (bits == 16) ? "inw %dx, %ax" : "inl %dx, %eax";
+			const char* regStr = (bits == 8)	? "={al},{dx},~{dirflag},~{fpsr},~{flags}"
 								 : (bits == 16) ? "={ax},{dx},~{dirflag},~{fpsr},~{flags}"
-												 : "={eax},{dx},~{dirflag},~{fpsr},~{flags}";
+												: "={eax},{dx},~{dirflag},~{fpsr},~{flags}";
 			auto* asmFnTy = llvm::FunctionType::get(valTy, {int16Ty}, false);
 			auto* ia = llvm::InlineAsm::get(asmFnTy, asmStr, regStr, /*hasSideEffects=*/true);
 			llvm::Value* result = builder->CreateCall(ia, {truncPort});
