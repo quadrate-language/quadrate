@@ -1,26 +1,27 @@
-// Test: sys::st8/load8, store16/load16, store32/load32, store64/load64
+// Test: sys::st8/ld8, st16/ld16, st32/ld32, st64/ld64
 // These are inline wrappers around __st8/__ld8 etc — zero overhead.
 use mem
 use sys
 
 fn main() {
 	64 mem::alloc! -> buf
+	buf cast<i64> -> addr
 
-	// store8 / load8: store and load a single byte
-	buf 0 42 sys::st8
-	buf 0 sys::ld8 print nl
+	// st8 / ld8: store and load a single byte
+	addr 0 42 sys::st8
+	addr 0 sys::ld8 print nl
 
-	// store16 / load16: store and load 16 bits
-	buf 8 4660 sys::st16
-	buf 8 sys::ld16 print nl
+	// st16 / ld16: store and load 16 bits
+	addr 8 4660 sys::st16
+	addr 8 sys::ld16 print nl
 
-	// store32 / load32: store and load 32 bits
-	buf 16 3735928559 sys::st32
-	buf 16 sys::ld32 print nl
+	// st32 / ld32: store and load 32 bits
+	addr 16 3735928559 sys::st32
+	addr 16 sys::ld32 print nl
 
-	// store64 / load64: store and load 64 bits
-	buf 24 9223372036854775807 sys::st64
-	buf 24 sys::ld64 print nl
+	// st64 / ld64: store and load 64 bits
+	addr 24 9223372036854775807 sys::st64
+	addr 24 sys::ld64 print nl
 
 	buf free
 	"done" print nl

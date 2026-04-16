@@ -1,3 +1,4 @@
+use sys
 // Bare-metal x86_64 multiboot kernel with interrupt support.
 // Demonstrates: GDT, IDT, PIC remapping, PIT timer, PS/2 keyboard.
 
@@ -48,15 +49,15 @@ const IDT_PRESENT_INT32 = 0x8E
 // VGA text mode
 // ---------------------------------------------------------------------------
 fn vga_put(row:i64 col:i64 ch:i64 -- ) {
-	VGA_BASE row VGA_COLS * col + 2 * + 0 ch __st8
-	VGA_BASE row VGA_COLS * col + 2 * + 1 ATTR_WHITE __st8
+	VGA_BASE row VGA_COLS * col + 2 * + 0 ch sys::st8
+	VGA_BASE row VGA_COLS * col + 2 * + 1 ATTR_WHITE sys::st8
 }
 
 fn vga_clear() {
 	0 -> i
 	loop {
 		i VGA_COLS VGA_ROWS * >= if { break }
-		VGA_BASE i 2 * + 0 32 ATTR_HI or __st16
+		VGA_BASE i 2 * + 0 32 ATTR_HI or sys::st16
 		i 1 + -> i
 	}
 }
@@ -66,14 +67,14 @@ fn vga_clear() {
 // ---------------------------------------------------------------------------
 fn gdt_set_entry(base:i64 idx:i64 seg_base:i64 seg_limit:i64 access:i64 flags:i64 -- ) {
 	base idx 8 * + -> off
-	off 0 + 0 seg_limit 0xFF and __st8
-	off 1 + 0 seg_limit 8 shr 0xFF and __st8
-	off 2 + 0 seg_base 0xFF and __st8
-	off 3 + 0 seg_base 8 shr 0xFF and __st8
-	off 4 + 0 seg_base 16 shr 0xFF and __st8
-	off 5 + 0 access __st8
-	off 6 + 0 seg_limit 16 shr 0x0F and flags 4 shl or __st8
-	off 7 + 0 seg_base 24 shr 0xFF and __st8
+	off 0 + 0 seg_limit 0xFF and sys::st8
+	off 1 + 0 seg_limit 8 shr 0xFF and sys::st8
+	off 2 + 0 seg_base 0xFF and sys::st8
+	off 3 + 0 seg_base 8 shr 0xFF and sys::st8
+	off 4 + 0 seg_base 16 shr 0xFF and sys::st8
+	off 5 + 0 access sys::st8
+	off 6 + 0 seg_limit 16 shr 0x0F and flags 4 shl or sys::st8
+	off 7 + 0 seg_base 24 shr 0xFF and sys::st8
 }
 
 fn setup_gdt() {
@@ -88,8 +89,8 @@ fn setup_gdt() {
 	gdt 2 0 0xFFFFF 0x92 0x0A gdt_set_entry
 
 	// GDT descriptor: limit (2 bytes) + base (8 bytes on x86_64)
-	desc 0 23 __st16
-	desc 2 + 0 gdt __st64
+	desc 0 23 sys::st16
+	desc 2 + 0 gdt sys::st64
 
 	desc hw::lgdt
 }
@@ -108,13 +109,13 @@ fn setup_gdt() {
 
 fn idt_set_entry(base:i64 idx:i64 handler:i64 selector:i64 type_attr:i64 -- ) {
 	base idx 16 * + -> off
-	off 0 + 0 handler 0xFFFF and __st16
-	off 2 + 0 selector __st16
-	off 4 + 0 0 __st8
-	off 5 + 0 type_attr __st8
-	off 6 + 0 handler 16 shr 0xFFFF and __st16
-	off 8 + 0 handler 32 shr 0xFFFFFFFF and __st32
-	off 12 + 0 0 __st32
+	off 0 + 0 handler 0xFFFF and sys::st16
+	off 2 + 0 selector sys::st16
+	off 4 + 0 0 sys::st8
+	off 5 + 0 type_attr sys::st8
+	off 6 + 0 handler 16 shr 0xFFFF and sys::st16
+	off 8 + 0 handler 32 shr 0xFFFFFFFF and sys::st32
+	off 12 + 0 0 sys::st32
 }
 
 fn setup_idt() {
@@ -126,14 +127,14 @@ fn setup_idt() {
 	loop {
 		i 48 >= if { break }
 		// ISR table has 64-bit pointers on x86_64
-		isrs i 8 * __ld64 -> handler
+		isrs i 8 * sys::ld64 -> handler
 		idt i handler SEG_KCODE IDT_PRESENT_INT32 idt_set_entry
 		i 1 + -> i
 	}
 
 	// IDT descriptor: limit = 256*16-1 = 4095, base = 8 bytes
-	desc 0 4095 __st16
-	desc 2 + 0 idt __st64
+	desc 0 4095 sys::st16
+	desc 2 + 0 idt sys::st64
 
 	desc hw::lidt
 }
@@ -142,31 +143,31 @@ fn setup_idt() {
 // PIC remapping
 // ---------------------------------------------------------------------------
 fn remap_pic() {
-	PIC1_CMD ICW1_INIT __port_out8
-	PIC2_CMD ICW1_INIT __port_out8
-	PIC1_DATA 32 __port_out8
-	PIC2_DATA 40 __port_out8
-	PIC1_DATA 4 __port_out8
-	PIC2_DATA 2 __port_out8
-	PIC1_DATA ICW4_8086 __port_out8
-	PIC2_DATA ICW4_8086 __port_out8
+	PIC1_CMD ICW1_INIT sys::port_out8
+	PIC2_CMD ICW1_INIT sys::port_out8
+	PIC1_DATA 32 sys::port_out8
+	PIC2_DATA 40 sys::port_out8
+	PIC1_DATA 4 sys::port_out8
+	PIC2_DATA 2 sys::port_out8
+	PIC1_DATA ICW4_8086 sys::port_out8
+	PIC2_DATA ICW4_8086 sys::port_out8
 	// Unmask IRQ0 (timer) and IRQ1 (keyboard)
-	PIC1_DATA 0xFC __port_out8
-	PIC2_DATA 0xFF __port_out8
+	PIC1_DATA 0xFC sys::port_out8
+	PIC2_DATA 0xFF sys::port_out8
 }
 
 // ---------------------------------------------------------------------------
 // Interrupt handler (called from ISR stub)
 // ---------------------------------------------------------------------------
 pub fn handle_interrupt() {
-	hw::int_num_addr cast<ptr> 0 __ld64 -> int_no
+	hw::int_num_addr 0 sys::ld64 -> int_no
 
 	int_no 32 == if { handle_timer }
 	int_no 33 == if { handle_keyboard }
 
 	// Send EOI
-	int_no 40 >= if { PIC2_CMD PIC_EOI __port_out8 }
-	int_no 32 >= if { PIC1_CMD PIC_EOI __port_out8 }
+	int_no 40 >= if { PIC2_CMD PIC_EOI sys::port_out8 }
+	int_no 32 >= if { PIC1_CMD PIC_EOI sys::port_out8 }
 }
 
 // ---------------------------------------------------------------------------
@@ -174,8 +175,8 @@ pub fn handle_interrupt() {
 // ---------------------------------------------------------------------------
 fn handle_timer() {
 	hw::tick_addr -> addr
-	addr cast<ptr> 0 __ld64 1 + -> ticks
-	addr cast<ptr> 0 ticks __st64
+	addr 0 sys::ld64 1 + -> ticks
+	addr 0 ticks sys::st64
 }
 
 // ---------------------------------------------------------------------------
@@ -224,18 +225,18 @@ fn scancode_to_ascii(sc:i64 -- ch:i64) {
 }
 
 fn handle_keyboard() {
-	0x60 __port_in8 -> scancode
+	0x60 sys::port_in8 -> scancode
 	scancode 0x80 and 0 != if { return }
 
 	scancode scancode_to_ascii -> ch
 	ch 0 == if { return }
 
-	hw::cursor_row_addr cast<ptr> 0 __ld64 -> row
-	hw::cursor_col_addr cast<ptr> 0 __ld64 -> col
+	hw::cursor_row_addr 0 sys::ld64 -> row
+	hw::cursor_col_addr 0 sys::ld64 -> col
 
 	ch 10 == if {
-		hw::cursor_row_addr cast<ptr> 0 row 1 + __st64
-		hw::cursor_col_addr cast<ptr> 0 0 __st64
+		hw::cursor_row_addr 0 row 1 + sys::st64
+		hw::cursor_col_addr 0 0 sys::st64
 		return
 	}
 
@@ -248,15 +249,15 @@ fn handle_keyboard() {
 	}
 	row VGA_ROWS >= if { 0 -> row }
 
-	hw::cursor_col_addr cast<ptr> 0 col __st64
-	hw::cursor_row_addr cast<ptr> 0 row __st64
+	hw::cursor_col_addr 0 col sys::st64
+	hw::cursor_row_addr 0 row sys::st64
 }
 
 // ---------------------------------------------------------------------------
 // Entry point
 // ---------------------------------------------------------------------------
 fn _start() {
-	__cli
+	sys::cli
 	vga_clear
 	setup_gdt
 	setup_idt
@@ -264,34 +265,34 @@ fn _start() {
 	setup_gdt
 
 	// Banner: "Hello, Quadrate kernel!" (inline writes for reliability)
-	0xB8000 0  0x0F48 __st16
-	0xB8000 2  0x0F65 __st16
-	0xB8000 4  0x0F6C __st16
-	0xB8000 6  0x0F6C __st16
-	0xB8000 8  0x0F6F __st16
-	0xB8000 10 0x0F2C __st16
-	0xB8000 12 0x0F20 __st16
-	0xB8000 14 0x0F51 __st16
-	0xB8000 16 0x0F75 __st16
-	0xB8000 18 0x0F61 __st16
-	0xB8000 20 0x0F64 __st16
-	0xB8000 22 0x0F72 __st16
-	0xB8000 24 0x0F61 __st16
-	0xB8000 26 0x0F74 __st16
-	0xB8000 28 0x0F65 __st16
-	0xB8000 30 0x0F20 __st16
-	0xB8000 32 0x0F6B __st16
-	0xB8000 34 0x0F65 __st16
-	0xB8000 36 0x0F72 __st16
-	0xB8000 38 0x0F6E __st16
-	0xB8000 40 0x0F65 __st16
-	0xB8000 42 0x0F6C __st16
-	0xB8000 44 0x0F21 __st16
+	0xB8000 0  0x0F48 sys::st16
+	0xB8000 2  0x0F65 sys::st16
+	0xB8000 4  0x0F6C sys::st16
+	0xB8000 6  0x0F6C sys::st16
+	0xB8000 8  0x0F6F sys::st16
+	0xB8000 10 0x0F2C sys::st16
+	0xB8000 12 0x0F20 sys::st16
+	0xB8000 14 0x0F51 sys::st16
+	0xB8000 16 0x0F75 sys::st16
+	0xB8000 18 0x0F61 sys::st16
+	0xB8000 20 0x0F64 sys::st16
+	0xB8000 22 0x0F72 sys::st16
+	0xB8000 24 0x0F61 sys::st16
+	0xB8000 26 0x0F74 sys::st16
+	0xB8000 28 0x0F65 sys::st16
+	0xB8000 30 0x0F20 sys::st16
+	0xB8000 32 0x0F6B sys::st16
+	0xB8000 34 0x0F65 sys::st16
+	0xB8000 36 0x0F72 sys::st16
+	0xB8000 38 0x0F6E sys::st16
+	0xB8000 40 0x0F65 sys::st16
+	0xB8000 42 0x0F6C sys::st16
+	0xB8000 44 0x0F21 sys::st16
 
 	// Cursor starts at row 2
-	hw::cursor_row_addr cast<ptr> 0 2 __st64
-	hw::cursor_col_addr cast<ptr> 0 0 __st64
+	hw::cursor_row_addr 0 2 sys::st64
+	hw::cursor_col_addr 0 0 sys::st64
 
-	__sti
-	loop { __hlt }
+	sys::sti
+	loop { sys::hlt }
 }

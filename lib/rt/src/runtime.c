@@ -367,6 +367,8 @@ int qd_casti(qd_context* ctx) {
 	} else if (elem.type == QD_STACK_TYPE_STR) {
 		result = atoll(qd_string_data(elem.value.s));
 		release_if_string(&elem);  // Release the string after conversion
+	} else if (elem.type == QD_STACK_TYPE_PTR) {
+		result = (int64_t)(uintptr_t)elem.value.p;
 	} else {
 		QDRT_FATAL(ctx, "casti", "Cannot cast type to integer");
 	}

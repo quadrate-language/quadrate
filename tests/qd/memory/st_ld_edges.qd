@@ -1,42 +1,43 @@
-// Test: edge cases for sys::st/load: byte access, max values, overwrite
+// Test: edge cases for sys::st/ld: byte access, max values, overwrite
 use mem
 use sys
 
 fn main() {
 	64 mem::alloc! -> buf
+	buf cast<i64> -> addr
 
 	// Byte-level access within a 16-bit store (little-endian)
-	buf 0 0x4142 sys::st16
-	buf 0 sys::ld8 print nl
-	buf 1 sys::ld8 print nl
+	addr 0 0x4142 sys::st16
+	addr 0 sys::ld8 print nl
+	addr 1 sys::ld8 print nl
 
 	// Multiple values at different offsets
-	buf 0 10 sys::st8
-	buf 1 20 sys::st8
-	buf 2 30 sys::st8
-	buf 0 sys::ld8 print nl
-	buf 1 sys::ld8 print nl
-	buf 2 sys::ld8 print nl
+	addr 0 10 sys::st8
+	addr 1 20 sys::st8
+	addr 2 30 sys::st8
+	addr 0 sys::ld8 print nl
+	addr 1 sys::ld8 print nl
+	addr 2 sys::ld8 print nl
 
 	// Overwrite and re-read
-	buf 0 255 sys::st8
-	buf 0 sys::ld8 print nl
+	addr 0 255 sys::st8
+	addr 0 sys::ld8 print nl
 
 	// Zero value
-	buf 0 0 sys::st64
-	buf 0 sys::ld64 print nl
+	addr 0 0 sys::st64
+	addr 0 sys::ld64 print nl
 
 	// Max u8
-	buf 0 255 sys::st8
-	buf 0 sys::ld8 print nl
+	addr 0 255 sys::st8
+	addr 0 sys::ld8 print nl
 
 	// Max u16
-	buf 0 65535 sys::st16
-	buf 0 sys::ld16 print nl
+	addr 0 65535 sys::st16
+	addr 0 sys::ld16 print nl
 
 	// Max u32
-	buf 0 4294967295 sys::st32
-	buf 0 sys::ld32 print nl
+	addr 0 4294967295 sys::st32
+	addr 0 sys::ld32 print nl
 
 	buf free
 	"done" print nl
