@@ -73,6 +73,8 @@ namespace Qd {
 			}
 		}
 
+
+
 		// panic instruction: ( msg code -- ) sets error flag and returns from function
 		// Can only be called inside fallible functions (marked with !)
 		if (strcmp(name, "panic") == 0) {
@@ -445,10 +447,10 @@ namespace Qd {
 			}
 			return;
 		}
-		// Raw memory stores: st8/st16/st32/st64
+		// Raw memory stores: __st8/__st16/__st32/__st64
 		// (addr:i64 offset:i64 value:i64 -- )
-		else if (strcmp(name, "st8") == 0 || strcmp(name, "st16") == 0 || strcmp(name, "st32") == 0 ||
-				 strcmp(name, "st64") == 0) {
+		else if (strcmp(name, "__st8") == 0 || strcmp(name, "__st16") == 0 || strcmp(name, "__st32") == 0 ||
+				 strcmp(name, "__st64") == 0) {
 			if (typeStack.size() < 3) {
 				std::string err = "Type error in '";
 				err += name;
@@ -464,10 +466,10 @@ namespace Qd {
 			}
 			return;
 		}
-		// Raw memory loads: ld8/ld16/ld32/ld64
+		// Raw memory loads: __ld8/__ld16/__ld32/__ld64
 		// (addr:i64 offset:i64 -- value:i64) — value is zero-extended.
-		else if (strcmp(name, "ld8") == 0 || strcmp(name, "ld16") == 0 || strcmp(name, "ld32") == 0 ||
-				 strcmp(name, "ld64") == 0) {
+		else if (strcmp(name, "__ld8") == 0 || strcmp(name, "__ld16") == 0 || strcmp(name, "__ld32") == 0 ||
+				 strcmp(name, "__ld64") == 0) {
 			if (typeStack.size() < 2) {
 				std::string err = "Type error in '";
 				err += name;
@@ -482,6 +484,48 @@ namespace Qd {
 			}
 			typeStack.push_back(StackValueType::INT);
 			structTypeStack.push_back("");
+			return;
+		}
+		// Port I/O output: __port_out8/__port_out16/__port_out32
+		// (port:i64 value:i64 --)
+		else if (strcmp(name, "__port_out8") == 0 || strcmp(name, "__port_out16") == 0 ||
+				 strcmp(name, "__port_out32") == 0) {
+			if (typeStack.size() < 2) {
+				std::string err = "Type error in '";
+				err += name;
+				err += "': Stack underflow (requires port value)";
+				reportErrorConditional(node, err.c_str(), reportErrors);
+				return;
+			}
+			typeStack.pop_back(); // value
+			typeStack.pop_back(); // port
+			for (int i = 0; i < 2 && !structTypeStack.empty(); i++) {
+				structTypeStack.pop_back();
+			}
+			return;
+		}
+		// Port I/O input: __port_in8/__port_in16/__port_in32
+		// (port:i64 -- value:i64)
+		else if (strcmp(name, "__port_in8") == 0 || strcmp(name, "__port_in16") == 0 ||
+				 strcmp(name, "__port_in32") == 0) {
+			if (typeStack.empty()) {
+				std::string err = "Type error in '";
+				err += name;
+				err += "': Stack underflow (requires port)";
+				reportErrorConditional(node, err.c_str(), reportErrors);
+				return;
+			}
+			typeStack.pop_back(); // port
+			if (!structTypeStack.empty()) {
+				structTypeStack.pop_back();
+			}
+			typeStack.push_back(StackValueType::INT);
+			structTypeStack.push_back("");
+			return;
+		}
+		// CPU control: __cli, __sti, __hlt ( -- )
+		else if (strcmp(name, "__cli") == 0 || strcmp(name, "__sti") == 0 || strcmp(name, "__hlt") == 0) {
+			// No stack effect
 			return;
 		}
 		// Modulo: mod (consume 2 ints, produce int)

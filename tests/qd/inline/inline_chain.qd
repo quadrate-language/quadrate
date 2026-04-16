@@ -1,0 +1,14 @@
+// Test: inline function calling another inline function
+inline fn square(x:i64 -- result:i64) {
+	x x *
+}
+
+inline fn sum_of_squares(a:i64 b:i64 -- result:i64) {
+	a square b square +
+}
+
+fn main() {
+	3 4 sum_of_squares print nl
+	1 1 sum_of_squares print nl
+	0 5 sum_of_squares print nl
+}

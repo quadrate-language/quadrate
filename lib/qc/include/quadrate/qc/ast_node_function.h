@@ -118,6 +118,14 @@ namespace Qd {
 			return mIsPublic;
 		}
 
+		void setInline(bool isInline) {
+			mIsInline = isInline;
+		}
+
+		bool isInline() const {
+			return mIsInline;
+		}
+
 		const std::vector<std::string>& typeParams() const {
 			return mTypeParams;
 		}
@@ -173,6 +181,7 @@ namespace Qd {
 		std::vector<std::unique_ptr<IAstNode>> mOutputParameters;
 		bool mThrows;
 		bool mIsPublic;
+		bool mIsInline = false;
 		size_t mLine;
 		size_t mColumn;
 

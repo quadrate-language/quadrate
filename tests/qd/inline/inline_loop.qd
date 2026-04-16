@@ -1,0 +1,14 @@
+// Test: inline function with loop
+inline fn factorial(n:i64 -- result:i64) {
+	1 -> acc
+	1 n 1 + 1 for i {
+		acc i * -> acc
+	}
+	acc
+}
+
+fn main() {
+	5 factorial print nl
+	1 factorial print nl
+	6 factorial print nl
+}

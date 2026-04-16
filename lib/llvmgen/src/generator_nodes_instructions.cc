@@ -392,6 +392,111 @@ namespace Qd {
 				builder->CreateCall(nlFn, {ctx});
 				return;
 			}
+			// Raw memory stores: st8/st16/st32/st64 — compile-time stack path.
+			// (addr:i64 offset:i64 value:i64 -- )
+			if (name == "__st8" || name == "__st16" || name == "__st32" || name == "__st64") {
+				unsigned bits =
+						(name == "__st8") ? 8 : (name == "__st16") ? 16 : (name == "__st32") ? 32 : 64;
+				llvm::Value* value = compileTimeStack.back();
+				compileTimeStack.pop_back();
+				llvm::Value* offset = compileTimeStack.back();
+				compileTimeStack.pop_back();
+				llvm::Value* addr = compileTimeStack.back();
+				compileTimeStack.pop_back();
+				llvm::Value* effective = builder->CreateAdd(addr, offset);
+				llvm::Value* ptr = builder->CreateIntToPtr(effective, ptrTy);
+				llvm::Type* storeTy = llvm::Type::getIntNTy(*context, bits);
+				llvm::Value* truncated = (bits == 64) ? value : builder->CreateTrunc(value, storeTy);
+				builder->CreateAlignedStore(truncated, ptr, llvm::Align(1));
+				return;
+			}
+			// Raw memory loads: ld8/ld16/ld32/ld64 — compile-time stack path.
+			// (addr:i64 offset:i64 -- value:i64) — value is zero-extended.
+			if (name == "__ld8" || name == "__ld16" || name == "__ld32" || name == "__ld64") {
+				unsigned bits =
+						(name == "__ld8") ? 8 : (name == "__ld16") ? 16 : (name == "__ld32") ? 32 : 64;
+				llvm::Value* offset = compileTimeStack.back();
+				compileTimeStack.pop_back();
+				llvm::Value* addr = compileTimeStack.back();
+				compileTimeStack.pop_back();
+				llvm::Value* effective = builder->CreateAdd(addr, offset);
+				llvm::Value* ptr = builder->CreateIntToPtr(effective, ptrTy);
+				llvm::Type* loadTy = llvm::Type::getIntNTy(*context, bits);
+				llvm::Value* loaded = builder->CreateAlignedLoad(loadTy, ptr, llvm::Align(1));
+				llvm::Value* extended = (bits == 64) ? loaded : builder->CreateZExt(loaded, int64Ty);
+				compileTimeStack.push_back(extended);
+				return;
+			}
+			// x86 port I/O output: __port_out8/__port_out16/__port_out32 — compile-time stack path.
+			// (port:i64 value:i64 -- )
+			if (name == "__port_out8" || name == "__port_out16" || name == "__port_out32") {
+				llvm::Triple triple(module->getTargetTriple());
+				if (triple.getArch() != llvm::Triple::x86 && triple.getArch() != llvm::Triple::x86_64) {
+					llvm::errs() << "Error: '" << name << "' requires an x86 target\n";
+					compilationFailed = true;
+					return;
+				}
+				unsigned bits = (name == "__port_out8") ? 8 : (name == "__port_out16") ? 16 : 32;
+				llvm::Value* value = compileTimeStack.back();
+				compileTimeStack.pop_back();
+				llvm::Value* port = compileTimeStack.back();
+				compileTimeStack.pop_back();
+				llvm::Type* int16Ty = llvm::Type::getInt16Ty(*context);
+				llvm::Value* truncPort = builder->CreateTrunc(port, int16Ty, "port16");
+				llvm::Type* valTy = llvm::Type::getIntNTy(*context, bits);
+				llvm::Value* truncVal = builder->CreateTrunc(value, valTy, "val");
+				const char* asmStr = (bits == 8) ? "outb %al, %dx" : (bits == 16) ? "outw %ax, %dx" : "outl %eax, %dx";
+				const char* regStr =
+						(bits == 8) ? "{al},{dx},~{dirflag},~{fpsr},~{flags}"
+						: (bits == 16) ? "{ax},{dx},~{dirflag},~{fpsr},~{flags}"
+									   : "{eax},{dx},~{dirflag},~{fpsr},~{flags}";
+				auto* asmFnTy = llvm::FunctionType::get(builder->getVoidTy(), {valTy, int16Ty}, false);
+				auto* ia = llvm::InlineAsm::get(asmFnTy, asmStr, regStr, /*hasSideEffects=*/true);
+				builder->CreateCall(ia, {truncVal, truncPort});
+				return;
+			}
+			// x86 port I/O input: __port_in8/__port_in16/__port_in32 — compile-time stack path.
+			// (port:i64 -- value:i64)
+			if (name == "__port_in8" || name == "__port_in16" || name == "__port_in32") {
+				llvm::Triple triple(module->getTargetTriple());
+				if (triple.getArch() != llvm::Triple::x86 && triple.getArch() != llvm::Triple::x86_64) {
+					llvm::errs() << "Error: '" << name << "' requires an x86 target\n";
+					compilationFailed = true;
+					return;
+				}
+				unsigned bits = (name == "__port_in8") ? 8 : (name == "__port_in16") ? 16 : 32;
+				llvm::Value* port = compileTimeStack.back();
+				compileTimeStack.pop_back();
+				llvm::Type* int16Ty = llvm::Type::getInt16Ty(*context);
+				llvm::Value* truncPort = builder->CreateTrunc(port, int16Ty, "port16");
+				llvm::Type* valTy = llvm::Type::getIntNTy(*context, bits);
+				const char* asmStr = (bits == 8) ? "inb %dx, %al" : (bits == 16) ? "inw %dx, %ax" : "inl %dx, %eax";
+				const char* regStr =
+						(bits == 8) ? "={al},{dx},~{dirflag},~{fpsr},~{flags}"
+						: (bits == 16) ? "={ax},{dx},~{dirflag},~{fpsr},~{flags}"
+									   : "={eax},{dx},~{dirflag},~{fpsr},~{flags}";
+				auto* asmFnTy = llvm::FunctionType::get(valTy, {int16Ty}, false);
+				auto* ia = llvm::InlineAsm::get(asmFnTy, asmStr, regStr, /*hasSideEffects=*/true);
+				llvm::Value* result = builder->CreateCall(ia, {truncPort});
+				llvm::Value* extended = builder->CreateZExt(result, int64Ty, "zext");
+				compileTimeStack.push_back(extended);
+				return;
+			}
+			// CPU control: __cli, __sti, __hlt — compile-time stack path.
+			if (name == "__cli" || name == "__sti" || name == "__hlt") {
+				llvm::Triple triple(module->getTargetTriple());
+				if (triple.getArch() != llvm::Triple::x86 && triple.getArch() != llvm::Triple::x86_64) {
+					llvm::errs() << "Error: '" << name << "' requires an x86 target\n";
+					compilationFailed = true;
+					return;
+				}
+				// Strip __ prefix for the actual asm mnemonic
+				const char* mnemonic = name.c_str() + 2;
+				auto* asmFnTy = llvm::FunctionType::get(builder->getVoidTy(), {}, false);
+				auto* ia = llvm::InlineAsm::get(asmFnTy, mnemonic, "", /*hasSideEffects=*/true);
+				builder->CreateCall(ia, {});
+				return;
+			}
 			// For any unhandled instruction in compile-time stack mode, fall through
 			// to the normal path (which will use the runtime stack)
 		}
@@ -702,8 +807,8 @@ namespace Qd {
 
 		// Raw memory stores: addr offset value st8/st16/st32/st64
 		// Lower directly to LLVM `store` — no runtime call, no libc.
-		if (name == "st8" || name == "st16" || name == "st32" || name == "st64") {
-			unsigned bits = (name == "st8") ? 8 : (name == "st16") ? 16 : (name == "st32") ? 32 : 64;
+		if (name == "__st8" || name == "__st16" || name == "__st32" || name == "__st64") {
+			unsigned bits = (name == "__st8") ? 8 : (name == "__st16") ? 16 : (name == "__st32") ? 32 : 64;
 			llvm::Value* value = generateInlinePopInt(ctx);
 			llvm::Value* offset = generateInlinePopInt(ctx);
 			llvm::Value* addr = generateInlinePopInt(ctx);
@@ -715,8 +820,8 @@ namespace Qd {
 			return;
 		}
 		// Raw memory loads: addr offset ld8/ld16/ld32/ld64 -- value (zero-extended to i64).
-		if (name == "ld8" || name == "ld16" || name == "ld32" || name == "ld64") {
-			unsigned bits = (name == "ld8") ? 8 : (name == "ld16") ? 16 : (name == "ld32") ? 32 : 64;
+		if (name == "__ld8" || name == "__ld16" || name == "__ld32" || name == "__ld64") {
+			unsigned bits = (name == "__ld8") ? 8 : (name == "__ld16") ? 16 : (name == "__ld32") ? 32 : 64;
 			llvm::Value* offset = generateInlinePopInt(ctx);
 			llvm::Value* addr = generateInlinePopInt(ctx);
 			llvm::Value* effective = builder->CreateAdd(addr, offset);
@@ -725,6 +830,71 @@ namespace Qd {
 			llvm::Value* loaded = builder->CreateAlignedLoad(loadTy, ptr, llvm::Align(1));
 			llvm::Value* extended = (bits == 64) ? loaded : builder->CreateZExt(loaded, int64Ty);
 			generateInlinePushIntValue(ctx, extended);
+			return;
+		}
+
+		// x86 port I/O output: port value __port_out8/__port_out16/__port_out32 — runtime stack path.
+		if (name == "__port_out8" || name == "__port_out16" || name == "__port_out32") {
+			llvm::Triple triple(module->getTargetTriple());
+			if (triple.getArch() != llvm::Triple::x86 && triple.getArch() != llvm::Triple::x86_64) {
+				llvm::errs() << "Error: '" << name << "' requires an x86 target\n";
+				compilationFailed = true;
+				return;
+			}
+			unsigned bits = (name == "__port_out8") ? 8 : (name == "__port_out16") ? 16 : 32;
+			llvm::Value* value = generateInlinePopInt(ctx);
+			llvm::Value* port = generateInlinePopInt(ctx);
+			llvm::Type* int16Ty = llvm::Type::getInt16Ty(*context);
+			llvm::Value* truncPort = builder->CreateTrunc(port, int16Ty, "port16");
+			llvm::Type* valTy = llvm::Type::getIntNTy(*context, bits);
+			llvm::Value* truncVal = builder->CreateTrunc(value, valTy, "val");
+			const char* asmStr =
+					(bits == 8) ? "outb %al, %dx" : (bits == 16) ? "outw %ax, %dx" : "outl %eax, %dx";
+			const char* regStr = (bits == 8)    ? "{al},{dx},~{dirflag},~{fpsr},~{flags}"
+								 : (bits == 16) ? "{ax},{dx},~{dirflag},~{fpsr},~{flags}"
+												 : "{eax},{dx},~{dirflag},~{fpsr},~{flags}";
+			auto* asmFnTy = llvm::FunctionType::get(builder->getVoidTy(), {valTy, int16Ty}, false);
+			auto* ia = llvm::InlineAsm::get(asmFnTy, asmStr, regStr, /*hasSideEffects=*/true);
+			builder->CreateCall(ia, {truncVal, truncPort});
+			return;
+		}
+		// x86 port I/O input: port __port_in8/__port_in16/__port_in32 -- value — runtime stack path.
+		if (name == "__port_in8" || name == "__port_in16" || name == "__port_in32") {
+			llvm::Triple triple(module->getTargetTriple());
+			if (triple.getArch() != llvm::Triple::x86 && triple.getArch() != llvm::Triple::x86_64) {
+				llvm::errs() << "Error: '" << name << "' requires an x86 target\n";
+				compilationFailed = true;
+				return;
+			}
+			unsigned bits = (name == "__port_in8") ? 8 : (name == "__port_in16") ? 16 : 32;
+			llvm::Value* port = generateInlinePopInt(ctx);
+			llvm::Type* int16Ty = llvm::Type::getInt16Ty(*context);
+			llvm::Value* truncPort = builder->CreateTrunc(port, int16Ty, "port16");
+			llvm::Type* valTy = llvm::Type::getIntNTy(*context, bits);
+			const char* asmStr =
+					(bits == 8) ? "inb %dx, %al" : (bits == 16) ? "inw %dx, %ax" : "inl %dx, %eax";
+			const char* regStr = (bits == 8)    ? "={al},{dx},~{dirflag},~{fpsr},~{flags}"
+								 : (bits == 16) ? "={ax},{dx},~{dirflag},~{fpsr},~{flags}"
+												 : "={eax},{dx},~{dirflag},~{fpsr},~{flags}";
+			auto* asmFnTy = llvm::FunctionType::get(valTy, {int16Ty}, false);
+			auto* ia = llvm::InlineAsm::get(asmFnTy, asmStr, regStr, /*hasSideEffects=*/true);
+			llvm::Value* result = builder->CreateCall(ia, {truncPort});
+			llvm::Value* extended = builder->CreateZExt(result, int64Ty, "zext");
+			generateInlinePushIntValue(ctx, extended);
+			return;
+		}
+		// CPU control: __cli, __sti, __hlt — runtime stack path.
+		if (name == "__cli" || name == "__sti" || name == "__hlt") {
+			llvm::Triple triple(module->getTargetTriple());
+			if (triple.getArch() != llvm::Triple::x86 && triple.getArch() != llvm::Triple::x86_64) {
+				llvm::errs() << "Error: '" << name << "' requires an x86 target\n";
+				compilationFailed = true;
+				return;
+			}
+			const char* mnemonic = name.c_str() + 2; // strip __ prefix
+			auto* asmFnTy = llvm::FunctionType::get(builder->getVoidTy(), {}, false);
+			auto* ia = llvm::InlineAsm::get(asmFnTy, mnemonic, "", /*hasSideEffects=*/true);
+			builder->CreateCall(ia, {});
 			return;
 		}
 

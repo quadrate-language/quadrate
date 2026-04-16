@@ -779,6 +779,9 @@ namespace Qd {
 				fn->addParamAttr(0, llvm::Attribute::NonNull);
 				fn->addParamAttr(0, llvm::Attribute::NoAlias);
 				fn->addFnAttr(llvm::Attribute::NoUnwind);
+				if (funcNode->isInline()) {
+					fn->addFnAttr(llvm::Attribute::AlwaysInline);
+				}
 			}
 
 			// Add debug info for user function
@@ -1495,6 +1498,9 @@ namespace Qd {
 							nativeFn->addParamAttr(0, llvm::Attribute::NonNull);
 							nativeFn->addParamAttr(0, llvm::Attribute::NoAlias);
 							nativeFn->addFnAttr(llvm::Attribute::NoUnwind);
+							if (funcNode->isInline()) {
+								nativeFn->addFnAttr(llvm::Attribute::AlwaysInline);
+							}
 						}
 
 						// Register native function by all names the stack-based version is registered under
@@ -1764,6 +1770,17 @@ namespace Qd {
 		if (!root) {
 			std::cerr << "Error: Root node is null" << std::endl;
 			return false;
+		}
+
+		// Set target triple early so codegen can check it (e.g., x86 port I/O builtins).
+		// writeObject() sets it again with full target machine setup; this is just for
+		// arch checks during IR generation.
+		if (!targetTriple.empty()) {
+#if LLVM_VERSION_MAJOR >= 20
+			module->setTargetTriple(llvm::Triple(targetTriple));
+#else
+			module->setTargetTriple(targetTriple);
+#endif
 		}
 
 		setupRuntimeDeclarations();

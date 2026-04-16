@@ -1,0 +1,105 @@
+/// Low-level system operations.
+///
+/// Provides zero-overhead access to x86 I/O ports, CPU interrupt control,
+/// and raw memory store/load operations. All functions are inline — the
+/// compiler eliminates call overhead entirely.
+///
+/// Port I/O and CPU control require an x86 target.
+
+// ---- x86 I/O port operations ----
+
+/// Write a byte to an I/O port.
+/// @param port i64 Port number (0-65535)
+/// @param value i64 Byte value (0-255)
+/// @example 0x3F8 65 sys::port_out8
+pub inline fn port_out8(port:i64 value:i64 --) { port value __port_out8 }
+
+/// Write a 16-bit word to an I/O port.
+/// @param port i64 Port number (0-65535)
+/// @param value i64 Word value (0-65535)
+pub inline fn port_out16(port:i64 value:i64 --) { port value __port_out16 }
+
+/// Write a 32-bit dword to an I/O port.
+/// @param port i64 Port number (0-65535)
+/// @param value i64 Dword value
+pub inline fn port_out32(port:i64 value:i64 --) { port value __port_out32 }
+
+/// Read a byte from an I/O port.
+/// @param port i64 Port number (0-65535)
+/// @return value i64 Byte value (0-255)
+/// @example 0x60 sys::port_in8 -> scancode
+pub inline fn port_in8(port:i64 -- value:i64) { port __port_in8 }
+
+/// Read a 16-bit word from an I/O port.
+/// @param port i64 Port number (0-65535)
+/// @return value i64 Word value (0-65535)
+pub inline fn port_in16(port:i64 -- value:i64) { port __port_in16 }
+
+/// Read a 32-bit dword from an I/O port.
+/// @param port i64 Port number (0-65535)
+/// @return value i64 Dword value
+pub inline fn port_in32(port:i64 -- value:i64) { port __port_in32 }
+
+// ---- CPU control ----
+
+/// Disable interrupts (x86 CLI instruction).
+pub inline fn cli() { __cli }
+
+/// Enable interrupts (x86 STI instruction).
+pub inline fn sti() { __sti }
+
+/// Halt the CPU until the next interrupt (x86 HLT instruction).
+/// Typically used in an idle loop: loop { sys::hlt }
+pub inline fn hlt() { __hlt }
+
+// ---- Raw memory operations ----
+
+/// Store an 8-bit value at address + offset.
+/// @param addr ptr Base address
+/// @param offset i64 Byte offset from base
+/// @param value i64 Value to store (low 8 bits used)
+/// @example buf 0 65 sys::st8
+pub inline fn st8(addr:ptr offset:i64 value:i64 --) { addr offset value __st8 }
+
+/// Store a 16-bit value at address + offset.
+/// @param addr ptr Base address
+/// @param offset i64 Byte offset from base
+/// @param value i64 Value to store (low 16 bits used)
+pub inline fn st16(addr:ptr offset:i64 value:i64 --) { addr offset value __st16 }
+
+/// Store a 32-bit value at address + offset.
+/// @param addr ptr Base address
+/// @param offset i64 Byte offset from base
+/// @param value i64 Value to store (low 32 bits used)
+pub inline fn st32(addr:ptr offset:i64 value:i64 --) { addr offset value __st32 }
+
+/// Store a 64-bit value at address + offset.
+/// @param addr ptr Base address
+/// @param offset i64 Byte offset from base
+/// @param value i64 Value to store
+pub inline fn st64(addr:ptr offset:i64 value:i64 --) { addr offset value __st64 }
+
+/// Load an 8-bit value from address + offset (zero-extended to i64).
+/// @param addr ptr Base address
+/// @param offset i64 Byte offset from base
+/// @return value i64 Loaded value (0-255)
+/// @example buf 0 sys::ld8 -> byte
+pub inline fn ld8(addr:ptr offset:i64 -- value:i64) { addr offset __ld8 }
+
+/// Load a 16-bit value from address + offset (zero-extended to i64).
+/// @param addr ptr Base address
+/// @param offset i64 Byte offset from base
+/// @return value i64 Loaded value (0-65535)
+pub inline fn ld16(addr:ptr offset:i64 -- value:i64) { addr offset __ld16 }
+
+/// Load a 32-bit value from address + offset (zero-extended to i64).
+/// @param addr ptr Base address
+/// @param offset i64 Byte offset from base
+/// @return value i64 Loaded value
+pub inline fn ld32(addr:ptr offset:i64 -- value:i64) { addr offset __ld32 }
+
+/// Load a 64-bit value from address + offset.
+/// @param addr ptr Base address
+/// @param offset i64 Byte offset from base
+/// @return value i64 Loaded value
+pub inline fn ld64(addr:ptr offset:i64 -- value:i64) { addr offset __ld64 }

@@ -1,0 +1,20 @@
+// Test: inline function with control flow
+inline fn abs(x:i64 -- result:i64) {
+	x 0 < if {
+		0 x -
+	} else {
+		x
+	}
+}
+
+inline fn max(a:i64 b:i64 -- result:i64) {
+	a b > if { a } else { b }
+}
+
+fn main() {
+	5 abs print nl
+	-3 abs print nl
+	0 abs print nl
+	10 20 max print nl
+	30 15 max print nl
+}

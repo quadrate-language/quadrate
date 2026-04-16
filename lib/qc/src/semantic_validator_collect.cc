@@ -354,7 +354,8 @@ namespace Qd {
 			if (mFreestandingMode) {
 				bool isUserImport = moduleName.find('/') != std::string::npos ||
 									(moduleName.size() > 3 && moduleName.substr(moduleName.size() - 3) == ".qd");
-				if (!isUserImport && moduleName != "bits" && moduleName != "limits" && moduleName != "mem") {
+				if (!isUserImport && moduleName != "bits" && moduleName != "limits" && moduleName != "mem" &&
+						moduleName != "sys") {
 					std::string err = "module '" + moduleName +
 									  "' is not available in --freestanding mode "
 									  "(allocates or depends on libc)";

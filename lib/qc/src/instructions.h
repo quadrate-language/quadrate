@@ -29,7 +29,14 @@ namespace Qd {
 			// where mem::* (libc-backed) is unavailable.
 			// Stores: (addr:i64 offset:i64 value:i64 -- )
 			// Loads:  (addr:i64 offset:i64 -- value:i64) (zero-extended)
-			"ld8", "ld16", "ld32", "ld64", "st8", "st16", "st32", "st64",
+			"__ld8", "__ld16", "__ld32", "__ld64", "__st8", "__st16", "__st32", "__st64",
+			// x86 I/O port operations — lower to inline asm (outb/inb etc.).
+			// Freestanding-only, x86/x86_64 targets only. Internal: use sys module.
+			// port_out: (port:i64 value:i64 --)   port_in: (port:i64 -- value:i64)
+			"__port_in8", "__port_in16", "__port_in32",
+			"__port_out8", "__port_out16", "__port_out32",
+			// CPU control — lower to single inline asm. Freestanding-only.
+			"__cli", "__hlt", "__sti",
 			// I/O
 			"nl", "print", "prints", "printsv", "printv", "read",
 			// Threading

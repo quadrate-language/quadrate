@@ -2,6 +2,7 @@
 // Writes "Hello, Quadrate kernel!" to VGA text mode, then halts.
 
 use mem
+use sys
 
 const VGA_BASE = 0xB8000
 const ATTR_W = 0x0F
@@ -17,7 +18,7 @@ fn clear_screen() {
 	0 -> i
 	loop {
 		i 80 25 * >= if { break }
-		VGA_BASE i 2 * 32 ATTR_HI or st16
+		VGA_BASE cast<ptr> i 2 * 32 ATTR_HI or sys::st16
 		i 1 + -> i
 	}
 }

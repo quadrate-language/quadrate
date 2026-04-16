@@ -1,0 +1,15 @@
+// Test: inline functions called alongside non-inline functions
+inline fn inc(x:i64 -- result:i64) {
+	x 1 +
+}
+
+fn regular_double(x:i64 -- result:i64) {
+	x 2 *
+}
+
+fn main() {
+	5 inc print nl
+	5 regular_double print nl
+	5 inc 2 * print nl
+	0 inc print nl
+}

@@ -1,0 +1,17 @@
+// Test: inline recursive function (LLVM handles this gracefully)
+inline fn fib(n:i64 -- result:i64) {
+	n 2 < if {
+		n
+	} else {
+		n 1 - fib
+		n 2 - fib
+		+
+	}
+}
+
+fn main() {
+	0 fib print nl
+	1 fib print nl
+	5 fib print nl
+	10 fib print nl
+}

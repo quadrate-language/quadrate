@@ -1,0 +1,10 @@
+// Test: inline function with no return value
+inline fn print_twice(x:i64 --) {
+	x print nl
+	x print nl
+}
+
+fn main() {
+	42 print_twice
+	7 print_twice
+}

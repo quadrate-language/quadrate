@@ -1,0 +1,13 @@
+// Test: inline with stack operations (dup, swap, over)
+inline fn dup_and_add(x:i64 -- result:i64) {
+	x dup +
+}
+
+inline fn swap_sub(a:i64 b:i64 -- result:i64) {
+	b a -
+}
+
+fn main() {
+	7 dup_and_add print nl
+	10 3 swap_sub print nl
+}

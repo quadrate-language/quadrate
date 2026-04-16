@@ -1,0 +1,9 @@
+// Test: inline function with no parameters
+inline fn greeting() {
+	99 print nl
+}
+
+fn main() {
+	greeting
+	greeting
+}

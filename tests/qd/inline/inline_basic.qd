@@ -1,0 +1,10 @@
+// Test: basic inline function
+inline fn double(x:i64 -- result:i64) {
+	x 2 *
+}
+
+fn main() {
+	5 double print nl
+	10 double print nl
+	0 double print nl
+}

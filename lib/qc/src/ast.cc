@@ -219,13 +219,20 @@ namespace Qd {
 				const char* text = u8t_scanner_token_text(&scanner, &n);
 
 				if (strcmp(text, "pub") == 0) {
-					// Check if next token is "fn", "const", or "struct"
+					// Check if next token is "fn", "inline", "const", or "struct"
 					token = u8t_scanner_scan(&scanner);
 					if (token == U8T_IDENTIFIER) {
 						const char* nextText = u8t_scanner_token_text(&scanner, &n);
+						bool isInline = false;
+						if (strcmp(nextText, "inline") == 0) {
+							isInline = true;
+							token = u8t_scanner_scan(&scanner);
+							nextText = u8t_scanner_token_text(&scanner, &n);
+						}
 						if (strcmp(nextText, "fn") == 0) {
 							IAstNode* func = parseFunctionDeclaration(&scanner, &errorReporter, src, true);
 							if (func) {
+								static_cast<AstNodeFunctionDeclaration*>(func)->setInline(isInline);
 								func->setParent(program);
 								program->addChild(func);
 							}
@@ -278,6 +285,26 @@ namespace Qd {
 					} else {
 						errorReporter.reportError(
 								&scanner, "Expected 'fn', 'struct', 'enum', 'type', or 'const' after 'pub'");
+						synchronize(&scanner);
+					}
+				} else if (strcmp(text, "inline") == 0) {
+					// inline fn — private inline function
+					token = u8t_scanner_scan(&scanner);
+					if (token == U8T_IDENTIFIER) {
+						const char* nextText = u8t_scanner_token_text(&scanner, &n);
+						if (strcmp(nextText, "fn") == 0) {
+							IAstNode* func = parseFunctionDeclaration(&scanner, &errorReporter, src, false);
+							if (func) {
+								static_cast<AstNodeFunctionDeclaration*>(func)->setInline(true);
+								func->setParent(program);
+								program->addChild(func);
+							}
+						} else {
+							errorReporter.reportError(&scanner, "Expected 'fn' after 'inline'");
+							synchronize(&scanner);
+						}
+					} else {
+						errorReporter.reportError(&scanner, "Expected 'fn' after 'inline'");
 						synchronize(&scanner);
 					}
 				} else if (strcmp(text, "fn") == 0) {
@@ -433,6 +460,16 @@ namespace Qd {
 								token = u8t_scanner_scan(&scanner);
 								if (token != U8T_IDENTIFIER) {
 									errorReporter.reportError(&scanner, "Expected 'fn' or 'const' after 'pub'");
+									continue;
+								}
+								keyword = u8t_scanner_token_text(&scanner, &n);
+							}
+							if (strcmp(keyword, "inline") == 0) {
+								// 'inline' is accepted for consistency but is a no-op
+								// in import blocks (imported functions have no body to inline).
+								token = u8t_scanner_scan(&scanner);
+								if (token != U8T_IDENTIFIER) {
+									errorReporter.reportError(&scanner, "Expected 'fn' after 'inline'");
 									continue;
 								}
 								keyword = u8t_scanner_token_text(&scanner, &n);

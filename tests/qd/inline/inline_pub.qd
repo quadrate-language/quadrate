@@ -1,0 +1,9 @@
+// Test: pub inline function
+pub inline fn add3(a:i64 b:i64 c:i64 -- result:i64) {
+	a b + c +
+}
+
+fn main() {
+	1 2 3 add3 print nl
+	10 20 30 add3 print nl
+}
