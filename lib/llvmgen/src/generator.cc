@@ -2191,6 +2191,9 @@ namespace Qd {
 				fn->addParamAttr(0, llvm::Attribute::NonNull);
 				fn->addParamAttr(0, llvm::Attribute::NoAlias);
 				fn->addFnAttr(llvm::Attribute::NoUnwind);
+				if (funcNode->isInline()) {
+					fn->addFnAttr(llvm::Attribute::AlwaysInline);
+				}
 				// Register the function for forward reference lookup
 				userFunctions[registerName] = fn;
 				fallibleFunctions[registerName] = funcNode->throws();
@@ -2282,6 +2285,9 @@ namespace Qd {
 									nativeFn->addParamAttr(0, llvm::Attribute::NonNull);
 									nativeFn->addParamAttr(0, llvm::Attribute::NoAlias);
 									nativeFn->addFnAttr(llvm::Attribute::NoUnwind);
+									if (funcNode->isInline()) {
+										nativeFn->addFnAttr(llvm::Attribute::AlwaysInline);
+									}
 								}
 								nativeFunctions[registerName] = nativeFn;
 								nativeFuncInfo[registerName] = {inputCount, outputCount, inputTypes, outputType};
@@ -2840,7 +2846,7 @@ namespace Qd {
 			llvm::FunctionAnalysisManager fam;
 			llvm::CGSCCAnalysisManager cgam;
 			llvm::ModuleAnalysisManager mam;
-			llvm::PassBuilder pb;
+			llvm::PassBuilder pb(targetMachine.get());
 			pb.registerModuleAnalyses(mam);
 			pb.registerCGSCCAnalyses(cgam);
 			pb.registerFunctionAnalyses(fam);
@@ -2848,10 +2854,11 @@ namespace Qd {
 			pb.crossRegisterProxies(lam, fam, cgam, mam);
 
 			llvm::ModulePassManager npm;
+			npm.addPass(llvm::AlwaysInlinerPass());
 			npm.addPass(llvm::GlobalDCEPass());
 			npm.run(*mImpl->module, mam);
 		}
-		printTiming("globalDCE");
+		printTiming("alwaysInlineAndDCE");
 
 		// Run optimization passes if optimization level > 0
 		if (mImpl->optimizationLevel > 0) {

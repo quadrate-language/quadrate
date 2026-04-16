@@ -8,6 +8,7 @@ Language keywords for declarations, control flow, and more.
 |---------|-------------|
 | [`fn`](#fn) | Declares a function with a stack signature |
 | [`pub`](#pub) | Makes a function, constant, or struct visible to other modules |
+| [`inline`](#inline) | Requests the compiler to inline a function at call sites |
 | [`const`](#const) | Declares a compile-time constant value |
 | [`struct`](#struct) | Declares a structured data type with named fields |
 | [`use`](#use) | Imports a module |
@@ -55,6 +56,22 @@ Makes a function, constant, or struct visible to other modules.
 ```qd
 pub fn greet() {
 	"Hello" print nl
+}
+```
+
+### inline
+
+Requests the compiler to inline a function at call sites, eliminating function call overhead. Can be combined with `pub`.
+
+The compiler will inline in most cases, but may decline for recursive functions or indirect calls through function pointers. Best suited for small wrapper functions where the call overhead would dominate the function body.
+
+```qd
+inline fn double(x:i64 -- result:i64) {
+	x 2 *
+}
+
+pub inline fn inc(x:i64 -- result:i64) {
+	x 1 +
 }
 ```
 

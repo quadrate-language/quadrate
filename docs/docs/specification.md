@@ -651,12 +651,13 @@ Type aliases are resolved at compile time and carry no runtime overhead. They ar
 ### 5.7 Function Declarations
 
 ```quadrate
-[pub] fn name [<TypeParams>] (params -- returns) [!] {
+[pub] [inline] fn name [<TypeParams>] (params -- returns) [!] {
     body
 }
 ```
 
 - `pub`: Makes function publicly accessible from other modules
+- `inline`: Requests the compiler to inline the function at call sites, eliminating call overhead. The compiler will inline in most cases, but may decline for recursive functions or indirect calls. Useful for small wrapper functions.
 - `<TypeParams>`: Generic type parameters
 - `!`: Marks function as fallible (can fail with error)
 
@@ -989,8 +990,9 @@ When `use modulename` is encountered, search order:
 By default, declarations MUST be private to their module.
 
 ```quadrate
-pub fn public_function() { }    // Accessible from other modules
-fn private_function() { }       // Only accessible within module
+pub fn public_function() { }         // Accessible from other modules
+fn private_function() { }            // Only accessible within module
+pub inline fn fast_helper() { }      // Public, inlined at call sites
 
 pub struct PublicStruct { }
 struct PrivateStruct { }

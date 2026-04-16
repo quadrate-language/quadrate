@@ -197,6 +197,26 @@ fn factorial(n:i64 -- result:i64) {
 }
 ```
 
+## Inline functions
+
+The `inline` keyword requests the compiler to inline the function body at call sites, eliminating function call overhead. The compiler will inline in most cases, but may decline for recursive functions or indirect calls.
+
+```qd
+inline fn double(x:i64 -- result:i64) {
+	x 2 *
+}
+```
+
+Can be combined with `pub`:
+
+```qd
+pub inline fn inc(x:i64 -- result:i64) {
+	x 1 +
+}
+```
+
+Use `inline` for small helper functions where the call overhead would dominate the actual work. The standard library's `sys` module uses this for zero-overhead hardware access wrappers.
+
 ## What's next?
 
 Now let's learn how to [Call Functions](calling.md) and chain them together.
