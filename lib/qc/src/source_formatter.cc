@@ -539,6 +539,9 @@ namespace Qd {
 			if (node->isPublic()) {
 				mOutput << "pub ";
 			}
+			if (node->isInline()) {
+				mOutput << "inline ";
+			}
 			mOutput << "fn ";
 			if (node->hasReceiver()) {
 				mOutput << "(" << node->receiverName() << ":" << node->receiverType();
