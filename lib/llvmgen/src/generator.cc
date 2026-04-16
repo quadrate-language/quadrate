@@ -2186,7 +2186,10 @@ namespace Qd {
 				auto fnTy = llvm::FunctionType::get(execResultTy, {contextPtrTy}, false);
 				// Use InternalLinkage for user functions unless in export mode (shared library compilation)
 				// InternalLinkage allows LLVM to eliminate unused functions via GlobalDCE
-				auto linkage = exportMode ? llvm::Function::ExternalLinkage : llvm::Function::InternalLinkage;
+				// ExternalLinkage for export mode and for pub functions in freestanding mode
+				// (pub freestanding functions may be called from assembly/C)
+				bool needsExternal = exportMode || (freestandingMode && funcNode->isPublic());
+				auto linkage = needsExternal ? llvm::Function::ExternalLinkage : llvm::Function::InternalLinkage;
 				auto fn = llvm::Function::Create(fnTy, linkage, fnName, *module);
 				fn->addParamAttr(0, llvm::Attribute::NonNull);
 				fn->addParamAttr(0, llvm::Attribute::NoAlias);

@@ -57,3 +57,9 @@ tests/fuzz/corpus/
 /benchmarks/mat4x4_go
 /benchmarks/mat4x4_c
 /*.tar.gz
+
+# Kernel example build artifacts
+examples/kernel/*.o
+examples/kernel/*.elf
+examples/kernel/*.iso
+examples/kernel/isodir/

@@ -10,7 +10,7 @@ MEM_SRC         := $(REPO_ROOT)/lib/mem/src/mem.c
 RT_INC          := $(REPO_ROOT)/lib/rt/include
 MEM_INC         := $(REPO_ROOT)/lib/mem/include
 
-OBJS := boot.o kernel.o freestanding.o mem.o
+OBJS := boot.o interrupts.o kernel.o freestanding.o mem.o
 
 .PHONY: all iso run run-iso clean
 
@@ -21,6 +21,9 @@ kernel.o: kernel.qd
 	  $(QUADC) --freestanding --target $(TARGET) -O2 kernel.qd -o kernel.o
 
 boot.o: boot.S
+	clang $(ASFLAGS) -c $< -o $@
+
+interrupts.o: interrupts.S
 	clang $(ASFLAGS) -c $< -o $@
 
 freestanding.o: $(FREESTANDING_RT)
