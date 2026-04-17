@@ -1,0 +1,5 @@
+// Test: named then unnamed input params
+fn foo(a:i64 i64 -- ) {
+	drop drop
+}
+fn main() { 1 2 foo }

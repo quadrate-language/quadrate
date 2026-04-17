@@ -1,0 +1,5 @@
+// Test: missing -- with multiple parameters
+fn add(a:i64 b:i64) {
+	a b + print nl
+}
+fn main() { 1 2 add }

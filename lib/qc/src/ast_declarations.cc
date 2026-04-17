@@ -76,6 +76,8 @@ namespace Qd {
 		bool isOutput = false;
 		bool anonHasSeparator = false;
 		bool anonHasParams = false;
+		bool anonHasNamedInput = false;
+		bool anonHasUnnamedInput = false;
 
 		// Parse parameters: (input:type input2:type -- output:type)
 		while ((token = u8t_scanner_scan(scanner)) != U8T_EOF) {
@@ -97,6 +99,9 @@ namespace Qd {
 				// Check if there's a type annotation
 				char32_t paramPeek = u8t_scanner_peek(scanner);
 				if (paramPeek == ':') {
+					if (!isOutput) {
+						anonHasNamedInput = true;
+					}
 					// Consume the ':'
 					u8t_scanner_scan(scanner);
 					// Get the type
@@ -185,6 +190,9 @@ namespace Qd {
 					}
 				} else if (isTypeName(paramNameStr)) {
 					// Unnamed typed parameter (e.g., fn (i64 -- i64) { ... })
+					if (!isOutput) {
+						anonHasUnnamedInput = true;
+					}
 					AstNodeParameter* param = new AstNodeParameter("", paramNameStr, isOutput);
 					setNodePosition(param, scanner, src);
 					param->setParent(func.get());
@@ -224,7 +232,10 @@ namespace Qd {
 						func->addInputParameter(param);
 					}
 				} else {
-					// Untyped parameter - use empty string as type
+					// Unnamed parameter — identifier is the type, not a name
+					if (!isOutput) {
+						anonHasUnnamedInput = true;
+					}
 					AstNodeParameter* param = new AstNodeParameter(paramNameStr, "", isOutput);
 					setNodePosition(param, scanner, src);
 					param->setParent(func.get());
@@ -274,6 +285,9 @@ namespace Qd {
 		if (anonHasParams && !anonHasSeparator) {
 			errorReporter->reportError(scanner,
 					"Function signature requires '--' separator (e.g., 'fn(x:i64 -- )' or 'fn(x:i64 -- y:i64)')");
+		}
+		if (anonHasNamedInput && anonHasUnnamedInput) {
+			errorReporter->reportError(scanner, "Cannot mix named and unnamed input parameters");
 		}
 
 		// Expect '{'
@@ -445,6 +459,8 @@ namespace Qd {
 		bool isOutput = false;
 		bool hasSeparator = false;
 		bool hasParams = false;
+		bool hasNamedInput = false;
+		bool hasUnnamedInput = false;
 		while ((token = u8t_scanner_scan(scanner)) != U8T_EOF) {
 			if (token == ')') {
 				break;
@@ -464,6 +480,9 @@ namespace Qd {
 				// Check if there's a type annotation
 				char32_t paramPeek = u8t_scanner_peek(scanner);
 				if (paramPeek == ':') {
+					if (!isOutput) {
+						hasNamedInput = true;
+					}
 					// Consume the ':'
 					u8t_scanner_scan(scanner);
 					// Get the type
@@ -552,6 +571,9 @@ namespace Qd {
 					}
 				} else if (isTypeName(paramNameStr)) {
 					// Unnamed typed parameter (e.g., fn foo(i64 f64 -- i64))
+					if (!isOutput) {
+						hasUnnamedInput = true;
+					}
 					AstNodeParameter* param = new AstNodeParameter("", paramNameStr, isOutput);
 					setNodePosition(param, scanner, src);
 					param->setParent(func.get());
@@ -591,7 +613,10 @@ namespace Qd {
 						func->addInputParameter(param);
 					}
 				} else {
-					// Untyped parameter - use empty string as type
+					// Unnamed parameter — identifier is the type, not a name
+					if (!isOutput) {
+						hasUnnamedInput = true;
+					}
 					AstNodeParameter* param = new AstNodeParameter(paramNameStr, "", isOutput);
 					setNodePosition(param, scanner, src);
 					param->setParent(func.get());
@@ -640,8 +665,14 @@ namespace Qd {
 
 		// Require '--' separator when parameters are present
 		if (hasParams && !hasSeparator) {
-			errorReporter->reportError(scanner,
-					"Function signature requires '--' separator (e.g., 'fn foo(x:i64 -- )' or 'fn foo(x:i64 -- y:i64)')");
+			errorReporter->reportError(scanner, "Function signature requires '--' separator (e.g., 'fn foo(x:i64 -- )' "
+												"or 'fn foo(x:i64 -- y:i64)')");
+		}
+
+		// Disallow mixing named and unnamed input parameters
+		if (hasNamedInput && hasUnnamedInput) {
+			errorReporter->reportError(scanner, "Cannot mix named and unnamed input parameters (use all named 'fn "
+												"foo(a:i64 b:i64 -- )' or all unnamed 'fn foo(i64 i64 -- )')");
 		}
 
 		// Check for optional '!' marker (fallible function)

@@ -1,0 +1,58 @@
+// Test: all valid function signature forms
+
+// No params
+fn no_params() {
+	1 print nl
+}
+
+// All named inputs, no outputs
+fn named_no_output(a:i64 b:i64 -- ) {
+	a b + print nl
+}
+
+// All unnamed inputs, no outputs
+fn unnamed_no_output(i64 i64 -- ) {
+	+ print nl
+}
+
+// All named inputs, named output
+fn named_with_output(a:i64 b:i64 -- result:i64) {
+	a b +
+}
+
+// All unnamed inputs, unnamed output
+fn unnamed_with_output(i64 i64 -- i64) {
+	+
+}
+
+// Named inputs, unnamed output (mixing OK on output side)
+fn named_in_unnamed_out(a:i64 b:i64 -- i64) {
+	a b +
+}
+
+// No inputs, outputs only
+fn outputs_only( -- x:i64 y:i64) {
+	10 20
+}
+
+// Single named param
+fn single_named(x:i64 -- i64) {
+	x 2 *
+}
+
+// Single unnamed param
+fn single_unnamed(i64 -- i64) {
+	2 *
+}
+
+fn main() {
+	no_params
+	3 4 named_no_output
+	5 6 unnamed_no_output
+	1 2 named_with_output print nl
+	3 4 unnamed_with_output print nl
+	5 6 named_in_unnamed_out print nl
+	outputs_only print nl print nl
+	7 single_named print nl
+	8 single_unnamed print nl
+}

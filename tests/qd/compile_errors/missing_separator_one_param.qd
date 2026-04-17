@@ -1,0 +1,5 @@
+// Test: missing -- with one input parameter
+fn foo(x:i64) {
+	x print nl
+}
+fn main() { 1 foo }
