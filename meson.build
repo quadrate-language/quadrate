@@ -34,6 +34,15 @@ cpp_args = [
 add_project_arguments(common_args, language: ['c', 'cpp'])
 add_project_arguments(cpp_args, language: 'cpp')
 
+# Haiku: meson's b_pie is disabled (see Makefile) because clang's -fPIE
+# emits R_X86_64_PC32 relocations against preemptible symbols that ld.lld
+# rejects in a PIE link. Supply -fPIC for compilation (GOT-indirect refs)
+# and -pie for linking, preserving PIE executables without the bad relocs.
+if host_machine.system() == 'haiku'
+	add_project_arguments('-fPIC', language: ['c', 'cpp'])
+	add_project_link_arguments('-pie', language: ['c', 'cpp'])
+endif
+
 # Common dependencies (used by multiple cmd tools)
 jansson_dep = dependency('jansson', version: '>=2.14', required: true, fallback: ['jansson', 'jansson_dep'])
 

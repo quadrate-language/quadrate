@@ -10,6 +10,11 @@ ifeq ($(UNAME_S),Haiku)
     DATADIR = $(PREFIX)/data
     INCLUDEDIR = $(PREFIX)/develop/headers
     DIST_DATADIR = dist/data
+    # Clang's -fPIE on Haiku emits R_X86_64_PC32 relocations against
+    # preemptible symbols that ld.lld rejects in a PIE link. Disable b_pie
+    # so meson doesn't add -fPIE; meson.build then supplies -fPIC compile
+    # args and -pie link args directly for the Haiku build.
+    MESON_FLAGS += -Db_pie=false
 else
     PREFIX ?= /usr
     DATADIR = $(PREFIX)/share
