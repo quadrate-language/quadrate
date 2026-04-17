@@ -1,11 +1,11 @@
 // Test: >>field! (no return) — nothing left on stack
 struct Counter { value: i64 }
 
-fn bump(c:Counter) {
+fn bump(c:Counter -- ) {
 	c c <<value 1 + >>value!
 }
 
-fn reset(c:Counter) {
+fn reset(c:Counter -- ) {
 	c 0 >>value!
 }
 

@@ -74,6 +74,8 @@ namespace Qd {
 
 		size_t n;
 		bool isOutput = false;
+		bool anonHasSeparator = false;
+		bool anonHasParams = false;
 
 		// Parse parameters: (input:type input2:type -- output:type)
 		while ((token = u8t_scanner_scan(scanner)) != U8T_EOF) {
@@ -85,8 +87,10 @@ namespace Qd {
 				char32_t nextToken = u8t_scanner_scan(scanner);
 				if (nextToken == '-') {
 					isOutput = true;
+					anonHasSeparator = true;
 				}
 			} else if (token == U8T_IDENTIFIER) {
+				anonHasParams = true;
 				const char* paramName = u8t_scanner_token_text(scanner, &n);
 				std::string paramNameStr(paramName);
 
@@ -267,6 +271,11 @@ namespace Qd {
 			}
 		}
 
+		if (anonHasParams && !anonHasSeparator) {
+			errorReporter->reportError(scanner,
+					"Function signature requires '--' separator (e.g., 'fn(x:i64 -- )' or 'fn(x:i64 -- y:i64)')");
+		}
+
 		// Expect '{'
 		token = u8t_scanner_scan(scanner);
 		if (token != '{') {
@@ -434,6 +443,8 @@ namespace Qd {
 		}
 
 		bool isOutput = false;
+		bool hasSeparator = false;
+		bool hasParams = false;
 		while ((token = u8t_scanner_scan(scanner)) != U8T_EOF) {
 			if (token == ')') {
 				break;
@@ -443,8 +454,10 @@ namespace Qd {
 				char32_t nextToken = u8t_scanner_scan(scanner);
 				if (nextToken == '-') {
 					isOutput = true;
+					hasSeparator = true;
 				}
 			} else if (token == U8T_IDENTIFIER) {
+				hasParams = true;
 				const char* paramName = u8t_scanner_token_text(scanner, &n);
 				std::string paramNameStr(paramName);
 
@@ -623,6 +636,12 @@ namespace Qd {
 					}
 				}
 			}
+		}
+
+		// Require '--' separator when parameters are present
+		if (hasParams && !hasSeparator) {
+			errorReporter->reportError(scanner,
+					"Function signature requires '--' separator (e.g., 'fn foo(x:i64 -- )' or 'fn foo(x:i64 -- y:i64)')");
 		}
 
 		// Check for optional '!' marker (fallible function)
