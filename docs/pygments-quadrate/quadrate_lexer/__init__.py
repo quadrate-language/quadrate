@@ -21,7 +21,7 @@ class QuadrateLexer(RegexLexer):
         'fn', 'pub', 'inline', 'const', 'struct', 'enum', 'type',
         'use', 'import', 'as', 'test',
         'if', 'else', 'for', 'loop', 'while', 'break', 'continue', 'return',
-        'defer', 'switch', 'ctx',
+        'defer', 'switch', 'case', 'ctx',
         'true', 'false', 'null', 'Ok', 'Err',
     )
 
@@ -80,7 +80,10 @@ class QuadrateLexer(RegexLexer):
 
     # Types
     types = (
-        'i64', 'f64', 'str', 'ptr', 'bool',
+        'i8', 'i16', 'i32', 'i64',
+        'u8', 'u16', 'u32', 'u64',
+        'f32', 'f64', 'float',
+        'str', 'ptr', 'bool', 'void', 'any',
     )
 
     tokens = {
@@ -92,6 +95,9 @@ class QuadrateLexer(RegexLexer):
             (r'///.*$', Comment.Doc),
             (r'//.*$', Comment.Single),
             (r'/\*', Comment.Multiline, 'block_comment'),
+
+            # String interpolation ($"...")
+            (r'(\$)(")', bygroups(String.Interpol, String.Double), 'interp_string'),
 
             # Strings
             (r'"', String.Double, 'string'),
@@ -134,15 +140,14 @@ class QuadrateLexer(RegexLexer):
             # Case arrow in switch
             (r'=>', Punctuation),
 
-            # Operators
-            (r'[+\-*/%]', Operator),
-            (r'[<>=!]=?', Operator),
+            # Field access/set (must come before operators so << and >> aren't split)
+            (r'<<\w+', Name.Attribute),
+            (r'>>\w+!?', Name.Attribute),
 
-            # Field access/set
-            (r'@\w+', Name.Attribute),
-            (r'!\w+', Name.Attribute),
-            (r'@\[\]', Operator),
-            (r'!\[\]', Operator),
+            # Operators
+            (r'\+\+|--', Operator),
+            (r'[+\-*/%]', Operator),
+            (r'<=|>=|==|!=|<|>', Operator),
 
             # Array type syntax
             (r'\w+\[\]', Keyword.Type),
@@ -174,6 +179,19 @@ class QuadrateLexer(RegexLexer):
             (r'\\[nrt\\"]', String.Escape),
             (r'[^"\\]+', String.Double),
             (r'"', String.Double, '#pop'),
+        ],
+        'interp_string': [
+            (r'\\[nrt\\"]', String.Escape),
+            (r'\{', String.Interpol, 'interp_expr'),
+            (r'[^"\\{]+', String.Double),
+            (r'"', String.Double, '#pop'),
+        ],
+        'interp_expr': [
+            (r'\}', String.Interpol, '#pop'),
+            (r'[+\-*/%]', Operator),
+            (r'\d+', Number.Integer),
+            (r'\w+', Name),
+            (r'\s+', Whitespace),
         ],
         'block_comment': [
             (r'\*/', Comment.Multiline, '#pop'),
