@@ -51,19 +51,6 @@ pub fn greet() { "Hello" print nl }
 
 ---
 
-### inline
-
-Requests the compiler to inline a function at call sites, eliminating call overhead. Can be combined with `pub`.
-
-**Example:**
-
-```qd
-inline fn double(x:i64 -- result:i64) { x 2 * }
-pub inline fn inc(x:i64 -- result:i64) { x 1 + }
-```
-
----
-
 ### const
 
 Declares a compile-time constant value.

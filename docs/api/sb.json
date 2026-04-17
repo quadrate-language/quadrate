@@ -78,7 +78,7 @@
     },
     {
       "name": "free",
-      "signature": "(sb:StringBuilder) free( -- )",
+      "signature": "(sb:StringBuilder) free()",
       "failable": false,
       "description": "Free the builder's resources.",
       "params": [],

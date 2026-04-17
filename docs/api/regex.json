@@ -76,7 +76,7 @@
     },
     {
       "name": "release",
-      "signature": "(self:Regex) release( -- )",
+      "signature": "(self:Regex) release()",
       "failable": false,
       "description": "Free a compiled regex.",
       "params": [],

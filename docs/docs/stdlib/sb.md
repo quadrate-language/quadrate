@@ -174,7 +174,7 @@ builder sb::finish  // result
 
 Free the builder's resources.
 
-**Signature:** `(sb:StringBuilder) free( -- )`
+**Signature:** `(sb:StringBuilder) free()`
 
 **Example:**
 

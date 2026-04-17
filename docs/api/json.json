@@ -299,11 +299,11 @@
     },
     {
       "name": "type_at",
-      "signature": "(json:str pos:i64 -- type:i64)",
+      "signature": "(json:str pos:i64 -- result:i64)",
       "failable": false,
       "description": "Get JSON value type at position.",
       "params": [{"name": "json", "type": "str", "description": "JSON string"}, {"name": "pos", "type": "i64", "description": "Position to check"}],
-      "returns": [{"name": "type", "type": "i64", "description": "Type constant (Null, Bool, Number, String, Array, Object)"}],
+      "returns": [{"name": "result", "type": "i64", "description": "Type constant (Null, Bool, Number, String, Array, Object)"}],
       "errors": [],
       "examples": ["\"{\\\"a\\\":1}\" 5 json::type_at print  // 2 (Number)"]
     }

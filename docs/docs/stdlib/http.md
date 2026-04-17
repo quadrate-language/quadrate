@@ -570,6 +570,27 @@ c "page" http::query_param  // page
 ```
 ---
 
+### `fn` request_body
+
+Get the raw request body as a string. Useful for reading JSON payloads in POST/PUT handlers.
+
+**Signature:** `(c:Ctx -- body:str)`
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `c` | `Ctx` | Context |
+
+| Output | Type | Description |
+|--------|------|-------------|
+| `body` | `str` | Request body (empty if no body) |
+
+**Example:**
+
+```qd
+c http::request_body  // json_payload
+```
+---
+
 ### `fn` run
 
 Start server (blocking).

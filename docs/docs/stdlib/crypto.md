@@ -192,7 +192,7 @@ Get CRC32 as 8-character hex string.
 
 Free resources used by CRC32 hasher.
 
-**Signature:** `(c:Crc32) release( -- )`
+**Signature:** `(c:Crc32) release()`
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
@@ -266,7 +266,7 @@ Finalize MD5 and get result as hex string.
 
 Free resources used by MD5 hasher.
 
-**Signature:** `(h:Md5) release( -- )`
+**Signature:** `(h:Md5) release()`
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
@@ -338,7 +338,7 @@ Finalize SHA-256 and get result as hex string.
 
 Free resources used by SHA-256 hasher.
 
-**Signature:** `(h:Sha256) release( -- )`
+**Signature:** `(h:Sha256) release()`
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
@@ -410,7 +410,7 @@ Finalize SHA-512 and get result as hex string.
 
 Free resources used by SHA-512 hasher.
 
-**Signature:** `(h:Sha512) release( -- )`
+**Signature:** `(h:Sha512) release()`
 ---
 
 #### `fn` update

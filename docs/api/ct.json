@@ -79,7 +79,7 @@
     },
     {
       "name": "capacity",
-      "signature": "(v:Vec<T>) capacity<T>(-- n:i64)",
+      "signature": "(v:Vec<T>) capacity<T>( -- n:i64)",
       "failable": false,
       "description": "Get the allocated capacity.  Capacity is always >= length. The vector can hold up to 'capacity' elements before needing to reallocate.  Example:     v capacity -> cap  Stack: (v -- n)",
       "params": [],
@@ -99,7 +99,7 @@
     },
     {
       "name": "dequeue",
-      "signature": "(q:Queue<T>) dequeue<T>(-- val:T q2:Queue<T>)",
+      "signature": "(q:Queue<T>) dequeue<T>( -- val:T q2:Queue<T>)",
       "failable": true,
       "description": "Remove and return the front element.  Returns error if queue is empty. Returns the value and updated queue.  Example:     q dequeue! -> q -> val  Stack: (q -- val q2)",
       "params": [],
@@ -119,7 +119,7 @@
     },
     {
       "name": "first",
-      "signature": "(p:Pair<T, U>) first<T, U>(-- a:T)",
+      "signature": "(p:Pair<T, U>) first<T, U>( -- a:T)",
       "failable": false,
       "description": "Get the first element of a pair.  Example:     p first -> a  Stack: (p -- a)",
       "params": [],
@@ -169,7 +169,7 @@
     },
     {
       "name": "is_empty",
-      "signature": "(d:Deque<T>) is_empty<T>(-- b:i64)",
+      "signature": "(d:Deque<T>) is_empty<T>( -- b:i64)",
       "failable": false,
       "description": "Check if the deque is empty.  Stack: (d -- bool)",
       "params": [],
@@ -179,7 +179,7 @@
     },
     {
       "name": "is_empty",
-      "signature": "(m:Map<V>) is_empty<V>(-- b:i64)",
+      "signature": "(m:Map<V>) is_empty<V>( -- b:i64)",
       "failable": false,
       "description": "Check if the map is empty.  Example:     m is_empty if { \"empty!\" print nl }  Stack: (m -- bool)",
       "params": [],
@@ -189,7 +189,7 @@
     },
     {
       "name": "is_empty",
-      "signature": "(q:Queue<T>) is_empty<T>(-- b:i64)",
+      "signature": "(q:Queue<T>) is_empty<T>( -- b:i64)",
       "failable": false,
       "description": "Check if the queue is empty.  Stack: (q -- bool)",
       "params": [],
@@ -199,7 +199,7 @@
     },
     {
       "name": "is_empty",
-      "signature": "(s:Set) is_empty(-- b:i64)",
+      "signature": "(s:Set) is_empty( -- b:i64)",
       "failable": false,
       "description": "Check if the set is empty.  Example:     s is_empty if { \"empty!\" print nl }  Stack: (s -- bool)",
       "params": [],
@@ -209,7 +209,7 @@
     },
     {
       "name": "is_empty",
-      "signature": "(v:Vec<T>) is_empty<T>(-- b:i64)",
+      "signature": "(v:Vec<T>) is_empty<T>( -- b:i64)",
       "failable": false,
       "description": "Check if the vector is empty (length == 0).  Example:     v is_empty if { \"empty!\" print nl }  Stack: (v -- bool)",
       "params": [],
@@ -219,7 +219,7 @@
     },
     {
       "name": "length",
-      "signature": "(d:Deque<T>) length<T>(-- n:i64)",
+      "signature": "(d:Deque<T>) length<T>( -- n:i64)",
       "failable": false,
       "description": "Get the number of elements.  Stack: (d -- n)",
       "params": [],
@@ -229,7 +229,7 @@
     },
     {
       "name": "length",
-      "signature": "(m:Map<V>) length<V>(-- n:i64)",
+      "signature": "(m:Map<V>) length<V>( -- n:i64)",
       "failable": false,
       "description": "Get the number of entries in the map.  Example:     m length -> n  Stack: (m -- n)",
       "params": [],
@@ -239,7 +239,7 @@
     },
     {
       "name": "length",
-      "signature": "(q:Queue<T>) length<T>(-- n:i64)",
+      "signature": "(q:Queue<T>) length<T>( -- n:i64)",
       "failable": false,
       "description": "Get the number of elements in the queue.  Stack: (q -- n)",
       "params": [],
@@ -249,7 +249,7 @@
     },
     {
       "name": "length",
-      "signature": "(s:Set) length(-- n:i64)",
+      "signature": "(s:Set) length( -- n:i64)",
       "failable": false,
       "description": "Get the number of elements in the set.  Example:     s length -> n  Stack: (s -- n)",
       "params": [],
@@ -259,7 +259,7 @@
     },
     {
       "name": "length",
-      "signature": "(v:Vec<T>) length<T>(-- n:i64)",
+      "signature": "(v:Vec<T>) length<T>( -- n:i64)",
       "failable": false,
       "description": "Get the number of elements in the vector.  Example:     v length -> n  Stack: (v -- n)",
       "params": [],
@@ -269,7 +269,7 @@
     },
     {
       "name": "peek_back",
-      "signature": "(d:Deque<T>) peek_back<T>(-- val:T)",
+      "signature": "(d:Deque<T>) peek_back<T>( -- val:T)",
       "failable": true,
       "description": "View the back element without removing it.  Stack: (d -- val)",
       "params": [],
@@ -279,7 +279,7 @@
     },
     {
       "name": "peek_front",
-      "signature": "(d:Deque<T>) peek_front<T>(-- val:T)",
+      "signature": "(d:Deque<T>) peek_front<T>( -- val:T)",
       "failable": true,
       "description": "View the front element without removing it.  Stack: (d -- val)",
       "params": [],
@@ -289,7 +289,7 @@
     },
     {
       "name": "peek",
-      "signature": "(q:Queue<T>) peek<T>(-- val:T)",
+      "signature": "(q:Queue<T>) peek<T>( -- val:T)",
       "failable": true,
       "description": "View the front element without removing it.  Returns error if queue is empty.  Example:     q peek! -> val  Stack: (q -- val)",
       "params": [],
@@ -299,7 +299,7 @@
     },
     {
       "name": "pop_back",
-      "signature": "(d:Deque<T>) pop_back<T>(-- val:T d2:Deque<T>)",
+      "signature": "(d:Deque<T>) pop_back<T>( -- val:T d2:Deque<T>)",
       "failable": true,
       "description": "Remove and return the back element.  Example:     d pop_back! -> d -> val  Stack: (d -- val d2)",
       "params": [],
@@ -309,7 +309,7 @@
     },
     {
       "name": "pop_front",
-      "signature": "(d:Deque<T>) pop_front<T>(-- val:T d2:Deque<T>)",
+      "signature": "(d:Deque<T>) pop_front<T>( -- val:T d2:Deque<T>)",
       "failable": true,
       "description": "Remove and return the front element.  Example:     d pop_front! -> d -> val  Stack: (d -- val d2)",
       "params": [],
@@ -319,7 +319,7 @@
     },
     {
       "name": "pop",
-      "signature": "(v:Vec<T>) pop<T>(-- elem:T v2:Vec<T>)",
+      "signature": "(v:Vec<T>) pop<T>( -- elem:T v2:Vec<T>)",
       "failable": true,
       "description": "Pop and return the last element.  Panics if the vector is empty. Returns both the element and the updated vector.  Example:     v pop! -> v -> elem  Stack: (v -- elem v2)",
       "params": [],
@@ -359,7 +359,7 @@
     },
     {
       "name": "release",
-      "signature": "(d:Deque<T>) release<T>(--)",
+      "signature": "(d:Deque<T>) release<T>()",
       "failable": false,
       "description": "Free the deque's memory.  Stack: (d --)",
       "params": [],
@@ -369,7 +369,7 @@
     },
     {
       "name": "release",
-      "signature": "(m:Map<V>) release<V>(--)",
+      "signature": "(m:Map<V>) release<V>()",
       "failable": false,
       "description": "Free the map's memory.  IMPORTANT: Always call this when done with a map to prevent memory leaks. After calling release, the map should not be used.  Example:     m release  Stack: (m --)",
       "params": [],
@@ -379,7 +379,7 @@
     },
     {
       "name": "release",
-      "signature": "(q:Queue<T>) release<T>(--)",
+      "signature": "(q:Queue<T>) release<T>()",
       "failable": false,
       "description": "Free the queue's memory.  Stack: (q --)",
       "params": [],
@@ -389,7 +389,7 @@
     },
     {
       "name": "release",
-      "signature": "(s:Set) release(--)",
+      "signature": "(s:Set) release()",
       "failable": false,
       "description": "Free the set's memory.  IMPORTANT: Always call this when done with a set to prevent memory leaks.  Example:     s release  Stack: (s --)",
       "params": [],
@@ -399,7 +399,7 @@
     },
     {
       "name": "release",
-      "signature": "(v:Vec<T>) release<T>(--)",
+      "signature": "(v:Vec<T>) release<T>()",
       "failable": false,
       "description": "Free the vector's memory.  IMPORTANT: Always call this when done with a vector to prevent memory leaks. After calling release, the vector should not be used.  Example:     v release  Stack: (v --)",
       "params": [],
@@ -429,7 +429,7 @@
     },
     {
       "name": "reset",
-      "signature": "(v:Vec<T>) reset<T>(-- v2:Vec<T>)",
+      "signature": "(v:Vec<T>) reset<T>( -- v2:Vec<T>)",
       "failable": false,
       "description": "Remove all elements, keeping allocated capacity.  Useful for reusing a vector without reallocating.  Example:     v reset -> v  Stack: (v -- v2)",
       "params": [],
@@ -439,7 +439,7 @@
     },
     {
       "name": "second",
-      "signature": "(p:Pair<T, U>) second<T, U>(-- b:U)",
+      "signature": "(p:Pair<T, U>) second<T, U>( -- b:U)",
       "failable": false,
       "description": "Get the second element of a pair.  Example:     p second -> b  Stack: (p -- b)",
       "params": [],
@@ -459,7 +459,7 @@
     },
     {
       "name": "unpack",
-      "signature": "(p:Pair<T, U>) unpack<T, U>(-- a:T b:U)",
+      "signature": "(p:Pair<T, U>) unpack<T, U>( -- a:T b:U)",
       "failable": false,
       "description": "Unpack a pair onto the stack.  Returns both elements: first is deeper, second on top.  Example:     p unpack -> first_val -> second_val  Stack: (p -- a b)",
       "params": [],

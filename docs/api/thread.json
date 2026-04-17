@@ -142,7 +142,7 @@
     },
     {
       "name": "close",
-      "signature": "(ch:Channel) close( -- )",
+      "signature": "(ch:Channel) close()",
       "failable": false,
       "description": "Close the channel. ",
       "params": [],
@@ -162,7 +162,7 @@
     },
     {
       "name": "detach",
-      "signature": "(t:Thread) detach( -- )",
+      "signature": "(t:Thread) detach()",
       "failable": true,
       "description": "Detach the thread. ",
       "params": [],
@@ -172,7 +172,7 @@
     },
     {
       "name": "done",
-      "signature": "(wg:WaitGroup) done( -- )",
+      "signature": "(wg:WaitGroup) done()",
       "failable": false,
       "description": "Mark one unit of work as done. ",
       "params": [],
@@ -192,7 +192,7 @@
     },
     {
       "name": "free",
-      "signature": "(b:Barrier) free( -- )",
+      "signature": "(b:Barrier) free()",
       "failable": false,
       "description": "Free the Barrier. ",
       "params": [],
@@ -202,7 +202,7 @@
     },
     {
       "name": "free",
-      "signature": "(ch:Channel) free( -- )",
+      "signature": "(ch:Channel) free()",
       "failable": false,
       "description": "Free the channel. ",
       "params": [],
@@ -212,7 +212,7 @@
     },
     {
       "name": "free",
-      "signature": "(m:Mutex) free( -- )",
+      "signature": "(m:Mutex) free()",
       "failable": false,
       "description": "Free the mutex. ",
       "params": [],
@@ -222,7 +222,7 @@
     },
     {
       "name": "free",
-      "signature": "(o:Once) free( -- )",
+      "signature": "(o:Once) free()",
       "failable": false,
       "description": "Free the Once. ",
       "params": [],
@@ -232,7 +232,7 @@
     },
     {
       "name": "free",
-      "signature": "(rw:RwLock) free( -- )",
+      "signature": "(rw:RwLock) free()",
       "failable": false,
       "description": "Free the RwLock. ",
       "params": [],
@@ -242,7 +242,7 @@
     },
     {
       "name": "free",
-      "signature": "(wg:WaitGroup) free( -- )",
+      "signature": "(wg:WaitGroup) free()",
       "failable": false,
       "description": "Free the WaitGroup. ",
       "params": [],
@@ -282,7 +282,7 @@
     },
     {
       "name": "join",
-      "signature": "(t:Thread) join( -- )",
+      "signature": "(t:Thread) join()",
       "failable": true,
       "description": "Wait for the thread to complete. ",
       "params": [],
@@ -302,7 +302,7 @@
     },
     {
       "name": "lock",
-      "signature": "(m:Mutex) lock( -- )",
+      "signature": "(m:Mutex) lock()",
       "failable": true,
       "description": "Lock the mutex. ",
       "params": [],
@@ -332,7 +332,7 @@
     },
     {
       "name": "read_lock",
-      "signature": "(rw:RwLock) read_lock( -- )",
+      "signature": "(rw:RwLock) read_lock()",
       "failable": true,
       "description": "Acquire a read lock. Multiple threads can hold read locks simultaneously. Blocks if a writer is active or waiting. ",
       "params": [],
@@ -342,7 +342,7 @@
     },
     {
       "name": "read_unlock",
-      "signature": "(rw:RwLock) read_unlock( -- )",
+      "signature": "(rw:RwLock) read_unlock()",
       "failable": true,
       "description": "Release a read lock. ",
       "params": [],
@@ -462,7 +462,7 @@
     },
     {
       "name": "unlock",
-      "signature": "(m:Mutex) unlock( -- )",
+      "signature": "(m:Mutex) unlock()",
       "failable": true,
       "description": "Unlock the mutex. ",
       "params": [],
@@ -482,7 +482,7 @@
     },
     {
       "name": "wait",
-      "signature": "(wg:WaitGroup) wait( -- )",
+      "signature": "(wg:WaitGroup) wait()",
       "failable": true,
       "description": "Wait for all threads to complete. ",
       "params": [],
@@ -502,7 +502,7 @@
     },
     {
       "name": "write_lock",
-      "signature": "(rw:RwLock) write_lock( -- )",
+      "signature": "(rw:RwLock) write_lock()",
       "failable": true,
       "description": "Acquire a write lock. Only one thread can hold the write lock. Blocks until all readers and writers release. ",
       "params": [],
@@ -512,7 +512,7 @@
     },
     {
       "name": "write_unlock",
-      "signature": "(rw:RwLock) write_unlock( -- )",
+      "signature": "(rw:RwLock) write_unlock()",
       "failable": true,
       "description": "Release a write lock. ",
       "params": [],
@@ -522,7 +522,7 @@
     },
     {
       "name": "yield",
-      "signature": "( -- )",
+      "signature": "()",
       "failable": false,
       "description": "Yield the CPU to allow other threads to run. ",
       "params": [],

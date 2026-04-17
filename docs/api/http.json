@@ -690,6 +690,16 @@
       "examples": ["c \"page\" http::query_param -> page"]
     },
     {
+      "name": "request_body",
+      "signature": "(c:Ctx -- body:str)",
+      "failable": false,
+      "description": "Get the raw request body as a string. Useful for reading JSON payloads in POST/PUT handlers.",
+      "params": [{"name": "c", "type": "Ctx", "description": "Context"}],
+      "returns": [{"name": "body", "type": "str", "description": "Request body (empty if no body)"}],
+      "errors": [],
+      "examples": ["c http::request_body -> json_payload"]
+    },
+    {
       "name": "run",
       "signature": "(engine:ptr addr:str -- )",
       "failable": true,

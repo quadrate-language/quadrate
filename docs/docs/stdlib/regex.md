@@ -145,7 +145,7 @@ Test if a string matches a compiled regex (full match).
 
 Free a compiled regex.
 
-**Signature:** `(self:Regex) release( -- )`
+**Signature:** `(self:Regex) release()`
 
 **Example:**
 

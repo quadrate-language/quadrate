@@ -5,9 +5,9 @@ theme:
   custom_dir: overrides
   logo: assets/logo-1024x512.png
   favicon: assets/favicon.ico
-  hljs_languages:
-    - yaml
+  highlightjs: false
 extra_css:
+  - styles/pygments.css
   - styles/extra.css
 
 markdown_extensions:

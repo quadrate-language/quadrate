@@ -105,7 +105,7 @@
     },
     {
       "name": "check_rotate",
-      "signature": "(logger:Logger) check_rotate( -- )",
+      "signature": "(logger:Logger) check_rotate()",
       "failable": false,
       "description": "Check and perform rotation if needed.  Called automatically before each log, but can be called manually. ",
       "params": [],
@@ -125,7 +125,7 @@
     },
     {
       "name": "disable_stdout",
-      "signature": "(logger:Logger) disable_stdout( -- )",
+      "signature": "(logger:Logger) disable_stdout()",
       "failable": false,
       "description": "Disable stdout output. ",
       "params": [],
@@ -135,7 +135,7 @@
     },
     {
       "name": "enable_stdout",
-      "signature": "(logger:Logger) enable_stdout( -- )",
+      "signature": "(logger:Logger) enable_stdout()",
       "failable": false,
       "description": "Enable stdout output (default). ",
       "params": [],
@@ -155,7 +155,7 @@
     },
     {
       "name": "flush",
-      "signature": "(logger:Logger) flush( -- )",
+      "signature": "(logger:Logger) flush()",
       "failable": false,
       "description": "Flush all outputs. ",
       "params": [],
@@ -165,7 +165,7 @@
     },
     {
       "name": "free",
-      "signature": "(logger:Logger) free( -- )",
+      "signature": "(logger:Logger) free()",
       "failable": false,
       "description": "Free logger resources. ",
       "params": [],

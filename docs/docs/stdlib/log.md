@@ -135,7 +135,7 @@ logger "/var/log/app.log" log::RotateDaily 0 7 log::add_file_rotate!
 
 Check and perform rotation if needed.  Called automatically before each log, but can be called manually. 
 
-**Signature:** `(logger:Logger) check_rotate( -- )`
+**Signature:** `(logger:Logger) check_rotate()`
 
 **Example:**
 
@@ -165,7 +165,7 @@ logger "processing item" log::debug
 
 Disable stdout output. 
 
-**Signature:** `(logger:Logger) disable_stdout( -- )`
+**Signature:** `(logger:Logger) disable_stdout()`
 
 **Example:**
 
@@ -178,7 +178,7 @@ logger log::disable_stdout
 
 Enable stdout output (default). 
 
-**Signature:** `(logger:Logger) enable_stdout( -- )`
+**Signature:** `(logger:Logger) enable_stdout()`
 
 **Example:**
 
@@ -208,7 +208,7 @@ logger "connection failed" log::error
 
 Flush all outputs. 
 
-**Signature:** `(logger:Logger) flush( -- )`
+**Signature:** `(logger:Logger) flush()`
 
 **Example:**
 
@@ -221,7 +221,7 @@ logger log::flush
 
 Free logger resources. 
 
-**Signature:** `(logger:Logger) free( -- )`
+**Signature:** `(logger:Logger) free()`
 
 **Example:**
 

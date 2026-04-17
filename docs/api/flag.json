@@ -41,7 +41,7 @@
     },
     {
       "name": "destroy",
-      "signature": "(f:Flag) destroy( -- )",
+      "signature": "(f:Flag) destroy()",
       "failable": false,
       "description": "Free a Flag struct and its argv string.",
       "params": [],

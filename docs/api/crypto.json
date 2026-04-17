@@ -156,7 +156,7 @@
     },
     {
       "name": "release",
-      "signature": "(c:Crc32) release( -- )",
+      "signature": "(c:Crc32) release()",
       "failable": false,
       "description": "Free resources used by CRC32 hasher.",
       "params": [{"name": "c", "type": "Crc32", "description": "The hasher state to free"}],
@@ -166,7 +166,7 @@
     },
     {
       "name": "release",
-      "signature": "(h:Md5) release( -- )",
+      "signature": "(h:Md5) release()",
       "failable": false,
       "description": "Free resources used by MD5 hasher.",
       "params": [{"name": "h", "type": "Md5", "description": "The hasher state to free"}],
@@ -176,7 +176,7 @@
     },
     {
       "name": "release",
-      "signature": "(h:Sha256) release( -- )",
+      "signature": "(h:Sha256) release()",
       "failable": false,
       "description": "Free resources used by SHA-256 hasher.",
       "params": [{"name": "h", "type": "Sha256", "description": "The hasher state to free"}],
@@ -186,7 +186,7 @@
     },
     {
       "name": "release",
-      "signature": "(h:Sha512) release( -- )",
+      "signature": "(h:Sha512) release()",
       "failable": false,
       "description": "Free resources used by SHA-512 hasher.",
       "params": [],

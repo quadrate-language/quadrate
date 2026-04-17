@@ -24,10 +24,10 @@
       "signature": "(u:Uri) build( -- s:str)",
       "failable": false,
       "description": "Build a URI string from components.",
-      "params": [{"name": "u", "type": "Uri", "description": "URI struct"}],
+      "params": [],
       "returns": [{"name": "s", "type": "str", "description": "URI string"}],
       "errors": [],
-      "examples": ["u uri::build -> url"]
+      "examples": ["u .build -> url"]
     },
     {
       "name": "decode",

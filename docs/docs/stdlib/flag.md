@@ -72,7 +72,7 @@ f "--verbose" flag::boolean if { "verbose" print nl }
 
 Free a Flag struct and its argv string.
 
-**Signature:** `(f:Flag) destroy( -- )`
+**Signature:** `(f:Flag) destroy()`
 
 **Example:**
 

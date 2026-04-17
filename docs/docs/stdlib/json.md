@@ -576,7 +576,7 @@ Build a JSON object from comma-separated key-value pairs.
 
 Get JSON value type at position.
 
-**Signature:** `(json:str pos:i64 -- type:i64)`
+**Signature:** `(json:str pos:i64 -- result:i64)`
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
@@ -585,7 +585,7 @@ Get JSON value type at position.
 
 | Output | Type | Description |
 |--------|------|-------------|
-| `type` | `i64` | Type constant (Null, Bool, Number, String, Array, Object) |
+| `result` | `i64` | Type constant (Null, Bool, Number, String, Array, Object) |
 
 **Example:**
 

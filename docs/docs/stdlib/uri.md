@@ -5,23 +5,6 @@ Handles percent-encoding and URI component extraction.
 
 ## Functions
 
-### `fn` (u:Uri) build
-
-Build a URI string from components.
-
-**Signature:** `(u:Uri) build( -- s:str)`
-
-| Output | Type | Description |
-|--------|------|-------------|
-| `s` | `str` | URI string |
-
-**Example:**
-
-```qd
-u uri::build  // url
-```
----
-
 ### `fn` decode
 
 Decode a percent-encoded string.
@@ -141,5 +124,23 @@ Parse a URI string into components.
 
 ```qd
 "https://example.com:8080/path?q=1#top" uri::parse  // u
+```
+
+### Methods
+
+#### `fn` build
+
+Build a URI string from components.
+
+**Signature:** `(u:Uri) build( -- s:str)`
+
+| Output | Type | Description |
+|--------|------|-------------|
+| `s` | `str` | URI string |
+
+**Example:**
+
+```qd
+u .build  // url
 ```
 

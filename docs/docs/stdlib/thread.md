@@ -111,7 +111,7 @@ Sleep the current thread for the specified duration in milliseconds.
 
 Yield the CPU to allow other threads to run. 
 
-**Signature:** `( -- )`
+**Signature:** `()`
 
 **Example:**
 
@@ -160,7 +160,7 @@ Create a new Barrier for n threads.
 
 Free the Barrier. 
 
-**Signature:** `(b:Barrier) free( -- )`
+**Signature:** `(b:Barrier) free()`
 
 **Example:**
 
@@ -265,7 +265,7 @@ ch cap  // c
 
 Close the channel. 
 
-**Signature:** `(ch:Channel) close( -- )`
+**Signature:** `(ch:Channel) close()`
 
 **Example:**
 
@@ -278,7 +278,7 @@ ch close
 
 Free the channel. 
 
-**Signature:** `(ch:Channel) free( -- )`
+**Signature:** `(ch:Channel) free()`
 
 **Example:**
 
@@ -439,7 +439,7 @@ thread::mutex_new!  // m
 
 Free the mutex. 
 
-**Signature:** `(m:Mutex) free( -- )`
+**Signature:** `(m:Mutex) free()`
 
 **Example:**
 
@@ -452,7 +452,7 @@ m free
 
 Lock the mutex. 
 
-**Signature:** `(m:Mutex) lock( -- )!`
+**Signature:** `(m:Mutex) lock()!`
 
 **Example:**
 
@@ -482,7 +482,7 @@ m try_lock  // got
 
 Unlock the mutex. 
 
-**Signature:** `(m:Mutex) unlock( -- )!`
+**Signature:** `(m:Mutex) unlock()!`
 
 **Example:**
 
@@ -545,7 +545,7 @@ o &init_stuff do
 
 Free the Once. 
 
-**Signature:** `(o:Once) free( -- )`
+**Signature:** `(o:Once) free()`
 
 **Example:**
 
@@ -608,7 +608,7 @@ thread::rwlock_new!  // rw
 
 Free the RwLock. 
 
-**Signature:** `(rw:RwLock) free( -- )`
+**Signature:** `(rw:RwLock) free()`
 
 **Example:**
 
@@ -621,7 +621,7 @@ rw free
 
 Acquire a read lock. Multiple threads can hold read locks simultaneously. Blocks if a writer is active or waiting. 
 
-**Signature:** `(rw:RwLock) read_lock( -- )!`
+**Signature:** `(rw:RwLock) read_lock()!`
 
 **Example:**
 
@@ -634,7 +634,7 @@ rw read_lock!
 
 Release a read lock. 
 
-**Signature:** `(rw:RwLock) read_unlock( -- )!`
+**Signature:** `(rw:RwLock) read_unlock()!`
 
 **Example:**
 
@@ -681,7 +681,7 @@ rw try_write  // got
 
 Acquire a write lock. Only one thread can hold the write lock. Blocks until all readers and writers release. 
 
-**Signature:** `(rw:RwLock) write_lock( -- )!`
+**Signature:** `(rw:RwLock) write_lock()!`
 
 **Example:**
 
@@ -694,7 +694,7 @@ rw write_lock!
 
 Release a write lock. 
 
-**Signature:** `(rw:RwLock) write_unlock( -- )!`
+**Signature:** `(rw:RwLock) write_unlock()!`
 
 **Example:**
 
@@ -744,7 +744,7 @@ Spawn a new thread running the given function.
 
 Detach the thread. 
 
-**Signature:** `(t:Thread) detach( -- )!`
+**Signature:** `(t:Thread) detach()!`
 
 **Example:**
 
@@ -774,7 +774,7 @@ t is_alive  // running
 
 Wait for the thread to complete. 
 
-**Signature:** `(t:Thread) join( -- )!`
+**Signature:** `(t:Thread) join()!`
 
 **Example:**
 
@@ -837,7 +837,7 @@ wg 2 add
 
 Mark one unit of work as done. 
 
-**Signature:** `(wg:WaitGroup) done( -- )`
+**Signature:** `(wg:WaitGroup) done()`
 
 **Example:**
 
@@ -850,7 +850,7 @@ wg done
 
 Free the WaitGroup. 
 
-**Signature:** `(wg:WaitGroup) free( -- )`
+**Signature:** `(wg:WaitGroup) free()`
 
 **Example:**
 
@@ -863,7 +863,7 @@ wg free
 
 Wait for all threads to complete. 
 
-**Signature:** `(wg:WaitGroup) wait( -- )!`
+**Signature:** `(wg:WaitGroup) wait()!`
 
 | Error | Description |
 |-------|-------------|
