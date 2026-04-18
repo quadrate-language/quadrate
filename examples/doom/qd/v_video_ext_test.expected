@@ -1,0 +1,28 @@
+fb[20*320+10]: 255
+fb[20*320+14]: 255
+fb[20*320+15]: 0
+fb[22*320+10]: 255
+fb[23*320+10]: 0
+horiz[50]: 7
+horiz[59]: 7
+horiz[60]: 0
+vert[40]: 9
+vert[44]: 9
+vert[45]: 0
+box top[0]: 5
+box top[1]: 5
+box interior[1,1]: 0
+box bottom[0]: 5
+box right: 5
+block[0,0]: 1
+block[0,1]: 2
+block[1,0]: 3
+block[1,1]: 4
+copy[0,0]: 5
+dirty x0: 0
+dirty y0: 0
+dirty x1: 15
+dirty y1: 15
+dest_screen non-null: 1
+dest_screen restored null: 1
+done

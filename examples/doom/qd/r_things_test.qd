@@ -1,0 +1,36 @@
+use "r_things.qd"
+use mem
+
+fn main() {
+	"numsprites initial: " print numsprites print nl              // 0
+
+	// Build a 3-entry namelist: three non-null ptrs followed by null.
+	4 8 mul mem::alloc! -> names
+	names 4 8 mul mem::zero
+	1 cast<ptr> names 0 mem::set_ptr
+	1 cast<ptr> names 8 mem::set_ptr
+	1 cast<ptr> names 16 mem::set_ptr
+
+	names R_InitSprites
+	"numsprites after init: " print numsprites print nl            // 3
+
+	R_ClearSprites
+	"vissprite_count after clear: " print vissprite_count print nl  // 0
+
+	0 cast<ptr> R_ProjectSprite
+	0 cast<ptr> R_ProjectSprite
+	"vissprite_count: " print vissprite_count print nl              // 2
+
+	0 cast<ptr> R_DrawPSprite
+	"psprite_draw_count: " print psprite_draw_count print nl        // 1
+
+	R_DrawPlayerSprites
+	R_SortVisSprites
+	R_DrawMasked
+	0 cast<ptr> R_DrawSprite
+	0 cast<ptr> R_DrawMaskedColumn
+	0 cast<ptr> R_AddSprites
+
+	names mem::free
+	"done" print nl
+}

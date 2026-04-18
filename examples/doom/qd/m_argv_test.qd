@@ -1,0 +1,18 @@
+use "m_argv.qd"
+
+/// Synthetic test: push a fixed argv inline and feed it to M_SetArgs.
+/// Avoids depending on how a test harness forwards args.
+fn main() {
+	"-iwad" "doom1.wad" "-SKILL" "3" "-nomonsters" 5 M_SetArgs
+	"argc=" print myargc print nl
+
+	"-iwad" M_CheckParm print nl            // 1
+	"-IWAD" M_CheckParm print nl            // 1 (case-insensitive)
+	"-skill" M_CheckParm print nl           // 3
+	"-nomonsters" M_ParmExists print nl     // 1
+	"-nope" M_ParmExists print nl           // 0
+
+	"-iwad" M_CheckParm -> p
+	p M_Argv print nl                       // doom1.wad (value after the flag)
+}
+

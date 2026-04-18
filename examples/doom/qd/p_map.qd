@@ -1,0 +1,90 @@
+/// Physics: movement clipping, line-of-sight, radius damage.
+///
+/// Ported from doomgeneric/p_map.c + p_maputl.c + p_sight.c — ~2,500
+/// lines combined. Owns:
+///   - Movement-path testing (P_TryMove, P_TeleportMove, P_SlideMove)
+///   - Collision primitives (PIT_CheckLine, PIT_CheckThing)
+///   - Line-of-sight / hit-scan (P_AimLineAttack, P_LineAttack, P_UseLines)
+///   - Radius damage (P_RadiusAttack)
+///   - Block-map / intercept traversal (P_BlockLinesIterator, P_PathTraverse)
+///   - BSP-based sight tests (P_CheckSight → P_CrossBSPNode)
+///
+/// All of these need mobj_t + line_t + sector_t layouts that p_setup
+/// (#46) hasn't pinned yet. Ship the API surface as stubs so info.qd,
+/// p_mobj, p_enemy can link and dispatch correctly.
+
+pub var tmfloorz:i64 = 0
+pub var tmceilingz:i64 = 0
+pub var tmdropoffz:i64 = 0
+
+pub var linetarget:ptr = 0
+pub var attackrange:i64 = 0
+
+pub fn P_TryMove(thing:ptr x:i64 y:i64 -- ok:i64) {
+	thing drop x drop y drop 1
+}
+pub fn P_TeleportMove(thing:ptr x:i64 y:i64 -- ok:i64) {
+	thing drop x drop y drop 1
+}
+pub fn P_ThingHeightClip(thing:ptr -- ok:i64) { thing drop 1 }
+pub fn P_SlideMove(mo:ptr -- ) { mo drop }
+pub fn P_UseLines(player:ptr -- ) { player drop }
+pub fn P_ChangeSector(sector:ptr crunch:i64 -- crushed:i64) {
+	sector drop crunch drop 0
+}
+pub fn P_RadiusAttack(spot:ptr source:ptr damage:i64 -- ) {
+	spot drop source drop damage drop
+}
+pub fn P_CheckPosition(thing:ptr x:i64 y:i64 -- ok:i64) {
+	thing drop x drop y drop 1
+}
+pub fn P_AimLineAttack(t1:ptr angle:i64 distance:i64 -- slope:i64) {
+	t1 drop angle drop distance drop
+	0
+}
+pub fn P_LineAttack(t1:ptr angle:i64 distance:i64 slope:i64 damage:i64 -- ) {
+	t1 drop angle drop distance drop slope drop damage drop
+}
+
+// ---- p_maputl ----
+
+pub fn P_AproxDistance(dx:i64 dy:i64 -- d:i64) {
+	dx 0 lt if { 0 dx sub -> dx }
+	dy 0 lt if { 0 dy sub -> dy }
+	dx dy lt if { dx dy 1 shr add } else { dx dy 1 shr add }
+}
+
+pub fn P_PointOnLineSide(x:i64 y:i64 line:ptr -- side:i64) {
+	x drop y drop line drop 0
+}
+
+pub fn P_PointOnDivlineSide(x:i64 y:i64 line:ptr -- side:i64) {
+	x drop y drop line drop 0
+}
+
+pub fn P_InterceptVector(v2:ptr v1:ptr -- frac:i64) {
+	v2 drop v1 drop 0
+}
+
+pub fn P_LineOpening(linedef:ptr -- ) { linedef drop }
+
+pub fn P_UnsetThingPosition(thing:ptr -- ) { thing drop }
+pub fn P_SetThingPosition(thing:ptr -- ) { thing drop }
+
+pub fn P_BlockLinesIterator(x:i64 y:i64 fn_id:i64 -- ok:i64) {
+	x drop y drop fn_id drop 1
+}
+
+pub fn P_BlockThingsIterator(x:i64 y:i64 fn_id:i64 -- ok:i64) {
+	x drop y drop fn_id drop 1
+}
+
+pub fn P_PathTraverse(x1:i64 y1:i64 x2:i64 y2:i64 flags:i64 trav:i64 -- ok:i64) {
+	x1 drop y1 drop x2 drop y2 drop flags drop trav drop 1
+}
+
+// ---- p_sight ----
+
+pub fn P_CheckSight(t1:ptr t2:ptr -- ok:i64) {
+	t1 drop t2 drop 1
+}

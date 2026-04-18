@@ -1,0 +1,48 @@
+use "m_cheat.qd"
+use mem
+
+fn feed(cht:ptr s:str -- ) {
+	0 -> i
+	s mem::from_string -> slen -> sptr
+	loop {
+		i slen gte if { break }
+		sptr i mem::get_u8 -> c
+		cht c cht_CheckCheat -> matched
+		matched 1 eq if { "MATCH after '" print s print "'" print nl }
+		i 1 add -> i
+	}
+	sptr mem::free
+}
+
+fn main() {
+	// iddqd — god mode — 5 chars, 0 params.
+	"iddqd" 0 M_NewCheat -> cht
+
+	// Partial: feed "idd" — should NOT match.
+	cht "idd" feed
+	"after 'idd': not-yet" print nl
+
+	// Completing: next "qd" closes it.
+	cht "qd" feed
+
+	// Reset path: wrong char mid-sequence resets.
+	cht "idxqd" feed          // starts id.. then wrong char, resets then ..dqd
+	cht "iddqd" feed          // full retype matches again
+
+	cht mem::free
+
+	// idkfa (keys+full ammo) has no params.
+	"idkfa" 0 M_NewCheat -> c2
+	c2 "idkfa" feed
+	c2 mem::free
+
+	// idmus with 2-char param — try "idmus01"
+	"idmus" 2 M_NewCheat -> c3
+	c3 "idmus01" feed
+	4 mem::alloc! -> pbuf
+	c3 pbuf cht_GetParam
+	"param[0]=" print pbuf 0 mem::get_u8 print nl
+	"param[1]=" print pbuf 1 mem::get_u8 print nl
+	pbuf mem::free
+	c3 mem::free
+}

@@ -1,0 +1,16 @@
+/// End-of-level statistics dump.
+///
+/// Ported from doomgeneric/statdump.c. The feature reproduces the output
+/// of id's `statdump.exe` tool (see /idgames ctrlapi.zip) — useful for
+/// speedrun analysis. Upstream has `StatDump` body-wrapped in
+/// `#ifdef ORIGCODE` and `StatCopy` gated on the `-statdump` command-line
+/// flag; the doomgeneric build ships with both effectively inert.
+///
+/// We match that: both entry points are no-ops. If speedrun tooling
+/// becomes interesting, port the full Par-time/Kill/Secret printer.
+
+pub fn StatCopy(stats:ptr -- ) {
+	stats drop
+}
+
+pub fn StatDump( -- ) { }

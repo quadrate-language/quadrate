@@ -1,0 +1,12 @@
+numlumps: 1264
+numtextures: 125
+numflats: 56
+firstflat: 1207
+numspritelumps: 483
+colormap non-null: 1
+STARTAN3 idx: 70
+BOGUS     idx: -1
+- (none) idx: 0
+FLOOR4_8 idx: 10
+stub col[0]: 4
+done

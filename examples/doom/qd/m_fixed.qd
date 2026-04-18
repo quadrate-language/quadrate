@@ -1,0 +1,48 @@
+/// 16.16 fixed-point arithmetic.
+///
+/// Ported from doomgeneric/m_fixed.c. In C this lives on `int` (32-bit signed);
+/// on Quadrate's i64 stack we get more headroom for the intermediate wide
+/// product in FixedMul "for free" — C needed an explicit (int64_t) cast and
+/// we just do the math.
+///
+/// Callers persisting values into memory should store them as i32 (via a
+/// packed struct field or `mem::set_i32`) to preserve the on-disk width.
+
+pub const FRACBITS = 16
+pub const FRACUNIT = 0x10000
+
+/// Saturation bounds matching C's INT_MAX / INT_MIN for fixed_t (int32).
+pub const FIXED_MAX = 0x7FFFFFFF
+pub const FIXED_MIN = -2147483648
+
+/// Integer absolute value. Used by FixedDiv's overflow check.
+fn iabs(x:i64 -- r:i64) {
+	x 0 lt if {
+		x neg
+	} else {
+		x
+	}
+}
+
+/// Multiply two 16.16 fixed-point values.
+/// @param a i64 first operand
+/// @param b i64 second operand
+/// @return r i64 (a * b) >> 16
+pub fn FixedMul(a:i64 b:i64 -- r:i64) {
+	a b mul FRACBITS shr
+}
+
+/// Divide two 16.16 fixed-point values with saturation.
+/// Matches the C reference including the `(abs(a) >> 14) >= abs(b)` overflow
+/// check and the XOR-sign trick for picking between INT_MIN and INT_MAX.
+pub fn FixedDiv(a:i64 b:i64 -- r:i64) {
+	a iabs 14 shr b iabs gte if {
+		a b xor 0 lt if {
+			FIXED_MIN
+		} else {
+			FIXED_MAX
+		}
+	} else {
+		a 16 shl b div
+	}
+}

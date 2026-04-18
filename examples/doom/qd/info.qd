@@ -1,0 +1,2830 @@
+/// Frame / state / mobj tables — auto-generated from info.c by
+/// tools/gen_info.py. Do not edit by hand; regenerate instead.
+///
+/// Data layout:
+///   * states: packed array of 32-byte entries holding
+///       sprite:i32 frame:i32 tics:i32 action_id:i32 nextstate:i32 misc1:i32 misc2:i32
+///     (one slot of padding lets us extend later).
+///   * mobjinfo: packed array of 92-byte entries with 23 i32 fields.
+///   * sprnames_ptr: pointer to a 5-byte-per-entry zero-padded buffer.
+///
+/// action_id maps into `action_table` (filled by the p_enemy / p_pspr port
+/// with real fn(ptr --) pointers). Until those arrive, the dispatcher treats
+/// every non-zero id as a no-op.
+
+use mem
+
+/// Enum constants — sprite indices (SPR_*).
+pub const SPR_TROO = 0
+pub const SPR_SHTG = 1
+pub const SPR_PUNG = 2
+pub const SPR_PISG = 3
+pub const SPR_PISF = 4
+pub const SPR_SHTF = 5
+pub const SPR_SHT2 = 6
+pub const SPR_CHGG = 7
+pub const SPR_CHGF = 8
+pub const SPR_MISG = 9
+pub const SPR_MISF = 10
+pub const SPR_SAWG = 11
+pub const SPR_PLSG = 12
+pub const SPR_PLSF = 13
+pub const SPR_BFGG = 14
+pub const SPR_BFGF = 15
+pub const SPR_BLUD = 16
+pub const SPR_PUFF = 17
+pub const SPR_BAL1 = 18
+pub const SPR_BAL2 = 19
+pub const SPR_PLSS = 20
+pub const SPR_PLSE = 21
+pub const SPR_MISL = 22
+pub const SPR_BFS1 = 23
+pub const SPR_BFE1 = 24
+pub const SPR_BFE2 = 25
+pub const SPR_TFOG = 26
+pub const SPR_IFOG = 27
+pub const SPR_PLAY = 28
+pub const SPR_POSS = 29
+pub const SPR_SPOS = 30
+pub const SPR_VILE = 31
+pub const SPR_FIRE = 32
+pub const SPR_FATB = 33
+pub const SPR_FBXP = 34
+pub const SPR_SKEL = 35
+pub const SPR_MANF = 36
+pub const SPR_FATT = 37
+pub const SPR_CPOS = 38
+pub const SPR_SARG = 39
+pub const SPR_HEAD = 40
+pub const SPR_BAL7 = 41
+pub const SPR_BOSS = 42
+pub const SPR_BOS2 = 43
+pub const SPR_SKUL = 44
+pub const SPR_SPID = 45
+pub const SPR_BSPI = 46
+pub const SPR_APLS = 47
+pub const SPR_APBX = 48
+pub const SPR_CYBR = 49
+pub const SPR_PAIN = 50
+pub const SPR_SSWV = 51
+pub const SPR_KEEN = 52
+pub const SPR_BBRN = 53
+pub const SPR_BOSF = 54
+pub const SPR_ARM1 = 55
+pub const SPR_ARM2 = 56
+pub const SPR_BAR1 = 57
+pub const SPR_BEXP = 58
+pub const SPR_FCAN = 59
+pub const SPR_BON1 = 60
+pub const SPR_BON2 = 61
+pub const SPR_BKEY = 62
+pub const SPR_RKEY = 63
+pub const SPR_YKEY = 64
+pub const SPR_BSKU = 65
+pub const SPR_RSKU = 66
+pub const SPR_YSKU = 67
+pub const SPR_STIM = 68
+pub const SPR_MEDI = 69
+pub const SPR_SOUL = 70
+pub const SPR_PINV = 71
+pub const SPR_PSTR = 72
+pub const SPR_PINS = 73
+pub const SPR_MEGA = 74
+pub const SPR_SUIT = 75
+pub const SPR_PMAP = 76
+pub const SPR_PVIS = 77
+pub const SPR_CLIP = 78
+pub const SPR_AMMO = 79
+pub const SPR_ROCK = 80
+pub const SPR_BROK = 81
+pub const SPR_CELL = 82
+pub const SPR_CELP = 83
+pub const SPR_SHEL = 84
+pub const SPR_SBOX = 85
+pub const SPR_BPAK = 86
+pub const SPR_BFUG = 87
+pub const SPR_MGUN = 88
+pub const SPR_CSAW = 89
+pub const SPR_LAUN = 90
+pub const SPR_PLAS = 91
+pub const SPR_SHOT = 92
+pub const SPR_SGN2 = 93
+pub const SPR_COLU = 94
+pub const SPR_SMT2 = 95
+pub const SPR_GOR1 = 96
+pub const SPR_POL2 = 97
+pub const SPR_POL5 = 98
+pub const SPR_POL4 = 99
+pub const SPR_POL3 = 100
+pub const SPR_POL1 = 101
+pub const SPR_POL6 = 102
+pub const SPR_GOR2 = 103
+pub const SPR_GOR3 = 104
+pub const SPR_GOR4 = 105
+pub const SPR_GOR5 = 106
+pub const SPR_SMIT = 107
+pub const SPR_COL1 = 108
+pub const SPR_COL2 = 109
+pub const SPR_COL3 = 110
+pub const SPR_COL4 = 111
+pub const SPR_CAND = 112
+pub const SPR_CBRA = 113
+pub const SPR_COL6 = 114
+pub const SPR_TRE1 = 115
+pub const SPR_TRE2 = 116
+pub const SPR_ELEC = 117
+pub const SPR_CEYE = 118
+pub const SPR_FSKU = 119
+pub const SPR_COL5 = 120
+pub const SPR_TBLU = 121
+pub const SPR_TGRN = 122
+pub const SPR_TRED = 123
+pub const SPR_SMBT = 124
+pub const SPR_SMGT = 125
+pub const SPR_SMRT = 126
+pub const SPR_HDB1 = 127
+pub const SPR_HDB2 = 128
+pub const SPR_HDB3 = 129
+pub const SPR_HDB4 = 130
+pub const SPR_HDB5 = 131
+pub const SPR_HDB6 = 132
+pub const SPR_POB1 = 133
+pub const SPR_POB2 = 134
+pub const SPR_BRS1 = 135
+pub const SPR_TLMP = 136
+pub const SPR_TLP2 = 137
+pub const NUMSPRITES = 138
+
+/// Enum constants — animation states (S_*).
+pub const S_NULL = 0
+pub const S_LIGHTDONE = 1
+pub const S_PUNCH = 2
+pub const S_PUNCHDOWN = 3
+pub const S_PUNCHUP = 4
+pub const S_PUNCH1 = 5
+pub const S_PUNCH2 = 6
+pub const S_PUNCH3 = 7
+pub const S_PUNCH4 = 8
+pub const S_PUNCH5 = 9
+pub const S_PISTOL = 10
+pub const S_PISTOLDOWN = 11
+pub const S_PISTOLUP = 12
+pub const S_PISTOL1 = 13
+pub const S_PISTOL2 = 14
+pub const S_PISTOL3 = 15
+pub const S_PISTOL4 = 16
+pub const S_PISTOLFLASH = 17
+pub const S_SGUN = 18
+pub const S_SGUNDOWN = 19
+pub const S_SGUNUP = 20
+pub const S_SGUN1 = 21
+pub const S_SGUN2 = 22
+pub const S_SGUN3 = 23
+pub const S_SGUN4 = 24
+pub const S_SGUN5 = 25
+pub const S_SGUN6 = 26
+pub const S_SGUN7 = 27
+pub const S_SGUN8 = 28
+pub const S_SGUN9 = 29
+pub const S_SGUNFLASH1 = 30
+pub const S_SGUNFLASH2 = 31
+pub const S_DSGUN = 32
+pub const S_DSGUNDOWN = 33
+pub const S_DSGUNUP = 34
+pub const S_DSGUN1 = 35
+pub const S_DSGUN2 = 36
+pub const S_DSGUN3 = 37
+pub const S_DSGUN4 = 38
+pub const S_DSGUN5 = 39
+pub const S_DSGUN6 = 40
+pub const S_DSGUN7 = 41
+pub const S_DSGUN8 = 42
+pub const S_DSGUN9 = 43
+pub const S_DSGUN10 = 44
+pub const S_DSNR1 = 45
+pub const S_DSNR2 = 46
+pub const S_DSGUNFLASH1 = 47
+pub const S_DSGUNFLASH2 = 48
+pub const S_CHAIN = 49
+pub const S_CHAINDOWN = 50
+pub const S_CHAINUP = 51
+pub const S_CHAIN1 = 52
+pub const S_CHAIN2 = 53
+pub const S_CHAIN3 = 54
+pub const S_CHAINFLASH1 = 55
+pub const S_CHAINFLASH2 = 56
+pub const S_MISSILE = 57
+pub const S_MISSILEDOWN = 58
+pub const S_MISSILEUP = 59
+pub const S_MISSILE1 = 60
+pub const S_MISSILE2 = 61
+pub const S_MISSILE3 = 62
+pub const S_MISSILEFLASH1 = 63
+pub const S_MISSILEFLASH2 = 64
+pub const S_MISSILEFLASH3 = 65
+pub const S_MISSILEFLASH4 = 66
+pub const S_SAW = 67
+pub const S_SAWB = 68
+pub const S_SAWDOWN = 69
+pub const S_SAWUP = 70
+pub const S_SAW1 = 71
+pub const S_SAW2 = 72
+pub const S_SAW3 = 73
+pub const S_PLASMA = 74
+pub const S_PLASMADOWN = 75
+pub const S_PLASMAUP = 76
+pub const S_PLASMA1 = 77
+pub const S_PLASMA2 = 78
+pub const S_PLASMAFLASH1 = 79
+pub const S_PLASMAFLASH2 = 80
+pub const S_BFG = 81
+pub const S_BFGDOWN = 82
+pub const S_BFGUP = 83
+pub const S_BFG1 = 84
+pub const S_BFG2 = 85
+pub const S_BFG3 = 86
+pub const S_BFG4 = 87
+pub const S_BFGFLASH1 = 88
+pub const S_BFGFLASH2 = 89
+pub const S_BLOOD1 = 90
+pub const S_BLOOD2 = 91
+pub const S_BLOOD3 = 92
+pub const S_PUFF1 = 93
+pub const S_PUFF2 = 94
+pub const S_PUFF3 = 95
+pub const S_PUFF4 = 96
+pub const S_TBALL1 = 97
+pub const S_TBALL2 = 98
+pub const S_TBALLX1 = 99
+pub const S_TBALLX2 = 100
+pub const S_TBALLX3 = 101
+pub const S_RBALL1 = 102
+pub const S_RBALL2 = 103
+pub const S_RBALLX1 = 104
+pub const S_RBALLX2 = 105
+pub const S_RBALLX3 = 106
+pub const S_PLASBALL = 107
+pub const S_PLASBALL2 = 108
+pub const S_PLASEXP = 109
+pub const S_PLASEXP2 = 110
+pub const S_PLASEXP3 = 111
+pub const S_PLASEXP4 = 112
+pub const S_PLASEXP5 = 113
+pub const S_ROCKET = 114
+pub const S_BFGSHOT = 115
+pub const S_BFGSHOT2 = 116
+pub const S_BFGLAND = 117
+pub const S_BFGLAND2 = 118
+pub const S_BFGLAND3 = 119
+pub const S_BFGLAND4 = 120
+pub const S_BFGLAND5 = 121
+pub const S_BFGLAND6 = 122
+pub const S_BFGEXP = 123
+pub const S_BFGEXP2 = 124
+pub const S_BFGEXP3 = 125
+pub const S_BFGEXP4 = 126
+pub const S_EXPLODE1 = 127
+pub const S_EXPLODE2 = 128
+pub const S_EXPLODE3 = 129
+pub const S_TFOG = 130
+pub const S_TFOG01 = 131
+pub const S_TFOG02 = 132
+pub const S_TFOG2 = 133
+pub const S_TFOG3 = 134
+pub const S_TFOG4 = 135
+pub const S_TFOG5 = 136
+pub const S_TFOG6 = 137
+pub const S_TFOG7 = 138
+pub const S_TFOG8 = 139
+pub const S_TFOG9 = 140
+pub const S_TFOG10 = 141
+pub const S_IFOG = 142
+pub const S_IFOG01 = 143
+pub const S_IFOG02 = 144
+pub const S_IFOG2 = 145
+pub const S_IFOG3 = 146
+pub const S_IFOG4 = 147
+pub const S_IFOG5 = 148
+pub const S_PLAY = 149
+pub const S_PLAY_RUN1 = 150
+pub const S_PLAY_RUN2 = 151
+pub const S_PLAY_RUN3 = 152
+pub const S_PLAY_RUN4 = 153
+pub const S_PLAY_ATK1 = 154
+pub const S_PLAY_ATK2 = 155
+pub const S_PLAY_PAIN = 156
+pub const S_PLAY_PAIN2 = 157
+pub const S_PLAY_DIE1 = 158
+pub const S_PLAY_DIE2 = 159
+pub const S_PLAY_DIE3 = 160
+pub const S_PLAY_DIE4 = 161
+pub const S_PLAY_DIE5 = 162
+pub const S_PLAY_DIE6 = 163
+pub const S_PLAY_DIE7 = 164
+pub const S_PLAY_XDIE1 = 165
+pub const S_PLAY_XDIE2 = 166
+pub const S_PLAY_XDIE3 = 167
+pub const S_PLAY_XDIE4 = 168
+pub const S_PLAY_XDIE5 = 169
+pub const S_PLAY_XDIE6 = 170
+pub const S_PLAY_XDIE7 = 171
+pub const S_PLAY_XDIE8 = 172
+pub const S_PLAY_XDIE9 = 173
+pub const S_POSS_STND = 174
+pub const S_POSS_STND2 = 175
+pub const S_POSS_RUN1 = 176
+pub const S_POSS_RUN2 = 177
+pub const S_POSS_RUN3 = 178
+pub const S_POSS_RUN4 = 179
+pub const S_POSS_RUN5 = 180
+pub const S_POSS_RUN6 = 181
+pub const S_POSS_RUN7 = 182
+pub const S_POSS_RUN8 = 183
+pub const S_POSS_ATK1 = 184
+pub const S_POSS_ATK2 = 185
+pub const S_POSS_ATK3 = 186
+pub const S_POSS_PAIN = 187
+pub const S_POSS_PAIN2 = 188
+pub const S_POSS_DIE1 = 189
+pub const S_POSS_DIE2 = 190
+pub const S_POSS_DIE3 = 191
+pub const S_POSS_DIE4 = 192
+pub const S_POSS_DIE5 = 193
+pub const S_POSS_XDIE1 = 194
+pub const S_POSS_XDIE2 = 195
+pub const S_POSS_XDIE3 = 196
+pub const S_POSS_XDIE4 = 197
+pub const S_POSS_XDIE5 = 198
+pub const S_POSS_XDIE6 = 199
+pub const S_POSS_XDIE7 = 200
+pub const S_POSS_XDIE8 = 201
+pub const S_POSS_XDIE9 = 202
+pub const S_POSS_RAISE1 = 203
+pub const S_POSS_RAISE2 = 204
+pub const S_POSS_RAISE3 = 205
+pub const S_POSS_RAISE4 = 206
+pub const S_SPOS_STND = 207
+pub const S_SPOS_STND2 = 208
+pub const S_SPOS_RUN1 = 209
+pub const S_SPOS_RUN2 = 210
+pub const S_SPOS_RUN3 = 211
+pub const S_SPOS_RUN4 = 212
+pub const S_SPOS_RUN5 = 213
+pub const S_SPOS_RUN6 = 214
+pub const S_SPOS_RUN7 = 215
+pub const S_SPOS_RUN8 = 216
+pub const S_SPOS_ATK1 = 217
+pub const S_SPOS_ATK2 = 218
+pub const S_SPOS_ATK3 = 219
+pub const S_SPOS_PAIN = 220
+pub const S_SPOS_PAIN2 = 221
+pub const S_SPOS_DIE1 = 222
+pub const S_SPOS_DIE2 = 223
+pub const S_SPOS_DIE3 = 224
+pub const S_SPOS_DIE4 = 225
+pub const S_SPOS_DIE5 = 226
+pub const S_SPOS_XDIE1 = 227
+pub const S_SPOS_XDIE2 = 228
+pub const S_SPOS_XDIE3 = 229
+pub const S_SPOS_XDIE4 = 230
+pub const S_SPOS_XDIE5 = 231
+pub const S_SPOS_XDIE6 = 232
+pub const S_SPOS_XDIE7 = 233
+pub const S_SPOS_XDIE8 = 234
+pub const S_SPOS_XDIE9 = 235
+pub const S_SPOS_RAISE1 = 236
+pub const S_SPOS_RAISE2 = 237
+pub const S_SPOS_RAISE3 = 238
+pub const S_SPOS_RAISE4 = 239
+pub const S_SPOS_RAISE5 = 240
+pub const S_VILE_STND = 241
+pub const S_VILE_STND2 = 242
+pub const S_VILE_RUN1 = 243
+pub const S_VILE_RUN2 = 244
+pub const S_VILE_RUN3 = 245
+pub const S_VILE_RUN4 = 246
+pub const S_VILE_RUN5 = 247
+pub const S_VILE_RUN6 = 248
+pub const S_VILE_RUN7 = 249
+pub const S_VILE_RUN8 = 250
+pub const S_VILE_RUN9 = 251
+pub const S_VILE_RUN10 = 252
+pub const S_VILE_RUN11 = 253
+pub const S_VILE_RUN12 = 254
+pub const S_VILE_ATK1 = 255
+pub const S_VILE_ATK2 = 256
+pub const S_VILE_ATK3 = 257
+pub const S_VILE_ATK4 = 258
+pub const S_VILE_ATK5 = 259
+pub const S_VILE_ATK6 = 260
+pub const S_VILE_ATK7 = 261
+pub const S_VILE_ATK8 = 262
+pub const S_VILE_ATK9 = 263
+pub const S_VILE_ATK10 = 264
+pub const S_VILE_ATK11 = 265
+pub const S_VILE_HEAL1 = 266
+pub const S_VILE_HEAL2 = 267
+pub const S_VILE_HEAL3 = 268
+pub const S_VILE_PAIN = 269
+pub const S_VILE_PAIN2 = 270
+pub const S_VILE_DIE1 = 271
+pub const S_VILE_DIE2 = 272
+pub const S_VILE_DIE3 = 273
+pub const S_VILE_DIE4 = 274
+pub const S_VILE_DIE5 = 275
+pub const S_VILE_DIE6 = 276
+pub const S_VILE_DIE7 = 277
+pub const S_VILE_DIE8 = 278
+pub const S_VILE_DIE9 = 279
+pub const S_VILE_DIE10 = 280
+pub const S_FIRE1 = 281
+pub const S_FIRE2 = 282
+pub const S_FIRE3 = 283
+pub const S_FIRE4 = 284
+pub const S_FIRE5 = 285
+pub const S_FIRE6 = 286
+pub const S_FIRE7 = 287
+pub const S_FIRE8 = 288
+pub const S_FIRE9 = 289
+pub const S_FIRE10 = 290
+pub const S_FIRE11 = 291
+pub const S_FIRE12 = 292
+pub const S_FIRE13 = 293
+pub const S_FIRE14 = 294
+pub const S_FIRE15 = 295
+pub const S_FIRE16 = 296
+pub const S_FIRE17 = 297
+pub const S_FIRE18 = 298
+pub const S_FIRE19 = 299
+pub const S_FIRE20 = 300
+pub const S_FIRE21 = 301
+pub const S_FIRE22 = 302
+pub const S_FIRE23 = 303
+pub const S_FIRE24 = 304
+pub const S_FIRE25 = 305
+pub const S_FIRE26 = 306
+pub const S_FIRE27 = 307
+pub const S_FIRE28 = 308
+pub const S_FIRE29 = 309
+pub const S_FIRE30 = 310
+pub const S_SMOKE1 = 311
+pub const S_SMOKE2 = 312
+pub const S_SMOKE3 = 313
+pub const S_SMOKE4 = 314
+pub const S_SMOKE5 = 315
+pub const S_TRACER = 316
+pub const S_TRACER2 = 317
+pub const S_TRACEEXP1 = 318
+pub const S_TRACEEXP2 = 319
+pub const S_TRACEEXP3 = 320
+pub const S_SKEL_STND = 321
+pub const S_SKEL_STND2 = 322
+pub const S_SKEL_RUN1 = 323
+pub const S_SKEL_RUN2 = 324
+pub const S_SKEL_RUN3 = 325
+pub const S_SKEL_RUN4 = 326
+pub const S_SKEL_RUN5 = 327
+pub const S_SKEL_RUN6 = 328
+pub const S_SKEL_RUN7 = 329
+pub const S_SKEL_RUN8 = 330
+pub const S_SKEL_RUN9 = 331
+pub const S_SKEL_RUN10 = 332
+pub const S_SKEL_RUN11 = 333
+pub const S_SKEL_RUN12 = 334
+pub const S_SKEL_FIST1 = 335
+pub const S_SKEL_FIST2 = 336
+pub const S_SKEL_FIST3 = 337
+pub const S_SKEL_FIST4 = 338
+pub const S_SKEL_MISS1 = 339
+pub const S_SKEL_MISS2 = 340
+pub const S_SKEL_MISS3 = 341
+pub const S_SKEL_MISS4 = 342
+pub const S_SKEL_PAIN = 343
+pub const S_SKEL_PAIN2 = 344
+pub const S_SKEL_DIE1 = 345
+pub const S_SKEL_DIE2 = 346
+pub const S_SKEL_DIE3 = 347
+pub const S_SKEL_DIE4 = 348
+pub const S_SKEL_DIE5 = 349
+pub const S_SKEL_DIE6 = 350
+pub const S_SKEL_RAISE1 = 351
+pub const S_SKEL_RAISE2 = 352
+pub const S_SKEL_RAISE3 = 353
+pub const S_SKEL_RAISE4 = 354
+pub const S_SKEL_RAISE5 = 355
+pub const S_SKEL_RAISE6 = 356
+pub const S_FATSHOT1 = 357
+pub const S_FATSHOT2 = 358
+pub const S_FATSHOTX1 = 359
+pub const S_FATSHOTX2 = 360
+pub const S_FATSHOTX3 = 361
+pub const S_FATT_STND = 362
+pub const S_FATT_STND2 = 363
+pub const S_FATT_RUN1 = 364
+pub const S_FATT_RUN2 = 365
+pub const S_FATT_RUN3 = 366
+pub const S_FATT_RUN4 = 367
+pub const S_FATT_RUN5 = 368
+pub const S_FATT_RUN6 = 369
+pub const S_FATT_RUN7 = 370
+pub const S_FATT_RUN8 = 371
+pub const S_FATT_RUN9 = 372
+pub const S_FATT_RUN10 = 373
+pub const S_FATT_RUN11 = 374
+pub const S_FATT_RUN12 = 375
+pub const S_FATT_ATK1 = 376
+pub const S_FATT_ATK2 = 377
+pub const S_FATT_ATK3 = 378
+pub const S_FATT_ATK4 = 379
+pub const S_FATT_ATK5 = 380
+pub const S_FATT_ATK6 = 381
+pub const S_FATT_ATK7 = 382
+pub const S_FATT_ATK8 = 383
+pub const S_FATT_ATK9 = 384
+pub const S_FATT_ATK10 = 385
+pub const S_FATT_PAIN = 386
+pub const S_FATT_PAIN2 = 387
+pub const S_FATT_DIE1 = 388
+pub const S_FATT_DIE2 = 389
+pub const S_FATT_DIE3 = 390
+pub const S_FATT_DIE4 = 391
+pub const S_FATT_DIE5 = 392
+pub const S_FATT_DIE6 = 393
+pub const S_FATT_DIE7 = 394
+pub const S_FATT_DIE8 = 395
+pub const S_FATT_DIE9 = 396
+pub const S_FATT_DIE10 = 397
+pub const S_FATT_RAISE1 = 398
+pub const S_FATT_RAISE2 = 399
+pub const S_FATT_RAISE3 = 400
+pub const S_FATT_RAISE4 = 401
+pub const S_FATT_RAISE5 = 402
+pub const S_FATT_RAISE6 = 403
+pub const S_FATT_RAISE7 = 404
+pub const S_FATT_RAISE8 = 405
+pub const S_CPOS_STND = 406
+pub const S_CPOS_STND2 = 407
+pub const S_CPOS_RUN1 = 408
+pub const S_CPOS_RUN2 = 409
+pub const S_CPOS_RUN3 = 410
+pub const S_CPOS_RUN4 = 411
+pub const S_CPOS_RUN5 = 412
+pub const S_CPOS_RUN6 = 413
+pub const S_CPOS_RUN7 = 414
+pub const S_CPOS_RUN8 = 415
+pub const S_CPOS_ATK1 = 416
+pub const S_CPOS_ATK2 = 417
+pub const S_CPOS_ATK3 = 418
+pub const S_CPOS_ATK4 = 419
+pub const S_CPOS_PAIN = 420
+pub const S_CPOS_PAIN2 = 421
+pub const S_CPOS_DIE1 = 422
+pub const S_CPOS_DIE2 = 423
+pub const S_CPOS_DIE3 = 424
+pub const S_CPOS_DIE4 = 425
+pub const S_CPOS_DIE5 = 426
+pub const S_CPOS_DIE6 = 427
+pub const S_CPOS_DIE7 = 428
+pub const S_CPOS_XDIE1 = 429
+pub const S_CPOS_XDIE2 = 430
+pub const S_CPOS_XDIE3 = 431
+pub const S_CPOS_XDIE4 = 432
+pub const S_CPOS_XDIE5 = 433
+pub const S_CPOS_XDIE6 = 434
+pub const S_CPOS_RAISE1 = 435
+pub const S_CPOS_RAISE2 = 436
+pub const S_CPOS_RAISE3 = 437
+pub const S_CPOS_RAISE4 = 438
+pub const S_CPOS_RAISE5 = 439
+pub const S_CPOS_RAISE6 = 440
+pub const S_CPOS_RAISE7 = 441
+pub const S_TROO_STND = 442
+pub const S_TROO_STND2 = 443
+pub const S_TROO_RUN1 = 444
+pub const S_TROO_RUN2 = 445
+pub const S_TROO_RUN3 = 446
+pub const S_TROO_RUN4 = 447
+pub const S_TROO_RUN5 = 448
+pub const S_TROO_RUN6 = 449
+pub const S_TROO_RUN7 = 450
+pub const S_TROO_RUN8 = 451
+pub const S_TROO_ATK1 = 452
+pub const S_TROO_ATK2 = 453
+pub const S_TROO_ATK3 = 454
+pub const S_TROO_PAIN = 455
+pub const S_TROO_PAIN2 = 456
+pub const S_TROO_DIE1 = 457
+pub const S_TROO_DIE2 = 458
+pub const S_TROO_DIE3 = 459
+pub const S_TROO_DIE4 = 460
+pub const S_TROO_DIE5 = 461
+pub const S_TROO_XDIE1 = 462
+pub const S_TROO_XDIE2 = 463
+pub const S_TROO_XDIE3 = 464
+pub const S_TROO_XDIE4 = 465
+pub const S_TROO_XDIE5 = 466
+pub const S_TROO_XDIE6 = 467
+pub const S_TROO_XDIE7 = 468
+pub const S_TROO_XDIE8 = 469
+pub const S_TROO_RAISE1 = 470
+pub const S_TROO_RAISE2 = 471
+pub const S_TROO_RAISE3 = 472
+pub const S_TROO_RAISE4 = 473
+pub const S_TROO_RAISE5 = 474
+pub const S_SARG_STND = 475
+pub const S_SARG_STND2 = 476
+pub const S_SARG_RUN1 = 477
+pub const S_SARG_RUN2 = 478
+pub const S_SARG_RUN3 = 479
+pub const S_SARG_RUN4 = 480
+pub const S_SARG_RUN5 = 481
+pub const S_SARG_RUN6 = 482
+pub const S_SARG_RUN7 = 483
+pub const S_SARG_RUN8 = 484
+pub const S_SARG_ATK1 = 485
+pub const S_SARG_ATK2 = 486
+pub const S_SARG_ATK3 = 487
+pub const S_SARG_PAIN = 488
+pub const S_SARG_PAIN2 = 489
+pub const S_SARG_DIE1 = 490
+pub const S_SARG_DIE2 = 491
+pub const S_SARG_DIE3 = 492
+pub const S_SARG_DIE4 = 493
+pub const S_SARG_DIE5 = 494
+pub const S_SARG_DIE6 = 495
+pub const S_SARG_RAISE1 = 496
+pub const S_SARG_RAISE2 = 497
+pub const S_SARG_RAISE3 = 498
+pub const S_SARG_RAISE4 = 499
+pub const S_SARG_RAISE5 = 500
+pub const S_SARG_RAISE6 = 501
+pub const S_HEAD_STND = 502
+pub const S_HEAD_RUN1 = 503
+pub const S_HEAD_ATK1 = 504
+pub const S_HEAD_ATK2 = 505
+pub const S_HEAD_ATK3 = 506
+pub const S_HEAD_PAIN = 507
+pub const S_HEAD_PAIN2 = 508
+pub const S_HEAD_PAIN3 = 509
+pub const S_HEAD_DIE1 = 510
+pub const S_HEAD_DIE2 = 511
+pub const S_HEAD_DIE3 = 512
+pub const S_HEAD_DIE4 = 513
+pub const S_HEAD_DIE5 = 514
+pub const S_HEAD_DIE6 = 515
+pub const S_HEAD_RAISE1 = 516
+pub const S_HEAD_RAISE2 = 517
+pub const S_HEAD_RAISE3 = 518
+pub const S_HEAD_RAISE4 = 519
+pub const S_HEAD_RAISE5 = 520
+pub const S_HEAD_RAISE6 = 521
+pub const S_BRBALL1 = 522
+pub const S_BRBALL2 = 523
+pub const S_BRBALLX1 = 524
+pub const S_BRBALLX2 = 525
+pub const S_BRBALLX3 = 526
+pub const S_BOSS_STND = 527
+pub const S_BOSS_STND2 = 528
+pub const S_BOSS_RUN1 = 529
+pub const S_BOSS_RUN2 = 530
+pub const S_BOSS_RUN3 = 531
+pub const S_BOSS_RUN4 = 532
+pub const S_BOSS_RUN5 = 533
+pub const S_BOSS_RUN6 = 534
+pub const S_BOSS_RUN7 = 535
+pub const S_BOSS_RUN8 = 536
+pub const S_BOSS_ATK1 = 537
+pub const S_BOSS_ATK2 = 538
+pub const S_BOSS_ATK3 = 539
+pub const S_BOSS_PAIN = 540
+pub const S_BOSS_PAIN2 = 541
+pub const S_BOSS_DIE1 = 542
+pub const S_BOSS_DIE2 = 543
+pub const S_BOSS_DIE3 = 544
+pub const S_BOSS_DIE4 = 545
+pub const S_BOSS_DIE5 = 546
+pub const S_BOSS_DIE6 = 547
+pub const S_BOSS_DIE7 = 548
+pub const S_BOSS_RAISE1 = 549
+pub const S_BOSS_RAISE2 = 550
+pub const S_BOSS_RAISE3 = 551
+pub const S_BOSS_RAISE4 = 552
+pub const S_BOSS_RAISE5 = 553
+pub const S_BOSS_RAISE6 = 554
+pub const S_BOSS_RAISE7 = 555
+pub const S_BOS2_STND = 556
+pub const S_BOS2_STND2 = 557
+pub const S_BOS2_RUN1 = 558
+pub const S_BOS2_RUN2 = 559
+pub const S_BOS2_RUN3 = 560
+pub const S_BOS2_RUN4 = 561
+pub const S_BOS2_RUN5 = 562
+pub const S_BOS2_RUN6 = 563
+pub const S_BOS2_RUN7 = 564
+pub const S_BOS2_RUN8 = 565
+pub const S_BOS2_ATK1 = 566
+pub const S_BOS2_ATK2 = 567
+pub const S_BOS2_ATK3 = 568
+pub const S_BOS2_PAIN = 569
+pub const S_BOS2_PAIN2 = 570
+pub const S_BOS2_DIE1 = 571
+pub const S_BOS2_DIE2 = 572
+pub const S_BOS2_DIE3 = 573
+pub const S_BOS2_DIE4 = 574
+pub const S_BOS2_DIE5 = 575
+pub const S_BOS2_DIE6 = 576
+pub const S_BOS2_DIE7 = 577
+pub const S_BOS2_RAISE1 = 578
+pub const S_BOS2_RAISE2 = 579
+pub const S_BOS2_RAISE3 = 580
+pub const S_BOS2_RAISE4 = 581
+pub const S_BOS2_RAISE5 = 582
+pub const S_BOS2_RAISE6 = 583
+pub const S_BOS2_RAISE7 = 584
+pub const S_SKULL_STND = 585
+pub const S_SKULL_STND2 = 586
+pub const S_SKULL_RUN1 = 587
+pub const S_SKULL_RUN2 = 588
+pub const S_SKULL_ATK1 = 589
+pub const S_SKULL_ATK2 = 590
+pub const S_SKULL_ATK3 = 591
+pub const S_SKULL_ATK4 = 592
+pub const S_SKULL_PAIN = 593
+pub const S_SKULL_PAIN2 = 594
+pub const S_SKULL_DIE1 = 595
+pub const S_SKULL_DIE2 = 596
+pub const S_SKULL_DIE3 = 597
+pub const S_SKULL_DIE4 = 598
+pub const S_SKULL_DIE5 = 599
+pub const S_SKULL_DIE6 = 600
+pub const S_SPID_STND = 601
+pub const S_SPID_STND2 = 602
+pub const S_SPID_RUN1 = 603
+pub const S_SPID_RUN2 = 604
+pub const S_SPID_RUN3 = 605
+pub const S_SPID_RUN4 = 606
+pub const S_SPID_RUN5 = 607
+pub const S_SPID_RUN6 = 608
+pub const S_SPID_RUN7 = 609
+pub const S_SPID_RUN8 = 610
+pub const S_SPID_RUN9 = 611
+pub const S_SPID_RUN10 = 612
+pub const S_SPID_RUN11 = 613
+pub const S_SPID_RUN12 = 614
+pub const S_SPID_ATK1 = 615
+pub const S_SPID_ATK2 = 616
+pub const S_SPID_ATK3 = 617
+pub const S_SPID_ATK4 = 618
+pub const S_SPID_PAIN = 619
+pub const S_SPID_PAIN2 = 620
+pub const S_SPID_DIE1 = 621
+pub const S_SPID_DIE2 = 622
+pub const S_SPID_DIE3 = 623
+pub const S_SPID_DIE4 = 624
+pub const S_SPID_DIE5 = 625
+pub const S_SPID_DIE6 = 626
+pub const S_SPID_DIE7 = 627
+pub const S_SPID_DIE8 = 628
+pub const S_SPID_DIE9 = 629
+pub const S_SPID_DIE10 = 630
+pub const S_SPID_DIE11 = 631
+pub const S_BSPI_STND = 632
+pub const S_BSPI_STND2 = 633
+pub const S_BSPI_SIGHT = 634
+pub const S_BSPI_RUN1 = 635
+pub const S_BSPI_RUN2 = 636
+pub const S_BSPI_RUN3 = 637
+pub const S_BSPI_RUN4 = 638
+pub const S_BSPI_RUN5 = 639
+pub const S_BSPI_RUN6 = 640
+pub const S_BSPI_RUN7 = 641
+pub const S_BSPI_RUN8 = 642
+pub const S_BSPI_RUN9 = 643
+pub const S_BSPI_RUN10 = 644
+pub const S_BSPI_RUN11 = 645
+pub const S_BSPI_RUN12 = 646
+pub const S_BSPI_ATK1 = 647
+pub const S_BSPI_ATK2 = 648
+pub const S_BSPI_ATK3 = 649
+pub const S_BSPI_ATK4 = 650
+pub const S_BSPI_PAIN = 651
+pub const S_BSPI_PAIN2 = 652
+pub const S_BSPI_DIE1 = 653
+pub const S_BSPI_DIE2 = 654
+pub const S_BSPI_DIE3 = 655
+pub const S_BSPI_DIE4 = 656
+pub const S_BSPI_DIE5 = 657
+pub const S_BSPI_DIE6 = 658
+pub const S_BSPI_DIE7 = 659
+pub const S_BSPI_RAISE1 = 660
+pub const S_BSPI_RAISE2 = 661
+pub const S_BSPI_RAISE3 = 662
+pub const S_BSPI_RAISE4 = 663
+pub const S_BSPI_RAISE5 = 664
+pub const S_BSPI_RAISE6 = 665
+pub const S_BSPI_RAISE7 = 666
+pub const S_ARACH_PLAZ = 667
+pub const S_ARACH_PLAZ2 = 668
+pub const S_ARACH_PLEX = 669
+pub const S_ARACH_PLEX2 = 670
+pub const S_ARACH_PLEX3 = 671
+pub const S_ARACH_PLEX4 = 672
+pub const S_ARACH_PLEX5 = 673
+pub const S_CYBER_STND = 674
+pub const S_CYBER_STND2 = 675
+pub const S_CYBER_RUN1 = 676
+pub const S_CYBER_RUN2 = 677
+pub const S_CYBER_RUN3 = 678
+pub const S_CYBER_RUN4 = 679
+pub const S_CYBER_RUN5 = 680
+pub const S_CYBER_RUN6 = 681
+pub const S_CYBER_RUN7 = 682
+pub const S_CYBER_RUN8 = 683
+pub const S_CYBER_ATK1 = 684
+pub const S_CYBER_ATK2 = 685
+pub const S_CYBER_ATK3 = 686
+pub const S_CYBER_ATK4 = 687
+pub const S_CYBER_ATK5 = 688
+pub const S_CYBER_ATK6 = 689
+pub const S_CYBER_PAIN = 690
+pub const S_CYBER_DIE1 = 691
+pub const S_CYBER_DIE2 = 692
+pub const S_CYBER_DIE3 = 693
+pub const S_CYBER_DIE4 = 694
+pub const S_CYBER_DIE5 = 695
+pub const S_CYBER_DIE6 = 696
+pub const S_CYBER_DIE7 = 697
+pub const S_CYBER_DIE8 = 698
+pub const S_CYBER_DIE9 = 699
+pub const S_CYBER_DIE10 = 700
+pub const S_PAIN_STND = 701
+pub const S_PAIN_RUN1 = 702
+pub const S_PAIN_RUN2 = 703
+pub const S_PAIN_RUN3 = 704
+pub const S_PAIN_RUN4 = 705
+pub const S_PAIN_RUN5 = 706
+pub const S_PAIN_RUN6 = 707
+pub const S_PAIN_ATK1 = 708
+pub const S_PAIN_ATK2 = 709
+pub const S_PAIN_ATK3 = 710
+pub const S_PAIN_ATK4 = 711
+pub const S_PAIN_PAIN = 712
+pub const S_PAIN_PAIN2 = 713
+pub const S_PAIN_DIE1 = 714
+pub const S_PAIN_DIE2 = 715
+pub const S_PAIN_DIE3 = 716
+pub const S_PAIN_DIE4 = 717
+pub const S_PAIN_DIE5 = 718
+pub const S_PAIN_DIE6 = 719
+pub const S_PAIN_RAISE1 = 720
+pub const S_PAIN_RAISE2 = 721
+pub const S_PAIN_RAISE3 = 722
+pub const S_PAIN_RAISE4 = 723
+pub const S_PAIN_RAISE5 = 724
+pub const S_PAIN_RAISE6 = 725
+pub const S_SSWV_STND = 726
+pub const S_SSWV_STND2 = 727
+pub const S_SSWV_RUN1 = 728
+pub const S_SSWV_RUN2 = 729
+pub const S_SSWV_RUN3 = 730
+pub const S_SSWV_RUN4 = 731
+pub const S_SSWV_RUN5 = 732
+pub const S_SSWV_RUN6 = 733
+pub const S_SSWV_RUN7 = 734
+pub const S_SSWV_RUN8 = 735
+pub const S_SSWV_ATK1 = 736
+pub const S_SSWV_ATK2 = 737
+pub const S_SSWV_ATK3 = 738
+pub const S_SSWV_ATK4 = 739
+pub const S_SSWV_ATK5 = 740
+pub const S_SSWV_ATK6 = 741
+pub const S_SSWV_PAIN = 742
+pub const S_SSWV_PAIN2 = 743
+pub const S_SSWV_DIE1 = 744
+pub const S_SSWV_DIE2 = 745
+pub const S_SSWV_DIE3 = 746
+pub const S_SSWV_DIE4 = 747
+pub const S_SSWV_DIE5 = 748
+pub const S_SSWV_XDIE1 = 749
+pub const S_SSWV_XDIE2 = 750
+pub const S_SSWV_XDIE3 = 751
+pub const S_SSWV_XDIE4 = 752
+pub const S_SSWV_XDIE5 = 753
+pub const S_SSWV_XDIE6 = 754
+pub const S_SSWV_XDIE7 = 755
+pub const S_SSWV_XDIE8 = 756
+pub const S_SSWV_XDIE9 = 757
+pub const S_SSWV_RAISE1 = 758
+pub const S_SSWV_RAISE2 = 759
+pub const S_SSWV_RAISE3 = 760
+pub const S_SSWV_RAISE4 = 761
+pub const S_SSWV_RAISE5 = 762
+pub const S_KEENSTND = 763
+pub const S_COMMKEEN = 764
+pub const S_COMMKEEN2 = 765
+pub const S_COMMKEEN3 = 766
+pub const S_COMMKEEN4 = 767
+pub const S_COMMKEEN5 = 768
+pub const S_COMMKEEN6 = 769
+pub const S_COMMKEEN7 = 770
+pub const S_COMMKEEN8 = 771
+pub const S_COMMKEEN9 = 772
+pub const S_COMMKEEN10 = 773
+pub const S_COMMKEEN11 = 774
+pub const S_COMMKEEN12 = 775
+pub const S_KEENPAIN = 776
+pub const S_KEENPAIN2 = 777
+pub const S_BRAIN = 778
+pub const S_BRAIN_PAIN = 779
+pub const S_BRAIN_DIE1 = 780
+pub const S_BRAIN_DIE2 = 781
+pub const S_BRAIN_DIE3 = 782
+pub const S_BRAIN_DIE4 = 783
+pub const S_BRAINEYE = 784
+pub const S_BRAINEYESEE = 785
+pub const S_BRAINEYE1 = 786
+pub const S_SPAWN1 = 787
+pub const S_SPAWN2 = 788
+pub const S_SPAWN3 = 789
+pub const S_SPAWN4 = 790
+pub const S_SPAWNFIRE1 = 791
+pub const S_SPAWNFIRE2 = 792
+pub const S_SPAWNFIRE3 = 793
+pub const S_SPAWNFIRE4 = 794
+pub const S_SPAWNFIRE5 = 795
+pub const S_SPAWNFIRE6 = 796
+pub const S_SPAWNFIRE7 = 797
+pub const S_SPAWNFIRE8 = 798
+pub const S_BRAINEXPLODE1 = 799
+pub const S_BRAINEXPLODE2 = 800
+pub const S_BRAINEXPLODE3 = 801
+pub const S_ARM1 = 802
+pub const S_ARM1A = 803
+pub const S_ARM2 = 804
+pub const S_ARM2A = 805
+pub const S_BAR1 = 806
+pub const S_BAR2 = 807
+pub const S_BEXP = 808
+pub const S_BEXP2 = 809
+pub const S_BEXP3 = 810
+pub const S_BEXP4 = 811
+pub const S_BEXP5 = 812
+pub const S_BBAR1 = 813
+pub const S_BBAR2 = 814
+pub const S_BBAR3 = 815
+pub const S_BON1 = 816
+pub const S_BON1A = 817
+pub const S_BON1B = 818
+pub const S_BON1C = 819
+pub const S_BON1D = 820
+pub const S_BON1E = 821
+pub const S_BON2 = 822
+pub const S_BON2A = 823
+pub const S_BON2B = 824
+pub const S_BON2C = 825
+pub const S_BON2D = 826
+pub const S_BON2E = 827
+pub const S_BKEY = 828
+pub const S_BKEY2 = 829
+pub const S_RKEY = 830
+pub const S_RKEY2 = 831
+pub const S_YKEY = 832
+pub const S_YKEY2 = 833
+pub const S_BSKULL = 834
+pub const S_BSKULL2 = 835
+pub const S_RSKULL = 836
+pub const S_RSKULL2 = 837
+pub const S_YSKULL = 838
+pub const S_YSKULL2 = 839
+pub const S_STIM = 840
+pub const S_MEDI = 841
+pub const S_SOUL = 842
+pub const S_SOUL2 = 843
+pub const S_SOUL3 = 844
+pub const S_SOUL4 = 845
+pub const S_SOUL5 = 846
+pub const S_SOUL6 = 847
+pub const S_PINV = 848
+pub const S_PINV2 = 849
+pub const S_PINV3 = 850
+pub const S_PINV4 = 851
+pub const S_PSTR = 852
+pub const S_PINS = 853
+pub const S_PINS2 = 854
+pub const S_PINS3 = 855
+pub const S_PINS4 = 856
+pub const S_MEGA = 857
+pub const S_MEGA2 = 858
+pub const S_MEGA3 = 859
+pub const S_MEGA4 = 860
+pub const S_SUIT = 861
+pub const S_PMAP = 862
+pub const S_PMAP2 = 863
+pub const S_PMAP3 = 864
+pub const S_PMAP4 = 865
+pub const S_PMAP5 = 866
+pub const S_PMAP6 = 867
+pub const S_PVIS = 868
+pub const S_PVIS2 = 869
+pub const S_CLIP = 870
+pub const S_AMMO = 871
+pub const S_ROCK = 872
+pub const S_BROK = 873
+pub const S_CELL = 874
+pub const S_CELP = 875
+pub const S_SHEL = 876
+pub const S_SBOX = 877
+pub const S_BPAK = 878
+pub const S_BFUG = 879
+pub const S_MGUN = 880
+pub const S_CSAW = 881
+pub const S_LAUN = 882
+pub const S_PLAS = 883
+pub const S_SHOT = 884
+pub const S_SHOT2 = 885
+pub const S_COLU = 886
+pub const S_STALAG = 887
+pub const S_BLOODYTWITCH = 888
+pub const S_BLOODYTWITCH2 = 889
+pub const S_BLOODYTWITCH3 = 890
+pub const S_BLOODYTWITCH4 = 891
+pub const S_DEADTORSO = 892
+pub const S_DEADBOTTOM = 893
+pub const S_HEADSONSTICK = 894
+pub const S_GIBS = 895
+pub const S_HEADONASTICK = 896
+pub const S_HEADCANDLES = 897
+pub const S_HEADCANDLES2 = 898
+pub const S_DEADSTICK = 899
+pub const S_LIVESTICK = 900
+pub const S_LIVESTICK2 = 901
+pub const S_MEAT2 = 902
+pub const S_MEAT3 = 903
+pub const S_MEAT4 = 904
+pub const S_MEAT5 = 905
+pub const S_STALAGTITE = 906
+pub const S_TALLGRNCOL = 907
+pub const S_SHRTGRNCOL = 908
+pub const S_TALLREDCOL = 909
+pub const S_SHRTREDCOL = 910
+pub const S_CANDLESTIK = 911
+pub const S_CANDELABRA = 912
+pub const S_SKULLCOL = 913
+pub const S_TORCHTREE = 914
+pub const S_BIGTREE = 915
+pub const S_TECHPILLAR = 916
+pub const S_EVILEYE = 917
+pub const S_EVILEYE2 = 918
+pub const S_EVILEYE3 = 919
+pub const S_EVILEYE4 = 920
+pub const S_FLOATSKULL = 921
+pub const S_FLOATSKULL2 = 922
+pub const S_FLOATSKULL3 = 923
+pub const S_HEARTCOL = 924
+pub const S_HEARTCOL2 = 925
+pub const S_BLUETORCH = 926
+pub const S_BLUETORCH2 = 927
+pub const S_BLUETORCH3 = 928
+pub const S_BLUETORCH4 = 929
+pub const S_GREENTORCH = 930
+pub const S_GREENTORCH2 = 931
+pub const S_GREENTORCH3 = 932
+pub const S_GREENTORCH4 = 933
+pub const S_REDTORCH = 934
+pub const S_REDTORCH2 = 935
+pub const S_REDTORCH3 = 936
+pub const S_REDTORCH4 = 937
+pub const S_BTORCHSHRT = 938
+pub const S_BTORCHSHRT2 = 939
+pub const S_BTORCHSHRT3 = 940
+pub const S_BTORCHSHRT4 = 941
+pub const S_GTORCHSHRT = 942
+pub const S_GTORCHSHRT2 = 943
+pub const S_GTORCHSHRT3 = 944
+pub const S_GTORCHSHRT4 = 945
+pub const S_RTORCHSHRT = 946
+pub const S_RTORCHSHRT2 = 947
+pub const S_RTORCHSHRT3 = 948
+pub const S_RTORCHSHRT4 = 949
+pub const S_HANGNOGUTS = 950
+pub const S_HANGBNOBRAIN = 951
+pub const S_HANGTLOOKDN = 952
+pub const S_HANGTSKULL = 953
+pub const S_HANGTLOOKUP = 954
+pub const S_HANGTNOBRAIN = 955
+pub const S_COLONGIBS = 956
+pub const S_SMALLPOOL = 957
+pub const S_BRAINSTEM = 958
+pub const S_TECHLAMP = 959
+pub const S_TECHLAMP2 = 960
+pub const S_TECHLAMP3 = 961
+pub const S_TECHLAMP4 = 962
+pub const S_TECH2LAMP = 963
+pub const S_TECH2LAMP2 = 964
+pub const S_TECH2LAMP3 = 965
+pub const S_TECH2LAMP4 = 966
+pub const NUMSTATES = 967
+
+/// Enum constants — mobj types (MT_*).
+pub const MT_PLAYER = 0
+pub const MT_POSSESSED = 1
+pub const MT_SHOTGUY = 2
+pub const MT_VILE = 3
+pub const MT_FIRE = 4
+pub const MT_UNDEAD = 5
+pub const MT_TRACER = 6
+pub const MT_SMOKE = 7
+pub const MT_FATSO = 8
+pub const MT_FATSHOT = 9
+pub const MT_CHAINGUY = 10
+pub const MT_TROOP = 11
+pub const MT_SERGEANT = 12
+pub const MT_SHADOWS = 13
+pub const MT_HEAD = 14
+pub const MT_BRUISER = 15
+pub const MT_BRUISERSHOT = 16
+pub const MT_KNIGHT = 17
+pub const MT_SKULL = 18
+pub const MT_SPIDER = 19
+pub const MT_BABY = 20
+pub const MT_CYBORG = 21
+pub const MT_PAIN = 22
+pub const MT_WOLFSS = 23
+pub const MT_KEEN = 24
+pub const MT_BOSSBRAIN = 25
+pub const MT_BOSSSPIT = 26
+pub const MT_BOSSTARGET = 27
+pub const MT_SPAWNSHOT = 28
+pub const MT_SPAWNFIRE = 29
+pub const MT_BARREL = 30
+pub const MT_TROOPSHOT = 31
+pub const MT_HEADSHOT = 32
+pub const MT_ROCKET = 33
+pub const MT_PLASMA = 34
+pub const MT_BFG = 35
+pub const MT_ARACHPLAZ = 36
+pub const MT_PUFF = 37
+pub const MT_BLOOD = 38
+pub const MT_TFOG = 39
+pub const MT_IFOG = 40
+pub const MT_TELEPORTMAN = 41
+pub const MT_EXTRABFG = 42
+pub const MT_MISC0 = 43
+pub const MT_MISC1 = 44
+pub const MT_MISC2 = 45
+pub const MT_MISC3 = 46
+pub const MT_MISC4 = 47
+pub const MT_MISC5 = 48
+pub const MT_MISC6 = 49
+pub const MT_MISC7 = 50
+pub const MT_MISC8 = 51
+pub const MT_MISC9 = 52
+pub const MT_MISC10 = 53
+pub const MT_MISC11 = 54
+pub const MT_MISC12 = 55
+pub const MT_INV = 56
+pub const MT_MISC13 = 57
+pub const MT_INS = 58
+pub const MT_MISC14 = 59
+pub const MT_MISC15 = 60
+pub const MT_MISC16 = 61
+pub const MT_MEGA = 62
+pub const MT_CLIP = 63
+pub const MT_MISC17 = 64
+pub const MT_MISC18 = 65
+pub const MT_MISC19 = 66
+pub const MT_MISC20 = 67
+pub const MT_MISC21 = 68
+pub const MT_MISC22 = 69
+pub const MT_MISC23 = 70
+pub const MT_MISC24 = 71
+pub const MT_MISC25 = 72
+pub const MT_CHAINGUN = 73
+pub const MT_MISC26 = 74
+pub const MT_MISC27 = 75
+pub const MT_MISC28 = 76
+pub const MT_SHOTGUN = 77
+pub const MT_SUPERSHOTGUN = 78
+pub const MT_MISC29 = 79
+pub const MT_MISC30 = 80
+pub const MT_MISC31 = 81
+pub const MT_MISC32 = 82
+pub const MT_MISC33 = 83
+pub const MT_MISC34 = 84
+pub const MT_MISC35 = 85
+pub const MT_MISC36 = 86
+pub const MT_MISC37 = 87
+pub const MT_MISC38 = 88
+pub const MT_MISC39 = 89
+pub const MT_MISC40 = 90
+pub const MT_MISC41 = 91
+pub const MT_MISC42 = 92
+pub const MT_MISC43 = 93
+pub const MT_MISC44 = 94
+pub const MT_MISC45 = 95
+pub const MT_MISC46 = 96
+pub const MT_MISC47 = 97
+pub const MT_MISC48 = 98
+pub const MT_MISC49 = 99
+pub const MT_MISC50 = 100
+pub const MT_MISC51 = 101
+pub const MT_MISC52 = 102
+pub const MT_MISC53 = 103
+pub const MT_MISC54 = 104
+pub const MT_MISC55 = 105
+pub const MT_MISC56 = 106
+pub const MT_MISC57 = 107
+pub const MT_MISC58 = 108
+pub const MT_MISC59 = 109
+pub const MT_MISC60 = 110
+pub const MT_MISC61 = 111
+pub const MT_MISC62 = 112
+pub const MT_MISC63 = 113
+pub const MT_MISC64 = 114
+pub const MT_MISC65 = 115
+pub const MT_MISC66 = 116
+pub const MT_MISC67 = 117
+pub const MT_MISC68 = 118
+pub const MT_MISC69 = 119
+pub const MT_MISC70 = 120
+pub const MT_MISC71 = 121
+pub const MT_MISC72 = 122
+pub const MT_MISC73 = 123
+pub const MT_MISC74 = 124
+pub const MT_MISC75 = 125
+pub const MT_MISC76 = 126
+pub const MT_MISC77 = 127
+pub const MT_MISC78 = 128
+pub const MT_MISC79 = 129
+pub const MT_MISC80 = 130
+pub const MT_MISC81 = 131
+pub const MT_MISC82 = 132
+pub const MT_MISC83 = 133
+pub const MT_MISC84 = 134
+pub const MT_MISC85 = 135
+pub const MT_MISC86 = 136
+pub const NUMMOBJTYPES = 137
+
+pub const NUMSPRITES = 138
+pub const NUMSTATES = 967
+pub const NUMMOBJTYPES = 137
+pub const STATE_STRIDE = 32
+pub const MOBJINFO_STRIDE = 92
+
+/// Total number of A_* action routines referenced anywhere in info.c.
+pub const NUMACTIONS = 74
+
+/// Action-function ids. 0 = no action. Values correspond to slots in
+/// the action_table once it's populated by the p_enemy port.
+pub const AC_NULL = 0
+pub const AC_BFGSpray = 1
+pub const AC_BFGsound = 2
+pub const AC_BabyMetal = 3
+pub const AC_BossDeath = 4
+pub const AC_BrainAwake = 5
+pub const AC_BrainDie = 6
+pub const AC_BrainExplode = 7
+pub const AC_BrainPain = 8
+pub const AC_BrainScream = 9
+pub const AC_BrainSpit = 10
+pub const AC_BruisAttack = 11
+pub const AC_BspiAttack = 12
+pub const AC_CPosAttack = 13
+pub const AC_CPosRefire = 14
+pub const AC_Chase = 15
+pub const AC_CheckReload = 16
+pub const AC_CloseShotgun2 = 17
+pub const AC_CyberAttack = 18
+pub const AC_Explode = 19
+pub const AC_FaceTarget = 20
+pub const AC_Fall = 21
+pub const AC_FatAttack1 = 22
+pub const AC_FatAttack2 = 23
+pub const AC_FatAttack3 = 24
+pub const AC_FatRaise = 25
+pub const AC_Fire = 26
+pub const AC_FireBFG = 27
+pub const AC_FireCGun = 28
+pub const AC_FireCrackle = 29
+pub const AC_FireMissile = 30
+pub const AC_FirePistol = 31
+pub const AC_FirePlasma = 32
+pub const AC_FireShotgun = 33
+pub const AC_FireShotgun2 = 34
+pub const AC_GunFlash = 35
+pub const AC_HeadAttack = 36
+pub const AC_Hoof = 37
+pub const AC_KeenDie = 38
+pub const AC_Light0 = 39
+pub const AC_Light1 = 40
+pub const AC_Light2 = 41
+pub const AC_LoadShotgun2 = 42
+pub const AC_Look = 43
+pub const AC_Lower = 44
+pub const AC_Metal = 45
+pub const AC_OpenShotgun2 = 46
+pub const AC_Pain = 47
+pub const AC_PainAttack = 48
+pub const AC_PainDie = 49
+pub const AC_PlayerScream = 50
+pub const AC_PosAttack = 51
+pub const AC_Punch = 52
+pub const AC_Raise = 53
+pub const AC_ReFire = 54
+pub const AC_SPosAttack = 55
+pub const AC_SargAttack = 56
+pub const AC_Saw = 57
+pub const AC_Scream = 58
+pub const AC_SkelFist = 59
+pub const AC_SkelMissile = 60
+pub const AC_SkelWhoosh = 61
+pub const AC_SkullAttack = 62
+pub const AC_SpawnFly = 63
+pub const AC_SpawnSound = 64
+pub const AC_SpidRefire = 65
+pub const AC_StartFire = 66
+pub const AC_Tracer = 67
+pub const AC_TroopAttack = 68
+pub const AC_VileAttack = 69
+pub const AC_VileChase = 70
+pub const AC_VileStart = 71
+pub const AC_VileTarget = 72
+pub const AC_WeaponReady = 73
+pub const AC_XScream = 74
+
+/// Packed data buffers, allocated on first use.
+pub var states:ptr = 0
+pub var mobjinfo:ptr = 0
+pub var sprnames_ptr:ptr = 0
+var info_ready:i64 = 0
+
+/// Write one state_t at index `i`.
+fn put_state(i:i64 sprite:i64 frame:i64 tics:i64 action_id:i64 next:i64 m1:i64 m2:i64 -- ) {
+	states i 32 mul mem::ptr_add -> p
+	sprite    p 0  mem::set_i32
+	frame     p 4  mem::set_i32
+	tics      p 8  mem::set_i32
+	action_id p 12 mem::set_i32
+	next      p 16 mem::set_i32
+	m1        p 20 mem::set_i32
+	m2        p 24 mem::set_i32
+}
+
+/// Write one mobjinfo_t at index `i`. 23 i32 fields.
+fn put_mobj(i:i64 f0:i64 f1:i64 f2:i64 f3:i64 f4:i64 f5:i64 f6:i64 f7:i64 f8:i64 f9:i64 f10:i64 f11:i64 f12:i64 f13:i64 f14:i64 f15:i64 f16:i64 f17:i64 f18:i64 f19:i64 f20:i64 f21:i64 f22:i64 -- ) {
+	mobjinfo i 92 mul mem::ptr_add -> p
+	f0  p 0   mem::set_i32
+	f1  p 4   mem::set_i32
+	f2  p 8   mem::set_i32
+	f3  p 12  mem::set_i32
+	f4  p 16  mem::set_i32
+	f5  p 20  mem::set_i32
+	f6  p 24  mem::set_i32
+	f7  p 28  mem::set_i32
+	f8  p 32  mem::set_i32
+	f9  p 36  mem::set_i32
+	f10 p 40  mem::set_i32
+	f11 p 44  mem::set_i32
+	f12 p 48  mem::set_i32
+	f13 p 52  mem::set_i32
+	f14 p 56  mem::set_i32
+	f15 p 60  mem::set_i32
+	f16 p 64  mem::set_i32
+	f17 p 68  mem::set_i32
+	f18 p 72  mem::set_i32
+	f19 p 76  mem::set_i32
+	f20 p 80  mem::set_i32
+	f21 p 84  mem::set_i32
+	f22 p 88  mem::set_i32
+}
+
+/// Write one 4-char sprite name at slot `i` (name is zero-padded to 5 bytes).
+fn put_sprite(i:i64 c0:i64 c1:i64 c2:i64 c3:i64 -- ) {
+	sprnames_ptr i 5 mul mem::ptr_add -> p
+	c0 p 0 mem::set_u8
+	c1 p 1 mem::set_u8
+	c2 p 2 mem::set_u8
+	c3 p 3 mem::set_u8
+	0  p 4 mem::set_u8
+}
+
+pub fn ensure_info( -- ) {
+	info_ready 0 neq if { return }
+
+	967 32 mul mem::alloc! -> states
+	states 967 32 mul mem::zero
+
+	137 92 mul mem::alloc! -> mobjinfo
+	mobjinfo 137 92 mul mem::zero
+
+	138 5 mul mem::alloc! -> sprnames_ptr
+	sprnames_ptr 138 5 mul mem::zero
+
+	populate_sprnames
+	populate_states
+	populate_mobjinfo
+
+	1 -> info_ready
+}
+
+fn populate_sprnames( -- ) {
+	0 84 82 79 79 put_sprite
+	1 83 72 84 71 put_sprite
+	2 80 85 78 71 put_sprite
+	3 80 73 83 71 put_sprite
+	4 80 73 83 70 put_sprite
+	5 83 72 84 70 put_sprite
+	6 83 72 84 50 put_sprite
+	7 67 72 71 71 put_sprite
+	8 67 72 71 70 put_sprite
+	9 77 73 83 71 put_sprite
+	10 77 73 83 70 put_sprite
+	11 83 65 87 71 put_sprite
+	12 80 76 83 71 put_sprite
+	13 80 76 83 70 put_sprite
+	14 66 70 71 71 put_sprite
+	15 66 70 71 70 put_sprite
+	16 66 76 85 68 put_sprite
+	17 80 85 70 70 put_sprite
+	18 66 65 76 49 put_sprite
+	19 66 65 76 50 put_sprite
+	20 80 76 83 83 put_sprite
+	21 80 76 83 69 put_sprite
+	22 77 73 83 76 put_sprite
+	23 66 70 83 49 put_sprite
+	24 66 70 69 49 put_sprite
+	25 66 70 69 50 put_sprite
+	26 84 70 79 71 put_sprite
+	27 73 70 79 71 put_sprite
+	28 80 76 65 89 put_sprite
+	29 80 79 83 83 put_sprite
+	30 83 80 79 83 put_sprite
+	31 86 73 76 69 put_sprite
+	32 70 73 82 69 put_sprite
+	33 70 65 84 66 put_sprite
+	34 70 66 88 80 put_sprite
+	35 83 75 69 76 put_sprite
+	36 77 65 78 70 put_sprite
+	37 70 65 84 84 put_sprite
+	38 67 80 79 83 put_sprite
+	39 83 65 82 71 put_sprite
+	40 72 69 65 68 put_sprite
+	41 66 65 76 55 put_sprite
+	42 66 79 83 83 put_sprite
+	43 66 79 83 50 put_sprite
+	44 83 75 85 76 put_sprite
+	45 83 80 73 68 put_sprite
+	46 66 83 80 73 put_sprite
+	47 65 80 76 83 put_sprite
+	48 65 80 66 88 put_sprite
+	49 67 89 66 82 put_sprite
+	50 80 65 73 78 put_sprite
+	51 83 83 87 86 put_sprite
+	52 75 69 69 78 put_sprite
+	53 66 66 82 78 put_sprite
+	54 66 79 83 70 put_sprite
+	55 65 82 77 49 put_sprite
+	56 65 82 77 50 put_sprite
+	57 66 65 82 49 put_sprite
+	58 66 69 88 80 put_sprite
+	59 70 67 65 78 put_sprite
+	60 66 79 78 49 put_sprite
+	61 66 79 78 50 put_sprite
+	62 66 75 69 89 put_sprite
+	63 82 75 69 89 put_sprite
+	64 89 75 69 89 put_sprite
+	65 66 83 75 85 put_sprite
+	66 82 83 75 85 put_sprite
+	67 89 83 75 85 put_sprite
+	68 83 84 73 77 put_sprite
+	69 77 69 68 73 put_sprite
+	70 83 79 85 76 put_sprite
+	71 80 73 78 86 put_sprite
+	72 80 83 84 82 put_sprite
+	73 80 73 78 83 put_sprite
+	74 77 69 71 65 put_sprite
+	75 83 85 73 84 put_sprite
+	76 80 77 65 80 put_sprite
+	77 80 86 73 83 put_sprite
+	78 67 76 73 80 put_sprite
+	79 65 77 77 79 put_sprite
+	80 82 79 67 75 put_sprite
+	81 66 82 79 75 put_sprite
+	82 67 69 76 76 put_sprite
+	83 67 69 76 80 put_sprite
+	84 83 72 69 76 put_sprite
+	85 83 66 79 88 put_sprite
+	86 66 80 65 75 put_sprite
+	87 66 70 85 71 put_sprite
+	88 77 71 85 78 put_sprite
+	89 67 83 65 87 put_sprite
+	90 76 65 85 78 put_sprite
+	91 80 76 65 83 put_sprite
+	92 83 72 79 84 put_sprite
+	93 83 71 78 50 put_sprite
+	94 67 79 76 85 put_sprite
+	95 83 77 84 50 put_sprite
+	96 71 79 82 49 put_sprite
+	97 80 79 76 50 put_sprite
+	98 80 79 76 53 put_sprite
+	99 80 79 76 52 put_sprite
+	100 80 79 76 51 put_sprite
+	101 80 79 76 49 put_sprite
+	102 80 79 76 54 put_sprite
+	103 71 79 82 50 put_sprite
+	104 71 79 82 51 put_sprite
+	105 71 79 82 52 put_sprite
+	106 71 79 82 53 put_sprite
+	107 83 77 73 84 put_sprite
+	108 67 79 76 49 put_sprite
+	109 67 79 76 50 put_sprite
+	110 67 79 76 51 put_sprite
+	111 67 79 76 52 put_sprite
+	112 67 65 78 68 put_sprite
+	113 67 66 82 65 put_sprite
+	114 67 79 76 54 put_sprite
+	115 84 82 69 49 put_sprite
+	116 84 82 69 50 put_sprite
+	117 69 76 69 67 put_sprite
+	118 67 69 89 69 put_sprite
+	119 70 83 75 85 put_sprite
+	120 67 79 76 53 put_sprite
+	121 84 66 76 85 put_sprite
+	122 84 71 82 78 put_sprite
+	123 84 82 69 68 put_sprite
+	124 83 77 66 84 put_sprite
+	125 83 77 71 84 put_sprite
+	126 83 77 82 84 put_sprite
+	127 72 68 66 49 put_sprite
+	128 72 68 66 50 put_sprite
+	129 72 68 66 51 put_sprite
+	130 72 68 66 52 put_sprite
+	131 72 68 66 53 put_sprite
+	132 72 68 66 54 put_sprite
+	133 80 79 66 49 put_sprite
+	134 80 79 66 50 put_sprite
+	135 66 82 83 49 put_sprite
+	136 84 76 77 80 put_sprite
+	137 84 76 80 50 put_sprite
+}
+
+fn populate_states( -- ) {
+	0 0 0 -1 0 0 0 0 put_state
+	1 1 4 0 39 0 0 0 put_state
+	2 2 0 1 73 2 0 0 put_state
+	3 2 0 1 44 3 0 0 put_state
+	4 2 0 1 53 4 0 0 put_state
+	5 2 1 4 0 6 0 0 put_state
+	6 2 2 4 52 7 0 0 put_state
+	7 2 3 5 0 8 0 0 put_state
+	8 2 2 4 0 9 0 0 put_state
+	9 2 1 5 54 2 0 0 put_state
+	10 3 0 1 73 10 0 0 put_state
+	11 3 0 1 44 11 0 0 put_state
+	12 3 0 1 53 12 0 0 put_state
+	13 3 0 4 0 14 0 0 put_state
+	14 3 1 6 31 15 0 0 put_state
+	15 3 2 4 0 16 0 0 put_state
+	16 3 1 5 54 10 0 0 put_state
+	17 4 32768 7 40 1 0 0 put_state
+	18 1 0 1 73 18 0 0 put_state
+	19 1 0 1 44 19 0 0 put_state
+	20 1 0 1 53 20 0 0 put_state
+	21 1 0 3 0 22 0 0 put_state
+	22 1 0 7 33 23 0 0 put_state
+	23 1 1 5 0 24 0 0 put_state
+	24 1 2 5 0 25 0 0 put_state
+	25 1 3 4 0 26 0 0 put_state
+	26 1 2 5 0 27 0 0 put_state
+	27 1 1 5 0 28 0 0 put_state
+	28 1 0 3 0 29 0 0 put_state
+	29 1 0 7 54 18 0 0 put_state
+	30 5 32768 4 40 31 0 0 put_state
+	31 5 32769 3 41 1 0 0 put_state
+	32 6 0 1 73 32 0 0 put_state
+	33 6 0 1 44 33 0 0 put_state
+	34 6 0 1 53 34 0 0 put_state
+	35 6 0 3 0 36 0 0 put_state
+	36 6 0 7 34 37 0 0 put_state
+	37 6 1 7 0 38 0 0 put_state
+	38 6 2 7 16 39 0 0 put_state
+	39 6 3 7 46 40 0 0 put_state
+	40 6 4 7 0 41 0 0 put_state
+	41 6 5 7 42 42 0 0 put_state
+	42 6 6 6 0 43 0 0 put_state
+	43 6 7 6 17 44 0 0 put_state
+	44 6 0 5 54 32 0 0 put_state
+	45 6 1 7 0 46 0 0 put_state
+	46 6 0 3 0 33 0 0 put_state
+	47 6 32776 5 40 48 0 0 put_state
+	48 6 32777 4 41 1 0 0 put_state
+	49 7 0 1 73 49 0 0 put_state
+	50 7 0 1 44 50 0 0 put_state
+	51 7 0 1 53 51 0 0 put_state
+	52 7 0 4 28 53 0 0 put_state
+	53 7 1 4 28 54 0 0 put_state
+	54 7 1 0 54 49 0 0 put_state
+	55 8 32768 5 40 1 0 0 put_state
+	56 8 32769 5 41 1 0 0 put_state
+	57 9 0 1 73 57 0 0 put_state
+	58 9 0 1 44 58 0 0 put_state
+	59 9 0 1 53 59 0 0 put_state
+	60 9 1 8 35 61 0 0 put_state
+	61 9 1 12 30 62 0 0 put_state
+	62 9 1 0 54 57 0 0 put_state
+	63 10 32768 3 40 64 0 0 put_state
+	64 10 32769 4 0 65 0 0 put_state
+	65 10 32770 4 41 66 0 0 put_state
+	66 10 32771 4 41 1 0 0 put_state
+	67 11 2 4 73 68 0 0 put_state
+	68 11 3 4 73 67 0 0 put_state
+	69 11 2 1 44 69 0 0 put_state
+	70 11 2 1 53 70 0 0 put_state
+	71 11 0 4 57 72 0 0 put_state
+	72 11 1 4 57 73 0 0 put_state
+	73 11 1 0 54 67 0 0 put_state
+	74 12 0 1 73 74 0 0 put_state
+	75 12 0 1 44 75 0 0 put_state
+	76 12 0 1 53 76 0 0 put_state
+	77 12 0 3 32 78 0 0 put_state
+	78 12 1 20 54 74 0 0 put_state
+	79 13 32768 4 40 1 0 0 put_state
+	80 13 32769 4 40 1 0 0 put_state
+	81 14 0 1 73 81 0 0 put_state
+	82 14 0 1 44 82 0 0 put_state
+	83 14 0 1 53 83 0 0 put_state
+	84 14 0 20 2 85 0 0 put_state
+	85 14 1 10 35 86 0 0 put_state
+	86 14 1 10 27 87 0 0 put_state
+	87 14 1 20 54 81 0 0 put_state
+	88 15 32768 11 40 89 0 0 put_state
+	89 15 32769 6 41 1 0 0 put_state
+	90 16 2 8 0 91 0 0 put_state
+	91 16 1 8 0 92 0 0 put_state
+	92 16 0 8 0 0 0 0 put_state
+	93 17 32768 4 0 94 0 0 put_state
+	94 17 1 4 0 95 0 0 put_state
+	95 17 2 4 0 96 0 0 put_state
+	96 17 3 4 0 0 0 0 put_state
+	97 18 32768 4 0 98 0 0 put_state
+	98 18 32769 4 0 97 0 0 put_state
+	99 18 32770 6 0 100 0 0 put_state
+	100 18 32771 6 0 101 0 0 put_state
+	101 18 32772 6 0 0 0 0 put_state
+	102 19 32768 4 0 103 0 0 put_state
+	103 19 32769 4 0 102 0 0 put_state
+	104 19 32770 6 0 105 0 0 put_state
+	105 19 32771 6 0 106 0 0 put_state
+	106 19 32772 6 0 0 0 0 put_state
+	107 20 32768 6 0 108 0 0 put_state
+	108 20 32769 6 0 107 0 0 put_state
+	109 21 32768 4 0 110 0 0 put_state
+	110 21 32769 4 0 111 0 0 put_state
+	111 21 32770 4 0 112 0 0 put_state
+	112 21 32771 4 0 113 0 0 put_state
+	113 21 32772 4 0 0 0 0 put_state
+	114 22 32768 1 0 114 0 0 put_state
+	115 23 32768 4 0 116 0 0 put_state
+	116 23 32769 4 0 115 0 0 put_state
+	117 24 32768 8 0 118 0 0 put_state
+	118 24 32769 8 0 119 0 0 put_state
+	119 24 32770 8 1 120 0 0 put_state
+	120 24 32771 8 0 121 0 0 put_state
+	121 24 32772 8 0 122 0 0 put_state
+	122 24 32773 8 0 0 0 0 put_state
+	123 25 32768 8 0 124 0 0 put_state
+	124 25 32769 8 0 125 0 0 put_state
+	125 25 32770 8 0 126 0 0 put_state
+	126 25 32771 8 0 0 0 0 put_state
+	127 22 32769 8 19 128 0 0 put_state
+	128 22 32770 6 0 129 0 0 put_state
+	129 22 32771 4 0 0 0 0 put_state
+	130 26 32768 6 0 131 0 0 put_state
+	131 26 32769 6 0 132 0 0 put_state
+	132 26 32768 6 0 133 0 0 put_state
+	133 26 32769 6 0 134 0 0 put_state
+	134 26 32770 6 0 135 0 0 put_state
+	135 26 32771 6 0 136 0 0 put_state
+	136 26 32772 6 0 137 0 0 put_state
+	137 26 32773 6 0 138 0 0 put_state
+	138 26 32774 6 0 139 0 0 put_state
+	139 26 32775 6 0 140 0 0 put_state
+	140 26 32776 6 0 141 0 0 put_state
+	141 26 32777 6 0 0 0 0 put_state
+	142 27 32768 6 0 143 0 0 put_state
+	143 27 32769 6 0 144 0 0 put_state
+	144 27 32768 6 0 145 0 0 put_state
+	145 27 32769 6 0 146 0 0 put_state
+	146 27 32770 6 0 147 0 0 put_state
+	147 27 32771 6 0 148 0 0 put_state
+	148 27 32772 6 0 0 0 0 put_state
+	149 28 0 -1 0 0 0 0 put_state
+	150 28 0 4 0 151 0 0 put_state
+	151 28 1 4 0 152 0 0 put_state
+	152 28 2 4 0 153 0 0 put_state
+	153 28 3 4 0 150 0 0 put_state
+	154 28 4 12 0 149 0 0 put_state
+	155 28 32773 6 0 154 0 0 put_state
+	156 28 6 4 0 157 0 0 put_state
+	157 28 6 4 47 149 0 0 put_state
+	158 28 7 10 0 159 0 0 put_state
+	159 28 8 10 50 160 0 0 put_state
+	160 28 9 10 21 161 0 0 put_state
+	161 28 10 10 0 162 0 0 put_state
+	162 28 11 10 0 163 0 0 put_state
+	163 28 12 10 0 164 0 0 put_state
+	164 28 13 -1 0 0 0 0 put_state
+	165 28 14 5 0 166 0 0 put_state
+	166 28 15 5 74 167 0 0 put_state
+	167 28 16 5 21 168 0 0 put_state
+	168 28 17 5 0 169 0 0 put_state
+	169 28 18 5 0 170 0 0 put_state
+	170 28 19 5 0 171 0 0 put_state
+	171 28 20 5 0 172 0 0 put_state
+	172 28 21 5 0 173 0 0 put_state
+	173 28 22 -1 0 0 0 0 put_state
+	174 29 0 10 43 175 0 0 put_state
+	175 29 1 10 43 174 0 0 put_state
+	176 29 0 4 15 177 0 0 put_state
+	177 29 0 4 15 178 0 0 put_state
+	178 29 1 4 15 179 0 0 put_state
+	179 29 1 4 15 180 0 0 put_state
+	180 29 2 4 15 181 0 0 put_state
+	181 29 2 4 15 182 0 0 put_state
+	182 29 3 4 15 183 0 0 put_state
+	183 29 3 4 15 176 0 0 put_state
+	184 29 4 10 20 185 0 0 put_state
+	185 29 5 8 51 186 0 0 put_state
+	186 29 4 8 0 176 0 0 put_state
+	187 29 6 3 0 188 0 0 put_state
+	188 29 6 3 47 176 0 0 put_state
+	189 29 7 5 0 190 0 0 put_state
+	190 29 8 5 58 191 0 0 put_state
+	191 29 9 5 21 192 0 0 put_state
+	192 29 10 5 0 193 0 0 put_state
+	193 29 11 -1 0 0 0 0 put_state
+	194 29 12 5 0 195 0 0 put_state
+	195 29 13 5 74 196 0 0 put_state
+	196 29 14 5 21 197 0 0 put_state
+	197 29 15 5 0 198 0 0 put_state
+	198 29 16 5 0 199 0 0 put_state
+	199 29 17 5 0 200 0 0 put_state
+	200 29 18 5 0 201 0 0 put_state
+	201 29 19 5 0 202 0 0 put_state
+	202 29 20 -1 0 0 0 0 put_state
+	203 29 10 5 0 204 0 0 put_state
+	204 29 9 5 0 205 0 0 put_state
+	205 29 8 5 0 206 0 0 put_state
+	206 29 7 5 0 176 0 0 put_state
+	207 30 0 10 43 208 0 0 put_state
+	208 30 1 10 43 207 0 0 put_state
+	209 30 0 3 15 210 0 0 put_state
+	210 30 0 3 15 211 0 0 put_state
+	211 30 1 3 15 212 0 0 put_state
+	212 30 1 3 15 213 0 0 put_state
+	213 30 2 3 15 214 0 0 put_state
+	214 30 2 3 15 215 0 0 put_state
+	215 30 3 3 15 216 0 0 put_state
+	216 30 3 3 15 209 0 0 put_state
+	217 30 4 10 20 218 0 0 put_state
+	218 30 32773 10 55 219 0 0 put_state
+	219 30 4 10 0 209 0 0 put_state
+	220 30 6 3 0 221 0 0 put_state
+	221 30 6 3 47 209 0 0 put_state
+	222 30 7 5 0 223 0 0 put_state
+	223 30 8 5 58 224 0 0 put_state
+	224 30 9 5 21 225 0 0 put_state
+	225 30 10 5 0 226 0 0 put_state
+	226 30 11 -1 0 0 0 0 put_state
+	227 30 12 5 0 228 0 0 put_state
+	228 30 13 5 74 229 0 0 put_state
+	229 30 14 5 21 230 0 0 put_state
+	230 30 15 5 0 231 0 0 put_state
+	231 30 16 5 0 232 0 0 put_state
+	232 30 17 5 0 233 0 0 put_state
+	233 30 18 5 0 234 0 0 put_state
+	234 30 19 5 0 235 0 0 put_state
+	235 30 20 -1 0 0 0 0 put_state
+	236 30 11 5 0 237 0 0 put_state
+	237 30 10 5 0 238 0 0 put_state
+	238 30 9 5 0 239 0 0 put_state
+	239 30 8 5 0 240 0 0 put_state
+	240 30 7 5 0 209 0 0 put_state
+	241 31 0 10 43 242 0 0 put_state
+	242 31 1 10 43 241 0 0 put_state
+	243 31 0 2 70 244 0 0 put_state
+	244 31 0 2 70 245 0 0 put_state
+	245 31 1 2 70 246 0 0 put_state
+	246 31 1 2 70 247 0 0 put_state
+	247 31 2 2 70 248 0 0 put_state
+	248 31 2 2 70 249 0 0 put_state
+	249 31 3 2 70 250 0 0 put_state
+	250 31 3 2 70 251 0 0 put_state
+	251 31 4 2 70 252 0 0 put_state
+	252 31 4 2 70 253 0 0 put_state
+	253 31 5 2 70 254 0 0 put_state
+	254 31 5 2 70 243 0 0 put_state
+	255 31 32774 0 71 256 0 0 put_state
+	256 31 32774 10 20 257 0 0 put_state
+	257 31 32775 8 72 258 0 0 put_state
+	258 31 32776 8 20 259 0 0 put_state
+	259 31 32777 8 20 260 0 0 put_state
+	260 31 32778 8 20 261 0 0 put_state
+	261 31 32779 8 20 262 0 0 put_state
+	262 31 32780 8 20 263 0 0 put_state
+	263 31 32781 8 20 264 0 0 put_state
+	264 31 32782 8 69 265 0 0 put_state
+	265 31 32783 20 0 243 0 0 put_state
+	266 31 32794 10 0 267 0 0 put_state
+	267 31 32795 10 0 268 0 0 put_state
+	268 31 32796 10 0 243 0 0 put_state
+	269 31 16 5 0 270 0 0 put_state
+	270 31 16 5 47 243 0 0 put_state
+	271 31 16 7 0 272 0 0 put_state
+	272 31 17 7 58 273 0 0 put_state
+	273 31 18 7 21 274 0 0 put_state
+	274 31 19 7 0 275 0 0 put_state
+	275 31 20 7 0 276 0 0 put_state
+	276 31 21 7 0 277 0 0 put_state
+	277 31 22 7 0 278 0 0 put_state
+	278 31 23 5 0 279 0 0 put_state
+	279 31 24 5 0 280 0 0 put_state
+	280 31 25 -1 0 0 0 0 put_state
+	281 32 32768 2 66 282 0 0 put_state
+	282 32 32769 2 26 283 0 0 put_state
+	283 32 32768 2 26 284 0 0 put_state
+	284 32 32769 2 26 285 0 0 put_state
+	285 32 32770 2 29 286 0 0 put_state
+	286 32 32769 2 26 287 0 0 put_state
+	287 32 32770 2 26 288 0 0 put_state
+	288 32 32769 2 26 289 0 0 put_state
+	289 32 32770 2 26 290 0 0 put_state
+	290 32 32771 2 26 291 0 0 put_state
+	291 32 32770 2 26 292 0 0 put_state
+	292 32 32771 2 26 293 0 0 put_state
+	293 32 32770 2 26 294 0 0 put_state
+	294 32 32771 2 26 295 0 0 put_state
+	295 32 32772 2 26 296 0 0 put_state
+	296 32 32771 2 26 297 0 0 put_state
+	297 32 32772 2 26 298 0 0 put_state
+	298 32 32771 2 26 299 0 0 put_state
+	299 32 32772 2 29 300 0 0 put_state
+	300 32 32773 2 26 301 0 0 put_state
+	301 32 32772 2 26 302 0 0 put_state
+	302 32 32773 2 26 303 0 0 put_state
+	303 32 32772 2 26 304 0 0 put_state
+	304 32 32773 2 26 305 0 0 put_state
+	305 32 32774 2 26 306 0 0 put_state
+	306 32 32775 2 26 307 0 0 put_state
+	307 32 32774 2 26 308 0 0 put_state
+	308 32 32775 2 26 309 0 0 put_state
+	309 32 32774 2 26 310 0 0 put_state
+	310 32 32775 2 26 0 0 0 put_state
+	311 17 1 4 0 312 0 0 put_state
+	312 17 2 4 0 313 0 0 put_state
+	313 17 1 4 0 314 0 0 put_state
+	314 17 2 4 0 315 0 0 put_state
+	315 17 3 4 0 0 0 0 put_state
+	316 33 32768 2 67 317 0 0 put_state
+	317 33 32769 2 67 316 0 0 put_state
+	318 34 32768 8 0 319 0 0 put_state
+	319 34 32769 6 0 320 0 0 put_state
+	320 34 32770 4 0 0 0 0 put_state
+	321 35 0 10 43 322 0 0 put_state
+	322 35 1 10 43 321 0 0 put_state
+	323 35 0 2 15 324 0 0 put_state
+	324 35 0 2 15 325 0 0 put_state
+	325 35 1 2 15 326 0 0 put_state
+	326 35 1 2 15 327 0 0 put_state
+	327 35 2 2 15 328 0 0 put_state
+	328 35 2 2 15 329 0 0 put_state
+	329 35 3 2 15 330 0 0 put_state
+	330 35 3 2 15 331 0 0 put_state
+	331 35 4 2 15 332 0 0 put_state
+	332 35 4 2 15 333 0 0 put_state
+	333 35 5 2 15 334 0 0 put_state
+	334 35 5 2 15 323 0 0 put_state
+	335 35 6 0 20 336 0 0 put_state
+	336 35 6 6 61 337 0 0 put_state
+	337 35 7 6 20 338 0 0 put_state
+	338 35 8 6 59 323 0 0 put_state
+	339 35 32777 0 20 340 0 0 put_state
+	340 35 32777 10 20 341 0 0 put_state
+	341 35 10 10 60 342 0 0 put_state
+	342 35 10 10 20 323 0 0 put_state
+	343 35 11 5 0 344 0 0 put_state
+	344 35 11 5 47 323 0 0 put_state
+	345 35 11 7 0 346 0 0 put_state
+	346 35 12 7 0 347 0 0 put_state
+	347 35 13 7 58 348 0 0 put_state
+	348 35 14 7 21 349 0 0 put_state
+	349 35 15 7 0 350 0 0 put_state
+	350 35 16 -1 0 0 0 0 put_state
+	351 35 16 5 0 352 0 0 put_state
+	352 35 15 5 0 353 0 0 put_state
+	353 35 14 5 0 354 0 0 put_state
+	354 35 13 5 0 355 0 0 put_state
+	355 35 12 5 0 356 0 0 put_state
+	356 35 11 5 0 323 0 0 put_state
+	357 36 32768 4 0 358 0 0 put_state
+	358 36 32769 4 0 357 0 0 put_state
+	359 22 32769 8 0 360 0 0 put_state
+	360 22 32770 6 0 361 0 0 put_state
+	361 22 32771 4 0 0 0 0 put_state
+	362 37 0 15 43 363 0 0 put_state
+	363 37 1 15 43 362 0 0 put_state
+	364 37 0 4 15 365 0 0 put_state
+	365 37 0 4 15 366 0 0 put_state
+	366 37 1 4 15 367 0 0 put_state
+	367 37 1 4 15 368 0 0 put_state
+	368 37 2 4 15 369 0 0 put_state
+	369 37 2 4 15 370 0 0 put_state
+	370 37 3 4 15 371 0 0 put_state
+	371 37 3 4 15 372 0 0 put_state
+	372 37 4 4 15 373 0 0 put_state
+	373 37 4 4 15 374 0 0 put_state
+	374 37 5 4 15 375 0 0 put_state
+	375 37 5 4 15 364 0 0 put_state
+	376 37 6 20 25 377 0 0 put_state
+	377 37 32775 10 22 378 0 0 put_state
+	378 37 8 5 20 379 0 0 put_state
+	379 37 6 5 20 380 0 0 put_state
+	380 37 32775 10 23 381 0 0 put_state
+	381 37 8 5 20 382 0 0 put_state
+	382 37 6 5 20 383 0 0 put_state
+	383 37 32775 10 24 384 0 0 put_state
+	384 37 8 5 20 385 0 0 put_state
+	385 37 6 5 20 364 0 0 put_state
+	386 37 9 3 0 387 0 0 put_state
+	387 37 9 3 47 364 0 0 put_state
+	388 37 10 6 0 389 0 0 put_state
+	389 37 11 6 58 390 0 0 put_state
+	390 37 12 6 21 391 0 0 put_state
+	391 37 13 6 0 392 0 0 put_state
+	392 37 14 6 0 393 0 0 put_state
+	393 37 15 6 0 394 0 0 put_state
+	394 37 16 6 0 395 0 0 put_state
+	395 37 17 6 0 396 0 0 put_state
+	396 37 18 6 0 397 0 0 put_state
+	397 37 19 -1 4 0 0 0 put_state
+	398 37 17 5 0 399 0 0 put_state
+	399 37 16 5 0 400 0 0 put_state
+	400 37 15 5 0 401 0 0 put_state
+	401 37 14 5 0 402 0 0 put_state
+	402 37 13 5 0 403 0 0 put_state
+	403 37 12 5 0 404 0 0 put_state
+	404 37 11 5 0 405 0 0 put_state
+	405 37 10 5 0 364 0 0 put_state
+	406 38 0 10 43 407 0 0 put_state
+	407 38 1 10 43 406 0 0 put_state
+	408 38 0 3 15 409 0 0 put_state
+	409 38 0 3 15 410 0 0 put_state
+	410 38 1 3 15 411 0 0 put_state
+	411 38 1 3 15 412 0 0 put_state
+	412 38 2 3 15 413 0 0 put_state
+	413 38 2 3 15 414 0 0 put_state
+	414 38 3 3 15 415 0 0 put_state
+	415 38 3 3 15 408 0 0 put_state
+	416 38 4 10 20 417 0 0 put_state
+	417 38 32773 4 13 418 0 0 put_state
+	418 38 32772 4 13 419 0 0 put_state
+	419 38 5 1 14 417 0 0 put_state
+	420 38 6 3 0 421 0 0 put_state
+	421 38 6 3 47 408 0 0 put_state
+	422 38 7 5 0 423 0 0 put_state
+	423 38 8 5 58 424 0 0 put_state
+	424 38 9 5 21 425 0 0 put_state
+	425 38 10 5 0 426 0 0 put_state
+	426 38 11 5 0 427 0 0 put_state
+	427 38 12 5 0 428 0 0 put_state
+	428 38 13 -1 0 0 0 0 put_state
+	429 38 14 5 0 430 0 0 put_state
+	430 38 15 5 74 431 0 0 put_state
+	431 38 16 5 21 432 0 0 put_state
+	432 38 17 5 0 433 0 0 put_state
+	433 38 18 5 0 434 0 0 put_state
+	434 38 19 -1 0 0 0 0 put_state
+	435 38 13 5 0 436 0 0 put_state
+	436 38 12 5 0 437 0 0 put_state
+	437 38 11 5 0 438 0 0 put_state
+	438 38 10 5 0 439 0 0 put_state
+	439 38 9 5 0 440 0 0 put_state
+	440 38 8 5 0 441 0 0 put_state
+	441 38 7 5 0 408 0 0 put_state
+	442 0 0 10 43 443 0 0 put_state
+	443 0 1 10 43 442 0 0 put_state
+	444 0 0 3 15 445 0 0 put_state
+	445 0 0 3 15 446 0 0 put_state
+	446 0 1 3 15 447 0 0 put_state
+	447 0 1 3 15 448 0 0 put_state
+	448 0 2 3 15 449 0 0 put_state
+	449 0 2 3 15 450 0 0 put_state
+	450 0 3 3 15 451 0 0 put_state
+	451 0 3 3 15 444 0 0 put_state
+	452 0 4 8 20 453 0 0 put_state
+	453 0 5 8 20 454 0 0 put_state
+	454 0 6 6 68 444 0 0 put_state
+	455 0 7 2 0 456 0 0 put_state
+	456 0 7 2 47 444 0 0 put_state
+	457 0 8 8 0 458 0 0 put_state
+	458 0 9 8 58 459 0 0 put_state
+	459 0 10 6 0 460 0 0 put_state
+	460 0 11 6 21 461 0 0 put_state
+	461 0 12 -1 0 0 0 0 put_state
+	462 0 13 5 0 463 0 0 put_state
+	463 0 14 5 74 464 0 0 put_state
+	464 0 15 5 0 465 0 0 put_state
+	465 0 16 5 21 466 0 0 put_state
+	466 0 17 5 0 467 0 0 put_state
+	467 0 18 5 0 468 0 0 put_state
+	468 0 19 5 0 469 0 0 put_state
+	469 0 20 -1 0 0 0 0 put_state
+	470 0 12 8 0 471 0 0 put_state
+	471 0 11 8 0 472 0 0 put_state
+	472 0 10 6 0 473 0 0 put_state
+	473 0 9 6 0 474 0 0 put_state
+	474 0 8 6 0 444 0 0 put_state
+	475 39 0 10 43 476 0 0 put_state
+	476 39 1 10 43 475 0 0 put_state
+	477 39 0 2 15 478 0 0 put_state
+	478 39 0 2 15 479 0 0 put_state
+	479 39 1 2 15 480 0 0 put_state
+	480 39 1 2 15 481 0 0 put_state
+	481 39 2 2 15 482 0 0 put_state
+	482 39 2 2 15 483 0 0 put_state
+	483 39 3 2 15 484 0 0 put_state
+	484 39 3 2 15 477 0 0 put_state
+	485 39 4 8 20 486 0 0 put_state
+	486 39 5 8 20 487 0 0 put_state
+	487 39 6 8 56 477 0 0 put_state
+	488 39 7 2 0 489 0 0 put_state
+	489 39 7 2 47 477 0 0 put_state
+	490 39 8 8 0 491 0 0 put_state
+	491 39 9 8 58 492 0 0 put_state
+	492 39 10 4 0 493 0 0 put_state
+	493 39 11 4 21 494 0 0 put_state
+	494 39 12 4 0 495 0 0 put_state
+	495 39 13 -1 0 0 0 0 put_state
+	496 39 13 5 0 497 0 0 put_state
+	497 39 12 5 0 498 0 0 put_state
+	498 39 11 5 0 499 0 0 put_state
+	499 39 10 5 0 500 0 0 put_state
+	500 39 9 5 0 501 0 0 put_state
+	501 39 8 5 0 477 0 0 put_state
+	502 40 0 10 43 502 0 0 put_state
+	503 40 0 3 15 503 0 0 put_state
+	504 40 1 5 20 505 0 0 put_state
+	505 40 2 5 20 506 0 0 put_state
+	506 40 32771 5 36 503 0 0 put_state
+	507 40 4 3 0 508 0 0 put_state
+	508 40 4 3 47 509 0 0 put_state
+	509 40 5 6 0 503 0 0 put_state
+	510 40 6 8 0 511 0 0 put_state
+	511 40 7 8 58 512 0 0 put_state
+	512 40 8 8 0 513 0 0 put_state
+	513 40 9 8 0 514 0 0 put_state
+	514 40 10 8 21 515 0 0 put_state
+	515 40 11 -1 0 0 0 0 put_state
+	516 40 11 8 0 517 0 0 put_state
+	517 40 10 8 0 518 0 0 put_state
+	518 40 9 8 0 519 0 0 put_state
+	519 40 8 8 0 520 0 0 put_state
+	520 40 7 8 0 521 0 0 put_state
+	521 40 6 8 0 503 0 0 put_state
+	522 41 32768 4 0 523 0 0 put_state
+	523 41 32769 4 0 522 0 0 put_state
+	524 41 32770 6 0 525 0 0 put_state
+	525 41 32771 6 0 526 0 0 put_state
+	526 41 32772 6 0 0 0 0 put_state
+	527 42 0 10 43 528 0 0 put_state
+	528 42 1 10 43 527 0 0 put_state
+	529 42 0 3 15 530 0 0 put_state
+	530 42 0 3 15 531 0 0 put_state
+	531 42 1 3 15 532 0 0 put_state
+	532 42 1 3 15 533 0 0 put_state
+	533 42 2 3 15 534 0 0 put_state
+	534 42 2 3 15 535 0 0 put_state
+	535 42 3 3 15 536 0 0 put_state
+	536 42 3 3 15 529 0 0 put_state
+	537 42 4 8 20 538 0 0 put_state
+	538 42 5 8 20 539 0 0 put_state
+	539 42 6 8 11 529 0 0 put_state
+	540 42 7 2 0 541 0 0 put_state
+	541 42 7 2 47 529 0 0 put_state
+	542 42 8 8 0 543 0 0 put_state
+	543 42 9 8 58 544 0 0 put_state
+	544 42 10 8 0 545 0 0 put_state
+	545 42 11 8 21 546 0 0 put_state
+	546 42 12 8 0 547 0 0 put_state
+	547 42 13 8 0 548 0 0 put_state
+	548 42 14 -1 4 0 0 0 put_state
+	549 42 14 8 0 550 0 0 put_state
+	550 42 13 8 0 551 0 0 put_state
+	551 42 12 8 0 552 0 0 put_state
+	552 42 11 8 0 553 0 0 put_state
+	553 42 10 8 0 554 0 0 put_state
+	554 42 9 8 0 555 0 0 put_state
+	555 42 8 8 0 529 0 0 put_state
+	556 43 0 10 43 557 0 0 put_state
+	557 43 1 10 43 556 0 0 put_state
+	558 43 0 3 15 559 0 0 put_state
+	559 43 0 3 15 560 0 0 put_state
+	560 43 1 3 15 561 0 0 put_state
+	561 43 1 3 15 562 0 0 put_state
+	562 43 2 3 15 563 0 0 put_state
+	563 43 2 3 15 564 0 0 put_state
+	564 43 3 3 15 565 0 0 put_state
+	565 43 3 3 15 558 0 0 put_state
+	566 43 4 8 20 567 0 0 put_state
+	567 43 5 8 20 568 0 0 put_state
+	568 43 6 8 11 558 0 0 put_state
+	569 43 7 2 0 570 0 0 put_state
+	570 43 7 2 47 558 0 0 put_state
+	571 43 8 8 0 572 0 0 put_state
+	572 43 9 8 58 573 0 0 put_state
+	573 43 10 8 0 574 0 0 put_state
+	574 43 11 8 21 575 0 0 put_state
+	575 43 12 8 0 576 0 0 put_state
+	576 43 13 8 0 577 0 0 put_state
+	577 43 14 -1 0 0 0 0 put_state
+	578 43 14 8 0 579 0 0 put_state
+	579 43 13 8 0 580 0 0 put_state
+	580 43 12 8 0 581 0 0 put_state
+	581 43 11 8 0 582 0 0 put_state
+	582 43 10 8 0 583 0 0 put_state
+	583 43 9 8 0 584 0 0 put_state
+	584 43 8 8 0 558 0 0 put_state
+	585 44 32768 10 43 586 0 0 put_state
+	586 44 32769 10 43 585 0 0 put_state
+	587 44 32768 6 15 588 0 0 put_state
+	588 44 32769 6 15 587 0 0 put_state
+	589 44 32770 10 20 590 0 0 put_state
+	590 44 32771 4 62 591 0 0 put_state
+	591 44 32770 4 0 592 0 0 put_state
+	592 44 32771 4 0 591 0 0 put_state
+	593 44 32772 3 0 594 0 0 put_state
+	594 44 32772 3 47 587 0 0 put_state
+	595 44 32773 6 0 596 0 0 put_state
+	596 44 32774 6 58 597 0 0 put_state
+	597 44 32775 6 0 598 0 0 put_state
+	598 44 32776 6 21 599 0 0 put_state
+	599 44 9 6 0 600 0 0 put_state
+	600 44 10 6 0 0 0 0 put_state
+	601 45 0 10 43 602 0 0 put_state
+	602 45 1 10 43 601 0 0 put_state
+	603 45 0 3 45 604 0 0 put_state
+	604 45 0 3 15 605 0 0 put_state
+	605 45 1 3 15 606 0 0 put_state
+	606 45 1 3 15 607 0 0 put_state
+	607 45 2 3 45 608 0 0 put_state
+	608 45 2 3 15 609 0 0 put_state
+	609 45 3 3 15 610 0 0 put_state
+	610 45 3 3 15 611 0 0 put_state
+	611 45 4 3 45 612 0 0 put_state
+	612 45 4 3 15 613 0 0 put_state
+	613 45 5 3 15 614 0 0 put_state
+	614 45 5 3 15 603 0 0 put_state
+	615 45 32768 20 20 616 0 0 put_state
+	616 45 32774 4 55 617 0 0 put_state
+	617 45 32775 4 55 618 0 0 put_state
+	618 45 32775 1 65 616 0 0 put_state
+	619 45 8 3 0 620 0 0 put_state
+	620 45 8 3 47 603 0 0 put_state
+	621 45 9 20 58 622 0 0 put_state
+	622 45 10 10 21 623 0 0 put_state
+	623 45 11 10 0 624 0 0 put_state
+	624 45 12 10 0 625 0 0 put_state
+	625 45 13 10 0 626 0 0 put_state
+	626 45 14 10 0 627 0 0 put_state
+	627 45 15 10 0 628 0 0 put_state
+	628 45 16 10 0 629 0 0 put_state
+	629 45 17 10 0 630 0 0 put_state
+	630 45 18 30 0 631 0 0 put_state
+	631 45 18 -1 4 0 0 0 put_state
+	632 46 0 10 43 633 0 0 put_state
+	633 46 1 10 43 632 0 0 put_state
+	634 46 0 20 0 635 0 0 put_state
+	635 46 0 3 3 636 0 0 put_state
+	636 46 0 3 15 637 0 0 put_state
+	637 46 1 3 15 638 0 0 put_state
+	638 46 1 3 15 639 0 0 put_state
+	639 46 2 3 15 640 0 0 put_state
+	640 46 2 3 15 641 0 0 put_state
+	641 46 3 3 3 642 0 0 put_state
+	642 46 3 3 15 643 0 0 put_state
+	643 46 4 3 15 644 0 0 put_state
+	644 46 4 3 15 645 0 0 put_state
+	645 46 5 3 15 646 0 0 put_state
+	646 46 5 3 15 635 0 0 put_state
+	647 46 32768 20 20 648 0 0 put_state
+	648 46 32774 4 12 649 0 0 put_state
+	649 46 32775 4 0 650 0 0 put_state
+	650 46 32775 1 65 648 0 0 put_state
+	651 46 8 3 0 652 0 0 put_state
+	652 46 8 3 47 635 0 0 put_state
+	653 46 9 20 58 654 0 0 put_state
+	654 46 10 7 21 655 0 0 put_state
+	655 46 11 7 0 656 0 0 put_state
+	656 46 12 7 0 657 0 0 put_state
+	657 46 13 7 0 658 0 0 put_state
+	658 46 14 7 0 659 0 0 put_state
+	659 46 15 -1 4 0 0 0 put_state
+	660 46 15 5 0 661 0 0 put_state
+	661 46 14 5 0 662 0 0 put_state
+	662 46 13 5 0 663 0 0 put_state
+	663 46 12 5 0 664 0 0 put_state
+	664 46 11 5 0 665 0 0 put_state
+	665 46 10 5 0 666 0 0 put_state
+	666 46 9 5 0 635 0 0 put_state
+	667 47 32768 5 0 668 0 0 put_state
+	668 47 32769 5 0 667 0 0 put_state
+	669 48 32768 5 0 670 0 0 put_state
+	670 48 32769 5 0 671 0 0 put_state
+	671 48 32770 5 0 672 0 0 put_state
+	672 48 32771 5 0 673 0 0 put_state
+	673 48 32772 5 0 0 0 0 put_state
+	674 49 0 10 43 675 0 0 put_state
+	675 49 1 10 43 674 0 0 put_state
+	676 49 0 3 37 677 0 0 put_state
+	677 49 0 3 15 678 0 0 put_state
+	678 49 1 3 15 679 0 0 put_state
+	679 49 1 3 15 680 0 0 put_state
+	680 49 2 3 15 681 0 0 put_state
+	681 49 2 3 15 682 0 0 put_state
+	682 49 3 3 45 683 0 0 put_state
+	683 49 3 3 15 676 0 0 put_state
+	684 49 4 6 20 685 0 0 put_state
+	685 49 5 12 18 686 0 0 put_state
+	686 49 4 12 20 687 0 0 put_state
+	687 49 5 12 18 688 0 0 put_state
+	688 49 4 12 20 689 0 0 put_state
+	689 49 5 12 18 676 0 0 put_state
+	690 49 6 10 47 676 0 0 put_state
+	691 49 7 10 0 692 0 0 put_state
+	692 49 8 10 58 693 0 0 put_state
+	693 49 9 10 0 694 0 0 put_state
+	694 49 10 10 0 695 0 0 put_state
+	695 49 11 10 0 696 0 0 put_state
+	696 49 12 10 21 697 0 0 put_state
+	697 49 13 10 0 698 0 0 put_state
+	698 49 14 10 0 699 0 0 put_state
+	699 49 15 30 0 700 0 0 put_state
+	700 49 15 -1 4 0 0 0 put_state
+	701 50 0 10 43 701 0 0 put_state
+	702 50 0 3 15 703 0 0 put_state
+	703 50 0 3 15 704 0 0 put_state
+	704 50 1 3 15 705 0 0 put_state
+	705 50 1 3 15 706 0 0 put_state
+	706 50 2 3 15 707 0 0 put_state
+	707 50 2 3 15 702 0 0 put_state
+	708 50 3 5 20 709 0 0 put_state
+	709 50 4 5 20 710 0 0 put_state
+	710 50 32773 5 20 711 0 0 put_state
+	711 50 32773 0 48 702 0 0 put_state
+	712 50 6 6 0 713 0 0 put_state
+	713 50 6 6 47 702 0 0 put_state
+	714 50 32775 8 0 715 0 0 put_state
+	715 50 32776 8 58 716 0 0 put_state
+	716 50 32777 8 0 717 0 0 put_state
+	717 50 32778 8 0 718 0 0 put_state
+	718 50 32779 8 49 719 0 0 put_state
+	719 50 32780 8 0 0 0 0 put_state
+	720 50 12 8 0 721 0 0 put_state
+	721 50 11 8 0 722 0 0 put_state
+	722 50 10 8 0 723 0 0 put_state
+	723 50 9 8 0 724 0 0 put_state
+	724 50 8 8 0 725 0 0 put_state
+	725 50 7 8 0 702 0 0 put_state
+	726 51 0 10 43 727 0 0 put_state
+	727 51 1 10 43 726 0 0 put_state
+	728 51 0 3 15 729 0 0 put_state
+	729 51 0 3 15 730 0 0 put_state
+	730 51 1 3 15 731 0 0 put_state
+	731 51 1 3 15 732 0 0 put_state
+	732 51 2 3 15 733 0 0 put_state
+	733 51 2 3 15 734 0 0 put_state
+	734 51 3 3 15 735 0 0 put_state
+	735 51 3 3 15 728 0 0 put_state
+	736 51 4 10 20 737 0 0 put_state
+	737 51 5 10 20 738 0 0 put_state
+	738 51 32774 4 13 739 0 0 put_state
+	739 51 5 6 20 740 0 0 put_state
+	740 51 32774 4 13 741 0 0 put_state
+	741 51 5 1 14 737 0 0 put_state
+	742 51 7 3 0 743 0 0 put_state
+	743 51 7 3 47 728 0 0 put_state
+	744 51 8 5 0 745 0 0 put_state
+	745 51 9 5 58 746 0 0 put_state
+	746 51 10 5 21 747 0 0 put_state
+	747 51 11 5 0 748 0 0 put_state
+	748 51 12 -1 0 0 0 0 put_state
+	749 51 13 5 0 750 0 0 put_state
+	750 51 14 5 74 751 0 0 put_state
+	751 51 15 5 21 752 0 0 put_state
+	752 51 16 5 0 753 0 0 put_state
+	753 51 17 5 0 754 0 0 put_state
+	754 51 18 5 0 755 0 0 put_state
+	755 51 19 5 0 756 0 0 put_state
+	756 51 20 5 0 757 0 0 put_state
+	757 51 21 -1 0 0 0 0 put_state
+	758 51 12 5 0 759 0 0 put_state
+	759 51 11 5 0 760 0 0 put_state
+	760 51 10 5 0 761 0 0 put_state
+	761 51 9 5 0 762 0 0 put_state
+	762 51 8 5 0 728 0 0 put_state
+	763 52 0 -1 0 763 0 0 put_state
+	764 52 0 6 0 765 0 0 put_state
+	765 52 1 6 0 766 0 0 put_state
+	766 52 2 6 58 767 0 0 put_state
+	767 52 3 6 0 768 0 0 put_state
+	768 52 4 6 0 769 0 0 put_state
+	769 52 5 6 0 770 0 0 put_state
+	770 52 6 6 0 771 0 0 put_state
+	771 52 7 6 0 772 0 0 put_state
+	772 52 8 6 0 773 0 0 put_state
+	773 52 9 6 0 774 0 0 put_state
+	774 52 10 6 38 775 0 0 put_state
+	775 52 11 -1 0 0 0 0 put_state
+	776 52 12 4 0 777 0 0 put_state
+	777 52 12 8 47 763 0 0 put_state
+	778 53 0 -1 0 0 0 0 put_state
+	779 53 1 36 8 778 0 0 put_state
+	780 53 0 100 9 781 0 0 put_state
+	781 53 0 10 0 782 0 0 put_state
+	782 53 0 10 0 783 0 0 put_state
+	783 53 0 -1 6 0 0 0 put_state
+	784 51 0 10 43 784 0 0 put_state
+	785 51 0 181 5 786 0 0 put_state
+	786 51 0 150 10 786 0 0 put_state
+	787 54 32768 3 64 788 0 0 put_state
+	788 54 32769 3 63 789 0 0 put_state
+	789 54 32770 3 63 790 0 0 put_state
+	790 54 32771 3 63 787 0 0 put_state
+	791 32 32768 4 26 792 0 0 put_state
+	792 32 32769 4 26 793 0 0 put_state
+	793 32 32770 4 26 794 0 0 put_state
+	794 32 32771 4 26 795 0 0 put_state
+	795 32 32772 4 26 796 0 0 put_state
+	796 32 32773 4 26 797 0 0 put_state
+	797 32 32774 4 26 798 0 0 put_state
+	798 32 32775 4 26 0 0 0 put_state
+	799 22 32769 10 0 800 0 0 put_state
+	800 22 32770 10 0 801 0 0 put_state
+	801 22 32771 10 7 0 0 0 put_state
+	802 55 0 6 0 803 0 0 put_state
+	803 55 32769 7 0 802 0 0 put_state
+	804 56 0 6 0 805 0 0 put_state
+	805 56 32769 6 0 804 0 0 put_state
+	806 57 0 6 0 807 0 0 put_state
+	807 57 1 6 0 806 0 0 put_state
+	808 58 32768 5 0 809 0 0 put_state
+	809 58 32769 5 58 810 0 0 put_state
+	810 58 32770 5 0 811 0 0 put_state
+	811 58 32771 10 19 812 0 0 put_state
+	812 58 32772 10 0 0 0 0 put_state
+	813 59 32768 4 0 814 0 0 put_state
+	814 59 32769 4 0 815 0 0 put_state
+	815 59 32770 4 0 813 0 0 put_state
+	816 60 0 6 0 817 0 0 put_state
+	817 60 1 6 0 818 0 0 put_state
+	818 60 2 6 0 819 0 0 put_state
+	819 60 3 6 0 820 0 0 put_state
+	820 60 2 6 0 821 0 0 put_state
+	821 60 1 6 0 816 0 0 put_state
+	822 61 0 6 0 823 0 0 put_state
+	823 61 1 6 0 824 0 0 put_state
+	824 61 2 6 0 825 0 0 put_state
+	825 61 3 6 0 826 0 0 put_state
+	826 61 2 6 0 827 0 0 put_state
+	827 61 1 6 0 822 0 0 put_state
+	828 62 0 10 0 829 0 0 put_state
+	829 62 32769 10 0 828 0 0 put_state
+	830 63 0 10 0 831 0 0 put_state
+	831 63 32769 10 0 830 0 0 put_state
+	832 64 0 10 0 833 0 0 put_state
+	833 64 32769 10 0 832 0 0 put_state
+	834 65 0 10 0 835 0 0 put_state
+	835 65 32769 10 0 834 0 0 put_state
+	836 66 0 10 0 837 0 0 put_state
+	837 66 32769 10 0 836 0 0 put_state
+	838 67 0 10 0 839 0 0 put_state
+	839 67 32769 10 0 838 0 0 put_state
+	840 68 0 -1 0 0 0 0 put_state
+	841 69 0 -1 0 0 0 0 put_state
+	842 70 32768 6 0 843 0 0 put_state
+	843 70 32769 6 0 844 0 0 put_state
+	844 70 32770 6 0 845 0 0 put_state
+	845 70 32771 6 0 846 0 0 put_state
+	846 70 32770 6 0 847 0 0 put_state
+	847 70 32769 6 0 842 0 0 put_state
+	848 71 32768 6 0 849 0 0 put_state
+	849 71 32769 6 0 850 0 0 put_state
+	850 71 32770 6 0 851 0 0 put_state
+	851 71 32771 6 0 848 0 0 put_state
+	852 72 32768 -1 0 0 0 0 put_state
+	853 73 32768 6 0 854 0 0 put_state
+	854 73 32769 6 0 855 0 0 put_state
+	855 73 32770 6 0 856 0 0 put_state
+	856 73 32771 6 0 853 0 0 put_state
+	857 74 32768 6 0 858 0 0 put_state
+	858 74 32769 6 0 859 0 0 put_state
+	859 74 32770 6 0 860 0 0 put_state
+	860 74 32771 6 0 857 0 0 put_state
+	861 75 32768 -1 0 0 0 0 put_state
+	862 76 32768 6 0 863 0 0 put_state
+	863 76 32769 6 0 864 0 0 put_state
+	864 76 32770 6 0 865 0 0 put_state
+	865 76 32771 6 0 866 0 0 put_state
+	866 76 32770 6 0 867 0 0 put_state
+	867 76 32769 6 0 862 0 0 put_state
+	868 77 32768 6 0 869 0 0 put_state
+	869 77 1 6 0 868 0 0 put_state
+	870 78 0 -1 0 0 0 0 put_state
+	871 79 0 -1 0 0 0 0 put_state
+	872 80 0 -1 0 0 0 0 put_state
+	873 81 0 -1 0 0 0 0 put_state
+	874 82 0 -1 0 0 0 0 put_state
+	875 83 0 -1 0 0 0 0 put_state
+	876 84 0 -1 0 0 0 0 put_state
+	877 85 0 -1 0 0 0 0 put_state
+	878 86 0 -1 0 0 0 0 put_state
+	879 87 0 -1 0 0 0 0 put_state
+	880 88 0 -1 0 0 0 0 put_state
+	881 89 0 -1 0 0 0 0 put_state
+	882 90 0 -1 0 0 0 0 put_state
+	883 91 0 -1 0 0 0 0 put_state
+	884 92 0 -1 0 0 0 0 put_state
+	885 93 0 -1 0 0 0 0 put_state
+	886 94 32768 -1 0 0 0 0 put_state
+	887 95 0 -1 0 0 0 0 put_state
+	888 96 0 10 0 889 0 0 put_state
+	889 96 1 15 0 890 0 0 put_state
+	890 96 2 8 0 891 0 0 put_state
+	891 96 1 6 0 888 0 0 put_state
+	892 28 13 -1 0 0 0 0 put_state
+	893 28 18 -1 0 0 0 0 put_state
+	894 97 0 -1 0 0 0 0 put_state
+	895 98 0 -1 0 0 0 0 put_state
+	896 99 0 -1 0 0 0 0 put_state
+	897 100 32768 6 0 898 0 0 put_state
+	898 100 32769 6 0 897 0 0 put_state
+	899 101 0 -1 0 0 0 0 put_state
+	900 102 0 6 0 901 0 0 put_state
+	901 102 1 8 0 900 0 0 put_state
+	902 103 0 -1 0 0 0 0 put_state
+	903 104 0 -1 0 0 0 0 put_state
+	904 105 0 -1 0 0 0 0 put_state
+	905 106 0 -1 0 0 0 0 put_state
+	906 107 0 -1 0 0 0 0 put_state
+	907 108 0 -1 0 0 0 0 put_state
+	908 109 0 -1 0 0 0 0 put_state
+	909 110 0 -1 0 0 0 0 put_state
+	910 111 0 -1 0 0 0 0 put_state
+	911 112 32768 -1 0 0 0 0 put_state
+	912 113 32768 -1 0 0 0 0 put_state
+	913 114 0 -1 0 0 0 0 put_state
+	914 115 0 -1 0 0 0 0 put_state
+	915 116 0 -1 0 0 0 0 put_state
+	916 117 0 -1 0 0 0 0 put_state
+	917 118 32768 6 0 918 0 0 put_state
+	918 118 32769 6 0 919 0 0 put_state
+	919 118 32770 6 0 920 0 0 put_state
+	920 118 32769 6 0 917 0 0 put_state
+	921 119 32768 6 0 922 0 0 put_state
+	922 119 32769 6 0 923 0 0 put_state
+	923 119 32770 6 0 921 0 0 put_state
+	924 120 0 14 0 925 0 0 put_state
+	925 120 1 14 0 924 0 0 put_state
+	926 121 32768 4 0 927 0 0 put_state
+	927 121 32769 4 0 928 0 0 put_state
+	928 121 32770 4 0 929 0 0 put_state
+	929 121 32771 4 0 926 0 0 put_state
+	930 122 32768 4 0 931 0 0 put_state
+	931 122 32769 4 0 932 0 0 put_state
+	932 122 32770 4 0 933 0 0 put_state
+	933 122 32771 4 0 930 0 0 put_state
+	934 123 32768 4 0 935 0 0 put_state
+	935 123 32769 4 0 936 0 0 put_state
+	936 123 32770 4 0 937 0 0 put_state
+	937 123 32771 4 0 934 0 0 put_state
+	938 124 32768 4 0 939 0 0 put_state
+	939 124 32769 4 0 940 0 0 put_state
+	940 124 32770 4 0 941 0 0 put_state
+	941 124 32771 4 0 938 0 0 put_state
+	942 125 32768 4 0 943 0 0 put_state
+	943 125 32769 4 0 944 0 0 put_state
+	944 125 32770 4 0 945 0 0 put_state
+	945 125 32771 4 0 942 0 0 put_state
+	946 126 32768 4 0 947 0 0 put_state
+	947 126 32769 4 0 948 0 0 put_state
+	948 126 32770 4 0 949 0 0 put_state
+	949 126 32771 4 0 946 0 0 put_state
+	950 127 0 -1 0 0 0 0 put_state
+	951 128 0 -1 0 0 0 0 put_state
+	952 129 0 -1 0 0 0 0 put_state
+	953 130 0 -1 0 0 0 0 put_state
+	954 131 0 -1 0 0 0 0 put_state
+	955 132 0 -1 0 0 0 0 put_state
+	956 133 0 -1 0 0 0 0 put_state
+	957 134 0 -1 0 0 0 0 put_state
+	958 135 0 -1 0 0 0 0 put_state
+	959 136 32768 4 0 960 0 0 put_state
+	960 136 32769 4 0 961 0 0 put_state
+	961 136 32770 4 0 962 0 0 put_state
+	962 136 32771 4 0 959 0 0 put_state
+	963 137 32768 4 0 964 0 0 put_state
+	964 137 32769 4 0 965 0 0 put_state
+	965 137 32770 4 0 966 0 0 put_state
+	966 137 32771 4 0 963 0 0 put_state
+}
+
+fn populate_mobjinfo( -- ) {
+	0 -1 149 100 150 0 0 0 156 255 0 0 154 158 165 0 0 1048576 3670016 100 0 0 33557510 0 put_mobj
+	1 3004 174 20 176 0 8 0 187 200 0 0 184 189 194 0 8 1310720 3670016 100 0 0 4194310 203 put_mobj
+	2 9 207 30 209 0 8 0 220 170 0 0 217 222 227 0 8 1310720 3670016 100 0 0 4194310 236 put_mobj
+	3 64 241 700 243 0 8 0 269 10 0 0 255 271 0 0 15 1310720 3670016 500 0 0 4194310 0 put_mobj
+	4 -1 281 1000 0 0 8 0 0 0 0 0 0 0 0 0 0 1310720 1048576 100 0 0 528 0 put_mobj
+	5 66 321 300 323 0 8 0 343 100 0 335 339 345 0 0 10 1310720 3670016 500 0 0 4194310 351 put_mobj
+	6 -1 316 1000 0 0 8 0 0 0 0 0 0 318 0 0 655360 720896 524288 100 10 0 67088 0 put_mobj
+	7 -1 311 1000 0 0 8 0 0 0 0 0 0 0 0 0 0 1310720 1048576 100 0 0 528 0 put_mobj
+	8 67 362 600 364 0 8 0 386 80 0 0 376 388 0 0 8 3145728 4194304 1000 0 0 4194310 398 put_mobj
+	9 -1 357 1000 0 0 8 0 0 0 0 0 0 359 0 0 1310720 393216 524288 100 8 0 67088 0 put_mobj
+	10 65 406 70 408 0 8 0 420 170 0 0 416 422 429 0 8 1310720 3670016 100 0 0 4194310 435 put_mobj
+	11 3001 442 60 444 0 8 0 455 200 0 452 452 457 462 0 8 1310720 3670016 100 0 0 4194310 470 put_mobj
+	12 3002 475 150 477 0 8 0 488 180 0 485 0 490 0 0 10 1966080 3670016 400 0 0 4194310 496 put_mobj
+	13 58 475 150 477 0 8 0 488 180 0 485 0 490 0 0 10 1966080 3670016 400 0 0 4456454 496 put_mobj
+	14 3005 502 400 503 0 8 0 507 128 0 0 504 510 0 0 8 2031616 3670016 400 0 0 4211206 516 put_mobj
+	15 3003 527 1000 529 0 8 0 540 50 0 537 537 542 0 0 8 1572864 4194304 1000 0 0 4194310 549 put_mobj
+	16 -1 522 1000 0 0 8 0 0 0 0 0 0 524 0 0 983040 393216 524288 100 8 0 67088 0 put_mobj
+	17 69 556 500 558 0 8 0 569 50 0 566 566 571 0 0 8 1572864 4194304 1000 0 0 4194310 578 put_mobj
+	18 3006 585 100 587 0 8 0 593 256 0 0 589 595 0 0 8 1048576 3670016 50 3 0 16902 0 put_mobj
+	19 7 601 3000 603 0 8 0 619 40 0 0 615 621 0 0 12 8388608 6553600 1000 0 0 4194310 0 put_mobj
+	20 68 632 500 634 0 8 0 651 128 0 0 647 653 0 0 12 4194304 4194304 600 0 0 4194310 660 put_mobj
+	21 16 674 4000 676 0 8 0 690 20 0 0 684 691 0 0 16 2621440 7208960 1000 0 0 4194310 0 put_mobj
+	22 71 701 400 702 0 8 0 712 128 0 0 708 714 0 0 8 2031616 3670016 400 0 0 4211206 720 put_mobj
+	23 84 726 50 728 0 8 0 742 170 0 0 736 744 749 0 8 1310720 3670016 100 0 0 4194310 758 put_mobj
+	24 72 763 100 0 0 8 0 776 256 0 0 0 764 0 0 0 1048576 4718592 10000000 0 0 4195078 0 put_mobj
+	25 88 778 250 0 0 8 0 779 255 0 0 0 780 0 0 0 1048576 1048576 10000000 0 0 6 0 put_mobj
+	26 89 784 1000 785 0 8 0 0 0 0 0 0 0 0 0 0 1310720 2097152 100 0 0 24 0 put_mobj
+	27 87 0 1000 0 0 8 0 0 0 0 0 0 0 0 0 0 1310720 2097152 100 0 0 24 0 put_mobj
+	28 -1 787 1000 0 0 8 0 0 0 0 0 0 0 0 0 655360 393216 2097152 100 3 0 71184 0 put_mobj
+	29 -1 791 1000 0 0 8 0 0 0 0 0 0 0 0 0 0 1310720 1048576 100 0 0 528 0 put_mobj
+	30 2035 806 20 0 0 8 0 0 0 0 0 0 808 0 0 0 655360 2752512 100 0 0 524294 0 put_mobj
+	31 -1 97 1000 0 0 8 0 0 0 0 0 0 99 0 0 655360 393216 524288 100 3 0 67088 0 put_mobj
+	32 -1 102 1000 0 0 8 0 0 0 0 0 0 104 0 0 655360 393216 524288 100 5 0 67088 0 put_mobj
+	33 -1 114 1000 0 0 8 0 0 0 0 0 0 127 0 0 1310720 720896 524288 100 20 0 67088 0 put_mobj
+	34 -1 107 1000 0 0 8 0 0 0 0 0 0 109 0 0 1638400 851968 524288 100 5 0 67088 0 put_mobj
+	35 -1 115 1000 0 0 8 0 0 0 0 0 0 117 0 0 1638400 851968 524288 100 100 0 67088 0 put_mobj
+	36 -1 667 1000 0 0 8 0 0 0 0 0 0 669 0 0 1638400 851968 524288 100 5 0 67088 0 put_mobj
+	37 -1 93 1000 0 0 8 0 0 0 0 0 0 0 0 0 0 1310720 1048576 100 0 0 528 0 put_mobj
+	38 -1 90 1000 0 0 8 0 0 0 0 0 0 0 0 0 0 1310720 1048576 100 0 0 16 0 put_mobj
+	39 -1 130 1000 0 0 8 0 0 0 0 0 0 0 0 0 0 1310720 1048576 100 0 0 528 0 put_mobj
+	40 -1 142 1000 0 0 8 0 0 0 0 0 0 0 0 0 0 1310720 1048576 100 0 0 528 0 put_mobj
+	41 14 0 1000 0 0 8 0 0 0 0 0 0 0 0 0 0 1310720 1048576 100 0 0 24 0 put_mobj
+	42 -1 123 1000 0 0 8 0 0 0 0 0 0 0 0 0 0 1310720 1048576 100 0 0 528 0 put_mobj
+	43 2018 802 1000 0 0 8 0 0 0 0 0 0 0 0 0 0 1310720 1048576 100 0 0 1 0 put_mobj
+	44 2019 804 1000 0 0 8 0 0 0 0 0 0 0 0 0 0 1310720 1048576 100 0 0 1 0 put_mobj
+	45 2014 816 1000 0 0 8 0 0 0 0 0 0 0 0 0 0 1310720 1048576 100 0 0 8388609 0 put_mobj
+	46 2015 822 1000 0 0 8 0 0 0 0 0 0 0 0 0 0 1310720 1048576 100 0 0 8388609 0 put_mobj
+	47 5 828 1000 0 0 8 0 0 0 0 0 0 0 0 0 0 1310720 1048576 100 0 0 33554433 0 put_mobj
+	48 13 830 1000 0 0 8 0 0 0 0 0 0 0 0 0 0 1310720 1048576 100 0 0 33554433 0 put_mobj
+	49 6 832 1000 0 0 8 0 0 0 0 0 0 0 0 0 0 1310720 1048576 100 0 0 33554433 0 put_mobj
+	50 39 838 1000 0 0 8 0 0 0 0 0 0 0 0 0 0 1310720 1048576 100 0 0 33554433 0 put_mobj
+	51 38 836 1000 0 0 8 0 0 0 0 0 0 0 0 0 0 1310720 1048576 100 0 0 33554433 0 put_mobj
+	52 40 834 1000 0 0 8 0 0 0 0 0 0 0 0 0 0 1310720 1048576 100 0 0 33554433 0 put_mobj
+	53 2011 840 1000 0 0 8 0 0 0 0 0 0 0 0 0 0 1310720 1048576 100 0 0 1 0 put_mobj
+	54 2012 841 1000 0 0 8 0 0 0 0 0 0 0 0 0 0 1310720 1048576 100 0 0 1 0 put_mobj
+	55 2013 842 1000 0 0 8 0 0 0 0 0 0 0 0 0 0 1310720 1048576 100 0 0 8388609 0 put_mobj
+	56 2022 848 1000 0 0 8 0 0 0 0 0 0 0 0 0 0 1310720 1048576 100 0 0 8388609 0 put_mobj
+	57 2023 852 1000 0 0 8 0 0 0 0 0 0 0 0 0 0 1310720 1048576 100 0 0 8388609 0 put_mobj
+	58 2024 853 1000 0 0 8 0 0 0 0 0 0 0 0 0 0 1310720 1048576 100 0 0 8388609 0 put_mobj
+	59 2025 861 1000 0 0 8 0 0 0 0 0 0 0 0 0 0 1310720 1048576 100 0 0 1 0 put_mobj
+	60 2026 862 1000 0 0 8 0 0 0 0 0 0 0 0 0 0 1310720 1048576 100 0 0 8388609 0 put_mobj
+	61 2045 868 1000 0 0 8 0 0 0 0 0 0 0 0 0 0 1310720 1048576 100 0 0 8388609 0 put_mobj
+	62 83 857 1000 0 0 8 0 0 0 0 0 0 0 0 0 0 1310720 1048576 100 0 0 8388609 0 put_mobj
+	63 2007 870 1000 0 0 8 0 0 0 0 0 0 0 0 0 0 1310720 1048576 100 0 0 1 0 put_mobj
+	64 2048 871 1000 0 0 8 0 0 0 0 0 0 0 0 0 0 1310720 1048576 100 0 0 1 0 put_mobj
+	65 2010 872 1000 0 0 8 0 0 0 0 0 0 0 0 0 0 1310720 1048576 100 0 0 1 0 put_mobj
+	66 2046 873 1000 0 0 8 0 0 0 0 0 0 0 0 0 0 1310720 1048576 100 0 0 1 0 put_mobj
+	67 2047 874 1000 0 0 8 0 0 0 0 0 0 0 0 0 0 1310720 1048576 100 0 0 1 0 put_mobj
+	68 17 875 1000 0 0 8 0 0 0 0 0 0 0 0 0 0 1310720 1048576 100 0 0 1 0 put_mobj
+	69 2008 876 1000 0 0 8 0 0 0 0 0 0 0 0 0 0 1310720 1048576 100 0 0 1 0 put_mobj
+	70 2049 877 1000 0 0 8 0 0 0 0 0 0 0 0 0 0 1310720 1048576 100 0 0 1 0 put_mobj
+	71 8 878 1000 0 0 8 0 0 0 0 0 0 0 0 0 0 1310720 1048576 100 0 0 1 0 put_mobj
+	72 2006 879 1000 0 0 8 0 0 0 0 0 0 0 0 0 0 1310720 1048576 100 0 0 1 0 put_mobj
+	73 2002 880 1000 0 0 8 0 0 0 0 0 0 0 0 0 0 1310720 1048576 100 0 0 1 0 put_mobj
+	74 2005 881 1000 0 0 8 0 0 0 0 0 0 0 0 0 0 1310720 1048576 100 0 0 1 0 put_mobj
+	75 2003 882 1000 0 0 8 0 0 0 0 0 0 0 0 0 0 1310720 1048576 100 0 0 1 0 put_mobj
+	76 2004 883 1000 0 0 8 0 0 0 0 0 0 0 0 0 0 1310720 1048576 100 0 0 1 0 put_mobj
+	77 2001 884 1000 0 0 8 0 0 0 0 0 0 0 0 0 0 1310720 1048576 100 0 0 1 0 put_mobj
+	78 82 885 1000 0 0 8 0 0 0 0 0 0 0 0 0 0 1310720 1048576 100 0 0 1 0 put_mobj
+	79 85 959 1000 0 0 8 0 0 0 0 0 0 0 0 0 0 1048576 1048576 100 0 0 2 0 put_mobj
+	80 86 963 1000 0 0 8 0 0 0 0 0 0 0 0 0 0 1048576 1048576 100 0 0 2 0 put_mobj
+	81 2028 886 1000 0 0 8 0 0 0 0 0 0 0 0 0 0 1048576 1048576 100 0 0 2 0 put_mobj
+	82 30 907 1000 0 0 8 0 0 0 0 0 0 0 0 0 0 1048576 1048576 100 0 0 2 0 put_mobj
+	83 31 908 1000 0 0 8 0 0 0 0 0 0 0 0 0 0 1048576 1048576 100 0 0 2 0 put_mobj
+	84 32 909 1000 0 0 8 0 0 0 0 0 0 0 0 0 0 1048576 1048576 100 0 0 2 0 put_mobj
+	85 33 910 1000 0 0 8 0 0 0 0 0 0 0 0 0 0 1048576 1048576 100 0 0 2 0 put_mobj
+	86 37 913 1000 0 0 8 0 0 0 0 0 0 0 0 0 0 1048576 1048576 100 0 0 2 0 put_mobj
+	87 36 924 1000 0 0 8 0 0 0 0 0 0 0 0 0 0 1048576 1048576 100 0 0 2 0 put_mobj
+	88 41 917 1000 0 0 8 0 0 0 0 0 0 0 0 0 0 1048576 1048576 100 0 0 2 0 put_mobj
+	89 42 921 1000 0 0 8 0 0 0 0 0 0 0 0 0 0 1048576 1048576 100 0 0 2 0 put_mobj
+	90 43 914 1000 0 0 8 0 0 0 0 0 0 0 0 0 0 1048576 1048576 100 0 0 2 0 put_mobj
+	91 44 926 1000 0 0 8 0 0 0 0 0 0 0 0 0 0 1048576 1048576 100 0 0 2 0 put_mobj
+	92 45 930 1000 0 0 8 0 0 0 0 0 0 0 0 0 0 1048576 1048576 100 0 0 2 0 put_mobj
+	93 46 934 1000 0 0 8 0 0 0 0 0 0 0 0 0 0 1048576 1048576 100 0 0 2 0 put_mobj
+	94 55 938 1000 0 0 8 0 0 0 0 0 0 0 0 0 0 1048576 1048576 100 0 0 2 0 put_mobj
+	95 56 942 1000 0 0 8 0 0 0 0 0 0 0 0 0 0 1048576 1048576 100 0 0 2 0 put_mobj
+	96 57 946 1000 0 0 8 0 0 0 0 0 0 0 0 0 0 1048576 1048576 100 0 0 2 0 put_mobj
+	97 47 906 1000 0 0 8 0 0 0 0 0 0 0 0 0 0 1048576 1048576 100 0 0 2 0 put_mobj
+	98 48 916 1000 0 0 8 0 0 0 0 0 0 0 0 0 0 1048576 1048576 100 0 0 2 0 put_mobj
+	99 34 911 1000 0 0 8 0 0 0 0 0 0 0 0 0 0 1310720 1048576 100 0 0 0 0 put_mobj
+	100 35 912 1000 0 0 8 0 0 0 0 0 0 0 0 0 0 1048576 1048576 100 0 0 2 0 put_mobj
+	101 49 888 1000 0 0 8 0 0 0 0 0 0 0 0 0 0 1048576 4456448 100 0 0 770 0 put_mobj
+	102 50 902 1000 0 0 8 0 0 0 0 0 0 0 0 0 0 1048576 5505024 100 0 0 770 0 put_mobj
+	103 51 903 1000 0 0 8 0 0 0 0 0 0 0 0 0 0 1048576 5505024 100 0 0 770 0 put_mobj
+	104 52 904 1000 0 0 8 0 0 0 0 0 0 0 0 0 0 1048576 4456448 100 0 0 770 0 put_mobj
+	105 53 905 1000 0 0 8 0 0 0 0 0 0 0 0 0 0 1048576 3407872 100 0 0 770 0 put_mobj
+	106 59 902 1000 0 0 8 0 0 0 0 0 0 0 0 0 0 1310720 5505024 100 0 0 768 0 put_mobj
+	107 60 904 1000 0 0 8 0 0 0 0 0 0 0 0 0 0 1310720 4456448 100 0 0 768 0 put_mobj
+	108 61 903 1000 0 0 8 0 0 0 0 0 0 0 0 0 0 1310720 3407872 100 0 0 768 0 put_mobj
+	109 62 905 1000 0 0 8 0 0 0 0 0 0 0 0 0 0 1310720 3407872 100 0 0 768 0 put_mobj
+	110 63 888 1000 0 0 8 0 0 0 0 0 0 0 0 0 0 1310720 4456448 100 0 0 768 0 put_mobj
+	111 22 515 1000 0 0 8 0 0 0 0 0 0 0 0 0 0 1310720 1048576 100 0 0 0 0 put_mobj
+	112 15 164 1000 0 0 8 0 0 0 0 0 0 0 0 0 0 1310720 1048576 100 0 0 0 0 put_mobj
+	113 18 193 1000 0 0 8 0 0 0 0 0 0 0 0 0 0 1310720 1048576 100 0 0 0 0 put_mobj
+	114 21 495 1000 0 0 8 0 0 0 0 0 0 0 0 0 0 1310720 1048576 100 0 0 0 0 put_mobj
+	115 23 600 1000 0 0 8 0 0 0 0 0 0 0 0 0 0 1310720 1048576 100 0 0 0 0 put_mobj
+	116 20 461 1000 0 0 8 0 0 0 0 0 0 0 0 0 0 1310720 1048576 100 0 0 0 0 put_mobj
+	117 19 226 1000 0 0 8 0 0 0 0 0 0 0 0 0 0 1310720 1048576 100 0 0 0 0 put_mobj
+	118 10 173 1000 0 0 8 0 0 0 0 0 0 0 0 0 0 1310720 1048576 100 0 0 0 0 put_mobj
+	119 12 173 1000 0 0 8 0 0 0 0 0 0 0 0 0 0 1310720 1048576 100 0 0 0 0 put_mobj
+	120 28 894 1000 0 0 8 0 0 0 0 0 0 0 0 0 0 1048576 1048576 100 0 0 2 0 put_mobj
+	121 24 895 1000 0 0 8 0 0 0 0 0 0 0 0 0 0 1310720 1048576 100 0 0 0 0 put_mobj
+	122 27 896 1000 0 0 8 0 0 0 0 0 0 0 0 0 0 1048576 1048576 100 0 0 2 0 put_mobj
+	123 29 897 1000 0 0 8 0 0 0 0 0 0 0 0 0 0 1048576 1048576 100 0 0 2 0 put_mobj
+	124 25 899 1000 0 0 8 0 0 0 0 0 0 0 0 0 0 1048576 1048576 100 0 0 2 0 put_mobj
+	125 26 900 1000 0 0 8 0 0 0 0 0 0 0 0 0 0 1048576 1048576 100 0 0 2 0 put_mobj
+	126 54 915 1000 0 0 8 0 0 0 0 0 0 0 0 0 0 2097152 1048576 100 0 0 2 0 put_mobj
+	127 70 813 1000 0 0 8 0 0 0 0 0 0 0 0 0 0 1048576 1048576 100 0 0 2 0 put_mobj
+	128 73 950 1000 0 0 8 0 0 0 0 0 0 0 0 0 0 1048576 5767168 100 0 0 770 0 put_mobj
+	129 74 951 1000 0 0 8 0 0 0 0 0 0 0 0 0 0 1048576 5767168 100 0 0 770 0 put_mobj
+	130 75 952 1000 0 0 8 0 0 0 0 0 0 0 0 0 0 1048576 4194304 100 0 0 770 0 put_mobj
+	131 76 953 1000 0 0 8 0 0 0 0 0 0 0 0 0 0 1048576 4194304 100 0 0 770 0 put_mobj
+	132 77 954 1000 0 0 8 0 0 0 0 0 0 0 0 0 0 1048576 4194304 100 0 0 770 0 put_mobj
+	133 78 955 1000 0 0 8 0 0 0 0 0 0 0 0 0 0 1048576 4194304 100 0 0 770 0 put_mobj
+	134 79 956 1000 0 0 8 0 0 0 0 0 0 0 0 0 0 1310720 1048576 100 0 0 16 0 put_mobj
+	135 80 957 1000 0 0 8 0 0 0 0 0 0 0 0 0 0 1310720 1048576 100 0 0 16 0 put_mobj
+	136 81 958 1000 0 0 8 0 0 0 0 0 0 0 0 0 0 1310720 1048576 100 0 0 16 0 put_mobj
+}
+
+// Action-function stubs. Bodies land in the Phase 4 p_enemy/p_pspr port.
+pub fn A_BFGSpray(mo:ptr -- ) { mo drop }
+pub fn A_BFGsound(mo:ptr -- ) { mo drop }
+pub fn A_BabyMetal(mo:ptr -- ) { mo drop }
+pub fn A_BossDeath(mo:ptr -- ) { mo drop }
+pub fn A_BrainAwake(mo:ptr -- ) { mo drop }
+pub fn A_BrainDie(mo:ptr -- ) { mo drop }
+pub fn A_BrainExplode(mo:ptr -- ) { mo drop }
+pub fn A_BrainPain(mo:ptr -- ) { mo drop }
+pub fn A_BrainScream(mo:ptr -- ) { mo drop }
+pub fn A_BrainSpit(mo:ptr -- ) { mo drop }
+pub fn A_BruisAttack(mo:ptr -- ) { mo drop }
+pub fn A_BspiAttack(mo:ptr -- ) { mo drop }
+pub fn A_CPosAttack(mo:ptr -- ) { mo drop }
+pub fn A_CPosRefire(mo:ptr -- ) { mo drop }
+pub fn A_Chase(mo:ptr -- ) { mo drop }
+pub fn A_CheckReload(mo:ptr -- ) { mo drop }
+pub fn A_CloseShotgun2(mo:ptr -- ) { mo drop }
+pub fn A_CyberAttack(mo:ptr -- ) { mo drop }
+pub fn A_Explode(mo:ptr -- ) { mo drop }
+pub fn A_FaceTarget(mo:ptr -- ) { mo drop }
+pub fn A_Fall(mo:ptr -- ) { mo drop }
+pub fn A_FatAttack1(mo:ptr -- ) { mo drop }
+pub fn A_FatAttack2(mo:ptr -- ) { mo drop }
+pub fn A_FatAttack3(mo:ptr -- ) { mo drop }
+pub fn A_FatRaise(mo:ptr -- ) { mo drop }
+pub fn A_Fire(mo:ptr -- ) { mo drop }
+pub fn A_FireBFG(mo:ptr -- ) { mo drop }
+pub fn A_FireCGun(mo:ptr -- ) { mo drop }
+pub fn A_FireCrackle(mo:ptr -- ) { mo drop }
+pub fn A_FireMissile(mo:ptr -- ) { mo drop }
+pub fn A_FirePistol(mo:ptr -- ) { mo drop }
+pub fn A_FirePlasma(mo:ptr -- ) { mo drop }
+pub fn A_FireShotgun(mo:ptr -- ) { mo drop }
+pub fn A_FireShotgun2(mo:ptr -- ) { mo drop }
+pub fn A_GunFlash(mo:ptr -- ) { mo drop }
+pub fn A_HeadAttack(mo:ptr -- ) { mo drop }
+pub fn A_Hoof(mo:ptr -- ) { mo drop }
+pub fn A_KeenDie(mo:ptr -- ) { mo drop }
+pub fn A_Light0(mo:ptr -- ) { mo drop }
+pub fn A_Light1(mo:ptr -- ) { mo drop }
+pub fn A_Light2(mo:ptr -- ) { mo drop }
+pub fn A_LoadShotgun2(mo:ptr -- ) { mo drop }
+pub fn A_Look(mo:ptr -- ) { mo drop }
+pub fn A_Lower(mo:ptr -- ) { mo drop }
+pub fn A_Metal(mo:ptr -- ) { mo drop }
+pub fn A_OpenShotgun2(mo:ptr -- ) { mo drop }
+pub fn A_Pain(mo:ptr -- ) { mo drop }
+pub fn A_PainAttack(mo:ptr -- ) { mo drop }
+pub fn A_PainDie(mo:ptr -- ) { mo drop }
+pub fn A_PlayerScream(mo:ptr -- ) { mo drop }
+pub fn A_PosAttack(mo:ptr -- ) { mo drop }
+pub fn A_Punch(mo:ptr -- ) { mo drop }
+pub fn A_Raise(mo:ptr -- ) { mo drop }
+pub fn A_ReFire(mo:ptr -- ) { mo drop }
+pub fn A_SPosAttack(mo:ptr -- ) { mo drop }
+pub fn A_SargAttack(mo:ptr -- ) { mo drop }
+pub fn A_Saw(mo:ptr -- ) { mo drop }
+pub fn A_Scream(mo:ptr -- ) { mo drop }
+pub fn A_SkelFist(mo:ptr -- ) { mo drop }
+pub fn A_SkelMissile(mo:ptr -- ) { mo drop }
+pub fn A_SkelWhoosh(mo:ptr -- ) { mo drop }
+pub fn A_SkullAttack(mo:ptr -- ) { mo drop }
+pub fn A_SpawnFly(mo:ptr -- ) { mo drop }
+pub fn A_SpawnSound(mo:ptr -- ) { mo drop }
+pub fn A_SpidRefire(mo:ptr -- ) { mo drop }
+pub fn A_StartFire(mo:ptr -- ) { mo drop }
+pub fn A_Tracer(mo:ptr -- ) { mo drop }
+pub fn A_TroopAttack(mo:ptr -- ) { mo drop }
+pub fn A_VileAttack(mo:ptr -- ) { mo drop }
+pub fn A_VileChase(mo:ptr -- ) { mo drop }
+pub fn A_VileStart(mo:ptr -- ) { mo drop }
+pub fn A_VileTarget(mo:ptr -- ) { mo drop }
+pub fn A_WeaponReady(mo:ptr -- ) { mo drop }
+pub fn A_XScream(mo:ptr -- ) { mo drop }
+
+pub fn state_sprite(i:i64 -- v:i64) {
+	ensure_info
+	states i STATE_STRIDE mul mem::ptr_add -> p
+	p 0 mem::get_i32
+}
+
+pub fn state_frame(i:i64 -- v:i64) {
+	ensure_info
+	states i STATE_STRIDE mul mem::ptr_add -> p
+	p 4 mem::get_i32
+}
+
+pub fn state_tics(i:i64 -- v:i64) {
+	ensure_info
+	states i STATE_STRIDE mul mem::ptr_add -> p
+	p 8 mem::get_i32
+}
+
+pub fn state_action(i:i64 -- v:i64) {
+	ensure_info
+	states i STATE_STRIDE mul mem::ptr_add -> p
+	p 12 mem::get_i32
+}
+
+pub fn state_nextstate(i:i64 -- v:i64) {
+	ensure_info
+	states i STATE_STRIDE mul mem::ptr_add -> p
+	p 16 mem::get_i32
+}
+
+pub fn state_misc1(i:i64 -- v:i64) {
+	ensure_info
+	states i STATE_STRIDE mul mem::ptr_add -> p
+	p 20 mem::get_i32
+}
+
+pub fn state_misc2(i:i64 -- v:i64) {
+	ensure_info
+	states i STATE_STRIDE mul mem::ptr_add -> p
+	p 24 mem::get_i32
+}
+
+/// mobjinfo accessor — `f` is the field index 0..22 matching the C struct
+/// order. Prefer named wrappers below in new code.
+pub fn mobj_field(i:i64 f:i64 -- v:i64) {
+	ensure_info
+	mobjinfo i MOBJINFO_STRIDE mul mem::ptr_add -> p
+	p f 4 mul mem::get_i32
+}
+
+pub fn mobj_doomednum(i:i64 -- v:i64)     { i 0  mobj_field }
+pub fn mobj_spawnstate(i:i64 -- v:i64)    { i 1  mobj_field }
+pub fn mobj_spawnhealth(i:i64 -- v:i64)   { i 2  mobj_field }
+pub fn mobj_seestate(i:i64 -- v:i64)      { i 3  mobj_field }
+pub fn mobj_seesound(i:i64 -- v:i64)      { i 4  mobj_field }
+pub fn mobj_reactiontime(i:i64 -- v:i64)  { i 5  mobj_field }
+pub fn mobj_attacksound(i:i64 -- v:i64)   { i 6  mobj_field }
+pub fn mobj_painstate(i:i64 -- v:i64)     { i 7  mobj_field }
+pub fn mobj_painchance(i:i64 -- v:i64)    { i 8  mobj_field }
+pub fn mobj_painsound(i:i64 -- v:i64)     { i 9  mobj_field }
+pub fn mobj_meleestate(i:i64 -- v:i64)    { i 10 mobj_field }
+pub fn mobj_missilestate(i:i64 -- v:i64)  { i 11 mobj_field }
+pub fn mobj_deathstate(i:i64 -- v:i64)    { i 12 mobj_field }
+pub fn mobj_xdeathstate(i:i64 -- v:i64)   { i 13 mobj_field }
+pub fn mobj_deathsound(i:i64 -- v:i64)    { i 14 mobj_field }
+pub fn mobj_speed(i:i64 -- v:i64)         { i 15 mobj_field }
+pub fn mobj_radius(i:i64 -- v:i64)        { i 16 mobj_field }
+pub fn mobj_height(i:i64 -- v:i64)        { i 17 mobj_field }
+pub fn mobj_mass(i:i64 -- v:i64)          { i 18 mobj_field }
+pub fn mobj_damage(i:i64 -- v:i64)        { i 19 mobj_field }
+pub fn mobj_activesound(i:i64 -- v:i64)   { i 20 mobj_field }
+pub fn mobj_flags(i:i64 -- v:i64)         { i 21 mobj_field }
+pub fn mobj_raisestate(i:i64 -- v:i64)    { i 22 mobj_field }
+

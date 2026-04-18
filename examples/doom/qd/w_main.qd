@@ -1,0 +1,53 @@
+/// WAD command-line parsing.
+///
+/// Ported from doomgeneric/w_main.c. Handles the `-file` flag — the only
+/// WAD-loading command line form that's reachable in our build (FEATURE_
+/// WAD_MERGE is off upstream, so `-merge`, `-nwtmerge`, `-af`, `-as`,
+/// `-aa` are compiled out). Returns 1 if at least one PWAD was loaded.
+
+use mem
+use "m_argv.qd"
+use "w_wad.qd"
+use "d_iwad.qd"
+
+/// Check whether argv[i] starts with '-' (i.e. is another flag, which
+/// terminates a `-file` run). Pull the argv entry as a Quadrate str and
+/// read its first byte via mem::from_string.
+fn argv_is_flag(i:i64 -- yes:i64) {
+	i 0 lt if { 0 } else {
+		i myargc gte if { 0 } else {
+			i M_Argv mem::from_string -> alen -> aptr
+			alen 0 lte if {
+				aptr mem::free
+				0
+			} else {
+				aptr 0 mem::get_u8 -> c
+				aptr mem::free
+				c 45 eq   // '-' = 45
+			}
+		}
+	}
+}
+
+/// Parse `-file <paths...>` out of the command line, feeding each to
+/// W_AddFile. Returns 1 if any PWAD was loaded, 0 otherwise.
+pub fn W_ParseCommandLine( -- modified:i64) {
+	0 -> modifiedgame
+
+	"-file" 1 M_CheckParmWithArgs -> p
+	p 0 gt if {
+		1 -> modifiedgame
+		loop {
+			p 1 add -> p
+			p myargc gte if { break }
+			p argv_is_flag if { break }
+
+			p M_Argv -> argpath
+			argpath D_TryFindWADByName -> resolved
+			" adding " print resolved print nl
+			resolved W_AddFile
+		}
+	}
+
+	modifiedgame
+}

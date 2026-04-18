@@ -1,0 +1,18 @@
+use "doomstat.qd"
+use "doomdef.qd"
+use "dummy.qd"
+
+fn main() {
+	"initial gamemode=" print gamemode print " (indetermined=" print MODE_INDETERMINED print ")" print nl
+	MODE_SHAREWARE -> gamemode
+	"after set, gamemode=" print gamemode print nl
+
+	MISSION_DOOM2 -> gamemission
+	"gamemission=" print gamemission print " (DOOM2=" print MISSION_DOOM2 print ")" print nl
+
+	SCREENWIDTH print "×" prints SCREENHEIGHT print " @ " print TICRATE print " tic/s" print nl
+
+	"WP_BFG=" print WP_BFG print " NUMWEAPONS=" print NUMWEAPONS print nl
+
+	"DEH_String identity: " print "TEST" DEH_String print nl
+}

@@ -1,0 +1,53 @@
+// Sanity test: open a 320x200 window, draw a solid color, wait, close.
+// Confirms the SDL FFI shim links and basic rendering works end-to-end.
+
+const INIT_VIDEO = 0x20
+const WINDOW_SHOWN = 0x4
+const WINDOWPOS_CENTERED = 0x2FFF0000
+const RENDERER_ACCELERATED = 0x2
+
+import "libdoomsdl.a" as "sdl" {
+	pub fn Init(flags:i64 -- rc:i64)
+	pub fn Quit( -- )
+	pub fn GetError( -- msg:str)
+
+	pub fn CreateWindow(title:str x:i64 y:i64 w:i64 h:i64 flags:i64 -- win:ptr)
+	pub fn DestroyWindow(win:ptr -- )
+
+	pub fn CreateRenderer(win:ptr index:i64 flags:i64 -- renderer:ptr)
+	pub fn DestroyRenderer(renderer:ptr -- )
+
+	pub fn RenderClear(renderer:ptr -- )
+	pub fn RenderPresent(renderer:ptr -- )
+	pub fn SetRenderDrawColor(renderer:ptr r:i64 g:i64 b:i64 a:i64 -- )
+
+	pub fn Delay(ms:i64 -- )
+}
+
+fn main() {
+	INIT_VIDEO sdl::Init -> rc
+	rc 0 neq if {
+		"SDL_Init failed: " print sdl::GetError print nl
+		return
+	}
+
+	"quadrate SDL sanity"
+		WINDOWPOS_CENTERED WINDOWPOS_CENTERED
+		320 200 WINDOW_SHOWN
+		sdl::CreateWindow -> win
+
+	win -1 RENDERER_ACCELERATED sdl::CreateRenderer -> renderer
+
+	// Bright magenta background so we can see it.
+	renderer 255 0 255 255 sdl::SetRenderDrawColor
+	renderer sdl::RenderClear
+	renderer sdl::RenderPresent
+
+	// Hold the window for 500 ms.
+	500 sdl::Delay
+
+	renderer sdl::DestroyRenderer
+	win sdl::DestroyWindow
+	sdl::Quit
+	"ok" print nl
+}

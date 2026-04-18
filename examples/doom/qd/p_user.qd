@@ -1,0 +1,26 @@
+/// Player movement + per-tic player logic.
+///
+/// Ported from doomgeneric/p_user.c. The C file handles bobbing, the
+/// head-movement calculation (P_CalcHeight), player movement from the
+/// input ticcmd (P_MovePlayer), death animation logic (P_DeathThink),
+/// and the top-level per-player tic (P_PlayerThink) which bundles all
+/// of the above plus weapon pending + cheat flags + sector specials.
+///
+/// The full translation depends on the player_t struct layout, mobj_t
+/// physics, P_Thrust (momentum update), and finesine/finecosine (we
+/// have those in tables.qd). Until task #40 pins the mobj layout, we
+/// expose P_PlayerThink / P_MovePlayer / P_CalcHeight / P_DeathThink /
+/// P_Thrust as stubs with matching signatures. `onground` is here as a
+/// module var because it's referenced from p_map and other modules.
+
+pub var onground:i64 = 0
+pub const MAXBOB = 0x100000           // 16 pixels in 16.16 fixed
+
+pub fn P_Thrust(player:ptr angle:i64 move:i64 -- ) {
+	player drop angle drop move drop
+}
+
+pub fn P_CalcHeight(player:ptr -- ) { player drop }
+pub fn P_MovePlayer(player:ptr -- ) { player drop }
+pub fn P_DeathThink(player:ptr -- ) { player drop }
+pub fn P_PlayerThink(player:ptr -- ) { player drop }

@@ -1,0 +1,43 @@
+/// Pickup + damage interaction.
+///
+/// Ported from doomgeneric/p_inter.c. Handles the two "objects touched
+/// each other" event paths: player-on-pickup (P_TouchSpecialThing walks
+/// the thing type and dispatches to P_GiveAmmo/Weapon/Card/Armor/Power)
+/// and damage flow (P_DamageMobj computes damage → health update →
+/// P_KillMobj on zero). Also owns the obituary/frag bookkeeping.
+///
+/// Needs the mobj_t + player_t layouts from tasks #40/#46. Stubs for
+/// now so the killable enemy pass doesn't fail to link; every pickup
+/// unconditionally succeeds so test dry-runs don't emit "failed to
+/// give" confusion.
+
+pub var maxammo:ptr = 0
+pub var clipammo:ptr = 0
+
+pub fn P_GiveAmmo(player:ptr ammo:i64 num:i64 -- ok:i64) {
+	player drop ammo drop num drop 1
+}
+pub fn P_GiveWeapon(player:ptr weapon:i64 dropped:i64 -- ok:i64) {
+	player drop weapon drop dropped drop 1
+}
+pub fn P_GiveBody(player:ptr num:i64 -- ok:i64) {
+	player drop num drop 1
+}
+pub fn P_GiveArmor(player:ptr armortype:i64 -- ok:i64) {
+	player drop armortype drop 1
+}
+pub fn P_GiveCard(player:ptr card:i64 -- ) {
+	player drop card drop
+}
+pub fn P_GivePower(player:ptr power:i64 -- ok:i64) {
+	player drop power drop 1
+}
+pub fn P_TouchSpecialThing(special:ptr toucher:ptr -- ) {
+	special drop toucher drop
+}
+pub fn P_KillMobj(source:ptr target:ptr -- ) {
+	source drop target drop
+}
+pub fn P_DamageMobj(target:ptr inflictor:ptr source:ptr damage:i64 -- ) {
+	target drop inflictor drop source drop damage drop
+}

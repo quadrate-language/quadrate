@@ -1,0 +1,189 @@
+/// Miscellaneous utilities — file I/O and string helpers.
+///
+/// Ported from doomgeneric/m_misc.c. Most of this is a thin veneer over
+/// Quadrate's existing stdlib (io::, os::, strings::, strconv::); we
+/// keep the M_* names so the large body of Doom source that calls them
+/// reads identically after porting.
+///
+/// C uses char* buffers with explicit dest_size for copy/concat; we
+/// expose str-returning versions that match Quadrate idioms. The one
+/// exception is M_ExtractFileBase which writes into an 8-byte output
+/// buffer because the callers (WAD loader, demo save) expect exactly
+/// that storage layout.
+
+use io
+use os
+use mem
+use strings
+use strconv
+
+pub const DIR_SEPARATOR = 47            // '/'  on Unix
+pub const DIR_SEPARATOR_S = "/"
+
+/// Read an entire file into a heap-allocated buffer. Returns ptr + length.
+/// Mirrors the C `int M_ReadFile(char*, byte**)` where `*buffer` receives
+/// the newly-allocated data and the return value is the byte count.
+/// The caller frees with mem::free.
+pub fn M_ReadFile(name:str -- buf:ptr length:i64) {
+	name io::ReadBinary io::open! -> h
+	h 0 2 io::seek! drop
+	h io::tell! -> len
+	h 0 0 io::seek! drop
+	len mem::alloc! -> buf
+	h buf len io::read! drop
+	h io::close
+	buf len
+}
+
+/// Write `length` bytes from `source` into `name`. Returns 1 on success.
+pub fn M_WriteFile(name:str source:ptr length:i64 -- ok:i64) {
+	name io::WriteBinary io::open! -> h
+	h source length io::write! -> wrote
+	h io::close
+	wrote length eq
+}
+
+/// File length of an already-opened io:: handle.
+pub fn M_FileLength(h:ptr -- length:i64) {
+	h io::tell! -> saved
+	h 0 2 io::seek! drop
+	h io::tell! -> len
+	h saved 0 io::seek! drop
+	len
+}
+
+/// Does the file / directory exist?
+pub fn M_FileExists(path:str -- ok:i64) {
+	path os::exists
+}
+
+/// Create a directory. Silent no-op if it already exists; fallible
+/// return is swallowed with `!` since Doom's callers don't check.
+pub fn M_MakeDirectory(path:str -- ) {
+	path os::exists 0 eq if {
+		path os::mkdir!
+	}
+}
+
+/// Return a path inside the OS temp directory. Caller owns the string.
+pub fn M_TempFile(s:str -- path:str) {
+	"TMPDIR" os::getenv -> tmp
+	tmp strings::len 0 eq if {
+		"/tmp" -> tmp
+	}
+	tmp "/" strings::concat s strings::concat
+}
+
+/// Parse "123" / "0x7F" / "0o17" / "0b101" into an int. Returns (value, ok).
+pub fn M_StrToInt(s:str -- value:i64 ok:i64) {
+	// strconv::parse_int with auto-base: try hex first if prefixed, else dec.
+	s "0x" strings::starts_with if {
+		s 2 s strings::len 2 sub strings::substring! 16 strconv::parse_int!
+		1
+	} else {
+		s "0X" strings::starts_with if {
+			s 2 s strings::len 2 sub strings::substring! 16 strconv::parse_int!
+			1
+		} else {
+			s 10 strconv::parse_int!
+			1
+		}
+	}
+}
+
+/// Uppercase an ASCII byte (non-letters pass through).
+fn upper_byte(c:i64 -- r:i64) {
+	c 97 gte if {
+		c 122 lte if { c 32 sub } else { c }
+	} else {
+		c
+	}
+}
+
+/// Doom's lump-name extractor. Takes a filesystem path, writes up to
+/// 8 uppercase bytes of the base filename (no extension) into `dest`.
+/// The output buffer must be at least 8 bytes; any unused bytes stay at
+/// whatever was there (the caller usually pre-zeros). Over-length names
+/// are silently truncated.
+pub fn M_ExtractFileBase(path:str dest:ptr -- ) {
+	// Find the last '/' — basename starts after it.
+	path strings::len -> plen
+	plen 1 sub -> i
+	0 -> start
+	loop {
+		i 0 lt if { break }
+		path i strings::char_at! -> c
+		c DIR_SEPARATOR eq if {
+			i 1 add -> start
+			-1 -> i   // force break
+		}
+		i 1 sub -> i
+	}
+
+	// Zero the destination so leftover bytes are clean.
+	0 8 1 for j { 0 dest j mem::set_u8 }
+
+	// Copy up to 8 bytes, uppercased, stopping at '.' or end.
+	0 -> written
+	start -> i
+	loop {
+		written 8 gte if { break }
+		i plen gte if { break }
+		path i strings::char_at! -> c
+		c 46 eq if { break }   // '.'
+		c upper_byte dest written mem::set_u8
+		written 1 add -> written
+		i 1 add -> i
+	}
+}
+
+/// Uppercase a string in place. Returns a new string (Quadrate strings
+/// are immutable); the function name is preserved for callers.
+pub fn M_ForceUppercase(s:str -- upper:str) {
+	s strings::upper
+}
+
+/// Case-insensitive substring search. Returns 0-based position or -1.
+/// The C version returns a char*; we return an index so callers can
+/// substring the haystack themselves.
+pub fn M_StrCaseStr(haystack:str needle:str -- pos:i64) {
+	haystack strings::lower needle strings::lower strings::index_of
+}
+
+/// Duplicate a string. Quadrate strings are already reference-counted
+/// so returning the same value is equivalent; kept for API parity.
+pub fn M_StringDuplicate(orig:str -- dup:str) {
+	orig
+}
+
+/// Safe copy matching OpenBSD's strlcpy semantics. Returns 1 if the full
+/// source fit without truncation.
+pub fn M_StringCopy(src:str -- result:str ok:i64) {
+	src 1
+}
+
+/// Concat two strings, returning the result. Doom's C version writes
+/// into a fixed dest buffer; we allocate fresh.
+pub fn M_StringConcat(a:str b:str -- result:str) {
+	a b strings::concat
+}
+
+/// Replace all occurrences of `needle` in `haystack` with `replacement`.
+pub fn M_StringReplace(haystack:str needle:str replacement:str -- result:str) {
+	haystack needle replacement strings::replace!
+}
+
+/// Starts-with / ends-with wrappers for API parity.
+pub fn M_StringStartsWith(s:str prefix:str -- ok:i64) {
+	s prefix strings::starts_with
+}
+
+pub fn M_StringEndsWith(s:str suffix:str -- ok:i64) {
+	s suffix strings::ends_with
+}
+
+/// Join two strings. Varargs join (M_StringJoin with ...) isn't needed
+/// yet; callers can chain M_StringConcat.
+pub fn M_StringJoin(a:str b:str -- result:str) {
+	a b strings::concat
+}

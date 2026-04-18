@@ -1,0 +1,56 @@
+/// Thinker list + per-tic driver.
+///
+/// Ported from doomgeneric/p_tick.c. In vanilla Doom a "thinker" is any
+/// object that wants to be ticked — mobjs (monsters, pickups), moving
+/// platforms/doors, flashing lights, the status bar flash logic. They
+/// live in a doubly-linked list (`thinkercap` sentinel) and each has a
+/// function pointer of one of three shapes (actionf_v / acp1 / acp2),
+/// which is where Doom's `actionf_t` union comes from.
+///
+/// Quadrate has no union type, so once real thinkers come online
+/// (mobjs in task #40) we'll store the function as an integer action
+/// tag and dispatch through a switch — the same pattern already used
+/// in info.qd for state-table A_* actions. Until then, the thinker
+/// list is empty and P_Ticker just bumps `leveltime`.
+
+use mem
+use "doomdef.qd"
+use "d_loop.qd"
+
+/// Per-level tic counter, starts at 0 every new level.
+pub var leveltime:i64 = 0
+
+/// Sentinel node at the head/tail of the circular thinker list. Once
+/// real thinkers land this is an allocated record; today it stays null.
+pub var thinkercap:ptr = 0
+
+pub fn P_InitThinkers( -- ) {
+	// No-op until p_mobj lands.
+}
+
+pub fn P_AddThinker(thinker:ptr -- ) { thinker drop }
+pub fn P_RemoveThinker(thinker:ptr -- ) { thinker drop }
+pub fn P_AllocateThinker(thinker:ptr -- ) { thinker drop }
+pub fn P_RunThinkers( -- ) { }
+
+/// Per-tic game logic entry. When paused or the menu owns focus the
+/// game freezes the world. Otherwise: tick each player, run every
+/// thinker, advance level-time, run special effects.
+pub var paused:i64 = 0
+pub var menuactive:i64 = 0
+pub var demoplayback:i64 = 0
+
+pub fn P_Ticker( -- ) {
+	paused 1 eq if { return }
+
+	// Skip ticking while the menu is up and we're not in a demo/net.
+	menuactive 1 eq
+	netgame 0 eq and
+	demoplayback 0 eq and if { return }
+
+	// Real code would call P_PlayerThink for each playeringame[i] and
+	// P_RunThinkers + P_UpdateSpecials + P_RespawnSpecials. Until the
+	// game-logic modules are up we only advance leveltime so demos /
+	// lumps that inspect it see a monotonically-increasing clock.
+	leveltime 1 add -> leveltime
+}

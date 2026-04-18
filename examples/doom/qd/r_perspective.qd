@@ -1,0 +1,920 @@
+/// Minimal 3D perspective projection — solid walls per seg.
+///
+/// Second iteration of the 3D view. For each seg we project both
+/// endpoints to view space, back-face cull, clip against a near
+/// plane, and fill the column range [x1, x2] between them. Wall
+/// height at each column = 1/depth * constant, with depth linearly
+/// interpolated across the span.
+///
+/// One-sided walls render solid red (palette 176), two-sided grey
+/// (palette 96). Still simplified — real Doom uses the xtoviewangle
+/// lookup for column-accurate projection and fills textures, not
+/// solid colours.
+
+use mem
+use "doomdef.qd"
+use "tables.qd"
+use "i_video.qd"
+use "p_setup.qd"
+use "r_data.qd"
+use "w_wad.qd"
+use "r_sky.qd"
+
+const HALF_WALL_SCALE = 786432000     // HALF_WALL * FOCAL = 4_915_200 × 160
+const NEAR_PLANE = 65536              // 1 map unit in 16.16 fixed
+const FOCAL = 160
+const EYE_HEIGHT_FIXED = 2686976      // 41 world units in 16.16
+const EYE_FOCAL_FIXED = 429916160     // EYE_HEIGHT_FIXED * FOCAL
+
+/// Fetch the 4096-byte 64×64 flat buffer for a sector floor/ceilpic
+/// index. Returns null if out of range. W_CacheLumpNum is already
+/// a cache so repeated calls are cheap.
+pub fn R_GetFlat(flat_idx:i64 -- p:ptr) {
+	flat_idx 0 lt flat_idx numflats gte or if { 0 cast<ptr> return }
+	firstflat flat_idx add 0 W_CacheLumpNum
+}
+
+pub var pv_drawn:i64 = 0
+
+/// Per-column depth buffer: smallest depth painted at each screen
+/// column this frame. Initialised to a "very far" sentinel before
+/// each R_DrawPerspective call. Columns with a smaller existing
+/// depth are skipped — proper occlusion without a full BSP sort.
+pub var column_depth:ptr = 0
+pub var sprite_anim_tic:i64 = 0
+pub var default_floor_pic:i64 = 0
+pub var default_ceil_pic:i64 = 0
+pub var default_ceil_eye_delta:i64 = 2686976   // 41 in 16.16, updated at startup
+pub var default_light:i64 = 160
+pub var pfloorh_global:i64 = 0
+var cd_inited:i64 = 0
+
+fn ensure_depth_buf( -- ) {
+	cd_inited 1 eq if { return }
+	SCREENWIDTH 8 mul mem::alloc! -> column_depth
+	1 -> cd_inited
+}
+
+fn reset_depth_buf( -- ) {
+	ensure_depth_buf
+	0 -> k
+	loop {
+		k SCREENWIDTH gte if { break }
+		1000000000 column_depth k 8 mul mem::set_i64
+		k 1 add -> k
+	}
+}
+
+/// Integer square root via Newton's method. Converges in <32 iters
+/// on any 63-bit input. Returns floor(sqrt(n)) for n >= 0, 0 for
+/// n < 0. Used by wall rendering to compute seg length for
+/// perspective-correct u-texture mapping.
+pub fn isqrt(n:i64 -- r:i64) {
+	n 1 lt if { 0 return }
+	n -> r
+	0 -> iter
+	loop {
+		iter 40 gte if { break }
+		n r div r add 2 div -> nr
+		nr r gte if { break }
+		nr -> r
+		iter 1 add -> iter
+	}
+	r
+}
+
+fn pv_plot(x:i64 y:i64 c:i64 -- ) {
+	x 0 lt x SCREENWIDTH gte or if { return }
+	y 0 lt y SCREENHEIGHT gte or if { return }
+	c I_VideoBuffer y SCREENWIDTH mul x add mem::set_u8
+}
+
+/// (worldx worldy viewx viewy c_a s_a -- depth side).
+fn to_view(x:i64 y:i64 vx:i64 vy:i64 c_a:i64 s_a:i64 -- fwd:i64 side:i64) {
+	x vx sub -> dx
+	y vy sub -> dy
+	dx c_a mul FRACBITS shr  dy s_a mul FRACBITS shr  add -> f
+	dy c_a mul FRACBITS shr  dx s_a mul FRACBITS shr  sub -> s
+	f s
+}
+
+/// Copy a literal sprite-name into an 8-byte lookup key, zero-
+/// padded. Used to resolve a thing's sprite lump by name at
+/// render time. Not fast, but only called per-thing (~138/frame).
+fn set_sprite_key(name:str key:ptr -- ) {
+	key 8 mem::zero
+	name mem::from_string -> slen -> sptr
+	slen 8 gt if { 8 -> slen }
+	0 -> k
+	loop {
+		k slen gte if { break }
+		sptr k mem::get_u8 key k mem::set_u8
+		k 1 add -> k
+	}
+	sptr mem::free
+}
+
+/// Write the sprite lump name (6 chars like "MEDIA0" or "POSSA1")
+/// for this doomednum into `key`. Returns 1 if mapped, 0 otherwise.
+/// Covers common shareware E1 things — missing types fall back to
+/// the colored-bar renderer.
+fn thing_sprite_key(type:i64 key:ptr -- mapped:i64) {
+	type 2012 eq if { "MEDIA0" key set_sprite_key 1 return }
+	type 2011 eq if { "STIMA0" key set_sprite_key 1 return }
+	type 2014 eq if { "BON1A0" key set_sprite_key 1 return }
+	type 2015 eq if { "BON2A0" key set_sprite_key 1 return }
+	type 2018 eq if { "ARM1A0" key set_sprite_key 1 return }
+	type 2019 eq if { "ARM2A0" key set_sprite_key 1 return }
+	type 2007 eq if { "CLIPA0" key set_sprite_key 1 return }
+	type 2008 eq if { "SHELA0" key set_sprite_key 1 return }
+	type 2010 eq if { "ROCKA0" key set_sprite_key 1 return }
+	type 2001 eq if { "SHOTA0" key set_sprite_key 1 return }
+	type 2005 eq if { "CSAWA0" key set_sprite_key 1 return }
+	type 2035 eq if { "BAR1A0" key set_sprite_key 1 return }
+	type 2023 eq if { "PSTRA0" key set_sprite_key 1 return }
+	type 2024 eq if { "PINSA0" key set_sprite_key 1 return }
+	type 2025 eq if { "SUITA0" key set_sprite_key 1 return }
+	type 2026 eq if { "PMAPA0" key set_sprite_key 1 return }
+	type 2028 eq if { "COLUA0" key set_sprite_key 1 return }
+	type 3001 eq if { "TROOA1" key set_sprite_key 1 return }
+	type 3002 eq if { "SARGA1" key set_sprite_key 1 return }
+	type 3004 eq if { "POSSA1" key set_sprite_key 1 return }
+	type 9 eq if { "SPOSA1" key set_sprite_key 1 return }
+	type 58 eq if { "SARGA1" key set_sprite_key 1 return }
+	type 5 eq if { "BKEYA0" key set_sprite_key 1 return }
+	type 6 eq if { "YKEYA0" key set_sprite_key 1 return }
+	type 13 eq if { "RKEYA0" key set_sprite_key 1 return }
+	type 30 eq if { "COL1A0" key set_sprite_key 1 return }
+	type 31 eq if { "COL2A0" key set_sprite_key 1 return }
+	type 32 eq if { "COL3A0" key set_sprite_key 1 return }
+	type 33 eq if { "COL4A0" key set_sprite_key 1 return }
+	type 34 eq if { "CANDA0" key set_sprite_key 1 return }
+	type 35 eq if { "CBRAA0" key set_sprite_key 1 return }
+	type 37 eq if { "COL6A0" key set_sprite_key 1 return }
+	type 41 eq if { "CEYEA0" key set_sprite_key 1 return }
+	type 43 eq if { "TRE1A0" key set_sprite_key 1 return }
+	type 44 eq if { "TBLUA0" key set_sprite_key 1 return }
+	type 45 eq if { "TGRNA0" key set_sprite_key 1 return }
+	type 46 eq if { "TREDA0" key set_sprite_key 1 return }
+	type 47 eq if { "SMITA0" key set_sprite_key 1 return }
+	type 48 eq if { "ELECA0" key set_sprite_key 1 return }
+	type 54 eq if { "TRE2A0" key set_sprite_key 1 return }
+	type 55 eq if { "SMBTA0" key set_sprite_key 1 return }
+	type 56 eq if { "SMGTA0" key set_sprite_key 1 return }
+	type 57 eq if { "SMRTA0" key set_sprite_key 1 return }
+	type 70 eq if { "FCANA0" key set_sprite_key 1 return }
+	type 2019 eq if { "ARM2A0" key set_sprite_key 1 return }
+	0
+}
+
+/// Render a sprite patch standing on the floor at screen column
+/// x_center, feet at y_feet, with horizontal half-width hw and
+/// total vertical extent y_feet-y_top_screen. Sprite scale ties
+/// pixels to world units 1:1 (so pw×ph patch maps to pw×ph world
+/// units at the thing's depth). Depth-tested per column.
+fn draw_sprite(patch:ptr x_center:i64 hw:i64 y_feet:i64 y_top_screen:i64 fwd:i64 light:i64 -- ) {
+	patch mem::is_null if { return }
+	hw 1 lt if { return }
+	patch 0 mem::get_i16 -> pw
+	patch 2 mem::get_i16 -> ph
+	pw 1 lt ph 1 lt or if { return }
+	x_center hw sub -> x_left
+	x_center hw add -> x_right
+	y_top_screen -> y_top
+	y_feet -> y_bot
+	y_top y_bot gte if { return }
+	// Depth + sector light colormap row.
+	fwd 65536 div 128 div -> cmap_row
+	255 light sub 16 div cmap_row add -> cmap_row
+	cmap_row 0 lt if { 0 -> cmap_row }
+	cmap_row 23 gt if { 23 -> cmap_row }
+	0 -> x
+	0 -> sp_u
+	0 -> post
+	0 -> topd
+	0 -> plen
+	0 -> k
+	0 -> dst_v
+	0 -> dst_y
+	0 -> src_px
+	0 -> existing
+	0 -> col_ofs
+	0 -> post_count
+	x_left -> x
+	loop {
+		x x_right gt if { break }
+		x 0 lt x SCREENWIDTH gte or if { x 1 add -> x } else {
+			column_depth x 8 mul mem::get_i64 -> existing
+			fwd existing lt if {
+				x x_left sub pw mul hw 2 mul 1 add div -> sp_u
+				sp_u 0 lt if { 0 -> sp_u }
+				sp_u pw gte if { pw 1 sub -> sp_u }
+				patch 8 sp_u 4 mul add mem::get_i32 -> col_ofs
+				col_ofs 0 lt col_ofs 8000000 gte or if { } else {
+				patch col_ofs mem::ptr_add -> post
+				0 -> post_count
+				loop {
+					post_count 64 gte if { break }
+					post 0 mem::get_u8 -> topd
+					topd 255 eq if { break }
+					post 1 mem::get_u8 -> plen
+					plen 255 gt if { break }
+					0 -> k
+					loop {
+						k plen gte if { break }
+						topd k add -> dst_v
+						y_top dst_v y_bot y_top sub 1 add mul ph div add -> dst_y
+						dst_y 0 lt if { k 1 add -> k } else {
+						dst_y SCREENHEIGHT gte if { k 1 add -> k } else {
+						post 3 k add mem::get_u8 -> src_px
+						colormaps mem::is_null if { } else {
+							colormaps cmap_row 256 mul src_px add mem::get_u8 -> src_px
+						}
+						src_px I_VideoBuffer dst_y SCREENWIDTH mul x add mem::set_u8
+						k 1 add -> k
+						}}
+					}
+					post plen 4 add mem::ptr_add -> post
+					post_count 1 add -> post_count
+				}
+				}
+			}
+			x 1 add -> x
+		}
+	}
+	y_bot drop
+}
+
+/// Paint every screen column top-to-bottom with the player sector's
+/// flats (or sky texture for the ceiling if the sector's ceilpic is
+/// skyflatnum). Called from D_Display BEFORE walls — the wall pass
+/// overdraws depth-correctly, so any column where no wall lands keeps
+/// the flat-textured background instead of the old palette gradient.
+pub fn R_FillBackgroundFlats(viewx:i64 viewy:i64 viewangle:i64 -- ) {
+	viewangle ANGLETOFINESHIFT shr FINEMASK and -> fidx
+	fidx finesine_at -> s_a
+	fidx finecosine_at -> c_a
+	default_floor_pic R_GetFlat -> flat_floor
+	default_ceil_pic R_GetFlat -> flat_ceil
+	0 -> x
+	0 -> fy
+	0 -> tmp_d
+	0 -> fdepth
+	0 -> s_view
+	0 -> fwx
+	0 -> fwy
+	0 -> fu
+	0 -> fv
+	0 -> pixel
+	0 -> sky_col
+	0 cast<ptr> -> tex_ptr
+	0 -> tex_len
+	0 -> tv
+	0 -> cmap_row
+	0 -> light_base_row
+	255 default_light sub 16 div -> light_base_row
+	light_base_row 0 lt if { 0 -> light_base_row }
+	loop {
+		x SCREENWIDTH gte if { break }
+		// Ceiling
+		default_ceil_pic skyflatnum eq if {
+			viewangle 22 shr x 320 mul 1024 div add 255 and -> sky_col
+			skytexture sky_col R_GetWallColumn -> tex_len -> tex_ptr
+			tex_ptr mem::is_null tex_len 0 lte or if { } else {
+				0 -> fy
+				loop {
+					fy 100 gte if { break }
+					fy tex_len mod -> tv
+					tex_ptr tv mem::get_u8 -> pixel
+					x fy pixel pv_plot
+					fy 1 add -> fy
+				}
+			}
+		} else {
+		flat_ceil mem::is_null if { } else {
+			0 -> fy
+			loop {
+				fy 99 gte if { break }
+				100 fy sub -> tmp_d
+				default_ceil_eye_delta FOCAL mul tmp_d div -> fdepth
+				x 160 sub fdepth mul 160 div -> s_view
+				fdepth c_a mul 65536 div s_view s_a mul 65536 div sub -> fwx
+				fdepth s_a mul 65536 div s_view c_a mul 65536 div add -> fwy
+				viewx fwx add -> fwx
+				viewy fwy add -> fwy
+				fwx 65536 div 63 and -> fu
+				fwy 65536 div 63 and -> fv
+				flat_ceil fv 64 mul fu add mem::get_u8 -> pixel
+				fdepth 65536 div 128 div light_base_row add -> cmap_row
+				cmap_row 0 lt if { 0 -> cmap_row }
+				cmap_row 23 gt if { 23 -> cmap_row }
+				colormaps mem::is_null if { } else {
+					colormaps cmap_row 256 mul pixel add mem::get_u8 -> pixel
+				}
+				x fy pixel pv_plot
+				fy 1 add -> fy
+			}
+		}
+		}
+		// Floor
+		flat_floor mem::is_null if { } else {
+			101 -> fy
+			loop {
+				fy SCREENHEIGHT gte if { break }
+				fy 100 sub -> tmp_d
+				EYE_FOCAL_FIXED tmp_d div -> fdepth
+				x 160 sub fdepth mul 160 div -> s_view
+				fdepth c_a mul 65536 div s_view s_a mul 65536 div sub -> fwx
+				fdepth s_a mul 65536 div s_view c_a mul 65536 div add -> fwy
+				viewx fwx add -> fwx
+				viewy fwy add -> fwy
+				fwx 65536 div 63 and -> fu
+				fwy 65536 div 63 and -> fv
+				flat_floor fv 64 mul fu add mem::get_u8 -> pixel
+				fdepth 65536 div 128 div light_base_row add -> cmap_row
+				cmap_row 0 lt if { 0 -> cmap_row }
+				cmap_row 23 gt if { 23 -> cmap_row }
+				colormaps mem::is_null if { } else {
+					colormaps cmap_row 256 mul pixel add mem::get_u8 -> pixel
+				}
+				x fy pixel pv_plot
+				fy 1 add -> fy
+			}
+		}
+		x 1 add -> x
+	}
+}
+
+/// Pick a palette colour from a thing's doomednum so monsters,
+/// pickups, and decorations visually distinguish themselves at a
+/// glance. Matches upstream Doom's rough classification without
+/// requiring the full sprite pipeline.
+fn thing_color(type:i64 -- col:i64) {
+	type 1 eq if { 112 return }                         // player green
+	type 2 eq type 3 eq or type 4 eq or if { 112 return }
+	type 3004 eq if { 176 return }                      // zombie
+	type 9 eq if { 176 return }                         // shotgun guy
+	type 3001 eq if { 161 return }                      // imp brown
+	type 3002 eq if { 161 return }                      // demon
+	type 3005 eq if { 176 return }                      // cacodemon
+	type 3006 eq if { 200 return }                      // lost soul
+	type 58 eq if { 241 return }                        // spectre (blue)
+	type 7 eq if { 176 return }                         // spider boss
+	type 16 eq if { 176 return }                        // cyberdemon
+	type 2001 eq if { 231 return }                      // shotgun
+	type 2002 eq if { 231 return }                      // chaingun
+	type 2003 eq if { 231 return }                      // rocket launcher
+	type 2004 eq if { 231 return }                      // plasma
+	type 2005 eq if { 231 return }                      // chainsaw
+	type 2006 eq if { 231 return }                      // bfg
+	type 2007 eq if { 192 return }                      // clip
+	type 2008 eq if { 192 return }                      // shells
+	type 2010 eq if { 192 return }                      // rocket
+	type 2011 eq if { 64 return }                       // stimpack
+	type 2012 eq if { 64 return }                       // medikit
+	type 2013 eq if { 212 return }                      // soulsphere
+	type 2014 eq if { 88 return }                       // health bonus
+	type 2015 eq if { 200 return }                      // armor bonus
+	type 2018 eq if { 200 return }                      // green armor
+	type 2019 eq if { 200 return }                      // blue armor
+	type 2023 eq if { 212 return }                      // berserk
+	type 2024 eq if { 208 return }                      // invisibility
+	type 2025 eq if { 97 return }                       // rad suit
+	type 2026 eq if { 255 return }                      // computer map
+	type 2028 eq if { 255 return }                      // light source
+	type 5 eq if { 241 return }                         // blue keycard
+	type 6 eq if { 192 return }                         // yellow keycard
+	type 13 eq if { 176 return }                        // red keycard
+	80 // default medium grey for decoration
+}
+
+/// Render each THING as a colored vertical bar at its projected
+/// screen position. Depth-test against column_depth so walls
+/// occlude things behind them. Simplified stand-in for real sprite
+/// rendering; colors pick out monsters/pickups/player starts per
+/// doomednum.
+/// Doom sprite rotation from a thing's facing + camera angle.
+/// Returns 0..7 (slot index).
+fn rotation_for_thing(tx:i64 ty:i64 tang:i64 vx:i64 vy:i64 -- rot_idx:i64) {
+	vx vy tx ty R_PointToAngle2 tang sub 4294967295 and 536870912 div 7 and
+}
+
+pub fn R_DrawThings(viewx:i64 viewy:i64 viewangle:i64 -- ) {
+	numthings 0 lte if { return }
+	things_data mem::is_null if { return }
+	viewangle ANGLETOFINESHIFT shr FINEMASK and -> fidx
+	fidx finesine_at -> s_a
+	fidx finecosine_at -> c_a
+	0 -> tx
+	0 -> ty
+	0 -> ttype
+	0 -> fwd
+	0 -> sid
+	0 -> tsx
+	0 -> half_w
+	0 -> half_h
+	0 -> tx0
+	0 -> tx1
+	0 -> ty0
+	0 -> ty1
+	0 -> xx
+	0 -> yy
+	0 -> tcol
+	0 -> existing
+	0 -> has_sprite
+	0 -> lump
+	0 -> thing_fz
+	0 -> thing_light
+	0 -> eye_delta
+	0 -> y_off
+	0 -> rot_idx
+	0 -> rot_lump
+	0 -> thing_ang
+	0 -> rx_off
+	0 -> ry_off
+	0 -> picked_flag
+	0 cast<ptr> -> sprite_patch
+	8 mem::alloc! -> sp_key
+	0 -> i
+	loop {
+		i numthings gte if { break }
+		things_data i THING_SIZE mul THING_OFF_X add mem::get_i32 -> tx
+		things_data i THING_SIZE mul THING_OFF_Y add mem::get_i32 -> ty
+		things_data i THING_SIZE mul THING_OFF_TYPE add mem::get_i32 -> ttype
+		things_data i THING_SIZE mul THING_OFF_PICKED add mem::get_i32 -> picked_flag
+		// Skip spawn-only markers and collected pickups. Dead monsters
+		// (picked=2) still render as dim corpses.
+		picked_flag 1 eq
+		ttype 0 lte ttype 5 lt and or
+		ttype 11 eq or
+		ttype 14 eq or
+		ttype 88 eq or ttype 89 eq or if { i 1 add -> i } else {
+		tx ty viewx viewy c_a s_a to_view -> sid -> fwd
+		fwd NEAR_PLANE lt if { i 1 add -> i } else {
+			sid FOCAL mul fwd div 160 add -> tsx
+			0 -> has_sprite
+			things_data i THING_SIZE mul THING_OFF_SPRITE_LUMP add mem::get_i32 -> lump
+			things_data i THING_SIZE mul THING_OFF_ANGLE add mem::get_i32 -> thing_ang
+			// Simple octant-based rotation from sign of (vx-tx, vy-ty)
+			// rotated by thing_ang. Approximate (not proper atan2);
+			// good enough to pick between 4 cardinal rotations.
+			viewx tx sub -> rx_off
+			viewy ty sub -> ry_off
+			rx_off 0 gt ry_off 0 gt and if { 2 -> rot_idx } else {
+			rx_off 0 gt ry_off 0 lte and if { 0 -> rot_idx } else {
+			rx_off 0 lte ry_off 0 gt and if { 4 -> rot_idx } else {
+				6 -> rot_idx
+			}}}
+			sprite_anim_tic i add 8 mod 4 gte if {
+				things_data i THING_SIZE mul THING_OFF_ROT_LUMPS_B add rot_idx 4 mul add mem::get_i32 -> rot_lump
+				rot_lump 0 lte if {
+					// Fall back to frame A if B doesn't exist.
+					things_data i THING_SIZE mul THING_OFF_ROT_LUMPS add rot_idx 4 mul add mem::get_i32 -> rot_lump
+				}
+			} else {
+				things_data i THING_SIZE mul THING_OFF_ROT_LUMPS add rot_idx 4 mul add mem::get_i32 -> rot_lump
+			}
+			rot_lump 0 gt if { rot_lump -> lump }
+			lump 0 gte if { 1 -> has_sprite }
+			has_sprite 1 eq if {
+				lump 0 W_CacheLumpNum -> sprite_patch
+				// Horizontal half-width scaled by depth.
+				sprite_patch 0 mem::get_i16 -> tx0
+				sprite_patch 2 mem::get_i16 -> ty0
+				tx0 10485760 mul fwd div 2 div -> half_w
+				half_w 60 gt if { 60 -> half_w }
+				// Feet-on-floor y: horizon + (eye - thing.floorz) projected.
+				// Player eye-z ≈ default_floor_pic_z + 41; thing's feet at
+				// its own sector floor. Delta is player_floor - thing_floor
+				// + 41 (all in 16.16 fixed).
+				things_data i THING_SIZE mul THING_OFF_FLOORZ add mem::get_i32 -> thing_fz
+				things_data i THING_SIZE mul THING_OFF_LIGHT add mem::get_i32 -> thing_light
+				// Corpse dim: halve sector light so dead things look
+				// shadow-stained.
+				picked_flag 2 eq if { thing_light 2 div -> thing_light }
+				thing_fz pfloorh_global sub 2686976 add -> eye_delta
+				eye_delta FOCAL mul fwd div -> y_off
+				100 y_off add -> ty1
+				ty1 SCREENHEIGHT gte if { SCREENHEIGHT 1 sub -> ty1 }
+				// Sprite top = feet - patch_height scaled by depth.
+				ty1 ty0 10485760 mul fwd div sub -> ty0
+				ty0 0 lt if { 0 -> ty0 }
+				sprite_patch tsx half_w ty1 ty0 fwd thing_light draw_sprite
+			} else {
+				HALF_WALL_SCALE fwd div -> half_h
+				half_h 2 div -> half_w
+				half_w 1 lt if { 1 -> half_w }
+				half_w 20 gt if { 20 -> half_w }
+				tsx half_w sub -> tx0
+				tsx half_w add -> tx1
+				100 half_h sub -> ty0
+				100 half_h add -> ty1
+				ty0 0 lt if { 0 -> ty0 }
+				ty1 SCREENHEIGHT gte if { SCREENHEIGHT 1 sub -> ty1 }
+				tx0 0 lt if { 0 -> tx0 }
+				tx1 SCREENWIDTH gte if { SCREENWIDTH 1 sub -> tx1 }
+				ttype thing_color -> tcol
+				tx0 -> xx
+				loop {
+					xx tx1 gt if { break }
+					column_depth xx 8 mul mem::get_i64 -> existing
+					fwd existing lt if {
+						ty0 -> yy
+						loop {
+							yy ty1 gt if { break }
+							xx yy tcol pv_plot
+							yy 1 add -> yy
+						}
+					}
+					xx 1 add -> xx
+				}
+			}
+			i 1 add -> i
+		}
+		}
+	}
+	sp_key mem::free
+}
+
+pub fn R_DrawPerspective(viewx:i64 viewy:i64 viewangle:i64 -- ) {
+	0 -> pv_drawn
+	reset_depth_buf
+	numsegs 0 lte if { return }
+
+	viewangle ANGLETOFINESHIFT shr FINEMASK and -> fidx
+	fidx finesine_at -> s_a
+	fidx finecosine_at -> c_a
+
+	0 -> i
+	// Pre-declare all locals used inside nested if blocks. Quadrate
+	// scopes `->` declarations per-branch, so reads further down
+	// otherwise report "stack underflow".
+	0 cast<ptr> -> seg
+	0 -> v1i
+	0 -> v2i
+	0 -> wx1
+	0 -> wy1
+	0 -> wx2
+	0 -> wy2
+	0 -> s1
+	0 -> d1
+	0 -> s2
+	0 -> d2
+	0 -> sx1
+	0 -> sx2
+	0 -> tmp_x
+	0 -> tmp_d
+	0 -> lnum
+	0 -> col
+	0 -> col_shaded
+	0 -> shade
+	0 -> light
+	0 -> dim
+	0 -> fsec
+	0 -> seg_side
+	0 -> sideidx
+	0 -> texidx
+	0 -> back
+	0 cast<ptr> -> tex_ptr
+	0 -> tex_len
+	0 -> span_h
+	0 -> tv
+	0 -> pixel
+	0 -> seg_u
+	0 -> y_top_full
+	0 -> y_bot_full
+	0 -> span_full
+	0 -> floorpic
+	0 -> ceilpic
+	0 -> floor_z
+	0 -> ceil_z
+	0 cast<ptr> -> flat_floor
+	0 cast<ptr> -> flat_ceil
+	0 -> ceil_eye_delta
+	0 -> fy
+	0 -> fdepth
+	0 -> s_view
+	0 -> fwx
+	0 -> fwy
+	0 -> fu
+	0 -> fv
+	0 -> sky_col
+	0 -> cmap_row
+	0 -> seg_length_w
+	0 -> u_at_v1
+	0 -> u_at_v2
+	0 -> tmp_u
+	0 -> d1_w
+	0 -> d2_w
+	0 -> u_num
+	0 -> u_den
+	0 -> back
+	0 -> num
+	0 -> den
+	0 -> t16
+	0 -> span
+	0 -> dx_from_start
+	0 -> depth
+	0 -> half_h
+	0 -> y_top
+	0 -> y_bot
+	0 -> x
+	0 -> y
+	loop {
+		i numsegs gte if { break }
+		0 -> skip
+		segs i SEG_SIZE mul mem::ptr_add -> seg
+		seg SEG_OFF_V1 mem::get_i32 -> v1i
+		seg SEG_OFF_V2 mem::get_i32 -> v2i
+		v1i 0 lt v1i numvertexes gte or if { 1 -> skip }
+		v2i 0 lt v2i numvertexes gte or if { 1 -> skip }
+
+		skip 0 eq if {
+			vertexes v1i VERTEX_SIZE mul mem::get_i32 -> wx1
+			vertexes v1i VERTEX_SIZE mul 4 add mem::get_i32 -> wy1
+			vertexes v2i VERTEX_SIZE mul mem::get_i32 -> wx2
+			vertexes v2i VERTEX_SIZE mul 4 add mem::get_i32 -> wy2
+
+			wx1 wy1 viewx viewy c_a s_a to_view -> s1 -> d1
+			wx2 wy2 viewx viewy c_a s_a to_view -> s2 -> d2
+
+			// Per-seg world-units for perspective-correct u.
+			wx2 wx1 sub 65536 div -> tmp_u
+			wy2 wy1 sub 65536 div -> u_num
+			tmp_u tmp_u mul u_num u_num mul add isqrt -> seg_length_w
+			seg SEG_OFF_OFFSET mem::get_i32 65536 div -> u_at_v1
+			u_at_v1 seg_length_w add -> u_at_v2
+
+			// Both endpoints behind near plane → cull.
+			d1 NEAR_PLANE lt d2 NEAR_PLANE lt and if { 1 -> skip }
+
+			skip 0 eq if {
+				// Near-plane clipping: clamp behind-plane endpoint.
+				d1 NEAR_PLANE lt if {
+					NEAR_PLANE d2 sub -> num
+					d1 d2 sub -> den
+					den 0 neq if {
+						num 16 shl den div -> t16
+						s2 s1 s2 sub t16 mul 16 shr add -> s1
+					}
+					NEAR_PLANE -> d1
+				}
+				d2 NEAR_PLANE lt if {
+					NEAR_PLANE d1 sub -> num
+					d2 d1 sub -> den
+					den 0 neq if {
+						num 16 shl den div -> t16
+						s1 s2 s1 sub t16 mul 16 shr add -> s2
+					}
+					NEAR_PLANE -> d2
+				}
+
+				// Project to screen x.
+				s1 FOCAL mul d1 div 160 add -> sx1
+				s2 FOCAL mul d2 div 160 add -> sx2
+
+				// Order left → right. Pre-declare tmp_x/tmp_d outside
+				// the if branch so the type-checker sees them as
+				// unconditional locals.
+				0 -> tmp_x
+				0 -> tmp_d
+				sx1 sx2 gt if {
+					sx1 -> tmp_x   sx2 -> sx1   tmp_x -> sx2
+					d1  -> tmp_d   d2  -> d1    tmp_d -> d2
+					u_at_v1 -> tmp_u   u_at_v2 -> u_at_v1   tmp_u -> u_at_v2
+				}
+
+				sx2 0 lt sx1 SCREENWIDTH gte or if { 1 -> skip }
+			}
+
+			skip 0 eq if {
+				sx1 0 lt if { 0 -> sx1 }
+				sx2 SCREENWIDTH gte if { SCREENWIDTH 1 sub -> sx2 }
+
+				// Pick the base palette ramp from one-sided/two-sided.
+				// Then brighten or dim by the seg's front-sector light
+				// level (0..255 in map units). This makes visually
+				// contiguous rooms render with their authored lighting.
+				// Pick base palette ramp from the seg's sidedef texture
+				// index — different textures render in different
+				// palette rows so each wall gets visual identity.
+				// Still not real texture sampling (coming via
+				// R_DrawColumn later) but enough to tell walls apart.
+				seg SEG_OFF_LINEDEF mem::get_i32 -> lnum
+				seg SEG_OFF_SIDE mem::get_i32 -> seg_side
+				176 -> col
+				128 -> light
+				0 -> sideidx
+				0 -> texidx
+				lnum 0 gte lnum numlines lt and if {
+					lines lnum LINE_SIZE mul LINE_OFF_BACKSECTOR add mem::get_i32 -> back
+					seg_side 0 eq if {
+						lines lnum LINE_SIZE mul LINE_OFF_SIDENUM_FRONT add mem::get_i32 -> sideidx
+					} else {
+						lines lnum LINE_SIZE mul LINE_OFF_SIDENUM_BACK add mem::get_i32 -> sideidx
+					}
+					back 0 lt if {
+						sideidx 0 gte sideidx numsides lt and if {
+							sides sideidx SIDE_SIZE mul SIDE_OFF_MIDTEX add mem::get_i32 -> texidx
+						}
+					} else {
+						sideidx 0 gte sideidx numsides lt and if {
+							sides sideidx SIDE_SIZE mul SIDE_OFF_TOPTEX add mem::get_i32 -> texidx
+						}
+					}
+					// Pick from 15 distinct palette ramps, each stride 16.
+					texidx 15 mod 16 mul 16 add -> col
+					lines lnum LINE_SIZE mul LINE_OFF_FRONTSECTOR add mem::get_i32 -> fsec
+					fsec 0 gte fsec numsectors lt and if {
+						sectors fsec SECTOR_SIZE mul SECTOR_OFF_LIGHT add mem::get_i32 -> light
+						sectors fsec SECTOR_SIZE mul SECTOR_OFF_FLOORPIC add mem::get_i32 -> floorpic
+						sectors fsec SECTOR_SIZE mul SECTOR_OFF_CEILPIC add mem::get_i32 -> ceilpic
+						sectors fsec SECTOR_SIZE mul SECTOR_OFF_FLOORH add mem::get_i32 -> floor_z
+						sectors fsec SECTOR_SIZE mul SECTOR_OFF_CEILH add mem::get_i32 -> ceil_z
+						floorpic R_GetFlat -> flat_floor
+						ceilpic R_GetFlat -> flat_ceil
+						ceil_z floor_z sub EYE_HEIGHT_FIXED sub -> ceil_eye_delta
+						ceil_eye_delta 65536 lt if { 65536 -> ceil_eye_delta }
+					}
+				}
+
+				sx2 sx1 sub -> span
+				span 0 lte if { 1 -> span }
+
+				sx1 -> x
+				loop {
+					x sx2 gt if { break }
+					x sx1 sub -> dx_from_start
+					d2 d1 sub dx_from_start mul span div d1 add -> depth
+					depth NEAR_PLANE lt if { NEAR_PLANE -> depth }
+
+					// Depth test: only draw if this column is closer
+					// than whatever's already there.
+					column_depth x 8 mul mem::get_i64 -> existing
+					depth existing lt if {
+						depth column_depth x 8 mul mem::set_i64
+						HALF_WALL_SCALE depth div -> half_h
+						100 half_h sub -> y_top_full
+						100 half_h add -> y_bot_full
+						y_bot_full y_top_full sub 1 add -> span_full
+						span_full 0 lte if { 1 -> span_full }
+						// Clamp to screen; v lookup later uses the
+						// unclamped span so close walls show only a
+						// slice of the texture rather than a stretched
+						// full copy.
+						y_top_full -> y_top
+						y_bot_full -> y_bot
+						y_top 0 lt if { 0 -> y_top }
+						y_bot SCREENHEIGHT gte if { SCREENHEIGHT 1 sub -> y_bot }
+
+						// Shade for the fallback (no-texture) path.
+						depth 2097152 div -> shade
+						255 light sub 16 div -> dim
+						dim 0 lt if { 0 -> dim }
+						shade dim add -> shade
+						shade 15 gt if { 15 -> shade }
+						shade 0 lt if { 0 -> shade }
+						col shade add -> col_shaded
+
+						// Perspective-correct u via 1/z linear interp:
+						//   u(x) = [u1*d2*(span-xo) + u2*d1*xo]
+						//        / [d2*(span-xo) + d1*xo]
+						// All math in world units (divide fixed by 64K).
+						d1 65536 div -> d1_w
+						d2 65536 div -> d2_w
+						d1_w 1 lt if { 1 -> d1_w }
+						d2_w 1 lt if { 1 -> d2_w }
+						u_at_v1 d2_w mul span x sx1 sub sub mul
+						u_at_v2 d1_w mul x sx1 sub mul add -> u_num
+						d2_w span x sx1 sub sub mul d1_w x sx1 sub mul add -> u_den
+						u_den 1 lt if { 1 -> u_den }
+						u_num u_den div -> seg_u
+						texidx seg_u R_GetWallColumn -> tex_len -> tex_ptr
+						tex_ptr mem::is_null tex_len 0 lte or if {
+							y_top -> y
+							loop {
+								y y_bot gt if { break }
+								x y col_shaded pv_plot
+								y 1 add -> y
+							}
+						} else {
+							// Perspective-correct v: map the texture's
+							// [0, tex_len] over the *unclamped* screen
+							// span [y_top_full, y_bot_full]. Close walls
+							// (span_full >> SCREENHEIGHT) render only
+							// the visible slice of the texture instead
+							// of the whole thing squashed into
+							// 200 pixels.
+							depth 65536 div 128 div -> cmap_row
+							255 light sub 16 div cmap_row add -> cmap_row
+							cmap_row 0 lt if { 0 -> cmap_row }
+							cmap_row 23 gt if { 23 -> cmap_row }
+							y_top -> y
+							loop {
+								y y_bot gt if { break }
+								y y_top_full sub tex_len mul span_full div -> tv
+								tv 0 lt if { 0 -> tv }
+								tv tex_len gte if { tex_len 1 sub -> tv }
+								tex_ptr tv mem::get_u8 -> pixel
+								colormaps mem::is_null if { } else {
+									colormaps cmap_row 256 mul pixel add mem::get_u8 -> pixel
+								}
+								x y pixel pv_plot
+								y 1 add -> y
+							}
+						}
+
+						// Floor pass with hard iteration cap as a safety
+						// valve while the mid-frame hang is still being
+						// hunted. Pixels further than cap remain at
+						// whatever the ceiling/floor gradient drew.
+						flat_floor mem::is_null if {
+							// nothing to do
+						} else {
+							y_bot 1 add -> fy
+							fy 101 lt if { 101 -> fy }
+							loop {
+								fy SCREENHEIGHT gte if { break }
+								fy 100 sub -> tmp_d
+								tmp_d 0 gt if {
+									EYE_FOCAL_FIXED tmp_d div -> fdepth
+									x 160 sub fdepth mul 160 div -> s_view
+									fdepth c_a mul 65536 div s_view s_a mul 65536 div sub -> fwx
+									fdepth s_a mul 65536 div s_view c_a mul 65536 div add -> fwy
+									viewx fwx add -> fwx
+									viewy fwy add -> fwy
+									fwx 65536 div 63 and -> fu
+									fwy 65536 div 63 and -> fv
+									flat_floor fv 64 mul fu add mem::get_u8 -> pixel
+									fdepth 65536 div 128 div -> cmap_row
+									255 light sub 16 div cmap_row add -> cmap_row
+									cmap_row 0 lt if { 0 -> cmap_row }
+									cmap_row 23 gt if { 23 -> cmap_row }
+									colormaps mem::is_null if { } else {
+										colormaps cmap_row 256 mul pixel add mem::get_u8 -> pixel
+									}
+									x fy pixel pv_plot
+								}
+								fy 1 add -> fy
+							}
+						}
+
+						ceilpic skyflatnum eq if {
+							// Sky: sample SKY1 texture at column derived
+							// from viewangle + screen x. Vertical coord
+							// = screen y (texture is 128 tall, wraps).
+							viewangle 22 shr x 320 mul 1024 div add 255 and -> sky_col
+							skytexture sky_col R_GetWallColumn -> tex_len -> tex_ptr
+							tex_ptr mem::is_null tex_len 0 lte or if { } else {
+								0 -> fy
+								loop {
+									fy y_top gte if { break }
+									fy tex_len mod -> tv
+									tex_ptr tv mem::get_u8 -> pixel
+									x fy pixel pv_plot
+									fy 1 add -> fy
+								}
+							}
+						} else {
+						flat_ceil mem::is_null if {
+							// nothing to do
+						} else {
+							0 -> fy
+							loop {
+								fy y_top gte if { break }
+								fy 99 gt if { break }
+								100 fy sub -> tmp_d
+								tmp_d 0 gt if {
+									ceil_eye_delta FOCAL mul tmp_d div -> fdepth
+									x 160 sub fdepth mul 160 div -> s_view
+									fdepth c_a mul 65536 div s_view s_a mul 65536 div sub -> fwx
+									fdepth s_a mul 65536 div s_view c_a mul 65536 div add -> fwy
+									viewx fwx add -> fwx
+									viewy fwy add -> fwy
+									fwx 65536 div 63 and -> fu
+									fwy 65536 div 63 and -> fv
+									flat_ceil fv 64 mul fu add mem::get_u8 -> pixel
+									fdepth 65536 div 128 div -> cmap_row
+									255 light sub 16 div cmap_row add -> cmap_row
+									cmap_row 0 lt if { 0 -> cmap_row }
+									cmap_row 23 gt if { 23 -> cmap_row }
+									colormaps mem::is_null if { } else {
+										colormaps cmap_row 256 mul pixel add mem::get_u8 -> pixel
+									}
+									x fy pixel pv_plot
+								}
+								fy 1 add -> fy
+							}
+						}
+						}
+					}
+
+					x 1 add -> x
+				}
+				pv_drawn 1 add -> pv_drawn
+			}
+		}
+
+		i 1 add -> i
+	}
+}

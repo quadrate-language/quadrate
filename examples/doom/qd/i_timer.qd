@@ -1,0 +1,52 @@
+/// Timer services.
+///
+/// Ported from doomgeneric/i_timer.c. The C version routes through the
+/// DG_* platform shim (doomgeneric_sdl.c → SDL_GetTicks / SDL_Delay); we
+/// call the SDL FFI directly since we have a single hosted platform.
+///
+/// I_GetTime returns tics at TICRATE=35 since first call; I_GetTimeMS
+/// returns milliseconds since first call. Both hold their baseline in a
+/// `basetime` module-level var so repeat calls stay self-consistent.
+
+use "../ffi/sdl.qd"
+use "doomdef.qd"
+
+var basetime:i64 = 0
+
+/// Raw millisecond counter (thin SDL_GetTicks wrapper).
+pub fn I_GetTicks( -- ms:i64) {
+	sdl::GetTicks
+}
+
+/// Return current time in Doom tics (1/35 second units) since first call.
+pub fn I_GetTime( -- tics:i64) {
+	I_GetTicks -> ticks
+	basetime 0 eq if {
+		ticks -> basetime
+	}
+	ticks basetime sub TICRATE mul 1000 div
+}
+
+/// Return current time in milliseconds since first call.
+pub fn I_GetTimeMS( -- ms:i64) {
+	I_GetTicks -> ticks
+	basetime 0 eq if {
+		ticks -> basetime
+	}
+	ticks basetime sub
+}
+
+/// Block for `ms` milliseconds.
+pub fn I_Sleep(ms:i64 -- ) {
+	ms sdl::Delay
+}
+
+/// Vertical-blank wait. The C version is a no-op in doomgeneric; we
+/// match it — the main loop paces by tic, not scanline.
+pub fn I_WaitVBL(count:i64 -- ) {
+	count drop
+}
+
+/// Initialise the timer subsystem. SDL_Init(INIT_TIMER) would go here
+/// but doomgeneric skips it, and INIT_VIDEO implies timer anyway.
+pub fn I_InitTimer( -- ) { }

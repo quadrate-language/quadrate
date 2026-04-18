@@ -1,0 +1,32 @@
+use "r_bsp.qd"
+use mem
+
+fn main() {
+	R_ClearDrawSegs
+	R_ClearClipSegs
+	R_ClearBspTestCounters
+
+	"ds_index after clear: " print ds_index print nl                // 0
+	"num_solidsegs after clear: " print num_solidsegs print nl      // 2
+
+	// Walk a subsector-leaf directly (high bit set).
+	NF_SUBSECTOR 42 or R_RenderBSPNode
+	"subsector_count after one leaf: " print subsector_count print nl // 1
+
+	// Walk an internal node with nodes=null: stub descends once and
+	// bottoms out at a synthetic subsector leaf.
+	0 R_RenderBSPNode
+	"subsector_count after one node: " print subsector_count print nl // 2
+
+	// R_CheckBBox stub returns 1 so bbox-culled paths still recurse.
+	0 cast<ptr> R_CheckBBox print nl                                  // 1
+
+	// R_AddLine stub bumps its counter.
+	0 cast<ptr> R_AddLine
+	0 cast<ptr> R_AddLine
+	"addline_count: " print addline_count print nl                    // 2
+
+	"NF_SUBSECTOR: " print NF_SUBSECTOR print nl                      // 2147483648
+
+	"done" print nl
+}

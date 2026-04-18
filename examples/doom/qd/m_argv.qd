@@ -1,0 +1,149 @@
+/// Command-line argument handling.
+///
+/// Ported from doomgeneric/m_argv.c. Doom's subsystems call M_CheckParm
+/// extensively during startup (-iwad, -file, -warp, -skill, -deathmatch,
+/// etc.), so this needs to land before D_DoomMain can be ported.
+///
+/// Response-file expansion (argv entries starting with '@' load an
+/// additional argv list from disk) is stubbed for now — rarely used by
+/// Doom and trivial to add when it's missed.
+
+use strings
+use mem
+
+/// Argc, set by M_SetArgs from the Quadrate `read` builtin. Zero until
+/// the host program calls M_SetArgs at startup.
+pub var myargc:i64 = 0
+
+/// Pointer to a heap-allocated argv table. Layout is:
+///   - one 16-byte slot per argv entry
+///       [0..8)  — raw byte-buffer pointer (owned, NUL-terminated)
+///       [8..16) — byte length (excluding terminator)
+/// We copy the incoming string data into heap buffers rather than hold
+/// Quadrate's refcounted `str` values directly, because refcounts get
+/// tricky across `var` storage and we don't need string machinery to
+/// compare argv entries byte-for-byte.
+pub var myargv:ptr = 0
+
+const ARG_STRIDE = 16
+const ARG_OFF_PTR = 0
+const ARG_OFF_LEN = 8
+
+/// Install the command line. The Quadrate idiom is `read -> argc`,
+/// which pushes each argument as a `str` onto the stack top-first.
+/// We pop in reverse, copy each string into a fresh heap buffer (so
+/// lifetime is explicit), and store the buffer+length at argv[i].
+pub fn M_SetArgs(argc:i64 -- ) {
+	argc -> myargc
+	argc ARG_STRIDE mul mem::alloc! -> myargv
+	myargv argc ARG_STRIDE mul mem::zero
+
+	argc -> remaining
+	loop {
+		remaining 0 lte if { break }
+		remaining 1 sub -> idx
+		-> a                               // pop next str (top-most)
+		a mem::from_string -> alen -> aptr // copy to owned heap buffer
+		aptr myargv idx ARG_STRIDE mul  ARG_OFF_PTR add mem::set_ptr
+		alen myargv idx ARG_STRIDE mul  ARG_OFF_LEN add mem::set_i64
+		idx -> remaining
+	}
+}
+
+/// Case-insensitive ASCII byte compare between two NUL-terminated
+/// buffers. Faster than bouncing through `str` conversions and doesn't
+/// allocate. Returns 1 on match, 0 otherwise.
+fn lower_byte(c:i64 -- r:i64) {
+	c 65 gte if {
+		c 90 lte if { c 32 add } else { c }
+	} else {
+		c
+	}
+}
+
+fn bytes_ieq(a:ptr alen:i64 b:ptr blen:i64 -- eq:i64) {
+	alen blen neq if {
+		0
+	} else {
+		1 -> result
+		0 -> i
+		loop {
+			i alen gte if { break }
+			a i mem::get_u8 lower_byte -> ca
+			b i mem::get_u8 lower_byte -> cb
+			ca cb neq if {
+				0 -> result
+				alen -> i   // force break
+			}
+			i 1 add -> i
+		}
+		result
+	}
+}
+
+/// Check for `check` in the command line. Returns the argv index
+/// (1..=argc-1 minus num_args) if found, 0 otherwise.
+///
+/// Note on indexing: Quadrate's `read` builtin hands us only the
+/// user-supplied arguments (no program-name slot at argv[0] like C).
+/// To keep M_CheckParm usable in Doom's idiom (`myargv[parm + 1]`
+/// reads the value after the flag) we scan from index 0, and the
+/// caller's `p+1` still points at what they expect — just shifted
+/// by one from C.
+pub fn M_CheckParmWithArgs(check:str num_args:i64 -- pos:i64) {
+	check mem::from_string -> clen -> cptr
+	0 -> found
+	0 -> i
+	myargc num_args sub -> limit
+	loop {
+		i limit gte if { break }
+		found 0 eq if {
+			myargv i ARG_STRIDE mul ARG_OFF_PTR add mem::get_ptr -> aptr
+			myargv i ARG_STRIDE mul ARG_OFF_LEN add mem::get_i64 -> alen
+			aptr alen cptr clen bytes_ieq if {
+				i 1 add -> found   // 1-based so "not found" stays 0
+			}
+		}
+		i 1 add -> i
+	}
+	cptr mem::free
+	found
+}
+
+pub fn M_CheckParm(check:str -- pos:i64) {
+	check 0 M_CheckParmWithArgs
+}
+
+/// true if the parameter exists.
+pub fn M_ParmExists(check:str -- exists:i64) {
+	check M_CheckParm 0 neq
+}
+
+/// Return argv[i] as a str, or "" if out of range. Rebuilds a Quadrate
+/// string from the owned byte buffer each call.
+pub fn M_Argv(i:i64 -- s:str) {
+	i 0 lt if { "" } else {
+		i myargc gte if { "" } else {
+			myargv i ARG_STRIDE mul ARG_OFF_PTR add mem::get_ptr -> aptr
+			myargv i ARG_STRIDE mul ARG_OFF_LEN add mem::get_i64 -> alen
+			aptr alen mem::to_string
+		}
+	}
+}
+
+/// Name of the executable as seen by the OS. The C version returns the
+/// basename of argv[0]; for Doom's purposes the full path works just as
+/// well — the only caller prints it in error messages.
+pub fn M_GetExecutableName( -- s:str) {
+	myargc 0 lte if {
+		""
+	} else {
+		0 M_Argv
+	}
+}
+
+/// Stub — response files (@file.rsp expansion) are rarely used and
+/// require a small tokenizer. Easy to add when Doom actually wants it.
+pub fn M_FindResponseFile( -- ) {
+	// no-op
+}

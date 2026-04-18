@@ -1,0 +1,44 @@
+use "m_misc.qd"
+use mem
+
+fn main() {
+	// M_ExtractFileBase — the canonical test: "/home/user/DOOM1.WAD" → "DOOM1"
+	8 mem::alloc! -> out
+	out 8 mem::zero
+	"/home/user/DOOM1.WAD" out M_ExtractFileBase
+
+	"ExtractFileBase bytes:" print nl
+	0 8 1 for j {
+		"  " print out j mem::get_u8 print nl
+	}
+
+	// Should spell "DOOM1\0\0\0" — 68 79 79 77 49 0 0 0.
+
+	// Long filename gets truncated at 8 chars.
+	out 8 mem::zero
+	"ABCDEFGHIJK.wad" out M_ExtractFileBase
+	"truncated bytes:" print nl
+	0 8 1 for j {
+		"  " print out j mem::get_u8 print nl
+	}
+
+	// M_StrCaseStr
+	"Hello DOOM World" "doom" M_StrCaseStr print nl     // 6
+	"no match here" "xyz" M_StrCaseStr print nl          // -1
+
+	// Starts / ends
+	"level.wad" ".wad" M_StringEndsWith print nl        // 1
+	"doom1.wad" "doom" M_StringStartsWith print nl      // 1
+
+	// M_StringConcat
+	"foo" "bar" M_StringConcat print nl                 // foobar
+
+	// M_StringReplace
+	"the quick brown fox" "quick" "slow" M_StringReplace print nl
+
+	// M_StrToInt
+	"42" M_StrToInt drop print nl                       // 42
+	"0xFF" M_StrToInt drop print nl                     // 255
+
+	out mem::free
+}

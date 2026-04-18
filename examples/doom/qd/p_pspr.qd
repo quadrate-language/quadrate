@@ -1,0 +1,66 @@
+/// Player weapon sprites (the view-weapon animation + fire logic).
+///
+/// Ported from doomgeneric/p_pspr.c. Upstream is ~1000 lines split
+/// between player-facing entry points (P_SetupPsprites, P_MovePsprites,
+/// P_FireWeapon, P_BringUpWeapon, P_DropWeapon, P_CheckAmmo) and the
+/// A_* action-table callbacks that each weapon frame in info.qd's
+/// state table dispatches to (A_WeaponReady, A_FirePistol, A_Punch, …).
+///
+/// Every entry here depends on player_t and mobj_t (task #40) plus the
+/// hit-scan machinery from p_map (task #42). Until those arrive, this
+/// pass is a symbol-surface port: every public function accepts its
+/// parameters and returns cleanly so info.qd's state dispatcher + the
+/// game tick can link. The bodies become one-to-one translations of
+/// the C code the moment mobjs are live.
+
+pub const WEAPONBOTTOM = 0x800000      // 128 * FRACUNIT
+pub const WEAPONTOP    = 0x200000      //  32 * FRACUNIT
+pub const LOWERSPEED   = 0x60000       //   6 * FRACUNIT
+pub const RAISESPEED   = 0x60000
+
+// ---- Player-facing entries ----
+
+pub fn P_SetPsprite(player:ptr position:i64 stnum:i64 -- ) {
+	player drop position drop stnum drop
+}
+
+pub fn P_CalcSwing(player:ptr -- ) { player drop }
+
+pub fn P_BringUpWeapon(player:ptr -- ) { player drop }
+
+pub fn P_CheckAmmo(player:ptr -- ok:i64) { player drop 1 }
+
+pub fn P_FireWeapon(player:ptr -- ) { player drop }
+
+pub fn P_DropWeapon(player:ptr -- ) { player drop }
+
+pub fn P_SetupPsprites(player:ptr -- ) { player drop }
+
+pub fn P_MovePsprites(player:ptr -- ) { player drop }
+
+pub fn P_BulletSlope(mo:ptr -- ) { mo drop }
+
+pub fn P_GunShot(mo:ptr accurate:i64 -- ) { mo drop accurate drop }
+
+// ---- A_* state-machine actions (called by info.qd's dispatcher) ----
+
+pub fn A_WeaponReady(player:ptr psp:ptr -- ) { player drop psp drop }
+pub fn A_ReFire(player:ptr psp:ptr -- ) { player drop psp drop }
+pub fn A_CheckReload(player:ptr psp:ptr -- ) { player drop psp drop }
+pub fn A_Lower(player:ptr psp:ptr -- ) { player drop psp drop }
+pub fn A_Raise(player:ptr psp:ptr -- ) { player drop psp drop }
+pub fn A_GunFlash(player:ptr psp:ptr -- ) { player drop psp drop }
+pub fn A_Punch(player:ptr psp:ptr -- ) { player drop psp drop }
+pub fn A_Saw(player:ptr psp:ptr -- ) { player drop psp drop }
+pub fn A_FireMissile(player:ptr psp:ptr -- ) { player drop psp drop }
+pub fn A_FireBFG(player:ptr psp:ptr -- ) { player drop psp drop }
+pub fn A_FirePlasma(player:ptr psp:ptr -- ) { player drop psp drop }
+pub fn A_FirePistol(player:ptr psp:ptr -- ) { player drop psp drop }
+pub fn A_FireShotgun(player:ptr psp:ptr -- ) { player drop psp drop }
+pub fn A_FireShotgun2(player:ptr psp:ptr -- ) { player drop psp drop }
+pub fn A_FireCGun(player:ptr psp:ptr -- ) { player drop psp drop }
+pub fn A_Light0(player:ptr psp:ptr -- ) { player drop psp drop }
+pub fn A_Light1(player:ptr psp:ptr -- ) { player drop psp drop }
+pub fn A_Light2(player:ptr psp:ptr -- ) { player drop psp drop }
+pub fn A_BFGsound(player:ptr psp:ptr -- ) { player drop psp drop }
+pub fn A_BFGSpray(mo:ptr -- ) { mo drop }

@@ -1,0 +1,24 @@
+use "sha1.qd"
+use mem
+
+fn main() {
+	SHA1_Init -> sc
+
+	// Fold in some data. Stub increments block count; digest stays zero.
+	sc "hello" SHA1_UpdateString
+	sc " world" SHA1_UpdateString
+	sc 42 SHA1_UpdateInt32
+
+	"byte count = " print sc 20 mem::get_i32 print nl   // 5 + 6 + 4 = 15
+
+	20 mem::alloc! -> digest
+	digest sc SHA1_Final
+
+	"digest (should be 20 zero bytes): " print nl
+	0 20 1 for i {
+		"  " print digest i mem::get_u8 print nl
+	}
+
+	digest mem::free
+	sc mem::free
+}

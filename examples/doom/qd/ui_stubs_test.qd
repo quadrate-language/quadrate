@@ -1,0 +1,47 @@
+use "ui_stubs.qd"
+use mem
+
+fn main() {
+	M_Init
+	M_StartControlPanel
+	M_Ticker
+	M_Drawer
+	0 cast<ptr> M_Responder print nl              // 0
+	M_ClearMenus
+
+	HU_Init
+	HU_Start
+	HU_Ticker
+	HU_Drawer
+	0 cast<ptr> HU_Responder print nl             // 0
+	HU_Stop
+
+	ST_Init
+	ST_Start
+	ST_Ticker
+	0 0 ST_Drawer
+	ST_Stop
+
+	"automap off: " print automapactive print nl  // 0
+	AM_Start
+	"automap on: " print automapactive print nl   // 1
+	AM_Ticker
+	AM_Drawer
+	AM_Stop
+	"automap off after stop: " print automapactive print nl  // 0
+
+	0 cast<ptr> WI_Start
+	WI_Ticker
+	WI_Drawer
+	WI_End
+
+	F_StartFinale
+	F_Ticker
+	F_Drawer
+
+	0 0 320 200 wipe_StartScreen print nl         // 0
+	0 0 320 200 wipe_EndScreen print nl           // 0
+	0 0 0 320 200 1 wipe_ScreenWipe print nl      // 1
+
+	"done" print nl
+}

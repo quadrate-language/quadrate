@@ -1,0 +1,129 @@
+/// In-memory byte-buffer I/O.
+///
+/// Ported from doomgeneric/memio.c. Used by mus2mid to decode MUS music
+/// lumps in RAM without bouncing through the filesystem. API mirrors
+/// stdio's read/write/seek/tell so MUS code reads identically.
+///
+/// MEMFILE stored as a raw 48-byte buffer:
+///   0..8   buf:ptr            — underlying bytes (null in read mode
+///                                means caller-supplied read-only data)
+///   8..16  buflen:i64         — logical content length
+///   16..24 alloced:i64        — backing capacity (write mode only)
+///   24..32 position:i64       — current cursor
+///   32..36 mode:i32           — 0 read, 1 write
+///   36..48 (padding)
+
+use mem
+
+pub const MEMFILE_SIZE = 48
+pub const MEM_OFF_BUF = 0
+pub const MEM_OFF_BUFLEN = 8
+pub const MEM_OFF_ALLOCED = 16
+pub const MEM_OFF_POSITION = 24
+pub const MEM_OFF_MODE = 32
+
+pub const MEM_MODE_READ = 0
+pub const MEM_MODE_WRITE = 1
+
+pub const MEM_SEEK_SET = 0
+pub const MEM_SEEK_CUR = 1
+pub const MEM_SEEK_END = 2
+
+/// Open a read-only view over an already-allocated buffer. The MEMFILE
+/// does NOT own the data — mem_fclose leaves it intact.
+pub fn mem_fopen_read(buf:ptr buflen:i64 -- f:ptr) {
+	MEMFILE_SIZE mem::alloc! -> f
+	f MEMFILE_SIZE mem::zero
+	buf               f MEM_OFF_BUF      mem::set_ptr
+	buflen            f MEM_OFF_BUFLEN   mem::set_i64
+	0                 f MEM_OFF_POSITION mem::set_i64
+	MEM_MODE_READ     f MEM_OFF_MODE     mem::set_i32
+	f
+}
+
+/// Read up to `count` bytes into `dest`. Returns bytes read (may be less
+/// at end-of-file).
+pub fn mem_fread(dest:ptr count:i64 f:ptr -- got:i64) {
+	f MEM_OFF_BUF mem::get_ptr -> src
+	f MEM_OFF_BUFLEN mem::get_i64 -> buflen
+	f MEM_OFF_POSITION mem::get_i64 -> pos
+
+	buflen pos sub -> remaining
+	count remaining gt if { remaining -> count }
+
+	dest src pos mem::ptr_add count mem::copy
+	pos count add  f MEM_OFF_POSITION mem::set_i64
+	count
+}
+
+/// Open a growable buffer for writing. Starts with 1024-byte capacity.
+pub fn mem_fopen_write( -- f:ptr) {
+	MEMFILE_SIZE mem::alloc! -> f
+	f MEMFILE_SIZE mem::zero
+	1024 mem::alloc! -> buf
+	buf            f MEM_OFF_BUF      mem::set_ptr
+	0              f MEM_OFF_BUFLEN   mem::set_i64
+	1024           f MEM_OFF_ALLOCED  mem::set_i64
+	0              f MEM_OFF_POSITION mem::set_i64
+	MEM_MODE_WRITE f MEM_OFF_MODE     mem::set_i32
+	f
+}
+
+/// Write `count` bytes from `src`, growing the buffer if needed.
+pub fn mem_fwrite(src:ptr count:i64 f:ptr -- wrote:i64) {
+	f MEM_OFF_BUF mem::get_ptr -> buf
+	f MEM_OFF_ALLOCED mem::get_i64 -> alloced
+	f MEM_OFF_BUFLEN mem::get_i64 -> buflen
+	f MEM_OFF_POSITION mem::get_i64 -> pos
+
+	// Grow until the write fits.
+	loop {
+		alloced pos sub count gte if { break }
+		alloced 2 mul -> alloced
+		alloced mem::alloc! -> newbuf
+		newbuf buf buflen mem::copy
+		buf mem::free
+		newbuf -> buf
+	}
+	buf            f MEM_OFF_BUF     mem::set_ptr
+	alloced        f MEM_OFF_ALLOCED mem::set_i64
+
+	buf pos mem::ptr_add src count mem::copy
+	pos count add -> pos
+	pos             f MEM_OFF_POSITION mem::set_i64
+	pos buflen gt if { pos f MEM_OFF_BUFLEN mem::set_i64 }
+	count
+}
+
+pub fn mem_get_buf(f:ptr -- buf:ptr buflen:i64) {
+	f MEM_OFF_BUF mem::get_ptr
+	f MEM_OFF_BUFLEN mem::get_i64
+}
+
+pub fn mem_ftell(f:ptr -- pos:i64) {
+	f MEM_OFF_POSITION mem::get_i64
+}
+
+pub fn mem_fseek(f:ptr offset:i64 whence:i64 -- rc:i64) {
+	f MEM_OFF_BUFLEN mem::get_i64 -> buflen
+	f MEM_OFF_POSITION mem::get_i64 -> cur
+	0 -> newpos
+	whence MEM_SEEK_SET eq if { offset -> newpos } else {
+		whence MEM_SEEK_CUR eq if { cur offset add -> newpos } else {
+			whence MEM_SEEK_END eq if { buflen offset add -> newpos } else { -1 -> newpos }
+		}
+	}
+	newpos 0 lt if { -1 } else {
+		newpos buflen gt if { -1 } else {
+			newpos f MEM_OFF_POSITION mem::set_i64
+			0
+		}
+	}
+}
+
+pub fn mem_fclose(f:ptr -- ) {
+	f MEM_OFF_MODE mem::get_i32 MEM_MODE_WRITE eq if {
+		f MEM_OFF_BUF mem::get_ptr mem::free
+	}
+	f mem::free
+}

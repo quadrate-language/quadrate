@@ -1,0 +1,40 @@
+use "doomgeneric.qd"
+use "d_event.qd"
+use mem
+
+fn main() {
+	// DG_GetKey drains the D_PostEvent queue.
+	8 mem::alloc! -> pressed_buf
+	8 mem::alloc! -> key_buf
+
+	// No events yet → 0.
+	pressed_buf key_buf DG_GetKey print nl      // 0
+
+	// Post a keydown, then pop it through DG_GetKey.
+	ev_keydown 65 0 0 0 D_MakeEvent -> ev1
+	ev1 D_PostEvent
+	ev1 mem::free
+
+	pressed_buf key_buf DG_GetKey print nl      // 1
+	"pressed: " print pressed_buf 0 mem::get_i32 print nl     // 1
+	"key: " print key_buf 0 mem::get_i32 print nl             // 65
+
+	// Keyup.
+	ev_keyup 27 0 0 0 D_MakeEvent -> ev2
+	ev2 D_PostEvent
+	ev2 mem::free
+	pressed_buf key_buf DG_GetKey print nl      // 1
+	"pressed: " print pressed_buf 0 mem::get_i32 print nl     // 0
+	"key: " print key_buf 0 mem::get_i32 print nl             // 27
+
+	// Queue drained.
+	pressed_buf key_buf DG_GetKey print nl      // 0
+
+	// DG_GetTicksMs ≥ 0.
+	DG_GetTicksMs 0 gte print nl                // 1
+	5 DG_SleepMs
+
+	pressed_buf mem::free
+	key_buf mem::free
+	"done" print nl
+}

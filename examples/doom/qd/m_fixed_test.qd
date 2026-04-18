@@ -1,0 +1,25 @@
+use "m_fixed.qd"
+
+fn main() {
+	// FixedMul: 2.5 * 3.0 = 7.5 in 16.16 representation
+	//   2.5  = 0x28000  (2.5 * 65536)
+	//   3.0  = 0x30000
+	//   product = (0x28000 * 0x30000) >> 16 = 0x78000 = 7.5
+	0x28000 0x30000 FixedMul print nl
+
+	// FixedMul: 1.0 * 1.0 = 1.0
+	FRACUNIT FRACUNIT FixedMul print nl
+
+	// FixedMul: -2.0 * 3.0 = -6.0
+	//   -2.0 = -131072 (as i32: 0xFFFE0000 sign-extended to i64)
+	-131072 0x30000 FixedMul print nl
+
+	// FixedDiv: 6.0 / 3.0 = 2.0 = 0x20000 = 131072
+	0x60000 0x30000 FixedDiv print nl
+
+	// FixedDiv saturation: 1.0 / (1/65536) should saturate
+	FRACUNIT 1 FixedDiv print nl                // FIXED_MAX = 2147483647
+
+	// FixedDiv with opposing signs saturating: -1.0 / (1/65536)
+	-65536 1 FixedDiv print nl                  // FIXED_MIN = -2147483648
+}

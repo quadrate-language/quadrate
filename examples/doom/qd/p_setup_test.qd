@@ -1,0 +1,35 @@
+use "w_wad.qd"
+use "r_data.qd"
+use "p_setup.qd"
+use mem
+
+fn main() {
+	"wads/doom1.wad" W_AddFile
+	R_InitData
+
+	1 1 0 2 P_SetupLevel
+	"E1M1 numvertexes: " print numvertexes print nl
+	"E1M1 numsectors: " print numsectors print nl
+	"E1M1 numnodes: " print numnodes print nl
+
+	// Spot-check a vertex. E1M1's first vertex is (1088, -3680).
+	"vertex[0].x (fixed>>16): " print
+	vertexes 0 VERTEX_SIZE mul mem::get_i32 FRACBITS shr print nl
+	"vertex[0].y: " print
+	vertexes 0 VERTEX_SIZE mul 4 add mem::get_i32 FRACBITS shr print nl
+
+	// First sector's floor/ceiling height in map units.
+	"sector[0].floorh: " print
+	sectors 0 SECTOR_OFF_FLOORH add mem::get_i32 FRACBITS shr print nl
+	"sector[0].ceilh: " print
+	sectors 0 SECTOR_OFF_CEILH add mem::get_i32 FRACBITS shr print nl
+	"sector[0].light: " print
+	sectors 0 SECTOR_OFF_LIGHT add mem::get_i32 print nl
+
+	// Sanity: last node's children[0] should reference a subsector or
+	// another node. Print value so we can see it.
+	"root node children[0]: " print
+	nodes numnodes 1 sub NODE_SIZE mul NODE_OFF_CHILDREN add mem::get_i32 print nl
+
+	"done" print nl
+}

@@ -1,0 +1,117 @@
+/// Sound subsystem — stubs.
+///
+/// Ports the combined symbol surface of doomgeneric's i_sound.c,
+/// s_sound.c, i_sdlsound.c, i_sdlmusic.c, i_cdmus.c, and mus2mid.c
+/// (~4,500 C lines) as no-ops. The plan defers real audio to Phase 5/
+/// post-hosted-run (see task #7): the game logic is 100% playable in
+/// silence, and a faithful port of the SDL mixer / OPL emulator /
+/// MUS→MIDI converter is a self-contained job we can tackle once the
+/// rest of Doom is up.
+///
+/// Every stub preserves the Doom call signature so callers in p_enemy,
+/// g_game, d_main, m_menu, st_stuff link unchanged when they come online.
+
+use mem
+
+// ---- Config variables (bound by m_config) ----
+
+pub var sfxVolume:i64 = 8
+pub var musicVolume:i64 = 8
+pub var snd_channels:i64 = 8
+pub var snd_samplerate:i64 = 44100
+pub var snd_cachesize:i64 = 67108864     // 64 MiB
+pub var snd_maxslicetime_ms:i64 = 28
+pub var snd_musicdevice:i64 = 2          // SNDDEVICE_SB
+pub var snd_sfxdevice:i64 = 2            // SNDDEVICE_SB
+
+pub const SNDDEVICE_NONE = 0
+pub const SNDDEVICE_PCSPEAKER = 1
+pub const SNDDEVICE_SB = 2
+pub const SNDDEVICE_PAS = 3
+pub const SNDDEVICE_GUS = 4
+pub const SNDDEVICE_WAVEBLASTER = 5
+pub const SNDDEVICE_SOUNDCANVAS = 6
+pub const SNDDEVICE_GENMIDI = 7
+pub const SNDDEVICE_AWE32 = 8
+pub const SNDDEVICE_CD = 9
+
+// ---- High-level (s_sound.c) ----
+
+pub fn S_Init(sfx_vol:i64 music_vol:i64 -- ) {
+	sfx_vol -> sfxVolume
+	music_vol -> musicVolume
+}
+
+pub fn S_Shutdown( -- ) { }
+pub fn S_Start( -- ) { }
+pub fn S_StopSound(origin:ptr -- ) { origin drop }
+pub fn S_StartSound(origin:ptr sfx_id:i64 -- ) { origin drop sfx_id drop }
+pub fn S_PauseSound( -- ) { }
+pub fn S_ResumeSound( -- ) { }
+pub fn S_UpdateSounds(listener:ptr -- ) { listener drop }
+
+pub fn S_SetMusicVolume(volume:i64 -- ) { volume -> musicVolume }
+pub fn S_SetSfxVolume(volume:i64 -- ) { volume -> sfxVolume }
+
+pub fn S_StartMusic(m_id:i64 -- ) { m_id drop }
+pub fn S_ChangeMusic(musicnum:i64 looping:i64 -- ) {
+	musicnum drop
+	looping drop
+}
+pub fn S_MusicPlaying( -- yes:i64) { 0 }
+pub fn S_StopMusic( -- ) { }
+
+// ---- Low-level (i_sound.c) ----
+
+pub fn I_InitSound(use_sfx_prefix:i64 -- ) { use_sfx_prefix drop }
+pub fn I_ShutdownSound( -- ) { }
+pub fn I_GetSfxLumpNum(sfxinfo:ptr -- lump:i64) { sfxinfo drop -1 }
+pub fn I_UpdateSound( -- ) { }
+pub fn I_UpdateSoundParams(channel:i64 vol:i64 sep:i64 -- ) {
+	channel drop vol drop sep drop
+}
+pub fn I_StartSound(sfxinfo:ptr channel:i64 vol:i64 sep:i64 -- handle:i64) {
+	sfxinfo drop channel drop vol drop sep drop
+	0
+}
+pub fn I_StopSound(channel:i64 -- ) { channel drop }
+pub fn I_SoundIsPlaying(channel:i64 -- yes:i64) { channel drop 0 }
+pub fn I_PrecacheSounds(sounds:ptr num_sounds:i64 -- ) {
+	sounds drop num_sounds drop
+}
+
+pub fn I_InitMusic( -- ) { }
+pub fn I_ShutdownMusic( -- ) { }
+pub fn I_SetMusicVolume(volume:i64 -- ) { volume drop }
+pub fn I_PauseSong( -- ) { }
+pub fn I_ResumeSong( -- ) { }
+pub fn I_RegisterSong(data:ptr len:i64 -- handle:ptr) {
+	data drop len drop
+	0 cast<ptr>
+}
+pub fn I_UnRegisterSong(handle:ptr -- ) { handle drop }
+pub fn I_PlaySong(handle:ptr looping:i64 -- ) {
+	handle drop looping drop
+}
+pub fn I_StopSong( -- ) { }
+pub fn I_MusicIsPlaying( -- yes:i64) { 0 }
+pub fn I_BindSoundVariables( -- ) { }
+
+// ---- CD audio (i_cdmus.c) — all stubs. Originally read redbook audio
+//      tracks from the CD for music playback; no modern port uses it.
+
+pub fn I_CDMusInit( -- rc:i64) { -1 }
+pub fn I_CDMusPlay(track:i64 looping:i64 -- rc:i64) {
+	track drop looping drop -1
+}
+pub fn I_CDMusStop( -- rc:i64) { -1 }
+pub fn I_CDMusResume( -- rc:i64) { -1 }
+pub fn I_CDMusSetVolume(volume:i64 -- rc:i64) { volume drop -1 }
+pub fn I_CDMusGetErrorMessage( -- msg:str) { "CD audio not supported" }
+
+// ---- MUS to MIDI conversion (mus2mid.c) — not needed since we don't
+//      play music; real implementation lands with the music subsystem.
+
+pub fn mus2mid(musinput:ptr midioutput:ptr -- rc:i64) {
+	musinput drop midioutput drop 1
+}

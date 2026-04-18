@@ -1,0 +1,5 @@
+leveltime initial: 0
+after 3 tics: 3
+paused: 3
+menu no-net: 3
+done

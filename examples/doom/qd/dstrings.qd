@@ -1,0 +1,43 @@
+/// Doom string table.
+///
+/// Ported from doomgeneric/dstrings.c — the game's static English strings
+/// (quit-game prompts). Exposed as function accessors keyed on index so
+/// callers don't need to know about the underlying string storage.
+///
+/// d_englsh.h has hundreds of #define'd in-game messages; those will be
+/// added as separate `pub const` declarations in a follow-up pass. This
+/// first cut just covers the quit-message arrays that dstrings.c actually
+/// defines — d_englsh.h is a pure `.h` of #defines and the callers can
+/// inline the string literals directly until we port m_menu.
+
+pub const SAVEGAMENAME = "doomsav"
+
+pub const NUM_QUITMESSAGES = 8
+
+/// doom1 quit messages (indices 0..7).
+pub fn doom1_endmsg(i:i64 -- s:str) {
+	i 0 eq if { "are you sure you want to\nquit this great game?" } else {
+	i 1 eq if { "please don't leave, there's more\ndemons to toast!" } else {
+	i 2 eq if { "let's beat it -- this is turning\ninto a bloodbath!" } else {
+	i 3 eq if { "i wouldn't leave if i were you.\ndos is much worse." } else {
+	i 4 eq if { "you're trying to say you like dos\nbetter than me, right?" } else {
+	i 5 eq if { "don't leave yet -- there's a\ndemon around that corner!" } else {
+	i 6 eq if { "ya know, next time you come in here\ni'm gonna toast ya." } else {
+	i 7 eq if { "go ahead and leave. see if i care." } else {
+		""
+	} } } } } } } }
+}
+
+/// doom2 quit messages (indices 0..7).
+pub fn doom2_endmsg(i:i64 -- s:str) {
+	i 0 eq if { "are you sure you want to\nquit this great game?" } else {
+	i 1 eq if { "you want to quit?\nthen, thou hast lost an eighth!" } else {
+	i 2 eq if { "don't go now, there's a \ndimensional shambler waiting\nat the dos prompt!" } else {
+	i 3 eq if { "get outta here and go back\nto your boring programs." } else {
+	i 4 eq if { "if i were your boss, i'd \n deathmatch ya in a minute!" } else {
+	i 5 eq if { "look, bud. you leave now\nand you forfeit your body count!" } else {
+	i 6 eq if { "just leave. when you come\nback, i'll be waiting with a bat." } else {
+	i 7 eq if { "you're lucky i don't smack\nyou for thinking about leaving." } else {
+		""
+	} } } } } } } }
+}

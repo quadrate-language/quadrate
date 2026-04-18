@@ -1,0 +1,18 @@
+use "m_controls.qd"
+
+fn main() {
+	// Defaults match doomkeys.h.
+	key_fire print nl          // 0xa3 = 163
+	key_use print nl           // 0xa2 = 162
+	key_menu_activate print nl // 27  (ESC)
+	key_weapon1 print nl       // 49  ('1')
+	key_weapon8 print nl       // 56  ('8')
+
+	// Rebinding works — the vars are mutable.
+	120 -> key_fire
+	key_fire print nl          // 120  ('x')
+
+	M_BindBaseControls
+	M_BindMenuControls
+	"bind functions are no-ops; still " print key_fire print nl
+}

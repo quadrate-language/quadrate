@@ -1,0 +1,65 @@
+/// Doom keyboard scan-code constants.
+///
+/// Ported from doomgeneric/doomkeys.h. Same numeric values as the C
+/// header so anything Doom already stores as a keycode stays identical.
+
+pub const KEY_RIGHTARROW = 0xae
+pub const KEY_LEFTARROW  = 0xac
+pub const KEY_UPARROW    = 0xad
+pub const KEY_DOWNARROW  = 0xaf
+pub const KEY_STRAFE_L   = 0xa0
+pub const KEY_STRAFE_R   = 0xa1
+pub const KEY_USE        = 0xa2
+pub const KEY_FIRE       = 0xa3
+pub const KEY_ESCAPE     = 27
+pub const KEY_ENTER      = 13
+pub const KEY_TAB        = 9
+
+pub const KEY_F1  = 0xbb
+pub const KEY_F2  = 0xbc
+pub const KEY_F3  = 0xbd
+pub const KEY_F4  = 0xbe
+pub const KEY_F5  = 0xbf
+pub const KEY_F6  = 0xc0
+pub const KEY_F7  = 0xc1
+pub const KEY_F8  = 0xc2
+pub const KEY_F9  = 0xc3
+pub const KEY_F10 = 0xc4
+pub const KEY_F11 = 0xd7
+pub const KEY_F12 = 0xd8
+
+pub const KEY_BACKSPACE = 0x7f
+pub const KEY_PAUSE     = 0xff
+pub const KEY_EQUALS    = 0x3d
+pub const KEY_MINUS     = 0x2d
+
+pub const KEY_RSHIFT    = 0xb6
+pub const KEY_RCTRL     = 0x9d
+pub const KEY_RALT      = 0xb8
+pub const KEY_LALT      = 0xb8
+
+pub const KEY_CAPSLOCK  = 0xba
+pub const KEY_NUMLOCK   = 0xc5
+pub const KEY_SCRLCK    = 0xc6
+pub const KEY_PRTSCR    = 0xd9
+
+pub const KEY_HOME      = 0xc7
+pub const KEY_END       = 0xcf
+pub const KEY_PGUP      = 0xc9
+pub const KEY_PGDN      = 0xd1
+pub const KEY_INS       = 0xd2
+pub const KEY_DEL       = 0xd3
+
+pub const KEYP_0        = 0
+pub const KEYP_1        = 0xcf
+pub const KEYP_3        = 0xd1
+pub const KEYP_5        = 0xcc
+pub const KEYP_7        = 0xc7
+pub const KEYP_9        = 0xc9
+pub const KEYP_DIVIDE   = 47
+pub const KEYP_PLUS     = 43
+pub const KEYP_MINUS    = 45
+pub const KEYP_MULTIPLY = 42
+pub const KEYP_PERIOD   = 0
+pub const KEYP_EQUALS   = KEY_EQUALS
+pub const KEYP_ENTER    = KEY_ENTER

@@ -1,0 +1,16 @@
+gameskill default: 2
+gameepisode default: 1
+gamemap default: 1
+after InitNew episode: 2
+after InitNew map: 5
+after InitNew skill: 3
+gameaction: 2
+ticker cleared gameaction: 0
+after ExitLevel: 6
+after DoCompleted: 0
+vanilla version: 109
+0
+0
+playeringame[0]: 1
+playeringame[3]: 0
+done

@@ -1,0 +1,30 @@
+/// Sky rendering constants.
+///
+/// Ported from doomgeneric/r_sky.c. Nothing to do here but expose the
+/// three state globals plus the view-size-change callback; the actual
+/// sky texture mapping is done in r_plane (it flags columns whose
+/// ceiling is `skyflatnum` and re-uses the wall column blitter).
+
+use "doomdef.qd"
+use "tables.qd"
+use "r_data.qd"
+
+pub var skyflatnum:i64 = 0
+pub var skytexture:i64 = 0
+pub var skytexturemid:i64 = 0
+
+pub const SKYFLATNAME = "F_SKY1"
+
+/// Reset sky texture Y-offset. Called whenever the view size changes.
+pub fn R_InitSkyMap( -- ) {
+	100 FRACUNIT mul -> skytexturemid
+}
+
+/// Resolve the sky-flat marker index (F_SKY1) and the first episode's
+/// SKY1 texture once flats and textures are loaded. Called after
+/// R_InitData from d_main's startup path.
+pub fn R_ResolveSkyTextures( -- ) {
+	"F_SKY1" R_FlatNumForName -> skyflatnum
+	"SKY1" R_CheckTextureNumForName -> skytexture
+	skytexture 0 lt if { 0 -> skytexture }
+}

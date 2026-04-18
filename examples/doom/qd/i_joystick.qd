@@ -1,0 +1,11 @@
+/// Joystick input.
+///
+/// Ported from doomgeneric/i_joystick.c. Every function body is wrapped in
+/// `#ifdef ORIGCODE` upstream — the generic build links against no SDL
+/// joystick code, so all four exports are no-ops. We expose matching
+/// signatures so d_main / m_config can call them unchanged.
+
+pub fn I_InitJoystick( -- ) { }
+pub fn I_ShutdownJoystick( -- ) { }
+pub fn I_UpdateJoystick( -- ) { }
+pub fn I_BindJoystickVariables( -- ) { }

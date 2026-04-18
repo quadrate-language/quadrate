@@ -1,0 +1,12 @@
+ loaded level: 467 verts, 85 sectors, 475 lines, 648 sides, 236 nodes, 237 ssecs, 732 segs, 138 things
+ player start: (1056, 281474976707040)
+E1M1 numvertexes: 467
+E1M1 numsectors: 85
+E1M1 numnodes: 236
+vertex[0].x (fixed>>16): 1088
+vertex[0].y: 281474976706976
+sector[0].floorh: 0
+sector[0].ceilh: 72
+sector[0].light: 160
+root node children[0]: 128
+done

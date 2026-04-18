@@ -1,0 +1,14 @@
+/// Vestigial stubs.
+///
+/// Ported from doomgeneric/dummy.c — the C file contains empty-body
+/// stubs that let the original Doom code link against functions it no
+/// longer uses (DEH patches, extended music). We expose no-op versions
+/// with matching names so when a ported subsystem references them
+/// nothing snaps.
+
+pub fn DEH_Init( -- ) { }
+pub fn DEH_ReadLumps( -- ) { }
+pub fn DEH_String(s:str -- out:str) { s }
+pub fn DEH_snprintf(s:str -- ) { s drop }
+
+/// A no-op hash used to be here in the C dummy. Not needed.

@@ -1,0 +1,14 @@
+numlumps: 1264
+first 10 lumps:
+  [0] PLAYPAL  (10752 bytes)
+  [1] COLORMAP  (8704 bytes)
+  [2] ENDOOM  (4000 bytes)
+  [3] DEMO1  (20118 bytes)
+  [4] DEMO2  (15358 bytes)
+  [5] DEMO3  (8550 bytes)
+  [6] E1M1  (0 bytes)
+  [7] THINGS  (1380 bytes)
+  [8] LINEDEFS  (6650 bytes)
+  [9] SIDEDEFS  (19440 bytes)
+PLAYPAL index: 0
+PLAYPAL size:  10752

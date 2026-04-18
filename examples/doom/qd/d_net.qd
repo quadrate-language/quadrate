@@ -1,0 +1,30 @@
+/// Network initialisation — single-player stub.
+///
+/// Ported from doomgeneric/d_net.c. Upstream negotiates starting skill,
+/// deathmatch mode, and player slot assignment across net peers before
+/// the game loop begins. We bypass the entire netgame path: `netgame`
+/// stays 0 except when `-solo-net` is passed (which lets you replay
+/// single-player demos that were recorded as netgames).
+
+use mem
+use "m_argv.qd"
+use "d_loop.qd"
+
+pub var netgame:i64 = 0
+pub var autostart:i64 = 0
+pub var netcmds:ptr = 0
+
+/// Initialise netgame connection. Checks `-solo-net` to set netgame=1
+/// without actually reaching out to a server.
+pub fn D_ConnectNetGame( -- ) {
+	0 cast<ptr> D_InitNetGame -> nt
+	nt -> netgame
+	"-solo-net" M_ParmExists if { 1 -> netgame }
+}
+
+/// Resolve player numbers. In single-player all we do is register the
+/// loop callback table (we don't hold one yet; see d_loop.qd).
+pub fn D_CheckNetGame( -- ) {
+	netgame 1 eq if { 1 -> autostart }
+	0 cast<ptr> D_RegisterLoopCallbacks
+}

@@ -1,0 +1,5 @@
+NUMSFX=109
+NUMMUSIC=68
+sfx[0] name=none priority=0
+sfx[sfx_pistol]: pistol prio=64
+mus[mus_e1m1] e1m1

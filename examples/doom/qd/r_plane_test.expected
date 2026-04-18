@@ -1,0 +1,12 @@
+numvisplanes initial: 0
+after 1st find: 1
+after 2nd find: 2
+after repeat find: 2
+1
+sky count after 2 adds: 3
+p1 minx after check: 10
+p1 maxx after check: 20
+p1 minx widened: 5
+p1 maxx widened: 25
+planes after forced split: 4
+done

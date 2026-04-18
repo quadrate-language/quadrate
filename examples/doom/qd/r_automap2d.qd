@@ -1,0 +1,252 @@
+/// Minimal 2D overhead renderer.
+///
+/// Draws every loaded seg as a line between its two vertices, fit into
+/// the 320×200 framebuffer. This is the first visible output from real
+/// level geometry and stands in for the full 3D pipeline until
+/// r_segs.qd gets its projection body. Treat this as a development
+/// scaffold — once walls draw properly in 3D this module gets
+/// repurposed as am_map's overlay or deleted.
+
+use mem
+use "doomdef.qd"
+use "i_video.qd"
+use "p_setup.qd"
+use "tables.qd"
+
+var ra_minx:i64 = 0
+var ra_miny:i64 = 0
+var ra_maxx:i64 = 0
+var ra_maxy:i64 = 0
+var ra_inited:i64 = 0
+
+/// Scan vertexes once to find map bounds. Called lazily on first draw.
+fn find_bounds( -- ) {
+	ra_inited 1 eq if { return }
+	numvertexes 0 lte if { return }
+
+	vertexes 0 mem::get_i32 -> ra_minx
+	vertexes 4 mem::get_i32 -> ra_miny
+	ra_minx -> ra_maxx
+	ra_miny -> ra_maxy
+
+	1 -> i
+	loop {
+		i numvertexes gte if { break }
+		vertexes i VERTEX_SIZE mul mem::get_i32 -> x
+		vertexes i VERTEX_SIZE mul 4 add mem::get_i32 -> y
+		x ra_minx lt if { x -> ra_minx }
+		x ra_maxx gt if { x -> ra_maxx }
+		y ra_miny lt if { y -> ra_miny }
+		y ra_maxy gt if { y -> ra_maxy }
+		i 1 add -> i
+	}
+	1 -> ra_inited
+}
+
+/// Project a fixed-point map x coordinate to a screen column [0, SCREENWIDTH).
+fn map_x(x:i64 -- sx:i64) {
+	x ra_minx sub -> dx
+	ra_maxx ra_minx sub -> range
+	range 0 lte if { 0 return }
+	dx SCREENWIDTH 8 sub mul range div 4 add
+}
+
+fn map_y(y:i64 -- sy:i64) {
+	y ra_miny sub -> dy
+	ra_maxy ra_miny sub -> range
+	range 0 lte if { 0 return }
+	// Flip Y so map north is up on screen.
+	SCREENHEIGHT 8 sub 1 sub dy SCREENHEIGHT 8 sub mul range div sub 4 add
+}
+
+/// Bresenham line plot — 1-pixel-wide, colour `c`, in I_VideoBuffer.
+fn plot_pixel(x:i64 y:i64 c:i64 -- ) {
+	x 0 lt x SCREENWIDTH gte or if { return }
+	y 0 lt y SCREENHEIGHT gte or if { return }
+	c I_VideoBuffer y SCREENWIDTH mul x add mem::set_u8
+}
+
+fn abs_i(v:i64 -- a:i64) {
+	v 0 lt if { 0 v sub } else { v }
+}
+
+fn signof(v:i64 -- s:i64) {
+	v 0 gt if { 1 return }
+	v 0 lt if { 0 1 sub return }
+	0
+}
+
+fn draw_line(x0:i64 y0:i64 x1:i64 y1:i64 c:i64 -- ) {
+	x1 x0 sub abs_i -> dx
+	y1 y0 sub abs_i -> dy
+	x1 x0 sub signof -> sx
+	y1 y0 sub signof -> sy
+	dx dy sub -> err
+
+	// Safety cap: a Bresenham loop over pathological coords can run
+	// very long if a sign check is off. 2000 pixels >= worst diagonal
+	// across a 320x200 screen, with margin.
+	x0 -> x
+	y0 -> y
+	0 -> iter
+	loop {
+		iter 2000 gte if { break }
+		x y c plot_pixel
+		x x1 eq y y1 eq and if { break }
+		err 2 mul -> e2
+		0 dy sub -> neg_dy
+		e2 neg_dy gt if {
+			err dy sub -> err
+			x sx add -> x
+		}
+		e2 dx lt if {
+			err dx add -> err
+			y sy add -> y
+		}
+		iter 1 add -> iter
+	}
+}
+
+/// Draw every loaded seg as a line. Colour is palette index 7 (white-ish)
+/// for one-sided walls, 10 (light grey) for two-sided.
+/// Draw a 96×64 minimap in the top-right corner (x=222..318,
+/// y=2..66). Uses the same bounds-fit math as the full automap
+/// but projects into the smaller rect. Walls red (176, one-sided)
+/// or grey (96, two-sided); camera marker green (112).
+pub fn R_DrawMinimap(cam_x:i64 cam_y:i64 cam_angle:i64 -- ) {
+	find_bounds
+	numsegs 0 lte if { return }
+	ra_maxx ra_minx sub -> mw
+	ra_maxy ra_miny sub -> mh
+	mw 1 lt if { 1 -> mw }
+	mh 1 lt if { 1 -> mh }
+	// Opaque dark background behind the map for legibility.
+	2 -> by
+	loop {
+		by 66 gte if { break }
+		222 -> bx
+		loop {
+			bx 318 gte if { break }
+			0 I_VideoBuffer by SCREENWIDTH mul bx add mem::set_u8
+			bx 1 add -> bx
+		}
+		by 1 add -> by
+	}
+	0 -> i
+	loop {
+		i numsegs gte if { break }
+		segs i SEG_SIZE mul mem::ptr_add -> seg
+		seg SEG_OFF_V1 mem::get_i32 -> v1i
+		seg SEG_OFF_V2 mem::get_i32 -> v2i
+		v1i 0 gte v1i numvertexes lt and
+		v2i 0 gte v2i numvertexes lt and and if {
+			vertexes v1i VERTEX_SIZE mul mem::get_i32 -> v1x
+			vertexes v1i VERTEX_SIZE mul 4 add mem::get_i32 -> v1y
+			vertexes v2i VERTEX_SIZE mul mem::get_i32 -> v2x
+			vertexes v2i VERTEX_SIZE mul 4 add mem::get_i32 -> v2y
+			v1x ra_minx sub 94 mul mw div 223 add -> sx1
+			ra_maxy v1y sub 62 mul mh div 3 add -> sy1
+			v2x ra_minx sub 94 mul mw div 223 add -> sx2
+			ra_maxy v2y sub 62 mul mh div 3 add -> sy2
+			seg SEG_OFF_LINEDEF mem::get_i32 -> lnum
+			176 -> c
+			lnum 0 gte lnum numlines lt and if {
+				lines lnum LINE_SIZE mul LINE_OFF_BACKSECTOR add mem::get_i32 -> back
+				lines lnum LINE_SIZE mul LINE_OFF_SPECIAL add mem::get_i32 -> lspec
+				lspec 1 eq lspec 2 eq or lspec 31 eq or if {
+					231 -> c    // door linedef — bright yellow
+				} else {
+					back 0 lt if { 176 -> c } else { 96 -> c }
+				}
+			}
+			sx1 sy1 sx2 sy2 c draw_line
+		}
+		i 1 add -> i
+	}
+	// Things: dots for each alive/collectible/corpse. Draw BEFORE
+	// camera so the camera marker stays on top.
+	0 -> ti
+	loop {
+		ti numthings gte if { break }
+		things_data ti THING_SIZE mul THING_OFF_PICKED add mem::get_i32 -> picked
+		picked 1 neq if {
+			things_data ti THING_SIZE mul THING_OFF_TYPE add mem::get_i32 -> tt
+			things_data ti THING_SIZE mul THING_OFF_HEALTH add mem::get_i32 -> hp
+			things_data ti THING_SIZE mul THING_OFF_X add mem::get_i32 -> tthx
+			things_data ti THING_SIZE mul THING_OFF_Y add mem::get_i32 -> tthy
+			picked 2 eq if { 8 } else {
+				hp 0 gt tt 2035 neq and if { 176 } else {
+					tt thing_is_pickup if { 112 } else { 231 }
+				}
+			} -> tc
+			tthx ra_minx sub 94 mul mw div 223 add -> dx_
+			ra_maxy tthy sub 62 mul mh div 3 add -> dy_
+			dx_ 222 gte dx_ 318 lt and
+			dy_ 2 gte dy_ 66 lt and and if {
+				tc I_VideoBuffer dy_ SCREENWIDTH mul dx_ add mem::set_u8
+			}
+		}
+		ti 1 add -> ti
+	}
+	// Camera marker + direction arrow on top. Arrow points where
+	// the camera looks, 6 pixels long along the current angle.
+	cam_x ra_minx sub 94 mul mw div 223 add -> cx
+	ra_maxy cam_y sub 62 mul mh div 3 add -> cy
+	cx 2 sub cy cx 2 add cy 112 draw_line
+	cx cy 2 sub cx cy 2 add 112 draw_line
+	cam_angle ANGLETOFINESHIFT shr FINEMASK and -> fa
+	fa finecosine_at -> mc
+	fa finesine_at -> ms
+	cx mc 6 mul 65536 div add -> tip_x
+	cy ms 6 mul 65536 div sub -> tip_y
+	cx cy tip_x tip_y 231 draw_line
+}
+
+pub fn R_DrawAutomap2D( -- ) {
+	find_bounds
+	numsegs 0 lte if { return }
+
+	0 -> i
+	loop {
+		i numsegs gte if { break }
+		segs i SEG_SIZE mul mem::ptr_add -> seg
+		seg SEG_OFF_V1 mem::get_i32 -> v1i
+		seg SEG_OFF_V2 mem::get_i32 -> v2i
+
+		v1i 0 gte v1i numvertexes lt and
+		v2i 0 gte v2i numvertexes lt and and if {
+			vertexes v1i VERTEX_SIZE mul mem::get_i32 -> v1x
+			vertexes v1i VERTEX_SIZE mul 4 add mem::get_i32 -> v1y
+			vertexes v2i VERTEX_SIZE mul mem::get_i32 -> v2x
+			vertexes v2i VERTEX_SIZE mul 4 add mem::get_i32 -> v2y
+
+			v1x map_x -> sx1
+			v1y map_y -> sy1
+			v2x map_x -> sx2
+			v2y map_y -> sy2
+
+			// Pick colour by backsector presence (resolves one-sided
+			// vs two-sided): look up linedef + backsector.
+			seg SEG_OFF_LINEDEF mem::get_i32 -> lnum
+			176 -> c   // red-ish for unknown
+			lnum 0 gte lnum numlines lt and if {
+				lines lnum LINE_SIZE mul LINE_OFF_BACKSECTOR add mem::get_i32 -> back
+				back 0 lt if {
+					176 -> c       // one-sided (solid wall) — red
+				} else {
+					96 -> c        // two-sided (passable) — grey
+				}
+			}
+			sx1 sy1 sx2 sy2 c draw_line
+		}
+		i 1 add -> i
+	}
+
+	// Player marker: a 5-pixel green '+' at the player start.
+	player_start_found 1 eq if {
+		player_start_x map_x -> px
+		player_start_y map_y -> py
+		px 2 sub py px 2 add py 112 draw_line
+		px py 2 sub px py 2 add 112 draw_line
+	}
+}

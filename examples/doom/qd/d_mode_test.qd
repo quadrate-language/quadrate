@@ -1,0 +1,59 @@
+use "d_mode.qd"
+use "d_items.qd"
+use "d_event.qd"
+use "doomstat.qd"
+use "doomdef.qd"
+use mem
+
+fn main() {
+	// --- d_mode ---
+	"doom1/shareware/E1M1: " print
+	  MISSION_DOOM MODE_SHAREWARE 1 1 D_ValidEpisodeMap print nl   // 1
+	"doom1/shareware/E4M1: " print
+	  MISSION_DOOM MODE_SHAREWARE 4 1 D_ValidEpisodeMap print nl   // 0
+	"doom1/retail/E4M9: " print
+	  MISSION_DOOM MODE_RETAIL 4 9 D_ValidEpisodeMap print nl      // 1
+	"doom2/commercial/MAP32: " print
+	  MISSION_DOOM2 MODE_COMMERCIAL 1 32 D_ValidEpisodeMap print nl // 1
+	"episodes shareware: " print
+	  MISSION_DOOM MODE_SHAREWARE D_GetNumEpisodes print nl        // 1
+	"episodes retail: " print
+	  MISSION_DOOM MODE_RETAIL D_GetNumEpisodes print nl           // 4
+	"doom valid version 1.9: " print
+	  MISSION_DOOM VERSION_DOOM_1_9 D_ValidGameVersion print nl    // 1
+	"episodemap doom: " print MISSION_DOOM D_IsEpisodeMap print nl  // 1
+	"episodemap doom2: " print MISSION_DOOM2 D_IsEpisodeMap print nl // 0
+	"mission name doom: " print MISSION_DOOM D_GameMissionString print nl
+
+	// --- d_items ---
+	D_InitWeapons
+	"weapon[WP_PISTOL] ammo: " print
+	  weaponinfo WP_PISTOL WEAPON_SIZE mul WEAPON_OFF_AMMO add mem::get_i32 print nl  // AM_CLIP=0
+	"weapon[WP_PISTOL] upstate: " print
+	  weaponinfo WP_PISTOL WEAPON_SIZE mul WEAPON_OFF_UPSTATE add mem::get_i32 print nl // S_PISTOLUP=12
+	"weapon[WP_BFG] ammo: " print
+	  weaponinfo WP_BFG WEAPON_SIZE mul WEAPON_OFF_AMMO add mem::get_i32 print nl       // AM_CELL=2
+	"weapon[WP_CHAINSAW] ammo: " print
+	  weaponinfo WP_CHAINSAW WEAPON_SIZE mul WEAPON_OFF_AMMO add mem::get_i32 print nl  // AM_NOAMMO=5
+
+	// --- d_event ---
+	// Post two events, pop them back.
+	ev_keydown 65 0 0 0 D_MakeEvent -> e1
+	e1 D_PostEvent
+	e1 mem::free
+
+	ev_mouse 1 10 20 0 D_MakeEvent -> e2
+	e2 D_PostEvent
+	e2 mem::free
+
+	D_PopEvent -> p1
+	"pop[0] type: " print p1 EVENT_OFF_TYPE mem::get_i32 print nl   // ev_keydown=0
+	"pop[0] data1: " print p1 EVENT_OFF_DATA1 mem::get_i32 print nl // 65
+
+	D_PopEvent -> p2
+	"pop[1] type: " print p2 EVENT_OFF_TYPE mem::get_i32 print nl   // ev_mouse=2
+	"pop[1] data2: " print p2 EVENT_OFF_DATA2 mem::get_i32 print nl // 10
+
+	D_PopEvent -> p3
+	"pop[2] empty: " print p3 mem::is_null print nl                 // 1
+}

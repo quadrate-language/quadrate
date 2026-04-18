@@ -1,0 +1,92 @@
+/// UI-layer stubs: menu, HUD, status bar, automap, intermission, finale.
+///
+/// Ported from doomgeneric/{m_menu, hu_lib, hu_stuff, st_lib, st_stuff,
+/// am_map, wi_stuff, f_finale, f_wipe}.c — ~10,000 lines combined.
+/// Every module's public surface is exposed here as argument-accepting
+/// no-ops; real bodies unblock once the renderer composes actual wall
+/// pixels (tasks #37 / #40) and g_game feeds player state in.
+///
+/// Consolidating here rather than one-file-per-module because every
+/// individual stub is trivial and the relationships between them (M_
+/// calls into S_ via sound.qd, HU_ queues on D_PostEvent, AM_ owns
+/// the overlay drawing path) are not exercised until the bodies land.
+/// When a module's real port arrives, split it out and retire the
+/// matching block here.
+
+pub var automapactive:i64 = 0
+
+// ---- m_menu.c ----
+
+pub fn M_Init( -- ) { }
+pub fn M_Ticker( -- ) { }
+pub fn M_Drawer( -- ) { }
+pub fn M_Responder(ev:ptr -- consumed:i64) { ev drop 0 }
+pub fn M_StartControlPanel( -- ) { }
+pub fn M_ClearMenus( -- ) { }
+pub fn M_StartMessage(msg:str fn_id:i64 input:i64 -- ) {
+	msg drop fn_id drop input drop
+}
+pub fn M_StopMessage( -- ) { }
+pub fn M_WriteText(x:i64 y:i64 s:str -- out:i64) {
+	x drop y drop s drop 0
+}
+
+// ---- hu_lib + hu_stuff ----
+
+pub fn HU_Init( -- ) { }
+pub fn HU_Start( -- ) { }
+pub fn HU_Stop( -- ) { }
+pub fn HU_Drawer( -- ) { }
+pub fn HU_Erase( -- ) { }
+pub fn HU_Ticker( -- ) { }
+pub fn HU_Responder(ev:ptr -- consumed:i64) { ev drop 0 }
+pub fn HU_queueChatChar(c:i64 -- ) { c drop }
+
+// ---- st_lib + st_stuff ----
+
+pub fn ST_Init( -- ) { }
+pub fn ST_Start( -- ) { }
+pub fn ST_Stop( -- ) { }
+pub fn ST_Ticker( -- ) { }
+pub fn ST_Drawer(fullscreen:i64 refresh:i64 -- ) {
+	fullscreen drop refresh drop
+}
+pub fn ST_Responder(ev:ptr -- consumed:i64) { ev drop 0 }
+
+// ---- am_map.c ----
+
+pub fn AM_Start( -- ) { 1 -> automapactive }
+pub fn AM_Stop( -- ) { 0 -> automapactive }
+pub fn AM_Ticker( -- ) { }
+pub fn AM_Drawer( -- ) { }
+pub fn AM_Responder(ev:ptr -- consumed:i64) { ev drop 0 }
+pub fn AM_LevelInit( -- ) { }
+
+// ---- wi_stuff.c ----
+
+pub fn WI_Start(wbstartstruct:ptr -- ) { wbstartstruct drop }
+pub fn WI_Ticker( -- ) { }
+pub fn WI_Drawer( -- ) { }
+pub fn WI_End( -- ) { }
+pub fn WI_Responder(ev:ptr -- consumed:i64) { ev drop 0 }
+
+// ---- f_finale.c ----
+
+pub fn F_StartFinale( -- ) { }
+pub fn F_Ticker( -- ) { }
+pub fn F_Drawer( -- ) { }
+pub fn F_Responder(event:ptr -- consumed:i64) { event drop 0 }
+pub fn F_StartCast( -- ) { }
+
+// ---- f_wipe.c ----
+
+pub fn wipe_StartScreen(x:i64 y:i64 w:i64 h:i64 -- ok:i64) {
+	x drop y drop w drop h drop 0
+}
+pub fn wipe_EndScreen(x:i64 y:i64 w:i64 h:i64 -- ok:i64) {
+	x drop y drop w drop h drop 0
+}
+pub fn wipe_ScreenWipe(wipeno:i64 x:i64 y:i64 w:i64 h:i64 tics:i64 -- done:i64) {
+	wipeno drop x drop y drop w drop h drop tics drop
+	1
+}

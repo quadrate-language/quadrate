@@ -1,0 +1,19 @@
+use "r_segs.qd"
+use mem
+
+fn main() {
+	// Defaults.
+	"segtextured: " print segtextured print nl            // 0
+	"markfloor: " print markfloor print nl                // 0
+	"markceiling: " print markceiling print nl            // 0
+
+	1 -> segtextured
+	"segtextured after set: " print segtextured print nl  // 1
+
+	// Stubbed entries accept args and return cleanly.
+	0 cast<ptr> 10 20 R_RenderMaskedSegRange
+	R_RenderSegLoop
+	5 30 R_StoreWallRange
+
+	"done" print nl
+}

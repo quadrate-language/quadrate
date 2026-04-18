@@ -1,0 +1,713 @@
+/// Level loading — parse map lumps into runtime structures.
+///
+/// Ported from doomgeneric/p_setup.c. Walks the 10-lump map group
+/// (VERTEXES, SEGS, SSECTORS, SECTORS, NODES, THINGS, LINEDEFS,
+/// SIDEDEFS, BLOCKMAP, REJECT) and materialises each into a flat
+/// packed array + link-up pass.
+///
+/// First real-body pass: VERTEXES, SECTORS, NODES actually load. The
+/// other lumps stay as stubs until the mobj + line-clipping modules
+/// need their contents. Enough to prove the level-load pipeline works
+/// end-to-end and the BSP tree has real node data.
+///
+/// On-disk lump layouts (little-endian, packed):
+///   mapvertex_t : i16 x, i16 y                                  (4 bytes)
+///   mapsector_t : i16 floorh, i16 ceilh, name[8], name[8],
+///                 i16 light, i16 special, i16 tag             (26 bytes)
+///   mapnode_t   : i16 x, i16 y, i16 dx, i16 dy,
+///                 i16 bbox[2][4], i16 children[2]             (28 bytes)
+
+use mem
+use "doomdef.qd"
+use "tables.qd"
+use "w_wad.qd"
+use "r_data.qd"
+
+// ---- ML_* map-lump offsets (relative to map header) ----
+
+pub const ML_THINGS = 1
+pub const ML_LINEDEFS = 2
+pub const ML_SIDEDEFS = 3
+pub const ML_VERTEXES = 4
+pub const ML_SEGS = 5
+pub const ML_SSECTORS = 6
+pub const ML_NODES = 7
+pub const ML_SECTORS = 8
+pub const ML_REJECT = 9
+pub const ML_BLOCKMAP = 10
+
+// ---- Runtime struct strides ----
+
+pub const VERTEX_SIZE = 8
+pub const SECTOR_SIZE = 40
+pub const NODE_SIZE = 56
+
+pub const SECTOR_OFF_FLOORH = 0
+pub const SECTOR_OFF_CEILH = 4
+pub const SECTOR_OFF_FLOORPIC = 8
+pub const SECTOR_OFF_CEILPIC = 12
+pub const SECTOR_OFF_LIGHT = 16
+pub const SECTOR_OFF_SPECIAL = 20
+pub const SECTOR_OFF_TAG = 24
+
+pub const NODE_OFF_X = 0
+pub const NODE_OFF_Y = 4
+pub const NODE_OFF_DX = 8
+pub const NODE_OFF_DY = 12
+pub const NODE_OFF_BBOX = 16
+pub const NODE_OFF_CHILDREN = 48
+
+// ---- Per-level arrays ----
+
+pub var numvertexes:i64 = 0
+pub var vertexes:ptr = 0
+
+pub var numsegs:i64 = 0
+pub var segs:ptr = 0
+
+pub var numsectors:i64 = 0
+pub var sectors:ptr = 0
+
+pub var numsubsectors:i64 = 0
+pub var subsectors:ptr = 0
+
+pub var numnodes:i64 = 0
+pub var nodes:ptr = 0
+
+pub var numlines:i64 = 0
+pub var lines:ptr = 0
+
+pub var numsides:i64 = 0
+pub var sides:ptr = 0
+
+pub var blockmaplump:ptr = 0
+pub var blockmap:ptr = 0
+pub var bmapwidth:i64 = 0
+pub var bmapheight:i64 = 0
+pub var rejectmatrix:ptr = 0
+
+pub var deathmatchstarts:ptr = 0
+pub var deathmatch_p:i64 = 0
+pub var playerstarts:ptr = 0
+
+// ---- Lump loaders (real) ----
+
+pub fn P_LoadVertexes(lump:i64 -- ) {
+	lump W_LumpLength -> blen
+	blen 4 div -> numvertexes
+	numvertexes VERTEX_SIZE mul mem::alloc! -> vertexes
+
+	blen mem::alloc! -> data
+	lump data W_ReadLump
+	0 -> i
+	loop {
+		i numvertexes gte if { break }
+		data i 4 mul mem::get_i16 FRACBITS shl  vertexes i VERTEX_SIZE mul  mem::set_i32
+		data i 4 mul 2 add mem::get_i16 FRACBITS shl  vertexes i VERTEX_SIZE mul 4 add mem::set_i32
+		i 1 add -> i
+	}
+	data mem::free
+}
+
+fn sector_name_to_flat(src:ptr offset:i64 -- idx:i64) {
+	// Copy the raw 8-byte name into a fresh key buffer and look up
+	// directly — avoids the str roundtrip entirely since
+	// mem::to_string over a pointer-into-a-heap-buffer produced a
+	// spurious double-free in the larger module graph.
+	src offset mem::ptr_add -> np
+	8 mem::alloc! -> key
+	key 8 mem::zero
+	0 -> i
+	0 -> done
+	loop {
+		i 8 gte if { break }
+		done 0 eq if {
+			np i mem::get_u8 -> c
+			c 0 eq if {
+				1 -> done
+			} else {
+				c 97 gte c 122 lte and if { c 32 sub -> c }
+				c key i mem::set_u8
+			}
+		}
+		i 1 add -> i
+	}
+	key W_CheckNumForName -> lnum
+	key mem::free
+	lnum 0 lt if { 0 } else { lnum firstflat sub }
+}
+
+pub fn P_LoadSectors(lump:i64 -- ) {
+	lump W_LumpLength -> blen
+	blen 26 div -> numsectors
+	numsectors SECTOR_SIZE mul mem::alloc! -> sectors
+	sectors numsectors SECTOR_SIZE mul mem::zero
+
+	blen mem::alloc! -> data
+	lump data W_ReadLump
+
+	0 -> i
+	loop {
+		i numsectors gte if { break }
+		data i 26 mul mem::ptr_add -> rec
+		i SECTOR_SIZE mul -> sout
+
+		rec 0 mem::get_i16 FRACBITS shl sectors sout SECTOR_OFF_FLOORH   add mem::set_i32
+		rec 2 mem::get_i16 FRACBITS shl sectors sout SECTOR_OFF_CEILH    add mem::set_i32
+		rec 4 sector_name_to_flat       sectors sout SECTOR_OFF_FLOORPIC add mem::set_i32
+		rec 12 sector_name_to_flat      sectors sout SECTOR_OFF_CEILPIC  add mem::set_i32
+		rec 20 mem::get_i16             sectors sout SECTOR_OFF_LIGHT    add mem::set_i32
+		rec 22 mem::get_i16             sectors sout SECTOR_OFF_SPECIAL  add mem::set_i32
+		rec 24 mem::get_i16             sectors sout SECTOR_OFF_TAG      add mem::set_i32
+
+		i 1 add -> i
+	}
+	data mem::free
+}
+
+pub fn P_LoadNodes(lump:i64 -- ) {
+	lump W_LumpLength -> blen
+	blen 28 div -> numnodes
+	numnodes NODE_SIZE mul mem::alloc! -> nodes
+
+	blen mem::alloc! -> data
+	lump data W_ReadLump
+
+	0 -> i
+	loop {
+		i numnodes gte if { break }
+		data i 28 mul mem::ptr_add -> rec
+		i NODE_SIZE mul -> nout
+
+		rec 0 mem::get_i16 FRACBITS shl nodes nout NODE_OFF_X  add mem::set_i32
+		rec 2 mem::get_i16 FRACBITS shl nodes nout NODE_OFF_Y  add mem::set_i32
+		rec 4 mem::get_i16 FRACBITS shl nodes nout NODE_OFF_DX add mem::set_i32
+		rec 6 mem::get_i16 FRACBITS shl nodes nout NODE_OFF_DY add mem::set_i32
+
+		rec  8 mem::get_i16 FRACBITS shl nodes nout NODE_OFF_BBOX  0 add add mem::set_i32
+		rec 10 mem::get_i16 FRACBITS shl nodes nout NODE_OFF_BBOX  4 add add mem::set_i32
+		rec 12 mem::get_i16 FRACBITS shl nodes nout NODE_OFF_BBOX  8 add add mem::set_i32
+		rec 14 mem::get_i16 FRACBITS shl nodes nout NODE_OFF_BBOX 12 add add mem::set_i32
+		rec 16 mem::get_i16 FRACBITS shl nodes nout NODE_OFF_BBOX 16 add add mem::set_i32
+		rec 18 mem::get_i16 FRACBITS shl nodes nout NODE_OFF_BBOX 20 add add mem::set_i32
+		rec 20 mem::get_i16 FRACBITS shl nodes nout NODE_OFF_BBOX 24 add add mem::set_i32
+		rec 22 mem::get_i16 FRACBITS shl nodes nout NODE_OFF_BBOX 28 add add mem::set_i32
+
+		rec 24 mem::get_i16 nodes nout NODE_OFF_CHILDREN     add mem::set_i32
+		rec 26 mem::get_i16 nodes nout NODE_OFF_CHILDREN 4 add add mem::set_i32
+
+		i 1 add -> i
+	}
+	data mem::free
+}
+
+// ---- Subsectors (4 bytes: numsegs:i16, firstseg:i16) ----
+
+pub const SUBSECTOR_SIZE = 8
+pub const SUBSECTOR_OFF_NUMSEGS = 0
+pub const SUBSECTOR_OFF_FIRSTSEG = 4
+
+pub fn P_LoadSubsectors(lump:i64 -- ) {
+	lump W_LumpLength -> blen
+	blen 4 div -> numsubsectors
+	numsubsectors SUBSECTOR_SIZE mul mem::alloc! -> subsectors
+
+	blen mem::alloc! -> data
+	lump data W_ReadLump
+
+	0 -> i
+	loop {
+		i numsubsectors gte if { break }
+		data i 4 mul mem::ptr_add -> rec
+		i SUBSECTOR_SIZE mul -> sout
+		rec 0 mem::get_i16 subsectors sout SUBSECTOR_OFF_NUMSEGS  add mem::set_i32
+		rec 2 mem::get_i16 subsectors sout SUBSECTOR_OFF_FIRSTSEG add mem::set_i32
+		i 1 add -> i
+	}
+	data mem::free
+}
+
+// ---- Segs (12 bytes: v1 v2 angle linedef side offset, all i16) ----
+
+pub const SEG_SIZE = 24
+pub const SEG_OFF_V1 = 0        // i32 index into vertexes[]
+pub const SEG_OFF_V2 = 4
+pub const SEG_OFF_ANGLE = 8     // i32 BAM (16.16 in upper bits)
+pub const SEG_OFF_OFFSET = 12
+pub const SEG_OFF_LINEDEF = 16
+pub const SEG_OFF_SIDE = 20
+
+pub fn P_LoadSegs(lump:i64 -- ) {
+	lump W_LumpLength -> blen
+	blen 12 div -> numsegs
+	numsegs SEG_SIZE mul mem::alloc! -> segs
+
+	blen mem::alloc! -> data
+	lump data W_ReadLump
+
+	0 -> i
+	loop {
+		i numsegs gte if { break }
+		data i 12 mul mem::ptr_add -> rec
+		i SEG_SIZE mul -> sout
+		rec  0 mem::get_i16                segs sout SEG_OFF_V1      add mem::set_i32
+		rec  2 mem::get_i16                segs sout SEG_OFF_V2      add mem::set_i32
+		rec  4 mem::get_i16 16 shl          segs sout SEG_OFF_ANGLE   add mem::set_i32
+		rec  6 mem::get_i16                segs sout SEG_OFF_LINEDEF add mem::set_i32
+		rec  8 mem::get_i16                segs sout SEG_OFF_SIDE    add mem::set_i32
+		rec 10 mem::get_i16 FRACBITS shl    segs sout SEG_OFF_OFFSET  add mem::set_i32
+		i 1 add -> i
+	}
+	data mem::free
+}
+
+// ---- Sidedefs (30 bytes on disk; 24 bytes runtime) ----
+
+pub const SIDE_SIZE = 24
+pub const SIDE_OFF_TEXTUREOFFSET = 0   // fixed-point
+pub const SIDE_OFF_ROWOFFSET = 4
+pub const SIDE_OFF_TOPTEX = 8          // texture index
+pub const SIDE_OFF_BOTTOMTEX = 12
+pub const SIDE_OFF_MIDTEX = 16
+pub const SIDE_OFF_SECTOR = 20
+
+fn side_tex_to_idx(src:ptr offset:i64 -- idx:i64) {
+	// Wall textures start with '-' for "no texture" = index 0.
+	src offset mem::get_u8 45 eq if { 0 return }
+
+	// Uppercased 8-byte key lookup via R_CheckTextureNumForName. The
+	// str roundtrip goes through mem::to_string; we isolate it in a
+	// helper so the scratch buffer stays off the sector records.
+	src offset mem::ptr_add -> np
+	0 -> len
+	0 -> done
+	0 -> i
+	loop {
+		i 8 gte if { break }
+		done 0 eq if {
+			np i mem::get_u8 0 eq if { 1 -> done } else { len 1 add -> len }
+		}
+		i 1 add -> i
+	}
+	np len mem::to_string R_CheckTextureNumForName -> tn
+	tn 0 lt if { 0 } else { tn }
+}
+
+pub fn P_LoadSideDefs(lump:i64 -- ) {
+	lump W_LumpLength -> blen
+	blen 30 div -> numsides
+	numsides SIDE_SIZE mul mem::alloc! -> sides
+	sides numsides SIDE_SIZE mul mem::zero
+
+	blen mem::alloc! -> data
+	lump data W_ReadLump
+
+	0 -> i
+	loop {
+		i numsides gte if { break }
+		data i 30 mul mem::ptr_add -> rec
+		i SIDE_SIZE mul -> sout
+
+		rec 0 mem::get_i16 FRACBITS shl sides sout SIDE_OFF_TEXTUREOFFSET add mem::set_i32
+		rec 2 mem::get_i16 FRACBITS shl sides sout SIDE_OFF_ROWOFFSET     add mem::set_i32
+		rec  4 side_tex_to_idx          sides sout SIDE_OFF_TOPTEX        add mem::set_i32
+		rec 12 side_tex_to_idx          sides sout SIDE_OFF_BOTTOMTEX     add mem::set_i32
+		rec 20 side_tex_to_idx          sides sout SIDE_OFF_MIDTEX        add mem::set_i32
+		rec 28 mem::get_i16             sides sout SIDE_OFF_SECTOR        add mem::set_i32
+
+		i 1 add -> i
+	}
+	data mem::free
+}
+
+// ---- Linedefs (14 bytes on disk; 64 bytes runtime) ----
+
+pub const LINE_SIZE = 64
+pub const LINE_OFF_V1 = 0        // vertex indices
+pub const LINE_OFF_V2 = 4
+pub const LINE_OFF_FLAGS = 8
+pub const LINE_OFF_SPECIAL = 12
+pub const LINE_OFF_TAG = 16
+pub const LINE_OFF_SIDENUM_FRONT = 20
+pub const LINE_OFF_SIDENUM_BACK = 24
+pub const LINE_OFF_DX = 28
+pub const LINE_OFF_DY = 32
+pub const LINE_OFF_SLOPETYPE = 36
+pub const LINE_OFF_FRONTSECTOR = 40   // sector index
+pub const LINE_OFF_BACKSECTOR = 44
+
+pub fn P_LoadLineDefs(lump:i64 -- ) {
+	lump W_LumpLength -> blen
+	blen 14 div -> numlines
+	numlines LINE_SIZE mul mem::alloc! -> lines
+	lines numlines LINE_SIZE mul mem::zero
+
+	blen mem::alloc! -> data
+	lump data W_ReadLump
+
+	0 -> i
+	loop {
+		i numlines gte if { break }
+		data i 14 mul mem::ptr_add -> rec
+		i LINE_SIZE mul -> lout
+
+		rec  0 mem::get_i16 -> v1i
+		rec  2 mem::get_i16 -> v2i
+		v1i lines lout LINE_OFF_V1      add mem::set_i32
+		v2i lines lout LINE_OFF_V2      add mem::set_i32
+		rec  4 mem::get_i16 lines lout LINE_OFF_FLAGS          add mem::set_i32
+		rec  6 mem::get_i16 lines lout LINE_OFF_SPECIAL        add mem::set_i32
+		rec  8 mem::get_i16 lines lout LINE_OFF_TAG            add mem::set_i32
+		rec 10 mem::get_i16 -> front
+		rec 12 mem::get_i16 -> back
+		front lines lout LINE_OFF_SIDENUM_FRONT add mem::set_i32
+		back  lines lout LINE_OFF_SIDENUM_BACK  add mem::set_i32
+
+		// Precompute dx/dy and link front/back sectors via sidedef.
+		vertexes v2i VERTEX_SIZE mul mem::get_i32 -> v2x
+		vertexes v1i VERTEX_SIZE mul mem::get_i32 -> v1x
+		v2x v1x sub lines lout LINE_OFF_DX add mem::set_i32
+		vertexes v2i VERTEX_SIZE mul 4 add mem::get_i32 -> v2y
+		vertexes v1i VERTEX_SIZE mul 4 add mem::get_i32 -> v1y
+		v2y v1y sub lines lout LINE_OFF_DY add mem::set_i32
+
+		// Resolve sectors through sidedefs when the sides array is
+		// populated. Safe to call early — side_sector_of returns -1
+		// when front/back isn't a valid index.
+		front 0 gte front numsides lt and if {
+			sides front SIDE_SIZE mul SIDE_OFF_SECTOR add mem::get_i32
+			lines lout LINE_OFF_FRONTSECTOR add mem::set_i32
+		}
+		back 0 gte back numsides lt and if {
+			sides back SIDE_SIZE mul SIDE_OFF_SECTOR add mem::get_i32
+			lines lout LINE_OFF_BACKSECTOR add mem::set_i32
+		} else {
+			-1 lines lout LINE_OFF_BACKSECTOR add mem::set_i32
+		}
+
+		i 1 add -> i
+	}
+	data mem::free
+}
+
+// ---- Remaining loaders (stubs) ----
+
+// ---- Things (10 bytes on disk: x:i16, y:i16, angle:i16, type:i16, options:i16) ----
+//
+// First-pass loader: extracts the player 1 start (doomednum 1) into
+// module-level vars so the automap can render a player marker. Full
+// thing-to-mobj spawning waits for p_mobj (task #40).
+
+pub var player_start_x:i64 = 0
+pub var player_start_y:i64 = 0
+pub var player_start_angle:i64 = 0
+pub var player_start_found:i64 = 0
+
+pub var numthings:i64 = 0
+
+// Packed thing record: 112 bytes per thing.
+// [0..4) x:i32, [4..8) y:i32, [8..12) type:i32,
+// [12..16) angle:i32, [16..20) sprite_lump:i32 (-1 if none),
+// [20..24) floor_z:i32, [24..28) light:i32,
+// [28..32) picked_up:i32 (0 alive, 1 collected, 2 killed),
+// [32..64) rot_lumps_a[8], [64..96) rot_lumps_b[8],
+// [96..100) health:i32 (0 = dead),
+// [100..104) state_idx:i32 (index into info.qd's state table),
+// [104..108) state_tics_left:i32 (ticks until nextstate).
+pub const THING_SIZE = 112
+pub const THING_OFF_X = 0
+pub const THING_OFF_Y = 4
+pub const THING_OFF_TYPE = 8
+pub const THING_OFF_ANGLE = 12
+pub const THING_OFF_SPRITE_LUMP = 16
+pub const THING_OFF_FLOORZ = 20
+pub const THING_OFF_LIGHT = 24
+pub const THING_OFF_PICKED = 28
+pub const THING_OFF_ROT_LUMPS = 32
+pub const THING_OFF_ROT_LUMPS_B = 64
+pub const THING_OFF_HEALTH = 96
+pub const THING_OFF_STATE_IDX = 100
+pub const THING_OFF_STATE_TICS = 104
+pub var things_data:ptr = 0
+
+/// Starting hitpoints for a given doomednum. Zero means "no
+/// combat entity" — pickups and decorations aren't damageable.
+pub fn thing_starting_health(type:i64 -- hp:i64) {
+	type 3004 eq if { 20 return }   // zombie
+	type 9 eq if { 30 return }      // shotgun guy
+	type 3001 eq if { 60 return }   // imp
+	type 3002 eq if { 150 return }  // demon
+	type 58 eq if { 150 return }    // spectre
+	type 2035 eq if { 20 return }   // barrel
+	0
+}
+
+/// Is this doomednum a pickup that the player can collect by
+/// touching? Matches the shareware E1 pickup set (ammo, armor,
+/// health, powerups, keys).
+pub fn thing_is_pickup(type:i64 -- y:i64) {
+	type 2007 eq
+	type 2008 eq or
+	type 2010 eq or
+	type 2011 eq or
+	type 2012 eq or
+	type 2013 eq or
+	type 2014 eq or
+	type 2015 eq or
+	type 2018 eq or
+	type 2019 eq or
+	type 2023 eq or
+	type 2024 eq or
+	type 2025 eq or
+	type 2026 eq or
+	type 5 eq or
+	type 6 eq or
+	type 13 eq or
+	type 8 eq or
+	type 2001 eq or
+	type 2002 eq or
+	type 2005 eq or
+	type 2006 eq or
+}
+
+fn psetup_set_sprite_key(name:str key:ptr -- ) {
+	key 8 mem::zero
+	name mem::from_string -> slen -> sptr
+	slen 8 gt if { 8 -> slen }
+	0 -> k
+	loop {
+		k slen gte if { break }
+		sptr k mem::get_u8 key k mem::set_u8
+		k 1 add -> k
+	}
+	sptr mem::free
+}
+
+/// Map doomednum → sprite lump index (via W_CheckNumForName).
+/// Returns -1 if no mapping or lump missing from this WAD.
+/// Called once per thing at load time so the renderer can skip
+/// per-frame string lookups.
+pub fn thing_resolve_sprite_lump(type:i64 -- lump:i64) {
+	8 mem::alloc! -> key
+	1 -> have
+	type 2012 eq if { "MEDIA0" key psetup_set_sprite_key } else {
+	type 2011 eq if { "STIMA0" key psetup_set_sprite_key } else {
+	type 2014 eq if { "BON1A0" key psetup_set_sprite_key } else {
+	type 2015 eq if { "BON2A0" key psetup_set_sprite_key } else {
+	type 2018 eq if { "ARM1A0" key psetup_set_sprite_key } else {
+	type 2019 eq if { "ARM2A0" key psetup_set_sprite_key } else {
+	type 2007 eq if { "CLIPA0" key psetup_set_sprite_key } else {
+	type 2008 eq if { "SHELA0" key psetup_set_sprite_key } else {
+	type 2010 eq if { "ROCKA0" key psetup_set_sprite_key } else {
+	type 2001 eq if { "SHOTA0" key psetup_set_sprite_key } else {
+	type 2005 eq if { "CSAWA0" key psetup_set_sprite_key } else {
+	type 2035 eq if { "BAR1A0" key psetup_set_sprite_key } else {
+	type 2023 eq if { "PSTRA0" key psetup_set_sprite_key } else {
+	type 2024 eq if { "PINSA0" key psetup_set_sprite_key } else {
+	type 2025 eq if { "SUITA0" key psetup_set_sprite_key } else {
+	type 2026 eq if { "PMAPA0" key psetup_set_sprite_key } else {
+	type 2028 eq if { "COLUA0" key psetup_set_sprite_key } else {
+	type 3001 eq if { "TROOA1" key psetup_set_sprite_key } else {
+	type 3002 eq if { "SARGA1" key psetup_set_sprite_key } else {
+	type 3004 eq if { "POSSA1" key psetup_set_sprite_key } else {
+	type 9 eq if { "SPOSA1" key psetup_set_sprite_key } else {
+	type 58 eq if { "SARGA1" key psetup_set_sprite_key } else {
+	type 5 eq if { "BKEYA0" key psetup_set_sprite_key } else {
+	type 6 eq if { "YKEYA0" key psetup_set_sprite_key } else {
+	type 13 eq if { "RKEYA0" key psetup_set_sprite_key } else {
+	type 30 eq if { "COL1A0" key psetup_set_sprite_key } else {
+	type 31 eq if { "COL2A0" key psetup_set_sprite_key } else {
+	type 32 eq if { "COL3A0" key psetup_set_sprite_key } else {
+	type 33 eq if { "COL4A0" key psetup_set_sprite_key } else {
+	type 34 eq if { "CANDA0" key psetup_set_sprite_key } else {
+	type 35 eq if { "CBRAA0" key psetup_set_sprite_key } else {
+	type 41 eq if { "CEYEA0" key psetup_set_sprite_key } else {
+	type 43 eq if { "TRE1A0" key psetup_set_sprite_key } else {
+	type 44 eq if { "TBLUA0" key psetup_set_sprite_key } else {
+	type 45 eq if { "TGRNA0" key psetup_set_sprite_key } else {
+	type 46 eq if { "TREDA0" key psetup_set_sprite_key } else {
+	type 47 eq if { "SMITA0" key psetup_set_sprite_key } else {
+	type 48 eq if { "ELECA0" key psetup_set_sprite_key } else {
+	type 54 eq if { "TRE2A0" key psetup_set_sprite_key } else {
+	type 70 eq if { "FCANA0" key psetup_set_sprite_key } else {
+		0 -> have
+	}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}
+	have 0 eq if { key mem::free -1 return }
+	key W_CheckNumForName -> lnum
+	key mem::free
+	lnum
+}
+
+/// Scan sprite lumps (firstspritelump..lastspritelump) for names
+/// matching the 5-byte prefix+frame. Fill rotation slots 1..8 via
+/// the 6th byte; also handle merged-mirror names like "POSSA2A8"
+/// where the 7th byte repeats the frame letter and the 8th is
+/// another rotation digit — that same lump then fills BOTH
+/// rotation slots. Missing slots stay at their init value (-1).
+fn resolve_sprite_rotations(prefix_frame:ptr out_rots:ptr -- ) {
+	// Init 8 slots to -1 (i32). Each slot is 4 bytes.
+	0 -> k
+	loop {
+		k 8 gte if { break }
+		-1 out_rots k 4 mul mem::set_i32
+		k 1 add -> k
+	}
+	firstspritelump -> li
+	loop {
+		li lastspritelump gt if { break }
+		li 0 lt li numlumps gte or if { li 1 add -> li } else {
+		lumpinfo li LUMP_STRIDE mul mem::ptr_add -> lentry
+		1 -> match_ok
+		0 -> mk
+		loop {
+			mk 5 gte if { break }
+			lentry mk mem::get_u8 prefix_frame mk mem::get_u8 neq if {
+				0 -> match_ok
+				break
+			}
+			mk 1 add -> mk
+		}
+		match_ok 1 eq if {
+			lentry 5 mem::get_u8 -> d1
+			d1 49 gte d1 56 lte and if {
+				d1 49 sub -> r1
+				li out_rots r1 4 mul mem::set_i32
+				lentry 6 mem::get_u8 -> b6
+				lentry 7 mem::get_u8 -> b7
+				b6 prefix_frame 4 mem::get_u8 eq if {
+					b7 49 gte b7 56 lte and if {
+						b7 49 sub -> r2
+						li out_rots r2 4 mul mem::set_i32
+					}
+				}
+			}
+		}
+		li 1 add -> li
+		}
+	}
+}
+
+pub fn P_LoadThings(lump:i64 -- ) {
+	lump W_LumpLength -> blen
+	blen 10 div -> numthings
+
+	blen mem::alloc! -> data
+	lump data W_ReadLump
+
+	numthings THING_SIZE mul mem::alloc! -> things_data
+	things_data numthings THING_SIZE mul mem::zero
+
+	0 -> found
+	0 -> sp_lump
+	0 cast<ptr> -> base_entry
+	0 -> base_d
+	0 cast<ptr> -> alt_key
+	0 cast<ptr> -> rot_slot
+	0 cast<ptr> -> rot_slot_b
+	0 -> ak
+	0 -> i
+	loop {
+		i numthings gte if { break }
+		data i 10 mul mem::ptr_add -> rec
+		rec 0 mem::get_i16 FRACBITS shl -> tx
+		rec 2 mem::get_i16 FRACBITS shl -> ty
+		rec 4 mem::get_i16 -> a_deg
+		rec 6 mem::get_i16 -> type
+		a_deg 11930465 mul -> tang
+		tx   things_data i THING_SIZE mul THING_OFF_X add mem::set_i32
+		ty   things_data i THING_SIZE mul THING_OFF_Y add mem::set_i32
+		type things_data i THING_SIZE mul THING_OFF_TYPE add mem::set_i32
+		tang things_data i THING_SIZE mul THING_OFF_ANGLE add mem::set_i32
+		type thing_resolve_sprite_lump -> sp_lump
+		sp_lump things_data i THING_SIZE mul THING_OFF_SPRITE_LUMP add mem::set_i32
+		// floorz / light filled after BSP is available (d_main).
+		0 things_data i THING_SIZE mul THING_OFF_FLOORZ add mem::set_i32
+		160 things_data i THING_SIZE mul THING_OFF_LIGHT add mem::set_i32
+		type thing_starting_health things_data i THING_SIZE mul THING_OFF_HEALTH add mem::set_i32
+		// State machine: left at zero here; d_main initializes it
+		// after P_SetupLevel completes so info.qd can be imported
+		// safely without contaminating the p_setup unit tests.
+		0 things_data i THING_SIZE mul THING_OFF_STATE_IDX add mem::set_i32
+		0 things_data i THING_SIZE mul THING_OFF_STATE_TICS add mem::set_i32
+		// Rotation lumps: scan sprite range for matching prefix+frame.
+		// Only useful when the base lump is a rotatable monster (name
+		// ends in digit ≥ 1). Non-rotated pickups end in '0' and get
+		// all-(-1) slots.
+		sp_lump 0 gte if {
+			lumpinfo sp_lump LUMP_STRIDE mul mem::ptr_add -> base_entry
+			base_entry 5 mem::get_u8 -> base_d
+			base_d 49 gte base_d 56 lte and if {
+				things_data i THING_SIZE mul THING_OFF_ROT_LUMPS add mem::ptr_add -> rot_slot
+				base_entry rot_slot resolve_sprite_rotations
+				// Also resolve the NEXT frame letter (B for monsters
+				// idle-anim, C for torches, …) for A↔B animation.
+				8 mem::alloc! -> alt_key
+				alt_key 8 mem::zero
+				0 -> ak
+				loop {
+					ak 4 gte if { break }
+					base_entry ak mem::get_u8 alt_key ak mem::set_u8
+					ak 1 add -> ak
+				}
+				base_entry 4 mem::get_u8 1 add alt_key 4 mem::set_u8
+				things_data i THING_SIZE mul THING_OFF_ROT_LUMPS_B add mem::ptr_add -> rot_slot_b
+				alt_key rot_slot_b resolve_sprite_rotations
+				alt_key mem::free
+			}
+		}
+		found 0 eq type 1 eq and if {
+			tx -> player_start_x
+			ty -> player_start_y
+			tang -> player_start_angle
+			1 -> found
+			1 -> player_start_found
+		}
+		i 1 add -> i
+	}
+	data mem::free
+}
+
+pub fn P_LoadBlockMap(lump:i64 -- ) { lump drop }
+pub fn P_GroupLines( -- ) { }
+
+// ---- P_SetupLevel ----
+
+pub fn P_SetupLevel(episode:i64 map:i64 playermask:i64 skill:i64 -- ) {
+	playermask drop skill drop
+
+	8 mem::alloc! -> lname
+	lname 8 mem::zero
+	69 lname 0 mem::set_u8              // 'E' = 69
+	48 episode add lname 1 mem::set_u8  // '0' + episode
+	77 lname 2 mem::set_u8              // 'M' = 77
+	48 map add lname 3 mem::set_u8      // '0' + map
+
+	lname W_CheckNumForName -> lumpnum
+	lname mem::free
+	lumpnum 0 lt if {
+		"P_SetupLevel: map lump not found" print nl
+		return
+	}
+
+	lumpnum ML_VERTEXES  add P_LoadVertexes
+	lumpnum ML_SECTORS   add P_LoadSectors
+	lumpnum ML_SIDEDEFS  add P_LoadSideDefs
+	lumpnum ML_LINEDEFS  add P_LoadLineDefs
+	lumpnum ML_NODES     add P_LoadNodes
+	lumpnum ML_SSECTORS  add P_LoadSubsectors
+	lumpnum ML_SEGS      add P_LoadSegs
+	lumpnum ML_THINGS    add P_LoadThings
+
+	" loaded level: " print numvertexes print " verts, " print
+	numsectors print " sectors, " print numlines print " lines, " print
+	numsides print " sides, " print numnodes print " nodes, " print
+	numsubsectors print " ssecs, " print numsegs print " segs, " print
+	numthings print " things" print nl
+	player_start_found 1 eq if {
+		" player start: (" print
+		player_start_x FRACBITS shr print ", " print
+		player_start_y FRACBITS shr print ")" print nl
+	}
+}
+
+pub fn P_Init( -- ) { }

@@ -1,0 +1,82 @@
+use "v_video.qd"
+use mem
+
+fn main() {
+	V_Init
+
+	// Allocate a 320x200 framebuffer and clear to 0.
+	320 200 mul mem::alloc! -> fb
+	fb 320 200 mul mem::zero
+
+	// V_DrawFilledBox — 5x3 block of 0xFF at (10, 20).
+	10 20 5 3 255 fb 320 V_DrawFilledBox
+	"fb[20*320+10]: " print fb 20 320 mul 10 add mem::get_u8 print nl   // 255
+	"fb[20*320+14]: " print fb 20 320 mul 14 add mem::get_u8 print nl   // 255
+	"fb[20*320+15]: " print fb 20 320 mul 15 add mem::get_u8 print nl   // 0 (outside w)
+	"fb[22*320+10]: " print fb 22 320 mul 10 add mem::get_u8 print nl   // 255
+	"fb[23*320+10]: " print fb 23 320 mul 10 add mem::get_u8 print nl   // 0 (outside h)
+
+	// V_DrawHorizLine at (50, 40) length 10 colour 7.
+	50 40 10 7 fb 320 V_DrawHorizLine
+	"horiz[50]: " print fb 40 320 mul 50 add mem::get_u8 print nl        // 7
+	"horiz[59]: " print fb 40 320 mul 59 add mem::get_u8 print nl        // 7
+	"horiz[60]: " print fb 40 320 mul 60 add mem::get_u8 print nl        // 0
+
+	// V_DrawVertLine at (100, 40) height 5 colour 9.
+	100 40 5 9 fb 320 V_DrawVertLine
+	"vert[40]: " print fb 40 320 mul 100 add mem::get_u8 print nl        // 9
+	"vert[44]: " print fb 44 320 mul 100 add mem::get_u8 print nl        // 9
+	"vert[45]: " print fb 45 320 mul 100 add mem::get_u8 print nl        // 0
+
+	// V_DrawBox — 4x4 hollow rect at (200, 100) colour 5.
+	200 100 4 4 5 fb 320 V_DrawBox
+	"box top[0]: " print fb 100 320 mul 200 add mem::get_u8 print nl     // 5
+	"box top[1]: " print fb 100 320 mul 201 add mem::get_u8 print nl     // 5
+	"box interior[1,1]: " print fb 101 320 mul 201 add mem::get_u8 print nl // 0
+	"box bottom[0]: " print fb 103 320 mul 200 add mem::get_u8 print nl   // 5
+	"box right: " print fb 100 320 mul 203 add mem::get_u8 print nl       // 5
+
+	// V_DrawBlock — 2x2 gradient at (0, 0).
+	4 mem::alloc! -> block
+	1 block 0 mem::set_u8
+	2 block 1 mem::set_u8
+	3 block 2 mem::set_u8
+	4 block 3 mem::set_u8
+	0 0 2 2 block fb 320 V_DrawBlock
+	"block[0,0]: " print fb 0 mem::get_u8 print nl                        // 1
+	"block[0,1]: " print fb 1 mem::get_u8 print nl                        // 2
+	"block[1,0]: " print fb 320 mem::get_u8 print nl                      // 3
+	"block[1,1]: " print fb 321 mem::get_u8 print nl                      // 4
+	block mem::free
+
+	// V_CopyRect — copy the 4x4 box into a side buffer.
+	320 200 mul mem::alloc! -> fb2
+	fb2 320 200 mul mem::zero
+	200 100 fb 320 4 4 0 0 fb2 320 V_CopyRect
+	"copy[0,0]: " print fb2 0 mem::get_u8 print nl                        // 5 (top-left of box)
+
+	// V_MarkRect grows the dirty box.
+	5 5 10 10 V_MarkRect
+	"dirty x0: " print dirtybox 0 mem::get_i32 print nl                    // 0
+	"dirty y0: " print dirtybox 4 mem::get_i32 print nl                    // 0
+	"dirty x1: " print dirtybox 8 mem::get_i32 print nl                    // 15
+	"dirty y1: " print dirtybox 12 mem::get_i32 print nl                   // 15
+
+	// V_UseBuffer / V_RestoreBuffer round-trip: check non-null after use,
+	// null after restore (initial value was 0).
+	fb2 V_UseBuffer
+	"dest_screen non-null: " print dest_screen mem::is_null 0 eq print nl  // 1
+	V_RestoreBuffer
+	"dest_screen restored null: " print dest_screen mem::is_null print nl   // 1
+
+	// Screenshot + table loads are no-ops; just confirm they return.
+	"png" V_ScreenShot
+	V_LoadTintTable
+	V_LoadXlaTable
+	42 V_DrawMouseSpeedBox
+
+	fb2 mem::free
+	fb mem::free
+
+	"done" print nl
+}

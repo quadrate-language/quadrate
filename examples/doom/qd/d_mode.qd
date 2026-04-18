@@ -1,0 +1,136 @@
+/// Game mode / mission / version validation.
+///
+/// Ported from doomgeneric/d_mode.c. The C version ships two static
+/// tables (valid (mission × mode × episode × map) tuples, valid
+/// (mission × version) pairs) and five lookups over them. We inline
+/// each table walk with an if-ladder because the tables are tiny (13
+/// mode rows, 10 version rows) and the constants live in doomstat.qd.
+
+use "doomstat.qd"
+
+/// Is (mission, mode, episode, map) a valid combination?
+pub fn D_ValidEpisodeMap(mission:i64 mode:i64 episode:i64 map:i64 -- ok:i64) {
+	// Heretic retail: episode 6 exists with 3 maps (secret levels).
+	mission MISSION_HERETIC eq if {
+		mode MODE_RETAIL eq episode 6 eq and if {
+			map 1 gte map 3 lte and
+			return
+		}
+		mode MODE_REGISTERED eq episode 4 eq and if {
+			map 1 eq
+			return
+		}
+	}
+
+	// Standard table lookup.
+	mission MISSION_PACK_CHEX eq mode MODE_SHAREWARE eq and if {
+		episode 1 eq map 1 gte and map 5 lte and return
+	}
+	mission MISSION_DOOM eq if {
+		mode MODE_SHAREWARE eq if {
+			episode 1 eq map 1 gte and map 9 lte and return
+		}
+		mode MODE_REGISTERED eq if {
+			episode 1 gte episode 3 lte and map 1 gte and map 9 lte and return
+		}
+		mode MODE_RETAIL eq if {
+			episode 1 gte episode 4 lte and map 1 gte and map 9 lte and return
+		}
+	}
+	mission MISSION_DOOM2 eq
+	mission MISSION_PACK_TNT eq or
+	mission MISSION_PACK_PLUT eq or
+	mission MISSION_PACK_HACX eq or if {
+		mode MODE_COMMERCIAL eq if {
+			episode 1 eq map 1 gte and map 32 lte and return
+		}
+	}
+	mission MISSION_HERETIC eq if {
+		mode MODE_SHAREWARE eq if {
+			episode 1 eq map 1 gte and map 9 lte and return
+		}
+		mode MODE_REGISTERED eq if {
+			episode 1 gte episode 3 lte and map 1 gte and map 9 lte and return
+		}
+		mode MODE_RETAIL eq if {
+			episode 1 gte episode 5 lte and map 1 gte and map 9 lte and return
+		}
+	}
+	mission MISSION_HEXEN eq mode MODE_COMMERCIAL eq and if {
+		episode 1 eq map 1 gte and map 60 lte and return
+	}
+	mission MISSION_STRIFE eq mode MODE_COMMERCIAL eq and if {
+		episode 1 eq map 1 gte and map 34 lte and return
+	}
+
+	0
+}
+
+/// Is (mission, mode) valid?
+pub fn D_ValidGameMode(mission:i64 mode:i64 -- ok:i64) {
+	mission mode 1 1 D_ValidEpisodeMap
+}
+
+/// How many valid episodes for this (mission, mode)?
+pub fn D_GetNumEpisodes(mission:i64 mode:i64 -- n:i64) {
+	1 -> episode
+	loop {
+		mission mode episode 1 D_ValidEpisodeMap 0 eq if { break }
+		episode 1 add -> episode
+	}
+	episode 1 sub
+}
+
+/// Is (mission, version) valid? The Doom-variant missions all map to
+/// MISSION_DOOM for version checking.
+pub fn D_ValidGameVersion(mission:i64 version:i64 -- ok:i64) {
+	mission -> m
+	m MISSION_DOOM2 eq
+	m MISSION_PACK_PLUT eq or
+	m MISSION_PACK_TNT eq or
+	m MISSION_PACK_HACX eq or
+	m MISSION_PACK_CHEX eq or if {
+		MISSION_DOOM -> m
+	}
+
+	m MISSION_DOOM eq if {
+		version VERSION_DOOM_1_9 eq return
+		version VERSION_HACX eq return
+		version VERSION_ULTIMATE eq return
+		version VERSION_FINAL eq return
+		version VERSION_FINAL2 eq return
+		version VERSION_CHEX eq return
+	}
+	m MISSION_HERETIC eq if {
+		version VERSION_HERETIC_1_3 eq return
+	}
+	m MISSION_HEXEN eq if {
+		version VERSION_HEXEN_1_1 eq return
+	}
+	m MISSION_STRIFE eq if {
+		version VERSION_STRIFE_1_2 eq version VERSION_STRIFE_1_31 eq or return
+	}
+
+	0
+}
+
+/// Does this mission use the ExMy map naming (vs. MAPxy)?
+pub fn D_IsEpisodeMap(mission:i64 -- yes:i64) {
+	mission MISSION_DOOM eq
+	mission MISSION_HERETIC eq or
+	mission MISSION_PACK_CHEX eq or
+}
+
+/// Human-readable mission string.
+pub fn D_GameMissionString(mission:i64 -- s:str) {
+	mission MISSION_DOOM eq if { "doom" return }
+	mission MISSION_DOOM2 eq if { "doom2" return }
+	mission MISSION_PACK_TNT eq if { "tnt" return }
+	mission MISSION_PACK_PLUT eq if { "plutonia" return }
+	mission MISSION_PACK_HACX eq if { "hacx" return }
+	mission MISSION_PACK_CHEX eq if { "chex" return }
+	mission MISSION_HERETIC eq if { "heretic" return }
+	mission MISSION_HEXEN eq if { "hexen" return }
+	mission MISSION_STRIFE eq if { "strife" return }
+	"none"
+}

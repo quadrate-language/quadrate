@@ -1,0 +1,56 @@
+/// WAD file I/O.
+///
+/// Ported from doomgeneric/w_file.c + w_file_stdc.c. The C version uses a
+/// vtable (`wad_file_class_t`) so backends can be swapped at runtime; we
+/// only have one backend (the hosted `io::` stdlib), so the vtable is
+/// collapsed into direct calls.
+///
+/// The WAD handle is stored as a manually-allocated 16-byte buffer instead
+/// of a struct so its lifetime is explicit — a ref-counted Quadrate struct
+/// would be released as soon as the caller's local went out of scope, and
+/// we need the handle to outlive W_AddFile.
+///
+/// Layout of a WadFile buffer:
+///   offset 0..8   — io:: handle (ptr)
+///   offset 8..16  — file length (i64)
+
+use io
+use mem
+
+pub const WADFILE_OFF_HANDLE = 0
+pub const WADFILE_OFF_LENGTH = 8
+pub const WADFILE_SIZE = 16
+
+/// Open `path` for binary read. Returns a freshly-allocated 16-byte WAD
+/// handle buffer. The caller owns it and must free with W_CloseFile.
+pub fn W_OpenFile(path:str -- wf:ptr) {
+	path io::ReadBinary io::open! -> handle
+
+	// Stat the file length — seek to end, tell, rewind.
+	handle 0 2 io::seek! drop
+	handle io::tell! -> length
+	handle 0 0 io::seek! drop
+
+	WADFILE_SIZE mem::alloc! -> wf
+	handle wf WADFILE_OFF_HANDLE mem::set_ptr
+	length wf WADFILE_OFF_LENGTH mem::set_i64
+	wf
+}
+
+/// Close a WAD file opened by W_OpenFile. Frees the handle buffer too.
+pub fn W_CloseFile(wf:ptr -- ) {
+	wf WADFILE_OFF_HANDLE mem::get_ptr io::close
+	wf mem::free
+}
+
+/// Byte length of the opened WAD.
+pub fn W_Length(wf:ptr -- n:i64) {
+	wf WADFILE_OFF_LENGTH mem::get_i64
+}
+
+/// Read `count` bytes at `offset` into `buffer`. Returns bytes actually read.
+pub fn W_Read(wf:ptr offset:i64 buffer:ptr count:i64 -- got:i64) {
+	wf WADFILE_OFF_HANDLE mem::get_ptr -> handle
+	handle offset 0 io::seek! drop
+	handle buffer count io::read!
+}

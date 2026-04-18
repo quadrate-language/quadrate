@@ -1,0 +1,23 @@
+use "sounds.qd"
+use mem
+
+fn print_name(p:ptr n:i64 -- ) {
+	p n mem::to_string print
+}
+
+fn main() {
+	ensure_sounds
+
+	"NUMSFX="   print NUMSFX print nl
+	"NUMMUSIC=" print NUMMUSIC print nl
+
+	// First entry is "none" dummy; second is pistol, priority 64.
+	"sfx[0] name=" print 0 sfx_name print_name
+	" priority=" print 0 sfx_priority print nl
+
+	"sfx[sfx_pistol]: " print sfx_pistol sfx_name print_name
+	" prio=" print sfx_pistol sfx_priority print nl
+
+	// Music e1m1 — doom episode 1 map 1 theme.
+	"mus[mus_e1m1] " print mus_e1m1 music_name print_name nl
+}

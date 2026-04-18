@@ -1,0 +1,53 @@
+use "r_plane.qd"
+use "r_sky.qd"
+use mem
+
+fn main() {
+	R_InitPlanes
+	R_ClearPlanes
+
+	"numvisplanes initial: " print numvisplanes print nl    // 0
+
+	// Allocate three distinct planes.
+	65536 3 1 R_FindPlane -> p1       // height=1.0, pic=3, lit=1
+	"after 1st find: " print numvisplanes print nl          // 1
+	131072 3 1 R_FindPlane -> p2      // same pic/lit, different height
+	"after 2nd find: " print numvisplanes print nl          // 2
+
+	// Re-request the first — should hit the cache, no new plane.
+	65536 3 1 R_FindPlane -> p3
+	"after repeat find: " print numvisplanes print nl       // 2
+
+	"p1 == p3 height match: "
+	  p1 VP_OFF_HEIGHT mem::get_i32
+	  p3 VP_OFF_HEIGHT mem::get_i32 eq print nl             // 1
+
+	// Sky pic collapses to one plane regardless of height/light.
+	0 -> skyflatnum   // ensure skyflatnum = 0 for this test
+	200 0 7 R_FindPlane -> sky1
+	400 0 9 R_FindPlane -> sky2
+	"sky count after 2 adds: " print numvisplanes print nl  // 3 (one shared sky)
+
+	// R_CheckPlane on p1: request range [10..20].
+	p1 10 20 R_CheckPlane -> q
+	"p1 minx after check: " print p1 VP_OFF_MINX mem::get_i32 print nl   // 10
+	"p1 maxx after check: " print p1 VP_OFF_MAXX mem::get_i32 print nl   // 20
+
+	// Extending to [5..25] should widen, not split.
+	q 5 25 R_CheckPlane -> q2
+	"p1 minx widened: " print p1 VP_OFF_MINX mem::get_i32 print nl       // 5
+	"p1 maxx widened: " print p1 VP_OFF_MAXX mem::get_i32 print nl       // 25
+
+	// Mark column 12 as "covered" (top[12] != 0xff) to force a split on
+	// the next overlapping request.
+	0 p1 VP_OFF_TOP 12 add mem::set_u8
+	q2 10 15 R_CheckPlane -> q3
+	"planes after forced split: " print numvisplanes print nl            // 4
+
+	// Stubs must accept their args without crashing.
+	50 0 10 R_MapPlane
+	30 0 10 20 30 R_MakeSpans
+	R_DrawPlanes
+
+	"done" print nl
+}

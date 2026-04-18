@@ -1,0 +1,32 @@
+use "m_config.qd"
+
+fn main() {
+	// Defaults ship as-is.
+	"cfg dir: " print config_dir print nl                 // .
+	"main: " print main_config_file print nl              // default.cfg
+
+	// Mutate via API.
+	"game.cfg" "extra.cfg" M_SetConfigFilenames
+	"main after: " print main_config_file print nl        // game.cfg
+	"extra after: " print extra_config_file print nl      // extra.cfg
+
+	"/home/user/.config/doom" M_SetConfigDir
+	"cfg dir after: " print config_dir print nl           // /home/user/.config/doom
+
+	"" M_SetConfigDir
+	"cfg dir empty: " print config_dir print nl           // .
+
+	// Bind/save/load are no-ops but must accept calls.
+	"mouse_sensitivity" 0 cast<ptr> M_BindVariable
+	M_SaveDefaults
+	"a.cfg" "b.cfg" M_SaveDefaultsAlternate
+	M_LoadDefaults
+
+	// Query stubs.
+	"sfxVolume" M_GetIntVariable print nl                 // 0
+	"chatmacro0" M_GetStrVariable print nl                // (empty)
+	"sfxVolume" "11" M_SetVariable print nl               // 0 (not set)
+
+	// Per-IWAD save dir.
+	"doom1.wad" M_GetSaveGameDir print nl                 // ./savegames/doom1.wad
+}

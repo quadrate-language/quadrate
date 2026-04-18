@@ -1,0 +1,38 @@
+use "d_iwad.qd"
+use "m_argv.qd"
+use "doomstat.qd"
+use mem
+
+fn main() {
+	read -> argc
+	argc M_SetArgs
+
+	// D_TryFindWADByName returns input verbatim when nothing exists.
+	"nonexistent.wad" D_TryFindWADByName print nl
+
+	// Resolve doom1.wad — the test harness runs from examples/doom so
+	// wads/doom1.wad resolves relative.
+	"wads/doom1.wad" D_FindWADByName print nl
+
+	// Should also hit via the wads/ scan (name without dir).
+	"doom1.wad" D_FindWADByName print nl
+
+	// Savegame name mirrors mission.
+	"save doom: " print MISSION_DOOM D_SaveGameIWADName print nl       // doom.wad
+	"save doom2: " print MISSION_DOOM2 D_SaveGameIWADName print nl     // doom2.wad
+	"save unknown: " print 99 D_SaveGameIWADName print nl              // unknown.wad
+
+	// Suggestions table lookup.
+	"suggest doom/shareware: " print
+	  MISSION_DOOM MODE_SHAREWARE D_SuggestIWADName print nl
+	"suggest doom2/commercial: " print
+	  MISSION_DOOM2 MODE_COMMERCIAL D_SuggestGameName print nl
+
+	// D_FindIWAD with no -iwad arg scans through known names and finds
+	// doom1.wad in wads/.
+	8 mem::alloc! -> missbuf
+	0 missbuf 0 mem::set_i32
+	0 missbuf D_FindIWAD print nl
+	"detected mission: " print missbuf 0 mem::get_i32 print nl        // MISSION_DOOM=0
+	missbuf mem::free
+}

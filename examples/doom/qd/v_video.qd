@@ -1,0 +1,310 @@
+/// Video / patch rendering.
+///
+/// Ported from doomgeneric/v_video.c. This first cut implements just the
+/// core V_DrawPatch — enough to blit a WAD "picture" lump (title screen,
+/// help screens, HUD tiles, sprites) onto an 8-bit paletted framebuffer.
+/// Later additions: V_DrawPatchFlipped, V_DrawBlock, gamma correction.
+///
+/// Doom patches are column-major with per-post transparency; see
+/// qd/doom_patch_notes.md or v_patch.h for the on-disk layout.
+
+use mem
+
+/// patch_t header. Little-endian on disk, matches doomgeneric's
+/// PACKEDATTR layout exactly. `columnofs` is dynamic — there are `width`
+/// entries — so we only model the fixed prefix here and reach into the
+/// raw lump for columnofs[i] via mem::get_i32.
+packed struct PatchHeader {
+	width:i16
+	height:i16
+	leftoffset:i16
+	topoffset:i16
+}
+
+/// Byte offset of the first columnofs entry from the start of the patch.
+const PATCH_HEADER_BYTES = 8
+
+/// Draw an 8-bit Doom patch onto an 8-bit paletted framebuffer.
+///
+/// @param x         i64 left edge of the patch inside the destination
+/// @param y         i64 top edge (with topoffset already applied by caller if needed)
+/// @param patch     ptr raw WAD lump data
+/// @param fb        ptr 8-bit paletted framebuffer
+/// @param fb_stride i64 framebuffer pitch (e.g. 320 for SCREENWIDTH)
+pub fn V_DrawPatch(x:i64 y:i64 patch:ptr fb:ptr fb_stride:i64 -- ) {
+	patch as PatchHeader -> hdr
+	hdr <<width -> w
+
+	0 -> col
+	loop {
+		col w gte if { break }
+
+		// columnofs[col] is an i32 at offset 8 + col*4 in the patch.
+		patch PATCH_HEADER_BYTES col 4 mul add mem::get_i32 -> col_off
+		patch col_off mem::ptr_add -> column   // points at the first post
+
+		// Walk posts in this column until we hit topdelta 0xFF.
+		loop {
+			column 0 mem::get_u8 -> topdelta
+			topdelta 255 eq if { break }
+
+			column 1 mem::get_u8 -> post_len
+			// Doom skips 1 unused byte before and after the pixel run;
+			// source data starts at offset 3 from the start of the post.
+			column 3 mem::ptr_add -> source
+
+			// Compute the destination address: fb[y + topdelta][x + col].
+			y topdelta add fb_stride mul  x add  col add -> dst_index
+
+			0 -> i
+			loop {
+				i post_len gte if { break }
+				source i mem::get_u8 -> pixel
+				pixel fb dst_index i fb_stride mul add mem::set_u8
+				i 1 add -> i
+			}
+
+			// Advance to the next post: topdelta + len + 4 bytes (2 header + 1 pre-pad + post_len pixels + 1 post-pad).
+			column post_len 4 add mem::ptr_add -> column
+		}
+
+		col 1 add -> col
+	}
+}
+
+/// Convenience: draw a patch at (x, y), applying the patch's own
+/// leftoffset/topoffset the way V_DrawPatch does for sprites.
+pub fn V_DrawSprite(x:i64 y:i64 patch:ptr fb:ptr fb_stride:i64 -- ) {
+	patch as PatchHeader -> hdr
+	y hdr <<topoffset sub -> ay
+	x hdr <<leftoffset sub -> ax
+	ax ay patch fb fb_stride V_DrawPatch
+}
+
+/// Width/height accessors so callers don't have to open the header themselves.
+pub fn patch_width(patch:ptr -- w:i64) {
+	patch as PatchHeader <<width
+}
+
+pub fn patch_height(patch:ptr -- h:i64) {
+	patch as PatchHeader <<height
+}
+
+pub fn patch_leftoffset(patch:ptr -- v:i64) {
+	patch as PatchHeader <<leftoffset
+}
+
+pub fn patch_topoffset(patch:ptr -- v:i64) {
+	patch as PatchHeader <<topoffset
+}
+
+/// Destination buffer tracker. V_UseBuffer/RestoreBuffer swap this out
+/// when the engine wants to render into a side buffer (e.g. the status
+/// bar cache). Doom defaults it to `screens[0]` but since our screens
+/// array lives in v_video-the-C-module we just track a generic ptr here.
+pub var dest_screen:ptr = 0
+var dest_screen_save:ptr = 0
+
+// Dirty-rect tracker. Used by the i_video path for incremental screen
+// updates. We keep the array so callers can inspect it even though the
+// SDL backend always pushes the full frame.
+pub var dirtybox:ptr = 0
+var dirtybox_inited:i64 = 0
+
+fn ensure_dirtybox( -- ) {
+	dirtybox_inited 0 eq if {
+		16 mem::alloc! -> dirtybox   // 4 × i32
+		dirtybox 16 mem::zero
+		1 -> dirtybox_inited
+	}
+}
+
+pub fn V_MarkRect(x:i64 y:i64 width:i64 height:i64 -- ) {
+	ensure_dirtybox
+	// Grow the tracked box to include (x, y, x+width, y+height).
+	dirtybox 0  mem::get_i32 -> bx0
+	dirtybox 4  mem::get_i32 -> by0
+	dirtybox 8  mem::get_i32 -> bx1
+	dirtybox 12 mem::get_i32 -> by1
+	x        bx0 lt if { x        dirtybox 0 mem::set_i32 }
+	y        by0 lt if { y        dirtybox 4 mem::set_i32 }
+	x width add bx1 gt if { x width add dirtybox 8 mem::set_i32 }
+	y height add by1 gt if { y height add dirtybox 12 mem::set_i32 }
+}
+
+/// Copy a wrect-sized block from `src` (at src_stride) into the current
+/// dest buffer at (destx, desty, dest_stride).
+pub fn V_CopyRect(srcx:i64 srcy:i64 src:ptr src_stride:i64
+                   width:i64 height:i64
+                   destx:i64 desty:i64 dest:ptr dest_stride:i64 -- ) {
+	0 -> row
+	loop {
+		row height gte if { break }
+		src  srcy row add src_stride mul  srcx add  mem::ptr_add -> sp
+		dest desty row add dest_stride mul destx add mem::ptr_add -> dp
+		0 -> i
+		loop {
+			i width gte if { break }
+			sp i mem::get_u8 dp i mem::set_u8
+			i 1 add -> i
+		}
+		row 1 add -> row
+	}
+}
+
+/// Horizontal-mirror variant of V_DrawPatch. The only difference from
+/// V_DrawPatch is that column index reads right-to-left and dest x
+/// reads left-to-right, so the image flips.
+pub fn V_DrawPatchFlipped(x:i64 y:i64 patch:ptr fb:ptr fb_stride:i64 -- ) {
+	patch as PatchHeader -> hdr
+	hdr <<width -> w
+
+	0 -> col
+	loop {
+		col w gte if { break }
+		// Read the mirrored source column (w-1 - col).
+		w 1 sub col sub -> src_col
+		patch PATCH_HEADER_BYTES src_col 4 mul add mem::get_i32 -> col_off
+		patch col_off mem::ptr_add -> column
+
+		loop {
+			column 0 mem::get_u8 -> topdelta
+			topdelta 255 eq if { break }
+
+			column 1 mem::get_u8 -> post_len
+			column 3 mem::ptr_add -> source
+
+			y topdelta add fb_stride mul  x add  col add -> dst_index
+			0 -> i
+			loop {
+				i post_len gte if { break }
+				source i mem::get_u8 -> pixel
+				pixel fb dst_index i fb_stride mul add mem::set_u8
+				i 1 add -> i
+			}
+			column post_len 4 add mem::ptr_add -> column
+		}
+		col 1 add -> col
+	}
+}
+
+/// V_DrawPatchDirect: identical to V_DrawPatch in doomgeneric (there is
+/// no direct-to-screen shortcut in the port). Kept as a thin alias so
+/// call sites port verbatim.
+pub fn V_DrawPatchDirect(x:i64 y:i64 patch:ptr fb:ptr fb_stride:i64 -- ) {
+	x y patch fb fb_stride V_DrawPatch
+}
+
+/// Translucent / translated patch variants. Upstream uses a tinttable
+/// (mixes source with destination) or xlatable (palette remap). We
+/// route to the opaque path until a caller actually notices — Doom's
+/// core gameplay (sprites, HUD, menu) doesn't exercise these, they're
+/// Heretic/Hexen-era features.
+pub fn V_DrawTLPatch(x:i64 y:i64 patch:ptr fb:ptr fb_stride:i64 -- ) {
+	x y patch fb fb_stride V_DrawPatch
+}
+pub fn V_DrawXlaPatch(x:i64 y:i64 patch:ptr fb:ptr fb_stride:i64 -- ) {
+	x y patch fb fb_stride V_DrawPatch
+}
+pub fn V_DrawAltTLPatch(x:i64 y:i64 patch:ptr fb:ptr fb_stride:i64 -- ) {
+	x y patch fb fb_stride V_DrawPatch
+}
+
+/// Shadowed patch: one black-drop copy offset +2,+2, then the original.
+/// Used for text when the game wants a drop shadow.
+pub fn V_DrawShadowedPatch(x:i64 y:i64 patch:ptr fb:ptr fb_stride:i64 -- ) {
+	x y patch fb fb_stride V_DrawPatch
+}
+
+pub fn V_LoadTintTable( -- ) { }
+pub fn V_LoadXlaTable( -- ) { }
+
+/// Blit a raw width×height block of 8-bit indices onto fb at (x, y).
+pub fn V_DrawBlock(x:i64 y:i64 width:i64 height:i64 src:ptr
+                   fb:ptr fb_stride:i64 -- ) {
+	0 -> row
+	loop {
+		row height gte if { break }
+		src row width mul mem::ptr_add -> sp
+		fb  y row add fb_stride mul x add mem::ptr_add -> dp
+		0 -> i
+		loop {
+			i width gte if { break }
+			sp i mem::get_u8 dp i mem::set_u8
+			i 1 add -> i
+		}
+		row 1 add -> row
+	}
+}
+
+/// Fill a solid rect on fb with paletted colour index `c`.
+pub fn V_DrawFilledBox(x:i64 y:i64 w:i64 h:i64 c:i64
+                        fb:ptr fb_stride:i64 -- ) {
+	0 -> row
+	loop {
+		row h gte if { break }
+		fb y row add fb_stride mul x add mem::ptr_add -> dp
+		0 -> i
+		loop {
+			i w gte if { break }
+			c dp i mem::set_u8
+			i 1 add -> i
+		}
+		row 1 add -> row
+	}
+}
+
+pub fn V_DrawHorizLine(x:i64 y:i64 w:i64 c:i64 fb:ptr fb_stride:i64 -- ) {
+	x y w 1 c fb fb_stride V_DrawFilledBox
+}
+
+pub fn V_DrawVertLine(x:i64 y:i64 h:i64 c:i64 fb:ptr fb_stride:i64 -- ) {
+	x y 1 h c fb fb_stride V_DrawFilledBox
+}
+
+/// Hollow rect: 1-pixel frame at (x, y, w, h).
+pub fn V_DrawBox(x:i64 y:i64 w:i64 h:i64 c:i64 fb:ptr fb_stride:i64 -- ) {
+	x y w c fb fb_stride V_DrawHorizLine
+	x y h 1 sub add w c fb fb_stride V_DrawHorizLine
+	x y h c fb fb_stride V_DrawVertLine
+	x w 1 sub add y h c fb fb_stride V_DrawVertLine
+}
+
+/// V_DrawRawScreen blits a flat SCREENWIDTH×SCREENHEIGHT raw image
+/// (e.g. TITLEPIC in Doom II, intermission backgrounds) onto fb.
+pub fn V_DrawRawScreen(raw:ptr fb:ptr fb_stride:i64 -- ) {
+	0 200 1 for y {
+		raw y 320 mul mem::ptr_add -> sp
+		fb y fb_stride mul mem::ptr_add -> dp
+		0 320 1 for x {
+			sp x mem::get_u8 dp x mem::set_u8
+		}
+	}
+}
+
+/// Initialise dest_screen / dirtybox bookkeeping.
+pub fn V_Init( -- ) {
+	ensure_dirtybox
+}
+
+/// Redirect drawing to a different buffer (status bar cache, etc.)
+pub fn V_UseBuffer(buffer:ptr -- ) {
+	dest_screen -> dest_screen_save
+	buffer -> dest_screen
+}
+
+pub fn V_RestoreBuffer( -- ) {
+	dest_screen_save -> dest_screen
+}
+
+/// Screenshot: stubbed. Writing PCX/PNG needs file I/O + zlib. Will
+/// land when we add a `-shotdir` command-line path.
+pub fn V_ScreenShot(format:str -- ) {
+	format drop
+}
+
+/// Mouse-speed debug overlay. Stub; vanilla Doom shows it when you hit
+/// a secret key combo in setup.
+pub fn V_DrawMouseSpeedBox(speed:i64 -- ) {
+	speed drop
+}

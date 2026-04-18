@@ -1,0 +1,25 @@
+/// Save-game serialisation.
+///
+/// Ported from doomgeneric/p_saveg.c. The upstream file is ~900 lines
+/// that walk every live mobj + player + sector-animation + thinker and
+/// write them through memio.qd's FILE*-like interface. Stubs until
+/// mobj + player layouts are up — P_ReadSaveGameEOF must return 1 so
+/// callers recognise "no data" as a clean early-end rather than a
+/// corrupted stream.
+
+pub var save_p:ptr = 0           // current write/read cursor
+pub var savebuffer:ptr = 0
+
+pub fn P_WriteSaveGameHeader(description:str -- ) { description drop }
+pub fn P_ReadSaveGameHeader( -- ok:i64) { 0 }
+pub fn P_ReadSaveGameEOF( -- eof:i64) { 1 }
+pub fn P_WriteSaveGameEOF( -- ) { }
+
+pub fn P_ArchivePlayers( -- ) { }
+pub fn P_UnArchivePlayers( -- ) { }
+pub fn P_ArchiveWorld( -- ) { }
+pub fn P_UnArchiveWorld( -- ) { }
+pub fn P_ArchiveThinkers( -- ) { }
+pub fn P_UnArchiveThinkers( -- ) { }
+pub fn P_ArchiveSpecials( -- ) { }
+pub fn P_UnArchiveSpecials( -- ) { }

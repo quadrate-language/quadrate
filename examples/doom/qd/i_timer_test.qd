@@ -1,0 +1,27 @@
+use "i_timer.qd"
+use "../ffi/sdl.qd"
+
+fn main() {
+	sdl::INIT_TIMER sdl::Init -> rc
+	rc drop
+
+	// First call seeds basetime — ms since first call should be small.
+	I_GetTimeMS -> t0
+	t0 200 lt print nl            // expect 1
+
+	// Sleep 50ms, second call should register elapsed time.
+	50 I_Sleep
+	I_GetTimeMS -> t1
+	t1 t0 sub -> dt
+	dt 30 gte dt 500 lte and print nl   // expect 1 (tolerant band)
+
+	// I_GetTime returns tics at 35Hz; initial call must be >= 0.
+	I_GetTime -> tics
+	tics 0 gte print nl           // expect 1
+
+	// I_WaitVBL is a no-op; confirm it returns.
+	3 I_WaitVBL
+	"done" print nl
+
+	sdl::Quit
+}

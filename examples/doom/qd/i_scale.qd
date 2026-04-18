@@ -1,0 +1,21 @@
+/// Software framebuffer scaling.
+///
+/// Ported from doomgeneric/i_scale.c. The upstream C file contains a full
+/// 1x/2x/3x/4x/5x palette-based scaler (≈1500 lines) plus aspect-ratio
+/// stretch tables — all unused in the doomgeneric build, which delegates
+/// scaling to SDL_RenderCopy. The scaler is dead code, kept only so
+/// `screen_mode_t` references elsewhere compile.
+///
+/// We ship the public API as no-ops. If we ever retarget to a platform
+/// that lacks GPU-side scaling (see task #8, freestanding Doom) we'll
+/// revive the 2x doubler here.
+
+pub fn I_InitScale(src:ptr dest:ptr dest_pitch:i64 -- ) {
+	src drop
+	dest drop
+	dest_pitch drop
+}
+
+pub fn I_ResetScaleTables(palette:ptr -- ) {
+	palette drop
+}

@@ -1,0 +1,237 @@
+/// BSP tree walker and draw-seg bookkeeping.
+///
+/// Ported from doomgeneric/r_bsp.c. In vanilla Doom the BSP traversal
+/// is what actually drives per-frame rendering: R_RenderBSPNode recurses
+/// front-to-back through the binary space partition, calls
+/// R_Subsector → R_AddLine on each visible seg, which eventually fills
+/// draw-segs + visplanes that r_segs + r_plane rasterise.
+///
+/// This port exposes the public surface (drawsegs buffer, clip arrays,
+/// R_CheckBBox, R_Subsector, R_RenderBSPNode) plus the recursion
+/// skeleton against r_main's R_PointOnSide. The per-seg render path
+/// (R_AddLine → R_StoreWallRange) is stubbed until r_segs.qd lands
+/// (task #37); the walker still correctly visits every subsector so
+/// the count can be verified from tests.
+
+use mem
+use "doomdef.qd"
+use "r_main.qd"
+use "r_plane.qd"
+use "p_setup.qd"
+use "i_video.qd"
+
+// ---- Drawseg buffer ----
+
+pub const MAXDRAWSEGS = 256
+pub const DRAWSEG_SIZE = 64               // per-entry placeholder; real layout comes with r_segs
+pub var drawsegs:ptr = 0
+pub var ds_index:i64 = 0                   // next empty slot (mirrors ds_p in C)
+
+// ---- Solid-seg clip list (tracks occluded X ranges per frame) ----
+
+pub const MAXSEGS = 32
+const CLIPSEG_SIZE = 16
+pub var solidsegs:ptr = 0                  // MAXSEGS × (first:i32, last:i32) packed
+pub var num_solidsegs:i64 = 0
+
+var rbsp_inited:i64 = 0
+
+fn ensure_rbsp( -- ) {
+	rbsp_inited 1 eq if { return }
+	MAXDRAWSEGS DRAWSEG_SIZE mul mem::alloc! -> drawsegs
+	drawsegs MAXDRAWSEGS DRAWSEG_SIZE mul mem::zero
+	MAXSEGS CLIPSEG_SIZE mul mem::alloc! -> solidsegs
+	solidsegs MAXSEGS CLIPSEG_SIZE mul mem::zero
+	1 -> rbsp_inited
+}
+
+pub fn R_ClearDrawSegs( -- ) {
+	ensure_rbsp
+	0 -> ds_index
+}
+
+pub fn R_ClearClipSegs( -- ) {
+	ensure_rbsp
+	// Seed two sentinel entries covering the left and right screen
+	// edges so R_AddLine always has something to clip against.
+	0 0 sub 1 sub solidsegs 0 mem::set_i32
+	0 1 sub      solidsegs 4 mem::set_i32
+	viewwidth solidsegs 8 mem::set_i32
+	2147483647  solidsegs 12 mem::set_i32
+	2 -> num_solidsegs
+}
+
+// ---- R_CheckBBox ----
+
+/// Is any part of `bspcoord` (4 × i32 fixed, BOXTOP/BOTTOM/LEFT/RIGHT)
+/// inside the current view frustum? Stubbed TRUE for now — the full
+/// logic wants centerx/clipangle/xtoviewangle, which are set up but the
+/// downstream render isn't. Returning 1 keeps recursion walking every
+/// node so test code can trace the full walk.
+pub fn R_CheckBBox(bspcoord:ptr -- visible:i64) {
+	bspcoord drop
+	1
+}
+
+// ---- Subsector handling ----
+
+/// Stub AddLine: counts visible segs and paints a debug strip into
+/// the framebuffer tinted by the front sector's light level. Until
+/// r_segs.qd gets a real projection body, this is our proof that the
+/// BSP walk correctly reaches each seg and that seg→linedef→sidedef
+/// →sector linkage resolves to real data.
+pub var addline_count:i64 = 0
+
+pub fn R_AddLine(seg:ptr -- ) {
+	addline_count 1 add -> addline_count
+
+	// Null seg (test callers) or line arrays not populated yet: bail.
+	seg mem::is_null if { return }
+	numlines 0 lte if { return }
+
+	seg SEG_OFF_LINEDEF mem::get_i32 -> lnum
+	lnum 0 lt lnum numlines gte or if { return }
+
+	seg SEG_OFF_SIDE mem::get_i32 -> sidepick
+	sidepick 0 eq if {
+		lines lnum LINE_SIZE mul LINE_OFF_FRONTSECTOR add mem::get_i32
+	} else {
+		lines lnum LINE_SIZE mul LINE_OFF_BACKSECTOR  add mem::get_i32
+	}
+	-> secidx
+
+	secidx 0 lt secidx numsectors gte or if { return }
+	sectors secidx SECTOR_SIZE mul SECTOR_OFF_LIGHT add mem::get_i32 -> light
+
+	// One-row strip per seg: addline_count mod SCREENHEIGHT picks a row,
+	// the sector light becomes the palette index. Floors and ceilings
+	// of bright sectors = bright column stripes.
+	addline_count 1 sub SCREENHEIGHT mod -> row
+	light SCREENWIDTH mul SCREENWIDTH div -> ignored
+	ignored drop
+	0 -> x
+	loop {
+		x SCREENWIDTH gte if { break }
+		light 200 mul 255 div 255 and I_VideoBuffer row SCREENWIDTH mul x add mem::set_u8
+		x 1 add -> x
+	}
+}
+
+/// Walk a subsector: fetch its seg range and pass each seg to R_AddLine.
+/// Each subsector record (SUBSECTOR_SIZE bytes) holds numsegs:i32 +
+/// firstseg:i32 as written by p_setup.qd's loader.
+pub var subsector_count:i64 = 0
+
+pub fn R_Subsector(num:i64 -- ) {
+	subsector_count 1 add -> subsector_count
+
+	subsectors mem::is_null if { return }
+	subsectors num SUBSECTOR_SIZE mul mem::ptr_add -> ss
+	ss SUBSECTOR_OFF_NUMSEGS  mem::get_i32 -> count
+	ss SUBSECTOR_OFF_FIRSTSEG mem::get_i32 -> first
+
+	0 -> k
+	loop {
+		k count gte if { break }
+		segs first k add SEG_SIZE mul mem::ptr_add R_AddLine
+		k 1 add -> k
+	}
+}
+
+// ---- R_RenderBSPNode ----
+
+/// Node leaf marker: high bit of the 16-bit BSP index means "this
+/// points at a subsector, not another node". Doom stores children as
+/// i16 on disk, so the flag is 0x8000.
+pub const NF_SUBSECTOR = 0x8000
+pub const NF_SUBSECTOR_MASK = 0x7fff
+
+/// Recursive BSP walker. When the high bit of `bspnum` is set it's a
+/// subsector leaf; otherwise follow the partition through R_PointOnSide.
+// nodes + numnodes live in p_setup.qd — r_bsp reads them via `use`.
+
+// NODE_SIZE declared in p_setup.qd — leaf size = 56 bytes (fixed-point
+// partition + bbox[2][4] + children[2]).
+
+pub var bsp_depth:i64 = 0
+pub var bsp_max_depth:i64 = 0
+
+pub fn R_RenderBSPNode(bspnum:i64 -- ) {
+	// Hard recursion cap — temporary safety valve. Real Doom BSPs
+	// hit depth ~20; something in the port spuriously exceeds this
+	// and segfaults under redirected stdout.
+	bsp_depth 1 add -> bsp_depth
+	bsp_depth 32 gt if {
+		bsp_depth 1 sub -> bsp_depth
+		return
+	}
+
+	bspnum NF_SUBSECTOR and 0 neq if {
+		bspnum NF_SUBSECTOR_MASK and -> ssnum
+		ssnum 0 gte ssnum numsubsectors lt and if {
+			ssnum R_Subsector
+		}
+		bsp_depth 1 sub -> bsp_depth
+		return
+	}
+
+	bspnum 0 lt bspnum numnodes gte or if {
+		bspnum drop
+		bsp_depth 1 sub -> bsp_depth
+		return
+	}
+
+	nodes bspnum NODE_SIZE mul mem::ptr_add -> node
+	viewx viewy node R_PointOnSide -> side
+
+	node NODE_OFF_CHILDREN side 4 mul add mem::get_i32 R_RenderBSPNode
+	node NODE_OFF_CHILDREN side 1 xor 4 mul add mem::get_i32 -> back
+	back R_RenderBSPNode
+	bsp_depth bsp_max_depth gt if { bsp_depth -> bsp_max_depth }
+	bsp_depth 1 sub -> bsp_depth
+}
+
+/// Walk the BSP tree to find the subsector containing the given
+/// point. Caps iterations at BSP depth limit; returns 0 if no root.
+pub fn R_PointInSubsector(px:i64 py:i64 -- ssnum:i64) {
+	numnodes 0 lte if { 0 return }
+	numnodes 1 sub -> bspnum
+	0 -> walk_cap
+	loop {
+		walk_cap 64 gte if { 0 return }
+		bspnum NF_SUBSECTOR and 0 neq if {
+			bspnum NF_SUBSECTOR_MASK and return
+		}
+		bspnum 0 lt bspnum numnodes gte or if { 0 return }
+		nodes bspnum NODE_SIZE mul mem::ptr_add -> node
+		px py node R_PointOnSide -> side
+		node NODE_OFF_CHILDREN side 4 mul add mem::get_i32 -> bspnum
+		walk_cap 1 add -> walk_cap
+	}
+	0
+}
+
+/// Map a subsector index to its containing sector index (via the
+/// subsector's first seg → linedef → front/back sector).
+pub fn R_SubsectorToSector(ssnum:i64 -- secidx:i64) {
+	ssnum 0 lt ssnum numsubsectors gte or if { 0 return }
+	subsectors ssnum SUBSECTOR_SIZE mul mem::ptr_add -> ss
+	ss SUBSECTOR_OFF_FIRSTSEG mem::get_i32 -> first_seg
+	first_seg 0 lt first_seg numsegs gte or if { 0 return }
+	segs first_seg SEG_SIZE mul mem::ptr_add -> seg
+	seg SEG_OFF_LINEDEF mem::get_i32 -> lnum
+	lnum 0 lt lnum numlines gte or if { 0 return }
+	seg SEG_OFF_SIDE mem::get_i32 -> side
+	side 0 eq if {
+		lines lnum LINE_SIZE mul LINE_OFF_FRONTSECTOR add mem::get_i32
+	} else {
+		lines lnum LINE_SIZE mul LINE_OFF_BACKSECTOR add mem::get_i32
+	}
+}
+
+// ---- Test helpers (frame reset) ----
+
+pub fn R_ClearBspTestCounters( -- ) {
+	0 -> addline_count
+	0 -> subsector_count
+}

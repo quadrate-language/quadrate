@@ -1,0 +1,49 @@
+use "sound.qd"
+use mem
+
+fn main() {
+	// Defaults land as documented.
+	"sfxVolume default: " print sfxVolume print nl       // 8
+	"musicVolume default: " print musicVolume print nl   // 8
+	"channels: " print snd_channels print nl             // 8
+	"samplerate: " print snd_samplerate print nl         // 44100
+
+	// S_Init should update both volume vars.
+	5 3 S_Init
+	"after S_Init sfx: " print sfxVolume print nl         // 5
+	"after S_Init music: " print musicVolume print nl     // 3
+
+	// Volume setters mutate the vars directly.
+	9 S_SetSfxVolume
+	"after S_SetSfxVolume: " print sfxVolume print nl     // 9
+
+	// Every other entry point is a no-op that must accept its arguments
+	// and not crash.
+	0 cast<ptr> 42 S_StartSound
+	0 cast<ptr> S_StopSound
+	0 cast<ptr> S_UpdateSounds
+	S_PauseSound
+	S_ResumeSound
+	7 0 S_ChangeMusic
+	S_StopMusic
+	S_Shutdown
+
+	1 I_InitSound
+	0 cast<ptr> 0 I_PrecacheSounds
+	0 cast<ptr> I_GetSfxLumpNum -> lump
+	"sfx lump: " print lump print nl                      // -1
+
+	0 cast<ptr> 1 1 0 I_StartSound -> handle
+	"sound handle: " print handle print nl                // 0
+	0 I_SoundIsPlaying -> playing
+	"is playing: " print playing print nl                 // 0
+
+	I_InitMusic
+	0 cast<ptr> 4 I_RegisterSong -> song
+	"song handle null: " print song mem::is_null print nl // 1
+	song 1 I_PlaySong
+	I_MusicIsPlaying print nl                             // 0
+
+	I_CDMusInit print nl                                  // -1
+	I_CDMusGetErrorMessage print nl
+}

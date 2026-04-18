@@ -1,0 +1,59 @@
+/// Sprite rendering.
+///
+/// Ported from doomgeneric/r_things.c. Upstream is 1,300 lines spanning
+/// sprite-definition parsing (R_InitSpriteDefs pulls rotation info off
+/// WAD lump names), per-frame vis-sprite collection (R_AddSprites pulls
+/// every mobj in each subsector, R_ProjectSprite transforms to screen
+/// space), depth-sort (R_SortVisSprites), and column-by-column blit
+/// through R_DrawMaskedColumn.
+///
+/// All of this is blocked on mobjs (task #40) and the BSP walker
+/// (#33 — subsector-attached-thing lists). This port exposes the
+/// public API as stubs so callers link cleanly; R_InitSprites walks
+/// its namelist argument and records the count so initialisation side
+/// effects are visible but no sprite actually renders yet.
+
+use mem
+
+pub var numsprites:i64 = 0
+pub var sprites:ptr = 0                 // spritedef_t[] buffer, allocated by R_InitSpriteDefs
+
+pub var vissprite_count:i64 = 0
+pub var psprite_draw_count:i64 = 0
+
+/// Parse sprite rotation info from the WAD, given a null-terminated
+/// pointer table `namelist` (one str per sprite: SPR_TROO, SPR_POSS,
+/// etc.). Until r_data integrates with info.qd's sprite tables we just
+/// count the namelist entries so the caller sees progress.
+pub fn R_InitSpriteDefs(namelist:ptr -- ) {
+	namelist mem::is_null if { return }
+	0 -> n
+	loop {
+		namelist n 8 mul mem::get_ptr mem::is_null if { break }
+		n 1 add -> n
+	}
+	n -> numsprites
+}
+
+pub fn R_InitSprites(namelist:ptr -- ) {
+	namelist R_InitSpriteDefs
+}
+
+pub fn R_ClearSprites( -- ) {
+	0 -> vissprite_count
+}
+
+pub fn R_DrawMaskedColumn(column:ptr -- ) { column drop }
+pub fn R_ProjectSprite(thing:ptr -- ) {
+	thing drop
+	vissprite_count 1 add -> vissprite_count
+}
+pub fn R_AddSprites(sec:ptr -- ) { sec drop }
+pub fn R_DrawPSprite(psp:ptr -- ) {
+	psp drop
+	psprite_draw_count 1 add -> psprite_draw_count
+}
+pub fn R_DrawPlayerSprites( -- ) { }
+pub fn R_SortVisSprites( -- ) { }
+pub fn R_DrawSprite(spr:ptr -- ) { spr drop }
+pub fn R_DrawMasked( -- ) { }

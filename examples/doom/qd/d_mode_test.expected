@@ -1,0 +1,19 @@
+doom1/shareware/E1M1: 1
+doom1/shareware/E4M1: 0
+doom1/retail/E4M9: 1
+doom2/commercial/MAP32: 1
+episodes shareware: 1
+episodes retail: 4
+doom valid version 1.9: 1
+episodemap doom: 1
+episodemap doom2: 0
+mission name doom: doom
+weapon[WP_PISTOL] ammo: 0
+weapon[WP_PISTOL] upstate: 12
+weapon[WP_BFG] ammo: 2
+weapon[WP_CHAINSAW] ammo: 5
+pop[0] type: 0
+pop[0] data1: 65
+pop[1] type: 2
+pop[1] data2: 10
+pop[2] empty: 1

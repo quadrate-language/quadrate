@@ -1,0 +1,59 @@
+use "r_main.qd"
+use "r_draw.qd"
+use "tables.qd"
+use "m_bbox.qd"
+use mem
+
+fn main() {
+	// R_PointToAngle around origin, with viewpoint at origin.
+	0 -> viewx
+	0 -> viewy
+	"angle (1,0): " print FRACUNIT 0 R_PointToAngle print nl    // ~0
+	"angle (0,1): " print 0 FRACUNIT R_PointToAngle print nl    // ~ANG90 (1073741823)
+	"angle (-1,0): " print 0 FRACUNIT sub 0 R_PointToAngle print nl  // ~ANG180
+
+	// R_PointToDist: distance from (0,0) to (3,4) should be ~5.0 in fixed.
+	3 FRACUNIT mul 4 FRACUNIT mul R_PointToDist -> d
+	"dist (3,4): " print d FRACBITS shr print nl                 // ~5
+
+	// R_AddPointToBox — confirm bbox grows correctly.
+	16 mem::alloc! -> box
+	box 16 mem::zero
+	// Initial: BOXTOP=0, BOXBOTTOM=0, BOXLEFT=0, BOXRIGHT=0
+	10 20 box R_AddPointToBox
+	"box.left after (10,20): " print box BOXLEFT 4 mul mem::get_i32 print nl    // 0 (10 > 0)
+	"box.right after (10,20): " print box BOXRIGHT 4 mul mem::get_i32 print nl  // 10
+	"box.top after (10,20): " print box BOXTOP 4 mul mem::get_i32 print nl      // 20
+	// Negative extent
+	0 100 sub 0 100 sub box R_AddPointToBox
+	"box.left after (-100,-100): " print box BOXLEFT 4 mul mem::get_i32 print nl  // -100
+	"box.bottom after (-100,-100): " print box BOXBOTTOM 4 mul mem::get_i32 print nl // -100
+	box mem::free
+
+	// R_PointOnSide against a node centred at origin with partition
+	// pointing up (dx=1, dy=0). Points with y > 0 are side 0 (front).
+	16 mem::alloc! -> node
+	node 16 mem::zero
+	FRACUNIT node NODE_OFF_DX mem::set_i32   // dx = 1.0
+	0 node NODE_OFF_DY mem::set_i32          // dy = 0
+	"point (0, 1): " print 0 FRACUNIT node R_PointOnSide print nl   // 1 (ldx>0 && y>ly → 0? re-check)
+	"point (0, -1): " print 0 FRACUNIT 0 sub node R_PointOnSide print nl
+	node mem::free
+
+	// Viewport setup.
+	5 0 R_SetViewSize
+	R_ExecuteSetViewSize
+	"viewwidth: " print viewwidth print nl                         // 160
+	"centerx: " print centerx print nl                             // 80
+	"centery: " print centery print nl
+	"centerxfrac: " print centerxfrac print nl                     // 80<<16 = 5242880
+
+	// R_SetupFrame bumps frame/valid counts.
+	framecount -> fc0
+	validcount -> vc0
+	0 cast<ptr> R_SetupFrame
+	"framecount delta: " print framecount fc0 sub print nl         // 1
+	"validcount delta: " print validcount vc0 sub print nl         // 1
+
+	"done" print nl
+}

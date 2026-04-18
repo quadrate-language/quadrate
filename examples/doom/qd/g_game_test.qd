@@ -1,0 +1,32 @@
+use "g_game.qd"
+use mem
+
+fn main() {
+	"gameskill default: " print gameskill print nl        // 2
+	"gameepisode default: " print gameepisode print nl    // 1
+	"gamemap default: " print gamemap print nl            // 1
+
+	3 2 5 G_InitNew
+	"after InitNew episode: " print gameepisode print nl  // 2
+	"after InitNew map: " print gamemap print nl          // 5
+	"after InitNew skill: " print gameskill print nl      // 3
+	"gameaction: " print gameaction print nl              // ga_newgame=2
+
+	G_Ticker
+	"ticker cleared gameaction: " print gameaction print nl // 0
+
+	G_ExitLevel
+	"after ExitLevel: " print gameaction print nl         // ga_completed=6
+
+	G_DoCompleted
+	"after DoCompleted: " print gameaction print nl       // 0
+
+	"vanilla version: " print G_VanillaVersionCode print nl  // 109
+	0 cast<ptr> G_Responder print nl                        // 0
+	G_CheckDemoStatus print nl                              // 0
+
+	"playeringame[0]: " print playeringame 0 mem::get_i64 print nl  // 1
+	"playeringame[3]: " print playeringame 3 8 mul mem::get_i64 print nl // 0
+
+	"done" print nl
+}

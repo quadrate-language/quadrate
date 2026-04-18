@@ -1,0 +1,27 @@
+use "z_zone.qd"
+use mem
+
+fn main() {
+	Z_Init
+
+	// Allocate with a user-ptr. After Z_Malloc, user->ptr should equal
+	// the returned pointer.
+	8 mem::alloc! -> user_slot   // slot holds one ptr (8 bytes)
+	user_slot 8 mem::zero
+
+	64 PU_STATIC user_slot Z_Malloc -> block
+
+	// block should be non-null and user_slot should now hold block.
+	block mem::is_not_null print nl    // 1
+	user_slot 0 mem::get_ptr -> stored
+	stored cast<i64> block cast<i64> eq print nl    // 1
+
+	// Allocate without a user ptr (tag PU_STATIC doesn't need one).
+	32 PU_STATIC 0 cast<ptr> Z_Malloc -> block2
+	block2 mem::is_not_null print nl   // 1
+
+	block Z_Free
+	block2 Z_Free
+
+	user_slot mem::free
+}

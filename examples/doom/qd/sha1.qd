@@ -1,0 +1,63 @@
+/// SHA-1 digest.
+///
+/// Ported from doomgeneric/sha1.c as a stub. Doom uses SHA-1 only in
+/// w_checksum.c for optional IWAD integrity logging — the game plays
+/// correctly with an all-zero digest. A proper implementation (80 rounds
+/// × rotate-left × nonlinear round functions) lands when the first
+/// caller actually validates against a reference digest.
+///
+/// Context buffer layout (packed as a raw 96-byte alloc):
+///   0..20  current digest (5 u32 values h0..h4)
+///   20..24 block count (i32)
+///   24..88 64-byte input buffer
+///   88..96 buffered byte count (i32) + padding
+
+use mem
+
+pub const SHA1_CONTEXT_SIZE = 96
+pub const SHA1_DIGEST_BYTES = 20
+
+/// Allocate a fresh context. Caller frees with mem::free.
+pub fn SHA1_Init( -- c:ptr) {
+	SHA1_CONTEXT_SIZE mem::alloc! -> c
+	c SHA1_CONTEXT_SIZE mem::zero
+
+	// Canonical SHA-1 initial hash values. Stored for reference even
+	// though we don't transform them; when a real implementation lands
+	// these stay correct.
+	0x67452301 c 0  mem::set_u32
+	0xefcdab89 c 4  mem::set_u32
+	0x98badcfe c 8  mem::set_u32
+	0x10325476 c 12 mem::set_u32
+	0xc3d2e1f0 c 16 mem::set_u32
+	c
+}
+
+/// Consume `len` bytes. Stub accumulates nothing; only the block count
+/// is incremented so callers watching progress see plausible numbers.
+pub fn SHA1_Update(c:ptr buf:ptr len:i64 -- ) {
+	buf drop
+	c 20 mem::get_i32 -> blocks
+	blocks len add c 20 mem::set_i32
+}
+
+/// Produce the final 20-byte digest into `dest`. Stub writes zeros.
+pub fn SHA1_Final(dest:ptr c:ptr -- ) {
+	c drop
+	dest SHA1_DIGEST_BYTES mem::zero
+}
+
+/// Convenience: fold a 32-bit integer into the digest.
+pub fn SHA1_UpdateInt32(c:ptr val:i64 -- ) {
+	4 mem::alloc! -> tmp
+	val tmp 0 mem::set_u32
+	c tmp 4 SHA1_Update
+	tmp mem::free
+}
+
+/// Convenience: fold a string into the digest.
+pub fn SHA1_UpdateString(c:ptr s:str -- ) {
+	s mem::from_string -> slen -> sptr
+	c sptr slen SHA1_Update
+	sptr mem::free
+}

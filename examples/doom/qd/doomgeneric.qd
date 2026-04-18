@@ -1,0 +1,63 @@
+/// Doomgeneric platform shim.
+///
+/// Ported from doomgeneric/doomgeneric.c + doomgeneric_sdl.c. Upstream
+/// defines a six-function DG_* interface (DG_Init, DG_DrawFrame,
+/// DG_SleepMs, DG_GetTicksMs, DG_GetKey, DG_SetWindowTitle) so any
+/// platform backend can plug in. Every backend was ~200 lines.
+///
+/// Since this port drives SDL directly from qd/i_video.qd, qd/i_timer.qd,
+/// and qd/i_input.qd, the shim collapses: DG_* entries are trivial
+/// wrappers that forward to the matching I_* function. They exist only
+/// to give in-progress port code a one-line escape hatch when a C
+/// caller still expects `DG_GetTicksMs` by name. Once every module
+/// uses the I_* names directly these can be deleted.
+
+use mem
+use "i_video.qd"
+use "i_timer.qd"
+use "i_input.qd"
+use "d_event.qd"
+
+pub fn DG_Init( -- ) {
+	I_InitGraphics
+}
+
+pub fn DG_DrawFrame( -- ) {
+	I_FinishUpdate
+}
+
+pub fn DG_SleepMs(ms:i64 -- ) {
+	ms I_Sleep
+}
+
+pub fn DG_GetTicksMs( -- ms:i64) {
+	I_GetTicks
+}
+
+/// DG_GetKey(pressed_out, key_out) — the C version pulls one scancode
+/// off an internal FIFO and reports (pressed, key). In our Quadrate
+/// port, I_GetEvent has already drained SDL into D_PostEvent, so we
+/// front-load the FIFO with D_PopEvent. Returns 1 if an event was
+/// delivered, 0 otherwise.
+pub fn DG_GetKey(pressed_out:ptr key_out:ptr -- got:i64) {
+	D_PopEvent -> ev
+	ev mem::is_null if { 0 return }
+
+	ev EVENT_OFF_TYPE mem::get_i32 -> t
+	t ev_keydown eq if {
+		1 pressed_out 0 mem::set_i32
+		ev EVENT_OFF_DATA1 mem::get_i32  key_out 0 mem::set_i32
+		1 return
+	}
+	t ev_keyup eq if {
+		0 pressed_out 0 mem::set_i32
+		ev EVENT_OFF_DATA1 mem::get_i32  key_out 0 mem::set_i32
+		1 return
+	}
+
+	0
+}
+
+pub fn DG_SetWindowTitle(title:str -- ) {
+	title I_SetWindowTitle
+}

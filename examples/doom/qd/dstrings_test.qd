@@ -1,0 +1,11 @@
+use "dstrings.qd"
+
+fn main() {
+	SAVEGAMENAME print nl
+	NUM_QUITMESSAGES print nl
+	0 doom1_endmsg print nl
+	7 doom1_endmsg print nl
+	0 doom2_endmsg print nl
+	7 doom2_endmsg print nl
+	42 doom1_endmsg print nl   // out of range -> empty string
+}

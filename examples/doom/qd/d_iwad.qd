@@ -1,0 +1,239 @@
+/// IWAD discovery.
+///
+/// Ported from doomgeneric/d_iwad.c — the full C file is ~850 lines
+/// because it carries Windows registry scrapers, macOS bundle probes,
+/// DOOMWADDIR / DOOMWADPATH / XDG_DATA_DIRS enumeration, and Steam/GOG
+/// install-path inspection. None of that is portable or useful for a
+/// hosted Linux run, so we collapse the machinery to a short search path:
+///
+///   1. the user-provided -iwad argument
+///   2. the current working directory
+///   3. ./wads/ (our repo convention)
+///   4. $HOME/.local/share/games/doom
+///
+/// That is already a broader search than most source ports need, and it
+/// matches how every qd-test invokes W_AddFile with "wads/doom1.wad".
+
+use mem
+use os
+use "doomstat.qd"
+use "m_argv.qd"
+use "m_misc.qd"
+
+const IWAD_STRIDE = 24
+const IWAD_OFF_NAME = 0      // ptr (owned str byte buffer)
+const IWAD_OFF_NAMELEN = 8   // i64
+const IWAD_OFF_MISSION = 16  // i32
+const IWAD_OFF_MODE = 20     // i32
+// Description is kept in a parallel table indexed by the same i.
+
+pub const NUM_KNOWN_IWADS = 15
+
+var iwads_initialized:i64 = 0
+var iwads_table:ptr = 0
+var iwads_descriptions:ptr = 0   // NUM_KNOWN_IWADS × 8 bytes each (ptr to owned bytes)
+
+fn copy_str_owned(s:str -- p:ptr len:i64) {
+	s mem::from_string -> slen -> sptr
+	sptr slen
+}
+
+fn set_iwad(i:i64 name:str mission:i64 mode:i64 desc:str -- ) {
+	iwads_table i IWAD_STRIDE mul mem::ptr_add -> row
+	name copy_str_owned -> nlen -> nptr
+	nptr    row IWAD_OFF_NAME    mem::set_ptr
+	nlen    row IWAD_OFF_NAMELEN mem::set_i64
+	mission row IWAD_OFF_MISSION mem::set_i32
+	mode    row IWAD_OFF_MODE    mem::set_i32
+
+	desc copy_str_owned -> dlen -> dptr
+	dlen drop
+	dptr iwads_descriptions i 8 mul mem::set_ptr
+}
+
+fn ensure_iwads( -- ) {
+	iwads_initialized 1 eq if { return }
+	NUM_KNOWN_IWADS IWAD_STRIDE mul mem::alloc! -> iwads_table
+	NUM_KNOWN_IWADS 8 mul mem::alloc! -> iwads_descriptions
+
+	 0 "doom2.wad"     MISSION_DOOM2      MODE_COMMERCIAL "Doom II"                          set_iwad
+	 1 "plutonia.wad"  MISSION_PACK_PLUT  MODE_COMMERCIAL "Final Doom: Plutonia Experiment"  set_iwad
+	 2 "tnt.wad"       MISSION_PACK_TNT   MODE_COMMERCIAL "Final Doom: TNT: Evilution"       set_iwad
+	 3 "doom.wad"      MISSION_DOOM       MODE_RETAIL     "Doom"                             set_iwad
+	 4 "doom1.wad"     MISSION_DOOM       MODE_SHAREWARE  "Doom Shareware"                   set_iwad
+	 5 "chex.wad"      MISSION_PACK_CHEX  MODE_SHAREWARE  "Chex Quest"                       set_iwad
+	 6 "hacx.wad"      MISSION_PACK_HACX  MODE_COMMERCIAL "Hacx"                             set_iwad
+	 7 "freedm.wad"    MISSION_DOOM2      MODE_COMMERCIAL "FreeDM"                           set_iwad
+	 8 "freedoom2.wad" MISSION_DOOM2      MODE_COMMERCIAL "Freedoom: Phase 2"                set_iwad
+	 9 "freedoom1.wad" MISSION_DOOM       MODE_RETAIL     "Freedoom: Phase 1"                set_iwad
+	10 "heretic.wad"   MISSION_HERETIC    MODE_RETAIL     "Heretic"                          set_iwad
+	11 "heretic1.wad"  MISSION_HERETIC    MODE_SHAREWARE  "Heretic Shareware"                set_iwad
+	12 "hexen.wad"     MISSION_HEXEN      MODE_COMMERCIAL "Hexen"                            set_iwad
+	13 "strife1.wad"   MISSION_STRIFE     MODE_COMMERCIAL "Strife"                           set_iwad
+	14 "strife0.wad"   MISSION_STRIFE     MODE_COMMERCIAL "Strife alt"                       set_iwad
+
+	1 -> iwads_initialized
+}
+
+/// Concatenate dir + "/" + name and check if the file exists on disk.
+/// Returns the joined path on hit, "" on miss.
+fn try_join(dir:str name:str -- found:str) {
+	dir "/" M_StringConcat name M_StringConcat -> path
+	path M_FileExists if { path } else { "" }
+}
+
+/// Resolve `name` against a short curated search path. Empty string on
+/// miss. Absolute paths and same-directory hits are both handled by the
+/// initial M_FileExists check.
+pub fn D_FindWADByName(name:str -- path:str) {
+	name M_FileExists if { name return }
+
+	"." name try_join -> p
+	p "" neq if { p return }
+
+	"wads" name try_join -> p2
+	p2 "" neq if { p2 return }
+
+	"HOME" os::getenv -> home
+	home "" neq if {
+		home "/.local/share/games/doom" M_StringConcat name try_join -> p3
+		p3 "" neq if { p3 return }
+	}
+
+	""
+}
+
+/// Search-or-passthrough. Returns the input verbatim if nothing on disk
+/// matches so the caller can still print a reasonable error message.
+pub fn D_TryFindWADByName(name:str -- path:str) {
+	name D_FindWADByName -> found
+	found "" eq if { name } else { found }
+}
+
+/// Identify which table row a resolved IWAD path maps to, by basename
+/// match against the known-IWADs name column. Returns -1 on no match.
+fn identify_by_name(path:str -- idx:i64) {
+	ensure_iwads
+	-1 -> found
+	0 NUM_KNOWN_IWADS 1 for i {
+		found -1 eq if {
+			iwads_table i IWAD_STRIDE mul IWAD_OFF_NAME add mem::get_ptr -> np
+			iwads_table i IWAD_STRIDE mul IWAD_OFF_NAMELEN add mem::get_i64 -> nl
+			np nl mem::to_string -> iname
+			path iname M_StringEndsWith if { i -> found }
+		}
+	}
+	found
+}
+
+/// Look for the `-iwad` flag, or if absent try each known-IWAD name in
+/// the search path. Writes detected mission into *mission_out (i64-wide
+/// so callers can mem::set_i32). Returns "" on failure.
+pub fn D_FindIWAD(mask:i64 mission_out:ptr -- path:str) {
+	ensure_iwads
+	mask drop
+
+	"-iwad" 1 M_CheckParmWithArgs -> p
+	p 0 gt if {
+		p 1 add M_Argv -> iwadfile
+		iwadfile D_FindWADByName -> found
+		found "" eq if { "" return }
+		found identify_by_name -> idx
+		idx 0 gte if {
+			iwads_table idx IWAD_STRIDE mul IWAD_OFF_MISSION add mem::get_i32
+			mission_out 0 mem::set_i32
+		} else {
+			MISSION_NONE mission_out 0 mem::set_i32
+		}
+		found return
+	}
+
+	// Try each known IWAD name in turn.
+	"" -> result
+	0 NUM_KNOWN_IWADS 1 for i {
+		result "" eq if {
+			iwads_table i IWAD_STRIDE mul IWAD_OFF_NAME add mem::get_ptr -> np
+			iwads_table i IWAD_STRIDE mul IWAD_OFF_NAMELEN add mem::get_i64 -> nl
+			np nl mem::to_string -> iname
+			iname D_FindWADByName -> found
+			found "" neq if {
+				found -> result
+				iwads_table i IWAD_STRIDE mul IWAD_OFF_MISSION add mem::get_i32
+				mission_out 0 mem::set_i32
+			}
+		}
+	}
+	result
+}
+
+/// Savegame directory name — mirrors C which keys off mission so all
+/// Doom1 variants share a save folder.
+pub fn D_SaveGameIWADName(mission:i64 -- name:str) {
+	ensure_iwads
+	"unknown.wad" -> result
+	0 -> done
+	0 -> i
+	loop {
+		i NUM_KNOWN_IWADS gte if { break }
+		done 0 eq if {
+			iwads_table i IWAD_STRIDE mul IWAD_OFF_MISSION add mem::get_i32 -> m
+			m mission eq if {
+				iwads_table i IWAD_STRIDE mul IWAD_OFF_NAME add mem::get_ptr -> np
+				iwads_table i IWAD_STRIDE mul IWAD_OFF_NAMELEN add mem::get_i64 -> nl
+				np nl mem::to_string -> result
+				1 -> done
+			}
+		}
+		i 1 add -> i
+	}
+	result
+}
+
+pub fn D_SuggestIWADName(mission:i64 mode:i64 -- name:str) {
+	ensure_iwads
+	"unknown.wad" -> result
+	0 -> done
+	0 -> i
+	loop {
+		i NUM_KNOWN_IWADS gte if { break }
+		done 0 eq if {
+			iwads_table i IWAD_STRIDE mul IWAD_OFF_MISSION add mem::get_i32 -> m
+			iwads_table i IWAD_STRIDE mul IWAD_OFF_MODE add mem::get_i32 -> md
+			m mission eq md mode eq and if {
+				iwads_table i IWAD_STRIDE mul IWAD_OFF_NAME add mem::get_ptr -> np
+				iwads_table i IWAD_STRIDE mul IWAD_OFF_NAMELEN add mem::get_i64 -> nl
+				np nl mem::to_string -> result
+				1 -> done
+			}
+		}
+		i 1 add -> i
+	}
+	result
+}
+
+pub fn D_SuggestGameName(mission:i64 mode:i64 -- name:str) {
+	ensure_iwads
+	"Unknown game?" -> result
+	0 -> done
+	0 -> i
+	loop {
+		i NUM_KNOWN_IWADS gte if { break }
+		done 0 eq if {
+			iwads_table i IWAD_STRIDE mul IWAD_OFF_MISSION add mem::get_i32 -> m
+			iwads_table i IWAD_STRIDE mul IWAD_OFF_MODE add mem::get_i32 -> md
+			m mission eq
+			mode MODE_INDETERMINED eq md mode eq or and if {
+				iwads_descriptions i 8 mul mem::get_ptr -> dp
+				0 -> dlen
+				loop {
+					dp dlen mem::get_u8 0 eq if { break }
+					dlen 1 add -> dlen
+				}
+				dp dlen mem::to_string -> result
+				1 -> done
+			}
+		}
+		i 1 add -> i
+	}
+	result
+}

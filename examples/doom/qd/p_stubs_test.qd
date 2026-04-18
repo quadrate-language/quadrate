@@ -1,0 +1,65 @@
+// Link-surface test for the whole game-logic stubs layer. Doesn't
+// validate behaviour — the stubs have none — but ensures every module
+// compiles and every call signature matches what info.qd / g_game /
+// d_main will expect once the real bodies land.
+
+use "p_mobj.qd"
+use "p_enemy.qd"
+use "p_map.qd"
+use "p_inter.qd"
+use "p_setup.qd"
+use "p_saveg.qd"
+use "p_spec.qd"
+use mem
+
+fn main() {
+	// p_mobj: a couple of spawns + state moves.
+	0 0 0 0 P_SpawnMobj -> mo
+	"spawned null: " print mo mem::is_null print nl           // 1
+	0 cast<ptr> 0 P_SetMobjState print nl                     // 1
+	0 cast<ptr> P_MobjThinker
+	0 cast<ptr> P_RemoveMobj
+	P_RespawnSpecials
+
+	// p_enemy: a sampling of A_* + path helpers.
+	0 cast<ptr> A_Look
+	0 cast<ptr> A_Chase
+	0 cast<ptr> A_FireCrackle
+	0 cast<ptr> A_BossDeath
+	0 cast<ptr> P_CheckMeleeRange print nl                    // 0
+	0 cast<ptr> 1 P_LookForPlayers print nl                   // 0
+
+	// p_map: move + hit-scan.
+	0 cast<ptr> 0 0 P_TryMove print nl                        // 1
+	0 cast<ptr> 0 cast<ptr> P_CheckSight print nl             // 1
+	100 200 P_AproxDistance print nl
+	0 cast<ptr> 0 100 P_AimLineAttack -> slope
+	"slope: " print slope print nl                             // 0
+
+	// p_inter: pickups succeed as stubs.
+	0 cast<ptr> 0 10 P_GiveAmmo print nl                      // 1
+	0 cast<ptr> 25 P_GiveBody print nl                        // 1
+	0 cast<ptr> 0 cast<ptr> 0 cast<ptr> 20 P_DamageMobj
+
+	// p_setup.
+	1 1 1 3 P_SetupLevel
+	P_Init
+	"numvertexes: " print numvertexes print nl                 // 0
+	"numsectors: " print numsectors print nl                   // 0
+
+	// p_saveg.
+	"save" P_WriteSaveGameHeader
+	P_ReadSaveGameEOF print nl                                  // 1
+	P_ArchivePlayers
+	P_UnArchiveWorld
+
+	// p_spec.
+	P_InitPicAnims
+	P_SpawnSpecials
+	P_UpdateSpecials
+	0 cast<ptr> 0 P_FindSectorFromLineTag print nl             // -1
+	0 cast<ptr> 0 EV_DoDoor print nl                           // 0
+	0 cast<ptr> 0 cast<ptr> 0 P_UseSpecialLine drop
+
+	"done" print nl
+}

@@ -1,0 +1,39 @@
+/// WAD directory checksum.
+///
+/// Ported from doomgeneric/w_checksum.c. Produces a SHA-1 over each lump's
+/// (name, file-index, position, size) tuple — Doom uses this purely as an
+/// optional integrity log for IWAD/PWAD bug reports. Since our SHA-1 is
+/// currently a stub (sha1.qd), the resulting digest is all zeros; the
+/// walk order, accumulation count, and call shape still match the C code
+/// so a real digest lands the moment SHA-1 is implemented.
+///
+/// The C version tracks a dynamic `open_wadfiles` list so every lump can
+/// be tagged with the WAD it came from. We only support one WAD today
+/// (w_wad.qd), so every lump is implicitly file index 0.
+
+use mem
+use "w_wad.qd"
+use "sha1.qd"
+
+pub const SHA1_DIGEST_BYTES = 20
+
+/// Compute the directory digest into `digest` (caller-owned 20-byte buffer).
+pub fn W_Checksum(digest:ptr -- ) {
+	SHA1_Init -> sc
+
+	0 numlumps 1 for i {
+		i lump_addr -> l
+
+		// 8-byte lump name, fed as raw bytes (SHA1_Update takes ptr+len).
+		sc l LUMP_OFF_NAME mem::ptr_add 8 SHA1_Update
+		// File index — always 0 in the single-WAD port.
+		sc 0 SHA1_UpdateInt32
+		// Position in file (i32).
+		sc l LUMP_OFF_POS mem::get_i32 SHA1_UpdateInt32
+		// Lump size (i32).
+		sc l LUMP_OFF_SIZE mem::get_i32 SHA1_UpdateInt32
+	}
+
+	digest sc SHA1_Final
+	sc mem::free
+}

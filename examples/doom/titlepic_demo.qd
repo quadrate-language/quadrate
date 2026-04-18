@@ -1,0 +1,196 @@
+// Load TITLEPIC from doom1.wad, decode the Doom patch format, blit it onto
+// a 320×200 paletted framebuffer, convert through PLAYPAL, and show the
+// result in an SDL2 window at 2× scale (640×400).
+//
+// This is the first program that renders recognisable Doom art from pure
+// Quadrate code. Every byte on screen took this path:
+//     disk → io::read → packed header parse → column-post decode (v_video.qd)
+//     → palette lookup (PLAYPAL lump) → ARGB8888 → SDL texture upload.
+
+use mem
+use io
+use "qd/w_wad.qd"
+use "qd/v_video.qd"
+
+const INIT_VIDEO = 0x20
+const WINDOW_SHOWN = 0x4
+const WINDOWPOS_CENTERED = 0x2FFF0000
+const RENDERER_ACCELERATED = 0x2
+const PIXELFORMAT_ARGB8888 = 0x16362004
+const TEXTUREACCESS_STREAMING = 1
+const EVENT_QUIT = 0x100
+const EVENT_KEYDOWN = 0x300
+
+import "libdoomsdl.a" as "sdl" {
+	pub fn Init(flags:i64 -- rc:i64)
+	pub fn Quit( -- )
+
+	pub fn CreateWindow(title:str x:i64 y:i64 w:i64 h:i64 flags:i64 -- win:ptr)
+	pub fn DestroyWindow(win:ptr -- )
+
+	pub fn CreateRenderer(win:ptr index:i64 flags:i64 -- renderer:ptr)
+	pub fn DestroyRenderer(renderer:ptr -- )
+
+	pub fn CreateTexture(renderer:ptr format:i64 access:i64 w:i64 h:i64 -- tex:ptr)
+	pub fn DestroyTexture(tex:ptr -- )
+
+	pub fn UpdateTextureFull(tex:ptr pixels:ptr pitch:i64 -- rc:i64)
+	pub fn RenderClear(renderer:ptr -- )
+	pub fn RenderCopyFull(renderer:ptr tex:ptr -- )
+	pub fn RenderPresent(renderer:ptr -- )
+
+	pub fn GetTicks( -- ticks:i64)
+	pub fn Delay(ms:i64 -- )
+
+	pub fn PollKey( -- has_event:i64 type:i64 scancode:i64)
+}
+
+const DOOM_W = 320
+const DOOM_H = 200
+const WIN_W = 640
+const WIN_H = 400
+
+/// Convert an 8-bit paletted source buffer into a 32-bit ARGB8888
+/// destination, scaling 2× by nearest-neighbour (each source pixel becomes
+/// a 2×2 destination block — the simplest integer upscale).
+fn palette_to_argb_2x(src:ptr playpal:ptr dst:ptr -- ) {
+	0 DOOM_H 1 for sy {
+		0 DOOM_W 1 for sx {
+			src sy DOOM_W mul sx add mem::get_u8 -> idx
+			playpal idx 3 mul mem::ptr_add -> entry
+			entry 0 mem::get_u8 -> r
+			entry 1 mem::get_u8 -> g
+			entry 2 mem::get_u8 -> b
+			0xFF000000 r 16 shl or g 8 shl or b or -> argb
+
+			// Upscale 2×2 by writing to four adjacent destination pixels.
+			sy 2 mul -> dy
+			sx 2 mul -> dx
+			dy WIN_W mul dx add -> p0
+			argb dst p0       4 mul mem::set_u32
+			argb dst p0 1 add 4 mul mem::set_u32
+			argb dst p0 WIN_W add       4 mul mem::set_u32
+			argb dst p0 WIN_W add 1 add 4 mul mem::set_u32
+		}
+	}
+}
+
+/// Load a WAD lump into a fresh heap buffer. Caller owns the allocation.
+/// Assumes the lump exists — callers check with W_CheckNumForName first
+/// when missing lumps aren't fatal.
+fn load_lump(name:ptr -- data:ptr size:i64) {
+	name W_CheckNumForName -> idx
+	idx W_LumpLength -> sz
+	sz mem::alloc! -> buf
+	idx buf W_ReadLump
+	buf sz
+}
+
+fn main() {
+	INIT_VIDEO sdl::Init -> rc
+	rc 0 neq if {
+		"SDL_Init failed" print nl
+		return
+	}
+
+	"Quadrate TITLEPIC demo"
+		WINDOWPOS_CENTERED WINDOWPOS_CENTERED
+		WIN_W WIN_H WINDOW_SHOWN
+		sdl::CreateWindow -> win
+
+	win -1 RENDERER_ACCELERATED sdl::CreateRenderer -> renderer
+	renderer PIXELFORMAT_ARGB8888 TEXTUREACCESS_STREAMING WIN_W WIN_H sdl::CreateTexture -> tex
+
+	"wads/doom1.wad" W_AddFile
+	"WAD loaded: " print numlumps print " lumps" print nl
+
+	// Helper: build a NUL-padded 8-byte name buffer.
+	8 mem::alloc! -> key
+
+	// PLAYPAL
+	key 8 mem::zero
+	80 key 0 mem::set_u8   76 key 1 mem::set_u8   65 key 2 mem::set_u8   89 key 3 mem::set_u8
+	80 key 4 mem::set_u8   65 key 5 mem::set_u8   76 key 6 mem::set_u8
+	key load_lump -> pal_size -> playpal
+	"PLAYPAL loaded (" print pal_size print " bytes)" print nl
+
+	// TITLEPIC
+	key 8 mem::zero
+	84 key 0 mem::set_u8   73 key 1 mem::set_u8   84 key 2 mem::set_u8   76 key 3 mem::set_u8
+	69 key 4 mem::set_u8   80 key 5 mem::set_u8   73 key 6 mem::set_u8   67 key 7 mem::set_u8
+	key load_lump -> tp_size -> titlepic
+	"TITLEPIC loaded (" print tp_size print " bytes, "
+		print titlepic patch_width print "×" prints titlepic patch_height print ")" print nl
+
+	// Paletted framebuffer (320×200 = 64000 bytes) + ARGB framebuffer (640×400×4 = 1,024,000 bytes).
+	DOOM_W DOOM_H mul mem::alloc! -> paletted
+	paletted DOOM_W DOOM_H mul mem::zero
+
+	WIN_W WIN_H mul 4 mul mem::alloc! -> argb
+	argb WIN_W WIN_H mul 4 mul mem::zero
+
+	// Render the patch onto the paletted buffer, then convert to ARGB.
+	0 0 titlepic paletted DOOM_W V_DrawPatch
+	paletted playpal argb palette_to_argb_2x
+
+	tex argb WIN_W 4 mul sdl::UpdateTextureFull drop
+	renderer sdl::RenderClear
+	renderer tex sdl::RenderCopyFull
+	renderer sdl::RenderPresent
+
+	// Write a PPM snapshot of the 320×200 native image so we have a
+	// visual artifact even on headless runs. Format: P6 header + raw RGB.
+	DOOM_W DOOM_H mul 3 mul -> rgb_bytes
+	rgb_bytes mem::alloc! -> rgb
+	0 DOOM_H 1 for sy {
+		0 DOOM_W 1 for sx {
+			paletted sy DOOM_W mul sx add mem::get_u8 -> idx
+			playpal idx 3 mul mem::ptr_add -> entry
+			entry 0 mem::get_u8 rgb sy DOOM_W mul sx add 3 mul     mem::set_u8
+			entry 1 mem::get_u8 rgb sy DOOM_W mul sx add 3 mul 1 add mem::set_u8
+			entry 2 mem::get_u8 rgb sy DOOM_W mul sx add 3 mul 2 add mem::set_u8
+		}
+	}
+	"build/titlepic.ppm" io::WriteBinary io::open! -> ppm
+	// PPM P6 header: magic + width/height + maxval + raw RGB.
+	"P6\n320 200\n255\n" mem::from_string -> hlen -> hbuf
+	ppm hbuf hlen io::write! drop
+	ppm rgb rgb_bytes io::write! drop
+	ppm io::close
+	hbuf mem::free
+	rgb mem::free
+	"wrote build/titlepic.ppm" print nl
+
+	"rendered — hold for 5s or until keypress" print nl
+	sdl::GetTicks -> start
+	0 -> done
+	loop {
+		done 1 eq if { break }
+		0 -> polling
+		loop {
+			polling 1 eq if { break }
+			sdl::PollKey -> scancode -> ev_type -> has_ev
+			scancode drop
+			has_ev 0 eq if {
+				1 -> polling
+			} else {
+				ev_type EVENT_QUIT eq if { 1 -> done  1 -> polling }
+				ev_type EVENT_KEYDOWN eq if { 1 -> done  1 -> polling }
+			}
+		}
+		sdl::GetTicks start sub 5000 gt if { 1 -> done }
+		16 sdl::Delay
+	}
+
+	argb mem::free
+	paletted mem::free
+	titlepic mem::free
+	playpal mem::free
+	key mem::free
+
+	tex sdl::DestroyTexture
+	renderer sdl::DestroyRenderer
+	win sdl::DestroyWindow
+	sdl::Quit
+	"done" print nl
+}

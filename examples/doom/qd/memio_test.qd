@@ -1,0 +1,36 @@
+use "memio.qd"
+use mem
+
+fn main() {
+	// Read path: wrap a pre-existing buffer.
+	16 mem::alloc! -> src
+	0 16 1 for i { i src i mem::set_u8 }
+	src 16 mem_fopen_read -> fr
+	"position=" print fr mem_ftell print nl
+
+	8 mem::alloc! -> dest
+	dest 8 fr mem_fread -> got
+	"read " print got print " bytes" print nl
+	0 8 1 for i { "  " print dest i mem::get_u8 print nl }
+	"position after=" print fr mem_ftell print nl
+
+	fr 4 MEM_SEEK_SET mem_fseek print nl           // 0 = OK
+	"position after seek=" print fr mem_ftell print nl
+	fr mem_fclose
+
+	// Write path.
+	mem_fopen_write -> fw
+	4 mem::alloc! -> data
+	99 data 0 mem::set_u8 100 data 1 mem::set_u8 101 data 2 mem::set_u8 102 data 3 mem::set_u8
+	data 4 fw mem_fwrite -> wrote
+	"wrote " print wrote print " bytes" print nl
+
+	fw mem_get_buf -> blen -> bp
+	"buflen=" print blen print nl
+	0 blen 1 for i { "  " print bp i mem::get_u8 print nl }
+	fw mem_fclose
+
+	data mem::free
+	dest mem::free
+	src mem::free
+}

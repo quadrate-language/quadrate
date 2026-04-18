@@ -1,0 +1,7 @@
+gametic: 0
+ticdup: 1
+netgame before: 0
+netgame after connect: 0
+autostart: 0
+gametic after 3 tics: 3
+done

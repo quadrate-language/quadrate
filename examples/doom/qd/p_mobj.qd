@@ -1,0 +1,59 @@
+/// Map-object (mobj_t) lifecycle.
+///
+/// Ported from doomgeneric/p_mobj.c. 1,300 lines covering: spawning,
+/// physics (XY/Z movement, clipping, floor-stepping), state-machine
+/// driving (P_SetMobjState walks info.qd's state table), explosion
+/// cleanup, nightmare respawn, bloodtrails / puffs, missile aiming,
+/// map-thing-to-mobj conversion.
+///
+/// Every entry depends on the mobj_t struct layout, which in turn
+/// depends on level geometry from p_setup (#46). This pass exposes
+/// just the public symbols so info.qd's dispatcher and g_game can
+/// link — real bodies replace these one by one once the mobj struct
+/// is pinned down.
+
+use mem
+
+pub fn P_SetMobjState(mobj:ptr state:i64 -- ok:i64) {
+	mobj drop state drop
+	1
+}
+
+pub fn P_ExplodeMissile(mo:ptr -- ) { mo drop }
+pub fn P_XYMovement(mo:ptr -- ) { mo drop }
+pub fn P_ZMovement(mo:ptr -- ) { mo drop }
+pub fn P_MobjThinker(mobj:ptr -- ) { mobj drop }
+
+pub fn P_SpawnMobj(x:i64 y:i64 z:i64 type:i64 -- mo:ptr) {
+	x drop y drop z drop type drop
+	0 cast<ptr>
+}
+
+pub fn P_RemoveMobj(mobj:ptr -- ) { mobj drop }
+
+pub fn P_RespawnSpecials( -- ) { }
+
+pub fn P_SpawnPlayer(mthing:ptr -- ) { mthing drop }
+
+pub fn P_SpawnMapThing(mthing:ptr -- ) { mthing drop }
+
+pub fn P_CheckMissileSpawn(th:ptr -- ) { th drop }
+
+pub fn P_NightmareRespawn(mobj:ptr -- ) { mobj drop }
+
+pub fn P_SpawnPuff(x:i64 y:i64 z:i64 -- ) {
+	x drop y drop z drop
+}
+
+pub fn P_SpawnBlood(x:i64 y:i64 z:i64 damage:i64 -- ) {
+	x drop y drop z drop damage drop
+}
+
+pub fn P_SpawnMissile(source:ptr dest:ptr type:i64 -- mo:ptr) {
+	source drop dest drop type drop
+	0 cast<ptr>
+}
+
+pub fn P_SpawnPlayerMissile(source:ptr type:i64 -- ) {
+	source drop type drop
+}

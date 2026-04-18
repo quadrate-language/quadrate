@@ -1,0 +1,60 @@
+/// Wall segment rendering.
+///
+/// Ported from doomgeneric/r_segs.c. The upstream file is 700 lines of
+/// projection-mapped wall rasterisation: R_StoreWallRange classifies the
+/// current seg (one-sided vs two-sided, sky, masked texture, etc.) and
+/// records it in drawsegs; R_RenderSegLoop walks per-column calling
+/// R_DrawColumn with the right dc_* state; R_RenderMaskedSegRange
+/// handles transparent middle textures for two-sided linedefs.
+///
+/// This pass exposes the public state + function signatures so the BSP
+/// walker and the render coordinator can link against the port, but
+/// the bodies are stubs: they need per-seg geometry that only lands
+/// once p_setup.qd wires up the real level-data structures (task #46).
+/// When that happens, the seg-loop body below is the direct successor
+/// of `R_RenderSegLoop` in r_segs.c, translated one line at a time.
+
+use "doomdef.qd"
+
+// ---- Seg state written by R_StoreWallRange, read by R_RenderSegLoop ----
+
+pub var segtextured:i64 = 0
+pub var markfloor:i64 = 0
+pub var markceiling:i64 = 0
+pub var maskedtexture:i64 = 0
+
+pub var toptexture:i64 = 0
+pub var bottomtexture:i64 = 0
+pub var midtexture:i64 = 0
+
+pub var rw_x:i64 = 0
+pub var rw_stopx:i64 = 0
+pub var rw_centerangle:i64 = 0
+pub var rw_offset:i64 = 0
+pub var rw_distance:i64 = 0
+pub var rw_scale:i64 = 0
+pub var rw_scalestep:i64 = 0
+pub var rw_midtexturemid:i64 = 0
+pub var rw_toptexturemid:i64 = 0
+pub var rw_bottomtexturemid:i64 = 0
+
+// ---- Public entry points ----
+
+/// Paint a (transparent) middle-texture seg between the two columns ds1
+/// and ds2. Fires for two-sided linedefs with a mid texture (door frames,
+/// grates). Stubbed; visible walls will render flat until the seg loop
+/// implementation lands.
+pub fn R_RenderMaskedSegRange(ds:ptr x1:i64 x2:i64 -- ) {
+	ds drop x1 drop x2 drop
+}
+
+/// Walk rw_x..rw_stopx, for each column compute yt/yb and call
+/// R_DrawColumn (or a masked variant for windows). Stubbed.
+pub fn R_RenderSegLoop( -- ) { }
+
+/// Classify the currently-considered seg and, if visible, record its
+/// projection extents in drawsegs so R_RenderSegLoop can rasterise
+/// them after the full BSP walk. Stubbed.
+pub fn R_StoreWallRange(start:i64 stop:i64 -- ) {
+	start drop stop drop
+}

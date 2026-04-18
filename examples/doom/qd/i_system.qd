@@ -1,0 +1,135 @@
+/// Platform-ish services: heap, banner, error, exit.
+///
+/// Ported from doomgeneric/i_system.c. The C version owns a singly-linked
+/// `atexit_listentry_t` list plus a zenity error-dialog path and a DOS
+/// NULL-pointer-read emulator. We trim both:
+///
+///   - The atexit list registers cleanup callbacks that the C build drives
+///     on quit and on error. Since we exit the process and the OS reaps
+///     every resource we hold (SDL window, WAD handle, heap), skipping
+///     atexit cleanup is safe and lets us dodge function-pointer-in-struct
+///     storage, which quadrate doesn't have yet. When a caller actively
+///     needs ordered teardown we'll revisit.
+///
+///   - The zenity dialog is a pure UX nicety; `I_Error` just prints to
+///     stderr and exits here.
+///
+///   - `I_GetMemoryValue` emulates reading the first 16 bytes of DOS
+///     conventional RAM for Doom bug-compat with original pointer bugs.
+///     None of the non-extreme mods hit it; we return zeros.
+
+use mem
+use os
+use "m_argv.qd"
+use "m_misc.qd"
+
+pub const DEFAULT_RAM = 6
+pub const MIN_RAM = 6
+
+var already_quitting:i64 = 0
+
+/// Register a cleanup function. No-op in this port — see module header.
+/// Keeps the signature so future Doom modules can call it unchanged.
+pub fn I_AtExit(func:i64 run_on_error:i64 -- ) {
+	func drop
+	run_on_error drop
+}
+
+/// Tactile feedback (Logitech Cyberman rumble). No-op.
+pub fn I_Tactile(on:i64 off:i64 total:i64 -- ) {
+	on drop off drop total drop
+}
+
+/// Allocate Doom's main zone heap. Honors `-mb <N>` to pick MiB size;
+/// otherwise DEFAULT_RAM. Returns (ptr, byte_size).
+pub fn I_ZoneBase( -- p:ptr size:i64) {
+	"-mb" 1 M_CheckParmWithArgs -> parm
+	DEFAULT_RAM -> mb
+	parm 0 gt if {
+		parm 1 add M_Argv M_StrToInt -> ok -> v
+		ok 1 eq if { v -> mb }
+	}
+
+	mb MIN_RAM lt if {
+		mb -> mb2
+		"zone: requested " print mb2 print " MiB, clamping to " print MIN_RAM print nl
+		MIN_RAM -> mb
+	}
+
+	mb 1024 mul 1024 mul -> total
+	total mem::alloc! -> zonemem
+	"zone memory: " print total print " bytes" print nl
+	zonemem total
+}
+
+/// Centred banner line (75-col divider + message centred within 70 cols).
+pub fn I_PrintBanner(msg:str -- ) {
+	msg mem::from_string -> slen -> sptr
+	sptr mem::free
+	35 slen 2 div sub -> spaces
+	spaces 0 lt if { 0 -> spaces }
+	0 spaces 1 for i { " " print }
+	msg print nl
+}
+
+pub fn I_PrintDivider( -- ) {
+	0 75 1 for i { "=" print }
+	nl
+}
+
+pub fn I_PrintStartupBanner(gamedescription:str -- ) {
+	I_PrintDivider
+	gamedescription I_PrintBanner
+	I_PrintDivider
+	" quadrate Doom is free software covered by the GNU GPL." print nl
+	" There is NO warranty. See the source for details." print nl
+	I_PrintDivider
+}
+
+/// Is stdout a real console? We don't have isatty() so pessimistically
+/// return 0 — this turns off the zenity popup path in I_Error, which is
+/// fine because our I_Error doesn't pop one anyway.
+pub fn I_ConsoleStdout( -- yes:i64) {
+	0
+}
+
+/// Fatal error. Prints to stderr, skips atexit (see header), exits -1.
+/// No varargs yet, so callers pass a pre-formatted string.
+pub fn I_Error(msg:str -- ) {
+	already_quitting 1 eq if {
+		"Warning: recursive call to I_Error" print nl
+		1 os::exit
+	}
+	1 -> already_quitting
+
+	"Error: " print msg print nl
+	1 os::exit
+}
+
+/// Normal quit. Prints a goodbye line and exits 0. atexit is a no-op.
+pub fn I_Quit( -- ) {
+	0 os::exit
+}
+
+/// DOS NULL-dereference emulation. Every supported Doom mod that cares
+/// about this was running on DOS 6.22 or Win98 — neither is relevant to
+/// modern Linux, so we return zeros. Size is 1/2/4 bytes.
+pub fn I_GetMemoryValue(offset:i64 value:ptr size:i64 -- ok:i64) {
+	offset drop
+	size 1 eq if {
+		0 value 0 mem::set_u8
+		1
+	} else {
+		size 2 eq if {
+			0 value 0 mem::set_u16
+			1
+		} else {
+			size 4 eq if {
+				0 value 0 mem::set_u32
+				1
+			} else {
+				0
+			}
+		}
+	}
+}

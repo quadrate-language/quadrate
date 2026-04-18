@@ -1,0 +1,9 @@
+/// ENDOOM text-mode end screen.
+///
+/// Ported from doomgeneric/i_endoom.c. In doomgeneric the body is wrapped
+/// in `#ifdef ORIGCODE` (txt_main.h isn't compiled in) so the generic
+/// build does nothing. We match that: I_Endoom is a no-op.
+
+pub fn I_Endoom(endoom_data:ptr -- ) {
+	endoom_data drop
+}

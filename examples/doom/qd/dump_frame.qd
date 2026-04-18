@@ -1,0 +1,73 @@
+/// Screenshot helper: dump the current I_VideoBuffer to a PPM file.
+///
+/// Writes a binary-PPM (P6) image of the 320×200 paletted framebuffer
+/// by looking up each pixel through the installed SDL palette. Used to
+/// verify the automap2d renderer output lands correctly without needing
+/// an interactive display.
+
+use mem
+use io
+use "doomdef.qd"
+use "i_video.qd"
+use "m_misc.qd"
+
+/// Format a small i64 into a byte buffer as ASCII; returns byte count.
+fn i64_to_ascii(v:i64 buf:ptr -- n:i64) {
+	v 0 eq if {
+		48 buf 0 mem::set_u8
+		1 return
+	}
+	// Up to 20 digits for i64.
+	20 mem::alloc! -> tmp
+	0 -> len
+	v -> x
+	loop {
+		x 0 lte if { break }
+		x 10 mod 48 add tmp len mem::set_u8
+		x 10 div -> x
+		len 1 add -> len
+	}
+	// Reverse into buf.
+	0 -> i
+	loop {
+		i len gte if { break }
+		tmp len i sub 1 sub mem::get_u8 buf i mem::set_u8
+		i 1 add -> i
+	}
+	tmp mem::free
+	len
+}
+
+/// Write 320×200 × 3 bytes of RGB data (no header) into `out` from
+/// I_VideoBuffer via s_palette. `out` must hold 192000 bytes.
+fn paletted_to_rgb(out:ptr -- ) {
+	0 -> i
+	SCREENWIDTH SCREENHEIGHT mul -> total
+	loop {
+		i total gte if { break }
+		I_VideoBuffer i mem::get_u8 -> idx
+		s_palette idx 4 mul mem::get_u32 -> argb
+		argb 16 shr 255 and -> r
+		argb 8 shr 255 and -> g
+		argb 255 and -> b
+		r out i 3 mul     mem::set_u8
+		g out i 3 mul 1 add mem::set_u8
+		b out i 3 mul 2 add mem::set_u8
+		i 1 add -> i
+	}
+}
+
+/// Save the current framebuffer to a PPM file at `path`.
+pub fn DumpFramePPM(path:str -- ) {
+	path io::WriteBinary io::open! -> h
+	"P6\n320 200\n255\n" mem::from_string -> hdr_len -> hdr
+	h hdr hdr_len io::write! drop
+	hdr mem::free
+
+	SCREENWIDTH SCREENHEIGHT mul 3 mul mem::alloc! -> rgb
+	rgb paletted_to_rgb
+	h rgb SCREENWIDTH SCREENHEIGHT mul 3 mul io::write! drop
+	rgb mem::free
+
+	h io::close
+}

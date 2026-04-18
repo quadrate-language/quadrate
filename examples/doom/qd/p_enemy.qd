@@ -1,0 +1,85 @@
+/// Monster AI + A_* action bodies.
+///
+/// Ported from doomgeneric/p_enemy.c — 2,000 lines of per-monster logic:
+/// P_CheckSight targets, P_NewChaseDir pathfinding, P_Move step-and-slide,
+/// plus ~50 A_* action callbacks driven by info.qd's state table
+/// (A_Look, A_Chase, A_FaceTarget, per-monster attacks, boss cues).
+///
+/// Each monster's state machine in info.qd calls one of the A_* entries
+/// per tic via an integer dispatch tag. We ship every one as an
+/// argument-accepting no-op so the link surface is complete; bodies
+/// land one-at-a-time once mobjs + p_map are live (tasks #40, #42).
+
+pub fn P_RecursiveSound(sec:ptr soundblocks:i64 -- ) {
+	sec drop soundblocks drop
+}
+
+pub fn P_NoiseAlert(target:ptr emmiter:ptr -- ) {
+	target drop emmiter drop
+}
+
+pub fn P_CheckMeleeRange(actor:ptr -- ok:i64) { actor drop 0 }
+pub fn P_CheckMissileRange(actor:ptr -- ok:i64) { actor drop 0 }
+
+pub fn P_Move(actor:ptr -- ok:i64) { actor drop 0 }
+pub fn P_TryWalk(actor:ptr -- ok:i64) { actor drop 0 }
+pub fn P_NewChaseDir(actor:ptr -- ) { actor drop }
+pub fn P_LookForPlayers(actor:ptr allaround:i64 -- ok:i64) {
+	actor drop allaround drop 0
+}
+
+/// A_* monster actions — driven by info.qd's state-table dispatcher.
+pub fn A_Fall(actor:ptr -- ) { actor drop }
+pub fn A_KeenDie(actor:ptr -- ) { actor drop }
+pub fn A_Look(actor:ptr -- ) { actor drop }
+pub fn A_Chase(actor:ptr -- ) { actor drop }
+pub fn A_FaceTarget(actor:ptr -- ) { actor drop }
+pub fn A_PosAttack(actor:ptr -- ) { actor drop }
+pub fn A_SPosAttack(actor:ptr -- ) { actor drop }
+pub fn A_CPosAttack(actor:ptr -- ) { actor drop }
+pub fn A_CPosRefire(actor:ptr -- ) { actor drop }
+pub fn A_SpidRefire(actor:ptr -- ) { actor drop }
+pub fn A_BspiAttack(actor:ptr -- ) { actor drop }
+pub fn A_TroopAttack(actor:ptr -- ) { actor drop }
+pub fn A_SargAttack(actor:ptr -- ) { actor drop }
+pub fn A_HeadAttack(actor:ptr -- ) { actor drop }
+pub fn A_CyberAttack(actor:ptr -- ) { actor drop }
+pub fn A_BruisAttack(actor:ptr -- ) { actor drop }
+pub fn A_SkelMissile(actor:ptr -- ) { actor drop }
+pub fn A_Tracer(actor:ptr -- ) { actor drop }
+pub fn A_SkelWhoosh(actor:ptr -- ) { actor drop }
+pub fn A_SkelFist(actor:ptr -- ) { actor drop }
+pub fn A_VileChase(actor:ptr -- ) { actor drop }
+pub fn A_VileStart(actor:ptr -- ) { actor drop }
+pub fn A_StartFire(actor:ptr -- ) { actor drop }
+pub fn A_FireCrackle(actor:ptr -- ) { actor drop }
+pub fn A_Fire(actor:ptr -- ) { actor drop }
+pub fn A_VileTarget(actor:ptr -- ) { actor drop }
+pub fn A_VileAttack(actor:ptr -- ) { actor drop }
+pub fn A_FatRaise(actor:ptr -- ) { actor drop }
+pub fn A_FatAttack1(actor:ptr -- ) { actor drop }
+pub fn A_FatAttack2(actor:ptr -- ) { actor drop }
+pub fn A_FatAttack3(actor:ptr -- ) { actor drop }
+pub fn A_SkullAttack(actor:ptr -- ) { actor drop }
+pub fn A_PainShootSkull(actor:ptr angle:i64 -- ) {
+	actor drop angle drop
+}
+pub fn A_PainAttack(actor:ptr -- ) { actor drop }
+pub fn A_PainDie(actor:ptr -- ) { actor drop }
+pub fn A_Scream(actor:ptr -- ) { actor drop }
+pub fn A_XScream(actor:ptr -- ) { actor drop }
+pub fn A_Pain(actor:ptr -- ) { actor drop }
+pub fn A_Explode(thingy:ptr -- ) { thingy drop }
+pub fn A_BossDeath(mo:ptr -- ) { mo drop }
+pub fn A_Hoof(mo:ptr -- ) { mo drop }
+pub fn A_Metal(mo:ptr -- ) { mo drop }
+pub fn A_BabyMetal(mo:ptr -- ) { mo drop }
+pub fn A_BrainAwake(mo:ptr -- ) { mo drop }
+pub fn A_BrainPain(mo:ptr -- ) { mo drop }
+pub fn A_BrainScream(mo:ptr -- ) { mo drop }
+pub fn A_BrainExplode(mo:ptr -- ) { mo drop }
+pub fn A_BrainDie(mo:ptr -- ) { mo drop }
+pub fn A_BrainSpit(mo:ptr -- ) { mo drop }
+pub fn A_SpawnSound(mo:ptr -- ) { mo drop }
+pub fn A_SpawnFly(mo:ptr -- ) { mo drop }
+pub fn A_PlayerScream(mo:ptr -- ) { mo drop }

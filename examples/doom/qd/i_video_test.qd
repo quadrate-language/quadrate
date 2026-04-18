@@ -1,0 +1,70 @@
+// Headless smoke test for i_video — verifies palette build-out, frame
+// compose, and SDL teardown without requiring a display (SDL_VIDEODRIVER=
+// dummy from the Makefile harness).
+
+use "i_video.qd"
+use "w_wad.qd"
+use "doomdef.qd"
+use mem
+
+fn main() {
+	// 1x scaling to keep it fast.
+	1 -> fb_scaling
+
+	I_InitGraphics
+
+	// Verify framebuffer + palette are allocated and zeroed.
+	"I_VideoBuffer null: " print I_VideoBuffer mem::is_null print nl    // 0
+	"s_palette null: " print s_palette mem::is_null print nl             // 0
+	"screenvisible: " print screenvisible print nl                       // 1
+
+	// Load PLAYPAL from the IWAD and install it.
+	"wads/doom1.wad" W_AddFile
+	8 mem::alloc! -> key
+	key 8 mem::zero
+	80 key 0 mem::set_u8 76 key 1 mem::set_u8 65 key 2 mem::set_u8
+	89 key 3 mem::set_u8 80 key 4 mem::set_u8 65 key 5 mem::set_u8
+	76 key 6 mem::set_u8
+	key W_CheckNumForName -> palnum
+	palnum 0 W_CacheLumpNum -> pal
+	key mem::free
+
+	pal I_SetPalette
+	"palette_changed: " print palette_changed print nl                   // 1
+
+	// Spot-check a couple palette entries.
+	"pal[0] argb: " print s_palette 0 mem::get_u32 print nl
+	"pal[255] argb: " print s_palette 255 4 mul mem::get_u32 print nl
+
+	// Round-trip I_GetPaletteIndex against an entry we just stored.
+	s_palette 10 4 mul mem::get_u32 -> argb
+	argb 16 shr 255 and -> r
+	argb 8 shr 255 and -> g
+	argb 255 and -> b
+	r g b I_GetPaletteIndex print nl      // expect 10 (or close match if dup)
+
+	// Fill videobuffer with index 42 and read it back via I_ReadScreen.
+	0 SCREENWIDTH SCREENHEIGHT mul 1 for i { 42 I_VideoBuffer i mem::set_u8 }
+	SCREENWIDTH SCREENHEIGHT mul mem::alloc! -> snap
+	snap I_ReadScreen
+	"snap[0]: " print snap 0 mem::get_u8 print nl                         // 42
+	"snap[63999]: " print snap 63999 mem::get_u8 print nl                 // 42
+	snap mem::free
+
+	// I_FinishUpdate composites the frame into the SDL texture. Under
+	// the dummy video driver it's a no-op SDL call chain, but must not
+	// crash.
+	I_FinishUpdate
+
+	// Tic-timing hooks are either no-ops or call into I_GetEvent (which
+	// is empty without pending events).
+	I_StartFrame
+	I_StartTic
+	I_UpdateNoBlit
+	I_BeginRead
+	I_EndRead
+	"test-title" I_SetWindowTitle
+
+	I_ShutdownGraphics
+	"done" print nl
+}

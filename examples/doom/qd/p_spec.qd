@@ -1,0 +1,133 @@
+/// Level specials: switches, doors, platforms, lights, teleports, stairs.
+///
+/// Ported from doomgeneric/p_spec.c + p_ceilng.c + p_doors.c + p_floor.c
+/// + p_plats.c + p_switch.c + p_telept.c + p_lights.c — ~2,500 lines
+/// spread across 8 files. Each special type (door, platform, etc.) has
+/// a spawn function (P_Spawn*), an event function (EV_*), and a thinker
+/// (T_*) that ticks its animation per frame.
+///
+/// All of these run against sector_t + line_t + mobj_t which aren't
+/// pinned yet. Ship symbol stubs so info.qd's state dispatcher, g_game's
+/// line-triggers, and P_UpdateSpecials can link; real T_* thinkers land
+/// with the mobj pass.
+
+// ---- p_spec.c orchestrator + line-event handling ----
+
+pub fn P_InitPicAnims( -- ) { }
+pub fn P_SpawnSpecials( -- ) { }
+pub fn P_UpdateSpecials( -- ) { }
+
+pub fn P_FindSectorFromLineTag(line:ptr start:i64 -- idx:i64) {
+	line drop start drop -1
+}
+pub fn P_FindMinSurroundingLight(sector:ptr max:i64 -- min:i64) {
+	sector drop max drop 0
+}
+pub fn P_CrossSpecialLine(linenum:i64 side:i64 thing:ptr -- ) {
+	linenum drop side drop thing drop
+}
+pub fn P_ShootSpecialLine(thing:ptr line:ptr -- ) {
+	thing drop line drop
+}
+pub fn P_UseSpecialLine(thing:ptr line:ptr side:i64 -- ok:i64) {
+	thing drop line drop side drop 0
+}
+pub fn P_PlayerInSpecialSector(player:ptr -- ) { player drop }
+pub fn twoSided(sector:i64 line:i64 -- ok:i64) {
+	sector drop line drop 0
+}
+
+// ---- p_switch.c ----
+
+pub fn P_InitSwitchList( -- ) { }
+pub fn P_StartButton(line:ptr type:i64 texture:i64 time:i64 -- ) {
+	line drop type drop texture drop time drop
+}
+pub fn P_ChangeSwitchTexture(line:ptr useAgain:i64 -- ) {
+	line drop useAgain drop
+}
+
+// ---- p_ceilng.c ----
+
+pub fn T_MoveCeiling(ceiling:ptr -- ) { ceiling drop }
+pub fn EV_DoCeiling(line:ptr type:i64 -- ok:i64) {
+	line drop type drop 0
+}
+pub fn EV_CeilingCrushStop(line:ptr -- ok:i64) {
+	line drop 0
+}
+pub fn P_AddActiveCeiling(c:ptr -- ) { c drop }
+pub fn P_RemoveActiveCeiling(c:ptr -- ) { c drop }
+pub fn P_ActivateInStasisCeiling(line:ptr -- ) { line drop }
+
+// ---- p_doors.c ----
+
+pub fn T_VerticalDoor(door:ptr -- ) { door drop }
+pub fn T_SlidingDoor(door:ptr -- ) { door drop }
+pub fn EV_DoDoor(line:ptr type:i64 -- ok:i64) {
+	line drop type drop 0
+}
+pub fn EV_DoLockedDoor(line:ptr type:i64 thing:ptr -- ok:i64) {
+	line drop type drop thing drop 0
+}
+pub fn EV_VerticalDoor(line:ptr thing:ptr -- ) {
+	line drop thing drop
+}
+pub fn EV_SlidingDoor(line:ptr thing:ptr -- ) {
+	line drop thing drop
+}
+pub fn P_SpawnDoorCloseIn30(sec:ptr -- ) { sec drop }
+pub fn P_SpawnDoorRaiseIn5Mins(sec:ptr secnum:i64 -- ) {
+	sec drop secnum drop
+}
+pub fn P_InitSlidingDoorFrames( -- ) { }
+pub fn P_FindSlidingDoorType(line:ptr -- type:i64) { line drop -1 }
+
+// ---- p_floor.c ----
+
+pub fn T_MoveFloor(floor:ptr -- ) { floor drop }
+pub fn EV_DoFloor(line:ptr type:i64 -- ok:i64) {
+	line drop type drop 0
+}
+pub fn EV_BuildStairs(line:ptr type:i64 -- ok:i64) {
+	line drop type drop 0
+}
+pub fn EV_DoDonut(line:ptr -- ok:i64) { line drop 0 }
+pub fn P_FindHighestFloorSurrounding(sec:ptr -- v:i64) { sec drop 0 }
+pub fn P_FindLowestFloorSurrounding(sec:ptr -- v:i64) { sec drop 0 }
+pub fn P_FindHighestCeilingSurrounding(sec:ptr -- v:i64) { sec drop 0 }
+
+// ---- p_plats.c ----
+
+pub fn T_PlatRaise(plat:ptr -- ) { plat drop }
+pub fn EV_DoPlat(line:ptr type:i64 amount:i64 -- ok:i64) {
+	line drop type drop amount drop 0
+}
+pub fn EV_StopPlat(line:ptr -- ) { line drop }
+pub fn P_AddActivePlat(plat:ptr -- ) { plat drop }
+pub fn P_RemoveActivePlat(plat:ptr -- ) { plat drop }
+pub fn P_ActivateInStasis(tag:i64 -- ) { tag drop }
+
+// ---- p_lights.c ----
+
+pub fn T_FireFlicker(flick:ptr -- ) { flick drop }
+pub fn T_LightFlash(flash:ptr -- ) { flash drop }
+pub fn T_StrobeFlash(s:ptr -- ) { s drop }
+pub fn T_Glow(g:ptr -- ) { g drop }
+pub fn P_SpawnFireFlicker(sector:ptr -- ) { sector drop }
+pub fn P_SpawnLightFlash(sector:ptr -- ) { sector drop }
+pub fn P_SpawnStrobeFlash(sector:ptr fastOrSlow:i64 inSync:i64 -- ) {
+	sector drop fastOrSlow drop inSync drop
+}
+pub fn P_SpawnGlowingLight(sector:ptr -- ) { sector drop }
+pub fn EV_StartLightStrobing(line:ptr -- ) { line drop }
+pub fn EV_TurnTagLightsOff(line:ptr -- ) { line drop }
+pub fn EV_LightTurnOn(line:ptr bright:i64 -- ) {
+	line drop bright drop
+}
+
+// ---- p_telept.c ----
+
+pub fn EV_Teleport(line:ptr side:i64 thing:ptr -- ok:i64) {
+	line drop side drop thing drop 0
+}

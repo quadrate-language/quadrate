@@ -1,0 +1,43 @@
+use "w_wad.qd"
+use mem
+
+/// Render an 8-byte, NUL-padded lump name as a string via mem::to_string.
+fn name_to_str(addr:ptr -- s:str) {
+	// Scan for NUL to compute length, then to_string.
+	0 -> len
+	0 8 1 for j {
+		addr j mem::get_u8 0 neq if {
+			len 1 + -> len
+		}
+	}
+	addr len mem::to_string
+}
+
+fn main() {
+	"wads/doom1.wad" W_AddFile
+
+	"numlumps: " print numlumps print nl
+
+	// Print the first 10 lump names and sizes.
+	"first 10 lumps:" print nl
+	0 10 1 for i {
+		"  [" print i print "] " print
+		lumpinfo i LUMP_STRIDE mul mem::ptr_add name_to_str print
+		"  (" print i W_LumpLength print " bytes)" print nl
+	}
+
+	// Find the PLAYPAL lump (the palette — always present in a Doom IWAD).
+	8 mem::alloc! -> key
+	key 8 mem::zero
+	80 key 0 mem::set_u8   // P
+	76 key 1 mem::set_u8   // L
+	65 key 2 mem::set_u8   // A
+	89 key 3 mem::set_u8   // Y
+	80 key 4 mem::set_u8   // P
+	65 key 5 mem::set_u8   // A
+	76 key 6 mem::set_u8   // L
+
+	"PLAYPAL index: " print key W_CheckNumForName print nl
+	"PLAYPAL size:  " print key W_CheckNumForName W_LumpLength print nl
+	key mem::free
+}

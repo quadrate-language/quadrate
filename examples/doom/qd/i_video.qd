@@ -1,0 +1,196 @@
+/// Video subsystem: 8-bit paletted framebuffer → SDL texture.
+///
+/// Ported from doomgeneric/i_video.c. Doom renders into an 8-bit
+/// paletted buffer (`I_VideoBuffer`), which we convert each frame to
+/// 32-bit ARGB through the current `s_Palette` and push into an SDL
+/// streaming texture. The C path goes through DG_DrawFrame (platform
+/// shim); we call SDL directly since the engine is now wholly in
+/// Quadrate.
+///
+/// Palette updates land in I_SetPalette via the PLAYPAL lump (256×3
+/// bytes: r, g, b). We apply the current gamma curve (from tables.qd)
+/// while building the ARGB entries.
+///
+/// The SDL renderer / window / texture are owned here; d_main doesn't
+/// need to know which platform is under the hood.
+
+use mem
+use "doomdef.qd"
+use "i_input.qd"
+use "../ffi/sdl.qd"
+use "tables.qd"
+
+// ---- Public state exposed to the engine ----
+
+pub var I_VideoBuffer:ptr = 0        // 320 × 200 u8 paletted
+pub var screenvisible:i64 = 0
+pub var palette_changed:i64 = 0
+pub var usegamma:i64 = 0
+pub var fb_scaling:i64 = 2
+pub var usemouse:i64 = 0
+pub var mouse_threshold:i64 = 10
+pub var screensaver_mode:i64 = 0
+
+// ---- Internal SDL state ----
+
+var sdl_window:ptr = 0
+var sdl_renderer:ptr = 0
+var sdl_texture:ptr = 0
+var argb_buffer:ptr = 0      // 320 × 200 × 4 bytes
+pub var s_palette:ptr = 0    // 256 × u32 ARGB
+
+fn ensure_palette( -- ) {
+	s_palette mem::is_null if {
+		256 4 mul mem::alloc! -> s_palette
+		s_palette 256 4 mul mem::zero
+	}
+}
+
+/// Initialise graphics: open the SDL window at (320 × fb_scaling, 200 ×
+/// fb_scaling), streaming-ARGB texture, and 320 × 200 paletted work
+/// buffer. Called once at engine boot.
+pub fn I_InitGraphics( -- ) {
+	sdl::INIT_VIDEO sdl::INIT_AUDIO or sdl::Init -> rc
+	rc 0 neq if {
+		"I_InitGraphics: SDL_Init failed: " print sdl::GetError print nl
+		return
+	}
+
+	SCREENWIDTH fb_scaling mul -> win_w
+	SCREENHEIGHT fb_scaling mul -> win_h
+
+	"quadrate doom"
+		sdl::WINDOWPOS_CENTERED sdl::WINDOWPOS_CENTERED
+		win_w win_h sdl::WINDOW_SHOWN
+		sdl::CreateWindow -> sdl_window
+
+	sdl_window -1 sdl::RENDERER_ACCELERATED sdl::CreateRenderer -> sdl_renderer
+
+	sdl_renderer
+		sdl::PIXELFORMAT_ARGB8888 sdl::TEXTUREACCESS_STREAMING
+		SCREENWIDTH SCREENHEIGHT
+		sdl::CreateTexture -> sdl_texture
+
+	SCREENWIDTH SCREENHEIGHT mul mem::alloc! -> I_VideoBuffer
+	I_VideoBuffer SCREENWIDTH SCREENHEIGHT mul mem::zero
+
+	SCREENWIDTH SCREENHEIGHT mul 4 mul mem::alloc! -> argb_buffer
+
+	ensure_palette
+	1 -> screenvisible
+	I_InitInput
+}
+
+pub fn I_ShutdownGraphics( -- ) {
+	sdl_texture mem::is_null 0 eq if { sdl_texture sdl::DestroyTexture }
+	sdl_renderer mem::is_null 0 eq if { sdl_renderer sdl::DestroyRenderer }
+	sdl_window mem::is_null 0 eq if { sdl_window sdl::DestroyWindow }
+	sdl::Quit
+	I_VideoBuffer mem::is_null 0 eq if { I_VideoBuffer mem::free }
+	argb_buffer mem::is_null 0 eq if { argb_buffer mem::free }
+	s_palette mem::is_null 0 eq if { s_palette mem::free }
+}
+
+/// Per-tic frame-start hook (nothing to do in SDL mode).
+pub fn I_StartFrame( -- ) { }
+
+/// Per-tic input drain.
+pub fn I_StartTic( -- ) {
+	I_GetEvent
+}
+
+pub fn I_UpdateNoBlit( -- ) { }
+
+/// Convert a PLAYPAL byte triplet (R, G, B) into the native ARGB32 layout
+/// SDL expects under SDL_PIXELFORMAT_ARGB8888 (little-endian stored as
+/// byte order B, G, R, A in memory).
+fn pack_argb(r:i64 g:i64 b:i64 -- v:i64) {
+	// 0xFF << 24 | R << 16 | G << 8 | B
+	255 16777216 mul   r 65536 mul add   g 256 mul add   b add
+}
+
+/// Install a new palette. `palette` points at 256 × 3 raw bytes from
+/// PLAYPAL. Each entry gets gamma-corrected via gammatable[usegamma].
+pub fn I_SetPalette(palette:ptr -- ) {
+	ensure_palette
+	ensure_tables
+	0 -> i
+	loop {
+		i 256 gte if { break }
+		palette i 3 mul 0 add mem::get_u8 -> r
+		palette i 3 mul 1 add mem::get_u8 -> g
+		palette i 3 mul 2 add mem::get_u8 -> b
+		gammatable usegamma 256 mul r add mem::get_u8 -> gr
+		gammatable usegamma 256 mul g add mem::get_u8 -> gg
+		gammatable usegamma 256 mul b add mem::get_u8 -> gb
+		gr gg gb pack_argb  s_palette i 4 mul mem::set_u32
+		i 1 add -> i
+	}
+	1 -> palette_changed
+}
+
+/// Push I_VideoBuffer through the palette into the SDL texture and present.
+pub fn I_FinishUpdate( -- ) {
+	ensure_palette
+	// Convert 320 × 200 u8 indices to ARGB. Single flat loop — Quadrate's
+	// nested `for` lowering mis-computes the inner bounds (observed at
+	// runtime: "Stack underflow when assigning to local variable").
+	0 -> i
+	SCREENWIDTH SCREENHEIGHT mul -> total
+	loop {
+		i total gte if { break }
+		I_VideoBuffer i mem::get_u8 -> idx
+		s_palette idx 4 mul mem::get_u32 -> argb
+		argb argb_buffer i 4 mul mem::set_u32
+		i 1 add -> i
+	}
+
+	sdl_texture argb_buffer SCREENWIDTH 4 mul sdl::UpdateTextureFull drop
+	sdl_renderer sdl::RenderClear
+	sdl_renderer sdl_texture sdl::RenderCopyFull
+	sdl_renderer sdl::RenderPresent
+}
+
+/// Copy I_VideoBuffer into scr (used by screen-wipe transitions).
+pub fn I_ReadScreen(scr:ptr -- ) {
+	0 SCREENWIDTH SCREENHEIGHT mul 1 for i {
+		I_VideoBuffer i mem::get_u8 scr i mem::set_u8
+	}
+}
+
+/// Closest-palette-entry finder. Doom calls this rarely; we scan the 256
+/// entries via ARGB distance.
+pub fn I_GetPaletteIndex(r:i64 g:i64 b:i64 -- idx:i64) {
+	ensure_palette
+	0 -> best
+	2147483647 -> best_diff
+	0 -> i
+	loop {
+		i 256 gte if { break }
+		s_palette i 4 mul mem::get_u32 -> argb
+		argb 16 shr 255 and -> pr
+		argb 8 shr 255 and -> pg
+		argb 255 and -> pb
+		r pr sub -> dr
+		g pg sub -> dg
+		b pb sub -> db
+		dr dr mul  dg dg mul add  db db mul add -> diff
+		diff best_diff lt if {
+			i -> best
+			diff -> best_diff
+		}
+		i 1 add -> i
+	}
+	best
+}
+
+pub fn I_BeginRead( -- ) { }
+pub fn I_EndRead( -- ) { }
+
+pub fn I_SetWindowTitle(title:str -- ) { title drop }
+pub fn I_GraphicsCheckCommandLine( -- ) { }
+pub fn I_SetGrabMouseCallback(func:i64 -- ) { func drop }
+pub fn I_EnableLoadingDisk( -- ) { }
+pub fn I_BindVideoVariables( -- ) { }
+pub fn I_DisplayFPSDots(on:i64 -- ) { on drop }
+pub fn I_CheckIsScreensaver( -- ) { }

@@ -1,0 +1,70 @@
+/// Basic Doom display/gameplay constants.
+///
+/// Ported from doomgeneric/doomdef.h. The C header is pure #defines; no
+/// runtime state lives here, so this module is just constants.
+
+// ---- Screen geometry ----
+
+pub const SCREENWIDTH = 320
+pub const SCREENHEIGHT = 200
+
+// ---- Frame rate / tic timing ----
+
+pub const TICRATE = 35
+
+// ---- Max players / lumps / etc ----
+
+pub const MAXPLAYERS = 4
+pub const MAXINT = 2147483647
+pub const MINCHAR = -128
+pub const MAXCHAR = 127
+pub const MINSHORT = -32768
+pub const MAXSHORT = 32767
+
+// ---- Game states (from doomdef.h's gamestate_t) ----
+
+pub const GS_LEVEL = 0
+pub const GS_INTERMISSION = 1
+pub const GS_FINALE = 2
+pub const GS_DEMOSCREEN = 3
+
+// ---- Card types ----
+
+pub const IT_BLUECARD = 0
+pub const IT_YELLOWCARD = 1
+pub const IT_REDCARD = 2
+pub const IT_BLUESKULL = 3
+pub const IT_YELLOWSKULL = 4
+pub const IT_REDSKULL = 5
+pub const NUMCARDS = 6
+
+// ---- Weapons ----
+
+pub const WP_FIST = 0
+pub const WP_PISTOL = 1
+pub const WP_SHOTGUN = 2
+pub const WP_CHAINGUN = 3
+pub const WP_MISSILE = 4
+pub const WP_PLASMA = 5
+pub const WP_BFG = 6
+pub const WP_CHAINSAW = 7
+pub const WP_SUPERSHOTGUN = 8
+pub const NUMWEAPONS = 9
+
+// ---- Ammo ----
+
+pub const AM_CLIP = 0
+pub const AM_SHELL = 1
+pub const AM_CELL = 2
+pub const AM_MISL = 3
+pub const NUMAMMO = 4
+pub const AM_NOAMMO = 5
+
+// ---- Logic helper ----
+
+/// Logical NOT: 0 → 1, anything else → 0. Quadrate's built-in `not`
+/// is BITWISE (~x), which produces unusable results for the boolean
+/// pattern `X not and Y`. Use this when you want a flag-style negate.
+pub fn lnot(x:i64 -- r:i64) {
+	x 0 eq
+}

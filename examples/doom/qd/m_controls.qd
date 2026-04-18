@@ -1,0 +1,158 @@
+/// Control bindings — keyboard / mouse / joystick scancodes.
+///
+/// Ported from doomgeneric/m_controls.c. Each key_* is a mutable module
+/// global holding the current binding; callers check `if event_key == key_fire`.
+/// Default values come from doomkeys.h's DOS-era scancode constants.
+///
+/// M_BindBaseControls / M_BindMenuControls / ... are no-ops here: the
+/// C version registered each global's address with m_config so .cfg save
+/// files could update them. Our m_config port (pending) will read .cfg
+/// keys and mutate these vars directly by name.
+
+// ---- Doom-specific key constants (from doomkeys.h) ----
+
+pub const KEY_RIGHTARROW = 0xae
+pub const KEY_LEFTARROW = 0xac
+pub const KEY_UPARROW = 0xad
+pub const KEY_DOWNARROW = 0xaf
+pub const KEY_STRAFE_L = 0xa0
+pub const KEY_STRAFE_R = 0xa1
+pub const KEY_USE = 0xa2
+pub const KEY_FIRE = 0xa3
+pub const KEY_ESCAPE = 27
+pub const KEY_ENTER = 13
+pub const KEY_TAB = 9
+pub const KEY_F1 = 0xbb
+pub const KEY_F2 = 0xbc
+pub const KEY_F3 = 0xbd
+pub const KEY_F4 = 0xbe
+pub const KEY_F5 = 0xbf
+pub const KEY_F6 = 0xc0
+pub const KEY_F7 = 0xc1
+pub const KEY_F8 = 0xc2
+pub const KEY_F9 = 0xc3
+pub const KEY_F10 = 0xc4
+pub const KEY_F11 = 0xd7
+pub const KEY_F12 = 0xd8
+pub const KEY_BACKSPACE = 0x7f
+pub const KEY_PAUSE = 0xff
+pub const KEY_EQUALS = 0x3d
+pub const KEY_MINUS = 0x2d
+pub const KEY_RSHIFT = 0xb6
+pub const KEY_RCTRL = 0x9d
+pub const KEY_RALT = 0xb8
+
+// ---- Movement ----
+
+pub var key_right:i64 = 0xae
+pub var key_left:i64 = 0xac
+pub var key_up:i64 = 0xad
+pub var key_down:i64 = 0xaf
+pub var key_strafeleft:i64 = 0xa0
+pub var key_straferight:i64 = 0xa1
+pub var key_fire:i64 = 0xa3
+pub var key_use:i64 = 0xa2
+pub var key_strafe:i64 = 0xb8
+pub var key_speed:i64 = 0xb6
+
+// ---- Mouse buttons ----
+
+pub var mousebfire:i64 = 0
+pub var mousebstrafe:i64 = 1
+pub var mousebforward:i64 = 2
+pub var mousebjump:i64 = -1
+pub var mousebstrafeleft:i64 = -1
+pub var mousebstraferight:i64 = -1
+pub var mousebbackward:i64 = -1
+pub var mousebuse:i64 = -1
+pub var mousebprevweapon:i64 = -1
+pub var mousebnextweapon:i64 = -1
+
+// ---- Misc ----
+
+pub var key_message_refresh:i64 = 13
+pub var key_pause:i64 = 0xff
+pub var key_demo_quit:i64 = 113
+pub var key_spy:i64 = 0xd8
+pub var key_multi_msg:i64 = 116
+
+// ---- Weapon selection ----
+
+pub var key_weapon1:i64 = 49
+pub var key_weapon2:i64 = 50
+pub var key_weapon3:i64 = 51
+pub var key_weapon4:i64 = 52
+pub var key_weapon5:i64 = 53
+pub var key_weapon6:i64 = 54
+pub var key_weapon7:i64 = 55
+pub var key_weapon8:i64 = 56
+pub var key_prevweapon:i64 = 0
+pub var key_nextweapon:i64 = 0
+
+// ---- Automap ----
+
+pub var key_map_north:i64 = 0xad
+pub var key_map_south:i64 = 0xaf
+pub var key_map_east:i64 = 0xae
+pub var key_map_west:i64 = 0xac
+pub var key_map_zoomin:i64 = 0x3d
+pub var key_map_zoomout:i64 = 0x2d
+pub var key_map_toggle:i64 = 9
+pub var key_map_maxzoom:i64 = 48
+pub var key_map_follow:i64 = 102
+pub var key_map_grid:i64 = 103
+pub var key_map_mark:i64 = 109
+pub var key_map_clearmark:i64 = 99
+
+// ---- Menu ----
+
+pub var key_menu_activate:i64 = 27
+pub var key_menu_up:i64 = 0xad
+pub var key_menu_down:i64 = 0xaf
+pub var key_menu_left:i64 = 0xac
+pub var key_menu_right:i64 = 0xae
+pub var key_menu_back:i64 = 0x7f
+pub var key_menu_forward:i64 = 13
+pub var key_menu_confirm:i64 = 121
+pub var key_menu_abort:i64 = 110
+
+pub var key_menu_help:i64 = 0xbb
+pub var key_menu_save:i64 = 0xbc
+pub var key_menu_load:i64 = 0xbd
+pub var key_menu_volume:i64 = 0xbe
+pub var key_menu_detail:i64 = 0xbf
+pub var key_menu_qsave:i64 = 0xc0
+pub var key_menu_endgame:i64 = 0xc1
+pub var key_menu_messages:i64 = 0xc2
+pub var key_menu_qload:i64 = 0xc3
+pub var key_menu_quit:i64 = 0xc4
+pub var key_menu_gamma:i64 = 0xd7
+
+pub var key_menu_incscreen:i64 = 0x3d
+pub var key_menu_decscreen:i64 = 0x2d
+pub var key_menu_screenshot:i64 = 0
+
+// ---- Joystick ----
+
+pub var joybfire:i64 = 0
+pub var joybstrafe:i64 = 1
+pub var joybuse:i64 = 3
+pub var joybspeed:i64 = 2
+pub var joybstrafeleft:i64 = -1
+pub var joybstraferight:i64 = -1
+pub var joybjump:i64 = -1
+pub var joybprevweapon:i64 = -1
+pub var joybnextweapon:i64 = -1
+pub var joybmenu:i64 = -1
+
+pub var dclick_use:i64 = 1
+
+// ---- Bind functions — no-ops here. When m_config lands, it will
+// ---- re-read .cfg values and mutate the vars above directly.
+
+pub fn M_BindBaseControls( -- ) { }
+pub fn M_BindWeaponControls( -- ) { }
+pub fn M_BindMapControls( -- ) { }
+pub fn M_BindMenuControls( -- ) { }
+pub fn M_BindChatControls(num_players:i64 -- ) { num_players drop }
+pub fn M_ApplyPlatformDefaults( -- ) { }

@@ -1,0 +1,95 @@
+/// Cheat-code state machine.
+///
+/// Ported from doomgeneric/m_cheat.c. The original cheatseq_t is stored
+/// as a raw 64-byte buffer so callers can define cheat instances as
+/// regular heap allocations with known layout.
+///
+/// cheatseq layout:
+///   0..25  sequence[25]         — the literal "idkfa" / "iddqd" / etc.
+///   26     sequence_len         — strlen(sequence), u8
+///   27     parameter_chars      — how many follow-up chars to capture, u8
+///   28..32 reserved
+///   32..36 chars_read (i32)     — state: matched prefix length
+///   36..40 param_chars_read (i32)
+///   40..45 parameter_buf[5]    — captured parameters
+///   (8 bytes padding to round up to 64)
+
+use mem
+
+pub const MAX_CHEAT_LEN = 25
+pub const MAX_CHEAT_PARAMS = 5
+pub const CHEATSEQ_SIZE = 64
+
+pub const CHEAT_OFF_SEQUENCE = 0
+pub const CHEAT_OFF_SEQLEN = 26
+pub const CHEAT_OFF_PARAMCHARS = 27
+pub const CHEAT_OFF_CHARSREAD = 32
+pub const CHEAT_OFF_PARAMREAD = 36
+pub const CHEAT_OFF_PARAMBUF = 40
+
+/// Build a fresh cheatseq from a plain string + parameter count.
+/// Caller owns the returned buffer and frees with mem::free.
+pub fn M_NewCheat(sequence:str parameter_chars:i64 -- cht:ptr) {
+	CHEATSEQ_SIZE mem::alloc! -> cht
+	cht CHEATSEQ_SIZE mem::zero
+	sequence mem::from_string -> slen -> sptr
+	// Copy the sequence bytes in (up to MAX_CHEAT_LEN - 1, leave room for NUL).
+	slen MAX_CHEAT_LEN 1 sub gt if { MAX_CHEAT_LEN 1 sub -> slen }
+	0 slen 1 for i {
+		sptr i mem::get_u8  cht CHEAT_OFF_SEQUENCE i add  mem::set_u8
+	}
+	slen cht CHEAT_OFF_SEQLEN mem::set_u8
+	parameter_chars cht CHEAT_OFF_PARAMCHARS mem::set_u8
+	sptr mem::free
+	cht
+}
+
+/// Feed one typed key into the state machine. Returns 1 if the cheat
+/// just matched completely (and the parameter buffer is full), 0 otherwise.
+pub fn cht_CheckCheat(cht:ptr key:i64 -- matched:i64) {
+	cht CHEAT_OFF_SEQLEN mem::get_u8 -> seqlen
+	cht CHEAT_OFF_PARAMCHARS mem::get_u8 -> paramchars
+	cht CHEAT_OFF_CHARSREAD mem::get_i32 -> chars_read
+	cht CHEAT_OFF_PARAMREAD mem::get_i32 -> param_read
+
+	chars_read seqlen lt if {
+		// Still matching the literal prefix.
+		cht CHEAT_OFF_SEQUENCE chars_read add mem::get_u8 -> expected
+		key expected eq if {
+			chars_read 1 add -> chars_read
+		} else {
+			0 -> chars_read
+		}
+		0 -> param_read
+	} else {
+		param_read paramchars lt if {
+			// Capturing a parameter character.
+			key cht CHEAT_OFF_PARAMBUF param_read add mem::set_u8
+			param_read 1 add -> param_read
+		}
+	}
+
+	chars_read  cht CHEAT_OFF_CHARSREAD mem::set_i32
+	param_read  cht CHEAT_OFF_PARAMREAD mem::set_i32
+
+	chars_read seqlen gte if {
+		param_read paramchars gte if {
+			0 cht CHEAT_OFF_CHARSREAD mem::set_i32
+			0 cht CHEAT_OFF_PARAMREAD mem::set_i32
+			1
+		} else {
+			0
+		}
+	} else {
+		0
+	}
+}
+
+/// Copy the captured parameter bytes into `buffer`. Writes
+/// `parameter_chars` bytes.
+pub fn cht_GetParam(cht:ptr buffer:ptr -- ) {
+	cht CHEAT_OFF_PARAMCHARS mem::get_u8 -> n
+	0 n 1 for i {
+		cht CHEAT_OFF_PARAMBUF i add mem::get_u8  buffer i  mem::set_u8
+	}
+}

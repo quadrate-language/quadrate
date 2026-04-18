@@ -1,0 +1,69 @@
+/// Weapon info table.
+///
+/// Ported from doomgeneric/d_items.c. One weaponinfo_t per NUMWEAPONS (9):
+/// fist, pistol, shotgun, chaingun, missile, plasma, BFG, chainsaw, super
+/// shotgun. Each row records the ammo type plus the five p_pspr state
+/// constants the weapon cycles through: up, down, ready, atk, flash.
+///
+/// Table layout is one flat 24-byte-per-row buffer — six i32 fields per
+/// row, mirroring the C struct with no padding. We expose offsets rather
+/// than a packed struct because p_pspr accesses by constant offset in
+/// tight paths and the flat buffer is what p_pspr.c already indexes.
+
+use mem
+use "doomdef.qd"
+use "info.qd"
+
+pub const WEAPON_SIZE = 24
+pub const WEAPON_OFF_AMMO = 0
+pub const WEAPON_OFF_UPSTATE = 4
+pub const WEAPON_OFF_DOWNSTATE = 8
+pub const WEAPON_OFF_READYSTATE = 12
+pub const WEAPON_OFF_ATKSTATE = 16
+pub const WEAPON_OFF_FLASHSTATE = 20
+
+pub var weaponinfo:ptr = 0
+var weaponinfo_initialized:i64 = 0
+
+fn weapon_addr(i:i64 -- p:ptr) {
+	weaponinfo i WEAPON_SIZE mul mem::ptr_add
+}
+
+fn set_weapon(i:i64 ammo:i64 up:i64 down:i64 ready:i64 atk:i64 flash:i64 -- ) {
+	i weapon_addr -> w
+	ammo  w WEAPON_OFF_AMMO        mem::set_i32
+	up    w WEAPON_OFF_UPSTATE     mem::set_i32
+	down  w WEAPON_OFF_DOWNSTATE   mem::set_i32
+	ready w WEAPON_OFF_READYSTATE  mem::set_i32
+	atk   w WEAPON_OFF_ATKSTATE    mem::set_i32
+	flash w WEAPON_OFF_FLASHSTATE  mem::set_i32
+}
+
+/// Populate the weaponinfo table. Lazy-initialised on first access.
+pub fn D_InitWeapons( -- ) {
+	weaponinfo_initialized 1 eq if { return }
+
+	NUMWEAPONS WEAPON_SIZE mul mem::alloc! -> weaponinfo
+	weaponinfo NUMWEAPONS WEAPON_SIZE mul mem::zero
+
+	// fist
+	WP_FIST        AM_NOAMMO S_PUNCHUP     S_PUNCHDOWN    S_PUNCH    S_PUNCH1    S_NULL          set_weapon
+	// pistol
+	WP_PISTOL      AM_CLIP   S_PISTOLUP    S_PISTOLDOWN   S_PISTOL   S_PISTOL1   S_PISTOLFLASH   set_weapon
+	// shotgun
+	WP_SHOTGUN     AM_SHELL  S_SGUNUP      S_SGUNDOWN     S_SGUN     S_SGUN1     S_SGUNFLASH1    set_weapon
+	// chaingun
+	WP_CHAINGUN    AM_CLIP   S_CHAINUP     S_CHAINDOWN    S_CHAIN    S_CHAIN1    S_CHAINFLASH1   set_weapon
+	// missile
+	WP_MISSILE     AM_MISL   S_MISSILEUP   S_MISSILEDOWN  S_MISSILE  S_MISSILE1  S_MISSILEFLASH1 set_weapon
+	// plasma
+	WP_PLASMA      AM_CELL   S_PLASMAUP    S_PLASMADOWN   S_PLASMA   S_PLASMA1   S_PLASMAFLASH1  set_weapon
+	// BFG
+	WP_BFG         AM_CELL   S_BFGUP       S_BFGDOWN      S_BFG      S_BFG1      S_BFGFLASH1     set_weapon
+	// chainsaw
+	WP_CHAINSAW    AM_NOAMMO S_SAWUP       S_SAWDOWN      S_SAW      S_SAW1      S_NULL          set_weapon
+	// super shotgun
+	WP_SUPERSHOTGUN AM_SHELL S_DSGUNUP     S_DSGUNDOWN    S_DSGUN    S_DSGUN1    S_DSGUNFLASH1   set_weapon
+
+	1 -> weaponinfo_initialized
+}

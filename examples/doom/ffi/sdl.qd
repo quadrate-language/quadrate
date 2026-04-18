@@ -1,0 +1,73 @@
+/// SDL2 bindings for the Doom port.
+///
+/// Each imported function is a thin wrapper over the corresponding SDL call
+/// defined in `ffi/sdl_shim.c`. Only the subset actually used by Doom's
+/// platform layer is exposed here — grow as the port demands more.
+
+/// Initialize the SDL_INIT_VIDEO subsystem.
+pub const INIT_VIDEO = 0x20
+/// Initialize timer subsystem (for SDL_GetTicks).
+pub const INIT_TIMER = 0x1
+/// Initialize audio subsystem.
+pub const INIT_AUDIO = 0x10
+
+/// Window is shown after creation.
+pub const WINDOW_SHOWN = 0x4
+/// Window positioning: centered on the default display.
+pub const WINDOWPOS_CENTERED = 0x2FFF0000
+
+/// Hardware-accelerated renderer.
+pub const RENDERER_ACCELERATED = 0x2
+/// Present is synchronised to vsync.
+pub const RENDERER_PRESENTVSYNC = 0x4
+
+/// Pixel format: 32-bit ARGB, one Uint32 per pixel.
+pub const PIXELFORMAT_ARGB8888 = 0x16362004
+/// Texture access: streaming (lockable, cpu-writeable).
+pub const TEXTUREACCESS_STREAMING = 1
+
+/// SDL_EventType subset relevant to Doom.
+pub const EVENT_QUIT = 0x100
+pub const EVENT_KEYDOWN = 0x300
+pub const EVENT_KEYUP = 0x301
+
+import "libdoomsdl.a" as "sdl" {
+	pub fn Init(flags:i64 -- rc:i64)
+	pub fn Quit( -- )
+	pub fn GetError( -- msg:str)
+
+	pub fn CreateWindow(title:str x:i64 y:i64 w:i64 h:i64 flags:i64 -- win:ptr)
+	pub fn DestroyWindow(win:ptr -- )
+
+	pub fn CreateRenderer(win:ptr index:i64 flags:i64 -- renderer:ptr)
+	pub fn DestroyRenderer(renderer:ptr -- )
+
+	pub fn CreateTexture(renderer:ptr format:i64 access:i64 w:i64 h:i64 -- tex:ptr)
+	pub fn DestroyTexture(tex:ptr -- )
+
+	pub fn UpdateTextureFull(tex:ptr pixels:ptr pitch:i64 -- rc:i64)
+	pub fn RenderClear(renderer:ptr -- )
+	pub fn RenderCopyFull(renderer:ptr tex:ptr -- )
+	pub fn RenderPresent(renderer:ptr -- )
+	pub fn SetRenderDrawColor(renderer:ptr r:i64 g:i64 b:i64 a:i64 -- )
+
+	pub fn GetTicks( -- ticks:i64)
+	pub fn Delay(ms:i64 -- )
+
+	/// Poll one SDL event. Returns (has_event, type, scancode). If
+	/// has_event is 0 the other two are 0. Only KEYDOWN/KEYUP populate
+	/// scancode; other event types return 0 there.
+	pub fn PollKey( -- has_event:i64 type:i64 scancode:i64)
+
+	/// Open a mono 11025 Hz / 8-bit unsigned audio device and start
+	/// playing. Returns 1 on success, 0 on failure. Subsequent
+	/// AudioQueue calls append PCM samples to the playback tail.
+	pub fn AudioInit( -- ok:i64)
+
+	/// Append `len` bytes of raw 8-bit unsigned PCM at the given
+	/// pointer to the audio queue. Returns 1 on success.
+	pub fn AudioQueue(samples:ptr len:i64 -- ok:i64)
+
+	/// Drop any queued audio not yet played.
+	pub fn AudioClearQueue( -- )
+}

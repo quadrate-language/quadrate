@@ -1,0 +1,21 @@
+use "w_file.qd"
+use mem
+
+fn main() {
+	"wads/doom1.wad" W_OpenFile -> wf
+	wf <<length print nl           // 4196020
+
+	// Read the first 4 bytes — should be "IWAD" = 0x44 41 57 49 in little-endian (fd-little reads bytes)
+	4 mem::alloc! -> buf
+	wf 0 buf 4 W_Read -> got
+	got print nl                   // 4
+
+	// Print each byte.
+	buf 0 mem::get_u8 print nl     // 73  'I'
+	buf 1 mem::get_u8 print nl     // 87  'W'
+	buf 2 mem::get_u8 print nl     // 65  'A'
+	buf 3 mem::get_u8 print nl     // 68  'D'
+
+	buf mem::free
+	wf W_CloseFile
+}

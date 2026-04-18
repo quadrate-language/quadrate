@@ -1,0 +1,19 @@
+position=0
+read 8 bytes
+  0
+  1
+  2
+  3
+  4
+  5
+  6
+  7
+position after=8
+0
+position after seek=4
+wrote 4 bytes
+buflen=4
+  99
+  100
+  101
+  102

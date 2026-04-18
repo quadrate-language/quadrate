@@ -1,0 +1,32 @@
+use "i_input.qd"
+use "d_event.qd"
+use "doomkeys.qd"
+use "../ffi/sdl.qd"
+use mem
+
+fn main() {
+	// Init SDL (no display driver — event queue works standalone).
+	sdl::INIT_TIMER sdl::Init -> rc
+	rc drop
+
+	I_InitInput
+
+	// With no real events pending, I_GetEvent should drain cleanly and
+	// D_PopEvent reports empty.
+	I_GetEvent
+	D_PopEvent -> ev0
+	"empty queue: " print ev0 mem::is_null print nl      // 1
+
+	// vanilla_keyboard_mapping default.
+	"vanilla mapping: " print vanilla_keyboard_mapping print nl   // 1
+
+	// Exercise the doomkeys constants so they're accessible.
+	"KEY_ESCAPE: " print KEY_ESCAPE print nl             // 27
+	"KEY_ENTER: " print KEY_ENTER print nl               // 13
+	"KEY_RIGHTARROW: " print KEY_RIGHTARROW print nl     // 174 (0xae)
+	"KEY_FIRE: " print KEY_FIRE print nl                 // 163 (0xa3)
+
+	sdl::Quit
+
+	"done" print nl
+}

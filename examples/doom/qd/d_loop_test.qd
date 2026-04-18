@@ -1,0 +1,33 @@
+use "d_loop.qd"
+use "d_net.qd"
+use "m_argv.qd"
+
+fn main() {
+	read -> argc
+	argc M_SetArgs
+
+	// Defaults.
+	"gametic: " print gametic print nl             // 0
+	"ticdup: " print ticdup print nl               // 1
+	"netgame before: " print netgame print nl      // 0
+
+	// D_ConnectNetGame without -solo-net leaves netgame clear.
+	D_ConnectNetGame
+	"netgame after connect: " print netgame print nl   // 0
+
+	D_CheckNetGame
+	"autostart: " print autostart print nl         // 0
+
+	D_StartGameLoop
+	NetUpdate
+
+	// TryRunTics bumps gametic.
+	TryRunTics
+	TryRunTics
+	TryRunTics
+	"gametic after 3 tics: " print gametic print nl   // 3
+
+	D_QuitNetGame
+
+	"done" print nl
+}

@@ -1,0 +1,29 @@
+// DOOM, 100% Quadrate. The entire 62 kLOC port collapses here into
+// a single call to D_DoomMain — every subsystem it touches is quadrate.
+//
+// Every dependency is spelled out explicitly because the module loader
+// only surfaces pub consts/vars when they're reachable via a direct
+// `use` from the main module — transitive imports don't propagate.
+
+use mem
+use os
+use "qd/doomdef.qd"
+use "qd/doomstat.qd"
+use "qd/m_argv.qd"
+use "qd/d_event.qd"
+use "qd/d_iwad.qd"
+use "qd/w_wad.qd"
+use "qd/i_video.qd"
+use "qd/i_timer.qd"
+use "qd/i_input.qd"
+use "qd/i_system.qd"
+use "qd/r_main.qd"
+use "qd/r_data.qd"
+use "qd/g_game.qd"
+use "qd/p_tick.qd"
+use "qd/ui_stubs.qd"
+use "qd/d_main.qd"
+
+fn main() {
+	D_DoomMain
+}

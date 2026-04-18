@@ -1,0 +1,9 @@
+NUMSTATES: 967
+NUMMOBJTYPES: 137
+NUMSPRITES: 138
+NUMACTIONS: 74
+S_NULL tics=-1 action=0
+S_LIGHTDONE sprite=1 frame=4 action=39 (AC_Light0=39)
+sprname[0]: TROO
+MT_PLAYER doomednum=-1 spawnhealth=100
+MT_TROOP spawnhealth=60 radius=1310720

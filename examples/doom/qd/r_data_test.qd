@@ -1,0 +1,33 @@
+use "w_wad.qd"
+use "r_data.qd"
+use "r_draw.qd"
+use mem
+
+fn main() {
+	"wads/doom1.wad" W_AddFile
+	"numlumps: " print numlumps print nl
+
+	R_InitData
+
+	"numtextures: " print numtextures print nl
+	"numflats: " print numflats print nl
+	"firstflat: " print firstflat print nl
+	"numspritelumps: " print numspritelumps print nl
+
+	"colormap non-null: " print colormaps mem::is_null 0 eq print nl
+
+	// Look up a well-known texture (STARTAN3 in Doom1).
+	"STARTAN3 idx: " print "STARTAN3" R_CheckTextureNumForName print nl
+	"BOGUS     idx: " print "BOGUS" R_CheckTextureNumForName print nl     // -1
+	"- (none) idx: " print "-" R_CheckTextureNumForName print nl          // 0
+
+	// Look up a flat (FLOOR4_8 is ubiquitous in Doom1).
+	"FLOOR4_8 idx: " print "FLOOR4_8" R_FlatNumForName print nl
+
+	// R_GetColumn returns the stub column (first byte = 4).
+	0 0 R_GetColumn -> col
+	"stub col[0]: " print col 0 mem::get_u8 print nl                       // 4
+
+	R_PrecacheLevel
+	"done" print nl
+}

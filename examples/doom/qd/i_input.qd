@@ -1,0 +1,158 @@
+/// Keyboard input: SDL scancodes → Doom events.
+///
+/// Ported from doomgeneric/i_input.c. The C version runs a loop against
+/// the DG_GetKey platform shim and posts ev_keydown/ev_keyup into the
+/// shared D_PostEvent queue. We short-circuit the DG layer and call the
+/// SDL poll wrapper (`sdl::PollKey`) directly, which returns
+/// (has_event, SDL_EventType, SDL_Scancode).
+///
+/// Translation from SDL scancode (USB HID codes) to Doom keycode is a
+/// table lookup. We cover the arrow keys, WASD, space, enter, esc, and
+/// the core modifier set — the subset Doom actually binds in the vanilla
+/// `key_*` defaults. Unknowns translate to 0 and are dropped, matching
+/// the C version's behaviour for unknown `at_to_doom` entries.
+///
+/// No mouse/joystick paths yet; the original SDL_MOUSEMOTION path was
+/// already commented out in the C file, so this matches parity.
+
+use mem
+use "../ffi/sdl.qd"
+use "d_event.qd"
+use "doomkeys.qd"
+
+pub var vanilla_keyboard_mapping:i64 = 1
+
+var shiftdown:i64 = 0
+
+/// Map an SDL scancode to a Doom keycode. Returns 0 for unmapped keys
+/// so the caller skips posting a bogus event.
+fn sdl_to_doom(scancode:i64 -- k:i64) {
+	// SDL_SCANCODE values — see SDL_scancode.h. ASCII codepoints are
+	// written numerically because quadrate's parser has no char literal.
+	scancode 4 eq  if { 97  return }   // 'a'
+	scancode 5 eq  if { 98  return }   // 'b'
+	scancode 6 eq  if { 99  return }   // 'c'
+	scancode 7 eq  if { 100 return }   // 'd'
+	scancode 8 eq  if { 101 return }   // 'e'
+	scancode 9 eq  if { 102 return }   // 'f'
+	scancode 10 eq if { 103 return }   // 'g'
+	scancode 11 eq if { 104 return }   // 'h'
+	scancode 12 eq if { 105 return }   // 'i'
+	scancode 13 eq if { 106 return }   // 'j'
+	scancode 14 eq if { 107 return }   // 'k'
+	scancode 15 eq if { 108 return }   // 'l'
+	scancode 16 eq if { 109 return }   // 'm'
+	scancode 17 eq if { 110 return }   // 'n'
+	scancode 18 eq if { 111 return }   // 'o'
+	scancode 19 eq if { 112 return }   // 'p'
+	scancode 20 eq if { 113 return }   // 'q'
+	scancode 21 eq if { 114 return }   // 'r'
+	scancode 22 eq if { 115 return }   // 's'
+	scancode 23 eq if { 116 return }   // 't'
+	scancode 24 eq if { 117 return }   // 'u'
+	scancode 25 eq if { 118 return }   // 'v'
+	scancode 26 eq if { 119 return }   // 'w'
+	scancode 27 eq if { 120 return }   // 'x'
+	scancode 28 eq if { 121 return }   // 'y'
+	scancode 29 eq if { 122 return }   // 'z'
+	// Digits 1..0 (SDL 30..39).
+	scancode 30 eq if { 49 return }    // '1'
+	scancode 31 eq if { 50 return }
+	scancode 32 eq if { 51 return }
+	scancode 33 eq if { 52 return }
+	scancode 34 eq if { 53 return }
+	scancode 35 eq if { 54 return }
+	scancode 36 eq if { 55 return }
+	scancode 37 eq if { 56 return }
+	scancode 38 eq if { 57 return }
+	scancode 39 eq if { 48 return }    // '0'
+
+	scancode 40 eq if { KEY_ENTER     return }
+	scancode 41 eq if { KEY_ESCAPE    return }
+	scancode 42 eq if { KEY_BACKSPACE return }
+	scancode 43 eq if { KEY_TAB       return }
+	scancode 44 eq if { 32            return }   // space
+	scancode 45 eq if { KEY_MINUS     return }
+	scancode 46 eq if { KEY_EQUALS    return }
+
+	// Function keys F1..F12 → SDL 58..69.
+	scancode 58 eq if { KEY_F1 return }
+	scancode 59 eq if { KEY_F2 return }
+	scancode 60 eq if { KEY_F3 return }
+	scancode 61 eq if { KEY_F4 return }
+	scancode 62 eq if { KEY_F5 return }
+	scancode 63 eq if { KEY_F6 return }
+	scancode 64 eq if { KEY_F7 return }
+	scancode 65 eq if { KEY_F8 return }
+	scancode 66 eq if { KEY_F9 return }
+	scancode 67 eq if { KEY_F10 return }
+	scancode 68 eq if { KEY_F11 return }
+	scancode 69 eq if { KEY_F12 return }
+
+	// Arrows → SDL 79..82.
+	scancode 79 eq if { KEY_RIGHTARROW return }
+	scancode 80 eq if { KEY_LEFTARROW  return }
+	scancode 81 eq if { KEY_DOWNARROW  return }
+	scancode 82 eq if { KEY_UPARROW    return }
+
+	// Modifiers (SDL 224..227 = LCtrl, LShift, LAlt, LGui).
+	scancode 224 eq if { KEY_RCTRL  return }     // LCtrl → fire
+	scancode 225 eq if { KEY_RSHIFT return }
+	scancode 226 eq if { KEY_RALT   return }
+	scancode 228 eq if { KEY_RCTRL  return }     // RCtrl
+	scancode 229 eq if { KEY_RSHIFT return }     // RShift
+	scancode 230 eq if { KEY_RALT   return }     // RAlt
+
+	0
+}
+
+fn update_shift(pressed:i64 k:i64 -- ) {
+	k KEY_RSHIFT eq if {
+		pressed 1 eq if {
+			shiftdown 1 add -> shiftdown
+		} else {
+			shiftdown 1 sub -> shiftdown
+		}
+	}
+}
+
+/// Drain any pending SDL keyboard events, converting each into a
+/// Doom event_t and posting it to D_PostEvent. Non-key events are
+/// silently consumed.
+pub fn I_GetEvent( -- ) {
+	loop {
+		sdl::PollKey -> scancode -> evtype -> has
+		has 0 eq if { break }
+
+		evtype sdl::EVENT_QUIT eq if {
+			ev_quit 0 0 0 0 D_MakeEvent -> ev
+			ev D_PostEvent
+			ev mem::free
+		} else {
+			evtype sdl::EVENT_KEYDOWN eq if {
+				scancode sdl_to_doom -> k
+				k 0 neq if {
+					1 k update_shift
+					ev_keydown k k 0 0 D_MakeEvent -> ev
+					ev D_PostEvent
+					ev mem::free
+				}
+			} else {
+				evtype sdl::EVENT_KEYUP eq if {
+					scancode sdl_to_doom -> k
+					k 0 neq if {
+						0 k update_shift
+						ev_keyup k 0 0 0 D_MakeEvent -> ev
+						ev D_PostEvent
+						ev mem::free
+					}
+				}
+			}
+		}
+	}
+}
+
+/// Initialise input subsystem. SDL event polling needs video (or timer,
+/// or events) inited upstream; the caller is expected to own SDL_Init,
+/// so this is a no-op.
+pub fn I_InitInput( -- ) { }

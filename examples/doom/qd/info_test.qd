@@ -1,0 +1,32 @@
+use "info.qd"
+use mem
+
+fn main() {
+	ensure_info
+
+	"NUMSTATES: " print NUMSTATES print nl
+	"NUMMOBJTYPES: " print NUMMOBJTYPES print nl
+	"NUMSPRITES: " print NUMSPRITES print nl
+	"NUMACTIONS: " print NUMACTIONS print nl
+
+	// S_NULL: {SPR_TROO,0,-1,{NULL},S_NULL,0,0}
+	"S_NULL tics=" print S_NULL state_tics print
+	" action=" print S_NULL state_action print nl
+
+	// S_LIGHTDONE: {SPR_SHTG,4,0,{A_Light0},S_NULL,0,0}
+	"S_LIGHTDONE sprite=" print S_LIGHTDONE state_sprite print
+	" frame=" print S_LIGHTDONE state_frame print
+	" action=" print S_LIGHTDONE state_action print
+	" (AC_Light0=" print AC_Light0 print ")" print nl
+
+	// First sprite name — "TROO"
+	"sprname[0]: " print sprnames_ptr 4 mem::to_string print nl
+
+	// MT_PLAYER — doomednum=-1 (the spawn marker), spawnhealth=100
+	"MT_PLAYER doomednum=" print MT_PLAYER mobj_doomednum print
+	" spawnhealth=" print MT_PLAYER mobj_spawnhealth print nl
+
+	// MT_TROOP (Imp) — spawnhealth=60, radius=20*FRACUNIT=1310720
+	"MT_TROOP spawnhealth=" print MT_TROOP mobj_spawnhealth print
+	" radius=" print MT_TROOP mobj_radius print nl
+}

@@ -1,0 +1,433 @@
+/// Textures, flats, sprites, colormaps.
+///
+/// Ported from doomgeneric/r_data.c. Full upstream is ~1,100 lines; this
+/// pass covers the data-loading surface (lump brackets, width/height
+/// tables, colormap + palette lookups) plus name-to-index lookups used
+/// across the renderer. Composite texture generation (stitching multiple
+/// patches into a single opaque column set) is stubbed for now — see
+/// task #37 (r_segs) for when that becomes load-bearing.
+///
+/// Layout of the packed texture table (one flat buffer, stride 32):
+///   [0..8)   name (8 bytes, upper-case, zero-padded)
+///   [8..10)  width (i16)
+///   [10..12) height (i16)
+///   [12..14) patchcount (i16)
+///   [14..16) pad
+///   [16..24) map_offset (i64) — offset into the source maptex blob
+///   [24..32) pad
+/// We don't store individual patches because R_GetColumn doesn't need
+/// them for the stub, and the composite path will revisit the format.
+
+use mem
+use "doomdef.qd"
+use "w_wad.qd"
+use "r_draw.qd"
+
+pub const TEX_STRIDE = 40
+pub const TEX_OFF_NAME = 0
+pub const TEX_OFF_WIDTH = 8
+pub const TEX_OFF_HEIGHT = 10
+pub const TEX_OFF_PATCHCOUNT = 12
+pub const TEX_OFF_FIRSTPATCH_LUMP = 16    // i32 lump number of first patch, -1 if unknown
+pub const TEX_OFF_FIRSTPATCH_CACHE = 24   // ptr to cached patch bytes, 0 until lazy-loaded
+
+pub var numtextures:i64 = 0
+pub var textures_table:ptr = 0        // numtextures × TEX_STRIDE
+pub var textureheight:ptr = 0         // numtextures × i64 (fixed-point)
+pub var texturewidthmask:ptr = 0      // numtextures × i64
+pub var texturetranslation:ptr = 0    // (numtextures+1) × i64
+
+pub var colormaps:ptr = 0
+
+pub var numflats:i64 = 0
+pub var firstflat:i64 = 0
+pub var lastflat:i64 = 0
+pub var flattranslation:ptr = 0
+
+pub var numspritelumps:i64 = 0
+pub var firstspritelump:i64 = 0
+pub var lastspritelump:i64 = 0
+pub var spritewidth:ptr = 0
+pub var spriteoffset:ptr = 0
+pub var spritetopoffset:ptr = 0
+
+/// Stubbed column source used until R_GenerateComposite lands. 128 bytes
+/// of colour index 4 — Doom's dark brown — so wall slices render as a
+/// flat band rather than garbage.
+var stub_column:ptr = 0
+
+fn ensure_stub_column( -- ) {
+	stub_column mem::is_null if {
+		128 mem::alloc! -> stub_column
+		0 128 1 for i { 4 stub_column i mem::set_u8 }
+	}
+}
+
+// ---- Lookup helpers ----
+
+fn rd_upper(c:i64 -- c2:i64) {
+	c 97 gte c 122 lte and if { c 32 sub } else { c }
+}
+
+fn rd_names_equal(a:ptr b:ptr -- eq:i64) {
+	1 -> r
+	0 8 1 for j {
+		a j mem::get_u8 rd_upper b j mem::get_u8 rd_upper neq if { 0 -> r }
+	}
+	r
+}
+
+fn rd_copy_name_upper(name:str dst:ptr -- ) {
+	name mem::from_string -> slen -> sptr
+	dst 8 mem::zero
+	slen 8 gt if { 8 -> slen }
+	0 slen 1 for i {
+		sptr i mem::get_u8 rd_upper dst i mem::set_u8
+	}
+	sptr mem::free
+}
+
+// ---- R_InitColormaps ----
+
+pub fn R_InitColormaps( -- ) {
+	8 mem::alloc! -> key
+	"COLORMAP" key rd_copy_name_upper
+	key W_CheckNumForName -> lump
+	lump 0 lt if {
+		"R_InitColormaps: COLORMAP lump not found" print nl
+		key mem::free
+		return
+	}
+	lump 0 W_CacheLumpNum -> colormaps
+	key mem::free
+}
+
+// ---- R_InitTextures ----
+
+/// Parse TEXTURE1 (and optionally TEXTURE2) into `textures_table`.
+/// Composite generation is deferred; all we populate are name, width,
+/// height, patchcount + the widthmask/height lookup tables the engine
+/// asks for by name later.
+// PNAMES lookup: pname index → lump index. Populated by R_InitTextures.
+pub var num_pnames:i64 = 0
+pub var pname_lumps:ptr = 0
+
+pub fn R_InitTextures( -- ) {
+	8 mem::alloc! -> key
+
+	// Load PNAMES first so we can resolve each texture's first patch
+	// into a lump index during the TEXTURE1 walk.
+	"PNAMES" key rd_copy_name_upper
+	key W_CheckNumForName -> pnames_lump
+	pnames_lump 0 gte if {
+		pnames_lump 0 W_CacheLumpNum -> pnames_data
+		pnames_data 0 mem::get_i32 -> num_pnames
+		num_pnames 8 mul mem::alloc! -> pname_lumps
+		0 -> pi
+		loop {
+			pi num_pnames gte if { break }
+			// name at pnames_data + 4 + pi*8, 8 bytes
+			pnames_data 4 pi 8 mul add mem::ptr_add -> np
+			// Copy into key and look up.
+			0 8 1 for k {
+				np k mem::get_u8 rd_upper key k mem::set_u8
+			}
+			key W_CheckNumForName -> ln
+			ln pname_lumps pi 8 mul mem::set_i64
+			pi 1 add -> pi
+		}
+	}
+
+	"TEXTURE1" key rd_copy_name_upper
+	key W_CheckNumForName -> tex1_lump
+	tex1_lump 0 lt if {
+		"R_InitTextures: no TEXTURE1 lump" print nl
+		key mem::free
+		return
+	}
+	tex1_lump 0 W_CacheLumpNum -> tex1_data
+	tex1_data 0 mem::get_i32 -> num1
+
+	0 -> num2
+	0 cast<ptr> -> tex2_data
+	"TEXTURE2" key rd_copy_name_upper
+	key W_CheckNumForName -> tex2_lump
+	tex2_lump 0 gte if {
+		tex2_lump 0 W_CacheLumpNum -> tex2_data
+		tex2_data 0 mem::get_i32 -> num2
+	}
+
+	num1 num2 add -> numtextures
+	numtextures TEX_STRIDE mul mem::alloc! -> textures_table
+	textures_table numtextures TEX_STRIDE mul mem::zero
+	numtextures 8 mul mem::alloc! -> textureheight
+	numtextures 8 mul mem::alloc! -> texturewidthmask
+	numtextures 1 add 8 mul mem::alloc! -> texturetranslation
+
+	// Walk the directory entries in TEXTURE1 then TEXTURE2, reading the
+	// maptexture_t records. Each directory entry is an i32 byte-offset
+	// from the start of its owning lump; the record starts with an
+	// 8-byte name, then i16 width/height and patch data.
+	0 -> i
+	loop {
+		i numtextures gte if { break }
+		i num1 lt if { tex1_data -> maptex  i -> local_i }
+		i num1 gte if { tex2_data -> maptex  i num1 sub -> local_i }
+
+		4 local_i 4 mul add -> dir_ofs
+		maptex dir_ofs mem::ptr_add -> dir_entry
+		dir_entry 0 mem::get_i32 -> offset
+		maptex offset mem::ptr_add -> mtex
+
+		// mtex layout: name[8] i16 i16 (pad i16) i16 i16 i16 (pad i16) patches...
+		mtex 0 mem::ptr_add -> name_ptr
+		mtex 12 mem::get_i16 -> tw
+		mtex 14 mem::get_i16 -> th
+		mtex 20 mem::get_i16 -> pc
+
+		// Normalise name into the textures_table slot (already uppercase in
+		// C WADs, but do it defensively).
+		0 8 1 for k {
+			name_ptr k mem::get_u8 to_upper
+			textures_table i TEX_STRIDE mul TEX_OFF_NAME add k add mem::set_u8
+		}
+		tw textures_table i TEX_STRIDE mul TEX_OFF_WIDTH       add mem::set_i16
+		th textures_table i TEX_STRIDE mul TEX_OFF_HEIGHT      add mem::set_i16
+		pc textures_table i TEX_STRIDE mul TEX_OFF_PATCHCOUNT  add mem::set_i16
+
+		// First patch → pname → lump index.
+		-1 -> patch_lump
+		pc 0 gt if {
+			mtex 26 mem::get_i16 -> pname_idx
+			pname_idx 0 gte pname_idx num_pnames lt and if {
+				pname_lumps pname_idx 8 mul mem::get_i64 -> patch_lump
+			}
+		}
+		patch_lump textures_table i TEX_STRIDE mul TEX_OFF_FIRSTPATCH_LUMP add mem::set_i32
+		0 textures_table i TEX_STRIDE mul TEX_OFF_FIRSTPATCH_CACHE add mem::set_i64
+
+		// Highest power-of-two ≤ width, minus 1. Used as column index mask.
+		1 -> mask
+		loop {
+			mask 1 shl tw gt if { break }
+			mask 1 shl -> mask
+		}
+		mask 1 sub texturewidthmask i 8 mul mem::set_i64
+		th FRACBITS shl textureheight i 8 mul mem::set_i64
+
+		i texturetranslation i 8 mul mem::set_i64
+		i 1 add -> i
+	}
+	i texturetranslation numtextures 8 mul mem::set_i64
+
+	key mem::free
+}
+
+// ---- R_InitFlats ----
+
+pub fn R_InitFlats( -- ) {
+	8 mem::alloc! -> key
+	"F_START" key rd_copy_name_upper
+	key W_CheckNumForName -> fs
+	"F_END"   key rd_copy_name_upper
+	key W_CheckNumForName -> fe
+
+	fs 0 lt fe 0 lt or if {
+		"R_InitFlats: missing F_START/F_END" print nl
+		key mem::free
+		return
+	}
+
+	fs 1 add -> firstflat
+	fe 1 sub -> lastflat
+	lastflat firstflat sub 1 add -> numflats
+
+	numflats 1 add 8 mul mem::alloc! -> flattranslation
+	0 numflats 1 for i { i flattranslation i 8 mul mem::set_i64 }
+	key mem::free
+}
+
+// ---- R_InitSpriteLumps ----
+
+pub fn R_InitSpriteLumps( -- ) {
+	8 mem::alloc! -> key
+	"S_START" key rd_copy_name_upper
+	key W_CheckNumForName -> ss
+	"S_END"   key rd_copy_name_upper
+	key W_CheckNumForName -> se
+
+	ss 0 lt se 0 lt or if {
+		"R_InitSpriteLumps: missing S_START/S_END" print nl
+		key mem::free
+		return
+	}
+
+	ss 1 add -> firstspritelump
+	se 1 sub -> lastspritelump
+	lastspritelump firstspritelump sub 1 add -> numspritelumps
+
+	numspritelumps 8 mul mem::alloc! -> spritewidth
+	numspritelumps 8 mul mem::alloc! -> spriteoffset
+	numspritelumps 8 mul mem::alloc! -> spritetopoffset
+
+	0 numspritelumps 1 for i {
+		firstspritelump i add 0 W_CacheLumpNum -> patch
+		patch 0 mem::get_i16 FRACBITS shl spritewidth     i 8 mul mem::set_i64
+		patch 4 mem::get_i16 FRACBITS shl spriteoffset    i 8 mul mem::set_i64
+		patch 6 mem::get_i16 FRACBITS shl spritetopoffset i 8 mul mem::set_i64
+	}
+	key mem::free
+}
+
+pub fn R_InitData( -- ) {
+	R_InitTextures
+	R_InitFlats
+	R_InitSpriteLumps
+	R_InitColormaps
+}
+
+// ---- Lookups ----
+
+pub fn R_CheckTextureNumForName(name:str -- idx:i64) {
+	// Leading '-' is the "no texture" marker.
+	name mem::from_string -> nlen -> nptr
+	nlen 0 gt if {
+		nptr 0 mem::get_u8 45 eq if {
+			nptr mem::free
+			0 return
+		}
+	}
+
+	// Scratch buffer with upper-cased copy.
+	8 mem::alloc! -> key
+	key 8 mem::zero
+	nlen 8 gt if { 8 -> nlen }
+	0 nlen 1 for i {
+		nptr i mem::get_u8 to_upper key i mem::set_u8
+	}
+	nptr mem::free
+
+	-1 -> found
+	0 -> i
+	loop {
+		i numtextures gte if { break }
+		found -1 eq if {
+			textures_table i TEX_STRIDE mul TEX_OFF_NAME add mem::ptr_add -> slot
+			slot key rd_names_equal if { i -> found }
+		}
+		i 1 add -> i
+	}
+	key mem::free
+	found
+}
+
+pub fn R_TextureNumForName(name:str -- idx:i64) {
+	name R_CheckTextureNumForName -> i
+	i 0 lt if {
+		"R_TextureNumForName: " print name print " not found" print nl
+		0 return
+	}
+	i
+}
+
+pub fn R_FlatNumForName(name:str -- idx:i64) {
+	8 mem::alloc! -> key
+	name key rd_copy_name_upper
+	key W_CheckNumForName -> i
+	key mem::free
+	i 0 lt if {
+		"R_FlatNumForName: " print name print " not found" print nl
+		0 return
+	}
+	i firstflat sub
+}
+
+// ---- R_GetColumn (stub) ----
+
+/// Retrieve the raw column data for a texture + column index. The full
+/// implementation composites multiple patches; our stub returns a tiny
+/// "post" buffer that renders as a solid band — enough to prove the
+/// call chain end-to-end until the composite generator arrives.
+pub fn R_GetColumn(tex:i64 col:i64 -- data:ptr) {
+	ensure_stub_column
+	tex drop col drop
+	stub_column
+}
+
+// ---- Texture column sampling ----
+//
+// Real texture rendering needs the composite-generator (glue multiple
+// patches into a single column buffer). As a stepping stone we sample
+// the first patch of each texture directly — "simple" textures like
+// STARTAN3 or METAL1 are already one patch, so they render correctly;
+// multi-patch textures show only the first patch but still surface
+// distinct art per wall.
+
+// Scratch column buffer used by R_GetWallColumn to stitch a full
+// patch column from all its posts. One shared buffer — callers must
+// consume the pointer before the next R_GetWallColumn call.
+var col_scratch:ptr = 0
+var col_scratch_filled:i64 = 0
+
+fn ensure_col_scratch( -- ) {
+	col_scratch mem::is_null if {
+		512 mem::alloc! -> col_scratch
+	}
+}
+
+/// Fetch a full-height column for (tex, col). Returns (ptr, height).
+/// The pointer references a reused scratch buffer — copy the bytes
+/// if you need them past the next call. Walks every post in the
+/// source patch column so multi-post columns render correctly.
+pub fn R_GetWallColumn(tex:i64 col:i64 -- p:ptr height:i64) {
+	tex 0 lt tex numtextures gte or if { 0 cast<ptr> 0 return }
+	textures_table tex TEX_STRIDE mul TEX_OFF_FIRSTPATCH_LUMP add mem::get_i32 -> lump
+	lump 0 lt if { 0 cast<ptr> 0 return }
+
+	textures_table tex TEX_STRIDE mul TEX_OFF_FIRSTPATCH_CACHE add mem::get_ptr -> patch
+	patch mem::is_null if {
+		lump 0 W_CacheLumpNum -> patch
+		patch textures_table tex TEX_STRIDE mul TEX_OFF_FIRSTPATCH_CACHE add mem::set_ptr
+	}
+
+	patch 0 mem::get_i16 -> pw
+	patch 2 mem::get_i16 -> ph
+	pw 0 lte ph 0 lte or if { 0 cast<ptr> 0 return }
+	ph 512 gt if { 512 -> ph }
+
+	col pw mod -> pc
+	pc 0 lt if { pc pw add -> pc }
+	patch 8 pc 4 mul add mem::get_i32 -> ofs
+	patch ofs mem::ptr_add -> post
+
+	// Stitch every post in the column into col_scratch. Gaps
+	// (transparent rows between posts) get palette 0 — the engine's
+	// usual "no pixel" sentinel; the wall renderer will keep those
+	// slots from its fallback shade.
+	ensure_col_scratch
+	col_scratch ph mem::zero
+
+	loop {
+		post 0 mem::get_u8 -> topdelta
+		topdelta 255 eq if { break }
+		post 1 mem::get_u8 -> plen
+		// Copy `plen` pixel bytes from post+3 into scratch[topdelta..].
+		0 -> k
+		loop {
+			k plen gte if { break }
+			topdelta k add -> dst_y
+			dst_y ph lt if {
+				post 3 k add mem::get_u8 col_scratch dst_y mem::set_u8
+			}
+			k 1 add -> k
+		}
+		// Next post: skip topdelta + length + 4 framing bytes.
+		post plen 4 add mem::ptr_add -> post
+	}
+
+	col_scratch ph
+}
+
+// ---- R_PrecacheLevel (no-op) ----
+
+pub fn R_PrecacheLevel( -- ) { }

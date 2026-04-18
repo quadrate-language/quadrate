@@ -1,0 +1,10 @@
+cfg dir: 
+main: 
+main after: game.cfg
+extra after: extra.cfg
+cfg dir after: /home/user/.config/doom
+cfg dir empty: .
+0
+
+0
+./savegames/doom1.wad

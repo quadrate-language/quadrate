@@ -1,0 +1,171 @@
+// Palette demo: open an SDL window, load PLAYPAL from doom1.wad, render
+// the 256 palette entries as 16x16 color squares (16 columns × 16 rows).
+//
+// This is the first program that combines every Phase 1-4 piece:
+//   - Sized integer types (u8 palette bytes, i32 WAD fields)
+//   - Packed structs (WadHeader, FileLump)
+//   - Module-level `var` (numlumps, lumpinfo, wad_handle)
+//   - FFI to libSDL2 (window/renderer/texture, events, timing)
+//   - Quadrate stdlib (mem::alloc/set_u8/get_u8/ptr_add, io::read)
+//
+// Run with: DISPLAY=:0 ./build/palette_demo
+// (or SDL_VIDEODRIVER=dummy if no display available)
+
+use mem
+use "qd/w_wad.qd"
+
+const INIT_VIDEO = 0x20
+const WINDOW_SHOWN = 0x4
+const WINDOWPOS_CENTERED = 0x2FFF0000
+const RENDERER_ACCELERATED = 0x2
+const PIXELFORMAT_ARGB8888 = 0x16362004
+const TEXTUREACCESS_STREAMING = 1
+const EVENT_QUIT = 0x100
+const EVENT_KEYDOWN = 0x300
+
+import "libdoomsdl.a" as "sdl" {
+	pub fn Init(flags:i64 -- rc:i64)
+	pub fn Quit( -- )
+
+	pub fn CreateWindow(title:str x:i64 y:i64 w:i64 h:i64 flags:i64 -- win:ptr)
+	pub fn DestroyWindow(win:ptr -- )
+
+	pub fn CreateRenderer(win:ptr index:i64 flags:i64 -- renderer:ptr)
+	pub fn DestroyRenderer(renderer:ptr -- )
+
+	pub fn CreateTexture(renderer:ptr format:i64 access:i64 w:i64 h:i64 -- tex:ptr)
+	pub fn DestroyTexture(tex:ptr -- )
+
+	pub fn UpdateTextureFull(tex:ptr pixels:ptr pitch:i64 -- rc:i64)
+	pub fn RenderClear(renderer:ptr -- )
+	pub fn RenderCopyFull(renderer:ptr tex:ptr -- )
+	pub fn RenderPresent(renderer:ptr -- )
+
+	pub fn GetTicks( -- ticks:i64)
+	pub fn Delay(ms:i64 -- )
+
+	pub fn PollKey( -- has_event:i64 type:i64 scancode:i64)
+}
+
+const WIDTH  = 640
+const HEIGHT = 400
+const SQUARE = 40   // WIDTH = 16 cols × 40 px;  HEIGHT = 10 rows × 40 px (covers 256 colors = 16×16 but bottom 6 rows unused)
+// actually HEIGHT / 16 would be 25, but 10 rows × 40 = 400 — and we only need 16 rows to show all 256 colors.
+// Use 25-pixel-tall rows to fit all 16 rows: 16 × 25 = 400. ✓
+const ROWH = 25
+
+/// Convert a Doom palette index (0..255) into a packed ARGB pixel using the
+/// 768-byte PLAYPAL lump. Each palette entry is 3 bytes R,G,B.
+fn palette_argb(playpal:ptr idx:i64 -- argb:i64) {
+	playpal idx 3 mul mem::ptr_add -> entry
+	entry 0 mem::get_u8 -> r
+	entry 1 mem::get_u8 -> g
+	entry 2 mem::get_u8 -> b
+	// ARGB8888 little-endian: A is high byte (0xFF = opaque), then R, G, B
+	0xFF000000 r 16 shl or g 8 shl or b or
+}
+
+/// Fill the framebuffer with a 16×16 grid of palette squares.
+fn render_palette(fb:ptr playpal:ptr -- ) {
+	0 HEIGHT 1 for y {
+		y ROWH div -> row           // 0..15 (16 rows × 25px = 400)
+		0 WIDTH 1 for x {
+			x SQUARE div -> col      // 0..15 (16 cols × 40px = 640)
+			row 16 mul col + -> palette_idx
+			palette_idx 255 lte if {
+				playpal palette_idx palette_argb -> color
+				y WIDTH mul x + 4 mul -> pixel_off
+				color fb pixel_off mem::set_u32
+			}
+		}
+	}
+}
+
+fn main() {
+	// 1. Bring up SDL.
+	INIT_VIDEO sdl::Init -> rc
+	rc 0 neq if {
+		"SDL_Init failed" print nl
+		return
+	}
+
+	"Quadrate palette demo"
+		WINDOWPOS_CENTERED WINDOWPOS_CENTERED
+		WIDTH HEIGHT WINDOW_SHOWN
+		sdl::CreateWindow -> win
+
+	win -1 RENDERER_ACCELERATED sdl::CreateRenderer -> renderer
+	renderer PIXELFORMAT_ARGB8888 TEXTUREACCESS_STREAMING WIDTH HEIGHT sdl::CreateTexture -> tex
+
+	// 2. Load PLAYPAL.
+	"wads/doom1.wad" W_AddFile
+	"numlumps: " print numlumps print nl
+
+	8 mem::alloc! -> key
+	key 8 mem::zero
+	80 key 0 mem::set_u8   76 key 1 mem::set_u8   65 key 2 mem::set_u8   89 key 3 mem::set_u8
+	80 key 4 mem::set_u8   65 key 5 mem::set_u8   76 key 6 mem::set_u8
+	key W_CheckNumForName -> pl_idx
+	"PLAYPAL index: " print pl_idx print nl
+
+	pl_idx W_LumpLength -> pl_size
+	pl_size mem::alloc! -> playpal
+	pl_idx playpal W_ReadLump
+	"PLAYPAL loaded (" print pl_size print " bytes)" print nl
+
+	// 3. Allocate the ARGB8888 framebuffer and render.
+	WIDTH HEIGHT mul 4 mul -> fb_bytes
+	fb_bytes mem::alloc! -> fb
+	fb fb_bytes mem::zero
+	fb playpal render_palette
+
+	// 4. Upload and present, then hold for ~3 seconds while draining events.
+	tex fb WIDTH 4 mul sdl::UpdateTextureFull drop
+	renderer sdl::RenderClear
+	renderer tex sdl::RenderCopyFull
+	renderer sdl::RenderPresent
+
+	sdl::GetTicks -> start
+	0 -> done
+	loop {
+		done 1 eq if { break }
+
+		// Drain the SDL event queue so the OS sees us as responsive.
+		0 -> polling
+		loop {
+			polling 1 eq if { break }
+			sdl::PollKey -> scancode -> ev_type -> has_ev
+			scancode drop
+			has_ev 0 eq if {
+				1 -> polling
+			} else {
+				ev_type EVENT_QUIT eq if {
+					1 -> done
+					1 -> polling
+				}
+				ev_type EVENT_KEYDOWN eq if {
+					1 -> done
+					1 -> polling
+				}
+			}
+		}
+
+		// 3-second timeout.
+		sdl::GetTicks start sub 3000 gt if {
+			1 -> done
+		}
+
+		16 sdl::Delay   // ~60 Hz
+	}
+
+	// 5. Clean up.
+	fb mem::free
+	playpal mem::free
+	key mem::free
+
+	tex sdl::DestroyTexture
+	renderer sdl::DestroyRenderer
+	win sdl::DestroyWindow
+	sdl::Quit
+	"done" print nl
+}

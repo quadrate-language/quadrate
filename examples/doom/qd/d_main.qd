@@ -1,0 +1,1232 @@
+/// Doom entry point + main loop.
+///
+/// Ported from doomgeneric/d_main.c — the top of the tree. D_DoomMain
+/// runs startup (identify IWAD, init every subsystem, parse command
+/// line), then D_DoomLoop turns over control to the per-tic loop
+/// (I_StartTic → G_Ticker → D_Display). This is the one module the
+/// plan explicitly leaves until every other is ready.
+///
+/// This first pass wires the full boot sequence:
+///   1. Read argv, seed m_argv, look for -iwad
+///   2. Init graphics, timer, wad, r_data, r_main
+///   3. Enter a short loop (tic + draw + event drain)
+///   4. Exit cleanly on EVENT_QUIT
+///
+/// Until renderer bodies exist (segs/planes/things), the display path
+/// draws a solid-colour palette-mapped background confirming the whole
+/// chain is live. Real D_Display lands with the last renderer fix.
+
+use mem
+use os
+use "../ffi/sdl.qd"
+use "m_argv.qd"
+use "d_iwad.qd"
+use "d_event.qd"
+use "w_wad.qd"
+use "i_video.qd"
+use "i_timer.qd"
+use "i_system.qd"
+use "r_main.qd"
+use "r_data.qd"
+use "g_game.qd"
+use "doomstat.qd"
+use "doomdef.qd"
+use "ui_stubs.qd"
+use "p_tick.qd"
+use "p_setup.qd"
+use "r_bsp.qd"
+use "r_automap2d.qd"
+use "r_perspective.qd"
+use "r_sky.qd"
+use "v_video.qd"
+use "dump_frame.qd"
+
+// ---- State ----
+
+pub var gamedescription:str = "DOOM"
+pub var demosequence:i64 = 0
+pub var pagetic:i64 = 0
+pub var pagename:str = ""
+pub var advancedemo:i64 = 0
+pub var d_frame_counter:i64 = 0
+
+// Live camera state: initialised from player_start at boot, updated
+// each tic from the keystate bitmap maintained by D_ProcessEvents.
+pub var camera_x:i64 = 0
+pub var camera_y:i64 = 0
+pub var camera_angle:i64 = 0
+
+// Keystate bitmap — set on ev_keydown, cleared on ev_keyup. Flags:
+//   bit 0 forward  (W or up arrow)
+//   bit 1 back     (S or down arrow)
+//   bit 2 turn-L   (left arrow or A)
+//   bit 3 turn-R   (right arrow or D)
+//   bit 4 strafe-L (comma or ,)
+//   bit 5 strafe-R (period or .)
+pub var keystate:i64 = 0
+
+// ---- Helpers ----
+
+pub fn D_IdentifyVersion( -- ) {
+	// Placeholder — defaults from doomstat.qd (gamemission=MISSION_DOOM,
+	// gamemode=MODE_INDETERMINED) are good enough while the full IWAD
+	// identity pass is deferred. Real version picks up mission/mode
+	// from the IWAD filename + lump-presence checks.
+}
+
+pub fn D_SetGameDescription( -- ) {
+	// Real version picks Doom 2 / Plutonia / TNT / Shareware based on
+	// gamemission; defaults to "DOOM Shareware" while mission detection
+	// is deferred.
+	"DOOM Shareware" -> gamedescription
+}
+
+// Squared collision radius, in raw-map-unit² space. 16 units → 256.
+const CAMERA_RADIUS_SQ_U = 256
+
+/// Signed arithmetic shift right: Quadrate's `shr` is logical, so a
+/// negative fixed-point value becomes a huge positive after `shr 16`.
+/// We emulate the signed version by dividing instead of shifting.
+fn asr16(v:i64 -- r:i64) {
+	v 65536 div
+}
+
+/// True if (px, py) is within radius 16 map units of segment (ax,ay)→(bx,by).
+/// All coords 16.16 fixed; converts to map units with asr16 before squaring.
+fn point_near_seg(px:i64 py:i64 ax:i64 ay:i64 bx:i64 by:i64 -- hit:i64) {
+	bx ax sub asr16 -> dxs
+	by ay sub asr16 -> dys
+	dxs dxs mul dys dys mul add -> seg_len_sq
+	px ax sub asr16 -> qx
+	py ay sub asr16 -> qy
+	seg_len_sq 0 eq if {
+		qx qx mul qy qy mul add CAMERA_RADIUS_SQ_U lt if { 1 return }
+		0 return
+	}
+	qx dxs mul qy dys mul add -> t_num
+	t_num 0 lt if { 0 -> t_num }
+	t_num seg_len_sq gt if { seg_len_sq -> t_num }
+	// Closest point in map units: (ax/65536) + dxs * t_num / seg_len_sq.
+	qx dxs t_num mul seg_len_sq div sub -> rx
+	qy dys t_num mul seg_len_sq div sub -> ry
+	rx rx mul ry ry mul add CAMERA_RADIUS_SQ_U lt if { 1 return }
+	0
+}
+
+/// True if (cx, cy) would touch any one-sided linedef.
+fn blocked(cx:i64 cy:i64 -- yes:i64) {
+	-1 -> dbg_hit_line
+	numlines 0 lte if { 0 return }
+	0 -> i
+	loop {
+		i numlines gte if { break }
+		lines i LINE_SIZE mul LINE_OFF_BACKSECTOR add mem::get_i32 -> back
+		back 0 lt if {
+			lines i LINE_SIZE mul LINE_OFF_V1 add mem::get_i32 -> v1i
+			lines i LINE_SIZE mul LINE_OFF_V2 add mem::get_i32 -> v2i
+			vertexes v1i VERTEX_SIZE mul mem::get_i32 -> ax
+			vertexes v1i VERTEX_SIZE mul 4 add mem::get_i32 -> ay
+			vertexes v2i VERTEX_SIZE mul mem::get_i32 -> bx
+			vertexes v2i VERTEX_SIZE mul 4 add mem::get_i32 -> by
+			cx cy ax ay bx by point_near_seg if { 1 return }
+		}
+		i 1 add -> i
+	}
+	0
+}
+
+pub var dbg_blocks:i64 = 0
+pub var dbg_moves:i64 = 0
+
+fn try_move(new_x:i64 new_y:i64 -- ) {
+	new_x new_y blocked -> b
+	b 0 eq if {
+		new_x -> camera_x
+		new_y -> camera_y
+		dbg_moves 1 add -> dbg_moves
+	} else {
+		dbg_blocks 1 add -> dbg_blocks
+	}
+}
+
+/// Step the camera one tic based on the keystate bitmap. Movement
+/// speed and turn speed are rough approximations of Doom's vanilla
+/// values — good enough for navigating E1M1 in the stub pipeline.
+pub var pickup_count:i64 = 0
+pub var pickup_flash:i64 = 0
+pub var exit_reached:i64 = 0
+pub var fire_tic:i64 = 0
+pub var kill_count:i64 = 0
+pub var pistol_ammo:i64 = 50
+pub const FIRE_RANGE_WORLD = 2048
+pub var player_health:i64 = 100
+pub var damage_tic:i64 = 0
+pub var total_damage:i64 = 0
+pub var player_dead:i64 = 0
+pub var monster_steps:i64 = 0
+pub var state_advances:i64 = 0
+
+/// Advance every alive thing's info.qd state machine by one tic.
+/// Each state has a `tics` duration and `nextstate` target; when
+/// the ticks-left counter hits 0 we follow the chain. `tics < 0`
+/// indicates a sticky "hold here" state — leave it alone.
+/// Placeholder — info.qd import from d_main.qd segfaults quadc.
+/// Move advancement to a dedicated module later.
+pub fn D_AdvanceStates( -- ) { }
+
+/// Simple monster-advance: every alive monster within ~1200 world
+/// units of the camera takes a small step toward it each tic.
+/// No wall collision — these are overhead-path-chase monsters for
+/// demo purposes, not true A* navigation.
+pub fn D_StepMonsters( -- ) {
+	0 -> ti
+	loop {
+		ti numthings gte if { break }
+		things_data ti THING_SIZE mul THING_OFF_PICKED add mem::get_i32 -> picked
+		things_data ti THING_SIZE mul THING_OFF_HEALTH add mem::get_i32 -> hp
+		things_data ti THING_SIZE mul THING_OFF_TYPE add mem::get_i32 -> tt
+		picked 0 eq hp 0 gt and tt 2035 neq and if {
+			things_data ti THING_SIZE mul THING_OFF_X add mem::get_i32 -> tthx
+			things_data ti THING_SIZE mul THING_OFF_Y add mem::get_i32 -> tthy
+			camera_x tthx sub 65536 div -> dxw
+			camera_y tthy sub 65536 div -> dyw
+			dxw dxw mul dyw dyw mul add -> dsq
+			dsq 1440000 lt dsq 0 gt and if {
+				// Step by ~4 world units per tic. Normalize (dx, dy) by
+				// |dx|+|dy| magnitude (cheap L1-norm; good enough for
+				// 60-tic demo motion).
+				dxw 0 lt if { 0 dxw sub } else { dxw } -> admx
+				dyw 0 lt if { 0 dyw sub } else { dyw } -> admy
+				admx admy add -> amag
+				amag 1 lt if { 1 -> amag }
+				4 dxw mul amag div 65536 mul -> stepx
+				4 dyw mul amag div 65536 mul -> stepy
+				tthx stepx add -> new_tthx
+				tthy stepy add -> new_tthy
+				new_tthx new_tthy blocked if {
+					// Tunneling blocked — monster stays put this tic.
+				} else {
+					new_tthx things_data ti THING_SIZE mul THING_OFF_X add mem::set_i32
+					new_tthy things_data ti THING_SIZE mul THING_OFF_Y add mem::set_i32
+					monster_steps 1 add -> monster_steps
+				}
+			}
+		}
+		ti 1 add -> ti
+	}
+}
+
+/// Each tic, if any alive monster is within ~96 world units of the
+/// camera, tick the damage counter. Every 10 tics of contact deals
+/// 5 HP to the player. Separate timer from the auto-fire so shots
+/// and bites don't race.
+pub fn D_CheckDamage( -- ) {
+	player_health 0 lte if { return }
+	0 -> contact
+	0 -> ti
+	loop {
+		ti numthings gte if { break }
+		contact 1 eq if { break }
+		things_data ti THING_SIZE mul THING_OFF_PICKED add mem::get_i32 -> picked
+		things_data ti THING_SIZE mul THING_OFF_HEALTH add mem::get_i32 -> hp
+		things_data ti THING_SIZE mul THING_OFF_TYPE add mem::get_i32 -> tt
+		picked 0 eq hp 0 gt and
+		tt 2035 neq and if {
+			things_data ti THING_SIZE mul THING_OFF_X add mem::get_i32 -> tthx
+			things_data ti THING_SIZE mul THING_OFF_Y add mem::get_i32 -> tthy
+			tthx camera_x sub 65536 div -> dxw
+			tthy camera_y sub 65536 div -> dyw
+			dxw dxw mul dyw dyw mul add -> dsq
+			dsq 9216 lt if {
+				camera_x camera_y tthx tthy has_los 1 eq if { 1 -> contact }
+			}
+		}
+		ti 1 add -> ti
+	}
+	contact 1 eq if {
+		damage_tic 1 add -> damage_tic
+		damage_tic 10 gte if {
+			0 -> damage_tic
+			player_health 5 sub -> player_health
+			total_damage 5 add -> total_damage
+			player_health 0 lte if {
+				0 -> player_health
+				player_dead 0 eq if {
+					1 -> player_dead
+					"PLAYER DIED at tic " print fire_tic print nl
+				}
+			}
+			"DAMAGE: player_health=" print player_health print nl
+			snd_hurt snd_hurt_len play_sfx
+		}
+	} else {
+		0 -> damage_tic
+	}
+}
+
+/// Auto-fire every 20 tics. Pick the alive monster with the
+/// smallest forward distance and apply 20 damage. If its health
+/// drops to 0 set picked_up=2 (killed) so the renderer stops
+/// drawing it, log the kill. Only considers things roughly in the
+/// camera's forward cone (view-space forward > 0).
+/// True (1) if segment (ax, ay)→(bx, by) does NOT cross any
+/// one-sided linedef — i.e. the path is clear of walls.
+/// Coordinates are 16.16 fixed-point; we compare in world units
+/// via /65536 to keep cross-products in i64 range.
+fn has_los(ax:i64 ay:i64 bx:i64 by:i64 -- clear:i64) {
+	ax 65536 div -> ax_
+	ay 65536 div -> ay_
+	bx 65536 div -> bx_
+	by 65536 div -> by_
+	0 -> li
+	loop {
+		li numlines gte if { break }
+		lines li LINE_SIZE mul LINE_OFF_BACKSECTOR add mem::get_i32 -> back
+		back 0 lt if {
+			lines li LINE_SIZE mul LINE_OFF_V1 add mem::get_i32 -> v1i
+			lines li LINE_SIZE mul LINE_OFF_V2 add mem::get_i32 -> v2i
+			vertexes v1i VERTEX_SIZE mul mem::get_i32 65536 div -> cx_
+			vertexes v1i VERTEX_SIZE mul 4 add mem::get_i32 65536 div -> cy_
+			vertexes v2i VERTEX_SIZE mul mem::get_i32 65536 div -> dx_
+			vertexes v2i VERTEX_SIZE mul 4 add mem::get_i32 65536 div -> dy_
+			// Cross-product signs: d1 = (D-C) × (A-C), d2 = (D-C) × (B-C)
+			dx_ cx_ sub -> ex
+			dy_ cy_ sub -> ey
+			ex ay_ cy_ sub mul ey ax_ cx_ sub mul sub -> d1
+			ex by_ cy_ sub mul ey bx_ cx_ sub mul sub -> d2
+			bx_ ax_ sub -> fx
+			by_ ay_ sub -> fy
+			fx cy_ ay_ sub mul fy cx_ ax_ sub mul sub -> d3
+			fx dy_ ay_ sub mul fy dx_ ax_ sub mul sub -> d4
+			d1 0 lt d2 0 gt and d1 0 gt d2 0 lt and or
+			d3 0 lt d4 0 gt and d3 0 gt d4 0 lt and or and if {
+				0 return
+			}
+		}
+		li 1 add -> li
+	}
+	1
+}
+
+pub fn D_AutoFire( -- ) {
+	fire_tic 1 add -> fire_tic
+	fire_tic 10 mod 0 neq if { return }
+	pistol_ammo 0 lte if { return }
+	camera_angle ANGLETOFINESHIFT shr FINEMASK and -> fidx
+	fidx finecosine_at -> c_a
+	fidx finesine_at -> s_a
+	-1 -> best
+	2000000000 -> best_d
+	0 -> ti
+	loop {
+		ti numthings gte if { break }
+		things_data ti THING_SIZE mul THING_OFF_PICKED add mem::get_i32 -> picked
+		things_data ti THING_SIZE mul THING_OFF_HEALTH add mem::get_i32 -> hp
+		picked 0 eq hp 0 gt and if {
+			things_data ti THING_SIZE mul THING_OFF_X add mem::get_i32 -> tthx
+			things_data ti THING_SIZE mul THING_OFF_Y add mem::get_i32 -> tthy
+			tthx camera_x sub -> ddx
+			tthy camera_y sub -> ddy
+			ddx c_a mul 65536 div ddy s_a mul 65536 div add -> fwd_v
+			ddx s_a mul 65536 div ddy c_a mul 65536 div sub -> side_v
+			side_v 0 lt if { 0 side_v sub -> side_v }
+			fwd_v 0 gt fwd_v best_d lt and
+			side_v 2 mul fwd_v lt and
+			fwd_v 65536 div FIRE_RANGE_WORLD lt and if {
+				// Within fire cone (|side| < fwd/2 ≈ 26°), in range,
+				// AND closer than current best.
+				camera_x camera_y tthx tthy has_los 1 eq if {
+					fwd_v -> best_d
+					ti -> best
+				}
+			}
+		}
+		ti 1 add -> ti
+	}
+	best 0 lt if { return }
+	pistol_ammo 1 sub -> pistol_ammo
+	snd_pistol snd_pistol_len play_sfx
+	things_data best THING_SIZE mul THING_OFF_HEALTH add mem::get_i32 -> hp
+	hp 20 sub -> hp
+	hp 0 lte if {
+		2 things_data best THING_SIZE mul THING_OFF_PICKED add mem::set_i32
+		0 things_data best THING_SIZE mul THING_OFF_HEALTH add mem::set_i32
+		kill_count 1 add -> kill_count
+		things_data best THING_SIZE mul THING_OFF_TYPE add mem::get_i32 -> tt
+		"KILL: thing #" print best print " type=" print tt print nl
+		12 -> face_kill_flash
+		tt 2035 eq if {
+			snd_explode snd_explode_len play_sfx
+		} else {
+			snd_kill snd_kill_len play_sfx
+		}
+		// Barrel explosion: when a barrel (type 2035) dies, AoE-
+		// damage every alive thing within ~128 world units. Chain
+		// reactions if barrels are clustered.
+		tt 2035 eq if {
+			things_data best THING_SIZE mul THING_OFF_X add mem::get_i32 -> bx
+			things_data best THING_SIZE mul THING_OFF_Y add mem::get_i32 -> by
+			0 -> aoe_i
+			loop {
+				aoe_i numthings gte if { break }
+				things_data aoe_i THING_SIZE mul THING_OFF_PICKED add mem::get_i32 -> aoe_pk
+				things_data aoe_i THING_SIZE mul THING_OFF_HEALTH add mem::get_i32 -> aoe_hp
+				aoe_pk 0 eq aoe_hp 0 gt and aoe_i best neq and if {
+					things_data aoe_i THING_SIZE mul THING_OFF_X add mem::get_i32 -> ax
+					things_data aoe_i THING_SIZE mul THING_OFF_Y add mem::get_i32 -> ay
+					ax bx sub 65536 div -> adx
+					ay by sub 65536 div -> ady
+					adx adx mul ady ady mul add -> adsq
+					adsq 16384 lt if {
+						aoe_hp 40 sub -> aoe_hp
+						aoe_hp 0 lte if {
+							0 -> aoe_hp
+							2 things_data aoe_i THING_SIZE mul THING_OFF_PICKED add mem::set_i32
+							kill_count 1 add -> kill_count
+							things_data aoe_i THING_SIZE mul THING_OFF_TYPE add mem::get_i32 -> aoe_tt
+							"CHAIN-KILL: thing #" print aoe_i print " type=" print aoe_tt print nl
+						}
+						aoe_hp things_data aoe_i THING_SIZE mul THING_OFF_HEALTH add mem::set_i32
+					}
+				}
+				aoe_i 1 add -> aoe_i
+			}
+		}
+	} else {
+		hp things_data best THING_SIZE mul THING_OFF_HEALTH add mem::set_i32
+		things_data best THING_SIZE mul THING_OFF_TYPE add mem::get_i32 -> tt
+		"hit thing #" print best print " type=" print tt print " hp=" print hp print nl
+	}
+}
+
+// Active door animations. Flat arrays of (sector_idx, target_z)
+// pairs, capped at 32 simultaneous doors. The sector's live
+// ceilingheight is raised by DOOR_SPEED per tic until target.
+pub const MAX_DOORS = 32
+pub const DOOR_SPEED = 131072       // 2 world units / tic, 16.16
+pub var door_sectors:ptr = 0        // i32 × MAX_DOORS
+pub var door_targets:ptr = 0        // i32 × MAX_DOORS
+pub var num_active_doors:i64 = 0
+var doors_inited:i64 = 0
+
+fn ensure_doors( -- ) {
+	doors_inited 1 eq if { return }
+	MAX_DOORS 4 mul mem::alloc! -> door_sectors
+	MAX_DOORS 4 mul mem::alloc! -> door_targets
+	1 -> doors_inited
+}
+
+/// Activate the door behind a given linedef: find the back sector
+/// and target its ceiling to (lowest neighbor ceiling - 4). For
+/// simplicity target = floor_z + 128 world units (= +8388608 fixed).
+fn door_activate_line(li:i64 -- ) {
+	lines li LINE_SIZE mul LINE_OFF_BACKSECTOR add mem::get_i32 -> bsec
+	bsec 0 lt bsec numsectors gte or if { return }
+	// Check not already active.
+	0 -> k
+	loop {
+		k num_active_doors gte if { break }
+		door_sectors k 4 mul mem::get_i32 bsec eq if { return }
+		k 1 add -> k
+	}
+	num_active_doors MAX_DOORS gte if { return }
+	sectors bsec SECTOR_SIZE mul SECTOR_OFF_FLOORH add mem::get_i32 -> bfloorz
+	bfloorz 8388608 add -> tgt                    // +128 world units
+	bsec   door_sectors num_active_doors 4 mul mem::set_i32
+	tgt    door_targets num_active_doors 4 mul mem::set_i32
+	num_active_doors 1 add -> num_active_doors
+	"DOOR: line " print li print " opening back sector " print bsec print
+	" toward z=" print tgt 65536 div print nl
+	snd_door snd_door_len play_sfx
+}
+
+/// Advance every active door one tic. Raise its sector's ceiling by
+/// DOOR_SPEED; when the target is met, swap-remove from the list.
+pub fn D_AdvanceDoors( -- ) {
+	ensure_doors
+	0 -> k
+	loop {
+		k num_active_doors gte if { break }
+		door_sectors k 4 mul mem::get_i32 -> s
+		door_targets k 4 mul mem::get_i32 -> tgt
+		sectors s SECTOR_SIZE mul SECTOR_OFF_CEILH add mem::get_i32 -> cz
+		cz DOOR_SPEED add -> nz
+		nz tgt gte if {
+			tgt sectors s SECTOR_SIZE mul SECTOR_OFF_CEILH add mem::set_i32
+			// Swap-remove this slot
+			num_active_doors 1 sub -> last
+			k last lt if {
+				door_sectors last 4 mul mem::get_i32
+					door_sectors k 4 mul mem::set_i32
+				door_targets last 4 mul mem::get_i32
+					door_targets k 4 mul mem::set_i32
+			}
+			last -> num_active_doors
+		} else {
+			nz sectors s SECTOR_SIZE mul SECTOR_OFF_CEILH add mem::set_i32
+			k 1 add -> k
+		}
+	}
+}
+
+/// Look for door linedefs (special 1/2/31) within reach of the
+/// camera. Activate any in range. Linedefs we trigger are marked
+/// `special = 0` so they fire once.
+pub fn D_CheckDoors( -- ) {
+	ensure_doors
+	// Probe point: 48 world units ahead along the camera's forward
+	// direction. Doors opening triggers when this probe is near
+	// the linedef midpoint, matching Doom's USE behavior.
+	camera_angle ANGLETOFINESHIFT shr FINEMASK and -> fidx
+	fidx finecosine_at -> door_c
+	fidx finesine_at -> door_s
+	camera_x door_c 48 mul add -> probe_x
+	camera_y door_s 48 mul add -> probe_y
+	0 -> li
+	loop {
+		li numlines gte if { break }
+		lines li LINE_SIZE mul LINE_OFF_SPECIAL add mem::get_i32 -> spec
+		spec 1 eq spec 2 eq or spec 31 eq or if {
+			lines li LINE_SIZE mul LINE_OFF_V1 add mem::get_i32 -> lv1
+			lines li LINE_SIZE mul LINE_OFF_V2 add mem::get_i32 -> lv2
+			lv1 0 gte lv1 numvertexes lt and
+			lv2 0 gte lv2 numvertexes lt and and if {
+				vertexes lv1 VERTEX_SIZE mul mem::get_i32 -> lx1
+				vertexes lv1 VERTEX_SIZE mul 4 add mem::get_i32 -> ly1
+				vertexes lv2 VERTEX_SIZE mul mem::get_i32 -> lx2
+				vertexes lv2 VERTEX_SIZE mul 4 add mem::get_i32 -> ly2
+				lx1 lx2 add 2 div -> mx
+				ly1 ly2 add 2 div -> my
+				// Activate if EITHER camera OR forward-probe is close.
+				mx camera_x sub 65536 div -> ddx
+				my camera_y sub 65536 div -> ddy
+				ddx ddx mul ddy ddy mul add -> dsd1
+				mx probe_x sub 65536 div -> pdx
+				my probe_y sub 65536 div -> pdy
+				pdx pdx mul pdy pdy mul add -> dsd2
+				dsd1 4096 lt dsd2 4096 lt or if {
+					li door_activate_line
+					0 lines li LINE_SIZE mul LINE_OFF_SPECIAL add mem::set_i32
+				}
+			}
+		}
+		li 1 add -> li
+	}
+}
+
+/// One-shot: log each exit linedef's position + special at boot so
+/// the snapshot output includes them. Callers expect this after
+/// P_SetupLevel so lines / vertexes are resolved.
+/// Count combat-ready things (alive, positive health) and log.
+pub fn D_LogCombatants( -- ) {
+	0 -> cc
+	2000000 -> nearest
+	0 -> ti
+	loop {
+		ti numthings gte if { break }
+		things_data ti THING_SIZE mul THING_OFF_HEALTH add mem::get_i32 -> hp
+		things_data ti THING_SIZE mul THING_OFF_TYPE add mem::get_i32 -> tt
+		hp 0 gt tt 2035 neq and if {
+			cc 1 add -> cc
+			things_data ti THING_SIZE mul THING_OFF_X add mem::get_i32 -> tthx
+			things_data ti THING_SIZE mul THING_OFF_Y add mem::get_i32 -> tthy
+			tthx player_start_x sub 65536 div -> dxw
+			tthy player_start_y sub 65536 div -> dyw
+			dxw dxw mul dyw dyw mul add -> dsq
+			dsq nearest lt if { dsq -> nearest }
+		}
+		ti 1 add -> ti
+	}
+	"combat-ready things: " print cc print
+	" (nearest " print nearest print " dsq from start)" print nl
+}
+
+pub fn D_LogExits( -- ) {
+	0 -> li
+	0 -> found
+	loop {
+		li numlines gte if { break }
+		lines li LINE_SIZE mul LINE_OFF_SPECIAL add mem::get_i32 -> spec
+		spec 11 eq spec 51 eq or spec 52 eq or spec 124 eq or if {
+			lines li LINE_SIZE mul LINE_OFF_V1 add mem::get_i32 -> lv1
+			vertexes lv1 VERTEX_SIZE mul mem::get_i32 -> lx1
+			vertexes lv1 VERTEX_SIZE mul 4 add mem::get_i32 -> ly1
+			"exit line " print li print " special=" print spec print
+			" at (" print lx1 65536 div print ", " print ly1 65536 div print ")" print nl
+			found 1 add -> found
+		}
+		li 1 add -> li
+	}
+	found 0 eq if {
+		"no exit linedefs in this map" print nl
+	}
+	// Also list the 5 closest door linedefs to the player start for
+	// tour-design visibility.
+	0 -> li
+	0 -> door_count
+	loop {
+		li numlines gte if { break }
+		door_count 10 gte if { break }
+		lines li LINE_SIZE mul LINE_OFF_SPECIAL add mem::get_i32 -> spec
+		spec 1 eq spec 2 eq or spec 31 eq or if {
+			lines li LINE_SIZE mul LINE_OFF_V1 add mem::get_i32 -> lv1
+			vertexes lv1 VERTEX_SIZE mul mem::get_i32 -> lx1
+			vertexes lv1 VERTEX_SIZE mul 4 add mem::get_i32 -> ly1
+			"door line " print li print " special=" print spec print
+			" v1=(" print lx1 65536 div print ", " print ly1 65536 div print ")" print nl
+			door_count 1 add -> door_count
+		}
+		li 1 add -> li
+	}
+}
+
+/// Scan linedefs for exit specials (W1/S1 End Level, Secret Exit).
+/// If the camera's within ~128 world units of one, flag the tour
+/// as "complete" and log the line index. One-shot: subsequent
+/// frames skip the check.
+pub fn D_CheckExit( -- ) {
+	exit_reached 0 neq if { return }
+	0 -> li
+	loop {
+		li numlines gte if { break }
+		lines li LINE_SIZE mul LINE_OFF_SPECIAL add mem::get_i32 -> spec
+		spec 11 eq spec 51 eq or spec 52 eq or spec 124 eq or if {
+			lines li LINE_SIZE mul LINE_OFF_V1 add mem::get_i32 -> lv1
+			lines li LINE_SIZE mul LINE_OFF_V2 add mem::get_i32 -> lv2
+			lv1 0 gte lv1 numvertexes lt and
+			lv2 0 gte lv2 numvertexes lt and and if {
+				vertexes lv1 VERTEX_SIZE mul mem::get_i32 -> lx1
+				vertexes lv1 VERTEX_SIZE mul 4 add mem::get_i32 -> ly1
+				vertexes lv2 VERTEX_SIZE mul mem::get_i32 -> lx2
+				vertexes lv2 VERTEX_SIZE mul 4 add mem::get_i32 -> ly2
+				lx1 lx2 add 2 div -> mx
+				ly1 ly2 add 2 div -> my
+				mx camera_x sub 65536 div -> exdx
+				my camera_y sub 65536 div -> exdy
+				exdx exdx mul exdy exdy mul add -> exds
+				exds 16384 lt if {
+					"EXIT line " print li print " (special " print spec print ") — level complete!" print nl
+					1 -> exit_reached
+					break
+				}
+			}
+		}
+		li 1 add -> li
+	}
+}
+pub var hud_stbar:ptr = 0
+pub var hud_pistol:ptr = 0
+pub var hud_pistol_fire:ptr = 0
+pub var hud_face:ptr = 0      // fallback if tiers missing
+pub var hud_faces:ptr = 0     // 5 × i64 ptr (STFST00/10/20/30/40)
+pub var hud_face_kill:ptr = 0
+pub var hud_face_dead:ptr = 0
+pub var snd_pistol:ptr = 0
+pub var snd_pistol_len:i64 = 0
+pub var snd_kill:ptr = 0
+pub var snd_kill_len:i64 = 0
+pub var snd_pickup:ptr = 0
+pub var snd_pickup_len:i64 = 0
+pub var snd_wpnup:ptr = 0
+pub var snd_wpnup_len:i64 = 0
+pub var snd_door:ptr = 0
+pub var snd_door_len:i64 = 0
+pub var snd_explode:ptr = 0
+pub var snd_explode_len:i64 = 0
+pub var snd_hurt:ptr = 0
+pub var snd_hurt_len:i64 = 0
+pub var snd_ready:i64 = 0
+
+/// Queue a cached SFX sample if audio is ready and the lump is
+/// present. No-op otherwise.
+pub fn play_sfx(samples:ptr len:i64 -- ) {
+	snd_ready 0 eq if { return }
+	samples mem::is_null if { return }
+	len 0 lte if { return }
+	samples len sdl::AudioQueue drop
+}
+
+/// Load a named DS* sound lump, skip the 16-byte DMX header, and
+/// produce (samples:ptr, len:i64) for raw 8-bit unsigned PCM. If
+/// the lump is missing, returns (null, 0).
+fn load_sfx(name:str -- samples:ptr len:i64) {
+	8 mem::alloc! -> sfx_key
+	sfx_key 8 mem::zero
+	name mem::from_string -> snl -> snp
+	snl 8 gt if { 8 -> snl }
+	0 snl 1 for k { snp k mem::get_u8 sfx_key k mem::set_u8 }
+	snp mem::free
+	sfx_key W_CheckNumForName -> sfx_lump
+	sfx_key mem::free
+	sfx_lump 0 lt if { 0 cast<ptr> 0 return }
+	sfx_lump 0 W_CacheLumpNum 16 mem::ptr_add
+	sfx_lump W_LumpLength 16 sub
+}
+pub var hud_digits:ptr = 0    // 10 × i64 (ptr per digit lump), filled in D_InitHUD
+pub var face_kill_flash:i64 = 0
+
+/// Resolve and cache the status-bar + pistol lumps once at boot.
+/// Call after R_Init / W_AddFile so the lumps exist. Either can
+/// remain null if the lookup fails (shareware doom1 has both).
+pub fn D_InitHUD( -- ) {
+	8 mem::alloc! -> key
+	key 8 mem::zero
+	"STBAR" mem::from_string -> sl -> sp
+	0 sl 1 for k { sp k mem::get_u8 key k mem::set_u8 }
+	sp mem::free
+	key W_CheckNumForName -> lnum
+	lnum 0 gte if { lnum 0 W_CacheLumpNum -> hud_stbar }
+	key 8 mem::zero
+	"PISGA0" mem::from_string -> pl -> pp
+	0 pl 1 for k { pp k mem::get_u8 key k mem::set_u8 }
+	pp mem::free
+	key W_CheckNumForName -> lnum
+	lnum 0 gte if { lnum 0 W_CacheLumpNum -> hud_pistol }
+	// Firing frame with muzzle flash.
+	key 8 mem::zero
+	"PISFA0" mem::from_string -> fl -> fp
+	0 fl 1 for k { fp k mem::get_u8 key k mem::set_u8 }
+	fp mem::free
+	key W_CheckNumForName -> lnum
+	lnum 0 gte if { lnum 0 W_CacheLumpNum -> hud_pistol_fire }
+	// Doomguy faces: 5 health tiers, kill-flash, dead.
+	5 8 mul mem::alloc! -> hud_faces
+	hud_faces 5 8 mul mem::zero
+	0 -> tier
+	loop {
+		tier 5 gte if { break }
+		key 8 mem::zero
+		"STFST00" mem::from_string -> nfl -> nfp
+		0 nfl 1 for k { nfp k mem::get_u8 key k mem::set_u8 }
+		nfp mem::free
+		48 tier add key 5 mem::set_u8   // STFST<tier>0
+		key W_CheckNumForName -> lnum
+		lnum 0 gte if {
+			lnum 0 W_CacheLumpNum hud_faces tier 8 mul mem::set_ptr
+		}
+		tier 1 add -> tier
+	}
+	hud_faces 0 mem::get_ptr -> hud_face   // tier 0 = fallback
+
+	// Audio: open the SDL device, cache SFX lumps. The Doom SFX
+	// lump has a 16-byte header before the raw 8-bit unsigned PCM
+	// samples; load_sfx handles that skip.
+	sdl::AudioInit -> audio_ok
+	audio_ok 1 eq if {
+		1 -> snd_ready
+		"DSPISTOL" load_sfx -> snd_pistol_len -> snd_pistol
+		"DSPODTH1" load_sfx -> snd_kill_len -> snd_kill
+		"DSITEMUP" load_sfx -> snd_pickup_len -> snd_pickup
+		"DSWPNUP"  load_sfx -> snd_wpnup_len -> snd_wpnup
+		"DSDOROPN" load_sfx -> snd_door_len -> snd_door
+		"DSBAREXP" load_sfx -> snd_explode_len -> snd_explode
+		"DSOOF"    load_sfx -> snd_hurt_len -> snd_hurt
+	}
+	key 8 mem::zero
+	"STFKILL0" mem::from_string -> kfl -> kfp
+	0 kfl 1 for k { kfp k mem::get_u8 key k mem::set_u8 }
+	kfp mem::free
+	key W_CheckNumForName -> lnum
+	lnum 0 gte if { lnum 0 W_CacheLumpNum -> hud_face_kill }
+	key 8 mem::zero
+	"STFDEAD0" mem::from_string -> dfl -> dfp
+	0 dfl 1 for k { dfp k mem::get_u8 key k mem::set_u8 }
+	dfp mem::free
+	key W_CheckNumForName -> lnum
+	lnum 0 gte if { lnum 0 W_CacheLumpNum -> hud_face_dead }
+	// Load STYSNUM0..STYSNUM9 digit patches into a 10-slot ptr array.
+	10 8 mul mem::alloc! -> hud_digits
+	hud_digits 10 8 mul mem::zero
+	0 -> d
+	loop {
+		d 10 gte if { break }
+		key 8 mem::zero
+		"STYSNUM0" mem::from_string -> nl -> np
+		0 7 1 for kk { np kk mem::get_u8 key kk mem::set_u8 }
+		np mem::free
+		48 d add key 7 mem::set_u8   // overwrite final '0' with '0'+d
+		key W_CheckNumForName -> lnum
+		lnum 0 gte if {
+			lnum 0 W_CacheLumpNum hud_digits d 8 mul mem::set_ptr
+		}
+		d 1 add -> d
+	}
+	key mem::free
+}
+
+/// Draw a small decimal number at (x, y) using the cached
+/// STYSNUM digit patches. Widths are ~4 pixels per digit.
+fn hud_draw_number(n:i64 x:i64 y:i64 -- ) {
+	hud_digits mem::is_null if { return }
+	n 0 lt if { 0 -> n }
+	n 999 gt if { 999 -> n }
+	n 100 div -> d100
+	n 100 mod 10 div -> d10
+	n 10 mod -> d1
+	hud_digits d100 8 mul mem::get_ptr -> p
+	p mem::is_null if { } else {
+		x y p I_VideoBuffer SCREENWIDTH V_DrawPatch
+	}
+	hud_digits d10 8 mul mem::get_ptr -> p
+	p mem::is_null if { } else {
+		x 5 add y p I_VideoBuffer SCREENWIDTH V_DrawPatch
+	}
+	hud_digits d1 8 mul mem::get_ptr -> p
+	p mem::is_null if { } else {
+		x 10 add y p I_VideoBuffer SCREENWIDTH V_DrawPatch
+	}
+}
+
+/// Draw the status bar + pistol weapon over the 3D view. Called
+/// after the renderer so the HUD sits on top.
+pub fn D_DrawHUD( -- ) {
+	// Swap to firing frame for 3 tics after each auto-fire, if the
+	// firing-frame lump is present.
+	fire_tic 10 mod 3 lt if {
+		hud_pistol_fire mem::is_null if { hud_pistol } else { hud_pistol_fire }
+	} else {
+		hud_pistol
+	} -> weapon_patch
+	weapon_patch mem::is_null if { } else {
+		// Breathing sway tied to sprite_anim_tic; recoil kick
+		// jumps the pistol down-and-back for 5 tics post-fire.
+		sprite_anim_tic 16 mod 8 sub -> sway
+		fire_tic 10 mod -> tic_mod
+		tic_mod 5 lt if { 5 tic_mod sub 3 mul } else { 0 } -> recoil
+		160 sway add 168 recoil add weapon_patch I_VideoBuffer SCREENWIDTH V_DrawSprite
+	}
+	// Pickup flash: paint screen edges yellow for 3 tics after a
+	// collect. Only edges so the 3D view stays visible.
+	pickup_flash 0 gt if {
+		0 -> ef_x
+		loop {
+			ef_x SCREENWIDTH gte if { break }
+			231 I_VideoBuffer 0 SCREENWIDTH mul ef_x add mem::set_u8
+			231 I_VideoBuffer 1 SCREENWIDTH mul ef_x add mem::set_u8
+			231 I_VideoBuffer 167 SCREENWIDTH mul ef_x add mem::set_u8
+			231 I_VideoBuffer 166 SCREENWIDTH mul ef_x add mem::set_u8
+			ef_x 1 add -> ef_x
+		}
+		0 -> ef_y
+		loop {
+			ef_y 168 gte if { break }
+			231 I_VideoBuffer ef_y SCREENWIDTH mul 0 add mem::set_u8
+			231 I_VideoBuffer ef_y SCREENWIDTH mul 1 add mem::set_u8
+			231 I_VideoBuffer ef_y SCREENWIDTH mul 318 add mem::set_u8
+			231 I_VideoBuffer ef_y SCREENWIDTH mul 319 add mem::set_u8
+			ef_y 1 add -> ef_y
+		}
+		pickup_flash 1 sub -> pickup_flash
+	}
+	// Red tint when dead: full-screen damage flash, palette 176.
+	player_dead 1 eq if {
+		0 -> yd
+		loop {
+			yd 168 gte if { break }
+			0 -> xd
+			loop {
+				xd SCREENWIDTH gte if { break }
+				176 I_VideoBuffer yd SCREENWIDTH mul xd add mem::set_u8
+				xd 2 add -> xd
+			}
+			yd 1 add -> yd
+		}
+	}
+	// Crosshair: 5-pixel plus-sign at screen center (palette 176 red).
+	// Flashes to palette 231 (bright yellow) for 3 tics after auto-fire.
+	fire_tic 10 mod 3 lt if { 231 } else { 176 } -> xh_col
+	xh_col I_VideoBuffer 100 SCREENWIDTH mul 160 add mem::set_u8
+	xh_col I_VideoBuffer 99 SCREENWIDTH mul 160 add mem::set_u8
+	xh_col I_VideoBuffer 101 SCREENWIDTH mul 160 add mem::set_u8
+	xh_col I_VideoBuffer 100 SCREENWIDTH mul 159 add mem::set_u8
+	xh_col I_VideoBuffer 100 SCREENWIDTH mul 161 add mem::set_u8
+	hud_stbar mem::is_null if { } else {
+		0 168 hud_stbar I_VideoBuffer SCREENWIDTH V_DrawPatch
+	}
+	// Doomguy face at x=143, y=168: dead if player dead, kill-flash
+	// for 12 tics after each kill, else health-tier neutral.
+	// Tier 0 = 81-100%, 1 = 61-80%, 2 = 41-60%, 3 = 21-40%, 4 = 1-20%.
+	player_health 81 gte if { 0 } else {
+		player_health 61 gte if { 1 } else {
+			player_health 41 gte if { 2 } else {
+				player_health 21 gte if { 3 } else { 4 }
+			}
+		}
+	} -> face_tier
+	hud_faces face_tier 8 mul mem::get_ptr -> tier_patch
+	tier_patch mem::is_null if { hud_face -> tier_patch }
+	player_dead 1 eq if { hud_face_dead } else {
+		face_kill_flash 0 gt if { hud_face_kill } else { tier_patch }
+	} -> face_patch
+	face_patch mem::is_null if { } else {
+		143 168 face_patch I_VideoBuffer SCREENWIDTH V_DrawPatch
+	}
+	face_kill_flash 0 gt if { face_kill_flash 1 sub -> face_kill_flash }
+	// Ammo slot x=44: pistol ammo.
+	pistol_ammo 44 174 hud_draw_number
+	// Health slot x=90: player health.
+	player_health 90 174 hud_draw_number
+	// Keys slot x=230: kills count (using this area since we don't
+	// have real keys tracking yet).
+	kill_count 230 174 hud_draw_number
+}
+
+/// Test each thing against the camera's XY footprint. Any pickup
+/// within ~20 world units gets marked collected and removed from
+/// rendering. Logs a brief message the first frame it's grabbed.
+pub fn D_CheckPickups( -- ) {
+	0 -> ti
+	loop {
+		ti numthings gte if { break }
+		things_data ti THING_SIZE mul THING_OFF_PICKED add mem::get_i32 -> picked
+		picked 0 neq if { ti 1 add -> ti } else {
+		things_data ti THING_SIZE mul THING_OFF_TYPE add mem::get_i32 -> ttype
+		ttype thing_is_pickup 0 eq if { ti 1 add -> ti } else {
+		things_data ti THING_SIZE mul THING_OFF_X add mem::get_i32 -> tthx
+		things_data ti THING_SIZE mul THING_OFF_Y add mem::get_i32 -> tthy
+		tthx camera_x sub 65536 div -> dxw
+		tthy camera_y sub 65536 div -> dyw
+		dxw dxw mul dyw dyw mul add -> dsq
+		dsq 40000 lt if {
+			1 things_data ti THING_SIZE mul THING_OFF_PICKED add mem::set_i32
+			pickup_count 1 add -> pickup_count
+			3 -> pickup_flash
+			// Heal by type. Caps at 200 for bonuses, 100 for stim/medi.
+			ttype 2007 eq if {
+				pistol_ammo 10 add -> pistol_ammo
+				pistol_ammo 200 gt if { 200 -> pistol_ammo }
+			}
+			ttype 2048 eq if {
+				pistol_ammo 50 add -> pistol_ammo
+				pistol_ammo 200 gt if { 200 -> pistol_ammo }
+			}
+			ttype 2014 eq if {
+				player_health 1 add -> player_health
+				player_health 200 gt if { 200 -> player_health }
+			}
+			ttype 2011 eq if {
+				player_health 10 add -> player_health
+				player_health 100 gt if { 100 -> player_health }
+			}
+			ttype 2012 eq if {
+				player_health 25 add -> player_health
+				player_health 100 gt if { 100 -> player_health }
+			}
+			ttype 2013 eq if {
+				player_health 100 add -> player_health
+				player_health 200 gt if { 200 -> player_health }
+			}
+			ttype 2023 eq if {
+				100 -> player_health
+			}
+			"picked up type " print ttype print " HP=" print player_health print nl
+			// Weapons vs items get different pickup SFX.
+			ttype 2001 eq ttype 2002 eq or ttype 2003 eq or
+			ttype 2004 eq or ttype 2005 eq or ttype 2006 eq or if {
+				snd_wpnup snd_wpnup_len play_sfx
+			} else {
+				snd_pickup snd_pickup_len play_sfx
+			}
+		}
+		ti 1 add -> ti
+		}
+		}
+	}
+}
+
+pub fn D_StepCamera( -- ) {
+	// Turning: ~6° per tic held.
+	keystate 4 and 0 neq if {
+		// ANG90 / 15 ≈ 71582788 BAM units per tic
+		camera_angle 71582788 sub -> camera_angle
+	}
+	keystate 8 and 0 neq if {
+		camera_angle 71582788 add -> camera_angle
+	}
+
+	// Movement: project forward/back/strafe through finesine/finecosine.
+	camera_angle ANGLETOFINESHIFT shr FINEMASK and -> fidx
+	fidx finecosine_at -> c_a
+	fidx finesine_at -> s_a
+
+	// Step ~16 map units per tic when moving. Fixed-point so the
+	// step scales cleanly: 16 * FRACUNIT = 1048576.
+	1048576 -> step
+
+	// Use 65536 div (arithmetic) rather than `FRACBITS shr` (logical)
+	// so negative finesine/finecosine values produce negative deltas.
+	keystate 1 and 0 neq if {
+		camera_x c_a step mul 65536 div add
+		camera_y s_a step mul 65536 div add
+		try_move
+	}
+	keystate 2 and 0 neq if {
+		camera_x c_a step mul 65536 div sub
+		camera_y s_a step mul 65536 div sub
+		try_move
+	}
+	keystate 16 and 0 neq if {
+		camera_x s_a step mul 65536 div sub
+		camera_y c_a step mul 65536 div add
+		try_move
+	}
+	keystate 32 and 0 neq if {
+		camera_x s_a step mul 65536 div add
+		camera_y c_a step mul 65536 div sub
+		try_move
+	}
+}
+
+// ---- Event loop ----
+
+/// Translate a pressed/released scancode into a keystate bit. 1 if
+/// handled, 0 otherwise. Uses Doom key codes from doomkeys.qd (i_input
+/// remapped SDL scancodes into these).
+fn key_to_bit(k:i64 -- bit:i64) {
+	// W (119), up arrow (0xad) → forward (bit 0)
+	k 119 eq  if { 1  return }
+	k 0xad eq if { 1  return }
+	// S (115), down arrow (0xaf) → back (bit 1)
+	k 115 eq  if { 2  return }
+	k 0xaf eq if { 2  return }
+	// left arrow (0xac), A (97) → turn left (bit 2)
+	k 0xac eq if { 4  return }
+	k 97 eq   if { 4  return }
+	// right arrow (0xae), D (100) → turn right (bit 3)
+	k 0xae eq if { 8  return }
+	k 100 eq  if { 8  return }
+	// comma (44) → strafe left (bit 4), period (46) → strafe right (bit 5)
+	k 44 eq   if { 16 return }
+	k 46 eq   if { 32 return }
+	0
+}
+
+pub fn D_ProcessEvents( -- ) {
+	loop {
+		D_PopEvent -> ev
+		ev mem::is_null if { break }
+		ev EVENT_OFF_TYPE mem::get_i32 -> t
+		t ev_quit eq if { 0 os::exit }
+		// Keyboard → keystate bitmap.
+		t ev_keydown eq if {
+			ev EVENT_OFF_DATA1 mem::get_i32 key_to_bit -> bit
+			bit 0 neq if { keystate bit or -> keystate }
+		}
+		t ev_keyup eq if {
+			ev EVENT_OFF_DATA1 mem::get_i32 key_to_bit -> bit
+			bit 0 neq if { keystate bit 0xFFFFFFFF xor and -> keystate }
+		}
+		// Route to menu/HUD/automap/game responders in turn.
+		ev M_Responder 1 eq if { break }
+		ev HU_Responder drop
+		ev AM_Responder drop
+		ev G_Responder  drop
+	}
+}
+
+pub fn D_Display( -- ) {
+	I_StartFrame
+
+	// Clear framebuffer to background colour (palette index 0 = black).
+	I_VideoBuffer SCREENWIDTH SCREENHEIGHT mul mem::zero
+
+	// Run the BSP walker (scaffold — counts subsectors/segs per
+	// frame, proves the full tree is reached).
+	numnodes 0 gt if {
+		0 -> subsector_count
+		0 -> addline_count
+		0 -> bsp_depth
+		numnodes 1 sub R_RenderBSPNode
+		d_frame_counter 0 eq if {
+			"bsp: " print subsector_count print " ssecs / "
+			print addline_count print " segs / max depth " print
+			bsp_max_depth print nl
+		}
+		d_frame_counter 1 add -> d_frame_counter
+	}
+
+	// Clear framebuffer, then paint textured flats for the player's
+	// sector across the whole screen (sky texture where applicable).
+	// Walls and things overdraw per the depth buffer.
+	I_VideoBuffer SCREENWIDTH SCREENHEIGHT mul mem::zero
+
+	player_start_found 1 eq if {
+		// Apply one tic of player input, then render from the live
+		// camera state.
+		D_StepCamera
+		D_CheckPickups
+		D_CheckDoors
+		D_AdvanceDoors
+		D_StepMonsters
+		D_AdvanceStates
+		D_AutoFire
+		D_CheckDamage
+		D_CheckExit
+		sprite_anim_tic 1 add -> sprite_anim_tic
+		camera_x camera_y camera_angle R_FillBackgroundFlats
+		camera_x camera_y camera_angle R_DrawPerspective
+		camera_x camera_y camera_angle R_DrawThings
+		camera_x camera_y camera_angle R_DrawMinimap
+		D_DrawHUD
+		d_frame_counter 1 eq if {
+			"perspective: drew " print pv_drawn print " bars" print nl
+		}
+	}
+
+	M_Drawer
+	I_FinishUpdate
+}
+
+// ---- Boot sequence ----
+
+pub fn D_DoomLoop( -- ) {
+	I_InitGraphics
+
+	// Install default palette (PLAYPAL first 768 bytes, 256 × 3 RGB).
+	"PLAYPAL" mem::from_string -> plen -> pptr
+	8 mem::alloc! -> palkey
+	palkey 8 mem::zero
+	0 plen 1 for i {
+		pptr i mem::get_u8 palkey i mem::set_u8
+	}
+	pptr mem::free
+	palkey W_CheckNumForName -> palnum
+	palnum 0 W_CacheLumpNum -> pal
+	palkey mem::free
+	pal I_SetPalette
+
+	// Short finite loop for test harness (60 tics ≈ 1.7s at 35 Hz).
+	// Directed traversal toward the exit is nontrivial (E1M1 has
+	// doors, keys, switches between start and exit), so this tour
+	// stays in the first few rooms and exercises every rendering
+	// path without trying to clear the level.
+	0 -> nframes
+	loop {
+		nframes 60 gte if { break }
+		exit_reached 1 eq if { break }
+		player_dead 1 eq if { break }
+		I_StartTic
+		D_ProcessEvents
+		G_Ticker
+
+		// Forward the whole time, gentle turn-right through the middle
+		// third so the 4 dumped frames sample a curve through the
+		// starting room instead of just standing-still rotation.
+		nframes 0 gt if {
+			keystate 1 or -> keystate
+			nframes 10 gte nframes 30 lt and if {
+				keystate 8 or -> keystate
+			} else {
+				keystate 8 0xFFFFFFFF xor and -> keystate
+			}
+		}
+
+		D_Display
+
+		// Dump PPM frames at 15-tic intervals.
+		nframes 0 eq if {
+			"build/e1m1_000.ppm" DumpFramePPM
+		}
+		nframes 15 eq if {
+			"build/e1m1_090.ppm" DumpFramePPM
+		}
+		nframes 30 eq if {
+			"build/e1m1_180.ppm" DumpFramePPM
+		}
+		nframes 45 eq if {
+			"build/e1m1_270.ppm" DumpFramePPM
+		}
+
+		nframes 1 add -> nframes
+	}
+
+	"camera end: (" print camera_x 65536 div print ", " print
+	camera_y 65536 div print ")" print nl
+	"moves=" print dbg_moves print " blocks=" print dbg_blocks print nl
+	"pickups=" print pickup_count print nl
+	"kills=" print kill_count print nl
+	"health=" print player_health print " total_damage_taken=" print total_damage print nl
+	"ammo=" print pistol_ammo print nl
+	"monster_steps=" print monster_steps print " state_advances=" print state_advances print nl
+
+	I_ShutdownGraphics
+}
+
+pub fn D_DoomMain( -- ) {
+	read -> argc
+	argc M_SetArgs
+
+	I_PrintDivider
+	"                            QUADRATE DOOM" print nl
+	I_PrintDivider
+
+	"-iwad" 1 M_CheckParmWithArgs -> iparm
+	"wads/doom1.wad" -> iwadpath
+	iparm 0 gt if {
+		iparm 1 add M_Argv D_TryFindWADByName -> iwadpath
+	}
+	" loading " print iwadpath print nl
+	iwadpath W_AddFile
+
+	D_IdentifyVersion
+	D_SetGameDescription
+	gamedescription I_PrintBanner
+
+	R_Init
+	R_ResolveSkyTextures
+	D_InitHUD
+
+	// Load the level BEFORE anything that reads sectors / lines /
+	// things — numsectors etc are zero until P_SetupLevel runs.
+	1 1 1 2 P_SetupLevel
+
+	// Resolve the player-start sector (via BSP walk) and cache its
+	// floor/ceiling flats so D_Display can fill untouched columns
+	// with textured backgrounds.
+	player_start_x player_start_y R_PointInSubsector R_SubsectorToSector -> psec
+	psec 0 gte psec numsectors lt and if {
+		sectors psec SECTOR_SIZE mul SECTOR_OFF_FLOORPIC add mem::get_i32 -> default_floor_pic
+		sectors psec SECTOR_SIZE mul SECTOR_OFF_CEILPIC add mem::get_i32 -> default_ceil_pic
+		sectors psec SECTOR_SIZE mul SECTOR_OFF_FLOORH add mem::get_i32 -> pfloorh
+		sectors psec SECTOR_SIZE mul SECTOR_OFF_CEILH add mem::get_i32 -> pceilh
+		sectors psec SECTOR_SIZE mul SECTOR_OFF_LIGHT add mem::get_i32 -> default_light
+		pfloorh -> pfloorh_global
+		pceilh pfloorh sub 2686976 sub -> default_ceil_eye_delta
+		default_ceil_eye_delta 65536 lt if { 65536 -> default_ceil_eye_delta }
+	}
+	// Fill each thing's sector floor height + light (via BSP walk).
+	0 -> ti
+	loop {
+		ti numthings gte if { break }
+		things_data ti THING_SIZE mul THING_OFF_X add mem::get_i32 -> tthx
+		things_data ti THING_SIZE mul THING_OFF_Y add mem::get_i32 -> tthy
+		tthx tthy R_PointInSubsector R_SubsectorToSector -> tsec
+		tsec 0 gte tsec numsectors lt and if {
+			sectors tsec SECTOR_SIZE mul SECTOR_OFF_FLOORH add mem::get_i32
+				things_data ti THING_SIZE mul THING_OFF_FLOORZ add mem::set_i32
+			sectors tsec SECTOR_SIZE mul SECTOR_OFF_LIGHT add mem::get_i32
+				things_data ti THING_SIZE mul THING_OFF_LIGHT add mem::set_i32
+		}
+		ti 1 add -> ti
+	}
+	// State-machine seed deferred — info.qd import from d_main.qd
+	// triggers a quadc crash on compile. The state_idx/state_tics
+	// fields stay zero until the compiler bug is fixed.
+	// Seed camera from the loaded player start.
+	player_start_x -> camera_x
+	player_start_y -> camera_y
+	player_start_angle -> camera_angle
+	D_LogExits
+	D_LogCombatants
+	G_Ticker               // prime gameaction
+	D_DoomLoop
+	"[exit ok]" print nl
+}
+
+pub fn D_BindVariables( -- ) { }
+pub fn D_GrabMouseCallback( -- ok:i64) { 0 }
+pub fn D_PageTicker( -- ) { pagetic 1 sub -> pagetic }
+pub fn D_PageDrawer( -- ) { }
+pub fn D_AdvanceDemo( -- ) { 1 -> advancedemo }
+pub fn D_DoAdvanceDemo( -- ) { }
+pub fn D_StartTitle( -- ) { }

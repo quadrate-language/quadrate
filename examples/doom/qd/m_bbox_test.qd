@@ -1,0 +1,26 @@
+use "m_bbox.qd"
+use mem
+
+fn dump(box:ptr -- ) {
+	"[TOP=" print box 0 mem::get_i32 print
+	" BOTTOM=" print box 4 mem::get_i32 print
+	" LEFT=" print box 8 mem::get_i32 print
+	" RIGHT=" print box 12 mem::get_i32 print "]" print nl
+}
+
+fn main() {
+	16 mem::alloc! -> box
+	box M_ClearBox
+	"cleared: " print box dump
+
+	box 10 20 M_AddToBox
+	"after (10,20): " print box dump
+
+	box -5 50 M_AddToBox
+	"after (-5,50): " print box dump
+
+	box 100 -30 M_AddToBox
+	"after (100,-30): " print box dump
+
+	box mem::free
+}

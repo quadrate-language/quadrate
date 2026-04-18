@@ -1,0 +1,35 @@
+use "i_system.qd"
+use "m_argv.qd"
+use mem
+
+fn main() {
+	read -> argc
+	argc M_SetArgs
+
+	// Startup banner output.
+	"QUADRATE DOOM (test)" I_PrintStartupBanner
+
+	// I_AtExit and I_Tactile are no-ops; just confirm they return.
+	0 1 I_AtExit
+	10 20 30 I_Tactile
+
+	// Console stdout detection always returns 0 in this port.
+	"console: " print I_ConsoleStdout print nl
+
+	// Zone allocation: ask for a 6 MiB heap, verify non-null + sized.
+	I_ZoneBase -> sz -> zp
+	zp mem::is_null 0 eq print nl     // expect 1 (non-null)
+	sz 6 1024 mul 1024 mul eq print nl // expect 1 (== 6 MiB)
+	zp mem::free
+
+	// I_GetMemoryValue returns zeros. Spot-check size=1/2/4.
+	8 mem::alloc! -> vbuf
+	0 vbuf 1 I_GetMemoryValue print nl     // expect 1
+	vbuf 0 mem::get_u8 print nl            // expect 0
+	0 vbuf 2 I_GetMemoryValue print nl     // expect 1
+	0 vbuf 4 I_GetMemoryValue print nl     // expect 1
+	0 vbuf 8 I_GetMemoryValue print nl     // expect 0 (unsupported size)
+	vbuf mem::free
+
+	"done" print nl
+}

@@ -1,0 +1,6 @@
+numsprites initial: 0
+numsprites after init: 3
+vissprite_count after clear: 0
+vissprite_count: 2
+psprite_draw_count: 1
+done

@@ -1,0 +1,61 @@
+/// Game loop driver — minimal single-player scaffold.
+///
+/// Ported from doomgeneric/d_loop.c (826 lines) as a thin single-player
+/// shell. The upstream C file owns a full netgame tic-buffer,
+/// lag-compensation (ticdup, extratic), connection negotiation, and
+/// resynchronisation. We don't do any of that: D_StartGameLoop /
+/// NetUpdate / TryRunTics are stubbed to the minimum required for the
+/// single-player main loop, and the actual per-tic dispatch happens in
+/// d_main.qd (task #55) by driving G_Ticker + D_Display directly.
+///
+/// The `loop_interface_t` indirection (function-pointer table) is
+/// collapsed: callers invoke d_main's ticker directly when the hook
+/// lands.
+
+use "d_event.qd"
+use "m_argv.qd"
+
+pub var gametic:i64 = 0
+pub var singletics:i64 = 0
+pub var ticdup:i64 = 1
+pub var lasttime:i64 = 0
+
+/// Per-frame net poll. No-op in single-player.
+pub fn NetUpdate( -- ) { }
+
+/// Kick off the game loop. Stub — d_main owns the actual loop body.
+pub fn D_StartGameLoop( -- ) { }
+
+/// Start a net game. Upstream negotiates settings across peers; we just
+/// zero out settings and return immediately.
+pub fn D_StartNetGame(settings:ptr reserved:ptr -- ) {
+	settings drop reserved drop
+}
+
+/// Drop into the network. Returns 1 for the vanilla `-solo-net` path.
+pub fn D_InitNetGame(connect_data:ptr -- netgame:i64) {
+	connect_data drop
+	"-solo-net" M_ParmExists
+}
+
+/// Announce departure. No-op.
+pub fn D_QuitNetGame( -- ) { }
+
+/// Receive an external tic buffer. No-op — single player reads local
+/// ticcmds via G_BuildTiccmd directly.
+pub fn D_ReceiveTic(ticcmds:ptr players_mask:ptr -- ) {
+	ticcmds drop players_mask drop
+}
+
+/// Advance the game by however many tics of real time have elapsed.
+/// Stub: d_main will call G_Ticker in its own loop once it lands, so
+/// for now this is a no-op that callers can invoke without ill effect.
+pub fn TryRunTics( -- ) {
+	gametic 1 add -> gametic
+}
+
+/// Register the { BuildCmd, RunTic, StartFrame, EndFrame } callback
+/// table. We route directly to d_main in Phase 4 completion.
+pub fn D_RegisterLoopCallbacks(iface:ptr -- ) {
+	iface drop
+}

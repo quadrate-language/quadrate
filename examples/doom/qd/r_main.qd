@@ -1,0 +1,304 @@
+/// Renderer coordinator: viewpoint state, projection, trig helpers.
+///
+/// Ported from doomgeneric/r_main.c. Upstream is ~1,500 lines; this port
+/// covers the public data surface (viewx/viewy/viewz/viewangle/...),
+/// trig utilities (R_PointToAngle, R_PointToDist, R_AddPointToBox,
+/// R_PointOnSide, R_PointOnSegSide), and the init orchestration chain
+/// (R_Init, R_SetViewSize, R_ExecuteSetViewSize).
+///
+/// The heavy-per-frame functions — R_SetupFrame, R_RenderPlayerView —
+/// stay as stubs for now: they depend on the BSP walker (task #33),
+/// seg renderer (#37), and sprite renderer (#39), which come next. The
+/// shape and public signatures are fixed here so the game loop (g_game,
+/// d_main) can plug them in unchanged.
+
+use mem
+use "doomdef.qd"
+use "m_fixed.qd"
+use "m_bbox.qd"
+use "tables.qd"
+use "r_draw.qd"
+use "r_plane.qd"
+use "r_sky.qd"
+use "r_data.qd"
+
+// ---- Viewpoint state ----
+
+pub var viewangleoffset:i64 = 0
+pub var validcount:i64 = 1
+
+pub var centerx:i64 = 160
+// centery owned by r_draw.qd (shared with the column blitters).
+pub var centerxfrac:i64 = 0
+pub var centeryfrac:i64 = 0
+pub var projection:i64 = 0
+
+pub var framecount:i64 = 0
+pub var sscount:i64 = 0
+pub var linecount:i64 = 0
+pub var loopcount:i64 = 0
+
+pub var viewx:i64 = 0
+pub var viewy:i64 = 0
+pub var viewz:i64 = 0
+pub var viewangle:i64 = 0
+pub var viewcos:i64 = 0
+pub var viewsin:i64 = 0
+
+pub var viewplayer:ptr = 0
+
+pub var detailshift:i64 = 0
+pub var clipangle:i64 = 0
+
+// xtoviewangle[x] — screen column x → angle offset from view direction.
+// Populated by R_InitTextureMapping once the viewport size is known.
+pub var xtoviewangle:ptr = 0          // (SCREENWIDTH+1) × i64
+
+pub var extralight:i64 = 0
+
+/// Current lighting context, set by the BSP walker per subsector. Null
+/// means variable-z lighting through `scalelight` / `zlight`.
+pub var fixedcolormap:ptr = 0
+
+// ---- Configurable state ----
+
+pub var setsizeneeded:i64 = 1
+pub var setblocks:i64 = 10
+pub var setdetail:i64 = 0
+
+// ---- R_AddPointToBox ----
+
+pub fn R_AddPointToBox(x:i64 y:i64 box:ptr -- ) {
+	x box BOXLEFT 4 mul mem::get_i32 lt if {
+		x box BOXLEFT 4 mul mem::set_i32
+	}
+	x box BOXRIGHT 4 mul mem::get_i32 gt if {
+		x box BOXRIGHT 4 mul mem::set_i32
+	}
+	y box BOXBOTTOM 4 mul mem::get_i32 lt if {
+		y box BOXBOTTOM 4 mul mem::set_i32
+	}
+	y box BOXTOP 4 mul mem::get_i32 gt if {
+		y box BOXTOP 4 mul mem::set_i32
+	}
+}
+
+// ---- R_PointToAngle ----
+
+/// Global-angle lookup via octant decomposition → tantoangle[].
+pub fn R_PointToAngle(x:i64 y:i64 -- ang:i64) {
+	x viewx sub -> dx
+	y viewy sub -> dy
+	dx 0 eq dy 0 eq and if { 0 return }
+
+	dx 0 gte if {
+		dy 0 gte if {
+			dx dy gt if {
+				// octant 0
+				dy dx SlopeDiv tantoangle_at return
+			}
+			// octant 1
+			ANG90 1 sub dx dy SlopeDiv tantoangle_at sub return
+		}
+		// y < 0
+		0 dy sub -> dy
+		dx dy gt if {
+			// octant 8
+			0 dy dx SlopeDiv tantoangle_at sub return
+		}
+		// octant 7
+		ANG270 dx dy SlopeDiv tantoangle_at add return
+	}
+	// x < 0
+	0 dx sub -> dx
+	dy 0 gte if {
+		dx dy gt if {
+			// octant 3
+			ANG180 1 sub dy dx SlopeDiv tantoangle_at sub return
+		}
+		// octant 2
+		ANG90 dx dy SlopeDiv tantoangle_at add return
+	}
+	0 dy sub -> dy
+	dx dy gt if {
+		// octant 4
+		ANG180 dy dx SlopeDiv tantoangle_at add return
+	}
+	// octant 5
+	ANG270 1 sub dx dy SlopeDiv tantoangle_at sub
+}
+
+/// Temporarily relocate viewpoint to (x1, y1), read angle to (x2, y2).
+pub fn R_PointToAngle2(x1:i64 y1:i64 x2:i64 y2:i64 -- ang:i64) {
+	x1 -> viewx
+	y1 -> viewy
+	x2 y2 R_PointToAngle
+}
+
+// ---- R_PointToDist ----
+
+fn abs_i64(v:i64 -- r:i64) {
+	v 0 lt if { 0 v sub } else { v }
+}
+
+pub fn R_PointToDist(x:i64 y:i64 -- dist:i64) {
+	x viewx sub abs_i64 -> dx
+	y viewy sub abs_i64 -> dy
+
+	dy dx gt if {
+		dx -> tmp
+		dy -> dx
+		tmp -> dy
+	}
+
+	0 -> frac
+	dx 0 neq if { dy dx FixedDiv -> frac }
+
+	frac DBITS shr tantoangle_at ANG90 add ANGLETOFINESHIFT shr -> angle
+	dx angle finesine_at FixedDiv
+}
+
+// ---- R_PointOnSide (node-based) ----
+
+/// node_t layout we'll follow once p_setup.qd lands: x (i32 fixed), y
+/// (i32 fixed), dx (i32 fixed), dy (i32 fixed), bbox[2][4] (2*4*i32),
+/// children[2] (2*i32). Offsets are based on packed record:
+///   [0..4)   x
+///   [4..8)   y
+///   [8..12)  dx
+///   [12..16) dy
+// NODE_OFF_X/Y/DX/DY declared in p_setup.qd.
+
+pub fn R_PointOnSide(x:i64 y:i64 node:ptr -- side:i64) {
+	node NODE_OFF_DX mem::get_i32 -> ndx
+	node NODE_OFF_DY mem::get_i32 -> ndy
+
+	ndx 0 eq if {
+		node NODE_OFF_X mem::get_i32 -> nx
+		x nx lte if {
+			ndy 0 gt if { 1 return } else { 0 return }
+		}
+		ndy 0 lt if { 1 return } else { 0 return }
+	}
+	ndy 0 eq if {
+		node NODE_OFF_Y mem::get_i32 -> ny
+		y ny lte if {
+			ndx 0 lt if { 1 return } else { 0 return }
+		}
+		ndx 0 gt if { 1 return } else { 0 return }
+	}
+
+	node NODE_OFF_X mem::get_i32 -> nx
+	node NODE_OFF_Y mem::get_i32 -> ny
+	x nx sub -> dx
+	y ny sub -> dy
+
+	ndy FRACBITS shr dx FixedMul -> left
+	dy ndx FRACBITS shr FixedMul -> right
+	right left lt if { 0 return }
+	1
+}
+
+/// seg_t.v1/v2 point to vertexes (x, y). For now we work from raw
+/// (lx, ly, ldx, ldy) quadruples since the seg layout isn't finalised.
+pub fn R_PointOnSegSideRaw(x:i64 y:i64 lx:i64 ly:i64 ldx:i64 ldy:i64 -- side:i64) {
+	ldx 0 eq if {
+		x lx lte if {
+			ldy 0 gt if { 1 return } else { 0 return }
+		}
+		ldy 0 lt if { 1 return } else { 0 return }
+	}
+	ldy 0 eq if {
+		y ly lte if {
+			ldx 0 lt if { 1 return } else { 0 return }
+		}
+		ldx 0 gt if { 1 return } else { 0 return }
+	}
+
+	x lx sub -> dx
+	y ly sub -> dy
+	ldy FRACBITS shr dx FixedMul -> left
+	dy ldx FRACBITS shr FixedMul -> right
+	right left lt if { 0 return }
+	1
+}
+
+// ---- Init pass (mostly orchestration) ----
+
+/// Build xtoviewangle[] once viewwidth is known. Simplified version that
+/// fills the table with a linear ramp — the precise vanilla math uses
+/// inverse-tangent over the half-FOV range. The renderer path doesn't
+/// use this yet since BSP/segs are stubs; the ramp is good enough for
+/// compile-time wiring until r_bsp comes online.
+pub fn R_InitTextureMapping( -- ) {
+	xtoviewangle mem::is_null if {
+		SCREENWIDTH 1 add 8 mul mem::alloc! -> xtoviewangle
+	}
+	0 SCREENWIDTH 1 add 1 for x {
+		0 xtoviewangle x 8 mul mem::set_i64
+	}
+}
+
+pub fn R_InitPointToAngle( -- ) { }  // tables.qd already owns tantoangle
+pub fn R_InitTables( -- ) { ensure_tables }
+pub fn R_InitLightTables( -- ) { }    // zlight/scalelight are deferred
+
+pub fn R_SetViewSize(blocks:i64 detail:i64 -- ) {
+	1 -> setsizeneeded
+	blocks -> setblocks
+	detail -> setdetail
+}
+
+pub fn R_ExecuteSetViewSize( -- ) {
+	0 -> setsizeneeded
+
+	setblocks 11 gte if {
+		SCREENWIDTH -> scaledviewwidth
+		SCREENHEIGHT -> viewheight
+	} else {
+		setblocks 32 mul -> scaledviewwidth
+		setblocks SCREENHEIGHT SBARHEIGHT sub mul 10 div 8 bits_and_round -> viewheight
+		// quadrate has no bit-AND-round helper; just use a straightforward integer.
+		setblocks SCREENHEIGHT SBARHEIGHT sub mul 10 div -> viewheight
+	}
+	setdetail -> detailshift
+	scaledviewwidth detailshift shr -> viewwidth
+
+	viewwidth 1 shr -> centerx
+	viewheight 1 shr -> centery
+	centerx FRACBITS shl -> centerxfrac
+	centery FRACBITS shl -> centeryfrac
+	centerxfrac -> projection
+
+	viewwidth viewheight R_InitBuffer
+	R_InitTextureMapping
+	R_InitLightTables
+	R_InitSkyMap
+	R_InitPlanes
+}
+
+fn bits_and_round(v:i64 -- r:i64) { v }
+
+pub fn R_Init( -- ) {
+	R_InitData
+	R_InitPointToAngle
+	R_InitTables
+	10 0 R_SetViewSize
+	R_ExecuteSetViewSize
+	R_InitTranslationTables
+}
+
+// ---- R_SetupFrame / R_RenderPlayerView (stubs) ----
+
+pub fn R_SetupFrame(player:ptr -- ) {
+	player drop
+	framecount 1 add -> framecount
+	validcount 1 add -> validcount
+}
+
+pub fn R_RenderPlayerView(player:ptr -- ) {
+	player R_SetupFrame
+	// Real flow: R_ClearPlanes, R_ClearSprites, R_RenderBSPNode,
+	// R_DrawPlanes, R_DrawMasked. All deferred pending r_bsp/r_segs.
+	R_ClearPlanes
+}

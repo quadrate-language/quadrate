@@ -1,0 +1,10 @@
+I_VideoBuffer null: 0
+s_palette null: 0
+screenvisible: 1
+palette_changed: 1
+pal[0] argb: 4278255873
+pal[255] argb: 4289162091
+10
+snap[0]: 42
+snap[63999]: 42
+done

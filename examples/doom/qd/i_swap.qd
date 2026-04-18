@@ -1,0 +1,34 @@
+/// Endian swap helpers.
+///
+/// Ported from doomgeneric/i_swap.h. The original is a bundle of macros:
+/// on little-endian hosts (our target) SHORT/LONG collapse to identity
+/// casts, on big-endian they byte-swap into little-endian order (WAD
+/// files are always stored little-endian).
+///
+/// x86 and x86_64 are little-endian, so the hot path is free. If we ever
+/// retarget to a big-endian platform, flip the `sys_little_endian` branch.
+
+pub const sys_little_endian = 1
+
+/// Read a 16-bit little-endian value as a signed short.
+/// Takes an i64 containing the 16-bit value and masks / sign-extends.
+pub fn SHORT(x:i64 -- r:i64) {
+	// On little-endian, the WAD bytes are already in the right order;
+	// the low 16 bits carry the value. Sign-extend to match C's `signed short`.
+	x 0xFFFF and -> lo
+	lo 0x8000 and 0 neq if {
+		lo 0xFFFFFFFFFFFF0000 or
+	} else {
+		lo
+	}
+}
+
+/// Read a 32-bit little-endian value as a signed int.
+pub fn LONG(x:i64 -- r:i64) {
+	x 0xFFFFFFFF and -> lo
+	lo 0x80000000 and 0 neq if {
+		lo 0xFFFFFFFF00000000 or
+	} else {
+		lo
+	}
+}

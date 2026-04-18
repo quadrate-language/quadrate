@@ -1,0 +1,62 @@
+/// Global game-state variables.
+///
+/// Ported from doomgeneric/doomstat.c + d_mode.h. This is the single
+/// source of truth for "what Doom IWAD are we running?" and various
+/// global mode flags. IWAD detection (d_iwad port) will mutate these
+/// once the game starts.
+
+// ---- Enums (from d_mode.h) ----
+
+// GameMission_t
+pub const MISSION_DOOM = 0
+pub const MISSION_DOOM2 = 1
+pub const MISSION_PACK_TNT = 2
+pub const MISSION_PACK_PLUT = 3
+pub const MISSION_PACK_CHEX = 4
+pub const MISSION_PACK_HACX = 5
+pub const MISSION_HERETIC = 6
+pub const MISSION_HEXEN = 7
+pub const MISSION_STRIFE = 8
+pub const MISSION_NONE = 9
+
+// GameMode_t
+pub const MODE_SHAREWARE = 0
+pub const MODE_REGISTERED = 1
+pub const MODE_COMMERCIAL = 2
+pub const MODE_RETAIL = 3
+pub const MODE_INDETERMINED = 4
+
+// GameVersion_t
+pub const VERSION_DOOM_1_2 = 0
+pub const VERSION_DOOM_1_666 = 1
+pub const VERSION_DOOM_1_7 = 2
+pub const VERSION_DOOM_1_8 = 3
+pub const VERSION_DOOM_1_9 = 4
+pub const VERSION_HACX = 5
+pub const VERSION_ULTIMATE = 6
+pub const VERSION_FINAL = 7
+pub const VERSION_FINAL2 = 8
+pub const VERSION_CHEX = 9
+pub const VERSION_HERETIC_1_3 = 10
+pub const VERSION_HEXEN_1_1 = 11
+pub const VERSION_STRIFE_1_2 = 12
+pub const VERSION_STRIFE_1_31 = 13
+
+// skill_t
+pub const SK_NOITEMS = -1
+pub const SK_BABY = 0
+pub const SK_EASY = 1
+pub const SK_MEDIUM = 2
+pub const SK_HARD = 3
+pub const SK_NIGHTMARE = 4
+
+// ---- Global state (mutable) ----
+
+/// Detected IWAD variant.
+pub var gamemode:i64 = 4          // MODE_INDETERMINED
+pub var gamemission:i64 = 0       // MISSION_DOOM
+pub var gameversion:i64 = 8       // VERSION_FINAL2
+// gamedescription owned by d_main.qd.
+
+/// Set if a PWAD was loaded alongside the IWAD.
+pub var modifiedgame:i64 = 0

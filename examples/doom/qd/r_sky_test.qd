@@ -1,0 +1,11 @@
+use "r_sky.qd"
+use "tables.qd"
+
+fn main() {
+	"skytexturemid initial: " print skytexturemid print nl     // 0
+	R_InitSkyMap
+	"skytexturemid after init: " print skytexturemid print nl  // 6553600 (100 * 0x10000)
+	"skyflatnum: " print skyflatnum print nl                   // 0
+	"skytexture: " print skytexture print nl                   // 0
+	"SKYFLATNAME: " print SKYFLATNAME print nl                 // F_SKY1
+}

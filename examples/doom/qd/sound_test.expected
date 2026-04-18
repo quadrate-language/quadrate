@@ -1,0 +1,14 @@
+sfxVolume default: 8
+musicVolume default: 8
+channels: 8
+samplerate: 44100
+after S_Init sfx: 5
+after S_Init music: 3
+after S_SetSfxVolume: 9
+sfx lump: -1
+sound handle: 0
+is playing: 0
+song handle null: 1
+0
+-1
+CD audio not supported

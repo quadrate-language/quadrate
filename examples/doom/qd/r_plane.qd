@@ -1,0 +1,196 @@
+/// Floor/ceiling plane management.
+///
+/// Ported from doomgeneric/r_plane.c. The renderer collects every
+/// distinct flat-textured region per frame into a "visplane" list —
+/// contiguous columns with the same height, flat, and lightlevel — then
+/// replays them as horizontal spans through R_DrawSpan.
+///
+/// This pass ports the data-structure side (visplane list + clip arrays
+/// + R_FindPlane / R_CheckPlane / R_ClearPlanes) plus stubs for the
+/// render-time hooks R_MapPlane / R_MakeSpans / R_DrawPlanes. The stubs
+/// keep the public surface intact so r_bsp and r_segs can call them
+/// unchanged; real rendering lands once r_main's viewpoint state is up
+/// (viewx/viewy/viewangle, centerxfrac, planezlight).
+///
+/// Visplane layout (packed, 660 bytes):
+///   [0..4)       height (i32, fixed-point)
+///   [4..8)       picnum (i32)
+///   [8..12)      lightlevel (i32)
+///   [12..16)     minx (i32)
+///   [16..20)     maxx (i32)
+///   [20..340)    top[SCREENWIDTH] (u8 per column, 0xff = uncovered)
+///   [340..660)   bottom[SCREENWIDTH] (u8 per column)
+
+use mem
+use "doomdef.qd"
+use "r_sky.qd"
+
+pub const MAXVISPLANES = 128
+pub const VISPLANE_SIZE = 660
+pub const VP_OFF_HEIGHT = 0
+pub const VP_OFF_PICNUM = 4
+pub const VP_OFF_LIGHT = 8
+pub const VP_OFF_MINX = 12
+pub const VP_OFF_MAXX = 16
+pub const VP_OFF_TOP = 20
+pub const VP_OFF_BOTTOM = 340
+
+pub var visplanes:ptr = 0
+pub var numvisplanes:i64 = 0
+
+pub var floorclip:ptr = 0       // SCREENWIDTH × i16
+pub var ceilingclip:ptr = 0     // SCREENWIDTH × i16
+
+pub const MAXOPENINGS_MUL = 64
+pub var openings:ptr = 0        // SCREENWIDTH × 64 × i16
+pub var lastopening:i64 = 0     // index into openings[]
+
+var rplane_inited:i64 = 0
+
+fn ensure_rplane( -- ) {
+	rplane_inited 1 eq if { return }
+	MAXVISPLANES VISPLANE_SIZE mul mem::alloc! -> visplanes
+	visplanes MAXVISPLANES VISPLANE_SIZE mul mem::zero
+	SCREENWIDTH 2 mul mem::alloc! -> floorclip
+	SCREENWIDTH 2 mul mem::alloc! -> ceilingclip
+	SCREENWIDTH MAXOPENINGS_MUL mul 2 mul mem::alloc! -> openings
+	1 -> rplane_inited
+}
+
+pub fn R_InitPlanes( -- ) {
+	ensure_rplane
+}
+
+fn visplane_addr(i:i64 -- p:ptr) {
+	visplanes i VISPLANE_SIZE mul mem::ptr_add
+}
+
+/// Begin-of-frame reset. Empties the visplane list and returns the clip
+/// arrays to their sentinel values (floorclip = viewheight, ceilingclip
+/// = -1) so the wall pass can narrow them per column.
+pub fn R_ClearPlanes( -- ) {
+	ensure_rplane
+	0 -> numvisplanes
+	0 -> lastopening
+
+	// Note: viewheight here is r_draw.qd's module var, but we avoid the
+	// cross-import to keep r_plane self-contained for the stub phase —
+	// the wall pass owns clip init in practice.
+	0 SCREENWIDTH 1 for i {
+		SCREENHEIGHT SBARHEIGHT sub floorclip i 2 mul mem::set_i16
+		0 1 sub ceilingclip i 2 mul mem::set_i16
+	}
+}
+
+pub const SBARHEIGHT = 32
+
+/// Find an existing visplane that matches (height, picnum, lightlevel)
+/// or allocate a new slot. Sky plane is special-cased: everything with
+/// picnum=skyflatnum collapses to one plane with height=0.
+pub fn R_FindPlane(height:i64 picnum:i64 lightlevel:i64 -- p:ptr) {
+	ensure_rplane
+	picnum skyflatnum eq if {
+		0 -> height
+		0 -> lightlevel
+	}
+
+	// Scan existing planes for a match.
+	-1 -> found
+	0 -> i
+	loop {
+		i numvisplanes gte if { break }
+		found 0 lt if {
+			i visplane_addr -> vp
+			vp VP_OFF_HEIGHT mem::get_i32 height eq
+			vp VP_OFF_PICNUM mem::get_i32 picnum eq and
+			vp VP_OFF_LIGHT  mem::get_i32 lightlevel eq and if {
+				i -> found
+			}
+		}
+		i 1 add -> i
+	}
+
+	found 0 gte if { found visplane_addr return }
+
+	// Allocate a new plane.
+	numvisplanes MAXVISPLANES gte if {
+		"R_FindPlane: no more visplanes" print nl
+		0 visplane_addr return
+	}
+	numvisplanes visplane_addr -> np
+	height     np VP_OFF_HEIGHT mem::set_i32
+	picnum     np VP_OFF_PICNUM mem::set_i32
+	lightlevel np VP_OFF_LIGHT  mem::set_i32
+	SCREENWIDTH np VP_OFF_MINX mem::set_i32
+	-1          np VP_OFF_MAXX mem::set_i32
+	// Mark every column uncovered (0xff) in top[].
+	0 SCREENWIDTH 1 for k {
+		255 np VP_OFF_TOP    k add mem::set_u8
+	}
+	numvisplanes 1 add -> numvisplanes
+	np
+}
+
+/// Ensure a plane covers columns [start..stop] inclusive. If the range
+/// overlaps but extends the plane's existing minx..maxx span, just
+/// widen the plane. If the requested range would overwrite a previously
+/// filled column, split to a fresh visplane.
+pub fn R_CheckPlane(pl:ptr start:i64 stop:i64 -- pl2:ptr) {
+	pl VP_OFF_MINX mem::get_i32 -> minx
+	pl VP_OFF_MAXX mem::get_i32 -> maxx
+
+	// Compute the intersection range [intrl..intrh] and union range
+	// [unionl..unionh]. See upstream for the four-case derivation.
+	minx -> intrl
+	maxx -> intrh
+	minx -> unionl
+	maxx -> unionh
+	start minx lt if { start -> unionl  minx -> intrl }
+	start minx gte if { minx -> unionl  start -> intrl }
+	stop maxx gt if { stop -> unionh  maxx -> intrh }
+	stop maxx lte if { maxx -> unionh  stop -> intrh }
+
+	1 -> shareable
+	intrl -> x
+	loop {
+		x intrh gt if { break }
+		pl VP_OFF_TOP x add mem::get_u8 255 neq if { 0 -> shareable  intrh 1 add -> x }
+		x 1 add -> x
+	}
+	shareable 1 eq if {
+		unionl pl VP_OFF_MINX mem::set_i32
+		unionh pl VP_OFF_MAXX mem::set_i32
+		pl return
+	}
+
+	// Need a new plane — allocate directly (not through R_FindPlane,
+	// which would return the already-matching source plane `pl`).
+	numvisplanes MAXVISPLANES gte if {
+		"R_CheckPlane: no more visplanes" print nl
+		pl return
+	}
+	pl VP_OFF_HEIGHT mem::get_i32 -> h
+	pl VP_OFF_PICNUM mem::get_i32 -> p
+	pl VP_OFF_LIGHT  mem::get_i32 -> l
+	numvisplanes visplane_addr -> newpl
+	h     newpl VP_OFF_HEIGHT mem::set_i32
+	p     newpl VP_OFF_PICNUM mem::set_i32
+	l     newpl VP_OFF_LIGHT  mem::set_i32
+	start newpl VP_OFF_MINX   mem::set_i32
+	stop  newpl VP_OFF_MAXX   mem::set_i32
+	0 SCREENWIDTH 1 for k { 255 newpl VP_OFF_TOP k add mem::set_u8 }
+	numvisplanes 1 add -> numvisplanes
+	newpl
+}
+
+// ---- Render-time hooks (stubs) ----
+
+pub fn R_MapPlane(y:i64 x1:i64 x2:i64 -- ) {
+	y drop x1 drop x2 drop
+}
+
+pub fn R_MakeSpans(x:i64 t1:i64 b1:i64 t2:i64 b2:i64 -- ) {
+	x drop t1 drop b1 drop t2 drop b2 drop
+}
+
+pub fn R_DrawPlanes( -- ) { }

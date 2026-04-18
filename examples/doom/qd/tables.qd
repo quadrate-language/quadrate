@@ -1,0 +1,158 @@
+/// Lookup tables — sine / tangent / arctan / gamma.
+///
+/// Ported from doomgeneric/tables.c. The C original stores ~16k precomputed
+/// fixed-point values as constant arrays. We don't yet have static array
+/// literals in Quadrate, so instead we compute the tables at program start
+/// using the host libm via math::sin/cos/tan/atan/pow, which matches C's
+/// values bit-for-bit on standard glibc.
+///
+/// Consumers should treat these tables as effectively immutable once
+/// ensure_tables has run; they never change during gameplay.
+
+use mem
+use math
+
+pub const FINEANGLES = 8192
+pub const FINEMASK = 8191                     // FINEANGLES - 1
+pub const ANGLETOFINESHIFT = 19
+
+// Binary Angle Measurement (BAM) constants.
+pub const ANG45 = 0x20000000
+pub const ANG90 = 0x40000000
+pub const ANG180 = 0x80000000
+pub const ANG270 = 0xc0000000
+pub const DBITS = 5                    // FRACBITS - SLOPEBITS = 16 - 11
+
+pub const SLOPERANGE = 2048
+pub const SLOPEBITS = 11
+
+pub const FRACBITS = 16
+pub const FRACUNIT = 0x10000
+
+// Each table holds 4 bytes per entry (i32 or u32). The buffers are laid
+// out as raw byte slabs indexed with mem::set_i32 / get_i32.
+pub var finesine:ptr = 0         // 10240 entries  (stride 4)
+pub var finetangent:ptr = 0      //  4096 entries
+pub var tantoangle:ptr = 0       //  2049 entries
+pub var gammatable:ptr = 0       //   5 * 256 = 1280 bytes (stride 1)
+
+var tables_ready:i64 = 0
+
+/// Fill finesine[0..10240) with round(sin((i + 0.5) * pi/4096) * 65536).
+fn fill_finesine( -- ) {
+	40960 mem::alloc! -> finesine   // 10240 * 4 bytes
+	0 10240 1 for i {
+		i cast<f64> 0.5 add 3.141592653589793 mul 4096.0 div math::sin -> s
+		s 65536.0 mul 0.5 add cast<i64> -> v
+		v finesine i 4 mul mem::set_i32
+	}
+}
+
+/// Fill finetangent[0..4096) with tan((i - 2048 + 0.5) * pi/4096) * 65536.
+/// Values near the ends of the range saturate to int32 bounds; we clamp to
+/// INT32_MIN/MAX the same way the C table does near -pi/2 and +pi/2.
+fn fill_finetangent( -- ) {
+	16384 mem::alloc! -> finetangent
+	0 4096 1 for i {
+		i cast<f64> 2048.0 sub 0.5 add 3.141592653589793 mul 4096.0 div math::tan -> t
+		t 65536.0 mul -> tf
+
+		// Clamp to i32 range.
+		2147483647.0 -> max_f
+		-2147483648.0 -> min_f
+		tf max_f gt if { max_f -> tf }
+		tf min_f lt if { min_f -> tf }
+
+		tf 0.5 add cast<i64> -> v
+		v finetangent i 4 mul mem::set_i32
+	}
+}
+
+/// Fill tantoangle[0..2049) mapping slope i/2048 to a BAM angle.
+fn fill_tantoangle( -- ) {
+	8196 mem::alloc! -> tantoangle    // 2049 * 4
+	0 2049 1 for i {
+		i cast<f64> 2048.0 div math::atan -> a       // radians, 0..pi/4
+		// BAM: 2^32 = 2*pi radians, so BAM = radians * (2^32 / (2*pi)).
+		a 683565275.576 mul 0.5 add cast<i64> -> v    // 2^32 / (2*pi) ≈ 683565275.576
+		v tantoangle i 4 mul mem::set_i32
+	}
+}
+
+/// Fill gammatable[5][256]. The C original has hand-tuned values; we
+/// approximate with five gamma curves (identity, then progressively
+/// brighter). Floor of 1 so dark pixels don't go pitch-black.
+fn fill_gammatable( -- ) {
+	1280 mem::alloc! -> gammatable
+	// Five curves: g=0 is identity (lifted), g>0 uses gamma exponent.
+	0 5 1 for g {
+		g cast<f64> 0.125 mul 1.0 add -> gamma     // 1.0, 1.125, 1.25, 1.375, 1.5
+		0 256 1 for i {
+			i 0 eq if {
+				1 gammatable g 256 mul i add mem::set_u8
+			} else {
+				i cast<f64> 255.0 div -> norm
+				norm 1.0 gamma div math::pow 255.0 mul 0.5 add cast<i64> -> v
+				v 1 lt if { 1 -> v }
+				v 255 gt if { 255 -> v }
+				v gammatable g 256 mul i add mem::set_u8
+			}
+		}
+	}
+}
+
+/// Run all four generators. Idempotent — subsequent calls are no-ops.
+pub fn ensure_tables( -- ) {
+	tables_ready 0 eq if {
+		fill_finesine
+		fill_finetangent
+		fill_tantoangle
+		fill_gammatable
+		1 -> tables_ready
+	}
+}
+
+/// Return finesine[i] in 16.16 fixed point. Signed.
+pub fn finesine_at(i:i64 -- v:i64) {
+	ensure_tables
+	finesine i 4 mul mem::get_i32
+}
+
+/// Return finecosine[i]. Doom's convention: cosine is just sine shifted
+/// by FINEANGLES/4 = 2048 — one shared table.
+pub fn finecosine_at(i:i64 -- v:i64) {
+	ensure_tables
+	finesine i 2048 add 4 mul mem::get_i32
+}
+
+/// Return finetangent[i] in 16.16 fixed point. Signed.
+pub fn finetangent_at(i:i64 -- v:i64) {
+	ensure_tables
+	finetangent i 4 mul mem::get_i32
+}
+
+/// Return tantoangle[i] — BAM angle as u32. Caller treats as unsigned.
+pub fn tantoangle_at(i:i64 -- v:i64) {
+	ensure_tables
+	tantoangle i 4 mul mem::get_u32
+}
+
+/// gammatable[level][index]
+pub fn gamma_at(level:i64 idx:i64 -- v:i64) {
+	ensure_tables
+	gammatable level 256 mul idx add mem::get_u8
+}
+
+/// SlopeDiv — Doom's fixed-slope → table-index helper. From tables.c.
+pub fn SlopeDiv(num:i64 den:i64 -- ans:i64) {
+	den 512 lt if {
+		SLOPERANGE
+	} else {
+		num 3 shl  den 8 shr  div -> ans
+		ans SLOPERANGE gt if {
+			SLOPERANGE
+		} else {
+			ans
+		}
+	}
+}

@@ -1,0 +1,130 @@
+/// Game state machine: new-game / level-transition / demo / save-load.
+///
+/// Ported from doomgeneric/g_game.c — 2,300 lines wiring the player's
+/// input (G_BuildTiccmd reads key/mouse state and emits a ticcmd each
+/// tic) through the per-tic progression (G_Ticker advances gametic,
+/// handles demo recording/playback, drives d_main's display phase).
+/// Also owns level-transition logic (G_DoLoadLevel, G_DoCompleted,
+/// G_WorldDone) and the save-load orchestration around p_saveg.
+///
+/// This pass exposes the public surface as stubs plus the handful of
+/// module-level flags that d_main flips (gameaction, gamestate,
+/// gameepisode, gamemap, demoplayback, netgame). Real bodies replace
+/// these when mobj + player_t + level-loading are ready (tasks #40
+/// and #46).
+
+use mem
+use "doomstat.qd"
+use "doomdef.qd"
+
+pub const ga_nothing = 0
+pub const ga_loadlevel = 1
+pub const ga_newgame = 2
+pub const ga_loadgame = 3
+pub const ga_savegame = 4
+pub const ga_playdemo = 5
+pub const ga_completed = 6
+pub const ga_victory = 7
+pub const ga_worlddone = 8
+pub const ga_screenshot = 9
+
+pub var gameaction:i64 = 0
+pub var gamestate:i64 = 3                  // GS_DEMOSCREEN
+pub var gameskill:i64 = 2                  // SK_MEDIUM
+pub var gameepisode:i64 = 1
+pub var gamemap:i64 = 1
+pub var respawnmonsters:i64 = 0
+pub var deathmatch:i64 = 0
+pub var netdemo:i64 = 0
+pub var demoplayback_g:i64 = 0
+pub var demorecording:i64 = 0
+pub var timingdemo:i64 = 0
+pub var playeringame:ptr = 0               // MAXPLAYERS × i64
+pub var consoleplayer:i64 = 0
+pub var displayplayer:i64 = 0
+pub var totalkills:i64 = 0
+pub var totalitems:i64 = 0
+pub var totalsecret:i64 = 0
+
+pub var usergame:i64 = 0
+pub var paused_g:i64 = 0
+
+var g_inited:i64 = 0
+
+fn ensure_g( -- ) {
+	g_inited 1 eq if { return }
+	MAXPLAYERS 8 mul mem::alloc! -> playeringame
+	playeringame MAXPLAYERS 8 mul mem::zero
+	1 playeringame 0 mem::set_i64     // consoleplayer always in-game
+	1 -> g_inited
+}
+
+// ---- Public entries ----
+
+pub fn G_CmdChecksum(cmd:ptr -- sum:i64) { cmd drop 0 }
+
+pub fn G_BuildTiccmd(cmd:ptr maketic:i64 -- ) {
+	cmd drop maketic drop
+	ensure_g
+}
+
+pub fn G_Ticker( -- ) {
+	ensure_g
+	// Real code: dispatch on gameaction, advance gametic, run menu +
+	// player ticks. Stubs reset gameaction so callers can spin.
+	ga_nothing -> gameaction
+}
+
+pub fn G_Responder(ev:ptr -- consumed:i64) { ev drop 0 }
+
+pub fn G_InitNew(skill:i64 episode:i64 map:i64 -- ) {
+	skill -> gameskill
+	episode -> gameepisode
+	map -> gamemap
+	ga_newgame -> gameaction
+}
+
+pub fn G_DeferedInitNew(skill:i64 episode:i64 map:i64 -- ) {
+	skill episode map G_InitNew
+}
+
+pub fn G_DeferedPlayDemo(name:str -- ) {
+	name drop
+	ga_playdemo -> gameaction
+}
+
+pub fn G_DoLoadLevel( -- ) { }
+pub fn G_DoNewGame( -- ) { }
+pub fn G_DoPlayDemo( -- ) { }
+pub fn G_DoCompleted( -- ) { ga_nothing -> gameaction }
+pub fn G_DoVictory( -- ) { ga_nothing -> gameaction }
+pub fn G_DoWorldDone( -- ) { ga_nothing -> gameaction }
+pub fn G_DoLoadGame( -- ) { ga_nothing -> gameaction }
+pub fn G_DoSaveGame( -- ) { ga_nothing -> gameaction }
+pub fn G_DoReborn(playernum:i64 -- ) { playernum drop }
+pub fn G_InitPlayer(player:i64 -- ) { player drop }
+pub fn G_PlayerFinishLevel(player:i64 -- ) { player drop }
+pub fn G_PlayerReborn(player:i64 -- ) { player drop }
+pub fn G_DeathMatchSpawnPlayer(playernum:i64 -- ) { playernum drop }
+
+pub fn G_ExitLevel( -- ) { ga_completed -> gameaction }
+pub fn G_SecretExitLevel( -- ) { ga_completed -> gameaction }
+pub fn G_WorldDone( -- ) { ga_worlddone -> gameaction }
+
+pub fn G_ScreenShot( -- ) { ga_screenshot -> gameaction }
+
+pub fn G_LoadGame(name:str -- ) { name drop  ga_loadgame -> gameaction }
+pub fn G_SaveGame(slot:i64 description:str -- ) {
+	slot drop description drop
+	ga_savegame -> gameaction
+}
+
+pub fn G_RecordDemo(name:str -- ) { name drop }
+pub fn G_BeginRecording( -- ) { }
+pub fn G_TimeDemo(name:str -- ) { name drop }
+pub fn G_CheckDemoStatus( -- done:i64) { 0 }
+
+pub fn G_ReadDemoTiccmd(cmd:ptr -- ) { cmd drop }
+pub fn G_WriteDemoTiccmd(cmd:ptr -- ) { cmd drop }
+
+pub fn G_VanillaVersionCode( -- code:i64) { 109 }     // Doom 1.9

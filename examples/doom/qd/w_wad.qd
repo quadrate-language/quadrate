@@ -1,0 +1,232 @@
+/// WAD directory management.
+///
+/// Ported from doomgeneric/w_wad.c. Reads IWAD/PWAD files and exposes the
+/// standard W_* API:
+///   W_AddFile        — load a WAD file, populate the lump table
+///   W_CheckNumForName — find a lump by name, or -1 if absent
+///   W_GetNumForName   — same, but I_Error on absent
+///   W_LumpLength      — byte size of lump i
+///   W_ReadLump        — read lump i into a caller-provided buffer
+///   W_CacheLumpNum    — lazy-allocated cache of lump i
+///
+/// The C original uses a per-lump malloc, hash-table lookup, and a
+/// tag-based purge system via z_zone. This first port keeps the lookup
+/// linear, gives every lump a pointer slot in a single packed buffer,
+/// and defers hashing until it becomes a performance concern.
+
+use mem
+use "w_file.qd"
+use "z_zone.qd"
+
+/// On-disk WAD header. 12 bytes, little-endian.
+packed struct WadHeader {
+	id0:u8
+	id1:u8
+	id2:u8
+	id3:u8
+	numlumps:i32
+	infotableofs:i32
+}
+
+/// On-disk directory entry. 16 bytes, little-endian.
+packed struct FileLump {
+	filepos:i32
+	size:i32
+	n0:u8
+	n1:u8
+	n2:u8
+	n3:u8
+	n4:u8
+	n5:u8
+	n6:u8
+	n7:u8
+}
+
+/// Internal per-lump record. 24 bytes per entry, laid out in one big
+/// heap buffer indexed by lump number. Mirrors the C lumpinfo_t except
+/// we skip the hash-chain `next` field (no hash table yet).
+///
+///   offset 0..8   — 8-byte name (padded with zeros)
+///   offset 8..12  — position in file (i32)
+///   offset 12..16 — lump size (i32)
+///   offset 16..24 — cache pointer (ptr, null until first read)
+pub const LUMP_STRIDE = 24
+const LUMP_OFF_NAME = 0
+const LUMP_OFF_POS = 8
+const LUMP_OFF_SIZE = 12
+const LUMP_OFF_CACHE = 16
+
+pub var numlumps:i64 = 0
+pub var lumpinfo:ptr = 0
+/// Pointer to the opened WAD's 16-byte handle buffer (w_file.qd owns the
+/// layout). Raw ptr instead of a struct so its lifetime stays explicit —
+/// a ref-counted struct would be freed when W_AddFile's local went out
+/// of scope, leaving this var dangling.
+var wad_handle:ptr = 0
+
+/// Lowercase-to-uppercase helper (WAD lump names are ASCII upper).
+fn to_upper(c:i64 -- c2:i64) {
+	c 97 gte if {
+		c 122 lte if {
+			c 32 sub
+		} else {
+			c
+		}
+	} else {
+		c
+	}
+}
+
+/// Return the address of the lumpinfo entry for lump `i`.
+fn lump_addr(i:i64 -- p:ptr) {
+	lumpinfo i LUMP_STRIDE mul mem::ptr_add
+}
+
+/// Copy 8 bytes from src into lumpinfo[i].name, uppercasing each byte.
+fn store_name(i:i64 src:ptr -- ) {
+	i lump_addr -> dst
+	0 8 1 for j {
+		src j mem::get_u8 to_upper dst j mem::set_u8
+	}
+}
+
+/// Compare 8-byte names (zero-padded). Returns 1 if equal, 0 otherwise.
+fn names_equal(a:ptr b:ptr -- eq:i64) {
+	1 -> result
+	0 8 1 for j {
+		a j mem::get_u8 b j mem::get_u8 neq if {
+			0 -> result
+		}
+	}
+	result
+}
+
+/// Add a WAD file to the lump directory. Single-lump files are not
+/// supported in this first cut — path must point at a real IWAD/PWAD.
+pub fn W_AddFile(path:str -- ) {
+	path W_OpenFile -> wf
+	wf -> wad_handle
+
+	// Read and validate the header.
+	16 mem::alloc! -> hdrbuf
+	wf 0 hdrbuf 12 W_Read -> got
+	got 12 neq if {
+		"W_AddFile: short read on header" print nl
+		hdrbuf mem::free
+		return
+	}
+
+	// Decode header via the packed struct. Cast the ptr back through a
+	// WadHeader-typed local so the field reads pick up the right widths.
+	hdrbuf as WadHeader -> header
+	header <<numlumps -> new_count
+	header <<infotableofs -> info_off
+
+	// Identification check — "IWAD" = 73 87 65 68.
+	header <<id0 73 neq if {
+		header <<id0 80 neq if {   // 'P' = 80 for PWAD
+			"W_AddFile: not an IWAD/PWAD" print nl
+			hdrbuf mem::free
+			return
+		}
+	}
+
+	// Read the directory (16 bytes per entry, `new_count` entries).
+	new_count 16 mul -> dir_bytes
+	dir_bytes mem::alloc! -> dirbuf
+	wf info_off dirbuf dir_bytes W_Read -> got2
+	got2 dir_bytes neq if {
+		"W_AddFile: short read on directory" print nl
+		hdrbuf mem::free
+		dirbuf mem::free
+		return
+	}
+
+	// Allocate the lumpinfo buffer. One big slab; each lump occupies
+	// LUMP_STRIDE bytes at offset (i * LUMP_STRIDE).
+	new_count LUMP_STRIDE mul mem::alloc! -> lumpinfo
+	lumpinfo new_count LUMP_STRIDE mul mem::zero
+
+	// Populate one lump at a time by reading the packed record through
+	// FileLump, then copying the fields into our lumpinfo slot.
+	0 new_count 1 for i {
+		dirbuf i 16 mul mem::ptr_add -> rec_addr
+		rec_addr as FileLump -> rec
+
+		i lump_addr -> dst
+		rec <<filepos dst LUMP_OFF_POS mem::set_i32
+		rec <<size dst LUMP_OFF_SIZE mem::set_i32
+
+		// Copy the 8-byte name in place, uppercased.
+		// store_name signature: (i:i64 src:ptr -- )
+		i  rec_addr 8 mem::ptr_add  store_name
+	}
+
+	new_count -> numlumps
+	hdrbuf mem::free
+	dirbuf mem::free
+}
+
+/// Find a lump by 8-char name (upper-case, zero-padded). Returns -1 if
+/// not found. Linear scan — fine for now.
+pub fn W_CheckNumForName(name:ptr -- idx:i64) {
+	// Uppercase-normalise the search name into a scratch buffer so we
+	// can compare against the stored names byte-for-byte.
+	8 mem::alloc! -> key
+	key 8 mem::zero
+	0 8 1 for j {
+		name j mem::get_u8 -> c
+		c 0 eq if { 0 } else { c to_upper } key j mem::set_u8
+	}
+
+	-1 -> found
+	0 numlumps 1 for i {
+		found -1 eq if {
+			i lump_addr LUMP_OFF_NAME mem::ptr_add key names_equal if {
+				i -> found
+			}
+		}
+	}
+
+	key mem::free
+	found
+}
+
+/// Byte length of lump `i`.
+pub fn W_LumpLength(i:i64 -- n:i64) {
+	i lump_addr LUMP_OFF_SIZE mem::get_i32
+}
+
+/// Read lump `i` into `dest`. Caller owns the buffer.
+pub fn W_ReadLump(i:i64 dest:ptr -- ) {
+	i lump_addr -> l
+	l LUMP_OFF_POS mem::get_i32 -> pos
+	l LUMP_OFF_SIZE mem::get_i32 -> sz
+	wad_handle pos dest sz W_Read drop
+}
+
+/// Get (and lazily cache) the lump data for lump `i`. The cache slot
+/// inside lumpinfo keeps the returned pointer alive for subsequent
+/// calls without re-reading.
+pub fn W_CacheLumpNum(i:i64 tag:i64 -- p:ptr) {
+	tag drop
+	i lump_addr -> l
+	l LUMP_OFF_CACHE mem::get_ptr -> cache
+	cache mem::is_null if {
+		l LUMP_OFF_SIZE mem::get_i32 mem::alloc! -> cache
+		i cache W_ReadLump
+		cache l LUMP_OFF_CACHE mem::set_ptr
+	}
+	cache
+}
+
+/// Look up a named lump and return its cached data. The tag is advisory
+/// (the stub z_zone ignores it).
+pub fn W_CacheLumpName(name:ptr tag:i64 -- p:ptr) {
+	name W_CheckNumForName -> idx
+	idx 0 lt if {
+		0 cast<ptr>
+	} else {
+		idx tag W_CacheLumpNum
+	}
+}

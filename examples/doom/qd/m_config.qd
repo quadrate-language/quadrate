@@ -1,0 +1,86 @@
+/// Configuration file load/save — stubs with in-memory bindings.
+///
+/// Ported from doomgeneric/m_config.c. The upstream C file is 2,128 lines
+/// because it carries a static table of ~200 named "defaults" (each
+/// bindable via M_BindVariable to a config variable elsewhere), a
+/// line-by-line default.cfg parser, writer, and backward-compat
+/// translation for ancient chocolate-doom config fields.
+///
+/// Our port defers file I/O: M_LoadDefaults and M_SaveDefaults are
+/// no-ops, so the game runs off whatever each module ships as its
+/// module-level `var` default. M_BindVariable accepts the binding so
+/// callers don't have to change shape, but we don't persist — if the
+/// user wants a non-default config later, they edit the module-level
+/// vars directly (or we expand this when we land a config UI).
+
+use "m_misc.qd"
+use os
+
+pub var config_dir:str = "."
+pub var main_config_file:str = "default.cfg"
+pub var extra_config_file:str = ""
+
+pub fn M_SetConfigFilenames(main_config:str extra_config:str -- ) {
+	main_config -> main_config_file
+	extra_config -> extra_config_file
+}
+
+/// Configure where config and savegames live. Accepts an empty string
+/// to mean "current directory".
+pub fn M_SetConfigDir(dir:str -- ) {
+	dir "" eq if {
+		"." -> config_dir
+	} else {
+		dir -> config_dir
+	}
+}
+
+/// Persist bound variables. Stub: upstream writes each binding to
+/// default.cfg — we keep everything in memory since our vars survive
+/// within the process.
+pub fn M_SaveDefaults( -- ) { }
+
+/// Same as above but to an alternate filename pair (used by
+/// chocolate-server variants).
+pub fn M_SaveDefaultsAlternate(main:str extra:str -- ) {
+	main drop extra drop
+}
+
+/// Load previously-saved bindings. Stub: no-op, all vars keep their
+/// compiled-in defaults. The game is fully playable this way.
+pub fn M_LoadDefaults( -- ) { }
+
+/// Wire a named config knob to a memory location. Upstream stores the
+/// binding in a ~200-entry hash table. We accept the call and drop
+/// the binding because save/load are no-ops.
+pub fn M_BindVariable(name:str location:ptr -- ) {
+	name drop location drop
+}
+
+/// Set a named variable by its string value. Stubbed — without a live
+/// binding table we can't find `name`, so returns "not set".
+pub fn M_SetVariable(name:str value:str -- ok:i64) {
+	name drop value drop
+	0
+}
+
+pub fn M_GetIntVariable(name:str -- v:i64) {
+	name drop
+	0
+}
+
+pub fn M_GetStrVariable(name:str -- v:str) {
+	name drop
+	""
+}
+
+pub fn M_GetFloatVariable(name:str -- v:f64) {
+	name drop
+	0.0
+}
+
+/// Compute a per-IWAD save directory: `<config_dir>/savegames/<iwadname>`.
+/// Upstream returns the directory without creating it; we mirror that.
+pub fn M_GetSaveGameDir(iwadname:str -- dir:str) {
+	config_dir "/savegames/" M_StringConcat iwadname M_StringConcat
+}

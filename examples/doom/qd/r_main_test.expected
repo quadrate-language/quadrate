@@ -1,0 +1,18 @@
+angle (1,0): 0
+angle (0,1): 1073741823
+angle (-1,0): 2147483647
+dist (3,4): 4
+box.left after (10,20): 0
+box.right after (10,20): 10
+box.top after (10,20): 20
+box.left after (-100,-100): -100
+box.bottom after (-100,-100): -100
+point (0, 1): 1
+point (0, -1): 1
+viewwidth: 160
+centerx: 80
+centery: 42
+centerxfrac: 5242880
+framecount delta: 1
+validcount delta: 1
+done

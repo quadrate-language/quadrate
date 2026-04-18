@@ -1,0 +1,78 @@
+/// Event queue for keyboard/mouse/joystick input.
+///
+/// Ported from doomgeneric/d_event.c. Events are posted by the platform
+/// input layer (i_input/i_video) and drained by the game loop via
+/// D_ProcessEvents. MAXEVENTS=64 slots in a ring buffer, 20 bytes per
+/// event (type + 4 × i32 data words).
+///
+/// We expose events as a raw packed buffer rather than a Quadrate struct
+/// so the game loop's `ev->data1` idiom translates to straightforward
+/// mem::get_i32 at a known offset.
+
+use mem
+
+pub const ev_keydown = 0
+pub const ev_keyup = 1
+pub const ev_mouse = 2
+pub const ev_joystick = 3
+pub const ev_quit = 4
+
+pub const EVENT_SIZE = 20
+pub const EVENT_OFF_TYPE = 0
+pub const EVENT_OFF_DATA1 = 4
+pub const EVENT_OFF_DATA2 = 8
+pub const EVENT_OFF_DATA3 = 12
+pub const EVENT_OFF_DATA4 = 16
+
+const MAXEVENTS = 64
+
+var events:ptr = 0
+var eventhead:i64 = 0
+var eventtail:i64 = 0
+var events_initialized:i64 = 0
+
+fn ensure_init( -- ) {
+	events_initialized 0 eq if {
+		MAXEVENTS EVENT_SIZE mul mem::alloc! -> events
+		events MAXEVENTS EVENT_SIZE mul mem::zero
+		1 -> events_initialized
+	}
+}
+
+/// Post an event onto the queue. Caller owns `ev` (a 20-byte event_t
+/// buffer); we copy its contents into the ring slot.
+pub fn D_PostEvent(ev:ptr -- ) {
+	ensure_init
+	events eventhead EVENT_SIZE mul mem::ptr_add -> slot
+	// Copy all 20 bytes from ev into slot.
+	0 EVENT_SIZE 1 for i {
+		ev i mem::get_u8 slot i mem::set_u8
+	}
+	eventhead 1 add MAXEVENTS mod -> eventhead
+}
+
+/// Pop an event from the queue. Returns a pointer into the internal ring
+/// buffer (valid only until the next D_PostEvent), or null when empty.
+pub fn D_PopEvent( -- ev:ptr) {
+	ensure_init
+	eventtail eventhead eq if {
+		0 cast<ptr>
+	} else {
+		events eventtail EVENT_SIZE mul mem::ptr_add -> result
+		eventtail 1 add MAXEVENTS mod -> eventtail
+		result
+	}
+}
+
+/// Build a fresh event on the heap. Caller frees via mem::free (or simply
+/// passes the pointer to D_PostEvent and throws it away — D_PostEvent
+/// copies). Useful for test code and the input shim.
+pub fn D_MakeEvent(type:i64 data1:i64 data2:i64 data3:i64 data4:i64 -- ev:ptr) {
+	EVENT_SIZE mem::alloc! -> ev
+	type  ev EVENT_OFF_TYPE  mem::set_i32
+	data1 ev EVENT_OFF_DATA1 mem::set_i32
+	data2 ev EVENT_OFF_DATA2 mem::set_i32
+	data3 ev EVENT_OFF_DATA3 mem::set_i32
+	data4 ev EVENT_OFF_DATA4 mem::set_i32
+	ev
+}

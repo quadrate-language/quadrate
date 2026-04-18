@@ -1,0 +1,7 @@
+initial gamemode=4 (indetermined=4)
+after set, gamemode=0
+gamemission=1 (DOOM2=1)
+320×
+200 @ 35 tic/s
+WP_BFG=6 NUMWEAPONS=9
+DEH_String identity: TEST

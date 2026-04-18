@@ -1,0 +1,19 @@
+use "m_random.qd"
+
+fn main() {
+	// First 5 values from P_Random match the original C output:
+	// rndtable[1] = 8, rndtable[2] = 109, rndtable[3] = 220, rndtable[4] = 222, rndtable[5] = 241
+	P_Random print nl
+	P_Random print nl
+	P_Random print nl
+	P_Random print nl
+	P_Random print nl
+
+	// Clear and sequence restarts.
+	M_ClearRandom
+	P_Random print nl   // 8 again
+
+	// M_Random uses a separate index.
+	M_Random print nl   // rndtable[1] = 8
+	M_Random print nl   // rndtable[2] = 109
+}

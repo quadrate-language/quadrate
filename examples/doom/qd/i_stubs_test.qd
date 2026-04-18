@@ -1,0 +1,27 @@
+use "i_endoom.qd"
+use "i_joystick.qd"
+use "i_scale.qd"
+use "statdump.qd"
+use mem
+
+fn main() {
+	// All four modules expose API-compatible no-ops. Exercise every
+	// exported entry point so a compile-time link regression is caught
+	// even though there is no observable state change.
+	0 cast<ptr> I_Endoom
+
+	I_InitJoystick
+	I_UpdateJoystick
+	I_BindJoystickVariables
+	I_ShutdownJoystick
+
+	16 mem::alloc! -> buf
+	buf buf 320 I_InitScale
+	buf I_ResetScaleTables
+	buf mem::free
+
+	0 cast<ptr> StatCopy
+	StatDump
+
+	"ok" print nl
+}

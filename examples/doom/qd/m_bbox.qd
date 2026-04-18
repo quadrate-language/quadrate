@@ -1,0 +1,36 @@
+/// Axis-aligned bounding box helpers.
+///
+/// Ported from doomgeneric/m_bbox.c. Boxes are stored as 4-entry i32
+/// arrays laid out { TOP, BOTTOM, LEFT, RIGHT } in fixed-point map units.
+
+use mem
+
+pub const BOXTOP = 0
+pub const BOXBOTTOM = 1
+pub const BOXLEFT = 2
+pub const BOXRIGHT = 3
+
+pub const FIXED_MAX = 0x7FFFFFFF
+pub const FIXED_MIN = -2147483648
+
+/// Initialise `box` so any added point extends it. 16 bytes (4 × i32).
+pub fn M_ClearBox(box:ptr -- ) {
+	FIXED_MIN box 0  mem::set_i32   // TOP    = INT_MIN
+	FIXED_MAX box 4  mem::set_i32   // BOTTOM = INT_MAX
+	FIXED_MAX box 8  mem::set_i32   // LEFT   = INT_MAX
+	FIXED_MIN box 12 mem::set_i32   // RIGHT  = INT_MIN
+}
+
+/// Extend `box` to include the point (x, y).
+pub fn M_AddToBox(box:ptr x:i64 y:i64 -- ) {
+	box 8 mem::get_i32 -> left
+	x left lt if { x box 8 mem::set_i32 } else {
+		box 12 mem::get_i32 -> right
+		x right gt if { x box 12 mem::set_i32 }
+	}
+	box 4 mem::get_i32 -> bottom
+	y bottom lt if { y box 4 mem::set_i32 } else {
+		box 0 mem::get_i32 -> top
+		y top gt if { y box 0 mem::set_i32 }
+	}
+}

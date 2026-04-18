@@ -1,0 +1,94 @@
+/// Zone memory allocator (stub).
+///
+/// Ported from doomgeneric/z_zone.c as a thin wrapper over the system
+/// allocator (mem::alloc / mem::free). The original implementation is a
+/// tagged free-list with the ability to auto-purge cached blocks when
+/// memory pressure rises; that logic takes ~500 lines of linked-list code
+/// and isn't needed until we're under real memory pressure.
+///
+/// This stub honours the user-pointer side effect Doom relies on:
+/// Z_Malloc stores the returned pointer into `*user` so callers can read
+/// through it after allocation. Z_Free zeroes `*user` before freeing.
+/// Cache purging (PU_CACHE, PU_PURGELEVEL) is a no-op: blocks stay alive
+/// until Z_Free is called. We can swap in a real implementation later.
+
+use mem
+
+/// Purge tags. Values match the C enum in z_zone.h so FFI-compatible
+/// code reads the same constants.
+pub const PU_STATIC = 1
+pub const PU_SOUND = 2
+pub const PU_MUSIC = 3
+pub const PU_FREE = 4
+pub const PU_LEVEL = 5
+pub const PU_LEVSPEC = 6
+pub const PU_PURGELEVEL = 7
+pub const PU_CACHE = 8
+
+/// One-time init hook. The real Z_Init grabs the OS memory arena from
+/// I_ZoneBase and carves it into one big free block. In this stub we
+/// have nothing to do — mem::alloc handles allocation on demand.
+pub fn Z_Init( -- ) {
+	// no-op
+}
+
+/// Allocate `size` bytes tagged with `tag`. If `user` is non-null,
+/// *user is updated to point at the returned block so callers can
+/// reuse the stored pointer (Doom uses this heavily in wad lump
+/// caching).
+/// @param size i64 Number of bytes
+/// @param tag i64 One of the PU_* constants (advisory in this stub)
+/// @param user ptr Optional pointer to a ptr slot; may be null
+/// @return p ptr Allocated block
+pub fn Z_Malloc(size:i64 tag:i64 user:ptr -- p:ptr) {
+	tag drop   // stub ignores the tag; real allocator uses it for purge tiers
+	size mem::alloc! -> block
+	user mem::is_not_null if {
+		block user 0 mem::set_ptr
+	}
+	block
+}
+
+/// Free a block. If the block was associated with a user-ptr slot,
+/// we'd clear it here — but to keep the API small we require the
+/// caller to NULL their user slot themselves. This matches the common
+/// "free then zero local variable" idiom.
+pub fn Z_Free(p:ptr -- ) {
+	p mem::free
+}
+
+/// Free every block in the tag range. No-op in the stub; the real
+/// allocator uses this to purge level-scoped memory when leaving a
+/// level.
+pub fn Z_FreeTags(lowtag:i64 hightag:i64 -- ) {
+	lowtag drop
+	hightag drop
+}
+
+/// Change a block's tag. No-op in the stub (we don't track tags).
+pub fn Z_ChangeTag(p:ptr newtag:i64 -- ) {
+	p drop
+	newtag drop
+}
+
+/// Change a block's user-ptr slot. No-op in the stub.
+pub fn Z_ChangeUser(p:ptr user:ptr -- ) {
+	p drop
+	user drop
+}
+
+/// Bytes available. The stub returns 0 (unbounded); the real zone
+/// tracks free-block capacity precisely.
+pub fn Z_FreeMemory( -- bytes:i64) {
+	0
+}
+
+/// Total zone size. The stub returns 0.
+pub fn Z_ZoneSize( -- bytes:i64) {
+	0
+}
+
+/// Heap validation hook. No-op in the stub.
+pub fn Z_CheckHeap( -- ) {
+	// no-op
+}

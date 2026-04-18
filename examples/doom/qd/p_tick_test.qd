@@ -1,0 +1,35 @@
+use "p_tick.qd"
+use "p_user.qd"
+use mem
+
+fn main() {
+	P_InitThinkers
+
+	"leveltime initial: " print leveltime print nl       // 0
+
+	P_Ticker P_Ticker P_Ticker
+	"after 3 tics: " print leveltime print nl            // 3
+
+	1 -> paused
+	P_Ticker
+	"paused: " print leveltime print nl                  // 3 (frozen)
+	0 -> paused
+
+	// Menu path: menuactive blocks unless netgame or demo. With both zero,
+	// menuactive=1 also blocks. Setting netgame=1 lets it through.
+	1 -> menuactive
+	P_Ticker
+	"menu no-net: " print leveltime print nl             // 3
+
+	// Stubs.
+	0 cast<ptr> 0 0 P_Thrust
+	0 cast<ptr> P_PlayerThink
+	0 cast<ptr> P_MovePlayer
+	0 cast<ptr> P_CalcHeight
+	0 cast<ptr> P_DeathThink
+	0 cast<ptr> P_AddThinker
+	0 cast<ptr> P_RemoveThinker
+	P_RunThinkers
+
+	"done" print nl
+}

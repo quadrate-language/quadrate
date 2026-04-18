@@ -1,0 +1,306 @@
+/// Random number LUT.
+///
+/// Ported from doomgeneric/m_random.c. The original keeps rndtable as a
+/// `static const unsigned char[256]` in .rodata; Quadrate doesn't yet have
+/// const array literals, so we lazily allocate and fill the table on first
+/// use. P_Random is the deterministic one used by game logic; M_Random is
+/// for non-gameplay randomness.
+
+use mem
+
+/// Offset into rndtable for M_Random.
+var rndindex:i64 = 0
+/// Offset into rndtable for P_Random (deterministic path).
+var prndindex:i64 = 0
+/// Pointer to the 256-byte table. Allocated on first use.
+var rndtable:ptr = 0
+
+/// Populate rndtable with the 256 values from the original Doom source.
+/// Called exactly once, on the first random-number request.
+fn init_rndtable( -- ) {
+	256 mem::alloc! -> rndtable
+
+	0 rndtable 0 mem::set_u8
+	8 rndtable 1 mem::set_u8
+	109 rndtable 2 mem::set_u8
+	220 rndtable 3 mem::set_u8
+	222 rndtable 4 mem::set_u8
+	241 rndtable 5 mem::set_u8
+	149 rndtable 6 mem::set_u8
+	107 rndtable 7 mem::set_u8
+	75 rndtable 8 mem::set_u8
+	248 rndtable 9 mem::set_u8
+	254 rndtable 10 mem::set_u8
+	140 rndtable 11 mem::set_u8
+	16 rndtable 12 mem::set_u8
+	66 rndtable 13 mem::set_u8
+	74 rndtable 14 mem::set_u8
+	21 rndtable 15 mem::set_u8
+	211 rndtable 16 mem::set_u8
+	47 rndtable 17 mem::set_u8
+	80 rndtable 18 mem::set_u8
+	242 rndtable 19 mem::set_u8
+	154 rndtable 20 mem::set_u8
+	27 rndtable 21 mem::set_u8
+	205 rndtable 22 mem::set_u8
+	128 rndtable 23 mem::set_u8
+	161 rndtable 24 mem::set_u8
+	89 rndtable 25 mem::set_u8
+	77 rndtable 26 mem::set_u8
+	36 rndtable 27 mem::set_u8
+	95 rndtable 28 mem::set_u8
+	110 rndtable 29 mem::set_u8
+	85 rndtable 30 mem::set_u8
+	48 rndtable 31 mem::set_u8
+	212 rndtable 32 mem::set_u8
+	140 rndtable 33 mem::set_u8
+	211 rndtable 34 mem::set_u8
+	249 rndtable 35 mem::set_u8
+	22 rndtable 36 mem::set_u8
+	79 rndtable 37 mem::set_u8
+	200 rndtable 38 mem::set_u8
+	50 rndtable 39 mem::set_u8
+	28 rndtable 40 mem::set_u8
+	188 rndtable 41 mem::set_u8
+	52 rndtable 42 mem::set_u8
+	140 rndtable 43 mem::set_u8
+	202 rndtable 44 mem::set_u8
+	120 rndtable 45 mem::set_u8
+	68 rndtable 46 mem::set_u8
+	145 rndtable 47 mem::set_u8
+	62 rndtable 48 mem::set_u8
+	70 rndtable 49 mem::set_u8
+	184 rndtable 50 mem::set_u8
+	190 rndtable 51 mem::set_u8
+	91 rndtable 52 mem::set_u8
+	197 rndtable 53 mem::set_u8
+	152 rndtable 54 mem::set_u8
+	224 rndtable 55 mem::set_u8
+	149 rndtable 56 mem::set_u8
+	104 rndtable 57 mem::set_u8
+	25 rndtable 58 mem::set_u8
+	178 rndtable 59 mem::set_u8
+	252 rndtable 60 mem::set_u8
+	182 rndtable 61 mem::set_u8
+	202 rndtable 62 mem::set_u8
+	182 rndtable 63 mem::set_u8
+	141 rndtable 64 mem::set_u8
+	197 rndtable 65 mem::set_u8
+	4 rndtable 66 mem::set_u8
+	81 rndtable 67 mem::set_u8
+	181 rndtable 68 mem::set_u8
+	242 rndtable 69 mem::set_u8
+	145 rndtable 70 mem::set_u8
+	42 rndtable 71 mem::set_u8
+	39 rndtable 72 mem::set_u8
+	227 rndtable 73 mem::set_u8
+	156 rndtable 74 mem::set_u8
+	198 rndtable 75 mem::set_u8
+	225 rndtable 76 mem::set_u8
+	193 rndtable 77 mem::set_u8
+	219 rndtable 78 mem::set_u8
+	93 rndtable 79 mem::set_u8
+	122 rndtable 80 mem::set_u8
+	175 rndtable 81 mem::set_u8
+	249 rndtable 82 mem::set_u8
+	0 rndtable 83 mem::set_u8
+	175 rndtable 84 mem::set_u8
+	143 rndtable 85 mem::set_u8
+	70 rndtable 86 mem::set_u8
+	239 rndtable 87 mem::set_u8
+	46 rndtable 88 mem::set_u8
+	246 rndtable 89 mem::set_u8
+	163 rndtable 90 mem::set_u8
+	53 rndtable 91 mem::set_u8
+	163 rndtable 92 mem::set_u8
+	109 rndtable 93 mem::set_u8
+	168 rndtable 94 mem::set_u8
+	135 rndtable 95 mem::set_u8
+	2 rndtable 96 mem::set_u8
+	235 rndtable 97 mem::set_u8
+	25 rndtable 98 mem::set_u8
+	92 rndtable 99 mem::set_u8
+	20 rndtable 100 mem::set_u8
+	145 rndtable 101 mem::set_u8
+	138 rndtable 102 mem::set_u8
+	77 rndtable 103 mem::set_u8
+	69 rndtable 104 mem::set_u8
+	166 rndtable 105 mem::set_u8
+	78 rndtable 106 mem::set_u8
+	176 rndtable 107 mem::set_u8
+	173 rndtable 108 mem::set_u8
+	212 rndtable 109 mem::set_u8
+	166 rndtable 110 mem::set_u8
+	113 rndtable 111 mem::set_u8
+	94 rndtable 112 mem::set_u8
+	161 rndtable 113 mem::set_u8
+	41 rndtable 114 mem::set_u8
+	50 rndtable 115 mem::set_u8
+	239 rndtable 116 mem::set_u8
+	49 rndtable 117 mem::set_u8
+	111 rndtable 118 mem::set_u8
+	164 rndtable 119 mem::set_u8
+	70 rndtable 120 mem::set_u8
+	60 rndtable 121 mem::set_u8
+	2 rndtable 122 mem::set_u8
+	37 rndtable 123 mem::set_u8
+	171 rndtable 124 mem::set_u8
+	75 rndtable 125 mem::set_u8
+	136 rndtable 126 mem::set_u8
+	156 rndtable 127 mem::set_u8
+	11 rndtable 128 mem::set_u8
+	56 rndtable 129 mem::set_u8
+	42 rndtable 130 mem::set_u8
+	146 rndtable 131 mem::set_u8
+	138 rndtable 132 mem::set_u8
+	229 rndtable 133 mem::set_u8
+	73 rndtable 134 mem::set_u8
+	146 rndtable 135 mem::set_u8
+	77 rndtable 136 mem::set_u8
+	61 rndtable 137 mem::set_u8
+	98 rndtable 138 mem::set_u8
+	196 rndtable 139 mem::set_u8
+	135 rndtable 140 mem::set_u8
+	106 rndtable 141 mem::set_u8
+	63 rndtable 142 mem::set_u8
+	197 rndtable 143 mem::set_u8
+	195 rndtable 144 mem::set_u8
+	86 rndtable 145 mem::set_u8
+	96 rndtable 146 mem::set_u8
+	203 rndtable 147 mem::set_u8
+	113 rndtable 148 mem::set_u8
+	101 rndtable 149 mem::set_u8
+	170 rndtable 150 mem::set_u8
+	247 rndtable 151 mem::set_u8
+	181 rndtable 152 mem::set_u8
+	113 rndtable 153 mem::set_u8
+	80 rndtable 154 mem::set_u8
+	250 rndtable 155 mem::set_u8
+	108 rndtable 156 mem::set_u8
+	7 rndtable 157 mem::set_u8
+	255 rndtable 158 mem::set_u8
+	237 rndtable 159 mem::set_u8
+	129 rndtable 160 mem::set_u8
+	226 rndtable 161 mem::set_u8
+	79 rndtable 162 mem::set_u8
+	107 rndtable 163 mem::set_u8
+	112 rndtable 164 mem::set_u8
+	166 rndtable 165 mem::set_u8
+	103 rndtable 166 mem::set_u8
+	241 rndtable 167 mem::set_u8
+	24 rndtable 168 mem::set_u8
+	223 rndtable 169 mem::set_u8
+	239 rndtable 170 mem::set_u8
+	120 rndtable 171 mem::set_u8
+	198 rndtable 172 mem::set_u8
+	58 rndtable 173 mem::set_u8
+	60 rndtable 174 mem::set_u8
+	82 rndtable 175 mem::set_u8
+	128 rndtable 176 mem::set_u8
+	3 rndtable 177 mem::set_u8
+	184 rndtable 178 mem::set_u8
+	66 rndtable 179 mem::set_u8
+	143 rndtable 180 mem::set_u8
+	224 rndtable 181 mem::set_u8
+	145 rndtable 182 mem::set_u8
+	224 rndtable 183 mem::set_u8
+	81 rndtable 184 mem::set_u8
+	206 rndtable 185 mem::set_u8
+	163 rndtable 186 mem::set_u8
+	45 rndtable 187 mem::set_u8
+	63 rndtable 188 mem::set_u8
+	90 rndtable 189 mem::set_u8
+	168 rndtable 190 mem::set_u8
+	114 rndtable 191 mem::set_u8
+	59 rndtable 192 mem::set_u8
+	33 rndtable 193 mem::set_u8
+	159 rndtable 194 mem::set_u8
+	95 rndtable 195 mem::set_u8
+	28 rndtable 196 mem::set_u8
+	139 rndtable 197 mem::set_u8
+	123 rndtable 198 mem::set_u8
+	98 rndtable 199 mem::set_u8
+	125 rndtable 200 mem::set_u8
+	196 rndtable 201 mem::set_u8
+	15 rndtable 202 mem::set_u8
+	70 rndtable 203 mem::set_u8
+	194 rndtable 204 mem::set_u8
+	253 rndtable 205 mem::set_u8
+	54 rndtable 206 mem::set_u8
+	14 rndtable 207 mem::set_u8
+	109 rndtable 208 mem::set_u8
+	226 rndtable 209 mem::set_u8
+	71 rndtable 210 mem::set_u8
+	17 rndtable 211 mem::set_u8
+	161 rndtable 212 mem::set_u8
+	93 rndtable 213 mem::set_u8
+	186 rndtable 214 mem::set_u8
+	87 rndtable 215 mem::set_u8
+	244 rndtable 216 mem::set_u8
+	138 rndtable 217 mem::set_u8
+	20 rndtable 218 mem::set_u8
+	52 rndtable 219 mem::set_u8
+	123 rndtable 220 mem::set_u8
+	251 rndtable 221 mem::set_u8
+	26 rndtable 222 mem::set_u8
+	36 rndtable 223 mem::set_u8
+	17 rndtable 224 mem::set_u8
+	46 rndtable 225 mem::set_u8
+	52 rndtable 226 mem::set_u8
+	231 rndtable 227 mem::set_u8
+	232 rndtable 228 mem::set_u8
+	76 rndtable 229 mem::set_u8
+	31 rndtable 230 mem::set_u8
+	221 rndtable 231 mem::set_u8
+	84 rndtable 232 mem::set_u8
+	37 rndtable 233 mem::set_u8
+	216 rndtable 234 mem::set_u8
+	165 rndtable 235 mem::set_u8
+	212 rndtable 236 mem::set_u8
+	106 rndtable 237 mem::set_u8
+	197 rndtable 238 mem::set_u8
+	242 rndtable 239 mem::set_u8
+	98 rndtable 240 mem::set_u8
+	43 rndtable 241 mem::set_u8
+	39 rndtable 242 mem::set_u8
+	175 rndtable 243 mem::set_u8
+	254 rndtable 244 mem::set_u8
+	145 rndtable 245 mem::set_u8
+	190 rndtable 246 mem::set_u8
+	84 rndtable 247 mem::set_u8
+	118 rndtable 248 mem::set_u8
+	222 rndtable 249 mem::set_u8
+	187 rndtable 250 mem::set_u8
+	136 rndtable 251 mem::set_u8
+	120 rndtable 252 mem::set_u8
+	163 rndtable 253 mem::set_u8
+	236 rndtable 254 mem::set_u8
+	249 rndtable 255 mem::set_u8
+
+}
+
+fn ensure_init( -- ) {
+	rndtable mem::is_null if {
+		init_rndtable
+	}
+}
+
+/// Deterministic random used by game logic (demo replay, AI).
+pub fn P_Random( -- v:i64) {
+	ensure_init
+	prndindex 1 + 0xff and -> prndindex
+	rndtable prndindex mem::get_u8
+}
+
+/// Random for non-gameplay effects (menu animations, etc).
+pub fn M_Random( -- v:i64) {
+	ensure_init
+	rndindex 1 + 0xff and -> rndindex
+	rndtable rndindex mem::get_u8
+}
+
+/// Reset both RNG indices. Called when starting a new game.
+pub fn M_ClearRandom( -- ) {
+	0 -> rndindex
+	0 -> prndindex
+}

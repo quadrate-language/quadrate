@@ -1,0 +1,320 @@
+/// Column + span blitters — renderer inner loops.
+///
+/// Ported from doomgeneric/r_draw.c. This is the hottest path in the
+/// engine: every wall slice, every sprite column, every floor/ceiling
+/// span funnels through here. The C version is 975 lines with 4×
+/// unrolled inner loops and low-detail variants; we keep the readable
+/// one-pixel-per-iteration shape, since LLVM's vectoriser picks up the
+/// straightforward forms automatically.
+///
+/// Shared with the rest of the renderer through module-level state: the
+/// caller fills in dc_* (column mode) or ds_* (span mode) globals before
+/// each R_DrawColumn / R_DrawSpan call, mirroring the C idiom verbatim.
+/// columnofs[] + ylookup[] are precomputed offsets into I_VideoBuffer so
+/// the inner loop is a single addition per pixel.
+
+use mem
+use "doomdef.qd"
+use "i_video.qd"
+use "doomstat.qd"
+
+pub const MAXWIDTH = 1120
+pub const MAXHEIGHT = 832
+pub const SBARHEIGHT = 32
+
+// ---- Viewport state ----
+
+pub var viewimage:ptr = 0
+pub var viewwidth:i64 = 320
+pub var scaledviewwidth:i64 = 320
+pub var viewheight:i64 = 168          // 200 - 32 status bar
+pub var viewwindowx:i64 = 0
+pub var viewwindowy:i64 = 0
+pub var centery:i64 = 84              // default for full-screen view
+
+// ylookup[i] = I_VideoBuffer-relative byte offset for row (i + viewwindowy)
+// columnofs[i] = byte offset from the row start for column (i + viewwindowx)
+pub var ylookup:ptr = 0               // MAXHEIGHT × i64
+pub var columnofs:ptr = 0             // MAXWIDTH × i64
+
+var rdraw_inited:i64 = 0
+
+fn ensure_rdraw( -- ) {
+	rdraw_inited 1 eq if { return }
+	MAXHEIGHT 8 mul mem::alloc! -> ylookup
+	MAXWIDTH 8 mul  mem::alloc! -> columnofs
+	ylookup MAXHEIGHT 8 mul mem::zero
+	columnofs MAXWIDTH 8 mul mem::zero
+	1 -> rdraw_inited
+}
+
+// ---- Column-draw state ----
+
+pub var dc_colormap:ptr = 0
+pub var dc_x:i64 = 0
+pub var dc_yl:i64 = 0
+pub var dc_yh:i64 = 0
+pub var dc_iscale:i64 = 0       // fixed-point 16.16
+pub var dc_texturemid:i64 = 0   // fixed-point 16.16
+pub var dc_source:ptr = 0
+pub var dc_translation:ptr = 0
+pub var translationtables:ptr = 0
+
+// ---- Span-draw state ----
+
+pub var ds_y:i64 = 0
+pub var ds_x1:i64 = 0
+pub var ds_x2:i64 = 0
+pub var ds_colormap:ptr = 0
+pub var ds_xfrac:i64 = 0
+pub var ds_yfrac:i64 = 0
+pub var ds_xstep:i64 = 0
+pub var ds_ystep:i64 = 0
+pub var ds_source:ptr = 0     // 64×64 flat texture tile
+
+// ---- Fuzz (spectre/invisibility) ----
+
+pub var colormaps:ptr = 0     // populated by r_data; stays null until then
+var fuzzoffset:ptr = 0
+var fuzzpos:i64 = 0
+var fuzz_inited:i64 = 0
+
+fn ensure_fuzz( -- ) {
+	fuzz_inited 1 eq if { return }
+	50 8 mul mem::alloc! -> fuzzoffset
+	// Doom's canonical 50-entry pattern — ±SCREENWIDTH per entry.
+	// 1=+SCREENWIDTH, 0=-SCREENWIDTH.
+	"11011101101101110110011100011101101001101111011110" -> pat
+	pat mem::from_string -> plen -> pptr
+	0 50 1 for i {
+		pptr i mem::get_u8 49 eq if {
+			SCREENWIDTH fuzzoffset i 8 mul mem::set_i64
+		} else {
+			0 SCREENWIDTH sub fuzzoffset i 8 mul mem::set_i64
+		}
+	}
+	pptr mem::free
+	1 -> fuzz_inited
+}
+
+// ---- R_DrawColumn ----
+
+/// Paint a vertical strip of a wall texture through the colormap onto
+/// the viewport. dc_yl..dc_yh inclusive, dc_x column, dc_source is the
+/// texture column with dc_texturemid the fixed-point top offset.
+pub fn R_DrawColumn( -- ) {
+	ensure_rdraw
+	dc_yh dc_yl sub 1 add -> count
+	count 0 lte if { return }
+
+	ylookup dc_yl 8 mul mem::get_i64 -> yoff
+	columnofs dc_x 8 mul mem::get_i64 -> xoff
+	I_VideoBuffer yoff xoff add mem::ptr_add -> dest
+
+	dc_iscale -> fracstep
+	dc_texturemid dc_yl centery sub fracstep mul add -> frac
+
+	0 -> i
+	loop {
+		i count gte if { break }
+		frac FRACBITS shr 127 and -> src_idx
+		dc_source src_idx mem::get_u8 -> texel
+		dc_colormap texel mem::get_u8 -> mapped
+		mapped dest i SCREENWIDTH mul mem::set_u8
+		frac fracstep add -> frac
+		i 1 add -> i
+	}
+}
+
+// ---- R_DrawFuzzColumn ----
+
+/// Spectre / invisibility post-process: walks the column, pulls a
+/// pixel from the row above or below as dithered by fuzzoffset[], and
+/// remaps through colormap 6 (roughly 1 brightness bucket darker).
+pub fn R_DrawFuzzColumn( -- ) {
+	ensure_rdraw
+	ensure_fuzz
+
+	dc_yl 0 eq if { 1 -> dc_yl }
+	dc_yh viewheight 1 sub eq if { viewheight 2 sub -> dc_yh }
+	dc_yh dc_yl sub -> count
+	count 0 lt if { return }
+
+	ylookup dc_yl 8 mul mem::get_i64 -> yoff
+	columnofs dc_x 8 mul mem::get_i64 -> xoff
+	I_VideoBuffer yoff xoff add mem::ptr_add -> dest
+
+	0 -> i
+	loop {
+		i count gt if { break }
+		fuzzoffset fuzzpos 8 mul mem::get_i64 -> delta
+		dest i SCREENWIDTH mul mem::ptr_add -> dp
+		dp delta mem::ptr_add 0 mem::get_u8 -> sample
+		colormaps mem::is_null 0 eq if {
+			colormaps 6 256 mul sample add mem::get_u8 -> mapped
+			mapped dp 0 mem::set_u8
+		} else {
+			sample dp 0 mem::set_u8
+		}
+		fuzzpos 1 add 50 mod -> fuzzpos
+		i 1 add -> i
+	}
+}
+
+// ---- R_DrawTranslatedColumn ----
+
+/// Player-sprite colour-swap column. Same as R_DrawColumn with an extra
+/// dc_translation[] lookup between the source index and the colormap.
+pub fn R_DrawTranslatedColumn( -- ) {
+	ensure_rdraw
+	dc_yh dc_yl sub -> count
+	count 0 lt if { return }
+
+	ylookup dc_yl 8 mul mem::get_i64 -> yoff
+	columnofs dc_x 8 mul mem::get_i64 -> xoff
+	I_VideoBuffer yoff xoff add mem::ptr_add -> dest
+
+	dc_iscale -> fracstep
+	dc_texturemid dc_yl centery sub fracstep mul add -> frac
+
+	0 -> i
+	loop {
+		i count gt if { break }
+		frac FRACBITS shr -> src_idx
+		dc_source src_idx mem::get_u8 -> texel
+		dc_translation texel mem::get_u8 -> xlated
+		dc_colormap xlated mem::get_u8 -> mapped
+		mapped dest i SCREENWIDTH mul mem::set_u8
+		frac fracstep add -> frac
+		i 1 add -> i
+	}
+}
+
+// ---- R_InitTranslationTables ----
+
+pub fn R_InitTranslationTables( -- ) {
+	256 3 mul mem::alloc! -> translationtables
+	0 256 1 for i {
+		i 0x70 gte i 0x7f lte and if {
+			i 15 and 0x60 add translationtables 0 256 mul i add mem::set_u8
+			i 15 and 0x40 add translationtables 1 256 mul i add mem::set_u8
+			i 15 and 0x20 add translationtables 2 256 mul i add mem::set_u8
+		} else {
+			i translationtables 0 256 mul i add mem::set_u8
+			i translationtables 1 256 mul i add mem::set_u8
+			i translationtables 2 256 mul i add mem::set_u8
+		}
+	}
+}
+
+// ---- R_DrawSpan ----
+
+/// Flat (floor/ceiling) span blitter. Walks the span texture in (u, v)
+/// fixed-point steps, masking to a 64×64 tile (Doom's flat dimensions).
+pub fn R_DrawSpan( -- ) {
+	ensure_rdraw
+	ds_x2 ds_x1 sub 1 add -> count
+	count 0 lte if { return }
+
+	ylookup ds_y 8 mul mem::get_i64 -> yoff
+	columnofs ds_x1 8 mul mem::get_i64 -> xoff
+	I_VideoBuffer yoff xoff add mem::ptr_add -> dest
+
+	ds_xfrac -> xfrac
+	ds_yfrac -> yfrac
+
+	0 -> i
+	loop {
+		i count gte if { break }
+		xfrac FRACBITS shr 63 and -> xt
+		yfrac FRACBITS shr 63 and 64 mul -> yt
+		xt yt or -> spot
+		ds_source spot mem::get_u8 -> texel
+		ds_colormap texel mem::get_u8 -> mapped
+		mapped dest i mem::set_u8
+		xfrac ds_xstep add -> xfrac
+		yfrac ds_ystep add -> yfrac
+		i 1 add -> i
+	}
+}
+
+// ---- R_InitBuffer ----
+
+/// Populate ylookup[] + columnofs[] for a (width × height) viewport
+/// centred horizontally; vertically positioned above the status bar.
+pub fn R_InitBuffer(width:i64 height:i64 -- ) {
+	ensure_rdraw
+	SCREENWIDTH width sub 1 shr -> viewwindowx
+
+	0 -> i
+	loop {
+		i width gte if { break }
+		viewwindowx i add columnofs i 8 mul mem::set_i64
+		i 1 add -> i
+	}
+
+	width SCREENWIDTH eq if {
+		0 -> viewwindowy
+	} else {
+		SCREENHEIGHT SBARHEIGHT sub height sub 1 shr -> viewwindowy
+	}
+
+	0 -> j
+	loop {
+		j height gte if { break }
+		j viewwindowy add SCREENWIDTH mul ylookup j 8 mul mem::set_i64
+		j 1 add -> j
+	}
+}
+
+// ---- Background bezel and border (tiny stubs + copies) ----
+
+var background_buffer:ptr = 0
+
+pub fn R_FillBackScreen( -- ) {
+	scaledviewwidth SCREENWIDTH eq if {
+		background_buffer mem::is_null 0 eq if {
+			background_buffer mem::free
+			0 cast<ptr> -> background_buffer
+		}
+		return
+	}
+	// Lazy-alloc the background pattern buffer so the border copy has
+	// something to source from. Real bezel fill needs r_data + v_video
+	// patch drawing; until those are wired, the buffer stays zeroed.
+	background_buffer mem::is_null if {
+		SCREENWIDTH SCREENHEIGHT SBARHEIGHT sub mul mem::alloc! -> background_buffer
+		background_buffer SCREENWIDTH SCREENHEIGHT SBARHEIGHT sub mul mem::zero
+	}
+}
+
+pub fn R_VideoErase(ofs:i64 count:i64 -- ) {
+	background_buffer mem::is_null if { return }
+	0 -> i
+	loop {
+		i count gte if { break }
+		background_buffer ofs i add mem::get_u8 -> b
+		b I_VideoBuffer ofs i add mem::set_u8
+		i 1 add -> i
+	}
+}
+
+pub fn R_DrawViewBorder( -- ) {
+	scaledviewwidth SCREENWIDTH eq if { return }
+	SCREENHEIGHT SBARHEIGHT sub viewheight sub 2 div -> top
+	SCREENWIDTH scaledviewwidth sub 2 div -> side
+
+	0 top SCREENWIDTH mul side add R_VideoErase
+	viewheight top add SCREENWIDTH mul side sub -> ofs
+	ofs top SCREENWIDTH mul side add R_VideoErase
+
+	top SCREENWIDTH mul SCREENWIDTH add side sub -> sofs
+	side 1 shl -> side2
+	1 -> i
+	loop {
+		i viewheight gte if { break }
+		sofs side2 R_VideoErase
+		sofs SCREENWIDTH add -> sofs
+		i 1 add -> i
+	}
+}

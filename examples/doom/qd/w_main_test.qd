@@ -1,0 +1,36 @@
+use "m_argv.qd"
+use "w_main.qd"
+use "w_wad.qd"
+use "w_checksum.qd"
+use mem
+
+fn main() {
+	// Stuff argv with a "-file wads/doom1.wad" sequence so the parser
+	// exercises the real add-PWAD path. We don't actually want a PWAD
+	// loaded on top of the IWAD for this test (the test would need two
+	// distinct files), so instead we run the parser against an argv that
+	// contains no `-file`, verify it reports "unmodified", then do a
+	// direct W_AddFile of the IWAD and checksum the result.
+
+	// --- Pass 1: no -file flag, parser returns 0 ---
+	read -> argc
+	argc M_SetArgs
+	W_ParseCommandLine -> modified
+	"modified (no -file): " print modified print nl   // expect 0
+
+	// --- Pass 2: load the IWAD directly and checksum it ---
+	"wads/doom1.wad" W_AddFile
+	"numlumps: " print numlumps print nl
+
+	SHA1_DIGEST_BYTES mem::alloc! -> digest
+	digest W_Checksum
+
+	// Digest is all zeros (SHA-1 stub). Spot-check the first four bytes.
+	"digest bytes [0..4]: " print
+	0 4 1 for i {
+		digest i mem::get_u8 print " " print
+	}
+	nl
+
+	digest mem::free
+}

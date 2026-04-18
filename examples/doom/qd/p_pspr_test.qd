@@ -1,0 +1,27 @@
+use "p_pspr.qd"
+use mem
+
+fn main() {
+	"WEAPONBOTTOM: " print WEAPONBOTTOM print nl    // 8388608 (128 << 16)
+	"WEAPONTOP: " print WEAPONTOP print nl          // 2097152 (32  << 16)
+	"RAISESPEED: " print RAISESPEED print nl        //  393216 (6   << 16)
+
+	0 cast<ptr> P_CheckAmmo print nl                // 1 (stub always succeeds)
+
+	// Exercise every entry.
+	0 cast<ptr> P_SetupPsprites
+	0 cast<ptr> P_MovePsprites
+	0 cast<ptr> P_FireWeapon
+	0 cast<ptr> P_DropWeapon
+	0 cast<ptr> P_BringUpWeapon
+	0 cast<ptr> P_CalcSwing
+	0 cast<ptr> P_BulletSlope
+	0 cast<ptr> 0 P_GunShot
+	0 cast<ptr> 0 0 P_SetPsprite
+	0 cast<ptr> 0 cast<ptr> A_WeaponReady
+	0 cast<ptr> 0 cast<ptr> A_FirePistol
+	0 cast<ptr> 0 cast<ptr> A_Light0
+	0 cast<ptr> A_BFGSpray
+
+	"done" print nl
+}
