@@ -14,15 +14,15 @@ fn main() {
 
 	// Spot-check a vertex. E1M1's first vertex is (1088, -3680).
 	"vertex[0].x (fixed>>16): " print
-	vertexes 0 VERTEX_SIZE mul mem::get_i32 FRACBITS shr print nl
+	vertexes 0 VERTEX_SIZE mul mem::get_i32 65536 div print nl
 	"vertex[0].y: " print
-	vertexes 0 VERTEX_SIZE mul 4 add mem::get_i32 FRACBITS shr print nl
+	vertexes 0 VERTEX_SIZE mul 4 add mem::get_i32 65536 div print nl
 
 	// First sector's floor/ceiling height in map units.
 	"sector[0].floorh: " print
-	sectors 0 SECTOR_OFF_FLOORH add mem::get_i32 FRACBITS shr print nl
+	sectors 0 SECTOR_OFF_FLOORH add mem::get_i32 65536 div print nl
 	"sector[0].ceilh: " print
-	sectors 0 SECTOR_OFF_CEILH add mem::get_i32 FRACBITS shr print nl
+	sectors 0 SECTOR_OFF_CEILH add mem::get_i32 65536 div print nl
 	"sector[0].light: " print
 	sectors 0 SECTOR_OFF_LIGHT add mem::get_i32 print nl
 

@@ -1,0 +1,126 @@
+/// Mobj state-machine advancement.
+///
+/// Quadrate's compiler segfaults when `use "info.qd"` is added to
+/// d_main.qd (see TODO.md). Pulling the state-table logic into a
+/// dedicated module keeps the info.qd import graph small and, so
+/// far, compiles cleanly. Exposes two pub fns d_main calls by
+/// reference through its use-graph:
+///   D_SeedThingStates — after P_SetupLevel, fill every thing's
+///     state_idx / state_tics from mobjinfo[type].spawnstate.
+///   D_AdvanceStates    — per tic, decrement state_tics; when 0
+///     follow state.nextstate and refresh state_tics.
+
+use mem
+use "p_setup.qd"
+use "info.qd"
+
+pub var state_advances:i64 = 0
+
+/// Overwrite a thing's rot_lumps_a slots with lumps matching the
+/// given state's sprite-prefix + frame-letter. Uses p_setup's
+/// existing resolve_sprite_rotations scan. Called from
+/// D_AdvanceStates whenever a thing moves to a new state so the
+/// renderer picks up the fresh frame.
+fn refresh_rot_lumps(ti:i64 st:i64 -- ) {
+	ensure_info
+	states st STATE_STRIDE mul mem::ptr_add -> sp
+	sp 0 mem::get_i32 -> spr_idx
+	sp 4 mem::get_i32 -> fr
+	spr_idx 0 lt spr_idx 138 gte or if { return }
+	8 mem::alloc! -> k
+	k 8 mem::zero
+	0 -> j
+	loop {
+		j 4 gte if { break }
+		sprnames_ptr spr_idx 5 mul j add mem::get_u8 k j mem::set_u8
+		j 1 add -> j
+	}
+	65 fr add k 4 mem::set_u8    // 'A' + frame
+	things_data ti THING_SIZE mul THING_OFF_ROT_LUMPS add mem::ptr_add -> rot_a
+	k rot_a resolve_sprite_rotations
+	k mem::free
+}
+
+/// Seed each thing's state_idx + state_tics from the mobjinfo
+/// entry matching its doomednum. Things whose doomednum isn't in
+/// the mobjinfo table get state_idx=0, state_tics=0 (no-op in
+/// D_AdvanceStates).
+pub fn D_SeedThingStates( -- ) {
+	0 -> si
+	loop {
+		si numthings gte if { break }
+		things_data si THING_SIZE mul THING_OFF_TYPE add mem::get_i32 -> si_type
+		0 -> mi_scan
+		-1 -> mi_found
+		loop {
+			mi_scan 137 gte if { break }
+			mi_found 0 gte if { break }
+			mi_scan mobj_doomednum si_type eq if { mi_scan -> mi_found }
+			mi_scan 1 add -> mi_scan
+		}
+		mi_found 0 gte if {
+			mi_found mobj_spawnstate -> sseed
+			sseed things_data si THING_SIZE mul THING_OFF_STATE_IDX add mem::set_i32
+			sseed state_tics things_data si THING_SIZE mul THING_OFF_STATE_TICS add mem::set_i32
+		}
+		si 1 add -> si
+	}
+}
+
+/// Tick every alive thing's state machine by one tic. When tics_left
+/// hits 0, advance to state.nextstate and reset tics_left to the
+/// new state's duration. Things with state_idx=0 or pickups don't
+/// advance.
+/// Transition a thing to its mobjinfo.painstate. Callers should
+/// roll painchance before calling (Doom's actual gate is
+/// random < painchance; we leave that to the caller so it can
+/// tune timing).
+pub fn D_ApplyPain(ti:i64 -- ) {
+	ensure_info
+	things_data ti THING_SIZE mul THING_OFF_TYPE add mem::get_i32 -> pt_type
+	0 -> pt_mi
+	-1 -> pt_found
+	loop {
+		pt_mi 137 gte if { break }
+		pt_found 0 gte if { break }
+		pt_mi mobj_doomednum pt_type eq if { pt_mi -> pt_found }
+		pt_mi 1 add -> pt_mi
+	}
+	pt_found 0 lt if { return }
+	pt_found mobj_painstate -> pain_idx
+	pain_idx 0 lte if { return }
+	pain_idx things_data ti THING_SIZE mul THING_OFF_STATE_IDX add mem::set_i32
+	pain_idx state_tics -> pain_tics
+	pain_tics 0 lt if { 0 -> pain_tics }
+	pain_tics things_data ti THING_SIZE mul THING_OFF_STATE_TICS add mem::set_i32
+	ti pain_idx refresh_rot_lumps
+}
+
+pub fn D_AdvanceStates( -- ) {
+	0 -> ti
+	loop {
+		ti numthings gte if { break }
+		things_data ti THING_SIZE mul THING_OFF_PICKED add mem::get_i32 -> picked
+		things_data ti THING_SIZE mul THING_OFF_STATE_IDX add mem::get_i32 -> st_idx
+		things_data ti THING_SIZE mul THING_OFF_STATE_TICS add mem::get_i32 -> tics_left
+		// Corpses (picked=2) stop ticking — their death chain ran
+		// once in info.qd terms but we freeze the final frame here.
+		// Collected pickups (picked=1) also don't advance.
+		picked 0 eq st_idx 0 gt and tics_left 0 gt and if {
+			tics_left 1 sub -> tics_left
+			tics_left 0 gt if {
+				tics_left things_data ti THING_SIZE mul THING_OFF_STATE_TICS add mem::set_i32
+			} else {
+				st_idx state_nextstate -> ns
+				ns 0 lt if { 0 -> ns }
+				ns things_data ti THING_SIZE mul THING_OFF_STATE_IDX add mem::set_i32
+				ns state_tics -> ntics
+				ntics 0 lt if { 0 -> ntics }
+				ntics things_data ti THING_SIZE mul THING_OFF_STATE_TICS add mem::set_i32
+				state_advances 1 add -> state_advances
+				ti ns refresh_rot_lumps
+			}
+		}
+		ti 1 add -> ti
+	}
+}

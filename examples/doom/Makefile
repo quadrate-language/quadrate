@@ -127,8 +127,13 @@ $(BUILDDIR):
 run: $(OUT)
 	$(OUT) -iwad wads/doom1.wad
 
+# Headless scripted tour — dumps PPM snapshots at tics 0/15/30/45 + title +
+# intermission. Useful for CI visual verification.
+tour: $(OUT)
+	SDL_VIDEODRIVER=dummy SDL_AUDIODRIVER=dummy $(OUT) -tour
+
 clean:
 	rm -rf $(BUILDDIR)
 	$(MAKE) -C ffi clean
 
-.PHONY: all run clean
+.PHONY: all run tour clean

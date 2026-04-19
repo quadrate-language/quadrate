@@ -432,6 +432,10 @@ pub fn R_DrawThings(viewx:i64 viewy:i64 viewangle:i64 -- ) {
 	0 -> thing_ang
 	0 -> rx_off
 	0 -> ry_off
+	0 -> arx
+	0 -> ary
+	0 -> viewer_oct
+	0 -> thing_oct
 	0 -> picked_flag
 	0 cast<ptr> -> sprite_patch
 	8 mem::alloc! -> sp_key
@@ -455,17 +459,34 @@ pub fn R_DrawThings(viewx:i64 viewy:i64 viewangle:i64 -- ) {
 			0 -> has_sprite
 			things_data i THING_SIZE mul THING_OFF_SPRITE_LUMP add mem::get_i32 -> lump
 			things_data i THING_SIZE mul THING_OFF_ANGLE add mem::get_i32 -> thing_ang
-			// Simple octant-based rotation from sign of (vx-tx, vy-ty)
-			// rotated by thing_ang. Approximate (not proper atan2);
-			// good enough to pick between 4 cardinal rotations.
+			// Rotation: octant-of-viewer-from-thing minus octant-of-
+			// thing's-own-angle, mod 8. Gives proper Doom rotation
+			// index without the R_PointToAngle2 cross-module call
+			// that trips a quadc segfault.
 			viewx tx sub -> rx_off
 			viewy ty sub -> ry_off
-			rx_off 0 gt ry_off 0 gt and if { 2 -> rot_idx } else {
-			rx_off 0 gt ry_off 0 lte and if { 0 -> rot_idx } else {
-			rx_off 0 lte ry_off 0 gt and if { 4 -> rot_idx } else {
-				6 -> rot_idx
-			}}}
-			sprite_anim_tic i add 8 mod 4 gte if {
+			rx_off 0 lt if { 0 rx_off sub } else { rx_off } -> arx
+			ry_off 0 lt if { 0 ry_off sub } else { ry_off } -> ary
+			rx_off 0 gte ry_off 0 gte and if {
+				ary arx gt if { 2 } else { arx ary gt if { 0 } else { 1 } }
+			} else {
+				rx_off 0 lt ry_off 0 gte and if {
+					ary arx gt if { 2 } else { arx ary gt if { 4 } else { 3 } }
+				} else {
+					rx_off 0 lt ry_off 0 lt and if {
+						ary arx gt if { 6 } else { arx ary gt if { 4 } else { 5 } }
+					} else {
+						ary arx gt if { 6 } else { arx ary gt if { 0 } else { 7 } }
+					}
+				}
+			} -> viewer_oct
+			thing_ang 4294967295 and 536870912 div 7 and -> thing_oct
+			viewer_oct thing_oct sub 8 add 7 and -> rot_idx
+			// State-driven things update rot_lumps_a per transition,
+			// so don't flip to the stale rot_lumps_b. Only pickups
+			// and un-statemachined things use the old A↔B cycle.
+			things_data i THING_SIZE mul THING_OFF_STATE_IDX add mem::get_i32 0 eq
+			sprite_anim_tic i add 8 mod 4 gte and if {
 				things_data i THING_SIZE mul THING_OFF_ROT_LUMPS_B add rot_idx 4 mul add mem::get_i32 -> rot_lump
 				rot_lump 0 lte if {
 					// Fall back to frame A if B doesn't exist.

@@ -414,7 +414,7 @@ pub var numthings:i64 = 0
 // [96..100) health:i32 (0 = dead),
 // [100..104) state_idx:i32 (index into info.qd's state table),
 // [104..108) state_tics_left:i32 (ticks until nextstate).
-pub const THING_SIZE = 112
+pub const THING_SIZE = 120
 pub const THING_OFF_X = 0
 pub const THING_OFF_Y = 4
 pub const THING_OFF_TYPE = 8
@@ -428,6 +428,7 @@ pub const THING_OFF_ROT_LUMPS_B = 64
 pub const THING_OFF_HEALTH = 96
 pub const THING_OFF_STATE_IDX = 100
 pub const THING_OFF_STATE_TICS = 104
+pub const THING_OFF_ALERTED = 108
 pub var things_data:ptr = 0
 
 /// Starting hitpoints for a given doomednum. Zero means "no
@@ -705,8 +706,8 @@ pub fn P_SetupLevel(episode:i64 map:i64 playermask:i64 skill:i64 -- ) {
 	numthings print " things" print nl
 	player_start_found 1 eq if {
 		" player start: (" print
-		player_start_x FRACBITS shr print ", " print
-		player_start_y FRACBITS shr print ")" print nl
+		player_start_x 65536 div print ", " print
+		player_start_y 65536 div print ")" print nl
 	}
 }
 

@@ -40,6 +40,7 @@ use "r_perspective.qd"
 use "r_sky.qd"
 use "v_video.qd"
 use "dump_frame.qd"
+use "p_states.qd"
 
 // ---- State ----
 
@@ -163,16 +164,9 @@ pub var player_health:i64 = 100
 pub var damage_tic:i64 = 0
 pub var total_damage:i64 = 0
 pub var player_dead:i64 = 0
+// 3-bit key mask: bit 0 blue, bit 1 yellow, bit 2 red.
+pub var player_keys:i64 = 0
 pub var monster_steps:i64 = 0
-pub var state_advances:i64 = 0
-
-/// Advance every alive thing's info.qd state machine by one tic.
-/// Each state has a `tics` duration and `nextstate` target; when
-/// the ticks-left counter hits 0 we follow the chain. `tics < 0`
-/// indicates a sticky "hold here" state — leave it alone.
-/// Placeholder — info.qd import from d_main.qd segfaults quadc.
-/// Move advancement to a dedicated module later.
-pub fn D_AdvanceStates( -- ) { }
 
 /// Simple monster-advance: every alive monster within ~1200 world
 /// units of the camera takes a small step toward it each tic.
@@ -191,7 +185,18 @@ pub fn D_StepMonsters( -- ) {
 			camera_x tthx sub 65536 div -> dxw
 			camera_y tthy sub 65536 div -> dyw
 			dxw dxw mul dyw dyw mul add -> dsq
-			dsq 1440000 lt dsq 0 gt and if {
+			dsq 1440000 lt dsq 0 gt and
+			camera_x camera_y tthx tthy has_los 1 eq and if {
+				// First-alert see-sound. Latch via THING_OFF_ALERTED
+				// so we only play once per monster.
+				things_data ti THING_SIZE mul THING_OFF_ALERTED add mem::get_i32 0 eq if {
+					1 things_data ti THING_SIZE mul THING_OFF_ALERTED add mem::set_i32
+					tt 3004 eq if { snd_see_pos snd_see_pos_len play_sfx } else {
+					tt 9 eq    if { snd_see_sgt snd_see_sgt_len play_sfx } else {
+					tt 3001 eq if { snd_see_imp snd_see_imp_len play_sfx } else {
+					tt 3002 eq tt 58 eq or if { snd_see_sar snd_see_sar_len play_sfx }
+					}}}
+				}
 				// Step by ~4 world units per tic. Normalize (dx, dy) by
 				// |dx|+|dy| magnitude (cheap L1-norm; good enough for
 				// 60-tic demo motion).
@@ -311,6 +316,9 @@ fn has_los(ax:i64 ay:i64 bx:i64 by:i64 -- clear:i64) {
 pub fn D_AutoFire( -- ) {
 	fire_tic 1 add -> fire_tic
 	fire_tic 10 mod 0 neq if { return }
+	// Ctrl (keystate bit 64) must be held to fire. Tour mode pins
+	// this bit on in D_DoomLoop to keep combat-path coverage.
+	keystate 64 and 0 eq if { return }
 	pistol_ammo 0 lte if { return }
 	camera_angle ANGLETOFINESHIFT shr FINEMASK and -> fidx
 	fidx finecosine_at -> c_a
@@ -358,7 +366,19 @@ pub fn D_AutoFire( -- ) {
 		tt 2035 eq if {
 			snd_explode snd_explode_len play_sfx
 		} else {
-			snd_kill snd_kill_len play_sfx
+			tt 9 eq if {
+				snd_kill_sgt snd_kill_sgt_len play_sfx
+			} else {
+				tt 3001 eq if {
+					snd_kill_imp snd_kill_imp_len play_sfx
+				} else {
+					tt 3002 eq tt 58 eq or if {
+						snd_kill_sar snd_kill_sar_len play_sfx
+					} else {
+						snd_kill snd_kill_len play_sfx
+					}
+				}
+			}
 		}
 		// Barrel explosion: when a barrel (type 2035) dies, AoE-
 		// damage every alive thing within ~128 world units. Chain
@@ -396,6 +416,11 @@ pub fn D_AutoFire( -- ) {
 		hp things_data best THING_SIZE mul THING_OFF_HEALTH add mem::set_i32
 		things_data best THING_SIZE mul THING_OFF_TYPE add mem::get_i32 -> tt
 		"hit thing #" print best print " type=" print tt print " hp=" print hp print nl
+		// 50% chance of transitioning to painstate. Doom's real
+		// formula uses mobjinfo.painchance (0..255); we simplify.
+		fire_tic 2 mod 0 eq if {
+			best D_ApplyPain
+		}
 	}
 }
 
@@ -486,7 +511,13 @@ pub fn D_CheckDoors( -- ) {
 	loop {
 		li numlines gte if { break }
 		lines li LINE_SIZE mul LINE_OFF_SPECIAL add mem::get_i32 -> spec
-		spec 1 eq spec 2 eq or spec 31 eq or if {
+		// Door specials we accept: unkeyed (1, 2, 31), and keyed
+		// (26/32 blue, 27/34 yellow, 28/33 red). Keyed doors only
+		// open if player_keys has the matching bit set.
+		spec 1 eq spec 2 eq or spec 31 eq or
+		spec 26 eq spec 32 eq or player_keys 1 and 0 neq and or
+		spec 27 eq spec 34 eq or player_keys 2 and 0 neq and or
+		spec 28 eq spec 33 eq or player_keys 4 and 0 neq and or if {
 			lines li LINE_SIZE mul LINE_OFF_V1 add mem::get_i32 -> lv1
 			lines li LINE_SIZE mul LINE_OFF_V2 add mem::get_i32 -> lv2
 			lv1 0 gte lv1 numvertexes lt and
@@ -614,6 +645,8 @@ pub fn D_CheckExit( -- ) {
 		li 1 add -> li
 	}
 }
+pub var hud_titlepic:ptr = 0
+pub var hud_interpic:ptr = 0
 pub var hud_stbar:ptr = 0
 pub var hud_pistol:ptr = 0
 pub var hud_pistol_fire:ptr = 0
@@ -625,6 +658,20 @@ pub var snd_pistol:ptr = 0
 pub var snd_pistol_len:i64 = 0
 pub var snd_kill:ptr = 0
 pub var snd_kill_len:i64 = 0
+pub var snd_kill_sgt:ptr = 0
+pub var snd_kill_sgt_len:i64 = 0
+pub var snd_kill_imp:ptr = 0
+pub var snd_kill_imp_len:i64 = 0
+pub var snd_kill_sar:ptr = 0
+pub var snd_kill_sar_len:i64 = 0
+pub var snd_see_pos:ptr = 0
+pub var snd_see_pos_len:i64 = 0
+pub var snd_see_sgt:ptr = 0
+pub var snd_see_sgt_len:i64 = 0
+pub var snd_see_imp:ptr = 0
+pub var snd_see_imp_len:i64 = 0
+pub var snd_see_sar:ptr = 0
+pub var snd_see_sar_len:i64 = 0
 pub var snd_pickup:ptr = 0
 pub var snd_pickup_len:i64 = 0
 pub var snd_wpnup:ptr = 0
@@ -676,6 +723,20 @@ pub fn D_InitHUD( -- ) {
 	sp mem::free
 	key W_CheckNumForName -> lnum
 	lnum 0 gte if { lnum 0 W_CacheLumpNum -> hud_stbar }
+	// Title splash.
+	key 8 mem::zero
+	"TITLEPIC" mem::from_string -> tpl -> tpp
+	0 tpl 1 for k { tpp k mem::get_u8 key k mem::set_u8 }
+	tpp mem::free
+	key W_CheckNumForName -> lnum
+	lnum 0 gte if { lnum 0 W_CacheLumpNum -> hud_titlepic }
+	// Intermission background (WIMAP0 = E1 overview).
+	key 8 mem::zero
+	"WIMAP0" mem::from_string -> ipl -> ipp
+	0 ipl 1 for k { ipp k mem::get_u8 key k mem::set_u8 }
+	ipp mem::free
+	key W_CheckNumForName -> lnum
+	lnum 0 gte if { lnum 0 W_CacheLumpNum -> hud_interpic }
 	key 8 mem::zero
 	"PISGA0" mem::from_string -> pl -> pp
 	0 pl 1 for k { pp k mem::get_u8 key k mem::set_u8 }
@@ -716,6 +777,14 @@ pub fn D_InitHUD( -- ) {
 		1 -> snd_ready
 		"DSPISTOL" load_sfx -> snd_pistol_len -> snd_pistol
 		"DSPODTH1" load_sfx -> snd_kill_len -> snd_kill
+		"DSPODTH2" load_sfx -> snd_kill_sgt_len -> snd_kill_sgt
+		"DSBGDTH1" load_sfx -> snd_kill_imp_len -> snd_kill_imp
+		"DSSGTDTH" load_sfx -> snd_kill_sar_len -> snd_kill_sar
+		"DSPOSIT1" load_sfx -> snd_see_pos_len -> snd_see_pos
+		"DSBGSIT1" load_sfx -> snd_see_imp_len -> snd_see_imp
+		"DSSGTSIT" load_sfx -> snd_see_sar_len -> snd_see_sar
+		snd_see_pos -> snd_see_sgt    // shotgun guy reuses zombie see-sound
+		snd_see_pos_len -> snd_see_sgt_len
 		"DSITEMUP" load_sfx -> snd_pickup_len -> snd_pickup
 		"DSWPNUP"  load_sfx -> snd_wpnup_len -> snd_wpnup
 		"DSDOROPN" load_sfx -> snd_door_len -> snd_door
@@ -919,6 +988,11 @@ pub fn D_CheckPickups( -- ) {
 			ttype 2023 eq if {
 				100 -> player_health
 			}
+			// Key pickups set the corresponding bit. Types:
+			//   5/40 blue card/skull, 6/39 yellow, 13/38 red.
+			ttype 5 eq ttype 40 eq or if { player_keys 1 or -> player_keys }
+			ttype 6 eq ttype 39 eq or if { player_keys 2 or -> player_keys }
+			ttype 13 eq ttype 38 eq or if { player_keys 4 or -> player_keys }
 			"picked up type " print ttype print " HP=" print player_health print nl
 			// Weapons vs items get different pickup SFX.
 			ttype 2001 eq ttype 2002 eq or ttype 2003 eq or
@@ -998,6 +1072,8 @@ fn key_to_bit(k:i64 -- bit:i64) {
 	// comma (44) → strafe left (bit 4), period (46) → strafe right (bit 5)
 	k 44 eq   if { 16 return }
 	k 46 eq   if { 32 return }
+	// KEY_RCTRL (0x9d) → fire (bit 6)
+	k 0x9d eq if { 64 return }
 	0
 }
 
@@ -1095,49 +1171,72 @@ pub fn D_DoomLoop( -- ) {
 	palkey mem::free
 	pal I_SetPalette
 
-	// Short finite loop for test harness (60 tics ≈ 1.7s at 35 Hz).
-	// Directed traversal toward the exit is nontrivial (E1M1 has
-	// doors, keys, switches between start and exit), so this tour
-	// stays in the first few rooms and exercises every rendering
-	// path without trying to clear the level.
-	0 -> nframes
-	loop {
-		nframes 60 gte if { break }
-		exit_reached 1 eq if { break }
-		player_dead 1 eq if { break }
-		I_StartTic
-		D_ProcessEvents
-		G_Ticker
+	"-tour" M_CheckParm -> tour_parm
 
-		// Forward the whole time, gentle turn-right through the middle
-		// third so the 4 dumped frames sample a curve through the
-		// starting room instead of just standing-still rotation.
-		nframes 0 gt if {
-			keystate 1 or -> keystate
-			nframes 10 gte nframes 30 lt and if {
-				keystate 8 or -> keystate
-			} else {
-				keystate 8 0xFFFFFFFF xor and -> keystate
+	// Title splash: render TITLEPIC full-screen.
+	hud_titlepic mem::is_null if { } else {
+		I_VideoBuffer SCREENWIDTH SCREENHEIGHT mul mem::zero
+		0 0 hud_titlepic I_VideoBuffer SCREENWIDTH V_DrawPatch
+		I_FinishUpdate
+		tour_parm 0 gt if { "build/e1m1_title.ppm" DumpFramePPM }
+	}
+
+	tour_parm 0 gt if {
+		// Test-harness tour: 60 tics (≈ 1.7s at 35 Hz) with scripted
+		// forward + gentle turn-right motion, PPM snapshots at 0/15/30/45.
+		0 -> nframes
+		loop {
+			nframes 60 gte if { break }
+			exit_reached 1 eq if { break }
+			player_dead 1 eq if { break }
+			I_StartTic
+			D_ProcessEvents
+			G_Ticker
+
+			nframes 0 gt if {
+				// Forward + fire pinned; turn-right through middle third.
+				keystate 1 or 64 or -> keystate
+				nframes 10 gte nframes 30 lt and if {
+					keystate 8 or -> keystate
+				} else {
+					keystate 8 0xFFFFFFFF xor and -> keystate
+				}
 			}
+
+			D_Display
+
+			nframes 0 eq if { "build/e1m1_000.ppm" DumpFramePPM }
+			nframes 15 eq if { "build/e1m1_090.ppm" DumpFramePPM }
+			nframes 30 eq if { "build/e1m1_180.ppm" DumpFramePPM }
+			nframes 45 eq if { "build/e1m1_270.ppm" DumpFramePPM }
+
+			nframes 1 add -> nframes
 		}
 
-		D_Display
-
-		// Dump PPM frames at 15-tic intervals.
-		nframes 0 eq if {
-			"build/e1m1_000.ppm" DumpFramePPM
+		// End-of-tour intermission snapshot.
+		hud_interpic mem::is_null if { } else {
+			I_VideoBuffer SCREENWIDTH SCREENHEIGHT mul mem::zero
+			0 0 hud_interpic I_VideoBuffer SCREENWIDTH V_DrawPatch
+			kill_count 44 90 hud_draw_number
+			pickup_count 90 90 hud_draw_number
+			dbg_moves 230 90 hud_draw_number
+			I_FinishUpdate
+			"build/e1m1_inter.ppm" DumpFramePPM
 		}
-		nframes 15 eq if {
-			"build/e1m1_090.ppm" DumpFramePPM
+	} else {
+		// Interactive play loop: unbounded, reads real keyboard.
+		// WASD/arrows move, comma/period strafe, Ctrl fires (wired in
+		// D_AutoFire / key_to_bit). Close window or ev_quit to exit.
+		// 28ms delay targets ~35 Hz Doom tic rate.
+		loop {
+			exit_reached 1 eq if { break }
+			player_dead 1 eq if { break }
+			I_StartTic
+			D_ProcessEvents
+			G_Ticker
+			D_Display
+			28 sdl::Delay
 		}
-		nframes 30 eq if {
-			"build/e1m1_180.ppm" DumpFramePPM
-		}
-		nframes 45 eq if {
-			"build/e1m1_270.ppm" DumpFramePPM
-		}
-
-		nframes 1 add -> nframes
 	}
 
 	"camera end: (" print camera_x 65536 div print ", " print
@@ -1209,9 +1308,7 @@ pub fn D_DoomMain( -- ) {
 		}
 		ti 1 add -> ti
 	}
-	// State-machine seed deferred — info.qd import from d_main.qd
-	// triggers a quadc crash on compile. The state_idx/state_tics
-	// fields stay zero until the compiler bug is fixed.
+	D_SeedThingStates
 	// Seed camera from the loaded player start.
 	player_start_x -> camera_x
 	player_start_y -> camera_y

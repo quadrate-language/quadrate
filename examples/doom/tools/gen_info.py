@@ -169,7 +169,23 @@ STATE_STRIDE = 32        # see state_t layout comment in info.qd
 MOBJINFO_STRIDE = 92     # 23 × 4 bytes
 
 
-def eval_mobj_field(expr: str, state_enums: list[str], mobj_enums: list[str], mf_flags: dict[str, int]) -> int:
+def load_sfx_enums(sounds_qd_path: str) -> dict[str, int]:
+    """Parse sounds.qd for `pub const sfx_* = N` lines. Used to
+    resolve mobjinfo sound fields that the generator previously
+    stubbed as 0 (see the `sfx_* → 0` comment below)."""
+    sfx: dict[str, int] = {}
+    try:
+        with open(sounds_qd_path, "r") as f:
+            for line in f:
+                m = re.match(r"^pub const (sfx_\w+) = (\d+)", line)
+                if m:
+                    sfx[m.group(1)] = int(m.group(2))
+    except OSError:
+        pass
+    return sfx
+
+
+def eval_mobj_field(expr: str, state_enums: list[str], mobj_enums: list[str], mf_flags: dict[str, int], sfx_enums: dict[str, int] | None = None) -> int:
     """Best-effort evaluator for mobjinfo field initializers.
 
     The C source uses integer literals, FRACUNIT multiplies, enum references
@@ -189,6 +205,8 @@ def eval_mobj_field(expr: str, state_enums: list[str], mobj_enums: list[str], mf
     env.update(mf_flags)
     env.update(state_idx)
     env.update(mobj_idx)
+    if sfx_enums:
+        env.update(sfx_enums)
 
     # Replace unknown identifiers with 0. `sfx_shotgn` and the like aren't
     # in our namespace; walking the tokens is safer than regexes since the
@@ -223,6 +241,7 @@ def emit(
     mobjinfos: list[list[str]],
     action_names: list[str],
     mf_flags: dict[str, int],
+    sfx_enums: dict[str, int],
 ) -> None:
     state_enum_index = {name: i for i, name in enumerate(state_enums)}
     sprite_enum_index = {name: i for i, name in enumerate(sprite_enums)}
@@ -382,7 +401,7 @@ pub fn ensure_info( -- ) {{
 
     w("fn populate_mobjinfo( -- ) {")
     for i, fields in enumerate(mobjinfos):
-        resolved = [str(eval_mobj_field(f.strip(), state_enums, mobj_enums, mf_flags))
+        resolved = [str(eval_mobj_field(f.strip(), state_enums, mobj_enums, mf_flags, sfx_enums))
                    for f in fields]
         w(f"\t{i} " + " ".join(resolved) + " put_mobj")
     w("}")
@@ -481,7 +500,11 @@ def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--src", required=True, help="path to doomgeneric source directory")
     ap.add_argument("--out", required=True, help="output .qd path")
+    ap.add_argument("--sounds-qd", default="qd/sounds.qd",
+                    help="path to sounds.qd (for resolving sfx_* enums)")
     args = ap.parse_args()
+
+    sfx_enums = load_sfx_enums(args.sounds_qd)
 
     src_dir = Path(args.src)
     header = (src_dir / "info.h").read_text()
@@ -507,6 +530,7 @@ def main() -> int:
         mobjinfos,
         actions,
         mf_flags,
+        sfx_enums,
     )
     return 0
 
