@@ -1,0 +1,51 @@
+// A WAD directory entry (filelump_t) — the concrete target of packed structs.
+// Doom reads 16-byte records straight off disk into this struct, so the
+// layout must be exactly 4+4+8 = 16 bytes with no padding.
+
+use mem
+
+// char name[8] expands to 8 separate u8 fields until fixed-size array fields
+// land in a later phase. This matches C's char[8] byte-for-byte.
+packed struct filelump_t {
+	filepos:i32
+	size:i32
+	n0:u8
+	n1:u8
+	n2:u8
+	n3:u8
+	n4:u8
+	n5:u8
+	n6:u8
+	n7:u8
+}
+
+fn main() {
+	// Simulate a "PLAYPAL" lump record at offset 12, size 768.
+	filelump_t {
+		filepos = 12
+		size = 768
+		n0 = 0x50  // 'P'
+		n1 = 0x4C  // 'L'
+		n2 = 0x41  // 'A'
+		n3 = 0x59  // 'Y'
+		n4 = 0x50  // 'P'
+		n5 = 0x41  // 'A'
+		n6 = 0x4C  // 'L'
+		n7 = 0x00
+	} -> lump
+
+	lump <<filepos print nl         // 12
+	lump <<size print nl            // 768
+
+	// Verify byte-for-byte layout matches what 'xxd' would show for a real WAD.
+	// [0..4)   = 12 little-endian = 0C 00 00 00
+	// [4..8)   = 768 little-endian = 00 03 00 00
+	// [8..16)  = "PLAYPAL\0"
+	lump cast<ptr> 0 mem::get_u8 print nl    // 12
+	lump cast<ptr> 1 mem::get_u8 print nl    // 0
+	lump cast<ptr> 4 mem::get_u8 print nl    // 0
+	lump cast<ptr> 5 mem::get_u8 print nl    // 3
+	lump cast<ptr> 8 mem::get_u8 print nl    // 80 = 'P'
+	lump cast<ptr> 14 mem::get_u8 print nl   // 76 = 'L'
+	lump cast<ptr> 15 mem::get_u8 print nl   // 0
+}

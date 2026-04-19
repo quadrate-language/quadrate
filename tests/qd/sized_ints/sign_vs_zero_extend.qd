@@ -1,0 +1,26 @@
+// Same bit pattern read as signed vs unsigned must give different i64 values.
+
+struct S {
+	s8:i8
+	u8:u8
+	s16:i16
+	u16:u16
+	s32:i32
+	u32:u32
+}
+
+fn main() {
+	S { s8=-1 u8=255 s16=-1 u16=65535 s32=-1 u32=4294967295 } -> p
+
+	// Signed variants sign-extend; unsigned zero-extend.
+	p <<s8 print nl    // -1
+	p <<u8 print nl    // 255
+	p <<s16 print nl   // -1
+	p <<u16 print nl   // 65535
+	p <<s32 print nl   // -1
+	p <<u32 print nl   // 4294967295
+
+	// Large signed value in u8 truncates to the low byte.
+	S { s8=0 u8=257 s16=0 u16=0 s32=0 u32=0 } -> q
+	q <<u8 print nl    // 1 (257 mod 256)
+}

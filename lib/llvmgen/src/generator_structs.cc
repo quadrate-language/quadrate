@@ -38,10 +38,14 @@ namespace Qd {
 	}
 
 	size_t LlvmGenerator::Impl::getTypeSize(const std::string& typeName) {
-		if (typeName == "i64" || typeName == "f64") {
+		if (typeName == "i64" || typeName == "u64" || typeName == "f64") {
 			return 8;
-		} else if (typeName == "i32" || typeName == "f32") {
+		} else if (typeName == "i32" || typeName == "u32" || typeName == "f32") {
 			return 4;
+		} else if (typeName == "i16" || typeName == "u16") {
+			return 2;
+		} else if (typeName == "i8" || typeName == "u8") {
+			return 1;
 		} else if (typeName == "str" || typeName.find('*') != std::string::npos) {
 			return 8; // Pointer size
 		} else if (looksLikeStructType(typeName) && isKnownStruct(typeName)) {
@@ -61,9 +65,16 @@ namespace Qd {
 			layout.name = structDecl->name();
 		}
 		layout.isPublic = structDecl->isPublic();
+		layout.isPacked = structDecl->isPacked();
 		layout.totalSize = 0;
 
-		// Calculate field offsets
+		// Calculate field offsets.
+		// Default (un-packed) layout rounds each field up to an 8-byte slot —
+		// a single fixed alignment that handles pointers, i64, and f64 uniformly
+		// without needing per-type natural alignment. For `packed struct`, fields
+		// are laid out back-to-back at their exact size, matching C's
+		// __attribute__((packed)) and `#pragma pack(1)`. This is required for
+		// parsing on-disk binary formats like WAD files.
 		for (const auto& field : structDecl->fields()) {
 			FieldInfo fieldInfo;
 			fieldInfo.name = field->name();
@@ -98,10 +109,9 @@ namespace Qd {
 			// Add field to layout
 			layout.fields.push_back(fieldInfo);
 
-			// Update total size with alignment (8-byte alignment)
 			layout.totalSize += fieldInfo.size;
-			if (layout.totalSize % 8 != 0) {
-				layout.totalSize = (layout.totalSize + 7) & ~static_cast<size_t>(7); // Round up to next 8-byte boundary
+			if (!layout.isPacked && layout.totalSize % 8 != 0) {
+				layout.totalSize = (layout.totalSize + 7) & ~static_cast<size_t>(7);
 			}
 		}
 
@@ -386,13 +396,21 @@ namespace Qd {
 			if (field.typeName == "f64") {
 				llvm::Value* floatValue = builder->CreateLoad(builder->getDoubleTy(), valuePtr, "float_val");
 				builder->CreateStore(floatValue, bytePtr);
-			} else if (field.typeName == "i64") {
+			} else if (field.typeName == "i64" || field.typeName == "u64") {
 				llvm::Value* intValue = builder->CreateLoad(int64Ty, valuePtr, "int_val");
 				builder->CreateStore(intValue, bytePtr);
-			} else if (field.typeName == "i32") {
+			} else if (field.typeName == "i32" || field.typeName == "u32") {
 				// Load as i64 from stack (stack elements are always 64-bit), truncate to i32
 				llvm::Value* intValue = builder->CreateLoad(int64Ty, valuePtr, "int_val");
 				llvm::Value* truncValue = builder->CreateTrunc(intValue, int32Ty, "int32_val");
+				builder->CreateStore(truncValue, bytePtr);
+			} else if (field.typeName == "i16" || field.typeName == "u16") {
+				llvm::Value* intValue = builder->CreateLoad(int64Ty, valuePtr, "int_val");
+				llvm::Value* truncValue = builder->CreateTrunc(intValue, builder->getInt16Ty(), "int16_val");
+				builder->CreateStore(truncValue, bytePtr);
+			} else if (field.typeName == "i8" || field.typeName == "u8") {
+				llvm::Value* intValue = builder->CreateLoad(int64Ty, valuePtr, "int_val");
+				llvm::Value* truncValue = builder->CreateTrunc(intValue, builder->getInt8Ty(), "int8_val");
 				builder->CreateStore(truncValue, bytePtr);
 			} else if (field.typeName == "ptr" || field.typeName == "str" ||
 					   field.typeName.find('*') != std::string::npos || isArrayType(field.typeName) ||
@@ -650,7 +668,7 @@ namespace Qd {
 			llvm::Value* floatValue = builder->CreateLoad(builder->getDoubleTy(), bytePtr, "field_value");
 			builder->CreateCall(pushFloatFn, {ctx, floatValue});
 			lastFieldAccessResultType.clear(); // Not a struct type
-		} else if (matchingField->typeName == "i64") {
+		} else if (matchingField->typeName == "i64" || matchingField->typeName == "u64") {
 			llvm::Value* intValue = builder->CreateLoad(int64Ty, bytePtr, "field_value");
 			builder->CreateCall(pushIntFn, {ctx, intValue});
 			lastFieldAccessResultType.clear(); // Not a struct type
@@ -660,6 +678,31 @@ namespace Qd {
 			llvm::Value* intValue = builder->CreateSExt(int32Value, int64Ty, "field_value");
 			builder->CreateCall(pushIntFn, {ctx, intValue});
 			lastFieldAccessResultType.clear(); // Not a struct type
+		} else if (matchingField->typeName == "u32") {
+			llvm::Value* int32Value = builder->CreateLoad(int32Ty, bytePtr, "field_value_u32");
+			llvm::Value* intValue = builder->CreateZExt(int32Value, int64Ty, "field_value");
+			builder->CreateCall(pushIntFn, {ctx, intValue});
+			lastFieldAccessResultType.clear();
+		} else if (matchingField->typeName == "i16") {
+			llvm::Value* int16Value = builder->CreateLoad(builder->getInt16Ty(), bytePtr, "field_value_i16");
+			llvm::Value* intValue = builder->CreateSExt(int16Value, int64Ty, "field_value");
+			builder->CreateCall(pushIntFn, {ctx, intValue});
+			lastFieldAccessResultType.clear();
+		} else if (matchingField->typeName == "u16") {
+			llvm::Value* int16Value = builder->CreateLoad(builder->getInt16Ty(), bytePtr, "field_value_u16");
+			llvm::Value* intValue = builder->CreateZExt(int16Value, int64Ty, "field_value");
+			builder->CreateCall(pushIntFn, {ctx, intValue});
+			lastFieldAccessResultType.clear();
+		} else if (matchingField->typeName == "i8") {
+			llvm::Value* int8Value = builder->CreateLoad(builder->getInt8Ty(), bytePtr, "field_value_i8");
+			llvm::Value* intValue = builder->CreateSExt(int8Value, int64Ty, "field_value");
+			builder->CreateCall(pushIntFn, {ctx, intValue});
+			lastFieldAccessResultType.clear();
+		} else if (matchingField->typeName == "u8") {
+			llvm::Value* int8Value = builder->CreateLoad(builder->getInt8Ty(), bytePtr, "field_value_u8");
+			llvm::Value* intValue = builder->CreateZExt(int8Value, int64Ty, "field_value");
+			builder->CreateCall(pushIntFn, {ctx, intValue});
+			lastFieldAccessResultType.clear();
 		} else if (matchingField->typeName == "str") {
 			llvm::Value* fieldPtr = bytePtr;
 			llvm::Value* ptrValue = builder->CreateLoad(ptrTy, fieldPtr, "field_value");
@@ -812,12 +855,20 @@ namespace Qd {
 			if (matchingField->typeName == "f64") {
 				llvm::Value* floatValue = builder->CreateLoad(builder->getDoubleTy(), valuePtr, "float_val");
 				builder->CreateStore(floatValue, bytePtr);
-			} else if (matchingField->typeName == "i64") {
+			} else if (matchingField->typeName == "i64" || matchingField->typeName == "u64") {
 				llvm::Value* intValue = builder->CreateLoad(int64Ty, valuePtr, "int_val");
 				builder->CreateStore(intValue, bytePtr);
-			} else if (matchingField->typeName == "i32") {
+			} else if (matchingField->typeName == "i32" || matchingField->typeName == "u32") {
 				llvm::Value* intValue = builder->CreateLoad(int64Ty, valuePtr, "int_val");
 				llvm::Value* truncValue = builder->CreateTrunc(intValue, int32Ty, "int32_val");
+				builder->CreateStore(truncValue, bytePtr);
+			} else if (matchingField->typeName == "i16" || matchingField->typeName == "u16") {
+				llvm::Value* intValue = builder->CreateLoad(int64Ty, valuePtr, "int_val");
+				llvm::Value* truncValue = builder->CreateTrunc(intValue, builder->getInt16Ty(), "int16_val");
+				builder->CreateStore(truncValue, bytePtr);
+			} else if (matchingField->typeName == "i8" || matchingField->typeName == "u8") {
+				llvm::Value* intValue = builder->CreateLoad(int64Ty, valuePtr, "int_val");
+				llvm::Value* truncValue = builder->CreateTrunc(intValue, builder->getInt8Ty(), "int8_val");
 				builder->CreateStore(truncValue, bytePtr);
 			} else if (matchingField->typeName == "ptr" || matchingField->typeName == "str" ||
 					   matchingField->typeName.find('*') != std::string::npos || isArrayType(matchingField->typeName) ||
@@ -991,13 +1042,21 @@ namespace Qd {
 		if (matchingField->typeName == "f64") {
 			llvm::Value* floatValue = builder->CreateLoad(builder->getDoubleTy(), valuePtr, "float_val");
 			builder->CreateStore(floatValue, bytePtr);
-		} else if (matchingField->typeName == "i64") {
+		} else if (matchingField->typeName == "i64" || matchingField->typeName == "u64") {
 			llvm::Value* intValue = builder->CreateLoad(int64Ty, valuePtr, "int_val");
 			builder->CreateStore(intValue, bytePtr);
-		} else if (matchingField->typeName == "i32") {
+		} else if (matchingField->typeName == "i32" || matchingField->typeName == "u32") {
 			// Load as i64 from stack (stack elements are always 64-bit), truncate to i32
 			llvm::Value* intValue = builder->CreateLoad(int64Ty, valuePtr, "int_val");
 			llvm::Value* truncValue = builder->CreateTrunc(intValue, int32Ty, "int32_val");
+			builder->CreateStore(truncValue, bytePtr);
+		} else if (matchingField->typeName == "i16" || matchingField->typeName == "u16") {
+			llvm::Value* intValue = builder->CreateLoad(int64Ty, valuePtr, "int_val");
+			llvm::Value* truncValue = builder->CreateTrunc(intValue, builder->getInt16Ty(), "int16_val");
+			builder->CreateStore(truncValue, bytePtr);
+		} else if (matchingField->typeName == "i8" || matchingField->typeName == "u8") {
+			llvm::Value* intValue = builder->CreateLoad(int64Ty, valuePtr, "int_val");
+			llvm::Value* truncValue = builder->CreateTrunc(intValue, builder->getInt8Ty(), "int8_val");
 			builder->CreateStore(truncValue, bytePtr);
 		} else if (matchingField->typeName == "ptr" || matchingField->typeName == "str" ||
 				   matchingField->typeName.find('*') != std::string::npos ||

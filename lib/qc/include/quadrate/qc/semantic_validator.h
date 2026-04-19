@@ -275,6 +275,16 @@ namespace Qd {
 		// Symbol table: all defined constants
 		std::unordered_set<std::string> mDefinedConstants;
 
+		// Symbol table: module-level `var` (mutable) — read like a constant,
+		// writable via `-> name`. Tracked separately from constants so the
+		// codegen can emit a load/store pair rather than a baked-in value.
+		std::unordered_set<std::string> mDefinedGlobalVars;
+		// Parallel map from global var name to declared type string ("i64",
+		// "f64", "ptr", "str", or a sized-int like "i32"). Used by the
+		// type-check pass to push the correct StackValueType when a global
+		// is referenced.
+		std::unordered_map<std::string, std::string> mGlobalVarTypes;
+
 		// Symbol table: all defined structs
 		std::unordered_set<std::string> mDefinedStructs;
 

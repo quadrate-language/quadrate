@@ -313,6 +313,12 @@ namespace Qd {
 					StackValueType constType = getConstantType(constIt->second);
 					typeStack.push_back(constType);
 				}
+				// Check if it's a module-level mutable `var` — push its
+				// declared type. Lives on the runtime stack.
+				auto gvIt = mGlobalVarTypes.find(name);
+				if (gvIt != mGlobalVarTypes.end()) {
+					typeStack.push_back(stringToStackValueType(gvIt->second));
+				}
 				// If signature not known yet, skip (will be resolved in next iteration)
 				break;
 			}
@@ -1663,6 +1669,14 @@ namespace Qd {
 					// Push the constant's type onto the stack
 					StackValueType constType = getConstantType(constIt->second);
 					typeStack.push_back(constType);
+					structTypeStack.push_back("");
+					break;
+				}
+
+				// Module-level `var`. Pushes its declared type on the stack.
+				auto gvIt2 = mGlobalVarTypes.find(name);
+				if (gvIt2 != mGlobalVarTypes.end()) {
+					typeStack.push_back(stringToStackValueType(gvIt2->second));
 					structTypeStack.push_back("");
 					break;
 				}

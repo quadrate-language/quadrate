@@ -71,6 +71,14 @@ namespace Qd {
 			return mIsPublic;
 		}
 
+		bool isPacked() const {
+			return mIsPacked;
+		}
+
+		void setPacked(bool packed) {
+			mIsPacked = packed;
+		}
+
 		void addField(AstNodeStructField* field) {
 			mFields.emplace_back(field);
 		}
@@ -95,6 +103,7 @@ namespace Qd {
 		std::string mName;
 		std::vector<std::string> mTypeParams;
 		bool mIsPublic;
+		bool mIsPacked = false;
 		std::vector<std::unique_ptr<AstNodeStructField>> mFields;
 		IAstNode* mParent;
 		size_t mLine;

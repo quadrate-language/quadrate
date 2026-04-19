@@ -1,0 +1,30 @@
+// packed struct: no padding between fields.
+// Fields are laid out at their exact width, adjacent in memory.
+
+packed struct Pair {
+	a:i16
+	b:i16
+}
+
+packed struct Mixed {
+	tag:u8
+	count:i32
+	flag:u8
+}
+
+fn main() {
+	Pair { a=-1000 b=500 } -> p
+	p <<a print nl              // -1000
+	p <<b print nl              // 500
+
+	Mixed { tag=0x42 count=12345 flag=0x99 } -> m
+	m <<tag print nl            // 66
+	m <<count print nl          // 12345
+	m <<flag print nl           // 153
+
+	// Writing into packed fields still truncates at the field width.
+	Mixed { tag=300 count=0x1FFFFFFFF flag=-1 } -> over
+	over <<tag print nl         // 44 (300 & 0xFF)
+	over <<count print nl       // -1 (0xFFFFFFFF low 32 bits, sign-extended)
+	over <<flag print nl        // 255
+}

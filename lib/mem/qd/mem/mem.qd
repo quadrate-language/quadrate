@@ -52,6 +52,47 @@ import "libmem.a" as "mem" {
 	/// @example buf 0 mem::get_byte -> b
 	pub fn get_byte(address:ptr offset:i64 -- value:i64)
 
+	/// Set a signed 8-bit integer at offset. Stored value is the low byte of `value`.
+	/// @param value i64 Integer value (low 8 bits used)
+	/// @param address ptr Base address
+	/// @param offset i64 Byte offset from base
+	pub fn set_i8(value:i64 address:ptr offset:i64 -- )
+
+	/// Set an unsigned 8-bit integer at offset. Stored value is the low byte of `value`.
+	pub fn set_u8(value:i64 address:ptr offset:i64 -- )
+
+	/// Get a signed 8-bit integer at offset (sign-extended to i64).
+	/// @return value i64 Sign-extended value (-128..127)
+	pub fn get_i8(address:ptr offset:i64 -- value:i64)
+
+	/// Get an unsigned 8-bit integer at offset (zero-extended to i64).
+	/// @return value i64 Zero-extended value (0..255)
+	pub fn get_u8(address:ptr offset:i64 -- value:i64)
+
+	/// Set a signed 16-bit integer at offset. Stored as low 2 bytes of `value`.
+	pub fn set_i16(value:i64 address:ptr offset:i64 -- )
+
+	/// Set an unsigned 16-bit integer at offset. Stored as low 2 bytes of `value`.
+	pub fn set_u16(value:i64 address:ptr offset:i64 -- )
+
+	/// Get a signed 16-bit integer at offset (sign-extended to i64).
+	pub fn get_i16(address:ptr offset:i64 -- value:i64)
+
+	/// Get an unsigned 16-bit integer at offset (zero-extended to i64).
+	pub fn get_u16(address:ptr offset:i64 -- value:i64)
+
+	/// Set a signed 32-bit integer at offset. Stored as low 4 bytes of `value`.
+	pub fn set_i32(value:i64 address:ptr offset:i64 -- )
+
+	/// Set an unsigned 32-bit integer at offset. Stored as low 4 bytes of `value`.
+	pub fn set_u32(value:i64 address:ptr offset:i64 -- )
+
+	/// Get a signed 32-bit integer at offset (sign-extended to i64).
+	pub fn get_i32(address:ptr offset:i64 -- value:i64)
+
+	/// Get an unsigned 32-bit integer at offset (zero-extended to i64).
+	pub fn get_u32(address:ptr offset:i64 -- value:i64)
+
 	/// Set a 64-bit integer at offset.
 	/// @param value i64 Integer value
 	/// @param address ptr Base address

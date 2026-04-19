@@ -1,4 +1,5 @@
 #include "ast_parse.h"
+#include <quadrate/qc/ast_node_global_var.h>
 
 namespace Qd {
 
@@ -96,6 +97,49 @@ namespace Qd {
 
 		errorReporter->reportError(scanner, "Expected literal value or env() after '=' in constant declaration");
 		return "";
+	}
+
+	// Parse `var name:type = literal` after the `var` keyword has been consumed.
+	// Installs a GLOBAL_VAR_DECLARATION node on `program` on success.
+	// Shared between the `pub var` and bare `var` paths.
+	static void parseGlobalVarAfterKeyword(
+			u8t_scanner* scanner, ErrorReporter* errorReporter, const char* src,
+			bool isPublic, AstProgram* program) {
+		size_t n;
+		char32_t token = u8t_scanner_scan(scanner);
+		if (token != U8T_IDENTIFIER) {
+			errorReporter->reportError(scanner, "Expected variable name after 'var'");
+			return;
+		}
+		std::string varName(u8t_scanner_token_text(scanner, &n));
+
+		token = u8t_scanner_scan(scanner);
+		if (token != ':') {
+			errorReporter->reportError(scanner, "Expected ':' after var name (type annotation required)");
+			return;
+		}
+
+		token = u8t_scanner_scan(scanner);
+		if (token != U8T_IDENTIFIER) {
+			errorReporter->reportError(scanner, "Expected type name after ':'");
+			return;
+		}
+		std::string typeName(u8t_scanner_token_text(scanner, &n));
+
+		token = u8t_scanner_scan(scanner);
+		if (token != '=') {
+			errorReporter->reportError(scanner, "Expected '=' after var type");
+			return;
+		}
+
+		std::string value = parseConstantValue(scanner, errorReporter);
+		if (value.empty()) {
+			return;
+		}
+		auto* varDecl = new AstNodeGlobalVar(varName, typeName, value.c_str(), isPublic);
+		setNodePosition(varDecl, scanner, src);
+		varDecl->setParent(program);
+		program->addChild(varDecl);
 	}
 
 	IAstNode* Ast::generate(const char* src, bool dumpTokens, const char* filename) {
@@ -219,13 +263,18 @@ namespace Qd {
 				const char* text = u8t_scanner_token_text(&scanner, &n);
 
 				if (strcmp(text, "pub") == 0) {
-					// Check if next token is "fn", "inline", "const", or "struct"
+					// Check if next token is "fn", "inline", "packed", "const", or "struct"
 					token = u8t_scanner_scan(&scanner);
 					if (token == U8T_IDENTIFIER) {
 						const char* nextText = u8t_scanner_token_text(&scanner, &n);
 						bool isInline = false;
+						bool isPacked = false;
 						if (strcmp(nextText, "inline") == 0) {
 							isInline = true;
+							token = u8t_scanner_scan(&scanner);
+							nextText = u8t_scanner_token_text(&scanner, &n);
+						} else if (strcmp(nextText, "packed") == 0) {
+							isPacked = true;
 							token = u8t_scanner_scan(&scanner);
 							nextText = u8t_scanner_token_text(&scanner, &n);
 						}
@@ -239,6 +288,9 @@ namespace Qd {
 						} else if (strcmp(nextText, "struct") == 0) {
 							IAstNode* structDecl = parseStructDeclaration(&scanner, &errorReporter, src, true);
 							if (structDecl) {
+								if (isPacked) {
+									static_cast<AstNodeStructDeclaration*>(structDecl)->setPacked(true);
+								}
 								structDecl->setParent(program);
 								program->addChild(structDecl);
 							}
@@ -277,9 +329,11 @@ namespace Qd {
 								errorReporter.reportError(&scanner, "Expected constant name after 'pub const'");
 								synchronize(&scanner);
 							}
+						} else if (strcmp(nextText, "var") == 0) {
+							parseGlobalVarAfterKeyword(&scanner, &errorReporter, src, true, program);
 						} else {
 							errorReporter.reportError(
-									&scanner, "Expected 'fn', 'struct', 'enum', 'type', or 'const' after 'pub'");
+									&scanner, "Expected 'fn', 'struct', 'enum', 'type', 'const', or 'var' after 'pub'");
 							synchronize(&scanner);
 						}
 					} else {
@@ -312,6 +366,26 @@ namespace Qd {
 					if (func) {
 						func->setParent(program);
 						program->addChild(func);
+					}
+				} else if (strcmp(text, "packed") == 0) {
+					// `packed struct ...` — non-public packed struct
+					token = u8t_scanner_scan(&scanner);
+					if (token == U8T_IDENTIFIER) {
+						const char* nextText = u8t_scanner_token_text(&scanner, &n);
+						if (strcmp(nextText, "struct") == 0) {
+							IAstNode* structDecl = parseStructDeclaration(&scanner, &errorReporter, src, false);
+							if (structDecl) {
+								static_cast<AstNodeStructDeclaration*>(structDecl)->setPacked(true);
+								structDecl->setParent(program);
+								program->addChild(structDecl);
+							}
+						} else {
+							errorReporter.reportError(&scanner, "Expected 'struct' after 'packed'");
+							synchronize(&scanner);
+						}
+					} else {
+						errorReporter.reportError(&scanner, "Expected 'struct' after 'packed'");
+						synchronize(&scanner);
 					}
 				} else if (strcmp(text, "struct") == 0) {
 					IAstNode* structDecl = parseStructDeclaration(&scanner, &errorReporter, src, false);
@@ -620,6 +694,8 @@ namespace Qd {
 					} else {
 						errorReporter.reportError(&scanner, "Expected constant name after 'const'");
 					}
+				} else if (strcmp(text, "var") == 0) {
+					parseGlobalVarAfterKeyword(&scanner, &errorReporter, src, false, program);
 				} else if (strcmp(text, "test") == 0) {
 					IAstNode* testDecl = parseTestDeclaration(&scanner, &errorReporter, src);
 					if (testDecl) {

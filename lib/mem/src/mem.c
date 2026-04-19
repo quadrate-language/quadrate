@@ -230,6 +230,94 @@ int usr_mem_get_ptr(qd_context* ctx) {
 	return qd_push_p(ctx, value);
 }
 
+/* Sized integer accessors. Stack values are always i64; these narrow on
+ * store and extend (sign or zero) on load, so user code can use i64
+ * arithmetic freely and only worry about widths at memory boundaries. */
+
+/* set_i8 / set_u8 share one implementation: the low byte is written. */
+static int store_narrow_int(qd_context* ctx, const char* label, size_t width) {
+	int64_t value, offset;
+	void* address;
+
+	if (pop_int(ctx, &offset) != QD_STACK_OK ||
+			pop_ptr(ctx, &address) != QD_STACK_OK ||
+			pop_int(ctx, &value) != QD_STACK_OK) {
+		return -1;
+	}
+
+	if (address == NULL) {
+		(void)label;
+		MEM_SET_ERR(ctx, "Null pointer in mem sized-int store");
+		return -1;
+	}
+
+	char* dst = (char*)address + offset;
+	switch (width) {
+	case 1: *(uint8_t*)dst = (uint8_t)(value & 0xFF); break;
+	case 2: {
+		uint16_t v16 = (uint16_t)(value & 0xFFFF);
+		memcpy(dst, &v16, 2);
+		break;
+	}
+	case 4: {
+		uint32_t v32 = (uint32_t)(value & 0xFFFFFFFFu);
+		memcpy(dst, &v32, 4);
+		break;
+	}
+	}
+	return 0;
+}
+
+int usr_mem_set_i8(qd_context* ctx) { return store_narrow_int(ctx, "set_i8", 1); }
+int usr_mem_set_u8(qd_context* ctx) { return store_narrow_int(ctx, "set_u8", 1); }
+int usr_mem_set_i16(qd_context* ctx) { return store_narrow_int(ctx, "set_i16", 2); }
+int usr_mem_set_u16(qd_context* ctx) { return store_narrow_int(ctx, "set_u16", 2); }
+int usr_mem_set_i32(qd_context* ctx) { return store_narrow_int(ctx, "set_i32", 4); }
+int usr_mem_set_u32(qd_context* ctx) { return store_narrow_int(ctx, "set_u32", 4); }
+
+int usr_mem_get_i8(qd_context* ctx) {
+	int64_t offset; void* address;
+	if (pop_int(ctx, &offset) != QD_STACK_OK || pop_ptr(ctx, &address) != QD_STACK_OK) return -1;
+	if (address == NULL) { MEM_SET_ERR(ctx, "Null pointer in mem::get_i8"); return -1; }
+	int8_t v = *((int8_t*)((char*)address + offset));
+	return qd_push_i(ctx, (int64_t)v);  /* sign-extend */
+}
+int usr_mem_get_u8(qd_context* ctx) {
+	int64_t offset; void* address;
+	if (pop_int(ctx, &offset) != QD_STACK_OK || pop_ptr(ctx, &address) != QD_STACK_OK) return -1;
+	if (address == NULL) { MEM_SET_ERR(ctx, "Null pointer in mem::get_u8"); return -1; }
+	uint8_t v = *((uint8_t*)((char*)address + offset));
+	return qd_push_i(ctx, (int64_t)v);  /* zero-extend */
+}
+int usr_mem_get_i16(qd_context* ctx) {
+	int64_t offset; void* address;
+	if (pop_int(ctx, &offset) != QD_STACK_OK || pop_ptr(ctx, &address) != QD_STACK_OK) return -1;
+	if (address == NULL) { MEM_SET_ERR(ctx, "Null pointer in mem::get_i16"); return -1; }
+	int16_t v; memcpy(&v, (char*)address + offset, 2);
+	return qd_push_i(ctx, (int64_t)v);
+}
+int usr_mem_get_u16(qd_context* ctx) {
+	int64_t offset; void* address;
+	if (pop_int(ctx, &offset) != QD_STACK_OK || pop_ptr(ctx, &address) != QD_STACK_OK) return -1;
+	if (address == NULL) { MEM_SET_ERR(ctx, "Null pointer in mem::get_u16"); return -1; }
+	uint16_t v; memcpy(&v, (char*)address + offset, 2);
+	return qd_push_i(ctx, (int64_t)v);
+}
+int usr_mem_get_i32(qd_context* ctx) {
+	int64_t offset; void* address;
+	if (pop_int(ctx, &offset) != QD_STACK_OK || pop_ptr(ctx, &address) != QD_STACK_OK) return -1;
+	if (address == NULL) { MEM_SET_ERR(ctx, "Null pointer in mem::get_i32"); return -1; }
+	int32_t v; memcpy(&v, (char*)address + offset, 4);
+	return qd_push_i(ctx, (int64_t)v);
+}
+int usr_mem_get_u32(qd_context* ctx) {
+	int64_t offset; void* address;
+	if (pop_int(ctx, &offset) != QD_STACK_OK || pop_ptr(ctx, &address) != QD_STACK_OK) return -1;
+	if (address == NULL) { MEM_SET_ERR(ctx, "Null pointer in mem::get_u32"); return -1; }
+	uint32_t v; memcpy(&v, (char*)address + offset, 4);
+	return qd_push_i(ctx, (int64_t)v);
+}
+
 /* Copy memory: dst src bytes -> memcpy(dst, src, bytes) */
 int usr_mem_copy(qd_context* ctx) {
 	int64_t bytes;

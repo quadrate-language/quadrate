@@ -667,6 +667,9 @@ namespace Qd {
 			if (node->isPublic()) {
 				mOutput << "pub ";
 			}
+			if (node->isPacked()) {
+				mOutput << "packed ";
+			}
 			mOutput << "struct " << node->name();
 			if (node->isGeneric()) {
 				mOutput << "<";

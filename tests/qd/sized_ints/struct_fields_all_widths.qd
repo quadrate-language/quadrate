@@ -1,0 +1,37 @@
+// Sized integer types (i8/i16/i32/u8/u16/u32/u64) in struct fields.
+// Stack values stay i64; fields are narrower in memory.
+// Load sign-extends signed types and zero-extends unsigned types.
+// Store truncates to the field width.
+
+struct AllSized {
+	a:i8
+	b:u8
+	c:i16
+	d:u16
+	e:i32
+	f:u32
+	g:i64
+	h:u64
+}
+
+fn main() {
+	AllSized {
+		a = -5
+		b = 200
+		c = -1000
+		d = 60000
+		e = -100000
+		f = 3000000000
+		g = -9000000000
+		h = 12345
+	} -> p
+
+	p <<a print nl
+	p <<b print nl
+	p <<c print nl
+	p <<d print nl
+	p <<e print nl
+	p <<f print nl
+	p <<g print nl
+	p <<h print nl
+}

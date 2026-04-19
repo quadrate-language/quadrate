@@ -23,6 +23,7 @@ extern "C" {
 #include <quadrate/qc/ast_node_ctx.h>
 #include <quadrate/qc/ast_node_defer.h>
 #include <quadrate/qc/ast_node_enum.h>
+#include <quadrate/qc/ast_node_global_var.h>
 #include <quadrate/qc/ast_node_field_access.h>
 #include <quadrate/qc/ast_node_field_set.h>
 #include <quadrate/qc/ast_node_for.h>
@@ -877,6 +878,16 @@ namespace Qd {
 					mDefinedEnums.insert(enumNode->name());
 				}
 			}
+			// Collect module-level `var` declarations so reads from the
+			// importing file don't trigger "undefined identifier" errors.
+			for (size_t i = 0; i < moduleAstRoot->childCount(); i++) {
+				IAstNode* child = moduleAstRoot->child(i);
+				if (child && child->type() == IAstNode::Type::GLOBAL_VAR_DECLARATION) {
+					auto* varNode = static_cast<AstNodeGlobalVar*>(child);
+					mDefinedGlobalVars.insert(varNode->name());
+					mGlobalVarTypes[varNode->name()] = varNode->typeName();
+				}
+			}
 		}
 
 		// Also collect constant values
@@ -1073,7 +1084,8 @@ namespace Qd {
 				const std::string& typeName = field->typeName();
 				if (typeName == "f64") {
 					fieldType = StackValueType::FLOAT;
-				} else if (typeName == "i64") {
+				} else if (typeName == "i64" || typeName == "i32" || typeName == "i16" || typeName == "i8" ||
+						typeName == "u64" || typeName == "u32" || typeName == "u16" || typeName == "u8") {
 					fieldType = StackValueType::INT;
 				} else if (typeName == "str") {
 					fieldType = StackValueType::STRING;
