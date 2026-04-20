@@ -1561,7 +1561,7 @@ declaration     = use_stmt | const_decl | var_decl | enum_decl | type_alias_decl
 
 use_stmt        = "use" ( identifier | string ) ;
 const_decl      = "const" identifier "=" expression ;
-var_decl        = ["pub"] "var" identifier ":" type "=" ( literal | const_name ) ;
+var_decl        = ["pub"] "var" identifier [ ":" type ] "=" ( literal | const_name | struct_construction ) ;
 enum_decl       = ["pub"] "enum" identifier "{" { enum_variant } "}" ;
 enum_variant    = identifier [ "=" integer ] ;
 type_alias_decl = ["pub"] "type" identifier "=" type ;

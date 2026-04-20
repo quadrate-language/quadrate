@@ -1674,12 +1674,17 @@ namespace Qd {
 				}
 
 				// Module-level `var`. Pushes its declared type on the stack.
+				// If the declared type is a struct name, carry the struct type
+				// forward so a following `<<field` access resolves to the
+				// right layout.
 				auto gvIt2 = mGlobalVarTypes.find(name);
 				if (gvIt2 != mGlobalVarTypes.end()) {
-					typeStack.push_back(stringToStackValueType(gvIt2->second));
-					structTypeStack.push_back("");
+					const std::string& gvType = gvIt2->second;
+					typeStack.push_back(stringToStackValueType(gvType));
+					structTypeStack.push_back(isStructTypeName(gvType) ? gvType : "");
 					break;
 				}
+
 
 				// Check if it's a struct construction
 				if (mDefinedStructs.find(name) != mDefinedStructs.end()) {

@@ -1,0 +1,17 @@
+struct Point {
+	x:f64
+	y:f64
+}
+
+struct Player {
+	name:str
+	hp:i64
+}
+
+var   origin   =   Point { x = 1.0 y = 2.0 }
+pub  var  hero  =  Player { name = "Hero" hp = 100 }
+
+fn main() {
+	origin <<x print nl
+	hero <<name print nl
+}

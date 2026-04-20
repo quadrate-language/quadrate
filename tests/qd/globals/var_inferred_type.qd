@@ -1,0 +1,30 @@
+// `var` type annotation is optional; the type is inferred from the
+// initializer. Int literals → i64, float literals → f64, string literals
+// → str. A const-reference initializer inherits the const's type.
+
+const MAX = 1000
+const RATIO = 2.5
+
+var counter = 0           // inferred i64
+var ratio = 3.14          // inferred f64
+var label = "hello"       // inferred str (string globals still null-init)
+var limit = MAX           // inferred i64 (from const's value shape)
+var scale = RATIO         // inferred f64 (from const's value shape)
+
+fn bump() {
+	counter 1 + -> counter
+}
+
+fn main() {
+	counter print nl         // 0
+	ratio print nl           // 3.14
+	limit print nl           // 1000
+	scale print nl           // 2.5
+
+	bump bump
+	counter print nl         // 2
+
+	// Writing a wider value works because storage is i64.
+	0x1FFFFFFFF -> counter
+	counter print nl         // 8589934591
+}

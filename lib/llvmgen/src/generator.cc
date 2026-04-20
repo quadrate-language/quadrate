@@ -702,6 +702,27 @@ namespace Qd {
 			auto lineNum = builder->getInt64(funcNode->line());
 			builder->CreateCall(pushCallFn, {ctx, funcNameStr, sourceFileStr, lineNum});
 
+			// Module struct-global init: run each pending struct construction
+			// and store the resulting pointer into its LLVM global, so user
+			// code sees a fully constructed value. Uses the runtime stack
+			// path explicitly (useCompileTimeStack is still false here).
+			for (auto& pending : pendingStructGlobalInits) {
+				llvm::GlobalVariable* gv = pending.first;
+				IAstNode* initNode = pending.second;
+				generateNode(initNode, ctx);
+
+				// Pop the just-pushed struct pointer and store into the global.
+				llvm::Value* initStackPtrPtr =
+						builder->CreateStructGEP(contextStructTy, ctx, 0, "init_stack_ptr_ptr");
+				llvm::Value* initStackPtr = builder->CreateLoad(ptrTy, initStackPtrPtr, "init_stack_ptr");
+				llvm::AllocaInst* initTmp = builder->CreateAlloca(stackElementTy, nullptr, "init_tmp");
+				builder->CreateCall(stackPopFn, {initStackPtr, initTmp});
+				llvm::Value* initVp = builder->CreateStructGEP(stackElementTy, initTmp, 0, "init_vp");
+				llvm::Value* initV = builder->CreateLoad(ptrTy, initVp, "init_ptr");
+				auto* initStore = builder->CreateStore(initV, gv);
+				initStore->setVolatile(true);
+			}
+
 			// Detect if main function body only uses integers (for type specialization)
 			currentFunctionIsIntegerOnly = true;
 			std::set<std::string> mainLocalNames;
@@ -2135,6 +2156,20 @@ namespace Qd {
 				llvm::Type* ty = nullptr;
 				llvm::Constant* init = nullptr;
 
+				// Struct-construction initializer: the LLVM global is just a
+				// null pointer here; a module-init sequence inside main will
+				// run the construction and store the resulting pointer.
+				if (varNode->initializerNode() != nullptr) {
+					ty = ptrTy;
+					init = llvm::ConstantPointerNull::get(ptrTy);
+					auto* gv = new llvm::GlobalVariable(*module, ty,
+							/*isConstant=*/false, llvm::GlobalValue::InternalLinkage, init, "qd_global_" + name);
+					moduleGlobalVars[name] = gv;
+					moduleGlobalVarTypes[name] = typeName;
+					pendingStructGlobalInits.emplace_back(gv, varNode->initializerNode());
+					continue;
+				}
+
 				if (typeName == "f64") {
 					ty = builder->getDoubleTy();
 					double d = 0.0;
@@ -2173,6 +2208,7 @@ namespace Qd {
 			}
 		}
 		printTiming("collectGlobalVars");
+
 
 		// Process struct declarations from all modules
 		for (const auto& modulePair : moduleASTs) {

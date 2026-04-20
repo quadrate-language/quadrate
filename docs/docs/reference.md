@@ -9,7 +9,7 @@ This page documents all Quadrate keywords and built-in instructions.
 | [`fn`](#fn) | Declares a function with a stack signature. |
 | [`pub`](#pub) | Makes a function, constant, or struct visible to other modules. |
 | [`const`](#const) | Declares a compile-time constant value. |
-| [`var`](#var) | Declares a module-level mutable global; `-> name` always writes to the global, never a local. |
+| [`var`](#var) | Declares a module-level mutable global (type annotation optional; inferred from initializer when omitted). |
 | [`struct`](#struct) | Declares a structured data type with named fields. |
 | [`packed`](#packed) | Struct modifier: fields laid out adjacent at exact widths, no padding. Used before `struct`. |
 | [`use`](#use) | Imports a module, making its functions available with module::function syntax. |
@@ -67,15 +67,16 @@ const PI = 3.14159
 
 ### var
 
-Declares a module-level mutable global; `-> name` always writes to the global, never a local.
+Declares a module-level mutable global (type annotation optional; inferred from initializer when omitted).
 
 **Example:**
 
 ```qd
-var counter:i64 = 0
+var counter = 0    // inferred i64
 ```
 
 ---
+
 
 ### struct
 

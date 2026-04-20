@@ -529,8 +529,13 @@ namespace Qd {
 			if (node->isPublic()) {
 				mOutput << "pub ";
 			}
-			mOutput << "var " << node->name() << ":" << node->typeName() << " = " << node->sourceExpr() << "\n";
+			mOutput << "var " << node->name();
+			if (node->hasExplicitType()) {
+				mOutput << ":" << node->typeName();
+			}
+			mOutput << " = " << node->sourceExpr() << "\n";
 		}
+
 
 		// ============================================================
 		// Function declaration

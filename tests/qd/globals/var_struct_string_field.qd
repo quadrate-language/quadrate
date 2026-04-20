@@ -1,0 +1,21 @@
+// Struct globals with string fields. Strings are refcounted; the global
+// holds a reference to the constructed struct, which in turn holds refs
+// to its string fields. This test exercises the refcount path.
+
+struct Player {
+	name:str
+	hp:i64
+	alive:i64
+}
+
+var hero = Player { name = "Hero" hp = 100 alive = 1 }
+pub var boss = Player { name = "Boss" hp = 500 alive = 1 }
+
+fn main() {
+	hero <<name print nl    // Hero
+	hero <<hp print nl      // 100
+	hero <<alive print nl   // 1
+
+	boss <<name print nl    // Boss
+	boss <<hp print nl      // 500
+}

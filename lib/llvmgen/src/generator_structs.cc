@@ -565,6 +565,16 @@ namespace Qd {
 					if (returnTypeIt != functionReturnStructType.end()) {
 						structTypeName = returnTypeIt->second;
 					}
+				} else if (moduleGlobalVars.count(varName) &&
+						isKnownStruct(moduleGlobalVarTypes[varName])) {
+					// Module-level `var` with a struct type — load the struct
+					// pointer from the LLVM global and treat it like a value
+					// that was just pushed onto the stack.
+					llvm::GlobalVariable* gv = moduleGlobalVars[varName];
+					llvm::LoadInst* loadGlobal = builder->CreateLoad(ptrTy, gv, varName + "_gv_load");
+					loadGlobal->setVolatile(true);
+					structPtr = loadGlobal;
+					structTypeName = moduleGlobalVarTypes[varName];
 				} else {
 					// Check if it's a captured variable (by reference)
 					auto capIt = capturedVariableRefs.find(varName);

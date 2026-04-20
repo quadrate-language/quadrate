@@ -87,18 +87,23 @@ const Pi = 3.14159
 
 ### var
 
-Declares a module-level mutable global variable. The type annotation and initializer are both required. Reads use the bare name; writes use `->`. Unlike `const`, the value can change across function calls. Use `pub var` to export.
+Declares a module-level mutable global variable. The initializer is required; the `:type` annotation is optional — when omitted, the type is inferred from the initializer. Reads use the bare name; writes use `->`. Unlike `const`, the value can change across function calls. Use `pub var` to export.
 
 ```qd
-var counter:i64 = 0
-pub var magic:i64 = 42
+var counter = 0           // inferred i64
+var ratio = 3.14          // inferred f64
+var label = "hello"       // inferred str
+pub var magic:i64 = 42    // explicit type still supported
 
 fn bump() {
 	counter 1 + -> counter
 }
 ```
 
-Supported types: `i64`, `f64`, `str` (always null-initialized), `ptr`. Initializers accept a literal or a reference to a previously-declared `const`. A `-> name` assignment inside any function always writes to the matching module-level var — locals never shadow globals; pick a different name if you need a local.
+**Inference rules:** integer literal → `i64`, float literal → `f64`, string literal → `str`, const-reference → the const's type (derived from its value shape). Write `:type` explicitly when you want a narrower type (e.g. `var port:u16 = 8080`) or when the inferred default isn't what you want — the declared type becomes metadata for field/memory-boundary operations; the global's storage is still `i64`-wide for integer kinds.
+
+Supported types: `i64`, `f64`, `str` (always null-initialized), `ptr`, any struct type, plus all sized ints (`i8/i16/i32/u8/u16/u32/u64`) as explicit annotations. Initializers accept a literal, a reference to a previously-declared `const`, or a struct construction (`var p = Point { x = 1.0 y = 2.0 }`). Struct initializers run once before `main` and are stored as a reference-counted pointer in the global. A `-> name` assignment inside any function always writes to the matching module-level var — locals never shadow globals; pick a different name if you need a local.
+
 
 ### struct
 

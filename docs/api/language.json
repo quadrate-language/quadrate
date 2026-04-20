@@ -182,13 +182,15 @@
     {
       "name": "var",
       "category": "Declaration",
-      "description": "Declares a module-level mutable global variable. Type annotation and initializer are required; initializer is a literal or a reference to a previously-declared const. Use pub var to export.",
-      "syntax": "[pub] var NAME:type = value",
+      "description": "Declares a module-level mutable global variable. Initializer is required; the :type annotation is optional — when omitted, the type is inferred from the initializer (int→i64, float→f64, string→str, from a referenced const's value shape, or from a struct construction's type). Struct constructions run once before main. Use pub var to export.",
+      "syntax": "[pub] var NAME [:type] = value",
       "examples": [
-        "var counter:i64 = 0",
+        "var counter = 0",
+        "var ratio = 3.14",
+        "var label = \"hello\"",
         "pub var magic:i64 = 42",
-        "var ratio:f64 = 3.14",
-        "var buf:ptr = 0"
+        "var port:u16 = 8080",
+        "var origin = Point { x = 0.0 y = 0.0 }"
       ]
     },
     {

@@ -1,5 +1,6 @@
 #include "ast_parse.h"
 #include <quadrate/qc/ast_node_global_var.h>
+#include <quadrate/qc/ast_node_struct_construction.h>
 
 namespace Qd {
 
@@ -99,6 +100,24 @@ namespace Qd {
 		return "";
 	}
 
+	// Peek the next non-whitespace character in the scanner's input.
+	// The built-in u8t_scanner_peek returns the raw next codepoint without
+	// skipping whitespace, so `Point {` peeks as `' '` after scanning
+	// `Point`. We reach past the whitespace directly via the scanner's
+	// internal `_str` cursor. Returns 0 at end-of-input.
+	static char32_t peekNextNonWhitespace(u8t_scanner* scanner) {
+		const char* p = scanner->_str;
+		while (p && *p) {
+			unsigned char c = static_cast<unsigned char>(*p);
+			if (c == ' ' || c == '\t' || c == '\n' || c == '\r') {
+				++p;
+				continue;
+			}
+			return static_cast<char32_t>(c);
+		}
+		return 0;
+	}
+
 	// Find a previously-declared constant in `program` by name.
 	// Returns the const's raw value string on success, empty string if not found.
 	static std::string lookupParsedConst(AstProgram* program, const std::string& name) {
@@ -114,11 +133,26 @@ namespace Qd {
 		return "";
 	}
 
-	// Parse `var name:type = <literal-or-const-ref>` after the `var` keyword
-	// has been consumed. Initializer is either a literal (int, float, string)
-	// or the name of a previously-declared `const` — the latter is resolved at
-	// parse time so codegen sees a plain literal. `env()` is intentionally not
-	// supported here; use a const for env-sourced values.
+	// Infer a type name from a raw value string produced by the initializer
+	// parser. Strings are wrapped in quotes; floats contain a `.`; everything
+	// else is treated as i64. Matches the set of literal kinds accepted below.
+	static std::string inferTypeFromValue(const std::string& value) {
+		if (!value.empty() && value.front() == '"') {
+			return "str";
+		}
+		if (value.find('.') != std::string::npos) {
+			return "f64";
+		}
+		return "i64";
+	}
+
+	// Parse `var name [:type] = <literal-or-const-ref>` after the `var`
+	// keyword has been consumed. The `:type` annotation is optional; when
+	// omitted, the type is inferred from the initializer literal (or from the
+	// value of the referenced const). Initializer itself is either a literal
+	// (int, float, string) or the name of a previously-declared `const` —
+	// the latter is resolved at parse time so codegen sees a plain literal.
+	// `env()` is intentionally not supported here; use a const for env values.
 	// Shared between the `pub var` and bare `var` paths.
 	static void parseGlobalVarAfterKeyword(
 			u8t_scanner* scanner, ErrorReporter* errorReporter, const char* src, bool isPublic, AstProgram* program) {
@@ -130,30 +164,35 @@ namespace Qd {
 		}
 		std::string varName(u8t_scanner_token_text(scanner, &n));
 
-		token = u8t_scanner_scan(scanner);
-		if (token != ':') {
-			errorReporter->reportError(scanner, "Expected ':' after var name (type annotation required)");
-			return;
-		}
+		std::string typeName;
+		bool hasExplicitType = false;
 
 		token = u8t_scanner_scan(scanner);
-		if (token != U8T_IDENTIFIER) {
-			errorReporter->reportError(scanner, "Expected type name after ':'");
-			return;
+		if (token == ':') {
+			// Explicit type annotation.
+			token = u8t_scanner_scan(scanner);
+			if (token != U8T_IDENTIFIER) {
+				errorReporter->reportError(scanner, "Expected type name after ':'");
+				return;
+			}
+			typeName = u8t_scanner_token_text(scanner, &n);
+			hasExplicitType = true;
+			token = u8t_scanner_scan(scanner);
 		}
-		std::string typeName(u8t_scanner_token_text(scanner, &n));
 
-		token = u8t_scanner_scan(scanner);
 		if (token != '=') {
-			errorReporter->reportError(scanner, "Expected '=' after var type");
+			errorReporter->reportError(scanner,
+					hasExplicitType ? "Expected '=' after var type" : "Expected ':' or '=' after var name");
 			return;
 		}
 
-		// Scan the initializer token. Identifier → const reference; literal → inline value.
-		// `env()` is intentionally not supported here — consts can still use it.
+		// Scan the initializer token. Identifier → const reference or struct
+		// construction; literal → inline value. `env()` is intentionally not
+		// supported here — consts can still use it.
 		token = u8t_scanner_scan(scanner);
-		std::string value;		// Resolved value for codegen.
-		std::string sourceExpr; // Original text for the formatter round-trip.
+		std::string value;		                       // Resolved value for codegen (empty for struct-init path).
+		std::string sourceExpr;                        // Original text for the formatter round-trip.
+		AstNodeStructConstruction* structInit = nullptr;
 		if (token == U8T_IDENTIFIER) {
 			std::string refName(u8t_scanner_token_text(scanner, &n));
 			if (refName == "env") {
@@ -161,13 +200,42 @@ namespace Qd {
 						scanner, "env() is not supported in var initializers (use a const and reference it)");
 				return;
 			}
-			value = lookupParsedConst(program, refName);
-			if (value.empty()) {
-				std::string msg = "Unknown constant '" + refName + "' in var initializer";
-				errorReporter->reportError(scanner, msg.c_str());
-				return;
+			// Distinguish struct construction (`StructName { ... }`) from
+			// a const reference by peeking the next non-whitespace char.
+			char32_t peekCh = peekNextNonWhitespace(scanner);
+			if (peekCh == U'{') {
+				// Record start-of-struct offset in the source so the
+				// formatter can emit the original text verbatim.
+				size_t structStartOffset = static_cast<size_t>(scanner->_str - src);
+				// Skip whitespace before the '{' we committed to.
+				while (src[structStartOffset] == ' ' || src[structStartOffset] == '\t' ||
+						src[structStartOffset] == '\n' || src[structStartOffset] == '\r') {
+					++structStartOffset;
+				}
+				size_t braceTokenStart = u8t_scanner_token_start(scanner);
+				u8t_scanner_scan(scanner); // Consume '{'
+				structInit = parseStructConstruction(refName, {}, scanner, errorReporter, src, braceTokenStart);
+				if (!structInit) {
+					return;
+				}
+				// After parseStructConstruction, the scanner is positioned
+				// just past the closing '}'. The end offset is the byte
+				// offset of the character following it.
+				size_t structEndOffset = static_cast<size_t>(scanner->_str - src);
+				sourceExpr = std::string(refName) + " " +
+						std::string(src + structStartOffset, structEndOffset - structStartOffset);
+				if (!hasExplicitType) {
+					typeName = refName;
+				}
+			} else {
+				value = lookupParsedConst(program, refName);
+				if (value.empty()) {
+					std::string msg = "Unknown constant '" + refName + "' in var initializer";
+					errorReporter->reportError(scanner, msg.c_str());
+					return;
+				}
+				sourceExpr = refName;
 			}
-			sourceExpr = refName;
 		} else if (token == U8T_INTEGER || token == U8T_FLOAT || token == U8T_STRING) {
 			value = u8t_scanner_token_text(scanner, &n);
 			sourceExpr = value;
@@ -176,12 +244,21 @@ namespace Qd {
 			return;
 		}
 
+		if (!hasExplicitType && !structInit) {
+			typeName = inferTypeFromValue(value);
+		}
+
 		auto* varDecl = new AstNodeGlobalVar(varName, typeName, value.c_str(), isPublic);
 		varDecl->setSourceExpr(sourceExpr);
+		varDecl->setHasExplicitType(hasExplicitType);
+		if (structInit) {
+			varDecl->setInitializerNode(structInit);
+		}
 		setNodePosition(varDecl, scanner, src);
 		varDecl->setParent(program);
 		program->addChild(varDecl);
 	}
+
 
 	IAstNode* Ast::generate(const char* src, bool dumpTokens, const char* filename) {
 		u8t_scanner scanner;

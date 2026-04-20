@@ -58,15 +58,16 @@ const AppName = "MyApp"
 | Defined at | Top level | Inside functions | Top level |
 | Can change | No | Yes | Yes |
 | Scope | Global | Function | Global |
-| Syntax | `const Name = value` | `value -> name` | `var name:type = init` |
+| Syntax | `const Name = value` | `value -> name` | `var name = init` |
 
 ## Module-level `var`
 
-Use `var` when you need a mutable value that lives across function calls. Type annotation and initializer are both required; `pub var` exports it.
+Use `var` when you need a mutable value that lives across function calls. The initializer is required; the `:type` annotation is optional — when you omit it, the type is inferred from the initializer (integer literal → `i64`, float literal → `f64`, string literal → `str`, or the shape of a referenced `const`'s value). `pub var` exports it.
 
 ```qd
-var counter:i64 = 0
-pub var greeting:str = "hi"
+var counter = 0            // inferred i64
+pub var greeting = "hi"    // inferred str
+var port:u16 = 8080        // explicit sized type when it matters
 
 fn bump() {
 	counter 1 + -> counter
@@ -77,6 +78,8 @@ fn main() {
 	counter print nl    // 3
 }
 ```
+
+Write `:type` explicitly when you want a narrower integer type (e.g. `u8`, `i32`) or to force a specific type; inference only chooses between `i64`, `f64`, `str`, and `ptr`.
 
 Writes use the same `-> name` syntax as locals — if `name` matches a module-level `var`, the write always targets the global; locals never shadow globals. Pick a different name if you need a local.
 

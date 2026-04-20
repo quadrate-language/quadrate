@@ -1,0 +1,19 @@
+// Cross-file: read the exported struct var from helper, mutate it
+// both directly and via helper's update function, verify single
+// source of truth.
+
+use "helper.qd"
+
+fn main() {
+	config <<host print nl     // localhost
+	config <<port print nl     // 8080
+	config <<debug print nl    // 1
+
+	// Mutation via helper's exported function.
+	9000 update_port
+	config <<port print nl     // 9000
+
+	// Direct mutation from main.
+	config 0 >>debug!
+	config <<debug print nl    // 0
+}

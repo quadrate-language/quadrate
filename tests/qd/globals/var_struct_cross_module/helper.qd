@@ -1,0 +1,14 @@
+// Exports a pub struct type and a pub var instance. Both are reachable
+// from the main file via explicit `use "helper.qd"` flat-merge.
+
+pub struct Config {
+	host:str
+	port:i64
+	debug:i64
+}
+
+pub var config = Config { host = "localhost" port = 8080 debug = 1 }
+
+fn update_port(new_port:i64 -- ) {
+	config new_port >>port!
+}

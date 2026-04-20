@@ -373,10 +373,20 @@ namespace Qd {
 			if (gvIt != moduleGlobalVars.end()) {
 				llvm::GlobalVariable* gv = gvIt->second;
 				const std::string& typeName = moduleGlobalVarTypes[name];
+
+				// Classify for load/push: any non-scalar name (including struct
+				// types from `var p = Point { ... }`) is treated as a pointer.
+				bool isFloat = (typeName == "f64");
+				bool isStr = (typeName == "str");
+				bool isPtr = (typeName == "ptr") || isKnownStruct(typeName);
+				bool isSizedInt = (typeName == "i64" || typeName == "i32" || typeName == "i16" ||
+						typeName == "i8" || typeName == "u64" || typeName == "u32" ||
+						typeName == "u16" || typeName == "u8");
+
 				llvm::Type* loadTy = int64Ty;
-				if (typeName == "f64") {
+				if (isFloat) {
 					loadTy = builder->getDoubleTy();
-				} else if (typeName == "str" || typeName == "ptr") {
+				} else if (isStr || isPtr) {
 					loadTy = ptrTy;
 				}
 
@@ -385,19 +395,27 @@ namespace Qd {
 
 				if (useCompileTimeStack) {
 					compileTimeStack.push_back(v);
-				} else if (typeName == "f64") {
+				} else if (isFloat) {
 					builder->CreateCall(pushFloatFn, {ctx, v});
-				} else if (typeName == "str") {
+				} else if (isStr) {
 					builder->CreateCall(pushStrRefFn, {ctx, v});
-				} else if (typeName == "ptr") {
+				} else if (isPtr) {
 					builder->CreateCall(pushPtrFn, {ctx, v});
 				} else {
+					// Integer (sized or unknown → i64 default).
+					(void)isSizedInt;
 					builder->CreateCall(pushIntFn, {ctx, v});
 				}
 				lastIdentifierPushed = name;
+				// Remember the struct type of this var so subsequent field
+				// accesses (`var.<<field`) resolve correctly.
+				if (isKnownStruct(typeName)) {
+					lastFieldAccessResultType = typeName;
+				}
 				return;
 			}
 		}
+
 
 		// Check if it's a constant
 		auto constIt = moduleConstants.find(name);

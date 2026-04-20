@@ -1,0 +1,8 @@
+// Struct construction requires a known struct type. Using an identifier
+// that isn't a struct (or a const) falls through to the const-ref path
+// and reports "Unknown constant".
+var p = NotAStruct { x = 1 }
+
+fn main() {
+	p <<x print nl
+}

@@ -22,9 +22,10 @@ KEYWORD(pub, "Makes a function, constant, or struct visible to other modules.")
 /// @example const PI = 3.14159
 KEYWORD(const, "Declares a compile-time constant value.")
 
-/// Module-level mutable global variable.
-/// @example var counter:i64 = 0
-KEYWORD(var, "Declares a module-level mutable global; `-> name` always writes to the global, never a local.")
+/// Module-level mutable global variable. Type annotation is optional.
+/// @example var counter = 0    // inferred i64
+KEYWORD(var, "Declares a module-level mutable global (type annotation optional; inferred from initializer when omitted).")
+
 
 /// Struct declaration keyword.
 /// @example struct Point { x:f64 y:f64 }

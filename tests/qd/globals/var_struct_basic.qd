@@ -1,0 +1,21 @@
+// Basic: struct global with two primitive fields. The initializer runs
+// once at program start (before main's body) and the global persists
+// across function calls.
+
+struct Point {
+	x:f64
+	y:f64
+}
+
+var origin = Point { x = 1.5 y = 2.5 }
+
+fn show() {
+	origin <<x print nl
+	origin <<y print nl
+}
+
+fn main() {
+	show                  // reads from within a function
+	origin <<x print nl   // reads from main
+	origin <<y print nl
+}

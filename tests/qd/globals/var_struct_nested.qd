@@ -1,0 +1,25 @@
+// A struct global whose initializer contains a nested struct
+// construction. Each inner Point is allocated as its own struct, and
+// the outer Line holds refs to them.
+
+struct Point {
+	x:f64
+	y:f64
+}
+
+struct Line {
+	start:Point
+	end:Point
+}
+
+var diagonal = Line {
+	start = Point { x = 0.0 y = 0.0 }
+	end = Point { x = 10.0 y = 10.0 }
+}
+
+fn main() {
+	diagonal <<start <<x print nl   // 0
+	diagonal <<start <<y print nl   // 0
+	diagonal <<end   <<x print nl   // 10
+	diagonal <<end   <<y print nl   // 10
+}
