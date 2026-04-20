@@ -1,0 +1,17 @@
+// A var initializer can reference a previously-declared const — the parser
+// resolves the reference at parse time, so the global's LLVM initializer is
+// still a plain literal.
+
+const START_COUNT = 42
+const PI = 3.14
+
+var counter:i64 = START_COUNT
+pub var ratio:f64 = PI
+
+fn main() {
+	counter print nl    // 42
+	ratio print nl      // 3.14
+
+	counter 1 + -> counter
+	counter print nl    // 43
+}

@@ -1,0 +1,33 @@
+// Module-level `var` with a sized-int type. Storage is i64 on the stack;
+// the declared width controls what the initializer accepts and how the
+// value should be interpreted. For v1 the LLVM global is i64 regardless
+// of declared width — sized-int semantics live at memory (field/accessor)
+// boundaries, not at module-global storage.
+
+var count:u32 = 1000
+var small:i8 = 42
+var big:u64 = 0
+
+fn bump() {
+	count 5 + -> count
+}
+
+fn main() {
+	count print nl         // 1000
+	small print nl         // 42
+	big print nl           // 0
+
+	bump bump bump
+	count print nl         // 1015
+
+	// Writing a value wider than the declared width: the stack value is
+	// stored as-is (no truncation at the global boundary — this matches
+	// the doc claim that sized-int semantics live at memory boundaries
+	// like struct fields and mem accessors, not module globals).
+	0x1FFFFFFFF -> count
+	count print nl         // 8589934591
+
+	// Reset small to verify signed storage works.
+	-10 -> small
+	small print nl         // -10
+}

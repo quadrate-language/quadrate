@@ -1,0 +1,31 @@
+// Module-level mutable `var`: read and written across function calls,
+// initialized once at program start.
+
+use mem
+
+var counter:i64 = 0
+pub var magic:i64 = 42
+var ratio:f64 = 3.14
+var ptr_slot:ptr = 0
+
+fn bump( -- ) {
+	counter 1 + -> counter
+}
+
+fn add_to_magic(n:i64 -- ) {
+	magic n + -> magic
+}
+
+fn main() {
+	counter print nl     // 0
+	magic print nl       // 42
+	ratio print nl       // 3.14
+	ptr_slot mem::is_null print nl  // 1
+
+	bump bump bump
+	counter print nl     // 3
+
+	10 add_to_magic
+	100 add_to_magic
+	magic print nl       // 152
+}

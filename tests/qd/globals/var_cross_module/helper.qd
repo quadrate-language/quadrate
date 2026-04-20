@@ -1,0 +1,9 @@
+// Helper file exports a pub var and a mutator function.
+// Sibling files share the namespace, so main.qd accesses `counter`
+// and `bump_counter` by bare name.
+
+pub var counter:i64 = 0
+
+fn bump_counter() {
+	counter 1 + -> counter
+}

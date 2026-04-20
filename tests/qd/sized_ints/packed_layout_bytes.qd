@@ -1,0 +1,37 @@
+// Verify that packed fields are laid out back-to-back at their declared
+// sizes, matching WAD's on-disk binary format.
+
+use mem
+
+packed struct P {
+	a:u8
+	b:u8
+	c:u16
+	d:i32
+}
+
+struct U {
+	a:u8
+	b:u8
+	c:u16
+	d:i32
+}
+
+fn main() {
+	P { a=1 b=2 c=0x0304 d=0x08070605 } -> p
+	U { a=1 b=2 c=0x0304 d=0x08070605 } -> u
+
+	// Packed: 8 bytes total, little-endian for c and d.
+	// Bytes: [a=1, b=2, c_lo=4, c_hi=3, d_0=5, d_1=6, d_2=7, d_3=8]
+	0 8 1 for i {
+		p cast<ptr> i mem::get_u8 print nl
+	}
+
+	// Unpacked: every field sits at an 8-byte boundary.
+	u cast<ptr> 0 mem::get_u8 print nl     // 1
+	u cast<ptr> 8 mem::get_u8 print nl     // 2
+	u cast<ptr> 16 mem::get_u8 print nl    // 4  (c low)
+	u cast<ptr> 17 mem::get_u8 print nl    // 3  (c high)
+	u cast<ptr> 24 mem::get_u8 print nl    // 5  (d byte 0)
+	u cast<ptr> 1 mem::get_u8 print nl     // 0  (padding)
+}

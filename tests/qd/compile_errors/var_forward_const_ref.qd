@@ -1,0 +1,9 @@
+// Var initializers resolve const references at parse time, so the const must
+// already be declared. Forward references are rejected.
+var counter:i64 = LATER
+
+const LATER = 42
+
+fn main() {
+	counter print nl
+}

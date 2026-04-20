@@ -12,6 +12,69 @@
       ]
     },
     {
+      "name": "i8",
+      "description": "8-bit signed integer. Only valid in struct fields and mem accessors; promotes to i64 on the stack (sign-extended on load, truncated on store).",
+      "examples": [
+        "struct Byte { value:i8 }",
+        "mem::set_i8",
+        "mem::get_i8"
+      ]
+    },
+    {
+      "name": "i16",
+      "description": "16-bit signed integer. Only valid in struct fields and mem accessors; promotes to i64 on the stack (sign-extended on load, truncated on store).",
+      "examples": [
+        "struct Short { value:i16 }",
+        "mem::set_i16",
+        "mem::get_i16"
+      ]
+    },
+    {
+      "name": "i32",
+      "description": "32-bit signed integer. Only valid in struct fields and mem accessors; promotes to i64 on the stack (sign-extended on load, truncated on store).",
+      "examples": [
+        "struct Int32 { value:i32 }",
+        "mem::set_i32",
+        "mem::get_i32"
+      ]
+    },
+    {
+      "name": "u8",
+      "description": "8-bit unsigned integer. Only valid in struct fields and mem accessors; promotes to i64 on the stack (zero-extended on load, truncated on store).",
+      "examples": [
+        "struct Byte { value:u8 }",
+        "mem::set_u8",
+        "mem::get_u8"
+      ]
+    },
+    {
+      "name": "u16",
+      "description": "16-bit unsigned integer. Only valid in struct fields and mem accessors; promotes to i64 on the stack (zero-extended on load, truncated on store).",
+      "examples": [
+        "struct Port { value:u16 }",
+        "mem::set_u16",
+        "mem::get_u16"
+      ]
+    },
+    {
+      "name": "u32",
+      "description": "32-bit unsigned integer. Only valid in struct fields and mem accessors; promotes to i64 on the stack (zero-extended on load, truncated on store).",
+      "examples": [
+        "struct U32 { value:u32 }",
+        "mem::set_u32",
+        "mem::get_u32"
+      ]
+    },
+    {
+      "name": "u64",
+      "description": "64-bit unsigned integer (memory width). Stack representation is i64, so values above 2^63-1 appear as negative on the stack. Prefer i64 unless the memory layout specifically requires unsigned semantics.",
+      "examples": [
+        "struct U64 { value:u64 }",
+        "mem::set_int",
+        "mem::get_int"
+      ]
+    },
+    {
       "name": "f64",
       "description": "64-bit floating point number",
       "examples": [
@@ -114,6 +177,18 @@
         "const PI = 3.14159",
         "const MAX_SIZE = 1024",
         "const GREETING = \"Hello\""
+      ]
+    },
+    {
+      "name": "var",
+      "category": "Declaration",
+      "description": "Declares a module-level mutable global variable. Type annotation and initializer are required; initializer is a literal or a reference to a previously-declared const. Use pub var to export.",
+      "syntax": "[pub] var NAME:type = value",
+      "examples": [
+        "var counter:i64 = 0",
+        "pub var magic:i64 = 42",
+        "var ratio:f64 = 3.14",
+        "var buf:ptr = 0"
       ]
     },
     {
@@ -292,6 +367,16 @@
         "struct Point { x:f64 y:f64 }",
         "struct Person { name:str age:i64 }",
         "struct Node<T> { value:T next:ptr }"
+      ]
+    },
+    {
+      "name": "packed",
+      "category": "Declaration",
+      "description": "Struct modifier: fields laid out adjacent at exact widths with no padding. Use for parsing on-disk binary formats. Combines with pub.",
+      "syntax": "[pub] packed struct Name { field:type ... }",
+      "examples": [
+        "packed struct FileLump { offset:u32 size:u32 name:u64 }",
+        "pub packed struct PngChunk { length:u32 type:u32 }"
       ]
     },
     {

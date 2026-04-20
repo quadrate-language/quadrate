@@ -188,6 +188,20 @@ buf 0 mem::get_f64  // x
 ```
 ---
 
+### `fn` get_i16
+
+Get a signed 16-bit integer at offset (sign-extended to i64).
+
+**Signature:** `(address:ptr offset:i64 -- value:i64)`
+---
+
+### `fn` get_i32
+
+Get a signed 32-bit integer at offset (sign-extended to i64).
+
+**Signature:** `(address:ptr offset:i64 -- value:i64)`
+---
+
 ### `fn` get_i64
 
 Get a 64-bit integer at offset.
@@ -210,6 +224,17 @@ buf 0 mem::get_i64  // n
 ```
 ---
 
+### `fn` get_i8
+
+Get a signed 8-bit integer at offset (sign-extended to i64).
+
+**Signature:** `(address:ptr offset:i64 -- value:i64)`
+
+| Output | Type | Description |
+|--------|------|-------------|
+| `value` | `i64` | Sign-extended value (-128..127) |
+---
+
 ### `fn` get_ptr
 
 Get a pointer at offset.
@@ -230,6 +255,31 @@ Get a pointer at offset.
 ```qd
 buf 0 mem::get_ptr  // p
 ```
+---
+
+### `fn` get_u16
+
+Get an unsigned 16-bit integer at offset (zero-extended to i64).
+
+**Signature:** `(address:ptr offset:i64 -- value:i64)`
+---
+
+### `fn` get_u32
+
+Get an unsigned 32-bit integer at offset (zero-extended to i64).
+
+**Signature:** `(address:ptr offset:i64 -- value:i64)`
+---
+
+### `fn` get_u8
+
+Get an unsigned 8-bit integer at offset (zero-extended to i64).
+
+**Signature:** `(address:ptr offset:i64 -- value:i64)`
+
+| Output | Type | Description |
+|--------|------|-------------|
+| `value` | `i64` | Zero-extended value (0..255) |
 ---
 
 ### `fn` is_not_null
@@ -355,6 +405,20 @@ Set a 64-bit float at offset.
 ```
 ---
 
+### `fn` set_i16
+
+Set a signed 16-bit integer at offset. Stored as low 2 bytes of `value`.
+
+**Signature:** `(value:i64 address:ptr offset:i64 -- )`
+---
+
+### `fn` set_i32
+
+Set a signed 32-bit integer at offset. Stored as low 4 bytes of `value`.
+
+**Signature:** `(value:i64 address:ptr offset:i64 -- )`
+---
+
 ### `fn` set_i64
 
 Set a 64-bit integer at offset.
@@ -374,6 +438,19 @@ Set a 64-bit integer at offset.
 ```
 ---
 
+### `fn` set_i8
+
+Set a signed 8-bit integer at offset. Stored value is the low byte of `value`.
+
+**Signature:** `(value:i64 address:ptr offset:i64 -- )`
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `value` | `i64` | Integer value (low 8 bits used) |
+| `address` | `ptr` | Base address |
+| `offset` | `i64` | Byte offset from base |
+---
+
 ### `fn` set_ptr
 
 Set a pointer at offset.
@@ -391,6 +468,27 @@ Set a pointer at offset.
 ```qd
 other_buf buf 0 mem::set_ptr
 ```
+---
+
+### `fn` set_u16
+
+Set an unsigned 16-bit integer at offset. Stored as low 2 bytes of `value`.
+
+**Signature:** `(value:i64 address:ptr offset:i64 -- )`
+---
+
+### `fn` set_u32
+
+Set an unsigned 32-bit integer at offset. Stored as low 4 bytes of `value`.
+
+**Signature:** `(value:i64 address:ptr offset:i64 -- )`
+---
+
+### `fn` set_u8
+
+Set an unsigned 8-bit integer at offset. Stored value is the low byte of `value`.
+
+**Signature:** `(value:i64 address:ptr offset:i64 -- )`
 ---
 
 ### `fn` to_string

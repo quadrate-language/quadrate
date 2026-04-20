@@ -1,0 +1,19 @@
+// A `-> name` inside a function always writes to the matching module-level
+// `var`, never introduces a local that shadows it. This keeps the mental
+// model simple: a name resolves to exactly one storage slot across the
+// whole module. If you want a local, pick a different name.
+
+var counter:i64 = 100
+
+fn mutate() {
+	// Looks like it could be introducing a local 'counter', but the global
+	// takes precedence. This writes to counter in module scope.
+	5 -> counter
+	counter print nl     // 5 — reads the same global just written
+}
+
+fn main() {
+	counter print nl     // 100
+	mutate               // mutates the global
+	counter print nl     // 5 — visible in main afterwards
+}

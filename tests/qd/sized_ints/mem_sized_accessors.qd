@@ -1,0 +1,33 @@
+// mem::get_u8/set_u8 family: explicit byte-offset access with width + sign.
+
+use mem
+
+fn main() {
+	16 mem::alloc! -> buf
+	buf 16 mem::zero
+
+	255 buf 0 mem::set_u8
+	buf 0 mem::get_u8 print nl     // 255
+
+	-1 buf 1 mem::set_i8
+	buf 1 mem::get_i8 print nl     // -1
+
+	40000 buf 2 mem::set_u16
+	buf 2 mem::get_u16 print nl    // 40000
+
+	-12345 buf 4 mem::set_i16
+	buf 4 mem::get_i16 print nl    // -12345
+
+	3000000000 buf 6 mem::set_u32
+	buf 6 mem::get_u32 print nl    // 3000000000
+
+	-1000000 buf 10 mem::set_i32
+	buf 10 mem::get_i32 print nl   // -1000000
+
+	// Same bit pattern read as signed vs unsigned.
+	-1 buf 14 mem::set_i8
+	buf 14 mem::get_u8 print nl    // 255
+	buf 14 mem::get_i8 print nl    // -1
+
+	buf mem::free
+}

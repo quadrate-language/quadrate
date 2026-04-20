@@ -363,6 +363,42 @@ namespace Qd {
 			return;
 		}
 
+		// Check if it's a module-level `var` — emit a load from the LLVM global.
+		// Works in both native (compile-time stack) mode and runtime stack mode.
+		// The load is volatile so GVN/DCE can't hoist it above an intervening
+		// function call that stores the global (AlwaysInliner can produce
+		// that pattern when a helper is inlined multiple times into main).
+		{
+			auto gvIt = moduleGlobalVars.find(name);
+			if (gvIt != moduleGlobalVars.end()) {
+				llvm::GlobalVariable* gv = gvIt->second;
+				const std::string& typeName = moduleGlobalVarTypes[name];
+				llvm::Type* loadTy = int64Ty;
+				if (typeName == "f64") {
+					loadTy = builder->getDoubleTy();
+				} else if (typeName == "str" || typeName == "ptr") {
+					loadTy = ptrTy;
+				}
+
+				llvm::Value* v = builder->CreateLoad(loadTy, gv, name + "_g");
+				llvm::cast<llvm::LoadInst>(v)->setVolatile(true);
+
+				if (useCompileTimeStack) {
+					compileTimeStack.push_back(v);
+				} else if (typeName == "f64") {
+					builder->CreateCall(pushFloatFn, {ctx, v});
+				} else if (typeName == "str") {
+					builder->CreateCall(pushStrRefFn, {ctx, v});
+				} else if (typeName == "ptr") {
+					builder->CreateCall(pushPtrFn, {ctx, v});
+				} else {
+					builder->CreateCall(pushIntFn, {ctx, v});
+				}
+				lastIdentifierPushed = name;
+				return;
+			}
+		}
+
 		// Check if it's a constant
 		auto constIt = moduleConstants.find(name);
 		if (constIt != moduleConstants.end()) {

@@ -1,0 +1,19 @@
+// Verify a pub var is a single source of truth across imported files:
+// direct reads/writes from main and mutations via helper's function see
+// the same storage.
+
+use "helper.qd"
+
+fn main() {
+	counter print nl      // 0 — initial value from helper.qd
+
+	bump_counter
+	bump_counter
+	counter print nl      // 2 — mutated via helper's function
+
+	42 -> counter         // direct write from main
+	counter print nl      // 42
+
+	bump_counter
+	counter print nl      // 43 — helper's write sees main's value
+}

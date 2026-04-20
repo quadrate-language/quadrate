@@ -1,0 +1,32 @@
+// packed struct with only i64 fields: layout is identical to the unpacked
+// version (every field is already on an 8-byte boundary). Round-trip
+// reads/writes must still work — this catches regressions where the
+// packed field emission path special-cases away the i64 handling.
+
+packed struct PackedTriple {
+	a:i64
+	b:i64
+	c:i64
+}
+
+struct PlainTriple {
+	a:i64
+	b:i64
+	c:i64
+}
+
+fn main() {
+	PackedTriple { a=10 b=20 c=30 } -> p
+	p <<a print nl           // 10
+	p <<b print nl           // 20
+	p <<c print nl           // 30
+
+	// Writing back in
+	p 99 >>a -> p
+	p <<a print nl           // 99
+
+	// A plain equivalent — just making sure both compile and behave
+	// the same for the all-i64 case.
+	PlainTriple { a=1 b=2 c=3 } -> q
+	q <<a q <<b q <<c + + print nl   // 6
+}

@@ -1,0 +1,6 @@
+// Var declarations require an initializer.
+var counter:i64
+
+fn main() {
+	counter print nl
+}

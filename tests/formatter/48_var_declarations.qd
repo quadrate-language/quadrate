@@ -1,0 +1,12 @@
+var counter:i64=0
+pub  var   magic:i64  =  42
+var ratio:f64 = 3.14
+var ptr_slot:ptr = 0
+
+const START = 10
+var initialized:i64 = START
+
+fn main() {
+	counter print nl
+	magic print nl
+}

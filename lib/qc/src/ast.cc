@@ -1,4 +1,5 @@
 #include "ast_parse.h"
+#include <quadrate/qc/ast_node_global_var.h>
 
 namespace Qd {
 
@@ -96,6 +97,90 @@ namespace Qd {
 
 		errorReporter->reportError(scanner, "Expected literal value or env() after '=' in constant declaration");
 		return "";
+	}
+
+	// Find a previously-declared constant in `program` by name.
+	// Returns the const's raw value string on success, empty string if not found.
+	static std::string lookupParsedConst(AstProgram* program, const std::string& name) {
+		for (size_t i = 0; i < program->childCount(); i++) {
+			IAstNode* child = program->child(i);
+			if (child && child->type() == IAstNode::Type::CONSTANT_DECLARATION) {
+				auto* c = static_cast<AstNodeConstant*>(child);
+				if (c->name() == name) {
+					return std::string(c->value());
+				}
+			}
+		}
+		return "";
+	}
+
+	// Parse `var name:type = <literal-or-const-ref>` after the `var` keyword
+	// has been consumed. Initializer is either a literal (int, float, string)
+	// or the name of a previously-declared `const` — the latter is resolved at
+	// parse time so codegen sees a plain literal. `env()` is intentionally not
+	// supported here; use a const for env-sourced values.
+	// Shared between the `pub var` and bare `var` paths.
+	static void parseGlobalVarAfterKeyword(
+			u8t_scanner* scanner, ErrorReporter* errorReporter, const char* src, bool isPublic, AstProgram* program) {
+		size_t n;
+		char32_t token = u8t_scanner_scan(scanner);
+		if (token != U8T_IDENTIFIER) {
+			errorReporter->reportError(scanner, "Expected variable name after 'var'");
+			return;
+		}
+		std::string varName(u8t_scanner_token_text(scanner, &n));
+
+		token = u8t_scanner_scan(scanner);
+		if (token != ':') {
+			errorReporter->reportError(scanner, "Expected ':' after var name (type annotation required)");
+			return;
+		}
+
+		token = u8t_scanner_scan(scanner);
+		if (token != U8T_IDENTIFIER) {
+			errorReporter->reportError(scanner, "Expected type name after ':'");
+			return;
+		}
+		std::string typeName(u8t_scanner_token_text(scanner, &n));
+
+		token = u8t_scanner_scan(scanner);
+		if (token != '=') {
+			errorReporter->reportError(scanner, "Expected '=' after var type");
+			return;
+		}
+
+		// Scan the initializer token. Identifier → const reference; literal → inline value.
+		// `env()` is intentionally not supported here — consts can still use it.
+		token = u8t_scanner_scan(scanner);
+		std::string value;		// Resolved value for codegen.
+		std::string sourceExpr; // Original text for the formatter round-trip.
+		if (token == U8T_IDENTIFIER) {
+			std::string refName(u8t_scanner_token_text(scanner, &n));
+			if (refName == "env") {
+				errorReporter->reportError(
+						scanner, "env() is not supported in var initializers (use a const and reference it)");
+				return;
+			}
+			value = lookupParsedConst(program, refName);
+			if (value.empty()) {
+				std::string msg = "Unknown constant '" + refName + "' in var initializer";
+				errorReporter->reportError(scanner, msg.c_str());
+				return;
+			}
+			sourceExpr = refName;
+		} else if (token == U8T_INTEGER || token == U8T_FLOAT || token == U8T_STRING) {
+			value = u8t_scanner_token_text(scanner, &n);
+			sourceExpr = value;
+		} else {
+			errorReporter->reportError(scanner, "Expected literal value or const name after '=' in var initializer");
+			return;
+		}
+
+		auto* varDecl = new AstNodeGlobalVar(varName, typeName, value.c_str(), isPublic);
+		varDecl->setSourceExpr(sourceExpr);
+		setNodePosition(varDecl, scanner, src);
+		varDecl->setParent(program);
+		program->addChild(varDecl);
 	}
 
 	IAstNode* Ast::generate(const char* src, bool dumpTokens, const char* filename) {
@@ -219,13 +304,18 @@ namespace Qd {
 				const char* text = u8t_scanner_token_text(&scanner, &n);
 
 				if (strcmp(text, "pub") == 0) {
-					// Check if next token is "fn", "inline", "const", or "struct"
+					// Check if next token is "fn", "inline", "packed", "const", or "struct"
 					token = u8t_scanner_scan(&scanner);
 					if (token == U8T_IDENTIFIER) {
 						const char* nextText = u8t_scanner_token_text(&scanner, &n);
 						bool isInline = false;
+						bool isPacked = false;
 						if (strcmp(nextText, "inline") == 0) {
 							isInline = true;
+							token = u8t_scanner_scan(&scanner);
+							nextText = u8t_scanner_token_text(&scanner, &n);
+						} else if (strcmp(nextText, "packed") == 0) {
+							isPacked = true;
 							token = u8t_scanner_scan(&scanner);
 							nextText = u8t_scanner_token_text(&scanner, &n);
 						}
@@ -239,6 +329,9 @@ namespace Qd {
 						} else if (strcmp(nextText, "struct") == 0) {
 							IAstNode* structDecl = parseStructDeclaration(&scanner, &errorReporter, src, true);
 							if (structDecl) {
+								if (isPacked) {
+									static_cast<AstNodeStructDeclaration*>(structDecl)->setPacked(true);
+								}
 								structDecl->setParent(program);
 								program->addChild(structDecl);
 							}
@@ -277,14 +370,16 @@ namespace Qd {
 								errorReporter.reportError(&scanner, "Expected constant name after 'pub const'");
 								synchronize(&scanner);
 							}
+						} else if (strcmp(nextText, "var") == 0) {
+							parseGlobalVarAfterKeyword(&scanner, &errorReporter, src, true, program);
 						} else {
 							errorReporter.reportError(
-									&scanner, "Expected 'fn', 'struct', 'enum', 'type', or 'const' after 'pub'");
+									&scanner, "Expected 'fn', 'struct', 'enum', 'type', 'const', or 'var' after 'pub'");
 							synchronize(&scanner);
 						}
 					} else {
 						errorReporter.reportError(
-								&scanner, "Expected 'fn', 'struct', 'enum', 'type', or 'const' after 'pub'");
+								&scanner, "Expected 'fn', 'struct', 'enum', 'type', 'const', or 'var' after 'pub'");
 						synchronize(&scanner);
 					}
 				} else if (strcmp(text, "inline") == 0) {
@@ -318,6 +413,20 @@ namespace Qd {
 					if (structDecl) {
 						structDecl->setParent(program);
 						program->addChild(structDecl);
+					}
+				} else if (strcmp(text, "packed") == 0) {
+					// `packed struct ...` — non-public packed struct.
+					token = u8t_scanner_scan(&scanner);
+					if (token == U8T_IDENTIFIER && strcmp(u8t_scanner_token_text(&scanner, &n), "struct") == 0) {
+						IAstNode* structDecl = parseStructDeclaration(&scanner, &errorReporter, src, false);
+						if (structDecl) {
+							static_cast<AstNodeStructDeclaration*>(structDecl)->setPacked(true);
+							structDecl->setParent(program);
+							program->addChild(structDecl);
+						}
+					} else {
+						errorReporter.reportError(&scanner, "Expected 'struct' after 'packed'");
+						synchronize(&scanner);
 					}
 				} else if (strcmp(text, "enum") == 0) {
 					IAstNode* enumDecl = parseEnumDeclaration(&scanner, &errorReporter, src, false);
@@ -620,6 +729,8 @@ namespace Qd {
 					} else {
 						errorReporter.reportError(&scanner, "Expected constant name after 'const'");
 					}
+				} else if (strcmp(text, "var") == 0) {
+					parseGlobalVarAfterKeyword(&scanner, &errorReporter, src, false, program);
 				} else if (strcmp(text, "test") == 0) {
 					IAstNode* testDecl = parseTestDeclaration(&scanner, &errorReporter, src);
 					if (testDecl) {

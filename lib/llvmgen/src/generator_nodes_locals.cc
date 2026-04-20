@@ -14,6 +14,50 @@ namespace Qd {
 	}
 
 	void LlvmGenerator::Impl::generateLocalOne(const std::string& name, size_t lineNum, llvm::Value* ctx) {
+		// `-> global` always stores to the LLVM global, regardless of which
+		// stack is active. Checked before the native / runtime paths so
+		// native functions also hit the global instead of a shadowing alloca.
+		// Stores are volatile to match the volatile-load convention over in
+		// generateIdentifier — together they prevent the optimizer from
+		// elide-and-forward across function-call boundaries.
+		{
+			auto gvIt = moduleGlobalVars.find(name);
+			if (gvIt != moduleGlobalVars.end()) {
+				llvm::GlobalVariable* gv = gvIt->second;
+
+				auto storeVolatile = [&](llvm::Value* v) {
+					auto* s = builder->CreateStore(v, gv);
+					s->setVolatile(true);
+				};
+
+				if (useCompileTimeStack) {
+					llvm::Value* v = compileTimeStack.back();
+					compileTimeStack.pop_back();
+					storeVolatile(v);
+					return;
+				}
+
+				const std::string& typeName = moduleGlobalVarTypes[name];
+				llvm::Value* stackPtrPtr = builder->CreateStructGEP(contextStructTy, ctx, 0, "stack_ptr_for_g");
+				llvm::Value* stackPtr = builder->CreateLoad(ptrTy, stackPtrPtr, "stack_for_g");
+				llvm::AllocaInst* tmp = builder->CreateAlloca(stackElementTy, nullptr, name + "_g_tmp");
+				builder->CreateCall(stackPopFn, {stackPtr, tmp});
+				llvm::Value* valuePtr = builder->CreateStructGEP(stackElementTy, tmp, 0, name + "_g_vp");
+
+				if (typeName == "f64") {
+					llvm::Value* v = builder->CreateLoad(builder->getDoubleTy(), valuePtr, name + "_g_f");
+					storeVolatile(v);
+				} else if (typeName == "str" || typeName == "ptr") {
+					llvm::Value* v = builder->CreateLoad(ptrTy, valuePtr, name + "_g_p");
+					storeVolatile(v);
+				} else {
+					llvm::Value* v = builder->CreateLoad(int64Ty, valuePtr, name + "_g_i");
+					storeVolatile(v);
+				}
+				return;
+			}
+		}
+
 		// Compile-time stack path: store to i64 alloca
 		if (useCompileTimeStack) {
 			if (name == "_") {

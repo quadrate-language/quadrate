@@ -17,6 +17,7 @@
 #include <quadrate/qc/ast_node_for.h>
 #include <quadrate/qc/ast_node_function.h>
 #include <quadrate/qc/ast_node_function_pointer.h>
+#include <quadrate/qc/ast_node_global_var.h>
 #include <quadrate/qc/ast_node_identifier.h>
 #include <quadrate/qc/ast_node_if.h>
 #include <quadrate/qc/ast_node_import.h>
@@ -277,6 +278,8 @@ namespace Qd {
 				return "use";
 			case IAstNode::Type::CONSTANT_DECLARATION:
 				return "const";
+			case IAstNode::Type::GLOBAL_VAR_DECLARATION:
+				return "var";
 			case IAstNode::Type::COMMENT: {
 				auto* comment = static_cast<AstNodeComment*>(node);
 				if (comment->commentType() == AstNodeComment::CommentType::SHEBANG) {
@@ -401,6 +404,9 @@ namespace Qd {
 			case IAstNode::Type::CONSTANT_DECLARATION:
 				emitConstant(static_cast<AstNodeConstant*>(node));
 				break;
+			case IAstNode::Type::GLOBAL_VAR_DECLARATION:
+				emitGlobalVar(static_cast<AstNodeGlobalVar*>(node));
+				break;
 			case IAstNode::Type::FUNCTION_DECLARATION:
 				emitFunctionDecl(static_cast<AstNodeFunctionDeclaration*>(node));
 				break;
@@ -516,6 +522,14 @@ namespace Qd {
 				mOutput << "pub ";
 			}
 			mOutput << "const " << node->name() << " = " << node->value() << "\n";
+		}
+
+		void emitGlobalVar(AstNodeGlobalVar* node) {
+			emitIndent();
+			if (node->isPublic()) {
+				mOutput << "pub ";
+			}
+			mOutput << "var " << node->name() << ":" << node->typeName() << " = " << node->sourceExpr() << "\n";
 		}
 
 		// ============================================================
@@ -666,6 +680,9 @@ namespace Qd {
 			emitIndent();
 			if (node->isPublic()) {
 				mOutput << "pub ";
+			}
+			if (node->isPacked()) {
+				mOutput << "packed ";
 			}
 			mOutput << "struct " << node->name();
 			if (node->isGeneric()) {

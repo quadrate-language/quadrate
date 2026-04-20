@@ -19,6 +19,7 @@
 #include <quadrate/qc/ast_node_for.h>
 #include <quadrate/qc/ast_node_function.h>
 #include <quadrate/qc/ast_node_function_pointer.h>
+#include <quadrate/qc/ast_node_global_var.h>
 #include <quadrate/qc/ast_node_identifier.h>
 #include <quadrate/qc/ast_node_if.h>
 #include <quadrate/qc/ast_node_import.h>
@@ -173,6 +174,38 @@ namespace Qd {
 			mConstantValues[constant->name()] = constant->value();
 		}
 
+		// Module-level mutable `var`. Collected here so identifier resolution
+		// can accept both reads (`counter`) and writes (`-> counter`) without
+		// reporting "Undefined identifier".
+		if (node->type() == IAstNode::Type::GLOBAL_VAR_DECLARATION) {
+			auto* varNode = static_cast<AstNodeGlobalVar*>(node);
+			if (isReservedKeyword(varNode->name())) {
+				std::string errorMsg =
+						"'" + varNode->name() + "' is a reserved keyword and cannot be used as a var name";
+				reportError(varNode, errorMsg.c_str());
+				return;
+			}
+			// Skip if already collected (the validator may run its collect pass
+			// twice on the same module — once pre-scan, once proper).
+			if (mDefinedGlobalVars.count(varNode->name())) {
+				return;
+			}
+			if (mDefinedConstants.count(varNode->name()) || mDefinedFunctions.count(varNode->name()) ||
+					mDefinedStructs.count(varNode->name())) {
+				std::string errorMsg = "'" + varNode->name() + "' conflicts with an existing declaration";
+				reportError(varNode, errorMsg.c_str());
+				return;
+			}
+			const std::string& typeName = varNode->typeName();
+			if (!isValidTypeName(typeName)) {
+				std::string errorMsg = "Unknown type '" + typeName + "' for var";
+				reportError(varNode, errorMsg.c_str());
+				return;
+			}
+			mDefinedGlobalVars.insert(varNode->name());
+			mGlobalVarTypes[varNode->name()] = typeName;
+		}
+
 		// If this is an enum declaration, register variants as scoped constants
 		if (node->type() == IAstNode::Type::ENUM_DECLARATION) {
 			AstNodeEnumDeclaration* enumDecl = static_cast<AstNodeEnumDeclaration*>(node);
@@ -284,7 +317,11 @@ namespace Qd {
 
 					if (resolvedTypeName == "f64") {
 						fieldType = StackValueType::FLOAT;
-					} else if (resolvedTypeName == "i64") {
+					} else if (resolvedTypeName == "i64" || resolvedTypeName == "i32" || resolvedTypeName == "i16" ||
+							   resolvedTypeName == "i8" || resolvedTypeName == "u64" || resolvedTypeName == "u32" ||
+							   resolvedTypeName == "u16" || resolvedTypeName == "u8") {
+						// All sized integer fields widen to INT on the stack —
+						// sized-int semantics live in memory, not on the stack.
 						fieldType = StackValueType::INT;
 					} else if (resolvedTypeName == "str") {
 						fieldType = StackValueType::STRING;
@@ -670,6 +707,11 @@ namespace Qd {
 			// Check if it's a defined constant
 			if (mDefinedConstants.find(name) != mDefinedConstants.end()) {
 				// Valid constant
+				return;
+			}
+
+			// Check if it's a module-level mutable `var`
+			if (mDefinedGlobalVars.find(name) != mDefinedGlobalVars.end()) {
 				return;
 			}
 

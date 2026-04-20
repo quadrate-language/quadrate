@@ -1,0 +1,21 @@
+packed   struct   FileLump {
+	offset:u32
+	size:u32
+	name:u64
+}
+
+pub  packed  struct  PngChunk {
+	length:u32
+	type:u32
+}
+
+packed struct Mixed {
+	tag:u8
+	count:i32
+	flag:u8
+}
+
+fn main() {
+	FileLump { offset=100 size=200 name=42 } -> f
+	f <<offset print nl
+}

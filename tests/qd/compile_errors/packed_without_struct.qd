@@ -1,0 +1,8 @@
+// `packed` must be immediately followed by `struct`; nothing else is valid.
+packed fn foo() {
+	42 print nl
+}
+
+fn main() {
+	foo
+}

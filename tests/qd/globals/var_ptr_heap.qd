@@ -1,0 +1,33 @@
+// A common pattern: lazy-init a heap buffer held in a pointer global.
+// The first call allocates; subsequent calls see the same address.
+
+use mem
+
+var buf:ptr = 0
+
+fn ensure_buf() {
+	buf 0 eq if {
+		16 mem::alloc! -> buf
+		buf 16 mem::zero
+	}
+}
+
+fn main() {
+	// First call allocates.
+	ensure_buf
+	buf mem::is_not_null print nl           // 1
+
+	// Write into the buffer, read back.
+	99 buf 0 mem::set_byte
+	buf 0 mem::get_byte print nl   // 99
+
+	// Save the address; call ensure_buf again and confirm it's the same.
+	buf cast<i64> -> first_addr
+	ensure_buf
+	buf cast<i64> first_addr eq print nl   // 1
+
+	// Value persists across calls (the very point of a global).
+	buf 0 mem::get_byte print nl   // 99
+
+	buf mem::free
+}

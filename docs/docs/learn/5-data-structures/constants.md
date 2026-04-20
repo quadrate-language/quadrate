@@ -53,12 +53,32 @@ const AppName = "MyApp"
 
 ## Constants vs variables
 
-| Feature | Constant | Variable |
-|---------|----------|----------|
-| Defined at | Top level | Inside functions |
-| Can change | No | Yes |
-| Scope | Global | Function |
-| Syntax | `const Name = value` | `value -> name` |
+| Feature | Constant | Local variable | Module-level `var` |
+|---------|----------|----------------|--------------------|
+| Defined at | Top level | Inside functions | Top level |
+| Can change | No | Yes | Yes |
+| Scope | Global | Function | Global |
+| Syntax | `const Name = value` | `value -> name` | `var name:type = init` |
+
+## Module-level `var`
+
+Use `var` when you need a mutable value that lives across function calls. Type annotation and initializer are both required; `pub var` exports it.
+
+```qd
+var counter:i64 = 0
+pub var greeting:str = "hi"
+
+fn bump() {
+	counter 1 + -> counter
+}
+
+fn main() {
+	bump bump bump
+	counter print nl    // 3
+}
+```
+
+Writes use the same `-> name` syntax as locals — if `name` matches a module-level `var`, the write always targets the global; locals never shadow globals. Pick a different name if you need a local.
 
 ## Built-in constants
 

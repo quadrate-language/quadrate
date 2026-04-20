@@ -1,0 +1,29 @@
+// Sized-int access into raw memory buffers (the pattern we'll use for the
+// framebuffer and WAD lumps in the Doom port). Fixed-size-array struct
+// fields aren't a language feature yet — they're a Phase 1b target — so
+// this test exercises the corresponding mem::set_u8/get_u8 pattern.
+
+use mem
+
+fn main() {
+	8 mem::alloc! -> name
+	name 8 mem::zero
+
+	65 name 0 mem::set_u8
+	66 name 1 mem::set_u8
+	67 name 2 mem::set_u8
+
+	name 0 mem::get_u8 print nl   // 65
+	name 1 mem::get_u8 print nl   // 66
+	name 2 mem::get_u8 print nl   // 67
+
+	// Untouched byte stays zero.
+	name 3 mem::get_u8 print nl   // 0
+
+	// Writing -2 truncates to 254.
+	-2 name 4 mem::set_u8
+	name 4 mem::get_u8 print nl   // 254
+	name 4 mem::get_i8 print nl   // -2
+
+	name mem::free
+}

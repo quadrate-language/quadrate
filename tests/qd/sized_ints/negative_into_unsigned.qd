@@ -1,0 +1,41 @@
+// Storing a negative value into an unsigned field is a bit-pattern
+// reinterpret: the low N bits of the stack value become the field's
+// stored bytes. Reading back as unsigned zero-extends those bytes.
+//
+// This is the same semantics C gives you for implicit int→unsigned
+// conversion and matches what users parsing binary formats expect.
+// Locked in here so it cannot silently change to a runtime error.
+
+use mem
+
+struct Widths {
+	u8_field:u8
+	u16_field:u16
+	u32_field:u32
+}
+
+fn main() {
+	// -1 stored into each unsigned field: all bits set.
+	Widths { u8_field = -1 u16_field = -1 u32_field = -1 } -> w
+	w <<u8_field  print nl         // 255
+	w <<u16_field print nl         // 65535
+	w <<u32_field print nl         // 4294967295
+
+	// -2 into each: one less than max.
+	Widths { u8_field = -2 u16_field = -2 u32_field = -2 } -> w2
+	w2 <<u8_field  print nl        // 254
+	w2 <<u16_field print nl        // 65534
+	w2 <<u32_field print nl        // 4294967294
+
+	// -128 into u8: wraps to 128 (0x80).
+	Widths { u8_field = -128 u16_field = 0 u32_field = 0 } -> w3
+	w3 <<u8_field print nl         // 128
+
+	// Same story via mem accessors — the width-aware setters truncate
+	// the i64 stack value, and the unsigned getters zero-extend.
+	4 mem::alloc! -> buf
+	buf 4 mem::zero
+	-1 buf 0 mem::set_u16
+	buf 0 mem::get_u16 print nl   // 65535
+	buf mem::free
+}

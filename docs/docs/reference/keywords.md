@@ -10,7 +10,9 @@ Language keywords for declarations, control flow, and more.
 | [`pub`](#pub) | Makes a function, constant, or struct visible to other modules |
 | [`inline`](#inline) | Requests the compiler to inline a function at call sites |
 | [`const`](#const) | Declares a compile-time constant value |
+| [`var`](#var) | Declares a module-level mutable global variable |
 | [`struct`](#struct) | Declares a structured data type with named fields |
+| [`packed`](#packed) | Struct modifier: fields laid out adjacent with no padding |
 | [`use`](#use) | Imports a module |
 | [`if`](#if) | Conditional execution |
 | [`else`](#else) | Alternative block when if condition is false |
@@ -83,6 +85,21 @@ Declares a compile-time constant value.
 const Pi = 3.14159
 ```
 
+### var
+
+Declares a module-level mutable global variable. The type annotation and initializer are both required. Reads use the bare name; writes use `->`. Unlike `const`, the value can change across function calls. Use `pub var` to export.
+
+```qd
+var counter:i64 = 0
+pub var magic:i64 = 42
+
+fn bump() {
+	counter 1 + -> counter
+}
+```
+
+Supported types: `i64`, `f64`, `str` (always null-initialized), `ptr`. Initializers accept a literal or a reference to a previously-declared `const`. A `-> name` assignment inside any function always writes to the matching module-level var — locals never shadow globals; pick a different name if you need a local.
+
 ### struct
 
 Declares a structured data type with named fields.
@@ -93,6 +110,21 @@ struct Point {
 	y:f64
 }
 ```
+
+### packed
+
+Struct modifier: fields are laid out back-to-back at their exact widths with no padding between them. Use for parsing on-disk binary formats (WAD lumps, PNG chunks, network protocol headers) where the memory layout must match a byte-exact specification. Combines with `pub`: `pub packed struct ...`.
+
+```qd
+packed struct FileLump {
+	offset:u32
+	size:u32
+	name:u64       // 8 raw bytes
+}
+// sizeof = 16 bytes; a plain `struct` would round each field to 8 bytes for 24.
+```
+
+Without `packed`, each field is rounded up to an 8-byte slot for uniform alignment. With `packed`, `struct FileLump` above is exactly 16 bytes wide.
 
 ### use
 

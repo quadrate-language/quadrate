@@ -19,6 +19,7 @@
 #include <quadrate/qc/ast_node_for.h>
 #include <quadrate/qc/ast_node_function.h>
 #include <quadrate/qc/ast_node_function_pointer.h>
+#include <quadrate/qc/ast_node_global_var.h>
 #include <quadrate/qc/ast_node_identifier.h>
 #include <quadrate/qc/ast_node_if.h>
 #include <quadrate/qc/ast_node_import.h>
@@ -119,6 +120,12 @@ namespace Qd {
 	bool SemanticValidator::isValidTypeName(const std::string& typeStr) const {
 		// Primitive types
 		if (typeStr == "i64" || typeStr == "f64" || typeStr == "str" || typeStr == "ptr" || typeStr == "any") {
+			return true;
+		}
+		// Sized integer types: all live in memory/signatures only;
+		// on the stack they're represented as i64 (sign- or zero-extended on load).
+		if (typeStr == "i8" || typeStr == "i16" || typeStr == "i32" || typeStr == "u8" || typeStr == "u16" ||
+				typeStr == "u32" || typeStr == "u64") {
 			return true;
 		}
 		// Array types: []i64, []f64, []str, []StructName
@@ -584,6 +591,17 @@ namespace Qd {
 				}
 				collectModuleConstantValues(moduleAstRoot, moduleName, true);
 
+				// Collect module-level `var` declarations. Flat-merged siblings
+				// expose their globals by bare name, so the main file's body
+				// can reference them directly (no module::var namespacing).
+				for (auto* child : moduleAstRoot->children()) {
+					if (child && child->type() == IAstNode::Type::GLOBAL_VAR_DECLARATION) {
+						auto* varNode = static_cast<AstNodeGlobalVar*>(child);
+						mDefinedGlobalVars.insert(varNode->name());
+						mGlobalVarTypes[varNode->name()] = varNode->typeName();
+					}
+				}
+
 				// Collect function definitions
 				std::unordered_map<std::string, bool> moduleFunctions;
 				collectModuleFunctions(moduleAstRoot, moduleFunctions);
@@ -801,6 +819,11 @@ namespace Qd {
 			return StackValueType::PTR;
 		}
 		if (typeStr == "i64") {
+			return StackValueType::INT;
+		}
+		// Sized integer types promote to i64 on the stack.
+		if (typeStr == "i8" || typeStr == "i16" || typeStr == "i32" || typeStr == "u8" || typeStr == "u16" ||
+				typeStr == "u32" || typeStr == "u64") {
 			return StackValueType::INT;
 		}
 		if (typeStr == "f64") {

@@ -206,9 +206,13 @@ void QuadrateLSP::handleCompletion(const std::string& id, const std::string& uri
 	// Check if we're in a type position (after : in function signature, struct field, etc.)
 	if (isInTypePosition(documentText, line, character)) {
 		// Show built-in types
-		static const char* builtinTypes[] = {"i64", "f64", "str", "bool", "ptr", "any"};
-		static const char* typeDescriptions[] = {"64-bit signed integer", "64-bit floating point", "String type",
-				"Boolean type", "Pointer type", "Any type (dynamic)"};
+		static const char* builtinTypes[] = {
+				"i64", "i32", "i16", "i8", "u64", "u32", "u16", "u8", "f64", "str", "bool", "ptr", "any"};
+		static const char* typeDescriptions[] = {"64-bit signed integer", "32-bit signed integer (field/mem only)",
+				"16-bit signed integer (field/mem only)", "8-bit signed integer (field/mem only)",
+				"64-bit unsigned integer (field/mem only)", "32-bit unsigned integer (field/mem only)",
+				"16-bit unsigned integer (field/mem only)", "8-bit unsigned integer (field/mem only)",
+				"64-bit floating point", "String type", "Boolean type", "Pointer type", "Any type (dynamic)"};
 
 		for (size_t i = 0; i < sizeof(builtinTypes) / sizeof(builtinTypes[0]); i++) {
 			json_t* item = json_object();
@@ -567,10 +571,13 @@ void QuadrateLSP::handleCompletion(const std::string& id, const std::string& uri
 
 		if (topLevel) {
 			// At top level - show only declaration keywords
-			static const char* topLevelKeywords[] = {"use", "fn", "test", "struct", "enum", "type", "const", "pub"};
+			static const char* topLevelKeywords[] = {
+					"use", "fn", "test", "struct", "packed", "enum", "type", "const", "var", "pub"};
 			static const char* topLevelDescriptions[] = {"Import a module", "Declare a function",
-					"Declare a test function", "Declare a struct type", "Declare an enum type", "Declare a type alias",
-					"Declare a constant", "Make declaration public"};
+					"Declare a test function", "Declare a struct type",
+					"Modifier for packed struct layout (packed struct ...)", "Declare an enum type",
+					"Declare a type alias", "Declare a constant", "Declare a mutable global",
+					"Make declaration public"};
 
 			for (size_t i = 0; i < sizeof(topLevelKeywords) / sizeof(topLevelKeywords[0]); i++) {
 				json_t* item = json_object();

@@ -454,6 +454,27 @@ fn inorder(n:ptr -- ) {
 }
 ```
 
+## Packed structs and sized integers
+
+By default, struct fields are rounded up to 8-byte slots so that pointers, `i64`, and `f64` all share one alignment rule. When you need to parse a binary format — WAD lumps, PNG chunks, network headers — you can declare a **packed struct** that lays fields out back-to-back at their exact widths, plus use **sized integer types** (`i8/i16/i32/u8/u16/u32/u64`) to match the on-disk representation exactly.
+
+```qd
+packed struct FileLump {
+	offset: u32
+	size:   u32
+	name:   u64       // 8 raw bytes
+}
+// sizeof(FileLump) == 16 bytes (a plain struct would be 24).
+
+fn main() {
+	FileLump { offset = 100 size = 200 name = 0 } -> lump
+	lump <<offset print nl      // 100
+	lump <<size   print nl      // 200
+}
+```
+
+Sized integer fields store at their declared width in memory and sign-extend (signed) or zero-extend (unsigned) to `i64` when pushed onto the stack. See [Type casting](../../reference/types.md#sized-integer-types) for the details and the [keywords reference](../../reference/keywords.md#packed) for `packed`.
+
 ## What's next?
 
 Learn about [Constants & Enums](constants.md) to define fixed values.

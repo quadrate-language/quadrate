@@ -22,9 +22,17 @@ KEYWORD(pub, "Makes a function, constant, or struct visible to other modules.")
 /// @example const PI = 3.14159
 KEYWORD(const, "Declares a compile-time constant value.")
 
+/// Module-level mutable global variable.
+/// @example var counter:i64 = 0
+KEYWORD(var, "Declares a module-level mutable global; `-> name` always writes to the global, never a local.")
+
 /// Struct declaration keyword.
 /// @example struct Point { x:f64 y:f64 }
 KEYWORD(struct, "Declares a structured data type with named fields.")
+
+/// Packed struct modifier.
+/// @example packed struct FileLump { offset:u32 size:u32 name:u64 }
+KEYWORD(packed, "Struct modifier: fields laid out adjacent at exact widths, no padding. Used before `struct`.")
 
 /// Module import keyword.
 /// @example use strings

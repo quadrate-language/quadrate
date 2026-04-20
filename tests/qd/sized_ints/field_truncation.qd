@@ -1,0 +1,26 @@
+// Stores narrower than i64 must truncate the stack value, and reads of that
+// same byte pattern through a different-width field expose the raw bytes.
+
+struct Word {
+	lo:u8
+	hi:u8
+	full:u16
+}
+
+fn main() {
+	// 0x1234 written into a u16 should read back intact.
+	Word { lo=0 hi=0 full=0x1234 } -> w
+	w <<full print nl              // 4660
+
+	// Writing 0x1FF to u8 truncates to 0xFF (255).
+	Word { lo=0x1FF hi=0 full=0 } -> w2
+	w2 <<lo print nl               // 255
+
+	// Writing -2 to u8 truncates to 0xFE (254).
+	Word { lo=-2 hi=0 full=0 } -> w3
+	w3 <<lo print nl               // 254
+
+	// Writing 0x10000 to u16 truncates to 0x0000.
+	Word { lo=0 hi=0 full=0x10000 } -> w4
+	w4 <<full print nl             // 0
+}

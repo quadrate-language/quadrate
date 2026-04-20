@@ -8,6 +8,7 @@
 #include "ptr_registry.h"
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <stdint.h>
 #include <stdatomic.h>
 #include <stdbool.h>
@@ -49,6 +50,12 @@ void* qd_struct_alloc(size_t size, qd_struct_destructor_fn destructor) {
 
 	// Return pointer to struct data (after header)
 	void* struct_ptr = (char*)mem + sizeof(qd_struct_header_t);
+
+	// Zero the struct body. Required for sized-integer fields (i8/i16/i32/u8/u16/u32)
+	// that occupy only part of an 8-byte-aligned slot: the unused padding would
+	// otherwise be undefined, and the optimizer can fold trunc/zext chains
+	// through the undef bits and return surprising values.
+	memset(struct_ptr, 0, size);
 
 	// Register this struct pointer
 	ptr_registry_add(&struct_registry, struct_ptr);

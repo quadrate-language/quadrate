@@ -555,11 +555,12 @@ void detectMagicNumbers(IAstNode* node, const std::string& filename, std::vector
 			std::string value = literal->value();
 			// Allow -1, 0, 1 as common values
 			if (value != "0" && value != "1" && value != "-1") {
-				// Check if inside a constant declaration (which is acceptable)
+				// Check if inside a constant or var declaration (which is acceptable)
 				IAstNode* parent = node->parent();
 				bool inConstant = false;
 				while (parent) {
-					if (parent->type() == IAstNode::Type::CONSTANT_DECLARATION) {
+					if (parent->type() == IAstNode::Type::CONSTANT_DECLARATION ||
+							parent->type() == IAstNode::Type::GLOBAL_VAR_DECLARATION) {
 						inConstant = true;
 						break;
 					}

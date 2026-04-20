@@ -98,6 +98,26 @@
       "examples": ["buf 0 mem::get_f64 -> x"]
     },
     {
+      "name": "get_i16",
+      "signature": "(address:ptr offset:i64 -- value:i64)",
+      "failable": false,
+      "description": "Get a signed 16-bit integer at offset (sign-extended to i64).",
+      "params": [],
+      "returns": [],
+      "errors": [],
+      "examples": []
+    },
+    {
+      "name": "get_i32",
+      "signature": "(address:ptr offset:i64 -- value:i64)",
+      "failable": false,
+      "description": "Get a signed 32-bit integer at offset (sign-extended to i64).",
+      "params": [],
+      "returns": [],
+      "errors": [],
+      "examples": []
+    },
+    {
       "name": "get_i64",
       "signature": "(address:ptr offset:i64 -- value:i64)",
       "failable": false,
@@ -108,6 +128,16 @@
       "examples": ["buf 0 mem::get_i64 -> n"]
     },
     {
+      "name": "get_i8",
+      "signature": "(address:ptr offset:i64 -- value:i64)",
+      "failable": false,
+      "description": "Get a signed 8-bit integer at offset (sign-extended to i64).",
+      "params": [],
+      "returns": [{"name": "value", "type": "i64", "description": "Sign-extended value (-128..127)"}],
+      "errors": [],
+      "examples": []
+    },
+    {
       "name": "get_ptr",
       "signature": "(address:ptr offset:i64 -- value:ptr)",
       "failable": false,
@@ -116,6 +146,36 @@
       "returns": [{"name": "value", "type": "ptr", "description": "Pointer value"}],
       "errors": [],
       "examples": ["buf 0 mem::get_ptr -> p"]
+    },
+    {
+      "name": "get_u16",
+      "signature": "(address:ptr offset:i64 -- value:i64)",
+      "failable": false,
+      "description": "Get an unsigned 16-bit integer at offset (zero-extended to i64).",
+      "params": [],
+      "returns": [],
+      "errors": [],
+      "examples": []
+    },
+    {
+      "name": "get_u32",
+      "signature": "(address:ptr offset:i64 -- value:i64)",
+      "failable": false,
+      "description": "Get an unsigned 32-bit integer at offset (zero-extended to i64).",
+      "params": [],
+      "returns": [],
+      "errors": [],
+      "examples": []
+    },
+    {
+      "name": "get_u8",
+      "signature": "(address:ptr offset:i64 -- value:i64)",
+      "failable": false,
+      "description": "Get an unsigned 8-bit integer at offset (zero-extended to i64).",
+      "params": [],
+      "returns": [{"name": "value", "type": "i64", "description": "Zero-extended value (0..255)"}],
+      "errors": [],
+      "examples": []
     },
     {
       "name": "is_not_null",
@@ -178,6 +238,26 @@
       "examples": ["3.14 buf 0 mem::set_f64"]
     },
     {
+      "name": "set_i16",
+      "signature": "(value:i64 address:ptr offset:i64 -- )",
+      "failable": false,
+      "description": "Set a signed 16-bit integer at offset. Stored as low 2 bytes of `value`.",
+      "params": [],
+      "returns": [],
+      "errors": [],
+      "examples": []
+    },
+    {
+      "name": "set_i32",
+      "signature": "(value:i64 address:ptr offset:i64 -- )",
+      "failable": false,
+      "description": "Set a signed 32-bit integer at offset. Stored as low 4 bytes of `value`.",
+      "params": [],
+      "returns": [],
+      "errors": [],
+      "examples": []
+    },
+    {
       "name": "set_i64",
       "signature": "(value:i64 address:ptr offset:i64 -- )",
       "failable": false,
@@ -188,6 +268,16 @@
       "examples": ["42 buf 0 mem::set_i64"]
     },
     {
+      "name": "set_i8",
+      "signature": "(value:i64 address:ptr offset:i64 -- )",
+      "failable": false,
+      "description": "Set a signed 8-bit integer at offset. Stored value is the low byte of `value`.",
+      "params": [{"name": "value", "type": "i64", "description": "Integer value (low 8 bits used)"}, {"name": "address", "type": "ptr", "description": "Base address"}, {"name": "offset", "type": "i64", "description": "Byte offset from base"}],
+      "returns": [],
+      "errors": [],
+      "examples": []
+    },
+    {
       "name": "set_ptr",
       "signature": "(value:ptr address:ptr offset:i64 -- )",
       "failable": false,
@@ -196,6 +286,36 @@
       "returns": [],
       "errors": [],
       "examples": ["other_buf buf 0 mem::set_ptr"]
+    },
+    {
+      "name": "set_u16",
+      "signature": "(value:i64 address:ptr offset:i64 -- )",
+      "failable": false,
+      "description": "Set an unsigned 16-bit integer at offset. Stored as low 2 bytes of `value`.",
+      "params": [],
+      "returns": [],
+      "errors": [],
+      "examples": []
+    },
+    {
+      "name": "set_u32",
+      "signature": "(value:i64 address:ptr offset:i64 -- )",
+      "failable": false,
+      "description": "Set an unsigned 32-bit integer at offset. Stored as low 4 bytes of `value`.",
+      "params": [],
+      "returns": [],
+      "errors": [],
+      "examples": []
+    },
+    {
+      "name": "set_u8",
+      "signature": "(value:i64 address:ptr offset:i64 -- )",
+      "failable": false,
+      "description": "Set an unsigned 8-bit integer at offset. Stored value is the low byte of `value`.",
+      "params": [],
+      "returns": [],
+      "errors": [],
+      "examples": []
     },
     {
       "name": "to_string",

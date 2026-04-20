@@ -187,6 +187,7 @@ static Module parseModule(const std::string& path) {
 	std::regex docRe(R"(^\s*///\s?(.*))");
 	std::regex pubFnRe(R"(^\s*pub\s+fn\s+(?:\(([^)]*)\)\s+)?(\w+)\s*\(([^)]*)\)\s*(!?))");
 	std::regex pubConstRe(R"(^\s*pub\s+const\s+(\w+)\s*=\s*(.+))");
+	std::regex pubVarRe(R"(^\s*pub\s+var\s+(\w+)\s*:\s*\w+\s*=\s*(.+))");
 	std::regex structRe(R"(^\s*(?:pub\s+)?struct\s+(\w+(?:<[^>]+>)?))");
 	std::regex pubStructRe(R"(^\s*pub\s+struct\s+)");
 	std::regex fieldDefRe(R"(^\s*(\w+)\s*:\s*([a-zA-Z0-9_*<>]+))");
@@ -326,6 +327,14 @@ static Module parseModule(const std::string& path) {
 
 		// Constant
 		if (std::regex_search(trimmed, m, pubConstRe)) {
+			auto doc = parseDocBuffer(docBuf);
+			mod.constants.push_back({m[1], trim(m[2].str()), doc.desc});
+			docBuf.clear();
+			continue;
+		}
+
+		// Module-level mutable global; documented alongside constants.
+		if (std::regex_search(trimmed, m, pubVarRe)) {
 			auto doc = parseDocBuffer(docBuf);
 			mod.constants.push_back({m[1], trim(m[2].str()), doc.desc});
 			docBuf.clear();

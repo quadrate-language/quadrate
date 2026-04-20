@@ -491,6 +491,7 @@ program := declaration*
 
 declaration := use_statement
              | const_declaration
+             | var_declaration
              | enum_declaration
              | type_alias_declaration
              | struct_declaration
@@ -1556,14 +1557,15 @@ Implementations MUST provide the following runtime functions:
 
 ```ebnf
 program         = { declaration } ;
-declaration     = use_stmt | const_decl | enum_decl | type_alias_decl | struct_decl | fn_decl | import_decl | test_decl ;
+declaration     = use_stmt | const_decl | var_decl | enum_decl | type_alias_decl | struct_decl | fn_decl | import_decl | test_decl ;
 
 use_stmt        = "use" ( identifier | string ) ;
 const_decl      = "const" identifier "=" expression ;
+var_decl        = ["pub"] "var" identifier ":" type "=" ( literal | const_name ) ;
 enum_decl       = ["pub"] "enum" identifier "{" { enum_variant } "}" ;
 enum_variant    = identifier [ "=" integer ] ;
 type_alias_decl = ["pub"] "type" identifier "=" type ;
-struct_decl     = ["pub"] "struct" identifier [type_params] "{" { field_decl } "}" ;
+struct_decl     = ["pub"] ["packed"] "struct" identifier [type_params] "{" { field_decl } "}" ;
 fn_decl         = ["pub"] "fn" identifier [type_params] signature ["!"] block ;
 import_decl     = "import" string "as" string "{" { import_fn } "}" ;
 test_decl       = "test" string block ;

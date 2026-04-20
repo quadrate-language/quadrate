@@ -1,0 +1,6 @@
+// Var with an unknown type name.
+var thing:NotAType = 0
+
+fn main() {
+	thing print nl
+}

@@ -2103,6 +2103,77 @@ namespace Qd {
 
 		printTiming("collectConstants");
 
+		// Collect module-level mutable vars (`var name:type = literal`) from
+		// the main file AND every imported module (for `use "file.qd"` style
+		// local merges, the imports show up as separate module ASTs). Emit
+		// each as an LLVM global variable with the parsed initializer.
+		// Reads/writes are lowered in generateIdentifier and
+		// generateLocalOne respectively.
+		std::vector<IAstNode*> allRootsForGlobals;
+		allRootsForGlobals.push_back(root);
+		for (const auto& modulePair : moduleASTs) {
+			if (modulePair.second) {
+				allRootsForGlobals.push_back(modulePair.second);
+			}
+		}
+		for (auto* rootIt : allRootsForGlobals) {
+			for (auto* child : rootIt->children()) {
+				auto* varNode = dynamic_cast<AstNodeGlobalVar*>(child);
+				if (!varNode) {
+					continue;
+				}
+
+				// Skip if already collected from a different root.
+				if (moduleGlobalVars.count(varNode->name())) {
+					continue;
+				}
+
+				const std::string& name = varNode->name();
+				const std::string& typeName = varNode->typeName();
+				const std::string value = varNode->value();
+
+				llvm::Type* ty = nullptr;
+				llvm::Constant* init = nullptr;
+
+				if (typeName == "f64") {
+					ty = builder->getDoubleTy();
+					double d = 0.0;
+					if (!value.empty()) {
+						char* endp = nullptr;
+						d = std::strtod(value.c_str(), &endp);
+						(void)endp;
+					}
+					init = llvm::ConstantFP::get(ty, d);
+				} else if (typeName == "str") {
+					// String globals always start as null. Refcounted string
+					// machinery requires a heap-allocated header that can't
+					// be expressed as an LLVM static initializer; if users
+					// want content, they assign it at runtime. Usually
+					// globals this big are ptrs anyway.
+					ty = ptrTy;
+					init = llvm::ConstantPointerNull::get(ptrTy);
+				} else if (typeName == "ptr") {
+					ty = ptrTy;
+					init = llvm::ConstantPointerNull::get(ptrTy);
+				} else {
+					// Integer types (i8/i16/i32/i64/u8/u16/u32/u64). Stored in
+					// an LLVM i64 — sized-int semantics live at memory-access
+					// sites, not on module globals (which aren't part of any
+					// packed record).
+					ty = int64Ty;
+					int64_t iv = 0;
+					safeParseInt64(value, iv);
+					init = builder->getInt64(static_cast<uint64_t>(iv));
+				}
+
+				auto* gv = new llvm::GlobalVariable(*module, ty,
+						/*isConstant=*/false, llvm::GlobalValue::InternalLinkage, init, "qd_global_" + name);
+				moduleGlobalVars[name] = gv;
+				moduleGlobalVarTypes[name] = typeName;
+			}
+		}
+		printTiming("collectGlobalVars");
+
 		// Process struct declarations from all modules
 		for (const auto& modulePair : moduleASTs) {
 			const std::string& moduleName = modulePair.first;

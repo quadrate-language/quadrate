@@ -65,6 +65,7 @@
 #include <quadrate/qc/ast_node_for.h>
 #include <quadrate/qc/ast_node_function.h>
 #include <quadrate/qc/ast_node_function_pointer.h>
+#include <quadrate/qc/ast_node_global_var.h>
 #include <quadrate/qc/ast_node_identifier.h>
 #include <quadrate/qc/ast_node_if.h>
 #include <quadrate/qc/ast_node_import.h>
@@ -269,6 +270,13 @@ namespace Qd {
 		// Module constants
 		std::map<std::string, std::string> moduleConstants;
 
+		// Module-level mutable variables declared with `var`. Map a name to the
+		// LLVM global that holds the value. Reads of the identifier lower to a
+		// load from this global; `-> name` writes lower to a store. Populated
+		// alongside moduleConstants during the initial module pass.
+		std::map<std::string, llvm::GlobalVariable*> moduleGlobalVars;
+		std::map<std::string, std::string> moduleGlobalVarTypes; // name -> type string
+
 		// Module ASTs
 		std::vector<std::pair<std::string, IAstNode*>> moduleASTs;
 
@@ -374,6 +382,7 @@ namespace Qd {
 			std::vector<FieldInfo> fields;
 			size_t totalSize;
 			bool isPublic;
+			bool isPacked = false;
 		};
 
 		std::map<std::string, StructLayout> structDefinitions;

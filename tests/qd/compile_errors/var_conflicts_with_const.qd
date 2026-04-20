@@ -1,0 +1,7 @@
+// Var name collides with an existing const.
+const counter = 10
+var counter:i64 = 0
+
+fn main() {
+	counter print nl
+}

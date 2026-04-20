@@ -1,0 +1,6 @@
+// Var initializer references a const that wasn't declared.
+var counter:i64 = DOES_NOT_EXIST
+
+fn main() {
+	counter print nl
+}
