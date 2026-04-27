@@ -667,12 +667,12 @@ static int generate(const std::vector<Module>& modules, const std::string& outDi
 						return;
 					}
 					f << "<p class=\"xref\"><strong>" << label << ":</strong> ";
-					bool first = true;
+					bool firstRef = true;
 					for (const auto& qn : refs) {
-						if (!first) {
+						if (!firstRef) {
 							f << ", ";
 						}
-						first = false;
+						firstRef = false;
 						auto pos = qn.find("::");
 						std::string targetMod = pos == std::string::npos ? "" : qn.substr(0, pos);
 						std::string targetFn = pos == std::string::npos ? qn : qn.substr(pos + 2);

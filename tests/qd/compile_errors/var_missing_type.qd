@@ -1,6 +1,0 @@
-// Var declarations require an explicit :type annotation.
-var counter = 0
-
-fn main() {
-	counter print nl
-}
