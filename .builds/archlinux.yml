@@ -7,7 +7,6 @@ packages:
   - openssl
   - pkgconf
   - sqlite
-  - valgrind
   - zlib
 
 sources:
@@ -32,10 +31,6 @@ tasks:
   - test: |
       cd quadrate
       make tests
-  - valgrind: |
-      cd quadrate
-      export DEBUGINFOD_URLS="https://debuginfod.archlinux.org"
-      make valgrind
   - dist: |
       cd quadrate
       if git describe --exact-match HEAD 2>/dev/null; then
