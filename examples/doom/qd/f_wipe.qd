@@ -1,0 +1,128 @@
+/// Screen melt/wipe effect. Ported from doomgeneric/f_wipe.c — the
+/// vertical-column "meltdown" Doom runs between screens (title, demo,
+/// level transitions). Our port only implements the melt variant; the
+/// colour-crossfade fallback from the original isn't wired up yet.
+///
+/// Usage:
+///   F_WipeStartScreen      // after the outgoing frame is in I_VideoBuffer
+///   <render incoming frame into I_VideoBuffer>
+///   F_WipeEndScreen        // snapshots the incoming frame and puts
+///                          // the outgoing one back into I_VideoBuffer
+///   loop { 1 F_WipeTick -> done  I_FinishUpdate  28 sdl::Delay
+///          done 1 eq if { break } }
+
+use mem
+use "doomdef.qd"
+use "m_random.qd"
+use "i_video.qd"
+
+pub var wipe_active:i64 = 0
+
+// Outgoing screen snapshot (visible when the wipe starts).
+var wipe_start:ptr = 0
+// Incoming screen snapshot (revealed as columns slide down).
+var wipe_end:ptr = 0
+// Per-column y-offset (i32 array, SCREENWIDTH entries). Columns
+// whose y is negative haven't started moving yet; once positive,
+// they slide down by `y+1` per tic (capped at 8) until reaching
+// SCREENHEIGHT.
+var wipe_ys:ptr = 0
+
+fn free_buffers( -- ) {
+	wipe_start mem::is_null 0 eq if { wipe_start mem::free  0 -> wipe_start }
+	wipe_end   mem::is_null 0 eq if { wipe_end   mem::free  0 -> wipe_end   }
+	wipe_ys    mem::is_null 0 eq if { wipe_ys    mem::free  0 -> wipe_ys    }
+}
+
+/// Snapshot the current video buffer as the outgoing (start) screen.
+/// Call with the old frame already rendered into I_VideoBuffer.
+pub fn F_WipeStartScreen( -- ) {
+	free_buffers
+	SCREENWIDTH SCREENHEIGHT mul mem::alloc! -> wipe_start
+	wipe_start I_ReadScreen
+}
+
+/// Snapshot the current video buffer as the incoming (end) screen,
+/// then restore the outgoing screen into I_VideoBuffer so the melt
+/// starts from the old frame. Call with the new frame already rendered
+/// into I_VideoBuffer and F_WipeStartScreen having been called earlier.
+pub fn F_WipeEndScreen( -- ) {
+	SCREENWIDTH SCREENHEIGHT mul mem::alloc! -> wipe_end
+	wipe_end I_ReadScreen
+	I_VideoBuffer wipe_start SCREENWIDTH SCREENHEIGHT mul mem::copy
+
+	SCREENWIDTH 4 mul mem::alloc! -> wipe_ys
+	// y[0] seeded to -[0..15]; each successive column drifts ±1,
+	// clamped to [-15, 0] so the columns stay staggered.
+	0 M_Random 16 mod sub -> y0
+	y0 wipe_ys 0 mem::set_i32
+	1 -> i
+	loop {
+		i SCREENWIDTH gte if { break }
+		wipe_ys i 1 sub 4 mul mem::get_i32 -> prev
+		M_Random 3 mod 1 sub -> r
+		prev r add -> yi
+		yi 0 gt if { 0 -> yi }
+		yi -16 eq if { -15 -> yi }
+		yi wipe_ys i 4 mul mem::set_i32
+		i 1 add -> i
+	}
+	1 -> wipe_active
+}
+
+/// Advance the melt by `ticks` tics. Returns 1 when the wipe is fully
+/// complete (all columns have slid off-screen), 0 otherwise. Updates
+/// I_VideoBuffer in place so the caller just needs to I_FinishUpdate.
+pub fn F_WipeTick(ticks:i64 -- done:i64) {
+	wipe_active 0 eq if { 1 return }
+
+	0 -> t
+	1 -> finished
+	loop {
+		t ticks gte if { break }
+		0 -> col
+		loop {
+			col SCREENWIDTH gte if { break }
+			wipe_ys col 4 mul mem::get_i32 -> yi
+			yi 0 lt if {
+				yi 1 add wipe_ys col 4 mul mem::set_i32
+				0 -> finished
+			} else {
+				yi SCREENHEIGHT lt if {
+					yi 16 lt if { yi 1 add } else { 8 } -> dy
+					yi dy add SCREENHEIGHT gt if { SCREENHEIGHT yi sub -> dy }
+
+					// Paint end screen into rows [yi, yi+dy) of column col.
+					0 -> j
+					loop {
+						j dy gte if { break }
+						wipe_end yi j add SCREENWIDTH mul col add mem::get_u8 -> px
+						px I_VideoBuffer yi j add SCREENWIDTH mul col add mem::set_u8
+						j 1 add -> j
+					}
+					yi dy add -> yi
+
+					// Slide start screen down: rows [yi, SCREENHEIGHT) show
+					// start_screen rows [0, SCREENHEIGHT-yi).
+					0 -> j
+					loop {
+						yi j add SCREENHEIGHT gte if { break }
+						wipe_start j SCREENWIDTH mul col add mem::get_u8 -> px
+						px I_VideoBuffer yi j add SCREENWIDTH mul col add mem::set_u8
+						j 1 add -> j
+					}
+					yi wipe_ys col 4 mul mem::set_i32
+					0 -> finished
+				}
+			}
+			col 1 add -> col
+		}
+		t 1 add -> t
+	}
+
+	finished 1 eq if {
+		free_buffers
+		0 -> wipe_active
+	}
+	finished
+}

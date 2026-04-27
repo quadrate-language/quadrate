@@ -1,0 +1,118 @@
+/// DEMO1 attract-mode playback. Ported from doomgeneric/g_game.c's
+/// G_DoPlayDemo + G_ReadDemoTiccmd, but only to the extent our
+/// simplified keystate-driven D_StepCamera can consume.
+///
+/// WAD layout (Doom 1.9, demoversion 109):
+///   header (13 bytes): version, skill, episode, map, deathmatch,
+///                      respawnparm, fastparm, nomonsters,
+///                      consoleplayer, playeringame[0..3]
+///   then repeating 4-byte ticcmd:
+///     forwardmove:i8  (-50..50, 50 units/tic at run speed)
+///     sidemove:i8     (-40..40)
+///     angleturn:i8    (upper byte of i16 — positive = CCW/left)
+///     buttons:u8      (bit 0 = BT_ATTACK)
+///   terminator byte 0x80 (DEMOMARKER).
+///
+/// Doom 1.10/Ultimate demos set demoversion 111 but share the same
+/// low-resolution ticcmd format — they're the common attract demos.
+
+use mem
+use "w_wad.qd"
+
+pub var demo_active:i64 = 0
+// Episode/map the demo was recorded on (populated by G_LoadDemo1 so
+// callers can switch levels before playback).
+pub var demo_episode:i64 = 0
+pub var demo_map:i64 = 0
+
+// Raw lump bytes (owned by the WAD cache; do not free).
+var demo_data:ptr = 0
+// Total lump length in bytes, so we can stop reading at EOF even
+// if the DEMOMARKER got truncated.
+var demo_len:i64 = 0
+// Current read offset; starts at 13 (past the header) after load.
+var demo_off:i64 = 0
+
+const DEMOMARKER = 0x80
+const DEMO_HEADER_BYTES = 13
+const DEMO_V19 = 109
+const DEMO_ULTIMATE = 111
+
+/// Try to load DEMO1 from the IWAD. Returns 1 on success, 0 otherwise
+/// (missing lump, unsupported version, truncated header, …). After a
+/// successful load, `G_DemoNextKeystate` produces one keystate per
+/// call until end-of-demo.
+pub fn G_LoadDemo1( -- ok:i64) {
+	8 mem::alloc! -> key
+	key 8 mem::zero
+	"DEMO1" mem::from_string -> nl -> np
+	0 nl 1 for k { np k mem::get_u8 key k mem::set_u8 }
+	np mem::free
+	key W_CheckNumForName -> lnum
+	key mem::free
+	lnum 0 lt if { 0 -> demo_active  0 return }
+
+	lnum W_LumpLength -> demo_len
+	demo_len DEMO_HEADER_BYTES lte if { 0 -> demo_active  0 return }
+
+	lnum 0 W_CacheLumpNum -> demo_data
+	demo_data 0 mem::get_u8 -> version
+	version DEMO_V19 neq version DEMO_ULTIMATE neq and if {
+		"demo: unsupported version " print version print nl
+		0 -> demo_active
+		0 return
+	}
+
+	// Header layout (Doom 1.9, 13 bytes):
+	//   [0] version  [1] skill      [2] episode    [3] map
+	//   [4] deathmatch  [5] respawn  [6] fast       [7] nomonsters
+	//   [8] consoleplayer  [9..12] playeringame[0..3]
+	demo_data 2 mem::get_u8 -> demo_episode
+	demo_data 3 mem::get_u8 -> demo_map
+
+	DEMO_HEADER_BYTES -> demo_off
+	1 -> demo_active
+	1
+}
+
+/// Pop one ticcmd off the stream and hand back the raw analog values
+/// plus an ok-flag. `ok=0` means end of demo (terminator or EOF).
+///   fwd:  signed forwardmove (-50..50, + is forward)
+///   side: signed sidemove    (-40..40, + is strafe-right)
+///   turn: signed angleturn   (i8; Doom applies it as (turn<<8)<<16 BAM)
+///   btn:  unsigned buttons   (bit 0 = BT_ATTACK)
+pub fn G_DemoNextTiccmd( -- fwd:i64 side:i64 turn:i64 btn:i64 ok:i64) {
+	demo_active 0 eq if { 0 0 0 0 0 return }
+	demo_off demo_len gte if { 0 -> demo_active  0 0 0 0 0 return }
+
+	demo_data demo_off mem::get_u8 -> b0
+	b0 DEMOMARKER eq if { 0 -> demo_active  0 0 0 0 0 return }
+
+	// Need four full bytes for the ticcmd.
+	demo_off 4 add demo_len gt if { 0 -> demo_active  0 0 0 0 0 return }
+
+	demo_data demo_off       mem::get_i8 -> fwd
+	demo_data demo_off 1 add mem::get_i8 -> side
+	demo_data demo_off 2 add mem::get_i8 -> turn
+	demo_data demo_off 3 add mem::get_u8 -> btn
+	demo_off 4 add -> demo_off
+	fwd side turn btn 1
+}
+
+/// Translate raw ticcmd fields into d_main's keystate bitmap. Used
+/// only to keep the fire / auto-fire code path reachable during demo
+/// playback — the camera itself follows the analog values via
+/// D_StepCameraAnalog, not the keystate.
+///   bit 0 forward, bit 1 back, bit 2 turn-L, bit 3 turn-R,
+///   bit 4 strafe-L, bit 5 strafe-R, bit 6 fire.
+pub fn G_TiccmdToKeystate(fwd:i64 side:i64 turn:i64 btn:i64 -- ks:i64) {
+	0 -> ks
+	fwd  0 gt if { ks 1  or -> ks }
+	fwd  0 lt if { ks 2  or -> ks }
+	side 0 lt if { ks 16 or -> ks }
+	side 0 gt if { ks 32 or -> ks }
+	turn 0 gt if { ks 4  or -> ks }
+	turn 0 lt if { ks 8  or -> ks }
+	btn  1 and 0 neq if { ks 64 or -> ks }
+	ks
+}

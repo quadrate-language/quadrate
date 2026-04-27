@@ -9,6 +9,7 @@
 /// qd/doom_patch_notes.md or v_patch.h for the on-disk layout.
 
 use mem
+use "doomdef.qd"
 
 /// patch_t header. Little-endian on disk, matches doomgeneric's
 /// PACKEDATTR layout exactly. `columnofs` is dynamic — there are `width`
@@ -39,33 +40,45 @@ pub fn V_DrawPatch(x:i64 y:i64 patch:ptr fb:ptr fb_stride:i64 -- ) {
 	loop {
 		col w gte if { break }
 
-		// columnofs[col] is an i32 at offset 8 + col*4 in the patch.
-		patch PATCH_HEADER_BYTES col 4 mul add mem::get_i32 -> col_off
-		patch col_off mem::ptr_add -> column   // points at the first post
+		x col add -> dst_x
+		dst_x 0 gte dst_x fb_stride lt and if {
+			// columnofs[col] is an i32 at offset 8 + col*4 in the patch.
+			patch PATCH_HEADER_BYTES col 4 mul add mem::get_i32 -> col_off
+			patch col_off mem::ptr_add -> column   // points at the first post
 
-		// Walk posts in this column until we hit topdelta 0xFF.
-		loop {
-			column 0 mem::get_u8 -> topdelta
-			topdelta 255 eq if { break }
-
-			column 1 mem::get_u8 -> post_len
-			// Doom skips 1 unused byte before and after the pixel run;
-			// source data starts at offset 3 from the start of the post.
-			column 3 mem::ptr_add -> source
-
-			// Compute the destination address: fb[y + topdelta][x + col].
-			y topdelta add fb_stride mul  x add  col add -> dst_index
-
-			0 -> i
+			// Walk posts in this column until we hit topdelta 0xFF.
 			loop {
-				i post_len gte if { break }
-				source i mem::get_u8 -> pixel
-				pixel fb dst_index i fb_stride mul add mem::set_u8
-				i 1 add -> i
-			}
+				column 0 mem::get_u8 -> topdelta
+				topdelta 255 eq if { break }
 
-			// Advance to the next post: topdelta + len + 4 bytes (2 header + 1 pre-pad + post_len pixels + 1 post-pad).
-			column post_len 4 add mem::ptr_add -> column
+				column 1 mem::get_u8 -> post_len
+				// Doom skips 1 unused byte before and after the pixel run;
+				// source data starts at offset 3 from the start of the post.
+				column 3 mem::ptr_add -> source
+
+				// Clip the post vertically to [0, SCREENHEIGHT). `skip`
+				// trims pixels above the top of the framebuffer; `draw_len`
+				// trims the run to what still fits at the bottom.
+				y topdelta add -> start_y
+				start_y 0 lt if { 0 start_y sub } else { 0 } -> skip
+				post_len skip sub -> draw_len
+				start_y skip add draw_len add SCREENHEIGHT gt if {
+					SCREENHEIGHT start_y skip add sub -> draw_len
+				}
+				draw_len 0 gt if {
+					start_y skip add fb_stride mul  dst_x add -> dst_index
+					0 -> i
+					loop {
+						i draw_len gte if { break }
+						source skip i add mem::get_u8 -> pixel
+						pixel fb dst_index i fb_stride mul add mem::set_u8
+						i 1 add -> i
+					}
+				}
+
+				// Advance to the next post: topdelta + len + 4 bytes (2 header + 1 pre-pad + post_len pixels + 1 post-pad).
+				column post_len 4 add mem::ptr_add -> column
+			}
 		}
 
 		col 1 add -> col
@@ -162,27 +175,39 @@ pub fn V_DrawPatchFlipped(x:i64 y:i64 patch:ptr fb:ptr fb_stride:i64 -- ) {
 	0 -> col
 	loop {
 		col w gte if { break }
-		// Read the mirrored source column (w-1 - col).
-		w 1 sub col sub -> src_col
-		patch PATCH_HEADER_BYTES src_col 4 mul add mem::get_i32 -> col_off
-		patch col_off mem::ptr_add -> column
 
-		loop {
-			column 0 mem::get_u8 -> topdelta
-			topdelta 255 eq if { break }
+		x col add -> dst_x
+		dst_x 0 gte dst_x fb_stride lt and if {
+			// Read the mirrored source column (w-1 - col).
+			w 1 sub col sub -> src_col
+			patch PATCH_HEADER_BYTES src_col 4 mul add mem::get_i32 -> col_off
+			patch col_off mem::ptr_add -> column
 
-			column 1 mem::get_u8 -> post_len
-			column 3 mem::ptr_add -> source
-
-			y topdelta add fb_stride mul  x add  col add -> dst_index
-			0 -> i
 			loop {
-				i post_len gte if { break }
-				source i mem::get_u8 -> pixel
-				pixel fb dst_index i fb_stride mul add mem::set_u8
-				i 1 add -> i
+				column 0 mem::get_u8 -> topdelta
+				topdelta 255 eq if { break }
+
+				column 1 mem::get_u8 -> post_len
+				column 3 mem::ptr_add -> source
+
+				y topdelta add -> start_y
+				start_y 0 lt if { 0 start_y sub } else { 0 } -> skip
+				post_len skip sub -> draw_len
+				start_y skip add draw_len add SCREENHEIGHT gt if {
+					SCREENHEIGHT start_y skip add sub -> draw_len
+				}
+				draw_len 0 gt if {
+					start_y skip add fb_stride mul  dst_x add -> dst_index
+					0 -> i
+					loop {
+						i draw_len gte if { break }
+						source skip i add mem::get_u8 -> pixel
+						pixel fb dst_index i fb_stride mul add mem::set_u8
+						i 1 add -> i
+					}
+				}
+				column post_len 4 add mem::ptr_add -> column
 			}
-			column post_len 4 add mem::ptr_add -> column
 		}
 		col 1 add -> col
 	}

@@ -614,7 +614,12 @@ pub fn P_LoadThings(lump:i64 -- ) {
 		rec 2 mem::get_i16 FRACBITS shl -> ty
 		rec 4 mem::get_i16 -> a_deg
 		rec 6 mem::get_i16 -> type
-		a_deg 11930465 mul -> tang
+		// Map-editor angles are always multiples of 45°. Matching
+		// Doom's `mobj->angle = ANG45 * (mthing->angle/45)`, we reach
+		// the canonical BAM values (ANG90 = 0x40000000, ANG180 = ...)
+		// exactly, instead of the 26-BAM rounding drift that
+		// `a_deg * 11930465` produces and accumulates during demos.
+		a_deg 45 div ANG45 mul -> tang
 		tx   things_data i THING_SIZE mul THING_OFF_X add mem::set_i32
 		ty   things_data i THING_SIZE mul THING_OFF_Y add mem::set_i32
 		type things_data i THING_SIZE mul THING_OFF_TYPE add mem::set_i32
@@ -671,10 +676,38 @@ pub fn P_LoadThings(lump:i64 -- ) {
 pub fn P_LoadBlockMap(lump:i64 -- ) { lump drop }
 pub fn P_GroupLines( -- ) { }
 
+/// Release every per-level buffer back to the allocator and reset
+/// the counters, so P_SetupLevel can be called again to load a
+/// different map without leaking the previous one's data.
+pub fn P_TeardownLevel( -- ) {
+	vertexes    mem::is_null 0 eq if { vertexes    mem::free  0 cast<ptr> -> vertexes    }
+	sectors     mem::is_null 0 eq if { sectors     mem::free  0 cast<ptr> -> sectors     }
+	sides       mem::is_null 0 eq if { sides       mem::free  0 cast<ptr> -> sides       }
+	lines       mem::is_null 0 eq if { lines       mem::free  0 cast<ptr> -> lines       }
+	nodes       mem::is_null 0 eq if { nodes       mem::free  0 cast<ptr> -> nodes       }
+	subsectors  mem::is_null 0 eq if { subsectors  mem::free  0 cast<ptr> -> subsectors  }
+	segs        mem::is_null 0 eq if { segs        mem::free  0 cast<ptr> -> segs        }
+	things_data mem::is_null 0 eq if { things_data mem::free  0 cast<ptr> -> things_data }
+	0 -> numvertexes
+	0 -> numsectors
+	0 -> numsides
+	0 -> numlines
+	0 -> numnodes
+	0 -> numsubsectors
+	0 -> numsegs
+	0 -> numthings
+	0 -> player_start_x
+	0 -> player_start_y
+	0 -> player_start_angle
+	0 -> player_start_found
+}
+
 // ---- P_SetupLevel ----
 
 pub fn P_SetupLevel(episode:i64 map:i64 playermask:i64 skill:i64 -- ) {
 	playermask drop skill drop
+	// Reentrancy: clear any state from a previously-loaded map.
+	P_TeardownLevel
 
 	8 mem::alloc! -> lname
 	lname 8 mem::zero

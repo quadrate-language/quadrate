@@ -46,7 +46,7 @@ pub fn I_ZoneBase( -- p:ptr size:i64) {
 	"-mb" 1 M_CheckParmWithArgs -> parm
 	DEFAULT_RAM -> mb
 	parm 0 gt if {
-		parm 1 add M_Argv M_StrToInt -> ok -> v
+		parm M_Argv M_StrToInt -> ok -> v
 		ok 1 eq if { v -> mb }
 	}
 

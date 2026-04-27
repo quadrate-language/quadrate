@@ -90,11 +90,17 @@ fn pv_plot(x:i64 y:i64 c:i64 -- ) {
 }
 
 /// (worldx worldy viewx viewy c_a s_a -- depth side).
+///
+/// Doom convention (see r_main.c): positive side = right of the
+/// camera's view direction, so tx = dx*sin - dy*cos. For a camera
+/// facing east (s=0, c=1) a point to the north (+dy) is to the
+/// camera's LEFT, so `side` goes negative — matching vanilla's
+/// screen-x projection where the left half of the screen has tx < 0.
 fn to_view(x:i64 y:i64 vx:i64 vy:i64 c_a:i64 s_a:i64 -- fwd:i64 side:i64) {
 	x vx sub -> dx
 	y vy sub -> dy
 	dx c_a mul FRACBITS shr  dy s_a mul FRACBITS shr  add -> f
-	dy c_a mul FRACBITS shr  dx s_a mul FRACBITS shr  sub -> s
+	dx s_a mul FRACBITS shr  dy c_a mul FRACBITS shr  sub -> s
 	f s
 }
 
@@ -298,8 +304,8 @@ pub fn R_FillBackgroundFlats(viewx:i64 viewy:i64 viewangle:i64 -- ) {
 				100 fy sub -> tmp_d
 				default_ceil_eye_delta FOCAL mul tmp_d div -> fdepth
 				x 160 sub fdepth mul 160 div -> s_view
-				fdepth c_a mul 65536 div s_view s_a mul 65536 div sub -> fwx
-				fdepth s_a mul 65536 div s_view c_a mul 65536 div add -> fwy
+				fdepth c_a mul 65536 div s_view s_a mul 65536 div add -> fwx
+				fdepth s_a mul 65536 div s_view c_a mul 65536 div sub -> fwy
 				viewx fwx add -> fwx
 				viewy fwy add -> fwy
 				fwx 65536 div 63 and -> fu
@@ -324,8 +330,8 @@ pub fn R_FillBackgroundFlats(viewx:i64 viewy:i64 viewangle:i64 -- ) {
 				fy 100 sub -> tmp_d
 				EYE_FOCAL_FIXED tmp_d div -> fdepth
 				x 160 sub fdepth mul 160 div -> s_view
-				fdepth c_a mul 65536 div s_view s_a mul 65536 div sub -> fwx
-				fdepth s_a mul 65536 div s_view c_a mul 65536 div add -> fwy
+				fdepth c_a mul 65536 div s_view s_a mul 65536 div add -> fwx
+				fdepth s_a mul 65536 div s_view c_a mul 65536 div sub -> fwy
 				viewx fwx add -> fwx
 				viewy fwy add -> fwy
 				fwx 65536 div 63 and -> fu
@@ -860,8 +866,8 @@ pub fn R_DrawPerspective(viewx:i64 viewy:i64 viewangle:i64 -- ) {
 								tmp_d 0 gt if {
 									EYE_FOCAL_FIXED tmp_d div -> fdepth
 									x 160 sub fdepth mul 160 div -> s_view
-									fdepth c_a mul 65536 div s_view s_a mul 65536 div sub -> fwx
-									fdepth s_a mul 65536 div s_view c_a mul 65536 div add -> fwy
+									fdepth c_a mul 65536 div s_view s_a mul 65536 div add -> fwx
+									fdepth s_a mul 65536 div s_view c_a mul 65536 div sub -> fwy
 									viewx fwx add -> fwx
 									viewy fwy add -> fwy
 									fwx 65536 div 63 and -> fu
@@ -908,8 +914,8 @@ pub fn R_DrawPerspective(viewx:i64 viewy:i64 viewangle:i64 -- ) {
 								tmp_d 0 gt if {
 									ceil_eye_delta FOCAL mul tmp_d div -> fdepth
 									x 160 sub fdepth mul 160 div -> s_view
-									fdepth c_a mul 65536 div s_view s_a mul 65536 div sub -> fwx
-									fdepth s_a mul 65536 div s_view c_a mul 65536 div add -> fwy
+									fdepth c_a mul 65536 div s_view s_a mul 65536 div add -> fwx
+									fdepth s_a mul 65536 div s_view c_a mul 65536 div sub -> fwy
 									viewx fwx add -> fwx
 									viewy fwy add -> fwy
 									fwx 65536 div 63 and -> fu

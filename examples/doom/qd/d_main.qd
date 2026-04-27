@@ -41,6 +41,8 @@ use "r_sky.qd"
 use "v_video.qd"
 use "dump_frame.qd"
 use "p_states.qd"
+use "f_wipe.qd"
+use "g_demo.qd"
 
 // ---- State ----
 
@@ -140,14 +142,27 @@ pub var dbg_blocks:i64 = 0
 pub var dbg_moves:i64 = 0
 
 fn try_move(new_x:i64 new_y:i64 -- ) {
-	new_x new_y blocked -> b
-	b 0 eq if {
+	// Full step clear — take it.
+	new_x new_y blocked 0 eq if {
 		new_x -> camera_x
 		new_y -> camera_y
 		dbg_moves 1 add -> dbg_moves
-	} else {
-		dbg_blocks 1 add -> dbg_blocks
+		return
 	}
+	// Doom-style wall slide: if the diagonal move is blocked but the
+	// axis-aligned subcomponent is not, move along that axis only so
+	// the player glides along the wall instead of sticking.
+	new_x camera_y blocked 0 eq if {
+		new_x -> camera_x
+		dbg_moves 1 add -> dbg_moves
+		return
+	}
+	camera_x new_y blocked 0 eq if {
+		new_y -> camera_y
+		dbg_moves 1 add -> dbg_moves
+		return
+	}
+	dbg_blocks 1 add -> dbg_blocks
 }
 
 /// Step the camera one tic based on the keystate bitmap. Movement
@@ -1008,7 +1023,47 @@ pub fn D_CheckPickups( -- ) {
 	}
 }
 
+// Demo-driven camera input. When demo_mode is non-zero, D_StepCamera
+// uses demo_tic_{fwd,side,turn} instead of keystate bits, giving us
+// analog motion (magnitude + sign) that tracks Doom's recorded ticcmds
+// rather than an on/off approximation.
+pub var demo_mode:i64 = 0
+pub var demo_tic_fwd:i64 = 0
+pub var demo_tic_side:i64 = 0
+pub var demo_tic_turn:i64 = 0
+
+/// Apply one tic of analog ticcmd movement (forwardmove, sidemove,
+/// angleturn) to the camera. `turn` is the raw i8 byte from the demo
+/// stream; Doom stores it as `angleturn = byte << 8` in the ticcmd
+/// and applies `player.angle += angleturn << 16`, so the combined
+/// BAM delta is `turn << 24`, i.e. `turn * 16777216`.
+pub fn D_StepCameraAnalog(fwd:i64 side:i64 turn:i64 -- ) {
+	camera_angle turn 16777216 mul add -> camera_angle
+
+	camera_angle ANGLETOFINESHIFT shr FINEMASK and -> fidx
+	fidx finecosine_at -> c_a
+	fidx finesine_at -> s_a
+
+	// Doom's P_MovePlayer accumulates momentum with friction. We skip
+	// the momentum model and apply the per-tic value directly — for
+	// attract-demo playback the resulting camera path tracks the
+	// recorded input closely enough to recognise id's scripted walk.
+	fwd  65536 mul -> fwd_fixed    // fwd  * FRACUNIT
+	side 65536 mul -> side_fixed   // side * FRACUNIT
+
+	camera_x c_a fwd_fixed mul 65536 div add
+	         s_a side_fixed mul 65536 div add -> nx
+	camera_y s_a fwd_fixed mul 65536 div add
+	         c_a side_fixed mul 65536 div sub -> ny
+	nx ny try_move
+}
+
 pub fn D_StepCamera( -- ) {
+	demo_mode 0 neq if {
+		demo_tic_fwd demo_tic_side demo_tic_turn D_StepCameraAnalog
+		return
+	}
+
 	// Turning: ~6° per tic held.
 	keystate 4 and 0 neq if {
 		// ANG90 / 15 ≈ 71582788 BAM units per tic
@@ -1100,7 +1155,10 @@ pub fn D_ProcessEvents( -- ) {
 	}
 }
 
-pub fn D_Display( -- ) {
+/// Render the current frame into I_VideoBuffer without presenting.
+/// Splitting render from present lets the wipe logic snapshot the next
+/// frame before it becomes visible.
+pub fn D_RenderFrame( -- ) {
 	I_StartFrame
 
 	// Clear framebuffer to background colour (palette index 0 = black).
@@ -1150,10 +1208,129 @@ pub fn D_Display( -- ) {
 	}
 
 	M_Drawer
+}
+
+pub fn D_Display( -- ) {
+	D_RenderFrame
 	I_FinishUpdate
 }
 
+/// Reset all per-level runtime state so a freshly-loaded map starts
+/// in the same condition the boot path leaves it in. Keeps the WAD-
+/// level caches (textures, flats, sprite lumps, HUD patches, audio
+/// samples) untouched — they're global across maps.
+fn D_ResetLevelState( -- ) {
+	0 -> num_active_doors
+	0 -> exit_reached
+	0 -> player_dead
+	100 -> player_health
+	0 -> damage_tic
+	0 -> total_damage
+	0 -> pickup_count
+	0 -> pickup_flash
+	0 -> kill_count
+	50 -> pistol_ammo
+	0 -> fire_tic
+	0 -> sprite_anim_tic
+	0 -> face_kill_flash
+	0 -> monster_steps
+	0 -> state_advances
+	0 -> dbg_moves
+	0 -> dbg_blocks
+	0 -> d_frame_counter
+	0 -> keystate
+}
+
+/// Load the named map (ExMy) from scratch: tears down any currently-
+/// loaded level, invokes P_SetupLevel, then redoes the post-load
+/// BSP-dependent work (default floor/ceiling flats, per-thing floor
+/// height + light, state-machine seed, camera seed) and resets
+/// per-level game state. Safe to call repeatedly.
+pub fn D_LoadLevel(episode:i64 map:i64 -- ) {
+	episode map 1 2 P_SetupLevel
+
+	D_ResetLevelState
+
+	// Resolve the player-start sector (via BSP walk) and cache its
+	// floor/ceiling flats so D_Display can fill untouched columns
+	// with textured backgrounds.
+	player_start_x player_start_y R_PointInSubsector R_SubsectorToSector -> psec
+	psec 0 gte psec numsectors lt and if {
+		sectors psec SECTOR_SIZE mul SECTOR_OFF_FLOORPIC add mem::get_i32 -> default_floor_pic
+		sectors psec SECTOR_SIZE mul SECTOR_OFF_CEILPIC add mem::get_i32 -> default_ceil_pic
+		sectors psec SECTOR_SIZE mul SECTOR_OFF_FLOORH add mem::get_i32 -> pfloorh
+		sectors psec SECTOR_SIZE mul SECTOR_OFF_CEILH add mem::get_i32 -> pceilh
+		sectors psec SECTOR_SIZE mul SECTOR_OFF_LIGHT add mem::get_i32 -> default_light
+		pfloorh -> pfloorh_global
+		pceilh pfloorh sub 2686976 sub -> default_ceil_eye_delta
+		default_ceil_eye_delta 65536 lt if { 65536 -> default_ceil_eye_delta }
+	}
+	// Fill each thing's sector floor height + light (via BSP walk).
+	0 -> ti
+	loop {
+		ti numthings gte if { break }
+		things_data ti THING_SIZE mul THING_OFF_X add mem::get_i32 -> tthx
+		things_data ti THING_SIZE mul THING_OFF_Y add mem::get_i32 -> tthy
+		tthx tthy R_PointInSubsector R_SubsectorToSector -> tsec
+		tsec 0 gte tsec numsectors lt and if {
+			sectors tsec SECTOR_SIZE mul SECTOR_OFF_FLOORH add mem::get_i32
+				things_data ti THING_SIZE mul THING_OFF_FLOORZ add mem::set_i32
+			sectors tsec SECTOR_SIZE mul SECTOR_OFF_LIGHT add mem::get_i32
+				things_data ti THING_SIZE mul THING_OFF_LIGHT add mem::set_i32
+		}
+		ti 1 add -> ti
+	}
+	D_SeedThingStates
+	// Seed camera from the loaded player start.
+	player_start_x -> camera_x
+	player_start_y -> camera_y
+	player_start_angle -> camera_angle
+	D_LogExits
+	D_LogCombatants
+}
+
 // ---- Boot sequence ----
+
+/// Place the camera at (x, y, ang) — fixed-point / BAM — render a
+/// single frame into I_VideoBuffer, and dump it to `path` as a PPM.
+/// Shared helper for the probe sweep below.
+fn D_ProbeShot(x:i64 y:i64 ang:i64 path:str -- ) {
+	x -> camera_x
+	y -> camera_y
+	ang -> camera_angle
+	1 -> player_start_found
+	D_RenderFrame
+	path DumpFramePPM
+	"wrote " print path print nl
+}
+
+/// Renderer-calibration sweep: load a small set of canonical (map,
+/// camera) positions and dump one PPM per position. Used to measure
+/// how close the Quadrate renderer's output is to the vanilla C Doom
+/// renderer's output from the same position — each phase of the
+/// render port should reduce the diff against reference frames.
+pub fn D_RunProbes( -- ) {
+	"probe: E1M1 …" print nl
+	1 1 D_LoadLevel
+	// E1M1 spawn  (1056, -3616)  facing N (ANG90), S (ANG270), E (ANG0).
+	// Forward pose  (1056, -3200)  facing N.
+	69206016  -236978176  1073741824  "build/probe_01_e1m1_spawn_n.ppm" D_ProbeShot
+	69206016  -236978176  3221225472  "build/probe_02_e1m1_spawn_s.ppm" D_ProbeShot
+	69206016  -209715200  1073741824  "build/probe_03_e1m1_forward.ppm" D_ProbeShot
+	69206016  -236978176           0  "build/probe_04_e1m1_east.ppm"    D_ProbeShot
+
+	"probe: E1M5 …" print nl
+	1 5 D_LoadLevel
+	// E1M5 spawn  (-224, -624)  facing N.
+	// Forward pose  (-224, -300)  facing N / ANG45.
+	// Spawn facing W.
+	-14680064  -40894464  1073741824  "build/probe_05_e1m5_spawn_n.ppm"  D_ProbeShot
+	-14680064  -19660800  1073741824  "build/probe_06_e1m5_forward.ppm"  D_ProbeShot
+	-14680064  -19660800   536870912  "build/probe_07_e1m5_diag.ppm"     D_ProbeShot
+	-14680064  -40894464  2147483648  "build/probe_08_e1m5_spawn_w.ppm"  D_ProbeShot
+
+	"probe: done — 8 frames written to build/probe_*.ppm" print nl
+}
 
 pub fn D_DoomLoop( -- ) {
 	I_InitGraphics
@@ -1171,6 +1348,13 @@ pub fn D_DoomLoop( -- ) {
 	palkey mem::free
 	pal I_SetPalette
 
+	// Probe mode: render and dump a fixed set of PPMs, then exit. No
+	// title, no demo, no interactive loop.
+	"-probe" M_CheckParm 0 gt if {
+		D_RunProbes
+		return
+	}
+
 	"-tour" M_CheckParm -> tour_parm
 
 	// Title splash: render TITLEPIC full-screen.
@@ -1179,6 +1363,52 @@ pub fn D_DoomLoop( -- ) {
 		0 0 hud_titlepic I_VideoBuffer SCREENWIDTH V_DrawPatch
 		I_FinishUpdate
 		tour_parm 0 gt if { "build/e1m1_title.ppm" DumpFramePPM }
+
+		// Interactive mode: hold TITLEPIC for ~5s, then melt-wipe to
+		// the first gameplay frame (doomgeneric does the same cycle
+		// via D_PageTicker + wipe_ScreenWipe). Tour mode skips the
+		// hold so it stays deterministic.
+		tour_parm 0 lte if {
+			// Hold: 170 tics ≈ 4.86s at 35 Hz. Pump SDL events each
+			// tic so the window stays responsive and ev_quit works
+			// during the hold.
+			0 -> t
+			loop {
+				t 170 gte if { break }
+				I_StartTic
+				D_ProcessEvents
+				28 sdl::Delay
+				t 1 add -> t
+			}
+
+			// Snapshot the title, render the first gameplay frame
+			// into I_VideoBuffer (without presenting it yet), snapshot
+			// it as the wipe-end, then restore the title so the melt
+			// starts from the old image.
+			F_WipeStartScreen
+			D_RenderFrame
+			F_WipeEndScreen
+
+			// Melt loop. The C version runs a full 35 Hz tick cycle
+			// between advance calls; Quadrate's I_FinishUpdate is
+			// an interpreted 64K-pixel palette->ARGB conversion
+			// (~25-50ms alone on this box), so waiting an extra
+			// 28ms per frame makes the wipe look sluggish. Drop
+			// the delay and advance 2 wipe-tics per presented
+			// frame; the palette conversion ends up pacing us.
+			I_GetTicks -> wipe_start_ms
+			0 -> wipe_ticks_total
+			loop {
+				I_StartTic
+				D_ProcessEvents
+				2 F_WipeTick -> done
+				I_FinishUpdate
+				wipe_ticks_total 2 add -> wipe_ticks_total
+				done 1 eq if { break }
+			}
+			"wipe: " print wipe_ticks_total print " melt-tics in "
+				print I_GetTicks wipe_start_ms sub print " ms" print nl
+		}
 	}
 
 	tour_parm 0 gt if {
@@ -1224,10 +1454,79 @@ pub fn D_DoomLoop( -- ) {
 			"build/e1m1_inter.ppm" DumpFramePPM
 		}
 	} else {
+		// Attract-mode demo: replay DEMO1 from the IWAD, feeding each
+		// tic's ticcmd (forwardmove/sidemove/angleturn/buttons) into
+		// our keystate bitmap. Any real keypress breaks into the
+		// interactive loop below. The demo ends either when DEMO1
+		// hits its terminator or the user presses a key.
+		//
+		// DEMO1 in doom1.wad was recorded on E1M5 (DEMO2 on E1M3,
+		// DEMO3 on E1M7) — none of them are E1M1. So before playback
+		// we switch levels to whatever map the demo header names, and
+		// when it ends (or the user interrupts) we reload E1M1 for
+		// the interactive session.
+		//
+		// Caveat: DEMO1 was recorded against Doom's vanilla playsim
+		// (FRACUNIT movement, proper wall sliding, etc.). Our
+		// D_StepCamera uses coarser constants, so the camera path
+		// drifts from the original — the *inputs* match, the
+		// resulting geometry won't.
+		G_LoadDemo1 -> demo_ok
+		demo_ok 0 eq if {
+			"demo: DEMO1 lump missing or unsupported" print nl
+		} else {
+			" demo: loading E" print demo_episode print "M" print demo_map print
+				" for attract playback" print nl
+			demo_episode demo_map D_LoadLevel
+			1 -> demo_mode
+		}
+		0 -> user_pressed
+		0 -> keystate
+		loop {
+			exit_reached 1 eq if { break }
+			player_dead 1 eq if { break }
+			user_pressed 1 eq if { break }
+			demo_active 0 eq if { break }
+
+			I_StartTic
+			// Drain events ourselves so we can watch for any keydown
+			// without D_ProcessEvents mutating keystate (we want the
+			// DEMO1 values, not the user's held keys).
+			loop {
+				D_PopEvent -> ev
+				ev mem::is_null if { break }
+				ev EVENT_OFF_TYPE mem::get_i32 -> t
+				t ev_quit eq if { 0 os::exit }
+				t ev_keydown eq if { 1 -> user_pressed }
+			}
+
+			G_DemoNextTiccmd -> tic_ok -> tic_btn -> tic_turn -> tic_side -> tic_fwd
+			tic_ok 0 eq if { break }
+			// Feed the analog values straight into D_StepCameraAnalog
+			// (via D_StepCamera's demo_mode branch) and mirror into
+			// keystate so D_AutoFire / HUD animations still react.
+			tic_fwd  -> demo_tic_fwd
+			tic_side -> demo_tic_side
+			tic_turn -> demo_tic_turn
+			tic_fwd tic_side tic_turn tic_btn G_TiccmdToKeystate -> keystate
+
+
+			G_Ticker
+			D_Display
+			28 sdl::Delay
+		}
+		0 -> demo_mode
+
+		// After the demo, hand the player a fresh E1M1 so interactive
+		// play starts on the familiar map (matching what C Doom does
+		// when you press a key during attract mode).
+		demo_ok 0 neq if { 1 1 D_LoadLevel }
+
 		// Interactive play loop: unbounded, reads real keyboard.
 		// WASD/arrows move, comma/period strafe, Ctrl fires (wired in
 		// D_AutoFire / key_to_bit). Close window or ev_quit to exit.
 		// 28ms delay targets ~35 Hz Doom tic rate.
+		0 -> keystate
 		loop {
 			exit_reached 1 eq if { break }
 			player_dead 1 eq if { break }
@@ -1262,7 +1561,7 @@ pub fn D_DoomMain( -- ) {
 	"-iwad" 1 M_CheckParmWithArgs -> iparm
 	"wads/doom1.wad" -> iwadpath
 	iparm 0 gt if {
-		iparm 1 add M_Argv D_TryFindWADByName -> iwadpath
+		iparm M_Argv D_TryFindWADByName -> iwadpath
 	}
 	" loading " print iwadpath print nl
 	iwadpath W_AddFile
@@ -1275,46 +1574,8 @@ pub fn D_DoomMain( -- ) {
 	R_ResolveSkyTextures
 	D_InitHUD
 
-	// Load the level BEFORE anything that reads sectors / lines /
-	// things — numsectors etc are zero until P_SetupLevel runs.
-	1 1 1 2 P_SetupLevel
-
-	// Resolve the player-start sector (via BSP walk) and cache its
-	// floor/ceiling flats so D_Display can fill untouched columns
-	// with textured backgrounds.
-	player_start_x player_start_y R_PointInSubsector R_SubsectorToSector -> psec
-	psec 0 gte psec numsectors lt and if {
-		sectors psec SECTOR_SIZE mul SECTOR_OFF_FLOORPIC add mem::get_i32 -> default_floor_pic
-		sectors psec SECTOR_SIZE mul SECTOR_OFF_CEILPIC add mem::get_i32 -> default_ceil_pic
-		sectors psec SECTOR_SIZE mul SECTOR_OFF_FLOORH add mem::get_i32 -> pfloorh
-		sectors psec SECTOR_SIZE mul SECTOR_OFF_CEILH add mem::get_i32 -> pceilh
-		sectors psec SECTOR_SIZE mul SECTOR_OFF_LIGHT add mem::get_i32 -> default_light
-		pfloorh -> pfloorh_global
-		pceilh pfloorh sub 2686976 sub -> default_ceil_eye_delta
-		default_ceil_eye_delta 65536 lt if { 65536 -> default_ceil_eye_delta }
-	}
-	// Fill each thing's sector floor height + light (via BSP walk).
-	0 -> ti
-	loop {
-		ti numthings gte if { break }
-		things_data ti THING_SIZE mul THING_OFF_X add mem::get_i32 -> tthx
-		things_data ti THING_SIZE mul THING_OFF_Y add mem::get_i32 -> tthy
-		tthx tthy R_PointInSubsector R_SubsectorToSector -> tsec
-		tsec 0 gte tsec numsectors lt and if {
-			sectors tsec SECTOR_SIZE mul SECTOR_OFF_FLOORH add mem::get_i32
-				things_data ti THING_SIZE mul THING_OFF_FLOORZ add mem::set_i32
-			sectors tsec SECTOR_SIZE mul SECTOR_OFF_LIGHT add mem::get_i32
-				things_data ti THING_SIZE mul THING_OFF_LIGHT add mem::set_i32
-		}
-		ti 1 add -> ti
-	}
-	D_SeedThingStates
-	// Seed camera from the loaded player start.
-	player_start_x -> camera_x
-	player_start_y -> camera_y
-	player_start_angle -> camera_angle
-	D_LogExits
-	D_LogCombatants
+	// Load E1M1 for the initial session.
+	1 1 D_LoadLevel
 	G_Ticker               // prime gameaction
 	D_DoomLoop
 	"[exit ok]" print nl

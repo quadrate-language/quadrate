@@ -135,7 +135,7 @@ pub fn D_FindIWAD(mask:i64 mission_out:ptr -- path:str) {
 
 	"-iwad" 1 M_CheckParmWithArgs -> p
 	p 0 gt if {
-		p 1 add M_Argv -> iwadfile
+		p M_Argv -> iwadfile
 		iwadfile D_FindWADByName -> found
 		found "" eq if { "" return }
 		found identify_by_name -> idx

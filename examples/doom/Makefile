@@ -20,7 +20,7 @@ CC      ?= cc
 SDL_CFLAGS = $(shell sdl2-config --cflags)
 SDL_LIBS   = $(shell sdl2-config --libs) -lSDL2_mixer
 
-CFLAGS  += -O2 -g -Wall -DNORMALUNIX -DLINUX -DFEATURE_SOUND $(SDL_CFLAGS)
+CFLAGS  += -std=gnu11 -O2 -g -Wall -DNORMALUNIX -DLINUX -DFEATURE_SOUND $(SDL_CFLAGS)
 LDLIBS  += -lm $(SDL_LIBS)
 
 BUILDDIR = build
@@ -127,13 +127,34 @@ $(BUILDDIR):
 run: $(OUT)
 	$(OUT) -iwad wads/doom1.wad
 
+run-game: $(OUT)
+	$(OUT) -iwad wads/DOOM.WAD
+
 # Headless scripted tour — dumps PPM snapshots at tics 0/15/30/45 + title +
 # intermission. Useful for CI visual verification.
 tour: $(OUT)
 	SDL_VIDEODRIVER=dummy SDL_AUDIODRIVER=dummy $(OUT) -tour
 
+# Renderer calibration sweep. Dumps build/probe_*.ppm at a fixed set of
+# (episode, map, camera) positions chosen to exercise interior walls,
+# hallway depth, outdoor sky, and diagonal views. Compare against
+# reference frames captured from the vanilla C Doom binary with
+# tools/ppm_diff.py --sweep build/ ref/ .
+probe: $(OUT)
+	SDL_VIDEODRIVER=dummy SDL_AUDIODRIVER=dummy $(OUT) -iwad wads/doom1.wad -probe
+
+# Render the probe sweep then diff against ref/ — the main "how close
+# are we to vanilla" signal. Prints 'no reference frames yet' instead
+# of a Python error when ref/ is empty (Phase 0 baseline).
+probe-diff: probe
+	@if ls ref/probe_*.ppm >/dev/null 2>&1; then \
+		tools/ppm_diff.py --sweep $(BUILDDIR) ref; \
+	else \
+		echo "no reference frames yet; see ref/README.md"; \
+	fi
+
 clean:
 	rm -rf $(BUILDDIR)
 	$(MAKE) -C ffi clean
 
-.PHONY: all run tour clean
+.PHONY: all run tour probe probe-diff clean
