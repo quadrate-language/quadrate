@@ -1685,7 +1685,6 @@ namespace Qd {
 					break;
 				}
 
-
 				// Check if it's a struct construction
 				if (mDefinedStructs.find(name) != mDefinedStructs.end()) {
 					// Struct construction: consumes field values, produces pointer

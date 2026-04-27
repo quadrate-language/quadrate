@@ -379,9 +379,8 @@ namespace Qd {
 				bool isFloat = (typeName == "f64");
 				bool isStr = (typeName == "str");
 				bool isPtr = (typeName == "ptr") || isKnownStruct(typeName);
-				bool isSizedInt = (typeName == "i64" || typeName == "i32" || typeName == "i16" ||
-						typeName == "i8" || typeName == "u64" || typeName == "u32" ||
-						typeName == "u16" || typeName == "u8");
+				bool isSizedInt = (typeName == "i64" || typeName == "i32" || typeName == "i16" || typeName == "i8" ||
+								   typeName == "u64" || typeName == "u32" || typeName == "u16" || typeName == "u8");
 
 				llvm::Type* loadTy = int64Ty;
 				if (isFloat) {
@@ -415,7 +414,6 @@ namespace Qd {
 				return;
 			}
 		}
-
 
 		// Check if it's a constant
 		auto constIt = moduleConstants.find(name);

@@ -283,7 +283,6 @@ namespace Qd {
 		// is the AstNodeStructConstruction held by the var node.
 		std::vector<std::pair<llvm::GlobalVariable*, IAstNode*>> pendingStructGlobalInits;
 
-
 		// Module ASTs
 		std::vector<std::pair<std::string, IAstNode*>> moduleASTs;
 

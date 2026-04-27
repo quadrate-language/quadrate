@@ -565,8 +565,7 @@ namespace Qd {
 					if (returnTypeIt != functionReturnStructType.end()) {
 						structTypeName = returnTypeIt->second;
 					}
-				} else if (moduleGlobalVars.count(varName) &&
-						isKnownStruct(moduleGlobalVarTypes[varName])) {
+				} else if (moduleGlobalVars.count(varName) && isKnownStruct(moduleGlobalVarTypes[varName])) {
 					// Module-level `var` with a struct type — load the struct
 					// pointer from the LLVM global and treat it like a value
 					// that was just pushed onto the stack.

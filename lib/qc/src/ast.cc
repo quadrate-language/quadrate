@@ -181,8 +181,8 @@ namespace Qd {
 		}
 
 		if (token != '=') {
-			errorReporter->reportError(scanner,
-					hasExplicitType ? "Expected '=' after var type" : "Expected ':' or '=' after var name");
+			errorReporter->reportError(
+					scanner, hasExplicitType ? "Expected '=' after var type" : "Expected ':' or '=' after var name");
 			return;
 		}
 
@@ -190,8 +190,8 @@ namespace Qd {
 		// construction; literal → inline value. `env()` is intentionally not
 		// supported here — consts can still use it.
 		token = u8t_scanner_scan(scanner);
-		std::string value;		                       // Resolved value for codegen (empty for struct-init path).
-		std::string sourceExpr;                        // Original text for the formatter round-trip.
+		std::string value;		// Resolved value for codegen (empty for struct-init path).
+		std::string sourceExpr; // Original text for the formatter round-trip.
 		AstNodeStructConstruction* structInit = nullptr;
 		if (token == U8T_IDENTIFIER) {
 			std::string refName(u8t_scanner_token_text(scanner, &n));
@@ -223,7 +223,7 @@ namespace Qd {
 				// offset of the character following it.
 				size_t structEndOffset = static_cast<size_t>(scanner->_str - src);
 				sourceExpr = std::string(refName) + " " +
-						std::string(src + structStartOffset, structEndOffset - structStartOffset);
+							 std::string(src + structStartOffset, structEndOffset - structStartOffset);
 				if (!hasExplicitType) {
 					typeName = refName;
 				}
@@ -258,7 +258,6 @@ namespace Qd {
 		varDecl->setParent(program);
 		program->addChild(varDecl);
 	}
-
 
 	IAstNode* Ast::generate(const char* src, bool dumpTokens, const char* filename) {
 		u8t_scanner scanner;

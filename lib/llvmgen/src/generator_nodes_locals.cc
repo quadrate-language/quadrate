@@ -59,7 +59,6 @@ namespace Qd {
 			}
 		}
 
-
 		// Compile-time stack path: store to i64 alloca
 		if (useCompileTimeStack) {
 			if (name == "_") {

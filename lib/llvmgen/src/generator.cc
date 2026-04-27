@@ -712,8 +712,7 @@ namespace Qd {
 				generateNode(initNode, ctx);
 
 				// Pop the just-pushed struct pointer and store into the global.
-				llvm::Value* initStackPtrPtr =
-						builder->CreateStructGEP(contextStructTy, ctx, 0, "init_stack_ptr_ptr");
+				llvm::Value* initStackPtrPtr = builder->CreateStructGEP(contextStructTy, ctx, 0, "init_stack_ptr_ptr");
 				llvm::Value* initStackPtr = builder->CreateLoad(ptrTy, initStackPtrPtr, "init_stack_ptr");
 				llvm::AllocaInst* initTmp = builder->CreateAlloca(stackElementTy, nullptr, "init_tmp");
 				builder->CreateCall(stackPopFn, {initStackPtr, initTmp});
@@ -2208,7 +2207,6 @@ namespace Qd {
 			}
 		}
 		printTiming("collectGlobalVars");
-
 
 		// Process struct declarations from all modules
 		for (const auto& modulePair : moduleASTs) {
