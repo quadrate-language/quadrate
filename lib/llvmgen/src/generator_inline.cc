@@ -136,6 +136,21 @@ namespace Qd {
 
 	void LlvmGenerator::Impl::generateInlineIntMod(llvm::Value* ctx) {
 		auto boc = setupBinaryOp(ctx);
+
+		// Guard against modulo-by-zero. The type-aware path diverts to the
+		// runtime qd_mod, which reports a clean error; in an integer-only
+		// function we emit the same fatal error inline rather than letting SRem
+		// trap with SIGFPE.
+		llvm::Value* isZero = builder->CreateICmpEQ(boc.value2, builder->getInt64(0), "divisor_is_zero");
+		llvm::Function* currentFn = builder->GetInsertBlock()->getParent();
+		llvm::BasicBlock* divZeroBB = llvm::BasicBlock::Create(*context, "mod.divzero", currentFn);
+		llvm::BasicBlock* modOkBB = llvm::BasicBlock::Create(*context, "mod.ok", currentFn);
+		builder->CreateCondBr(isZero, divZeroBB, modOkBB);
+
+		builder->SetInsertPoint(divZeroBB);
+		emitFatalError(ctx, "Fatal error: division by zero\n");
+
+		builder->SetInsertPoint(modOkBB);
 		llvm::Value* result = builder->CreateSRem(boc.value1, boc.value2, "mod_result");
 		finishBinaryOp(boc, result);
 	}
