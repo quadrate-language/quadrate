@@ -31,6 +31,13 @@ qd_array_t* qd_array_create(size_t capacity, qd_array_type elemType) {
 		capacity = QD_ARRAY_DEFAULT_CAPACITY;
 	}
 
+	// Guard against overflow in the `capacity * elemSize` allocations below.
+	// The largest element size is 8 bytes (int64/double/ptr), so bounding
+	// against that is sufficient for every branch.
+	if (capacity > SIZE_MAX / sizeof(int64_t)) {
+		return NULL;
+	}
+
 	qd_array_t* arr = (qd_array_t*)malloc(sizeof(qd_array_t));
 	if (!arr) {
 		return NULL;

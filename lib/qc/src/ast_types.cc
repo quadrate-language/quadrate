@@ -340,6 +340,11 @@ namespace Qd {
 	AstNodeStructConstruction* parseStructConstruction(const std::string& structName,
 			const std::vector<std::string>& typeArgs, u8t_scanner* scanner, ErrorReporter* errorReporter,
 			const char* src, size_t startPos) {
+		ParseDepthGuard depthGuard;
+		if (depthGuard.exceeded()) {
+			errorReporter->reportError(scanner, "Struct construction nesting too deep");
+			return nullptr;
+		}
 		AstNodeStructConstruction* structConstruct = new AstNodeStructConstruction(structName, typeArgs);
 		size_t line, column;
 		size_t startPosByte = fastCharToByteOffset(src, startPos);

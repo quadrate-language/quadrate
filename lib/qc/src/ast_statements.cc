@@ -6,6 +6,11 @@ namespace Qd {
 	// When inFunctionBody is true, also handles >>field, ctx blocks, and EOF detection.
 	void parseBlockBody(AstNodeBlock* block, u8t_scanner* scanner, ErrorReporter* errorReporter, const char* src,
 			bool inFunctionBody) {
+		ParseDepthGuard depthGuard;
+		if (depthGuard.exceeded()) {
+			errorReporter->reportError(scanner, "Block nesting too deep");
+			return;
+		}
 		size_t n;
 		char32_t token;
 		size_t slashPos = SIZE_MAX; // Position of first slash for comment detection

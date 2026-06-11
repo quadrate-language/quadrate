@@ -319,9 +319,12 @@ int qd_call(qd_context* ctx) {
 		QDRT_FATAL(ctx, "call", "NULL pointer");
 	}
 
-	// Check if this is a closure (magic marker at start of struct)
+	// Check if this is a closure. The pointer must be a registered closure
+	// allocation before we dereference it as one: a bare function pointer (or
+	// any other ptr value that reached the stack) is not safe to treat as a
+	// qd_closure_t, so validate against the registry before reading ->magic.
 	qd_closure_t* closure = (qd_closure_t*)ptr;
-	if (closure->magic == QD_CLOSURE_MAGIC) {
+	if (qd_closure_is_valid(ptr) && closure->magic == QD_CLOSURE_MAGIC) {
 		// This is a closure - extract function pointer and environment
 		// Closure function signature: int (*)(qd_context*, void* env)
 		typedef int (*qd_closure_fn_ptr)(qd_context*, void*);

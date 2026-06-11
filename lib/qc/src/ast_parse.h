@@ -75,6 +75,42 @@ public:
 
 namespace Qd {
 
+	// Maximum recursive-descent nesting depth. The recursive parse functions
+	// (block bodies, nested struct construction) have no natural bound, so
+	// pathologically nested input would overflow the native stack and crash.
+	// This caps the depth well below an 8 MB stack while staying far above any
+	// realistic hand-written nesting.
+	inline constexpr int kMaxParseDepth = 512;
+
+	// Current recursive-descent depth, per thread (the parser is used from
+	// multiple threads, e.g. the language server).
+	inline thread_local int gParseDepth = 0;
+
+	// RAII guard: increments the recursion depth on entry to a recursive parse
+	// function and restores it on exit. Construct one at the top of each
+	// recursive parser and bail out cleanly when exceeded() is true.
+	class ParseDepthGuard {
+	public:
+		ParseDepthGuard() {
+			++gParseDepth;
+		}
+
+		~ParseDepthGuard() {
+			--gParseDepth;
+		}
+
+		ParseDepthGuard(const ParseDepthGuard&) = delete;
+		ParseDepthGuard& operator=(const ParseDepthGuard&) = delete;
+
+		bool exceeded() const {
+			return gParseDepth > kMaxParseDepth;
+		}
+	};
+
+} // namespace Qd
+
+namespace Qd {
+
 	// Source position lookup helper - combines line map and char-byte map
 	struct SourceMaps {
 		SourceLineMap lineMap;
