@@ -288,9 +288,15 @@ static http_method_t method_from_string(const char* method) {
 	return HTTP_METHOD_ANY;
 }
 
-/** Parse HTTP request */
-static int parse_request(const char* data, size_t len, char* method_out, char* path_out, char* query_out,
-		char* headers_out, char* body_out) {
+/** Parse HTTP request.
+ *
+ * Each *_out buffer has a matching *_cap capacity (including the room for the
+ * terminating NUL). Any field that does not fit its destination is rejected
+ * rather than copied, to avoid overflowing the caller's fixed stack buffers.
+ */
+static int parse_request(const char* data, size_t len, char* method_out, size_t method_cap, char* path_out,
+		size_t path_cap, char* query_out, size_t query_cap, char* headers_out, size_t headers_cap,
+		char* body_out, size_t body_cap) {
 	if (len < 14) {
 		return -1; // Minimum: "GET / HTTP/1.0"
 	}
@@ -308,7 +314,7 @@ static int parse_request(const char* data, size_t len, char* method_out, char* p
 		return -1;
 	}
 	size_t method_len = (size_t)(method_end - p);
-	if (method_len > 15) {
+	if (method_len >= method_cap) {
 		return -1;
 	}
 	memcpy(method_out, p, method_len);
@@ -324,14 +330,23 @@ static int parse_request(const char* data, size_t len, char* method_out, char* p
 	const char* query_start = strchr(p, '?');
 	if (query_start && query_start < path_end) {
 		size_t path_len = (size_t)(query_start - p);
+		if (path_len >= path_cap) {
+			return -1;
+		}
 		memcpy(path_out, p, path_len);
 		path_out[path_len] = '\0';
 
 		size_t query_len = (size_t)(path_end - query_start - 1);
+		if (query_len >= query_cap) {
+			return -1;
+		}
 		memcpy(query_out, query_start + 1, query_len);
 		query_out[query_len] = '\0';
 	} else {
 		size_t path_len = (size_t)(path_end - p);
+		if (path_len >= path_cap) {
+			return -1;
+		}
 		memcpy(path_out, p, path_len);
 		path_out[path_len] = '\0';
 		query_out[0] = '\0';
@@ -343,17 +358,26 @@ static int parse_request(const char* data, size_t len, char* method_out, char* p
 	if (!headers_end) {
 		// No body
 		size_t headers_len = len - (size_t)(p - data);
+		if (headers_len >= headers_cap) {
+			return -1;
+		}
 		memcpy(headers_out, p, headers_len);
 		headers_out[headers_len] = '\0';
 		body_out[0] = '\0';
 	} else {
 		size_t headers_len = (size_t)(headers_end - p);
+		if (headers_len >= headers_cap) {
+			return -1;
+		}
 		memcpy(headers_out, p, headers_len);
 		headers_out[headers_len] = '\0';
 
 		// Body
 		const char* body_start = headers_end + 4;
 		size_t body_len = len - (size_t)(body_start - data);
+		if (body_len >= body_cap) {
+			return -1;
+		}
 		memcpy(body_out, body_start, body_len);
 		body_out[body_len] = '\0';
 	}
@@ -640,7 +664,8 @@ static void handle_request(http_engine_t* engine, int client_fd, qd_context* ctx
 
 	// Parse request
 	char method[16], path[4096], query[4096], headers[8192], body[32768];
-	if (parse_request(buffer, (size_t)received, method, path, query, headers, body) < 0) {
+	if (parse_request(buffer, (size_t)received, method, sizeof(method), path, sizeof(path), query, sizeof(query),
+				headers, sizeof(headers), body, sizeof(body)) < 0) {
 		send_response(client_fd, 400, NULL, "text/plain", "Bad Request");
 		close(client_fd);
 		return;
