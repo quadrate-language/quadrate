@@ -336,7 +336,7 @@ namespace Qd {
 			llvm::BasicBlock* loopBody = llvm::BasicBlock::Create(*context, name + "_old_cap_loop_body", currentFn);
 			llvm::BasicBlock* afterLoop = llvm::BasicBlock::Create(*context, name + "_old_cap_loop_done", currentFn);
 
-			llvm::AllocaInst* loopIdxAlloca = builder->CreateAlloca(int64Ty, nullptr, name + "_old_cap_idx");
+			llvm::AllocaInst* loopIdxAlloca = createEntryAlloca(int64Ty, (name + "_old_cap_idx").c_str());
 			builder->CreateStore(builder->getInt64(0), loopIdxAlloca);
 			builder->CreateBr(loopHeader);
 
@@ -616,7 +616,7 @@ namespace Qd {
 				llvm::BasicBlock* afterLoop = llvm::BasicBlock::Create(*context, varName + "_cap_loop_done", currentFn);
 
 				// Loop counter
-				llvm::AllocaInst* loopIdxAlloca = builder->CreateAlloca(int64Ty, nullptr, varName + "_cap_idx");
+				llvm::AllocaInst* loopIdxAlloca = createEntryAlloca(int64Ty, (varName + "_cap_idx").c_str());
 				builder->CreateStore(builder->getInt64(0), loopIdxAlloca);
 				builder->CreateBr(loopHeader);
 

@@ -489,6 +489,17 @@ namespace Qd {
 
 		StackAccess getStackAccess(llvm::Value* ctx);
 
+		// Allocate a stack slot in the current function's entry block rather than
+		// at the current insertion point. Entry-block allocas are reclaimed only
+		// on function return, so this avoids unbounded native-stack growth when
+		// the alloca site sits inside a loop body (at -O0 nothing hoists it).
+		llvm::AllocaInst* createEntryAlloca(llvm::Type* ty, const char* name) {
+			llvm::Function* fn = builder->GetInsertBlock()->getParent();
+			llvm::BasicBlock& entry = fn->getEntryBlock();
+			llvm::IRBuilder<> entryBuilder(&entry, entry.getFirstInsertionPt());
+			return entryBuilder.CreateAlloca(ty, nullptr, name);
+		}
+
 		// Fatal error helper - emits write(2, msg, len), qd_print_stack_trace(ctx), _exit(1), unreachable
 		void emitFatalError(llvm::Value* ctx, const char* message);
 
@@ -552,6 +563,10 @@ namespace Qd {
 		void generateTypeAwareAdd(llvm::Value* ctx);
 		void generateTypeAwareSub(llvm::Value* ctx);
 		void generateTypeAwareMul(llvm::Value* ctx);
+		// Shared implementation for the type-aware comparison operators: emits
+		// an integer fast path using `pred` and falls back to `runtimeFnName`.
+		void generateTypeAwareCompare(
+				llvm::Value* ctx, const char* opName, llvm::CmpInst::Predicate pred, const char* runtimeFnName);
 		void generateTypeAwareLt(llvm::Value* ctx);
 		void generateTypeAwareGt(llvm::Value* ctx);
 		void generateTypeAwareEq(llvm::Value* ctx);

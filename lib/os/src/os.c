@@ -4,6 +4,7 @@
 #include <quadrate/os/os.h>
 #include <quadrate/rt/runtime.h>
 #include <quadrate/rt/stack.h>
+#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -1271,6 +1272,31 @@ int usr_os_getuid(qd_context* ctx) {
 int usr_os_getgid(qd_context* ctx) {
 	gid_t gid = getgid();
 	qd_stack_push_int(ctx->st, (int64_t)gid);
+	return (int){0};
+}
+
+// urandom( -- n:i64)! - cryptographically secure random 64-bit value sourced
+// from the OS entropy pool (/dev/urandom). Portable across Linux and Haiku.
+int usr_os_urandom(qd_context* ctx) {
+	uint64_t value = 0;
+	FILE* f = fopen("/dev/urandom", "rb");
+	if (!f) {
+		int error_code = errno_to_os_error(errno);
+		ctx->error_code = error_code;
+		qd_set_error_msg(ctx, "os::urandom: cannot open /dev/urandom");
+		qd_stack_push_int(ctx->st, (int64_t)error_code);
+		return (int){error_code};
+	}
+	size_t got = fread(&value, 1, sizeof(value), f);
+	fclose(f);
+	if (got != sizeof(value)) {
+		ctx->error_code = OS_ERR_IO;
+		qd_set_error_msg(ctx, "os::urandom: short read from /dev/urandom");
+		qd_stack_push_int(ctx->st, (int64_t)OS_ERR_IO);
+		return (int){OS_ERR_IO};
+	}
+	qd_stack_push_int(ctx->st, (int64_t)value);
+	qd_stack_push_int(ctx->st, OS_ERR_OK);
 	return (int){0};
 }
 

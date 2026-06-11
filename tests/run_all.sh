@@ -138,7 +138,7 @@ fi
 
 # Create temp directory
 mkdir -p "$TEMP_DIR"
-trap "rm -rf $TEMP_DIR" EXIT
+trap 'rm -rf "$TEMP_DIR"' EXIT
 
 # External module support
 EXTERNAL_MODULES_FILE="$SCRIPT_DIR/external_modules.txt"

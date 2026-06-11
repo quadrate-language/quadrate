@@ -225,9 +225,14 @@ static void check_and_rotate(qdlog_file_t* f) {
 			f->file = fopen(new_path, "a");
 		}
 
-		f->current_size = 0;
-		f->last_rotate_day = tm->tm_yday;
-		f->last_rotate_hour = tm->tm_hour;
+		// If the reopen failed f->file is NULL; the write/flush paths already
+		// skip NULL handles, so this disables the output rather than crashing.
+		// Only advance the rotation bookkeeping when we actually have a fresh file.
+		if (f->file) {
+			f->current_size = 0;
+			f->last_rotate_day = tm->tm_yday;
+			f->last_rotate_hour = tm->tm_hour;
+		}
 	}
 }
 

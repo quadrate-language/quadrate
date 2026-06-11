@@ -923,6 +923,12 @@ int usr_strings_repeat(qd_context* ctx) {
 		abort();
 	}
 	size_t result_len = str_len * (size_t)n;
+	if (result_len == SIZE_MAX) {
+		// result_len + 1 would wrap to 0, yielding an undersized allocation.
+		fprintf(stderr, "Fatal error in strings::repeat: Result size overflow\n");
+		qd_string_release(str_elem.value.s);
+		abort();
+	}
 
 	char* result = malloc(result_len + 1);
 	if (!result) {
@@ -1927,15 +1933,35 @@ int usr_strings_column(qd_context* ctx) {
 		return (int){0};
 	}
 
-	// Calculate total width per row (sum of widths + spaces between)
+	// Calculate total width per row (sum of widths + spaces between).
+	// Widths are caller-supplied: reject negatives (which would wrap when cast
+	// to size_t) and guard every accumulation/multiplication against overflow,
+	// otherwise an undersized buffer would be written past below.
 	size_t row_width = 0;
 	for (int64_t c = 0; c < num_cols; c++) {
-		row_width += (size_t)widths[c];
-		if (c < num_cols - 1) row_width += 1;  // space between columns
+		if (widths[c] < 0) {
+			qd_push_s(ctx, "");
+			return (int){0};
+		}
+		size_t w = (size_t)widths[c];
+		size_t sep = (c < num_cols - 1) ? 1 : 0;  // space between columns
+		if (row_width > SIZE_MAX - w - sep) {
+			qd_push_s(ctx, "");
+			return (int){0};
+		}
+		row_width += w + sep;
+	}
+	if (row_width > SIZE_MAX - 1) {
+		qd_push_s(ctx, "");
+		return (int){0};
 	}
 	row_width += 1;  // newline
 
 	int64_t num_rows = (count + num_cols - 1) / num_cols;
+	if (num_rows <= 0 || row_width > (SIZE_MAX - 1) / (size_t)num_rows) {
+		qd_push_s(ctx, "");
+		return (int){0};
+	}
 	size_t result_size = row_width * (size_t)num_rows + 1;
 
 	char* result = malloc(result_size);

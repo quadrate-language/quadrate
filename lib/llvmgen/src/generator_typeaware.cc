@@ -114,9 +114,11 @@ namespace Qd {
 		builder->SetInsertPoint(toc.endBlock);
 	}
 
-	void LlvmGenerator::Impl::generateTypeAwareLt(llvm::Value* ctx) {
-		auto toc = setupTypeAwareOp(ctx, "lt");
+	void LlvmGenerator::Impl::generateTypeAwareCompare(
+			llvm::Value* ctx, const char* opName, llvm::CmpInst::Predicate pred, const char* runtimeFnName) {
+		auto toc = setupTypeAwareOp(ctx, opName);
 
+		// Fast path: both operands are integers — compare directly.
 		llvm::Value* value1Ptr = builder->CreateStructGEP(stackElementTy, toc.elem1Ptr, 0, "value1_ptr");
 		llvm::Value* value1iPtrCast = builder->CreateBitCast(value1Ptr, ptrTy);
 		llvm::Value* value1 = builder->CreateLoad(int64Ty, value1iPtrCast, "value1");
@@ -125,155 +127,45 @@ namespace Qd {
 		llvm::Value* value2iPtrCast = builder->CreateBitCast(value2Ptr, ptrTy);
 		llvm::Value* value2 = builder->CreateLoad(int64Ty, value2iPtrCast, "value2");
 
-		llvm::Value* cmpResult = builder->CreateICmpSLT(value1, value2, "lt_result");
+		llvm::Value* cmpResult = builder->CreateICmp(pred, value1, value2, std::string(opName) + "_result");
 		llvm::Value* result = builder->CreateZExt(cmpResult, int64Ty, "result_i64");
 		finishTypeAwareOp(toc, result, value1iPtrCast);
 
+		// Slow path: defer to the runtime helper, which handles mixed/float/string operands.
 		builder->SetInsertPoint(toc.slowPath);
-		llvm::Function* ltFn = module->getFunction("qd_lt");
-		if (!ltFn) {
+		llvm::Function* fn = module->getFunction(runtimeFnName);
+		if (!fn) {
 			auto fnTy = llvm::FunctionType::get(execResultTy, {contextPtrTy}, false);
-			ltFn = llvm::Function::Create(fnTy, llvm::Function::ExternalLinkage, "qd_lt", *module);
+			fn = llvm::Function::Create(fnTy, llvm::Function::ExternalLinkage, runtimeFnName, *module);
 		}
-		builder->CreateCall(ltFn, {ctx});
+		builder->CreateCall(fn, {ctx});
 		builder->CreateBr(toc.endBlock);
 
 		builder->SetInsertPoint(toc.endBlock);
+	}
+
+	void LlvmGenerator::Impl::generateTypeAwareLt(llvm::Value* ctx) {
+		generateTypeAwareCompare(ctx, "lt", llvm::CmpInst::ICMP_SLT, "qd_lt");
 	}
 
 	void LlvmGenerator::Impl::generateTypeAwareGt(llvm::Value* ctx) {
-		auto toc = setupTypeAwareOp(ctx, "gt");
-
-		llvm::Value* value1Ptr = builder->CreateStructGEP(stackElementTy, toc.elem1Ptr, 0, "value1_ptr");
-		llvm::Value* value1iPtrCast = builder->CreateBitCast(value1Ptr, ptrTy);
-		llvm::Value* value1 = builder->CreateLoad(int64Ty, value1iPtrCast, "value1");
-
-		llvm::Value* value2Ptr = builder->CreateStructGEP(stackElementTy, toc.elem2Ptr, 0, "value2_ptr");
-		llvm::Value* value2iPtrCast = builder->CreateBitCast(value2Ptr, ptrTy);
-		llvm::Value* value2 = builder->CreateLoad(int64Ty, value2iPtrCast, "value2");
-
-		llvm::Value* cmpResult = builder->CreateICmpSGT(value1, value2, "gt_result");
-		llvm::Value* result = builder->CreateZExt(cmpResult, int64Ty, "result_i64");
-		finishTypeAwareOp(toc, result, value1iPtrCast);
-
-		builder->SetInsertPoint(toc.slowPath);
-		llvm::Function* gtFn = module->getFunction("qd_gt");
-		if (!gtFn) {
-			auto fnTy = llvm::FunctionType::get(execResultTy, {contextPtrTy}, false);
-			gtFn = llvm::Function::Create(fnTy, llvm::Function::ExternalLinkage, "qd_gt", *module);
-		}
-		builder->CreateCall(gtFn, {ctx});
-		builder->CreateBr(toc.endBlock);
-
-		builder->SetInsertPoint(toc.endBlock);
+		generateTypeAwareCompare(ctx, "gt", llvm::CmpInst::ICMP_SGT, "qd_gt");
 	}
 
 	void LlvmGenerator::Impl::generateTypeAwareEq(llvm::Value* ctx) {
-		auto toc = setupTypeAwareOp(ctx, "eq");
-
-		llvm::Value* value1Ptr = builder->CreateStructGEP(stackElementTy, toc.elem1Ptr, 0, "value1_ptr");
-		llvm::Value* value1iPtrCast = builder->CreateBitCast(value1Ptr, ptrTy);
-		llvm::Value* value1 = builder->CreateLoad(int64Ty, value1iPtrCast, "value1");
-
-		llvm::Value* value2Ptr = builder->CreateStructGEP(stackElementTy, toc.elem2Ptr, 0, "value2_ptr");
-		llvm::Value* value2iPtrCast = builder->CreateBitCast(value2Ptr, ptrTy);
-		llvm::Value* value2 = builder->CreateLoad(int64Ty, value2iPtrCast, "value2");
-
-		llvm::Value* cmpResult = builder->CreateICmpEQ(value1, value2, "eq_result");
-		llvm::Value* result = builder->CreateZExt(cmpResult, int64Ty, "result_i64");
-		finishTypeAwareOp(toc, result, value1iPtrCast);
-
-		builder->SetInsertPoint(toc.slowPath);
-		llvm::Function* eqFn = module->getFunction("qd_eq");
-		if (!eqFn) {
-			auto fnTy = llvm::FunctionType::get(execResultTy, {contextPtrTy}, false);
-			eqFn = llvm::Function::Create(fnTy, llvm::Function::ExternalLinkage, "qd_eq", *module);
-		}
-		builder->CreateCall(eqFn, {ctx});
-		builder->CreateBr(toc.endBlock);
-
-		builder->SetInsertPoint(toc.endBlock);
+		generateTypeAwareCompare(ctx, "eq", llvm::CmpInst::ICMP_EQ, "qd_eq");
 	}
 
 	void LlvmGenerator::Impl::generateTypeAwareNeq(llvm::Value* ctx) {
-		auto toc = setupTypeAwareOp(ctx, "neq");
-
-		llvm::Value* value1Ptr = builder->CreateStructGEP(stackElementTy, toc.elem1Ptr, 0, "value1_ptr");
-		llvm::Value* value1iPtrCast = builder->CreateBitCast(value1Ptr, ptrTy);
-		llvm::Value* value1 = builder->CreateLoad(int64Ty, value1iPtrCast, "value1");
-
-		llvm::Value* value2Ptr = builder->CreateStructGEP(stackElementTy, toc.elem2Ptr, 0, "value2_ptr");
-		llvm::Value* value2iPtrCast = builder->CreateBitCast(value2Ptr, ptrTy);
-		llvm::Value* value2 = builder->CreateLoad(int64Ty, value2iPtrCast, "value2");
-
-		llvm::Value* cmpResult = builder->CreateICmpNE(value1, value2, "neq_result");
-		llvm::Value* result = builder->CreateZExt(cmpResult, int64Ty, "result_i64");
-		finishTypeAwareOp(toc, result, value1iPtrCast);
-
-		builder->SetInsertPoint(toc.slowPath);
-		llvm::Function* neqFn = module->getFunction("qd_neq");
-		if (!neqFn) {
-			auto fnTy = llvm::FunctionType::get(execResultTy, {contextPtrTy}, false);
-			neqFn = llvm::Function::Create(fnTy, llvm::Function::ExternalLinkage, "qd_neq", *module);
-		}
-		builder->CreateCall(neqFn, {ctx});
-		builder->CreateBr(toc.endBlock);
-
-		builder->SetInsertPoint(toc.endBlock);
+		generateTypeAwareCompare(ctx, "neq", llvm::CmpInst::ICMP_NE, "qd_neq");
 	}
 
 	void LlvmGenerator::Impl::generateTypeAwareLte(llvm::Value* ctx) {
-		auto toc = setupTypeAwareOp(ctx, "lte");
-
-		llvm::Value* value1Ptr = builder->CreateStructGEP(stackElementTy, toc.elem1Ptr, 0, "value1_ptr");
-		llvm::Value* value1iPtrCast = builder->CreateBitCast(value1Ptr, ptrTy);
-		llvm::Value* value1 = builder->CreateLoad(int64Ty, value1iPtrCast, "value1");
-
-		llvm::Value* value2Ptr = builder->CreateStructGEP(stackElementTy, toc.elem2Ptr, 0, "value2_ptr");
-		llvm::Value* value2iPtrCast = builder->CreateBitCast(value2Ptr, ptrTy);
-		llvm::Value* value2 = builder->CreateLoad(int64Ty, value2iPtrCast, "value2");
-
-		llvm::Value* cmpResult = builder->CreateICmpSLE(value1, value2, "lte_result");
-		llvm::Value* result = builder->CreateZExt(cmpResult, int64Ty, "result_i64");
-		finishTypeAwareOp(toc, result, value1iPtrCast);
-
-		builder->SetInsertPoint(toc.slowPath);
-		llvm::Function* lteFn = module->getFunction("qd_lte");
-		if (!lteFn) {
-			auto fnTy = llvm::FunctionType::get(execResultTy, {contextPtrTy}, false);
-			lteFn = llvm::Function::Create(fnTy, llvm::Function::ExternalLinkage, "qd_lte", *module);
-		}
-		builder->CreateCall(lteFn, {ctx});
-		builder->CreateBr(toc.endBlock);
-
-		builder->SetInsertPoint(toc.endBlock);
+		generateTypeAwareCompare(ctx, "lte", llvm::CmpInst::ICMP_SLE, "qd_lte");
 	}
 
 	void LlvmGenerator::Impl::generateTypeAwareGte(llvm::Value* ctx) {
-		auto toc = setupTypeAwareOp(ctx, "gte");
-
-		llvm::Value* value1Ptr = builder->CreateStructGEP(stackElementTy, toc.elem1Ptr, 0, "value1_ptr");
-		llvm::Value* value1iPtrCast = builder->CreateBitCast(value1Ptr, ptrTy);
-		llvm::Value* value1 = builder->CreateLoad(int64Ty, value1iPtrCast, "value1");
-
-		llvm::Value* value2Ptr = builder->CreateStructGEP(stackElementTy, toc.elem2Ptr, 0, "value2_ptr");
-		llvm::Value* value2iPtrCast = builder->CreateBitCast(value2Ptr, ptrTy);
-		llvm::Value* value2 = builder->CreateLoad(int64Ty, value2iPtrCast, "value2");
-
-		llvm::Value* cmpResult = builder->CreateICmpSGE(value1, value2, "gte_result");
-		llvm::Value* result = builder->CreateZExt(cmpResult, int64Ty, "result_i64");
-		finishTypeAwareOp(toc, result, value1iPtrCast);
-
-		builder->SetInsertPoint(toc.slowPath);
-		llvm::Function* gteFn = module->getFunction("qd_gte");
-		if (!gteFn) {
-			auto fnTy = llvm::FunctionType::get(execResultTy, {contextPtrTy}, false);
-			gteFn = llvm::Function::Create(fnTy, llvm::Function::ExternalLinkage, "qd_gte", *module);
-		}
-		builder->CreateCall(gteFn, {ctx});
-		builder->CreateBr(toc.endBlock);
-
-		builder->SetInsertPoint(toc.endBlock);
+		generateTypeAwareCompare(ctx, "gte", llvm::CmpInst::ICMP_SGE, "qd_gte");
 	}
 
 	void LlvmGenerator::Impl::generateTypeAwareDiv(llvm::Value* ctx) {

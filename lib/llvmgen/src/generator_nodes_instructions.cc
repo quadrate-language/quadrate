@@ -359,13 +359,16 @@ namespace Qd {
 				compileTimeStack.insert(compileTimeStack.begin() + static_cast<long>(sz - 2), top);
 				return;
 			}
-			if (name == "pick") {
-				// pick N: copy the Nth element from top (0-indexed)
-				// In compile-time stack, we can't do dynamic pick,
-				// but for constant N this would work. For now, fall through.
-			}
-			if (name == "roll") {
-				// Similar to pick but removes the element. Fall through for now.
+			if (name == "pick" || name == "roll") {
+				// pick/roll reorder the stack dynamically, which the
+				// compile-time stack cannot model. Falling through here would
+				// dispatch to the runtime op while the values actually live on
+				// the compile-time stack - a silent miscompile. Fail cleanly
+				// instead. (If this fires, the eligibility analysis should be
+				// taught to exclude functions using pick/roll.)
+				llvm::errs() << "Error: '" << name << "' is not supported in compile-time-stack functions\n";
+				compilationFailed = true;
+				return;
 			}
 			// print: materialize top value to runtime stack, call runtime print
 			if (name == "print") {

@@ -1,9 +1,10 @@
 #include <quadrate/math/math.h>
 #include <quadrate/rt/stack.h>
 #include <quadrate/rt/runtime.h>
+#include <math.h>
+#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <math.h>
 
 int usr_math_sin(qd_context* ctx) {
 	// Compute sine of the top value (in radians)
@@ -1196,6 +1197,11 @@ int usr_math_fac(qd_context* ctx) {
 
 	int64_t result = 1;
 	for (int64_t i = 2; i <= n; i++) {
+		// Detect overflow before it happens (21! already exceeds int64).
+		if (result > INT64_MAX / i) {
+			fprintf(stderr, "Fatal error in math::fac: Result overflow (n too large)\n");
+			abort();
+		}
 		result *= i;
 	}
 

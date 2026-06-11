@@ -95,18 +95,19 @@ qd_stack_error qd_stack_init(qd_stack** stack, size_t capacity);
 void qd_stack_destroy(qd_stack* stack);
 
 /**
- * @brief Clone a stack (shallow copy for strings)
+ * @brief Clone a stack (deep copy for strings)
  *
  * Creates a copy of the source stack. Numeric and pointer values are copied directly.
- * String values use reference counting - the reference count is incremented rather
- * than copying the string data.
+ * String values are deep-copied (a new independent qd_string_t is allocated for each)
+ * so that the cloned stack is fully isolated from the source - this is relied on by
+ * qd_clone_context for context isolation.
  *
  * @param[out] dest Pointer to receive the cloned stack
  * @param src Source stack to clone
  * @return QD_STACK_OK on success, error code otherwise
  *
  * @note The caller is responsible for calling qd_stack_destroy() on the cloned stack
- * @note String references are retained (refcount incremented)
+ * @note String values are deep-copied, not reference-shared, with the source
  */
 qd_stack_error qd_stack_clone(qd_stack** dest, const qd_stack* src);
 

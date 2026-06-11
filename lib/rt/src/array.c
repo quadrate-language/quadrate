@@ -100,6 +100,14 @@ void qd_array_release(qd_array_t* arr) {
 		return;
 	}
 
+	// Validate against the registry BEFORE touching refcount. If the array has
+	// already been freed (and thus unregistered), the memory is no longer ours
+	// to read or decrement - bailing here avoids a use-after-free. This mirrors
+	// qd_struct_release.
+	if (!qd_array_is_valid(arr)) {
+		return;
+	}
+
 	size_t old_count = atomic_fetch_sub(&arr->refcount, 1);
 	if (old_count == 0) {
 		fprintf(stderr, "Fatal error: free called on already-freed array\n");
@@ -496,7 +504,12 @@ int qd_makei(qd_context* ctx) {
 	}
 	arr->length = (size_t)size;
 
-	qd_stack_push_ptr(ctx->st, arr);
+	if (qd_stack_push_ptr(ctx->st, arr) != QD_STACK_OK) {
+		// Push failed (e.g. stack full): release the array so it is not leaked.
+		qd_array_release(arr);
+		result = -2;
+		return result;
+	}
 	return result;
 }
 
@@ -540,7 +553,12 @@ int qd_makef(qd_context* ctx) {
 	}
 	arr->length = (size_t)size;
 
-	qd_stack_push_ptr(ctx->st, arr);
+	if (qd_stack_push_ptr(ctx->st, arr) != QD_STACK_OK) {
+		// Push failed (e.g. stack full): release the array so it is not leaked.
+		qd_array_release(arr);
+		result = -2;
+		return result;
+	}
 	return result;
 }
 
@@ -584,7 +602,12 @@ int qd_makes(qd_context* ctx) {
 	}
 	arr->length = (size_t)size;
 
-	qd_stack_push_ptr(ctx->st, arr);
+	if (qd_stack_push_ptr(ctx->st, arr) != QD_STACK_OK) {
+		// Push failed (e.g. stack full): release the array so it is not leaked.
+		qd_array_release(arr);
+		result = -2;
+		return result;
+	}
 	return result;
 }
 
@@ -625,7 +648,12 @@ int qd_makep(qd_context* ctx) {
 	// Initialize elements to null (already done by qd_array_create for PTR type)
 	arr->length = (size_t)size;
 
-	qd_stack_push_ptr(ctx->st, arr);
+	if (qd_stack_push_ptr(ctx->st, arr) != QD_STACK_OK) {
+		// Push failed (e.g. stack full): release the array so it is not leaked.
+		qd_array_release(arr);
+		result = -2;
+		return result;
+	}
 	return result;
 }
 
@@ -727,7 +755,12 @@ int qd_append(qd_context* ctx) {
 	}
 
 	// Push array back onto stack (don't release, caller still owns it)
-	qd_stack_push_ptr(ctx->st, arr);
+	if (qd_stack_push_ptr(ctx->st, arr) != QD_STACK_OK) {
+		// Push failed (e.g. stack full): release the array so it is not leaked.
+		qd_array_release(arr);
+		result = -2;
+		return result;
+	}
 	return result;
 }
 

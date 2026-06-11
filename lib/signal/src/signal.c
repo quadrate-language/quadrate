@@ -249,43 +249,43 @@ int usr_signal_clear(qd_context* ctx) {
 }
 
 int usr_signal_wait(qd_context* ctx) {
-	// Wait for any trapped signal using pause()
-	// pause() returns when a signal is caught
+	// Wait for any trapped signal. A naive "scan pending then pause()" loop has
+	// a race: a signal delivered between the scan and pause() would be missed,
+	// potentially hanging forever. Block signals around the pending check and
+	// use sigsuspend() to atomically unblock-and-wait, which closes that window.
+	sigset_t block_all, prev_mask;
+	sigfillset(&block_all);
+	sigprocmask(SIG_BLOCK, &block_all, &prev_mask);
 
-	// First check if any signal is already pending
-	for (int i = 1; i < MAX_SIGNALS; i++) {
-		if (pending_signals[i]) {
-			qd_stack_error err = qd_stack_push_int(ctx->st, (int64_t)i);
+	int result = 0;
+	while (1) {
+		int found = 0;
+		for (int i = 1; i < MAX_SIGNALS; i++) {
+			if (pending_signals[i]) {
+				found = i;
+				break;
+			}
+		}
+
+		if (found) {
+			qd_stack_error err = qd_stack_push_int(ctx->st, (int64_t)found);
 			if (err != QD_STACK_OK) {
+				// Restore the mask before aborting so the process state is sane.
+				sigprocmask(SIG_SETMASK, &prev_mask, NULL);
 				fprintf(stderr, "Fatal error in signal::wait: Failed to push signal number\n");
 				qd_print_stack_trace(ctx);
 				abort();
 			}
-			return (int){0};
+			break;
 		}
+
+		// No signal pending: atomically restore the previous mask (so trapped
+		// signals can be delivered), wait for one, then re-block on return.
+		sigsuspend(&prev_mask);
 	}
 
-	// No signal pending, wait for one
-	while (1) {
-		pause();  // Sleep until a signal arrives
-
-		// Check which signal was received
-		for (int i = 1; i < MAX_SIGNALS; i++) {
-			if (pending_signals[i]) {
-				qd_stack_error err = qd_stack_push_int(ctx->st, (int64_t)i);
-				if (err != QD_STACK_OK) {
-					fprintf(stderr, "Fatal error in signal::wait: Failed to push signal number\n");
-					qd_print_stack_trace(ctx);
-					abort();
-				}
-				return (int){0};
-			}
-		}
-		// If we get here, it was a signal we're not tracking, keep waiting
-	}
-
-	// Never reached
-	return (int){0};
+	sigprocmask(SIG_SETMASK, &prev_mask, NULL);
+	return (int){result};
 }
 
 int usr_signal_raise(qd_context* ctx) {

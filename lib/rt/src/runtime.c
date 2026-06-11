@@ -178,7 +178,8 @@ int qd_peek(qd_context* ctx) {
 			printf("%ld\n", val.value.i);
 			break;
 		case QD_STACK_TYPE_FLOAT:
-			printf("%f\n", val.value.f);
+			// Use %g to match qd_print's float formatting (consistent output).
+			printf("%g\n", val.value.f);
 			break;
 		case QD_STACK_TYPE_STR:
 			printf("%s\n", qd_string_data(val.value.s));
@@ -390,9 +391,6 @@ int qd_castf(qd_context* ctx) {
 	size_t stack_size = qd_stack_size(ctx->st);
 	if (stack_size < 1) {
 		QDRT_FATAL(ctx, "castf", "Stack underflow (requires 1 value)");
-		dump_stack(ctx);
-		qd_print_stack_trace(ctx);
-		abort();
 	}
 
 	qd_stack_element_t elem;
@@ -427,9 +425,6 @@ int qd_casts(qd_context* ctx) {
 	size_t stack_size = qd_stack_size(ctx->st);
 	if (stack_size < 1) {
 		QDRT_FATAL(ctx, "casts", "Stack underflow (requires 1 value)");
-		dump_stack(ctx);
-		qd_print_stack_trace(ctx);
-		abort();
 	}
 
 	qd_stack_element_t elem;
@@ -453,24 +448,14 @@ int qd_casts(qd_context* ctx) {
 		release_if_string(&elem);
 		return (int){0};
 	} else if (elem.type == QD_STACK_TYPE_PTR) {
-		// Treat pointer as qd_string_t* - retain it and push as string
-		qd_string_t* str = (qd_string_t*)elem.value.p;
-		if (str) {
-			qd_string_retain(str);
-			qd_stack_element_t str_elem = {.type = QD_STACK_TYPE_STR, .value.s = str};
-			err = push_element(ctx->st, &str_elem);
-			if (err != QD_STACK_OK) {
-				qd_string_release(str);
-				return (int){-2};
-			}
-			return (int){0};
+		// A raw pointer carries no string contents we can safely dereference -
+		// blindly treating it as a qd_string_t* and retaining it would corrupt
+		// arbitrary memory. Render its address instead (matching casti, which
+		// yields the address as an integer). NULL becomes the empty string.
+		if (elem.value.p == NULL) {
+			buffer[0] = '\0';
 		} else {
-			// NULL pointer - push empty string
-			err = qd_stack_push_str(ctx->st, "");
-			if (err != QD_STACK_OK) {
-				return (int){-2};
-			}
-			return (int){0};
+			snprintf(buffer, sizeof(buffer), "%ld", (int64_t)(intptr_t)elem.value.p);
 		}
 	} else {
 		QDRT_FATAL(ctx, "casts", "Cannot cast type to string");
@@ -489,9 +474,6 @@ int qd_castp(qd_context* ctx) {
 	size_t stack_size = qd_stack_size(ctx->st);
 	if (stack_size < 1) {
 		QDRT_FATAL(ctx, "castp", "Stack underflow (requires 1 value)");
-		dump_stack(ctx);
-		qd_print_stack_trace(ctx);
-		abort();
 	}
 
 	qd_stack_element_t elem;
@@ -660,9 +642,6 @@ int qd_free(qd_context* ctx) {
 	size_t stack_size = qd_stack_size(ctx->st);
 	if (stack_size < 1) {
 		QDRT_FATAL(ctx, "free", "Stack underflow (required 1 element, have %zu)", stack_size);
-		dump_stack(ctx);
-		qd_print_stack_trace(ctx);
-		abort();
 	}
 
 	qd_stack_element_t val;
@@ -697,9 +676,6 @@ int qd_free_struct(qd_context* ctx) {
 	size_t stack_size = qd_stack_size(ctx->st);
 	if (stack_size < 1) {
 		QDRT_FATAL(ctx, "free", "Stack underflow (required 1 element, have %zu)", stack_size);
-		dump_stack(ctx);
-		qd_print_stack_trace(ctx);
-		abort();
 	}
 
 	qd_stack_element_t val;
@@ -778,19 +754,23 @@ int qd_spawn(qd_context* ctx) {
 		QDRT_FATAL(ctx, "spawn", "Expected pointer type, got %d", val.type);
 	}
 
-	// Create new context for the thread
+	// Create new context for the thread. These are transient runtime failures
+	// (out of memory, OS thread limit), not programming errors, so report them
+	// via the error convention and clean up rather than aborting the process.
 	qd_context* thread_ctx = qd_create_context(1024);
 	if (!thread_ctx) {
-		QDRT_FATAL(ctx, "spawn", "Failed to create context");
-		abort();
+		ctx->error_code = -1;
+		qd_set_error_msg(ctx, "spawn: failed to create thread context");
+		return (int){-2};
 	}
 
 	// Create thread info
 	qd_thread_info_t* info = malloc(sizeof(qd_thread_info_t));
 	if (!info) {
-		QDRT_FATAL(ctx, "spawn", "Failed to allocate thread info");
 		qd_free_context(thread_ctx);
-		abort();
+		ctx->error_code = -1;
+		qd_set_error_msg(ctx, "spawn: failed to allocate thread info");
+		return (int){-2};
 	}
 	info->ctx = thread_ctx;
 	info->func_ptr = val.value.p;
@@ -798,10 +778,11 @@ int qd_spawn(qd_context* ctx) {
 	// Create thread using platform abstraction
 	thread_handle_t thread = thread_platform_create(qd_thread_wrapper, info);
 	if (!thread) {
-		QDRT_FATAL(ctx, "spawn", "thread_platform_create failed");
-		qd_free_context(thread_ctx);
 		free(info);
-		abort();
+		qd_free_context(thread_ctx);
+		ctx->error_code = -1;
+		qd_set_error_msg(ctx, "spawn: failed to create thread");
+		return (int){-2};
 	}
 
 	// Push thread handle (as pointer cast to int64_t)
@@ -835,7 +816,6 @@ int qd_detach(qd_context* ctx) {
 	int result = thread_platform_detach(thread);
 	if (result != THREAD_SUCCESS) {
 		QDRT_FATAL(ctx, "detach", "thread_platform_detach failed");
-		abort();
 	}
 
 	return (int){0};
@@ -863,7 +843,6 @@ int qd_wait(qd_context* ctx) {
 	int result = thread_platform_join(thread);
 	if (result != THREAD_SUCCESS) {
 		QDRT_FATAL(ctx, "wait", "thread_platform_join failed");
-		abort();
 	}
 
 	return (int){0};

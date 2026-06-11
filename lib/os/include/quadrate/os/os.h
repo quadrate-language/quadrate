@@ -499,6 +499,18 @@ int usr_os_getuid(qd_context* ctx);
 int usr_os_getgid(qd_context* ctx);
 
 /**
+ * @brief Get cryptographically secure random bytes from the OS
+ *
+ * @par Stack Effect: ( -- n:i64 )!
+ *
+ * Returns a 64-bit value sourced from the OS entropy pool (/dev/urandom).
+ *
+ * @param ctx Execution context
+ * @return Execution result
+ */
+int usr_os_urandom(qd_context* ctx);
+
+/**
  * @brief Get the hostname
  *
  * @par Stack Effect: ( -- hostname:s )!

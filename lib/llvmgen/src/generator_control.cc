@@ -1049,9 +1049,6 @@ namespace Qd {
 		// Free the cloned context AFTER pushing (qd_push_s has now duplicated the string)
 		builder->SetInsertPoint(pushDoneBB);
 		builder->CreateCall(freeContextFn, {clonedCtx});
-
-		// Continue after push
-		builder->SetInsertPoint(pushDoneBB);
 	}
 
 	void LlvmGenerator::Impl::generateNode(IAstNode* node, llvm::Value* ctx) {

@@ -3,9 +3,11 @@
 #include <quadrate/strconv/strconv.h>
 #include <quadrate/rt/stack.h>
 #include <quadrate/rt/runtime.h>
+#include <ctype.h>
+#include <errno.h>
+#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <ctype.h>
 #include <string.h>
 #include <strings.h>
 
@@ -165,6 +167,14 @@ int usr_strconv_parse_int(qd_context* ctx) {
 		if (digit < 0 || digit >= base) {
 			break;
 		}
+		// Detect overflow before it happens (signed overflow is UB).
+		if (result > (INT64_MAX - digit) / base) {
+			qd_string_release(str_elem.value.s);
+			ctx->error_code = STRCONV_ERR_INVALID;
+			qd_set_error_msg(ctx, "strconv::parse_int: number out of range");
+			qd_stack_push_int(ctx->st, (int64_t)STRCONV_ERR_INVALID);
+			return (int){STRCONV_ERR_INVALID};
+		}
 		result = result * base + digit;
 		digits_parsed++;
 		ptr++;
@@ -227,7 +237,8 @@ int usr_strconv_atoi(qd_context* ctx) {
 
 	const char* str = qd_string_data(str_elem.value.s);
 	char* endptr;
-	int64_t result = strtol(str, &endptr, 10);
+	errno = 0;
+	long parsed = strtol(str, &endptr, 10);
 
 	// Check if any valid digits were parsed
 	if (endptr == str) {
@@ -237,6 +248,17 @@ int usr_strconv_atoi(qd_context* ctx) {
 		qd_stack_push_int(ctx->st, (int64_t)STRCONV_ERR_INVALID);
 		return (int){STRCONV_ERR_INVALID};
 	}
+
+	// Detect out-of-range values rather than silently using the clamped result.
+	if (errno == ERANGE) {
+		qd_string_release(str_elem.value.s);
+		ctx->error_code = STRCONV_ERR_INVALID;
+		qd_set_error_msg(ctx, "strconv::atoi: number out of range");
+		qd_stack_push_int(ctx->st, (int64_t)STRCONV_ERR_INVALID);
+		return (int){STRCONV_ERR_INVALID};
+	}
+
+	int64_t result = (int64_t)parsed;
 
 	qd_string_release(str_elem.value.s);
 	qd_push_i(ctx, result);

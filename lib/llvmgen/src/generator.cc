@@ -3384,6 +3384,22 @@ namespace Qd {
 		int result = -1;
 		bool usedLld = false;
 
+		// Quote interpolated paths for the system() link commands below, so an
+		// output name or dependency path containing shell metacharacters cannot
+		// inject commands. (The flag strings themselves are not user data.)
+		auto shellQuote = [](const std::string& s) {
+			std::string out = "'";
+			for (char c : s) {
+				if (c == '\'') {
+					out += "'\\''";
+				} else {
+					out += c;
+				}
+			}
+			out += "'";
+			return out;
+		};
+
 		// Check if ld.lld is available and we're not cross-compiling
 		if (mImpl->targetTriple.empty()) {
 			// Check for lld availability
@@ -3427,13 +3443,13 @@ namespace Qd {
 					std::string lldCmd = "ld.lld --hash-style=gnu --build-id --eh-frame-hdr -m elf_x86_64 -pie "
 										 "-dynamic-linker /lib64/ld-linux-x86-64.so.2 "
 										 "--gc-sections -o " +
-										 filename + " " + crtDir + "/Scrt1.o " + crtDir + "/crti.o " + gccCrtDir +
-										 "/crtbeginS.o " + "-L" + gccCrtDir + " -L" + crtDir + " " + objFile + " " +
-										 qdrtStaticPath;
+										 shellQuote(filename) + " " + crtDir + "/Scrt1.o " + crtDir + "/crti.o " +
+										 gccCrtDir + "/crtbeginS.o " + "-L" + gccCrtDir + " -L" + crtDir + " " +
+										 shellQuote(objFile) + " " + shellQuote(qdrtStaticPath);
 
 					// Add resolved static libraries (already have full paths)
 					for (const auto& libPath : resolvedStaticLibs) {
-						lldCmd += " " + libPath;
+						lldCmd += " " + shellQuote(libPath);
 					}
 
 					// Add dynamic libraries (.so)
@@ -3480,7 +3496,8 @@ namespace Qd {
 
 		// Fall back to clang if lld wasn't used or failed
 		if (!usedLld) {
-			std::string linkCmd = "clang -Wl,--gc-sections -o " + filename + " " + objFile + " " + libraryFlags;
+			std::string linkCmd = "clang -Wl,--gc-sections -o " + shellQuote(filename) + " " + shellQuote(objFile) +
+								  " " + libraryFlags;
 
 			if (timing) {
 				auto linkStart = std::chrono::steady_clock::now();

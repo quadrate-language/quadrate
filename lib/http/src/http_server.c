@@ -10,6 +10,7 @@
 #include <ctype.h>
 #include <errno.h>
 #include <fcntl.h>
+#include <limits.h>
 #include <netinet/in.h>
 #include <poll.h>
 #include <quadrate/http/http.h>
@@ -1574,6 +1575,29 @@ int usr_http_static_file(qd_context* ctx) {
 	return 0;
 }
 
+// Confine a candidate filesystem path to a root directory. Both are
+// canonicalized with realpath (which resolves "..", ".", and symlinks), then
+// the canonical candidate must lie within the canonical root. Returns 1 if the
+// path is safe to serve, 0 if it does not resolve or escapes the root. On
+// success the canonical path is written to resolved_out (size PATH_MAX).
+// Percent-encoded traversal (e.g. %2e%2e) is handled implicitly: it resolves to
+// a literal, non-existent filename and realpath fails.
+static int resolve_within_root(const char* root, const char* candidate, char* resolved_out) {
+	char root_real[PATH_MAX];
+	if (realpath(root, root_real) == NULL) {
+		return 0;
+	}
+	if (realpath(candidate, resolved_out) == NULL) {
+		return 0; // missing file or unresolved traversal
+	}
+	size_t rlen = strlen(root_real);
+	if (strncmp(resolved_out, root_real, rlen) != 0) {
+		return 0;
+	}
+	// Must be the root itself or a path strictly under it.
+	return resolved_out[rlen] == '\0' || resolved_out[rlen] == '/';
+}
+
 int usr_http_static(qd_context* ctx) {
 	// Pop fs_path (filesystem path)
 	qd_stack_element_t fs_path_elem;
@@ -1621,8 +1645,8 @@ int usr_http_static(qd_context* ctx) {
 		rel_path++; // Skip leading slash
 	}
 
-	// Security: prevent path traversal
-	if (strstr(rel_path, "..") != NULL) {
+	// Reject absolute relative paths outright (they would ignore fs_path).
+	if (*rel_path == '/') {
 		send_response((int)http_ctx->socket, 403, http_ctx->response_headers, "text/plain", "Forbidden");
 		http_ctx->responded = 1;
 		qd_string_release(fs_path_elem.value.s);
@@ -1645,7 +1669,23 @@ int usr_http_static(qd_context* ctx) {
 		strncat(filepath, "index.html", sizeof(filepath) - filepath_len - 1);
 	}
 
-	int result = send_file_response((int)http_ctx->socket, filepath, http_ctx->response_headers);
+	// Confine the resolved path to fs_path. This canonicalizes away "..", ".",
+	// and symlinks and rejects anything that escapes the configured root - a
+	// far stronger guarantee than a substring check for "..".
+	char resolved[PATH_MAX];
+	if (!resolve_within_root(fs_path, filepath, resolved)) {
+		// Distinguish a genuinely missing file (404) from an escape attempt
+		// (403): if the file simply does not exist, realpath fails with ENOENT.
+		int status = (errno == ENOENT || errno == ENOTDIR) ? 404 : 403;
+		const char* body = (status == 404) ? "Not Found" : "Forbidden";
+		send_response((int)http_ctx->socket, status, http_ctx->response_headers, "text/plain", body);
+		http_ctx->responded = 1;
+		qd_string_release(fs_path_elem.value.s);
+		qd_string_release(prefix_elem.value.s);
+		return 0;
+	}
+
+	int result = send_file_response((int)http_ctx->socket, resolved, http_ctx->response_headers);
 	if (result < 0) {
 		send_response((int)http_ctx->socket, 404, http_ctx->response_headers, "text/plain", "Not Found");
 	}

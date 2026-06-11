@@ -9,8 +9,7 @@
 	do {                                                                                                               \
 		if ((ptr) == NULL) {                                                                                           \
 			(ctx)->error_code = -1;                                                                                    \
-			free((ctx)->error_msg);                                                                                    \
-			(ctx)->error_msg = strdup("Null pointer in mem::" op_name);                                                \
+			qd_set_error_msg((ctx), "Null pointer in mem::" op_name);                                                  \
 			return (int){-1};                                                                                          \
 		}                                                                                                              \
 	} while (0)
@@ -66,16 +65,14 @@ int qd_mem_alloc(qd_context* ctx) {
 
 	if (bytes < 0) {
 		ctx->error_code = -1;
-		free(ctx->error_msg);
-		ctx->error_msg = strdup("Negative size in mem::alloc");
+		qd_set_error_msg(ctx, "Negative size in mem::alloc");
 		return (int){-1};
 	}
 
 	void* ptr = malloc((size_t)bytes);
 	if (ptr == NULL && bytes > 0) {
 		ctx->error_code = -1;
-		free(ctx->error_msg);
-		ctx->error_msg = strdup("Allocation failed in mem::alloc");
+		qd_set_error_msg(ctx, "Allocation failed in mem::alloc");
 		return (int){-1};
 	}
 	return qd_push_p(ctx, ptr);
@@ -107,15 +104,19 @@ int qd_mem_realloc(qd_context* ctx) {
 
 	if (new_bytes < 0) {
 		ctx->error_code = -1;
-		free(ctx->error_msg);
-		ctx->error_msg = strdup("Negative size in mem::realloc");
+		qd_set_error_msg(ctx, "Negative size in mem::realloc");
 		return (int){-1};
 	}
 
 	void* new_ptr = realloc(ptr, (size_t)new_bytes);
 	if (new_ptr == NULL && new_bytes > 0) {
-		/* Push the original pointer back so it is not leaked */
-		return qd_push_p(ctx, ptr);
+		/* Reallocation failed. The original block is still valid, so push it
+		 * back to avoid leaking it, but report the failure so the caller does
+		 * not assume it now owns a larger buffer. */
+		ctx->error_code = -1;
+		qd_set_error_msg(ctx, "Allocation failed in mem::realloc");
+		qd_push_p(ctx, ptr);
+		return (int){-1};
 	}
 	return qd_push_p(ctx, new_ptr);
 }
@@ -262,8 +263,7 @@ int qd_mem_copy(qd_context* ctx) {
 
 	if (bytes < 0) {
 		ctx->error_code = -1;
-		free(ctx->error_msg);
-		ctx->error_msg = strdup("Negative size in mem::copy");
+		qd_set_error_msg(ctx, "Negative size in mem::copy");
 		return (int){-1};
 	}
 
@@ -284,8 +284,7 @@ int qd_mem_zero(qd_context* ctx) {
 
 	if (bytes < 0) {
 		ctx->error_code = -1;
-		free(ctx->error_msg);
-		ctx->error_msg = strdup("Negative size in mem::zero");
+		qd_set_error_msg(ctx, "Negative size in mem::zero");
 		return (int){-1};
 	}
 
@@ -307,8 +306,7 @@ int qd_mem_fill(qd_context* ctx) {
 
 	if (bytes < 0) {
 		ctx->error_code = -1;
-		free(ctx->error_msg);
-		ctx->error_msg = strdup("Negative size in mem::fill");
+		qd_set_error_msg(ctx, "Negative size in mem::fill");
 		return (int){-1};
 	}
 

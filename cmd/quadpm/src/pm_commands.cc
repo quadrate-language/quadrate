@@ -227,9 +227,10 @@ bool compileCsources(const std::string& moduleDir, const std::string& moduleName
 		compiler = "clang";
 	}
 
-	// Build include paths
+	// Build include paths. (No blanket -I/usr/include: the compiler already
+	// searches its default system include paths, and adding it explicitly only
+	// widens the ambient header surface.)
 	std::vector<std::string> includePaths;
-	includePaths.push_back("-I/usr/include");
 	// Module's own include directory
 	std::string moduleIncDir = moduleDir + "/include";
 	if (fs::exists(moduleIncDir)) {

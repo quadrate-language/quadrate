@@ -189,6 +189,16 @@ std::vector<Dependency> parseDependencies(const std::string& manifestPath) {
 // Create or update a namespace symlink
 // Returns true on success, false on conflict (different package already owns namespace)
 bool createNamespaceSymlink(const std::string& namespaceName, const std::string& targetPath) {
+	// namespaceName comes from a downloaded package's manifest. Reject anything
+	// that is not a plain single path component so a malicious manifest cannot
+	// place the symlink outside the _namespaces directory (path traversal).
+	if (namespaceName.empty() || namespaceName == "." || namespaceName == ".." ||
+			namespaceName.find('/') != std::string::npos || namespaceName.find('\\') != std::string::npos ||
+			namespaceName.find("..") != std::string::npos) {
+		std::cerr << COLOR_RED << "Error: invalid namespace name: " << COLOR_RESET << namespaceName << "\n";
+		return false;
+	}
+
 	std::string namespacesDir = getNamespacesDir();
 	fs::create_directories(namespacesDir);
 

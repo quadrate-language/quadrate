@@ -7,6 +7,7 @@
 #include <fstream>
 #include <functional>
 #include <memory>
+#include <mutex>
 #include <quadrate/llvmgen/generator.h>
 #include <quadrate/qc/ast.h>
 #include <quadrate/qc/ast_node.h>
@@ -217,6 +218,23 @@ static const char* findCXX() {
 	return (cxx && cxx[0]) ? cxx : "c++";
 }
 
+// Quote a path for inclusion in a popen()/system() command line. Module names
+// and temp/library paths are interpolated into the compile/link commands below;
+// quoting prevents a path containing shell metacharacters from injecting
+// commands into the build host.
+static std::string shellQuote(const std::string& s) {
+	std::string out = "'";
+	for (char c : s) {
+		if (c == '\'') {
+			out += "'\\''";
+		} else {
+			out += c;
+		}
+	}
+	out += "'";
+	return out;
+}
+
 // Module implementation
 struct qd_module {
 	std::string name;
@@ -254,13 +272,18 @@ struct qd_module {
 	}
 };
 
-// Global module registry (stored per-context would be better, but API doesn't support it)
+// Global module registry (stored per-context would be better, but API doesn't support it).
+// g_modules_mutex guards structural changes to the map (insert/erase), which would
+// otherwise race when modules are created or released from multiple threads.
 static std::unordered_map<qd_context*, std::unordered_map<std::string, qd_module*>> g_context_modules;
+static std::mutex g_modules_mutex;
 
 qd_module* qd_get_module(qd_context* ctx, const char* name) {
 	if (!ctx || !name) {
 		return nullptr;
 	}
+
+	std::lock_guard<std::mutex> lock(g_modules_mutex);
 
 	// Get or create module registry for this context
 	auto& modules = g_context_modules[ctx];
@@ -276,6 +299,21 @@ qd_module* qd_get_module(qd_context* ctx, const char* name) {
 	mod->owner_ctx = ctx;
 	modules[name] = mod;
 	return mod;
+}
+
+void qd_release_modules(qd_context* ctx) {
+	if (!ctx) {
+		return;
+	}
+	std::lock_guard<std::mutex> lock(g_modules_mutex);
+	auto ctx_it = g_context_modules.find(ctx);
+	if (ctx_it == g_context_modules.end()) {
+		return;
+	}
+	for (auto& mod_pair : ctx_it->second) {
+		delete mod_pair.second;
+	}
+	g_context_modules.erase(ctx_it);
 }
 
 void qd_add_script(qd_module* mod, const char* script) {
@@ -594,9 +632,9 @@ void qd_build(qd_module* mod) {
 
 				std::string stub_cmd = std::string(findCC()) + " -c -fPIC";
 				for (const auto& dir : include_dirs) {
-					stub_cmd += " -I" + dir;
+					stub_cmd += " -I" + shellQuote(dir);
 				}
-				stub_cmd += " " + stub_c.string() + " -o " + stub_o.string() + " 2>&1";
+				stub_cmd += " " + shellQuote(stub_c.string()) + " -o " + shellQuote(stub_o.string()) + " 2>&1";
 
 				FILE* stub_output = popen(stub_cmd.c_str(), "r");
 				if (!stub_output) {
@@ -645,7 +683,7 @@ void qd_build(qd_module* mod) {
 		mod->so_path = mod->temp_dir / ("lib" + mod->name + ".so");
 
 		// Check what symbols are in the object file and store them for lookup
-		std::string nm_cmd = "nm " + obj_file.string() + " | grep ' T usr_' || true";
+		std::string nm_cmd = "nm " + shellQuote(obj_file.string()) + " | grep ' T usr_' || true";
 		FILE* nm_output = popen(nm_cmd.c_str(), "r");
 		std::unordered_map<std::string, std::string> symbol_map; // function_name -> full_symbol
 		if (nm_output) {
@@ -746,12 +784,12 @@ void qd_build(qd_module* mod) {
 
 		// Link the object file into a shared library with static libs
 		std::string link_cmd = std::string(findCXX()) + " -shared -fPIC ";
-		link_cmd += obj_file.string();
+		link_cmd += shellQuote(obj_file.string());
 		for (const auto& stub_o : stub_objects) {
-			link_cmd += " " + stub_o.string();
+			link_cmd += " " + shellQuote(stub_o.string());
 		}
 		link_cmd += " -o ";
-		link_cmd += mod->so_path.string();
+		link_cmd += shellQuote(mod->so_path.string());
 
 		// Link only the stdlib libraries that the script actually uses.
 		// The runtime (rt) is always required. Other libraries are linked
@@ -766,7 +804,7 @@ void qd_build(qd_module* mod) {
 		for (const auto& libName : usedLibs) {
 			std::string libPath = findStaticLib(lib_dir, libName);
 			if (!libPath.empty()) {
-				link_cmd += " -Wl,--whole-archive " + libPath + " -Wl,--no-whole-archive";
+				link_cmd += " -Wl,--whole-archive " + shellQuote(libPath) + " -Wl,--no-whole-archive";
 				processLibraryDeps(libPath);
 			}
 		}
@@ -780,10 +818,10 @@ void qd_build(qd_module* mod) {
 		if (!stub_objects.empty()) {
 			// Link against libqd so qd_call_native resolves at dlopen time
 			// via the already-loaded shared library.
-			link_cmd += " -L" + lib_dir;
+			link_cmd += " -L" + shellQuote(lib_dir);
 			// In meson build tree, libqd.so lives in a qd/ subdirectory
 			if (fs::exists(fs::path(lib_dir) / "qd" / "libqd.so")) {
-				link_cmd += " -L" + lib_dir + "/qd";
+				link_cmd += " -L" + shellQuote(lib_dir + "/qd");
 			}
 			link_cmd += " -lqd";
 		}
@@ -1009,7 +1047,9 @@ void qd_execute(qd_context* ctx, const char* code) {
 namespace {
 	struct ContextCleaner {
 		~ContextCleaner() {
-			// Clean up all modules
+			// Clean up any modules the embedder did not release explicitly via
+			// qd_release_modules(). Best-effort backstop at process exit.
+			std::lock_guard<std::mutex> lock(g_modules_mutex);
 			for (auto& ctx_pair : g_context_modules) {
 				for (auto& mod_pair : ctx_pair.second) {
 					delete mod_pair.second;

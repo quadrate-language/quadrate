@@ -280,8 +280,10 @@ int usr_net_close(qd_context* ctx) {
 // Stack signature: ( socket:i ms:i -- )!
 int usr_net_set_timeout(qd_context* ctx) {
 	qd_stack_element_t ms_elem, socket_elem;
-	qd_stack_pop(ctx->st, &ms_elem);
-	qd_stack_pop(ctx->st, &socket_elem);
+	if (qd_stack_pop(ctx->st, &ms_elem) != QD_STACK_OK || qd_stack_pop(ctx->st, &socket_elem) != QD_STACK_OK) {
+		qd_push_i(ctx, NET_ERR_INVALID_ARG);
+		return 0;
+	}
 
 	if (socket_elem.type != QD_STACK_TYPE_INT || ms_elem.type != QD_STACK_TYPE_INT) {
 		qd_push_i(ctx, NET_ERR_INVALID_ARG);
@@ -296,8 +298,10 @@ int usr_net_set_timeout(qd_context* ctx) {
 // Stack signature: ( socket:i enable:i -- )!
 int usr_net_set_keepalive(qd_context* ctx) {
 	qd_stack_element_t enable_elem, socket_elem;
-	qd_stack_pop(ctx->st, &enable_elem);
-	qd_stack_pop(ctx->st, &socket_elem);
+	if (qd_stack_pop(ctx->st, &enable_elem) != QD_STACK_OK || qd_stack_pop(ctx->st, &socket_elem) != QD_STACK_OK) {
+		qd_push_i(ctx, NET_ERR_INVALID_ARG);
+		return 0;
+	}
 
 	if (socket_elem.type != QD_STACK_TYPE_INT || enable_elem.type != QD_STACK_TYPE_INT) {
 		qd_push_i(ctx, NET_ERR_INVALID_ARG);
@@ -312,7 +316,10 @@ int usr_net_set_keepalive(qd_context* ctx) {
 // Stack signature: ( hostname:s -- ip:s )!
 int usr_net_lookup(qd_context* ctx) {
 	qd_stack_element_t host_elem;
-	qd_stack_pop(ctx->st, &host_elem);
+	if (qd_stack_pop(ctx->st, &host_elem) != QD_STACK_OK) {
+		qd_push_i(ctx, NET_ERR_INVALID_ARG);
+		return 0;
+	}
 
 	if (host_elem.type != QD_STACK_TYPE_STR) {
 		qd_push_i(ctx, NET_ERR_INVALID_ARG);
@@ -338,7 +345,10 @@ int usr_net_lookup(qd_context* ctx) {
 // Stack signature: ( socket:i -- addr:s port:i )!
 int usr_net_get_peer_addr(qd_context* ctx) {
 	qd_stack_element_t socket_elem;
-	qd_stack_pop(ctx->st, &socket_elem);
+	if (qd_stack_pop(ctx->st, &socket_elem) != QD_STACK_OK) {
+		qd_push_i(ctx, NET_ERR_INVALID_ARG);
+		return 0;
+	}
 
 	if (socket_elem.type != QD_STACK_TYPE_INT) {
 		qd_push_i(ctx, NET_ERR_INVALID_ARG);

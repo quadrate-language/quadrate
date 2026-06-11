@@ -43,6 +43,19 @@ typedef struct qd_module qd_module;
 qd_module* qd_get_module(qd_context* ctx, const char* name);
 
 /**
+ * @brief Release all modules associated with a context
+ *
+ * Frees every qd_module created for @p ctx (including their dlopen handles and
+ * temp directories) and removes the context's entry from the internal registry.
+ * Call this before qd_free_context() in long-running embedders to avoid leaking
+ * modules until process exit, and to prevent a later context that reuses the
+ * same pointer value from aliasing this context's stale modules.
+ *
+ * @param ctx Execution context (NULL is ignored)
+ */
+void qd_release_modules(qd_context* ctx);
+
+/**
  * @brief Add Quadrate source code to a module
  *
  * Adds script source code to the module. Multiple scripts can be added

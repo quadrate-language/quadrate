@@ -10,6 +10,7 @@
 #define QD_PTR_REGISTRY_H
 
 #include "platform/mutex_platform.h"
+#include <sched.h>
 #include <stdatomic.h>
 #include <stddef.h>
 #include <stdint.h>
@@ -74,9 +75,12 @@ static inline void ptr_registry_ensure_init(ptr_registry_t* reg) {
 			mutex_platform_init((mutex_platform_t*)init_mutex_storage);
 			atomic_store(&init_mutex_state, 2);
 		} else {
-			// Another thread is initializing or has finished; wait for completion
+			// Another thread is initializing or has finished; wait for completion.
+			// Yield rather than busy-spin so we don't peg a core if the
+			// initializing thread is descheduled (the wait is a brief one-time
+			// bootstrap, so a yield loop is sufficient).
 			while (atomic_load(&init_mutex_state) != 2) {
-				// spin
+				sched_yield();
 			}
 		}
 		mutex_platform_lock((mutex_platform_t*)init_mutex_storage);

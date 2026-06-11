@@ -506,7 +506,7 @@ namespace Qd {
 			llvm::Value* stackPtr = builder->CreateLoad(ptrTy, stackPtrPtr, "stack");
 
 			// Allocate temp for popped element
-			llvm::Value* tempElem = builder->CreateAlloca(stackElementTy, nullptr, "temp_elem");
+			llvm::Value* tempElem = createEntryAlloca(stackElementTy, "temp_elem");
 			builder->CreateCall(stackPopFn, {stackPtr, tempElem});
 
 			// Load the pointer value from the element
@@ -528,7 +528,7 @@ namespace Qd {
 				llvm::Value* stackPtrPtr = builder->CreateStructGEP(contextStructTy, ctx, 0, "stack_ptr");
 				llvm::Value* stackPtr = builder->CreateLoad(ptrTy, stackPtrPtr, "stack");
 
-				llvm::Value* tempElem = builder->CreateAlloca(stackElementTy, nullptr, "temp_elem");
+				llvm::Value* tempElem = createEntryAlloca(stackElementTy, "temp_elem");
 				builder->CreateCall(stackPopFn, {stackPtr, tempElem});
 
 				llvm::Value* valuePtr = builder->CreateStructGEP(stackElementTy, tempElem, 0, "value_ptr");
@@ -554,7 +554,7 @@ namespace Qd {
 					llvm::Value* stackPtrPtr = builder->CreateStructGEP(contextStructTy, ctx, 0, "stack_ptr");
 					llvm::Value* stackPtr = builder->CreateLoad(ptrTy, stackPtrPtr, "stack");
 
-					llvm::Value* tempElem = builder->CreateAlloca(stackElementTy, nullptr, "temp_elem");
+					llvm::Value* tempElem = createEntryAlloca(stackElementTy, "temp_elem");
 					builder->CreateCall(stackPopFn, {stackPtr, tempElem});
 
 					llvm::Value* valuePtr = builder->CreateStructGEP(stackElementTy, tempElem, 0, "value_ptr");

@@ -65,6 +65,52 @@ static int count_format_specifiers(const char* fmt) {
 	return count;
 }
 
+// Cap for width/precision fields in a format specifier. Width/precision come
+// straight from the caller's (untrusted) format string; without a bound a spec
+// like "%999999999d" would make the underlying printf attempt a huge amount of
+// output/padding, a denial-of-service vector.
+#define FMT_MAX_FIELD 1048576
+
+// Returns 1 if every width/precision field in the format string is within
+// FMT_MAX_FIELD, 0 otherwise.
+static int fmt_format_fields_ok(const char* fmt) {
+	for (const char* p = fmt; *p; p++) {
+		if (*p != '%') {
+			continue;
+		}
+		p++;
+		if (*p == '%' || *p == '\0') {
+			continue;
+		}
+		// Flags
+		while (*p == '-' || *p == '+' || *p == ' ' || *p == '#' || *p == '0') {
+			p++;
+		}
+		// Width
+		long width = 0;
+		while (*p >= '0' && *p <= '9') {
+			width = width * 10 + (*p - '0');
+			if (width > FMT_MAX_FIELD) {
+				return 0;
+			}
+			p++;
+		}
+		// Precision
+		if (*p == '.') {
+			p++;
+			long prec = 0;
+			while (*p >= '0' && *p <= '9') {
+				prec = prec * 10 + (*p - '0');
+				if (prec > FMT_MAX_FIELD) {
+					return 0;
+				}
+				p++;
+			}
+		}
+	}
+	return 1;
+}
+
 int usr_fmt_printf(qd_context* ctx) {
 	// Stack order: ( arg1 arg2 ... argN format:s -- )
 	// Format string is on top, arguments are below it
@@ -83,6 +129,11 @@ int usr_fmt_printf(qd_context* ctx) {
 	}
 
 	const char* format = qd_string_data(fmt_elem.value.s);
+	if (!fmt_format_fields_ok(format)) {
+		fprintf(stderr, "Fatal error in fmt: format width/precision too large\n");
+		qd_string_release(fmt_elem.value.s);
+		abort();
+	}
 	int arg_count = count_format_specifiers(format);
 
 	// Now pop exactly arg_count arguments from stack
@@ -298,6 +349,11 @@ int usr_fmt_sprintf(qd_context* ctx) {
 	}
 
 	const char* format = qd_string_data(fmt_elem.value.s);
+	if (!fmt_format_fields_ok(format)) {
+		fprintf(stderr, "Fatal error in fmt: format width/precision too large\n");
+		qd_string_release(fmt_elem.value.s);
+		abort();
+	}
 	int arg_count = count_format_specifiers(format);
 
 	// Pop exactly arg_count arguments from stack
@@ -639,6 +695,11 @@ int usr_fmt_fprintf(qd_context* ctx) {
 	}
 
 	const char* format = qd_string_data(fmt_elem.value.s);
+	if (!fmt_format_fields_ok(format)) {
+		fprintf(stderr, "Fatal error in fmt: format width/precision too large\n");
+		qd_string_release(fmt_elem.value.s);
+		abort();
+	}
 	int arg_count = count_format_specifiers(format);
 
 	qd_stack_element_t* elements = NULL;

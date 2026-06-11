@@ -16,81 +16,93 @@
 
 #define FILE_REGISTRY_SIZE 256
 
-typedef struct file_registry_entry {
+// File handles are exposed to Quadrate as opaque tokens rather than raw FILE*
+// pointers. Each open file occupies a slot with a generation counter, and a
+// token encodes (generation << 16 | slot index). Closing a file bumps the
+// slot's generation so a stale token from a previously-closed file no longer
+// resolves - even if the OS later reuses the same FILE* address. Keying on the
+// FILE* address directly (as before) suffered that ABA problem.
+typedef struct {
 	FILE* fp;
-	struct file_registry_entry* next;
-} file_registry_entry_t;
+	uint32_t gen;
+} file_slot_t;
 
-static file_registry_entry_t* file_registry[FILE_REGISTRY_SIZE] = {0};
+static file_slot_t file_slots[FILE_REGISTRY_SIZE];
 static pthread_mutex_t file_registry_mutex = PTHREAD_MUTEX_INITIALIZER;
 
-static size_t file_registry_hash(const FILE* fp) {
-	uintptr_t val = (uintptr_t)fp;
-	val = val ^ (val >> 16);
-	return val % FILE_REGISTRY_SIZE;
+#define FILE_TOKEN_INDEX_BITS 16
+#define FILE_TOKEN_INDEX_MASK ((uintptr_t)0xFFFF)
+
+static void* file_token_encode(uint32_t gen, size_t index) {
+	uintptr_t token = ((uintptr_t)gen << FILE_TOKEN_INDEX_BITS) | ((uintptr_t)index & FILE_TOKEN_INDEX_MASK);
+	return (void*)token;
 }
 
-static void file_registry_add(FILE* fp) {
+// Register an open FILE* and return its opaque token, or NULL if the table is full.
+static void* file_handle_register(FILE* fp) {
 	if (!fp) {
-		return;
+		return NULL;
 	}
 	pthread_mutex_lock(&file_registry_mutex);
-	size_t idx = file_registry_hash(fp);
-	file_registry_entry_t* entry = (file_registry_entry_t*)malloc(sizeof(file_registry_entry_t));
-	if (entry) {
-		entry->fp = fp;
-		entry->next = file_registry[idx];
-		file_registry[idx] = entry;
-	}
-	pthread_mutex_unlock(&file_registry_mutex);
-}
-
-static int file_registry_contains(const FILE* fp) {
-	if (!fp) {
-		return 0;
-	}
-	pthread_mutex_lock(&file_registry_mutex);
-	size_t idx = file_registry_hash(fp);
-	file_registry_entry_t* entry = file_registry[idx];
-	while (entry) {
-		if (entry->fp == fp) {
+	for (size_t i = 0; i < FILE_REGISTRY_SIZE; i++) {
+		if (file_slots[i].fp == NULL) {
+			if (file_slots[i].gen == 0) {
+				file_slots[i].gen = 1; // generations start at 1 so valid tokens are non-zero
+			}
+			file_slots[i].fp = fp;
+			void* token = file_token_encode(file_slots[i].gen, i);
 			pthread_mutex_unlock(&file_registry_mutex);
-			return 1;
+			return token;
 		}
-		entry = entry->next;
 	}
 	pthread_mutex_unlock(&file_registry_mutex);
-	return 0;
+	return NULL;
 }
 
-static void file_registry_remove(FILE* fp) {
-	if (!fp) {
-		return;
+// Resolve a token to its FILE*, or NULL if the token is stale/invalid.
+static FILE* file_handle_resolve(void* token) {
+	uintptr_t t = (uintptr_t)token;
+	size_t index = (size_t)(t & FILE_TOKEN_INDEX_MASK);
+	uint32_t gen = (uint32_t)(t >> FILE_TOKEN_INDEX_BITS);
+	if (index >= FILE_REGISTRY_SIZE) {
+		return NULL;
 	}
 	pthread_mutex_lock(&file_registry_mutex);
-	size_t idx = file_registry_hash(fp);
-	file_registry_entry_t** pp = &file_registry[idx];
-	while (*pp) {
-		if ((*pp)->fp == fp) {
-			file_registry_entry_t* to_free = *pp;
-			*pp = (*pp)->next;
-			free(to_free);
-			pthread_mutex_unlock(&file_registry_mutex);
-			return;
-		}
-		pp = &(*pp)->next;
+	FILE* fp = NULL;
+	if (file_slots[index].fp != NULL && file_slots[index].gen == gen) {
+		fp = file_slots[index].fp;
 	}
 	pthread_mutex_unlock(&file_registry_mutex);
+	return fp;
 }
 
-// Helper to validate a FILE handle before use
+// Invalidate a token's slot and return the FILE* it held (so the caller can
+// fclose outside the lock), or NULL if the token was already invalid.
+static FILE* file_handle_release(void* token) {
+	uintptr_t t = (uintptr_t)token;
+	size_t index = (size_t)(t & FILE_TOKEN_INDEX_MASK);
+	uint32_t gen = (uint32_t)(t >> FILE_TOKEN_INDEX_BITS);
+	if (index >= FILE_REGISTRY_SIZE) {
+		return NULL;
+	}
+	pthread_mutex_lock(&file_registry_mutex);
+	FILE* fp = NULL;
+	if (file_slots[index].fp != NULL && file_slots[index].gen == gen) {
+		fp = file_slots[index].fp;
+		file_slots[index].fp = NULL;
+		file_slots[index].gen++; // bump so stale tokens to this slot stop resolving
+		if (file_slots[index].gen == 0) {
+			file_slots[index].gen = 1;
+		}
+	}
+	pthread_mutex_unlock(&file_registry_mutex);
+	return fp;
+}
+
+// Validate a resolved FILE handle before use. fp is the result of
+// file_handle_resolve - NULL when the token was stale, invalid, or closed.
 static int is_valid_file_handle(FILE* fp, qd_context* ctx, const char* op_name) {
 	if (!fp) {
-		ctx->error_code = IO_ERR_INVALID_HANDLE;
-		qd_set_error_msg(ctx, "null file handle");
-		return 0;
-	}
-	if (!file_registry_contains(fp)) {
 		ctx->error_code = IO_ERR_INVALID_HANDLE;
 		char err_buf[128];
 		snprintf(err_buf, sizeof(err_buf), "%s: invalid or already closed file handle", op_name);
@@ -155,14 +167,21 @@ int usr_io_open(qd_context* ctx) {
 		return (int){IO_ERR_NOT_FOUND};
 	}
 
-	// Register the file handle for tracking
-	file_registry_add(fp);
-
-	int push_result = qd_push_p(ctx, fp);
-	if (push_result != 0) {
-		file_registry_remove(fp);
+	// Register the file handle and hand back an opaque token, not the raw FILE*.
+	void* token = file_handle_register(fp);
+	if (!token) {
 		fclose(fp);
-		fprintf(stderr, "Fatal error in io::open: Failed to push pointer to stack\n");
+		ctx->error_code = IO_ERR_INVALID_HANDLE;
+		qd_set_error_msg(ctx, "io::open: too many open files");
+		qd_push_i(ctx, IO_ERR_INVALID_HANDLE);
+		return (int){IO_ERR_INVALID_HANDLE};
+	}
+
+	int push_result = qd_push_p(ctx, token);
+	if (push_result != 0) {
+		file_handle_release(token);
+		fclose(fp);
+		fprintf(stderr, "Fatal error in io::open: Failed to push handle to stack\n");
 		abort();
 	}
 	qd_push_i(ctx, IO_ERR_OK);
@@ -188,15 +207,17 @@ int usr_io_close(qd_context* ctx) {
 		abort();
 	}
 
-	FILE* fp = (FILE*)elem.value.p;
-	if (!is_valid_file_handle(fp, ctx, "io::close")) {
-		// Still return success - closing an invalid handle is a no-op
-		// but we've set the error message for debugging
+	// Invalidate the slot first (bumps its generation) so any stale copies of
+	// this token stop resolving, then close the underlying file.
+	FILE* fp = file_handle_release(elem.value.p);
+	if (!fp) {
+		// Closing an invalid/already-closed handle is a no-op; record the error
+		// for debugging but still report success.
+		ctx->error_code = IO_ERR_INVALID_HANDLE;
+		qd_set_error_msg(ctx, "io::close: invalid or already closed file handle");
 		return (int){0};
 	}
 
-	// Remove from registry before closing
-	file_registry_remove(fp);
 	fclose(fp);
 
 	return (int){0};
@@ -232,7 +253,7 @@ int usr_io_read_string(qd_context* ctx) {
 		abort();
 	}
 
-	FILE* fp = (FILE*)handle_elem.value.p;
+	FILE* fp = file_handle_resolve(handle_elem.value.p);
 	int64_t count = count_elem.value.i;
 
 	// Validate file handle using registry
@@ -317,7 +338,7 @@ int usr_io_write_string(qd_context* ctx) {
 		abort();
 	}
 
-	FILE* fp = (FILE*)handle_elem.value.p;
+	FILE* fp = file_handle_resolve(handle_elem.value.p);
 	const char* data = qd_string_data(data_elem.value.s);
 	if (!data) {
 		qd_string_release(data_elem.value.s);
@@ -389,7 +410,7 @@ int usr_io_seekg(qd_context* ctx) {
 		abort();
 	}
 
-	FILE* fp = (FILE*)handle_elem.value.p;
+	FILE* fp = file_handle_resolve(handle_elem.value.p);
 	int64_t offset = offset_elem.value.i;
 	int whence = (int)whence_elem.value.i;
 
@@ -461,7 +482,7 @@ int usr_io_eof(qd_context* ctx) {
 		abort();
 	}
 
-	FILE* fp = (FILE*)elem.value.p;
+	FILE* fp = file_handle_resolve(elem.value.p);
 	int64_t is_eof = 0;
 
 	if (is_valid_file_handle(fp, ctx, "io::eof")) {
@@ -498,7 +519,7 @@ int usr_io_tell(qd_context* ctx) {
 		abort();
 	}
 
-	FILE* fp = (FILE*)elem.value.p;
+	FILE* fp = file_handle_resolve(elem.value.p);
 	if (!is_valid_file_handle(fp, ctx, "io::tell")) {
 		qd_push_i(ctx, ctx->error_code);
 		return (int){IO_ERR_INVALID_HANDLE};
@@ -559,7 +580,7 @@ int usr_io_read(qd_context* ctx) {
 		abort();
 	}
 
-	FILE* fp = (FILE*)handle_elem.value.p;
+	FILE* fp = file_handle_resolve(handle_elem.value.p);
 	void* buffer = buffer_elem.value.p;
 	int64_t count = count_elem.value.i;
 
@@ -663,7 +684,7 @@ int usr_io_write(qd_context* ctx) {
 		abort();
 	}
 
-	FILE* fp = (FILE*)handle_elem.value.p;
+	FILE* fp = file_handle_resolve(handle_elem.value.p);
 	void* buffer = buffer_elem.value.p;
 	int64_t count = count_elem.value.i;
 

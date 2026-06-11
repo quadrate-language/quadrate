@@ -60,7 +60,9 @@ func main() {
 			http.NotFound(w, r)
 			return
 		}
-		tmpl.ExecuteTemplate(w, "index.html", nil)
+		if err := tmpl.ExecuteTemplate(w, "index.html", nil); err != nil {
+			log.Printf("failed to render index template: %v", err)
+		}
 	})
 
 	http.HandleFunc("/favicon.ico", func(w http.ResponseWriter, r *http.Request) {
@@ -119,8 +121,14 @@ func runCode(code string) (string, error) {
 		return "", fmt.Errorf("failed to write source: %v", err)
 	}
 
-	os.Chmod(srcFile, 0644)
-	os.Chmod(tmpDir, 0755)
+	// Make the dir and source readable by the (possibly different) uid the
+	// sandbox container runs as.
+	if err := os.Chmod(srcFile, 0644); err != nil {
+		return "", fmt.Errorf("failed to set source permissions: %v", err)
+	}
+	if err := os.Chmod(tmpDir, 0755); err != nil {
+		return "", fmt.Errorf("failed to set temp dir permissions: %v", err)
+	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), timeout)
 	defer cancel()
@@ -229,5 +237,7 @@ func handleFmt(w http.ResponseWriter, r *http.Request) {
 func writeJSON(w http.ResponseWriter, status int, v any) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(status)
-	json.NewEncoder(w).Encode(v)
+	if err := json.NewEncoder(w).Encode(v); err != nil {
+		log.Printf("writeJSON: failed to encode response: %v", err)
+	}
 }
