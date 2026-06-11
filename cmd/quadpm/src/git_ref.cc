@@ -97,3 +97,21 @@ GitRef parseGitUrl(const std::string& input) {
 	result.hostPath = extractHostPath(result.url);
 	return result;
 }
+
+bool isSafeGitArgument(const std::string& value) {
+	if (value.empty()) {
+		return true; // empty refs are handled by callers (default branch)
+	}
+	// A leading '-' makes git treat the value as an option.
+	if (value[0] == '-') {
+		return false;
+	}
+	// Newlines would let a value smuggle extra lines into git's stdin-driven
+	// flows; reject control characters outright.
+	for (char c : value) {
+		if (c == '\n' || c == '\r' || c == '\0') {
+			return false;
+		}
+	}
+	return true;
+}

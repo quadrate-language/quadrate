@@ -33,4 +33,10 @@ std::string extractHostPath(const std::string& gitUrl);
 // Parse a git URL into its components
 GitRef parseGitUrl(const std::string& input);
 
+// Reject a URL or ref that could be misinterpreted by git as an option.
+// A value beginning with '-' (e.g. "--upload-pack=...") would be treated as a
+// flag rather than a positional argument, so such values are unsafe to pass to
+// git even via an argv vector. Returns true when the value is safe to use.
+bool isSafeGitArgument(const std::string& value);
+
 #endif

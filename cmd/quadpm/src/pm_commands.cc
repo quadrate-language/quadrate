@@ -41,12 +41,21 @@ std::string gitClone(const GitRef& gitRef) {
 	fs::path targetPath(targetDir);
 	fs::create_directories(targetPath.parent_path());
 
-	// Clone with --depth 1 for faster download
+	// Reject URLs/refs that git would interpret as options (argument injection).
+	if (!isSafeGitArgument(gitRef.url) || !isSafeGitArgument(gitRef.ref)) {
+		std::cerr << COLOR_RED << "Error: refusing unsafe git URL or ref: " << COLOR_RESET << gitRef.url
+				  << (gitRef.ref.empty() ? "" : ("@" + gitRef.ref)) << "\n";
+		return "";
+	}
+
+	// Clone with --depth 1 for faster download. The "--" separator ensures the
+	// URL and target are always treated as positional arguments.
 	std::vector<std::string> cloneCmd = {"git", "clone", "--depth", "1"};
 	if (!gitRef.ref.empty()) {
 		cloneCmd.push_back("--branch");
 		cloneCmd.push_back(gitRef.ref);
 	}
+	cloneCmd.push_back("--");
 	cloneCmd.push_back(gitRef.url);
 	cloneCmd.push_back(targetDir);
 	int result = execCommandLive(cloneCmd);
@@ -638,9 +647,14 @@ std::string computeSha256(const std::string& path) {
 std::vector<std::pair<std::string, std::string>> listRemoteTags(const std::string& gitUrl) {
 	std::vector<std::pair<std::string, std::string>> tags;
 
+	if (!isSafeGitArgument(gitUrl)) {
+		std::cerr << COLOR_RED << "Error: refusing unsafe git URL: " << COLOR_RESET << gitUrl << "\n";
+		return tags;
+	}
+
 	try {
-		// git ls-remote --tags <url>
-		std::string output = execCommand({"git", "ls-remote", "--tags", gitUrl});
+		// git ls-remote --tags -- <url> ("--" forces <url> to be positional)
+		std::string output = execCommand({"git", "ls-remote", "--tags", "--", gitUrl});
 
 		// Parse output: "commit_hash\trefs/tags/tag_name" (one per line)
 		std::istringstream iss(output);
@@ -903,11 +917,17 @@ InstallResult installSingleDependency(const Dependency& dep, const std::string& 
 	}
 	std::cout << "\n";
 
-	// Verify sha256 if specified in manifest
+	// Verify sha256 if specified in manifest. A mismatch is a hard failure: the
+	// resolved code does not match what the manifest pinned, so installing it
+	// would defeat the point of the integrity field. Remove the clone and abort.
 	if (!dep.sha256.empty() && commitHash != dep.sha256) {
-		std::cout << "  " << COLOR_YELLOW << "⚠ SHA256 mismatch!" << COLOR_RESET << "\n";
-		std::cout << "    Expected: " << dep.sha256 << "\n";
-		std::cout << "    Got:      " << commitHash << "\n";
+		std::cerr << "  " << COLOR_RED << "✗ Integrity check failed (SHA256 mismatch)" << COLOR_RESET << "\n";
+		std::cerr << "    Expected: " << dep.sha256 << "\n";
+		std::cerr << "    Got:      " << commitHash << "\n";
+		if (fs::exists(installedDir)) {
+			fs::remove_all(installedDir);
+		}
+		return result;
 	}
 
 	result.modulePath = installedDir;
