@@ -1,0 +1,31 @@
+// Test: Regression: same shape as switch_value_native_literal, but with `const` case
+// labels instead of integer literals.
+//
+// This was a separate defect from the missing native path: a bare (unqualified)
+// identifier case label was handled by neither the literal nor the scoped-identifier
+// branch of the case dispatch, so no comparison was emitted, the enclosing block was
+// left without a terminator, and the module failed verification with "Basic Block in
+// function '..._native' does not have terminator!". It failed in `main` too, not just
+// on the native path. `module::Const` worked because it parses as a scoped identifier.
+const CaseA = 0
+const CaseB = 1
+
+fn classify(d:i64 -- r:i64) {
+	d switch {
+		CaseA {
+			100
+		}
+		CaseB {
+			200
+		}
+		_ {
+			-1
+		}
+	}
+}
+
+fn main() {
+	0 classify print nl
+	1 classify print nl
+	7 classify print nl
+}

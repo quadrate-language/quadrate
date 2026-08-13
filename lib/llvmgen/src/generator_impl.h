@@ -197,6 +197,7 @@ namespace Qd {
 		llvm::Function* orFn = nullptr;
 		llvm::Function* xorFn = nullptr;
 		llvm::Function* notFn = nullptr;
+		llvm::Function* lnotFn = nullptr;
 		llvm::Function* shlFn = nullptr;
 		llvm::Function* shrFn = nullptr;
 		llvm::Function* exitFn = nullptr;
@@ -533,6 +534,7 @@ namespace Qd {
 		void generateInlineBitOr(llvm::Value* ctx);
 		void generateInlineBitXor(llvm::Value* ctx);
 		void generateInlineBitNot(llvm::Value* ctx);
+		void generateInlineLogicalNot(llvm::Value* ctx);
 		void generateInlineBitLshift(llvm::Value* ctx);
 		void generateInlineBitRshift(llvm::Value* ctx);
 		void generateInlineDup(llvm::Value* ctx);

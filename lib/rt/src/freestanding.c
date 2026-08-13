@@ -329,6 +329,12 @@ int qd_not(qd_context* ctx) {
 	return push_i_inline(ctx, ~a);
 }
 
+// Logical negation, as distinct from the bitwise `not` above.
+int qd_lnot(qd_context* ctx) {
+	int64_t a = pop_i_inline(ctx);
+	return push_i_inline(ctx, a == 0 ? 1 : 0);
+}
+
 int qd_neg(qd_context* ctx) {
 	int64_t a = pop_i_inline(ctx);
 	return push_i_inline(ctx, -a);

@@ -72,9 +72,9 @@ pub fn (sb:StringBuilder) append(s:str -- sb2:StringBuilder) {
 	buf curlen mem::ptr_add sdata slen mem::copy
 
 	// Update builder in-place and return
-	sb buf >>buf
-	sb newlen >>len
-	sb cap >>cap
+	sb buf >>buf!
+	sb newlen >>len!
+	sb cap >>cap!
 	sb
 }
 
@@ -97,9 +97,9 @@ pub fn (sb:StringBuilder) append_char(c:i64 -- sb2:StringBuilder) {
 	c buf curlen mem::set_byte
 
 	// Update builder in-place
-	sb buf >>buf
-	sb curlen 1 + >>len
-	sb cap >>cap
+	sb buf >>buf!
+	sb curlen 1 + >>len!
+	sb cap >>cap!
 	sb
 }
 
@@ -158,9 +158,9 @@ pub fn (sb:StringBuilder) append_int(n:i64 -- sb2:StringBuilder) {
 		}
 
 		// Update builder in-place
-		sb buf >>buf
-		sb curlen count + >>len
-		sb cap >>cap
+		sb buf >>buf!
+		sb curlen count + >>len!
+		sb cap >>cap!
 		sb
 	}
 }

@@ -830,6 +830,16 @@ namespace Qd {
 				errorReporter.reportError(&scanner, "Unexpected float literal at top level");
 				break;
 			default:
+				if (token == '}') {
+					// A stray close brace at module scope means an earlier function body was
+					// closed too soon. Silently skipping it let the rest of that body parse as
+					// top-level declarations -- or, when nothing followed, produced a cleanly
+					// built binary in which the truncated function's remaining statements had
+					// simply vanished.
+					errorReporter.reportError(&scanner,
+							"Unmatched '}' at top level (an earlier function body was closed by an extra "
+							"'}')");
+				}
 				break;
 			}
 		}

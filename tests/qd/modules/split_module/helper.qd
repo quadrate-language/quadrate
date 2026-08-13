@@ -8,6 +8,6 @@ pub fn negate(f64 -- f64) {
 	neg
 }
 
-pub fn get_hundred() {
+pub fn get_hundred( -- v:f64) {
 	100.0
 }

@@ -1,16 +1,16 @@
 // Mathematical constants
-pub fn pi() {
+pub fn pi( -- v:f64) {
 	3.141592653589793
 }
 
-pub fn e() {
+pub fn e( -- v:f64) {
 	2.718281828459045
 }
 
-pub fn tau() {
+pub fn tau( -- v:f64) {
 	6.283185307179586
 }
 
-pub fn phi() {
+pub fn phi( -- v:f64) {
 	1.618033988749895
 }

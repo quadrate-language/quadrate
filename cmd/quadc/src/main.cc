@@ -500,6 +500,8 @@ int main(int argc, char** argv) {
 			buildCache.addOption("stack:" + std::to_string(opts.stackSize));
 			buildCache.addOption("target:" + opts.targetTriple);
 			buildCache.addOption("debug:" + std::to_string(opts.debugInfo ? 1 : 0));
+			// A different quadc can produce different output from identical sources
+			buildCache.addCompilerIdentity();
 
 			// Check cache before doing expensive codegen
 			if (buildCache.restore(outputPath)) {

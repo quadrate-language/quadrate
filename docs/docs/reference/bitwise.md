@@ -9,9 +9,23 @@ Operations for bit manipulation.
 | `and` | `(a b -- result)` | Bitwise AND |
 | `or` | `(a b -- result)` | Bitwise OR |
 | `xor` | `(a b -- result)` | Bitwise XOR |
-| `not` | `(a -- result)` | Bitwise NOT |
+| `not` | `(a -- result)` | Bitwise NOT (ones' complement) |
+| `lnot` | `(a -- result)` | Logical NOT (boolean negation) |
 | `shl` | `(a n -- result)` | Shift left |
 | `shr` | `(a n -- result)` | Shift right |
+
+!!! warning "`not` is bitwise -- use `lnot` for boolean negation"
+    `not` computes the ones' complement, so `0 not` is `-1`, not `1`. Writing
+    `flag not other and` to mean "NOT flag AND other" silently gives the wrong answer,
+    because `-1` is all bits set and `-1 and X` is `X`.
+
+    Use `lnot` when you want boolean negation:
+
+    ```qd
+    0 not print nl      // -1   (all bits set)
+    0 lnot print nl     // 1
+    5 lnot print nl     // 0
+    ```
 
 ---
 

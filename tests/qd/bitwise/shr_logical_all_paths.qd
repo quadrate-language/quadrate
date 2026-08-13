@@ -1,0 +1,24 @@
+// Test: `shr` is a logical shift on every codegen path. It is documented as treating its
+// operand as unsigned, and both runtimes cast to uint64_t before shifting, but the
+// constant-folding path used to emit CreateAShr -- so the same expression gave a different
+// answer depending on whether it was folded.
+//
+// -1 is all ones, so a logical `1 shr` yields 0x7FFFFFFFFFFFFFFF (9223372036854775807).
+// An arithmetic shift would yield -1.
+fn shift_native(v:i64 n:i64 -- r:i64) {
+	v n shr
+}
+
+fn main() {
+	// Native / all-i64 path
+	-1 1 shift_native print nl
+	-8 2 shift_native print nl
+
+	// Same expressions inline in main (non-native path)
+	-1 1 shr print nl
+	-8 2 shr print nl
+
+	// Positive values are unaffected and agree across paths
+	256 4 shift_native print nl
+	256 4 shr print nl
+}

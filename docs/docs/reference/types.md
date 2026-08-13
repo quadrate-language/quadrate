@@ -127,7 +127,6 @@ The `as` keyword narrows a `ptr` value to a specific struct type. This is a comp
 
 ```qd
 fn get_name(p:ptr -- name:str) {
-	-> p
 	p as Dog <<name
 }
 ```
@@ -141,7 +140,6 @@ struct Foo { value:i64 }
 struct Bar { value:str }
 
 fn read_foo(p:ptr -- v:i64) {
-	-> p
 	p as Foo <<value   // disambiguates <<value
 }
 ```
@@ -163,7 +161,6 @@ Combining `as` with `->` tracks the type for all subsequent accesses:
 
 ```qd
 fn process(p:ptr -- ) {
-	-> p
 	p as Point -> pt   // pt is now typed as Point
 	pt <<x print nl     // no ambiguity
 	pt <<y print nl     // type still known

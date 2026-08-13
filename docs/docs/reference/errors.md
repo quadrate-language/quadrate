@@ -58,6 +58,15 @@ fn divide(a:i64 b:i64 -- result:i64)! {
 
 ## Handling errors
 
+!!! note "Error codes and `Ok`"
+    A fallible call leaves a status the consuming `if` or `switch` reads. Both idioms work for
+    functions written in Quadrate and for those imported from a native library.
+
+    `Ok` means "the call succeeded", not "the value equals 1" — so a `panic` carrying code `1`
+    is still recognised as a failure and will not match `Ok`. Prefer codes >= 2 for your own
+    modules anyway, matching the stdlib convention, so that each code stays distinguishable in
+    a `switch`.
+
 ### With switch (recommended)
 
 Use `switch` to match on specific error codes:
@@ -129,7 +138,6 @@ Handle errors without matching specific codes:
 
 ```qd
 fn compute(x:i64 -- result:i64)! {
-	-> x
 	x 2 divide if {
 		// Success
 	} else {
@@ -145,7 +153,6 @@ Abort the program if an error occurs:
 
 ```qd
 fn compute(x:i64 -- result:i64)! {
-	-> x
 	x 2 divide!  // Aborts program if divide fails
 	10 +
 }
@@ -159,7 +166,6 @@ Automatically propagate errors to the calling function:
 
 ```qd
 fn compute(x:i64 -- result:i64)! {
-	-> x
 	x 2 divide?  // Propagates error to caller if divide fails
 	10 +
 }
@@ -171,7 +177,6 @@ This is equivalent to the more verbose pattern:
 
 ```qd
 fn compute(x:i64 -- result:i64)! {
-	-> x
 	x 2 divide switch {
 		Ok { }
 		_ { err panic }
@@ -219,7 +224,6 @@ strings::ErrAlloc        // 3 - Memory allocation failed
 
 ```qd
 fn process(path:str -- result:i64)! {
-	-> path
 	path io::Read io::open switch {
 		Ok {
 			-> file

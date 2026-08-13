@@ -890,6 +890,19 @@ namespace Qd {
 
 			// Check if this is an imported library namespace (even if function not declared)
 			if (mImportedLibraries.find(scopeName) != mImportedLibraries.end()) {
+				// A module may qualify a reference with its own name, and that name can also be
+				// the namespace of an `import` block in the same file: `math.qd` declares
+				// `import "libmath.a" as "math"` and calls its own `pub fn abs` as `math::abs`;
+				// `time.qd` declares `import "libtime.a" as "time"` and reads its own
+				// `pub const Millisecond` as `time::Millisecond`. Resolve against the module's
+				// own definitions before rejecting. Only fires when a name is both an FFI
+				// namespace and a locally defined function or constant, which is exactly this
+				// case. Getting this wrong also cascades: an unresolved `time::Millisecond` left
+				// nothing on the stack, so the following `/` reported a spurious underflow.
+				if (mDefinedFunctions.find(functionName) != mDefinedFunctions.end() ||
+						mDefinedConstants.find(functionName) != mDefinedConstants.end()) {
+					return;
+				}
 				// It's a library namespace, but function wasn't declared in import
 				std::string errorMsg = "Function '";
 				errorMsg += functionName;

@@ -8,6 +8,6 @@ pub fn multiply_by_two(f64 -- f64) {
 	2.0 mul
 }
 
-pub fn get_hundred() {
+pub fn get_hundred( -- v:f64) {
 	100.0
 }

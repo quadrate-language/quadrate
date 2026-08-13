@@ -1,11 +1,15 @@
 #include "build_cache.h"
 
 #include <cstdint>
+#include <cstdio>
 #include <cstring>
 #include <filesystem>
 #include <fstream>
 #include <iomanip>
+#include "version.h"
+
 #include <sstream>
+#include <system_error>
 
 namespace fs = std::filesystem;
 
@@ -50,6 +54,32 @@ void BuildCache::addSourceFile(const std::string& filePath) {
 
 void BuildCache::addOption(const std::string& option) {
 	mOptions.push_back(option);
+}
+
+void BuildCache::addCompilerIdentity() {
+	// Version and commit cover released builds, where the binary is reproducible.
+	mOptions.push_back(std::string("qdc-version:") + QUADRATE_VERSION);
+	mOptions.push_back(std::string("qdc-commit:") + QUADRATE_GIT_COMMIT);
+
+	// During development the version string does not move between rebuilds, so also mix in
+	// the running binary's size and mtime. Best-effort: if the path can't be resolved the
+	// version fields above still apply.
+	std::error_code ec;
+	fs::path self = fs::read_symlink("/proc/self/exe", ec);
+	if (ec || self.empty()) {
+		return;
+	}
+
+	auto size = fs::file_size(self, ec);
+	if (!ec) {
+		mOptions.push_back("qdc-size:" + std::to_string(size));
+	}
+
+	auto mtime = fs::last_write_time(self, ec);
+	if (!ec) {
+		mOptions.push_back(
+				"qdc-mtime:" + std::to_string(mtime.time_since_epoch().count()));
+	}
 }
 
 std::string BuildCache::computeKey() {

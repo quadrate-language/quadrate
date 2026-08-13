@@ -1,0 +1,60 @@
+// Test: the status a fallible call leaves behind works with BOTH consuming idioms, and
+// behaves the same for user-defined and imported functions.
+//
+// Two bugs used to break the two idioms in opposite directions:
+//   - if/else CRASHED on an imported function's failure. FFI pushes the raw error code, and
+//     any code >= 2 is truthy, so `if` took the success branch and then underflowed on the
+//     first drop. `"/nonexistent" io::Read io::open if {...} else {...}` aborted.
+//   - switch-on-code always hit `_` for user-defined functions, because their failure pushed
+//     a bare 0 and discarded the panic code.
+//
+// Also pins the Ok/code-1 collision: `Ok` is 1, so a panic carrying code 1 must still be
+// recognised as a failure rather than mistaken for success.
+use io
+
+fn fails_with(code:i64 -- v:i64)! {
+	code 0 != if {
+		"boom" code panic
+	}
+	99
+}
+
+fn main() {
+	// user-defined + if/else
+	1 fails_with if { "WRONG: success" print nl drop } else { "user if: else" print nl }
+	0 fails_with if { "user if: then " print print nl } else { "WRONG: else" print nl }
+
+	// user-defined + switch on a specific code
+	7 fails_with switch {
+		Ok { "WRONG: ok" print nl drop }
+		7 { "user switch: matched 7" print nl }
+		_ { "WRONG: wildcard" print nl }
+	}
+
+	// panic code 1 collides with Ok's value; it must still read as a failure
+	1 fails_with switch {
+		Ok { "WRONG: code 1 seen as ok" print nl drop }
+		1 { "user switch: matched 1" print nl }
+		_ { "WRONG: wildcard" print nl }
+	}
+
+	// user-defined success through switch
+	0 fails_with switch {
+		Ok { "user switch: ok " print print nl }
+		_ { "WRONG: error" print nl }
+	}
+
+	// imported + if/else on failure -- used to abort
+	"/nonexistent/nope.txt" io::Read io::open if {
+		"WRONG: success" print nl io::close
+	} else {
+		"ffi if: else" print nl
+	}
+
+	// imported + switch on a specific code still works
+	"/nonexistent/nope.txt" io::Read io::open switch {
+		Ok { "WRONG: ok" print nl io::close }
+		io::ErrNotFound { "ffi switch: not found" print nl }
+		_ { "WRONG: wildcard" print nl }
+	}
+}

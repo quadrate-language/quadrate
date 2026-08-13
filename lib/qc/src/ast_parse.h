@@ -383,6 +383,11 @@ namespace Qd {
 			// Walk children in reverse so indices stay valid after replacement
 			for (size_t i = block->childCount(); i > 0; i--) {
 				IAstNode* child = block->child(i - 1);
+				if (!child) {
+					// child() returns null for absent optional children (e.g. a loop with no
+					// body), so this is reachable, not merely defensive.
+					continue;
+				}
 				if (child->type() == IAstNode::Type::STRING_INTERPOLATION) {
 					auto expanded = expandStringInterpolation(static_cast<AstNodeStringInterpolation*>(child));
 					for (auto* n : expanded) {

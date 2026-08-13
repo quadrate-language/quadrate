@@ -14,7 +14,7 @@ namespace Qd {
 			// Arithmetic instructions
 			"add", "dec", "div", "inc", "mod", "mul", "neg", "sub",
 			// Bitwise operations
-			"and", "not", "or", "shl", "shr", "xor",
+			"and", "lnot", "not", "or", "shl", "shr", "xor",
 			// Logical operations
 			"eq", "gt", "gte", "lt", "lte", "neq", "within",
 			// Stack operations

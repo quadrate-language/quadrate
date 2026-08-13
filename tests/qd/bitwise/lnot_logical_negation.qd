@@ -1,0 +1,23 @@
+// Test: `lnot` is logical negation (0 -> 1, anything else -> 0), as distinct from `not`,
+// which is bitwise ones' complement. Boolean negation is the common case people reach for,
+// and writing `flag not and other` for it silently yields the wrong answer because
+// ~0 = -1 = 0xFF..FF and -1 and X = X.
+//
+// Covers both codegen paths: an all-i64 function takes the native/compile-time-stack path,
+// while main goes through the runtime stack.
+fn negate_native(x:i64 -- r:i64) {
+	x lnot
+}
+
+fn main() {
+	0 lnot print nl
+	5 lnot print nl
+	-1 lnot print nl
+
+	0 negate_native print nl
+	7 negate_native print nl
+
+	// `not` keeps its bitwise meaning -- unchanged by the addition of lnot
+	0 not print nl
+	5 not print nl
+}

@@ -7,7 +7,7 @@ test_llvmgen = executable('test_llvmgen',
 	'test_llvmgen.cc',
 	include_directories: [llvmgen_inc, qc_inc],
 	dependencies: [llvmgen_dep, qc_dep, unit_check_dep],
-	cpp_args: llvm_cxxflags,
+	cpp_args: llvm_cxxflags + llvmgen_warn_args,
 	link_args: llvm_ldflags + llvm_libs,
 )
 

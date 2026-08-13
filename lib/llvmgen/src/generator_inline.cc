@@ -205,6 +205,20 @@ namespace Qd {
 		finishBinaryOp(boc, result);
 	}
 
+	void LlvmGenerator::Impl::generateInlineLogicalNot(llvm::Value* ctx) {
+		// Inline implementation of logical NOT: ( a:int -- result:int )
+		// Distinct from `not`, which is bitwise: 0 -> 1, anything else -> 0.
+		auto sa = getStackAccess(ctx);
+		llvm::Value* idx = builder->CreateSub(sa.size, builder->getInt64(1), "idx");
+		llvm::Value* elemPtr = builder->CreateGEP(stackElementTy, sa.data, idx, "elem_ptr");
+		llvm::Value* valuePtr = builder->CreateStructGEP(stackElementTy, elemPtr, 0, "value_ptr");
+		llvm::Value* valuePtrCast = builder->CreateBitCast(valuePtr, ptrTy);
+		llvm::Value* value = builder->CreateLoad(int64Ty, valuePtrCast, "value");
+		llvm::Value* isZero = builder->CreateICmpEQ(value, builder->getInt64(0), "is_zero");
+		llvm::Value* result = builder->CreateZExt(isZero, int64Ty, "lnot_result");
+		builder->CreateStore(result, valuePtrCast);
+	}
+
 	void LlvmGenerator::Impl::generateInlineBitNot(llvm::Value* ctx) {
 		// Inline implementation of bitwise NOT: ( a:int -- result:int )
 		auto sa = getStackAccess(ctx);

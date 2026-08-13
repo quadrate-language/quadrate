@@ -12,10 +12,10 @@ pub fn square(f64 -- f64) {
 	dup mul
 }
 
-pub fn ten() {
+pub fn ten( -- v:f64) {
 	10.0
 }
 
-pub fn twenty() {
+pub fn twenty( -- v:f64) {
 	20.0
 }

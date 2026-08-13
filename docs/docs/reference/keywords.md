@@ -302,7 +302,6 @@ Has two uses:
 
 ```qd
 fn get_body(c:ptr -- body:str) {
-	-> c
 	c as http::Ctx <<body
 }
 ```

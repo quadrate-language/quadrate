@@ -747,6 +747,29 @@ int qd_not(qd_context* ctx) {
 	return (int){0};
 }
 
+// Logical negation, as distinct from the bitwise `not` above: 0 -> 1, anything else -> 0.
+int qd_lnot(qd_context* ctx) {
+	qd_stack* st = ctx->st;
+	if (st->size < 1) {
+		fprintf(stderr, "Fatal error in lnot: Stack underflow (required 1 element, have %zu)\n", st->size);
+		qdrt_dump_stack(ctx);
+		qd_print_stack_trace(ctx);
+		abort();
+	}
+
+	qd_stack_element_t* top = &st->data[st->size - 1];
+
+	if (top->type != QD_STACK_TYPE_INT) {
+		fprintf(stderr, "Fatal error in lnot: Type error (expected int for logical operation)\n");
+		qdrt_dump_stack(ctx);
+		qd_print_stack_trace(ctx);
+		abort();
+	}
+
+	top->value.i = (top->value.i == 0) ? 1 : 0;
+	return (int){0};
+}
+
 int qd_shl(qd_context* ctx) {
 	return qdrt_shift_op(ctx, "shl", true);
 }

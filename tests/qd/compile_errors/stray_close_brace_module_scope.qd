@@ -1,0 +1,11 @@
+// Test: an extra '}' after a function body must be diagnosed. It used to be skipped by the
+// top-level parser's default case, so the enclosing function was silently truncated at the
+// stray brace and quadc built a clean binary in which the remaining statements never ran.
+fn f( -- r:i64) {
+	1
+}
+}
+
+fn main() {
+	f print nl
+}

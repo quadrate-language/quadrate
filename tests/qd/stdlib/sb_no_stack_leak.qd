@@ -1,0 +1,32 @@
+// Test: the StringBuilder mutators leave exactly their declared output on the stack.
+//
+// `>>field` returns the modified struct; `>>field!` consumes it. sb::append,
+// sb::append_char and sb::append_int each ended with three chained `>>field` writes
+// followed by `sb`, pushing four values where the signature declares one -- so every
+// call silently leaked three stack slots. A loop appending to a builder would grow the
+// stack without bound.
+use sb
+
+fn main() {
+	sb::new -> b
+	b 0 sb::append_int -> b
+	depth print nl
+
+	b 12345 sb::append_int -> b
+	depth print nl
+
+	b -42 sb::append_int -> b
+	depth print nl
+
+	b " hello" sb::append -> b
+	depth print nl
+
+	// Many appends in a loop: depth must not grow with iteration count
+	0 20 1 for i {
+		b "x" sb::append -> b
+	}
+	depth print nl
+
+	b sb::finish print nl
+	depth print nl
+}

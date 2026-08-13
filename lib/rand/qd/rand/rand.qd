@@ -7,6 +7,7 @@
 /// nonces, salts, or keys. For those, use `rand::secure_i64` (which draws
 /// fresh OS entropy on every call) or seed an `Rng` with `rand::secure`.
 use math
+use mem
 use os
 use time
 
@@ -183,8 +184,6 @@ pub fn (rng:Rng) float_range(min:f64 max:f64 -- rng2:Rng f:f64) {
 /// @return rng ptr Updated RNG state
 /// @example rng arr len rand::shuffle -> rng
 pub fn (rng:Rng) shuffle(arr:ptr len:i64 -- rng2:Rng) {
-	use mem
-
 	len 1 > if {
 		len 1 - -> i
 		loop {
@@ -213,8 +212,6 @@ pub fn (rng:Rng) shuffle(arr:ptr len:i64 -- rng2:Rng) {
 /// @return val i64 Random element from array
 /// @example rng arr len rand::choice -> rng val
 pub fn (rng:Rng) choice(arr:ptr len:i64 -- rng2:Rng val:i64) {
-	use mem
-
 	rng len int -> idx -> newrng
 	arr idx 8 * mem::get_i64 -> result
 
@@ -295,8 +292,6 @@ pub fn (rng:Rng) exponential(lambda:f64 -- rng2:Rng n:f64) {
 /// @return rng ptr Updated RNG state
 /// @example rng src 10 dst 3 rand::sample -> rng
 pub fn (rng:Rng) sample(src:ptr src_len:i64 dst:ptr n:i64 -- rng2:Rng) {
-	use mem
-
 	// Handle edge cases
 	n 0 <= if { rng } else {
 		// Clamp n to src_len

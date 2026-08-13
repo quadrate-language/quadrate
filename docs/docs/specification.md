@@ -80,10 +80,10 @@ Quadrate source files MUST be UTF-8 encoded. Identifiers MUST contain only ASCII
 #### 2.3.1 Keywords
 
 ```
-fn        pub       struct    enum      type      use       import
-if        else      for       loop
+fn        pub       inline    struct    packed    enum      type
+use       import    if        else      for       loop
 switch    break     continue  return    defer
-const     test      ctx       as
+const     var       test      ctx       as
 ```
 
 #### 2.3.2 Predefined Constants
@@ -218,7 +218,50 @@ Implementations MUST support these four primitive types:
 | `str` | Immutable UTF-8 string | pointer |
 | `ptr` | Generic pointer | 8 bytes |
 
-**Note**: Quadrate MUST use only 64-bit integers and floats. There MUST NOT be 8/16/32-bit types in the language itself.
+**Note**: Every value on the runtime stack MUST be 64-bit. Implementations MUST NOT introduce
+narrower *stack* types; arithmetic, comparison, and all stack operations operate on `i64` and
+`f64` only. Narrower widths exist solely as memory-layout annotations — see §3.1.1.
+
+`bool` MAY be provided as an alias for `i64`.
+
+#### 3.1.1 Sized Integer Types
+
+Implementations SHOULD support the following sized integer types. They describe the width of a
+value **in memory**, not on the stack, and exist so that programs can match byte-exact binary
+layouts (on-disk formats, network headers, MMIO registers):
+
+| Type | Description | Size |
+|------|-------------|------|
+| `i8` / `u8` | 8-bit signed / unsigned integer | 1 byte |
+| `i16` / `u16` | 16-bit signed / unsigned integer | 2 bytes |
+| `i32` / `u32` | 32-bit signed / unsigned integer | 4 bytes |
+| `u64` | 64-bit unsigned integer | 8 bytes |
+
+They are valid as struct field types (§8) and as the width selector on raw memory accessors
+(`mem::get_u8`, `mem::set_i16`, and the rest of that family).
+
+**Load and store semantics.** At a memory boundary:
+
+- A **store** MUST truncate the 64-bit stack value to the field's width, keeping the low N bits.
+  Storing a negative value into an unsigned field is therefore a bit-pattern reinterpretation,
+  not an error: `-1` into a `u8` stores `0xFF`.
+- A **load** MUST widen back to 64 bits: signed types sign-extend, unsigned types zero-extend.
+  The same byte read through an `i8` field and a `u8` field yields `-1` and `255` respectively.
+
+**Layout.** In an ordinary `struct`, every field MUST occupy an 8-byte slot regardless of its
+declared width. In a `packed struct` (§8), fields MUST be laid out adjacent at exactly their
+declared widths with no padding, in target byte order.
+
+**`u64` caveat**: because a stack element is always `i64`, a `u64` value above `2^63-1` loads as
+a negative `i64` with the same bit pattern. Bitwise operations behave as expected; comparison
+operators treat it as signed.
+
+**Known divergence in the reference implementation** (not normative — implementers SHOULD NOT
+copy this): sized types are currently accepted in positions where they carry no meaning, and are
+silently inert there. `cast<u8>` does not truncate (`300 cast<u8>` yields `300`, not `44`), and a
+sized type used as a function parameter or return annotation has no effect on the value. Only
+struct fields and the `mem` accessors honour the declared width. A conforming implementation
+SHOULD either apply the width consistently or reject sized types in positions where it does not.
 
 ### 3.2 Composite Types
 
@@ -464,10 +507,26 @@ fn get_constant( -- c:i64)             // Consumes 0, produces 1
 The `->` operator pops values into named local variables:
 
 ```quadrate
-fn example(x:i64 y:i64 -- result:i64) {
+fn example( -- result:i64) {
+    10 20       // Push two values
     -> b        // Pop top into b
     -> a        // Pop next into a
     a b +       // Use variables
+}
+```
+
+Named parameters in a stack effect signature are bound automatically on entry, so a function
+MUST NOT re-bind them with `->`. The parameters have already been consumed from the stack, and
+attempting `-> x` for a declared parameter `x` is a stack underflow:
+
+```quadrate
+fn good(x:i64 y:i64 -- result:i64) {
+    x y +       // Parameters are already in scope
+}
+
+fn bad(x:i64 -- result:i64) {
+    -> x        // ERROR: nothing left on the stack to bind
+    x 2 *
 }
 ```
 
@@ -642,12 +701,15 @@ Type aliases are resolved at compile time and carry no runtime overhead. They ar
 ### 5.6 Struct Declarations
 
 ```quadrate
-[pub] struct Name [<TypeParams>] {
+[pub] [packed] struct Name [<TypeParams>] {
     field1:type1
     field2:type2 = default_value
     field3:*StructName           // Pointer type
 }
 ```
+
+- `packed`: lays fields out adjacent at their exact declared widths with no padding (§8.1).
+  Without it, every field occupies an 8-byte slot.
 
 ### 5.7 Function Declarations
 
@@ -888,9 +950,23 @@ pointer call        // Invoke function via pointer
 ### 8.1 Struct Definition
 
 ```quadrate
-[pub] struct Name [<TypeParams>] {
+[pub] [packed] struct Name [<TypeParams>] {
     field1:type1
     field2:type2 = default_value
+}
+```
+
+By default every field MUST occupy an 8-byte slot, whatever its declared width. A `packed`
+struct MUST instead lay its fields out adjacent at exactly their declared widths, with no
+padding, in target byte order — so a struct of `u32`, `u32`, `u64` is 16 bytes packed and 24
+bytes unpacked. Combined with the sized integer types (§3.1.1), this is what lets a program
+map a struct directly onto a byte-exact binary format.
+
+```quadrate
+packed struct FileLump {
+    offset:u32
+    size:u32
+    name:u64
 }
 ```
 
@@ -1118,6 +1194,21 @@ The `?` operator requires the enclosing function to be fallible. On error, the f
 ```
 
 **Check with switch:**
+
+A bare fallible call MUST leave a status value that the following `if` or `switch` consumes.
+The two consumers require different shapes, and an implementation MUST provide each:
+
+- Before an `if`, the status MUST be a boolean — non-zero on success, zero on failure — because
+  `if` tests truthiness. Pushing a raw error code here would make any code >= 2 select the
+  success branch.
+- Before a `switch`, the status MUST carry the error code, so specific codes can be matched.
+
+`Ok` as a case label MUST mean "the call succeeded", not "the status equals 1". Error codes are
+chosen by the program, so a `panic` carrying code `1` MUST NOT match `Ok`.
+
+This MUST hold identically for functions defined in Quadrate and for those declared in an
+`import` block (§5.8).
+
 ```quadrate
 path io::Read io::open switch {
     Ok {
@@ -1606,7 +1697,9 @@ local_bind      = "->" identifier ;
 anon_fn         = "fn" signature block ;  /* captures are implicit */
 fn_call         = identifier [ "!" ] ;
 
-type            = "i64" | "f64" | "str" | "ptr" | "[]" type | identifier [type_args] | "*" type ;
+type            = "i64" | "f64" | "str" | "ptr" | "bool" | sized_int
+                | "[]" type | identifier [type_args] | "*" type ;
+sized_int       = "i8" | "u8" | "i16" | "u16" | "i32" | "u32" | "u64" ;
 type_args       = "<" type { "," type } ">" ;
 
 operator        = "+" | "-" | "*" | "/" | "%" | "++" | "--"

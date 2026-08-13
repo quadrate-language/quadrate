@@ -979,10 +979,16 @@ pub fn (q:Quat) length_sq( -- result:f64) {
 pub fn (q:Quat) slerp(other:Quat t:f64 -- result:Quat) {
 	q <<w other <<w * q <<x other <<x * + q <<y other <<y * + q <<z other <<z * + -> dot_val
 	dot_val 0.0 lt if {
-		other <<w neg other .w
-		other <<x neg other .x
-		other <<y neg other .y
-		other <<z neg other .z
+		// Take the shortest path: negate `other` so the interpolation does not go the long
+		// way round. Build a negated copy rather than writing through `other`, which is the
+		// caller's quaternion. (`other .w` here was never valid syntax -- `.` is not an
+		// operator -- and went unnoticed because module bodies were not being validated.)
+		Quat {
+			w = other <<w neg
+			x = other <<x neg
+			y = other <<y neg
+			z = other <<z neg
+		} -> other
 		dot_val neg -> dot_val
 	}
 	dot_val 0.9995 gt if {

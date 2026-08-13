@@ -966,8 +966,36 @@ namespace Qd {
 					if (thenDiverges && elseDiverges) {
 						// Both branches diverge (return/panic) — no effect on parent stack
 					} else if (thenEffect != elseEffect && !thenDiverges && !elseDiverges) {
-						// Effects disagree — common with fallible calls where the if branch
-						// gets the result value and the else branch doesn't.
+						// Effects disagree. This is legitimate and expected after a fallible
+						// call: the success arm receives the call's result value while the
+						// failure arm does not. Anywhere else it means the two arms leave the
+						// stack at different depths, so whatever follows reads a value whose
+						// identity depends on which arm ran -- and codegen silently truncates
+						// to the shallower arm, discarding the excess.
+						// Resolve the sibling immediately before this `if`. A fallible call there
+						// is the legitimate source of an arm mismatch.
+						bool afterFallibleCall = false;
+						if (i > 0) {
+							IAstNode* prev = node->child(i - 1);
+							std::string callee;
+							if (prev && prev->type() == IAstNode::Type::IDENTIFIER) {
+								callee = static_cast<AstNodeIdentifier*>(prev)->name();
+							} else if (prev && prev->type() == IAstNode::Type::SCOPED_IDENTIFIER) {
+								auto* sc = static_cast<AstNodeScopedIdentifier*>(prev);
+								callee = sc->scope() + "::" + sc->name();
+							}
+							if (!callee.empty()) {
+								auto sigIt = mFunctionSignatures.find(callee);
+								afterFallibleCall = sigIt != mFunctionSignatures.end() && sigIt->second.throws;
+							}
+						}
+
+						if (!afterFallibleCall) {
+							std::string msg = "if/else branches leave different numbers of values on the stack (then: " +
+											  std::to_string(thenEffect) + ", else: " + std::to_string(elseEffect) +
+											  "); values beyond the shallower branch are discarded";
+							reportWarning(child, msg.c_str());
+						}
 						// Use the if (success) branch as authoritative.
 						typeStack = thenStack;
 						structTypeStack = thenStructStack;
@@ -2981,6 +3009,29 @@ namespace Qd {
 					typeStack.push_back(StackValueType::INT);
 					structTypeStack.push_back("");
 					break;
+				}
+
+				// Self-qualified module constant. `time.qd` declares
+				// `import "libtime.a" as "time"` and reads its own `pub const Millisecond` as
+				// `time::Millisecond`; the constant is registered under the bare name, so the
+				// qualified lookup above misses it. Guarded on the scope being an FFI namespace
+				// so this cannot swallow a genuinely unresolved `othermodule::Name`. Without it
+				// the reference pushed nothing and the following `/` reported a spurious
+				// "Stack underflow (requires 2 numeric values)".
+				if (mImportedLibraries.find(moduleName) != mImportedLibraries.end()) {
+					auto selfConstIt = mConstantValues.find(functionName);
+					if (selfConstIt != mConstantValues.end()) {
+						const std::string& value = selfConstIt->second;
+						if (!value.empty() && value[0] == '"') {
+							typeStack.push_back(StackValueType::STRING);
+						} else if (value.find('.') != std::string::npos) {
+							typeStack.push_back(StackValueType::FLOAT);
+						} else {
+							typeStack.push_back(StackValueType::INT);
+						}
+						structTypeStack.push_back("");
+						break;
+					}
 				}
 
 				// Check if this is a constant first

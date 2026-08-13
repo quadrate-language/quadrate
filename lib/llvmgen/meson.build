@@ -16,6 +16,15 @@ if llvm_dep.found()
 		llvm_libs = []
 	endif
 
+	# -Wnull-dereference is an optimiser-driven warning, so at -O3 it fires on LLVM's own
+	# inlined internals (llvm/ADT/ilist_node_base.h, llvm/IR/Value.h) and is attributed to
+	# whichever of our functions triggered the inlining. It reports code inside LLVM, not
+	# ours -- e.g. BasicBlock::getTerminator()'s InstList.empty() guard, which GCC 16 fails
+	# to see through. -isystem does not help, because the diagnostic is emitted during
+	# optimisation rather than while parsing the header. Downgrade it from error to warning
+	# for this target only, so the signal stays visible without breaking the release build.
+	llvmgen_warn_args = ['-Wno-error=null-dereference']
+
 	llvmgen_sources = files(
 		'src/generator.cc',
 		'src/generator_inline.cc',
@@ -35,7 +44,7 @@ if llvm_dep.found()
 		include_directories: [llvmgen_inc, qc_inc, qdrt_src_inc],
 		dependencies: [llvm_dep, qc_dep],
 		cpp_pch: 'src/generator_impl.h',
-		cpp_args: llvm_cxxflags,
+		cpp_args: llvm_cxxflags + llvmgen_warn_args,
 		link_args: llvm_ldflags + llvm_libs,
 		install: false
 	)

@@ -1,0 +1,25 @@
+// Test: a value-producing switch with integer literal cases in a function that
+// returns str. The str return keeps the function off the integer-only native
+// path, so operands are on the runtime stack and the switch finds them. This is
+// the shape lib/ and examples/ happen to use (see links-api::get_url), which is
+// why the native-path bug has not surfaced in the corpus. Pinned so the fix keeps
+// the working path working.
+fn name_of(d:i64 -- r:str) {
+	d switch {
+		0 {
+			"zero"
+		}
+		1 {
+			"one"
+		}
+		_ {
+			"other"
+		}
+	}
+}
+
+fn main() {
+	0 name_of print nl
+	1 name_of print nl
+	7 name_of print nl
+}

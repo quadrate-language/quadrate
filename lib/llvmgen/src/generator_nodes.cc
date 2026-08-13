@@ -5,6 +5,53 @@
 
 namespace Qd {
 
+	namespace {
+		// What consumes the status value a fallible call leaves on the stack. The semantic
+		// validator already guarantees a bare fallible call is immediately followed by `if` or
+		// `switch`, so these are the only cases; None covers `!`/`?`, which consume nothing.
+		enum class FallibleConsumer { None, If, Switch };
+
+		// A fallible call has to push a different status depending on who reads it:
+		//
+		//   `if`     tests the value for truthiness, so it needs a boolean -- 1 success, 0 failure.
+		//            Pushing the raw error code here is what made `io::open ... if {} else {}`
+		//            take the *success* branch on a missing file and then underflow, because any
+		//            code >= 2 is truthy.
+		//   `switch` matches against Ok and specific error codes, so it needs the code itself --
+		//            1 on success, error_code on failure. Pushing a bare 0/1 here is what made
+		//            `switch { Ok {} SomeErr {} }` never match a specific code for user-defined
+		//            functions.
+		//
+		// Determined by looking at the call's next sibling in the AST, which is exactly what the
+		// validator inspects when it enforces the rule.
+		FallibleConsumer fallibleConsumerOf(IAstNode* callNode) {
+			if (!callNode) {
+				return FallibleConsumer::None;
+			}
+			IAstNode* parent = callNode->parent();
+			if (!parent) {
+				return FallibleConsumer::None;
+			}
+			for (size_t i = 0; i + 1 < parent->childCount(); i++) {
+				if (parent->child(i) != callNode) {
+					continue;
+				}
+				IAstNode* next = parent->child(i + 1);
+				if (!next) {
+					return FallibleConsumer::None;
+				}
+				if (next->type() == IAstNode::Type::IF_STATEMENT) {
+					return FallibleConsumer::If;
+				}
+				if (next->type() == IAstNode::Type::SWITCH_STATEMENT) {
+					return FallibleConsumer::Switch;
+				}
+				return FallibleConsumer::None;
+			}
+			return FallibleConsumer::None;
+		}
+	}
+
 	void LlvmGenerator::Impl::generateLiteral(AstNodeLiteral* lit, llvm::Value* ctx) {
 		auto type = lit->literalType();
 		const auto& value = lit->value();
@@ -690,15 +737,15 @@ namespace Qd {
 
 					builder->SetInsertPoint(continueBlock);
 				} else {
-					// No operator or ? operator: push error status
-					// Convert bool to success status: true (error) -> 0, false (no error) -> 1
-					auto successStatus = builder->CreateSelect(
-							hasError, builder->getInt64(0), builder->getInt64(1), "success_status");
+					// No operator: push a status shaped for whoever consumes it (see
+					// fallibleConsumerOf). Don't clear error_code -- `err` still needs it, and
+					// the next fallible call overwrites it anyway.
+					const bool wantsCode = fallibleConsumerOf(ident) == FallibleConsumer::Switch;
+					llvm::Value* onFailure =
+							wantsCode ? static_cast<llvm::Value*>(errorCode) : builder->getInt64(0);
+					auto successStatus =
+							builder->CreateSelect(hasError, onFailure, builder->getInt64(1), "success_status");
 
-					// Don't clear error_code here - leave it so 'err' instruction can retrieve it
-					// The error state will be overwritten by the next fallible call anyway
-
-					// Push the success status onto the stack
 					builder->CreateCall(pushIntFn, {ctx, successStatus});
 				}
 			}
@@ -1058,8 +1105,12 @@ namespace Qd {
 
 						builder->SetInsertPoint(continueBlock);
 					} else {
-						auto successStatus = builder->CreateSelect(
-								hasError, builder->getInt64(0), builder->getInt64(1), "success_status");
+						// Shape the status for its consumer -- see fallibleConsumerOf.
+						llvm::Value* onFailure = (fallibleConsumerOf(scopedIdent) == FallibleConsumer::Switch)
+														 ? static_cast<llvm::Value*>(errorCode)
+														 : builder->getInt64(0);
+						auto successStatus =
+								builder->CreateSelect(hasError, onFailure, builder->getInt64(1), "success_status");
 						builder->CreateCall(pushIntFn, {ctx, successStatus});
 					}
 				}
@@ -1291,19 +1342,30 @@ namespace Qd {
 					generateInlineDrop(ctx);
 				}
 			} else {
-				// No ! operator: push success status for non-imported functions
-				// Imported C functions handle their own success status push
-				if (importedCFunctions.find(fullName) == importedCFunctions.end()) {
-					// Convert bool to success status: true (error) -> 0, false (no error) -> 1
+				// No ! operator: leave a status shaped for whoever consumes it. Don't clear
+				// error_code -- `err` still needs it, and the next fallible call overwrites it.
+				const auto consumer = fallibleConsumerOf(scopedIdent);
+				const bool isImported = importedCFunctions.find(fullName) != importedCFunctions.end();
+
+				if (!isImported) {
+					// User-defined: we push the status ourselves.
+					llvm::Value* onFailure = (consumer == FallibleConsumer::Switch)
+													 ? static_cast<llvm::Value*>(errorCode)
+													 : builder->getInt64(0);
+					auto successStatus =
+							builder->CreateSelect(hasError, onFailure, builder->getInt64(1), "success_status");
+					builder->CreateCall(pushIntFn, {ctx, successStatus});
+				} else if (consumer == FallibleConsumer::If) {
+					// Imported C functions push their own status, and it is the raw error code
+					// (see e.g. usr_io_open pushing IO_ERR_NOT_FOUND). Any code >= 2 is truthy,
+					// so handing it to `if` selected the success branch on failure and then
+					// underflowed on the first drop. Replace it with a boolean.
+					generateInlineDrop(ctx);
 					auto successStatus = builder->CreateSelect(
 							hasError, builder->getInt64(0), builder->getInt64(1), "success_status");
-
-					// Don't clear error_code here - leave it so 'err' instruction can retrieve it
-					// The error state will be overwritten by the next fallible call anyway
-
-					// Push the success status onto the stack
 					builder->CreateCall(pushIntFn, {ctx, successStatus});
 				}
+				// Imported + switch: the pushed code is already what switch wants.
 			}
 		}
 	}
@@ -1312,30 +1374,175 @@ namespace Qd {
 		// Get current function
 		llvm::Function* currentFn = builder->GetInsertBlock()->getParent();
 
-		// Get the runtime stack pop function
-		auto stackPopFunc = module->getFunction("qd_stack_pop");
+		// On the native path (integer-only functions) operands live in compileTimeStack as
+		// SSA values and are never materialised to the runtime stack, so the scrutinee has
+		// to come from there instead. Reading it off the runtime stack finds whatever
+		// happens to be there, which made every literal case fall through to the wildcard.
+		const bool nativePath = useCompileTimeStack;
+
 		auto switchElemTy = llvm::StructType::get(*context,
 				{int64Ty,						// value (union as i64)
 						int32Ty,				// type
 						builder->getInt8Ty()}); // is_error_tainted
 
-		// Pop the value to switch on from the stack
-		auto stackFieldPtr = builder->CreateStructGEP(llvm::StructType::get(*context,
-															  {ptrTy,		   // qd_stack* st
-																	  int64Ty, // int64_t error_code
-																	  ptrTy,   // char* error_msg
-																	  int32Ty, // int argc
-																	  ptrTy,   // char** argv
-																	  ptrTy}), // char* program_name
-				ctx, 0, "st_ptr");
-		auto stack = builder->CreateLoad(ptrTy, stackFieldPtr, "st");
+		llvm::Value* nativeScrutinee = nullptr;
+		llvm::Value* switchElem = nullptr;
 
-		// Create alloca in entry block to avoid stack growth in loops
-		llvm::BasicBlock& entryBlock = currentFn->getEntryBlock();
-		llvm::IRBuilder<> entryBuilder(&entryBlock, entryBlock.getFirstInsertionPt());
-		auto switchElem = entryBuilder.CreateAlloca(switchElemTy, nullptr, "switch_elem");
+		if (nativePath) {
+			if (compileTimeStack.empty()) {
+				std::cerr << "quadc: error: switch has no value to match on" << std::endl;
+				compilationFailed = true;
+				return;
+			}
+			nativeScrutinee = compileTimeStack.back();
+			compileTimeStack.pop_back();
+		} else {
+			// Get the runtime stack pop function
+			auto stackPopFunc = module->getFunction("qd_stack_pop");
 
-		builder->CreateCall(stackPopFunc, {stack, switchElem});
+			// Pop the value to switch on from the stack
+			auto stackFieldPtr = builder->CreateStructGEP(llvm::StructType::get(*context,
+																  {ptrTy,		   // qd_stack* st
+																		  int64Ty, // int64_t error_code
+																		  ptrTy,   // char* error_msg
+																		  int32Ty, // int argc
+																		  ptrTy,   // char** argv
+																		  ptrTy}), // char* program_name
+					ctx, 0, "st_ptr");
+			auto stack = builder->CreateLoad(ptrTy, stackFieldPtr, "st");
+
+			// Create alloca in entry block to avoid stack growth in loops
+			llvm::BasicBlock& entryBlock = currentFn->getEntryBlock();
+			llvm::IRBuilder<> entryBuilder(&entryBlock, entryBlock.getFirstInsertionPt());
+			switchElem = entryBuilder.CreateAlloca(switchElemTy, nullptr, "switch_elem");
+
+			builder->CreateCall(stackPopFunc, {stack, switchElem});
+		}
+
+		// Is this switch reading the status left by a *user-defined* fallible call? If so, `Ok`
+		// must mean "no error" rather than "the value equals 1". Error codes are user-chosen and
+		// `Ok` is 1, so comparing by value makes a `panic` with code 1 indistinguishable from
+		// success.
+		//
+		// Deliberately excludes imported C functions: they are inconsistent about setting
+		// ctx->error_code (io::open sets it, net::connect only pushes the code), so testing the
+		// error state there would report success on a genuine failure. They keep the by-value
+		// comparison, which is sound because their codes start at 2 by convention.
+		const bool scrutineeIsFallibleStatus = [&]() -> bool {
+			IAstNode* parent = switchStmt->parent();
+			if (!parent) {
+				return false;
+			}
+			for (size_t i = 1; i < parent->childCount(); i++) {
+				if (parent->child(i) != switchStmt) {
+					continue;
+				}
+				IAstNode* prev = parent->child(i - 1);
+				if (!prev) {
+					return false;
+				}
+				std::string callee;
+				if (prev->type() == IAstNode::Type::IDENTIFIER) {
+					callee = static_cast<AstNodeIdentifier*>(prev)->name();
+				} else if (prev->type() == IAstNode::Type::SCOPED_IDENTIFIER) {
+					auto* sc = static_cast<AstNodeScopedIdentifier*>(prev);
+					callee = sc->scope() + "::" + sc->name();
+				} else {
+					return false;
+				}
+				if (importedCFunctions.find(callee) != importedCFunctions.end()) {
+					return false;
+				}
+				auto it = fallibleFunctions.find(callee);
+				return it != fallibleFunctions.end() && it->second;
+			}
+			return false;
+		}();
+
+		// Scrutinee accessors: SSA value on the native path, a load from the popped stack
+		// element otherwise. Native functions are integer-only, so only the integer accessor
+		// is reachable there.
+		auto switchValueInt = [&]() -> llvm::Value* {
+			if (nativePath) {
+				return nativeScrutinee;
+			}
+			auto valuePtr = builder->CreateStructGEP(switchElemTy, switchElem, 0, "value_ptr");
+			return builder->CreateLoad(int64Ty, valuePtr, "switch_val");
+		};
+		// Float and string scrutinees only exist off the native path -- native functions are
+		// integer-only, and `switchElem` is null there. Returning null rather than building a
+		// GEP on a null operand lets the caller fall through to the unresolved-case-label
+		// diagnostic below instead of handing LLVM a null Value.
+		auto switchValueFloat = [&]() -> llvm::Value* {
+			if (nativePath) {
+				return nullptr;
+			}
+			auto valuePtr = builder->CreateStructGEP(switchElemTy, switchElem, 0, "value_ptr");
+			return builder->CreateLoad(builder->getDoubleTy(), valuePtr, "switch_val_f");
+		};
+		auto switchValueStr = [&]() -> llvm::Value* {
+			if (nativePath) {
+				return nullptr;
+			}
+			auto valuePtr = builder->CreateStructGEP(switchElemTy, switchElem, 0, "value_ptr");
+			return builder->CreateLoad(ptrTy, valuePtr, "switch_str");
+		};
+
+		// Compare the scrutinee against a named constant or enum variant. Shared by the scoped
+		// (module::Name, Enum::Variant) and unqualified (bare const) case-label forms. Returns
+		// null when the name does not resolve, so the caller can diagnose it.
+		auto compareAgainstNamedConstant = [&](const std::string& name) -> llvm::Value* {
+			auto constIt = moduleConstants.find(name);
+			if (constIt == moduleConstants.end()) {
+				return nullptr;
+			}
+			const std::string& value = constIt->second;
+
+			// Determine the type from the value string
+			if (!value.empty() && value[0] == '"') {
+				// String constant
+				auto switchStrPtr = switchValueStr();
+				if (!switchStrPtr) {
+					return nullptr;
+				}
+
+				auto strcmpFn = module->getFunction("strcmp");
+				if (!strcmpFn) {
+					auto charPtrTy = ptrTy;
+					auto strcmpTy = llvm::FunctionType::get(int32Ty, {charPtrTy, charPtrTy}, false);
+					strcmpFn =
+							llvm::Function::Create(strcmpTy, llvm::Function::ExternalLinkage, "strcmp", module.get());
+				}
+
+				// Call qd_string_data to get const char*
+				auto switchStrData = builder->CreateCall(qdStringDataFn, {switchStrPtr}, "switch_str_data");
+
+				// Create case string constant (strip quotes)
+				auto caseStr = builder->CreateGlobalString(value.substr(1, value.length() - 2));
+				auto cmpResult = builder->CreateCall(strcmpFn, {switchStrData, caseStr}, "strcmp_result");
+				return builder->CreateICmpEQ(cmpResult, builder->getInt32(0), "case_match");
+			}
+
+			if (value.find('.') != std::string::npos) {
+				// Float constant
+				auto switchVal = switchValueFloat();
+				if (!switchVal) {
+					return nullptr;
+				}
+				auto caseVal = llvm::ConstantFP::get(builder->getDoubleTy(), std::stod(value));
+				return builder->CreateFCmpOEQ(switchVal, caseVal, "case_match");
+			}
+
+			// Integer constant
+			auto switchVal = switchValueInt();
+			int64_t parsedVal = 0;
+			if (!safeParseInt64(value, parsedVal)) {
+				std::cerr << "quadc: error: Invalid integer constant value '" << value << "' for " << name << std::endl;
+				compilationFailed = true;
+			}
+			auto caseVal = builder->getInt64(static_cast<uint64_t>(parsedVal));
+			return builder->CreateICmpEQ(switchVal, caseVal, "case_match");
+		};
 
 		// Create merge block (after all cases)
 		llvm::BasicBlock* mergeBB = llvm::BasicBlock::Create(*context, "switch.merge", currentFn);
@@ -1365,6 +1572,13 @@ namespace Qd {
 				nonDefaultCaseCount++;
 			}
 		}
+
+		// On the native path each arm starts from the same compile-time stack and may leave a
+		// different set of SSA values on it, so record every arm's exit block and resulting
+		// stack and reconcile them with PHI nodes at the merge block -- the same shape
+		// generateIf uses for its two arms.
+		const std::vector<llvm::Value*> savedStack = compileTimeStack;
+		std::vector<std::pair<llvm::BasicBlock*, std::vector<llvm::Value*>>> armExits;
 
 		// Generate each case
 		size_t processedCases = 0;
@@ -1401,11 +1615,17 @@ namespace Qd {
 			if (caseValue->type() == IAstNode::Type::LITERAL) {
 				AstNodeLiteral* lit = static_cast<AstNodeLiteral*>(caseValue);
 
-				if (lit->literalType() == AstNodeLiteral::LiteralType::INTEGER ||
+				if (scrutineeIsFallibleStatus && lit->literalType() == AstNodeLiteral::LiteralType::BOOL &&
+						(lit->value() == "Ok" || lit->value() == "true")) {
+					// `Ok` on a fallible status means "the call succeeded". Test the error state
+					// directly so that a panic carrying code 1 is not mistaken for success.
+					auto errorCodePtr = builder->CreateStructGEP(contextStructTy, ctx, 1, "sw_error_code_ptr");
+					auto errorCode = builder->CreateLoad(int64Ty, errorCodePtr, "sw_error_code");
+					matches = builder->CreateICmpEQ(errorCode, builder->getInt64(0), "case_ok");
+				} else if (lit->literalType() == AstNodeLiteral::LiteralType::INTEGER ||
 						lit->literalType() == AstNodeLiteral::LiteralType::BOOL) {
 					// Compare switch value with case value (integer or bool)
-					auto valuePtr = builder->CreateStructGEP(switchElemTy, switchElem, 0, "value_ptr");
-					auto switchVal = builder->CreateLoad(int64Ty, valuePtr, "switch_val");
+					auto switchVal = switchValueInt();
 
 					int64_t parsedVal = 0;
 					if (lit->literalType() == AstNodeLiteral::LiteralType::BOOL) {
@@ -1418,109 +1638,106 @@ namespace Qd {
 					auto caseVal = builder->getInt64(static_cast<uint64_t>(parsedVal));
 					matches = builder->CreateICmpEQ(switchVal, caseVal, "case_match");
 				} else if (lit->literalType() == AstNodeLiteral::LiteralType::FLOAT) {
-					// Compare float values
-					auto valuePtr = builder->CreateStructGEP(switchElemTy, switchElem, 0, "value_ptr");
-					auto switchVal = builder->CreateLoad(builder->getDoubleTy(), valuePtr, "switch_val_f");
-					auto caseVal = llvm::ConstantFP::get(builder->getDoubleTy(), std::stod(lit->value()));
-					matches = builder->CreateFCmpOEQ(switchVal, caseVal, "case_match");
-				} else if (lit->literalType() == AstNodeLiteral::LiteralType::STRING) {
-					// Compare strings using strcmp
-					auto strcmpFn = module->getFunction("strcmp");
-					if (!strcmpFn) {
-						// Declare strcmp if not already declared
-						auto charPtrTy = ptrTy;
-						auto strcmpTy = llvm::FunctionType::get(int32Ty, {charPtrTy, charPtrTy}, false);
-						strcmpFn = llvm::Function::Create(
-								strcmpTy, llvm::Function::ExternalLinkage, "strcmp", module.get());
+					// Compare float values (leaves `matches` null on the native path, which the
+					// unresolved-case-label diagnostic below reports)
+					auto switchVal = switchValueFloat();
+					if (switchVal) {
+						auto caseVal = llvm::ConstantFP::get(builder->getDoubleTy(), std::stod(lit->value()));
+						matches = builder->CreateFCmpOEQ(switchVal, caseVal, "case_match");
 					}
-
-					// Get switch string value (qd_string_t*)
-					auto valuePtr = builder->CreateStructGEP(switchElemTy, switchElem, 0, "value_ptr");
-					auto switchStrPtr = builder->CreateLoad(ptrTy, valuePtr, "switch_str");
-
-					// Call qd_string_data to get const char*
-					auto switchStrData = builder->CreateCall(qdStringDataFn, {switchStrPtr}, "switch_str_data");
-
-					// Create case string constant
-					auto caseStr = builder->CreateGlobalString(lit->value().substr(1, lit->value().length() - 2));
-
-					// Call strcmp
-					auto cmpResult = builder->CreateCall(strcmpFn, {switchStrData, caseStr}, "strcmp_result");
-					matches = builder->CreateICmpEQ(cmpResult, builder->getInt32(0), "case_match");
-				}
-			} else if (caseValue->type() == IAstNode::Type::SCOPED_IDENTIFIER) {
-				// Handle scoped constants (module::ConstName)
-				AstNodeScopedIdentifier* scoped = static_cast<AstNodeScopedIdentifier*>(caseValue);
-				std::string fullName = scoped->scope() + "::" + scoped->name();
-
-				// Look up the constant value in moduleConstants map
-				auto constIt = moduleConstants.find(fullName);
-				if (constIt != moduleConstants.end()) {
-					const std::string& value = constIt->second;
-					auto valuePtr = builder->CreateStructGEP(switchElemTy, switchElem, 0, "value_ptr");
-
-					// Determine the type from the value string
-					if (!value.empty() && value[0] == '"') {
-						// String constant
+				} else if (lit->literalType() == AstNodeLiteral::LiteralType::STRING) {
+					// Get switch string value (qd_string_t*). Null on the native path, which
+					// leaves `matches` null for the diagnostic below.
+					auto switchStrPtr = switchValueStr();
+					if (switchStrPtr) {
+						// Compare strings using strcmp
 						auto strcmpFn = module->getFunction("strcmp");
 						if (!strcmpFn) {
+							// Declare strcmp if not already declared
 							auto charPtrTy = ptrTy;
 							auto strcmpTy = llvm::FunctionType::get(int32Ty, {charPtrTy, charPtrTy}, false);
 							strcmpFn = llvm::Function::Create(
 									strcmpTy, llvm::Function::ExternalLinkage, "strcmp", module.get());
 						}
 
-						auto switchStrPtr = builder->CreateLoad(ptrTy, valuePtr, "switch_str");
-
 						// Call qd_string_data to get const char*
 						auto switchStrData = builder->CreateCall(qdStringDataFn, {switchStrPtr}, "switch_str_data");
 
-						// Create case string constant (strip quotes)
-						auto caseStr = builder->CreateGlobalString(value.substr(1, value.length() - 2));
+						// Create case string constant
+						auto caseStr = builder->CreateGlobalString(lit->value().substr(1, lit->value().length() - 2));
+
+						// Call strcmp
 						auto cmpResult = builder->CreateCall(strcmpFn, {switchStrData, caseStr}, "strcmp_result");
 						matches = builder->CreateICmpEQ(cmpResult, builder->getInt32(0), "case_match");
-					} else if (value.find('.') != std::string::npos) {
-						// Float constant
-						auto switchVal = builder->CreateLoad(builder->getDoubleTy(), valuePtr, "switch_val_f");
-						auto caseVal = llvm::ConstantFP::get(builder->getDoubleTy(), std::stod(value));
-						matches = builder->CreateFCmpOEQ(switchVal, caseVal, "case_match");
-					} else {
-						// Integer constant
-						auto switchVal = builder->CreateLoad(int64Ty, valuePtr, "switch_val");
-						int64_t parsedVal = 0;
-						if (!safeParseInt64(value, parsedVal)) {
-							std::cerr << "quadc: error: Invalid integer constant value '" << value << "' for "
-									  << fullName << std::endl;
-							compilationFailed = true;
-						}
-						auto caseVal = builder->getInt64(static_cast<uint64_t>(parsedVal));
-						matches = builder->CreateICmpEQ(switchVal, caseVal, "case_match");
 					}
 				}
+			} else if (caseValue->type() == IAstNode::Type::SCOPED_IDENTIFIER) {
+				// Handle scoped constants and enum variants (module::ConstName, Enum::Variant)
+				AstNodeScopedIdentifier* scoped = static_cast<AstNodeScopedIdentifier*>(caseValue);
+				std::string fullName = scoped->scope() + "::" + scoped->name();
+				matches = compareAgainstNamedConstant(fullName);
+			} else if (caseValue->type() == IAstNode::Type::IDENTIFIER) {
+				// Handle unqualified constants (a module-level `const` referenced by bare name).
+				// Without this the case label resolved to nothing, `matches` stayed null, no
+				// conditional branch was emitted and the enclosing block was left without a
+				// terminator -- which surfaced as "Basic Block ... does not have terminator!".
+				AstNodeIdentifier* ident = static_cast<AstNodeIdentifier*>(caseValue);
+				matches = compareAgainstNamedConstant(ident->name());
 			}
 
-			if (matches) {
-				builder->CreateCondBr(matches, caseBB, nextCaseBB);
-
-				// Generate case body
-				builder->SetInsertPoint(caseBB);
-				if (caseNode->body()) {
-					generateNode(caseNode->body(), ctx);
+			if (!matches) {
+				// Nothing resolved this case label. Emitting no branch here leaves the current
+				// block unterminated and produces invalid IR, so fail loudly instead.
+				std::cerr << "quadc: error: Unsupported or unresolved switch case label";
+				if (caseValue && caseValue->line() > 0) {
+					std::cerr << " at line " << caseValue->line();
 				}
-				// Branch to merge (automatic break)
-				llvm::BasicBlock* caseBlock = builder->GetInsertBlock();
-				if (caseBlock && !caseBlock->getTerminator()) {
-					builder->CreateBr(mergeBB);
-				}
-
-				// Set up for next case
-				builder->SetInsertPoint(nextCaseBB);
+				std::cerr << " (case labels must be a literal, a constant, or an enum variant)" << std::endl;
+				compilationFailed = true;
+				matches = builder->getFalse();
 			}
+
+			// When there is no default arm, the last case's false edge lands straight on the
+			// merge block. That edge carries the unmodified entry stack and is a merge
+			// predecessor like any arm, so record it.
+			llvm::BasicBlock* compareBlock = builder->GetInsertBlock();
+			if (nextCaseBB == mergeBB && compareBlock) {
+				armExits.emplace_back(compareBlock, savedStack);
+			}
+
+			builder->CreateCondBr(matches, caseBB, nextCaseBB);
+
+			// Generate case body
+			builder->SetInsertPoint(caseBB);
+			compileTimeStack = savedStack;
+			if (caseNode->body()) {
+				generateNode(caseNode->body(), ctx);
+			}
+			// Branch to merge (automatic break)
+			llvm::BasicBlock* caseBlock = builder->GetInsertBlock();
+			if (caseBlock && !caseBlock->getTerminator()) {
+				armExits.emplace_back(caseBlock, compileTimeStack);
+				builder->CreateBr(mergeBB);
+			}
+
+			// Set up for next case
+			builder->SetInsertPoint(nextCaseBB);
+			compileTimeStack = savedStack;
 		}
 
 		// Generate default case if present
 		if (defaultBB != mergeBB) {
+			// A switch whose only arm is the wildcard emits no comparison, so nothing has
+			// branched to the default block yet. Wire the current block to it.
+			if (nonDefaultCaseCount == 0) {
+				llvm::BasicBlock* entryBlock = builder->GetInsertBlock();
+				if (entryBlock && !entryBlock->getTerminator()) {
+					builder->CreateBr(defaultBB);
+				}
+			}
+
 			builder->SetInsertPoint(defaultBB);
+			compileTimeStack = savedStack;
 			for (auto* caseNode : cases) {
 				if (caseNode->isDefault() && caseNode->body()) {
 					// Debug location will be set by generateNode for the body
@@ -1530,12 +1747,56 @@ namespace Qd {
 			}
 			llvm::BasicBlock* defaultBlock = builder->GetInsertBlock();
 			if (defaultBlock && !defaultBlock->getTerminator()) {
+				armExits.emplace_back(defaultBlock, compileTimeStack);
 				builder->CreateBr(mergeBB);
 			}
 		}
 
 		// Continue with merge block
 		builder->SetInsertPoint(mergeBB);
+
+		if (nativePath) {
+			// Reconcile the arms. Mirrors generateIf: identical values pass through untouched,
+			// differing ones become PHI nodes. Arms that leave differing depths are merged at
+			// the shallowest common depth, matching generateIf's existing behaviour -- making
+			// that an error is the separate branch-unification work.
+			if (armExits.empty()) {
+				// Every arm terminated; the merge block is unreachable.
+				compileTimeStack = savedStack;
+			} else {
+				size_t mergeSize = armExits[0].second.size();
+				for (const auto& arm : armExits) {
+					mergeSize = std::min(mergeSize, arm.second.size());
+				}
+
+				std::vector<llvm::Value*> merged;
+				merged.reserve(mergeSize);
+				for (size_t slot = 0; slot < mergeSize; slot++) {
+					llvm::Value* first = armExits[0].second[slot];
+					bool allSame = true;
+					for (const auto& arm : armExits) {
+						if (arm.second[slot] != first) {
+							allSame = false;
+							break;
+						}
+					}
+
+					if (allSame) {
+						merged.push_back(first);
+						continue;
+					}
+
+					auto* phi = builder->CreatePHI(
+							first->getType(), static_cast<unsigned>(armExits.size()), "switch.merge.val");
+					for (const auto& arm : armExits) {
+						phi->addIncoming(arm.second[slot], arm.first);
+					}
+					merged.push_back(phi);
+				}
+				compileTimeStack = std::move(merged);
+			}
+			return;
+		}
 
 		// Clean up switch value if it's a string (need to free the allocated memory)
 		auto typePtr = builder->CreateStructGEP(switchElemTy, switchElem, 1, "type_ptr");

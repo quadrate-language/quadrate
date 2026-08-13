@@ -340,10 +340,11 @@ namespace Qd {
 			structTypeStack.push_back("");
 			return;
 		}
-		// Logical negation: not (consume 1, produce int/bool)
-		else if (strcmp(name, "not") == 0) {
+		// Bitwise / logical negation: not, lnot (consume 1, produce int/bool)
+		else if (strcmp(name, "not") == 0 || strcmp(name, "lnot") == 0) {
 			if (typeStack.empty()) {
-				reportErrorConditional(node, "Type error in 'not': Stack underflow (requires 1 value)", reportErrors);
+				std::string msg = std::string("Type error in '") + name + "': Stack underflow (requires 1 value)";
+				reportErrorConditional(node, msg.c_str(), reportErrors);
 				return;
 			}
 			// Pop operand, push result (type stays int)

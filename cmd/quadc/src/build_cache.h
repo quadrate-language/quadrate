@@ -16,6 +16,12 @@ public:
 	// Add a compiler option string to the hash inputs (e.g. "-O2", target triple).
 	void addOption(const std::string& option);
 
+	// Mix the compiler's own identity into the hash: version string, git commit, and the
+	// size/mtime of the running quadc binary. Without this the key depends only on source
+	// contents and options, so a rebuilt compiler with different codegen keeps serving
+	// executables produced by the old one and fixes silently appear to have no effect.
+	void addCompilerIdentity();
+
 	// Compute the final cache key from all added inputs.
 	// Returns a hex string suitable for use as a filename.
 	std::string computeKey();

@@ -1,0 +1,26 @@
+// Test: Regression: a value-producing switch with integer literal cases, inside a
+// function whose signature is all-i64 (so codegen takes the native path), must
+// return the matched arm's value rather than falling through to the wildcard.
+//
+// generateSwitchStatement has no compileTimeStack path and pops the scrutinee off
+// the runtime stack, where native-path operands never appear. See TODO.md,
+// "switch has no native-path codegen".
+fn classify(d:i64 -- r:i64) {
+	d switch {
+		0 {
+			100
+		}
+		1 {
+			200
+		}
+		_ {
+			-1
+		}
+	}
+}
+
+fn main() {
+	0 classify print nl
+	1 classify print nl
+	7 classify print nl
+}

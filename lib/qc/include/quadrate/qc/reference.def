@@ -340,6 +340,12 @@ BUILTIN(xor, "( a b -- result )", "Computes bitwise XOR of two integers.")
 /// @example 0 not // -1 (all bits set)
 BUILTIN(not, "( a -- result )", "Computes bitwise NOT (ones' complement).")
 
+/// Logical NOT.
+/// @signature ( a -- result )
+/// @example 0 lnot // 1
+/// @example 5 lnot // 0
+BUILTIN(lnot, "( a -- result )", "Logical NOT: 1 if the value is zero, 0 otherwise. Use this for boolean negation; `not` is bitwise.")
+
 /// Shift left.
 /// @signature ( a n -- result )
 /// @example 1 4 shl // 16

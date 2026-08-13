@@ -254,6 +254,13 @@ namespace Qd {
 				compileTimeStack.push_back(builder->CreateXor(a, b, "xor"));
 				return;
 			}
+			if (name == "lnot") {
+				llvm::Value* a = compileTimeStack.back();
+				compileTimeStack.pop_back();
+				llvm::Value* isZero = builder->CreateICmpEQ(a, builder->getInt64(0), "is_zero");
+				compileTimeStack.push_back(builder->CreateZExt(isZero, int64Ty, "lnot"));
+				return;
+			}
 			if (name == "not") {
 				llvm::Value* a = compileTimeStack.back();
 				compileTimeStack.pop_back();
@@ -273,7 +280,11 @@ namespace Qd {
 				compileTimeStack.pop_back();
 				llvm::Value* a = compileTimeStack.back();
 				compileTimeStack.pop_back();
-				compileTimeStack.push_back(builder->CreateAShr(a, b, "shr"));
+				// Logical, not arithmetic. `shr` treats its operand as unsigned everywhere else
+				// -- generateInlineBitRshift uses CreateLShr, and both runtimes cast to uint64_t
+				// before shifting. Using CreateAShr here made the same `v shr n` expression yield
+				// a different result depending on whether it happened to be folded.
+				compileTimeStack.push_back(builder->CreateLShr(a, b, "shr"));
 				return;
 			}
 			// Increment/decrement (type-aware)
@@ -1082,6 +1093,13 @@ namespace Qd {
 				generateInlineBitNot(ctx);
 			} else {
 				builder->CreateCall(notFn, {ctx});
+			}
+			return;
+		} else if (name == "lnot") {
+			if (currentFunctionIsIntegerOnly) {
+				generateInlineLogicalNot(ctx);
+			} else {
+				builder->CreateCall(lnotFn, {ctx});
 			}
 			return;
 		} else if (name == "shl") {

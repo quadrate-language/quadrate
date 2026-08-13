@@ -1,0 +1,30 @@
+// Test: a value-producing switch with enum case labels, in an all-i64 function.
+//
+// This was the one variant that already worked before the native-path fix, because
+// `Enum::Variant` parses as a scoped identifier and so resolved through moduleConstants.
+// That asymmetry against bare `const` labels is what isolated the two distinct bugs.
+// Pinned so neither fix regresses the case that always behaved.
+enum Dir {
+	Up
+	Down
+}
+
+fn step(d:i64 -- r:i64) {
+	d switch {
+		Dir::Up {
+			100
+		}
+		Dir::Down {
+			200
+		}
+		_ {
+			-1
+		}
+	}
+}
+
+fn main() {
+	Dir::Up step print nl
+	Dir::Down step print nl
+	7 step print nl
+}

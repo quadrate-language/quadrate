@@ -130,6 +130,7 @@ namespace Qd {
 		orFn = declareFn(ctxToResultTy, "qd_or");
 		xorFn = declareFn(ctxToResultTy, "qd_xor");
 		notFn = declareFn(ctxToResultTy, "qd_not");
+		lnotFn = declareFn(ctxToResultTy, "qd_lnot");
 		shlFn = declareFn(ctxToResultTy, "qd_shl");
 		shrFn = declareFn(ctxToResultTy, "qd_shr");
 

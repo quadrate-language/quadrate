@@ -1,0 +1,7 @@
+user if: else
+user if: then 99
+user switch: matched 7
+user switch: matched 1
+user switch: ok 99
+ffi if: else
+ffi switch: not found
