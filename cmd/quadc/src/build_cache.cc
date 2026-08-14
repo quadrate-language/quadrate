@@ -1,12 +1,12 @@
 #include "build_cache.h"
 
+#include "version.h"
 #include <cstdint>
 #include <cstdio>
 #include <cstring>
 #include <filesystem>
 #include <fstream>
 #include <iomanip>
-#include "version.h"
 
 #include <sstream>
 #include <system_error>
@@ -77,8 +77,7 @@ void BuildCache::addCompilerIdentity() {
 
 	auto mtime = fs::last_write_time(self, ec);
 	if (!ec) {
-		mOptions.push_back(
-				"qdc-mtime:" + std::to_string(mtime.time_since_epoch().count()));
+		mOptions.push_back("qdc-mtime:" + std::to_string(mtime.time_since_epoch().count()));
 	}
 }
 

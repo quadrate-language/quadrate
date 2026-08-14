@@ -6,9 +6,13 @@ Built-in operations for concurrent execution.
 
 | Instruction | Signature | Description |
 |-------------|-----------|-------------|
-| `spawn` | `(fn -- thread)` | Spawn a new thread |
-| `wait` | `(thread --)` | Wait for thread completion |
-| `detach` | `(thread --)` | Detach a thread |
+| `spawn` | `(fn:ptr -- thread:i64)` | Spawn a new thread |
+| `wait` | `(thread:i64 --)` | Wait for thread completion |
+| `detach` | `(thread:i64 --)` | Detach a thread |
+
+The handle `spawn` returns is an `i64`, not the `ptr` that `&worker` pushed — so thread handles
+go in an `[]i64` (see [Multiple workers](#multiple-workers)), and `wait`/`detach` take that
+`i64` back.
 
 ---
 

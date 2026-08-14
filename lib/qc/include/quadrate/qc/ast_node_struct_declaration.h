@@ -63,6 +63,29 @@ namespace Qd {
 			mColumn = column;
 		}
 
+		/**
+		 * @brief A comment written inside the struct body.
+		 *
+		 * Kept separate from mFields, and deliberately not exposed through child()/childCount(),
+		 * so that consumers walking the declaration still see only fields. Only the formatter
+		 * reads these; without them a `// note` on a field line was parsed and dropped, and
+		 * `quadfmt -w` silently deleted it.
+		 */
+		struct BodyComment {
+			std::string text;	  ///< comment body, without the // or /* */ delimiters
+			bool isBlock;		  ///< true for a block comment
+			size_t afterFieldIdx; ///< number of fields parsed before this comment
+			bool trailing;		  ///< true if it sits on the same line as field afterFieldIdx-1
+		};
+
+		void addBodyComment(const std::string& text, bool isBlock, size_t afterFieldIdx, bool trailing) {
+			mBodyComments.push_back(BodyComment{text, isBlock, afterFieldIdx, trailing});
+		}
+
+		const std::vector<BodyComment>& bodyComments() const {
+			return mBodyComments;
+		}
+
 		const std::string& name() const {
 			return mName;
 		}
@@ -105,6 +128,7 @@ namespace Qd {
 		bool mIsPublic;
 		bool mIsPacked = false;
 		std::vector<std::unique_ptr<AstNodeStructField>> mFields;
+		std::vector<BodyComment> mBodyComments;
 		IAstNode* mParent;
 		size_t mLine;
 		size_t mColumn;

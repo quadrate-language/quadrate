@@ -54,6 +54,7 @@ fn point_add(a:Point b:Point -- c:Point) {
 }
 ```
 
+<!-- doccheck: skip one file of the multi-file module built up in this section -->
 ```qd
 // main.qd
 fn main() {
@@ -190,6 +191,7 @@ pub fn cube(x:i64 -- result:i64) {
 
 Use it from another file:
 
+<!-- doccheck: skip imports a module the reader creates in this section -->
 ```qd
 use mymath
 
@@ -286,6 +288,7 @@ Quadrate looks for modules in:
 
 Module namespaces prevent conflicts:
 
+<!-- doccheck: skip imports modules the reader creates in this section -->
 ```qd
 use mylib
 use otherlib

@@ -6,6 +6,7 @@ packages:
   - meson
   - openssl
   - pkgconf
+  - python
   - sqlite
   - zlib
 
@@ -28,6 +29,9 @@ tasks:
   - fmtcheck: |
       cd quadrate
       make fmtcheck
+  - docscheck: |
+      cd quadrate
+      make docscheck
   - test: |
       cd quadrate
       make tests

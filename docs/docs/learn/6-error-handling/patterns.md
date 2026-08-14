@@ -179,15 +179,25 @@ fn file_close(f:ptr -- ) {
 }
 
 fn with_file(path:str -- ) {
-	path file_open if {
-		-> f  // bind file
-		defer {
-			f file_close
+	path file_open switch {
+		Ok {
+			-> f  // bind file
+			defer {
+				f file_close
+			}
+			// Use file...
 		}
-		// Use file...
+		_ {
+			"could not open" print nl
+		}
 	}
 }
 ```
+
+!!! note "`defer` runs only if it is reached"
+    A `defer` is armed when control reaches the statement, so one written inside a `switch` arm
+    runs only when that arm is taken — the cleanup above never fires on the failure path, where
+    no file was opened. The same holds for a `?` that propagates out before the `defer`.
 
 ## Pattern 7: validation
 

@@ -310,6 +310,7 @@ error (including EOF) exits.
 
 `main` parses command-line flags with the `flag` module:
 
+<!-- doccheck: skip excerpt of examples/dc/dc.qd; helpers live in the full file -->
 ```qd
 fn main() {
     stack_new -> s

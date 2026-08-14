@@ -1,0 +1,39 @@
+if taken:
+    then-arm ran
+    defer from then-arm
+if not taken:
+    else-arm ran
+switch arm taken:
+    arm 1 ran
+    defer from arm 1
+switch arm not taken:
+    wildcard ran
+? success:
+    body ran
+    released
+? propagated:
+    propagated
+lifo with c=1:
+    first
+    middle (only when c)
+    last
+lifo with c=0:
+    first
+    last
+loop, per iteration:
+    body 0
+    defer 0
+    body 1
+    defer 1
+    body 2
+    defer 2
+loop, conditional:
+    iter 0
+    iter 1
+    defer only on i=1
+    iter 2
+loop, break:
+    body
+    defer before break
+    after loop
+depth=0

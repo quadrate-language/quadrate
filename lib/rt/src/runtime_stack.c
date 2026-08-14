@@ -50,7 +50,7 @@ int qd_dup(qd_context* ctx) {
 	// Push a copy of the top element (strings are retained, not copied)
 	err = qdrt_push_element(st, &top);
 	if (err != QD_STACK_OK) {
-		return (int){-2};
+		QDRT_FATAL(ctx, "dup", "Stack overflow pushing result");
 	}
 
 	return (int){0};
@@ -126,13 +126,13 @@ int qd_dup2(qd_context* ctx) {
 	// Push a copy of the second element (strings are retained, not copied)
 	err = qdrt_push_element(ctx->st, &second);
 	if (err != QD_STACK_OK) {
-		return (int){-2};
+		QDRT_FATAL(ctx, "dup2", "Stack overflow pushing result");
 	}
 
 	// Push a copy of the top element
 	err = qdrt_push_element(ctx->st, &top);
 	if (err != QD_STACK_OK) {
-		return (int){-2};
+		QDRT_FATAL(ctx, "dup2", "Stack overflow pushing result");
 	}
 
 	return (int){0};
@@ -163,11 +163,11 @@ int qd_swap(qd_context* ctx) {
 	qd_stack_element_t a, b;
 	qd_stack_error err = qd_stack_pop(st, &b);  // b is top
 	if (err != QD_STACK_OK) {
-		return (int){-2};
+		QDRT_FATAL(ctx, "swap", "Failed to pop value (stack changed unexpectedly)");
 	}
 	err = qd_stack_pop(st, &a);  // a is second
 	if (err != QD_STACK_OK) {
-		return (int){-2};
+		QDRT_FATAL(ctx, "swap", "Failed to pop value (stack changed unexpectedly)");
 	}
 
 	// Push them back in swapped order (b first, then a, strings are retained not copied)
@@ -175,14 +175,14 @@ int qd_swap(qd_context* ctx) {
 	if (err != QD_STACK_OK) {
 		qdrt_release_if_string(&a);
 		qdrt_release_if_string(&b);
-		return (int){-2};
+		QDRT_FATAL(ctx, "swap", "Stack overflow pushing result");
 	}
 
 	err = qdrt_push_element(st, &a);
 	if (err != QD_STACK_OK) {
 		qdrt_release_if_string(&a);
 		qdrt_release_if_string(&b);
-		return (int){-2};
+		QDRT_FATAL(ctx, "swap", "Stack overflow pushing result");
 	}
 
 	// Release our original references (push_element retained them)
@@ -251,25 +251,25 @@ int qd_swap2(qd_context* ctx) {
 	qd_stack_element_t d, c, b, a;
 	qd_stack_error err = qd_stack_pop(ctx->st, &d);
 	if (err != QD_STACK_OK) {
-		return (int){-2};
+		QDRT_FATAL(ctx, "swap2", "Failed to pop value (stack changed unexpectedly)");
 	}
 	err = qd_stack_pop(ctx->st, &c);
 	if (err != QD_STACK_OK) {
 		qdrt_release_if_string(&d);
-		return (int){-2};
+		QDRT_FATAL(ctx, "swap2", "Failed to pop value (stack changed unexpectedly)");
 	}
 	err = qd_stack_pop(ctx->st, &b);
 	if (err != QD_STACK_OK) {
 		qdrt_release_if_string(&d);
 		qdrt_release_if_string(&c);
-		return (int){-2};
+		QDRT_FATAL(ctx, "swap2", "Failed to pop value (stack changed unexpectedly)");
 	}
 	err = qd_stack_pop(ctx->st, &a);
 	if (err != QD_STACK_OK) {
 		qdrt_release_if_string(&d);
 		qdrt_release_if_string(&c);
 		qdrt_release_if_string(&b);
-		return (int){-2};
+		QDRT_FATAL(ctx, "swap2", "Failed to pop value (stack changed unexpectedly)");
 	}
 
 	// Push in order: c, d, a, b (strings are retained, not copied)
@@ -279,7 +279,7 @@ int qd_swap2(qd_context* ctx) {
 		qdrt_release_if_string(&b);
 		qdrt_release_if_string(&c);
 		qdrt_release_if_string(&d);
-		return (int){-2};
+		QDRT_FATAL(ctx, "swap2", "Stack overflow pushing result");
 	}
 
 	err = qdrt_push_element(ctx->st, &d);
@@ -288,7 +288,7 @@ int qd_swap2(qd_context* ctx) {
 		qdrt_release_if_string(&b);
 		qdrt_release_if_string(&c);
 		qdrt_release_if_string(&d);
-		return (int){-2};
+		QDRT_FATAL(ctx, "swap2", "Stack overflow pushing result");
 	}
 
 	err = qdrt_push_element(ctx->st, &a);
@@ -297,7 +297,7 @@ int qd_swap2(qd_context* ctx) {
 		qdrt_release_if_string(&b);
 		qdrt_release_if_string(&c);
 		qdrt_release_if_string(&d);
-		return (int){-2};
+		QDRT_FATAL(ctx, "swap2", "Stack overflow pushing result");
 	}
 
 	err = qdrt_push_element(ctx->st, &b);
@@ -306,7 +306,7 @@ int qd_swap2(qd_context* ctx) {
 		qdrt_release_if_string(&b);
 		qdrt_release_if_string(&c);
 		qdrt_release_if_string(&d);
-		return (int){-2};
+		QDRT_FATAL(ctx, "swap2", "Stack overflow pushing result");
 	}
 
 	// Release our original references (push_element retained them)
@@ -334,7 +334,7 @@ int qd_over(qd_context* ctx) {
 	err = qdrt_push_element(ctx->st, &second);
 
 	if (err != QD_STACK_OK) {
-		return (int){-2};
+		QDRT_FATAL(ctx, "over", "Stack overflow pushing result");
 	}
 
 	return (int){0};
@@ -395,12 +395,12 @@ int qd_over2(qd_context* ctx) {
 	// Push copies of elem_a and elem_b
 	err = qdrt_push_element(ctx->st, &elem_a);
 	if (err != QD_STACK_OK) {
-		return (int){-2};
+		QDRT_FATAL(ctx, "over2", "Stack overflow pushing result");
 	}
 
 	err = qdrt_push_element(ctx->st, &elem_b);
 	if (err != QD_STACK_OK) {
-		return (int){-2};
+		QDRT_FATAL(ctx, "over2", "Stack overflow pushing result");
 	}
 
 	return (int){0};
@@ -414,14 +414,14 @@ int qd_nip(qd_context* ctx) {
 	qd_stack_element_t top;
 	qd_stack_error err = qd_stack_pop(ctx->st, &top);
 	if (err != QD_STACK_OK) {
-		return (int){-2};
+		QDRT_FATAL(ctx, "nip", "Failed to pop value (stack changed unexpectedly)");
 	}
 
 	// Pop the second element (which we want to discard)
 	qd_stack_element_t second;
 	err = qd_stack_pop(ctx->st, &second);
 	if (err != QD_STACK_OK) {
-		return (int){-2};
+		QDRT_FATAL(ctx, "nip", "Failed to pop value (stack changed unexpectedly)");
 	}
 
 	// Release string reference if necessary
@@ -433,7 +433,7 @@ int qd_nip(qd_context* ctx) {
 	err = qdrt_push_element(ctx->st, &top);
 
 	if (err != QD_STACK_OK) {
-		return (int){-2};
+		QDRT_FATAL(ctx, "nip", "Stack overflow pushing result");
 	}
 
 	// Release our reference to top (push_element retained it)
@@ -479,7 +479,7 @@ int qd_drop(qd_context* ctx) {
 	qd_stack_element_t val;
 	qd_stack_error err = qd_stack_pop(ctx->st, &val);
 	if (err != QD_STACK_OK) {
-		return (int){-2};
+		QDRT_FATAL(ctx, "drop", "Failed to pop value (stack changed unexpectedly)");
 	}
 
 	// Release string reference if needed
@@ -497,7 +497,7 @@ int qd_drop2(qd_context* ctx) {
 	// Drop first element
 	qd_stack_error err = qd_stack_pop(ctx->st, &val);
 	if (err != QD_STACK_OK) {
-		return (int){-2};
+		QDRT_FATAL(ctx, "drop2", "Failed to pop value (stack changed unexpectedly)");
 	}
 	if (val.type == QD_STACK_TYPE_STR) {
 		qd_string_release(val.value.s);
@@ -506,7 +506,7 @@ int qd_drop2(qd_context* ctx) {
 	// Drop second element
 	err = qd_stack_pop(ctx->st, &val);
 	if (err != QD_STACK_OK) {
-		return (int){-2};
+		QDRT_FATAL(ctx, "drop2", "Failed to pop value (stack changed unexpectedly)");
 	}
 	if (val.type == QD_STACK_TYPE_STR) {
 		qd_string_release(val.value.s);
@@ -522,34 +522,34 @@ int qd_rot(qd_context* ctx) {
 	qd_stack_element_t c, b, a;
 	qd_stack_error err = qd_stack_pop(ctx->st, &c);
 	if (err != QD_STACK_OK) {
-		return (int){-2};
+		QDRT_FATAL(ctx, "rot", "Failed to pop value (stack changed unexpectedly)");
 	}
 	err = qd_stack_pop(ctx->st, &b);
 	if (err != QD_STACK_OK) {
-		return (int){-2};
+		QDRT_FATAL(ctx, "rot", "Failed to pop value (stack changed unexpectedly)");
 	}
 	err = qd_stack_pop(ctx->st, &a);
 	if (err != QD_STACK_OK) {
-		return (int){-2};
+		QDRT_FATAL(ctx, "rot", "Failed to pop value (stack changed unexpectedly)");
 	}
 
 	// Push in order: b, c, a
 	// Push b
 	err = qdrt_push_element(ctx->st, &b);
 	if (err != QD_STACK_OK) {
-		return (int){-2};
+		QDRT_FATAL(ctx, "rot", "Stack overflow pushing result");
 	}
 
 	// Push c
 	err = qdrt_push_element(ctx->st, &c);
 	if (err != QD_STACK_OK) {
-		return (int){-2};
+		QDRT_FATAL(ctx, "rot", "Stack overflow pushing result");
 	}
 
 	// Push a
 	err = qdrt_push_element(ctx->st, &a);
 	if (err != QD_STACK_OK) {
-		return (int){-2};
+		QDRT_FATAL(ctx, "rot", "Stack overflow pushing result");
 	}
 
 	// Release our original references (push_element retained them)
@@ -573,11 +573,11 @@ int qd_tuck(qd_context* ctx) {
 	qd_stack_element_t b, a;
 	qd_stack_error err = qd_stack_pop(ctx->st, &b);
 	if (err != QD_STACK_OK) {
-		return (int){-2};
+		QDRT_FATAL(ctx, "tuck", "Failed to pop value (stack changed unexpectedly)");
 	}
 	err = qd_stack_pop(ctx->st, &a);
 	if (err != QD_STACK_OK) {
-		return (int){-2};
+		QDRT_FATAL(ctx, "tuck", "Failed to pop value (stack changed unexpectedly)");
 	}
 
 	// Push in order: b, a, b
@@ -586,7 +586,7 @@ int qd_tuck(qd_context* ctx) {
 	if (err != QD_STACK_OK) {
 		qdrt_release_if_string(&b);
 		qdrt_release_if_string(&a);
-		return (int){-2};
+		QDRT_FATAL(ctx, "tuck", "Stack overflow pushing result");
 	}
 
 	// Push a (strings are retained, not copied)
@@ -594,7 +594,7 @@ int qd_tuck(qd_context* ctx) {
 	if (err != QD_STACK_OK) {
 		qdrt_release_if_string(&a);
 		qdrt_release_if_string(&b);
-		return (int){-2};
+		QDRT_FATAL(ctx, "tuck", "Stack overflow pushing result");
 	}
 
 	// Push b (second copy, strings are retained)
@@ -602,7 +602,7 @@ int qd_tuck(qd_context* ctx) {
 	if (err != QD_STACK_OK) {
 		qdrt_release_if_string(&a);
 		qdrt_release_if_string(&b);
-		return (int){-2};
+		QDRT_FATAL(ctx, "tuck", "Stack overflow pushing result");
 	}
 
 	// Release our original references (push_element retained them twice for b)
@@ -622,7 +622,7 @@ int qd_pick(qd_context* ctx) {
 	qd_stack_element_t idx_elem;
 	qd_stack_error err = qd_stack_pop(ctx->st, &idx_elem);
 	if (err != QD_STACK_OK) {
-		return (int){-2};
+		QDRT_FATAL(ctx, "pick", "Failed to pop index");
 	}
 
 	if (idx_elem.type != QD_STACK_TYPE_INT) {
@@ -650,7 +650,7 @@ int qd_pick(qd_context* ctx) {
 	err = qdrt_push_element(ctx->st, &elem);
 
 	if (err != QD_STACK_OK) {
-		return (int){-2};
+		QDRT_FATAL(ctx, "pick", "Stack overflow pushing picked element");
 	}
 
 	return (int){0};
@@ -666,7 +666,7 @@ int qd_roll(qd_context* ctx) {
 	qd_stack_element_t count_elem;
 	qd_stack_error err = qd_stack_pop(ctx->st, &count_elem);
 	if (err != QD_STACK_OK) {
-		return (int){-2};
+		QDRT_FATAL(ctx, "roll", "Failed to pop count");
 	}
 
 	if (count_elem.type != QD_STACK_TYPE_INT) {
@@ -702,7 +702,7 @@ int qd_roll(qd_context* ctx) {
 		err = qd_stack_pop(ctx->st, &temp[n - 1 - i]);
 		if (err != QD_STACK_OK) {
 			free(temp);
-			return (int){-2};
+			QDRT_FATAL(ctx, "roll", "Failed to pop element %ld of %ld", (long)i, (long)n);
 		}
 	}
 
@@ -718,7 +718,7 @@ int qd_roll(qd_context* ctx) {
 			}
 			qdrt_release_if_string(&temp[0]);
 			free(temp);
-			return (int){-2};
+			QDRT_FATAL(ctx, "roll", "Stack overflow restoring element %ld", (long)i);
 		}
 		// Release our reference (push_element retained it)
 		qdrt_release_if_string(&temp[i]);
@@ -729,7 +729,7 @@ int qd_roll(qd_context* ctx) {
 	if (err != QD_STACK_OK) {
 		qdrt_release_if_string(&temp[0]);
 		free(temp);
-		return (int){-2};
+		QDRT_FATAL(ctx, "roll", "Stack overflow restoring rolled element");
 	}
 	// Release our reference (push_element retained it)
 	qdrt_release_if_string(&temp[0]);
@@ -762,7 +762,7 @@ int qd_depth(qd_context* ctx) {
 
 	qd_stack_error err = qd_stack_push_int(ctx->st, (int64_t)stack_size);
 	if (err != QD_STACK_OK) {
-		return (int){-2};
+		QDRT_FATAL(ctx, "depth", "Stack overflow pushing result");
 	}
 
 	return (int){0};

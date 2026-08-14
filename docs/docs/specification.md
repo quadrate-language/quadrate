@@ -851,6 +851,41 @@ fn example() {
 // Prints: first, second, third
 ```
 
+#### 6.6.1 Registration
+
+A `defer` MUST be registered when control **reaches** the statement, not merely because the
+statement appears in the function. A `defer` written inside a branch that was not taken, or
+after a point from which the function already returned, MUST NOT run:
+
+```quadrate
+fn open_maybe(c:i64 -- ) {
+    c if {
+        acquire -> r
+        defer { r release }    // registered only when c is non-zero
+    }
+    // if c was zero, nothing is released -- nothing was acquired
+}
+```
+
+This is what makes `defer` usable for cleanup in a `switch` arm: the arm that acquires the
+resource is the arm that registers its release, and the failure arms register nothing.
+
+The same applies to `?` (§10.3). A `?` that propagates out of the function before reaching a
+`defer` MUST NOT run that `defer`:
+
+```quadrate
+fn use_it( -- )! {
+    open?  -> f              // if this propagates, the defer below is never registered
+    defer { f close }
+    // ... work with f ...
+}
+```
+
+Deferred code registered inside a loop body MUST run at the end of the iteration that
+registered it, and MUST NOT carry over to a later iteration that does not reach the statement
+again. `break` and `continue` MUST run the deferred code registered so far in that iteration
+before transferring control.
+
 ---
 
 ## 7. Functions
@@ -1137,13 +1172,15 @@ Functions that can fail MUST be marked with `!`:
 
 ```quadrate
 fn divide(a:i64 b:i64 -- result:i64)! {
-    dup 0 == if {
-        drop drop
+    b 0 == if {
         "division by zero" -1 panic
     }
-    /
+    a b /
 }
 ```
+
+Note that `a` and `b` are named parameters, so they are bound on entry and already consumed
+from the stack (§4.4); the body refers to them by name rather than manipulating the stack.
 
 ### 10.2 The `panic` Instruction
 
@@ -1154,8 +1191,14 @@ Signal an error from within a fallible function:
 ```
 
 - **Stack effect**: `(msg:str code:i64 -- )`
-- Sets runtime error state
+- Sets runtime error state and returns from the enclosing function immediately
 - Only valid in fallible functions
+
+The error code is chosen by the program and MAY be any `i64`, including `0`. Implementations
+MUST therefore record "an error is signalled" separately from the code itself: a `panic`
+carrying code `0` is a failure, even though `0` is also the conventional "no error" value and
+the value of `Err` (§10.4). Testing the code alone would report such a call as a success and
+hand the caller a return value that was never produced.
 
 **Alternative: Error literal syntax:**
 ```quadrate
@@ -1174,7 +1217,7 @@ The `error { code = N message = "..." }` syntax creates an anonymous error value
 **Propagate error (`?` operator):**
 ```quadrate
 fn wrapper(a:i64 b:i64 -- result:i64)! {
-    divide?     // Propagates error to caller if divide fails
+    a b divide?     // Propagates error to caller if divide fails
     2 *
 }
 ```
@@ -1187,11 +1230,15 @@ The `?` operator requires the enclosing function to be fallible. On error, the f
     // Success - result on stack
     print nl
 } else {
-    // Failure - handle error
-    drop
+    // Failure - the status has already been consumed by `if`
     "Division failed" print nl
 }
 ```
+
+The status value a bare fallible call leaves is consumed by the `if` (or `switch`) that reads
+it. Neither arm receives it, so an arm MUST NOT `drop` it — doing so underflows the stack. On
+success the call's own return values are on the stack for the success arm to use; on failure
+there are none.
 
 **Check with switch:**
 
@@ -1204,10 +1251,14 @@ The two consumers require different shapes, and an implementation MUST provide e
 - Before a `switch`, the status MUST carry the error code, so specific codes can be matched.
 
 `Ok` as a case label MUST mean "the call succeeded", not "the status equals 1". Error codes are
-chosen by the program, so a `panic` carrying code `1` MUST NOT match `Ok`.
+chosen by the program, so a `panic` carrying code `1` MUST NOT match `Ok`, and a `panic`
+carrying code `0` MUST NOT match it either (§10.2).
 
 This MUST hold identically for functions defined in Quadrate and for those declared in an
 `import` block (§5.8).
+
+As with `if`, the `switch` consumes the status: no arm receives it, and an arm MUST NOT `drop`
+it.
 
 ```quadrate
 path io::Read io::open switch {
@@ -1217,11 +1268,9 @@ path io::Read io::open switch {
         handle io::close
     }
     io::ErrNotFound {
-        drop
         "File not found" print nl
     }
     _ {
-        drop
         "Unknown error" print nl
     }
 }
@@ -1247,6 +1296,60 @@ Retrieve error information after a failed call:
 
 ```quadrate
 err    // Stack effect: ( -- msg:str code:i64 )
+```
+
+`err` reports the code the `panic` carried, whatever it was — including `0`. Reading the error
+state clears it.
+
+### 10.6 Worked Example
+
+A complete program exercising all four call-site forms against one fallible function:
+
+```quadrate
+fn divide(a:i64 b:i64 -- result:i64)! {
+    b 0 == if {
+        "division by zero" -1 panic
+    }
+    a b /
+}
+
+// `?` propagates: doubled is fallible too, so a failure in divide returns from it immediately.
+fn doubled(a:i64 b:i64 -- result:i64)! {
+    a b divide?
+    2 *
+}
+
+fn main() {
+    // 1. if/else -- the status is a boolean, consumed by the `if`
+    10 2 divide if { "10/2 = " print print nl } else { "failed" print nl }
+    10 0 divide if { "unreachable" print nl } else { "10/0 failed as expected" print nl }
+
+    // 2. switch -- the status carries the error code, so specific codes can be matched
+    10 0 divide switch {
+        Ok { "unreachable" print nl }
+        -1 { "caught code -1: " print err print " " print print nl }
+        _  { "some other error" print nl }
+    }
+
+    // 3. ! aborts the program on failure; here it succeeds
+    "20/4 = " print 20 4 divide! print nl
+
+    // 4. ? propagates to the caller
+    10 2 doubled switch {
+        Ok { "(10/2)*2 = " print print nl }
+        _  { "failed" print nl }
+    }
+}
+```
+
+Output:
+
+```
+10/2 = 5
+10/0 failed as expected
+caught code -1: -1 division by zero
+20/4 = 5
+(10/2)*2 = 10
 ```
 
 ---

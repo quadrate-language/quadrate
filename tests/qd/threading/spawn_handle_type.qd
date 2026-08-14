@@ -1,0 +1,37 @@
+// Test: `spawn` is typed ( fn:ptr -- handle:i64 ), and `wait`/`detach` take that handle back.
+//
+// spawn/wait/detach were listed as builtins but had no branch in the semantic validator, so
+// none of them touched the type stack. The `ptr` that `&worker` pushed was therefore still on
+// the type stack after `spawn`, while the runtime pushes an i64 handle. Storing a handle in an
+// array -- the natural way to write a worker pool, and what the threading reference showed --
+// could not be made to typecheck: `make<i64>` was rejected statically ("Array is '[]i64' but
+// value is ptr") and `make<ptr>` failed at runtime ("set: type mismatch - pointer array, got
+// type 0"). Only an explicit `cast<i64>` got through.
+//
+// The single-handle-to-a-local form always worked, which is why this survived: nothing in the
+// corpus put a thread handle in an array.
+
+fn worker() {
+	"  worked" print nl
+}
+
+fn main() {
+	// A handle in a local
+	&worker spawn -> t
+	t wait
+
+	// Handles in an []i64 -- this is the case that did not compile
+	3 make<i64> -> threads
+	0 3 1 for i {
+		threads i &worker spawn set
+	}
+	0 3 1 for i {
+		threads i nth wait
+	}
+
+	// spawn feeding wait directly, with no local in between
+	&worker spawn wait
+
+	"done" print nl
+	"depth=" print depth print nl
+}

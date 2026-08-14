@@ -9,7 +9,11 @@ namespace Qd {
 		// What consumes the status value a fallible call leaves on the stack. The semantic
 		// validator already guarantees a bare fallible call is immediately followed by `if` or
 		// `switch`, so these are the only cases; None covers `!`/`?`, which consume nothing.
-		enum class FallibleConsumer { None, If, Switch };
+		enum class FallibleConsumer {
+			None,
+			If,
+			Switch
+		};
 
 		// A fallible call has to push a different status depending on who reads it:
 		//
@@ -50,6 +54,31 @@ namespace Qd {
 			}
 			return FallibleConsumer::None;
 		}
+	}
+
+	void LlvmGenerator::Impl::generateClearErrorState(llvm::Value* ctx) {
+		auto errorCodePtr =
+				builder->CreateStructGEP(contextStructTy, ctx, CTX_FIELD_ERROR_CODE, "pre_call_error_code_ptr");
+		builder->CreateStore(builder->getInt64(0), errorCodePtr);
+		auto hasErrorPtr =
+				builder->CreateStructGEP(contextStructTy, ctx, CTX_FIELD_HAS_ERROR, "pre_call_has_error_ptr");
+		builder->CreateStore(builder->getInt64(0), hasErrorPtr);
+	}
+
+	LlvmGenerator::Impl::ErrorState LlvmGenerator::Impl::generateReadErrorState(llvm::Value* ctx, const char* name) {
+		// `has_error` is the authoritative signal for Quadrate-defined functions: qd_panic sets it
+		// whatever code it carries, so `"msg" Err panic` (code 0) still reads as a failure.
+		auto hasErrorPtr = builder->CreateStructGEP(contextStructTy, ctx, CTX_FIELD_HAS_ERROR, "has_error_ptr");
+		auto hasErrorFlag = builder->CreateLoad(int64Ty, hasErrorPtr, "has_error_flag");
+		auto flagSet = builder->CreateICmpNE(hasErrorFlag, builder->getInt64(0), "has_error_flag_set");
+
+		// Imported C functions are inconsistent about error state -- some set error_code, some
+		// only push the code -- and none of them set the flag, so a non-zero code still counts.
+		auto errorCodePtr = builder->CreateStructGEP(contextStructTy, ctx, CTX_FIELD_ERROR_CODE, "error_code_ptr");
+		auto errorCode = builder->CreateLoad(int64Ty, errorCodePtr, "error_code");
+		auto codeSet = builder->CreateICmpNE(errorCode, builder->getInt64(0), "error_code_set");
+
+		return ErrorState{builder->CreateOr(flagSet, codeSet, name), errorCode};
 	}
 
 	void LlvmGenerator::Impl::generateLiteral(AstNodeLiteral* lit, llvm::Value* ctx) {
@@ -605,12 +634,11 @@ namespace Qd {
 			// Generate any needed type casts before the function call
 			generateCastInstructions(ident->parameterCasts(), ctx);
 
-			// For fallible functions, clear error_code before the call
+			// For fallible functions, clear the error state before the call
 			// This ensures each call starts with a clean state
 			auto preFallibleIt = fallibleFunctions.find(lookupName);
 			if (preFallibleIt != fallibleFunctions.end() && preFallibleIt->second) {
-				auto errorCodePtr = builder->CreateStructGEP(contextStructTy, ctx, 1, "pre_call_error_code_ptr");
-				builder->CreateStore(builder->getInt64(0), errorCodePtr);
+				generateClearErrorState(ctx);
 			}
 
 			// Check for inlinable bits:: functions
@@ -692,10 +720,9 @@ namespace Qd {
 			auto fallibleIt = fallibleFunctions.find(lookupName);
 			if (fallibleIt != fallibleFunctions.end() && fallibleIt->second) {
 				// This is a fallible function - push error status after the call
-				// Get the error_code field from context (field index 1)
-				auto errorCodePtr = builder->CreateStructGEP(contextStructTy, ctx, 1, "error_code_ptr");
-				auto errorCode = builder->CreateLoad(int64Ty, errorCodePtr, "error_code");
-				auto hasError = builder->CreateICmpNE(errorCode, builder->getInt64(0), "has_error");
+				auto errorState = generateReadErrorState(ctx);
+				auto hasError = errorState.failed;
+				auto errorCode = errorState.code;
 
 				if (ident->abortOnError()) {
 					// ! operator: check error and abort if set
@@ -741,8 +768,7 @@ namespace Qd {
 					// fallibleConsumerOf). Don't clear error_code -- `err` still needs it, and
 					// the next fallible call overwrites it anyway.
 					const bool wantsCode = fallibleConsumerOf(ident) == FallibleConsumer::Switch;
-					llvm::Value* onFailure =
-							wantsCode ? static_cast<llvm::Value*>(errorCode) : builder->getInt64(0);
+					llvm::Value* onFailure = wantsCode ? static_cast<llvm::Value*>(errorCode) : builder->getInt64(0);
 					auto successStatus =
 							builder->CreateSelect(hasError, onFailure, builder->getInt64(1), "success_status");
 
@@ -1042,8 +1068,7 @@ namespace Qd {
 				// Clear error_code for fallible methods
 				auto preFallibleIt = fallibleFunctions.find(lookupName);
 				if (preFallibleIt != fallibleFunctions.end() && preFallibleIt->second) {
-					auto errorCodePtr = builder->CreateStructGEP(contextStructTy, ctx, 1, "pre_call_error_code_ptr");
-					builder->CreateStore(builder->getInt64(0), errorCodePtr);
+					generateClearErrorState(ctx);
 				}
 
 				// For method calls, rotate stack so receiver is on top before calling
@@ -1064,9 +1089,9 @@ namespace Qd {
 				// Handle fallible method return
 				auto fallibleIt = fallibleFunctions.find(lookupName);
 				if (fallibleIt != fallibleFunctions.end() && fallibleIt->second) {
-					auto errorCodePtr = builder->CreateStructGEP(contextStructTy, ctx, 1, "error_code_ptr");
-					auto errorCode = builder->CreateLoad(int64Ty, errorCodePtr, "error_code");
-					auto hasError = builder->CreateICmpNE(errorCode, builder->getInt64(0), "has_error");
+					auto errorState = generateReadErrorState(ctx);
+					auto hasError = errorState.failed;
+					auto errorCode = errorState.code;
 
 					if (scopedIdent->abortOnError()) {
 						llvm::BasicBlock* errorBlock = llvm::BasicBlock::Create(
@@ -1223,12 +1248,11 @@ namespace Qd {
 		// Generate any needed type casts before the function call
 		generateCastInstructions(scopedIdent->parameterCasts(), ctx);
 
-		// For fallible functions, clear error_code before the call
+		// For fallible functions, clear the error state before the call
 		// This ensures each call starts with a clean state
 		auto preFallibleIt = fallibleFunctions.find(fullName);
 		if (preFallibleIt != fallibleFunctions.end() && preFallibleIt->second) {
-			auto errorCodePtr = builder->CreateStructGEP(contextStructTy, ctx, 1, "pre_call_error_code_ptr");
-			builder->CreateStore(builder->getInt64(0), errorCodePtr);
+			generateClearErrorState(ctx);
 		}
 
 		// Call the scoped function — use native bridge (A optimization) if available
@@ -1284,9 +1308,9 @@ namespace Qd {
 		auto fallibleIt = fallibleFunctions.find(fullName);
 		if (fallibleIt != fallibleFunctions.end() && fallibleIt->second) {
 			// This is a fallible function - push error status after the call
-			auto errorCodePtr = builder->CreateStructGEP(contextStructTy, ctx, 1, "error_code_ptr");
-			auto errorCode = builder->CreateLoad(int64Ty, errorCodePtr, "error_code");
-			auto hasError = builder->CreateICmpNE(errorCode, builder->getInt64(0), "has_error");
+			auto errorState = generateReadErrorState(ctx);
+			auto hasError = errorState.failed;
+			auto errorCode = errorState.code;
 
 			if (scopedIdent->abortOnError()) {
 				// ! operator: check error and abort if set
@@ -1618,12 +1642,11 @@ namespace Qd {
 				if (scrutineeIsFallibleStatus && lit->literalType() == AstNodeLiteral::LiteralType::BOOL &&
 						(lit->value() == "Ok" || lit->value() == "true")) {
 					// `Ok` on a fallible status means "the call succeeded". Test the error state
-					// directly so that a panic carrying code 1 is not mistaken for success.
-					auto errorCodePtr = builder->CreateStructGEP(contextStructTy, ctx, 1, "sw_error_code_ptr");
-					auto errorCode = builder->CreateLoad(int64Ty, errorCodePtr, "sw_error_code");
-					matches = builder->CreateICmpEQ(errorCode, builder->getInt64(0), "case_ok");
+					// directly so that a panic carrying code 1 is not mistaken for success --
+					// and via has_error, so that a panic carrying code 0 is not either.
+					matches = builder->CreateNot(generateReadErrorState(ctx, "sw_has_error").failed, "case_ok");
 				} else if (lit->literalType() == AstNodeLiteral::LiteralType::INTEGER ||
-						lit->literalType() == AstNodeLiteral::LiteralType::BOOL) {
+						   lit->literalType() == AstNodeLiteral::LiteralType::BOOL) {
 					// Compare switch value with case value (integer or bool)
 					auto switchVal = switchValueInt();
 

@@ -702,31 +702,70 @@ namespace Qd {
 			}
 			mOutput << " {\n";
 			mIndent++;
-			if (mOpts.alignStructFields && fields.size() > 2) {
-				size_t maxNameLen = 0;
+			size_t maxNameLen = 0;
+			const bool align = mOpts.alignStructFields && fields.size() > 2;
+			if (align) {
 				for (const auto& f : fields) {
 					if (f->name().length() > maxNameLen) {
 						maxNameLen = f->name().length();
 					}
 				}
-				for (const auto& f : fields) {
-					emitIndent();
+			}
+			const auto& comments = node->bodyComments();
+			for (size_t i = 0; i < fields.size(); i++) {
+				emitBodyCommentsBefore(comments, i);
+				const auto& f = fields[i];
+				emitIndent();
+				if (align) {
 					mOutput << f->name() << ":";
 					size_t padding = maxNameLen - f->name().length() + 1;
 					for (size_t p = 0; p < padding; p++) {
 						mOutput << ' ';
 					}
-					mOutput << f->typeName() << "\n";
+					mOutput << f->typeName();
+				} else {
+					mOutput << f->name() << ": " << f->typeName();
 				}
-			} else {
-				for (const auto& f : fields) {
-					emitIndent();
-					mOutput << f->name() << ": " << f->typeName() << "\n";
-				}
+				emitTrailingBodyComment(comments, i + 1);
+				mOutput << "\n";
 			}
+			emitBodyCommentsBefore(comments, fields.size());
 			mIndent--;
 			emitIndent();
 			mOutput << "}\n";
+		}
+
+		// Comments recorded inside a struct or enum body. `index` is the number of fields (or
+		// variants) that precede them; a trailing comment shares its line with the item before it
+		// and is emitted by emitTrailingBodyComment instead.
+		template <typename BodyCommentT>
+		void emitBodyCommentsBefore(const std::vector<BodyCommentT>& comments, size_t index) {
+			for (const auto& c : comments) {
+				if (c.trailing || commentIndex(c) != index) {
+					continue;
+				}
+				emitIndent();
+				mOutput << (c.isBlock ? "/*" : "//") << c.text << (c.isBlock ? "*/" : "") << "\n";
+			}
+		}
+
+		template <typename BodyCommentT>
+		void emitTrailingBodyComment(const std::vector<BodyCommentT>& comments, size_t index) {
+			for (const auto& c : comments) {
+				if (!c.trailing || commentIndex(c) != index) {
+					continue;
+				}
+				mOutput << " " << (c.isBlock ? "/*" : "//") << c.text << (c.isBlock ? "*/" : "");
+				return; // at most one can share the line
+			}
+		}
+
+		static size_t commentIndex(const AstNodeStructDeclaration::BodyComment& c) {
+			return c.afterFieldIdx;
+		}
+
+		static size_t commentIndex(const AstNodeEnumDeclaration::BodyComment& c) {
+			return c.afterVariantIdx;
 		}
 
 		// ============================================================
@@ -740,10 +779,16 @@ namespace Qd {
 			}
 			mOutput << "enum " << node->name() << " {\n";
 			mIndent++;
-			for (const auto& v : node->variants()) {
+			const auto& variants = node->variants();
+			const auto& comments = node->bodyComments();
+			for (size_t i = 0; i < variants.size(); i++) {
+				emitBodyCommentsBefore(comments, i);
 				emitIndent();
-				mOutput << v.name << "\n";
+				mOutput << variants[i].name;
+				emitTrailingBodyComment(comments, i + 1);
+				mOutput << "\n";
 			}
+			emitBodyCommentsBefore(comments, variants.size());
 			mIndent--;
 			emitIndent();
 			mOutput << "}\n";

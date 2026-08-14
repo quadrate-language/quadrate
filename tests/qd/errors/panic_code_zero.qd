@@ -1,0 +1,62 @@
+// Test: `panic` reports a failure whatever code it carries -- including 0.
+//
+// Error codes are chosen by the program and `Err` is 0, so `"msg" Err panic` -- the spec's
+// own spelling for a generic failure (§10.4) -- writes 0 into ctx->error_code, which is that
+// field's "no error" value. The caller then took the success branch and read a return value
+// that was never pushed, silently: `Ok` matched, `print` found an empty stack and printed
+// nothing, exit status 0.
+//
+// qd_panic now sets ctx->has_error unconditionally and generated code tests that flag (or a
+// non-zero error_code, since imported C functions set the code but not the flag).
+//
+// Companion to fallible_protocol_unified, which pins the other end of the same problem:
+// `Ok` is 1, so a panic carrying code 1 must not read as success either. Between them every
+// code that collides with a sentinel is covered: 0 (no-error) and 1 (Ok).
+
+fn panics_with(code:i64 -- v:i64)! {
+	"boom" code panic
+	99
+}
+
+fn never_panics( -- v:i64)! {
+	42
+}
+
+fn main() {
+	// The regression: code 0 through both consumers.
+	panics_with_zero_switch
+	panics_with_zero_if
+
+	// Neighbouring codes must be unaffected.
+	1 panics_with switch { Ok { "WRONG: ok" print nl drop } _ { "code 1: err" print nl } }
+	2 panics_with switch { Ok { "WRONG: ok" print nl drop } 2 { "code 2: matched 2" print nl } _ { "WRONG: wildcard" print nl } }
+
+	// A computed code of 0 -- the literal is not what makes this work.
+	5 5 - panics_with switch { Ok { "WRONG: ok" print nl drop } _ { "computed 0: err" print nl } }
+
+	// Success still reads as success, and still carries its value.
+	never_panics switch { Ok { "success: " print print nl } _ { "WRONG: err" print nl } }
+	never_panics if { "success if: " print print nl } else { "WRONG: else" print nl }
+
+	// `err` still reports the code the panic carried, including 0.
+	0 panics_with switch { Ok { "WRONG: ok" print nl drop } _ { "err says: " print err print " " print print nl } }
+
+	// A failure must not leave the error state set for the next call.
+	0 panics_with switch { Ok { "WRONG: ok" print nl drop } _ { "first: err" print nl } }
+	never_panics switch { Ok { "then ok: " print print nl } _ { "WRONG: sticky error" print nl } }
+}
+
+fn panics_with_zero_switch() {
+	0 panics_with switch {
+		Ok { "WRONG: code 0 seen as ok" print nl drop }
+		_ { "code 0 switch: err" print nl }
+	}
+}
+
+fn panics_with_zero_if() {
+	0 panics_with if {
+		"WRONG: code 0 took success branch" print nl drop
+	} else {
+		"code 0 if: else" print nl
+	}
+}

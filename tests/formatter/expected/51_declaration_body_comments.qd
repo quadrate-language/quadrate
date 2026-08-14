@@ -1,0 +1,40 @@
+// Comments inside struct and enum bodies must survive formatting.
+// These used to be parsed and discarded, so quadfmt -w silently deleted them.
+struct Point {
+	x:     f64 // horizontal
+	y:     f64 /* vertical */
+	// a comment on its own line, between fields
+	label: str
+	// and one before the closing brace
+}
+
+struct TwoFields {
+	a: i64 // fields are not aligned when there are 2 or fewer
+	b: i64
+}
+
+struct Multi {
+	first:  i64 // trailing
+	// two standalone comments
+	// in a row
+	second: i64
+	third:  i64
+}
+
+struct OnlyComments {
+	// no fields at all
+}
+
+enum Color {
+	Red // the first one
+	Green
+	// standalone between variants
+	Blue
+	// before the brace
+}
+
+pub struct Crc32 {
+	state:i64 = 4294967295 // default values take the source-preserving path
+	tbl:ptr = null
+	// so comments survive there too
+}

@@ -1238,7 +1238,7 @@ namespace Qd {
 	}
 
 	void LlvmGenerator::Impl::pushDeferScope() {
-		deferScopeStack.push_back(std::vector<AstNodeDefer*>());
+		deferScopeStack.push_back(std::vector<DeferEntry>());
 	}
 
 	void LlvmGenerator::Impl::popDeferScope() {
@@ -1247,16 +1247,56 @@ namespace Qd {
 		}
 	}
 
-	void LlvmGenerator::Impl::executeDeferScope(llvm::Value* ctx) {
+	void LlvmGenerator::Impl::registerDefer(AstNodeDefer* deferNode, llvm::Value* ctx) {
+		(void)ctx;
+		if (deferScopeStack.empty()) {
+			pushDeferScope();
+		}
+
+		// The flag lives in the entry block so it dominates every exit, and starts false so a
+		// path that skips this statement leaves it false.
+		llvm::Function* currentFn = builder->GetInsertBlock()->getParent();
+		llvm::BasicBlock& entryBlock = currentFn->getEntryBlock();
+		llvm::IRBuilder<> entryBuilder(&entryBlock, entryBlock.getFirstInsertionPt());
+		llvm::Value* reached = entryBuilder.CreateAlloca(builder->getInt1Ty(), nullptr, "defer_reached");
+		entryBuilder.CreateStore(builder->getInt1(false), reached);
+
+		// Reaching the `defer` statement is what arms it.
+		builder->CreateStore(builder->getInt1(true), reached);
+
+		deferScopeStack.back().push_back(DeferEntry{deferNode, reached});
+	}
+
+	void LlvmGenerator::Impl::emitDeferScope(llvm::Value* ctx) {
 		if (deferScopeStack.empty()) {
 			return;
 		}
 
-		auto& currentScope = deferScopeStack.back();
+		// Copy: generating a defer body can itself register defers (a nested scope), which would
+		// reallocate the vector we are iterating.
+		std::vector<DeferEntry> currentScope = deferScopeStack.back();
+
 		// Execute defers in REVERSE order (LIFO)
 		for (auto it = currentScope.rbegin(); it != currentScope.rend(); ++it) {
-			AstNodeDefer* deferNode = *it;
-			// Generate defer body
+			AstNodeDefer* deferNode = it->node;
+			llvm::Value* reached = it->reached;
+
+			// Nothing to guard against if the block already ended (e.g. the body panicked).
+			if (builder->GetInsertBlock() == nullptr || builder->GetInsertBlock()->getTerminator() != nullptr) {
+				break;
+			}
+
+			llvm::Function* currentFn = builder->GetInsertBlock()->getParent();
+			llvm::BasicBlock* runBB = llvm::BasicBlock::Create(*context, "defer.run", currentFn);
+			llvm::BasicBlock* skipBB = llvm::BasicBlock::Create(*context, "defer.skip", currentFn);
+
+			llvm::Value* wasReached = builder->CreateLoad(builder->getInt1Ty(), reached, "defer_was_reached");
+			builder->CreateCondBr(wasReached, runBB, skipBB);
+
+			builder->SetInsertPoint(runBB);
+			// Disarm before running, so a defer inside a loop body does not fire again on a
+			// later iteration that did not reach it.
+			builder->CreateStore(builder->getInt1(false), reached);
 			for (auto* child : deferNode->children()) {
 				// If the child is a block, generate its children directly
 				if (child && child->type() == IAstNode::Type::BLOCK) {
@@ -1267,8 +1307,19 @@ namespace Qd {
 					generateNode(child, ctx);
 				}
 			}
-		}
+			if (builder->GetInsertBlock() != nullptr && builder->GetInsertBlock()->getTerminator() == nullptr) {
+				builder->CreateBr(skipBB);
+			}
 
+			builder->SetInsertPoint(skipBB);
+		}
+	}
+
+	void LlvmGenerator::Impl::executeDeferScope(llvm::Value* ctx) {
+		if (deferScopeStack.empty()) {
+			return;
+		}
+		emitDeferScope(ctx);
 		deferScopeStack.pop_back();
 	}
 

@@ -150,6 +150,7 @@ int factorial(qd_context* ctx) {
 
 ### main.qd
 
+<!-- doccheck: skip links against an external .a built by the reader -->
 ```qd
 import "libmath_ext.a" as "mathx" {
 	pub fn hypot(a:f64 b:f64 -- c:f64)
@@ -189,6 +190,7 @@ int my_function(qd_context* ctx) {
 
 In Quadrate, use the `!` suffix for failable functions. Define error code constants at module top-level alongside the import block:
 
+<!-- doccheck: skip links against an external .a built by the reader -->
 ```qd
 pub const ErrOverflow = 2
 pub const ErrTypeMismatch = 3

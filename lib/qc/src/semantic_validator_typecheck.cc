@@ -991,9 +991,10 @@ namespace Qd {
 						}
 
 						if (!afterFallibleCall) {
-							std::string msg = "if/else branches leave different numbers of values on the stack (then: " +
-											  std::to_string(thenEffect) + ", else: " + std::to_string(elseEffect) +
-											  "); values beyond the shallower branch are discarded";
+							std::string msg =
+									"if/else branches leave different numbers of values on the stack (then: " +
+									std::to_string(thenEffect) + ", else: " + std::to_string(elseEffect) +
+									"); values beyond the shallower branch are discarded";
 							reportWarning(child, msg.c_str());
 						}
 						// Use the if (success) branch as authoritative.

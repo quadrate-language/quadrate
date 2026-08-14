@@ -28,6 +28,7 @@ Hello, World!
 
 ### The function
 
+<!-- doccheck: skip fragment shown piece by piece in the prose -->
 ```qd
 fn main() {
 ```

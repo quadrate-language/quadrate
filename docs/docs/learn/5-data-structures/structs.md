@@ -153,7 +153,7 @@ struct Polygon {
 }
 
 fn main() {
-	3 make<ptr> -> pts
+	3 make<Point> -> pts
 	Point {
 		x = 0.0
 		y = 0.0

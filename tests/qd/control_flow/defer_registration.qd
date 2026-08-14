@@ -1,0 +1,117 @@
+// Test: a `defer` runs only if control actually reached the statement.
+//
+// Defers are collected lexically at codegen time and their bodies emitted at scope exit. That
+// collection used to be unconditional, so a defer would run even on a path that never reached
+// it. Two ways that bit:
+//
+//   - A `defer` in a branch that was not taken ran anyway. The documented file-handling
+//     pattern -- `defer { file io::close }` inside the `Ok` arm of an `io::open switch` -- then
+//     closed a handle that was never opened on the failure path.
+//   - A `defer` after a `?` ran when the `?` propagated, with the local it references still
+//     unbound, so the cleanup call underflowed.
+//
+// Each defer now carries an i1 "reached" flag, stored where the statement sits and tested at
+// scope exit, so registration is dynamic while collection stays lexical.
+use mem
+
+fn acquire(ok:i64 -- p:ptr)! {
+	ok 0 == if {
+		"acquire failed" 2 panic
+	}
+	8 mem::alloc!
+}
+
+fn release(p:ptr -- ) {
+	p mem::free
+	"    released" print nl
+}
+
+// --- branches -------------------------------------------------------------
+
+fn in_if(c:i64 -- ) {
+	c if {
+		defer { "    defer from then-arm" print nl }
+		"    then-arm ran" print nl
+	} else {
+		"    else-arm ran" print nl
+	}
+}
+
+fn in_switch(c:i64 -- ) {
+	c switch {
+		1 {
+			defer { "    defer from arm 1" print nl }
+			"    arm 1 ran" print nl
+		}
+		_ {
+			"    wildcard ran" print nl
+		}
+	}
+}
+
+// --- ? propagation --------------------------------------------------------
+
+fn via_propagate(ok:i64 -- )! {
+	ok acquire? -> p
+	defer { p release }
+	"    body ran" print nl
+}
+
+// --- ordering -------------------------------------------------------------
+
+fn conditional_lifo(c:i64 -- ) {
+	defer { "    last" print nl }
+	c if {
+		defer { "    middle (only when c)" print nl }
+	}
+	defer { "    first" print nl }
+}
+
+// --- loops ----------------------------------------------------------------
+
+fn per_iteration( -- ) {
+	0 3 1 for i {
+		defer { "    defer " print i print nl }
+		"    body " print i print nl
+	}
+}
+
+fn conditional_in_loop( -- ) {
+	0 3 1 for i {
+		i 1 == if {
+			defer { "    defer only on i=1" print nl }
+		}
+		"    iter " print i print nl
+	}
+}
+
+fn before_break( -- ) {
+	loop {
+		defer { "    defer before break" print nl }
+		"    body" print nl
+		break
+	}
+	"    after loop" print nl
+}
+
+fn main() {
+	"if taken:" print nl 1 in_if
+	"if not taken:" print nl 0 in_if
+
+	"switch arm taken:" print nl 1 in_switch
+	"switch arm not taken:" print nl 0 in_switch
+
+	"? success:" print nl
+	1 via_propagate switch { Ok { } _ { "    propagated" print nl } }
+	"? propagated:" print nl
+	0 via_propagate switch { Ok { } _ { "    propagated" print nl } }
+
+	"lifo with c=1:" print nl 1 conditional_lifo
+	"lifo with c=0:" print nl 0 conditional_lifo
+
+	"loop, per iteration:" print nl per_iteration
+	"loop, conditional:" print nl conditional_in_loop
+	"loop, break:" print nl before_break
+
+	"depth=" print depth print nl
+}

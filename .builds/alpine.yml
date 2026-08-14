@@ -11,6 +11,7 @@ packages:
   - musl-dev
   - openssl-dev
   - pkgconf
+  - python3
   - readline-dev
   - sqlite-dev
   - zlib-dev
@@ -34,6 +35,9 @@ tasks:
   - fmtcheck: |
       cd quadrate
       make fmtcheck
+  - docscheck: |
+      cd quadrate
+      make docscheck
   - test: |
       cd quadrate
       make tests

@@ -155,8 +155,14 @@ namespace Qd {
 		llvm::Type* contextPtrTy = nullptr;
 		llvm::Type* execResultTy = nullptr;
 		llvm::Type* stackElementTy = nullptr;
-		llvm::StructType* contextStructTy =
-				nullptr; // Cached context struct layout: {st, error_code, error_msg, argc, argv, program_name}
+		llvm::StructType* contextStructTy = nullptr; // Cached context struct layout:
+													 // {st, error_code, error_msg, argc, argv, program_name, has_error}
+
+		// Field indices into contextStructTy. Must match qd_context in
+		// lib/rt/include/quadrate/rt/context.h.
+		static constexpr unsigned CTX_FIELD_ERROR_CODE = 1;
+		static constexpr unsigned CTX_FIELD_HAS_ERROR = 6;
+
 		llvm::StructType* closureStructTy = nullptr; // Cached closure struct layout: {magic, fn, env, capture_count}
 		llvm::StructType* stackStructTy = nullptr;	 // Cached stack struct layout: {data, capacity, size}
 		llvm::PointerType* ptrTy = nullptr;			 // Cached pointer type (replaces PointerType::getUnqual(*context))
@@ -318,8 +324,19 @@ namespace Qd {
 		// The main module name
 		std::string mainModuleName = "main";
 
-		// Defer statements
-		std::vector<std::vector<AstNodeDefer*>> deferScopeStack;
+		// Defer statements.
+		//
+		// A `defer` is collected here when codegen walks past it, and its body is emitted at
+		// scope exit. Collection is lexical, but *execution* must not be: a defer written inside
+		// an `if`/`switch` arm that was not taken, or after a `?` that propagated out early, was
+		// never reached and must not run. Each entry therefore carries an i1 flag alloca, stored
+		// `true` where the defer statement sits and tested at scope exit.
+		struct DeferEntry {
+			AstNodeDefer* node;
+			llvm::Value* reached; ///< i1 alloca: did control actually reach the defer statement?
+		};
+
+		std::vector<std::vector<DeferEntry>> deferScopeStack;
 
 		// Counter for unique variable names
 		int varCounter = 0;
@@ -449,6 +466,23 @@ namespace Qd {
 		void generateLocalOne(const std::string& name, size_t lineNum, llvm::Value* ctx);
 		void generateLocalCleanup();
 		void generateCastInstructions(const std::vector<CastDirection>& casts, llvm::Value* ctx);
+
+		// Error state
+		/** @brief The error state left by a fallible call that has just returned. */
+		struct ErrorState {
+			llvm::Value* failed; ///< i1, true if the call failed
+			llvm::Value* code;	 ///< i64, the error code the call reported
+		};
+
+		/** @brief Clear both error fields before a fallible call, so the post-call test sees
+		 *		   only this call's outcome. */
+		void generateClearErrorState(llvm::Value* ctx);
+		/** @brief Read the error state after a fallible call returns.
+		 *
+		 * `failed` tests `has_error` -- set unconditionally by `qd_panic`, so a `panic` carrying
+		 * code 0 is still a failure -- or a non-zero `error_code`, since imported C functions set
+		 * the code but not the flag. */
+		ErrorState generateReadErrorState(llvm::Value* ctx, const char* name = "has_error");
 
 		// Control flow
 		void generateIf(AstNodeIfStatement* ifStmt, llvm::Value* ctx);
@@ -581,6 +615,12 @@ namespace Qd {
 		// Defer scope management
 		void pushDeferScope();
 		void popDeferScope();
+		/** @brief Record a defer in the current scope and mark it reached at this point. */
+		void registerDefer(AstNodeDefer* deferNode, llvm::Value* ctx);
+		/** @brief Emit the current scope's defer bodies (LIFO, each guarded by its reached flag)
+		 *		   without popping it. */
+		void emitDeferScope(llvm::Value* ctx);
+		/** @brief emitDeferScope, then pop the scope. */
 		void executeDeferScope(llvm::Value* ctx);
 
 		// Analysis helpers

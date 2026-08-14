@@ -228,6 +228,7 @@ pub const AppVersion = "2.0.0"
 pub const MaxUsers = 1000
 ```
 
+<!-- doccheck: skip imports a config module the reader creates above -->
 ```qd
 // main.qd
 use config

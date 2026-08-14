@@ -142,6 +142,20 @@ namespace Qd {
 	}
 
 	// Helper to set position on a node from scanner - uses optimized maps if available
+	/** @brief Source line of the token the scanner is currently on (1-based). */
+	inline size_t currentScannerLine(u8t_scanner* scanner, const char* src) {
+		size_t charPos = u8t_scanner_token_start(scanner);
+		size_t line, column;
+		if (tCurrentSourceMaps) {
+			size_t bytePos = tCurrentSourceMaps->charByteMap.getByteOffset(charPos);
+			tCurrentSourceMaps->lineMap.getLineColumn(bytePos, &line, &column);
+		} else {
+			size_t bytePos = fastCharToByteOffset(src, charPos);
+			fastLineColumn(src, bytePos, &line, &column);
+		}
+		return line;
+	}
+
 	inline void setNodePosition(IAstNode* node, u8t_scanner* scanner, const char* src) {
 		size_t charPos = u8t_scanner_token_start(scanner);
 		size_t line, column;

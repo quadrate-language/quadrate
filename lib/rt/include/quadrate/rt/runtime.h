@@ -9,6 +9,26 @@
  * - I/O operations (print, read)
  * - Context management (create, destroy)
  * - Error handling and call stack tracking
+ *
+ * @par Two failure conventions
+ *
+ * The functions here fall into two groups, and they fail differently:
+ *
+ * - **Embedding API** — @ref StackPush and @ref StackPop (`qd_push_i`, `qd_pop_s`, ...).
+ *   These are called by host programs with stack state the runtime cannot vouch for, so they
+ *   report failure by return code (see exec_result.h) and never abort.
+ *
+ * - **Instruction implementations** — everything else taking only a `qd_context*`
+ *   (@ref StackManip, @ref Arithmetic, @ref Bitwise, @ref Comparison, @ref TypeCast, and the
+ *   `qd_print` family). These are the runtime side of compiled Quadrate instructions, whose
+ *   operands the compiler has already type- and arity-checked. A stack underflow or overflow
+ *   reaching one of them means the generated code was wrong, so they report it with a message,
+ *   a stack dump and a Quadrate stack trace, then `abort()` — they do not return. Their
+ *   non-zero return codes are reserved for conditions the compiler does not check, chiefly
+ *   type mismatches (QD_ERR_TYPE_MISMATCH, QD_ERR_INVALID_OP).
+ *
+ * Do not add a silent error return to the second group: a failure the caller cannot observe
+ * (generated code discards these return values) turns a compiler bug into a wrong answer.
  */
 
 #ifndef QD_QUADRATE_RUNTIME_RUNTIME_H

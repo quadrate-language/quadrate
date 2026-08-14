@@ -80,8 +80,11 @@ namespace Qd {
 		stackElementTy = llvm::StructType::create(*context, {i64t, i32t, builder->getInt8Ty()}, "qd_stack_element_t");
 
 		// Context layout: {qd_stack* st, int64_t error_code, char* error_msg, int argc, char** argv, char*
-		// program_name}
-		contextStructTy = llvm::StructType::create(*context, {ptrTy, i64t, ptrTy, i32t, ptrTy, ptrTy}, "qd_context_t");
+		// program_name, int64_t has_error}
+		// Prefix of qd_context (lib/rt/include/quadrate/rt/context.h) up to the last field generated
+		// code touches; the trailing call-stack fields are deliberately not modelled.
+		contextStructTy =
+				llvm::StructType::create(*context, {ptrTy, i64t, ptrTy, i32t, ptrTy, ptrTy, i64t}, "qd_context_t");
 
 		// Closure layout: {int64_t magic, ptr fn, ptr env, int64_t capture_count}
 		closureStructTy = llvm::StructType::create(*context, {i64t, ptrTy, ptrTy, i64t}, "qd_closure_t");
@@ -304,16 +307,18 @@ namespace Qd {
 					compileUnit, "argv", debugFile, 49, 64, 64, 256, llvm::DINode::FlagZero, charPtrPtrType));
 			contextFields.push_back(debugBuilder->createMemberType(
 					compileUnit, "program_name", debugFile, 50, 64, 64, 320, llvm::DINode::FlagZero, charPtrType));
-			// call_stack is const char* [256] at offset 48 bytes (384 bits)
+			contextFields.push_back(debugBuilder->createMemberType(
+					compileUnit, "has_error", debugFile, 66, 64, 64, 384, llvm::DINode::FlagZero, int64Type));
+			// call_stack is const char* [256] at offset 56 bytes (448 bits)
 			auto callStackArrayType = debugBuilder->createArrayType(16384, // 256 * 64 bits
 					64,													   // alignment
 					charPtrType, debugBuilder->getOrCreateArray({debugBuilder->getOrCreateSubrange(0, 256)}));
-			contextFields.push_back(debugBuilder->createMemberType(compileUnit, "call_stack", debugFile, 53, 16384, 64,
-					384, llvm::DINode::FlagZero, callStackArrayType));
+			contextFields.push_back(debugBuilder->createMemberType(compileUnit, "call_stack", debugFile, 67, 16384, 64,
+					448, llvm::DINode::FlagZero, callStackArrayType));
 			contextFields.push_back(debugBuilder->createMemberType(
-					compileUnit, "call_stack_depth", debugFile, 54, 64, 64, 16768, llvm::DINode::FlagZero, sizeType));
+					compileUnit, "call_stack_depth", debugFile, 68, 64, 64, 16832, llvm::DINode::FlagZero, sizeType));
 
-			auto contextStructType = debugBuilder->createStructType(compileUnit, "qd_context", debugFile, 44, 16832, 64,
+			auto contextStructType = debugBuilder->createStructType(compileUnit, "qd_context", debugFile, 44, 16896, 64,
 					llvm::DINode::FlagZero, nullptr, debugBuilder->getOrCreateArray(contextFields));
 			contextDebugType = debugBuilder->createPointerType(contextStructType, 64);
 		}

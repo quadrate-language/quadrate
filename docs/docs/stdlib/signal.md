@@ -7,6 +7,7 @@ if a signal was received, and clear() to reset the flag.
 
 **Example:**
 
+<!-- doccheck: compile-only loops until Ctrl+C -->
 ```qd
 use signal
 

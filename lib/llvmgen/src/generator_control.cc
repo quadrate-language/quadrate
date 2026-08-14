@@ -507,35 +507,21 @@ namespace Qd {
 			generateNode(forStmt->body(), ctx);
 		}
 
+		// Generate defer execution code at end of loop body
+		// This code will execute at runtime for each iteration.
+		// Emitted before the iterator is restored: a defer body is part of the loop body and may
+		// reference the iterator, so it has to still be in scope here.
+		emitDeferScope(ctx);
+
+		// Pop defer scope (compilation-time cleanup)
+		popDeferScope();
+
 		// Restore previous iterator value (for nested loops with same name)
 		if (prevIterVar) {
 			iteratorVars[iterName] = prevIterVar;
 		} else {
 			iteratorVars.erase(iterName);
 		}
-
-		// Generate defer execution code at end of loop body
-		// This code will execute at runtime for each iteration
-		if (!deferScopeStack.empty() && !deferScopeStack.back().empty()) {
-			auto& currentScope = deferScopeStack.back();
-			// Generate IR to execute defers in REVERSE order (LIFO)
-			for (auto it = currentScope.rbegin(); it != currentScope.rend(); ++it) {
-				AstNodeDefer* deferNode = *it;
-				// Generate defer body inline
-				for (auto* child : deferNode->children()) {
-					if (child && child->type() == IAstNode::Type::BLOCK) {
-						for (auto* innerChild : child->children()) {
-							generateNode(innerChild, ctx);
-						}
-					} else {
-						generateNode(child, ctx);
-					}
-				}
-			}
-		}
-
-		// Pop defer scope (compilation-time cleanup)
-		popDeferScope();
 
 		// Only add branch if block doesn't already have a terminator
 		llvm::BasicBlock* loopBodyBlock = builder->GetInsertBlock();
@@ -763,21 +749,7 @@ namespace Qd {
 		}
 
 		// Generate defer execution code at end of loop body
-		if (!deferScopeStack.empty() && !deferScopeStack.back().empty()) {
-			auto& currentScope = deferScopeStack.back();
-			for (auto it = currentScope.rbegin(); it != currentScope.rend(); ++it) {
-				AstNodeDefer* deferNode = *it;
-				for (auto* child : deferNode->children()) {
-					if (child && child->type() == IAstNode::Type::BLOCK) {
-						for (auto* innerChild : child->children()) {
-							generateNode(innerChild, ctx);
-						}
-					} else {
-						generateNode(child, ctx);
-					}
-				}
-			}
-		}
+		emitDeferScope(ctx);
 
 		// Pop defer scope (compilation-time cleanup)
 		popDeferScope();
@@ -938,21 +910,7 @@ namespace Qd {
 		}
 
 		// Generate defer execution code at end of loop body
-		if (!deferScopeStack.empty() && !deferScopeStack.back().empty()) {
-			auto& currentScope = deferScopeStack.back();
-			for (auto it = currentScope.rbegin(); it != currentScope.rend(); ++it) {
-				AstNodeDefer* deferNode = *it;
-				for (auto* child : deferNode->children()) {
-					if (child && child->type() == IAstNode::Type::BLOCK) {
-						for (auto* innerChild : child->children()) {
-							generateNode(innerChild, ctx);
-						}
-					} else {
-						generateNode(child, ctx);
-					}
-				}
-			}
-		}
+		emitDeferScope(ctx);
 
 		// Pop defer scope (compilation-time cleanup)
 		popDeferScope();
@@ -1097,21 +1055,7 @@ namespace Qd {
 			// Execute defer scope before breaking from current loop
 			if (!loopStack.empty()) {
 				// Generate IR to execute defers before breaking
-				if (!deferScopeStack.empty() && !deferScopeStack.back().empty()) {
-					auto& currentScope = deferScopeStack.back();
-					for (auto it = currentScope.rbegin(); it != currentScope.rend(); ++it) {
-						AstNodeDefer* deferNode = *it;
-						for (auto* child : deferNode->children()) {
-							if (child && child->type() == IAstNode::Type::BLOCK) {
-								for (auto* innerChild : child->children()) {
-									generateNode(innerChild, ctx);
-								}
-							} else {
-								generateNode(child, ctx);
-							}
-						}
-					}
-				}
+				emitDeferScope(ctx);
 				// Record break state for compile-time stack merging at loop exit
 				if (useCompileTimeStack) {
 					loopStack.back().breakInfos.push_back({builder->GetInsertBlock(), compileTimeStack});
@@ -1123,21 +1067,7 @@ namespace Qd {
 			// Execute defer scope before continuing to next iteration
 			if (!loopStack.empty()) {
 				// Generate IR to execute defers before continuing
-				if (!deferScopeStack.empty() && !deferScopeStack.back().empty()) {
-					auto& currentScope = deferScopeStack.back();
-					for (auto it = currentScope.rbegin(); it != currentScope.rend(); ++it) {
-						AstNodeDefer* deferNode = *it;
-						for (auto* child : deferNode->children()) {
-							if (child && child->type() == IAstNode::Type::BLOCK) {
-								for (auto* innerChild : child->children()) {
-									generateNode(innerChild, ctx);
-								}
-							} else {
-								generateNode(child, ctx);
-							}
-						}
-					}
-				}
+				emitDeferScope(ctx);
 				// Record continue state for compile-time stack merging
 				if (useCompileTimeStack) {
 					loopStack.back().continueInfos.push_back({builder->GetInsertBlock(), compileTimeStack});
@@ -1156,12 +1086,9 @@ namespace Qd {
 			}
 			break;
 		case IAstNode::Type::DEFER_STATEMENT:
-			// Collect defer statement for later execution at scope end
-			if (deferScopeStack.empty()) {
-				pushDeferScope();
-			}
-			deferScopeStack.back().push_back(static_cast<AstNodeDefer*>(node));
-			// Don't generate code now - will be generated at scope end
+			// Collect the defer for execution at scope end, and arm it here so that a path which
+			// never reaches this statement does not run the body.
+			registerDefer(static_cast<AstNodeDefer*>(node), ctx);
 			break;
 		case IAstNode::Type::CTX_STATEMENT:
 			generateCtxBlock(static_cast<AstNodeCtx*>(node), ctx);

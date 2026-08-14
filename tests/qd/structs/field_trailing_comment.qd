@@ -1,0 +1,33 @@
+// Test: a `//` comment on a struct field line parses.
+//
+// The struct *declaration* field loop was the only one of the three loops in ast_types.cc that
+// did not run parseComment: enum declarations and struct construction both did. A trailing
+// comment therefore reached the field parser as a stray token and reported
+// "Expected ':' after field name" -- and, because the loop `continue`d, every following field
+// reported it too, so a three-field struct produced four errors pointing at the wrong lines.
+//
+// No .qd file in lib/ or examples/ had a commented struct field, which is why it went unnoticed;
+// the docs did (learn/5-data-structures/structs.md).
+struct Point {
+	x:f64 // horizontal
+	y:f64 /* vertical */
+	// a comment on its own line, between fields
+	label:str
+}
+
+packed struct FileLump {
+	offset:u32 // byte offset into the file
+	size:u32   // length in bytes
+	name:u64   // 8 raw bytes
+}
+
+fn main() {
+	Point { x = 1.5 y = 2.5 label = "origin" } -> p
+	p <<x print nl
+	p <<y print nl
+	p <<label print nl
+
+	FileLump { offset = 100 size = 200 name = 0 } -> lump
+	lump <<offset print nl
+	lump <<size print nl
+}

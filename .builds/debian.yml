@@ -9,6 +9,7 @@ packages:
   - llvm-dev
   - meson
   - pkg-config
+  - python3
   - valgrind
   - zlib1g-dev
 
@@ -31,6 +32,9 @@ tasks:
   - fmtcheck: |
       cd quadrate
       make fmtcheck
+  - docscheck: |
+      cd quadrate
+      make docscheck
   - test: |
       cd quadrate
       make tests

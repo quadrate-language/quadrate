@@ -45,7 +45,7 @@ LIBS_WITH_HEADERS := rt qd fmt io math mem net os signal strings strconv time th
 # Standard library modules (auto-discovered from lib/*/qd/*/)
 STDLIB_MODULES := $(shell find lib/*/qd -maxdepth 1 -mindepth 1 -type d -exec basename {} \; 2>/dev/null | sort -u)
 
-.PHONY: all debug release docker-x64 docker-arm64 docker-all tests tests-failed tests-clear valgrind asan fuzz examples format fmtcheck install uninstall clean docs quadmcp playground
+.PHONY: all debug release docker-x64 docker-arm64 docker-all tests tests-failed tests-clear valgrind asan fuzz examples format fmtcheck docscheck install uninstall clean docs quadmcp playground
 
 all: debug
 
@@ -188,6 +188,11 @@ format: debug
 
 fmtcheck: release
 	$(BUILD_DIR_RELEASE)/cmd/quadfmt/quadfmt -c lib examples
+
+# Compile and run every complete program embedded in the docs. Fragments are skipped; see
+# tools/check_docs.py for the markers that opt a block out.
+docscheck: debug
+	LD_LIBRARY_PATH=$(CURDIR)/dist/lib python3 tools/check_docs.py --run
 
 # Build quadmcp (MCP server for AI assistants)
 quadmcp: debug

@@ -17,6 +17,7 @@ quadpm get https://git.sr.ht/~klahr/qdcompress
 
 After installing a package, use it like any other module:
 
+<!-- doccheck: skip illustrative third-party package, not installed here -->
 ```qd
 use compress
 
@@ -55,6 +56,7 @@ quadpm remove compress
 
 Database access with SQLite:
 
+<!-- doccheck: skip illustrative third-party package, not installed here -->
 ```qd
 use sqlite
 
@@ -90,6 +92,7 @@ fn main() {
 
 Compression with gzip:
 
+<!-- doccheck: skip illustrative third-party package, not installed here -->
 ```qd
 use compress
 

@@ -1,0 +1,10 @@
+code 0 switch: err
+code 0 if: else
+code 1: err
+code 2: matched 2
+computed 0: err
+success: 42
+success if: 42
+err says: 0 boom
+first: err
+then ok: 42

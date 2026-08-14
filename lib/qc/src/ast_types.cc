@@ -25,6 +25,7 @@ namespace Qd {
 
 		int64_t nextValue = 0;
 		size_t slashPos = SIZE_MAX;
+		size_t lastVariantLine = 0; // for deciding whether a comment trails a variant
 		while ((token = u8t_scanner_scan(scanner)) != U8T_EOF) {
 			if (token == '}') {
 				break;
@@ -33,6 +34,9 @@ namespace Qd {
 			// Handle comments
 			auto comment = std::unique_ptr<AstNodeComment>(parseComment(scanner, src, slashPos, token));
 			if (comment != nullptr) {
+				// Keep it for the formatter, tagged with where it sits relative to the variants.
+				enumDecl->addBodyComment(comment->text(), comment->commentType() == AstNodeComment::CommentType::BLOCK,
+						enumDecl->variants().size(), lastVariantLine != 0 && comment->line() == lastVariantLine);
 				slashPos = SIZE_MAX;
 				continue;
 			}
@@ -45,6 +49,7 @@ namespace Qd {
 			if (token == U8T_IDENTIFIER) {
 				const char* variantName = u8t_scanner_token_text(scanner, &n);
 				std::string variantNameStr(variantName);
+				lastVariantLine = currentScannerLine(scanner, src);
 
 				// Check for explicit value: Name = <integer>
 				char32_t peek = peekNextNonWhitespace(scanner, src);
@@ -126,7 +131,27 @@ namespace Qd {
 		}
 
 		// Parse struct fields
+		size_t slashPos = SIZE_MAX;
+		size_t lastFieldLine = 0; // for deciding whether a comment trails a field
 		while ((token = u8t_scanner_scan(scanner)) != U8T_EOF) {
+			// Handle comments, the same way the enum and struct-construction loops do. Without
+			// this a trailing `// note` on a field line reaches the field parser as a stray
+			// token and reports "Expected ':' after field name".
+			auto comment = std::unique_ptr<AstNodeComment>(parseComment(scanner, src, slashPos, token));
+			if (comment != nullptr) {
+				// Keep it for the formatter, tagged with where it sits relative to the fields.
+				structDecl->addBodyComment(comment->text(),
+						comment->commentType() == AstNodeComment::CommentType::BLOCK, structDecl->fields().size(),
+						lastFieldLine != 0 && comment->line() == lastFieldLine);
+				slashPos = SIZE_MAX;
+				continue;
+			}
+			if (token == '/') {
+				slashPos = u8t_scanner_token_start(scanner);
+				continue;
+			}
+			slashPos = SIZE_MAX;
+
 			if (token == '}') {
 				break;
 			}
@@ -134,6 +159,7 @@ namespace Qd {
 			if (token == U8T_IDENTIFIER) {
 				const char* fieldName = u8t_scanner_token_text(scanner, &n);
 				std::string fieldNameStr(fieldName);
+				lastFieldLine = currentScannerLine(scanner, src);
 
 				// Expect ':' and then type
 				token = u8t_scanner_scan(scanner);

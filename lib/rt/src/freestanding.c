@@ -53,6 +53,7 @@ static qd_stack g_stack = {
 qd_context qd_freestanding_ctx = {
 		.st = &g_stack,
 		.error_code = 0,
+		.has_error = 0,
 		.error_msg = (char*)0,
 		.argc = 0,
 		.argv = (char**)0,

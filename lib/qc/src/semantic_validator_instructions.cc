@@ -902,6 +902,56 @@ namespace Qd {
 			}
 			// Otherwise, we don't know what the called function will do to the stack
 		}
+		// Threading: spawn ( fn:ptr -- handle:i64 )
+		//
+		// The handle qd_spawn pushes is an i64 (the OS thread handle cast to an integer), not the
+		// ptr that `&worker` put on the stack. Leaving this unmodelled meant the function
+		// pointer's PTR stayed on the type stack, so `threads i &worker spawn set` reported
+		// "Array is '[]i64' but value is ptr" and no array element type could satisfy it.
+		else if (strcmp(name, "spawn") == 0) {
+			if (typeStack.empty()) {
+				reportErrorConditional(
+						node, "Type error in 'spawn': Stack underflow (requires 1 function pointer)", reportErrors);
+				return;
+			}
+			if (typeStack.back() != StackValueType::PTR && typeStack.back() != StackValueType::UNKNOWN) {
+				reportErrorConditional(
+						node, "Type error in 'spawn': Expected a function pointer (use &function_name)", reportErrors);
+				return;
+			}
+			typeStack.pop_back();
+			if (!structTypeStack.empty()) {
+				structTypeStack.pop_back();
+			}
+			// The spawned function runs on its own fresh stack, so its signature has no bearing
+			// on this one.
+			mPendingFnSignature.reset();
+			typeStack.push_back(StackValueType::INT);
+			structTypeStack.push_back("");
+			return;
+		}
+		// Threading: wait, detach ( handle:i64 -- )
+		else if (strcmp(name, "wait") == 0 || strcmp(name, "detach") == 0) {
+			if (typeStack.empty()) {
+				std::string errorMsg = "Type error in '";
+				errorMsg += name;
+				errorMsg += "': Stack underflow (requires 1 thread handle)";
+				reportErrorConditional(node, errorMsg.c_str(), reportErrors);
+				return;
+			}
+			if (typeStack.back() != StackValueType::INT && typeStack.back() != StackValueType::UNKNOWN) {
+				std::string errorMsg = "Type error in '";
+				errorMsg += name;
+				errorMsg += "': Expected a thread handle from 'spawn'";
+				reportErrorConditional(node, errorMsg.c_str(), reportErrors);
+				return;
+			}
+			typeStack.pop_back();
+			if (!structTypeStack.empty()) {
+				structTypeStack.pop_back();
+			}
+			return;
+		}
 		// Array creation: make, makei, makef, makes, makep ( size -- arr )
 		// All create typed arrays, always return pointer
 		else if (strcmp(name, "make") == 0 || strcmp(name, "makei") == 0 || strcmp(name, "makef") == 0 ||

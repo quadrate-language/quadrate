@@ -48,13 +48,13 @@ int qd_add(qd_context* ctx) {
 		int64_t result = a.value.i + b.value.i;
 		qd_stack_error err = qd_stack_push_int(st, result);
 		if (err != QD_STACK_OK) {
-			return (int){-2};
+			QDRT_FATAL(ctx, "add", "Stack overflow pushing result");
 		}
 	} else if (qdrt_is_numeric_type(a.type) && qdrt_is_numeric_type(b.type)) {
 		double result = qdrt_to_double(&a) + qdrt_to_double(&b);
 		qd_stack_error err = qd_stack_push_float(st, result);
 		if (err != QD_STACK_OK) {
-			return (int){-2};
+			QDRT_FATAL(ctx, "add", "Stack overflow pushing result");
 		}
 	} else {
 		qdrt_release_if_string(&b);
@@ -102,13 +102,13 @@ int qd_sub(qd_context* ctx) {
 		int64_t result = a.value.i - b.value.i;
 		qd_stack_error err = qd_stack_push_int(st, result);
 		if (err != QD_STACK_OK) {
-			return (int){-2};
+			QDRT_FATAL(ctx, "sub", "Stack overflow pushing result");
 		}
 	} else if (qdrt_is_numeric_type(a.type) && qdrt_is_numeric_type(b.type)) {
 		double result = qdrt_to_double(&a) - qdrt_to_double(&b);
 		qd_stack_error err = qd_stack_push_float(st, result);
 		if (err != QD_STACK_OK) {
-			return (int){-2};
+			QDRT_FATAL(ctx, "sub", "Stack overflow pushing result");
 		}
 	} else {
 		qdrt_release_if_string(&b);
@@ -131,13 +131,13 @@ int qd_mul(qd_context* ctx) {
 		int64_t result = a.value.i * b.value.i;
 		qd_stack_error err = qd_stack_push_int(ctx->st, result);
 		if (err != QD_STACK_OK) {
-			return (int){-2};
+			QDRT_FATAL(ctx, "mul", "Stack overflow pushing result");
 		}
 	} else if (qdrt_is_numeric_type(a.type) && qdrt_is_numeric_type(b.type)) {
 		double result = qdrt_to_double(&a) * qdrt_to_double(&b);
 		qd_stack_error err = qd_stack_push_float(ctx->st, result);
 		if (err != QD_STACK_OK) {
-			return (int){-2};
+			QDRT_FATAL(ctx, "mul", "Stack overflow pushing result");
 		}
 	} else {
 		qdrt_release_if_string(&b);
@@ -166,7 +166,7 @@ int qd_div(qd_context* ctx) {
 		int64_t result = a.value.i / b.value.i;
 		qd_stack_error err = qd_stack_push_int(ctx->st, result);
 		if (err != QD_STACK_OK) {
-			return (int){-2};
+			QDRT_FATAL(ctx, "div", "Stack overflow pushing result");
 		}
 	} else if (qdrt_is_numeric_type(a.type) && qdrt_is_numeric_type(b.type)) {
 		double af = qdrt_to_double(&a);
@@ -180,7 +180,7 @@ int qd_div(qd_context* ctx) {
 		double result = af / bf;
 		qd_stack_error err = qd_stack_push_float(ctx->st, result);
 		if (err != QD_STACK_OK) {
-			return (int){-2};
+			QDRT_FATAL(ctx, "div", "Stack overflow pushing result");
 		}
 	} else {
 		qdrt_release_if_string(&b);
@@ -222,11 +222,11 @@ int qd_mod(qd_context* ctx) {
 	qd_stack_element_t b, a;
 	qd_stack_error err = qd_stack_pop(ctx->st, &b);
 	if (err != QD_STACK_OK) {
-		return (int){-2};
+		QDRT_FATAL(ctx, "mod", "Failed to pop value (stack changed unexpectedly)");
 	}
 	err = qd_stack_pop(ctx->st, &a);
 	if (err != QD_STACK_OK) {
-		return (int){-2};
+		QDRT_FATAL(ctx, "mod", "Failed to pop value (stack changed unexpectedly)");
 	}
 
 	if (b.value.i == 0) {
@@ -240,7 +240,7 @@ int qd_mod(qd_context* ctx) {
 
 	err = qd_stack_push_int(ctx->st, result);
 	if (err != QD_STACK_OK) {
-		return (int){-2};
+		QDRT_FATAL(ctx, "mod", "Stack overflow pushing result");
 	}
 
 	return (int){0};
@@ -279,7 +279,7 @@ int qd_inc(qd_context* ctx) {
 	}
 
 	if (err != QD_STACK_OK) {
-		return (int){-2};
+		QDRT_FATAL(ctx, "inc", "Stack operation failed");
 	}
 
 	return (int){0};
@@ -318,7 +318,7 @@ int qd_dec(qd_context* ctx) {
 	}
 
 	if (err != QD_STACK_OK) {
-		return (int){-2};
+		QDRT_FATAL(ctx, "dec", "Stack operation failed");
 	}
 
 	return (int){0};
@@ -352,7 +352,7 @@ int qd_neg(qd_context* ctx) {
 	qd_stack_element_t val;
 	qd_stack_error err = qd_stack_pop(ctx->st, &val);
 	if (err != QD_STACK_OK) {
-		return (int){-2};
+		QDRT_FATAL(ctx, "neg", "Failed to pop value (stack changed unexpectedly)");
 	}
 
 	if (val.type == QD_STACK_TYPE_INT) {
@@ -364,7 +364,7 @@ int qd_neg(qd_context* ctx) {
 	}
 
 	if (err != QD_STACK_OK) {
-		return (int){-2};
+		QDRT_FATAL(ctx, "neg", "Stack overflow pushing result");
 	}
 
 	return (int){0};
@@ -411,12 +411,12 @@ static int qdrt_equality_op(qd_context* ctx, const char* name, bool want_equal) 
 	qd_stack_element_t b;
 	qd_stack_error err = qd_stack_pop(ctx->st, &b);
 	if (err != QD_STACK_OK) {
-		return (int){-2};
+		QDRT_FATAL(ctx, "equality op", "Failed to pop value (stack changed unexpectedly)");
 	}
 	qd_stack_element_t a;
 	err = qd_stack_pop(ctx->st, &a);
 	if (err != QD_STACK_OK) {
-		return (int){-2};
+		QDRT_FATAL(ctx, "equality op", "Failed to pop value (stack changed unexpectedly)");
 	}
 
 	int equal;
@@ -439,7 +439,7 @@ static int qdrt_equality_op(qd_context* ctx, const char* name, bool want_equal) 
 	int64_t result = (equal == (int)want_equal) ? 1 : 0;
 	err = qd_stack_push_int(ctx->st, result);
 	if (err != QD_STACK_OK) {
-		return (int){-2};
+		QDRT_FATAL(ctx, "equality op", "Stack overflow pushing result");
 	}
 
 	return (int){0};
@@ -481,12 +481,12 @@ static int qdrt_order_op(qd_context* ctx, const char* name, qdrt_order_kind kind
 	qd_stack_element_t b;
 	qd_stack_error err = qd_stack_pop(ctx->st, &b);
 	if (err != QD_STACK_OK) {
-		return (int){-2};
+		QDRT_FATAL(ctx, "comparison op", "Failed to pop value (stack changed unexpectedly)");
 	}
 	qd_stack_element_t a;
 	err = qd_stack_pop(ctx->st, &a);
 	if (err != QD_STACK_OK) {
-		return (int){-2};
+		QDRT_FATAL(ctx, "comparison op", "Failed to pop value (stack changed unexpectedly)");
 	}
 
 	double af = (a.type == QD_STACK_TYPE_INT) ? (double)a.value.i : a.value.f;
@@ -507,7 +507,7 @@ static int qdrt_order_op(qd_context* ctx, const char* name, qdrt_order_kind kind
 
 	err = qd_stack_push_int(ctx->st, result);
 	if (err != QD_STACK_OK) {
-		return (int){-2};
+		QDRT_FATAL(ctx, "comparison op", "Stack overflow pushing result");
 	}
 
 	return (int){0};
@@ -687,15 +687,15 @@ int qd_within(qd_context* ctx) {
 	qd_stack_element_t max, min, value;
 	qd_stack_error err = qd_stack_pop(ctx->st, &max);
 	if (err != QD_STACK_OK) {
-		return (int){-2};
+		QDRT_FATAL(ctx, "within", "Failed to pop value (stack changed unexpectedly)");
 	}
 	err = qd_stack_pop(ctx->st, &min);
 	if (err != QD_STACK_OK) {
-		return (int){-2};
+		QDRT_FATAL(ctx, "within", "Failed to pop value (stack changed unexpectedly)");
 	}
 	err = qd_stack_pop(ctx->st, &value);
 	if (err != QD_STACK_OK) {
-		return (int){-2};
+		QDRT_FATAL(ctx, "within", "Failed to pop value (stack changed unexpectedly)");
 	}
 
 	// Convert to double for comparison
@@ -707,7 +707,7 @@ int qd_within(qd_context* ctx) {
 	int64_t result = (value_f >= min_f && value_f <= max_f) ? 1 : 0;
 	err = qd_stack_push_int(ctx->st, result);
 	if (err != QD_STACK_OK) {
-		return (int){-2};
+		QDRT_FATAL(ctx, "within", "Stack overflow pushing result");
 	}
 
 	return (int){0};

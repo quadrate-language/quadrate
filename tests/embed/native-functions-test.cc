@@ -23,7 +23,10 @@ int main(void) {
 	qd_module* utils = qd_get_module(ctx, "utils");
 
 	// Add Quadrate functions
-	qd_add_script(utils, "fn double(x:i64 -- result:i64) { 2 * }");
+	// `x` is a named parameter, so it is bound on entry and already consumed from the stack;
+	// the body has to push it back by name. Writing `2 *` here underflows `mul`, which failed
+	// this script's compile silently until qd_print started aborting on underflow.
+	qd_add_script(utils, "fn double(x:i64 -- result:i64) { x 2 * }");
 
 	// Register native C functions
 	qd_register_function(utils, "get_timestamp", "( -- t:i64)", native_get_timestamp, NULL);

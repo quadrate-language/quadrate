@@ -6,6 +6,7 @@ Reading input from the user and command-line arguments.
 
 Use `io::readline` to read a line of input:
 
+<!-- doccheck: compile-only reads from stdin -->
 ```qd
 use io
 
@@ -39,6 +40,7 @@ fn main() {
 
 `io::readline` returns a string. Use `cast` to convert to other types:
 
+<!-- doccheck: compile-only reads from stdin -->
 ```qd
 use io
 

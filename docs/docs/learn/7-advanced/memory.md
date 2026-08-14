@@ -158,11 +158,11 @@ fn sb_free(sb:ptr -- ) {
 fn sb_append_byte(sb:ptr byte:i64 -- ) {
 	sb <<len sb <<capacity >= if {
 		// Need to grow
-		sb <<data sb <<capacity 2 * mem::realloc! sb.data
-		sb <<capacity 2 * sb.capacity
+		sb  sb <<data sb <<capacity 2 * mem::realloc!  >>data!
+		sb  sb <<capacity 2 *  >>capacity!
 	}
 	byte sb <<data sb <<len mem::set_byte
-	sb <<len 1 + sb.len
+	sb  sb <<len 1 +  >>len!
 }
 
 fn main() {
@@ -215,7 +215,7 @@ fn pool_alloc(pool:ptr bytes:i64 -- offset:i64) {
 }
 
 fn pool_reset(pool:ptr -- ) {
-	0 pool.used
+	pool 0 >>used!
 }
 
 fn pool_free(pool:ptr -- ) {

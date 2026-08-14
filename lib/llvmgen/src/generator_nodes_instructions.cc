@@ -648,10 +648,8 @@ namespace Qd {
 
 				// Handle fallible method calls
 				if (inst->abortOnError() || inst->propagateOnError()) {
-					// Check error code
-					auto errorCodePtr = builder->CreateStructGEP(contextStructTy, ctx, 1, "error_code_ptr");
-					auto errorCode = builder->CreateLoad(int64Ty, errorCodePtr, "error_code");
-					auto hasError = builder->CreateICmpNE(errorCode, builder->getInt64(0), "has_error");
+					// Check error state
+					auto hasError = generateReadErrorState(ctx).failed;
 
 					if (inst->abortOnError()) {
 						llvm::BasicBlock* errorBlock = llvm::BasicBlock::Create(

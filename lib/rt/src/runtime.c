@@ -168,10 +168,12 @@ int qd_pop_p(qd_context* ctx, void** value) {
 
 // Helper function to check if string contains whitespace
 int qd_peek(qd_context* ctx) {
+	QDRT_CHECK_STACK(ctx, "peek", 1);
+
 	qd_stack_element_t val;
 	qd_stack_error err = qd_stack_peek(ctx->st, &val);
 	if (err != QD_STACK_OK) {
-		return (int){-2};
+		QDRT_FATAL(ctx, "peek", "Failed to peek value");
 	}
 	switch (val.type) {
 		case QD_STACK_TYPE_INT:
@@ -223,13 +225,15 @@ static bool validate_binary_numeric_op(qd_context* ctx, const char* op_name) {
 
 // Helper function to pop two values from stack for binary operations
 static int pop_two_values(qd_context* ctx, qd_stack_element_t* a, qd_stack_element_t* b) {
+	// Every caller validates the arity first, so a failure here means the stack changed
+	// underneath us -- an invariant violation, not a recoverable condition.
 	qd_stack_error err = qd_stack_pop(ctx->st, b);
 	if (err != QD_STACK_OK) {
-		return (int){-2};
+		QDRT_FATAL(ctx, "binary op", "Failed to pop right operand");
 	}
 	err = qd_stack_pop(ctx->st, a);
 	if (err != QD_STACK_OK) {
-		return (int){-2};
+		QDRT_FATAL(ctx, "binary op", "Failed to pop left operand");
 	}
 	return (int){0};
 }
@@ -379,7 +383,7 @@ int qd_casti(qd_context* ctx) {
 
 	err = qd_stack_push_int(ctx->st, result);
 	if (err != QD_STACK_OK) {
-		return (int){-2};
+		QDRT_FATAL(ctx, "casti", "Stack overflow pushing int result");
 	}
 
 	return (int){0};
@@ -413,7 +417,7 @@ int qd_castf(qd_context* ctx) {
 
 	err = qd_stack_push_float(ctx->st, result);
 	if (err != QD_STACK_OK) {
-		return (int){-2};
+		QDRT_FATAL(ctx, "castf", "Stack overflow pushing float result");
 	}
 
 	return (int){0};
@@ -442,7 +446,7 @@ int qd_casts(qd_context* ctx) {
 		// Already a string - just push it back (retain it)
 		err = push_element(ctx->st, &elem);
 		if (err != QD_STACK_OK) {
-			return (int){-2};
+			QDRT_FATAL(ctx, "casts", "Stack overflow pushing string result");
 		}
 		// Release our reference from the pop
 		release_if_string(&elem);
@@ -463,7 +467,7 @@ int qd_casts(qd_context* ctx) {
 
 	err = qd_stack_push_str(ctx->st, buffer);
 	if (err != QD_STACK_OK) {
-		return (int){-2};
+		QDRT_FATAL(ctx, "casts", "Stack overflow pushing string result");
 	}
 
 	return (int){0};
@@ -495,7 +499,7 @@ int qd_castp(qd_context* ctx) {
 
 	err = qd_stack_push_ptr(ctx->st, ptr_value);
 	if (err != QD_STACK_OK) {
-		return (int){-2};
+		QDRT_FATAL(ctx, "castp", "Stack overflow pushing pointer result");
 	}
 
 	return (int){0};
@@ -647,7 +651,7 @@ int qd_free(qd_context* ctx) {
 	qd_stack_element_t val;
 	qd_stack_error err = qd_stack_pop(ctx->st, &val);
 	if (err != QD_STACK_OK) {
-		return (int){-2};
+		QDRT_FATAL(ctx, "free", "Failed to pop pointer");
 	}
 
 	// Verify it's a pointer type
@@ -681,7 +685,7 @@ int qd_free_struct(qd_context* ctx) {
 	qd_stack_element_t val;
 	qd_stack_error err = qd_stack_pop(ctx->st, &val);
 	if (err != QD_STACK_OK) {
-		return (int){-2};
+		QDRT_FATAL(ctx, "free", "Failed to pop pointer");
 	}
 
 	// Verify it's a pointer type
@@ -788,7 +792,7 @@ int qd_spawn(qd_context* ctx) {
 	// Push thread handle (as pointer cast to int64_t)
 	err = qd_stack_push_int(ctx->st, (int64_t)(uintptr_t)thread);
 	if (err != QD_STACK_OK) {
-		return (int){-2};
+		QDRT_FATAL(ctx, "spawn", "Stack overflow pushing thread handle");
 	}
 
 	return (int){0};
@@ -866,6 +870,7 @@ int qd_err(qd_context* ctx) {
 
 	// Clear error state after reading
 	ctx->error_code = 0;
+	ctx->has_error = 0;
 	if (ctx->error_msg) {
 		free(ctx->error_msg);
 		ctx->error_msg = NULL;
@@ -907,8 +912,12 @@ int qd_panic(qd_context* ctx) {
 		abort();
 	}
 
-	// Set error code and message
+	// Set error code and message.
+	// has_error is set unconditionally: the code is chosen by the program and may legitimately
+	// be 0 (`Err` is 0), so error_code alone cannot distinguish "failed with code 0" from
+	// "no error".
 	ctx->error_code = error_code_elem.value.i;
+	ctx->has_error = 1;
 
 	// Free old error message if it exists
 	if (ctx->error_msg) {
@@ -944,6 +953,7 @@ void qd_clear_error(qd_context* ctx) {
 		return;
 	}
 	ctx->error_code = 0;
+	ctx->has_error = 0;
 	if (ctx->error_msg) {
 		free(ctx->error_msg);
 		ctx->error_msg = NULL;
@@ -967,6 +977,7 @@ qd_context* qd_create_context(size_t stack_size) {
 			return NULL;
 		}
 		ctx->error_code = 0;
+		ctx->has_error = 0;
 		ctx->error_msg = NULL;
 		ctx->error_context = NULL;
 		ctx->userdata = NULL;
@@ -1015,6 +1026,7 @@ qd_context* qd_clone_context(const qd_context* src) {
 
 	/* Copy error state */
 	ctx->error_code = src->error_code;
+	ctx->has_error = src->has_error;
 	if (src->error_msg != NULL) {
 		ctx->error_msg = strdup(src->error_msg);
 		if (ctx->error_msg == NULL) {

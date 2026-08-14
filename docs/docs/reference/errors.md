@@ -48,11 +48,10 @@ Functions that can fail are marked with `!` after the signature:
 
 ```qd
 fn divide(a:i64 b:i64 -- result:i64)! {
-	dup 0 == if {
-		drop2
-		"division by zero" 1 panic
+	b 0 == if {
+		"division by zero" 2 panic
 	}
-	/
+	a b /
 }
 ```
 
@@ -63,9 +62,24 @@ fn divide(a:i64 b:i64 -- result:i64)! {
     functions written in Quadrate and for those imported from a native library.
 
     `Ok` means "the call succeeded", not "the value equals 1" — so a `panic` carrying code `1`
-    is still recognised as a failure and will not match `Ok`. Prefer codes >= 2 for your own
-    modules anyway, matching the stdlib convention, so that each code stays distinguishable in
-    a `switch`.
+    is still recognised as a failure and will not match `Ok`. The same holds for code `0`, even
+    though `0` is the value of `Err`. Prefer codes >= 2 for your own modules anyway, matching
+    the stdlib convention, so that each code stays distinguishable in a `switch`.
+
+!!! warning "Don't `drop` the status"
+    The `if` or `switch` **consumes** the status value. No arm receives it, so dropping it in an
+    error arm underflows the stack and aborts the program:
+
+    ```qd
+    // doccheck: skip -- shows the mistake this warning is about
+    path io::Read io::open switch {
+        Ok { -> file  file io::close }
+        io::ErrNotFound { drop  "not found" print nl }   // WRONG: nothing to drop
+    }
+    ```
+
+    To get at the failing code or message inside an arm, use [`err`](#err), not `-> code` —
+    binding also underflows, for the same reason.
 
 ### With switch (recommended)
 
@@ -79,15 +93,12 @@ Use `switch` to match on specific error codes:
 		file io::close
 	}
 	io::ErrNotFound {
-		drop
 		"File not found" print nl
 	}
 	io::ErrPermission {
-		drop
 		"Permission denied" print nl
 	}
 	_ {
-		drop
 		"Unknown error" print nl
 	}
 }
@@ -121,12 +132,11 @@ fn read_config( -- data:str)! {
 			file io::close
 		}
 		io::ErrNotFound {
-			drop
 			"config not found" io::ErrNotFound panic
 		}
 		_ {
-			-> code
-			"config read failed" code panic
+			err -> code -> msg
+			msg code panic
 		}
 	}
 }
@@ -139,10 +149,9 @@ Handle errors without matching specific codes:
 ```qd
 fn compute(x:i64 -- result:i64)! {
 	x 2 divide if {
-		// Success
+		// Success: the result is on the stack
 	} else {
-		drop
-		"compute failed" Err panic
+		"compute failed" 2 panic
 	}
 }
 ```
@@ -220,7 +229,7 @@ strings::ErrAlloc        // 3 - Memory allocation failed
 1. **Use switch for specific errors** - Match module error codes
 2. **Use if-else for simple cases** - When you don't need specific codes
 3. **Use meaningful messages** - Help with debugging
-4. **Clean up with defer** - Resources released on error
+4. **Clean up with defer** - Resources released on every exit from the arm that acquired them
 
 ```qd
 fn process(path:str -- result:i64)! {
@@ -234,16 +243,14 @@ fn process(path:str -- result:i64)! {
 			42
 		}
 		io::ErrNotFound {
-			drop
 			"file not found" io::ErrNotFound panic
 		}
 		io::ErrPermission {
-			drop
 			"permission denied" io::ErrPermission panic
 		}
 		_ {
-			-> code
-			"open failed" code panic
+			err -> code -> msg
+			msg code panic
 		}
 	}
 }

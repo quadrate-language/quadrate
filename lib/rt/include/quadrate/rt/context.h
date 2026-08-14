@@ -43,11 +43,26 @@ extern "C" {
  */
 typedef struct {
 	qd_stack* st;		///< Data stack for stack-based operations
-	int64_t error_code; ///< Current error code (0 = no error)
+	int64_t error_code; ///< Current error code (as chosen by the program; may be 0)
 	char* error_msg;	///< Error message string (NULL if no error)
 	int argc;			///< Command-line argument count
 	char** argv;		///< Command-line arguments
 	char* program_name; ///< Name of the executing program
+
+	/**
+	 * @brief Whether an error is currently signalled (0 = no error)
+	 *
+	 * `error_code` alone cannot answer this: error codes are chosen by the program, and
+	 * `Err` is defined as 0, so `"msg" Err panic` writes 0 into `error_code` — which is
+	 * indistinguishable from "no error". `qd_panic` therefore sets this flag
+	 * unconditionally, and it is what generated code tests to decide whether a fallible
+	 * call failed.
+	 *
+	 * Imported C functions are inconsistent about setting error state (some set
+	 * `error_code`, some only push the code onto the stack) and do not set this flag, so
+	 * generated code treats a non-zero `error_code` as a failure too.
+	 */
+	int64_t has_error;
 
 	/** @brief Call stack for error reporting and debugging */
 	const char* call_stack[QD_MAX_CALL_STACK_DEPTH];

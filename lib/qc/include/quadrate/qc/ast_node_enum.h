@@ -26,6 +26,28 @@ namespace Qd {
 			return 0;
 		}
 
+		/**
+		 * @brief A comment written inside the enum body.
+		 *
+		 * Enum variants are plain values rather than AST nodes and childCount() is 0, so these
+		 * are kept in their own list for the formatter. Without them a `// note` on a variant
+		 * line was parsed and dropped, and `quadfmt -w` silently deleted it.
+		 */
+		struct BodyComment {
+			std::string text;		///< comment body, without the // or /* */ delimiters
+			bool isBlock;			///< true for a block comment
+			size_t afterVariantIdx; ///< number of variants parsed before this comment
+			bool trailing;			///< true if it sits on the same line as variant afterVariantIdx-1
+		};
+
+		void addBodyComment(const std::string& text, bool isBlock, size_t afterVariantIdx, bool trailing) {
+			mBodyComments.push_back(BodyComment{text, isBlock, afterVariantIdx, trailing});
+		}
+
+		const std::vector<BodyComment>& bodyComments() const {
+			return mBodyComments;
+		}
+
 		IAstNode* child(size_t) const override {
 			return nullptr;
 		}
@@ -71,6 +93,7 @@ namespace Qd {
 		std::string mName;
 		bool mIsPublic;
 		std::vector<Variant> mVariants;
+		std::vector<BodyComment> mBodyComments;
 		IAstNode* mParent;
 		size_t mLine;
 		size_t mColumn;

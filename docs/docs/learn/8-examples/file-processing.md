@@ -36,12 +36,12 @@ fn main() {
 
 For more control, use `io::open!`, `io::read!`, etc:
 
+<!-- doccheck: compile-only reads a file that only exists on the reader's machine -->
 ```qd
 use io
 use mem
 
 fn read_file(path:str -- content:str)! {
-	-> path
 	path io::Read io::open! -> file
 	defer { file io::close }
 
@@ -70,7 +70,6 @@ use io
 use mem
 
 fn write_file(path:str content:str -- )! {
-	-> content -> path
 	path io::Write io::open! -> file
 	defer { file io::close }
 
@@ -96,7 +95,6 @@ use mem
 use strings
 
 fn process_line(num:i64 line:str -- ) {
-	-> line -> num
 	num print ": " print line print nl
 }
 
@@ -117,13 +115,13 @@ fn main() {
 
 ## Word count
 
+<!-- doccheck: compile-only reads a file that only exists on the reader's machine -->
 ```qd
 use io
 use mem
 use strings
 
 fn count_words(path:str -- words:i64 lines:i64 chars:i64)! {
-	-> path
 	path io::read_file! -> content
 
 	content strings::len -> chars
@@ -159,6 +157,7 @@ fn main() {
 
 ## Copy file
 
+<!-- doccheck: compile-only reads a file that only exists on the reader's machine -->
 ```qd
 use io
 use mem
@@ -166,7 +165,6 @@ use mem
 const BufferSize = 4096
 
 fn copy_file(src:str dst:str -- total:i64)! {
-	-> dst -> src
 	src io::ReadBinary io::open! -> src_file
 	defer { src_file io::close }
 

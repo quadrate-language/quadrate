@@ -6,6 +6,10 @@
 #include <string.h>
 #include <math.h>
 #include <stdint.h>
+#include <signal.h>
+#include <stdio.h>
+#include <sys/wait.h>
+#include <unistd.h>
 
 // Helper to compare floats with tolerance
 static int float_eq(double a, double b) {
@@ -33,6 +37,47 @@ static qd_context* create_test_context(void) {
 static void destroy_test_context(qd_context* ctx) {
 	qd_stack_destroy(ctx->st);
 	free(ctx);
+}
+
+// Death-test support.
+//
+// Instruction implementations abort on stack underflow rather than returning an error code
+// (see the "Two failure conventions" note in runtime.h), so pinning that behaviour means
+// running the call in a child process and inspecting how it died. Returns the child's wait
+// status; the caller checks WIFSIGNALED/WTERMSIG.
+static int run_in_child(void (*body)(void)) {
+	fflush(NULL); // don't duplicate buffered output into the child
+	pid_t pid = fork();
+	if (pid == 0) {
+		// Silence the expected diagnostic so it doesn't pollute the test log.
+		FILE* devnull = freopen("/dev/null", "w", stderr);
+		(void)devnull;
+		body();
+		_exit(0); // reached only if body() failed to abort
+	}
+	int status = 0;
+	waitpid(pid, &status, 0);
+	return status;
+}
+
+// These use qd_create_context rather than create_test_context: the abort path walks the call
+// stack and error state, which create_test_context leaves uninitialised (it mallocs the context
+// and only sets up ->st). With garbage there the child dies of SIGSEGV inside the diagnostic
+// instead of the SIGABRT we are pinning.
+static void print_empty_stack_child(void) {
+	qd_print(qd_create_context(64));
+}
+
+static void peek_empty_stack_child(void) {
+	qd_peek(qd_create_context(64));
+}
+
+static void printv_empty_stack_child(void) {
+	qd_printv(qd_create_context(64));
+}
+
+static void neg_empty_stack_child(void) {
+	qd_neg(qd_create_context(64));
 }
 
 
@@ -1229,13 +1274,33 @@ TEST(PrintPopsStackTest) {
 }
 
 TEST(PrintEmptyStackTest) {
-	qd_context* ctx = create_test_context();
+	// An instruction implementation reached with an underflowed stack means the generated
+	// code was wrong, so qd_print reports and aborts rather than returning an error the
+	// caller cannot see -- generated code discards these return values. This used to return
+	// -2 silently, which turned a compiler bug into a wrong answer with exit status 0.
+	//
+	// Run it in a child so the abort doesn't take the test process with it.
+	int status = run_in_child(print_empty_stack_child);
+	ASSERT(WIFSIGNALED(status), "print on empty stack should abort, not return");
+	ASSERT_EQ(WTERMSIG(status), SIGABRT, "print on empty stack should raise SIGABRT");
+}
 
-	// Try to print from empty stack
-	int result = qd_print(ctx);
-	ASSERT(result != 0, "print on empty stack should fail");
+TEST(PeekEmptyStackTest) {
+	int status = run_in_child(peek_empty_stack_child);
+	ASSERT(WIFSIGNALED(status), "peek on empty stack should abort, not return");
+	ASSERT_EQ(WTERMSIG(status), SIGABRT, "peek on empty stack should raise SIGABRT");
+}
 
-	destroy_test_context(ctx);
+TEST(PrintvEmptyStackTest) {
+	int status = run_in_child(printv_empty_stack_child);
+	ASSERT(WIFSIGNALED(status), "printv on empty stack should abort, not return");
+	ASSERT_EQ(WTERMSIG(status), SIGABRT, "printv on empty stack should raise SIGABRT");
+}
+
+TEST(NegEmptyStackTest) {
+	int status = run_in_child(neg_empty_stack_child);
+	ASSERT(WIFSIGNALED(status), "neg on empty stack should abort, not return");
+	ASSERT_EQ(WTERMSIG(status), SIGABRT, "neg on empty stack should raise SIGABRT");
 }
 
 TEST(PrintIntegerTest) {

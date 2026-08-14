@@ -44,10 +44,12 @@ static char* remove_quotes(const char* str) {
 
 int qd_print(qd_context* ctx) {
 	// Pop and print the top element
+	QDRT_CHECK_STACK(ctx, "print", 1);
+
 	qd_stack_element_t val;
 	qd_stack_error err = qd_stack_pop(ctx->st, &val);
 	if (err != QD_STACK_OK) {
-		return (int){-2};
+		QDRT_FATAL(ctx, "print", "Failed to pop value");
 	}
 
 	switch (val.type) {
@@ -83,7 +85,7 @@ int qd_prints(qd_context* ctx) {
 		qd_stack_element_t val;
 		qd_stack_error err = qd_stack_element(ctx->st, i, &val);
 		if (err != QD_STACK_OK) {
-			return (int){-2};
+			QDRT_FATAL(ctx, "prints", "Failed to read stack element %zu", i);
 		}
 
 		if (i > 0) {
@@ -121,10 +123,12 @@ int qd_prints(qd_context* ctx) {
 
 int qd_printv(qd_context* ctx) {
 	// Forth-style verbose: pop and print the top element with type info
+	QDRT_CHECK_STACK(ctx, "printv", 1);
+
 	qd_stack_element_t val;
 	qd_stack_error err = qd_stack_pop(ctx->st, &val);
 	if (err != QD_STACK_OK) {
-		return (int){-2};
+		QDRT_FATAL(ctx, "printv", "Failed to pop value");
 	}
 
 	switch (val.type) {
@@ -164,7 +168,7 @@ int qd_printsv(qd_context* ctx) {
 		qd_stack_element_t val;
 		qd_stack_error err = qd_stack_element(ctx->st, i, &val);
 		if (err != QD_STACK_OK) {
-			return (int){-2};
+			QDRT_FATAL(ctx, "printsv", "Failed to read stack element %zu", i);
 		}
 
 		if (i > 0) {
