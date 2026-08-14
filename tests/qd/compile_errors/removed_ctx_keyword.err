@@ -1,0 +1,1 @@
+'ctx' has been removed; the block's values were appended to the parent stack anyway, so write the body inline

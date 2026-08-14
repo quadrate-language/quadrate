@@ -640,7 +640,6 @@ void qd_check_stack(qd_context* ctx, size_t count, const qd_stack_type* types, c
 }
 
 // drop - remove top element from stack: ( a -- )
-// drop2 - remove top 2 elements from stack: ( a b -- )
 // free - deallocate memory pointed to by pointer on stack: ( ptr -- )
 int qd_free(qd_context* ctx) {
 	size_t stack_size = qd_stack_size(ctx->st);
@@ -700,11 +699,8 @@ int qd_free_struct(qd_context* ctx) {
 }
 
 // rot - rotate top 3 elements: ( a b c -- b c a )
-// tuck - insert copy of top below second: ( a b -- b a b )
 // pick - copy nth element to top (0-indexed from top): ( ... n -- ... nth )
 // roll - rotate n elements, moving nth to top: ( ... n -- ... )
-// swap2 - swap top two pairs: ( a b c d -- c d a b )
-// over2 - copy second pair to top: ( a b c d -- a b c d a b )
 // mod - modulo operation: ( a b -- a%b )
 // and - bitwise AND: ( a b -- a&b )
 // or - bitwise OR: ( a b -- a|b )

@@ -340,11 +340,6 @@ namespace Qd {
 				compileTimeStack.pop_back();
 				return;
 			}
-			if (name == "drop2") {
-				compileTimeStack.pop_back();
-				compileTimeStack.pop_back();
-				return;
-			}
 			if (name == "over") {
 				size_t sz = compileTimeStack.size();
 				compileTimeStack.push_back(compileTimeStack[sz - 2]);
@@ -362,12 +357,6 @@ namespace Qd {
 				size_t sz = compileTimeStack.size();
 				compileTimeStack[sz - 2] = compileTimeStack[sz - 1];
 				compileTimeStack.pop_back();
-				return;
-			}
-			if (name == "tuck") {
-				size_t sz = compileTimeStack.size();
-				llvm::Value* top = compileTimeStack[sz - 1];
-				compileTimeStack.insert(compileTimeStack.begin() + static_cast<long>(sz - 2), top);
 				return;
 			}
 			if (name == "pick" || name == "roll") {

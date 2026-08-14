@@ -20,7 +20,6 @@ extern "C" {
 #include <quadrate/qc/ast_node.h>
 #include <quadrate/qc/ast_node_anonymous_function.h>
 #include <quadrate/qc/ast_node_constant.h>
-#include <quadrate/qc/ast_node_ctx.h>
 #include <quadrate/qc/ast_node_defer.h>
 #include <quadrate/qc/ast_node_enum.h>
 #include <quadrate/qc/ast_node_field_access.h>

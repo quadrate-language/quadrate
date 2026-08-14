@@ -1,0 +1,8 @@
+// 'ctx' was removed: nothing in the corpus used it, the static checker could
+// not model it, and the block's values landed on the parent stack regardless —
+// so the body can simply be written inline.
+fn main() {
+	1 2 3
+	ctx { + + }
+	print nl
+}

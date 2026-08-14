@@ -83,7 +83,7 @@ Quadrate source files MUST be UTF-8 encoded. Identifiers MUST contain only ASCII
 fn        pub       inline    struct    packed    enum      type
 use       import    if        else      for       loop
 switch    break     continue  return    defer
-const     var       test      ctx       as
+const     var       test      as
 ```
 
 #### 2.3.2 Predefined Constants
@@ -449,24 +449,19 @@ All operations MUST be postfix. Arguments MUST be popped from the stack, and res
 |-----------|--------------|-------------|
 | `dup` | `( a -- a a )` | Duplicate top |
 | `dup2` | `( a b -- a b a b )` | Duplicate top two |
-| `dupd` | `( a b -- a a b )` | Duplicate second |
 
 **Swapping:**
 
 | Operation | Stack Effect | Description |
 |-----------|--------------|-------------|
 | `swap` | `( a b -- b a )` | Swap top two |
-| `swap2` | `( a b c d -- c d a b )` | Swap pairs |
-| `swapd` | `( a b c -- b a c )` | Swap under top |
 
 **Removal:**
 
 | Operation | Stack Effect | Description |
 |-----------|--------------|-------------|
 | `drop` | `( a -- )` | Remove top |
-| `drop2` | `( a b -- )` | Remove top two |
 | `nip` | `( a b -- b )` | Remove second |
-| `nipd` | `( a b c -- a c )` | Remove second under top |
 | `clear` | `( ... -- )` | Clear entire stack |
 
 **Rearrangement:**
@@ -474,10 +469,7 @@ All operations MUST be postfix. Arguments MUST be popped from the stack, and res
 | Operation | Stack Effect | Description |
 |-----------|--------------|-------------|
 | `over` | `( a b -- a b a )` | Copy second to top |
-| `over2` | `( a b c d -- a b c d a b )` | Copy second pair |
-| `overd` | `( a b c -- a b a c )` | Copy third |
 | `rot` | `( a b c -- b c a )` | Rotate three |
-| `tuck` | `( a b -- b a b )` | Copy top below second |
 | `pick` | `( ... n -- ... x )` | Copy nth to top |
 | `roll` | `( ... n -- ... )` | Move nth to top |
 | `nth` | `( array n -- elem )` | Get array element |
@@ -1844,7 +1836,7 @@ operator        = "+" | "-" | "*" | "/" | "%" | "++" | "--"
                 | "<" | ">" | "==" | "!=" | "<=" | ">="
                 ;
 
-instruction     = "dup" | "swap" | "drop" | "over" | "rot" | "nip" | "tuck"
+instruction     = "dup" | "swap" | "drop" | "over" | "rot" | "nip"
                 | "pick" | "roll" | "nth" | "len" | "append" | "set"
                 | "make" "<" type ">" | "cast" "<" type ">"
                 | "print" | "nl" | "read" | "call" | "panic" | "err" | ... ;

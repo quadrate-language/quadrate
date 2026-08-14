@@ -9,7 +9,6 @@
 #include <quadrate/qc/ast_node_as_cast.h>
 #include <quadrate/qc/ast_node_case.h>
 #include <quadrate/qc/ast_node_constant.h>
-#include <quadrate/qc/ast_node_ctx.h>
 #include <quadrate/qc/ast_node_defer.h>
 #include <quadrate/qc/ast_node_enum.h>
 #include <quadrate/qc/ast_node_field_access.h>

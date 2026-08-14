@@ -446,12 +446,8 @@
                             <span class="result">rotate third to top: [a b c] → [b c a]</span>
                         </div>
                         <div class="quick-ref-example">
-                            <code>dup2 swap2 drop2</code>
-                            <span class="result">2-element variants</span>
-                        </div>
-                        <div class="quick-ref-example">
-                            <code>dupd overd nipd</code>
-                            <span class="result">operate on element below top</span>
+                            <code>dup2</code>
+                            <span class="result">duplicate top two: [a b] → [a b a b]</span>
                         </div>
                     </div>
                     <div class="quick-ref-section">
@@ -737,11 +733,11 @@
         let errorLines = new Set();
 
         // Quadrate syntax highlighting
-        const keywords = ['fn', 'pub', 'inline', 'if', 'else', 'for', 'loop', 'break', 'continue', 'return', 'use', 'import', 'as', 'struct', 'enum', 'type', 'const', 'defer', 'switch', 'ctx', 'test', 'true', 'false', 'null', 'Ok', 'Err'];
+        const keywords = ['fn', 'pub', 'inline', 'if', 'else', 'for', 'loop', 'break', 'continue', 'return', 'use', 'import', 'as', 'struct', 'enum', 'type', 'const', 'defer', 'switch', 'test', 'true', 'false', 'null', 'Ok', 'Err'];
         const types = ['i64', 'f64', 'str', 'ptr', 'any', 'bool'];
         const builtins = [
-            'dup', 'dup2', 'dupd', 'drop', 'drop2', 'swap', 'swap2', 'swapd',
-            'over', 'over2', 'overd', 'rot', 'nip', 'nipd', 'tuck', 'pick', 'roll', 'clear', 'depth',
+            'dup', 'dup2', 'drop', 'swap',
+            'over', 'rot', 'nip', 'pick', 'roll', 'clear', 'depth',
             'add', 'sub', 'mul', 'div', 'mod', 'neg', 'inc', 'dec',
             'eq', 'neq', 'lt', 'lte', 'gt', 'gte', 'within',
             'and', 'or', 'xor', 'not', 'shl', 'shr',

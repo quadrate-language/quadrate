@@ -23,7 +23,6 @@ Language keywords for declarations, control flow, and more.
 | [`return`](#return) | Exit function |
 | [`defer`](#defer) | Schedule cleanup code |
 | [`switch`](#switch) | Multi-way branching |
-| [`ctx`](#ctx) | Context variable access |
 | [`->`](#arrow-) | Variable binding |
 | [`test`](#test) | Declares a test block |
 | [`import`](#import) | Imports a native C library |
@@ -282,16 +281,6 @@ Schedules a block to run when the function exits, in LIFO order.
 ```qd
 defer {
 	file io::close
-}
-```
-
-### ctx
-
-Creates a new isolated stack context. The child starts with a copy of the parent stack but cannot modify parent variables.
-
-```qd
-ctx {
-	// child context
 }
 ```
 

@@ -243,14 +243,6 @@ int qd_peek(qd_context* ctx);
 int qd_dup(qd_context* ctx);
 
 /**
- * @brief Duplicate second element ( a b -- a b a )
- *
- * @param ctx Execution context
- * @return Execution result (0 on success)
- */
-int qd_dupd(qd_context* ctx);
-
-/**
  * @brief Duplicate top two elements ( a b -- a b a b )
  *
  * @param ctx Execution context
@@ -267,44 +259,12 @@ int qd_dup2(qd_context* ctx);
 int qd_swap(qd_context* ctx);
 
 /**
- * @brief Swap second pair of elements ( a b c -- b a c )
- *
- * @param ctx Execution context
- * @return Execution result (0 on success)
- */
-int qd_swapd(qd_context* ctx);
-
-/**
- * @brief Swap two pairs ( a b c d -- c d a b )
- *
- * @param ctx Execution context
- * @return Execution result (0 on success)
- */
-int qd_swap2(qd_context* ctx);
-
-/**
  * @brief Copy second element to top ( a b -- a b a )
  *
  * @param ctx Execution context
  * @return Execution result (0 on success)
  */
 int qd_over(qd_context* ctx);
-
-/**
- * @brief Copy second element below top ( a b c -- a b c a )
- *
- * @param ctx Execution context
- * @return Execution result (0 on success)
- */
-int qd_overd(qd_context* ctx);
-
-/**
- * @brief Copy second pair to top ( a b c d -- a b c d a b )
- *
- * @param ctx Execution context
- * @return Execution result (0 on success)
- */
-int qd_over2(qd_context* ctx);
 
 /**
  * @brief Remove second element ( a b -- b )
@@ -315,28 +275,12 @@ int qd_over2(qd_context* ctx);
 int qd_nip(qd_context* ctx);
 
 /**
- * @brief Remove second element below top ( a b c -- a c )
- *
- * @param ctx Execution context
- * @return Execution result (0 on success)
- */
-int qd_nipd(qd_context* ctx);
-
-/**
  * @brief Drop top element ( a -- )
  *
  * @param ctx Execution context
  * @return Execution result (0 on success)
  */
 int qd_drop(qd_context* ctx);
-
-/**
- * @brief Drop top two elements ( a b -- )
- *
- * @param ctx Execution context
- * @return Execution result (0 on success)
- */
-int qd_drop2(qd_context* ctx);
 
 /**
  * @brief Free memory pointed to by pointer on stack ( ptr -- )
@@ -364,14 +308,6 @@ int qd_free_struct(qd_context* ctx);
  * @return Execution result (0 on success)
  */
 int qd_rot(qd_context* ctx);
-
-/**
- * @brief Tuck: copy top below second ( a b -- b a b )
- *
- * @param ctx Execution context
- * @return Execution result (0 on success)
- */
-int qd_tuck(qd_context* ctx);
 
 /**
  * @brief Pick: copy nth element to top ( ... n -- ... n x )
@@ -790,7 +726,8 @@ void qd_free_context(qd_context* ctx);
  * @brief Clone an execution context (deep copy)
  *
  * Creates a deep copy of the source context, including the entire stack.
- * This is used by the ctx keyword to create an isolated execution context.
+ * Provided for embedders that need an isolated execution context; the compiler
+ * itself no longer emits calls to it.
  *
  * @param src Source context to clone
  * @return Pointer to the cloned context, or NULL on failure

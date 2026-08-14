@@ -59,7 +59,6 @@
 #include <quadrate/qc/ast_node_break.h>
 #include <quadrate/qc/ast_node_constant.h>
 #include <quadrate/qc/ast_node_continue.h>
-#include <quadrate/qc/ast_node_ctx.h>
 #include <quadrate/qc/ast_node_defer.h>
 #include <quadrate/qc/ast_node_enum.h>
 #include <quadrate/qc/ast_node_for.h>
@@ -171,7 +170,6 @@ namespace Qd {
 		// Runtime functions
 		llvm::Function* createContextFn = nullptr;
 		llvm::Function* freeContextFn = nullptr;
-		llvm::Function* cloneContextFn = nullptr;
 		llvm::Function* pushIntFn = nullptr;
 		llvm::Function* pushFloatFn = nullptr;
 		llvm::Function* pushStrFn = nullptr;
@@ -487,7 +485,6 @@ namespace Qd {
 		void generateIf(AstNodeIfStatement* ifStmt, llvm::Value* ctx);
 		void generateFor(AstNodeForStatement* forStmt, llvm::Value* ctx);
 		void generateLoop(AstNodeLoopStatement* loopStmt, llvm::Value* ctx);
-		void generateCtxBlock(AstNodeCtx* ctxNode, llvm::Value* ctx);
 		void generateSwitchStatement(AstNodeSwitchStatement* switchStmt, llvm::Value* ctx);
 
 		// Struct handling

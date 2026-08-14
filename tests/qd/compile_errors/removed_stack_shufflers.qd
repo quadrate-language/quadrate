@@ -1,0 +1,7 @@
+// The eight zero-use stack shufflers were removed; named parameters and '->'
+// locals cover what they did. Using one must report the removal rather than
+// falling through to a generic "undefined identifier".
+fn main() {
+	1 2 tuck
+	drop drop drop
+}

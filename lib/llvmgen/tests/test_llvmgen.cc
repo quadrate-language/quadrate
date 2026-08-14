@@ -862,19 +862,6 @@ TEST(MultipleReturnValuesUsed) {
 	ASSERT(!ir.empty(), "should generate IR for multiple return values");
 }
 
-TEST(CtxStatement) {
-	const char* src = R"(
-		fn main() {
-			ctx {
-				42 print
-			}
-			drop
-		}
-	)";
-	std::string ir = generateIR(src);
-	ASSERT(!ir.empty(), "should generate IR for ctx statement");
-}
-
 TEST(LogicalOperations) {
 	const char* src = R"(
 		fn main() {
@@ -931,15 +918,14 @@ TEST(StackPickRoll) {
 	ASSERT(!ir.empty(), "should generate IR for pick and roll");
 }
 
-TEST(StackNipTuck) {
+TEST(StackNip) {
 	const char* src = R"(
 		fn main() {
 			1 2 nip print
-			1 2 tuck drop drop print
 		}
 	)";
 	std::string ir = generateIR(src);
-	ASSERT(!ir.empty(), "should generate IR for nip and tuck");
+	ASSERT(!ir.empty(), "should generate IR for nip");
 }
 
 TEST(StructMethodSum) {

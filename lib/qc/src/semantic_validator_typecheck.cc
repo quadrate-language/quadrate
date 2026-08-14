@@ -13,7 +13,6 @@
 #include <quadrate/qc/ast_node_array_literal.h>
 #include <quadrate/qc/ast_node_as_cast.h>
 #include <quadrate/qc/ast_node_constant.h>
-#include <quadrate/qc/ast_node_ctx.h>
 #include <quadrate/qc/ast_node_defer.h>
 #include <quadrate/qc/ast_node_field_access.h>
 #include <quadrate/qc/ast_node_field_set.h>
@@ -1218,16 +1217,6 @@ namespace Qd {
 				mInLoopBody = wasInLoopBody;
 
 				// Don't modify parent stack
-				break;
-			}
-
-			case IAstNode::Type::CTX_STATEMENT: {
-				// For now, skip ctx type checking since it's complex
-				// (would need full stack effect analysis including clear, drop, etc.)
-				// The runtime enforces the single-value constraint anyway
-				// Just push a generic type to the parent stack
-				typeStack.push_back(StackValueType::INT);
-				structTypeStack.push_back("");
 				break;
 			}
 

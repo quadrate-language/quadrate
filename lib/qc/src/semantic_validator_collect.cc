@@ -11,7 +11,6 @@
 #include <quadrate/qc/ast_node.h>
 #include <quadrate/qc/ast_node_anonymous_function.h>
 #include <quadrate/qc/ast_node_constant.h>
-#include <quadrate/qc/ast_node_ctx.h>
 #include <quadrate/qc/ast_node_defer.h>
 #include <quadrate/qc/ast_node_enum.h>
 #include <quadrate/qc/ast_node_field_access.h>
@@ -747,6 +746,18 @@ namespace Qd {
 					// Potentially valid method call - type checking will verify receiver type
 					return;
 				}
+			}
+
+			// Removed builtins report what happened rather than "undefined identifier",
+			// which would otherwise suggest a typo or a missing variable declaration.
+			if (const char* effect = removedInstructionEffect(name)) {
+				std::string removedMsg = "'";
+				removedMsg += name;
+				removedMsg += "' has been removed (it was ";
+				removedMsg += effect;
+				removedMsg += "); bind the values with named locals ('-> a -> b') instead";
+				reportError(ident, removedMsg.c_str());
+				return;
 			}
 
 			// Not found - report error with suggestion

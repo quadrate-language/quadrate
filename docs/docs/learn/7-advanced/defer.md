@@ -219,4 +219,4 @@ fn main() {
 
 ## What's next?
 
-Learn about [Context](context.md) for passing data through your program.
+Learn about [Function pointers](function-pointers.md) for passing behaviour through your program.

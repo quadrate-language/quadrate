@@ -21,16 +21,14 @@ class QuadrateLexer(RegexLexer):
         'fn', 'pub', 'inline', 'const', 'var', 'struct', 'packed', 'enum', 'type',
         'use', 'import', 'as', 'test',
         'if', 'else', 'for', 'loop', 'while', 'break', 'continue', 'return',
-        'defer', 'switch', 'case', 'ctx',
+        'defer', 'switch', 'case',
         'true', 'false', 'null', 'Ok', 'Err',
     )
 
     # Built-in stack operations
     builtins_stack = (
-        'dup', 'dup2', 'dupd', 'drop', 'drop2',
-        'swap', 'swap2', 'swapd',
-        'over', 'over2', 'overd',
-        'rot', 'nip', 'nipd', 'tuck',
+        'dup', 'dup2', 'drop',
+        'swap', 'over', 'rot', 'nip',
         'pick', 'roll', 'clear', 'depth',
     )
 

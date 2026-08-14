@@ -1781,7 +1781,7 @@ static bool isKeyword(const std::string& word) {
 // Helper to check if a word is a built-in stack operation
 static bool isBuiltinOp(const std::string& word) {
 	static const std::set<std::string> builtins = {// Stack manipulation
-			"dup", "drop", "swap", "over", "rot", "nip", "tuck", "pick", "roll",
+			"dup", "drop", "swap", "over", "rot", "nip", "pick", "roll",
 			// Arithmetic
 			"++", "--",
 			// Comparison

@@ -1,0 +1,1 @@
+'tuck' has been removed (it was ( a b -- b a b )); bind the values with named locals ('-> a -> b') instead

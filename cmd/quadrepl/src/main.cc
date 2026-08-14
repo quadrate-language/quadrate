@@ -32,7 +32,7 @@ static const char* g_keywords[] = {"fn", "pub", "if", "else", "for", "loop", "br
 
 static const char* g_builtins[] = {
 		// Stack operations
-		"dup", "drop", "swap", "over", "rot", "nip", "tuck", "pick", "roll",
+		"dup", "drop", "swap", "over", "rot", "nip", "pick", "roll",
 		// Arithmetic
 		"add", "sub", "mul", "div", "mod", "neg", "inc", "dec",
 		// Comparison

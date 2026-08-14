@@ -44,7 +44,6 @@ nav:
           - Patterns: learn/6-error-handling/patterns.md
       - 8. Advanced topics:
           - Defer: learn/7-advanced/defer.md
-          - Context: learn/7-advanced/context.md
           - Function pointers: learn/7-advanced/function-pointers.md
           - Anonymous functions: learn/7-advanced/anonymous-functions.md
           - Higher-order functions: learn/7-advanced/higher-order-functions.md

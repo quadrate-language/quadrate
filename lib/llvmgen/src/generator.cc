@@ -111,7 +111,6 @@ namespace Qd {
 		auto i64ToCtxTy = llvm::FunctionType::get(contextPtrTy, {int64Ty}, false);
 		createContextFn = declareFn(i64ToCtxTy, "qd_create_context");
 		freeContextFn = declareFn(ctxToVoidTy, "qd_free_context");
-		cloneContextFn = declareFn(ptrToPtrTy, "qd_clone_context");
 
 		// Push functions: (ctx, value) -> result
 		auto ctxI64ToResultTy = llvm::FunctionType::get(execResultTy, {contextPtrTy, int64Ty}, false);
@@ -486,8 +485,7 @@ namespace Qd {
 						name == "make" || name == "set" || name == "nth" || name == "len" || name == "push_back" ||
 						name == "pop_back" || name == "panic" || name == "sizeof" || name == "type" || name == "call" ||
 						name == "pick" || name == "roll" || name == "depth" || name == "clear" || name == "within" ||
-						name == "swap2" || name == "over2" || name == "nipd" || name == "swapd" || name == "dupd" ||
-						name == "overd" || name == "free" || name == "peek") {
+						name == "free" || name == "peek") {
 					return false;
 				}
 			}
@@ -498,10 +496,6 @@ namespace Qd {
 		case IAstNode::Type::DEFER_STATEMENT:
 			// Defer blocks execute at function return, which conflicts with the
 			// compile-time stack approach. Reject for now.
-			return false;
-		case IAstNode::Type::CTX_STATEMENT:
-			// Ctx blocks clone the context and expect results on the runtime stack,
-			// which conflicts with the compile-time stack approach.
 			return false;
 		case IAstNode::Type::SCOPED_IDENTIFIER: {
 			auto* scoped = static_cast<AstNodeScopedIdentifier*>(node);

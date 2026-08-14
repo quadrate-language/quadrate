@@ -721,88 +721,6 @@ namespace Qd {
 		builder->SetInsertPoint(loopExitBB);
 	}
 
-	void LlvmGenerator::Impl::generateCtxBlock(AstNodeCtx* ctxNode, llvm::Value* ctx) {
-		// Clone the parent context
-		auto clonedCtx = builder->CreateCall(cloneContextFn, {ctx}, "cloned_ctx");
-
-		// Execute the block with the cloned context
-		for (auto* child : ctxNode->children()) {
-			generateNode(child, clonedCtx);
-		}
-
-		// Get the stack from cloned context
-		auto stackFieldPtr = builder->CreateStructGEP(llvm::StructType::get(*context,
-															  {
-																	  ptrTy,   // qd_stack* st
-																	  int64Ty, // int64_t error_code
-																	  ptrTy,   // char* error_msg
-																	  int32Ty, // int argc
-																	  ptrTy,   // char** argv
-																	  ptrTy	   // char* program_name
-															  }),
-				clonedCtx, 0, "cloned_st_ptr");
-		auto clonedStack = builder->CreateLoad(ptrTy, stackFieldPtr, "cloned_st");
-
-		// Pop exactly one value from the cloned stack
-		auto resultElemPtr = builder->CreateAlloca(stackElementTy, nullptr, "ctx_result_elem");
-		builder->CreateCall(stackPopFn, {clonedStack, resultElemPtr});
-
-		// Get the result value and type
-		auto resultValuePtr = builder->CreateStructGEP(stackElementTy, resultElemPtr, 0, "result_value_ptr");
-		auto resultValue = builder->CreateLoad(int64Ty, resultValuePtr, "result_value");
-		auto resultTypePtr = builder->CreateStructGEP(stackElementTy, resultElemPtr, 1, "result_type_ptr");
-		auto resultType = builder->CreateLoad(int32Ty, resultTypePtr, "result_type");
-
-		// Push the result to the parent context based on its type BEFORE freeing cloned context
-		// This is critical for strings: qd_push_s will duplicate the string, so we need
-		// the original string to still be valid when we call it
-		// Type field: 0=INT, 1=FLOAT, 2=PTR, 3=STR
-		llvm::Function* currentFn = builder->GetInsertBlock()->getParent();
-		llvm::BasicBlock* pushIntBB = llvm::BasicBlock::Create(*context, "ctx.push_int", currentFn);
-		llvm::BasicBlock* pushFloatBB = llvm::BasicBlock::Create(*context, "ctx.push_float", currentFn);
-		llvm::BasicBlock* pushPtrBB = llvm::BasicBlock::Create(*context, "ctx.push_ptr", currentFn);
-		llvm::BasicBlock* pushStrBB = llvm::BasicBlock::Create(*context, "ctx.push_str", currentFn);
-		llvm::BasicBlock* pushDoneBB = llvm::BasicBlock::Create(*context, "ctx.push_done", currentFn);
-
-		// Switch on type
-		auto switchInst = builder->CreateSwitch(resultType, pushDoneBB, 4);
-		switchInst->addCase(builder->getInt32(0), pushIntBB);	// INT
-		switchInst->addCase(builder->getInt32(1), pushFloatBB); // FLOAT
-		switchInst->addCase(builder->getInt32(2), pushPtrBB);	// PTR
-		switchInst->addCase(builder->getInt32(3), pushStrBB);	// STR
-
-		// Push INT
-		builder->SetInsertPoint(pushIntBB);
-		builder->CreateCall(pushIntFn, {ctx, resultValue});
-		builder->CreateBr(pushDoneBB);
-
-		// Push FLOAT
-		builder->SetInsertPoint(pushFloatBB);
-		auto floatValue = builder->CreateBitCast(resultValue, builder->getDoubleTy(), "float_value");
-		builder->CreateCall(pushFloatFn, {ctx, floatValue});
-		builder->CreateBr(pushDoneBB);
-
-		// Push PTR
-		builder->SetInsertPoint(pushPtrBB);
-		auto ptrValue = builder->CreateIntToPtr(resultValue, ptrTy, "ptr_value");
-		builder->CreateCall(pushPtrFn, {ctx, ptrValue});
-		builder->CreateBr(pushDoneBB);
-
-		// Push STR
-		builder->SetInsertPoint(pushStrBB);
-		auto strPtr = builder->CreateIntToPtr(resultValue, ptrTy, "str_ptr");
-		// Call qd_string_data to get const char* from qd_string_t*
-		auto strData = builder->CreateCall(qdStringDataFn, {strPtr}, "str_data");
-		builder->CreateCall(pushStrFn, {ctx, strData});
-		// Release the string reference from cloned context (qd_push_s has created a new copy)
-		builder->CreateCall(qdStringReleaseFn, {strPtr});
-		builder->CreateBr(pushDoneBB);
-
-		// Free the cloned context AFTER pushing (qd_push_s has now duplicated the string)
-		builder->SetInsertPoint(pushDoneBB);
-		builder->CreateCall(freeContextFn, {clonedCtx});
-	}
-
 	void LlvmGenerator::Impl::generateNode(IAstNode* node, llvm::Value* ctx) {
 		if (!node) {
 			return;
@@ -880,9 +798,6 @@ namespace Qd {
 			// Collect the defer for execution at scope end, and arm it here so that a path which
 			// never reaches this statement does not run the body.
 			registerDefer(static_cast<AstNodeDefer*>(node), ctx);
-			break;
-		case IAstNode::Type::CTX_STATEMENT:
-			generateCtxBlock(static_cast<AstNodeCtx*>(node), ctx);
 			break;
 		case IAstNode::Type::IDENTIFIER:
 			generateIdentifier(static_cast<AstNodeIdentifier*>(node), ctx);

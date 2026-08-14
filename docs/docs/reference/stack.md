@@ -8,28 +8,18 @@ Operations for manipulating values on the stack.
 |-------------|-----------|-------------|
 | `dup` | `(a -- a a)` | Duplicate top |
 | `dup2` | `(a b -- a b a b)` | Duplicate top two |
-| `dupd` | `(a b -- a a b)` | Duplicate second |
 | `drop` | `(a --)` | Remove top |
-| `drop2` | `(a b --)` | Remove top two |
 | `swap` | `(a b -- b a)` | Exchange top two |
-| `swap2` | `(a b c d -- c d a b)` | Exchange top pairs |
-| `swapd` | `(a b c -- b a c)` | Swap under top |
 | `over` | `(a b -- a b a)` | Copy second to top |
-| `over2` | `(a b c d -- a b c d a b)` | Copy second pair |
-| `overd` | `(a b c -- a b a c)` | Copy second under top |
 | `rot` | `(a b c -- b c a)` | Rotate three |
 | `nip` | `(a b -- b)` | Remove second |
-| `nipd` | `(a b c -- a c)` | Remove second under top |
-| `tuck` | `(a b -- b a b)` | Copy top under second |
 | `pick` | `(... n -- ... val)` | Copy nth value |
 | `roll` | `(... n -- ...)` | Move nth to top |
 | `clear` | `(... --)` | Remove all |
 | `depth` | `(... -- ... n)` | Count values |
 
-**Naming convention:**
-- Base name: operates on top element (`dup`, `swap`, `drop`, `over`, `nip`)
-- `2` suffix: operates on top pair (`dup2`, `swap2`, `drop2`, `over2`)
-- `d` suffix: operates on the element below top (`dupd`, `swapd`, `overd`, `nipd`)
+**Naming convention:** the base name operates on the top element (`dup`, `swap`,
+`drop`, `over`, `nip`); a `2` suffix operates on the top pair (`dup2`).
 
 ---
 
@@ -55,14 +45,6 @@ Duplicates the top two values.
 1 2 dup2 // Stack: [1, 2, 1, 2]
 ```
 
-### dupd
-
-Duplicates the second value, keeping top on top.
-
-**Signature:** `(a b -- a a b)`
-
----
-
 ## Removal
 
 ### drop
@@ -74,14 +56,6 @@ Removes the top value from the stack.
 ```qd
 1 2 3 drop // Stack: [1, 2]
 ```
-
-### drop2
-
-Removes the top two values from the stack.
-
-**Signature:** `(a b --)`
-
----
 
 ## Swapping
 
@@ -95,20 +69,6 @@ Exchanges the top two values.
 1 2 swap // Stack: [2, 1]
 ```
 
-### swap2
-
-Exchanges the top two pairs of values.
-
-**Signature:** `(a b c d -- c d a b)`
-
-### swapd
-
-Swaps the second and third values, keeping top on top.
-
-**Signature:** `(a b c -- b a c)`
-
----
-
 ## Copying
 
 ### over
@@ -120,20 +80,6 @@ Copies the second value to the top.
 ```qd
 1 2 over // Stack: [1, 2, 1]
 ```
-
-### over2
-
-Copies the second pair to the top.
-
-**Signature:** `(a b c d -- a b c d a b)`
-
-### overd
-
-Copies the second value, keeping top on top.
-
-**Signature:** `(a b c -- a b a c)`
-
----
 
 ## Rotation
 
@@ -160,18 +106,6 @@ Removes the second value, keeping top.
 ```qd
 1 2 nip // Stack: [2]
 ```
-
-### nipd
-
-Removes the second value, keeping top and third.
-
-**Signature:** `(a b c -- a c)`
-
-### tuck
-
-Copies the top value under the second.
-
-**Signature:** `(a b -- b a b)`
 
 ### pick
 

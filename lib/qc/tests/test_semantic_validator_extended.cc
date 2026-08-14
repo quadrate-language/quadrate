@@ -67,10 +67,10 @@ TEST(NipValid) {
 	ASSERT(errors == 0, "nip with two elements should succeed");
 }
 
-TEST(TuckValid) {
+TEST(RemovedShufflerRejected) {
 	const char* src = "fn main() { 1 2 tuck drop drop drop }";
 	size_t errors = validateCode(src);
-	ASSERT(errors == 0, "tuck with two elements should succeed");
+	ASSERT(errors > 0, "removed builtin 'tuck' should be rejected");
 }
 
 TEST(PickZero) {

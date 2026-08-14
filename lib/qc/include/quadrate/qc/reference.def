@@ -83,10 +83,6 @@ KEYWORD(switch, "Branches based on matching the top of stack against case values
 /// @example _ { "no match" print }
 KEYWORD(_, "Provides a fallback block when no switch case matches.")
 
-/// Isolated stack context.
-/// @example 1 2 3 ctx { + + } // Stack: [1, 2, 3, 6]
-KEYWORD(ctx, "Creates an isolated stack context; results are appended to parent stack.")
-
 /// Local variable binding.
 /// @example 42 -> x
 KEYWORD(->, "Pops a value from the stack and binds it to a local variable.")
@@ -113,44 +109,20 @@ BUILTIN(dup, "( a -- a a )", "Duplicates the top value on the stack.")
 /// @example 1 2 dup2 // Stack: [1, 2, 1, 2]
 BUILTIN(dup2, "( a b -- a b a b )", "Duplicates the top two values.")
 
-/// Duplicate second value under top.
-/// @signature ( a b -- a a b )
-BUILTIN(dupd, "( a b -- a a b )", "Duplicates the second value, keeping top on top.")
-
 /// Remove top of stack.
 /// @signature ( a -- )
 /// @example 1 2 3 drop // Stack: [1, 2]
 BUILTIN(drop, "( a -- )", "Removes the top value from the stack.")
-
-/// Remove top two values.
-/// @signature ( a b -- )
-BUILTIN(drop2, "( a b -- )", "Removes the top two values from the stack.")
 
 /// Swap top two values.
 /// @signature ( a b -- b a )
 /// @example 1 2 swap // Stack: [2, 1]
 BUILTIN(swap, "( a b -- b a )", "Exchanges the top two values.")
 
-/// Swap pairs.
-/// @signature ( a b c d -- c d a b )
-BUILTIN(swap2, "( a b c d -- c d a b )", "Exchanges the top two pairs of values.")
-
-/// Swap under top.
-/// @signature ( a b c -- b a c )
-BUILTIN(swapd, "( a b c -- b a c )", "Swaps the second and third values, keeping top on top.")
-
 /// Copy second value to top.
 /// @signature ( a b -- a b a )
 /// @example 1 2 over // Stack: [1, 2, 1]
 BUILTIN(over, "( a b -- a b a )", "Copies the second value to the top.")
-
-/// Copy second pair to top.
-/// @signature ( a b c d -- a b c d a b )
-BUILTIN(over2, "( a b c d -- a b c d a b )", "Copies the second pair to the top.")
-
-/// Copy second value under top.
-/// @signature ( a b c -- a b a c )
-BUILTIN(overd, "( a b c -- a b a c )", "Copies the second value, keeping top on top.")
 
 /// Rotate top three values.
 /// @signature ( a b c -- b c a )
@@ -161,14 +133,6 @@ BUILTIN(rot, "( a b c -- b c a )", "Rotates the top three values, moving third t
 /// @signature ( a b -- b )
 /// @example 1 2 nip // Stack: [2]
 BUILTIN(nip, "( a b -- b )", "Removes the second value, keeping top.")
-
-/// Remove second value under top.
-/// @signature ( a b c -- a c )
-BUILTIN(nipd, "( a b c -- a c )", "Removes the second value, keeping top and third.")
-
-/// Copy top under second.
-/// @signature ( a b -- b a b )
-BUILTIN(tuck, "( a b -- b a b )", "Copies the top value under the second.")
 
 /// Copy nth value to top.
 /// @signature ( ... n -- ... val )

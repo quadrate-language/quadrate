@@ -137,7 +137,7 @@ use testing
 
 fn divide(a:i64 b:i64 -- result:i64)! {
 	dup 0 == if {
-		drop2
+		drop drop
 		"division by zero" -1 panic
 	}
 	/

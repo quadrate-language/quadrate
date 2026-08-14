@@ -644,8 +644,7 @@ fn tool_trace_stack(args:str -- result:str) {
 		output "  swap      (a b -- b a)         swap top two\n" strings::concat -> output
 		output "  over      (a b -- a b a)       copy second to top\n" strings::concat -> output
 		output "  rot       (a b c -- b c a)     rotate: bottom to top\n" strings::concat -> output
-		output "  nip       (a b -- b)           remove second\n" strings::concat -> output
-		output "  tuck      (a b -- b a b)       copy top under second\n\n" strings::concat -> output
+		output "  nip       (a b -- b)           remove second\n\n" strings::concat -> output
 
 		output "ARITHMETIC:\n" strings::concat -> output
 		output "  + / add   (a b -- a+b)   addition\n" strings::concat -> output

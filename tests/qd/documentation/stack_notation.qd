@@ -60,7 +60,8 @@ fn keep_first(i64 i64 -- i64) {
 }
 
 fn keep_first_of_four(i64 i64 i64 i64 -- i64) {
-	drop2
+	drop
+	drop
 	drop
 }
 

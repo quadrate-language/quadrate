@@ -287,32 +287,29 @@ namespace Qd {
 						continue;
 					}
 				} else if (inFunctionBody && strcmp(tokenText, "ctx") == 0) {
-					// Parse ctx block — only in function bodies
-					// ctx blocks add children directly (not wrapped in a block node)
-					for (auto* node : tempNodes) {
-						node->setParent(block);
-						block->addChild(node);
-					}
-					tempNodes.clear();
-
-					auto ctxStmt = std::make_unique<AstNodeCtx>();
-					setNodePosition(ctxStmt.get(), scanner, src);
-					token = u8t_scanner_scan(scanner);
-
-					if (token != '{') {
-						errorReporter->reportError(scanner, "Expected '{' after 'ctx'");
-					} else {
-						// Parse ctx body using shared parser, collecting into a temporary block
-						auto* ctxBody = new AstNodeBlock();
-						setNodePosition(ctxBody, scanner, src);
-						parseBlockBody(ctxBody, scanner, errorReporter, src, true);
-
-						// The ctx body block IS the ctx's content — attach it directly
-						ctxBody->setParent(ctxStmt.get());
-						ctxStmt->addChild(ctxBody);
-
-						ctxStmt->setParent(block);
-						block->addChild(ctxStmt.release());
+					// 'ctx' has been removed. Still recognised here so its use reports what
+					// happened rather than an undefined-identifier cascade, the same way the
+					// parser still recognises 'while'.
+					errorReporter->reportError(scanner,
+							"'ctx' has been removed; the block's values were "
+							"appended to the parent stack anyway, so write the body inline");
+					// Consume the whole 'ctx { ... }' block rather than calling synchronize().
+					// The body is brace-balanced, so skipping it exactly leaves the enclosing
+					// function intact; synchronize() would stop at the block's own '}' and let
+					// it close the function, turning one error into a cascade of top-level ones.
+					if (u8t_scanner_scan(scanner) == '{') {
+						int depth = 1;
+						while (depth > 0) {
+							token = u8t_scanner_scan(scanner);
+							if (token == U8T_EOF) {
+								break;
+							}
+							if (token == '{') {
+								depth++;
+							} else if (token == '}') {
+								depth--;
+							}
+						}
 					}
 					continue;
 				}

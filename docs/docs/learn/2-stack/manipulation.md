@@ -102,29 +102,17 @@ fn main() {
 
 `nip` is equivalent to `swap drop`.
 
-## tuck - copy under
+## dup2 - duplicate a pair
 
-Copy the top value under the second:
+`dup2` is the one two-element variant, duplicating the top pair:
 
 ```qd
 fn main() {
-	1 2      // [1, 2]
-	tuck     // [2, 1, 2]
+	1 2 dup2 // [1, 2] -> [1, 2, 1, 2]
 	print nl // 2
 	print nl // 1
 	print nl // 2
-}
-```
-
-## Two-element variants
-
-Operations with `2` suffix work on pairs:
-
-```qd
-fn main() {
-	1 2 dup2   // [1, 2] -> [1, 2, 1, 2]
-	1 2 drop2  // [1, 2] -> []
-	1 2 3 4 swap2  // [1, 2, 3, 4] -> [3, 4, 1, 2]
+	print nl // 1
 }
 ```
 
@@ -189,7 +177,7 @@ fn main() {
 | `over` | [a, b] | [a, b, a] | Copy second |
 | `rot` | [a, b, c] | [b, c, a] | Rotate three |
 | `nip` | [a, b] | [b] | Remove second |
-| `tuck` | [a, b] | [b, a, b] | Copy top under |
+| `dup2` | [a, b] | [a, b, a, b] | Duplicate pair |
 
 ## What's next?
 

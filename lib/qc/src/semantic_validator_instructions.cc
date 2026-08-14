@@ -604,95 +604,6 @@ namespace Qd {
 			}
 			return;
 		}
-		// Stack operations: dupd ( a b -- a a b )
-		else if (strcmp(name, "dupd") == 0) {
-			if (typeStack.size() < 2) {
-				reportError(node, "Type error in 'dupd': Stack underflow (requires 2 values)");
-				return;
-			}
-			// Insert copy of second element before top: [a, b] -> [a, a, b]
-			StackValueType second = typeStack[typeStack.size() - 2];
-			typeStack.insert(typeStack.end() - 1, second);
-			if (structTypeStack.size() >= 2) {
-				std::string secondStruct = structTypeStack[structTypeStack.size() - 2];
-				structTypeStack.insert(structTypeStack.end() - 1, secondStruct);
-			}
-			return;
-		}
-		// Stack operations: swapd ( a b c -- b a c )
-		else if (strcmp(name, "swapd") == 0) {
-			if (typeStack.size() < 3) {
-				reportError(node, "Type error in 'swapd': Stack underflow (requires 3 values)");
-				return;
-			}
-			// Get third, second, and top elements
-			StackValueType third = typeStack[typeStack.size() - 3];
-			StackValueType second = typeStack[typeStack.size() - 2];
-			StackValueType top = typeStack.back();
-			// Remove all three
-			typeStack.pop_back();
-			typeStack.pop_back();
-			typeStack.pop_back();
-			// Push: second, third, top (swapped second and third)
-			typeStack.push_back(second);
-			typeStack.push_back(third);
-			typeStack.push_back(top);
-			// Swap struct types as well
-			if (structTypeStack.size() >= 3) {
-				std::string thirdStruct = structTypeStack[structTypeStack.size() - 3];
-				std::string secondStruct = structTypeStack[structTypeStack.size() - 2];
-				std::string topStruct = structTypeStack.back();
-				structTypeStack.pop_back();
-				structTypeStack.pop_back();
-				structTypeStack.pop_back();
-				structTypeStack.push_back(secondStruct);
-				structTypeStack.push_back(thirdStruct);
-				structTypeStack.push_back(topStruct);
-				return;
-			}
-			return;
-		}
-		// Stack operations: overd ( a b c -- a b a c )
-		else if (strcmp(name, "overd") == 0) {
-			if (typeStack.size() < 3) {
-				reportError(node, "Type error in 'overd': Stack underflow (requires 3 values)");
-				return;
-			}
-			// Get the third element
-			StackValueType third = typeStack[typeStack.size() - 3];
-			// Push a copy of it to the top
-			typeStack.push_back(third);
-			// Copy struct type as well
-			if (structTypeStack.size() >= 3) {
-				std::string thirdStruct = structTypeStack[structTypeStack.size() - 3];
-				structTypeStack.push_back(thirdStruct);
-				return;
-			}
-			return;
-		}
-		// Stack operations: nipd ( a b c -- a c )
-		else if (strcmp(name, "nipd") == 0) {
-			if (typeStack.size() < 3) {
-				reportError(node, "Type error in 'nipd': Stack underflow (requires 3 values)");
-				return;
-			}
-			// Get top element
-			StackValueType top = typeStack.back();
-			typeStack.pop_back();
-			// Remove second element
-			typeStack.pop_back();
-			// Push top back
-			typeStack.push_back(top);
-			// Remove second struct type as well
-			if (structTypeStack.size() >= 3) {
-				std::string topStruct = structTypeStack.back();
-				structTypeStack.pop_back();
-				structTypeStack.pop_back();
-				structTypeStack.push_back(topStruct);
-				return;
-			}
-			return;
-		}
 		// Stack operations: swap
 		else if (strcmp(name, "swap") == 0) {
 			if (typeStack.size() < 2) {
@@ -767,21 +678,6 @@ namespace Qd {
 			}
 			return;
 		}
-		// Stack operations: drop2 ( a b -- )
-		else if (strcmp(name, "drop2") == 0) {
-			if (typeStack.size() < 2) {
-				reportErrorConditional(
-						node, "Type error in 'drop2': Stack underflow (requires 2 values)", reportErrors);
-				return;
-			}
-			typeStack.pop_back();
-			typeStack.pop_back();
-			if (structTypeStack.size() >= 2) {
-				structTypeStack.pop_back();
-				structTypeStack.pop_back();
-			}
-			return;
-		}
 		// Stack operations: rot ( a b c -- b c a )
 		else if (strcmp(name, "rot") == 0) {
 			if (typeStack.size() < 3) {
@@ -808,32 +704,6 @@ namespace Qd {
 				structTypeStack.push_back(bStruct);
 				structTypeStack.push_back(cStruct);
 				structTypeStack.push_back(aStruct);
-				return;
-			}
-			return;
-		}
-		// Stack operations: tuck ( a b -- b a b )
-		else if (strcmp(name, "tuck") == 0) {
-			if (typeStack.size() < 2) {
-				reportErrorConditional(node, "Type error in 'tuck': Stack underflow (requires 2 values)", reportErrors);
-				return;
-			}
-			StackValueType b = typeStack.back();
-			typeStack.pop_back();
-			StackValueType a = typeStack.back();
-			typeStack.pop_back();
-			typeStack.push_back(b);
-			typeStack.push_back(a);
-			typeStack.push_back(b);
-			// Handle struct type stack
-			if (structTypeStack.size() >= 2) {
-				std::string bStruct = structTypeStack.back();
-				structTypeStack.pop_back();
-				std::string aStruct = structTypeStack.back();
-				structTypeStack.pop_back();
-				structTypeStack.push_back(bStruct);
-				structTypeStack.push_back(aStruct);
-				structTypeStack.push_back(bStruct);
 				return;
 			}
 			return;

@@ -24,7 +24,6 @@ This page documents all Quadrate keywords and built-in instructions.
 | [`defer`](#defer) | Schedules a block to run when the function exits, in LIFO order. |
 | [`switch`](#switch) | Branches based on matching the top of stack against case values. |
 | [`_`](#_) | Provides a fallback block when no switch case matches. |
-| [`ctx`](#ctx) | Creates an isolated stack context; results are appended to parent stack. |
 | [`->`](#arrow) | Pops a value from the stack and binds it to a local variable. |
 | [`true`](#true) | Pushes 1 onto the stack. |
 | [`false`](#false) | Pushes 0 onto the stack. |
@@ -76,7 +75,6 @@ var counter = 0    // inferred i64
 ```
 
 ---
-
 
 ### struct
 
@@ -246,18 +244,6 @@ _ { "no match" print }
 
 ---
 
-### ctx
-
-Creates an isolated stack context; results are appended to parent stack.
-
-**Example:**
-
-```qd
-1 2 3 ctx { + + } // Stack: [1, 2, 3, 6]
-```
-
----
-
 ### ->
 
 Pops a value from the stack and binds it to a local variable.
@@ -304,6 +290,7 @@ false if { } else { "no" print }
 | [`or`](#or) | `( a b -- result )` | Computes bitwise OR of two integers. |
 | [`xor`](#xor) | `( a b -- result )` | Computes bitwise XOR of two integers. |
 | [`not`](#not) | `( a -- result )` | Computes bitwise NOT (ones' complement). |
+| [`lnot`](#lnot) | `( a -- result )` | Logical NOT: 1 if the value is zero, 0 otherwise. Use this for boolean negation; `not` is bitwise. |
 | [`shl`](#shl) | `( a n -- result )` | Shifts a left by n bits. |
 | [`shr`](#shr) | `( a n -- result )` | Shifts a right by n bits (arithmetic shift). |
 
@@ -359,6 +346,21 @@ Computes bitwise NOT (ones' complement).
 
 ```qd
 0 not // -1 (all bits set)
+```
+
+---
+
+#### lnot
+
+Logical NOT: 1 if the value is zero, 0 otherwise. Use this for boolean negation; `not` is bitwise.
+
+**Signature:** `( a -- result )`
+
+**Example:**
+
+```qd
+0 lnot // 1
+5 lnot // 0
 ```
 
 ---
@@ -1043,19 +1045,11 @@ read -> argc // reads command line args
 |-------------|-----------|-------------|
 | [`dup`](#dup) | `( a -- a a )` | Duplicates the top value on the stack. |
 | [`dup2`](#dup2) | `( a b -- a b a b )` | Duplicates the top two values. |
-| [`dupd`](#dupd) | `( a b -- a a b )` | Duplicates the second value, keeping top on top. |
 | [`drop`](#drop) | `( a -- )` | Removes the top value from the stack. |
-| [`drop2`](#drop2) | `( a b -- )` | Removes the top two values from the stack. |
 | [`swap`](#swap) | `( a b -- b a )` | Exchanges the top two values. |
-| [`swap2`](#swap2) | `( a b c d -- c d a b )` | Exchanges the top two pairs of values. |
-| [`swapd`](#swapd) | `( a b c -- b a c )` | Swaps the second and third values, keeping top on top. |
 | [`over`](#over) | `( a b -- a b a )` | Copies the second value to the top. |
-| [`over2`](#over2) | `( a b c d -- a b c d a b )` | Copies the second pair to the top. |
-| [`overd`](#overd) | `( a b c -- a b a c )` | Copies the second value, keeping top on top. |
 | [`rot`](#rot) | `( a b c -- b c a )` | Rotates the top three values, moving third to top. |
 | [`nip`](#nip) | `( a b -- b )` | Removes the second value, keeping top. |
-| [`nipd`](#nipd) | `( a b c -- a c )` | Removes the second value, keeping top and third. |
-| [`tuck`](#tuck) | `( a b -- b a b )` | Copies the top value under the second. |
 | [`pick`](#pick) | `( ... n -- ... val )` | Copies the nth value (0-indexed from top) to the top. |
 | [`roll`](#roll) | `( ... n -- ... )` | Moves the nth value to the top, shifting others down. |
 | [`clear`](#clear) | `( ... -- )` | Removes all values from the stack. |
@@ -1089,14 +1083,6 @@ Duplicates the top two values.
 
 ---
 
-#### dupd
-
-Duplicates the second value, keeping top on top.
-
-**Signature:** `( a b -- a a b )`
-
----
-
 #### drop
 
 Removes the top value from the stack.
@@ -1108,14 +1094,6 @@ Removes the top value from the stack.
 ```qd
 1 2 3 drop // Stack: [1, 2]
 ```
-
----
-
-#### drop2
-
-Removes the top two values from the stack.
-
-**Signature:** `( a b -- )`
 
 ---
 
@@ -1133,22 +1111,6 @@ Exchanges the top two values.
 
 ---
 
-#### swap2
-
-Exchanges the top two pairs of values.
-
-**Signature:** `( a b c d -- c d a b )`
-
----
-
-#### swapd
-
-Swaps the second and third values, keeping top on top.
-
-**Signature:** `( a b c -- b a c )`
-
----
-
 #### over
 
 Copies the second value to the top.
@@ -1160,22 +1122,6 @@ Copies the second value to the top.
 ```qd
 1 2 over // Stack: [1, 2, 1]
 ```
-
----
-
-#### over2
-
-Copies the second pair to the top.
-
-**Signature:** `( a b c d -- a b c d a b )`
-
----
-
-#### overd
-
-Copies the second value, keeping top on top.
-
-**Signature:** `( a b c -- a b a c )`
 
 ---
 
@@ -1204,22 +1150,6 @@ Removes the second value, keeping top.
 ```qd
 1 2 nip // Stack: [2]
 ```
-
----
-
-#### nipd
-
-Removes the second value, keeping top and third.
-
-**Signature:** `( a b c -- a c )`
-
----
-
-#### tuck
-
-Copies the top value under the second.
-
-**Signature:** `( a b -- b a b )`
 
 ---
 

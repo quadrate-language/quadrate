@@ -398,7 +398,6 @@ fn get_cheatsheet_content( -- content:str) {
 	s "over               a b -- a b a           Copy second to top\n" strings::concat -> s
 	s "rot                a b c -- b c a         Rotate top three\n" strings::concat -> s
 	s "nip                a b -- b               Remove second\n" strings::concat -> s
-	s "tuck               a b -- b a b           Copy top under second\n" strings::concat -> s
 	s "-> var             a --                   Bind to variable\n" strings::concat -> s
 	s "-> _               a --                   Discard value\n" strings::concat -> s
 
