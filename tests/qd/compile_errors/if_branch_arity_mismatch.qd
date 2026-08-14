@@ -1,0 +1,16 @@
+// Test: if/else arms that leave different numbers of values on the stack must be
+// rejected. Before the fix this compiled clean and the false branch yielded 2
+// rather than the top-of-stack 3, because generateIf merged the arms with
+// std::min(thenStack.size(), elseStack.size()) and discarded the excess.
+fn pick(c:i64 -- r:i64) {
+	c if {
+		1
+	} else {
+		2 3
+	}
+}
+
+fn main() {
+	1 pick print nl
+	0 pick print nl
+}

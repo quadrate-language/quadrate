@@ -47,7 +47,6 @@
 #include <quadrate/qc/ast_node_test.h>
 #include <quadrate/qc/ast_node_type_alias.h>
 #include <quadrate/qc/ast_node_use.h>
-#include <quadrate/qc/ast_node_while.h>
 #include <quadrate/qc/colors.h>
 #include <quadrate/qc/error_reporter.h>
 #include <u8t/scanner.h>

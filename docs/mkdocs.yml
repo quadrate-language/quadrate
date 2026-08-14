@@ -51,6 +51,7 @@ nav:
           - Generics: learn/7-advanced/generics.md
           - Memory management: learn/7-advanced/memory.md
           - FFI (C interop): learn/7-advanced/ffi.md
+          - Freestanding mode: learn/7-advanced/freestanding.md
       - 9. Examples:
           - File processing: learn/8-examples/file-processing.md
           - User input: learn/8-examples/user-input.md

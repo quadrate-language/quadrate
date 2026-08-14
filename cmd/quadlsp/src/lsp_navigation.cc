@@ -1351,8 +1351,7 @@ void QuadrateLSP::handleFoldingRange(const std::string& id, const std::string& u
 					};
 					endLine = findMaxLine(node);
 					kind = "region";
-				} else if (node->type() == Qd::IAstNode::Type::WHILE_STATEMENT ||
-						   node->type() == Qd::IAstNode::Type::FOR_STATEMENT ||
+				} else if (node->type() == Qd::IAstNode::Type::FOR_STATEMENT ||
 						   node->type() == Qd::IAstNode::Type::LOOP_STATEMENT) {
 					startLine = node->line() > 0 ? node->line() - 1 : 0;
 					std::function<size_t(Qd::IAstNode*)> findMaxLine = [&](Qd::IAstNode* n) -> size_t {

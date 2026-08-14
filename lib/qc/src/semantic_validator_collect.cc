@@ -33,7 +33,6 @@
 #include <quadrate/qc/ast_node_test.h>
 #include <quadrate/qc/ast_node_type_alias.h>
 #include <quadrate/qc/ast_node_use.h>
-#include <quadrate/qc/ast_node_while.h>
 #include <quadrate/qc/colors.h>
 #include <quadrate/qc/semantic_validator.h>
 #include <sstream>
@@ -710,6 +709,18 @@ namespace Qd {
 				return;
 			}
 
+			// Inside a module file, a function pulled in by an intra-module `use "other.qd"` is
+			// referenced without a prefix — it shares the module's namespace. Those land in
+			// mModuleFunctions under the current package rather than in mDefinedFunctions, so
+			// resolve against them too. Guarded on mIsModuleFile: in a main file an unqualified
+			// name must not silently reach into an imported module.
+			if (mIsModuleFile) {
+				auto pkg = mModuleFunctions.find(mCurrentPackage);
+				if (pkg != mModuleFunctions.end() && pkg->second.count(name) > 0) {
+					return;
+				}
+			}
+
 			// Check if it's a module-level mutable `var`
 			if (mDefinedGlobalVars.find(name) != mDefinedGlobalVars.end()) {
 				return;
@@ -1040,10 +1051,9 @@ namespace Qd {
 			return;
 		}
 
-		// When entering a while, loop or switch statement, use a placeholder iterator name for break/continue tracking
+		// When entering a loop or switch statement, use a placeholder iterator name for break/continue tracking
 		// Also create a new scope so variables defined inside don't leak out
-		if (node->type() == IAstNode::Type::WHILE_STATEMENT || node->type() == IAstNode::Type::LOOP_STATEMENT ||
-				node->type() == IAstNode::Type::SWITCH_STATEMENT) {
+		if (node->type() == IAstNode::Type::LOOP_STATEMENT || node->type() == IAstNode::Type::SWITCH_STATEMENT) {
 			std::unordered_set<std::string> childIterators = iteratorNames;
 			childIterators.insert("__loop__"); // Placeholder to indicate we're inside a loop/switch
 			std::unordered_set<std::string> loopLocals = localVariables; // New scope for the loop body
@@ -1297,9 +1307,8 @@ namespace Qd {
 			return;
 		}
 
-		// Handle while/loop/switch - create new scope
-		if (node->type() == IAstNode::Type::WHILE_STATEMENT || node->type() == IAstNode::Type::LOOP_STATEMENT ||
-				node->type() == IAstNode::Type::SWITCH_STATEMENT) {
+		// Handle loop/switch - create new scope
+		if (node->type() == IAstNode::Type::LOOP_STATEMENT || node->type() == IAstNode::Type::SWITCH_STATEMENT) {
 			std::unordered_set<std::string> loopLocals = localVariables;
 			for (auto* child : node->children()) {
 				collectCapturedVariables(child, loopLocals, iteratorNames, outerScopeVariables, anonFunc);

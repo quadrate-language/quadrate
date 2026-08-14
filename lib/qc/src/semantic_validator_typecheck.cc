@@ -33,7 +33,6 @@
 #include <quadrate/qc/ast_node_switch.h>
 #include <quadrate/qc/ast_node_test.h>
 #include <quadrate/qc/ast_node_use.h>
-#include <quadrate/qc/ast_node_while.h>
 #include <quadrate/qc/colors.h>
 #include <quadrate/qc/semantic_validator.h>
 #include <sstream>
@@ -990,12 +989,21 @@ namespace Qd {
 							}
 						}
 
-						if (!afterFallibleCall) {
+						// Only report when the stack model is trustworthy. mHasUnpredictableStack
+						// means something in this function -- a variadic like fmt::printf, an
+						// imported C function, flag::parse -- consumed an amount the signature
+						// does not describe, so the arm effects are computed from a model already
+						// known to be wrong. The function-level arity check and the defer-effect
+						// check gate on this for the same reason; this one did not, and it made
+						// every module-qualified method call on a receiver read as +1. Both
+						// `wc.qd` sites were that: `f flag::destroy` is net zero at runtime.
+						if (!afterFallibleCall && !mHasUnpredictableStack) {
 							std::string msg =
 									"if/else branches leave different numbers of values on the stack (then: " +
 									std::to_string(thenEffect) + ", else: " + std::to_string(elseEffect) +
-									"); values beyond the shallower branch are discarded";
-							reportWarning(child, msg.c_str());
+									"); both arms must leave the same number, since whatever follows "
+									"reads a value whose identity would otherwise depend on which arm ran";
+							reportError(child, msg.c_str());
 						}
 						// Use the if (success) branch as authoritative.
 						typeStack = thenStack;
@@ -1191,33 +1199,6 @@ namespace Qd {
 				mInLoopBody = wasInLoopBody;
 
 				// Don't modify parent stack - loops don't have consistent stack effects
-				break;
-			}
-
-			case IAstNode::Type::WHILE_STATEMENT: {
-				// While loops: pop 1 condition value, type check body
-				// Pop condition
-				if (!typeStack.empty()) {
-					typeStack.pop_back();
-					if (!structTypeStack.empty()) {
-						structTypeStack.pop_back();
-					}
-				}
-
-				// Type check body with a copy of the state
-				std::vector<StackValueType> loopStack = typeStack;
-				std::unordered_map<std::string, StackValueType> loopVars = localVariables;
-				std::vector<std::string> loopStructStack = structTypeStack;
-
-				bool wasInLoopBody = mInLoopBody;
-				mInLoopBody = true;
-				AstNodeWhileStatement* whileStmt = static_cast<AstNodeWhileStatement*>(child);
-				if (whileStmt->body()) {
-					typeCheckBlock(whileStmt->body(), loopStack, loopVars, loopStructStack);
-				}
-				mInLoopBody = wasInLoopBody;
-
-				// Don't modify parent stack
 				break;
 			}
 

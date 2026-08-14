@@ -22,7 +22,10 @@ const SHA512_OUT = 64
 
 // Build inner or outer padded buffer: (key_pad XOR pad_byte) || message_bytes
 // Returns a ptr and its length. Caller must free the ptr.
-fn build_hmac_input(key:str block_size:i64 pad_byte:i64 msg_buf:ptr msg_len:i64 -- result:ptr result_len:i64)! {
+// Outputs are declared in push order: the length goes on the stack first, the buffer
+// pointer on top, matching the body's closing `total result`. Callers bind them as
+// `-> buf -> len`.
+fn build_hmac_input(key:str block_size:i64 pad_byte:i64 msg_buf:ptr msg_len:i64 -- result_len:i64 result:ptr)! {
 	key mem::from_string -> klen -> kbuf
 
 	// Prepare key block (zero-padded to block_size)

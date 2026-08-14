@@ -1,0 +1,39 @@
+// Test: `return` must return from main.
+//
+// It was a silent no-op there. Every other function-generation path assigns
+// currentFunctionReturnBlock, but main's did not, and generateNode's RETURN_STATEMENT case is
+// guarded on that being non-null — so the branch was never emitted and execution fell straight
+// through to the code the return was supposed to skip. The semantic validator meanwhile models
+// `return` as diverging, so a main written with guard clauses validated clean and then did the
+// wrong thing at runtime.
+fn helper(c:i64 -- ) {
+	c if {
+		"helper: early" print nl
+		return
+	}
+	"helper: late" print nl
+}
+
+fn main() {
+	defer { "defer ran" print nl }
+
+	1 helper
+	0 helper
+
+	// A guard whose condition is false must not return.
+	0 if {
+		"not taken" print nl
+		return
+	}
+
+	// A guard whose condition is true must return from main, not fall through.
+	0 5 1 for i {
+		i 2 == if {
+			"returned from loop at " print i print nl
+			return
+		}
+		"iteration " print i print nl
+	}
+
+	"unreachable" print nl
+}

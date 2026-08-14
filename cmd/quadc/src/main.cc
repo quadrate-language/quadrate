@@ -51,6 +51,24 @@ static bool hasNativeStdlibImports(const std::vector<std::string>& importedModul
 	return false;
 }
 
+// Canonical form of a directory path, for comparing two paths that may differ in spelling
+// (relative vs absolute, symlinks, trailing "."). Falls back to the input if the path
+// cannot be resolved, which just means the comparison degrades to a textual one.
+static std::string canonicalDir(const std::string& dir) {
+	std::error_code ec;
+	std::filesystem::path resolved = std::filesystem::canonical(dir, ec);
+	return ec ? dir : resolved.string();
+}
+
+// Whether filePath lives directly in one of the given directories
+static bool isInDirectory(const std::string& filePath, const std::unordered_set<std::string>& dirs) {
+	if (dirs.empty()) {
+		return false;
+	}
+	std::filesystem::path parent = std::filesystem::path(filePath).parent_path();
+	return dirs.count(canonicalDir(parent.empty() ? "." : parent.string())) > 0;
+}
+
 int main(int argc, char** argv) {
 	// Timing helper - only active when QUADC_TIMING is set
 	static bool timing = std::getenv("QUADC_TIMING") != nullptr;
@@ -276,6 +294,14 @@ int main(int argc, char** argv) {
 		std::unordered_map<std::string, std::string> moduleToSourceDir; // moduleName -> sourceDirectory
 		std::unordered_set<std::string> modulesToMergeIntoMain;			// modules that should merge into main
 		std::string sourceDirectory;
+		// Directories holding a main source file. Files there are directory-namespace siblings
+		// owned by the main-file validation pass; the module loop must not re-validate them.
+		std::unordered_set<std::string> mainFileDirs;
+		for (const auto& module : parsedModules) {
+			if (module.package == "main" && !module.sourceDirectory.empty()) {
+				mainFileDirs.insert(canonicalDir(module.sourceDirectory));
+			}
+		}
 		for (const auto& module : parsedModules) {
 			for (const auto& importedModule : module.importedModules) {
 				allModules.insert(importedModule);
@@ -343,10 +369,10 @@ int main(int argc, char** argv) {
 				// Parse module file (uses cache if already parsed by semantic validator)
 				Qd::Ast* ast = nullptr;
 				std::string buffer;
-				bool fromCache = false;
+				bool alreadyValidated = false;
 
 				auto parseStart = std::chrono::steady_clock::now();
-				Qd::IAstNode* root = AstCache::instance().getOrParse(moduleFilePath, &ast, &buffer, &fromCache);
+				Qd::IAstNode* root = AstCache::instance().getOrParse(moduleFilePath, &ast, &buffer, &alreadyValidated);
 				auto parseEnd = std::chrono::steady_clock::now();
 				if (timing) {
 					auto parseMs = std::chrono::duration_cast<std::chrono::milliseconds>(parseEnd - parseStart).count();
@@ -361,15 +387,68 @@ int main(int argc, char** argv) {
 					return 1;
 				}
 
-				// Semantic validation - catch errors before LLVM generation
-				// Skip validation if AST came from cache (already validated during main file semantic analysis)
-				// Only validate freshly parsed files to catch internal module errors
+				// Semantic validation - catch errors before LLVM generation.
+				//
+				// A cache hit is NOT evidence that anything checked this file: the semantic
+				// validator parses module files to collect their signatures and hands those ASTs
+				// to the cache, so by the time this loop runs every module is a hit. Guarding on
+				// "came from cache" therefore left every imported module body unchecked, which is
+				// how a stdlib function that leaked three stack slots per call stayed invisible.
+				// Guard on the AST actually having been validated instead.
+				//
+				// Files in the main file's own directory are excluded: they are the
+				// directory-namespace siblings, already collected and checked by the main-file
+				// pass, and only that pass has the context to resolve them (getSiblingQdFiles
+				// deliberately excludes the file containing main(), so a sibling referencing a
+				// constant defined there cannot be resolved from here).
 				size_t errorCount = 0;
-				if (!fromCache) {
+				bool ownedByMainPass = isInDirectory(moduleFilePath, mainFileDirs);
+				if (!alreadyValidated && !ownedByMainPass) {
 					auto valStart = std::chrono::steady_clock::now();
 					Qd::SemanticValidator validator;
 					validator.setIncludePaths(opts.includePaths);
 					validator.setSource(buffer.c_str());
+					// The module's other files, so intra-module references resolve. Note this is
+					// NOT getSiblingQdFiles: that scans a directory for the directory-namespace
+					// feature and deliberately skips anything under lib/ or tests/, which is
+					// every module we care about here. The module's own file list is both more
+					// precise and already computed.
+					// Any file already linked to this one by an explicit `use "other.qd"` — in
+					// either direction — is excluded. Loading it a second time as a sibling
+					// reports every function it defines as a duplicate definition.
+					auto qdFileImportsOf = [](const std::string& path) {
+						std::unordered_set<std::string> names;
+						Qd::IAstNode* fileRoot = AstCache::instance().getOrParse(path);
+						if (!fileRoot) {
+							return names;
+						}
+						for (const auto& imported : collectImportedModules(fileRoot)) {
+							if (isQdFile(imported)) {
+								names.insert(std::filesystem::path(imported).filename().string());
+							}
+						}
+						return names;
+					};
+
+					std::string thisFileName = std::filesystem::path(moduleFilePath).filename().string();
+					std::unordered_set<std::string> importedByThisFile = qdFileImportsOf(moduleFilePath);
+
+					std::vector<std::string> moduleSiblings;
+					for (const auto& other : moduleFilePaths) {
+						if (other == moduleFilePath) {
+							continue;
+						}
+						std::string otherName = std::filesystem::path(other).filename().string();
+						if (importedByThisFile.count(otherName) > 0) {
+							continue;
+						}
+						if (qdFileImportsOf(other).count(thisFileName) > 0) {
+							continue;
+						}
+						moduleSiblings.push_back(other);
+					}
+					validator.setSiblingFiles(moduleSiblings);
+					validator.setFreestandingMode(opts.freestanding);
 					errorCount = validator.validate(root, moduleFilePath.c_str(), true, opts.werror);
 					auto valEnd = std::chrono::steady_clock::now();
 					if (timing) {
@@ -377,8 +456,12 @@ int main(int argc, char** argv) {
 						std::cerr << "[TIMING] moduleLoop validate " << moduleName << ": " << valMs << "ms"
 								  << std::endl;
 					}
+					if (errorCount == 0) {
+						AstCache::instance().markValidated(moduleFilePath);
+					}
 				} else if (timing) {
-					std::cerr << "[TIMING] moduleLoop validate " << moduleName << ": 0ms (cached)" << std::endl;
+					std::cerr << "[TIMING] moduleLoop validate " << moduleName << ": 0ms ("
+							  << (ownedByMainPass ? "main-file sibling" : "already validated") << ")" << std::endl;
 				}
 				if (errorCount > 0) {
 					// Validation failed - do not proceed

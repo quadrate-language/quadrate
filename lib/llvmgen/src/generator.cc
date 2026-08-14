@@ -742,6 +742,15 @@ namespace Qd {
 			// Create return basic block for defer execution
 			auto returnBB = llvm::BasicBlock::Create(*context, "return", fn);
 
+			// Set the return target so `return` works in main. Without this,
+			// currentFunctionReturnBlock stayed null here — every other function path assigns
+			// it — and generateNode's RETURN_STATEMENT case, which is guarded on it being
+			// non-null, silently emitted nothing. `return` in main was a no-op, so the
+			// guard-clause idiom fell straight through to the code it was guarding against.
+			// Reaching returnBB also runs main's defers and local cleanup, which an early
+			// return previously skipped along with everything else.
+			currentFunctionReturnBlock = returnBB;
+
 			// Initialize defer scope stack for this function
 			deferScopeStack.clear();
 			pushDeferScope();
@@ -780,6 +789,8 @@ namespace Qd {
 
 			// Return 0
 			builder->CreateRet(builder->getInt32(0));
+
+			currentFunctionReturnBlock = nullptr;
 
 			// Pop debug scope for main function
 			if (debugInfoEnabled && !debugScopeStack.empty()) {
@@ -3544,30 +3555,51 @@ namespace Qd {
 		llvm::InitializeNativeTargetAsmPrinter();
 		printTiming("initTargets");
 
-		// Load runtime library so JIT can resolve symbols
-		// The runtime symbols need to be available in the current process
-		void* rtHandle = dlopen("libqdrt.so", RTLD_NOW | RTLD_GLOBAL);
+		// Load runtime library so JIT can resolve symbols.
+		// The runtime symbols need to be available in the current process.
+		//
+		// Order matters: the runtime shipped alongside this executable is tried before the bare
+		// soname. Resolving "libqdrt.so" through the normal loader search lets an installed
+		// /usr/lib/libqdrt.so from an older release win over the one this binary was built with,
+		// which silently pairs new codegen with an old runtime — reading struct fields at offsets
+		// the old ABI doesn't have. That presents as "my compiler change had no effect" while
+		// `quad build`, which links against the right library, produces a correct binary.
+		void* rtHandle = nullptr;
+
+		// 1. Explicit override.
+		if (const char* libDir = std::getenv("QUADRATE_LIBDIR")) {
+			std::string fullPath = std::string(libDir) + "/libqdrt.so";
+			rtHandle = dlopen(fullPath.c_str(), RTLD_NOW | RTLD_GLOBAL);
+		}
+
+		// 2. The runtime installed next to this executable (dist/bin/quad -> dist/lib/libqdrt.so),
+		//    or beside it for a flat layout.
 		if (!rtHandle) {
-			// Try with full path from QUADRATE_LIBDIR
-			const char* libDir = std::getenv("QUADRATE_LIBDIR");
-			if (libDir) {
-				std::string fullPath = std::string(libDir) + "/libqdrt.so";
-				rtHandle = dlopen(fullPath.c_str(), RTLD_NOW | RTLD_GLOBAL);
-			}
-			if (!rtHandle) {
-				// Try relative to executable
-				char exePathBuf[4096];
-				int len = exe_path_platform_get(exePathBuf, sizeof(exePathBuf));
-				if (len > 0) {
-					std::filesystem::path exePath(exePathBuf);
-					std::filesystem::path libPath = exePath.parent_path() / ".." / "lib" / "libqdrt.so";
-					rtHandle = dlopen(libPath.c_str(), RTLD_NOW | RTLD_GLOBAL);
+			char exePathBuf[4096];
+			int len = exe_path_platform_get(exePathBuf, sizeof(exePathBuf));
+			if (len > 0) {
+				std::filesystem::path exeDir = std::filesystem::path(exePathBuf).parent_path();
+				for (const auto& candidate : {exeDir / ".." / "lib" / "libqdrt.so", exeDir / "libqdrt.so"}) {
+					std::error_code ec;
+					if (!std::filesystem::exists(candidate, ec)) {
+						continue;
+					}
+					rtHandle = dlopen(candidate.c_str(), RTLD_NOW | RTLD_GLOBAL);
+					if (rtHandle) {
+						break;
+					}
 				}
 			}
-			if (!rtHandle) {
-				std::cerr << "Error: Could not load libqdrt.so for JIT execution: " << dlerror() << std::endl;
-				return -1;
-			}
+		}
+
+		// 3. Fall back to the loader's search path.
+		if (!rtHandle) {
+			rtHandle = dlopen("libqdrt.so", RTLD_NOW | RTLD_GLOBAL);
+		}
+
+		if (!rtHandle) {
+			std::cerr << "Error: Could not load libqdrt.so for JIT execution: " << dlerror() << std::endl;
+			return -1;
 		}
 		printTiming("loadRuntime");
 

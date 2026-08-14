@@ -13,16 +13,16 @@
 #include <stdint.h>
 
 // Helper function to create a context
+/* Must go through qd_create_context: a hand-rolled context initialises only ->st,
+ * so any test that trips a fatal runtime path walks an uninitialised call stack and
+ * dies of SIGSEGV instead of the SIGABRT it is asserting. */
 static qd_context* create_test_context(void) {
-	qd_context* ctx = (qd_context*)malloc(sizeof(qd_context));
-	qd_stack_init(&ctx->st, 256);
-	return ctx;
+	return qd_create_context(256);
 }
 
 // Helper function to destroy a context
 static void destroy_test_context(qd_context* ctx) {
-	qd_stack_destroy(ctx->st);
-	free(ctx);
+	qd_free_context(ctx);
 }
 
 

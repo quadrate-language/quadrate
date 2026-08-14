@@ -27,16 +27,16 @@ static char* qd_test_strdup(const char* s) {
 }
 
 // Helper function to create a context
+/* Must go through qd_create_context: a hand-rolled context initialises only ->st,
+ * so any test that trips a fatal runtime path walks an uninitialised call stack and
+ * dies of SIGSEGV instead of the SIGABRT it is asserting. */
 static qd_context* create_test_context(void) {
-	qd_context* ctx = (qd_context*)malloc(sizeof(qd_context));
-	qd_stack_init(&ctx->st, 256);
-	return ctx;
+	return qd_create_context(256);
 }
 
 // Helper function to destroy a context
 static void destroy_test_context(qd_context* ctx) {
-	qd_stack_destroy(ctx->st);
-	free(ctx);
+	qd_free_context(ctx);
 }
 
 // Death-test support.
@@ -60,10 +60,7 @@ static int run_in_child(void (*body)(void)) {
 	return status;
 }
 
-// These use qd_create_context rather than create_test_context: the abort path walks the call
-// stack and error state, which create_test_context leaves uninitialised (it mallocs the context
-// and only sets up ->st). With garbage there the child dies of SIGSEGV inside the diagnostic
-// instead of the SIGABRT we are pinning.
+// The context is deliberately leaked: the child aborts before it could be freed.
 static void print_empty_stack_child(void) {
 	qd_print(qd_create_context(64));
 }

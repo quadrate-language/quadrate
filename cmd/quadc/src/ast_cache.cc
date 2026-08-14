@@ -18,7 +18,7 @@ std::string AstCache::canonicalize(const std::string& filePath) const {
 }
 
 Qd::IAstNode* AstCache::getOrParse(
-		const std::string& filePath, Qd::Ast** outAst, std::string* outSource, bool* outFromCache) {
+		const std::string& filePath, Qd::Ast** outAst, std::string* outSource, bool* outAlreadyValidated) {
 	std::string canonicalPath = canonicalize(filePath);
 
 	static bool debug = std::getenv("QUADC_DEBUG_MERGE") != nullptr;
@@ -38,8 +38,8 @@ Qd::IAstNode* AstCache::getOrParse(
 		if (outSource) {
 			*outSource = it->second.source;
 		}
-		if (outFromCache) {
-			*outFromCache = true;
+		if (outAlreadyValidated) {
+			*outAlreadyValidated = it->second.validated;
 		}
 		return it->second.root;
 	}
@@ -47,8 +47,8 @@ Qd::IAstNode* AstCache::getOrParse(
 		std::cerr << "[DEBUG CACHE]   MISS - will parse fresh" << std::endl;
 	}
 
-	if (outFromCache) {
-		*outFromCache = false;
+	if (outAlreadyValidated) {
+		*outAlreadyValidated = false;
 	}
 
 	// Not cached, read and parse
@@ -121,6 +121,13 @@ void AstCache::importFromValidator(Qd::SemanticValidator& validator) {
 				std::cerr << "[DEBUG CACHE]   Already cached, skipping" << std::endl;
 			}
 		}
+	}
+}
+
+void AstCache::markValidated(const std::string& filePath) {
+	auto it = mCache.find(canonicalize(filePath));
+	if (it != mCache.end()) {
+		it->second.validated = true;
 	}
 }
 

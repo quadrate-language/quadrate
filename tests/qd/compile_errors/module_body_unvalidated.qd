@@ -1,0 +1,12 @@
+// Test: the body of an imported module must be semantically validated.
+//
+// This compiled cleanly and exited 0 before the fix. Module files were only validated when
+// freshly parsed, but the semantic validator parses them first to collect their signatures
+// and hands those ASTs to the AST cache, so every module was a cache hit by the time the
+// module loop ran and validation was skipped for all of them. Every stdlib and third-party
+// module body therefore went unchecked during a normal build.
+use unchecked_module_body
+
+fn main() {
+	21 unchecked_module_body::good print nl
+}

@@ -227,8 +227,31 @@ fn do_work( -- ) {
 }
 ```
 
-!!! note
-    `return` only works at the function body's top level. It cannot be used inside `if`, `else`, `loop`, or other blocks.
+`return` exits the enclosing function from anywhere — including inside `if`, `else`, `for`,
+`loop` and `switch` arms — which makes the guard-clause style available:
+
+```qd
+fn classify(n:i64 -- label:str) {
+	n 0 < if {
+		"negative"
+		return
+	}
+	n 0 == if {
+		"zero"
+		return
+	}
+	"positive"
+}
+
+fn main() {
+	-5 classify print nl
+	0 classify print nl
+	7 classify print nl
+}
+```
+
+A function that declares outputs must leave them on the stack before returning, on every path
+that returns. Deferred blocks registered before the `return` still run (see [defer](#defer)).
 
 ### switch
 

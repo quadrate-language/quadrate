@@ -772,6 +772,41 @@ x 10 > if {
 }
 ```
 
+#### 6.1.1 Branch stack effects
+
+Both arms of an `if`/`else` MUST leave the stack at the same depth. An implementation MUST
+reject a program whose arms disagree:
+
+```quadrate
+// doccheck: expect-error arms leave 1 and 2 values respectively
+fn pick(c:i64 -- r:i64) {
+    c if {
+        1
+    } else {
+        2 3
+    }
+}
+
+fn main() {
+    1 pick print nl
+}
+```
+
+This is the one place where the declared stack effect cannot be checked by eye, and where an
+unreported mismatch is not merely unchecked but wrong: whatever follows the `if` reads a value
+whose identity depends on which arm ran.
+
+Two cases are exempt, because the arms legitimately differ:
+
+- **A diverging arm.** An arm ending in `return`, `panic`, `break` or `continue` never reaches
+  the merge point and contributes no stack effect, so the guard idiom `c if { "..." panic }` is
+  unaffected whatever the other arm leaves.
+- **An `if` immediately after a fallible call.** The success arm receives the call's result and
+  the failure arm does not. See §10.3.
+
+An `if` without an `else` is not constrained by this rule; its then-arm is governed by the
+enclosing function's declared effect (§4.3).
+
 ### 6.2 For Loops
 
 ```quadrate

@@ -80,7 +80,6 @@
 #include <quadrate/qc/ast_node_switch.h>
 #include <quadrate/qc/ast_node_test.h>
 #include <quadrate/qc/ast_node_use.h>
-#include <quadrate/qc/ast_node_while.h>
 
 #include <algorithm>
 #include <charconv>
@@ -487,7 +486,6 @@ namespace Qd {
 		// Control flow
 		void generateIf(AstNodeIfStatement* ifStmt, llvm::Value* ctx);
 		void generateFor(AstNodeForStatement* forStmt, llvm::Value* ctx);
-		void generateWhile(AstNodeWhileStatement* whileStmt, llvm::Value* ctx);
 		void generateLoop(AstNodeLoopStatement* loopStmt, llvm::Value* ctx);
 		void generateCtxBlock(AstNodeCtx* ctxNode, llvm::Value* ctx);
 		void generateSwitchStatement(AstNodeSwitchStatement* switchStmt, llvm::Value* ctx);

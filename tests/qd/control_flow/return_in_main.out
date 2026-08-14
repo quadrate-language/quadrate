@@ -1,0 +1,6 @@
+helper: early
+helper: late
+iteration 0
+iteration 1
+returned from loop at 2
+defer ran
