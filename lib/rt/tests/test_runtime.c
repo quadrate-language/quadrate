@@ -3439,6 +3439,7 @@ TEST(CloneContextDeepCopiesStack) {
 	qd_stack_pop(clone->st, &elem);
 	ASSERT_EQ((int)elem.type, (int)QD_STACK_TYPE_STR, "third element should be a string");
 	ASSERT(strcmp(elem.value.s->data, "hello") == 0, "string value should survive the clone");
+	qd_string_release(elem.value.s);
 	qd_stack_pop(clone->st, &elem);
 	ASSERT_EQ((int)elem.type, (int)QD_STACK_TYPE_FLOAT, "second element should be a float");
 	ASSERT(float_eq(elem.value.f, 2.5), "float value should survive the clone");
@@ -3464,6 +3465,7 @@ TEST(CloneContextSharesStringStorage) {
 	qd_stack_pop(src->st, &elem);
 	ASSERT_EQ((int)elem.type, (int)QD_STACK_TYPE_STR, "source element should still be a string");
 	ASSERT(strcmp(elem.value.s->data, "shared") == 0, "source string must outlive the clone");
+	qd_string_release(elem.value.s);
 
 	destroy_test_context(src);
 }
