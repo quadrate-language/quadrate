@@ -11,7 +11,7 @@
       ordinary: `pub fn R_PointToAngle2(x1:i64 y1:i64 x2:i64 y2:i64 -- ang:i64)`. Defining the
       function in the same file works; adding `use "r_main.qd"` doesn't help. Likely a missing bounds
       check on a type-stack/local table past some nesting depth. Bisect under gdb for a backtrace.
-      See `memory/feedback_point_to_angle2_compiler_crash.md`. **Not reproducible from this tree** —
+      **Not reproducible from this tree** —
       `examples/doom/` currently contains only `build/`, `ffi/sdl_shim.o` and `wads/`; the `.qd`
       sources are absent, so this needs the port restored before it can be bisected.
 
@@ -138,9 +138,10 @@ internals), 69 documented in `reference.def`.
     Counts, measured rather than the "81 builtins" this file previously asserted:
     `BUILTIN_INSTRUCTIONS` went 95 → 87 entries, of which the user-facing word-named ones went
     65 → 57 (the rest are 13 symbol operators and 17 `__`-prefixed freestanding internals).
-    The documented surface in `reference.def` went 77 → 69.
+    The documented surface in `reference.def` went 76 → 68 `BUILTIN(...)` entries, plus one
+    `KEYWORD(...)` for `ctx` (22 → 21).
 
-    Following the `while` precedent (`ast_expressions.cc:326`), use now reports what happened rather
+    Following the `while` precedent in `parseBlockStatement` (`ast_expressions.cc`), use now reports what happened rather
     than a generic "undefined identifier", and carries the old stack effect because that is what a
     reader porting old code needs:
 

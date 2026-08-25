@@ -286,32 +286,6 @@ namespace Qd {
 															"Did you mean 'fn (...) { }' for an anonymous function?");
 						continue;
 					}
-				} else if (inFunctionBody && strcmp(tokenText, "ctx") == 0) {
-					// 'ctx' has been removed. Still recognised here so its use reports what
-					// happened rather than an undefined-identifier cascade, the same way the
-					// parser still recognises 'while'.
-					errorReporter->reportError(scanner,
-							"'ctx' has been removed; the block's values were "
-							"appended to the parent stack anyway, so write the body inline");
-					// Consume the whole 'ctx { ... }' block rather than calling synchronize().
-					// The body is brace-balanced, so skipping it exactly leaves the enclosing
-					// function intact; synchronize() would stop at the block's own '}' and let
-					// it close the function, turning one error into a cascade of top-level ones.
-					if (u8t_scanner_scan(scanner) == '{') {
-						int depth = 1;
-						while (depth > 0) {
-							token = u8t_scanner_scan(scanner);
-							if (token == U8T_EOF) {
-								break;
-							}
-							if (token == '{') {
-								depth++;
-							} else if (token == '}') {
-								depth--;
-							}
-						}
-					}
-					continue;
 				}
 			}
 

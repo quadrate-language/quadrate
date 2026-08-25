@@ -316,6 +316,27 @@ namespace Qd {
 				return deferStmt;
 			}
 
+			// 'ctx' has been removed. Recognised here, at the same altitude as the
+			// removed 'while', so it reports what happened from any block position -
+			// function body, if/else, loop, switch case, defer, test, anonymous fn -
+			// rather than only from the one position a caller happens to flag.
+			// Only 'ctx {' was the keyword: a bare 'ctx' is now an ordinary
+			// identifier, so locals and functions named 'ctx' behave like any other.
+			if (strcmp(text, "ctx") == 0 && peekNextNonWhitespace(scanner, src) == '{') {
+				errorReporter->reportError(scanner, REMOVED_CTX_MESSAGE);
+				// Consume the whole 'ctx { ... }' by parsing it into a scratch block that
+				// is then discarded. Reusing parseBlockBody keeps comments and nested
+				// braces accounted for; counting raw '{'/'}' tokens desynchronises on a
+				// brace inside a comment (the scanner does not skip comments), which
+				// turns this one error into a cascade of top-level ones - and calling
+				// synchronize() would stop at the block's own '}' and let it close the
+				// enclosing function, with the same result.
+				u8t_scanner_scan(scanner); // Consume '{'
+				std::unique_ptr<AstNodeBlock> discarded(new AstNodeBlock());
+				parseBlockBody(discarded.get(), scanner, errorReporter, src);
+				return nullptr;
+			}
+
 			if (allowControlFlow) {
 				if (strcmp(text, "if") == 0) {
 					return parseIfStatement(scanner, errorReporter, src);

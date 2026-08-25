@@ -1,4 +1,3 @@
-#include "instructions.h"
 #include <algorithm>
 #include <cstdint>
 #include <cstdlib>
@@ -33,6 +32,7 @@
 #include <quadrate/qc/ast_node_test.h>
 #include <quadrate/qc/ast_node_use.h>
 #include <quadrate/qc/colors.h>
+#include <quadrate/qc/instructions.h>
 #include <quadrate/qc/semantic_validator.h>
 #include <sstream>
 #include <unordered_set>
@@ -510,6 +510,14 @@ namespace Qd {
 
 	void SemanticValidator::typeCheckFunction(IAstNode* node) {
 		if (!node) {
+			return;
+		}
+
+		// A body that referenced a removed builtin has already been diagnosed. Its
+		// stack simulation would be off by the removed op's effect from that point
+		// on, so every downstream underflow/arity error would be noise pointing at
+		// lines the user must not change. Skip the simulation, keep the real error.
+		if (mBodiesWithRemovedBuiltins.count(node)) {
 			return;
 		}
 

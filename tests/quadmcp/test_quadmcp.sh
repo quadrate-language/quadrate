@@ -481,9 +481,17 @@ run_test "Get keyword: loop" \
     '{"jsonrpc":"2.0","method":"tools/call","id":104,"params":{"name":"quadrate_get_keyword","arguments":{"name":"loop"}}}' \
     'name.*loop.*category'
 
-run_test "Get keyword: while" \
+# Removed keywords must NOT be served. This tool is what an AI assistant asks
+# before emitting code, so a stale entry here hands it a keyword the compiler
+# rejects - which is exactly what happened: 'ctx' outlived its removal in
+# docs/api/language.json because nothing checked.
+run_error_test "Get keyword: while is removed" \
     '{"jsonrpc":"2.0","method":"tools/call","id":105,"params":{"name":"quadrate_get_keyword","arguments":{"name":"while"}}}' \
-    'name.*while.*category'
+    "not found"
+
+run_error_test "Get keyword: ctx is removed" \
+    '{"jsonrpc":"2.0","method":"tools/call","id":110,"params":{"name":"quadrate_get_keyword","arguments":{"name":"ctx"}}}' \
+    "not found"
 
 run_test "Get keyword: for" \
     '{"jsonrpc":"2.0","method":"tools/call","id":106,"params":{"name":"quadrate_get_keyword","arguments":{"name":"for"}}}' \

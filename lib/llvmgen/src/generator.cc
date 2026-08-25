@@ -454,6 +454,34 @@ namespace Qd {
 		}
 	}
 
+	// Instructions generateInstruction lowers directly onto the compile-time stack.
+	// pick/roll are deliberately absent: they reorder the stack dynamically, which the
+	// compile-time stack cannot model, and generateInstruction hard-errors on them.
+	bool LlvmGenerator::Impl::isCompileTimeStackInstruction(AstNodeInstruction* inst, bool allowFloat) {
+		static const std::set<std::string> HANDLED = {// Arithmetic and comparison
+				"+", "-", "*", "/", "%", "++", "--", "add", "sub", "mul", "div", "mod", "neg", "<",
+				"<=", "==", "!=", ">", ">=", "lt", "lte", "eq", "neq", "gt", "gte",
+				// Bitwise and logical
+				"and", "or", "xor", "not", "lnot", "shl", "shr",
+				// Stack shuffling
+				"drop", "dup", "dup2", "nip", "over", "rot", "swap",
+				// I/O
+				"nl", "print", "prints",
+				// Raw memory loads/stores
+				"__ld8", "__ld16", "__ld32", "__ld64", "__st8", "__st16", "__st32", "__st64",
+				// x86 port I/O and CPU control
+				"__port_in8", "__port_in16", "__port_in32", "__port_out8", "__port_out16", "__port_out32", "__cli",
+				"__hlt", "__sti"};
+
+		const std::string& name = inst->name();
+		// 'cast' has a compile-time path only in its type-parameterised form, and only
+		// f64 conversions make it worth taking; bare 'cast' falls through to qd_cast*.
+		if (name == "cast") {
+			return allowFloat && inst->hasTypeParam();
+		}
+		return HANDLED.find(name) != HANDLED.end();
+	}
+
 	bool LlvmGenerator::Impl::analyzeIsBodyNativeEligible(
 			IAstNode* node, const std::set<std::string>& localNames, bool allowFloat) {
 		if (!node) {
@@ -475,17 +503,19 @@ namespace Qd {
 		case IAstNode::Type::INSTRUCTION: {
 			auto* inst = static_cast<AstNodeInstruction*>(node);
 			const std::string& name = inst->name();
-			// Reject instructions that work with non-integer types (strings, arrays, pointers)
-			// Also reject dynamic stack ops (pick, roll) that can't be statically handled
-			// But skip the check if the instruction name is actually a local variable reference
-			// (the parser emits Instruction nodes for names like "len" even when they refer to locals)
-			// Note: "cast" is allowed when allowFloat is true for compile-time stack i64<->f64 conversions
+			// Skip the check if the instruction name is actually a local variable
+			// reference (the parser emits Instruction nodes for names like "len" even
+			// when they refer to locals) - generateInstruction resolves those first.
 			if (localNames.find(name) == localNames.end()) {
-				if ((!allowFloat && name == "cast") || name == "err" || name == "read" || name == "getenv" ||
-						name == "make" || name == "set" || name == "nth" || name == "len" || name == "push_back" ||
-						name == "pop_back" || name == "panic" || name == "sizeof" || name == "type" || name == "call" ||
-						name == "pick" || name == "roll" || name == "depth" || name == "clear" || name == "within" ||
-						name == "free" || name == "peek") {
+				// Allow-list, not a deny-list. An instruction with no compile-time-stack
+				// handler falls through to the runtime dispatcher, which reads the
+				// runtime stack while the values actually live in LLVM SSA values - a
+				// silent miscompile that surfaces as a bogus underflow at run time. So
+				// the only safe rule is: if generateInstruction cannot handle it in
+				// compile-time-stack mode, the function is not eligible. Keep this in
+				// sync with the `if (useCompileTimeStack)` block of
+				// generator_nodes_instructions.cc.
+				if (!isCompileTimeStackInstruction(inst, allowFloat)) {
 					return false;
 				}
 			}

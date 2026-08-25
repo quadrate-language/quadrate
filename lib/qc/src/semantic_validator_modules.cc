@@ -15,7 +15,6 @@ extern "C" {
 }
 #include "src/platform/platform_paths.h"
 
-#include "instructions.h"
 #include <quadrate/qc/ast.h>
 #include <quadrate/qc/ast_node.h>
 #include <quadrate/qc/ast_node_anonymous_function.h>
@@ -41,6 +40,7 @@ extern "C" {
 #include <quadrate/qc/ast_node_test.h>
 #include <quadrate/qc/ast_node_use.h>
 #include <quadrate/qc/colors.h>
+#include <quadrate/qc/instructions.h>
 #include <quadrate/qc/semantic_validator.h>
 #include <sstream>
 #include <sys/stat.h>

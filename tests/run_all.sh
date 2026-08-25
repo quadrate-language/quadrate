@@ -5,7 +5,7 @@
 #   ./tests/run_all.sh                    # Run all tests
 #   ./tests/run_all.sh --failed           # Run only previously failed tests
 #   ./tests/run_all.sh --test NAME        # Run specific test
-#   ./tests/run_all.sh --suite SUITE      # Run specific suite (cpp, lsp, qd, formatter, linter, embed, quadpm, build_cache, quadmcp, args, crosscompile, stdlib, mtls, fuzz)
+#   ./tests/run_all.sh --suite SUITE      # Run specific suite (cpp, lsp, qd, formatter, linter, embed, quadpm, build_cache, quadmcp, args, reference, crosscompile, stdlib, mtls, fuzz)
 #   ./tests/run_all.sh --clear            # Clear failed tests file
 #   ./tests/run_all.sh --list             # List all available tests
 
@@ -112,7 +112,7 @@ while [[ $# -gt 0 ]]; do
             echo "Options:"
             echo "  --failed, -f       Run only previously failed tests"
             echo "  --test, -t NAME    Run specific test by name"
-            echo "  --suite, -s SUITE  Run specific suite (cpp, lsp, qd, formatter, linter, embed, quadpm, build_cache, quadmcp, args, crosscompile, stdlib, mtls, fuzz)"
+            echo "  --suite, -s SUITE  Run specific suite (cpp, lsp, qd, formatter, linter, embed, quadpm, build_cache, quadmcp, args, reference, crosscompile, stdlib, mtls, fuzz)"
             echo "  --fuzz-time SECS   Fuzz test duration in seconds (default: 10)"
             echo "  --list, -l         List all available tests"
             echo "  --clear, -c        Clear failed tests file"
@@ -374,9 +374,13 @@ should_run_test() {
     return 0
 }
 
-# Run C++ tests via meson
+# Run C++ tests via meson.
+# Keep this in sync with the C++ test binaries meson defines: `make tests` and CI
+# run this list, not `meson test`, so a binary that is missing here is one nobody
+# runs. test_semantic_validator_extended, test_parser_edge_cases and test_semver
+# were all built, all registered with meson, and all invisible to CI.
 run_cpp_tests() {
-    local tests=("test_ast" "test_semantic_validator" "test_runtime" "test_llvmgen" "test_mem" "test_options" "test_math" "test_strings" "test_io" "test_os" "test_strconv" "test_time" "test_signal" "test_log" "test_fmt" "test_tty" "test_net" "test_thread" "test_testing" "test_http" "test_file_utils")
+    local tests=("test_ast" "test_semantic_validator" "test_semantic_validator_extended" "test_parser_edge_cases" "test_semver" "test_runtime" "test_llvmgen" "test_mem" "test_options" "test_math" "test_strings" "test_io" "test_os" "test_strconv" "test_time" "test_signal" "test_log" "test_fmt" "test_tty" "test_net" "test_thread" "test_testing" "test_http" "test_file_utils")
     local suite="cpp"
 
     # Filter tests first
@@ -506,10 +510,19 @@ run_single_qd_test() {
             return
         fi
 
-        # Check if all error patterns are present
+        # Check error patterns. A line starting with '!' is a negative pattern: it
+        # must NOT appear. Positive-only matching cannot catch a diagnostic that is
+        # correct but followed by a cascade of bogus ones, which is exactly the
+        # failure mode the removed-keyword/removed-builtin tests guard against.
         local all_patterns_found=true
         while IFS= read -r pattern; do
-            if ! grep -qF "$pattern" "$compile_log"; then
+            [[ -z "$pattern" ]] && continue
+            if [[ "$pattern" == !* ]]; then
+                if grep -qF "${pattern#!}" "$compile_log"; then
+                    all_patterns_found=false
+                    break
+                fi
+            elif ! grep -qF "$pattern" "$compile_log"; then
                 all_patterns_found=false
                 break
             fi
@@ -1217,6 +1230,27 @@ arg0=hello" "hello"
     fi
 }
 
+# Cross-check every hand-maintained copy of the builtin/keyword surface against
+# the compiler's own tables. Removing a builtin means editing ten separate lists;
+# nothing compared them, which is how a removed keyword survived in the JSON the
+# MCP server serves live.
+run_reference_tests() {
+    local suite="reference"
+
+    if ! should_run_test "$suite" "builtin_lists"; then
+        return
+    fi
+
+    print_header "Reference Consistency Tests"
+
+    local output
+    if output=$(cd "$PROJECT_ROOT" && python3 tools/check_builtin_lists.py 2>&1); then
+        log_pass "$suite" "builtin_lists" "(builtin and keyword lists agree)"
+    else
+        log_fail "$suite" "builtin_lists" "$output"
+    fi
+}
+
 # Run cross-compilation tests (--target flag)
 run_crosscompile_tests() {
     local suite="crosscompile"
@@ -1894,6 +1928,10 @@ main() {
 
     if [[ -z "$SPECIFIC_SUITE" ]] || [[ "$SPECIFIC_SUITE" == "args" ]]; then
         run_args_tests
+    fi
+
+    if [[ -z "$SPECIFIC_SUITE" ]] || [[ "$SPECIFIC_SUITE" == "reference" ]]; then
+        run_reference_tests
     fi
 
     if [[ -z "$SPECIFIC_SUITE" ]] || [[ "$SPECIFIC_SUITE" == "crosscompile" ]]; then

@@ -1,0 +1,7 @@
+// A removed builtin in a 'use'd sibling must be diagnosed at compile time.
+// Before reference validation ran over merged siblings this compiled with
+// exit 0 and the binary aborted with a stack underflow at run time.
+fn use_removed( -- x:i64) {
+	1 2 tuck
+	drop drop
+}

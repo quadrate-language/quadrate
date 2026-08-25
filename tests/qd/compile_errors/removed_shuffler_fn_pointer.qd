@@ -1,0 +1,7 @@
+// A removed shuffler behind '&' must report the removal too. The fuzzy matcher
+// would otherwise suggest 'pick', an op with a completely different effect.
+fn main() {
+	&tuck -> f
+	1 2 f call
+	print nl
+}

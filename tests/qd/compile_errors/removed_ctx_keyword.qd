@@ -1,6 +1,7 @@
-// 'ctx' was removed: nothing in the corpus used it, the static checker could
-// not model it, and the block's values landed on the parent stack regardless —
-// so the body can simply be written inline.
+// 'ctx' was removed: nothing in the corpus used it and the static checker could
+// not model it. It ran its body on a copy of the stack and appended only the
+// body's top value to the parent, so inlining the body is NOT an equivalent
+// rewrite - the diagnostic must not claim otherwise.
 fn main() {
 	1 2 3
 	ctx { + + }

@@ -1,0 +1,5 @@
+use "helper.qd"
+
+fn main() {
+	use_removed print nl
+}

@@ -1,4 +1,3 @@
-#include "instructions.h"
 #include <algorithm>
 #include <chrono>
 #include <cstdint>
@@ -32,6 +31,7 @@
 #include <quadrate/qc/ast_node_test.h>
 #include <quadrate/qc/ast_node_use.h>
 #include <quadrate/qc/colors.h>
+#include <quadrate/qc/instructions.h>
 #include <quadrate/qc/semantic_validator.h>
 #include <sstream>
 #include <unordered_set>
@@ -764,6 +764,31 @@ namespace Qd {
 					// Set filename/source context so errors point to the sibling file
 					mFilename = astIt->second.filePath.c_str();
 					mSource = astIt->second.source.c_str();
+					// Reference validation runs here too, not just on the main file.
+					// Without it an undefined name - or a removed builtin - in a used
+					// sibling compiles silently and only shows up as a runtime abort.
+					//
+					// mImportedModules holds the main file's imports; a sibling's own
+					// 'use' lines were loaded during the sibling pass but deliberately
+					// never added to it. Bring them into scope for the duration of this
+					// sibling's validation so its qualified calls are not misreported as
+					// missing imports, then take them back out again.
+					std::vector<std::string> scopedImports;
+					for (auto* child : astIt->second.root->children()) {
+						if (!child || child->type() != IAstNode::Type::USE_STATEMENT) {
+							continue;
+						}
+						const std::string& used = static_cast<AstNodeUse*>(child)->module();
+						for (const std::string& n : {used, getPackageFromModuleName(used)}) {
+							if (mImportedModules.insert(n).second) {
+								scopedImports.push_back(n);
+							}
+						}
+					}
+					validateReferences(astIt->second.root);
+					for (const std::string& n : scopedImports) {
+						mImportedModules.erase(n);
+					}
 					typeCheckFunction(astIt->second.root);
 				}
 			}

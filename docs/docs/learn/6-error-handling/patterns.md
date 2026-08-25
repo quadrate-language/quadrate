@@ -306,4 +306,4 @@ fn process_batch(items:[]i64 -- processed:i64 failed:i64) {
 
 ## What's next?
 
-Learn about [Advanced Topics](../7-advanced/defer.md) like defer, context, and memory management.
+Learn about [Advanced Topics](../7-advanced/defer.md) like defer and memory management.

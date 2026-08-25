@@ -1,4 +1,3 @@
-#include "instructions.h"
 #include <algorithm>
 #include <cstdint>
 #include <cstdlib>
@@ -33,6 +32,7 @@
 #include <quadrate/qc/ast_node_type_alias.h>
 #include <quadrate/qc/ast_node_use.h>
 #include <quadrate/qc/colors.h>
+#include <quadrate/qc/instructions.h>
 #include <quadrate/qc/semantic_validator.h>
 #include <sstream>
 #include <unordered_set>
@@ -479,6 +479,18 @@ namespace Qd {
 		}
 	}
 
+	void SemanticValidator::markBodyWithRemovedBuiltin(const IAstNode* node) {
+		// Walk out to the enclosing function or test. Everything from the removed
+		// name onwards is simulated against a stack that is missing its effect, so
+		// the whole body's stack reasoning is unusable, not just the one line.
+		for (const IAstNode* n = node; n != nullptr; n = n->parent()) {
+			if (n->type() == IAstNode::Type::FUNCTION_DECLARATION || n->type() == IAstNode::Type::TEST_DECLARATION) {
+				mBodiesWithRemovedBuiltins.insert(n);
+				return;
+			}
+		}
+	}
+
 	void SemanticValidator::validateReferences(IAstNode* node) {
 		std::unordered_set<std::string> localVariables;
 		std::unordered_set<std::string> iteratorNames;
@@ -750,13 +762,16 @@ namespace Qd {
 
 			// Removed builtins report what happened rather than "undefined identifier",
 			// which would otherwise suggest a typo or a missing variable declaration.
-			if (const char* effect = removedInstructionEffect(name)) {
-				std::string removedMsg = "'";
-				removedMsg += name;
-				removedMsg += "' has been removed (it was ";
-				removedMsg += effect;
-				removedMsg += "); bind the values with named locals ('-> a -> b') instead";
-				reportError(ident, removedMsg.c_str());
+			if (const RemovedInstruction* removed = findRemovedInstruction(name)) {
+				reportError(ident, removedInstructionMessage(*removed).c_str());
+				markBodyWithRemovedBuiltin(ident);
+				return;
+			}
+
+			// A removed keyword is not a typo either - it is a name that used to mean
+			// something. Say what it meant before the fuzzy matcher guesses.
+			if (const char* removedNote = removedKeywordMessage(name)) {
+				reportError(ident, removedNote);
 				return;
 			}
 
@@ -785,15 +800,22 @@ namespace Qd {
 
 			// Check if the referenced function is defined
 			if (mDefinedFunctions.find(name) == mDefinedFunctions.end()) {
-				// Not found - report error with suggestion
-				std::string errorMsg = "Undefined function '";
-				errorMsg += name;
-				errorMsg += "' in function pointer reference";
-				std::string suggestion = findSimilarFunctionName(name, mDefinedFunctions);
-				if (!suggestion.empty()) {
-					errorMsg += "; did you mean '" + suggestion + "'?";
+				// A removed builtin is not a typo - say so before the fuzzy matcher
+				// gets a chance to point at an unrelated op with a different effect.
+				if (const RemovedInstruction* removed = findRemovedInstruction(name)) {
+					reportError(funcPtr, removedInstructionMessage(*removed).c_str());
+					markBodyWithRemovedBuiltin(funcPtr);
+				} else {
+					// Not found - report error with suggestion
+					std::string errorMsg = "Undefined function '";
+					errorMsg += name;
+					errorMsg += "' in function pointer reference";
+					std::string suggestion = findSimilarFunctionName(name, mDefinedFunctions);
+					if (!suggestion.empty()) {
+						errorMsg += "; did you mean '" + suggestion + "'?";
+					}
+					reportError(funcPtr, errorMsg.c_str());
 				}
-				reportError(funcPtr, errorMsg.c_str());
 			}
 		}
 

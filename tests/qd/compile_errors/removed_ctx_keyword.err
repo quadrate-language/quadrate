@@ -1,1 +1,5 @@
-'ctx' has been removed; the block's values were appended to the parent stack anyway, so write the body inline
+'ctx' has been removed; it ran the block on a copy of the stack and appended only the block's top value to the parent, so inlining the body is not equivalent - bind what the body needs with named locals and push the result explicitly
+!write the body inline
+!Unexpected identifier
+!Unmatched '}'
+!Undefined struct

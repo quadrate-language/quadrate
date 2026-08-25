@@ -1059,6 +1059,9 @@ qd_context* qd_clone_context(const qd_context* src) {
 			if (ctx->error_msg) {
 				free(ctx->error_msg);
 			}
+			if (ctx->error_context) {
+				free(ctx->error_context);
+			}
 			qd_stack_destroy(ctx->st);
 			free(ctx);
 			return NULL;

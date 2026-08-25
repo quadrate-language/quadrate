@@ -1,7 +1,9 @@
 #include <cstring>
 #include <quadrate/qc/ast.h>
 #include <quadrate/qc/semantic_validator.h>
+#include <string>
 #include <unit-check/uc.h>
+#include <vector>
 
 // Helper function to validate code and return error count
 static size_t validateCode(const char* src) {
@@ -9,6 +11,28 @@ static size_t validateCode(const char* src) {
 	Qd::IAstNode* root = ast.generate(src, false, nullptr);
 	Qd::SemanticValidator validator;
 	return validator.validate(root, "test.qd");
+}
+
+// Same, but returns the diagnostics themselves. An error count alone cannot tell
+// a purpose-built diagnostic apart from the generic fallback it replaced, so any
+// test asserting on *which* error was produced needs the text.
+static std::vector<Qd::ErrorInfo> validateCodeErrors(const char* src) {
+	Qd::Ast ast;
+	Qd::IAstNode* root = ast.generate(src, false, nullptr);
+	Qd::SemanticValidator validator;
+	validator.setStoreErrors(true);
+	validator.validate(root, "test.qd");
+	return validator.getErrors();
+}
+
+// True when some diagnostic contains 'needle'.
+static bool hasError(const std::vector<Qd::ErrorInfo>& errors, const char* needle) {
+	for (const Qd::ErrorInfo& e : errors) {
+		if (e.message.find(needle) != std::string::npos) {
+			return true;
+		}
+	}
+	return false;
 }
 
 // Stack Operations Edge Cases
@@ -68,9 +92,36 @@ TEST(NipValid) {
 }
 
 TEST(RemovedShufflerRejected) {
-	const char* src = "fn main() { 1 2 tuck drop drop drop }";
-	size_t errors = validateCode(src);
-	ASSERT(errors > 0, "removed builtin 'tuck' should be rejected");
+	// The three drops are correct for tuck's old ( a b -- b a b ) effect, so the
+	// removal message must be the *only* error: simulating the rest of the body
+	// against a stack that never got tuck's values would report an underflow on a
+	// line the user must not change. A bare `errors > 0` cannot see that, and is
+	// satisfied by the generic "undefined identifier" fallback besides.
+	auto errors = validateCodeErrors("fn main() { 1 2 tuck drop drop drop }");
+	ASSERT(hasError(errors, "'tuck' has been removed"), "removed builtin should say it was removed");
+	ASSERT(hasError(errors, "-> b -> a  b a b"), "removal should give the correct binding order");
+	ASSERT(!hasError(errors, "Stack underflow"), "removal should not cascade into a stack underflow");
+	ASSERT(!hasError(errors, "Undefined identifier"), "removal should not fall through to the generic error");
+}
+
+TEST(RemovedShufflerFunctionPointerRejected) {
+	// The fuzzy matcher would otherwise suggest 'pick' here - a different effect.
+	auto errors = validateCodeErrors("fn main() { &tuck -> f  1 2 f call print }");
+	ASSERT(hasError(errors, "'tuck' has been removed"), "&tuck should say tuck was removed");
+	ASSERT(!hasError(errors, "did you mean"), "&tuck should not suggest an unrelated builtin");
+}
+
+TEST(RemovedKeywordCtxRejected) {
+	// 'ctx' is no longer reserved, so an unresolved one reaches name resolution.
+	auto errors = validateCodeErrors("fn main() { 1 2 3 ctx print }");
+	ASSERT(hasError(errors, "'ctx' has been removed"), "bare ctx should say ctx was removed");
+	ASSERT(!hasError(errors, "did you mean"), "removed keyword should not be reported as a typo");
+}
+
+TEST(CtxUsableAsLocalName) {
+	// It is a plain identifier now, exactly like the removed shufflers.
+	size_t errors = validateCode("fn main() { 42 -> ctx  ctx print }");
+	ASSERT(errors == 0, "'ctx' should be usable as an ordinary local name");
 }
 
 TEST(PickZero) {
@@ -324,7 +375,6 @@ TEST(UndefinedLocal) {
 TEST(RecursiveFunction) {
 	const char* src = R"(
 		fn recurse(n:i64 -- r:i64) {
-			-> n
 			n 0 eq if {
 				0
 			} else {
@@ -340,11 +390,9 @@ TEST(RecursiveFunction) {
 TEST(MutualRecursion) {
 	const char* src = R"(
 		fn even(n:i64 -- r:i64) {
-			-> n
 			n 0 eq if { 1 } else { n 1 sub odd }
 		}
 		fn odd(n:i64 -- r:i64) {
-			-> n
 			n 0 eq if { 0 } else { n 1 sub even }
 		}
 		fn main() { 4 even print }
@@ -542,7 +590,7 @@ TEST(AnonymousFunctionCapture) {
 
 TEST(GenericIdentity) {
 	const char* src = R"(
-		fn identity<T>(x:T -- y:T) { }
+		fn identity<T>(x:T -- y:T) { x }
 		fn main() { 42 identity print }
 	)";
 	size_t errors = validateCode(src);
@@ -552,7 +600,7 @@ TEST(GenericIdentity) {
 TEST(GenericPair) {
 	const char* src = R"(
 		fn swap_pair<T U>(a:T b:U -- x:U y:T) {
-			swap
+			b a
 		}
 		fn main() { 1 2 swap_pair add print }
 	)";

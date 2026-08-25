@@ -1,0 +1,8 @@
+// A header comment containing a multi-byte character — an em dash, here.
+// The scanner reports token positions as character indices; the error reporter
+// indexes bytes. Without the conversion the em dash above drags every reported
+// position two columns backwards, naming the wrong line entirely.
+fn main() {
+	ctx { 1 2 + }
+	print nl
+}

@@ -622,6 +622,8 @@ namespace Qd {
 		void collectLocalNames(IAstNode* node, std::set<std::string>& names);
 		bool analyzeIsBodyNativeEligible(
 				IAstNode* node, const std::set<std::string>& localNames, bool allowFloat = true);
+		// True when generateInstruction lowers 'inst' onto the compile-time stack.
+		static bool isCompileTimeStackInstruction(AstNodeInstruction* inst, bool allowFloat);
 		bool analyzeCalleesAllNative(IAstNode* node);
 	};
 

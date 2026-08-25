@@ -24,6 +24,7 @@
 #include <quadrate/qc/ast_node_struct.h>
 #include <quadrate/qc/ast_node_test.h>
 #include <quadrate/qc/error_reporter.h>
+#include <quadrate/qc/instructions.h>
 #include <quadrate/qc/semantic_validator.h>
 #include <set>
 #include <sstream>
@@ -1778,23 +1779,12 @@ static bool isKeyword(const std::string& word) {
 	return keywords.count(word) > 0;
 }
 
-// Helper to check if a word is a built-in stack operation
+// Helper to check if a word is a built-in stack operation.
+// Delegates to the compiler's own table: a second hand-maintained copy drifts
+// (this one had grown 'le', 'ge', 'ne', 'typeof' and 'alloc', none of which
+// exist, while missing 'dup2', 'clear', 'depth', 'len', 'nth', 'add' and 'neq').
 static bool isBuiltinOp(const std::string& word) {
-	static const std::set<std::string> builtins = {// Stack manipulation
-			"dup", "drop", "swap", "over", "rot", "nip", "pick", "roll",
-			// Arithmetic
-			"++", "--",
-			// Comparison
-			"lt", "gt", "le", "ge", "eq", "ne",
-			// I/O
-			"print", "nl", "read", "readln",
-			// Type operations
-			"typeof", "sizeof",
-			// Memory
-			"alloc", "free", "realloc",
-			// Other
-			"assert", "panic", "exit"};
-	return builtins.count(word) > 0;
+	return Qd::isBuiltInInstruction(word.c_str());
 }
 
 // Helper to check if a word is a type name

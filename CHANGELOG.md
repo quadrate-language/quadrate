@@ -5,6 +5,19 @@ All notable changes to the Quadrate programming language are documented in this 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Removed
+
+- **`ctx` keyword**: `ctx { ... }` ran its body on a copy of the stack and appended only the body's top value to the parent. Nothing in the corpus used it and the static checker could not model it. There is no drop-in replacement — inlining the body is *not* equivalent, since it consumes the values `ctx` preserved; bind what the body needs with named locals and push the result explicitly. Using it reports the removal.
+- **Eight stack shufflers**: `drop2`, `dupd`, `nipd`, `over2`, `overd`, `swap2`, `swapd`, `tuck`. All had zero uses; named parameters and `->` locals cover what they did. Using one reports the removal together with its old stack effect and the equivalent named-local rewrite.
+- **Eight C runtime entry points** (`qd_drop2`, `qd_dupd`, `qd_nipd`, `qd_over2`, `qd_overd`, `qd_swap2`, `qd_swapd`, `qd_tuck`) from `<quadrate/rt/runtime.h>` and `libqdrt`. **This is a breaking change for out-of-tree embedders** that called them directly: `libqdrt.so` carries no soversion, so the upgrade is silent and fails at link or load time with an undefined symbol. Replace each call with the equivalent sequence of `qd_stack_push`/`qd_stack_pop`.
+- Phantom `error` builtin from the language reference. It was documented with a signature and an example but never existed; the instruction is `err`.
+
+### Fixed
+
+- `qd_clone_context` leaked `error_context` when the `program_name` copy failed.
+
 ## [0.5.0] - 2026-04-16
 
 ### Added

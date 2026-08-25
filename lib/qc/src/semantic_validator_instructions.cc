@@ -11,10 +11,10 @@
 #include <unordered_set>
 #include <vector>
 
-#include "instructions.h"
 #include <quadrate/qc/ast_node.h>
 #include <quadrate/qc/ast_node_instruction.h>
 #include <quadrate/qc/ast_node_literal.h>
+#include <quadrate/qc/instructions.h>
 #include <quadrate/qc/semantic_validator.h>
 
 namespace Qd {

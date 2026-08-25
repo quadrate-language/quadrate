@@ -1,3 +1,4 @@
+#include <quadrate/rt/qd_string.h>
 #include <quadrate/rt/runtime.h>
 #include <quadrate/rt/context.h>
 #include <quadrate/rt/stack.h>
@@ -3408,4 +3409,70 @@ TEST(RollTest) {
 	ASSERT_EQ((int)elem.value.i, 20, "should be 20");
 
 	destroy_test_context(ctx);
+}
+
+// qd_clone_context tests.
+//
+// The compiler no longer emits calls to qd_clone_context - it existed for the
+// 'ctx' keyword, and the .qd tests for that keyword were its only coverage. It
+// remains a documented public entry point for embedders, so the deep copy and
+// its string handling are pinned here instead.
+
+TEST(CloneContextDeepCopiesStack) {
+	qd_context* src = create_test_context();
+	qd_push_i(src, 1);
+	qd_push_f(src, 2.5);
+	qd_push_s(src, "hello");
+
+	qd_context* clone = qd_clone_context(src);
+	ASSERT(clone != NULL, "clone should succeed");
+	ASSERT(clone->st != src->st, "clone must not share the source stack");
+	ASSERT_EQ((int)qd_stack_size(clone->st), 3, "clone should have the same depth");
+
+	// Mutating the clone must leave the source untouched.
+	qd_push_i(clone, 99);
+	ASSERT_EQ((int)qd_stack_size(src->st), 3, "source depth must not change");
+	ASSERT_EQ((int)qd_stack_size(clone->st), 4, "clone depth should change");
+
+	qd_stack_element_t elem;
+	qd_stack_pop(clone->st, &elem); // the 99 just pushed
+	qd_stack_pop(clone->st, &elem);
+	ASSERT_EQ((int)elem.type, (int)QD_STACK_TYPE_STR, "third element should be a string");
+	ASSERT(strcmp(elem.value.s->data, "hello") == 0, "string value should survive the clone");
+	qd_stack_pop(clone->st, &elem);
+	ASSERT_EQ((int)elem.type, (int)QD_STACK_TYPE_FLOAT, "second element should be a float");
+	ASSERT(float_eq(elem.value.f, 2.5), "float value should survive the clone");
+	qd_stack_pop(clone->st, &elem);
+	ASSERT_EQ((int)elem.value.i, 1, "first element should survive the clone");
+
+	destroy_test_context(clone);
+	destroy_test_context(src);
+}
+
+TEST(CloneContextSharesStringStorage) {
+	// Strings are reference counted, so a cloned stack takes a reference rather
+	// than copying the bytes. Freeing the clone must not invalidate the source's
+	// copy - that is the refcounting the deleted 'ctx' tests used to exercise.
+	qd_context* src = create_test_context();
+	qd_push_s(src, "shared");
+
+	qd_context* clone = qd_clone_context(src);
+	ASSERT(clone != NULL, "clone should succeed");
+	destroy_test_context(clone);
+
+	qd_stack_element_t elem;
+	qd_stack_pop(src->st, &elem);
+	ASSERT_EQ((int)elem.type, (int)QD_STACK_TYPE_STR, "source element should still be a string");
+	ASSERT(strcmp(elem.value.s->data, "shared") == 0, "source string must outlive the clone");
+
+	destroy_test_context(src);
+}
+
+TEST(CloneContextEmptyStack) {
+	qd_context* src = create_test_context();
+	qd_context* clone = qd_clone_context(src);
+	ASSERT(clone != NULL, "cloning an empty context should succeed");
+	ASSERT_EQ((int)qd_stack_size(clone->st), 0, "clone of an empty stack should be empty");
+	destroy_test_context(clone);
+	destroy_test_context(src);
 }

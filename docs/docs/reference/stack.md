@@ -45,6 +45,8 @@ Duplicates the top two values.
 1 2 dup2 // Stack: [1, 2, 1, 2]
 ```
 
+---
+
 ## Removal
 
 ### drop
@@ -56,6 +58,8 @@ Removes the top value from the stack.
 ```qd
 1 2 3 drop // Stack: [1, 2]
 ```
+
+---
 
 ## Swapping
 
@@ -69,6 +73,8 @@ Exchanges the top two values.
 1 2 swap // Stack: [2, 1]
 ```
 
+---
+
 ## Copying
 
 ### over
@@ -80,6 +86,8 @@ Copies the second value to the top.
 ```qd
 1 2 over // Stack: [1, 2, 1]
 ```
+
+---
 
 ## Rotation
 

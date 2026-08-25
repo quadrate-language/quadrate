@@ -13,9 +13,14 @@ namespace Qd {
 			return;
 		}
 
-		size_t pos = u8t_scanner_token_start(scanner);
+		// u8t_scanner_token_start returns a character index; calculateLineColumn
+		// indexes bytes. Without the conversion every multi-byte character earlier
+		// in the file drags the reported position backwards - a single em dash in a
+		// header comment is enough to name the wrong line.
+		size_t charPos = u8t_scanner_token_start(scanner);
+		size_t bytePos = charIndexToByteOffset(mSource, charPos);
 		size_t line, column;
-		calculateLineColumn(mSource, pos, &line, &column);
+		calculateLineColumn(mSource, bytePos, &line, &column);
 		reportError(line, column, message);
 	}
 

@@ -2,6 +2,7 @@
 #include <quadrate/platform/platform.h>
 #include <quadrate/qc/ast.h>
 #include <quadrate/qc/colors.h>
+#include <quadrate/qc/instructions.h>
 #include <quadrate/qd/qd.h>
 #include <quadrate/rt/stack.h>
 
@@ -30,23 +31,18 @@ static const char* g_keywords[] = {"fn", "pub", "if", "else", "for", "loop", "br
 		"struct", "packed", "enum", "const", "var", "defer", "switch", "case", "test", "as", "null", "true", "false",
 		"Ok", "Err", nullptr};
 
-static const char* g_builtins[] = {
-		// Stack operations
-		"dup", "drop", "swap", "over", "rot", "nip", "pick", "roll",
-		// Arithmetic
-		"add", "sub", "mul", "div", "mod", "neg", "inc", "dec",
-		// Comparison
-		"eq", "ne", "lt", "gt", "le", "ge",
-		// Logic
-		"and", "or", "not", "xor",
-		// Bitwise
-		"shl", "shr", "band", "bor", "bnot", "bxor",
-		// I/O
-		"print", "prints", "printv", "printsv", "nl", "read",
-		// Type conversion
-		"i2f", "f2i", "i2s", "f2s",
-		// Arrays
-		"makei", "makef", "makes", "make", "len", "nth", "set", "append", nullptr};
+// Tab completions for built-in instructions, derived from the compiler's own
+// table so this list cannot drift. The hand-maintained copy it replaces had
+// grown 'ne', 'le', 'ge', 'band', 'bor', 'bnot', 'bxor', 'i2f', 'f2i', 'i2s'
+// and 'f2s' - none of which are instructions - while missing real ones.
+static const char* const* builtinCompletions() {
+	static const std::vector<const char*> list = [] {
+		std::vector<const char*> v(std::begin(Qd::BUILTIN_INSTRUCTIONS), std::end(Qd::BUILTIN_INSTRUCTIONS));
+		v.push_back(nullptr); // readline completion loop scans to a nullptr sentinel
+		return v;
+	}();
+	return list.data();
+}
 
 static const char* g_modules[] = {
 		"math::", "strings::", "io::", "fmt::", "os::", "mem::", "time::", "thread::", "flag::", "path::", "rand::",
@@ -119,13 +115,13 @@ static char* completionGenerator(const char* text, int state) {
 	}
 
 	while (phase < 4) {
-		const char** list;
+		const char* const* list;
 		switch (phase) {
 		case 0:
 			list = g_keywords;
 			break;
 		case 1:
-			list = g_builtins;
+			list = builtinCompletions();
 			break;
 		case 2:
 			list = g_modules;

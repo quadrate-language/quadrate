@@ -7,8 +7,8 @@
 #include "ast_node_block.h"
 #include "ast_node_comment.h"
 #include "ast_node_label.h"
-#include "instructions.h"
 #include "source_utils.h"
+#include <quadrate/qc/instructions.h>
 
 #include <cstdint>
 #include <cstdlib>
@@ -507,7 +507,7 @@ namespace Qd {
 						strcmp(text, "enum") == 0 || strcmp(text, "type") == 0 || strcmp(text, "use") == 0 ||
 						strcmp(text, "import") == 0 || strcmp(text, "if") == 0 || strcmp(text, "for") == 0 ||
 						strcmp(text, "while") == 0 || strcmp(text, "loop") == 0 || strcmp(text, "switch") == 0 ||
-						strcmp(text, "return") == 0 || strcmp(text, "ctx") == 0) {
+						strcmp(text, "return") == 0) {
 					return;
 				}
 			}

@@ -1,0 +1,14 @@
+// 'ctx' must be diagnosed from any block position, not only directly inside a
+// function body, and consuming its block must survive a brace inside a comment:
+// the scanner does not skip comments, so counting raw '{'/'}' tokens would
+// desynchronise here and cascade into bogus top-level errors.
+fn main() {
+	1 if {
+		1 2 3
+		ctx {
+			// a stray } inside a comment
+			+ +
+		}
+		print nl
+	}
+}

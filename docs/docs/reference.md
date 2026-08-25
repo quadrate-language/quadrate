@@ -1207,23 +1207,8 @@ Pushes the number of values on the stack.
 
 | Instruction | Signature | Description |
 |-------------|-----------|-------------|
-| [`error`](#error) | `( msg code -- )` | Signals an error with a message and code. Used in fallible functions. |
 | [`err`](#err) | `( -- code )` | Pushes the error code from the last fallible function call. |
 | [`panic`](#panic) | `( msg code -- )` | Signals an error and returns from the fallible function. |
-
-#### error
-
-Signals an error with a message and code. Used in fallible functions.
-
-**Signature:** `( msg code -- )`
-
-**Example:**
-
-```qd
-"invalid input" 1 error
-```
-
----
 
 #### err
 

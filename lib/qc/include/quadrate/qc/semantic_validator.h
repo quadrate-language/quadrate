@@ -191,6 +191,10 @@ namespace Qd {
 
 		// Pass 2: Validate all function calls and references
 		void validateReferences(IAstNode* node);
+		// Records the function or test enclosing 'node' as having referenced a
+		// removed builtin, so type checking can skip its stack simulation.
+		void markBodyWithRemovedBuiltin(const IAstNode* node);
+
 		void validateReferencesInternal(IAstNode* node, std::unordered_set<std::string>& localVariables,
 				std::unordered_set<std::string>& iteratorNames);
 
@@ -424,6 +428,12 @@ namespace Qd {
 		// Number of output values the current function's signature expects
 		// Used to validate 'return' statements push the right number of values
 		size_t mCurrentFunctionOutputCount;
+
+		// Functions and tests whose body referenced a removed builtin. Their stack
+		// simulation is meaningless from that point on - the removed name pushes
+		// nothing - so type checking skips them rather than emitting a cascade of
+		// underflow/arity errors on lines the user must not change.
+		std::unordered_set<const IAstNode*> mBodiesWithRemovedBuiltins;
 
 		// Pending function signature - set when an anonymous function or function pointer
 		// with known signature is pushed onto the stack, used by 'call' instruction

@@ -204,16 +204,6 @@
       ]
     },
     {
-      "name": "ctx",
-      "category": "Stack",
-      "description": "Creates an isolated stack context; results are appended to parent stack",
-      "syntax": "ctx { isolated-body }",
-      "examples": [
-        "1 2 3 ctx { + + } // Stack: [1, 2, 3, 6]",
-        "ctx { 10 20 + } // Computes 30 in isolation"
-      ]
-    },
-    {
       "name": "defer",
       "category": "Control Flow",
       "description": "Schedules a block to run when the function exits, in LIFO order",
@@ -419,16 +409,6 @@
         "use math",
         "use strings",
         "use io"
-      ]
-    },
-    {
-      "name": "while",
-      "category": "Control Flow",
-      "description": "Repeats a block while the condition on the stack is true",
-      "syntax": "condition while { body condition }",
-      "examples": [
-        "1 -> x x 10 < while { x print nl x 1 + -> x x 10 < }",
-        "has_more while { process_next has_more }"
       ]
     }
   ],

@@ -421,11 +421,6 @@ BUILTIN(read, "( -- ... n )", "Reads command line arguments onto the stack, push
 // ERROR HANDLING
 // ============================================================================
 
-/// Signal an error.
-/// @signature ( msg code -- )
-/// @example "invalid input" 1 error
-BUILTIN(error, "( msg code -- )", "Signals an error with a message and code. Used in fallible functions.")
-
 /// Get last error code.
 /// @signature ( -- code )
 /// @example err print nl  // prints error code from last fallible call

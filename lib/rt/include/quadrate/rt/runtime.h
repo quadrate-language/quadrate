@@ -734,7 +734,8 @@ void qd_free_context(qd_context* ctx);
  *
  * @note The caller is responsible for freeing the cloned context with qd_free_context()
  * @note The stack and all string values are deep copied
- * @note Command-line arguments and program name are shared (not copied)
+ * @note Command-line arguments (argc/argv) and the userdata pointer are shared
+ * @note The program name and any pending error message/context are copied
  */
 qd_context* qd_clone_context(const qd_context* src);
 
