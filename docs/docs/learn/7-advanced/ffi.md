@@ -42,6 +42,7 @@ ar rcs libgreet.a greet.o
 
 Create `main.qd`:
 
+<!-- doccheck: skip links against an external .a built by the reader -->
 ```qd
 import "libgreet.a" as "greet" {
 	pub fn hello(name:str -- )
