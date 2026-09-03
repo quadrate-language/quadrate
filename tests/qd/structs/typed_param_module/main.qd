@@ -3,13 +3,13 @@ use geometry
 
 fn main() {
 	// Create a Vec2 using the module's struct
-	3.0 4.0 new geometry::Vec2 -> v1
+	geometry::Vec2 { x = 3.0 y = 4.0 } -> v1
 
 	// Call function with typed parameter
 	"Length of (3,4): " print v1 geometry::length print nl
 
 	// Create another and add them
-	1.0 2.0 new geometry::Vec2 -> v2
+	geometry::Vec2 { x = 1.0 y = 2.0 } -> v2
 	v1 v2 geometry::add -> v3
 	"Added (3,4) + (1,2): (" print v3 <<x print ", " print v3 <<y print ")" print nl
 	"Length of sum: " print v3 geometry::length print nl

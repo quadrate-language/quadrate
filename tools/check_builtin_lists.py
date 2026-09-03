@@ -109,6 +109,16 @@ def base_name(name):
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--verbose", action="store_true")
+    ap.add_argument(
+        "--extra",
+        metavar="PATH",
+        nargs="+",
+        default=[],
+        help="Additional files to word-boundary scan for removed names. Paths are "
+             "absolute or relative to the current directory, not to the repo root, "
+             "so the editor integrations -- which live in sibling repos and so cannot "
+             "be listed in PROSE_SOURCES -- can be checked from their own CI.",
+    )
     args = ap.parse_args()
 
     builtins, removed, removed_kw = parse_instructions_h()
@@ -139,12 +149,28 @@ def main():
             if base_name(name) not in builtins:
                 problems.append(f"{where}: documents '{name}', which is not a builtin")
 
-    for rel in PROSE_SOURCES:
-        text = read(rel)
-        for name in sorted(removed):
+    # PROSE_SOURCES are scanned for removed *instructions* only. Removed keywords
+    # cannot be scanned here: these files embed JavaScript, and the playground's own
+    # highlighter is full of `while (i < code.length)`. Instruction names like `tuck`
+    # and `dupd` are distinctive enough not to collide.
+    prose = [(rel, read(rel), removed) for rel in PROSE_SOURCES]
+
+    # --extra files are syntax definitions -- keyword lists, tree-sitter rules,
+    # TextMate patterns -- where every name is a claim about Quadrate, so removed
+    # keywords count too: a grammar carrying a `while` or `ctx` rule parses what the
+    # compiler rejects.
+    for path in args.extra:
+        if not os.path.exists(path):
+            problems.append(f"{path}: --extra file does not exist")
+            continue
+        with open(path, encoding="utf-8") as f:
+            prose.append((path, f.read(), removed | removed_kw))
+
+    for rel, text, banned in prose:
+        for name in sorted(banned):
             for m in re.finditer(r"\b%s\b" % re.escape(name), text):
                 line = text.count("\n", 0, m.start()) + 1
-                problems.append(f"{rel}:{line}: mentions removed instruction '{name}'")
+                problems.append(f"{rel}:{line}: mentions removed name '{name}'")
 
     if args.verbose:
         print(f"{len(builtins)} builtins, {len(removed)} removed instructions, "

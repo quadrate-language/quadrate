@@ -5,7 +5,7 @@
 #   ./tests/run_all.sh                    # Run all tests
 #   ./tests/run_all.sh --failed           # Run only previously failed tests
 #   ./tests/run_all.sh --test NAME        # Run specific test
-#   ./tests/run_all.sh --suite SUITE      # Run specific suite (cpp, lsp, qd, formatter, linter, embed, quadpm, build_cache, quadmcp, args, reference, crosscompile, stdlib, mtls, fuzz)
+#   ./tests/run_all.sh --suite SUITE      # Run specific suite (cpp, lsp, qd, formatter, linter, embed, quadpm, build_cache, quadmcp, args, reference, crosscompile, stdlib, http, mtls, fuzz)
 #   ./tests/run_all.sh --clear            # Clear failed tests file
 #   ./tests/run_all.sh --list             # List all available tests
 
@@ -112,7 +112,7 @@ while [[ $# -gt 0 ]]; do
             echo "Options:"
             echo "  --failed, -f       Run only previously failed tests"
             echo "  --test, -t NAME    Run specific test by name"
-            echo "  --suite, -s SUITE  Run specific suite (cpp, lsp, qd, formatter, linter, embed, quadpm, build_cache, quadmcp, args, reference, crosscompile, stdlib, mtls, fuzz)"
+            echo "  --suite, -s SUITE  Run specific suite (cpp, lsp, qd, formatter, linter, embed, quadpm, build_cache, quadmcp, args, reference, crosscompile, stdlib, http, mtls, fuzz)"
             echo "  --fuzz-time SECS   Fuzz test duration in seconds (default: 10)"
             echo "  --list, -l         List all available tests"
             echo "  --clear, -c        Clear failed tests file"
@@ -430,9 +430,9 @@ run_lsp_tests() {
     # Skip stress test under valgrind (too slow)
     local tests
     if [[ $USE_VALGRIND -eq 1 ]]; then
-        tests=("test_lsp" "test_lsp_extended" "test_lsp_features" "test_lsp_comprehensive")
+        tests=("test_lsp" "test_lsp_extended" "test_lsp_features" "test_lsp_comprehensive" "test_lsp_completion")
     else
-        tests=("test_lsp" "test_lsp_extended" "test_lsp_stress" "test_lsp_features" "test_lsp_comprehensive")
+        tests=("test_lsp" "test_lsp_extended" "test_lsp_stress" "test_lsp_features" "test_lsp_comprehensive" "test_lsp_completion")
     fi
     local suite="lsp"
 
@@ -585,7 +585,19 @@ run_single_qd_test() {
     if [[ ! -f "$expected_file" ]]; then
         expected_file="${test_file%.qd}.out"
         if [[ ! -f "$expected_file" ]]; then
-            echo "SKIP:no expected output" > "$result_file"
+            # A file with no expected output is normally a helper module pulled in
+            # by a sibling test. Servers are the exception: they end in a blocking
+            # http::run!, so they cannot be compile-run-diffed at all and are driven
+            # by the http suite (tests/run_http_test.sh) instead. Name them so the
+            # skip reads as deliberate rather than as a forgotten .out file.
+            case "$test_file" in
+                */http/server_integration.qd|*/http/sse_integration.qd)
+                    echo "SKIP:blocking server, covered by the http suite" > "$result_file"
+                    ;;
+                *)
+                    echo "SKIP:no expected output" > "$result_file"
+                    ;;
+            esac
             return
         fi
     fi
@@ -1507,6 +1519,35 @@ EOFSRC
     fi
 }
 
+# Run HTTP server / SSE integration tests
+run_http_tests() {
+    local suite="http"
+
+    if ! should_run_test "$suite" "http_test"; then
+        return
+    fi
+
+    if ! command -v curl &> /dev/null; then
+        log_skip "$suite" "http_test" "curl not found"
+        return
+    fi
+
+    print_header "HTTP Integration Tests"
+
+    local output
+    local exit_code
+
+    output=$(QUADC="$QUADC" bash "$PROJECT_ROOT/tests/run_http_test.sh" 2>&1)
+    exit_code=$?
+
+    if [[ $exit_code -eq 0 ]]; then
+        log_pass "$suite" "http_test"
+    else
+        local error_msg=$(echo "$output" | grep -B 2 -A 3 "✗\|FAIL" | head -20)
+        log_fail "$suite" "http_test" "test failed" "$error_msg"
+    fi
+}
+
 # Run mTLS tests
 run_mtls_tests() {
     local suite="mtls"
@@ -1728,7 +1769,7 @@ list_all_tests() {
     echo ""
 
     echo "LSP Tests (suite: lsp):"
-    for test in test_lsp test_lsp_extended test_lsp_stress test_lsp_features test_lsp_comprehensive; do
+    for test in test_lsp test_lsp_extended test_lsp_stress test_lsp_features test_lsp_comprehensive test_lsp_completion; do
         echo "  $test"
     done
     echo ""
@@ -1764,6 +1805,10 @@ list_all_tests() {
     echo "  stdlib_tests"
     echo ""
 
+    echo "HTTP Integration Tests (suite: http):"
+    echo "  http_test"
+    echo ""
+
     echo "mTLS Tests (suite: mtls):"
     echo "  mtls_test"
     echo ""
@@ -1780,7 +1825,7 @@ print_summary() {
     echo -e "${BOLD}═══════════════════════════════════════════════════════════════════════════════${NC}"
 
     # Print per-suite summary
-    for suite in cpp lsp qd formatter linter embed quadpm build_cache quadmcp stdlib mtls fuzz; do
+    for suite in cpp lsp qd formatter linter embed quadpm build_cache quadmcp stdlib http mtls fuzz; do
         local passed=${SUITE_PASSED[$suite]:-0}
         local failed=${SUITE_FAILED[$suite]:-0}
         local skipped=${SUITE_SKIPPED[$suite]:-0}
@@ -1800,6 +1845,7 @@ print_summary() {
             build_cache) suite_name="Build Cache" ;;
             quadmcp) suite_name="MCP Server" ;;
             stdlib) suite_name="Stdlib Unit Tests" ;;
+            http) suite_name="HTTP Integration" ;;
             mtls) suite_name="mTLS" ;;
             fuzz) suite_name="Fuzz" ;;
         esac
@@ -1941,6 +1987,10 @@ main() {
     if [[ -z "$SPECIFIC_SUITE" ]] || [[ "$SPECIFIC_SUITE" == "stdlib" ]]; then
         run_stdlib_tests
         run_helgrind_tests
+    fi
+
+    if [[ -z "$SPECIFIC_SUITE" ]] || [[ "$SPECIFIC_SUITE" == "http" ]]; then
+        run_http_tests
     fi
 
     if [[ -z "$SPECIFIC_SUITE" ]] || [[ "$SPECIFIC_SUITE" == "mtls" ]]; then
