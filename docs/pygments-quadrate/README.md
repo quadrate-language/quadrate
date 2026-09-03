@@ -1,6 +1,6 @@
 # Pygments Quadrate lexer
 
-Syntax highlighting for the [Quadrate](https://git.sr.ht/~klahr/quadrate) programming language.
+Syntax highlighting for the [Quadrate](https://github.com/quadrate-language/quadrate) programming language.
 
 ## Installation
 

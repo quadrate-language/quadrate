@@ -768,5 +768,5 @@ int native_might_fail(qd_context* ctx, void* userdata) {
 
 Wrappers around the C embedding API are available for other languages:
 
-- **Go**: [go-quadrate](https://git.sr.ht/~klahr/go-quadrate)
-- **Python**: [python-quadrate](https://git.sr.ht/~klahr/python-quadrate)
+- **Go**: [go-quadrate](https://github.com/quadrate-language/go-quadrate)
+- **Python**: [python-quadrate](https://github.com/quadrate-language/python-quadrate)

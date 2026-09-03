@@ -3,15 +3,15 @@
 The following modules are available as separate packages. Install them using `quadpm get`:
 
 ```bash
-quadpm get https://git.sr.ht/~klahr/qdcompress
+quadpm get https://github.com/quadrate-language/compress
 ```
 
 ## Available packages
 
 | Package | Description | Install |
 |---------|-------------|---------|
-| [compress](https://git.sr.ht/~klahr/qdcompress) | Compression (gzip, zlib) | `quadpm get https://git.sr.ht/~klahr/qdcompress` |
-| [sqlite](https://git.sr.ht/~klahr/qdsqlite) | SQLite database | `quadpm get https://git.sr.ht/~klahr/qdsqlite` |
+| [compress](https://github.com/quadrate-language/compress) | Compression (gzip, zlib) | `quadpm get https://github.com/quadrate-language/compress` |
+| [sqlite](https://github.com/quadrate-language/sqlite) | SQLite database | `quadpm get https://github.com/quadrate-language/sqlite` |
 
 ## Usage
 
@@ -32,10 +32,10 @@ fn main() {
 
 ```bash
 # Install a single package
-quadpm get https://git.sr.ht/~klahr/qdcompress
+quadpm get https://github.com/quadrate-language/compress
 
 # Install a specific version/ref
-quadpm get https://git.sr.ht/~klahr/qdcompress@v1.0.0
+quadpm get https://github.com/quadrate-language/compress@v1.0.0
 
 # Install all dependencies from qd.json
 quadpm install

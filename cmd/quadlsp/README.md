@@ -20,5 +20,5 @@ Communicates via stdin/stdout using JSON-RPC.
 
 Configure your editor to use `quadlsp` as the language server for `.qd` files.
 
-- **Neovim**: https://git.sr.ht/~klahr/quadrate.nvim
-- **VS Code**: https://git.sr.ht/~klahr/quadrate-vscode
+- **Neovim**: https://github.com/quadrate-language/quadrate.nvim
+- **VS Code**: https://github.com/quadrate-language/quadrate-vscode

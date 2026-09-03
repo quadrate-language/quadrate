@@ -4,8 +4,10 @@ URI encoding, decoding, and parsing for Quadrate.
 
 ## Installation
 
-```bash
-quadpm get https://git.sr.ht/~klahr/qduri
+`uri` ships with the Quadrate toolchain, so there is nothing to install:
+
+```quadrate
+use uri
 ```
 
 ## Usage
@@ -61,4 +63,4 @@ Apache 2.0
 
 ## Contributing
 
-Contributions welcome! Please open an issue or submit a patch on [SourceHut](https://git.sr.ht/~klahr/qduri).
+Contributions welcome! Please open an issue or pull request on [GitHub](https://github.com/quadrate-language/quadrate).

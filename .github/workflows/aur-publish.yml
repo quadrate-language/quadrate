@@ -1,0 +1,38 @@
+name: AUR publish
+
+on:
+  push:
+    tags: ["*"]
+  workflow_dispatch:
+
+jobs:
+  publish:
+    name: Push PKGBUILD to the AUR
+    if: github.ref_type == 'tag'
+    runs-on: ubuntu-latest
+    container: archlinux:base-devel
+    steps:
+      - name: Install packages
+        run: pacman -Syu --noconfirm --needed git openssh
+
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - name: Publish to AUR
+        env:
+          AUR_SSH_PRIVATE_KEY: ${{ secrets.AUR_SSH_PRIVATE_KEY }}
+          TAG: ${{ github.ref_name }}
+        run: |
+          if [ -z "${AUR_SSH_PRIVATE_KEY:-}" ]; then
+            echo "AUR_SSH_PRIVATE_KEY is not set — skipping AUR publish."
+            exit 0
+          fi
+
+          useradd -m builder
+          install -d -m 700 -o builder -g builder /home/builder/.ssh
+          (umask 077 && printf '%s\n' "$AUR_SSH_PRIVATE_KEY" >/home/builder/.ssh/id_ed25519)
+          ssh-keyscan aur.archlinux.org >/home/builder/.ssh/known_hosts 2>/dev/null
+          chown -R builder:builder /home/builder/.ssh
+
+          runuser -u builder -- env TAG="$TAG" .github/scripts/aur-publish.sh

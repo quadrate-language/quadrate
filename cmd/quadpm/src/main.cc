@@ -38,19 +38,19 @@ static void printUsage() {
 	std::cout << "  quadpm install\n";
 	std::cout << "  quadpm install --frozen\n";
 	std::cout << "  quadpm lock\n";
-	std::cout << "  quadpm get https://git.sr.ht/~user/zlib\n";
-	std::cout << "  quadpm get https://git.sr.ht/~user/zlib@1.2.0\n";
-	std::cout << "  quadpm get https://git.sr.ht/~user/qdhttp@master\n";
+	std::cout << "  quadpm get https://github.com/user/zlib\n";
+	std::cout << "  quadpm get https://github.com/user/zlib@1.2.0\n";
+	std::cout << "  quadpm get https://github.com/user/qdhttp@master\n";
 	std::cout << "  quadpm list\n\n";
 	std::cout << "qd.json format (npm-compatible):\n";
 	std::cout << "  {\n";
 	std::cout << "    \"name\": \"mymodule\",\n";
 	std::cout << "    \"dependencies\": {\n";
-	std::cout << "      \"glut\": \"https://git.sr.ht/~user/qd-glut@v1.0.0\",\n";
-	std::cout << "      \"http\": { \"url\": \"https://git.sr.ht/~user/qd-http\", \"version\": \"^2.0.0\" },\n";
+	std::cout << "      \"glut\": \"https://github.com/user/qd-glut@v1.0.0\",\n";
+	std::cout << "      \"http\": { \"url\": \"https://github.com/user/qd-http\", \"version\": \"^2.0.0\" },\n";
 	std::cout << "      \"mylib\": \"../local/path\",\n";
 	std::cout << "      \"crypto\": {\n";
-	std::cout << "        \"url\": \"https://git.sr.ht/~user/qd-crypto\",\n";
+	std::cout << "        \"url\": \"https://github.com/user/qd-crypto\",\n";
 	std::cout << "        \"version\": \"~1.5.0\",\n";
 	std::cout << "        \"integrity\": \"sha256-abc123...\"\n";
 	std::cout << "      }\n";
@@ -93,7 +93,7 @@ int main(int argc, char** argv) {
 		if (argc < 3) {
 			std::cerr << COLOR_RED << "Error: 'get' requires a Git URL" << COLOR_RESET << "\n";
 			std::cerr << "Usage: " << argv[0] << " get <git-url>[@ref]\n";
-			std::cerr << "Example: " << argv[0] << " get https://git.sr.ht/~user/zlib@1.2.0\n";
+			std::cerr << "Example: " << argv[0] << " get https://github.com/user/zlib@1.2.0\n";
 			return 1;
 		}
 

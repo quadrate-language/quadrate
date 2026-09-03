@@ -38,7 +38,7 @@ Quadrate builds on these foundations while adding static types, LLVM compilation
 
 Quadrate is open source and developed in the open:
 
-**Repository:** [git.sr.ht/~klahr/quadrate](https://git.sr.ht/~klahr/quadrate)
+**Repository:** [github.com/quadrate-language/quadrate](https://github.com/quadrate-language/quadrate)
 
 Contributions, bug reports, and feedback are welcome. The project uses SourceHut for hosting and mailing lists for discussion.
 

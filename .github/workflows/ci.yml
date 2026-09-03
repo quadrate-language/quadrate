@@ -1,0 +1,68 @@
+name: CI
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  debian:
+    name: debian/testing
+    runs-on: ubuntu-latest
+    container: debian:testing
+    steps:
+      - name: Install packages
+        run: |
+          apt-get update
+          DEBIAN_FRONTEND=noninteractive apt-get install -y \
+            build-essential ca-certificates clang clang-format git \
+            libclang-rt-dev libsqlite3-dev libssl-dev llvm-dev meson \
+            ninja-build patchelf pkg-config python3 valgrind zlib1g-dev
+
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - name: Run checks
+        run: .github/scripts/ci-checks.sh --valgrind
+
+  archlinux:
+    name: archlinux
+    runs-on: ubuntu-latest
+    container: archlinux:base-devel
+    steps:
+      - name: Install packages
+        run: |
+          pacman -Syu --noconfirm --needed \
+            clang git llvm meson ninja openssl patchelf pkgconf python \
+            sqlite zlib
+
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - name: Run checks
+        run: .github/scripts/ci-checks.sh
+
+  alpine:
+    name: alpine/edge
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - name: Run checks
+        run: |
+          docker run --rm -v "$PWD:/build" -w /build alpine:edge sh -euc '
+            apk add --no-cache \
+              bash build-base clang clang-dev clang-extra-tools compiler-rt \
+              git llvm-dev meson musl-dev openssl-dev patchelf pkgconf \
+              python3 readline-dev sqlite-dev zlib-dev
+            exec .github/scripts/ci-checks.sh
+          '

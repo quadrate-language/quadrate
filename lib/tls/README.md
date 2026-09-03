@@ -4,8 +4,10 @@ TLS/SSL secure socket module for Quadrate using OpenSSL.
 
 ## Installation
 
-```bash
-quadpm get https://git.sr.ht/~klahr/qdtls
+`tls` ships with the Quadrate toolchain, so there is nothing to install:
+
+```quadrate
+use tls
 ```
 
 **Prerequisites**: OpenSSL development libraries must be installed:
@@ -80,4 +82,4 @@ Apache-2.0
 
 ## Contributing
 
-Contributions welcome! Please open an issue or submit a patch on [SourceHut](https://git.sr.ht/~klahr/qdtls).
+Contributions welcome! Please open an issue or pull request on [GitHub](https://github.com/quadrate-language/quadrate).

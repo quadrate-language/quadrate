@@ -385,7 +385,7 @@ void listModules() {
 
 	// Collect all packages with their info
 	struct PackageInfo {
-		std::string hostPath;	   // e.g., "git.sr.ht/~klahr/collections"
+		std::string hostPath;	   // e.g., "github.com/klahr/collections"
 		std::string version;	   // e.g., "v1.0.0"
 		std::string fullPath;	   // Full filesystem path
 		std::string namespaceName; // Namespace for code usage
@@ -1543,7 +1543,7 @@ int removeModule(const std::string& targetModuleName) {
 		// Match by:
 		// 1. Full directory name (e.g., "json@master")
 		// 2. Just the module name (e.g., "json")
-		// 3. Full hostPath (e.g., "git.sr.ht/~klahr/qdjson")
+		// 3. Full hostPath (e.g., "github.com/quadrate-language/compress")
 		// 4. Namespace from qd.json
 		std::string manifestNamespace;
 		std::string manifestModuleName;

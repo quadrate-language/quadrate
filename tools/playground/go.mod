@@ -1,3 +1,3 @@
-module git.sr.ht/~klahr/quadrate/tools/playground
+module github.com/quadrate-language/quadrate/tools/playground
 
 go 1.21

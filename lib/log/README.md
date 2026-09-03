@@ -1,11 +1,13 @@
 # log
 
-Structured logging with levels, rotation, and multiple outputs for [Quadrate](https://git.sr.ht/~klahr/quadrate).
+Structured logging with levels, rotation, and multiple outputs for [Quadrate](https://github.com/quadrate-language/quadrate).
 
 ## Installation
 
-```bash
-quadpm get https://git.sr.ht/~klahr/qdlog
+`log` ships with the Quadrate toolchain, so there is nothing to install:
+
+```quadrate
+use log
 ```
 
 **Note**: This module requires native compilation. The C source files in `src/` must be compiled and linked.
@@ -89,4 +91,4 @@ Apache-2.0 - See [LICENSE](LICENSE) for details.
 
 ## Contributing
 
-Contributions welcome! Please open an issue or submit a patch on [SourceHut](https://git.sr.ht/~klahr/qdlog).
+Contributions welcome! Please open an issue or pull request on [GitHub](https://github.com/quadrate-language/quadrate).

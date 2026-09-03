@@ -4,8 +4,10 @@ Base64 encoding and decoding for Quadrate.
 
 ## Installation
 
-```bash
-quadpm get https://git.sr.ht/~klahr/qdbase64
+`base64` ships with the Quadrate toolchain, so there is nothing to install:
+
+```quadrate
+use base64
 ```
 
 ## Usage
@@ -37,4 +39,4 @@ Apache 2.0
 
 ## Contributing
 
-Contributions welcome! Please open an issue or submit a patch on [SourceHut](https://git.sr.ht/~klahr/qdbase64).
+Contributions welcome! Please open an issue or pull request on [GitHub](https://github.com/quadrate-language/quadrate).

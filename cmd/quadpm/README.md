@@ -16,8 +16,8 @@ quadpm <command> [args]
 ## Examples
 
 ```bash
-quadpm get https://git.sr.ht/~user/mylib
-quadpm get https://git.sr.ht/~user/lib@v1.0.0
+quadpm get https://github.com/user/mylib
+quadpm get https://github.com/user/lib@v1.0.0
 quadpm list
 ```
 

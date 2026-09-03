@@ -44,7 +44,7 @@ std::string extractHostPath(const std::string& gitUrl) {
 	}
 
 	// Handle https:// and http:// URLs
-	// e.g., https://git.sr.ht/~user/repo -> git.sr.ht/~user/repo
+	// e.g., https://github.com/user/repo -> github.com/user/repo
 	if (url.substr(0, 8) == "https://") {
 		return url.substr(8);
 	}

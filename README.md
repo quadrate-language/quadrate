@@ -71,8 +71,8 @@ See [CONTRIBUTING.md](./CONTRIBUTING.md) for the full release workflow.
 
 - **Documentation**: https://quad.r8.rs
 - **Playground**: https://quad.r8.rs/play/
-- **Issues**: https://todo.sr.ht/~klahr/quadrate
-- **Patches**: ~klahr/quadrate@lists.sr.ht
+- **Issues**: https://github.com/quadrate-language/quadrate/issues
+- **Pull requests**: https://github.com/quadrate-language/quadrate/pulls
 
 ## License
 

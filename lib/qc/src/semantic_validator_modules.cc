@@ -69,7 +69,7 @@ namespace Qd {
 	}
 
 	// Helper: Check if a module name is a full path import (contains host/path)
-	// e.g., "git.sr.ht/~klahr/collections" or "github.com/user/repo"
+	// e.g., "github.com/klahr/collections" or "github.com/user/repo"
 	static bool isFullPathImport(const std::string& moduleName) {
 		// Full path imports contain '/' but don't start with '.', '~', or '/'
 		if (moduleName.empty()) {
@@ -476,7 +476,7 @@ namespace Qd {
 			}
 
 			// Try 3: Third-party packages directory (installed via quadpm)
-			// Supports both full path imports (e.g., "use git.sr.ht/~klahr/collections")
+			// Supports both full path imports (e.g., "use github.com/klahr/collections")
 			// and namespace resolution via _namespaces/ symlinks
 			std::string packagesDir = getPackagesDirectory();
 
@@ -484,7 +484,7 @@ namespace Qd {
 				std::string cacheDir = packagesDir + "/cache";
 				std::string namespacesDir = packagesDir + "/_namespaces";
 
-				// Check if this is a full path import (e.g., "git.sr.ht/~klahr/collections")
+				// Check if this is a full path import (e.g., "github.com/klahr/collections")
 				if (isFullPathImport(moduleName)) {
 					// Full path import - look in cache/{hostPath}@*/module.qd
 					// Extract the namespace from qd.json to use as the effective module name

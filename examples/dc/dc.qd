@@ -142,7 +142,7 @@ fn print_help() {
 	"  -h, --help               display this help and exit" print nl
 	"  -V, --version            output version information and exit" print nl
 	nl
-	"Email bug reports to:  ~klahr/<<quadratelists.sr.ht" print nl
+	"Report bugs at:  https://github.com/quadrate-language/quadrate/issues" print nl
 }
 
 fn is_number(tok:str -- result:i64) {

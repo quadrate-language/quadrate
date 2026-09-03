@@ -1,5 +1,5 @@
 [wrap-git]
-url = https://git.sr.ht/~klahr/unit-check
+url = https://github.com/klahr/unit-check.git
 revision = 1.1.0
 patch_directory = unit-check
 

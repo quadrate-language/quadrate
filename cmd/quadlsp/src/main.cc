@@ -1277,7 +1277,7 @@ std::string QuadrateLSP::findLatestPackageVersion(const std::string& moduleName)
 
 	std::string latestPath;
 	try {
-		// Modules are nested in paths like git.sr.ht/~klahr/qdhttp@master
+		// Modules are nested in paths like github.com/quadrate-language/compress@master
 		// Use recursive iteration to find them
 		for (const auto& entry : std::filesystem::recursive_directory_iterator(packagesDir)) {
 			if (!entry.is_directory()) {

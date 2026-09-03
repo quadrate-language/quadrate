@@ -115,7 +115,7 @@ These modules ship with Quadrate and are always available:
 Additional modules are available as separate packages via `quadpm`. Install them with `quadpm get`:
 
 ```bash
-quadpm get https://git.sr.ht/~klahr/qdcompress
+quadpm get https://github.com/quadrate-language/compress
 ```
 
 After installing, use them like any standard library module.
@@ -126,7 +126,7 @@ For projects with multiple dependencies, list them in a `qd.json` file and run `
 {
 	"name": "myproject",
 	"dependencies": {
-		"compress": "https://git.sr.ht/~klahr/qdcompress"
+		"compress": "https://github.com/quadrate-language/compress"
 	}
 }
 ```
@@ -137,8 +137,8 @@ quadpm install
 
 | Package | Install |
 |---------|---------|
-| `compress` | `quadpm get https://git.sr.ht/~klahr/qdcompress` |
-| `sqlite` | `quadpm get https://git.sr.ht/~klahr/qdsqlite` |
+| `compress` | `quadpm get https://github.com/quadrate-language/compress` |
+| `sqlite` | `quadpm get https://github.com/quadrate-language/sqlite` |
 
 See [External Packages](../../external-packages.md) for full documentation and examples.
 

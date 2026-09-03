@@ -3,5 +3,5 @@
 # Tests in tests/qd/<module_name>/ will use -I flag to find these modules
 # If clone fails, tests for that module are skipped
 
-compress https://git.sr.ht/~klahr/qdcompress
-sqlite https://git.sr.ht/~klahr/qdsqlite
+compress https://github.com/quadrate-language/compress
+sqlite https://github.com/quadrate-language/sqlite

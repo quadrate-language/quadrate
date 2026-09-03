@@ -1,0 +1,81 @@
+name: Release
+
+on:
+  push:
+    tags: ["*"]
+  workflow_dispatch:
+
+jobs:
+  glibc:
+    name: dist (glibc)
+    runs-on: ubuntu-latest
+    container: debian:testing
+    steps:
+      - name: Install packages
+        run: |
+          apt-get update
+          DEBIAN_FRONTEND=noninteractive apt-get install -y \
+            build-essential ca-certificates clang git \
+            libclang-rt-dev libsqlite3-dev libssl-dev llvm-dev meson \
+            ninja-build patchelf pkg-config python3 zlib1g-dev
+
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - name: Build tarball
+        run: .github/scripts/ci-dist.sh glibc
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: dist-glibc
+          path: dist-out/
+          if-no-files-found: error
+
+  musl:
+    name: dist (musl)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - name: Build tarball
+        run: |
+          docker run --rm -v "$PWD:/build" -w /build alpine:edge sh -euc '
+            apk add --no-cache \
+              bash build-base clang clang-dev clang-extra-tools compiler-rt \
+              git llvm-dev meson musl-dev openssl-dev patchelf pkgconf \
+              python3 readline-dev sqlite-dev zlib-dev
+            exec .github/scripts/ci-dist.sh musl
+          '
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: dist-musl
+          path: dist-out/
+          if-no-files-found: error
+
+  publish:
+    name: Publish release
+    needs: [glibc, musl]
+    if: github.ref_type == 'tag'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: assets
+          merge-multiple: true
+
+      - name: Attach tarballs to the release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ github.ref_name }}
+        run: |
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            gh release upload "$TAG" assets/* --clobber
+          else
+            gh release create "$TAG" --title "$TAG" --generate-notes assets/*
+          fi

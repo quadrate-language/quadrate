@@ -109,8 +109,8 @@ quadrate/
 ```
 
 Editor integrations are in separate repositories:
-- **Neovim**: https://git.sr.ht/~klahr/quadrate.nvim
-- **VS Code**: https://git.sr.ht/~klahr/quadrate-vscode
+- **Neovim**: https://github.com/quadrate-language/quadrate.nvim
+- **VS Code**: https://github.com/quadrate-language/quadrate-vscode
 
 Each library follows the structure:
 ```
@@ -133,19 +133,19 @@ Ensure your code compiles without warnings.
 
 ## Submitting contributions
 
-Quadrate is hosted on [SourceHut](https://sr.ht/~klahr/quadrate). We use email-based workflows:
+Quadrate is hosted on [GitHub](https://github.com/quadrate-language/quadrate). We use pull requests:
 
-### Sending patches
+### Opening a pull request
 
-1. Make your changes in a local branch
+1. Fork the repository and make your changes in a branch
 2. Commit with clear, descriptive messages
-3. Send patches to the mailing list:
+3. Push the branch and open a pull request:
 
 ```bash
-git send-email --to=~klahr/quadrate@lists.sr.ht HEAD^
+gh pr create --fill
 ```
 
-If you're new to `git send-email`, see [git-send-email.io](https://git-send-email.io) for setup instructions.
+CI runs the Alpine, Debian and Arch Linux checks on every pull request.
 
 ### Commit messages
 
@@ -182,14 +182,17 @@ Explain what changed and why, not how (the diff shows how).
    ```bash
    git push && git push origin <tag>
    ```
-4. CI builds on Alpine, Debian, and Arch Linux. Tagged commits produce release tarballs as build artifacts on builds.sr.ht.
-5. Download the tarballs from the CI job page and attach them to the tag on git.sr.ht.
+4. CI builds on Alpine, Debian, and Arch Linux. Pushing the tag also runs
+   the release workflow, which builds the glibc and musl tarballs and
+   attaches them to the GitHub Release automatically.
+5. The same tag triggers the AUR publish workflow, which stamps
+   `pkg/aur/quadrate/PKGBUILD` with the new version and pushes it.
 
 To build a release tarball locally (e.g. for testing): `make dist`
 
 ## Reporting issues
 
-Report bugs and request features via the [issue tracker](https://todo.sr.ht/~klahr/quadrate) or by sending email to the mailing list.
+Report bugs and request features via the [issue tracker](https://github.com/quadrate-language/quadrate/issues).
 
 Include:
 - Quadrate version
@@ -199,9 +202,9 @@ Include:
 
 ## Questions?
 
-- Mailing list: ~klahr/quadrate@lists.sr.ht
+- Issues: https://github.com/quadrate-language/quadrate/issues
 - Documentation: https://quad.r8.rs
-- Maintainer: [~klahr](https://sr.ht/~klahr)
+- Maintainer: [@klahr](https://github.com/klahr)
 
 ## License
 

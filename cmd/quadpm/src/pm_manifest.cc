@@ -91,8 +91,8 @@ std::string parseNamespace(const std::string& manifestPath) {
 
 // Parse dependencies from qd.json
 // Supports:
-//   "name": "https://git.sr.ht/~user/repo@ref"  (git URL with branch/tag)
-//   "name": "https://git.sr.ht/~user/repo"      (git URL, default branch)
+//   "name": "https://github.com/user/repo@ref"  (git URL with branch/tag)
+//   "name": "https://github.com/user/repo"      (git URL, default branch)
 //   "name": "../local/path"                      (local path)
 //   "name": "^1.0.0"                             (semver range, uses default registry)
 //   "name": { "url": "...", "version": "^1.0.0" }  (expanded form with semver)

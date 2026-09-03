@@ -1012,7 +1012,7 @@ fi
 echo ""
 echo "Test 34: Go-style directory structure"
 # Check that the directory structure uses host/path format
-# For git URLs it should be like: git.sr.ht/~user/repo@version
+# For git URLs it should be like: github.com/user/repo@version
 # For local paths it should be like: local/path/to/repo@version
 if find "$TEST_CACHE_DIR/cache" -type d -name "mylib@v1.0.0" | grep -q "local/"; then
     pass "Go-style directory structure for local paths"

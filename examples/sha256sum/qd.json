@@ -1,8 +1,5 @@
 {
   "name": "sha256sum",
   "version": "1.0.0",
-  "description": "SHA256 checksum utility",
-  "dependencies": {
-    "crypto": "https://git.sr.ht/~klahr/qdcrypto"
-  }
+  "description": "SHA256 checksum utility"
 }

@@ -56,7 +56,7 @@ paru -S quadrate
 Clone the repository and build:
 
 ```bash
-git clone https://git.sr.ht/~klahr/quadrate
+git clone https://github.com/quadrate-language/quadrate
 cd quadrate
 make release
 make install
@@ -114,11 +114,11 @@ See [Toolchain](toolchain.md) for documentation on all available tools including
 
 ### Neovim
 
-Tree-sitter grammar and LSP support: [quadrate.nvim](https://git.sr.ht/~klahr/quadrate.nvim)
+Tree-sitter grammar and LSP support: [quadrate.nvim](https://github.com/quadrate-language/quadrate.nvim)
 
 ### Visual Studio Code / Code - OSS
 
-Syntax highlighting and LSP support: [quadrate-vscode](https://git.sr.ht/~klahr/quadrate-vscode)
+Syntax highlighting and LSP support: [quadrate-vscode](https://github.com/quadrate-language/quadrate-vscode)
 
 ## Troubleshooting
 

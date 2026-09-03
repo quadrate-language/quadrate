@@ -4,14 +4,16 @@ HTTP client and server module for the Quadrate programming language.
 
 ## Installation
 
-```bash
-quadpm get https://git.sr.ht/~klahr/qdhttp
+`http` ships with the Quadrate toolchain, so there is nothing to install:
+
+```quadrate
+use http
 ```
 
 ## Dependencies
 
 This module depends on:
-- [tls](https://git.sr.ht/~klahr/qdtls) - TLS/SSL encryption
+- [tls](../tls) - TLS/SSL encryption
 - OpenSSL (libssl, libcrypto) - System libraries
 
 ## Usage
@@ -198,4 +200,4 @@ Apache 2.0
 
 ## Contributing
 
-Contributions welcome! Please open an issue or submit a patch on [SourceHut](https://git.sr.ht/~klahr/qdhttp).
+Contributions welcome! Please open an issue or pull request on [GitHub](https://github.com/quadrate-language/quadrate).
