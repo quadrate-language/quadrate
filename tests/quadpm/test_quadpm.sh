@@ -1037,6 +1037,88 @@ else
     fail "List command failed" "$output"
 fi
 
+# ============================================
+# Frozen lockfile integrity (git dependencies)
+# ============================================
+# The lockfile tests above all use local-path deps, which return before any git
+# logic runs. These drive the git path, where the lockfile pins a commit but the
+# ref actually cloned is symbolic and can move underneath it.
+
+# Test 36: install --frozen rejects a moved tag on a clean machine
+echo ""
+echo "Test 36: install --frozen rejects a moved tag"
+GIT_TEST_DIR="$TEST_CACHE_DIR/frozen-git"
+GIT_UPSTREAM="$GIT_TEST_DIR/upstream"
+GIT_PROJ="$GIT_TEST_DIR/proj"
+GIT_MODULES="$GIT_TEST_DIR/modules"
+mkdir -p "$GIT_UPSTREAM" "$GIT_PROJ" "$GIT_MODULES"
+
+git -C "$GIT_UPSTREAM" init -q -b main .
+git -C "$GIT_UPSTREAM" config user.email test@example.com
+git -C "$GIT_UPSTREAM" config user.name test
+echo 'fn good( -- x:i64) { 1 }' > "$GIT_UPSTREAM/module.qd"
+echo '{"name": "pinned", "version": "1.0.0"}' > "$GIT_UPSTREAM/qd.json"
+git -C "$GIT_UPSTREAM" add -A
+git -C "$GIT_UPSTREAM" commit -qm "good"
+git -C "$GIT_UPSTREAM" tag -a v1.0.0 -m v1.0.0
+GOOD_COMMIT=$(git -C "$GIT_UPSTREAM" rev-parse HEAD)
+
+cat > "$GIT_PROJ/qd.json" << EOF
+{
+  "name": "frozen-git-test",
+  "dependencies": {
+    "pinned": "file://$GIT_UPSTREAM@v1.0.0"
+  }
+}
+EOF
+
+cd "$GIT_PROJ"
+QUADRATE_PATH="$GIT_MODULES" "$QUADPM" install > /dev/null 2>&1
+
+if ! grep -q "$GOOD_COMMIT" qd.lock 2>/dev/null; then
+    fail "Lockfile did not pin the original commit" "$(cat qd.lock 2>/dev/null)"
+else
+    # Move the tag to a different commit, then wipe the module cache so the
+    # fresh-clone path runs -- a clean machine restoring from the lockfile.
+    echo 'fn moved( -- x:i64) { 666 }' > "$GIT_UPSTREAM/module.qd"
+    git -C "$GIT_UPSTREAM" add -A
+    git -C "$GIT_UPSTREAM" commit -qm "moved"
+    git -C "$GIT_UPSTREAM" tag -f -a v1.0.0 -m v1.0.0 > /dev/null 2>&1
+    rm -rf "$GIT_MODULES"; mkdir -p "$GIT_MODULES"
+
+    if output=$(QUADRATE_PATH="$GIT_MODULES" "$QUADPM" install --frozen 2>&1); then
+        fail "Frozen install accepted a moved tag" "$output"
+    elif echo "$output" | grep -q "Commit mismatch (frozen)"; then
+        if [ -z "$(find "$GIT_MODULES" -name module.qd 2>/dev/null)" ]; then
+            pass "install --frozen rejects a moved tag and removes the clone"
+        else
+            fail "Rejected but left the clone on disk" "$output"
+        fi
+    else
+        fail "Error message unclear" "$output"
+    fi
+fi
+cd - > /dev/null
+
+# Test 37: install --frozen still accepts a tag that has not moved
+echo ""
+echo "Test 37: install --frozen accepts an unmoved tag"
+cd "$GIT_PROJ"
+git -C "$GIT_UPSTREAM" tag -f -a v1.0.0 -m v1.0.0 "$GOOD_COMMIT" > /dev/null 2>&1
+rm -rf "$GIT_MODULES"; mkdir -p "$GIT_MODULES"
+if output=$(QUADRATE_PATH="$GIT_MODULES" "$QUADPM" install --frozen 2>&1); then
+    installed=$(find "$GIT_MODULES" -name module.qd 2>/dev/null | head -1)
+    if [ -n "$installed" ] && grep -q "fn good" "$installed"; then
+        pass "install --frozen installs the pinned commit"
+    else
+        fail "Wrong content installed" "$output"
+    fi
+else
+    fail "Frozen install failed on an unmoved tag" "$output"
+fi
+cd - > /dev/null
+
+
 # Print summary
 echo ""
 echo "=========================================="

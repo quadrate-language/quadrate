@@ -918,6 +918,22 @@ InstallResult installSingleDependency(const Dependency& dep, const std::string& 
 	}
 	std::cout << "\n";
 
+	// In frozen mode the lockfile pins an exact commit, but what we just cloned is
+	// the *symbolic* ref (a tag or branch), which can have moved since the lock was
+	// written. The already-installed branch above performs this check; without it
+	// here, a clean machine -- CI, a fresh clone, exactly where a lockfile is meant
+	// to guarantee reproducibility -- silently accepts whatever the ref now points
+	// at. Remove the clone and abort, as the integrity check below does.
+	if (frozen && !expectedCommit.empty() && commitHash != expectedCommit) {
+		std::cerr << "  " << COLOR_RED << "✗ Commit mismatch (frozen)" << COLOR_RESET << "\n";
+		std::cerr << "    Expected: " << expectedCommit << "\n";
+		std::cerr << "    Got:      " << commitHash << "\n";
+		if (fs::exists(installedDir)) {
+			fs::remove_all(installedDir);
+		}
+		return result;
+	}
+
 	// Verify sha256 if specified in manifest. A mismatch is a hard failure: the
 	// resolved code does not match what the manifest pinned, so installing it
 	// would defeat the point of the integrity field. Remove the clone and abort.
