@@ -229,6 +229,25 @@ namespace Qd {
 			// If not followed by identifier, return nullptr (error will be handled by caller)
 			return nullptr;
 		}
+
+		// Nothing matched. Every branch above either builds a node or reports its own
+		// diagnostic, so anything arriving here is a character the language has no
+		// meaning for. u8t hands unrecognised codepoints back as the codepoint itself
+		// (see the final else of u8t_scanner_scan), and this used to return nullptr,
+		// which parseBlockBody and the array-literal loop both discard -- so a stray
+		// '@', backtick or backslash from a bad paste was deleted from the program and
+		// it compiled clean.
+		{
+			size_t textLen = 0;
+			const char* tokenText = u8t_scanner_token_text(scanner, &textLen);
+			std::string message = "Unexpected character";
+			if (tokenText != nullptr && textLen > 0) {
+				message += " '";
+				message.append(tokenText, textLen);
+				message += "'";
+			}
+			errorReporter->reportError(scanner, message.c_str());
+		}
 		return nullptr;
 	}
 

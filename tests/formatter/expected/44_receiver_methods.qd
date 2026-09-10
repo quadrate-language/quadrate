@@ -4,13 +4,13 @@ struct Point {
 }
 
 fn (self:Point) magnitude( -- result:f64) {
-	self.x self.x * self.y self.y * + sqrt
+	self <<x self <<x * self <<y self <<y * + sqrt
 }
 
 fn (self:Point) translate(dx:f64 dy:f64 -- result:Point) {
 	Point {
-		x = self.x dx +
-		y = self.y dy +
+		x = self <<x dx +
+		y = self <<y dy +
 	}
 }
 

@@ -1,0 +1,8 @@
+// A character the language has no meaning for must be reported, not dropped.
+// These used to vanish before the parser saw them, so the program compiled and
+// ran as though they had never been typed.
+fn main() {
+	1 print @ nl
+	2 print ` nl
+	3 print ~ nl
+}
