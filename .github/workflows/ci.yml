@@ -30,7 +30,9 @@ jobs:
           fetch-depth: 0
 
       - name: Run checks
-        run: .github/scripts/ci-checks.sh --valgrind
+        # debian owns the two checks that only need running once: the
+        # clang-format diff (version-sensitive, see ci-checks.sh) and valgrind.
+        run: .github/scripts/ci-checks.sh --clang-format --valgrind
 
   archlinux:
     name: archlinux
