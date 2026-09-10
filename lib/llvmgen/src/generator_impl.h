@@ -17,6 +17,7 @@
 #pragma GCC diagnostic ignored "-Wpedantic"
 #endif
 
+#include <llvm/IR/BasicBlock.h>
 #include <llvm/IR/DIBuilder.h>
 #include <llvm/IR/IRBuilder.h>
 #include <llvm/IR/LLVMContext.h>
@@ -103,6 +104,22 @@ namespace Qd {
 	// Forward declarations for helper functions
 	bool looksLikeStructType(const std::string& typeStr);
 	std::string extractStructName(const std::string& typeStr);
+
+	/**
+	 * @brief True when `bb` ends in a terminator instruction.
+	 *
+	 * Deliberately not `bb->getTerminator() != nullptr`. LLVM 23 redefined
+	 * getTerminator() from "returns null if the block is not well formed" to
+	 * asserting hasTerminator(), so the old spelling aborts an assertions build
+	 * the moment it is asked about a block still under construction -- which is
+	 * the only reason anything here asks. The replacements LLVM added in that
+	 * same change (hasTerminator, getTerminatorOrNull) do not exist in 22 and
+	 * earlier, so neither is usable while both are supported. empty() and
+	 * back().isTerminator() mean the same thing in every version.
+	 */
+	inline bool isTerminated(const llvm::BasicBlock* bb) {
+		return bb != nullptr && !bb->empty() && bb->back().isTerminator();
+	}
 
 	class LlvmGenerator::Impl {
 	public:

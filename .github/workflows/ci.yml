@@ -21,8 +21,9 @@ jobs:
           apt-get update
           DEBIAN_FRONTEND=noninteractive apt-get install -y \
             build-essential ca-certificates clang clang-format git \
-            libclang-rt-dev libsqlite3-dev libssl-dev llvm-dev meson \
-            ninja-build patchelf pkg-config python3 valgrind zlib1g-dev
+            libclang-rt-dev libreadline-dev libsqlite3-dev libssl-dev \
+            llvm-dev meson ninja-build patchelf pkg-config python3 \
+            valgrind zlib1g-dev
 
       - uses: actions/checkout@v5
         with:
@@ -40,7 +41,7 @@ jobs:
         run: |
           pacman -Syu --noconfirm --needed \
             clang git llvm meson ninja openssl patchelf pkgconf python \
-            sqlite zlib
+            readline sqlite zlib
 
       - uses: actions/checkout@v5
         with:

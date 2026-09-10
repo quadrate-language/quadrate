@@ -939,7 +939,7 @@ namespace Qd {
 
 		// Jump to return block if we haven't already terminated
 		llvm::BasicBlock* currentBlock = builder->GetInsertBlock();
-		if (currentBlock && !currentBlock->getTerminator()) {
+		if (currentBlock && !isTerminated(currentBlock)) {
 			builder->CreateBr(returnBB);
 		}
 
@@ -1738,7 +1738,7 @@ namespace Qd {
 			}
 			// Branch to merge (automatic break)
 			llvm::BasicBlock* caseBlock = builder->GetInsertBlock();
-			if (caseBlock && !caseBlock->getTerminator()) {
+			if (caseBlock && !isTerminated(caseBlock)) {
 				armExits.emplace_back(caseBlock, compileTimeStack);
 				builder->CreateBr(mergeBB);
 			}
@@ -1754,7 +1754,7 @@ namespace Qd {
 			// branched to the default block yet. Wire the current block to it.
 			if (nonDefaultCaseCount == 0) {
 				llvm::BasicBlock* entryBlock = builder->GetInsertBlock();
-				if (entryBlock && !entryBlock->getTerminator()) {
+				if (entryBlock && !isTerminated(entryBlock)) {
 					builder->CreateBr(defaultBB);
 				}
 			}
@@ -1769,7 +1769,7 @@ namespace Qd {
 				}
 			}
 			llvm::BasicBlock* defaultBlock = builder->GetInsertBlock();
-			if (defaultBlock && !defaultBlock->getTerminator()) {
+			if (defaultBlock && !isTerminated(defaultBlock)) {
 				armExits.emplace_back(defaultBlock, compileTimeStack);
 				builder->CreateBr(mergeBB);
 			}

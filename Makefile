@@ -1,7 +1,9 @@
 BUILD_DIR_DEBUG   := build/debug
 BUILD_DIR_RELEASE := build/release
 
-MESON_FLAGS := -Dbuild_tests=true
+# The floppy distribution ships a source subset with no tests/ directory, so
+# asking meson for tests there configures a build that cannot succeed.
+MESON_FLAGS := -Dbuild_tests=$(if $(wildcard tests/meson.build),true,false)
 
 # Detect Haiku and set appropriate paths
 UNAME_S := $(shell uname -s)
@@ -33,8 +35,12 @@ else
     export CXX := clang++
 endif
 
-# Commands to copy
-CMDS := quad quadc quadfmt quadlint quadlsp quadpm quaduses quaddoc
+# Commands to copy. Derived from what is present rather than listed, so a source
+# subset that omits a tool builds as-is -- the floppy distribution drops
+# cmd/quadlsp and used to sed this list, which also ate the word "quadlsp" out
+# of every path below it. quadrepl and quadmcp are excluded because both are
+# built conditionally further down.
+CMDS := $(filter-out quadmcp quadrepl,$(notdir $(wildcard cmd/quad*)))
 
 # Libraries with C components (directory names under lib/)
 LIBS_WITH_C := rt qd fmt io math mem net os signal strings strconv time thread testing tty tls http log
@@ -84,13 +90,16 @@ define do_build
 	done
 	@mkdir -p $(DIST_DATADIR)/quadrate
 	@for mod in $(STDLIB_MODULES); do cp -r lib/*/qd/$$mod $(DIST_DATADIR)/quadrate/ 2>/dev/null || true; done
-	@mkdir -p $(DIST_DATADIR)/bash-completion/completions
-	@cp -f completions/quad.bash $(DIST_DATADIR)/bash-completion/completions/quad
+	@if [ -f completions/quad.bash ]; then \
+		mkdir -p $(DIST_DATADIR)/bash-completion/completions; \
+		cp -f completions/quad.bash $(DIST_DATADIR)/bash-completion/completions/quad; \
+	fi
 	@echo "$(3)"
 endef
 
 debug:
 	$(call do_build,$(BUILD_DIR_DEBUG),debug,Debug build complete - static libraries ready)
+ifneq ($(wildcard cmd/quadmcp/server.qd),)
 	@echo "Building quadmcp..."
 	@mkdir -p $(BUILD_DIR_DEBUG)/modules
 	cd cmd/quadmcp && QUADRATE_PATH=$(CURDIR)/$(BUILD_DIR_DEBUG)/modules QUADRATE_ROOT=$(CURDIR) $(CURDIR)/dist/bin/quadpm install
@@ -98,9 +107,11 @@ debug:
 	@cat cmd/quadmcp/core.qd cmd/quadmcp/tools.qd cmd/quadmcp/resources.qd cmd/quadmcp/server.qd > $(BUILD_DIR_DEBUG)/cmd/quadmcp/quadmcp.qd
 	cd $(BUILD_DIR_DEBUG)/cmd/quadmcp && QUADRATE_PATH=$(CURDIR)/$(BUILD_DIR_DEBUG)/modules QUADRATE_ROOT=$(CURDIR) $(CURDIR)/dist/bin/quad build quadmcp.qd -o quadmcp
 	cp $(BUILD_DIR_DEBUG)/cmd/quadmcp/quadmcp dist/bin/
+endif
 
 release:
 	$(call do_build,$(BUILD_DIR_RELEASE),release,Release build complete - static libraries ready)
+ifneq ($(wildcard cmd/quadmcp/server.qd),)
 	@echo "Building quadmcp..."
 	@mkdir -p $(BUILD_DIR_RELEASE)/modules
 	cd cmd/quadmcp && QUADRATE_PATH=$(CURDIR)/$(BUILD_DIR_RELEASE)/modules QUADRATE_ROOT=$(CURDIR) $(CURDIR)/dist/bin/quadpm install
@@ -108,6 +119,7 @@ release:
 	@cat cmd/quadmcp/core.qd cmd/quadmcp/tools.qd cmd/quadmcp/resources.qd cmd/quadmcp/server.qd > $(BUILD_DIR_RELEASE)/cmd/quadmcp/quadmcp.qd
 	cd $(BUILD_DIR_RELEASE)/cmd/quadmcp && QUADRATE_PATH=$(CURDIR)/$(BUILD_DIR_RELEASE)/modules QUADRATE_ROOT=$(CURDIR) $(CURDIR)/dist/bin/quad build -O3 quadmcp.qd -o quadmcp
 	cp $(BUILD_DIR_RELEASE)/cmd/quadmcp/quadmcp dist/bin/
+endif
 	@echo "Stripping binaries..."
 	@for cmd in $(CMDS) quadrepl quadmcp; do \
 		if [ -f dist/bin/$$cmd ]; then strip dist/bin/$$cmd && echo "  $$cmd"; fi; \

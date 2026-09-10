@@ -36,7 +36,7 @@ namespace Qd {
 			}
 			auto thenStack = compileTimeStack;
 			llvm::BasicBlock* thenExitBlock = builder->GetInsertBlock();
-			bool thenTerminated = (thenExitBlock != nullptr && thenExitBlock->getTerminator() != nullptr);
+			bool thenTerminated = isTerminated(thenExitBlock);
 			if (!thenTerminated) {
 				builder->CreateBr(mergeBB);
 			}
@@ -53,7 +53,7 @@ namespace Qd {
 				}
 				elseStack = compileTimeStack;
 				elseExitBlock = builder->GetInsertBlock();
-				elseTerminated = (elseExitBlock != nullptr && elseExitBlock->getTerminator() != nullptr);
+				elseTerminated = isTerminated(elseExitBlock);
 				if (!elseTerminated) {
 					builder->CreateBr(mergeBB);
 				}
@@ -174,7 +174,7 @@ namespace Qd {
 		}
 		// Only add branch if block doesn't already have a terminator
 		llvm::BasicBlock* thenBlock = builder->GetInsertBlock();
-		if (thenBlock != nullptr && thenBlock->getTerminator() == nullptr) {
+		if (thenBlock != nullptr && !isTerminated(thenBlock)) {
 			builder->CreateBr(mergeBB);
 		}
 
@@ -186,7 +186,7 @@ namespace Qd {
 			}
 			// Only add branch if block doesn't already have a terminator
 			llvm::BasicBlock* elseBlock = builder->GetInsertBlock();
-			if (elseBlock != nullptr && elseBlock->getTerminator() == nullptr) {
+			if (elseBlock != nullptr && !isTerminated(elseBlock)) {
 				builder->CreateBr(mergeBB);
 			}
 		}
@@ -370,7 +370,7 @@ namespace Qd {
 			// Capture body-end state before branching to inc
 			auto bodyEndStack = compileTimeStack;
 			llvm::BasicBlock* bodyEndBlock = builder->GetInsertBlock();
-			bool bodyFallsThrough = (bodyEndBlock != nullptr && bodyEndBlock->getTerminator() == nullptr);
+			bool bodyFallsThrough = (bodyEndBlock != nullptr && !isTerminated(bodyEndBlock));
 			if (bodyFallsThrough) {
 				builder->CreateBr(loopIncBB);
 			}
@@ -544,7 +544,7 @@ namespace Qd {
 
 		// Only add branch if block doesn't already have a terminator
 		llvm::BasicBlock* loopBodyBlock = builder->GetInsertBlock();
-		if (loopBodyBlock != nullptr && loopBodyBlock->getTerminator() == nullptr) {
+		if (loopBodyBlock != nullptr && !isTerminated(loopBodyBlock)) {
 			builder->CreateBr(loopIncBB);
 		}
 
@@ -594,7 +594,7 @@ namespace Qd {
 
 			auto bodyEndStack = compileTimeStack;
 			llvm::BasicBlock* bodyEndBlock = builder->GetInsertBlock();
-			if (bodyEndBlock != nullptr && bodyEndBlock->getTerminator() == nullptr) {
+			if (bodyEndBlock != nullptr && !isTerminated(bodyEndBlock)) {
 				builder->CreateBr(loopBodyBB);
 				// Wire stack PHI back-edges
 				for (size_t i = 0; i < stackPHIs.size(); i++) {
@@ -711,7 +711,7 @@ namespace Qd {
 
 		// Only add branch if block doesn't already have a terminator
 		llvm::BasicBlock* loopBlock = builder->GetInsertBlock();
-		if (loopBlock != nullptr && loopBlock->getTerminator() == nullptr) {
+		if (loopBlock != nullptr && !isTerminated(loopBlock)) {
 			builder->CreateBr(loopBodyBB); // Loop forever
 		}
 
@@ -814,7 +814,7 @@ namespace Qd {
 				generateNode(child, ctx);
 				// Stop if we've added a terminator (return, break, continue)
 				llvm::BasicBlock* currentBlock = builder->GetInsertBlock();
-				if (currentBlock != nullptr && currentBlock->getTerminator() != nullptr) {
+				if (isTerminated(currentBlock)) {
 					break;
 				}
 			}

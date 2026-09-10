@@ -43,6 +43,8 @@ if host_machine.system() == 'haiku'
 	add_project_link_arguments('-pie', language: ['c', 'cpp'])
 endif
 
+fs_root = import('fs')
+
 # Common dependencies (used by multiple cmd tools)
 jansson_dep = dependency('jansson', version: '>=2.14', required: true, fallback: ['jansson', 'jansson_dep'])
 
@@ -56,7 +58,10 @@ endif
 # Subdirectories
 subdir('lib')
 subdir('cmd')
-subdir('tests')
+# Absent in the floppy distribution's source subset.
+if fs_root.is_dir('tests')
+	subdir('tests')
+endif
 
 # Examples (optional)
 if get_option('build_examples')

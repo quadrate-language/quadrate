@@ -792,7 +792,7 @@ namespace Qd {
 			}
 
 			// Branch to return block if no terminator
-			if (!builder->GetInsertBlock()->getTerminator()) {
+			if (!isTerminated(builder->GetInsertBlock())) {
 				builder->CreateBr(returnBB);
 			}
 
@@ -1117,7 +1117,7 @@ namespace Qd {
 
 				// Before branching to return, store the return value
 				llvm::BasicBlock* nativeBodyBlock = builder->GetInsertBlock();
-				if (nativeBodyBlock != nullptr && nativeBodyBlock->getTerminator() == nullptr) {
+				if (nativeBodyBlock != nullptr && !isTerminated(nativeBodyBlock)) {
 					if (info.outputCount == 1 && !compileTimeStack.empty()) {
 						builder->CreateStore(compileTimeStack.back(), nativeReturnAlloca);
 					}
@@ -1398,7 +1398,7 @@ namespace Qd {
 
 				// If the block doesn't end with a terminator, branch to return block
 				llvm::BasicBlock* funcBodyBlock = builder->GetInsertBlock();
-				if (funcBodyBlock != nullptr && funcBodyBlock->getTerminator() == nullptr) {
+				if (funcBodyBlock != nullptr && !isTerminated(funcBodyBlock)) {
 					builder->CreateBr(returnBB);
 				}
 
@@ -1661,7 +1661,7 @@ namespace Qd {
 
 		// Branch to return block if no terminator
 		llvm::BasicBlock* testBodyBlock = builder->GetInsertBlock();
-		if (testBodyBlock != nullptr && testBodyBlock->getTerminator() == nullptr) {
+		if (testBodyBlock != nullptr && !isTerminated(testBodyBlock)) {
 			builder->CreateBr(returnBB);
 		}
 

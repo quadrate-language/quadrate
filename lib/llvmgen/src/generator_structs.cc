@@ -1281,7 +1281,7 @@ namespace Qd {
 			llvm::Value* reached = it->reached;
 
 			// Nothing to guard against if the block already ended (e.g. the body panicked).
-			if (builder->GetInsertBlock() == nullptr || builder->GetInsertBlock()->getTerminator() != nullptr) {
+			if (builder->GetInsertBlock() == nullptr || isTerminated(builder->GetInsertBlock())) {
 				break;
 			}
 
@@ -1306,7 +1306,7 @@ namespace Qd {
 					generateNode(child, ctx);
 				}
 			}
-			if (builder->GetInsertBlock() != nullptr && builder->GetInsertBlock()->getTerminator() == nullptr) {
+			if (builder->GetInsertBlock() != nullptr && !isTerminated(builder->GetInsertBlock())) {
 				builder->CreateBr(skipBB);
 			}
 

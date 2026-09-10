@@ -28,9 +28,13 @@ QUADDOC="${QUADDOC:-$PROJECT_ROOT/$BUILD_DIR/cmd/quaddoc/quaddoc}"
 QUADREPL="${QUADREPL:-$PROJECT_ROOT/$BUILD_DIR/cmd/quadrepl/quadrepl}"
 QUADFMT="${QUADFMT:-$PROJECT_ROOT/$BUILD_DIR/cmd/quadfmt/quadfmt}"
 
+# Marked with the same U+2717 as a failing check: run_all.sh extracts the message
+# it reports by grepping for that character, so a bare "FAIL" here surfaced as
+# "0 passed, 1 failed" with no reason attached. A tool is missing rather than
+# broken when its meson.build skipped it -- quadrepl needs readline.
 for tool in "$QUADUSES" "$QUADDOC" "$QUADREPL" "$QUADFMT"; do
     if [ ! -x "$tool" ]; then
-        echo -e "${RED}FAIL${NC}: $tool not found"
+        echo -e "  ${RED}\u2717${NC} $tool not found (not built? check meson output for a skip warning)"
         exit 1
     fi
 done
