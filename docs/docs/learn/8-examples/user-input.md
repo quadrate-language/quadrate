@@ -12,7 +12,7 @@ use io
 
 fn main() {
 	"Enter your name: " print
-	io::readline! -> name
+	io::readline! -> _ -> name
 	"Hello, " print name print "!" print nl
 }
 ```
@@ -117,7 +117,10 @@ fn main() {
 		"calc> " print
 		io::readline switch {
 			Ok {
-				-> line
+				-> ok -> line
+				ok 0 == if {
+					nl break
+				}
 				line strings::len 0 == if {
 					continue
 				}

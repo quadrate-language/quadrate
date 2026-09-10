@@ -1,4 +1,5 @@
 // sort test
+use strings
 use sort
 use mem
 use testing
@@ -444,4 +445,23 @@ test "sort then search" {
 	arr 5 25 sort::search -1 testing::assert_eq
 
 	arr mem::free
+}
+
+test "sort::strings sorts a string array" {
+	// sort::strings used mem::get_ptr at 8-byte strides, which on a Quadrate array
+	// reads the header rather than the elements. The numeric functions in this
+	// module keep operating on flat mem::alloc buffers -- a different shape, on
+	// purpose -- and every test above still exercises that.
+	"c,a,b" "," strings::split! -> count -> arr
+	arr count sort::strings
+	arr 0 nth "a" testing::assert_eq
+	arr 1 nth "b" testing::assert_eq
+	arr 2 nth "c" testing::assert_eq
+}
+
+test "sort::strings_desc sorts a string array" {
+	"a,c,b" "," strings::split! -> count -> arr
+	arr count sort::strings_desc
+	arr 0 nth "c" testing::assert_eq
+	arr 2 nth "a" testing::assert_eq
 }

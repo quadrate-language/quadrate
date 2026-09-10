@@ -1,6 +1,6 @@
 // Test: the StringBuilder mutators leave exactly their declared output on the stack.
 //
-// `>>field` returns the modified struct; `>>field!` consumes it. sb::append,
+// `>>field` returns the modified struct; `>>field drop` consumes it. sb::append,
 // sb::append_char and sb::append_int each ended with three chained `>>field` writes
 // followed by `sb`, pushing four values where the signature declares one -- so every
 // call silently leaked three stack slots. A loop appending to a builder would grow the

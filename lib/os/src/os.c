@@ -3,6 +3,7 @@
 #include <errno.h>
 #include <quadrate/os/os.h>
 #include <quadrate/rt/runtime.h>
+#include <quadrate/rt/array.h>
 #include <quadrate/rt/stack.h>
 #include <stdint.h>
 #include <stdio.h>
@@ -736,14 +737,32 @@ int usr_os_list(qd_context* ctx) {
 
 	qd_string_release(elem.value.s);
 
-	// Push entries pointer and count
-	err = qd_stack_push_ptr(ctx->st, entries);
-	if (err != QD_STACK_OK) {
-		// Cleanup on error
+	// Hand back a real Quadrate array so `nth`/`len`/`free` work. os_fs_list_dir
+	// returns a malloc'd char**; that buffer used to be pushed straight through,
+	// which left callers doing `entries i 8 * mem::get_ptr` by hand (see
+	// tests/qd/strings/join.qd) and could not be indexed with `nth` at all.
+	qd_array_t* entries_arr = qd_array_create(count, QD_ARRAY_TYPE_STR);
+	if (entries_arr != NULL) {
 		for (size_t j = 0; j < count; j++) {
-			free(entries[j]);
+			entries_arr->data.p[j] = qd_string_create(entries[j] != NULL ? entries[j] : "");
 		}
-		free(entries);
+		entries_arr->length = count;
+	}
+	for (size_t j = 0; j < count; j++) {
+		free(entries[j]);
+	}
+	free(entries);
+	if (entries_arr == NULL) {
+		fprintf(stderr, "Fatal error in os::list: Failed to allocate entry array\n");
+		qd_print_stack_trace(ctx);
+		abort();
+	}
+
+	// Push entries array and count
+	err = qd_stack_push_ptr(ctx->st, entries_arr);
+	if (err != QD_STACK_OK) {
+		// The char** buffer is already freed above; release the array instead.
+		qd_array_release(entries_arr);
 		fprintf(stderr, "Fatal error in os::list: Failed to push entries pointer\n");
 		qd_print_stack_trace(ctx);
 		abort();
@@ -929,8 +948,26 @@ int usr_os_glob(qd_context* ctx) {
 		return (int){OS_ERR_OK};
 	}
 
-	// Push entries pointer and count
-	qd_stack_push_ptr(ctx->st, entries);
+	// Same array shape as os::list, so `nth`/`len`/`free` work here too.
+	qd_array_t* entries_arr = qd_array_create(count, QD_ARRAY_TYPE_STR);
+	if (entries_arr != NULL) {
+		for (size_t j = 0; j < count; j++) {
+			entries_arr->data.p[j] = qd_string_create(entries[j] != NULL ? entries[j] : "");
+		}
+		entries_arr->length = count;
+	}
+	for (size_t j = 0; j < count; j++) {
+		free(entries[j]);
+	}
+	free(entries);
+	if (entries_arr == NULL) {
+		fprintf(stderr, "Fatal error in os::glob: Failed to allocate entry array\n");
+		qd_print_stack_trace(ctx);
+		abort();
+	}
+
+	// Push entries array and count
+	qd_stack_push_ptr(ctx->st, entries_arr);
 	qd_stack_push_int(ctx->st, (int64_t)count);
 	qd_stack_push_int(ctx->st, OS_ERR_OK);
 	return (int){OS_ERR_OK};

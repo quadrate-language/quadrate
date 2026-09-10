@@ -103,7 +103,8 @@ import "libos.a" as "os" {
 	/// @return count i64 Number of entries
 	/// @error ErrNotFound File not found
 	/// @error ErrNotDirectory Path is not a directory
-	/// @example "/tmp" os::list! -> entries -> count
+	/// @example "/tmp" os::list! -> count -> entries   // `->` binds top-of-stack first,
+	/// so the bindings read in reverse of the declared outputs
 	pub fn list(path:str -- entries:ptr count:i64)!
 
 	/// Execute a command and stream output line-by-line to a callback.

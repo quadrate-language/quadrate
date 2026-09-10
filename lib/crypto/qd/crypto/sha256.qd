@@ -246,7 +246,7 @@ pub fn (h:Sha256) update(data:str -- h2:Sha256)! {
 
 	// Lazy init buffer
 	buf 0 == if {
-		64 mem::alloc! -> buf
+		64 mem::alloc? -> buf
 	}
 
 	data strings::len -> dlen
@@ -260,7 +260,7 @@ pub fn (h:Sha256) update(data:str -- h2:Sha256)! {
 		loop {
 			buflen 64 >= if { break }
 			i dlen >= if { break }
-			data i strings::char_at! buf buflen mem::set_byte
+			data i strings::char_at? buf buflen mem::set_byte
 			buflen 1 + -> buflen
 			i 1 + -> i
 		}
@@ -306,7 +306,7 @@ pub fn (h:Sha256) finish( -- hash:str)! {
 	h <<total -> total
 
 	buf 0 == if {
-		64 mem::alloc! -> buf
+		64 mem::alloc? -> buf
 	}
 
 	// Pad message
@@ -341,7 +341,7 @@ pub fn (h:Sha256) finish( -- hash:str)! {
 	-> hh7 -> hh6 -> hh5 -> hh4 -> hh3 -> hh2 -> hh1 -> hh0
 
 	// Convert to hex
-	64 mem::alloc! -> out
+	64 mem::alloc? -> out
 	0 -> pos
 
 	// Write 8 hex chars for each word
@@ -415,8 +415,8 @@ pub fn (h:Sha256) release() {
 /// @example "Hello" sha256! -> hash
 pub fn sha256(s:str -- hash:str)! {
 	Sha256 {} -> h
-	h s update! -> h
-	h finish! -> result
+	h s update? -> h
+	h finish? -> result
 	h release
 	result
 }
@@ -436,7 +436,7 @@ pub fn sha256_bytes(buf:ptr length:i64 -- hash:str)! {
 	SHA256_H6 -> hh6
 	SHA256_H7 -> hh7
 
-	64 mem::alloc! -> block
+	64 mem::alloc? -> block
 	0 -> buflen
 	0 -> total
 
@@ -490,7 +490,7 @@ pub fn sha256_bytes(buf:ptr length:i64 -- hash:str)! {
 	-> hh7 -> hh6 -> hh5 -> hh4 -> hh3 -> hh2 -> hh1 -> hh0
 
 	// Convert to hex
-	64 mem::alloc! -> out
+	64 mem::alloc? -> out
 	0 -> pos
 
 	0 8 1 for j {

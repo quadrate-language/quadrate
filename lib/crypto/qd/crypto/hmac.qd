@@ -29,19 +29,19 @@ fn build_hmac_input(key:str block_size:i64 pad_byte:i64 msg_buf:ptr msg_len:i64 
 	key mem::from_string -> klen -> kbuf
 
 	// Prepare key block (zero-padded to block_size)
-	block_size mem::alloc! -> kpad
+	block_size mem::alloc? -> kpad
 	kpad block_size mem::zero
 
 	klen block_size > if {
 		// Key too long: hash it first
 		block_size SHA256_BLOCK == if {
-			kbuf klen sha256_bytes! -> khex
+			kbuf klen sha256_bytes? -> khex
 			khex hex::decode -> kraw
 			kraw mem::from_string -> rawlen -> rawbuf
 			kpad rawbuf rawlen mem::copy
 			rawbuf mem::free
 		} else {
-			kbuf klen sha512_bytes! -> khex
+			kbuf klen sha512_bytes? -> khex
 			khex hex::decode -> kraw
 			kraw mem::from_string -> rawlen -> rawbuf
 			kpad rawbuf rawlen mem::copy
@@ -63,7 +63,7 @@ fn build_hmac_input(key:str block_size:i64 pad_byte:i64 msg_buf:ptr msg_len:i64 
 
 	// Allocate result: block_size + msg_len
 	block_size msg_len + -> total
-	total mem::alloc! -> result
+	total mem::alloc? -> result
 	// Copy key pad into first block_size bytes
 	result kpad block_size mem::copy
 	// Copy message after key pad
@@ -82,8 +82,8 @@ pub fn hmac_sha256(key:str message:str -- mac:str)! {
 	message mem::from_string -> mlen -> mbuf
 
 	// Inner: SHA256((key XOR ipad) || message)
-	key SHA256_BLOCK 54 mbuf mlen build_hmac_input! -> inner_buf -> inner_len
-	inner_buf inner_len sha256_bytes! -> inner_hex
+	key SHA256_BLOCK 54 mbuf mlen build_hmac_input? -> inner_buf -> inner_len
+	inner_buf inner_len sha256_bytes? -> inner_hex
 	mbuf mem::free
 	inner_buf mem::free
 
@@ -92,8 +92,8 @@ pub fn hmac_sha256(key:str message:str -- mac:str)! {
 	inner_raw mem::from_string -> inner_raw_len -> inner_raw_buf
 
 	// Outer: SHA256((key XOR opad) || inner_hash_bytes)
-	key SHA256_BLOCK 92 inner_raw_buf inner_raw_len build_hmac_input! -> outer_buf -> outer_len
-	outer_buf outer_len sha256_bytes! -> mac
+	key SHA256_BLOCK 92 inner_raw_buf inner_raw_len build_hmac_input? -> outer_buf -> outer_len
+	outer_buf outer_len sha256_bytes? -> mac
 	inner_raw_buf mem::free
 	outer_buf mem::free
 
@@ -109,8 +109,8 @@ pub fn hmac_sha512(key:str message:str -- mac:str)! {
 	message mem::from_string -> mlen -> mbuf
 
 	// Inner: SHA512((key XOR ipad) || message)
-	key SHA512_BLOCK 54 mbuf mlen build_hmac_input! -> inner_buf -> inner_len
-	inner_buf inner_len sha512_bytes! -> inner_hex
+	key SHA512_BLOCK 54 mbuf mlen build_hmac_input? -> inner_buf -> inner_len
+	inner_buf inner_len sha512_bytes? -> inner_hex
 	mbuf mem::free
 	inner_buf mem::free
 
@@ -119,8 +119,8 @@ pub fn hmac_sha512(key:str message:str -- mac:str)! {
 	inner_raw mem::from_string -> inner_raw_len -> inner_raw_buf
 
 	// Outer: SHA512((key XOR opad) || inner_hash_bytes)
-	key SHA512_BLOCK 92 inner_raw_buf inner_raw_len build_hmac_input! -> outer_buf -> outer_len
-	outer_buf outer_len sha512_bytes! -> mac
+	key SHA512_BLOCK 92 inner_raw_buf inner_raw_len build_hmac_input? -> outer_buf -> outer_len
+	outer_buf outer_len sha512_bytes? -> mac
 	inner_raw_buf mem::free
 	outer_buf mem::free
 

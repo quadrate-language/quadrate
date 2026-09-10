@@ -22,6 +22,10 @@ public:
 	// executables produced by the old one and fixes silently appear to have no effect.
 	void addCompilerIdentity();
 
+	// Mix in the runtime/stdlib archives a build links against. Without this a
+	// stdlib rebuild produces cache hits for executables built against the old one.
+	void addStdlibIdentity();
+
 	// Compute the final cache key from all added inputs.
 	// Returns a hex string suitable for use as a filename.
 	std::string computeKey();

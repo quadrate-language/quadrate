@@ -66,7 +66,7 @@ pub fn (v:Vec<T>) push<T>(elem:T -- v2:Vec<T>)! {
 	// Grow capacity if full
 	len cap >= if {
 		cap 0 == if { 8 } else { cap 2 * } -> new_cap
-		data new_cap sizeof<T> * mem::realloc! -> data
+		data new_cap sizeof<T> * mem::realloc? -> data
 		new_cap -> cap
 	}
 

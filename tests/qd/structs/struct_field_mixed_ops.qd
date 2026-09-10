@@ -1,4 +1,4 @@
-// Test: mixing <<field, >>field, >>field! in same function
+// Test: mixing <<field, >>field, >>field drop in same function
 struct Point { x: i64  y: i64 }
 
 fn distance_sq(a:Point b:Point -- i64) {
@@ -20,7 +20,7 @@ fn main() {
 	Point { x = 0 y = 0 } p distance_sq print nl   // 25
 
 	// Mutate without return
-	p 10 >>x!
+	p 10 >>x drop
 	p <<x print nl   // 10
 
 	// Inline struct + chained read

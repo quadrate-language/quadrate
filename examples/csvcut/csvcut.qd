@@ -210,7 +210,8 @@ fn slurp(path:str -- text:str ok:i64) {
 		loop {
 			io::readline switch {
 				Ok {
-					-> line
+					-> ok -> line
+					ok 0 == if { line drop break }
 					first 0 == if { b "\n" sb::append -> b }
 					b line sb::append -> b
 					0 -> first

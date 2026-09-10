@@ -11,9 +11,10 @@ struct Options {
 	std::vector<std::string> files;
 	std::vector<std::string> runArgs;	   // Arguments to pass to the program when using -r
 	std::vector<std::string> includePaths; // Additional module search paths (-I)
-	std::string outputName = "main";
-	int optLevel = 0;		 // 0-3 for -O0 through -O3
-	size_t stackSize = 1024; // Stack capacity
+	std::string outputName = "main";	   // Overridden from the input file stem when -o is absent
+	bool outputNameSet = false;			   // True once -o has been seen
+	int optLevel = 0;					   // 0-3 for -O0 through -O3
+	size_t stackSize = 1024;			   // Stack capacity
 	bool help = false;
 	bool version = false;
 	bool saveTemps = false;

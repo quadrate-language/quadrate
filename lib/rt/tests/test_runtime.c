@@ -1,3 +1,5 @@
+#define _POSIX_C_SOURCE 200809L
+
 #include <quadrate/rt/qd_string.h>
 #include <quadrate/rt/runtime.h>
 #include <quadrate/rt/context.h>
@@ -42,19 +44,25 @@ static void destroy_test_context(qd_context* ctx) {
 
 // Death-test support.
 //
-// Instruction implementations abort on stack underflow rather than returning an error code
-// (see the "Two failure conventions" note in runtime.h), so pinning that behaviour means
-// running the call in a child process and inspecting how it died. Returns the child's wait
-// status; the caller checks WIFSIGNALED/WTERMSIG.
+// Instruction implementations terminate on stack underflow rather than returning an error
+// code (see the "Two failure conventions" note in runtime.h), so pinning that behaviour
+// means running the call in a child process and inspecting how it died. Returns the child's
+// wait status; the caller checks WIFSIGNALED/WTERMSIG.
+//
+// The child sets QUADRATE_ABORT_ON_FATAL so qdrt_fatal_exit() raises SIGABRT instead of
+// calling _exit(1). Asserting on a signal is a sharper test than asserting on an exit
+// status -- a plain exit(1) is something ordinary code can do, a SIGABRT is not -- and it
+// keeps the abort path itself exercised now that it is no longer the default.
 static int run_in_child(void (*body)(void)) {
 	fflush(NULL); // don't duplicate buffered output into the child
 	pid_t pid = fork();
 	if (pid == 0) {
+		setenv("QUADRATE_ABORT_ON_FATAL", "1", 1);
 		// Silence the expected diagnostic so it doesn't pollute the test log.
 		FILE* devnull = freopen("/dev/null", "w", stderr);
 		(void)devnull;
 		body();
-		_exit(0); // reached only if body() failed to abort
+		_exit(0); // reached only if body() failed to terminate
 	}
 	int status = 0;
 	waitpid(pid, &status, 0);

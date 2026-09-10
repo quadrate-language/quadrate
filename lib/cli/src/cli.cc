@@ -32,7 +32,9 @@ namespace qdcli {
 				continue;
 			}
 
-			if (arg[0] == '-') {
+			// A lone "-" is the conventional spelling for stdin, not an option.
+			// Tools that do not support it will reject it when they try to read it.
+			if (arg[0] == '-' && arg[1] != '\0') {
 				// Tool-specific option
 				if (handler && handler(arg, i, argc, argv)) {
 					continue;

@@ -16,6 +16,19 @@ void qdrt_dump_stack(qd_context* ctx);
 // Error handling macros - consolidate repetitive error reporting
 
 // Fatal error with stack dump and abort
+/* Terminate after a fatal runtime error.
+ *
+ * Uses _exit(1) rather than abort(): abort() raises SIGABRT, which on Haiku
+ * triggers debug_server and hangs or garbles the output. That is the same
+ * reason lib/llvmgen emits _exit(1) in generated code (generator.cc), and the
+ * runtime is linked into those very programs, so the hazard applies equally
+ * here. By the time this is called the message, stack dump and backtrace have
+ * already been printed -- only the core file is lost.
+ *
+ * Set QUADRATE_ABORT_ON_FATAL=1 to get abort() back for gdb post-mortem.
+ */
+_Noreturn void qdrt_fatal_exit(void);
+
 #define QDRT_FATAL(ctx, op, ...)                                                                                       \
 	do {                                                                                                               \
 		fprintf(stderr, "Fatal error in %s: ", (op));                                                                  \
@@ -23,7 +36,7 @@ void qdrt_dump_stack(qd_context* ctx);
 		fprintf(stderr, "\n");                                                                                         \
 		qdrt_dump_stack(ctx);                                                                                          \
 		qd_print_stack_trace(ctx);                                                                                     \
-		abort();                                                                                                       \
+		qdrt_fatal_exit();                                                                                             \
 	} while (0)
 
 // Stack underflow error
@@ -33,7 +46,7 @@ void qdrt_dump_stack(qd_context* ctx);
 				(size_t)(required), (size_t)(have));                                                                   \
 		qdrt_dump_stack(ctx);                                                                                          \
 		qd_print_stack_trace(ctx);                                                                                     \
-		abort();                                                                                                       \
+		qdrt_fatal_exit();                                                                                             \
 	} while (0)
 
 // Check stack has minimum elements, abort if not

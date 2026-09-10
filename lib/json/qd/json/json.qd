@@ -372,8 +372,14 @@ pub fn get_float(json:str key:str -- value:f64 found:i64) {
 		end_pos start - -> length
 		length 0 > if {
 			json start length strings::substring! -> num_str
-			num_str strconv::parse_float! -> num_val
-			num_val 1
+			// find_num_end accepts anything number-shaped, so a malformed token
+			// like `-` or `1e` reaches parse_float. `!` aborted here, which killed
+			// the process on untrusted input; `found = 0` is the channel this
+			// function already has for "not a usable number".
+			num_str strconv::parse_float switch {
+				Ok { -> num_val num_val 1 }
+				_ { 0.0 0 }
+			}
 		} else {
 			0.0 0
 		}
@@ -585,8 +591,14 @@ pub fn array_get_float(json:str index:i64 -- value:f64 found:i64) {
 		end_pos start - -> length
 		length 0 > if {
 			json start length strings::substring! -> num_str
-			num_str strconv::parse_float! -> num_val
-			num_val 1
+			// find_num_end accepts anything number-shaped, so a malformed token
+			// like `-` or `1e` reaches parse_float. `!` aborted here, which killed
+			// the process on untrusted input; `found = 0` is the channel this
+			// function already has for "not a usable number".
+			num_str strconv::parse_float switch {
+				Ok { -> num_val num_val 1 }
+				_ { 0.0 0 }
+			}
 		} else {
 			0.0 0
 		}

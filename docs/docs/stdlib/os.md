@@ -425,7 +425,8 @@ List directory contents.
 **Example:**
 
 ```qd
-"/tmp" os::list! -> entries  // count
+"/tmp" os::list! -> count -> entries   // `->` binds top-of-stack first,
+// so the bindings read in reverse of the declared outputs
 ```
 ---
 

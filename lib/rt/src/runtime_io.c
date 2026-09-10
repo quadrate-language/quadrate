@@ -232,7 +232,7 @@ int qd_read(qd_context* ctx) {
 		ctx->program_name = strdup(ctx->argv[0]);
 		if (!ctx->program_name) {
 			fprintf(stderr, "Fatal error in read: Memory allocation failed for program name\n");
-			abort();
+			qdrt_fatal_exit();
 		}
 	}
 
@@ -246,7 +246,7 @@ int qd_read(qd_context* ctx) {
 			free(str);
 		} else {
 			fprintf(stderr, "Fatal error in read: Memory allocation failed\n");
-			abort();
+			qdrt_fatal_exit();
 		}
 	}
 

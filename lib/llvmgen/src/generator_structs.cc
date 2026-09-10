@@ -924,14 +924,13 @@ namespace Qd {
 				builder->CreateStore(intValue, bytePtr);
 			}
 
-			// Push the struct back onto the stack for chaining (unless noReturn)
-			if (!fieldSet->noReturn()) {
-				if (!pushPtrFn) {
-					auto fnTy = llvm::FunctionType::get(execResultTy, {contextPtrTy, ptrTy}, false);
-					pushPtrFn = llvm::Function::Create(fnTy, llvm::Function::ExternalLinkage, "qd_push_p", *module);
-				}
-				builder->CreateCall(pushPtrFn, {ctx, structPtr});
+			// Push the struct back onto the stack for chaining. Always: the `>>field!`
+			// form that suppressed this is gone, and callers write `>>field drop`.
+			if (!pushPtrFn) {
+				auto fnTy = llvm::FunctionType::get(execResultTy, {contextPtrTy, ptrTy}, false);
+				pushPtrFn = llvm::Function::Create(fnTy, llvm::Function::ExternalLinkage, "qd_push_p", *module);
 			}
+			builder->CreateCall(pushPtrFn, {ctx, structPtr});
 
 			return;
 		}

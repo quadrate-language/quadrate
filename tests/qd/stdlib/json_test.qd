@@ -293,3 +293,31 @@ test "json build full object" {
 	found testing::assert_true
 	val 30 testing::assert_eq
 }
+
+test "json::get_float survives a malformed number" {
+	// find_num_end accepts anything number-shaped, so tokens like `-`, `.` and
+	// `e5` reached strconv::parse_float!, which aborted -- a JSON parser dying on
+	// untrusted input. `found = 0` is the channel this function already had.
+	"{\"a\": -}" "a" json::get_float -> found -> _
+	found 0 testing::assert_eq
+
+	"{\"a\": .}" "a" json::get_float -> found2 -> _
+	found2 0 testing::assert_eq
+
+	"{\"a\": e5}" "a" json::get_float -> found3 -> _
+	found3 0 testing::assert_eq
+
+	// A valid number is still a valid number.
+	"{\"a\": 1.5}" "a" json::get_float -> found4 -> val4
+	found4 1 testing::assert_eq
+	val4 1.5 testing::assert_eq
+}
+
+test "json::array_get_float survives a malformed element" {
+	"[1.5, -, 2.5]" 0 json::array_get_float -> f0 -> v0
+	f0 1 testing::assert_eq
+	v0 1.5 testing::assert_eq
+
+	"[1.5, -, 2.5]" 1 json::array_get_float -> f1 -> _
+	f1 0 testing::assert_eq
+}

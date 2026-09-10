@@ -181,7 +181,7 @@ $"result={x + y}"             // Expression interpolation
 --    Decrement
 <<    Field access (read): struct <<field
 >>    Field set (write): struct value >>field  (returns updated struct)
->>!   Field set (write): struct value >>field! (no return, consumes struct)
+>>    Field set (write): struct value >>field (returns struct; add drop to discard)
 ->    Local variable binding
 ::    Scope resolution
 &     Function pointer prefix
@@ -1067,11 +1067,11 @@ ptr_val as MyStruct <<field
 Use `>>` operator (data flows right, into struct). The struct and value are popped from the stack:
 
 - `>>field` — sets field, pushes modified struct back (for chaining)
-- `>>field!` — sets field, discards struct (for standalone mutation)
+- `>>field drop` — sets the field, then discards the struct (for standalone mutation)
 
 ```quadrate
 struct value >>field     // Set field, push modified struct back
-struct value >>field!    // Set field, discard struct
+struct value >>field drop    // Set field, discard struct
 ```
 
 **Example:**
@@ -1080,7 +1080,7 @@ struct value >>field!    // Set field, discard struct
 Point { x = 0.0 y = 0.0 } 5.0 >>x 10.0 >>y -> p
 
 // Standalone mutation (no return)
-p 99 >>x!
+p 99 >>x drop
 
 // Write with rebind
 p 42 >>x -> p
@@ -1887,7 +1887,7 @@ instruction     = "dup" | "swap" | "drop" | "over" | "rot" | "nip"
 | `->` | Bind top of stack to local variable |
 | `::` | Scope resolution (module::member) |
 | `<<` | Field access (read): `struct <<field` |
-| `>>` | Field set (write): `struct value >>field` (returns struct) or `>>field!` (no return) |
+| `>>` | Field set (write): `struct value >>field` — returns the struct; add `drop` to discard it |
 | `&` | Get function pointer |
 | `!` | Abort on error (after fallible call) |
 | `?` | Propagate error to caller (after fallible call) |

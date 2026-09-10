@@ -1,4 +1,4 @@
-// Mutating a struct global via `>>!` writes through to the underlying
+// Mutating a struct global via `>>field drop` writes through to the underlying
 // heap struct. Subsequent reads see the new values. This is the main
 // reason to use `var` rather than `const` for structs.
 
@@ -9,7 +9,7 @@ struct Counter {
 var tally = Counter { value = 0 }
 
 fn bump() {
-	tally tally <<value 1 + >>value!
+	tally tally <<value 1 + >>value drop
 }
 
 fn main() {
@@ -19,7 +19,7 @@ fn main() {
 	tally <<value print nl      // 3
 
 	// Direct mutation from main.
-	tally 42 >>value!
+	tally 42 >>value drop
 	tally <<value print nl      // 42
 
 	// Reassign the whole struct with a fresh instance.

@@ -382,3 +382,56 @@ test "strings::split_n" {
 	"a:b:c" ":" 1 strings::split_n! -> count3 -> arr3
 	count3 1 testing::assert_eq
 }
+
+test "strings::split parts are indexable" {
+	// The result used to be a bare malloc'd qd_string_t**: `nth` segfaulted on it
+	// and nothing in the corpus ever read an element.
+	"a,b,c" "," strings::split! -> count -> parts
+	count 3 testing::assert_eq
+	parts len 3 testing::assert_eq
+	parts 0 nth "a" testing::assert_eq
+	parts 1 nth "b" testing::assert_eq
+	parts 2 nth "c" testing::assert_eq
+}
+
+test "strings::split round-trips through join" {
+	// join read the same buffer as char**, so this returned the bytes of the
+	// qd_string_t structs rather than the strings.
+	"a,b,c" "," strings::split! -> count -> parts
+	parts count "-" strings::join! -> joined
+	joined "a-b-c" testing::assert_eq
+}
+
+test "strings::split_n parts are indexable" {
+	"x:y:z" ":" 2 strings::split_n! -> count -> parts
+	count 2 testing::assert_eq
+	parts 0 nth "x" testing::assert_eq
+	parts 1 nth "y:z" testing::assert_eq
+	parts count "|" strings::join! -> joined
+	joined "x|y:z" testing::assert_eq
+}
+
+test "strings::lines parts are indexable" {
+	// As a bare malloc'd buffer this validated as an array of length 0, so `len`
+	// answered 0 while `count` answered 2 -- a loop over it silently did nothing.
+	"a\nb\nc" strings::lines! -> count -> parts
+	count 3 testing::assert_eq
+	parts len 3 testing::assert_eq
+	parts 0 nth "a" testing::assert_eq
+	parts 2 nth "c" testing::assert_eq
+}
+
+test "strings::words parts are indexable" {
+	"one two" strings::words! -> count -> parts
+	count 2 testing::assert_eq
+	parts len 2 testing::assert_eq
+	parts 1 nth "two" testing::assert_eq
+}
+
+test "the string-list family composes" {
+	// split -> sort -> join across three modules, none of which could previously
+	// consume another's output.
+	"c,a,b" "," strings::split! -> count -> parts
+	parts count strings::sort
+	parts count "-" strings::join! "a-b-c" testing::assert_eq
+}

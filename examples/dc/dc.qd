@@ -44,7 +44,7 @@ fn stack_push(s:ptr val:f64 -- ) {
 		"dc: stack overflow" print nl
 	} else {
 		val s <<data sz 8 * mem::set_f64
-		s sz 1 + >>size!
+		s sz 1 + >>size drop
 	}
 }
 
@@ -55,7 +55,7 @@ fn stack_pop(s:ptr -- val:f64) {
 		0.0
 	} else {
 		sz 1 - -> sz
-		s sz >>size!
+		s sz >>size drop
 		s <<data sz 8 * mem::get_f64
 	}
 }
@@ -74,7 +74,7 @@ fn stack_depth(s:ptr -- n:i64) {
 }
 
 fn stack_clear(s:ptr -- ) {
-	s 0 >>size!
+	s 0 >>size drop
 }
 
 // Check if stack has at least n items, print error if not
@@ -401,11 +401,17 @@ fn repl(s:ptr -- ) {
 	loop {
 		io::readline switch {
 			Ok {
-				-> input s input process_line input drop
+				-> ok -> input
+				ok 0 == if {
+					// End of input
+					input drop
+					0 os::exit
+				}
+				s input process_line input drop
 			}
 			_ {
-				// EOF or error - exit
-				0 os::exit
+				// A genuine read failure
+				1 os::exit
 			}
 		}
 	}

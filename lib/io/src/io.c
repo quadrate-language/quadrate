@@ -620,17 +620,43 @@ int usr_io_read(qd_context* ctx) {
 }
 
 // Read a line from stdin
+/* ( -- line:str ok:i64 )!
+ *
+ * Three outcomes, kept distinct:
+ *
+ *   a line      -> line, ok=1, status OK
+ *   end of input-> "",   ok=0, status OK   (no error state set)
+ *   read failure-> status IO_ERR_READ, error state set
+ *
+ * Running out of input is how every read loop ends, so it is not an error. This
+ * used to set error_code = IO_ERR_EOF at EOF, and because Quadrate has no way to
+ * clear the error state, a *successful* loop left it set: a fallible function
+ * that drained stdin reported failure to its caller. examples/wc/wc.qd carried a
+ * comment explaining that it hand-rolled an ok flag for exactly this reason.
+ *
+ * getline() returns -1 for both cases, so feof/ferror decide which. Previously
+ * they were collapsed into one code whose message read "read error or EOF" --
+ * the API admitting it could not tell them apart. */
 int usr_io_readline(qd_context* ctx) {
 	char* line = NULL;
 	size_t len = 0;
+	errno = 0;
 	ssize_t nread = getline(&line, &len, stdin);
 
 	if (nread == -1) {
-		ctx->error_code = IO_ERR_EOF;
-		qd_set_error_msg(ctx, "io::readline: read error or EOF");
 		free(line);
-		qd_push_i(ctx, IO_ERR_EOF);
-		return (int){IO_ERR_EOF};
+		if (ferror(stdin)) {
+			clearerr(stdin);
+			ctx->error_code = IO_ERR_READ;
+			qd_set_error_msg(ctx, "io::readline: read failed");
+			qd_push_i(ctx, IO_ERR_READ);
+			return (int){IO_ERR_READ};
+		}
+		// Ordinary end of input.
+		qd_push_s(ctx, "");
+		qd_push_i(ctx, 0);
+		qd_push_i(ctx, IO_ERR_OK);
+		return (int){0};
 	}
 
 	if (nread > 0 && line[nread - 1] == '\n') {
@@ -639,6 +665,7 @@ int usr_io_readline(qd_context* ctx) {
 	}
 
 	qd_push_s(ctx, line);
+	qd_push_i(ctx, 1);
 	qd_push_i(ctx, IO_ERR_OK);
 	free(line);
 

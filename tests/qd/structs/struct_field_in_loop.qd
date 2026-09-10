@@ -4,10 +4,10 @@ struct Acc { total: i64  count: i64 }
 fn main() {
 	Acc { total = 0 count = 0 } -> a
 
-	// Accumulate in loop using >>field!
+	// Accumulate in loop using >>field drop
 	0 10 1 for i {
-		a a <<total i + >>total!
-		a a <<count 1 + >>count!
+		a a <<total i + >>total drop
+		a a <<count 1 + >>count drop
 	}
 
 	a <<total print nl    // 45 (0+1+2+...+9)

@@ -76,7 +76,7 @@ This is compile-time only — no runtime cost. It's required when multiple struc
 Use `>>fieldname` to write. Two variants:
 
 - `>>field` — pushes modified struct back (for chaining)
-- `>>field!` — discards struct (for standalone mutation)
+- `>>field drop` — discards the struct (for standalone mutation)
 
 ```qd
 struct Counter {
@@ -90,8 +90,8 @@ fn main() {
 
 	c <<value print nl  // 0
 
-	// >>field! for standalone mutation
-	c 10 >>value!
+	// >>field drop for standalone mutation
+	c 10 >>value drop
 	c <<value print nl  // 10
 
 	// >>field with rebind

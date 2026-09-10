@@ -36,6 +36,8 @@ static const Command commands[] = {
 		{"uses", "quaduses", "Analyze module dependencies"},
 		{"lsp", "quadlsp", "Start language server"},
 		{"doc", "quaddoc", "Generate HTML documentation"},
+		{"pm", "quadpm", "Manage third-party modules"},
+		{"mcp", "quadmcp", "Start the MCP server"},
 		{"init", nullptr, "Initialize a new Quadrate project"},
 		{"clean", nullptr, "Remove build artifacts"},
 		{"version", nullptr, "Show version information"},
@@ -57,6 +59,8 @@ void printHelp() {
 	std::cout << "  " << Colors::green() << "uses" << Colors::reset() << "      Analyze module dependencies\n";
 	std::cout << "  " << Colors::green() << "lsp" << Colors::reset() << "       Start language server\n";
 	std::cout << "  " << Colors::green() << "doc" << Colors::reset() << "       Generate HTML documentation\n";
+	std::cout << "  " << Colors::green() << "pm" << Colors::reset() << "        Manage third-party modules\n";
+	std::cout << "  " << Colors::green() << "mcp" << Colors::reset() << "       Start the MCP server\n";
 	std::cout << "  " << Colors::green() << "init" << Colors::reset() << "      Initialize a new Quadrate project\n";
 	std::cout << "  " << Colors::green() << "clean" << Colors::reset() << "     Remove build artifacts\n";
 	std::cout << "  " << Colors::green() << "help" << Colors::reset() << "      Show help for a command\n";
@@ -450,6 +454,24 @@ int handleRepl(const std::vector<std::string>& args) {
 	return execTool(toolPath, args);
 }
 
+int handlePm(const std::vector<std::string>& args) {
+	std::string toolPath = findTool("quadpm");
+	if (toolPath.empty()) {
+		std::cerr << "quad: quadpm not found\n";
+		return 1;
+	}
+	return execTool(toolPath, args);
+}
+
+int handleMcp(const std::vector<std::string>& args) {
+	std::string toolPath = findTool("quadmcp");
+	if (toolPath.empty()) {
+		std::cerr << "quad: quadmcp not found\n";
+		return 1;
+	}
+	return execTool(toolPath, args);
+}
+
 int handleUses(const std::vector<std::string>& args) {
 	std::string toolPath = findTool("quaduses");
 	if (toolPath.empty()) {
@@ -764,6 +786,12 @@ int main(int argc, char* argv[]) {
 	}
 	if (command == "doc") {
 		return handleDoc(args);
+	}
+	if (command == "pm") {
+		return handlePm(args);
+	}
+	if (command == "mcp") {
+		return handleMcp(args);
 	}
 	if (command == "init") {
 		return handleInit(args);

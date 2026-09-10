@@ -350,21 +350,9 @@ namespace Qd {
 			case IAstNode::Type::FIELD_SET: {
 				AstNodeFieldSet* fs = static_cast<AstNodeFieldSet*>(child);
 				if (fs->varName().empty()) {
-					if (fs->noReturn()) {
-						// >>field! : pop value, pop struct, push nothing (net: -2)
-						if (typeStack.size() >= 2) {
-							typeStack.pop_back(); // pop value
-							typeStack.pop_back(); // pop struct
-						} else if (!typeStack.empty()) {
-							typeStack.pop_back();
-						}
-					} else {
-						// >>field : pop value, struct stays (net: -1)
-						if (typeStack.size() >= 2) {
-							typeStack.pop_back(); // pop value
-						} else if (!typeStack.empty()) {
-							typeStack.pop_back();
-						}
+					// >>field : pop value, struct stays (net: -1)
+					if (!typeStack.empty()) {
+						typeStack.pop_back(); // pop value
 					}
 				} else {
 					if (!typeStack.empty()) {
@@ -911,6 +899,30 @@ namespace Qd {
 						// Use the receiver position calculated earlier (before stack modifications)
 						instr->setMethodReceiverPositionFromTop(receiverPositionFromTop);
 						break;
+					}
+				}
+
+				// A literal zero divisor is knowable now, and reaching it at run time is a
+				// fatal error that kills the process. Report it here instead, the way C, Go
+				// and Rust all do. Only the immediately preceding literal is examined --
+				// this is a peephole check, not constant propagation, so `0 -> z x z /`
+				// still fails at run time.
+				if ((instrName == "div" || instrName == "/" || instrName == "mod" || instrName == "%") && i > 0) {
+					IAstNode* prev = node->child(i - 1);
+					if (prev != nullptr && prev->type() == IAstNode::Type::LITERAL) {
+						auto* lit = static_cast<AstNodeLiteral*>(prev);
+						const std::string& text = lit->value();
+						const bool zeroInt = lit->literalType() == AstNodeLiteral::LiteralType::INTEGER && text == "0";
+						const bool zeroFloat = lit->literalType() == AstNodeLiteral::LiteralType::FLOAT &&
+											   text.find_first_not_of("0.") == std::string::npos &&
+											   text.find_first_of("0") != std::string::npos;
+						if (zeroInt || zeroFloat) {
+							std::string errorMsg = "Division by zero in '";
+							errorMsg += instrName;
+							errorMsg += "': the divisor is the literal ";
+							errorMsg += text;
+							reportError(child, errorMsg.c_str());
+						}
 					}
 				}
 
@@ -2923,15 +2935,6 @@ namespace Qd {
 						typeStack.pop_back(); // pop value
 						if (!structTypeStack.empty()) {
 							structTypeStack.pop_back();
-						}
-					}
-					// >>field! also pops the struct
-					if (fieldSet->noReturn()) {
-						if (!typeStack.empty()) {
-							typeStack.pop_back(); // pop struct
-							if (!structTypeStack.empty()) {
-								structTypeStack.pop_back();
-							}
 						}
 					}
 				} else {

@@ -108,7 +108,7 @@ pub fn (f:Flag) string(name:str -- value:str)! {
 		"flag has no value: " name strings::concat ErrNoValue panic
 	}
 
-	argv start end_idx start - strings::substring! -> value
+	argv start end_idx start - strings::substring? -> value
 	value
 }
 
@@ -183,10 +183,10 @@ pub fn (f:Flag) positional(index:i64 -- value:str)! {
 		}
 
 		// Check if this is a flag (starts with -)
-		argv start strings::char_at! unicode::minus != if {
+		argv start strings::char_at? unicode::minus != if {
 			// This is a positional argument
 			pos_idx index == if {
-				argv start end_idx start - strings::substring! -> result
+				argv start end_idx start - strings::substring? -> result
 				1 -> found
 				break
 			}
@@ -202,7 +202,7 @@ pub fn (f:Flag) positional(index:i64 -- value:str)! {
 				}
 				// Check if next arg is a value (not starting with -)
 				start end_idx < if {
-					argv start strings::char_at! unicode::minus != if {
+					argv start strings::char_at? unicode::minus != if {
 						// Skip this value too (it belongs to the flag)
 						end_idx 1 + -> start
 						continue

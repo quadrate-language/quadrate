@@ -14,11 +14,7 @@ fn main() {
 	// Test 2: Empty delimiter
 	entries count "" strings::join! print nl
 
-	// Free entries and clean up first test
-	0 count 1 for i {
-		entries i 8 * mem::get_ptr mem::free
-	}
-	entries mem::free
+	entries free
 	tmpdir "/only.txt" strings::concat os::delete!
 	tmpdir os::rmdir!
 
@@ -30,11 +26,7 @@ fn main() {
 	entries2 count2 strings::sort
 	entries2 count2 " - " strings::join! print nl
 
-	// Free entries2 and clean up
-	0 count2 1 for i {
-		entries2 i 8 * mem::get_ptr mem::free
-	}
-	entries2 mem::free
+	entries2 free
 	tmpdir2 "/a.txt" strings::concat os::delete!
 	tmpdir2 "/b.txt" strings::concat os::delete!
 	tmpdir2 os::rmdir!

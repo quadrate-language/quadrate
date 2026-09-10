@@ -18,6 +18,18 @@ namespace Qd {
 			setNodePosition(node, scanner, src);
 			return node;
 		} else if (token == U8T_STRING) {
+			// u8t ends a string token at EOF exactly as it does at a closing quote, so an
+			// unterminated literal silently swallows the rest of the file and the parser
+			// then blames the missing '}' at the last line. Detect it here, where the
+			// position still points at the opening quote.
+			const size_t startChar = u8t_scanner_token_start(scanner);
+			const size_t lenChars = u8t_scanner_token_len(scanner);
+			const size_t endByte = fastCharToByteOffset(src, startChar + lenChars);
+			const size_t srcLen = strlen(src);
+			if (lenChars < 2 || endByte == 0 || endByte > srcLen || src[endByte - 1] != '"') {
+				errorReporter->reportError(scanner, "Unterminated string literal");
+				return nullptr;
+			}
 			const char* text = u8t_scanner_token_text(scanner, n);
 			IAstNode* node = new AstNodeLiteral(text, AstNodeLiteral::LiteralType::STRING);
 			setNodePosition(node, scanner, src);
@@ -174,11 +186,13 @@ namespace Qd {
 					char32_t identToken = u8t_scanner_scan(scanner);
 					if (identToken == U8T_IDENTIFIER) {
 						std::string fieldName(u8t_scanner_token_text(scanner, n));
-						bool noReturn = (peekNextChar(scanner, src) == '!');
-						if (noReturn) {
+						if (peekNextChar(scanner, src) == '!') {
 							u8t_scanner_scan(scanner);
+							errorReporter->reportError(scanner,
+									"'>>field!' has been removed; it only differed from '>>field' by "
+									"discarding the struct, so write '>>field drop' instead");
 						}
-						AstNodeFieldSet* fieldSet = new AstNodeFieldSet("", fieldName, noReturn);
+						AstNodeFieldSet* fieldSet = new AstNodeFieldSet("", fieldName);
 						setNodePosition(fieldSet, scanner, src);
 						return fieldSet;
 					}

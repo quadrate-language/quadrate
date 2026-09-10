@@ -7,6 +7,8 @@
 #include <quadrate/rt/qd_string.h>
 #include <quadrate/rt/qd_struct.h>
 #include <quadrate/rt/stack.h>
+#include "runtime_internal.h"
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -111,7 +113,7 @@ void qd_array_release(qd_array_t* arr) {
 	size_t old_count = atomic_fetch_sub(&arr->refcount, 1);
 	if (old_count == 0) {
 		fprintf(stderr, "Fatal error: free called on already-freed array\n");
-		abort();
+		qdrt_fatal_exit();
 	}
 	if (old_count > 1) {
 		return;

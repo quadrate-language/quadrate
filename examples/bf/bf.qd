@@ -49,8 +49,8 @@ fn main() {
 				tape dp mem::get_byte strings::from_char print
 			}
 			unicode::comma {
-				io::readline! -> line
-				line strings::len 0 > if {
+				io::readline! -> ok -> line
+				ok 0 != line strings::len 0 > and if {
 					line 0 strings::char_at!
 				} else {
 					0

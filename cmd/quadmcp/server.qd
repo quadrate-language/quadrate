@@ -100,7 +100,7 @@ fn extract_id(body:str -- id:str) {
 fn run_stdio(ds:ptr -- ) {
 	loop {
 		io::readline switch {
-			Ok { -> line line strings::len 0 > if { line "method" json::get_string -> found -> method found 0 == if { "null" "-32600" "Invalid request: missing method" rpc_error print nl io::flush } else { line extract_id -> id ds method id line dispatch -> response response strings::len 0 > if { response print nl io::flush } } } }
+			Ok { -> ok -> line ok 0 == if { line drop break } line strings::len 0 > if { line "method" json::get_string -> found -> method found 0 == if { "null" "-32600" "Invalid request: missing method" rpc_error print nl io::flush } else { line extract_id -> id ds method id line dispatch -> response response strings::len 0 > if { response print nl io::flush } } } }
 			_ { break }
 		}
 	}

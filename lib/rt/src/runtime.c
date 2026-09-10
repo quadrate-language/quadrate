@@ -5,6 +5,7 @@
 #include <quadrate/rt/array.h>
 #include <quadrate/rt/qd_string.h>
 #include <quadrate/rt/qd_struct.h>
+#include <unistd.h>
 #include <stdio.h>
 #include <stdint.h>
 #include <stdlib.h>
@@ -18,6 +19,14 @@ static void dump_stack(qd_context* ctx);
 
 // Closure registry for safe closure detection
 static ptr_registry_t closure_registry = PTR_REGISTRY_INITIALIZER;
+
+_Noreturn void qdrt_fatal_exit(void) {
+	const char* want_abort = getenv("QUADRATE_ABORT_ON_FATAL");
+	if (want_abort != NULL && want_abort[0] != '\0' && strcmp(want_abort, "0") != 0) {
+		abort();
+	}
+	_exit(1);
+}
 
 void qd_closure_register(void* ptr) {
 	if (ptr) {
@@ -578,7 +587,7 @@ void qd_check_stack(qd_context* ctx, size_t count, const qd_stack_type* types, c
 			func_name, count, stack_size);
 		dump_stack(ctx);
 		qd_print_stack_trace(ctx);
-		abort();
+		qdrt_fatal_exit();
 	}
 
 	// Fast path: single integer parameter (very common case like fib(n:i64))
@@ -598,7 +607,7 @@ void qd_check_stack(qd_context* ctx, size_t count, const qd_stack_type* types, c
 			func_name, actual_type_name);
 		dump_stack(ctx);
 		qd_print_stack_trace(ctx);
-		abort();
+		qdrt_fatal_exit();
 	}
 
 	// Check types match (from bottom to top of required elements)
@@ -634,7 +643,7 @@ void qd_check_stack(qd_context* ctx, size_t count, const qd_stack_type* types, c
 				func_name, i + 1, expected_type_name, actual_type_name);
 			dump_stack(ctx);
 			qd_print_stack_trace(ctx);
-			abort();
+			qdrt_fatal_exit();
 		}
 	}
 }
@@ -898,14 +907,9 @@ int qd_panic(qd_context* ctx) {
 	}
 
 	if (error_msg_elem.type != QD_STACK_TYPE_STR) {
+		// QDRT_FATAL terminates, so nothing after it can run -- the dump, backtrace,
+		// string release and abort() that used to follow were unreachable.
 		QDRT_FATAL(ctx, "panic", "Expected string error message, got type %d", error_msg_elem.type);
-		dump_stack(ctx);
-		qd_print_stack_trace(ctx);
-		// Release the error code's string reference if needed
-		if (error_code_elem.type == QD_STACK_TYPE_STR) {
-			qd_string_release(error_code_elem.value.s);
-		}
-		abort();
 	}
 
 	// Set error code and message.

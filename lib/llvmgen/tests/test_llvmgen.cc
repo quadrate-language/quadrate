@@ -525,17 +525,17 @@ TEST(StructFieldSetChaining) {
 	ASSERT(irContains(ir, "qd_push_p"), "chained >>field should push struct back");
 }
 
-TEST(StructFieldSetNoReturn) {
+TEST(StructFieldSetDiscard) {
 	const char* src = R"(
 		struct Point { x:i64 y:i64 }
 		fn main() {
 			Point { x = 1 y = 2 } -> p
-			p 99 >>x!
+			p 99 >>x drop
 			p <<x print nl
 		}
 	)";
 	std::string ir = generateIR(src);
-	ASSERT(!ir.empty(), "should generate IR for >>field! (no return)");
+	ASSERT(!ir.empty(), "should generate IR for >>field followed by drop");
 }
 
 TEST(StructAsParameter) {

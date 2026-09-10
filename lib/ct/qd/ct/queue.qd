@@ -66,7 +66,7 @@ pub fn (q:Queue<T>) enqueue<T>(val:T -- q2:Queue<T>)! {
 	// Grow capacity if full
 	len cap >= cap 0 == or if {
 		cap 0 == if { 8 } else { cap 2 * } -> new_cap
-		new_cap 8 * mem::alloc! -> new_data
+		new_cap 8 * mem::alloc? -> new_data
 
 		// Copy elements in order (unwrap circular buffer)
 		cap 0 > if {

@@ -12,7 +12,7 @@ Custom data types that group related fields together.
 | `Name { field = value }` | Create an instance |
 | `<<field` | Read a field |
 | `struct value >>field` | Write a field (pushes modified struct back for chaining) |
-| `struct value >>field!` | Write a field (discards struct, for standalone mutation) |
+| `struct value >>field drop` | Write a field and discard the struct (standalone mutation) |
 | `fn (s:Name) method(...)` | Define a method |
 
 ---
@@ -123,13 +123,13 @@ Point { x = 0.0 y = 0.0 } 1.0 >>x 2.0 >>y -> p
 p 5.0 >>x -> p
 ```
 
-Use `>>field!` (with `!`) when you don't need the struct back — for standalone mutations:
+Add `drop` when you don't need the struct back — for standalone mutations:
 
-**Syntax:** `struct value >>field!` — discards struct after write
+**Syntax:** `struct value >>field drop` — discards the struct after the write
 
 ```qd
-p 99 >>x!           // mutate, don't push struct back
-s sz 1 + >>size!    // common in imperative code
+p 99 >>x drop           // mutate, don't push struct back
+s sz 1 + >>size drop    // common in imperative code
 ```
 
 ---

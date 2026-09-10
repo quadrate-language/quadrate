@@ -206,7 +206,7 @@ Read a line from stdin.
 **Example:**
 
 ```qd
-io::readline!  // input
+io::readline switch { Ok { -> ok -> line ok 0 == if { break } } _ { } }
 ```
 ---
 

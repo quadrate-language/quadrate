@@ -19,7 +19,7 @@ void printHelp() {
 	std::cout << "  -h, --help         Show this help message\n";
 	std::cout << "  -v, --version      Show version information\n";
 	std::cout << "  --no-color         Disable coloured output\n";
-	std::cout << "  -o <name>          Output executable name (default: main)\n";
+	std::cout << "  -o <name>          Output executable name (default: the source file's name)\n";
 	std::cout << "  -O0, -O1, -O2, -O3 Set optimization level (default: -O0)\n";
 	std::cout << "  -s <size>          Set stack size (default: 1024)\n";
 	std::cout << "  -g                 Generate debug information for GDB/LLDB\n";
@@ -77,6 +77,7 @@ bool parseArgs(int argc, char* argv[], Options& opts) {
 				return false;
 			}
 			opts.outputName = argv[++i];
+			opts.outputNameSet = true;
 		} else if (arg == "--save-temps") {
 			opts.saveTemps = true;
 		} else if (arg == "--verbose") {

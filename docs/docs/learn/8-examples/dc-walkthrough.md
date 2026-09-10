@@ -79,7 +79,7 @@ fn stack_push(s:ptr val:f64 -- ) {
         "dc: stack overflow" print nl
     } else {
         val s <<data sz 8 * mem::set_f64
-        s sz 1 + >>size!
+        s sz 1 + >>size drop
     }
 }
 ```
@@ -87,8 +87,8 @@ fn stack_push(s:ptr val:f64 -- ) {
 Key syntax:
 
 - `s <<size` reads the `size` field from struct `s`
-- `s sz 1 + >>size!` sets `size` to `sz + 1`. The `!` suffix means "consume
-  the struct after the assignment" — we don't need it back on the stack.
+- `s sz 1 + >>size drop` sets `size` to `sz + 1`. `>>field` leaves the struct on
+  the stack for chaining, and the `drop` discards it — we don't need it back.
 - `val s <<data sz 8 * mem::set_f64` writes `val` at offset `sz * 8` in `data`
 
 `stack_pop` is the mirror image — decrement `size`, read the value:
@@ -101,7 +101,7 @@ fn stack_pop(s:ptr -- val:f64) {
         0.0
     } else {
         sz 1 - -> sz
-        s sz >>size!
+        s sz >>size drop
         s <<data sz 8 * mem::get_f64
     }
 }
@@ -296,15 +296,20 @@ The interactive loop just reads lines from stdin until EOF:
 fn repl(s:ptr -- ) {
     loop {
         io::readline switch {
-            Ok { -> input  s input process_line  input drop }
-            _  { 0 os::exit }
+            Ok {
+                -> ok -> input
+                ok 0 == if { input drop  0 os::exit }
+                s input process_line  input drop
+            }
+            _  { 1 os::exit }
         }
     }
 }
 ```
 
-`io::readline` returns a `Result`. `Ok` binds the line and processes it; any
-error (including EOF) exits.
+`io::readline` returns a line plus an `ok` flag. `ok 0` is end of input -- not an
+error, just the end -- and exits cleanly; the `_` arm is a genuine read failure
+and exits non-zero.
 
 ## Main and flags
 
@@ -336,7 +341,7 @@ The flag logic is straightforward:
 
 ## What this example teaches
 
-- **Struct definition with fields** and the `<<field` / `>>field!` access
+- **Struct definition with fields** and the `<<field` / `>>field` access
   syntax
 - **Raw memory operations** via the `mem` module for implementing data
   structures

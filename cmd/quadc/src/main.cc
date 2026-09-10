@@ -144,6 +144,18 @@ int main(int argc, char** argv) {
 		Qd::Colors::setEnabled(false);
 	}
 
+	// Without -o, name the binary after the source file, as gcc/go/rustc do.
+	// It used to be a hardcoded "main" -- the entry function's name -- so
+	// `quadc server.qd` produced `main`, the artefact said nothing about where it
+	// came from, and compiling two sources in one directory silently clobbered
+	// the first.
+	if (!opts.outputNameSet && !opts.files.empty()) {
+		std::filesystem::path stem = std::filesystem::path(opts.files[0]).stem();
+		if (!stem.empty()) {
+			opts.outputName = stem.string();
+		}
+	}
+
 	const std::string outputDir = createTempDir(opts.saveTemps);
 	TempDirGuard tempGuard(outputDir);
 
@@ -219,7 +231,10 @@ int main(int argc, char** argv) {
 		for (const auto& file : opts.files) {
 			auto bufferOpt = readFileContents(file);
 			if (!bufferOpt) {
-				printError(file + ": No such file or directory");
+				// Tool-level failure, not a compiler diagnostic: use the same
+				// `tool: path: message` shape as quadfmt/quadlint/quaduses/quaddoc
+				// rather than the `quadc: error:` form reserved for diagnostics.
+				printToolError(file + ": No such file or directory");
 				continue;
 			}
 			std::string buffer = std::move(*bufferOpt);
@@ -590,6 +605,8 @@ int main(int argc, char** argv) {
 			buildCache.addOption("debug:" + std::to_string(opts.debugInfo ? 1 : 0));
 			// A different quadc can produce different output from identical sources
 			buildCache.addCompilerIdentity();
+			// ...and so can a different runtime or stdlib, which is linked in
+			buildCache.addStdlibIdentity();
 
 			// Check cache before doing expensive codegen
 			if (buildCache.restore(outputPath)) {

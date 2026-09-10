@@ -8,6 +8,7 @@
 #include <quadrate/strings/strings.h>
 #include <quadrate/rt/runtime.h>
 #include <quadrate/rt/context.h>
+#include <quadrate/rt/array.h>
 #include <quadrate/rt/stack.h>
 #include <quadrate/rt/qd_string.h>
 #include <unit-check/uc.h>
@@ -351,12 +352,16 @@ TEST(StrSplitTest) {
 	qd_stack_pop(ctx->st, &ptr_elem);
 	ASSERT_EQ(QD_STACK_TYPE_PTR, ptr_elem.type, "result should be ptr");
 
-	// Clean up split results
-	qd_string_t** parts = (qd_string_t**)ptr_elem.value.p;
-	for (int i = 0; i < 3; i++) {
-		qd_string_release(parts[i]);
-	}
-	free(parts);
+	// split returns a real Quadrate array now, so the elements are readable and
+	// releasing the array releases them.
+	qd_array_t* parts = (qd_array_t*)ptr_elem.value.p;
+	ASSERT_EQ(1, qd_array_is_valid(parts), "split result should be a valid array");
+	ASSERT_EQ(3, (int)qd_array_length(parts), "array length should match count");
+	qd_string_t** elems = (qd_string_t**)parts->data.p;
+	ASSERT_STR_EQ("a", qd_string_data(elems[0]), "first part");
+	ASSERT_STR_EQ("b", qd_string_data(elems[1]), "second part");
+	ASSERT_STR_EQ("c", qd_string_data(elems[2]), "third part");
+	qd_array_release(parts);
 
 	destroy_test_context(ctx);
 }
@@ -364,11 +369,15 @@ TEST(StrSplitTest) {
 TEST(StrJoinTest) {
 	qd_context* ctx = create_test_context();
 
-	// Create array of C strings (join expects char**)
-	char** parts = malloc(3 * sizeof(char*));
-	parts[0] = strdup("a");
-	parts[1] = strdup("b");
-	parts[2] = strdup("c");
+	// join takes the same array shape strings::split produces. This test used to
+	// build a char** -- the shape join *used* to expect -- while split produced
+	// qd_string_t**; each test exercised one half of an incompatible pair, which
+	// is why neither caught that split|join returned garbage.
+	qd_array_t* parts = qd_array_create(3, QD_ARRAY_TYPE_STR);
+	parts->data.p[0] = qd_string_create("a");
+	parts->data.p[1] = qd_string_create("b");
+	parts->data.p[2] = qd_string_create("c");
+	parts->length = 3;
 
 	qd_push_p(ctx, parts);
 	qd_push_i(ctx, 3);
@@ -385,10 +394,7 @@ TEST(StrJoinTest) {
 	ASSERT_STR_EQ("a,b,c", qd_string_data(elem.value.s), "join result");
 
 	qd_string_release(elem.value.s);
-	for (int i = 0; i < 3; i++) {
-		free(parts[i]);
-	}
-	free(parts);
+	qd_array_release(parts);
 
 	destroy_test_context(ctx);
 }

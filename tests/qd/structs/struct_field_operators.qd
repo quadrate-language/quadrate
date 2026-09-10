@@ -1,4 +1,4 @@
-// Test: Comprehensive test for <<field (read), >>field (write), >>field! (write no-return)
+// Test: Comprehensive test for <<field (read), >>field (write), >>field drop (write no-return)
 struct Point {
 	x: i64
 	y: i64
@@ -55,16 +55,16 @@ fn main() {
 	b "hello" >>value -> b
 	b <<value print nl  // hello
 
-	// === >>field! (write, no return) ===
+	// === >>field drop (write, no return) ===
 
 	// Standalone mutation
 	Point { x = 1 y = 2 } -> r
-	r 50 >>x!
+	r 50 >>x drop
 	r <<x print nl  // 50
 
-	r 60 >>y!
+	r 60 >>y drop
 	r <<y print nl  // 60
 
-	// >>field! doesn't leave anything on the stack
+	// >>field drop doesn't leave anything on the stack
 	// (this would fail with "body leaves N values" if it pushed)
 }

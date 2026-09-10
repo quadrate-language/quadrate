@@ -21,6 +21,7 @@ fi
 # Use an isolated cache directory so we don't pollute the user's real cache
 TEST_DIR="/tmp/quadrate_build_cache_test_$$"
 CACHE_DIR="$TEST_DIR/cache"
+PROJECT_ROOT="${PROJECT_ROOT:-$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)}"
 SRC_DIR="$TEST_DIR/src"
 
 cleanup() {
@@ -275,6 +276,39 @@ if echo "$output_s1" | grep -q "total (cached)"; then
     fail "Different stack size should NOT hit cache"
 else
     pass "Different stack size produces separate cache entry"
+fi
+
+# ===================================================================
+# Test 13: Rebuilding the stdlib invalidates the cache
+# ===================================================================
+# The key mixed in compiler identity but nothing about the runtime/stdlib
+# archives, so rebuilding libstrings.a and re-running the suite served
+# executables linked against the previous one -- reporting failures that quoted
+# an error message no longer in the source, and equally able to report a stale
+# pass. Work against a copy of the library directory so touching an archive
+# cannot disturb the real tree or the developer's cache.
+LIB_COPY="$TEST_DIR/libcopy"
+if [[ -d "$PROJECT_ROOT/dist/lib" ]]; then
+    cp -r "$PROJECT_ROOT/dist/lib" "$LIB_COPY"
+
+    out_a=$(QUADRATE_LIBDIR="$LIB_COPY" "$QUADC" "$SRC_DIR/hello.qd" -o "$TEST_DIR/hello_lib1" 2>&1)
+    out_b=$(QUADRATE_LIBDIR="$LIB_COPY" "$QUADC" "$SRC_DIR/hello.qd" -o "$TEST_DIR/hello_lib2" 2>&1)
+    if echo "$out_b" | grep -q "total (cached)"; then
+        pass "Identical build with the copied libdir hits the cache"
+    else
+        fail "Second identical build should have hit the cache"
+    fi
+
+    # Any archive will do; strings is the one that exposed this.
+    touch "$LIB_COPY/quadrate/libstrings.a" 2>/dev/null || touch "$LIB_COPY"/*.a
+    out_c=$(QUADRATE_LIBDIR="$LIB_COPY" "$QUADC" "$SRC_DIR/hello.qd" -o "$TEST_DIR/hello_lib3" 2>&1)
+    if echo "$out_c" | grep -q "total (cached)"; then
+        fail "A rebuilt stdlib archive should NOT hit the cache"
+    else
+        pass "A rebuilt stdlib archive invalidates the cache"
+    fi
+else
+    echo "  (skipped: no dist/lib to copy)"
 fi
 
 # ===================================================================

@@ -1,12 +1,15 @@
 #include "build_cache.h"
 
 #include "version.h"
+#include <algorithm>
 #include <cstdint>
 #include <cstdio>
+#include <cstdlib>
 #include <cstring>
 #include <filesystem>
 #include <fstream>
 #include <iomanip>
+#include <vector>
 
 #include <sstream>
 #include <system_error>
@@ -78,6 +81,104 @@ void BuildCache::addCompilerIdentity() {
 	auto mtime = fs::last_write_time(self, ec);
 	if (!ec) {
 		mOptions.push_back("qdc-mtime:" + std::to_string(mtime.time_since_epoch().count()));
+	}
+}
+
+namespace {
+
+	// Resolve the library directory the same way lib/llvmgen does at link time
+	// (generator.cc, "Determine library directory"). Duplicated rather than shared
+	// because that logic is inline in a large function; if the precedence there
+	// changes, this must follow.
+	fs::path resolveLibDir() {
+		std::error_code ec;
+
+		if (const char* env = std::getenv("QUADRATE_LIBDIR")) {
+			fs::path p(env);
+			if (p.is_relative()) {
+				p = fs::absolute(p, ec);
+			}
+			if (!ec && fs::exists(p, ec)) {
+				return p;
+			}
+		}
+
+		fs::path distLib = fs::absolute("./dist/lib", ec);
+		if (!ec && fs::exists(distLib, ec)) {
+			return distLib;
+		}
+
+		fs::path self = fs::read_symlink("/proc/self/exe", ec);
+		if (!ec && !self.empty()) {
+			fs::path installed = self.parent_path() / ".." / "lib";
+			if (fs::exists(installed, ec)) {
+				return installed;
+			}
+		}
+
+		if (const char* home = std::getenv("HOME")) {
+			fs::path localLib = fs::path(home) / ".local" / "lib";
+			if (fs::exists(localLib, ec)) {
+				return localLib;
+			}
+		}
+
+		if (fs::exists("/usr/lib", ec)) {
+			return fs::path("/usr/lib");
+		}
+		return {};
+	}
+
+	// Mix in one archive's identity. Contents are not hashed: a .a can be tens of
+	// megabytes and this runs on every build, so size+mtime is the same trade the
+	// compiler-identity check above already makes.
+	void addArchive(std::vector<std::string>& out, const fs::path& file) {
+		std::error_code ec;
+		auto size = fs::file_size(file, ec);
+		if (ec) {
+			return;
+		}
+		auto mtime = fs::last_write_time(file, ec);
+		if (ec) {
+			return;
+		}
+		out.push_back("lib:" + file.filename().string() + ":" + std::to_string(size) + ":" +
+					  std::to_string(mtime.time_since_epoch().count()));
+	}
+
+} // namespace
+
+void BuildCache::addStdlibIdentity() {
+	// The compiler identity above does not cover the runtime and stdlib archives a
+	// build links against, so rebuilding libstrings.a and re-running the tests
+	// served executables compiled against the previous one -- reporting failures
+	// citing an error message that no longer existed in the source, and equally
+	// able to report a pass that is no longer true.
+	fs::path libDir = resolveLibDir();
+	if (libDir.empty()) {
+		return;
+	}
+
+	std::vector<std::string> archives;
+	std::error_code ec;
+	for (const fs::path& dir : {libDir, libDir / "quadrate"}) {
+		if (!fs::is_directory(dir, ec)) {
+			continue;
+		}
+		for (const auto& entry : fs::directory_iterator(dir, ec)) {
+			if (ec) {
+				break;
+			}
+			if (entry.is_regular_file(ec) && entry.path().extension() == ".a") {
+				addArchive(archives, entry.path());
+			}
+		}
+	}
+
+	// directory_iterator order is unspecified; sort so the key is stable.
+	std::sort(archives.begin(), archives.end());
+	for (const auto& a : archives) {
+		mOptions.push_back(a);
 	}
 }
 

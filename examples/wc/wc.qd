@@ -74,9 +74,7 @@ fn count_buffer(buf:ptr length:i64 -- lines:i64 words:i64 bytes:i64) {
 
 // Read an entire file (or all of stdin) into a freshly-allocated buffer.
 // Returns (buf, length, ok). On failure, ok=0 and buf is null. Caller must
-// mem::free buf if ok=1. We use a plain ok flag rather than the `!`
-// fallible mechanism because io::readline keeps the error code set after
-// EOF, which would leak into our caller's error state.
+// mem::free buf if ok=1.
 fn slurp_file(path:str -- buf:ptr length:i64 ok:i64) {
 	path "-" strings::compare 0 == if {
 		// Read stdin to EOF using io::readline. readline strips the trailing
@@ -88,7 +86,8 @@ fn slurp_file(path:str -- buf:ptr length:i64 ok:i64) {
 				loop {
 					io::readline switch {
 						Ok {
-							-> line
+							-> ok -> line
+							ok 0 == if { line drop break }
 							line strings::len -> line_len
 							out total line_len 1 + + mem::realloc switch {
 								Ok { -> out }

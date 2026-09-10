@@ -395,12 +395,14 @@ namespace Qd {
 						if (identToken == U8T_IDENTIFIER) {
 							size_t fn;
 							std::string fieldName(u8t_scanner_token_text(scanner, &fn));
-							bool noReturn = (u8t_scanner_peek(scanner) == '!');
-							if (noReturn) {
+							if (u8t_scanner_peek(scanner) == '!') {
 								u8t_scanner_scan(scanner);
+								errorReporter->reportError(scanner,
+										"'>>field!' has been removed; it only differed from '>>field' by "
+										"discarding the struct, so write '>>field drop' instead");
 							}
 							// >>field in struct construction = field set (write)
-							AstNodeFieldSet* fieldSet = new AstNodeFieldSet("", fieldName, noReturn);
+							AstNodeFieldSet* fieldSet = new AstNodeFieldSet("", fieldName);
 							setNodePosition(fieldSet, scanner, src);
 							currentFieldNodes.push_back(fieldSet);
 							continue;

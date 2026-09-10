@@ -3,6 +3,7 @@
 
 #include <quadrate/strings/strings.h>
 #include <strings.h>
+#include <quadrate/rt/array.h>
 #include <quadrate/rt/stack.h>
 #include <quadrate/rt/runtime.h>
 #include <stdio.h>
@@ -446,14 +447,17 @@ int usr_strings_split(qd_context* ctx) {
 		pos += delim_len;
 	}
 
-	// Allocate array for qd_string pointers
-	qd_string_t** parts = malloc(count * sizeof(qd_string_t*));
-	if (!parts) {
+	// A real Quadrate array, not a bare malloc'd qd_string_t**. The old shape could
+	// not be indexed from Quadrate at all -- `parts i nth` segfaulted -- and
+	// strings::join read the same buffer as char**, so split|join produced garbage.
+	qd_array_t* parts_arr = qd_array_create(count, QD_ARRAY_TYPE_STR);
+	if (!parts_arr) {
 		fprintf(stderr, "Fatal error in strings::split: Memory allocation failed\n");
 		qd_string_release(str_elem.value.s);
 		qd_string_release(delim_elem.value.s);
 		abort();
 	}
+	qd_string_t** parts = (qd_string_t**)parts_arr->data.p;
 
 	// Split string
 	size_t idx = 0;
@@ -465,8 +469,8 @@ int usr_strings_split(qd_context* ctx) {
 		parts[idx] = qd_string_create_with_length(start, part_len);
 		if (!parts[idx]) {
 			fprintf(stderr, "Fatal error in strings::split: Memory allocation failed\n");
-			for (size_t i = 0; i < idx; i++) qd_string_release(parts[i]);
-			free(parts);
+			parts_arr->length = idx;
+			qd_array_release(parts_arr);
 			qd_string_release(str_elem.value.s);
 			qd_string_release(delim_elem.value.s);
 			abort();
@@ -481,8 +485,8 @@ int usr_strings_split(qd_context* ctx) {
 	parts[idx] = qd_string_create_with_length(start, part_len);
 	if (!parts[idx]) {
 		fprintf(stderr, "Fatal error in strings::split: Memory allocation failed\n");
-		for (size_t i = 0; i < idx; i++) qd_string_release(parts[i]);
-		free(parts);
+		parts_arr->length = idx;
+		qd_array_release(parts_arr);
 		qd_string_release(str_elem.value.s);
 		qd_string_release(delim_elem.value.s);
 		abort();
@@ -491,7 +495,8 @@ int usr_strings_split(qd_context* ctx) {
 	qd_string_release(str_elem.value.s);
 	qd_string_release(delim_elem.value.s);
 
-	qd_push_p(ctx, parts);
+	parts_arr->length = count;
+	qd_push_p(ctx, parts_arr);
 	qd_push_i(ctx, (int64_t)count);
 	qd_push_i(ctx, STRINGS_ERR_OK);  // Success status for fallible function
 
@@ -832,17 +837,33 @@ int usr_strings_from_ptr(qd_context* ctx) {
 }
 
 // Comparison function for qsort (ascending)
+/* Elements are qd_string_t*, the shape every string-list producer in the stdlib
+ * now hands back (strings::split/split_n/lines/words, os::list/glob). */
 static int str_cmp_asc(const void* a, const void* b) {
-	const char* str_a = *(const char**)a;
-	const char* str_b = *(const char**)b;
-	return strcmp(str_a, str_b);
+	qd_string_t* str_a = *(qd_string_t* const*)a;
+	qd_string_t* str_b = *(qd_string_t* const*)b;
+	return strcmp(qd_string_data(str_a), qd_string_data(str_b));
 }
 
 // Comparison function for qsort (descending)
 static int str_cmp_desc(const void* a, const void* b) {
-	const char* str_a = *(const char**)a;
-	const char* str_b = *(const char**)b;
-	return strcmp(str_b, str_a);
+	qd_string_t* str_a = *(qd_string_t* const*)a;
+	qd_string_t* str_b = *(qd_string_t* const*)b;
+	return strcmp(qd_string_data(str_b), qd_string_data(str_a));
+}
+
+/* Fetch the element buffer of a Quadrate string array taken off the stack.
+ * Returns NULL and reports if the pointer is not an array -- the string-list
+ * functions require one now that every producer emits one. */
+static qd_string_t** strings_array_elems(const qd_stack_element_t* elem, const char* who) {
+	if (elem->value.p == NULL) {
+		return NULL;
+	}
+	if (!qd_array_is_valid(elem->value.p)) {
+		fprintf(stderr, "Fatal error in strings::%s: expected a string array (from split/lines/os::list)\n", who);
+		abort();
+	}
+	return (qd_string_t**)((qd_array_t*)elem->value.p)->data.p;
 }
 
 // sort - sort array of strings in ascending order ( arr:p count:i -- )
@@ -862,10 +883,10 @@ int usr_strings_sort(qd_context* ctx) {
 	}
 
 	int64_t count = count_elem.value.i;
-	char** arr = (char**)arr_elem.value.p;
+	qd_string_t** arr = strings_array_elems(&arr_elem, "sort");
 
 	if (count > 1 && arr != NULL) {
-		qsort(arr, (size_t)count, sizeof(char*), str_cmp_asc);
+		qsort(arr, (size_t)count, sizeof(qd_string_t*), str_cmp_asc);
 	}
 
 	return (int){0};
@@ -888,10 +909,10 @@ int usr_strings_sort_desc(qd_context* ctx) {
 	}
 
 	int64_t count = count_elem.value.i;
-	char** arr = (char**)arr_elem.value.p;
+	qd_string_t** arr = strings_array_elems(&arr_elem, "sort_desc");
 
 	if (count > 1 && arr != NULL) {
-		qsort(arr, (size_t)count, sizeof(char*), str_cmp_desc);
+		qsort(arr, (size_t)count, sizeof(qd_string_t*), str_cmp_desc);
 	}
 
 	return (int){0};
@@ -1143,12 +1164,24 @@ int usr_strings_join(qd_context* ctx) {
 	}
 
 	int64_t count = count_elem.value.i;
-	char** parts = (char**)parts_elem.value.p;
 	const char* delim = qd_string_data(delim_elem.value.s);
 	size_t delim_len = strlen(delim);
 
-	// Handle empty array
-	if (count <= 0 || parts == NULL) {
+	// count <= 0 short-circuits before the pointer is examined at all: joining
+	// nothing is "" whatever was passed, and callers rely on that (see
+	// tests/qd/strings/join_edge.qd, which passes a scratch buffer with count 0).
+	if (count <= 0) {
+		qd_string_release(delim_elem.value.s);
+		qd_push_s(ctx, "");
+		qd_push_i(ctx, STRINGS_ERR_OK);
+		return (int){0};
+	}
+
+	// Elements are qd_string_t*, the one shape every string-list producer emits.
+	// This briefly accepted a raw char** as well, because os::list returned one;
+	// os::list now returns an array too, so there is a single convention.
+	qd_string_t** parts = strings_array_elems(&parts_elem, "join");
+	if (parts == NULL) {
 		qd_string_release(delim_elem.value.s);
 		qd_push_s(ctx, "");
 		qd_push_i(ctx, STRINGS_ERR_OK);
@@ -1158,8 +1191,9 @@ int usr_strings_join(qd_context* ctx) {
 	// Calculate total length
 	size_t total_len = 0;
 	for (int64_t i = 0; i < count; i++) {
-		if (parts[i] != NULL) {
-			total_len += strlen(parts[i]);
+		const char* part = parts[i] != NULL ? qd_string_data(parts[i]) : NULL;
+		if (part != NULL) {
+			total_len += strlen(part);
 		}
 		if (i < count - 1) {
 			total_len += delim_len;
@@ -1179,9 +1213,10 @@ int usr_strings_join(qd_context* ctx) {
 	// Build result
 	char* dest = result;
 	for (int64_t i = 0; i < count; i++) {
-		if (parts[i] != NULL) {
-			size_t part_len = strlen(parts[i]);
-			memcpy(dest, parts[i], part_len);
+		const char* part = parts[i] != NULL ? qd_string_data(parts[i]) : NULL;
+		if (part != NULL) {
+			size_t part_len = strlen(part);
+			memcpy(dest, part, part_len);
 			dest += part_len;
 		}
 		if (i < count - 1) {
@@ -1629,8 +1664,12 @@ int usr_strings_lines(qd_context* ctx) {
 		if (*p == '\n') count++;
 	}
 
-	qd_string_t** parts = malloc(count * sizeof(qd_string_t*));
-	if (!parts) abort();
+	// A real Quadrate array, matching strings::split. As a bare malloc'd buffer this
+	// validated as an array of length 0, so `len` answered 0 while `count` answered
+	// the true number -- a loop over the result silently did nothing.
+	qd_array_t* parts_arr = qd_array_create(count, QD_ARRAY_TYPE_STR);
+	if (!parts_arr) abort();
+	qd_string_t** parts = (qd_string_t**)parts_arr->data.p;
 
 	size_t idx = 0;
 	const char* start = str;
@@ -1645,8 +1684,9 @@ int usr_strings_lines(qd_context* ctx) {
 		}
 	}
 
+	parts_arr->length = idx;
 	qd_string_release(str_elem.value.s);
-	qd_push_p(ctx, parts);
+	qd_push_p(ctx, parts_arr);
 	qd_push_i(ctx, (int64_t)idx);
 	qd_push_i(ctx, STRINGS_ERR_OK);
 	return (int){0};
@@ -1679,8 +1719,9 @@ int usr_strings_words(qd_context* ctx) {
 		return (int){0};
 	}
 
-	qd_string_t** parts = malloc(count * sizeof(qd_string_t*));
-	if (!parts) abort();
+	qd_array_t* parts_arr = qd_array_create(count, QD_ARRAY_TYPE_STR);
+	if (!parts_arr) abort();
+	qd_string_t** parts = (qd_string_t**)parts_arr->data.p;
 
 	size_t idx = 0;
 	const char* start = NULL;
@@ -1697,8 +1738,9 @@ int usr_strings_words(qd_context* ctx) {
 		}
 	}
 
+	parts_arr->length = idx;
 	qd_string_release(str_elem.value.s);
-	qd_push_p(ctx, parts);
+	qd_push_p(ctx, parts_arr);
 	qd_push_i(ctx, (int64_t)idx);
 	qd_push_i(ctx, STRINGS_ERR_OK);
 	return (int){0};
@@ -1717,12 +1759,13 @@ int usr_strings_split_n(qd_context* ctx) {
 	size_t delim_len = strlen(delim);
 
 	if (max_parts <= 0 || delim_len == 0) {
-		qd_string_t** parts = malloc(sizeof(qd_string_t*));
-		if (!parts) abort();
-		parts[0] = qd_string_create(str);
+		qd_array_t* one = qd_array_create(1, QD_ARRAY_TYPE_STR);
+		if (!one) abort();
+		one->data.p[0] = qd_string_create(str);
+		one->length = 1;
 		qd_string_release(str_elem.value.s);
 		qd_string_release(delim_elem.value.s);
-		qd_push_p(ctx, parts);
+		qd_push_p(ctx, one);
 		qd_push_i(ctx, 1);
 		qd_push_i(ctx, STRINGS_ERR_OK);
 		return (int){0};
@@ -1736,8 +1779,11 @@ int usr_strings_split_n(qd_context* ctx) {
 		pos += delim_len;
 	}
 
-	qd_string_t** parts = malloc(count * sizeof(qd_string_t*));
-	if (!parts) abort();
+	// Same shape as strings::split: a real Quadrate array, so `nth`/`len` work and
+	// strings::join reads the elements correctly.
+	qd_array_t* parts_arr = qd_array_create(count, QD_ARRAY_TYPE_STR);
+	if (!parts_arr) abort();
+	qd_string_t** parts = (qd_string_t**)parts_arr->data.p;
 
 	size_t idx = 0;
 	const char* start = str;
@@ -1752,9 +1798,10 @@ int usr_strings_split_n(qd_context* ctx) {
 	// Last part (remainder)
 	parts[idx] = qd_string_create(start);
 
+	parts_arr->length = count;
 	qd_string_release(str_elem.value.s);
 	qd_string_release(delim_elem.value.s);
-	qd_push_p(ctx, parts);
+	qd_push_p(ctx, parts_arr);
 	qd_push_i(ctx, (int64_t)count);
 	qd_push_i(ctx, STRINGS_ERR_OK);
 	return (int){0};
@@ -1923,7 +1970,7 @@ int usr_strings_column(qd_context* ctx) {
 	STRINGS_POP(ctx, &count_elem, "column");
 	STRINGS_POP(ctx, &arr_elem, "column");
 
-	char** arr = (char**)arr_elem.value.p;
+	qd_string_t** arr = strings_array_elems(&arr_elem, "column");
 	int64_t count = count_elem.value.i;
 	int64_t* widths = (int64_t*)widths_elem.value.p;
 	int64_t num_cols = num_cols_elem.value.i;
@@ -1973,7 +2020,7 @@ int usr_strings_column(qd_context* ctx) {
 	for (int64_t row = 0; row < num_rows; row++) {
 		for (int64_t col = 0; col < num_cols; col++) {
 			int64_t width = widths[col];
-			const char* cell = (idx < count && arr[idx]) ? arr[idx] : "";
+			const char* cell = (idx < count && arr[idx] != NULL) ? qd_string_data(arr[idx]) : "";
 			size_t cell_len = strlen(cell);
 
 			// Copy cell content (truncate if needed)

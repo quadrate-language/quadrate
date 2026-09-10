@@ -255,7 +255,7 @@ pub fn (h:Sha512) update(data:str -- h2:Sha512)! {
 
 	// Lazy init buffer (128 bytes for SHA-512)
 	buf 0 == if {
-		128 mem::alloc! -> buf
+		128 mem::alloc? -> buf
 	}
 
 	data strings::len -> dlen
@@ -269,7 +269,7 @@ pub fn (h:Sha512) update(data:str -- h2:Sha512)! {
 		loop {
 			buflen 128 >= if { break }
 			i dlen >= if { break }
-			data i strings::char_at! buf buflen mem::set_byte
+			data i strings::char_at? buf buflen mem::set_byte
 			buflen 1 + -> buflen
 			i 1 + -> i
 		}
@@ -304,7 +304,7 @@ pub fn (h:Sha512) finish( -- hash:str)! {
 	h <<total -> total
 
 	buf 0 == if {
-		128 mem::alloc! -> buf
+		128 mem::alloc? -> buf
 	}
 
 	// Pad message
@@ -339,7 +339,7 @@ pub fn (h:Sha512) finish( -- hash:str)! {
 	-> hh7 -> hh6 -> hh5 -> hh4 -> hh3 -> hh2 -> hh1 -> hh0
 
 	// Convert to hex (128 chars for 512 bits)
-	128 mem::alloc! -> out
+	128 mem::alloc? -> out
 	0 -> pos
 
 	// Helper to write 16 hex chars for each 64-bit word
@@ -410,8 +410,8 @@ pub fn (h:Sha512) release() {
 /// @return hash str 128-character hex string
 pub fn sha512(s:str -- hash:str)! {
 	Sha512 {} -> h
-	h s update! -> h
-	h finish! -> result
+	h s update? -> h
+	h finish? -> result
 	h release
 	result
 }
@@ -430,7 +430,7 @@ pub fn sha512_bytes(buf:ptr length:i64 -- hash:str)! {
 	SHA512_H6 -> hh6
 	SHA512_H7 -> hh7
 
-	128 mem::alloc! -> block
+	128 mem::alloc? -> block
 	0 -> buflen
 	0 -> total
 
@@ -479,7 +479,7 @@ pub fn sha512_bytes(buf:ptr length:i64 -- hash:str)! {
 	hh0 hh1 hh2 hh3 hh4 hh5 hh6 hh7 block sha512_process_block
 	-> hh7 -> hh6 -> hh5 -> hh4 -> hh3 -> hh2 -> hh1 -> hh0
 
-	128 mem::alloc! -> out
+	128 mem::alloc? -> out
 	0 -> pos
 
 	0 16 1 for j {

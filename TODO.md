@@ -49,10 +49,6 @@ internals), 69 documented in `reference.def`.
       named locals lower with no runtime call — `bits.qd` is freestanding-eligible.
       `dup` (26) and `drop` (48) are **not** in scope: `drop` is result-discarding (`io::write! drop`),
       the job of Go's `_ =`, and `dup *` for squaring is genuinely clearer than naming the value.
-- [ ] (Lower priority) **Reconsider the `>>field` / `>>field!` split.** Three sigils for two
-      operations (`<<`, `>>`, `>>!`, plus `as` for disambiguation), where the split is purely "does it
-      leave the struct behind" — inferable, or expressible as `>>field drop`. Two forms doubles
-      formatter, LSP, linter and doc surface for a modest ergonomic win.
 - [ ] (Longer horizon) **Sum types / tagged unions** — the one addition worth arguing for. `enum`
       gives bare ints and `struct` gives records, but there's no "one of these". That absence is *why*
       errors are out-of-band int codes plus a message, why `Ok`/`Err` are conflated with `true`/`false`,
@@ -89,6 +85,36 @@ internals), 69 documented in `reference.def`.
 ## Done
 
 ### Language design / scope
+
+- [x] **Cut `>>field!`.** Two forms for one operation, split purely on "does it leave the
+      struct behind" — which `drop` already says. `<<`, `>>` and `as` remain; `>>!` is gone.
+
+    43 call sites rewritten to `>>field drop` (12 in `lib/` + `examples/`, 31 in `tests/`).
+    Verified the two forms produce byte-identical output before starting. The `noReturn` flag
+    is removed from `AstNodeFieldSet`, all three parse sites (`ast_statements.cc`,
+    `ast_expressions.cc`, `ast_types.cc`), both validator branches and `generator_structs.cc`,
+    which now always pushes the struct back.
+
+    Following the `while` and shuffler precedent, a use reports what happened rather than
+    looking like a syntax error:
+
+    ```
+    '>>field!' has been removed; it only differed from '>>field' by discarding the struct,
+    so write '>>field drop' instead
+    ```
+
+    The diagnostic is load-bearing, not a courtesy: `parseSimpleToken`'s `'!'` branch returns
+    nullptr without reporting, so a bare trailing `!` would otherwise be silently dropped and
+    `p 42 >>x!` would compile as `p 42 >>x` — leaving the struct on the stack and changing the
+    program's meaning rather than rejecting it.
+
+    Also touched: 4 doc files (11 code examples plus the prose in `dc-walkthrough.md`
+    explaining the `!` suffix), `StructFieldSetNoReturn` in both
+    `test_semantic_validator_extended.cc` and `test_llvmgen.cc` (renamed and rewritten, with a
+    third test pinning that `>>x!` is now rejected), and
+    `tests/qd/structs/struct_field_write_noreturn` renamed to `..._discard`. Regression test
+    `tests/qd/compile_errors/removed_field_set_bang`. Suite 2033 passed, 0 failed; `docscheck`
+    218 blocks clean.
 
 - [x] **Cut `ctx`.** Zero corpus uses, ~340 lines of implementation, and a static checker that
       could not model it. 22 keywords → 21.

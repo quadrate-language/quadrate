@@ -5,7 +5,7 @@
 #   ./tests/run_all.sh                    # Run all tests
 #   ./tests/run_all.sh --failed           # Run only previously failed tests
 #   ./tests/run_all.sh --test NAME        # Run specific test
-#   ./tests/run_all.sh --suite SUITE      # Run specific suite (cpp, lsp, qd, formatter, linter, embed, quadpm, build_cache, quadmcp, args, reference, crosscompile, stdlib, http, mtls, fuzz)
+#   ./tests/run_all.sh --suite SUITE      # Run specific suite (cpp, lsp, qd, formatter, linter, embed, quadpm, build_cache, quadmcp, args, reference, crosscompile, stdlib, tools, http, mtls, fuzz)
 #   ./tests/run_all.sh --clear            # Clear failed tests file
 #   ./tests/run_all.sh --list             # List all available tests
 
@@ -112,7 +112,7 @@ while [[ $# -gt 0 ]]; do
             echo "Options:"
             echo "  --failed, -f       Run only previously failed tests"
             echo "  --test, -t NAME    Run specific test by name"
-            echo "  --suite, -s SUITE  Run specific suite (cpp, lsp, qd, formatter, linter, embed, quadpm, build_cache, quadmcp, args, reference, crosscompile, stdlib, http, mtls, fuzz)"
+            echo "  --suite, -s SUITE  Run specific suite (cpp, lsp, qd, formatter, linter, embed, quadpm, build_cache, quadmcp, args, reference, crosscompile, stdlib, tools, http, mtls, fuzz)"
             echo "  --fuzz-time SECS   Fuzz test duration in seconds (default: 10)"
             echo "  --list, -l         List all available tests"
             echo "  --clear, -c        Clear failed tests file"
@@ -1261,6 +1261,12 @@ run_reference_tests() {
     else
         log_fail "$suite" "builtin_lists" "$output"
     fi
+
+    if output=$(cd "$PROJECT_ROOT" && python3 tools/check_fallible_propagation.py 2>&1); then
+        log_pass "$suite" "fallible_propagation" "(fallible functions propagate, not abort)"
+    else
+        log_fail "$suite" "fallible_propagation" "$output"
+    fi
 }
 
 # Run cross-compilation tests (--target flag)
@@ -1516,6 +1522,30 @@ EOFSRC
         log_pass "$suite" "crosscompile_tests" "($passed tests)"
     else
         log_fail "$suite" "crosscompile_tests" "$failed/$((passed + failed)) tests failed"
+    fi
+}
+
+# Run quaduses / quaddoc / quadrepl tests
+run_tools_tests() {
+    local suite="tools"
+
+    if ! should_run_test "$suite" "tools_test"; then
+        return
+    fi
+
+    print_header "Tool Tests"
+
+    local output
+    local exit_code
+
+    output=$(BUILD_DIR="$BUILD_DIR" bash "$PROJECT_ROOT/tests/run_tools_test.sh" 2>&1)
+    exit_code=$?
+
+    if [[ $exit_code -eq 0 ]]; then
+        log_pass "$suite" "tools_test"
+    else
+        local error_msg=$(echo "$output" | grep -A 1 "✗" | head -20)
+        log_fail "$suite" "tools_test" "test failed" "$error_msg"
     fi
 }
 
@@ -1805,6 +1835,10 @@ list_all_tests() {
     echo "  stdlib_tests"
     echo ""
 
+    echo "Tool Tests (suite: tools):"
+    echo "  tools_test"
+    echo ""
+
     echo "HTTP Integration Tests (suite: http):"
     echo "  http_test"
     echo ""
@@ -1825,7 +1859,7 @@ print_summary() {
     echo -e "${BOLD}═══════════════════════════════════════════════════════════════════════════════${NC}"
 
     # Print per-suite summary
-    for suite in cpp lsp qd formatter linter embed quadpm build_cache quadmcp stdlib http mtls fuzz; do
+    for suite in cpp lsp qd formatter linter embed quadpm build_cache quadmcp stdlib tools http mtls fuzz; do
         local passed=${SUITE_PASSED[$suite]:-0}
         local failed=${SUITE_FAILED[$suite]:-0}
         local skipped=${SUITE_SKIPPED[$suite]:-0}
@@ -1845,6 +1879,7 @@ print_summary() {
             build_cache) suite_name="Build Cache" ;;
             quadmcp) suite_name="MCP Server" ;;
             stdlib) suite_name="Stdlib Unit Tests" ;;
+            tools) suite_name="Tool Tests" ;;
             http) suite_name="HTTP Integration" ;;
             mtls) suite_name="mTLS" ;;
             fuzz) suite_name="Fuzz" ;;
@@ -1987,6 +2022,10 @@ main() {
     if [[ -z "$SPECIFIC_SUITE" ]] || [[ "$SPECIFIC_SUITE" == "stdlib" ]]; then
         run_stdlib_tests
         run_helgrind_tests
+    fi
+
+    if [[ -z "$SPECIFIC_SUITE" ]] || [[ "$SPECIFIC_SUITE" == "tools" ]]; then
+        run_tools_tests
     fi
 
     if [[ -z "$SPECIFIC_SUITE" ]] || [[ "$SPECIFIC_SUITE" == "http" ]]; then

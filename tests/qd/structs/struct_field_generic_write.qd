@@ -1,4 +1,4 @@
-// Test: >>field and >>field! on generic structs with type changes
+// Test: >>field and >>field drop on generic structs with type changes
 struct Box<T> { value: T }
 
 fn main() {
@@ -16,9 +16,9 @@ fn main() {
 	b "hello" >>value -> b
 	b <<value print nl       // hello
 
-	// >>field! on generic
+	// >>field drop on generic
 	"world" Box -> c
 	c <<value print nl       // world
-	c 42 >>value!
+	c 42 >>value drop
 	c <<value print nl       // 42
 }

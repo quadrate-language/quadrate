@@ -21,11 +21,7 @@ fn main() {
 	// Join with slash
 	entries count "/" strings::join! print nl
 
-	// Free entries array (each string + the array itself)
-	0 count 1 for i {
-		entries i 8 * mem::get_ptr mem::free
-	}
-	entries mem::free
+	entries free
 
 	// Clean up
 	tmpdir "/a.txt" strings::concat os::delete!

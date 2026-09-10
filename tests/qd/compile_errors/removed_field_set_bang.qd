@@ -1,0 +1,12 @@
+// `>>field!` differed from `>>field` only by discarding the struct, which
+// `drop` already says. Using it should report what happened, not look like a
+// syntax error.
+struct P {
+	x:i64
+}
+
+fn main() {
+	P { x = 1 } -> p
+	p 42 >>x!
+	p free
+}

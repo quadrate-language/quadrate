@@ -111,10 +111,15 @@ import "libio.a" as "io" {
 	pub fn eof(handle:ptr -- handle:ptr is_eof:i64)
 
 	/// Read a line from stdin.
-	/// @return line str Line without trailing newline
-	/// @error ErrEof End of file or read error
-	/// @example io::readline! -> input
-	pub fn readline( -- line:str)!
+	///
+	/// Running out of input is not an error -- it is how a read loop ends -- so it
+	/// comes back as ok=0 with the error state untouched. Only a genuine read
+	/// failure is reported through the fallible status.
+	/// @return line str The line read, without its trailing newline; "" at end of input
+	/// @return ok i64 1 if a line was read, 0 at end of input
+	/// @error ErrRead The underlying read failed
+	/// @example io::readline switch { Ok { -> ok -> line ok 0 == if { break } } _ { } }
+	pub fn readline( -- line:str ok:i64)!
 
 	/// Read entire file contents.
 	/// @param path str File path

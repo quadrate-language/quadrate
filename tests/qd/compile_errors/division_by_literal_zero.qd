@@ -1,0 +1,7 @@
+// A literal zero divisor is knowable at compile time. Reaching it at run time
+// is a fatal error that kills the process, so report it here instead.
+fn main() {
+	1 0 / print nl
+	1 0 % print nl
+	1.0 0.0 / print nl
+}

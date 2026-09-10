@@ -10,5 +10,5 @@ pub struct Config {
 pub var config = Config { host = "localhost" port = 8080 debug = 1 }
 
 fn update_port(new_port:i64 -- ) {
-	config new_port >>port!
+	config new_port >>port drop
 }

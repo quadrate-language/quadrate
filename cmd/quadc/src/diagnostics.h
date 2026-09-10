@@ -21,6 +21,13 @@ inline void printError(const std::string& file, size_t line, size_t column, cons
 	std::cerr << Qd::Colors::bold() << message << Qd::Colors::reset() << std::endl;
 }
 
+// A failure of the tool itself (missing file, bad option) rather than a diagnostic
+// about the source. Uses the plain `quadc: message` shape the other CLI tools use;
+// `error:`/`warning:` stay reserved for things found *in* the code.
+inline void printToolError(const std::string& message) {
+	std::cerr << Qd::Colors::bold() << "quadc: " << Qd::Colors::reset() << message << std::endl;
+}
+
 inline void printNote(const std::string& message) {
 	std::cerr << Qd::Colors::bold() << "quadc: " << Qd::Colors::reset() << Qd::Colors::bold() << Qd::Colors::cyan()
 			  << "note: " << Qd::Colors::reset() << message << std::endl;

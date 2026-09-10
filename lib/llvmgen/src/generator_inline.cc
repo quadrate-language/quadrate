@@ -148,7 +148,9 @@ namespace Qd {
 		builder->CreateCondBr(isZero, divZeroBB, modOkBB);
 
 		builder->SetInsertPoint(divZeroBB);
-		emitFatalError(ctx, "Fatal error: division by zero\n");
+		// Same wording as the runtime's QDRT_FATAL path (runtime_ops.c), so the
+		// message does not depend on whether this op was inlined.
+		emitFatalError(ctx, "Fatal error in mod: Division by zero\n");
 
 		builder->SetInsertPoint(modOkBB);
 		llvm::Value* result = builder->CreateSRem(boc.value1, boc.value2, "mod_result");

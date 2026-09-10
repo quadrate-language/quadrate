@@ -1,0 +1,6 @@
+// An unterminated string used to swallow the rest of the file, so the only
+// diagnostic was "Expected '}' to close function body" pointing at the last
+// line -- nowhere near the actual mistake.
+fn main() {
+	"oops print nl
+}

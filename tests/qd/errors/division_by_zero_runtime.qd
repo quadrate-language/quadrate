@@ -1,0 +1,6 @@
+// A non-literal zero divisor still fails at run time. Both the runtime path
+// (div) and the inlined path (mod) must report the same way and exit 1.
+fn main() {
+	0 -> z
+	10 z / print nl
+}

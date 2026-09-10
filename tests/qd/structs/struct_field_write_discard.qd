@@ -1,18 +1,18 @@
-// Test: >>field! (no return) — nothing left on stack
+// Test: `>>field drop` — writes the field and discards the struct, leaving nothing
 struct Counter { value: i64 }
 
 fn bump(c:Counter -- ) {
-	c c <<value 1 + >>value!
+	c c <<value 1 + >>value drop
 }
 
 fn reset(c:Counter -- ) {
-	c 0 >>value!
+	c 0 >>value drop
 }
 
 fn main() {
 	Counter { value = 0 } -> c
 
-	// >>field! in function with no outputs
+	// >>field drop in function with no outputs
 	c bump
 	c <<value print nl   // 1
 
@@ -23,7 +23,7 @@ fn main() {
 	c reset
 	c <<value print nl   // 0
 
-	// >>field! inline
-	c 42 >>value!
+	// >>field drop inline
+	c 42 >>value drop
 	c <<value print nl   // 42
 }

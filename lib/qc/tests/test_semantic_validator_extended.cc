@@ -138,17 +138,29 @@ TEST(RollZero) {
 
 // Arithmetic Operations Edge Cases
 
+/* These two previously asserted the opposite -- that a literal zero divisor is a
+ * runtime error, not a compile-time one. That was a deliberate choice at the time;
+ * it was reversed because reaching it at run time kills the process, and the value
+ * is knowable here. C, Go and Rust all reject the constant form. A divisor that is
+ * merely *known* to be zero (bound to a local, say) is still a runtime error --
+ * this is a peephole check on the preceding literal, not constant propagation, so
+ * DivByZeroThroughLocal below must keep validating clean. */
 TEST(DivByZero) {
-	// Division by zero is a runtime error, not a compile-time error
 	const char* src = "fn main() { 10 0 div drop }";
 	size_t errors = validateCode(src);
-	ASSERT(errors == 0, "division by zero constant is allowed at compile time");
+	ASSERT(errors == 1, "division by a literal zero is a compile-time error");
 }
 
 TEST(ModByZero) {
 	const char* src = "fn main() { 10 0 mod drop }";
 	size_t errors = validateCode(src);
-	ASSERT(errors == 0, "mod by zero is allowed at compile time");
+	ASSERT(errors == 1, "mod by a literal zero is a compile-time error");
+}
+
+TEST(DivByZeroThroughLocal) {
+	const char* src = "fn main() { 0 -> z 10 z div drop }";
+	size_t errors = validateCode(src);
+	ASSERT(errors == 0, "a zero divisor behind a local is still only a runtime error");
 }
 
 TEST(NegatFloat) {
@@ -449,23 +461,35 @@ TEST(StructFieldSetChaining) {
 	ASSERT(errors == 0, "struct field set chaining should succeed");
 }
 
-TEST(StructFieldSetNoReturn) {
+TEST(StructFieldSetDiscard) {
+	const char* src = R"(
+		struct Point { x:i64 y:i64 }
+		fn main() { Point { x = 10 y = 20 } -> p p 99 >>x drop p <<x print }
+	)";
+	size_t errors = validateCode(src);
+	ASSERT(errors == 0, "struct field set followed by drop should succeed");
+}
+
+TEST(StructFieldSetDiscardStackClean) {
+	const char* src = R"(
+		struct Point { x:i64 y:i64 }
+		fn helper(p:Point) { p 1 >>x drop p 2 >>y drop }
+		fn main() { Point { x = 0 y = 0 } -> p p helper }
+	)";
+	size_t errors = validateCode(src);
+	ASSERT(errors == 0, ">>field drop should not leave values on stack");
+}
+
+/* `>>field!` was removed: it differed from `>>field` only by discarding the
+ * struct, which `drop` already expresses. Using it must say so rather than
+ * looking like a syntax error. */
+TEST(StructFieldSetBangRemoved) {
 	const char* src = R"(
 		struct Point { x:i64 y:i64 }
 		fn main() { Point { x = 10 y = 20 } -> p p 99 >>x! p <<x print }
 	)";
 	size_t errors = validateCode(src);
-	ASSERT(errors == 0, "struct field set with ! (no return) should succeed");
-}
-
-TEST(StructFieldSetNoReturnStackClean) {
-	const char* src = R"(
-		struct Point { x:i64 y:i64 }
-		fn helper(p:Point) { p 1 >>x! p 2 >>y! }
-		fn main() { Point { x = 0 y = 0 } -> p p helper }
-	)";
-	size_t errors = validateCode(src);
-	ASSERT(errors == 0, ">>field! should not leave values on stack");
+	ASSERT(errors > 0, ">>field! should be rejected");
 }
 
 TEST(StructChainedFieldRead) {

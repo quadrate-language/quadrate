@@ -230,7 +230,7 @@ pub fn (h:Md5) update(data:str -- h2:Md5)! {
 
 	// Lazy init buffer
 	buf 0 == if {
-		64 mem::alloc! -> buf
+		64 mem::alloc? -> buf
 	}
 
 	data strings::len -> dlen
@@ -244,7 +244,7 @@ pub fn (h:Md5) update(data:str -- h2:Md5)! {
 		loop {
 			buflen 64 >= if { break }
 			i dlen >= if { break }
-			data i strings::char_at! buf buflen mem::set_byte
+			data i strings::char_at? buf buflen mem::set_byte
 			buflen 1 + -> buflen
 			i 1 + -> i
 		}
@@ -275,7 +275,7 @@ pub fn (h:Md5) finish( -- hash:str)! {
 	h <<total -> total
 
 	buf 0 == if {
-		64 mem::alloc! -> buf
+		64 mem::alloc? -> buf
 	}
 
 	// Pad message
@@ -310,7 +310,7 @@ pub fn (h:Md5) finish( -- hash:str)! {
 
 	// Convert to hex (32 chars for 128 bits)
 	// Output is A, B, C, D in little-endian byte order
-	32 mem::alloc! -> out
+	32 mem::alloc? -> out
 	0 -> pos
 
 	// Write A (little-endian bytes)
@@ -378,8 +378,8 @@ pub fn (h:Md5) release() {
 /// @example "Hello" md5! -> hash
 pub fn md5(s:str -- hash:str)! {
 	Md5 {} -> h
-	h s update! -> h
-	h finish! -> result
+	h s update? -> h
+	h finish? -> result
 	h release
 	result
 }

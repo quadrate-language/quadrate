@@ -1,5 +1,6 @@
 #include <cstring>
 #include <iostream>
+#include <iterator>
 #include <quadrate/cli/cli.h>
 #include <quadrate/cli/file_utils.h>
 #include <quadrate/qc/ast.h>
@@ -22,6 +23,8 @@ void printHelp() {
 	std::cout << "  -h, --help           Show this help message\n";
 	std::cout << "  -v, --version        Show version information\n";
 	std::cout << "  --no-color           Disable coloured output\n";
+	std::cout << "\n";
+	std::cout << "  Use '-' as the path to read from stdin and write to stdout.\n";
 	std::cout << "  -c, --check          Check if files are formatted (exit 1 if not)\n";
 	std::cout << "  -w, --write          Format files in-place\n";
 	std::cout << "  --no-sort-imports    Don't sort use statements\n";
@@ -39,6 +42,41 @@ void printHelp() {
 	std::cout << "  quadfmt -w src/              Format all .qd files in directory recursively\n";
 	std::cout << "  quadfmt -c *.qd              Check if files need formatting\n";
 	std::cout << "  quadfmt --no-sort-imports f.qd Format without sorting imports\n";
+}
+
+// Format source read from stdin and write the result to stdout.
+//
+// Editors format-on-save by piping the buffer through the formatter rather than
+// writing to disk first (gofmt, rustfmt, black and prettier all support this),
+// so without it the editor plugins have to round-trip through a temp file.
+static bool formatStdin(const FormatOptions& fmtOpts) {
+	std::string source((std::istreambuf_iterator<char>(std::cin)), std::istreambuf_iterator<char>());
+
+	if (!qdcli::isValidUtf8(source)) {
+		std::cerr << "quadfmt: <stdin>: invalid UTF-8 encoding or binary input\n";
+		return false;
+	}
+
+	std::string formatted = formatSource(source, fmtOpts);
+
+	Ast validationAst;
+	IAstNode* validationRoot = validationAst.generate(formatted.c_str(), false, "<stdin>");
+	if (!validationRoot || validationAst.hasErrors()) {
+		Ast sourceAst;
+		sourceAst.generate(source.c_str(), false, "<stdin>");
+		if (sourceAst.hasErrors()) {
+			std::cerr << "quadfmt: <stdin>: failed to parse (contains errors)\n";
+		} else {
+			std::cerr << "quadfmt: <stdin>: internal error, formatted output does not parse\n";
+		}
+		// Pass the input through untouched: an editor must never lose the buffer
+		// because the formatter could not handle it.
+		std::cout << source;
+		return false;
+	}
+
+	std::cout << formatted;
+	return true;
 }
 
 bool formatFile(const std::string& filename, const FmtOptions& opts, const FormatOptions& fmtOpts) {
@@ -129,7 +167,11 @@ int main(int argc, char* argv[]) {
 		return 0;
 	}
 
-	if (qdcli::checkNoInputFiles(base, "quadfmt")) {
+	// A lone "-" means stdin. Handled before the no-input check, which would
+	// otherwise reject it as a path that does not exist.
+	const bool useStdin = (base.paths.size() == 1 && base.paths[0] == "-");
+
+	if (!useStdin && qdcli::checkNoInputFiles(base, "quadfmt")) {
 		return 1;
 	}
 
@@ -146,6 +188,10 @@ int main(int argc, char* argv[]) {
 	// Command-line options override config file
 	if (opts.noSortImports) {
 		fmtOpts.sortImports = false;
+	}
+
+	if (useStdin) {
+		return formatStdin(fmtOpts) ? 0 : 1;
 	}
 
 	bool allSuccess = true;
