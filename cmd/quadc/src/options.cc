@@ -18,6 +18,7 @@ void printHelp() {
 	std::cout << "Options:\n";
 	std::cout << "  -h, --help         Show this help message\n";
 	std::cout << "  -v, --version      Show version information\n";
+	std::cout << "  --no-color         Disable coloured output\n";
 	std::cout << "  -o <name>          Output executable name (default: main)\n";
 	std::cout << "  -O0, -O1, -O2, -O3 Set optimization level (default: -O0)\n";
 	std::cout << "  -s <size>          Set stack size (default: 1024)\n";
@@ -80,6 +81,8 @@ bool parseArgs(int argc, char* argv[], Options& opts) {
 			opts.saveTemps = true;
 		} else if (arg == "--verbose") {
 			opts.verbose = true;
+		} else if (arg == "--no-color" || arg == "--no-colors") {
+			opts.noColor = true;
 		} else if (arg == "--dump-tokens") {
 			opts.dumpTokens = true;
 		} else if (arg == "--dump-ast") {

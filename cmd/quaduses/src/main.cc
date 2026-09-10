@@ -35,6 +35,7 @@ void printHelp() {
 	std::cout << "Options:\n";
 	std::cout << "  -h, --help       Show this help message\n";
 	std::cout << "  -v, --version    Show version information\n";
+	std::cout << "  --no-color       Disable coloured output\n";
 	std::cout << "  -w, --write      Update file in-place\n";
 	std::cout << "  -c, --check      Check if files need changes (exit 1 if so)\n";
 	std::cout << "  -n, --dry-run    Show what would change without modifying\n";

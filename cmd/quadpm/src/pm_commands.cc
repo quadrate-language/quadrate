@@ -934,11 +934,11 @@ InstallResult installSingleDependency(const Dependency& dep, const std::string& 
 		return result;
 	}
 
-	// Verify sha256 if specified in manifest. A mismatch is a hard failure: the
-	// resolved code does not match what the manifest pinned, so installing it
-	// would defeat the point of the integrity field. Remove the clone and abort.
+	// Verify the pinned commit if the manifest specifies one. A mismatch is a hard
+	// failure: the resolved code is not what the manifest pinned, so installing it
+	// would defeat the point of pinning. Remove the clone and abort.
 	if (!dep.sha256.empty() && commitHash != dep.sha256) {
-		std::cerr << "  " << COLOR_RED << "✗ Integrity check failed (SHA256 mismatch)" << COLOR_RESET << "\n";
+		std::cerr << "  " << COLOR_RED << "✗ Pinned commit mismatch" << COLOR_RESET << "\n";
 		std::cerr << "    Expected: " << dep.sha256 << "\n";
 		std::cerr << "    Got:      " << commitHash << "\n";
 		if (fs::exists(installedDir)) {

@@ -1,5 +1,5 @@
-[1mtests/linter/unused_variables/multiple_unused.qd:6:5:[0m [1m[1;35mwarning:[0m [1mUnused local variable 'unused_three'[0m
-[1mtests/linter/unused_variables/multiple_unused.qd:5:5:[0m [1m[1;35mwarning:[0m [1mUnused local variable 'unused_two'[0m
-[1mtests/linter/unused_variables/multiple_unused.qd:3:5:[0m [1m[1;35mwarning:[0m [1mUnused local variable 'unused_one'[0m
+tests/linter/unused_variables/multiple_unused.qd:6:5: warning: Unused local variable 'unused_three'
+tests/linter/unused_variables/multiple_unused.qd:5:5: warning: Unused local variable 'unused_two'
+tests/linter/unused_variables/multiple_unused.qd:3:5: warning: Unused local variable 'unused_one'
 
 3 issues found

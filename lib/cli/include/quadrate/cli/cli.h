@@ -15,6 +15,10 @@ namespace qdcli {
 		std::vector<std::string> paths;
 		bool help = false;
 		bool version = false;
+		// Set by --no-color/--no-colors. Recorded rather than applied here so that
+		// lib/cli stays free of a dependency on the compiler frontend that owns
+		// Qd::Colors; the tools that actually colour apply it.
+		bool noColor = false;
 	};
 
 	// Handler for tool-specific options

@@ -1,1 +1,1 @@
-[1mquadc: [0m[1mtests/qd/errors/error_switch_empty.qd:3:11:[0m [1m[1;31merror:[0m [1mSwitch statement must have at least one case[0m
+quadc: tests/qd/errors/error_switch_empty.qd:3:11: error: Switch statement must have at least one case

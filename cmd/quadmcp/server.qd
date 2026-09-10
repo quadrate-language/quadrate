@@ -161,15 +161,41 @@ fn run_http(ds:ptr port:str -- ) {
 	e port http::run!
 }
 
-fn main() {
-	load_docs -> ds
-	defer {
-		ds free
-	}
+fn print_usage( -- ) {
+	"quadmcp - Model Context Protocol server for Quadrate" print nl
+	nl
+	"Usage: quadmcp [options]" print nl
+	nl
+	"Options:" print nl
+	"  -h, --help       Show this help message" print nl
+	"  -v, --version    Show version information" print nl
+	"      --http       Serve over HTTP on :3000 instead of stdio" print nl
+	nl
+	"With no options quadmcp speaks JSON-RPC (MCP) on stdin/stdout." print nl
+}
 
+fn main() {
+	// Flags are parsed before the docs are loaded so --help and --version stay
+	// cheap, and so they answer rather than dropping into the stdio server the
+	// way every unrecognised invocation used to.
 	read flag::parse -> f
 	defer {
 		f flag::destroy
+	}
+
+	f "--help" flag::boolean f "-h" flag::boolean or if {
+		print_usage
+		return
+	}
+
+	f "--version" flag::boolean f "-v" flag::boolean or if {
+		"quadmcp " print SERVER_VERSION print nl
+		return
+	}
+
+	load_docs -> ds
+	defer {
+		ds free
 	}
 
 	f "--http" flag::boolean -> use_http

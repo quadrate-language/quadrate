@@ -6,6 +6,7 @@
 #include <algorithm>
 #include <filesystem>
 #include <fstream>
+#include <iostream>
 #include <sstream>
 #include <stdexcept>
 
@@ -28,6 +29,18 @@ namespace qdcli {
 		}
 
 		return files;
+	}
+
+	bool checkPathsExist(const std::vector<std::string>& paths, const char* toolName) {
+		bool ok = true;
+		for (const auto& path : paths) {
+			std::error_code ec;
+			if (!fs::exists(path, ec)) {
+				std::cerr << toolName << ": " << path << ": No such file or directory\n";
+				ok = false;
+			}
+		}
+		return ok;
 	}
 
 	std::string readFile(const std::string& filename) {

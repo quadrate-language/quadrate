@@ -458,8 +458,9 @@ public:
 			return;
 		}
 
-		// Re-enable colors for interactive mode (unless NO_COLOR is set)
-		if (!qdcli::noColor()) {
+		// Re-enable colors for interactive mode. Only meaningful when the output
+		// streams really are terminals, which is what the default already tests.
+		if (!qdcli::noColor() && isatty(STDOUT_FILENO) && isatty(STDERR_FILENO)) {
 			Qd::Colors::setEnabled(true);
 		}
 
@@ -1360,10 +1361,13 @@ int main(int argc, char* argv[]) {
 		return 0;
 	}
 
-	// Configure colored output - disable if piped or NO_COLOR is set
+	// Configure colored output - disable if piped or NO_COLOR is set. The default
+	// already accounts for NO_COLOR and redirected output; piped *stdin* is the
+	// extra condition only the REPL cares about, so it can only subtract.
 	const bool isPiped = !isatty(STDIN_FILENO);
-	const bool noColors = qdcli::noColor() || isPiped;
-	Qd::Colors::setEnabled(!noColors);
+	if (qdcli::noColor() || isPiped) {
+		Qd::Colors::setEnabled(false);
+	}
 
 	// Run the REPL
 	ReplSession session(printOnExit);

@@ -18,6 +18,7 @@ struct Options {
 	bool version = false;
 	bool saveTemps = false;
 	bool verbose = false;
+	bool noColor = false;
 	bool dumpTokens = false;
 	bool dumpAst = false;
 	bool run = false;

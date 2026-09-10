@@ -85,10 +85,12 @@ int main(int argc, char** argv) {
 
 	Options opts;
 
-	// Show help if no arguments provided
+	// No arguments is a usage error, not success -- `quadc` in a script should
+	// not look like a successful compile. Help still goes to stdout so that
+	// `quadc | less` works; the exit status is what changes.
 	if (argc == 1) {
 		printHelp();
-		return 0;
+		return 1;
 	}
 
 	if (!parseArgs(argc, argv, opts)) {
@@ -135,9 +137,12 @@ int main(int argc, char** argv) {
 		setModuleIncludePaths(opts.includePaths);
 	}
 
-	// Configure colored output - check NO_COLOR environment variable
-	const bool noColors = qdcli::noColor();
-	Qd::Colors::setEnabled(!noColors);
+	// Colours already default to off when NO_COLOR is set or output is redirected
+	// (see lib/qc/src/colors.cc), so only ever force them *off* here -- forcing
+	// them on would put escape sequences back into pipes.
+	if (qdcli::noColor() || opts.noColor) {
+		Qd::Colors::setEnabled(false);
+	}
 
 	const std::string outputDir = createTempDir(opts.saveTemps);
 	TempDirGuard tempGuard(outputDir);

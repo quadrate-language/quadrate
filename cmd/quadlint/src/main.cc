@@ -114,6 +114,7 @@ void printHelp() {
 	std::cout << "Options:\n";
 	std::cout << "  -h, --help                Show this help message\n";
 	std::cout << "  -v, --version             Show version information\n";
+	std::cout << "  --no-color                Disable coloured output\n";
 	std::cout << "  --json                    Output results in JSON format\n";
 	std::cout << "  -q, --quiet               Only show summary (no individual issues)\n";
 	std::cout << "  --no-unused-functions     Disable unused function warnings\n";
@@ -1017,11 +1018,26 @@ int main(int argc, char* argv[]) {
 		return 1;
 	}
 
+	if (base.noColor) {
+		Colors::setEnabled(false);
+	}
+
+	if (!qdcli::checkPathsExist(base.paths, "quadlint")) {
+		return 1;
+	}
+
 	// Collect all files from paths (now supports directories)
 	std::vector<std::string> allFiles;
 	for (const auto& path : base.paths) {
 		auto files = qdcli::collectFiles(path);
 		allFiles.insert(allFiles.end(), files.begin(), files.end());
+	}
+
+	// A path that exists but yields nothing to lint is also not success: it means
+	// the caller pointed at the wrong directory and every check silently passed.
+	if (allFiles.empty()) {
+		std::cerr << "quadlint: no .qd files found\n";
+		return 1;
 	}
 
 	std::vector<LintIssue> allIssues;

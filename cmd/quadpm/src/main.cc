@@ -52,7 +52,7 @@ static void printUsage() {
 	std::cout << "      \"crypto\": {\n";
 	std::cout << "        \"url\": \"https://github.com/user/qd-crypto\",\n";
 	std::cout << "        \"version\": \"~1.5.0\",\n";
-	std::cout << "        \"integrity\": \"sha256-abc123...\"\n";
+	std::cout << "        \"commit\": \"a1b2c3d4...\"    (pin an exact git commit)\n";
 	std::cout << "      }\n";
 	std::cout << "    }\n";
 	std::cout << "  }\n\n";

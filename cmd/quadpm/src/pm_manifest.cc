@@ -96,7 +96,7 @@ std::string parseNamespace(const std::string& manifestPath) {
 //   "name": "../local/path"                      (local path)
 //   "name": "^1.0.0"                             (semver range, uses default registry)
 //   "name": { "url": "...", "version": "^1.0.0" }  (expanded form with semver)
-//   "name": { "url": "...", "integrity": "sha256-..." }  (expanded form)
+//   "name": { "url": "...", "commit": "<git commit id>" }  (expanded form)
 std::vector<Dependency> parseDependencies(const std::string& manifestPath) {
 	std::vector<Dependency> deps;
 
@@ -141,7 +141,7 @@ std::vector<Dependency> parseDependencies(const std::string& manifestPath) {
 					// URL will need to be looked up - leave empty for now
 				}
 			} else if (json_is_object(value)) {
-				// Expanded form: { "url": "...", "version": "...", "integrity": "sha256-..." }
+				// Expanded form: { "url": "...", "version": "...", "commit": "<git commit id>" }
 				json_t* url = json_object_get(value, "url");
 				if (url && json_is_string(url)) {
 					std::string urlStr = json_string_value(url);
@@ -164,15 +164,20 @@ std::vector<Dependency> parseDependencies(const std::string& manifestPath) {
 
 				dep.isSemVer = isSemVerRange(dep.version);
 
-				json_t* integrity = json_object_get(value, "integrity");
-				if (integrity && json_is_string(integrity)) {
-					std::string integrityStr = json_string_value(integrity);
-					// Strip "sha256-" prefix if present (npm-style)
-					if (integrityStr.size() > 7 && integrityStr.substr(0, 7) == "sha256-") {
-						dep.sha256 = integrityStr.substr(7);
-					} else {
-						dep.sha256 = integrityStr;
+				// The pinned value is compared against the resolved *git commit id*,
+				// not a content hash -- so the accurate spelling is "commit". The
+				// older "integrity" key (with its misleading npm-style "sha256-"
+				// prefix) is still accepted so existing manifests keep working.
+				json_t* pin = json_object_get(value, "commit");
+				if (!pin) {
+					pin = json_object_get(value, "integrity");
+				}
+				if (pin && json_is_string(pin)) {
+					std::string pinStr = json_string_value(pin);
+					if (pinStr.size() > 7 && pinStr.substr(0, 7) == "sha256-") {
+						pinStr = pinStr.substr(7);
 					}
+					dep.sha256 = pinStr;
 				}
 			}
 

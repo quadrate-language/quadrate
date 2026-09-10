@@ -34,6 +34,19 @@ type RunResponse struct {
 	Error  string `json:"error,omitempty"`
 }
 
+const (
+	// Largest request body accepted, before decoding. Generous next to the 64KB
+	// code cap so a slightly-over payload gets a clear error rather than a
+	// connection reset.
+	maxRequestBytes = 256 * 1024
+	maxCodeBytes    = 64 * 1024
+	// Concurrent sandbox containers. Each is capped at 64MB / 0.5 CPU.
+	maxConcurrentRuns = 8
+)
+
+// runSlots bounds how many sandboxes run at once; a full channel sheds load.
+var runSlots = make(chan struct{}, maxConcurrentRuns)
+
 func main() {
 	flag.StringVar(&addr, "addr", ":8080", "listen address")
 	flag.StringVar(&sandboxImage, "image", "quadrate-sandbox", "Docker sandbox image")
@@ -75,7 +88,17 @@ func main() {
 	http.HandleFunc("/fmt", handleFmt)
 
 	log.Printf("Quadrate Playground listening on %s (image: %s)", addr, sandboxImage)
-	log.Fatal(http.ListenAndServe(addr, nil))
+
+	// Explicit timeouts: the zero-value Server has none, so a client that opens a
+	// connection and dribbles bytes holds a goroutine indefinitely.
+	srv := &http.Server{
+		Addr:              addr,
+		ReadHeaderTimeout: 10 * time.Second,
+		ReadTimeout:       30 * time.Second,
+		WriteTimeout:      2 * time.Minute,
+		IdleTimeout:       2 * time.Minute,
+	}
+	log.Fatal(srv.ListenAndServe())
 }
 
 func handleRun(w http.ResponseWriter, r *http.Request) {
@@ -84,14 +107,30 @@ func handleRun(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Cap the body before decoding, not after: the 64KB check below only sees
+	// req.Code, by which point an arbitrarily large body has already been read
+	// into memory.
+	r.Body = http.MaxBytesReader(w, r.Body, maxRequestBytes)
+
 	var req RunRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		writeJSON(w, http.StatusBadRequest, RunResponse{Error: "invalid request"})
 		return
 	}
 
-	if len(req.Code) > 64*1024 {
+	if len(req.Code) > maxCodeBytes {
 		writeJSON(w, http.StatusBadRequest, RunResponse{Error: "code exceeds 64KB limit"})
+		return
+	}
+
+	// One container per request at 64MB and 0.5 CPU, so unbounded concurrency is
+	// an easy way to exhaust the host. Shed load rather than queueing behind the
+	// execution timeout.
+	select {
+	case runSlots <- struct{}{}:
+		defer func() { <-runSlots }()
+	default:
+		writeJSON(w, http.StatusServiceUnavailable, RunResponse{Error: "server busy, try again"})
 		return
 	}
 
@@ -188,6 +227,8 @@ func handleFmt(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	r.Body = http.MaxBytesReader(w, r.Body, maxRequestBytes)
+
 	var req RunRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		writeJSON(w, http.StatusBadRequest, FmtResponse{Error: "invalid request"})
@@ -196,6 +237,20 @@ func handleFmt(w http.ResponseWriter, r *http.Request) {
 
 	if req.Code == "" {
 		writeJSON(w, http.StatusBadRequest, FmtResponse{Error: "no code provided"})
+		return
+	}
+
+	if len(req.Code) > maxCodeBytes {
+		writeJSON(w, http.StatusBadRequest, FmtResponse{Error: "code exceeds 64KB limit"})
+		return
+	}
+
+	// Formatting spawns a container too, so it shares the concurrency budget.
+	select {
+	case runSlots <- struct{}{}:
+		defer func() { <-runSlots }()
+	default:
+		writeJSON(w, http.StatusServiceUnavailable, FmtResponse{Error: "server busy, try again"})
 		return
 	}
 

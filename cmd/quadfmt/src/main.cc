@@ -21,6 +21,7 @@ void printHelp() {
 	std::cout << "Options:\n";
 	std::cout << "  -h, --help           Show this help message\n";
 	std::cout << "  -v, --version        Show version information\n";
+	std::cout << "  --no-color           Disable coloured output\n";
 	std::cout << "  -c, --check          Check if files are formatted (exit 1 if not)\n";
 	std::cout << "  -w, --write          Format files in-place\n";
 	std::cout << "  --no-sort-imports    Don't sort use statements\n";

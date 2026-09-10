@@ -24,6 +24,14 @@ namespace qdcli {
 				return true;
 			}
 
+			// Accepted by every tool so the spelling is uniform. Colour is already
+			// off when output is redirected or NO_COLOR is set; this is the explicit
+			// override for a terminal.
+			if (strcmp(arg, "--no-color") == 0 || strcmp(arg, "--no-colors") == 0) {
+				opts.noColor = true;
+				continue;
+			}
+
 			if (arg[0] == '-') {
 				// Tool-specific option
 				if (handler && handler(arg, i, argc, argv)) {

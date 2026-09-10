@@ -724,7 +724,7 @@ int main(int argc, char* argv[]) {
 	}
 	if (base.help) {
 		std::cout << "quaddoc - Generate HTML documentation from Quadrate source files\n\n"
-				  << "Usage: quaddoc [options] <directory>\n\n"
+				  << "Usage: quaddoc [options] [directory]   (default: current directory)\n\n"
 				  << "Options:\n"
 				  << "  -h, --help         Show this help message\n"
 				  << "  -v, --version      Show version information\n"
@@ -745,6 +745,20 @@ int main(int argc, char* argv[]) {
 	}
 
 	std::string dir = base.paths.empty() ? "." : base.paths[0];
+
+	// scanDirectory builds a recursive_directory_iterator, which throws
+	// filesystem_error on anything that is not an openable directory. Left
+	// unchecked that escapes main and aborts with a core dump rather than a
+	// diagnostic, so validate the path here.
+	std::error_code dirEc;
+	if (!fs::exists(dir, dirEc)) {
+		std::cerr << "quaddoc: " << dir << ": No such file or directory\n";
+		return 1;
+	}
+	if (!fs::is_directory(dir, dirEc)) {
+		std::cerr << "quaddoc: " << dir << ": Not a directory\n";
+		return 1;
+	}
 
 	if (!quiet) {
 		std::cout << "Scanning " << dir << "...\n";

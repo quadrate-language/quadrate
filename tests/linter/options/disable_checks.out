@@ -1,5 +1,5 @@
-[1mtests/linter/options/disable_checks.qd:2:4:[0m [1m[1;35mwarning:[0m [1mUnused function 'unused_function'[0m
-[1mtests/linter/options/disable_checks.qd:7:5:[0m [1m[1;35mwarning:[0m [1mUnused local variable 'unused_var'[0m
-[1mtests/linter/options/disable_checks.qd:9:2:[0m [1m[1;35mwarning:[0m [1mUnreachable code after return[0m
+tests/linter/options/disable_checks.qd:2:4: warning: Unused function 'unused_function'
+tests/linter/options/disable_checks.qd:7:5: warning: Unused local variable 'unused_var'
+tests/linter/options/disable_checks.qd:9:2: warning: Unreachable code after return
 
 3 issues found

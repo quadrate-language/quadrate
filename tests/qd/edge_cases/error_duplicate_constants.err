@@ -1,1 +1,1 @@
-[1mquadc: [0m[1mtests/qd/edge_cases/error_duplicate_constants.qd:3:12:[0m [1m[1;31merror:[0m [1mDuplicate constant definition: 'PI'[0m
+quadc: tests/qd/edge_cases/error_duplicate_constants.qd:3:12: error: Duplicate constant definition: 'PI'
