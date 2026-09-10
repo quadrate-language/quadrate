@@ -7,9 +7,11 @@
 namespace Qd {
 	// Built-in runtime instructions
 	// These are instructions that are directly compiled into the runtime executable
-	inline constexpr const char* BUILTIN_INSTRUCTIONS[] = {
-			// Comparison operators (also available as symbols)
-			"!=", "<", "<=", "==", ">", ">=",
+	// Grouped by kind, starting with the comparison operators (also available as
+	// symbols). The group comments sit between entries rather than directly after
+	// the brace: clang-format 22 and 23 disagree irreconcilably about a comment in
+	// that position, so a file containing one cannot satisfy both.
+	inline constexpr const char* BUILTIN_INSTRUCTIONS[] = {"!=", "<", "<=", "==", ">", ">=",
 			// Arithmetic operators (also available as symbols)
 			"%", "*", "+", "++", "-", "--", "/",
 			// Arithmetic instructions

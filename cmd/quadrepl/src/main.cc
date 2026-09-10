@@ -49,12 +49,13 @@ static const char* g_modules[] = {
 		"unicode::", "strconv::", "bytes::", "bits::", "signal::", "term::", "limits::", "testing::", "sb::", nullptr};
 
 // Module function completions (module::function format)
-static const char* g_moduleFunctions[] = {
-		// math module
-		"math::abs", "math::sqrt", "math::sin", "math::cos", "math::tan", "math::asin", "math::acos", "math::atan",
-		"math::atan2", "math::exp", "math::log", "math::log10", "math::log2", "math::pow", "math::floor", "math::ceil",
-		"math::round", "math::trunc", "math::min", "math::max", "math::clamp", "math::lerp", "math::sq", "math::hypot",
-		"math::PI", "math::E", "math::TAU",
+// Grouped by module, starting with math. The group comments sit between entries
+// rather than directly after the brace -- clang-format 22 and 23 format a comment
+// in that position differently and neither accepts the other's output.
+static const char* g_moduleFunctions[] = {"math::abs", "math::sqrt", "math::sin", "math::cos", "math::tan",
+		"math::asin", "math::acos", "math::atan", "math::atan2", "math::exp", "math::log", "math::log10", "math::log2",
+		"math::pow", "math::floor", "math::ceil", "math::round", "math::trunc", "math::min", "math::max", "math::clamp",
+		"math::lerp", "math::sq", "math::hypot", "math::PI", "math::E", "math::TAU",
 		// strings module
 		"strings::len", "strings::concat", "strings::substr", "strings::index", "strings::contains",
 		"strings::starts_with", "strings::ends_with", "strings::trim", "strings::ltrim", "strings::rtrim",
