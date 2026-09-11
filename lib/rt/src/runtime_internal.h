@@ -29,25 +29,18 @@ void qdrt_dump_stack(qd_context* ctx);
  */
 _Noreturn void qdrt_fatal_exit(void);
 
-#define QDRT_FATAL(ctx, op, ...)                                                                                       \
-	do {                                                                                                               \
-		fprintf(stderr, "Fatal error in %s: ", (op));                                                                  \
-		fprintf(stderr, __VA_ARGS__);                                                                                  \
-		fprintf(stderr, "\n");                                                                                         \
-		qdrt_dump_stack(ctx);                                                                                          \
-		qd_print_stack_trace(ctx);                                                                                     \
-		qdrt_fatal_exit();                                                                                             \
-	} while (0)
+_Noreturn void qdrt_fatal_raise(qd_context* ctx, const char* op, const char* fmt, ...)
+#ifdef __GNUC__
+		__attribute__((format(printf, 3, 4)))
+#endif
+		;
+
+#define QDRT_FATAL(ctx, op, ...) qdrt_fatal_raise((ctx), (op), __VA_ARGS__)
 
 // Stack underflow error
 #define QDRT_FATAL_UNDERFLOW(ctx, op, required, have)                                                                  \
-	do {                                                                                                               \
-		fprintf(stderr, "Fatal error in %s: Stack underflow (required %zu elements, have %zu)\n", (op),                \
-				(size_t)(required), (size_t)(have));                                                                   \
-		qdrt_dump_stack(ctx);                                                                                          \
-		qd_print_stack_trace(ctx);                                                                                     \
-		qdrt_fatal_exit();                                                                                             \
-	} while (0)
+	qdrt_fatal_raise(                                                                                                  \
+			(ctx), (op), "Stack underflow (required %zu elements, have %zu)", (size_t)(required), (size_t)(have))
 
 // Check stack has minimum elements, abort if not
 #define QDRT_CHECK_STACK(ctx, op, required)                                                                            \

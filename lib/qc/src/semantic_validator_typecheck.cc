@@ -1,5 +1,5 @@
 #include <algorithm>
-#include <cerrno>
+#include <charconv>
 #include <cstdint>
 #include <cstdlib>
 #include <cstring>
@@ -117,20 +117,32 @@ namespace Qd {
 	}
 
 	static std::string integerLiteralProblem(const std::string& text) {
-		errno = 0;
-		char* end = nullptr;
-		const long long v = std::strtoll(text.c_str(), &end, 0);
-		(void)v;
-		const bool consumedAll = end != nullptr && *end == '\0' && end != text.c_str();
-		if (consumedAll && errno == 0) {
+		int64_t value = 0;
+		const char* begin = text.data();
+		const char* finish = text.data() + text.size();
+		int base = 10;
+		bool prefixed = false;
+		if (text.size() > 2 && text[0] == '0') {
+			if (text[1] == 'x' || text[1] == 'X') {
+				base = 16;
+				prefixed = true;
+			} else if (text[1] == 'b' || text[1] == 'B') {
+				base = 2;
+				prefixed = true;
+			}
+		}
+		if (prefixed) {
+			begin += 2;
+		}
+		auto [ptr, ec] = std::from_chars(begin, finish, value, base);
+		if (ec == std::errc() && ptr == finish) {
 			return "";
 		}
-		const bool isHex = text.size() > 1 && text[0] == '0' && (text[1] == 'x' || text[1] == 'X');
-		if (!isHex && text.find_first_of("eE") != std::string::npos) {
+		if (!prefixed && text.find_first_of("eE") != std::string::npos) {
 			return "Invalid numeric literal '" + text +
 				   "': exponent notation is not supported; write the value out, e.g. 1000000.0";
 		}
-		if (errno == ERANGE) {
+		if (ec == std::errc::result_out_of_range) {
 			return "Integer literal '" + text + "' is out of range for i64";
 		}
 		return "Invalid integer literal '" + text + "'";

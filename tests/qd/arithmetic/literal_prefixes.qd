@@ -1,0 +1,5 @@
+fn main() {
+	0b1100 0b1010 and print nl
+	0xFF print nl
+	0B11 0X10 + print nl
+}

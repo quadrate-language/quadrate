@@ -9,6 +9,7 @@
 #include <quadrate/rt/qd_string.h>
 #include <quadrate/rt/qd_struct.h>
 #include <unistd.h>
+#include <stdarg.h>
 #include <stdio.h>
 #include <stdint.h>
 #include <stdlib.h>
@@ -61,6 +62,48 @@ _Noreturn void qdrt_fatal_exit(void) {
 		abort();
 	}
 	_exit(1);
+}
+
+static _Thread_local jmp_buf qdrt_recovery_buf;
+static _Thread_local bool qdrt_recovery_armed = false;
+
+jmp_buf* qd_recovery_buf(void) {
+	return &qdrt_recovery_buf;
+}
+
+void qd_recovery_arm(void) {
+	qdrt_recovery_armed = true;
+}
+
+void qd_recovery_disarm(void) {
+	qdrt_recovery_armed = false;
+}
+
+bool qd_recovery_armed(void) {
+	return qdrt_recovery_armed;
+}
+
+_Noreturn void qdrt_fatal_raise(qd_context* ctx, const char* op, const char* fmt, ...) {
+	char detail[384];
+	va_list args;
+	va_start(args, fmt);
+	vsnprintf(detail, sizeof(detail), fmt, args);
+	va_end(args);
+
+	if (qdrt_recovery_armed) {
+		char message[448];
+		snprintf(message, sizeof(message), "%s: %s", op, detail);
+		if (ctx != NULL) {
+			qd_set_error_msg(ctx, message);
+		}
+		qdrt_recovery_armed = false;
+		longjmp(qdrt_recovery_buf, 1);
+	}
+
+	fprintf(stderr, "Fatal error in %s: %s\n", op, detail);
+	qdrt_dump_stack(ctx);
+	qd_print_stack_trace(ctx);
+	qdrt_fatal_exit();
 }
 
 void qd_closure_register(void* ptr) {

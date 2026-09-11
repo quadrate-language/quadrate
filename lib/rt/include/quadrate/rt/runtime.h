@@ -38,6 +38,7 @@
 #include <quadrate/rt/context.h>
 #include <quadrate/rt/exec_result.h>
 #include <quadrate/rt/qd_struct.h>
+#include <setjmp.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -1180,6 +1181,18 @@ int qd_rt_version(qd_context* ctx);
 int qd_rt_version_api(qd_context* ctx);
 
 /** @} */ // end of Version group
+
+/** @brief The calling thread's recovery jump buffer for setjmp(); owned by the runtime */
+jmp_buf* qd_recovery_buf(void);
+
+/** @brief Arm recovery: a fatal runtime error longjmps to qd_recovery_buf() instead of exiting */
+void qd_recovery_arm(void);
+
+/** @brief Disarm recovery; unwinding disarms automatically */
+void qd_recovery_disarm(void);
+
+/** @brief Whether recovery is armed for the calling thread */
+bool qd_recovery_armed(void);
 
 #ifdef __cplusplus
 }
