@@ -791,6 +791,7 @@ namespace Qd {
 				errorMsg += name;
 			}
 			reportError(ident, errorMsg.c_str());
+			mUndefinedNodes.insert(ident);
 		}
 
 		// Check if this is a function pointer reference
@@ -815,6 +816,7 @@ namespace Qd {
 						errorMsg += "; did you mean '" + suggestion + "'?";
 					}
 					reportError(funcPtr, errorMsg.c_str());
+					mUndefinedNodes.insert(funcPtr);
 				}
 			}
 		}
@@ -965,6 +967,7 @@ namespace Qd {
 				errorMsg += scopeName;
 				errorMsg += "' to use this module";
 				reportError(scoped, errorMsg.c_str());
+				mUndefinedNodes.insert(scoped);
 				return;
 			}
 
@@ -1050,6 +1053,7 @@ namespace Qd {
 									}
 								}
 								reportError(scoped, errorMsg.c_str());
+								mUndefinedNodes.insert(scoped);
 							}
 						}
 					}

@@ -186,7 +186,7 @@ namespace Qd {
 		builder->CreateCondBr(isZero, toc.slowPath, divOkBlock);
 
 		builder->SetInsertPoint(divOkBlock);
-		llvm::Value* result = builder->CreateSDiv(value1, value2, "div_result");
+		llvm::Value* result = emitWrappingSDiv(value1, value2);
 		builder->CreateStore(result, value1iPtrCast);
 		llvm::Value* newSize = builder->CreateSub(toc.size, builder->getInt64(1), "new_size");
 		builder->CreateStore(newSize, toc.sizePtr);
@@ -222,7 +222,7 @@ namespace Qd {
 		builder->CreateCondBr(isZero, toc.slowPath, modOkBlock);
 
 		builder->SetInsertPoint(modOkBlock);
-		llvm::Value* result = builder->CreateSRem(value1, value2, "mod_result");
+		llvm::Value* result = emitWrappingSRem(value1, value2);
 		builder->CreateStore(result, value1iPtrCast);
 		llvm::Value* newSize = builder->CreateSub(toc.size, builder->getInt64(1), "new_size");
 		builder->CreateStore(newSize, toc.sizePtr);

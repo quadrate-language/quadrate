@@ -910,18 +910,16 @@ int main(int argc, char** argv) {
 				printError("failed to execute program");
 				return 1;
 			}
-			// Check if process exited normally or was killed by signal
-			int exitCode;
 			if (WIFEXITED(status)) {
-				exitCode = WEXITSTATUS(status);
-			} else {
-				// Process was terminated by a signal
-				exitCode = -1;
+				return WEXITSTATUS(status);
 			}
-			if (exitCode != 0) {
-				printError("program exited with code " + std::to_string(exitCode));
+			if (WIFSIGNALED(status)) {
+				int sig = WTERMSIG(status);
+				printError(std::string("program terminated by signal ") + std::to_string(sig) + " (" + strsignal(sig) +
+						   ")");
+				return 128 + sig;
 			}
-			return exitCode;
+			return 1;
 		}
 	}
 

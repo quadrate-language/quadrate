@@ -167,6 +167,11 @@ int main(int argc, char* argv[]) {
 		return 0;
 	}
 
+	if (opts.check && opts.inPlace) {
+		std::cerr << "quadfmt: options -w and -c are mutually exclusive\n";
+		return 1;
+	}
+
 	// A lone "-" means stdin. Handled before the no-input check, which would
 	// otherwise reject it as a path that does not exist.
 	const bool useStdin = (base.paths.size() == 1 && base.paths[0] == "-");

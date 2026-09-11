@@ -160,7 +160,7 @@ int qd_div(qd_context* ctx) {
 		if (b.value.i == 0) {
 			QDRT_FATAL(ctx, "div", "Division by zero");
 		}
-		int64_t result = a.value.i / b.value.i;
+		int64_t result = (b.value.i == -1) ? (int64_t)(0 - (uint64_t)a.value.i) : a.value.i / b.value.i;
 		qd_stack_error err = qd_stack_push_int(ctx->st, result);
 		if (err != QD_STACK_OK) {
 			QDRT_FATAL(ctx, "div", "Stack overflow pushing result");
@@ -227,7 +227,7 @@ int qd_mod(qd_context* ctx) {
 		QDRT_FATAL(ctx, "mod", "Division by zero");
 	}
 
-	int64_t result = a.value.i % b.value.i;
+	int64_t result = (b.value.i == -1) ? 0 : a.value.i % b.value.i;
 
 	err = qd_stack_push_int(ctx->st, result);
 	if (err != QD_STACK_OK) {

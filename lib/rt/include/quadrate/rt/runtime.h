@@ -800,6 +800,7 @@ void qd_pop_call(qd_context* ctx);
  * @param ctx Execution context
  */
 void qd_print_stack_trace(qd_context* ctx);
+void qd_install_crash_handler(void);
 
 /**
  * @brief Register a user-defined function for coverage tracking.

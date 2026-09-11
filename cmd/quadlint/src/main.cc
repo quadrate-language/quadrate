@@ -724,7 +724,26 @@ std::vector<LintIssue> lintFile(const std::string& filename, const LintOptions& 
 		IAstNode* root = ast.generate(source.c_str(), false, filename.c_str());
 
 		if (!root || ast.hasErrors()) {
-			// Don't lint files with parse errors
+			for (const auto& err : ast.getErrors()) {
+				LintIssue issue;
+				issue.filename = filename;
+				issue.line = err.line;
+				issue.column = err.column;
+				issue.message = err.message;
+				issue.level = "error";
+				issue.rule = "parse-error";
+				issues.push_back(issue);
+			}
+			if (issues.empty()) {
+				LintIssue issue;
+				issue.filename = filename;
+				issue.line = 1;
+				issue.column = 1;
+				issue.message = "failed to parse";
+				issue.level = "error";
+				issue.rule = "parse-error";
+				issues.push_back(issue);
+			}
 			return issues;
 		}
 

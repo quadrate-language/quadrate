@@ -4664,6 +4664,7 @@ void printHelp() {
 	std::cout << "Options:\n";
 	std::cout << "  -h, --help       Show this help message\n";
 	std::cout << "  -v, --version    Show version information\n";
+	std::cout << "  --no-color       Disable coloured output\n";
 	std::cout << "\n";
 	std::cout << "The LSP server communicates via stdin/stdout using JSON-RPC.\n";
 	std::cout << "Configure your editor to use 'quadlsp' as the language server.\n\n";
@@ -4683,14 +4684,20 @@ void printVersion() {
 
 int main(int argc, char* argv[]) {
 	// Check for help or version flags
-	if (argc > 1) {
-		std::string arg = argv[1];
+	for (int i = 1; i < argc; i++) {
+		std::string arg = argv[i];
 		if (arg == "-h" || arg == "--help") {
 			printHelp();
 			return 0;
 		} else if (arg == "-v" || arg == "--version") {
 			printVersion();
 			return 0;
+		} else if (arg == "--no-color" || arg == "--no-colors") {
+			continue;
+		} else {
+			std::cerr << "quadlsp: unknown option: " << arg << "\n";
+			std::cerr << "Try 'quadlsp --help' for more information.\n";
+			return 1;
 		}
 	}
 

@@ -11,6 +11,8 @@ namespace Qd {
 		auto errorMsg = builder->CreateGlobalString(message);
 		builder->CreateCall(writeFn, {builder->getInt32(2), errorMsg, builder->getInt64(strlen(message))});
 		builder->CreateCall(printStackTraceFn, {ctx});
+		auto fflushFn = module->getOrInsertFunction("fflush", llvm::FunctionType::get(int32Ty, {ptrTy}, false));
+		builder->CreateCall(fflushFn, {llvm::ConstantPointerNull::get(ptrTy)});
 		builder->CreateCall(exitFn, {builder->getInt32(1)});
 		builder->CreateUnreachable();
 	}
@@ -116,6 +118,49 @@ namespace Qd {
 		builder->CreateStore(newSize, sizePtr);
 	}
 
+	void LlvmGenerator::Impl::emitDivisorZeroCheck(llvm::Value* ctx, llvm::Value* divisor, const char* opName) {
+		llvm::Value* isZero = builder->CreateICmpEQ(divisor, builder->getInt64(0), "divisor_is_zero");
+		llvm::Function* currentFn = builder->GetInsertBlock()->getParent();
+		llvm::BasicBlock* zeroBB = llvm::BasicBlock::Create(*context, std::string(opName) + ".divzero", currentFn);
+		llvm::BasicBlock* okBB = llvm::BasicBlock::Create(*context, std::string(opName) + ".ok", currentFn);
+		builder->CreateCondBr(isZero, zeroBB, okBB);
+		builder->SetInsertPoint(zeroBB);
+		std::string msg = std::string("Fatal error in ") + opName + ": Division by zero\n";
+		emitFatalError(ctx, msg.c_str());
+		builder->SetInsertPoint(okBB);
+	}
+
+	llvm::Value* LlvmGenerator::Impl::emitWrappingSDiv(llvm::Value* a, llvm::Value* b) {
+		llvm::Value* isNegOne =
+				builder->CreateICmpEQ(b, llvm::ConstantInt::getSigned(builder->getInt64Ty(), -1), "divisor_is_neg1");
+		llvm::Value* safeB = builder->CreateSelect(isNegOne, builder->getInt64(1), b, "safe_divisor");
+		llvm::Value* quotient = builder->CreateSDiv(a, safeB, "div");
+		llvm::Value* negated = builder->CreateSub(builder->getInt64(0), a, "div_neg");
+		return builder->CreateSelect(isNegOne, negated, quotient, "div_result");
+	}
+
+	llvm::Value* LlvmGenerator::Impl::emitWrappingSRem(llvm::Value* a, llvm::Value* b) {
+		llvm::Value* isNegOne =
+				builder->CreateICmpEQ(b, llvm::ConstantInt::getSigned(builder->getInt64Ty(), -1), "divisor_is_neg1");
+		llvm::Value* safeB = builder->CreateSelect(isNegOne, builder->getInt64(1), b, "safe_divisor");
+		llvm::Value* remainder = builder->CreateSRem(a, safeB, "mod");
+		return builder->CreateSelect(isNegOne, builder->getInt64(0), remainder, "mod_result");
+	}
+
+	llvm::Value* LlvmGenerator::Impl::emitCheckedShift(
+			llvm::Value* ctx, llvm::Value* value, llvm::Value* count, bool left, const char* opName) {
+		llvm::Value* inRange = builder->CreateICmpULT(count, builder->getInt64(64), "shift_count_ok");
+		llvm::Function* currentFn = builder->GetInsertBlock()->getParent();
+		llvm::BasicBlock* badBB = llvm::BasicBlock::Create(*context, std::string(opName) + ".badcount", currentFn);
+		llvm::BasicBlock* okBB = llvm::BasicBlock::Create(*context, std::string(opName) + ".ok", currentFn);
+		builder->CreateCondBr(inRange, okBB, badBB);
+		builder->SetInsertPoint(badBB);
+		std::string msg = std::string("Fatal error in ") + opName + ": Shift count out of range (must be 0-63)\n";
+		emitFatalError(ctx, msg.c_str());
+		builder->SetInsertPoint(okBB);
+		return left ? builder->CreateShl(value, count, "shl") : builder->CreateLShr(value, count, "shr");
+	}
+
 	void LlvmGenerator::Impl::generateInlineIntAdd(llvm::Value* ctx) {
 		auto boc = setupBinaryOp(ctx);
 		llvm::Value* result = builder->CreateNSWAdd(boc.value1, boc.value2, "add_result");
@@ -153,7 +198,7 @@ namespace Qd {
 		emitFatalError(ctx, "Fatal error in mod: Division by zero\n");
 
 		builder->SetInsertPoint(modOkBB);
-		llvm::Value* result = builder->CreateSRem(boc.value1, boc.value2, "mod_result");
+		llvm::Value* result = emitWrappingSRem(boc.value1, boc.value2);
 		finishBinaryOp(boc, result);
 	}
 
@@ -235,13 +280,13 @@ namespace Qd {
 
 	void LlvmGenerator::Impl::generateInlineBitLshift(llvm::Value* ctx) {
 		auto boc = setupBinaryOp(ctx);
-		llvm::Value* result = builder->CreateShl(boc.value1, boc.value2, "lshift_result");
+		llvm::Value* result = emitCheckedShift(ctx, boc.value1, boc.value2, true, "shl");
 		finishBinaryOp(boc, result);
 	}
 
 	void LlvmGenerator::Impl::generateInlineBitRshift(llvm::Value* ctx) {
 		auto boc = setupBinaryOp(ctx);
-		llvm::Value* result = builder->CreateLShr(boc.value1, boc.value2, "rshift_result");
+		llvm::Value* result = emitCheckedShift(ctx, boc.value1, boc.value2, false, "shr");
 		finishBinaryOp(boc, result);
 	}
 

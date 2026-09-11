@@ -1,0 +1,5 @@
+// Test: one undefined name produces one error, not a trail of stack underflows
+fn main() {
+	os::args -> a a len print nl
+	missing_fn -> b b print nl
+}

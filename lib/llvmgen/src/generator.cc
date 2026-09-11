@@ -173,6 +173,8 @@ namespace Qd {
 		auto i32ToVoidTy = llvm::FunctionType::get(builder->getVoidTy(), {int32Ty}, false);
 		exitFn = declareFn(i32ToVoidTy, "_exit");
 		printStackTraceFn = declareFn(ctxToVoidTy, "qd_print_stack_trace");
+		installCrashHandlerFn =
+				declareFn(llvm::FunctionType::get(builder->getVoidTy(), {}, false), "qd_install_crash_handler");
 		printErrorMsgFn = declareFn(ptrPtrToVoidTy, "qd_print_error_msg");
 
 		// String functions
@@ -678,6 +680,7 @@ namespace Qd {
 			// Create Quadrate context
 			auto stackSizeVal = builder->getInt64(stackSize);
 			auto ctx = builder->CreateCall(createContextFn, {stackSizeVal}, "ctx");
+			builder->CreateCall(installCrashHandlerFn, {});
 
 			// Create alloca for ctx so debugger can reliably access it
 			llvm::AllocaInst* ctxAlloca = builder->CreateAlloca(ctx->getType(), nullptr, "ctx.addr");

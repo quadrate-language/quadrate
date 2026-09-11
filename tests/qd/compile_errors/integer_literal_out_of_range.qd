@@ -1,0 +1,4 @@
+// Test: an integer literal that does not fit i64 is reported with a position
+fn main() {
+	99999999999999999999 print nl
+}

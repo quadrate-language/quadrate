@@ -1,4 +1,5 @@
 #include <algorithm>
+#include <cerrno>
 #include <cstdint>
 #include <cstdlib>
 #include <cstring>
@@ -115,6 +116,26 @@ namespace Qd {
 		}
 	}
 
+	static std::string integerLiteralProblem(const std::string& text) {
+		errno = 0;
+		char* end = nullptr;
+		const long long v = std::strtoll(text.c_str(), &end, 0);
+		(void)v;
+		const bool consumedAll = end != nullptr && *end == '\0' && end != text.c_str();
+		if (consumedAll && errno == 0) {
+			return "";
+		}
+		const bool isHex = text.size() > 1 && text[0] == '0' && (text[1] == 'x' || text[1] == 'X');
+		if (!isHex && text.find_first_of("eE") != std::string::npos) {
+			return "Invalid numeric literal '" + text +
+				   "': exponent notation is not supported; write the value out, e.g. 1000000.0";
+		}
+		if (errno == ERANGE) {
+			return "Integer literal '" + text + "' is out of range for i64";
+		}
+		return "Invalid integer literal '" + text + "'";
+	}
+
 	// Helper: Convert literal type to stack value type
 	static StackValueType getLiteralStackType(AstNodeLiteral::LiteralType litType) {
 		switch (litType) {
@@ -189,6 +210,12 @@ namespace Qd {
 		for (size_t i = 0; i < node->childCount(); i++) {
 			IAstNode* child = node->child(i);
 			if (!child) {
+				continue;
+			}
+			if (mUndefinedNodes.count(child)) {
+				typeStack.push_back(StackValueType::UNKNOWN);
+				structTypeStack.push_back("");
+				mHasUnpredictableStack = true;
 				continue;
 			}
 
@@ -737,10 +764,22 @@ namespace Qd {
 			if (!child) {
 				continue;
 			}
+			if (mUndefinedNodes.count(child)) {
+				typeStack.push_back(StackValueType::UNKNOWN);
+				structTypeStack.push_back("");
+				mHasUnpredictableStack = true;
+				continue;
+			}
 
 			switch (child->type()) {
 			case IAstNode::Type::LITERAL: {
 				AstNodeLiteral* lit = static_cast<AstNodeLiteral*>(child);
+				if (lit->literalType() == AstNodeLiteral::LiteralType::INTEGER) {
+					std::string problem = integerLiteralProblem(lit->value());
+					if (!problem.empty()) {
+						reportError(lit, problem.c_str());
+					}
+				}
 				typeStack.push_back(getLiteralStackType(lit->literalType()));
 				structTypeStack.push_back("");
 				break;

@@ -260,7 +260,14 @@ namespace Qd {
 		reportErrorConditional(message, !mInLoopBody);
 	}
 
+	static bool isUnknownOperandError(const char* message) {
+		return message != nullptr && std::strstr(message, "got unknown") != nullptr;
+	}
+
 	void SemanticValidator::reportError(const IAstNode* node, const char* message) {
+		if (isUnknownOperandError(message)) {
+			return;
+		}
 		// Suppress errors inside loop bodies (we still analyze for method call marking)
 		reportErrorConditional(node, message, !mInLoopBody);
 	}
@@ -280,7 +287,7 @@ namespace Qd {
 
 	void SemanticValidator::reportErrorConditionalWithHint(
 			const IAstNode* node, const char* message, const char* hint, bool shouldReport) {
-		if (!shouldReport) {
+		if (!shouldReport || isUnknownOperandError(message)) {
 			return;
 		}
 
@@ -315,10 +322,10 @@ namespace Qd {
 			// GCC/Clang style: quadc: filename:line:column: error: message
 			std::cerr << Colors::bold() << "quadc: " << Colors::reset();
 			if (mFilename && node) {
-				std::cerr << Colors::bold() << mFilename << ":" << node->line() << ":" << node->column() << ":"
+				std::cerr << Colors::bold() << displayFilename() << ":" << node->line() << ":" << node->column() << ":"
 						  << Colors::reset() << " ";
 			} else if (mFilename) {
-				std::cerr << Colors::bold() << mFilename << ":" << Colors::reset() << " ";
+				std::cerr << Colors::bold() << displayFilename() << ":" << Colors::reset() << " ";
 			}
 			std::cerr << Colors::bold() << Colors::red() << "error:" << Colors::reset() << " ";
 			std::cerr << Colors::bold() << message << Colors::reset() << std::endl;
@@ -387,10 +394,10 @@ namespace Qd {
 		// GCC/Clang style: quadc: filename:line:column: warning: message
 		std::cerr << Colors::bold() << "quadc: " << Colors::reset();
 		if (mFilename && node) {
-			std::cerr << Colors::bold() << mFilename << ":" << node->line() << ":" << node->column() << ":"
+			std::cerr << Colors::bold() << displayFilename() << ":" << node->line() << ":" << node->column() << ":"
 					  << Colors::reset() << " ";
 		} else if (mFilename) {
-			std::cerr << Colors::bold() << mFilename << ":" << Colors::reset() << " ";
+			std::cerr << Colors::bold() << displayFilename() << ":" << Colors::reset() << " ";
 		}
 		std::cerr << Colors::bold() << Colors::magenta() << "warning:" << Colors::reset() << " ";
 		std::cerr << Colors::bold() << message << Colors::reset() << std::endl;

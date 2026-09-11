@@ -222,6 +222,7 @@ namespace Qd {
 		llvm::Function* shrFn = nullptr;
 		llvm::Function* exitFn = nullptr;
 		llvm::Function* printStackTraceFn = nullptr;
+		llvm::Function* installCrashHandlerFn = nullptr;
 		llvm::Function* printErrorMsgFn = nullptr;
 
 		// Loop context for break/continue
@@ -549,6 +550,11 @@ namespace Qd {
 
 		// Fatal error helper - emits write(2, msg, len), qd_print_stack_trace(ctx), _exit(1), unreachable
 		void emitFatalError(llvm::Value* ctx, const char* message);
+		void emitDivisorZeroCheck(llvm::Value* ctx, llvm::Value* divisor, const char* opName);
+		llvm::Value* emitWrappingSDiv(llvm::Value* a, llvm::Value* b);
+		llvm::Value* emitWrappingSRem(llvm::Value* a, llvm::Value* b);
+		llvm::Value* emitCheckedShift(
+				llvm::Value* ctx, llvm::Value* value, llvm::Value* count, bool left, const char* opName);
 
 		// Inline stack operation helpers
 		struct BinaryOpContext {

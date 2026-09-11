@@ -7,6 +7,8 @@
 #include <iostream>
 #include <quadrate/cli/cli.h>
 #include <string>
+#include <unistd.h>
+#include <vector>
 
 // Print usage information
 static void printUsage() {
@@ -15,7 +17,8 @@ static void printUsage() {
 	std::cout << "Usage: quadpm [options] <command> [arguments]\n\n";
 	std::cout << "Options:\n";
 	std::cout << "  -h, --help       Show this help message\n";
-	std::cout << "  -v, --version    Show version information\n\n";
+	std::cout << "  -v, --version    Show version information\n";
+	std::cout << "  --no-color       Disable coloured output\n\n";
 	std::cout << "Commands:\n";
 	std::cout << "  install          Install dependencies from qd.json\n";
 	std::cout << "    --frozen       Only install from qd.lock (fail if outdated)\n";
@@ -71,7 +74,30 @@ static void printUsage() {
 	std::cout << "  Default: ~/quadrate/modules\n";
 }
 
+static bool g_pmColor = false;
+
+bool pmColorEnabled() {
+	return g_pmColor;
+}
+
+void pmSetColorEnabled(bool enabled) {
+	g_pmColor = enabled;
+}
+
 int main(int argc, char** argv) {
+	bool noColorFlag = false;
+	std::vector<char*> args;
+	for (int i = 0; i < argc; i++) {
+		if (std::string(argv[i]) == "--no-color" || std::string(argv[i]) == "--no-colors") {
+			noColorFlag = true;
+			continue;
+		}
+		args.push_back(argv[i]);
+	}
+	argc = static_cast<int>(args.size());
+	argv = args.data();
+	pmSetColorEnabled(!noColorFlag && !qdcli::noColor() && isatty(STDOUT_FILENO) && isatty(STDERR_FILENO));
+
 	if (argc < 2) {
 		printUsage();
 		return 1;

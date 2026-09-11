@@ -1,0 +1,6 @@
+// Test: a negative shift count is a fatal error
+fn n( -- r:i64) { -1 }
+
+fn main() {
+	8 n shr print nl
+}

@@ -1,0 +1,4 @@
+tests/linter/parse_error/unterminated_string.qd:3:2: error: Unterminated string literal
+tests/linter/parse_error/unterminated_string.qd:5:1: error: Expected '}' to close function body (reached end of file)
+
+2 issues found

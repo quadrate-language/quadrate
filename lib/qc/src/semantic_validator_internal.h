@@ -5,6 +5,7 @@
 #define QD_QC_SEMANTIC_VALIDATOR_INTERNAL_H
 
 #include <algorithm>
+#include <cctype>
 #include <cstdint>
 #include <cstdlib>
 #include <filesystem>
@@ -189,15 +190,43 @@ inline std::string findSimilarName(const std::string& name, const std::unordered
 	size_t bestDistance = SIZE_MAX;
 
 	// Maximum distance threshold - larger names allow more errors
+	const bool largeSet = candidates.size() > 8;
 	size_t maxDistance = std::max(size_t(2), name.size() / 3);
+	if (largeSet && name.size() <= 2) {
+		maxDistance = 0;
+	} else if (largeSet && name.size() <= 3) {
+		maxDistance = 1;
+	}
+	auto lowered = [](std::string v) {
+		for (char& ch : v) {
+			ch = static_cast<char>(std::tolower(static_cast<unsigned char>(ch)));
+		}
+		return v;
+	};
+	const std::string nameLower = lowered(name);
+
+	auto isIdentifierLike = [](const std::string& s) {
+		for (char ch : s) {
+			const unsigned char c = static_cast<unsigned char>(ch);
+			if (!std::isalnum(c) && c != '_') {
+				return false;
+			}
+		}
+		return true;
+	};
+	const bool nameIsIdentifier = isIdentifierLike(name);
 
 	for (const auto& candidate : candidates) {
 		// Skip if lengths are too different
 		if (candidate.size() > name.size() * 2 || name.size() > candidate.size() * 2) {
 			continue;
 		}
+		if (isIdentifierLike(candidate) != nameIsIdentifier) {
+			continue;
+		}
 
-		size_t distance = levenshteinDistance(name, candidate);
+		size_t distance = levenshteinDistance(
+				maxDistance == 0 ? nameLower : name, maxDistance == 0 ? lowered(candidate) : candidate);
 		if (distance < bestDistance && distance <= maxDistance) {
 			bestDistance = distance;
 			bestMatch = candidate;

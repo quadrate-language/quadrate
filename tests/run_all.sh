@@ -1267,6 +1267,12 @@ run_reference_tests() {
     else
         log_fail "$suite" "fallible_propagation" "$output"
     fi
+
+    if output=$(cd "$PROJECT_ROOT" && python3 tools/check_versions.py 2>&1); then
+        log_pass "$suite" "versions" "(hand-maintained version strings match the toolchain)"
+    else
+        log_fail "$suite" "versions" "$output"
+    fi
 }
 
 # Run cross-compilation tests (--target flag)

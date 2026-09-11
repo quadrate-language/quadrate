@@ -1,0 +1,4 @@
+// Test: exponent notation is not a supported literal form and says so
+fn main() {
+	1e300 print nl
+}

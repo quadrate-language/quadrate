@@ -459,8 +459,9 @@ void qd_build(qd_module* mod) {
 		}
 
 		// Parse the source
+		const std::string display_name = "<" + mod->name + ">";
 		Qd::Ast ast;
-		Qd::IAstNode* root = ast.generate(combined_source.c_str(), false, source_file.string().c_str());
+		Qd::IAstNode* root = ast.generate(combined_source.c_str(), false, display_name.c_str());
 		if (!root) {
 			fprintf(stderr, "qd_build: Failed to parse script\n");
 			return;
@@ -473,6 +474,7 @@ void qd_build(qd_module* mod) {
 		}
 		// Add temp dir as include path so validator finds synthetic module files
 		validator.setIncludePaths({mod->temp_dir.string()});
+		validator.setDisplayFilename(display_name);
 		size_t error_count = validator.validate(root, source_file.string().c_str(), true, false);
 		if (error_count > 0) {
 			fprintf(stderr, "qd_build: Semantic validation failed with %zu error(s)\n", error_count);

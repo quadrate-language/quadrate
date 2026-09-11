@@ -1,6 +1,9 @@
 // Need POSIX for strdup() - not part of C standard
 #define _POSIX_C_SOURCE 200809L
 
+#ifndef _DEFAULT_SOURCE
+#define _DEFAULT_SOURCE
+#endif
 #include <quadrate/rt/runtime.h>
 #include <quadrate/rt/array.h>
 #include <quadrate/rt/qd_string.h>
@@ -11,6 +14,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <math.h>
+#include <signal.h>
 #include "platform/thread_platform.h"
 #include "ptr_registry.h"
 #include "runtime_internal.h"
@@ -20,7 +24,38 @@ static void dump_stack(qd_context* ctx);
 // Closure registry for safe closure detection
 static ptr_registry_t closure_registry = PTR_REGISTRY_INITIALIZER;
 
+static void qdrt_crash_handler(int sig) {
+	const char* msg = sig == SIGSEGV ? "Fatal error: Segmentation fault (stack overflow from unbounded recursion?)\n"
+									 : "Fatal error: Bus error\n";
+	(void)!write(2, msg, strlen(msg));
+	const char* want_abort = getenv("QUADRATE_ABORT_ON_FATAL");
+	if (want_abort != NULL && want_abort[0] != '\0' && strcmp(want_abort, "0") != 0) {
+		signal(sig, SIG_DFL);
+		raise(sig);
+	}
+	_exit(1);
+}
+
+void qd_install_crash_handler(void) {
+	static uint8_t alt_stack[64 * 1024];
+	stack_t ss;
+	ss.ss_sp = alt_stack;
+	ss.ss_size = sizeof(alt_stack);
+	ss.ss_flags = 0;
+	if (sigaltstack(&ss, NULL) != 0) {
+		return;
+	}
+	struct sigaction sa;
+	memset(&sa, 0, sizeof(sa));
+	sa.sa_handler = qdrt_crash_handler;
+	sa.sa_flags = SA_ONSTACK;
+	sigemptyset(&sa.sa_mask);
+	sigaction(SIGSEGV, &sa, NULL);
+	sigaction(SIGBUS, &sa, NULL);
+}
+
 _Noreturn void qdrt_fatal_exit(void) {
+	fflush(NULL);
 	const char* want_abort = getenv("QUADRATE_ABORT_ON_FATAL");
 	if (want_abort != NULL && want_abort[0] != '\0' && strcmp(want_abort, "0") != 0) {
 		abort();
@@ -1157,7 +1192,7 @@ void qd_coverage_report(int use_color) {
 
 void qd_print_stack_trace(qd_context* ctx) {
 	// Check NO_COLOR environment variable
-	const bool use_color = getenv("NO_COLOR") == NULL;
+	const bool use_color = getenv("NO_COLOR") == NULL && isatty(STDERR_FILENO);
 	const char* color_start = use_color ? "\x1b[1;31m" : "";
 	const char* color_end = use_color ? "\x1b[0m" : "";
 
@@ -1196,7 +1231,7 @@ void qd_clear_error_context(qd_context* ctx) {
 
 void qd_print_error_msg(qd_context* ctx, const char* func_name) {
 	// Check NO_COLOR environment variable
-	const bool use_color = getenv("NO_COLOR") == NULL;
+	const bool use_color = getenv("NO_COLOR") == NULL && isatty(STDERR_FILENO);
 	const char* color_red = use_color ? "\x1b[1;31m" : "";
 	const char* color_dim = use_color ? "\x1b[2m" : "";
 	const char* color_reset = use_color ? "\x1b[0m" : "";
@@ -1247,7 +1282,7 @@ void qd_debug_print_stack(qd_context* ctx) {
 	size_t stack_size = qd_stack_size(ctx->st);
 
 	// Check NO_COLOR environment variable
-	const bool use_color = getenv("NO_COLOR") == NULL;
+	const bool use_color = getenv("NO_COLOR") == NULL && isatty(STDERR_FILENO);
 	const char* color_blue = use_color ? "\x1b[1;34m" : "";
 	const char* color_green = use_color ? "\x1b[0;32m" : "";
 	const char* color_yellow = use_color ? "\x1b[0;33m" : "";

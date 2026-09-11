@@ -153,6 +153,10 @@ namespace Qd {
 			mSiblingFiles = files;
 		}
 
+		void setDisplayFilename(const std::string& name) {
+			mDisplayFilename = name;
+		}
+
 		// Get cached parsed module ASTs (populated during validation)
 		// Key: file path, Value: ParsedModuleAst with AST ownership
 		std::unordered_map<std::string, ParsedModuleAst>& getParsedModuleAsts() {
@@ -434,6 +438,7 @@ namespace Qd {
 		// nothing - so type checking skips them rather than emitting a cascade of
 		// underflow/arity errors on lines the user must not change.
 		std::unordered_set<const IAstNode*> mBodiesWithRemovedBuiltins;
+		std::unordered_set<const IAstNode*> mUndefinedNodes;
 
 		// Pending function signature - set when an anonymous function or function pointer
 		// with known signature is pushed onto the stack, used by 'call' instruction
@@ -466,6 +471,11 @@ namespace Qd {
 		// Sibling files for directory-based namespace system
 		// These are automatically merged into the main namespace
 		std::vector<std::string> mSiblingFiles;
+		std::string mDisplayFilename;
+
+		const char* displayFilename() const {
+			return mDisplayFilename.empty() ? mFilename : mDisplayFilename.c_str();
+		}
 	};
 
 } // namespace Qd

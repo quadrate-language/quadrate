@@ -1511,6 +1511,12 @@ fn process(path:str -- )! {
 | `inc` | `++` | `(a -- b)` | Increment by 1 |
 | `dec` | `--` | `(a -- b)` | Decrement by 1 |
 
+**Integer semantics.** Integer arithmetic is two's-complement and wraps on overflow:
+`9223372036854775807 1 +` yields `-9223372036854775808`, and `-9223372036854775808 -1 /`
+yields `-9223372036854775808` with remainder `0`. Division or modulo by zero is a fatal
+error; when the divisor is a literal `0` it is a compile-time error. Numeric literals do
+not support exponent notation (`1e300` is rejected); write the value out.
+
 ### 12.2 Comparison
 
 | Instruction | Alias | Stack Effect | Description |
@@ -1532,7 +1538,11 @@ fn process(path:str -- )! {
 | `xor` | | `(a b -- c)` | Bitwise XOR |
 | `not` | | `(a -- b)` | Bitwise NOT |
 | `shl` | | `(a n -- b)` | Shift left |
-| `shr` | | `(a n -- b)` | Shift right |
+| `shr` | | `(a n -- b)` | Shift right (logical) |
+
+**Shift semantics.** `shr` is a logical shift: the operand is treated as unsigned and
+zeros are shifted in. The shift count `n` MUST be in the range 0..63; any other count is
+a fatal error, whether the operation is compiled, inlined, or executed by the runtime.
 
 ### 12.4 Stack Manipulation
 

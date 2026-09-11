@@ -33,7 +33,7 @@ static const Command commands[] = {
 		{"fmt", "quadfmt", "Format Quadrate source files"},
 		{"lint", "quadlint", "Check code for common issues"},
 		{"repl", "quadrepl", "Start interactive REPL"},
-		{"uses", "quaduses", "Analyze module dependencies"},
+		{"uses", "quaduses", "Manage use statements"},
 		{"lsp", "quadlsp", "Start language server"},
 		{"doc", "quaddoc", "Generate HTML documentation"},
 		{"pm", "quadpm", "Manage third-party modules"},
@@ -56,7 +56,7 @@ void printHelp() {
 	std::cout << "  " << Colors::green() << "fmt" << Colors::reset() << "       Format Quadrate source files\n";
 	std::cout << "  " << Colors::green() << "lint" << Colors::reset() << "      Check code for common issues\n";
 	std::cout << "  " << Colors::green() << "repl" << Colors::reset() << "      Start interactive REPL\n";
-	std::cout << "  " << Colors::green() << "uses" << Colors::reset() << "      Analyze module dependencies\n";
+	std::cout << "  " << Colors::green() << "uses" << Colors::reset() << "      Manage use statements\n";
 	std::cout << "  " << Colors::green() << "lsp" << Colors::reset() << "       Start language server\n";
 	std::cout << "  " << Colors::green() << "doc" << Colors::reset() << "       Generate HTML documentation\n";
 	std::cout << "  " << Colors::green() << "pm" << Colors::reset() << "        Manage third-party modules\n";
@@ -385,10 +385,9 @@ int handleFmt(const std::vector<std::string>& args) {
 
 	std::vector<std::string> toolArgs;
 
-	// Add -w flag by default to format in place (unless user passes --check or -n)
 	bool hasCheckFlag = false;
 	for (const auto& arg : args) {
-		if (arg == "--check" || arg == "-n") {
+		if (arg == "-c" || arg == "--check" || arg == "-n" || arg == "--dry-run") {
 			hasCheckFlag = true;
 			break;
 		}
@@ -399,6 +398,9 @@ int handleFmt(const std::vector<std::string>& args) {
 
 	// Add user-provided args
 	for (const auto& arg : args) {
+		if (arg == "-n" || arg == "--dry-run") {
+			continue;
+		}
 		toolArgs.push_back(arg);
 	}
 
@@ -484,7 +486,7 @@ int handleUses(const std::vector<std::string>& args) {
 	// Add -w flag by default to update in place (unless user passes --check or -n)
 	bool hasCheckFlag = false;
 	for (const auto& arg : args) {
-		if (arg == "--check" || arg == "-n") {
+		if (arg == "-c" || arg == "--check" || arg == "-n" || arg == "--dry-run") {
 			hasCheckFlag = true;
 			break;
 		}
@@ -560,7 +562,10 @@ int handleDoc(const std::vector<std::string>& args) {
 }
 
 int handleInit(const std::vector<std::string>& args) {
-	std::string projectName = "myproject";
+	std::string projectName = fs::current_path().filename().string();
+	if (projectName.empty()) {
+		projectName = "myproject";
+	}
 
 	// Parse arguments
 	for (size_t i = 0; i < args.size(); i++) {
@@ -701,6 +706,9 @@ int handleHelp(const std::vector<std::string>& args) {
 		}
 		std::string toolPath = findTool(command->tool);
 		if (!toolPath.empty()) {
+			std::cout << "quad " << command->name << " - " << command->description << "\n";
+			std::cout << "Runs " << command->tool << "; all options below are passed through.\n\n";
+			std::cout.flush();
 			return execTool(toolPath, {"--help"});
 		}
 		std::cerr << "quad: " << command->tool << " not found\n";

@@ -1,0 +1,8 @@
+// Test: a shift count outside 0..63 is a fatal error, and output printed
+// before the failure is not lost
+fn shl_fn(a:i64 n:i64 -- r:i64) { a n shl }
+
+fn main() {
+	1 3 shl_fn print nl
+	1 64 shl_fn print nl
+}

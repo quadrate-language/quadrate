@@ -1,0 +1,4 @@
+// Test: a one-letter typo is not "corrected" to an unrelated builtin
+fn main() {
+	g print nl
+}

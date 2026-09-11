@@ -96,7 +96,8 @@ namespace Qd {
 				if (a->getType()->isDoubleTy()) {
 					compileTimeStack.push_back(builder->CreateFDiv(a, b, "fdiv"));
 				} else {
-					compileTimeStack.push_back(builder->CreateSDiv(a, b, "div"));
+					emitDivisorZeroCheck(ctx, b, "div");
+					compileTimeStack.push_back(emitWrappingSDiv(a, b));
 				}
 				return;
 			}
@@ -116,7 +117,8 @@ namespace Qd {
 				if (a->getType()->isDoubleTy()) {
 					compileTimeStack.push_back(builder->CreateFRem(a, b, "fmod"));
 				} else {
-					compileTimeStack.push_back(builder->CreateSRem(a, b, "mod"));
+					emitDivisorZeroCheck(ctx, b, "mod");
+					compileTimeStack.push_back(emitWrappingSRem(a, b));
 				}
 				return;
 			}
@@ -272,7 +274,7 @@ namespace Qd {
 				compileTimeStack.pop_back();
 				llvm::Value* a = compileTimeStack.back();
 				compileTimeStack.pop_back();
-				compileTimeStack.push_back(builder->CreateShl(a, b, "shl"));
+				compileTimeStack.push_back(emitCheckedShift(ctx, a, b, true, "shl"));
 				return;
 			}
 			if (name == "shr") {
@@ -284,7 +286,7 @@ namespace Qd {
 				// -- generateInlineBitRshift uses CreateLShr, and both runtimes cast to uint64_t
 				// before shifting. Using CreateAShr here made the same `v shr n` expression yield
 				// a different result depending on whether it happened to be folded.
-				compileTimeStack.push_back(builder->CreateLShr(a, b, "shr"));
+				compileTimeStack.push_back(emitCheckedShift(ctx, a, b, false, "shr"));
 				return;
 			}
 			// Increment/decrement (type-aware)

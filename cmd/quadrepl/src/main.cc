@@ -199,15 +199,15 @@ static void signalHandler(int sig) {
 }
 
 // ANSI color codes
-#define COLOR_RESET "\033[0m"
-#define COLOR_BOLD "\033[1m"
-#define COLOR_DIM "\033[2m"
-#define COLOR_GREEN "\033[32m"
-#define COLOR_YELLOW "\033[33m"
-#define COLOR_BLUE "\033[34m"
-#define COLOR_CYAN "\033[36m"
-#define COLOR_MAGENTA "\033[35m"
-#define COLOR_RED "\033[31m"
+#define COLOR_RESET (Qd::Colors::isEnabled() ? "\033[0m" : "")
+#define COLOR_BOLD (Qd::Colors::isEnabled() ? "\033[1m" : "")
+#define COLOR_DIM (Qd::Colors::isEnabled() ? "\033[2m" : "")
+#define COLOR_GREEN (Qd::Colors::isEnabled() ? "\033[32m" : "")
+#define COLOR_YELLOW (Qd::Colors::isEnabled() ? "\033[33m" : "")
+#define COLOR_BLUE (Qd::Colors::isEnabled() ? "\033[34m" : "")
+#define COLOR_CYAN (Qd::Colors::isEnabled() ? "\033[36m" : "")
+#define COLOR_MAGENTA (Qd::Colors::isEnabled() ? "\033[35m" : "")
+#define COLOR_RED (Qd::Colors::isEnabled() ? "\033[31m" : "")
 
 // Stack display settings
 #define MAX_STACK_DISPLAY 5
@@ -307,50 +307,80 @@ public:
 
 			add_history(completeInput.c_str());
 
-			// Handle special commands
-			if (completeInput == "exit" || completeInput == "quit" || completeInput == ":q") {
-				if (printOnExit) {
-					printStackToStdout();
-				}
-				saveHistory();
+			if (!handleCompleteInput(completeInput)) {
 				break;
-			} else if (completeInput == "help" || completeInput == ":help" || completeInput == ":h") {
-				printHelp();
-				continue;
-			} else if (completeInput == "clear" || completeInput == ":clear") {
-				clearStack();
-				continue;
-			} else if (completeInput == "stack" || completeInput == ":stack") {
-				showStack();
-				continue;
-			} else if (completeInput == "type" || completeInput == ":type" || completeInput == ":types") {
-				showTypes();
-				continue;
-			} else if (completeInput == "reset" || completeInput == ":reset") {
-				reset();
-				continue;
-			} else if (completeInput.substr(0, 6) == ".save ") {
-				std::string filename = trim(completeInput.substr(6));
-				if (filename.empty()) {
-					printf("%sUsage: .save <filename>%s\n", COLOR_RED, COLOR_RESET);
-				} else {
-					saveSession(filename);
-				}
-				continue;
-			} else if (completeInput.substr(0, 6) == ".load ") {
-				std::string filename = trim(completeInput.substr(6));
-				if (filename.empty()) {
-					printf("%sUsage: .load <filename>%s\n", COLOR_RED, COLOR_RESET);
-				} else {
-					loadSession(filename);
-				}
+			}
+		}
+	}
+
+	bool hasUserFunction(const std::string& name) {
+		for (const auto& def : functionDefs) {
+			std::string d = trim(def);
+			if (d.compare(0, 4, "pub ") == 0) {
+				d = trim(d.substr(4));
+			}
+			if (d.compare(0, 3, "fn ") != 0) {
 				continue;
 			}
-
-			// Record successful commands for session history
-			sessionHistory.push_back(completeInput);
-			processLine(completeInput);
+			std::string rest = trim(d.substr(3));
+			if (rest.compare(0, name.size(), name) == 0 && rest.size() > name.size() &&
+					(rest[name.size()] == '(' || rest[name.size()] == ' ' || rest[name.size()] == '<')) {
+				return true;
+			}
 		}
+		return false;
+	}
+
+	bool handleCompleteInput(const std::string& completeInput) {
+		auto isMeta = [&](const char* bare, const char* colon, const char* alt = nullptr) {
+			if (completeInput == colon || (alt && completeInput == alt)) {
+				return true;
+			}
+			return completeInput == bare && !hasUserFunction(bare);
+		};
+
+		if (isMeta("exit", ":q") || isMeta("quit", ":q")) {
+			if (printOnExit) {
+				printStackToStdout();
+			}
+			saveHistory();
+			return false;
+		} else if (isMeta("help", ":help", ":h")) {
+			printHelp();
+			return true;
+		} else if (isMeta("clear", ":clear")) {
+			clearStack();
+			return true;
+		} else if (isMeta("stack", ":stack")) {
+			showStack();
+			return true;
+		} else if (isMeta("type", ":type", ":types")) {
+			showTypes();
+			return true;
+		} else if (isMeta("reset", ":reset")) {
+			reset();
+			return true;
+		} else if (completeInput.substr(0, 6) == ".save ") {
+			std::string filename = trim(completeInput.substr(6));
+			if (filename.empty()) {
+				printf("%sUsage: .save <filename>%s\n", COLOR_RED, COLOR_RESET);
+			} else {
+				saveSession(filename);
+			}
+			return true;
+		} else if (completeInput.substr(0, 6) == ".load ") {
+			std::string filename = trim(completeInput.substr(6));
+			if (filename.empty()) {
+				printf("%sUsage: .load <filename>%s\n", COLOR_RED, COLOR_RESET);
+			} else {
+				loadSession(filename);
+			}
+			return true;
+		}
+
+		sessionHistory.push_back(completeInput);
+		processLine(completeInput);
+		return true;
 	}
 
 	// Count unbalanced braces in input (returns > 0 if more { than })
@@ -431,23 +461,30 @@ public:
 
 	// Read values from stdin and push onto stack, then run interactive REPL
 	void runWithPipedInput() {
-		// Read all piped input
-		std::string allInput;
+		std::string accumulated;
 		std::string line;
-		while (std::getline(std::cin, line)) {
-			line = trim(line);
-			if (line.empty()) {
+		bool keepGoing = true;
+		while (keepGoing && std::getline(std::cin, line)) {
+			if (accumulated.empty()) {
+				accumulated = line;
+			} else {
+				accumulated += "\n" + line;
+			}
+			if (countUnbalancedBraces(accumulated) > 0) {
 				continue;
 			}
-			if (!allInput.empty()) {
-				allInput += " ";
+			std::string completeInput = trim(accumulated);
+			accumulated.clear();
+			if (completeInput.empty()) {
+				continue;
 			}
-			allInput += line;
+			keepGoing = handleCompleteInput(completeInput);
 		}
-
-		// Process piped input as Quadrate code
-		if (!allInput.empty()) {
-			processLine(allInput);
+		if (!trim(accumulated).empty() && keepGoing) {
+			handleCompleteInput(trim(accumulated));
+		}
+		if (!keepGoing) {
+			return;
 		}
 
 		// Reopen stdin from terminal for interactive input
@@ -461,7 +498,7 @@ public:
 
 		// Re-enable colors for interactive mode. Only meaningful when the output
 		// streams really are terminals, which is what the default already tests.
-		if (!qdcli::noColor() && isatty(STDOUT_FILENO) && isatty(STDERR_FILENO)) {
+		if (!qdcli::noColor() && !mNoColorFlag && isatty(STDOUT_FILENO) && isatty(STDERR_FILENO)) {
 			Qd::Colors::setEnabled(true);
 		}
 
@@ -600,7 +637,14 @@ private:
 	size_t lastSuccessfulExprCount; // Number of expressions successfully compiled
 	size_t expectedStackDepth;		// Expected stack depth based on successful operations
 	bool printOnExit;				// Whether to print stack on exit (-p flag)
+	bool mNoColorFlag = false;		// --no-color given on the command line
 
+public:
+	void setNoColor(bool noColor) {
+		mNoColorFlag = noColor;
+	}
+
+private:
 	std::string trim(const std::string& str) {
 		size_t first = str.find_first_not_of(" \t\n\r");
 		if (first == std::string::npos) {
@@ -1352,6 +1396,7 @@ int main(int argc, char* argv[]) {
 		printf("  -h, --help       Show this help message\n");
 		printf("  -v, --version    Show version information\n");
 		printf("  -p, --print      Print stack to stdout on exit\n");
+		printf("      --no-color   Disable coloured output\n");
 		printf("\nPiping:\n");
 		printf("  echo \"1 2 3\" | quadrepl      Start with values on stack\n");
 		printf("  echo \"1 2 add\" | quadrepl -p  Compute and print result\n\n");
@@ -1366,12 +1411,13 @@ int main(int argc, char* argv[]) {
 	// already accounts for NO_COLOR and redirected output; piped *stdin* is the
 	// extra condition only the REPL cares about, so it can only subtract.
 	const bool isPiped = !isatty(STDIN_FILENO);
-	if (qdcli::noColor() || isPiped) {
+	if (qdcli::noColor() || base.noColor || isPiped) {
 		Qd::Colors::setEnabled(false);
 	}
 
 	// Run the REPL
 	ReplSession session(printOnExit);
+	session.setNoColor(base.noColor);
 	if (isPiped) {
 		session.runWithPipedInput();
 	} else {

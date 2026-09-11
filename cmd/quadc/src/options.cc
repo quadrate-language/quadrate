@@ -44,7 +44,7 @@ void printHelp() {
 	std::cout << "  quadc -o prog main.qd                Compile to executable 'prog'\n";
 	std::cout << "  quadc -r main.qd                     Compile and run immediately\n";
 	std::cout << "  quadc -r greet.qd -- Alice           Compile and run with argument 'Alice'\n";
-	std::cout << "  echo 'fn main(--) { 42 . }' | quadc -r   Compile and run from stdin\n";
+	std::cout << "  echo 'fn main() { 42 print nl }' | quadc -r   Compile and run from stdin\n";
 }
 
 void printVersion() {

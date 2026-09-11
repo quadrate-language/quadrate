@@ -463,8 +463,7 @@ bool processFile(const std::string& filename, const UsesOptions& opts, bool& nee
 		// Format the result to ensure proper formatting
 		result = formatSource(result);
 
-		// Check if file changed
-		bool changed = (source != result);
+		bool changed = (extractUseStatements(source) != extractUseStatements(result));
 
 		if (opts.check) {
 			// Check mode: report if changes needed
@@ -492,7 +491,7 @@ bool processFile(const std::string& filename, const UsesOptions& opts, bool& nee
 			return true;
 		} else {
 			// Stdout mode: write to stdout
-			std::cout << result;
+			std::cout << (changed ? result : source);
 			return true;
 		}
 	} catch (const std::exception& e) {
