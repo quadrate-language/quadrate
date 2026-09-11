@@ -1,0 +1,11 @@
+// i++ and value-- in a top-level comment
+fn main() {
+	// i++ style comment
+	5++print nl // trailing: x-- stays x--
+	/* block comment:
+	   - indented bullet with ++ and --
+	     deeper line
+	   end */
+	"a++b" print nl
+	10--print nl
+}

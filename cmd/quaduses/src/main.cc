@@ -6,10 +6,12 @@
 #include <quadrate/cli/cli.h>
 #include <quadrate/cli/file_utils.h>
 #include <quadrate/qc/ast.h>
+#include <quadrate/qc/ast_node_enum.h>
 #include <quadrate/qc/ast_node_import.h>
 #include <quadrate/qc/ast_node_parameter.h>
 #include <quadrate/qc/ast_node_program.h>
 #include <quadrate/qc/ast_node_scoped.h>
+#include <quadrate/qc/ast_node_struct.h>
 #include <quadrate/qc/ast_node_struct_construction.h>
 #include <quadrate/qc/ast_node_struct_field.h>
 #include <quadrate/qc/ast_node_use.h>
@@ -99,6 +101,20 @@ void collectScopedIdentifiers(const IAstNode* node, std::set<std::string>& scope
 	// Recursively visit all children
 	for (size_t i = 0; i < node->childCount(); i++) {
 		collectScopedIdentifiers(node->child(i), scopes);
+	}
+}
+
+void collectLocalTypeNames(const IAstNode* node, std::set<std::string>& names) {
+	if (!node) {
+		return;
+	}
+	if (node->type() == IAstNode::Type::ENUM_DECLARATION) {
+		names.insert(static_cast<const AstNodeEnumDeclaration*>(node)->name());
+	} else if (node->type() == IAstNode::Type::STRUCT_DECLARATION) {
+		names.insert(static_cast<const AstNodeStructDeclaration*>(node)->name());
+	}
+	for (size_t i = 0; i < node->childCount(); i++) {
+		collectLocalTypeNames(node->child(i), names);
 	}
 }
 
@@ -406,6 +422,12 @@ bool processFile(const std::string& filename, const UsesOptions& opts, bool& nee
 		// Remove namespaces that are already defined by import blocks
 		for (const auto& ns : importedNamespaces) {
 			usedScopes.erase(ns);
+		}
+
+		std::set<std::string> localTypeNames;
+		collectLocalTypeNames(root, localTypeNames);
+		for (const auto& name : localTypeNames) {
+			usedScopes.erase(name);
 		}
 
 		// Collect original use statements to preserve file paths vs module names

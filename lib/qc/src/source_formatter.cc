@@ -32,6 +32,7 @@
 #include <quadrate/qc/ast_node_struct_declaration.h>
 #include <quadrate/qc/ast_node_switch.h>
 #include <quadrate/qc/ast_node_test.h>
+#include <quadrate/qc/ast_node_type_alias.h>
 #include <quadrate/qc/ast_node_use.h>
 #include <quadrate/qc/formatter.h>
 #include <sstream>
@@ -275,6 +276,7 @@ namespace Qd {
 			case IAstNode::Type::IMPORT_STATEMENT:
 				return "use";
 			case IAstNode::Type::CONSTANT_DECLARATION:
+			case IAstNode::Type::TYPE_ALIAS_DECLARATION:
 				return "const";
 			case IAstNode::Type::GLOBAL_VAR_DECLARATION:
 				return "var";
@@ -414,6 +416,9 @@ namespace Qd {
 			case IAstNode::Type::ENUM_DECLARATION:
 				emitEnumDecl(static_cast<AstNodeEnumDeclaration*>(node));
 				break;
+			case IAstNode::Type::TYPE_ALIAS_DECLARATION:
+				emitTypeAlias(static_cast<AstNodeTypeAlias*>(node));
+				break;
 			case IAstNode::Type::TEST_DECLARATION:
 				emitTestDecl(static_cast<AstNodeTest*>(node));
 				break;
@@ -532,6 +537,14 @@ namespace Qd {
 				mOutput << ":" << node->typeName();
 			}
 			mOutput << " = " << node->sourceExpr() << "\n";
+		}
+
+		void emitTypeAlias(AstNodeTypeAlias* node) {
+			emitIndent();
+			if (node->isPublic()) {
+				mOutput << "pub ";
+			}
+			mOutput << "type " << node->name() << " = " << node->targetType() << "\n";
 		}
 
 		// ============================================================
@@ -783,6 +796,9 @@ namespace Qd {
 				emitBodyCommentsBefore(comments, i);
 				emitIndent();
 				mOutput << variants[i].name;
+				if (variants[i].hasExplicitValue) {
+					mOutput << " = " << variants[i].valueText;
+				}
 				emitTrailingBodyComment(comments, i + 1);
 				mOutput << "\n";
 			}
@@ -1274,12 +1290,36 @@ namespace Qd {
 			return result;
 		}
 
+		static size_t findCommentStart(const std::string& line) {
+			bool inStr = false;
+			for (size_t i = 0; i < line.length(); i++) {
+				char c = line[i];
+				if (c == '"' && (i == 0 || line[i - 1] != '\\')) {
+					inStr = !inStr;
+					continue;
+				}
+				if (inStr) {
+					continue;
+				}
+				if (c == '/' && i + 1 < line.length() && (line[i + 1] == '/' || line[i + 1] == '*')) {
+					return i;
+				}
+			}
+			return std::string::npos;
+		}
+
 		// Apply all normalizations to a source line
 		std::string normalizeLine(const std::string& line) {
-			std::string result = line;
+			size_t commentPos = findCommentStart(line);
+			std::string code = commentPos == std::string::npos ? line : line.substr(0, commentPos);
+			std::string comment = commentPos == std::string::npos ? std::string() : line.substr(commentPos);
+			if (commentPos == 0) {
+				return line;
+			}
+			std::string result = code;
 			result = normalizeIncDecOperators(result);
 			result = normalizeAnonymousFunction(result);
-			return result;
+			return result + comment;
 		}
 
 		// ============================================================
@@ -1428,6 +1468,7 @@ namespace Qd {
 			int braceDepth = 0;
 			bool inMultilineString = false;
 			bool inBlockComment = false;
+			std::string blockCommentBase;
 
 			for (size_t i = startLine; i < endLine; i++) {
 				const std::string& srcLine = getSourceLine(i);
@@ -1447,8 +1488,17 @@ namespace Qd {
 
 				// Handle block comment continuation
 				if (inBlockComment) {
-					emitIndent(mIndent + braceDepth);
-					mOutput << trimmed << "\n";
+					if (trimmed.empty()) {
+						mOutput << '\n';
+					} else {
+						emitIndent(mIndent + braceDepth);
+						if (!blockCommentBase.empty() &&
+								srcLine.compare(0, blockCommentBase.size(), blockCommentBase) == 0) {
+							mOutput << srcLine.substr(blockCommentBase.size()) << "\n";
+						} else {
+							mOutput << trimmed << "\n";
+						}
+					}
 					if (trimmed.find("*/") != std::string::npos) {
 						inBlockComment = false;
 					}
@@ -1549,6 +1599,7 @@ namespace Qd {
 				}
 				if (lineInBC) {
 					inBlockComment = true;
+					blockCommentBase = srcLine.substr(0, srcLine.find_first_not_of(" \t"));
 				}
 			}
 		}

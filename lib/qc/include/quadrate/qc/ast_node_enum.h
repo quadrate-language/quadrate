@@ -12,6 +12,8 @@ namespace Qd {
 		struct Variant {
 			std::string name;
 			int64_t value;
+			bool hasExplicitValue = false;
+			std::string valueText;
 		};
 
 		AstNodeEnumDeclaration(const std::string& name, bool isPublic = false)
@@ -82,7 +84,11 @@ namespace Qd {
 		}
 
 		void addVariant(const std::string& name, int64_t value) {
-			mVariants.push_back({name, value});
+			mVariants.push_back({name, value, false, std::string()});
+		}
+
+		void addVariant(const std::string& name, int64_t value, const std::string& valueText) {
+			mVariants.push_back({name, value, true, valueText});
 		}
 
 		const std::vector<Variant>& variants() const {

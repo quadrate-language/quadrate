@@ -1,0 +1,14 @@
+// Explicit enum values
+enum TokenType {
+	Int
+	Str = 10
+	Ident
+	Plus = 20
+	Eof = -1
+	Mask = 0x10 // hex literal
+}
+
+pub enum Status {
+	Ok = 0
+	Err = -1
+}

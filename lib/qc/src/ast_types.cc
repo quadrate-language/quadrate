@@ -52,6 +52,8 @@ namespace Qd {
 				lastVariantLine = currentScannerLine(scanner, src);
 
 				// Check for explicit value: Name = <integer>
+				bool hasExplicitValue = false;
+				std::string valueText;
 				char32_t peek = peekNextNonWhitespace(scanner, src);
 				if (peek == '=') {
 					u8t_scanner_scan(scanner); // Consume '='
@@ -66,14 +68,21 @@ namespace Qd {
 						int64_t val = static_cast<int64_t>(strtoll(valText, nullptr, 0));
 						if (negative) {
 							val = -val;
+							valueText = "-";
 						}
+						valueText += valText;
+						hasExplicitValue = true;
 						nextValue = val;
 					} else {
 						errorReporter->reportError(scanner, "Expected integer value after '=' in enum");
 					}
 				}
 
-				enumDecl->addVariant(variantNameStr, nextValue);
+				if (hasExplicitValue) {
+					enumDecl->addVariant(variantNameStr, nextValue, valueText);
+				} else {
+					enumDecl->addVariant(variantNameStr, nextValue);
+				}
 				nextValue++;
 			} else {
 				// Skip comments or unexpected tokens

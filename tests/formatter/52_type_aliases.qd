@@ -1,0 +1,13 @@
+// Type aliases
+type   Number = i64
+pub type Text=str
+type IntArray = []i64
+type Mapper = fn(i64 -- i64)
+type Pt = Point
+
+struct Point {
+	x:i64
+	y:i64
+}
+
+fn double(x:Number -- r:Number) { x 2 * }
