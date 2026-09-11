@@ -380,7 +380,7 @@ should_run_test() {
 # runs. test_semantic_validator_extended, test_parser_edge_cases and test_semver
 # were all built, all registered with meson, and all invisible to CI.
 run_cpp_tests() {
-    local tests=("test_ast" "test_semantic_validator" "test_semantic_validator_extended" "test_parser_edge_cases" "test_semver" "test_runtime" "test_llvmgen" "test_mem" "test_options" "test_math" "test_strings" "test_io" "test_os" "test_strconv" "test_time" "test_signal" "test_log" "test_fmt" "test_tty" "test_net" "test_thread" "test_testing" "test_http" "test_file_utils")
+    local tests=("test_ast" "test_semantic_validator" "test_semantic_validator_extended" "test_parser_edge_cases" "test_interp" "test_semver" "test_runtime" "test_llvmgen" "test_mem" "test_options" "test_math" "test_strings" "test_io" "test_os" "test_strconv" "test_time" "test_signal" "test_log" "test_fmt" "test_tty" "test_net" "test_thread" "test_testing" "test_http" "test_file_utils")
     local suite="cpp"
 
     # Filter tests first
@@ -1799,7 +1799,7 @@ list_all_tests() {
     echo ""
 
     echo "C++ Tests (suite: cpp):"
-    for test in test_ast test_semantic_validator test_runtime test_llvmgen test_mem test_options test_math test_strings test_io test_os test_strconv test_time test_signal test_log test_fmt test_tty test_net test_thread test_testing test_http test_file_utils; do
+    for test in test_ast test_semantic_validator test_interp test_runtime test_llvmgen test_mem test_options test_math test_strings test_io test_os test_strconv test_time test_signal test_log test_fmt test_tty test_net test_thread test_testing test_http test_file_utils; do
         echo "  $test"
     done
     echo ""

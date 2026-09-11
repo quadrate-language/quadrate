@@ -39,6 +39,7 @@ dist/share/         Standard library modules, completions, API docs
 cmd/                Command-line tools (quad, quadc, quadfmt, quadlint, quadlsp, quadpm, quadrepl, quaduses, quaddoc, quadmcp)
 lib/qc/             Compiler frontend (parser, semantic validator)
 lib/llvmgen/        LLVM code generator
+lib/interp/         AST interpreter (no LLVM)
 lib/rt/             Runtime library (stack, strings, context)
 lib/qd/             Build/execution driver
 lib/*/              Standard library modules (36+ modules)

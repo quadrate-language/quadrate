@@ -57,14 +57,22 @@ endif
 
 # Subdirectories
 subdir('lib')
-subdir('cmd')
-# Absent in the floppy distribution's source subset.
-if fs_root.is_dir('tests')
+
+# The command-line tools need LLVM. Disabling them leaves the libraries, which
+# is what an embedded target wants: lib/rt and lib/interp run Quadrate without
+# a compiler, and nothing there depends on LLVM.
+if get_option('build_tools')
+	subdir('cmd')
+endif
+
+# Absent in the floppy distribution's source subset. The language tests drive
+# the compiler, so they go with the tools.
+if fs_root.is_dir('tests') and get_option('build_tools')
 	subdir('tests')
 endif
 
-# Examples (optional)
-if get_option('build_examples')
+# Examples (optional). They are compiled with quadc, so they go with the tools.
+if get_option('build_examples') and get_option('build_tools')
 		subdir('examples')
 endif
 

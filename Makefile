@@ -43,10 +43,10 @@ endif
 CMDS := $(filter-out quadmcp quadrepl,$(notdir $(wildcard cmd/quad*)))
 
 # Libraries with C components (directory names under lib/)
-LIBS_WITH_C := rt qd fmt io math mem net os signal strings strconv time thread testing tty tls http log
+LIBS_WITH_C := rt qd qc interp fmt io math mem net os signal strings strconv time thread testing tty tls http log
 
 # Libraries with headers to install (directory names under lib/)
-LIBS_WITH_HEADERS := rt qd fmt io math mem net os signal strings strconv time thread testing tty tls http log
+LIBS_WITH_HEADERS := rt qd qc interp fmt io math mem net os signal strings strconv time thread testing tty tls http log
 
 # Standard library modules (auto-discovered from lib/*/qd/*/)
 STDLIB_MODULES := $(shell find lib/*/qd -maxdepth 1 -mindepth 1 -type d -exec basename {} \; 2>/dev/null | sort -u)
@@ -78,6 +78,13 @@ define do_build
 	@echo "Creating static libraries..."
 	@(cd $(1)/lib/rt && ar rcs librt.a $$(ar -t librt_static.a) && cp librt.a ../../../../dist/lib/quadrate/) && echo "  librt.a"
 	@(cd $(1)/lib/qd && ar rcs libqd.a $$(ar -t libqd_static.a) && cp libqd.a ../../../../dist/lib/quadrate/) && echo "  libqd.a"
+	@# libqc.a carries unresolved u8t symbols, so the parser is only linkable
+	@# with u8t alongside it. Consumers link -lqc -lu8t. Repacked rather than
+	@# copied: meson builds u8t as a thin archive that only references objects
+	@# back in the build tree.
+	@if [ -f $(1)/subprojects/u8t/libu8t.a ]; then \
+		(cd $(1)/subprojects/u8t && ar rcs libu8t_packed.a $$(ar -t libu8t.a) && cp libu8t_packed.a ../../../../dist/lib/quadrate/libu8t.a) && echo "  libu8t.a"; \
+	fi
 	@for dir in $(filter-out rt qd,$(LIBS_WITH_C)); do \
 		(cd $(1)/lib/$$dir && ar rcs lib$${dir}_regular.a $$(ar -t lib$$dir.a) && cp lib$${dir}_regular.a ../../../../dist/lib/quadrate/lib$$dir.a) && echo "  lib$$dir.a"; \
 	done
@@ -239,6 +246,7 @@ install:
 	@for dir in $(LIBS_WITH_C); do \
 		install -m 644 dist/lib/quadrate/lib$$dir.a $(DESTDIR)$(PREFIX)/lib/quadrate/; \
 	done
+	@if [ -f dist/lib/quadrate/libu8t.a ]; then install -m 644 dist/lib/quadrate/libu8t.a $(DESTDIR)$(PREFIX)/lib/quadrate/; fi
 	@for deps in dist/lib/quadrate/*.deps; do if [ -f "$$deps" ]; then install -m 644 "$$deps" $(DESTDIR)$(PREFIX)/lib/quadrate/; fi; done
 	install -m 755 dist/lib/libqdrt.so $(DESTDIR)$(PREFIX)/lib/
 	install -m 755 dist/lib/libqd.so $(DESTDIR)$(PREFIX)/lib/

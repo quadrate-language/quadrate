@@ -1,3 +1,4 @@
 option('build_examples', type: 'boolean', value: false, description: 'Build examples')
 option('build_tests', type: 'boolean', value: false, description: 'Build tests')
 option('build_fuzz', type: 'boolean', value: false, description: 'Build fuzzing targets (requires clang)')
+option('build_tools', type: 'boolean', value: true, description: 'Build the command-line tools (requires LLVM). Disable to build only the libraries, e.g. when cross-compiling for an embedded target.')
