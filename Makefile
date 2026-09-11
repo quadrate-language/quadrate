@@ -42,14 +42,21 @@ endif
 # built conditionally further down.
 CMDS := $(filter-out quadmcp quadrepl,$(notdir $(wildcard cmd/quad*)))
 
-# Libraries with C components (directory names under lib/)
-LIBS_WITH_C := rt qd qc interp fmt io math mem net os signal strings strconv time thread testing tty tls http log
+# Toolchain libraries with C components (directory names under lib/)
+TOOLCHAIN_LIBS_WITH_C := rt qd qc interp
 
-# Libraries with headers to install (directory names under lib/)
-LIBS_WITH_HEADERS := rt qd qc interp fmt io math mem net os signal strings strconv time thread testing tty tls http log
+# Standard library modules with C components (directory names under stdlib/)
+STDLIB_LIBS_WITH_C := fmt io math mem net os signal strings strconv time thread testing tty tls http log
 
-# Standard library modules (auto-discovered from lib/*/qd/*/)
-STDLIB_MODULES := $(shell find lib/*/qd -maxdepth 1 -mindepth 1 -type d -exec basename {} \; 2>/dev/null | sort -u)
+LIBS_WITH_C := $(TOOLCHAIN_LIBS_WITH_C) $(STDLIB_LIBS_WITH_C)
+
+# Libraries with headers to install
+TOOLCHAIN_LIBS_WITH_HEADERS := $(TOOLCHAIN_LIBS_WITH_C)
+STDLIB_LIBS_WITH_HEADERS := $(STDLIB_LIBS_WITH_C)
+LIBS_WITH_HEADERS := $(LIBS_WITH_C)
+
+# Standard library modules (auto-discovered from stdlib/*/qd/*/)
+STDLIB_MODULES := $(shell find stdlib/*/qd -maxdepth 1 -mindepth 1 -type d -exec basename {} \; 2>/dev/null | sort -u)
 
 .PHONY: all debug release docker-x64 docker-arm64 docker-all tests tests-failed tests-clear valgrind asan fuzz examples format fmtcheck docscheck install uninstall clean docs quadmcp playground
 
@@ -85,18 +92,24 @@ define do_build
 	@if [ -f $(1)/subprojects/u8t/libu8t.a ]; then \
 		(cd $(1)/subprojects/u8t && ar rcs libu8t_packed.a $$(ar -t libu8t.a) && cp libu8t_packed.a ../../../../dist/lib/quadrate/libu8t.a) && echo "  libu8t.a"; \
 	fi
-	@for dir in $(filter-out rt qd,$(LIBS_WITH_C)); do \
+	@for dir in $(filter-out rt qd,$(TOOLCHAIN_LIBS_WITH_C)); do \
 		(cd $(1)/lib/$$dir && ar rcs lib$${dir}_regular.a $$(ar -t lib$$dir.a) && cp lib$${dir}_regular.a ../../../../dist/lib/quadrate/lib$$dir.a) && echo "  lib$$dir.a"; \
 	done
+	@for dir in $(STDLIB_LIBS_WITH_C); do \
+		(cd $(1)/stdlib/$$dir && ar rcs lib$${dir}_regular.a $$(ar -t lib$$dir.a) && cp lib$${dir}_regular.a ../../../../dist/lib/quadrate/lib$$dir.a) && echo "  lib$$dir.a"; \
+	done
 	@for dir in thread tls http; do \
-		if [ -f lib/$$dir/lib$$dir.deps ]; then cp lib/$$dir/lib$$dir.deps dist/lib/quadrate/; fi; \
+		if [ -f stdlib/$$dir/lib$$dir.deps ]; then cp stdlib/$$dir/lib$$dir.deps dist/lib/quadrate/; fi; \
 	done
 	@if [ "$$(uname -s)" = "Haiku" ]; then echo "-lnetwork" > dist/lib/quadrate/libnet.deps; fi
-	@for dir in $(LIBS_WITH_HEADERS); do \
+	@for dir in $(TOOLCHAIN_LIBS_WITH_HEADERS); do \
 		cp -rf lib/$$dir/include/quadrate/$$dir dist/include/quadrate/; \
 	done
+	@for dir in $(STDLIB_LIBS_WITH_HEADERS); do \
+		cp -rf stdlib/$$dir/include/quadrate/$$dir dist/include/quadrate/; \
+	done
 	@mkdir -p $(DIST_DATADIR)/quadrate
-	@for mod in $(STDLIB_MODULES); do cp -r lib/*/qd/$$mod $(DIST_DATADIR)/quadrate/ 2>/dev/null || true; done
+	@for mod in $(STDLIB_MODULES); do cp -r stdlib/*/qd/$$mod $(DIST_DATADIR)/quadrate/ 2>/dev/null || true; done
 	@if [ -f completions/quad.bash ]; then \
 		mkdir -p $(DIST_DATADIR)/bash-completion/completions; \
 		cp -f completions/quad.bash $(DIST_DATADIR)/bash-completion/completions/quad; \
@@ -202,11 +215,11 @@ examples: debug
 	@cp -f $(BUILD_DIR_DEBUG)/lib/rt/libqdrt.so dist/lib/
 
 format: debug
-	find cmd lib examples -type f \( -name '*.cc' -o -name '*.h' \) -exec clang-format -i {} +
-	$(BUILD_DIR_DEBUG)/cmd/quadfmt/quadfmt -w lib examples
+	find cmd lib stdlib examples -type f \( -name '*.cc' -o -name '*.h' \) -exec clang-format -i {} +
+	$(BUILD_DIR_DEBUG)/cmd/quadfmt/quadfmt -w lib stdlib examples
 
 fmtcheck: release
-	$(BUILD_DIR_RELEASE)/cmd/quadfmt/quadfmt -c lib examples
+	$(BUILD_DIR_RELEASE)/cmd/quadfmt/quadfmt -c lib stdlib examples
 
 # Compile and run every complete program embedded in the docs. Fragments are skipped; see
 # tools/check_docs.py for the markers that opt a block out.
@@ -258,7 +271,7 @@ install:
 	@find $(DESTDIR)$(INCLUDEDIR) -type d -exec chmod 755 {} +
 	@echo "Installing Quadrate standard library modules to $(DESTDIR)$(DATADIR)/quadrate/"
 	install -d $(DESTDIR)$(DATADIR)/quadrate
-	@for mod in $(STDLIB_MODULES); do cp -r lib/*/qd/$$mod $(DESTDIR)$(DATADIR)/quadrate/ 2>/dev/null || true; done
+	@for mod in $(STDLIB_MODULES); do cp -r stdlib/*/qd/$$mod $(DESTDIR)$(DATADIR)/quadrate/ 2>/dev/null || true; done
 	@find $(DESTDIR)$(DATADIR)/quadrate -type f -exec chmod 644 {} +
 	@find $(DESTDIR)$(DATADIR)/quadrate -type d -exec chmod 755 {} +
 	@echo "Installing API documentation to $(DESTDIR)$(DATADIR)/quadrate/docs/api/"

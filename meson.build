@@ -58,6 +58,14 @@ endif
 # Subdirectories
 subdir('lib')
 
+# Must come after lib/, which defines the deps the modules build against.
+# Skipping them leaves the core libraries, which is what an embedder linking
+# lib/interp wants: the modules pull in OpenSSL and zlib, and nothing in lib/
+# depends on them.
+if get_option('build_stdlib')
+	subdir('stdlib')
+endif
+
 # The command-line tools need LLVM. Disabling them leaves the libraries, which
 # is what an embedded target wants: lib/rt and lib/interp run Quadrate without
 # a compiler, and nothing there depends on LLVM.

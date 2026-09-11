@@ -6,9 +6,9 @@ ASFLAGS  := --target=$(TARGET) -ffreestanding -nostdlib
 REPO_ROOT       := ../..
 QUADC           := $(REPO_ROOT)/build/release/cmd/quadc/quadc
 FREESTANDING_RT := $(REPO_ROOT)/lib/rt/src/freestanding.c
-MEM_SRC         := $(REPO_ROOT)/lib/mem/src/mem.c
+MEM_SRC         := $(REPO_ROOT)/stdlib/mem/src/mem.c
 RT_INC          := $(REPO_ROOT)/lib/rt/include
-MEM_INC         := $(REPO_ROOT)/lib/mem/include
+MEM_INC         := $(REPO_ROOT)/stdlib/mem/include
 
 OBJS := boot.o interrupts.o kernel.o freestanding.o mem.o
 

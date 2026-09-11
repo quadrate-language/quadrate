@@ -42,7 +42,7 @@ lib/llvmgen/        LLVM code generator
 lib/interp/         AST interpreter (no LLVM)
 lib/rt/             Runtime library (stack, strings, context)
 lib/qd/             Build/execution driver
-lib/*/              Standard library modules (36+ modules)
+stdlib/*/           Standard library modules (38 modules)
 tests/              Test suite
 examples/           Example programs
 docs/               Documentation site (mkdocs)

@@ -186,7 +186,7 @@ freestanding.o: lib/rt/src/freestanding.c
 	clang --target=x86_64-unknown-none-elf -ffreestanding -fno-builtin -nostdlib \
 	      -fno-stack-protector -mno-red-zone -O2 -Ilib/rt/include -c $< -o $@
 
-mem.o: lib/mem/src/mem.c
+mem.o: stdlib/mem/src/mem.c
 	clang --target=x86_64-unknown-none-elf -ffreestanding -fno-builtin -nostdlib \
 	      -Ilib/rt/include -Ilib/mem/include -c $< -o $@
 

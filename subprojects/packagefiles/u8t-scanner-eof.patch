@@ -1,0 +1,18 @@
+diff --git a/src/scanner.c b/src/scanner.c
+index f437e38..da3c1ff 100644
+--- a/src/scanner.c
++++ b/src/scanner.c
+@@ -110,8 +110,12 @@ char32_t u8t_scanner_scan(u8t_scanner* s) {
+ 				escaped = false;
+ 			} else if (peek_cp == U'\\') {
+ 				escaped = true;
+-			} else if (peek_cp == U'"' || peek_cp == 0) {
++			} else if (peek_cp == U'"') {
+ 				done = true;
++			} else if (peek_cp == 0) {
++				// Do not consume the NUL: _str would advance past the buffer.
++				done = true;
++				continue;
+ 			} else if (peek_cp == U'\\') {
+ 				// Backslash: consume it, then unconditionally consume next char
+ 				// so that \" doesn't terminate the string

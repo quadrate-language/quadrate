@@ -50,7 +50,7 @@ def scan(path):
 
 
 def main():
-    roots = sys.argv[1:] or ['lib']
+    roots = sys.argv[1:] or ['stdlib', 'lib']
     problems = []
     for root in roots:
         for dirpath, _, filenames in os.walk(root):

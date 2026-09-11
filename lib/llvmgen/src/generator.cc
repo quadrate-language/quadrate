@@ -3271,7 +3271,7 @@ namespace Qd {
 								// Check flat path (e.g., dist/lib/quadrate/libtls.a)
 								std::string flatDepLib = stdlibDir + "/" + depLibFile;
 								// Check nested path: directory name matches library name
-								// (e.g., build dir: lib/tls/libtls.a for -ltls)
+								// (e.g., build dir: stdlib/tls/libtls.a for -ltls)
 								std::string nestedDepLib = libDir + "/" + depLibName + "/" + depLibFile;
 
 								if (std::filesystem::exists(flatDepLib)) {

@@ -9,7 +9,7 @@
 #
 # Usage:
 #     ./docs/gen_docs.sh                           # Generate all docs
-#     ./docs/gen_docs.sh lib/math/qd/math/math.qd  # Single file
+#     ./docs/gen_docs.sh stdlib/math/qd/math/math.qd  # Single file
 #
 
 set -euo pipefail
@@ -24,49 +24,49 @@ JSON_DIR="$PROJECT_ROOT/docs/api"
 
 # Standard library modules (core modules only - external packages are not included)
 declare -A STDLIB_MODULES=(
-    ["bits"]="lib/bits/qd/bits/bits.qd"
-    ["bytes"]="lib/bytes/qd/bytes/bytes.qd"
-    ["flag"]="lib/flag/qd/flag/flag.qd"
-    ["fmt"]="lib/fmt/qd/fmt/fmt.qd"
-    ["io"]="lib/io/qd/io/io.qd"
-    ["limits"]="lib/limits/qd/limits/limits.qd"
-    ["math"]="lib/math/qd/math/math.qd"
-    ["mem"]="lib/mem/qd/mem/mem.qd"
-    ["os"]="lib/os/qd/os/os.qd"
-    ["path"]="lib/path/qd/path/path.qd"
-    ["rand"]="lib/rand/qd/rand/rand.qd"
-    ["sb"]="lib/sb/qd/sb/sb.qd"
-    ["signal"]="lib/signal/qd/signal/signal.qd"
-    ["strings"]="lib/strings/qd/strings/strings.qd"
-    ["strconv"]="lib/strconv/qd/strconv/strconv.qd"
-    ["term"]="lib/term/qd/term/term.qd"
-    ["testing"]="lib/testing/qd/testing/testing.qd"
-    ["thread"]="lib/thread/qd/thread/thread.qd"
-    ["time"]="lib/time/qd/time/time.qd"
-    ["unicode"]="lib/unicode/qd/unicode/unicode.qd"
-    ["crypto"]="lib/crypto/qd/crypto/crypto.qd"
-    ["json"]="lib/json/qd/json/json.qd"
-    ["http"]="lib/http/qd/http/http.qd"
-    ["tls"]="lib/tls/qd/tls/tls.qd"
-    ["regex"]="lib/regex/qd/regex/regex.qd"
-    ["log"]="lib/log/qd/log/log.qd"
-    ["base64"]="lib/base64/qd/base64/base64.qd"
-    ["uri"]="lib/uri/qd/uri/uri.qd"
-    ["uuid"]="lib/uuid/qd/uuid/uuid.qd"
-    ["hex"]="lib/hex/qd/hex/hex.qd"
-    ["fuzzy"]="lib/fuzzy/qd/fuzzy/fuzzy.qd"
-    ["ct"]="lib/ct/qd/ct/ct.qd"
-    ["hof"]="lib/hof/qd/hof/hof.qd"
-    ["sort"]="lib/sort/qd/sort/sort.qd"
-    ["net"]="lib/net/qd/net/net.qd"
-    ["tty"]="lib/tty/qd/tty/tty.qd"
+    ["bits"]="stdlib/bits/qd/bits/bits.qd"
+    ["bytes"]="stdlib/bytes/qd/bytes/bytes.qd"
+    ["flag"]="stdlib/flag/qd/flag/flag.qd"
+    ["fmt"]="stdlib/fmt/qd/fmt/fmt.qd"
+    ["io"]="stdlib/io/qd/io/io.qd"
+    ["limits"]="stdlib/limits/qd/limits/limits.qd"
+    ["math"]="stdlib/math/qd/math/math.qd"
+    ["mem"]="stdlib/mem/qd/mem/mem.qd"
+    ["os"]="stdlib/os/qd/os/os.qd"
+    ["path"]="stdlib/path/qd/path/path.qd"
+    ["rand"]="stdlib/rand/qd/rand/rand.qd"
+    ["sb"]="stdlib/sb/qd/sb/sb.qd"
+    ["signal"]="stdlib/signal/qd/signal/signal.qd"
+    ["strings"]="stdlib/strings/qd/strings/strings.qd"
+    ["strconv"]="stdlib/strconv/qd/strconv/strconv.qd"
+    ["term"]="stdlib/term/qd/term/term.qd"
+    ["testing"]="stdlib/testing/qd/testing/testing.qd"
+    ["thread"]="stdlib/thread/qd/thread/thread.qd"
+    ["time"]="stdlib/time/qd/time/time.qd"
+    ["unicode"]="stdlib/unicode/qd/unicode/unicode.qd"
+    ["crypto"]="stdlib/crypto/qd/crypto/crypto.qd"
+    ["json"]="stdlib/json/qd/json/json.qd"
+    ["http"]="stdlib/http/qd/http/http.qd"
+    ["tls"]="stdlib/tls/qd/tls/tls.qd"
+    ["regex"]="stdlib/regex/qd/regex/regex.qd"
+    ["log"]="stdlib/log/qd/log/log.qd"
+    ["base64"]="stdlib/base64/qd/base64/base64.qd"
+    ["uri"]="stdlib/uri/qd/uri/uri.qd"
+    ["uuid"]="stdlib/uuid/qd/uuid/uuid.qd"
+    ["hex"]="stdlib/hex/qd/hex/hex.qd"
+    ["fuzzy"]="stdlib/fuzzy/qd/fuzzy/fuzzy.qd"
+    ["ct"]="stdlib/ct/qd/ct/ct.qd"
+    ["hof"]="stdlib/hof/qd/hof/hof.qd"
+    ["sort"]="stdlib/sort/qd/sort/sort.qd"
+    ["net"]="stdlib/net/qd/net/net.qd"
+    ["tty"]="stdlib/tty/qd/tty/tty.qd"
 )
 
 # Get module name from file path
 get_module_name() {
     local filepath="$1"
-    # Extract module name from path like lib/math/qd/math/math.qd -> math
-    # or lib/math/qd/math/module.qd -> math (backwards compat)
+    # Extract module name from path like stdlib/math/qd/math/math.qd -> math
+    # or stdlib/math/qd/math/module.qd -> math (backwards compat)
     local name
     name=$(echo "$filepath" | sed -n 's|.*/qd/\([^/]*\)/[^/]*\.qd|\1|p')
     echo "$name"

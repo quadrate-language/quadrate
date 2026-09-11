@@ -46,7 +46,7 @@ if [ -n "${QUADRATE_EXTERNAL_MODULES:-}" ]; then
     INCLUDE_FLAGS="-I $QUADRATE_EXTERNAL_MODULES"
 fi
 
-# Check if tls module is available (in-tree at lib/tls/ or via QUADRATE_EXTERNAL_MODULES)
+# Check if tls module is available (in-tree at stdlib/tls/ or via QUADRATE_EXTERNAL_MODULES)
 TLS_FOUND=0
 if [ -d "$PROJECT_ROOT/lib/tls" ] && ls "$PROJECT_ROOT/lib/tls"/*.qd >/dev/null 2>&1; then
     INCLUDE_FLAGS="-I $PROJECT_ROOT/lib"
@@ -56,7 +56,7 @@ elif [ -n "${QUADRATE_EXTERNAL_MODULES:-}" ] && [ -f "$QUADRATE_EXTERNAL_MODULES
 fi
 
 if [ "$TLS_FOUND" -eq 0 ]; then
-    echo -e "${RED}SKIP${NC}: tls module not found (not in lib/tls/ or QUADRATE_EXTERNAL_MODULES)"
+    echo -e "${RED}SKIP${NC}: tls module not found (not in stdlib/tls/ or QUADRATE_EXTERNAL_MODULES)"
     exit 0
 fi
 

@@ -46,7 +46,7 @@ fi
 # in-tree lib/ layout so the script also works from a bare build directory.
 if [ -d "$PROJECT_ROOT/dist/share/quadrate/http" ]; then
     export QUADRATE_ROOT="$PROJECT_ROOT/dist/share/quadrate"
-elif [ -d "$PROJECT_ROOT/lib/http/qd/http" ]; then
+elif [ -d "$PROJECT_ROOT/stdlib/http/qd/http" ]; then
     export QUADRATE_ROOT="$PROJECT_ROOT/lib"
 else
     echo -e "${RED}SKIP${NC}: http module not found, skipping HTTP integration tests"

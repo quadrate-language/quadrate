@@ -1,4 +1,5 @@
 option('build_examples', type: 'boolean', value: false, description: 'Build examples')
 option('build_tests', type: 'boolean', value: false, description: 'Build tests')
 option('build_fuzz', type: 'boolean', value: false, description: 'Build fuzzing targets (requires clang)')
+option('build_stdlib', type: 'boolean', value: true, description: 'Build the standard library modules. Disable to build only the core libraries, e.g. for an embedded target that embeds lib/interp and needs neither the modules nor their dependencies such as OpenSSL.')
 option('build_tools', type: 'boolean', value: true, description: 'Build the command-line tools (requires LLVM). Disable to build only the libraries, e.g. when cross-compiling for an embedded target.')

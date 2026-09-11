@@ -306,7 +306,7 @@ internals), 69 documented in `reference.def`.
       (`QUADRATE_LIBDIR`) → the runtime beside the executable (`dist/bin/quad` → `dist/lib`, then a
       flat layout) → the loader search path as a last resort.
 
-- [x] FIXED — **`create_test_context` in `lib/rt/tests` and `lib/mem/tests` hand-rolled the
+- [x] FIXED — **`create_test_context` in `lib/rt/tests` and `stdlib/mem/tests` hand-rolled the
       context**, mallocing it and initialising only `->st`, so any test that tripped a fatal
       runtime path walked an uninitialised call stack and died of SIGSEGV instead of the SIGABRT it
       was asserting. Both now go through `qd_create_context`/`qd_free_context` like the other

@@ -57,7 +57,7 @@ make valgrind
 Tests are organized across multiple locations:
 - Language feature tests: `tests/qd/` (.qd files with expected outputs)
 - Standard library tests: `tests/qd/stdlib/` (unit tests using the `testing` module)
-- C/C++ unit tests: `lib/*/tests/` (Meson test framework)
+- C/C++ unit tests: `lib/*/tests/` and `stdlib/*/tests/` (Meson test framework)
 - Formatter tests: `tests/formatter/`
 - Linter tests: `tests/linter/`
 - Embedding tests: `tests/embed/`
@@ -97,12 +97,14 @@ quadrate/
 │   ├── quadfmt/  # Formatter
 │   ├── quadlsp/  # Language server
 │   └── ...
-├── lib/          # Libraries
+├── lib/          # Toolchain libraries (the language itself)
 │   ├── qc/       # Compiler frontend (parser, AST, semantic analysis)
 │   ├── qd/       # Embedding API (libqd)
 │   ├── rt/       # Runtime (librt)
 │   ├── llvmgen/  # LLVM code generator
-│   └── ...       # Standard library modules
+│   ├── interp/   # AST interpreter (no LLVM)
+│   └── ...       # cli, platform, version
+├── stdlib/       # Standard library modules (fmt, io, json, math, ...)
 ├── examples/     # Example programs
 ├── tests/        # Test suite
 └── docs/         # Documentation source
@@ -112,14 +114,30 @@ Editor integrations are in separate repositories:
 - **Neovim**: https://github.com/quadrate-language/quadrate.nvim
 - **VS Code**: https://github.com/quadrate-language/quadrate-vscode
 
-Each library follows the structure:
+Toolchain libraries under `lib/` follow the structure:
 ```
 lib/name/
 ├── meson.build
-├── include/name/  # Public headers
-├── src/           # Implementation
-├── qd/            # Quadrate source (for stdlib modules)
-└── tests/         # Unit tests
+├── include/quadrate/name/  # Public headers
+├── src/                    # Implementation
+└── tests/                  # Unit tests
+```
+
+Standard library modules under `stdlib/` come in two shapes. C-backed ones add a
+Quadrate surface on top of a C implementation:
+```
+stdlib/name/
+├── meson.build             # plus a subdir() line in stdlib/meson.build
+├── include/quadrate/name/  # Public headers
+├── src/                    # C implementation
+├── qd/name/name.qd         # Quadrate surface
+└── tests/                  # Unit tests
+```
+
+Pure-Quadrate ones are just the source, with no build wiring:
+```
+stdlib/name/
+└── qd/name/name.qd
 ```
 
 ## Compiler warnings
