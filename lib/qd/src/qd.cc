@@ -353,6 +353,11 @@ void qd_register_function(qd_module* mod, const char* name, const char* signatur
 		return;
 	}
 	mod->native_functions[name] = {fn, userdata, signature};
+
+	// Also record it on the context, where lib/interp can find it: an embedder
+	// registering once should reach both execution tiers.
+	const std::string scoped = mod->name + "::" + name;
+	qd_native_register(mod->owner_ctx, scoped.c_str(), signature, fn, userdata);
 }
 
 void qd_set_warning_min_line(qd_module* mod, size_t line) {

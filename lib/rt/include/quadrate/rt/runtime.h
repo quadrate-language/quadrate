@@ -1182,17 +1182,36 @@ int qd_rt_version_api(qd_context* ctx);
 
 /** @} */ // end of Version group
 
-/** @brief The calling thread's recovery jump buffer for setjmp(); owned by the runtime */
-jmp_buf* qd_recovery_buf(void);
+/** @brief The context's recovery jump buffer, for setjmp() */
+jmp_buf* qd_recovery_buf(qd_context* ctx);
 
-/** @brief Arm recovery: a fatal runtime error longjmps to qd_recovery_buf() instead of exiting */
-void qd_recovery_arm(void);
+/** @brief Arm recovery: a fatal runtime error longjmps to qd_recovery_buf() instead of exiting.
+ *  The context stays usable, but the stack may have changed: qd_div pops before testing for zero. */
+void qd_recovery_arm(qd_context* ctx);
 
 /** @brief Disarm recovery; unwinding disarms automatically */
-void qd_recovery_disarm(void);
+void qd_recovery_disarm(qd_context* ctx);
 
-/** @brief Whether recovery is armed for the calling thread */
-bool qd_recovery_armed(void);
+/** @brief Whether recovery is armed on this context */
+bool qd_recovery_armed(const qd_context* ctx);
+
+/** @brief Native function callable from Quadrate */
+typedef int (*qd_native_callback)(qd_context* ctx, void* userdata);
+
+/** @brief Make a C function callable by name. Registering a name twice replaces it.
+ *  @param signature Stack effect, e.g. "(a:i64 -- r:i64)"; its inputs are counted for
+ *                   the caller's arity check. NULL disables that check. */
+bool qd_native_register(
+		qd_context* ctx, const char* name, const char* signature, qd_native_callback fn, void* userdata);
+
+/** @brief Look up a registered function. Any out parameter may be NULL. */
+bool qd_native_lookup(const qd_context* ctx, const char* name, qd_native_callback* fn, void** userdata, size_t* arity);
+
+/** @brief Number of registered functions */
+size_t qd_native_count(const qd_context* ctx);
+
+/** @brief Forget every registration; called by qd_free_context() */
+void qd_native_clear(qd_context* ctx);
 
 #ifdef __cplusplus
 }

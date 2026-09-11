@@ -64,23 +64,24 @@ _Noreturn void qdrt_fatal_exit(void) {
 	_exit(1);
 }
 
-static _Thread_local jmp_buf qdrt_recovery_buf;
-static _Thread_local bool qdrt_recovery_armed = false;
-
-jmp_buf* qd_recovery_buf(void) {
-	return &qdrt_recovery_buf;
+jmp_buf* qd_recovery_buf(qd_context* ctx) {
+	return (ctx != NULL) ? &ctx->recovery_buf : NULL;
 }
 
-void qd_recovery_arm(void) {
-	qdrt_recovery_armed = true;
+void qd_recovery_arm(qd_context* ctx) {
+	if (ctx != NULL) {
+		ctx->recovery_armed = true;
+	}
 }
 
-void qd_recovery_disarm(void) {
-	qdrt_recovery_armed = false;
+void qd_recovery_disarm(qd_context* ctx) {
+	if (ctx != NULL) {
+		ctx->recovery_armed = false;
+	}
 }
 
-bool qd_recovery_armed(void) {
-	return qdrt_recovery_armed;
+bool qd_recovery_armed(const qd_context* ctx) {
+	return ctx != NULL && ctx->recovery_armed;
 }
 
 _Noreturn void qdrt_fatal_raise(qd_context* ctx, const char* op, const char* fmt, ...) {
@@ -90,14 +91,12 @@ _Noreturn void qdrt_fatal_raise(qd_context* ctx, const char* op, const char* fmt
 	vsnprintf(detail, sizeof(detail), fmt, args);
 	va_end(args);
 
-	if (qdrt_recovery_armed) {
+	if (ctx != NULL && ctx->recovery_armed) {
 		char message[448];
 		snprintf(message, sizeof(message), "%s: %s", op, detail);
-		if (ctx != NULL) {
-			qd_set_error_msg(ctx, message);
-		}
-		qdrt_recovery_armed = false;
-		longjmp(qdrt_recovery_buf, 1);
+		qd_set_error_msg(ctx, message);
+		ctx->recovery_armed = false;
+		longjmp(ctx->recovery_buf, 1);
 	}
 
 	fprintf(stderr, "Fatal error in %s: %s\n", op, detail);
@@ -1054,6 +1053,8 @@ qd_context* qd_create_context(size_t stack_size) {
 			free(ctx);
 			return NULL;
 		}
+		ctx->recovery_armed = false;
+		ctx->natives = NULL;
 		ctx->error_code = 0;
 		ctx->has_error = 0;
 		ctx->error_msg = NULL;
@@ -1071,6 +1072,7 @@ void qd_free_context(qd_context* ctx) {
 	if (ctx == NULL) {
 		return;
 	}
+	qd_native_clear(ctx);
 	qd_stack_destroy(ctx->st);
 	if (ctx->program_name) {
 		free(ctx->program_name);
@@ -1103,6 +1105,8 @@ qd_context* qd_clone_context(const qd_context* src) {
 	}
 
 	/* Copy error state */
+	ctx->recovery_armed = false;
+	ctx->natives = NULL;
 	ctx->error_code = src->error_code;
 	ctx->has_error = src->has_error;
 	if (src->error_msg != NULL) {

@@ -11,6 +11,7 @@
 #define QD_QUADRATE_RUNTIME_CONTEXT_H
 
 #include <quadrate/rt/stack.h>
+#include <setjmp.h>
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
@@ -74,6 +75,15 @@ typedef struct {
 	char* error_context;
 
 	void* userdata; ///< User-defined data pointer for embedders
+
+	// Recovery state. On the context rather than file scope: lib/qd may link
+	// the shared runtime while lib/interp links the static one, and statics
+	// would then exist twice in one process. Appended so codegen's GEP of
+	// field 0 is unaffected.
+	jmp_buf recovery_buf; ///< Armed by qd_recovery_arm()
+	bool recovery_armed;  ///< Whether a fatal error unwinds instead of exiting
+
+	struct qd_native_registry* natives; ///< Native functions, shared by both execution tiers
 } qd_context;
 
 #ifdef __cplusplus

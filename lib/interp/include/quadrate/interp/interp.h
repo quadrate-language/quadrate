@@ -2,17 +2,8 @@
  * @file interp.h
  * @brief Interpreted execution of Quadrate source (lib/interp)
  *
- * Parses with the front-end (lib/qc) and walks the AST, calling runtime
- * operations (lib/rt) directly. No LLVM, no code generation, no toolchain at
- * run time.
- *
- * Use lib/qd for code that runs often enough to repay compiling it, and this
- * for code typed by a person. Both can share one context; see
- * qd_interp_attach().
- *
- * Nothing here ends the process on a bad input: arity is checked before an
- * instruction runs, and the walk executes inside a recovery point, so a
- * division by zero or a type mismatch becomes a message. See lib/interp/README.md.
+ * Parses with lib/qc and walks the AST, calling lib/rt operations directly.
+ * No LLVM and no toolchain at run time. See lib/interp/README.md.
  */
 
 #ifndef QD_INTERP_INTERP_H
@@ -69,9 +60,7 @@ qd_interp* qd_interp_create(size_t stack_size);
 /**
  * @brief Create an interpreter over an existing context
  *
- * Lets interpreted and compiled code share one stack: evaluate a typed line
- * with this interpreter, then call a JIT-compiled function from lib/qd against
- * the same @p ctx and it sees the values the line left behind.
+ * Lets interpreted and compiled code share one stack.
  *
  * @param ctx Context to borrow; must outlive the interpreter
  * @return New interpreter, or NULL on allocation failure
@@ -86,6 +75,44 @@ qd_interp* qd_interp_attach(qd_context* ctx);
  * Frees the context if it was created by qd_interp_create(). NULL is ignored.
  */
 void qd_interp_destroy(qd_interp* interp);
+
+/**
+ * @brief Native function callable from interpreted Quadrate
+ *
+ * Structurally identical to lib/qd's qd_native_fn, so one C function can be
+ * registered with either API without a cast.
+ *
+ * @param ctx Execution context; arguments are on its stack, results go back on it
+ * @param userdata Pointer supplied at registration
+ * @return 0 on success, non-zero to raise an error
+ */
+typedef int (*qd_interp_native_fn)(qd_context* ctx, void* userdata);
+
+/**
+ * @brief Make a C function callable by name from interpreted source
+ *
+ * The interpreter resolves a name it does not recognise as a builtin against
+ * the functions registered here, so `display::clear` or `beep` in evaluated
+ * source calls straight into @p fn. This is how an embedder exposes its own
+ * capabilities — hardware, storage, anything — to code typed by a user.
+ *
+ * Registering the same name twice replaces the earlier entry.
+ *
+ * @param name      Name as written in source. May be scoped, e.g. "display::clear".
+ * @param signature Stack effect in Quadrate syntax, e.g. "( -- )", "(x:f64 -- s:str)".
+ *                  Only the inputs are read, to check the stack holds enough
+ *                  before calling; pass NULL to skip that check.
+ * @param fn        Function to call; must not be NULL
+ * @param userdata  Passed to @p fn on every call
+ * @return true if registered
+ */
+bool qd_interp_register(
+		qd_interp* interp, const char* name, const char* signature, qd_interp_native_fn fn, void* userdata);
+
+/**
+ * @brief Number of native functions registered
+ */
+size_t qd_interp_registered_count(const qd_interp* interp);
 
 /**
  * @brief Parse and execute Quadrate source

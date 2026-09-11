@@ -63,8 +63,8 @@ qd_module* game = qd_get_module(ctx, "game");
 Add Quadrate source code to a module:
 
 ```c
-qd_add_script(mod, "fn square(x:i64 -- result:i64) { dup * }");
-qd_add_script(mod, "fn cube(x:i64 -- result:i64) { dup dup * * }");
+qd_add_script(mod, "fn square(x:i64 -- result:i64) { x x * }");
+qd_add_script(mod, "fn cube(x:i64 -- result:i64) { x x * x * }");
 ```
 
 You can call `qd_add_script` multiple times before building.
@@ -224,6 +224,90 @@ fn telemetry( -- ) {
     sensors::temperature strconv::format_float print nl  // type-checked!
 }
 ```
+
+## Interpreted Execution
+
+Everything above compiles through LLVM, which is the right trade for code that runs many times.
+For code a person is typing — a console, a REPL, a rule someone edits while the application is
+running — there is a second execution path that parses and walks the AST directly, with no code
+generation and no toolchain at run time:
+
+```c
+#include <quadrate/interp/interp.h>
+
+int main(void) {
+    qd_interp* interp = qd_interp_create(1024);
+
+    qd_interp_eval(interp, "2 3 +");
+
+    qd_interp_value value;
+    if (qd_interp_peek(interp, 0, &value)) {
+        printf("%s\n", value.text);   // 5
+    }
+
+    qd_interp_destroy(interp);
+    return 0;
+}
+```
+
+Compile with:
+```bash
+gcc -o myapp myapp.c -linterp -lqc -lu8t -lrt -L/path/to/quadrate/dist/lib/quadrate -I/path/to/quadrate/dist/include
+```
+
+The stack persists across calls, which is what a prompt needs:
+
+```c
+qd_interp_eval(interp, "2");
+qd_interp_eval(interp, "3");
+qd_interp_eval(interp, "+");      // 5
+```
+
+### Sharing a Context
+
+`qd_interp_attach()` builds an interpreter over a context you already have, so typed lines and
+compiled modules work against the same stack. The interpreter borrows the context and will not
+free it:
+
+```c
+qd_context* ctx = qd_create_context(1024);
+qd_module* mod = qd_get_module(ctx, "game");
+qd_add_script(mod, "fn double(x:i64 -- r:i64) { x 2 * }");
+qd_build(mod);
+
+qd_interp* interp = qd_interp_attach(ctx);   // borrows ctx
+qd_interp_eval(interp, "21");                // interpreted, leaves 21 on the stack
+qd_execute(ctx, "game::double");             // compiled, consumes it
+
+qd_interp_destroy(interp);                   // ctx survives
+qd_free_context(ctx);
+```
+
+Linking this combination needs both paths: `-lqd -lqdrt -linterp -lqc -lu8t`.
+
+### Errors
+
+Interpreted code is typed by people and is wrong all the time, so nothing on this path ends the
+process. Arity is checked before an instruction runs, and everything else — type mismatch,
+division by zero, an out-of-range `pick` — runs inside a recovery point, so the runtime unwinds
+back to the interpreter instead of exiting:
+
+```c
+if (!qd_interp_eval(interp, "1 0 /")) {
+    printf("%s\n", qd_interp_error(interp));   // div: Division by zero
+}
+```
+
+The context stays usable afterwards. On failure the stack is left as the error found it rather
+than rolled back, which is what a user needs in order to see what went wrong.
+
+### Coverage
+
+The interpreter handles built-in instructions and literals. Control flow, user-defined functions,
+local variables and module imports are not interpreted; they are reported as an error rather than
+failing silently. Use `qd_add_script()` and `qd_build()` for those.
+
+---
 
 ---
 
@@ -691,6 +775,21 @@ clean:
 | Function | Description |
 |----------|-------------|
 | `qd_execute(ctx, expr)` | Execute Quadrate expression |
+
+### Interpreted Execution
+
+Declared in `<quadrate/interp/interp.h>`. Link with `-linterp -lqc -lu8t -lrt`.
+
+| Function | Description |
+|----------|-------------|
+| `qd_interp_create(size)` | Create interpreter with a context of its own |
+| `qd_interp_attach(ctx)` | Create interpreter over an existing context (borrowed) |
+| `qd_interp_eval(interp, src)` | Parse and execute source against the persistent stack |
+| `qd_interp_error(interp)` | Message from the most recent failure |
+| `qd_interp_depth(interp)` | Number of values on the stack |
+| `qd_interp_peek(interp, i, &v)` | Read a stack value without removing it (0 is the top) |
+| `qd_interp_context(interp)` | The context this interpreter executes against |
+| `qd_interp_destroy(interp)` | Destroy interpreter; frees the context only if it created it |
 
 ### Stack Operations
 

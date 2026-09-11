@@ -1,21 +1,20 @@
 // interp - Interpreted execution of Quadrate source
 //
-// Every builtin instruction already exists as a C function in the runtime
-// (qd_add, qd_dup, qd_print), because that is what generated code calls into.
-// So interpreting is a dispatch table from instruction name to runtime function
-// plus a walk over the AST. There is no bytecode and no second implementation
-// of the language's semantics: interpreted and compiled code execute through
-// the same runtime.
+// Dispatch table from instruction name to runtime function, plus a walk over
+// the AST. Interpreted and compiled code share the same runtime.
 
 #include <quadrate/interp/interp.h>
 
 #include <quadrate/qc/ast.h>
+#include <quadrate/qc/ast_node_identifier.h>
 #include <quadrate/qc/ast_node_instruction.h>
 #include <quadrate/qc/ast_node_literal.h>
+#include <quadrate/qc/ast_node_scoped.h>
 #include <quadrate/rt/array.h>
 #include <quadrate/rt/qd_string.h>
 #include <quadrate/rt/stack.h>
 
+#include <cctype>
 #include <cinttypes>
 #include <csetjmp>
 #include <cstdio>
@@ -29,15 +28,8 @@ namespace {
 
 	using OpFn = int (*)(qd_context*);
 
-	// A builtin instruction: the runtime function that performs it, and the
-	// stack depth required before it may be called. The runtime treats
-	// underflow as a compiler bug and ends the process, which is right for
-	// generated code and wrong for a typed line, so the arity is checked here
-	// rather than trusted.
-	//
-	// The names duplicate BUILTIN_INSTRUCTIONS in qc/instructions.h. Carrying
-	// the arity there would give one source of truth, at the cost of touching
-	// the compiler's instruction table.
+	// Runtime function plus the stack depth it needs. The runtime ends the
+	// process on underflow, so the arity is checked here rather than trusted.
 	struct BuiltinOp {
 		OpFn fn;
 		size_t arity;
@@ -147,6 +139,70 @@ namespace {
 		return true;
 	}
 
+	// Strip the quotes the parser keeps and decode escapes, matching
+	// generator_nodes.cc so both tiers agree what a literal means. An
+	// unrecognised escape is kept verbatim, as there.
+	std::string decodeString(const std::string& literal) {
+		std::string body = literal;
+		if (body.size() >= 2 && body.front() == '"' && body.back() == '"') {
+			body = body.substr(1, body.size() - 2);
+		}
+
+		std::string out;
+		out.reserve(body.size());
+
+		for (size_t i = 0; i < body.size(); i++) {
+			if (body[i] != '\\' || i + 1 >= body.size()) {
+				out += body[i];
+				continue;
+			}
+
+			switch (body[i + 1]) {
+			case 'n':
+				out += '\n';
+				i++;
+				break;
+			case 't':
+				out += '\t';
+				i++;
+				break;
+			case 'r':
+				out += '\r';
+				i++;
+				break;
+			case '\\':
+				out += '\\';
+				i++;
+				break;
+			case '"':
+				out += '"';
+				i++;
+				break;
+			case '0':
+				out += '\0';
+				i++;
+				break;
+			case 'e':
+				out += '\x1b';
+				i++;
+				break;
+			case 'x':
+				if (i + 3 < body.size() && isxdigit(static_cast<unsigned char>(body[i + 2])) != 0 &&
+						isxdigit(static_cast<unsigned char>(body[i + 3])) != 0) {
+					out += static_cast<char>(std::strtol(body.substr(i + 2, 2).c_str(), nullptr, 16));
+					i += 3;
+				} else {
+					out += body[i];
+				}
+				break;
+			default:
+				out += body[i];
+				break;
+			}
+		}
+		return out;
+	}
+
 	bool pushLiteral(qd_interp* interp, const Qd::AstNodeLiteral* literal) {
 		const std::string& text = literal->value();
 
@@ -159,7 +215,7 @@ namespace {
 		case Qd::AstNodeLiteral::LiteralType::FLOAT:
 			return qd_push_f(interp->ctx, std::strtod(text.c_str(), nullptr)) == 0;
 		case Qd::AstNodeLiteral::LiteralType::STRING:
-			return qd_push_s(interp->ctx, text.c_str()) == 0;
+			return qd_push_s(interp->ctx, decodeString(text).c_str()) == 0;
 		case Qd::AstNodeLiteral::LiteralType::BOOL:
 			// 'true' and 'Ok' are 1, 'false' and 'Err' are 0
 			return qd_push_i(interp->ctx, (text == "true" || text == "Ok") ? 1 : 0) == 0;
@@ -198,6 +254,33 @@ namespace {
 		return true;
 	}
 
+	// Call a registered native function by the name written in source.
+	bool evalNative(qd_interp* interp, const std::string& name) {
+		qd_native_callback fn = nullptr;
+		void* userdata = nullptr;
+		size_t arity = 0;
+		if (!qd_native_lookup(interp->ctx, name.c_str(), &fn, &userdata, &arity)) {
+			interp->error = "'" + name + "' is not defined";
+			return false;
+		}
+
+		// Same guard the builtins get
+		const size_t depth = static_cast<size_t>(qd_stack_size(interp->ctx->st));
+		if (depth < arity) {
+			interp->error = "'" + name + "' needs " + std::to_string(arity) + (arity == 1 ? " value, " : " values, ") +
+							std::to_string(depth) + " on the stack";
+			return false;
+		}
+
+		qd_clear_error(interp->ctx);
+		if (fn(interp->ctx, userdata) != 0) {
+			const char* message = qd_error_message(interp->ctx);
+			interp->error = (message != nullptr) ? message : ("'" + name + "' failed");
+			return false;
+		}
+		return true;
+	}
+
 	bool evalNode(qd_interp* interp, const Qd::IAstNode* node) {
 		using Type = Qd::IAstNode::Type;
 
@@ -224,26 +307,33 @@ namespace {
 		case Type::INSTRUCTION:
 			return evalInstruction(interp, static_cast<const Qd::AstNodeInstruction*>(node));
 
+		// A name the language does not define is looked up among the functions
+		// the embedder registered, which is how host capabilities become callable
+		// words in typed source
+		case Type::IDENTIFIER:
+			return evalNative(interp, static_cast<const Qd::AstNodeIdentifier*>(node)->name());
+
+		case Type::SCOPED_IDENTIFIER: {
+			const auto* scoped = static_cast<const Qd::AstNodeScopedIdentifier*>(node);
+			return evalNative(interp, scoped->scope() + "::" + scoped->name());
+		}
+
 		default:
 			interp->error = "this construct cannot be interpreted yet";
 			return false;
 		}
 	}
 
-	// Walk the tree with runtime recovery armed. The arity check stops the
-	// common underflow, but a type mismatch, a division by zero and an
-	// out-of-range pick or roll depend on values only visible at run time;
-	// those unwind to here and become messages.
+	// Walk with recovery armed: errors depending on run-time values (type
+	// mismatch, division by zero, out-of-range pick) unwind here.
 	//
-	// longjmp does not run destructors, so nothing between this frame and a
-	// runtime call may hold an object that needs one. The walk above is written
-	// to that constraint (references and trivially destructible locals only)
-	// and changes to it must keep to it.
+	// longjmp skips destructors, so the walk holds only trivially destructible
+	// locals between this frame and a runtime call. Keep it that way.
 	bool runGuarded(qd_interp* interp, const Qd::IAstNode* root) {
-		if (setjmp(*qd_recovery_buf()) == 0) {
-			qd_recovery_arm();
+		if (setjmp(*qd_recovery_buf(interp->ctx)) == 0) {
+			qd_recovery_arm(interp->ctx);
 			const bool ok = evalNode(interp, root);
-			qd_recovery_disarm();
+			qd_recovery_disarm(interp->ctx);
 			return ok;
 		}
 
@@ -290,6 +380,18 @@ void qd_interp_destroy(qd_interp* interp) {
 	delete interp;
 }
 
+bool qd_interp_register(
+		qd_interp* interp, const char* name, const char* signature, qd_interp_native_fn fn, void* userdata) {
+	if (interp == nullptr) {
+		return false;
+	}
+	return qd_native_register(interp->ctx, name, signature, fn, userdata);
+}
+
+size_t qd_interp_registered_count(const qd_interp* interp) {
+	return (interp != nullptr) ? qd_native_count(interp->ctx) : 0;
+}
+
 bool qd_interp_eval(qd_interp* interp, const char* source) {
 	if (interp == nullptr || source == nullptr) {
 		return false;
@@ -297,10 +399,8 @@ bool qd_interp_eval(qd_interp* interp, const char* source) {
 
 	interp->error.clear();
 
-	// The parser accepts only declarations at top level, so the source is given
-	// a function to live in. The walk treats that function as transparent,
-	// which leaves the code executing against the persistent stack rather than
-	// a fresh one.
+	// The parser accepts only declarations at top level; the walk treats the
+	// wrapper as transparent, so the stack persists across calls.
 	const std::string wrapped = "fn main() {\n" + std::string(source) + "\n}";
 
 	Qd::Ast ast;

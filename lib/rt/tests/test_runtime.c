@@ -5,6 +5,7 @@
 #include <quadrate/rt/context.h>
 #include <quadrate/rt/stack.h>
 #include <unit-check/uc.h>
+#include <setjmp.h>
 #include <stdlib.h>
 #include <string.h>
 #include <math.h>
@@ -1070,6 +1071,204 @@ TEST(StackIsEmptyAfterClearTest) {
 	destroy_test_context(ctx);
 }
 
+
+TEST(RecoveryIsPerContext) {
+	qd_context* a = qd_create_context(64);
+	qd_context* b = qd_create_context(64);
+
+	ASSERT(!qd_recovery_armed(a), "a starts disarmed");
+	ASSERT(!qd_recovery_armed(b), "b starts disarmed");
+
+	qd_recovery_arm(a);
+	ASSERT(qd_recovery_armed(a), "a is armed");
+	ASSERT(!qd_recovery_armed(b), "arming a leaves b alone");
+
+	qd_recovery_disarm(a);
+	ASSERT(!qd_recovery_armed(a), "a is disarmed again");
+
+	ASSERT(!qd_recovery_armed(NULL), "a null context is never armed");
+	ASSERT(qd_recovery_buf(NULL) == NULL, "and has no jump buffer");
+
+	qd_free_context(a);
+	qd_free_context(b);
+}
+
+TEST(RecoveryCatchesFatalError) {
+	qd_context* ctx = qd_create_context(64);
+
+	// 1 0 / is fatal; armed, it unwinds here instead of ending the process
+	qd_push_i(ctx, 1);
+	qd_push_i(ctx, 0);
+
+	int recovered = 0;
+	if (setjmp(*qd_recovery_buf(ctx)) == 0) {
+		qd_recovery_arm(ctx);
+		qd_div(ctx);
+		qd_recovery_disarm(ctx);
+	} else {
+		recovered = 1;
+	}
+
+	ASSERT(recovered == 1, "division by zero unwound to the recovery point");
+	ASSERT(!qd_recovery_armed(ctx), "unwinding disarms");
+	ASSERT(qd_error_message(ctx) != NULL, "the message is on the context");
+
+	// The context is still usable afterwards
+	qd_push_i(ctx, 2);
+	qd_push_i(ctx, 3);
+	ASSERT(qd_add(ctx) == 0, "the context still works");
+
+	qd_free_context(ctx);
+}
+
+TEST(ClonedContextIsNotArmed) {
+	qd_context* src = qd_create_context(64);
+	qd_recovery_arm(src);
+
+	// A clone must not inherit the jump buffer: it names a frame in the
+	// cloning thread, which the clone has no business returning to
+	qd_context* copy = qd_clone_context(src);
+	ASSERT(copy != NULL, "clone succeeds");
+	ASSERT(!qd_recovery_armed(copy), "the clone is disarmed");
+
+	qd_recovery_disarm(src);
+	qd_free_context(src);
+	qd_free_context(copy);
+}
+
+static int native_push_one(qd_context* ctx, void* userdata) {
+	(void)userdata;
+	return qd_push_i(ctx, 1);
+}
+
+static int native_push_two(qd_context* ctx, void* userdata) {
+	(void)userdata;
+	return qd_push_i(ctx, 2);
+}
+
+TEST(NativeRegistryBasics) {
+	qd_context* ctx = qd_create_context(64);
+
+	ASSERT(qd_native_count(ctx) == 0, "starts empty");
+	ASSERT(!qd_native_lookup(ctx, "nope", NULL, NULL, NULL), "lookup on an empty registry fails");
+
+	ASSERT(qd_native_register(ctx, "one", "( -- v:i64)", native_push_one, NULL), "register");
+	ASSERT(qd_native_count(ctx) == 1, "count is one");
+
+	qd_native_callback fn = NULL;
+	void* userdata = (void*)1;
+	size_t arity = 99;
+	ASSERT(qd_native_lookup(ctx, "one", &fn, &userdata, &arity), "lookup succeeds");
+	ASSERT(fn == native_push_one, "the right function");
+	ASSERT(userdata == NULL, "userdata carried");
+	ASSERT(arity == 0, "no inputs in the signature");
+
+	ASSERT(qd_native_lookup(ctx, "one", NULL, NULL, NULL), "out parameters are optional");
+	ASSERT(!qd_native_lookup(ctx, "One", NULL, NULL, NULL), "lookup is case sensitive");
+
+	ASSERT(!qd_native_register(NULL, "x", NULL, native_push_one, NULL), "null context");
+	ASSERT(!qd_native_register(ctx, NULL, NULL, native_push_one, NULL), "null name");
+	ASSERT(!qd_native_register(ctx, "", NULL, native_push_one, NULL), "empty name");
+	ASSERT(!qd_native_register(ctx, "x", NULL, NULL, NULL), "null function");
+	ASSERT(qd_native_count(ctx) == 1, "nothing extra registered");
+
+	qd_free_context(ctx);
+}
+
+TEST(NativeRegistryArityFromSignature) {
+	qd_context* ctx = qd_create_context(64);
+	size_t arity = 0;
+
+	qd_native_register(ctx, "none", "( -- )", native_push_one, NULL);
+	qd_native_lookup(ctx, "none", NULL, NULL, &arity);
+	ASSERT(arity == 0, "no inputs");
+
+	qd_native_register(ctx, "two", "(a:i64 b:i64 -- r:i64)", native_push_one, NULL);
+	qd_native_lookup(ctx, "two", NULL, NULL, &arity);
+	ASSERT(arity == 2, "two inputs");
+
+	qd_native_register(ctx, "unknown", NULL, native_push_one, NULL);
+	qd_native_lookup(ctx, "unknown", NULL, NULL, &arity);
+	ASSERT(arity == 0, "a null signature disables the check");
+
+	qd_free_context(ctx);
+}
+
+TEST(NativeRegistryReplaces) {
+	qd_context* ctx = qd_create_context(64);
+
+	qd_native_register(ctx, "f", "( -- v:i64)", native_push_one, NULL);
+	qd_native_register(ctx, "f", "(a:i64 -- v:i64)", native_push_two, (void*)0x42);
+
+	ASSERT(qd_native_count(ctx) == 1, "still one entry");
+
+	qd_native_callback fn = NULL;
+	void* userdata = NULL;
+	size_t arity = 0;
+	qd_native_lookup(ctx, "f", &fn, &userdata, &arity);
+	ASSERT(fn == native_push_two, "the later function wins");
+	ASSERT(userdata == (void*)0x42, "and its userdata");
+	ASSERT(arity == 1, "and its signature");
+
+	qd_free_context(ctx);
+}
+
+TEST(NativeRegistryGrowsAndRehashes) {
+	qd_context* ctx = qd_create_context(64);
+
+	// Well past the initial capacity, so the table grows and rehashes several
+	// times; every name must survive every rehash
+	enum { COUNT = 500 };
+	char name[32];
+
+	for (int i = 0; i < COUNT; i++) {
+		snprintf(name, sizeof(name), "mod::fn%d", i);
+		ASSERT(qd_native_register(ctx, name, "( -- v:i64)", native_push_one, NULL) || 0, "register");
+	}
+	ASSERT(qd_native_count(ctx) == (size_t)COUNT, "all entries counted");
+
+	int found = 0;
+	for (int i = 0; i < COUNT; i++) {
+		snprintf(name, sizeof(name), "mod::fn%d", i);
+		if (qd_native_lookup(ctx, name, NULL, NULL, NULL)) {
+			found++;
+		}
+	}
+	ASSERT(found == COUNT, "every name still resolves after rehashing");
+
+	// Names that were never registered must not resolve, whatever they hash to
+	int ghosts = 0;
+	for (int i = COUNT; i < COUNT + 200; i++) {
+		snprintf(name, sizeof(name), "mod::fn%d", i);
+		if (qd_native_lookup(ctx, name, NULL, NULL, NULL)) {
+			ghosts++;
+		}
+	}
+	ASSERT(ghosts == 0, "unregistered names never resolve");
+
+	qd_free_context(ctx);
+}
+
+TEST(NativeRegistryClear) {
+	qd_context* ctx = qd_create_context(64);
+
+	qd_native_register(ctx, "a", NULL, native_push_one, NULL);
+	qd_native_register(ctx, "b", NULL, native_push_one, NULL);
+	ASSERT(qd_native_count(ctx) == 2, "two registered");
+
+	qd_native_clear(ctx);
+	ASSERT(qd_native_count(ctx) == 0, "cleared");
+	ASSERT(!qd_native_lookup(ctx, "a", NULL, NULL, NULL), "and nothing resolves");
+
+	// Usable again afterwards
+	ASSERT(qd_native_register(ctx, "c", NULL, native_push_one, NULL), "re-register after clear");
+	ASSERT(qd_native_count(ctx) == 1, "count restarted");
+
+	qd_native_clear(NULL);
+	ASSERT(qd_native_count(NULL) == 0, "null context is handled");
+
+	qd_free_context(ctx);
+}
 
 int main(void) {
 	return UC_PrintResults();

@@ -944,6 +944,7 @@ run_embed_tests() {
         "incremental-test:Building all at once"
         "typed-native-test:All typed native tests passed"
         "embed-comprehensive-test:All comprehensive tests passed"
+        "cross-tier-test:cross-tier: all checks passed"
         "ffi:Hello, World!"
     )
 
@@ -1828,7 +1829,7 @@ list_all_tests() {
     echo ""
 
     echo "Embed Tests (suite: embed):"
-    for test in embed multi-module-test native-functions-test incremental-test typed-native-test embed-comprehensive-test ffi; do
+    for test in embed multi-module-test native-functions-test incremental-test typed-native-test embed-comprehensive-test cross-tier-test ffi; do
         echo "  $test"
     done
     echo ""

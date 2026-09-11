@@ -20,6 +20,7 @@ and this for the second; both can share one context.
 - `qd_interp_error()` - Message from the most recent failure
 - `qd_interp_depth()` - Number of values on the stack
 - `qd_interp_peek()` - Read a stack value without removing it
+- `qd_interp_register()` - Make a C function callable by name from source
 - `qd_interp_destroy()` - Destroy the interpreter
 
 ## Example
@@ -59,10 +60,37 @@ if (!qd_interp_eval(interp, "1 0 /")) {
 }
 ```
 
+## Native functions
+
+`qd_interp_register()` makes a C function callable by name, which is how an
+embedder exposes its own capabilities to code a user types.
+
+```c
+static int beep(qd_context* ctx, void* userdata) {
+    (void)ctx; (void)userdata;
+    sound_the_buzzer();
+    return 0;               // non-zero raises an error
+}
+
+qd_interp_register(interp, "hw::beep", "( -- )", beep, NULL);
+qd_interp_eval(interp, "hw::beep");
+```
+
+Names may be scoped (`hw::beep`) or plain (`beep`). The signature's inputs are
+counted so the stack is checked before the call, the same guard builtins get;
+pass `NULL` to skip it. Registering a name twice replaces the earlier entry.
+
+`lib/qd` offers the same capability through `qd_register_function()`, but has to
+generate C stubs and link them so `dlopen` can resolve the symbols, which is why
+it needs a compiler and linker present at run time. Here it is a name lookup
+while walking the tree — nothing is compiled. The function pointer type is
+structurally identical to `qd_native_fn`, so one C function can be registered
+with either API without a cast.
+
 ## Coverage
 
-Builtin instructions and literals. Control flow, user-defined functions,
-variables and module imports are not interpreted yet; they are reported as an
+Builtin instructions, literals, and registered native functions. Control flow,
+Quadrate-defined functions, variables and module imports are not interpreted yet; they are reported as an
 error rather than failing silently.
 
 ## Constraints

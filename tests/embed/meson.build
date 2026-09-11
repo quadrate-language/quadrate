@@ -46,12 +46,19 @@ embed_comprehensive_test_exe = executable('embed-comprehensive-test',
 patchelf = find_program('patchelf', required: false)
 chrpath = find_program('chrpath', required: false)
 
+cross_tier_test_exe = executable('cross-tier-test',
+	'cross-tier-test.c',
+	dependencies: [qd_dep, interp_dep],
+	build_by_default: true
+)
+
 foreach example_info : [
 	['multi-module-test', multi_module_test_exe],
 	['native-functions-test', native_functions_test_exe],
 	['incremental-test', incremental_test_exe],
 	['typed-native-test', typed_native_test_exe],
-	['embed-comprehensive-test', embed_comprehensive_test_exe]
+	['embed-comprehensive-test', embed_comprehensive_test_exe],
+	['cross-tier-test', cross_tier_test_exe]
 ]
 	example_name = example_info[0]
 	example_exe = example_info[1]

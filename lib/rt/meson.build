@@ -1,5 +1,6 @@
 # Common sources
 qdrt_sources = files(
+		'src/natives.c',
 		'src/runtime.c',
 		'src/runtime_stack.c',
 		'src/runtime_ops.c',
