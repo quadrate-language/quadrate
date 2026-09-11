@@ -116,6 +116,11 @@ namespace Qd {
 		}
 	}
 
+	static std::string exponentNotationProblem(const std::string& text) {
+		return "Invalid numeric literal '" + text +
+			   "': exponent notation is not supported; write the value out, e.g. 1000000.0";
+	}
+
 	static std::string integerLiteralProblem(const std::string& text) {
 		int64_t value = 0;
 		const char* begin = text.data();
@@ -139,13 +144,24 @@ namespace Qd {
 			return "";
 		}
 		if (!prefixed && text.find_first_of("eE") != std::string::npos) {
-			return "Invalid numeric literal '" + text +
-				   "': exponent notation is not supported; write the value out, e.g. 1000000.0";
+			return exponentNotationProblem(text);
 		}
 		if (ec == std::errc::result_out_of_range) {
 			return "Integer literal '" + text + "' is out of range for i64";
 		}
 		return "Invalid integer literal '" + text + "'";
+	}
+
+	// u8t classifies every exponent form as a float. It used to type the ones with no
+	// fraction part — 1e300 — as integers, where integerLiteralProblem rejected them,
+	// while 2.2250738585072014e-308 came through as a float and was accepted (stdlib
+	// limits writes f64 bounds that way). Keep that split: an exponent standing in for
+	// an integer is the rejected form.
+	static std::string floatLiteralProblem(const std::string& text) {
+		if (text.find('.') == std::string::npos && text.find_first_of("eE") != std::string::npos) {
+			return exponentNotationProblem(text);
+		}
+		return "";
 	}
 
 	// Helper: Convert literal type to stack value type
@@ -788,6 +804,11 @@ namespace Qd {
 				AstNodeLiteral* lit = static_cast<AstNodeLiteral*>(child);
 				if (lit->literalType() == AstNodeLiteral::LiteralType::INTEGER) {
 					std::string problem = integerLiteralProblem(lit->value());
+					if (!problem.empty()) {
+						reportError(lit, problem.c_str());
+					}
+				} else if (lit->literalType() == AstNodeLiteral::LiteralType::FLOAT) {
+					std::string problem = floatLiteralProblem(lit->value());
 					if (!problem.empty()) {
 						reportError(lit, problem.c_str());
 					}

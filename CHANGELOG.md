@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- **u8t tokenizer updated to 1.4.0.** The local `u8t-scanner-eof.patch` is dropped — upstream now stops a string token at end-of-input without consuming the terminator, which is what the patch did. Malformed numeric literals (`0x`, `0b` and `1e` with no digits after them) are reported as `Unexpected character` rather than `Invalid integer literal`; the tokenizer classifies them as errors instead of handing the text to the parser. Rejection of exponent notation is unchanged: `1e300` is still an error, `2.2250738585072014e-308` is still a float.
+
 ### Removed
 
 - **`ctx` keyword**: `ctx { ... }` ran its body on a copy of the stack and appended only the body's top value to the parent. Nothing in the corpus used it and the static checker could not model it. There is no drop-in replacement — inlining the body is *not* equivalent, since it consumes the values `ctx` preserved; bind what the body needs with named locals and push the result explicitly. Using it reports the removal.

@@ -1,8 +1,7 @@
 [wrap-git]
 url = https://github.com/klahr/libu8t.git
-revision = 1.3.1
+revision = 1.4.0
 patch_directory = u8t
-diff_files = u8t-scanner-eof.patch
 
 [provide]
 u8t = u8t_dep
