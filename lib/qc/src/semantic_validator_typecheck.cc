@@ -650,6 +650,10 @@ namespace Qd {
 				typeCheckBlock(func->body(), typeStack, localVariables, structTypeStack);
 			}
 
+			mFinalStackFunction = func->name();
+			mFinalStackTypes = typeStack;
+			mFinalStackStructTypes = structTypeStack;
+
 			// Warn about unused named parameters
 			if (func->body()) {
 				// Collect named param names

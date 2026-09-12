@@ -1,18 +1,26 @@
 #include <quadrate/cli/cli.h>
 #include <quadrate/platform/platform.h>
 #include <quadrate/qc/ast.h>
+#include <quadrate/qc/ast_node_function.h>
+#include <quadrate/qc/ast_node_local.h>
 #include <quadrate/qc/colors.h>
 #include <quadrate/qc/instructions.h>
+#include <quadrate/qc/semantic_validator.h>
 #include <quadrate/qd/qd.h>
 #include <quadrate/rt/stack.h>
 
+#include <algorithm>
 #include <csetjmp>
 #include <csignal>
 #include <cstdio>
 #include <cstdlib>
+#include <cstring>
 #include <fcntl.h>
+#include <filesystem>
 #include <fstream>
+#include <functional>
 #include <iostream>
+#include <map>
 #include <pwd.h>
 #include <readline/history.h>
 #include <readline/readline.h>
@@ -26,122 +34,212 @@
 // History file path
 static std::string g_historyFile;
 
-// Completions for tab completion
-static const char* g_keywords[] = {"fn", "pub", "if", "else", "for", "loop", "break", "continue", "return", "use",
-		"struct", "packed", "enum", "const", "var", "defer", "switch", "case", "test", "as", "null", "true", "false",
-		"Ok", "Err", nullptr};
-
-// Tab completions for built-in instructions, derived from the compiler's own
-// table so this list cannot drift. The hand-maintained copy it replaces had
-// grown 'ne', 'le', 'ge', 'band', 'bor', 'bnot', 'bxor', 'i2f', 'f2i', 'i2s'
-// and 'f2s' - none of which are instructions - while missing real ones.
-static const char* const* builtinCompletions() {
-	static const std::vector<const char*> list = [] {
-		std::vector<const char*> v(std::begin(Qd::BUILTIN_INSTRUCTIONS), std::end(Qd::BUILTIN_INSTRUCTIONS));
-		v.push_back(nullptr); // readline completion loop scans to a nullptr sentinel
-		return v;
-	}();
-	return list.data();
+static bool isWordChar(char c) {
+	return isalnum(static_cast<unsigned char>(c)) != 0 || c == '_';
 }
 
-static const char* g_modules[] = {
-		"math::", "strings::", "io::", "fmt::", "os::", "mem::", "time::", "thread::", "flag::", "path::", "rand::",
-		"unicode::", "strconv::", "bytes::", "bits::", "signal::", "term::", "limits::", "testing::", "sb::", nullptr};
+struct ReferenceEntry {
+	const char* name;
+	const char* signature;
+	const char* description;
+};
 
-// Module function completions (module::function format)
-// Grouped by module, starting with math. The group comments sit between entries
-// rather than directly after the brace -- clang-format 22 and 23 format a comment
-// in that position differently and neither accepts the other's output.
-static const char* g_moduleFunctions[] = {"math::abs", "math::sqrt", "math::sin", "math::cos", "math::tan",
-		"math::asin", "math::acos", "math::atan", "math::atan2", "math::exp", "math::log", "math::log10", "math::log2",
-		"math::pow", "math::floor", "math::ceil", "math::round", "math::trunc", "math::min", "math::max", "math::clamp",
-		"math::lerp", "math::sq", "math::hypot", "math::PI", "math::E", "math::TAU",
-		// strings module
-		"strings::len", "strings::concat", "strings::substr", "strings::index", "strings::contains",
-		"strings::starts_with", "strings::ends_with", "strings::trim", "strings::ltrim", "strings::rtrim",
-		"strings::upper", "strings::lower", "strings::replace", "strings::split", "strings::join", "strings::repeat",
-		"strings::reverse", "strings::compare", "strings::char_at", "strings::from_char",
-		// io module
-		"io::open", "io::close", "io::read", "io::write", "io::read_line", "io::read_file", "io::write_file",
-		"io::append_file", "io::exists", "io::remove", "io::rename", "io::mkdir", "io::rmdir", "io::ReadOnly",
-		"io::WriteOnly", "io::ReadWrite", "io::Append", "io::Create", "io::Truncate",
-		// fmt module
-		"fmt::sprintf", "fmt::printf", "fmt::pad_left", "fmt::pad_right",
-		// os module
-		"os::args", "os::getenv", "os::setenv", "os::exit", "os::exec", "os::system", "os::getcwd", "os::chdir",
-		"os::hostname", "os::username", "os::pid", "os::ppid",
-		// mem module
-		"mem::alloc", "mem::realloc", "mem::free", "mem::copy", "mem::set", "mem::zero",
-		// time module
-		"time::now", "time::sleep", "time::since", "time::format", "time::parse", "time::year", "time::month",
-		"time::day", "time::hour", "time::minute", "time::second", "time::weekday",
-		// thread module
-		"thread::spawn", "thread::join", "thread::sleep", "thread::yield", "thread::id", "thread::mutex_create",
-		"thread::mutex_lock", "thread::mutex_unlock", "thread::mutex_destroy",
-		// path module
-		"path::join", "path::dir", "path::base", "path::ext", "path::abs", "path::rel", "path::clean", "path::is_abs",
-		"path::split", "path::match",
-		// rand module
-		"rand::int", "rand::float", "rand::range", "rand::bytes", "rand::shuffle", "rand::choice", "rand::seed",
-		// strconv module
-		"strconv::atoi", "strconv::atof", "strconv::itoa", "strconv::ftoa", "strconv::parse_int",
-		"strconv::parse_float",
-		// bytes module
-		"bytes::from_str", "bytes::to_str", "bytes::len", "bytes::get", "bytes::set", "bytes::slice",
-		// bits module
-		"bits::set", "bits::clear", "bits::toggle", "bits::test", "bits::count", "bits::reverse",
-		// signal module
-		"signal::handle", "signal::ignore", "signal::reset", "signal::raise",
-		// term module
-		"term::width", "term::height", "term::clear", "term::move", "term::color", "term::reset", "term::is_tty",
-		"term::raw", "term::cooked",
-		// limits module
-		"limits::I8_MIN", "limits::I8_MAX", "limits::I16_MIN", "limits::I16_MAX", "limits::I32_MIN", "limits::I32_MAX",
-		"limits::I64_MIN", "limits::I64_MAX", "limits::F32_MIN", "limits::F32_MAX", "limits::F64_MIN",
-		"limits::F64_MAX",
-		// sb (string builder) module
-		"sb::new", "sb::write", "sb::writeln", "sb::string", "sb::len", "sb::clear", "sb::free", nullptr};
+static const ReferenceEntry g_reference[] = {
+#define KEYWORD(name, description) {#name, nullptr, description},
+#define BUILTIN(name, signature, description) {#name, signature, description},
+#include <quadrate/qc/reference.def>
+#undef BUILTIN
+#undef KEYWORD
+};
+
+static const char* const g_keywords[] = {"fn", "pub", "inline", "if", "else", "for", "loop", "break", "continue",
+		"return", "use", "struct", "packed", "enum", "const", "var", "defer", "switch", "case", "test", "type", "as",
+		"null", "true", "false", "Ok", "Err"};
+
+extern "C" int exe_path_platform_get(char* buffer, size_t buffer_size);
+
+#ifndef QUADRATE_SOURCE_ROOT
+#define QUADRATE_SOURCE_ROOT ""
+#endif
+
+#ifdef QD_PLATFORM_HAIKU
+#define QD_DATA_DIR_NAME "data"
+#else
+#define QD_DATA_DIR_NAME "share"
+#endif
+
+static std::string findStdlibRoot() {
+	namespace fs = std::filesystem;
+
+	auto usable = [](const fs::path& path) {
+		std::error_code ec;
+		return fs::is_directory(path, ec);
+	};
+
+	if (const char* root = getenv("QUADRATE_ROOT"); root && usable(root)) {
+		return root;
+	}
+
+	if (const char* libDir = getenv("QUADRATE_LIBDIR")) {
+		fs::path share = fs::path(libDir) / ".." / QD_DATA_DIR_NAME / "quadrate";
+		if (usable(share)) {
+			return share.string();
+		}
+	}
+
+	char exePathBuf[4096];
+	const int len = exe_path_platform_get(exePathBuf, sizeof(exePathBuf));
+	if (len > 0 && static_cast<size_t>(len) < sizeof(exePathBuf)) {
+		std::error_code ec;
+		fs::path exePath = fs::canonical(exePathBuf, ec);
+		if (!ec) {
+			fs::path share = exePath.parent_path() / ".." / QD_DATA_DIR_NAME / "quadrate";
+			if (usable(share)) {
+				return share.string();
+			}
+		}
+	}
+
+	if (const char* home = getenv("HOME")) {
+		fs::path path = fs::path(home) / "quadrate";
+		if (usable(path)) {
+			return path.string();
+		}
+	}
+
+	if (QUADRATE_SOURCE_ROOT[0] != '\0') {
+		fs::path stdlib = fs::path(QUADRATE_SOURCE_ROOT) / "stdlib";
+		if (usable(stdlib)) {
+			return stdlib.string();
+		}
+	}
+
+	return "";
+}
+
+static void collectPublicDeclarations(
+		const std::filesystem::path& file, const std::string& module, std::map<std::string, std::string>& out) {
+	std::ifstream in(file);
+	if (!in.good()) {
+		return;
+	}
+
+	std::string line;
+	while (std::getline(in, line)) {
+		size_t indent = 0;
+		while (indent < line.size() && isspace(static_cast<unsigned char>(line[indent])) != 0) {
+			indent++;
+		}
+		if (line.compare(indent, 4, "pub ") != 0) {
+			continue;
+		}
+
+		size_t pos = indent + 4;
+		auto skipKeyword = [&](const char* keyword) {
+			const size_t n = strlen(keyword);
+			if (line.compare(pos, n, keyword) != 0 || pos + n >= line.size() ||
+					isspace(static_cast<unsigned char>(line[pos + n])) == 0) {
+				return false;
+			}
+			pos += n;
+			while (pos < line.size() && isspace(static_cast<unsigned char>(line[pos])) != 0) {
+				pos++;
+			}
+			return true;
+		};
+
+		skipKeyword("inline");
+		if (!skipKeyword("fn") && !skipKeyword("const") && !skipKeyword("struct") && !skipKeyword("enum") &&
+				!skipKeyword("type")) {
+			continue;
+		}
+
+		const size_t start = pos;
+		while (pos < line.size() && isWordChar(line[pos])) {
+			pos++;
+		}
+		if (pos == start) {
+			continue;
+		}
+
+		std::string declaration = line.substr(indent, line.find('{') - indent);
+		while (!declaration.empty() && isspace(static_cast<unsigned char>(declaration.back())) != 0) {
+			declaration.pop_back();
+		}
+		out.emplace(module + "::" + line.substr(start, pos - start), declaration);
+	}
+}
+
+static const std::map<std::string, std::string>& stdlibDeclarations() {
+	static const std::map<std::string, std::string> declarations = [] {
+		namespace fs = std::filesystem;
+		std::map<std::string, std::string> out;
+
+		const std::string root = findStdlibRoot();
+		if (root.empty()) {
+			return out;
+		}
+
+		std::error_code ec;
+		for (const auto& entry : fs::directory_iterator(root, ec)) {
+			if (!entry.is_directory(ec)) {
+				continue;
+			}
+			const std::string module = entry.path().filename().string();
+			if (module.empty() || module[0] == '.' || module[0] == '_') {
+				continue;
+			}
+
+			std::error_code walkEc;
+			for (const auto& file : fs::recursive_directory_iterator(entry.path(), walkEc)) {
+				if (file.path().extension() == ".qd") {
+					collectPublicDeclarations(file.path(), module, out);
+				}
+			}
+		}
+		return out;
+	}();
+	return declarations;
+}
+
+static const std::vector<std::string>& completionCandidates() {
+	static const std::vector<std::string> candidates = [] {
+		std::vector<std::string> all(std::begin(g_keywords), std::end(g_keywords));
+		all.insert(all.end(), std::begin(Qd::BUILTIN_INSTRUCTIONS), std::end(Qd::BUILTIN_INSTRUCTIONS));
+		for (const auto& entry : g_reference) {
+			if (strcmp(entry.name, "_") != 0) {
+				all.push_back(entry.name);
+			}
+		}
+
+		for (const auto& [name, declaration] : stdlibDeclarations()) {
+			all.push_back(name.substr(0, name.find(':') + 2));
+			all.push_back(name);
+		}
+
+		std::sort(all.begin(), all.end());
+		all.erase(std::unique(all.begin(), all.end()), all.end());
+		return all;
+	}();
+	return candidates;
+}
 
 // Generator function for readline completion
 static char* completionGenerator(const char* text, int state) {
-	static int listIndex;
+	static size_t index;
 	static size_t len;
-	static int phase; // 0=keywords, 1=builtins, 2=modules, 3=module functions
-	const char* name;
 
 	if (!state) {
-		listIndex = 0;
-		phase = 0;
+		index = 0;
 		len = strlen(text);
 	}
 
-	while (phase < 4) {
-		const char* const* list;
-		switch (phase) {
-		case 0:
-			list = g_keywords;
-			break;
-		case 1:
-			list = builtinCompletions();
-			break;
-		case 2:
-			list = g_modules;
-			break;
-		case 3:
-			list = g_moduleFunctions;
-			break;
-		default:
-			return nullptr;
+	const std::vector<std::string>& candidates = completionCandidates();
+	while (index < candidates.size()) {
+		const std::string& name = candidates[index++];
+		if (name.compare(0, len, text, len) == 0) {
+			return strdup(name.c_str());
 		}
-
-		while ((name = list[listIndex]) != nullptr) {
-			listIndex++;
-			if (strncmp(name, text, len) == 0) {
-				return strdup(name);
-			}
-		}
-		phase++;
-		listIndex = 0;
 	}
 
 	return nullptr;
@@ -211,6 +309,79 @@ static void signalHandler(int sig) {
 
 // Stack display settings
 #define MAX_STACK_DISPLAY 5
+#define HISTORY_LIMIT 5000
+#define MAX_STRING_DISPLAY 20
+
+static std::string rewriteWords(
+		const std::string& code, const std::function<bool(const std::string&, std::string&)>& rewrite) {
+	std::string out;
+	const size_t n = code.size();
+	size_t i = 0;
+
+	while (i < n) {
+		const char c = code[i];
+
+		if (c == '"') {
+			out += c;
+			i++;
+			while (i < n) {
+				if (code[i] == '\\' && i + 1 < n) {
+					out += code[i];
+					out += code[i + 1];
+					i += 2;
+					continue;
+				}
+				out += code[i];
+				i++;
+				if (code[i - 1] == '"') {
+					break;
+				}
+			}
+			continue;
+		}
+
+		if (c == '/' && i + 1 < n && code[i + 1] == '/') {
+			while (i < n && code[i] != '\n') {
+				out += code[i];
+				i++;
+			}
+			continue;
+		}
+
+		if (c == '/' && i + 1 < n && code[i + 1] == '*') {
+			out += "/*";
+			i += 2;
+			while (i + 1 < n && !(code[i] == '*' && code[i + 1] == '/')) {
+				out += code[i];
+				i++;
+			}
+			if (i + 1 < n) {
+				out += "*/";
+				i += 2;
+			} else {
+				out.append(code, i, std::string::npos);
+				i = n;
+			}
+			continue;
+		}
+
+		if (isWordChar(c)) {
+			const size_t start = i;
+			while (i < n && isWordChar(code[i])) {
+				i++;
+			}
+			const std::string word = code.substr(start, i - start);
+			std::string replacement;
+			out += rewrite(word, replacement) ? replacement : word;
+			continue;
+		}
+
+		out += c;
+		i++;
+	}
+
+	return out;
+}
 
 class ReplSession {
 public:
@@ -218,8 +389,6 @@ public:
 		ctx = qd_create_context(1024);
 		mod = qd_get_module(ctx, "repl");
 		moduleCounter = 0;
-		lastSuccessfulExprCount = 0;
-		expectedStackDepth = 0;
 	}
 
 	~ReplSession() {
@@ -236,6 +405,7 @@ public:
 		g_historyFile = getHistoryFilePath();
 		if (!g_historyFile.empty()) {
 			read_history(g_historyFile.c_str());
+			stifle_history(HISTORY_LIMIT);
 		}
 
 		printWelcome();
@@ -248,7 +418,7 @@ public:
 			std::string indent;
 			if (braceDepth > 0) {
 				// Continuation prompt with indentation indicator
-				prompt = std::string(COLOR_DIM) + "...> " + COLOR_RESET;
+				prompt = paint(COLOR_DIM) + "...> " + paint(COLOR_RESET);
 				// Build indentation string (one tab per brace level)
 				for (int i = 0; i < braceDepth; i++) {
 					indent += "\t";
@@ -314,7 +484,7 @@ public:
 	}
 
 	bool hasUserFunction(const std::string& name) {
-		for (const auto& def : functionDefs) {
+		for (const auto& def : definitions) {
 			std::string d = trim(def);
 			if (d.compare(0, 4, "pub ") == 0) {
 				d = trim(d.substr(4));
@@ -331,47 +501,78 @@ public:
 		return false;
 	}
 
+	static std::pair<std::string, std::string> splitCommand(const std::string& input) {
+		const size_t space = input.find_first_of(" \t");
+		if (space == std::string::npos) {
+			return {input, ""};
+		}
+		return {input.substr(0, space), input.substr(space + 1)};
+	}
+
 	bool handleCompleteInput(const std::string& completeInput) {
-		auto isMeta = [&](const char* bare, const char* colon, const char* alt = nullptr) {
-			if (completeInput == colon || (alt && completeInput == alt)) {
-				return true;
+		auto isMeta = [&](std::initializer_list<const char*> names) {
+			for (const char* name : names) {
+				if (completeInput != name) {
+					continue;
+				}
+				if (name[0] == ':' || !hasUserFunction(name)) {
+					return true;
+				}
 			}
-			return completeInput == bare && !hasUserFunction(bare);
+			return false;
 		};
 
-		if (isMeta("exit", ":q") || isMeta("quit", ":q")) {
+		const auto [word, argument] = splitCommand(completeInput);
+		auto isMetaWithArgument = [&](std::initializer_list<const char*> names) {
+			for (const char* name : names) {
+				if (word == name) {
+					return true;
+				}
+			}
+			return false;
+		};
+
+		if (isMeta({"exit", "quit", ":q", ":quit", ":exit"})) {
 			if (printOnExit) {
 				printStackToStdout();
 			}
 			saveHistory();
 			return false;
-		} else if (isMeta("help", ":help", ":h")) {
+		} else if (isMeta({"help", ":help", ":h"})) {
 			printHelp();
 			return true;
-		} else if (isMeta("clear", ":clear")) {
+		} else if (isMeta({"clear", ":clear"})) {
 			clearStack();
 			return true;
-		} else if (isMeta("stack", ":stack")) {
+		} else if (isMeta({"stack", ":stack"})) {
 			showStack();
 			return true;
-		} else if (isMeta("type", ":type", ":types")) {
+		} else if (isMeta({"type", "types", ":type", ":types"})) {
 			showTypes();
 			return true;
-		} else if (isMeta("reset", ":reset")) {
+		} else if (isMeta({"reset", ":reset"})) {
 			reset();
 			return true;
-		} else if (completeInput.substr(0, 6) == ".save ") {
-			std::string filename = trim(completeInput.substr(6));
+		} else if (isMetaWithArgument({":doc", ":d"})) {
+			const std::string name = trim(argument);
+			if (name.empty()) {
+				printf("%sUsage: :doc <name>%s\n", COLOR_RED, COLOR_RESET);
+			} else {
+				printDoc(name);
+			}
+			return true;
+		} else if (isMetaWithArgument({".save", ":save"})) {
+			const std::string filename = trim(argument);
 			if (filename.empty()) {
-				printf("%sUsage: .save <filename>%s\n", COLOR_RED, COLOR_RESET);
+				printf("%sUsage: :save <filename>%s\n", COLOR_RED, COLOR_RESET);
 			} else {
 				saveSession(filename);
 			}
 			return true;
-		} else if (completeInput.substr(0, 6) == ".load ") {
-			std::string filename = trim(completeInput.substr(6));
+		} else if (isMetaWithArgument({".load", ":load"})) {
+			const std::string filename = trim(argument);
 			if (filename.empty()) {
-				printf("%sUsage: .load <filename>%s\n", COLOR_RED, COLOR_RESET);
+				printf("%sUsage: :load <filename>%s\n", COLOR_RED, COLOR_RESET);
 			} else {
 				loadSession(filename);
 			}
@@ -506,97 +707,9 @@ public:
 		run();
 	}
 
-	// Parse a line of space-separated values and push them onto the stack
-	void pushValuesFromLine(const std::string& line) {
-		size_t pos = 0;
-		size_t len = line.length();
-
-		while (pos < len) {
-			// Skip whitespace
-			while (pos < len && (line[pos] == ' ' || line[pos] == '\t')) {
-				pos++;
-			}
-			if (pos >= len) {
-				break;
-			}
-
-			// Check for quoted string
-			if (line[pos] == '"') {
-				pos++; // skip opening quote
-				std::string str;
-				while (pos < len && line[pos] != '"') {
-					if (line[pos] == '\\' && pos + 1 < len) {
-						pos++;
-						switch (line[pos]) {
-						case 'n':
-							str += '\n';
-							break;
-						case 't':
-							str += '\t';
-							break;
-						case 'r':
-							str += '\r';
-							break;
-						case '\\':
-							str += '\\';
-							break;
-						case '"':
-							str += '"';
-							break;
-						default:
-							str += line[pos];
-							break;
-						}
-					} else {
-						str += line[pos];
-					}
-					pos++;
-				}
-				if (pos < len) {
-					pos++; // skip closing quote
-				}
-				qd_push_s(ctx, str.c_str());
-			} else {
-				// Read until whitespace
-				size_t start = pos;
-				while (pos < len && line[pos] != ' ' && line[pos] != '\t') {
-					pos++;
-				}
-				std::string token = line.substr(start, pos - start);
-
-				// Try to parse as number
-				if (token.empty()) {
-					continue;
-				}
-
-				// Check for float (contains '.' or 'e'/'E')
-				bool isFloat = token.find('.') != std::string::npos || token.find('e') != std::string::npos ||
-							   token.find('E') != std::string::npos;
-
-				if (isFloat) {
-					try {
-						double val = std::stod(token);
-						qd_push_f(ctx, val);
-					} catch (...) {
-						// Not a valid float, push as string
-						qd_push_s(ctx, token.c_str());
-					}
-				} else {
-					try {
-						long long val = std::stoll(token);
-						qd_push_i(ctx, val);
-					} catch (...) {
-						// Not a valid int, push as string
-						qd_push_s(ctx, token.c_str());
-					}
-				}
-			}
-		}
-	}
-
 	// Print stack values to stdout (space-separated, compatible with 'read' instruction)
 	void printStackToStdout() {
-		size_t depth = getStackDepth();
+		size_t depth = userStackDepth();
 		for (size_t i = 0; i < depth; i++) {
 			if (i > 0) {
 				printf(" ");
@@ -627,17 +740,36 @@ public:
 	}
 
 private:
+	struct Binding {
+		std::string name;
+		std::string type;
+	};
+
+	static std::string declaredType(const qd_stack_element_t& elem, const std::string& structType) {
+		switch (elem.type) {
+		case QD_STACK_TYPE_INT:
+			return "i64";
+		case QD_STACK_TYPE_FLOAT:
+			return "f64";
+		case QD_STACK_TYPE_STR:
+			return "str";
+		case QD_STACK_TYPE_PTR:
+			return structType.empty() ? "ptr" : structType;
+		default:
+			return "any";
+		}
+	}
+
 	qd_context* ctx;
 	qd_module* mod;
-	std::vector<std::string> functionDefs;
+	std::vector<std::string> definitions;
 	std::vector<std::string> useStatements;
-	std::vector<std::string> history;		 // Accumulated expressions
 	std::vector<std::string> sessionHistory; // Commands for .save/.load
+	std::vector<std::string> sessionStack;
+	std::vector<Binding> sessionLocals;
 	int moduleCounter;
-	size_t lastSuccessfulExprCount; // Number of expressions successfully compiled
-	size_t expectedStackDepth;		// Expected stack depth based on successful operations
-	bool printOnExit;				// Whether to print stack on exit (-p flag)
-	bool mNoColorFlag = false;		// --no-color given on the command line
+	bool printOnExit;
+	bool mNoColorFlag = false;
 
 public:
 	void setNoColor(bool noColor) {
@@ -654,33 +786,65 @@ private:
 		return str.substr(first, (last - first + 1));
 	}
 
-	size_t getStackDepth() {
-		return qd_stack_size(ctx->st);
+	void clearStack() {
+		const size_t visible = userStackDepth();
+		for (size_t i = 0; i < visible; i++) {
+			qd_stack_remove_at(ctx->st, 0, nullptr);
+		}
+		sessionStack.clear();
 	}
 
-	void clearStack() {
-		// Clear expression history
-		history.clear();
-		// Also clear the context stack immediately
+	void dropEverything() {
 		while (!qd_stack_is_empty(ctx->st)) {
-			qd_stack_element_t elem;
-			qd_stack_pop(ctx->st, &elem);
+			qd_stack_pop(ctx->st, nullptr);
+		}
+		sessionStack.clear();
+		sessionLocals.clear();
+	}
+
+	std::string formatValue(const qd_stack_element_t& elem, const char*& color, size_t maxString) {
+		char buffer[64];
+
+		switch (elem.type) {
+		case QD_STACK_TYPE_INT:
+			color = COLOR_BLUE;
+			return std::to_string(elem.value.i);
+		case QD_STACK_TYPE_FLOAT:
+			color = COLOR_YELLOW;
+			snprintf(buffer, sizeof(buffer), "%g", elem.value.f);
+			return buffer;
+		case QD_STACK_TYPE_STR: {
+			color = COLOR_GREEN;
+			std::string text = (elem.value.s && elem.value.s->data) ? elem.value.s->data : "";
+			if (text.size() > maxString) {
+				text = text.substr(0, maxString) + "...";
+			}
+			return "\"" + text + "\"";
+		}
+		case QD_STACK_TYPE_PTR:
+			color = COLOR_MAGENTA;
+			return "ptr";
+		default:
+			color = COLOR_RED;
+			return "?";
 		}
 	}
 
+	static std::string paint(const char* color) {
+		std::string escaped(color);
+		if (escaped.empty()) {
+			return escaped;
+		}
+		return std::string(1, RL_PROMPT_START_IGNORE) + escaped + std::string(1, RL_PROMPT_END_IGNORE);
+	}
+
 	std::string buildPrompt() {
-		std::string prompt;
-		prompt += COLOR_CYAN;
-		prompt += "[";
+		std::string prompt = paint(COLOR_CYAN) + "[";
 
-		size_t depth = getStackDepth();
+		const size_t depth = userStackDepth();
 		size_t startIndex = 0;
-
 		if (depth > MAX_STACK_DISPLAY) {
-			prompt += COLOR_DIM;
-			prompt += "...";
-			prompt += COLOR_RESET;
-			prompt += " ";
+			prompt += paint(COLOR_DIM) + "..." + paint(COLOR_RESET) + " ";
 			startIndex = depth - MAX_STACK_DISPLAY;
 		}
 
@@ -689,47 +853,15 @@ private:
 				prompt += " ";
 			}
 
-			// Get value at position (from bottom, index 0 = bottom)
 			qd_stack_element_t elem;
 			qd_stack_element(ctx->st, i, &elem);
 
-			switch (elem.type) {
-			case QD_STACK_TYPE_INT:
-				prompt += COLOR_BLUE;
-				prompt += std::to_string(elem.value.i);
-				prompt += COLOR_RESET;
-				break;
-			case QD_STACK_TYPE_FLOAT:
-				prompt += COLOR_YELLOW;
-				prompt += std::to_string(elem.value.f);
-				prompt += COLOR_RESET;
-				break;
-			case QD_STACK_TYPE_STR:
-				prompt += COLOR_GREEN;
-				prompt += "\"";
-				if (elem.value.s && elem.value.s->data) {
-					prompt += elem.value.s->data;
-				}
-				prompt += "\"";
-				prompt += COLOR_RESET;
-				break;
-			case QD_STACK_TYPE_PTR:
-				prompt += COLOR_MAGENTA;
-				prompt += "ptr";
-				prompt += COLOR_RESET;
-				break;
-			default:
-				prompt += COLOR_RED;
-				prompt += "?";
-				prompt += COLOR_RESET;
-				break;
-			}
+			const char* color = COLOR_RESET;
+			const std::string text = formatValue(elem, color, MAX_STRING_DISPLAY);
+			prompt += paint(color) + text + paint(COLOR_RESET);
 		}
 
-		prompt += COLOR_CYAN;
-		prompt += "]> ";
-		prompt += COLOR_RESET;
-
+		prompt += paint(COLOR_CYAN) + "]> " + paint(COLOR_RESET);
 		return prompt;
 	}
 
@@ -737,7 +869,8 @@ private:
 		printf("%sQuadrate REPL %s%s\n", COLOR_BOLD, QUADRATE_VERSION, COLOR_RESET);
 		printf("Type %shelp%s for available commands, %sexit%s to quit\n", COLOR_GREEN, COLOR_RESET, COLOR_GREEN,
 				COLOR_RESET);
-		printf("%sTip: Use 'print' to display integer/float values, 'prints' for strings%s\n", COLOR_DIM, COLOR_RESET);
+		printf("%sTip: the prompt shows the stack. 'print' writes the top value out, ':doc <name>' explains a name%s\n",
+				COLOR_DIM, COLOR_RESET);
 		printf("\n");
 	}
 
@@ -778,46 +911,101 @@ private:
 	}
 
 	void printHelp() {
+		auto command = [](const char* names, const char* description) {
+			printf("  %s%-18s%s %s\n", COLOR_GREEN, names, COLOR_RESET, description);
+		};
+
 		printf("\n");
 		printf("%sREPL Commands:%s\n", COLOR_BOLD, COLOR_RESET);
-		printf("  %shelp%s, %s:help%s     Show this help message\n", COLOR_GREEN, COLOR_RESET, COLOR_GREEN,
-				COLOR_RESET);
-		printf("  %sexit%s, %squit%s, %s:q%s  Exit the REPL\n", COLOR_GREEN, COLOR_RESET, COLOR_GREEN, COLOR_RESET,
-				COLOR_GREEN, COLOR_RESET);
-		printf("  %sstack%s, %s:stack%s   Show current stack values\n", COLOR_GREEN, COLOR_RESET, COLOR_GREEN,
-				COLOR_RESET);
-		printf("  %stype%s, %s:type%s    Show stack types (i64, f64, str, ptr)\n", COLOR_GREEN, COLOR_RESET,
-				COLOR_GREEN, COLOR_RESET);
-		printf("  %sclear%s, %s:clear%s   Clear the stack\n", COLOR_GREEN, COLOR_RESET, COLOR_GREEN, COLOR_RESET);
-		printf("  %sreset%s, %s:reset%s   Reset REPL (clear everything)\n", COLOR_GREEN, COLOR_RESET, COLOR_GREEN,
-				COLOR_RESET);
-		printf("  %s.save <file>%s    Save session history to file\n", COLOR_GREEN, COLOR_RESET);
-		printf("  %s.load <file>%s    Load and execute commands from file\n", COLOR_GREEN, COLOR_RESET);
+		command("help, :help, :h", "Show this help message");
+		command("exit, quit, :q", "Exit the REPL");
+		command("stack, :stack", "Show current stack values");
+		command("type, :type", "Show stack types (i64, f64, str, ptr)");
+		command("clear, :clear", "Clear the stack");
+		command("reset, :reset", "Reset the REPL: stack, definitions and imports");
+		command(":doc <name>", "Show a signature; with no exact match, search names");
+		command(":save <file>", "Save session history to file");
+		command(":load <file>", "Load and execute commands from file");
 		printf("\n");
 		printf("%sKey Bindings:%s\n", COLOR_BOLD, COLOR_RESET);
-		printf("  %sTab%s           Auto-complete keywords, builtins, module functions\n", COLOR_GREEN, COLOR_RESET);
-		printf("  %sUp/Down Arrow%s  Navigate command history\n", COLOR_GREEN, COLOR_RESET);
-		printf("  %sCtrl+R%s        Search command history\n", COLOR_GREEN, COLOR_RESET);
-		printf("  %sCtrl+D%s        Exit REPL (EOF)\n", COLOR_GREEN, COLOR_RESET);
+		command("Tab", "Complete keywords, builtins and standard library names");
+		command("Up/Down Arrow", "Navigate command history");
+		command("Ctrl+R", "Search command history");
+		command("Ctrl+D", "Exit REPL (EOF)");
 		printf("\n");
 		printf("%sUsage:%s\n", COLOR_BOLD, COLOR_RESET);
-		printf("  Type Quadrate expressions and they will be evaluated immediately.\n");
-		printf("  Use 'print' or 'prints' to see output from your expressions.\n");
+		printf("  Expressions are evaluated as you type them, and whatever they leave\n");
+		printf("  on the stack stays there - the prompt shows it. Use 'print' to write\n");
+		printf("  a value to the screen (which also pops it).\n");
 		printf("\n");
 		printf("%sExamples:%s\n", COLOR_BOLD, COLOR_RESET);
-		printf("  []> 5 3 add print\n");
-		printf("  8\n");
-		printf("  []> 10 dup mul print\n");
-		printf("  100\n");
-		printf("  []> fn double(x:i64 -- y:i64) { dup add }\n");
+		printf("  []> 5 3\n");
+		printf("  [5 3]> add\n");
+		printf("  [8]> dup mul\n");
+		printf("  [64]> print\n");
+		printf("  64\n");
+		printf("  []> fn double(x:i64 -- y:i64) { x x add }\n");
 		printf("  Function defined\n");
 		printf("  []> 21 double print\n");
 		printf("  42\n");
 		printf("\n");
 	}
 
+	void printDoc(const std::string& query) {
+		size_t matches = 0;
+
+		for (const auto& entry : g_reference) {
+			if (query != entry.name) {
+				continue;
+			}
+			matches++;
+			if (entry.signature) {
+				printf("  %s%s%s %s%s%s\n", COLOR_BOLD, entry.name, COLOR_RESET, COLOR_DIM, entry.signature,
+						COLOR_RESET);
+			} else {
+				printf("  %s%s%s %s(keyword)%s\n", COLOR_BOLD, entry.name, COLOR_RESET, COLOR_DIM, COLOR_RESET);
+			}
+			printf("    %s\n", entry.description);
+		}
+
+		const auto& declarations = stdlibDeclarations();
+		if (auto it = declarations.find(query); it != declarations.end()) {
+			matches++;
+			printf("  %s%s%s\n", COLOR_BOLD, it->second.c_str(), COLOR_RESET);
+		}
+
+		for (const auto& definition : definitions) {
+			const std::string declaration = trim(definition.substr(0, definition.find('{')));
+			if (declaration.find(query) != std::string::npos) {
+				matches++;
+				printf("  %s%s%s %s(this session)%s\n", COLOR_BOLD, declaration.c_str(), COLOR_RESET, COLOR_DIM,
+						COLOR_RESET);
+			}
+		}
+
+		if (matches > 0) {
+			return;
+		}
+
+		for (const auto& name : completionCandidates()) {
+			if (name.find(query) == std::string::npos || name.size() < 2 ||
+					name.compare(name.size() - 2, 2, "::") == 0) {
+				continue;
+			}
+			matches++;
+			if (matches == 1) {
+				printf("%sNo exact match for '%s'. Names containing it:%s\n", COLOR_DIM, query.c_str(), COLOR_RESET);
+			}
+			printf("  %s\n", name.c_str());
+		}
+
+		if (matches == 0) {
+			printf("%sNothing found for '%s'%s\n", COLOR_DIM, query.c_str(), COLOR_RESET);
+		}
+	}
+
 	void showStack() {
-		size_t depth = getStackDepth();
+		const size_t depth = userStackDepth();
 		if (depth == 0) {
 			printf("%sStack is empty%s\n", COLOR_DIM, COLOR_RESET);
 			return;
@@ -827,30 +1015,14 @@ private:
 		for (size_t i = 0; i < depth; i++) {
 			qd_stack_element_t elem;
 			qd_stack_element(ctx->st, i, &elem);
-			printf("  [%zu] ", i);
-
-			switch (elem.type) {
-			case QD_STACK_TYPE_INT:
-				printf("%lld\n", static_cast<long long>(elem.value.i));
-				break;
-			case QD_STACK_TYPE_FLOAT:
-				printf("%f\n", elem.value.f);
-				break;
-			case QD_STACK_TYPE_STR:
-				printf("\"%s\"\n", (elem.value.s && elem.value.s->data) ? elem.value.s->data : "");
-				break;
-			case QD_STACK_TYPE_PTR:
-				printf("ptr:%p\n", elem.value.p);
-				break;
-			default:
-				printf("?\n");
-				break;
-			}
+			const char* color = COLOR_RESET;
+			const std::string text = formatValue(elem, color, std::string::npos);
+			printf("  [%zu] %s%s%s\n", i, color, text.c_str(), COLOR_RESET);
 		}
 	}
 
 	void showTypes() {
-		size_t depth = getStackDepth();
+		size_t depth = userStackDepth();
 		if (depth == 0) {
 			printf("%sStack is empty%s\n", COLOR_DIM, COLOR_RESET);
 			return;
@@ -883,10 +1055,9 @@ private:
 	}
 
 	void reset() {
-		history.clear();
-		functionDefs.clear();
+		dropEverything();
+		definitions.clear();
 		useStatements.clear();
-		expectedStackDepth = 0;
 		printf("%sREPL reset%s\n", COLOR_DIM, COLOR_RESET);
 	}
 
@@ -896,12 +1067,31 @@ private:
 		}
 	}
 
-	void processLine(const std::string& line) {
-		std::string trimmedLine = trim(line);
+	static const char* declarationKind(const std::string& line) {
+		static const std::pair<const char*, const char*> kinds[] = {
+				{"fn ", "Function"},
+				{"inline fn ", "Function"},
+				{"struct ", "Struct"},
+				{"packed struct ", "Struct"},
+				{"enum ", "Enum"},
+				{"const ", "Constant"},
+				{"type ", "Type alias"},
+				{"var ", "Global"},
+		};
 
-		// Check if this is a use statement
+		const std::string rest = line.compare(0, 4, "pub ") == 0 ? line.substr(4) : line;
+		for (const auto& [prefix, name] : kinds) {
+			if (rest.compare(0, strlen(prefix), prefix) == 0) {
+				return name;
+			}
+		}
+		return nullptr;
+	}
+
+	void processLine(const std::string& line) {
+		const std::string trimmedLine = trim(line);
+
 		if (trimmedLine.rfind("use ", 0) == 0) {
-			// Validate use statement by trying to parse it
 			if (validateDefinition(line)) {
 				useStatements.push_back(line);
 				printf("%sModule imported%s\n", COLOR_DIM, COLOR_RESET);
@@ -909,17 +1099,14 @@ private:
 			return;
 		}
 
-		// Check if this is a function definition
-		if (trimmedLine.rfind("fn ", 0) == 0) {
-			// Validate function definition by trying to parse it
+		if (const char* kind = declarationKind(trimmedLine)) {
 			if (validateDefinition(line)) {
-				functionDefs.push_back(line);
-				printf("%sFunction defined%s\n", COLOR_DIM, COLOR_RESET);
+				definitions.push_back(line);
+				printf("%s%s defined%s\n", COLOR_DIM, kind, COLOR_RESET);
 			}
 			return;
 		}
 
-		// Regular expression - compile and execute
 		compileAndExecute(line);
 	}
 
@@ -934,7 +1121,7 @@ private:
 		}
 
 		// Add existing function definitions
-		for (const auto& func : functionDefs) {
+		for (const auto& func : definitions) {
 			testSource += func + "\n";
 		}
 
@@ -960,181 +1147,64 @@ private:
 	}
 
 	std::string convertPrint(const std::string& code) {
-		// In REPL, automatically add newlines after print operations for better output
-		// Convert 'prints' to 'prints nl'
-		// Convert 'print' to 'print nl'
-		// Convert '.' to '. nl'
-		std::string processedCode = code;
-
-		// Handle '.' -> '. nl'
-		size_t pos = 0;
-		while ((pos = processedCode.find('.', pos)) != std::string::npos) {
-			bool isWordStart = (pos == 0 || !isalnum(processedCode[pos - 1]));
-			bool isWordEnd = (pos + 1 >= processedCode.length() || !isalnum(processedCode[pos + 1]));
-			// Check it's not a decimal point
-			bool isDecimalPoint = (pos > 0 && isdigit(processedCode[pos - 1])) ||
-								  (pos + 1 < processedCode.length() && isdigit(processedCode[pos + 1]));
-			if (isWordStart && isWordEnd && !isDecimalPoint) {
-				processedCode.insert(pos + 1, " nl");
-				pos += 4; // ". nl"
-			} else {
-				pos += 1;
+		return rewriteWords(code, [](const std::string& word, std::string& out) {
+			if (word == "print" || word == "printv" || word == "prints" || word == "printsv") {
+				out = word + " nl";
+				return true;
 			}
-		}
-
-		// Handle 'prints' -> 'prints nl' (before handling 'print')
-		pos = 0;
-		while ((pos = processedCode.find("prints", pos)) != std::string::npos) {
-			// Skip 'printsv'
-			if (pos + 7 < processedCode.length() && processedCode[pos + 6] == 'v') {
-				pos += 7;
-				continue;
-			}
-			bool isWordStart = (pos == 0 || !isalnum(processedCode[pos - 1]));
-			bool isWordEnd = (pos + 6 >= processedCode.length() || !isalnum(processedCode[pos + 6]));
-			if (isWordStart && isWordEnd) {
-				processedCode.insert(pos + 6, " nl");
-				pos += 9; // "prints nl"
-			} else {
-				pos += 6;
-			}
-		}
-
-		// Handle 'printv' -> 'printv nl' (before handling 'print')
-		pos = 0;
-		while ((pos = processedCode.find("printv", pos)) != std::string::npos) {
-			bool isWordStart = (pos == 0 || !isalnum(processedCode[pos - 1]));
-			bool isWordEnd = (pos + 6 >= processedCode.length() || !isalnum(processedCode[pos + 6]));
-			if (isWordStart && isWordEnd) {
-				processedCode.insert(pos + 6, " nl");
-				pos += 9; // "printv nl"
-			} else {
-				pos += 6;
-			}
-		}
-
-		// Handle 'print' -> 'print nl' (but not 'prints' or 'printv' which we already handled)
-		pos = 0;
-		while ((pos = processedCode.find("print", pos)) != std::string::npos) {
-			// Skip 'prints' (already has 'nl' appended)
-			if (pos + 6 < processedCode.length() && processedCode[pos + 5] == 's') {
-				pos += 6;
-				continue;
-			}
-			// Skip 'printv' (already has 'nl' appended)
-			if (pos + 6 < processedCode.length() && processedCode[pos + 5] == 'v') {
-				pos += 6;
-				continue;
-			}
-			bool isWordStart = (pos == 0 || !isalnum(processedCode[pos - 1]));
-			bool isWordEnd = (pos + 5 >= processedCode.length() || !isalnum(processedCode[pos + 5]));
-			if (isWordStart && isWordEnd) {
-				processedCode.insert(pos + 5, " nl");
-				pos += 8; // "print nl"
-			} else {
-				pos += 5;
-			}
-		}
-		return processedCode;
+			return false;
+		});
 	}
 
-	// Strip print side effects from code for storage in history.
-	// This prevents duplicate output when history is re-executed.
-	// - '.' (print and pop) -> 'drop' (just pop, same stack effect)
-	// - 'print' / 'printv' (print and pop) -> 'drop'
-	// - 'prints' / 'printsv' (print stack, no pop) -> '' (remove, no stack effect)
-	// - 'nl' (print newline) -> '' (remove, no stack effect)
-	std::string stripPrintForHistory(const std::string& code) {
-		std::string result = code;
+	std::vector<std::string> topLevelBindings(const std::string& code) {
+		std::vector<std::string> names;
 
-		// Helper to check word boundaries
-		auto isWordChar = [](char c) { return isalnum(c) || c == '_'; };
-
-		// Replace '.' with 'drop' (must check it's not part of a number like 3.14)
-		size_t pos = 0;
-		while ((pos = result.find('.', pos)) != std::string::npos) {
-			bool isWordStart = (pos == 0 || !isWordChar(result[pos - 1]));
-			bool isWordEnd = (pos + 1 >= result.length() || !isWordChar(result[pos + 1]));
-			// Also check it's not a decimal point (preceded by digit and followed by digit)
-			bool isDecimalPoint =
-					(pos > 0 && isdigit(result[pos - 1])) || (pos + 1 < result.length() && isdigit(result[pos + 1]));
-			if (isWordStart && isWordEnd && !isDecimalPoint) {
-				result.replace(pos, 1, "drop");
-				pos += 4;
-			} else {
-				pos += 1;
-			}
+		Qd::Ast ast;
+		Qd::IAstNode* root = ast.generate(("pub fn repl_main() {\n" + code + "\n}\n").c_str(), false, "repl");
+		if (!root || ast.hasErrors()) {
+			return names;
 		}
 
-		// Replace 'printv' with 'drop' (before 'print' to avoid partial match)
-		pos = 0;
-		while ((pos = result.find("printv", pos)) != std::string::npos) {
-			bool isWordStart = (pos == 0 || !isWordChar(result[pos - 1]));
-			bool isWordEnd = (pos + 6 >= result.length() || !isWordChar(result[pos + 6]));
-			if (isWordStart && isWordEnd) {
-				result.replace(pos, 6, "drop");
-				pos += 4;
-			} else {
-				pos += 6;
+		for (size_t i = 0; i < root->childCount(); i++) {
+			Qd::IAstNode* node = root->child(i);
+			if (!node || node->type() != Qd::IAstNode::Type::FUNCTION_DECLARATION) {
+				continue;
+			}
+			auto* body = static_cast<Qd::AstNodeFunctionDeclaration*>(node)->body();
+			if (!body) {
+				continue;
+			}
+			for (size_t j = 0; j < body->childCount(); j++) {
+				Qd::IAstNode* child = body->child(j);
+				if (!child || child->type() != Qd::IAstNode::Type::LOCAL) {
+					continue;
+				}
+				for (const auto& name : static_cast<Qd::AstNodeLocal*>(child)->names()) {
+					if (name != "_") {
+						names.push_back(name);
+					}
+				}
 			}
 		}
-
-		// Replace 'print' with 'drop' (but not 'prints' or 'printsv')
-		pos = 0;
-		while ((pos = result.find("print", pos)) != std::string::npos) {
-			bool isWordStart = (pos == 0 || !isWordChar(result[pos - 1]));
-			bool isWordEnd = (pos + 5 >= result.length() || !isWordChar(result[pos + 5]));
-			if (isWordStart && isWordEnd) {
-				result.replace(pos, 5, "drop");
-				pos += 4;
-			} else {
-				pos += 5;
-			}
-		}
-
-		// Remove 'printsv' (before 'prints' to avoid partial match)
-		pos = 0;
-		while ((pos = result.find("printsv", pos)) != std::string::npos) {
-			bool isWordStart = (pos == 0 || !isWordChar(result[pos - 1]));
-			bool isWordEnd = (pos + 7 >= result.length() || !isWordChar(result[pos + 7]));
-			if (isWordStart && isWordEnd) {
-				result.erase(pos, 7);
-			} else {
-				pos += 7;
-			}
-		}
-
-		// Remove 'prints'
-		pos = 0;
-		while ((pos = result.find("prints", pos)) != std::string::npos) {
-			bool isWordStart = (pos == 0 || !isWordChar(result[pos - 1]));
-			bool isWordEnd = (pos + 6 >= result.length() || !isWordChar(result[pos + 6]));
-			if (isWordStart && isWordEnd) {
-				result.erase(pos, 6);
-			} else {
-				pos += 6;
-			}
-		}
-
-		// Remove 'nl'
-		pos = 0;
-		while ((pos = result.find("nl", pos)) != std::string::npos) {
-			bool isWordStart = (pos == 0 || !isWordChar(result[pos - 1]));
-			bool isWordEnd = (pos + 2 >= result.length() || !isWordChar(result[pos + 2]));
-			if (isWordStart && isWordEnd) {
-				result.erase(pos, 2);
-			} else {
-				pos += 2;
-			}
-		}
-
-		return result;
+		return names;
 	}
 
-	std::string buildSource(const std::vector<std::string>& expressions) {
+	static bool isAnonymousType(const std::string& type) {
+		return type == "i64" || type == "f64" || type == "str" || type == "ptr" || type == "any";
+	}
+
+	std::string buildSource(const std::string& code, const std::vector<std::string>& stackTypes,
+			const std::vector<Binding>& locals, const std::vector<Binding>& carried, size_t outputs) {
+		bool named = false;
+		for (const auto& type : stackTypes) {
+			named = named || !isAnonymousType(type);
+		}
+		for (const auto& local : locals) {
+			named = named || !isAnonymousType(local.type);
+		}
+
 		std::string source;
 
-		// Add use statements
 		for (const auto& use : useStatements) {
 			source += use + "\n";
 		}
@@ -1142,134 +1212,166 @@ private:
 			source += "\n";
 		}
 
-		// Add function definitions
-		for (const auto& func : functionDefs) {
-			source += func + "\n";
+		for (const auto& definition : definitions) {
+			source += definition + "\n";
 		}
-		if (!functionDefs.empty()) {
+		if (!definitions.empty()) {
 			source += "\n";
 		}
 
-		// Generate main function with all expressions
-		source += "pub fn repl_main() {\n";
-		for (const auto& expr : expressions) {
-			source += "\t" + expr + "\n";
+		source += "pub fn repl_main(";
+		for (size_t i = 0; i < stackTypes.size(); i++) {
+			source += named ? "_s" + std::to_string(i) + ":" + stackTypes[i] + " " : stackTypes[i] + " ";
 		}
-		source += "}\n";
+		for (const auto& local : locals) {
+			source += named ? local.name + ":" + local.type + " " : local.type + " ";
+		}
+		source += "--";
+		for (size_t i = 0; i < outputs; i++) {
+			source += " r" + std::to_string(i) + ":any";
+		}
+		source += ") {\n";
 
+		if (named) {
+			if (!stackTypes.empty()) {
+				source += "\t";
+				for (size_t i = 0; i < stackTypes.size(); i++) {
+					source += "_s" + std::to_string(i) + " ";
+				}
+				source += "\n";
+			}
+		} else if (!locals.empty()) {
+			source += "\t";
+			for (size_t i = locals.size(); i > 0; i--) {
+				source += "-> " + locals[i - 1].name + " ";
+			}
+			source += "\n";
+		}
+
+		source += "\t" + code + "\n";
+
+		if (!carried.empty()) {
+			source += "\t";
+			for (const auto& local : carried) {
+				source += local.name + " ";
+			}
+			source += "\n";
+		}
+
+		source += "}\n";
 		return source;
 	}
 
-	// Calculate the line number where the Nth expression starts in the generated source
-	// (accounting for package declaration added by qd_build)
-	size_t getExpressionLineNumber(size_t exprIndex) {
-		// Line 1: package repl_N (added by qd_build)
-		// Line 2: (empty line after package)
+	size_t bodyLineNumber() const {
 		size_t line = 2;
+		line += useStatements.size() + (useStatements.empty() ? 0 : 1);
+		line += definitions.size() + (definitions.empty() ? 0 : 1);
+		return line + 1;
+	}
 
-		// Use statements
-		line += useStatements.size();
-		if (!useStatements.empty()) {
-			line += 1; // Empty line after use statements
+	bool analyseBody(
+			const std::string& source, std::vector<std::string>& structTypes, std::vector<Qd::ErrorInfo>& parseErrors) {
+		Qd::Ast ast;
+		Qd::IAstNode* root = ast.generate(source.c_str(), false, "repl");
+		if (!root || ast.hasErrors()) {
+			parseErrors = ast.getErrors();
+			return false;
 		}
 
-		// Function definitions
-		line += functionDefs.size();
-		if (!functionDefs.empty()) {
-			line += 1; // Empty line after function definitions
+		Qd::SemanticValidator validator;
+		validator.setStoreErrors(true);
+		validator.setDisplayFilename("repl");
+		validator.validate(root, "repl", true, false);
+
+		if (validator.finalStackFunction() != "repl_main") {
+			return false;
 		}
 
-		// Line for "pub fn repl_main() {"
-		line += 1;
+		const auto& names = validator.finalStackStructTypes();
+		structTypes.assign(validator.finalStackTypes().size(), "");
+		for (size_t i = 0; i < structTypes.size() && i < names.size(); i++) {
+			structTypes[i] = names[i];
+		}
+		return true;
+	}
 
-		// Expressions are on subsequent lines (1-indexed, exprIndex is 0-indexed)
-		line += exprIndex + 1;
+	void recordState(const std::vector<std::string>& structTypes) {
+		const size_t depth = qd_stack_size(ctx->st);
+		const size_t localCount = std::min(sessionLocals.size(), depth);
+		const size_t visible = depth - localCount;
 
-		return line;
+		sessionStack.clear();
+		for (size_t i = 0; i < depth; i++) {
+			qd_stack_element_t elem;
+			qd_stack_element(ctx->st, i, &elem);
+			const std::string structType = i < structTypes.size() ? structTypes[i] : "";
+
+			if (i < visible) {
+				sessionStack.push_back(declaredType(elem, structType));
+			} else {
+				sessionLocals[i - visible].type = declaredType(elem, structType);
+			}
+		}
+	}
+
+	size_t userStackDepth() const {
+		const size_t depth = qd_stack_size(ctx->st);
+		return depth > sessionLocals.size() ? depth - sessionLocals.size() : 0;
 	}
 
 	void compileAndExecute(const std::string& code) {
-		// Convert print to printv for the new code
-		std::string processedCode = convertPrint(code);
+		const std::string processedCode = convertPrint(code);
 
-		// Create a unique module name for this execution
-		std::string moduleName = "repl_" + std::to_string(moduleCounter++);
+		const std::vector<std::string>& stackTypes = sessionStack;
+		const std::vector<Binding>& locals = sessionLocals;
 
-		// Try compiling with the new expression added to history
-		std::vector<std::string> testHistory = history;
-		testHistory.push_back(processedCode);
-
-		std::string source = buildSource(testHistory);
-
-		// Suppress stderr during compilation attempts (errors printed on final failure)
-		// Save stderr, redirect to /dev/null for probing
-		int savedStderr = dup(STDERR_FILENO);
-		int devNull = open("/dev/null", O_WRONLY);
-
-		// First try: compile as-is (silently)
-		dup2(devNull, STDERR_FILENO);
-		qd_module* execMod = qd_get_module(ctx, moduleName.c_str());
-		qd_add_script(execMod, source.c_str());
-		if (lastSuccessfulExprCount > 0) {
-			qd_set_warning_min_line(execMod, getExpressionLineNumber(lastSuccessfulExprCount));
-		}
-		qd_build(execMod);
-
-		// If compilation failed, try adding print+drop for leftover stack values
-		if (!qd_is_compiled(execMod)) {
-			for (int drops = 1; drops <= 8; drops++) {
-				std::string cleanup = "print nl";
-				for (int i = 1; i < drops; i++) {
-					cleanup += " drop";
-				}
-
-				std::vector<std::string> retryHistory = history;
-				retryHistory.push_back(processedCode);
-				retryHistory.push_back(cleanup);
-				std::string retrySource = buildSource(retryHistory);
-
-				std::string retryName = "repl_" + std::to_string(moduleCounter++);
-				execMod = qd_get_module(ctx, retryName.c_str());
-				qd_add_script(execMod, retrySource.c_str());
-				if (lastSuccessfulExprCount > 0) {
-					qd_set_warning_min_line(execMod, getExpressionLineNumber(lastSuccessfulExprCount));
-				}
-				qd_build(execMod);
-
-				if (qd_is_compiled(execMod)) {
-					moduleName = retryName;
-					processedCode += "\n" + cleanup;
-					break;
-				}
+		std::vector<Binding> carried = locals;
+		for (const auto& name : topLevelBindings(processedCode)) {
+			const bool known =
+					std::any_of(carried.begin(), carried.end(), [&](const Binding& b) { return b.name == name; });
+			if (!known) {
+				carried.push_back({name, "any"});
 			}
 		}
 
-		// Restore stderr
+		std::vector<std::string> structTypes;
+		std::vector<Qd::ErrorInfo> parseErrors;
+		if (!analyseBody(buildSource(processedCode, stackTypes, locals, carried, 0), structTypes, parseErrors)) {
+			structTypes.clear();
+		}
+		if (!parseErrors.empty()) {
+			for (const auto& error : parseErrors) {
+				printf("%s%s%s\n", COLOR_RED, error.message.c_str(), COLOR_RESET);
+			}
+			return;
+		}
+
+		const std::string source = buildSource(processedCode, stackTypes, locals, carried, structTypes.size());
+		const std::string moduleName = "repl_" + std::to_string(moduleCounter++);
+
+		int savedStderr = dup(STDERR_FILENO);
+		int devNull = open("/dev/null", O_WRONLY);
+
+		dup2(devNull, STDERR_FILENO);
+		qd_module* execMod = qd_get_module(ctx, moduleName.c_str());
+		qd_add_script(execMod, source.c_str());
+		qd_set_warning_min_line(execMod, bodyLineNumber());
+		qd_build(execMod);
+
 		dup2(savedStderr, STDERR_FILENO);
 		close(savedStderr);
 		close(devNull);
 
-		// If still not compiled, re-compile with errors visible
 		if (!qd_is_compiled(execMod)) {
-			// Recompile once more with stderr visible so user sees the error
-			std::string failName = "repl_" + std::to_string(moduleCounter++);
+			const std::string failName = "repl_" + std::to_string(moduleCounter++);
 			qd_module* failMod = qd_get_module(ctx, failName.c_str());
 			qd_add_script(failMod, source.c_str());
-			if (lastSuccessfulExprCount > 0) {
-				qd_set_warning_min_line(failMod, getExpressionLineNumber(lastSuccessfulExprCount));
-			}
+			qd_set_warning_min_line(failMod, bodyLineNumber());
 			qd_build(failMod);
 			return;
 		}
 
-		// Clear the stack before execution (we re-execute all history)
-		while (!qd_stack_is_empty(ctx->st)) {
-			qd_stack_element_t elem;
-			qd_stack_pop(ctx->st, &elem);
-		}
-
-		// Execute the main function with crash protection
-		std::string funcCall = moduleName + "::repl_main";
+		const std::string funcCall = moduleName + "::repl_main";
 
 		// Set up signal handlers for crash recovery
 		struct sigaction sa, oldAbrt, oldFpe, oldSegv;
@@ -1288,81 +1390,14 @@ private:
 			qd_execute(ctx, funcCall.c_str());
 			g_inExecution = 0;
 
-			// Check if execution actually succeeded by comparing stack depth
-			// Some operations like '.' silently fail without aborting
-			size_t actualDepth = getStackDepth();
-
-			// Add to history on success (strip print effects to avoid duplicates on re-execution)
-			std::string historyEntry = stripPrintForHistory(processedCode);
-
-			// Only add to history if we have something meaningful to add
-			std::string trimmed = historyEntry;
-			// Trim whitespace
-			size_t start = trimmed.find_first_not_of(" \t\n\r");
-			size_t end = trimmed.find_last_not_of(" \t\n\r");
-			if (start != std::string::npos) {
-				trimmed = trimmed.substr(start, end - start + 1);
-			} else {
-				trimmed = "";
-			}
-
-			// Only add to history if the entry would be safe to replay.
-			// Count how many 'drop' operations are in the history entry and ensure
-			// we'll have enough stack depth on replay.
-			size_t dropCount = 0;
-			size_t pos = 0;
-			while ((pos = trimmed.find("drop", pos)) != std::string::npos) {
-				// Check it's a word boundary
-				bool isWordStart = (pos == 0 || !isalnum(trimmed[pos - 1]));
-				bool isWordEnd = (pos + 4 >= trimmed.length() || !isalnum(trimmed[pos + 4]));
-				if (isWordStart && isWordEnd) {
-					dropCount++;
-				}
-				pos += 4;
-			}
-
-			// Only add if we have enough depth for the drops
-			// expectedStackDepth is the depth BEFORE this expression
-			// actualDepth is the depth AFTER this expression
-			// The expression is safe to add if actualDepth >= 0 (which it always is)
-			// and if we wouldn't underflow on replay
-			if (!trimmed.empty() && (dropCount == 0 || actualDepth + dropCount <= expectedStackDepth + 100)) {
-				// The condition above is a sanity check. The real check is:
-				// did the execution actually modify the stack as expected?
-				// If we're adding drops but the stack didn't shrink, something failed.
-				bool executionSucceeded = true;
-				if (dropCount > 0) {
-					// If we added drops, the actual depth should reflect that
-					// If actual depth > expected - drops, a drop failed silently
-					// Actually, we need to think about pushes too...
-					// Simpler: if actualDepth equals expectedStackDepth and we're adding drops,
-					// those drops didn't actually execute (stack underflow)
-					if (actualDepth == expectedStackDepth && dropCount > 0) {
-						// The drops didn't execute - don't add them to history
-						executionSucceeded = false;
-					}
-				}
-
-				if (executionSucceeded) {
-					history.push_back(historyEntry);
-					lastSuccessfulExprCount = history.size();
-					expectedStackDepth = actualDepth;
-				}
-			} else if (trimmed.empty()) {
-				// Empty entry, just update expected depth
-				expectedStackDepth = actualDepth;
-			}
+			sessionLocals = carried;
+			recordState(structTypes);
 		} else {
 			// Returned from signal handler - execution crashed
 			g_inExecution = 0;
 			printf("%sExecution error (signal %d)%s\n", COLOR_RED, sig, COLOR_RESET);
 
-			// Clear the stack to recover to a clean state
-			while (!qd_stack_is_empty(ctx->st)) {
-				qd_stack_element_t elem;
-				qd_stack_pop(ctx->st, &elem);
-			}
-			// Don't add to history on crash
+			dropEverything();
 		}
 
 		// Restore original signal handlers
@@ -1395,11 +1430,10 @@ int main(int argc, char* argv[]) {
 		printf("Options:\n");
 		printf("  -h, --help       Show this help message\n");
 		printf("  -v, --version    Show version information\n");
-		printf("  -p, --print      Print stack to stdout on exit\n");
+		printf("  -p, --print      Print stack to stdout on exit (implied when stdin is a pipe)\n");
 		printf("      --no-color   Disable coloured output\n");
 		printf("\nPiping:\n");
-		printf("  echo \"1 2 3\" | quadrepl      Start with values on stack\n");
-		printf("  echo \"1 2 add\" | quadrepl -p  Compute and print result\n\n");
+		printf("  echo \"1 2 add\" | quadrepl   Evaluate and print what is left on the stack\n\n");
 		return 0;
 	}
 	if (base.version) {
@@ -1413,6 +1447,10 @@ int main(int argc, char* argv[]) {
 	const bool isPiped = !isatty(STDIN_FILENO);
 	if (qdcli::noColor() || base.noColor || isPiped) {
 		Qd::Colors::setEnabled(false);
+	}
+
+	if (isPiped) {
+		printOnExit = true;
 	}
 
 	// Run the REPL

@@ -145,6 +145,131 @@ out=$(printf '1 2 add\n' | timeout 10 "$QUADREPL" -p 2>&1 | tail -1 || true)
 if [ "$out" = "3" ]; then pass "--print reports the stack"; else
     fail "--print reports the stack" "expected 3, got '$out'"; fi
 
+repl() { printf '%b' "$1" | timeout 20 "$QUADREPL" 2>&1; }
+
+out=$(repl '5\n3\nadd\nstack\n')
+if echo "$out" | grep -q '^  \[0\] 8$'; then pass "values stay on the stack between lines"; else
+    fail "values stay on the stack between lines" "$(echo "$out" | tr '\n' ' ')"; fi
+
+out=$(repl '5 3\nstack\n')
+if [ "$(echo "$out" | grep -c '^  \[')" = "2" ]; then pass "one line can leave several values"; else
+    fail "one line can leave several values" "$(echo "$out" | tr '\n' ' ')"; fi
+
+out=$(repl '"a" 2.5\nstack\n')
+if echo "$out" | grep -q '\[1\] 2.5$'; then pass "floats print without trailing zeros"; else
+    fail "floats print without trailing zeros" "$(echo "$out" | tr '\n' ' ')"; fi
+
+out=$(repl '"hello print world" prints\n')
+if echo "$out" | grep -q 'hello print world'; then pass "a string literal containing 'print' is untouched"; else
+    fail "a string literal containing 'print' is untouched" "$(echo "$out" | tr '\n' ' ')"; fi
+if echo "$out" | grep -q 'print nl'; then
+    fail "no 'nl' is spliced into a string literal" "$(echo "$out" | tr '\n' ' ')"
+else
+    pass "no 'nl' is spliced into a string literal"; fi
+
+out=$(repl '5 3 add\nreset\nstack\n')
+if echo "$out" | grep -q 'Stack is empty'; then pass "reset clears the stack"; else
+    fail "reset clears the stack" "$(echo "$out" | tr '\n' ' ')"; fi
+
+out=$(repl '1 2 add\n:quit\n3 4 add\n')
+if [ "$(echo "$out" | tail -1)" = "3" ]; then pass ":quit ends the session"; else
+    fail ":quit ends the session" "$(echo "$out" | tr '\n' ' ')"; fi
+
+out=$(repl '1 2 3 clear\nstack\n')
+if echo "$out" | grep -q 'Stack is empty'; then pass "'clear' inside a line runs as an instruction"; else
+    fail "'clear' inside a line runs as an instruction" "$(echo "$out" | tr '\n' ' ')"; fi
+
+out_dir="$WORK_DIR/replay"; mkdir -p "$out_dir"
+(cd "$out_dir" && printf 'use io\n"log.txt" "line\\n" io::append_file!\n1 print\n2 print\n3 print\n' \
+    | timeout 30 "$QUADREPL" > /dev/null 2>&1) || true
+written=$(wc -l < "$out_dir/log.txt" 2>/dev/null || echo 0)
+if [ "$written" = "1" ]; then pass "a side effect runs once, not once per later line"; else
+    fail "a side effect runs once, not once per later line" "wrote $written lines, expected 1"; fi
+
+echo ""
+echo "=== quadrepl session locals ==="
+
+out=$(repl '5 -> x\nx print\n')
+if [ "$(echo "$out" | tail -1)" = "5" ]; then pass "a local outlives the line that bound it"; else
+    fail "a local outlives the line that bound it" "$(echo "$out" | tr '\n' ' ')"; fi
+
+out=$(repl '5 -> x\n99 -> x\nx print\n')
+if [ "$(echo "$out" | tail -1)" = "99" ]; then pass "a local can be rebound"; else
+    fail "a local can be rebound" "$(echo "$out" | tr '\n' ' ')"; fi
+
+out=$(repl '1 -> a\n2 -> b\na print\nb print\n')
+if [ "$(echo "$out" | tr '\n' ' ')" = "1 2 " ]; then pass "several locals coexist"; else
+    fail "several locals coexist" "$(echo "$out" | tr '\n' ' ')"; fi
+
+out=$(repl '1 2\n10 -> x\nstack\n')
+if [ "$(echo "$out" | grep -c '^  \[')" = "2" ]; then pass "a local is not part of the visible stack"; else
+    fail "a local is not part of the visible stack" "$(echo "$out" | tr '\n' ' ')"; fi
+
+out=$(repl '1 2\n10 -> x\nx add\nstack\n')
+if echo "$out" | grep -q '^  \[1\] 12$'; then pass "a local can be pushed back and used"; else
+    fail "a local can be pushed back and used" "$(echo "$out" | tr '\n' ' ')"; fi
+
+out=$(repl '1 if { 42 -> inner }\ninner print\n')
+if echo "$out" | grep -q "Undefined identifier 'inner'"; then pass "a binding inside a block does not leak"; else
+    fail "a binding inside a block does not leak" "$(echo "$out" | tr '\n' ' ')"; fi
+
+out=$(repl '5 -> x\nreset\nx print\n')
+if echo "$out" | grep -q "Undefined identifier 'x'"; then pass "reset forgets the session's locals"; else
+    fail "reset forgets the session's locals" "$(echo "$out" | tr '\n' ' ')"; fi
+
+out=$(repl '1 2\n9 -> x\nclear\nx print\n')
+if [ "$(echo "$out" | tail -1)" = "9" ]; then pass "clear empties the stack but keeps locals"; else
+    fail "clear empties the stack but keeps locals" "$(echo "$out" | tr '\n' ' ')"; fi
+
+echo ""
+echo "=== quadrepl declarations ==="
+
+out=$(repl 'const K = 7\nK print\n')
+if [ "$(echo "$out" | tail -1)" = "7" ]; then pass "a const declaration is kept"; else
+    fail "a const declaration is kept" "$(echo "$out" | tr '\n' ' ')"; fi
+
+out=$(repl 'struct Point { x:i64 y:i64 }\nPoint { x = 3 y = 4 }\n<<x print\n')
+if [ "$(echo "$out" | tail -1)" = "3" ]; then pass "a struct declaration is kept"; else
+    fail "a struct declaration is kept" "$(echo "$out" | tr '\n' ' ')"; fi
+
+out=$(repl 'struct Point { x:i64 y:i64 }\nPoint { x = 3 y = 4 } -> p\np <<x print\np <<y print\n')
+if [ "$(echo "$out" | tr '\n' ' ' | grep -c '3 4')" = "1" ]; then pass "a struct local keeps its type across lines"; else
+    fail "a struct local keeps its type across lines" "$(echo "$out" | tr '\n' ' ')"; fi
+
+echo ""
+echo "=== quadrepl :doc ==="
+
+out=$(repl ':doc dup\n')
+if echo "$out" | grep -q '( a -- a a )'; then pass ":doc shows a builtin's stack effect"; else
+    fail ":doc shows a builtin's stack effect" "$(echo "$out" | tr '\n' ' ')"; fi
+
+out=$(repl ':doc defer\n')
+if echo "$out" | grep -q 'keyword'; then pass ":doc describes a keyword"; else
+    fail ":doc describes a keyword" "$(echo "$out" | tr '\n' ' ')"; fi
+
+out=$(repl ':doc math::sqrt\n')
+if echo "$out" | grep -q 'pub fn sqrt'; then pass ":doc reads a stdlib signature"; else
+    fail ":doc reads a stdlib signature" "$(echo "$out" | tr '\n' ' ')"; fi
+
+out=$(repl ':doc trim\n')
+if echo "$out" | grep -q 'strings::trim_left'; then pass ":doc searches when there is no exact match"; else
+    fail ":doc searches when there is no exact match" "$(echo "$out" | tr '\n' ' ')"; fi
+
+out=$(repl 'fn double(x:i64 -- y:i64) { x x add }\n:doc double\n')
+if echo "$out" | grep -q 'this session'; then pass ":doc finds a function defined in the session"; else
+    fail ":doc finds a function defined in the session" "$(echo "$out" | tr '\n' ' ')"; fi
+
+echo ""
+echo "=== quadrepl standard library ==="
+
+out=$(repl 'use math\n2.0 math::sqrt printv\n')
+if echo "$out" | grep -q '1.41421'; then pass "a stdlib module links and runs"; else
+    fail "a stdlib module links and runs" "$(echo "$out" | tr '\n' ' ')"; fi
+
+out=$(repl 'use strings\n"  padded  " strings::trim prints\n')
+if echo "$out" | grep -q '^padded$'; then pass "a second stdlib module links and runs"; else
+    fail "a second stdlib module links and runs" "$(echo "$out" | tr '\n' ' ')"; fi
+
 echo ""
 echo "=== quadfmt stdin ==="
 

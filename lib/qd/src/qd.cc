@@ -113,8 +113,8 @@ static std::string findModuleFile(const std::string& moduleName) {
 
 	// Try 5: Local development paths (relative to build directory, debug builds only)
 	if (MESON_BUILD_ROOT[0] != '\0') {
-		fs::path buildRoot = fs::path(MESON_BUILD_ROOT).parent_path().parent_path();
-		result = findFirstQdFile((buildRoot / "lib" / ("qd" + moduleName) / "qd" / moduleName).string());
+		fs::path sourceRoot = fs::path(MESON_BUILD_ROOT).parent_path().parent_path();
+		result = findFirstQdFile((sourceRoot / "stdlib" / moduleName / "qd" / moduleName).string());
 		if (!result.empty()) {
 			return result;
 		}
@@ -193,6 +193,10 @@ static std::string findStaticLib(const std::string& libDir, const std::string& l
 	fs::path nestedLib = fs::path(libDir) / libName / ("lib" + libName + ".a");
 	if (fs::exists(nestedLib)) {
 		return nestedLib.string();
+	}
+	fs::path buildStdlib = fs::path(libDir).parent_path() / "stdlib" / libName / ("lib" + libName + ".a");
+	if (fs::exists(buildStdlib)) {
+		return buildStdlib.string();
 	}
 	// In installed location: quadrate/lib<name>.a
 	fs::path quadrateLib = fs::path(libDir) / "quadrate" / ("lib" + libName + ".a");

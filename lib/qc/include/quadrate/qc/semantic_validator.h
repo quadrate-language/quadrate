@@ -157,6 +157,18 @@ namespace Qd {
 			mDisplayFilename = name;
 		}
 
+		const std::string& finalStackFunction() const {
+			return mFinalStackFunction;
+		}
+
+		const std::vector<StackValueType>& finalStackTypes() const {
+			return mFinalStackTypes;
+		}
+
+		const std::vector<std::string>& finalStackStructTypes() const {
+			return mFinalStackStructTypes;
+		}
+
 		// Get cached parsed module ASTs (populated during validation)
 		// Key: file path, Value: ParsedModuleAst with AST ownership
 		std::unordered_map<std::string, ParsedModuleAst>& getParsedModuleAsts() {
@@ -336,6 +348,9 @@ namespace Qd {
 		// Track which struct type each local variable holds (for PTR types)
 		// Maps variable name -> struct type name (empty string if not a struct pointer)
 		std::unordered_map<std::string, std::string> mLocalVariableStructTypes;
+		std::string mFinalStackFunction;
+		std::vector<StackValueType> mFinalStackTypes;
+		std::vector<std::string> mFinalStackStructTypes;
 
 		// Track function pointer signatures for local variables
 		// Maps variable name -> function signature (for variables that hold function pointers)
