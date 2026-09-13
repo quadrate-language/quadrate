@@ -1,0 +1,285 @@
+<!DOCTYPE html><html><head><meta charset="utf-8"><title>term - Quadrate API</title><link rel="stylesheet" href="style.css"></head><body>
+<nav><h1>Quadrate API</h1><a href="index.html">All Modules</a></nav>
+<div class="container"><h2>term</h2>
+<p class="desc">Terminal colors and formatting using ANSI escape codes. Use these constants to colorize terminal output.</p>
+<h2>Constants</h2>
+<dl>
+<dt><code>Reset</code> = <code>&quot;\x1b[0m&quot;</code></dt>
+<dd>Reset all formatting.</dd>
+<dt><code>Bold</code> = <code>&quot;\x1b[1m&quot;</code></dt>
+<dd>Bold text.</dd>
+<dt><code>Dim</code> = <code>&quot;\x1b[2m&quot;</code></dt>
+<dd>Dim text.</dd>
+<dt><code>Italic</code> = <code>&quot;\x1b[3m&quot;</code></dt>
+<dd>Italic text.</dd>
+<dt><code>Underline</code> = <code>&quot;\x1b[4m&quot;</code></dt>
+<dd>Underline text.</dd>
+<dt><code>Black</code> = <code>&quot;\x1b[30m&quot;</code></dt>
+<dd>Black foreground.</dd>
+<dt><code>Red</code> = <code>&quot;\x1b[31m&quot;</code></dt>
+<dd>Red foreground.</dd>
+<dt><code>Green</code> = <code>&quot;\x1b[32m&quot;</code></dt>
+<dd>Green foreground.</dd>
+<dt><code>Yellow</code> = <code>&quot;\x1b[33m&quot;</code></dt>
+<dd>Yellow foreground.</dd>
+<dt><code>Blue</code> = <code>&quot;\x1b[34m&quot;</code></dt>
+<dd>Blue foreground.</dd>
+<dt><code>Magenta</code> = <code>&quot;\x1b[35m&quot;</code></dt>
+<dd>Magenta foreground.</dd>
+<dt><code>Cyan</code> = <code>&quot;\x1b[36m&quot;</code></dt>
+<dd>Cyan foreground.</dd>
+<dt><code>White</code> = <code>&quot;\x1b[37m&quot;</code></dt>
+<dd>White foreground.</dd>
+<dt><code>BrightBlack</code> = <code>&quot;\x1b[90m&quot;</code></dt>
+<dd>Bright black (gray) foreground.</dd>
+<dt><code>BrightRed</code> = <code>&quot;\x1b[91m&quot;</code></dt>
+<dd>Bright red foreground.</dd>
+<dt><code>BrightGreen</code> = <code>&quot;\x1b[92m&quot;</code></dt>
+<dd>Bright green foreground.</dd>
+<dt><code>BrightYellow</code> = <code>&quot;\x1b[93m&quot;</code></dt>
+<dd>Bright yellow foreground.</dd>
+<dt><code>BrightBlue</code> = <code>&quot;\x1b[94m&quot;</code></dt>
+<dd>Bright blue foreground.</dd>
+<dt><code>BrightMagenta</code> = <code>&quot;\x1b[95m&quot;</code></dt>
+<dd>Bright magenta foreground.</dd>
+<dt><code>BrightCyan</code> = <code>&quot;\x1b[96m&quot;</code></dt>
+<dd>Bright cyan foreground.</dd>
+<dt><code>BrightWhite</code> = <code>&quot;\x1b[97m&quot;</code></dt>
+<dd>Bright white foreground.</dd>
+<dt><code>BgBlack</code> = <code>&quot;\x1b[40m&quot;</code></dt>
+<dd>Black background.</dd>
+<dt><code>BgRed</code> = <code>&quot;\x1b[41m&quot;</code></dt>
+<dd>Red background.</dd>
+<dt><code>BgGreen</code> = <code>&quot;\x1b[42m&quot;</code></dt>
+<dd>Green background.</dd>
+<dt><code>BgYellow</code> = <code>&quot;\x1b[43m&quot;</code></dt>
+<dd>Yellow background.</dd>
+<dt><code>BgBlue</code> = <code>&quot;\x1b[44m&quot;</code></dt>
+<dd>Blue background.</dd>
+<dt><code>BgMagenta</code> = <code>&quot;\x1b[45m&quot;</code></dt>
+<dd>Magenta background.</dd>
+<dt><code>BgCyan</code> = <code>&quot;\x1b[46m&quot;</code></dt>
+<dd>Cyan background.</dd>
+<dt><code>BgWhite</code> = <code>&quot;\x1b[47m&quot;</code></dt>
+<dd>White background.</dd>
+<dt><code>Clear</code> = <code>&quot;\x1b[2J&quot;</code></dt>
+<dd>Clear entire screen.</dd>
+<dt><code>ClearToEnd</code> = <code>&quot;\x1b[0J&quot;</code></dt>
+<dd>Clear from cursor to end of screen.</dd>
+<dt><code>ClearToBegin</code> = <code>&quot;\x1b[1J&quot;</code></dt>
+<dd>Clear from cursor to beginning of screen.</dd>
+<dt><code>ClearLine</code> = <code>&quot;\x1b[2K&quot;</code></dt>
+<dd>Clear entire line.</dd>
+<dt><code>ClearLineToEnd</code> = <code>&quot;\x1b[0K&quot;</code></dt>
+<dd>Clear from cursor to end of line.</dd>
+<dt><code>ClearLineToBegin</code> = <code>&quot;\x1b[1K&quot;</code></dt>
+<dd>Clear from cursor to beginning of line.</dd>
+<dt><code>Home</code> = <code>&quot;\x1b[H&quot;</code></dt>
+<dd>Move cursor to home position (1, 1).</dd>
+<dt><code>SaveCursor</code> = <code>&quot;\x1b[s&quot;</code></dt>
+<dd>Save cursor position.</dd>
+<dt><code>RestoreCursor</code> = <code>&quot;\x1b[u&quot;</code></dt>
+<dd>Restore cursor position.</dd>
+<dt><code>HideCursor</code> = <code>&quot;\x1b[?25l&quot;</code></dt>
+<dd>Hide cursor.</dd>
+<dt><code>ShowCursor</code> = <code>&quot;\x1b[?25h&quot;</code></dt>
+<dd>Show cursor.</dd>
+<dt><code>CursorUp</code> = <code>&quot;\x1b[1A&quot;</code></dt>
+<dd>Move cursor up one line.</dd>
+<dt><code>CursorDown</code> = <code>&quot;\x1b[1B&quot;</code></dt>
+<dd>Move cursor down one line.</dd>
+<dt><code>CursorRight</code> = <code>&quot;\x1b[1C&quot;</code></dt>
+<dd>Move cursor right one column.</dd>
+<dt><code>CursorLeft</code> = <code>&quot;\x1b[1D&quot;</code></dt>
+<dd>Move cursor left one column.</dd>
+<dt><code>ScrollUp</code> = <code>&quot;\x1b[1S&quot;</code></dt>
+<dd>Scroll up one line.</dd>
+<dt><code>ScrollDown</code> = <code>&quot;\x1b[1T&quot;</code></dt>
+<dd>Scroll down one line.</dd>
+<dt><code>AltScreen</code> = <code>&quot;\x1b[?1049h&quot;</code></dt>
+<dd>Enter alternate screen buffer.</dd>
+<dt><code>MainScreen</code> = <code>&quot;\x1b[?1049l&quot;</code></dt>
+<dd>Exit alternate screen buffer.</dd>
+</dl>
+<h2>Functions</h2>
+<div class="fn" id="fg256">
+<h3>fg256</h3>
+<pre><code>fn fg256(n:i64 -- s:str)</code></pre>
+<p>Set foreground to 256-color palette value (0-255).</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>n</code> <code>i64</code></dt>
+<dd>Color index (0-255)</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>s</code> <code>str</code></dt>
+<dd>ANSI escape sequence</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>196 term::fg256 print &quot;Red&quot; print term::Reset print nl</code></pre>
+<p class="xref"><strong>Calls:</strong> <a href="fmt.html#sprintf"><code>fmt::sprintf</code></a></p>
+</div>
+<hr>
+<div class="fn" id="bg256">
+<h3>bg256</h3>
+<pre><code>fn bg256(n:i64 -- s:str)</code></pre>
+<p>Set background to 256-color palette value (0-255).</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>n</code> <code>i64</code></dt>
+<dd>Color index (0-255)</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>s</code> <code>str</code></dt>
+<dd>ANSI escape sequence</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>21 term::bg256 print &quot;Blue BG&quot; print term::Reset print nl</code></pre>
+<p class="xref"><strong>Calls:</strong> <a href="fmt.html#sprintf"><code>fmt::sprintf</code></a></p>
+</div>
+<hr>
+<div class="fn" id="rgb">
+<h3>rgb</h3>
+<pre><code>fn rgb(r:i64 g:i64 b:i64 -- s:str)</code></pre>
+<p>Set foreground to RGB color.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>r</code> <code>i64</code></dt>
+<dd>Red component (0-255)</dd>
+<dt><code>g</code> <code>i64</code></dt>
+<dd>Green component (0-255)</dd>
+<dt><code>b</code> <code>i64</code></dt>
+<dd>Blue component (0-255)</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>s</code> <code>str</code></dt>
+<dd>ANSI escape sequence</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>255 128 0 term::rgb print &quot;Orange&quot; print term::Reset print nl</code></pre>
+<p class="xref"><strong>Calls:</strong> <a href="fmt.html#sprintf"><code>fmt::sprintf</code></a></p>
+</div>
+<hr>
+<div class="fn" id="bg_rgb">
+<h3>bg_rgb</h3>
+<pre><code>fn bg_rgb(r:i64 g:i64 b:i64 -- s:str)</code></pre>
+<p>Set background to RGB color.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>r</code> <code>i64</code></dt>
+<dd>Red component (0-255)</dd>
+<dt><code>g</code> <code>i64</code></dt>
+<dd>Green component (0-255)</dd>
+<dt><code>b</code> <code>i64</code></dt>
+<dd>Blue component (0-255)</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>s</code> <code>str</code></dt>
+<dd>ANSI escape sequence</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>0 0 128 term::bg_rgb print &quot;Navy BG&quot; print term::Reset print nl</code></pre>
+<p class="xref"><strong>Calls:</strong> <a href="fmt.html#sprintf"><code>fmt::sprintf</code></a></p>
+</div>
+<hr>
+<div class="fn" id="goto">
+<h3>goto</h3>
+<pre><code>fn goto(row:i64 col:i64 -- s:str)</code></pre>
+<p>Move cursor to specific position (1-indexed).</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>row</code> <code>i64</code></dt>
+<dd>Row number (1-based)</dd>
+<dt><code>col</code> <code>i64</code></dt>
+<dd>Column number (1-based)</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>s</code> <code>str</code></dt>
+<dd>ANSI escape sequence</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>10 5 term::goto print</code></pre>
+<p class="xref"><strong>Calls:</strong> <a href="fmt.html#sprintf"><code>fmt::sprintf</code></a></p>
+</div>
+<hr>
+<div class="fn" id="up">
+<h3>up</h3>
+<pre><code>fn up(n:i64 -- s:str)</code></pre>
+<p>Move cursor up by n lines.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>n</code> <code>i64</code></dt>
+<dd>Number of lines</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>s</code> <code>str</code></dt>
+<dd>ANSI escape sequence</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>5 term::up print</code></pre>
+<p class="xref"><strong>Calls:</strong> <a href="fmt.html#sprintf"><code>fmt::sprintf</code></a></p>
+</div>
+<hr>
+<div class="fn" id="down">
+<h3>down</h3>
+<pre><code>fn down(n:i64 -- s:str)</code></pre>
+<p>Move cursor down by n lines.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>n</code> <code>i64</code></dt>
+<dd>Number of lines</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>s</code> <code>str</code></dt>
+<dd>ANSI escape sequence</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>5 term::down print</code></pre>
+<p class="xref"><strong>Calls:</strong> <a href="fmt.html#sprintf"><code>fmt::sprintf</code></a></p>
+</div>
+<hr>
+<div class="fn" id="right">
+<h3>right</h3>
+<pre><code>fn right(n:i64 -- s:str)</code></pre>
+<p>Move cursor right by n columns.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>n</code> <code>i64</code></dt>
+<dd>Number of columns</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>s</code> <code>str</code></dt>
+<dd>ANSI escape sequence</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>10 term::right print</code></pre>
+<p class="xref"><strong>Calls:</strong> <a href="fmt.html#sprintf"><code>fmt::sprintf</code></a></p>
+</div>
+<hr>
+<div class="fn" id="left">
+<h3>left</h3>
+<pre><code>fn left(n:i64 -- s:str)</code></pre>
+<p>Move cursor left by n columns.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>n</code> <code>i64</code></dt>
+<dd>Number of columns</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>s</code> <code>str</code></dt>
+<dd>ANSI escape sequence</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>10 term::left print</code></pre>
+<p class="xref"><strong>Calls:</strong> <a href="fmt.html#sprintf"><code>fmt::sprintf</code></a></p>
+</div>
+</div></body></html>

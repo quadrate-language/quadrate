@@ -1,0 +1,87 @@
+<!DOCTYPE html><html><head><meta charset="utf-8"><title>md5 - Quadrate API</title><link rel="stylesheet" href="style.css"></head><body>
+<nav><h1>Quadrate API</h1><a href="index.html">All Modules</a></nav>
+<div class="container"><h2>md5</h2>
+<p class="desc">MD5 Implementation ==================  MD5 hash with streaming and one-shot APIs. Note: MD5 is cryptographically broken. Use only for checksums, not security.  use crypto  // One-shot &quot;Hello&quot; md5! -&gt; hash  // Streaming Md5 {} -&gt; h h &quot;Hello&quot; update! -&gt; h h &quot; World&quot; update! -&gt; h h finish! -&gt; hash h release</p>
+<h2>Structs</h2>
+<h3 id="Md5"><code>Md5</code></h3>
+<p>MD5 hasher state for streaming computation.</p>
+<dl>
+<dt><code>a</code> <code>i64</code></dt>
+<dt><code>b</code> <code>i64</code></dt>
+<dt><code>c</code> <code>i64</code></dt>
+<dt><code>d</code> <code>i64</code></dt>
+<dt><code>buf</code> <code>ptr</code></dt>
+<dt><code>buflen</code> <code>i64</code></dt>
+<dt><code>total</code> <code>i64</code></dt>
+</dl>
+<h2>Functions</h2>
+<div class="fn fallible" id="update">
+<h3>update [fallible]</h3>
+<pre><code>fn (h:Md5) update(data:str -- h2:Md5)!</code></pre>
+<p>Update MD5 state with additional data.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>h</code> <code>Md5</code></dt>
+<dd>The hasher state</dd>
+<dt><code>data</code> <code>str</code></dt>
+<dd>Data to hash</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>h2</code> <code>Md5</code></dt>
+<dd>Updated hasher state</dd>
+</dl>
+<p class="xref"><strong>Calls:</strong> <a href="mem.html#alloc"><code>mem::alloc</code></a>, <a href="mem.html#set_byte"><code>mem::set_byte</code></a>, <a href="strings.html#char_at"><code>strings::char_at</code></a>, <a href="strings.html#len"><code>strings::len</code></a></p>
+<p class="xref"><strong>Called by:</strong> <a href="md5.html#md5"><code>md5::md5</code></a></p>
+</div>
+<hr>
+<div class="fn fallible" id="finish">
+<h3>finish [fallible]</h3>
+<pre><code>fn (h:Md5) finish( -- hash:str)!</code></pre>
+<p>Finalize MD5 and get result as hex string.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>h</code> <code>Md5</code></dt>
+<dd>The hasher state</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>hash</code> <code>str</code></dt>
+<dd>32-character hex string (lowercase)</dd>
+</dl>
+<p class="xref"><strong>Calls:</strong> <a href="mem.html#alloc"><code>mem::alloc</code></a>, <a href="mem.html#free"><code>mem::free</code></a>, <a href="mem.html#set_byte"><code>mem::set_byte</code></a>, <a href="mem.html#to_string"><code>mem::to_string</code></a></p>
+<p class="xref"><strong>Called by:</strong> <a href="md5.html#md5"><code>md5::md5</code></a></p>
+</div>
+<hr>
+<div class="fn" id="release">
+<h3>release</h3>
+<pre><code>fn (h:Md5) release()</code></pre>
+<p>Free resources used by MD5 hasher.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>h</code> <code>Md5</code></dt>
+<dd>The hasher state to free</dd>
+</dl>
+<p class="xref"><strong>Calls:</strong> <a href="mem.html#free"><code>mem::free</code></a></p>
+<p class="xref"><strong>Called by:</strong> <a href="md5.html#md5"><code>md5::md5</code></a></p>
+</div>
+<hr>
+<div class="fn fallible" id="md5">
+<h3>md5 [fallible]</h3>
+<pre><code>fn md5(s:str -- hash:str)!</code></pre>
+<p>One-shot MD5 of a string. Note: MD5 is cryptographically broken. Use only for checksums, not security.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>s</code> <code>str</code></dt>
+<dd>Input string</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>hash</code> <code>str</code></dt>
+<dd>32-character hex string</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>&quot;Hello&quot; md5! -&gt; hash</code></pre>
+<p class="xref"><strong>Calls:</strong> <a href="md5.html#finish"><code>md5::finish</code></a>, <a href="md5.html#release"><code>md5::release</code></a>, <a href="md5.html#update"><code>md5::update</code></a></p>
+</div>
+</div></body></html>

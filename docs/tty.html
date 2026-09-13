@@ -1,0 +1,85 @@
+<!DOCTYPE html><html><head><meta charset="utf-8"><title>tty - Quadrate API</title><link rel="stylesheet" href="style.css"></head><body>
+<nav><h1>Quadrate API</h1><a href="index.html">All Modules</a></nav>
+<div class="container"><h2>tty</h2>
+<p class="desc">Terminal detection and information. Provides functions to check if file descriptors are connected to terminals and to get terminal dimensions.  tty::is_stdout if {     term::Green print &quot;Success&quot; print term::Reset print nl } else {     &quot;Success&quot; print nl }</p>
+<h2>Functions</h2>
+<div class="fn" id="is_stdout">
+<h3>is_stdout</h3>
+<pre><code>fn is_stdout( -- is_tty:i64)</code></pre>
+<p>Check if stdout is connected to a terminal.</p>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>is_tty</code> <code>i64</code></dt>
+<dd>1 if terminal, 0 otherwise</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>tty::is_stdout if { &quot;Colors enabled&quot; print nl }</code></pre>
+</div>
+<hr>
+<div class="fn" id="is_stderr">
+<h3>is_stderr</h3>
+<pre><code>fn is_stderr( -- is_tty:i64)</code></pre>
+<p>Check if stderr is connected to a terminal.</p>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>is_tty</code> <code>i64</code></dt>
+<dd>1 if terminal, 0 otherwise</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>tty::is_stderr if { &quot;Error output to terminal&quot; print nl }</code></pre>
+</div>
+<hr>
+<div class="fn" id="is_stdin">
+<h3>is_stdin</h3>
+<pre><code>fn is_stdin( -- is_tty:i64)</code></pre>
+<p>Check if stdin is connected to a terminal. Useful for detecting if input is piped.</p>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>is_tty</code> <code>i64</code></dt>
+<dd>1 if terminal, 0 otherwise</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>tty::is_stdin 0 == if { &quot;Reading from pipe&quot; print nl }</code></pre>
+</div>
+<hr>
+<div class="fn" id="size">
+<h3>size</h3>
+<pre><code>fn size( -- rows:i64 cols:i64)</code></pre>
+<p>Get terminal dimensions. Returns 0, 0 if not a terminal.</p>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>rows</code> <code>i64</code></dt>
+<dd>Terminal height in rows</dd>
+<dt><code>cols</code> <code>i64</code></dt>
+<dd>Terminal width in columns</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>tty::size -&gt; cols -&gt; rows</code></pre>
+</div>
+<hr>
+<div class="fn" id="width">
+<h3>width</h3>
+<pre><code>fn width( -- cols:i64)</code></pre>
+<p>Get terminal width in columns. Returns 0 if not a terminal.</p>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>cols</code> <code>i64</code></dt>
+<dd>Terminal width</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>tty::width -&gt; cols</code></pre>
+</div>
+<hr>
+<div class="fn" id="height">
+<h3>height</h3>
+<pre><code>fn height( -- rows:i64)</code></pre>
+<p>Get terminal height in rows. Returns 0 if not a terminal.</p>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>rows</code> <code>i64</code></dt>
+<dd>Terminal height</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>tty::height -&gt; rows</code></pre>
+</div>
+</div></body></html>

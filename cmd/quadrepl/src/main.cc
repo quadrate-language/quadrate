@@ -1012,7 +1012,7 @@ private:
 			return;
 		}
 
-		printf("%sStack (%zu items):%s\n", COLOR_BOLD, depth, COLOR_RESET);
+		printf("%sStack (%zu item%s):%s\n", COLOR_BOLD, depth, depth == 1 ? "" : "s", COLOR_RESET);
 		for (size_t i = 0; i < depth; i++) {
 			qd_stack_element_t elem;
 			qd_stack_element(ctx->st, i, &elem);
@@ -1029,7 +1029,7 @@ private:
 			return;
 		}
 
-		printf("%sStack types (%zu items):%s\n", COLOR_BOLD, depth, COLOR_RESET);
+		printf("%sStack types (%zu item%s):%s\n", COLOR_BOLD, depth, depth == 1 ? "" : "s", COLOR_RESET);
 		for (size_t i = 0; i < depth; i++) {
 			qd_stack_element_t elem;
 			qd_stack_element(ctx->st, i, &elem);

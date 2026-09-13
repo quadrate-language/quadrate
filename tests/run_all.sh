@@ -432,7 +432,7 @@ run_lsp_tests() {
     if [[ $USE_VALGRIND -eq 1 ]]; then
         tests=("test_lsp" "test_lsp_extended" "test_lsp_features" "test_lsp_comprehensive" "test_lsp_completion")
     else
-        tests=("test_lsp" "test_lsp_extended" "test_lsp_stress" "test_lsp_features" "test_lsp_comprehensive" "test_lsp_completion")
+        tests=("test_lsp" "test_lsp_extended" "test_lsp_stress" "test_lsp_features" "test_lsp_comprehensive" "test_lsp_completion" "test_lsp_robustness")
     fi
     local suite="lsp"
 

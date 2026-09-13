@@ -77,4 +77,16 @@ if get_option('build_tests')
 			timeout: 60
 		)
 	endif
+
+	# Robustness tests (hostile clients: bad framing, bad ids, huge documents).
+	# Longer timeout than the others: several cases feed the server megabytes on
+	# purpose to check the reply comes back rather than the process dying.
+	test_lsp_robustness_script = find_program('tests/test_lsp_robustness.py', required: false)
+	if test_lsp_robustness_script.found()
+		test('test_lsp_robustness',
+			test_lsp_robustness_script,
+			depends: [quadlsp_exe],
+			timeout: 300
+		)
+	endif
 endif

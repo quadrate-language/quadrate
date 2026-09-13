@@ -1,0 +1,31 @@
+<!DOCTYPE html><html><head><meta charset="utf-8"><title>rt - Quadrate API</title><link rel="stylesheet" href="style.css"></head><body>
+<nav><h1>Quadrate API</h1><a href="index.html">All Modules</a></nav>
+<div class="container"><h2>rt</h2>
+<p class="desc">Runtime information and version constants. Provides version information about the Quadrate runtime.</p>
+<h2>Functions</h2>
+<div class="fn" id="version">
+<h3>version</h3>
+<pre><code>fn version( -- version:str)</code></pre>
+<p>Get the Quadrate version string.</p>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>version</code> <code>str</code></dt>
+<dd>Version string (e.g., &quot;2.0.0-alpha&quot;)</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>rt::version print nl  // 2.0.0-alpha</code></pre>
+</div>
+<hr>
+<div class="fn" id="version_api">
+<h3>version_api</h3>
+<pre><code>fn version_api( -- api:i64)</code></pre>
+<p>Get the Quadrate API version number. Encoded as: major * 10000 + minor * 100 + patch.</p>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>api</code> <code>i64</code></dt>
+<dd>API version number (e.g., 20000 for v2.0.0)</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>rt::version_api print nl  // 20000</code></pre>
+</div>
+</div></body></html>

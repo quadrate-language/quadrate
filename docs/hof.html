@@ -1,0 +1,387 @@
+<!DOCTYPE html><html><head><meta charset="utf-8"><title>hof - Quadrate API</title><link rel="stylesheet" href="style.css"></head><body>
+<nav><h1>Quadrate API</h1><a href="index.html">All Modules</a></nav>
+<div class="container"><h2>hof</h2>
+<p class="desc">Higher-Order Function combinators. Combinators are functions that combine or apply other functions in useful patterns. They enable functional programming without explicit temporary variables.</p>
+<h2>Functions</h2>
+<div class="fn" id="apply">
+<h3>apply</h3>
+<pre><code>fn apply(x:i64 f:fn(i64 -- i64) -- r:i64)</code></pre>
+<p>Apply a function to a value.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>x</code> <code>i64</code></dt>
+<dd>The input value</dd>
+<dt><code>f</code> <code>fn(i64 -- i64)</code></dt>
+<dd>-- i64) Function (i64 -- i64)</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>r</code> <code>i64</code></dt>
+<dd>Result of f(x)</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>5 fn (x:i64 -- r:i64) { 2 * } hof::apply print nl  // 10</code></pre>
+</div>
+<hr>
+<div class="fn" id="bi">
+<h3>bi</h3>
+<pre><code>fn bi(x:i64 f:fn(i64 -- i64) g:fn(i64 -- i64) -- a:i64 b:i64)</code></pre>
+<p>Apply two functions to the same value.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>x</code> <code>i64</code></dt>
+<dd>The input value</dd>
+<dt><code>f</code> <code>fn(i64 -- i64)</code></dt>
+<dd>-- i64) First function (i64 -- i64)</dd>
+<dt><code>g</code> <code>fn(i64 -- i64)</code></dt>
+<dd>-- i64) Second function (i64 -- i64)</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>a</code> <code>i64</code></dt>
+<dd>Result of f(x)</dd>
+<dt><code>b</code> <code>i64</code></dt>
+<dd>Result of g(x)</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>5 fn (x:i64 -- r:i64) { 2 * } fn (x:i64 -- r:i64) { 3 + } hof::bi  // Stack: 10 8</code></pre>
+</div>
+<hr>
+<div class="fn" id="tri">
+<h3>tri</h3>
+<pre><code>fn tri(x:i64 f:fn(i64 -- i64) g:fn(i64 -- i64) h:fn(i64 -- i64) -- a:i64 b:i64 c:i64)</code></pre>
+<p>Apply three functions to the same value.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>x</code> <code>i64</code></dt>
+<dd>The input value</dd>
+<dt><code>f</code> <code>fn(i64 -- i64)</code></dt>
+<dd>-- i64) First function (i64 -- i64)</dd>
+<dt><code>g</code> <code>fn(i64 -- i64)</code></dt>
+<dd>-- i64) Second function (i64 -- i64)</dd>
+<dt><code>h</code> <code>fn(i64 -- i64)</code></dt>
+<dd>-- i64) Third function (i64 -- i64)</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>a</code> <code>i64</code></dt>
+<dd>Result of f(x)</dd>
+<dt><code>b</code> <code>i64</code></dt>
+<dd>Result of g(x)</dd>
+<dt><code>c</code> <code>i64</code></dt>
+<dd>Result of h(x)</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>5 fn (x:i64 -- r:i64) { 1 + } fn (x:i64 -- r:i64) { 2 * } fn (x:i64 -- r:i64) { dup * } hof::tri  // Stack: 6 10 25</code></pre>
+</div>
+<hr>
+<div class="fn" id="keep">
+<h3>keep</h3>
+<pre><code>fn keep(x:i64 f:fn(i64 -- i64) -- r:i64 orig:i64)</code></pre>
+<p>Apply a function but keep the original value.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>x</code> <code>i64</code></dt>
+<dd>The input value</dd>
+<dt><code>f</code> <code>fn(i64 -- i64)</code></dt>
+<dd>-- i64) Function (i64 -- i64)</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>r</code> <code>i64</code></dt>
+<dd>Result of f(x)</dd>
+<dt><code>orig</code> <code>i64</code></dt>
+<dd>Original value (preserved)</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>5 fn (x:i64 -- r:i64) { 2 * } hof::keep  // Stack: 10 5</code></pre>
+</div>
+<hr>
+<div class="fn" id="dip">
+<h3>dip</h3>
+<pre><code>fn dip(x:i64 y:i64 f:fn(i64 -- i64) -- r:i64 top:i64)</code></pre>
+<p>Apply a function to the second stack element, preserving the top.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>x</code> <code>i64</code></dt>
+<dd>Second element (will have f applied)</dd>
+<dt><code>y</code> <code>i64</code></dt>
+<dd>Top element (preserved)</dd>
+<dt><code>f</code> <code>fn(i64 -- i64)</code></dt>
+<dd>-- i64) Function (i64 -- i64)</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>r</code> <code>i64</code></dt>
+<dd>Result of f(x)</dd>
+<dt><code>top</code> <code>i64</code></dt>
+<dd>Original top value (preserved)</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>10 20 fn (x:i64 -- r:i64) { 2 * } hof::dip  // Stack: 20 20</code></pre>
+</div>
+<hr>
+<div class="fn" id="both">
+<h3>both</h3>
+<pre><code>fn both(x:i64 y:i64 f:fn(i64 -- i64) -- a:i64 b:i64)</code></pre>
+<p>Apply a function to two values separately.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>x</code> <code>i64</code></dt>
+<dd>First value</dd>
+<dt><code>y</code> <code>i64</code></dt>
+<dd>Second value</dd>
+<dt><code>f</code> <code>fn(i64 -- i64)</code></dt>
+<dd>-- i64) Function (i64 -- i64)</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>a</code> <code>i64</code></dt>
+<dd>Result of f(x)</dd>
+<dt><code>b</code> <code>i64</code></dt>
+<dd>Result of f(y)</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>3 4 fn (x:i64 -- r:i64) { dup * } hof::both  // Stack: 9 16</code></pre>
+</div>
+<hr>
+<div class="fn" id="bi_star">
+<h3>bi_star</h3>
+<pre><code>fn bi_star(x:i64 y:i64 f:fn(i64 -- i64) g:fn(i64 -- i64) -- a:i64 b:i64)</code></pre>
+<p>Apply two functions to two values (first to first, second to second).</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>x</code> <code>i64</code></dt>
+<dd>First value</dd>
+<dt><code>y</code> <code>i64</code></dt>
+<dd>Second value</dd>
+<dt><code>f</code> <code>fn(i64 -- i64)</code></dt>
+<dd>-- i64) Function for first value (i64 -- i64)</dd>
+<dt><code>g</code> <code>fn(i64 -- i64)</code></dt>
+<dd>-- i64) Function for second value (i64 -- i64)</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>a</code> <code>i64</code></dt>
+<dd>Result of f(x)</dd>
+<dt><code>b</code> <code>i64</code></dt>
+<dd>Result of g(y)</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>3 4 fn (x:i64 -- r:i64) { 1 + } fn (x:i64 -- r:i64) { 2 * } hof::bi_star  // Stack: 4 8</code></pre>
+</div>
+<hr>
+<div class="fn" id="when">
+<h3>when</h3>
+<pre><code>fn when(x:i64 cond:i64 f:fn(i64 -- i64) -- r:i64)</code></pre>
+<p>Apply function only if condition is true, otherwise return value unchanged.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>x</code> <code>i64</code></dt>
+<dd>The input value</dd>
+<dt><code>cond</code> <code>i64</code></dt>
+<dd>Condition (0 = false, non-zero = true)</dd>
+<dt><code>f</code> <code>fn(i64 -- i64)</code></dt>
+<dd>-- i64) Function (i64 -- i64)</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>r</code> <code>i64</code></dt>
+<dd>Result of f(x) if cond is true, otherwise x</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>5 1 fn (x:i64 -- r:i64) { 2 * } hof::when print nl  // 10</code></pre>
+<pre><code>5 0 fn (x:i64 -- r:i64) { 2 * } hof::when print nl  // 5</code></pre>
+</div>
+<hr>
+<div class="fn" id="unless">
+<h3>unless</h3>
+<pre><code>fn unless(x:i64 cond:i64 f:fn(i64 -- i64) -- r:i64)</code></pre>
+<p>Apply function only if condition is false, otherwise return value unchanged.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>x</code> <code>i64</code></dt>
+<dd>The input value</dd>
+<dt><code>cond</code> <code>i64</code></dt>
+<dd>Condition (0 = false, non-zero = true)</dd>
+<dt><code>f</code> <code>fn(i64 -- i64)</code></dt>
+<dd>-- i64) Function (i64 -- i64)</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>r</code> <code>i64</code></dt>
+<dd>Result of f(x) if cond is false, otherwise x</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>5 0 fn (x:i64 -- r:i64) { 2 * } hof::unless print nl  // 10</code></pre>
+<pre><code>5 1 fn (x:i64 -- r:i64) { 2 * } hof::unless print nl  // 5</code></pre>
+</div>
+<hr>
+<div class="fn" id="times">
+<h3>times</h3>
+<pre><code>fn times(x:i64 n:i64 f:fn(i64 -- i64) -- r:i64)</code></pre>
+<p>Apply function n times to an initial value.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>x</code> <code>i64</code></dt>
+<dd>Initial value</dd>
+<dt><code>n</code> <code>i64</code></dt>
+<dd>Number of times to apply</dd>
+<dt><code>f</code> <code>fn(i64 -- i64)</code></dt>
+<dd>-- i64) Function (i64 -- i64)</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>r</code> <code>i64</code></dt>
+<dd>Result after n applications</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>2 4 fn (x:i64 -- r:i64) { dup * } hof::times print nl  // 65536 (2^16)</code></pre>
+</div>
+<hr>
+<div class="fn" id="fold">
+<h3>fold</h3>
+<pre><code>fn fold(arr:[]i64 acc:i64 f:fn(i64 i64 -- i64) -- result:i64)</code></pre>
+<p>Fold/reduce an array left-to-right with a binary function.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>arr</code> <code>[]i64</code></dt>
+<dd>Array</dd>
+<dt><code>acc</code> <code>i64</code></dt>
+<dd>Initial accumulator value</dd>
+<dt><code>f</code> <code>fn(i64 i64 -- i64)</code></dt>
+<dd>i64 -- i64) Binary function (acc:i64 elem:i64 -- acc:i64)</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>result</code> <code>i64</code></dt>
+<dd>Final accumulated value</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>arr 0 fn (acc:i64 x:i64 -- r:i64) { + } hof::fold  // sum of array</code></pre>
+</div>
+<hr>
+<div class="fn" id="fold_right">
+<h3>fold_right</h3>
+<pre><code>fn fold_right(arr:[]i64 acc:i64 f:fn(i64 i64 -- i64) -- result:i64)</code></pre>
+<p>Fold/reduce an array right-to-left with a binary function.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>arr</code> <code>[]i64</code></dt>
+<dd>Array</dd>
+<dt><code>acc</code> <code>i64</code></dt>
+<dd>Initial accumulator value</dd>
+<dt><code>f</code> <code>fn(i64 i64 -- i64)</code></dt>
+<dd>i64 -- i64) Binary function (elem:i64 acc:i64 -- acc:i64)</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>result</code> <code>i64</code></dt>
+<dd>Final accumulated value</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>arr 0 fn (x:i64 acc:i64 -- r:i64) { + } hof::fold_right  // sum of array</code></pre>
+</div>
+<hr>
+<div class="fn" id="map">
+<h3>map</h3>
+<pre><code>fn map(arr:[]i64 f:fn(i64 -- i64) -- result:[]i64)</code></pre>
+<p>Map a function over an array, returning a new array.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>arr</code> <code>[]i64</code></dt>
+<dd>Input array</dd>
+<dt><code>f</code> <code>fn(i64 -- i64)</code></dt>
+<dd>-- i64) Function (i64 -- i64)</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>result</code> <code>[]i64</code></dt>
+<dd>New array with mapped values</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>arr fn (x:i64 -- r:i64) { 2 * } hof::map  // double each element</code></pre>
+</div>
+<hr>
+<div class="fn" id="filter">
+<h3>filter</h3>
+<pre><code>fn filter(arr:[]i64 pred:fn(i64 -- i64) -- result:[]i64)</code></pre>
+<p>Filter an array, keeping only elements that satisfy a predicate.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>arr</code> <code>[]i64</code></dt>
+<dd>Input array</dd>
+<dt><code>pred</code> <code>fn(i64 -- i64)</code></dt>
+<dd>-- i64) Predicate function (i64 -- bool:i64)</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>result</code> <code>[]i64</code></dt>
+<dd>New array with filtered values</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>arr fn (x:i64 -- r:i64) { 2 mod 0 == } hof::filter  // keep evens</code></pre>
+</div>
+<hr>
+<div class="fn" id="any">
+<h3>any</h3>
+<pre><code>fn any(arr:[]i64 pred:fn(i64 -- i64) -- result:i64)</code></pre>
+<p>Check if any element satisfies a predicate.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>arr</code> <code>[]i64</code></dt>
+<dd>Array</dd>
+<dt><code>pred</code> <code>fn(i64 -- i64)</code></dt>
+<dd>-- i64) Predicate function (i64 -- bool:i64)</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>result</code> <code>i64</code></dt>
+<dd>1 if any element satisfies pred, 0 otherwise</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>arr fn (x:i64 -- r:i64) { 0 &gt; } hof::any  // any positive?</code></pre>
+</div>
+<hr>
+<div class="fn" id="all">
+<h3>all</h3>
+<pre><code>fn all(arr:[]i64 pred:fn(i64 -- i64) -- result:i64)</code></pre>
+<p>Check if all elements satisfy a predicate.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>arr</code> <code>[]i64</code></dt>
+<dd>Array</dd>
+<dt><code>pred</code> <code>fn(i64 -- i64)</code></dt>
+<dd>-- i64) Predicate function (i64 -- bool:i64)</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>result</code> <code>i64</code></dt>
+<dd>1 if all elements satisfy pred, 0 otherwise</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>arr fn (x:i64 -- r:i64) { 0 &gt; } hof::all  // all positive?</code></pre>
+</div>
+<hr>
+<div class="fn" id="find">
+<h3>find</h3>
+<pre><code>fn find(arr:[]i64 pred:fn(i64 -- i64) -- elem:i64 found:i64)</code></pre>
+<p>Find the first element satisfying a predicate.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>arr</code> <code>[]i64</code></dt>
+<dd>Array</dd>
+<dt><code>pred</code> <code>fn(i64 -- i64)</code></dt>
+<dd>-- i64) Predicate function (i64 -- bool:i64)</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>elem</code> <code>i64</code></dt>
+<dd>The found element (or 0 if not found)</dd>
+<dt><code>found</code> <code>i64</code></dt>
+<dd>1 if found, 0 otherwise</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>arr fn (x:i64 -- r:i64) { 10 &gt; } hof::find  // first &gt; 10</code></pre>
+</div>
+</div></body></html>

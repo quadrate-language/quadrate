@@ -1,0 +1,155 @@
+<!DOCTYPE html><html><head><meta charset="utf-8"><title>strconv - Quadrate API</title><link rel="stylesheet" href="style.css"></head><body>
+<nav><h1>Quadrate API</h1><a href="index.html">All Modules</a></nav>
+<div class="container"><h2>strconv</h2>
+<p class="desc">String to number conversions.  Functions: - format_int: Format integer in any base (2-36) - parse_int: Parse string to integer in any base (2-36) - itoa: Convert integer to decimal string (shorthand for 10 format_int) - atoi: Parse decimal string to integer (shorthand for 10 parse_int) - format_float: Format float to string - parse_float: Parse string to float - format_bool: Format boolean to string (&quot;true&quot;/&quot;false&quot;) - parse_bool: Parse string to boolean</p>
+<h2>Functions</h2>
+<div class="fn" id="format_int">
+<h3>format_int</h3>
+<pre><code>fn format_int(value:i64 base:i64 -- s:str)</code></pre>
+<p>Format integer in given base.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>value</code> <code>i64</code></dt>
+<dd>Integer value</dd>
+<dt><code>base</code> <code>i64</code></dt>
+<dd>Numeric base (2-36)</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>s</code> <code>str</code></dt>
+<dd>Formatted string</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>255 16 strconv::format_int print  // &quot;ff&quot;</code></pre>
+</div>
+<hr>
+<div class="fn fallible" id="parse_int">
+<h3>parse_int [fallible]</h3>
+<pre><code>fn parse_int(s:str base:i64 -- value:i64)!</code></pre>
+<p>Parse integer from string in given base.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>s</code> <code>str</code></dt>
+<dd>String to parse</dd>
+<dt><code>base</code> <code>i64</code></dt>
+<dd>Numeric base (2-36)</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>value</code> <code>i64</code></dt>
+<dd>Parsed integer</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>&quot;ff&quot; 16 strconv::parse_int! print  // 255</code></pre>
+</div>
+<hr>
+<div class="fn" id="itoa">
+<h3>itoa</h3>
+<pre><code>fn itoa(value:i64 -- s:str)</code></pre>
+<p>Convert integer to decimal string (base 10). Equivalent to: value 10 strconv::format_int</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>value</code> <code>i64</code></dt>
+<dd>Integer value</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>s</code> <code>str</code></dt>
+<dd>Decimal string</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>42 strconv::itoa print  // &quot;42&quot;</code></pre>
+<p class="xref"><strong>Called by:</strong> <a href="flag.html#positional"><code>flag::positional</code></a></p>
+</div>
+<hr>
+<div class="fn fallible" id="atoi">
+<h3>atoi [fallible]</h3>
+<pre><code>fn atoi(s:str -- value:i64)!</code></pre>
+<p>Parse decimal string to integer (base 10). Equivalent to: str 10 strconv::parse_int</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>s</code> <code>str</code></dt>
+<dd>Decimal string</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>value</code> <code>i64</code></dt>
+<dd>Parsed integer</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>&quot;42&quot; strconv::atoi! print  // 42</code></pre>
+</div>
+<hr>
+<div class="fn" id="format_float">
+<h3>format_float</h3>
+<pre><code>fn format_float(value:f64 -- s:str)</code></pre>
+<p>Format float to string. Uses compact %g format (removes trailing zeros).</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>value</code> <code>f64</code></dt>
+<dd>Float value</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>s</code> <code>str</code></dt>
+<dd>Formatted string</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>3.14159 strconv::format_float print  // &quot;3.14159&quot;</code></pre>
+</div>
+<hr>
+<div class="fn fallible" id="parse_float">
+<h3>parse_float [fallible]</h3>
+<pre><code>fn parse_float(s:str -- value:f64)!</code></pre>
+<p>Parse string to float.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>s</code> <code>str</code></dt>
+<dd>String to parse</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>value</code> <code>f64</code></dt>
+<dd>Parsed float</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>&quot;3.14&quot; strconv::parse_float! print  // 3.14</code></pre>
+<p class="xref"><strong>Called by:</strong> <a href="json.html#array_get_float"><code>json::array_get_float</code></a>, <a href="json.html#get_float"><code>json::get_float</code></a></p>
+</div>
+<hr>
+<div class="fn" id="format_bool">
+<h3>format_bool</h3>
+<pre><code>fn format_bool(value:i64 -- s:str)</code></pre>
+<p>Format boolean to string. Non-zero becomes &quot;true&quot;, zero becomes &quot;false&quot;.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>value</code> <code>i64</code></dt>
+<dd>Boolean value (0 or non-zero)</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>s</code> <code>str</code></dt>
+<dd>&quot;true&quot; or &quot;false&quot;</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>1 strconv::format_bool print  // &quot;true&quot;</code></pre>
+</div>
+<hr>
+<div class="fn fallible" id="parse_bool">
+<h3>parse_bool [fallible]</h3>
+<pre><code>fn parse_bool(s:str -- value:i64)!</code></pre>
+<p>Parse string to boolean. Accepts &quot;true&quot;/&quot;1&quot; as true, &quot;false&quot;/&quot;0&quot; as false (case-insensitive).</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>s</code> <code>str</code></dt>
+<dd>String to parse</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>value</code> <code>i64</code></dt>
+<dd>1 for true, 0 for false</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>&quot;true&quot; strconv::parse_bool! print  // 1</code></pre>
+</div>
+</div></body></html>

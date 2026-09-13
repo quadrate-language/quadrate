@@ -1,0 +1,55 @@
+<!DOCTYPE html><html><head><meta charset="utf-8"><title>pair - Quadrate API</title><link rel="stylesheet" href="style.css"></head><body>
+<nav><h1>Quadrate API</h1><a href="index.html">All Modules</a></nav>
+<div class="container"><h2>pair</h2>
+<p class="desc">Pair&lt;T, U&gt; - A Generic Two-Element Tuple ========================================  Pair holds two values of potentially different types. Useful for returning multiple values or key-value associations.  ## Creating a Pair      Pair&lt;i64, str&gt; { first = 42 second = &quot;hello&quot; } -&gt; p  ## Accessing Elements      p &lt;&lt;first -&gt; key     p &lt;&lt;second -&gt; value  ## Unpacking Both Elements      p unpack -&gt; a -&gt; b</p>
+<h2>Structs</h2>
+<h3 id="Pair<T, U>"><code>Pair&lt;T, U&gt;</code></h3>
+<p>A pair of two values.  Fields:   first  - The first element of type T   second - The second element of type U</p>
+<dl>
+<dt><code>first</code> <code>T</code></dt>
+<dt><code>second</code> <code>U</code></dt>
+</dl>
+<h2>Functions</h2>
+<div class="fn" id="first">
+<h3>first</h3>
+<pre><code>fn (p:Pair&lt;T, U&gt;) first&lt;T, U&gt;( -- a:T)</code></pre>
+<p>Get the first element of a pair.  Example:     p first -&gt; a  Stack: (p -- a)</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>p</code> <code>Pair&lt;T, U&gt;</code></dt>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>a</code> <code>T</code></dt>
+</dl>
+</div>
+<hr>
+<div class="fn" id="second">
+<h3>second</h3>
+<pre><code>fn (p:Pair&lt;T, U&gt;) second&lt;T, U&gt;( -- b:U)</code></pre>
+<p>Get the second element of a pair.  Example:     p second -&gt; b  Stack: (p -- b)</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>p</code> <code>Pair&lt;T, U&gt;</code></dt>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>b</code> <code>U</code></dt>
+</dl>
+</div>
+<hr>
+<div class="fn" id="unpack">
+<h3>unpack</h3>
+<pre><code>fn (p:Pair&lt;T, U&gt;) unpack&lt;T, U&gt;( -- a:T b:U)</code></pre>
+<p>Unpack a pair onto the stack.  Returns both elements: first is deeper, second on top.  Example:     p unpack -&gt; first_val -&gt; second_val  Stack: (p -- a b)</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>p</code> <code>Pair&lt;T, U&gt;</code></dt>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>a</code> <code>T</code></dt>
+<dt><code>b</code> <code>U</code></dt>
+</dl>
+</div>
+</div></body></html>

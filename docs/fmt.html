@@ -1,0 +1,110 @@
+<!DOCTYPE html><html><head><meta charset="utf-8"><title>fmt - Quadrate API</title><link rel="stylesheet" href="style.css"></head><body>
+<nav><h1>Quadrate API</h1><a href="index.html">All Modules</a></nav>
+<div class="container"><h2>fmt</h2>
+<p class="desc">Formatted output functions.</p>
+<h2>Functions</h2>
+<div class="fn" id="printf">
+<h3>printf</h3>
+<pre><code>fn printf(format:str -- )</code></pre>
+<p>Print formatted output to stdout.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>format</code> <code>str</code></dt>
+<dd>Format string with % specifiers</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>&quot;world&quot; &quot;Hello %s\n&quot; fmt::printf  // Hello world</code></pre>
+<p class="xref"><strong>Called by:</strong> <a href="modA.html#print_a"><code>modA::print_a</code></a>, <a href="modB.html#print_b"><code>modB::print_b</code></a>, <a href="printer.html#print_message"><code>printer::print_message</code></a>, <a href="printer.html#print_number"><code>printer::print_number</code></a></p>
+</div>
+<hr>
+<div class="fn" id="sprintf">
+<h3>sprintf</h3>
+<pre><code>fn sprintf(format:str -- result:str)</code></pre>
+<p>Format a string with printf-style specifiers.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>format</code> <code>str</code></dt>
+<dd>Format string with % specifiers</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>result</code> <code>str</code></dt>
+<dd>Formatted string</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>&quot;world&quot; &quot;Hello %s&quot; fmt::sprintf  // &quot;Hello world&quot;</code></pre>
+<p class="xref"><strong>Called by:</strong> <a href="term.html#bg256"><code>term::bg256</code></a>, <a href="term.html#bg_rgb"><code>term::bg_rgb</code></a>, <a href="term.html#down"><code>term::down</code></a>, <a href="term.html#fg256"><code>term::fg256</code></a>, <a href="term.html#goto"><code>term::goto</code></a>, <a href="term.html#left"><code>term::left</code></a>, <a href="term.html#rgb"><code>term::rgb</code></a>, <a href="term.html#right"><code>term::right</code></a>, <a href="term.html#up"><code>term::up</code></a></p>
+</div>
+<hr>
+<div class="fn" id="print">
+<h3>print</h3>
+<pre><code>fn print(s:str -- )</code></pre>
+<p>Print a string to stdout (no newline appended).</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>s</code> <code>str</code></dt>
+<dd>String to print</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>&quot;hello&quot; fmt::print</code></pre>
+</div>
+<hr>
+<div class="fn" id="println">
+<h3>println</h3>
+<pre><code>fn println(s:str -- )</code></pre>
+<p>Print a string to stdout followed by a newline.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>s</code> <code>str</code></dt>
+<dd>String to print</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>&quot;hello&quot; fmt::println  // hello\n</code></pre>
+</div>
+<hr>
+<div class="fn" id="eprintln">
+<h3>eprintln</h3>
+<pre><code>fn eprintln(s:str -- )</code></pre>
+<p>Print a string to stderr followed by a newline.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>s</code> <code>str</code></dt>
+<dd>String to print</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>&quot;error occurred&quot; fmt::eprintln</code></pre>
+</div>
+<hr>
+<div class="fn" id="sprintln">
+<h3>sprintln</h3>
+<pre><code>fn sprintln(s:str -- result:str)</code></pre>
+<p>Append a newline to a string and return the result.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>s</code> <code>str</code></dt>
+<dd>Input string</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>result</code> <code>str</code></dt>
+<dd>String with newline appended</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>&quot;hello&quot; fmt::sprintln  // &quot;hello\n&quot;</code></pre>
+</div>
+<hr>
+<div class="fn" id="fprintf">
+<h3>fprintf</h3>
+<pre><code>fn fprintf(fd:i64 format:str -- )</code></pre>
+<p>Print formatted output to a file descriptor.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>fd</code> <code>i64</code></dt>
+<dd>File descriptor (1=stdout, 2=stderr)</dd>
+<dt><code>format</code> <code>str</code></dt>
+<dd>Format string with % specifiers</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>&quot;error: %s\n&quot; &quot;not found&quot; 2 fmt::fprintf</code></pre>
+</div>
+</div></body></html>

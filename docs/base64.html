@@ -1,0 +1,43 @@
+<!DOCTYPE html><html><head><meta charset="utf-8"><title>base64 - Quadrate API</title><link rel="stylesheet" href="style.css"></head><body>
+<nav><h1>Quadrate API</h1><a href="index.html">All Modules</a></nav>
+<div class="container"><h2>base64</h2>
+<p class="desc">Base64 encoding and decoding. Optimized with lookup tables and direct buffer writes.</p>
+<h2>Functions</h2>
+<div class="fn" id="encode">
+<h3>encode</h3>
+<pre><code>fn encode(input:str -- encoded:str)</code></pre>
+<p>Encode a string to base64.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>input</code> <code>str</code></dt>
+<dd>String to encode</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>encoded</code> <code>str</code></dt>
+<dd>Base64-encoded string</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>&quot;Hello&quot; base64::encode -&gt; b64</code></pre>
+<p class="xref"><strong>Calls:</strong> <a href="mem.html#alloc"><code>mem::alloc</code></a>, <a href="mem.html#free"><code>mem::free</code></a>, <a href="mem.html#from_string"><code>mem::from_string</code></a>, <a href="mem.html#get_byte"><code>mem::get_byte</code></a>, <a href="mem.html#set_byte"><code>mem::set_byte</code></a>, <a href="mem.html#to_string"><code>mem::to_string</code></a></p>
+</div>
+<hr>
+<div class="fn" id="decode">
+<h3>decode</h3>
+<pre><code>fn decode(encoded:str -- decoded:str)</code></pre>
+<p>Decode a base64 string.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>encoded</code> <code>str</code></dt>
+<dd>Base64-encoded string</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>decoded</code> <code>str</code></dt>
+<dd>Decoded string</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>&quot;SGVsbG8=&quot; base64::decode -&gt; text</code></pre>
+<p class="xref"><strong>Calls:</strong> <a href="mem.html#alloc"><code>mem::alloc</code></a>, <a href="mem.html#free"><code>mem::free</code></a>, <a href="mem.html#from_string"><code>mem::from_string</code></a>, <a href="mem.html#get_byte"><code>mem::get_byte</code></a>, <a href="mem.html#set_byte"><code>mem::set_byte</code></a>, <a href="mem.html#to_string"><code>mem::to_string</code></a></p>
+</div>
+</div></body></html>

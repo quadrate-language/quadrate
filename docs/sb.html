@@ -1,0 +1,250 @@
+<!DOCTYPE html><html><head><meta charset="utf-8"><title>sb - Quadrate API</title><link rel="stylesheet" href="style.css"></head><body>
+<nav><h1>Quadrate API</h1><a href="index.html">All Modules</a></nav>
+<div class="container"><h2>sb</h2>
+<p class="desc">StringBuilder - Efficient string building. Avoids O(n²) cost of repeated strings::concat.</p>
+<h2>Structs</h2>
+<h3 id="StringBuilder"><code>StringBuilder</code></h3>
+<p>Growable string buffer for efficient string building.</p>
+<dl>
+<dt><code>buf</code> <code>ptr</code></dt>
+<dd>Internal buffer</dd>
+<dt><code>len</code> <code>i64</code></dt>
+<dd>Current length</dd>
+<dt><code>cap</code> <code>i64</code></dt>
+<dd>Buffer capacity</dd>
+</dl>
+<h2>Functions</h2>
+<div class="fn" id="new">
+<h3>new</h3>
+<pre><code>fn new( -- sb:StringBuilder)</code></pre>
+<p>Create a new StringBuilder with default capacity.</p>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>sb</code> <code>StringBuilder</code></dt>
+<dd>New empty builder</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>sb::new -&gt; builder</code></pre>
+<p class="xref"><strong>Calls:</strong> <a href="mem.html#alloc"><code>mem::alloc</code></a></p>
+<p class="xref"><strong>Called by:</strong> <a href="regex.html#replace"><code>regex::replace</code></a></p>
+</div>
+<hr>
+<div class="fn" id="with_capacity">
+<h3>with_capacity</h3>
+<pre><code>fn with_capacity(capacity:i64 -- sb:StringBuilder)</code></pre>
+<p>Create a StringBuilder with specific initial capacity.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>capacity</code> <code>i64</code></dt>
+<dd>Initial buffer size</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>sb</code> <code>StringBuilder</code></dt>
+<dd>New empty builder</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>1024 sb::with_capacity -&gt; builder</code></pre>
+<p class="xref"><strong>Calls:</strong> <a href="mem.html#alloc"><code>mem::alloc</code></a>, <a href="sb.html#capacity"><code>sb::capacity</code></a></p>
+</div>
+<hr>
+<div class="fn" id="append">
+<h3>append</h3>
+<pre><code>fn (sb:StringBuilder) append(s:str -- sb2:StringBuilder)</code></pre>
+<p>Append a string to the builder.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>sb</code> <code>StringBuilder</code></dt>
+<dt><code>s</code> <code>str</code></dt>
+<dd>String to append</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>sb2</code> <code>StringBuilder</code></dt>
+<dd>Updated builder</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>builder &quot;hello&quot; sb::append -&gt; builder</code></pre>
+<p class="xref"><strong>Calls:</strong> <a href="mem.html#copy"><code>mem::copy</code></a>, <a href="mem.html#ptr_add"><code>mem::ptr_add</code></a>, <a href="mem.html#realloc"><code>mem::realloc</code></a>, <a href="strings.html#data"><code>strings::data</code></a>, <a href="strings.html#len"><code>strings::len</code></a></p>
+<p class="xref"><strong>Called by:</strong> <a href="regex.html#replace"><code>regex::replace</code></a></p>
+</div>
+<hr>
+<div class="fn" id="append_char">
+<h3>append_char</h3>
+<pre><code>fn (sb:StringBuilder) append_char(c:i64 -- sb2:StringBuilder)</code></pre>
+<p>Append a single character (by code point).</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>sb</code> <code>StringBuilder</code></dt>
+<dt><code>c</code> <code>i64</code></dt>
+<dd>Character code to append</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>sb2</code> <code>StringBuilder</code></dt>
+<dd>Updated builder</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>builder 65 sb::append_char -&gt; builder</code></pre>
+<p class="xref"><strong>Calls:</strong> <a href="mem.html#realloc"><code>mem::realloc</code></a>, <a href="mem.html#set_byte"><code>mem::set_byte</code></a></p>
+<p class="xref"><strong>Called by:</strong> <a href="sb.html#append_int"><code>sb::append_int</code></a>, <a href="sb.html#newline"><code>sb::newline</code></a>, <a href="sb.html#space"><code>sb::space</code></a></p>
+</div>
+<hr>
+<div class="fn" id="append_int">
+<h3>append_int</h3>
+<pre><code>fn (sb:StringBuilder) append_int(n:i64 -- sb2:StringBuilder)</code></pre>
+<p>Append an integer as string.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>sb</code> <code>StringBuilder</code></dt>
+<dt><code>n</code> <code>i64</code></dt>
+<dd>Integer to append</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>sb2</code> <code>StringBuilder</code></dt>
+<dd>Updated builder</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>builder 42 sb::append_int -&gt; builder</code></pre>
+<p class="xref"><strong>Calls:</strong> <a href="mem.html#realloc"><code>mem::realloc</code></a>, <a href="mem.html#set_byte"><code>mem::set_byte</code></a>, <a href="sb.html#append_char"><code>sb::append_char</code></a></p>
+</div>
+<hr>
+<div class="fn" id="len">
+<h3>len</h3>
+<pre><code>fn (sb:StringBuilder) len( -- sblen:i64)</code></pre>
+<p>Get current length of builder content.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>sb</code> <code>StringBuilder</code></dt>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>sblen</code> <code>i64</code></dt>
+<dd>Current content length</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>builder sb::len -&gt; sblen</code></pre>
+</div>
+<hr>
+<div class="fn" id="build">
+<h3>build</h3>
+<pre><code>fn (sb:StringBuilder) build( -- s:str)</code></pre>
+<p>Build the final string (does not consume builder).</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>sb</code> <code>StringBuilder</code></dt>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>s</code> <code>str</code></dt>
+<dd>Built string</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>builder sb::build -&gt; result</code></pre>
+<p class="xref"><strong>Calls:</strong> <a href="mem.html#to_string"><code>mem::to_string</code></a></p>
+</div>
+<hr>
+<div class="fn" id="free">
+<h3>free</h3>
+<pre><code>fn (sb:StringBuilder) free()</code></pre>
+<p>Free the builder's resources.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>sb</code> <code>StringBuilder</code></dt>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>builder sb::free</code></pre>
+<p class="xref"><strong>Calls:</strong> <a href="mem.html#free"><code>mem::free</code></a></p>
+</div>
+<hr>
+<div class="fn" id="finish">
+<h3>finish</h3>
+<pre><code>fn (sb:StringBuilder) finish( -- s:str)</code></pre>
+<p>Build string and free builder in one call.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>sb</code> <code>StringBuilder</code></dt>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>s</code> <code>str</code></dt>
+<dd>Built string</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>builder sb::finish -&gt; result</code></pre>
+<p class="xref"><strong>Calls:</strong> <a href="mem.html#free"><code>mem::free</code></a>, <a href="mem.html#to_string"><code>mem::to_string</code></a></p>
+<p class="xref"><strong>Called by:</strong> <a href="regex.html#replace"><code>regex::replace</code></a></p>
+</div>
+<hr>
+<div class="fn" id="capacity">
+<h3>capacity</h3>
+<pre><code>fn (sb:StringBuilder) capacity( -- cap:i64)</code></pre>
+<p>Get the current capacity of the builder.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>sb</code> <code>StringBuilder</code></dt>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>cap</code> <code>i64</code></dt>
+<dd>Current buffer capacity</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>builder sb::capacity -&gt; cap</code></pre>
+<p class="xref"><strong>Called by:</strong> <a href="sb.html#with_capacity"><code>sb::with_capacity</code></a></p>
+</div>
+<hr>
+<div class="fn" id="is_empty">
+<h3>is_empty</h3>
+<pre><code>fn (sb:StringBuilder) is_empty( -- empty:i64)</code></pre>
+<p>Check if the builder is empty.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>sb</code> <code>StringBuilder</code></dt>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>empty</code> <code>i64</code></dt>
+<dd>1 if empty, 0 otherwise</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>builder sb::is_empty -&gt; empty</code></pre>
+</div>
+<hr>
+<div class="fn" id="newline">
+<h3>newline</h3>
+<pre><code>fn (sb:StringBuilder) newline( -- sb2:StringBuilder)</code></pre>
+<p>Append a newline character.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>sb</code> <code>StringBuilder</code></dt>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>sb2</code> <code>StringBuilder</code></dt>
+<dd>Updated builder</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>builder sb::newline -&gt; builder</code></pre>
+<p class="xref"><strong>Calls:</strong> <a href="sb.html#append_char"><code>sb::append_char</code></a></p>
+</div>
+<hr>
+<div class="fn" id="space">
+<h3>space</h3>
+<pre><code>fn (sb:StringBuilder) space( -- sb2:StringBuilder)</code></pre>
+<p>Append a space character.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>sb</code> <code>StringBuilder</code></dt>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>sb2</code> <code>StringBuilder</code></dt>
+<dd>Updated builder</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>builder sb::space -&gt; builder</code></pre>
+<p class="xref"><strong>Calls:</strong> <a href="sb.html#append_char"><code>sb::append_char</code></a></p>
+</div>
+</div></body></html>

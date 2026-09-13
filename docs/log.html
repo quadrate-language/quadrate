@@ -1,0 +1,276 @@
+<!DOCTYPE html><html><head><meta charset="utf-8"><title>log - Quadrate API</title><link rel="stylesheet" href="style.css"></head><body>
+<nav><h1>Quadrate API</h1><a href="index.html">All Modules</a></nav>
+<div class="container"><h2>log</h2>
+<p class="desc">Logging module - structured logging with levels and rotation.  Provides: - Log levels: Debug, Info, Warn, Error - Structured key-value logging - Multiple outputs (stdout, files) - Log rotation (by size, daily, hourly) - Text and JSON formats  ## Example      use log      fn main() {         // Create logger         log::new! -&gt; logger          // Basic logging         logger &quot;server started&quot; log::info         logger &quot;connection failed&quot; log::error          // Set minimum level         logger log::LevelWarn log::set_level          // Add file output with rotation         logger &quot;/var/log/app.log&quot; log::RotateDaily 0 7 log::add_file_rotate!          // Structured logging with key-value pairs         logger &quot;user login&quot; &quot;user&quot; &quot;alice&quot; &quot;ip&quot; &quot;192.168.1.1&quot; 2 log::info_kv          // JSON format         logger log::FormatJson log::set_format          // Cleanup         logger log::free     }</p>
+<h2>Structs</h2>
+<h3 id="Logger"><code>Logger</code></h3>
+<p>Logger handle.</p>
+<dl>
+<dt><code>handle</code> <code>ptr</code></dt>
+</dl>
+<h2>Constants</h2>
+<dl>
+<dt><code>LevelDebug</code> = <code>0</code></dt>
+<dd>Log level: Debug (most verbose).</dd>
+<dt><code>LevelInfo</code> = <code>1</code></dt>
+<dd>Log level: Info (normal messages).</dd>
+<dt><code>LevelWarn</code> = <code>2</code></dt>
+<dd>Log level: Warn (warnings).</dd>
+<dt><code>LevelError</code> = <code>3</code></dt>
+<dd>Log level: Error (errors only).</dd>
+<dt><code>LevelOff</code> = <code>4</code></dt>
+<dd>Log level: Off (no logging).</dd>
+<dt><code>FormatText</code> = <code>0</code></dt>
+<dd>Output format: human-readable text.</dd>
+<dt><code>FormatJson</code> = <code>1</code></dt>
+<dd>Output format: JSON lines.</dd>
+<dt><code>RotateNone</code> = <code>0</code></dt>
+<dd>Rotation mode: no rotation.</dd>
+<dt><code>RotateSize</code> = <code>1</code></dt>
+<dd>Rotation mode: rotate by file size.</dd>
+<dt><code>RotateDaily</code> = <code>2</code></dt>
+<dd>Rotation mode: rotate daily.</dd>
+<dt><code>RotateHourly</code> = <code>3</code></dt>
+<dd>Rotation mode: rotate hourly.</dd>
+<dt><code>ErrAlloc</code> = <code>2</code></dt>
+<dd>Error: Memory allocation failed.</dd>
+<dt><code>ErrFile</code> = <code>3</code></dt>
+<dd>Error: File operation failed.</dd>
+<dt><code>ErrInvalid</code> = <code>4</code></dt>
+<dd>Error: Invalid argument.</dd>
+</dl>
+<h2>Functions</h2>
+<div class="fn fallible" id="new">
+<h3>new [fallible]</h3>
+<pre><code>fn new( -- logger:Logger)!</code></pre>
+<p>Create a new logger.  By default logs to stdout at Info level in text format.</p>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>logger</code> <code>Logger</code></dt>
+<dd>New logger handle</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>log::new! -&gt; logger</code></pre>
+</div>
+<hr>
+<div class="fn" id="free">
+<h3>free</h3>
+<pre><code>fn (logger:Logger) free()</code></pre>
+<p>Free logger resources.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>logger</code> <code>Logger</code></dt>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>logger log::free</code></pre>
+</div>
+<hr>
+<div class="fn" id="set_level">
+<h3>set_level</h3>
+<pre><code>fn (logger:Logger) set_level(level:i64 -- )</code></pre>
+<p>Set minimum log level.  Messages below this level are ignored.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>logger</code> <code>Logger</code></dt>
+<dt><code>level</code> <code>i64</code></dt>
+<dd>Minimum level (LevelDebug, LevelInfo, LevelWarn, LevelError, LevelOff)</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>logger log::LevelWarn log::set_level</code></pre>
+</div>
+<hr>
+<div class="fn" id="get_level">
+<h3>get_level</h3>
+<pre><code>fn (logger:Logger) get_level( -- level:i64)</code></pre>
+<p>Get current log level.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>logger</code> <code>Logger</code></dt>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>level</code> <code>i64</code></dt>
+<dd>Current minimum level</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>logger log::get_level -&gt; level</code></pre>
+</div>
+<hr>
+<div class="fn" id="set_format">
+<h3>set_format</h3>
+<pre><code>fn (logger:Logger) set_format(format:i64 -- )</code></pre>
+<p>Set output format.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>logger</code> <code>Logger</code></dt>
+<dt><code>format</code> <code>i64</code></dt>
+<dd>Format (FormatText or FormatJson)</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>logger log::FormatJson log::set_format</code></pre>
+</div>
+<hr>
+<div class="fn" id="enable_stdout">
+<h3>enable_stdout</h3>
+<pre><code>fn (logger:Logger) enable_stdout()</code></pre>
+<p>Enable stdout output (default).</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>logger</code> <code>Logger</code></dt>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>logger log::enable_stdout</code></pre>
+</div>
+<hr>
+<div class="fn" id="disable_stdout">
+<h3>disable_stdout</h3>
+<pre><code>fn (logger:Logger) disable_stdout()</code></pre>
+<p>Disable stdout output.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>logger</code> <code>Logger</code></dt>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>logger log::disable_stdout</code></pre>
+</div>
+<hr>
+<div class="fn fallible" id="add_file">
+<h3>add_file [fallible]</h3>
+<pre><code>fn (logger:Logger) add_file(path:str -- )!</code></pre>
+<p>Add file output (no rotation).</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>logger</code> <code>Logger</code></dt>
+<dt><code>path</code> <code>str</code></dt>
+<dd>Log file path</dd>
+</dl>
+<p><strong>Errors:</strong></p>
+<dl>
+<dt><code>ErrFile</code></dt>
+<dd>Failed to open file</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>logger &quot;/var/log/app.log&quot; log::add_file!</code></pre>
+</div>
+<hr>
+<div class="fn fallible" id="add_file_rotate">
+<h3>add_file_rotate [fallible]</h3>
+<pre><code>fn (logger:Logger) add_file_rotate(path:str mode:i64 max_size:i64 max_files:i64 -- )!</code></pre>
+<p>Add file output with rotation.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>logger</code> <code>Logger</code></dt>
+<dt><code>path</code> <code>str</code></dt>
+<dd>Base log file path</dd>
+<dt><code>mode</code> <code>i64</code></dt>
+<dd>Rotation mode (RotateNone, RotateSize, RotateDaily, RotateHourly)</dd>
+<dt><code>max_size</code> <code>i64</code></dt>
+<dd>Max file size for RotateSize (bytes), 0 for time-based</dd>
+<dt><code>max_files</code> <code>i64</code></dt>
+<dd>Max rotated files to keep (0 = unlimited)</dd>
+</dl>
+<p><strong>Errors:</strong></p>
+<dl>
+<dt><code>ErrFile</code></dt>
+<dd>Failed to open file</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>logger &quot;/var/log/app.log&quot; log::RotateDaily 0 7 log::add_file_rotate!</code></pre>
+</div>
+<hr>
+<div class="fn" id="debug">
+<h3>debug</h3>
+<pre><code>fn (logger:Logger) debug(msg:str -- )</code></pre>
+<p>Log a debug message.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>logger</code> <code>Logger</code></dt>
+<dt><code>msg</code> <code>str</code></dt>
+<dd>Message to log</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>logger &quot;processing item&quot; log::debug</code></pre>
+</div>
+<hr>
+<div class="fn" id="info">
+<h3>info</h3>
+<pre><code>fn (logger:Logger) info(msg:str -- )</code></pre>
+<p>Log an info message.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>logger</code> <code>Logger</code></dt>
+<dt><code>msg</code> <code>str</code></dt>
+<dd>Message to log</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>logger &quot;server started&quot; log::info</code></pre>
+</div>
+<hr>
+<div class="fn" id="warn">
+<h3>warn</h3>
+<pre><code>fn (logger:Logger) warn(msg:str -- )</code></pre>
+<p>Log a warning message.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>logger</code> <code>Logger</code></dt>
+<dt><code>msg</code> <code>str</code></dt>
+<dd>Message to log</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>logger &quot;connection timeout&quot; log::warn</code></pre>
+</div>
+<hr>
+<div class="fn" id="error">
+<h3>error</h3>
+<pre><code>fn (logger:Logger) error(msg:str -- )</code></pre>
+<p>Log an error message.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>logger</code> <code>Logger</code></dt>
+<dt><code>msg</code> <code>str</code></dt>
+<dd>Message to log</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>logger &quot;connection failed&quot; log::error</code></pre>
+</div>
+<hr>
+<div class="fn" id="log">
+<h3>log</h3>
+<pre><code>fn (logger:Logger) log(level:i64 msg:str -- )</code></pre>
+<p>Log a message at specified level.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>logger</code> <code>Logger</code></dt>
+<dt><code>level</code> <code>i64</code></dt>
+<dd>Log level</dd>
+<dt><code>msg</code> <code>str</code></dt>
+<dd>Message to log</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>logger log::LevelInfo &quot;custom message&quot; log::log</code></pre>
+</div>
+<hr>
+<div class="fn" id="flush">
+<h3>flush</h3>
+<pre><code>fn (logger:Logger) flush()</code></pre>
+<p>Flush all outputs.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>logger</code> <code>Logger</code></dt>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>logger log::flush</code></pre>
+</div>
+<hr>
+<div class="fn" id="check_rotate">
+<h3>check_rotate</h3>
+<pre><code>fn (logger:Logger) check_rotate()</code></pre>
+<p>Check and perform rotation if needed.  Called automatically before each log, but can be called manually.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>logger</code> <code>Logger</code></dt>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>logger log::check_rotate</code></pre>
+</div>
+</div></body></html>

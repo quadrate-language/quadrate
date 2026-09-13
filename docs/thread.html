@@ -1,0 +1,733 @@
+<!DOCTYPE html><html><head><meta charset="utf-8"><title>thread - Quadrate API</title><link rel="stylesheet" href="style.css"></head><body>
+<nav><h1>Quadrate API</h1><a href="index.html">All Modules</a></nav>
+<div class="container"><h2>thread</h2>
+<p class="desc">Thread module - threading primitives using C11 threads.  Provides: - Thread: spawn, join, detach threads - Mutex: mutual exclusion locks - Channel: Go-style channels for thread communication - WaitGroup: wait for multiple threads to complete  ## Example      use thread      fn worker() {         &quot;Hello from thread!&quot; print nl     }      fn main() {         // Spawn and join a thread         &amp;worker thread::spawn! -&gt; t         t join!          // Mutex for synchronization         thread::mutex_new! -&gt; m         m lock!         m unlock!         m free          // Channel for communication         10 thread::chan_buffered! -&gt; ch         ch 42 send!         ch recv! -&gt; val         ch free          // WaitGroup to wait for multiple threads         thread::wg_new! -&gt; wg         wg 2 add         wg done         wg done         wg wait!         wg free     }</p>
+<h2>Structs</h2>
+<h3 id="Thread"><code>Thread</code></h3>
+<p>A thread handle.</p>
+<dl>
+<dt><code>handle</code> <code>ptr</code></dt>
+</dl>
+<h3 id="Mutex"><code>Mutex</code></h3>
+<p>A mutual exclusion lock.</p>
+<dl>
+<dt><code>handle</code> <code>ptr</code></dt>
+</dl>
+<h3 id="Channel"><code>Channel</code></h3>
+<p>A channel for thread communication.</p>
+<dl>
+<dt><code>handle</code> <code>ptr</code></dt>
+</dl>
+<h3 id="WaitGroup"><code>WaitGroup</code></h3>
+<p>A WaitGroup waits for a collection of threads to finish.</p>
+<dl>
+<dt><code>handle</code> <code>ptr</code></dt>
+</dl>
+<h3 id="Once"><code>Once</code></h3>
+<p>A Once ensures a function is executed only once.</p>
+<dl>
+<dt><code>handle</code> <code>ptr</code></dt>
+</dl>
+<h3 id="Barrier"><code>Barrier</code></h3>
+<p>A Barrier synchronizes multiple threads at a point.</p>
+<dl>
+<dt><code>handle</code> <code>ptr</code></dt>
+</dl>
+<h3 id="RwLock"><code>RwLock</code></h3>
+<p>A RwLock allows multiple readers or one writer. Writers are prioritized to prevent starvation.</p>
+<dl>
+<dt><code>handle</code> <code>ptr</code></dt>
+</dl>
+<h2>Constants</h2>
+<dl>
+<dt><code>ErrCreate</code> = <code>2</code></dt>
+<dd>Error: Failed to create thread.</dd>
+<dt><code>ErrJoin</code> = <code>3</code></dt>
+<dd>Error: Failed to join thread.</dd>
+<dt><code>ErrDetach</code> = <code>4</code></dt>
+<dd>Error: Failed to detach thread.</dd>
+<dt><code>ErrMutex</code> = <code>5</code></dt>
+<dd>Error: Mutex operation failed.</dd>
+<dt><code>ErrChannel</code> = <code>6</code></dt>
+<dd>Error: Channel operation failed.</dd>
+<dt><code>ErrClosed</code> = <code>7</code></dt>
+<dd>Error: Channel is closed.</dd>
+<dt><code>ErrTimeout</code> = <code>8</code></dt>
+<dd>Error: Operation timed out.</dd>
+</dl>
+<h2>Functions</h2>
+<div class="fn" id="sleep">
+<h3>sleep</h3>
+<pre><code>fn sleep(ms:i64 -- )</code></pre>
+<p>Sleep the current thread for the specified duration in milliseconds.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>ms</code> <code>i64</code></dt>
+<dd>Sleep duration in milliseconds</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>1000 thread::sleep  // Sleep 1 second</code></pre>
+</div>
+<hr>
+<div class="fn fallible" id="spawn">
+<h3>spawn [fallible]</h3>
+<pre><code>fn spawn(func:ptr -- t:Thread)!</code></pre>
+<p>Spawn a new thread running the given function.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>func</code> <code>ptr</code></dt>
+<dd>Function pointer (use &amp;function_name)</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>t</code> <code>Thread</code></dt>
+<dd>Thread handle</dd>
+</dl>
+<p><strong>Errors:</strong></p>
+<dl>
+<dt><code>ErrCreate</code></dt>
+<dd>Failed to create thread</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>&amp;worker thread::spawn! -&gt; t</code></pre>
+</div>
+<hr>
+<div class="fn fallible" id="join">
+<h3>join [fallible]</h3>
+<pre><code>fn (t:Thread) join()!</code></pre>
+<p>Wait for the thread to complete.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>t</code> <code>Thread</code></dt>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>t join!</code></pre>
+</div>
+<hr>
+<div class="fn fallible" id="detach">
+<h3>detach [fallible]</h3>
+<pre><code>fn (t:Thread) detach()!</code></pre>
+<p>Detach the thread.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>t</code> <code>Thread</code></dt>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>t detach!</code></pre>
+</div>
+<hr>
+<div class="fn" id="is_alive">
+<h3>is_alive</h3>
+<pre><code>fn (t:Thread) is_alive( -- alive:i64)</code></pre>
+<p>Check if the thread is still alive.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>t</code> <code>Thread</code></dt>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>alive</code> <code>i64</code></dt>
+<dd>1 if running, 0 if completed</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>t is_alive -&gt; running</code></pre>
+</div>
+<hr>
+<div class="fn fallible" id="mutex_new">
+<h3>mutex_new [fallible]</h3>
+<pre><code>fn mutex_new( -- m:Mutex)!</code></pre>
+<p>Create a new mutex.</p>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>m</code> <code>Mutex</code></dt>
+<dd>New mutex handle</dd>
+</dl>
+<p><strong>Errors:</strong></p>
+<dl>
+<dt><code>ErrMutex</code></dt>
+<dd>Failed to create mutex</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>thread::mutex_new! -&gt; m</code></pre>
+</div>
+<hr>
+<div class="fn fallible" id="lock">
+<h3>lock [fallible]</h3>
+<pre><code>fn (m:Mutex) lock()!</code></pre>
+<p>Lock the mutex.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>m</code> <code>Mutex</code></dt>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>m lock!</code></pre>
+</div>
+<hr>
+<div class="fn fallible" id="unlock">
+<h3>unlock [fallible]</h3>
+<pre><code>fn (m:Mutex) unlock()!</code></pre>
+<p>Unlock the mutex.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>m</code> <code>Mutex</code></dt>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>m unlock!</code></pre>
+</div>
+<hr>
+<div class="fn" id="try_lock">
+<h3>try_lock</h3>
+<pre><code>fn (m:Mutex) try_lock( -- success:i64)</code></pre>
+<p>Try to lock the mutex without blocking.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>m</code> <code>Mutex</code></dt>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>success</code> <code>i64</code></dt>
+<dd>1 if locked, 0 if already held</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>m try_lock -&gt; got</code></pre>
+</div>
+<hr>
+<div class="fn" id="free">
+<h3>free</h3>
+<pre><code>fn (m:Mutex) free()</code></pre>
+<p>Free the mutex.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>m</code> <code>Mutex</code></dt>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>m free</code></pre>
+</div>
+<hr>
+<div class="fn fallible" id="chan_new">
+<h3>chan_new [fallible]</h3>
+<pre><code>fn chan_new( -- ch:Channel)!</code></pre>
+<p>Create a new unbuffered (synchronous) channel.</p>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>ch</code> <code>Channel</code></dt>
+<dd>New channel handle</dd>
+</dl>
+<p><strong>Errors:</strong></p>
+<dl>
+<dt><code>ErrChannel</code></dt>
+<dd>Failed to create channel</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>thread::chan_new! -&gt; ch</code></pre>
+</div>
+<hr>
+<div class="fn fallible" id="chan_buffered">
+<h3>chan_buffered [fallible]</h3>
+<pre><code>fn chan_buffered(capacity:i64 -- ch:Channel)!</code></pre>
+<p>Create a new buffered channel.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>capacity</code> <code>i64</code></dt>
+<dd>Buffer size</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>ch</code> <code>Channel</code></dt>
+<dd>New channel handle</dd>
+</dl>
+<p><strong>Errors:</strong></p>
+<dl>
+<dt><code>ErrChannel</code></dt>
+<dd>Failed to create channel</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>10 thread::chan_buffered! -&gt; ch</code></pre>
+</div>
+<hr>
+<div class="fn fallible" id="send">
+<h3>send [fallible]</h3>
+<pre><code>fn (ch:Channel) send(val:i64 -- )!</code></pre>
+<p>Send a value on the channel.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>ch</code> <code>Channel</code></dt>
+<dt><code>val</code> <code>i64</code></dt>
+<dd>Value to send</dd>
+</dl>
+<p><strong>Errors:</strong></p>
+<dl>
+<dt><code>ErrClosed</code></dt>
+<dd>Cannot send on closed channel</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>ch 42 send!</code></pre>
+</div>
+<hr>
+<div class="fn fallible" id="recv">
+<h3>recv [fallible]</h3>
+<pre><code>fn (ch:Channel) recv( -- val:i64)!</code></pre>
+<p>Receive a value from the channel.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>ch</code> <code>Channel</code></dt>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>val</code> <code>i64</code></dt>
+<dd>Received value</dd>
+</dl>
+<p><strong>Errors:</strong></p>
+<dl>
+<dt><code>ErrClosed</code></dt>
+<dd>Channel closed with no values</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>ch recv! -&gt; val</code></pre>
+</div>
+<hr>
+<div class="fn" id="try_send">
+<h3>try_send</h3>
+<pre><code>fn (ch:Channel) try_send(val:i64 -- success:i64)</code></pre>
+<p>Try to send without blocking.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>ch</code> <code>Channel</code></dt>
+<dt><code>val</code> <code>i64</code></dt>
+<dd>Value to send</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>success</code> <code>i64</code></dt>
+<dd>1 if sent, 0 if would block</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>ch 42 try_send -&gt; sent</code></pre>
+</div>
+<hr>
+<div class="fn" id="try_recv">
+<h3>try_recv</h3>
+<pre><code>fn (ch:Channel) try_recv( -- val:i64 success:i64)</code></pre>
+<p>Try to receive without blocking.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>ch</code> <code>Channel</code></dt>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>val</code> <code>i64</code></dt>
+<dd>Received value (0 if failed)</dd>
+<dt><code>success</code> <code>i64</code></dt>
+<dd>1 if received, 0 if would block</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>ch try_recv -&gt; success -&gt; val</code></pre>
+</div>
+<hr>
+<div class="fn" id="close">
+<h3>close</h3>
+<pre><code>fn (ch:Channel) close()</code></pre>
+<p>Close the channel.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>ch</code> <code>Channel</code></dt>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>ch close</code></pre>
+</div>
+<hr>
+<div class="fn" id="is_closed">
+<h3>is_closed</h3>
+<pre><code>fn (ch:Channel) is_closed( -- closed:i64)</code></pre>
+<p>Check if the channel is closed.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>ch</code> <code>Channel</code></dt>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>closed</code> <code>i64</code></dt>
+<dd>1 if closed, 0 if open</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>ch is_closed -&gt; done</code></pre>
+</div>
+<hr>
+<div class="fn" id="len">
+<h3>len</h3>
+<pre><code>fn (ch:Channel) len( -- n:i64)</code></pre>
+<p>Get number of values in channel buffer.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>ch</code> <code>Channel</code></dt>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>n</code> <code>i64</code></dt>
+<dd>Number of buffered values</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>ch len -&gt; n</code></pre>
+</div>
+<hr>
+<div class="fn" id="cap">
+<h3>cap</h3>
+<pre><code>fn (ch:Channel) cap( -- c:i64)</code></pre>
+<p>Get channel capacity.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>ch</code> <code>Channel</code></dt>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>c</code> <code>i64</code></dt>
+<dd>Buffer capacity (0 for unbuffered)</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>ch cap -&gt; c</code></pre>
+</div>
+<hr>
+<div class="fn" id="free">
+<h3>free</h3>
+<pre><code>fn (ch:Channel) free()</code></pre>
+<p>Free the channel.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>ch</code> <code>Channel</code></dt>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>ch free</code></pre>
+</div>
+<hr>
+<div class="fn fallible" id="wg_new">
+<h3>wg_new [fallible]</h3>
+<pre><code>fn wg_new( -- wg:WaitGroup)!</code></pre>
+<p>Create a new WaitGroup.</p>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>wg</code> <code>WaitGroup</code></dt>
+<dd>New WaitGroup handle</dd>
+</dl>
+<p><strong>Errors:</strong></p>
+<dl>
+<dt><code>ErrCreate</code></dt>
+<dd>Failed to create WaitGroup</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>thread::wg_new! -&gt; wg</code></pre>
+</div>
+<hr>
+<div class="fn" id="add">
+<h3>add</h3>
+<pre><code>fn (wg:WaitGroup) add(n:i64 -- )</code></pre>
+<p>Add to the WaitGroup counter.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>wg</code> <code>WaitGroup</code></dt>
+<dt><code>n</code> <code>i64</code></dt>
+<dd>Number to add (usually 1 per thread)</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>wg 2 add</code></pre>
+</div>
+<hr>
+<div class="fn" id="done">
+<h3>done</h3>
+<pre><code>fn (wg:WaitGroup) done()</code></pre>
+<p>Mark one unit of work as done.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>wg</code> <code>WaitGroup</code></dt>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>wg done</code></pre>
+</div>
+<hr>
+<div class="fn fallible" id="wait">
+<h3>wait [fallible]</h3>
+<pre><code>fn (wg:WaitGroup) wait()!</code></pre>
+<p>Wait for all threads to complete.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>wg</code> <code>WaitGroup</code></dt>
+</dl>
+<p><strong>Errors:</strong></p>
+<dl>
+<dt><code>ErrCreate</code></dt>
+<dd>Invalid WaitGroup</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>wg wait!</code></pre>
+</div>
+<hr>
+<div class="fn" id="free">
+<h3>free</h3>
+<pre><code>fn (wg:WaitGroup) free()</code></pre>
+<p>Free the WaitGroup.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>wg</code> <code>WaitGroup</code></dt>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>wg free</code></pre>
+</div>
+<hr>
+<div class="fn fallible" id="once_new">
+<h3>once_new [fallible]</h3>
+<pre><code>fn once_new( -- o:Once)!</code></pre>
+<p>Create a new Once.</p>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>o</code> <code>Once</code></dt>
+<dd>New Once handle</dd>
+</dl>
+<p><strong>Errors:</strong></p>
+<dl>
+<dt><code>ErrCreate</code></dt>
+<dd>Failed to create Once</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>thread::once_new! -&gt; o</code></pre>
+</div>
+<hr>
+<div class="fn" id="do">
+<h3>do</h3>
+<pre><code>fn (o:Once) do(func:ptr -- )</code></pre>
+<p>Execute the function exactly once. If multiple threads call this concurrently, only one will execute the function; the others will wait until it completes.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>o</code> <code>Once</code></dt>
+<dt><code>func</code> <code>ptr</code></dt>
+<dd>Function to execute once</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>o &amp;init_stuff do</code></pre>
+</div>
+<hr>
+<div class="fn" id="is_done">
+<h3>is_done</h3>
+<pre><code>fn (o:Once) is_done( -- done:i64)</code></pre>
+<p>Check if the function has been executed.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>o</code> <code>Once</code></dt>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>done</code> <code>i64</code></dt>
+<dd>1 if executed, 0 if not yet</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>o is_done -&gt; executed</code></pre>
+</div>
+<hr>
+<div class="fn" id="free">
+<h3>free</h3>
+<pre><code>fn (o:Once) free()</code></pre>
+<p>Free the Once.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>o</code> <code>Once</code></dt>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>o free</code></pre>
+</div>
+<hr>
+<div class="fn" id="self">
+<h3>self</h3>
+<pre><code>fn self( -- id:i64)</code></pre>
+<p>Get the current thread's ID. The ID is implementation-defined but can be used for comparison.</p>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>id</code> <code>i64</code></dt>
+<dd>Current thread ID</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>thread::self -&gt; id</code></pre>
+</div>
+<hr>
+<div class="fn" id="yield">
+<h3>yield</h3>
+<pre><code>fn yield()</code></pre>
+<p>Yield the CPU to allow other threads to run.</p>
+<p><strong>Examples:</strong></p>
+<pre><code>thread::yield</code></pre>
+</div>
+<hr>
+<div class="fn" id="cpu_count">
+<h3>cpu_count</h3>
+<pre><code>fn cpu_count( -- count:i64)</code></pre>
+<p>Get the number of online CPUs/cores. Useful for determining how many threads to spawn.</p>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>count</code> <code>i64</code></dt>
+<dd>Number of CPUs</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>thread::cpu_count -&gt; n</code></pre>
+</div>
+<hr>
+<div class="fn fallible" id="barrier_new">
+<h3>barrier_new [fallible]</h3>
+<pre><code>fn barrier_new(n:i64 -- b:Barrier)!</code></pre>
+<p>Create a new Barrier for n threads.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>n</code> <code>i64</code></dt>
+<dd>Number of threads that must reach the barrier</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>b</code> <code>Barrier</code></dt>
+<dd>New Barrier handle</dd>
+</dl>
+<p><strong>Errors:</strong></p>
+<dl>
+<dt><code>ErrCreate</code></dt>
+<dd>Failed to create Barrier</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>4 thread::barrier_new! -&gt; b</code></pre>
+</div>
+<hr>
+<div class="fn" id="wait">
+<h3>wait</h3>
+<pre><code>fn (b:Barrier) wait( -- is_serial:i64)</code></pre>
+<p>Wait at the barrier until all threads arrive. Returns 1 for exactly one thread (the &quot;serial thread&quot;), 0 for all other threads. This can be used to have one thread perform serial work after the barrier.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>b</code> <code>Barrier</code></dt>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>is_serial</code> <code>i64</code></dt>
+<dd>1 for serial thread, 0 otherwise</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>b wait -&gt; serial</code></pre>
+</div>
+<hr>
+<div class="fn" id="free">
+<h3>free</h3>
+<pre><code>fn (b:Barrier) free()</code></pre>
+<p>Free the Barrier.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>b</code> <code>Barrier</code></dt>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>b free</code></pre>
+</div>
+<hr>
+<div class="fn fallible" id="rwlock_new">
+<h3>rwlock_new [fallible]</h3>
+<pre><code>fn rwlock_new( -- rw:RwLock)!</code></pre>
+<p>Create a new RwLock.</p>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>rw</code> <code>RwLock</code></dt>
+<dd>New RwLock handle</dd>
+</dl>
+<p><strong>Errors:</strong></p>
+<dl>
+<dt><code>ErrCreate</code></dt>
+<dd>Failed to create RwLock</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>thread::rwlock_new! -&gt; rw</code></pre>
+</div>
+<hr>
+<div class="fn fallible" id="read_lock">
+<h3>read_lock [fallible]</h3>
+<pre><code>fn (rw:RwLock) read_lock()!</code></pre>
+<p>Acquire a read lock. Multiple threads can hold read locks simultaneously. Blocks if a writer is active or waiting.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>rw</code> <code>RwLock</code></dt>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>rw read_lock!</code></pre>
+</div>
+<hr>
+<div class="fn fallible" id="read_unlock">
+<h3>read_unlock [fallible]</h3>
+<pre><code>fn (rw:RwLock) read_unlock()!</code></pre>
+<p>Release a read lock.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>rw</code> <code>RwLock</code></dt>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>rw read_unlock!</code></pre>
+</div>
+<hr>
+<div class="fn fallible" id="write_lock">
+<h3>write_lock [fallible]</h3>
+<pre><code>fn (rw:RwLock) write_lock()!</code></pre>
+<p>Acquire a write lock. Only one thread can hold the write lock. Blocks until all readers and writers release.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>rw</code> <code>RwLock</code></dt>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>rw write_lock!</code></pre>
+</div>
+<hr>
+<div class="fn fallible" id="write_unlock">
+<h3>write_unlock [fallible]</h3>
+<pre><code>fn (rw:RwLock) write_unlock()!</code></pre>
+<p>Release a write lock.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>rw</code> <code>RwLock</code></dt>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>rw write_unlock!</code></pre>
+</div>
+<hr>
+<div class="fn" id="try_read">
+<h3>try_read</h3>
+<pre><code>fn (rw:RwLock) try_read( -- success:i64)</code></pre>
+<p>Try to acquire a read lock without blocking.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>rw</code> <code>RwLock</code></dt>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>success</code> <code>i64</code></dt>
+<dd>1 if acquired, 0 otherwise</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>rw try_read -&gt; got</code></pre>
+</div>
+<hr>
+<div class="fn" id="try_write">
+<h3>try_write</h3>
+<pre><code>fn (rw:RwLock) try_write( -- success:i64)</code></pre>
+<p>Try to acquire a write lock without blocking.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>rw</code> <code>RwLock</code></dt>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>success</code> <code>i64</code></dt>
+<dd>1 if acquired, 0 otherwise</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>rw try_write -&gt; got</code></pre>
+</div>
+<hr>
+<div class="fn" id="free">
+<h3>free</h3>
+<pre><code>fn (rw:RwLock) free()</code></pre>
+<p>Free the RwLock.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>rw</code> <code>RwLock</code></dt>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>rw free</code></pre>
+</div>
+</div></body></html>

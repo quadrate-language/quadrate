@@ -1,0 +1,786 @@
+<!DOCTYPE html><html><head><meta charset="utf-8"><title>http - Quadrate API</title><link rel="stylesheet" href="style.css"></head><body>
+<nav><h1>Quadrate API</h1><a href="index.html">All Modules</a></nav>
+<div class="container"><h2>http</h2>
+<p class="desc">HTTP module. Provides HTTP client and server functionality. Error codes: Ok=1 (success), specific errors start at 2</p>
+<h2>Structs</h2>
+<h3 id="Response"><code>Response</code></h3>
+<p>HTTP Response structure (for client)</p>
+<dl>
+<dt><code>status</code> <code>i64</code></dt>
+<dt><code>headers</code> <code>str</code></dt>
+<dt><code>body</code> <code>str</code></dt>
+</dl>
+<h3 id="Ctx"><code>Ctx</code></h3>
+<p>HTTP Context structure (for server handlers). Passed to route handlers, contains request data and response methods. Fields:   method - GET, POST, PUT, DELETE, etc.   path - /users/123 (path without query string)   query - Raw query string (foo=bar&amp;baz=qux)   headers - Request headers   body - Request body   params - Path parameters as &quot;key=val\nkey2=val2&quot;   _socket - Internal: client socket   _responded - Internal: response sent flag</p>
+<dl>
+<dt><code>method</code> <code>str</code></dt>
+<dt><code>path</code> <code>str</code></dt>
+<dt><code>query</code> <code>str</code></dt>
+<dt><code>headers</code> <code>str</code></dt>
+<dt><code>body</code> <code>str</code></dt>
+<dt><code>params</code> <code>str</code></dt>
+<dt><code>_socket</code> <code>i64</code></dt>
+<dt><code>_responded</code> <code>i64</code></dt>
+</dl>
+<h2>Constants</h2>
+<dl>
+<dt><code>StatusContinue</code> = <code>100</code></dt>
+<dt><code>StatusSwitchingProtocols</code> = <code>101</code></dt>
+<dt><code>StatusProcessing</code> = <code>102</code></dt>
+<dt><code>StatusEarlyHints</code> = <code>103</code></dt>
+<dt><code>StatusOK</code> = <code>200</code></dt>
+<dt><code>StatusCreated</code> = <code>201</code></dt>
+<dt><code>StatusAccepted</code> = <code>202</code></dt>
+<dt><code>StatusNonAuthoritativeInfo</code> = <code>203</code></dt>
+<dt><code>StatusNoContent</code> = <code>204</code></dt>
+<dt><code>StatusResetContent</code> = <code>205</code></dt>
+<dt><code>StatusPartialContent</code> = <code>206</code></dt>
+<dt><code>StatusMultiStatus</code> = <code>207</code></dt>
+<dt><code>StatusAlreadyReported</code> = <code>208</code></dt>
+<dt><code>StatusIMUsed</code> = <code>226</code></dt>
+<dt><code>StatusMultipleChoices</code> = <code>300</code></dt>
+<dt><code>StatusMovedPermanently</code> = <code>301</code></dt>
+<dt><code>StatusFound</code> = <code>302</code></dt>
+<dt><code>StatusSeeOther</code> = <code>303</code></dt>
+<dt><code>StatusNotModified</code> = <code>304</code></dt>
+<dt><code>StatusUseProxy</code> = <code>305</code></dt>
+<dt><code>StatusTemporaryRedirect</code> = <code>307</code></dt>
+<dt><code>StatusPermanentRedirect</code> = <code>308</code></dt>
+<dt><code>StatusBadRequest</code> = <code>400</code></dt>
+<dt><code>StatusUnauthorized</code> = <code>401</code></dt>
+<dt><code>StatusPaymentRequired</code> = <code>402</code></dt>
+<dt><code>StatusForbidden</code> = <code>403</code></dt>
+<dt><code>StatusNotFound</code> = <code>404</code></dt>
+<dt><code>StatusMethodNotAllowed</code> = <code>405</code></dt>
+<dt><code>StatusNotAcceptable</code> = <code>406</code></dt>
+<dt><code>StatusProxyAuthRequired</code> = <code>407</code></dt>
+<dt><code>StatusRequestTimeout</code> = <code>408</code></dt>
+<dt><code>StatusConflict</code> = <code>409</code></dt>
+<dt><code>StatusGone</code> = <code>410</code></dt>
+<dt><code>StatusLengthRequired</code> = <code>411</code></dt>
+<dt><code>StatusPreconditionFailed</code> = <code>412</code></dt>
+<dt><code>StatusPayloadTooLarge</code> = <code>413</code></dt>
+<dt><code>StatusURITooLong</code> = <code>414</code></dt>
+<dt><code>StatusUnsupportedMediaType</code> = <code>415</code></dt>
+<dt><code>StatusRangeNotSatisfiable</code> = <code>416</code></dt>
+<dt><code>StatusExpectationFailed</code> = <code>417</code></dt>
+<dt><code>StatusTeapot</code> = <code>418</code></dt>
+<dt><code>StatusMisdirectedRequest</code> = <code>421</code></dt>
+<dt><code>StatusUnprocessableEntity</code> = <code>422</code></dt>
+<dt><code>StatusLocked</code> = <code>423</code></dt>
+<dt><code>StatusFailedDependency</code> = <code>424</code></dt>
+<dt><code>StatusTooEarly</code> = <code>425</code></dt>
+<dt><code>StatusUpgradeRequired</code> = <code>426</code></dt>
+<dt><code>StatusPreconditionRequired</code> = <code>428</code></dt>
+<dt><code>StatusTooManyRequests</code> = <code>429</code></dt>
+<dt><code>StatusRequestHeaderFieldsTooLarge</code> = <code>431</code></dt>
+<dt><code>StatusUnavailableForLegalReasons</code> = <code>451</code></dt>
+<dt><code>StatusInternalServerError</code> = <code>500</code></dt>
+<dt><code>StatusNotImplemented</code> = <code>501</code></dt>
+<dt><code>StatusBadGateway</code> = <code>502</code></dt>
+<dt><code>StatusServiceUnavailable</code> = <code>503</code></dt>
+<dt><code>StatusGatewayTimeout</code> = <code>504</code></dt>
+<dt><code>StatusHTTPVersionNotSupported</code> = <code>505</code></dt>
+<dt><code>StatusVariantAlsoNegotiates</code> = <code>506</code></dt>
+<dt><code>StatusInsufficientStorage</code> = <code>507</code></dt>
+<dt><code>StatusLoopDetected</code> = <code>508</code></dt>
+<dt><code>StatusNotExtended</code> = <code>510</code></dt>
+<dt><code>StatusNetworkAuthRequired</code> = <code>511</code></dt>
+<dt><code>ErrConnect</code> = <code>2</code></dt>
+<dd>Connection failed.</dd>
+<dt><code>ErrTls</code> = <code>3</code></dt>
+<dd>TLS handshake failed.</dd>
+<dt><code>ErrTimeout</code> = <code>4</code></dt>
+<dd>Request timeout.</dd>
+<dt><code>ErrParse</code> = <code>5</code></dt>
+<dd>Response parse error.</dd>
+<dt><code>ErrInvalidUrl</code> = <code>6</code></dt>
+<dd>Invalid URL format.</dd>
+<dt><code>ErrRedirect</code> = <code>7</code></dt>
+<dd>Too many redirects.</dd>
+<dt><code>ErrMemory</code> = <code>8</code></dt>
+<dd>Memory allocation failed.</dd>
+<dt><code>ErrSend</code> = <code>9</code></dt>
+<dd>Send failed.</dd>
+<dt><code>ErrReceive</code> = <code>10</code></dt>
+<dd>Receive failed.</dd>
+<dt><code>ErrBind</code> = <code>20</code></dt>
+<dd>Server error: bind failed.</dd>
+<dt><code>ErrAccept</code> = <code>21</code></dt>
+<dd>Server error: accept failed.</dd>
+<dt><code>ErrServerParse</code> = <code>22</code></dt>
+<dd>Server error: parse failed.</dd>
+</dl>
+<h2>Functions</h2>
+<div class="fn" id="new">
+<h3>new</h3>
+<pre><code>fn new(url:str -- req:ptr)</code></pre>
+<p>Create new HTTP request builder.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>url</code> <code>str</code></dt>
+<dd>The request URL (http:// or https://)</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>req</code> <code>ptr</code></dt>
+<dd>Request object</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>&quot;https://example.com&quot; http::new -&gt; req</code></pre>
+</div>
+<hr>
+<div class="fn" id="method">
+<h3>method</h3>
+<pre><code>fn method(req:ptr method:str -- )</code></pre>
+<p>Set request HTTP method.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>req</code> <code>ptr</code></dt>
+<dd>Request object</dd>
+<dt><code>method</code> <code>str</code></dt>
+<dd>HTTP method (GET, POST, PUT, DELETE, etc.)</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>req &quot;POST&quot; http::method</code></pre>
+</div>
+<hr>
+<div class="fn" id="header">
+<h3>header</h3>
+<pre><code>fn header(req:ptr name:str value:str -- )</code></pre>
+<p>Add request header.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>req</code> <code>ptr</code></dt>
+<dd>Request object</dd>
+<dt><code>name</code> <code>str</code></dt>
+<dd>Header name</dd>
+<dt><code>value</code> <code>str</code></dt>
+<dd>Header value</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>req &quot;Content-Type&quot; &quot;application/json&quot; http::header</code></pre>
+</div>
+<hr>
+<div class="fn" id="body">
+<h3>body</h3>
+<pre><code>fn body(req:ptr body:str -- )</code></pre>
+<p>Set request body.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>req</code> <code>ptr</code></dt>
+<dd>Request object</dd>
+<dt><code>body</code> <code>str</code></dt>
+<dd>Request body content</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>req &quot;{\&quot;key\&quot;:\&quot;value\&quot;}&quot; http::body</code></pre>
+</div>
+<hr>
+<div class="fn" id="cert">
+<h3>cert</h3>
+<pre><code>fn cert(req:ptr cert_path:str key_path:str -- )</code></pre>
+<p>Set client certificate for mTLS (mutual TLS).</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>req</code> <code>ptr</code></dt>
+<dd>Request object</dd>
+<dt><code>cert_path</code> <code>str</code></dt>
+<dd>Path to PEM client certificate file</dd>
+<dt><code>key_path</code> <code>str</code></dt>
+<dd>Path to PEM client private key file</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>req &quot;/path/client.crt&quot; &quot;/path/client.key&quot; http::cert</code></pre>
+</div>
+<hr>
+<div class="fn fallible" id="send">
+<h3>send [fallible]</h3>
+<pre><code>fn send(req:ptr -- resp:Response)!</code></pre>
+<p>Execute HTTP request.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>req</code> <code>ptr</code></dt>
+<dd>Request object</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>resp</code> <code>Response</code></dt>
+<dd>Response struct with status, headers, body</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>req http::send! -&gt; resp  resp &lt;&lt;status print</code></pre>
+</div>
+<hr>
+<div class="fn" id="free_request">
+<h3>free_request</h3>
+<pre><code>fn free_request(req:ptr -- )</code></pre>
+<p>Free request object (call after send).</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>req</code> <code>ptr</code></dt>
+<dd>Request object</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>req http::free_request</code></pre>
+</div>
+<hr>
+<div class="fn" id="close">
+<h3>close</h3>
+<pre><code>fn close(resp:Response -- )</code></pre>
+<p>Close and free response.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>resp</code> <code>Response</code></dt>
+<dd>Response object</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>resp http::close</code></pre>
+</div>
+<hr>
+<div class="fn fallible" id="get">
+<h3>get [fallible]</h3>
+<pre><code>fn get(url:str -- resp:Response)!</code></pre>
+<p>Simple GET request.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>url</code> <code>str</code></dt>
+<dd>The request URL</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>resp</code> <code>Response</code></dt>
+<dd>Response struct</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>&quot;https://example.com&quot; http::get! -&gt; resp</code></pre>
+</div>
+<hr>
+<div class="fn" id="engine">
+<h3>engine</h3>
+<pre><code>fn engine( -- engine:ptr)</code></pre>
+<p>Create new HTTP engine.</p>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>engine</code> <code>ptr</code></dt>
+<dd>Engine handle</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>http::engine -&gt; e</code></pre>
+</div>
+<hr>
+<div class="fn" id="GET">
+<h3>GET</h3>
+<pre><code>fn GET(engine:ptr path:str handler:ptr -- )</code></pre>
+<p>Register GET route.   - :param for path parameters (e.g., &quot;/users/:id&quot;)   - /* for wildcard suffix (e.g., &quot;/static/*&quot; matches /static/anything)</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>engine</code> <code>ptr</code></dt>
+<dd>Engine</dd>
+<dt><code>path</code> <code>str</code></dt>
+<dd>Route path. Supports:</dd>
+<dt><code>handler</code> <code>ptr</code></dt>
+<dd>Handler function receiving Ctx</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>e &quot;/&quot; fn(c:Ctx -- ) { c 200 &quot;Hello&quot; http::string } http::GET</code></pre>
+</div>
+<hr>
+<div class="fn" id="POST">
+<h3>POST</h3>
+<pre><code>fn POST(engine:ptr path:str handler:ptr -- )</code></pre>
+<p>Register POST route.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>engine</code> <code>ptr</code></dt>
+<dd>Engine</dd>
+<dt><code>path</code> <code>str</code></dt>
+<dd>Route path</dd>
+<dt><code>handler</code> <code>ptr</code></dt>
+<dd>Handler function</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>e &quot;/api/users&quot; fn(c:Ctx -- ) { ... } http::POST</code></pre>
+</div>
+<hr>
+<div class="fn" id="PUT">
+<h3>PUT</h3>
+<pre><code>fn PUT(engine:ptr path:str handler:ptr -- )</code></pre>
+<p>Register PUT route.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>engine</code> <code>ptr</code></dt>
+<dd>Engine</dd>
+<dt><code>path</code> <code>str</code></dt>
+<dd>Route path</dd>
+<dt><code>handler</code> <code>ptr</code></dt>
+<dd>Handler function</dd>
+</dl>
+</div>
+<hr>
+<div class="fn" id="DELETE">
+<h3>DELETE</h3>
+<pre><code>fn DELETE(engine:ptr path:str handler:ptr -- )</code></pre>
+<p>Register DELETE route.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>engine</code> <code>ptr</code></dt>
+<dd>Engine</dd>
+<dt><code>path</code> <code>str</code></dt>
+<dd>Route path</dd>
+<dt><code>handler</code> <code>ptr</code></dt>
+<dd>Handler function</dd>
+</dl>
+</div>
+<hr>
+<div class="fn" id="ANY">
+<h3>ANY</h3>
+<pre><code>fn ANY(engine:ptr path:str handler:ptr -- )</code></pre>
+<p>Register handler for any HTTP method.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>engine</code> <code>ptr</code></dt>
+<dd>Engine</dd>
+<dt><code>path</code> <code>str</code></dt>
+<dd>Route path</dd>
+<dt><code>handler</code> <code>ptr</code></dt>
+<dd>Handler function</dd>
+</dl>
+</div>
+<hr>
+<div class="fn" id="use">
+<h3>use</h3>
+<pre><code>fn use(engine:ptr middleware:ptr -- )</code></pre>
+<p>Add middleware to engine. Middleware runs before route handlers on every request.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>engine</code> <code>ptr</code></dt>
+<dd>Engine</dd>
+<dt><code>middleware</code> <code>ptr</code></dt>
+<dd>Middleware function</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>e fn(c:Ctx -- ) { c &quot;X-Server&quot; &quot;Quadrate&quot; http::set_header } http::use</code></pre>
+</div>
+<hr>
+<div class="fn fallible" id="run">
+<h3>run [fallible]</h3>
+<pre><code>fn run(engine:ptr addr:str -- )!</code></pre>
+<p>Start server (blocking).</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>engine</code> <code>ptr</code></dt>
+<dd>Engine</dd>
+<dt><code>addr</code> <code>str</code></dt>
+<dd>Address like &quot;:8080&quot; or &quot;127.0.0.1:3000&quot;</dd>
+</dl>
+<p><strong>Errors:</strong></p>
+<dl>
+<dt><code>ErrBind</code></dt>
+<dd>Failed to bind to address</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>e &quot;:8080&quot; http::run!</code></pre>
+</div>
+<hr>
+<div class="fn" id="handle_one">
+<h3>handle_one</h3>
+<pre><code>fn handle_one(engine:ptr -- handled:i64)</code></pre>
+<p>Handle a single request (non-blocking alternative to run). Returns 0 if no request pending, 1 if request handled.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>engine</code> <code>ptr</code></dt>
+<dd>Engine</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>handled</code> <code>i64</code></dt>
+<dd>1 if request was handled, 0 otherwise</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>e http::handle_one -&gt; handled</code></pre>
+</div>
+<hr>
+<div class="fn" id="stop">
+<h3>stop</h3>
+<pre><code>fn stop(engine:ptr -- )</code></pre>
+<p>Stop the server.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>engine</code> <code>ptr</code></dt>
+<dd>Engine</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>e http::stop</code></pre>
+</div>
+<hr>
+<div class="fn" id="free_engine">
+<h3>free_engine</h3>
+<pre><code>fn free_engine(engine:ptr -- )</code></pre>
+<p>Free engine resources.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>engine</code> <code>ptr</code></dt>
+<dd>Engine</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>e http::free_engine</code></pre>
+</div>
+<hr>
+<div class="fn" id="param">
+<h3>param</h3>
+<pre><code>fn param(c:Ctx name:str -- value:str)</code></pre>
+<p>Get path parameter by name.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>c</code> <code>Ctx</code></dt>
+<dd>Context</dd>
+<dt><code>name</code> <code>str</code></dt>
+<dd>Parameter name (e.g., &quot;id&quot; for route &quot;/users/:id&quot;)</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>value</code> <code>str</code></dt>
+<dd>Parameter value</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>c &quot;id&quot; http::param -&gt; id</code></pre>
+</div>
+<hr>
+<div class="fn" id="query_param">
+<h3>query_param</h3>
+<pre><code>fn query_param(c:Ctx name:str -- value:str)</code></pre>
+<p>Get query parameter by name.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>c</code> <code>Ctx</code></dt>
+<dd>Context</dd>
+<dt><code>name</code> <code>str</code></dt>
+<dd>Parameter name</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>value</code> <code>str</code></dt>
+<dd>Parameter value (empty if not found)</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>c &quot;page&quot; http::query_param -&gt; page</code></pre>
+</div>
+<hr>
+<div class="fn" id="get_header">
+<h3>get_header</h3>
+<pre><code>fn get_header(c:Ctx name:str -- value:str)</code></pre>
+<p>Get header value by name.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>c</code> <code>Ctx</code></dt>
+<dd>Context</dd>
+<dt><code>name</code> <code>str</code></dt>
+<dd>Header name (case-insensitive)</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>value</code> <code>str</code></dt>
+<dd>Header value (empty if not found)</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>c &quot;Content-Type&quot; http::get_header -&gt; ct</code></pre>
+</div>
+<hr>
+<div class="fn" id="request_body">
+<h3>request_body</h3>
+<pre><code>fn request_body(c:Ctx -- body:str)</code></pre>
+<p>Get the raw request body as a string. Useful for reading JSON payloads in POST/PUT handlers.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>c</code> <code>Ctx</code></dt>
+<dd>Context</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>body</code> <code>str</code></dt>
+<dd>Request body (empty if no body)</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>c http::request_body -&gt; json_payload</code></pre>
+</div>
+<hr>
+<div class="fn" id="string">
+<h3>string</h3>
+<pre><code>fn string(c:Ctx status:i64 body:str -- )</code></pre>
+<p>Send plain text response.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>c</code> <code>Ctx</code></dt>
+<dd>Context</dd>
+<dt><code>status</code> <code>i64</code></dt>
+<dd>HTTP status code</dd>
+<dt><code>body</code> <code>str</code></dt>
+<dd>Response body</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>c 200 &quot;Hello, World!&quot; http::string</code></pre>
+</div>
+<hr>
+<div class="fn" id="json">
+<h3>json</h3>
+<pre><code>fn json(c:Ctx status:i64 body:str -- )</code></pre>
+<p>Send JSON response (sets Content-Type: application/json).</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>c</code> <code>Ctx</code></dt>
+<dd>Context</dd>
+<dt><code>status</code> <code>i64</code></dt>
+<dd>HTTP status code</dd>
+<dt><code>body</code> <code>str</code></dt>
+<dd>JSON body</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>c 200 &quot;{\&quot;ok\&quot;:true}&quot; http::json</code></pre>
+</div>
+<hr>
+<div class="fn" id="html">
+<h3>html</h3>
+<pre><code>fn html(c:Ctx status:i64 body:str -- )</code></pre>
+<p>Send HTML response (sets Content-Type: text/html).</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>c</code> <code>Ctx</code></dt>
+<dd>Context</dd>
+<dt><code>status</code> <code>i64</code></dt>
+<dd>HTTP status code</dd>
+<dt><code>body</code> <code>str</code></dt>
+<dd>HTML body</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>c 200 &quot;&lt;h1&gt;Hello&lt;/h1&gt;&quot; http::html</code></pre>
+</div>
+<hr>
+<div class="fn" id="set_header">
+<h3>set_header</h3>
+<pre><code>fn set_header(c:Ctx name:str value:str -- )</code></pre>
+<p>Set response header. Must be called before sending response body.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>c</code> <code>Ctx</code></dt>
+<dd>Context</dd>
+<dt><code>name</code> <code>str</code></dt>
+<dd>Header name</dd>
+<dt><code>value</code> <code>str</code></dt>
+<dd>Header value</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>c &quot;X-Custom&quot; &quot;value&quot; http::set_header</code></pre>
+</div>
+<hr>
+<div class="fn" id="abort">
+<h3>abort</h3>
+<pre><code>fn abort(c:Ctx status:i64 body:str -- )</code></pre>
+<p>Abort request processing and send error response. Prevents further middleware/handlers from running.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>c</code> <code>Ctx</code></dt>
+<dd>Context</dd>
+<dt><code>status</code> <code>i64</code></dt>
+<dd>HTTP status code</dd>
+<dt><code>body</code> <code>str</code></dt>
+<dd>Error message</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>c 401 &quot;Unauthorized&quot; http::abort</code></pre>
+</div>
+<hr>
+<div class="fn" id="is_responded">
+<h3>is_responded</h3>
+<pre><code>fn is_responded(c:Ctx -- sent:i64)</code></pre>
+<p>Check if response has already been sent.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>c</code> <code>Ctx</code></dt>
+<dd>Context</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>sent</code> <code>i64</code></dt>
+<dd>1 if sent, 0 otherwise</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>c http::is_responded -&gt; sent</code></pre>
+</div>
+<hr>
+<div class="fn" id="group">
+<h3>group</h3>
+<pre><code>fn group(engine:ptr prefix:str -- group:ptr)</code></pre>
+<p>Create route group with prefix.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>engine</code> <code>ptr</code></dt>
+<dd>Engine</dd>
+<dt><code>prefix</code> <code>str</code></dt>
+<dd>Path prefix (e.g., &quot;/api&quot;)</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>group</code> <code>ptr</code></dt>
+<dd>Group handle</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>e &quot;/api&quot; http::group -&gt; api</code></pre>
+</div>
+<hr>
+<div class="fn" id="group_use">
+<h3>group_use</h3>
+<pre><code>fn group_use(group:ptr middleware:ptr -- )</code></pre>
+<p>Add middleware to group.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>group</code> <code>ptr</code></dt>
+<dd>Group handle</dd>
+<dt><code>middleware</code> <code>ptr</code></dt>
+<dd>Middleware function</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>api fn(c:Ctx -- ) { ... } http::group_use</code></pre>
+</div>
+<hr>
+<div class="fn" id="group_GET">
+<h3>group_GET</h3>
+<pre><code>fn group_GET(group:ptr path:str handler:ptr -- )</code></pre>
+<p>Register GET on group.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>group</code> <code>ptr</code></dt>
+<dd>Group handle</dd>
+<dt><code>path</code> <code>str</code></dt>
+<dd>Route path (relative to group prefix)</dd>
+<dt><code>handler</code> <code>ptr</code></dt>
+<dd>Handler function</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>api &quot;/users&quot; fn(c:Ctx -- ) { ... } http::group_GET</code></pre>
+</div>
+<hr>
+<div class="fn" id="group_POST">
+<h3>group_POST</h3>
+<pre><code>fn group_POST(group:ptr path:str handler:ptr -- )</code></pre>
+<p>Register POST on group.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>group</code> <code>ptr</code></dt>
+<dt><code>path</code> <code>str</code></dt>
+<dt><code>handler</code> <code>ptr</code></dt>
+</dl>
+</div>
+<hr>
+<div class="fn" id="group_PUT">
+<h3>group_PUT</h3>
+<pre><code>fn group_PUT(group:ptr path:str handler:ptr -- )</code></pre>
+<p>Register PUT on group.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>group</code> <code>ptr</code></dt>
+<dt><code>path</code> <code>str</code></dt>
+<dt><code>handler</code> <code>ptr</code></dt>
+</dl>
+</div>
+<hr>
+<div class="fn" id="group_DELETE">
+<h3>group_DELETE</h3>
+<pre><code>fn group_DELETE(group:ptr path:str handler:ptr -- )</code></pre>
+<p>Register DELETE on group.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>group</code> <code>ptr</code></dt>
+<dt><code>path</code> <code>str</code></dt>
+<dt><code>handler</code> <code>ptr</code></dt>
+</dl>
+</div>
+<hr>
+<div class="fn" id="static_file">
+<h3>static_file</h3>
+<pre><code>fn static_file(c:Ctx filepath:str -- )</code></pre>
+<p>Serve a single file from the filesystem. Automatically detects MIME type from file extension. Returns 404 if file not found, 403 for path traversal attempts.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>c</code> <code>Ctx</code></dt>
+<dd>Context</dd>
+<dt><code>filepath</code> <code>str</code></dt>
+<dd>Path to file on filesystem</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>c &quot;/var/www/index.html&quot; http::static_file</code></pre>
+</div>
+<hr>
+<div class="fn" id="static">
+<h3>static</h3>
+<pre><code>fn static(c:Ctx prefix:str fs_path:str -- )</code></pre>
+<p>Serve files from a directory. Maps URL paths to filesystem paths. Use with a wildcard route (/*). Automatically serves index.html for directory requests. Returns 404 if file not found, 403 for path traversal attempts. // Serve files from ./public at /static/* fn handle_static(c:ptr -- ) {     -&gt; c     c &quot;/static&quot; &quot;./public&quot; http::static } e &quot;/static/*&quot; &amp;handle_static http::GET</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>c</code> <code>Ctx</code></dt>
+<dd>Context</dd>
+<dt><code>prefix</code> <code>str</code></dt>
+<dd>URL prefix to strip (e.g., &quot;/static&quot;)</dd>
+<dt><code>fs_path</code> <code>str</code></dt>
+<dd>Filesystem directory path (e.g., &quot;./public&quot;)</dd>
+</dl>
+</div>
+<hr>
+<div class="fn" id="sse_start">
+<h3>sse_start</h3>
+<pre><code>fn sse_start(c:Ctx -- )</code></pre>
+<p>Start an SSE (Server-Sent Events) stream. Sends SSE headers and keeps the connection open for streaming events. Must be called before sse_send or sse_event.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>c</code> <code>Ctx</code></dt>
+<dd>Context</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>c http::sse_start</code></pre>
+</div>
+<hr>
+<div class="fn" id="sse_send">
+<h3>sse_send</h3>
+<pre><code>fn sse_send(c:Ctx data:str -- )</code></pre>
+<p>Send a data-only SSE event. The data is sent as &quot;data: &lt;content&gt;\n\n&quot;.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>c</code> <code>Ctx</code></dt>
+<dd>Context</dd>
+<dt><code>data</code> <code>str</code></dt>
+<dd>Event data (typically JSON)</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>c &quot;{\&quot;count\&quot;: 1}&quot; http::sse_send</code></pre>
+</div>
+<hr>
+<div class="fn" id="sse_event">
+<h3>sse_event</h3>
+<pre><code>fn sse_event(c:Ctx name:str data:str -- )</code></pre>
+<p>Send a named SSE event. The event is sent as &quot;event: &lt;name&gt;\ndata: &lt;content&gt;\n\n&quot;. Clients can listen for specific event types with addEventListener.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>c</code> <code>Ctx</code></dt>
+<dd>Context</dd>
+<dt><code>name</code> <code>str</code></dt>
+<dd>Event name</dd>
+<dt><code>data</code> <code>str</code></dt>
+<dd>Event data (typically JSON)</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>c &quot;progress&quot; &quot;{\&quot;percent\&quot;: 50}&quot; http::sse_event</code></pre>
+</div>
+<hr>
+<div class="fn" id="sse_end">
+<h3>sse_end</h3>
+<pre><code>fn sse_end(c:Ctx -- )</code></pre>
+<p>End the SSE stream. Marks the stream as complete. The connection will be closed after the handler returns.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>c</code> <code>Ctx</code></dt>
+<dd>Context</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>c http::sse_end</code></pre>
+</div>
+</div></body></html>

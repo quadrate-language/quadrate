@@ -1,0 +1,507 @@
+<!DOCTYPE html><html><head><meta charset="utf-8"><title>bytes - Quadrate API</title><link rel="stylesheet" href="style.css"></head><body>
+<nav><h1>Quadrate API</h1><a href="index.html">All Modules</a></nav>
+<div class="container"><h2>bytes</h2>
+<p class="desc">Byte array operations and endianness conversion. Provides functions for reading and writing multi-byte integers in big-endian and little-endian byte order.</p>
+<h2>Functions</h2>
+<div class="fn" id="read_u16_be">
+<h3>read_u16_be</h3>
+<pre><code>fn read_u16_be(buf:ptr offset:i64 -- value:i64)</code></pre>
+<p>Read a 16-bit unsigned integer from memory in big-endian order.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>buf</code> <code>ptr</code></dt>
+<dd>Buffer to read from</dd>
+<dt><code>offset</code> <code>i64</code></dt>
+<dd>Byte offset in buffer</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>value</code> <code>i64</code></dt>
+<dd>16-bit value</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>buf 0 bytes::read_u16_be -&gt; val</code></pre>
+<p class="xref"><strong>Calls:</strong> <a href="mem.html#get_byte"><code>mem::get_byte</code></a></p>
+</div>
+<hr>
+<div class="fn" id="read_u16_le">
+<h3>read_u16_le</h3>
+<pre><code>fn read_u16_le(buf:ptr offset:i64 -- value:i64)</code></pre>
+<p>Read a 16-bit unsigned integer from memory in little-endian order.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>buf</code> <code>ptr</code></dt>
+<dd>Buffer to read from</dd>
+<dt><code>offset</code> <code>i64</code></dt>
+<dd>Byte offset in buffer</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>value</code> <code>i64</code></dt>
+<dd>16-bit value</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>buf 0 bytes::read_u16_le -&gt; val</code></pre>
+<p class="xref"><strong>Calls:</strong> <a href="mem.html#get_byte"><code>mem::get_byte</code></a></p>
+</div>
+<hr>
+<div class="fn" id="read_u32_be">
+<h3>read_u32_be</h3>
+<pre><code>fn read_u32_be(buf:ptr offset:i64 -- value:i64)</code></pre>
+<p>Read a 32-bit unsigned integer from memory in big-endian order.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>buf</code> <code>ptr</code></dt>
+<dd>Buffer to read from</dd>
+<dt><code>offset</code> <code>i64</code></dt>
+<dd>Byte offset in buffer</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>value</code> <code>i64</code></dt>
+<dd>32-bit value</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>buf 0 bytes::read_u32_be -&gt; val</code></pre>
+<p class="xref"><strong>Calls:</strong> <a href="mem.html#get_byte"><code>mem::get_byte</code></a></p>
+</div>
+<hr>
+<div class="fn" id="read_u32_le">
+<h3>read_u32_le</h3>
+<pre><code>fn read_u32_le(buf:ptr offset:i64 -- value:i64)</code></pre>
+<p>Read a 32-bit unsigned integer from memory in little-endian order.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>buf</code> <code>ptr</code></dt>
+<dd>Buffer to read from</dd>
+<dt><code>offset</code> <code>i64</code></dt>
+<dd>Byte offset in buffer</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>value</code> <code>i64</code></dt>
+<dd>32-bit value</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>buf 0 bytes::read_u32_le -&gt; val</code></pre>
+<p class="xref"><strong>Calls:</strong> <a href="mem.html#get_byte"><code>mem::get_byte</code></a></p>
+</div>
+<hr>
+<div class="fn" id="read_u64_be">
+<h3>read_u64_be</h3>
+<pre><code>fn read_u64_be(buf:ptr offset:i64 -- value:i64)</code></pre>
+<p>Read a 64-bit unsigned integer from memory in big-endian order.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>buf</code> <code>ptr</code></dt>
+<dd>Buffer to read from</dd>
+<dt><code>offset</code> <code>i64</code></dt>
+<dd>Byte offset in buffer</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>value</code> <code>i64</code></dt>
+<dd>64-bit value</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>buf 0 bytes::read_u64_be -&gt; val</code></pre>
+<p class="xref"><strong>Calls:</strong> <a href="mem.html#get_byte"><code>mem::get_byte</code></a></p>
+</div>
+<hr>
+<div class="fn" id="read_u64_le">
+<h3>read_u64_le</h3>
+<pre><code>fn read_u64_le(buf:ptr offset:i64 -- value:i64)</code></pre>
+<p>Read a 64-bit unsigned integer from memory in little-endian order.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>buf</code> <code>ptr</code></dt>
+<dd>Buffer to read from</dd>
+<dt><code>offset</code> <code>i64</code></dt>
+<dd>Byte offset in buffer</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>value</code> <code>i64</code></dt>
+<dd>64-bit value</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>buf 0 bytes::read_u64_le -&gt; val</code></pre>
+<p class="xref"><strong>Calls:</strong> <a href="mem.html#get_byte"><code>mem::get_byte</code></a></p>
+</div>
+<hr>
+<div class="fn" id="write_u16_be">
+<h3>write_u16_be</h3>
+<pre><code>fn write_u16_be(buf:ptr offset:i64 value:i64 -- )</code></pre>
+<p>Write a 16-bit unsigned integer to memory in big-endian order.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>buf</code> <code>ptr</code></dt>
+<dd>Buffer to write to</dd>
+<dt><code>offset</code> <code>i64</code></dt>
+<dd>Byte offset in buffer</dd>
+<dt><code>value</code> <code>i64</code></dt>
+<dd>16-bit value to write</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>buf 0 0x1234 bytes::write_u16_be</code></pre>
+<p class="xref"><strong>Calls:</strong> <a href="mem.html#set_byte"><code>mem::set_byte</code></a></p>
+</div>
+<hr>
+<div class="fn" id="write_u16_le">
+<h3>write_u16_le</h3>
+<pre><code>fn write_u16_le(buf:ptr offset:i64 value:i64 -- )</code></pre>
+<p>Write a 16-bit unsigned integer to memory in little-endian order.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>buf</code> <code>ptr</code></dt>
+<dd>Buffer to write to</dd>
+<dt><code>offset</code> <code>i64</code></dt>
+<dd>Byte offset in buffer</dd>
+<dt><code>value</code> <code>i64</code></dt>
+<dd>16-bit value to write</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>buf 0 0x1234 bytes::write_u16_le</code></pre>
+<p class="xref"><strong>Calls:</strong> <a href="mem.html#set_byte"><code>mem::set_byte</code></a></p>
+</div>
+<hr>
+<div class="fn" id="write_u32_be">
+<h3>write_u32_be</h3>
+<pre><code>fn write_u32_be(buf:ptr offset:i64 value:i64 -- )</code></pre>
+<p>Write a 32-bit unsigned integer to memory in big-endian order.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>buf</code> <code>ptr</code></dt>
+<dd>Buffer to write to</dd>
+<dt><code>offset</code> <code>i64</code></dt>
+<dd>Byte offset in buffer</dd>
+<dt><code>value</code> <code>i64</code></dt>
+<dd>32-bit value to write</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>buf 0 0x12345678 bytes::write_u32_be</code></pre>
+<p class="xref"><strong>Calls:</strong> <a href="mem.html#set_byte"><code>mem::set_byte</code></a></p>
+</div>
+<hr>
+<div class="fn" id="write_u32_le">
+<h3>write_u32_le</h3>
+<pre><code>fn write_u32_le(buf:ptr offset:i64 value:i64 -- )</code></pre>
+<p>Write a 32-bit unsigned integer to memory in little-endian order.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>buf</code> <code>ptr</code></dt>
+<dd>Buffer to write to</dd>
+<dt><code>offset</code> <code>i64</code></dt>
+<dd>Byte offset in buffer</dd>
+<dt><code>value</code> <code>i64</code></dt>
+<dd>32-bit value to write</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>buf 0 0x12345678 bytes::write_u32_le</code></pre>
+<p class="xref"><strong>Calls:</strong> <a href="mem.html#set_byte"><code>mem::set_byte</code></a></p>
+</div>
+<hr>
+<div class="fn" id="write_u64_be">
+<h3>write_u64_be</h3>
+<pre><code>fn write_u64_be(buf:ptr offset:i64 value:i64 -- )</code></pre>
+<p>Write a 64-bit unsigned integer to memory in big-endian order.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>buf</code> <code>ptr</code></dt>
+<dd>Buffer to write to</dd>
+<dt><code>offset</code> <code>i64</code></dt>
+<dd>Byte offset in buffer</dd>
+<dt><code>value</code> <code>i64</code></dt>
+<dd>64-bit value to write</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>buf 0 0x123456789ABCDEF0 bytes::write_u64_be</code></pre>
+<p class="xref"><strong>Calls:</strong> <a href="mem.html#set_byte"><code>mem::set_byte</code></a></p>
+</div>
+<hr>
+<div class="fn" id="write_u64_le">
+<h3>write_u64_le</h3>
+<pre><code>fn write_u64_le(buf:ptr offset:i64 value:i64 -- )</code></pre>
+<p>Write a 64-bit unsigned integer to memory in little-endian order.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>buf</code> <code>ptr</code></dt>
+<dd>Buffer to write to</dd>
+<dt><code>offset</code> <code>i64</code></dt>
+<dd>Byte offset in buffer</dd>
+<dt><code>value</code> <code>i64</code></dt>
+<dd>64-bit value to write</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>buf 0 0x123456789ABCDEF0 bytes::write_u64_le</code></pre>
+<p class="xref"><strong>Calls:</strong> <a href="mem.html#set_byte"><code>mem::set_byte</code></a></p>
+</div>
+<hr>
+<div class="fn" id="swap16">
+<h3>swap16</h3>
+<pre><code>fn swap16(value:i64 -- result:i64)</code></pre>
+<p>Swap byte order of a 16-bit value.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>value</code> <code>i64</code></dt>
+<dd>16-bit value</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>result</code> <code>i64</code></dt>
+<dd>Byte-swapped value</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>0x1234 bytes::swap16 -&gt; result  // 0x3412</code></pre>
+</div>
+<hr>
+<div class="fn" id="swap32">
+<h3>swap32</h3>
+<pre><code>fn swap32(value:i64 -- result:i64)</code></pre>
+<p>Swap byte order of a 32-bit value.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>value</code> <code>i64</code></dt>
+<dd>32-bit value</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>result</code> <code>i64</code></dt>
+<dd>Byte-swapped value</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>0x12345678 bytes::swap32 -&gt; result  // 0x78563412</code></pre>
+</div>
+<hr>
+<div class="fn" id="swap64">
+<h3>swap64</h3>
+<pre><code>fn swap64(value:i64 -- result:i64)</code></pre>
+<p>Swap byte order of a 64-bit value.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>value</code> <code>i64</code></dt>
+<dd>64-bit value</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>result</code> <code>i64</code></dt>
+<dd>Byte-swapped value</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>0x0102030405060708 bytes::swap64 -&gt; result  // 0x0807060504030201</code></pre>
+</div>
+<hr>
+<div class="fn" id="copy">
+<h3>copy</h3>
+<pre><code>fn copy(dst:ptr dst_off:i64 src:ptr src_off:i64 count:i64 -- )</code></pre>
+<p>Copy bytes from one buffer to another.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>dst</code> <code>ptr</code></dt>
+<dd>Destination buffer</dd>
+<dt><code>dst_off</code> <code>i64</code></dt>
+<dd>Destination offset</dd>
+<dt><code>src</code> <code>ptr</code></dt>
+<dd>Source buffer</dd>
+<dt><code>src_off</code> <code>i64</code></dt>
+<dd>Source offset</dd>
+<dt><code>count</code> <code>i64</code></dt>
+<dd>Number of bytes to copy</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>dst 0 src 0 10 bytes::copy</code></pre>
+<p class="xref"><strong>Calls:</strong> <a href="bytes.html#count"><code>bytes::count</code></a>, <a href="mem.html#get_byte"><code>mem::get_byte</code></a>, <a href="mem.html#set_byte"><code>mem::set_byte</code></a></p>
+</div>
+<hr>
+<div class="fn" id="fill">
+<h3>fill</h3>
+<pre><code>fn fill(value:i64 buf:ptr offset:i64 count:i64 -- )</code></pre>
+<p>Fill a buffer with a byte value.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>value</code> <code>i64</code></dt>
+<dd>Byte value to fill with</dd>
+<dt><code>buf</code> <code>ptr</code></dt>
+<dd>Buffer to fill</dd>
+<dt><code>offset</code> <code>i64</code></dt>
+<dd>Starting offset</dd>
+<dt><code>count</code> <code>i64</code></dt>
+<dd>Number of bytes to fill</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>0 buf 0 10 bytes::fill</code></pre>
+<p class="xref"><strong>Calls:</strong> <a href="bytes.html#count"><code>bytes::count</code></a>, <a href="mem.html#set_byte"><code>mem::set_byte</code></a></p>
+</div>
+<hr>
+<div class="fn" id="compare">
+<h3>compare</h3>
+<pre><code>fn compare(a:ptr a_off:i64 b:ptr b_off:i64 count:i64 -- result:i64)</code></pre>
+<p>Compare two byte buffers.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>a</code> <code>ptr</code></dt>
+<dd>First buffer</dd>
+<dt><code>a_off</code> <code>i64</code></dt>
+<dd>First buffer offset</dd>
+<dt><code>b</code> <code>ptr</code></dt>
+<dd>Second buffer</dd>
+<dt><code>b_off</code> <code>i64</code></dt>
+<dd>Second buffer offset</dd>
+<dt><code>count</code> <code>i64</code></dt>
+<dd>Number of bytes to compare</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>result</code> <code>i64</code></dt>
+<dd>0 if equal, negative if a&lt;b, positive if a&gt;b</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>buf1 0 buf2 0 10 bytes::compare -&gt; result</code></pre>
+<p class="xref"><strong>Calls:</strong> <a href="bytes.html#count"><code>bytes::count</code></a>, <a href="mem.html#get_byte"><code>mem::get_byte</code></a></p>
+<p class="xref"><strong>Called by:</strong> <a href="bytes.html#equals"><code>bytes::equals</code></a></p>
+</div>
+<hr>
+<div class="fn" id="equals">
+<h3>equals</h3>
+<pre><code>fn equals(ptr i64 ptr i64 i64 -- i64)</code></pre>
+<p>Check if two byte buffers are equal.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>a</code> <code>ptr</code></dt>
+<dd>First buffer</dd>
+<dt><code>a_off</code> <code>i64</code></dt>
+<dd>First buffer offset</dd>
+<dt><code>b</code> <code>ptr</code></dt>
+<dd>Second buffer</dd>
+<dt><code>b_off</code> <code>i64</code></dt>
+<dd>Second buffer offset</dd>
+<dt><code>count</code> <code>i64</code></dt>
+<dd>Number of bytes to compare</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>result</code> <code>i64</code></dt>
+<dd>1 if equal, 0 otherwise</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>buf1 0 buf2 0 10 bytes::equals -&gt; result</code></pre>
+<p class="xref"><strong>Calls:</strong> <a href="bytes.html#compare"><code>bytes::compare</code></a></p>
+</div>
+<hr>
+<div class="fn" id="find">
+<h3>find</h3>
+<pre><code>fn find(buf:ptr offset:i64 count:i64 value:i64 -- result:i64)</code></pre>
+<p>Find the first occurrence of a byte value in a buffer.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>buf</code> <code>ptr</code></dt>
+<dd>Buffer to search</dd>
+<dt><code>offset</code> <code>i64</code></dt>
+<dd>Starting offset</dd>
+<dt><code>count</code> <code>i64</code></dt>
+<dd>Number of bytes to search</dd>
+<dt><code>value</code> <code>i64</code></dt>
+<dd>Byte value to find</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>result</code> <code>i64</code></dt>
+<dd>Index of first occurrence, or -1 if not found</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>buf 0 10 0x41 bytes::find -&gt; idx</code></pre>
+<p class="xref"><strong>Calls:</strong> <a href="bytes.html#count"><code>bytes::count</code></a>, <a href="mem.html#get_byte"><code>mem::get_byte</code></a></p>
+<p class="xref"><strong>Called by:</strong> <a href="bytes.html#contains"><code>bytes::contains</code></a></p>
+</div>
+<hr>
+<div class="fn" id="contains">
+<h3>contains</h3>
+<pre><code>fn contains(ptr i64 i64 i64 -- i64)</code></pre>
+<p>Check if a byte value exists in a buffer.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>buf</code> <code>ptr</code></dt>
+<dd>Buffer to search</dd>
+<dt><code>offset</code> <code>i64</code></dt>
+<dd>Starting offset</dd>
+<dt><code>count</code> <code>i64</code></dt>
+<dd>Number of bytes to search</dd>
+<dt><code>value</code> <code>i64</code></dt>
+<dd>Byte value to find</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>result</code> <code>i64</code></dt>
+<dd>1 if found, 0 otherwise</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>buf 0 10 0x41 bytes::contains -&gt; found</code></pre>
+<p class="xref"><strong>Calls:</strong> <a href="bytes.html#find"><code>bytes::find</code></a></p>
+</div>
+<hr>
+<div class="fn" id="reverse">
+<h3>reverse</h3>
+<pre><code>fn reverse(buf:ptr offset:i64 count:i64 -- )</code></pre>
+<p>Reverse the byte order in a buffer region.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>buf</code> <code>ptr</code></dt>
+<dd>Buffer to reverse</dd>
+<dt><code>offset</code> <code>i64</code></dt>
+<dd>Starting offset</dd>
+<dt><code>count</code> <code>i64</code></dt>
+<dd>Number of bytes to reverse</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>buf 0 10 bytes::reverse</code></pre>
+<p class="xref"><strong>Calls:</strong> <a href="bytes.html#count"><code>bytes::count</code></a>, <a href="mem.html#get_byte"><code>mem::get_byte</code></a>, <a href="mem.html#set_byte"><code>mem::set_byte</code></a></p>
+</div>
+<hr>
+<div class="fn" id="xor">
+<h3>xor</h3>
+<pre><code>fn xor(dst:ptr dst_off:i64 src:ptr src_off:i64 count:i64 -- )</code></pre>
+<p>XOR two byte buffers, storing result in first buffer.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>dst</code> <code>ptr</code></dt>
+<dd>Destination buffer (also first operand)</dd>
+<dt><code>dst_off</code> <code>i64</code></dt>
+<dd>Destination offset</dd>
+<dt><code>src</code> <code>ptr</code></dt>
+<dd>Source buffer (second operand)</dd>
+<dt><code>src_off</code> <code>i64</code></dt>
+<dd>Source offset</dd>
+<dt><code>count</code> <code>i64</code></dt>
+<dd>Number of bytes to XOR</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>dst 0 src 0 10 bytes::xor</code></pre>
+<p class="xref"><strong>Calls:</strong> <a href="bytes.html#count"><code>bytes::count</code></a>, <a href="mem.html#get_byte"><code>mem::get_byte</code></a>, <a href="mem.html#set_byte"><code>mem::set_byte</code></a></p>
+</div>
+<hr>
+<div class="fn" id="count">
+<h3>count</h3>
+<pre><code>fn count(buf:ptr offset:i64 len:i64 value:i64 -- result:i64)</code></pre>
+<p>Count occurrences of a byte value in a buffer.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>buf</code> <code>ptr</code></dt>
+<dd>Buffer to search</dd>
+<dt><code>offset</code> <code>i64</code></dt>
+<dd>Starting offset</dd>
+<dt><code>len</code> <code>i64</code></dt>
+<dd>Number of bytes to search</dd>
+<dt><code>value</code> <code>i64</code></dt>
+<dd>Byte value to count</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>result</code> <code>i64</code></dt>
+<dd>Number of occurrences</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>buf 0 10 0x41 bytes::count -&gt; n</code></pre>
+<p class="xref"><strong>Calls:</strong> <a href="mem.html#get_byte"><code>mem::get_byte</code></a></p>
+<p class="xref"><strong>Called by:</strong> <a href="bytes.html#compare"><code>bytes::compare</code></a>, <a href="bytes.html#copy"><code>bytes::copy</code></a>, <a href="bytes.html#fill"><code>bytes::fill</code></a>, <a href="bytes.html#find"><code>bytes::find</code></a>, <a href="bytes.html#reverse"><code>bytes::reverse</code></a>, <a href="bytes.html#xor"><code>bytes::xor</code></a></p>
+</div>
+</div></body></html>

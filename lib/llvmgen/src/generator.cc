@@ -2932,7 +2932,7 @@ namespace Qd {
 		std::error_code ec;
 		llvm::raw_fd_ostream os(filename, ec);
 		if (ec) {
-			std::cerr << "Error opening file: " << ec.message() << std::endl;
+			std::cerr << "Error: Could not open '" << filename << "': " << ec.message() << std::endl;
 			return false;
 		}
 
@@ -3094,7 +3094,7 @@ namespace Qd {
 		std::error_code ec;
 		llvm::raw_fd_ostream dest(filename, ec, llvm::sys::fs::OF_None);
 		if (ec) {
-			std::cerr << "Could not open file: " << ec.message() << std::endl;
+			std::cerr << "Error: Could not open '" << filename << "': " << ec.message() << std::endl;
 			return false;
 		}
 

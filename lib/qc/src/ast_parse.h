@@ -109,35 +109,7 @@ namespace Qd {
 
 namespace Qd {
 
-	// Source position lookup helper - combines line map and char-byte map
-	struct SourceMaps {
-		SourceLineMap lineMap;
-		CharByteMap charByteMap;
-
-		SourceMaps(const char* src) : lineMap(src), charByteMap(src) {
-		}
-	};
-
-	// Thread-local pointer to current source maps (set at start of generate())
-	// This allows helper functions to use optimized lookup without signature changes
-	extern thread_local const SourceMaps* tCurrentSourceMaps;
-
-	// Optimized charIndexToByteOffset - uses precomputed table when available
-	inline size_t fastCharToByteOffset(const char* src, size_t charIndex) {
-		if (tCurrentSourceMaps) {
-			return tCurrentSourceMaps->charByteMap.getByteOffset(charIndex);
-		}
-		return charIndexToByteOffset(src, charIndex);
-	}
-
-	// Optimized calculateLineColumn - uses precomputed table when available
-	inline void fastLineColumn(const char* src, size_t bytePos, size_t* line, size_t* column) {
-		if (tCurrentSourceMaps) {
-			tCurrentSourceMaps->lineMap.getLineColumn(bytePos, line, column);
-		} else {
-			Qd::fastLineColumn(src, bytePos, line, column);
-		}
-	}
+	// SourceMaps, tCurrentSourceMaps and the fast* lookups live in source_utils.h.
 
 	// Helper to set position on a node from scanner - uses optimized maps if available
 	/** @brief Source line of the token the scanner is currently on (1-based). */

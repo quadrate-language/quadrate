@@ -1,0 +1,101 @@
+<!DOCTYPE html><html><head><meta charset="utf-8"><title>queue - Quadrate API</title><link rel="stylesheet" href="style.css"></head><body>
+<nav><h1>Quadrate API</h1><a href="index.html">All Modules</a></nav>
+<div class="container"><h2>queue</h2>
+<p class="desc">Queue&lt;T&gt; - A FIFO Queue ========================  Queue provides First-In-First-Out (FIFO) operations. Implemented using a circular buffer for O(1) enqueue/dequeue.  ## Creating a Queue  Create an empty queue:      Queue&lt;i64&gt; { data = null head = 0 tail = 0 len = 0 cap = 0 } -&gt; q  ## Basic Operations  Enqueue (add to back):      q 42 enqueue! -&gt; q  Dequeue (remove from front):      q dequeue! -&gt; q -&gt; val  Peek (view front without removing):      q peek! -&gt; val  ## Memory Management  Always call release when done:      q release</p>
+<h2>Structs</h2>
+<h3 id="Queue<T>"><code>Queue&lt;T&gt;</code></h3>
+<p>FIFO Queue with elements of type T.  Fields:   data - Pointer to circular buffer   head - Index of front element   tail - Index after last element   len  - Number of elements   cap  - Buffer capacity</p>
+<dl>
+<dt><code>data</code> <code>ptr</code></dt>
+<dt><code>head</code> <code>i64</code></dt>
+<dt><code>tail</code> <code>i64</code></dt>
+<dt><code>len</code> <code>i64</code></dt>
+<dt><code>cap</code> <code>i64</code></dt>
+</dl>
+<h2>Functions</h2>
+<div class="fn fallible" id="enqueue">
+<h3>enqueue [fallible]</h3>
+<pre><code>fn (q:Queue&lt;T&gt;) enqueue&lt;T&gt;(val:T -- q2:Queue&lt;T&gt;)!</code></pre>
+<p>Add an element to the back of the queue.  Returns the updated queue which must be captured.  Example:     q 42 enqueue! -&gt; q  Stack: (q val -- q2)</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>q</code> <code>Queue&lt;T&gt;</code></dt>
+<dt><code>val</code> <code>T</code></dt>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>q2</code> <code>Queue&lt;T&gt;</code></dt>
+</dl>
+<p class="xref"><strong>Calls:</strong> <a href="mem.html#alloc"><code>mem::alloc</code></a>, <a href="mem.html#free"><code>mem::free</code></a>, <a href="mem.html#get_i64"><code>mem::get_i64</code></a>, <a href="mem.html#set_i64"><code>mem::set_i64</code></a></p>
+</div>
+<hr>
+<div class="fn fallible" id="dequeue">
+<h3>dequeue [fallible]</h3>
+<pre><code>fn (q:Queue&lt;T&gt;) dequeue&lt;T&gt;( -- val:T q2:Queue&lt;T&gt;)!</code></pre>
+<p>Remove and return the front element.  Returns error if queue is empty. Returns the value and updated queue.  Example:     q dequeue! -&gt; q -&gt; val  Stack: (q -- val q2)</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>q</code> <code>Queue&lt;T&gt;</code></dt>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>val</code> <code>T</code></dt>
+<dt><code>q2</code> <code>Queue&lt;T&gt;</code></dt>
+</dl>
+<p class="xref"><strong>Calls:</strong> <a href="mem.html#get_i64"><code>mem::get_i64</code></a></p>
+</div>
+<hr>
+<div class="fn fallible" id="peek">
+<h3>peek [fallible]</h3>
+<pre><code>fn (q:Queue&lt;T&gt;) peek&lt;T&gt;( -- val:T)!</code></pre>
+<p>View the front element without removing it.  Returns error if queue is empty.  Example:     q peek! -&gt; val  Stack: (q -- val)</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>q</code> <code>Queue&lt;T&gt;</code></dt>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>val</code> <code>T</code></dt>
+</dl>
+<p class="xref"><strong>Calls:</strong> <a href="mem.html#get_i64"><code>mem::get_i64</code></a></p>
+</div>
+<hr>
+<div class="fn" id="length">
+<h3>length</h3>
+<pre><code>fn (q:Queue&lt;T&gt;) length&lt;T&gt;( -- n:i64)</code></pre>
+<p>Get the number of elements in the queue.  Stack: (q -- n)</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>q</code> <code>Queue&lt;T&gt;</code></dt>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>n</code> <code>i64</code></dt>
+</dl>
+</div>
+<hr>
+<div class="fn" id="is_empty">
+<h3>is_empty</h3>
+<pre><code>fn (q:Queue&lt;T&gt;) is_empty&lt;T&gt;( -- b:i64)</code></pre>
+<p>Check if the queue is empty.  Stack: (q -- bool)</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>q</code> <code>Queue&lt;T&gt;</code></dt>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>b</code> <code>i64</code></dt>
+</dl>
+</div>
+<hr>
+<div class="fn" id="release">
+<h3>release</h3>
+<pre><code>fn (q:Queue&lt;T&gt;) release&lt;T&gt;()</code></pre>
+<p>Free the queue's memory.  Stack: (q --)</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>q</code> <code>Queue&lt;T&gt;</code></dt>
+</dl>
+<p class="xref"><strong>Calls:</strong> <a href="mem.html#free"><code>mem::free</code></a></p>
+</div>
+</div></body></html>

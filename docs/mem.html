@@ -1,0 +1,577 @@
+<!DOCTYPE html><html><head><meta charset="utf-8"><title>mem - Quadrate API</title><link rel="stylesheet" href="style.css"></head><body>
+<nav><h1>Quadrate API</h1><a href="index.html">All Modules</a></nav>
+<div class="container"><h2>mem</h2>
+<p class="desc">Low-level memory allocation and manipulation.  SAFETY: These are unsafe operations with no bounds checking. Improper use can cause segmentation faults and memory corruption.</p>
+<h2>Constants</h2>
+<dl>
+<dt><code>ErrAlloc</code> = <code>2</code></dt>
+<dd>Allocation failure error code</dd>
+<dt><code>ErrInvalidArg</code> = <code>3</code></dt>
+<dd>Invalid argument error code</dd>
+</dl>
+<h2>Functions</h2>
+<div class="fn fallible" id="alloc">
+<h3>alloc [fallible]</h3>
+<pre><code>fn alloc(bytes:i64 -- address:ptr)!</code></pre>
+<p>Allocate memory.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>bytes</code> <code>i64</code></dt>
+<dd>Number of bytes to allocate</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>address</code> <code>ptr</code></dt>
+<dd>Allocated memory address</dd>
+</dl>
+<p><strong>Errors:</strong></p>
+<dl>
+<dt><code>ErrAlloc</code></dt>
+<dd>Allocation failed</dd>
+<dt><code>ErrInvalidArg</code></dt>
+<dd>Invalid size (negative)</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>1024 mem::alloc! -&gt; buf</code></pre>
+<p class="xref"><strong>Called by:</strong> <a href="base64.html#decode"><code>base64::decode</code></a>, <a href="base64.html#encode"><code>base64::encode</code></a>, <a href="crc32.html#hex"><code>crc32::hex</code></a>, <a href="crypto.html#finish"><code>crypto::finish</code></a>, <a href="crypto.html#hex"><code>crypto::hex</code></a>, <a href="crypto.html#sha256_bytes"><code>crypto::sha256_bytes</code></a>, <a href="crypto.html#sha512_bytes"><code>crypto::sha512_bytes</code></a>, <a href="crypto.html#update"><code>crypto::update</code></a>, <a href="ct.html#add"><code>ct::add</code></a>, <a href="ct.html#enqueue"><code>ct::enqueue</code></a>, <a href="ct.html#insert"><code>ct::insert</code></a>, <a href="ct.html#push_back"><code>ct::push_back</code></a>, <a href="ct.html#push_front"><code>ct::push_front</code></a>, <a href="deque.html#push_back"><code>deque::push_back</code></a>, <a href="deque.html#push_front"><code>deque::push_front</code></a>, <a href="fuzzy.html#best"><code>fuzzy::best</code></a>, <a href="fuzzy.html#distance"><code>fuzzy::distance</code></a>, <a href="hashmap.html#insert"><code>hashmap::insert</code></a>, <a href="hex.html#decode"><code>hex::decode</code></a>, <a href="hex.html#encode"><code>hex::encode</code></a>, <a href="hex.html#encode_byte"><code>hex::encode_byte</code></a>, <a href="hex.html#encode_lower"><code>hex::encode_lower</code></a>, <a href="md5.html#finish"><code>md5::finish</code></a>, <a href="md5.html#update"><code>md5::update</code></a>, <a href="queue.html#enqueue"><code>queue::enqueue</code></a>, <a href="rand.html#sample"><code>rand::sample</code></a>, <a href="regex.html#find_all"><code>regex::find_all</code></a>, <a href="regex.html#matches"><code>regex::matches</code></a>, <a href="sb.html#new"><code>sb::new</code></a>, <a href="sb.html#with_capacity"><code>sb::with_capacity</code></a>, <a href="set.html#add"><code>set::add</code></a>, <a href="sha256.html#finish"><code>sha256::finish</code></a>, <a href="sha256.html#sha256_bytes"><code>sha256::sha256_bytes</code></a>, <a href="sha256.html#update"><code>sha256::update</code></a>, <a href="sha512.html#finish"><code>sha512::finish</code></a>, <a href="sha512.html#sha512_bytes"><code>sha512::sha512_bytes</code></a>, <a href="sha512.html#update"><code>sha512::update</code></a>, <a href="uri.html#build"><code>uri::build</code></a>, <a href="uri.html#decode"><code>uri::decode</code></a>, <a href="uri.html#encode"><code>uri::encode</code></a>, <a href="uuid.html#v4"><code>uuid::v4</code></a>, <a href="uuid.html#v4_seeded"><code>uuid::v4_seeded</code></a></p>
+</div>
+<hr>
+<div class="fn fallible" id="realloc">
+<h3>realloc [fallible]</h3>
+<pre><code>fn realloc(address:ptr new_bytes:i64 -- new_address:ptr)!</code></pre>
+<p>Reallocate memory to new size.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>address</code> <code>ptr</code></dt>
+<dd>Existing allocation (or null for new alloc)</dd>
+<dt><code>new_bytes</code> <code>i64</code></dt>
+<dd>New size in bytes</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>new_address</code> <code>ptr</code></dt>
+<dd>Reallocated memory address</dd>
+</dl>
+<p><strong>Errors:</strong></p>
+<dl>
+<dt><code>ErrAlloc</code></dt>
+<dd>Reallocation failed</dd>
+<dt><code>ErrInvalidArg</code></dt>
+<dd>Invalid size (negative)</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>buf 2048 mem::realloc! -&gt; buf</code></pre>
+<p class="xref"><strong>Called by:</strong> <a href="ct.html#push"><code>ct::push</code></a>, <a href="sb.html#append"><code>sb::append</code></a>, <a href="sb.html#append_char"><code>sb::append_char</code></a>, <a href="sb.html#append_int"><code>sb::append_int</code></a>, <a href="vec.html#push"><code>vec::push</code></a></p>
+</div>
+<hr>
+<div class="fn fallible" id="alloc_aligned">
+<h3>alloc_aligned [fallible]</h3>
+<pre><code>fn alloc_aligned(alignment:i64 bytes:i64 -- address:ptr)!</code></pre>
+<p>Allocate aligned memory. The returned pointer is aligned to the specified boundary. Use standard mem::free to deallocate.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>alignment</code> <code>i64</code></dt>
+<dd>Alignment boundary (must be power of 2, e.g., 16, 32, 64)</dd>
+<dt><code>bytes</code> <code>i64</code></dt>
+<dd>Number of bytes to allocate</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>address</code> <code>ptr</code></dt>
+<dd>Aligned memory address</dd>
+</dl>
+<p><strong>Errors:</strong></p>
+<dl>
+<dt><code>ErrAlloc</code></dt>
+<dd>Allocation failed</dd>
+<dt><code>ErrInvalidArg</code></dt>
+<dd>Invalid alignment or size</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>64 1024 mem::alloc_aligned! -&gt; buf  // 64-byte aligned</code></pre>
+</div>
+<hr>
+<div class="fn" id="set_byte">
+<h3>set_byte</h3>
+<pre><code>fn set_byte(value:i64 address:ptr offset:i64 -- )</code></pre>
+<p>Set a byte at offset.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>value</code> <code>i64</code></dt>
+<dd>Byte value (0-255)</dd>
+<dt><code>address</code> <code>ptr</code></dt>
+<dd>Base address</dd>
+<dt><code>offset</code> <code>i64</code></dt>
+<dd>Byte offset from base</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>65 buf 0 mem::set_byte</code></pre>
+<p class="xref"><strong>Called by:</strong> <a href="base64.html#decode"><code>base64::decode</code></a>, <a href="base64.html#encode"><code>base64::encode</code></a>, <a href="bytes.html#copy"><code>bytes::copy</code></a>, <a href="bytes.html#fill"><code>bytes::fill</code></a>, <a href="bytes.html#reverse"><code>bytes::reverse</code></a>, <a href="bytes.html#write_u16_be"><code>bytes::write_u16_be</code></a>, <a href="bytes.html#write_u16_le"><code>bytes::write_u16_le</code></a>, <a href="bytes.html#write_u32_be"><code>bytes::write_u32_be</code></a>, <a href="bytes.html#write_u32_le"><code>bytes::write_u32_le</code></a>, <a href="bytes.html#write_u64_be"><code>bytes::write_u64_be</code></a>, <a href="bytes.html#write_u64_le"><code>bytes::write_u64_le</code></a>, <a href="bytes.html#xor"><code>bytes::xor</code></a>, <a href="crc32.html#hex"><code>crc32::hex</code></a>, <a href="crypto.html#finish"><code>crypto::finish</code></a>, <a href="crypto.html#hex"><code>crypto::hex</code></a>, <a href="crypto.html#sha256_bytes"><code>crypto::sha256_bytes</code></a>, <a href="crypto.html#sha512_bytes"><code>crypto::sha512_bytes</code></a>, <a href="crypto.html#update"><code>crypto::update</code></a>, <a href="ct.html#add"><code>ct::add</code></a>, <a href="ct.html#insert"><code>ct::insert</code></a>, <a href="hashmap.html#insert"><code>hashmap::insert</code></a>, <a href="hex.html#decode"><code>hex::decode</code></a>, <a href="hex.html#encode"><code>hex::encode</code></a>, <a href="hex.html#encode_byte"><code>hex::encode_byte</code></a>, <a href="hex.html#encode_lower"><code>hex::encode_lower</code></a>, <a href="md5.html#finish"><code>md5::finish</code></a>, <a href="md5.html#update"><code>md5::update</code></a>, <a href="sb.html#append_char"><code>sb::append_char</code></a>, <a href="sb.html#append_int"><code>sb::append_int</code></a>, <a href="set.html#add"><code>set::add</code></a>, <a href="sha256.html#finish"><code>sha256::finish</code></a>, <a href="sha256.html#sha256_bytes"><code>sha256::sha256_bytes</code></a>, <a href="sha256.html#update"><code>sha256::update</code></a>, <a href="sha512.html#finish"><code>sha512::finish</code></a>, <a href="sha512.html#sha512_bytes"><code>sha512::sha512_bytes</code></a>, <a href="sha512.html#update"><code>sha512::update</code></a>, <a href="uri.html#build"><code>uri::build</code></a>, <a href="uri.html#decode"><code>uri::decode</code></a>, <a href="uri.html#encode"><code>uri::encode</code></a>, <a href="uuid.html#v4"><code>uuid::v4</code></a>, <a href="uuid.html#v4_seeded"><code>uuid::v4_seeded</code></a></p>
+</div>
+<hr>
+<div class="fn" id="get_byte">
+<h3>get_byte</h3>
+<pre><code>fn get_byte(address:ptr offset:i64 -- value:i64)</code></pre>
+<p>Get a byte at offset.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>address</code> <code>ptr</code></dt>
+<dd>Base address</dd>
+<dt><code>offset</code> <code>i64</code></dt>
+<dd>Byte offset from base</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>value</code> <code>i64</code></dt>
+<dd>Byte value (0-255)</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>buf 0 mem::get_byte -&gt; b</code></pre>
+<p class="xref"><strong>Called by:</strong> <a href="base64.html#decode"><code>base64::decode</code></a>, <a href="base64.html#encode"><code>base64::encode</code></a>, <a href="bytes.html#compare"><code>bytes::compare</code></a>, <a href="bytes.html#copy"><code>bytes::copy</code></a>, <a href="bytes.html#count"><code>bytes::count</code></a>, <a href="bytes.html#find"><code>bytes::find</code></a>, <a href="bytes.html#read_u16_be"><code>bytes::read_u16_be</code></a>, <a href="bytes.html#read_u16_le"><code>bytes::read_u16_le</code></a>, <a href="bytes.html#read_u32_be"><code>bytes::read_u32_be</code></a>, <a href="bytes.html#read_u32_le"><code>bytes::read_u32_le</code></a>, <a href="bytes.html#read_u64_be"><code>bytes::read_u64_be</code></a>, <a href="bytes.html#read_u64_le"><code>bytes::read_u64_le</code></a>, <a href="bytes.html#reverse"><code>bytes::reverse</code></a>, <a href="bytes.html#xor"><code>bytes::xor</code></a>, <a href="crypto.html#sha256_bytes"><code>crypto::sha256_bytes</code></a>, <a href="crypto.html#sha512_bytes"><code>crypto::sha512_bytes</code></a>, <a href="sha256.html#sha256_bytes"><code>sha256::sha256_bytes</code></a>, <a href="sha512.html#sha512_bytes"><code>sha512::sha512_bytes</code></a>, <a href="uri.html#encode"><code>uri::encode</code></a>, <a href="uuid.html#v4"><code>uuid::v4</code></a>, <a href="uuid.html#v4_seeded"><code>uuid::v4_seeded</code></a></p>
+</div>
+<hr>
+<div class="fn" id="set_i8">
+<h3>set_i8</h3>
+<pre><code>fn set_i8(value:i64 address:ptr offset:i64 -- )</code></pre>
+<p>Set a signed 8-bit integer at offset. Stored value is the low byte of `value`.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>value</code> <code>i64</code></dt>
+<dd>Integer value (low 8 bits used)</dd>
+<dt><code>address</code> <code>ptr</code></dt>
+<dd>Base address</dd>
+<dt><code>offset</code> <code>i64</code></dt>
+<dd>Byte offset from base</dd>
+</dl>
+</div>
+<hr>
+<div class="fn" id="set_u8">
+<h3>set_u8</h3>
+<pre><code>fn set_u8(value:i64 address:ptr offset:i64 -- )</code></pre>
+<p>Set an unsigned 8-bit integer at offset. Stored value is the low byte of `value`.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>value</code> <code>i64</code></dt>
+<dt><code>address</code> <code>ptr</code></dt>
+<dt><code>offset</code> <code>i64</code></dt>
+</dl>
+</div>
+<hr>
+<div class="fn" id="get_i8">
+<h3>get_i8</h3>
+<pre><code>fn get_i8(address:ptr offset:i64 -- value:i64)</code></pre>
+<p>Get a signed 8-bit integer at offset (sign-extended to i64).</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>address</code> <code>ptr</code></dt>
+<dt><code>offset</code> <code>i64</code></dt>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>value</code> <code>i64</code></dt>
+<dd>Sign-extended value (-128..127)</dd>
+</dl>
+</div>
+<hr>
+<div class="fn" id="get_u8">
+<h3>get_u8</h3>
+<pre><code>fn get_u8(address:ptr offset:i64 -- value:i64)</code></pre>
+<p>Get an unsigned 8-bit integer at offset (zero-extended to i64).</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>address</code> <code>ptr</code></dt>
+<dt><code>offset</code> <code>i64</code></dt>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>value</code> <code>i64</code></dt>
+<dd>Zero-extended value (0..255)</dd>
+</dl>
+</div>
+<hr>
+<div class="fn" id="set_i16">
+<h3>set_i16</h3>
+<pre><code>fn set_i16(value:i64 address:ptr offset:i64 -- )</code></pre>
+<p>Set a signed 16-bit integer at offset. Stored as low 2 bytes of `value`.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>value</code> <code>i64</code></dt>
+<dt><code>address</code> <code>ptr</code></dt>
+<dt><code>offset</code> <code>i64</code></dt>
+</dl>
+</div>
+<hr>
+<div class="fn" id="set_u16">
+<h3>set_u16</h3>
+<pre><code>fn set_u16(value:i64 address:ptr offset:i64 -- )</code></pre>
+<p>Set an unsigned 16-bit integer at offset. Stored as low 2 bytes of `value`.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>value</code> <code>i64</code></dt>
+<dt><code>address</code> <code>ptr</code></dt>
+<dt><code>offset</code> <code>i64</code></dt>
+</dl>
+</div>
+<hr>
+<div class="fn" id="get_i16">
+<h3>get_i16</h3>
+<pre><code>fn get_i16(address:ptr offset:i64 -- value:i64)</code></pre>
+<p>Get a signed 16-bit integer at offset (sign-extended to i64).</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>address</code> <code>ptr</code></dt>
+<dt><code>offset</code> <code>i64</code></dt>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>value</code> <code>i64</code></dt>
+</dl>
+</div>
+<hr>
+<div class="fn" id="get_u16">
+<h3>get_u16</h3>
+<pre><code>fn get_u16(address:ptr offset:i64 -- value:i64)</code></pre>
+<p>Get an unsigned 16-bit integer at offset (zero-extended to i64).</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>address</code> <code>ptr</code></dt>
+<dt><code>offset</code> <code>i64</code></dt>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>value</code> <code>i64</code></dt>
+</dl>
+</div>
+<hr>
+<div class="fn" id="set_i32">
+<h3>set_i32</h3>
+<pre><code>fn set_i32(value:i64 address:ptr offset:i64 -- )</code></pre>
+<p>Set a signed 32-bit integer at offset. Stored as low 4 bytes of `value`.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>value</code> <code>i64</code></dt>
+<dt><code>address</code> <code>ptr</code></dt>
+<dt><code>offset</code> <code>i64</code></dt>
+</dl>
+</div>
+<hr>
+<div class="fn" id="set_u32">
+<h3>set_u32</h3>
+<pre><code>fn set_u32(value:i64 address:ptr offset:i64 -- )</code></pre>
+<p>Set an unsigned 32-bit integer at offset. Stored as low 4 bytes of `value`.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>value</code> <code>i64</code></dt>
+<dt><code>address</code> <code>ptr</code></dt>
+<dt><code>offset</code> <code>i64</code></dt>
+</dl>
+</div>
+<hr>
+<div class="fn" id="get_i32">
+<h3>get_i32</h3>
+<pre><code>fn get_i32(address:ptr offset:i64 -- value:i64)</code></pre>
+<p>Get a signed 32-bit integer at offset (sign-extended to i64).</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>address</code> <code>ptr</code></dt>
+<dt><code>offset</code> <code>i64</code></dt>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>value</code> <code>i64</code></dt>
+</dl>
+</div>
+<hr>
+<div class="fn" id="get_u32">
+<h3>get_u32</h3>
+<pre><code>fn get_u32(address:ptr offset:i64 -- value:i64)</code></pre>
+<p>Get an unsigned 32-bit integer at offset (zero-extended to i64).</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>address</code> <code>ptr</code></dt>
+<dt><code>offset</code> <code>i64</code></dt>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>value</code> <code>i64</code></dt>
+</dl>
+</div>
+<hr>
+<div class="fn" id="set_i64">
+<h3>set_i64</h3>
+<pre><code>fn set_i64(value:i64 address:ptr offset:i64 -- )</code></pre>
+<p>Set a 64-bit integer at offset.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>value</code> <code>i64</code></dt>
+<dd>Integer value</dd>
+<dt><code>address</code> <code>ptr</code></dt>
+<dd>Base address</dd>
+<dt><code>offset</code> <code>i64</code></dt>
+<dd>Byte offset from base</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>42 buf 0 mem::set_i64</code></pre>
+<p class="xref"><strong>Called by:</strong> <a href="ct.html#add"><code>ct::add</code></a>, <a href="ct.html#enqueue"><code>ct::enqueue</code></a>, <a href="ct.html#insert"><code>ct::insert</code></a>, <a href="ct.html#push"><code>ct::push</code></a>, <a href="ct.html#push_back"><code>ct::push_back</code></a>, <a href="ct.html#push_front"><code>ct::push_front</code></a>, <a href="ct.html#remove"><code>ct::remove</code></a>, <a href="ct.html#set"><code>ct::set</code></a>, <a href="deque.html#push_back"><code>deque::push_back</code></a>, <a href="deque.html#push_front"><code>deque::push_front</code></a>, <a href="fuzzy.html#best"><code>fuzzy::best</code></a>, <a href="fuzzy.html#distance"><code>fuzzy::distance</code></a>, <a href="hashmap.html#insert"><code>hashmap::insert</code></a>, <a href="hashmap.html#remove"><code>hashmap::remove</code></a>, <a href="queue.html#enqueue"><code>queue::enqueue</code></a>, <a href="rand.html#sample"><code>rand::sample</code></a>, <a href="rand.html#shuffle"><code>rand::shuffle</code></a>, <a href="regex.html#compile"><code>regex::compile</code></a>, <a href="regex.html#find_all"><code>regex::find_all</code></a>, <a href="regex.html#matches"><code>regex::matches</code></a>, <a href="set.html#add"><code>set::add</code></a>, <a href="set.html#remove"><code>set::remove</code></a>, <a href="sort.html#reverse"><code>sort::reverse</code></a>, <a href="sort.html#unique"><code>sort::unique</code></a>, <a href="vec.html#push"><code>vec::push</code></a>, <a href="vec.html#set"><code>vec::set</code></a></p>
+</div>
+<hr>
+<div class="fn" id="get_i64">
+<h3>get_i64</h3>
+<pre><code>fn get_i64(address:ptr offset:i64 -- value:i64)</code></pre>
+<p>Get a 64-bit integer at offset.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>address</code> <code>ptr</code></dt>
+<dd>Base address</dd>
+<dt><code>offset</code> <code>i64</code></dt>
+<dd>Byte offset from base</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>value</code> <code>i64</code></dt>
+<dd>Integer value</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>buf 0 mem::get_i64 -&gt; n</code></pre>
+<p class="xref"><strong>Called by:</strong> <a href="crc32.html#update"><code>crc32::update</code></a>, <a href="crypto.html#update"><code>crypto::update</code></a>, <a href="ct.html#dequeue"><code>ct::dequeue</code></a>, <a href="ct.html#enqueue"><code>ct::enqueue</code></a>, <a href="ct.html#get"><code>ct::get</code></a>, <a href="ct.html#peek"><code>ct::peek</code></a>, <a href="ct.html#peek_back"><code>ct::peek_back</code></a>, <a href="ct.html#peek_front"><code>ct::peek_front</code></a>, <a href="ct.html#pop"><code>ct::pop</code></a>, <a href="ct.html#pop_back"><code>ct::pop_back</code></a>, <a href="ct.html#pop_front"><code>ct::pop_front</code></a>, <a href="ct.html#push_back"><code>ct::push_back</code></a>, <a href="ct.html#push_front"><code>ct::push_front</code></a>, <a href="ct.html#release"><code>ct::release</code></a>, <a href="deque.html#peek_back"><code>deque::peek_back</code></a>, <a href="deque.html#peek_front"><code>deque::peek_front</code></a>, <a href="deque.html#pop_back"><code>deque::pop_back</code></a>, <a href="deque.html#pop_front"><code>deque::pop_front</code></a>, <a href="deque.html#push_back"><code>deque::push_back</code></a>, <a href="deque.html#push_front"><code>deque::push_front</code></a>, <a href="fuzzy.html#best"><code>fuzzy::best</code></a>, <a href="fuzzy.html#distance"><code>fuzzy::distance</code></a>, <a href="hashmap.html#get"><code>hashmap::get</code></a>, <a href="hashmap.html#release"><code>hashmap::release</code></a>, <a href="queue.html#dequeue"><code>queue::dequeue</code></a>, <a href="queue.html#enqueue"><code>queue::enqueue</code></a>, <a href="queue.html#peek"><code>queue::peek</code></a>, <a href="rand.html#choice"><code>rand::choice</code></a>, <a href="rand.html#sample"><code>rand::sample</code></a>, <a href="rand.html#shuffle"><code>rand::shuffle</code></a>, <a href="regex.html#matches"><code>regex::matches</code></a>, <a href="regex.html#release"><code>regex::release</code></a>, <a href="set.html#release"><code>set::release</code></a>, <a href="sort.html#is_sorted"><code>sort::is_sorted</code></a>, <a href="sort.html#max"><code>sort::max</code></a>, <a href="sort.html#min"><code>sort::min</code></a>, <a href="sort.html#reverse"><code>sort::reverse</code></a>, <a href="sort.html#search"><code>sort::search</code></a>, <a href="sort.html#unique"><code>sort::unique</code></a>, <a href="vec.html#get"><code>vec::get</code></a>, <a href="vec.html#pop"><code>vec::pop</code></a></p>
+</div>
+<hr>
+<div class="fn" id="set_f64">
+<h3>set_f64</h3>
+<pre><code>fn set_f64(value:f64 address:ptr offset:i64 -- )</code></pre>
+<p>Set a 64-bit float at offset.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>value</code> <code>f64</code></dt>
+<dd>Float value</dd>
+<dt><code>address</code> <code>ptr</code></dt>
+<dd>Base address</dd>
+<dt><code>offset</code> <code>i64</code></dt>
+<dd>Byte offset from base</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>3.14 buf 0 mem::set_f64</code></pre>
+</div>
+<hr>
+<div class="fn" id="get_f64">
+<h3>get_f64</h3>
+<pre><code>fn get_f64(address:ptr offset:i64 -- value:f64)</code></pre>
+<p>Get a 64-bit float at offset.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>address</code> <code>ptr</code></dt>
+<dd>Base address</dd>
+<dt><code>offset</code> <code>i64</code></dt>
+<dd>Byte offset from base</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>value</code> <code>f64</code></dt>
+<dd>Float value</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>buf 0 mem::get_f64 -&gt; x</code></pre>
+<p class="xref"><strong>Called by:</strong> <a href="sort.html#is_sorted_floats"><code>sort::is_sorted_floats</code></a></p>
+</div>
+<hr>
+<div class="fn" id="set_ptr">
+<h3>set_ptr</h3>
+<pre><code>fn set_ptr(value:ptr address:ptr offset:i64 -- )</code></pre>
+<p>Set a pointer at offset.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>value</code> <code>ptr</code></dt>
+<dd>Pointer value</dd>
+<dt><code>address</code> <code>ptr</code></dt>
+<dd>Base address</dd>
+<dt><code>offset</code> <code>i64</code></dt>
+<dd>Byte offset from base</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>other_buf buf 0 mem::set_ptr</code></pre>
+<p class="xref"><strong>Called by:</strong> <a href="ct.html#add"><code>ct::add</code></a>, <a href="ct.html#insert"><code>ct::insert</code></a>, <a href="hashmap.html#insert"><code>hashmap::insert</code></a>, <a href="set.html#add"><code>set::add</code></a></p>
+</div>
+<hr>
+<div class="fn" id="get_ptr">
+<h3>get_ptr</h3>
+<pre><code>fn get_ptr(address:ptr offset:i64 -- value:ptr)</code></pre>
+<p>Get a pointer at offset.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>address</code> <code>ptr</code></dt>
+<dd>Base address</dd>
+<dt><code>offset</code> <code>i64</code></dt>
+<dd>Byte offset from base</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>value</code> <code>ptr</code></dt>
+<dd>Pointer value</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>buf 0 mem::get_ptr -&gt; p</code></pre>
+<p class="xref"><strong>Called by:</strong> <a href="ct.html#release"><code>ct::release</code></a>, <a href="ct.html#remove"><code>ct::remove</code></a>, <a href="hashmap.html#release"><code>hashmap::release</code></a>, <a href="hashmap.html#remove"><code>hashmap::remove</code></a>, <a href="regex.html#release"><code>regex::release</code></a>, <a href="set.html#release"><code>set::release</code></a>, <a href="set.html#remove"><code>set::remove</code></a></p>
+</div>
+<hr>
+<div class="fn" id="copy">
+<h3>copy</h3>
+<pre><code>fn copy(dst:ptr src:ptr bytes:i64 -- )</code></pre>
+<p>Copy bytes between memory regions.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>dst</code> <code>ptr</code></dt>
+<dd>Destination address</dd>
+<dt><code>src</code> <code>ptr</code></dt>
+<dd>Source address</dd>
+<dt><code>bytes</code> <code>i64</code></dt>
+<dd>Number of bytes to copy</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>dst src 100 mem::copy</code></pre>
+<p class="xref"><strong>Called by:</strong> <a href="ct.html#add"><code>ct::add</code></a>, <a href="ct.html#insert"><code>ct::insert</code></a>, <a href="hashmap.html#insert"><code>hashmap::insert</code></a>, <a href="regex.html#find_all"><code>regex::find_all</code></a>, <a href="sb.html#append"><code>sb::append</code></a>, <a href="set.html#add"><code>set::add</code></a></p>
+</div>
+<hr>
+<div class="fn" id="ptr_add">
+<h3>ptr_add</h3>
+<pre><code>fn ptr_add(base:ptr offset:i64 -- result:ptr)</code></pre>
+<p>Pointer arithmetic: base + offset.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>base</code> <code>ptr</code></dt>
+<dd>Base pointer</dd>
+<dt><code>offset</code> <code>i64</code></dt>
+<dd>Byte offset to add</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>result</code> <code>ptr</code></dt>
+<dd>Offset pointer</dd>
+</dl>
+<p class="xref"><strong>Called by:</strong> <a href="sb.html#append"><code>sb::append</code></a></p>
+</div>
+<hr>
+<div class="fn" id="zero">
+<h3>zero</h3>
+<pre><code>fn zero(address:ptr bytes:i64 -- )</code></pre>
+<p>Zero out memory region.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>address</code> <code>ptr</code></dt>
+<dd>Base address</dd>
+<dt><code>bytes</code> <code>i64</code></dt>
+<dd>Number of bytes to zero</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>buf 1024 mem::zero</code></pre>
+<p class="xref"><strong>Called by:</strong> <a href="regex.html#matches"><code>regex::matches</code></a></p>
+</div>
+<hr>
+<div class="fn" id="fill">
+<h3>fill</h3>
+<pre><code>fn fill(value:i64 address:ptr bytes:i64 -- )</code></pre>
+<p>Fill memory region with byte value.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>value</code> <code>i64</code></dt>
+<dd>Fill value (0-255)</dd>
+<dt><code>address</code> <code>ptr</code></dt>
+<dd>Base address</dd>
+<dt><code>bytes</code> <code>i64</code></dt>
+<dd>Number of bytes to fill</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>0xFF buf 1024 mem::fill</code></pre>
+</div>
+<hr>
+<div class="fn" id="to_string">
+<h3>to_string</h3>
+<pre><code>fn to_string(buffer:ptr length:i64 -- text:str)</code></pre>
+<p>Convert buffer to string.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>buffer</code> <code>ptr</code></dt>
+<dd>Source buffer</dd>
+<dt><code>length</code> <code>i64</code></dt>
+<dd>Number of bytes</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>text</code> <code>str</code></dt>
+<dd>Null-terminated string</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>buf len mem::to_string -&gt; s</code></pre>
+<p class="xref"><strong>Called by:</strong> <a href="base64.html#decode"><code>base64::decode</code></a>, <a href="base64.html#encode"><code>base64::encode</code></a>, <a href="crc32.html#hex"><code>crc32::hex</code></a>, <a href="crypto.html#finish"><code>crypto::finish</code></a>, <a href="crypto.html#hex"><code>crypto::hex</code></a>, <a href="crypto.html#sha256_bytes"><code>crypto::sha256_bytes</code></a>, <a href="crypto.html#sha512_bytes"><code>crypto::sha512_bytes</code></a>, <a href="hex.html#decode"><code>hex::decode</code></a>, <a href="hex.html#encode"><code>hex::encode</code></a>, <a href="hex.html#encode_byte"><code>hex::encode_byte</code></a>, <a href="hex.html#encode_lower"><code>hex::encode_lower</code></a>, <a href="md5.html#finish"><code>md5::finish</code></a>, <a href="sb.html#build"><code>sb::build</code></a>, <a href="sb.html#finish"><code>sb::finish</code></a>, <a href="sha256.html#finish"><code>sha256::finish</code></a>, <a href="sha256.html#sha256_bytes"><code>sha256::sha256_bytes</code></a>, <a href="sha512.html#finish"><code>sha512::finish</code></a>, <a href="sha512.html#sha512_bytes"><code>sha512::sha512_bytes</code></a>, <a href="uri.html#build"><code>uri::build</code></a>, <a href="uri.html#decode"><code>uri::decode</code></a>, <a href="uri.html#encode"><code>uri::encode</code></a>, <a href="uuid.html#v4"><code>uuid::v4</code></a>, <a href="uuid.html#v4_seeded"><code>uuid::v4_seeded</code></a></p>
+</div>
+<hr>
+<div class="fn" id="from_string">
+<h3>from_string</h3>
+<pre><code>fn from_string(text:str -- buffer:ptr length:i64)</code></pre>
+<p>Convert string to buffer.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>text</code> <code>str</code></dt>
+<dd>Source string</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>buffer</code> <code>ptr</code></dt>
+<dd>Allocated buffer</dd>
+<dt><code>length</code> <code>i64</code></dt>
+<dd>String length</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>&quot;hello&quot; mem::from_string -&gt; len -&gt; buf</code></pre>
+<p class="xref"><strong>Called by:</strong> <a href="base64.html#decode"><code>base64::decode</code></a>, <a href="base64.html#encode"><code>base64::encode</code></a>, <a href="crypto.html#hmac_sha256"><code>crypto::hmac_sha256</code></a>, <a href="crypto.html#hmac_sha512"><code>crypto::hmac_sha512</code></a>, <a href="ct.html#add"><code>ct::add</code></a>, <a href="ct.html#insert"><code>ct::insert</code></a>, <a href="hashmap.html#insert"><code>hashmap::insert</code></a>, <a href="hmac.html#hmac_sha256"><code>hmac::hmac_sha256</code></a>, <a href="hmac.html#hmac_sha512"><code>hmac::hmac_sha512</code></a>, <a href="set.html#add"><code>set::add</code></a></p>
+</div>
+<hr>
+<div class="fn" id="free">
+<h3>free</h3>
+<pre><code>fn free(address:ptr -- )</code></pre>
+<p>Free allocated memory.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>address</code> <code>ptr</code></dt>
+<dd>Memory to free (null is safe)</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>buf mem::free</code></pre>
+<p class="xref"><strong>Called by:</strong> <a href="base64.html#decode"><code>base64::decode</code></a>, <a href="base64.html#encode"><code>base64::encode</code></a>, <a href="crc32.html#hex"><code>crc32::hex</code></a>, <a href="crc32.html#release"><code>crc32::release</code></a>, <a href="crypto.html#finish"><code>crypto::finish</code></a>, <a href="crypto.html#hex"><code>crypto::hex</code></a>, <a href="crypto.html#hmac_sha256"><code>crypto::hmac_sha256</code></a>, <a href="crypto.html#hmac_sha512"><code>crypto::hmac_sha512</code></a>, <a href="crypto.html#release"><code>crypto::release</code></a>, <a href="crypto.html#sha256_bytes"><code>crypto::sha256_bytes</code></a>, <a href="crypto.html#sha512_bytes"><code>crypto::sha512_bytes</code></a>, <a href="ct.html#add"><code>ct::add</code></a>, <a href="ct.html#enqueue"><code>ct::enqueue</code></a>, <a href="ct.html#insert"><code>ct::insert</code></a>, <a href="ct.html#push_back"><code>ct::push_back</code></a>, <a href="ct.html#push_front"><code>ct::push_front</code></a>, <a href="ct.html#release"><code>ct::release</code></a>, <a href="ct.html#remove"><code>ct::remove</code></a>, <a href="deque.html#push_back"><code>deque::push_back</code></a>, <a href="deque.html#push_front"><code>deque::push_front</code></a>, <a href="deque.html#release"><code>deque::release</code></a>, <a href="fuzzy.html#best"><code>fuzzy::best</code></a>, <a href="fuzzy.html#distance"><code>fuzzy::distance</code></a>, <a href="hashmap.html#insert"><code>hashmap::insert</code></a>, <a href="hashmap.html#release"><code>hashmap::release</code></a>, <a href="hashmap.html#remove"><code>hashmap::remove</code></a>, <a href="hex.html#decode"><code>hex::decode</code></a>, <a href="hex.html#encode"><code>hex::encode</code></a>, <a href="hex.html#encode_byte"><code>hex::encode_byte</code></a>, <a href="hex.html#encode_lower"><code>hex::encode_lower</code></a>, <a href="hmac.html#hmac_sha256"><code>hmac::hmac_sha256</code></a>, <a href="hmac.html#hmac_sha512"><code>hmac::hmac_sha512</code></a>, <a href="md5.html#finish"><code>md5::finish</code></a>, <a href="md5.html#release"><code>md5::release</code></a>, <a href="queue.html#enqueue"><code>queue::enqueue</code></a>, <a href="queue.html#release"><code>queue::release</code></a>, <a href="rand.html#sample"><code>rand::sample</code></a>, <a href="regex.html#find_all"><code>regex::find_all</code></a>, <a href="regex.html#matches"><code>regex::matches</code></a>, <a href="regex.html#release"><code>regex::release</code></a>, <a href="sb.html#finish"><code>sb::finish</code></a>, <a href="sb.html#free"><code>sb::free</code></a>, <a href="set.html#add"><code>set::add</code></a>, <a href="set.html#release"><code>set::release</code></a>, <a href="set.html#remove"><code>set::remove</code></a>, <a href="sha256.html#finish"><code>sha256::finish</code></a>, <a href="sha256.html#release"><code>sha256::release</code></a>, <a href="sha256.html#sha256_bytes"><code>sha256::sha256_bytes</code></a>, <a href="sha512.html#finish"><code>sha512::finish</code></a>, <a href="sha512.html#release"><code>sha512::release</code></a>, <a href="sha512.html#sha512_bytes"><code>sha512::sha512_bytes</code></a>, <a href="uri.html#build"><code>uri::build</code></a>, <a href="uri.html#decode"><code>uri::decode</code></a>, <a href="uri.html#encode"><code>uri::encode</code></a>, <a href="uuid.html#v4"><code>uuid::v4</code></a>, <a href="uuid.html#v4_seeded"><code>uuid::v4_seeded</code></a>, <a href="vec.html#release"><code>vec::release</code></a></p>
+</div>
+<hr>
+<div class="fn" id="is_null">
+<h3>is_null</h3>
+<pre><code>fn is_null(address:ptr -- is_null:i64)</code></pre>
+<p>Check if pointer is null.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>address</code> <code>ptr</code></dt>
+<dd>Pointer to check</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>is_null</code> <code>i64</code></dt>
+<dd>1 if null, 0 otherwise</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>buf mem::is_null print  // 0</code></pre>
+</div>
+<hr>
+<div class="fn" id="is_not_null">
+<h3>is_not_null</h3>
+<pre><code>fn is_not_null(address:ptr -- not_null:i64)</code></pre>
+<p>Check if pointer is not null.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>address</code> <code>ptr</code></dt>
+<dd>Pointer to check</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>not_null</code> <code>i64</code></dt>
+<dd>1 if not null, 0 otherwise</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>buf mem::is_not_null print  // 1</code></pre>
+</div>
+</div></body></html>

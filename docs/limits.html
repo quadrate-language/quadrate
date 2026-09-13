@@ -1,0 +1,230 @@
+<!DOCTYPE html><html><head><meta charset="utf-8"><title>limits - Quadrate API</title><link rel="stylesheet" href="style.css"></head><body>
+<nav><h1>Quadrate API</h1><a href="index.html">All Modules</a></nav>
+<div class="container"><h2>limits</h2>
+<p class="desc">Numeric limits and constants. Provides minimum and maximum values for numeric types.</p>
+<h2>Constants</h2>
+<dl>
+<dt><code>I64Max</code> = <code>9223372036854775807</code></dt>
+<dd>Maximum value for i64 (Quadrate's native integer type).</dd>
+<dt><code>F64Min</code> = <code>2.2250738585072014e-308</code></dt>
+<dd>Smallest positive normalized f64 value.</dd>
+<dt><code>F64Max</code> = <code>1.7976931348623157e+308</code></dt>
+<dd>Largest finite f64 value.</dd>
+<dt><code>F64Epsilon</code> = <code>2.220446049250313e-16</code></dt>
+<dd>Machine epsilon for f64 (smallest x such that 1.0 + x != 1.0).</dd>
+<dt><code>I8Max</code> = <code>127</code></dt>
+<dd>Maximum value for 8-bit signed integer (C: int8_t).</dd>
+<dt><code>I8Min</code> = <code>-128</code></dt>
+<dd>Minimum value for 8-bit signed integer (C: int8_t).</dd>
+<dt><code>I16Max</code> = <code>32767</code></dt>
+<dd>Maximum value for 16-bit signed integer (C: int16_t).</dd>
+<dt><code>I16Min</code> = <code>-32768</code></dt>
+<dd>Minimum value for 16-bit signed integer (C: int16_t).</dd>
+<dt><code>I32Max</code> = <code>2147483647</code></dt>
+<dd>Maximum value for 32-bit signed integer (C: int32_t).</dd>
+<dt><code>I32Min</code> = <code>-2147483648</code></dt>
+<dd>Minimum value for 32-bit signed integer (C: int32_t).</dd>
+<dt><code>U8Max</code> = <code>255</code></dt>
+<dd>Maximum value for 8-bit unsigned integer (C: uint8_t).</dd>
+<dt><code>U16Max</code> = <code>65535</code></dt>
+<dd>Maximum value for 16-bit unsigned integer (C: uint16_t).</dd>
+<dt><code>U32Max</code> = <code>4294967295</code></dt>
+<dd>Maximum value for 32-bit unsigned integer (C: uint32_t).</dd>
+<dt><code>PtrSize</code> = <code>8</code></dt>
+<dd>Size of a pointer in bytes (64-bit platform).</dd>
+<dt><code>I64Size</code> = <code>8</code></dt>
+<dd>Size of i64 in bytes.</dd>
+<dt><code>F64Size</code> = <code>8</code></dt>
+<dd>Size of f64 in bytes.</dd>
+</dl>
+<h2>Functions</h2>
+<div class="fn" id="I64Min">
+<h3>I64Min</h3>
+<pre><code>fn I64Min( -- result:i64)</code></pre>
+<p>Minimum value for i64 (Quadrate's native integer type). Note: -9223372036854775808 cannot be a literal (parser overflows), so we compute it.</p>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>result</code> <code>i64</code></dt>
+</dl>
+</div>
+<hr>
+<div class="fn" id="fits_i8">
+<h3>fits_i8</h3>
+<pre><code>fn fits_i8(v:i64 -- fits:i64)</code></pre>
+<p>Check if value fits in i8 range.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>v</code> <code>i64</code></dt>
+<dd>Value to check</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>fits</code> <code>i64</code></dt>
+<dd>1 if in range, 0 otherwise</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>100 limits::fits_i8 print  // 1</code></pre>
+</div>
+<hr>
+<div class="fn" id="fits_i16">
+<h3>fits_i16</h3>
+<pre><code>fn fits_i16(v:i64 -- fits:i64)</code></pre>
+<p>Check if value fits in i16 range.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>v</code> <code>i64</code></dt>
+<dd>Value to check</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>fits</code> <code>i64</code></dt>
+<dd>1 if in range, 0 otherwise</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>30000 limits::fits_i16 print  // 1</code></pre>
+</div>
+<hr>
+<div class="fn" id="fits_i32">
+<h3>fits_i32</h3>
+<pre><code>fn fits_i32(v:i64 -- fits:i64)</code></pre>
+<p>Check if value fits in i32 range.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>v</code> <code>i64</code></dt>
+<dd>Value to check</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>fits</code> <code>i64</code></dt>
+<dd>1 if in range, 0 otherwise</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>2000000000 limits::fits_i32 print  // 1</code></pre>
+</div>
+<hr>
+<div class="fn" id="fits_u8">
+<h3>fits_u8</h3>
+<pre><code>fn fits_u8(v:i64 -- fits:i64)</code></pre>
+<p>Check if value fits in u8 range.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>v</code> <code>i64</code></dt>
+<dd>Value to check</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>fits</code> <code>i64</code></dt>
+<dd>1 if in range, 0 otherwise</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>200 limits::fits_u8 print  // 1</code></pre>
+</div>
+<hr>
+<div class="fn" id="fits_u16">
+<h3>fits_u16</h3>
+<pre><code>fn fits_u16(v:i64 -- fits:i64)</code></pre>
+<p>Check if value fits in u16 range.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>v</code> <code>i64</code></dt>
+<dd>Value to check</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>fits</code> <code>i64</code></dt>
+<dd>1 if in range, 0 otherwise</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>50000 limits::fits_u16 print  // 1</code></pre>
+</div>
+<hr>
+<div class="fn" id="fits_u32">
+<h3>fits_u32</h3>
+<pre><code>fn fits_u32(v:i64 -- fits:i64)</code></pre>
+<p>Check if value fits in u32 range.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>v</code> <code>i64</code></dt>
+<dd>Value to check</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>fits</code> <code>i64</code></dt>
+<dd>1 if in range, 0 otherwise</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>3000000000 limits::fits_u32 print  // 1</code></pre>
+</div>
+<hr>
+<div class="fn" id="clamp_i8">
+<h3>clamp_i8</h3>
+<pre><code>fn clamp_i8(v:i64 -- clamped:i64)</code></pre>
+<p>Clamp value to i8 range.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>v</code> <code>i64</code></dt>
+<dd>Value to clamp</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>clamped</code> <code>i64</code></dt>
+<dd>Value clamped to [-128, 127]</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>200 limits::clamp_i8 print  // 127</code></pre>
+</div>
+<hr>
+<div class="fn" id="clamp_i16">
+<h3>clamp_i16</h3>
+<pre><code>fn clamp_i16(v:i64 -- clamped:i64)</code></pre>
+<p>Clamp value to i16 range.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>v</code> <code>i64</code></dt>
+<dd>Value to clamp</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>clamped</code> <code>i64</code></dt>
+<dd>Value clamped to [-32768, 32767]</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>50000 limits::clamp_i16 print  // 32767</code></pre>
+</div>
+<hr>
+<div class="fn" id="clamp_u8">
+<h3>clamp_u8</h3>
+<pre><code>fn clamp_u8(v:i64 -- clamped:i64)</code></pre>
+<p>Clamp value to u8 range.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>v</code> <code>i64</code></dt>
+<dd>Value to clamp</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>clamped</code> <code>i64</code></dt>
+<dd>Value clamped to [0, 255]</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>300 limits::clamp_u8 print  // 255</code></pre>
+</div>
+<hr>
+<div class="fn" id="clamp_u16">
+<h3>clamp_u16</h3>
+<pre><code>fn clamp_u16(v:i64 -- clamped:i64)</code></pre>
+<p>Clamp value to u16 range.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>v</code> <code>i64</code></dt>
+<dd>Value to clamp</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>clamped</code> <code>i64</code></dt>
+<dd>Value clamped to [0, 65535]</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>70000 limits::clamp_u16 print  // 65535</code></pre>
+</div>
+</div></body></html>

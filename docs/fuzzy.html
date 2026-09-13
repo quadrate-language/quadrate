@@ -1,0 +1,162 @@
+<!DOCTYPE html><html><head><meta charset="utf-8"><title>fuzzy - Quadrate API</title><link rel="stylesheet" href="style.css"></head><body>
+<nav><h1>Quadrate API</h1><a href="index.html">All Modules</a></nav>
+<div class="container"><h2>fuzzy</h2>
+<p class="desc">Minimum of two integers.</p>
+<h2>Functions</h2>
+<div class="fn" id="distance">
+<h3>distance</h3>
+<pre><code>fn distance(a:str b:str -- dist:i64)</code></pre>
+<p>Compute Levenshtein edit distance between two strings. The edit distance is the minimum number of single-character edits (insertions, deletions, substitutions) required to transform one string into another.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>a</code> <code>str</code></dt>
+<dd>First string</dd>
+<dt><code>b</code> <code>str</code></dt>
+<dd>Second string</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>dist</code> <code>i64</code></dt>
+<dd>Edit distance (0 = identical)</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>&quot;kitten&quot; &quot;sitting&quot; fuzzy::distance -&gt; 3</code></pre>
+<pre><code>&quot;hello&quot; &quot;hello&quot; fuzzy::distance -&gt; 0</code></pre>
+<pre><code>&quot;&quot; &quot;abc&quot; fuzzy::distance -&gt; 3</code></pre>
+<p class="xref"><strong>Calls:</strong> <a href="mem.html#alloc"><code>mem::alloc</code></a>, <a href="mem.html#free"><code>mem::free</code></a>, <a href="mem.html#get_i64"><code>mem::get_i64</code></a>, <a href="mem.html#set_i64"><code>mem::set_i64</code></a>, <a href="strings.html#char_at"><code>strings::char_at</code></a>, <a href="strings.html#len"><code>strings::len</code></a></p>
+<p class="xref"><strong>Called by:</strong> <a href="fuzzy.html#similarity"><code>fuzzy::similarity</code></a></p>
+</div>
+<hr>
+<div class="fn" id="similarity">
+<h3>similarity</h3>
+<pre><code>fn similarity(a:str b:str -- sim:f64)</code></pre>
+<p>Compute similarity between two strings as a value from 0.0 to 1.0. 1.0 means identical, 0.0 means completely different. Based on normalized Levenshtein distance: 1 - (distance / max_length).</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>a</code> <code>str</code></dt>
+<dd>First string</dd>
+<dt><code>b</code> <code>str</code></dt>
+<dd>Second string</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>sim</code> <code>f64</code></dt>
+<dd>Similarity score (0.0 to 1.0)</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>&quot;hello&quot; &quot;hello&quot; fuzzy::similarity -&gt; 1.0</code></pre>
+<pre><code>&quot;hello&quot; &quot;hallo&quot; fuzzy::similarity -&gt; 0.8</code></pre>
+<pre><code>&quot;abc&quot; &quot;xyz&quot; fuzzy::similarity -&gt; 0.0</code></pre>
+<p class="xref"><strong>Calls:</strong> <a href="fuzzy.html#distance"><code>fuzzy::distance</code></a>, <a href="strings.html#len"><code>strings::len</code></a></p>
+<p class="xref"><strong>Called by:</strong> <a href="fuzzy.html#matches"><code>fuzzy::matches</code></a>, <a href="fuzzy.html#score"><code>fuzzy::score</code></a></p>
+</div>
+<hr>
+<div class="fn" id="matches">
+<h3>matches</h3>
+<pre><code>fn matches(str str f64 -- i64)</code></pre>
+<p>Check if query approximately matches target within a similarity threshold.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>query</code> <code>str</code></dt>
+<dd>Query string to search for</dd>
+<dt><code>target</code> <code>str</code></dt>
+<dd>Target string to match against</dd>
+<dt><code>threshold</code> <code>f64</code></dt>
+<dd>Minimum similarity (0.0 to 1.0)</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>matches</code> <code>i64</code></dt>
+<dd>1 if similarity &gt;= threshold, 0 otherwise</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>&quot;helo&quot; &quot;hello&quot; 0.7 fuzzy::matches -&gt; 1</code></pre>
+<pre><code>&quot;xyz&quot; &quot;hello&quot; 0.7 fuzzy::matches -&gt; 0</code></pre>
+<p class="xref"><strong>Calls:</strong> <a href="fuzzy.html#similarity"><code>fuzzy::similarity</code></a></p>
+</div>
+<hr>
+<div class="fn" id="score">
+<h3>score</h3>
+<pre><code>fn score(query:str target:str -- score:i64)</code></pre>
+<p>Compute a fuzzy match score combining multiple matching strategies. Higher scores indicate better matches. Returns 0 if no match. Scoring:   - Exact match: 1000   - Prefix match: 500 + (query_len / target_len * 100)   - Substring match: 300 + (query_len / target_len * 100)   - Word boundary match (after _ or at start): 200   - Similarity match (&gt;= 0.6): similarity * 100</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>query</code> <code>str</code></dt>
+<dd>Query string (typically shorter)</dd>
+<dt><code>target</code> <code>str</code></dt>
+<dd>Target string to match against</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>score</code> <code>i64</code></dt>
+<dd>Match score (0 = no match, higher = better)</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>&quot;sin&quot; &quot;sin&quot; fuzzy::score -&gt; 1000</code></pre>
+<pre><code>&quot;sin&quot; &quot;asin&quot; fuzzy::score -&gt; ~350 (substring)</code></pre>
+<pre><code>&quot;rf&quot; &quot;read_file&quot; fuzzy::score -&gt; 200 (word boundary)</code></pre>
+<p class="xref"><strong>Calls:</strong> <a href="fuzzy.html#similarity"><code>fuzzy::similarity</code></a>, <a href="strings.html#compare"><code>strings::compare</code></a>, <a href="strings.html#contains"><code>strings::contains</code></a>, <a href="strings.html#len"><code>strings::len</code></a>, <a href="strings.html#lower"><code>strings::lower</code></a>, <a href="strings.html#starts_with"><code>strings::starts_with</code></a></p>
+<p class="xref"><strong>Called by:</strong> <a href="fuzzy.html#best"><code>fuzzy::best</code></a></p>
+</div>
+<hr>
+<div class="fn" id="best">
+<h3>best</h3>
+<pre><code>fn best(query:str items:ptr max_results:i64 -- results:ptr count:i64)</code></pre>
+<p>Find the best matching items from a list, sorted by score descending. Items with score 0 are excluded.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>query</code> <code>str</code></dt>
+<dd>Query string to match</dd>
+<dt><code>items</code> <code>ptr</code></dt>
+<dd>Array of strings to search</dd>
+<dt><code>max_results</code> <code>i64</code></dt>
+<dd>Maximum number of results to return</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>results</code> <code>ptr</code></dt>
+<dd>Array of matching strings (caller must free)</dd>
+<dt><code>count</code> <code>i64</code></dt>
+<dd>Number of results</dd>
+</dl>
+<p class="xref"><strong>Calls:</strong> <a href="fuzzy.html#score"><code>fuzzy::score</code></a>, <a href="mem.html#alloc"><code>mem::alloc</code></a>, <a href="mem.html#free"><code>mem::free</code></a>, <a href="mem.html#get_i64"><code>mem::get_i64</code></a>, <a href="mem.html#set_i64"><code>mem::set_i64</code></a></p>
+</div>
+<hr>
+<div class="fn" id="starts_with_ci">
+<h3>starts_with_ci</h3>
+<pre><code>fn starts_with_ci(str str -- i64)</code></pre>
+<p>Check if a string starts with a given prefix (case-insensitive).</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>s</code> <code>str</code></dt>
+<dd>String to check</dd>
+<dt><code>prefix</code> <code>str</code></dt>
+<dd>Prefix to look for</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>starts</code> <code>i64</code></dt>
+<dd>1 if s starts with prefix, 0 otherwise</dd>
+</dl>
+<p class="xref"><strong>Calls:</strong> <a href="strings.html#lower"><code>strings::lower</code></a>, <a href="strings.html#starts_with"><code>strings::starts_with</code></a></p>
+</div>
+<hr>
+<div class="fn" id="contains_ci">
+<h3>contains_ci</h3>
+<pre><code>fn contains_ci(str str -- i64)</code></pre>
+<p>Check if a string contains a substring (case-insensitive).</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>s</code> <code>str</code></dt>
+<dd>String to search in</dd>
+<dt><code>substr</code> <code>str</code></dt>
+<dd>Substring to look for</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>contains</code> <code>i64</code></dt>
+<dd>1 if s contains substr, 0 otherwise</dd>
+</dl>
+<p class="xref"><strong>Calls:</strong> <a href="strings.html#contains"><code>strings::contains</code></a>, <a href="strings.html#lower"><code>strings::lower</code></a></p>
+</div>
+</div></body></html>

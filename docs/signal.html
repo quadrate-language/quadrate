@@ -1,0 +1,316 @@
+<!DOCTYPE html><html><head><meta charset="utf-8"><title>signal - Quadrate API</title><link rel="stylesheet" href="style.css"></head><body>
+<nav><h1>Quadrate API</h1><a href="index.html">All Modules</a></nav>
+<div class="container"><h2>signal</h2>
+<p class="desc">Unix signal handling with polling-based API.  Signals are caught and stored as flags. Use pending() to check if a signal was received, and clear() to reset the flag.  Example:   use signal    fn main() {       signal::SigInt signal::trap       &quot;Running. Press Ctrl+C to stop.&quot; print nl        loop {           signal::SigInt signal::pending if {               &quot;Shutting down&quot; print nl               signal::SigInt signal::clear               break           }       }   }</p>
+<h2>Functions</h2>
+<div class="fn" id="SigHup">
+<h3>SigHup</h3>
+<pre><code>fn SigHup( -- val:i64)</code></pre>
+<p>Hangup signal (terminal closed).</p>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>val</code> <code>i64</code></dt>
+</dl>
+</div>
+<hr>
+<div class="fn" id="SigInt">
+<h3>SigInt</h3>
+<pre><code>fn SigInt( -- val:i64)</code></pre>
+<p>Interrupt signal (Ctrl+C).</p>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>val</code> <code>i64</code></dt>
+</dl>
+</div>
+<hr>
+<div class="fn" id="SigQuit">
+<h3>SigQuit</h3>
+<pre><code>fn SigQuit( -- val:i64)</code></pre>
+<p>Quit signal (Ctrl+\).</p>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>val</code> <code>i64</code></dt>
+</dl>
+</div>
+<hr>
+<div class="fn" id="SigIll">
+<h3>SigIll</h3>
+<pre><code>fn SigIll( -- val:i64)</code></pre>
+<p>Illegal instruction.</p>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>val</code> <code>i64</code></dt>
+</dl>
+</div>
+<hr>
+<div class="fn" id="SigAbrt">
+<h3>SigAbrt</h3>
+<pre><code>fn SigAbrt( -- val:i64)</code></pre>
+<p>Abort signal.</p>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>val</code> <code>i64</code></dt>
+</dl>
+</div>
+<hr>
+<div class="fn" id="SigFpe">
+<h3>SigFpe</h3>
+<pre><code>fn SigFpe( -- val:i64)</code></pre>
+<p>Floating point exception.</p>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>val</code> <code>i64</code></dt>
+</dl>
+</div>
+<hr>
+<div class="fn" id="SigKill">
+<h3>SigKill</h3>
+<pre><code>fn SigKill( -- val:i64)</code></pre>
+<p>Kill signal (cannot be caught).</p>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>val</code> <code>i64</code></dt>
+</dl>
+</div>
+<hr>
+<div class="fn" id="SigSegv">
+<h3>SigSegv</h3>
+<pre><code>fn SigSegv( -- val:i64)</code></pre>
+<p>Segmentation fault.</p>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>val</code> <code>i64</code></dt>
+</dl>
+</div>
+<hr>
+<div class="fn" id="SigPipe">
+<h3>SigPipe</h3>
+<pre><code>fn SigPipe( -- val:i64)</code></pre>
+<p>Broken pipe.</p>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>val</code> <code>i64</code></dt>
+</dl>
+</div>
+<hr>
+<div class="fn" id="SigAlrm">
+<h3>SigAlrm</h3>
+<pre><code>fn SigAlrm( -- val:i64)</code></pre>
+<p>Alarm clock.</p>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>val</code> <code>i64</code></dt>
+</dl>
+</div>
+<hr>
+<div class="fn" id="SigTerm">
+<h3>SigTerm</h3>
+<pre><code>fn SigTerm( -- val:i64)</code></pre>
+<p>Termination signal.</p>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>val</code> <code>i64</code></dt>
+</dl>
+</div>
+<hr>
+<div class="fn" id="SigUsr1">
+<h3>SigUsr1</h3>
+<pre><code>fn SigUsr1( -- val:i64)</code></pre>
+<p>User-defined signal 1.</p>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>val</code> <code>i64</code></dt>
+</dl>
+</div>
+<hr>
+<div class="fn" id="SigUsr2">
+<h3>SigUsr2</h3>
+<pre><code>fn SigUsr2( -- val:i64)</code></pre>
+<p>User-defined signal 2.</p>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>val</code> <code>i64</code></dt>
+</dl>
+</div>
+<hr>
+<div class="fn" id="SigChld">
+<h3>SigChld</h3>
+<pre><code>fn SigChld( -- val:i64)</code></pre>
+<p>Child process stopped or terminated.</p>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>val</code> <code>i64</code></dt>
+</dl>
+</div>
+<hr>
+<div class="fn" id="SigCont">
+<h3>SigCont</h3>
+<pre><code>fn SigCont( -- val:i64)</code></pre>
+<p>Continue if stopped.</p>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>val</code> <code>i64</code></dt>
+</dl>
+</div>
+<hr>
+<div class="fn" id="SigStop">
+<h3>SigStop</h3>
+<pre><code>fn SigStop( -- val:i64)</code></pre>
+<p>Stop signal (cannot be caught).</p>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>val</code> <code>i64</code></dt>
+</dl>
+</div>
+<hr>
+<div class="fn" id="SigTstp">
+<h3>SigTstp</h3>
+<pre><code>fn SigTstp( -- val:i64)</code></pre>
+<p>Terminal stop (Ctrl+Z).</p>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>val</code> <code>i64</code></dt>
+</dl>
+</div>
+<hr>
+<div class="fn" id="SigTtin">
+<h3>SigTtin</h3>
+<pre><code>fn SigTtin( -- val:i64)</code></pre>
+<p>Background read from terminal.</p>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>val</code> <code>i64</code></dt>
+</dl>
+</div>
+<hr>
+<div class="fn" id="SigTtou">
+<h3>SigTtou</h3>
+<pre><code>fn SigTtou( -- val:i64)</code></pre>
+<p>Background write to terminal.</p>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>val</code> <code>i64</code></dt>
+</dl>
+</div>
+<hr>
+<div class="fn" id="trap">
+<h3>trap</h3>
+<pre><code>fn trap(signum:i64 -- )</code></pre>
+<p>Install a handler to catch the specified signal. After trapping, the signal sets a pending flag instead of causing the default action (e.g., termination).</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>signum</code> <code>i64</code></dt>
+<dd>Signal number (use signal::SigInt, etc.)</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>signal::SigInt signal::trap</code></pre>
+</div>
+<hr>
+<div class="fn" id="ignore">
+<h3>ignore</h3>
+<pre><code>fn ignore(signum:i64 -- )</code></pre>
+<p>Ignore the specified signal completely.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>signum</code> <code>i64</code></dt>
+<dd>Signal number</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>signal::SigPipe signal::ignore</code></pre>
+</div>
+<hr>
+<div class="fn" id="reset">
+<h3>reset</h3>
+<pre><code>fn reset(signum:i64 -- )</code></pre>
+<p>Reset signal to default behavior.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>signum</code> <code>i64</code></dt>
+<dd>Signal number</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>signal::SigInt signal::reset</code></pre>
+</div>
+<hr>
+<div class="fn" id="pending">
+<h3>pending</h3>
+<pre><code>fn pending(signum:i64 -- flag:i64)</code></pre>
+<p>Check if a signal is pending (received but not cleared). Returns 1 if pending, 0 otherwise. Does not clear the flag.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>signum</code> <code>i64</code></dt>
+<dd>Signal number</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>flag</code> <code>i64</code></dt>
+<dd>1 if pending, 0 otherwise</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>signal::SigInt signal::pending</code></pre>
+</div>
+<hr>
+<div class="fn" id="clear">
+<h3>clear</h3>
+<pre><code>fn clear(signum:i64 -- )</code></pre>
+<p>Clear the pending flag for a signal.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>signum</code> <code>i64</code></dt>
+<dd>Signal number</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>signal::SigInt signal::clear</code></pre>
+</div>
+<hr>
+<div class="fn" id="wait">
+<h3>wait</h3>
+<pre><code>fn wait( -- signum:i64)</code></pre>
+<p>Block until any trapped signal is received. Returns the signal number that was received.</p>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>signum</code> <code>i64</code></dt>
+<dd>The signal that was received</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>signal::wait -&gt; sig</code></pre>
+</div>
+<hr>
+<div class="fn" id="raise">
+<h3>raise</h3>
+<pre><code>fn raise(signum:i64 -- result:i64)</code></pre>
+<p>Send a signal to the current process.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>signum</code> <code>i64</code></dt>
+<dd>Signal number to send</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>result</code> <code>i64</code></dt>
+<dd>0 on success, -1 on error</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>signal::SigUsr1 signal::raise drop</code></pre>
+</div>
+<hr>
+<div class="fn" id="kill">
+<h3>kill</h3>
+<pre><code>fn kill(pid:i64 signum:i64 -- result:i64)</code></pre>
+<p>Send a signal to another process.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>pid</code> <code>i64</code></dt>
+<dd>Process ID to signal</dd>
+<dt><code>signum</code> <code>i64</code></dt>
+<dd>Signal number to send</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>result</code> <code>i64</code></dt>
+<dd>0 on success, -1 on error</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>1234 signal::SigTerm signal::kill drop</code></pre>
+</div>
+</div></body></html>

@@ -886,7 +886,7 @@ json_t* QuadrateLSP::handleFieldAccessDefinition(
 void QuadrateLSP::handleDefinition(const std::string& id, const std::string& uri, size_t line, size_t character) {
 	json_t* response = json_object();
 	json_object_set_new(response, "jsonrpc", json_string("2.0"));
-	json_object_set_new(response, "id", json_integer(std::stoi(id)));
+	json_object_set_new(response, "id", makeResponseId(id));
 
 	// Get document text
 	std::string documentText;
@@ -1279,7 +1279,7 @@ void QuadrateLSP::handleDefinition(const std::string& id, const std::string& uri
 void QuadrateLSP::handleFoldingRange(const std::string& id, const std::string& uri) {
 	json_t* response = json_object();
 	json_object_set_new(response, "jsonrpc", json_string("2.0"));
-	json_object_set_new(response, "id", json_integer(std::stoi(id)));
+	json_object_set_new(response, "id", makeResponseId(id));
 
 	// Get document text
 	std::string documentText;
@@ -1425,7 +1425,7 @@ void QuadrateLSP::handleDocumentHighlight(
 		const std::string& id, const std::string& uri, size_t line, size_t character) {
 	json_t* response = json_object();
 	json_object_set_new(response, "jsonrpc", json_string("2.0"));
-	json_object_set_new(response, "id", json_integer(std::stoi(id)));
+	json_object_set_new(response, "id", makeResponseId(id));
 
 	// Get document text
 	std::string documentText;
@@ -1524,7 +1524,7 @@ void QuadrateLSP::handleDocumentHighlight(
 void QuadrateLSP::handleReferences(const std::string& id, const std::string& uri, size_t line, size_t character) {
 	json_t* response = json_object();
 	json_object_set_new(response, "jsonrpc", json_string("2.0"));
-	json_object_set_new(response, "id", json_integer(std::stoi(id)));
+	json_object_set_new(response, "id", makeResponseId(id));
 
 	// Get document text
 	std::string documentText;
@@ -1619,7 +1619,7 @@ void QuadrateLSP::handleReferences(const std::string& id, const std::string& uri
 void QuadrateLSP::handlePrepareRename(const std::string& id, const std::string& uri, size_t line, size_t character) {
 	json_t* response = json_object();
 	json_object_set_new(response, "jsonrpc", json_string("2.0"));
-	json_object_set_new(response, "id", json_integer(std::stoi(id)));
+	json_object_set_new(response, "id", makeResponseId(id));
 
 	// Get document text
 	std::string documentText;
@@ -1687,7 +1687,7 @@ void QuadrateLSP::handleRename(
 		const std::string& id, const std::string& uri, size_t line, size_t character, const std::string& newName) {
 	json_t* response = json_object();
 	json_object_set_new(response, "jsonrpc", json_string("2.0"));
-	json_object_set_new(response, "id", json_integer(std::stoi(id)));
+	json_object_set_new(response, "id", makeResponseId(id));
 
 	// Get document text
 	std::string documentText;

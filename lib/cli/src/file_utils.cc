@@ -17,17 +17,39 @@ namespace qdcli {
 	std::vector<std::string> collectFiles(const std::string& path) {
 		std::vector<std::string> files;
 
-		if (fs::is_directory(path)) {
-			for (const auto& entry : fs::recursive_directory_iterator(path)) {
-				if (entry.is_regular_file() && entry.path().extension() == ".qd") {
-					files.push_back(entry.path().string());
-				}
-			}
-			std::sort(files.begin(), files.end());
-		} else {
+		// Every filesystem call here takes the error_code overload. The throwing
+		// ones abort the process instead of reporting: is_directory() throws on a
+		// path longer than NAME_MAX, and the plain recursive iterator throws the
+		// first time it meets a directory it may not read, so `quadfmt /` died with
+		// an uncaught filesystem_error rather than formatting what it could reach.
+		std::error_code ec;
+		if (!fs::is_directory(path, ec) || ec) {
 			files.push_back(path);
+			return files;
 		}
 
+		fs::recursive_directory_iterator it(path, fs::directory_options::skip_permission_denied, ec);
+		if (ec) {
+			files.push_back(path);
+			return files;
+		}
+
+		const fs::recursive_directory_iterator end;
+		while (it != end) {
+			const fs::directory_entry& entry = *it;
+			std::error_code entryEc;
+			if (entry.is_regular_file(entryEc) && !entryEc && entry.path().extension() == ".qd") {
+				files.push_back(entry.path().string());
+			}
+			// increment(ec) keeps walking past an unreadable subtree; operator++
+			// would throw out of the loop and take the process with it.
+			it.increment(ec);
+			if (ec) {
+				break;
+			}
+		}
+
+		std::sort(files.begin(), files.end());
 		return files;
 	}
 
@@ -44,6 +66,22 @@ namespace qdcli {
 	}
 
 	std::string readFile(const std::string& filename) {
+		// Only ever read something that has an end. A character device such as
+		// /dev/zero opens and streams happily forever, so `quadfmt /dev/zero` hung
+		// until it was killed; a directory opens too on Linux and then fails the
+		// read with no useful message.
+		std::error_code ec;
+		const fs::file_status status = fs::status(filename, ec);
+		if (ec) {
+			throw std::runtime_error("No such file or directory");
+		}
+		if (fs::is_directory(status)) {
+			throw std::runtime_error("Is a directory");
+		}
+		if (!fs::is_regular_file(status)) {
+			throw std::runtime_error("Not a regular file");
+		}
+
 		std::ifstream file(filename);
 		if (!file.good()) {
 			throw std::runtime_error("No such file or directory");

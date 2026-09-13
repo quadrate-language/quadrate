@@ -1,0 +1,633 @@
+<!DOCTYPE html><html><head><meta charset="utf-8"><title>os - Quadrate API</title><link rel="stylesheet" href="style.css"></head><body>
+<nav><h1>Quadrate API</h1><a href="index.html">All Modules</a></nav>
+<div class="container"><h2>os</h2>
+<p class="desc">Operating system interface. Error codes: Ok=1 (success), specific errors start at 2</p>
+<h2>Constants</h2>
+<dl>
+<dt><code>ErrNotFound</code> = <code>2</code></dt>
+<dd>Error: No such file or directory.</dd>
+<dt><code>ErrPermission</code> = <code>3</code></dt>
+<dd>Error: Permission denied.</dd>
+<dt><code>ErrExists</code> = <code>4</code></dt>
+<dd>Error: File already exists.</dd>
+<dt><code>ErrNotDirectory</code> = <code>5</code></dt>
+<dd>Error: Path is not a directory.</dd>
+<dt><code>ErrIsDirectory</code> = <code>6</code></dt>
+<dd>Error: Path is a directory.</dd>
+<dt><code>ErrIo</code> = <code>7</code></dt>
+<dd>Error: I/O error.</dd>
+<dt><code>ErrNoSpace</code> = <code>8</code></dt>
+<dd>Error: No space left on device.</dd>
+<dt><code>ErrReadOnly</code> = <code>9</code></dt>
+<dd>Error: Read-only file system.</dd>
+<dt><code>ErrNameTooLong</code> = <code>10</code></dt>
+<dd>Error: File name too long.</dd>
+<dt><code>ErrOutOfMemory</code> = <code>11</code></dt>
+<dd>Error: Out of memory.</dd>
+<dt><code>ErrInvalidArg</code> = <code>12</code></dt>
+<dd>Error: Invalid argument.</dd>
+<dt><code>ExitSuccess</code> = <code>0</code></dt>
+<dd>Exit code for successful termination.</dd>
+<dt><code>ExitFailure</code> = <code>1</code></dt>
+<dd>Exit code for failed termination.</dd>
+</dl>
+<h2>Functions</h2>
+<div class="fn" id="exit">
+<h3>exit</h3>
+<pre><code>fn exit(code:i64 -- )</code></pre>
+<p>Exit the program with status code.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>code</code> <code>i64</code></dt>
+<dd>Exit status (os::ExitSuccess or os::ExitFailure)</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>os::ExitSuccess os::exit</code></pre>
+</div>
+<hr>
+<div class="fn" id="system">
+<h3>system</h3>
+<pre><code>fn system(cmd:str -- exitcode:i64)</code></pre>
+<p>Execute a shell command. SECURITY: cmd is passed to the system shell (/bin/sh -c). Never build it from untrusted input - that is a shell-injection vector. If you need to run a program with dynamic arguments, prefer os::exec with a fixed command and validated inputs.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>cmd</code> <code>str</code></dt>
+<dd>Command to execute</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>exitcode</code> <code>i64</code></dt>
+<dd>Command exit status</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>&quot;ls -la&quot; os::system -&gt; code</code></pre>
+</div>
+<hr>
+<div class="fn" id="getenv">
+<h3>getenv</h3>
+<pre><code>fn getenv(name:str -- value:str)</code></pre>
+<p>Get environment variable value.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>name</code> <code>str</code></dt>
+<dd>Variable name</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>value</code> <code>str</code></dt>
+<dd>Variable value (empty if not set)</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>&quot;HOME&quot; os::getenv -&gt; home</code></pre>
+</div>
+<hr>
+<div class="fn" id="setenv">
+<h3>setenv</h3>
+<pre><code>fn setenv(name:str value:str -- )</code></pre>
+<p>Set environment variable.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>name</code> <code>str</code></dt>
+<dd>Variable name</dd>
+<dt><code>value</code> <code>str</code></dt>
+<dd>Variable value</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>&quot;MY_VAR&quot; &quot;hello&quot; os::setenv</code></pre>
+</div>
+<hr>
+<div class="fn" id="unsetenv">
+<h3>unsetenv</h3>
+<pre><code>fn unsetenv(name:str -- )</code></pre>
+<p>Unset environment variable.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>name</code> <code>str</code></dt>
+<dd>Variable name to remove</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>&quot;MY_VAR&quot; os::unsetenv</code></pre>
+</div>
+<hr>
+<div class="fn" id="exists">
+<h3>exists</h3>
+<pre><code>fn exists(path:str -- exists:i64)</code></pre>
+<p>Check if path exists.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>path</code> <code>str</code></dt>
+<dd>File or directory path</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>exists</code> <code>i64</code></dt>
+<dd>1 if exists, 0 otherwise</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>&quot;/tmp&quot; os::exists print  // 1</code></pre>
+</div>
+<hr>
+<div class="fn fallible" id="delete">
+<h3>delete [fallible]</h3>
+<pre><code>fn delete(path:str -- )!</code></pre>
+<p>Delete a file or empty directory.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>path</code> <code>str</code></dt>
+<dd>Path to delete</dd>
+</dl>
+<p><strong>Errors:</strong></p>
+<dl>
+<dt><code>ErrNotFound</code></dt>
+<dd>File not found</dd>
+<dt><code>ErrPermission</code></dt>
+<dd>Permission denied</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>&quot;/tmp/test.txt&quot; os::delete!</code></pre>
+</div>
+<hr>
+<div class="fn fallible" id="rename">
+<h3>rename [fallible]</h3>
+<pre><code>fn rename(oldpath:str newpath:str -- )!</code></pre>
+<p>Rename or move a file.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>oldpath</code> <code>str</code></dt>
+<dd>Current path</dd>
+<dt><code>newpath</code> <code>str</code></dt>
+<dd>New path</dd>
+</dl>
+<p><strong>Errors:</strong></p>
+<dl>
+<dt><code>ErrNotFound</code></dt>
+<dd>File not found</dd>
+<dt><code>ErrPermission</code></dt>
+<dd>Permission denied</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>&quot;old.txt&quot; &quot;new.txt&quot; os::rename!</code></pre>
+</div>
+<hr>
+<div class="fn fallible" id="copy">
+<h3>copy [fallible]</h3>
+<pre><code>fn copy(srcpath:str dstpath:str -- )!</code></pre>
+<p>Copy a file.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>srcpath</code> <code>str</code></dt>
+<dd>Source path</dd>
+<dt><code>dstpath</code> <code>str</code></dt>
+<dd>Destination path</dd>
+</dl>
+<p><strong>Errors:</strong></p>
+<dl>
+<dt><code>ErrNotFound</code></dt>
+<dd>File not found</dd>
+<dt><code>ErrPermission</code></dt>
+<dd>Permission denied</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>&quot;src.txt&quot; &quot;dst.txt&quot; os::copy!</code></pre>
+</div>
+<hr>
+<div class="fn fallible" id="mkdir">
+<h3>mkdir [fallible]</h3>
+<pre><code>fn mkdir(path:str -- )!</code></pre>
+<p>Create a directory and all parent directories.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>path</code> <code>str</code></dt>
+<dd>Directory path</dd>
+</dl>
+<p><strong>Errors:</strong></p>
+<dl>
+<dt><code>ErrPermission</code></dt>
+<dd>Permission denied</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>&quot;/tmp/a/b/c&quot; os::mkdir!</code></pre>
+</div>
+<hr>
+<div class="fn fallible" id="list">
+<h3>list [fallible]</h3>
+<pre><code>fn list(path:str -- entries:ptr count:i64)!</code></pre>
+<p>List directory contents. so the bindings read in reverse of the declared outputs</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>path</code> <code>str</code></dt>
+<dd>Directory path</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>entries</code> <code>ptr</code></dt>
+<dd>Array of entry names</dd>
+<dt><code>count</code> <code>i64</code></dt>
+<dd>Number of entries</dd>
+</dl>
+<p><strong>Errors:</strong></p>
+<dl>
+<dt><code>ErrNotFound</code></dt>
+<dd>File not found</dd>
+<dt><code>ErrNotDirectory</code></dt>
+<dd>Path is not a directory</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>&quot;/tmp&quot; os::list! -&gt; count -&gt; entries   // `-&gt;` binds top-of-stack first,</code></pre>
+</div>
+<hr>
+<div class="fn fallible" id="popen">
+<h3>popen [fallible]</h3>
+<pre><code>fn popen(cmd:str callback:ptr -- exitcode:i64)!</code></pre>
+<p>Execute a command and stream output line-by-line to a callback. The callback is called synchronously for each line of output (without trailing newline). The call blocks until the command completes. Closures with captured variables are supported.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>cmd</code> <code>str</code></dt>
+<dd>Command to execute</dd>
+<dt><code>callback</code> <code>ptr</code></dt>
+<dd>Callback function (line:str -- )</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>exitcode</code> <code>i64</code></dt>
+<dd>Command exit status</dd>
+</dl>
+<p><strong>Errors:</strong></p>
+<dl>
+<dt><code>ErrIo</code></dt>
+<dd>Failed to execute command</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>&quot;ls -la&quot; fn (line:str -- ) { print nl } os::popen! -&gt; code</code></pre>
+</div>
+<hr>
+<div class="fn fallible" id="exec">
+<h3>exec [fallible]</h3>
+<pre><code>fn exec(cmd:str -- stdout:str exitcode:i64)!</code></pre>
+<p>Execute a command and capture all output. Simpler alternative to os::popen when you just need the full output.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>cmd</code> <code>str</code></dt>
+<dd>Command to execute</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>stdout</code> <code>str</code></dt>
+<dd>All output from command</dd>
+<dt><code>exitcode</code> <code>i64</code></dt>
+<dd>Command exit status</dd>
+</dl>
+<p><strong>Errors:</strong></p>
+<dl>
+<dt><code>ErrIo</code></dt>
+<dd>Failed to execute command</dd>
+<dt><code>ErrOutOfMemory</code></dt>
+<dd>Out of memory</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>&quot;echo hello&quot; os::exec! -&gt; exitcode -&gt; stdout</code></pre>
+</div>
+<hr>
+<div class="fn" id="getpid">
+<h3>getpid</h3>
+<pre><code>fn getpid( -- pid:i64)</code></pre>
+<p>Get the current process ID.</p>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>pid</code> <code>i64</code></dt>
+<dd>Process ID</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>os::getpid print nl</code></pre>
+</div>
+<hr>
+<div class="fn" id="is_dir">
+<h3>is_dir</h3>
+<pre><code>fn is_dir(path:str -- is_dir:i64)</code></pre>
+<p>Check if path is a directory.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>path</code> <code>str</code></dt>
+<dd>Path to check</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>is_dir</code> <code>i64</code></dt>
+<dd>1 if directory, 0 otherwise</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>&quot;/tmp&quot; os::is_dir print  // 1</code></pre>
+</div>
+<hr>
+<div class="fn" id="is_file">
+<h3>is_file</h3>
+<pre><code>fn is_file(path:str -- is_file:i64)</code></pre>
+<p>Check if path is a regular file.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>path</code> <code>str</code></dt>
+<dd>Path to check</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>is_file</code> <code>i64</code></dt>
+<dd>1 if regular file, 0 otherwise</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>&quot;/etc/passwd&quot; os::is_file print  // 1</code></pre>
+</div>
+<hr>
+<div class="fn fallible" id="rmdir">
+<h3>rmdir [fallible]</h3>
+<pre><code>fn rmdir(path:str -- )!</code></pre>
+<p>Remove directory and all contents recursively.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>path</code> <code>str</code></dt>
+<dd>Directory path to remove</dd>
+</dl>
+<p><strong>Errors:</strong></p>
+<dl>
+<dt><code>ErrNotFound</code></dt>
+<dd>Path not found</dd>
+<dt><code>ErrPermission</code></dt>
+<dd>Permission denied</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>&quot;/tmp/mydir&quot; os::rmdir!</code></pre>
+</div>
+<hr>
+<div class="fn fallible" id="walk">
+<h3>walk [fallible]</h3>
+<pre><code>fn walk(path:str callback:ptr -- )!</code></pre>
+<p>Walk a directory tree recursively. Calls callback for each file and directory.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>path</code> <code>str</code></dt>
+<dd>Directory path to walk</dd>
+<dt><code>callback</code> <code>ptr</code></dt>
+<dd>Callback function (path:str is_dir:i64 depth:i64 -- )</dd>
+</dl>
+<p><strong>Errors:</strong></p>
+<dl>
+<dt><code>ErrNotFound</code></dt>
+<dd>Path not found</dd>
+<dt><code>ErrNotDirectory</code></dt>
+<dd>Path is not a directory</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>&quot;/tmp&quot; fn (p:str is_dir:i64 depth:i64 -- ) { p print nl } os::walk!</code></pre>
+</div>
+<hr>
+<div class="fn fallible" id="glob">
+<h3>glob [fallible]</h3>
+<pre><code>fn glob(pattern:str -- entries:ptr count:i64)!</code></pre>
+<p>Match files using glob pattern. Supports *, ?, and ** for recursive matching.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>pattern</code> <code>str</code></dt>
+<dd>Glob pattern</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>entries</code> <code>ptr</code></dt>
+<dd>Array of matching paths</dd>
+<dt><code>count</code> <code>i64</code></dt>
+<dd>Number of matches</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>&quot;*.qd&quot; os::glob! -&gt; count -&gt; entries</code></pre>
+</div>
+<hr>
+<div class="fn fallible" id="mktemp">
+<h3>mktemp [fallible]</h3>
+<pre><code>fn mktemp( -- path:str)!</code></pre>
+<p>Create a unique temporary directory. Creates a directory in /tmp with a unique name. Caller is responsible for removing it when done (use os::rmdir).</p>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>path</code> <code>str</code></dt>
+<dd>Path to the created directory</dd>
+</dl>
+<p><strong>Errors:</strong></p>
+<dl>
+<dt><code>ErrIo</code></dt>
+<dd>Failed to create directory</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>os::mktemp! -&gt; tmpdir</code></pre>
+</div>
+<hr>
+<div class="fn fallible" id="cwd">
+<h3>cwd [fallible]</h3>
+<pre><code>fn cwd( -- path:str)!</code></pre>
+<p>Get current working directory.</p>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>path</code> <code>str</code></dt>
+<dd>Current working directory path</dd>
+</dl>
+<p><strong>Errors:</strong></p>
+<dl>
+<dt><code>ErrIo</code></dt>
+<dd>Failed to get directory</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>os::cwd! -&gt; dir</code></pre>
+</div>
+<hr>
+<div class="fn fallible" id="symlink">
+<h3>symlink [fallible]</h3>
+<pre><code>fn symlink(target:str linkpath:str -- )!</code></pre>
+<p>Create a symbolic link.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>target</code> <code>str</code></dt>
+<dd>Path that the link points to</dd>
+<dt><code>linkpath</code> <code>str</code></dt>
+<dd>Path where the link will be created</dd>
+</dl>
+<p><strong>Errors:</strong></p>
+<dl>
+<dt><code>ErrExists</code></dt>
+<dd>Link path already exists</dd>
+<dt><code>ErrPermission</code></dt>
+<dd>Permission denied</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>&quot;/usr/bin/python3&quot; &quot;/tmp/python&quot; os::symlink!</code></pre>
+</div>
+<hr>
+<div class="fn fallible" id="readlink">
+<h3>readlink [fallible]</h3>
+<pre><code>fn readlink(path:str -- target:str)!</code></pre>
+<p>Read the target of a symbolic link.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>path</code> <code>str</code></dt>
+<dd>Path to the symbolic link</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>target</code> <code>str</code></dt>
+<dd>Path that the link points to</dd>
+</dl>
+<p><strong>Errors:</strong></p>
+<dl>
+<dt><code>ErrNotFound</code></dt>
+<dd>Link not found</dd>
+<dt><code>ErrInvalidArg</code></dt>
+<dd>Path is not a symbolic link</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>&quot;/tmp/mylink&quot; os::readlink! -&gt; target</code></pre>
+</div>
+<hr>
+<div class="fn" id="is_symlink">
+<h3>is_symlink</h3>
+<pre><code>fn is_symlink(path:str -- is_symlink:i64)</code></pre>
+<p>Check if path is a symbolic link. Does not follow the link to check if the target exists.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>path</code> <code>str</code></dt>
+<dd>Path to check</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>is_symlink</code> <code>i64</code></dt>
+<dd>1 if symbolic link, 0 otherwise</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>&quot;/tmp/mylink&quot; os::is_symlink print</code></pre>
+</div>
+<hr>
+<div class="fn fallible" id="chmod">
+<h3>chmod [fallible]</h3>
+<pre><code>fn chmod(path:str mode:i64 -- )!</code></pre>
+<p>Change file permissions. Mode is specified as Unix permission bits (e.g., 0o644, 0o755).</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>path</code> <code>str</code></dt>
+<dd>File or directory path</dd>
+<dt><code>mode</code> <code>i64</code></dt>
+<dd>Permission mode (e.g., 420 for 0o644)</dd>
+</dl>
+<p><strong>Errors:</strong></p>
+<dl>
+<dt><code>ErrNotFound</code></dt>
+<dd>File not found</dd>
+<dt><code>ErrPermission</code></dt>
+<dd>Permission denied</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>&quot;/tmp/script.sh&quot; 0o755 os::chmod!</code></pre>
+</div>
+<hr>
+<div class="fn fallible" id="chown">
+<h3>chown [fallible]</h3>
+<pre><code>fn chown(path:str uid:i64 gid:i64 -- )!</code></pre>
+<p>Change file owner and group. Use -1 for uid or gid to leave unchanged.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>path</code> <code>str</code></dt>
+<dd>File or directory path</dd>
+<dt><code>uid</code> <code>i64</code></dt>
+<dd>User ID (-1 to not change)</dd>
+<dt><code>gid</code> <code>i64</code></dt>
+<dd>Group ID (-1 to not change)</dd>
+</dl>
+<p><strong>Errors:</strong></p>
+<dl>
+<dt><code>ErrNotFound</code></dt>
+<dd>File not found</dd>
+<dt><code>ErrPermission</code></dt>
+<dd>Permission denied (usually requires root)</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>&quot;/tmp/myfile&quot; 1000 1000 os::chown!</code></pre>
+</div>
+<hr>
+<div class="fn" id="getuid">
+<h3>getuid</h3>
+<pre><code>fn getuid( -- uid:i64)</code></pre>
+<p>Get the current user ID.</p>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>uid</code> <code>i64</code></dt>
+<dd>Real user ID of the calling process</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>os::getuid print</code></pre>
+</div>
+<hr>
+<div class="fn" id="getgid">
+<h3>getgid</h3>
+<pre><code>fn getgid( -- gid:i64)</code></pre>
+<p>Get the current group ID.</p>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>gid</code> <code>i64</code></dt>
+<dd>Real group ID of the calling process</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>os::getgid print</code></pre>
+</div>
+<hr>
+<div class="fn fallible" id="urandom">
+<h3>urandom [fallible]</h3>
+<pre><code>fn urandom( -- n:i64)!</code></pre>
+<p>Get a cryptographically secure random 64-bit value from the OS entropy pool (/dev/urandom). Suitable for seeds, tokens, and nonces.</p>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>n</code> <code>i64</code></dt>
+<dd>Secure random 64-bit value</dd>
+</dl>
+<p><strong>Errors:</strong></p>
+<dl>
+<dt><code>ErrIo</code></dt>
+<dd>Failed to read from the entropy source</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>os::urandom! -&gt; n</code></pre>
+<p class="xref"><strong>Called by:</strong> <a href="rand.html#secure"><code>rand::secure</code></a>, <a href="rand.html#secure_i64"><code>rand::secure_i64</code></a></p>
+</div>
+<hr>
+<div class="fn fallible" id="hostname">
+<h3>hostname [fallible]</h3>
+<pre><code>fn hostname( -- hostname:str)!</code></pre>
+<p>Get the system hostname.</p>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>hostname</code> <code>str</code></dt>
+<dd>Hostname of the current system</dd>
+</dl>
+<p><strong>Errors:</strong></p>
+<dl>
+<dt><code>ErrIo</code></dt>
+<dd>Failed to get hostname</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>os::hostname! print</code></pre>
+</div>
+<hr>
+<div class="fn fallible" id="chdir">
+<h3>chdir [fallible]</h3>
+<pre><code>fn chdir(path:str -- )!</code></pre>
+<p>Change the current working directory.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>path</code> <code>str</code></dt>
+<dd>Directory path</dd>
+</dl>
+<p><strong>Errors:</strong></p>
+<dl>
+<dt><code>ErrNotFound</code></dt>
+<dd>Directory not found</dd>
+<dt><code>ErrPermission</code></dt>
+<dd>Permission denied</dd>
+<dt><code>ErrNotDirectory</code></dt>
+<dd>Path is not a directory</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>&quot;/tmp&quot; os::chdir!</code></pre>
+</div>
+</div></body></html>

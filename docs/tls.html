@@ -1,0 +1,147 @@
+<!DOCTYPE html><html><head><meta charset="utf-8"><title>tls - Quadrate API</title><link rel="stylesheet" href="style.css"></head><body>
+<nav><h1>Quadrate API</h1><a href="index.html">All Modules</a></nav>
+<div class="container"><h2>tls</h2>
+<p class="desc">TLS/SSL secure socket operations. Provides encryption layer on top of TCP sockets using OpenSSL. Error codes: Ok=1 (success), specific errors start at 2</p>
+<h2>Constants</h2>
+<dl>
+<dt><code>ErrInit</code> = <code>2</code></dt>
+<dd>TLS initialization failed.</dd>
+<dt><code>ErrConnect</code> = <code>3</code></dt>
+<dd>TLS handshake failed (client mode).</dd>
+<dt><code>ErrAccept</code> = <code>4</code></dt>
+<dd>TLS handshake failed (server mode).</dd>
+<dt><code>ErrCertificate</code> = <code>5</code></dt>
+<dd>Certificate validation or loading error.</dd>
+<dt><code>ErrRead</code> = <code>6</code></dt>
+<dd>TLS read operation failed.</dd>
+<dt><code>ErrWrite</code> = <code>7</code></dt>
+<dd>TLS write operation failed.</dd>
+<dt><code>ErrClosed</code> = <code>8</code></dt>
+<dd>Connection closed by peer.</dd>
+<dt><code>ErrMemory</code> = <code>9</code></dt>
+<dd>Memory allocation failed.</dd>
+<dt><code>ErrInvalidArg</code> = <code>10</code></dt>
+<dd>Invalid argument provided.</dd>
+</dl>
+<h2>Functions</h2>
+<div class="fn fallible" id="connect">
+<h3>connect [fallible]</h3>
+<pre><code>fn connect(socket:i64 hostname:str -- conn:ptr)!</code></pre>
+<p>Wrap a TCP socket with TLS encryption (client mode). Performs TLS handshake and certificate verification.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>socket</code> <code>i64</code></dt>
+<dd>TCP socket from net::connect</dd>
+<dt><code>hostname</code> <code>str</code></dt>
+<dd>Server hostname for SNI and certificate verification</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>conn</code> <code>ptr</code></dt>
+<dd>TLS connection handle</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>&quot;example.com&quot; 443 net::connect -&gt; sock  sock &quot;example.com&quot; tls::connect! -&gt; conn</code></pre>
+</div>
+<hr>
+<div class="fn fallible" id="connect_mtls">
+<h3>connect_mtls [fallible]</h3>
+<pre><code>fn connect_mtls(socket:i64 hostname:str cert_path:str key_path:str -- conn:ptr)!</code></pre>
+<p>Wrap a TCP socket with TLS encryption using client certificate (mTLS). Performs TLS handshake with client certificate authentication.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>socket</code> <code>i64</code></dt>
+<dd>TCP socket from net::connect</dd>
+<dt><code>hostname</code> <code>str</code></dt>
+<dd>Server hostname for SNI and certificate verification</dd>
+<dt><code>cert_path</code> <code>str</code></dt>
+<dd>Path to PEM client certificate file</dd>
+<dt><code>key_path</code> <code>str</code></dt>
+<dd>Path to PEM client private key file</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>conn</code> <code>ptr</code></dt>
+<dd>TLS connection handle</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>sock &quot;api.example.com&quot; &quot;/path/client.crt&quot; &quot;/path/client.key&quot; tls::connect_mtls! -&gt; conn</code></pre>
+</div>
+<hr>
+<div class="fn fallible" id="accept">
+<h3>accept [fallible]</h3>
+<pre><code>fn accept(socket:i64 cert_path:str key_path:str -- conn:ptr)!</code></pre>
+<p>Wrap a TCP socket with TLS encryption (server mode). Loads certificate and key, then performs TLS handshake.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>socket</code> <code>i64</code></dt>
+<dd>TCP socket from net::accept</dd>
+<dt><code>cert_path</code> <code>str</code></dt>
+<dd>Path to PEM certificate file</dd>
+<dt><code>key_path</code> <code>str</code></dt>
+<dd>Path to PEM private key file</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>conn</code> <code>ptr</code></dt>
+<dd>TLS connection handle</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>client_sock &quot;/path/cert.pem&quot; &quot;/path/key.pem&quot; tls::accept! -&gt; conn</code></pre>
+</div>
+<hr>
+<div class="fn fallible" id="send">
+<h3>send [fallible]</h3>
+<pre><code>fn send(conn:ptr data:str -- bytes_sent:i64)!</code></pre>
+<p>Send data over TLS connection. Data is encrypted before transmission.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>conn</code> <code>ptr</code></dt>
+<dd>TLS connection handle</dd>
+<dt><code>data</code> <code>str</code></dt>
+<dd>Data to send</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>bytes_sent</code> <code>i64</code></dt>
+<dd>Number of bytes sent</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>conn &quot;GET / HTTP/1.1\r\n\r\n&quot; tls::send! -&gt; n</code></pre>
+</div>
+<hr>
+<div class="fn fallible" id="receive">
+<h3>receive [fallible]</h3>
+<pre><code>fn receive(conn:ptr max_bytes:i64 -- data:str bytes_read:i64)!</code></pre>
+<p>Receive data from TLS connection. Data is decrypted after reception.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>conn</code> <code>ptr</code></dt>
+<dd>TLS connection handle</dd>
+<dt><code>max_bytes</code> <code>i64</code></dt>
+<dd>Maximum bytes to receive</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>data</code> <code>str</code></dt>
+<dd>Received and decrypted data</dd>
+<dt><code>bytes_read</code> <code>i64</code></dt>
+<dd>Actual bytes received</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>conn 4096 tls::receive! -&gt; data -&gt; n</code></pre>
+</div>
+<hr>
+<div class="fn" id="close">
+<h3>close</h3>
+<pre><code>fn close(conn:ptr -- )</code></pre>
+<p>Close TLS connection and free resources. Performs TLS shutdown handshake. Does NOT close underlying socket. Call net::close separately to close the socket.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>conn</code> <code>ptr</code></dt>
+<dd>TLS connection handle</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>conn tls::close  sock net::close</code></pre>
+</div>
+</div></body></html>

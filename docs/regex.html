@@ -1,0 +1,173 @@
+<!DOCTYPE html><html><head><meta charset="utf-8"><title>regex - Quadrate API</title><link rel="stylesheet" href="style.css"></head><body>
+<nav><h1>Quadrate API</h1><a href="index.html">All Modules</a></nav>
+<div class="container"><h2>regex</h2>
+<p class="desc">Regular expression matching using Thompson NFA. Supports . * + ? | () [] [^] [a-z] ^ $ and escapes. Note: Nested groups and alternation inside groups not yet supported.</p>
+<h2>Structs</h2>
+<h3 id="Regex"><code>Regex</code></h3>
+<p>Compiled regular expression.</p>
+<dl>
+<dt><code>re</code> <code>ptr</code></dt>
+<dd>Internal NFA state</dd>
+</dl>
+<h2>Functions</h2>
+<div class="fn" id="compile">
+<h3>compile</h3>
+<pre><code>fn compile(pattern:str -- re:Regex)</code></pre>
+<p>Compile a regex pattern.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>pattern</code> <code>str</code></dt>
+<dd>Regular expression pattern</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>re</code> <code>Regex</code></dt>
+<dd>Compiled regex</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>&quot;[0-9]+&quot; regex::compile -&gt; re</code></pre>
+<p class="xref"><strong>Calls:</strong> <a href="mem.html#set_i64"><code>mem::set_i64</code></a></p>
+<p class="xref"><strong>Called by:</strong> <a href="regex.html#is_match"><code>regex::is_match</code></a></p>
+</div>
+<hr>
+<div class="fn" id="release">
+<h3>release</h3>
+<pre><code>fn (self:Regex) release()</code></pre>
+<p>Free a compiled regex.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>self</code> <code>Regex</code></dt>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>re regex::release</code></pre>
+<p class="xref"><strong>Calls:</strong> <a href="mem.html#free"><code>mem::free</code></a>, <a href="mem.html#get_i64"><code>mem::get_i64</code></a>, <a href="mem.html#get_ptr"><code>mem::get_ptr</code></a></p>
+<p class="xref"><strong>Called by:</strong> <a href="regex.html#is_match"><code>regex::is_match</code></a></p>
+</div>
+<hr>
+<div class="fn" id="matches">
+<h3>matches</h3>
+<pre><code>fn (self:Regex) matches(s:str -- result:i64)</code></pre>
+<p>Test if a string matches a compiled regex (full match).</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>self</code> <code>Regex</code></dt>
+<dt><code>s</code> <code>str</code></dt>
+<dd>String to match</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>result</code> <code>i64</code></dt>
+<dd>1 if matches, 0 otherwise</dd>
+</dl>
+<p class="xref"><strong>Calls:</strong> <a href="mem.html#alloc"><code>mem::alloc</code></a>, <a href="mem.html#free"><code>mem::free</code></a>, <a href="mem.html#get_i64"><code>mem::get_i64</code></a>, <a href="mem.html#set_i64"><code>mem::set_i64</code></a>, <a href="mem.html#zero"><code>mem::zero</code></a>, <a href="strings.html#char_at"><code>strings::char_at</code></a>, <a href="strings.html#len"><code>strings::len</code></a></p>
+<p class="xref"><strong>Called by:</strong> <a href="regex.html#is_match"><code>regex::is_match</code></a></p>
+</div>
+<hr>
+<div class="fn" id="is_match">
+<h3>is_match</h3>
+<pre><code>fn is_match(pattern:str s:str -- result:i64)</code></pre>
+<p>Compile and test if pattern matches string.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>pattern</code> <code>str</code></dt>
+<dd>Regex pattern</dd>
+<dt><code>s</code> <code>str</code></dt>
+<dd>String to match</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>result</code> <code>i64</code></dt>
+<dd>1 if matches, 0 otherwise</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>&quot;hello.*&quot; &quot;hello world&quot; regex::is_match -&gt; result</code></pre>
+<p class="xref"><strong>Calls:</strong> <a href="regex.html#compile"><code>regex::compile</code></a>, <a href="regex.html#matches"><code>regex::matches</code></a>, <a href="regex.html#release"><code>regex::release</code></a></p>
+</div>
+<hr>
+<div class="fn" id="find">
+<h3>find</h3>
+<pre><code>fn (self:Regex) find(s:str -- start:i64 end:i64)</code></pre>
+<p>Find first match in string. Returns start and end (exclusive) indices. Returns -1 -1 if no match found.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>self</code> <code>Regex</code></dt>
+<dt><code>s</code> <code>str</code></dt>
+<dd>String to search</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>start</code> <code>i64</code></dt>
+<dd>Start index of match (-1 if none)</dd>
+<dt><code>end</code> <code>i64</code></dt>
+<dd>End index of match, exclusive (-1 if none)</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>&quot;[0-9]+&quot; regex::compile -&gt; re  re &quot;abc123def&quot; regex::find -&gt; end -&gt; start</code></pre>
+</div>
+<hr>
+<div class="fn" id="find_all">
+<h3>find_all</h3>
+<pre><code>fn (self:Regex) find_all(s:str max:i64 -- results:ptr count:i64)</code></pre>
+<p>Find all non-overlapping matches. Returns array of start/end pairs and count. Caller must free the returned array with mem::free.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>self</code> <code>Regex</code></dt>
+<dt><code>s</code> <code>str</code></dt>
+<dd>String to search</dd>
+<dt><code>max</code> <code>i64</code></dt>
+<dd>Maximum matches to find (-1 for unlimited)</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>results</code> <code>ptr</code></dt>
+<dd>Array of i64 pairs [start0, end0, start1, end1, ...]</dd>
+<dt><code>count</code> <code>i64</code></dt>
+<dd>Number of matches found</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>&quot;[0-9]+&quot; regex::compile -&gt; re  re &quot;a1b22c333&quot; -1 regex::find_all -&gt; count -&gt; results</code></pre>
+<p class="xref"><strong>Calls:</strong> <a href="mem.html#alloc"><code>mem::alloc</code></a>, <a href="mem.html#copy"><code>mem::copy</code></a>, <a href="mem.html#free"><code>mem::free</code></a>, <a href="mem.html#set_i64"><code>mem::set_i64</code></a></p>
+</div>
+<hr>
+<div class="fn" id="replace">
+<h3>replace</h3>
+<pre><code>fn (self:Regex) replace(s:str repl:str -- result:str)</code></pre>
+<p>Replace all matches with replacement string.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>self</code> <code>Regex</code></dt>
+<dt><code>s</code> <code>str</code></dt>
+<dd>Input string</dd>
+<dt><code>repl</code> <code>str</code></dt>
+<dd>Replacement string</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>result</code> <code>str</code></dt>
+<dd>String with all matches replaced</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>&quot;[0-9]+&quot; regex::compile -&gt; re  re &quot;abc123def456&quot; &quot;#&quot; regex::replace -&gt; result</code></pre>
+<p class="xref"><strong>Calls:</strong> <a href="sb.html#append"><code>sb::append</code></a>, <a href="sb.html#finish"><code>sb::finish</code></a>, <a href="sb.html#new"><code>sb::new</code></a>, <a href="strings.html#len"><code>strings::len</code></a>, <a href="strings.html#substring"><code>strings::substring</code></a></p>
+</div>
+<hr>
+<div class="fn" id="match_count">
+<h3>match_count</h3>
+<pre><code>fn (self:Regex) match_count(s:str -- count:i64)</code></pre>
+<p>Count non-overlapping matches in string.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>self</code> <code>Regex</code></dt>
+<dt><code>s</code> <code>str</code></dt>
+<dd>String to search</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>count</code> <code>i64</code></dt>
+<dd>Number of matches</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>&quot;[0-9]+&quot; regex::compile -&gt; re  re &quot;a1b22c333&quot; regex::match_count -&gt; n</code></pre>
+<p class="xref"><strong>Calls:</strong> <a href="strings.html#len"><code>strings::len</code></a></p>
+</div>
+</div></body></html>

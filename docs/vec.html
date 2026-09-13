@@ -1,0 +1,145 @@
+<!DOCTYPE html><html><head><meta charset="utf-8"><title>vec - Quadrate API</title><link rel="stylesheet" href="style.css"></head><body>
+<nav><h1>Quadrate API</h1><a href="index.html">All Modules</a></nav>
+<div class="container"><h2>vec</h2>
+<p class="desc">Vec&lt;T&gt; - A Generic Dynamic Array ================================  Vec&lt;T&gt; is a growable array that can hold elements of any type T. It automatically manages memory allocation and resizing.  ## Creating a Vector  Create an empty vector with zero initialization:      Vec&lt;i64&gt; { data = null len = 0 cap = 0 } -&gt; v  ## Basic Operations  Push elements (vector is returned, must be captured):      v 10 push! -&gt; v     v 20 push! -&gt; v  Get elements by index (0-indexed):      v 0 get! -&gt; first_elem  Set elements by index:      v 0 100 set! -&gt; v  Pop the last element:      v pop! -&gt; v -&gt; elem  ## Memory Management  Always call release when done to free memory:      v release</p>
+<h2>Structs</h2>
+<h3 id="Vec<T>"><code>Vec&lt;T&gt;</code></h3>
+<p>Dynamic array (vector) structure.  Fields:   data - Pointer to contiguous element storage   len  - Current number of elements (0 to cap)   cap  - Allocated capacity in elements</p>
+<dl>
+<dt><code>data</code> <code>ptr</code></dt>
+<dt><code>len</code> <code>i64</code></dt>
+<dt><code>cap</code> <code>i64</code></dt>
+</dl>
+<h2>Functions</h2>
+<div class="fn fallible" id="push">
+<h3>push [fallible]</h3>
+<pre><code>fn (v:Vec&lt;T&gt;) push&lt;T&gt;(elem:T -- v2:Vec&lt;T&gt;)!</code></pre>
+<p>Push an element to the end of the vector.  Automatically grows capacity when full (doubles size, starting at 8). Returns the updated vector which must be captured.  Example:     v 42 push! -&gt; v  Stack: (v elem -- v2)</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>v</code> <code>Vec&lt;T&gt;</code></dt>
+<dt><code>elem</code> <code>T</code></dt>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>v2</code> <code>Vec&lt;T&gt;</code></dt>
+</dl>
+<p class="xref"><strong>Calls:</strong> <a href="mem.html#realloc"><code>mem::realloc</code></a>, <a href="mem.html#set_i64"><code>mem::set_i64</code></a></p>
+</div>
+<hr>
+<div class="fn fallible" id="pop">
+<h3>pop [fallible]</h3>
+<pre><code>fn (v:Vec&lt;T&gt;) pop&lt;T&gt;( -- elem:T v2:Vec&lt;T&gt;)!</code></pre>
+<p>Pop and return the last element.  Panics if the vector is empty. Returns both the element and the updated vector.  Example:     v pop! -&gt; v -&gt; elem  Stack: (v -- elem v2)</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>v</code> <code>Vec&lt;T&gt;</code></dt>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>elem</code> <code>T</code></dt>
+<dt><code>v2</code> <code>Vec&lt;T&gt;</code></dt>
+</dl>
+<p class="xref"><strong>Calls:</strong> <a href="mem.html#get_i64"><code>mem::get_i64</code></a></p>
+</div>
+<hr>
+<div class="fn fallible" id="get">
+<h3>get [fallible]</h3>
+<pre><code>fn (v:Vec&lt;T&gt;) get&lt;T&gt;(idx:i64 -- elem:T)!</code></pre>
+<p>Get element at index.  Panics if index is out of bounds (&lt; 0 or &gt;= len).  Example:     v 0 get! -&gt; first  Stack: (v idx -- elem)</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>v</code> <code>Vec&lt;T&gt;</code></dt>
+<dt><code>idx</code> <code>i64</code></dt>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>elem</code> <code>T</code></dt>
+</dl>
+<p class="xref"><strong>Calls:</strong> <a href="mem.html#get_i64"><code>mem::get_i64</code></a></p>
+</div>
+<hr>
+<div class="fn fallible" id="set">
+<h3>set [fallible]</h3>
+<pre><code>fn (v:Vec&lt;T&gt;) set&lt;T&gt;(idx:i64 elem:T -- v2:Vec&lt;T&gt;)!</code></pre>
+<p>Set element at index.  Panics if index is out of bounds (&lt; 0 or &gt;= len). Returns the updated vector which must be captured.  Example:     v 0 100 set! -&gt; v  Stack: (v idx elem -- v2)</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>v</code> <code>Vec&lt;T&gt;</code></dt>
+<dt><code>idx</code> <code>i64</code></dt>
+<dt><code>elem</code> <code>T</code></dt>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>v2</code> <code>Vec&lt;T&gt;</code></dt>
+</dl>
+<p class="xref"><strong>Calls:</strong> <a href="mem.html#set_i64"><code>mem::set_i64</code></a></p>
+</div>
+<hr>
+<div class="fn" id="length">
+<h3>length</h3>
+<pre><code>fn (v:Vec&lt;T&gt;) length&lt;T&gt;( -- n:i64)</code></pre>
+<p>Get the number of elements in the vector.  Example:     v length -&gt; n  Stack: (v -- n)</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>v</code> <code>Vec&lt;T&gt;</code></dt>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>n</code> <code>i64</code></dt>
+</dl>
+</div>
+<hr>
+<div class="fn" id="capacity">
+<h3>capacity</h3>
+<pre><code>fn (v:Vec&lt;T&gt;) capacity&lt;T&gt;( -- n:i64)</code></pre>
+<p>Get the allocated capacity.  Capacity is always &gt;= length. The vector can hold up to 'capacity' elements before needing to reallocate.  Example:     v capacity -&gt; cap  Stack: (v -- n)</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>v</code> <code>Vec&lt;T&gt;</code></dt>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>n</code> <code>i64</code></dt>
+</dl>
+</div>
+<hr>
+<div class="fn" id="is_empty">
+<h3>is_empty</h3>
+<pre><code>fn (v:Vec&lt;T&gt;) is_empty&lt;T&gt;( -- b:i64)</code></pre>
+<p>Check if the vector is empty (length == 0).  Example:     v is_empty if { &quot;empty!&quot; print nl }  Stack: (v -- bool)</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>v</code> <code>Vec&lt;T&gt;</code></dt>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>b</code> <code>i64</code></dt>
+</dl>
+</div>
+<hr>
+<div class="fn" id="reset">
+<h3>reset</h3>
+<pre><code>fn (v:Vec&lt;T&gt;) reset&lt;T&gt;( -- v2:Vec&lt;T&gt;)</code></pre>
+<p>Remove all elements, keeping allocated capacity.  Useful for reusing a vector without reallocating.  Example:     v reset -&gt; v  Stack: (v -- v2)</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>v</code> <code>Vec&lt;T&gt;</code></dt>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>v2</code> <code>Vec&lt;T&gt;</code></dt>
+</dl>
+</div>
+<hr>
+<div class="fn" id="release">
+<h3>release</h3>
+<pre><code>fn (v:Vec&lt;T&gt;) release&lt;T&gt;()</code></pre>
+<p>Free the vector's memory.  IMPORTANT: Always call this when done with a vector to prevent memory leaks. After calling release, the vector should not be used.  Example:     v release  Stack: (v --)</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>v</code> <code>Vec&lt;T&gt;</code></dt>
+</dl>
+<p class="xref"><strong>Calls:</strong> <a href="mem.html#free"><code>mem::free</code></a></p>
+</div>
+</div></body></html>

@@ -1,0 +1,698 @@
+<!DOCTYPE html><html><head><meta charset="utf-8"><title>time - Quadrate API</title><link rel="stylesheet" href="style.css"></head><body>
+<nav><h1>Quadrate API</h1><a href="index.html">All Modules</a></nav>
+<div class="container"><h2>time</h2>
+<h2>Constants</h2>
+<dl>
+<dt><code>Nanosecond</code> = <code>1</code></dt>
+<dd>Time operations and duration constants. Duration = 1 nanosecond.</dd>
+<dt><code>Microsecond</code> = <code>1000</code></dt>
+<dd>Duration = 1 microsecond (1000 nanoseconds).</dd>
+<dt><code>Millisecond</code> = <code>1000000</code></dt>
+<dd>Duration = 1 millisecond (1,000,000 nanoseconds).</dd>
+<dt><code>Second</code> = <code>1000000000</code></dt>
+<dd>Duration = 1 second (1,000,000,000 nanoseconds).</dd>
+<dt><code>Minute</code> = <code>60000000000</code></dt>
+<dd>Duration = 1 minute (60 seconds).</dd>
+<dt><code>Hour</code> = <code>3600000000000</code></dt>
+<dd>Duration = 1 hour (60 minutes).</dd>
+<dt><code>Day</code> = <code>86400000000000</code></dt>
+<dd>Duration = 1 day (24 hours).</dd>
+<dt><code>Week</code> = <code>604800000000000</code></dt>
+<dd>Duration = 1 week (7 days).</dd>
+<dt><code>Sunday</code> = <code>0</code></dt>
+<dd>Weekday constants (Sunday=0)</dd>
+<dt><code>Monday</code> = <code>1</code></dt>
+<dt><code>Tuesday</code> = <code>2</code></dt>
+<dt><code>Wednesday</code> = <code>3</code></dt>
+<dt><code>Thursday</code> = <code>4</code></dt>
+<dt><code>Friday</code> = <code>5</code></dt>
+<dt><code>Saturday</code> = <code>6</code></dt>
+<dt><code>January</code> = <code>1</code></dt>
+<dd>Month constants (1-indexed)</dd>
+<dt><code>February</code> = <code>2</code></dt>
+<dt><code>March</code> = <code>3</code></dt>
+<dt><code>April</code> = <code>4</code></dt>
+<dt><code>May</code> = <code>5</code></dt>
+<dt><code>June</code> = <code>6</code></dt>
+<dt><code>July</code> = <code>7</code></dt>
+<dt><code>August</code> = <code>8</code></dt>
+<dt><code>September</code> = <code>9</code></dt>
+<dt><code>October</code> = <code>10</code></dt>
+<dt><code>November</code> = <code>11</code></dt>
+<dt><code>December</code> = <code>12</code></dt>
+<dt><code>ErrFormat</code> = <code>2</code></dt>
+<dd>Error: Format operation failed.</dd>
+<dt><code>ErrParse</code> = <code>3</code></dt>
+<dd>Error: Parse operation failed.</dd>
+</dl>
+<h2>Functions</h2>
+<div class="fn" id="unix">
+<h3>unix</h3>
+<pre><code>fn unix( -- timestamp:i64)</code></pre>
+<p>Get Unix timestamp in seconds.</p>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>timestamp</code> <code>i64</code></dt>
+<dd>Seconds since 1970-01-01 00:00:00 UTC</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>time::unix print  // 1700000000</code></pre>
+</div>
+<hr>
+<div class="fn" id="now">
+<h3>now</h3>
+<pre><code>fn now( -- nanoseconds:i64)</code></pre>
+<p>Get current time in nanoseconds since epoch.</p>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>nanoseconds</code> <code>i64</code></dt>
+<dd>Nanoseconds since 1970-01-01 00:00:00 UTC</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>time::now -&gt; start</code></pre>
+<p class="xref"><strong>Called by:</strong> <a href="rand.html#new"><code>rand::new</code></a>, <a href="time.html#micros"><code>time::micros</code></a>, <a href="time.html#millis"><code>time::millis</code></a></p>
+</div>
+<hr>
+<div class="fn" id="sleep">
+<h3>sleep</h3>
+<pre><code>fn sleep(duration:i64 -- )</code></pre>
+<p>Sleep for duration in nanoseconds.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>duration</code> <code>i64</code></dt>
+<dd>Duration to sleep (use time constants)</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>time::Second time::sleep</code></pre>
+</div>
+<hr>
+<div class="fn fallible" id="format">
+<h3>format [fallible]</h3>
+<pre><code>fn format(timestamp:i64 format:str -- result:str)!</code></pre>
+<p>Format timestamp using strftime format string. Common format specifiers: - %Y: 4-digit year, %m: month (01-12), %d: day (01-31) - %H: hour (00-23), %M: minute (00-59), %S: second (00-59) - %F: date (YYYY-MM-DD), %T: time (HH:MM:SS) - %A: weekday name, %B: month name</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>timestamp</code> <code>i64</code></dt>
+<dd>Unix timestamp in seconds</dd>
+<dt><code>format</code> <code>str</code></dt>
+<dd>strftime format string</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>result</code> <code>str</code></dt>
+<dd>Formatted time string</dd>
+</dl>
+<p><strong>Errors:</strong></p>
+<dl>
+<dt><code>ErrFormat</code></dt>
+<dd>Format error or invalid timestamp</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>time::unix &quot;%Y-%m-%d %H:%M:%S&quot; time::format! print</code></pre>
+</div>
+<hr>
+<div class="fn fallible" id="parse">
+<h3>parse [fallible]</h3>
+<pre><code>fn parse(input:str format:str -- timestamp:i64)!</code></pre>
+<p>Parse string to timestamp using strptime format string.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>input</code> <code>str</code></dt>
+<dd>String to parse</dd>
+<dt><code>format</code> <code>str</code></dt>
+<dd>strptime format string</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>timestamp</code> <code>i64</code></dt>
+<dd>Unix timestamp in seconds</dd>
+</dl>
+<p><strong>Errors:</strong></p>
+<dl>
+<dt><code>ErrParse</code></dt>
+<dd>Parse failed or invalid format</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>&quot;2024-01-15&quot; &quot;%Y-%m-%d&quot; time::parse! -&gt; ts</code></pre>
+</div>
+<hr>
+<div class="fn" id="is_leap_year">
+<h3>is_leap_year</h3>
+<pre><code>fn is_leap_year(yr:i64 -- is_leap:i64)</code></pre>
+<p>Check if year is a leap year.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>yr</code> <code>i64</code></dt>
+<dd>Year to check</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>is_leap</code> <code>i64</code></dt>
+<dd>1 if leap year, 0 otherwise</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>2024 time::is_leap_year print  // 1</code></pre>
+<p class="xref"><strong>Called by:</strong> <a href="time.html#date"><code>time::date</code></a>, <a href="time.html#days_in_month"><code>time::days_in_month</code></a>, <a href="time.html#days_in_year"><code>time::days_in_year</code></a></p>
+</div>
+<hr>
+<div class="fn" id="days_in_month">
+<h3>days_in_month</h3>
+<pre><code>fn days_in_month(yr:i64 mon:i64 -- days:i64)</code></pre>
+<p>Get number of days in a month.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>yr</code> <code>i64</code></dt>
+<dd>Year (needed for February)</dd>
+<dt><code>mon</code> <code>i64</code></dt>
+<dd>Month (1-12)</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>days</code> <code>i64</code></dt>
+<dd>Number of days in the month</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>2024 2 time::days_in_month print  // 29</code></pre>
+<p class="xref"><strong>Calls:</strong> <a href="time.html#is_leap_year"><code>time::is_leap_year</code></a></p>
+<p class="xref"><strong>Called by:</strong> <a href="time.html#date"><code>time::date</code></a>, <a href="time.html#year_day"><code>time::year_day</code></a></p>
+</div>
+<hr>
+<div class="fn" id="year">
+<h3>year</h3>
+<pre><code>fn year(ts:i64 -- yr:i64)</code></pre>
+<p>Extract year from Unix timestamp.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>ts</code> <code>i64</code></dt>
+<dd>Unix timestamp in seconds</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>yr</code> <code>i64</code></dt>
+<dd>Year (e.g., 2024)</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>time::unix time::year print</code></pre>
+</div>
+<hr>
+<div class="fn" id="month">
+<h3>month</h3>
+<pre><code>fn month(ts:i64 -- mon:i64)</code></pre>
+<p>Extract month from Unix timestamp (1-12).</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>ts</code> <code>i64</code></dt>
+<dd>Unix timestamp in seconds</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>mon</code> <code>i64</code></dt>
+<dd>Month (1=January, 12=December)</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>time::unix time::month print</code></pre>
+</div>
+<hr>
+<div class="fn" id="day">
+<h3>day</h3>
+<pre><code>fn day(ts:i64 -- d:i64)</code></pre>
+<p>Extract day of month from Unix timestamp (1-31).</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>ts</code> <code>i64</code></dt>
+<dd>Unix timestamp in seconds</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>d</code> <code>i64</code></dt>
+<dd>Day of month</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>time::unix time::day print</code></pre>
+</div>
+<hr>
+<div class="fn" id="hour">
+<h3>hour</h3>
+<pre><code>fn hour(ts:i64 -- h:i64)</code></pre>
+<p>Extract hour from Unix timestamp (0-23).</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>ts</code> <code>i64</code></dt>
+<dd>Unix timestamp in seconds</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>h</code> <code>i64</code></dt>
+<dd>Hour</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>time::unix time::hour print</code></pre>
+</div>
+<hr>
+<div class="fn" id="minute">
+<h3>minute</h3>
+<pre><code>fn minute(ts:i64 -- m:i64)</code></pre>
+<p>Extract minute from Unix timestamp (0-59).</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>ts</code> <code>i64</code></dt>
+<dd>Unix timestamp in seconds</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>m</code> <code>i64</code></dt>
+<dd>Minute</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>time::unix time::minute print</code></pre>
+</div>
+<hr>
+<div class="fn" id="second">
+<h3>second</h3>
+<pre><code>fn second(ts:i64 -- s:i64)</code></pre>
+<p>Extract second from Unix timestamp (0-59).</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>ts</code> <code>i64</code></dt>
+<dd>Unix timestamp in seconds</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>s</code> <code>i64</code></dt>
+<dd>Second</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>time::unix time::second print</code></pre>
+</div>
+<hr>
+<div class="fn" id="weekday">
+<h3>weekday</h3>
+<pre><code>fn weekday(ts:i64 -- wd:i64)</code></pre>
+<p>Get day of week from Unix timestamp (0=Sunday, 6=Saturday).</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>ts</code> <code>i64</code></dt>
+<dd>Unix timestamp in seconds</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>wd</code> <code>i64</code></dt>
+<dd>Weekday (0=Sunday)</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>time::unix time::weekday print</code></pre>
+<p class="xref"><strong>Called by:</strong> <a href="time.html#iso_week"><code>time::iso_week</code></a></p>
+</div>
+<hr>
+<div class="fn" id="year_day">
+<h3>year_day</h3>
+<pre><code>fn year_day(ts:i64 -- yd:i64)</code></pre>
+<p>Get day of year from Unix timestamp (1-366).</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>ts</code> <code>i64</code></dt>
+<dd>Unix timestamp in seconds</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>yd</code> <code>i64</code></dt>
+<dd>Day of year</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>time::unix time::year_day print</code></pre>
+<p class="xref"><strong>Calls:</strong> <a href="time.html#days_in_month"><code>time::days_in_month</code></a></p>
+<p class="xref"><strong>Called by:</strong> <a href="time.html#iso_week"><code>time::iso_week</code></a></p>
+</div>
+<hr>
+<div class="fn" id="date">
+<h3>date</h3>
+<pre><code>fn date(yr:i64 mon:i64 d:i64 h:i64 m:i64 s:i64 -- ts:i64)</code></pre>
+<p>Create Unix timestamp from date components.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>yr</code> <code>i64</code></dt>
+<dd>Year</dd>
+<dt><code>mon</code> <code>i64</code></dt>
+<dd>Month (1-12)</dd>
+<dt><code>d</code> <code>i64</code></dt>
+<dd>Day (1-31)</dd>
+<dt><code>h</code> <code>i64</code></dt>
+<dd>Hour (0-23)</dd>
+<dt><code>m</code> <code>i64</code></dt>
+<dd>Minute (0-59)</dd>
+<dt><code>s</code> <code>i64</code></dt>
+<dd>Second (0-59)</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>ts</code> <code>i64</code></dt>
+<dd>Unix timestamp in seconds</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>2024 1 15 12 30 0 time::date print</code></pre>
+<p class="xref"><strong>Calls:</strong> <a href="time.html#days_in_month"><code>time::days_in_month</code></a>, <a href="time.html#is_leap_year"><code>time::is_leap_year</code></a></p>
+<p class="xref"><strong>Called by:</strong> <a href="time.html#end_of_day"><code>time::end_of_day</code></a>, <a href="time.html#start_of_day"><code>time::start_of_day</code></a></p>
+</div>
+<hr>
+<div class="fn" id="add">
+<h3>add</h3>
+<pre><code>fn add(ts:i64 duration:i64 -- new_ts:i64)</code></pre>
+<p>Add duration to a timestamp.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>ts</code> <code>i64</code></dt>
+<dd>Timestamp (use time::now for nanoseconds)</dd>
+<dt><code>duration</code> <code>i64</code></dt>
+<dd>Duration to add (use time constants)</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>new_ts</code> <code>i64</code></dt>
+<dd>New timestamp</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>time::now time::Day 4 * time::add print</code></pre>
+</div>
+<hr>
+<div class="fn" id="before">
+<h3>before</h3>
+<pre><code>fn before(ts1:i64 ts2:i64 -- before:i64)</code></pre>
+<p>Check if timestamp is before another.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>ts1</code> <code>i64</code></dt>
+<dd>First timestamp</dd>
+<dt><code>ts2</code> <code>i64</code></dt>
+<dd>Second timestamp</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>before</code> <code>i64</code></dt>
+<dd>1 if ts1 &lt; ts2, 0 otherwise</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>ts1 ts2 time::before print</code></pre>
+</div>
+<hr>
+<div class="fn" id="after">
+<h3>after</h3>
+<pre><code>fn after(ts1:i64 ts2:i64 -- after:i64)</code></pre>
+<p>Check if timestamp is after another.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>ts1</code> <code>i64</code></dt>
+<dd>First timestamp</dd>
+<dt><code>ts2</code> <code>i64</code></dt>
+<dd>Second timestamp</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>after</code> <code>i64</code></dt>
+<dd>1 if ts1 &gt; ts2, 0 otherwise</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>ts1 ts2 time::after print</code></pre>
+</div>
+<hr>
+<div class="fn" id="sub">
+<h3>sub</h3>
+<pre><code>fn sub(ts1:i64 ts2:i64 -- diff:i64)</code></pre>
+<p>Get difference between two timestamps in seconds.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>ts1</code> <code>i64</code></dt>
+<dd>First timestamp</dd>
+<dt><code>ts2</code> <code>i64</code></dt>
+<dd>Second timestamp</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>diff</code> <code>i64</code></dt>
+<dd>ts1 - ts2 in seconds</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>end_time start_time time::sub print</code></pre>
+</div>
+<hr>
+<div class="fn" id="is_weekend">
+<h3>is_weekend</h3>
+<pre><code>fn is_weekend(wd:i64 -- is_wknd:i64)</code></pre>
+<p>Check if weekday is a weekend day (Saturday or Sunday).</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>wd</code> <code>i64</code></dt>
+<dd>Weekday (0=Sunday, 6=Saturday)</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>is_wknd</code> <code>i64</code></dt>
+<dd>1 if weekend, 0 otherwise</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>time::unix time::weekday time::is_weekend print</code></pre>
+<p class="xref"><strong>Called by:</strong> <a href="time.html#is_weekday"><code>time::is_weekday</code></a></p>
+</div>
+<hr>
+<div class="fn" id="is_weekday">
+<h3>is_weekday</h3>
+<pre><code>fn is_weekday(wd:i64 -- is_wkday:i64)</code></pre>
+<p>Check if weekday is a weekday (Monday-Friday).</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>wd</code> <code>i64</code></dt>
+<dd>Weekday (0=Sunday, 6=Saturday)</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>is_wkday</code> <code>i64</code></dt>
+<dd>1 if weekday, 0 otherwise</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>time::unix time::weekday time::is_weekday print</code></pre>
+<p class="xref"><strong>Calls:</strong> <a href="time.html#is_weekend"><code>time::is_weekend</code></a></p>
+</div>
+<hr>
+<div class="fn" id="days_in_year">
+<h3>days_in_year</h3>
+<pre><code>fn days_in_year(yr:i64 -- days:i64)</code></pre>
+<p>Get number of days in a year.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>yr</code> <code>i64</code></dt>
+<dd>Year</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>days</code> <code>i64</code></dt>
+<dd>365 or 366 for leap year</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>2024 time::days_in_year .  // 366</code></pre>
+<p class="xref"><strong>Calls:</strong> <a href="time.html#is_leap_year"><code>time::is_leap_year</code></a></p>
+</div>
+<hr>
+<div class="fn" id="add_days">
+<h3>add_days</h3>
+<pre><code>fn add_days(ts:i64 days:i64 -- new_ts:i64)</code></pre>
+<p>Add days to a timestamp.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>ts</code> <code>i64</code></dt>
+<dd>Unix timestamp in seconds</dd>
+<dt><code>days</code> <code>i64</code></dt>
+<dd>Number of days to add</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>new_ts</code> <code>i64</code></dt>
+<dd>New timestamp</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>time::unix 7 time::add_days print</code></pre>
+</div>
+<hr>
+<div class="fn" id="add_hours">
+<h3>add_hours</h3>
+<pre><code>fn add_hours(ts:i64 hours:i64 -- new_ts:i64)</code></pre>
+<p>Add hours to a timestamp.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>ts</code> <code>i64</code></dt>
+<dd>Unix timestamp in seconds</dd>
+<dt><code>hours</code> <code>i64</code></dt>
+<dd>Number of hours to add</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>new_ts</code> <code>i64</code></dt>
+<dd>New timestamp</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>time::unix 2 time::add_hours print</code></pre>
+</div>
+<hr>
+<div class="fn" id="add_minutes">
+<h3>add_minutes</h3>
+<pre><code>fn add_minutes(ts:i64 mins:i64 -- new_ts:i64)</code></pre>
+<p>Add minutes to a timestamp.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>ts</code> <code>i64</code></dt>
+<dd>Unix timestamp in seconds</dd>
+<dt><code>mins</code> <code>i64</code></dt>
+<dd>Number of minutes to add</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>new_ts</code> <code>i64</code></dt>
+<dd>New timestamp</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>time::unix 30 time::add_minutes print</code></pre>
+</div>
+<hr>
+<div class="fn" id="days_between">
+<h3>days_between</h3>
+<pre><code>fn days_between(ts1:i64 ts2:i64 -- days:i64)</code></pre>
+<p>Get number of full days between two timestamps.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>ts1</code> <code>i64</code></dt>
+<dd>First timestamp in seconds</dd>
+<dt><code>ts2</code> <code>i64</code></dt>
+<dd>Second timestamp in seconds</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>days</code> <code>i64</code></dt>
+<dd>Number of full days between timestamps (absolute)</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>end_ts start_ts time::days_between print</code></pre>
+</div>
+<hr>
+<div class="fn" id="hours_between">
+<h3>hours_between</h3>
+<pre><code>fn hours_between(ts1:i64 ts2:i64 -- hours:i64)</code></pre>
+<p>Get number of full hours between two timestamps.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>ts1</code> <code>i64</code></dt>
+<dd>First timestamp in seconds</dd>
+<dt><code>ts2</code> <code>i64</code></dt>
+<dd>Second timestamp in seconds</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>hours</code> <code>i64</code></dt>
+<dd>Number of full hours between timestamps (absolute)</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>end_ts start_ts time::hours_between print</code></pre>
+</div>
+<hr>
+<div class="fn" id="start_of_day">
+<h3>start_of_day</h3>
+<pre><code>fn start_of_day(ts:i64 -- midnight_ts:i64)</code></pre>
+<p>Get start of day (midnight) for a timestamp.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>ts</code> <code>i64</code></dt>
+<dd>Unix timestamp in seconds</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>midnight_ts</code> <code>i64</code></dt>
+<dd>Timestamp at midnight of same day</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>time::unix time::start_of_day print</code></pre>
+<p class="xref"><strong>Calls:</strong> <a href="time.html#date"><code>time::date</code></a></p>
+</div>
+<hr>
+<div class="fn" id="end_of_day">
+<h3>end_of_day</h3>
+<pre><code>fn end_of_day(ts:i64 -- end_ts:i64)</code></pre>
+<p>Get end of day (23:59:59) for a timestamp.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>ts</code> <code>i64</code></dt>
+<dd>Unix timestamp in seconds</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>end_ts</code> <code>i64</code></dt>
+<dd>Timestamp at 23:59:59 of same day</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>time::unix time::end_of_day print</code></pre>
+<p class="xref"><strong>Calls:</strong> <a href="time.html#date"><code>time::date</code></a></p>
+</div>
+<hr>
+<div class="fn" id="iso_week">
+<h3>iso_week</h3>
+<pre><code>fn iso_week(ts:i64 -- week:i64)</code></pre>
+<p>Get ISO week number (1-53).</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>ts</code> <code>i64</code></dt>
+<dd>Unix timestamp in seconds</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>week</code> <code>i64</code></dt>
+<dd>ISO week number</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>time::unix time::iso_week print</code></pre>
+<p class="xref"><strong>Calls:</strong> <a href="time.html#weekday"><code>time::weekday</code></a>, <a href="time.html#year_day"><code>time::year_day</code></a></p>
+</div>
+<hr>
+<div class="fn" id="same_day">
+<h3>same_day</h3>
+<pre><code>fn same_day(ts1:i64 ts2:i64 -- same:i64)</code></pre>
+<p>Check if two timestamps are on the same day.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>ts1</code> <code>i64</code></dt>
+<dd>First timestamp</dd>
+<dt><code>ts2</code> <code>i64</code></dt>
+<dd>Second timestamp</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>same</code> <code>i64</code></dt>
+<dd>1 if same day, 0 otherwise</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>ts1 ts2 time::same_day print</code></pre>
+</div>
+<hr>
+<div class="fn" id="millis">
+<h3>millis</h3>
+<pre><code>fn millis( -- milliseconds:i64)</code></pre>
+<p>Get current time in milliseconds since epoch.</p>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>milliseconds</code> <code>i64</code></dt>
+<dd>Milliseconds since 1970-01-01 00:00:00 UTC</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>time::millis -&gt; ms</code></pre>
+<p class="xref"><strong>Calls:</strong> <a href="time.html#now"><code>time::now</code></a></p>
+</div>
+<hr>
+<div class="fn" id="micros">
+<h3>micros</h3>
+<pre><code>fn micros( -- microseconds:i64)</code></pre>
+<p>Get current time in microseconds since epoch.</p>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>microseconds</code> <code>i64</code></dt>
+<dd>Microseconds since 1970-01-01 00:00:00 UTC</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>time::micros -&gt; us</code></pre>
+<p class="xref"><strong>Calls:</strong> <a href="time.html#now"><code>time::now</code></a></p>
+</div>
+</div></body></html>

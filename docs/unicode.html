@@ -1,0 +1,621 @@
+<!DOCTYPE html><html><head><meta charset="utf-8"><title>unicode - Quadrate API</title><link rel="stylesheet" href="style.css"></head><body>
+<nav><h1>Quadrate API</h1><a href="index.html">All Modules</a></nav>
+<div class="container"><h2>unicode</h2>
+<h2>Constants</h2>
+<dl>
+<dt><code>nul</code> = <code>0</code></dt>
+<dd>Unicode character constants and classification. Control: Null character.</dd>
+<dt><code>tab</code> = <code>9</code></dt>
+<dd>Control: Tab character.</dd>
+<dt><code>newline</code> = <code>10</code></dt>
+<dd>Control: Newline (line feed).</dd>
+<dt><code>cr</code> = <code>13</code></dt>
+<dd>Control: Carriage return.</dd>
+<dt><code>esc</code> = <code>27</code></dt>
+<dd>Control: Escape character.</dd>
+<dt><code>space</code> = <code>32</code></dt>
+<dd>Punctuation: Space.</dd>
+<dt><code>exclaim</code> = <code>33</code></dt>
+<dd>Punctuation: Exclamation mark (!).</dd>
+<dt><code>dquote</code> = <code>34</code></dt>
+<dd>Punctuation: Double quote (&quot;).</dd>
+<dt><code>hash</code> = <code>35</code></dt>
+<dd>Punctuation: Hash (#).</dd>
+<dt><code>dollar</code> = <code>36</code></dt>
+<dd>Punctuation: Dollar sign ($).</dd>
+<dt><code>percent</code> = <code>37</code></dt>
+<dd>Punctuation: Percent (%).</dd>
+<dt><code>ampersand</code> = <code>38</code></dt>
+<dd>Punctuation: Ampersand (&amp;).</dd>
+<dt><code>squote</code> = <code>39</code></dt>
+<dd>Punctuation: Single quote (').</dd>
+<dt><code>lparen</code> = <code>40</code></dt>
+<dd>Punctuation: Left parenthesis.</dd>
+<dt><code>rparen</code> = <code>41</code></dt>
+<dd>Punctuation: Right parenthesis.</dd>
+<dt><code>asterisk</code> = <code>42</code></dt>
+<dd>Punctuation: Asterisk (*).</dd>
+<dt><code>plus</code> = <code>43</code></dt>
+<dd>Punctuation: Plus sign (+).</dd>
+<dt><code>comma</code> = <code>44</code></dt>
+<dd>Punctuation: Comma (,).</dd>
+<dt><code>minus</code> = <code>45</code></dt>
+<dd>Punctuation: Minus/hyphen (-).</dd>
+<dt><code>dot</code> = <code>46</code></dt>
+<dd>Punctuation: Period/dot (.).</dd>
+<dt><code>slash</code> = <code>47</code></dt>
+<dd>Punctuation: Forward slash (/).</dd>
+<dt><code>digit0</code> = <code>48</code></dt>
+<dd>Digit = 0.</dd>
+<dt><code>digit1</code> = <code>49</code></dt>
+<dd>Digit = 1.</dd>
+<dt><code>digit2</code> = <code>50</code></dt>
+<dd>Digit = 2.</dd>
+<dt><code>digit3</code> = <code>51</code></dt>
+<dd>Digit = 3.</dd>
+<dt><code>digit4</code> = <code>52</code></dt>
+<dd>Digit = 4.</dd>
+<dt><code>digit5</code> = <code>53</code></dt>
+<dd>Digit = 5.</dd>
+<dt><code>digit6</code> = <code>54</code></dt>
+<dd>Digit = 6.</dd>
+<dt><code>digit7</code> = <code>55</code></dt>
+<dd>Digit = 7.</dd>
+<dt><code>digit8</code> = <code>56</code></dt>
+<dd>Digit = 8.</dd>
+<dt><code>digit9</code> = <code>57</code></dt>
+<dd>Digit = 9.</dd>
+<dt><code>colon</code> = <code>58</code></dt>
+<dd>Punctuation: Colon (:).</dd>
+<dt><code>semicolon</code> = <code>59</code></dt>
+<dd>Punctuation: Semicolon (;).</dd>
+<dt><code>lt</code> = <code>60</code></dt>
+<dd>Punctuation: Less than (&lt;).</dd>
+<dt><code>equals</code> = <code>61</code></dt>
+<dd>Punctuation: Equals (=).</dd>
+<dt><code>gt</code> = <code>62</code></dt>
+<dd>Punctuation: Greater than (&gt;).</dd>
+<dt><code>question</code> = <code>63</code></dt>
+<dd>Punctuation: Question mark (?).</dd>
+<dt><code>at</code> = <code>64</code></dt>
+<dd>Punctuation: At sign (@).</dd>
+<dt><code>A</code> = <code>65</code></dt>
+<dd>Letter: Uppercase A.</dd>
+<dt><code>B</code> = <code>66</code></dt>
+<dd>Letter: Uppercase B.</dd>
+<dt><code>C</code> = <code>67</code></dt>
+<dd>Letter: Uppercase C.</dd>
+<dt><code>D</code> = <code>68</code></dt>
+<dd>Letter: Uppercase D.</dd>
+<dt><code>E</code> = <code>69</code></dt>
+<dd>Letter: Uppercase E.</dd>
+<dt><code>F</code> = <code>70</code></dt>
+<dd>Letter: Uppercase F.</dd>
+<dt><code>G</code> = <code>71</code></dt>
+<dd>Letter: Uppercase G.</dd>
+<dt><code>H</code> = <code>72</code></dt>
+<dd>Letter: Uppercase H.</dd>
+<dt><code>I</code> = <code>73</code></dt>
+<dd>Letter: Uppercase I.</dd>
+<dt><code>J</code> = <code>74</code></dt>
+<dd>Letter: Uppercase J.</dd>
+<dt><code>K</code> = <code>75</code></dt>
+<dd>Letter: Uppercase K.</dd>
+<dt><code>L</code> = <code>76</code></dt>
+<dd>Letter: Uppercase L.</dd>
+<dt><code>M</code> = <code>77</code></dt>
+<dd>Letter: Uppercase M.</dd>
+<dt><code>N</code> = <code>78</code></dt>
+<dd>Letter: Uppercase N.</dd>
+<dt><code>O</code> = <code>79</code></dt>
+<dd>Letter: Uppercase O.</dd>
+<dt><code>P</code> = <code>80</code></dt>
+<dd>Letter: Uppercase P.</dd>
+<dt><code>Q</code> = <code>81</code></dt>
+<dd>Letter: Uppercase Q.</dd>
+<dt><code>R</code> = <code>82</code></dt>
+<dd>Letter: Uppercase R.</dd>
+<dt><code>S</code> = <code>83</code></dt>
+<dd>Letter: Uppercase S.</dd>
+<dt><code>T</code> = <code>84</code></dt>
+<dd>Letter: Uppercase T.</dd>
+<dt><code>U</code> = <code>85</code></dt>
+<dd>Letter: Uppercase U.</dd>
+<dt><code>V</code> = <code>86</code></dt>
+<dd>Letter: Uppercase V.</dd>
+<dt><code>W</code> = <code>87</code></dt>
+<dd>Letter: Uppercase W.</dd>
+<dt><code>X</code> = <code>88</code></dt>
+<dd>Letter: Uppercase X.</dd>
+<dt><code>Y</code> = <code>89</code></dt>
+<dd>Letter: Uppercase Y.</dd>
+<dt><code>Z</code> = <code>90</code></dt>
+<dd>Letter: Uppercase Z.</dd>
+<dt><code>lbracket</code> = <code>91</code></dt>
+<dd>Punctuation: Left bracket ([).</dd>
+<dt><code>backslash</code> = <code>92</code></dt>
+<dd>Punctuation: Backslash (\).</dd>
+<dt><code>rbracket</code> = <code>93</code></dt>
+<dd>Punctuation: Right bracket (]).</dd>
+<dt><code>caret</code> = <code>94</code></dt>
+<dd>Punctuation: Caret (^).</dd>
+<dt><code>underscore</code> = <code>95</code></dt>
+<dd>Punctuation: Underscore (_).</dd>
+<dt><code>backtick</code> = <code>96</code></dt>
+<dd>Punctuation: Backtick (`).</dd>
+<dt><code>a</code> = <code>97</code></dt>
+<dd>Letter: Lowercase a.</dd>
+<dt><code>b</code> = <code>98</code></dt>
+<dd>Letter: Lowercase b.</dd>
+<dt><code>c</code> = <code>99</code></dt>
+<dd>Letter: Lowercase c.</dd>
+<dt><code>d</code> = <code>100</code></dt>
+<dd>Letter: Lowercase d.</dd>
+<dt><code>e</code> = <code>101</code></dt>
+<dd>Letter: Lowercase e.</dd>
+<dt><code>f</code> = <code>102</code></dt>
+<dd>Letter: Lowercase f.</dd>
+<dt><code>g</code> = <code>103</code></dt>
+<dd>Letter: Lowercase g.</dd>
+<dt><code>h</code> = <code>104</code></dt>
+<dd>Letter: Lowercase h.</dd>
+<dt><code>i</code> = <code>105</code></dt>
+<dd>Letter: Lowercase i.</dd>
+<dt><code>j</code> = <code>106</code></dt>
+<dd>Letter: Lowercase j.</dd>
+<dt><code>k</code> = <code>107</code></dt>
+<dd>Letter: Lowercase k.</dd>
+<dt><code>l</code> = <code>108</code></dt>
+<dd>Letter: Lowercase l.</dd>
+<dt><code>m</code> = <code>109</code></dt>
+<dd>Letter: Lowercase m.</dd>
+<dt><code>n</code> = <code>110</code></dt>
+<dd>Letter: Lowercase n.</dd>
+<dt><code>o</code> = <code>111</code></dt>
+<dd>Letter: Lowercase o.</dd>
+<dt><code>p</code> = <code>112</code></dt>
+<dd>Letter: Lowercase p.</dd>
+<dt><code>q</code> = <code>113</code></dt>
+<dd>Letter: Lowercase q.</dd>
+<dt><code>r</code> = <code>114</code></dt>
+<dd>Letter: Lowercase r.</dd>
+<dt><code>s</code> = <code>115</code></dt>
+<dd>Letter: Lowercase s.</dd>
+<dt><code>t</code> = <code>116</code></dt>
+<dd>Letter: Lowercase t.</dd>
+<dt><code>u</code> = <code>117</code></dt>
+<dd>Letter: Lowercase u.</dd>
+<dt><code>v</code> = <code>118</code></dt>
+<dd>Letter: Lowercase v.</dd>
+<dt><code>w</code> = <code>119</code></dt>
+<dd>Letter: Lowercase w.</dd>
+<dt><code>x</code> = <code>120</code></dt>
+<dd>Letter: Lowercase x.</dd>
+<dt><code>y</code> = <code>121</code></dt>
+<dd>Letter: Lowercase y.</dd>
+<dt><code>z</code> = <code>122</code></dt>
+<dd>Letter: Lowercase z.</dd>
+<dt><code>lbrace</code> = <code>123</code></dt>
+<dd>Punctuation: Left brace ({).</dd>
+<dt><code>pipe</code> = <code>124</code></dt>
+<dd>Punctuation: Pipe (|).</dd>
+<dt><code>rbrace</code> = <code>125</code></dt>
+<dd>Punctuation: Right brace (}).</dd>
+<dt><code>tilde</code> = <code>126</code></dt>
+<dd>Punctuation: Tilde (~).</dd>
+</dl>
+<h2>Functions</h2>
+<div class="fn" id="is_digit">
+<h3>is_digit</h3>
+<pre><code>fn is_digit(c:i64 -- result:i64)</code></pre>
+<p>Check if character is a digit (0-9).</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>c</code> <code>i64</code></dt>
+<dd>Character code</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>result</code> <code>i64</code></dt>
+<dd>1 if digit, 0 otherwise</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>48 unicode::is_digit print  // 1</code></pre>
+<p class="xref"><strong>Called by:</strong> <a href="unicode.html#digit_value"><code>unicode::digit_value</code></a>, <a href="unicode.html#hex_digit_value"><code>unicode::hex_digit_value</code></a>, <a href="unicode.html#is_alnum"><code>unicode::is_alnum</code></a>, <a href="unicode.html#is_hex_digit"><code>unicode::is_hex_digit</code></a></p>
+</div>
+<hr>
+<div class="fn" id="is_upper">
+<h3>is_upper</h3>
+<pre><code>fn is_upper(c:i64 -- result:i64)</code></pre>
+<p>Check if character is an uppercase letter (A-Z).</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>c</code> <code>i64</code></dt>
+<dd>Character code</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>result</code> <code>i64</code></dt>
+<dd>1 if uppercase, 0 otherwise</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>65 unicode::is_upper print  // 1</code></pre>
+<p class="xref"><strong>Called by:</strong> <a href="unicode.html#is_alpha"><code>unicode::is_alpha</code></a>, <a href="unicode.html#to_lower"><code>unicode::to_lower</code></a></p>
+</div>
+<hr>
+<div class="fn" id="is_lower">
+<h3>is_lower</h3>
+<pre><code>fn is_lower(c:i64 -- result:i64)</code></pre>
+<p>Check if character is a lowercase letter (a-z).</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>c</code> <code>i64</code></dt>
+<dd>Character code</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>result</code> <code>i64</code></dt>
+<dd>1 if lowercase, 0 otherwise</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>97 unicode::is_lower print  // 1</code></pre>
+<p class="xref"><strong>Called by:</strong> <a href="unicode.html#is_alpha"><code>unicode::is_alpha</code></a>, <a href="unicode.html#to_upper"><code>unicode::to_upper</code></a></p>
+</div>
+<hr>
+<div class="fn" id="is_alpha">
+<h3>is_alpha</h3>
+<pre><code>fn is_alpha(c:i64 -- result:i64)</code></pre>
+<p>Check if character is an alphabetic letter (A-Z or a-z).</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>c</code> <code>i64</code></dt>
+<dd>Character code</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>result</code> <code>i64</code></dt>
+<dd>1 if alphabetic, 0 otherwise</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>65 unicode::is_alpha print  // 1</code></pre>
+<p class="xref"><strong>Calls:</strong> <a href="unicode.html#is_lower"><code>unicode::is_lower</code></a>, <a href="unicode.html#is_upper"><code>unicode::is_upper</code></a></p>
+<p class="xref"><strong>Called by:</strong> <a href="unicode.html#is_alnum"><code>unicode::is_alnum</code></a>, <a href="unicode.html#is_ident_start"><code>unicode::is_ident_start</code></a></p>
+</div>
+<hr>
+<div class="fn" id="is_alnum">
+<h3>is_alnum</h3>
+<pre><code>fn is_alnum(c:i64 -- result:i64)</code></pre>
+<p>Check if character is alphanumeric (A-Z, a-z, or 0-9).</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>c</code> <code>i64</code></dt>
+<dd>Character code</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>result</code> <code>i64</code></dt>
+<dd>1 if alphanumeric, 0 otherwise</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>65 unicode::is_alnum print  // 1</code></pre>
+<p class="xref"><strong>Calls:</strong> <a href="unicode.html#is_alpha"><code>unicode::is_alpha</code></a>, <a href="unicode.html#is_digit"><code>unicode::is_digit</code></a></p>
+<p class="xref"><strong>Called by:</strong> <a href="unicode.html#is_ident_cont"><code>unicode::is_ident_cont</code></a>, <a href="unicode.html#is_punct"><code>unicode::is_punct</code></a></p>
+</div>
+<hr>
+<div class="fn" id="is_space">
+<h3>is_space</h3>
+<pre><code>fn is_space(c:i64 -- result:i64)</code></pre>
+<p>Check if character is whitespace (space, tab, newline, carriage return).</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>c</code> <code>i64</code></dt>
+<dd>Character code</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>result</code> <code>i64</code></dt>
+<dd>1 if whitespace, 0 otherwise</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>32 unicode::is_space print  // 1</code></pre>
+</div>
+<hr>
+<div class="fn" id="to_lower">
+<h3>to_lower</h3>
+<pre><code>fn to_lower(c:i64 -- result:i64)</code></pre>
+<p>Convert uppercase letter to lowercase.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>c</code> <code>i64</code></dt>
+<dd>Character code</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>result</code> <code>i64</code></dt>
+<dd>Lowercase character code (unchanged if not uppercase)</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>65 unicode::to_lower print  // 97</code></pre>
+<p class="xref"><strong>Calls:</strong> <a href="unicode.html#is_upper"><code>unicode::is_upper</code></a></p>
+</div>
+<hr>
+<div class="fn" id="to_upper">
+<h3>to_upper</h3>
+<pre><code>fn to_upper(c:i64 -- result:i64)</code></pre>
+<p>Convert lowercase letter to uppercase.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>c</code> <code>i64</code></dt>
+<dd>Character code</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>result</code> <code>i64</code></dt>
+<dd>Uppercase character code (unchanged if not lowercase)</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>97 unicode::to_upper print  // 65</code></pre>
+<p class="xref"><strong>Calls:</strong> <a href="unicode.html#is_lower"><code>unicode::is_lower</code></a></p>
+</div>
+<hr>
+<div class="fn" id="is_hex_digit">
+<h3>is_hex_digit</h3>
+<pre><code>fn is_hex_digit(c:i64 -- result:i64)</code></pre>
+<p>Check if character is a hexadecimal digit (0-9, A-F, a-f).</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>c</code> <code>i64</code></dt>
+<dd>Character code</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>result</code> <code>i64</code></dt>
+<dd>1 if hex digit, 0 otherwise</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>65 unicode::is_hex_digit print  // 1 (A)</code></pre>
+<p class="xref"><strong>Calls:</strong> <a href="unicode.html#is_digit"><code>unicode::is_digit</code></a></p>
+</div>
+<hr>
+<div class="fn" id="is_print">
+<h3>is_print</h3>
+<pre><code>fn is_print(c:i64 -- result:i64)</code></pre>
+<p>Check if character is printable (space through tilde, ASCII 32-126).</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>c</code> <code>i64</code></dt>
+<dd>Character code</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>result</code> <code>i64</code></dt>
+<dd>1 if printable, 0 otherwise</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>65 unicode::is_print print  // 1</code></pre>
+<p class="xref"><strong>Called by:</strong> <a href="unicode.html#is_punct"><code>unicode::is_punct</code></a></p>
+</div>
+<hr>
+<div class="fn" id="is_control">
+<h3>is_control</h3>
+<pre><code>fn is_control(c:i64 -- result:i64)</code></pre>
+<p>Check if character is a control character (ASCII 0-31 and 127).</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>c</code> <code>i64</code></dt>
+<dd>Character code</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>result</code> <code>i64</code></dt>
+<dd>1 if control character, 0 otherwise</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>10 unicode::is_control print  // 1 (newline)</code></pre>
+</div>
+<hr>
+<div class="fn" id="is_punct">
+<h3>is_punct</h3>
+<pre><code>fn is_punct(c:i64 -- result:i64)</code></pre>
+<p>Check if character is punctuation (printable but not alphanumeric or space).</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>c</code> <code>i64</code></dt>
+<dd>Character code</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>result</code> <code>i64</code></dt>
+<dd>1 if punctuation, 0 otherwise</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>33 unicode::is_punct print  // 1 (!)</code></pre>
+<p class="xref"><strong>Calls:</strong> <a href="unicode.html#is_alnum"><code>unicode::is_alnum</code></a>, <a href="unicode.html#is_print"><code>unicode::is_print</code></a></p>
+</div>
+<hr>
+<div class="fn" id="is_ident_start">
+<h3>is_ident_start</h3>
+<pre><code>fn is_ident_start(c:i64 -- result:i64)</code></pre>
+<p>Check if character is a valid identifier start (letter or underscore).</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>c</code> <code>i64</code></dt>
+<dd>Character code</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>result</code> <code>i64</code></dt>
+<dd>1 if valid identifier start, 0 otherwise</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>95 unicode::is_ident_start print  // 1 (_)</code></pre>
+<p class="xref"><strong>Calls:</strong> <a href="unicode.html#is_alpha"><code>unicode::is_alpha</code></a></p>
+</div>
+<hr>
+<div class="fn" id="is_ident_cont">
+<h3>is_ident_cont</h3>
+<pre><code>fn is_ident_cont(c:i64 -- result:i64)</code></pre>
+<p>Check if character is a valid identifier continuation (letter, digit, or underscore).</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>c</code> <code>i64</code></dt>
+<dd>Character code</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>result</code> <code>i64</code></dt>
+<dd>1 if valid identifier continuation, 0 otherwise</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>95 unicode::is_ident_cont print  // 1 (_)</code></pre>
+<p class="xref"><strong>Calls:</strong> <a href="unicode.html#is_alnum"><code>unicode::is_alnum</code></a></p>
+</div>
+<hr>
+<div class="fn" id="is_ascii">
+<h3>is_ascii</h3>
+<pre><code>fn is_ascii(c:i64 -- result:i64)</code></pre>
+<p>Check if character is ASCII (0-127).</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>c</code> <code>i64</code></dt>
+<dd>Character code</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>result</code> <code>i64</code></dt>
+<dd>1 if ASCII, 0 otherwise</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>65 unicode::is_ascii print  // 1</code></pre>
+</div>
+<hr>
+<div class="fn" id="digit_value">
+<h3>digit_value</h3>
+<pre><code>fn digit_value(c:i64 -- result:i64)</code></pre>
+<p>Convert digit character to its numeric value.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>c</code> <code>i64</code></dt>
+<dd>Character code (must be a digit)</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>result</code> <code>i64</code></dt>
+<dd>Numeric value (0-9), or -1 if not a digit</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>53 unicode::digit_value print  // 5</code></pre>
+<p class="xref"><strong>Calls:</strong> <a href="unicode.html#is_digit"><code>unicode::is_digit</code></a></p>
+</div>
+<hr>
+<div class="fn" id="hex_digit_value">
+<h3>hex_digit_value</h3>
+<pre><code>fn hex_digit_value(c:i64 -- result:i64)</code></pre>
+<p>Convert hex digit character to its numeric value.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>c</code> <code>i64</code></dt>
+<dd>Character code (must be a hex digit)</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>result</code> <code>i64</code></dt>
+<dd>Numeric value (0-15), or -1 if not a hex digit</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>65 unicode::hex_digit_value print  // 10 (A)</code></pre>
+<p class="xref"><strong>Calls:</strong> <a href="unicode.html#is_digit"><code>unicode::is_digit</code></a></p>
+</div>
+<hr>
+<div class="fn" id="is_utf8_cont">
+<h3>is_utf8_cont</h3>
+<pre><code>fn is_utf8_cont(b:i64 -- result:i64)</code></pre>
+<p>Check if byte is a UTF-8 continuation byte (10xxxxxx).</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>b</code> <code>i64</code></dt>
+<dd>Byte value</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>result</code> <code>i64</code></dt>
+<dd>1 if continuation byte, 0 otherwise</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>0x80 unicode::is_utf8_cont print  // 1</code></pre>
+<p class="xref"><strong>Called by:</strong> <a href="unicode.html#is_utf8_start"><code>unicode::is_utf8_start</code></a></p>
+</div>
+<hr>
+<div class="fn" id="is_utf8_start">
+<h3>is_utf8_start</h3>
+<pre><code>fn is_utf8_start(b:i64 -- result:i64)</code></pre>
+<p>Check if byte is the start of a UTF-8 sequence.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>b</code> <code>i64</code></dt>
+<dd>Byte value</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>result</code> <code>i64</code></dt>
+<dd>1 if start byte, 0 otherwise</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>0xC2 unicode::is_utf8_start print  // 1</code></pre>
+<p class="xref"><strong>Calls:</strong> <a href="unicode.html#is_utf8_cont"><code>unicode::is_utf8_cont</code></a></p>
+</div>
+<hr>
+<div class="fn" id="utf8_seq_len">
+<h3>utf8_seq_len</h3>
+<pre><code>fn utf8_seq_len(b:i64 -- len:i64)</code></pre>
+<p>Get the number of bytes in a UTF-8 sequence based on the first byte. Returns 1 for ASCII, 2-4 for multi-byte sequences, 0 for invalid.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>b</code> <code>i64</code></dt>
+<dd>First byte of UTF-8 sequence</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>len</code> <code>i64</code></dt>
+<dd>Number of bytes (1-4), or 0 if invalid</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>0xC2 unicode::utf8_seq_len print  // 2</code></pre>
+</div>
+<hr>
+<div class="fn" id="utf8_encode_len">
+<h3>utf8_encode_len</h3>
+<pre><code>fn utf8_encode_len(cp:i64 -- len:i64)</code></pre>
+<p>Get the number of UTF-8 bytes needed to encode a codepoint.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>cp</code> <code>i64</code></dt>
+<dd>Unicode codepoint</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>len</code> <code>i64</code></dt>
+<dd>Number of bytes needed (1-4), or 0 if invalid</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>0x00E9 unicode::utf8_encode_len print  // 2 (é)</code></pre>
+</div>
+<hr>
+<div class="fn" id="is_valid_codepoint">
+<h3>is_valid_codepoint</h3>
+<pre><code>fn is_valid_codepoint(cp:i64 -- valid:i64)</code></pre>
+<p>Check if a codepoint is valid Unicode.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>cp</code> <code>i64</code></dt>
+<dd>Codepoint to check</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>valid</code> <code>i64</code></dt>
+<dd>1 if valid, 0 otherwise</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>0x1F600 unicode::is_valid_codepoint print  // 1 (😀)</code></pre>
+</div>
+</div></body></html>

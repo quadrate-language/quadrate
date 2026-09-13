@@ -168,7 +168,7 @@ void QuadrateLSP::handleCompletion(const std::string& id, const std::string& uri
 
 	json_t* response = json_object();
 	json_object_set_new(response, "jsonrpc", json_string("2.0"));
-	json_object_set_new(response, "id", json_integer(std::stoi(id)));
+	json_object_set_new(response, "id", makeResponseId(id));
 
 	json_t* result = json_object();
 	json_object_set_new(result, "isIncomplete", json_false());

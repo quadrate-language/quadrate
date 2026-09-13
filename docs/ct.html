@@ -1,0 +1,637 @@
+<!DOCTYPE html><html><head><meta charset="utf-8"><title>ct - Quadrate API</title><link rel="stylesheet" href="style.css"></head><body>
+<nav><h1>Quadrate API</h1><a href="index.html">All Modules</a></nav>
+<div class="container"><h2>ct</h2>
+<p class="desc">Generic container types. Provides Vec, HashMap, Set, Queue, Deque, and Pair.</p>
+<h2>Structs</h2>
+<h3 id="Deque<T>"><code>Deque&lt;T&gt;</code></h3>
+<p>Double-ended queue with elements of type T.  Fields:   data - Pointer to circular buffer   head - Index of front element   tail - Index after last element   len  - Number of elements   cap  - Buffer capacity</p>
+<dl>
+<dt><code>data</code> <code>ptr</code></dt>
+<dt><code>head</code> <code>i64</code></dt>
+<dt><code>tail</code> <code>i64</code></dt>
+<dt><code>len</code> <code>i64</code></dt>
+<dt><code>cap</code> <code>i64</code></dt>
+</dl>
+<h3 id="Map<V>"><code>Map&lt;V&gt;</code></h3>
+<p>Hash map with string keys and values of type V.  Fields:   keys   - Array of string key pointers   values - Array of V values   states - Array of slot states (0=empty, 1=occupied, 2=deleted)   len    - Number of entries   cap    - Allocated capacity</p>
+<dl>
+<dt><code>keys</code> <code>ptr</code></dt>
+<dt><code>values</code> <code>ptr</code></dt>
+<dt><code>states</code> <code>ptr</code></dt>
+<dt><code>len</code> <code>i64</code></dt>
+<dt><code>cap</code> <code>i64</code></dt>
+</dl>
+<h3 id="Pair<T, U>"><code>Pair&lt;T, U&gt;</code></h3>
+<p>A pair of two values.  Fields:   first  - The first element of type T   second - The second element of type U</p>
+<dl>
+<dt><code>first</code> <code>T</code></dt>
+<dt><code>second</code> <code>U</code></dt>
+</dl>
+<h3 id="Queue<T>"><code>Queue&lt;T&gt;</code></h3>
+<p>FIFO Queue with elements of type T.  Fields:   data - Pointer to circular buffer   head - Index of front element   tail - Index after last element   len  - Number of elements   cap  - Buffer capacity</p>
+<dl>
+<dt><code>data</code> <code>ptr</code></dt>
+<dt><code>head</code> <code>i64</code></dt>
+<dt><code>tail</code> <code>i64</code></dt>
+<dt><code>len</code> <code>i64</code></dt>
+<dt><code>cap</code> <code>i64</code></dt>
+</dl>
+<h3 id="Set"><code>Set</code></h3>
+<p>Set of unique string elements.  Fields:   keys   - Array of string key pointers   states - Array of slot states (0=empty, 1=occupied, 2=deleted)   len    - Number of elements   cap    - Allocated capacity</p>
+<dl>
+<dt><code>keys</code> <code>ptr</code></dt>
+<dt><code>states</code> <code>ptr</code></dt>
+<dt><code>len</code> <code>i64</code></dt>
+<dt><code>cap</code> <code>i64</code></dt>
+</dl>
+<h3 id="Vec<T>"><code>Vec&lt;T&gt;</code></h3>
+<p>Dynamic array (vector) structure.  Fields:   data - Pointer to contiguous element storage   len  - Current number of elements (0 to cap)   cap  - Allocated capacity in elements</p>
+<dl>
+<dt><code>data</code> <code>ptr</code></dt>
+<dt><code>len</code> <code>i64</code></dt>
+<dt><code>cap</code> <code>i64</code></dt>
+</dl>
+<h2>Functions</h2>
+<div class="fn fallible" id="push_back">
+<h3>push_back [fallible]</h3>
+<pre><code>fn (d:Deque&lt;T&gt;) push_back&lt;T&gt;(val:T -- d2:Deque&lt;T&gt;)!</code></pre>
+<p>Push an element to the back.  Example:     d 42 push_back! -&gt; d  Stack: (d val -- d2)</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>d</code> <code>Deque&lt;T&gt;</code></dt>
+<dt><code>val</code> <code>T</code></dt>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>d2</code> <code>Deque&lt;T&gt;</code></dt>
+</dl>
+<p class="xref"><strong>Calls:</strong> <a href="mem.html#alloc"><code>mem::alloc</code></a>, <a href="mem.html#free"><code>mem::free</code></a>, <a href="mem.html#get_i64"><code>mem::get_i64</code></a>, <a href="mem.html#set_i64"><code>mem::set_i64</code></a></p>
+</div>
+<hr>
+<div class="fn fallible" id="push_front">
+<h3>push_front [fallible]</h3>
+<pre><code>fn (d:Deque&lt;T&gt;) push_front&lt;T&gt;(val:T -- d2:Deque&lt;T&gt;)!</code></pre>
+<p>Push an element to the front.  Example:     d 42 push_front! -&gt; d  Stack: (d val -- d2)</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>d</code> <code>Deque&lt;T&gt;</code></dt>
+<dt><code>val</code> <code>T</code></dt>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>d2</code> <code>Deque&lt;T&gt;</code></dt>
+</dl>
+<p class="xref"><strong>Calls:</strong> <a href="mem.html#alloc"><code>mem::alloc</code></a>, <a href="mem.html#free"><code>mem::free</code></a>, <a href="mem.html#get_i64"><code>mem::get_i64</code></a>, <a href="mem.html#set_i64"><code>mem::set_i64</code></a></p>
+</div>
+<hr>
+<div class="fn fallible" id="pop_front">
+<h3>pop_front [fallible]</h3>
+<pre><code>fn (d:Deque&lt;T&gt;) pop_front&lt;T&gt;( -- val:T d2:Deque&lt;T&gt;)!</code></pre>
+<p>Remove and return the front element.  Example:     d pop_front! -&gt; d -&gt; val  Stack: (d -- val d2)</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>d</code> <code>Deque&lt;T&gt;</code></dt>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>val</code> <code>T</code></dt>
+<dt><code>d2</code> <code>Deque&lt;T&gt;</code></dt>
+</dl>
+<p class="xref"><strong>Calls:</strong> <a href="mem.html#get_i64"><code>mem::get_i64</code></a></p>
+</div>
+<hr>
+<div class="fn fallible" id="pop_back">
+<h3>pop_back [fallible]</h3>
+<pre><code>fn (d:Deque&lt;T&gt;) pop_back&lt;T&gt;( -- val:T d2:Deque&lt;T&gt;)!</code></pre>
+<p>Remove and return the back element.  Example:     d pop_back! -&gt; d -&gt; val  Stack: (d -- val d2)</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>d</code> <code>Deque&lt;T&gt;</code></dt>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>val</code> <code>T</code></dt>
+<dt><code>d2</code> <code>Deque&lt;T&gt;</code></dt>
+</dl>
+<p class="xref"><strong>Calls:</strong> <a href="mem.html#get_i64"><code>mem::get_i64</code></a></p>
+</div>
+<hr>
+<div class="fn fallible" id="peek_front">
+<h3>peek_front [fallible]</h3>
+<pre><code>fn (d:Deque&lt;T&gt;) peek_front&lt;T&gt;( -- val:T)!</code></pre>
+<p>View the front element without removing it.  Stack: (d -- val)</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>d</code> <code>Deque&lt;T&gt;</code></dt>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>val</code> <code>T</code></dt>
+</dl>
+<p class="xref"><strong>Calls:</strong> <a href="mem.html#get_i64"><code>mem::get_i64</code></a></p>
+</div>
+<hr>
+<div class="fn fallible" id="peek_back">
+<h3>peek_back [fallible]</h3>
+<pre><code>fn (d:Deque&lt;T&gt;) peek_back&lt;T&gt;( -- val:T)!</code></pre>
+<p>View the back element without removing it.  Stack: (d -- val)</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>d</code> <code>Deque&lt;T&gt;</code></dt>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>val</code> <code>T</code></dt>
+</dl>
+<p class="xref"><strong>Calls:</strong> <a href="mem.html#get_i64"><code>mem::get_i64</code></a></p>
+</div>
+<hr>
+<div class="fn" id="length">
+<h3>length</h3>
+<pre><code>fn (d:Deque&lt;T&gt;) length&lt;T&gt;( -- n:i64)</code></pre>
+<p>Get the number of elements.  Stack: (d -- n)</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>d</code> <code>Deque&lt;T&gt;</code></dt>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>n</code> <code>i64</code></dt>
+</dl>
+</div>
+<hr>
+<div class="fn" id="is_empty">
+<h3>is_empty</h3>
+<pre><code>fn (d:Deque&lt;T&gt;) is_empty&lt;T&gt;( -- b:i64)</code></pre>
+<p>Check if the deque is empty.  Stack: (d -- bool)</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>d</code> <code>Deque&lt;T&gt;</code></dt>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>b</code> <code>i64</code></dt>
+</dl>
+</div>
+<hr>
+<div class="fn" id="release">
+<h3>release</h3>
+<pre><code>fn (d:Deque&lt;T&gt;) release&lt;T&gt;()</code></pre>
+<p>Free the deque's memory.  Stack: (d --)</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>d</code> <code>Deque&lt;T&gt;</code></dt>
+</dl>
+<p class="xref"><strong>Calls:</strong> <a href="mem.html#free"><code>mem::free</code></a></p>
+</div>
+<hr>
+<div class="fn fallible" id="insert">
+<h3>insert [fallible]</h3>
+<pre><code>fn (m:Map&lt;V&gt;) insert&lt;V&gt;(key:str value:V -- m2:Map&lt;V&gt;)!</code></pre>
+<p>Insert a key-value pair into the map.  If the key already exists, the value is updated. Returns the updated map which must be captured.  Example:     m &quot;alice&quot; 42 insert! -&gt; m  Stack: (m key value -- m2)</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>m</code> <code>Map&lt;V&gt;</code></dt>
+<dt><code>key</code> <code>str</code></dt>
+<dt><code>value</code> <code>V</code></dt>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>m2</code> <code>Map&lt;V&gt;</code></dt>
+</dl>
+<p class="xref"><strong>Calls:</strong> <a href="mem.html#alloc"><code>mem::alloc</code></a>, <a href="mem.html#copy"><code>mem::copy</code></a>, <a href="mem.html#free"><code>mem::free</code></a>, <a href="mem.html#from_string"><code>mem::from_string</code></a>, <a href="mem.html#set_byte"><code>mem::set_byte</code></a>, <a href="mem.html#set_i64"><code>mem::set_i64</code></a>, <a href="mem.html#set_ptr"><code>mem::set_ptr</code></a>, <a href="strings.html#len"><code>strings::len</code></a></p>
+</div>
+<hr>
+<div class="fn fallible" id="get">
+<h3>get [fallible]</h3>
+<pre><code>fn (m:Map&lt;V&gt;) get&lt;V&gt;(key:str -- value:V)!</code></pre>
+<p>Get the value for a key.  Returns an error if the key is not found.  Example:     m &quot;alice&quot; get! -&gt; age  Stack: (m key -- value)</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>m</code> <code>Map&lt;V&gt;</code></dt>
+<dt><code>key</code> <code>str</code></dt>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>value</code> <code>V</code></dt>
+</dl>
+<p class="xref"><strong>Calls:</strong> <a href="mem.html#get_i64"><code>mem::get_i64</code></a></p>
+</div>
+<hr>
+<div class="fn" id="has">
+<h3>has</h3>
+<pre><code>fn (m:Map&lt;V&gt;) has&lt;V&gt;(key:str -- exists:i64)</code></pre>
+<p>Check if a key exists in the map.  Example:     m &quot;alice&quot; has if { &quot;found!&quot; print nl }  Stack: (m key -- exists)</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>m</code> <code>Map&lt;V&gt;</code></dt>
+<dt><code>key</code> <code>str</code></dt>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>exists</code> <code>i64</code></dt>
+</dl>
+</div>
+<hr>
+<div class="fn fallible" id="remove">
+<h3>remove [fallible]</h3>
+<pre><code>fn (m:Map&lt;V&gt;) remove&lt;V&gt;(key:str -- m2:Map&lt;V&gt;)!</code></pre>
+<p>Remove a key from the map.  Returns error if the key is not found. Returns the updated map which must be captured.  Example:     m &quot;alice&quot; remove! -&gt; m  Stack: (m key -- m2)</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>m</code> <code>Map&lt;V&gt;</code></dt>
+<dt><code>key</code> <code>str</code></dt>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>m2</code> <code>Map&lt;V&gt;</code></dt>
+</dl>
+<p class="xref"><strong>Calls:</strong> <a href="mem.html#free"><code>mem::free</code></a>, <a href="mem.html#get_ptr"><code>mem::get_ptr</code></a>, <a href="mem.html#set_i64"><code>mem::set_i64</code></a></p>
+</div>
+<hr>
+<div class="fn" id="length">
+<h3>length</h3>
+<pre><code>fn (m:Map&lt;V&gt;) length&lt;V&gt;( -- n:i64)</code></pre>
+<p>Get the number of entries in the map.  Example:     m length -&gt; n  Stack: (m -- n)</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>m</code> <code>Map&lt;V&gt;</code></dt>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>n</code> <code>i64</code></dt>
+</dl>
+</div>
+<hr>
+<div class="fn" id="is_empty">
+<h3>is_empty</h3>
+<pre><code>fn (m:Map&lt;V&gt;) is_empty&lt;V&gt;( -- b:i64)</code></pre>
+<p>Check if the map is empty.  Example:     m is_empty if { &quot;empty!&quot; print nl }  Stack: (m -- bool)</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>m</code> <code>Map&lt;V&gt;</code></dt>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>b</code> <code>i64</code></dt>
+</dl>
+</div>
+<hr>
+<div class="fn" id="release">
+<h3>release</h3>
+<pre><code>fn (m:Map&lt;V&gt;) release&lt;V&gt;()</code></pre>
+<p>Free the map's memory.  IMPORTANT: Always call this when done with a map to prevent memory leaks. After calling release, the map should not be used.  Example:     m release  Stack: (m --)</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>m</code> <code>Map&lt;V&gt;</code></dt>
+</dl>
+<p class="xref"><strong>Calls:</strong> <a href="mem.html#free"><code>mem::free</code></a>, <a href="mem.html#get_i64"><code>mem::get_i64</code></a>, <a href="mem.html#get_ptr"><code>mem::get_ptr</code></a></p>
+</div>
+<hr>
+<div class="fn" id="first">
+<h3>first</h3>
+<pre><code>fn (p:Pair&lt;T, U&gt;) first&lt;T, U&gt;( -- a:T)</code></pre>
+<p>Get the first element of a pair.  Example:     p first -&gt; a  Stack: (p -- a)</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>p</code> <code>Pair&lt;T, U&gt;</code></dt>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>a</code> <code>T</code></dt>
+</dl>
+</div>
+<hr>
+<div class="fn" id="second">
+<h3>second</h3>
+<pre><code>fn (p:Pair&lt;T, U&gt;) second&lt;T, U&gt;( -- b:U)</code></pre>
+<p>Get the second element of a pair.  Example:     p second -&gt; b  Stack: (p -- b)</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>p</code> <code>Pair&lt;T, U&gt;</code></dt>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>b</code> <code>U</code></dt>
+</dl>
+</div>
+<hr>
+<div class="fn" id="unpack">
+<h3>unpack</h3>
+<pre><code>fn (p:Pair&lt;T, U&gt;) unpack&lt;T, U&gt;( -- a:T b:U)</code></pre>
+<p>Unpack a pair onto the stack.  Returns both elements: first is deeper, second on top.  Example:     p unpack -&gt; first_val -&gt; second_val  Stack: (p -- a b)</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>p</code> <code>Pair&lt;T, U&gt;</code></dt>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>a</code> <code>T</code></dt>
+<dt><code>b</code> <code>U</code></dt>
+</dl>
+</div>
+<hr>
+<div class="fn fallible" id="enqueue">
+<h3>enqueue [fallible]</h3>
+<pre><code>fn (q:Queue&lt;T&gt;) enqueue&lt;T&gt;(val:T -- q2:Queue&lt;T&gt;)!</code></pre>
+<p>Add an element to the back of the queue.  Returns the updated queue which must be captured.  Example:     q 42 enqueue! -&gt; q  Stack: (q val -- q2)</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>q</code> <code>Queue&lt;T&gt;</code></dt>
+<dt><code>val</code> <code>T</code></dt>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>q2</code> <code>Queue&lt;T&gt;</code></dt>
+</dl>
+<p class="xref"><strong>Calls:</strong> <a href="mem.html#alloc"><code>mem::alloc</code></a>, <a href="mem.html#free"><code>mem::free</code></a>, <a href="mem.html#get_i64"><code>mem::get_i64</code></a>, <a href="mem.html#set_i64"><code>mem::set_i64</code></a></p>
+</div>
+<hr>
+<div class="fn fallible" id="dequeue">
+<h3>dequeue [fallible]</h3>
+<pre><code>fn (q:Queue&lt;T&gt;) dequeue&lt;T&gt;( -- val:T q2:Queue&lt;T&gt;)!</code></pre>
+<p>Remove and return the front element.  Returns error if queue is empty. Returns the value and updated queue.  Example:     q dequeue! -&gt; q -&gt; val  Stack: (q -- val q2)</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>q</code> <code>Queue&lt;T&gt;</code></dt>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>val</code> <code>T</code></dt>
+<dt><code>q2</code> <code>Queue&lt;T&gt;</code></dt>
+</dl>
+<p class="xref"><strong>Calls:</strong> <a href="mem.html#get_i64"><code>mem::get_i64</code></a></p>
+</div>
+<hr>
+<div class="fn fallible" id="peek">
+<h3>peek [fallible]</h3>
+<pre><code>fn (q:Queue&lt;T&gt;) peek&lt;T&gt;( -- val:T)!</code></pre>
+<p>View the front element without removing it.  Returns error if queue is empty.  Example:     q peek! -&gt; val  Stack: (q -- val)</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>q</code> <code>Queue&lt;T&gt;</code></dt>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>val</code> <code>T</code></dt>
+</dl>
+<p class="xref"><strong>Calls:</strong> <a href="mem.html#get_i64"><code>mem::get_i64</code></a></p>
+</div>
+<hr>
+<div class="fn" id="length">
+<h3>length</h3>
+<pre><code>fn (q:Queue&lt;T&gt;) length&lt;T&gt;( -- n:i64)</code></pre>
+<p>Get the number of elements in the queue.  Stack: (q -- n)</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>q</code> <code>Queue&lt;T&gt;</code></dt>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>n</code> <code>i64</code></dt>
+</dl>
+</div>
+<hr>
+<div class="fn" id="is_empty">
+<h3>is_empty</h3>
+<pre><code>fn (q:Queue&lt;T&gt;) is_empty&lt;T&gt;( -- b:i64)</code></pre>
+<p>Check if the queue is empty.  Stack: (q -- bool)</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>q</code> <code>Queue&lt;T&gt;</code></dt>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>b</code> <code>i64</code></dt>
+</dl>
+</div>
+<hr>
+<div class="fn" id="release">
+<h3>release</h3>
+<pre><code>fn (q:Queue&lt;T&gt;) release&lt;T&gt;()</code></pre>
+<p>Free the queue's memory.  Stack: (q --)</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>q</code> <code>Queue&lt;T&gt;</code></dt>
+</dl>
+<p class="xref"><strong>Calls:</strong> <a href="mem.html#free"><code>mem::free</code></a></p>
+</div>
+<hr>
+<div class="fn fallible" id="add">
+<h3>add [fallible]</h3>
+<pre><code>fn (s:Set) add(key:str -- s2:Set)!</code></pre>
+<p>Add an element to the set.  If the element already exists, the set is unchanged. Returns the updated set which must be captured.  Example:     s &quot;alice&quot; add! -&gt; s  Stack: (s key -- s2)</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>s</code> <code>Set</code></dt>
+<dt><code>key</code> <code>str</code></dt>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>s2</code> <code>Set</code></dt>
+</dl>
+<p class="xref"><strong>Calls:</strong> <a href="mem.html#alloc"><code>mem::alloc</code></a>, <a href="mem.html#copy"><code>mem::copy</code></a>, <a href="mem.html#free"><code>mem::free</code></a>, <a href="mem.html#from_string"><code>mem::from_string</code></a>, <a href="mem.html#set_byte"><code>mem::set_byte</code></a>, <a href="mem.html#set_i64"><code>mem::set_i64</code></a>, <a href="mem.html#set_ptr"><code>mem::set_ptr</code></a>, <a href="strings.html#len"><code>strings::len</code></a></p>
+</div>
+<hr>
+<div class="fn" id="contains">
+<h3>contains</h3>
+<pre><code>fn (s:Set) contains(key:str -- exists:i64)</code></pre>
+<p>Check if an element exists in the set.  Example:     s &quot;alice&quot; contains if { &quot;found!&quot; print nl }  Stack: (s key -- exists)</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>s</code> <code>Set</code></dt>
+<dt><code>key</code> <code>str</code></dt>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>exists</code> <code>i64</code></dt>
+</dl>
+</div>
+<hr>
+<div class="fn fallible" id="remove">
+<h3>remove [fallible]</h3>
+<pre><code>fn (s:Set) remove(key:str -- s2:Set)!</code></pre>
+<p>Remove an element from the set.  Returns error if the element is not found. Returns the updated set which must be captured.  Example:     s &quot;alice&quot; remove! -&gt; s  Stack: (s key -- s2)</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>s</code> <code>Set</code></dt>
+<dt><code>key</code> <code>str</code></dt>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>s2</code> <code>Set</code></dt>
+</dl>
+<p class="xref"><strong>Calls:</strong> <a href="mem.html#free"><code>mem::free</code></a>, <a href="mem.html#get_ptr"><code>mem::get_ptr</code></a>, <a href="mem.html#set_i64"><code>mem::set_i64</code></a></p>
+</div>
+<hr>
+<div class="fn" id="length">
+<h3>length</h3>
+<pre><code>fn (s:Set) length( -- n:i64)</code></pre>
+<p>Get the number of elements in the set.  Example:     s length -&gt; n  Stack: (s -- n)</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>s</code> <code>Set</code></dt>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>n</code> <code>i64</code></dt>
+</dl>
+</div>
+<hr>
+<div class="fn" id="is_empty">
+<h3>is_empty</h3>
+<pre><code>fn (s:Set) is_empty( -- b:i64)</code></pre>
+<p>Check if the set is empty.  Example:     s is_empty if { &quot;empty!&quot; print nl }  Stack: (s -- bool)</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>s</code> <code>Set</code></dt>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>b</code> <code>i64</code></dt>
+</dl>
+</div>
+<hr>
+<div class="fn" id="release">
+<h3>release</h3>
+<pre><code>fn (s:Set) release()</code></pre>
+<p>Free the set's memory.  IMPORTANT: Always call this when done with a set to prevent memory leaks.  Example:     s release  Stack: (s --)</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>s</code> <code>Set</code></dt>
+</dl>
+<p class="xref"><strong>Calls:</strong> <a href="mem.html#free"><code>mem::free</code></a>, <a href="mem.html#get_i64"><code>mem::get_i64</code></a>, <a href="mem.html#get_ptr"><code>mem::get_ptr</code></a></p>
+</div>
+<hr>
+<div class="fn fallible" id="push">
+<h3>push [fallible]</h3>
+<pre><code>fn (v:Vec&lt;T&gt;) push&lt;T&gt;(elem:T -- v2:Vec&lt;T&gt;)!</code></pre>
+<p>Push an element to the end of the vector.  Automatically grows capacity when full (doubles size, starting at 8). Returns the updated vector which must be captured.  Example:     v 42 push! -&gt; v  Stack: (v elem -- v2)</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>v</code> <code>Vec&lt;T&gt;</code></dt>
+<dt><code>elem</code> <code>T</code></dt>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>v2</code> <code>Vec&lt;T&gt;</code></dt>
+</dl>
+<p class="xref"><strong>Calls:</strong> <a href="mem.html#realloc"><code>mem::realloc</code></a>, <a href="mem.html#set_i64"><code>mem::set_i64</code></a></p>
+</div>
+<hr>
+<div class="fn fallible" id="pop">
+<h3>pop [fallible]</h3>
+<pre><code>fn (v:Vec&lt;T&gt;) pop&lt;T&gt;( -- elem:T v2:Vec&lt;T&gt;)!</code></pre>
+<p>Pop and return the last element.  Panics if the vector is empty. Returns both the element and the updated vector.  Example:     v pop! -&gt; v -&gt; elem  Stack: (v -- elem v2)</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>v</code> <code>Vec&lt;T&gt;</code></dt>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>elem</code> <code>T</code></dt>
+<dt><code>v2</code> <code>Vec&lt;T&gt;</code></dt>
+</dl>
+<p class="xref"><strong>Calls:</strong> <a href="mem.html#get_i64"><code>mem::get_i64</code></a></p>
+</div>
+<hr>
+<div class="fn fallible" id="get">
+<h3>get [fallible]</h3>
+<pre><code>fn (v:Vec&lt;T&gt;) get&lt;T&gt;(idx:i64 -- elem:T)!</code></pre>
+<p>Get element at index.  Panics if index is out of bounds (&lt; 0 or &gt;= len).  Example:     v 0 get! -&gt; first  Stack: (v idx -- elem)</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>v</code> <code>Vec&lt;T&gt;</code></dt>
+<dt><code>idx</code> <code>i64</code></dt>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>elem</code> <code>T</code></dt>
+</dl>
+<p class="xref"><strong>Calls:</strong> <a href="mem.html#get_i64"><code>mem::get_i64</code></a></p>
+</div>
+<hr>
+<div class="fn fallible" id="set">
+<h3>set [fallible]</h3>
+<pre><code>fn (v:Vec&lt;T&gt;) set&lt;T&gt;(idx:i64 elem:T -- v2:Vec&lt;T&gt;)!</code></pre>
+<p>Set element at index.  Panics if index is out of bounds (&lt; 0 or &gt;= len). Returns the updated vector which must be captured.  Example:     v 0 100 set! -&gt; v  Stack: (v idx elem -- v2)</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>v</code> <code>Vec&lt;T&gt;</code></dt>
+<dt><code>idx</code> <code>i64</code></dt>
+<dt><code>elem</code> <code>T</code></dt>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>v2</code> <code>Vec&lt;T&gt;</code></dt>
+</dl>
+<p class="xref"><strong>Calls:</strong> <a href="mem.html#set_i64"><code>mem::set_i64</code></a></p>
+</div>
+<hr>
+<div class="fn" id="length">
+<h3>length</h3>
+<pre><code>fn (v:Vec&lt;T&gt;) length&lt;T&gt;( -- n:i64)</code></pre>
+<p>Get the number of elements in the vector.  Example:     v length -&gt; n  Stack: (v -- n)</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>v</code> <code>Vec&lt;T&gt;</code></dt>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>n</code> <code>i64</code></dt>
+</dl>
+</div>
+<hr>
+<div class="fn" id="capacity">
+<h3>capacity</h3>
+<pre><code>fn (v:Vec&lt;T&gt;) capacity&lt;T&gt;( -- n:i64)</code></pre>
+<p>Get the allocated capacity.  Capacity is always &gt;= length. The vector can hold up to 'capacity' elements before needing to reallocate.  Example:     v capacity -&gt; cap  Stack: (v -- n)</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>v</code> <code>Vec&lt;T&gt;</code></dt>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>n</code> <code>i64</code></dt>
+</dl>
+</div>
+<hr>
+<div class="fn" id="is_empty">
+<h3>is_empty</h3>
+<pre><code>fn (v:Vec&lt;T&gt;) is_empty&lt;T&gt;( -- b:i64)</code></pre>
+<p>Check if the vector is empty (length == 0).  Example:     v is_empty if { &quot;empty!&quot; print nl }  Stack: (v -- bool)</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>v</code> <code>Vec&lt;T&gt;</code></dt>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>b</code> <code>i64</code></dt>
+</dl>
+</div>
+<hr>
+<div class="fn" id="reset">
+<h3>reset</h3>
+<pre><code>fn (v:Vec&lt;T&gt;) reset&lt;T&gt;( -- v2:Vec&lt;T&gt;)</code></pre>
+<p>Remove all elements, keeping allocated capacity.  Useful for reusing a vector without reallocating.  Example:     v reset -&gt; v  Stack: (v -- v2)</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>v</code> <code>Vec&lt;T&gt;</code></dt>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>v2</code> <code>Vec&lt;T&gt;</code></dt>
+</dl>
+</div>
+<hr>
+<div class="fn" id="release">
+<h3>release</h3>
+<pre><code>fn (v:Vec&lt;T&gt;) release&lt;T&gt;()</code></pre>
+<p>Free the vector's memory.  IMPORTANT: Always call this when done with a vector to prevent memory leaks. After calling release, the vector should not be used.  Example:     v release  Stack: (v --)</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>v</code> <code>Vec&lt;T&gt;</code></dt>
+</dl>
+<p class="xref"><strong>Calls:</strong> <a href="mem.html#free"><code>mem::free</code></a></p>
+</div>
+</div></body></html>

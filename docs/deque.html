@@ -1,0 +1,148 @@
+<!DOCTYPE html><html><head><meta charset="utf-8"><title>deque - Quadrate API</title><link rel="stylesheet" href="style.css"></head><body>
+<nav><h1>Quadrate API</h1><a href="index.html">All Modules</a></nav>
+<div class="container"><h2>deque</h2>
+<p class="desc">Deque&lt;T&gt; - A Double-Ended Queue ================================  Deque provides O(1) push/pop from both ends. Implemented using a circular buffer.  ## Creating a Deque  Create an empty deque:      Deque&lt;i64&gt; { data = null head = 0 tail = 0 len = 0 cap = 0 } -&gt; d  ## Basic Operations  Push to front/back:      d 42 push_front! -&gt; d     d 42 push_back! -&gt; d  Pop from front/back:      d pop_front! -&gt; d -&gt; val     d pop_back! -&gt; d -&gt; val  Peek front/back:      d peek_front! -&gt; val     d peek_back! -&gt; val  ## Memory Management  Always call release when done:      d release</p>
+<h2>Structs</h2>
+<h3 id="Deque<T>"><code>Deque&lt;T&gt;</code></h3>
+<p>Double-ended queue with elements of type T.  Fields:   data - Pointer to circular buffer   head - Index of front element   tail - Index after last element   len  - Number of elements   cap  - Buffer capacity</p>
+<dl>
+<dt><code>data</code> <code>ptr</code></dt>
+<dt><code>head</code> <code>i64</code></dt>
+<dt><code>tail</code> <code>i64</code></dt>
+<dt><code>len</code> <code>i64</code></dt>
+<dt><code>cap</code> <code>i64</code></dt>
+</dl>
+<h2>Functions</h2>
+<div class="fn fallible" id="push_back">
+<h3>push_back [fallible]</h3>
+<pre><code>fn (d:Deque&lt;T&gt;) push_back&lt;T&gt;(val:T -- d2:Deque&lt;T&gt;)!</code></pre>
+<p>Push an element to the back.  Example:     d 42 push_back! -&gt; d  Stack: (d val -- d2)</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>d</code> <code>Deque&lt;T&gt;</code></dt>
+<dt><code>val</code> <code>T</code></dt>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>d2</code> <code>Deque&lt;T&gt;</code></dt>
+</dl>
+<p class="xref"><strong>Calls:</strong> <a href="mem.html#alloc"><code>mem::alloc</code></a>, <a href="mem.html#free"><code>mem::free</code></a>, <a href="mem.html#get_i64"><code>mem::get_i64</code></a>, <a href="mem.html#set_i64"><code>mem::set_i64</code></a></p>
+</div>
+<hr>
+<div class="fn fallible" id="push_front">
+<h3>push_front [fallible]</h3>
+<pre><code>fn (d:Deque&lt;T&gt;) push_front&lt;T&gt;(val:T -- d2:Deque&lt;T&gt;)!</code></pre>
+<p>Push an element to the front.  Example:     d 42 push_front! -&gt; d  Stack: (d val -- d2)</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>d</code> <code>Deque&lt;T&gt;</code></dt>
+<dt><code>val</code> <code>T</code></dt>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>d2</code> <code>Deque&lt;T&gt;</code></dt>
+</dl>
+<p class="xref"><strong>Calls:</strong> <a href="mem.html#alloc"><code>mem::alloc</code></a>, <a href="mem.html#free"><code>mem::free</code></a>, <a href="mem.html#get_i64"><code>mem::get_i64</code></a>, <a href="mem.html#set_i64"><code>mem::set_i64</code></a></p>
+</div>
+<hr>
+<div class="fn fallible" id="pop_front">
+<h3>pop_front [fallible]</h3>
+<pre><code>fn (d:Deque&lt;T&gt;) pop_front&lt;T&gt;( -- val:T d2:Deque&lt;T&gt;)!</code></pre>
+<p>Remove and return the front element.  Example:     d pop_front! -&gt; d -&gt; val  Stack: (d -- val d2)</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>d</code> <code>Deque&lt;T&gt;</code></dt>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>val</code> <code>T</code></dt>
+<dt><code>d2</code> <code>Deque&lt;T&gt;</code></dt>
+</dl>
+<p class="xref"><strong>Calls:</strong> <a href="mem.html#get_i64"><code>mem::get_i64</code></a></p>
+</div>
+<hr>
+<div class="fn fallible" id="pop_back">
+<h3>pop_back [fallible]</h3>
+<pre><code>fn (d:Deque&lt;T&gt;) pop_back&lt;T&gt;( -- val:T d2:Deque&lt;T&gt;)!</code></pre>
+<p>Remove and return the back element.  Example:     d pop_back! -&gt; d -&gt; val  Stack: (d -- val d2)</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>d</code> <code>Deque&lt;T&gt;</code></dt>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>val</code> <code>T</code></dt>
+<dt><code>d2</code> <code>Deque&lt;T&gt;</code></dt>
+</dl>
+<p class="xref"><strong>Calls:</strong> <a href="mem.html#get_i64"><code>mem::get_i64</code></a></p>
+</div>
+<hr>
+<div class="fn fallible" id="peek_front">
+<h3>peek_front [fallible]</h3>
+<pre><code>fn (d:Deque&lt;T&gt;) peek_front&lt;T&gt;( -- val:T)!</code></pre>
+<p>View the front element without removing it.  Stack: (d -- val)</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>d</code> <code>Deque&lt;T&gt;</code></dt>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>val</code> <code>T</code></dt>
+</dl>
+<p class="xref"><strong>Calls:</strong> <a href="mem.html#get_i64"><code>mem::get_i64</code></a></p>
+</div>
+<hr>
+<div class="fn fallible" id="peek_back">
+<h3>peek_back [fallible]</h3>
+<pre><code>fn (d:Deque&lt;T&gt;) peek_back&lt;T&gt;( -- val:T)!</code></pre>
+<p>View the back element without removing it.  Stack: (d -- val)</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>d</code> <code>Deque&lt;T&gt;</code></dt>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>val</code> <code>T</code></dt>
+</dl>
+<p class="xref"><strong>Calls:</strong> <a href="mem.html#get_i64"><code>mem::get_i64</code></a></p>
+</div>
+<hr>
+<div class="fn" id="length">
+<h3>length</h3>
+<pre><code>fn (d:Deque&lt;T&gt;) length&lt;T&gt;( -- n:i64)</code></pre>
+<p>Get the number of elements.  Stack: (d -- n)</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>d</code> <code>Deque&lt;T&gt;</code></dt>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>n</code> <code>i64</code></dt>
+</dl>
+</div>
+<hr>
+<div class="fn" id="is_empty">
+<h3>is_empty</h3>
+<pre><code>fn (d:Deque&lt;T&gt;) is_empty&lt;T&gt;( -- b:i64)</code></pre>
+<p>Check if the deque is empty.  Stack: (d -- bool)</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>d</code> <code>Deque&lt;T&gt;</code></dt>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>b</code> <code>i64</code></dt>
+</dl>
+</div>
+<hr>
+<div class="fn" id="release">
+<h3>release</h3>
+<pre><code>fn (d:Deque&lt;T&gt;) release&lt;T&gt;()</code></pre>
+<p>Free the deque's memory.  Stack: (d --)</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>d</code> <code>Deque&lt;T&gt;</code></dt>
+</dl>
+<p class="xref"><strong>Calls:</strong> <a href="mem.html#free"><code>mem::free</code></a></p>
+</div>
+</div></body></html>

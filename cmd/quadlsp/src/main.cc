@@ -168,6 +168,30 @@ void QuadrateLSP::run() {
 	}
 }
 
+// Build the `id` of a response.
+//
+// JSON-RPC allows a request id to be a string, a number, or absent, and LSP
+// clients use all three. Every response site used to do json_integer(stoi(id)),
+// which threw std::invalid_argument on a string id such as "abc-123" and
+// terminated the server -- a conforming client could kill it with one message.
+json_t* QuadrateLSP::makeResponseId(const std::string& id) const {
+	if (id.empty()) {
+		return json_null();
+	}
+	if (!currentIdIsString_) {
+		try {
+			size_t consumed = 0;
+			const long long value = std::stoll(id, &consumed);
+			if (consumed == id.size()) {
+				return json_integer(static_cast<json_int_t>(value));
+			}
+		} catch (const std::exception&) {
+			// fall through and answer with the id as a string
+		}
+	}
+	return json_string(id.c_str());
+}
+
 std::string QuadrateLSP::readMessage() {
 	std::string line;
 	size_t contentLength = 0;
@@ -178,7 +202,29 @@ std::string QuadrateLSP::readMessage() {
 			break;
 		}
 		if (line.substr(0, 16) == "Content-Length: ") {
-			contentLength = static_cast<size_t>(std::stoi(line.substr(16)));
+			// stoi throws on a header that is not a number ("Content-Length: abc")
+			// and on one too large to fit, which took the whole server down; a
+			// negative value wrapped round to a huge size_t and the resize below
+			// then threw bad_alloc. Parse by hand and reject anything unusable.
+			const std::string value = line.substr(16);
+			size_t parsed = 0;
+			bool valid = false;
+			for (const char c : value) {
+				if (c == '\r' || c == '\n' || c == ' ') {
+					break;
+				}
+				if (c < '0' || c > '9') {
+					valid = false;
+					break;
+				}
+				if (parsed > (MAX_CONTENT_LENGTH / 10)) {
+					valid = false;
+					break;
+				}
+				parsed = parsed * 10 + static_cast<size_t>(c - '0');
+				valid = true;
+			}
+			contentLength = (valid && parsed <= MAX_CONTENT_LENGTH) ? parsed : 0;
 		}
 	}
 
@@ -190,6 +236,9 @@ std::string QuadrateLSP::readMessage() {
 	std::string content;
 	content.resize(contentLength);
 	std::cin.read(&content[0], static_cast<std::streamsize>(contentLength));
+	// A frame whose header promised more than the client sent leaves the rest of
+	// the buffer uninitialised; truncate to what actually arrived.
+	content.resize(static_cast<size_t>(std::cin.gcount()));
 
 	return content;
 }
@@ -225,11 +274,15 @@ void QuadrateLSP::handleMessage(const std::string& message) {
 	std::string method = getJsonString(root, "method");
 	std::string id = getJsonString(root, "id");
 
+	// Remember the id's JSON type so the response echoes it back as the same
+	// type; a client that sent the string "5" must not get the number 5 back.
+	json_t* idJson = json_object_get(root, "id");
+	currentIdIsString_ = (idJson != nullptr) && json_is_string(idJson);
+
 	// If id is not string, try integer
 	if (id.empty()) {
-		json_t* id_json = json_object_get(root, "id");
-		if (id_json && json_is_integer(id_json)) {
-			id = std::to_string(json_integer_value(id_json));
+		if (idJson && json_is_integer(idJson)) {
+			id = std::to_string(json_integer_value(idJson));
 		}
 	}
 
@@ -284,14 +337,27 @@ void QuadrateLSP::handleMessage(const std::string& message) {
 			json_t* contentChanges = getJsonObject(params, "contentChanges");
 			if (textDoc && contentChanges && json_is_array(contentChanges)) {
 				std::string uri = getJsonString(textDoc, "uri");
-				// For full sync, contentChanges[0] contains the full document
+				// For full sync, contentChanges[0] contains the full document.
+				// Empty text is a real edit -- the user selected all and deleted --
+				// so it must not be skipped, or the server keeps answering from the
+				// content the buffer had before it was cleared. Only a change with
+				// no "text" member at all (incremental sync, which is not
+				// advertised) is ignored.
 				if (json_array_size(contentChanges) > 0) {
 					json_t* change = json_array_get(contentChanges, 0);
-					std::string text = getJsonString(change, "text");
-					if (!text.empty()) {
-						handleDidOpen(uri, text);
+					json_t* textNode = getJsonObject(change, "text");
+					if (textNode && json_is_string(textNode)) {
+						handleDidOpen(uri, getJsonString(change, "text"));
 					}
 				}
+			}
+		}
+	} else if (method == "textDocument/didClose") {
+		json_t* params = getJsonObject(root, "params");
+		if (params) {
+			json_t* textDoc = getJsonObject(params, "textDocument");
+			if (textDoc) {
+				handleDidClose(getJsonString(textDoc, "uri"));
 			}
 		}
 	} else if (method == "textDocument/didSave") {
@@ -651,7 +717,7 @@ void QuadrateLSP::handleInitialize(const std::string& id, json_t* initOptions) {
 
 	json_t* response = json_object();
 	json_object_set_new(response, "jsonrpc", json_string("2.0"));
-	json_object_set_new(response, "id", json_integer(std::stoi(id)));
+	json_object_set_new(response, "id", makeResponseId(id));
 
 	json_t* result = json_object();
 	json_t* capabilities = json_object();
@@ -815,10 +881,19 @@ void QuadrateLSP::handleDidOpen(const std::string& uri, const std::string& text)
 	publishDiagnostics(uri, text);
 }
 
+void QuadrateLSP::handleDidClose(const std::string& uri) {
+	// Drop the buffer: the client owns the file again, so a stale copy here would
+	// both grow documents_ for the life of the session and keep answering
+	// workspace-wide queries with content that is no longer open. Clearing the
+	// diagnostics is what retires the squiggles the client is still showing.
+	documents_.erase(uri);
+	publishEmptyDiagnostics(uri);
+}
+
 void QuadrateLSP::handleShutdown(const std::string& id) {
 	json_t* response = json_object();
 	json_object_set_new(response, "jsonrpc", json_string("2.0"));
-	json_object_set_new(response, "id", json_integer(std::stoi(id)));
+	json_object_set_new(response, "id", makeResponseId(id));
 	json_object_set_new(response, "result", json_null());
 	sendMessage(response);
 	json_decref(response);
@@ -941,6 +1016,23 @@ std::vector<QuadrateLSP::LintWarning> QuadrateLSP::runQuadlint(const std::string
 	std::remove(tempPath.c_str());
 
 	return warnings;
+}
+
+void QuadrateLSP::publishEmptyDiagnostics(const std::string& uri) {
+	// An empty diagnostics array is how LSP says "nothing wrong here any more".
+	// Sent on close rather than re-running the parser and the linter over a
+	// buffer that is going away.
+	json_t* notification = json_object();
+	json_object_set_new(notification, "jsonrpc", json_string("2.0"));
+	json_object_set_new(notification, "method", json_string("textDocument/publishDiagnostics"));
+
+	json_t* params = json_object();
+	json_object_set_new(params, "uri", json_string(uri.c_str()));
+	json_object_set_new(params, "diagnostics", json_array());
+	json_object_set_new(notification, "params", params);
+
+	sendMessage(notification);
+	json_decref(notification);
 }
 
 void QuadrateLSP::publishDiagnostics(const std::string& uri, const std::string& text) {
@@ -1095,7 +1187,7 @@ void QuadrateLSP::publishDiagnostics(const std::string& uri, const std::string& 
 void QuadrateLSP::handleFormatting(const std::string& id, const std::string& uri) {
 	json_t* response = json_object();
 	json_object_set_new(response, "jsonrpc", json_string("2.0"));
-	json_object_set_new(response, "id", json_integer(std::stoi(id)));
+	json_object_set_new(response, "id", makeResponseId(id));
 
 	// Get document content
 	auto it = documents_.find(uri);
@@ -1474,7 +1566,7 @@ void QuadrateLSP::handleCodeAction(const std::string& id, const std::string& uri
 
 	json_t* response = json_object();
 	json_object_set_new(response, "jsonrpc", json_string("2.0"));
-	json_object_set_new(response, "id", json_integer(std::stoi(id)));
+	json_object_set_new(response, "id", makeResponseId(id));
 
 	json_t* actions = json_array();
 
@@ -1608,7 +1700,7 @@ void QuadrateLSP::handleCodeAction(const std::string& id, const std::string& uri
 void QuadrateLSP::handleInlayHints(const std::string& id, const std::string& uri, size_t startLine, size_t endLine) {
 	json_t* response = json_object();
 	json_object_set_new(response, "jsonrpc", json_string("2.0"));
-	json_object_set_new(response, "id", json_integer(std::stoi(id)));
+	json_object_set_new(response, "id", makeResponseId(id));
 
 	json_t* hints = json_array();
 
@@ -1798,7 +1890,7 @@ static bool isTypeName(const std::string& word) {
 void QuadrateLSP::handleSemanticTokens(const std::string& id, const std::string& uri) {
 	json_t* response = json_object();
 	json_object_set_new(response, "jsonrpc", json_string("2.0"));
-	json_object_set_new(response, "id", json_integer(std::stoi(id)));
+	json_object_set_new(response, "id", makeResponseId(id));
 
 	std::vector<int> data; // Encoded token data
 
@@ -2180,7 +2272,7 @@ void QuadrateLSP::handleSemanticTokens(const std::string& id, const std::string&
 void QuadrateLSP::handleDocumentLinks(const std::string& id, const std::string& uri) {
 	json_t* response = json_object();
 	json_object_set_new(response, "jsonrpc", json_string("2.0"));
-	json_object_set_new(response, "id", json_integer(std::stoi(id)));
+	json_object_set_new(response, "id", makeResponseId(id));
 
 	json_t* links = json_array();
 
@@ -2292,7 +2384,7 @@ void QuadrateLSP::handlePrepareCallHierarchy(
 		const std::string& id, const std::string& uri, size_t line, size_t character) {
 	json_t* response = json_object();
 	json_object_set_new(response, "jsonrpc", json_string("2.0"));
-	json_object_set_new(response, "id", json_integer(std::stoi(id)));
+	json_object_set_new(response, "id", makeResponseId(id));
 
 	json_t* items = json_array();
 
@@ -2386,7 +2478,7 @@ void QuadrateLSP::handlePrepareCallHierarchy(
 void QuadrateLSP::handleIncomingCalls(const std::string& id, const std::string& itemData) {
 	json_t* response = json_object();
 	json_object_set_new(response, "jsonrpc", json_string("2.0"));
-	json_object_set_new(response, "id", json_integer(std::stoi(id)));
+	json_object_set_new(response, "id", makeResponseId(id));
 
 	json_t* calls = json_array();
 
@@ -2513,7 +2605,7 @@ void QuadrateLSP::handleIncomingCalls(const std::string& id, const std::string& 
 void QuadrateLSP::handleOutgoingCalls(const std::string& id, const std::string& itemData) {
 	json_t* response = json_object();
 	json_object_set_new(response, "jsonrpc", json_string("2.0"));
-	json_object_set_new(response, "id", json_integer(std::stoi(id)));
+	json_object_set_new(response, "id", makeResponseId(id));
 
 	json_t* calls = json_array();
 
@@ -2527,7 +2619,12 @@ void QuadrateLSP::handleOutgoingCalls(const std::string& id, const std::string& 
 	if (firstPipe != std::string::npos && secondPipe != std::string::npos) {
 		sourceUri = itemData.substr(0, firstPipe);
 		sourceFuncName = itemData.substr(firstPipe + 1, secondPipe - firstPipe - 1);
-		sourceLine = std::stoul(itemData.substr(secondPipe + 1));
+		// Client-supplied opaque data: a non-numeric tail must not throw.
+		try {
+			sourceLine = std::stoul(itemData.substr(secondPipe + 1));
+		} catch (const std::exception&) {
+			sourceLine = 0;
+		}
 	}
 
 	if (!sourceFuncName.empty()) {
@@ -2677,7 +2774,7 @@ void QuadrateLSP::handleSelectionRange(
 		const std::string& id, const std::string& uri, const std::vector<std::pair<size_t, size_t>>& positions) {
 	json_t* response = json_object();
 	json_object_set_new(response, "jsonrpc", json_string("2.0"));
-	json_object_set_new(response, "id", json_integer(std::stoi(id)));
+	json_object_set_new(response, "id", makeResponseId(id));
 
 	json_t* results = json_array();
 
@@ -2887,7 +2984,7 @@ void QuadrateLSP::handleRangeFormatting(const std::string& id, const std::string
 		size_t startChar, size_t endLine, size_t endChar) {
 	json_t* response = json_object();
 	json_object_set_new(response, "jsonrpc", json_string("2.0"));
-	json_object_set_new(response, "id", json_integer(std::stoi(id)));
+	json_object_set_new(response, "id", makeResponseId(id));
 
 	json_t* edits = json_array();
 
@@ -2995,7 +3092,7 @@ void QuadrateLSP::handleRangeFormatting(const std::string& id, const std::string
 void QuadrateLSP::handleCodeLens(const std::string& id, const std::string& uri) {
 	json_t* response = json_object();
 	json_object_set_new(response, "jsonrpc", json_string("2.0"));
-	json_object_set_new(response, "id", json_integer(std::stoi(id)));
+	json_object_set_new(response, "id", makeResponseId(id));
 
 	json_t* lenses = json_array();
 
@@ -3116,7 +3213,7 @@ void QuadrateLSP::handlePrepareTypeHierarchy(
 		const std::string& id, const std::string& uri, size_t line, size_t character) {
 	json_t* response = json_object();
 	json_object_set_new(response, "jsonrpc", json_string("2.0"));
-	json_object_set_new(response, "id", json_integer(std::stoi(id)));
+	json_object_set_new(response, "id", makeResponseId(id));
 
 	json_t* items = json_array();
 
@@ -3213,7 +3310,7 @@ void QuadrateLSP::handlePrepareTypeHierarchy(
 void QuadrateLSP::handleSupertypes(const std::string& id, const std::string& itemData) {
 	json_t* response = json_object();
 	json_object_set_new(response, "jsonrpc", json_string("2.0"));
-	json_object_set_new(response, "id", json_integer(std::stoi(id)));
+	json_object_set_new(response, "id", makeResponseId(id));
 
 	// Quadrate doesn't have struct inheritance, so return empty array
 	json_t* items = json_array();
@@ -3229,7 +3326,7 @@ void QuadrateLSP::handleSupertypes(const std::string& id, const std::string& ite
 void QuadrateLSP::handleSubtypes(const std::string& id, const std::string& itemData) {
 	json_t* response = json_object();
 	json_object_set_new(response, "jsonrpc", json_string("2.0"));
-	json_object_set_new(response, "id", json_integer(std::stoi(id)));
+	json_object_set_new(response, "id", makeResponseId(id));
 
 	// Quadrate doesn't have struct inheritance, so return empty array
 	json_t* items = json_array();
@@ -3246,7 +3343,7 @@ void QuadrateLSP::handleOnTypeFormatting(
 		const std::string& id, const std::string& uri, size_t line, size_t character, const std::string& ch) {
 	json_t* response = json_object();
 	json_object_set_new(response, "jsonrpc", json_string("2.0"));
-	json_object_set_new(response, "id", json_integer(std::stoi(id)));
+	json_object_set_new(response, "id", makeResponseId(id));
 
 	json_t* edits = json_array();
 
@@ -3362,7 +3459,7 @@ void QuadrateLSP::handleLinkedEditingRange(
 		const std::string& id, const std::string& uri, size_t line, size_t character) {
 	json_t* response = json_object();
 	json_object_set_new(response, "jsonrpc", json_string("2.0"));
-	json_object_set_new(response, "id", json_integer(std::stoi(id)));
+	json_object_set_new(response, "id", makeResponseId(id));
 
 	// Get document text
 	std::string documentText;
@@ -3511,7 +3608,7 @@ std::vector<std::string> QuadrateLSP::collectWorkspaceFiles(const std::string& d
 void QuadrateLSP::handleWorkspaceSymbols(const std::string& id, const std::string& query) {
 	json_t* response = json_object();
 	json_object_set_new(response, "jsonrpc", json_string("2.0"));
-	json_object_set_new(response, "id", json_integer(std::stoi(id)));
+	json_object_set_new(response, "id", makeResponseId(id));
 
 	json_t* symbols = json_array();
 	std::set<std::string> processedFiles;
@@ -3621,7 +3718,7 @@ void QuadrateLSP::handleWorkspaceSymbols(const std::string& id, const std::strin
 void QuadrateLSP::handleHover(const std::string& id, const std::string& uri, size_t line, size_t character) {
 	json_t* response = json_object();
 	json_object_set_new(response, "jsonrpc", json_string("2.0"));
-	json_object_set_new(response, "id", json_integer(std::stoi(id)));
+	json_object_set_new(response, "id", makeResponseId(id));
 
 	// Get document text
 	std::string documentText;
@@ -3950,7 +4047,7 @@ void QuadrateLSP::handleHover(const std::string& id, const std::string& uri, siz
 void QuadrateLSP::handleSignatureHelp(const std::string& id, const std::string& uri, size_t line, size_t character) {
 	json_t* response = json_object();
 	json_object_set_new(response, "jsonrpc", json_string("2.0"));
-	json_object_set_new(response, "id", json_integer(std::stoi(id)));
+	json_object_set_new(response, "id", makeResponseId(id));
 
 	// Get document text
 	std::string documentText;
@@ -4187,7 +4284,7 @@ void QuadrateLSP::handleSignatureHelp(const std::string& id, const std::string& 
 void QuadrateLSP::handleDocumentSymbols(const std::string& id, const std::string& uri) {
 	json_t* response = json_object();
 	json_object_set_new(response, "jsonrpc", json_string("2.0"));
-	json_object_set_new(response, "id", json_integer(std::stoi(id)));
+	json_object_set_new(response, "id", makeResponseId(id));
 
 	// Get document text
 	std::string documentText;

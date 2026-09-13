@@ -1,0 +1,47 @@
+<!DOCTYPE html><html><head><meta charset="utf-8"><title>hmac - Quadrate API</title><link rel="stylesheet" href="style.css"></head><body>
+<nav><h1>Quadrate API</h1><a href="index.html">All Modules</a></nav>
+<div class="container"><h2>hmac</h2>
+<p class="desc">HMAC (Hash-based Message Authentication Code) =============================================  HMAC-SHA256 and HMAC-SHA512 implementations per RFC 2104.  use crypto  &quot;my-secret-key&quot; &quot;Hello World&quot; hmac_sha256! -&gt; mac mac print  // prints 64-char hex HMAC</p>
+<h2>Functions</h2>
+<div class="fn fallible" id="hmac_sha256">
+<h3>hmac_sha256 [fallible]</h3>
+<pre><code>fn hmac_sha256(key:str message:str -- mac:str)!</code></pre>
+<p>Compute HMAC-SHA256.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>key</code> <code>str</code></dt>
+<dd>Secret key</dd>
+<dt><code>message</code> <code>str</code></dt>
+<dd>Message to authenticate</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>mac</code> <code>str</code></dt>
+<dd>64-character hex HMAC</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>&quot;Jefe&quot; &quot;what do ya want for nothing?&quot; crypto::hmac_sha256! -&gt; mac</code></pre>
+<p class="xref"><strong>Calls:</strong> <a href="hex.html#decode"><code>hex::decode</code></a>, <a href="mem.html#free"><code>mem::free</code></a>, <a href="mem.html#from_string"><code>mem::from_string</code></a></p>
+</div>
+<hr>
+<div class="fn fallible" id="hmac_sha512">
+<h3>hmac_sha512 [fallible]</h3>
+<pre><code>fn hmac_sha512(key:str message:str -- mac:str)!</code></pre>
+<p>Compute HMAC-SHA512.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>key</code> <code>str</code></dt>
+<dd>Secret key</dd>
+<dt><code>message</code> <code>str</code></dt>
+<dd>Message to authenticate</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>mac</code> <code>str</code></dt>
+<dd>128-character hex HMAC</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>&quot;Jefe&quot; &quot;what do ya want for nothing?&quot; crypto::hmac_sha512! -&gt; mac</code></pre>
+<p class="xref"><strong>Calls:</strong> <a href="hex.html#decode"><code>hex::decode</code></a>, <a href="mem.html#free"><code>mem::free</code></a>, <a href="mem.html#from_string"><code>mem::from_string</code></a></p>
+</div>
+</div></body></html>

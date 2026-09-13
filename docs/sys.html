@@ -1,0 +1,252 @@
+<!DOCTYPE html><html><head><meta charset="utf-8"><title>sys - Quadrate API</title><link rel="stylesheet" href="style.css"></head><body>
+<nav><h1>Quadrate API</h1><a href="index.html">All Modules</a></nav>
+<div class="container"><h2>sys</h2>
+<p class="desc">Low-level system operations.  Provides zero-overhead access to x86 I/O ports, CPU interrupt control, and raw memory store/load operations. All functions are inline — the compiler eliminates call overhead entirely.  Port I/O and CPU control require an x86 target.</p>
+<h2>Functions</h2>
+<div class="fn" id="port_out8">
+<h3>port_out8</h3>
+<pre><code>fn port_out8(port:i64 value:i64 -- )</code></pre>
+<p>Write a byte to an I/O port.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>port</code> <code>i64</code></dt>
+<dd>Port number (0-65535)</dd>
+<dt><code>value</code> <code>i64</code></dt>
+<dd>Byte value (0-255)</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>0x3F8 65 sys::port_out8</code></pre>
+<p class="xref"><strong>Called by:</strong> <a href="kernel.html#handle_interrupt"><code>kernel::handle_interrupt</code></a></p>
+</div>
+<hr>
+<div class="fn" id="port_out16">
+<h3>port_out16</h3>
+<pre><code>fn port_out16(port:i64 value:i64 -- )</code></pre>
+<p>Write a 16-bit word to an I/O port.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>port</code> <code>i64</code></dt>
+<dd>Port number (0-65535)</dd>
+<dt><code>value</code> <code>i64</code></dt>
+<dd>Word value (0-65535)</dd>
+</dl>
+</div>
+<hr>
+<div class="fn" id="port_out32">
+<h3>port_out32</h3>
+<pre><code>fn port_out32(port:i64 value:i64 -- )</code></pre>
+<p>Write a 32-bit dword to an I/O port.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>port</code> <code>i64</code></dt>
+<dd>Port number (0-65535)</dd>
+<dt><code>value</code> <code>i64</code></dt>
+<dd>Dword value</dd>
+</dl>
+</div>
+<hr>
+<div class="fn" id="port_in8">
+<h3>port_in8</h3>
+<pre><code>fn port_in8(port:i64 -- value:i64)</code></pre>
+<p>Read a byte from an I/O port.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>port</code> <code>i64</code></dt>
+<dd>Port number (0-65535)</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>value</code> <code>i64</code></dt>
+<dd>Byte value (0-255)</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>0x60 sys::port_in8 -&gt; scancode</code></pre>
+</div>
+<hr>
+<div class="fn" id="port_in16">
+<h3>port_in16</h3>
+<pre><code>fn port_in16(port:i64 -- value:i64)</code></pre>
+<p>Read a 16-bit word from an I/O port.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>port</code> <code>i64</code></dt>
+<dd>Port number (0-65535)</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>value</code> <code>i64</code></dt>
+<dd>Word value (0-65535)</dd>
+</dl>
+</div>
+<hr>
+<div class="fn" id="port_in32">
+<h3>port_in32</h3>
+<pre><code>fn port_in32(port:i64 -- value:i64)</code></pre>
+<p>Read a 32-bit dword from an I/O port.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>port</code> <code>i64</code></dt>
+<dd>Port number (0-65535)</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>value</code> <code>i64</code></dt>
+<dd>Dword value</dd>
+</dl>
+</div>
+<hr>
+<div class="fn" id="cli">
+<h3>cli</h3>
+<pre><code>fn cli()</code></pre>
+<p>Disable interrupts (x86 CLI instruction).</p>
+</div>
+<hr>
+<div class="fn" id="sti">
+<h3>sti</h3>
+<pre><code>fn sti()</code></pre>
+<p>Enable interrupts (x86 STI instruction).</p>
+</div>
+<hr>
+<div class="fn" id="hlt">
+<h3>hlt</h3>
+<pre><code>fn hlt()</code></pre>
+<p>Halt the CPU until the next interrupt (x86 HLT instruction). Typically used in an idle loop: loop { sys::hlt }</p>
+</div>
+<hr>
+<div class="fn" id="st8">
+<h3>st8</h3>
+<pre><code>fn st8(addr:i64 offset:i64 value:i64 -- )</code></pre>
+<p>Store an 8-bit value at address + offset.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>addr</code> <code>i64</code></dt>
+<dd>Base address</dd>
+<dt><code>offset</code> <code>i64</code></dt>
+<dd>Byte offset from base</dd>
+<dt><code>value</code> <code>i64</code></dt>
+<dd>Value to store (low 8 bits used)</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>buf 0 65 sys::st8</code></pre>
+</div>
+<hr>
+<div class="fn" id="st16">
+<h3>st16</h3>
+<pre><code>fn st16(addr:i64 offset:i64 value:i64 -- )</code></pre>
+<p>Store a 16-bit value at address + offset.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>addr</code> <code>i64</code></dt>
+<dd>Base address</dd>
+<dt><code>offset</code> <code>i64</code></dt>
+<dd>Byte offset from base</dd>
+<dt><code>value</code> <code>i64</code></dt>
+<dd>Value to store (low 16 bits used)</dd>
+</dl>
+</div>
+<hr>
+<div class="fn" id="st32">
+<h3>st32</h3>
+<pre><code>fn st32(addr:i64 offset:i64 value:i64 -- )</code></pre>
+<p>Store a 32-bit value at address + offset.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>addr</code> <code>i64</code></dt>
+<dd>Base address</dd>
+<dt><code>offset</code> <code>i64</code></dt>
+<dd>Byte offset from base</dd>
+<dt><code>value</code> <code>i64</code></dt>
+<dd>Value to store (low 32 bits used)</dd>
+</dl>
+</div>
+<hr>
+<div class="fn" id="st64">
+<h3>st64</h3>
+<pre><code>fn st64(addr:i64 offset:i64 value:i64 -- )</code></pre>
+<p>Store a 64-bit value at address + offset.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>addr</code> <code>i64</code></dt>
+<dd>Base address</dd>
+<dt><code>offset</code> <code>i64</code></dt>
+<dd>Byte offset from base</dd>
+<dt><code>value</code> <code>i64</code></dt>
+<dd>Value to store</dd>
+</dl>
+</div>
+<hr>
+<div class="fn" id="ld8">
+<h3>ld8</h3>
+<pre><code>fn ld8(addr:i64 offset:i64 -- value:i64)</code></pre>
+<p>Load an 8-bit value from address + offset (zero-extended to i64).</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>addr</code> <code>i64</code></dt>
+<dd>Base address</dd>
+<dt><code>offset</code> <code>i64</code></dt>
+<dd>Byte offset from base</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>value</code> <code>i64</code></dt>
+<dd>Loaded value (0-255)</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>buf 0 sys::ld8 -&gt; byte</code></pre>
+</div>
+<hr>
+<div class="fn" id="ld16">
+<h3>ld16</h3>
+<pre><code>fn ld16(addr:i64 offset:i64 -- value:i64)</code></pre>
+<p>Load a 16-bit value from address + offset (zero-extended to i64).</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>addr</code> <code>i64</code></dt>
+<dd>Base address</dd>
+<dt><code>offset</code> <code>i64</code></dt>
+<dd>Byte offset from base</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>value</code> <code>i64</code></dt>
+<dd>Loaded value (0-65535)</dd>
+</dl>
+</div>
+<hr>
+<div class="fn" id="ld32">
+<h3>ld32</h3>
+<pre><code>fn ld32(addr:i64 offset:i64 -- value:i64)</code></pre>
+<p>Load a 32-bit value from address + offset (zero-extended to i64).</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>addr</code> <code>i64</code></dt>
+<dd>Base address</dd>
+<dt><code>offset</code> <code>i64</code></dt>
+<dd>Byte offset from base</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>value</code> <code>i64</code></dt>
+<dd>Loaded value</dd>
+</dl>
+</div>
+<hr>
+<div class="fn" id="ld64">
+<h3>ld64</h3>
+<pre><code>fn ld64(addr:i64 offset:i64 -- value:i64)</code></pre>
+<p>Load a 64-bit value from address + offset.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>addr</code> <code>i64</code></dt>
+<dd>Base address</dd>
+<dt><code>offset</code> <code>i64</code></dt>
+<dd>Byte offset from base</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>value</code> <code>i64</code></dt>
+<dd>Loaded value</dd>
+</dl>
+<p class="xref"><strong>Called by:</strong> <a href="kernel.html#handle_interrupt"><code>kernel::handle_interrupt</code></a></p>
+</div>
+</div></body></html>

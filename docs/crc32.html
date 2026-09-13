@@ -1,0 +1,139 @@
+<!DOCTYPE html><html><head><meta charset="utf-8"><title>crc32 - Quadrate API</title><link rel="stylesheet" href="style.css"></head><body>
+<nav><h1>Quadrate API</h1><a href="index.html">All Modules</a></nav>
+<div class="container"><h2>crc32</h2>
+<p class="desc">CRC32 Implementation ====================  CRC32 checksum with streaming and one-shot APIs.  use crypto  // One-shot &quot;Hello&quot; crc32 -&gt; crc &quot;Hello&quot; crc32_hex -&gt; hex  // Streaming Crc32 {} -&gt; c c &quot;Hello&quot; update -&gt; c c &quot; World&quot; update -&gt; c c value -&gt; crc c release</p>
+<h2>Structs</h2>
+<h3 id="Crc32"><code>Crc32</code></h3>
+<p>CRC32 hasher state for streaming computation.</p>
+<dl>
+<dt><code>state</code> <code>i64</code></dt>
+<dd>CRC state</dd>
+<dt><code>tbl</code> <code>ptr</code></dt>
+<dd>table (allocated on first update)</dd>
+</dl>
+<h2>Functions</h2>
+<div class="fn" id="update">
+<h3>update</h3>
+<pre><code>fn (c:Crc32) update(data:str -- c2:Crc32)</code></pre>
+<p>Update CRC32 state with additional data.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>c</code> <code>Crc32</code></dt>
+<dd>The hasher state</dd>
+<dt><code>data</code> <code>str</code></dt>
+<dd>Data to hash</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>c2</code> <code>Crc32</code></dt>
+<dd>Updated hasher state</dd>
+</dl>
+<p class="xref"><strong>Calls:</strong> <a href="mem.html#get_i64"><code>mem::get_i64</code></a>, <a href="strings.html#char_at"><code>strings::char_at</code></a>, <a href="strings.html#len"><code>strings::len</code></a></p>
+<p class="xref"><strong>Called by:</strong> <a href="crc32.html#crc32"><code>crc32::crc32</code></a>, <a href="crc32.html#crc32_hex"><code>crc32::crc32_hex</code></a></p>
+</div>
+<hr>
+<div class="fn" id="value">
+<h3>value</h3>
+<pre><code>fn (c:Crc32) value( -- crc:i64)</code></pre>
+<p>Get the current CRC32 value.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>c</code> <code>Crc32</code></dt>
+<dd>The hasher state</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>crc</code> <code>i64</code></dt>
+<dd>Current CRC32 checksum</dd>
+</dl>
+<p class="xref"><strong>Calls:</strong> <a href="bits.html#mask"><code>bits::mask</code></a></p>
+<p class="xref"><strong>Called by:</strong> <a href="crc32.html#crc32"><code>crc32::crc32</code></a>, <a href="crc32.html#hex"><code>crc32::hex</code></a></p>
+</div>
+<hr>
+<div class="fn" id="hex">
+<h3>hex</h3>
+<pre><code>fn (c:Crc32) hex( -- hex:str)</code></pre>
+<p>Get CRC32 as 8-character hex string.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>c</code> <code>Crc32</code></dt>
+<dd>The hasher state</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>hex</code> <code>str</code></dt>
+<dd>CRC32 as lowercase hex string</dd>
+</dl>
+<p class="xref"><strong>Calls:</strong> <a href="crc32.html#value"><code>crc32::value</code></a>, <a href="mem.html#alloc"><code>mem::alloc</code></a>, <a href="mem.html#free"><code>mem::free</code></a>, <a href="mem.html#set_byte"><code>mem::set_byte</code></a>, <a href="mem.html#to_string"><code>mem::to_string</code></a></p>
+<p class="xref"><strong>Called by:</strong> <a href="crc32.html#crc32_hex"><code>crc32::crc32_hex</code></a></p>
+</div>
+<hr>
+<div class="fn" id="release">
+<h3>release</h3>
+<pre><code>fn (c:Crc32) release()</code></pre>
+<p>Free resources used by CRC32 hasher.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>c</code> <code>Crc32</code></dt>
+<dd>The hasher state to free</dd>
+</dl>
+<p class="xref"><strong>Calls:</strong> <a href="mem.html#free"><code>mem::free</code></a></p>
+<p class="xref"><strong>Called by:</strong> <a href="crc32.html#crc32"><code>crc32::crc32</code></a>, <a href="crc32.html#crc32_hex"><code>crc32::crc32_hex</code></a></p>
+</div>
+<hr>
+<div class="fn" id="crc32">
+<h3>crc32</h3>
+<pre><code>fn crc32(s:str -- crc:i64)</code></pre>
+<p>One-shot CRC32 of a string.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>s</code> <code>str</code></dt>
+<dd>Input string</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>crc</code> <code>i64</code></dt>
+<dd>CRC32 checksum</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>&quot;Hello&quot; crc32 -&gt; crc</code></pre>
+<p class="xref"><strong>Calls:</strong> <a href="crc32.html#release"><code>crc32::release</code></a>, <a href="crc32.html#update"><code>crc32::update</code></a>, <a href="crc32.html#value"><code>crc32::value</code></a></p>
+<p class="xref"><strong>Called by:</strong> <a href="crc32.html#crc32_verify"><code>crc32::crc32_verify</code></a></p>
+</div>
+<hr>
+<div class="fn" id="crc32_hex">
+<h3>crc32_hex</h3>
+<pre><code>fn crc32_hex(s:str -- hex:str)</code></pre>
+<p>One-shot CRC32 as hex string.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>s</code> <code>str</code></dt>
+<dd>Input string</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>hex</code> <code>str</code></dt>
+<dd>CRC32 as 8-character hex string</dd>
+</dl>
+<p class="xref"><strong>Calls:</strong> <a href="crc32.html#hex"><code>crc32::hex</code></a>, <a href="crc32.html#release"><code>crc32::release</code></a>, <a href="crc32.html#update"><code>crc32::update</code></a></p>
+</div>
+<hr>
+<div class="fn" id="crc32_verify">
+<h3>crc32_verify</h3>
+<pre><code>fn crc32_verify(s:str expected:i64 -- ok:i64)</code></pre>
+<p>Verify data against expected CRC32.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>s</code> <code>str</code></dt>
+<dd>Data to verify</dd>
+<dt><code>expected</code> <code>i64</code></dt>
+<dd>Expected CRC32 value</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>ok</code> <code>i64</code></dt>
+<dd>1 if matches, 0 otherwise</dd>
+</dl>
+<p class="xref"><strong>Calls:</strong> <a href="crc32.html#crc32"><code>crc32::crc32</code></a></p>
+</div>
+</div></body></html>

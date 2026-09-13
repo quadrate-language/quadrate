@@ -1,0 +1,357 @@
+<!DOCTYPE html><html><head><meta charset="utf-8"><title>rand - Quadrate API</title><link rel="stylesheet" href="style.css"></head><body>
+<nav><h1>Quadrate API</h1><a href="index.html">All Modules</a></nav>
+<div class="container"><h2>rand</h2>
+<p class="desc">Random number generation using xorshift64* algorithm. Fast, high-quality PRNG suitable for most applications.  SECURITY: the `Rng` generator (`new`, `with_seed`, `next`, ...) is NOT cryptographically secure - xorshift64* is fast but predictable and a time-based seed is guessable. Do NOT use it for tokens, session IDs, nonces, salts, or keys. For those, use `rand::secure_i64` (which draws fresh OS entropy on every call) or seed an `Rng` with `rand::secure`.</p>
+<h2>Structs</h2>
+<h3 id="Rng"><code>Rng</code></h3>
+<p>Random number generator state.</p>
+<dl>
+<dt><code>state</code> <code>i64</code></dt>
+<dd>Internal RNG state</dd>
+</dl>
+<h2>Functions</h2>
+<div class="fn" id="new">
+<h3>new</h3>
+<pre><code>fn new( -- rng:Rng)</code></pre>
+<p>Create a new RNG seeded from current time. NOT cryptographically secure (guessable seed) - see module security note.</p>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>rng</code> <code>Rng</code></dt>
+<dd>New random number generator</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>rand::new -&gt; rng</code></pre>
+<p class="xref"><strong>Calls:</strong> <a href="time.html#now"><code>time::now</code></a></p>
+<p class="xref"><strong>Called by:</strong> <a href="uuid.html#v4"><code>uuid::v4</code></a></p>
+</div>
+<hr>
+<div class="fn" id="secure_i64">
+<h3>secure_i64</h3>
+<pre><code>fn secure_i64( -- n:i64)</code></pre>
+<p>Get a cryptographically secure random 64-bit value directly from the OS entropy pool. Each call draws fresh entropy, so the output is suitable for tokens, nonces, salts, and keys.</p>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>n</code> <code>i64</code></dt>
+<dd>Secure random 64-bit value</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>rand::secure_i64 -&gt; token</code></pre>
+<p class="xref"><strong>Calls:</strong> <a href="os.html#urandom"><code>os::urandom</code></a></p>
+</div>
+<hr>
+<div class="fn" id="secure">
+<h3>secure</h3>
+<pre><code>fn secure( -- rng:Rng)</code></pre>
+<p>Create a new RNG seeded from the OS entropy pool. The seed is unpredictable, but the generated stream is still xorshift64* and therefore NOT cryptographically secure - use `secure_i64` when stream secrecy matters.</p>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>rng</code> <code>Rng</code></dt>
+<dd>New random number generator</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>rand::secure -&gt; rng</code></pre>
+<p class="xref"><strong>Calls:</strong> <a href="os.html#urandom"><code>os::urandom</code></a></p>
+</div>
+<hr>
+<div class="fn" id="with_seed">
+<h3>with_seed</h3>
+<pre><code>fn with_seed(seed:i64 -- rng:Rng)</code></pre>
+<p>Create a new RNG with specific seed.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>seed</code> <code>i64</code></dt>
+<dd>Initial seed value (must be non-zero)</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>rng</code> <code>Rng</code></dt>
+<dd>New random number generator</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>12345 rand::with_seed -&gt; rng</code></pre>
+<p class="xref"><strong>Called by:</strong> <a href="uuid.html#v4_seeded"><code>uuid::v4_seeded</code></a></p>
+</div>
+<hr>
+<div class="fn" id="next">
+<h3>next</h3>
+<pre><code>fn (rng:Rng) next( -- rng2:Rng n:i64)</code></pre>
+<p>Generate next random i64.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>rng</code> <code>Rng</code></dt>
+<dd>RNG state</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>rng2</code> <code>Rng</code></dt>
+<dd>Updated RNG state</dd>
+<dt><code>n</code> <code>i64</code></dt>
+<dd>Random 64-bit integer</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>rng rand::next -&gt; rng n</code></pre>
+<p class="xref"><strong>Called by:</strong> <a href="rand.html#float"><code>rand::float</code></a>, <a href="rand.html#int"><code>rand::int</code></a></p>
+</div>
+<hr>
+<div class="fn" id="int">
+<h3>int</h3>
+<pre><code>fn (rng:Rng) int(max:i64 -- rng2:Rng n:i64)</code></pre>
+<p>Generate random i64 in range [0, max).</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>rng</code> <code>Rng</code></dt>
+<dd>RNG state</dd>
+<dt><code>max</code> <code>i64</code></dt>
+<dd>Upper bound (exclusive)</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>rng2</code> <code>Rng</code></dt>
+<dd>Updated RNG state</dd>
+<dt><code>n</code> <code>i64</code></dt>
+<dd>Random integer in [0, max)</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>rng 100 rand::int -&gt; rng n</code></pre>
+<p class="xref"><strong>Calls:</strong> <a href="rand.html#next"><code>rand::next</code></a></p>
+<p class="xref"><strong>Called by:</strong> <a href="rand.html#boolean"><code>rand::boolean</code></a>, <a href="rand.html#choice"><code>rand::choice</code></a>, <a href="rand.html#range"><code>rand::range</code></a>, <a href="rand.html#sample"><code>rand::sample</code></a>, <a href="rand.html#shuffle"><code>rand::shuffle</code></a>, <a href="uuid.html#v4"><code>uuid::v4</code></a>, <a href="uuid.html#v4_seeded"><code>uuid::v4_seeded</code></a></p>
+</div>
+<hr>
+<div class="fn" id="range">
+<h3>range</h3>
+<pre><code>fn (rng:Rng) range(min:i64 max:i64 -- rng2:Rng n:i64)</code></pre>
+<p>Generate random i64 in range [min, max).</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>rng</code> <code>Rng</code></dt>
+<dd>RNG state</dd>
+<dt><code>min</code> <code>i64</code></dt>
+<dd>Lower bound (inclusive)</dd>
+<dt><code>max</code> <code>i64</code></dt>
+<dd>Upper bound (exclusive)</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>rng2</code> <code>Rng</code></dt>
+<dd>Updated RNG state</dd>
+<dt><code>n</code> <code>i64</code></dt>
+<dd>Random integer in [min, max)</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>rng 10 20 rand::range -&gt; rng n</code></pre>
+<p class="xref"><strong>Calls:</strong> <a href="rand.html#int"><code>rand::int</code></a></p>
+</div>
+<hr>
+<div class="fn" id="boolean">
+<h3>boolean</h3>
+<pre><code>fn (rng:Rng) boolean( -- rng2:Rng b:i64)</code></pre>
+<p>Generate random boolean.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>rng</code> <code>Rng</code></dt>
+<dd>RNG state</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>rng2</code> <code>Rng</code></dt>
+<dd>Updated RNG state</dd>
+<dt><code>b</code> <code>i64</code></dt>
+<dd>Random boolean (0 or 1)</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>rng rand::boolean -&gt; rng b</code></pre>
+<p class="xref"><strong>Calls:</strong> <a href="rand.html#int"><code>rand::int</code></a></p>
+</div>
+<hr>
+<div class="fn" id="float">
+<h3>float</h3>
+<pre><code>fn (rng:Rng) float( -- rng2:Rng f:f64)</code></pre>
+<p>Generate random f64 in range [0.0, 1.0).</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>rng</code> <code>Rng</code></dt>
+<dd>RNG state</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>rng2</code> <code>Rng</code></dt>
+<dd>Updated RNG state</dd>
+<dt><code>f</code> <code>f64</code></dt>
+<dd>Random float in [0.0, 1.0)</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>rng rand::float -&gt; rng f</code></pre>
+<p class="xref"><strong>Calls:</strong> <a href="rand.html#next"><code>rand::next</code></a></p>
+<p class="xref"><strong>Called by:</strong> <a href="rand.html#exponential"><code>rand::exponential</code></a>, <a href="rand.html#float_range"><code>rand::float_range</code></a>, <a href="rand.html#normal"><code>rand::normal</code></a></p>
+</div>
+<hr>
+<div class="fn" id="float_range">
+<h3>float_range</h3>
+<pre><code>fn (rng:Rng) float_range(min:f64 max:f64 -- rng2:Rng f:f64)</code></pre>
+<p>Generate random f64 in range [min, max).</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>rng</code> <code>Rng</code></dt>
+<dd>RNG state</dd>
+<dt><code>min</code> <code>f64</code></dt>
+<dd>Lower bound (inclusive)</dd>
+<dt><code>max</code> <code>f64</code></dt>
+<dd>Upper bound (exclusive)</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>rng2</code> <code>Rng</code></dt>
+<dd>Updated RNG state</dd>
+<dt><code>f</code> <code>f64</code></dt>
+<dd>Random float in [min, max)</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>rng 0.0 10.0 rand::float_range -&gt; rng f</code></pre>
+<p class="xref"><strong>Calls:</strong> <a href="rand.html#float"><code>rand::float</code></a></p>
+</div>
+<hr>
+<div class="fn" id="shuffle">
+<h3>shuffle</h3>
+<pre><code>fn (rng:Rng) shuffle(arr:ptr len:i64 -- rng2:Rng)</code></pre>
+<p>Shuffle array in place using Fisher-Yates algorithm.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>rng</code> <code>Rng</code></dt>
+<dd>RNG state</dd>
+<dt><code>arr</code> <code>ptr</code></dt>
+<dd>Array of i64 values</dd>
+<dt><code>len</code> <code>i64</code></dt>
+<dd>Array length</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>rng2</code> <code>Rng</code></dt>
+<dd>Updated RNG state</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>rng arr len rand::shuffle -&gt; rng</code></pre>
+<p class="xref"><strong>Calls:</strong> <a href="mem.html#get_i64"><code>mem::get_i64</code></a>, <a href="mem.html#set_i64"><code>mem::set_i64</code></a>, <a href="rand.html#int"><code>rand::int</code></a></p>
+</div>
+<hr>
+<div class="fn" id="choice">
+<h3>choice</h3>
+<pre><code>fn (rng:Rng) choice(arr:ptr len:i64 -- rng2:Rng val:i64)</code></pre>
+<p>Pick a random element from array.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>rng</code> <code>Rng</code></dt>
+<dd>RNG state</dd>
+<dt><code>arr</code> <code>ptr</code></dt>
+<dd>Array of i64 values</dd>
+<dt><code>len</code> <code>i64</code></dt>
+<dd>Array length</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>rng2</code> <code>Rng</code></dt>
+<dd>Updated RNG state</dd>
+<dt><code>val</code> <code>i64</code></dt>
+<dd>Random element from array</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>rng arr len rand::choice -&gt; rng val</code></pre>
+<p class="xref"><strong>Calls:</strong> <a href="mem.html#get_i64"><code>mem::get_i64</code></a>, <a href="rand.html#int"><code>rand::int</code></a></p>
+</div>
+<hr>
+<div class="fn" id="normal">
+<h3>normal</h3>
+<pre><code>fn (rng:Rng) normal( -- rng2:Rng n:f64)</code></pre>
+<p>Generate random f64 from standard normal distribution (mean=0, stddev=1). Uses Box-Muller transform.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>rng</code> <code>Rng</code></dt>
+<dd>RNG state</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>rng2</code> <code>Rng</code></dt>
+<dd>Updated RNG state</dd>
+<dt><code>n</code> <code>f64</code></dt>
+<dd>Random value from N(0,1)</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>rng rand::normal -&gt; rng n</code></pre>
+<p class="xref"><strong>Calls:</strong> <a href="math.html#cos"><code>math::cos</code></a>, <a href="math.html#ln"><code>math::ln</code></a>, <a href="math.html#sqrt"><code>math::sqrt</code></a>, <a href="rand.html#float"><code>rand::float</code></a></p>
+<p class="xref"><strong>Called by:</strong> <a href="rand.html#normal_params"><code>rand::normal_params</code></a></p>
+</div>
+<hr>
+<div class="fn" id="normal_params">
+<h3>normal_params</h3>
+<pre><code>fn (rng:Rng) normal_params(mean:f64 stddev:f64 -- rng2:Rng n:f64)</code></pre>
+<p>Generate random f64 from normal distribution with given mean and stddev.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>rng</code> <code>Rng</code></dt>
+<dd>RNG state</dd>
+<dt><code>mean</code> <code>f64</code></dt>
+<dd>Distribution mean</dd>
+<dt><code>stddev</code> <code>f64</code></dt>
+<dd>Distribution standard deviation</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>rng2</code> <code>Rng</code></dt>
+<dd>Updated RNG state</dd>
+<dt><code>n</code> <code>f64</code></dt>
+<dd>Random value from N(mean, stddev)</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>rng 100.0 15.0 rand::normal_params -&gt; rng n</code></pre>
+<p class="xref"><strong>Calls:</strong> <a href="rand.html#normal"><code>rand::normal</code></a></p>
+</div>
+<hr>
+<div class="fn" id="exponential">
+<h3>exponential</h3>
+<pre><code>fn (rng:Rng) exponential(lambda:f64 -- rng2:Rng n:f64)</code></pre>
+<p>Generate random f64 from exponential distribution.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>rng</code> <code>Rng</code></dt>
+<dd>RNG state</dd>
+<dt><code>lambda</code> <code>f64</code></dt>
+<dd>Rate parameter (1/mean)</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>rng2</code> <code>Rng</code></dt>
+<dd>Updated RNG state</dd>
+<dt><code>n</code> <code>f64</code></dt>
+<dd>Random value from Exp(lambda)</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>rng 1.0 rand::exponential -&gt; rng n</code></pre>
+<p class="xref"><strong>Calls:</strong> <a href="math.html#ln"><code>math::ln</code></a>, <a href="rand.html#float"><code>rand::float</code></a></p>
+</div>
+<hr>
+<div class="fn" id="sample">
+<h3>sample</h3>
+<pre><code>fn (rng:Rng) sample(src:ptr src_len:i64 dst:ptr n:i64 -- rng2:Rng)</code></pre>
+<p>Pick n random elements from array without replacement. Uses partial Fisher-Yates algorithm. Output array must have space for n elements.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>rng</code> <code>Rng</code></dt>
+<dd>RNG state</dd>
+<dt><code>src</code> <code>ptr</code></dt>
+<dd>Source array of i64 values</dd>
+<dt><code>src_len</code> <code>i64</code></dt>
+<dd>Source array length</dd>
+<dt><code>dst</code> <code>ptr</code></dt>
+<dd>Destination array (must have space for n i64 values)</dd>
+<dt><code>n</code> <code>i64</code></dt>
+<dd>Number of elements to pick</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>rng2</code> <code>Rng</code></dt>
+<dd>Updated RNG state</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>rng src 10 dst 3 rand::sample -&gt; rng</code></pre>
+<p class="xref"><strong>Calls:</strong> <a href="mem.html#alloc"><code>mem::alloc</code></a>, <a href="mem.html#free"><code>mem::free</code></a>, <a href="mem.html#get_i64"><code>mem::get_i64</code></a>, <a href="mem.html#set_i64"><code>mem::set_i64</code></a>, <a href="rand.html#int"><code>rand::int</code></a></p>
+</div>
+</div></body></html>

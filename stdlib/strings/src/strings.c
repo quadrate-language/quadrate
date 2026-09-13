@@ -39,7 +39,7 @@ int usr_strings_len(qd_context* ctx) {
 		abort();
 	}
 
-	size_t len = strlen(qd_string_data(val.value.s));
+	size_t len = qd_string_length(val.value.s);
 	qd_string_release(val.value.s);
 
 	qd_push_i(ctx, (int64_t)len);
@@ -153,8 +153,8 @@ int usr_strings_starts_with(qd_context* ctx) {
 		abort();
 	}
 
-	size_t str_len = strlen(qd_string_data(str.value.s));
-	size_t prefix_len = strlen(qd_string_data(prefix.value.s));
+	size_t str_len = qd_string_length(str.value.s);
+	size_t prefix_len = qd_string_length(prefix.value.s);
 
 	int result = 0;
 	if (prefix_len <= str_len) {
@@ -190,8 +190,8 @@ int usr_strings_ends_with(qd_context* ctx) {
 		abort();
 	}
 
-	size_t str_len = strlen(qd_string_data(str.value.s));
-	size_t suffix_len = strlen(qd_string_data(suffix.value.s));
+	size_t str_len = qd_string_length(str.value.s);
+	size_t suffix_len = qd_string_length(suffix.value.s);
 
 	int result = 0;
 	if (suffix_len <= str_len) {
@@ -221,7 +221,7 @@ int usr_strings_upper(qd_context* ctx) {
 		abort();
 	}
 
-	size_t len = strlen(qd_string_data(val.value.s));
+	size_t len = qd_string_length(val.value.s);
 	char* result = malloc(len + 1);
 
 	if (!result) {
@@ -256,7 +256,7 @@ int usr_strings_lower(qd_context* ctx) {
 		abort();
 	}
 
-	size_t len = strlen(qd_string_data(val.value.s));
+	size_t len = qd_string_length(val.value.s);
 	char* result = malloc(len + 1);
 
 	if (!result) {
@@ -368,7 +368,7 @@ int usr_strings_substring(qd_context* ctx) {
 
 	int64_t start = start_elem.value.i;
 	int64_t length = len_elem.value.i;
-	size_t str_len = strlen(qd_string_data(str_elem.value.s));
+	size_t str_len = qd_string_length(str_elem.value.s);
 
 	if (start < 0 || length < 0) {
 		fprintf(stderr, "Fatal error in strings::substring: Negative indices not allowed\n");
@@ -558,7 +558,7 @@ int usr_strings_replace(qd_context* ctx) {
 	}
 
 	// Calculate result length using signed arithmetic to handle shrinking replacements
-	size_t str_len = strlen(qd_string_data(str_elem.value.s));
+	size_t str_len = qd_string_length(str_elem.value.s);
 	int64_t delta = (int64_t)new_len - (int64_t)old_len;
 	int64_t result_len_signed = (int64_t)str_len + (int64_t)count * delta;
 	if (result_len_signed < 0) result_len_signed = 0;
@@ -667,7 +667,10 @@ int usr_strings_char_at(qd_context* ctx) {
 	}
 
 	int64_t index = index_elem.value.i;
-	size_t str_len = strlen(qd_string_data(str_elem.value.s));
+	// The runtime already knows the length; strlen() here made char_at O(n), so
+	// every .qd loop that scanned a string one character at a time -- json's
+	// find_str_end over an MCP request body, for one -- was quadratic.
+	size_t str_len = qd_string_length(str_elem.value.s);
 
 	if (index < 0 || (size_t)index >= str_len) {
 		qd_string_release(str_elem.value.s);
@@ -937,7 +940,7 @@ int usr_strings_repeat(qd_context* ctx) {
 		n = 0;
 	}
 
-	size_t str_len = strlen(qd_string_data(str_elem.value.s));
+	size_t str_len = qd_string_length(str_elem.value.s);
 	if (str_len > 0 && (size_t)n > SIZE_MAX / str_len) {
 		fprintf(stderr, "Fatal error in strings::repeat: Result size overflow\n");
 		qd_string_release(str_elem.value.s);
@@ -981,7 +984,7 @@ int usr_strings_reverse(qd_context* ctx) {
 		abort();
 	}
 
-	size_t len = strlen(qd_string_data(str_elem.value.s));
+	size_t len = qd_string_length(str_elem.value.s);
 	char* result = malloc(len + 1);
 	if (!result) {
 		fprintf(stderr, "Fatal error in strings::reverse: Memory allocation failed\n");
@@ -1244,7 +1247,7 @@ int usr_strings_is_empty(qd_context* ctx) {
 		abort();
 	}
 
-	int result = (strlen(qd_string_data(str_elem.value.s)) == 0) ? 1 : 0;
+	int result = (qd_string_length(str_elem.value.s) == 0) ? 1 : 0;
 	qd_string_release(str_elem.value.s);
 	qd_push_i(ctx, result);
 	return (int){0};

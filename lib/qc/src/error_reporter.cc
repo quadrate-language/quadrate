@@ -17,10 +17,14 @@ namespace Qd {
 		// indexes bytes. Without the conversion every multi-byte character earlier
 		// in the file drags the reported position backwards - a single em dash in a
 		// header comment is enough to name the wrong line.
+		//
+		// fast* rather than the plain helpers: those walk the source from byte 0 on
+		// every call, so a file with n errors cost O(n^2) to report -- 20k stray
+		// braces took ~9s to reject. The precomputed maps make each lookup O(log n).
 		size_t charPos = u8t_scanner_token_start(scanner);
-		size_t bytePos = charIndexToByteOffset(mSource, charPos);
+		size_t bytePos = fastCharToByteOffset(mSource, charPos);
 		size_t line, column;
-		calculateLineColumn(mSource, bytePos, &line, &column);
+		fastLineColumn(mSource, bytePos, &line, &column);
 		reportError(line, column, message);
 	}
 

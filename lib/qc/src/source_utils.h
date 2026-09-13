@@ -169,6 +169,41 @@ namespace Qd {
 		return count;
 	}
 
+	// Source position lookup helper - combines line map and char-byte map
+	struct SourceMaps {
+		SourceLineMap lineMap;
+		CharByteMap charByteMap;
+
+		SourceMaps(const char* src) : lineMap(src), charByteMap(src) {
+		}
+	};
+
+	// Thread-local pointer to current source maps (set at start of generate()).
+	// Lives here rather than in ast_parse.h so ErrorReporter can reach it too:
+	// reporting a diagnostic used to recompute the position by scanning the whole
+	// file twice, which made a file full of errors quadratic to report on.
+	extern thread_local const SourceMaps* tCurrentSourceMaps;
+
+	// Optimized charIndexToByteOffset - uses precomputed table when available
+	inline size_t fastCharToByteOffset(const char* src, size_t charIndex) {
+		if (tCurrentSourceMaps) {
+			return tCurrentSourceMaps->charByteMap.getByteOffset(charIndex);
+		}
+		return charIndexToByteOffset(src, charIndex);
+	}
+
+	// Optimized calculateLineColumn - uses precomputed table when available
+	inline void fastLineColumn(const char* src, size_t bytePos, size_t* line, size_t* column) {
+		if (tCurrentSourceMaps) {
+			tCurrentSourceMaps->lineMap.getLineColumn(bytePos, line, column);
+		} else {
+			// Was Qd::fastLineColumn(...) -- this function, calling itself with the
+			// same arguments. Unbounded recursion on every lookup made outside a
+			// generate() call, where the maps are null.
+			calculateLineColumn(src, bytePos, line, column);
+		}
+	}
+
 } // namespace Qd
 
 #endif // QD_QC_SOURCE_UTILS_H

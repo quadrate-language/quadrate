@@ -1,0 +1,583 @@
+<!DOCTYPE html><html><head><meta charset="utf-8"><title>json - Quadrate API</title><link rel="stylesheet" href="style.css"></head><body>
+<nav><h1>Quadrate API</h1><a href="index.html">All Modules</a></nav>
+<div class="container"><h2>json</h2>
+<p class="desc">JSON parsing and querying without AST construction.</p>
+<h2>Constants</h2>
+<dl>
+<dt><code>Null</code> = <code>0</code></dt>
+<dd>Type: Null value.</dd>
+<dt><code>Bool</code> = <code>1</code></dt>
+<dd>Type: Boolean value.</dd>
+<dt><code>Number</code> = <code>2</code></dt>
+<dd>Type: Number value.</dd>
+<dt><code>String</code> = <code>3</code></dt>
+<dd>Type: String value.</dd>
+<dt><code>Array</code> = <code>4</code></dt>
+<dd>Type: Array value.</dd>
+<dt><code>Object</code> = <code>5</code></dt>
+<dd>Type: Object value.</dd>
+</dl>
+<h2>Functions</h2>
+<div class="fn" id="find_str_end">
+<h3>find_str_end</h3>
+<pre><code>fn find_str_end(json:str pos:i64 -- end_pos:i64)</code></pre>
+<p>Find end of JSON string (pos at opening quote).</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>json</code> <code>str</code></dt>
+<dd>JSON string</dd>
+<dt><code>pos</code> <code>i64</code></dt>
+<dd>Position of opening quote</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>end_pos</code> <code>i64</code></dt>
+<dd>Position after closing quote</dd>
+</dl>
+<p class="xref"><strong>Calls:</strong> <a href="strings.html#char_at"><code>strings::char_at</code></a>, <a href="strings.html#len"><code>strings::len</code></a></p>
+<p class="xref"><strong>Called by:</strong> <a href="json.html#extract_str"><code>json::extract_str</code></a></p>
+</div>
+<hr>
+<div class="fn" id="type_at">
+<h3>type_at</h3>
+<pre><code>fn type_at(json:str pos:i64 -- result:i64)</code></pre>
+<p>Get JSON value type at position.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>json</code> <code>str</code></dt>
+<dd>JSON string</dd>
+<dt><code>pos</code> <code>i64</code></dt>
+<dd>Position to check</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>result</code> <code>i64</code></dt>
+<dd>Type constant (Null, Bool, Number, String, Array, Object)</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>&quot;{\&quot;a\&quot;:1}&quot; 5 json::type_at print  // 2 (Number)</code></pre>
+<p class="xref"><strong>Calls:</strong> <a href="strings.html#char_at"><code>strings::char_at</code></a>, <a href="strings.html#len"><code>strings::len</code></a></p>
+</div>
+<hr>
+<div class="fn" id="extract_str">
+<h3>extract_str</h3>
+<pre><code>fn extract_str(json:str pos:i64 -- value:str)</code></pre>
+<p>Extract string value at position.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>json</code> <code>str</code></dt>
+<dd>JSON string</dd>
+<dt><code>pos</code> <code>i64</code></dt>
+<dd>Position of opening quote</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>value</code> <code>str</code></dt>
+<dd>Extracted string</dd>
+</dl>
+<p class="xref"><strong>Calls:</strong> <a href="json.html#find_str_end"><code>json::find_str_end</code></a>, <a href="strings.html#substring"><code>strings::substring</code></a></p>
+<p class="xref"><strong>Called by:</strong> <a href="json.html#array_get_string"><code>json::array_get_string</code></a>, <a href="json.html#get_string"><code>json::get_string</code></a></p>
+</div>
+<hr>
+<div class="fn" id="get_string">
+<h3>get_string</h3>
+<pre><code>fn get_string(json:str key:str -- value:str found:i64)</code></pre>
+<p>Get string value by key from object.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>json</code> <code>str</code></dt>
+<dd>JSON object string</dd>
+<dt><code>key</code> <code>str</code></dt>
+<dd>Key to look up</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>value</code> <code>str</code></dt>
+<dd>String value</dd>
+<dt><code>found</code> <code>i64</code></dt>
+<dd>1 if found, 0 otherwise</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>&quot;{\&quot;name\&quot;:\&quot;Bob\&quot;}&quot; &quot;name&quot; json::get_string  // &quot;Bob&quot; 1</code></pre>
+<p class="xref"><strong>Calls:</strong> <a href="json.html#extract_str"><code>json::extract_str</code></a></p>
+</div>
+<hr>
+<div class="fn" id="get_int">
+<h3>get_int</h3>
+<pre><code>fn get_int(json:str key:str -- value:i64 found:i64)</code></pre>
+<p>Get integer value by key from object.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>json</code> <code>str</code></dt>
+<dd>JSON object string</dd>
+<dt><code>key</code> <code>str</code></dt>
+<dd>Key to look up</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>value</code> <code>i64</code></dt>
+<dd>Integer value</dd>
+<dt><code>found</code> <code>i64</code></dt>
+<dd>1 if found, 0 otherwise</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>&quot;{\&quot;age\&quot;:42}&quot; &quot;age&quot; json::get_int  // 42 1</code></pre>
+<p class="xref"><strong>Calls:</strong> <a href="strings.html#substring"><code>strings::substring</code></a></p>
+</div>
+<hr>
+<div class="fn" id="get_float">
+<h3>get_float</h3>
+<pre><code>fn get_float(json:str key:str -- value:f64 found:i64)</code></pre>
+<p>Get float value by key from object.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>json</code> <code>str</code></dt>
+<dd>JSON object string</dd>
+<dt><code>key</code> <code>str</code></dt>
+<dd>Key to look up</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>value</code> <code>f64</code></dt>
+<dd>Float value</dd>
+<dt><code>found</code> <code>i64</code></dt>
+<dd>1 if found, 0 otherwise</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>&quot;{\&quot;pi\&quot;:3.14}&quot; &quot;pi&quot; json::get_float  // 3.14 1</code></pre>
+<p class="xref"><strong>Calls:</strong> <a href="strconv.html#parse_float"><code>strconv::parse_float</code></a>, <a href="strings.html#substring"><code>strings::substring</code></a></p>
+</div>
+<hr>
+<div class="fn" id="get_bool">
+<h3>get_bool</h3>
+<pre><code>fn get_bool(json:str key:str -- value:i64 found:i64)</code></pre>
+<p>Get boolean value by key from object.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>json</code> <code>str</code></dt>
+<dd>JSON object string</dd>
+<dt><code>key</code> <code>str</code></dt>
+<dd>Key to look up</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>value</code> <code>i64</code></dt>
+<dd>1 for true, 0 for false</dd>
+<dt><code>found</code> <code>i64</code></dt>
+<dd>1 if found, 0 otherwise</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>&quot;{\&quot;ok\&quot;:true}&quot; &quot;ok&quot; json::get_bool  // 1 1</code></pre>
+<p class="xref"><strong>Calls:</strong> <a href="strings.html#char_at"><code>strings::char_at</code></a></p>
+</div>
+<hr>
+<div class="fn" id="has_key">
+<h3>has_key</h3>
+<pre><code>fn has_key(json:str key:str -- exists:i64)</code></pre>
+<p>Check if key exists in object.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>json</code> <code>str</code></dt>
+<dd>JSON object string</dd>
+<dt><code>key</code> <code>str</code></dt>
+<dd>Key to check</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>exists</code> <code>i64</code></dt>
+<dd>1 if exists, 0 otherwise</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>&quot;{\&quot;a\&quot;:1}&quot; &quot;a&quot; json::has_key print  // 1</code></pre>
+</div>
+<hr>
+<div class="fn" id="get_object">
+<h3>get_object</h3>
+<pre><code>fn get_object(json:str key:str -- value:str found:i64)</code></pre>
+<p>Get nested object as string by key.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>json</code> <code>str</code></dt>
+<dd>JSON object string</dd>
+<dt><code>key</code> <code>str</code></dt>
+<dd>Key to look up</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>value</code> <code>str</code></dt>
+<dd>Nested object as string</dd>
+<dt><code>found</code> <code>i64</code></dt>
+<dd>1 if found, 0 otherwise</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>&quot;{\&quot;obj\&quot;:{\&quot;x\&quot;:1}}&quot; &quot;obj&quot; json::get_object  // &quot;{\&quot;x\&quot;:1}&quot; 1</code></pre>
+<p class="xref"><strong>Calls:</strong> <a href="strings.html#char_at"><code>strings::char_at</code></a>, <a href="strings.html#substring"><code>strings::substring</code></a></p>
+</div>
+<hr>
+<div class="fn" id="get_array">
+<h3>get_array</h3>
+<pre><code>fn get_array(json:str key:str -- value:str found:i64)</code></pre>
+<p>Get nested array as string by key.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>json</code> <code>str</code></dt>
+<dd>JSON object string</dd>
+<dt><code>key</code> <code>str</code></dt>
+<dd>Key to look up</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>value</code> <code>str</code></dt>
+<dd>Array as string</dd>
+<dt><code>found</code> <code>i64</code></dt>
+<dd>1 if found, 0 otherwise</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>&quot;{\&quot;arr\&quot;:[1,2]}&quot; &quot;arr&quot; json::get_array  // &quot;[1,2]&quot; 1</code></pre>
+<p class="xref"><strong>Calls:</strong> <a href="strings.html#char_at"><code>strings::char_at</code></a>, <a href="strings.html#substring"><code>strings::substring</code></a></p>
+</div>
+<hr>
+<div class="fn" id="array_get_string">
+<h3>array_get_string</h3>
+<pre><code>fn array_get_string(json:str index:i64 -- value:str found:i64)</code></pre>
+<p>Get array element as string by index.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>json</code> <code>str</code></dt>
+<dd>JSON array string</dd>
+<dt><code>index</code> <code>i64</code></dt>
+<dd>Element index (0-based)</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>value</code> <code>str</code></dt>
+<dd>String value</dd>
+<dt><code>found</code> <code>i64</code></dt>
+<dd>1 if found, 0 otherwise</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>&quot;[\&quot;a\&quot;,\&quot;b\&quot;]&quot; 1 json::array_get_string  // &quot;b&quot; 1</code></pre>
+<p class="xref"><strong>Calls:</strong> <a href="json.html#extract_str"><code>json::extract_str</code></a></p>
+</div>
+<hr>
+<div class="fn" id="array_get_int">
+<h3>array_get_int</h3>
+<pre><code>fn array_get_int(json:str index:i64 -- value:i64 found:i64)</code></pre>
+<p>Get array element as integer by index.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>json</code> <code>str</code></dt>
+<dd>JSON array string</dd>
+<dt><code>index</code> <code>i64</code></dt>
+<dd>Element index (0-based)</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>value</code> <code>i64</code></dt>
+<dd>Integer value</dd>
+<dt><code>found</code> <code>i64</code></dt>
+<dd>1 if found, 0 otherwise</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>&quot;[10,20,30]&quot; 2 json::array_get_int  // 30 1</code></pre>
+<p class="xref"><strong>Calls:</strong> <a href="strings.html#substring"><code>strings::substring</code></a></p>
+</div>
+<hr>
+<div class="fn" id="array_get_float">
+<h3>array_get_float</h3>
+<pre><code>fn array_get_float(json:str index:i64 -- value:f64 found:i64)</code></pre>
+<p>Get array element as float by index.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>json</code> <code>str</code></dt>
+<dd>JSON array string</dd>
+<dt><code>index</code> <code>i64</code></dt>
+<dd>Element index (0-based)</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>value</code> <code>f64</code></dt>
+<dd>Float value</dd>
+<dt><code>found</code> <code>i64</code></dt>
+<dd>1 if found, 0 otherwise</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>&quot;[1.5,2.5]&quot; 0 json::array_get_float  // 1.5 1</code></pre>
+<p class="xref"><strong>Calls:</strong> <a href="strconv.html#parse_float"><code>strconv::parse_float</code></a>, <a href="strings.html#substring"><code>strings::substring</code></a></p>
+</div>
+<hr>
+<div class="fn" id="array_get_object">
+<h3>array_get_object</h3>
+<pre><code>fn array_get_object(json:str index:i64 -- value:str found:i64)</code></pre>
+<p>Get array element as object by index.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>json</code> <code>str</code></dt>
+<dd>JSON array string</dd>
+<dt><code>index</code> <code>i64</code></dt>
+<dd>Element index (0-based)</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>value</code> <code>str</code></dt>
+<dd>Object as JSON string</dd>
+<dt><code>found</code> <code>i64</code></dt>
+<dd>1 if found, 0 otherwise</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>&quot;[{\&quot;a\&quot;:1},{\&quot;b\&quot;:2}]&quot; 1 json::array_get_object  // &quot;{\&quot;b\&quot;:2}&quot; 1</code></pre>
+<p class="xref"><strong>Calls:</strong> <a href="strings.html#char_at"><code>strings::char_at</code></a>, <a href="strings.html#substring"><code>strings::substring</code></a></p>
+</div>
+<hr>
+<div class="fn" id="array_get_array">
+<h3>array_get_array</h3>
+<pre><code>fn array_get_array(json:str index:i64 -- value:str found:i64)</code></pre>
+<p>Get array element as nested array by index.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>json</code> <code>str</code></dt>
+<dd>JSON array string</dd>
+<dt><code>index</code> <code>i64</code></dt>
+<dd>Element index (0-based)</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>value</code> <code>str</code></dt>
+<dd>Nested array as JSON string</dd>
+<dt><code>found</code> <code>i64</code></dt>
+<dd>1 if found, 0 otherwise</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>&quot;[[1,2],[3,4]]&quot; 0 json::array_get_array  // &quot;[1,2]&quot; 1</code></pre>
+<p class="xref"><strong>Calls:</strong> <a href="strings.html#char_at"><code>strings::char_at</code></a>, <a href="strings.html#substring"><code>strings::substring</code></a></p>
+</div>
+<hr>
+<div class="fn" id="array_len">
+<h3>array_len</h3>
+<pre><code>fn array_len(json:str -- length:i64)</code></pre>
+<p>Get length of JSON array.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>json</code> <code>str</code></dt>
+<dd>JSON array string</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>length</code> <code>i64</code></dt>
+<dd>Number of elements</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>&quot;[1,2,3]&quot; json::array_len print  // 3</code></pre>
+<p class="xref"><strong>Calls:</strong> <a href="strings.html#char_at"><code>strings::char_at</code></a>, <a href="strings.html#len"><code>strings::len</code></a></p>
+</div>
+<hr>
+<div class="fn" id="is_null_at">
+<h3>is_null_at</h3>
+<pre><code>fn is_null_at(json:str pos:i64 -- is_null:i64)</code></pre>
+<p>Check if value at position is null.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>json</code> <code>str</code></dt>
+<dd>JSON string</dd>
+<dt><code>pos</code> <code>i64</code></dt>
+<dd>Position to check</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>is_null</code> <code>i64</code></dt>
+<dd>1 if null, 0 otherwise</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>&quot;null&quot; 0 json::is_null_at print  // 1</code></pre>
+<p class="xref"><strong>Calls:</strong> <a href="strings.html#char_at"><code>strings::char_at</code></a>, <a href="strings.html#len"><code>strings::len</code></a></p>
+</div>
+<hr>
+<div class="fn" id="encode">
+<h3>encode</h3>
+<pre><code>fn encode(s:str -- encoded:str)</code></pre>
+<p>Encode a string for JSON (add quotes and escape special chars).</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>s</code> <code>str</code></dt>
+<dd>String to encode</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>encoded</code> <code>str</code></dt>
+<dd>JSON-encoded string with quotes</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>&quot;hello&quot; json::encode print  // &quot;hello&quot;</code></pre>
+<p class="xref"><strong>Calls:</strong> <a href="strings.html#concat"><code>strings::concat</code></a>, <a href="strings.html#replace"><code>strings::replace</code></a></p>
+<p class="xref"><strong>Called by:</strong> <a href="json.html#kv"><code>json::kv</code></a>, <a href="json.html#kv_bool"><code>json::kv_bool</code></a>, <a href="json.html#kv_int"><code>json::kv_int</code></a>, <a href="json.html#kv_raw"><code>json::kv_raw</code></a></p>
+</div>
+<hr>
+<div class="fn" id="kv">
+<h3>kv</h3>
+<pre><code>fn kv(key:str value:str -- kv:str)</code></pre>
+<p>Build a key-value pair with string value.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>key</code> <code>str</code></dt>
+<dd>Key name</dd>
+<dt><code>value</code> <code>str</code></dt>
+<dd>String value</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>kv</code> <code>str</code></dt>
+<dd>JSON key-value pair</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>&quot;name&quot; &quot;Bob&quot; json::kv print  // &quot;name&quot;:&quot;Bob&quot;</code></pre>
+<p class="xref"><strong>Calls:</strong> <a href="json.html#encode"><code>json::encode</code></a>, <a href="strings.html#concat"><code>strings::concat</code></a></p>
+</div>
+<hr>
+<div class="fn" id="kv_int">
+<h3>kv_int</h3>
+<pre><code>fn kv_int(key:str value:i64 -- kv:str)</code></pre>
+<p>Build a key-value pair with integer value.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>key</code> <code>str</code></dt>
+<dd>Key name</dd>
+<dt><code>value</code> <code>i64</code></dt>
+<dd>Integer value</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>kv</code> <code>str</code></dt>
+<dd>JSON key-value pair</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>&quot;age&quot; 42 json::kv_int print  // &quot;age&quot;:42</code></pre>
+<p class="xref"><strong>Calls:</strong> <a href="json.html#encode"><code>json::encode</code></a>, <a href="strings.html#concat"><code>strings::concat</code></a>, <a href="strings.html#from_char"><code>strings::from_char</code></a></p>
+</div>
+<hr>
+<div class="fn" id="kv_bool">
+<h3>kv_bool</h3>
+<pre><code>fn kv_bool(key:str value:i64 -- kv:str)</code></pre>
+<p>Build a key-value pair with boolean value.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>key</code> <code>str</code></dt>
+<dd>Key name</dd>
+<dt><code>value</code> <code>i64</code></dt>
+<dd>Boolean value (0=false, non-zero=true)</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>kv</code> <code>str</code></dt>
+<dd>JSON key-value pair</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>&quot;active&quot; 1 json::kv_bool print  // &quot;active&quot;:true</code></pre>
+<p class="xref"><strong>Calls:</strong> <a href="json.html#encode"><code>json::encode</code></a>, <a href="strings.html#concat"><code>strings::concat</code></a></p>
+</div>
+<hr>
+<div class="fn" id="kv_raw">
+<h3>kv_raw</h3>
+<pre><code>fn kv_raw(key:str value:str -- kv:str)</code></pre>
+<p>Build a key-value pair with raw JSON value (object, array, or literal).</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>key</code> <code>str</code></dt>
+<dd>Key name</dd>
+<dt><code>value</code> <code>str</code></dt>
+<dd>Raw JSON value (not quoted)</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>kv</code> <code>str</code></dt>
+<dd>JSON key-value pair</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>&quot;data&quot; &quot;{}&quot; json::kv_raw print  // &quot;data&quot;:{}</code></pre>
+<p class="xref"><strong>Calls:</strong> <a href="json.html#encode"><code>json::encode</code></a>, <a href="strings.html#concat"><code>strings::concat</code></a></p>
+</div>
+<hr>
+<div class="fn" id="obj">
+<h3>obj</h3>
+<pre><code>fn obj(content:str -- obj:str)</code></pre>
+<p>Build a JSON object from comma-separated key-value pairs.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>content</code> <code>str</code></dt>
+<dd>Comma-separated key-value pairs</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>obj</code> <code>str</code></dt>
+<dd>JSON object</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>&quot;\&quot;a\&quot;:1,\&quot;b\&quot;:2&quot; json::obj print  // {&quot;a&quot;:1,&quot;b&quot;:2}</code></pre>
+<p class="xref"><strong>Calls:</strong> <a href="strings.html#concat"><code>strings::concat</code></a></p>
+</div>
+<hr>
+<div class="fn" id="empty_obj">
+<h3>empty_obj</h3>
+<pre><code>fn empty_obj( -- obj:str)</code></pre>
+<p>Build an empty JSON object.</p>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>obj</code> <code>str</code></dt>
+<dd>Empty JSON object</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>json::empty_obj print  // {}</code></pre>
+</div>
+<hr>
+<div class="fn" id="arr">
+<h3>arr</h3>
+<pre><code>fn arr(content:str -- arr:str)</code></pre>
+<p>Build a JSON array from comma-separated elements.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>content</code> <code>str</code></dt>
+<dd>Comma-separated elements</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>arr</code> <code>str</code></dt>
+<dd>JSON array</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>&quot;1,2,3&quot; json::arr print  // [1,2,3]</code></pre>
+<p class="xref"><strong>Calls:</strong> <a href="strings.html#concat"><code>strings::concat</code></a></p>
+</div>
+<hr>
+<div class="fn" id="empty_arr">
+<h3>empty_arr</h3>
+<pre><code>fn empty_arr( -- arr:str)</code></pre>
+<p>Build an empty JSON array.</p>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>arr</code> <code>str</code></dt>
+<dd>Empty JSON array</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>json::empty_arr print  // []</code></pre>
+</div>
+<hr>
+<div class="fn" id="join">
+<h3>join</h3>
+<pre><code>fn join(a:str b:str -- joined:str)</code></pre>
+<p>Join multiple JSON fragments with commas.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>a</code> <code>str</code></dt>
+<dd>First fragment</dd>
+<dt><code>b</code> <code>str</code></dt>
+<dd>Second fragment</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>joined</code> <code>str</code></dt>
+<dd>Comma-joined fragments</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>&quot;\&quot;a\&quot;:1&quot; &quot;\&quot;b\&quot;:2&quot; json::join print  // &quot;a&quot;:1,&quot;b&quot;:2</code></pre>
+<p class="xref"><strong>Calls:</strong> <a href="strings.html#concat"><code>strings::concat</code></a></p>
+</div>
+</div></body></html>

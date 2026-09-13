@@ -1,0 +1,118 @@
+<!DOCTYPE html><html><head><meta charset="utf-8"><title>hashmap - Quadrate API</title><link rel="stylesheet" href="style.css"></head><body>
+<nav><h1>Quadrate API</h1><a href="index.html">All Modules</a></nav>
+<div class="container"><h2>hashmap</h2>
+<p class="desc">Map&lt;V&gt; - A String-Keyed Hash Map ====================================  Map stores key-value pairs with O(1) average lookup time. Keys are strings, values can be any type V.  ## Creating a Map  Create an empty map with a struct literal:      Map&lt;i64&gt; { keys = 0 values = 0 states = 0 len = 0 cap = 0 } -&gt; m  ## Basic Operations  Insert a key-value pair (map is returned, must be captured):      m &quot;alice&quot; 42 insert! -&gt; m  Get a value by key (returns error if not found):      m &quot;alice&quot; get! -&gt; age  Check if key exists:      m &quot;alice&quot; has -&gt; exists  Remove a key:      m &quot;alice&quot; remove! -&gt; m  ## Memory Management  Always call release when done to free memory:      m release</p>
+<h2>Structs</h2>
+<h3 id="Map<V>"><code>Map&lt;V&gt;</code></h3>
+<p>Hash map with string keys and values of type V.  Fields:   keys   - Array of string key pointers   values - Array of V values   states - Array of slot states (0=empty, 1=occupied, 2=deleted)   len    - Number of entries   cap    - Allocated capacity</p>
+<dl>
+<dt><code>keys</code> <code>ptr</code></dt>
+<dt><code>values</code> <code>ptr</code></dt>
+<dt><code>states</code> <code>ptr</code></dt>
+<dt><code>len</code> <code>i64</code></dt>
+<dt><code>cap</code> <code>i64</code></dt>
+</dl>
+<h2>Functions</h2>
+<div class="fn fallible" id="insert">
+<h3>insert [fallible]</h3>
+<pre><code>fn (m:Map&lt;V&gt;) insert&lt;V&gt;(key:str value:V -- m2:Map&lt;V&gt;)!</code></pre>
+<p>Insert a key-value pair into the map.  If the key already exists, the value is updated. Returns the updated map which must be captured.  Example:     m &quot;alice&quot; 42 insert! -&gt; m  Stack: (m key value -- m2)</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>m</code> <code>Map&lt;V&gt;</code></dt>
+<dt><code>key</code> <code>str</code></dt>
+<dt><code>value</code> <code>V</code></dt>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>m2</code> <code>Map&lt;V&gt;</code></dt>
+</dl>
+<p class="xref"><strong>Calls:</strong> <a href="mem.html#alloc"><code>mem::alloc</code></a>, <a href="mem.html#copy"><code>mem::copy</code></a>, <a href="mem.html#free"><code>mem::free</code></a>, <a href="mem.html#from_string"><code>mem::from_string</code></a>, <a href="mem.html#set_byte"><code>mem::set_byte</code></a>, <a href="mem.html#set_i64"><code>mem::set_i64</code></a>, <a href="mem.html#set_ptr"><code>mem::set_ptr</code></a>, <a href="strings.html#len"><code>strings::len</code></a></p>
+</div>
+<hr>
+<div class="fn fallible" id="get">
+<h3>get [fallible]</h3>
+<pre><code>fn (m:Map&lt;V&gt;) get&lt;V&gt;(key:str -- value:V)!</code></pre>
+<p>Get the value for a key.  Returns an error if the key is not found.  Example:     m &quot;alice&quot; get! -&gt; age  Stack: (m key -- value)</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>m</code> <code>Map&lt;V&gt;</code></dt>
+<dt><code>key</code> <code>str</code></dt>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>value</code> <code>V</code></dt>
+</dl>
+<p class="xref"><strong>Calls:</strong> <a href="mem.html#get_i64"><code>mem::get_i64</code></a></p>
+</div>
+<hr>
+<div class="fn" id="has">
+<h3>has</h3>
+<pre><code>fn (m:Map&lt;V&gt;) has&lt;V&gt;(key:str -- exists:i64)</code></pre>
+<p>Check if a key exists in the map.  Example:     m &quot;alice&quot; has if { &quot;found!&quot; print nl }  Stack: (m key -- exists)</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>m</code> <code>Map&lt;V&gt;</code></dt>
+<dt><code>key</code> <code>str</code></dt>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>exists</code> <code>i64</code></dt>
+</dl>
+</div>
+<hr>
+<div class="fn fallible" id="remove">
+<h3>remove [fallible]</h3>
+<pre><code>fn (m:Map&lt;V&gt;) remove&lt;V&gt;(key:str -- m2:Map&lt;V&gt;)!</code></pre>
+<p>Remove a key from the map.  Returns error if the key is not found. Returns the updated map which must be captured.  Example:     m &quot;alice&quot; remove! -&gt; m  Stack: (m key -- m2)</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>m</code> <code>Map&lt;V&gt;</code></dt>
+<dt><code>key</code> <code>str</code></dt>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>m2</code> <code>Map&lt;V&gt;</code></dt>
+</dl>
+<p class="xref"><strong>Calls:</strong> <a href="mem.html#free"><code>mem::free</code></a>, <a href="mem.html#get_ptr"><code>mem::get_ptr</code></a>, <a href="mem.html#set_i64"><code>mem::set_i64</code></a></p>
+</div>
+<hr>
+<div class="fn" id="length">
+<h3>length</h3>
+<pre><code>fn (m:Map&lt;V&gt;) length&lt;V&gt;( -- n:i64)</code></pre>
+<p>Get the number of entries in the map.  Example:     m length -&gt; n  Stack: (m -- n)</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>m</code> <code>Map&lt;V&gt;</code></dt>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>n</code> <code>i64</code></dt>
+</dl>
+</div>
+<hr>
+<div class="fn" id="is_empty">
+<h3>is_empty</h3>
+<pre><code>fn (m:Map&lt;V&gt;) is_empty&lt;V&gt;( -- b:i64)</code></pre>
+<p>Check if the map is empty.  Example:     m is_empty if { &quot;empty!&quot; print nl }  Stack: (m -- bool)</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>m</code> <code>Map&lt;V&gt;</code></dt>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>b</code> <code>i64</code></dt>
+</dl>
+</div>
+<hr>
+<div class="fn" id="release">
+<h3>release</h3>
+<pre><code>fn (m:Map&lt;V&gt;) release&lt;V&gt;()</code></pre>
+<p>Free the map's memory.  IMPORTANT: Always call this when done with a map to prevent memory leaks. After calling release, the map should not be used.  Example:     m release  Stack: (m --)</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>m</code> <code>Map&lt;V&gt;</code></dt>
+</dl>
+<p class="xref"><strong>Calls:</strong> <a href="mem.html#free"><code>mem::free</code></a>, <a href="mem.html#get_i64"><code>mem::get_i64</code></a>, <a href="mem.html#get_ptr"><code>mem::get_ptr</code></a></p>
+</div>
+</div></body></html>

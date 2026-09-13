@@ -162,10 +162,15 @@ bool parseArgs(int argc, char* argv[], Options& opts) {
 			qdcli::usageError("quadc", "unknown option: " + arg);
 			return false;
 		} else {
-			// If argument is a directory, look for main.qd inside it
-			if (fs::is_directory(arg)) {
+			// If argument is a directory, look for main.qd inside it.
+			// error_code overloads throughout: the throwing is_directory() aborts
+			// the process on a path longer than NAME_MAX, before any diagnostic.
+			// Anything that is not a readable directory falls through and is
+			// reported later as the missing file it is.
+			std::error_code ec;
+			if (fs::is_directory(arg, ec) && !ec) {
 				fs::path mainQd = fs::path(arg) / "main.qd";
-				if (fs::exists(mainQd)) {
+				if (fs::exists(mainQd, ec) && !ec) {
 					opts.files.push_back(mainQd.string());
 				} else {
 					qdcli::usageError("quadc", "no main.qd found in directory '" + arg + "'");

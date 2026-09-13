@@ -1,0 +1,261 @@
+<!DOCTYPE html><html><head><meta charset="utf-8"><title>net - Quadrate API</title><link rel="stylesheet" href="style.css"></head><body>
+<nav><h1>Quadrate API</h1><a href="index.html">All Modules</a></nav>
+<div class="container"><h2>net</h2>
+<p class="desc">TCP network operations. Error codes: Ok=1 (success), specific errors start at 2</p>
+<h2>Constants</h2>
+<dl>
+<dt><code>ErrListen</code> = <code>2</code></dt>
+<dd>Error: Listen/bind failed.</dd>
+<dt><code>ErrAccept</code> = <code>3</code></dt>
+<dd>Error: Accept failed.</dd>
+<dt><code>ErrConnect</code> = <code>4</code></dt>
+<dd>Error: Connection failed.</dd>
+<dt><code>ErrSend</code> = <code>5</code></dt>
+<dd>Error: Send failed.</dd>
+<dt><code>ErrReceive</code> = <code>6</code></dt>
+<dd>Error: Receive failed.</dd>
+<dt><code>ErrInvalidArg</code> = <code>7</code></dt>
+<dd>Error: Invalid argument.</dd>
+<dt><code>ErrTimeout</code> = <code>8</code></dt>
+<dd>Error: Timeout setting failed.</dd>
+<dt><code>ErrLookup</code> = <code>9</code></dt>
+<dd>Error: DNS lookup failed.</dd>
+</dl>
+<h2>Functions</h2>
+<div class="fn fallible" id="listen">
+<h3>listen [fallible]</h3>
+<pre><code>fn listen(port:i64 -- socket:i64)!</code></pre>
+<p>Start listening for connections on a port.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>port</code> <code>i64</code></dt>
+<dd>Port number to listen on</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>socket</code> <code>i64</code></dt>
+<dd>Server socket descriptor</dd>
+</dl>
+<p><strong>Errors:</strong></p>
+<dl>
+<dt><code>ErrListen</code></dt>
+<dd>Port may be in use or permission denied</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>8080 net::listen! -&gt; server</code></pre>
+</div>
+<hr>
+<div class="fn fallible" id="accept">
+<h3>accept [fallible]</h3>
+<pre><code>fn accept(server_socket:i64 -- client_socket:i64)!</code></pre>
+<p>Accept an incoming connection.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>server_socket</code> <code>i64</code></dt>
+<dd>Server socket from listen</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>client_socket</code> <code>i64</code></dt>
+<dd>Connected client socket</dd>
+</dl>
+<p><strong>Errors:</strong></p>
+<dl>
+<dt><code>ErrAccept</code></dt>
+<dd>Failed to accept connection</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>server net::accept! -&gt; client</code></pre>
+</div>
+<hr>
+<div class="fn fallible" id="connect">
+<h3>connect [fallible]</h3>
+<pre><code>fn connect(host:str port:i64 -- socket:i64)!</code></pre>
+<p>Connect to a remote host.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>host</code> <code>str</code></dt>
+<dd>Hostname or IP address</dd>
+<dt><code>port</code> <code>i64</code></dt>
+<dd>Port number</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>socket</code> <code>i64</code></dt>
+<dd>Connected socket descriptor</dd>
+</dl>
+<p><strong>Errors:</strong></p>
+<dl>
+<dt><code>ErrConnect</code></dt>
+<dd>Host unreachable or connection refused</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>&quot;localhost&quot; 8080 net::connect! -&gt; sock</code></pre>
+</div>
+<hr>
+<div class="fn fallible" id="send">
+<h3>send [fallible]</h3>
+<pre><code>fn send(socket:i64 data:str -- bytes_sent:i64)!</code></pre>
+<p>Send data over socket.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>socket</code> <code>i64</code></dt>
+<dd>Socket descriptor</dd>
+<dt><code>data</code> <code>str</code></dt>
+<dd>Data to send</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>bytes_sent</code> <code>i64</code></dt>
+<dd>Number of bytes sent</dd>
+</dl>
+<p><strong>Errors:</strong></p>
+<dl>
+<dt><code>ErrSend</code></dt>
+<dd>Failed to send data</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>sock &quot;Hello&quot; net::send! -&gt; n</code></pre>
+</div>
+<hr>
+<div class="fn fallible" id="receive">
+<h3>receive [fallible]</h3>
+<pre><code>fn receive(socket:i64 max_bytes:i64 -- data:str bytes_read:i64)!</code></pre>
+<p>Receive data from socket.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>socket</code> <code>i64</code></dt>
+<dd>Socket descriptor</dd>
+<dt><code>max_bytes</code> <code>i64</code></dt>
+<dd>Maximum bytes to receive</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>data</code> <code>str</code></dt>
+<dd>Received data</dd>
+<dt><code>bytes_read</code> <code>i64</code></dt>
+<dd>Actual bytes received</dd>
+</dl>
+<p><strong>Errors:</strong></p>
+<dl>
+<dt><code>ErrReceive</code></dt>
+<dd>Failed to receive data</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>sock 1024 net::receive! -&gt; n -&gt; data</code></pre>
+</div>
+<hr>
+<div class="fn" id="shutdown">
+<h3>shutdown</h3>
+<pre><code>fn shutdown(socket:i64 -- )</code></pre>
+<p>Shutdown socket for reading/writing.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>socket</code> <code>i64</code></dt>
+<dd>Socket descriptor</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>sock net::shutdown</code></pre>
+</div>
+<hr>
+<div class="fn" id="close">
+<h3>close</h3>
+<pre><code>fn close(socket:i64 -- )</code></pre>
+<p>Close socket and release resources.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>socket</code> <code>i64</code></dt>
+<dd>Socket descriptor</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>sock net::close</code></pre>
+</div>
+<hr>
+<div class="fn fallible" id="set_timeout">
+<h3>set_timeout [fallible]</h3>
+<pre><code>fn set_timeout(socket:i64 ms:i64 -- )!</code></pre>
+<p>Set send and receive timeout on a socket.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>socket</code> <code>i64</code></dt>
+<dd>Socket descriptor</dd>
+<dt><code>ms</code> <code>i64</code></dt>
+<dd>Timeout in milliseconds</dd>
+</dl>
+<p><strong>Errors:</strong></p>
+<dl>
+<dt><code>ErrTimeout</code></dt>
+<dd>Failed to set timeout</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>sock 5000 net::set_timeout!</code></pre>
+</div>
+<hr>
+<div class="fn fallible" id="set_keepalive">
+<h3>set_keepalive [fallible]</h3>
+<pre><code>fn set_keepalive(socket:i64 enable:i64 -- )!</code></pre>
+<p>Enable or disable TCP keepalive on a socket.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>socket</code> <code>i64</code></dt>
+<dd>Socket descriptor</dd>
+<dt><code>enable</code> <code>i64</code></dt>
+<dd>1 to enable, 0 to disable</dd>
+</dl>
+<p><strong>Errors:</strong></p>
+<dl>
+<dt><code>ErrInvalidArg</code></dt>
+<dd>Failed to set keepalive</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>sock 1 net::set_keepalive!</code></pre>
+</div>
+<hr>
+<div class="fn fallible" id="lookup">
+<h3>lookup [fallible]</h3>
+<pre><code>fn lookup(hostname:str -- ip:str)!</code></pre>
+<p>Resolve a hostname to an IP address via DNS.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>hostname</code> <code>str</code></dt>
+<dd>Hostname to resolve</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>ip</code> <code>str</code></dt>
+<dd>IP address string</dd>
+</dl>
+<p><strong>Errors:</strong></p>
+<dl>
+<dt><code>ErrLookup</code></dt>
+<dd>DNS resolution failed</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>&quot;example.com&quot; net::lookup! -&gt; ip</code></pre>
+</div>
+<hr>
+<div class="fn fallible" id="get_peer_addr">
+<h3>get_peer_addr [fallible]</h3>
+<pre><code>fn get_peer_addr(socket:i64 -- addr:str port:i64)!</code></pre>
+<p>Get the remote address and port of a connected socket.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>socket</code> <code>i64</code></dt>
+<dd>Socket descriptor</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>addr</code> <code>str</code></dt>
+<dd>Remote IP address</dd>
+<dt><code>port</code> <code>i64</code></dt>
+<dd>Remote port number</dd>
+</dl>
+<p><strong>Errors:</strong></p>
+<dl>
+<dt><code>ErrInvalidArg</code></dt>
+<dd>Failed to get peer address</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>sock net::get_peer_addr! -&gt; port -&gt; addr</code></pre>
+</div>
+</div></body></html>

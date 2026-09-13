@@ -1,0 +1,433 @@
+<!DOCTYPE html><html><head><meta charset="utf-8"><title>io - Quadrate API</title><link rel="stylesheet" href="style.css"></head><body>
+<nav><h1>Quadrate API</h1><a href="index.html">All Modules</a></nav>
+<div class="container"><h2>io</h2>
+<p class="desc">File and stream I/O operations. Error codes: Ok=1 (success), specific errors start at 2</p>
+<h2>Constants</h2>
+<dl>
+<dt><code>ErrNotFound</code> = <code>2</code></dt>
+<dd>Error: File not found.</dd>
+<dt><code>ErrPermission</code> = <code>3</code></dt>
+<dd>Error: Permission denied.</dd>
+<dt><code>ErrInvalidHandle</code> = <code>4</code></dt>
+<dd>Error: Invalid file handle.</dd>
+<dt><code>ErrRead</code> = <code>5</code></dt>
+<dd>Error: Read operation failed.</dd>
+<dt><code>ErrWrite</code> = <code>6</code></dt>
+<dd>Error: Write operation failed.</dd>
+<dt><code>ErrSeek</code> = <code>7</code></dt>
+<dd>Error: Seek operation failed.</dd>
+<dt><code>ErrEof</code> = <code>8</code></dt>
+<dd>Error: End of file reached.</dd>
+<dt><code>ErrInvalidArg</code> = <code>9</code></dt>
+<dd>Error: Invalid argument.</dd>
+<dt><code>ErrStat</code> = <code>10</code></dt>
+<dd>Error: Stat operation failed.</dd>
+<dt><code>Read</code> = <code>&quot;r&quot;</code></dt>
+<dd>Open mode: read only.</dd>
+<dt><code>ReadBinary</code> = <code>&quot;rb&quot;</code></dt>
+<dd>Open mode: read binary.</dd>
+<dt><code>Write</code> = <code>&quot;w&quot;</code></dt>
+<dd>Open mode: write (truncate).</dd>
+<dt><code>WriteBinary</code> = <code>&quot;wb&quot;</code></dt>
+<dd>Open mode: write binary.</dd>
+<dt><code>Append</code> = <code>&quot;a&quot;</code></dt>
+<dd>Open mode: append.</dd>
+<dt><code>AppendBinary</code> = <code>&quot;ab&quot;</code></dt>
+<dd>Open mode: append binary.</dd>
+<dt><code>ReadWrite</code> = <code>&quot;r+&quot;</code></dt>
+<dd>Open mode: read and write.</dd>
+<dt><code>ReadWriteBinary</code> = <code>&quot;rb+&quot;</code></dt>
+<dd>Open mode: read and write binary.</dd>
+<dt><code>WriteRead</code> = <code>&quot;w+&quot;</code></dt>
+<dd>Open mode: write and read (truncate).</dd>
+<dt><code>WriteReadBinary</code> = <code>&quot;wb+&quot;</code></dt>
+<dd>Open mode: write and read binary.</dd>
+<dt><code>AppendRead</code> = <code>&quot;a+&quot;</code></dt>
+<dd>Open mode: append and read.</dd>
+<dt><code>AppendReadBinary</code> = <code>&quot;ab+&quot;</code></dt>
+<dd>Open mode: append and read binary.</dd>
+<dt><code>SeekSet</code> = <code>0</code></dt>
+<dd>Seek from beginning of file.</dd>
+<dt><code>SeekCur</code> = <code>1</code></dt>
+<dd>Seek from current position.</dd>
+<dt><code>SeekEnd</code> = <code>2</code></dt>
+<dd>Seek from end of file.</dd>
+</dl>
+<h2>Functions</h2>
+<div class="fn fallible" id="open">
+<h3>open [fallible]</h3>
+<pre><code>fn open(path:str mode:str -- handle:ptr)!</code></pre>
+<p>Open a file.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>path</code> <code>str</code></dt>
+<dd>File path</dd>
+<dt><code>mode</code> <code>str</code></dt>
+<dd>Open mode (use io::Read, io::Write, etc.)</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>handle</code> <code>ptr</code></dt>
+<dd>File handle</dd>
+</dl>
+<p><strong>Errors:</strong></p>
+<dl>
+<dt><code>ErrNotFound</code></dt>
+<dd>File not found</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>&quot;data.txt&quot; io::Read io::open! -&gt; f</code></pre>
+</div>
+<hr>
+<div class="fn" id="close">
+<h3>close</h3>
+<pre><code>fn close(handle:ptr -- )</code></pre>
+<p>Close a file.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>handle</code> <code>ptr</code></dt>
+<dd>File handle to close</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>f io::close</code></pre>
+</div>
+<hr>
+<div class="fn fallible" id="read">
+<h3>read [fallible]</h3>
+<pre><code>fn read(handle:ptr buffer:ptr count:i64 -- bytes_read:i64)!</code></pre>
+<p>Read bytes into buffer.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>handle</code> <code>ptr</code></dt>
+<dd>File handle</dd>
+<dt><code>buffer</code> <code>ptr</code></dt>
+<dd>Pre-allocated buffer</dd>
+<dt><code>count</code> <code>i64</code></dt>
+<dd>Maximum bytes to read</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>bytes_read</code> <code>i64</code></dt>
+<dd>Actual bytes read</dd>
+</dl>
+<p><strong>Errors:</strong></p>
+<dl>
+<dt><code>ErrInvalidArg</code></dt>
+<dd>Invalid file handle, buffer, or count</dd>
+<dt><code>ErrRead</code></dt>
+<dd>Read operation failed</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>f buf 1024 io::read! -&gt; n</code></pre>
+</div>
+<hr>
+<div class="fn fallible" id="write">
+<h3>write [fallible]</h3>
+<pre><code>fn write(handle:ptr buffer:ptr count:i64 -- bytes_written:i64)!</code></pre>
+<p>Write bytes from buffer.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>handle</code> <code>ptr</code></dt>
+<dd>File handle</dd>
+<dt><code>buffer</code> <code>ptr</code></dt>
+<dd>Buffer containing data</dd>
+<dt><code>count</code> <code>i64</code></dt>
+<dd>Number of bytes to write</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>bytes_written</code> <code>i64</code></dt>
+<dd>Actual bytes written</dd>
+</dl>
+<p><strong>Errors:</strong></p>
+<dl>
+<dt><code>ErrInvalidArg</code></dt>
+<dd>Invalid file handle, buffer, or count</dd>
+<dt><code>ErrWrite</code></dt>
+<dd>Write operation failed</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>f buf len io::write! drop</code></pre>
+</div>
+<hr>
+<div class="fn fallible" id="seek">
+<h3>seek [fallible]</h3>
+<pre><code>fn seek(handle:ptr offset:i64 whence:i64 -- position:i64)!</code></pre>
+<p>Seek to position in file.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>handle</code> <code>ptr</code></dt>
+<dd>File handle</dd>
+<dt><code>offset</code> <code>i64</code></dt>
+<dd>Offset in bytes</dd>
+<dt><code>whence</code> <code>i64</code></dt>
+<dd>Reference point (SeekSet, SeekCur, SeekEnd)</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>position</code> <code>i64</code></dt>
+<dd>New position</dd>
+</dl>
+<p><strong>Errors:</strong></p>
+<dl>
+<dt><code>ErrInvalidHandle</code></dt>
+<dd>Invalid file handle</dd>
+<dt><code>ErrInvalidArg</code></dt>
+<dd>Invalid whence value</dd>
+<dt><code>ErrSeek</code></dt>
+<dd>Seek operation failed</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>f 0 io::SeekSet io::seek! drop</code></pre>
+</div>
+<hr>
+<div class="fn fallible" id="tell">
+<h3>tell [fallible]</h3>
+<pre><code>fn tell(handle:ptr -- position:i64)!</code></pre>
+<p>Get current position in file.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>handle</code> <code>ptr</code></dt>
+<dd>File handle</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>position</code> <code>i64</code></dt>
+<dd>Current position</dd>
+</dl>
+<p><strong>Errors:</strong></p>
+<dl>
+<dt><code>ErrInvalidHandle</code></dt>
+<dd>Invalid file handle</dd>
+<dt><code>ErrSeek</code></dt>
+<dd>Tell operation failed</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>f io::tell! -&gt; pos</code></pre>
+</div>
+<hr>
+<div class="fn" id="eof">
+<h3>eof</h3>
+<pre><code>fn eof(handle:ptr -- handle:ptr is_eof:i64)</code></pre>
+<p>Check if at end of file.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>handle</code> <code>ptr</code></dt>
+<dd>File handle</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>handle</code> <code>ptr</code></dt>
+<dd>File handle (unchanged)</dd>
+<dt><code>is_eof</code> <code>i64</code></dt>
+<dd>1 if at EOF, 0 otherwise</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>f io::eof -&gt; f -&gt; at_end</code></pre>
+</div>
+<hr>
+<div class="fn fallible" id="readline">
+<h3>readline [fallible]</h3>
+<pre><code>fn readline( -- line:str ok:i64)!</code></pre>
+<p>Read a line from stdin.  Running out of input is not an error -- it is how a read loop ends -- so it comes back as ok=0 with the error state untouched. Only a genuine read failure is reported through the fallible status.</p>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>line</code> <code>str</code></dt>
+<dd>The line read, without its trailing newline; &quot;&quot; at end of input</dd>
+<dt><code>ok</code> <code>i64</code></dt>
+<dd>1 if a line was read, 0 at end of input</dd>
+</dl>
+<p><strong>Errors:</strong></p>
+<dl>
+<dt><code>ErrRead</code></dt>
+<dd>The underlying read failed</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>io::readline switch { Ok { -&gt; ok -&gt; line ok 0 == if { break } } _ { } }</code></pre>
+</div>
+<hr>
+<div class="fn fallible" id="read_file">
+<h3>read_file [fallible]</h3>
+<pre><code>fn read_file(path:str -- contents:str)!</code></pre>
+<p>Read entire file contents.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>path</code> <code>str</code></dt>
+<dd>File path</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>contents</code> <code>str</code></dt>
+<dd>File contents as string</dd>
+</dl>
+<p><strong>Errors:</strong></p>
+<dl>
+<dt><code>ErrNotFound</code></dt>
+<dd>File not found</dd>
+<dt><code>ErrRead</code></dt>
+<dd>Read operation failed</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>&quot;/etc/hostname&quot; io::read_file! -&gt; contents</code></pre>
+</div>
+<hr>
+<div class="fn fallible" id="write_file">
+<h3>write_file [fallible]</h3>
+<pre><code>fn write_file(path:str contents:str -- )!</code></pre>
+<p>Write string contents to file. Creates or truncates the file at the given path.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>path</code> <code>str</code></dt>
+<dd>File path</dd>
+<dt><code>contents</code> <code>str</code></dt>
+<dd>String to write</dd>
+</dl>
+<p><strong>Errors:</strong></p>
+<dl>
+<dt><code>ErrPermission</code></dt>
+<dd>Permission denied or cannot create file</dd>
+<dt><code>ErrWrite</code></dt>
+<dd>Write operation failed</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>&quot;/tmp/test.txt&quot; &quot;Hello, world!\n&quot; io::write_file!</code></pre>
+</div>
+<hr>
+<div class="fn" id="flush">
+<h3>flush</h3>
+<pre><code>fn flush()</code></pre>
+<p>Flush stdout buffer. Ensures all pending output is written immediately. Useful for progress indicators that don't use newlines.</p>
+<p><strong>Examples:</strong></p>
+<pre><code>&quot;Loading...&quot; print io::flush</code></pre>
+</div>
+<hr>
+<div class="fn fallible" id="stat_size">
+<h3>stat_size [fallible]</h3>
+<pre><code>fn stat_size(path:str -- size:i64)!</code></pre>
+<p>Get file size in bytes.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>path</code> <code>str</code></dt>
+<dd>File path</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>size</code> <code>i64</code></dt>
+<dd>File size in bytes</dd>
+</dl>
+<p><strong>Errors:</strong></p>
+<dl>
+<dt><code>ErrNotFound</code></dt>
+<dd>File not found</dd>
+<dt><code>ErrPermission</code></dt>
+<dd>Permission denied</dd>
+<dt><code>ErrStat</code></dt>
+<dd>Stat operation failed</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>&quot;/etc/hostname&quot; io::stat_size! -&gt; size</code></pre>
+</div>
+<hr>
+<div class="fn fallible" id="stat_mtime">
+<h3>stat_mtime [fallible]</h3>
+<pre><code>fn stat_mtime(path:str -- mtime:i64)!</code></pre>
+<p>Get file modification time.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>path</code> <code>str</code></dt>
+<dd>File path</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>mtime</code> <code>i64</code></dt>
+<dd>Last modification time as Unix timestamp</dd>
+</dl>
+<p><strong>Errors:</strong></p>
+<dl>
+<dt><code>ErrNotFound</code></dt>
+<dd>File not found</dd>
+<dt><code>ErrPermission</code></dt>
+<dd>Permission denied</dd>
+<dt><code>ErrStat</code></dt>
+<dd>Stat operation failed</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>&quot;/etc/hostname&quot; io::stat_mtime! -&gt; mtime</code></pre>
+</div>
+<hr>
+<div class="fn fallible" id="stat_atime">
+<h3>stat_atime [fallible]</h3>
+<pre><code>fn stat_atime(path:str -- atime:i64)!</code></pre>
+<p>Get file access time.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>path</code> <code>str</code></dt>
+<dd>File path</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>atime</code> <code>i64</code></dt>
+<dd>Last access time as Unix timestamp</dd>
+</dl>
+<p><strong>Errors:</strong></p>
+<dl>
+<dt><code>ErrNotFound</code></dt>
+<dd>File not found</dd>
+<dt><code>ErrPermission</code></dt>
+<dd>Permission denied</dd>
+<dt><code>ErrStat</code></dt>
+<dd>Stat operation failed</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>&quot;/etc/hostname&quot; io::stat_atime! -&gt; atime</code></pre>
+</div>
+<hr>
+<div class="fn fallible" id="stat_mode">
+<h3>stat_mode [fallible]</h3>
+<pre><code>fn stat_mode(path:str -- mode:i64)!</code></pre>
+<p>Get file permissions (Unix mode).</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>path</code> <code>str</code></dt>
+<dd>File path</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>mode</code> <code>i64</code></dt>
+<dd>Unix permission mode (e.g., 0644)</dd>
+</dl>
+<p><strong>Errors:</strong></p>
+<dl>
+<dt><code>ErrNotFound</code></dt>
+<dd>File not found</dd>
+<dt><code>ErrPermission</code></dt>
+<dd>Permission denied</dd>
+<dt><code>ErrStat</code></dt>
+<dd>Stat operation failed</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>&quot;/etc/hostname&quot; io::stat_mode! -&gt; mode</code></pre>
+</div>
+<hr>
+<div class="fn fallible" id="append_file">
+<h3>append_file [fallible]</h3>
+<pre><code>fn append_file(path:str contents:str -- )!</code></pre>
+<p>Append string contents to a file. Creates the file if it doesn't exist.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>path</code> <code>str</code></dt>
+<dd>File path</dd>
+<dt><code>contents</code> <code>str</code></dt>
+<dd>String to append</dd>
+</dl>
+<p><strong>Errors:</strong></p>
+<dl>
+<dt><code>ErrPermission</code></dt>
+<dd>Permission denied or cannot open file</dd>
+<dt><code>ErrWrite</code></dt>
+<dd>Write operation failed</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>&quot;/tmp/log.txt&quot; &quot;New line\n&quot; io::append_file!</code></pre>
+</div>
+</div></body></html>

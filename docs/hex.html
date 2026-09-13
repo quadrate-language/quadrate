@@ -1,0 +1,159 @@
+<!DOCTYPE html><html><head><meta charset="utf-8"><title>hex - Quadrate API</title><link rel="stylesheet" href="style.css"></head><body>
+<nav><h1>Quadrate API</h1><a href="index.html">All Modules</a></nav>
+<div class="container"><h2>hex</h2>
+<p class="desc">Hexadecimal encoding and decoding. Converts between binary data and hexadecimal string representation.</p>
+<h2>Functions</h2>
+<div class="fn" id="encode">
+<h3>encode</h3>
+<pre><code>fn encode(s:str -- hex:str)</code></pre>
+<p>Encode a string to uppercase hexadecimal. Each byte becomes two hex characters (00-FF).</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>s</code> <code>str</code></dt>
+<dd>String to encode</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>hex</code> <code>str</code></dt>
+<dd>Hexadecimal string (uppercase)</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>&quot;Hello&quot; hex::encode -&gt; &quot;48656C6C6F&quot;</code></pre>
+<p class="xref"><strong>Calls:</strong> <a href="mem.html#alloc"><code>mem::alloc</code></a>, <a href="mem.html#free"><code>mem::free</code></a>, <a href="mem.html#set_byte"><code>mem::set_byte</code></a>, <a href="mem.html#to_string"><code>mem::to_string</code></a>, <a href="strings.html#char_at"><code>strings::char_at</code></a>, <a href="strings.html#len"><code>strings::len</code></a></p>
+</div>
+<hr>
+<div class="fn" id="encode_lower">
+<h3>encode_lower</h3>
+<pre><code>fn encode_lower(s:str -- hex:str)</code></pre>
+<p>Encode a string to lowercase hexadecimal. Each byte becomes two hex characters (00-ff).</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>s</code> <code>str</code></dt>
+<dd>String to encode</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>hex</code> <code>str</code></dt>
+<dd>Hexadecimal string (lowercase)</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>&quot;Hello&quot; hex::encode_lower -&gt; &quot;48656c6c6f&quot;</code></pre>
+<p class="xref"><strong>Calls:</strong> <a href="mem.html#alloc"><code>mem::alloc</code></a>, <a href="mem.html#free"><code>mem::free</code></a>, <a href="mem.html#set_byte"><code>mem::set_byte</code></a>, <a href="mem.html#to_string"><code>mem::to_string</code></a>, <a href="strings.html#char_at"><code>strings::char_at</code></a>, <a href="strings.html#len"><code>strings::len</code></a></p>
+</div>
+<hr>
+<div class="fn" id="decode">
+<h3>decode</h3>
+<pre><code>fn decode(hex:str -- s:str)</code></pre>
+<p>Decode a hexadecimal string to bytes. Accepts both uppercase and lowercase hex digits. Invalid characters are skipped.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>hex</code> <code>str</code></dt>
+<dd>Hexadecimal string</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>s</code> <code>str</code></dt>
+<dd>Decoded string</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>&quot;48656C6C6F&quot; hex::decode -&gt; &quot;Hello&quot;</code></pre>
+<p class="xref"><strong>Calls:</strong> <a href="mem.html#alloc"><code>mem::alloc</code></a>, <a href="mem.html#free"><code>mem::free</code></a>, <a href="mem.html#set_byte"><code>mem::set_byte</code></a>, <a href="mem.html#to_string"><code>mem::to_string</code></a>, <a href="strings.html#char_at"><code>strings::char_at</code></a>, <a href="strings.html#len"><code>strings::len</code></a></p>
+<p class="xref"><strong>Called by:</strong> <a href="crypto.html#hmac_sha256"><code>crypto::hmac_sha256</code></a>, <a href="crypto.html#hmac_sha512"><code>crypto::hmac_sha512</code></a>, <a href="hmac.html#hmac_sha256"><code>hmac::hmac_sha256</code></a>, <a href="hmac.html#hmac_sha512"><code>hmac::hmac_sha512</code></a></p>
+</div>
+<hr>
+<div class="fn" id="encode_byte">
+<h3>encode_byte</h3>
+<pre><code>fn encode_byte(b:i64 -- hex:str)</code></pre>
+<p>Encode a single byte (0-255) to a 2-character hex string.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>b</code> <code>i64</code></dt>
+<dd>Byte value (0-255)</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>hex</code> <code>str</code></dt>
+<dd>Two-character hex string (uppercase)</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>65 hex::encode_byte -&gt; &quot;41&quot;</code></pre>
+<p class="xref"><strong>Calls:</strong> <a href="mem.html#alloc"><code>mem::alloc</code></a>, <a href="mem.html#free"><code>mem::free</code></a>, <a href="mem.html#set_byte"><code>mem::set_byte</code></a>, <a href="mem.html#to_string"><code>mem::to_string</code></a></p>
+</div>
+<hr>
+<div class="fn" id="decode_byte">
+<h3>decode_byte</h3>
+<pre><code>fn decode_byte(hex:str -- b:i64)</code></pre>
+<p>Decode a 2-character hex string to a byte value. Returns -1 if the input is invalid.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>hex</code> <code>str</code></dt>
+<dd>Two-character hex string</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>b</code> <code>i64</code></dt>
+<dd>Byte value (0-255) or -1 if invalid</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>&quot;41&quot; hex::decode_byte -&gt; 65</code></pre>
+<p class="xref"><strong>Calls:</strong> <a href="strings.html#char_at"><code>strings::char_at</code></a>, <a href="strings.html#len"><code>strings::len</code></a></p>
+</div>
+<hr>
+<div class="fn" id="is_valid">
+<h3>is_valid</h3>
+<pre><code>fn is_valid(hex:str -- valid:i64)</code></pre>
+<p>Check if a string contains only valid hexadecimal characters. Valid characters are 0-9, A-F, a-f.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>hex</code> <code>str</code></dt>
+<dd>String to check</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>valid</code> <code>i64</code></dt>
+<dd>1 if valid hex, 0 otherwise</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>&quot;48656C6C6F&quot; hex::is_valid -&gt; 1</code></pre>
+<pre><code>&quot;48ZZ&quot; hex::is_valid -&gt; 0</code></pre>
+<p class="xref"><strong>Calls:</strong> <a href="strings.html#char_at"><code>strings::char_at</code></a>, <a href="strings.html#len"><code>strings::len</code></a></p>
+</div>
+<hr>
+<div class="fn" id="decoded_len">
+<h3>decoded_len</h3>
+<pre><code>fn decoded_len(hex:str -- len:i64)</code></pre>
+<p>Get the length of data that would result from decoding a hex string. Returns -1 if the hex string has invalid length (odd).</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>hex</code> <code>str</code></dt>
+<dd>Hexadecimal string</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>len</code> <code>i64</code></dt>
+<dd>Decoded length in bytes, or -1 if invalid</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>&quot;48656C6C6F&quot; hex::decoded_len -&gt; 5</code></pre>
+<p class="xref"><strong>Calls:</strong> <a href="strings.html#len"><code>strings::len</code></a></p>
+</div>
+<hr>
+<div class="fn" id="encoded_len">
+<h3>encoded_len</h3>
+<pre><code>fn encoded_len(s:str -- len:i64)</code></pre>
+<p>Get the length of hex string that would result from encoding data.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>s</code> <code>str</code></dt>
+<dd>String to encode</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>len</code> <code>i64</code></dt>
+<dd>Encoded length in characters</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>&quot;Hello&quot; hex::encoded_len -&gt; 10</code></pre>
+<p class="xref"><strong>Calls:</strong> <a href="strings.html#len"><code>strings::len</code></a></p>
+</div>
+</div></body></html>

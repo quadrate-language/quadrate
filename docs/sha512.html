@@ -1,0 +1,102 @@
+<!DOCTYPE html><html><head><meta charset="utf-8"><title>sha512 - Quadrate API</title><link rel="stylesheet" href="style.css"></head><body>
+<nav><h1>Quadrate API</h1><a href="index.html">All Modules</a></nav>
+<div class="container"><h2>sha512</h2>
+<p class="desc">SHA-512 Implementation ======================  SHA-512 hash with streaming and one-shot APIs.  use crypto  // One-shot &quot;Hello&quot; sha512! -&gt; hash  // Streaming Sha512 {} -&gt; h h &quot;Hello&quot; update! -&gt; h h &quot; World&quot; update! -&gt; h h finish! -&gt; hash h release</p>
+<h2>Structs</h2>
+<h3 id="Sha512"><code>Sha512</code></h3>
+<p>SHA-512 hasher state for streaming computation.</p>
+<dl>
+<dt><code>h0</code> <code>i64</code></dt>
+<dt><code>h1</code> <code>i64</code></dt>
+<dt><code>h2</code> <code>i64</code></dt>
+<dt><code>h3</code> <code>i64</code></dt>
+<dt><code>h4</code> <code>i64</code></dt>
+<dt><code>h5</code> <code>i64</code></dt>
+<dt><code>h6</code> <code>i64</code></dt>
+<dt><code>h7</code> <code>i64</code></dt>
+<dt><code>buf</code> <code>ptr</code></dt>
+<dt><code>buflen</code> <code>i64</code></dt>
+<dt><code>total</code> <code>i64</code></dt>
+</dl>
+<h2>Functions</h2>
+<div class="fn fallible" id="update">
+<h3>update [fallible]</h3>
+<pre><code>fn (h:Sha512) update(data:str -- h2:Sha512)!</code></pre>
+<p>Update SHA-512 state with additional data.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>h</code> <code>Sha512</code></dt>
+<dt><code>data</code> <code>str</code></dt>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>h2</code> <code>Sha512</code></dt>
+</dl>
+<p class="xref"><strong>Calls:</strong> <a href="mem.html#alloc"><code>mem::alloc</code></a>, <a href="mem.html#set_byte"><code>mem::set_byte</code></a>, <a href="strings.html#char_at"><code>strings::char_at</code></a>, <a href="strings.html#len"><code>strings::len</code></a></p>
+<p class="xref"><strong>Called by:</strong> <a href="sha512.html#sha512"><code>sha512::sha512</code></a></p>
+</div>
+<hr>
+<div class="fn fallible" id="finish">
+<h3>finish [fallible]</h3>
+<pre><code>fn (h:Sha512) finish( -- hash:str)!</code></pre>
+<p>Finalize SHA-512 and get result as hex string.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>h</code> <code>Sha512</code></dt>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>hash</code> <code>str</code></dt>
+</dl>
+<p class="xref"><strong>Calls:</strong> <a href="mem.html#alloc"><code>mem::alloc</code></a>, <a href="mem.html#free"><code>mem::free</code></a>, <a href="mem.html#set_byte"><code>mem::set_byte</code></a>, <a href="mem.html#to_string"><code>mem::to_string</code></a></p>
+<p class="xref"><strong>Called by:</strong> <a href="sha512.html#sha512"><code>sha512::sha512</code></a></p>
+</div>
+<hr>
+<div class="fn" id="release">
+<h3>release</h3>
+<pre><code>fn (h:Sha512) release()</code></pre>
+<p>Free resources used by SHA-512 hasher.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>h</code> <code>Sha512</code></dt>
+</dl>
+<p class="xref"><strong>Calls:</strong> <a href="mem.html#free"><code>mem::free</code></a></p>
+<p class="xref"><strong>Called by:</strong> <a href="sha512.html#sha512"><code>sha512::sha512</code></a></p>
+</div>
+<hr>
+<div class="fn fallible" id="sha512">
+<h3>sha512 [fallible]</h3>
+<pre><code>fn sha512(s:str -- hash:str)!</code></pre>
+<p>One-shot SHA-512 of a string.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>s</code> <code>str</code></dt>
+<dd>Input string</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>hash</code> <code>str</code></dt>
+<dd>128-character hex string</dd>
+</dl>
+<p class="xref"><strong>Calls:</strong> <a href="sha512.html#finish"><code>sha512::finish</code></a>, <a href="sha512.html#release"><code>sha512::release</code></a>, <a href="sha512.html#update"><code>sha512::update</code></a></p>
+</div>
+<hr>
+<div class="fn fallible" id="sha512_bytes">
+<h3>sha512_bytes [fallible]</h3>
+<pre><code>fn sha512_bytes(buf:ptr length:i64 -- hash:str)!</code></pre>
+<p>Calculate SHA-512 hash of raw bytes.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>buf</code> <code>ptr</code></dt>
+<dd>Input buffer</dd>
+<dt><code>length</code> <code>i64</code></dt>
+<dd>Length of buffer in bytes</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>hash</code> <code>str</code></dt>
+<dd>128-character hex string</dd>
+</dl>
+<p class="xref"><strong>Calls:</strong> <a href="mem.html#alloc"><code>mem::alloc</code></a>, <a href="mem.html#free"><code>mem::free</code></a>, <a href="mem.html#get_byte"><code>mem::get_byte</code></a>, <a href="mem.html#set_byte"><code>mem::set_byte</code></a>, <a href="mem.html#to_string"><code>mem::to_string</code></a></p>
+</div>
+</div></body></html>

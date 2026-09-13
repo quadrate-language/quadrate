@@ -1,0 +1,2450 @@
+<!DOCTYPE html><html><head><meta charset="utf-8"><title>math - Quadrate API</title><link rel="stylesheet" href="style.css"></head><body>
+<nav><h1>Quadrate API</h1><a href="index.html">All Modules</a></nav>
+<div class="container"><h2>math</h2>
+<p class="desc">Mathematical functions and constants.</p>
+<h2>Structs</h2>
+<h3 id="Vec2"><code>Vec2</code></h3>
+<p>2D vector with x and y components.</p>
+<dl>
+<dt><code>x</code> <code>f64</code></dt>
+<dd>X component</dd>
+<dt><code>y</code> <code>f64</code></dt>
+<dd>Y component</dd>
+</dl>
+<h3 id="Vec3"><code>Vec3</code></h3>
+<p>3D vector with x, y, and z components.</p>
+<dl>
+<dt><code>x</code> <code>f64</code></dt>
+<dd>X component</dd>
+<dt><code>y</code> <code>f64</code></dt>
+<dd>Y component</dd>
+<dt><code>z</code> <code>f64</code></dt>
+<dd>Z component</dd>
+</dl>
+<h3 id="Vec4"><code>Vec4</code></h3>
+<p>4D vector with x, y, z, and w components.</p>
+<dl>
+<dt><code>x</code> <code>f64</code></dt>
+<dd>X component</dd>
+<dt><code>y</code> <code>f64</code></dt>
+<dd>Y component</dd>
+<dt><code>z</code> <code>f64</code></dt>
+<dd>Z component</dd>
+<dt><code>w</code> <code>f64</code></dt>
+<dd>W component</dd>
+</dl>
+<h3 id="Quat"><code>Quat</code></h3>
+<p>Quaternion for representing rotations. Stored as (w, x, y, z) where w is the scalar part.</p>
+<dl>
+<dt><code>w</code> <code>f64</code></dt>
+<dd>Scalar (real) component</dd>
+<dt><code>x</code> <code>f64</code></dt>
+<dd>X component of vector part</dd>
+<dt><code>y</code> <code>f64</code></dt>
+<dd>Y component of vector part</dd>
+<dt><code>z</code> <code>f64</code></dt>
+<dd>Z component of vector part</dd>
+</dl>
+<h3 id="Mat4"><code>Mat4</code></h3>
+<p>4x4 matrix in column-major order (OpenGL compatible).</p>
+<dl>
+<dt><code>m00</code> <code>f64</code></dt>
+<dd>Element at row 0, column 0</dd>
+<dt><code>m01</code> <code>f64</code></dt>
+<dd>Element at row 1, column 0</dd>
+<dt><code>m02</code> <code>f64</code></dt>
+<dd>Element at row 2, column 0</dd>
+<dt><code>m03</code> <code>f64</code></dt>
+<dd>Element at row 3, column 0</dd>
+<dt><code>m10</code> <code>f64</code></dt>
+<dd>Element at row 0, column 1</dd>
+<dt><code>m11</code> <code>f64</code></dt>
+<dd>Element at row 1, column 1</dd>
+<dt><code>m12</code> <code>f64</code></dt>
+<dd>Element at row 2, column 1</dd>
+<dt><code>m13</code> <code>f64</code></dt>
+<dd>Element at row 3, column 1</dd>
+<dt><code>m20</code> <code>f64</code></dt>
+<dd>Element at row 0, column 2</dd>
+<dt><code>m21</code> <code>f64</code></dt>
+<dd>Element at row 1, column 2</dd>
+<dt><code>m22</code> <code>f64</code></dt>
+<dd>Element at row 2, column 2</dd>
+<dt><code>m23</code> <code>f64</code></dt>
+<dd>Element at row 3, column 2</dd>
+<dt><code>m30</code> <code>f64</code></dt>
+<dd>Element at row 0, column 3</dd>
+<dt><code>m31</code> <code>f64</code></dt>
+<dd>Element at row 1, column 3</dd>
+<dt><code>m32</code> <code>f64</code></dt>
+<dd>Element at row 2, column 3</dd>
+<dt><code>m33</code> <code>f64</code></dt>
+<dd>Element at row 3, column 3</dd>
+</dl>
+<h2>Constants</h2>
+<dl>
+<dt><code>Pi</code> = <code>3.141592653589793238</code></dt>
+<dd>Mathematical constant Pi (π).</dd>
+<dt><code>E</code> = <code>2.718281828459045235</code></dt>
+<dd>Euler's number (e).</dd>
+<dt><code>Tau</code> = <code>6.283185307179586477</code></dt>
+<dd>Tau = 2π (full circle in radians).</dd>
+<dt><code>Phi</code> = <code>1.618033988749894848</code></dt>
+<dd>Golden ratio φ = (1 + √5) / 2.</dd>
+<dt><code>Sqrt2</code> = <code>1.414213562373095049</code></dt>
+<dd>Square root of 2.</dd>
+<dt><code>Sqrt3</code> = <code>1.732050807568877294</code></dt>
+<dd>Square root of 3.</dd>
+<dt><code>Ln2</code> = <code>0.693147180559945309</code></dt>
+<dd>Natural logarithm of 2.</dd>
+<dt><code>Ln10</code> = <code>2.302585092994045684</code></dt>
+<dd>Natural logarithm of 10.</dd>
+<dt><code>Log2E</code> = <code>1.442695040888963407</code></dt>
+<dd>Base-2 logarithm of e.</dd>
+<dt><code>Log10E</code> = <code>0.434294481903251828</code></dt>
+<dd>Base-10 logarithm of e.</dd>
+</dl>
+<h2>Functions</h2>
+<div class="fn" id="sin">
+<h3>sin</h3>
+<pre><code>fn sin(x:f64 -- result:f64)</code></pre>
+<p>Sine of angle in radians.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>x</code> <code>f64</code></dt>
+<dd>Angle in radians</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>result</code> <code>f64</code></dt>
+<dd>Sine value [-1, 1]</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>0.0 math::sin print  // 0.0</code></pre>
+<p class="xref"><strong>Called by:</strong> <a href="math.html#mat4_rotation_x"><code>math::mat4_rotation_x</code></a>, <a href="math.html#mat4_rotation_y"><code>math::mat4_rotation_y</code></a>, <a href="math.html#mat4_rotation_z"><code>math::mat4_rotation_z</code></a>, <a href="math.html#quat_from_axis_angle"><code>math::quat_from_axis_angle</code></a>, <a href="math.html#quat_from_euler"><code>math::quat_from_euler</code></a>, <a href="math.html#rotate"><code>math::rotate</code></a>, <a href="math.html#slerp"><code>math::slerp</code></a>, <a href="physics.html#compute_deriv"><code>physics::compute_deriv</code></a></p>
+</div>
+<hr>
+<div class="fn" id="cos">
+<h3>cos</h3>
+<pre><code>fn cos(x:f64 -- result:f64)</code></pre>
+<p>Cosine of angle in radians.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>x</code> <code>f64</code></dt>
+<dd>Angle in radians</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>result</code> <code>f64</code></dt>
+<dd>Cosine value [-1, 1]</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>0.0 math::cos print  // 1.0</code></pre>
+<p class="xref"><strong>Called by:</strong> <a href="math.html#mat4_rotation_x"><code>math::mat4_rotation_x</code></a>, <a href="math.html#mat4_rotation_y"><code>math::mat4_rotation_y</code></a>, <a href="math.html#mat4_rotation_z"><code>math::mat4_rotation_z</code></a>, <a href="math.html#quat_from_axis_angle"><code>math::quat_from_axis_angle</code></a>, <a href="math.html#quat_from_euler"><code>math::quat_from_euler</code></a>, <a href="math.html#rotate"><code>math::rotate</code></a>, <a href="math.html#slerp"><code>math::slerp</code></a>, <a href="physics.html#compute_deriv"><code>physics::compute_deriv</code></a>, <a href="rand.html#normal"><code>rand::normal</code></a></p>
+</div>
+<hr>
+<div class="fn" id="tan">
+<h3>tan</h3>
+<pre><code>fn tan(x:f64 -- result:f64)</code></pre>
+<p>Tangent of angle in radians.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>x</code> <code>f64</code></dt>
+<dd>Angle in radians</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>result</code> <code>f64</code></dt>
+<dd>Tangent value</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>0.0 math::tan print  // 0.0</code></pre>
+<p class="xref"><strong>Called by:</strong> <a href="math.html#mat4_perspective"><code>math::mat4_perspective</code></a></p>
+</div>
+<hr>
+<div class="fn" id="asin">
+<h3>asin</h3>
+<pre><code>fn asin(x:f64 -- result:f64)</code></pre>
+<p>Arc sine (inverse sine).</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>x</code> <code>f64</code></dt>
+<dd>Value in range [-1, 1]</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>result</code> <code>f64</code></dt>
+<dd>Angle in radians [-π/2, π/2]</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>0.0 math::asin print  // 0.0</code></pre>
+</div>
+<hr>
+<div class="fn" id="acos">
+<h3>acos</h3>
+<pre><code>fn acos(x:f64 -- result:f64)</code></pre>
+<p>Arc cosine (inverse cosine).</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>x</code> <code>f64</code></dt>
+<dd>Value in range [-1, 1]</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>result</code> <code>f64</code></dt>
+<dd>Angle in radians [0, π]</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>1.0 math::acos print  // 0.0</code></pre>
+<p class="xref"><strong>Called by:</strong> <a href="math.html#angle_between"><code>math::angle_between</code></a>, <a href="math.html#slerp"><code>math::slerp</code></a>, <a href="orbital.html#inclination"><code>orbital::inclination</code></a></p>
+</div>
+<hr>
+<div class="fn" id="atan">
+<h3>atan</h3>
+<pre><code>fn atan(x:f64 -- result:f64)</code></pre>
+<p>Arc tangent (inverse tangent).</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>x</code> <code>f64</code></dt>
+<dd>Any value</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>result</code> <code>f64</code></dt>
+<dd>Angle in radians [-π/2, π/2]</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>0.0 math::atan print  // 0.0</code></pre>
+</div>
+<hr>
+<div class="fn" id="atan2">
+<h3>atan2</h3>
+<pre><code>fn atan2(y:f64 x:f64 -- result:f64)</code></pre>
+<p>Two-argument arc tangent. Returns the angle in radians between the positive x-axis and the point (x, y). More useful than atan for computing angles because it handles all quadrants.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>y</code> <code>f64</code></dt>
+<dd>Y coordinate</dd>
+<dt><code>x</code> <code>f64</code></dt>
+<dd>X coordinate</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>result</code> <code>f64</code></dt>
+<dd>Angle in radians [-π, π]</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>1.0 1.0 math::atan2 print  // ~0.785 (π/4)</code></pre>
+<p class="xref"><strong>Called by:</strong> <a href="math.html#angle"><code>math::angle</code></a></p>
+</div>
+<hr>
+<div class="fn" id="sqrt">
+<h3>sqrt</h3>
+<pre><code>fn sqrt(x:f64 -- result:f64)</code></pre>
+<p>Square root.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>x</code> <code>f64</code></dt>
+<dd>Non-negative value</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>result</code> <code>f64</code></dt>
+<dd>Square root of x</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>4.0 math::sqrt print  // 2.0</code></pre>
+<p class="xref"><strong>Called by:</strong> <a href="geometry.html#length"><code>geometry::length</code></a>, <a href="math.html#angle_between"><code>math::angle_between</code></a>, <a href="math.html#distance"><code>math::distance</code></a>, <a href="math.html#length"><code>math::length</code></a>, <a href="math.html#mat4_look_at"><code>math::mat4_look_at</code></a>, <a href="math.html#normalize"><code>math::normalize</code></a>, <a href="rand.html#normal"><code>rand::normal</code></a></p>
+</div>
+<hr>
+<div class="fn" id="cbrt">
+<h3>cbrt</h3>
+<pre><code>fn cbrt(x:f64 -- result:f64)</code></pre>
+<p>Cube root.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>x</code> <code>f64</code></dt>
+<dd>Any value</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>result</code> <code>f64</code></dt>
+<dd>Cube root of x</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>8.0 math::cbrt print  // 2.0</code></pre>
+</div>
+<hr>
+<div class="fn" id="pow">
+<h3>pow</h3>
+<pre><code>fn pow(base:f64 exp:f64 -- result:f64)</code></pre>
+<p>Power function.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>base</code> <code>f64</code></dt>
+<dd>Base value</dd>
+<dt><code>exp</code> <code>f64</code></dt>
+<dd>Exponent</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>result</code> <code>f64</code></dt>
+<dd>base raised to exp</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>2.0 3.0 math::pow print  // 8.0</code></pre>
+</div>
+<hr>
+<div class="fn" id="exp">
+<h3>exp</h3>
+<pre><code>fn exp(x:f64 -- result:f64)</code></pre>
+<p>Exponential function (e^x).</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>x</code> <code>f64</code></dt>
+<dd>Exponent value</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>result</code> <code>f64</code></dt>
+<dd>e raised to x</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>1.0 math::exp print  // ~2.718 (e)</code></pre>
+</div>
+<hr>
+<div class="fn" id="hypot">
+<h3>hypot</h3>
+<pre><code>fn hypot(x:f64 y:f64 -- result:f64)</code></pre>
+<p>Hypotenuse (Euclidean distance). Computes sqrt(x² + y²) without intermediate overflow or underflow.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>x</code> <code>f64</code></dt>
+<dd>First value</dd>
+<dt><code>y</code> <code>f64</code></dt>
+<dd>Second value</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>result</code> <code>f64</code></dt>
+<dd>sqrt(x² + y²)</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>3.0 4.0 math::hypot print  // 5.0</code></pre>
+</div>
+<hr>
+<div class="fn" id="ln">
+<h3>ln</h3>
+<pre><code>fn ln(x:f64 -- result:f64)</code></pre>
+<p>Natural logarithm (base e).</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>x</code> <code>f64</code></dt>
+<dd>Positive value</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>result</code> <code>f64</code></dt>
+<dd>Natural log of x</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>2.718281828 math::ln print  // ~1.0</code></pre>
+<p class="xref"><strong>Called by:</strong> <a href="math.html#log"><code>math::log</code></a>, <a href="rand.html#exponential"><code>rand::exponential</code></a>, <a href="rand.html#normal"><code>rand::normal</code></a></p>
+</div>
+<hr>
+<div class="fn" id="log10">
+<h3>log10</h3>
+<pre><code>fn log10(x:f64 -- result:f64)</code></pre>
+<p>Base-10 logarithm.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>x</code> <code>f64</code></dt>
+<dd>Positive value</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>result</code> <code>f64</code></dt>
+<dd>Log base 10 of x</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>100.0 math::log10 print  // 2.0</code></pre>
+</div>
+<hr>
+<div class="fn" id="ceil">
+<h3>ceil</h3>
+<pre><code>fn ceil(x:f64 -- result:f64)</code></pre>
+<p>Ceiling (round up).</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>x</code> <code>f64</code></dt>
+<dd>Any value</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>result</code> <code>f64</code></dt>
+<dd>Smallest integer &gt;= x</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>2.3 math::ceil print  // 3.0</code></pre>
+</div>
+<hr>
+<div class="fn" id="floor">
+<h3>floor</h3>
+<pre><code>fn floor(x:f64 -- result:f64)</code></pre>
+<p>Floor (round down).</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>x</code> <code>f64</code></dt>
+<dd>Any value</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>result</code> <code>f64</code></dt>
+<dd>Largest integer &lt;= x</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>2.7 math::floor print  // 2.0</code></pre>
+</div>
+<hr>
+<div class="fn" id="round">
+<h3>round</h3>
+<pre><code>fn round(x:f64 -- result:f64)</code></pre>
+<p>Round to nearest integer.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>x</code> <code>f64</code></dt>
+<dd>Any value</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>result</code> <code>f64</code></dt>
+<dd>Nearest integer to x</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>2.5 math::round print  // 3.0</code></pre>
+</div>
+<hr>
+<div class="fn" id="fmod">
+<h3>fmod</h3>
+<pre><code>fn fmod(x:f64 y:f64 -- result:f64)</code></pre>
+<p>Floating-point modulo (remainder). Returns the remainder of x/y with the same sign as x.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>x</code> <code>f64</code></dt>
+<dd>Dividend</dd>
+<dt><code>y</code> <code>f64</code></dt>
+<dd>Divisor (non-zero)</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>result</code> <code>f64</code></dt>
+<dd>Remainder of x/y</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>5.5 2.0 math::fmod print  // 1.5</code></pre>
+</div>
+<hr>
+<div class="fn" id="sinh">
+<h3>sinh</h3>
+<pre><code>fn sinh(x:f64 -- result:f64)</code></pre>
+<p>Hyperbolic sine.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>x</code> <code>f64</code></dt>
+<dd>Any value</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>result</code> <code>f64</code></dt>
+<dd>Hyperbolic sine of x</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>1.0 math::sinh print  // ~1.175</code></pre>
+</div>
+<hr>
+<div class="fn" id="cosh">
+<h3>cosh</h3>
+<pre><code>fn cosh(x:f64 -- result:f64)</code></pre>
+<p>Hyperbolic cosine.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>x</code> <code>f64</code></dt>
+<dd>Any value</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>result</code> <code>f64</code></dt>
+<dd>Hyperbolic cosine of x</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>0.0 math::cosh print  // 1.0</code></pre>
+</div>
+<hr>
+<div class="fn" id="tanh">
+<h3>tanh</h3>
+<pre><code>fn tanh(x:f64 -- result:f64)</code></pre>
+<p>Hyperbolic tangent.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>x</code> <code>f64</code></dt>
+<dd>Any value</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>result</code> <code>f64</code></dt>
+<dd>Hyperbolic tangent of x [-1, 1]</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>0.0 math::tanh print  // 0.0</code></pre>
+</div>
+<hr>
+<div class="fn" id="asinh">
+<h3>asinh</h3>
+<pre><code>fn asinh(x:f64 -- result:f64)</code></pre>
+<p>Inverse hyperbolic sine.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>x</code> <code>f64</code></dt>
+<dd>Any value</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>result</code> <code>f64</code></dt>
+<dd>Inverse hyperbolic sine of x</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>0.0 math::asinh print  // 0.0</code></pre>
+</div>
+<hr>
+<div class="fn" id="acosh">
+<h3>acosh</h3>
+<pre><code>fn acosh(x:f64 -- result:f64)</code></pre>
+<p>Inverse hyperbolic cosine.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>x</code> <code>f64</code></dt>
+<dd>Value &gt;= 1</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>result</code> <code>f64</code></dt>
+<dd>Inverse hyperbolic cosine of x</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>1.0 math::acosh print  // 0.0</code></pre>
+</div>
+<hr>
+<div class="fn" id="atanh">
+<h3>atanh</h3>
+<pre><code>fn atanh(x:f64 -- result:f64)</code></pre>
+<p>Inverse hyperbolic tangent.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>x</code> <code>f64</code></dt>
+<dd>Value in range (-1, 1)</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>result</code> <code>f64</code></dt>
+<dd>Inverse hyperbolic tangent of x</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>0.0 math::atanh print  // 0.0</code></pre>
+</div>
+<hr>
+<div class="fn" id="log2">
+<h3>log2</h3>
+<pre><code>fn log2(x:f64 -- result:f64)</code></pre>
+<p>Base-2 logarithm.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>x</code> <code>f64</code></dt>
+<dd>Positive value</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>result</code> <code>f64</code></dt>
+<dd>Log base 2 of x</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>8.0 math::log2 print  // 3.0</code></pre>
+</div>
+<hr>
+<div class="fn" id="exp2">
+<h3>exp2</h3>
+<pre><code>fn exp2(x:f64 -- result:f64)</code></pre>
+<p>Exponential base 2 (2^x).</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>x</code> <code>f64</code></dt>
+<dd>Exponent</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>result</code> <code>f64</code></dt>
+<dd>2 raised to x</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>3.0 math::exp2 print  // 8.0</code></pre>
+</div>
+<hr>
+<div class="fn" id="trunc">
+<h3>trunc</h3>
+<pre><code>fn trunc(x:f64 -- result:f64)</code></pre>
+<p>Truncate toward zero.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>x</code> <code>f64</code></dt>
+<dd>Any value</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>result</code> <code>f64</code></dt>
+<dd>Integer part of x (toward zero)</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>-2.7 math::trunc print  // -2.0</code></pre>
+</div>
+<hr>
+<div class="fn" id="sq">
+<h3>sq</h3>
+<pre><code>fn sq(f64 -- f64)</code></pre>
+<p>Square a number.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>x</code> <code>f64</code></dt>
+<dd>Value to square</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>result</code> <code>f64</code></dt>
+<dd>x * x</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>3.0 math::sq print  // 9.0</code></pre>
+</div>
+<hr>
+<div class="fn" id="cb">
+<h3>cb</h3>
+<pre><code>fn cb(f64 -- f64)</code></pre>
+<p>Cube a number.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>x</code> <code>f64</code></dt>
+<dd>Value to cube</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>result</code> <code>f64</code></dt>
+<dd>x * x * x</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>2.0 math::cb print  // 8.0</code></pre>
+</div>
+<hr>
+<div class="fn" id="abs">
+<h3>abs</h3>
+<pre><code>fn abs(f64 -- f64)</code></pre>
+<p>Absolute value.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>x</code> <code>f64</code></dt>
+<dd>Any value</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>result</code> <code>f64</code></dt>
+<dd>|x|</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>-5.0 math::abs print  // 5.0</code></pre>
+<p class="xref"><strong>Called by:</strong> <a href="math.html#inverse"><code>math::inverse</code></a>, <a href="math.html#inverse_lerp"><code>math::inverse_lerp</code></a>, <a href="math.html#transform_point"><code>math::transform_point</code></a></p>
+</div>
+<hr>
+<div class="fn" id="inv">
+<h3>inv</h3>
+<pre><code>fn inv(f64 -- f64)</code></pre>
+<p>Reciprocal (1/x).</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>x</code> <code>f64</code></dt>
+<dd>Non-zero value</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>result</code> <code>f64</code></dt>
+<dd>1/x</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>4.0 math::inv print  // 0.25</code></pre>
+</div>
+<hr>
+<div class="fn" id="fac">
+<h3>fac</h3>
+<pre><code>fn fac(n:i64 -- result:i64)</code></pre>
+<p>Factorial (n!).</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>n</code> <code>i64</code></dt>
+<dd>Non-negative integer</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>result</code> <code>i64</code></dt>
+<dd>n!</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>5 math::fac print  // 120</code></pre>
+</div>
+<hr>
+<div class="fn" id="min">
+<h3>min</h3>
+<pre><code>fn min(any any -- any)</code></pre>
+<p>Minimum of two values.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>a</code> <code>any</code></dt>
+<dd>First value</dd>
+<dt><code>b</code> <code>any</code></dt>
+<dd>Second value</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>result</code> <code>any</code></dt>
+<dd>Smaller of a and b</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>3 7 math::min print  // 3</code></pre>
+</div>
+<hr>
+<div class="fn" id="max">
+<h3>max</h3>
+<pre><code>fn max(any any -- any)</code></pre>
+<p>Maximum of two values.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>a</code> <code>any</code></dt>
+<dd>First value</dd>
+<dt><code>b</code> <code>any</code></dt>
+<dd>Second value</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>result</code> <code>any</code></dt>
+<dd>Larger of a and b</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>3 7 math::max print  // 7</code></pre>
+</div>
+<hr>
+<div class="fn" id="log">
+<h3>log</h3>
+<pre><code>fn log(x:f64 base:f64 -- result:f64)</code></pre>
+<p>Logarithm with arbitrary base.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>x</code> <code>f64</code></dt>
+<dd>Positive value</dd>
+<dt><code>base</code> <code>f64</code></dt>
+<dd>Logarithm base</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>result</code> <code>f64</code></dt>
+<dd>log_base(x)</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>8.0 2.0 math::log print  // 3.0</code></pre>
+<p class="xref"><strong>Calls:</strong> <a href="math.html#ln"><code>math::ln</code></a></p>
+</div>
+<hr>
+<div class="fn" id="clamp">
+<h3>clamp</h3>
+<pre><code>fn clamp(x:f64 min_val:f64 max_val:f64 -- result:f64)</code></pre>
+<p>Clamp value to range.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>x</code> <code>f64</code></dt>
+<dd>Value to clamp</dd>
+<dt><code>min_val</code> <code>f64</code></dt>
+<dd>Minimum bound</dd>
+<dt><code>max_val</code> <code>f64</code></dt>
+<dd>Maximum bound</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>result</code> <code>f64</code></dt>
+<dd>x clamped to [min_val, max_val]</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>15.0 0.0 10.0 math::clamp print  // 10.0</code></pre>
+</div>
+<hr>
+<div class="fn" id="within">
+<h3>within</h3>
+<pre><code>fn within(x:any min_val:any max_val:any -- result:i64)</code></pre>
+<p>Check if value is within range (inclusive).</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>x</code> <code>any</code></dt>
+<dd>Value to check</dd>
+<dt><code>min_val</code> <code>any</code></dt>
+<dd>Minimum bound</dd>
+<dt><code>max_val</code> <code>any</code></dt>
+<dd>Maximum bound</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>result</code> <code>i64</code></dt>
+<dd>1 if in range, 0 otherwise</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>5 0 10 math::within print  // 1</code></pre>
+</div>
+<hr>
+<div class="fn" id="lerp">
+<h3>lerp</h3>
+<pre><code>fn lerp(a:f64 b:f64 t:f64 -- result:f64)</code></pre>
+<p>Linear interpolation between two values.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>a</code> <code>f64</code></dt>
+<dd>Start value</dd>
+<dt><code>b</code> <code>f64</code></dt>
+<dd>End value</dd>
+<dt><code>t</code> <code>f64</code></dt>
+<dd>Interpolation factor [0, 1]</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>result</code> <code>f64</code></dt>
+<dd>a + (b - a) * t</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>0.0 10.0 0.5 math::lerp print  // 5.0</code></pre>
+</div>
+<hr>
+<div class="fn" id="deg_to_rad">
+<h3>deg_to_rad</h3>
+<pre><code>fn deg_to_rad(f64 -- f64)</code></pre>
+<p>Convert degrees to radians.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>degrees</code> <code>f64</code></dt>
+<dd>Angle in degrees</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>radians</code> <code>f64</code></dt>
+<dd>Angle in radians</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>180.0 math::deg_to_rad print  // ~3.14159</code></pre>
+</div>
+<hr>
+<div class="fn" id="rad_to_deg">
+<h3>rad_to_deg</h3>
+<pre><code>fn rad_to_deg(f64 -- f64)</code></pre>
+<p>Convert radians to degrees.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>radians</code> <code>f64</code></dt>
+<dd>Angle in radians</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>degrees</code> <code>f64</code></dt>
+<dd>Angle in degrees</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>3.141592653589793 math::rad_to_deg print  // 180.0</code></pre>
+</div>
+<hr>
+<div class="fn" id="vec2_zero">
+<h3>vec2_zero</h3>
+<pre><code>fn vec2_zero( -- v:Vec2)</code></pre>
+<p>Create a Vec2 with all components set to zero.</p>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>v</code> <code>Vec2</code></dt>
+<dd>Zero vector (0, 0)</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>math::vec2_zero -&gt; v</code></pre>
+<p class="xref"><strong>Called by:</strong> <a href="math.html#normalize"><code>math::normalize</code></a></p>
+</div>
+<hr>
+<div class="fn" id="vec2_one">
+<h3>vec2_one</h3>
+<pre><code>fn vec2_one( -- v:Vec2)</code></pre>
+<p>Create a Vec2 with all components set to one.</p>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>v</code> <code>Vec2</code></dt>
+<dd>One vector (1, 1)</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>math::vec2_one -&gt; v</code></pre>
+</div>
+<hr>
+<div class="fn" id="add">
+<h3>add</h3>
+<pre><code>fn (v:Vec2) add(other:Vec2 -- result:Vec2)</code></pre>
+<p>Add another Vec2 to this vector.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>v</code> <code>Vec2</code></dt>
+<dt><code>other</code> <code>Vec2</code></dt>
+<dd>Vector to add</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>result</code> <code>Vec2</code></dt>
+<dd>Sum of vectors</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>other v add -&gt; sum</code></pre>
+</div>
+<hr>
+<div class="fn" id="subtract">
+<h3>subtract</h3>
+<pre><code>fn (v:Vec2) subtract(other:Vec2 -- result:Vec2)</code></pre>
+<p>Subtract another Vec2 from this vector.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>v</code> <code>Vec2</code></dt>
+<dt><code>other</code> <code>Vec2</code></dt>
+<dd>Vector to subtract</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>result</code> <code>Vec2</code></dt>
+<dd>Difference of vectors</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>other v subtract -&gt; diff</code></pre>
+</div>
+<hr>
+<div class="fn" id="scale">
+<h3>scale</h3>
+<pre><code>fn (v:Vec2) scale(s:f64 -- result:Vec2)</code></pre>
+<p>Multiply this vector by a scalar.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>v</code> <code>Vec2</code></dt>
+<dt><code>s</code> <code>f64</code></dt>
+<dd>Scalar multiplier</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>result</code> <code>Vec2</code></dt>
+<dd>Scaled vector</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>2.0 v scale -&gt; scaled</code></pre>
+</div>
+<hr>
+<div class="fn" id="dot">
+<h3>dot</h3>
+<pre><code>fn (v:Vec2) dot(other:Vec2 -- result:f64)</code></pre>
+<p>Dot product with another Vec2.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>v</code> <code>Vec2</code></dt>
+<dt><code>other</code> <code>Vec2</code></dt>
+<dd>Other vector</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>result</code> <code>f64</code></dt>
+<dd>Dot product</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>other v dot -&gt; d</code></pre>
+</div>
+<hr>
+<div class="fn" id="length">
+<h3>length</h3>
+<pre><code>fn (v:Vec2) length( -- result:f64)</code></pre>
+<p>Length (magnitude) of this vector.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>v</code> <code>Vec2</code></dt>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>result</code> <code>f64</code></dt>
+<dd>Length of vector</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>v length -&gt; len</code></pre>
+<p class="xref"><strong>Calls:</strong> <a href="math.html#sqrt"><code>math::sqrt</code></a></p>
+</div>
+<hr>
+<div class="fn" id="length_sq">
+<h3>length_sq</h3>
+<pre><code>fn (v:Vec2) length_sq( -- result:f64)</code></pre>
+<p>Squared length of this vector (avoids sqrt).</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>v</code> <code>Vec2</code></dt>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>result</code> <code>f64</code></dt>
+<dd>Squared length of vector</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>v length_sq -&gt; len_sq</code></pre>
+</div>
+<hr>
+<div class="fn" id="normalize">
+<h3>normalize</h3>
+<pre><code>fn (v:Vec2) normalize( -- result:Vec2)</code></pre>
+<p>Normalize this vector to unit length.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>v</code> <code>Vec2</code></dt>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>result</code> <code>Vec2</code></dt>
+<dd>Unit vector in same direction</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>v normalize -&gt; unit</code></pre>
+<p class="xref"><strong>Calls:</strong> <a href="math.html#sqrt"><code>math::sqrt</code></a>, <a href="math.html#vec2_zero"><code>math::vec2_zero</code></a></p>
+</div>
+<hr>
+<div class="fn" id="neg">
+<h3>neg</h3>
+<pre><code>fn (v:Vec2) neg( -- result:Vec2)</code></pre>
+<p>Negate this vector.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>v</code> <code>Vec2</code></dt>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>result</code> <code>Vec2</code></dt>
+<dd>Negated vector</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>v neg -&gt; neg_v</code></pre>
+</div>
+<hr>
+<div class="fn" id="lerp">
+<h3>lerp</h3>
+<pre><code>fn (v:Vec2) lerp(other:Vec2 t:f64 -- result:Vec2)</code></pre>
+<p>Linear interpolation to another Vec2.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>v</code> <code>Vec2</code></dt>
+<dt><code>other</code> <code>Vec2</code></dt>
+<dd>End vector</dd>
+<dt><code>t</code> <code>f64</code></dt>
+<dd>Interpolation factor (0.0 to 1.0)</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>result</code> <code>Vec2</code></dt>
+<dd>Interpolated vector</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>other 0.5 v lerp -&gt; mid</code></pre>
+</div>
+<hr>
+<div class="fn" id="distance">
+<h3>distance</h3>
+<pre><code>fn (v:Vec2) distance(other:Vec2 -- result:f64)</code></pre>
+<p>Distance to another Vec2.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>v</code> <code>Vec2</code></dt>
+<dt><code>other</code> <code>Vec2</code></dt>
+<dd>Other point</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>result</code> <code>f64</code></dt>
+<dd>Distance between points</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>other v distance -&gt; d</code></pre>
+<p class="xref"><strong>Calls:</strong> <a href="math.html#sqrt"><code>math::sqrt</code></a></p>
+</div>
+<hr>
+<div class="fn" id="angle">
+<h3>angle</h3>
+<pre><code>fn (v:Vec2) angle( -- result:f64)</code></pre>
+<p>Angle of this vector from positive X axis.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>v</code> <code>Vec2</code></dt>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>result</code> <code>f64</code></dt>
+<dd>Angle in radians [-π, π]</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>v angle -&gt; a</code></pre>
+<p class="xref"><strong>Calls:</strong> <a href="math.html#atan2"><code>math::atan2</code></a></p>
+<p class="xref"><strong>Called by:</strong> <a href="math.html#mat4_rotation_x"><code>math::mat4_rotation_x</code></a>, <a href="math.html#mat4_rotation_y"><code>math::mat4_rotation_y</code></a>, <a href="math.html#mat4_rotation_z"><code>math::mat4_rotation_z</code></a>, <a href="math.html#quat_from_axis_angle"><code>math::quat_from_axis_angle</code></a>, <a href="math.html#rotate"><code>math::rotate</code></a></p>
+</div>
+<hr>
+<div class="fn" id="rotate">
+<h3>rotate</h3>
+<pre><code>fn (v:Vec2) rotate(angle:f64 -- result:Vec2)</code></pre>
+<p>Rotate this vector by an angle.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>v</code> <code>Vec2</code></dt>
+<dt><code>angle</code> <code>f64</code></dt>
+<dd>Rotation angle in radians</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>result</code> <code>Vec2</code></dt>
+<dd>Rotated vector</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>1.57 v rotate -&gt; rotated</code></pre>
+<p class="xref"><strong>Calls:</strong> <a href="math.html#angle"><code>math::angle</code></a>, <a href="math.html#cos"><code>math::cos</code></a>, <a href="math.html#sin"><code>math::sin</code></a></p>
+</div>
+<hr>
+<div class="fn" id="perpendicular">
+<h3>perpendicular</h3>
+<pre><code>fn (v:Vec2) perpendicular( -- result:Vec2)</code></pre>
+<p>Get perpendicular vector (90° counterclockwise rotation).</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>v</code> <code>Vec2</code></dt>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>result</code> <code>Vec2</code></dt>
+<dd>Perpendicular vector</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>v perpendicular -&gt; perp</code></pre>
+</div>
+<hr>
+<div class="fn" id="vec3_zero">
+<h3>vec3_zero</h3>
+<pre><code>fn vec3_zero( -- v:Vec3)</code></pre>
+<p>Create a Vec3 with all components set to zero.</p>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>v</code> <code>Vec3</code></dt>
+<dd>Zero vector (0, 0, 0)</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>math::vec3_zero -&gt; v</code></pre>
+<p class="xref"><strong>Called by:</strong> <a href="math.html#normalize"><code>math::normalize</code></a>, <a href="physics.html#compute_deriv"><code>physics::compute_deriv</code></a></p>
+</div>
+<hr>
+<div class="fn" id="vec3_one">
+<h3>vec3_one</h3>
+<pre><code>fn vec3_one( -- v:Vec3)</code></pre>
+<p>Create a Vec3 with all components set to one.</p>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>v</code> <code>Vec3</code></dt>
+<dd>One vector (1, 1, 1)</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>math::vec3_one -&gt; v</code></pre>
+</div>
+<hr>
+<div class="fn" id="vec3_unit_x">
+<h3>vec3_unit_x</h3>
+<pre><code>fn vec3_unit_x( -- v:Vec3)</code></pre>
+<p>Unit vector along the X axis.</p>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>v</code> <code>Vec3</code></dt>
+<dd>Unit X vector (1, 0, 0)</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>math::vec3_unit_x -&gt; v</code></pre>
+</div>
+<hr>
+<div class="fn" id="vec3_unit_y">
+<h3>vec3_unit_y</h3>
+<pre><code>fn vec3_unit_y( -- v:Vec3)</code></pre>
+<p>Unit vector along the Y axis.</p>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>v</code> <code>Vec3</code></dt>
+<dd>Unit Y vector (0, 1, 0)</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>math::vec3_unit_y -&gt; v</code></pre>
+</div>
+<hr>
+<div class="fn" id="vec3_unit_z">
+<h3>vec3_unit_z</h3>
+<pre><code>fn vec3_unit_z( -- v:Vec3)</code></pre>
+<p>Unit vector along the Z axis.</p>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>v</code> <code>Vec3</code></dt>
+<dd>Unit Z vector (0, 0, 1)</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>math::vec3_unit_z -&gt; v</code></pre>
+</div>
+<hr>
+<div class="fn" id="add">
+<h3>add</h3>
+<pre><code>fn (v:Vec3) add(other:Vec3 -- result:Vec3)</code></pre>
+<p>Add another Vec3 to this vector.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>v</code> <code>Vec3</code></dt>
+<dt><code>other</code> <code>Vec3</code></dt>
+<dd>Vector to add</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>result</code> <code>Vec3</code></dt>
+<dd>Sum of vectors</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>other v add -&gt; sum</code></pre>
+</div>
+<hr>
+<div class="fn" id="subtract">
+<h3>subtract</h3>
+<pre><code>fn (v:Vec3) subtract(other:Vec3 -- result:Vec3)</code></pre>
+<p>Subtract another Vec3 from this vector.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>v</code> <code>Vec3</code></dt>
+<dt><code>other</code> <code>Vec3</code></dt>
+<dd>Vector to subtract</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>result</code> <code>Vec3</code></dt>
+<dd>Difference of vectors</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>other v subtract -&gt; diff</code></pre>
+</div>
+<hr>
+<div class="fn" id="scale">
+<h3>scale</h3>
+<pre><code>fn (v:Vec3) scale(s:f64 -- result:Vec3)</code></pre>
+<p>Multiply this vector by a scalar.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>v</code> <code>Vec3</code></dt>
+<dt><code>s</code> <code>f64</code></dt>
+<dd>Scalar multiplier</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>result</code> <code>Vec3</code></dt>
+<dd>Scaled vector</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>2.0 v scale -&gt; scaled</code></pre>
+</div>
+<hr>
+<div class="fn" id="dot">
+<h3>dot</h3>
+<pre><code>fn (v:Vec3) dot(other:Vec3 -- result:f64)</code></pre>
+<p>Dot product with another Vec3.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>v</code> <code>Vec3</code></dt>
+<dt><code>other</code> <code>Vec3</code></dt>
+<dd>Other vector</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>result</code> <code>f64</code></dt>
+<dd>Dot product</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>other v dot -&gt; d</code></pre>
+</div>
+<hr>
+<div class="fn" id="cross">
+<h3>cross</h3>
+<pre><code>fn (v:Vec3) cross(other:Vec3 -- result:Vec3)</code></pre>
+<p>Cross product with another Vec3.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>v</code> <code>Vec3</code></dt>
+<dt><code>other</code> <code>Vec3</code></dt>
+<dd>Other vector</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>result</code> <code>Vec3</code></dt>
+<dd>Cross product (v x other)</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>other v cross -&gt; c</code></pre>
+</div>
+<hr>
+<div class="fn" id="length">
+<h3>length</h3>
+<pre><code>fn (v:Vec3) length( -- result:f64)</code></pre>
+<p>Length (magnitude) of this vector.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>v</code> <code>Vec3</code></dt>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>result</code> <code>f64</code></dt>
+<dd>Length of vector</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>v length -&gt; len</code></pre>
+<p class="xref"><strong>Calls:</strong> <a href="math.html#sqrt"><code>math::sqrt</code></a></p>
+</div>
+<hr>
+<div class="fn" id="length_sq">
+<h3>length_sq</h3>
+<pre><code>fn (v:Vec3) length_sq( -- result:f64)</code></pre>
+<p>Squared length of this vector (avoids sqrt).</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>v</code> <code>Vec3</code></dt>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>result</code> <code>f64</code></dt>
+<dd>Squared length of vector</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>v length_sq -&gt; len_sq</code></pre>
+</div>
+<hr>
+<div class="fn" id="normalize">
+<h3>normalize</h3>
+<pre><code>fn (v:Vec3) normalize( -- result:Vec3)</code></pre>
+<p>Normalize this vector to unit length.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>v</code> <code>Vec3</code></dt>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>result</code> <code>Vec3</code></dt>
+<dd>Unit vector in same direction</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>v normalize -&gt; unit</code></pre>
+<p class="xref"><strong>Calls:</strong> <a href="math.html#sqrt"><code>math::sqrt</code></a>, <a href="math.html#vec3_zero"><code>math::vec3_zero</code></a></p>
+</div>
+<hr>
+<div class="fn" id="neg">
+<h3>neg</h3>
+<pre><code>fn (v:Vec3) neg( -- result:Vec3)</code></pre>
+<p>Negate this vector.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>v</code> <code>Vec3</code></dt>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>result</code> <code>Vec3</code></dt>
+<dd>Negated vector</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>v neg -&gt; neg_v</code></pre>
+</div>
+<hr>
+<div class="fn" id="lerp">
+<h3>lerp</h3>
+<pre><code>fn (v:Vec3) lerp(other:Vec3 t:f64 -- result:Vec3)</code></pre>
+<p>Linear interpolation to another Vec3.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>v</code> <code>Vec3</code></dt>
+<dt><code>other</code> <code>Vec3</code></dt>
+<dd>End vector</dd>
+<dt><code>t</code> <code>f64</code></dt>
+<dd>Interpolation factor (0.0 to 1.0)</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>result</code> <code>Vec3</code></dt>
+<dd>Interpolated vector</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>other 0.5 v lerp -&gt; mid</code></pre>
+</div>
+<hr>
+<div class="fn" id="reflect">
+<h3>reflect</h3>
+<pre><code>fn (v:Vec3) reflect(n:Vec3 -- result:Vec3)</code></pre>
+<p>Reflect this vector around a normal.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>v</code> <code>Vec3</code></dt>
+<dt><code>n</code> <code>Vec3</code></dt>
+<dd>Normal vector</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>result</code> <code>Vec3</code></dt>
+<dd>Reflected vector</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>normal v reflect -&gt; reflected</code></pre>
+</div>
+<hr>
+<div class="fn" id="distance">
+<h3>distance</h3>
+<pre><code>fn (v:Vec3) distance(other:Vec3 -- result:f64)</code></pre>
+<p>Distance to another Vec3.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>v</code> <code>Vec3</code></dt>
+<dt><code>other</code> <code>Vec3</code></dt>
+<dd>Other point</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>result</code> <code>f64</code></dt>
+<dd>Distance between points</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>other v distance -&gt; d</code></pre>
+<p class="xref"><strong>Calls:</strong> <a href="math.html#sqrt"><code>math::sqrt</code></a></p>
+</div>
+<hr>
+<div class="fn" id="angle_between">
+<h3>angle_between</h3>
+<pre><code>fn (v:Vec3) angle_between(other:Vec3 -- result:f64)</code></pre>
+<p>Angle between this vector and another.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>v</code> <code>Vec3</code></dt>
+<dt><code>other</code> <code>Vec3</code></dt>
+<dd>Other vector</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>result</code> <code>f64</code></dt>
+<dd>Angle in radians [0, π]</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>other v angle_between -&gt; a</code></pre>
+<p class="xref"><strong>Calls:</strong> <a href="math.html#acos"><code>math::acos</code></a>, <a href="math.html#sqrt"><code>math::sqrt</code></a></p>
+</div>
+<hr>
+<div class="fn" id="vec4_zero">
+<h3>vec4_zero</h3>
+<pre><code>fn vec4_zero( -- v:Vec4)</code></pre>
+<p>Create a Vec4 with all components set to zero.</p>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>v</code> <code>Vec4</code></dt>
+<dd>Zero vector (0, 0, 0, 0)</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>math::vec4_zero -&gt; v</code></pre>
+<p class="xref"><strong>Called by:</strong> <a href="math.html#normalize"><code>math::normalize</code></a></p>
+</div>
+<hr>
+<div class="fn" id="vec4_one">
+<h3>vec4_one</h3>
+<pre><code>fn vec4_one( -- v:Vec4)</code></pre>
+<p>Create a Vec4 with all components set to one.</p>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>v</code> <code>Vec4</code></dt>
+<dd>One vector (1, 1, 1, 1)</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>math::vec4_one -&gt; v</code></pre>
+</div>
+<hr>
+<div class="fn" id="add">
+<h3>add</h3>
+<pre><code>fn (v:Vec4) add(other:Vec4 -- result:Vec4)</code></pre>
+<p>Add another Vec4 to this vector.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>v</code> <code>Vec4</code></dt>
+<dt><code>other</code> <code>Vec4</code></dt>
+<dd>Vector to add</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>result</code> <code>Vec4</code></dt>
+<dd>Sum of vectors</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>other v add -&gt; sum</code></pre>
+</div>
+<hr>
+<div class="fn" id="subtract">
+<h3>subtract</h3>
+<pre><code>fn (v:Vec4) subtract(other:Vec4 -- result:Vec4)</code></pre>
+<p>Subtract another Vec4 from this vector.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>v</code> <code>Vec4</code></dt>
+<dt><code>other</code> <code>Vec4</code></dt>
+<dd>Vector to subtract</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>result</code> <code>Vec4</code></dt>
+<dd>Difference of vectors</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>other v subtract -&gt; diff</code></pre>
+</div>
+<hr>
+<div class="fn" id="scale">
+<h3>scale</h3>
+<pre><code>fn (v:Vec4) scale(s:f64 -- result:Vec4)</code></pre>
+<p>Multiply this vector by a scalar.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>v</code> <code>Vec4</code></dt>
+<dt><code>s</code> <code>f64</code></dt>
+<dd>Scalar multiplier</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>result</code> <code>Vec4</code></dt>
+<dd>Scaled vector</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>2.0 v scale -&gt; scaled</code></pre>
+</div>
+<hr>
+<div class="fn" id="dot">
+<h3>dot</h3>
+<pre><code>fn (v:Vec4) dot(other:Vec4 -- result:f64)</code></pre>
+<p>Dot product with another Vec4.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>v</code> <code>Vec4</code></dt>
+<dt><code>other</code> <code>Vec4</code></dt>
+<dd>Other vector</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>result</code> <code>f64</code></dt>
+<dd>Dot product</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>other v dot -&gt; d</code></pre>
+</div>
+<hr>
+<div class="fn" id="length">
+<h3>length</h3>
+<pre><code>fn (v:Vec4) length( -- result:f64)</code></pre>
+<p>Length (magnitude) of this vector.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>v</code> <code>Vec4</code></dt>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>result</code> <code>f64</code></dt>
+<dd>Length of vector</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>v length -&gt; len</code></pre>
+<p class="xref"><strong>Calls:</strong> <a href="math.html#sqrt"><code>math::sqrt</code></a></p>
+</div>
+<hr>
+<div class="fn" id="normalize">
+<h3>normalize</h3>
+<pre><code>fn (v:Vec4) normalize( -- result:Vec4)</code></pre>
+<p>Normalize this vector to unit length.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>v</code> <code>Vec4</code></dt>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>result</code> <code>Vec4</code></dt>
+<dd>Unit vector in same direction</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>v normalize -&gt; unit</code></pre>
+<p class="xref"><strong>Calls:</strong> <a href="math.html#sqrt"><code>math::sqrt</code></a>, <a href="math.html#vec4_zero"><code>math::vec4_zero</code></a></p>
+</div>
+<hr>
+<div class="fn" id="length_sq">
+<h3>length_sq</h3>
+<pre><code>fn (v:Vec4) length_sq( -- result:f64)</code></pre>
+<p>Squared length of this vector (avoids sqrt).</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>v</code> <code>Vec4</code></dt>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>result</code> <code>f64</code></dt>
+<dd>Squared length of vector</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>v length_sq -&gt; len_sq</code></pre>
+</div>
+<hr>
+<div class="fn" id="neg">
+<h3>neg</h3>
+<pre><code>fn (v:Vec4) neg( -- result:Vec4)</code></pre>
+<p>Negate this vector.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>v</code> <code>Vec4</code></dt>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>result</code> <code>Vec4</code></dt>
+<dd>Negated vector</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>v neg -&gt; neg_v</code></pre>
+</div>
+<hr>
+<div class="fn" id="lerp">
+<h3>lerp</h3>
+<pre><code>fn (v:Vec4) lerp(other:Vec4 t:f64 -- result:Vec4)</code></pre>
+<p>Linear interpolation to another Vec4.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>v</code> <code>Vec4</code></dt>
+<dt><code>other</code> <code>Vec4</code></dt>
+<dd>End vector</dd>
+<dt><code>t</code> <code>f64</code></dt>
+<dd>Interpolation factor (0.0 to 1.0)</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>result</code> <code>Vec4</code></dt>
+<dd>Interpolated vector</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>other 0.5 v lerp -&gt; mid</code></pre>
+</div>
+<hr>
+<div class="fn" id="quat_identity">
+<h3>quat_identity</h3>
+<pre><code>fn quat_identity( -- q:Quat)</code></pre>
+<p>Create identity quaternion (no rotation).</p>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>q</code> <code>Quat</code></dt>
+<dd>Identity quaternion</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>math::quat_identity -&gt; q</code></pre>
+<p class="xref"><strong>Called by:</strong> <a href="math.html#inverse"><code>math::inverse</code></a>, <a href="math.html#normalize"><code>math::normalize</code></a></p>
+</div>
+<hr>
+<div class="fn" id="mul">
+<h3>mul</h3>
+<pre><code>fn (q:Quat) mul(other:Quat -- result:Quat)</code></pre>
+<p>Quaternion multiplication.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>q</code> <code>Quat</code></dt>
+<dt><code>other</code> <code>Quat</code></dt>
+<dd>Quaternion to multiply with</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>result</code> <code>Quat</code></dt>
+<dd>Product of this and other</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>other q mul -&gt; product</code></pre>
+</div>
+<hr>
+<div class="fn" id="conjugate">
+<h3>conjugate</h3>
+<pre><code>fn (q:Quat) conjugate( -- result:Quat)</code></pre>
+<p>Conjugate of this quaternion.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>q</code> <code>Quat</code></dt>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>result</code> <code>Quat</code></dt>
+<dd>Conjugate quaternion</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>q conjugate -&gt; q_conj</code></pre>
+</div>
+<hr>
+<div class="fn" id="length">
+<h3>length</h3>
+<pre><code>fn (q:Quat) length( -- result:f64)</code></pre>
+<p>Length (magnitude) of this quaternion.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>q</code> <code>Quat</code></dt>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>result</code> <code>f64</code></dt>
+<dd>Length of quaternion</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>q length -&gt; len</code></pre>
+<p class="xref"><strong>Calls:</strong> <a href="math.html#sqrt"><code>math::sqrt</code></a></p>
+</div>
+<hr>
+<div class="fn" id="normalize">
+<h3>normalize</h3>
+<pre><code>fn (q:Quat) normalize( -- result:Quat)</code></pre>
+<p>Normalize this quaternion to unit length.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>q</code> <code>Quat</code></dt>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>result</code> <code>Quat</code></dt>
+<dd>Unit quaternion</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>q normalize -&gt; unit_q</code></pre>
+<p class="xref"><strong>Calls:</strong> <a href="math.html#quat_identity"><code>math::quat_identity</code></a>, <a href="math.html#sqrt"><code>math::sqrt</code></a></p>
+<p class="xref"><strong>Called by:</strong> <a href="math.html#slerp"><code>math::slerp</code></a></p>
+</div>
+<hr>
+<div class="fn" id="dot">
+<h3>dot</h3>
+<pre><code>fn (q:Quat) dot(other:Quat -- result:f64)</code></pre>
+<p>Dot product with another quaternion.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>q</code> <code>Quat</code></dt>
+<dt><code>other</code> <code>Quat</code></dt>
+<dd>Other quaternion</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>result</code> <code>f64</code></dt>
+<dd>Dot product</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>other q dot -&gt; d</code></pre>
+</div>
+<hr>
+<div class="fn" id="inverse">
+<h3>inverse</h3>
+<pre><code>fn (q:Quat) inverse( -- result:Quat)</code></pre>
+<p>Inverse of this quaternion.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>q</code> <code>Quat</code></dt>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>result</code> <code>Quat</code></dt>
+<dd>Inverse quaternion</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>q inverse -&gt; q_inv</code></pre>
+<p class="xref"><strong>Calls:</strong> <a href="math.html#quat_identity"><code>math::quat_identity</code></a></p>
+</div>
+<hr>
+<div class="fn" id="length_sq">
+<h3>length_sq</h3>
+<pre><code>fn (q:Quat) length_sq( -- result:f64)</code></pre>
+<p>Squared length of quaternion.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>q</code> <code>Quat</code></dt>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>result</code> <code>f64</code></dt>
+<dd>Squared length</dd>
+</dl>
+</div>
+<hr>
+<div class="fn" id="slerp">
+<h3>slerp</h3>
+<pre><code>fn (q:Quat) slerp(other:Quat t:f64 -- result:Quat)</code></pre>
+<p>Spherical linear interpolation to another quaternion.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>q</code> <code>Quat</code></dt>
+<dt><code>other</code> <code>Quat</code></dt>
+<dd>End quaternion</dd>
+<dt><code>t</code> <code>f64</code></dt>
+<dd>Interpolation factor (0.0 to 1.0)</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>result</code> <code>Quat</code></dt>
+<dd>Interpolated quaternion</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>other 0.5 q slerp -&gt; mid</code></pre>
+<p class="xref"><strong>Calls:</strong> <a href="math.html#acos"><code>math::acos</code></a>, <a href="math.html#cos"><code>math::cos</code></a>, <a href="math.html#normalize"><code>math::normalize</code></a>, <a href="math.html#sin"><code>math::sin</code></a></p>
+</div>
+<hr>
+<div class="fn" id="rotate_vec3">
+<h3>rotate_vec3</h3>
+<pre><code>fn (q:Quat) rotate_vec3(v:Vec3 -- result:Vec3)</code></pre>
+<p>Rotate a Vec3 by this quaternion.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>q</code> <code>Quat</code></dt>
+<dt><code>v</code> <code>Vec3</code></dt>
+<dd>Vector to rotate</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>result</code> <code>Vec3</code></dt>
+<dd>Rotated vector</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>v q rotate_vec3 -&gt; rotated</code></pre>
+</div>
+<hr>
+<div class="fn" id="quat_from_axis_angle">
+<h3>quat_from_axis_angle</h3>
+<pre><code>fn quat_from_axis_angle(axis:Vec3 angle:f64 -- result:Quat)</code></pre>
+<p>Create quaternion from axis and angle.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>axis</code> <code>Vec3</code></dt>
+<dd>Rotation axis (should be normalized)</dd>
+<dt><code>angle</code> <code>f64</code></dt>
+<dd>Rotation angle in radians</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>result</code> <code>Quat</code></dt>
+<dd>Rotation quaternion</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>axis 1.57 quat_from_axis_angle -&gt; q</code></pre>
+<p class="xref"><strong>Calls:</strong> <a href="math.html#angle"><code>math::angle</code></a>, <a href="math.html#cos"><code>math::cos</code></a>, <a href="math.html#sin"><code>math::sin</code></a></p>
+</div>
+<hr>
+<div class="fn" id="quat_from_euler">
+<h3>quat_from_euler</h3>
+<pre><code>fn quat_from_euler(pitch:f64 yaw:f64 roll:f64 -- result:Quat)</code></pre>
+<p>Create quaternion from Euler angles (XYZ order).</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>pitch</code> <code>f64</code></dt>
+<dd>Rotation around X axis (radians)</dd>
+<dt><code>yaw</code> <code>f64</code></dt>
+<dd>Rotation around Y axis (radians)</dd>
+<dt><code>roll</code> <code>f64</code></dt>
+<dd>Rotation around Z axis (radians)</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>result</code> <code>Quat</code></dt>
+<dd>Rotation quaternion</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>0.0 1.57 0.0 quat_from_euler -&gt; q</code></pre>
+<p class="xref"><strong>Calls:</strong> <a href="math.html#cos"><code>math::cos</code></a>, <a href="math.html#sin"><code>math::sin</code></a></p>
+</div>
+<hr>
+<div class="fn" id="mat4_identity">
+<h3>mat4_identity</h3>
+<pre><code>fn mat4_identity( -- m:Mat4)</code></pre>
+<p>Create identity Mat4.</p>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>m</code> <code>Mat4</code></dt>
+<dd>Identity matrix</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>math::mat4_identity -&gt; m</code></pre>
+<p class="xref"><strong>Called by:</strong> <a href="math.html#inverse"><code>math::inverse</code></a></p>
+</div>
+<hr>
+<div class="fn" id="mat4_zero">
+<h3>mat4_zero</h3>
+<pre><code>fn mat4_zero( -- m:Mat4)</code></pre>
+<p>Create zero Mat4.</p>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>m</code> <code>Mat4</code></dt>
+<dd>Zero matrix</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>math::mat4_zero -&gt; m</code></pre>
+</div>
+<hr>
+<div class="fn" id="transpose">
+<h3>transpose</h3>
+<pre><code>fn (m:Mat4) transpose( -- result:Mat4)</code></pre>
+<p>Transpose this matrix.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>m</code> <code>Mat4</code></dt>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>result</code> <code>Mat4</code></dt>
+<dd>Transposed matrix</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>m transpose -&gt; m_t</code></pre>
+</div>
+<hr>
+<div class="fn" id="mat4_translation">
+<h3>mat4_translation</h3>
+<pre><code>fn mat4_translation(x_v:f64 y_v:f64 z_v:f64 -- m:Mat4)</code></pre>
+<p>Create translation Mat4.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>x_v</code> <code>f64</code></dt>
+<dd>X translation</dd>
+<dt><code>y_v</code> <code>f64</code></dt>
+<dd>Y translation</dd>
+<dt><code>z_v</code> <code>f64</code></dt>
+<dd>Z translation</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>m</code> <code>Mat4</code></dt>
+<dd>Translation matrix</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>1.0 2.0 3.0 math::mat4_translation -&gt; m</code></pre>
+</div>
+<hr>
+<div class="fn" id="mat4_scaling">
+<h3>mat4_scaling</h3>
+<pre><code>fn mat4_scaling(sx_v:f64 sy_v:f64 sz_v:f64 -- m:Mat4)</code></pre>
+<p>Create scale Mat4.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>sx_v</code> <code>f64</code></dt>
+<dd>X scale factor</dd>
+<dt><code>sy_v</code> <code>f64</code></dt>
+<dd>Y scale factor</dd>
+<dt><code>sz_v</code> <code>f64</code></dt>
+<dd>Z scale factor</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>m</code> <code>Mat4</code></dt>
+<dd>Scale matrix</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>2.0 2.0 2.0 math::mat4_scaling -&gt; m</code></pre>
+</div>
+<hr>
+<div class="fn" id="mat4_rotation_x">
+<h3>mat4_rotation_x</h3>
+<pre><code>fn mat4_rotation_x(angle:f64 -- m:Mat4)</code></pre>
+<p>Create rotation Mat4 around X axis.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>angle</code> <code>f64</code></dt>
+<dd>Rotation angle in radians</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>m</code> <code>Mat4</code></dt>
+<dd>Rotation matrix</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>1.57 math::mat4_rotation_x -&gt; m</code></pre>
+<p class="xref"><strong>Calls:</strong> <a href="math.html#angle"><code>math::angle</code></a>, <a href="math.html#cos"><code>math::cos</code></a>, <a href="math.html#sin"><code>math::sin</code></a></p>
+</div>
+<hr>
+<div class="fn" id="mat4_rotation_y">
+<h3>mat4_rotation_y</h3>
+<pre><code>fn mat4_rotation_y(angle:f64 -- m:Mat4)</code></pre>
+<p>Create rotation Mat4 around Y axis.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>angle</code> <code>f64</code></dt>
+<dd>Rotation angle in radians</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>m</code> <code>Mat4</code></dt>
+<dd>Rotation matrix</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>1.57 math::mat4_rotation_y -&gt; m</code></pre>
+<p class="xref"><strong>Calls:</strong> <a href="math.html#angle"><code>math::angle</code></a>, <a href="math.html#cos"><code>math::cos</code></a>, <a href="math.html#sin"><code>math::sin</code></a></p>
+</div>
+<hr>
+<div class="fn" id="mat4_rotation_z">
+<h3>mat4_rotation_z</h3>
+<pre><code>fn mat4_rotation_z(angle:f64 -- m:Mat4)</code></pre>
+<p>Create rotation Mat4 around Z axis.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>angle</code> <code>f64</code></dt>
+<dd>Rotation angle in radians</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>m</code> <code>Mat4</code></dt>
+<dd>Rotation matrix</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>1.57 math::mat4_rotation_z -&gt; m</code></pre>
+<p class="xref"><strong>Calls:</strong> <a href="math.html#angle"><code>math::angle</code></a>, <a href="math.html#cos"><code>math::cos</code></a>, <a href="math.html#sin"><code>math::sin</code></a></p>
+</div>
+<hr>
+<div class="fn" id="mul">
+<h3>mul</h3>
+<pre><code>fn (m:Mat4) mul(other:Mat4 -- result:Mat4)</code></pre>
+<p>Matrix multiplication.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>m</code> <code>Mat4</code></dt>
+<dt><code>other</code> <code>Mat4</code></dt>
+<dd>Matrix to multiply with</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>result</code> <code>Mat4</code></dt>
+<dd>Product of matrices (m * other)</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>other m mul -&gt; product</code></pre>
+</div>
+<hr>
+<div class="fn" id="determinant">
+<h3>determinant</h3>
+<pre><code>fn (m:Mat4) determinant( -- result:f64)</code></pre>
+<p>Matrix determinant.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>m</code> <code>Mat4</code></dt>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>result</code> <code>f64</code></dt>
+<dd>Determinant of matrix</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>m determinant -&gt; det</code></pre>
+</div>
+<hr>
+<div class="fn" id="inverse">
+<h3>inverse</h3>
+<pre><code>fn (m:Mat4) inverse( -- result:Mat4)</code></pre>
+<p>Matrix inverse.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>m</code> <code>Mat4</code></dt>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>result</code> <code>Mat4</code></dt>
+<dd>Inverse matrix (returns identity if singular)</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>m inverse -&gt; m_inv</code></pre>
+<p class="xref"><strong>Calls:</strong> <a href="math.html#abs"><code>math::abs</code></a>, <a href="math.html#mat4_identity"><code>math::mat4_identity</code></a></p>
+</div>
+<hr>
+<div class="fn" id="transform_point">
+<h3>transform_point</h3>
+<pre><code>fn (m:Mat4) transform_point(v:Vec3 -- result:Vec3)</code></pre>
+<p>Transform a Vec3 point by this matrix (w=1).</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>m</code> <code>Mat4</code></dt>
+<dt><code>v</code> <code>Vec3</code></dt>
+<dd>Point to transform</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>result</code> <code>Vec3</code></dt>
+<dd>Transformed point</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>point m transform_point -&gt; transformed</code></pre>
+<p class="xref"><strong>Calls:</strong> <a href="math.html#abs"><code>math::abs</code></a></p>
+</div>
+<hr>
+<div class="fn" id="transform_vec4">
+<h3>transform_vec4</h3>
+<pre><code>fn (m:Mat4) transform_vec4(v:Vec4 -- result:Vec4)</code></pre>
+<p>Transform a Vec4 by this matrix.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>m</code> <code>Mat4</code></dt>
+<dt><code>v</code> <code>Vec4</code></dt>
+<dd>Vector to transform</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>result</code> <code>Vec4</code></dt>
+<dd>Transformed vector</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>vec m transform_vec4 -&gt; transformed</code></pre>
+</div>
+<hr>
+<div class="fn" id="mat4_look_at">
+<h3>mat4_look_at</h3>
+<pre><code>fn mat4_look_at(eye:Vec3 target:Vec3 up:Vec3 -- m:Mat4)</code></pre>
+<p>Create a look-at view matrix.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>eye</code> <code>Vec3</code></dt>
+<dd>Camera position</dd>
+<dt><code>target</code> <code>Vec3</code></dt>
+<dd>Point to look at</dd>
+<dt><code>up</code> <code>Vec3</code></dt>
+<dd>Up direction</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>m</code> <code>Mat4</code></dt>
+<dd>View matrix</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>eye target up mat4_look_at -&gt; view</code></pre>
+<p class="xref"><strong>Calls:</strong> <a href="math.html#sqrt"><code>math::sqrt</code></a></p>
+</div>
+<hr>
+<div class="fn" id="mat4_perspective">
+<h3>mat4_perspective</h3>
+<pre><code>fn mat4_perspective(fov:f64 aspect:f64 near:f64 far:f64 -- m:Mat4)</code></pre>
+<p>Create a perspective projection matrix.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>fov</code> <code>f64</code></dt>
+<dd>Field of view in radians</dd>
+<dt><code>aspect</code> <code>f64</code></dt>
+<dd>Aspect ratio (width/height)</dd>
+<dt><code>near</code> <code>f64</code></dt>
+<dd>Near clipping plane</dd>
+<dt><code>far</code> <code>f64</code></dt>
+<dd>Far clipping plane</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>m</code> <code>Mat4</code></dt>
+<dd>Perspective projection matrix</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>1.047 1.777 0.1 100.0 mat4_perspective -&gt; proj</code></pre>
+<p class="xref"><strong>Calls:</strong> <a href="math.html#tan"><code>math::tan</code></a></p>
+</div>
+<hr>
+<div class="fn" id="mat4_orthographic">
+<h3>mat4_orthographic</h3>
+<pre><code>fn mat4_orthographic(left:f64 right:f64 bottom:f64 top:f64 near:f64 far:f64 -- m:Mat4)</code></pre>
+<p>Create an orthographic projection matrix.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>left</code> <code>f64</code></dt>
+<dd>Left clipping plane</dd>
+<dt><code>right</code> <code>f64</code></dt>
+<dd>Right clipping plane</dd>
+<dt><code>bottom</code> <code>f64</code></dt>
+<dd>Bottom clipping plane</dd>
+<dt><code>top</code> <code>f64</code></dt>
+<dd>Top clipping plane</dd>
+<dt><code>near</code> <code>f64</code></dt>
+<dd>Near clipping plane</dd>
+<dt><code>far</code> <code>f64</code></dt>
+<dd>Far clipping plane</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>m</code> <code>Mat4</code></dt>
+<dd>Orthographic projection matrix</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>-1.0 1.0 -1.0 1.0 0.1 100.0 mat4_orthographic -&gt; proj</code></pre>
+</div>
+<hr>
+<div class="fn" id="mat4_from_quat">
+<h3>mat4_from_quat</h3>
+<pre><code>fn mat4_from_quat(q:Quat -- m:Mat4)</code></pre>
+<p>Create rotation matrix from quaternion.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>q</code> <code>Quat</code></dt>
+<dd>Rotation quaternion</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>m</code> <code>Mat4</code></dt>
+<dd>Rotation matrix</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>q mat4_from_quat -&gt; rot_mat</code></pre>
+</div>
+<hr>
+<div class="fn" id="sign">
+<h3>sign</h3>
+<pre><code>fn sign(x:f64 -- result:f64)</code></pre>
+<p>Sign function.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>x</code> <code>f64</code></dt>
+<dd>Input value</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>result</code> <code>f64</code></dt>
+<dd>-1 if x &lt; 0, 0 if x == 0, 1 if x &gt; 0</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>-5.0 math::sign print  // -1.0</code></pre>
+</div>
+<hr>
+<div class="fn" id="smoothstep">
+<h3>smoothstep</h3>
+<pre><code>fn smoothstep(edge0:f64 edge1:f64 x_v:f64 -- result:f64)</code></pre>
+<p>Smooth step interpolation (cubic Hermite, zero derivatives at edges).</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>edge0</code> <code>f64</code></dt>
+<dd>Lower edge</dd>
+<dt><code>edge1</code> <code>f64</code></dt>
+<dd>Upper edge</dd>
+<dt><code>x_v</code> <code>f64</code></dt>
+<dd>Value to interpolate</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>result</code> <code>f64</code></dt>
+<dd>Smoothly interpolated value [0, 1]</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>0.0 1.0 0.5 math::smoothstep print  // 0.5</code></pre>
+</div>
+<hr>
+<div class="fn" id="smootherstep">
+<h3>smootherstep</h3>
+<pre><code>fn smootherstep(edge0:f64 edge1:f64 x_v:f64 -- result:f64)</code></pre>
+<p>Smoother step interpolation (quintic, zero first and second derivatives at edges).</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>edge0</code> <code>f64</code></dt>
+<dd>Lower edge</dd>
+<dt><code>edge1</code> <code>f64</code></dt>
+<dd>Upper edge</dd>
+<dt><code>x_v</code> <code>f64</code></dt>
+<dd>Value to interpolate</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>result</code> <code>f64</code></dt>
+<dd>Smoothly interpolated value [0, 1]</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>0.0 1.0 0.5 math::smootherstep print  // 0.5</code></pre>
+</div>
+<hr>
+<div class="fn" id="cubic_hermite">
+<h3>cubic_hermite</h3>
+<pre><code>fn cubic_hermite(p0:f64 p1:f64 p2:f64 p3:f64 t:f64 -- result:f64)</code></pre>
+<p>Cubic Hermite spline interpolation. Interpolates between p1 and p2 using tangents m1 and m2.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>p0</code> <code>f64</code></dt>
+<dd>Point before p1 (used to compute tangent)</dd>
+<dt><code>p1</code> <code>f64</code></dt>
+<dd>Start point</dd>
+<dt><code>p2</code> <code>f64</code></dt>
+<dd>End point</dd>
+<dt><code>p3</code> <code>f64</code></dt>
+<dd>Point after p2 (used to compute tangent)</dd>
+<dt><code>t</code> <code>f64</code></dt>
+<dd>Interpolation factor [0, 1]</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>result</code> <code>f64</code></dt>
+<dd>Interpolated value</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>0.0 1.0 4.0 5.0 0.5 math::cubic_hermite print</code></pre>
+</div>
+<hr>
+<div class="fn" id="bezier2">
+<h3>bezier2</h3>
+<pre><code>fn bezier2(p0:f64 p1:f64 p2:f64 t:f64 -- result:f64)</code></pre>
+<p>Evaluate quadratic Bezier curve.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>p0</code> <code>f64</code></dt>
+<dd>Start point</dd>
+<dt><code>p1</code> <code>f64</code></dt>
+<dd>Control point</dd>
+<dt><code>p2</code> <code>f64</code></dt>
+<dd>End point</dd>
+<dt><code>t</code> <code>f64</code></dt>
+<dd>Parameter [0, 1]</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>result</code> <code>f64</code></dt>
+<dd>Point on curve</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>0.0 1.0 2.0 0.5 math::bezier2 print  // 1.0</code></pre>
+</div>
+<hr>
+<div class="fn" id="bezier3">
+<h3>bezier3</h3>
+<pre><code>fn bezier3(p0:f64 p1:f64 p2:f64 p3:f64 t:f64 -- result:f64)</code></pre>
+<p>Evaluate cubic Bezier curve.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>p0</code> <code>f64</code></dt>
+<dd>Start point</dd>
+<dt><code>p1</code> <code>f64</code></dt>
+<dd>First control point</dd>
+<dt><code>p2</code> <code>f64</code></dt>
+<dd>Second control point</dd>
+<dt><code>p3</code> <code>f64</code></dt>
+<dd>End point</dd>
+<dt><code>t</code> <code>f64</code></dt>
+<dd>Parameter [0, 1]</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>result</code> <code>f64</code></dt>
+<dd>Point on curve</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>0.0 0.5 0.5 1.0 0.5 math::bezier3 print</code></pre>
+</div>
+<hr>
+<div class="fn" id="bezier2_vec2">
+<h3>bezier2_vec2</h3>
+<pre><code>fn bezier2_vec2(p0:Vec2 p1:Vec2 p2:Vec2 t:f64 -- result:Vec2)</code></pre>
+<p>Evaluate quadratic Bezier curve for Vec2.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>p0</code> <code>Vec2</code></dt>
+<dd>Start point</dd>
+<dt><code>p1</code> <code>Vec2</code></dt>
+<dd>Control point</dd>
+<dt><code>p2</code> <code>Vec2</code></dt>
+<dd>End point</dd>
+<dt><code>t</code> <code>f64</code></dt>
+<dd>Parameter [0, 1]</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>result</code> <code>Vec2</code></dt>
+<dd>Point on curve</dd>
+</dl>
+</div>
+<hr>
+<div class="fn" id="bezier3_vec2">
+<h3>bezier3_vec2</h3>
+<pre><code>fn bezier3_vec2(p0:Vec2 p1:Vec2 p2:Vec2 p3:Vec2 t:f64 -- result:Vec2)</code></pre>
+<p>Evaluate cubic Bezier curve for Vec2.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>p0</code> <code>Vec2</code></dt>
+<dd>Start point</dd>
+<dt><code>p1</code> <code>Vec2</code></dt>
+<dd>First control point</dd>
+<dt><code>p2</code> <code>Vec2</code></dt>
+<dd>Second control point</dd>
+<dt><code>p3</code> <code>Vec2</code></dt>
+<dd>End point</dd>
+<dt><code>t</code> <code>f64</code></dt>
+<dd>Parameter [0, 1]</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>result</code> <code>Vec2</code></dt>
+<dd>Point on curve</dd>
+</dl>
+</div>
+<hr>
+<div class="fn" id="bezier3_vec3">
+<h3>bezier3_vec3</h3>
+<pre><code>fn bezier3_vec3(p0:Vec3 p1:Vec3 p2:Vec3 p3:Vec3 t:f64 -- result:Vec3)</code></pre>
+<p>Evaluate cubic Bezier curve for Vec3.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>p0</code> <code>Vec3</code></dt>
+<dd>Start point</dd>
+<dt><code>p1</code> <code>Vec3</code></dt>
+<dd>First control point</dd>
+<dt><code>p2</code> <code>Vec3</code></dt>
+<dd>Second control point</dd>
+<dt><code>p3</code> <code>Vec3</code></dt>
+<dd>End point</dd>
+<dt><code>t</code> <code>f64</code></dt>
+<dd>Parameter [0, 1]</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>result</code> <code>Vec3</code></dt>
+<dd>Point on curve</dd>
+</dl>
+</div>
+<hr>
+<div class="fn" id="inverse_lerp">
+<h3>inverse_lerp</h3>
+<pre><code>fn inverse_lerp(a:f64 b:f64 v:f64 -- result:f64)</code></pre>
+<p>Inverse lerp - find t given a value between a and b.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>a</code> <code>f64</code></dt>
+<dd>Start value</dd>
+<dt><code>b</code> <code>f64</code></dt>
+<dd>End value</dd>
+<dt><code>v</code> <code>f64</code></dt>
+<dd>Value to find t for</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>result</code> <code>f64</code></dt>
+<dd>Interpolation factor t where lerp(a, b, t) = v</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>0.0 10.0 5.0 math::inverse_lerp print  // 0.5</code></pre>
+<p class="xref"><strong>Calls:</strong> <a href="math.html#abs"><code>math::abs</code></a></p>
+</div>
+<hr>
+<div class="fn" id="remap">
+<h3>remap</h3>
+<pre><code>fn remap(in_min:f64 in_max:f64 out_min:f64 out_max:f64 v:f64 -- result:f64)</code></pre>
+<p>Remap a value from one range to another.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>in_min</code> <code>f64</code></dt>
+<dd>Input range minimum</dd>
+<dt><code>in_max</code> <code>f64</code></dt>
+<dd>Input range maximum</dd>
+<dt><code>out_min</code> <code>f64</code></dt>
+<dd>Output range minimum</dd>
+<dt><code>out_max</code> <code>f64</code></dt>
+<dd>Output range maximum</dd>
+<dt><code>v</code> <code>f64</code></dt>
+<dd>Value to remap</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>result</code> <code>f64</code></dt>
+<dd>Remapped value</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>0.0 10.0 0.0 100.0 5.0 math::remap print  // 50.0</code></pre>
+</div>
+</div></body></html>

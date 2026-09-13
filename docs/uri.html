@@ -1,0 +1,140 @@
+<!DOCTYPE html><html><head><meta charset="utf-8"><title>uri - Quadrate API</title><link rel="stylesheet" href="style.css"></head><body>
+<nav><h1>Quadrate API</h1><a href="index.html">All Modules</a></nav>
+<div class="container"><h2>uri</h2>
+<p class="desc">URI encoding, decoding, and parsing. Handles percent-encoding and URI component extraction.</p>
+<h2>Structs</h2>
+<h3 id="Uri"><code>Uri</code></h3>
+<p>Parsed URI components.</p>
+<dl>
+<dt><code>scheme</code> <code>str</code></dt>
+<dd>URI scheme (e.g., &quot;https&quot;)</dd>
+<dt><code>host</code> <code>str</code></dt>
+<dd>Host name</dd>
+<dt><code>port</code> <code>i64</code></dt>
+<dd>Port number (0 if not specified)</dd>
+<dt><code>path</code> <code>str</code></dt>
+<dd>Path component</dd>
+<dt><code>query</code> <code>str</code></dt>
+<dd>Query string (without leading &quot;?&quot;)</dd>
+<dt><code>fragment</code> <code>str</code></dt>
+<dd>Fragment (without leading &quot;#&quot;)</dd>
+</dl>
+<h2>Functions</h2>
+<div class="fn" id="encode">
+<h3>encode</h3>
+<pre><code>fn encode(s:str -- encoded:str)</code></pre>
+<p>Percent-encode a string for use in URIs.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>s</code> <code>str</code></dt>
+<dd>String to encode</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>encoded</code> <code>str</code></dt>
+<dd>Percent-encoded string</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>&quot;hello world&quot; uri::encode -&gt; encoded</code></pre>
+<p class="xref"><strong>Calls:</strong> <a href="mem.html#alloc"><code>mem::alloc</code></a>, <a href="mem.html#free"><code>mem::free</code></a>, <a href="mem.html#get_byte"><code>mem::get_byte</code></a>, <a href="mem.html#set_byte"><code>mem::set_byte</code></a>, <a href="mem.html#to_string"><code>mem::to_string</code></a>, <a href="strings.html#char_at"><code>strings::char_at</code></a>, <a href="strings.html#len"><code>strings::len</code></a></p>
+</div>
+<hr>
+<div class="fn" id="decode">
+<h3>decode</h3>
+<pre><code>fn decode(s:str -- decoded:str)</code></pre>
+<p>Decode a percent-encoded string.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>s</code> <code>str</code></dt>
+<dd>Percent-encoded string</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>decoded</code> <code>str</code></dt>
+<dd>Decoded string</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>&quot;hello%20world&quot; uri::decode -&gt; decoded</code></pre>
+<p class="xref"><strong>Calls:</strong> <a href="mem.html#alloc"><code>mem::alloc</code></a>, <a href="mem.html#free"><code>mem::free</code></a>, <a href="mem.html#set_byte"><code>mem::set_byte</code></a>, <a href="mem.html#to_string"><code>mem::to_string</code></a>, <a href="strings.html#char_at"><code>strings::char_at</code></a>, <a href="strings.html#len"><code>strings::len</code></a></p>
+<p class="xref"><strong>Called by:</strong> <a href="uri.html#query_get"><code>uri::query_get</code></a></p>
+</div>
+<hr>
+<div class="fn" id="parse">
+<h3>parse</h3>
+<pre><code>fn parse(s:str -- u:Uri)</code></pre>
+<p>Parse a URI string into components.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>s</code> <code>str</code></dt>
+<dd>URI string to parse</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>u</code> <code>Uri</code></dt>
+<dd>Parsed URI struct</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>&quot;https://example.com:8080/path?q=1#top&quot; uri::parse -&gt; u</code></pre>
+<p class="xref"><strong>Calls:</strong> <a href="strings.html#char_at"><code>strings::char_at</code></a>, <a href="strings.html#len"><code>strings::len</code></a>, <a href="strings.html#substring"><code>strings::substring</code></a></p>
+</div>
+<hr>
+<div class="fn" id="query_get">
+<h3>query_get</h3>
+<pre><code>fn query_get(query:str key:str -- value:str)</code></pre>
+<p>Get a query parameter value by key.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>query</code> <code>str</code></dt>
+<dd>Query string (without leading '?')</dd>
+<dt><code>key</code> <code>str</code></dt>
+<dd>Parameter name to find</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>value</code> <code>str</code></dt>
+<dd>Parameter value (empty if not found)</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>&quot;foo=bar&amp;x=1&quot; &quot;foo&quot; uri::query_get -&gt; val</code></pre>
+<p class="xref"><strong>Calls:</strong> <a href="strings.html#compare"><code>strings::compare</code></a>, <a href="strings.html#len"><code>strings::len</code></a>, <a href="strings.html#substring"><code>strings::substring</code></a>, <a href="uri.html#decode"><code>uri::decode</code></a></p>
+</div>
+<hr>
+<div class="fn" id="query_has">
+<h3>query_has</h3>
+<pre><code>fn query_has(query:str key:str -- exists:i64)</code></pre>
+<p>Check if a query parameter exists.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>query</code> <code>str</code></dt>
+<dd>Query string (without leading '?')</dd>
+<dt><code>key</code> <code>str</code></dt>
+<dd>Parameter name to find</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>exists</code> <code>i64</code></dt>
+<dd>1 if exists, 0 otherwise</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>&quot;foo=bar&amp;x=1&quot; &quot;foo&quot; uri::query_has -&gt; exists</code></pre>
+<p class="xref"><strong>Calls:</strong> <a href="strings.html#compare"><code>strings::compare</code></a>, <a href="strings.html#len"><code>strings::len</code></a>, <a href="strings.html#substring"><code>strings::substring</code></a></p>
+</div>
+<hr>
+<div class="fn" id="build">
+<h3>build</h3>
+<pre><code>fn (u:Uri) build( -- s:str)</code></pre>
+<p>Build a URI string from components.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>u</code> <code>Uri</code></dt>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>s</code> <code>str</code></dt>
+<dd>URI string</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>u .build -&gt; url</code></pre>
+<p class="xref"><strong>Calls:</strong> <a href="mem.html#alloc"><code>mem::alloc</code></a>, <a href="mem.html#free"><code>mem::free</code></a>, <a href="mem.html#set_byte"><code>mem::set_byte</code></a>, <a href="mem.html#to_string"><code>mem::to_string</code></a>, <a href="strings.html#concat"><code>strings::concat</code></a>, <a href="strings.html#len"><code>strings::len</code></a></p>
+</div>
+</div></body></html>

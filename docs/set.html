@@ -1,0 +1,100 @@
+<!DOCTYPE html><html><head><meta charset="utf-8"><title>set - Quadrate API</title><link rel="stylesheet" href="style.css"></head><body>
+<nav><h1>Quadrate API</h1><a href="index.html">All Modules</a></nav>
+<div class="container"><h2>set</h2>
+<p class="desc">Set - A String Set Collection ==============================  Set stores unique string elements with O(1) average lookup time. Implemented using open addressing with linear probing.  ## Creating a Set  Create an empty set:      Set { keys = 0 states = 0 len = 0 cap = 0 } -&gt; s  ## Basic Operations  Add an element (set is returned, must be captured):      s &quot;alice&quot; add! -&gt; s  Check if element exists:      s &quot;alice&quot; contains -&gt; exists  Remove an element:      s &quot;alice&quot; remove! -&gt; s  ## Memory Management  Always call release when done to free memory:      s release</p>
+<h2>Structs</h2>
+<h3 id="Set"><code>Set</code></h3>
+<p>Set of unique string elements.  Fields:   keys   - Array of string key pointers   states - Array of slot states (0=empty, 1=occupied, 2=deleted)   len    - Number of elements   cap    - Allocated capacity</p>
+<dl>
+<dt><code>keys</code> <code>ptr</code></dt>
+<dt><code>states</code> <code>ptr</code></dt>
+<dt><code>len</code> <code>i64</code></dt>
+<dt><code>cap</code> <code>i64</code></dt>
+</dl>
+<h2>Functions</h2>
+<div class="fn fallible" id="add">
+<h3>add [fallible]</h3>
+<pre><code>fn (s:Set) add(key:str -- s2:Set)!</code></pre>
+<p>Add an element to the set.  If the element already exists, the set is unchanged. Returns the updated set which must be captured.  Example:     s &quot;alice&quot; add! -&gt; s  Stack: (s key -- s2)</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>s</code> <code>Set</code></dt>
+<dt><code>key</code> <code>str</code></dt>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>s2</code> <code>Set</code></dt>
+</dl>
+<p class="xref"><strong>Calls:</strong> <a href="mem.html#alloc"><code>mem::alloc</code></a>, <a href="mem.html#copy"><code>mem::copy</code></a>, <a href="mem.html#free"><code>mem::free</code></a>, <a href="mem.html#from_string"><code>mem::from_string</code></a>, <a href="mem.html#set_byte"><code>mem::set_byte</code></a>, <a href="mem.html#set_i64"><code>mem::set_i64</code></a>, <a href="mem.html#set_ptr"><code>mem::set_ptr</code></a>, <a href="strings.html#len"><code>strings::len</code></a></p>
+</div>
+<hr>
+<div class="fn" id="contains">
+<h3>contains</h3>
+<pre><code>fn (s:Set) contains(key:str -- exists:i64)</code></pre>
+<p>Check if an element exists in the set.  Example:     s &quot;alice&quot; contains if { &quot;found!&quot; print nl }  Stack: (s key -- exists)</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>s</code> <code>Set</code></dt>
+<dt><code>key</code> <code>str</code></dt>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>exists</code> <code>i64</code></dt>
+</dl>
+</div>
+<hr>
+<div class="fn fallible" id="remove">
+<h3>remove [fallible]</h3>
+<pre><code>fn (s:Set) remove(key:str -- s2:Set)!</code></pre>
+<p>Remove an element from the set.  Returns error if the element is not found. Returns the updated set which must be captured.  Example:     s &quot;alice&quot; remove! -&gt; s  Stack: (s key -- s2)</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>s</code> <code>Set</code></dt>
+<dt><code>key</code> <code>str</code></dt>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>s2</code> <code>Set</code></dt>
+</dl>
+<p class="xref"><strong>Calls:</strong> <a href="mem.html#free"><code>mem::free</code></a>, <a href="mem.html#get_ptr"><code>mem::get_ptr</code></a>, <a href="mem.html#set_i64"><code>mem::set_i64</code></a></p>
+</div>
+<hr>
+<div class="fn" id="length">
+<h3>length</h3>
+<pre><code>fn (s:Set) length( -- n:i64)</code></pre>
+<p>Get the number of elements in the set.  Example:     s length -&gt; n  Stack: (s -- n)</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>s</code> <code>Set</code></dt>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>n</code> <code>i64</code></dt>
+</dl>
+</div>
+<hr>
+<div class="fn" id="is_empty">
+<h3>is_empty</h3>
+<pre><code>fn (s:Set) is_empty( -- b:i64)</code></pre>
+<p>Check if the set is empty.  Example:     s is_empty if { &quot;empty!&quot; print nl }  Stack: (s -- bool)</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>s</code> <code>Set</code></dt>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>b</code> <code>i64</code></dt>
+</dl>
+</div>
+<hr>
+<div class="fn" id="release">
+<h3>release</h3>
+<pre><code>fn (s:Set) release()</code></pre>
+<p>Free the set's memory.  IMPORTANT: Always call this when done with a set to prevent memory leaks.  Example:     s release  Stack: (s --)</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>s</code> <code>Set</code></dt>
+</dl>
+<p class="xref"><strong>Calls:</strong> <a href="mem.html#free"><code>mem::free</code></a>, <a href="mem.html#get_i64"><code>mem::get_i64</code></a>, <a href="mem.html#get_ptr"><code>mem::get_ptr</code></a></p>
+</div>
+</div></body></html>

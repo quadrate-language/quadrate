@@ -111,6 +111,14 @@ static std::string htmlEscape(const std::string& s) {
 }
 
 static std::string readFile(const std::string& path) {
+	// Read only things that end. A character device such as /dev/zero opens and
+	// streams zeros forever, so passing one as --css hung the generator instead
+	// of failing it.
+	std::error_code ec;
+	const fs::file_status status = fs::status(path, ec);
+	if (ec || !fs::is_regular_file(status)) {
+		return "";
+	}
 	std::ifstream f(path);
 	if (!f) {
 		return "";
@@ -677,8 +685,26 @@ static void buildCallGraph(std::vector<Module>& modules) {
 
 static std::vector<Module> scanDirectory(const std::string& dir, bool quiet) {
 	std::vector<Module> modules;
-	for (auto& entry : fs::recursive_directory_iterator(dir)) {
-		if (!entry.is_regular_file() || entry.path().extension() != ".qd") {
+
+	// The plain iterator throws the first time it meets a directory it may not
+	// read; main() checks that `dir` itself is openable, but nothing about what
+	// is underneath it. skip_permission_denied plus increment(ec) walks past an
+	// unreadable subtree instead of aborting the whole run.
+	std::error_code ec;
+	fs::recursive_directory_iterator it(dir, fs::directory_options::skip_permission_denied, ec);
+	if (ec) {
+		std::cerr << "quaddoc: " << dir << ": " << ec.message() << "\n";
+		return modules;
+	}
+
+	const fs::recursive_directory_iterator end;
+	for (; it != end; it.increment(ec)) {
+		if (ec) {
+			break;
+		}
+		const fs::directory_entry& entry = *it;
+		std::error_code entryEc;
+		if (!entry.is_regular_file(entryEc) || entryEc || entry.path().extension() != ".qd") {
 			continue;
 		}
 		auto mod = parseModule(entry.path().string());

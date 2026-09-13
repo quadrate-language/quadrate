@@ -1,0 +1,459 @@
+<!DOCTYPE html><html><head><meta charset="utf-8"><title>crypto - Quadrate API</title><link rel="stylesheet" href="style.css"></head><body>
+<nav><h1>Quadrate API</h1><a href="index.html">All Modules</a></nav>
+<div class="container"><h2>crypto</h2>
+<p class="desc">Cryptographic hash functions, checksums, and HMAC. Provides SHA-256, SHA-512, MD5, CRC32, and HMAC implementations.  Each hash algorithm supports both one-shot hashing and streaming (incremental) mode. HMAC provides message authentication using SHA-256 or SHA-512.</p>
+<h2>Structs</h2>
+<h3 id="Crc32"><code>Crc32</code></h3>
+<p>CRC32 hasher state for streaming computation.</p>
+<dl>
+<dt><code>state</code> <code>i64</code></dt>
+<dd>CRC state</dd>
+<dt><code>tbl</code> <code>ptr</code></dt>
+<dd>table (allocated on first update)</dd>
+</dl>
+<h3 id="Md5"><code>Md5</code></h3>
+<p>MD5 hasher state for streaming computation.</p>
+<dl>
+<dt><code>a</code> <code>i64</code></dt>
+<dt><code>b</code> <code>i64</code></dt>
+<dt><code>c</code> <code>i64</code></dt>
+<dt><code>d</code> <code>i64</code></dt>
+<dt><code>buf</code> <code>ptr</code></dt>
+<dt><code>buflen</code> <code>i64</code></dt>
+<dt><code>total</code> <code>i64</code></dt>
+</dl>
+<h3 id="Sha256"><code>Sha256</code></h3>
+<p>SHA-256 hasher state for streaming computation.</p>
+<dl>
+<dt><code>h0</code> <code>i64</code></dt>
+<dt><code>h1</code> <code>i64</code></dt>
+<dt><code>h2</code> <code>i64</code></dt>
+<dt><code>h3</code> <code>i64</code></dt>
+<dt><code>h4</code> <code>i64</code></dt>
+<dt><code>h5</code> <code>i64</code></dt>
+<dt><code>h6</code> <code>i64</code></dt>
+<dt><code>h7</code> <code>i64</code></dt>
+<dt><code>buf</code> <code>ptr</code></dt>
+<dd>for incomplete blocks</dd>
+<dt><code>buflen</code> <code>i64</code></dt>
+<dd>buffer fill level</dd>
+<dt><code>total</code> <code>i64</code></dt>
+<dd>bytes processed</dd>
+</dl>
+<h3 id="Sha512"><code>Sha512</code></h3>
+<p>SHA-512 hasher state for streaming computation.</p>
+<dl>
+<dt><code>h0</code> <code>i64</code></dt>
+<dt><code>h1</code> <code>i64</code></dt>
+<dt><code>h2</code> <code>i64</code></dt>
+<dt><code>h3</code> <code>i64</code></dt>
+<dt><code>h4</code> <code>i64</code></dt>
+<dt><code>h5</code> <code>i64</code></dt>
+<dt><code>h6</code> <code>i64</code></dt>
+<dt><code>h7</code> <code>i64</code></dt>
+<dt><code>buf</code> <code>ptr</code></dt>
+<dt><code>buflen</code> <code>i64</code></dt>
+<dt><code>total</code> <code>i64</code></dt>
+</dl>
+<h2>Functions</h2>
+<div class="fn" id="update">
+<h3>update</h3>
+<pre><code>fn (c:Crc32) update(data:str -- c2:Crc32)</code></pre>
+<p>Update CRC32 state with additional data.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>c</code> <code>Crc32</code></dt>
+<dd>The hasher state</dd>
+<dt><code>data</code> <code>str</code></dt>
+<dd>Data to hash</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>c2</code> <code>Crc32</code></dt>
+<dd>Updated hasher state</dd>
+</dl>
+<p class="xref"><strong>Calls:</strong> <a href="mem.html#get_i64"><code>mem::get_i64</code></a>, <a href="strings.html#char_at"><code>strings::char_at</code></a>, <a href="strings.html#len"><code>strings::len</code></a></p>
+</div>
+<hr>
+<div class="fn" id="value">
+<h3>value</h3>
+<pre><code>fn (c:Crc32) value( -- crc:i64)</code></pre>
+<p>Get the current CRC32 value.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>c</code> <code>Crc32</code></dt>
+<dd>The hasher state</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>crc</code> <code>i64</code></dt>
+<dd>Current CRC32 checksum</dd>
+</dl>
+<p class="xref"><strong>Calls:</strong> <a href="bits.html#mask"><code>bits::mask</code></a></p>
+<p class="xref"><strong>Called by:</strong> <a href="crypto.html#crc32"><code>crypto::crc32</code></a>, <a href="crypto.html#hex"><code>crypto::hex</code></a></p>
+</div>
+<hr>
+<div class="fn" id="hex">
+<h3>hex</h3>
+<pre><code>fn (c:Crc32) hex( -- hex:str)</code></pre>
+<p>Get CRC32 as 8-character hex string.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>c</code> <code>Crc32</code></dt>
+<dd>The hasher state</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>hex</code> <code>str</code></dt>
+<dd>CRC32 as lowercase hex string</dd>
+</dl>
+<p class="xref"><strong>Calls:</strong> <a href="crypto.html#value"><code>crypto::value</code></a>, <a href="mem.html#alloc"><code>mem::alloc</code></a>, <a href="mem.html#free"><code>mem::free</code></a>, <a href="mem.html#set_byte"><code>mem::set_byte</code></a>, <a href="mem.html#to_string"><code>mem::to_string</code></a></p>
+<p class="xref"><strong>Called by:</strong> <a href="crypto.html#crc32_hex"><code>crypto::crc32_hex</code></a></p>
+</div>
+<hr>
+<div class="fn" id="release">
+<h3>release</h3>
+<pre><code>fn (c:Crc32) release()</code></pre>
+<p>Free resources used by CRC32 hasher.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>c</code> <code>Crc32</code></dt>
+<dd>The hasher state to free</dd>
+</dl>
+<p class="xref"><strong>Calls:</strong> <a href="mem.html#free"><code>mem::free</code></a></p>
+</div>
+<hr>
+<div class="fn" id="crc32">
+<h3>crc32</h3>
+<pre><code>fn crc32(s:str -- crc:i64)</code></pre>
+<p>One-shot CRC32 of a string.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>s</code> <code>str</code></dt>
+<dd>Input string</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>crc</code> <code>i64</code></dt>
+<dd>CRC32 checksum</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>&quot;Hello&quot; crc32 -&gt; crc</code></pre>
+<p class="xref"><strong>Calls:</strong> <a href="crypto.html#release"><code>crypto::release</code></a>, <a href="crypto.html#update"><code>crypto::update</code></a>, <a href="crypto.html#value"><code>crypto::value</code></a></p>
+<p class="xref"><strong>Called by:</strong> <a href="crypto.html#crc32_verify"><code>crypto::crc32_verify</code></a></p>
+</div>
+<hr>
+<div class="fn" id="crc32_hex">
+<h3>crc32_hex</h3>
+<pre><code>fn crc32_hex(s:str -- hex:str)</code></pre>
+<p>One-shot CRC32 as hex string.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>s</code> <code>str</code></dt>
+<dd>Input string</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>hex</code> <code>str</code></dt>
+<dd>CRC32 as 8-character hex string</dd>
+</dl>
+<p class="xref"><strong>Calls:</strong> <a href="crypto.html#hex"><code>crypto::hex</code></a>, <a href="crypto.html#release"><code>crypto::release</code></a>, <a href="crypto.html#update"><code>crypto::update</code></a></p>
+</div>
+<hr>
+<div class="fn" id="crc32_verify">
+<h3>crc32_verify</h3>
+<pre><code>fn crc32_verify(s:str expected:i64 -- ok:i64)</code></pre>
+<p>Verify data against expected CRC32.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>s</code> <code>str</code></dt>
+<dd>Data to verify</dd>
+<dt><code>expected</code> <code>i64</code></dt>
+<dd>Expected CRC32 value</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>ok</code> <code>i64</code></dt>
+<dd>1 if matches, 0 otherwise</dd>
+</dl>
+<p class="xref"><strong>Calls:</strong> <a href="crypto.html#crc32"><code>crypto::crc32</code></a></p>
+</div>
+<hr>
+<div class="fn fallible" id="hmac_sha256">
+<h3>hmac_sha256 [fallible]</h3>
+<pre><code>fn hmac_sha256(key:str message:str -- mac:str)!</code></pre>
+<p>Compute HMAC-SHA256.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>key</code> <code>str</code></dt>
+<dd>Secret key</dd>
+<dt><code>message</code> <code>str</code></dt>
+<dd>Message to authenticate</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>mac</code> <code>str</code></dt>
+<dd>64-character hex HMAC</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>&quot;Jefe&quot; &quot;what do ya want for nothing?&quot; crypto::hmac_sha256! -&gt; mac</code></pre>
+<p class="xref"><strong>Calls:</strong> <a href="crypto.html#sha256_bytes"><code>crypto::sha256_bytes</code></a>, <a href="hex.html#decode"><code>hex::decode</code></a>, <a href="mem.html#free"><code>mem::free</code></a>, <a href="mem.html#from_string"><code>mem::from_string</code></a></p>
+</div>
+<hr>
+<div class="fn fallible" id="hmac_sha512">
+<h3>hmac_sha512 [fallible]</h3>
+<pre><code>fn hmac_sha512(key:str message:str -- mac:str)!</code></pre>
+<p>Compute HMAC-SHA512.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>key</code> <code>str</code></dt>
+<dd>Secret key</dd>
+<dt><code>message</code> <code>str</code></dt>
+<dd>Message to authenticate</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>mac</code> <code>str</code></dt>
+<dd>128-character hex HMAC</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>&quot;Jefe&quot; &quot;what do ya want for nothing?&quot; crypto::hmac_sha512! -&gt; mac</code></pre>
+<p class="xref"><strong>Calls:</strong> <a href="crypto.html#sha512_bytes"><code>crypto::sha512_bytes</code></a>, <a href="hex.html#decode"><code>hex::decode</code></a>, <a href="mem.html#free"><code>mem::free</code></a>, <a href="mem.html#from_string"><code>mem::from_string</code></a></p>
+</div>
+<hr>
+<div class="fn fallible" id="update">
+<h3>update [fallible]</h3>
+<pre><code>fn (h:Md5) update(data:str -- h2:Md5)!</code></pre>
+<p>Update MD5 state with additional data.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>h</code> <code>Md5</code></dt>
+<dd>The hasher state</dd>
+<dt><code>data</code> <code>str</code></dt>
+<dd>Data to hash</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>h2</code> <code>Md5</code></dt>
+<dd>Updated hasher state</dd>
+</dl>
+<p class="xref"><strong>Calls:</strong> <a href="mem.html#alloc"><code>mem::alloc</code></a>, <a href="mem.html#set_byte"><code>mem::set_byte</code></a>, <a href="strings.html#char_at"><code>strings::char_at</code></a>, <a href="strings.html#len"><code>strings::len</code></a></p>
+</div>
+<hr>
+<div class="fn fallible" id="finish">
+<h3>finish [fallible]</h3>
+<pre><code>fn (h:Md5) finish( -- hash:str)!</code></pre>
+<p>Finalize MD5 and get result as hex string.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>h</code> <code>Md5</code></dt>
+<dd>The hasher state</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>hash</code> <code>str</code></dt>
+<dd>32-character hex string (lowercase)</dd>
+</dl>
+<p class="xref"><strong>Calls:</strong> <a href="mem.html#alloc"><code>mem::alloc</code></a>, <a href="mem.html#free"><code>mem::free</code></a>, <a href="mem.html#set_byte"><code>mem::set_byte</code></a>, <a href="mem.html#to_string"><code>mem::to_string</code></a></p>
+</div>
+<hr>
+<div class="fn" id="release">
+<h3>release</h3>
+<pre><code>fn (h:Md5) release()</code></pre>
+<p>Free resources used by MD5 hasher.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>h</code> <code>Md5</code></dt>
+<dd>The hasher state to free</dd>
+</dl>
+<p class="xref"><strong>Calls:</strong> <a href="mem.html#free"><code>mem::free</code></a></p>
+</div>
+<hr>
+<div class="fn fallible" id="md5">
+<h3>md5 [fallible]</h3>
+<pre><code>fn md5(s:str -- hash:str)!</code></pre>
+<p>One-shot MD5 of a string. Note: MD5 is cryptographically broken. Use only for checksums, not security.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>s</code> <code>str</code></dt>
+<dd>Input string</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>hash</code> <code>str</code></dt>
+<dd>32-character hex string</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>&quot;Hello&quot; md5! -&gt; hash</code></pre>
+<p class="xref"><strong>Calls:</strong> <a href="crypto.html#finish"><code>crypto::finish</code></a>, <a href="crypto.html#release"><code>crypto::release</code></a>, <a href="crypto.html#update"><code>crypto::update</code></a></p>
+</div>
+<hr>
+<div class="fn fallible" id="update">
+<h3>update [fallible]</h3>
+<pre><code>fn (h:Sha256) update(data:str -- h2:Sha256)!</code></pre>
+<p>Update SHA-256 state with additional data.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>h</code> <code>Sha256</code></dt>
+<dd>The hasher state</dd>
+<dt><code>data</code> <code>str</code></dt>
+<dd>Data to hash</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>h2</code> <code>Sha256</code></dt>
+<dd>Updated hasher state</dd>
+</dl>
+<p class="xref"><strong>Calls:</strong> <a href="mem.html#alloc"><code>mem::alloc</code></a>, <a href="mem.html#set_byte"><code>mem::set_byte</code></a>, <a href="strings.html#char_at"><code>strings::char_at</code></a>, <a href="strings.html#len"><code>strings::len</code></a></p>
+</div>
+<hr>
+<div class="fn fallible" id="finish">
+<h3>finish [fallible]</h3>
+<pre><code>fn (h:Sha256) finish( -- hash:str)!</code></pre>
+<p>Finalize SHA-256 and get result as hex string.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>h</code> <code>Sha256</code></dt>
+<dd>The hasher state</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>hash</code> <code>str</code></dt>
+<dd>64-character hex string (lowercase)</dd>
+</dl>
+<p class="xref"><strong>Calls:</strong> <a href="mem.html#alloc"><code>mem::alloc</code></a>, <a href="mem.html#free"><code>mem::free</code></a>, <a href="mem.html#set_byte"><code>mem::set_byte</code></a>, <a href="mem.html#to_string"><code>mem::to_string</code></a></p>
+</div>
+<hr>
+<div class="fn" id="release">
+<h3>release</h3>
+<pre><code>fn (h:Sha256) release()</code></pre>
+<p>Free resources used by SHA-256 hasher.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>h</code> <code>Sha256</code></dt>
+<dd>The hasher state to free</dd>
+</dl>
+<p class="xref"><strong>Calls:</strong> <a href="mem.html#free"><code>mem::free</code></a></p>
+</div>
+<hr>
+<div class="fn fallible" id="sha256">
+<h3>sha256 [fallible]</h3>
+<pre><code>fn sha256(s:str -- hash:str)!</code></pre>
+<p>One-shot SHA-256 of a string.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>s</code> <code>str</code></dt>
+<dd>Input string</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>hash</code> <code>str</code></dt>
+<dd>64-character hex string</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>&quot;Hello&quot; sha256! -&gt; hash</code></pre>
+<p class="xref"><strong>Calls:</strong> <a href="crypto.html#finish"><code>crypto::finish</code></a>, <a href="crypto.html#release"><code>crypto::release</code></a>, <a href="crypto.html#update"><code>crypto::update</code></a></p>
+</div>
+<hr>
+<div class="fn fallible" id="sha256_bytes">
+<h3>sha256_bytes [fallible]</h3>
+<pre><code>fn sha256_bytes(buf:ptr length:i64 -- hash:str)!</code></pre>
+<p>Calculate SHA-256 hash of raw bytes.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>buf</code> <code>ptr</code></dt>
+<dd>Input buffer</dd>
+<dt><code>length</code> <code>i64</code></dt>
+<dd>Length of buffer in bytes</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>hash</code> <code>str</code></dt>
+<dd>64-character hex string (lowercase)</dd>
+</dl>
+<p class="xref"><strong>Calls:</strong> <a href="mem.html#alloc"><code>mem::alloc</code></a>, <a href="mem.html#free"><code>mem::free</code></a>, <a href="mem.html#get_byte"><code>mem::get_byte</code></a>, <a href="mem.html#set_byte"><code>mem::set_byte</code></a>, <a href="mem.html#to_string"><code>mem::to_string</code></a></p>
+<p class="xref"><strong>Called by:</strong> <a href="crypto.html#hmac_sha256"><code>crypto::hmac_sha256</code></a></p>
+</div>
+<hr>
+<div class="fn fallible" id="update">
+<h3>update [fallible]</h3>
+<pre><code>fn (h:Sha512) update(data:str -- h2:Sha512)!</code></pre>
+<p>Update SHA-512 state with additional data.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>h</code> <code>Sha512</code></dt>
+<dt><code>data</code> <code>str</code></dt>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>h2</code> <code>Sha512</code></dt>
+</dl>
+<p class="xref"><strong>Calls:</strong> <a href="mem.html#alloc"><code>mem::alloc</code></a>, <a href="mem.html#set_byte"><code>mem::set_byte</code></a>, <a href="strings.html#char_at"><code>strings::char_at</code></a>, <a href="strings.html#len"><code>strings::len</code></a></p>
+<p class="xref"><strong>Called by:</strong> <a href="crypto.html#crc32"><code>crypto::crc32</code></a>, <a href="crypto.html#crc32_hex"><code>crypto::crc32_hex</code></a>, <a href="crypto.html#md5"><code>crypto::md5</code></a>, <a href="crypto.html#sha256"><code>crypto::sha256</code></a>, <a href="crypto.html#sha512"><code>crypto::sha512</code></a></p>
+</div>
+<hr>
+<div class="fn fallible" id="finish">
+<h3>finish [fallible]</h3>
+<pre><code>fn (h:Sha512) finish( -- hash:str)!</code></pre>
+<p>Finalize SHA-512 and get result as hex string.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>h</code> <code>Sha512</code></dt>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>hash</code> <code>str</code></dt>
+</dl>
+<p class="xref"><strong>Calls:</strong> <a href="mem.html#alloc"><code>mem::alloc</code></a>, <a href="mem.html#free"><code>mem::free</code></a>, <a href="mem.html#set_byte"><code>mem::set_byte</code></a>, <a href="mem.html#to_string"><code>mem::to_string</code></a></p>
+<p class="xref"><strong>Called by:</strong> <a href="crypto.html#md5"><code>crypto::md5</code></a>, <a href="crypto.html#sha256"><code>crypto::sha256</code></a>, <a href="crypto.html#sha512"><code>crypto::sha512</code></a></p>
+</div>
+<hr>
+<div class="fn" id="release">
+<h3>release</h3>
+<pre><code>fn (h:Sha512) release()</code></pre>
+<p>Free resources used by SHA-512 hasher.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>h</code> <code>Sha512</code></dt>
+</dl>
+<p class="xref"><strong>Calls:</strong> <a href="mem.html#free"><code>mem::free</code></a></p>
+<p class="xref"><strong>Called by:</strong> <a href="crypto.html#crc32"><code>crypto::crc32</code></a>, <a href="crypto.html#crc32_hex"><code>crypto::crc32_hex</code></a>, <a href="crypto.html#md5"><code>crypto::md5</code></a>, <a href="crypto.html#sha256"><code>crypto::sha256</code></a>, <a href="crypto.html#sha512"><code>crypto::sha512</code></a></p>
+</div>
+<hr>
+<div class="fn fallible" id="sha512">
+<h3>sha512 [fallible]</h3>
+<pre><code>fn sha512(s:str -- hash:str)!</code></pre>
+<p>One-shot SHA-512 of a string.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>s</code> <code>str</code></dt>
+<dd>Input string</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>hash</code> <code>str</code></dt>
+<dd>128-character hex string</dd>
+</dl>
+<p class="xref"><strong>Calls:</strong> <a href="crypto.html#finish"><code>crypto::finish</code></a>, <a href="crypto.html#release"><code>crypto::release</code></a>, <a href="crypto.html#update"><code>crypto::update</code></a></p>
+</div>
+<hr>
+<div class="fn fallible" id="sha512_bytes">
+<h3>sha512_bytes [fallible]</h3>
+<pre><code>fn sha512_bytes(buf:ptr length:i64 -- hash:str)!</code></pre>
+<p>Calculate SHA-512 hash of raw bytes.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>buf</code> <code>ptr</code></dt>
+<dd>Input buffer</dd>
+<dt><code>length</code> <code>i64</code></dt>
+<dd>Length of buffer in bytes</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>hash</code> <code>str</code></dt>
+<dd>128-character hex string</dd>
+</dl>
+<p class="xref"><strong>Calls:</strong> <a href="mem.html#alloc"><code>mem::alloc</code></a>, <a href="mem.html#free"><code>mem::free</code></a>, <a href="mem.html#get_byte"><code>mem::get_byte</code></a>, <a href="mem.html#set_byte"><code>mem::set_byte</code></a>, <a href="mem.html#to_string"><code>mem::to_string</code></a></p>
+<p class="xref"><strong>Called by:</strong> <a href="crypto.html#hmac_sha512"><code>crypto::hmac_sha512</code></a></p>
+</div>
+</div></body></html>

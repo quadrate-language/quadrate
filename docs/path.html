@@ -1,0 +1,310 @@
+<!DOCTYPE html><html><head><meta charset="utf-8"><title>path - Quadrate API</title><link rel="stylesheet" href="style.css"></head><body>
+<nav><h1>Quadrate API</h1><a href="index.html">All Modules</a></nav>
+<div class="container"><h2>path</h2>
+<p class="desc">File path manipulation functions. POSIX-style paths with forward slash separator.</p>
+<h2>Constants</h2>
+<dl>
+<dt><code>Sep</code> = <code>&quot;/&quot;</code></dt>
+<dd>Path separator constant.</dd>
+</dl>
+<h2>Functions</h2>
+<div class="fn" id="dirname">
+<h3>dirname</h3>
+<pre><code>fn dirname(path:str -- dir:str)</code></pre>
+<p>Get the directory part of a path.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>path</code> <code>str</code></dt>
+<dd>File path</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>dir</code> <code>str</code></dt>
+<dd>Directory component</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>&quot;/home/user/file.txt&quot; path::dirname -&gt; &quot;/home/user&quot;</code></pre>
+<p class="xref"><strong>Calls:</strong> <a href="strings.html#substring"><code>strings::substring</code></a></p>
+<p class="xref"><strong>Called by:</strong> <a href="path.html#parent"><code>path::parent</code></a>, <a href="path.html#with_ext"><code>path::with_ext</code></a></p>
+</div>
+<hr>
+<div class="fn" id="basename">
+<h3>basename</h3>
+<pre><code>fn basename(path:str -- name:str)</code></pre>
+<p>Get the filename part of a path.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>path</code> <code>str</code></dt>
+<dd>File path</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>name</code> <code>str</code></dt>
+<dd>Filename component</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>&quot;/home/user/file.txt&quot; path::basename -&gt; &quot;file.txt&quot;</code></pre>
+<p class="xref"><strong>Calls:</strong> <a href="strings.html#len"><code>strings::len</code></a>, <a href="strings.html#substring"><code>strings::substring</code></a></p>
+</div>
+<hr>
+<div class="fn" id="ext">
+<h3>ext</h3>
+<pre><code>fn ext(path:str -- ext:str)</code></pre>
+<p>Get the file extension (including dot).</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>path</code> <code>str</code></dt>
+<dd>File path</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>ext</code> <code>str</code></dt>
+<dd>Extension including dot, empty if none</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>&quot;file.txt&quot; path::ext -&gt; &quot;.txt&quot;</code></pre>
+<p class="xref"><strong>Calls:</strong> <a href="strings.html#len"><code>strings::len</code></a>, <a href="strings.html#substring"><code>strings::substring</code></a></p>
+<p class="xref"><strong>Called by:</strong> <a href="path.html#has_ext"><code>path::has_ext</code></a>, <a href="path.html#has_extension"><code>path::has_extension</code></a></p>
+</div>
+<hr>
+<div class="fn" id="stem">
+<h3>stem</h3>
+<pre><code>fn stem(path:str -- stem:str)</code></pre>
+<p>Get filename without extension.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>path</code> <code>str</code></dt>
+<dd>File path</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>stem</code> <code>str</code></dt>
+<dd>Filename without extension</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>&quot;file.txt&quot; path::stem -&gt; &quot;file&quot;</code></pre>
+<p class="xref"><strong>Calls:</strong> <a href="strings.html#len"><code>strings::len</code></a>, <a href="strings.html#substring"><code>strings::substring</code></a></p>
+<p class="xref"><strong>Called by:</strong> <a href="path.html#with_ext"><code>path::with_ext</code></a></p>
+</div>
+<hr>
+<div class="fn" id="join">
+<h3>join</h3>
+<pre><code>fn join(p1:str p2:str -- joined:str)</code></pre>
+<p>Join two path components.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>p1</code> <code>str</code></dt>
+<dd>First path</dd>
+<dt><code>p2</code> <code>str</code></dt>
+<dd>Second path</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>joined</code> <code>str</code></dt>
+<dd>Joined path</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>&quot;/home&quot; &quot;user&quot; path::join -&gt; &quot;/home/user&quot;</code></pre>
+<p class="xref"><strong>Calls:</strong> <a href="strings.html#char_at"><code>strings::char_at</code></a>, <a href="strings.html#concat"><code>strings::concat</code></a>, <a href="strings.html#len"><code>strings::len</code></a>, <a href="strings.html#starts_with"><code>strings::starts_with</code></a></p>
+</div>
+<hr>
+<div class="fn" id="is_absolute">
+<h3>is_absolute</h3>
+<pre><code>fn is_absolute(path:str -- result:i64)</code></pre>
+<p>Check if path is absolute.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>path</code> <code>str</code></dt>
+<dd>File path</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>result</code> <code>i64</code></dt>
+<dd>1 if absolute, 0 otherwise</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>&quot;/home/user&quot; path::is_absolute -&gt; 1</code></pre>
+<p class="xref"><strong>Calls:</strong> <a href="strings.html#starts_with"><code>strings::starts_with</code></a></p>
+<p class="xref"><strong>Called by:</strong> <a href="path.html#is_relative"><code>path::is_relative</code></a></p>
+</div>
+<hr>
+<div class="fn" id="normalize">
+<h3>normalize</h3>
+<pre><code>fn normalize(path:str -- norm:str)</code></pre>
+<p>Normalize a path (remove redundant separators).</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>path</code> <code>str</code></dt>
+<dd>File path</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>norm</code> <code>str</code></dt>
+<dd>Normalized path</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>&quot;/home//user/&quot; path::normalize -&gt; &quot;/home/user&quot;</code></pre>
+<p class="xref"><strong>Calls:</strong> <a href="strings.html#char_at"><code>strings::char_at</code></a>, <a href="strings.html#contains"><code>strings::contains</code></a>, <a href="strings.html#len"><code>strings::len</code></a>, <a href="strings.html#replace"><code>strings::replace</code></a>, <a href="strings.html#substring"><code>strings::substring</code></a></p>
+</div>
+<hr>
+<div class="fn" id="with_ext">
+<h3>with_ext</h3>
+<pre><code>fn with_ext(path:str newext:str -- result:str)</code></pre>
+<p>Change or add file extension.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>path</code> <code>str</code></dt>
+<dd>File path</dd>
+<dt><code>newext</code> <code>str</code></dt>
+<dd>New extension (with or without leading dot)</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>result</code> <code>str</code></dt>
+<dd>Path with new extension</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>&quot;file.txt&quot; &quot;.md&quot; path::with_ext -&gt; &quot;file.md&quot;</code></pre>
+<p class="xref"><strong>Calls:</strong> <a href="path.html#dirname"><code>path::dirname</code></a>, <a href="path.html#stem"><code>path::stem</code></a>, <a href="strings.html#char_at"><code>strings::char_at</code></a>, <a href="strings.html#compare"><code>strings::compare</code></a>, <a href="strings.html#concat"><code>strings::concat</code></a>, <a href="strings.html#len"><code>strings::len</code></a></p>
+</div>
+<hr>
+<div class="fn" id="has_ext">
+<h3>has_ext</h3>
+<pre><code>fn has_ext(path:str -- result:i64)</code></pre>
+<p>Check if path has an extension.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>path</code> <code>str</code></dt>
+<dd>File path</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>result</code> <code>i64</code></dt>
+<dd>1 if has extension, 0 otherwise</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>&quot;file.txt&quot; path::has_ext -&gt; 1</code></pre>
+<p class="xref"><strong>Calls:</strong> <a href="path.html#ext"><code>path::ext</code></a>, <a href="strings.html#len"><code>strings::len</code></a></p>
+</div>
+<hr>
+<div class="fn" id="parent">
+<h3>parent</h3>
+<pre><code>fn parent(path:str -- parent:str)</code></pre>
+<p>Get parent directory (same as dirname but clearer name).</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>path</code> <code>str</code></dt>
+<dd>File path</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>parent</code> <code>str</code></dt>
+<dd>Parent directory</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>&quot;/home/user/file.txt&quot; path::parent -&gt; &quot;/home/user&quot;</code></pre>
+<p class="xref"><strong>Calls:</strong> <a href="path.html#dirname"><code>path::dirname</code></a></p>
+</div>
+<hr>
+<div class="fn" id="is_relative">
+<h3>is_relative</h3>
+<pre><code>fn is_relative(path:str -- result:i64)</code></pre>
+<p>Check if path is relative (not absolute).</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>path</code> <code>str</code></dt>
+<dd>File path</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>result</code> <code>i64</code></dt>
+<dd>1 if relative, 0 otherwise</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>&quot;home/user&quot; path::is_relative -&gt; 1</code></pre>
+<p class="xref"><strong>Calls:</strong> <a href="path.html#is_absolute"><code>path::is_absolute</code></a></p>
+</div>
+<hr>
+<div class="fn" id="has_extension">
+<h3>has_extension</h3>
+<pre><code>fn has_extension(path:str extension:str -- result:i64)</code></pre>
+<p>Check if a path matches a simple extension filter.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>path</code> <code>str</code></dt>
+<dd>File path</dd>
+<dt><code>extension</code> <code>str</code></dt>
+<dd>Extension to match (with or without dot)</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>result</code> <code>i64</code></dt>
+<dd>1 if matches, 0 otherwise</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>&quot;file.txt&quot; &quot;txt&quot; path::has_extension -&gt; 1</code></pre>
+<p class="xref"><strong>Calls:</strong> <a href="path.html#ext"><code>path::ext</code></a>, <a href="strings.html#char_at"><code>strings::char_at</code></a>, <a href="strings.html#compare"><code>strings::compare</code></a>, <a href="strings.html#concat"><code>strings::concat</code></a>, <a href="strings.html#len"><code>strings::len</code></a></p>
+</div>
+<hr>
+<div class="fn" id="depth">
+<h3>depth</h3>
+<pre><code>fn depth(path:str -- depth:i64)</code></pre>
+<p>Get the depth of a path (number of components).</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>path</code> <code>str</code></dt>
+<dd>File path</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>depth</code> <code>i64</code></dt>
+<dd>Number of path components</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>&quot;/home/user/file.txt&quot; path::depth -&gt; 3</code></pre>
+<p class="xref"><strong>Calls:</strong> <a href="strings.html#char_at"><code>strings::char_at</code></a>, <a href="strings.html#len"><code>strings::len</code></a></p>
+</div>
+<hr>
+<div class="fn" id="starts_with">
+<h3>starts_with</h3>
+<pre><code>fn starts_with(path:str prefix:str -- result:i64)</code></pre>
+<p>Check if path starts with a given prefix path.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>path</code> <code>str</code></dt>
+<dd>File path to check</dd>
+<dt><code>prefix</code> <code>str</code></dt>
+<dd>Prefix path</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>result</code> <code>i64</code></dt>
+<dd>1 if starts with prefix, 0 otherwise</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>&quot;/home/user/file.txt&quot; &quot;/home&quot; path::starts_with -&gt; 1</code></pre>
+<p class="xref"><strong>Calls:</strong> <a href="strings.html#char_at"><code>strings::char_at</code></a>, <a href="strings.html#len"><code>strings::len</code></a>, <a href="strings.html#starts_with"><code>strings::starts_with</code></a></p>
+<p class="xref"><strong>Called by:</strong> <a href="path.html#strip_prefix"><code>path::strip_prefix</code></a></p>
+</div>
+<hr>
+<div class="fn" id="strip_prefix">
+<h3>strip_prefix</h3>
+<pre><code>fn strip_prefix(path:str prefix:str -- result:str)</code></pre>
+<p>Remove a prefix from a path if it exists.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>path</code> <code>str</code></dt>
+<dd>File path</dd>
+<dt><code>prefix</code> <code>str</code></dt>
+<dd>Prefix to remove</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>result</code> <code>str</code></dt>
+<dd>Path without prefix</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>&quot;/home/user/file.txt&quot; &quot;/home&quot; path::strip_prefix -&gt; &quot;user/file.txt&quot;</code></pre>
+<p class="xref"><strong>Calls:</strong> <a href="path.html#starts_with"><code>path::starts_with</code></a>, <a href="strings.html#char_at"><code>strings::char_at</code></a>, <a href="strings.html#len"><code>strings::len</code></a>, <a href="strings.html#substring"><code>strings::substring</code></a></p>
+</div>
+</div></body></html>

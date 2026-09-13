@@ -1,0 +1,180 @@
+<!DOCTYPE html><html><head><meta charset="utf-8"><title>flag - Quadrate API</title><link rel="stylesheet" href="style.css"></head><body>
+<nav><h1>Quadrate API</h1><a href="index.html">All Modules</a></nav>
+<div class="container"><h2>flag</h2>
+<p class="desc">Command-line flag parsing. Error codes: Ok=1 (success), specific errors start at 2</p>
+<h2>Structs</h2>
+<h3 id="Flag"><code>Flag</code></h3>
+<p>Parsed command-line arguments.</p>
+<dl>
+<dt><code>argc</code> <code>i64</code></dt>
+<dd>Argument count</dd>
+<dt><code>argv</code> <code>str</code></dt>
+<dd>Arguments string</dd>
+</dl>
+<h2>Constants</h2>
+<dl>
+<dt><code>ErrNotFound</code> = <code>2</code></dt>
+<dd>Error: Flag not found.</dd>
+<dt><code>ErrNoValue</code> = <code>3</code></dt>
+<dd>Error: Value not found (flag exists but has no value).</dd>
+<dt><code>ErrInvalidValue</code> = <code>4</code></dt>
+<dd>Error: Invalid value format.</dd>
+</dl>
+<h2>Functions</h2>
+<div class="fn" id="parse">
+<h3>parse</h3>
+<pre><code>fn parse(argc:i64 -- f:Flag)</code></pre>
+<p>Parse arguments from read instruction.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>argc</code> <code>i64</code></dt>
+<dd>Argument count from read</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>f</code> <code>Flag</code></dt>
+<dd>Parsed flags</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>read flag::parse -&gt; f</code></pre>
+<p class="xref"><strong>Calls:</strong> <a href="strings.html#concat"><code>strings::concat</code></a></p>
+</div>
+<hr>
+<div class="fn" id="destroy">
+<h3>destroy</h3>
+<pre><code>fn (f:Flag) destroy()</code></pre>
+<p>Free a Flag struct and its argv string.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>f</code> <code>Flag</code></dt>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>f flag::destroy</code></pre>
+</div>
+<hr>
+<div class="fn" id="boolean">
+<h3>boolean</h3>
+<pre><code>fn (f:Flag) boolean(name:str -- present:i64)</code></pre>
+<p>Check if a boolean flag exists.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>f</code> <code>Flag</code></dt>
+<dd>Flag struct</dd>
+<dt><code>name</code> <code>str</code></dt>
+<dd>Flag name (e.g., &quot;--verbose&quot;)</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>present</code> <code>i64</code></dt>
+<dd>1 if found, 0 otherwise</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>f &quot;--verbose&quot; flag::boolean if { &quot;verbose&quot; print nl }</code></pre>
+<p class="xref"><strong>Calls:</strong> <a href="strings.html#concat"><code>strings::concat</code></a>, <a href="strings.html#contains"><code>strings::contains</code></a></p>
+</div>
+<hr>
+<div class="fn fallible" id="string">
+<h3>string [fallible]</h3>
+<pre><code>fn (f:Flag) string(name:str -- value:str)!</code></pre>
+<p>Get string value of a flag.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>f</code> <code>Flag</code></dt>
+<dd>Flag struct</dd>
+<dt><code>name</code> <code>str</code></dt>
+<dd>Flag name</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>value</code> <code>str</code></dt>
+<dd>Flag value</dd>
+</dl>
+<p><strong>Errors:</strong></p>
+<dl>
+<dt><code>ErrNotFound</code></dt>
+<dd>Flag not found</dd>
+<dt><code>ErrNoValue</code></dt>
+<dd>Flag exists but has no value</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>f &quot;--name&quot; flag::string! -&gt; name</code></pre>
+<p class="xref"><strong>Calls:</strong> <a href="strings.html#concat"><code>strings::concat</code></a>, <a href="strings.html#index_of"><code>strings::index_of</code></a>, <a href="strings.html#index_of_from"><code>strings::index_of_from</code></a>, <a href="strings.html#len"><code>strings::len</code></a>, <a href="strings.html#substring"><code>strings::substring</code></a></p>
+<p class="xref"><strong>Called by:</strong> <a href="flag.html#float"><code>flag::float</code></a>, <a href="flag.html#int"><code>flag::int</code></a></p>
+</div>
+<hr>
+<div class="fn fallible" id="int">
+<h3>int [fallible]</h3>
+<pre><code>fn (f:Flag) int(name:str -- value:i64)!</code></pre>
+<p>Get integer value of a flag.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>f</code> <code>Flag</code></dt>
+<dd>Flag struct</dd>
+<dt><code>name</code> <code>str</code></dt>
+<dd>Flag name</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>value</code> <code>i64</code></dt>
+<dd>Flag value as integer</dd>
+</dl>
+<p><strong>Errors:</strong></p>
+<dl>
+<dt><code>ErrNotFound</code></dt>
+<dd>Flag not found</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>f &quot;--count&quot; flag::int! -&gt; count</code></pre>
+<p class="xref"><strong>Calls:</strong> <a href="flag.html#string"><code>flag::string</code></a>, <a href="strings.html#concat"><code>strings::concat</code></a></p>
+</div>
+<hr>
+<div class="fn fallible" id="float">
+<h3>float [fallible]</h3>
+<pre><code>fn (f:Flag) float(name:str -- value:f64)!</code></pre>
+<p>Get float value of a flag.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>f</code> <code>Flag</code></dt>
+<dd>Flag struct</dd>
+<dt><code>name</code> <code>str</code></dt>
+<dd>Flag name</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>value</code> <code>f64</code></dt>
+<dd>Flag value as float</dd>
+</dl>
+<p><strong>Errors:</strong></p>
+<dl>
+<dt><code>ErrNotFound</code></dt>
+<dd>Flag not found</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>f &quot;--rate&quot; flag::float! -&gt; rate</code></pre>
+<p class="xref"><strong>Calls:</strong> <a href="flag.html#string"><code>flag::string</code></a>, <a href="strings.html#concat"><code>strings::concat</code></a></p>
+</div>
+<hr>
+<div class="fn fallible" id="positional">
+<h3>positional [fallible]</h3>
+<pre><code>fn (f:Flag) positional(index:i64 -- value:str)!</code></pre>
+<p>Get positional argument at index.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>f</code> <code>Flag</code></dt>
+<dd>Flag struct</dd>
+<dt><code>index</code> <code>i64</code></dt>
+<dd>Position (0-based, skips flags starting with -)</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>value</code> <code>str</code></dt>
+<dd>Positional argument</dd>
+</dl>
+<p><strong>Errors:</strong></p>
+<dl>
+<dt><code>ErrNotFound</code></dt>
+<dd>Index out of bounds</dd>
+</dl>
+<p class="xref"><strong>Calls:</strong> <a href="strconv.html#itoa"><code>strconv::itoa</code></a>, <a href="strings.html#char_at"><code>strings::char_at</code></a>, <a href="strings.html#concat"><code>strings::concat</code></a>, <a href="strings.html#index_of_from"><code>strings::index_of_from</code></a>, <a href="strings.html#len"><code>strings::len</code></a>, <a href="strings.html#substring"><code>strings::substring</code></a></p>
+</div>
+</div></body></html>

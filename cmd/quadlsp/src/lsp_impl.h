@@ -43,11 +43,13 @@ private:
 	void sendMessage(json_t* json);
 	std::string getJsonString(json_t* obj, const char* key);
 	json_t* getJsonObject(json_t* obj, const char* key);
+	json_t* makeResponseId(const std::string& id) const;
 	void handleMessage(const std::string& message);
 
 	// Initialization
 	void handleInitialize(const std::string& id, json_t* initOptions);
 	void handleDidOpen(const std::string& uri, const std::string& text);
+	void handleDidClose(const std::string& uri);
 	void handleShutdown(const std::string& id);
 
 	// Structure to hold lint warnings
@@ -65,6 +67,7 @@ private:
 
 	// Diagnostics and formatting
 	void publishDiagnostics(const std::string& uri, const std::string& text);
+	void publishEmptyDiagnostics(const std::string& uri);
 	void handleFormatting(const std::string& id, const std::string& uri);
 
 	// Completion (implemented in lsp_completion.cc)
@@ -161,7 +164,12 @@ private:
 	std::vector<std::string> collectWorkspaceFiles(const std::string& dir, int maxDepth = 5);
 
 	// Member variables
+	// Largest frame accepted from the client (16 MiB): a header claiming more
+	// than this is a broken or hostile client, not a real document.
+	static constexpr size_t MAX_CONTENT_LENGTH = 16u * 1024u * 1024u;
+
 	std::map<std::string, std::string> documents_;
+	bool currentIdIsString_ = false;
 	[[maybe_unused]] int messageId_;
 	bool lintEnabled_ = true;
 	std::string quadlintPath_ = "quadlint";

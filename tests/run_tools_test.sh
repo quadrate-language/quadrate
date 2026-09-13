@@ -27,12 +27,13 @@ QUADUSES="${QUADUSES:-$PROJECT_ROOT/$BUILD_DIR/cmd/quaduses/quaduses}"
 QUADDOC="${QUADDOC:-$PROJECT_ROOT/$BUILD_DIR/cmd/quaddoc/quaddoc}"
 QUADREPL="${QUADREPL:-$PROJECT_ROOT/$BUILD_DIR/cmd/quadrepl/quadrepl}"
 QUADFMT="${QUADFMT:-$PROJECT_ROOT/$BUILD_DIR/cmd/quadfmt/quadfmt}"
+QUADLINT="${QUADLINT:-$PROJECT_ROOT/$BUILD_DIR/cmd/quadlint/quadlint}"
 
 # Marked with the same U+2717 as a failing check: run_all.sh extracts the message
 # it reports by grepping for that character, so a bare "FAIL" here surfaced as
 # "0 passed, 1 failed" with no reason attached. A tool is missing rather than
 # broken when its meson.build skipped it -- quadrepl needs readline.
-for tool in "$QUADUSES" "$QUADDOC" "$QUADREPL" "$QUADFMT"; do
+for tool in "$QUADUSES" "$QUADDOC" "$QUADREPL" "$QUADFMT" "$QUADLINT"; do
     if [ ! -x "$tool" ]; then
         echo -e "  ${RED}\u2717${NC} $tool not found (not built? check meson output for a skip warning)"
         exit 1
@@ -450,6 +451,128 @@ for spec in "quaduses:$QUADUSES" "quaddoc:$QUADDOC" "quadrepl:$QUADREPL"; do
     expect_contains "$name --version reports it"  "$name" "$bin" --version
     expect_rc       "$name rejects unknown options" 1 "$bin" --definitely-not-a-flag
 done
+
+echo ""
+echo "=== hostile input ==="
+
+# Everything below is a regression for a crash, a wedge or a wrong exit code
+# found by fuzzing the tools with the arguments and files a user never types on
+# purpose but a script, an editor or a stray glob eventually will.
+
+# A path longer than NAME_MAX reached the throwing std::filesystem overloads
+# (is_directory / recursive_directory_iterator) and aborted with an uncaught
+# filesystem_error -- no diagnostic, just SIGABRT and a core dump.
+LONG_NAME=$(printf 'A%.0s' $(seq 1 100000))
+for spec in "quadc:$QUADC" "quadfmt:$QUADFMT" "quadlint:$QUADLINT" "quaduses:$QUADUSES"; do
+    name="${spec%%:*}"; bin="${spec#*:}"
+    err=$("$bin" "$LONG_NAME" 2>&1 >/dev/null || true)
+    rc=0; "$bin" "$LONG_NAME" >/dev/null 2>&1 || rc=$?
+    if [ "$rc" -lt 128 ]; then pass "$name survives an over-long path"; else
+        fail "$name survives an over-long path" "exit $rc"; fi
+    if echo "$err" | grep -q "terminate called"; then
+        fail "$name does not abort on an over-long path" "$(echo "$err" | head -1)"
+    else pass "$name does not abort on an over-long path"; fi
+done
+
+# A directory tree holding something unreadable made the plain recursive
+# iterator throw mid-walk. The tools must skip what they may not read.
+mkdir -p "$WORK_DIR/hostile/readable" "$WORK_DIR/hostile/locked"
+echo 'fn main() { 1 drop }' > "$WORK_DIR/hostile/readable/ok.qd"
+echo 'fn other() { }' > "$WORK_DIR/hostile/locked/hidden.qd"
+chmod 000 "$WORK_DIR/hostile/locked" 2>/dev/null || true
+for spec in "quadfmt:$QUADFMT" "quadlint:$QUADLINT" "quaduses:$QUADUSES"; do
+    name="${spec%%:*}"; bin="${spec#*:}"
+    err=$("$bin" "$WORK_DIR/hostile" 2>&1 >/dev/null || true)
+    rc=0; "$bin" "$WORK_DIR/hostile" >/dev/null 2>&1 || rc=$?
+    if [ "$rc" -lt 128 ]; then pass "$name walks past an unreadable directory"; else
+        fail "$name walks past an unreadable directory" "exit $rc"; fi
+    if echo "$err" | grep -q "terminate called"; then
+        fail "$name does not abort on an unreadable directory" "$(echo "$err" | head -1)"
+    else pass "$name does not abort on an unreadable directory"; fi
+done
+chmod 755 "$WORK_DIR/hostile/locked" 2>/dev/null || true
+
+# readFile() streamed a character device forever: `quadfmt /dev/zero` never
+# returned. Only regular files are read now.
+if [ -c /dev/zero ]; then
+    for spec in "quadfmt:$QUADFMT" "quadlint:$QUADLINT" "quaduses:$QUADUSES"; do
+        name="${spec%%:*}"; bin="${spec#*:}"
+        if timeout 20 "$bin" /dev/zero >/dev/null 2>&1; rc=$?; [ "${rc:-0}" -ne 124 ]; then
+            pass "$name does not hang on a character device"
+        else
+            fail "$name does not hang on a character device" "timed out"
+        fi
+    done
+fi
+
+# A directory passed where a file belongs must be reported, not read.
+for spec in "quadfmt:$QUADFMT" "quaduses:$QUADUSES"; do
+    name="${spec%%:*}"; bin="${spec#*:}"
+    rc=0; "$bin" "$WORK_DIR/hostile/readable/" >/dev/null 2>&1 || rc=$?
+    if [ "$rc" -lt 128 ]; then pass "$name handles a directory argument"; else
+        fail "$name handles a directory argument" "exit $rc"; fi
+done
+
+# A file the scanner cannot read used to parse as a clean empty program, so
+# quadlint printed "error: Invalid UTF-8" and still exited 0 -- a CI check over
+# a binary file passed silently.
+printf 'fn main() { 1 drop }\n\xff\xfe not utf8\n' > "$WORK_DIR/badutf8.qd"
+for spec in "quadc:$QUADC" "quadfmt:$QUADFMT" "quadlint:$QUADLINT" "quaduses:$QUADUSES"; do
+    name="${spec%%:*}"; bin="${spec#*:}"
+    rc=0; "$bin" "$WORK_DIR/badutf8.qd" >/dev/null 2>&1 || rc=$?
+    if [ "$rc" -eq 1 ]; then pass "$name exits 1 on invalid UTF-8"; else
+        fail "$name exits 1 on invalid UTF-8" "exit $rc"; fi
+done
+
+# Reporting a diagnostic recomputed line/column by scanning the file from byte
+# zero, so a file that is nothing but errors cost O(n^2) to reject: 20k stray
+# braces took about nine seconds. The precomputed source maps make it linear.
+printf '}%.0s' $(seq 1 20000) > "$WORK_DIR/allerrors.qd"
+for spec in "quadfmt:$QUADFMT" "quadlint:$QUADLINT" "quaduses:$QUADUSES"; do
+    name="${spec%%:*}"; bin="${spec#*:}"
+    if timeout 20 "$bin" "$WORK_DIR/allerrors.qd" >/dev/null 2>&1; rc=$?; [ "${rc:-0}" -ne 124 ]; then
+        pass "$name reports a file of pure errors promptly"
+    else
+        fail "$name reports a file of pure errors promptly" "timed out (quadratic diagnostics?)"
+    fi
+done
+
+# Deep nesting must not run the parser out of stack.
+{ printf 'fn main() {'; printf '{%.0s' $(seq 1 50000); printf '}%.0s' $(seq 1 50000); printf '}\n'; } \
+    > "$WORK_DIR/deep.qd"
+rc=0; timeout 60 "$QUADFMT" "$WORK_DIR/deep.qd" >/dev/null 2>&1 || rc=$?
+if [ "$rc" -lt 128 ]; then pass "quadfmt survives 50k levels of nesting"; else
+    fail "quadfmt survives 50k levels of nesting" "exit $rc"; fi
+
+# Arguments made of invisible or control characters must be reported like any
+# other missing file, never crash and never be executed by a shell.
+for payload in "$(printf '\xe2\x80\x8b')" "$(printf '\xef\xbb\xbf')" "$(printf '\033[2J')" "-" "--" "; touch $WORK_DIR/pwned; #"; do
+    rc=0; "$QUADLINT" "$payload" >/dev/null 2>&1 || rc=$?
+    if [ "$rc" -lt 128 ]; then pass "quadlint survives an invisible/control argument"; else
+        fail "quadlint survives an invisible/control argument" "exit $rc"; fi
+done
+if [ -e "$WORK_DIR/pwned" ]; then
+    fail "arguments are not run through a shell" "a shell metacharacter argument created a file"
+else
+    pass "arguments are not run through a shell"
+fi
+
+# An output path that cannot be written must say which path and name the tool,
+# rather than printing a bare strerror line with no context.
+err=$("$QUADC" -o /dev/null/nope "$WORK_DIR/hostile/readable/ok.qd" 2>&1 || true)
+if echo "$err" | grep -q "Error: Could not open"; then
+    pass "quadc names the file it could not open"
+else
+    fail "quadc names the file it could not open" "$(echo "$err" | head -1)"
+fi
+
+# quadrepl reports its stack with agreeing grammar.
+out=$(printf '42\nstack\n' | "$QUADREPL" 2>&1 || true)
+if echo "$out" | grep -q "Stack (1 item)"; then pass "quadrepl says '1 item', not '1 items'"; else
+    fail "quadrepl says '1 item', not '1 items'" "$(echo "$out" | grep -i item | head -1)"; fi
+out=$(printf '1 2\nstack\n' | "$QUADREPL" 2>&1 || true)
+if echo "$out" | grep -q "Stack (2 items)"; then pass "quadrepl still pluralises above one"; else
+    fail "quadrepl still pluralises above one" "$(echo "$out" | grep -i item | head -1)"; fi
 
 echo ""
 if [ "$TESTS_FAILED" -gt 0 ]; then

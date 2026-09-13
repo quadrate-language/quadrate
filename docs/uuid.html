@@ -1,0 +1,57 @@
+<!DOCTYPE html><html><head><meta charset="utf-8"><title>uuid - Quadrate API</title><link rel="stylesheet" href="style.css"></head><body>
+<nav><h1>Quadrate API</h1><a href="index.html">All Modules</a></nav>
+<div class="container"><h2>uuid</h2>
+<p class="desc">UUID generation (version 4 random UUIDs). Format: xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx</p>
+<h2>Functions</h2>
+<div class="fn" id="v4">
+<h3>v4</h3>
+<pre><code>fn v4( -- uuid:str)</code></pre>
+<p>Generate a new random UUIDv4 string.</p>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>uuid</code> <code>str</code></dt>
+<dd>UUID string (36 chars)</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>uuid::v4 -&gt; id</code></pre>
+<p class="xref"><strong>Calls:</strong> <a href="mem.html#alloc"><code>mem::alloc</code></a>, <a href="mem.html#free"><code>mem::free</code></a>, <a href="mem.html#get_byte"><code>mem::get_byte</code></a>, <a href="mem.html#set_byte"><code>mem::set_byte</code></a>, <a href="mem.html#to_string"><code>mem::to_string</code></a>, <a href="rand.html#int"><code>rand::int</code></a>, <a href="rand.html#new"><code>rand::new</code></a></p>
+</div>
+<hr>
+<div class="fn" id="v4_seeded">
+<h3>v4_seeded</h3>
+<pre><code>fn v4_seeded(seed:i64 -- uuid:str)</code></pre>
+<p>Generate UUID with specific seed (for reproducibility).</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>seed</code> <code>i64</code></dt>
+<dd>Seed value</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>uuid</code> <code>str</code></dt>
+<dd>UUID string (36 chars)</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>12345 uuid::v4_seeded -&gt; id</code></pre>
+<p class="xref"><strong>Calls:</strong> <a href="mem.html#alloc"><code>mem::alloc</code></a>, <a href="mem.html#free"><code>mem::free</code></a>, <a href="mem.html#get_byte"><code>mem::get_byte</code></a>, <a href="mem.html#set_byte"><code>mem::set_byte</code></a>, <a href="mem.html#to_string"><code>mem::to_string</code></a>, <a href="rand.html#int"><code>rand::int</code></a>, <a href="rand.html#with_seed"><code>rand::with_seed</code></a></p>
+</div>
+<hr>
+<div class="fn" id="is_valid">
+<h3>is_valid</h3>
+<pre><code>fn is_valid(s:str -- valid:i64)</code></pre>
+<p>Check if a string is a valid UUID format.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>s</code> <code>str</code></dt>
+<dd>String to check</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>valid</code> <code>i64</code></dt>
+<dd>1 if valid format, 0 otherwise</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>&quot;550e8400-e29b-41d4-a716-446655440000&quot; uuid::is_valid -&gt; result</code></pre>
+<p class="xref"><strong>Calls:</strong> <a href="strings.html#char_at"><code>strings::char_at</code></a>, <a href="strings.html#len"><code>strings::len</code></a></p>
+</div>
+</div></body></html>

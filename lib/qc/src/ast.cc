@@ -262,9 +262,16 @@ namespace Qd {
 	IAstNode* Ast::generate(const char* src, bool dumpTokens, const char* filename) {
 		u8t_scanner scanner;
 		if (!u8t_scanner_init(&scanner, src)) {
-			// Invalid UTF-8 input - return empty program with error
+			// Invalid UTF-8 input - return an empty program, but record the error the
+			// way the parsing path below does: stored rather than printed, so callers
+			// see it through hasErrors()/getErrors() and report it themselves. Leaving
+			// those unset made a file the scanner could not read look like a clean
+			// empty one, and quadlint exited 0 on it.
 			ErrorReporter errorReporter(src, filename);
+			errorReporter.setStoreErrors(true);
 			errorReporter.reportError(0, 0, "Invalid UTF-8 encoding in source file");
+			mErrorCount = errorReporter.errorCount();
+			mErrors = errorReporter.getErrors();
 			mRoot = std::make_unique<AstProgram>();
 			return mRoot.get();
 		}

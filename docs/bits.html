@@ -1,0 +1,369 @@
+<!DOCTYPE html><html><head><meta charset="utf-8"><title>bits - Quadrate API</title><link rel="stylesheet" href="style.css"></head><body>
+<nav><h1>Quadrate API</h1><a href="index.html">All Modules</a></nav>
+<div class="container"><h2>bits</h2>
+<h2>Functions</h2>
+<div class="fn" id="mask">
+<h3>mask</h3>
+<pre><code>fn mask(i64 i64 -- result:i64)</code></pre>
+<p>Bitwise operations for integer manipulation.  Core operations (and, or, xor, not, shl, shr) are builtins. This module provides higher-level bit manipulation functions. Keep only the bottom N bits.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>value</code> <code>i64</code></dt>
+<dd>Input value</dd>
+<dt><code>num_bits</code> <code>i64</code></dt>
+<dd>Number of bits to keep from LSB</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>result</code> <code>i64</code></dt>
+<dd>Masked value</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>0xFF 4 bits::mask print  // 15</code></pre>
+<p class="xref"><strong>Called by:</strong> <a href="bits.html#extract"><code>bits::extract</code></a>, <a href="bits.html#rotate_left"><code>bits::rotate_left</code></a>, <a href="bits.html#rotate_right"><code>bits::rotate_right</code></a>, <a href="bits.html#set_bits"><code>bits::set_bits</code></a>, <a href="crc32.html#value"><code>crc32::value</code></a>, <a href="crypto.html#value"><code>crypto::value</code></a></p>
+</div>
+<hr>
+<div class="fn" id="extract">
+<h3>extract</h3>
+<pre><code>fn extract(i64 i64 i64 -- result:i64)</code></pre>
+<p>Extract a bit field from a value.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>value</code> <code>i64</code></dt>
+<dd>Source value</dd>
+<dt><code>start_bit</code> <code>i64</code></dt>
+<dd>Start position (0 = LSB)</dd>
+<dt><code>num_bits</code> <code>i64</code></dt>
+<dd>Number of bits to extract</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>result</code> <code>i64</code></dt>
+<dd>Extracted bits, right-aligned</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>0b11010110 2 3 bits::extract print  // 5</code></pre>
+<p class="xref"><strong>Calls:</strong> <a href="bits.html#mask"><code>bits::mask</code></a></p>
+</div>
+<hr>
+<div class="fn" id="set_bits">
+<h3>set_bits</h3>
+<pre><code>fn set_bits(tgt:i64 val:i64 sb:i64 nb:i64 -- result:i64)</code></pre>
+<p>Set a bit field in a value.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>tgt</code> <code>i64</code></dt>
+<dd>Target value to modify</dd>
+<dt><code>val</code> <code>i64</code></dt>
+<dd>Value to insert</dd>
+<dt><code>sb</code> <code>i64</code></dt>
+<dd>Start position (0 = LSB)</dd>
+<dt><code>nb</code> <code>i64</code></dt>
+<dd>Number of bits to set</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>result</code> <code>i64</code></dt>
+<dd>Modified target</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>0 0b101 2 3 bits::set_bits print  // 20 (0b10100)</code></pre>
+<p class="xref"><strong>Calls:</strong> <a href="bits.html#mask"><code>bits::mask</code></a></p>
+</div>
+<hr>
+<div class="fn" id="rotate_left">
+<h3>rotate_left</h3>
+<pre><code>fn rotate_left(v:i64 b:i64 w:i64 -- result:i64)</code></pre>
+<p>Rotate bits left within a width.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>v</code> <code>i64</code></dt>
+<dd>Value to rotate</dd>
+<dt><code>b</code> <code>i64</code></dt>
+<dd>Positions to rotate</dd>
+<dt><code>w</code> <code>i64</code></dt>
+<dd>Bit width to rotate within</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>result</code> <code>i64</code></dt>
+<dd>Rotated value</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>0b0011 1 4 bits::rotate_left print  // 6 (0b0110)</code></pre>
+<p class="xref"><strong>Calls:</strong> <a href="bits.html#mask"><code>bits::mask</code></a></p>
+</div>
+<hr>
+<div class="fn" id="rotate_right">
+<h3>rotate_right</h3>
+<pre><code>fn rotate_right(v:i64 b:i64 w:i64 -- result:i64)</code></pre>
+<p>Rotate bits right within a width.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>v</code> <code>i64</code></dt>
+<dd>Value to rotate</dd>
+<dt><code>b</code> <code>i64</code></dt>
+<dd>Positions to rotate</dd>
+<dt><code>w</code> <code>i64</code></dt>
+<dd>Bit width to rotate within</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>result</code> <code>i64</code></dt>
+<dd>Rotated value</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>0b0110 1 4 bits::rotate_right print  // 3 (0b0011)</code></pre>
+<p class="xref"><strong>Calls:</strong> <a href="bits.html#mask"><code>bits::mask</code></a></p>
+</div>
+<hr>
+<div class="fn" id="popcount">
+<h3>popcount</h3>
+<pre><code>fn popcount(i64 -- count:i64)</code></pre>
+<p>Count set bits (population count).</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>value</code> <code>i64</code></dt>
+<dd>Value to count</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>count</code> <code>i64</code></dt>
+<dd>Number of 1 bits</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>0b1010110 bits::popcount print  // 4</code></pre>
+</div>
+<hr>
+<div class="fn" id="reverse_bits">
+<h3>reverse_bits</h3>
+<pre><code>fn reverse_bits(v:i64 w:i64 -- result:i64)</code></pre>
+<p>Reverse the bottom N bits.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>v</code> <code>i64</code></dt>
+<dd>Value to reverse</dd>
+<dt><code>w</code> <code>i64</code></dt>
+<dd>Number of bits to reverse</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>result</code> <code>i64</code></dt>
+<dd>Reversed value</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>0b1011 4 bits::reverse_bits print  // 13 (0b1101)</code></pre>
+</div>
+<hr>
+<div class="fn" id="has_bit">
+<h3>has_bit</h3>
+<pre><code>fn has_bit(i64 i64 -- flag:i64)</code></pre>
+<p>Check if a bit is set.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>value</code> <code>i64</code></dt>
+<dd>Value to check</dd>
+<dt><code>bit_pos</code> <code>i64</code></dt>
+<dd>Bit position (0 = LSB)</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>flag</code> <code>i64</code></dt>
+<dd>1 if set, 0 if not</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>0b1010 1 bits::has_bit print  // 1</code></pre>
+</div>
+<hr>
+<div class="fn" id="set_bit">
+<h3>set_bit</h3>
+<pre><code>fn set_bit(i64 i64 -- result:i64)</code></pre>
+<p>Set a bit to 1.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>value</code> <code>i64</code></dt>
+<dd>Input value</dd>
+<dt><code>bit_pos</code> <code>i64</code></dt>
+<dd>Bit position to set</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>result</code> <code>i64</code></dt>
+<dd>Value with bit set</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>0b1000 1 bits::set_bit print  // 10 (0b1010)</code></pre>
+</div>
+<hr>
+<div class="fn" id="clear_bit">
+<h3>clear_bit</h3>
+<pre><code>fn clear_bit(i64 i64 -- result:i64)</code></pre>
+<p>Clear a bit to 0.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>value</code> <code>i64</code></dt>
+<dd>Input value</dd>
+<dt><code>bit_pos</code> <code>i64</code></dt>
+<dd>Bit position to clear</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>result</code> <code>i64</code></dt>
+<dd>Value with bit cleared</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>0b1010 1 bits::clear_bit print  // 8 (0b1000)</code></pre>
+</div>
+<hr>
+<div class="fn" id="toggle_bit">
+<h3>toggle_bit</h3>
+<pre><code>fn toggle_bit(i64 i64 -- result:i64)</code></pre>
+<p>Toggle a bit.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>value</code> <code>i64</code></dt>
+<dd>Input value</dd>
+<dt><code>bit_pos</code> <code>i64</code></dt>
+<dd>Bit position to toggle</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>result</code> <code>i64</code></dt>
+<dd>Value with bit toggled</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>0b1010 0 bits::toggle_bit print  // 11 (0b1011)</code></pre>
+</div>
+<hr>
+<div class="fn" id="clz">
+<h3>clz</h3>
+<pre><code>fn clz(v:i64 -- count:i64)</code></pre>
+<p>Count leading zeros (from MSB).</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>v</code> <code>i64</code></dt>
+<dd>Value to count</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>count</code> <code>i64</code></dt>
+<dd>Number of leading zero bits (0-64)</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>0x0F00000000000000 bits::clz print  // 4</code></pre>
+<p class="xref"><strong>Called by:</strong> <a href="bits.html#highest_bit"><code>bits::highest_bit</code></a>, <a href="bits.html#log2"><code>bits::log2</code></a></p>
+</div>
+<hr>
+<div class="fn" id="ctz">
+<h3>ctz</h3>
+<pre><code>fn ctz(v:i64 -- count:i64)</code></pre>
+<p>Count trailing zeros (from LSB).</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>v</code> <code>i64</code></dt>
+<dd>Value to count</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>count</code> <code>i64</code></dt>
+<dd>Number of trailing zero bits (0-64)</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>0x100 bits::ctz print  // 8</code></pre>
+</div>
+<hr>
+<div class="fn" id="is_power_of_two">
+<h3>is_power_of_two</h3>
+<pre><code>fn is_power_of_two(v:i64 -- flag:i64)</code></pre>
+<p>Check if value is a power of two.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>v</code> <code>i64</code></dt>
+<dd>Value to check</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>flag</code> <code>i64</code></dt>
+<dd>1 if power of two, 0 otherwise</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>8 bits::is_power_of_two print  // 1</code></pre>
+<pre><code>7 bits::is_power_of_two print  // 0</code></pre>
+</div>
+<hr>
+<div class="fn" id="next_power_of_two">
+<h3>next_power_of_two</h3>
+<pre><code>fn next_power_of_two(v:i64 -- result:i64)</code></pre>
+<p>Find the next power of two greater than or equal to value.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>v</code> <code>i64</code></dt>
+<dd>Input value</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>result</code> <code>i64</code></dt>
+<dd>Next power of two</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>5 bits::next_power_of_two print  // 8</code></pre>
+<pre><code>8 bits::next_power_of_two print  // 8</code></pre>
+</div>
+<hr>
+<div class="fn" id="log2">
+<h3>log2</h3>
+<pre><code>fn log2(v:i64 -- result:i64)</code></pre>
+<p>Integer log base 2 (position of highest set bit).</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>v</code> <code>i64</code></dt>
+<dd>Value (must be &gt; 0)</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>result</code> <code>i64</code></dt>
+<dd>Floor of log2(value)</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>8 bits::log2 print  // 3</code></pre>
+<pre><code>15 bits::log2 print  // 3</code></pre>
+<p class="xref"><strong>Calls:</strong> <a href="bits.html#clz"><code>bits::clz</code></a></p>
+</div>
+<hr>
+<div class="fn" id="highest_bit">
+<h3>highest_bit</h3>
+<pre><code>fn highest_bit(v:i64 -- result:i64)</code></pre>
+<p>Get the highest set bit as a value (isolate highest bit).</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>v</code> <code>i64</code></dt>
+<dd>Input value</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>result</code> <code>i64</code></dt>
+<dd>Highest set bit as power of two, 0 if input is 0</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>0b1010 bits::highest_bit print  // 8 (0b1000)</code></pre>
+<p class="xref"><strong>Calls:</strong> <a href="bits.html#clz"><code>bits::clz</code></a></p>
+</div>
+<hr>
+<div class="fn" id="lowest_bit">
+<h3>lowest_bit</h3>
+<pre><code>fn lowest_bit(v:i64 -- result:i64)</code></pre>
+<p>Get the lowest set bit as a value (isolate lowest bit).</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>v</code> <code>i64</code></dt>
+<dd>Input value</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>result</code> <code>i64</code></dt>
+<dd>Lowest set bit as power of two, 0 if input is 0</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>0b1010 bits::lowest_bit print  // 2 (0b0010)</code></pre>
+</div>
+</div></body></html>

@@ -1,0 +1,1105 @@
+<!DOCTYPE html><html><head><meta charset="utf-8"><title>strings - Quadrate API</title><link rel="stylesheet" href="style.css"></head><body>
+<nav><h1>Quadrate API</h1><a href="index.html">All Modules</a></nav>
+<div class="container"><h2>strings</h2>
+<p class="desc">String manipulation functions. Error codes: Ok=1 (success), specific errors start at 2</p>
+<h2>Constants</h2>
+<dl>
+<dt><code>ErrOutOfBounds</code> = <code>2</code></dt>
+<dd>Error: Index out of bounds.</dd>
+<dt><code>ErrAlloc</code> = <code>3</code></dt>
+<dd>Error: Memory allocation failed.</dd>
+<dt><code>ErrInvalidArg</code> = <code>4</code></dt>
+<dd>Error: Invalid argument.</dd>
+</dl>
+<h2>Functions</h2>
+<div class="fn" id="len">
+<h3>len</h3>
+<pre><code>fn len(str:str -- len:i64)</code></pre>
+<p>Get string length in bytes.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>str</code> <code>str</code></dt>
+<dd>Input string</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>len</code> <code>i64</code></dt>
+<dd>Length in bytes</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>&quot;hello&quot; strings::len print  // 5</code></pre>
+<p class="xref"><strong>Called by:</strong> <a href="crc32.html#update"><code>crc32::update</code></a>, <a href="crypto.html#update"><code>crypto::update</code></a>, <a href="ct.html#add"><code>ct::add</code></a>, <a href="ct.html#insert"><code>ct::insert</code></a>, <a href="flag.html#positional"><code>flag::positional</code></a>, <a href="flag.html#string"><code>flag::string</code></a>, <a href="fuzzy.html#distance"><code>fuzzy::distance</code></a>, <a href="fuzzy.html#score"><code>fuzzy::score</code></a>, <a href="fuzzy.html#similarity"><code>fuzzy::similarity</code></a>, <a href="hashmap.html#insert"><code>hashmap::insert</code></a>, <a href="hex.html#decode"><code>hex::decode</code></a>, <a href="hex.html#decode_byte"><code>hex::decode_byte</code></a>, <a href="hex.html#decoded_len"><code>hex::decoded_len</code></a>, <a href="hex.html#encode"><code>hex::encode</code></a>, <a href="hex.html#encode_lower"><code>hex::encode_lower</code></a>, <a href="hex.html#encoded_len"><code>hex::encoded_len</code></a>, <a href="hex.html#is_valid"><code>hex::is_valid</code></a>, <a href="json.html#array_len"><code>json::array_len</code></a>, <a href="json.html#find_str_end"><code>json::find_str_end</code></a>, <a href="json.html#is_null_at"><code>json::is_null_at</code></a>, <a href="json.html#type_at"><code>json::type_at</code></a>, <a href="md5.html#update"><code>md5::update</code></a>, <a href="path.html#basename"><code>path::basename</code></a>, <a href="path.html#depth"><code>path::depth</code></a>, <a href="path.html#ext"><code>path::ext</code></a>, <a href="path.html#has_ext"><code>path::has_ext</code></a>, <a href="path.html#has_extension"><code>path::has_extension</code></a>, <a href="path.html#join"><code>path::join</code></a>, <a href="path.html#normalize"><code>path::normalize</code></a>, <a href="path.html#starts_with"><code>path::starts_with</code></a>, <a href="path.html#stem"><code>path::stem</code></a>, <a href="path.html#strip_prefix"><code>path::strip_prefix</code></a>, <a href="path.html#with_ext"><code>path::with_ext</code></a>, <a href="regex.html#match_count"><code>regex::match_count</code></a>, <a href="regex.html#matches"><code>regex::matches</code></a>, <a href="regex.html#replace"><code>regex::replace</code></a>, <a href="sb.html#append"><code>sb::append</code></a>, <a href="set.html#add"><code>set::add</code></a>, <a href="sha256.html#update"><code>sha256::update</code></a>, <a href="sha512.html#update"><code>sha512::update</code></a>, <a href="uri.html#build"><code>uri::build</code></a>, <a href="uri.html#decode"><code>uri::decode</code></a>, <a href="uri.html#encode"><code>uri::encode</code></a>, <a href="uri.html#parse"><code>uri::parse</code></a>, <a href="uri.html#query_get"><code>uri::query_get</code></a>, <a href="uri.html#query_has"><code>uri::query_has</code></a>, <a href="uuid.html#is_valid"><code>uuid::is_valid</code></a></p>
+</div>
+<hr>
+<div class="fn" id="data">
+<h3>data</h3>
+<pre><code>fn data(str:str -- ptr:ptr)</code></pre>
+<p>Get raw char pointer to string data.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>str</code> <code>str</code></dt>
+<dd>Source string</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>ptr</code> <code>ptr</code></dt>
+<dd>Raw pointer to string bytes</dd>
+</dl>
+<p class="xref"><strong>Called by:</strong> <a href="sb.html#append"><code>sb::append</code></a></p>
+</div>
+<hr>
+<div class="fn" id="concat">
+<h3>concat</h3>
+<pre><code>fn concat(str1:str str2:str -- result:str)</code></pre>
+<p>Concatenate two strings.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>str1</code> <code>str</code></dt>
+<dd>First string</dd>
+<dt><code>str2</code> <code>str</code></dt>
+<dd>Second string</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>result</code> <code>str</code></dt>
+<dd>Combined string</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>&quot;hello&quot; &quot; world&quot; strings::concat print  // &quot;hello world&quot;</code></pre>
+<p class="xref"><strong>Called by:</strong> <a href="flag.html#boolean"><code>flag::boolean</code></a>, <a href="flag.html#float"><code>flag::float</code></a>, <a href="flag.html#int"><code>flag::int</code></a>, <a href="flag.html#parse"><code>flag::parse</code></a>, <a href="flag.html#positional"><code>flag::positional</code></a>, <a href="flag.html#string"><code>flag::string</code></a>, <a href="json.html#arr"><code>json::arr</code></a>, <a href="json.html#encode"><code>json::encode</code></a>, <a href="json.html#join"><code>json::join</code></a>, <a href="json.html#kv"><code>json::kv</code></a>, <a href="json.html#kv_bool"><code>json::kv_bool</code></a>, <a href="json.html#kv_int"><code>json::kv_int</code></a>, <a href="json.html#kv_raw"><code>json::kv_raw</code></a>, <a href="json.html#obj"><code>json::obj</code></a>, <a href="path.html#has_extension"><code>path::has_extension</code></a>, <a href="path.html#join"><code>path::join</code></a>, <a href="path.html#with_ext"><code>path::with_ext</code></a>, <a href="uri.html#build"><code>uri::build</code></a></p>
+</div>
+<hr>
+<div class="fn" id="contains">
+<h3>contains</h3>
+<pre><code>fn contains(str:str needle:str -- result:i64)</code></pre>
+<p>Check if string contains substring.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>str</code> <code>str</code></dt>
+<dd>String to search in</dd>
+<dt><code>needle</code> <code>str</code></dt>
+<dd>Substring to find</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>result</code> <code>i64</code></dt>
+<dd>1 if found, 0 otherwise</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>&quot;hello&quot; &quot;ell&quot; strings::contains print  // 1</code></pre>
+<p class="xref"><strong>Called by:</strong> <a href="flag.html#boolean"><code>flag::boolean</code></a>, <a href="fuzzy.html#contains_ci"><code>fuzzy::contains_ci</code></a>, <a href="fuzzy.html#score"><code>fuzzy::score</code></a>, <a href="path.html#normalize"><code>path::normalize</code></a></p>
+</div>
+<hr>
+<div class="fn" id="starts_with">
+<h3>starts_with</h3>
+<pre><code>fn starts_with(str:str prefix:str -- result:i64)</code></pre>
+<p>Check if string starts with prefix.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>str</code> <code>str</code></dt>
+<dd>String to check</dd>
+<dt><code>prefix</code> <code>str</code></dt>
+<dd>Prefix to match</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>result</code> <code>i64</code></dt>
+<dd>1 if matches, 0 otherwise</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>&quot;hello&quot; &quot;hel&quot; strings::starts_with print  // 1</code></pre>
+<p class="xref"><strong>Called by:</strong> <a href="fuzzy.html#score"><code>fuzzy::score</code></a>, <a href="fuzzy.html#starts_with_ci"><code>fuzzy::starts_with_ci</code></a>, <a href="path.html#is_absolute"><code>path::is_absolute</code></a>, <a href="path.html#join"><code>path::join</code></a>, <a href="path.html#starts_with"><code>path::starts_with</code></a></p>
+</div>
+<hr>
+<div class="fn" id="ends_with">
+<h3>ends_with</h3>
+<pre><code>fn ends_with(str:str suffix:str -- result:i64)</code></pre>
+<p>Check if string ends with suffix.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>str</code> <code>str</code></dt>
+<dd>String to check</dd>
+<dt><code>suffix</code> <code>str</code></dt>
+<dd>Suffix to match</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>result</code> <code>i64</code></dt>
+<dd>1 if matches, 0 otherwise</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>&quot;hello&quot; &quot;lo&quot; strings::ends_with print  // 1</code></pre>
+</div>
+<hr>
+<div class="fn" id="index_of">
+<h3>index_of</h3>
+<pre><code>fn index_of(haystack:str needle:str -- index:i64)</code></pre>
+<p>Find first occurrence of substring.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>haystack</code> <code>str</code></dt>
+<dd>String to search in</dd>
+<dt><code>needle</code> <code>str</code></dt>
+<dd>Substring to find</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>index</code> <code>i64</code></dt>
+<dd>Index of first match, -1 if not found</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>&quot;hello&quot; &quot;ll&quot; strings::index_of print  // 2</code></pre>
+<p class="xref"><strong>Called by:</strong> <a href="flag.html#string"><code>flag::string</code></a></p>
+</div>
+<hr>
+<div class="fn" id="index_of_from">
+<h3>index_of_from</h3>
+<pre><code>fn index_of_from(haystack:str needle:str start:i64 -- index:i64)</code></pre>
+<p>Find substring starting from position.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>haystack</code> <code>str</code></dt>
+<dd>String to search in</dd>
+<dt><code>needle</code> <code>str</code></dt>
+<dd>Substring to find</dd>
+<dt><code>start</code> <code>i64</code></dt>
+<dd>Starting position</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>index</code> <code>i64</code></dt>
+<dd>Index of match, -1 if not found</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>&quot;hello hello&quot; &quot;hello&quot; 1 strings::index_of_from print  // 6</code></pre>
+<p class="xref"><strong>Called by:</strong> <a href="flag.html#positional"><code>flag::positional</code></a>, <a href="flag.html#string"><code>flag::string</code></a></p>
+</div>
+<hr>
+<div class="fn" id="upper">
+<h3>upper</h3>
+<pre><code>fn upper(str:str -- result:str)</code></pre>
+<p>Convert string to uppercase.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>str</code> <code>str</code></dt>
+<dd>Input string</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>result</code> <code>str</code></dt>
+<dd>Uppercase string</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>&quot;hello&quot; strings::upper print  // &quot;HELLO&quot;</code></pre>
+</div>
+<hr>
+<div class="fn" id="lower">
+<h3>lower</h3>
+<pre><code>fn lower(str:str -- result:str)</code></pre>
+<p>Convert string to lowercase.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>str</code> <code>str</code></dt>
+<dd>Input string</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>result</code> <code>str</code></dt>
+<dd>Lowercase string</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>&quot;HELLO&quot; strings::lower print  // &quot;hello&quot;</code></pre>
+<p class="xref"><strong>Called by:</strong> <a href="fuzzy.html#contains_ci"><code>fuzzy::contains_ci</code></a>, <a href="fuzzy.html#score"><code>fuzzy::score</code></a>, <a href="fuzzy.html#starts_with_ci"><code>fuzzy::starts_with_ci</code></a></p>
+</div>
+<hr>
+<div class="fn" id="trim">
+<h3>trim</h3>
+<pre><code>fn trim(str:str -- result:str)</code></pre>
+<p>Remove leading and trailing whitespace.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>str</code> <code>str</code></dt>
+<dd>Input string</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>result</code> <code>str</code></dt>
+<dd>Trimmed string</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>&quot;  hello  &quot; strings::trim print  // &quot;hello&quot;</code></pre>
+</div>
+<hr>
+<div class="fn fallible" id="substring">
+<h3>substring [fallible]</h3>
+<pre><code>fn substring(str:str start:i64 length:i64 -- result:str)!</code></pre>
+<p>Extract substring.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>str</code> <code>str</code></dt>
+<dd>Source string</dd>
+<dt><code>start</code> <code>i64</code></dt>
+<dd>Starting index</dd>
+<dt><code>length</code> <code>i64</code></dt>
+<dd>Number of characters</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>result</code> <code>str</code></dt>
+<dd>Extracted substring</dd>
+</dl>
+<p><strong>Errors:</strong></p>
+<dl>
+<dt><code>ErrOutOfBounds</code></dt>
+<dd>Index out of bounds</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>&quot;hello&quot; 1 3 strings::substring! print  // &quot;ell&quot;</code></pre>
+<p class="xref"><strong>Called by:</strong> <a href="flag.html#positional"><code>flag::positional</code></a>, <a href="flag.html#string"><code>flag::string</code></a>, <a href="json.html#array_get_array"><code>json::array_get_array</code></a>, <a href="json.html#array_get_float"><code>json::array_get_float</code></a>, <a href="json.html#array_get_int"><code>json::array_get_int</code></a>, <a href="json.html#array_get_object"><code>json::array_get_object</code></a>, <a href="json.html#extract_str"><code>json::extract_str</code></a>, <a href="json.html#get_array"><code>json::get_array</code></a>, <a href="json.html#get_float"><code>json::get_float</code></a>, <a href="json.html#get_int"><code>json::get_int</code></a>, <a href="json.html#get_object"><code>json::get_object</code></a>, <a href="path.html#basename"><code>path::basename</code></a>, <a href="path.html#dirname"><code>path::dirname</code></a>, <a href="path.html#ext"><code>path::ext</code></a>, <a href="path.html#normalize"><code>path::normalize</code></a>, <a href="path.html#stem"><code>path::stem</code></a>, <a href="path.html#strip_prefix"><code>path::strip_prefix</code></a>, <a href="regex.html#replace"><code>regex::replace</code></a>, <a href="uri.html#parse"><code>uri::parse</code></a>, <a href="uri.html#query_get"><code>uri::query_get</code></a>, <a href="uri.html#query_has"><code>uri::query_has</code></a></p>
+</div>
+<hr>
+<div class="fn fallible" id="replace">
+<h3>replace [fallible]</h3>
+<pre><code>fn replace(str:str old:str new:str -- result:str)!</code></pre>
+<p>Replace all occurrences of substring.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>str</code> <code>str</code></dt>
+<dd>Source string</dd>
+<dt><code>old</code> <code>str</code></dt>
+<dd>Substring to replace</dd>
+<dt><code>new</code> <code>str</code></dt>
+<dd>Replacement string</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>result</code> <code>str</code></dt>
+<dd>String with replacements</dd>
+</dl>
+<p><strong>Errors:</strong></p>
+<dl>
+<dt><code>ErrAlloc</code></dt>
+<dd>Memory allocation failed</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>&quot;hello&quot; &quot;l&quot; &quot;L&quot; strings::replace! print  // &quot;heLLo&quot;</code></pre>
+<p class="xref"><strong>Called by:</strong> <a href="json.html#encode"><code>json::encode</code></a>, <a href="path.html#normalize"><code>path::normalize</code></a></p>
+</div>
+<hr>
+<div class="fn fallible" id="char_at">
+<h3>char_at [fallible]</h3>
+<pre><code>fn char_at(str:str index:i64 -- char_code:i64)!</code></pre>
+<p>Get character code at index.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>str</code> <code>str</code></dt>
+<dd>Input string</dd>
+<dt><code>index</code> <code>i64</code></dt>
+<dd>Character position</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>char_code</code> <code>i64</code></dt>
+<dd>ASCII/UTF-8 byte value</dd>
+</dl>
+<p><strong>Errors:</strong></p>
+<dl>
+<dt><code>ErrOutOfBounds</code></dt>
+<dd>Index out of bounds</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>&quot;hello&quot; 0 strings::char_at! print  // 104 ('h')</code></pre>
+<p class="xref"><strong>Called by:</strong> <a href="crc32.html#update"><code>crc32::update</code></a>, <a href="crypto.html#update"><code>crypto::update</code></a>, <a href="flag.html#positional"><code>flag::positional</code></a>, <a href="fuzzy.html#distance"><code>fuzzy::distance</code></a>, <a href="hex.html#decode"><code>hex::decode</code></a>, <a href="hex.html#decode_byte"><code>hex::decode_byte</code></a>, <a href="hex.html#encode"><code>hex::encode</code></a>, <a href="hex.html#encode_lower"><code>hex::encode_lower</code></a>, <a href="hex.html#is_valid"><code>hex::is_valid</code></a>, <a href="json.html#array_get_array"><code>json::array_get_array</code></a>, <a href="json.html#array_get_object"><code>json::array_get_object</code></a>, <a href="json.html#array_len"><code>json::array_len</code></a>, <a href="json.html#find_str_end"><code>json::find_str_end</code></a>, <a href="json.html#get_array"><code>json::get_array</code></a>, <a href="json.html#get_bool"><code>json::get_bool</code></a>, <a href="json.html#get_object"><code>json::get_object</code></a>, <a href="json.html#is_null_at"><code>json::is_null_at</code></a>, <a href="json.html#type_at"><code>json::type_at</code></a>, <a href="md5.html#update"><code>md5::update</code></a>, <a href="path.html#depth"><code>path::depth</code></a>, <a href="path.html#has_extension"><code>path::has_extension</code></a>, <a href="path.html#join"><code>path::join</code></a>, <a href="path.html#normalize"><code>path::normalize</code></a>, <a href="path.html#starts_with"><code>path::starts_with</code></a>, <a href="path.html#strip_prefix"><code>path::strip_prefix</code></a>, <a href="path.html#with_ext"><code>path::with_ext</code></a>, <a href="regex.html#matches"><code>regex::matches</code></a>, <a href="sha256.html#update"><code>sha256::update</code></a>, <a href="sha512.html#update"><code>sha512::update</code></a>, <a href="uri.html#decode"><code>uri::decode</code></a>, <a href="uri.html#encode"><code>uri::encode</code></a>, <a href="uri.html#parse"><code>uri::parse</code></a>, <a href="uuid.html#is_valid"><code>uuid::is_valid</code></a></p>
+</div>
+<hr>
+<div class="fn" id="from_char">
+<h3>from_char</h3>
+<pre><code>fn from_char(char_code:i64 -- str:str)</code></pre>
+<p>Create string from character code.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>char_code</code> <code>i64</code></dt>
+<dd>ASCII/UTF-8 byte value</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>str</code> <code>str</code></dt>
+<dd>Single character string</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>65 strings::from_char print  // &quot;A&quot;</code></pre>
+<p class="xref"><strong>Called by:</strong> <a href="json.html#kv_int"><code>json::kv_int</code></a></p>
+</div>
+<hr>
+<div class="fn fallible" id="split">
+<h3>split [fallible]</h3>
+<pre><code>fn split(str:str delim:str -- parts:ptr count:i64)!</code></pre>
+<p>Split string by delimiter.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>str</code> <code>str</code></dt>
+<dd>String to split</dd>
+<dt><code>delim</code> <code>str</code></dt>
+<dd>Delimiter string</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>parts</code> <code>ptr</code></dt>
+<dd>Array of string parts</dd>
+<dt><code>count</code> <code>i64</code></dt>
+<dd>Number of parts</dd>
+</dl>
+<p><strong>Errors:</strong></p>
+<dl>
+<dt><code>ErrAlloc</code></dt>
+<dd>Memory allocation failed</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>&quot;a,b,c&quot; &quot;,&quot; strings::split!  // parts=[&quot;a&quot;,&quot;b&quot;,&quot;c&quot;], count=3</code></pre>
+</div>
+<hr>
+<div class="fn" id="compare">
+<h3>compare</h3>
+<pre><code>fn compare(str1:str str2:str -- result:i64)</code></pre>
+<p>Compare two strings lexicographically.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>str1</code> <code>str</code></dt>
+<dd>First string</dd>
+<dt><code>str2</code> <code>str</code></dt>
+<dd>Second string</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>result</code> <code>i64</code></dt>
+<dd>&lt;0 if str1&lt;str2, 0 if equal, &gt;0 if str1&gt;str2</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>&quot;abc&quot; &quot;abd&quot; strings::compare print  // -1</code></pre>
+<p class="xref"><strong>Called by:</strong> <a href="fuzzy.html#score"><code>fuzzy::score</code></a>, <a href="path.html#has_extension"><code>path::has_extension</code></a>, <a href="path.html#with_ext"><code>path::with_ext</code></a>, <a href="sort.html#strings"><code>sort::strings</code></a>, <a href="sort.html#strings_desc"><code>sort::strings_desc</code></a>, <a href="uri.html#query_get"><code>uri::query_get</code></a>, <a href="uri.html#query_has"><code>uri::query_has</code></a></p>
+</div>
+<hr>
+<div class="fn" id="sort">
+<h3>sort</h3>
+<pre><code>fn sort(arr:ptr count:i64 -- )</code></pre>
+<p>Sort array of strings in ascending alphabetical order.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>arr</code> <code>ptr</code></dt>
+<dd>Array of string pointers</dd>
+<dt><code>count</code> <code>i64</code></dt>
+<dd>Number of elements</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>entries count strings::sort</code></pre>
+</div>
+<hr>
+<div class="fn" id="sort_desc">
+<h3>sort_desc</h3>
+<pre><code>fn sort_desc(arr:ptr count:i64 -- )</code></pre>
+<p>Sort array of strings in descending alphabetical order.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>arr</code> <code>ptr</code></dt>
+<dd>Array of string pointers</dd>
+<dt><code>count</code> <code>i64</code></dt>
+<dd>Number of elements</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>entries count strings::sort_desc</code></pre>
+</div>
+<hr>
+<div class="fn" id="from_ptr">
+<h3>from_ptr</h3>
+<pre><code>fn from_ptr(ptr:ptr -- str:str)</code></pre>
+<p>Convert C string pointer to Quadrate string.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>ptr</code> <code>ptr</code></dt>
+<dd>Pointer to null-terminated C string</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>str</code> <code>str</code></dt>
+<dd>Quadrate string</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>entries 0 mem::get_ptr strings::from_ptr print</code></pre>
+</div>
+<hr>
+<div class="fn fallible" id="join">
+<h3>join [fallible]</h3>
+<pre><code>fn join(parts:ptr count:i64 delim:str -- result:str)!</code></pre>
+<p>Join array of strings with delimiter.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>parts</code> <code>ptr</code></dt>
+<dd>Array of string pointers</dd>
+<dt><code>count</code> <code>i64</code></dt>
+<dd>Number of strings</dd>
+<dt><code>delim</code> <code>str</code></dt>
+<dd>Delimiter string</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>result</code> <code>str</code></dt>
+<dd>Joined string</dd>
+</dl>
+<p><strong>Errors:</strong></p>
+<dl>
+<dt><code>ErrAlloc</code></dt>
+<dd>Memory allocation failed</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>parts count &quot;/&quot; strings::join! -&gt; path</code></pre>
+</div>
+<hr>
+<div class="fn" id="repeat">
+<h3>repeat</h3>
+<pre><code>fn repeat(str:str n:i64 -- result:str)</code></pre>
+<p>Repeat string n times.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>str</code> <code>str</code></dt>
+<dd>Input string</dd>
+<dt><code>n</code> <code>i64</code></dt>
+<dd>Number of repetitions</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>result</code> <code>str</code></dt>
+<dd>Repeated string</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>&quot;ab&quot; 3 strings::repeat print  // &quot;ababab&quot;</code></pre>
+</div>
+<hr>
+<div class="fn" id="reverse">
+<h3>reverse</h3>
+<pre><code>fn reverse(str:str -- result:str)</code></pre>
+<p>Reverse a string.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>str</code> <code>str</code></dt>
+<dd>Input string</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>result</code> <code>str</code></dt>
+<dd>Reversed string</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>&quot;hello&quot; strings::reverse print  // &quot;olleh&quot;</code></pre>
+</div>
+<hr>
+<div class="fn" id="trim_left">
+<h3>trim_left</h3>
+<pre><code>fn trim_left(str:str -- result:str)</code></pre>
+<p>Remove leading whitespace.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>str</code> <code>str</code></dt>
+<dd>Input string</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>result</code> <code>str</code></dt>
+<dd>String with leading whitespace removed</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>&quot;  hello&quot; strings::trim_left print  // &quot;hello&quot;</code></pre>
+</div>
+<hr>
+<div class="fn" id="trim_right">
+<h3>trim_right</h3>
+<pre><code>fn trim_right(str:str -- result:str)</code></pre>
+<p>Remove trailing whitespace.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>str</code> <code>str</code></dt>
+<dd>Input string</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>result</code> <code>str</code></dt>
+<dd>String with trailing whitespace removed</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>&quot;hello  &quot; strings::trim_right print  // &quot;hello&quot;</code></pre>
+</div>
+<hr>
+<div class="fn" id="count">
+<h3>count</h3>
+<pre><code>fn count(haystack:str needle:str -- count:i64)</code></pre>
+<p>Count occurrences of substring.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>haystack</code> <code>str</code></dt>
+<dd>String to search in</dd>
+<dt><code>needle</code> <code>str</code></dt>
+<dd>Substring to count</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>count</code> <code>i64</code></dt>
+<dd>Number of occurrences</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>&quot;ababa&quot; &quot;aba&quot; strings::count print  // 1 (non-overlapping)</code></pre>
+</div>
+<hr>
+<div class="fn" id="last_index_of">
+<h3>last_index_of</h3>
+<pre><code>fn last_index_of(haystack:str needle:str -- index:i64)</code></pre>
+<p>Find last occurrence of substring.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>haystack</code> <code>str</code></dt>
+<dd>String to search in</dd>
+<dt><code>needle</code> <code>str</code></dt>
+<dd>Substring to find</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>index</code> <code>i64</code></dt>
+<dd>Index of last match, -1 if not found</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>&quot;hello hello&quot; &quot;hello&quot; strings::last_index_of print  // 6</code></pre>
+</div>
+<hr>
+<div class="fn" id="is_empty">
+<h3>is_empty</h3>
+<pre><code>fn is_empty(s:str -- result:i64)</code></pre>
+<p>Check if string is empty.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>s</code> <code>str</code></dt>
+<dd>Input string</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>result</code> <code>i64</code></dt>
+<dd>1 if empty, 0 otherwise</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>&quot;&quot; strings::is_empty print  // 1</code></pre>
+</div>
+<hr>
+<div class="fn" id="is_blank">
+<h3>is_blank</h3>
+<pre><code>fn is_blank(s:str -- result:i64)</code></pre>
+<p>Check if string is empty or only whitespace.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>s</code> <code>str</code></dt>
+<dd>Input string</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>result</code> <code>i64</code></dt>
+<dd>1 if blank, 0 otherwise</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>&quot;  &quot; strings::is_blank print  // 1</code></pre>
+</div>
+<hr>
+<div class="fn" id="equals_ignore_case">
+<h3>equals_ignore_case</h3>
+<pre><code>fn equals_ignore_case(a:str b:str -- result:i64)</code></pre>
+<p>Case-insensitive string comparison.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>a</code> <code>str</code></dt>
+<dd>First string</dd>
+<dt><code>b</code> <code>str</code></dt>
+<dd>Second string</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>result</code> <code>i64</code></dt>
+<dd>1 if equal (ignoring case), 0 otherwise</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>&quot;Hello&quot; &quot;HELLO&quot; strings::equals_ignore_case print  // 1</code></pre>
+</div>
+<hr>
+<div class="fn" id="pad_left">
+<h3>pad_left</h3>
+<pre><code>fn pad_left(s:str len:i64 ch:str -- result:str)</code></pre>
+<p>Left-pad string to target length.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>s</code> <code>str</code></dt>
+<dd>Input string</dd>
+<dt><code>len</code> <code>i64</code></dt>
+<dd>Target length</dd>
+<dt><code>ch</code> <code>str</code></dt>
+<dd>Padding character</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>result</code> <code>str</code></dt>
+<dd>Padded string</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>&quot;42&quot; 5 &quot;0&quot; strings::pad_left print  // &quot;00042&quot;</code></pre>
+</div>
+<hr>
+<div class="fn" id="pad_right">
+<h3>pad_right</h3>
+<pre><code>fn pad_right(s:str len:i64 ch:str -- result:str)</code></pre>
+<p>Right-pad string to target length.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>s</code> <code>str</code></dt>
+<dd>Input string</dd>
+<dt><code>len</code> <code>i64</code></dt>
+<dd>Target length</dd>
+<dt><code>ch</code> <code>str</code></dt>
+<dd>Padding character</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>result</code> <code>str</code></dt>
+<dd>Padded string</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>&quot;hi&quot; 5 &quot;.&quot; strings::pad_right print  // &quot;hi...&quot;</code></pre>
+</div>
+<hr>
+<div class="fn" id="center">
+<h3>center</h3>
+<pre><code>fn center(s:str len:i64 ch:str -- result:str)</code></pre>
+<p>Center string with padding on both sides.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>s</code> <code>str</code></dt>
+<dd>Input string</dd>
+<dt><code>len</code> <code>i64</code></dt>
+<dd>Target length</dd>
+<dt><code>ch</code> <code>str</code></dt>
+<dd>Padding character</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>result</code> <code>str</code></dt>
+<dd>Centered string</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>&quot;hi&quot; 6 &quot;-&quot; strings::center print  // &quot;--hi--&quot;</code></pre>
+</div>
+<hr>
+<div class="fn" id="capitalize">
+<h3>capitalize</h3>
+<pre><code>fn capitalize(s:str -- result:str)</code></pre>
+<p>Capitalize first character, lowercase rest.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>s</code> <code>str</code></dt>
+<dd>Input string</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>result</code> <code>str</code></dt>
+<dd>Capitalized string</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>&quot;hELLO&quot; strings::capitalize print  // &quot;Hello&quot;</code></pre>
+</div>
+<hr>
+<div class="fn" id="title">
+<h3>title</h3>
+<pre><code>fn title(s:str -- result:str)</code></pre>
+<p>Title case - capitalize first letter of each word.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>s</code> <code>str</code></dt>
+<dd>Input string</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>result</code> <code>str</code></dt>
+<dd>Title-cased string</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>&quot;hello world&quot; strings::title print  // &quot;Hello World&quot;</code></pre>
+</div>
+<hr>
+<div class="fn" id="trim_prefix">
+<h3>trim_prefix</h3>
+<pre><code>fn trim_prefix(s:str prefix:str -- result:str)</code></pre>
+<p>Remove prefix if present.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>s</code> <code>str</code></dt>
+<dd>Input string</dd>
+<dt><code>prefix</code> <code>str</code></dt>
+<dd>Prefix to remove</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>result</code> <code>str</code></dt>
+<dd>String without prefix</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>&quot;hello&quot; &quot;hel&quot; strings::trim_prefix print  // &quot;lo&quot;</code></pre>
+</div>
+<hr>
+<div class="fn" id="trim_suffix">
+<h3>trim_suffix</h3>
+<pre><code>fn trim_suffix(s:str suffix:str -- result:str)</code></pre>
+<p>Remove suffix if present.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>s</code> <code>str</code></dt>
+<dd>Input string</dd>
+<dt><code>suffix</code> <code>str</code></dt>
+<dd>Suffix to remove</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>result</code> <code>str</code></dt>
+<dd>String without suffix</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>&quot;hello&quot; &quot;lo&quot; strings::trim_suffix print  // &quot;hel&quot;</code></pre>
+</div>
+<hr>
+<div class="fn" id="replace_first">
+<h3>replace_first</h3>
+<pre><code>fn replace_first(s:str old:str new:str -- result:str)</code></pre>
+<p>Replace first occurrence only.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>s</code> <code>str</code></dt>
+<dd>Source string</dd>
+<dt><code>old</code> <code>str</code></dt>
+<dd>Substring to replace</dd>
+<dt><code>new</code> <code>str</code></dt>
+<dd>Replacement string</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>result</code> <code>str</code></dt>
+<dd>String with first occurrence replaced</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>&quot;abab&quot; &quot;ab&quot; &quot;X&quot; strings::replace_first print  // &quot;Xab&quot;</code></pre>
+</div>
+<hr>
+<div class="fn" id="insert">
+<h3>insert</h3>
+<pre><code>fn insert(s:str pos:i64 ins:str -- result:str)</code></pre>
+<p>Insert string at position.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>s</code> <code>str</code></dt>
+<dd>Original string</dd>
+<dt><code>pos</code> <code>i64</code></dt>
+<dd>Insert position</dd>
+<dt><code>ins</code> <code>str</code></dt>
+<dd>String to insert</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>result</code> <code>str</code></dt>
+<dd>String with insertion</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>&quot;hello&quot; 2 &quot;XX&quot; strings::insert print  // &quot;heXXllo&quot;</code></pre>
+</div>
+<hr>
+<div class="fn" id="remove_range">
+<h3>remove_range</h3>
+<pre><code>fn remove_range(s:str start:i64 len:i64 -- result:str)</code></pre>
+<p>Remove range from string.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>s</code> <code>str</code></dt>
+<dd>Input string</dd>
+<dt><code>start</code> <code>i64</code></dt>
+<dd>Start position</dd>
+<dt><code>len</code> <code>i64</code></dt>
+<dd>Number of characters to remove</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>result</code> <code>str</code></dt>
+<dd>String with range removed</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>&quot;hello&quot; 1 3 strings::remove_range print  // &quot;ho&quot;</code></pre>
+</div>
+<hr>
+<div class="fn" id="truncate">
+<h3>truncate</h3>
+<pre><code>fn truncate(s:str max:i64 suffix:str -- result:str)</code></pre>
+<p>Truncate to max length with optional suffix.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>s</code> <code>str</code></dt>
+<dd>Input string</dd>
+<dt><code>max</code> <code>i64</code></dt>
+<dd>Maximum length</dd>
+<dt><code>suffix</code> <code>str</code></dt>
+<dd>Suffix to append when truncated (e.g. &quot;...&quot;)</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>result</code> <code>str</code></dt>
+<dd>Truncated string</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>&quot;hello world&quot; 8 &quot;...&quot; strings::truncate print  // &quot;hello...&quot;</code></pre>
+</div>
+<hr>
+<div class="fn fallible" id="lines">
+<h3>lines [fallible]</h3>
+<pre><code>fn lines(s:str -- arr:ptr count:i64)!</code></pre>
+<p>Split string by newlines.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>s</code> <code>str</code></dt>
+<dd>Input string</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>arr</code> <code>ptr</code></dt>
+<dd>Array of line strings</dd>
+<dt><code>count</code> <code>i64</code></dt>
+<dd>Number of lines</dd>
+</dl>
+<p><strong>Errors:</strong></p>
+<dl>
+<dt><code>ErrAlloc</code></dt>
+<dd>Memory allocation failed</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>&quot;a\nb\nc&quot; strings::lines!  // [&quot;a&quot;, &quot;b&quot;, &quot;c&quot;]</code></pre>
+</div>
+<hr>
+<div class="fn fallible" id="words">
+<h3>words [fallible]</h3>
+<pre><code>fn words(s:str -- arr:ptr count:i64)!</code></pre>
+<p>Split string by whitespace.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>s</code> <code>str</code></dt>
+<dd>Input string</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>arr</code> <code>ptr</code></dt>
+<dd>Array of word strings</dd>
+<dt><code>count</code> <code>i64</code></dt>
+<dd>Number of words</dd>
+</dl>
+<p><strong>Errors:</strong></p>
+<dl>
+<dt><code>ErrAlloc</code></dt>
+<dd>Memory allocation failed</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>&quot;hello  world&quot; strings::words!  // [&quot;hello&quot;, &quot;world&quot;]</code></pre>
+</div>
+<hr>
+<div class="fn fallible" id="split_n">
+<h3>split_n [fallible]</h3>
+<pre><code>fn split_n(s:str delim:str n:i64 -- parts:ptr count:i64)!</code></pre>
+<p>Split into at most n parts.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>s</code> <code>str</code></dt>
+<dd>String to split</dd>
+<dt><code>delim</code> <code>str</code></dt>
+<dd>Delimiter</dd>
+<dt><code>n</code> <code>i64</code></dt>
+<dd>Maximum number of parts</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>parts</code> <code>ptr</code></dt>
+<dd>Array of string parts</dd>
+<dt><code>count</code> <code>i64</code></dt>
+<dd>Number of parts</dd>
+</dl>
+<p><strong>Errors:</strong></p>
+<dl>
+<dt><code>ErrAlloc</code></dt>
+<dd>Memory allocation failed</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>&quot;a:b:c:d&quot; &quot;:&quot; 2 strings::split_n!  // [&quot;a&quot;, &quot;b:c:d&quot;]</code></pre>
+</div>
+<hr>
+<div class="fn" id="is_numeric">
+<h3>is_numeric</h3>
+<pre><code>fn is_numeric(s:str -- result:i64)</code></pre>
+<p>Check if string contains only digits.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>s</code> <code>str</code></dt>
+<dd>Input string</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>result</code> <code>i64</code></dt>
+<dd>1 if numeric, 0 otherwise</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>&quot;12345&quot; strings::is_numeric print  // 1</code></pre>
+</div>
+<hr>
+<div class="fn" id="is_alpha">
+<h3>is_alpha</h3>
+<pre><code>fn is_alpha(s:str -- result:i64)</code></pre>
+<p>Check if string contains only letters.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>s</code> <code>str</code></dt>
+<dd>Input string</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>result</code> <code>i64</code></dt>
+<dd>1 if alphabetic, 0 otherwise</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>&quot;Hello&quot; strings::is_alpha print  // 1</code></pre>
+</div>
+<hr>
+<div class="fn" id="is_alphanumeric">
+<h3>is_alphanumeric</h3>
+<pre><code>fn is_alphanumeric(s:str -- result:i64)</code></pre>
+<p>Check if string contains only letters and digits.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>s</code> <code>str</code></dt>
+<dd>Input string</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>result</code> <code>i64</code></dt>
+<dd>1 if alphanumeric, 0 otherwise</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>&quot;Hello123&quot; strings::is_alphanumeric print  // 1</code></pre>
+</div>
+<hr>
+<div class="fn" id="is_ascii">
+<h3>is_ascii</h3>
+<pre><code>fn is_ascii(s:str -- result:i64)</code></pre>
+<p>Check if all characters are ASCII (0-127).</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>s</code> <code>str</code></dt>
+<dd>Input string</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>result</code> <code>i64</code></dt>
+<dd>1 if all ASCII, 0 otherwise</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>&quot;hello&quot; strings::is_ascii print  // 1</code></pre>
+</div>
+<hr>
+<div class="fn" id="is_lowercase">
+<h3>is_lowercase</h3>
+<pre><code>fn is_lowercase(s:str -- result:i64)</code></pre>
+<p>Check if all letters are lowercase.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>s</code> <code>str</code></dt>
+<dd>Input string</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>result</code> <code>i64</code></dt>
+<dd>1 if lowercase, 0 otherwise</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>&quot;hello&quot; strings::is_lowercase print  // 1</code></pre>
+</div>
+<hr>
+<div class="fn" id="is_uppercase">
+<h3>is_uppercase</h3>
+<pre><code>fn is_uppercase(s:str -- result:i64)</code></pre>
+<p>Check if all letters are uppercase.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>s</code> <code>str</code></dt>
+<dd>Input string</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>result</code> <code>i64</code></dt>
+<dd>1 if uppercase, 0 otherwise</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>&quot;HELLO&quot; strings::is_uppercase print  // 1</code></pre>
+</div>
+<hr>
+<div class="fn" id="char_count">
+<h3>char_count</h3>
+<pre><code>fn char_count(s:str -- count:i64)</code></pre>
+<p>Count UTF-8 codepoints (characters, not bytes).</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>s</code> <code>str</code></dt>
+<dd>Input string</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>count</code> <code>i64</code></dt>
+<dd>Number of UTF-8 codepoints</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>&quot;héllo&quot; strings::char_count print  // 5</code></pre>
+</div>
+<hr>
+<div class="fn" id="slice">
+<h3>slice</h3>
+<pre><code>fn slice(s:str start:i64 end:i64 -- result:str)</code></pre>
+<p>Slice with negative index support (Python-style).</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>s</code> <code>str</code></dt>
+<dd>Input string</dd>
+<dt><code>start</code> <code>i64</code></dt>
+<dd>Start index (negative counts from end)</dd>
+<dt><code>end</code> <code>i64</code></dt>
+<dd>End index (negative counts from end)</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>result</code> <code>str</code></dt>
+<dd>Sliced substring</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>&quot;hello&quot; 1 -1 strings::slice print  // &quot;ell&quot;</code></pre>
+</div>
+<hr>
+<div class="fn" id="column">
+<h3>column</h3>
+<pre><code>fn column(arr:ptr count:i64 widths:ptr num_cols:i64 -- result:str)</code></pre>
+<p>Format strings into columns.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>arr</code> <code>ptr</code></dt>
+<dd>Array of strings</dd>
+<dt><code>count</code> <code>i64</code></dt>
+<dd>Number of strings</dd>
+<dt><code>widths</code> <code>ptr</code></dt>
+<dd>Array of column widths</dd>
+<dt><code>num_cols</code> <code>i64</code></dt>
+<dd>Number of columns</dd>
+</dl>
+<p><strong>Returns:</strong></p>
+<dl>
+<dt><code>result</code> <code>str</code></dt>
+<dd>Formatted column output</dd>
+</dl>
+</div>
+</div></body></html>

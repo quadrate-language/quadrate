@@ -1,0 +1,310 @@
+<!DOCTYPE html><html><head><meta charset="utf-8"><title>testing - Quadrate API</title><link rel="stylesheet" href="style.css"></head><body>
+<nav><h1>Quadrate API</h1><a href="index.html">All Modules</a></nav>
+<div class="container"><h2>testing</h2>
+<p class="desc">Testing utilities for unit tests.  Provides assertion functions for writing test cases. Tests are defined using the `test` keyword and assertions check that conditions are met.  use testing  test &quot;addition works&quot; {     2 3 + 5 testing::assert_eq }</p>
+<h2>Functions</h2>
+<div class="fn" id="assert_eq">
+<h3>assert_eq</h3>
+<pre><code>fn assert_eq(a:any b:any -- )</code></pre>
+<p>Assert that two values are equal. Works with any type (i64, f64, str, ptr).</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>a</code> <code>any</code></dt>
+<dd>First value</dd>
+<dt><code>b</code> <code>any</code></dt>
+<dd>Second value (expected)</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>5 5 testing::assert_eq  // passes</code></pre>
+<pre><code>&quot;hello&quot; &quot;hello&quot; testing::assert_eq  // passes</code></pre>
+</div>
+<hr>
+<div class="fn" id="assert_ne">
+<h3>assert_ne</h3>
+<pre><code>fn assert_ne(a:any b:any -- )</code></pre>
+<p>Assert that two values are not equal. Works with any type (i64, f64, str, ptr).</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>a</code> <code>any</code></dt>
+<dd>First value</dd>
+<dt><code>b</code> <code>any</code></dt>
+<dd>Second value</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>5 6 testing::assert_ne  // passes</code></pre>
+</div>
+<hr>
+<div class="fn" id="assert_true">
+<h3>assert_true</h3>
+<pre><code>fn assert_true(v:any -- )</code></pre>
+<p>Assert that a value is truthy. Truthy means: non-zero for integers, non-zero for floats, non-empty for strings, non-null for pointers.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>v</code> <code>any</code></dt>
+<dd>Value to check</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>1 testing::assert_true  // passes</code></pre>
+<pre><code>&quot;hello&quot; testing::assert_true  // passes</code></pre>
+<p class="xref"><strong>Called by:</strong> <a href="testing.html#assert_ge"><code>testing::assert_ge</code></a>, <a href="testing.html#assert_gt"><code>testing::assert_gt</code></a>, <a href="testing.html#assert_gt_f"><code>testing::assert_gt_f</code></a>, <a href="testing.html#assert_in_range"><code>testing::assert_in_range</code></a>, <a href="testing.html#assert_le"><code>testing::assert_le</code></a>, <a href="testing.html#assert_lt"><code>testing::assert_lt</code></a>, <a href="testing.html#assert_lt_f"><code>testing::assert_lt_f</code></a>, <a href="testing.html#assert_negative"><code>testing::assert_negative</code></a>, <a href="testing.html#assert_nonzero"><code>testing::assert_nonzero</code></a>, <a href="testing.html#assert_positive"><code>testing::assert_positive</code></a>, <a href="testing.html#assert_zero"><code>testing::assert_zero</code></a></p>
+</div>
+<hr>
+<div class="fn" id="assert_false">
+<h3>assert_false</h3>
+<pre><code>fn assert_false(v:any -- )</code></pre>
+<p>Assert that a value is falsy. Falsy means: zero for integers, zero for floats, empty for strings, null for pointers.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>v</code> <code>any</code></dt>
+<dd>Value to check</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>0 testing::assert_false  // passes</code></pre>
+<pre><code>&quot;&quot; testing::assert_false  // passes</code></pre>
+</div>
+<hr>
+<div class="fn" id="fail">
+<h3>fail</h3>
+<pre><code>fn fail(msg:str -- )</code></pre>
+<p>Unconditionally fail a test with a message.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>msg</code> <code>str</code></dt>
+<dd>Failure message</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>&quot;Not implemented&quot; testing::fail</code></pre>
+</div>
+<hr>
+<div class="fn" id="assert_approx_eq">
+<h3>assert_approx_eq</h3>
+<pre><code>fn assert_approx_eq(a:f64 b:f64 epsilon:f64 -- )</code></pre>
+<p>Assert that two floats are approximately equal within epsilon. Useful for comparing floating-point numbers which may have rounding errors.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>a</code> <code>f64</code></dt>
+<dd>First value</dd>
+<dt><code>b</code> <code>f64</code></dt>
+<dd>Second value (expected)</dd>
+<dt><code>epsilon</code> <code>f64</code></dt>
+<dd>Maximum allowed difference</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>3.14159 3.14160 0.0001 testing::assert_approx_eq  // passes</code></pre>
+</div>
+<hr>
+<div class="fn" id="assert_contains">
+<h3>assert_contains</h3>
+<pre><code>fn assert_contains(haystack:str needle:str -- )</code></pre>
+<p>Assert that a string contains a substring.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>haystack</code> <code>str</code></dt>
+<dd>String to search in</dd>
+<dt><code>needle</code> <code>str</code></dt>
+<dd>Substring to search for</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>&quot;hello world&quot; &quot;world&quot; testing::assert_contains  // passes</code></pre>
+</div>
+<hr>
+<div class="fn" id="assert_starts_with">
+<h3>assert_starts_with</h3>
+<pre><code>fn assert_starts_with(s:str prefix:str -- )</code></pre>
+<p>Assert that a string starts with a prefix.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>s</code> <code>str</code></dt>
+<dd>String to check</dd>
+<dt><code>prefix</code> <code>str</code></dt>
+<dd>Expected prefix</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>&quot;hello world&quot; &quot;hello&quot; testing::assert_starts_with  // passes</code></pre>
+</div>
+<hr>
+<div class="fn" id="assert_ends_with">
+<h3>assert_ends_with</h3>
+<pre><code>fn assert_ends_with(s:str suffix:str -- )</code></pre>
+<p>Assert that a string ends with a suffix.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>s</code> <code>str</code></dt>
+<dd>String to check</dd>
+<dt><code>suffix</code> <code>str</code></dt>
+<dd>Expected suffix</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>&quot;hello world&quot; &quot;world&quot; testing::assert_ends_with  // passes</code></pre>
+</div>
+<hr>
+<div class="fn" id="assert_gt">
+<h3>assert_gt</h3>
+<pre><code>fn assert_gt(a:i64 b:i64 -- )</code></pre>
+<p>Assert that a is greater than b.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>a</code> <code>i64</code></dt>
+<dd>First value</dd>
+<dt><code>b</code> <code>i64</code></dt>
+<dd>Second value</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>5 3 testing::assert_gt  // passes</code></pre>
+<p class="xref"><strong>Calls:</strong> <a href="testing.html#assert_true"><code>testing::assert_true</code></a></p>
+</div>
+<hr>
+<div class="fn" id="assert_lt">
+<h3>assert_lt</h3>
+<pre><code>fn assert_lt(a:i64 b:i64 -- )</code></pre>
+<p>Assert that a is less than b.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>a</code> <code>i64</code></dt>
+<dd>First value</dd>
+<dt><code>b</code> <code>i64</code></dt>
+<dd>Second value</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>3 5 testing::assert_lt  // passes</code></pre>
+<p class="xref"><strong>Calls:</strong> <a href="testing.html#assert_true"><code>testing::assert_true</code></a></p>
+</div>
+<hr>
+<div class="fn" id="assert_ge">
+<h3>assert_ge</h3>
+<pre><code>fn assert_ge(a:i64 b:i64 -- )</code></pre>
+<p>Assert that a is greater than or equal to b.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>a</code> <code>i64</code></dt>
+<dd>First value</dd>
+<dt><code>b</code> <code>i64</code></dt>
+<dd>Second value</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>5 5 testing::assert_ge  // passes</code></pre>
+<p class="xref"><strong>Calls:</strong> <a href="testing.html#assert_true"><code>testing::assert_true</code></a></p>
+</div>
+<hr>
+<div class="fn" id="assert_le">
+<h3>assert_le</h3>
+<pre><code>fn assert_le(a:i64 b:i64 -- )</code></pre>
+<p>Assert that a is less than or equal to b.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>a</code> <code>i64</code></dt>
+<dd>First value</dd>
+<dt><code>b</code> <code>i64</code></dt>
+<dd>Second value</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>5 5 testing::assert_le  // passes</code></pre>
+<p class="xref"><strong>Calls:</strong> <a href="testing.html#assert_true"><code>testing::assert_true</code></a></p>
+</div>
+<hr>
+<div class="fn" id="assert_in_range">
+<h3>assert_in_range</h3>
+<pre><code>fn assert_in_range(value:i64 min:i64 max:i64 -- )</code></pre>
+<p>Assert that value is within an inclusive range [min, max].</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>value</code> <code>i64</code></dt>
+<dd>Value to check</dd>
+<dt><code>min</code> <code>i64</code></dt>
+<dd>Minimum value (inclusive)</dd>
+<dt><code>max</code> <code>i64</code></dt>
+<dd>Maximum value (inclusive)</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>5 0 10 testing::assert_in_range  // passes</code></pre>
+<p class="xref"><strong>Calls:</strong> <a href="testing.html#assert_true"><code>testing::assert_true</code></a></p>
+</div>
+<hr>
+<div class="fn" id="assert_gt_f">
+<h3>assert_gt_f</h3>
+<pre><code>fn assert_gt_f(a:f64 b:f64 -- )</code></pre>
+<p>Assert that a float is greater than another.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>a</code> <code>f64</code></dt>
+<dd>First value</dd>
+<dt><code>b</code> <code>f64</code></dt>
+<dd>Second value</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>5.0 3.0 testing::assert_gt_f  // passes</code></pre>
+<p class="xref"><strong>Calls:</strong> <a href="testing.html#assert_true"><code>testing::assert_true</code></a></p>
+</div>
+<hr>
+<div class="fn" id="assert_lt_f">
+<h3>assert_lt_f</h3>
+<pre><code>fn assert_lt_f(a:f64 b:f64 -- )</code></pre>
+<p>Assert that a float is less than another.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>a</code> <code>f64</code></dt>
+<dd>First value</dd>
+<dt><code>b</code> <code>f64</code></dt>
+<dd>Second value</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>3.0 5.0 testing::assert_lt_f  // passes</code></pre>
+<p class="xref"><strong>Calls:</strong> <a href="testing.html#assert_true"><code>testing::assert_true</code></a></p>
+</div>
+<hr>
+<div class="fn" id="assert_positive">
+<h3>assert_positive</h3>
+<pre><code>fn assert_positive(value:i64 -- )</code></pre>
+<p>Assert that value is positive (&gt; 0).</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>value</code> <code>i64</code></dt>
+<dd>Value to check</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>5 testing::assert_positive  // passes</code></pre>
+<p class="xref"><strong>Calls:</strong> <a href="testing.html#assert_true"><code>testing::assert_true</code></a></p>
+</div>
+<hr>
+<div class="fn" id="assert_negative">
+<h3>assert_negative</h3>
+<pre><code>fn assert_negative(value:i64 -- )</code></pre>
+<p>Assert that value is negative (&lt; 0).</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>value</code> <code>i64</code></dt>
+<dd>Value to check</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>-5 testing::assert_negative  // passes</code></pre>
+<p class="xref"><strong>Calls:</strong> <a href="testing.html#assert_true"><code>testing::assert_true</code></a></p>
+</div>
+<hr>
+<div class="fn" id="assert_zero">
+<h3>assert_zero</h3>
+<pre><code>fn assert_zero(value:i64 -- )</code></pre>
+<p>Assert that value is zero.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>value</code> <code>i64</code></dt>
+<dd>Value to check</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>0 testing::assert_zero  // passes</code></pre>
+<p class="xref"><strong>Calls:</strong> <a href="testing.html#assert_true"><code>testing::assert_true</code></a></p>
+</div>
+<hr>
+<div class="fn" id="assert_nonzero">
+<h3>assert_nonzero</h3>
+<pre><code>fn assert_nonzero(value:i64 -- )</code></pre>
+<p>Assert that value is non-zero.</p>
+<p><strong>Parameters:</strong></p>
+<dl>
+<dt><code>value</code> <code>i64</code></dt>
+<dd>Value to check</dd>
+</dl>
+<p><strong>Examples:</strong></p>
+<pre><code>5 testing::assert_nonzero  // passes</code></pre>
+<p class="xref"><strong>Calls:</strong> <a href="testing.html#assert_true"><code>testing::assert_true</code></a></p>
+</div>
+</div></body></html>
