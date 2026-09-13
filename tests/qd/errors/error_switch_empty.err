@@ -1,1 +1,1 @@
-quadc: tests/qd/errors/error_switch_empty.qd:3:11: error: Switch statement must have at least one case
+tests/qd/errors/error_switch_empty.qd:3:11: error: Switch statement must have at least one case

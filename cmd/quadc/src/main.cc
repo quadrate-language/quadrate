@@ -85,14 +85,11 @@ int main(int argc, char** argv) {
 
 	Options opts;
 
-	// No arguments is a usage error, not success -- `quadc` in a script should
-	// not look like a successful compile. Help still goes to stdout so that
-	// `quadc | less` works; the exit status is what changes.
-	if (argc == 1) {
-		printHelp();
-		return 1;
-	}
-
+	// No arguments is a usage error, not success -- `quadc` in a script should not
+	// look like a successful compile. parseArgs reports it the way every other
+	// tool does (a terse line on stderr, exit 1) rather than dumping help to
+	// stdout, and reaching it also lets a bare `echo 'code' | quadc` find the
+	// stdin path, which an argc==1 shortcut here used to cut off.
 	if (!parseArgs(argc, argv, opts)) {
 		return 1;
 	}

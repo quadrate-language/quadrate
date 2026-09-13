@@ -11,11 +11,26 @@
 
 namespace fs = std::filesystem;
 
+int pmError(const std::string& message) {
+	std::cerr << COLOR_RED << "quadpm:" << COLOR_RESET << " " << message << "\n";
+	return 1;
+}
+
+void pmWarn(const std::string& message) {
+	std::cerr << COLOR_YELLOW << "quadpm:" << COLOR_RESET << " warning: " << message << "\n";
+}
+
+int pmUsageError(const std::string& message) {
+	pmError(message);
+	std::cerr << "Try 'quadpm --help' for more information.\n";
+	return 1;
+}
+
 // Get home directory
 std::string getHomeDir() {
 	const char* home = getenv("HOME");
 	if (!home) {
-		std::cerr << COLOR_RED << "Error: HOME environment variable not set" << COLOR_RESET << "\n";
+		pmError("HOME environment variable not set");
 		exit(1);
 	}
 	return std::string(home);

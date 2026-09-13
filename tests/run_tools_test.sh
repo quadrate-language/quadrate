@@ -130,6 +130,75 @@ expect_contains "file argument reports it as quaddoc"       "quaddoc: " \
 expect_not_contains "file argument does not throw"          "terminate called" \
                 "$QUADDOC" -q "$WORK_DIR/src/greet/greet.qd"
 
+# quaddoc reads declarations off the compiler's AST. It used to match them with
+# hand-written regular expressions, which silently dropped every form the
+# patterns had not anticipated -- the whole `sys` module and the whole `ct`
+# container library were missing from the published documentation. Each check
+# below is one of those forms.
+mkdir -p "$WORK_DIR/src/shapes"
+cat > "$WORK_DIR/src/shapes/shapes.qd" <<'QDEOF'
+/// Shapes.
+
+pub struct Box { w: i64 }
+
+/// Inline functions are still functions.
+/// @param p i64 A port
+pub inline fn emit(p:i64 -- ) {
+	p drop
+}
+
+/// A generic function.
+pub fn (b:Box) scaled<T>(k:T -- out:Box) {
+	b
+}
+
+/// Takes a function.
+/// @param f fn(i64 -- i64) The callback
+pub fn apply(x:i64 f:fn(i64 -- i64) -- y:i64) {
+	x f call
+}
+
+/// A method on a struct.
+pub fn (b:Box) width( -- n:i64) {
+	b <<w
+}
+
+/// Mentions width only in a comment.
+pub fn describe( -- n:i64) {
+	// returns the width of the box
+	7
+}
+QDEOF
+
+"$QUADDOC" -q -o "$WORK_DIR/docs2" "$WORK_DIR/src/shapes" > /dev/null 2>&1 || true
+SHAPES="$WORK_DIR/docs2/shapes.html"
+
+if grep -q 'id="emit"' "$SHAPES" 2>/dev/null; then pass "documents 'pub inline fn'"; else
+    fail "documents 'pub inline fn'" "the whole sys module went missing this way"; fi
+if grep -q 'id="scaled"' "$SHAPES" 2>/dev/null; then pass "documents a generic function"; else
+    fail "documents a generic function" "the whole ct container library went missing this way"; fi
+
+# The old pattern ended the parameter list at the first ')', truncating the
+# signature mid-type and losing everything after it.
+expect_contains "function-pointer parameter type is not truncated" \
+                "f:fn(i64 -- i64) -- y:i64)" cat "$SHAPES"
+# `fn b:Box width()` is not syntax anyone can paste back into a file.
+expect_contains "receiver is parenthesised in the signature" \
+                "fn (b:Box) width( -- n:i64)" cat "$SHAPES"
+# A word in a comment is not a call: the old scanner regexed body *text*.
+expect_not_contains "a name mentioned in a comment is not a call" \
+                "#width" grep -A6 'id="describe"' "$SHAPES"
+
+# A file that does not parse is reported rather than published half-empty.
+mkdir -p "$WORK_DIR/src/broken"
+printf '/// Broken.\n\npub fn ok(x:i64 -- y:i64) {\n\tx\n}\n\npub fn bad(  {\n' \
+    > "$WORK_DIR/src/broken/broken.qd"
+expect_contains "reports a parse error as a located warning" \
+                ": warning: " "$QUADDOC" -o "$WORK_DIR/docs3" "$WORK_DIR/src/broken"
+expect_not_contains "-q silences the parse warning" \
+                ": warning: " "$QUADDOC" -q -o "$WORK_DIR/docs3" "$WORK_DIR/src/broken"
+
+
 echo ""
 echo "=== quadrepl ==="
 

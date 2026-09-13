@@ -1,1 +1,1 @@
-quadc: tests/qd/errors/error_break_outside_loop.qd:3:2: error: break statement not within loop or switch
+tests/qd/errors/error_break_outside_loop.qd:3:2: error: break statement not within loop or switch

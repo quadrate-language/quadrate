@@ -1,1 +1,1 @@
-quadc: tests/qd/syntax/error_missing_colon_in_struct_field.qd:3:4: error: Expected ':' after field name
+tests/qd/syntax/error_missing_colon_in_struct_field.qd:3:4: error: Expected ':' after field name

@@ -1,1 +1,1 @@
-quadc: tests/qd/errors/error_if_stack_underflow.qd:3:5: error: Type error in 'if': Stack underflow (requires 1 condition value)
+tests/qd/errors/error_if_stack_underflow.qd:3:5: error: Type error in 'if': Stack underflow (requires 1 condition value)

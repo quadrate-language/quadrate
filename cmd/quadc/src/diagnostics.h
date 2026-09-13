@@ -14,8 +14,13 @@ inline void printError(const std::string& message) {
 			  << "error: " << Qd::Colors::reset() << message << std::endl;
 }
 
+// A located diagnostic: "file:line:column: error: message", the shape gcc, clang
+// and quadlint all emit and every editor's error parser expects. Deliberately
+// *not* prefixed with "quadc: " -- the file name already says where this came
+// from, and the prefix pushed the location off the front of the line where the
+// parsers look for it. The tool's own failures keep the prefix; see
+// printToolError below.
 inline void printError(const std::string& file, size_t line, size_t column, const std::string& message) {
-	std::cerr << Qd::Colors::bold() << "quadc: " << Qd::Colors::reset();
 	std::cerr << Qd::Colors::bold() << file << ":" << line << ":" << column << ":" << Qd::Colors::reset() << " ";
 	std::cerr << Qd::Colors::bold() << Qd::Colors::red() << "error:" << Qd::Colors::reset() << " ";
 	std::cerr << Qd::Colors::bold() << message << Qd::Colors::reset() << std::endl;

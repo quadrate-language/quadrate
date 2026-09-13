@@ -1,37 +1,41 @@
 # quadrepl
 
-Interactive REPL for Quadrate.
+Quadrate REPL.
+
+Interactive Read-Eval-Print Loop. Each line is compiled and run on its own, taking
+the state the previous line left; values it leaves behind stay on the stack, and
+the prompt shows them. Because a line runs once, an effect in one line does not
+happen again on the next.
 
 ## Usage
 
 ```bash
-quadrepl
+quadrepl [options]
 ```
 
-Values a line leaves behind stay on the stack, and the prompt shows it. Names
-bound with `->` and declarations (`fn`, `struct`, `const`, `use`, ...) stay for
-the rest of the session. Each line is compiled and run once, on its own, so an
-effect in one line does not happen again on the next.
+## Options
 
-Piping works too: with stdin on a pipe the final stack is printed when input
-ends.
+| Option | Description |
+|--------|-------------|
+| `-p, --print` | Print stack to stdout on exit (implied when stdin is a pipe) |
 
-```bash
-echo "2 3 add" | quadrepl   # 5
-```
+## Session commands
 
-## Commands
+| Command | Description |
+|---------|-------------|
+| `stack` | Show the stack |
+| `type` | Show the type of each stack value |
+| `clear` | Clear the stack |
+| `reset` | Clear the stack, locals, definitions and imports |
+| `:doc <name>` | Show a signature; with no exact match, search names |
+| `:save <file>` / `:load <file>` | Write or replay session history |
+| `help` | Show the full list, including key bindings |
+| `exit`, `:q`, Ctrl-D | Exit the REPL |
 
-- `stack` - Show the stack
-- `type` - Show the type of each stack value
-- `clear` - Clear the stack
-- `reset` - Clear the stack, locals, definitions and imports
-- `:doc <name>` - Show a signature; with no exact match, search names
-- `:save <file>` / `:load <file>` - Write or replay session history
-- `help` - Show available commands
-- `exit`, `:q`, Ctrl-D - Exit REPL
+Names bound with `->` and declarations (`fn`, `struct`, `enum`, `const`, `type`,
+`var`, `use`) stay for the rest of the session.
 
-## Example
+## Examples
 
 ```
 []> 5 3
@@ -39,7 +43,11 @@ echo "2 3 add" | quadrepl   # 5
 [8]> dup *
 [64]> print
 64
-[]> :doc rot
-  rot ( a b c -- b c a )
-    Rotates the top three values, moving third to top.
 ```
+
+```bash
+echo '2 3 add' | quadrepl   # 5 — the final stack is printed at end of input
+```
+
+`quadrepl --help` is the authoritative option list. Every Quadrate tool accepts
+`-h`/`--help`, `-v`/`--version` and `--no-color`.

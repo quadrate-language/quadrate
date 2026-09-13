@@ -1,1 +1,1 @@
-quadc: tests/qd/edge_cases/error_stack_effect_mismatch.qd:3:6: error: Type error in 'add': Stack underflow (requires 2 numeric values)
+tests/qd/edge_cases/error_stack_effect_mismatch.qd:3:6: error: Type error in 'add': Stack underflow (requires 2 numeric values)

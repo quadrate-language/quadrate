@@ -42,6 +42,23 @@ endif
 # built conditionally further down.
 CMDS := $(filter-out quadmcp quadrepl,$(notdir $(wildcard cmd/quad*)))
 
+# Every tool that ships a binary, conditionally-built ones included. Three rules
+# below needed this list and each spelled it out again.
+ALL_CMDS := $(CMDS) quadrepl quadmcp
+
+# bash-completion loads a completion file lazily, named after the command being
+# completed: typing `quaddoc <TAB>` makes it look for a file called `quaddoc`.
+# One file serves all ten tools, so every tool bar `quad` -- which is the file
+# itself -- needs a link under its own name, or it silently gets no completion
+# at all. quaddoc and quadmcp were missing from the hand-written list this
+# replaces, so neither completed anything however complete completions/quad.bash
+# was.
+#
+# fish autoloads the same way and so needs the same links, named <tool>.fish.
+# zsh is the exception: completions/_quad names all ten commands on its #compdef
+# line, and zsh indexes the file by those names when compinit runs.
+COMPLETION_LINKS := $(filter-out quad,$(ALL_CMDS))
+
 # Toolchain libraries with C components (directory names under lib/)
 TOOLCHAIN_LIBS_WITH_C := rt qd qc interp
 
@@ -113,8 +130,34 @@ define do_build
 	@if [ -f completions/quad.bash ]; then \
 		mkdir -p $(DIST_DATADIR)/bash-completion/completions; \
 		cp -f completions/quad.bash $(DIST_DATADIR)/bash-completion/completions/quad; \
+		for cmd in $(COMPLETION_LINKS); do \
+			ln -sf quad $(DIST_DATADIR)/bash-completion/completions/$$cmd; \
+		done; \
+	fi
+	@if [ -f completions/_quad ]; then \
+		mkdir -p $(DIST_DATADIR)/zsh/site-functions; \
+		cp -f completions/_quad $(DIST_DATADIR)/zsh/site-functions/_quad; \
+	fi
+	@if [ -f completions/quad.fish ]; then \
+		mkdir -p $(DIST_DATADIR)/fish/vendor_completions.d; \
+		cp -f completions/quad.fish $(DIST_DATADIR)/fish/vendor_completions.d/quad.fish; \
+		for cmd in $(COMPLETION_LINKS); do \
+			ln -sf quad.fish $(DIST_DATADIR)/fish/vendor_completions.d/$$cmd.fish; \
+		done; \
 	fi
 	@echo "$(3)"
+endef
+
+# quadmcp is compiled from .qd, so it cannot include the version.h that meson
+# generates for the C++ tools. Emit the same string as a Quadrate const, so
+# `quadmcp --version` reads identically to `quadc --version` rather than
+# printing a bare number.
+# $(1) = build directory
+define gen_quadmcp_version
+	@printf 'const BUILD_VERSION = "%s (%s, built %s)"\n' \
+		"$$(git describe --tags --abbrev=0 2>/dev/null || echo 0.0.0-unknown)" \
+		"$$(git describe --always --dirty 2>/dev/null || echo unknown)" \
+		"$$(date '+%b %e %Y')" > $(1)/cmd/quadmcp/version.qd
 endef
 
 debug:
@@ -124,7 +167,8 @@ ifneq ($(wildcard cmd/quadmcp/server.qd),)
 	@mkdir -p $(BUILD_DIR_DEBUG)/modules
 	cd cmd/quadmcp && QUADRATE_PATH=$(CURDIR)/$(BUILD_DIR_DEBUG)/modules QUADRATE_ROOT=$(CURDIR) $(CURDIR)/dist/bin/quadpm install
 	@mkdir -p $(BUILD_DIR_DEBUG)/cmd/quadmcp
-	@cat cmd/quadmcp/core.qd cmd/quadmcp/tools.qd cmd/quadmcp/resources.qd cmd/quadmcp/server.qd > $(BUILD_DIR_DEBUG)/cmd/quadmcp/quadmcp.qd
+	$(call gen_quadmcp_version,$(BUILD_DIR_DEBUG))
+	@cat cmd/quadmcp/core.qd $(BUILD_DIR_DEBUG)/cmd/quadmcp/version.qd cmd/quadmcp/tools.qd cmd/quadmcp/resources.qd cmd/quadmcp/server.qd > $(BUILD_DIR_DEBUG)/cmd/quadmcp/quadmcp.qd
 	cd $(BUILD_DIR_DEBUG)/cmd/quadmcp && QUADRATE_PATH=$(CURDIR)/$(BUILD_DIR_DEBUG)/modules QUADRATE_ROOT=$(CURDIR) $(CURDIR)/dist/bin/quad build quadmcp.qd -o quadmcp
 	cp $(BUILD_DIR_DEBUG)/cmd/quadmcp/quadmcp dist/bin/
 endif
@@ -136,12 +180,13 @@ ifneq ($(wildcard cmd/quadmcp/server.qd),)
 	@mkdir -p $(BUILD_DIR_RELEASE)/modules
 	cd cmd/quadmcp && QUADRATE_PATH=$(CURDIR)/$(BUILD_DIR_RELEASE)/modules QUADRATE_ROOT=$(CURDIR) $(CURDIR)/dist/bin/quadpm install
 	@mkdir -p $(BUILD_DIR_RELEASE)/cmd/quadmcp
-	@cat cmd/quadmcp/core.qd cmd/quadmcp/tools.qd cmd/quadmcp/resources.qd cmd/quadmcp/server.qd > $(BUILD_DIR_RELEASE)/cmd/quadmcp/quadmcp.qd
+	$(call gen_quadmcp_version,$(BUILD_DIR_RELEASE))
+	@cat cmd/quadmcp/core.qd $(BUILD_DIR_RELEASE)/cmd/quadmcp/version.qd cmd/quadmcp/tools.qd cmd/quadmcp/resources.qd cmd/quadmcp/server.qd > $(BUILD_DIR_RELEASE)/cmd/quadmcp/quadmcp.qd
 	cd $(BUILD_DIR_RELEASE)/cmd/quadmcp && QUADRATE_PATH=$(CURDIR)/$(BUILD_DIR_RELEASE)/modules QUADRATE_ROOT=$(CURDIR) $(CURDIR)/dist/bin/quad build -O3 quadmcp.qd -o quadmcp
 	cp $(BUILD_DIR_RELEASE)/cmd/quadmcp/quadmcp dist/bin/
 endif
 	@echo "Stripping binaries..."
-	@for cmd in $(CMDS) quadrepl quadmcp; do \
+	@for cmd in $(ALL_CMDS); do \
 		if [ -f dist/bin/$$cmd ]; then strip dist/bin/$$cmd && echo "  $$cmd"; fi; \
 	done
 	@strip dist/lib/*.so 2>/dev/null || true
@@ -280,10 +325,23 @@ install:
 	@echo "Installing bash completions to $(DESTDIR)$(DATADIR)/bash-completion/completions/"
 	install -d $(DESTDIR)$(DATADIR)/bash-completion/completions
 	install -m 644 completions/quad.bash $(DESTDIR)$(DATADIR)/bash-completion/completions/quad
-	@for cmd in quadc quadfmt quadlint quadlsp quadpm quadrepl quaduses; do ln -sf quad $(DESTDIR)$(DATADIR)/bash-completion/completions/$$cmd; done
+	@for cmd in $(COMPLETION_LINKS); do ln -sf quad $(DESTDIR)$(DATADIR)/bash-completion/completions/$$cmd; done
+	@echo "Installing zsh completions to $(DESTDIR)$(DATADIR)/zsh/site-functions/"
+	install -d $(DESTDIR)$(DATADIR)/zsh/site-functions
+	install -m 644 completions/_quad $(DESTDIR)$(DATADIR)/zsh/site-functions/_quad
+	@echo "Installing fish completions to $(DESTDIR)$(DATADIR)/fish/vendor_completions.d/"
+	install -d $(DESTDIR)$(DATADIR)/fish/vendor_completions.d
+	install -m 644 completions/quad.fish $(DESTDIR)$(DATADIR)/fish/vendor_completions.d/quad.fish
+	@for cmd in $(COMPLETION_LINKS); do ln -sf quad.fish $(DESTDIR)$(DATADIR)/fish/vendor_completions.d/$$cmd.fish; done
+
+# Used by tests/run_cli_surface_test.sh to check that every tool gets a
+# completion link, without the test restating the list.
+.PHONY: print-completion-links
+print-completion-links:
+	@echo $(COMPLETION_LINKS)
 
 uninstall:
-	@for cmd in $(CMDS) quadrepl quadmcp; do rm -f $(DESTDIR)$(PREFIX)/bin/$$cmd; done
+	@for cmd in $(ALL_CMDS); do rm -f $(DESTDIR)$(PREFIX)/bin/$$cmd; done
 	rm -rf $(DESTDIR)$(PREFIX)/lib/quadrate
 	rm -f $(DESTDIR)$(PREFIX)/lib/libqdrt.so
 	rm -f $(DESTDIR)$(PREFIX)/lib/libqd.so
@@ -291,7 +349,9 @@ uninstall:
 	@echo "Removing Quadrate standard library modules from $(DESTDIR)$(DATADIR)/quadrate/"
 	rm -rf $(DESTDIR)$(DATADIR)/quadrate
 	@echo "Removing bash completions from $(DESTDIR)$(DATADIR)/bash-completion/completions/"
-	@for cmd in quad quadc quadfmt quadlint quadlsp quadpm quadrepl quaduses; do rm -f $(DESTDIR)$(DATADIR)/bash-completion/completions/$$cmd; done
+	@for cmd in quad $(COMPLETION_LINKS); do rm -f $(DESTDIR)$(DATADIR)/bash-completion/completions/$$cmd; done
+	@rm -f $(DESTDIR)$(DATADIR)/zsh/site-functions/_quad
+	@for cmd in quad $(COMPLETION_LINKS); do rm -f $(DESTDIR)$(DATADIR)/fish/vendor_completions.d/$$cmd.fish; done
 
 docs:
 	@echo "=========================================="
@@ -313,7 +373,7 @@ dist: release
 	cp -r dist/lib/* "$$TARNAME/lib/" && \
 	cp -r dist/share/* "$$TARNAME/share/" 2>/dev/null || true && \
 	cp -r dist/include "$$TARNAME/" 2>/dev/null || true && \
-	cp completions/quad.bash "$$TARNAME/" && \
+	cp completions/quad.bash completions/_quad completions/quad.fish "$$TARNAME/" && \
 	cp LICENSE README.md "$$TARNAME/" && \
 	sha256sum "$$TARNAME"/bin/* > "$$TARNAME/SHA256SUMS" && \
 	tar czf "$$TARNAME.tar.gz" "$$TARNAME" && \

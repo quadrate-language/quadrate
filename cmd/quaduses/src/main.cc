@@ -5,6 +5,7 @@
 #include <map>
 #include <quadrate/cli/cli.h>
 #include <quadrate/cli/file_utils.h>
+#include <quadrate/cli/help.h>
 #include <quadrate/qc/ast.h>
 #include <quadrate/qc/ast_node_enum.h>
 #include <quadrate/qc/ast_node_import.h>
@@ -31,23 +32,22 @@ struct UsesOptions {
 };
 
 void printHelp() {
-	std::cout << "quaduses - Manage use statements automatically\n\n";
-	std::cout << "Analyzes code and adds/removes use statements as needed.\n\n";
-	std::cout << "Usage: quaduses [options] <file|directory>...\n\n";
-	std::cout << "Options:\n";
-	std::cout << "  -h, --help       Show this help message\n";
-	std::cout << "  -v, --version    Show version information\n";
-	std::cout << "  --no-color       Disable coloured output\n";
-	std::cout << "  -w, --write      Update file in-place\n";
-	std::cout << "  -c, --check      Check if files need changes (exit 1 if so)\n";
-	std::cout << "  -n, --dry-run    Show what would change without modifying\n";
-	std::cout << "\n";
-	std::cout << "Examples:\n";
-	std::cout << "  quaduses file.qd             Show updated file with use statements\n";
-	std::cout << "  quaduses -w file.qd          Update use statements in-place\n";
-	std::cout << "  quaduses -w src/             Update all .qd files in directory recursively\n";
-	std::cout << "  quaduses -c src/             Check if any files need updating (for CI)\n";
-	std::cout << "  quaduses -n file.qd          Show changes that would be made\n";
+	qdcli::Help help("quaduses", "Quadrate use-statement manager");
+	help.description("Analyses a source file and adds the use statements it needs, removing the\n"
+					 "ones it does not.")
+			.usage("[options] <file|directory>...")
+			.section("Options")
+			.standardOptions()
+			.option('w', "--write", "Update files in place")
+			.option('c', "--check", "Report whether files need changes (exit 1 if so)")
+			.option('n', "--dry-run", "Show what would change without modifying")
+			.section("Examples")
+			.item("quaduses file.qd", "Print the updated file to stdout")
+			.item("quaduses -w file.qd", "Update use statements in place")
+			.item("quaduses -w src/", "Update every .qd file in a directory, recursively")
+			.item("quaduses -c src/", "Check whether any file needs updating (for CI)")
+			.item("quaduses -n file.qd", "Show the changes that would be made");
+	help.print();
 }
 
 // Helper to extract module name from a scoped type like "math::Vec3" -> "math"

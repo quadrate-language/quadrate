@@ -19,6 +19,16 @@ void pmSetColorEnabled(bool enabled);
 #define COLOR_BLUE (pmColorEnabled() ? "\033[34m" : "")
 #define COLOR_CYAN (pmColorEnabled() ? "\033[36m" : "")
 
+// Diagnostics. Every Quadrate tool writes "<tool>: <message>" in lower case on
+// stderr, so quadpm does too rather than the capitalised "Error:"/"Warning:"
+// prefixes it used to print. The prefix is coloured when colour is on; the text
+// after it is not, so output stays greppable.
+// pmError returns 1 so a caller can `return pmError(...)`.
+int pmError(const std::string& message);
+void pmWarn(const std::string& message);
+// A usage error: adds the referral line the other tools print.
+int pmUsageError(const std::string& message);
+
 // Lockfile format version
 extern const int LOCKFILE_VERSION;
 

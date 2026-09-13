@@ -43,8 +43,7 @@ std::string gitClone(const GitRef& gitRef) {
 
 	// Reject URLs/refs that git would interpret as options (argument injection).
 	if (!isSafeGitArgument(gitRef.url) || !isSafeGitArgument(gitRef.ref)) {
-		std::cerr << COLOR_RED << "Error: refusing unsafe git URL or ref: " << COLOR_RESET << gitRef.url
-				  << (gitRef.ref.empty() ? "" : ("@" + gitRef.ref)) << "\n";
+		pmError("refusing unsafe git URL or ref: " + gitRef.url + (gitRef.ref.empty() ? "" : ("@" + gitRef.ref)));
 		return "";
 	}
 
@@ -61,7 +60,7 @@ std::string gitClone(const GitRef& gitRef) {
 	int result = execCommandLive(cloneCmd);
 
 	if (result != 0) {
-		std::cerr << COLOR_RED << "Error: Failed to clone repository" << COLOR_RESET << "\n";
+		pmError("failed to clone repository");
 		// Try to clean up partial clone
 		if (fs::exists(targetDir)) {
 			fs::remove_all(targetDir);
@@ -78,8 +77,7 @@ std::string gitClone(const GitRef& gitRef) {
 	if (hasQuadrateFiles(finalDir)) {
 		std::cout << COLOR_GREEN << "  ✓ Found .qd files" << COLOR_RESET << "\n";
 	} else {
-		std::cout << COLOR_YELLOW << "  ⚠ Warning: no .qd files found at root" << COLOR_RESET << "\n";
-		std::cout << "    Module should contain at least one .qd file\n";
+		pmWarn("no .qd files found at the module root; a module should contain at least one .qd file");
 	}
 
 	// Parse namespace from qd.json and create symlink
@@ -107,8 +105,7 @@ std::string gitClone(const GitRef& gitRef) {
 	for (const auto& pkg : existingPackages) {
 		if (pkg != installedDirName) {
 			hasConflict = true;
-			std::cout << COLOR_YELLOW << "  ⚠ Warning: namespace '" << namespaceName
-					  << "' also claimed by: " << COLOR_RESET << pkg << "\n";
+			pmWarn("namespace '" + namespaceName + "' is also claimed by: " + pkg);
 		}
 	}
 
@@ -582,16 +579,15 @@ int buildModule() {
 	// Check for qd.json
 	std::string manifestPath = cwd + "/qd.json";
 	if (!fs::exists(manifestPath)) {
-		std::cerr << COLOR_RED << "Error: No qd.json found in current directory" << COLOR_RESET << "\n";
-		std::cerr << "Run this command from a module directory containing qd.json\n";
+		pmError("no qd.json in the current directory");
+		std::cerr << "Run this command from a module directory containing qd.json.\n";
 		return 1;
 	}
 
 	// Parse module name from manifest
 	std::string moduleName = parseModuleName(manifestPath);
 	if (moduleName.empty()) {
-		std::cerr << COLOR_RED << "Error: Could not parse module name from qd.json" << COLOR_RESET << "\n";
-		return 1;
+		return pmError("could not parse the module name from qd.json");
 	}
 
 	std::cout << COLOR_CYAN << "Building module " << COLOR_BOLD << moduleName << COLOR_RESET << "...\n";
@@ -649,7 +645,7 @@ std::vector<std::pair<std::string, std::string>> listRemoteTags(const std::strin
 	std::vector<std::pair<std::string, std::string>> tags;
 
 	if (!isSafeGitArgument(gitUrl)) {
-		std::cerr << COLOR_RED << "Error: refusing unsafe git URL: " << COLOR_RESET << gitUrl << "\n";
+		pmError("refusing unsafe git URL: " + gitUrl);
 		return tags;
 	}
 
@@ -962,8 +958,7 @@ int installDependencies(bool frozen) {
 	// Check for qd.json
 	std::string manifestPath = cwd + "/qd.json";
 	if (!fs::exists(manifestPath)) {
-		std::cerr << COLOR_RED << "Error: No qd.json found in current directory" << COLOR_RESET << "\n";
-		return 1;
+		return pmError("no qd.json in the current directory");
 	}
 
 	// Check for lockfile
@@ -972,8 +967,8 @@ int installDependencies(bool frozen) {
 	bool hasLockfile = !lockedDeps.empty();
 
 	if (frozen && !hasLockfile) {
-		std::cerr << COLOR_RED << "Error: --frozen requires qd.lock but none found" << COLOR_RESET << "\n";
-		std::cerr << "Run 'quadpm install' first to generate a lockfile\n";
+		pmError("--frozen requires qd.lock, but none was found");
+		std::cerr << "Run 'quadpm install' first to generate a lockfile.\n";
 		return 1;
 	}
 
@@ -994,9 +989,8 @@ int installDependencies(bool frozen) {
 	if (frozen) {
 		for (const auto& dep : directDeps) {
 			if (lockedByName.find(dep.name) == lockedByName.end()) {
-				std::cerr << COLOR_RED << "Error: Dependency '" << dep.name << "' not in lockfile" << COLOR_RESET
-						  << "\n";
-				std::cerr << "Run 'quadpm install' to update the lockfile\n";
+				pmError("dependency '" + dep.name + "' is not in the lockfile");
+				std::cerr << "Run 'quadpm install' to update the lockfile.\n";
 				return 1;
 			}
 		}
@@ -1019,7 +1013,8 @@ int installDependencies(bool frozen) {
 	std::set<std::string> conflictVisited;
 	std::vector<VersionConflict> conflicts = detectVersionConflicts(directDeps, cwd, conflictVisited);
 	if (!conflicts.empty()) {
-		std::cout << COLOR_YELLOW << "Warning: Detected version conflicts:" << COLOR_RESET << "\n\n";
+		pmWarn("detected version conflicts:");
+		std::cout << "\n";
 		for (const auto& conflict : conflicts) {
 			std::cout << "  " << COLOR_BOLD << conflict.packageName << COLOR_RESET << ":\n";
 			for (const auto& [requirer, version] : conflict.requirements) {
@@ -1119,8 +1114,7 @@ int generateLockfile() {
 	// Check for qd.json
 	std::string manifestPath = cwd + "/qd.json";
 	if (!fs::exists(manifestPath)) {
-		std::cerr << COLOR_RED << "Error: No qd.json found in current directory" << COLOR_RESET << "\n";
-		return 1;
+		return pmError("no qd.json in the current directory");
 	}
 
 	// Parse dependencies
@@ -1206,8 +1200,7 @@ int generateLockfile() {
 			std::cout << COLOR_GREEN << "✓ " << COLOR_RESET << "Wrote qd.lock (" << lockedDeps.size() << " packages)\n";
 			return 0;
 		} else {
-			std::cerr << COLOR_RED << "Error: Failed to write qd.lock" << COLOR_RESET << "\n";
-			return 1;
+			return pmError("failed to write qd.lock");
 		}
 	}
 
@@ -1219,8 +1212,7 @@ int updateModules(const std::string& targetModuleName) {
 	std::string modulesDir = getModulesDir();
 
 	if (!fs::exists(modulesDir)) {
-		std::cerr << COLOR_RED << "Error: No modules installed" << COLOR_RESET << "\n";
-		return 1;
+		return pmError("no modules installed");
 	}
 
 	// Load dependency constraints from qd.json (if present) for semver resolution
@@ -1276,9 +1268,9 @@ int updateModules(const std::string& targetModuleName) {
 
 	if (!found) {
 		if (targetModuleName.empty()) {
-			std::cerr << COLOR_RED << "Error: No modules found to update" << COLOR_RESET << "\n";
+			pmError("no modules found to update");
 		} else {
-			std::cerr << COLOR_RED << "Error: Module '" << targetModuleName << "' not found" << COLOR_RESET << "\n";
+			pmError("module '" + targetModuleName + "' not found");
 		}
 		return 1;
 	}
@@ -1506,7 +1498,7 @@ int showOutdated() {
 // Remove an installed module
 int removeModule(const std::string& targetModuleName) {
 	if (targetModuleName.empty()) {
-		std::cerr << COLOR_RED << "Error: Module name required" << COLOR_RESET << "\n";
+		pmError("'remove' requires a module name");
 		std::cerr << "Usage: quadpm remove <name>\n";
 		return 1;
 	}
@@ -1514,8 +1506,7 @@ int removeModule(const std::string& targetModuleName) {
 	std::string modulesDir = getModulesDir();
 
 	if (!fs::exists(modulesDir)) {
-		std::cerr << COLOR_RED << "Error: No modules installed" << COLOR_RESET << "\n";
-		return 1;
+		return pmError("no modules installed");
 	}
 
 	// Find the module directory
@@ -1581,8 +1572,8 @@ int removeModule(const std::string& targetModuleName) {
 	}
 
 	if (foundPath.empty()) {
-		std::cerr << COLOR_RED << "Error: Module '" << targetModuleName << "' not found" << COLOR_RESET << "\n";
-		std::cerr << "Use 'quadpm list' to see installed modules\n";
+		pmError("module '" + targetModuleName + "' not found");
+		std::cerr << "Use 'quadpm list' to see installed modules.\n";
 		return 1;
 	}
 

@@ -162,16 +162,49 @@ fn run_http(ds:ptr port:str -- ) {
 }
 
 fn print_usage( -- ) {
-	"quadmcp - Model Context Protocol server for Quadrate" print nl
+	"quadmcp - Quadrate MCP server" print nl
+	nl
+	"Serves the Model Context Protocol over stdin/stdout as JSON-RPC, giving an" print nl
+	"MCP client the Quadrate language and standard library reference." print nl
 	nl
 	"Usage: quadmcp [options]" print nl
 	nl
 	"Options:" print nl
 	"  -h, --help       Show this help message" print nl
 	"  -v, --version    Show version information" print nl
+	"      --no-color   Disable coloured output" print nl
 	"      --http       Serve over HTTP on :3000 instead of stdio" print nl
 	nl
-	"With no options quadmcp speaks JSON-RPC (MCP) on stdin/stdout." print nl
+	"Examples:" print nl
+	"  quadmcp          Serve MCP on stdin/stdout (how a client starts it)" print nl
+	"  quadmcp --http   Serve MCP over HTTP on localhost:3000" print nl
+}
+
+// Report the first option that is not one of the ones listed above, the way the
+// C++ tools do: the message and the referral line on stderr, then exit 1. quadmcp
+// used to ignore an unrecognised flag and drop into the stdio server, which to
+// whoever mistyped it looked like a hang -- the process just sat there waiting
+// for JSON-RPC that was never coming.
+fn reject_unknown_options(f:Flag -- ) {
+	f <<argv "\n" strings::split! -> count -> parts
+	0 count 1 for it {
+		parts it nth -> tok
+		tok "-" strings::starts_with
+		tok "-h" strings::compare 0 != *
+		tok "--help" strings::compare 0 != *
+		tok "-v" strings::compare 0 != *
+		tok "--version" strings::compare 0 != *
+		tok "--http" strings::compare 0 != *
+		tok "--no-color" strings::compare 0 != *
+		tok "--no-colors" strings::compare 0 != * if {
+			"quadmcp: unknown option: " tok strings::concat fmt::eprintln
+			"Try 'quadmcp --help' for more information." fmt::eprintln
+			parts free
+			f flag::destroy
+			1 os::exit
+		}
+	}
+	parts free
 }
 
 fn main() {
@@ -189,9 +222,11 @@ fn main() {
 	}
 
 	f "--version" flag::boolean f "-v" flag::boolean or if {
-		"quadmcp " print SERVER_VERSION print nl
+		"quadmcp " print BUILD_VERSION print nl
 		return
 	}
+
+	f reject_unknown_options
 
 	load_docs -> ds
 	defer {

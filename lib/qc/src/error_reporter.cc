@@ -42,7 +42,6 @@ namespace Qd {
 		}
 
 		// Format: filename:line:column: warning: message
-		std::cerr << Colors::bold() << "quadc: " << Colors::reset();
 		if (mFilename) {
 			std::cerr << Colors::bold() << mFilename << ":" << line << ":" << column << ":" << Colors::reset() << " ";
 		} else {
@@ -66,7 +65,6 @@ namespace Qd {
 			// Still report this error, but warn about limit
 			if (!mStoreErrors) {
 				// Report the current error first
-				std::cerr << Colors::bold() << "quadc: " << Colors::reset();
 				if (mFilename) {
 					std::cerr << Colors::bold() << mFilename << ":" << line << ":" << column << ":" << Colors::reset()
 							  << " ";
@@ -78,8 +76,11 @@ namespace Qd {
 					std::cerr << Colors::cyan() << "  hint:" << Colors::reset() << " " << hint << std::endl;
 				}
 
-				// Then print the limit warning
-				std::cerr << Colors::bold() << Colors::magenta() << "\nquadc: error limit reached (" << mMaxErrors
+				// Then print the limit warning. Uses the note: level the located
+				// diagnostics above already speak in, rather than naming a tool --
+				// this reporter is linked into quadlsp and quadrepl too, which were
+				// reporting themselves as "quadc:" here.
+				std::cerr << Colors::bold() << Colors::magenta() << "\nnote: error limit reached (" << mMaxErrors
 						  << " errors). Further errors suppressed." << Colors::reset() << std::endl;
 				return;
 			}
@@ -116,7 +117,6 @@ namespace Qd {
 		}
 
 		// Format: filename:line:column: error: message
-		std::cerr << Colors::bold() << "quadc: " << Colors::reset();
 		if (mFilename) {
 			std::cerr << Colors::bold() << mFilename << ":" << line << ":" << column << ":" << Colors::reset() << " ";
 		} else {

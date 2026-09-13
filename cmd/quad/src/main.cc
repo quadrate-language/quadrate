@@ -5,6 +5,7 @@
 #include <fstream>
 #include <iostream>
 #include <quadrate/cli/cli.h>
+#include <quadrate/cli/help.h>
 #include <quadrate/qc/colors.h>
 #include <string>
 #include <vector>
@@ -46,41 +47,34 @@ static const Command commands[] = {
 static const size_t NUM_COMMANDS = sizeof(commands) / sizeof(commands[0]);
 
 void printHelp() {
-	std::cout << Colors::bold() << "quad" << Colors::reset() << " - Quadrate language toolchain\n\n";
-	std::cout << Colors::bold() << "Usage:" << Colors::reset() << " quad <command> [options] [arguments]\n";
-	std::cout << "       quad <file.qd> [arguments]   (run a script directly)\n\n";
-	std::cout << Colors::bold() << "Commands:" << Colors::reset() << "\n";
-	std::cout << "  " << Colors::green() << "build" << Colors::reset() << "     Compile Quadrate source files\n";
-	std::cout << "  " << Colors::green() << "run" << Colors::reset() << "       Build and run a Quadrate program\n";
-	std::cout << "  " << Colors::green() << "test" << Colors::reset() << "      Run tests\n";
-	std::cout << "  " << Colors::green() << "fmt" << Colors::reset() << "       Format Quadrate source files\n";
-	std::cout << "  " << Colors::green() << "lint" << Colors::reset() << "      Check code for common issues\n";
-	std::cout << "  " << Colors::green() << "repl" << Colors::reset() << "      Start interactive REPL\n";
-	std::cout << "  " << Colors::green() << "uses" << Colors::reset() << "      Manage use statements\n";
-	std::cout << "  " << Colors::green() << "lsp" << Colors::reset() << "       Start language server\n";
-	std::cout << "  " << Colors::green() << "doc" << Colors::reset() << "       Generate HTML documentation\n";
-	std::cout << "  " << Colors::green() << "pm" << Colors::reset() << "        Manage third-party modules\n";
-	std::cout << "  " << Colors::green() << "mcp" << Colors::reset() << "       Start the MCP server\n";
-	std::cout << "  " << Colors::green() << "init" << Colors::reset() << "      Initialize a new Quadrate project\n";
-	std::cout << "  " << Colors::green() << "clean" << Colors::reset() << "     Remove build artifacts\n";
-	std::cout << "  " << Colors::green() << "help" << Colors::reset() << "      Show help for a command\n";
-	std::cout << "  " << Colors::green() << "version" << Colors::reset() << "   Show version information\n";
-	std::cout << "\n";
-	std::cout << Colors::bold() << "Examples:" << Colors::reset() << "\n";
-	std::cout << "  " << Colors::cyan() << "quad build main.qd" << Colors::reset() << "           Compile main.qd\n";
-	std::cout << "  " << Colors::cyan() << "quad run main.qd" << Colors::reset()
-			  << "             Build and run main.qd\n";
-	std::cout << "  " << Colors::cyan() << "quad run greet.qd -- Alice" << Colors::reset()
-			  << "   Run with argument 'Alice'\n";
-	std::cout << "  " << Colors::cyan() << "quad fmt" << Colors::reset()
-			  << "                     Format all .qd files in-place\n";
-	std::cout << "  " << Colors::cyan() << "quad test" << Colors::reset()
-			  << "                    Run tests in current directory\n";
-	std::cout << "  " << Colors::cyan() << "quad script.qd" << Colors::reset()
-			  << "               Run script directly (for shebang)\n";
-	std::cout << "\n";
-	std::cout << "Run '" << Colors::cyan() << "quad help <command>" << Colors::reset()
-			  << "' for more information on a command.\n";
+	qdcli::Help help("quad", "Quadrate toolchain");
+	help.description("A single entry point to the Quadrate tools. Each command below runs the\n"
+					 "matching tool and passes your options straight through to it.")
+			.usage("<command> [options] [arguments]")
+			.usage("<file.qd> [arguments]", "run a script directly")
+			.section("Commands");
+
+	// Driven off the dispatch table rather than a second hand-written list, which
+	// is how the two drifted apart before.
+	for (size_t i = 0; i < NUM_COMMANDS; i++) {
+		help.item(commands[i].name, commands[i].description);
+	}
+	help.item("help", "Show help for a command");
+
+	help.section("Options")
+			.standardOptions()
+			.text()
+			.text("Any other option is passed through to the tool the command runs.")
+			.section("Examples")
+			.item("quad build main.qd", "Compile main.qd")
+			.item("quad run main.qd", "Build and run main.qd")
+			.item("quad run greet.qd -- Alice", "Run with the argument 'Alice'")
+			.item("quad fmt", "Format every .qd file in place")
+			.item("quad test", "Run the tests in the current directory")
+			.item("quad script.qd", "Run a script directly (for a shebang line)");
+	help.print();
+
+	std::cout << "\nRun 'quad help <command>' for more information on a command.\n";
 }
 
 void printVersion() {
@@ -715,9 +709,7 @@ int handleHelp(const std::vector<std::string>& args) {
 		return 1;
 	}
 
-	std::cerr << "quad: unknown command '" << cmd << "'\n";
-	std::cerr << "Run 'quad help' for usage.\n";
-	return 1;
+	return qdcli::usageError("quad", "unknown command '" + cmd + "'");
 }
 
 int main(int argc, char* argv[]) {
@@ -727,18 +719,36 @@ int main(int argc, char* argv[]) {
 		Colors::setEnabled(false);
 	}
 
-	if (argc < 2) {
+	// --no-color is accepted by every tool, so it has to work on the dispatcher
+	// too -- a script passing it uniformly should not have `quad` alone reject
+	// it as an unknown command. Consume it here and pass it on, since the tool
+	// that finally produces the output is the one that colours.
+	std::vector<std::string> argList;
+	bool noColorFlag = false;
+	for (int i = 1; i < argc; i++) {
+		std::string arg = argv[i];
+		if (arg == "--no-color" || arg == "--no-colors") {
+			noColorFlag = true;
+			continue;
+		}
+		argList.push_back(arg);
+	}
+	if (noColorFlag) {
+		Colors::setEnabled(false);
+		// Inherited by every tool quad execs, so `quad --no-color lint src/`
+		// reaches quadlint as well.
+		setenv("NO_COLOR", "1", 1);
+	}
+
+	if (argList.empty()) {
 		printHelp();
 		return 0;
 	}
 
-	std::string command = argv[1];
+	std::string command = argList[0];
 
 	// Collect remaining arguments
-	std::vector<std::string> args;
-	for (int i = 2; i < argc; i++) {
-		args.push_back(argv[i]);
-	}
+	std::vector<std::string> args(argList.begin() + 1, argList.end());
 
 	// Check if first argument is a .qd file (for shebang support: #!/usr/bin/quad)
 	// If so, run it directly using quadc -r
@@ -808,7 +818,8 @@ int main(int argc, char* argv[]) {
 		return handleClean(args);
 	}
 
-	std::cerr << "quad: unknown command '" << command << "'\n";
-	std::cerr << "Run 'quad help' for usage.\n";
-	return 1;
+	if (!command.empty() && command[0] == '-') {
+		return qdcli::usageError("quad", "unknown option: " + command);
+	}
+	return qdcli::usageError("quad", "unknown command '" + command + "'");
 }

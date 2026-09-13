@@ -1,0 +1,225 @@
+#compdef quad quadc quaddoc quadfmt quadlint quadlsp quadmcp quadpm quadrepl quaduses
+
+# Zsh completion for the Quadrate toolchain.
+#
+# One file serves all ten tools: zsh dispatches on $service, so unlike the bash
+# completion this needs no per-command links. Option lists mirror each tool's
+# --help; `<tool> --help` is the authoritative list, and
+# tests/run_cli_surface_test.sh fails if an option documented there is missing
+# from here.
+
+# The three options every Quadrate tool accepts.
+local -a common_opts
+common_opts=(
+	'(-h --help)'{-h,--help}'[Show this help message]'
+	'(-v --version)'{-v,--version}'[Show version information]'
+	'--no-color[Disable coloured output]'
+)
+
+local -a qd_files
+qd_files=('*:Quadrate source:_files -g "*.qd" -/')
+
+_quadc_opts() {
+	local -a opts
+	opts=(
+		$common_opts
+		'(-o --output)'{-o,--output}'[Output executable name]:output name:_files'
+		'-O0[No optimization (default)]'
+		'-O1[Optimize a little]'
+		'-O2[Optimize more]'
+		'-O3[Optimize most]'
+		'(-g --debug)'{-g,--debug}'[Generate debug information for GDB/LLDB]'
+		'(-s --stack-size)'{-s,--stack-size}'[Set stack size]:size:'
+		'*'{-I,--include}'[Add a module search path]:path:_files -/'
+		'*'{-l,--module}'[Pin a module to a version]:module@version:'
+		'(-r --run)'{-r,--run}'[Compile and run immediately]'
+		'--no-jit[Link and execute instead of using the JIT]'
+		'--test[Compile and run tests]'
+		'--coverage[Print a function coverage report]'
+		'--target[Cross-compile for a target]:triple:'
+		'--freestanding[No hosted runtime: no libc, no auto-main]'
+		'--werror[Treat warnings as errors]'
+		'--verbose[Show detailed compilation steps]'
+		'--save-temps[Keep temporary files for debugging]'
+		'--dump-tokens[Print the lexer token stream]'
+		'--dump-ast[Print the parsed AST]'
+		'--dump-ir[Print the generated LLVM IR]'
+		$qd_files
+	)
+	_arguments -s : $opts
+}
+
+_quadfmt_opts() {
+	_arguments -s : \
+		$common_opts \
+		'(-c --check)'{-c,--check}'[Report whether files are formatted (exit 1 if not)]' \
+		'(-w --write)'{-w,--write}'[Format files in place]' \
+		'--no-sort-imports[Leave use statements in their original order]' \
+		$qd_files
+}
+
+_quadlint_opts() {
+	_arguments -s : \
+		$common_opts \
+		'--json[Report issues as JSON (for editors and CI)]' \
+		'(-q --quiet)'{-q,--quiet}'[Only show the summary]' \
+		'--max-nesting[Maximum nesting depth]:depth:' \
+		'--no-unused-functions[Disable unused function warnings]' \
+		'--no-unused-variables[Disable unused variable warnings]' \
+		'--no-dead-code[Disable dead code warnings]' \
+		'--no-deep-nesting[Disable deep nesting warnings]' \
+		'--no-missing-defer[Disable missing defer warnings]' \
+		'--no-shadow-variables[Disable shadow variable warnings]' \
+		'--no-empty-blocks[Disable empty block warnings]' \
+		'--no-constant-conditions[Disable constant condition warnings]' \
+		'--check-magic-numbers[Enable magic number detection]' \
+		'--check-long-functions[Enable long function detection]' \
+		'--check-naming[Enable naming convention checks]' \
+		'--max-function-lines[Maximum function lines]:lines:' \
+		$qd_files
+}
+
+_quaduses_opts() {
+	_arguments -s : \
+		$common_opts \
+		'(-w --write)'{-w,--write}'[Update files in place]' \
+		'(-c --check)'{-c,--check}'[Report whether files need changes (exit 1 if so)]' \
+		'(-n --dry-run)'{-n,--dry-run}'[Show what would change without modifying]' \
+		$qd_files
+}
+
+_quaddoc_opts() {
+	_arguments -s : \
+		$common_opts \
+		'(-o --output)'{-o,--output}'[Output directory]:directory:_files -/' \
+		'(-q --quiet)'{-q,--quiet}'[Print nothing but errors]' \
+		'--title[Project title]:title:' \
+		'--css[Append a custom CSS file]:css file:_files -g "*.css"' \
+		'::directory:_files -/'
+}
+
+_quadrepl_opts() {
+	_arguments -s : \
+		$common_opts \
+		'(-p --print)'{-p,--print}'[Print stack to stdout on exit]'
+}
+
+_quadmcp_opts() {
+	_arguments -s : \
+		$common_opts \
+		'--http[Serve over HTTP on :3000 instead of stdio]'
+}
+
+_quadlsp_opts() {
+	_arguments -s : $common_opts
+}
+
+_quadpm_opts() {
+	local -a pm_commands
+	pm_commands=(
+		'install:Install the dependencies listed in qd.json'
+		'lock:Generate or update qd.lock from the installed modules'
+		'get:Fetch and install one module from Git'
+		'update:Update installed modules (git pull)'
+		'remove:Remove an installed module'
+		'list:List installed modules'
+		'outdated:Show modules with newer versions available'
+		'build:Build the C sources of the module in this directory'
+	)
+
+	local curcontext="$curcontext" state
+	_arguments -s -C : \
+		$common_opts \
+		'1: :->command' \
+		'*:: :->args' && return
+
+	case $state in
+		command)
+			_describe -t commands 'quadpm command' pm_commands
+			;;
+		args)
+			case $words[1] in
+				install)
+					_arguments -s : \
+						$common_opts \
+						'--frozen[Install only from qd.lock (fail if outdated)]'
+					;;
+				get)
+					_message 'Git URL, optionally suffixed with @ref'
+					;;
+				update|remove)
+					_message 'module name'
+					;;
+				*)
+					_arguments -s : $common_opts
+					;;
+			esac
+			;;
+	esac
+}
+
+_quad_dispatch() {
+	local -a quad_commands
+	quad_commands=(
+		'build:Compile Quadrate source files'
+		'run:Build and run a Quadrate program'
+		'test:Run tests'
+		'fmt:Format Quadrate source files'
+		'lint:Check code for common issues'
+		'repl:Start interactive REPL'
+		'uses:Manage use statements'
+		'lsp:Start language server'
+		'doc:Generate HTML documentation'
+		'pm:Manage third-party modules'
+		'mcp:Start the MCP server'
+		'init:Initialize a new Quadrate project'
+		'clean:Remove build artifacts'
+		'help:Show help for a command'
+		'version:Show version information'
+	)
+
+	local curcontext="$curcontext" state
+	_arguments -s -C : \
+		$common_opts \
+		'1: :->command' \
+		'*:: :->args' && return
+
+	case $state in
+		command)
+			# A .qd file may be given directly, for shebang scripts.
+			_alternative \
+				'commands:quad command:(( ${(@)quad_commands} ))' \
+				'files:Quadrate source:_files -g "*.qd"'
+			;;
+		args)
+			# Each command runs the matching tool and passes options straight
+			# through, so complete exactly what that tool would accept.
+			case $words[1] in
+				build|run|test) _quadc_opts ;;
+				fmt)            _quadfmt_opts ;;
+				lint)           _quadlint_opts ;;
+				uses)           _quaduses_opts ;;
+				doc)            _quaddoc_opts ;;
+				repl)           _quadrepl_opts ;;
+				lsp)            _quadlsp_opts ;;
+				mcp)            _quadmcp_opts ;;
+				pm)             _quadpm_opts ;;
+				help)           _describe -t commands 'quad command' quad_commands ;;
+				*)              _arguments -s : $common_opts ;;
+			esac
+			;;
+	esac
+}
+
+case $service in
+	quad)     _quad_dispatch ;;
+	quadc)    _quadc_opts ;;
+	quaddoc)  _quaddoc_opts ;;
+	quadfmt)  _quadfmt_opts ;;
+	quadlint) _quadlint_opts ;;
+	quadlsp)  _quadlsp_opts ;;
+	quadmcp)  _quadmcp_opts ;;
+	quadpm)   _quadpm_opts ;;
+	quadrepl) _quadrepl_opts ;;
+	quaduses) _quaduses_opts ;;
+esac

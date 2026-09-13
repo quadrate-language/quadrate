@@ -12,6 +12,7 @@
 #include <fstream>
 #include <iostream>
 #include <quadrate/cli/cli.h>
+#include <quadrate/cli/help.h>
 #include <quadrate/platform/platform.h>
 #include <quadrate/qc/ast.h>
 #include <quadrate/qc/ast_node_constant.h>
@@ -4658,24 +4659,23 @@ std::vector<StructInfo> QuadrateLSP::extractStructs(const std::string& text) {
 // Entry point helpers
 
 void printHelp() {
-	std::cout << "quadlsp - Quadrate Language Server Protocol\n\n";
-	std::cout << "Provides IDE features for Quadrate: diagnostics, completion, and hover.\n\n";
-	std::cout << "Usage: quadlsp [options]\n\n";
-	std::cout << "Options:\n";
-	std::cout << "  -h, --help       Show this help message\n";
-	std::cout << "  -v, --version    Show version information\n";
-	std::cout << "  --no-color       Disable coloured output\n";
-	std::cout << "\n";
-	std::cout << "The LSP server communicates via stdin/stdout using JSON-RPC.\n";
-	std::cout << "Configure your editor to use 'quadlsp' as the language server.\n\n";
-	std::cout << "Supported features:\n";
-	std::cout << "  - Syntax error diagnostics\n";
-	std::cout << "  - Auto-completion for built-in instructions and user functions\n";
-	std::cout << "  - Hover documentation\n";
-	std::cout << "  - Document symbols (outline view of functions and imports)\n";
-	std::cout << "  - Go to definition (jump to function declarations)\n";
-	std::cout << "  - Find references (locate all function calls)\n";
-	std::cout << "  - Rename symbol (rename functions across the file)\n";
+	qdcli::Help help("quadlsp", "Quadrate language server");
+	help.description("Serves the Language Server Protocol over stdin/stdout as JSON-RPC.\n"
+					 "Configure your editor to use 'quadlsp' as the language server for .qd files.")
+			.usage("[options]")
+			.section("Options")
+			.standardOptions()
+			.section("Features")
+			.item("Diagnostics", "Syntax and semantic errors as you type")
+			.item("Completion", "Builtins, keywords, user functions and stdlib names")
+			.item("Hover", "Signatures and documentation")
+			.item("Navigation", "Go to definition, find references, document and workspace symbols")
+			.item("Hierarchies", "Call hierarchy and type hierarchy")
+			.item("Editing", "Rename, code actions, linked editing, on-type formatting")
+			.item("Display", "Semantic tokens, inlay hints, folding ranges, code lens, document links")
+			.section("Examples")
+			.item("quadlsp", "Serve LSP on stdin/stdout (how an editor starts it)");
+	help.print();
 }
 
 void printVersion() {

@@ -6,6 +6,7 @@
 #include <jansson.h>
 #include <quadrate/cli/cli.h>
 #include <quadrate/cli/file_utils.h>
+#include <quadrate/cli/help.h>
 #include <quadrate/qc/ast.h>
 #include <quadrate/qc/ast_node_for.h>
 #include <quadrate/qc/ast_node_function.h>
@@ -108,40 +109,40 @@ static std::vector<std::string> splitLines(const std::string& source) {
 }
 
 void printHelp() {
-	std::cout << "quadlint - Quadrate code linter\n\n";
-	std::cout << "Checks Quadrate source files for code quality issues.\n\n";
-	std::cout << "Usage: quadlint [options] <file|directory>...\n\n";
-	std::cout << "Options:\n";
-	std::cout << "  -h, --help                Show this help message\n";
-	std::cout << "  -v, --version             Show version information\n";
-	std::cout << "  --no-color                Disable coloured output\n";
-	std::cout << "  --json                    Output results in JSON format\n";
-	std::cout << "  -q, --quiet               Only show summary (no individual issues)\n";
-	std::cout << "  --no-unused-functions     Disable unused function warnings\n";
-	std::cout << "  --no-unused-variables     Disable unused variable warnings\n";
-	std::cout << "  --no-dead-code            Disable dead code warnings\n";
-	std::cout << "  --no-deep-nesting         Disable deep nesting warnings\n";
-	std::cout << "  --no-missing-defer        Disable missing defer warnings\n";
-	std::cout << "  --no-shadow-variables     Disable shadow variable warnings\n";
-	std::cout << "  --no-empty-blocks         Disable empty block warnings\n";
-	std::cout << "  --no-constant-conditions  Disable constant condition warnings\n";
-	std::cout << "  --max-nesting <N>         Maximum nesting depth (default: 4)\n";
-	std::cout << "\nStricter checks (disabled by default):\n";
-	std::cout << "  --check-magic-numbers     Enable magic number detection\n";
-	std::cout << "  --check-long-functions    Enable long function detection\n";
-	std::cout << "  --check-naming            Enable naming convention checks\n";
-	std::cout << "  --max-function-lines <N>  Maximum function lines (default: 50)\n";
-	std::cout << "\nInline suppression:\n";
-	std::cout << "  Add //nolint on a line to suppress all warnings on that line.\n";
-	std::cout << "  Add //nolint:rule1,rule2 to suppress specific rules.\n";
-	std::cout << "  Rules: unused-functions, unused-variables, dead-code, deep-nesting,\n";
-	std::cout << "         missing-defer, shadow-variables, empty-blocks, constant-conditions,\n";
-	std::cout << "         magic-numbers, long-functions, naming\n";
-	std::cout << "\nExamples:\n";
-	std::cout << "  quadlint file.qd          Lint a single file\n";
-	std::cout << "  quadlint src/             Lint all .qd files in directory recursively\n";
-	std::cout << "  quadlint --json file.qd   Output results in JSON format for IDEs\n";
-	std::cout << "  quadlint -q *.qd          Only show summary\n";
+	qdcli::Help help("quadlint", "Quadrate code linter");
+	help.description("Checks Quadrate source files for code quality issues.")
+			.usage("[options] <file|directory>...")
+			.section("Options")
+			.standardOptions()
+			.option("--json", "Report issues as JSON (for editors and CI)")
+			.option('q', "--quiet", "Only show the summary, not individual issues")
+			.option("--max-nesting", "<N>", "Maximum nesting depth (default: 4)")
+			.option("--no-unused-functions", "Disable unused function warnings")
+			.option("--no-unused-variables", "Disable unused variable warnings")
+			.option("--no-dead-code", "Disable dead code warnings")
+			.option("--no-deep-nesting", "Disable deep nesting warnings")
+			.option("--no-missing-defer", "Disable missing defer warnings")
+			.option("--no-shadow-variables", "Disable shadow variable warnings")
+			.option("--no-empty-blocks", "Disable empty block warnings")
+			.option("--no-constant-conditions", "Disable constant condition warnings")
+			.section("Stricter checks (disabled by default)")
+			.option("--check-magic-numbers", "Enable magic number detection")
+			.option("--check-long-functions", "Enable long function detection")
+			.option("--check-naming", "Enable naming convention checks")
+			.option("--max-function-lines", "<N>", "Maximum function lines (default: 50)")
+			.section("Inline suppression")
+			.text("Add //nolint on a line to suppress all warnings on that line, or")
+			.text("//nolint:rule1,rule2 to suppress specific rules. Rule names are:")
+			.text()
+			.text("unused-functions, unused-variables, dead-code, deep-nesting,")
+			.text("missing-defer, shadow-variables, empty-blocks, constant-conditions,")
+			.text("magic-numbers, long-functions, naming")
+			.section("Examples")
+			.item("quadlint file.qd", "Lint a single file")
+			.item("quadlint src/", "Lint every .qd file in a directory, recursively")
+			.item("quadlint --json src/", "Report issues as JSON for an editor or CI")
+			.item("quadlint -q src/", "Only show the summary");
+	help.print();
 }
 
 // Recursively collect all function definitions
@@ -939,7 +940,7 @@ int main(int argc, char* argv[]) {
 	qdcli::BaseOptions base;
 	LintOptions opts;
 
-	auto handler = [&opts](const char* arg, int& i, int ac, char* av[]) -> bool {
+	auto handler = [&opts, &base](const char* arg, int& i, int ac, char* av[]) -> bool {
 		if (strcmp(arg, "--no-unused-functions") == 0) {
 			opts.noUnusedFunctions = true;
 			return true;
@@ -994,24 +995,24 @@ int main(int argc, char* argv[]) {
 		}
 		if (strcmp(arg, "--max-nesting") == 0) {
 			if (i + 1 >= ac) {
-				std::cerr << "quadlint: --max-nesting requires an argument\n";
+				base.optionError = "option '--max-nesting' requires an argument";
 				return false;
 			}
 			opts.maxNestingDepth = std::atoi(av[++i]);
 			if (opts.maxNestingDepth < 1) {
-				std::cerr << "quadlint: --max-nesting must be at least 1\n";
+				base.optionError = "option '--max-nesting' must be at least 1";
 				return false;
 			}
 			return true;
 		}
 		if (strcmp(arg, "--max-function-lines") == 0) {
 			if (i + 1 >= ac) {
-				std::cerr << "quadlint: --max-function-lines requires an argument\n";
+				base.optionError = "option '--max-function-lines' requires an argument";
 				return false;
 			}
 			opts.maxFunctionLines = std::atoi(av[++i]);
 			if (opts.maxFunctionLines < 1) {
-				std::cerr << "quadlint: --max-function-lines must be at least 1\n";
+				base.optionError = "option '--max-function-lines' must be at least 1";
 				return false;
 			}
 			return true;
@@ -1055,7 +1056,7 @@ int main(int argc, char* argv[]) {
 	// A path that exists but yields nothing to lint is also not success: it means
 	// the caller pointed at the wrong directory and every check silently passed.
 	if (allFiles.empty()) {
-		std::cerr << "quadlint: no .qd files found\n";
+		qdcli::error("quadlint", "no .qd files found");
 		return 1;
 	}
 

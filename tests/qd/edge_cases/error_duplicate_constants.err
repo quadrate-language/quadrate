@@ -1,1 +1,1 @@
-quadc: tests/qd/edge_cases/error_duplicate_constants.qd:3:12: error: Duplicate constant definition: 'PI'
+tests/qd/edge_cases/error_duplicate_constants.qd:3:12: error: Duplicate constant definition: 'PI'

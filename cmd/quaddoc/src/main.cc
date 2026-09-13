@@ -1,5 +1,17 @@
 // quaddoc - Generate HTML documentation from Quadrate source files
 #include <quadrate/cli/cli.h>
+#include <quadrate/cli/help.h>
+#include <quadrate/qc/ast.h>
+#include <quadrate/qc/ast_node_constant.h>
+#include <quadrate/qc/ast_node_function.h>
+#include <quadrate/qc/ast_node_function_pointer.h>
+#include <quadrate/qc/ast_node_global_var.h>
+#include <quadrate/qc/ast_node_identifier.h>
+#include <quadrate/qc/ast_node_import.h>
+#include <quadrate/qc/ast_node_parameter.h>
+#include <quadrate/qc/ast_node_scoped.h>
+#include <quadrate/qc/ast_node_struct_declaration.h>
+#include <quadrate/qc/ast_node_struct_field.h>
 
 #include <algorithm>
 #include <cstring>
@@ -33,10 +45,10 @@ struct Function {
 	bool fallible = false;
 	std::vector<Param> params, returns, errors;
 	std::vector<std::string> examples;
-	// Raw function body text, captured during parseModule. Used by
-	// buildCallGraph to extract qualified `module::name` and unqualified
-	// `name` references for the cross-reference UI.
-	std::string body;
+	// Identifiers the body referenced, collected off the AST during
+	// parseModule. buildCallGraph resolves these into calls once every module
+	// is known; qualified ones are `module::name`, plain ones a bare name.
+	std::vector<std::string> qualifiedRefs, plainRefs;
 	// Cross-module references, populated by buildCallGraph after all
 	// modules are parsed. Each entry is "module::function". Sorted, deduped.
 	std::vector<std::string> calls;
@@ -57,6 +69,10 @@ struct Module {
 	std::vector<Function> functions;
 	std::vector<Struct> structs;
 	std::vector<Constant> constants;
+	// Anything the parser could not read. A module with errors is still
+	// documented as far as it parsed, but the caller reports them so a broken
+	// file is not silently documented as empty.
+	std::vector<Qd::ErrorInfo> parseErrors;
 };
 
 // --- Helpers ---
@@ -104,7 +120,13 @@ static std::string readFile(const std::string& path) {
 	return ss.str();
 }
 
-// Expand `use foo.qd` includes
+// Expand `use foo.qd` includes.
+//
+// Textual on purpose, and the only place a Quadrate construct is still matched
+// by hand: this runs *before* parsing, to build the single buffer that gets
+// parsed and that the doc index is line-numbered against. A module split across
+// files (`crypto.qd` pulling in `md5.qd`, `sha256.qd`, ...) is documented as the
+// one module it presents itself as.
 static std::string expandIncludes(const std::string& path) {
 	std::ifstream f(path);
 	if (!f) {
@@ -129,6 +151,12 @@ static std::string expandIncludes(const std::string& path) {
 }
 
 // --- Doc comment parsing ---
+//
+// `@param`, `@return`, `@error`, `@example` and `@field` are a small language of
+// their own, living inside comments that the Quadrate lexer discards. There is
+// no AST for them, so they are matched here. What these tags do *not* decide any
+// more is what a declaration is: names, types and order come from the signature,
+// and a tag only supplies prose.
 
 struct DocInfo {
 	std::string desc;
@@ -174,218 +202,426 @@ static DocInfo parseDocBuffer(const std::vector<std::string>& buf) {
 }
 
 // --- Module parsing ---
+//
+// Structure comes from the compiler's own parser: which declarations a module
+// has, their names, parameters, receivers, generics and visibility are read off
+// the AST rather than matched out of the text. The previous line-based scanner
+// silently dropped anything its patterns did not anticipate -- `pub inline fn`
+// never matched `pub\s+fn`, which is why all 17 functions of the `sys` module,
+// and so the whole module, were missing from the generated documentation.
+//
+// One thing still has to be read textually: doc comments. The lexer discards
+// `///` along with every other comment, so the AST cannot say what a
+// declaration's documentation is. collectDocs below scans the source once for
+// runs of `///` lines and indexes each run by the line of the code that follows
+// it; a declaration then looks up its own line, which the AST does give us.
+
+// A doc block and where it landed.
+struct DocIndex {
+	// Doc block indexed by the source line of the declaration it precedes.
+	std::unordered_map<size_t, DocInfo> byLine;
+	// Those same lines in file order, so the first unclaimed one can become the
+	// module description.
+	std::vector<size_t> order;
+	// Blocks separated from what follows by a blank line, so attached to
+	// nothing. The first is the module description when there is one.
+	std::vector<DocInfo> floating;
+};
+
+static DocIndex collectDocs(const std::string& source) {
+	DocIndex docs;
+	std::vector<std::string> buf;
+	std::istringstream stream(source);
+	std::string line;
+	size_t lineNo = 0;
+
+	while (std::getline(stream, line)) {
+		lineNo++;
+		std::string t = trim(line);
+
+		if (t.rfind("///", 0) == 0) {
+			// Drop the marker and one optional space, keeping further
+			// indentation so that @example blocks survive intact.
+			std::string text = t.substr(3);
+			if (!text.empty() && text[0] == ' ') {
+				text.erase(0, 1);
+			}
+			buf.push_back(text);
+			continue;
+		}
+
+		if (buf.empty()) {
+			continue;
+		}
+
+		if (t.empty()) {
+			docs.floating.push_back(parseDocBuffer(buf));
+			buf.clear();
+			continue;
+		}
+
+		// An ordinary comment between a doc block and its declaration does not
+		// break the association -- `/// ...` then `// TODO` then `pub fn` still
+		// documents the function.
+		if (t.rfind("//", 0) == 0 || t.rfind("/*", 0) == 0) {
+			continue;
+		}
+
+		docs.byLine[lineNo] = parseDocBuffer(buf);
+		docs.order.push_back(lineNo);
+		buf.clear();
+	}
+
+	return docs;
+}
+
+// Render a parameter list the way it is written in source: `name:type`,
+// separated by spaces, with ` -- ` between inputs and outputs.
+static std::string formatParams(
+		const std::vector<const Qd::AstNodeParameter*>& in, const std::vector<const Qd::AstNodeParameter*>& out) {
+	// Both empty is spelled `()` rather than `( -- )`; the AST cannot tell the
+	// two apart, and `()` is what the receiver methods in the corpus write.
+	if (in.empty() && out.empty()) {
+		return "()";
+	}
+	// A parameter may be written as a bare type -- `fn sq(f64 -- f64)` is a
+	// legal stack effect -- in which case there is no `name:` to print.
+	auto one = [](const Qd::AstNodeParameter* p) {
+		return p->name().empty() ? p->typeString() : p->name() + ":" + p->typeString();
+	};
+
+	std::string s = "(";
+	for (size_t i = 0; i < in.size(); i++) {
+		if (i > 0) {
+			s += " ";
+		}
+		s += one(in[i]);
+	}
+	s += " -- ";
+	for (size_t i = 0; i < out.size(); i++) {
+		if (i > 0) {
+			s += " ";
+		}
+		s += one(out[i]);
+	}
+	s += ")";
+	return s;
+}
+
+static std::string formatTypeParams(const std::vector<std::string>& typeParams) {
+	if (typeParams.empty()) {
+		return "";
+	}
+	std::string s = "<";
+	for (size_t i = 0; i < typeParams.size(); i++) {
+		if (i > 0) {
+			s += ", ";
+		}
+		s += typeParams[i];
+	}
+	return s + ">";
+}
+
+// The parameters a function actually takes, described by its doc comment where
+// the comment says something. The signature is the source of truth for name,
+// type and order; `@param`/`@return` only supply prose. A tag naming something
+// the function does not have is stale and is dropped rather than printed.
+static std::vector<Param> mergeParams(
+		const std::vector<const Qd::AstNodeParameter*>& actual, const std::vector<Param>& documented) {
+	std::vector<Param> merged;
+	merged.reserve(actual.size());
+	std::vector<bool> used(documented.size(), false);
+
+	for (const Qd::AstNodeParameter* p : actual) {
+		Param out{p->name(), p->typeString(), ""};
+		for (size_t i = 0; i < documented.size(); i++) {
+			if (!used[i] && !out.name.empty() && documented[i].name == out.name) {
+				out.desc = documented[i].desc;
+				used[i] = true;
+				break;
+			}
+		}
+		merged.push_back(out);
+	}
+
+	// Tags are written in signature order, so an unmatched one still describes
+	// the parameter in its position. This recovers two common cases: a tag that
+	// names the parameter differently from the declaration (`@return rng` for
+	// an output declared `rng2`), and a parameter written as a bare type, which
+	// has no name for a tag to match but is invariably documented with one.
+	for (size_t i = 0; i < merged.size(); i++) {
+		if (!merged[i].desc.empty() || i >= documented.size() || used[i]) {
+			continue;
+		}
+		merged[i].desc = documented[i].desc;
+		if (merged[i].name.empty()) {
+			merged[i].name = documented[i].name;
+		}
+		used[i] = true;
+	}
+
+	return merged;
+}
+
+// Identifiers referenced by a function body, for the cross-reference graph.
+// Reading these off the AST rather than regexing the text means a name inside a
+// string literal or a comment is no longer counted as a call.
+static void collectRefs(
+		const Qd::IAstNode* node, std::vector<std::string>& qualified, std::vector<std::string>& plain) {
+	if (!node) {
+		return;
+	}
+	switch (node->type()) {
+	case Qd::IAstNode::Type::SCOPED_IDENTIFIER: {
+		const auto* scoped = static_cast<const Qd::AstNodeScopedIdentifier*>(node);
+		qualified.push_back(scoped->scope() + "::" + scoped->name());
+		break;
+	}
+	case Qd::IAstNode::Type::IDENTIFIER: {
+		const auto* ident = static_cast<const Qd::AstNodeIdentifier*>(node);
+		plain.push_back(ident->name());
+		break;
+	}
+	case Qd::IAstNode::Type::FUNCTION_POINTER_REFERENCE: {
+		// `&name` passes a function without calling it, which is still a
+		// reference worth showing in the cross-reference list.
+		const auto* ref = static_cast<const Qd::AstNodeFunctionPointerReference*>(node);
+		plain.push_back(ref->functionName());
+		break;
+	}
+	default:
+		break;
+	}
+	for (size_t i = 0; i < node->childCount(); i++) {
+		collectRefs(node->child(i), qualified, plain);
+	}
+}
+
+// The doc block written above the declaration on this line, if any.
+static DocInfo docFor(const DocIndex& docs, size_t line) {
+	auto it = docs.byLine.find(line);
+	return it == docs.byLine.end() ? DocInfo{} : it->second;
+}
+
+// Walk the tree and record every public declaration. Function bodies are not
+// descended into: a declaration cannot appear inside one, and the body is
+// handled separately for the call graph.
+static void collectDecls(const Qd::IAstNode* node, Module& mod, const DocIndex& docs, std::set<size_t>& claimed) {
+	if (!node) {
+		return;
+	}
+
+	switch (node->type()) {
+	case Qd::IAstNode::Type::FUNCTION_DECLARATION: {
+		const auto* fnNode = static_cast<const Qd::AstNodeFunctionDeclaration*>(node);
+		if (!fnNode->isPublic()) {
+			return;
+		}
+		DocInfo doc = docFor(docs, fnNode->line());
+		claimed.insert(fnNode->line());
+
+		std::vector<const Qd::AstNodeParameter*> in, out;
+		for (const auto& p : fnNode->inputParameters()) {
+			in.push_back(static_cast<const Qd::AstNodeParameter*>(p.get()));
+		}
+		for (const auto& p : fnNode->outputParameters()) {
+			out.push_back(static_cast<const Qd::AstNodeParameter*>(p.get()));
+		}
+
+		Function fn;
+		fn.name = fnNode->name();
+		fn.fallible = fnNode->throws();
+		fn.desc = doc.desc;
+		fn.params = mergeParams(in, doc.params);
+		fn.returns = mergeParams(out, doc.returns);
+		fn.errors = doc.errors;
+		fn.examples = doc.examples;
+
+		if (fnNode->hasReceiver()) {
+			const std::string receiverType = fnNode->receiverType() + formatTypeParams(fnNode->receiverTypeParams());
+			fn.receiver = fnNode->receiverName() + ":" + receiverType;
+			// Parenthesised, as the language writes it, so the rendered
+			// signature can be pasted back into a source file.
+			fn.signature = "(" + fn.receiver + ") ";
+
+			// The receiver is an input like any other, and the corpus documents
+			// it with an ordinary `@param`, so it leads the parameter table.
+			// Its type comes from the signature: several modules describe the
+			// receiver as `ptr` in the tag where the declaration says `Flag`.
+			Param self{fnNode->receiverName(), receiverType, ""};
+			for (const Param& documented : doc.params) {
+				if (documented.name == self.name) {
+					self.desc = documented.desc;
+					break;
+				}
+			}
+			fn.params.insert(fn.params.begin(), self);
+		}
+		fn.signature += fnNode->name() + formatTypeParams(fnNode->typeParams()) + formatParams(in, out);
+		if (fn.fallible) {
+			fn.signature += "!";
+		}
+
+		collectRefs(fnNode->body(), fn.qualifiedRefs, fn.plainRefs);
+		mod.functions.push_back(std::move(fn));
+		return; // do not descend into parameters or body
+	}
+
+	case Qd::IAstNode::Type::IMPORT_STATEMENT: {
+		// `import "libio.a" as "io" { pub fn ... }` -- how every C-implemented
+		// module declares its surface. These functions hang off the import node
+		// rather than appearing as children, so they need handling here or the
+		// seventeen native modules would document nothing.
+		const auto* imp = static_cast<const Qd::AstNodeImport*>(node);
+		for (const auto& imported : imp->functions()) {
+			if (!imported->isPublic) {
+				continue;
+			}
+			DocInfo doc = docFor(docs, imported->line);
+			claimed.insert(imported->line);
+
+			std::vector<const Qd::AstNodeParameter*> in, out;
+			for (const auto& p : imported->inputParameters) {
+				in.push_back(p.get());
+			}
+			for (const auto& p : imported->outputParameters) {
+				out.push_back(p.get());
+			}
+
+			Function fn;
+			fn.name = imported->name;
+			fn.fallible = imported->throws;
+			fn.desc = doc.desc;
+			fn.params = mergeParams(in, doc.params);
+			fn.returns = mergeParams(out, doc.returns);
+			fn.errors = doc.errors;
+			fn.examples = doc.examples;
+			fn.signature = imported->name + formatParams(in, out);
+			if (fn.fallible) {
+				fn.signature += "!";
+			}
+			mod.functions.push_back(std::move(fn));
+		}
+		return;
+	}
+
+	case Qd::IAstNode::Type::STRUCT_DECLARATION: {
+		const auto* st = static_cast<const Qd::AstNodeStructDeclaration*>(node);
+		if (!st->isPublic()) {
+			return;
+		}
+		DocInfo doc = docFor(docs, st->line());
+		claimed.insert(st->line());
+
+		Struct s;
+		s.name = st->name() + formatTypeParams(st->typeParams());
+		s.desc = doc.desc;
+		for (const auto& field : st->fields()) {
+			Field f{field->name(), field->typeName(), ""};
+			// A field's description can come from a `///` on the field itself
+			// or from an `@field` tag on the struct; prefer the closer one.
+			auto own = docs.byLine.find(field->line());
+			if (own != docs.byLine.end() && !own->second.desc.empty()) {
+				f.desc = own->second.desc;
+				claimed.insert(field->line());
+			} else {
+				for (const Field& documented : doc.fields) {
+					if (documented.name == f.name) {
+						f.desc = documented.desc;
+						break;
+					}
+				}
+			}
+			s.fields.push_back(f);
+		}
+		// A struct documented only with @field tags and no parsed fields (an
+		// opaque handle, say) still lists what the tags describe.
+		if (s.fields.empty()) {
+			s.fields = doc.fields;
+		}
+		mod.structs.push_back(std::move(s));
+		return;
+	}
+
+	case Qd::IAstNode::Type::CONSTANT_DECLARATION: {
+		const auto* c = static_cast<const Qd::AstNodeConstant*>(node);
+		if (!c->isPublic()) {
+			return;
+		}
+		DocInfo doc = docFor(docs, c->line());
+		claimed.insert(c->line());
+		mod.constants.push_back({c->name(), c->value() ? c->value() : "", doc.desc});
+		return;
+	}
+
+	case Qd::IAstNode::Type::GLOBAL_VAR_DECLARATION: {
+		const auto* v = static_cast<const Qd::AstNodeGlobalVar*>(node);
+		if (!v->isPublic()) {
+			return;
+		}
+		DocInfo doc = docFor(docs, v->line());
+		claimed.insert(v->line());
+		// Documented alongside constants; the initialiser as written is more
+		// useful than the folded value.
+		mod.constants.push_back({v->name(), v->sourceExpr(), doc.desc});
+		return;
+	}
+
+	default:
+		break;
+	}
+
+	for (size_t i = 0; i < node->childCount(); i++) {
+		collectDecls(node->child(i), mod, docs, claimed);
+	}
+}
 
 static Module parseModule(const std::string& path) {
 	std::string content = expandIncludes(path);
 	Module mod;
 	mod.path = path;
 
-	// Derive name
 	auto stem = fs::path(path).stem().string();
 	mod.name = (stem == "module") ? fs::path(path).parent_path().filename().string() : stem;
 
-	std::regex docRe(R"(^\s*///\s?(.*))");
-	std::regex pubFnRe(R"(^\s*pub\s+fn\s+(?:\(([^)]*)\)\s+)?(\w+)\s*\(([^)]*)\)\s*(!?))");
-	std::regex pubConstRe(R"(^\s*pub\s+const\s+(\w+)\s*=\s*(.+))");
-	std::regex pubVarRe(R"(^\s*pub\s+var\s+(\w+)\s*:\s*\w+\s*=\s*(.+))");
-	std::regex structRe(R"(^\s*(?:pub\s+)?struct\s+(\w+(?:<[^>]+>)?))");
-	std::regex pubStructRe(R"(^\s*pub\s+struct\s+)");
-	std::regex fieldDefRe(R"(^\s*(\w+)\s*:\s*([a-zA-Z0-9_*<>]+))");
+	DocIndex docs = collectDocs(content);
 
-	std::vector<std::string> docBuf;
-	bool moduleDocFound = false;
-	bool inStruct = false;
-	bool structIsPub = false;
-	Struct curStruct;
-	// Body capture for the most recently parsed function. We append lines
-	// while braceDepth > 0; the body becomes the back() function's `body`.
-	int braceDepth = 0;
-	bool capturingBody = false;
+	Qd::Ast ast;
+	Qd::IAstNode* root = ast.generate(content.c_str(), false, path.c_str());
+	if (!root) {
+		return mod;
+	}
+	// Parse errors are reported by the caller; a partial tree still documents
+	// everything the parser did understand, which beats documenting nothing.
+	mod.parseErrors = ast.getErrors();
 
-	// Count braces on a line, ignoring those inside strings or comments.
-	auto countBraces = [](const std::string& s) -> std::pair<int, int> {
-		int opens = 0, closes = 0;
-		bool inStr = false;
-		bool inLC = false;
-		for (size_t i = 0; i < s.size(); i++) {
-			if (inLC) {
-				break;
-			}
-			char c = s[i];
-			if (!inStr && i + 1 < s.size() && c == '/' && s[i + 1] == '/') {
-				inLC = true;
-				break;
-			}
-			if (c == '"' && (i == 0 || s[i - 1] != '\\')) {
-				inStr = !inStr;
-			}
-			if (inStr) {
+	std::set<size_t> claimed;
+	collectDecls(root, mod, docs, claimed);
+
+	// The module description: a block that was separated from the code by a
+	// blank line, or failing that the first block attached to something that is
+	// not a documented declaration -- a `use` line, typically.
+	if (!docs.floating.empty()) {
+		mod.desc = docs.floating.front().desc;
+	} else {
+		for (size_t line : docs.order) {
+			if (claimed.count(line)) {
 				continue;
 			}
-			if (c == '{') {
-				opens++;
-			} else if (c == '}') {
-				closes++;
-			}
+			mod.desc = docs.byLine.at(line).desc;
+			break;
 		}
-		return {opens, closes};
-	};
-
-	std::istringstream stream(content);
-	std::string line;
-	while (std::getline(stream, line)) {
-		auto trimmed = trim(line);
-		std::smatch m;
-
-		// Capture function body: keep appending until braces balance back to 0.
-		if (capturingBody) {
-			auto [opens, closes] = countBraces(line);
-			braceDepth += opens - closes;
-			if (!mod.functions.empty()) {
-				mod.functions.back().body += line;
-				mod.functions.back().body += '\n';
-			}
-			if (braceDepth <= 0) {
-				capturingBody = false;
-				braceDepth = 0;
-			}
-			continue;
-		}
-
-		// Doc comments
-		if (std::regex_search(line, m, docRe)) {
-			docBuf.push_back(m[1]);
-			continue;
-		}
-
-		// Skip regular comments
-		if (trimmed.substr(0, 2) == "//" || trimmed.substr(0, 2) == "/*") {
-			continue;
-		}
-
-		// Empty line — capture module doc
-		if (trimmed.empty()) {
-			if (!docBuf.empty() && !moduleDocFound && mod.desc.empty()) {
-				mod.desc = parseDocBuffer(docBuf).desc;
-				moduleDocFound = true;
-			}
-			docBuf.clear();
-			continue;
-		}
-
-		bool isPub = trimmed.substr(0, 4) == "pub ";
-
-		// Struct fields
-		if (inStruct) {
-			if (trimmed == "}") {
-				if (structIsPub) {
-					mod.structs.push_back(curStruct);
-				}
-				inStruct = false;
-			} else if (std::regex_search(trimmed, m, fieldDefRe)) {
-				curStruct.fields.push_back({m[1], m[2], ""});
-			}
-			docBuf.clear();
-			continue;
-		}
-
-		// Function
-		if (std::regex_search(trimmed, m, pubFnRe) && isPub) {
-			auto doc = parseDocBuffer(docBuf);
-			Function fn;
-			fn.name = m[2];
-			fn.receiver = trim(m[1].str());
-			fn.fallible = m[4].str() == "!";
-			fn.desc = doc.desc;
-			fn.params = doc.params;
-			fn.returns = doc.returns;
-			fn.errors = doc.errors;
-			fn.examples = doc.examples;
-
-			if (!fn.receiver.empty()) {
-				fn.signature = fn.receiver + " " + fn.name + "(" + m[3].str() + ")";
-			} else {
-				fn.signature = fn.name + "(" + m[3].str() + ")";
-			}
-			if (fn.fallible) {
-				fn.signature += "!";
-			}
-
-			mod.functions.push_back(fn);
-			docBuf.clear();
-
-			// Start capturing body if `{` is on this line.
-			auto [opens, closes] = countBraces(line);
-			if (opens > 0) {
-				braceDepth = opens - closes;
-				if (braceDepth > 0) {
-					capturingBody = true;
-				}
-			}
-			continue;
-		}
-
-		// Constant
-		if (std::regex_search(trimmed, m, pubConstRe)) {
-			auto doc = parseDocBuffer(docBuf);
-			mod.constants.push_back({m[1], trim(m[2].str()), doc.desc});
-			docBuf.clear();
-			continue;
-		}
-
-		// Module-level mutable global; documented alongside constants.
-		if (std::regex_search(trimmed, m, pubVarRe)) {
-			auto doc = parseDocBuffer(docBuf);
-			mod.constants.push_back({m[1], trim(m[2].str()), doc.desc});
-			docBuf.clear();
-			continue;
-		}
-
-		// Struct
-		if (std::regex_search(trimmed, m, structRe)) {
-			auto doc = parseDocBuffer(docBuf);
-			structIsPub = isPub || std::regex_search(trimmed, pubStructRe);
-			curStruct = Struct{m[1], doc.desc, {}};
-
-			if (!doc.fields.empty()) {
-				curStruct.fields = doc.fields;
-				if (structIsPub) {
-					mod.structs.push_back(curStruct);
-				}
-			} else if (trimmed.find('{') != std::string::npos && trimmed.find('}') == std::string::npos) {
-				inStruct = true;
-			}
-			docBuf.clear();
-			continue;
-		}
-
-		// Import/use — module doc
-		if (trimmed.substr(0, 7) == "import " || trimmed.substr(0, 4) == "use ") {
-			if (!docBuf.empty() && mod.desc.empty()) {
-				mod.desc = parseDocBuffer(docBuf).desc;
-				moduleDocFound = true;
-			}
-			docBuf.clear();
-			continue;
-		}
-
-		docBuf.clear();
 	}
 
 	return mod;
 }
 
-// Walk every function body, collect references to other documented functions,
-// and populate Function::calls and Function::calledBy across all modules. We
-// recognize two reference forms:
-//   - module::name  → cross-module call
-//   - name          → same-module call (only matched if the module defines a
-//                     function/constant/struct of that name, to avoid noise
-//                     from local variables and stack ops)
+// Populate Function::calls and Function::calledBy across all modules from the
+// references collected during parsing. A qualified `mod::name` is a call when
+// that module documents such a function; a bare `name` is one only when this
+// module defines it, which keeps locals and stack words out of the graph.
 static void buildCallGraph(std::vector<Module>& modules) {
-	// Index: qualified "mod::name" → (module index, function index).
 	std::unordered_map<std::string, std::pair<size_t, size_t>> index;
-	// Per-module symbol set so we can resolve unqualified references.
 	std::unordered_map<std::string, std::unordered_set<std::string>> moduleSymbols;
 	for (size_t mi = 0; mi < modules.size(); mi++) {
 		auto& mod = modules[mi];
@@ -396,45 +632,19 @@ static void buildCallGraph(std::vector<Module>& modules) {
 		}
 	}
 
-	std::regex qualRefRe(R"((\w+)::(\w+))");
-	std::regex unqualRefRe(R"(\b([a-zA-Z_]\w*)\b)");
-
 	for (auto& mod : modules) {
 		for (auto& fn : mod.functions) {
-			if (fn.body.empty()) {
-				continue;
-			}
 			std::set<std::string> callees;
 			std::string self = mod.name + "::" + fn.name;
-			std::set<size_t> spans;
 
-			// Qualified `module::name` references.
-			for (auto it = std::sregex_iterator(fn.body.begin(), fn.body.end(), qualRefRe);
-					it != std::sregex_iterator(); ++it) {
-				std::string qn = (*it)[1].str() + "::" + (*it)[2].str();
+			for (const std::string& qn : fn.qualifiedRefs) {
 				if (qn != self && index.count(qn)) {
 					callees.insert(qn);
 				}
-				spans.insert(static_cast<size_t>(it->position()));
-				spans.insert(static_cast<size_t>(it->position() + it->length()));
 			}
-
-			// Same-module unqualified references that match a known symbol in
-			// THIS module. We skip identifiers that are part of a `mod::name`
-			// match (already counted) by checking the spans set crudely.
-			auto& syms = moduleSymbols[mod.name];
-			for (auto it = std::sregex_iterator(fn.body.begin(), fn.body.end(), unqualRefRe);
-					it != std::sregex_iterator(); ++it) {
-				std::string name = (*it)[1].str();
-				if (name == fn.name) {
-					continue;
-				}
-				if (!syms.count(name)) {
-					continue;
-				}
-				// Skip if this position was already part of a qualified match.
-				size_t pos = static_cast<size_t>(it->position());
-				if (spans.count(pos) || spans.count(pos + static_cast<size_t>(it->length()))) {
+			const auto& syms = moduleSymbols[mod.name];
+			for (const std::string& name : fn.plainRefs) {
+				if (name == fn.name || !syms.count(name)) {
 					continue;
 				}
 				callees.insert(mod.name + "::" + name);
@@ -444,7 +654,6 @@ static void buildCallGraph(std::vector<Module>& modules) {
 		}
 	}
 
-	// Now invert calls → calledBy.
 	for (auto& mod : modules) {
 		for (auto& fn : mod.functions) {
 			std::string self = mod.name + "::" + fn.name;
@@ -458,7 +667,6 @@ static void buildCallGraph(std::vector<Module>& modules) {
 		}
 	}
 
-	// Dedupe + sort calledBy lists.
 	for (auto& mod : modules) {
 		for (auto& fn : mod.functions) {
 			std::sort(fn.calledBy.begin(), fn.calledBy.end());
@@ -467,13 +675,25 @@ static void buildCallGraph(std::vector<Module>& modules) {
 	}
 }
 
-static std::vector<Module> scanDirectory(const std::string& dir) {
+static std::vector<Module> scanDirectory(const std::string& dir, bool quiet) {
 	std::vector<Module> modules;
 	for (auto& entry : fs::recursive_directory_iterator(dir)) {
 		if (!entry.is_regular_file() || entry.path().extension() != ".qd") {
 			continue;
 		}
 		auto mod = parseModule(entry.path().string());
+
+		// A file the parser chokes on still documents whatever came before the
+		// error, so generation continues -- but say so rather than quietly
+		// publishing a module with half its functions missing, which is the
+		// failure mode the old text scanner had for every file it mis-read.
+		if (!quiet) {
+			for (const Qd::ErrorInfo& err : mod.parseErrors) {
+				std::cerr << mod.path << ":" << err.line << ":" << err.column << ": warning: " << err.message
+						  << " (documentation for this file may be incomplete)\n";
+			}
+		}
+
 		if (!mod.functions.empty() || !mod.structs.empty() || !mod.constants.empty()) {
 			modules.push_back(mod);
 		}
@@ -705,38 +925,51 @@ int main(int argc, char* argv[]) {
 	bool parsed =
 			qdcli::parseArgs(argc, argv, base, "quaddoc", [&](const char* arg, int& i, int ac, char* av[]) -> bool {
 				std::string a(arg);
-				if (a == "-o" && i + 1 < ac) {
-					outDir = av[++i];
-				} else if (a == "-q" || a == "--quiet") {
-					quiet = true;
-				} else if (a == "--title" && i + 1 < ac) {
-					title = av[++i];
-				} else if (a == "--css" && i + 1 < ac) {
-					customCSS = av[++i];
-				} else {
-					return false;
+				// Options taking a value are matched before the value is fetched, so a
+				// missing one reports "requires an argument" rather than falling through
+				// to the unknown-option path and blaming the flag itself.
+				if (a == "-o" || a == "--output" || a == "--title" || a == "--css") {
+					if (i + 1 >= ac) {
+						base.optionError = "option '" + a + "' requires an argument";
+						return false;
+					}
+					const char* value = av[++i];
+					if (a == "-o" || a == "--output") {
+						outDir = value;
+					} else if (a == "--title") {
+						title = value;
+					} else {
+						customCSS = value;
+					}
+					return true;
 				}
-				return true;
+				if (a == "-q" || a == "--quiet") {
+					quiet = true;
+					return true;
+				}
+				return false;
 			});
 
 	if (!parsed) {
 		return 1;
 	}
 	if (base.help) {
-		std::cout << "quaddoc - Generate HTML documentation from Quadrate source files\n\n"
-				  << "Usage: quaddoc [options] [directory]   (default: current directory)\n\n"
-				  << "Options:\n"
-				  << "  -h, --help         Show this help message\n"
-				  << "  -v, --version      Show version information\n"
-				  << "  -o <dir>           Output directory (default: docs)\n"
-				  << "  -q, --quiet        Quiet mode — no output except errors\n"
-				  << "  --title <str>      Project title (default: \"Quadrate API\")\n"
-				  << "  --css <file>       Append custom CSS file after default styles\n\n"
-				  << "Examples:\n"
-				  << "  quaddoc                          # Scan current dir, output to docs/\n"
-				  << "  quaddoc -o api lib/              # Scan lib/, output to api/\n"
-				  << "  quaddoc --title \"My Project\" .   # Custom title\n"
-				  << "  quaddoc --css custom.css lib/    # Custom styling\n";
+		qdcli::Help help("quaddoc", "Quadrate documentation generator");
+		help.description("Generates an HTML API reference from /// doc comments, reading the\n"
+						 "@param, @return, @error, @example and @field tags.")
+				.usage("[options] [directory]", "default: the current directory")
+				.section("Options")
+				.standardOptions()
+				.option('o', "--output", "<dir>", "Output directory (default: docs)")
+				.option('q', "--quiet", "Print nothing but errors")
+				.option("--title", "<str>", "Project title (default: \"Quadrate API\")")
+				.option("--css", "<file>", "Append a custom CSS file after the default styles")
+				.section("Examples")
+				.item("quaddoc", "Scan the current directory, write to docs/")
+				.item("quaddoc -o api lib/", "Scan lib/, write to api/")
+				.item("quaddoc --title \"My Project\" .", "Set the project title")
+				.item("quaddoc --css custom.css lib/", "Append custom styling");
+		help.print();
 		return 0;
 	}
 	if (base.version) {
@@ -764,7 +997,7 @@ int main(int argc, char* argv[]) {
 		std::cout << "Scanning " << dir << "...\n";
 	}
 
-	auto modules = scanDirectory(dir);
+	auto modules = scanDirectory(dir, quiet);
 	if (modules.empty()) {
 		std::cout << "No documented modules found.\n";
 		return 0;

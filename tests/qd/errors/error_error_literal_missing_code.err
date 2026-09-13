@@ -1,1 +1,1 @@
-quadc: tests/qd/errors/error_error_literal_missing_code.qd:3:2: error: Error literal requires 'code' field
+tests/qd/errors/error_error_literal_missing_code.qd:3:2: error: Error literal requires 'code' field

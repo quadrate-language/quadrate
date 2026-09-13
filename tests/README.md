@@ -39,7 +39,7 @@ make tests SUITE=linter
 make tests SUITE=embed
 make tests SUITE=args
 
-# Available suites: cpp, lsp, qd, formatter, linter, embed, quadpm, args, stdlib, mtls, fuzz
+# Available suites: cpp, lsp, qd, formatter, linter, embed, quadpm, tools, args, stdlib, mtls, fuzz
 ```
 
 ### Individual tests
@@ -140,6 +140,30 @@ Tests for command-line argument passing via `--` separator.
 ```bash
 bash tests/run_all.sh --suite args
 ```
+
+### Tool tests (`tools`)
+
+Two scripts. `run_tools_test.sh` covers the behaviour of `quaduses`, `quaddoc`,
+`quadrepl`, `quadfmt`'s stdin mode and `quadc`'s output naming.
+`run_cli_surface_test.sh` covers what all ten tools share: the shape of `--help`
+(title line, `Usage:`, an `Options:` block opening with `-h`/`-v`/`--no-color`
+worded identically, `Examples:`), the one-line `--version` format, that an
+unrecognised option is two lines on stderr and exit 1, and that every option in
+a tool's `--help` is completable from all three of `completions/quad.bash`,
+`completions/_quad` and `completions/quad.fish` (and that the Makefile installs
+each under a name the shell will actually look for).
+
+```bash
+bash tests/run_all.sh --suite tools
+```
+
+Add a tool and it must pass the surface checks: append its name to `TOOLS` in
+`run_cli_surface_test.sh`, build its help with `qdcli::Help` (`lib/cli/src/help.cc`)
+so the layout comes out right by construction, and add it to all three completion
+files — `completions/quad.bash` (a `complete -F` line), `completions/_quad` (the
+`#compdef` line and a `$service` branch) and `completions/quad.fish` (the
+`__quad_tools` list). The Makefile's `COMPLETION_LINKS` gives it the bash and
+fish links.
 
 ### Standard library tests (`stdlib`)
 

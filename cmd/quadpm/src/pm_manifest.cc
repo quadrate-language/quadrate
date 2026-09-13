@@ -200,7 +200,7 @@ bool createNamespaceSymlink(const std::string& namespaceName, const std::string&
 	if (namespaceName.empty() || namespaceName == "." || namespaceName == ".." ||
 			namespaceName.find('/') != std::string::npos || namespaceName.find('\\') != std::string::npos ||
 			namespaceName.find("..") != std::string::npos) {
-		std::cerr << COLOR_RED << "Error: invalid namespace name: " << COLOR_RESET << namespaceName << "\n";
+		pmError("invalid namespace name: " + namespaceName);
 		return false;
 	}
 
@@ -233,7 +233,7 @@ bool createNamespaceSymlink(const std::string& namespaceName, const std::string&
 		fs::create_symlink(targetPath, symlinkPath);
 		return true;
 	} catch (const std::exception& e) {
-		std::cerr << COLOR_RED << "Error creating namespace symlink: " << COLOR_RESET << e.what() << "\n";
+		pmError(std::string("could not create the namespace symlink: ") + e.what());
 		return false;
 	}
 }

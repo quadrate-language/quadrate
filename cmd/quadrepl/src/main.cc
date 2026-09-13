@@ -1,4 +1,5 @@
 #include <quadrate/cli/cli.h>
+#include <quadrate/cli/help.h>
 #include <quadrate/platform/platform.h>
 #include <quadrate/qc/ast.h>
 #include <quadrate/qc/ast_node_function.h>
@@ -1424,16 +1425,20 @@ int main(int argc, char* argv[]) {
 		return 1;
 	}
 	if (base.help) {
-		printf("quadrepl - Quadrate REPL\n\n");
-		printf("Interactive Read-Eval-Print Loop for Quadrate.\n\n");
-		printf("Usage: quadrepl [options]\n\n");
-		printf("Options:\n");
-		printf("  -h, --help       Show this help message\n");
-		printf("  -v, --version    Show version information\n");
-		printf("  -p, --print      Print stack to stdout on exit (implied when stdin is a pipe)\n");
-		printf("      --no-color   Disable coloured output\n");
-		printf("\nPiping:\n");
-		printf("  echo \"1 2 add\" | quadrepl   Evaluate and print what is left on the stack\n\n");
+		qdcli::Help help("quadrepl", "Quadrate REPL");
+		help.description("Interactive Read-Eval-Print Loop for Quadrate. Each line is compiled and\n"
+						 "run on its own; values it leaves behind stay on the stack, and the prompt\n"
+						 "shows them.")
+				.usage("[options]")
+				.section("Options")
+				.standardOptions()
+				.option('p', "--print", "Print stack to stdout on exit (implied when stdin is a pipe)")
+				.section("Session commands")
+				.text("Type 'help' inside the REPL for the full list, including key bindings.")
+				.section("Examples")
+				.item("quadrepl", "Start an interactive session")
+				.item("echo '1 2 add' | quadrepl", "Evaluate a pipe and print the final stack");
+		help.print();
 		return 0;
 	}
 	if (base.version) {

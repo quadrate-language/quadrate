@@ -672,7 +672,12 @@ namespace Qd {
 								func->isPublic = isPublic;
 
 								size_t funcLine, funcColumn;
-								size_t pos = u8t_scanner_token_start(&scanner);
+								// token_start is a character index and fastLineColumn wants a byte
+								// offset, so it has to go through the map the way every other call
+								// site does. Without the conversion the line drifts by one for each
+								// multi-byte character earlier in the file, which put every imported
+								// function after the first non-ASCII doc comment on the wrong line.
+								size_t pos = fastCharToByteOffset(src, u8t_scanner_token_start(&scanner));
 								fastLineColumn(src, pos, &funcLine, &funcColumn);
 								func->line = funcLine;
 								func->column = funcColumn;

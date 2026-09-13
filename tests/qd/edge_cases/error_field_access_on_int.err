@@ -1,1 +1,1 @@
-quadc: tests/qd/edge_cases/error_field_access_on_int.qd:4:6: error: Type error in field access 'x <<foo': Variable 'x' is not a struct type
+tests/qd/edge_cases/error_field_access_on_int.qd:4:6: error: Type error in field access 'x <<foo': Variable 'x' is not a struct type

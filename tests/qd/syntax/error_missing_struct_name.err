@@ -1,1 +1,1 @@
-quadc: tests/qd/syntax/error_missing_struct_name.qd:2:8: error: Expected struct name after 'struct'
+tests/qd/syntax/error_missing_struct_name.qd:2:8: error: Expected struct name after 'struct'

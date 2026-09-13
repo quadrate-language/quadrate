@@ -3,6 +3,7 @@
 qdcli_sources = files(
 	'src/file_utils.cc',
 	'src/cli.cc',
+	'src/help.cc',
 )
 
 qdcli_inc = include_directories('include')

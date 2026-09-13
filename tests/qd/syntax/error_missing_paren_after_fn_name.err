@@ -1,1 +1,1 @@
-quadc: tests/qd/syntax/error_missing_paren_after_fn_name.qd:2:9: error: Expected '(' after function name
+tests/qd/syntax/error_missing_paren_after_fn_name.qd:2:9: error: Expected '(' after function name

@@ -19,6 +19,12 @@ namespace qdcli {
 		// lib/cli stays free of a dependency on the compiler frontend that owns
 		// Qd::Colors; the tools that actually colour apply it.
 		bool noColor = false;
+		// Set by an OptionHandler that has diagnosed the problem itself (a missing
+		// value, say). parseArgs then fails without adding its own generic
+		// "unknown option" line, which would otherwise blame the flag rather than
+		// what was actually wrong with it. parseArgs still prints it, so the
+		// referral line matches every other tool.
+		std::string optionError;
 	};
 
 	// Handler for tool-specific options

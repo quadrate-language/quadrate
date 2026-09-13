@@ -1,1 +1,1 @@
-quadc: tests/qd/edge_cases/error_duplicate_functions.qd:6:4: error: Duplicate function definition: 'foo'
+tests/qd/edge_cases/error_duplicate_functions.qd:6:4: error: Duplicate function definition: 'foo'

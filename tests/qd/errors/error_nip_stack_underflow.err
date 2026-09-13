@@ -1,1 +1,1 @@
-quadc: tests/qd/errors/error_nip_stack_underflow.qd:3:4: error: Type error in 'nip': Stack underflow (requires 2 values)
+tests/qd/errors/error_nip_stack_underflow.qd:3:4: error: Type error in 'nip': Stack underflow (requires 2 values)

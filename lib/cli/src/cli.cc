@@ -39,7 +39,11 @@ namespace qdcli {
 				if (handler && handler(arg, i, argc, argv)) {
 					continue;
 				}
-				std::cerr << toolName << ": unknown option: " << arg << "\n";
+				if (!opts.optionError.empty()) {
+					std::cerr << toolName << ": " << opts.optionError << "\n";
+				} else {
+					std::cerr << toolName << ": unknown option: " << arg << "\n";
+				}
 				std::cerr << "Try '" << toolName << " --help' for more information.\n";
 				return false;
 			}

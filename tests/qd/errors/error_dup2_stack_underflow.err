@@ -1,1 +1,1 @@
-quadc: tests/qd/errors/error_dup2_stack_underflow.qd:3:4: error: Type error in 'dup2': Stack underflow (requires 2 values)
+tests/qd/errors/error_dup2_stack_underflow.qd:3:4: error: Type error in 'dup2': Stack underflow (requires 2 values)

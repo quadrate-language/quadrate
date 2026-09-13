@@ -1556,6 +1556,30 @@ run_tools_tests() {
     fi
 }
 
+# Run the shared CLI surface checks across all ten tools
+run_cli_surface_tests() {
+    local suite="tools"
+
+    if ! should_run_test "$suite" "cli_surface_test"; then
+        return
+    fi
+
+    print_header "CLI Surface Tests"
+
+    local output
+    local exit_code
+
+    output=$(BUILD_DIR="$BUILD_DIR" bash "$PROJECT_ROOT/tests/run_cli_surface_test.sh" 2>&1)
+    exit_code=$?
+
+    if [[ $exit_code -eq 0 ]]; then
+        log_pass "$suite" "cli_surface_test"
+    else
+        local error_msg=$(echo "$output" | grep -A 1 "✗" | head -20)
+        log_fail "$suite" "cli_surface_test" "test failed" "$error_msg"
+    fi
+}
+
 # Run HTTP server / SSE integration tests
 run_http_tests() {
     local suite="http"
@@ -1844,6 +1868,7 @@ list_all_tests() {
 
     echo "Tool Tests (suite: tools):"
     echo "  tools_test"
+    echo "  cli_surface_test"
     echo ""
 
     echo "HTTP Integration Tests (suite: http):"
@@ -2033,6 +2058,7 @@ main() {
 
     if [[ -z "$SPECIFIC_SUITE" ]] || [[ "$SPECIFIC_SUITE" == "tools" ]]; then
         run_tools_tests
+        run_cli_surface_tests
     fi
 
     if [[ -z "$SPECIFIC_SUITE" ]] || [[ "$SPECIFIC_SUITE" == "http" ]]; then

@@ -6,72 +6,64 @@
 #include <cstring>
 #include <iostream>
 #include <quadrate/cli/cli.h>
+#include <quadrate/cli/help.h>
 #include <string>
 #include <unistd.h>
 #include <vector>
 
 // Print usage information
 static void printUsage() {
-	std::cout << "quadpm - Quadrate module manager\n\n";
-	std::cout << "Manages 3rd party modules from Git repositories.\n\n";
-	std::cout << "Usage: quadpm [options] <command> [arguments]\n\n";
-	std::cout << "Options:\n";
-	std::cout << "  -h, --help       Show this help message\n";
-	std::cout << "  -v, --version    Show version information\n";
-	std::cout << "  --no-color       Disable coloured output\n\n";
-	std::cout << "Commands:\n";
-	std::cout << "  install          Install dependencies from qd.json\n";
-	std::cout << "    --frozen       Only install from qd.lock (fail if outdated)\n";
-	std::cout << "  lock             Generate/update qd.lock from installed modules\n";
-	std::cout << "  get <url>[@ref]  Fetch and install a module from Git\n";
-	std::cout << "  update [name]    Update installed module(s) (git pull)\n";
-	std::cout << "  remove <name>    Remove an installed module\n";
-	std::cout << "  list             List installed modules\n";
-	std::cout << "  outdated         Show packages with available updates\n";
-	std::cout << "  build            Build C sources in current module directory\n\n";
-	std::cout << "Lockfile (qd.lock):\n";
-	std::cout << "  The lockfile pins exact commit hashes for reproducible builds.\n";
-	std::cout << "  - 'install' creates/updates qd.lock automatically\n";
-	std::cout << "  - 'install --frozen' uses qd.lock strictly (for CI)\n";
-	std::cout << "  - 'lock' regenerates qd.lock from installed modules\n\n";
-	std::cout << "Transitive Dependencies:\n";
-	std::cout << "  quadpm automatically resolves and installs transitive dependencies.\n";
-	std::cout << "  If package A depends on B, and B depends on C, all three are installed.\n\n";
-	std::cout << "Examples:\n";
-	std::cout << "  quadpm install\n";
-	std::cout << "  quadpm install --frozen\n";
-	std::cout << "  quadpm lock\n";
-	std::cout << "  quadpm get https://github.com/user/zlib\n";
-	std::cout << "  quadpm get https://github.com/user/zlib@1.2.0\n";
-	std::cout << "  quadpm get https://github.com/user/qdhttp@master\n";
-	std::cout << "  quadpm list\n\n";
-	std::cout << "qd.json format (npm-compatible):\n";
-	std::cout << "  {\n";
-	std::cout << "    \"name\": \"mymodule\",\n";
-	std::cout << "    \"dependencies\": {\n";
-	std::cout << "      \"glut\": \"https://github.com/user/qd-glut@v1.0.0\",\n";
-	std::cout << "      \"http\": { \"url\": \"https://github.com/user/qd-http\", \"version\": \"^2.0.0\" },\n";
-	std::cout << "      \"mylib\": \"../local/path\",\n";
-	std::cout << "      \"crypto\": {\n";
-	std::cout << "        \"url\": \"https://github.com/user/qd-crypto\",\n";
-	std::cout << "        \"version\": \"~1.5.0\",\n";
-	std::cout << "        \"commit\": \"a1b2c3d4...\"    (pin an exact git commit)\n";
-	std::cout << "      }\n";
-	std::cout << "    }\n";
-	std::cout << "  }\n\n";
-	std::cout << "Semver version ranges:\n";
-	std::cout << "  ^1.2.3    Compatible with version (>=1.2.3 <2.0.0)\n";
-	std::cout << "  ~1.2.3    Approximately equivalent (>=1.2.3 <1.3.0)\n";
-	std::cout << "  >=1.0.0   Greater than or equal\n";
-	std::cout << "  <2.0.0    Less than\n";
-	std::cout << "  1.2.x     Any patch version (>=1.2.0 <1.3.0)\n";
-	std::cout << "  *         Any version\n";
-	std::cout << "  1.0.0 - 2.0.0   Hyphen range (inclusive)\n";
-	std::cout << "  >=1.0.0 <2.0.0 || >=3.0.0   Multiple ranges\n\n";
-	std::cout << "Environment:\n";
-	std::cout << "  QUADRATE_PATH      Module installation directory\n";
-	std::cout << "  XDG_DATA_HOME      If set, uses $XDG_DATA_HOME/quadrate/modules\n";
-	std::cout << "  Default: ~/quadrate/modules\n";
+	qdcli::Help help("quadpm", "Quadrate module manager");
+	help.description("Installs and updates third-party modules from Git repositories.")
+			.usage("[options] <command> [arguments]")
+			.section("Commands")
+			.item("install", "Install the dependencies listed in qd.json")
+			.item("lock", "Generate or update qd.lock from the installed modules")
+			.item("get <url>[@ref]", "Fetch and install one module from Git")
+			.item("update [name]", "Update installed modules (git pull)")
+			.item("remove <name>", "Remove an installed module")
+			.item("list", "List installed modules")
+			.item("outdated", "Show modules with newer versions available")
+			.item("build", "Build the C sources of the module in this directory")
+			.section("Options")
+			.standardOptions()
+			.option("--frozen", "With 'install', install only from qd.lock (fail if outdated)")
+			.section("Lockfile")
+			.text("qd.lock pins exact commit hashes for reproducible builds. 'install'")
+			.text("creates and updates it, 'install --frozen' uses it strictly (for CI),")
+			.text("and 'lock' regenerates it from what is installed. Transitive")
+			.text("dependencies are resolved and installed automatically.")
+			.section("Manifest (qd.json)")
+			.text("{")
+			.text("  \"name\": \"mymodule\",")
+			.text("  \"dependencies\": {")
+			.text("    \"glut\":   \"https://github.com/user/qd-glut@v1.0.0\",")
+			.text("    \"http\":   { \"url\": \"https://github.com/user/qd-http\", \"version\": \"^2.0.0\" },")
+			.text("    \"mylib\":  \"../local/path\",")
+			.text("    \"crypto\": { \"url\": \"https://github.com/user/qd-crypto\",")
+			.text("                \"version\": \"~1.5.0\", \"commit\": \"a1b2c3d4...\" }")
+			.text("  }")
+			.text("}")
+			.section("Version ranges")
+			.item("^1.2.3", "Compatible with the version (>=1.2.3 <2.0.0)")
+			.item("~1.2.3", "Approximately equivalent (>=1.2.3 <1.3.0)")
+			.item("1.2.x", "Any patch version (>=1.2.0 <1.3.0)")
+			.item(">=1.0.0, <2.0.0", "Comparison ranges")
+			.item("1.0.0 - 2.0.0", "Hyphen range (inclusive)")
+			.item(">=1.0.0 <2.0.0 || >=3.0.0", "Several ranges at once")
+			.item("*", "Any version")
+			.section("Environment")
+			.item("QUADRATE_PATH", "Module installation directory")
+			.item("XDG_DATA_HOME", "If set, uses $XDG_DATA_HOME/quadrate/modules")
+			.text()
+			.text("Default: ~/quadrate/modules")
+			.section("Examples")
+			.item("quadpm install", "Install everything qd.json asks for")
+			.item("quadpm install --frozen", "Install strictly from qd.lock (for CI)")
+			.item("quadpm get https://github.com/user/zlib", "Install a module from Git")
+			.item("quadpm get https://github.com/user/zlib@1.2.0", "Install one version of it")
+			.item("quadpm list", "List what is installed");
+	help.print();
 }
 
 static bool g_pmColor = false;
@@ -98,9 +90,13 @@ int main(int argc, char** argv) {
 	argv = args.data();
 	pmSetColorEnabled(!noColorFlag && !qdcli::noColor() && isatty(STDOUT_FILENO) && isatty(STDERR_FILENO));
 
+	// A bare invocation of a command dispatcher is a request to see the commands,
+	// so print help and succeed -- the same thing `quad` with no arguments does.
+	// The file-taking tools differ deliberately: a missing path there is a
+	// mistake, and they report it tersely on stderr.
 	if (argc < 2) {
 		printUsage();
-		return 1;
+		return 0;
 	}
 
 	std::string command = argv[1];
@@ -117,9 +113,9 @@ int main(int argc, char** argv) {
 
 	if (command == "get") {
 		if (argc < 3) {
-			std::cerr << COLOR_RED << "Error: 'get' requires a Git URL" << COLOR_RESET << "\n";
-			std::cerr << "Usage: " << argv[0] << " get <git-url>[@ref]\n";
-			std::cerr << "Example: " << argv[0] << " get https://github.com/user/zlib@1.2.0\n";
+			pmError("'get' requires a Git URL");
+			std::cerr << "Usage: quadpm get <git-url>[@ref]\n";
+			std::cerr << "Example: quadpm get https://github.com/user/zlib@1.2.0\n";
 			return 1;
 		}
 
@@ -177,7 +173,10 @@ int main(int argc, char** argv) {
 		return showOutdated();
 	}
 
-	std::cerr << COLOR_RED << "Error: Unknown command '" << command << "'" << COLOR_RESET << "\n";
-	printUsage();
-	return 1;
+	// Unknown input gets the same two lines as every other tool rather than the
+	// whole help page on stdout, which buried the diagnostic.
+	if (!command.empty() && command[0] == '-') {
+		return pmUsageError("unknown option: " + command);
+	}
+	return pmUsageError("unknown command '" + command + "'");
 }

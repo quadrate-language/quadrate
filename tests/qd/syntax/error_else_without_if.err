@@ -1,1 +1,1 @@
-quadc: tests/qd/syntax/error_else_without_if.qd:3:2: error: 'else' without preceding 'if'
+tests/qd/syntax/error_else_without_if.qd:3:2: error: 'else' without preceding 'if'

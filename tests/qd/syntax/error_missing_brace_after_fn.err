@@ -1,1 +1,1 @@
-quadc: tests/qd/syntax/error_missing_brace_after_fn.qd:3:1: error: Expected '{' after function signature
+tests/qd/syntax/error_missing_brace_after_fn.qd:3:1: error: Expected '{' after function signature

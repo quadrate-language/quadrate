@@ -1,6 +1,19 @@
 # quadmcp
 
-MCP server for Quadrate language documentation.
+Quadrate MCP server.
+
+Serves the Model Context Protocol over stdin/stdout as JSON-RPC, giving an MCP
+client the Quadrate language and standard library reference. Written in Quadrate
+itself, so the Makefile builds it after the compiler.
+
+## Usage
+
+```bash
+quadmcp            # Serve MCP on stdin/stdout (how a client starts it)
+quadmcp --http     # Serve MCP over HTTP on localhost:3000
+```
+
+Configure your MCP client to run `quadmcp` as a stdio-based server.
 
 ## Build
 
@@ -8,15 +21,11 @@ MCP server for Quadrate language documentation.
 make quadmcp
 ```
 
-## Usage
+## Options
 
-```bash
-# Stdio mode (for MCP clients)
-./quadmcp
-
-# HTTP mode (localhost:3000)
-./quadmcp --http
-```
+| Option | Description |
+|--------|-------------|
+| `--http` | Serve over HTTP on :3000 instead of stdio |
 
 ## Tools
 
@@ -52,3 +61,6 @@ Files are concatenated during build:
 - `tools.qd` - Tool implementations
 - `resources.qd` - Resource content
 - `server.qd` - Dispatch and main
+
+`quadmcp --help` is the authoritative option list. Every Quadrate tool accepts
+`-h`/`--help`, `-v`/`--version` and `--no-color`.

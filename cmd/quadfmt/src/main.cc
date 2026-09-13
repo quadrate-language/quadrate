@@ -3,6 +3,7 @@
 #include <iterator>
 #include <quadrate/cli/cli.h>
 #include <quadrate/cli/file_utils.h>
+#include <quadrate/cli/help.h>
 #include <quadrate/qc/ast.h>
 #include <quadrate/qc/formatter.h>
 #include <vector>
@@ -16,32 +17,27 @@ struct FmtOptions {
 };
 
 void printHelp() {
-	std::cout << "quadfmt - Quadrate code formatter\n\n";
-	std::cout << "Formats Quadrate source files with consistent style.\n\n";
-	std::cout << "Usage: quadfmt [options] <file|directory>...\n\n";
-	std::cout << "Options:\n";
-	std::cout << "  -h, --help           Show this help message\n";
-	std::cout << "  -v, --version        Show version information\n";
-	std::cout << "  --no-color           Disable coloured output\n";
-	std::cout << "\n";
-	std::cout << "  Use '-' as the path to read from stdin and write to stdout.\n";
-	std::cout << "  -c, --check          Check if files are formatted (exit 1 if not)\n";
-	std::cout << "  -w, --write          Format files in-place\n";
-	std::cout << "  --no-sort-imports    Don't sort use statements\n";
-	std::cout << "\n";
-	std::cout << "Configuration:\n";
-	std::cout << "  Options can be set in .quadfmt.json (searches current dir and parents):\n";
-	std::cout << "  {\n";
-	std::cout << "    \"sortImports\": true,\n";
-	std::cout << "    \"alignStructFields\": true\n";
-	std::cout << "  }\n";
-	std::cout << "\n";
-	std::cout << "Examples:\n";
-	std::cout << "  quadfmt file.qd              Format to stdout\n";
-	std::cout << "  quadfmt -w file.qd           Format in-place\n";
-	std::cout << "  quadfmt -w src/              Format all .qd files in directory recursively\n";
-	std::cout << "  quadfmt -c *.qd              Check if files need formatting\n";
-	std::cout << "  quadfmt --no-sort-imports f.qd Format without sorting imports\n";
+	qdcli::Help help("quadfmt", "Quadrate code formatter");
+	help.description("Formats Quadrate source files with consistent style.")
+			.usage("[options] <file|directory>...")
+			.usage("[options] -", "read from stdin, write to stdout")
+			.section("Options")
+			.standardOptions()
+			.option('c', "--check", "Report whether files are formatted (exit 1 if not)")
+			.option('w', "--write", "Format files in place")
+			.option("--no-sort-imports", "Leave use statements in their original order")
+			.section("Configuration")
+			.text("Options can be set in .quadfmt.json (searched for in the current")
+			.text("directory and its parents):")
+			.text()
+			.text("  { \"sortImports\": true, \"alignStructFields\": true }")
+			.section("Examples")
+			.item("quadfmt file.qd", "Print the formatted file to stdout")
+			.item("quadfmt -w file.qd", "Format in place")
+			.item("quadfmt -w src/", "Format every .qd file in a directory, recursively")
+			.item("quadfmt -c src/", "Check whether any file needs formatting (for CI)")
+			.item("cat file.qd | quadfmt -", "Format a buffer piped from an editor");
+	help.print();
 }
 
 // Format source read from stdin and write the result to stdout.
@@ -168,8 +164,7 @@ int main(int argc, char* argv[]) {
 	}
 
 	if (opts.check && opts.inPlace) {
-		std::cerr << "quadfmt: options -w and -c are mutually exclusive\n";
-		return 1;
+		return qdcli::usageError("quadfmt", "options -w and -c are mutually exclusive");
 	}
 
 	// A lone "-" means stdin. Handled before the no-input check, which would

@@ -4,47 +4,45 @@
 #include <filesystem>
 #include <iostream>
 #include <quadrate/cli/cli.h>
+#include <quadrate/cli/help.h>
 #include <unistd.h>
 
 namespace fs = std::filesystem;
 
 void printHelp() {
-	std::cout << "quadc - Quadrate compiler\n\n";
-	std::cout << "Compiles .qd source files to native executables via LLVM.\n\n";
-	std::cout << "Usage: quadc [options] <file>...\n";
-	std::cout << "       quadc [options] <file> -- [args]   # Pass args to program with -r\n";
-	std::cout << "       quadc [options] -                  # Read from stdin\n";
-	std::cout << "       echo 'code' | quadc -r             # Pipe code to compile and run\n\n";
-	std::cout << "Options:\n";
-	std::cout << "  -h, --help         Show this help message\n";
-	std::cout << "  -v, --version      Show version information\n";
-	std::cout << "  --no-color         Disable coloured output\n";
-	std::cout << "  -o <name>          Output executable name (default: the source file's name)\n";
-	std::cout << "  -O0, -O1, -O2, -O3 Set optimization level (default: -O0)\n";
-	std::cout << "  -s <size>          Set stack size (default: 1024)\n";
-	std::cout << "  -g                 Generate debug information for GDB/LLDB\n";
-	std::cout << "  -I <path>          Add module search path (can be used multiple times)\n";
-	std::cout << "  -l <mod@ver>       Pin module to specific version (e.g., -l color@1.0.0)\n";
-	std::cout << "  --save-temps       Keep temporary files for debugging\n";
-	std::cout << "  --verbose          Show detailed compilation steps\n";
-	std::cout << "  --dump-tokens      Print lexer tokens\n";
-	std::cout << "  --dump-ast         Print parsed AST structure\n";
-	std::cout << "  -r, --run          Compile and run immediately (uses JIT by default)\n";
-	std::cout << "  --no-jit           Disable JIT execution for -r mode (use traditional linking)\n";
-	std::cout << "  --test             Compile and run tests\n";
-	std::cout << "  --coverage         Print function coverage report (use with --test)\n";
-	std::cout << "  --freestanding     No hosted runtime — emits .o with no libc / no auto-main\n";
-	std::cout << "  --dump-ir          Print generated LLVM IR\n";
-	std::cout << "  --werror           Treat warnings as errors\n";
-	std::cout << "  --target <triple>  Cross-compile for target (e.g., aarch64-linux-gnu)\n";
-	std::cout << "  --                 Separator for program arguments (used with -r)\n";
-	std::cout << "\n";
-	std::cout << "Examples:\n";
-	std::cout << "  quadc main.qd                        Compile to executable 'main'\n";
-	std::cout << "  quadc -o prog main.qd                Compile to executable 'prog'\n";
-	std::cout << "  quadc -r main.qd                     Compile and run immediately\n";
-	std::cout << "  quadc -r greet.qd -- Alice           Compile and run with argument 'Alice'\n";
-	std::cout << "  echo 'fn main() { 42 print nl }' | quadc -r   Compile and run from stdin\n";
+	qdcli::Help help("quadc", "Quadrate compiler");
+	help.description("Compiles .qd source files to native executables via LLVM.")
+			.usage("[options] <file>...")
+			.usage("[options] <file> -- [args]", "pass args to the program, with -r")
+			.usage("[options] -", "read the source from stdin")
+			.section("Options")
+			.standardOptions()
+			.option('o', "--output", "<name>", "Output executable name (default: the source file's name)")
+			.item("-O0, -O1, -O2, -O3", "Set optimization level (default: -O0)")
+			.option('g', "--debug", "Generate debug information for GDB/LLDB")
+			.option('s', "--stack-size", "<size>", "Set stack size (default: 1024)")
+			.option('I', "--include", "<path>", "Add a module search path (repeatable)")
+			.option('l', "--module", "<mod@ver>", "Pin a module to a version (e.g. -l color@1.0.0)")
+			.option('r', "--run", "Compile and run immediately (uses the JIT by default)")
+			.option("--no-jit", "Link and execute instead of using the JIT, with -r")
+			.option("--test", "Compile and run tests")
+			.option("--coverage", "Print a function coverage report (use with --test)")
+			.option("--target", "<triple>", "Cross-compile for a target (e.g. aarch64-linux-gnu)")
+			.option("--freestanding", "No hosted runtime - emit .o with no libc and no auto-main")
+			.option("--werror", "Treat warnings as errors")
+			.option("--verbose", "Show detailed compilation steps")
+			.option("--save-temps", "Keep temporary files for debugging")
+			.option("--dump-tokens", "Print the lexer token stream")
+			.option("--dump-ast", "Print the parsed AST")
+			.option("--dump-ir", "Print the generated LLVM IR")
+			.option("--", "Separate program arguments from compiler options (with -r)")
+			.section("Examples")
+			.item("quadc main.qd", "Compile to an executable named 'main'")
+			.item("quadc -o prog main.qd", "Compile to an executable named 'prog'")
+			.item("quadc -r main.qd", "Compile and run immediately")
+			.item("quadc -r greet.qd -- Alice", "Compile and run with the argument 'Alice'")
+			.item("quadc -r -", "Compile and run source piped on stdin");
+	help.print();
 }
 
 void printVersion() {
@@ -70,10 +68,9 @@ bool parseArgs(int argc, char* argv[], Options& opts) {
 		} else if (arg == "-v" || arg == "--version") {
 			opts.version = true;
 			return true;
-		} else if (arg == "-o") {
+		} else if (arg == "-o" || arg == "--output") {
 			if (i + 1 >= argc) {
-				std::cerr << "quadc: option '-o' requires an argument\n";
-				std::cerr << "Try 'quadc --help' for more information.\n";
+				qdcli::usageError("quadc", "option '-o' requires an argument");
 				return false;
 			}
 			opts.outputName = argv[++i];
@@ -101,19 +98,17 @@ bool parseArgs(int argc, char* argv[], Options& opts) {
 			opts.coverage = true;
 		} else if (arg == "--freestanding") {
 			opts.freestanding = true;
-		} else if (arg == "-g") {
+		} else if (arg == "-g" || arg == "--debug") {
 			opts.debugInfo = true;
-		} else if (arg == "-I") {
+		} else if (arg == "-I" || arg == "--include") {
 			if (i + 1 >= argc) {
-				std::cerr << "quadc: option '-I' requires an argument\n";
-				std::cerr << "Try 'quadc --help' for more information.\n";
+				qdcli::usageError("quadc", "option '-I' requires an argument");
 				return false;
 			}
 			opts.includePaths.push_back(argv[++i]);
-		} else if (arg == "-l") {
+		} else if (arg == "-l" || arg == "--module") {
 			if (i + 1 >= argc) {
-				std::cerr << "quadc: option '-l' requires an argument (module@version)\n";
-				std::cerr << "Try 'quadc --help' for more information.\n";
+				qdcli::usageError("quadc", "option '-l' requires an argument (module@version)");
 				return false;
 			}
 			std::string moduleSpec = argv[++i];
@@ -121,8 +116,8 @@ bool parseArgs(int argc, char* argv[], Options& opts) {
 			// Parse module@version format
 			size_t atPos = moduleSpec.find('@');
 			if (atPos == std::string::npos || atPos == 0 || atPos == moduleSpec.size() - 1) {
-				std::cerr << "quadc: invalid format for '-l': '" << moduleSpec << "'\n";
-				std::cerr << "Expected format: module@version (e.g., color@1.0.0)\n";
+				qdcli::usageError("quadc",
+						"invalid argument for '-l': '" + moduleSpec + "' (expected module@version, e.g. color@1.0.0)");
 				return false;
 			}
 
@@ -133,8 +128,7 @@ bool parseArgs(int argc, char* argv[], Options& opts) {
 			opts.werror = true;
 		} else if (arg == "--target") {
 			if (i + 1 >= argc) {
-				std::cerr << "quadc: option '--target' requires an argument\n";
-				std::cerr << "Try 'quadc --help' for more information.\n";
+				qdcli::usageError("quadc", "option '--target' requires an argument");
 				return false;
 			}
 			opts.targetTriple = argv[++i];
@@ -146,28 +140,26 @@ bool parseArgs(int argc, char* argv[], Options& opts) {
 			opts.optLevel = 2;
 		} else if (arg == "-O3") {
 			opts.optLevel = 3;
-		} else if (arg == "-s") {
+		} else if (arg == "-s" || arg == "--stack-size") {
 			if (i + 1 >= argc) {
-				std::cerr << "quadc: option '-s' requires an argument\n";
-				std::cerr << "Try 'quadc --help' for more information.\n";
+				qdcli::usageError("quadc", "option '-s' requires an argument");
 				return false;
 			}
 			try {
 				opts.stackSize = std::stoull(argv[++i]);
 				if (opts.stackSize == 0) {
-					std::cerr << "quadc: stack size must be greater than 0\n";
+					qdcli::usageError("quadc", "stack size must be greater than 0");
 					return false;
 				}
 			} catch (const std::exception&) {
-				std::cerr << "quadc: invalid stack size: " << argv[i] << "\n";
+				qdcli::usageError("quadc", std::string("invalid stack size: ") + argv[i]);
 				return false;
 			}
 		} else if (arg == "-") {
 			// Read from stdin
 			opts.readStdin = true;
 		} else if (arg[0] == '-') {
-			std::cerr << "quadc: unknown option: " << arg << "\n";
-			std::cerr << "Try 'quadc --help' for more information.\n";
+			qdcli::usageError("quadc", "unknown option: " + arg);
 			return false;
 		} else {
 			// If argument is a directory, look for main.qd inside it
@@ -176,8 +168,7 @@ bool parseArgs(int argc, char* argv[], Options& opts) {
 				if (fs::exists(mainQd)) {
 					opts.files.push_back(mainQd.string());
 				} else {
-					std::cerr << "quadc: no main.qd found in directory '" << arg << "'\n";
-					std::cerr << "Try 'quadc --help' for more information.\n";
+					qdcli::usageError("quadc", "no main.qd found in directory '" + arg + "'");
 					return false;
 				}
 			} else {
@@ -191,8 +182,7 @@ bool parseArgs(int argc, char* argv[], Options& opts) {
 		if (!isatty(STDIN_FILENO)) {
 			opts.readStdin = true;
 		} else {
-			std::cerr << "quadc: no input files\n";
-			std::cerr << "Try 'quadc --help' for more information.\n";
+			qdcli::usageError("quadc", "no input files");
 			return false;
 		}
 	}

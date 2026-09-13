@@ -319,8 +319,7 @@ namespace Qd {
 			}
 			mStoredErrors.push_back(err);
 		} else {
-			// GCC/Clang style: quadc: filename:line:column: error: message
-			std::cerr << Colors::bold() << "quadc: " << Colors::reset();
+			// GCC/Clang style: filename:line:column: error: message
 			if (mFilename && node) {
 				std::cerr << Colors::bold() << displayFilename() << ":" << node->line() << ":" << node->column() << ":"
 						  << Colors::reset() << " ";
@@ -391,8 +390,7 @@ namespace Qd {
 			return;
 		}
 
-		// GCC/Clang style: quadc: filename:line:column: warning: message
-		std::cerr << Colors::bold() << "quadc: " << Colors::reset();
+		// GCC/Clang style: filename:line:column: warning: message
 		if (mFilename && node) {
 			std::cerr << Colors::bold() << displayFilename() << ":" << node->line() << ":" << node->column() << ":"
 					  << Colors::reset() << " ";

@@ -108,7 +108,7 @@ echo "Test 4: Unknown command"
 if output=$("$QUADPM" foobar 2>&1); then
     fail "Should reject unknown command" "$output"
 else
-    if echo "$output" | grep -q "Unknown command"; then
+    if echo "$output" | grep -q "unknown command"; then
         pass "Rejects unknown command with error"
     else
         fail "Error message unclear" "$output"
@@ -147,7 +147,7 @@ echo "Test 7: get from non-existent URL"
 if output=$(QUADRATE_PATH="$TEST_CACHE_DIR" "$QUADPM" get file:///nonexistent/path/to/repo@v1.0.0 2>&1); then
     fail "Should fail for invalid URL" "$output"
 else
-    if echo "$output" | grep -q "Failed to clone"; then
+    if echo "$output" | grep -q "failed to clone"; then
         pass "Rejects invalid Git URL"
     else
         fail "Error message unclear" "$output"
@@ -174,7 +174,7 @@ git commit -q -m "Initial"
 if output=$(QUADRATE_PATH="$TEST_CACHE_DIR/cache" "$QUADPM" get "$TEST_REPO@nonexistent-tag" 2>&1); then
     fail "Should fail for non-existent ref" "$output"
 else
-    if echo "$output" | grep -q "Failed to clone"; then
+    if echo "$output" | grep -q "failed to clone"; then
         pass "Rejects non-existent Git ref"
     else
         fail "Error message unclear" "$output"
@@ -431,7 +431,7 @@ EOF
 if output=$("$QUADPM" install --frozen 2>&1); then
     fail "Should fail with outdated lockfile" "$output"
 else
-    if echo "$output" | grep -q "not in lockfile"; then
+    if echo "$output" | grep -q "not in the lockfile"; then
         pass "install --frozen detects outdated lockfile"
     else
         fail "Error message unclear" "$output"
@@ -995,7 +995,7 @@ git tag -a v1.0.0 -m "v1.0.0"
 cd - > /dev/null
 
 if output=$(QUADRATE_PATH="$TEST_CACHE_DIR/cache" "$QUADPM" get "$NAMESPACE_DIR/conflicting@v1.0.0" 2>&1); then
-    if echo "$output" | grep -q "namespace 'ml' also claimed by"; then
+    if echo "$output" | grep -q "namespace 'ml' is also claimed by"; then
         if echo "$output" | grep -q "Use full path"; then
             pass "Namespace conflict detected with instructions"
         else
@@ -1056,6 +1056,11 @@ mkdir -p "$GIT_UPSTREAM" "$GIT_PROJ" "$GIT_MODULES"
 git -C "$GIT_UPSTREAM" init -q -b main .
 git -C "$GIT_UPSTREAM" config user.email test@example.com
 git -C "$GIT_UPSTREAM" config user.name test
+# The six other throwaway repos in this file disable signing; this one did not,
+# so on a machine with commit.gpgsign set globally the commit below blocked on
+# pinentry for 60 seconds and then failed, taking tests 36 and 37 with it.
+git -C "$GIT_UPSTREAM" config commit.gpgSign false
+git -C "$GIT_UPSTREAM" config tag.gpgSign false
 echo 'fn good( -- x:i64) { 1 }' > "$GIT_UPSTREAM/module.qd"
 echo '{"name": "pinned", "version": "1.0.0"}' > "$GIT_UPSTREAM/qd.json"
 git -C "$GIT_UPSTREAM" add -A

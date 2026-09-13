@@ -1,1 +1,1 @@
-quadc: tests/qd/syntax/error_missing_brace_after_else.qd:6:3: error: Expected '{' after 'else'
+tests/qd/syntax/error_missing_brace_after_else.qd:6:3: error: Expected '{' after 'else'
