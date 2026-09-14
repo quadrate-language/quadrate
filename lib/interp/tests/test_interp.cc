@@ -362,6 +362,274 @@ TEST(StringLiteralEscapes) {
 	qd_interp_destroy(interp);
 }
 
+TEST(Conditionals) {
+	qd_interp* interp = qd_interp_create(256);
+
+	// The condition comes off the stack, as everything else does
+	ASSERT(std::strcmp(top(interp, "1 if { 42 }"), "42") == 0, "a true condition runs the block");
+	ASSERT(qd_interp_eval(interp, "clear 0 if { 42 }"), "a false condition succeeds");
+	ASSERT(qd_interp_depth(interp) == 0, "and runs nothing");
+
+	ASSERT(std::strcmp(top(interp, "clear 1 if { 1 } else { 2 }"), "1") == 0, "true takes the first branch");
+	ASSERT(std::strcmp(top(interp, "clear 0 if { 1 } else { 2 }"), "2") == 0, "false takes the else branch");
+
+	// Any non-zero is true
+	ASSERT(std::strcmp(top(interp, "clear -1 if { 7 } else { 8 }"), "7") == 0, "negative is true");
+
+	ASSERT(std::strcmp(top(interp, "clear 1 if { 1 if { 5 } }"), "5") == 0, "conditionals nest");
+
+	qd_interp_destroy(interp);
+}
+
+TEST(ConditionalNeedsACondition) {
+	qd_interp* interp = qd_interp_create(256);
+
+	ASSERT(!qd_interp_eval(interp, "if { 1 }"), "an empty stack is refused");
+	ASSERT(std::strstr(qd_interp_error(interp), "condition") != nullptr, "and says why");
+
+	qd_interp_destroy(interp);
+}
+
+TEST(Loops) {
+	qd_interp* interp = qd_interp_create(256);
+
+	ASSERT(std::strcmp(top(interp, "0 loop { 1 + dup 5 >= if { break } }"), "5") == 0, "break leaves the loop");
+	ASSERT(qd_interp_depth(interp) == 1, "and the stack is what the body left");
+
+	// continue skips the rest of the body, break still ends it
+	ASSERT(std::strcmp(top(interp, "clear 0 loop { 1 + dup 3 == if { continue } dup 6 >= if { break } }"), "6") == 0,
+			"continue resumes the loop");
+
+	// A break belongs to its own loop, not an outer one
+	ASSERT(std::strcmp(top(interp, "clear 0 loop { 1 + dup 3 >= if { break } } 100 +"), "103") == 0,
+			"execution resumes after the loop");
+
+	qd_interp_destroy(interp);
+}
+
+TEST(RunawayLoopIsStopped) {
+	// Nothing can interrupt a running evaluation on a calculator, so an
+	// unbounded loop has to stop itself
+	qd_interp* interp = qd_interp_create(256);
+
+	ASSERT(!qd_interp_eval(interp, "loop { }"), "an empty infinite loop fails");
+	ASSERT(std::strstr(qd_interp_error(interp), "execution limit") != nullptr, "with a message naming the cause");
+
+	ASSERT(!qd_interp_eval(interp, "clear loop { 1 drop }"), "so does one with a body");
+
+	// And the interpreter still works afterwards
+	ASSERT(std::strcmp(top(interp, "clear 2 3 +"), "5") == 0, "the interpreter survives");
+
+	qd_interp_destroy(interp);
+}
+
+TEST(StepLimitIsConfigurable) {
+	qd_interp* interp = qd_interp_create(256);
+	ASSERT(qd_interp_step_limit(interp) > 0, "there is a default limit");
+
+	qd_interp_set_step_limit(interp, 100);
+	ASSERT(qd_interp_step_limit(interp) == 100, "the limit can be lowered");
+	ASSERT(!qd_interp_eval(interp, "0 loop { 1 + }"), "a tight limit stops sooner");
+
+	// Enough headroom for real work
+	qd_interp_set_step_limit(interp, 1000000);
+	ASSERT(std::strcmp(top(interp, "clear 0 loop { 1 + dup 100 >= if { break } }"), "100") == 0,
+			"a raised limit lets real loops finish");
+
+	qd_interp_set_step_limit(nullptr, 10); // must not crash
+	ASSERT(qd_interp_step_limit(nullptr) == 0, "a null interpreter has no limit");
+
+	qd_interp_destroy(interp);
+}
+
+TEST(FlowDoesNotLeakBetweenCalls) {
+	qd_interp* interp = qd_interp_create(256);
+
+	// A break outside a loop ends the line, and must not affect the next one
+	ASSERT(qd_interp_eval(interp, "1 break 2"), "a stray break ends the line");
+	ASSERT(qd_interp_depth(interp) == 1, "so the 2 is never pushed");
+	ASSERT(std::strcmp(top(interp, "10 +"), "11") == 0, "the next call runs normally");
+
+	qd_interp_destroy(interp);
+}
+
+TEST(DeclaredFunctions) {
+	qd_interp* interp = qd_interp_create(256);
+
+	// A declaration defines; it does not run
+	ASSERT(qd_interp_eval(interp, "fn double(x:i64 -- r:i64) { 2 * }"), "a function can be declared");
+	ASSERT(qd_interp_depth(interp) == 0, "declaring runs nothing");
+
+	ASSERT(std::strcmp(top(interp, "5 double"), "10") == 0, "and can then be called");
+	ASSERT(std::strcmp(top(interp, "clear 21 double double"), "84") == 0, "calls compose");
+
+	qd_interp_destroy(interp);
+}
+
+TEST(FunctionsCallFunctions) {
+	qd_interp* interp = qd_interp_create(256);
+
+	qd_interp_eval(interp, "fn sq(x:i64 -- r:i64) { dup * }");
+	qd_interp_eval(interp, "fn quad(x:i64 -- r:i64) { sq sq }");
+
+	ASSERT(std::strcmp(top(interp, "clear 3 quad"), "81") == 0, "a function may call another");
+
+	qd_interp_destroy(interp);
+}
+
+TEST(FunctionsUseControlFlow) {
+	qd_interp* interp = qd_interp_create(256);
+
+	qd_interp_eval(interp, "fn clamp(x:i64 -- r:i64) { dup 100 > if { drop 100 } }");
+	ASSERT(std::strcmp(top(interp, "clear 5 clamp"), "5") == 0, "below the limit passes through");
+	ASSERT(std::strcmp(top(interp, "clear 500 clamp"), "100") == 0, "above it is clamped");
+
+	qd_interp_destroy(interp);
+}
+
+TEST(FunctionsRecurse) {
+	qd_interp* interp = qd_interp_create(256);
+
+	qd_interp_eval(interp, "fn countdown(n:i64 -- r:i64) { dup 0 > if { 1 - countdown } }");
+	ASSERT(std::strcmp(top(interp, "clear 5 countdown"), "0") == 0, "recursion terminates");
+
+	qd_interp_destroy(interp);
+}
+
+TEST(RunawayRecursionIsStopped) {
+	// Each level costs a C stack frame in the walk, so this has to be refused
+	// rather than left to take the process down
+	qd_interp* interp = qd_interp_create(256);
+
+	qd_interp_eval(interp, "fn forever(n:i64 -- r:i64) { forever }");
+	ASSERT(!qd_interp_eval(interp, "clear 1 forever"), "unbounded recursion fails");
+	ASSERT(std::strstr(qd_interp_error(interp), "recursed too deeply") != nullptr, "and says why");
+
+	ASSERT(std::strcmp(top(interp, "clear 2 3 +"), "5") == 0, "the interpreter survives");
+
+	qd_interp_destroy(interp);
+}
+
+TEST(RedefiningAFunction) {
+	qd_interp* interp = qd_interp_create(256);
+
+	qd_interp_eval(interp, "fn f(x:i64 -- r:i64) { 1 + }");
+	ASSERT(std::strcmp(top(interp, "clear 10 f"), "11") == 0, "the first definition applies");
+
+	qd_interp_eval(interp, "fn f(x:i64 -- r:i64) { 100 + }");
+	ASSERT(std::strcmp(top(interp, "clear 10 f"), "110") == 0, "a later definition replaces it");
+
+	qd_interp_destroy(interp);
+}
+
+TEST(DeclaredFunctionsShadowNatives) {
+	qd_interp* interp = qd_interp_create(256);
+
+	qd_interp_register(interp, "thing", "( -- v:i64)", nativeAnswer, nullptr);
+	ASSERT(std::strcmp(top(interp, "thing"), "42") == 0, "the native answers first");
+
+	// A program may deliberately replace a capability the host provided
+	qd_interp_eval(interp, "fn thing( -- r:i64) { 7 }");
+	ASSERT(std::strcmp(top(interp, "clear thing"), "7") == 0, "a declaration wins");
+
+	qd_interp_destroy(interp);
+}
+
+TEST(DeclarationsSurviveTheParseThatMadeThem) {
+	// The body belongs to the Ast that parsed it, so that Ast has to outlive
+	// the call. Many later evaluations should not disturb it.
+	qd_interp* interp = qd_interp_create(256);
+
+	qd_interp_eval(interp, "fn keep(x:i64 -- r:i64) { 3 * }");
+	for (int i = 0; i < 200; i++) {
+		qd_interp_eval(interp, "clear 1 2 +");
+	}
+	ASSERT(std::strcmp(top(interp, "clear 5 keep"), "15") == 0, "the body is still valid");
+
+	qd_interp_destroy(interp);
+}
+
+TEST(ExpressionsAndDeclarationsBothParse) {
+	qd_interp* interp = qd_interp_create(256);
+
+	// Which form the source takes decides how it is parsed; both must work, and
+	// a malformed one of either kind must report its own error
+	ASSERT(qd_interp_eval(interp, "1 2 +"), "an expression");
+	ASSERT(qd_interp_eval(interp, "fn g( -- r:i64) { 1 }"), "a declaration");
+	ASSERT(!qd_interp_eval(interp, "fn broken(("), "a malformed declaration fails");
+	ASSERT(qd_interp_error(interp)[0] != '\0', "with a message");
+	ASSERT(!qd_interp_eval(interp, "2 +++ @@@"), "a malformed expression fails");
+
+	qd_interp_destroy(interp);
+}
+
+TEST(UndeclaringAFunction) {
+	qd_interp* interp = qd_interp_create(256);
+
+	ASSERT(qd_interp_declared_count(interp) == 0, "nothing declared yet");
+	qd_interp_eval(interp, "fn sq(x:i64 -- r:i64) { dup * }");
+	ASSERT(qd_interp_declared_count(interp) == 1, "one declaration");
+	ASSERT(std::strcmp(top(interp, "7 sq"), "49") == 0, "it works");
+
+	ASSERT(qd_interp_undeclare(interp, "sq"), "undeclaring reports success");
+	ASSERT(qd_interp_declared_count(interp) == 0, "and the count drops");
+	ASSERT(!qd_interp_eval(interp, "clear 7 sq"), "the name no longer resolves");
+	ASSERT(std::strstr(qd_interp_error(interp), "not defined") != nullptr, "with the usual message");
+
+	ASSERT(!qd_interp_undeclare(interp, "sq"), "undeclaring twice reports nothing to do");
+	ASSERT(!qd_interp_undeclare(interp, "neverexisted"), "an unknown name likewise");
+	ASSERT(!qd_interp_undeclare(nullptr, "sq"), "null interpreter");
+	ASSERT(!qd_interp_undeclare(interp, nullptr), "null name");
+	ASSERT(qd_interp_declared_count(nullptr) == 0, "null interpreter has no declarations");
+
+	qd_interp_destroy(interp);
+}
+
+TEST(UndeclaringRestoresANative) {
+	qd_interp* interp = qd_interp_create(256);
+
+	qd_interp_register(interp, "thing", "( -- v:i64)", nativeAnswer, nullptr);
+	qd_interp_eval(interp, "fn thing( -- r:i64) { 7 }");
+	ASSERT(std::strcmp(top(interp, "thing"), "7") == 0, "the declaration shadows the native");
+
+	// Removing the declaration uncovers what the host registered
+	ASSERT(qd_interp_undeclare(interp, "thing"), "undeclared");
+	ASSERT(std::strcmp(top(interp, "clear thing"), "42") == 0, "the native answers again");
+
+	qd_interp_destroy(interp);
+}
+
+TEST(RedeclaringDoesNotAccumulate) {
+	// Each declaration owns the parse its body lives in. Replacing one has to
+	// release the previous parse, or an interpreter that is used for a while
+	// grows without bound -- which is what a calculator is.
+	qd_interp* interp = qd_interp_create(256);
+
+	for (int i = 0; i < 500; i++) {
+		ASSERT(qd_interp_eval(interp, "fn f(x:i64 -- r:i64) { 2 * }") || false, "redeclare");
+	}
+	ASSERT(qd_interp_declared_count(interp) == 1, "500 redefinitions leave one declaration");
+	ASSERT(std::strcmp(top(interp, "clear 21 f"), "42") == 0, "and the last one works");
+
+	qd_interp_destroy(interp);
+}
+
+TEST(UndeclaredFunctionsStopBeingCallable) {
+	// A body must not outlive its declaration: calling through a stale pointer
+	// is the failure this ownership is meant to prevent
+	qd_interp* interp = qd_interp_create(256);
+
+	qd_interp_eval(interp, "fn outer(x:i64 -- r:i64) { inner }");
+	qd_interp_eval(interp, "fn inner(x:i64 -- r:i64) { 3 * }");
+	ASSERT(std::strcmp(top(interp, "clear 5 outer"), "15") == 0, "calls through");
+
+	qd_interp_undeclare(interp, "inner");
+	ASSERT(!qd_interp_eval(interp, "clear 5 outer"), "the caller now fails");
+	ASSERT(std::strstr(qd_interp_error(interp), "inner") != nullptr, "naming the missing word");
+
+	qd_interp_destroy(interp);
+}
+
 int main() {
 	return UC_PrintResults();
 }

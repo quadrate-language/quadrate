@@ -87,10 +87,45 @@ while walking the tree — nothing is compiled. The function pointer type is
 structurally identical to `qd_native_fn`, so one C function can be registered
 with either API without a cast.
 
+## Declarations
+
+Source that declares something is parsed as a program; anything else is parsed
+as the body of one. A leading `fn`, `const`, `struct`, `enum`, `use`, `type` or
+`test` decides which, so an error always concerns what the caller meant to write.
+
+```c
+qd_interp_eval(interp, "fn double(x:i64 -- r:i64) { 2 * }");  // defines
+qd_interp_eval(interp, "5 double");                           // 10
+```
+
+`qd_interp_undeclare()` removes a declaration again, and a name that shadowed a
+registered native becomes that native once more. Each declaration owns the parse
+its body lives in, so replacing or removing one releases it rather than
+accumulating for the life of the interpreter.
+
+Parameters are passed on the stack like everything else; the signature is for
+type checking, which this tier leaves to the runtime. A declared name shadows a
+registered native of the same name, so a program can replace a host capability
+deliberately.
+
+## Execution limits
+
+Interpreted code is typed by people, who write unbounded loops, and nothing can
+interrupt a running evaluation. A walk that exceeds a step budget therefore
+fails rather than running forever:
+
+```c
+qd_interp_set_step_limit(interp, 5000000);   // 0 removes the limit
+```
+
+The default is tuned so the wait is about a second on a Cortex-A53. Recursion is
+bounded separately, since each level costs a C stack frame in the walk.
+
 ## Coverage
 
-Builtin instructions, literals, and registered native functions. Control flow,
-Quadrate-defined functions, variables and module imports are not interpreted yet; they are reported as an
+Builtin instructions, literals, registered native functions, control flow
+(`if`/`else`, `loop`, `break`, `continue`) and Quadrate-defined functions.
+`for`, named locals and module imports are not interpreted yet; they are reported as an
 error rather than failing silently.
 
 ## Constraints

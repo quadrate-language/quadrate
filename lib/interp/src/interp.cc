@@ -1,14 +1,17 @@
-// interp - Interpreted execution of Quadrate source
+// interp - Interpreted execution of Quadrate source.
 //
-// Dispatch table from instruction name to runtime function, plus a walk over
-// the AST. Interpreted and compiled code share the same runtime.
+// Dispatch table from instruction name to runtime function, plus an AST walk.
+// Interpreted and compiled code share the same runtime.
 
 #include <quadrate/interp/interp.h>
 
 #include <quadrate/qc/ast.h>
+#include <quadrate/qc/ast_node_function.h>
 #include <quadrate/qc/ast_node_identifier.h>
+#include <quadrate/qc/ast_node_if.h>
 #include <quadrate/qc/ast_node_instruction.h>
 #include <quadrate/qc/ast_node_literal.h>
+#include <quadrate/qc/ast_node_loop.h>
 #include <quadrate/qc/ast_node_scoped.h>
 #include <quadrate/rt/array.h>
 #include <quadrate/rt/qd_string.h>
@@ -20,16 +23,17 @@
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
+#include <memory>
 #include <new>
 #include <string>
 #include <unordered_map>
+#include <vector>
 
 namespace {
 
 	using OpFn = int (*)(qd_context*);
 
-	// Runtime function plus the stack depth it needs. The runtime ends the
-	// process on underflow, so the arity is checked here rather than trusted.
+	// Runtime function plus the depth it needs: the runtime exits on underflow.
 	struct BuiltinOp {
 		OpFn fn;
 		size_t arity;
@@ -118,16 +122,41 @@ namespace {
 
 } // namespace
 
-// Interpreter state
+enum class Flow {
+	Normal,
+	Break,
+	Continue
+};
+
+// Nodes one eval may walk. Nothing can interrupt a running evaluation, so an
+// unbounded loop would otherwise need a power cycle. About a second on an A53.
+#define QD_INTERP_DEFAULT_STEP_LIMIT 2000000u
+
+// Each level costs a C stack frame in the walk.
+#define QD_INTERP_MAX_CALL_DEPTH 256
+
+// Holding the Ast here releases it when the declaration is replaced or removed.
+struct Declared {
+	const Qd::IAstNode* node;
+	std::shared_ptr<Qd::Ast> ast;
+};
+
 struct qd_interp {
 	qd_context* ctx;   ///< Execution context holding the stack
 	bool owns_ctx;	   ///< Whether destroy() should free the context
 	std::string error; ///< Message from the most recent failure
+	Flow flow;		   ///< Set by break/continue, cleared by the enclosing loop
+	uint64_t steps;	   ///< Nodes walked in this call
+	uint64_t step_limit;
+
+	std::unordered_map<std::string, Declared> functions; ///< `fn` declarations
+	size_t call_depth;
 };
 
 namespace {
 
 	bool evalNode(qd_interp* interp, const Qd::IAstNode* node);
+	bool evalNative(qd_interp* interp, const std::string& name);
 
 	bool evalChildren(qd_interp* interp, const Qd::IAstNode* node) {
 		const size_t count = node->childCount();
@@ -135,13 +164,64 @@ namespace {
 			if (!evalNode(interp, node->child(i))) {
 				return false;
 			}
+			// A break or continue abandons the rest of the block
+			if (interp->flow != Flow::Normal) {
+				break;
+			}
 		}
 		return true;
 	}
 
-	// Strip the quotes the parser keeps and decode escapes, matching
-	// generator_nodes.cc so both tiers agree what a literal means. An
-	// unrecognised escape is kept verbatim, as there.
+	// `1 if { ... }` takes its condition from the stack. Zero is false.
+	bool evalIf(qd_interp* interp, const Qd::IAstNode* node) {
+		int64_t condition = 0;
+		if (qd_stack_size(interp->ctx->st) == 0) {
+			interp->error = "'if' needs a condition on the stack";
+			return false;
+		}
+		qd_clear_error(interp->ctx);
+		if (qd_pop_i(interp->ctx, &condition) != 0) {
+			const char* message = qd_error_message(interp->ctx);
+			interp->error = (message != nullptr) ? message : "'if' condition must be an integer";
+			return false;
+		}
+
+		if (condition != 0) {
+			return evalNode(interp, node->child(0));
+		}
+		if (node->childCount() > 1) {
+			return evalNode(interp, node->child(1));
+		}
+		return true;
+	}
+
+	bool evalLoop(qd_interp* interp, const Qd::IAstNode* node) {
+		const Qd::IAstNode* body = node->child(0);
+
+		for (;;) {
+			if (!evalNode(interp, body)) {
+				return false;
+			}
+
+			if (interp->flow == Flow::Break) {
+				interp->flow = Flow::Normal;
+				break;
+			}
+			if (interp->flow == Flow::Continue) {
+				interp->flow = Flow::Normal;
+			}
+
+			// An empty body walks no node, so the step budget alone would never stop it.
+			if (++interp->steps > interp->step_limit) {
+				interp->error = "execution limit reached; is this loop missing a break?";
+				return false;
+			}
+		}
+		return true;
+	}
+
+	// Strip quotes and decode escapes as generator_nodes.cc does, so both tiers
+	// agree what a literal means.
 	std::string decodeString(const std::string& literal) {
 		std::string body = literal;
 		if (body.size() >= 2 && body.front() == '"' && body.back() == '"') {
@@ -254,7 +334,60 @@ namespace {
 		return true;
 	}
 
+	// Whether the source declares rather than evaluates; a leading keyword decides.
+	bool startsWithDeclaration(const char* source) {
+		const char* p = source;
+		while (*p == ' ' || *p == '\t' || *p == '\n' || *p == '\r') {
+			p++;
+		}
+
+		static const char* const KEYWORDS[] = {"fn ", "fn(", "const ", "struct ", "enum ", "use ", "type ", "test "};
+		for (const char* keyword : KEYWORDS) {
+			if (std::strncmp(p, keyword, std::strlen(keyword)) == 0) {
+				return true;
+			}
+		}
+		return false;
+	}
+
+	// Parameters arrive on the stack, so the body just runs.
+	bool callFunction(qd_interp* interp, const std::string& name, const Qd::IAstNode* decl) {
+		if (interp->call_depth >= QD_INTERP_MAX_CALL_DEPTH) {
+			interp->error = "'" + name + "' recursed too deeply";
+			return false;
+		}
+
+		// The body is the function's Block; the other children are parameters
+		const Qd::IAstNode* body = nullptr;
+		for (size_t i = 0; i < decl->childCount(); i++) {
+			if (decl->child(i)->type() == Qd::IAstNode::Type::BLOCK) {
+				body = decl->child(i);
+			}
+		}
+		if (body == nullptr) {
+			interp->error = "'" + name + "' has no body";
+			return false;
+		}
+
+		interp->call_depth++;
+		const bool ok = evalNode(interp, body);
+		interp->call_depth--;
+
+		// A break inside a function does not escape it
+		interp->flow = Flow::Normal;
+		return ok;
+	}
+
 	// Call a registered native function by the name written in source.
+	bool evalName(qd_interp* interp, const std::string& name) {
+		// A declared word shadows a registered native.
+		const auto declared = interp->functions.find(name);
+		if (declared != interp->functions.end()) {
+			return callFunction(interp, name, declared->second.node);
+		}
+		return evalNative(interp, name);
+	}
+
 	bool evalNative(qd_interp* interp, const std::string& name) {
 		qd_native_callback fn = nullptr;
 		void* userdata = nullptr;
@@ -284,15 +417,20 @@ namespace {
 	bool evalNode(qd_interp* interp, const Qd::IAstNode* node) {
 		using Type = Qd::IAstNode::Type;
 
+		if (++interp->steps > interp->step_limit) {
+			interp->error = "execution limit reached; is this loop missing a break?";
+			return false;
+		}
+
 		switch (node->type()) {
-		// Containers: source is wrapped in a function to satisfy the
-		// parser, and both wrappers are transparent to execution
+		// Wrappers the parser needs; transparent to execution.
 		case Type::PROGRAM:
 		case Type::BLOCK:
 		case Type::FUNCTION_DECLARATION:
 			return evalChildren(interp, node);
 
 		case Type::COMMENT:
+		case Type::VARIABLE_DECLARATION: // a parameter, recorded by the declaration
 			return true;
 
 		case Type::LITERAL:
@@ -307,15 +445,26 @@ namespace {
 		case Type::INSTRUCTION:
 			return evalInstruction(interp, static_cast<const Qd::AstNodeInstruction*>(node));
 
-		// A name the language does not define is looked up among the functions
-		// the embedder registered, which is how host capabilities become callable
-		// words in typed source
+		case Type::IF_STATEMENT:
+			return evalIf(interp, node);
+
+		case Type::LOOP_STATEMENT:
+			return evalLoop(interp, node);
+
+		case Type::BREAK_STATEMENT:
+			interp->flow = Flow::Break;
+			return true;
+
+		case Type::CONTINUE_STATEMENT:
+			interp->flow = Flow::Continue;
+			return true;
+
 		case Type::IDENTIFIER:
-			return evalNative(interp, static_cast<const Qd::AstNodeIdentifier*>(node)->name());
+			return evalName(interp, static_cast<const Qd::AstNodeIdentifier*>(node)->name());
 
 		case Type::SCOPED_IDENTIFIER: {
 			const auto* scoped = static_cast<const Qd::AstNodeScopedIdentifier*>(node);
-			return evalNative(interp, scoped->scope() + "::" + scoped->name());
+			return evalName(interp, scoped->scope() + "::" + scoped->name());
 		}
 
 		default:
@@ -324,11 +473,11 @@ namespace {
 		}
 	}
 
-	// Walk with recovery armed: errors depending on run-time values (type
-	// mismatch, division by zero, out-of-range pick) unwind here.
+	// Walk with recovery armed: type mismatch, division by zero and out-of-range
+	// pick unwind here.
 	//
-	// longjmp skips destructors, so the walk holds only trivially destructible
-	// locals between this frame and a runtime call. Keep it that way.
+	// longjmp skips destructors, so nothing between this frame and a runtime call
+	// may hold an object needing one. Keep it that way.
 	bool runGuarded(qd_interp* interp, const Qd::IAstNode* root) {
 		if (setjmp(*qd_recovery_buf(interp->ctx)) == 0) {
 			qd_recovery_arm(interp->ctx);
@@ -344,7 +493,8 @@ namespace {
 	}
 
 	qd_interp* makeInterp(qd_context* ctx, bool owns) {
-		qd_interp* interp = new (std::nothrow) qd_interp{ctx, owns, std::string()};
+		qd_interp* interp = new (std::nothrow)
+				qd_interp{ctx, owns, std::string(), Flow::Normal, 0, QD_INTERP_DEFAULT_STEP_LIMIT, {}, 0};
 		if (interp == nullptr && owns) {
 			qd_free_context(ctx);
 		}
@@ -392,23 +542,66 @@ size_t qd_interp_registered_count(const qd_interp* interp) {
 	return (interp != nullptr) ? qd_native_count(interp->ctx) : 0;
 }
 
+void qd_interp_set_step_limit(qd_interp* interp, uint64_t limit) {
+	if (interp != nullptr) {
+		interp->step_limit = (limit == 0) ? UINT64_MAX : limit;
+	}
+}
+
+uint64_t qd_interp_step_limit(const qd_interp* interp) {
+	return (interp != nullptr) ? interp->step_limit : 0;
+}
+
+bool qd_interp_undeclare(qd_interp* interp, const char* name) {
+	if (interp == nullptr || name == nullptr) {
+		return false;
+	}
+	return interp->functions.erase(name) > 0;
+}
+
+size_t qd_interp_declared_count(const qd_interp* interp) {
+	return (interp != nullptr) ? interp->functions.size() : 0;
+}
+
 bool qd_interp_eval(qd_interp* interp, const char* source) {
 	if (interp == nullptr || source == nullptr) {
 		return false;
 	}
 
 	interp->error.clear();
+	interp->flow = Flow::Normal;
+	interp->steps = 0;
+	interp->call_depth = 0;
 
-	// The parser accepts only declarations at top level; the walk treats the
-	// wrapper as transparent, so the stack persists across calls.
-	const std::string wrapped = "fn main() {\n" + std::string(source) + "\n}";
+	// A declaration parses as a program; anything else as a function body.
+	const bool declares = startsWithDeclaration(source);
+	const std::string text = declares ? std::string(source) : ("fn main() {\n" + std::string(source) + "\n}");
 
-	Qd::Ast ast;
-	Qd::IAstNode* root = ast.generate(wrapped.c_str(), false, "<interp>");
-	if (root == nullptr || ast.hasErrors()) {
-		const std::vector<Qd::ErrorInfo>& errors = ast.getErrors();
+	auto ast = std::make_shared<Qd::Ast>();
+	Qd::IAstNode* root = ast->generate(text.c_str(), false, "<interp>");
+	if (root == nullptr || ast->hasErrors()) {
+		const std::vector<Qd::ErrorInfo>& errors = ast->getErrors();
 		interp->error = errors.empty() ? "syntax error" : errors.front().message;
 		return false;
+	}
+
+	if (declares) {
+		// The nodes belong to this Ast, so the declaration keeps it alive.
+		bool recorded = false;
+		for (size_t i = 0; i < root->childCount(); i++) {
+			const Qd::IAstNode* child = root->child(i);
+			if (child->type() != Qd::IAstNode::Type::FUNCTION_DECLARATION) {
+				continue;
+			}
+			const auto* fn = static_cast<const Qd::AstNodeFunctionDeclaration*>(child);
+			interp->functions[fn->name()] = Declared{child, ast};
+			recorded = true;
+		}
+		if (!recorded) {
+			interp->error = "nothing declared here can be interpreted yet";
+			return false;
+		}
+		return true;
 	}
 
 	return runGuarded(interp, root);
@@ -452,8 +645,7 @@ bool qd_interp_peek(const qd_interp* interp, size_t index, qd_interp_value* out)
 	case QD_STACK_TYPE_FLOAT:
 		out->type = QD_INTERP_VALUE_FLOAT;
 		out->f = element.value.f;
-		// %.15g keeps an integral result looking integral while still
-		// showing enough digits to be trusted
+		// %.15g keeps an integral result integral without losing precision.
 		std::snprintf(out->text, sizeof(out->text), "%.15g", element.value.f);
 		break;
 
