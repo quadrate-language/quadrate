@@ -1,6 +1,9 @@
+#include <algorithm>
 #include <cstring>
 #include <quadrate/interp/interp.h>
+#include <string>
 #include <unit-check/uc.h>
+#include <vector>
 
 namespace {
 
@@ -462,6 +465,74 @@ TEST(DeclaredFunctions) {
 
 	ASSERT(std::strcmp(top(interp, "5 double"), "10") == 0, "and can then be called");
 	ASSERT(std::strcmp(top(interp, "clear 21 double double"), "84") == 0, "calls compose");
+
+	qd_interp_destroy(interp);
+}
+
+static bool collect_word(const char* name, void* userdata) {
+	static_cast<std::vector<std::string>*>(userdata)->emplace_back(name);
+	return true;
+}
+
+static bool has(const std::vector<std::string>& words, const char* name) {
+	return std::find(words.begin(), words.end(), name) != words.end();
+}
+
+TEST(VisitWords) {
+	qd_interp* interp = qd_interp_create(256);
+	qd_interp_register(interp, "mynative", "( -- )", [](qd_context*, void*) { return 0; }, nullptr);
+	qd_interp_eval(interp, "fn mine( -- r:i64) { 7 }");
+
+	std::vector<std::string> words;
+	qd_interp_visit_words(interp, collect_word, &words);
+
+	ASSERT(has(words, "dup"), "builtins are visited");
+	ASSERT(has(words, "mynative"), "registered natives are visited");
+	ASSERT(has(words, "mine"), "declarations are visited");
+
+	qd_interp_destroy(interp);
+}
+
+TEST(VisitWordsStops) {
+	qd_interp* interp = qd_interp_create(256);
+
+	int seen = 0;
+	qd_interp_visit_words(
+			interp,
+			[](const char*, void* userdata) {
+				(*static_cast<int*>(userdata))++;
+				return false;
+			},
+			&seen);
+	ASSERT(seen == 1, "returning false stops the walk");
+
+	qd_interp_destroy(interp);
+}
+
+TEST(DeclarationAfterComment) {
+	qd_interp* interp = qd_interp_create(256);
+
+	// A stored program opens with a comment; it must still declare, not be
+	// wrapped in an implicit main
+	ASSERT(qd_interp_eval(interp, "// what it does\nfn f( -- r:i64) { 7 }"), "line comment first");
+	ASSERT(qd_interp_eval(interp, "/* block */ fn g( -- r:i64) { 8 }"), "block comment first");
+	ASSERT(std::strcmp(top(interp, "f g +"), "15") == 0, "both are callable");
+
+	qd_interp_destroy(interp);
+}
+
+TEST(LastDeclared) {
+	qd_interp* interp = qd_interp_create(256);
+
+	qd_interp_eval(interp, "1 2 +");
+	ASSERT(qd_interp_last_declared(interp) == nullptr, "an expression declares nothing");
+
+	qd_interp_eval(interp, "fn double(x:i64 -- r:i64) { 2 * }");
+	const char* name = qd_interp_last_declared(interp);
+	ASSERT(name != nullptr && std::strcmp(name, "double") == 0, "the declared name is reported");
+
+	qd_interp_eval(interp, "5 double");
+	ASSERT(qd_interp_last_declared(interp) == nullptr, "and is cleared by the next eval");
 
 	qd_interp_destroy(interp);
 }

@@ -151,6 +151,7 @@ struct qd_interp {
 
 	std::unordered_map<std::string, Declared> functions; ///< `fn` declarations
 	size_t call_depth;
+	std::string last_declared; ///< Name the most recent eval declared, if any
 };
 
 namespace {
@@ -337,8 +338,28 @@ namespace {
 	// Whether the source declares rather than evaluates; a leading keyword decides.
 	bool startsWithDeclaration(const char* source) {
 		const char* p = source;
-		while (*p == ' ' || *p == '\t' || *p == '\n' || *p == '\r') {
-			p++;
+		// Skip comments too: a stored program usually opens with one
+		for (;;) {
+			while (*p == ' ' || *p == '\t' || *p == '\n' || *p == '\r') {
+				p++;
+			}
+			if (p[0] == '/' && p[1] == '/') {
+				while (*p != '\0' && *p != '\n') {
+					p++;
+				}
+				continue;
+			}
+			if (p[0] == '/' && p[1] == '*') {
+				p += 2;
+				while (*p != '\0' && !(p[0] == '*' && p[1] == '/')) {
+					p++;
+				}
+				if (*p != '\0') {
+					p += 2;
+				}
+				continue;
+			}
+			break;
 		}
 
 		static const char* const KEYWORDS[] = {"fn ", "fn(", "const ", "struct ", "enum ", "use ", "type ", "test "};
@@ -493,8 +514,8 @@ namespace {
 	}
 
 	qd_interp* makeInterp(qd_context* ctx, bool owns) {
-		qd_interp* interp = new (std::nothrow)
-				qd_interp{ctx, owns, std::string(), Flow::Normal, 0, QD_INTERP_DEFAULT_STEP_LIMIT, {}, 0};
+		qd_interp* interp = new (std::nothrow) qd_interp{
+				ctx, owns, std::string(), Flow::Normal, 0, QD_INTERP_DEFAULT_STEP_LIMIT, {}, 0, std::string()};
 		if (interp == nullptr && owns) {
 			qd_free_context(ctx);
 		}
@@ -552,11 +573,40 @@ uint64_t qd_interp_step_limit(const qd_interp* interp) {
 	return (interp != nullptr) ? interp->step_limit : 0;
 }
 
+const char* qd_interp_last_declared(const qd_interp* interp) {
+	if (interp == nullptr || interp->last_declared.empty()) {
+		return nullptr;
+	}
+	return interp->last_declared.c_str();
+}
+
 bool qd_interp_undeclare(qd_interp* interp, const char* name) {
 	if (interp == nullptr || name == nullptr) {
 		return false;
 	}
 	return interp->functions.erase(name) > 0;
+}
+
+void qd_interp_visit_words(const qd_interp* interp, qd_interp_word_visitor visit, void* userdata) {
+	if (interp == nullptr || visit == nullptr) {
+		return;
+	}
+
+	for (const auto& entry : opTable()) {
+		if (!visit(entry.first.c_str(), userdata)) {
+			return;
+		}
+	}
+
+	if (!qd_native_visit(interp->ctx, visit, userdata)) {
+		return;
+	}
+
+	for (const auto& entry : interp->functions) {
+		if (!visit(entry.first.c_str(), userdata)) {
+			return;
+		}
+	}
 }
 
 size_t qd_interp_declared_count(const qd_interp* interp) {
@@ -569,6 +619,7 @@ bool qd_interp_eval(qd_interp* interp, const char* source) {
 	}
 
 	interp->error.clear();
+	interp->last_declared.clear();
 	interp->flow = Flow::Normal;
 	interp->steps = 0;
 	interp->call_depth = 0;
@@ -595,6 +646,9 @@ bool qd_interp_eval(qd_interp* interp, const char* source) {
 			}
 			const auto* fn = static_cast<const Qd::AstNodeFunctionDeclaration*>(child);
 			interp->functions[fn->name()] = Declared{child, ast};
+			if (interp->last_declared.empty()) {
+				interp->last_declared = fn->name();
+			}
 			recorded = true;
 		}
 		if (!recorded) {

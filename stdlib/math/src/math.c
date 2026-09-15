@@ -10,28 +10,19 @@ int usr_math_sin(qd_context* ctx) {
 	// Compute sine of the top value (in radians)
 	size_t stack_size = qd_stack_size(ctx->st);
 	if (stack_size < 1) {
-		fprintf(stderr, "Fatal error in math::sin: Stack underflow (required 1 element, have %zu)\n", stack_size);
-		qd_dump_stack(ctx);
-		qd_print_stack_trace(ctx);
-		abort();
+		qd_fatal_raise(ctx, "math::sin", "Stack underflow (required 1 element, have %zu)", stack_size);
 	}
 
 	qd_stack_element_t a;
 	qd_stack_error err = qd_stack_peek(ctx->st, &a);
 	if (err != QD_STACK_OK) {
-		fprintf(stderr, "Fatal error in math::sin: Failed to peek stack\n");
-		qd_dump_stack(ctx);
-		qd_print_stack_trace(ctx);
-		abort();
+		qd_fatal_raise(ctx, "math::sin", "Failed to peek stack");
 	}
 	if (a.type != QD_STACK_TYPE_INT && a.type != QD_STACK_TYPE_FLOAT) {
 		const char* type_name = "unknown";
 		if (a.type == QD_STACK_TYPE_STR) type_name = "str";
 		else if (a.type == QD_STACK_TYPE_PTR) type_name = "ptr";
-		fprintf(stderr, "Fatal error in math::sin: Type error (expected int or float, got %s)\n", type_name);
-		qd_dump_stack(ctx);
-		qd_print_stack_trace(ctx);
-		abort();
+		qd_fatal_raise(ctx, "math::sin", "Type error (expected int or float, got %s)", type_name);
 	}
 
 	err = qd_stack_pop(ctx->st, &a);
@@ -53,28 +44,19 @@ int usr_math_cos(qd_context* ctx) {
 	// Compute cosine of the top value (in radians)
 	size_t stack_size = qd_stack_size(ctx->st);
 	if (stack_size < 1) {
-		fprintf(stderr, "Fatal error in math::cos: Stack underflow (required 1 element, have %zu)\n", stack_size);
-		qd_dump_stack(ctx);
-		qd_print_stack_trace(ctx);
-		abort();
+		qd_fatal_raise(ctx, "math::cos", "Stack underflow (required 1 element, have %zu)", stack_size);
 	}
 
 	qd_stack_element_t a;
 	qd_stack_error err = qd_stack_peek(ctx->st, &a);
 	if (err != QD_STACK_OK) {
-		fprintf(stderr, "Fatal error in math::cos: Failed to peek stack\n");
-		qd_dump_stack(ctx);
-		qd_print_stack_trace(ctx);
-		abort();
+		qd_fatal_raise(ctx, "math::cos", "Failed to peek stack");
 	}
 	if (a.type != QD_STACK_TYPE_INT && a.type != QD_STACK_TYPE_FLOAT) {
 		const char* type_name = "unknown";
 		if (a.type == QD_STACK_TYPE_STR) type_name = "str";
 		else if (a.type == QD_STACK_TYPE_PTR) type_name = "ptr";
-		fprintf(stderr, "Fatal error in math::cos: Type error (expected int or float, got %s)\n", type_name);
-		qd_dump_stack(ctx);
-		qd_print_stack_trace(ctx);
-		abort();
+		qd_fatal_raise(ctx, "math::cos", "Type error (expected int or float, got %s)", type_name);
 	}
 
 	err = qd_stack_pop(ctx->st, &a);
@@ -96,28 +78,19 @@ int usr_math_tan(qd_context* ctx) {
 	// Compute tangent of the top value (in radians)
 	size_t stack_size = qd_stack_size(ctx->st);
 	if (stack_size < 1) {
-		fprintf(stderr, "Fatal error in math::tan: Stack underflow (required 1 element, have %zu)\n", stack_size);
-		qd_dump_stack(ctx);
-		qd_print_stack_trace(ctx);
-		abort();
+		qd_fatal_raise(ctx, "math::tan", "Stack underflow (required 1 element, have %zu)", stack_size);
 	}
 
 	qd_stack_element_t a;
 	qd_stack_error err = qd_stack_peek(ctx->st, &a);
 	if (err != QD_STACK_OK) {
-		fprintf(stderr, "Fatal error in math::tan: Failed to peek stack\n");
-		qd_dump_stack(ctx);
-		qd_print_stack_trace(ctx);
-		abort();
+		qd_fatal_raise(ctx, "math::tan", "Failed to peek stack");
 	}
 	if (a.type != QD_STACK_TYPE_INT && a.type != QD_STACK_TYPE_FLOAT) {
 		const char* type_name = "unknown";
 		if (a.type == QD_STACK_TYPE_STR) type_name = "str";
 		else if (a.type == QD_STACK_TYPE_PTR) type_name = "ptr";
-		fprintf(stderr, "Fatal error in math::tan: Type error (expected int or float, got %s)\n", type_name);
-		qd_dump_stack(ctx);
-		qd_print_stack_trace(ctx);
-		abort();
+		qd_fatal_raise(ctx, "math::tan", "Type error (expected int or float, got %s)", type_name);
 	}
 
 	err = qd_stack_pop(ctx->st, &a);
@@ -139,28 +112,19 @@ int usr_math_asin(qd_context* ctx) {
 	// Compute arcsine of the top value (result in radians)
 	size_t stack_size = qd_stack_size(ctx->st);
 	if (stack_size < 1) {
-		fprintf(stderr, "Fatal error in math::asin: Stack underflow (required 1 element, have %zu)\n", stack_size);
-		qd_dump_stack(ctx);
-		qd_print_stack_trace(ctx);
-		abort();
+		qd_fatal_raise(ctx, "math::asin", "Stack underflow (required 1 element, have %zu)", stack_size);
 	}
 
 	qd_stack_element_t a;
 	qd_stack_error err = qd_stack_peek(ctx->st, &a);
 	if (err != QD_STACK_OK) {
-		fprintf(stderr, "Fatal error in math::asin: Failed to peek stack\n");
-		qd_dump_stack(ctx);
-		qd_print_stack_trace(ctx);
-		abort();
+		qd_fatal_raise(ctx, "math::asin", "Failed to peek stack");
 	}
 	if (a.type != QD_STACK_TYPE_INT && a.type != QD_STACK_TYPE_FLOAT) {
 		const char* type_name = "unknown";
 		if (a.type == QD_STACK_TYPE_STR) type_name = "str";
 		else if (a.type == QD_STACK_TYPE_PTR) type_name = "ptr";
-		fprintf(stderr, "Fatal error in math::asin: Type error (expected int or float, got %s)\n", type_name);
-		qd_dump_stack(ctx);
-		qd_print_stack_trace(ctx);
-		abort();
+		qd_fatal_raise(ctx, "math::asin", "Type error (expected int or float, got %s)", type_name);
 	}
 
 	err = qd_stack_pop(ctx->st, &a);
@@ -172,10 +136,7 @@ int usr_math_asin(qd_context* ctx) {
 
 	// Check domain: asin requires value in [-1, 1]
 	if (value < -1.0 || value > 1.0) {
-		fprintf(stderr, "Fatal error in math::asin: Domain error (value %f is outside [-1, 1])\n", value);
-		qd_dump_stack(ctx);
-		qd_print_stack_trace(ctx);
-		abort();
+		qd_fatal_raise(ctx, "math::asin", "Domain error (value %f is outside [-1, 1])", value);
 	}
 
 	double result = asin(value);
@@ -191,28 +152,19 @@ int usr_math_acos(qd_context* ctx) {
 	// Compute arccosine of the top value (result in radians)
 	size_t stack_size = qd_stack_size(ctx->st);
 	if (stack_size < 1) {
-		fprintf(stderr, "Fatal error in math::acos: Stack underflow (required 1 element, have %zu)\n", stack_size);
-		qd_dump_stack(ctx);
-		qd_print_stack_trace(ctx);
-		abort();
+		qd_fatal_raise(ctx, "math::acos", "Stack underflow (required 1 element, have %zu)", stack_size);
 	}
 
 	qd_stack_element_t a;
 	qd_stack_error err = qd_stack_peek(ctx->st, &a);
 	if (err != QD_STACK_OK) {
-		fprintf(stderr, "Fatal error in math::acos: Failed to peek stack\n");
-		qd_dump_stack(ctx);
-		qd_print_stack_trace(ctx);
-		abort();
+		qd_fatal_raise(ctx, "math::acos", "Failed to peek stack");
 	}
 	if (a.type != QD_STACK_TYPE_INT && a.type != QD_STACK_TYPE_FLOAT) {
 		const char* type_name = "unknown";
 		if (a.type == QD_STACK_TYPE_STR) type_name = "str";
 		else if (a.type == QD_STACK_TYPE_PTR) type_name = "ptr";
-		fprintf(stderr, "Fatal error in math::acos: Type error (expected int or float, got %s)\n", type_name);
-		qd_dump_stack(ctx);
-		qd_print_stack_trace(ctx);
-		abort();
+		qd_fatal_raise(ctx, "math::acos", "Type error (expected int or float, got %s)", type_name);
 	}
 
 	err = qd_stack_pop(ctx->st, &a);
@@ -224,10 +176,7 @@ int usr_math_acos(qd_context* ctx) {
 
 	// Check domain: acos requires value in [-1, 1]
 	if (value < -1.0 || value > 1.0) {
-		fprintf(stderr, "Fatal error in math::acos: Domain error (value %f is outside [-1, 1])\n", value);
-		qd_dump_stack(ctx);
-		qd_print_stack_trace(ctx);
-		abort();
+		qd_fatal_raise(ctx, "math::acos", "Domain error (value %f is outside [-1, 1])", value);
 	}
 
 	double result = acos(value);
@@ -243,28 +192,19 @@ int usr_math_atan(qd_context* ctx) {
 	// Compute arctangent of the top value (result in radians)
 	size_t stack_size = qd_stack_size(ctx->st);
 	if (stack_size < 1) {
-		fprintf(stderr, "Fatal error in math::atan: Stack underflow (required 1 element, have %zu)\n", stack_size);
-		qd_dump_stack(ctx);
-		qd_print_stack_trace(ctx);
-		abort();
+		qd_fatal_raise(ctx, "math::atan", "Stack underflow (required 1 element, have %zu)", stack_size);
 	}
 
 	qd_stack_element_t a;
 	qd_stack_error err = qd_stack_peek(ctx->st, &a);
 	if (err != QD_STACK_OK) {
-		fprintf(stderr, "Fatal error in math::atan: Failed to peek stack\n");
-		qd_dump_stack(ctx);
-		qd_print_stack_trace(ctx);
-		abort();
+		qd_fatal_raise(ctx, "math::atan", "Failed to peek stack");
 	}
 	if (a.type != QD_STACK_TYPE_INT && a.type != QD_STACK_TYPE_FLOAT) {
 		const char* type_name = "unknown";
 		if (a.type == QD_STACK_TYPE_STR) type_name = "str";
 		else if (a.type == QD_STACK_TYPE_PTR) type_name = "ptr";
-		fprintf(stderr, "Fatal error in math::atan: Type error (expected int or float, got %s)\n", type_name);
-		qd_dump_stack(ctx);
-		qd_print_stack_trace(ctx);
-		abort();
+		qd_fatal_raise(ctx, "math::atan", "Type error (expected int or float, got %s)", type_name);
 	}
 
 	err = qd_stack_pop(ctx->st, &a);
@@ -286,19 +226,13 @@ int usr_math_atan(qd_context* ctx) {
 int usr_math_sqrt(qd_context* ctx) {
 	size_t stack_size = qd_stack_size(ctx->st);
 	if (stack_size < 1) {
-		fprintf(stderr, "Fatal error in math::sqrt: Stack underflow (requires 1 value)\n");
-		qd_dump_stack(ctx);
-		qd_print_stack_trace(ctx);
-		abort();
+		qd_fatal_raise(ctx, "math::sqrt", "Stack underflow (requires 1 value)");
 	}
 
 	qd_stack_element_t elem;
 	qd_stack_error err = qd_stack_pop(ctx->st, &elem);
 	if (err != QD_STACK_OK) {
-		fprintf(stderr, "Fatal error in math::sqrt: Failed to pop value\n");
-		qd_dump_stack(ctx);
-		qd_print_stack_trace(ctx);
-		abort();
+		qd_fatal_raise(ctx, "math::sqrt", "Failed to pop value");
 	}
 
 	double value;
@@ -307,18 +241,12 @@ int usr_math_sqrt(qd_context* ctx) {
 	} else if (elem.type == QD_STACK_TYPE_FLOAT) {
 		value = elem.value.f;
 	} else {
-		fprintf(stderr, "Fatal error in math::sqrt: Invalid type (expected int or float)\n");
-		qd_dump_stack(ctx);
-		qd_print_stack_trace(ctx);
-		abort();
+		qd_fatal_raise(ctx, "math::sqrt", "Invalid type (expected int or float)");
 	}
 
 	// Check domain: sqrt requires non-negative values
 	if (value < 0.0) {
-		fprintf(stderr, "Fatal error in math::sqrt: Domain error (requires non-negative value, got %f)\n", value);
-		qd_dump_stack(ctx);
-		qd_print_stack_trace(ctx);
-		abort();
+		qd_fatal_raise(ctx, "math::sqrt", "Domain error (requires non-negative value, got %f)", value);
 	}
 
 	double result = sqrt(value);
@@ -335,19 +263,13 @@ int usr_math_sqrt(qd_context* ctx) {
 int usr_math_cbrt(qd_context* ctx) {
 	size_t stack_size = qd_stack_size(ctx->st);
 	if (stack_size < 1) {
-		fprintf(stderr, "Fatal error in math::cbrt: Stack underflow (requires 1 value)\n");
-		qd_dump_stack(ctx);
-		qd_print_stack_trace(ctx);
-		abort();
+		qd_fatal_raise(ctx, "math::cbrt", "Stack underflow (requires 1 value)");
 	}
 
 	qd_stack_element_t elem;
 	qd_stack_error err = qd_stack_pop(ctx->st, &elem);
 	if (err != QD_STACK_OK) {
-		fprintf(stderr, "Fatal error in math::cbrt: Failed to pop value\n");
-		qd_dump_stack(ctx);
-		qd_print_stack_trace(ctx);
-		abort();
+		qd_fatal_raise(ctx, "math::cbrt", "Failed to pop value");
 	}
 
 	double value;
@@ -356,10 +278,7 @@ int usr_math_cbrt(qd_context* ctx) {
 	} else if (elem.type == QD_STACK_TYPE_FLOAT) {
 		value = elem.value.f;
 	} else {
-		fprintf(stderr, "Fatal error in math::cbrt: Invalid type (expected int or float)\n");
-		qd_dump_stack(ctx);
-		qd_print_stack_trace(ctx);
-		abort();
+		qd_fatal_raise(ctx, "math::cbrt", "Invalid type (expected int or float)");
 	}
 
 	double result = cbrt(value);
@@ -376,28 +295,19 @@ int usr_math_cbrt(qd_context* ctx) {
 int usr_math_pow(qd_context* ctx) {
 	size_t stack_size = qd_stack_size(ctx->st);
 	if (stack_size < 2) {
-		fprintf(stderr, "Fatal error in math::pow: Stack underflow (requires 2 values)\n");
-		qd_dump_stack(ctx);
-		qd_print_stack_trace(ctx);
-		abort();
+		qd_fatal_raise(ctx, "math::pow", "Stack underflow (requires 2 values)");
 	}
 
 	qd_stack_element_t exponent_elem;
 	qd_stack_error err = qd_stack_pop(ctx->st, &exponent_elem);
 	if (err != QD_STACK_OK) {
-		fprintf(stderr, "Fatal error in math::pow: Failed to pop exponent\n");
-		qd_dump_stack(ctx);
-		qd_print_stack_trace(ctx);
-		abort();
+		qd_fatal_raise(ctx, "math::pow", "Failed to pop exponent");
 	}
 
 	qd_stack_element_t base_elem;
 	err = qd_stack_pop(ctx->st, &base_elem);
 	if (err != QD_STACK_OK) {
-		fprintf(stderr, "Fatal error in math::pow: Failed to pop base\n");
-		qd_dump_stack(ctx);
-		qd_print_stack_trace(ctx);
-		abort();
+		qd_fatal_raise(ctx, "math::pow", "Failed to pop base");
 	}
 
 	double base, exponent;
@@ -406,10 +316,7 @@ int usr_math_pow(qd_context* ctx) {
 	} else if (base_elem.type == QD_STACK_TYPE_FLOAT) {
 		base = base_elem.value.f;
 	} else {
-		fprintf(stderr, "Fatal error in math::pow: Invalid base type (expected int or float)\n");
-		qd_dump_stack(ctx);
-		qd_print_stack_trace(ctx);
-		abort();
+		qd_fatal_raise(ctx, "math::pow", "Invalid base type (expected int or float)");
 	}
 
 	if (exponent_elem.type == QD_STACK_TYPE_INT) {
@@ -417,10 +324,7 @@ int usr_math_pow(qd_context* ctx) {
 	} else if (exponent_elem.type == QD_STACK_TYPE_FLOAT) {
 		exponent = exponent_elem.value.f;
 	} else {
-		fprintf(stderr, "Fatal error in math::pow: Invalid exponent type (expected int or float)\n");
-		qd_dump_stack(ctx);
-		qd_print_stack_trace(ctx);
-		abort();
+		qd_fatal_raise(ctx, "math::pow", "Invalid exponent type (expected int or float)");
 	}
 
 	double result = pow(base, exponent);
@@ -437,19 +341,13 @@ int usr_math_pow(qd_context* ctx) {
 int usr_math_ln(qd_context* ctx) {
 	size_t stack_size = qd_stack_size(ctx->st);
 	if (stack_size < 1) {
-		fprintf(stderr, "Fatal error in math::ln: Stack underflow (requires 1 value)\n");
-		qd_dump_stack(ctx);
-		qd_print_stack_trace(ctx);
-		abort();
+		qd_fatal_raise(ctx, "math::ln", "Stack underflow (requires 1 value)");
 	}
 
 	qd_stack_element_t elem;
 	qd_stack_error err = qd_stack_pop(ctx->st, &elem);
 	if (err != QD_STACK_OK) {
-		fprintf(stderr, "Fatal error in math::ln: Failed to pop value\n");
-		qd_dump_stack(ctx);
-		qd_print_stack_trace(ctx);
-		abort();
+		qd_fatal_raise(ctx, "math::ln", "Failed to pop value");
 	}
 
 	double value;
@@ -458,18 +356,12 @@ int usr_math_ln(qd_context* ctx) {
 	} else if (elem.type == QD_STACK_TYPE_FLOAT) {
 		value = elem.value.f;
 	} else {
-		fprintf(stderr, "Fatal error in math::ln: Invalid type (expected int or float)\n");
-		qd_dump_stack(ctx);
-		qd_print_stack_trace(ctx);
-		abort();
+		qd_fatal_raise(ctx, "math::ln", "Invalid type (expected int or float)");
 	}
 
 	// Check domain: ln requires positive values
 	if (value <= 0.0) {
-		fprintf(stderr, "Fatal error in math::ln: Domain error (requires positive value, got %f)\n", value);
-		qd_dump_stack(ctx);
-		qd_print_stack_trace(ctx);
-		abort();
+		qd_fatal_raise(ctx, "math::ln", "Domain error (requires positive value, got %f)", value);
 	}
 
 	double result = log(value);  // log() is natural logarithm in C
@@ -486,19 +378,13 @@ int usr_math_ln(qd_context* ctx) {
 int usr_math_log10(qd_context* ctx) {
 	size_t stack_size = qd_stack_size(ctx->st);
 	if (stack_size < 1) {
-		fprintf(stderr, "Fatal error in math::log10: Stack underflow (requires 1 value)\n");
-		qd_dump_stack(ctx);
-		qd_print_stack_trace(ctx);
-		abort();
+		qd_fatal_raise(ctx, "math::log10", "Stack underflow (requires 1 value)");
 	}
 
 	qd_stack_element_t elem;
 	qd_stack_error err = qd_stack_pop(ctx->st, &elem);
 	if (err != QD_STACK_OK) {
-		fprintf(stderr, "Fatal error in math::log10: Failed to pop value\n");
-		qd_dump_stack(ctx);
-		qd_print_stack_trace(ctx);
-		abort();
+		qd_fatal_raise(ctx, "math::log10", "Failed to pop value");
 	}
 
 	double value;
@@ -507,18 +393,12 @@ int usr_math_log10(qd_context* ctx) {
 	} else if (elem.type == QD_STACK_TYPE_FLOAT) {
 		value = elem.value.f;
 	} else {
-		fprintf(stderr, "Fatal error in math::log10: Invalid type (expected int or float)\n");
-		qd_dump_stack(ctx);
-		qd_print_stack_trace(ctx);
-		abort();
+		qd_fatal_raise(ctx, "math::log10", "Invalid type (expected int or float)");
 	}
 
 	// Check domain: log10 requires positive values
 	if (value <= 0.0) {
-		fprintf(stderr, "Fatal error in math::log10: Domain error (requires positive value, got %f)\n", value);
-		qd_dump_stack(ctx);
-		qd_print_stack_trace(ctx);
-		abort();
+		qd_fatal_raise(ctx, "math::log10", "Domain error (requires positive value, got %f)", value);
 	}
 
 	double result = log10(value);
@@ -535,19 +415,13 @@ int usr_math_log10(qd_context* ctx) {
 int usr_math_ceil(qd_context* ctx) {
 	size_t stack_size = qd_stack_size(ctx->st);
 	if (stack_size < 1) {
-		fprintf(stderr, "Fatal error in math::ceil: Stack underflow (requires 1 value)\n");
-		qd_dump_stack(ctx);
-		qd_print_stack_trace(ctx);
-		abort();
+		qd_fatal_raise(ctx, "math::ceil", "Stack underflow (requires 1 value)");
 	}
 
 	qd_stack_element_t elem;
 	qd_stack_error err = qd_stack_pop(ctx->st, &elem);
 	if (err != QD_STACK_OK) {
-		fprintf(stderr, "Fatal error in math::ceil: Failed to pop value\n");
-		qd_dump_stack(ctx);
-		qd_print_stack_trace(ctx);
-		abort();
+		qd_fatal_raise(ctx, "math::ceil", "Failed to pop value");
 	}
 
 	double value;
@@ -556,10 +430,7 @@ int usr_math_ceil(qd_context* ctx) {
 	} else if (elem.type == QD_STACK_TYPE_FLOAT) {
 		value = elem.value.f;
 	} else {
-		fprintf(stderr, "Fatal error in math::ceil: Invalid type (expected int or float)\n");
-		qd_dump_stack(ctx);
-		qd_print_stack_trace(ctx);
-		abort();
+		qd_fatal_raise(ctx, "math::ceil", "Invalid type (expected int or float)");
 	}
 
 	double result = ceil(value);
@@ -576,19 +447,13 @@ int usr_math_ceil(qd_context* ctx) {
 int usr_math_floor(qd_context* ctx) {
 	size_t stack_size = qd_stack_size(ctx->st);
 	if (stack_size < 1) {
-		fprintf(stderr, "Fatal error in math::floor: Stack underflow (requires 1 value)\n");
-		qd_dump_stack(ctx);
-		qd_print_stack_trace(ctx);
-		abort();
+		qd_fatal_raise(ctx, "math::floor", "Stack underflow (requires 1 value)");
 	}
 
 	qd_stack_element_t elem;
 	qd_stack_error err = qd_stack_pop(ctx->st, &elem);
 	if (err != QD_STACK_OK) {
-		fprintf(stderr, "Fatal error in math::floor: Failed to pop value\n");
-		qd_dump_stack(ctx);
-		qd_print_stack_trace(ctx);
-		abort();
+		qd_fatal_raise(ctx, "math::floor", "Failed to pop value");
 	}
 
 	double value;
@@ -597,10 +462,7 @@ int usr_math_floor(qd_context* ctx) {
 	} else if (elem.type == QD_STACK_TYPE_FLOAT) {
 		value = elem.value.f;
 	} else {
-		fprintf(stderr, "Fatal error in math::floor: Invalid type (expected int or float)\n");
-		qd_dump_stack(ctx);
-		qd_print_stack_trace(ctx);
-		abort();
+		qd_fatal_raise(ctx, "math::floor", "Invalid type (expected int or float)");
 	}
 
 	double result = floor(value);
@@ -617,19 +479,13 @@ int usr_math_floor(qd_context* ctx) {
 int usr_math_round(qd_context* ctx) {
 	size_t stack_size = qd_stack_size(ctx->st);
 	if (stack_size < 1) {
-		fprintf(stderr, "Fatal error in math::round: Stack underflow (requires 1 value)\n");
-		qd_dump_stack(ctx);
-		qd_print_stack_trace(ctx);
-		abort();
+		qd_fatal_raise(ctx, "math::round", "Stack underflow (requires 1 value)");
 	}
 
 	qd_stack_element_t elem;
 	qd_stack_error err = qd_stack_pop(ctx->st, &elem);
 	if (err != QD_STACK_OK) {
-		fprintf(stderr, "Fatal error in math::round: Failed to pop value\n");
-		qd_dump_stack(ctx);
-		qd_print_stack_trace(ctx);
-		abort();
+		qd_fatal_raise(ctx, "math::round", "Failed to pop value");
 	}
 
 	double value;
@@ -638,10 +494,7 @@ int usr_math_round(qd_context* ctx) {
 	} else if (elem.type == QD_STACK_TYPE_FLOAT) {
 		value = elem.value.f;
 	} else {
-		fprintf(stderr, "Fatal error in math::round: Invalid type (expected int or float)\n");
-		qd_dump_stack(ctx);
-		qd_print_stack_trace(ctx);
-		abort();
+		qd_fatal_raise(ctx, "math::round", "Invalid type (expected int or float)");
 	}
 
 	// Round to nearest integer
@@ -660,28 +513,19 @@ int usr_math_atan2(qd_context* ctx) {
 	// Stack: ( y x -- atan2(y,x) )
 	size_t stack_size = qd_stack_size(ctx->st);
 	if (stack_size < 2) {
-		fprintf(stderr, "Fatal error in math::atan2: Stack underflow (requires 2 values)\n");
-		qd_dump_stack(ctx);
-		qd_print_stack_trace(ctx);
-		abort();
+		qd_fatal_raise(ctx, "math::atan2", "Stack underflow (requires 2 values)");
 	}
 
 	qd_stack_element_t x_elem;
 	qd_stack_error err = qd_stack_pop(ctx->st, &x_elem);
 	if (err != QD_STACK_OK) {
-		fprintf(stderr, "Fatal error in math::atan2: Failed to pop x\n");
-		qd_dump_stack(ctx);
-		qd_print_stack_trace(ctx);
-		abort();
+		qd_fatal_raise(ctx, "math::atan2", "Failed to pop x");
 	}
 
 	qd_stack_element_t y_elem;
 	err = qd_stack_pop(ctx->st, &y_elem);
 	if (err != QD_STACK_OK) {
-		fprintf(stderr, "Fatal error in math::atan2: Failed to pop y\n");
-		qd_dump_stack(ctx);
-		qd_print_stack_trace(ctx);
-		abort();
+		qd_fatal_raise(ctx, "math::atan2", "Failed to pop y");
 	}
 
 	double x, y;
@@ -690,10 +534,7 @@ int usr_math_atan2(qd_context* ctx) {
 	} else if (x_elem.type == QD_STACK_TYPE_FLOAT) {
 		x = x_elem.value.f;
 	} else {
-		fprintf(stderr, "Fatal error in math::atan2: Invalid x type (expected int or float)\n");
-		qd_dump_stack(ctx);
-		qd_print_stack_trace(ctx);
-		abort();
+		qd_fatal_raise(ctx, "math::atan2", "Invalid x type (expected int or float)");
 	}
 
 	if (y_elem.type == QD_STACK_TYPE_INT) {
@@ -701,10 +542,7 @@ int usr_math_atan2(qd_context* ctx) {
 	} else if (y_elem.type == QD_STACK_TYPE_FLOAT) {
 		y = y_elem.value.f;
 	} else {
-		fprintf(stderr, "Fatal error in math::atan2: Invalid y type (expected int or float)\n");
-		qd_dump_stack(ctx);
-		qd_print_stack_trace(ctx);
-		abort();
+		qd_fatal_raise(ctx, "math::atan2", "Invalid y type (expected int or float)");
 	}
 
 	double result = atan2(y, x);
@@ -722,28 +560,19 @@ int usr_math_hypot(qd_context* ctx) {
 	// Stack: ( x y -- hypot(x,y) )
 	size_t stack_size = qd_stack_size(ctx->st);
 	if (stack_size < 2) {
-		fprintf(stderr, "Fatal error in math::hypot: Stack underflow (requires 2 values)\n");
-		qd_dump_stack(ctx);
-		qd_print_stack_trace(ctx);
-		abort();
+		qd_fatal_raise(ctx, "math::hypot", "Stack underflow (requires 2 values)");
 	}
 
 	qd_stack_element_t y_elem;
 	qd_stack_error err = qd_stack_pop(ctx->st, &y_elem);
 	if (err != QD_STACK_OK) {
-		fprintf(stderr, "Fatal error in math::hypot: Failed to pop y\n");
-		qd_dump_stack(ctx);
-		qd_print_stack_trace(ctx);
-		abort();
+		qd_fatal_raise(ctx, "math::hypot", "Failed to pop y");
 	}
 
 	qd_stack_element_t x_elem;
 	err = qd_stack_pop(ctx->st, &x_elem);
 	if (err != QD_STACK_OK) {
-		fprintf(stderr, "Fatal error in math::hypot: Failed to pop x\n");
-		qd_dump_stack(ctx);
-		qd_print_stack_trace(ctx);
-		abort();
+		qd_fatal_raise(ctx, "math::hypot", "Failed to pop x");
 	}
 
 	double x, y;
@@ -752,10 +581,7 @@ int usr_math_hypot(qd_context* ctx) {
 	} else if (x_elem.type == QD_STACK_TYPE_FLOAT) {
 		x = x_elem.value.f;
 	} else {
-		fprintf(stderr, "Fatal error in math::hypot: Invalid x type (expected int or float)\n");
-		qd_dump_stack(ctx);
-		qd_print_stack_trace(ctx);
-		abort();
+		qd_fatal_raise(ctx, "math::hypot", "Invalid x type (expected int or float)");
 	}
 
 	if (y_elem.type == QD_STACK_TYPE_INT) {
@@ -763,10 +589,7 @@ int usr_math_hypot(qd_context* ctx) {
 	} else if (y_elem.type == QD_STACK_TYPE_FLOAT) {
 		y = y_elem.value.f;
 	} else {
-		fprintf(stderr, "Fatal error in math::hypot: Invalid y type (expected int or float)\n");
-		qd_dump_stack(ctx);
-		qd_print_stack_trace(ctx);
-		abort();
+		qd_fatal_raise(ctx, "math::hypot", "Invalid y type (expected int or float)");
 	}
 
 	double result = hypot(x, y);
@@ -784,19 +607,13 @@ int usr_math_exp(qd_context* ctx) {
 	// Stack: ( x -- e^x )
 	size_t stack_size = qd_stack_size(ctx->st);
 	if (stack_size < 1) {
-		fprintf(stderr, "Fatal error in math::exp: Stack underflow (requires 1 value)\n");
-		qd_dump_stack(ctx);
-		qd_print_stack_trace(ctx);
-		abort();
+		qd_fatal_raise(ctx, "math::exp", "Stack underflow (requires 1 value)");
 	}
 
 	qd_stack_element_t elem;
 	qd_stack_error err = qd_stack_pop(ctx->st, &elem);
 	if (err != QD_STACK_OK) {
-		fprintf(stderr, "Fatal error in math::exp: Failed to pop value\n");
-		qd_dump_stack(ctx);
-		qd_print_stack_trace(ctx);
-		abort();
+		qd_fatal_raise(ctx, "math::exp", "Failed to pop value");
 	}
 
 	double value;
@@ -805,10 +622,7 @@ int usr_math_exp(qd_context* ctx) {
 	} else if (elem.type == QD_STACK_TYPE_FLOAT) {
 		value = elem.value.f;
 	} else {
-		fprintf(stderr, "Fatal error in math::exp: Invalid type (expected int or float)\n");
-		qd_dump_stack(ctx);
-		qd_print_stack_trace(ctx);
-		abort();
+		qd_fatal_raise(ctx, "math::exp", "Invalid type (expected int or float)");
 	}
 
 	double result = exp(value);
@@ -826,28 +640,19 @@ int usr_math_fmod(qd_context* ctx) {
 	// Stack: ( x y -- x mod y )
 	size_t stack_size = qd_stack_size(ctx->st);
 	if (stack_size < 2) {
-		fprintf(stderr, "Fatal error in math::fmod: Stack underflow (requires 2 values)\n");
-		qd_dump_stack(ctx);
-		qd_print_stack_trace(ctx);
-		abort();
+		qd_fatal_raise(ctx, "math::fmod", "Stack underflow (requires 2 values)");
 	}
 
 	qd_stack_element_t y_elem;
 	qd_stack_error err = qd_stack_pop(ctx->st, &y_elem);
 	if (err != QD_STACK_OK) {
-		fprintf(stderr, "Fatal error in math::fmod: Failed to pop y\n");
-		qd_dump_stack(ctx);
-		qd_print_stack_trace(ctx);
-		abort();
+		qd_fatal_raise(ctx, "math::fmod", "Failed to pop y");
 	}
 
 	qd_stack_element_t x_elem;
 	err = qd_stack_pop(ctx->st, &x_elem);
 	if (err != QD_STACK_OK) {
-		fprintf(stderr, "Fatal error in math::fmod: Failed to pop x\n");
-		qd_dump_stack(ctx);
-		qd_print_stack_trace(ctx);
-		abort();
+		qd_fatal_raise(ctx, "math::fmod", "Failed to pop x");
 	}
 
 	double x, y;
@@ -856,10 +661,7 @@ int usr_math_fmod(qd_context* ctx) {
 	} else if (x_elem.type == QD_STACK_TYPE_FLOAT) {
 		x = x_elem.value.f;
 	} else {
-		fprintf(stderr, "Fatal error in math::fmod: Invalid x type (expected int or float)\n");
-		qd_dump_stack(ctx);
-		qd_print_stack_trace(ctx);
-		abort();
+		qd_fatal_raise(ctx, "math::fmod", "Invalid x type (expected int or float)");
 	}
 
 	if (y_elem.type == QD_STACK_TYPE_INT) {
@@ -867,18 +669,12 @@ int usr_math_fmod(qd_context* ctx) {
 	} else if (y_elem.type == QD_STACK_TYPE_FLOAT) {
 		y = y_elem.value.f;
 	} else {
-		fprintf(stderr, "Fatal error in math::fmod: Invalid y type (expected int or float)\n");
-		qd_dump_stack(ctx);
-		qd_print_stack_trace(ctx);
-		abort();
+		qd_fatal_raise(ctx, "math::fmod", "Invalid y type (expected int or float)");
 	}
 
 	// Check for division by zero
 	if (y == 0.0) {
-		fprintf(stderr, "Fatal error in math::fmod: Division by zero\n");
-		qd_dump_stack(ctx);
-		qd_print_stack_trace(ctx);
-		abort();
+		qd_fatal_raise(ctx, "math::fmod", "Division by zero");
 	}
 
 	double result = fmod(x, y);
@@ -895,8 +691,7 @@ int usr_math_fmod(qd_context* ctx) {
 int usr_math_sinh(qd_context* ctx) {
 	size_t stack_size = qd_stack_size(ctx->st);
 	if (stack_size < 1) {
-		fprintf(stderr, "Fatal error in math::sinh: Stack underflow\n");
-		abort();
+		qd_fatal_raise(ctx, "math::sinh", "Stack underflow");
 	}
 
 	qd_stack_element_t elem;
@@ -912,8 +707,7 @@ int usr_math_sinh(qd_context* ctx) {
 int usr_math_cosh(qd_context* ctx) {
 	size_t stack_size = qd_stack_size(ctx->st);
 	if (stack_size < 1) {
-		fprintf(stderr, "Fatal error in math::cosh: Stack underflow\n");
-		abort();
+		qd_fatal_raise(ctx, "math::cosh", "Stack underflow");
 	}
 
 	qd_stack_element_t elem;
@@ -929,8 +723,7 @@ int usr_math_cosh(qd_context* ctx) {
 int usr_math_tanh(qd_context* ctx) {
 	size_t stack_size = qd_stack_size(ctx->st);
 	if (stack_size < 1) {
-		fprintf(stderr, "Fatal error in math::tanh: Stack underflow\n");
-		abort();
+		qd_fatal_raise(ctx, "math::tanh", "Stack underflow");
 	}
 
 	qd_stack_element_t elem;
@@ -946,8 +739,7 @@ int usr_math_tanh(qd_context* ctx) {
 int usr_math_asinh(qd_context* ctx) {
 	size_t stack_size = qd_stack_size(ctx->st);
 	if (stack_size < 1) {
-		fprintf(stderr, "Fatal error in math::asinh: Stack underflow\n");
-		abort();
+		qd_fatal_raise(ctx, "math::asinh", "Stack underflow");
 	}
 
 	qd_stack_element_t elem;
@@ -963,8 +755,7 @@ int usr_math_asinh(qd_context* ctx) {
 int usr_math_acosh(qd_context* ctx) {
 	size_t stack_size = qd_stack_size(ctx->st);
 	if (stack_size < 1) {
-		fprintf(stderr, "Fatal error in math::acosh: Stack underflow\n");
-		abort();
+		qd_fatal_raise(ctx, "math::acosh", "Stack underflow");
 	}
 
 	qd_stack_element_t elem;
@@ -973,8 +764,7 @@ int usr_math_acosh(qd_context* ctx) {
 
 	double value = (elem.type == QD_STACK_TYPE_INT) ? (double)elem.value.i : elem.value.f;
 	if (value < 1.0) {
-		fprintf(stderr, "Fatal error in math::acosh: Domain error (requires value >= 1)\n");
-		abort();
+		qd_fatal_raise(ctx, "math::acosh", "Domain error (requires value >= 1)");
 	}
 	err = qd_stack_push_float(ctx->st, acosh(value));
 	return (err != QD_STACK_OK) ? (int){-2} : (int){0};
@@ -984,8 +774,7 @@ int usr_math_acosh(qd_context* ctx) {
 int usr_math_atanh(qd_context* ctx) {
 	size_t stack_size = qd_stack_size(ctx->st);
 	if (stack_size < 1) {
-		fprintf(stderr, "Fatal error in math::atanh: Stack underflow\n");
-		abort();
+		qd_fatal_raise(ctx, "math::atanh", "Stack underflow");
 	}
 
 	qd_stack_element_t elem;
@@ -994,8 +783,7 @@ int usr_math_atanh(qd_context* ctx) {
 
 	double value = (elem.type == QD_STACK_TYPE_INT) ? (double)elem.value.i : elem.value.f;
 	if (value <= -1.0 || value >= 1.0) {
-		fprintf(stderr, "Fatal error in math::atanh: Domain error (requires -1 < value < 1)\n");
-		abort();
+		qd_fatal_raise(ctx, "math::atanh", "Domain error (requires -1 < value < 1)");
 	}
 	err = qd_stack_push_float(ctx->st, atanh(value));
 	return (err != QD_STACK_OK) ? (int){-2} : (int){0};
@@ -1005,8 +793,7 @@ int usr_math_atanh(qd_context* ctx) {
 int usr_math_log2(qd_context* ctx) {
 	size_t stack_size = qd_stack_size(ctx->st);
 	if (stack_size < 1) {
-		fprintf(stderr, "Fatal error in math::log2: Stack underflow\n");
-		abort();
+		qd_fatal_raise(ctx, "math::log2", "Stack underflow");
 	}
 
 	qd_stack_element_t elem;
@@ -1015,8 +802,7 @@ int usr_math_log2(qd_context* ctx) {
 
 	double value = (elem.type == QD_STACK_TYPE_INT) ? (double)elem.value.i : elem.value.f;
 	if (value <= 0.0) {
-		fprintf(stderr, "Fatal error in math::log2: Domain error (requires positive value)\n");
-		abort();
+		qd_fatal_raise(ctx, "math::log2", "Domain error (requires positive value)");
 	}
 	err = qd_stack_push_float(ctx->st, log2(value));
 	return (err != QD_STACK_OK) ? (int){-2} : (int){0};
@@ -1026,8 +812,7 @@ int usr_math_log2(qd_context* ctx) {
 int usr_math_exp2(qd_context* ctx) {
 	size_t stack_size = qd_stack_size(ctx->st);
 	if (stack_size < 1) {
-		fprintf(stderr, "Fatal error in math::exp2: Stack underflow\n");
-		abort();
+		qd_fatal_raise(ctx, "math::exp2", "Stack underflow");
 	}
 
 	qd_stack_element_t elem;
@@ -1043,8 +828,7 @@ int usr_math_exp2(qd_context* ctx) {
 int usr_math_trunc(qd_context* ctx) {
 	size_t stack_size = qd_stack_size(ctx->st);
 	if (stack_size < 1) {
-		fprintf(stderr, "Fatal error in math::trunc: Stack underflow\n");
-		abort();
+		qd_fatal_raise(ctx, "math::trunc", "Stack underflow");
 	}
 
 	qd_stack_element_t elem;
@@ -1060,8 +844,7 @@ int usr_math_trunc(qd_context* ctx) {
 int usr_math_sq(qd_context* ctx) {
 	size_t stack_size = qd_stack_size(ctx->st);
 	if (stack_size < 1) {
-		fprintf(stderr, "Fatal error in math::sq: Stack underflow\n");
-		abort();
+		qd_fatal_raise(ctx, "math::sq", "Stack underflow");
 	}
 
 	qd_stack_element_t elem;
@@ -1077,8 +860,7 @@ int usr_math_sq(qd_context* ctx) {
 int usr_math_cb(qd_context* ctx) {
 	size_t stack_size = qd_stack_size(ctx->st);
 	if (stack_size < 1) {
-		fprintf(stderr, "Fatal error in math::cb: Stack underflow\n");
-		abort();
+		qd_fatal_raise(ctx, "math::cb", "Stack underflow");
 	}
 
 	qd_stack_element_t elem;
@@ -1094,8 +876,7 @@ int usr_math_cb(qd_context* ctx) {
 int usr_math_abs(qd_context* ctx) {
 	size_t stack_size = qd_stack_size(ctx->st);
 	if (stack_size < 1) {
-		fprintf(stderr, "Fatal error in math::abs: Stack underflow\n");
-		abort();
+		qd_fatal_raise(ctx, "math::abs", "Stack underflow");
 	}
 
 	qd_stack_element_t elem;
@@ -1112,24 +893,19 @@ int usr_math_min(qd_context* ctx) {
 	// Stack: ( a b -- min(a,b) )
 	size_t stack_size = qd_stack_size(ctx->st);
 	if (stack_size < 2) {
-		fprintf(stderr, "Fatal error in math::min: Stack underflow (requires 2 values)\n");
-		qd_dump_stack(ctx);
-		qd_print_stack_trace(ctx);
-		abort();
+		qd_fatal_raise(ctx, "math::min", "Stack underflow (requires 2 values)");
 	}
 
 	qd_stack_element_t b_elem;
 	qd_stack_error err = qd_stack_pop(ctx->st, &b_elem);
 	if (err != QD_STACK_OK) {
-		fprintf(stderr, "Fatal error in math::min: Failed to pop b\n");
-		abort();
+		qd_fatal_raise(ctx, "math::min", "Failed to pop b");
 	}
 
 	qd_stack_element_t a_elem;
 	err = qd_stack_pop(ctx->st, &a_elem);
 	if (err != QD_STACK_OK) {
-		fprintf(stderr, "Fatal error in math::min: Failed to pop a\n");
-		abort();
+		qd_fatal_raise(ctx, "math::min", "Failed to pop a");
 	}
 
 	double a = (a_elem.type == QD_STACK_TYPE_INT) ? (double)a_elem.value.i : a_elem.value.f;
@@ -1144,24 +920,19 @@ int usr_math_max(qd_context* ctx) {
 	// Stack: ( a b -- max(a,b) )
 	size_t stack_size = qd_stack_size(ctx->st);
 	if (stack_size < 2) {
-		fprintf(stderr, "Fatal error in math::max: Stack underflow (requires 2 values)\n");
-		qd_dump_stack(ctx);
-		qd_print_stack_trace(ctx);
-		abort();
+		qd_fatal_raise(ctx, "math::max", "Stack underflow (requires 2 values)");
 	}
 
 	qd_stack_element_t b_elem;
 	qd_stack_error err = qd_stack_pop(ctx->st, &b_elem);
 	if (err != QD_STACK_OK) {
-		fprintf(stderr, "Fatal error in math::max: Failed to pop b\n");
-		abort();
+		qd_fatal_raise(ctx, "math::max", "Failed to pop b");
 	}
 
 	qd_stack_element_t a_elem;
 	err = qd_stack_pop(ctx->st, &a_elem);
 	if (err != QD_STACK_OK) {
-		fprintf(stderr, "Fatal error in math::max: Failed to pop a\n");
-		abort();
+		qd_fatal_raise(ctx, "math::max", "Failed to pop a");
 	}
 
 	double a = (a_elem.type == QD_STACK_TYPE_INT) ? (double)a_elem.value.i : a_elem.value.f;
@@ -1176,8 +947,7 @@ int usr_math_fac(qd_context* ctx) {
 	// Stack: ( n:i -- n!:i )
 	size_t stack_size = qd_stack_size(ctx->st);
 	if (stack_size < 1) {
-		fprintf(stderr, "Fatal error in math::fac: Stack underflow\n");
-		abort();
+		qd_fatal_raise(ctx, "math::fac", "Stack underflow");
 	}
 
 	qd_stack_element_t elem;
@@ -1185,22 +955,19 @@ int usr_math_fac(qd_context* ctx) {
 	if (err != QD_STACK_OK) return (int){-2};
 
 	if (elem.type != QD_STACK_TYPE_INT) {
-		fprintf(stderr, "Fatal error in math::fac: Type error (expected int)\n");
-		abort();
+		qd_fatal_raise(ctx, "math::fac", "Type error (expected int)");
 	}
 
 	int64_t n = elem.value.i;
 	if (n < 0) {
-		fprintf(stderr, "Fatal error in math::fac: Domain error (requires non-negative integer)\n");
-		abort();
+		qd_fatal_raise(ctx, "math::fac", "Domain error (requires non-negative integer)");
 	}
 
 	int64_t result = 1;
 	for (int64_t i = 2; i <= n; i++) {
 		// Detect overflow before it happens (21! already exceeds int64).
 		if (result > INT64_MAX / i) {
-			fprintf(stderr, "Fatal error in math::fac: Result overflow (n too large)\n");
-			abort();
+			qd_fatal_raise(ctx, "math::fac", "Result overflow (n too large)");
 		}
 		result *= i;
 	}
@@ -1213,8 +980,7 @@ int usr_math_fac(qd_context* ctx) {
 int usr_math_inv(qd_context* ctx) {
 	size_t stack_size = qd_stack_size(ctx->st);
 	if (stack_size < 1) {
-		fprintf(stderr, "Fatal error in math::inv: Stack underflow\n");
-		abort();
+		qd_fatal_raise(ctx, "math::inv", "Stack underflow");
 	}
 
 	qd_stack_element_t elem;
@@ -1223,8 +989,7 @@ int usr_math_inv(qd_context* ctx) {
 
 	double value = (elem.type == QD_STACK_TYPE_INT) ? (double)elem.value.i : elem.value.f;
 	if (value == 0.0) {
-		fprintf(stderr, "Fatal error in math::inv: Division by zero\n");
-		abort();
+		qd_fatal_raise(ctx, "math::inv", "Division by zero");
 	}
 
 	err = qd_stack_push_float(ctx->st, 1.0 / value);

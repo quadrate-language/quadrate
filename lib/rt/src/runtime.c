@@ -105,6 +105,16 @@ _Noreturn void qdrt_fatal_raise(qd_context* ctx, const char* op, const char* fmt
 	qdrt_fatal_exit();
 }
 
+_Noreturn void qd_fatal_raise(qd_context* ctx, const char* op, const char* fmt, ...) {
+	char detail[384];
+	va_list args;
+	va_start(args, fmt);
+	vsnprintf(detail, sizeof(detail), fmt, args);
+	va_end(args);
+
+	qdrt_fatal_raise(ctx, op, "%s", detail);
+}
+
 void qd_closure_register(void* ptr) {
 	if (ptr) {
 		ptr_registry_add(&closure_registry, ptr);

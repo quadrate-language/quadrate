@@ -1192,6 +1192,24 @@ void qd_recovery_arm(qd_context* ctx);
 /** @brief Disarm recovery; unwinding disarms automatically */
 void qd_recovery_disarm(qd_context* ctx);
 
+/**
+ * @brief Raise a fatal runtime error
+ *
+ * Longjmps to the recovery buffer when recovery is armed, and otherwise reports
+ * and exits as before. Stdlib modules use this so an embedder that has armed
+ * recovery survives their errors too.
+ */
+#if defined(__cplusplus)
+[[noreturn]]
+#elif defined(__STDC_VERSION__) && __STDC_VERSION__ >= 201112L
+_Noreturn
+#endif
+void qd_fatal_raise(qd_context* ctx, const char* op, const char* fmt, ...)
+#ifdef __GNUC__
+		__attribute__((format(printf, 3, 4)))
+#endif
+		;
+
 /** @brief Whether recovery is armed on this context */
 bool qd_recovery_armed(const qd_context* ctx);
 
@@ -1209,6 +1227,12 @@ bool qd_native_lookup(const qd_context* ctx, const char* name, qd_native_callbac
 
 /** @brief Number of registered functions */
 size_t qd_native_count(const qd_context* ctx);
+
+/** @brief Callback receiving one registered native's name; false stops the walk */
+typedef bool (*qd_native_visitor)(const char* name, void* userdata);
+
+/** @brief Visit every registered native, unordered; false if stopped early */
+bool qd_native_visit(const qd_context* ctx, qd_native_visitor visit, void* userdata);
 
 /** @brief Forget every registration; called by qd_free_context() */
 void qd_native_clear(qd_context* ctx);

@@ -69,23 +69,28 @@ extern "C" int exe_path_platform_get(char* buffer, size_t buffer_size);
 #define QD_DATA_DIR_NAME "share"
 #endif
 
-static std::string findStdlibRoot() {
+// Every place a module may live, best first. All of them are scanned rather than
+// just the first that exists: $HOME/quadrate is quadpm's package cache and is
+// usually present without holding any of the standard library, so stopping there
+// left :doc and completion with nothing at all. Declarations are merged with
+// emplace, so an earlier root still wins for a name two roots share.
+static std::vector<std::string> findStdlibRoots() {
 	namespace fs = std::filesystem;
 
-	auto usable = [](const fs::path& path) {
+	std::vector<std::string> roots;
+	auto add = [&roots](const fs::path& path) {
 		std::error_code ec;
-		return fs::is_directory(path, ec);
+		if (fs::is_directory(path, ec)) {
+			roots.push_back(path.string());
+		}
 	};
 
-	if (const char* root = getenv("QUADRATE_ROOT"); root && usable(root)) {
-		return root;
+	if (const char* root = getenv("QUADRATE_ROOT")) {
+		add(root);
 	}
 
 	if (const char* libDir = getenv("QUADRATE_LIBDIR")) {
-		fs::path share = fs::path(libDir) / ".." / QD_DATA_DIR_NAME / "quadrate";
-		if (usable(share)) {
-			return share.string();
-		}
+		add(fs::path(libDir) / ".." / QD_DATA_DIR_NAME / "quadrate");
 	}
 
 	char exePathBuf[4096];
@@ -94,28 +99,26 @@ static std::string findStdlibRoot() {
 		std::error_code ec;
 		fs::path exePath = fs::canonical(exePathBuf, ec);
 		if (!ec) {
-			fs::path share = exePath.parent_path() / ".." / QD_DATA_DIR_NAME / "quadrate";
-			if (usable(share)) {
-				return share.string();
-			}
-		}
-	}
-
-	if (const char* home = getenv("HOME")) {
-		fs::path path = fs::path(home) / "quadrate";
-		if (usable(path)) {
-			return path.string();
+			add(exePath.parent_path() / ".." / QD_DATA_DIR_NAME / "quadrate");
 		}
 	}
 
 	if (QUADRATE_SOURCE_ROOT[0] != '\0') {
-		fs::path stdlib = fs::path(QUADRATE_SOURCE_ROOT) / "stdlib";
-		if (usable(stdlib)) {
-			return stdlib.string();
-		}
+		add(fs::path(QUADRATE_SOURCE_ROOT) / "stdlib");
 	}
 
-	return "";
+	if (const char* home = getenv("HOME")) {
+		add(fs::path(home) / "quadrate");
+		add(fs::path(home) / "quadrate" / "modules" / "_namespaces");
+	}
+
+#ifdef QD_PLATFORM_HAIKU
+	add("/boot/system/data/quadrate");
+#else
+	add("/usr/share/quadrate");
+#endif
+
+	return roots;
 }
 
 static void collectPublicDeclarations(
@@ -176,25 +179,22 @@ static const std::map<std::string, std::string>& stdlibDeclarations() {
 		namespace fs = std::filesystem;
 		std::map<std::string, std::string> out;
 
-		const std::string root = findStdlibRoot();
-		if (root.empty()) {
-			return out;
-		}
+		for (const std::string& root : findStdlibRoots()) {
+			std::error_code ec;
+			for (const auto& entry : fs::directory_iterator(root, ec)) {
+				if (!entry.is_directory(ec)) {
+					continue;
+				}
+				const std::string module = entry.path().filename().string();
+				if (module.empty() || module[0] == '.' || module[0] == '_') {
+					continue;
+				}
 
-		std::error_code ec;
-		for (const auto& entry : fs::directory_iterator(root, ec)) {
-			if (!entry.is_directory(ec)) {
-				continue;
-			}
-			const std::string module = entry.path().filename().string();
-			if (module.empty() || module[0] == '.' || module[0] == '_') {
-				continue;
-			}
-
-			std::error_code walkEc;
-			for (const auto& file : fs::recursive_directory_iterator(entry.path(), walkEc)) {
-				if (file.path().extension() == ".qd") {
-					collectPublicDeclarations(file.path(), module, out);
+				std::error_code walkEc;
+				for (const auto& file : fs::recursive_directory_iterator(entry.path(), walkEc)) {
+					if (file.path().extension() == ".qd") {
+						collectPublicDeclarations(file.path(), module, out);
+					}
 				}
 			}
 		}

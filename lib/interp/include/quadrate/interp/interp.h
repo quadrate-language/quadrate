@@ -93,11 +93,20 @@ uint64_t qd_interp_step_limit(const qd_interp* interp);
  */
 bool qd_interp_eval(qd_interp* interp, const char* source);
 
+/** @brief Name the most recent qd_interp_eval() declared, or NULL */
+const char* qd_interp_last_declared(const qd_interp* interp);
+
 /**
  * @brief Remove a Quadrate-defined function
  * @return true if the name was declared
  */
 bool qd_interp_undeclare(qd_interp* interp, const char* name);
+
+/** @brief Callback receiving one word; false stops the walk */
+typedef bool (*qd_interp_word_visitor)(const char* name, void* userdata);
+
+/** @brief Visit builtins, natives then declarations; names may repeat */
+void qd_interp_visit_words(const qd_interp* interp, qd_interp_word_visitor visit, void* userdata);
 
 /** @brief Number of Quadrate-defined functions currently declared */
 size_t qd_interp_declared_count(const qd_interp* interp);

@@ -96,8 +96,8 @@ static size_t count_inputs(const char* signature) {
 	return count;
 }
 
-bool qd_native_register(qd_context* ctx, const char* name, const char* signature, qd_native_callback fn,
-		void* userdata) {
+bool qd_native_register(
+		qd_context* ctx, const char* name, const char* signature, qd_native_callback fn, void* userdata) {
 	if (ctx == NULL || name == NULL || *name == '\0' || fn == NULL) {
 		return false;
 	}
@@ -134,8 +134,7 @@ bool qd_native_register(qd_context* ctx, const char* name, const char* signature
 	return true;
 }
 
-bool qd_native_lookup(const qd_context* ctx, const char* name, qd_native_callback* fn, void** userdata,
-		size_t* arity) {
+bool qd_native_lookup(const qd_context* ctx, const char* name, qd_native_callback* fn, void** userdata, size_t* arity) {
 	if (ctx == NULL || ctx->natives == NULL || ctx->natives->capacity == 0 || name == NULL) {
 		return false;
 	}
@@ -159,6 +158,20 @@ bool qd_native_lookup(const qd_context* ctx, const char* name, qd_native_callbac
 
 size_t qd_native_count(const qd_context* ctx) {
 	return (ctx != NULL && ctx->natives != NULL) ? ctx->natives->count : 0;
+}
+
+bool qd_native_visit(const qd_context* ctx, qd_native_visitor visit, void* userdata) {
+	if (ctx == NULL || ctx->natives == NULL || visit == NULL) {
+		return true;
+	}
+
+	for (size_t i = 0; i < ctx->natives->capacity; i++) {
+		const char* name = ctx->natives->entries[i].name;
+		if (name != NULL && !visit(name, userdata)) {
+			return false;
+		}
+	}
+	return true;
 }
 
 void qd_native_clear(qd_context* ctx) {
