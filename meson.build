@@ -62,6 +62,11 @@ subdir('lib')
 # Skipping them leaves the core libraries, which is what an embedder linking
 # lib/interp wants: the modules pull in OpenSSL and zlib, and nothing in lib/
 # depends on them.
+# math is the exception to the paragraph above: one source file over lib/rt,
+# with nothing external behind it, and an embedder running interpreted Quadrate
+# needs its words to have any mathematics at all. Built either way.
+subdir('stdlib/math')
+
 if get_option('build_stdlib')
 	subdir('stdlib')
 endif
