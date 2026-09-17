@@ -696,9 +696,14 @@ namespace Qd {
 				fnName = "qd_makef";
 			} else if (typeParam == "str" || typeParam == "string") {
 				fnName = "qd_makes";
-			} else {
-				// Assume it's a struct type - use makep for pointer
+			} else if (typeParam == "ptr" || isKnownStruct(typeParam) ||
+					   (typeParam.size() > 2 && typeParam[0] == '[' && typeParam[1] == ']')) {
 				fnName = "qd_makep";
+			} else {
+				// A type parameter of the enclosing generic function: its concrete type is not
+				// known at run time (generics are erased, not monomorphised), so the array adopts
+				// the type of the first value put into it.
+				fnName = "qd_makea";
 			}
 
 			llvm::Function* makeFn = module->getFunction(fnName);

@@ -241,9 +241,6 @@ namespace Qd {
 		} else if (node->type() == IAstNode::Type::FIELD_ACCESS) {
 			const AstNodeFieldAccess* fieldAccess = static_cast<const AstNodeFieldAccess*>(node);
 			printf(",");
-			printf("\"varName\":\"");
-			escapeJsonString(fieldAccess->varName().c_str());
-			printf("\",");
 			printf("\"fieldName\":\"");
 			escapeJsonString(fieldAccess->fieldName().c_str());
 			printf("\"");

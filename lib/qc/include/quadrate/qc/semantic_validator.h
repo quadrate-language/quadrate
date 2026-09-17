@@ -2,6 +2,9 @@
 #define QD_QC_SEMANTIC_VALIDATOR_H
 
 #include "ast.h"
+#include <cctype>
+#include <functional>
+#include <map>
 #include <memory>
 #include <optional>
 #include <string>
@@ -54,6 +57,16 @@ namespace Qd {
 		// For each PTR return value index, the struct type name (if determinable)
 		// Key: produces index (0-based), Value: struct type name
 		std::unordered_map<size_t, std::string> producesStructTypes;
+		// Generic type parameters declared on the function (`fn f<T, U>`), plus a generic
+		// receiver's. Empty for a non-generic function.
+		std::vector<std::string> typeParams;
+		// The declared type of each parameter and result exactly as written -- `T`, `[]T`,
+		// `fn(T -- T)`, `Box<T>`, `i64` -- keyed by index. A call site binds the type parameters
+		// by unifying these against what is actually on the stack, then substitutes the bindings
+		// into the results. The coarse `consumes`/`produces` types cannot do that: `[]T` and
+		// `[]i64` are both PTR.
+		std::unordered_map<size_t, std::string> parameterTypeNames;
+		std::unordered_map<size_t, std::string> producesTypeNames;
 		bool throws = false; // Whether the function can throw errors
 	};
 
@@ -66,8 +79,42 @@ namespace Qd {
 		// Returns 0 if valid, > 0 if errors were found
 		// If isModuleFile is true, missing module imports will not be reported as errors
 		// If werror is true, warnings are treated as errors
+		// Whether a value of type `actual` may initialise a field declared `expected`.
+		bool fieldTypesCompatible(const std::string& expected, const std::string& actual) const;
+
+		// The canonical spelling of a struct type name: an unqualified name that is not local but
+		// is exported by an imported module becomes `module::Name`, so the two spellings of the
+		// same struct compare equal.
+		std::string canonicalStructName(const std::string& name) const;
+
+		// The signature a `fn(...)` type string describes -- the inverse of buildFnTypeString.
+		// Returns nothing if the string is not a function type. This is what lets `call` know the
+		// effect of a function pointer that arrived as a typed parameter or a struct field, rather
+		// than only one bound straight from `&f` or a lambda.
+		std::optional<FunctionSignature> parseFnTypeString(const std::string& typeStr) const;
+
+		// The type of `fieldName` on a value of struct type `structType` (possibly an instantiated
+		// generic such as `Box<i64>`). A field declared with one of the struct's type parameters
+		// takes the corresponding argument's type; `fieldStructType` receives the field's own
+		// struct/array/fn type name when it has one, and `unboundTypeParam` is set when the field
+		// is a type parameter the instantiation does not fix.
+		StackValueType resolveFieldType(const std::string& structType, const std::string& fieldName,
+				std::string& fieldStructType, bool* unboundTypeParam = nullptr) const;
 		// The signature of the bare fallible call immediately before node->child(i), or nullptr.
 		const FunctionSignature* bareFallibleCallBefore(IAstNode* node, size_t i) const;
+
+		// Checks the argument types of a call against `sig` (struct, array and fn-pointer parameter
+		// types, and generic type parameters), binding the type parameters as it goes. Reports
+		// mismatches at `site`, naming the callee `displayName`. Returns false if anything failed.
+		bool bindCallTypeParams(const FunctionSignature& sig, const std::vector<StackValueType>& typeStack,
+				const std::vector<std::string>& structTypeStack, IAstNode* site, const std::string& displayName,
+				std::map<std::string, std::string>& bindings);
+		// Pushes a call's results with the type parameters substituted from `bindings`, and with
+		// the struct types of pointer results resolved (declared, substituted, or passed through
+		// from a pointer argument of the same position).
+		void pushCallResults(const FunctionSignature& sig, const std::map<std::string, std::string>& bindings,
+				const std::vector<std::string>& consumedStructTypes, std::vector<StackValueType>& typeStack,
+				std::vector<std::string>& structTypeStack);
 
 		size_t validate(
 				IAstNode* program, const char* filename = nullptr, bool isModuleFile = false, bool werror = false);

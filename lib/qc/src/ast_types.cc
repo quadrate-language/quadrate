@@ -411,7 +411,7 @@ namespace Qd {
 										"discarding the struct, so write '>>field drop' instead");
 							}
 							// >>field in struct construction = field set (write)
-							AstNodeFieldSet* fieldSet = new AstNodeFieldSet("", fieldName);
+							AstNodeFieldSet* fieldSet = new AstNodeFieldSet(fieldName);
 							setNodePosition(fieldSet, scanner, src);
 							currentFieldNodes.push_back(fieldSet);
 							continue;
@@ -438,29 +438,11 @@ namespace Qd {
 							size_t fn;
 							const char* fieldName = u8t_scanner_token_text(scanner, &fn);
 							// <<field in struct construction = field read
-							if (!currentFieldNodes.empty() &&
-									currentFieldNodes.back()->type() == IAstNode::Type::IDENTIFIER) {
-								std::unique_ptr<IAstNode> varOwner(currentFieldNodes.back());
-								currentFieldNodes.pop_back();
-								auto* varIdent = static_cast<AstNodeIdentifier*>(varOwner.get());
-								std::string varName = varIdent->name();
-								if (varName == "error") {
-									varName = "__global_error__";
-								}
-								AstNodeFieldAccess* fieldAccess = new AstNodeFieldAccess(varName, fieldName);
-								setNodePosition(fieldAccess, scanner, src);
-								currentFieldNodes.push_back(fieldAccess);
-								// varOwner auto-deletes old node
-							} else if (!currentFieldNodes.empty() &&
-									   currentFieldNodes.back()->type() == IAstNode::Type::FIELD_ACCESS) {
-								AstNodeFieldAccess* fieldAccess = new AstNodeFieldAccess("", fieldName);
-								setNodePosition(fieldAccess, scanner, src);
-								currentFieldNodes.push_back(fieldAccess);
-							} else {
-								AstNodeFieldAccess* fieldAccess = new AstNodeFieldAccess("", fieldName);
-								setNodePosition(fieldAccess, scanner, src);
-								currentFieldNodes.push_back(fieldAccess);
-							}
+							// `<<field` reads the struct on top of the stack, whatever put it there; the operand
+							// stays its own node (see the same site in ast_statements.cc).
+							AstNodeFieldAccess* fieldAccess = new AstNodeFieldAccess(fieldName);
+							setNodePosition(fieldAccess, scanner, src);
+							currentFieldNodes.push_back(fieldAccess);
 							continue;
 						}
 					}

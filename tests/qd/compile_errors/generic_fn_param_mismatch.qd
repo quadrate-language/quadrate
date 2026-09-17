@@ -1,0 +1,12 @@
+// Test: a fn-pointer argument whose signature disagrees with the bound type parameter.
+fn apply<T>(x:T f:fn(T -- T) -- r:T) {
+	x f call
+}
+
+fn shout(s:str -- r:str) {
+	s
+}
+
+fn main() {
+	5 &shout apply print nl
+}

@@ -1,0 +1,15 @@
+// Test: once `call`'s effect is known, the function-level checks apply to it. `call` used to
+// fall out of its branch into the "unhandled instruction" marker at the end of
+// typeCheckInstructionInternal -- a plain statement, not an `else` -- which switched the
+// arity, if-arm and defer checks off in every function containing a call.
+fn run(f:fn( -- f64) -- ) {
+	f call
+}
+
+fn pi( -- r:f64) {
+	3.5
+}
+
+fn main() {
+	&pi run
+}

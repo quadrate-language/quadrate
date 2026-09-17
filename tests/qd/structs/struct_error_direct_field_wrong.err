@@ -1,3 +1,1 @@
-tests/qd/structs/struct_error_direct_field_wrong.qd:12:6: error: Type error in field access 'p <<z': Struct 'Point' has no field named 'z'; did you mean 'x'?
-    12 | 	p <<z print nl  // ERROR: Point has no field 'z'
-      |      ^
+Type error in field access '<<z': Struct 'Point' has no field named 'z'; did you mean 'x'?

@@ -1,0 +1,14 @@
+// Test: a function pointer whose signature disagrees with the field's declared type is
+// rejected at construction. The field initializer had no case for `&f`, so the value's type
+// was UNKNOWN and any function satisfied any fn-typed field.
+struct H {
+	f:fn(i64 -- i64)
+}
+
+fn shout(s:str -- r:str) {
+	s
+}
+
+fn main() {
+	H { f = &shout } -> h
+}

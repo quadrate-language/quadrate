@@ -153,7 +153,7 @@ namespace Qd {
 										"'>>field!' has been removed; it only differed from '>>field' by "
 										"discarding the struct, so write '>>field drop' instead");
 							}
-							AstNodeFieldSet* fieldSet = new AstNodeFieldSet("", fieldName);
+							AstNodeFieldSet* fieldSet = new AstNodeFieldSet(fieldName);
 							setNodePosition(fieldSet, scanner, src);
 							tempNodes.push_back(fieldSet);
 							continue;
@@ -176,32 +176,14 @@ namespace Qd {
 						if (identToken == U8T_IDENTIFIER) {
 							const char* fieldName = u8t_scanner_token_text(scanner, &n);
 
-							if (!tempNodes.empty() && tempNodes.back()->type() == IAstNode::Type::IDENTIFIER) {
-								// We have: identifier <<field
-								std::unique_ptr<IAstNode> varOwner(tempNodes.back());
-								tempNodes.pop_back();
-								auto* varIdent = static_cast<AstNodeIdentifier*>(varOwner.get());
-
-								// Special handling for 'error <<field' - access global error struct
-								std::string varName = varIdent->name();
-								if (varName == "error") {
-									varName = "__global_error__";
-								}
-								AstNodeFieldAccess* fieldAccess = new AstNodeFieldAccess(varName, fieldName);
-								setNodePosition(fieldAccess, scanner, src);
-								tempNodes.push_back(fieldAccess);
-								// varOwner auto-deletes old node
-							} else if (!tempNodes.empty() && tempNodes.back()->type() == IAstNode::Type::FIELD_ACCESS) {
-								// Chained field access: previous <<field followed by <<field2
-								AstNodeFieldAccess* fieldAccess = new AstNodeFieldAccess("", fieldName);
-								setNodePosition(fieldAccess, scanner, src);
-								tempNodes.push_back(fieldAccess);
-							} else {
-								// Stack-based field access: <<field after struct construction, function call, etc.
-								AstNodeFieldAccess* fieldAccess = new AstNodeFieldAccess("", fieldName);
-								setNodePosition(fieldAccess, scanner, src);
-								tempNodes.push_back(fieldAccess);
-							}
+							// `<<field` reads the struct on top of the stack, whatever put it there -- a local,
+							// a call, a construction, a previous `<<`. That operand stays its own node. The
+							// parser used to fold a preceding identifier into this node, and every consumer
+							// then had to redo name resolution to learn whether it had been a variable, a
+							// function or a struct type; the validator got it wrong for functions.
+							AstNodeFieldAccess* fieldAccess = new AstNodeFieldAccess(fieldName);
+							setNodePosition(fieldAccess, scanner, src);
+							tempNodes.push_back(fieldAccess);
 							continue;
 						}
 					}

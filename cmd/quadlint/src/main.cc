@@ -215,12 +215,6 @@ void collectVariableUsages(
 		usages.insert(ident->name());
 	}
 
-	// Also check field access nodes (v <<x uses variable v)
-	if (node->type() == IAstNode::Type::FIELD_ACCESS) {
-		AstNodeFieldAccess* fieldAccess = static_cast<AstNodeFieldAccess*>(node);
-		usages.insert(fieldAccess->varName());
-	}
-
 	// Check instruction nodes - if the name matches a local variable, it's a variable reference
 	// (variable names can shadow builtin instruction names like 'inc', 'dec', 'add', etc.)
 	if (node->type() == IAstNode::Type::INSTRUCTION) {

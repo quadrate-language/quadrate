@@ -5,6 +5,25 @@ Arrays are pointers to contiguous i64 values, f64 values, or string pointers.
 
 ## Functions
 
+### `fn` by
+
+Sort an array of i64 by a comparator (quicksort). The comparator returns a negative value if `a` sorts before `b`, zero if they tie, and a positive value if `a` sorts after `b` -- the same convention as C's `qsort`. Sorting by a key, by several fields, or in descending order are all just comparators. Not stable.
+
+**Signature:** `(arr:ptr count:i64 cmp:fn(i64 i64 -- i64)`
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `arr` | `ptr` | Array of i64 values |
+| `count` | `i64` | Number of elements |
+| `cmp` | `fn` | Comparator (a b -- ordering) |
+
+**Example:**
+
+```qd
+arr count &by_length sort::by
+```
+---
+
 ### `fn` floats
 
 Sort an array of f64 in ascending order (quicksort).
@@ -99,6 +118,29 @@ arr count sort::is_sorted  // result
 ```
 ---
 
+### `fn` is_sorted_by
+
+Whether an array of i64 is sorted according to a comparator.
+
+**Signature:** `(arr:ptr count:i64 cmp:fn(i64 i64 -- i64)`
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `arr` | `ptr` | Array of i64 values |
+| `count` | `i64` | Number of elements |
+| `cmp` | `fn` | Comparator (a b -- ordering) |
+
+| Output | Type | Description |
+|--------|------|-------------|
+| `sorted` | `i64` | 1 if sorted, 0 otherwise |
+
+**Example:**
+
+```qd
+arr count &by_length sort::is_sorted_by print nl
+```
+---
+
 ### `fn` is_sorted_floats
 
 Check if array of f64 is sorted in ascending order.
@@ -118,6 +160,30 @@ Check if array of f64 is sorted in ascending order.
 
 ```qd
 arr count sort::is_sorted_floats  // result
+```
+---
+
+### `fn` lower_bound_by
+
+Find the index of the first element not ordered before `needle` (binary search lower bound). The array must already be sorted by the same comparator. Returns `count` when every element sorts before `needle`.
+
+**Signature:** `(arr:ptr count:i64 needle:i64 cmp:fn(i64 i64 -- i64)`
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `arr` | `ptr` | Array of i64 values, sorted by `cmp` |
+| `count` | `i64` | Number of elements |
+| `needle` | `i64` | Value to locate |
+| `cmp` | `fn` | Comparator (a b -- ordering) |
+
+| Output | Type | Description |
+|--------|------|-------------|
+| `idx` | `i64` | Index of the first element not ordered before `needle` |
+
+**Example:**
+
+```qd
+arr count 42 &ascending sort::lower_bound_by print nl
 ```
 ---
 

@@ -5,7 +5,6 @@
 #define QD_QC_SEMANTIC_VALIDATOR_INTERNAL_H
 
 #include <algorithm>
-#include <cctype>
 #include <cstdint>
 #include <cstdlib>
 #include <filesystem>
@@ -298,6 +297,226 @@ inline bool structTypesMatch(
 	}
 
 	return false;
+}
+
+// ---- Generic type parameters at call sites ----------------------------------------------
+//
+// Type names are kept as the strings the programmer wrote (`[]T`, `fn(T -- T)`, `Box<T>`), so
+// unification is structural recursion over those strings. A binding maps a type parameter to
+// the concrete type name it was first unified with.
+
+inline std::string typeBaseName(const std::string& t) {
+	size_t p = t.find('<');
+	return p == std::string::npos ? t : t.substr(0, p);
+}
+
+// "Box<A, []B>" -> ["A", "[]B"]; top-level split on ',' respecting nested <> and ().
+inline std::vector<std::string> typeArgsOf(const std::string& t) {
+	std::vector<std::string> args;
+	size_t open = t.find('<');
+	if (open == std::string::npos || t.back() != '>') {
+		return args;
+	}
+	std::string inner = t.substr(open + 1, t.size() - open - 2);
+	int depth = 0;
+	std::string cur;
+	for (char c : inner) {
+		if (c == '<' || c == '(') {
+			depth++;
+		} else if (c == '>' || c == ')') {
+			depth--;
+		}
+		if (c == ',' && depth == 0) {
+			args.push_back(cur);
+			cur.clear();
+		} else {
+			cur += c;
+		}
+	}
+	if (!cur.empty()) {
+		args.push_back(cur);
+	}
+	for (auto& a : args) {
+		size_t b = a.find_first_not_of(' ');
+		size_t e = a.find_last_not_of(' ');
+		a = b == std::string::npos ? "" : a.substr(b, e - b + 1);
+	}
+	return args;
+}
+
+// "fn(A B -- C D)" -> ins ["A","B"], outs ["C","D"]. Space-separated at top level.
+inline bool splitFnType(const std::string& t, std::vector<std::string>& ins, std::vector<std::string>& outs) {
+	if (t.size() < 5 || t.compare(0, 3, "fn(") != 0 || t.back() != ')') {
+		return false;
+	}
+	std::string inner = t.substr(3, t.size() - 4);
+	size_t sep = inner.find("--");
+	std::string left = sep == std::string::npos ? inner : inner.substr(0, sep);
+	std::string right = sep == std::string::npos ? "" : inner.substr(sep + 2);
+	auto split = [](const std::string& part, std::vector<std::string>& out) {
+		int depth = 0;
+		std::string cur;
+		for (char c : part) {
+			if (c == '<' || c == '(') {
+				depth++;
+			} else if (c == '>' || c == ')') {
+				depth--;
+			}
+			if (c == ' ' && depth == 0) {
+				if (!cur.empty()) {
+					out.push_back(cur);
+					cur.clear();
+				}
+			} else {
+				cur += c;
+			}
+		}
+		if (!cur.empty()) {
+			out.push_back(cur);
+		}
+	};
+	split(left, ins);
+	split(right, outs);
+	return true;
+}
+
+inline bool isTypeParamName(const std::string& t, const std::vector<std::string>& typeParams) {
+	return std::find(typeParams.begin(), typeParams.end(), t) != typeParams.end();
+}
+
+// The type name a stack element has when nothing more specific is known.
+inline const char* qdTypeNameOf(StackValueType t) {
+	switch (t) {
+	case StackValueType::INT:
+		return "i64";
+	case StackValueType::FLOAT:
+		return "f64";
+	case StackValueType::STRING:
+		return "str";
+	default:
+		return "";
+	}
+}
+
+// Unify a declared type `expected` with an argument's type `actual` ("" when unknown), binding
+// type parameters into `bindings`. Returns false on a mismatch; `why` then explains it.
+// `canon` maps a struct name to its canonical spelling -- an unqualified name that refers to a
+// module's struct becomes `module::Name` -- so `Flag` declared in a caller that did `use flag`
+// unifies with the `flag::Flag` a value actually carries.
+inline bool unifyTypeName(const std::string& expected, const std::string& actual,
+		const std::vector<std::string>& typeParams, std::map<std::string, std::string>& bindings,
+		const std::unordered_set<std::string>& mergedModules,
+		const std::function<std::string(const std::string&)>& canon, std::string& why, bool strict = false) {
+	if (expected.empty() || expected == "any" || expected == "ptr" || actual.empty()) {
+		return true; // the declaration accepts anything, or nothing is known about the argument
+	}
+	if (!strict && (actual == "any" || actual == "ptr")) {
+		// The argument's type is not known well enough to check: a bare `ptr`, or an `any`. This
+		// applies only where the check started -- nested, `any` and `ptr` are real element types,
+		// so an empty `[]` literal (`[]any`) does not satisfy a declared `[]i64`. It also does not
+		// apply to a field initializer, which is a definite assignment rather than a value of
+		// unknown provenance: `old_make -> x  Container { data = x }` with `x:ptr` stays an error.
+		return true;
+	}
+	if (isTypeParamName(expected, typeParams)) {
+		auto it = bindings.find(expected);
+		if (it == bindings.end()) {
+			bindings[expected] = actual;
+			return true;
+		}
+		if (it->second == actual || canon(it->second) == canon(actual) ||
+				structTypesMatch(actual, it->second, mergedModules)) {
+			return true;
+		}
+		why = "type parameter " + expected + " is '" + it->second + "' from an earlier argument, but this one is '" +
+			  actual + "'";
+		return false;
+	}
+	bool expArr = expected.size() > 2 && expected[0] == '[' && expected[1] == ']';
+	bool actArr = actual.size() > 2 && actual[0] == '[' && actual[1] == ']';
+	if (expArr || actArr) {
+		if (!(expArr && actArr)) {
+			why = "expects type '" + expected + "' but got '" + actual + "'";
+			return false;
+		}
+		if (!unifyTypeName(
+					expected.substr(2), actual.substr(2), typeParams, bindings, mergedModules, canon, why, true)) {
+			if (why.compare(0, 14, "type parameter") != 0) {
+				why = "expects type '" + expected + "' but got '" + actual + "'";
+			}
+			return false;
+		}
+		return true;
+	}
+	bool expFn = expected.compare(0, 3, "fn(") == 0;
+	bool actFn = actual.compare(0, 3, "fn(") == 0;
+	if (expFn || actFn) {
+		std::vector<std::string> ei, eo, ai, ao;
+		if (!(expFn && actFn) || !splitFnType(expected, ei, eo) || !splitFnType(actual, ai, ao) ||
+				ei.size() != ai.size() || eo.size() != ao.size()) {
+			why = "expects type '" + expected + "' but got '" + actual + "'";
+			return false;
+		}
+		for (size_t i = 0; i < ei.size(); i++) {
+			if (!unifyTypeName(ei[i], ai[i], typeParams, bindings, mergedModules, canon, why, true)) {
+				if (why.compare(0, 14, "type parameter") != 0) {
+					why = "expects type '" + expected + "' but got '" + actual + "'";
+				}
+				return false;
+			}
+		}
+		for (size_t i = 0; i < eo.size(); i++) {
+			if (!unifyTypeName(eo[i], ao[i], typeParams, bindings, mergedModules, canon, why, true)) {
+				if (why.compare(0, 14, "type parameter") != 0) {
+					why = "expects type '" + expected + "' but got '" + actual + "'";
+				}
+				return false;
+			}
+		}
+		return true;
+	}
+	std::string expBase = canon(typeBaseName(expected));
+	std::string actBase = canon(typeBaseName(actual));
+	if (actBase != expBase && !structTypesMatch(actBase, expBase, mergedModules)) {
+		why = "expects type '" + expected + "' but got '" + actual + "'";
+		return false;
+	}
+	std::vector<std::string> ea = typeArgsOf(expected), aa = typeArgsOf(actual);
+	for (size_t i = 0; i < ea.size() && i < aa.size(); i++) {
+		if (!unifyTypeName(ea[i], aa[i], typeParams, bindings, mergedModules, canon, why, true)) {
+			if (why.compare(0, 14, "type parameter") != 0) {
+				why = "expects type '" + expected + "' but got '" + actual + "'";
+			}
+			return false;
+		}
+	}
+	return true;
+}
+
+// Replace every whole-identifier occurrence of a bound type parameter in `t`.
+inline std::string substituteTypeParams(const std::string& t, const std::map<std::string, std::string>& bindings) {
+	if (bindings.empty()) {
+		return t;
+	}
+	std::string out;
+	size_t i = 0;
+	while (i < t.size()) {
+		char c = t[i];
+		if (std::isalpha(static_cast<unsigned char>(c)) || c == '_') {
+			size_t j = i;
+			while (j < t.size() && (std::isalnum(static_cast<unsigned char>(t[j])) || t[j] == '_')) {
+				j++;
+			}
+			std::string ident = t.substr(i, j - i);
+			auto it = bindings.find(ident);
+			out += it != bindings.end() ? it->second : ident;
+			i = j;
+		} else {
+			out += c;
+			i++;
+		}
+	}
+	return out;
 }
 
 // Get all .qd files in a directory, sorted alphabetically

@@ -290,6 +290,12 @@ namespace Qd {
 
 			builder->SetInsertPoint(endBlock);
 			lastIdentifierPushed = name;
+			// A captured struct carries its type for a following `<<`, as a plain local does.
+			auto capStructIt = localVariableStructTypes.find(name);
+			if (capStructIt != localVariableStructTypes.end()) {
+				lastStructConstructed = capStructIt->second;
+				lastStructWasConstructedInPlace = false;
+			}
 			return;
 		}
 
@@ -900,6 +906,12 @@ namespace Qd {
 
 				// Register as captured variable reference (needs extra indirection when accessed)
 				capturedVariableRefs[capName] = ptrAlloca;
+				// The body reads the outer variable through the reference, so it needs the outer
+				// variable's struct type for a following `<<field` to resolve the field.
+				auto capStructType = savedLocalVarStructTypes.find(capName);
+				if (capStructType != savedLocalVarStructTypes.end()) {
+					localVariableStructTypes[capName] = capStructType->second;
+				}
 			}
 		}
 

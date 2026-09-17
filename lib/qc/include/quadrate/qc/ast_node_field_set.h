@@ -9,12 +9,11 @@ namespace Qd {
 	 * @brief AST node representing field mutation (set)
 	 *
 	 * Example: foo 42 >>x
-	 * Sets field 'x' of struct in local variable 'foo' to 42 (from stack)
+	 * Pops 42 and sets field 'x' of the struct beneath it; the struct stays on the stack.
 	 */
 	class AstNodeFieldSet : public IAstNode {
 	public:
-		AstNodeFieldSet(const std::string& varName, const std::string& fieldName)
-			: mVarName(varName), mFieldName(fieldName), mParent(nullptr), mLine(0), mColumn(0) {
+		AstNodeFieldSet(const std::string& fieldName) : mFieldName(fieldName), mParent(nullptr), mLine(0), mColumn(0) {
 		}
 
 		IAstNode::Type type() const override {
@@ -50,16 +49,11 @@ namespace Qd {
 			mColumn = column;
 		}
 
-		const std::string& varName() const {
-			return mVarName;
-		}
-
 		const std::string& fieldName() const {
 			return mFieldName;
 		}
 
 	private:
-		std::string mVarName;
 		std::string mFieldName;
 		IAstNode* mParent;
 		size_t mLine;

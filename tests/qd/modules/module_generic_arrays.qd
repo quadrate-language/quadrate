@@ -1,0 +1,15 @@
+// Test: module-qualified generic calls bind their type parameters like local ones, and
+// module-qualified calls check array/struct/fn argument types (they never did before).
+use generic_arrays
+
+fn dbl(x:i64 -- r:i64) {
+	x 2 *
+}
+
+fn main() {
+	[1 2 3] generic_arrays::count print nl
+	["a" "b"] generic_arrays::first print nl
+	[4 5] generic_arrays::first 1 + print nl
+	5 &dbl generic_arrays::apply 1 + print nl
+	[7 8 9] generic_arrays::ints_only print nl
+}

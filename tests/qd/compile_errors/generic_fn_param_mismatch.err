@@ -1,0 +1,2 @@
+Type error in function 'apply': Parameter 2
+type parameter T is 'i64'

@@ -81,51 +81,10 @@ can be referred to while working through them; they are ordered by leverage, not
 Where an item restates something already open above (`R3`, parts of `R23`), it is kept only for the
 new evidence, not as a second copy of the task.
 
-*Amended 2026-09-17 while working R1*: R2 corrected (its headline claim was wrong), R34 and R35
-added. R34 was fixed the same day and moved to Done, taking R6 with it; R36–R38 were found while
-fixing it.
+*Amended 2026-09-17*: R2 corrected (its headline claim was wrong); R34 and R35 added and fixed
+the same day, R34 taking R6 with it; R36–R38 found while fixing them. R1, R2 and R28 are done — see Done.
 
 #### Abstraction — the cluster that shapes everything else
-
-- [ ] **R1. Generic type parameters unify on bare `T` only.** `[]T` and `fn(...)` appear to be
-      compared as literal type strings, so every generic over an aggregate is rejected at the call
-      site. Measured:
-      `fn count<T>(a:[]T -- n:i64)` called as `[1 2 3] count` → *"Parameter 1 expects type '[]T' but
-      got '[]i64'"*; `fn apply<T>(x:T f:fn(T -- T) -- r:T)` called as `5 &dbl apply` → *"expects
-      'fn(T -- T)' but got 'fn(i64 -- i64)'"*. Bare `T` works (`fn id<T>(x:T -- y:T)` accepts i64,
-      str and f64), and generic structs work. The workaround in the corpus is to declare the
-      parameter `ptr`, which discards checking entirely.
-      **Open question**: is this a substitution bug in the signature comparison (likely small), or
-      does `[]T`/`fn(...)` unification need type-variable machinery that does not exist yet? The
-      answer decides whether R28 and the `type`-alias watch item resolve themselves.
-      *Follow-up 2026-09-17*: the "generic struct return" case originally attached here
-      (`fn wrap<T>(x:T -- b:Box<T>)` then `5 wrap <<value`) turned out to have nothing to do with
-      generics — the non-generic control fails identically. It is R35.
-
-- [ ] **R2. `call` after `<<field` is never modelled — corrected 2026-09-17.** The original
-      claim ("a function pointer does not survive a struct field") was wrong: `<<f` *does* record
-      the field's declared `fn(...)` type on the struct-type stack (visible under
-      `QUADC_DEBUG_MERGE=1`), and `tests/qd/typealias/struct_field.qd` calls through a field and
-      passes. What is missing is any code that turns a `fn(...)` type *string* back into a
-      `FunctionSignature` — there is no such parser anywhere in `lib/qc`. `mPendingFnSignature`,
-      which `call` consults, is set only from `&fn`, an anonymous-fn literal, or a local bound
-      directly from one (`typecheck.cc:1753, :3643, :3667`). So `<<field call` always takes the
-      "we don't know what the called function will do" branch: pop the pointer, push nothing.
-      Why it *looks* like it works: bisected across 13 probes (`fn(i64 -- i64)`, `fn( -- f64)`,
-      `fn(i64 i64 -- i64)`, `fn( -- i64 i64)`, `fn(i64 -- )`, alias vs inline, `&named` vs anon,
-      local vs fn-returned struct). The only discriminator is whether something *after* `call`
-      underflows on the value `call` should have pushed. Cases with an input under the pointer
-      pass because the leftover input is what the next instruction consumes in the model, and the
-      function-level arity check that would catch the imbalance is switched off by R34. Zero-input
-      fn types fail first simply because nothing is under the pointer.
-      Also found: field fn types are not checked at construction — `H { f = &shout }` with
-      `f:fn(i64 -- i64)` and `shout:fn(str -- str)` is accepted silently.
-      **Open question**: add the inverse of `buildFnTypeString` (`typecheck.cc:62`) and set the
-      pending signature from `structTypeStack.back()` when it starts with `fn(` — which also gives
-      fn-typed *parameters* a real signature, since they have none today either — or decide
-      fn-pointer fields are out of scope and reject them at the declaration? Either way, the
-      construction-time field check is a separate small addition. This still bears on the
-      interfaces/traits decision above.
 
 - [ ] **R3. Evidence for the sum-types item above, not a second copy of it.** Three measurements
       that were not in the original note, all consequences of "there is no *one of these*":
@@ -199,35 +158,28 @@ fixing it.
       **Open question**: generate the missing `.out` siblings from current behaviour and review the
       diff, or are these deliberately output-free?
 
-- [ ] **R35. `ident <<field` is parsed as a field access *on a variable named `ident`*, so a call
-      in that position is never modelled.** `ast_statements.cc:178-192`: when the token before
-      `<<` is an `IDENTIFIER`, the parser deletes that node and stores its name in
-      `AstNodeFieldAccess::varName`. Codegen reconstructs the meaning
-      (`generator_structs.cc:519-566`: struct type → *function name, call it first* → global →
-      captured → local) and gets it right. The validator's `FIELD_ACCESS` case
-      (`typecheck.cc:2636-2900`) has no function-name branch: it tries struct-type, then local, then
-      falls to "search every struct for a field with that name". So for `7 mk1 <<a` the call's
-      arguments are never consumed.
-      Verified: the phantom is exactly the parameter count — `mk0 <<a` passes, `7 mk1 <<a` reports
-      1 leftover, `7 8 mk2 <<b` reports 2. Runtime is correct: `5 wrap <<value print nl drop`
-      compiles (model sees +1) and dies with *"Stack underflow in drop"*. `pm::mk1 <<a` works,
-      because the fold only fires on unqualified identifiers. Binding first (`5 wrap -> b  b
-      <<value`) "works" only because `wrap` then trips R34 and the arity check is skipped.
-      The 0-parameter case passes by accident and is still wrong: the field type comes from the
-      first struct in hash order that has a field of that name, and the chained struct type is lost.
-      Precedent for removing the fold: `>>field` never folds — all three parse sites construct
-      `AstNodeFieldSet("", …)` — and works everywhere `<<` does. The stack-based `<<` path already
-      handles captured variables and module globals correctly (verified both ways). The
-      `error <<code` special case that rides on the fold (`__global_error__`) has zero uses in
-      corpus, tests or docs. Consumers of the folded `varName`: `quadlsp/lsp_navigation.cc:655`
-      (go-to-definition) and `quadlint/main.cc:221` (unused-variable usage). 135 test files use the
-      `ident <<field` form; no C++ unit test constructs the folded node.
-      **Open question**: (A) add a function-name branch to the validator's `FIELD_ACCESS` case —
-      a third copy of the apply-a-signature logic already duplicated at `:2500`/`:3503`; or (B) stop
-      folding, always emit `IDENTIFIER` + `AstNodeFieldAccess("")`, delete the `varName` special
-      cases in both validator and codegen, and point the LSP/linter at the preceding identifier
-      node. (B) is the one that removes the class of bug rather than the instance, and `>>` shows
-      it is viable. Cost of (B) is touching four consumers; cost of (A) is a third copy.
+- [ ] **R39. A lambda cannot appear inline in a struct literal.** `H { f = fn (x:i64 -- r:i64) {
+      x 2 * } }` is rejected by the struct-literal field parser with *"Use '=' instead of ':' for
+      struct field initializers"* — it reads the lambda's `x:i64` as the start of another field.
+      The working form is to bind it first (`fn (…) {…} -> cb  H { f = cb }`), which is what the
+      corpus does. Found while adding the construction-time check in R2; predates it.
+      **Open question**: teach the field-initializer parser to recognise `fn (` and parse a
+      lambda, or leave it and say so in the docs? Same family as R19 (nested array literals and
+      struct literals inside array literals do not parse either) — probably one fix to the
+      "what can appear as a value here" question rather than three.
+
+
+- [ ] **R40. `quaddoc` still truncates a signature containing a function-pointer parameter.**
+      `hof::all` is published as `(arr:[]T pred:fn(T -- i64)` — the ` -- result:i64)` is missing,
+      and the opening paren is unbalanced. The `[Unreleased]` changelog says this was fixed ("17
+      signatures were affected"), and the generated pages checked in still show it, so either the
+      fix misses this shape or the pages predate it. Regenerating `hof.md` and `sort.md` for R28
+      reproduced it with the current binary, so it is the former.
+      **Open question**: fix the signature renderer, and separately decide whether the generated
+      `docs/docs/stdlib/*.md` should be regenerated wholesale — every module's page predates the
+      quaddoc rewrite, so they are all stale, and `gen_docs.sh` is known to drop `signal.md`'s
+      doccheck directive (noted under Documentation below).
+
 
 - [ ] **R36. A user function named like a builtin is accepted, and the builtin wins.** Found by
       accident: a test function called `pick` compiled, and `1 pick!` ran the *builtin* `pick` at
@@ -246,7 +198,13 @@ fixing it.
       outputs and another mapping sized integers to `any`; both were divergences the others did
       not have. The call-site *application* logic is likewise duplicated between the `IDENTIFIER`
       and `SCOPED_IDENTIFIER` paths (~1,100 lines apart), which is why every fix in this batch
-      landed twice.
+      landed twice. R1 factored the call-site *application* into `bindCallTypeParams` and
+      `pushCallResults`, shared by both paths, so what remains duplicated is the four signature
+      *builders*. R2 added `parseFnTypeString` as the inverse of `buildFnTypeString`; those two
+      should stay adjacent, since a change to either silently breaks the round trip.
+      Also of this family: the struct-construction field-initializer check (`typecheck.cc`, "Process
+      the field's expression nodes") is a hand-rolled mini type checker with its own `switch` over
+      node kinds; R35 found it had no `<<` case at all. It should call the real one.
       **Open question**: one `buildFunctionSignature(func, moduleName, mergeIntoMain)` and one
       `applyCallSignature(...)`, or accept the copies and add a test that diffs their outputs over
       the stdlib?
@@ -386,13 +344,6 @@ fixing it.
       isolated otherwise, which is the important part.
       **Open question**: plumb `-s` through, or make it a `thread::spawn` parameter?
 
-- [ ] **R28. No comparator sort, and `hof` is `i64`-only — both downstream of R1.** `sort` exposes
-      six monomorphic entry points (`ints`, `ints_desc`, `floats`, `floats_desc`, `strings`,
-      `strings_desc`), all taking `(arr:ptr count:i64)`, and every combinator in `hof` — `apply`,
-      `bi`, `tri`, `keep`, `dip`, `both` — is hardcoded to `fn(i64 -- i64)`. Recorded here so that
-      when R1 lands there is a list of APIs to revisit rather than a fresh survey.
-      **Open question**: none yet — this is a follow-on task, not a decision.
-
 #### Cuts with corpus evidence
 
 - [ ] **R29. `read` has zero bare uses and actively degrades checking.** It clears the type stack and
@@ -465,6 +416,94 @@ fixing it.
 
 ### Language review 2026-09-17
 
+- [x] **R2 — `call` after `<<field` (or on a typed parameter) was never modelled.** The
+      corrected diagnosis stood: nothing converted a `fn(...)` type *string* back into a
+      signature, so `call` always took its unknown-effect branch outside the `&f`/lambda case.
+      `parseFnTypeString` is the inverse of `buildFnTypeString`, and `call` falls back to it
+      using the type the value already carries — which the parameter registration and the field
+      access had been putting on the struct-type stack all along. **Dynamic dispatch through a
+      struct field now works**, including multi-result, zero-result and struct-returning fields
+      that chain straight into `<<`. Found while fixing it:
+
+    - **`call` was a third instance of the R34 bug.** Its branch fell out of the chain into the
+      trailing `mHasUnpredictableStack = true` — a plain statement, not an `else` — so *every*
+      function containing a `call` lost its arity, if-arm and defer checks. It is the only
+      non-alias branch in `typeCheckInstructionInternal` that did not `return`. The flag is now
+      set only when the effect is genuinely unknown (an untyped `ptr`).
+    - **Nothing checked a function pointer against the field it initialises**: the field
+      initializer evaluator had no case for `&f` or a lambda, so `H { f = &shout }` with
+      `f:fn(i64 -- i64)` was accepted. Added both cases, and replaced the raw string compare it
+      then reaches with the structural one from R1.
+    - **`buildFnTypeString` rendered coarse stack types**, so a struct-returning function came
+      out as `fn( -- ptr)` and did not match a field declared `fn( -- Point)`. It now uses the
+      declared type names R1 put on the signature.
+    - **`ptr` vs `any` in unification**: `ptr` is the untyped escape hatch and stays compatible
+      at any depth; `any` means "unknown" only at the top level, which is what keeps the empty
+      `[]` literal failing against `[]i64`.
+
+    R39 (a lambda cannot appear inline in a struct literal) was found here and is filed above.
+    Sweep clean, docscheck clean, stdlib unit tests clean.
+
+
+- [x] **R28 — comparator sort and generic `hof`, the payoff from R1.** Both APIs were shaped by
+      the missing unification: `sort` had six entry points each fixing element type *and*
+      direction, and every `hof` combinator was `fn(i64 -- i64)`.
+
+    - **`hof` is generic**: all seventeen combinators take type parameters, `map` is `map<T, U>`
+      so it can change the element type. The seventeen existing i64 tests pass unchanged; five
+      new tests cover floats and strings.
+    - **`sort::by`, `is_sorted_by`, `lower_bound_by`**: comparator-ordered, C `qsort` convention.
+    - **Found a shipped correctness bug in the existing quicksort.** All four of `ints`,
+      `ints_desc`, `floats`, `floats_desc` returned *unsorted data* for reverse-sorted input of
+      even length 18 or more, silently. The left scan was bounded by `j` instead of `hi`, so it
+      could stop on an element sorting before the pivot, which the following pivot swap then
+      jumped over. Found only because `sort::by` mirrors the same partition and failed its test.
+      Fixed in all five partitions; regression tests cover lengths 2..60 for `ints`, `floats` and
+      `by`, and a stress run of ~1,000 sorts over random, duplicate-heavy, reverse and all-equal
+      input reports no failures.
+    - **Arrays now decide their element type on first use** (runtime change). An empty `[]`
+      literal was an *int* array, so `[] "x" append` failed at run time and a generic `map<T, U>`
+      could not build its result. Arrays start untyped and adopt from the first `append` or
+      `set`; `make<T>` for a type parameter uses the new `qd_makea`, since generics are erased
+      and T is unknown at run time.
+    - **The function-level output check is structural too**, with the function's own type
+      parameters as wildcards — the last place still doing a string comparison. It also skipped
+      struct results entirely, so returning a `B` where `A` was declared went unreported.
+
+    R40 (quaddoc truncates fn-pointer signatures) was found here and is filed above. `hof.md` and
+    `sort.md` regenerated; sweep clean, docscheck clean.
+
+
+- [x] **R1 — generic type parameters unify structurally.** `structTypesMatch` compared declared
+      and actual types as literal strings, so `[]T` never matched `[]i64` and `fn(T -- T)` never
+      matched `fn(i64 -- i64)`; only a bare `T` worked, via a coarse `TYPEVAR` on the stack-type
+      level. `FunctionSignature` now carries the function's `typeParams` and the declared type
+      *names* of parameters and results (the coarse types cannot express this: `[]T` and `[]i64`
+      are both PTR). `unifyTypeName` recurses through `[]X`, `fn(A -- B)` and `Name<X>`, binding
+      parameters into a map; `pushCallResults` substitutes those bindings into the results.
+      Fallout and findings:
+
+    - **The consistency hole closed for free.** `fn same<T>(a:T b:T -- r:T)` accepted `1 "s"`
+      because no binding environment existed. Now an error naming both types.
+    - **Module-qualified calls never checked struct/array/fn argument types at all** — the check
+      lived only in the unqualified path. Both now share `bindCallTypeParams`/`pushCallResults`.
+      This surfaced `Flag` vs `flag::Flag` (quadmcp declares a parameter with the unqualified name
+      after `use flag`), fixed by canonicalising an unqualified struct name to its module's.
+    - **Instantiated generics lost their arguments.** `Box<i64> { value = 5 }` pushed `Box`, so
+      `<<value` reported `T`. The struct-type stack now carries `Box<i64>`,
+      `lookupStructFieldTypes` strips the arguments, and `resolveFieldType` maps a field declared
+      as a type parameter to the matching argument. This also replaced the ad-hoc generic-field
+      exemption added for `>>field` during R35.
+    - **`hof_test.qd` declared seven lambdas as `fn ( -- )` and passed them where `fn(i64 -- i64)`
+      was expected** — untruthful signatures the old string compare could not see (the *strings*
+      differed, but the check never ran on a lambda whose type came from the anonymous-fn node).
+      Corrected to the effect they actually have.
+
+    `sort`'s six monomorphic entry points and `hof`'s `i64`-only combinators are now fixable
+    (R28), and `type` aliases for fn-pointer types become usable. Sweep clean, docscheck 219/219,
+    stdlib unit tests clean.
+
+
 - [x] **R34 — the declared-effect check ran only on literal-only bodies.** `mHasUnpredictableStack
       = true` sat after the closing brace of the "signature found" block in both the `IDENTIFIER`
       (`typecheck.cc:2632`) and `SCOPED_IDENTIFIER` (`:3631`) call paths, so every call switched off
@@ -502,6 +541,22 @@ fixing it.
     `regex::get_cclass`) plus `examples/errors`; nine tests and four doc pages encoded the old
     conventions. Sweep clean, `docscheck` 218/218, stdlib unit tests clean. Spec §6.1.1, §6.4.1
     and §10.3 rewritten to say what the implementation now enforces.
+
+- [x] **R35 — `ident <<field` folded the identifier into the field-access node.** The parser
+      deleted the preceding `IDENTIFIER` and stored its name as `varName`; codegen reconstructed
+      the meaning (struct type → function → global → captured → local), the validator had no
+      function branch, so a call with arguments before `<<` left phantom values equal to its
+      parameter count. Fixed by not folding: `<<field` always reads the struct on top of the stack
+      (option B), as `>>field` already did. `AstNodeFieldAccess`/`AstNodeFieldSet` carry only the
+      field name; `__global_error__` (`error <<code`, one use — inside `run_tools_test.sh`, now `err`) removed; validator, codegen, LSP
+      (`precedingIdentifierName`) and linter updated. Three silent dependents surfaced and were
+      made stack-based: the construction-time field evaluator (no `<<` case — `math.qd` reported
+      `Vec2` as a float field), the isolated analysis (pushed without popping), and closure
+      codegen (captured variables lost their struct type, so `v <<x` in a closure hit the
+      ambiguity fallback). Zero-argument calls before `<<` on an ambiguous field name now resolve
+      too. `>>field` gained a value-type check. Tests: `structs/field_access_operand_forms`,
+      `compile_errors/field_access_on_scalar`, `field_access_unknown_field_typed`. 135 test files
+      exercise the form; suite green, valgrind clean on the changed retain/release path.
 
 ### Language design / scope
 

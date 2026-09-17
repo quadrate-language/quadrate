@@ -1,0 +1,21 @@
+// Test: a generic array parameter unifies its element type with the argument's.
+// `[]T` used to be compared with `[]i64` as strings, so every such call was rejected.
+fn count<T>(a:[]T -- n:i64) {
+	a len
+}
+
+fn first<T>(a:[]T -- x:T) {
+	a 0 nth
+}
+
+fn main() {
+	[1 2 3] count print nl
+	["a" "b"] count print nl
+	[1 2 3] first 10 + print nl
+	["a" "b"] first print nl
+	[1.5 2.5] first 1.0 + print nl
+	// An empty literal is `[]any`: it binds a type parameter (nothing is known about the
+	// element type) but does not satisfy a concrete `[]i64` -- see
+	// compile_errors/typed_error_empty_array.
+	[] count print nl
+}

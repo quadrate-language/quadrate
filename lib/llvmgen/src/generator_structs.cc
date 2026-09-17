@@ -449,176 +449,29 @@ namespace Qd {
 	}
 
 	void LlvmGenerator::Impl::generateFieldAccess(AstNodeFieldAccess* fieldAccess, llvm::Value* ctx) {
-		const std::string& varName = fieldAccess->varName();
 		const std::string& fieldName = fieldAccess->fieldName();
 
-		// Special handling for global error access: error @code or error @message
-		if (varName == "__global_error__") {
-			if (fieldName == "code") {
-				// Access ctx->error_code (offset 1) and push as int
-				llvm::Value* errorCodePtr = builder->CreateStructGEP(contextStructTy, ctx, 1, "error_code_ptr");
-				llvm::Value* errorCode = builder->CreateLoad(int64Ty, errorCodePtr, "error_code");
-
-				// Push error code onto stack (use class member pushIntFn)
-				if (!pushIntFn) {
-					auto fnTy = llvm::FunctionType::get(execResultTy, {contextPtrTy, int64Ty}, false);
-					pushIntFn = llvm::Function::Create(fnTy, llvm::Function::ExternalLinkage, "qd_push_i", *module);
-				}
-				builder->CreateCall(pushIntFn, {ctx, errorCode});
-			} else if (fieldName == "message") {
-				// Access ctx->error_msg (offset 2) and push as string
-				llvm::Value* errorMsgPtr = builder->CreateStructGEP(contextStructTy, ctx, 2, "error_msg_ptr");
-				llvm::Value* errorMsg = builder->CreateLoad(ptrTy, errorMsgPtr, "error_msg");
-
-				// If error_msg is NULL, use empty string
-				llvm::Value* isNull = builder->CreateICmpEQ(errorMsg, llvm::ConstantPointerNull::get(ptrTy));
-				llvm::Value* emptyStr = builder->CreateGlobalString("", "empty_str");
-				llvm::Value* msgToUse = builder->CreateSelect(isNull, emptyStr, errorMsg, "msg_to_use");
-
-				// Push error message onto stack using qd_push_str_cstr (use class member pushStrFn)
-				if (!pushStrFn) {
-					auto fnTy = llvm::FunctionType::get(execResultTy, {contextPtrTy, ptrTy}, false);
-					pushStrFn =
-							llvm::Function::Create(fnTy, llvm::Function::ExternalLinkage, "qd_push_str_cstr", *module);
-				}
-				builder->CreateCall(pushStrFn, {ctx, msgToUse});
-			}
-			return;
-		}
-
-		llvm::Value* structPtr = nullptr;
+		// `<<field` reads the struct on top of the stack, whatever put it there. Its type is
+		// the hint the producer left: a chained `<<` sets lastFieldAccessResultType; a local, a
+		// captured variable, a call, a construction and `as` set lastStructConstructed.
 		std::string structTypeName;
-		bool needsReleaseAfterAccess = false; // Track if we need to release the struct after field access
-
-		if (varName.empty()) {
-			// Stack-based field access - could be:
-			// 1. Chained field access (p <<origin <<x) - use lastFieldAccessResultType
-			// 2. Direct access after struct construction (Point @x) - use lastStructConstructed
-			if (!lastFieldAccessResultType.empty()) {
-				structTypeName = lastFieldAccessResultType;
-			} else if (!lastStructConstructed.empty()) {
-				structTypeName = lastStructConstructed;
-				lastStructConstructed.clear(); // Consume it
-			}
-
-			// Pop struct pointer from stack
-			llvm::Value* stackPtrPtr = builder->CreateStructGEP(contextStructTy, ctx, 0, "stack_ptr");
-			llvm::Value* stackPtr = builder->CreateLoad(ptrTy, stackPtrPtr, "stack");
-
-			// Allocate temp for popped element
-			llvm::Value* tempElem = createEntryAlloca(stackElementTy, "temp_elem");
-			builder->CreateCall(stackPopFn, {stackPtr, tempElem});
-
-			// Load the pointer value from the element
-			llvm::Value* valuePtr = builder->CreateStructGEP(stackElementTy, tempElem, 0, "value_ptr");
-			structPtr = builder->CreateLoad(ptrTy, valuePtr, "struct_ptr");
-
-			// The struct pointer was retained when pushed to stack, needs release after access
-			needsReleaseAfterAccess = true;
-		} else {
-			// Check if varName is actually a struct type (e.g., Point @x after 1 2 Point @x)
-			// The parser created AstNodeFieldAccess("Point", "x") but Point is a struct, not a variable
-			auto structDefIt = structDefinitions.find(varName);
-			if (structDefIt != structDefinitions.end()) {
-				// varName is a struct type - generate struct construction first, then stack-based access
-				generateStructConstruction(varName, ctx);
-				structTypeName = varName;
-
-				// Pop the just-constructed struct pointer from stack
-				llvm::Value* stackPtrPtr = builder->CreateStructGEP(contextStructTy, ctx, 0, "stack_ptr");
-				llvm::Value* stackPtr = builder->CreateLoad(ptrTy, stackPtrPtr, "stack");
-
-				llvm::Value* tempElem = createEntryAlloca(stackElementTy, "temp_elem");
-				builder->CreateCall(stackPopFn, {stackPtr, tempElem});
-
-				llvm::Value* valuePtr = builder->CreateStructGEP(stackElementTy, tempElem, 0, "value_ptr");
-				structPtr = builder->CreateLoad(ptrTy, valuePtr, "struct_ptr");
-			} else {
-				// Check if varName is a function - call it first, then do stack-based field access
-				auto funcIt = userFunctions.find(varName);
-				std::string funcLookupName = varName;
-				if (funcIt == userFunctions.end() && currentModulePrefix != "main") {
-					// Try with current module prefix
-					std::string qualifiedName = currentModulePrefix + "::" + varName;
-					funcIt = userFunctions.find(qualifiedName);
-					if (funcIt != userFunctions.end()) {
-						funcLookupName = qualifiedName;
-					}
-				}
-
-				if (funcIt != userFunctions.end()) {
-					// varName is a function - call it first
-					builder->CreateCall(funcIt->second, {ctx});
-
-					// Pop the result (struct pointer) from stack
-					llvm::Value* stackPtrPtr = builder->CreateStructGEP(contextStructTy, ctx, 0, "stack_ptr");
-					llvm::Value* stackPtr = builder->CreateLoad(ptrTy, stackPtrPtr, "stack");
-
-					llvm::Value* tempElem = createEntryAlloca(stackElementTy, "temp_elem");
-					builder->CreateCall(stackPopFn, {stackPtr, tempElem});
-
-					llvm::Value* valuePtr = builder->CreateStructGEP(stackElementTy, tempElem, 0, "value_ptr");
-					structPtr = builder->CreateLoad(ptrTy, valuePtr, "struct_ptr");
-
-					// Look up the return struct type from function signature
-					auto returnTypeIt = functionReturnStructType.find(funcLookupName);
-					if (returnTypeIt != functionReturnStructType.end()) {
-						structTypeName = returnTypeIt->second;
-					}
-				} else if (moduleGlobalVars.count(varName) && isKnownStruct(moduleGlobalVarTypes[varName])) {
-					// Module-level `var` with a struct type — load the struct
-					// pointer from the LLVM global and treat it like a value
-					// that was just pushed onto the stack.
-					llvm::GlobalVariable* gv = moduleGlobalVars[varName];
-					llvm::LoadInst* loadGlobal = builder->CreateLoad(ptrTy, gv, varName + "_gv_load");
-					loadGlobal->setVolatile(true);
-					structPtr = loadGlobal;
-					structTypeName = moduleGlobalVarTypes[varName];
-				} else {
-					// Check if it's a captured variable (by reference)
-					auto capIt = capturedVariableRefs.find(varName);
-					if (capIt != capturedVariableRefs.end()) {
-						// Load the pointer to the outer variable, then access the value
-						llvm::AllocaInst* ptrAlloca = capIt->second;
-						llvm::Value* outerVarPtr = builder->CreateLoad(ptrTy, ptrAlloca, varName + "_cap_ptr");
-
-						// Look up the struct type from local variable tracking
-						auto typeIt = localVariableStructTypes.find(varName);
-						if (typeIt != localVariableStructTypes.end()) {
-							structTypeName = typeIt->second;
-						}
-
-						// Extract the value field from the outer variable (qd_stack_element_t)
-						llvm::Value* valuePtr =
-								builder->CreateStructGEP(stackElementTy, outerVarPtr, 0, varName + "_cap_value_ptr");
-						structPtr = builder->CreateLoad(ptrTy, valuePtr, "struct_ptr");
-					} else {
-						// Normal field access from local variable
-						auto it = localVariables.find(varName);
-						if (it == localVariables.end()) {
-							std::cerr << "Error: Undefined variable: " << varName << std::endl;
-							return;
-						}
-
-						// Look up the struct type from local variable tracking
-						auto typeIt = localVariableStructTypes.find(varName);
-						if (typeIt != localVariableStructTypes.end()) {
-							structTypeName = typeIt->second;
-						}
-
-						// Local variables are stored as qd_stack_element_t, need to extract the value field
-						llvm::Value* structPtrAlloca = it->second;
-						// For indirect (captured) variables, load the actual storage pointer first
-						if (indirectLocalVariables.find(varName) != indirectLocalVariables.end()) {
-							structPtrAlloca = builder->CreateLoad(ptrTy, it->second, varName + "_storage");
-						}
-						llvm::Value* valuePtr =
-								builder->CreateStructGEP(stackElementTy, structPtrAlloca, 0, varName + "_value_ptr");
-						structPtr = builder->CreateLoad(ptrTy, valuePtr, "struct_ptr");
-					}
-				}
-			}
+		if (!lastFieldAccessResultType.empty()) {
+			structTypeName = lastFieldAccessResultType;
+		} else if (!lastStructConstructed.empty()) {
+			structTypeName = lastStructConstructed;
+			lastStructConstructed.clear(); // Consume it
 		}
+
+		// Pop the struct pointer from the stack
+		llvm::Value* stackPtrPtr = builder->CreateStructGEP(contextStructTy, ctx, 0, "stack_ptr");
+		llvm::Value* stackPtr = builder->CreateLoad(ptrTy, stackPtrPtr, "stack");
+		llvm::Value* tempElem = createEntryAlloca(stackElementTy, "temp_elem");
+		builder->CreateCall(stackPopFn, {stackPtr, tempElem});
+		llvm::Value* valuePtr = builder->CreateStructGEP(stackElementTy, tempElem, 0, "value_ptr");
+		llvm::Value* structPtr = builder->CreateLoad(ptrTy, valuePtr, "struct_ptr");
+
+		// The struct pointer was retained when pushed to stack, needs release after access
+		bool needsReleaseAfterAccess = true;
 
 		// Find the field in the specific struct type if known
 		const FieldInfo* matchingField = nullptr;
@@ -790,198 +643,38 @@ namespace Qd {
 	}
 
 	void LlvmGenerator::Impl::generateFieldSet(AstNodeFieldSet* fieldSet, llvm::Value* ctx) {
-		const std::string& varName = fieldSet->varName();
 		const std::string& fieldName = fieldSet->fieldName();
-
 		llvm::Value* structPtr = nullptr;
 		std::string structTypeName;
 
-		if (varName.empty()) {
-			// Stack-based field set: stack has [struct, value] (value on top)
-			// Pop value first, then pop struct, set field, push struct back
+		// Stack-based field set: stack has [struct, value] (value on top)
+		// Pop value first, then pop struct, set field, push struct back
 
-			// Determine struct type from context
-			if (!lastFieldAccessResultType.empty()) {
-				structTypeName = lastFieldAccessResultType;
-			} else if (!lastStructConstructed.empty()) {
-				structTypeName = lastStructConstructed;
-			}
-
-			// Pop value from stack into temp
-			llvm::Value* stackPtrPtr = builder->CreateStructGEP(contextStructTy, ctx, 0, "stack_ptr");
-			llvm::Value* stackPtrVal = builder->CreateLoad(ptrTy, stackPtrPtr, "stack");
-
-			llvm::Value* valueTempElem = builder->CreateAlloca(stackElementTy, nullptr, "value_temp_elem");
-			builder->CreateCall(stackPopFn, {stackPtrVal, valueTempElem});
-
-			// Pop struct from stack into temp
-			llvm::Value* structTempElem = builder->CreateAlloca(stackElementTy, nullptr, "struct_temp_elem");
-			builder->CreateCall(stackPopFn, {stackPtrVal, structTempElem});
-
-			// Load the struct pointer
-			llvm::Value* structValuePtr =
-					builder->CreateStructGEP(stackElementTy, structTempElem, 0, "struct_value_ptr");
-			structPtr = builder->CreateLoad(ptrTy, structValuePtr, "struct_ptr");
-
-			// Find the field
-			const FieldInfo* matchingField = nullptr;
-			if (!structTypeName.empty()) {
-				const StructLayout* layoutPtr = findStructDefinition(structTypeName);
-				if (layoutPtr != nullptr) {
-					for (const auto& field : layoutPtr->fields) {
-						if (field.name == fieldName) {
-							matchingField = &field;
-							break;
-						}
-					}
-				}
-			}
-			if (!matchingField) {
-				for (const auto& pair : structDefinitions) {
-					for (const auto& field : pair.second.fields) {
-						if (field.name == fieldName) {
-							matchingField = &field;
-							break;
-						}
-					}
-					if (matchingField) {
-						break;
-					}
-				}
-			}
-
-			if (!matchingField) {
-				std::cerr << "Error: Unknown field in field set: " << fieldName << std::endl;
-				return;
-			}
-
-			// Calculate field offset and store value
-			auto fieldOffset = builder->getInt64(matchingField->offset);
-			auto bytePtr = builder->CreateGEP(builder->getInt8Ty(), structPtr, fieldOffset, "field_byte_ptr");
-
-			llvm::Value* valuePtr = builder->CreateStructGEP(stackElementTy, valueTempElem, 0, "value_ptr");
-
-			if (matchingField->typeName == "f64") {
-				llvm::Value* floatValue = builder->CreateLoad(builder->getDoubleTy(), valuePtr, "float_val");
-				builder->CreateStore(floatValue, bytePtr);
-			} else if (matchingField->typeName == "i64" || matchingField->typeName == "u64") {
-				llvm::Value* intValue = builder->CreateLoad(int64Ty, valuePtr, "int_val");
-				builder->CreateStore(intValue, bytePtr);
-			} else if (matchingField->typeName == "i32" || matchingField->typeName == "u32") {
-				llvm::Value* intValue = builder->CreateLoad(int64Ty, valuePtr, "int_val");
-				llvm::Value* truncValue = builder->CreateTrunc(intValue, int32Ty, "int32_val");
-				builder->CreateStore(truncValue, bytePtr);
-			} else if (matchingField->typeName == "i16" || matchingField->typeName == "u16") {
-				llvm::Value* intValue = builder->CreateLoad(int64Ty, valuePtr, "int_val");
-				llvm::Value* truncValue = builder->CreateTrunc(intValue, builder->getInt16Ty(), "int16_val");
-				builder->CreateStore(truncValue, bytePtr);
-			} else if (matchingField->typeName == "i8" || matchingField->typeName == "u8") {
-				llvm::Value* intValue = builder->CreateLoad(int64Ty, valuePtr, "int_val");
-				llvm::Value* truncValue = builder->CreateTrunc(intValue, builder->getInt8Ty(), "int8_val");
-				builder->CreateStore(truncValue, bytePtr);
-			} else if (matchingField->typeName == "ptr" || matchingField->typeName == "str" ||
-					   matchingField->typeName.find('*') != std::string::npos || isArrayType(matchingField->typeName) ||
-					   (looksLikeStructType(matchingField->typeName) && isKnownStruct(matchingField->typeName))) {
-				llvm::Value* ptrValue = builder->CreateLoad(ptrTy, valuePtr, "ptr_val");
-				builder->CreateStore(ptrValue, bytePtr);
-			} else if (matchingField->isTypeParam) {
-				// Release old string value if the generic field currently holds a string
-				{
-					llvm::Value* oldTagOffset = builder->getInt64(matchingField->offset + 8);
-					llvm::Value* oldTagPtr =
-							builder->CreateGEP(builder->getInt8Ty(), structPtr, oldTagOffset, "old_tag_ptr");
-					llvm::Value* oldTag = builder->CreateLoad(int64Ty, oldTagPtr, "old_tag");
-					llvm::Value* wasStr = builder->CreateICmpEQ(oldTag, builder->getInt64(3), "was_str");
-					llvm::Function* currentFn = builder->GetInsertBlock()->getParent();
-					llvm::BasicBlock* releaseOldStr =
-							llvm::BasicBlock::Create(*context, "release_old_typeparam_str", currentFn);
-					llvm::BasicBlock* afterRelease =
-							llvm::BasicBlock::Create(*context, "after_old_typeparam_release", currentFn);
-					builder->CreateCondBr(wasStr, releaseOldStr, afterRelease);
-
-					builder->SetInsertPoint(releaseOldStr);
-					llvm::Value* oldValPtr = builder->CreateGEP(
-							builder->getInt8Ty(), structPtr, builder->getInt64(matchingField->offset), "old_val_ptr");
-					llvm::Value* oldStr = builder->CreateLoad(ptrTy, oldValPtr, "old_str");
-					builder->CreateCall(qdStringReleaseFn, {oldStr});
-					builder->CreateBr(afterRelease);
-
-					builder->SetInsertPoint(afterRelease);
-				}
-				// Generic type parameter field - store raw 8-byte value + type tag
-				llvm::Value* intValue = builder->CreateLoad(int64Ty, valuePtr, "generic_val");
-				builder->CreateStore(intValue, bytePtr);
-				// Read type tag from stack element (GEP index 1)
-				llvm::Value* typeTagPtr = builder->CreateStructGEP(stackElementTy, valueTempElem, 1, "elem_type_ptr");
-				llvm::Value* typeTag = builder->CreateLoad(int32Ty, typeTagPtr, "type_tag");
-				// Store type tag at field.offset + 8
-				llvm::Value* tagOffset = builder->getInt64(matchingField->offset + 8);
-				llvm::Value* tagPtr = builder->CreateGEP(builder->getInt8Ty(), structPtr, tagOffset, "tag_ptr");
-				llvm::Value* tagExt = builder->CreateZExt(typeTag, int64Ty, "tag_i64");
-				builder->CreateStore(tagExt, tagPtr);
-			} else {
-				llvm::Value* intValue = builder->CreateLoad(int64Ty, valuePtr, "generic_val");
-				builder->CreateStore(intValue, bytePtr);
-			}
-
-			// Push the struct back onto the stack for chaining. Always: the `>>field!`
-			// form that suppressed this is gone, and callers write `>>field drop`.
-			if (!pushPtrFn) {
-				auto fnTy = llvm::FunctionType::get(execResultTy, {contextPtrTy, ptrTy}, false);
-				pushPtrFn = llvm::Function::Create(fnTy, llvm::Function::ExternalLinkage, "qd_push_p", *module);
-			}
-			builder->CreateCall(pushPtrFn, {ctx, structPtr});
-
-			return;
+		// Determine struct type from context
+		if (!lastFieldAccessResultType.empty()) {
+			structTypeName = lastFieldAccessResultType;
+		} else if (!lastStructConstructed.empty()) {
+			structTypeName = lastStructConstructed;
 		}
 
-		// Check if it's a captured variable (by reference)
-		auto capIt = capturedVariableRefs.find(varName);
-		if (capIt != capturedVariableRefs.end()) {
-			// Load the pointer to the outer variable, then access the value
-			llvm::AllocaInst* ptrAlloca = capIt->second;
-			llvm::Value* outerVarPtr = builder->CreateLoad(ptrTy, ptrAlloca, varName + "_cap_ptr");
+		// Pop value from stack into temp
+		llvm::Value* stackPtrPtr = builder->CreateStructGEP(contextStructTy, ctx, 0, "stack_ptr");
+		llvm::Value* stackPtrVal = builder->CreateLoad(ptrTy, stackPtrPtr, "stack");
 
-			// Look up the struct type from local variable tracking
-			auto typeIt = localVariableStructTypes.find(varName);
-			if (typeIt != localVariableStructTypes.end()) {
-				structTypeName = typeIt->second;
-			}
+		llvm::Value* valueTempElem = builder->CreateAlloca(stackElementTy, nullptr, "value_temp_elem");
+		builder->CreateCall(stackPopFn, {stackPtrVal, valueTempElem});
 
-			// Extract the value field from the outer variable (qd_stack_element_t)
-			llvm::Value* structValuePtr =
-					builder->CreateStructGEP(stackElementTy, outerVarPtr, 0, varName + "_cap_value_ptr");
-			structPtr = builder->CreateLoad(ptrTy, structValuePtr, "struct_ptr");
-		} else {
-			// Get struct pointer from local variable
-			auto it = localVariables.find(varName);
-			if (it == localVariables.end()) {
-				std::cerr << "Error: Undefined variable in field set: " << varName << std::endl;
-				return;
-			}
+		// Pop struct from stack into temp
+		llvm::Value* structTempElem = builder->CreateAlloca(stackElementTy, nullptr, "struct_temp_elem");
+		builder->CreateCall(stackPopFn, {stackPtrVal, structTempElem});
 
-			// Look up the struct type from local variable tracking
-			auto typeIt = localVariableStructTypes.find(varName);
-			if (typeIt != localVariableStructTypes.end()) {
-				structTypeName = typeIt->second;
-			}
+		// Load the struct pointer
+		llvm::Value* structValuePtr = builder->CreateStructGEP(stackElementTy, structTempElem, 0, "struct_value_ptr");
+		structPtr = builder->CreateLoad(ptrTy, structValuePtr, "struct_ptr");
 
-			// Local variables are stored as qd_stack_element_t, need to extract the value field
-			llvm::Value* structPtrAlloca = it->second;
-			// For indirect (captured) variables, load the actual storage pointer first
-			if (indirectLocalVariables.find(varName) != indirectLocalVariables.end()) {
-				structPtrAlloca = builder->CreateLoad(ptrTy, it->second, varName + "_storage");
-			}
-			llvm::Value* structValuePtr =
-					builder->CreateStructGEP(stackElementTy, structPtrAlloca, 0, varName + "_value_ptr");
-			structPtr = builder->CreateLoad(ptrTy, structValuePtr, "struct_ptr");
-		}
-
-		// Find the field in the specific struct type if known
+		// Find the field
 		const FieldInfo* matchingField = nullptr;
-
 		if (!structTypeName.empty()) {
-			// Look up field in the specific struct type (use findStructDefinition for proper module handling)
 			const StructLayout* layoutPtr = findStructDefinition(structTypeName);
 			if (layoutPtr != nullptr) {
 				for (const auto& field : layoutPtr->fields) {
@@ -992,28 +685,17 @@ namespace Qd {
 				}
 			}
 		}
-
-		// Fallback: search all struct types if we don't know the type
 		if (!matchingField) {
-			int matchCount = 0;
-			std::string selectedStruct;
 			for (const auto& pair : structDefinitions) {
 				for (const auto& field : pair.second.fields) {
 					if (field.name == fieldName) {
-						if (!matchingField) {
-							matchingField = &field;
-							selectedStruct = pair.first;
-						}
-						matchCount++;
+						matchingField = &field;
 						break;
 					}
 				}
-			}
-			if (matchCount > 1 && structTypeName.empty()) {
-				std::cerr << "Error: ambiguous field '<<" << fieldName << "' found in " << matchCount
-						  << " structs. Use 'as StructType' to disambiguate, e.g.: value as " << selectedStruct << " <<"
-						  << fieldName << std::endl;
-				return;
+				if (matchingField) {
+					break;
+				}
 			}
 		}
 
@@ -1022,31 +704,12 @@ namespace Qd {
 			return;
 		}
 
-		// Calculate field offset
+		// Calculate field offset and store value
 		auto fieldOffset = builder->getInt64(matchingField->offset);
 		auto bytePtr = builder->CreateGEP(builder->getInt8Ty(), structPtr, fieldOffset, "field_byte_ptr");
 
-		// Pop value from stack
-		llvm::Value* stackPtr = builder->CreateStructGEP(contextStructTy, ctx, 0, "st_ptr");
-		llvm::Value* st = builder->CreateLoad(ptrTy, stackPtr, "st");
+		llvm::Value* valuePtr = builder->CreateStructGEP(stackElementTy, valueTempElem, 0, "value_ptr");
 
-		// Get stack size
-		llvm::Value* sizePtr = builder->CreateStructGEP(stackStructTy, st, 2, "size_ptr");
-		llvm::Value* size = builder->CreateLoad(int64Ty, sizePtr, "size");
-
-		// Decrement size
-		llvm::Value* newSize = builder->CreateSub(size, builder->getInt64(1), "new_size");
-		builder->CreateStore(newSize, sizePtr);
-
-		// Get element pointer
-		llvm::Value* dataPtr = builder->CreateStructGEP(stackStructTy, st, 0, "data_ptr");
-		llvm::Value* data = builder->CreateLoad(ptrTy, dataPtr, "data");
-		llvm::Value* elemPtr = builder->CreateGEP(stackElementTy, data, newSize, "elem_ptr");
-
-		// Load value from stack element
-		llvm::Value* valuePtr = builder->CreateStructGEP(stackElementTy, elemPtr, 0, "value_ptr");
-
-		// Store to struct field based on type
 		if (matchingField->typeName == "f64") {
 			llvm::Value* floatValue = builder->CreateLoad(builder->getDoubleTy(), valuePtr, "float_val");
 			builder->CreateStore(floatValue, bytePtr);
@@ -1054,7 +717,6 @@ namespace Qd {
 			llvm::Value* intValue = builder->CreateLoad(int64Ty, valuePtr, "int_val");
 			builder->CreateStore(intValue, bytePtr);
 		} else if (matchingField->typeName == "i32" || matchingField->typeName == "u32") {
-			// Load as i64 from stack (stack elements are always 64-bit), truncate to i32
 			llvm::Value* intValue = builder->CreateLoad(int64Ty, valuePtr, "int_val");
 			llvm::Value* truncValue = builder->CreateTrunc(intValue, int32Ty, "int32_val");
 			builder->CreateStore(truncValue, bytePtr);
@@ -1067,9 +729,8 @@ namespace Qd {
 			llvm::Value* truncValue = builder->CreateTrunc(intValue, builder->getInt8Ty(), "int8_val");
 			builder->CreateStore(truncValue, bytePtr);
 		} else if (matchingField->typeName == "ptr" || matchingField->typeName == "str" ||
-				   matchingField->typeName.find('*') != std::string::npos ||
+				   matchingField->typeName.find('*') != std::string::npos || isArrayType(matchingField->typeName) ||
 				   (looksLikeStructType(matchingField->typeName) && isKnownStruct(matchingField->typeName))) {
-			// Pointer type (including ptr, str, raw pointers, and struct-typed fields)
 			llvm::Value* ptrValue = builder->CreateLoad(ptrTy, valuePtr, "ptr_val");
 			builder->CreateStore(ptrValue, bytePtr);
 		} else if (matchingField->isTypeParam) {
@@ -1096,12 +757,11 @@ namespace Qd {
 
 				builder->SetInsertPoint(afterRelease);
 			}
-
 			// Generic type parameter field - store raw 8-byte value + type tag
 			llvm::Value* intValue = builder->CreateLoad(int64Ty, valuePtr, "generic_val");
 			builder->CreateStore(intValue, bytePtr);
 			// Read type tag from stack element (GEP index 1)
-			llvm::Value* typeTagPtr = builder->CreateStructGEP(stackElementTy, elemPtr, 1, "elem_type_ptr");
+			llvm::Value* typeTagPtr = builder->CreateStructGEP(stackElementTy, valueTempElem, 1, "elem_type_ptr");
 			llvm::Value* typeTag = builder->CreateLoad(int32Ty, typeTagPtr, "type_tag");
 			// Store type tag at field.offset + 8
 			llvm::Value* tagOffset = builder->getInt64(matchingField->offset + 8);
@@ -1109,10 +769,17 @@ namespace Qd {
 			llvm::Value* tagExt = builder->CreateZExt(typeTag, int64Ty, "tag_i64");
 			builder->CreateStore(tagExt, tagPtr);
 		} else {
-			// Unknown type - treat as i64 value
 			llvm::Value* intValue = builder->CreateLoad(int64Ty, valuePtr, "generic_val");
 			builder->CreateStore(intValue, bytePtr);
 		}
+
+		// Push the struct back onto the stack for chaining. Always: the `>>field!`
+		// form that suppressed this is gone, and callers write `>>field drop`.
+		if (!pushPtrFn) {
+			auto fnTy = llvm::FunctionType::get(execResultTy, {contextPtrTy, ptrTy}, false);
+			pushPtrFn = llvm::Function::Create(fnTy, llvm::Function::ExternalLinkage, "qd_push_p", *module);
+		}
+		builder->CreateCall(pushPtrFn, {ctx, structPtr});
 	}
 
 	void LlvmGenerator::Impl::generateArrayLiteral(AstNodeArrayLiteral* arrayLiteral, llvm::Value* ctx) {
@@ -1120,7 +787,9 @@ namespace Qd {
 		size_t numElements = elements.size();
 
 		if (numElements == 0) {
-			// Empty array - create with default type (INT)
+			// Empty array - element type unknown until the first append (QD_ARRAY_TYPE_ANY = 4).
+			// Creating it as INT meant `[] "x" append` failed at run time, and made a generic
+			// `map<T, U>` impossible to write: the result array could only ever hold integers.
 			llvm::Function* createArrayFn = module->getFunction("qd_array_create");
 			if (!createArrayFn) {
 				auto fnTy = llvm::FunctionType::get(ptrTy, {int64Ty, int32Ty}, false);
@@ -1128,7 +797,7 @@ namespace Qd {
 						llvm::Function::Create(fnTy, llvm::Function::ExternalLinkage, "qd_array_create", *module);
 			}
 			llvm::Value* arrPtr =
-					builder->CreateCall(createArrayFn, {builder->getInt64(8), builder->getInt32(0)}, "empty_arr");
+					builder->CreateCall(createArrayFn, {builder->getInt64(8), builder->getInt32(4)}, "empty_arr");
 			builder->CreateCall(pushPtrFn, {ctx, arrPtr});
 			return;
 		}

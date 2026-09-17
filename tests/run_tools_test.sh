@@ -423,7 +423,7 @@ fn main() {
 		Ok { -> n "counted=" print n print nl }
 		_ { "caller-saw-failure" print nl }
 	}
-	"errcode=" print error <<code print nl
+	"errcode=" print err -> code drop code print nl
 }
 ENDQD
 

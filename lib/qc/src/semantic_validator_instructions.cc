@@ -732,13 +732,22 @@ namespace Qd {
 			}
 			// Pop the function pointer - runtime will verify it's a pointer type
 			typeStack.pop_back();
-			// Pop struct type as well
+			// Pop struct type as well, remembering it: for a pointer that came from a typed
+			// parameter, a struct field, an array element or a local declared with a `fn(...)`
+			// type, the type string is the only description of the callee there is.
+			std::string fnTypeStr;
 			if (!structTypeStack.empty()) {
+				fnTypeStr = structTypeStack.back();
 				structTypeStack.pop_back();
 			}
 
-			// If we have a pending function signature from a known function pointer,
-			// apply its stack effect
+			// A pending signature from `&f` or a lambda is preferred -- it is the real
+			// signature, with struct types the type string cannot carry. Otherwise the declared
+			// `fn(...)` type says what the call does.
+			if (!mPendingFnSignature.has_value() && !fnTypeStr.empty()) {
+				mPendingFnSignature = parseFnTypeString(fnTypeStr);
+			}
+
 			if (mPendingFnSignature.has_value()) {
 				const FunctionSignature& sig = mPendingFnSignature.value();
 
@@ -762,15 +771,20 @@ namespace Qd {
 					}
 				}
 
-				// Push produced types
-				for (const auto& type : sig.produces) {
-					typeStack.push_back(type);
-					structTypeStack.push_back(""); // Don't track struct types for now
-				}
-
+				// Push produced types, with any struct/array/fn types the signature carries, so a
+				// call that returns a struct or another function pointer can be chained.
+				FunctionSignature applied = sig;
 				mPendingFnSignature.reset();
+				pushCallResults(applied, {}, {}, typeStack, structTypeStack);
+				// The effect is fully known, so the function-level checks stay in force. Falling
+				// out of this branch instead would reach the "unhandled instruction" marker at the
+				// end of this function -- a plain statement, not an `else` -- and switch off the
+				// arity, if-arm and defer checks in every function containing a `call`.
+				return;
 			}
-			// Otherwise, we don't know what the called function will do to the stack
+			// No signature: an untyped `ptr` was called and the effect really is unknown.
+			mHasUnpredictableStack = true;
+			return;
 		}
 		// Threading: spawn ( fn:ptr -- handle:i64 )
 		//

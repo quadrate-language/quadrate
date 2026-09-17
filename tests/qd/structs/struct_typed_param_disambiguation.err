@@ -1,3 +1,1 @@
-tests/qd/structs/struct_typed_param_disambiguation.qd:26:6: error: Type error in field access 'c <<width': Struct 'Circle' has no field named 'width'
-    26 | 	c <<width
-      |      ^
+Type error in field access '<<width': Struct 'Circle' has no field named 'width'

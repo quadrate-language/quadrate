@@ -1,6 +1,10 @@
 # `use` hof
 
 Higher-Order Function combinators.
+
+Every combinator is generic: `T` is the value's type and `U` the result's, so the same
+`apply`, `map` or `fold` works over integers, floats, strings and structs. They were fixed
+to `fn(i64 -- i64)` until generic function-pointer parameters started unifying.
 Combinators are functions that combine or apply other functions in useful patterns.
 They enable functional programming without explicit temporary variables.
 
@@ -10,11 +14,11 @@ They enable functional programming without explicit temporary variables.
 
 Check if all elements satisfy a predicate.
 
-**Signature:** `(arr:[]i64 pred:fn(i64 -- i64)`
+**Signature:** `(arr:[]T pred:fn(T -- i64)`
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
-| `pred` | `fn` | (i64 -- i64) Predicate function (i64 -- bool:i64) |
+| `pred` | `fn` | Predicate function (i64 -- bool:i64) |
 
 | Output | Type | Description |
 |--------|------|-------------|
@@ -31,11 +35,11 @@ arr fn (x:i64 -- r:i64) { 0 > } hof::all  // all positive?
 
 Check if any element satisfies a predicate.
 
-**Signature:** `(arr:[]i64 pred:fn(i64 -- i64)`
+**Signature:** `(arr:[]T pred:fn(T -- i64)`
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
-| `pred` | `fn` | (i64 -- i64) Predicate function (i64 -- bool:i64) |
+| `pred` | `fn` | Predicate function (i64 -- bool:i64) |
 
 | Output | Type | Description |
 |--------|------|-------------|
@@ -52,12 +56,12 @@ arr fn (x:i64 -- r:i64) { 0 > } hof::any  // any positive?
 
 Apply a function to a value.
 
-**Signature:** `(x:i64 f:fn(i64 -- i64)`
+**Signature:** `(x:T f:fn(T -- T)`
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
-| `x` | `i64` | The input value |
-| `f` | `fn` | (i64 -- i64) Function (i64 -- i64) |
+| `x` | `T` | The input value |
+| `f` | `fn` | Function applied to the value |
 
 | Output | Type | Description |
 |--------|------|-------------|
@@ -74,14 +78,14 @@ Apply a function to a value.
 
 Apply two functions to two values (first to first, second to second).
 
-**Signature:** `(x:i64 y:i64 f:fn(i64 -- i64)`
+**Signature:** `(x:T y:T f:fn(T -- U)`
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
-| `x` | `i64` | First value |
+| `x` | `T` | First value |
 | `y` | `i64` | Second value |
-| `f` | `fn` | (i64 -- i64) Function for first value (i64 -- i64) |
-| `g` | `fn` | (i64 -- i64) Function for second value (i64 -- i64) |
+| `f` | `fn` | Function for first value (i64 -- i64) |
+| `g` | `fn` | Function for second value (i64 -- i64) |
 
 | Output | Type | Description |
 |--------|------|-------------|
@@ -99,13 +103,13 @@ Apply two functions to two values (first to first, second to second).
 
 Apply two functions to the same value.
 
-**Signature:** `(x:i64 f:fn(i64 -- i64)`
+**Signature:** `(x:T f:fn(T -- U)`
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
-| `x` | `i64` | The input value |
-| `f` | `fn` | (i64 -- i64) First function (i64 -- i64) |
-| `g` | `fn` | (i64 -- i64) Second function (i64 -- i64) |
+| `x` | `T` | The input value |
+| `f` | `fn` | First function |
+| `g` | `fn` | Second function |
 
 | Output | Type | Description |
 |--------|------|-------------|
@@ -123,13 +127,13 @@ Apply two functions to the same value.
 
 Apply a function to two values separately.
 
-**Signature:** `(x:i64 y:i64 f:fn(i64 -- i64)`
+**Signature:** `(x:T y:T f:fn(T -- U)`
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
-| `x` | `i64` | First value |
+| `x` | `T` | First value |
 | `y` | `i64` | Second value |
-| `f` | `fn` | (i64 -- i64) Function (i64 -- i64) |
+| `f` | `fn` | Function applied to the value |
 
 | Output | Type | Description |
 |--------|------|-------------|
@@ -147,13 +151,13 @@ Apply a function to two values separately.
 
 Apply a function to the second stack element, preserving the top.
 
-**Signature:** `(x:i64 y:i64 f:fn(i64 -- i64)`
+**Signature:** `(x:T y:U f:fn(T -- T)`
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
-| `x` | `i64` | Second element (will have f applied) |
+| `x` | `T` | Second element (will have f applied) |
 | `y` | `i64` | Top element (preserved) |
-| `f` | `fn` | (i64 -- i64) Function (i64 -- i64) |
+| `f` | `fn` | Function applied to the value |
 
 | Output | Type | Description |
 |--------|------|-------------|
@@ -171,11 +175,11 @@ Apply a function to the second stack element, preserving the top.
 
 Filter an array, keeping only elements that satisfy a predicate.
 
-**Signature:** `(arr:[]i64 pred:fn(i64 -- i64)`
+**Signature:** `(arr:[]T pred:fn(T -- i64)`
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
-| `pred` | `fn` | (i64 -- i64) Predicate function (i64 -- bool:i64) |
+| `pred` | `fn` | Predicate function (i64 -- bool:i64) |
 
 **Example:**
 
@@ -188,11 +192,11 @@ arr fn (x:i64 -- r:i64) { 2 mod 0 == } hof::filter  // keep evens
 
 Find the first element satisfying a predicate.
 
-**Signature:** `(arr:[]i64 pred:fn(i64 -- i64)`
+**Signature:** `(arr:[]T pred:fn(T -- i64)`
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
-| `pred` | `fn` | (i64 -- i64) Predicate function (i64 -- bool:i64) |
+| `pred` | `fn` | Predicate function (i64 -- bool:i64) |
 
 | Output | Type | Description |
 |--------|------|-------------|
@@ -210,7 +214,7 @@ arr fn (x:i64 -- r:i64) { 10 > } hof::find  // first > 10
 
 Fold/reduce an array left-to-right with a binary function.
 
-**Signature:** `(arr:[]i64 acc:i64 f:fn(i64 i64 -- i64)`
+**Signature:** `(arr:[]T acc:A f:fn(A T -- A)`
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
@@ -232,7 +236,7 @@ arr 0 fn (acc:i64 x:i64 -- r:i64) { + } hof::fold  // sum of array
 
 Fold/reduce an array right-to-left with a binary function.
 
-**Signature:** `(arr:[]i64 acc:i64 f:fn(i64 i64 -- i64)`
+**Signature:** `(arr:[]T acc:A f:fn(T A -- A)`
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
@@ -254,12 +258,12 @@ arr 0 fn (x:i64 acc:i64 -- r:i64) { + } hof::fold_right  // sum of array
 
 Apply a function but keep the original value.
 
-**Signature:** `(x:i64 f:fn(i64 -- i64)`
+**Signature:** `(x:T f:fn(T -- U)`
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
-| `x` | `i64` | The input value |
-| `f` | `fn` | (i64 -- i64) Function (i64 -- i64) |
+| `x` | `T` | The input value |
+| `f` | `fn` | Function applied to the value |
 
 | Output | Type | Description |
 |--------|------|-------------|
@@ -277,11 +281,11 @@ Apply a function but keep the original value.
 
 Map a function over an array, returning a new array.
 
-**Signature:** `(arr:[]i64 f:fn(i64 -- i64)`
+**Signature:** `(arr:[]T f:fn(T -- U)`
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
-| `f` | `fn` | (i64 -- i64) Function (i64 -- i64) |
+| `f` | `fn` | Function applied to the value |
 
 **Example:**
 
@@ -294,13 +298,13 @@ arr fn (x:i64 -- r:i64) { 2 * } hof::map  // double each element
 
 Apply function n times to an initial value.
 
-**Signature:** `(x:i64 n:i64 f:fn(i64 -- i64)`
+**Signature:** `(x:T n:i64 f:fn(T -- T)`
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
-| `x` | `i64` | Initial value |
+| `x` | `T` | Initial value |
 | `n` | `i64` | Number of times to apply |
-| `f` | `fn` | (i64 -- i64) Function (i64 -- i64) |
+| `f` | `fn` | Function applied to the value |
 
 | Output | Type | Description |
 |--------|------|-------------|
@@ -317,14 +321,14 @@ Apply function n times to an initial value.
 
 Apply three functions to the same value.
 
-**Signature:** `(x:i64 f:fn(i64 -- i64)`
+**Signature:** `(x:T f:fn(T -- U)`
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
-| `x` | `i64` | The input value |
-| `f` | `fn` | (i64 -- i64) First function (i64 -- i64) |
-| `g` | `fn` | (i64 -- i64) Second function (i64 -- i64) |
-| `h` | `fn` | (i64 -- i64) Third function (i64 -- i64) |
+| `x` | `T` | The input value |
+| `f` | `fn` | First function |
+| `g` | `fn` | Second function |
+| `h` | `fn` | Third function |
 
 | Output | Type | Description |
 |--------|------|-------------|
@@ -343,13 +347,13 @@ Apply three functions to the same value.
 
 Apply function only if condition is false, otherwise return value unchanged.
 
-**Signature:** `(x:i64 cond:i64 f:fn(i64 -- i64)`
+**Signature:** `(x:T cond:i64 f:fn(T -- T)`
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
-| `x` | `i64` | The input value |
+| `x` | `T` | The input value |
 | `cond` | `i64` | Condition (0 = false, non-zero = true) |
-| `f` | `fn` | (i64 -- i64) Function (i64 -- i64) |
+| `f` | `fn` | Function applied to the value |
 
 | Output | Type | Description |
 |--------|------|-------------|
@@ -367,13 +371,13 @@ Apply function only if condition is false, otherwise return value unchanged.
 
 Apply function only if condition is true, otherwise return value unchanged.
 
-**Signature:** `(x:i64 cond:i64 f:fn(i64 -- i64)`
+**Signature:** `(x:T cond:i64 f:fn(T -- T)`
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
-| `x` | `i64` | The input value |
+| `x` | `T` | The input value |
 | `cond` | `i64` | Condition (0 = false, non-zero = true) |
-| `f` | `fn` | (i64 -- i64) Function (i64 -- i64) |
+| `f` | `fn` | Function applied to the value |
 
 | Output | Type | Description |
 |--------|------|-------------|

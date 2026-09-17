@@ -47,7 +47,11 @@ namespace Qd {
 	}
 
 	const std::unordered_map<std::string, StackValueType>* SemanticValidator::lookupStructFieldTypes(
-			const std::string& typeName) const {
+			const std::string& fullTypeName) const {
+		// An instantiated generic (`Box<i64>`) has the fields of its declaration (`Box`); the
+		// arguments only matter for the fields' types, which resolveFieldType handles.
+		size_t angle = fullTypeName.find('<');
+		std::string typeName = angle == std::string::npos ? fullTypeName : fullTypeName.substr(0, angle);
 		// First try direct lookup (works for local structs and qualified names)
 		auto it = mStructFieldTypes.find(typeName);
 		if (it != mStructFieldTypes.end()) {

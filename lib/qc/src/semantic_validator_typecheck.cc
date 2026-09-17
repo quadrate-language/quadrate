@@ -58,30 +58,29 @@ namespace Qd {
 		}
 	}
 
-	// Helper: Build fn type string from FunctionSignature, e.g. "fn(i64 -- i64)"
+	// Helper: Build fn type string from FunctionSignature, e.g. "fn(i64 -- i64)".
+	// Prefers the declared type name of each parameter and result, so a function returning a
+	// struct renders as `fn( -- Point)` rather than `fn( -- ptr)`; the coarse stack types cannot
+	// tell those apart, and a field declared `fn( -- Point)` would not match.
 	static std::string buildFnTypeString(const FunctionSignature& sig) {
+		auto nameAt = [](const std::unordered_map<size_t, std::string>& names, size_t i, StackValueType t) {
+			auto it = names.find(i);
+			return it != names.end() && !it->second.empty() ? it->second : std::string(stackTypeToQdType(t));
+		};
 		std::string s = "fn(";
-		bool first = true;
-		for (const auto& t : sig.consumes) {
-			if (!first) {
+		for (size_t i = 0; i < sig.consumes.size(); i++) {
+			if (i > 0) {
 				s += " ";
 			}
-			s += stackTypeToQdType(t);
-			first = false;
+			s += nameAt(sig.parameterTypeNames, i, sig.consumes[i]);
 		}
 		if (!sig.consumes.empty()) {
 			s += " ";
 		}
 		s += "--";
-		first = true;
-		for (const auto& t : sig.produces) {
-			if (first) {
-				s += " ";
-			} else {
-				s += " ";
-			}
-			s += stackTypeToQdType(t);
-			first = false;
+		for (size_t i = 0; i < sig.produces.size(); i++) {
+			s += " ";
+			s += nameAt(sig.producesTypeNames, i, sig.produces[i]);
 		}
 		s += ")";
 		return s;
@@ -96,14 +95,6 @@ namespace Qd {
 		if (node->type() == IAstNode::Type::IDENTIFIER) {
 			const auto* ident = static_cast<const AstNodeIdentifier*>(node);
 			refs.insert(ident->name());
-		}
-		if (node->type() == IAstNode::Type::FIELD_ACCESS) {
-			const auto* fieldAccess = static_cast<const AstNodeFieldAccess*>(node);
-			refs.insert(fieldAccess->varName());
-		}
-		if (node->type() == IAstNode::Type::FIELD_SET) {
-			const auto* fieldSet = static_cast<const AstNodeFieldSet*>(node);
-			refs.insert(fieldSet->varName());
 		}
 		if (node->type() == IAstNode::Type::INSTRUCTION) {
 			const auto* instr = static_cast<const AstNodeInstruction*>(node);
@@ -287,6 +278,258 @@ namespace Qd {
 		}
 	}
 
+	// The struct type a pointer result inherits from a pointer argument in the same position
+	// when the signature declares none: `fn f(p:ptr -- q:ptr)` passing a `Point` through.
+	static std::string passThroughStructType(
+			const FunctionSignature& sig, size_t produceIdx, const std::vector<std::string>& consumedStructTypes) {
+		size_t producedPtrBefore = 0;
+		for (size_t pi = 0; pi < produceIdx && pi < sig.produces.size(); pi++) {
+			if (sig.produces[pi] == StackValueType::PTR) {
+				producedPtrBefore++;
+			}
+		}
+		size_t ptrIdx = 0;
+		for (size_t ci = 0; ci < sig.consumes.size() && ci < consumedStructTypes.size(); ci++) {
+			if (sig.consumes[ci] == StackValueType::PTR) {
+				if (ptrIdx == producedPtrBefore) {
+					return consumedStructTypes[ci];
+				}
+				ptrIdx++;
+			}
+		}
+		return "";
+	}
+
+	bool SemanticValidator::bindCallTypeParams(const FunctionSignature& sig,
+			const std::vector<StackValueType>& typeStack, const std::vector<std::string>& structTypeStack,
+			IAstNode* site, const std::string& displayName, std::map<std::string, std::string>& bindings) {
+		if (typeStack.size() < sig.consumes.size()) {
+			return true; // the underflow is reported by the caller
+		}
+		bool ok = true;
+		auto canon = [this](const std::string& n) { return canonicalStructName(n); };
+		size_t base = typeStack.size() - sig.consumes.size();
+		for (size_t idx = 0; idx < sig.consumes.size(); idx++) {
+			StackValueType declared = sig.consumes[idx];
+			if (declared != StackValueType::PTR && declared != StackValueType::TYPEVAR) {
+				continue; // scalars were checked against the coarse types already
+			}
+			std::string expected;
+			auto nameIt = sig.parameterTypeNames.find(idx);
+			if (nameIt != sig.parameterTypeNames.end()) {
+				expected = nameIt->second;
+			} else {
+				auto stIt = sig.parameterStructTypes.find(idx);
+				if (stIt != sig.parameterStructTypes.end()) {
+					expected = stIt->second;
+				}
+			}
+			if (expected.empty() || expected == "ptr" || expected == "any") {
+				continue;
+			}
+			size_t stackIdx = base + idx;
+			StackValueType actualType = typeStack[stackIdx];
+			std::string actual;
+			size_t fromTop = typeStack.size() - stackIdx; // 1 = top
+			if (structTypeStack.size() >= fromTop) {
+				actual = structTypeStack[structTypeStack.size() - fromTop];
+			}
+			if (actual.empty()) {
+				actual = qdTypeNameOf(actualType);
+			}
+			if (actual.empty()) {
+				if (actualType == StackValueType::PTR && expected.compare(0, 3, "fn(") == 0) {
+					std::string warnMsg = "Untyped 'ptr' passed to function '" + displayName + "': Parameter " +
+										  std::to_string(idx + 1) + " expects '" + expected +
+										  "'. Consider adding a type annotation";
+					reportWarning(site, warnMsg.c_str());
+				}
+				continue; // nothing known about the argument
+			}
+			std::string why;
+			if (!unifyTypeName(expected, actual, sig.typeParams, bindings, mMergedModules, canon, why)) {
+				std::string msg = "Type error in function '" + displayName + "': Parameter " + std::to_string(idx + 1) +
+								  (why.compare(0, 7, "expects") == 0 ? " " : ": ") + why;
+				reportError(site, msg.c_str());
+				ok = false;
+			}
+		}
+		return ok;
+	}
+
+	void SemanticValidator::pushCallResults(const FunctionSignature& sig,
+			const std::map<std::string, std::string>& bindings, const std::vector<std::string>& consumedStructTypes,
+			std::vector<StackValueType>& typeStack, std::vector<std::string>& structTypeStack) {
+		for (size_t idx = 0; idx < sig.produces.size(); idx++) {
+			StackValueType type = sig.produces[idx];
+			std::string structType;
+			std::string declared;
+			auto declIt = sig.producesTypeNames.find(idx);
+			if (declIt != sig.producesTypeNames.end()) {
+				declared = declIt->second;
+			}
+			std::string resolved = declared.empty() ? std::string() : substituteTypeParams(declared, bindings);
+			bool substituted = !declared.empty() && resolved != declared;
+			if (substituted) {
+				// A type parameter was bound at this call: the result has the concrete type.
+				if (resolved.compare(0, 2, "[]") == 0 || resolved.compare(0, 3, "fn(") == 0) {
+					type = StackValueType::PTR;
+					structType = resolved;
+				} else {
+					StackValueType concrete = stringToStackValueType(typeBaseName(resolved));
+					if (concrete == StackValueType::INT || concrete == StackValueType::FLOAT ||
+							concrete == StackValueType::STRING) {
+						type = concrete;
+					} else if (concrete == StackValueType::PTR) {
+						type = StackValueType::PTR;
+						structType = resolved; // keeps `<...>` so the fields resolve to concrete types
+					}
+					// otherwise the binding itself was unknown: keep the declared coarse type
+				}
+			} else if (type == StackValueType::PTR) {
+				auto stIt = sig.producesStructTypes.find(idx);
+				if (stIt != sig.producesStructTypes.end()) {
+					structType = stIt->second;
+				} else {
+					structType = passThroughStructType(sig, idx, consumedStructTypes);
+				}
+			}
+			typeStack.push_back(type);
+			structTypeStack.push_back(structType);
+		}
+	}
+
+	// Whether a value of type `actual` may initialise a field declared `expected`. Structural,
+	// so spelling differences that denote the same type do not matter.
+	bool SemanticValidator::fieldTypesCompatible(const std::string& expected, const std::string& actual) const {
+		std::map<std::string, std::string> noBindings;
+		std::string why;
+		auto canon = [this](const std::string& n) { return canonicalStructName(n); };
+		// Strict from the start: a field initializer is a definite assignment, so a bare `ptr`
+		// does not satisfy a typed field.
+		return unifyTypeName(expected, actual, {}, noBindings, mMergedModules, canon, why, true);
+	}
+
+	std::string SemanticValidator::canonicalStructName(const std::string& name) const {
+		if (name.empty() || name.find("::") != std::string::npos || mDefinedStructs.count(name) > 0) {
+			return name;
+		}
+		for (const auto& moduleEntry : mModuleStructs) {
+			if (moduleEntry.second.find(name) != moduleEntry.second.end()) {
+				return moduleEntry.first + "::" + name;
+			}
+		}
+		return name;
+	}
+
+	std::optional<FunctionSignature> SemanticValidator::parseFnTypeString(const std::string& typeStr) const {
+		std::string resolved = typeStr;
+		auto aliasIt = mTypeAliases.find(typeStr);
+		if (aliasIt != mTypeAliases.end()) {
+			resolved = aliasIt->second;
+		}
+		std::vector<std::string> ins, outs;
+		if (!splitFnType(resolved, ins, outs)) {
+			return std::nullopt;
+		}
+		FunctionSignature sig;
+		auto add = [&](const std::vector<std::string>& names, std::vector<StackValueType>& types,
+						   std::unordered_map<size_t, std::string>& structTypes,
+						   std::unordered_map<size_t, std::string>& typeNames) {
+			for (size_t i = 0; i < names.size(); i++) {
+				std::string name = names[i];
+				auto a = mTypeAliases.find(name);
+				if (a != mTypeAliases.end()) {
+					name = a->second;
+				}
+				StackValueType t = stringToStackValueType(name);
+				types.push_back(t);
+				typeNames[i] = name;
+				if (t == StackValueType::PTR && name != "ptr") {
+					structTypes[i] = name;
+				}
+			}
+		};
+		add(ins, sig.consumes, sig.parameterStructTypes, sig.parameterTypeNames);
+		add(outs, sig.produces, sig.producesStructTypes, sig.producesTypeNames);
+		return sig;
+	}
+
+	StackValueType SemanticValidator::resolveFieldType(const std::string& structType, const std::string& fieldName,
+			std::string& fieldStructType, bool* unboundTypeParam) const {
+		fieldStructType.clear();
+		if (unboundTypeParam) {
+			*unboundTypeParam = false;
+		}
+		std::string base = typeBaseName(structType);
+		const auto* fields = lookupStructFieldTypes(base);
+		if (fields == nullptr) {
+			return StackValueType::UNKNOWN;
+		}
+		auto fieldIt = fields->find(fieldName);
+		if (fieldIt == fields->end()) {
+			return StackValueType::UNKNOWN;
+		}
+		StackValueType type = fieldIt->second;
+		std::string declared;
+		auto fstIt = mStructFieldStructTypes.find(base);
+		if (fstIt == mStructFieldStructTypes.end()) {
+			// Module structs may be registered under the unqualified name.
+			size_t colon = base.rfind("::");
+			if (colon != std::string::npos) {
+				fstIt = mStructFieldStructTypes.find(base.substr(colon + 2));
+			}
+		}
+		if (fstIt != mStructFieldStructTypes.end()) {
+			auto nm = fstIt->second.find(fieldName);
+			if (nm != fstIt->second.end()) {
+				declared = nm->second;
+			}
+		}
+		// Is the declared field type one of the struct's type parameters?
+		AstNodeStructDeclaration* decl = nullptr;
+		auto dIt = mStructDeclarations.find(base);
+		if (dIt != mStructDeclarations.end()) {
+			decl = dIt->second;
+		} else {
+			auto mIt = mModuleStructDeclarations.find(base);
+			if (mIt != mModuleStructDeclarations.end()) {
+				decl = mIt->second;
+			}
+		}
+		if (decl != nullptr && !declared.empty()) {
+			const auto& tps = decl->typeParams();
+			auto tp = std::find(tps.begin(), tps.end(), declared);
+			if (tp != tps.end()) {
+				std::vector<std::string> args = typeArgsOf(structType);
+				size_t index = static_cast<size_t>(tp - tps.begin());
+				if (index < args.size()) {
+					const std::string& arg = args[index];
+					if (arg.compare(0, 2, "[]") == 0 || arg.compare(0, 3, "fn(") == 0) {
+						fieldStructType = arg;
+						return StackValueType::PTR;
+					}
+					StackValueType concrete = stringToStackValueType(typeBaseName(arg));
+					if (concrete == StackValueType::INT || concrete == StackValueType::FLOAT ||
+							concrete == StackValueType::STRING) {
+						return concrete;
+					}
+					if (concrete == StackValueType::PTR) {
+						fieldStructType = arg;
+						return StackValueType::PTR;
+					}
+				}
+				if (unboundTypeParam) {
+					*unboundTypeParam = true;
+				}
+				fieldStructType = declared;
+				return type;
+			}
+		}
+		fieldStructType = declared;
+		return type;
+	}
+
 	// Check if a type string is a known struct name (local or imported)
 	// Supports both unqualified names (Response) and qualified names (http::Response)
 
@@ -468,20 +711,17 @@ namespace Qd {
 					fieldType = StackValueType::ANY;
 				}
 
+				// The struct being read is on the stack (its producer is a separate node); replace it.
+				if (!typeStack.empty()) {
+					typeStack.pop_back();
+				}
 				typeStack.push_back(fieldType);
 				break;
 			}
 			case IAstNode::Type::FIELD_SET: {
-				AstNodeFieldSet* fs = static_cast<AstNodeFieldSet*>(child);
-				if (fs->varName().empty()) {
-					// >>field : pop value, struct stays (net: -1)
-					if (!typeStack.empty()) {
-						typeStack.pop_back(); // pop value
-					}
-				} else {
-					if (!typeStack.empty()) {
-						typeStack.pop_back();
-					}
+				// >>field : pop value, struct stays (net: -1)
+				if (!typeStack.empty()) {
+					typeStack.pop_back();
 				}
 				break;
 			}
@@ -790,14 +1030,21 @@ namespace Qd {
 							errorMsg += stackValueTypeToString(actualType);
 							reportError(func, errorMsg.c_str());
 						} else if (actualType == StackValueType::PTR) {
-							// Both are PTR — check array/struct subtype
+							// Both are PTR — compare the pointer's real type structurally, with this
+							// function's own type parameters as wildcards. Inside `fn map<T, U>(…
+							// -- r:[]U)` the result is built from an empty `[]` literal, which is
+							// `[]any`: U is unbound in the body, so it must accept that. The compare
+							// here used to be a string equality over array types only, which
+							// rejected it and skipped struct results entirely.
 							std::string expectedStructType = outParam->typeString();
 							std::string actualStructType = (i < structTypeStack.size()) ? structTypeStack[i] : "";
-							bool expectedIsArray = expectedStructType.size() > 2 && expectedStructType[0] == '[' &&
-												   expectedStructType[1] == ']';
-							bool actualIsArray = actualStructType.size() > 2 && actualStructType[0] == '[' &&
-												 actualStructType[1] == ']';
-							if (expectedIsArray && actualIsArray && expectedStructType != actualStructType) {
+							std::map<std::string, std::string> outBindings;
+							std::string outWhy;
+							auto canon = [this](const std::string& n) { return canonicalStructName(n); };
+							bool mismatch = !expectedStructType.empty() && !actualStructType.empty() &&
+											!unifyTypeName(expectedStructType, actualStructType, mCurrentTypeParams,
+													outBindings, mMergedModules, canon, outWhy);
+							if (mismatch) {
 								std::string errorMsg = "Function '";
 								errorMsg += func->name();
 								errorMsg += "' output '";
@@ -1686,6 +1933,67 @@ namespace Qd {
 								}
 								break;
 							}
+							case IAstNode::Type::FUNCTION_POINTER_REFERENCE: {
+								// `&f` in a field initializer: carry the function's type so a field declared
+								// `fn(...)` is checked against it. Without these two cases the initializer was
+								// UNKNOWN and any function pointer satisfied any fn-typed field.
+								auto* fnRef = static_cast<AstNodeFunctionPointerReference*>(exprNode);
+								exprTypeStack.push_back(StackValueType::PTR);
+								auto refSig = mFunctionSignatures.find(fnRef->functionName());
+								exprStructTypeStack.push_back(
+										refSig != mFunctionSignatures.end() ? buildFnTypeString(refSig->second) : "");
+								break;
+							}
+							case IAstNode::Type::ANONYMOUS_FUNCTION: {
+								auto* anonFn = static_cast<AstNodeAnonymousFunction*>(exprNode);
+								FunctionSignature anonSig;
+								for (const auto& pn : anonFn->inputParameters()) {
+									anonSig.consumes.push_back(stringToStackValueType(
+											static_cast<AstNodeParameter*>(pn.get())->typeString()));
+								}
+								for (const auto& pn : anonFn->outputParameters()) {
+									anonSig.produces.push_back(stringToStackValueType(
+											static_cast<AstNodeParameter*>(pn.get())->typeString()));
+								}
+								exprTypeStack.push_back(StackValueType::PTR);
+								exprStructTypeStack.push_back(buildFnTypeString(anonSig));
+								break;
+							}
+							case IAstNode::Type::FIELD_ACCESS: {
+								// `<<field` replaces the struct on top with the field's value. Before the
+								// parser stopped folding the operand into this node there was no operand
+								// here to pop, and no case at all: the struct itself was reported as the
+								// field's value ("expects float, but got Vec2").
+								AstNodeFieldAccess* fa = static_cast<AstNodeFieldAccess*>(exprNode);
+								std::string operandStruct;
+								if (!exprTypeStack.empty()) {
+									exprTypeStack.pop_back();
+								}
+								if (!exprStructTypeStack.empty()) {
+									operandStruct = exprStructTypeStack.back();
+									exprStructTypeStack.pop_back();
+								}
+								StackValueType faType = StackValueType::UNKNOWN;
+								std::string faStruct;
+								const auto* faFields =
+										operandStruct.empty() ? nullptr : lookupStructFieldTypes(operandStruct);
+								if (faFields != nullptr) {
+									if (faFields->find(fa->fieldName()) != faFields->end()) {
+										faType = resolveFieldType(operandStruct, fa->fieldName(), faStruct);
+									}
+								} else {
+									for (const auto& structEntry : mStructFieldTypes) {
+										auto it = structEntry.second.find(fa->fieldName());
+										if (it != structEntry.second.end()) {
+											faType = it->second;
+											break;
+										}
+									}
+								}
+								exprTypeStack.push_back(faType);
+								exprStructTypeStack.push_back(faStruct);
+								break;
+							}
 							case IAstNode::Type::INSTRUCTION: {
 								// Instructions modify the stack - simplified handling
 								AstNodeInstruction* instr = static_cast<AstNodeInstruction*>(exprNode);
@@ -1747,7 +2055,13 @@ namespace Qd {
 																			 : actualStructType;
 										reportError(construct, errorMsg.c_str());
 									}
-								} else if (!expectedStructType.empty() && actualStructType != expectedStructType) {
+								} else if (!expectedStructType.empty() &&
+										   (actualStructType.empty() ||
+												   !fieldTypesCompatible(expectedStructType, actualStructType))) {
+									// An empty actual type is an untyped pointer, which does not satisfy a typed
+									// field. Otherwise compare structurally rather than by string: `fn( -- f64)`
+									// and the `fn(-- f64)` buildFnTypeString emits are the same type, and so are
+									// `Point` and `mod::Point`.
 									std::string errorMsg = "Type error in struct construction '";
 									errorMsg += name;
 									errorMsg += "': Field '";
@@ -1791,11 +2105,23 @@ namespace Qd {
 					}
 				}
 
-				// Push pointer type for the constructed struct
+				// Push pointer type for the constructed struct. An instantiated generic keeps its
+				// arguments (`Box<i64>`) so that its fields resolve to concrete types later.
+				std::string typeArgSuffix;
+				if (!construct->typeArgs().empty()) {
+					typeArgSuffix = "<";
+					for (size_t ta = 0; ta < construct->typeArgs().size(); ta++) {
+						if (ta > 0) {
+							typeArgSuffix += ", ";
+						}
+						typeArgSuffix += construct->typeArgs()[ta];
+					}
+					typeArgSuffix += ">";
+				}
 				typeStack.push_back(StackValueType::PTR);
 				// Use qualified name for method resolution (already computed in lookupKey for module structs)
 				if (lookupKey.find("::") != std::string::npos) {
-					structTypeStack.push_back(lookupKey);
+					structTypeStack.push_back(lookupKey + typeArgSuffix);
 				} else {
 					// Check if struct is from a module - use qualified name
 					std::string qualifiedStructName = name;
@@ -1806,7 +2132,7 @@ namespace Qd {
 							break;
 						}
 					}
-					structTypeStack.push_back(qualifiedStructName);
+					structTypeStack.push_back(qualifiedStructName + typeArgSuffix);
 				}
 				break;
 			}
@@ -2569,51 +2895,9 @@ namespace Qd {
 						}
 					}
 
-					// Validate struct types match expected parameter types
-					for (size_t paramIdx = 0; paramIdx < sig.consumes.size(); paramIdx++) {
-						if (sig.consumes[paramIdx] != StackValueType::PTR) {
-							continue;
-						}
-
-						// Check if this parameter has an expected struct type
-						auto expectedTypeIt = sig.parameterStructTypes.find(paramIdx);
-						if (expectedTypeIt == sig.parameterStructTypes.end()) {
-							continue; // No specific struct type required
-						}
-
-						const std::string& expectedStruct = expectedTypeIt->second;
-
-						// Get the actual struct type being passed
-						// Parameters are in declaration order, which matches stack order (bottom to top)
-						if (paramIdx < consumedStructTypes.size()) {
-							const std::string& actualStruct = consumedStructTypes[paramIdx];
-
-							if (!actualStruct.empty() &&
-									!structTypesMatch(actualStruct, expectedStruct, mMergedModules)) {
-								std::string errorMsg = "Type error in function '";
-								errorMsg += name;
-								errorMsg += "': Parameter ";
-								errorMsg += std::to_string(paramIdx + 1);
-								errorMsg += " expects type '";
-								errorMsg += expectedStruct;
-								errorMsg += "' but got '";
-								errorMsg += actualStruct;
-								errorMsg += "'";
-								reportError(ident, errorMsg.c_str());
-							} else if (actualStruct.empty() && expectedStruct.size() > 3 &&
-									   expectedStruct.substr(0, 3) == "fn(") {
-								// Untyped ptr passed where typed fn(...) expected
-								std::string warnMsg = "Untyped 'ptr' passed to function '";
-								warnMsg += name;
-								warnMsg += "': Parameter ";
-								warnMsg += std::to_string(paramIdx + 1);
-								warnMsg += " expects '";
-								warnMsg += expectedStruct;
-								warnMsg += "'. Consider adding a type annotation";
-								reportWarning(ident, warnMsg.c_str());
-							}
-						}
-					}
+					// Check struct, array and fn-pointer argument types and bind generic type parameters.
+					std::map<std::string, std::string> typeBindings;
+					bindCallTypeParams(sig, typeStack, structTypeStack, ident, name, typeBindings);
 
 					// Check if any parameter is PTR (function pointer) before consuming
 					bool consumesPtrParam = false;
@@ -2621,19 +2905,6 @@ namespace Qd {
 						if (paramType == StackValueType::PTR) {
 							consumesPtrParam = true;
 							break;
-						}
-					}
-
-					// For generic functions: unify type variables with concrete types
-					// Track the first concrete type unified with TYPEVAR (simple approach)
-					StackValueType unifiedTypeVarType = StackValueType::UNKNOWN;
-					for (size_t j = 0; j < sig.consumes.size(); j++) {
-						if (sig.consumes[j] == StackValueType::TYPEVAR) {
-							size_t stackIdx = typeStack.size() - sig.consumes.size() + j;
-							if (stackIdx < typeStack.size()) {
-								unifiedTypeVarType = typeStack[stackIdx];
-								break; // Use first TYPEVAR's unified type
-							}
 						}
 					}
 
@@ -2653,76 +2924,12 @@ namespace Qd {
 						mPendingFnSignature.reset();
 					}
 
-					// Helper lambda to determine struct type for a produced PTR value
-					auto getProducedStructType = [&](size_t produceIdx, StackValueType producedType) -> std::string {
-						if (producedType != StackValueType::PTR) {
-							return ""; // Only PTR types can have struct types
-						}
-						// First check if the signature explicitly declares the return struct type
-						auto structIt = sig.producesStructTypes.find(produceIdx);
-						if (structIt != sig.producesStructTypes.end()) {
-							return structIt->second;
-						}
-						// Fallback: Conservative heuristic: if we consumed PTR parameters and are producing PTR values,
-						// try to match them up in order (simple pass-through case)
-						size_t consumedPtrCount = 0;
-						size_t producedPtrCount = 0;
-						for (size_t ci = 0; ci < sig.consumes.size(); ci++) {
-							if (sig.consumes[ci] == StackValueType::PTR) {
-								consumedPtrCount++;
-							}
-						}
-						for (size_t pi = 0; pi < sig.produces.size(); pi++) {
-							if (sig.produces[pi] == StackValueType::PTR) {
-								if (pi == produceIdx) {
-									// This is the PTR we're producing - find which PTR index it is
-									break;
-								}
-								producedPtrCount++;
-							}
-						}
-						// If we have at least as many consumed PTR params as produced PTR values,
-						// try to match them up in order
-						if (producedPtrCount < consumedPtrCount && producedPtrCount < consumedStructTypes.size()) {
-							// Find the Nth consumed PTR parameter
-							size_t ptrIdx = 0;
-							for (size_t mi = 0; mi < sig.consumes.size() && mi < consumedStructTypes.size(); mi++) {
-								if (sig.consumes[mi] == StackValueType::PTR) {
-									if (ptrIdx == producedPtrCount) {
-										return consumedStructTypes[mi];
-									}
-									ptrIdx++;
-								}
-							}
-						}
-						return ""; // Unknown struct type
-					};
-
-					// Helper to resolve TYPEVAR to unified concrete type
-					auto resolveTypeVar = [&](StackValueType type) -> StackValueType {
-						if (type == StackValueType::TYPEVAR && unifiedTypeVarType != StackValueType::UNKNOWN) {
-							return unifiedTypeVarType;
-						}
-						return type;
-					};
-
-					// Apply the produces effect
+					// Results, with bound type parameters substituted; a bare fallible call also
+					// leaves the status for the following `if`/`switch`.
+					pushCallResults(sig, typeBindings, consumedStructTypes, typeStack, structTypeStack);
 					if (sig.throws && !ident->abortOnError() && !ident->propagateOnError()) {
-						// func without ! or ? - pushes result + error flag
-						for (size_t idx = 0; idx < sig.produces.size(); idx++) {
-							StackValueType type = resolveTypeVar(sig.produces[idx]);
-							typeStack.push_back(type);
-							structTypeStack.push_back(getProducedStructType(idx, type));
-						}
 						typeStack.push_back(StackValueType::INT); // Error status (0 or 1)
 						structTypeStack.push_back("");
-					} else {
-						// Normal call or func!
-						for (size_t idx = 0; idx < sig.produces.size(); idx++) {
-							StackValueType type = resolveTypeVar(sig.produces[idx]);
-							typeStack.push_back(type);
-							structTypeStack.push_back(getProducedStructType(idx, type));
-						}
 					}
 				} else {
 					// Not a local, not a method, not a user function: unresolved, so its stack
@@ -2736,392 +2943,163 @@ namespace Qd {
 			}
 
 			case IAstNode::Type::FIELD_ACCESS: {
-				// Field access: varName @fieldName - pushes the field value onto stack
+				// `struct <<field`: pop the struct, push the field. The struct's type is what its
+				// producer left on the struct-type stack -- a local, a call, a construction, `as`,
+				// or a previous `<<` of a struct-typed field -- so nothing here needs to know what
+				// the operand *was*, only what it is.
 				AstNodeFieldAccess* fieldAccess = static_cast<AstNodeFieldAccess*>(child);
-				const std::string& varName = fieldAccess->varName();
 				const std::string& fieldName = fieldAccess->fieldName();
 
-				// Stack-based field access (empty varName): pops struct from stack, pushes field
-				// This occurs after 'as' casts: "c as Type @field"
-				if (varName.empty()) {
-					// Pop the struct value from the stack
-					if (!typeStack.empty()) {
-						// Get struct type from the stack to look up field type
-						std::string structType = "";
-						if (!structTypeStack.empty()) {
-							structType = structTypeStack.back();
-						}
-						typeStack.pop_back();
-						if (!structTypeStack.empty()) {
-							structTypeStack.pop_back();
-						}
-
-						// Look up field type if we know the struct type
-						StackValueType fieldType = StackValueType::UNKNOWN;
-						std::string fieldStructType = "";
-						if (!structType.empty()) {
-							const auto* structFieldPtr = lookupStructFieldTypes(structType);
-							if (structFieldPtr != nullptr) {
-								auto fieldIt = structFieldPtr->find(fieldName);
-								if (fieldIt != structFieldPtr->end()) {
-									fieldType = fieldIt->second;
-									// Check if field is a struct type
-									auto fstIt = mStructFieldStructTypes.find(structType);
-									if (fstIt != mStructFieldStructTypes.end()) {
-										auto nameIt = fstIt->second.find(fieldName);
-										if (nameIt != fstIt->second.end()) {
-											fieldStructType = nameIt->second;
-										}
-									}
-								}
-							}
-						}
-						if (fieldType == StackValueType::UNKNOWN) {
-							// Unknown struct type — search all structs for this field
-							for (const auto& structEntry : mStructFieldTypes) {
-								auto it = structEntry.second.find(fieldName);
-								if (it != structEntry.second.end()) {
-									fieldType = it->second;
-									break;
-								}
-							}
-						}
-						typeStack.push_back(fieldType);
-						structTypeStack.push_back(fieldStructType);
-					} else {
-						typeStack.push_back(StackValueType::UNKNOWN);
-						structTypeStack.push_back("");
-					}
+				if (typeStack.empty()) {
+					std::string msg =
+							"Type error in field access '<<" + fieldName + "': Stack underflow (requires a struct)";
+					reportErrorWithHint(fieldAccess, msg.c_str(), "push the struct first, e.g. 'p <<x'");
+					typeStack.push_back(StackValueType::UNKNOWN);
+					structTypeStack.push_back("");
 					break;
 				}
-
-				// Special handling for global error access: error @code or error @message
-				if (varName == "__global_error__") {
-					if (fieldName == "code") {
-						typeStack.push_back(StackValueType::INT);
-						structTypeStack.push_back("");
-					} else if (fieldName == "message") {
-						typeStack.push_back(StackValueType::STRING);
-						structTypeStack.push_back("");
-					} else {
-						std::string errorMsg = "Unknown field '";
-						errorMsg += fieldName;
-						errorMsg += "' in error; only 'code' and 'message' are available";
-						reportError(fieldAccess, errorMsg.c_str());
-						typeStack.push_back(StackValueType::ANY);
-						structTypeStack.push_back("");
-					}
-					break;
+				StackValueType operandType = typeStack.back();
+				std::string structType = structTypeStack.empty() ? "" : structTypeStack.back();
+				typeStack.pop_back();
+				if (!structTypeStack.empty()) {
+					structTypeStack.pop_back();
 				}
 
-				// Check if varName is a struct type name (inline struct field access)
-				// e.g., "100 200 IntPair @x" - IntPair is a struct type, not a variable
-				// We distinguish inline construction from accessing an existing struct by checking:
-				// - If structTypeStack.back() == varName, the struct is already constructed (no pop)
-				// - Otherwise, the field values are on the stack waiting for construction (pop them)
-				const auto* inlineStructFields = lookupStructFieldTypes(varName);
-				if (inlineStructFields != nullptr) {
-					const auto& fields = *inlineStructFields;
-					bool isExistingStruct = !structTypeStack.empty() && structTypeStack.back() == varName;
-
-					if (!isExistingStruct) {
-						// This is inline struct field access - pop struct field values from stacks
-						size_t fieldCount = fields.size();
-						for (size_t fi = 0; fi < fieldCount && !typeStack.empty(); fi++) {
-							typeStack.pop_back();
-							if (!structTypeStack.empty()) {
-								structTypeStack.pop_back();
-							}
-						}
-					} else {
-						// Accessing an existing struct - pop just the struct pointer
-						typeStack.pop_back();
-						structTypeStack.pop_back();
-					}
-
-					// Find the field type
-					auto fieldIt = fields.find(fieldName);
-					if (fieldIt != fields.end()) {
-						StackValueType fieldType = fieldIt->second;
-						typeStack.push_back(fieldType);
-
-						// Check if field is a struct type
-						auto fieldStructIt = mStructFieldStructTypes.find(varName);
-						if (fieldStructIt != mStructFieldStructTypes.end()) {
-							auto structNameIt = fieldStructIt->second.find(fieldName);
-							if (structNameIt != fieldStructIt->second.end()) {
-								structTypeStack.push_back(structNameIt->second);
-							} else {
-								structTypeStack.push_back("");
-							}
-						} else {
-							structTypeStack.push_back("");
-						}
-					} else {
-						std::string errorMsg = "Type error in field access '";
-						errorMsg += varName;
-						errorMsg += " <<";
-						errorMsg += fieldName;
-						errorMsg += "': Struct '";
-						errorMsg += varName;
-						errorMsg += "' has no field named '";
-						errorMsg += fieldName;
-						errorMsg += "'";
-						reportError(fieldAccess, errorMsg.c_str());
-						typeStack.push_back(StackValueType::ANY);
-						structTypeStack.push_back("");
-					}
-					break;
-				}
-
-				// Look up which struct type this variable holds
-				std::string structType = "";
-				auto structTypeIt = mLocalVariableStructTypes.find(varName);
-				if (structTypeIt != mLocalVariableStructTypes.end()) {
-					structType = structTypeIt->second;
-				}
-
-				// Validate the field exists on this struct type
 				StackValueType fieldType = StackValueType::UNKNOWN;
-				bool fieldFound = false;
-
-				if (!structType.empty()) {
-					// We know which struct type this is - validate against it
-					const auto* structFieldPtr = lookupStructFieldTypes(structType);
-					if (structFieldPtr != nullptr) {
-						const auto& fields = *structFieldPtr;
-						auto fieldIt = fields.find(fieldName);
-						if (fieldIt != fields.end()) {
-							fieldType = fieldIt->second;
-							fieldFound = true;
-						} else {
-							// Field doesn't exist on this struct type!
-							std::string errorMsg = "Type error in field access '";
-							errorMsg += varName;
-							errorMsg += " <<";
-							errorMsg += fieldName;
-							errorMsg += "': Struct '";
-							errorMsg += structType;
-							errorMsg += "' has no field named '";
-							errorMsg += fieldName;
-							errorMsg += "'";
-							// Suggest a similar field name
-							std::string suggestion = findSimilarNameInMap(fieldName, fields);
-							if (!suggestion.empty()) {
-								errorMsg += "; did you mean '";
-								errorMsg += suggestion;
-								errorMsg += "'?";
-							}
-							reportError(fieldAccess, errorMsg.c_str());
-							fieldType = StackValueType::ANY; // Continue with ANY to avoid cascading errors
+				std::string fieldStructType;
+				const auto* knownFields = structType.empty() ? nullptr : lookupStructFieldTypes(structType);
+				if (operandType == StackValueType::INT || operandType == StackValueType::FLOAT ||
+						operandType == StackValueType::STRING) {
+					std::string msg = "Type error in field access '<<" + fieldName + "': the value on the stack is " +
+									  stackValueTypeToString(operandType) + ", not a struct";
+					reportError(fieldAccess, msg.c_str());
+					fieldType = StackValueType::ANY;
+				} else if (knownFields != nullptr) {
+					auto fieldIt = knownFields->find(fieldName);
+					if (fieldIt != knownFields->end()) {
+						fieldType = resolveFieldType(structType, fieldName, fieldStructType);
+					} else {
+						std::string msg = "Type error in field access '<<" + fieldName + "': Struct '" + structType +
+										  "' has no field named '" + fieldName + "'";
+						std::string suggestion = findSimilarNameInMap(fieldName, *knownFields);
+						if (!suggestion.empty()) {
+							msg += "; did you mean '" + suggestion + "'?";
 						}
+						reportError(fieldAccess, msg.c_str());
+						fieldType = StackValueType::ANY;
 					}
 				} else {
-					// Variable is not a known struct type
-					// Check if variable is definitely a scalar type (not a struct)
-					auto localIt = localVariables.find(varName);
-					if (localIt != localVariables.end() &&
-							(localIt->second == StackValueType::INT || localIt->second == StackValueType::FLOAT ||
-									localIt->second == StackValueType::STRING)) {
-						// Variable is definitely a scalar type - this is an error
-						std::string errorMsg = "Type error in field access '";
-						errorMsg += varName;
-						errorMsg += " <<";
-						errorMsg += fieldName;
-						errorMsg += "': Variable '";
-						errorMsg += varName;
-						errorMsg += "' is not a struct type";
-						reportError(fieldAccess, errorMsg.c_str());
-						fieldType = StackValueType::ANY; // Continue with ANY to avoid cascading errors
-					} else {
-						// Variable is either a pointer or unknown - search all structs (for parameters/pointers)
+					// An untyped pointer: the first struct with a field of this name supplies the type.
+					bool found = false;
+					for (const auto& structEntry : mStructFieldTypes) {
+						auto it = structEntry.second.find(fieldName);
+						if (it != structEntry.second.end()) {
+							fieldType = it->second;
+							found = true;
+							break;
+						}
+					}
+					if (!found) {
+						std::unordered_set<std::string> allFields;
 						for (const auto& structEntry : mStructFieldTypes) {
-							const auto& fields = structEntry.second;
-							auto it = fields.find(fieldName);
-							if (it != fields.end()) {
-								fieldType = it->second;
-								fieldFound = true;
-								break;
+							for (const auto& field : structEntry.second) {
+								allFields.insert(field.first);
 							}
 						}
-
-						if (!fieldFound) {
-							std::string errorMsg = "Type error in field access '";
-							errorMsg += varName;
-							errorMsg += " <<";
-							errorMsg += fieldName;
-							errorMsg += "': Unknown variable or field";
-							// Try to suggest a similar variable name first
-							std::string varSuggestion = findSimilarNameInMap(varName, localVariables);
-							if (!varSuggestion.empty()) {
-								errorMsg += "; did you mean variable '";
-								errorMsg += varSuggestion;
-								errorMsg += "'?";
-							} else {
-								// Try to find a similar field name across all structs
-								std::unordered_set<std::string> allFields;
-								for (const auto& structEntry : mStructFieldTypes) {
-									for (const auto& field : structEntry.second) {
-										allFields.insert(field.first);
-									}
-								}
-								std::string fieldSuggestion = findSimilarName(fieldName, allFields);
-								if (!fieldSuggestion.empty()) {
-									errorMsg += "; did you mean field '";
-									errorMsg += fieldSuggestion;
-									errorMsg += "'?";
-								}
-							}
-							reportError(fieldAccess, errorMsg.c_str());
-							fieldType = StackValueType::ANY;
+						std::string msg = "Type error in field access '<<" + fieldName +
+										  "': no struct has a field named '" + fieldName + "'";
+						std::string suggestion = findSimilarName(fieldName, allFields);
+						if (!suggestion.empty()) {
+							msg += "; did you mean '" + suggestion + "'?";
 						}
+						reportError(fieldAccess, msg.c_str());
+						fieldType = StackValueType::ANY;
 					}
 				}
-
-				// Push the field type onto the stack
 				typeStack.push_back(fieldType);
-
-				// If this field is a struct-typed field, push its struct type for chaining
-				std::string fieldStructType = "";
-				if (fieldType == StackValueType::PTR && !structType.empty()) {
-					auto fieldStructIt = mStructFieldStructTypes.find(structType);
-					if (fieldStructIt != mStructFieldStructTypes.end()) {
-						auto structNameIt = fieldStructIt->second.find(fieldName);
-						if (structNameIt != fieldStructIt->second.end()) {
-							fieldStructType = structNameIt->second;
-						}
-					}
-				}
 				structTypeStack.push_back(fieldStructType);
-				static bool debug = std::getenv("QUADC_DEBUG_MERGE") != nullptr;
-				if (debug) {
-					std::cerr << "[DEBUG TC] Field access " << varName << " <<" << fieldName
-							  << " -> struct type: " << fieldStructType << " (var struct type was: " << structType
-							  << ")" << std::endl;
-				}
 				break;
 			}
 
 			case IAstNode::Type::FIELD_SET: {
-				// Field set: <<field (stack-based)
+				// `struct value >>field`: pop the value, check the field against the struct beneath
+				// it, and leave the struct on the stack for chaining.
 				AstNodeFieldSet* fieldSet = static_cast<AstNodeFieldSet*>(child);
-				const std::string& varName = fieldSet->varName();
 				const std::string& fieldName = fieldSet->fieldName();
 
-				// Look up which struct type this variable holds
-				std::string structType = "";
-				if (varName.empty()) {
-					// Stack-based field set: struct type from struct type stack
-					if (!structTypeStack.empty()) {
-						// Value is on top, struct below — peek at second from top
-						if (structTypeStack.size() >= 2) {
-							structType = structTypeStack[structTypeStack.size() - 2];
-						}
-					}
-				} else {
-					auto structTypeIt = mLocalVariableStructTypes.find(varName);
-					if (structTypeIt != mLocalVariableStructTypes.end()) {
-						structType = structTypeIt->second;
-					}
-				}
-
-				// Validate the field exists on this struct type
-				bool fieldFound = false;
-
-				if (!structType.empty()) {
-					// We know which struct type this is - validate against it
-					const auto* structFieldPtr = lookupStructFieldTypes(structType);
-					if (structFieldPtr != nullptr) {
-						const auto& fields = *structFieldPtr;
-						auto fieldIt = fields.find(fieldName);
-						if (fieldIt != fields.end()) {
-							fieldFound = true;
-						} else {
-							// Field doesn't exist on this struct type!
-							std::string errorMsg = "Field '";
-							errorMsg += fieldName;
-							errorMsg += "' does not exist in struct '";
-							errorMsg += structType;
-							errorMsg += "'";
-							// Suggest a similar field name
-							std::string suggestion = findSimilarNameInMap(fieldName, fields);
-							if (!suggestion.empty()) {
-								errorMsg += "; did you mean '";
-								errorMsg += suggestion;
-								errorMsg += "'?";
-							}
-							reportError(fieldSet, errorMsg.c_str());
-						}
-					}
-				} else {
-					// Variable is not a known struct type
-					auto localIt = localVariables.find(varName);
-					if (localIt != localVariables.end() &&
-							(localIt->second == StackValueType::INT || localIt->second == StackValueType::FLOAT ||
-									localIt->second == StackValueType::STRING)) {
-						// Variable is definitely a scalar type - this is an error
-						std::string errorMsg = "Variable '";
-						errorMsg += varName;
-						errorMsg += "' is not a struct type";
-						reportError(fieldSet, errorMsg.c_str());
-					} else {
-						// Variable is either a pointer or unknown - search all structs
-						for (const auto& structEntry : mStructFieldTypes) {
-							const auto& fields = structEntry.second;
-							auto it = fields.find(fieldName);
-							if (it != fields.end()) {
-								fieldFound = true;
-								break;
-							}
-						}
-
-						if (!fieldFound) {
-							std::string errorMsg = "Unknown variable '";
-							errorMsg += varName;
-							errorMsg += "' or field '";
-							errorMsg += fieldName;
-							errorMsg += "'";
-							// Try to suggest a similar variable name first
-							std::string varSuggestion = findSimilarNameInMap(varName, localVariables);
-							if (!varSuggestion.empty()) {
-								errorMsg += "; did you mean variable '";
-								errorMsg += varSuggestion;
-								errorMsg += "'?";
-							} else {
-								// Try to find a similar field name across all structs
-								std::unordered_set<std::string> allFields;
-								for (const auto& structEntry : mStructFieldTypes) {
-									for (const auto& field : structEntry.second) {
-										allFields.insert(field.first);
-									}
-								}
-								std::string fieldSuggestion = findSimilarName(fieldName, allFields);
-								if (!fieldSuggestion.empty()) {
-									errorMsg += "; did you mean field '";
-									errorMsg += fieldSuggestion;
-									errorMsg += "'?";
-								}
-							}
-							reportError(fieldSet, errorMsg.c_str());
-						}
-					}
-				}
-
-				// Pop the value being assigned from the stack
-				if (varName.empty()) {
-					if (!typeStack.empty()) {
-						typeStack.pop_back(); // pop value
-						if (!structTypeStack.empty()) {
-							structTypeStack.pop_back();
-						}
-					}
-				} else {
+				if (typeStack.size() < 2) {
+					std::string msg = "Type error in field set '>>" + fieldName +
+									  "': Stack underflow (requires struct and value)";
+					reportErrorWithHint(fieldSet, msg.c_str(), "push the struct, then the value, e.g. 'p 42 >>x'");
 					if (!typeStack.empty()) {
 						typeStack.pop_back();
 						if (!structTypeStack.empty()) {
 							structTypeStack.pop_back();
 						}
 					}
+					break;
+				}
+				std::string structType =
+						structTypeStack.size() >= 2 ? structTypeStack[structTypeStack.size() - 2] : std::string();
+				StackValueType valueType = typeStack.back();
+				const auto* knownFields = structType.empty() ? nullptr : lookupStructFieldTypes(structType);
+				if (knownFields != nullptr) {
+					auto fieldIt = knownFields->find(fieldName);
+					if (fieldIt == knownFields->end()) {
+						std::string msg = "Field '" + fieldName + "' does not exist in struct '" + structType + "'";
+						std::string suggestion = findSimilarNameInMap(fieldName, *knownFields);
+						if (!suggestion.empty()) {
+							msg += "; did you mean '" + suggestion + "'?";
+						}
+						reportError(fieldSet, msg.c_str());
+					} else {
+						std::string fieldOwnType;
+						bool genericField = false;
+						StackValueType expected = resolveFieldType(structType, fieldName, fieldOwnType, &genericField);
+						if (!genericField && !fieldOwnType.empty()) {
+							genericField = isCurrentTypeParam(fieldOwnType);
+						}
+						bool checkable = !genericField && expected != StackValueType::ANY &&
+										 expected != StackValueType::UNKNOWN && expected != StackValueType::TYPEVAR &&
+										 valueType != StackValueType::ANY && valueType != StackValueType::UNKNOWN &&
+										 valueType != StackValueType::TYPEVAR;
+						if (checkable && valueType != expected && !isImplicitCastAllowed(valueType, expected)) {
+							std::string msg = "Type error in field set '>>" + fieldName + "': field '" + fieldName +
+											  "' of struct '" + structType + "' is " +
+											  stackValueTypeToString(expected) + ", but the value is " +
+											  stackValueTypeToString(valueType);
+							reportError(fieldSet, msg.c_str());
+						}
+					}
+				} else {
+					bool fieldFound = false;
+					for (const auto& structEntry : mStructFieldTypes) {
+						if (structEntry.second.find(fieldName) != structEntry.second.end()) {
+							fieldFound = true;
+							break;
+						}
+					}
+					if (!fieldFound) {
+						std::unordered_set<std::string> allFields;
+						for (const auto& structEntry : mStructFieldTypes) {
+							for (const auto& field : structEntry.second) {
+								allFields.insert(field.first);
+							}
+						}
+						std::string msg = "Type error in field set '>>" + fieldName +
+										  "': no struct has a field named '" + fieldName + "'";
+						std::string suggestion = findSimilarName(fieldName, allFields);
+						if (!suggestion.empty()) {
+							msg += "; did you mean '" + suggestion + "'?";
+						}
+						reportError(fieldSet, msg.c_str());
+					}
+				}
+
+				// Pop the value; the struct stays.
+				typeStack.pop_back();
+				if (!structTypeStack.empty()) {
+					structTypeStack.pop_back();
 				}
 				break;
 			}
@@ -3663,25 +3641,26 @@ namespace Qd {
 					// Store cast information in the scoped identifier node
 					scoped->setParameterCasts(paramCasts);
 
+					// Struct types of the arguments, bottom to top, for pass-through results.
+					std::vector<std::string> consumedStructTypes;
+					if (sig.consumes.size() > 0 && structTypeStack.size() >= sig.consumes.size()) {
+						size_t startIdx = structTypeStack.size() - sig.consumes.size();
+						for (size_t j = 0; j < sig.consumes.size(); j++) {
+							consumedStructTypes.push_back(structTypeStack[startIdx + j]);
+						}
+					}
+
+					// Check struct, array and fn-pointer argument types and bind generic type parameters.
+					// Module-qualified calls never had this check; the identifier path always did.
+					std::map<std::string, std::string> typeBindings;
+					bindCallTypeParams(sig, typeStack, structTypeStack, scoped, qualifiedName, typeBindings);
+
 					// Check if any parameter is PTR (function pointer) before consuming
 					bool consumesPtrParam = false;
 					for (const auto& paramType : sig.consumes) {
 						if (paramType == StackValueType::PTR) {
 							consumesPtrParam = true;
 							break;
-						}
-					}
-
-					// For generic functions: unify type variables with concrete types
-					// Track the first concrete type unified with TYPEVAR (simple approach)
-					StackValueType unifiedTypeVarType = StackValueType::UNKNOWN;
-					for (size_t j = 0; j < sig.consumes.size(); j++) {
-						if (sig.consumes[j] == StackValueType::TYPEVAR) {
-							size_t stackIdx = typeStack.size() - sig.consumes.size() + j;
-							if (stackIdx < typeStack.size()) {
-								unifiedTypeVarType = typeStack[stackIdx];
-								break; // Use first TYPEVAR's unified type
-							}
 						}
 					}
 
@@ -3693,43 +3672,14 @@ namespace Qd {
 						}
 					}
 
-					// Reset pending function signature only if we consumed a PTR parameter -
-					// this ensures signatures from input function pointers don't leak to
-					// returned function pointers, but preserves signatures for functions
-					// that return closures without taking function pointer parameters
 					if (consumesPtrParam) {
 						mPendingFnSignature.reset();
 					}
 
-					// Helper to resolve TYPEVAR to unified concrete type
-					auto resolveTypeVar = [&](StackValueType type) -> StackValueType {
-						if (type == StackValueType::TYPEVAR && unifiedTypeVarType != StackValueType::UNKNOWN) {
-							return unifiedTypeVarType;
-						}
-						return type;
-					};
-
-					// Apply the produces effect
+					pushCallResults(sig, typeBindings, consumedStructTypes, typeStack, structTypeStack);
 					if (sig.throws && !scoped->abortOnError() && !scoped->propagateOnError()) {
-						// func without ! or ? - pushes result + error flag
-						for (size_t idx = 0; idx < sig.produces.size(); idx++) {
-							StackValueType type = resolveTypeVar(sig.produces[idx]);
-							typeStack.push_back(type);
-							auto structIt = sig.producesStructTypes.find(idx);
-							structTypeStack.push_back(
-									structIt != sig.producesStructTypes.end() ? structIt->second : "");
-						}
 						typeStack.push_back(StackValueType::INT); // Error status (0 or 1)
 						structTypeStack.push_back("");
-					} else {
-						// Normal call or func!
-						for (size_t idx = 0; idx < sig.produces.size(); idx++) {
-							StackValueType type = resolveTypeVar(sig.produces[idx]);
-							typeStack.push_back(type);
-							auto structIt = sig.producesStructTypes.find(idx);
-							structTypeStack.push_back(
-									structIt != sig.producesStructTypes.end() ? structIt->second : "");
-						}
 					}
 				} else {
 					// Signature not found: the module was not loaded or analysed, so the stack

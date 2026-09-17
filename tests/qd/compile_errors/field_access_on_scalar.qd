@@ -1,0 +1,8 @@
+// Test: `<<field` requires a struct on the stack.
+struct A {
+	x:i64
+}
+
+fn main() {
+	5 <<x print nl
+}

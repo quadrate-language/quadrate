@@ -1,0 +1,6 @@
+// Test: a module-qualified call with the wrong array element type is rejected.
+use generic_arrays
+
+fn main() {
+	["x"] generic_arrays::ints_only print nl
+}

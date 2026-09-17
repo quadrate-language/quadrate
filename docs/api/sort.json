@@ -9,6 +9,16 @@
   ],
   "functions": [
     {
+      "name": "by",
+      "signature": "(arr:ptr count:i64 cmp:fn(i64 i64 -- i64)",
+      "failable": false,
+      "description": "Sort an array of i64 by a comparator (quicksort). The comparator returns a negative value if `a` sorts before `b`, zero if they tie, and a positive value if `a` sorts after `b` -- the same convention as C's `qsort`. Sorting by a key, by several fields, or in descending order are all just comparators. Not stable.",
+      "params": [{"name": "arr", "type": "ptr", "description": "Array of i64 values"}, {"name": "count", "type": "i64", "description": "Number of elements"}, {"name": "cmp", "type": "fn", "description": "Comparator (a b -- ordering)"}],
+      "returns": [],
+      "errors": [],
+      "examples": ["arr count &by_length sort::by"]
+    },
+    {
       "name": "floats",
       "signature": "(arr:ptr count:i64 -- )",
       "failable": false,
@@ -59,6 +69,16 @@
       "examples": ["arr count sort::is_sorted -> result"]
     },
     {
+      "name": "is_sorted_by",
+      "signature": "(arr:ptr count:i64 cmp:fn(i64 i64 -- i64)",
+      "failable": false,
+      "description": "Whether an array of i64 is sorted according to a comparator.",
+      "params": [{"name": "arr", "type": "ptr", "description": "Array of i64 values"}, {"name": "count", "type": "i64", "description": "Number of elements"}, {"name": "cmp", "type": "fn", "description": "Comparator (a b -- ordering)"}],
+      "returns": [{"name": "sorted", "type": "i64", "description": "1 if sorted, 0 otherwise"}],
+      "errors": [],
+      "examples": ["arr count &by_length sort::is_sorted_by print nl"]
+    },
+    {
       "name": "is_sorted_floats",
       "signature": "(arr:ptr count:i64 -- sorted:i64)",
       "failable": false,
@@ -67,6 +87,16 @@
       "returns": [{"name": "sorted", "type": "i64", "description": "1 if sorted, 0 otherwise"}],
       "errors": [],
       "examples": ["arr count sort::is_sorted_floats -> result"]
+    },
+    {
+      "name": "lower_bound_by",
+      "signature": "(arr:ptr count:i64 needle:i64 cmp:fn(i64 i64 -- i64)",
+      "failable": false,
+      "description": "Find the index of the first element not ordered before `needle` (binary search lower bound). The array must already be sorted by the same comparator. Returns `count` when every element sorts before `needle`.",
+      "params": [{"name": "arr", "type": "ptr", "description": "Array of i64 values, sorted by `cmp`"}, {"name": "count", "type": "i64", "description": "Number of elements"}, {"name": "needle", "type": "i64", "description": "Value to locate"}, {"name": "cmp", "type": "fn", "description": "Comparator (a b -- ordering)"}],
+      "returns": [{"name": "idx", "type": "i64", "description": "Index of the first element not ordered before `needle`"}],
+      "errors": [],
+      "examples": ["arr count 42 &ascending sort::lower_bound_by print nl"]
     },
     {
       "name": "max",

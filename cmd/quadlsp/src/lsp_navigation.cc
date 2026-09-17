@@ -635,6 +635,25 @@ std::string QuadrateLSP::findStructTypeOfVariable(Qd::IAstNode* root, const std:
 	return structType;
 }
 
+// The variable a `<<field`/`>>field` operates on, when the node just before it in its block
+// is an identifier. The field node itself carries only the field name.
+static std::string precedingIdentifierName(Qd::IAstNode* node) {
+	Qd::IAstNode* parent = node ? node->parent() : nullptr;
+	if (!parent) {
+		return "";
+	}
+	for (size_t i = 1; i < parent->childCount(); i++) {
+		if (parent->child(i) == node) {
+			Qd::IAstNode* prev = parent->child(i - 1);
+			if (prev && prev->type() == Qd::IAstNode::Type::IDENTIFIER) {
+				return static_cast<Qd::AstNodeIdentifier*>(prev)->name();
+			}
+			return "";
+		}
+	}
+	return "";
+}
+
 json_t* QuadrateLSP::handleFieldAccessDefinition(
 		Qd::IAstNode* root, const std::string& uri, size_t line, bool cursorOnVariable) {
 	// Find the field access or field set node at the target line
@@ -652,7 +671,7 @@ json_t* QuadrateLSP::handleFieldAccessDefinition(
 			Qd::AstNodeFieldAccess* faNode = static_cast<Qd::AstNodeFieldAccess*>(node);
 			size_t nodeLine = (faNode->line() > 0) ? faNode->line() - 1 : 0;
 			if (nodeLine == line) {
-				foundVarName = faNode->varName();
+				foundVarName = precedingIdentifierName(node);
 				foundFieldName = faNode->fieldName();
 				foundNode = node;
 				return;
@@ -661,7 +680,7 @@ json_t* QuadrateLSP::handleFieldAccessDefinition(
 			Qd::AstNodeFieldSet* fsNode = static_cast<Qd::AstNodeFieldSet*>(node);
 			size_t nodeLine = (fsNode->line() > 0) ? fsNode->line() - 1 : 0;
 			if (nodeLine == line) {
-				foundVarName = fsNode->varName();
+				foundVarName = precedingIdentifierName(node);
 				foundFieldName = fsNode->fieldName();
 				foundNode = node;
 				return;

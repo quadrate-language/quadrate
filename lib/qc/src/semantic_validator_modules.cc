@@ -1279,6 +1279,7 @@ namespace Qd {
 			for (size_t i = 0; i < func->inputParameters().size(); i++) {
 				AstNodeParameter* param = static_cast<AstNodeParameter*>(func->inputParameters()[i].get());
 				const std::string& typeStr = param->typeString();
+				sig.parameterTypeNames[i] = typeStr;
 
 				StackValueType scalar = stringToStackValueType(typeStr);
 				if (scalar == StackValueType::INT || scalar == StackValueType::FLOAT ||
@@ -1321,6 +1322,7 @@ namespace Qd {
 				for (size_t i = 0; i < func->outputParameters().size(); i++) {
 					AstNodeParameter* param = static_cast<AstNodeParameter*>(func->outputParameters()[i].get());
 					const std::string& typeStr = param->typeString();
+					sig.producesTypeNames[i] = typeStr;
 
 					StackValueType scalar = stringToStackValueType(typeStr);
 					if (scalar == StackValueType::INT || scalar == StackValueType::FLOAT ||
@@ -1360,6 +1362,7 @@ namespace Qd {
 			// `if` or an unmodelled call that residual was the function's own *inputs* -- so
 			// `bytes::fill` was registered as producing four values.
 			sig.throws = func->throws();
+			sig.typeParams = mCurrentTypeParams;
 
 			// For methods, include receiver as implicit first parameter and use mangled name
 			if (func->hasReceiver()) {
@@ -1382,6 +1385,12 @@ namespace Qd {
 					newParamStructTypes[0] = receiverType;
 				}
 				sig.parameterStructTypes = newParamStructTypes;
+				std::unordered_map<size_t, std::string> newParamTypeNames;
+				for (const auto& entry : sig.parameterTypeNames) {
+					newParamTypeNames[entry.first + 1] = entry.second;
+				}
+				newParamTypeNames[0] = func->receiverType();
+				sig.parameterTypeNames = std::move(newParamTypeNames);
 
 				// Use mangled name: moduleName::StructType::methodName
 				std::string qualifiedName = moduleName + "::" + func->receiverType() + "::" + func->name();

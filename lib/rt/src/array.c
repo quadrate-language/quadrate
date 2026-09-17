@@ -72,6 +72,10 @@ qd_array_t* qd_array_create(size_t capacity, qd_array_type elemType) {
 		break;
 	case QD_ARRAY_TYPE_STR:
 	case QD_ARRAY_TYPE_PTR:
+	case QD_ARRAY_TYPE_ANY:
+		// Every element representation is 8 bytes, so an as-yet-untyped array can allocate as
+		// pointers and be reinterpreted once its type is known. Zeroing matters for the string
+		// and pointer cases, which release what they hold.
 		elemSize = sizeof(void*);
 		arr->data.p = (void**)malloc(capacity * elemSize);
 		if (!arr->data.p) {
@@ -121,6 +125,8 @@ void qd_array_release(qd_array_t* arr) {
 
 	// Free contents
 	switch (arr->elemType) {
+	case QD_ARRAY_TYPE_ANY:
+		break; // never held an element, so nothing to release
 	case QD_ARRAY_TYPE_INT:
 		free(arr->data.i);
 		break;
@@ -410,6 +416,12 @@ int qd_nth(qd_context* ctx) {
 	}
 
 	// Push element based on array type
+	// Nothing has been written, so the element type is still open and every slot is zero.
+	if (arr->elemType == QD_ARRAY_TYPE_ANY) {
+		qd_array_release(arr);
+		return qd_push_i(ctx, 0);
+	}
+
 	switch (arr->elemType) {
 	case QD_ARRAY_TYPE_INT:
 		qd_stack_push_int(ctx->st, arr->data.i[index]);
@@ -659,6 +671,54 @@ int qd_makep(qd_context* ctx) {
 	return result;
 }
 
+/* Creates an array whose element type is decided by the first value appended to it. Used for
+ * `make<T>` inside a generic function, where T is erased at run time. */
+int qd_makea(qd_context* ctx) {
+	int result = {0};
+	if (!ctx || !ctx->st) {
+		result = -1;
+		return result;
+	}
+
+	qd_stack_element_t sizeElem;
+	if (qd_stack_pop(ctx->st, &sizeElem) != QD_STACK_OK) {
+		fprintf(stderr, "makea: stack underflow\n");
+		result = -1;
+		return result;
+	}
+
+	if (sizeElem.type != QD_STACK_TYPE_INT) {
+		fprintf(stderr, "makea: expected integer size, got %d\n", sizeElem.type);
+		result = -1;
+		return result;
+	}
+
+	int64_t size = sizeElem.value.i;
+	if (size < 0) {
+		fprintf(stderr, "makea: negative size %ld\n", size);
+		result = -1;
+		return result;
+	}
+
+	qd_array_t* arr = qd_array_create((size_t)size, QD_ARRAY_TYPE_ANY);
+	if (!arr) {
+		fprintf(stderr, "makea: allocation failed\n");
+		result = -1;
+		return result;
+	}
+
+	// Initialize elements to null (already done by qd_array_create for PTR type)
+	arr->length = (size_t)size;
+
+	if (qd_stack_push_ptr(ctx->st, arr) != QD_STACK_OK) {
+		// Push failed (e.g. stack full): release the array so it is not leaked.
+		qd_array_release(arr);
+		result = -2;
+		return result;
+	}
+	return result;
+}
+
 int qd_append(qd_context* ctx) {
 	int result = {0};
 	if (!ctx || !ctx->st) {
@@ -703,6 +763,24 @@ int qd_append(qd_context* ctx) {
 		}
 		result = -1;
 		return result;
+	}
+
+	// An empty array with no element type yet adopts the type of this first value.
+	if (arr->elemType == QD_ARRAY_TYPE_ANY && arr->length == 0) {
+		switch (valueElem.type) {
+		case QD_STACK_TYPE_INT:
+			arr->elemType = QD_ARRAY_TYPE_INT;
+			break;
+		case QD_STACK_TYPE_FLOAT:
+			arr->elemType = QD_ARRAY_TYPE_FLOAT;
+			break;
+		case QD_STACK_TYPE_STR:
+			arr->elemType = QD_ARRAY_TYPE_STR;
+			break;
+		default:
+			arr->elemType = QD_ARRAY_TYPE_PTR;
+			break;
+		}
 	}
 
 	// Append based on array type
@@ -840,6 +918,26 @@ int qd_set(qd_context* ctx) {
 		qd_array_release(arr);
 		result = -1;
 		return result;
+	}
+
+	// An array whose element type is still open adopts it here too: `make<T>` in a generic
+	// pre-sizes the array, so the first write is a `set` rather than an `append`. Every slot is
+	// zeroed, which is the zero value of whichever type it becomes.
+	if (arr->elemType == QD_ARRAY_TYPE_ANY) {
+		switch (valueElem.type) {
+		case QD_STACK_TYPE_INT:
+			arr->elemType = QD_ARRAY_TYPE_INT;
+			break;
+		case QD_STACK_TYPE_FLOAT:
+			arr->elemType = QD_ARRAY_TYPE_FLOAT;
+			break;
+		case QD_STACK_TYPE_STR:
+			arr->elemType = QD_ARRAY_TYPE_STR;
+			break;
+		default:
+			arr->elemType = QD_ARRAY_TYPE_PTR;
+			break;
+		}
 	}
 
 	// Set based on array type

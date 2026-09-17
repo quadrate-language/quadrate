@@ -1,0 +1,9 @@
+// Test: an unknown field on a struct whose type is known names the struct and suggests.
+struct A {
+	x:i64
+	count:i64
+}
+
+fn main() {
+	A { x = 1 count = 2 } <<cont print nl
+}

@@ -65,7 +65,11 @@ fn qsort_i64_asc(arr:ptr lo:i64 hi:i64 -- ) {
 		loop {
 			// Find element >= pivot from left
 			loop {
-				i j >= if { break }
+				// Bounded by hi, not j: the pivot sits at hi and stops this scan. Bounding it by j
+				// let the scan stop on an element that still sorts *before* the pivot, and the
+				// final swap below then placed the pivot to the left of it -- leaving the array
+				// unsorted for every reverse-sorted input of even length 18 or more.
+				i hi >= if { break }
 				arr i 8 * mem::get_i64 pivot >= if { break }
 				i 1 + -> i
 			}
@@ -124,7 +128,11 @@ fn qsort_i64_desc(arr:ptr lo:i64 hi:i64 -- ) {
 		hi 1 - -> j
 		loop {
 			loop {
-				i j >= if { break }
+				// Bounded by hi, not j: the pivot sits at hi and stops this scan. Bounding it by j
+				// let the scan stop on an element that still sorts *before* the pivot, and the
+				// final swap below then placed the pivot to the left of it -- leaving the array
+				// unsorted for every reverse-sorted input of even length 18 or more.
+				i hi >= if { break }
 				arr i 8 * mem::get_i64 pivot <= if { break }
 				i 1 + -> i
 			}
@@ -203,7 +211,11 @@ fn qsort_f64_asc(arr:ptr lo:i64 hi:i64 -- ) {
 		hi 1 - -> j
 		loop {
 			loop {
-				i j >= if { break }
+				// Bounded by hi, not j: the pivot sits at hi and stops this scan. Bounding it by j
+				// let the scan stop on an element that still sorts *before* the pivot, and the
+				// final swap below then placed the pivot to the left of it -- leaving the array
+				// unsorted for every reverse-sorted input of even length 18 or more.
+				i hi >= if { break }
 				arr i 8 * mem::get_f64 pivot >= if { break }
 				i 1 + -> i
 			}
@@ -272,7 +284,11 @@ fn qsort_f64_desc(arr:ptr lo:i64 hi:i64 -- ) {
 		hi 1 - -> j
 		loop {
 			loop {
-				i j >= if { break }
+				// Bounded by hi, not j: the pivot sits at hi and stops this scan. Bounding it by j
+				// let the scan stop on an element that still sorts *before* the pivot, and the
+				// final swap below then placed the pivot to the left of it -- leaving the array
+				// unsorted for every reverse-sorted input of even length 18 or more.
+				i hi >= if { break }
 				arr i 8 * mem::get_f64 pivot <= if { break }
 				i 1 + -> i
 			}
@@ -308,6 +324,152 @@ pub fn ints(arr:ptr count:i64 -- ) {
 	} else {
 		arr 0 count 1 - qsort_i64_asc
 	}
+}
+
+// --- Comparator-ordered sort -------------------------------------------------------------
+//
+// The six entry points above each fix both the element type and the direction, because a
+// function could not take a comparator: a `fn(...)` parameter was compared to the argument's
+// type as a string, so no caller could ever satisfy one. These three work for any order the
+// caller can express, including by a key, by several fields, or descending.
+
+// Insertion sort for small partitions, ordered by `cmp`
+fn isort_cmp(arr:ptr lo:i64 hi:i64 cmp:fn(i64 i64 -- i64) -- ) {
+	lo 1 + -> i
+	loop {
+		i hi > if { break }
+		arr i 8 * mem::get_i64 -> key
+		i 1 - -> j
+		loop {
+			j lo < if { break }
+			arr j 8 * mem::get_i64 -> jval
+			jval key cmp call 0 <= if { break }
+			jval arr j 1 + 8 * mem::set_i64
+			j 1 - -> j
+		}
+		key arr j 1 + 8 * mem::set_i64
+		i 1 + -> i
+	}
+}
+
+// Median-of-three pivot selection, ordered by `cmp`
+fn median3_cmp(arr:ptr lo:i64 hi:i64 cmp:fn(i64 i64 -- i64) -- pivot:i64) {
+	lo hi + 2 / -> mid
+	arr lo 8 * mem::get_i64 -> a
+	arr mid 8 * mem::get_i64 -> b
+	arr hi 8 * mem::get_i64 -> c
+	a b cmp call 0 <= if {
+		b c cmp call 0 <= if { mid } else {
+			a c cmp call 0 <= if { hi } else { lo }
+		}
+	} else {
+		a c cmp call 0 <= if { lo } else {
+			b c cmp call 0 <= if { hi } else { mid }
+		}
+	}
+}
+
+fn qsort_cmp(arr:ptr lo:i64 hi:i64 cmp:fn(i64 i64 -- i64) -- ) {
+	hi lo - 1 + -> n
+	n 16 <= if {
+		arr lo hi cmp isort_cmp
+	} else {
+		arr lo hi cmp median3_cmp -> pivotIdx
+		arr pivotIdx hi swap_i64
+		arr hi 8 * mem::get_i64 -> pivot
+
+		lo -> i
+		hi 1 - -> j
+		loop {
+			loop {
+				// Bounded by hi, not j: the pivot sits at hi and stops this scan. Bounding it by j
+				// let the scan stop on an element that still sorts *before* the pivot, and the
+				// final swap below then placed the pivot to the left of it -- leaving the array
+				// unsorted for every reverse-sorted input of even length 18 or more.
+				i hi >= if { break }
+				arr i 8 * mem::get_i64 pivot cmp call 0 >= if { break }
+				i 1 + -> i
+			}
+			loop {
+				j i <= if { break }
+				arr j 8 * mem::get_i64 pivot cmp call 0 <= if { break }
+				j 1 - -> j
+			}
+			i j >= if { break }
+			arr i j swap_i64
+			i 1 + -> i
+			j 1 - -> j
+		}
+		arr i hi swap_i64
+
+		i 1 - lo >= if {
+			arr lo i 1 - cmp qsort_cmp
+		}
+		i 1 + hi <= if {
+			arr i 1 + hi cmp qsort_cmp
+		}
+	}
+}
+
+/// Sort an array of i64 by a comparator (quicksort).
+/// The comparator returns a negative value if `a` sorts before `b`, zero if they tie, and a
+/// positive value if `a` sorts after `b` -- the same convention as C's `qsort`. Sorting by a
+/// key, by several fields, or in descending order are all just comparators. Not stable.
+/// @param arr ptr Array of i64 values
+/// @param count i64 Number of elements
+/// @param cmp fn Comparator (a b -- ordering)
+/// @example arr count &by_length sort::by
+pub fn by(arr:ptr count:i64 cmp:fn(i64 i64 -- i64) -- ) {
+	count 2 < if {
+	} else {
+		arr 0 count 1 - cmp qsort_cmp
+	}
+}
+
+/// Whether an array of i64 is sorted according to a comparator.
+/// @param arr ptr Array of i64 values
+/// @param count i64 Number of elements
+/// @param cmp fn Comparator (a b -- ordering)
+/// @return sorted i64 1 if sorted, 0 otherwise
+/// @example arr count &by_length sort::is_sorted_by print nl
+pub fn is_sorted_by(arr:ptr count:i64 cmp:fn(i64 i64 -- i64) -- sorted:i64) {
+	1 -> result
+	1 -> i
+	loop {
+		i count >= if { break }
+		arr i 1 - 8 * mem::get_i64 -> prev
+		arr i 8 * mem::get_i64 -> cur
+		prev cur cmp call 0 > if {
+			0 -> result
+			break
+		}
+		i 1 + -> i
+	}
+	result
+}
+
+/// Find the index of the first element not ordered before `needle` (binary search lower bound).
+/// The array must already be sorted by the same comparator. Returns `count` when every element
+/// sorts before `needle`.
+/// @param arr ptr Array of i64 values, sorted by `cmp`
+/// @param count i64 Number of elements
+/// @param needle i64 Value to locate
+/// @param cmp fn Comparator (a b -- ordering)
+/// @return idx i64 Index of the first element not ordered before `needle`
+/// @example arr count 42 &ascending sort::lower_bound_by print nl
+pub fn lower_bound_by(arr:ptr count:i64 needle:i64 cmp:fn(i64 i64 -- i64) -- idx:i64) {
+	0 -> lo
+	count -> hi
+	loop {
+		lo hi >= if { break }
+		lo hi + 2 / -> mid
+		arr mid 8 * mem::get_i64 needle cmp call 0 < if {
+			mid 1 + -> lo
+		} else {
+			mid -> hi
+		}
+	}
+	lo
 }
 
 /// Sort an array of i64 in descending order (quicksort).

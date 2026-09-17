@@ -9,12 +9,13 @@ namespace Qd {
 	 * @brief AST node representing field access
 	 *
 	 * Example: v <<x
-	 * Accesses field 'x' from struct in local variable 'v'
+	 * Reads field 'x' of the struct on top of the stack -- here the local 'v', which the
+	 * preceding identifier node pushed. The node carries only the field name.
 	 */
 	class AstNodeFieldAccess : public IAstNode {
 	public:
-		AstNodeFieldAccess(const std::string& varName, const std::string& fieldName)
-			: mVarName(varName), mFieldName(fieldName), mParent(nullptr), mLine(0), mColumn(0) {
+		AstNodeFieldAccess(const std::string& fieldName)
+			: mFieldName(fieldName), mParent(nullptr), mLine(0), mColumn(0) {
 		}
 
 		IAstNode::Type type() const override {
@@ -50,16 +51,11 @@ namespace Qd {
 			mColumn = column;
 		}
 
-		const std::string& varName() const {
-			return mVarName;
-		}
-
 		const std::string& fieldName() const {
 			return mFieldName;
 		}
 
 	private:
-		std::string mVarName;
 		std::string mFieldName;
 		IAstNode* mParent;
 		size_t mLine;

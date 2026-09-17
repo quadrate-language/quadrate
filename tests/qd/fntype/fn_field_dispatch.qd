@@ -1,0 +1,54 @@
+// Test: a function pointer held in a struct field can be called, and the call's effect is
+// modelled. Nothing turned a `fn(...)` type string back into a signature, so `call` always
+// took the "unknown effect" branch: it popped the pointer and pushed nothing.
+struct Shape {
+	name:str
+	area:fn( -- f64)
+}
+
+struct P {
+	x:i64
+}
+
+struct H {
+	mk:fn( -- P)
+	two:fn( -- i64 i64)
+	eat:fn(i64 -- )
+}
+
+fn circle_area( -- a:f64) {
+	3.5
+}
+
+fn square_area( -- a:f64) {
+	4.0
+}
+
+fn mkp( -- p:P) {
+	P { x = 9 }
+}
+
+fn two_values( -- a:i64 b:i64) {
+	1 2
+}
+
+fn eat_one(x:i64 -- ) {
+	"ate " print x print nl
+}
+
+fn main() {
+	// Dynamic dispatch through a field
+	Shape { name = "circle" area = &circle_area } -> c
+	Shape { name = "square" area = &square_area } -> s
+	c <<name print " " print c <<area call print nl
+	s <<name print " " print s <<area call print nl
+
+	H { mk = &mkp two = &two_values eat = &eat_one } -> h
+	// A struct result can be chained straight into a field read
+	h <<mk call <<x print nl
+	// Several results
+	h <<two call + print nl
+	// No results
+	7 h <<eat call
+	"depth: " print depth print nl
+}

@@ -31,7 +31,11 @@ typedef enum {
 	QD_ARRAY_TYPE_INT = 0,	 ///< 64-bit signed integer
 	QD_ARRAY_TYPE_FLOAT = 1, ///< Double-precision floating point
 	QD_ARRAY_TYPE_STR = 2,	 ///< Reference-counted string
-	QD_ARRAY_TYPE_PTR = 3	 ///< Generic pointer
+	QD_ARRAY_TYPE_PTR = 3,	 ///< Generic pointer
+	/// Element type not yet determined: an empty array that adopts the type of the first value
+	/// appended to it. An empty `[]` literal starts this way, as does `make<T>` for a type
+	/// parameter, whose concrete type a generic function cannot know at run time.
+	QD_ARRAY_TYPE_ANY = 4
 } qd_array_type;
 
 /**
@@ -271,6 +275,17 @@ int qd_makes(qd_context* ctx);
  * @return Execution result (0 on success)
  */
 int qd_makep(qd_context* ctx);
+
+/**
+ * @brief Create an array with no element type yet ( n -- arr )
+ *
+ * The array adopts the type of the first value appended to it. Used for `make<T>` inside a
+ * generic function, where T is erased at run time.
+ *
+ * @param ctx Execution context
+ * @return Execution result (0 on success)
+ */
+int qd_makea(qd_context* ctx);
 
 /**
  * @brief Append element to array

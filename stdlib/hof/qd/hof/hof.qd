@@ -1,39 +1,43 @@
 /// Higher-Order Function combinators.
+///
+/// Every combinator is generic: `T` is the value's type and `U` the result's, so the same
+/// `apply`, `map` or `fold` works over integers, floats, strings and structs. They were fixed
+/// to `fn(i64 -- i64)` until generic function-pointer parameters started unifying.
 /// Combinators are functions that combine or apply other functions in useful patterns.
 /// They enable functional programming without explicit temporary variables.
 
 /// Apply a function to a value.
-/// @param x i64 The input value
-/// @param f fn(i64 -- i64) Function (i64 -- i64)
+/// @param x T The input value
+/// @param f fn Function applied to the value
 /// @return r i64 Result of f(x)
 /// @example 5 fn (x:i64 -- r:i64) { 2 * } hof::apply print nl  // 10
-pub fn apply(x:i64 f:fn(i64 -- i64) -- r:i64) {
+pub fn apply<T>(x:T f:fn(T -- T) -- r:T) {
 	x f call
 }
 
 /// Apply two functions to the same value.
-/// @param x i64 The input value
-/// @param f fn(i64 -- i64) First function (i64 -- i64)
-/// @param g fn(i64 -- i64) Second function (i64 -- i64)
+/// @param x T The input value
+/// @param f fn First function
+/// @param g fn Second function
 /// @return a i64 Result of f(x)
 /// @return b i64 Result of g(x)
 /// @example 5 fn (x:i64 -- r:i64) { 2 * } fn (x:i64 -- r:i64) { 3 + } hof::bi  // Stack: 10 8
-pub fn bi(x:i64 f:fn(i64 -- i64) g:fn(i64 -- i64) -- a:i64 b:i64) {
+pub fn bi<T, U>(x:T f:fn(T -- U) g:fn(T -- U) -- a:U b:U) {
 	x f call -> a
 	x g call -> b
 	a b
 }
 
 /// Apply three functions to the same value.
-/// @param x i64 The input value
-/// @param f fn(i64 -- i64) First function (i64 -- i64)
-/// @param g fn(i64 -- i64) Second function (i64 -- i64)
-/// @param h fn(i64 -- i64) Third function (i64 -- i64)
+/// @param x T The input value
+/// @param f fn First function
+/// @param g fn Second function
+/// @param h fn Third function
 /// @return a i64 Result of f(x)
 /// @return b i64 Result of g(x)
 /// @return c i64 Result of h(x)
 /// @example 5 fn (x:i64 -- r:i64) { 1 + } fn (x:i64 -- r:i64) { 2 * } fn (x:i64 -- r:i64) { dup * } hof::tri  // Stack: 6 10 25
-pub fn tri(x:i64 f:fn(i64 -- i64) g:fn(i64 -- i64) h:fn(i64 -- i64) -- a:i64 b:i64 c:i64) {
+pub fn tri<T, U>(x:T f:fn(T -- U) g:fn(T -- U) h:fn(T -- U) -- a:U b:U c:U) {
 	x f call -> a
 	x g call -> b
 	x h call -> c
@@ -41,63 +45,63 @@ pub fn tri(x:i64 f:fn(i64 -- i64) g:fn(i64 -- i64) h:fn(i64 -- i64) -- a:i64 b:i
 }
 
 /// Apply a function but keep the original value.
-/// @param x i64 The input value
-/// @param f fn(i64 -- i64) Function (i64 -- i64)
+/// @param x T The input value
+/// @param f fn Function applied to the value
 /// @return r i64 Result of f(x)
 /// @return x i64 Original value (preserved)
 /// @example 5 fn (x:i64 -- r:i64) { 2 * } hof::keep  // Stack: 10 5
-pub fn keep(x:i64 f:fn(i64 -- i64) -- r:i64 orig:i64) {
+pub fn keep<T, U>(x:T f:fn(T -- U) -- r:U orig:T) {
 	x f call
 	x
 }
 
 /// Apply a function to the second stack element, preserving the top.
-/// @param x i64 Second element (will have f applied)
+/// @param x T Second element (will have f applied)
 /// @param y i64 Top element (preserved)
-/// @param f fn(i64 -- i64) Function (i64 -- i64)
+/// @param f fn Function applied to the value
 /// @return r i64 Result of f(x)
 /// @return y i64 Original top value (preserved)
 /// @example 10 20 fn (x:i64 -- r:i64) { 2 * } hof::dip  // Stack: 20 20
-pub fn dip(x:i64 y:i64 f:fn(i64 -- i64) -- r:i64 top:i64) {
+pub fn dip<T, U>(x:T y:U f:fn(T -- T) -- r:T top:U) {
 	x f call
 	y
 }
 
 /// Apply a function to two values separately.
-/// @param x i64 First value
+/// @param x T First value
 /// @param y i64 Second value
-/// @param f fn(i64 -- i64) Function (i64 -- i64)
+/// @param f fn Function applied to the value
 /// @return a i64 Result of f(x)
 /// @return b i64 Result of f(y)
 /// @example 3 4 fn (x:i64 -- r:i64) { dup * } hof::both  // Stack: 9 16
-pub fn both(x:i64 y:i64 f:fn(i64 -- i64) -- a:i64 b:i64) {
+pub fn both<T, U>(x:T y:T f:fn(T -- U) -- a:U b:U) {
 	x f call -> a
 	y f call -> b
 	a b
 }
 
 /// Apply two functions to two values (first to first, second to second).
-/// @param x i64 First value
+/// @param x T First value
 /// @param y i64 Second value
-/// @param f fn(i64 -- i64) Function for first value (i64 -- i64)
-/// @param g fn(i64 -- i64) Function for second value (i64 -- i64)
+/// @param f fn Function for first value (i64 -- i64)
+/// @param g fn Function for second value (i64 -- i64)
 /// @return a i64 Result of f(x)
 /// @return b i64 Result of g(y)
 /// @example 3 4 fn (x:i64 -- r:i64) { 1 + } fn (x:i64 -- r:i64) { 2 * } hof::bi_star  // Stack: 4 8
-pub fn bi_star(x:i64 y:i64 f:fn(i64 -- i64) g:fn(i64 -- i64) -- a:i64 b:i64) {
+pub fn bi_star<T, U>(x:T y:T f:fn(T -- U) g:fn(T -- U) -- a:U b:U) {
 	x f call -> a
 	y g call -> b
 	a b
 }
 
 /// Apply function only if condition is true, otherwise return value unchanged.
-/// @param x i64 The input value
+/// @param x T The input value
 /// @param cond i64 Condition (0 = false, non-zero = true)
-/// @param f fn(i64 -- i64) Function (i64 -- i64)
+/// @param f fn Function applied to the value
 /// @return r i64 Result of f(x) if cond is true, otherwise x
 /// @example 5 1 fn (x:i64 -- r:i64) { 2 * } hof::when print nl  // 10
 /// @example 5 0 fn (x:i64 -- r:i64) { 2 * } hof::when print nl  // 5
-pub fn when(x:i64 cond:i64 f:fn(i64 -- i64) -- r:i64) {
+pub fn when<T>(x:T cond:i64 f:fn(T -- T) -- r:T) {
 	x
 	cond 0 != if {
 		f call
@@ -105,13 +109,13 @@ pub fn when(x:i64 cond:i64 f:fn(i64 -- i64) -- r:i64) {
 }
 
 /// Apply function only if condition is false, otherwise return value unchanged.
-/// @param x i64 The input value
+/// @param x T The input value
 /// @param cond i64 Condition (0 = false, non-zero = true)
-/// @param f fn(i64 -- i64) Function (i64 -- i64)
+/// @param f fn Function applied to the value
 /// @return r i64 Result of f(x) if cond is false, otherwise x
 /// @example 5 0 fn (x:i64 -- r:i64) { 2 * } hof::unless print nl  // 10
 /// @example 5 1 fn (x:i64 -- r:i64) { 2 * } hof::unless print nl  // 5
-pub fn unless(x:i64 cond:i64 f:fn(i64 -- i64) -- r:i64) {
+pub fn unless<T>(x:T cond:i64 f:fn(T -- T) -- r:T) {
 	x
 	cond 0 == if {
 		f call
@@ -119,12 +123,12 @@ pub fn unless(x:i64 cond:i64 f:fn(i64 -- i64) -- r:i64) {
 }
 
 /// Apply function n times to an initial value.
-/// @param x i64 Initial value
+/// @param x T Initial value
 /// @param n i64 Number of times to apply
-/// @param f fn(i64 -- i64) Function (i64 -- i64)
+/// @param f fn Function applied to the value
 /// @return r i64 Result after n applications
 /// @example 2 4 fn (x:i64 -- r:i64) { dup * } hof::times print nl  // 65536 (2^16)
-pub fn times(x:i64 n:i64 f:fn(i64 -- i64) -- r:i64) {
+pub fn times<T>(x:T n:i64 f:fn(T -- T) -- r:T) {
 	x
 	0 n 1 for i {
 		f call
@@ -132,12 +136,12 @@ pub fn times(x:i64 n:i64 f:fn(i64 -- i64) -- r:i64) {
 }
 
 /// Fold/reduce an array left-to-right with a binary function.
-/// @param arr []i64 Array
+/// @param arr []T Array
 /// @param init i64 Initial accumulator value
 /// @param f fn(i64 i64 -- i64) Binary function (acc:i64 elem:i64 -- acc:i64)
 /// @return result i64 Final accumulated value
 /// @example arr 0 fn (acc:i64 x:i64 -- r:i64) { + } hof::fold  // sum of array
-pub fn fold(arr:[]i64 acc:i64 f:fn(i64 i64 -- i64) -- result:i64) {
+pub fn fold<T, A>(arr:[]T acc:A f:fn(A T -- A) -- result:A) {
 	0 arr len 1 for i {
 		arr i nth acc swap f call -> acc
 	}
@@ -145,12 +149,12 @@ pub fn fold(arr:[]i64 acc:i64 f:fn(i64 i64 -- i64) -- result:i64) {
 }
 
 /// Fold/reduce an array right-to-left with a binary function.
-/// @param arr []i64 Array
+/// @param arr []T Array
 /// @param init i64 Initial accumulator value
 /// @param f fn(i64 i64 -- i64) Binary function (elem:i64 acc:i64 -- acc:i64)
 /// @return result i64 Final accumulated value
 /// @example arr 0 fn (x:i64 acc:i64 -- r:i64) { + } hof::fold_right  // sum of array
-pub fn fold_right(arr:[]i64 acc:i64 f:fn(i64 i64 -- i64) -- result:i64) {
+pub fn fold_right<T, A>(arr:[]T acc:A f:fn(T A -- A) -- result:A) {
 	arr len 1 - -1 -1 for i {
 		arr i nth acc f call -> acc
 	}
@@ -158,12 +162,12 @@ pub fn fold_right(arr:[]i64 acc:i64 f:fn(i64 i64 -- i64) -- result:i64) {
 }
 
 /// Map a function over an array, returning a new array.
-/// @param arr []i64 Input array
-/// @param f fn(i64 -- i64) Function (i64 -- i64)
+/// @param arr []T Input array
+/// @param f fn Function applied to the value
 /// @return result []i64 New array with mapped values
 /// @example arr fn (x:i64 -- r:i64) { 2 * } hof::map  // double each element
-pub fn map(arr:[]i64 f:fn(i64 -- i64) -- result:[]i64) {
-	0 make<i64> -> out
+pub fn map<T, U>(arr:[]T f:fn(T -- U) -- result:[]U) {
+	[] -> out
 	0 arr len 1 for i {
 		arr i nth f call out swap append -> out
 	}
@@ -171,12 +175,12 @@ pub fn map(arr:[]i64 f:fn(i64 -- i64) -- result:[]i64) {
 }
 
 /// Filter an array, keeping only elements that satisfy a predicate.
-/// @param arr []i64 Input array
-/// @param pred fn(i64 -- i64) Predicate function (i64 -- bool:i64)
+/// @param arr []T Input array
+/// @param pred fn Predicate function (i64 -- bool:i64)
 /// @return result []i64 New array with filtered values
 /// @example arr fn (x:i64 -- r:i64) { 2 mod 0 == } hof::filter  // keep evens
-pub fn filter(arr:[]i64 pred:fn(i64 -- i64) -- result:[]i64) {
-	0 make<i64> -> out
+pub fn filter<T>(arr:[]T pred:fn(T -- i64) -- result:[]T) {
+	[] -> out
 	0 arr len 1 for i {
 		arr i nth -> elem
 		elem pred call if {
@@ -187,11 +191,11 @@ pub fn filter(arr:[]i64 pred:fn(i64 -- i64) -- result:[]i64) {
 }
 
 /// Check if any element satisfies a predicate.
-/// @param arr []i64 Array
-/// @param pred fn(i64 -- i64) Predicate function (i64 -- bool:i64)
+/// @param arr []T Array
+/// @param pred fn Predicate function (i64 -- bool:i64)
 /// @return result i64 1 if any element satisfies pred, 0 otherwise
 /// @example arr fn (x:i64 -- r:i64) { 0 > } hof::any  // any positive?
-pub fn any(arr:[]i64 pred:fn(i64 -- i64) -- result:i64) {
+pub fn any<T>(arr:[]T pred:fn(T -- i64) -- result:i64) {
 	0 -> result
 	0 arr len 1 for i {
 		arr i nth pred call if {
@@ -203,11 +207,11 @@ pub fn any(arr:[]i64 pred:fn(i64 -- i64) -- result:i64) {
 }
 
 /// Check if all elements satisfy a predicate.
-/// @param arr []i64 Array
-/// @param pred fn(i64 -- i64) Predicate function (i64 -- bool:i64)
+/// @param arr []T Array
+/// @param pred fn Predicate function (i64 -- bool:i64)
 /// @return result i64 1 if all elements satisfy pred, 0 otherwise
 /// @example arr fn (x:i64 -- r:i64) { 0 > } hof::all  // all positive?
-pub fn all(arr:[]i64 pred:fn(i64 -- i64) -- result:i64) {
+pub fn all<T>(arr:[]T pred:fn(T -- i64) -- result:i64) {
 	1 -> result
 	0 arr len 1 for i {
 		arr i nth pred call 0 == if {
@@ -219,12 +223,12 @@ pub fn all(arr:[]i64 pred:fn(i64 -- i64) -- result:i64) {
 }
 
 /// Find the first element satisfying a predicate.
-/// @param arr []i64 Array
-/// @param pred fn(i64 -- i64) Predicate function (i64 -- bool:i64)
+/// @param arr []T Array
+/// @param pred fn Predicate function (i64 -- bool:i64)
 /// @return elem i64 The found element (or 0 if not found)
 /// @return found i64 1 if found, 0 otherwise
 /// @example arr fn (x:i64 -- r:i64) { 10 > } hof::find  // first > 10
-pub fn find(arr:[]i64 pred:fn(i64 -- i64) -- elem:i64 found:i64) {
+pub fn find<T>(arr:[]T pred:fn(T -- i64) -- elem:T found:i64) {
 	0 -> elem
 	0 -> found
 	0 arr len 1 for i {

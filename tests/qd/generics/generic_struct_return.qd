@@ -1,0 +1,13 @@
+// Test: a generic struct result is tracked by its base name, so fields resolve after the call.
+struct Box<T> {
+	value:T
+}
+
+fn wrap<T>(x:T -- b:Box<T>) {
+	Box<T> { value = x }
+}
+
+fn main() {
+	5 wrap <<value 1 + print nl
+	"s" wrap <<value print nl
+}

@@ -1,0 +1,16 @@
+// Generic functions over arrays and function pointers, called module-qualified.
+pub fn count<T>(a:[]T -- n:i64) {
+	a len
+}
+
+pub fn first<T>(a:[]T -- x:T) {
+	a 0 nth
+}
+
+pub fn apply<T>(x:T f:fn(T -- T) -- r:T) {
+	x f call
+}
+
+pub fn ints_only(a:[]i64 -- n:i64) {
+	a len
+}

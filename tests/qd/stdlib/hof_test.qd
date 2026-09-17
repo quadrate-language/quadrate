@@ -1,6 +1,7 @@
 // Unit tests for the hof (higher-order functions) module
 use hof
 use testing
+use strings
 
 test "hof::apply" {
 	5 fn (i64 -- i64) { 2 * } hof::apply 10 testing::assert_eq
@@ -23,7 +24,7 @@ test "hof::both" {
 }
 
 test "hof::dip" {
-	3 4 fn ( -- ) { 10 + } hof::dip
+	3 4 fn (i64 -- i64) { 10 + } hof::dip
 	-> top -> below
 	below 13 testing::assert_eq
 	top 4 testing::assert_eq
@@ -37,18 +38,18 @@ test "hof::keep" {
 }
 
 test "hof::times" {
-	0 5 fn ( -- ) { 1 + } hof::times 5 testing::assert_eq
-	1 4 fn ( -- ) { 2 * } hof::times 16 testing::assert_eq
+	0 5 fn (i64 -- i64) { 1 + } hof::times 5 testing::assert_eq
+	1 4 fn (i64 -- i64) { 2 * } hof::times 16 testing::assert_eq
 }
 
 test "hof::when" {
-	5 1 fn ( -- ) { 10 + } hof::when 15 testing::assert_eq
-	5 0 fn ( -- ) { 10 + } hof::when 5 testing::assert_eq
+	5 1 fn (i64 -- i64) { 10 + } hof::when 15 testing::assert_eq
+	5 0 fn (i64 -- i64) { 10 + } hof::when 5 testing::assert_eq
 }
 
 test "hof::unless" {
-	5 0 fn ( -- ) { 10 + } hof::unless 15 testing::assert_eq
-	5 1 fn ( -- ) { 10 + } hof::unless 5 testing::assert_eq
+	5 0 fn (i64 -- i64) { 10 + } hof::unless 15 testing::assert_eq
+	5 1 fn (i64 -- i64) { 10 + } hof::unless 5 testing::assert_eq
 }
 
 test "hof::fold" {
@@ -146,4 +147,66 @@ test "hof::find" {
 	found testing::assert_false
 
 	arr free
+}
+
+// --- generic combinators ----------------------------------------------------------------
+//
+// Every combinator was fixed to fn(i64 -- i64) until generic function-pointer parameters
+// started unifying. The tests above all use i64 and still pass unchanged; these cover the
+// types that were impossible to use before.
+
+fn halve(x:f64 -- r:f64) {
+	x 2.0 /
+}
+
+fn tag(s:str -- r:str) {
+	s "!" strings::concat
+}
+
+fn length_of(s:str -- n:i64) {
+	s strings::len
+}
+
+fn is_short(s:str -- b:i64) {
+	s strings::len 2 <=
+}
+
+fn join_two(acc:str x:str -- r:str) {
+	acc x strings::concat
+}
+
+test "hof::apply over f64 and str" {
+	8.0 &halve hof::apply 4.0 0.001 testing::assert_approx_eq
+	"hi" &tag hof::apply "hi!" testing::assert_eq
+}
+
+test "hof::map changes the element type" {
+	"a,bbb" "," strings::split! -> count -> arr
+	arr &length_of hof::map -> lens
+	lens 0 nth 1 testing::assert_eq
+	lens 1 nth 3 testing::assert_eq
+	lens free
+}
+
+test "hof::filter and find over strings" {
+	"a,bbb,cc" "," strings::split! -> count -> arr
+	arr &is_short hof::filter -> shorts
+	shorts len 2 testing::assert_eq
+	shorts 0 nth "a" testing::assert_eq
+
+	arr &is_short hof::find -> found -> elem
+	found testing::assert_true
+	elem "a" testing::assert_eq
+	shorts free
+}
+
+test "hof::fold over strings" {
+	"a,b,c" "," strings::split! -> count -> arr
+	arr "" &join_two hof::fold "abc" testing::assert_eq
+}
+
+test "hof::any and all over strings" {
+	"a,bbb" "," strings::split! -> count -> arr
+	arr &is_short hof::any testing::assert_true
+	arr &is_short hof::all testing::assert_false
 }

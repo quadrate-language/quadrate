@@ -465,3 +465,137 @@ test "sort::strings_desc sorts a string array" {
 	arr 0 nth "c" testing::assert_eq
 	arr 2 nth "a" testing::assert_eq
 }
+
+// --- comparator-ordered sort -----------------------------------------------------------
+
+fn cmp_desc(a:i64 b:i64 -- r:i64) {
+	b a -
+}
+
+fn cmp_by_last_digit(a:i64 b:i64 -- r:i64) {
+	a 10 % b 10 % -
+}
+
+fn cmp_asc(a:i64 b:i64 -- r:i64) {
+	a b -
+}
+
+test "sort::by orders with a caller-supplied comparator" {
+	5 8 * mem::alloc! -> arr
+	31 arr 0 mem::set_i64
+	12 arr 8 mem::set_i64
+	45 arr 16 mem::set_i64
+	27 arr 24 mem::set_i64
+	6 arr 32 mem::set_i64
+
+	arr 5 &cmp_desc sort::by
+	arr 0 mem::get_i64 45 testing::assert_eq
+	arr 32 mem::get_i64 6 testing::assert_eq
+	arr 5 &cmp_desc sort::is_sorted_by testing::assert_true
+
+	// A comparator can order by a key rather than the value: 31 12 45 6 27
+	arr 5 &cmp_by_last_digit sort::by
+	arr 0 mem::get_i64 31 testing::assert_eq
+	arr 8 mem::get_i64 12 testing::assert_eq
+	arr 32 mem::get_i64 27 testing::assert_eq
+	arr 5 &cmp_by_last_digit sort::is_sorted_by testing::assert_true
+
+	arr mem::free
+}
+
+test "sort::by handles empty, single and already-sorted input" {
+	1 8 * mem::alloc! -> one
+	7 one 0 mem::set_i64
+	one 0 &cmp_asc sort::by
+	one 1 &cmp_asc sort::by
+	one 0 mem::get_i64 7 testing::assert_eq
+	one 1 &cmp_asc sort::is_sorted_by testing::assert_true
+	one mem::free
+}
+
+test "sort::by sorts a partition larger than the insertion-sort threshold" {
+	// 16 is the cutoff between insertion sort and quicksort; 40 exercises both paths
+	40 8 * mem::alloc! -> arr
+	0 40 1 for i {
+		40 i - arr i 8 * mem::set_i64
+	}
+	arr 40 &cmp_asc sort::by
+	arr 0 mem::get_i64 1 testing::assert_eq
+	arr 39 8 * mem::get_i64 40 testing::assert_eq
+	arr 40 &cmp_asc sort::is_sorted_by testing::assert_true
+	arr mem::free
+}
+
+test "sort::is_sorted_by reports unsorted input" {
+	3 8 * mem::alloc! -> arr
+	1 arr 0 mem::set_i64
+	9 arr 8 mem::set_i64
+	4 arr 16 mem::set_i64
+	arr 3 &cmp_asc sort::is_sorted_by testing::assert_false
+	arr mem::free
+}
+
+test "sort::lower_bound_by locates the insertion point" {
+	5 8 * mem::alloc! -> arr
+	0 5 1 for i {
+		i 2 * arr i 8 * mem::set_i64
+	}
+	// 0 2 4 6 8
+	arr 5 4 &cmp_asc sort::lower_bound_by 2 testing::assert_eq
+	arr 5 5 &cmp_asc sort::lower_bound_by 3 testing::assert_eq
+	arr 5 0 &cmp_asc sort::lower_bound_by 0 testing::assert_eq
+	arr 5 99 &cmp_asc sort::lower_bound_by 5 testing::assert_eq
+	arr mem::free
+}
+
+test "sort::ints sorts reverse-sorted input of every length" {
+	// The partition bounded its left scan by j rather than by hi. The scan could then stop on
+	// an element that still sorted before the pivot, and the pivot swap that follows put the
+	// pivot to the left of it. Reverse-sorted input of even length 18 or more came back
+	// unsorted -- silently, since nothing checked.
+	0 -> failures
+	2 61 1 for n {
+		n 8 * mem::alloc! -> arr
+		0 n 1 for i {
+			n i - arr i 8 * mem::set_i64
+		}
+		arr n sort::ints
+		arr n sort::is_sorted 0 == if {
+			failures 1 + -> failures
+		}
+		arr mem::free
+	}
+	failures 0 testing::assert_eq
+}
+
+test "sort::floats sorts reverse-sorted input of every length" {
+	0 -> failures
+	2 61 1 for n {
+		n 8 * mem::alloc! -> arr
+		0 n 1 for i {
+			n i - cast<f64> arr i 8 * mem::set_f64
+		}
+		arr n sort::floats
+		arr n sort::is_sorted_floats 0 == if {
+			failures 1 + -> failures
+		}
+		arr mem::free
+	}
+	failures 0 testing::assert_eq
+}
+
+test "sort::by sorts reverse-sorted input of every length" {
+	0 -> failures
+	2 61 1 for n {
+		n 8 * mem::alloc! -> arr
+		0 n 1 for i {
+			n i - arr i 8 * mem::set_i64
+		}
+		arr n &cmp_asc sort::by
+		arr n &cmp_asc sort::is_sorted_by 0 == if {
+			failures 1 + -> failures
+		}
+		arr mem::free
+	}
+	failures 0 testing::assert_eq
+}

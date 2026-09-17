@@ -156,7 +156,7 @@ namespace Qd {
 					char32_t identToken = u8t_scanner_scan(scanner);
 					if (identToken == U8T_IDENTIFIER) {
 						const char* fieldName = u8t_scanner_token_text(scanner, n);
-						AstNodeFieldAccess* fieldAccess = new AstNodeFieldAccess("", fieldName);
+						AstNodeFieldAccess* fieldAccess = new AstNodeFieldAccess(fieldName);
 						setNodePosition(fieldAccess, scanner, src);
 						return fieldAccess;
 					}
@@ -192,7 +192,7 @@ namespace Qd {
 									"'>>field!' has been removed; it only differed from '>>field' by "
 									"discarding the struct, so write '>>field drop' instead");
 						}
-						AstNodeFieldSet* fieldSet = new AstNodeFieldSet("", fieldName);
+						AstNodeFieldSet* fieldSet = new AstNodeFieldSet(fieldName);
 						setNodePosition(fieldSet, scanner, src);
 						return fieldSet;
 					}

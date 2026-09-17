@@ -1231,58 +1231,6 @@ namespace Qd {
 			return;
 		}
 
-		// Handle field access - check if the struct variable needs to be captured
-		if (node->type() == IAstNode::Type::FIELD_ACCESS) {
-			AstNodeFieldAccess* fieldAccess = static_cast<AstNodeFieldAccess*>(node);
-			const std::string& varName = fieldAccess->varName();
-
-			// Skip if it's a local variable in the anonymous function
-			if (localVariables.find(varName) != localVariables.end()) {
-				return;
-			}
-
-			// Skip if it's an iterator
-			if (iteratorNames.find(varName) != iteratorNames.end()) {
-				return;
-			}
-
-			// Check if it's in the outer scope - this means it's a captured variable!
-			if (outerScopeVariables.find(varName) != outerScopeVariables.end()) {
-				// Add to captures (avoid duplicates)
-				const auto& captures = anonFunc->capturedVariables();
-				if (std::find(captures.begin(), captures.end(), varName) == captures.end()) {
-					anonFunc->addCapturedVariable(varName);
-				}
-			}
-			return;
-		}
-
-		// Handle field set - check if the struct variable needs to be captured
-		if (node->type() == IAstNode::Type::FIELD_SET) {
-			AstNodeFieldSet* fieldSet = static_cast<AstNodeFieldSet*>(node);
-			const std::string& varName = fieldSet->varName();
-
-			// Skip if it's a local variable in the anonymous function
-			if (localVariables.find(varName) != localVariables.end()) {
-				return;
-			}
-
-			// Skip if it's an iterator
-			if (iteratorNames.find(varName) != iteratorNames.end()) {
-				return;
-			}
-
-			// Check if it's in the outer scope - this means it's a captured variable!
-			if (outerScopeVariables.find(varName) != outerScopeVariables.end()) {
-				// Add to captures (avoid duplicates)
-				const auto& captures = anonFunc->capturedVariables();
-				if (std::find(captures.begin(), captures.end(), varName) == captures.end()) {
-					anonFunc->addCapturedVariable(varName);
-				}
-			}
-			return;
-		}
-
 		// Handle identifier references - this is where we detect captures
 		if (node->type() == IAstNode::Type::IDENTIFIER) {
 			AstNodeIdentifier* ident = static_cast<AstNodeIdentifier*>(node);
@@ -1463,6 +1411,7 @@ namespace Qd {
 
 				StackValueType paramType = stringToStackValueType(resolvedType);
 				sig.consumes.push_back(paramType);
+				sig.parameterTypeNames[paramIdx] = resolvedType;
 
 				// Track struct/array/fn types for PTR parameters
 				if (paramType == StackValueType::PTR &&
@@ -1523,6 +1472,7 @@ namespace Qd {
 				// Use stringToStackValueType to handle all types including type parameters
 				StackValueType producedType = stringToStackValueType(typeStr);
 				sig.produces.push_back(producedType);
+				sig.producesTypeNames[producesIdx] = typeStr;
 
 				// Track struct/array/fn types for PTR return values
 				if (producedType == StackValueType::PTR &&
@@ -1533,6 +1483,12 @@ namespace Qd {
 				producesIdx++;
 			}
 			sig.throws = func->throws();
+			sig.typeParams = mCurrentTypeParams;
+			for (const auto& tp : func->receiverTypeParams()) {
+				if (std::find(sig.typeParams.begin(), sig.typeParams.end(), tp) == sig.typeParams.end()) {
+					sig.typeParams.push_back(tp);
+				}
+			}
 
 			// For methods, use mangled name and insert receiver at beginning of consumes
 			// Receiver is at stack top, validation code expects consumes[0] = receiver
@@ -1547,6 +1503,12 @@ namespace Qd {
 				}
 				newParamStructTypes[0] = func->receiverType();
 				sig.parameterStructTypes = std::move(newParamStructTypes);
+				std::unordered_map<size_t, std::string> newParamTypeNames;
+				for (const auto& entry : sig.parameterTypeNames) {
+					newParamTypeNames[entry.first + 1] = entry.second;
+				}
+				newParamTypeNames[0] = func->receiverType();
+				sig.parameterTypeNames = std::move(newParamTypeNames);
 
 				// Use mangled name for methods
 				std::string mangledName = func->receiverType() + "::" + func->name();
@@ -1575,71 +1537,58 @@ namespace Qd {
 		std::unordered_map<std::string, std::string> localToParam; // local var name -> parameter name
 
 		// Helper to recursively collect with local variable tracking
+		// Records `<<field` reads whose operand is a parameter (or a local bound from one). The
+		// operand is the identifier node just before the field access in the same block; a read
+		// through anything else (a call, a chained access) says nothing about a parameter.
+		auto recordAccess = [&](const std::string& varName, const std::string& fieldName) {
+			StackValueType fieldType = StackValueType::UNKNOWN;
+			for (const auto& structEntry : mStructFieldTypes) {
+				auto it = structEntry.second.find(fieldName);
+				if (it != structEntry.second.end()) {
+					fieldType = it->second;
+					break;
+				}
+			}
+			if (std::find(paramNames.begin(), paramNames.end(), varName) != paramNames.end()) {
+				fieldAccesses[varName][fieldName] = fieldType;
+				return;
+			}
+			auto localIt = localToParam.find(varName);
+			if (localIt != localToParam.end()) {
+				fieldAccesses[localIt->second][fieldName] = fieldType;
+				return;
+			}
+			// Unknown provenance: attribute to the first parameter, as before (a heuristic).
+			if (!paramNames.empty()) {
+				fieldAccesses[paramNames[0]][fieldName] = fieldType;
+			}
+		};
+
 		std::function<void(IAstNode*)> collectRecursive = [&](IAstNode* n) {
 			if (!n) {
 				return;
 			}
-
-			// Track local variable bindings from parameters
-			// Pattern: parameter values are on stack, then `-> localVar` pops them
-			// We need to track the flow to know which local comes from which parameter
-			// For simplicity, we'll track field accesses on ANY local variable or parameter
-			// and attribute them all to the single PTR parameter (since most functions have one)
-
-			if (n->type() == IAstNode::Type::FIELD_ACCESS) {
-				AstNodeFieldAccess* fieldAccess = static_cast<AstNodeFieldAccess*>(n);
-				const std::string& varName = fieldAccess->varName();
-				const std::string& fieldName = fieldAccess->fieldName();
-
-				// Determine the type of this field by looking in all known structs
-				StackValueType fieldType = StackValueType::UNKNOWN;
-				for (const auto& structEntry : mStructFieldTypes) {
-					const auto& fields = structEntry.second;
-					auto it = fields.find(fieldName);
-					if (it != fields.end()) {
-						fieldType = it->second;
-						break;
+			for (size_t i = 0; i < n->childCount(); i++) {
+				IAstNode* c = n->child(i);
+				if (!c) {
+					continue;
+				}
+				if (c->type() == IAstNode::Type::FIELD_ACCESS && i > 0) {
+					IAstNode* prev = n->child(i - 1);
+					if (prev && prev->type() == IAstNode::Type::IDENTIFIER) {
+						recordAccess(static_cast<AstNodeIdentifier*>(prev)->name(),
+								static_cast<AstNodeFieldAccess*>(c)->fieldName());
+					}
+				} else if (c->type() == IAstNode::Type::LOCAL) {
+					// Simplified tracking: locals are assumed to be bound from the first parameter.
+					AstNodeLocal* local = static_cast<AstNodeLocal*>(c);
+					if (!paramNames.empty()) {
+						for (const std::string& name : local->names()) {
+							localToParam[name] = paramNames[0];
+						}
 					}
 				}
-
-				// Check if this variable is directly a parameter
-				bool isParam = std::find(paramNames.begin(), paramNames.end(), varName) != paramNames.end();
-
-				// Check if this variable was bound from a parameter
-				auto localIt = localToParam.find(varName);
-				bool isFromParam = (localIt != localToParam.end());
-
-				if (isParam) {
-					fieldAccesses[varName][fieldName] = fieldType;
-				} else if (isFromParam) {
-					fieldAccesses[localIt->second][fieldName] = fieldType;
-				} else {
-					// This could be a local variable bound from a parameter
-					// For now, attribute to first PTR parameter as a heuristic
-					for (const auto& paramName : paramNames) {
-						fieldAccesses[paramName][fieldName] = fieldType;
-						break; // Only add to first parameter
-					}
-				}
-			}
-
-			// Track local variable bindings
-			// Note: This is a simplified tracking - proper tracking would require data flow analysis
-			if (n->type() == IAstNode::Type::LOCAL) {
-				AstNodeLocal* local = static_cast<AstNodeLocal*>(n);
-				// Assume locals are bound from parameters (simplified heuristic)
-				// In reality, we'd need to track the stack to know which value is being bound
-				// For multiple assignment (-> a b c), associate all with first param
-				if (!paramNames.empty()) {
-					for (const std::string& name : local->names()) {
-						localToParam[name] = paramNames[0];
-					}
-				}
-			}
-
-			// Recursively process children
-			for (auto* child : n->children()) {
-				collectRecursive(child);
+				collectRecursive(c);
 			}
 		};
 

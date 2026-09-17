@@ -1,0 +1,41 @@
+// Test: `<<field` reads the struct on top of the stack whatever produced it. The parser
+// used to fold a preceding identifier into the field-access node, and the validator then
+// treated a *function* in that position as an unknown variable, so a call with arguments
+// before `<<` reported phantom leftover values.
+struct A {
+	x:i64
+}
+
+struct B {
+	x:str
+	inner:A
+}
+
+struct Point {
+	x:i64
+	y:i64
+}
+
+fn mkb(n:i64 -- b:B) {
+	B { x = "hello" inner = A { x = n } }
+}
+
+fn mkb0( -- b:B) {
+	B { x = "zero" inner = A { x = 0 } }
+}
+
+var g:A = A { x = 5 }
+
+fn main() {
+	7 mkb <<x print nl
+	7 mkb <<inner <<x print nl
+	mkb0 <<x print nl
+	B { x = "w" inner = A { x = 3 } } -> v
+	v <<x print nl
+	v <<inner <<x print nl
+	fn ( -- s:str) { v <<x } -> get
+	get call print nl
+	g <<x print nl
+	1 2 Point <<y print nl
+	"depth: " print depth print nl
+}
