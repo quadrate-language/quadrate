@@ -689,9 +689,13 @@ public:
 			return;
 		}
 
-		// Reopen stdin from terminal for interactive input
-		if (!freopen("/dev/tty", "r", stdin)) {
-			// Can't reopen terminal - print stack and exit
+		// Reopen stdin from terminal for interactive input, but only when there is
+		// a session to continue into. /dev/tty existing is not enough: with output
+		// captured, the prompt goes into the pipe where nobody sees it and the REPL
+		// waits on a keyboard nobody is at, so `echo '2 3 add' | quadrepl > out`
+		// hangs until it is killed and loses the buffered results with it.
+		if (!isatty(STDOUT_FILENO) || !freopen("/dev/tty", "r", stdin)) {
+			// No terminal to continue in - print stack and exit
 			if (printOnExit) {
 				printStackToStdout();
 			}

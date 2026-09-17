@@ -4,6 +4,15 @@
 
 set -u
 
+# The fixtures below build throwaway git repositories to fetch from. A developer
+# with commit signing on globally would have every one of those commits block on
+# a passphrase prompt with no tty attached, hanging the suite rather than failing
+# it. Injected through the environment so it reaches each git call without
+# repeating the flag at twenty call sites.
+export GIT_CONFIG_COUNT=1
+export GIT_CONFIG_KEY_0=commit.gpgsign
+export GIT_CONFIG_VALUE_0=false
+
 # Colors for output
 RED='\033[0;31m'
 GREEN='\033[0;32m'
