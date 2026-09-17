@@ -1124,6 +1124,106 @@ fi
 cd - > /dev/null
 
 
+echo ""
+echo "Test 38: prebuild script runs for the module you are in"
+mkdir -p "$TEST_CACHE_DIR/hook_local"
+cd "$TEST_CACHE_DIR/hook_local"
+cat > qd.json <<'JSON'
+{
+	"name": "hooklocal",
+	"scripts": { "prebuild": "mkdir -p src && echo 'int generated(void){return 1;}' > src/gen.c" }
+}
+JSON
+output=$("$QUADPM" build 2>&1)
+if [ -f src/gen.c ] && echo "$output" | grep -q "Prebuild finished"; then
+    pass "prebuild runs before the src/ check, so it can create src/"
+else
+    fail "prebuild did not run for a local module" "$output"
+fi
+cd - > /dev/null
+
+echo ""
+echo "Test 39: a failing prebuild script fails the build"
+mkdir -p "$TEST_CACHE_DIR/hook_bad"
+cd "$TEST_CACHE_DIR/hook_bad"
+printf '{\n\t"name": "hookbad",\n\t"scripts": { "prebuild": "exit 3" }\n}\n' > qd.json
+output=$("$QUADPM" build 2>&1)
+status=$?
+if [ $status -ne 0 ] && echo "$output" | grep -q "Prebuild script failed"; then
+    pass "a failing prebuild script fails the build"
+else
+    fail "A failing prebuild script did not fail the build" "$output"
+fi
+cd - > /dev/null
+
+echo ""
+echo "Test 40: a fetched module's prebuild script runs by default"
+mkdir -p "$TEST_CACHE_DIR/hook_remote"
+cd "$TEST_CACHE_DIR/hook_remote"
+cat > qd.json <<'JSON'
+{
+	"name": "hookremote",
+	"scripts": { "prebuild": "mkdir -p src && echo 'int fetched(void){return 1;}' > src/gen.c" }
+}
+JSON
+echo "fn nothing() {}" > hookremote.qd
+git init -q . && git add -A && git -c user.email=t@t -c user.name=t commit -qm init > /dev/null 2>&1
+export QUADRATE_PATH="$TEST_CACHE_DIR/hook_modules"
+output=$("$QUADPM" get "file://$TEST_CACHE_DIR/hook_remote" 2>&1)
+if echo "$output" | grep -q "Prebuild finished" && echo "$output" | grep -q "mkdir -p src"; then
+    pass "a fetched module's script runs, and the command is echoed"
+else
+    fail "A fetched module's script did not run" "$output"
+fi
+
+echo ""
+echo "Test 41: --no-scripts skips it without failing"
+rm -rf "$TEST_CACHE_DIR/hook_modules"
+output=$("$QUADPM" get "file://$TEST_CACHE_DIR/hook_remote" --no-scripts 2>&1)
+status=$?
+if [ $status -eq 0 ] && echo "$output" | grep -q "Skipping prebuild script"; then
+    pass "--no-scripts skips the script and still succeeds"
+else
+    fail "--no-scripts did not skip cleanly" "$output"
+fi
+unset QUADRATE_PATH
+cd - > /dev/null
+
+
+echo ""
+echo "Test 42: native.cflags reach the compiler"
+mkdir -p "$TEST_CACHE_DIR/cflags/src"
+cd "$TEST_CACHE_DIR/cflags"
+cat > qd.json <<'JSON'
+{
+	"name": "cflagsmod",
+	"native": { "cflags": ["-DANSWER=42"] }
+}
+JSON
+cat > src/a.c <<'CSRC'
+#ifndef ANSWER
+#error "cflags did not reach the compiler"
+#endif
+int answer(void) { return ANSWER; }
+CSRC
+output=$("$QUADPM" build 2>&1)
+if [ -f lib/libcflagsmod_static.a ] && echo "$output" | grep -q "Compile flags"; then
+    pass "native.cflags are passed to the compiler and reported"
+else
+    fail "cflags did not reach the compiler" "$output"
+fi
+
+rm -rf lib
+printf '{\n\t"name": "cflagsmod"\n}\n' > qd.json
+output=$("$QUADPM" build 2>&1)
+if [ ! -f lib/libcflagsmod_static.a ]; then
+    pass "without them the same source fails, so the check means something"
+else
+    fail "Build succeeded without the flag it needs" "$output"
+fi
+cd - > /dev/null
+
+
 # Print summary
 echo ""
 echo "=========================================="

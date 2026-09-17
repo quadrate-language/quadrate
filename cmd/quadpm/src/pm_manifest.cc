@@ -10,6 +10,28 @@ namespace fs = std::filesystem;
 // Lockfile format version
 const int LOCKFILE_VERSION = 1;
 
+// Parse scripts section from qd.json
+ScriptsConfig parseScriptsConfig(const std::string& manifestPath) {
+	ScriptsConfig config;
+
+	json_error_t error;
+	json_t* root = json_load_file(manifestPath.c_str(), 0, &error);
+	if (!root) {
+		return config;
+	}
+
+	json_t* scripts = json_object_get(root, "scripts");
+	if (scripts && json_is_object(scripts)) {
+		json_t* prebuild = json_object_get(scripts, "prebuild");
+		if (prebuild && json_is_string(prebuild)) {
+			config.prebuild = json_string_value(prebuild);
+		}
+	}
+
+	json_decref(root);
+	return config;
+}
+
 // Parse native section from qd.json
 NativeConfig parseNativeConfig(const std::string& manifestPath) {
 	NativeConfig config;
@@ -30,6 +52,31 @@ NativeConfig parseNativeConfig(const std::string& manifestPath) {
 			json_array_foreach(link, index, value) {
 				if (json_is_string(value)) {
 					config.link.push_back(json_string_value(value));
+				}
+			}
+		}
+
+		// Parse extra compile flags
+		json_t* cflags = json_object_get(native, "cflags");
+		if (cflags && json_is_array(cflags)) {
+			size_t index;
+			json_t* value;
+			json_array_foreach(cflags, index, value) {
+				if (json_is_string(value)) {
+					config.cflags.push_back(json_string_value(value));
+				}
+			}
+		}
+
+		// Parse platform-specific compile flags (e.g., cflags_haiku, cflags_linux)
+		std::string cflagsKey = "cflags_" + getPlatformName();
+		json_t* platformCflags = json_object_get(native, cflagsKey.c_str());
+		if (platformCflags && json_is_array(platformCflags)) {
+			size_t index;
+			json_t* value;
+			json_array_foreach(platformCflags, index, value) {
+				if (json_is_string(value)) {
+					config.cflags.push_back(json_string_value(value));
 				}
 			}
 		}

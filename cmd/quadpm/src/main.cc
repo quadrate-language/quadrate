@@ -28,6 +28,7 @@ static void printUsage() {
 			.section("Options")
 			.standardOptions()
 			.option("--frozen", "With 'install', install only from qd.lock (fail if outdated)")
+			.option("--no-scripts", "Do not run modules' prebuild scripts")
 			.section("Lockfile")
 			.text("qd.lock pins exact commit hashes for reproducible builds. 'install'")
 			.text("creates and updates it, 'install --frozen' uses it strictly (for CI),")
@@ -80,6 +81,10 @@ int main(int argc, char** argv) {
 	bool noColorFlag = false;
 	std::vector<char*> args;
 	for (int i = 0; i < argc; i++) {
+		if (std::string(argv[i]) == "--no-scripts") {
+			setScriptsEnabled(false);
+			continue;
+		}
 		if (std::string(argv[i]) == "--no-color" || std::string(argv[i]) == "--no-colors") {
 			noColorFlag = true;
 			continue;

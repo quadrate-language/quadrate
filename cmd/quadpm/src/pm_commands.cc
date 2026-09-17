@@ -123,6 +123,11 @@ std::string gitClone(const GitRef& gitRef) {
 				  << "\n";
 	}
 
+	// Before the src/ check: a prebuild script may be what puts src/ there
+	if (!runPrebuild(finalDir, actualModuleName)) {
+		return "";
+	}
+
 	// Check for C source files and compile if found
 	std::string srcDir = finalDir + "/src";
 	if (fs::exists(srcDir) && fs::is_directory(srcDir)) {
@@ -182,6 +187,53 @@ bool usesQuadrateNaming(const std::vector<std::string>& cFiles, const std::strin
 		}
 	}
 	return false;
+}
+
+namespace {
+	bool gScriptsEnabled = true;
+}
+
+void setScriptsEnabled(bool enabled) {
+	gScriptsEnabled = enabled;
+}
+
+bool scriptsEnabled() {
+	return gScriptsEnabled;
+}
+
+// Run a module's prebuild script, if it declares one.
+//
+// This exists because quadpm compiles a module's C as part of installing it,
+// which leaves no moment for the user to prepare anything first -- a module
+// that vendors an upstream tree, say, has nowhere else to fetch it.
+//
+// The command is echoed rather than gated. Installing a module already means
+// compiling its C and linking it into the program that will run it, so a script
+// does not decide whether someone else's code runs, only when. What it does
+// change is that it runs at install time, which --no-scripts is there to
+// prevent for the cases that care: auditing a module, or mirroring one.
+bool runPrebuild(const std::string& moduleDir, const std::string& moduleName) {
+	ScriptsConfig scripts = parseScriptsConfig(moduleDir + "/qd.json");
+	if (scripts.prebuild.empty()) {
+		return true;
+	}
+
+	if (!scriptsEnabled()) {
+		std::cout << COLOR_YELLOW << "  ⊘ Skipping prebuild script" << COLOR_RESET
+				  << " (--no-scripts): " << scripts.prebuild << "\n";
+		return true;
+	}
+
+	std::cout << "  → Running prebuild for " << moduleName << ": " << scripts.prebuild << "\n";
+
+	int result = execShellIn(scripts.prebuild, moduleDir);
+	if (result != 0) {
+		std::cerr << COLOR_RED << "  ✗ Prebuild script failed" << COLOR_RESET << " (exit " << result << ")\n";
+		return false;
+	}
+
+	std::cout << COLOR_GREEN << "  ✓ Prebuild finished" << COLOR_RESET << "\n";
+	return true;
 }
 
 // Compile C sources in a module directory
@@ -267,6 +319,11 @@ bool compileCsources(const std::string& moduleDir, const std::string& moduleName
 		std::vector<std::string> compileArgs = {compiler, "-c", "-fPIC", "-O2", "-Wall"};
 		for (const auto& inc : includePaths) {
 			compileArgs.push_back(inc);
+		}
+		// After quadpm's own flags and include paths, so a module can override
+		// what it needs to -- the compiler takes the last of a repeated option.
+		for (const auto& flag : nativeConfig.cflags) {
+			compileArgs.push_back(flag);
 		}
 		compileArgs.push_back(cFile);
 		compileArgs.push_back("-o");
@@ -566,6 +623,9 @@ bool updateModule(const std::string& moduleDir, const Dependency* dep) {
 
 	// Rebuild C sources if present
 	std::string manifestPath = moduleDir + "/qd.json";
+	if (!runPrebuild(moduleDir, moduleName)) {
+		return false;
+	}
 	NativeConfig nativeConfig = parseNativeConfig(manifestPath);
 	compileCsources(moduleDir, moduleName, nativeConfig);
 
@@ -603,6 +663,23 @@ int buildModule() {
 			std::cout << nativeConfig.link[i];
 		}
 		std::cout << "\n";
+	}
+
+	if (!nativeConfig.cflags.empty()) {
+		std::cout << "  → Compile flags: ";
+		for (size_t i = 0; i < nativeConfig.cflags.size(); i++) {
+			if (i > 0) {
+				std::cout << " ";
+			}
+			std::cout << nativeConfig.cflags[i];
+		}
+		std::cout << "\n";
+	}
+
+	// Before the src/ check, because it may be what puts src/ there
+	if (!runPrebuild(cwd, moduleName)) {
+		std::cerr << COLOR_RED << "Build failed" << COLOR_RESET << "\n";
+		return 1;
 	}
 
 	// Check for src/ directory

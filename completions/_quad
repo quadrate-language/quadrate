@@ -142,13 +142,22 @@ _quadpm_opts() {
 				install)
 					_arguments -s : \
 						$common_opts \
-						'--frozen[Install only from qd.lock (fail if outdated)]'
+						'--frozen[Install only from qd.lock (fail if outdated)]' \
+						'--no-scripts[Do not run modules'"'"' prebuild scripts]'
 					;;
 				get)
+					_arguments -s : \
+						$common_opts \
+						'--no-scripts[Do not run modules'"'"' prebuild scripts]'
 					_message 'Git URL, optionally suffixed with @ref'
 					;;
 				update|remove)
 					_message 'module name'
+					;;
+				update|build)
+					_arguments -s : \
+						$common_opts \
+						'--no-scripts[Do not run modules'"'"' prebuild scripts]'
 					;;
 				*)
 					_arguments -s : $common_opts

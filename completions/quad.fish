@@ -120,6 +120,8 @@ complete -c quadpm -n __fish_use_subcommand -a outdated -d 'Show modules with ne
 complete -c quadpm -n __fish_use_subcommand -a build -d 'Build the C sources of the module in this directory'
 complete -c quadpm -n '__fish_seen_subcommand_from install' -l frozen \
     -d 'Install only from qd.lock (fail if outdated)'
+complete -c quadpm -n '__fish_seen_subcommand_from install get update build' -l no-scripts \
+    -d 'Do not run modules\' prebuild scripts'
 
 # --- quad -------------------------------------------------------------------
 # The dispatcher. Each command runs the matching tool and passes options
@@ -186,3 +188,4 @@ complete -c quad -n '__fish_seen_subcommand_from mcp' -l http -d 'Serve over HTT
 complete -c quad -n '__fish_seen_subcommand_from pm' \
     -a 'install lock get update remove list outdated build'
 complete -c quad -n '__fish_seen_subcommand_from pm' -l frozen -d 'Install only from qd.lock'
+complete -c quad -n '__fish_seen_subcommand_from pm' -l no-scripts -d 'Do not run prebuild scripts'

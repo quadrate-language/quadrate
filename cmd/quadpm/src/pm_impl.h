@@ -34,7 +34,13 @@ extern const int LOCKFILE_VERSION;
 
 // Native build configuration from qd.json
 struct NativeConfig {
-	std::vector<std::string> link; // Libraries to link with (-l flags)
+	std::vector<std::string> link;	 // Libraries to link with (-l flags)
+	std::vector<std::string> cflags; // Extra flags for the module's own C, after quadpm's
+};
+
+// Scripts section from qd.json
+struct ScriptsConfig {
+	std::string prebuild; // Run in the module directory before its C is compiled
 };
 
 // Dependency from [dependencies] section
@@ -90,6 +96,9 @@ std::string execCommand(const std::vector<std::string>& args);
 // Execute command showing output in real-time
 int execCommandLive(const std::vector<std::string>& args);
 
+// Run a command line through /bin/sh in workingDir, output unfiltered
+int execShellIn(const std::string& command, const std::string& workingDir);
+
 // Check if a command exists in PATH
 bool commandExists(const std::string& cmd);
 
@@ -121,6 +130,9 @@ void collectTransitiveDeps(const std::string& manifestPath, const std::string& m
 
 // Parse native section from qd.json
 NativeConfig parseNativeConfig(const std::string& manifestPath);
+
+// Parse scripts section from qd.json
+ScriptsConfig parseScriptsConfig(const std::string& manifestPath);
 
 // Parse module name from qd.json
 std::string parseModuleName(const std::string& manifestPath);
@@ -167,6 +179,15 @@ bool usesQuadrateNaming(const std::vector<std::string>& cFiles, const std::strin
 
 // Compile C sources in a module directory
 bool compileCsources(const std::string& moduleDir, const std::string& moduleName, const NativeConfig& nativeConfig);
+
+// Run a module's prebuild script, if it declares one, echoing the command first
+// Returns false only if the script failed; --no-scripts skips it and succeeds,
+// since the point of that flag is to install without executing
+bool runPrebuild(const std::string& moduleDir, const std::string& moduleName);
+
+// Cleared by --no-scripts
+void setScriptsEnabled(bool enabled);
+bool scriptsEnabled();
 
 // List installed modules
 void listModules();

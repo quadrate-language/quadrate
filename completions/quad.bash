@@ -16,7 +16,7 @@ _QUAD_OPTS_QUADUSES="-w --write -c --check -n --dry-run"
 _QUAD_OPTS_QUADDOC="-o --output -q --quiet --title --css"
 _QUAD_OPTS_QUADREPL="-p --print"
 _QUAD_OPTS_QUADMCP="--http"
-_QUAD_OPTS_QUADPM="--frozen"
+_QUAD_OPTS_QUADPM="--frozen --no-scripts"
 
 # Helper function to find .qd files and directories
 _quad_qd_files() {

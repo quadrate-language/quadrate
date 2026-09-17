@@ -156,6 +156,32 @@ int execCommandLive(const std::vector<std::string>& args) {
 	return execCommandSafe(args, nullptr, true);
 }
 
+// Run a command line through /bin/sh, in workingDir
+int execShellIn(const std::string& command, const std::string& workingDir) {
+	pid_t pid = fork();
+	if (pid == -1) {
+		return -1;
+	}
+
+	if (pid == 0) {
+		if (chdir(workingDir.c_str()) != 0) {
+			_exit(127);
+		}
+		execl("/bin/sh", "sh", "-c", command.c_str(), static_cast<char*>(nullptr));
+		_exit(127);
+	}
+
+	int status = 0;
+	if (waitpid(pid, &status, 0) == -1) {
+		return -1;
+	}
+
+	if (WIFEXITED(status)) {
+		return WEXITSTATUS(status);
+	}
+	return -1;
+}
+
 // Check if a command exists in PATH
 bool commandExists(const std::string& cmd) {
 	std::string output;
