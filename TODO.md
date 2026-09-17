@@ -66,6 +66,12 @@ internals), 69 documented in `reference.def`.
       documented `quadc` segfaults on ordinary programs, above. Breadth is fine; depth under the
       breadth is thin. Worth weighing before the next module or tool lands.
 
+### Interpreter tier (lib/interp)
+
+- [ ] Not planned for this tier: structs, `defer`, `import`/`use`, anonymous functions. Imports in
+      particular cannot mean anything on a device with no package resolution — qdos takes its
+      scopes from `lib<name>.so` filenames — so they should keep refusing clearly.
+
 ### Formatter
 
 - [ ] Remaining edge cases (low priority — no valid Quadrate program triggers them):
@@ -199,7 +205,98 @@ internals), 69 documented in `reference.def`.
     `gen_docs.sh` drops the `<!-- doccheck: compile-only -->` directive from `signal.md`, so
     regenerating it breaks `docscheck`. Pre-existing bug, not fixed here.
 
+### Interpreter tier (lib/interp)
+
+- [x] **The six remaining gaps in the AST walker are closed: `return`, `const`/`enum`, named
+      locals, `for`, `cast<T>` and array literals.** Each had been probed construct by construct;
+      all six landed together because four of them turned out to be one feature.
+
+    **Named locals were the load-bearing one.** `qd_interp` grows a `std::vector<Frame>`, one
+    frame per active call, and `-> x` binds into the innermost. `for`'s iterator is an ordinary
+    entry in the same frame (saved and restored around the loop, as `iteratorVars` is in
+    `generateFor`), so implementing locals implemented most of `for` with it. The top-level frame
+    persists across evaluations, the way the stack already does — a prompt that forgot its names
+    between lines would be the wrong shape for what this tier is for.
+
+    **The tier had been binding parameters wrongly, and the tests recorded it.** A signature whose
+    inputs are *all* named binds them on entry and takes them off the stack —
+    `semantic_validator_typecheck.cc` states the rule and the compiled tier follows it, so
+    `fn double(x:i64 -- r:i64) { 2 * }` is a stack-underflow *error* in a real build. Eleven test
+    declarations spelled it that way and passed here; they now read `{ x 2 * }` and mean the same
+    thing in both tiers. Mixed or unnamed inputs still stay on the stack, which is the exemption
+    the validator makes.
+
+    **Arrays needed reference counting, not just construction.** `len` and `nth` each consume the
+    reference the stack carries, so a literal bound with `-> a` and read twice was freed under the
+    second read — `a 1 nth` returned garbage from freed memory. Reading a pointer local now
+    retains first and a frame releases what it holds when it is dropped, which is precisely what
+    `generateIdentifier` and `generateLocalCleanup` do. The interpreter now ends its own test run
+    with zero bytes in use.
+
+    **`const` was the worst failure of the set and the smallest fix**: it parsed, and then the name
+    reported as undefined, which reads like a typo rather than a missing feature. Constants and
+    enum variants share one table keyed by the written form, so `Colour::Red` resolves as a value
+    *and* as a `switch` case label — the latter matching `compareAgainstNamedConstant`, including
+    its refusal to let a label that resolves to nothing quietly never match.
+
+    Also: `evalSwitch` was leaking the string it popped as its subject. `qd_interp_destroy` now
+    drops its frames rather than leaving what they own to the allocator.
+
+    Fourteen tests added (`Return`, `Constants`, `Enums`, `NamedLocals`, `NamedParameters`,
+    `ForLoops`, `Casts`, `ArrayLiterals` among them); 754 assertions pass under valgrind with no
+    errors and nothing in use at exit. Full suite 2064 passed, 0 failed.
+
+    **Writing `for` here found a compiler bug**, since a float loop worked in this tier and hung
+    in a compiled build. Fixed below rather than matched.
+
+    **`-> a b c` is not a thing.** `AstNodeLocal` carries a name list and the compiled tier loops
+    over it, but both parse sites build a one-element vector and the syntax is a single name —
+    so the multiple-binding spelling is dead in the parser. The walk handles the list anyway,
+    because the node can express it; `-> a -> b -> c` is what a program writes.
+
 ### Compiler & runtime
+
+- [x] FIXED — **A `for` loop with float bounds never terminated.** `0.0 2.0 0.5 for x { … }`
+      compiled clean and hung, printing the iterator as 0 forever. `generateFor`'s runtime-stack
+      path converted start, end and step with `CreateFPToSI` before building the loop, so a step
+      of 0.5 became 0. Only functions that miss `analyzeIsBodyNativeEligible` — `main` among them —
+      take that path; the compile-time-stack path already had a float branch and was correct.
+
+    **The type is not known at compile time on that path, which is the whole difficulty.** The
+    bounds arrive as `qd_stack_element_t`s carrying a runtime tag, so there is no IR type to
+    branch on. The loop therefore carries *both* iterators — an i64 PHI and a double PHI, each
+    advanced by its own step — and selects between them with the tag: the condition is
+    `select(isFloatLoop, floatCmp, intCmp)` and the body reads whichever the same flag picks. The
+    start element decides, matching the compile-time path and the interpreter. LLVM deletes the
+    dead half whenever the tag folds to a constant, so an integer loop is unchanged in the
+    optimised output.
+
+    **Reading the iterator had to become type-aware too**, or a float loop would push its value
+    under an INT tag. `generateInlinePushIntValue` and `generateInlinePushFloatValue` differed only
+    in the tag they stored, so both now delegate to one `generateInlinePushTaggedValue` that takes
+    the tag as a value; the iterator passes a `select` of 0 and 1. No branch, one extra select per
+    read, and 40 lines of duplication gone.
+
+    **A second bug fell out of the same code.** All three bounds were converted according to the
+    *start's* tag, so `0.0 10 1 for` read the integer end and step as the bits of a double —
+    garbage. Each bound is now read in both domains from its own tag, so mixed bounds mean what
+    they look like.
+
+    Regression test `tests/qd/control_flow/for_loop_float_bounds` covers ascending and descending
+    fractional steps, mixed bounds, an iterator bound with `->`, an integer loop nested in a float
+    one sharing the name, and a native-eligible function for the other path. Verified red: on the
+    unfixed compiler it prints 0 forever. Its output is byte-identical to the same programs under
+    `lib/interp`. Full suite 2064 passed, 0 failed; `docscheck` 218 blocks clean.
+
+- [x] **`switch` in the interpreter tier.** Matches integers, floats, strings and bools against
+      literal cases, with `_` as the default, and takes its value off the stack the way `if` takes
+      its condition. The compiled tier has one further rule — where the value is the status of a
+      user-defined fallible call, `Ok` means "no error" rather than "equals 1" — which is
+      inexpressible here, this tier having no fallible calls, so the two cannot disagree.
+
+    Also fixed `parseSwitchStatement`, which stopped at the first comment between two cases. A
+    dispatch table is the one place that most wants a comment per line, so annotating one made it
+    fail to parse; it affected the compiled tier equally.
 
 - [x] FIXED — **`return` was a silent no-op in `main`.** Not just inside an `if` — at the top
       level too. Found while restructuring `wc.qd` for the branch-arity work below.
