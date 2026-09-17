@@ -1224,6 +1224,38 @@ fi
 cd - > /dev/null
 
 
+echo ""
+echo "Test 43: update visits each module once"
+mkdir -p "$TEST_CACHE_DIR/upd_src"
+cd "$TEST_CACHE_DIR/upd_src"
+printf '{\n\t"name": "updonce"\n}\n' > qd.json
+echo "fn nothing() {}" > updonce.qd
+git init -q . && git add -A && git -c user.email=t@t -c user.name=t commit -qm init > /dev/null 2>&1
+export QUADRATE_PATH="$TEST_CACHE_DIR/upd_modules"
+"$QUADPM" get "file://$TEST_CACHE_DIR/upd_src" > /dev/null 2>&1
+
+# A module may leave a checkout of its own behind -- a prebuild script that
+# vendors an upstream tree does. That is not a module, and neither is the
+# namespace symlink pointing at this one.
+installed=$(dirname "$(find "$TEST_CACHE_DIR/upd_modules" -maxdepth 4 -name qd.json | head -1)")
+if [ ! -d "$installed" ]; then
+    fail "Could not find the installed module" "$(find "$TEST_CACHE_DIR/upd_modules" -maxdepth 4)"
+fi
+mkdir -p "$installed/.vendor/upstream"
+git init -q "$installed/.vendor/upstream"
+
+output=$("$QUADPM" update 2>&1)
+status=$?
+updates=$(echo "$output" | grep -c "✓ Updated")
+if [ $status -eq 0 ] && [ "$updates" -eq 1 ]; then
+    pass "update walks past a module's own checkout and the namespace symlink"
+else
+    fail "update visited a module more than once (or failed)" "$output"
+fi
+unset QUADRATE_PATH
+cd - > /dev/null
+
+
 # Print summary
 echo ""
 echo "=========================================="

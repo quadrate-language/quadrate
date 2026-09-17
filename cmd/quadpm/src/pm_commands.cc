@@ -1306,8 +1306,18 @@ int updateModules(const std::string& targetModuleName) {
 	int failures = 0;
 
 	// Recursively traverse to find all git repositories
-	for (const auto& entry : fs::recursive_directory_iterator(modulesDir)) {
+	for (auto it = fs::recursive_directory_iterator(modulesDir); it != fs::recursive_directory_iterator(); ++it) {
+		const auto& entry = *it;
 		if (!entry.is_directory()) {
+			continue;
+		}
+
+		// _namespaces holds a symlink to every module, so walking it would find
+		// each one a second time under its bare name. Recursion has to be
+		// disabled rather than the entry skipped: is_directory() follows the
+		// symlinks, so a plain continue would still walk through them.
+		if (entry.path().filename() == "_namespaces") {
+			it.disable_recursion_pending();
 			continue;
 		}
 
@@ -1316,6 +1326,12 @@ int updateModules(const std::string& targetModuleName) {
 		if (!fs::exists(gitDir)) {
 			continue;
 		}
+
+		// A module is not a place to look for more modules. Its own checkouts
+		// are its business -- a prebuild script that vendors an upstream tree
+		// leaves one behind, and pulling that would mean updating a module to
+		// something nobody asked for.
+		it.disable_recursion_pending();
 
 		std::string name = entry.path().filename().string();
 
