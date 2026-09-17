@@ -66,6 +66,301 @@ internals), 69 documented in `reference.def`.
       documented `quadc` segfaults on ordinary programs, above. Breadth is fine; depth under the
       breadth is thin. Worth weighing before the next module or tool lands.
 
+### Language review 2026-09-17
+
+Findings from a full review of the language surface. Method: the specification read end to end;
+`semantic_validator_typecheck.cc` / `_instructions.cc` read at the points where checking is
+suspended; ~40 probe programs compiled and run against `quadc 0.5.0-58-gd963049e`; and a feature
+census over the `stdlib` + `examples` corpus (82 `.qd` files, 18,918 lines, doom port absent as
+before).
+
+Nothing here is an accepted decision. Each item records **what was measured**, and **the open
+question** — several may well come out as "working as intended, close it". IDs are stable so they
+can be referred to while working through them; they are ordered by leverage, not by effort.
+
+Where an item restates something already open above (`R3`, parts of `R23`), it is kept only for the
+new evidence, not as a second copy of the task.
+
+#### Abstraction — the cluster that shapes everything else
+
+- [ ] **R1. Generic type parameters unify on bare `T` only.** `[]T` and `fn(...)` appear to be
+      compared as literal type strings, so every generic over an aggregate is rejected at the call
+      site. Measured:
+      `fn count<T>(a:[]T -- n:i64)` called as `[1 2 3] count` → *"Parameter 1 expects type '[]T' but
+      got '[]i64'"*; `fn apply<T>(x:T f:fn(T -- T) -- r:T)` called as `5 &dbl apply` → *"expects
+      'fn(T -- T)' but got 'fn(i64 -- i64)'"*. Bare `T` works (`fn id<T>(x:T -- y:T)` accepts i64,
+      str and f64), and generic structs work. The workaround in the corpus is to declare the
+      parameter `ptr`, which discards checking entirely.
+      **Open question**: is this a substitution bug in the signature comparison (likely small), or
+      does `[]T`/`fn(...)` unification need type-variable machinery that does not exist yet? The
+      answer decides whether R28 and the `type`-alias watch item resolve themselves.
+
+- [ ] **R2. A function pointer does not survive a struct field.** The declared `fn(...)` type is
+      lost through `<<field`, so the following `call` is modelled as producing nothing:
+      `struct Shape { area:fn( -- f64) }` then `s <<area call print` → *"Type error in 'print':
+      Stack underflow (requires 1 value)"*. Binding first (`s <<area -> f  f call -> a`) fails the
+      same way, and declaring the field `ptr` does not help. There are **zero fn-typed struct fields
+      in the whole corpus**, which is consistent with the feature never having worked.
+      **Open question**: fix the type propagation, or decide that fn-pointer fields are out of scope
+      and reject them at the declaration instead of at the use site? This is the minimum viable form
+      of dynamic dispatch, so the answer also bears on the interfaces/traits decision above.
+
+- [ ] **R3. Evidence for the sum-types item above, not a second copy of it.** Three measurements
+      that were not in the original note, all consequences of "there is no *one of these*":
+      `stdlib/json` has **no `parse`** — its 27 public functions are string scanners that re-scan the
+      document on every key lookup (`get_int(json:str key:str -- value:i64 found:i64)`), because
+      there is no value type to parse into and no dispatch to walk one with; the `(value, found)`
+      multi-return convention it uses is an ad-hoc `Option` repeated across dozens of stdlib
+      signatures; and see R4 for the error-handling cost.
+      **Open question**: does the JSON case move this from "longer horizon" to the next thing after
+      R1/R2, or is a real `json::parse` simply not a goal?
+
+- [ ] **R4. 315 abort-on-error call sites, 263 of them inside the standard library.** Counts are
+      `[a-z_]!` call sites over the corpus: 263 in `stdlib`, 52 in `examples`. Heaviest: `json` 38,
+      `thread` 30, `uri` 28, `os` 19, `regex` 18, `path` 18. `json.qd` calls `strings::char_at!`
+      20+ times while scanning *untrusted input*, and line 376 already carries the comment
+      *"`!` aborted here, which killed the process on untrusted input"* against a site that was
+      converted to a `switch`. A library that aborts the host process on malformed input is not
+      shippable, and this reads as the design pushing authors there — `?` requires the enclosing
+      function to be fallible, and threading a bare `(code, msg)` through recursive descent is
+      miserable — rather than as carelessness.
+      **Open question**: is this a stdlib-hygiene sweep to do now (convert library `!` to `?`), or
+      does it wait for R3 because the sweep would otherwise be done twice?
+
+#### What the compiler does and does not check
+
+- [ ] **R5. Any function containing a `loop` gets no declared-effect verification.**
+      `LOOP_STATEMENT` sets `mHasUnpredictableStack = true` unconditionally
+      (`semantic_validator_typecheck.cc:1302`), and the arity check at :682 is gated on that flag.
+      Verified: a `( -- r:i64)` function whose `loop` body pushes an unconsumed `42` each iteration
+      compiles clean and returns with three junk values on the stack. With `loop` at 177 uses and
+      `while` removed (R12), this exemption covers most non-trivial functions in the corpus.
+      The other exemptions, for the record: `read` (R14), `fmt::printf`, `fmt::sprintf`,
+      `flag::parse`, every FFI-imported function, and any unresolved symbol.
+      **Open question**: model loop bodies properly (fixpoint over the body, `break` edges joined),
+      or accept the gap and stop claiming *"validates all stack operations at compile time"*
+      (`index.md`)? A middle option is to check only loops with no `break`/`continue`.
+
+- [ ] **R6. `switch` arms are not balance-checked.** The `if`/`else` rule at :1057 — with its
+      well-reasoned diverging-arm and post-fallible-call exemptions — has no `switch` counterpart.
+      Verified: `c switch { 1 { 10 }  2 { 20 30 }  _ { 0 } }` in a `( -- r:i64)` function compiles
+      and runs. The same argument the `if` rule makes applies verbatim: whatever follows reads a
+      value whose identity depends on which arm ran.
+      **Open question**: extend the existing check to `switch`, including the `Ok`-arm exemption
+      that mirrors the post-fallible-call case?
+
+- [ ] **R7. An unbalanced `if` inside a loop is caught by codegen, as an internal error.**
+      `quadc: error: internal: if/else arms leave the stack at different depths (then: 2, else: 3)
+      at line 3` followed by `quadc: error: LLVM generation failed` — no source excerpt, no
+      `file:line:column:`, and the word "internal" tells the user they hit a compiler bug when they
+      wrote ordinary bad code. The frontend misses it precisely because of R5.
+      **Open question**: this is arguably fixed for free by R5. If R5 is declined, is it worth
+      promoting the codegen check to a located frontend diagnostic on its own?
+
+- [ ] **R8. `for` bodies are checked against the pre-loop stack, so the model is unsound in both
+      directions.** The body is type-checked in a *copy* and the parent stack is left unchanged
+      ("loops don't have consistent stack effects", :1296). Verified rejecting a valid program:
+      `0 1000 1 for i { i }  0 1000 1 for i { drop }` → *"Type error in 'drop': Stack underflow"*,
+      though it is balanced. And verified accepting an invalid one: a `for` body leaving values per
+      iteration passes silently (`0 5 1 for i { i }` leaves depth 5 at runtime).
+      **Open question**: is accumulate-on-the-stack inside `for` an idiom worth keeping (it is the
+      only map-like form available today), in which case the check can only ever be a warning — or
+      is it a mistake that R1 would make unnecessary?
+
+- [ ] **R9. `docscheck` covers 16% of the documented examples.** 218 blocks checked and passing,
+      1,117 skipped as "not programs", out of 1,335 fenced Quadrate blocks. The floor is honestly
+      scoped and documented in `tools/check_docs.py` — but the front-page example is in the 84%:
+      `fn double(x:i64 -- result:i64) { 2 * }` in `about.md` does not compile (R10).
+      **Open question**: can the harness synthesise a `fn main` wrapper for fragment blocks and lift
+      coverage materially, or is the current floor the right stopping point and the fix is only to
+      hand-audit the handful of blocks that are whole declarations?
+
+- [ ] **R10. 87 language tests have no asserted output.** `run_all.sh` reports them as
+      `SKIP:no expected output` — they compile and run but nothing is pinned, ~11% of the 682
+      language tests.
+      **Open question**: generate the missing `.out` siblings from current behaviour and review the
+      diff, or are these deliberately output-free?
+
+#### Language design decisions to settle
+
+- [ ] **R11. Naming a parameter silently changes the calling convention.** `fn f(x:i64 -- r:i64)`
+      binds and consumes `x`; `fn f(i64 -- r:i64)` leaves it on the stack. An annotation that looks
+      purely documentary changes what the body means, and mixing the two forms is rejected outright
+      (*"Cannot mix named and unnamed input parameters"*). The rule is stated in the spec (§4.4) and
+      the interpreter tier already had eleven tests encoding it wrongly.
+      **Open question**: leave it (it is at least consistent and diagnosed), or make naming
+      non-consuming, or bind *and* leave the value? This is the wart most likely to cost a newcomer
+      their first hour, so "leave it, document harder" is a legitimate answer but should be a
+      decision rather than the default.
+
+- [ ] **R12. The cost of removing `while`, now measurable.** `loop` is at 177 uses against `for`'s
+      104, and the overwhelming majority are `loop { cond if { break } … }` — three lines and a
+      nesting level where `while` was one. `examples/kernel/kernel.qd` is wall-to-wall with it.
+      Compounding: `loop` is exactly the construct that suspends effect checking (R5), so the
+      removal pushed the dominant loop form into the unchecked path.
+      **Open question**: reinstate `while` as sugar that lowers to the same `loop`, or does the
+      subtractive argument still hold? If R5 is fixed, most of this item evaporates.
+
+- [ ] **R13. `and`/`or` are bitwise and are used throughout as logical.** There is no short-circuit
+      operator; `lnot` exists but has no binary counterpart. Verified: `2 1 and` → `0`, so any
+      operand not already 0/1 gives the wrong answer. Both sides always evaluate, so the guarded
+      form `i xs len < xs i nth … and` is unsafe. Live in the corpus:
+      `t 0.0 > best_t 0.0 < t best_t < or and if` (`examples/raytracer/raytracer.qd`) is correct
+      only because every operand happens to be a comparison result.
+      **Open question**: add short-circuit `land`/`lor` (named, per the no-symbolic-bitwise rule),
+      or rely on comparisons always yielding 0/1 and document the hazard? Note this is a correctness
+      question, not ergonomics.
+
+- [ ] **R14. `cast<T>` fails silently.** `"42abc" cast<i64>` → `42`; `"notanumber" cast<i64>` → `0`,
+      indistinguishable from parsing the string `"0"`. This sits oddly in a language that otherwise
+      *forces* the caller to handle failure (R16 is the same shape). `strconv::parse_int` is the
+      fallible sibling that already exists.
+      **Open question**: make string→numeric `cast` fallible, or remove that direction of `cast`
+      entirely and point at `strconv`?
+
+- [ ] **R15. The sized-integer divergence the spec already documents — decide it.** `300 cast<u8>`
+      yields `300`, and a sized type on a parameter or return annotation is inert. Only struct
+      fields and the `mem` accessors honour the width; those were verified correct (`packed struct
+      { a:u32 … }` with `-1 >>a` loads back `4294967295`). The spec §3.1.1 says a conforming
+      implementation "SHOULD either apply the width consistently or reject sized types in positions
+      where it does not" — the reference implementation does neither.
+      **Open question**: truncate in `cast`, or reject the annotation where it carries no meaning?
+      Rejecting is smaller and matches the subtractive precedent.
+
+- [ ] **R16. No exhaustiveness check on `switch` over an enum.** A missing variant with no `_` arm
+      is caught only incidentally, and only when the function's declared outputs happen to expose it
+      (*"declares 1 output(s) but body leaves 0"*). The enum metadata needed is already collected.
+      **Open question**: warn, error, or leave alone given `enum` has 1 decl in-corpus (though it is
+      load-bearing in the doom port)?
+
+- [ ] **R17. Closures cannot capture a `for` iterator.** `0 3 1 for i { fn ( -- r:i64) { i } … }` →
+      *"Undefined identifier 'i'"*. The iterator is saved and restored around the loop as an
+      ordinary frame entry, so it is presumably not in the capture set.
+      **Open question**: fix, or is building closures in a loop out of scope? Worth noting the
+      classic capture-by-reference-vs-value question has to be answered either way.
+
+- [ ] **R18. Multi-return selection still has no syntax.** Already flagged above as the real need
+      hiding inside the `nip nip` / `drop nip` cluster in `time.qd`; adding that the `(value, found)`
+      convention makes it pervasive — every one of `json::get_*`, and much of `strings`, returns two
+      values of which callers usually want one, spelled `-> found -> value` and then ignoring one.
+      **Open question**: a discard binding (`-> _`), destructuring, or does R3 delete the need?
+
+#### Spec and implementation disagree
+
+- [ ] **R19. Nested array literals do not parse.** `[[1 2] [3 4]]` is documented in specification
+      §3.2.2 as valid; it produces *"Unexpected character '['"*. Struct literals inside array
+      literals do not parse either: `[ P { x = 1 } P { x = 2 } ]` fails the same way. `make<P>` plus
+      `set` does work for arrays of structs.
+      **Open question**: implement, or narrow the spec and the array-literal grammar to scalars?
+
+- [ ] **R20. `str` is a byte string; the spec says "Immutable UTF-8 string".** Verified on
+      `"héllo wörld"` (11 characters, 13 bytes): `strings::len` → 13, `strings::char_at 1` → 195
+      (a continuation byte), `strings::upper` leaves `ö` unchanged, `index_of` returns a byte index.
+      Separately, the `unicode` module is not a Unicode module — it is a table of ASCII character
+      codes (`unicode::lbrace`, `unicode::digit0`).
+      **Open question**: three separate decisions — (a) correct the spec's wording to "byte string";
+      (b) add codepoint-level operations or explicitly decline them; (c) rename `unicode` to
+      something that says what it is (`ascii`?), which is a breaking change across the corpus.
+
+- [ ] **R21. `>>field` is specced as returning an updated struct; it mutates in place.** Structs are
+      reference values: `P { x = 1 } -> a  a -> b  b 99 >>x drop` leaves `a <<x` as 99, and passing
+      a struct to a function lets that function mutate the caller's value. The spec's "sets field,
+      pushes modified struct back (for chaining)" and the idiom `p 42 >>x -> p` both read as a
+      functional update.
+      **Open question**: documentation only, or is there an argument for value semantics on
+      assignment? (Almost certainly documentation only — but the current wording is actively
+      misleading and 12 `>>` sites is a small blast radius if anything does change.)
+
+- [ ] **R22. Float division by a literal `0.0` is a compile error.** *"Division by zero in '/': the
+      divisor is the literal 0.0"*. For `f64` this is a well-defined IEEE 754 operation yielding
+      infinity; the integer rule appears to have been applied to floats.
+      **Open question**: allow it for `f64` (and let `math` expose the infinity constants), or is
+      rejecting it a deliberate safety choice?
+
+#### Ergonomics and gaps
+
+- [ ] **R23. There is no way to print an array or a struct.** `[1 2 3] print` prints an empty line;
+      `printv` gives `ptr:0x…`. Debug output for aggregates has to be hand-written per type.
+      **Open question**: teach `print`/`printv` the array element type and the struct layout (both
+      are known at compile time), or is this what `fmt` is for?
+
+- [ ] **R24. `err` is global state, not a value.** Set by `panic`, cleared on read, survives
+      intervening non-fallible calls (all verified). It cannot be stored, returned, wrapped, or
+      chained, so there is no way to build "failed to open config: no such file". It is also the
+      main reason R4's authors reach for `!`.
+      **Open question**: subsumed by R3, or worth an independent error-value type first?
+
+- [ ] **R25. `error { code = … message = … }` literal has near-zero use.** Listed in the grammar and
+      §10.2 as the alternative to `msg code panic`.
+      **Open question**: cut it now on the `>>field!` precedent (two spellings of one operation), or
+      hold because R3 would replace both?
+
+- [ ] **R26. Reference cycles leak, silently.** Verified with two `*Node` structs pointing at each
+      other. Expected for refcounting and entirely defensible — but `specification.md` §11 does not
+      mention it, and `struct Node { next:*Node }` is the spec's own example.
+      **Open question**: document the limitation, add weak references, or add a cycle detector for
+      debug builds? Documenting is nearly free and probably sufficient.
+
+- [ ] **R27. Threads get a hardcoded 1,024-element stack.** `qd_create_context(1024)` in
+      `stdlib/thread/src/thread.c:44` and `lib/rt/src/runtime.c:856`; `-s` does not reach it.
+      Verified: a thread body that pushes 5,000 values dies with *"Stack overflow (use -s to
+      increase stack size)"* — advice that does not work for this case. Thread contexts are properly
+      isolated otherwise, which is the important part.
+      **Open question**: plumb `-s` through, or make it a `thread::spawn` parameter?
+
+- [ ] **R28. No comparator sort, and `hof` is `i64`-only — both downstream of R1.** `sort` exposes
+      six monomorphic entry points (`ints`, `ints_desc`, `floats`, `floats_desc`, `strings`,
+      `strings_desc`), all taking `(arr:ptr count:i64)`, and every combinator in `hof` — `apply`,
+      `bi`, `tri`, `keep`, `dip`, `both` — is hardcoded to `fn(i64 -- i64)`. Recorded here so that
+      when R1 lands there is a list of APIs to revisit rather than a fresh survey.
+      **Open question**: none yet — this is a follow-on task, not a decision.
+
+#### Cuts with corpus evidence
+
+- [ ] **R29. `read` has zero bare uses and actively degrades checking.** It clears the type stack and
+      sets `mHasUnpredictableStack` (`semantic_validator_instructions.cc:119`), pushing 16 synthetic
+      `str` values because argc is unknown at compile time — so any function containing it loses its
+      declared-effect check. `flag` and `os` cover the job properly.
+      **Open question**: straight cut with a `REMOVED_INSTRUCTIONS` entry pointing at `flag`/`os`?
+
+- [ ] **R30. Four more zero-use builtins.** Bare-use counts over the corpus, excluding `module::`
+      hits: `free` 0 (all 120 hits are `mem::free`/`thread::free`), `printv` 0, `printsv` 0,
+      `dec`/`--` 0. `wait` is also 0 bare, against `spawn` 4 and `detach` 5 — that trio duplicates
+      the `thread` module and wants a decision about which layer owns threading.
+      **Open question**: cut the four outright; separately, do the `spawn`/`detach`/`wait` builtins
+      have a reason to exist alongside `thread::`?
+
+- [ ] **R31. Supporting numbers for the `pick`/`roll` and live-shuffler items above.** The full
+      census, so the two open items can be settled against one table: `-> ` locals **3,213**;
+      `<<field` 1,154; `>>field` **12**; `drop` 63, `dup` 26, `swap` 18, `over` 8, `nip` 7, `rot` 5,
+      `roll` 3, `dup2` 2, `pick` 1. Named binding outnumbers every shuffler combined by roughly
+      46:1. Separately worth noting: `>>field`, one of the language's two custom sigils, has twelve
+      uses in 18,918 lines — structs are read-mostly in practice.
+      **Open question**: does the 46:1 ratio settle the live-shuffler item, or is frequency the
+      wrong test for `swap`/`over`?
+
+#### Positioning and scope
+
+- [ ] **R32. The stack is no longer the programming model, and the documentation still says it is.**
+      Given R31's ratios, real Quadrate is an ALGOL-family language with named parameters, named
+      locals, structs and methods, that uses postfix syntax and a stack calling convention.
+      `examples/dc/dc.qd` — a calculator, the most stack-shaped program there is — opens with
+      `fn stack_push(s:ptr val:f64 -- )` over a hand-rolled `mem::alloc` array, because the
+      language's stack is not where data lives. Meanwhile `learn/2-stack/` is four pages, more than
+      functions and error handling together.
+      **Open question**: is this a docs restructure (lead with functions and locals, demote the
+      stack to "how calls work"), or is the concatenative framing something to keep pushing toward
+      in the language itself?
+
+- [ ] **R33. Supporting numbers for the scope-vs-depth note above.** `cmd/` is **20,828 lines,
+      larger than `lib/llvmgen/` at 12,695** — ten CLI tools against one code generator. Of 2,064
+      passing tests: 898 stdlib, 337 MCP server, 682 language, 25 C++ compiler tests. The whole
+      `[Unreleased]` changelog is completions, `--help` layout, `quadrepl`, `quaddoc` and diagnostic
+      prefixes — **no language changes except removals** — while the two `quadc` segfaults at the
+      top of this file remain unbisectable for want of the doom sources.
+      **Open question**: is a tooling freeze for one release worth doing explicitly, or does the
+      existing note already cover it?
+
 ### Interpreter tier (lib/interp)
 
 - [ ] Not planned for this tier: structs, `defer`, `import`/`use`, anonymous functions. Imports in
