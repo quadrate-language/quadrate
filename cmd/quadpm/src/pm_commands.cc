@@ -134,7 +134,11 @@ std::string gitClone(const GitRef& gitRef) {
 		std::cout << COLOR_GREEN << "  ✓ Found src/ directory" << COLOR_RESET << "\n";
 		// Parse native config for link libraries
 		NativeConfig nativeConfig = parseNativeConfig(manifestPath);
-		compileCsources(finalDir, actualModuleName, nativeConfig);
+		if (!compileCsources(finalDir, actualModuleName, nativeConfig)) {
+			pmError("failed to build native sources for '" + actualModuleName + "'");
+			std::cerr << "The checkout is left at " << finalDir << " so the build can be retried with 'quadpm build'\n";
+			return "";
+		}
 	}
 
 	return actualModuleName;
@@ -353,11 +357,13 @@ bool compileCsources(const std::string& moduleDir, const std::string& moduleName
 	linkArgs.push_back(sharedLib);
 
 	int linkResult = execCommandLive(linkArgs);
+	bool linkFailed = false;
 
 	if (linkResult == 0) {
 		std::cout << COLOR_GREEN << "  ✓ Built " << COLOR_RESET << libName << ".so\n";
 	} else {
-		std::cerr << COLOR_YELLOW << "  ⚠ Failed to build shared library" << COLOR_RESET << "\n";
+		std::cerr << COLOR_RED << "  ✗ Failed to build shared library" << COLOR_RESET << "\n";
+		linkFailed = true;
 	}
 
 	// Create static library (note: static libs don't link with other libs directly)
@@ -413,7 +419,8 @@ bool compileCsources(const std::string& moduleDir, const std::string& moduleName
 			}
 		}
 	} else {
-		std::cerr << COLOR_YELLOW << "  ⚠ Failed to build static library" << COLOR_RESET << "\n";
+		std::cerr << COLOR_RED << "  ✗ Failed to build static library" << COLOR_RESET << "\n";
+		linkFailed = true;
 	}
 
 	// Clean up object files
@@ -421,7 +428,7 @@ bool compileCsources(const std::string& moduleDir, const std::string& moduleName
 		fs::remove(obj);
 	}
 
-	return true;
+	return !linkFailed;
 }
 
 // List installed modules (handles Go-style host/user/repo@version paths)
@@ -627,7 +634,10 @@ bool updateModule(const std::string& moduleDir, const Dependency* dep) {
 		return false;
 	}
 	NativeConfig nativeConfig = parseNativeConfig(manifestPath);
-	compileCsources(moduleDir, moduleName, nativeConfig);
+	if (!compileCsources(moduleDir, moduleName, nativeConfig)) {
+		pmError("failed to rebuild native sources for '" + displayName + "'");
+		return false;
+	}
 
 	return true;
 }

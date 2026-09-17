@@ -302,16 +302,28 @@ git commit -q -m "Initial"
 git tag -a v1.0.0 -m "Version 1.0.0"
 cd - > /dev/null
 
-if output=$(QUADRATE_PATH="$TEST_CACHE_DIR/cache" "$QUADPM" get "$TEST_BAD_C_REPO@v1.0.0" 2>&1); then
-    if echo "$output" | grep -q "✗ Failed to compile"; then
-        # Should install but fail C compilation
-        pass "Handles C compilation errors gracefully"
-    else
-        # Package installed, but should have shown compilation warning
-        skip "C compilation error not clearly reported"
-    fi
+output=$(QUADRATE_PATH="$TEST_CACHE_DIR/cache" "$QUADPM" get "$TEST_BAD_C_REPO@v1.0.0" 2>&1)
+status=$?
+
+# The checkout stays so the build can be retried, but a module whose C sources
+# did not compile is not installed in any useful sense and must not be reported
+# as a success.
+if [ -n "$(find "$TEST_CACHE_DIR/cache" -name module.qd -print -quit 2>/dev/null)" ]; then
+    pass "The checkout is kept when C compilation fails"
 else
-    fail "Should install package even if C compilation fails" "$output"
+    fail "Should keep the checkout even if C compilation fails" "$output"
+fi
+
+if echo "$output" | grep -q "✗ Failed to compile"; then
+    pass "C compilation errors are reported"
+else
+    fail "C compilation error not clearly reported" "$output"
+fi
+
+if [ $status -ne 0 ] && ! echo "$output" | grep -q "Success!"; then
+    pass "get does not claim success when C compilation fails"
+else
+    fail "get claimed success for a module whose C sources do not compile" "$output"
 fi
 
 # Test 14: XDG_DATA_HOME support
@@ -1251,6 +1263,41 @@ if [ $status -eq 0 ] && [ "$updates" -eq 1 ]; then
     pass "update walks past a module's own checkout and the namespace symlink"
 else
     fail "update visited a module more than once (or failed)" "$output"
+fi
+unset QUADRATE_PATH
+cd - > /dev/null
+
+
+echo ""
+echo "Test 44: a native build failure is not a success"
+mkdir -p "$TEST_CACHE_DIR/broken_src/src"
+cd "$TEST_CACHE_DIR/broken_src"
+printf '{\n\t"name": "brokenmod"\n}\n' > qd.json
+echo "fn nothing() {}" > brokenmod.qd
+echo "int usr_brokenmod_hello(void* ctx) { this is not C; }" > src/broken.c
+git init -q . && git add -A && git -c user.email=t@t -c user.name=t commit -qm init > /dev/null 2>&1
+export QUADRATE_PATH="$TEST_CACHE_DIR/broken_modules"
+
+output=$("$QUADPM" get "file://$TEST_CACHE_DIR/broken_src" 2>&1)
+status=$?
+if [ $status -ne 0 ] && ! echo "$output" | grep -q "Success!"; then
+    pass "get reports a C compile failure instead of claiming success"
+else
+    fail "get claimed success for a module whose C sources do not compile" "$output"
+fi
+
+# Sources compile, but the library they are asked to link against does not exist
+mkdir -p "$TEST_CACHE_DIR/linkfail"
+cd "$TEST_CACHE_DIR/linkfail"
+printf '{\n\t"name": "linkfailmod",\n\t"native": {\n\t\t"link": ["no_such_library_anywhere"]\n\t}\n}\n' > qd.json
+mkdir -p src
+echo "int usr_linkfailmod_hello(void* ctx) { (void)ctx; return 0; }" > src/ok.c
+output=$("$QUADPM" build 2>&1)
+status=$?
+if [ $status -ne 0 ] && ! echo "$output" | grep -q "Build complete!"; then
+    pass "build reports a link failure instead of claiming success"
+else
+    fail "build claimed success when the shared library failed to link" "$output"
 fi
 unset QUADRATE_PATH
 cd - > /dev/null
