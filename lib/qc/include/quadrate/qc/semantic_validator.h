@@ -66,6 +66,9 @@ namespace Qd {
 		// Returns 0 if valid, > 0 if errors were found
 		// If isModuleFile is true, missing module imports will not be reported as errors
 		// If werror is true, warnings are treated as errors
+		// The signature of the bare fallible call immediately before node->child(i), or nullptr.
+		const FunctionSignature* bareFallibleCallBefore(IAstNode* node, size_t i) const;
+
 		size_t validate(
 				IAstNode* program, const char* filename = nullptr, bool isModuleFile = false, bool werror = false);
 

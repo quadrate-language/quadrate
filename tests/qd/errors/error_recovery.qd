@@ -1,7 +1,7 @@
 // Test: error recovery patterns
 fn might_fail(val:i64 -- result:i64)! {
 	val 0 eq if {
-		0 "zero not allowed" 1 panic
+		"zero not allowed" 1 panic
 	}
 	100 val /
 }
@@ -10,7 +10,7 @@ fn with_default(val:i64 def:i64 -- result:i64) {
 	val might_fail if {
 		// got result
 	} else {
-		drop def
+		def
 	}
 }
 
@@ -40,15 +40,12 @@ fn main() {
 	0 might_fail if {
 		print
 	} else {
-		drop
 		0 might_fail if {
 			print
 		} else {
-			drop
 			25 might_fail if {
 				print
 			} else {
-				drop
 				"all failed" print
 			}
 		}

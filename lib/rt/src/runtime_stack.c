@@ -221,6 +221,27 @@ int qd_drop(qd_context* ctx) {
 	return (int){0};
 }
 
+/* Drops elements until the stack holds `target`. Used on the failure exit of a fallible
+ * function: a failed call produces nothing, so the caller must see the stack exactly as it
+ * was before the call minus the declared inputs -- whatever the body pushed, or left
+ * unconsumed when it panicked, is discarded here. Releases strings like qd_drop does;
+ * pointers are left alone for the same reason qd_drop leaves them alone (a raw pointer on
+ * the stack is not necessarily a counted object). */
+void qd_stack_truncate(qd_context* ctx, int64_t target) {
+	if (target < 0) {
+		target = 0;
+	}
+	while ((int64_t)qd_stack_size(ctx->st) > target) {
+		qd_stack_element_t val;
+		if (qd_stack_pop(ctx->st, &val) != QD_STACK_OK) {
+			break;
+		}
+		if (val.type == QD_STACK_TYPE_STR) {
+			qd_string_release(val.value.s);
+		}
+	}
+}
+
 int qd_rot(qd_context* ctx) {
 	QDRT_CHECK_STACK(ctx, "rot", 3);
 

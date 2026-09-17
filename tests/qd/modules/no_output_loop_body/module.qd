@@ -1,0 +1,15 @@
+// A module function with no declared outputs whose body has a loop. Its signature must
+// come from the declaration: it produces nothing. The isolated body analysis used to
+// substitute its residual -- the function's own inputs -- as the produces list.
+pub fn print_each(n:i64 -- ) {
+	0 n 1 for i {
+		i print nl
+	}
+}
+
+pub fn describe(x:i64 -- ) {
+	x switch {
+		1 { "one" print nl }
+		_ { "many" print nl }
+	}
+}

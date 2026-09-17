@@ -94,9 +94,9 @@ The compiler infers types at the call site. Each call can use different types:
 fn identity<T>(x:T -- y:T) { x }
 
 fn main() {
-    42 identity      // T = i64
-    3.14 identity    // T = f64
-    "hi" identity    // T = str
+    42 identity print nl     // T = i64
+    3.14 identity print nl   // T = f64
+    "hi" identity print nl   // T = str
 }
 ```
 

@@ -1,0 +1,21 @@
+// Test: in a switch after a fallible call, `Ok` is the success arm and a literal `1` is the
+// error-code arm. Only the Ok arm receives the call's result.
+fn fails_with(code:i64 -- v:i64)! {
+	code 0 != if {
+		"boom" code panic
+	}
+	99
+}
+
+fn main() {
+	1 fails_with switch {
+		Ok { "ok " print print nl }
+		1 { "code 1" print nl }
+		_ { "other" print nl }
+	}
+	0 fails_with switch {
+		Ok { "ok " print print nl }
+		1 { "code 1" print nl }
+		_ { "other" print nl }
+	}
+}

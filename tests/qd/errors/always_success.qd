@@ -7,20 +7,20 @@ fn main() {
 	42 always_ok if {
 		print nl
 	} else {
-		drop "Failed" print nl
+		"Failed" print nl
 	}
 
 	"Test 2: " print
 	0 always_ok if {
 		print nl
 	} else {
-		drop "Failed" print nl
+		"Failed" print nl
 	}
 
 	"Test 3: " print
 	-5 always_ok if {
 		print nl
 	} else {
-		drop "Failed" print nl
+		"Failed" print nl
 	}
 }

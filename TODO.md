@@ -81,6 +81,10 @@ can be referred to while working through them; they are ordered by leverage, not
 Where an item restates something already open above (`R3`, parts of `R23`), it is kept only for the
 new evidence, not as a second copy of the task.
 
+*Amended 2026-09-17 while working R1*: R2 corrected (its headline claim was wrong), R34 and R35
+added. R34 was fixed the same day and moved to Done, taking R6 with it; R36–R38 were found while
+fixing it.
+
 #### Abstraction — the cluster that shapes everything else
 
 - [ ] **R1. Generic type parameters unify on bare `T` only.** `[]T` and `fn(...)` appear to be
@@ -94,16 +98,34 @@ new evidence, not as a second copy of the task.
       **Open question**: is this a substitution bug in the signature comparison (likely small), or
       does `[]T`/`fn(...)` unification need type-variable machinery that does not exist yet? The
       answer decides whether R28 and the `type`-alias watch item resolve themselves.
+      *Follow-up 2026-09-17*: the "generic struct return" case originally attached here
+      (`fn wrap<T>(x:T -- b:Box<T>)` then `5 wrap <<value`) turned out to have nothing to do with
+      generics — the non-generic control fails identically. It is R35.
 
-- [ ] **R2. A function pointer does not survive a struct field.** The declared `fn(...)` type is
-      lost through `<<field`, so the following `call` is modelled as producing nothing:
-      `struct Shape { area:fn( -- f64) }` then `s <<area call print` → *"Type error in 'print':
-      Stack underflow (requires 1 value)"*. Binding first (`s <<area -> f  f call -> a`) fails the
-      same way, and declaring the field `ptr` does not help. There are **zero fn-typed struct fields
-      in the whole corpus**, which is consistent with the feature never having worked.
-      **Open question**: fix the type propagation, or decide that fn-pointer fields are out of scope
-      and reject them at the declaration instead of at the use site? This is the minimum viable form
-      of dynamic dispatch, so the answer also bears on the interfaces/traits decision above.
+- [ ] **R2. `call` after `<<field` is never modelled — corrected 2026-09-17.** The original
+      claim ("a function pointer does not survive a struct field") was wrong: `<<f` *does* record
+      the field's declared `fn(...)` type on the struct-type stack (visible under
+      `QUADC_DEBUG_MERGE=1`), and `tests/qd/typealias/struct_field.qd` calls through a field and
+      passes. What is missing is any code that turns a `fn(...)` type *string* back into a
+      `FunctionSignature` — there is no such parser anywhere in `lib/qc`. `mPendingFnSignature`,
+      which `call` consults, is set only from `&fn`, an anonymous-fn literal, or a local bound
+      directly from one (`typecheck.cc:1753, :3643, :3667`). So `<<field call` always takes the
+      "we don't know what the called function will do" branch: pop the pointer, push nothing.
+      Why it *looks* like it works: bisected across 13 probes (`fn(i64 -- i64)`, `fn( -- f64)`,
+      `fn(i64 i64 -- i64)`, `fn( -- i64 i64)`, `fn(i64 -- )`, alias vs inline, `&named` vs anon,
+      local vs fn-returned struct). The only discriminator is whether something *after* `call`
+      underflows on the value `call` should have pushed. Cases with an input under the pointer
+      pass because the leftover input is what the next instruction consumes in the model, and the
+      function-level arity check that would catch the imbalance is switched off by R34. Zero-input
+      fn types fail first simply because nothing is under the pointer.
+      Also found: field fn types are not checked at construction — `H { f = &shout }` with
+      `f:fn(i64 -- i64)` and `shout:fn(str -- str)` is accepted silently.
+      **Open question**: add the inverse of `buildFnTypeString` (`typecheck.cc:62`) and set the
+      pending signature from `structTypeStack.back()` when it starts with `fn(` — which also gives
+      fn-typed *parameters* a real signature, since they have none today either — or decide
+      fn-pointer fields are out of scope and reject them at the declaration? Either way, the
+      construction-time field check is a separate small addition. This still bears on the
+      interfaces/traits decision above.
 
 - [ ] **R3. Evidence for the sum-types item above, not a second copy of it.** Three measurements
       that were not in the original note, all consequences of "there is no *one of these*":
@@ -140,22 +162,18 @@ new evidence, not as a second copy of the task.
       **Open question**: model loop bodies properly (fixpoint over the body, `break` edges joined),
       or accept the gap and stop claiming *"validates all stack operations at compile time"*
       (`index.md`)? A middle option is to check only loops with no `break`/`continue`.
+      *2026-09-17*: R34 (every call tripped the flag) is fixed — see Done. `loop` and `read` are
+      the remaining triggers, plus `fmt::printf`/`sprintf`, `flag::parse` and FFI imports by design.
 
-- [ ] **R6. `switch` arms are not balance-checked.** The `if`/`else` rule at :1057 — with its
-      well-reasoned diverging-arm and post-fallible-call exemptions — has no `switch` counterpart.
-      Verified: `c switch { 1 { 10 }  2 { 20 30 }  _ { 0 } }` in a `( -- r:i64)` function compiles
-      and runs. The same argument the `if` rule makes applies verbatim: whatever follows reads a
-      value whose identity depends on which arm ran.
-      **Open question**: extend the existing check to `switch`, including the `Ok`-arm exemption
-      that mirrors the post-fallible-call case?
-
-- [ ] **R7. An unbalanced `if` inside a loop is caught by codegen, as an internal error.**
+- [ ] **R7. An unbalanced `if` inside a loop is caught by codegen, as an internal error.** *(2026-09-17: the frontend now catches this everywhere except inside `loop`/`for`, where R5's flag still suppresses it; R7 is now exactly the loop case.)*
       `quadc: error: internal: if/else arms leave the stack at different depths (then: 2, else: 3)
       at line 3` followed by `quadc: error: LLVM generation failed` — no source excerpt, no
       `file:line:column:`, and the word "internal" tells the user they hit a compiler bug when they
       wrote ordinary bad code. The frontend misses it precisely because of R5.
       **Open question**: this is arguably fixed for free by R5. If R5 is declined, is it worth
       promoting the codegen check to a located frontend diagnostic on its own?
+      *Note 2026-09-17*: per R34, this codegen check is currently the **only** live if-arm balance
+      check in any function that calls another function — the frontend rule is gated off there.
 
 - [ ] **R8. `for` bodies are checked against the pre-loop stack, so the model is unsound in both
       directions.** The body is type-checked in a *copy* and the parent stack is left unchanged
@@ -180,6 +198,66 @@ new evidence, not as a second copy of the task.
       language tests.
       **Open question**: generate the missing `.out` siblings from current behaviour and review the
       diff, or are these deliberately output-free?
+
+- [ ] **R35. `ident <<field` is parsed as a field access *on a variable named `ident`*, so a call
+      in that position is never modelled.** `ast_statements.cc:178-192`: when the token before
+      `<<` is an `IDENTIFIER`, the parser deletes that node and stores its name in
+      `AstNodeFieldAccess::varName`. Codegen reconstructs the meaning
+      (`generator_structs.cc:519-566`: struct type → *function name, call it first* → global →
+      captured → local) and gets it right. The validator's `FIELD_ACCESS` case
+      (`typecheck.cc:2636-2900`) has no function-name branch: it tries struct-type, then local, then
+      falls to "search every struct for a field with that name". So for `7 mk1 <<a` the call's
+      arguments are never consumed.
+      Verified: the phantom is exactly the parameter count — `mk0 <<a` passes, `7 mk1 <<a` reports
+      1 leftover, `7 8 mk2 <<b` reports 2. Runtime is correct: `5 wrap <<value print nl drop`
+      compiles (model sees +1) and dies with *"Stack underflow in drop"*. `pm::mk1 <<a` works,
+      because the fold only fires on unqualified identifiers. Binding first (`5 wrap -> b  b
+      <<value`) "works" only because `wrap` then trips R34 and the arity check is skipped.
+      The 0-parameter case passes by accident and is still wrong: the field type comes from the
+      first struct in hash order that has a field of that name, and the chained struct type is lost.
+      Precedent for removing the fold: `>>field` never folds — all three parse sites construct
+      `AstNodeFieldSet("", …)` — and works everywhere `<<` does. The stack-based `<<` path already
+      handles captured variables and module globals correctly (verified both ways). The
+      `error <<code` special case that rides on the fold (`__global_error__`) has zero uses in
+      corpus, tests or docs. Consumers of the folded `varName`: `quadlsp/lsp_navigation.cc:655`
+      (go-to-definition) and `quadlint/main.cc:221` (unused-variable usage). 135 test files use the
+      `ident <<field` form; no C++ unit test constructs the folded node.
+      **Open question**: (A) add a function-name branch to the validator's `FIELD_ACCESS` case —
+      a third copy of the apply-a-signature logic already duplicated at `:2500`/`:3503`; or (B) stop
+      folding, always emit `IDENTIFIER` + `AstNodeFieldAccess("")`, delete the `varName` special
+      cases in both validator and codegen, and point the LSP/linter at the preceding identifier
+      node. (B) is the one that removes the class of bug rather than the instance, and `>>` shows
+      it is viable. Cost of (B) is touching four consumers; cost of (A) is a third copy.
+
+- [ ] **R36. A user function named like a builtin is accepted, and the builtin wins.** Found by
+      accident: a test function called `pick` compiled, and `1 pick!` ran the *builtin* `pick` at
+      runtime (*"Index 1 out of range (stack has 0 elements)"*). The plain-call form `pick print`
+      is rejected only because the builtin's stack effect happens not to fit. Locals shadowing a
+      function already get *"Local variable 'x' shadows function with same name"*; declarations
+      shadowing a builtin get nothing.
+      **Open question**: reject at the declaration (`fn pick` → error naming the builtin), which is
+      the only reading under which the call site is unambiguous?
+
+- [ ] **R37. Five hand-rolled signature builders.** `collect.cc:1443` (main-module functions),
+      `collect.cc:430` (import blocks in main), `modules.cc:1218` (module functions),
+      `modules.cc:~1420` (import blocks in modules), each with its own type-string → stack-type
+      mapping and its own struct-qualification rules, plus the receiver-insertion logic repeated in
+      two of them. R34's fallout included one of them substituting a body residual for declared
+      outputs and another mapping sized integers to `any`; both were divergences the others did
+      not have. The call-site *application* logic is likewise duplicated between the `IDENTIFIER`
+      and `SCOPED_IDENTIFIER` paths (~1,100 lines apart), which is why every fix in this batch
+      landed twice.
+      **Open question**: one `buildFunctionSignature(func, moduleName, mergeIntoMain)` and one
+      `applyCallSignature(...)`, or accept the copies and add a test that diffs their outputs over
+      the stdlib?
+
+- [ ] **R38. `analyzeBlockInIsolation` still runs on every function body at collection time, and
+      its result is no longer used for anything declared.** Both builders call it before building
+      the signature; after R34 neither reads its residual. It may still be load-bearing for side
+      effects — method-call marking on identifier nodes, captured-variable collection — and it
+      may be pure cost.
+      **Open question**: find out which, then either delete the call or rename it for what it
+      actually does.
 
 #### Language design decisions to settle
 
@@ -384,6 +462,46 @@ new evidence, not as a second copy of the task.
       halt) so kernel code can stay in `.qd`.
 
 ## Done
+
+### Language review 2026-09-17
+
+- [x] **R34 — the declared-effect check ran only on literal-only bodies.** `mHasUnpredictableStack
+      = true` sat after the closing brace of the "signature found" block in both the `IDENTIFIER`
+      (`typecheck.cc:2632`) and `SCOPED_IDENTIFIER` (`:3631`) call paths, so every call switched off
+      the arity check, the `if`-arm rule and the `defer` rule for the rest of the function. Since
+      `3267700f` (2026-03-24). Moved into the not-found branch of both. Also closed here, because
+      turning the checks on exposed each of them within the hour:
+
+    - **R6** — `switch` arms are now depth-checked like `if` arms, with the no-`_` rule that arms
+      must leave the stack as found; `switch_arms_unbalanced`, `switch_no_default_changes_stack`.
+    - **Failure arms were modelled from the success stack.** `drop` in a failure arm type-checked
+      and, at runtime, ate the caller's value (sentinel probe: caller's final `drop` underflowed).
+      `flag::int`/`float` and `examples/errors` did exactly this. The arm now starts from the
+      pre-call stack; `drop` there is a compile-time underflow. `Ok` seeding follows the same rule
+      in `switch`, and a literal `1` arm is an error-code arm (spec 10.3), not `Ok`.
+    - **Fallible-call `if` arms are no longer exempt from the depth rule**, and a fallible `if`
+      with no `else` merges to the pre-call stack. The spec's §10.6 example needed fixing.
+    - **The failure exit of a fallible function truncates the stack** to entry depth minus inputs
+      (`qd_stack_truncate`, emitted in the return block when `has_error` is set). Probe:
+      `fn g(i64 -- i64)!` panicking before consuming its input left depth 1 in the caller's failure
+      arm; now 0. This is what makes the validator's model true for every callee body.
+    - **Balanced arms kept the pre-`if` types** (no `== 0` branch in the merge) — the
+      `flag::float ... expects float but got string` report.
+    - **`blockEndsDiverging` looked only at the last statement**, so `panic  0.0` was not
+      diverging; `break`/`continue` (spec 6.1.1) were never checked.
+    - **Fallible method calls before `if`/`switch` were not recognised** (bare-name lookup; methods
+      are keyed mangled). One helper, `bareFallibleCallBefore`, now serves both.
+    - **Module functions with no declared outputs took their produces from the isolated body
+      residual** (`modules.cc:1361`), so `bytes::fill` "produced" four values and every `( -- )`
+      module function with a loop leaked its inputs into the caller's model. Declared outputs only,
+      and the module builder's scalar mapping now goes through `stringToStackValueType` (sized
+      integers were `any`).
+    - **Method-call argument checks did not skip `TYPEVAR`**, unlike function calls.
+
+    Fallout across stdlib + examples was three functions (`flag::int`, `flag::float`,
+    `regex::get_cclass`) plus `examples/errors`; nine tests and four doc pages encoded the old
+    conventions. Sweep clean, `docscheck` 218/218, stdlib unit tests clean. Spec §6.1.1, §6.4.1
+    and §10.3 rewritten to say what the implementation now enforces.
 
 ### Language design / scope
 

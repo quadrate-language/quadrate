@@ -2,7 +2,6 @@
 fn division(i64 i64 -- i64)! {
 	dup 0 == if {
 		drop drop
-		0
 		"division by zero" -1 panic
 	}
 	/
@@ -11,15 +10,16 @@ fn division(i64 i64 -- i64)! {
 fn main() {
 	// Call fallible function with error check using 'if'
 	// Success: 'if' branch is taken, result is on stack
-	// Error: 'else' branch is taken, error value is on stack
+	// Error: 'else' branch is taken; the function produced nothing, so the
+	// stack is as it was before the call. Use 'err' to read the message and code.
 
 	// Attempt division by zero
 	1 0 division if {
 		// Success - print result
 		"1 / 0 = " print print nl
 	} else {
-		// Error - drop error value and print message
-		drop
+		// Error - nothing was produced; report it
+		err drop drop
 		"Error: Division by zero!" print nl
 	}
 
@@ -27,7 +27,6 @@ fn main() {
 	10 2 division if {
 		"10 / 2 = " print print nl
 	} else {
-		drop
 		"Unexpected error" print nl
 	}
 

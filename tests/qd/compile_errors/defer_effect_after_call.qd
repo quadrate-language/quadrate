@@ -1,0 +1,13 @@
+// Test: the defer zero-net-effect rule still applies in a function that makes a call.
+fn helper( -- r:i64) {
+	1
+}
+
+fn f( -- ) {
+	helper drop
+	defer { 42 }
+}
+
+fn main() {
+	f "ok" print nl
+}

@@ -1,0 +1,12 @@
+// Test: without a '_' arm a switch may match nothing, so its arms must leave the stack
+// as they found it.
+fn f(c:i64 -- r:i64) {
+	c switch {
+		1 { 10 }
+		2 { 20 }
+	}
+}
+
+fn main() {
+	1 f print nl
+}

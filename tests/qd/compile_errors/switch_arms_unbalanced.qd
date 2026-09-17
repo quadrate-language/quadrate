@@ -1,0 +1,12 @@
+// Test: switch arms must leave the stack at the same depth, like if/else arms.
+fn f(c:i64 -- r:i64) {
+	c switch {
+		1 { 10 }
+		2 { 20 30 }
+		_ { 0 }
+	}
+}
+
+fn main() {
+	1 f print nl
+}

@@ -197,6 +197,7 @@ namespace Qd {
 		llvm::Function* nlFn = nullptr;
 		llvm::Function* stackPopFn = nullptr;
 		llvm::Function* stackSizeFn = nullptr;
+		llvm::Function* stackTruncateFn = nullptr;
 		llvm::Function* pushCallFn = nullptr;
 		llvm::Function* popCallFn = nullptr;
 		llvm::Function* checkStackFn = nullptr;

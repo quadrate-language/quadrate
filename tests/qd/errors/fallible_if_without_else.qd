@@ -1,0 +1,30 @@
+// Test: `call if { ... }` with no else after a fallible call. On failure nothing runs and
+// nothing was produced, so the model continues from the pre-call stack; the success arm
+// consumes the result to match.
+fn divide(a:i64 b:i64 -- result:i64)! {
+	b 0 == if {
+		"division by zero" -1 panic
+	}
+	a b /
+}
+
+fn try_all( -- success_count:i64) {
+	0 -> count
+	10 2 divide if {
+		drop
+		count inc -> count
+	}
+	10 5 divide if {
+		drop
+		count inc -> count
+	}
+	10 0 divide if {
+		drop
+		count inc -> count
+	}
+	count
+}
+
+fn main() {
+	try_all print nl
+}

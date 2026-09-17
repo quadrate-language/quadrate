@@ -1,0 +1,14 @@
+// Test: an arm that panics diverges even when dead code follows the panic, so the other
+// arm's depth is what the code after the if sees.
+fn choose(c:i64 -- r:f64)! {
+	c if {
+		1.5
+	} else {
+		"negative" 2 panic
+		0.0
+	}
+}
+
+fn main() {
+	1 choose! print nl
+}

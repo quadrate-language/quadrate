@@ -114,7 +114,7 @@ fn add_cclass(re:ptr cc:ptr -- idx:i64) {
 // Get cclass pointer by index
 fn get_cclass(re:ptr idx:i64 -- cc:ptr) {
 	idx -1 == if {
-		0  // null
+		null
 	} else {
 		re RE_CCLASSES mem::get_ptr idx 8 * mem::get_ptr
 	}

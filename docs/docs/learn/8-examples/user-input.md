@@ -26,7 +26,7 @@ fn main() {
 	"Enter your name: " print
 	io::readline switch {
 		Ok {
-			-> name
+			-> _ -> name
 			"Hello, " print name print "!" print nl
 		}
 		_ {
@@ -46,7 +46,7 @@ use io
 
 fn main() {
 	"Enter a number: " print
-	io::readline! cast<i64> -> n
+	io::readline! -> _ cast<i64> -> n
 	"Double: " print n 2 * print nl
 }
 ```
@@ -63,7 +63,7 @@ fn main() {
 		"> " print
 		io::readline switch {
 			Ok {
-				-> line
+				-> _ -> line
 				"You said: " print line print nl
 			}
 			_ {

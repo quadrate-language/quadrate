@@ -1,0 +1,10 @@
+// Test: module functions with no outputs and control flow in the body consume exactly
+// their declared inputs at the call site.
+use no_output_loop_body
+
+fn main() {
+	3 no_output_loop_body::print_each
+	1 no_output_loop_body::describe
+	5 no_output_loop_body::describe
+	"depth: " print depth print nl
+}

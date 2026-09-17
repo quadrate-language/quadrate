@@ -1,0 +1,17 @@
+// Test: the if/else arm-depth rule still applies in a function that makes a call.
+fn helper( -- r:i64) {
+	1
+}
+
+fn f(c:i64 -- r:i64) {
+	helper drop
+	c if {
+		1
+	} else {
+		2 3
+	}
+}
+
+fn main() {
+	1 f print nl
+}

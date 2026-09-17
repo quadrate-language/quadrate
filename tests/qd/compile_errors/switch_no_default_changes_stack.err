@@ -1,0 +1,1 @@
+switch without a '_' arm changes the stack by 1

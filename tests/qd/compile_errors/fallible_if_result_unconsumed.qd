@@ -1,0 +1,16 @@
+// Test: after a fallible call the success arm must consume the result; the failure arm
+// never receives it, so leaving it makes the depth after the `if` depend on which arm ran.
+fn divide(a:i64 b:i64 -- result:i64)! {
+	b 0 == if {
+		"division by zero" -1 panic
+	}
+	a b /
+}
+
+fn main() {
+	10 2 divide if {
+		"ok" print nl
+	} else {
+		"failed" print nl
+	}
+}

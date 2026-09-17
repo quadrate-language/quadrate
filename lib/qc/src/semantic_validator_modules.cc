@@ -1280,12 +1280,11 @@ namespace Qd {
 				AstNodeParameter* param = static_cast<AstNodeParameter*>(func->inputParameters()[i].get());
 				const std::string& typeStr = param->typeString();
 
-				if (typeStr == "i64") {
-					sig.consumes.push_back(StackValueType::INT);
-				} else if (typeStr == "f64") {
-					sig.consumes.push_back(StackValueType::FLOAT);
-				} else if (typeStr == "str") {
-					sig.consumes.push_back(StackValueType::STRING);
+				StackValueType scalar = stringToStackValueType(typeStr);
+				if (scalar == StackValueType::INT || scalar == StackValueType::FLOAT ||
+						scalar == StackValueType::STRING || scalar == StackValueType::TYPEVAR) {
+					// i64 and the sized integers, f64, str, or a generic type parameter
+					sig.consumes.push_back(scalar);
 				} else if (typeStr == "ptr") {
 					sig.consumes.push_back(StackValueType::PTR);
 				} else if (typeStr.size() > 2 && typeStr[0] == '[' && typeStr[1] == ']') {
@@ -1323,12 +1322,11 @@ namespace Qd {
 					AstNodeParameter* param = static_cast<AstNodeParameter*>(func->outputParameters()[i].get());
 					const std::string& typeStr = param->typeString();
 
-					if (typeStr == "i64") {
-						sig.produces.push_back(StackValueType::INT);
-					} else if (typeStr == "f64") {
-						sig.produces.push_back(StackValueType::FLOAT);
-					} else if (typeStr == "str") {
-						sig.produces.push_back(StackValueType::STRING);
+					StackValueType scalar = stringToStackValueType(typeStr);
+					if (scalar == StackValueType::INT || scalar == StackValueType::FLOAT ||
+							scalar == StackValueType::STRING || scalar == StackValueType::TYPEVAR) {
+						// i64 and the sized integers, f64, str, or a generic type parameter
+						sig.produces.push_back(scalar);
 					} else if (typeStr == "ptr") {
 						sig.produces.push_back(StackValueType::PTR);
 					} else if (typeStr.size() > 2 && typeStr[0] == '[' && typeStr[1] == ']') {
@@ -1356,10 +1354,11 @@ namespace Qd {
 						sig.produces.push_back(StackValueType::ANY);
 					}
 				}
-			} else {
-				// No declared outputs - use body analysis result
-				sig.produces = typeStack;
 			}
+			// A function that declares no outputs produces nothing. The residual of the isolated
+			// body analysis used to be substituted here, and for any body with a loop, `switch`,
+			// `if` or an unmodelled call that residual was the function's own *inputs* -- so
+			// `bytes::fill` was registered as producing four values.
 			sig.throws = func->throws();
 
 			// For methods, include receiver as implicit first parameter and use mangled name

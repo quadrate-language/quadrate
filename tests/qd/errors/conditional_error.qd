@@ -4,7 +4,6 @@ fn process(i64 i64 -- i64)! {
 		add
 	} else {
 		drop drop
-		-1
 		"Error occurred" 1 panic
 	}
 }
@@ -21,7 +20,7 @@ fn main() {
 	10 0 process if {
 		print nl
 	} else {
-		drop "Error (b was zero)" print nl
+		"Error (b was zero)" print nl
 	}
 
 	"7 + 2 = " print

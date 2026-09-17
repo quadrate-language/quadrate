@@ -8,7 +8,7 @@ pub fn add_five_then_double(f64 -- f64) {
 	base_ops::multiply_by_two
 }
 
-pub fn get_two_hundred() {
+pub fn get_two_hundred( -- v:f64) {
 	// Uses base_ops and doubles it
 	base_ops::get_hundred
 	base_ops::multiply_by_two

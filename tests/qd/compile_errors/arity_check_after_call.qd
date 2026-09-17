@@ -1,0 +1,14 @@
+// Test: the declared-effect check runs in a function that calls another function.
+// It used to be switched off by every call (the "unpredictable stack" flag was set
+// unconditionally after applying a call's signature).
+fn helper( -- r:i64) {
+	1
+}
+
+fn bad( -- r:i64) {
+	helper 99
+}
+
+fn main() {
+	bad print nl
+}

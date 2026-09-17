@@ -1,0 +1,24 @@
+// Test: a failed fallible call produces nothing, so the failure arm has nothing to drop.
+// At runtime this drop ate the *caller's* value from the shared stack (see flag::int before
+// its fix). The failure arm is now modelled from the pre-call stack, so this underflows.
+fn getter(name:str -- value:str)! {
+	name "x" == if {
+		"found"
+	} else {
+		"not found" 2 panic
+	}
+}
+
+fn flt(name:str -- value:f64)! {
+	name getter if {
+		-> s
+		1.5
+	} else {
+		drop
+		"missing" 2 panic
+	}
+}
+
+fn main() {
+	"x" flt! print nl
+}

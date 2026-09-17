@@ -137,6 +137,16 @@ void qd_string_release(qd_string_t* s) {
 	(void)s;
 }
 
+void qd_stack_truncate(qd_context* ctx, int64_t target) {
+	qd_stack* st = ctx->st;
+	if (target < 0) {
+		target = 0;
+	}
+	if ((int64_t)st->size > target) {
+		st->size = (size_t)target;
+	}
+}
+
 void qd_ptr_release(void* p) {
 	(void)p;
 }

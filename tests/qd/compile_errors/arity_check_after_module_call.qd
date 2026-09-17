@@ -1,0 +1,10 @@
+// Test: same as arity_check_after_call, through a module-qualified call.
+use math
+
+fn bad( -- r:f64) {
+	2.0 math::sqrt 99.0
+}
+
+fn main() {
+	bad print nl
+}

@@ -151,6 +151,8 @@ namespace Qd {
 		auto ptrToI64Ty = llvm::FunctionType::get(int64Ty, {ptrTy}, false);
 		stackPopFn = declareFn(stackPopFnTy, "qd_stack_pop");
 		stackSizeFn = declareFn(ptrToI64Ty, "qd_stack_size");
+		auto ctxI64ToVoidTy = llvm::FunctionType::get(builder->getVoidTy(), {contextPtrTy, int64Ty}, false);
+		stackTruncateFn = declareFn(ctxI64ToVoidTy, "qd_stack_truncate");
 
 		// C library functions
 		auto i64ToPtrTy = llvm::FunctionType::get(ptrTy, {int64Ty}, false);
@@ -1306,6 +1308,23 @@ namespace Qd {
 					}
 				}
 
+				// Fallible functions remember the depth the caller expects on failure. A failed call
+				// produces nothing, so on the failure exit the stack must be exactly what it was
+				// before the call minus the declared inputs and the receiver -- whatever the body
+				// pushed, or left unconsumed when it panicked, is dropped in the return block. This
+				// is what makes the validator's model of a failure arm ("the pre-call stack") exact
+				// for every callee body, not only for those that bind their inputs before panicking.
+				// Computed here, before the receiver and any named parameters are popped.
+				llvm::Value* failTarget = nullptr;
+				if (funcNode->throws()) {
+					llvm::Value* entryStackPtrPtr =
+							builder->CreateStructGEP(contextStructTy, ctx, 0, "entry_stack_ptr");
+					llvm::Value* entryStackPtr = builder->CreateLoad(ptrTy, entryStackPtrPtr, "entry_stack");
+					llvm::Value* entryDepth = builder->CreateCall(stackSizeFn, {entryStackPtr}, "entry_depth");
+					uint64_t consumed = funcNode->inputParameters().size() + (funcNode->hasReceiver() ? 1 : 0);
+					failTarget = builder->CreateSub(entryDepth, builder->getInt64(consumed), "fail_target");
+				}
+
 				// For methods, pop the receiver from the stack and bind it as a local variable
 				// The receiver is implicitly passed and must be bound before the body executes
 				if (funcNode->hasReceiver()) {
@@ -1416,6 +1435,19 @@ namespace Qd {
 
 				// Clean up local variables (free strings)
 				generateLocalCleanup();
+
+				// Failure exit of a fallible function: leave the stack as the caller expects it.
+				if (failTarget) {
+					ErrorState exitState = generateReadErrorState(ctx, "fail_exit");
+					llvm::Function* thisFn = builder->GetInsertBlock()->getParent();
+					auto truncBB = llvm::BasicBlock::Create(*context, "fail_truncate", thisFn);
+					auto afterBB = llvm::BasicBlock::Create(*context, "fail_done", thisFn);
+					builder->CreateCondBr(exitState.failed, truncBB, afterBB);
+					builder->SetInsertPoint(truncBB);
+					builder->CreateCall(stackTruncateFn, {ctx, failTarget});
+					builder->CreateBr(afterBB);
+					builder->SetInsertPoint(afterBB);
+				}
 
 				// Pop function from call stack before returning
 				// Skip for integer-only functions (we didn't push in that case)

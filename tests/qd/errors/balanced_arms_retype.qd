@@ -1,0 +1,30 @@
+// Test: when both arms of an if/else leave the same depth, what follows sees the arms'
+// types -- not the pre-if types. Here the arms turn a str into an f64.
+fn getter(name:str -- value:str)! {
+	name "x" == if {
+		"found"
+	} else {
+		"not found" 2 panic
+	}
+}
+
+fn parse(s:str -- v:f64) {
+	s "found" == if {
+		1.5
+	} else {
+		0.0
+	}
+}
+
+fn flt(name:str -- value:f64)! {
+	name getter if {
+		-> s
+		s parse
+	} else {
+		"missing" 2 panic
+	}
+}
+
+fn main() {
+	"x" flt! print nl
+}

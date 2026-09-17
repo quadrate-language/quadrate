@@ -194,28 +194,97 @@ namespace Qd {
 
 	// Helper: Check if a block ends with a diverging instruction (like `panic`)
 	// Diverging instructions never return, so stack effects don't need to balance
-	static bool blockEndsDiverging(IAstNode* block) {
-		if (!block || block->childCount() == 0) {
+	// A block diverges when control cannot reach its end: some top-level statement in it
+	// is `panic`, `return`, `break` or `continue` (spec 6.1.1). Everything after such a
+	// statement is unreachable, so it is the statement's presence that matters, not whether
+	// it happens to be last -- `"msg" 1 panic  0` diverges just as `"msg" 1 panic` does.
+	static bool blockEndsDiverging(IAstNode* block);
+
+	static bool isDivergingStatement(IAstNode* node) {
+		if (!node) {
 			return false;
 		}
-		IAstNode* lastChild = block->child(block->childCount() - 1);
-		if (!lastChild) {
-			return false;
-		}
-		// Check if the last instruction is `panic`
-		if (lastChild->type() == IAstNode::Type::INSTRUCTION) {
-			AstNodeInstruction* instr = static_cast<AstNodeInstruction*>(lastChild);
-			return instr->name() == "panic";
-		}
-		// Check if the block ends with `return`
-		if (lastChild->type() == IAstNode::Type::RETURN_STATEMENT) {
+		switch (node->type()) {
+		case IAstNode::Type::RETURN_STATEMENT:
+		case IAstNode::Type::BREAK_STATEMENT:
+		case IAstNode::Type::CONTINUE_STATEMENT:
 			return true;
+		case IAstNode::Type::INSTRUCTION:
+			return static_cast<AstNodeInstruction*>(node)->name() == "panic";
+		case IAstNode::Type::BLOCK:
+			return blockEndsDiverging(node);
+		default:
+			return false;
 		}
-		// Recursively check nested blocks (e.g., if the last child is another block)
-		if (lastChild->type() == IAstNode::Type::BLOCK) {
-			return blockEndsDiverging(lastChild);
+	}
+
+	static bool blockEndsDiverging(IAstNode* block) {
+		if (!block) {
+			return false;
+		}
+		for (size_t i = 0; i < block->childCount(); i++) {
+			if (isDivergingStatement(block->child(i))) {
+				return true;
+			}
 		}
 		return false;
+	}
+
+	// The signature of the bare fallible call at `node->child(i - 1)`, or nullptr. "Bare" means
+	// no `!` or `?`: the call leaves a status value for the `if`/`switch` at child(i) to consume.
+	// Methods are keyed by their mangled name, which is why this cannot be a plain name lookup.
+	const FunctionSignature* SemanticValidator::bareFallibleCallBefore(IAstNode* node, size_t i) const {
+		if (i == 0) {
+			return nullptr;
+		}
+		IAstNode* prev = node->child(i - 1);
+		if (!prev) {
+			return nullptr;
+		}
+		std::string key;
+		if (prev->type() == IAstNode::Type::IDENTIFIER) {
+			auto* id = static_cast<AstNodeIdentifier*>(prev);
+			if (id->abortOnError() || id->propagateOnError()) {
+				return nullptr;
+			}
+			key = id->isMethodCall() ? id->receiverType() + "::" + id->name() : id->name();
+		} else if (prev->type() == IAstNode::Type::SCOPED_IDENTIFIER) {
+			auto* sc = static_cast<AstNodeScopedIdentifier*>(prev);
+			if (sc->abortOnError() || sc->propagateOnError()) {
+				return nullptr;
+			}
+			if (sc->isMethodCall()) {
+				auto it = mFunctionSignatures.find(sc->scope() + "::" + sc->receiverType() + "::" + sc->name());
+				if (it != mFunctionSignatures.end() && it->second.throws) {
+					return &it->second;
+				}
+				key = sc->receiverType() + "::" + sc->name();
+			} else {
+				key = sc->scope() + "::" + sc->name();
+			}
+		} else {
+			return nullptr;
+		}
+		auto it = mFunctionSignatures.find(key);
+		if (it == mFunctionSignatures.end() || !it->second.throws) {
+			return nullptr;
+		}
+		return &it->second;
+	}
+
+	// Drops the values a failed fallible call never produced. On failure the callee returns
+	// before pushing its results, so the failure arm of the `if`/`switch` that consumed the
+	// status sees the stack as it was before the call. Modelling the arm from the success
+	// stack instead is what let a `drop` in a failure arm type-check while underflowing --
+	// or eating the caller's value -- at runtime.
+	static void removeProducedValues(const FunctionSignature& sig, std::vector<StackValueType>& typeStack,
+			std::vector<std::string>& structTypeStack) {
+		for (size_t k = 0; k < sig.produces.size() && !typeStack.empty(); k++) {
+			typeStack.pop_back();
+			if (!structTypeStack.empty()) {
+				structTypeStack.pop_back();
+			}
+		}
 	}
 
 	// Check if a type string is a known struct name (local or imported)
@@ -1032,108 +1101,93 @@ namespace Qd {
 				IAstNode* elseBody = ifStmt->elseBody();
 
 				if (thenBody && elseBody) {
+					// A bare fallible call before this `if` leaves its results for the success arm
+					// only; the failure arm starts from the stack as it was before the call.
+					const FunctionSignature* fallible = bareFallibleCallBefore(node, i);
+
 					// Analyze then branch
 					std::vector<StackValueType> thenStack = typeStack;
 					std::unordered_map<std::string, StackValueType> thenVars = localVariables;
 					std::vector<std::string> thenStructStack = structTypeStack;
 					typeCheckBlock(thenBody, thenStack, thenVars, thenStructStack);
 
-					// Analyze else branch (same starting stack - both branches receive
-					// result values from fallible calls, though error values are undefined)
+					// Analyze else branch
 					std::vector<StackValueType> elseStack = typeStack;
 					std::unordered_map<std::string, StackValueType> elseVars = localVariables;
 					std::vector<std::string> elseStructStack = structTypeStack;
+					if (fallible) {
+						removeProducedValues(*fallible, elseStack, elseStructStack);
+					}
 					typeCheckBlock(elseBody, elseStack, elseVars, elseStructStack);
 
-					int thenEffect = static_cast<int>(thenStack.size()) - static_cast<int>(typeStack.size());
-					int elseEffect = static_cast<int>(elseStack.size()) - static_cast<int>(typeStack.size());
-
-					// Check if either branch diverges (e.g., ends with `panic`)
-					// Diverging branches never return, so stack effects don't need to balance
+					// A diverging arm never reaches the merge point and contributes no stack effect.
 					bool thenDiverges = blockEndsDiverging(thenBody);
 					bool elseDiverges = blockEndsDiverging(elseBody);
 
-					// Both branches should have the same stack effect (balanced).
-					// Stack effect mismatch is an error because it leaves the stack in an
-					// unpredictable state, making subsequent code incorrect.
-					// Exception: if one branch diverges, it never returns, so no mismatch.
 					if (thenDiverges && elseDiverges) {
-						// Both branches diverge (return/panic) — no effect on parent stack
-					} else if (thenEffect != elseEffect && !thenDiverges && !elseDiverges) {
-						// Effects disagree. This is legitimate and expected after a fallible
-						// call: the success arm receives the call's result value while the
-						// failure arm does not. Anywhere else it means the two arms leave the
-						// stack at different depths, so whatever follows reads a value whose
-						// identity depends on which arm ran -- and codegen silently truncates
-						// to the shallower arm, discarding the excess.
-						// Resolve the sibling immediately before this `if`. A fallible call there
-						// is the legitimate source of an arm mismatch.
-						bool afterFallibleCall = false;
-						if (i > 0) {
-							IAstNode* prev = node->child(i - 1);
-							std::string callee;
-							if (prev && prev->type() == IAstNode::Type::IDENTIFIER) {
-								callee = static_cast<AstNodeIdentifier*>(prev)->name();
-							} else if (prev && prev->type() == IAstNode::Type::SCOPED_IDENTIFIER) {
-								auto* sc = static_cast<AstNodeScopedIdentifier*>(prev);
-								callee = sc->scope() + "::" + sc->name();
-							}
-							if (!callee.empty()) {
-								auto sigIt = mFunctionSignatures.find(callee);
-								afterFallibleCall = sigIt != mFunctionSignatures.end() && sigIt->second.throws;
-							}
-						}
-
-						// Only report when the stack model is trustworthy. mHasUnpredictableStack
-						// means something in this function -- a variadic like fmt::printf, an
-						// imported C function, flag::parse -- consumed an amount the signature
-						// does not describe, so the arm effects are computed from a model already
-						// known to be wrong. The function-level arity check and the defer-effect
-						// check gate on this for the same reason; this one did not, and it made
-						// every module-qualified method call on a receiver read as +1. Both
-						// `wc.qd` sites were that: `f flag::destroy` is net zero at runtime.
-						if (!afterFallibleCall && !mHasUnpredictableStack) {
-							std::string msg =
-									"if/else branches leave different numbers of values on the stack (then: " +
-									std::to_string(thenEffect) + ", else: " + std::to_string(elseEffect) +
-									"); both arms must leave the same number, since whatever follows "
-									"reads a value whose identity would otherwise depend on which arm ran";
-							reportError(child, msg.c_str());
-						}
-						// Use the if (success) branch as authoritative.
-						typeStack = thenStack;
-						structTypeStack = thenStructStack;
-					} else if (thenDiverges && !elseDiverges) {
-						// Only else branch returns, apply its effects
+						// Both arms diverge -- nothing reaches the code after the `if`.
+					} else if (thenDiverges) {
 						typeStack = elseStack;
 						structTypeStack = elseStructStack;
-					} else if (elseDiverges && !thenDiverges) {
-						// Only then branch returns, apply its effects
+					} else if (elseDiverges) {
 						typeStack = thenStack;
 						structTypeStack = thenStructStack;
-					} else if (thenEffect > 0) {
-						// Both branches have the same positive effect, apply it
-						for (size_t k = typeStack.size(); k < thenStack.size(); k++) {
-							typeStack.push_back(thenStack[k]);
-							if (k < thenStructStack.size()) {
-								structTypeStack.push_back(thenStructStack[k]);
+					} else if (thenStack.size() != elseStack.size()) {
+						// The arms leave the stack at different depths, so whatever follows reads a
+						// value whose identity depends on which arm ran -- and codegen silently
+						// truncates to the shallower arm. Only report when the model is trustworthy:
+						// mHasUnpredictableStack means something in this function consumed an amount
+						// its signature does not describe, so the effects were computed from a model
+						// already known to be wrong.
+						if (!mHasUnpredictableStack) {
+							std::string msg = "if/else arms leave the stack at different depths (then: " +
+											  std::to_string(thenStack.size()) +
+											  " value(s), else: " + std::to_string(elseStack.size()) +
+											  "); both arms must leave the same depth, since whatever follows "
+											  "reads a value whose identity would otherwise depend on which arm ran";
+							if (fallible) {
+								reportErrorWithHint(child, msg.c_str(),
+										"the failure arm never receives the call's result(s); consume or drop them "
+										"in the success arm so both arms leave the same depth");
 							} else {
-								structTypeStack.push_back("");
+								reportError(child, msg.c_str());
 							}
 						}
-					} else if (thenEffect < 0) {
-						// Both branches consume values, set to final state
+						// Use the then (success) arm as authoritative.
+						typeStack = thenStack;
+						structTypeStack = thenStructStack;
+					} else {
+						// Balanced arms: the stack after the `if` is what either arm left, including
+						// any values the arms changed in place. Keeping the pre-`if` types here was what
+						// made `x if { -> s  s parse } else { ... }` report the *input's* type as the
+						// function's output.
 						typeStack = thenStack;
 						structTypeStack = thenStructStack;
 					}
 				} else if (thenBody) {
-					// Only then branch - analyze with a copy since branch might not execute
-					// (common pattern: fallible_func if { -> var ... })
+					const FunctionSignature* fallible = bareFallibleCallBefore(node, i);
 					std::vector<StackValueType> thenStack = typeStack;
 					std::unordered_map<std::string, StackValueType> thenVars = localVariables;
 					std::vector<std::string> thenStructStack = structTypeStack;
 					typeCheckBlock(thenBody, thenStack, thenVars, thenStructStack);
-					// Don't apply stack effects - the branch might not run
+
+					if (fallible) {
+						// `call if { ... }` with no else: on failure nothing was produced and nothing
+						// runs, so what follows sees the stack as it was before the call. The success
+						// arm must therefore consume the results (or diverge) to leave that same depth.
+						removeProducedValues(*fallible, typeStack, structTypeStack);
+						if (!blockEndsDiverging(thenBody) && thenStack.size() != typeStack.size() &&
+								!mHasUnpredictableStack) {
+							std::string msg = "success arm of a fallible call leaves the stack at a different depth (" +
+											  std::to_string(thenStack.size()) +
+											  " value(s)) than the not-taken failure path (" +
+											  std::to_string(typeStack.size()) + " value(s))";
+							reportErrorWithHint(child, msg.c_str(),
+									"consume or drop the call's result(s) inside the arm, or add an else arm");
+						}
+					}
+					// Otherwise the arm might not run; spec 6.1.1 leaves a bare `if` unconstrained and
+					// the enclosing function's declared effect governs. The pre-`if` stack stands.
 				}
 				break;
 			}
@@ -1183,80 +1237,119 @@ namespace Qd {
 				// Analyze all case branches to track stack effects
 				AstNodeSwitchStatement* switchStmt = static_cast<AstNodeSwitchStatement*>(child);
 				const auto& cases = switchStmt->cases();
+
+				// After a bare fallible call the status carries the error code: the `Ok` arm sees the
+				// call's results, every other arm sees the stack as it was before the call.
+				const FunctionSignature* fallible = bareFallibleCallBefore(node, i);
+				std::vector<StackValueType> failureStack = typeStack;
+				std::vector<std::string> failureStructStack = structTypeStack;
+				if (fallible) {
+					removeProducedValues(*fallible, failureStack, failureStructStack);
+				}
+
 				bool hasDefault = false;
-				bool allSameEffect = true;
-				int commonEffect = 0;
-				bool firstCase = true;
-				std::vector<StackValueType> firstCaseStack;
-				std::vector<std::string> firstCaseStructStack;
-				// Track Ok branch separately for fallible switch patterns
+				bool hasOkCase = false;
 				std::vector<StackValueType> okCaseStack;
 				std::vector<std::string> okCaseStructStack;
-				bool hasOkCase = false;
+				// The first non-diverging arm fixes the depth the others must match.
+				bool haveReference = false;
+				int referenceEffect = 0;
+				std::vector<StackValueType> referenceStack;
+				std::vector<std::string> referenceStructStack;
 				bool allDiverge = true;
+				bool armsDisagree = false;
+				int disagreeingEffect = 0;
 
 				for (const auto* caseNode : cases) {
 					if (caseNode->isDefault()) {
 						hasDefault = true;
 					}
 					IAstNode* caseBody = caseNode->body();
-					if (caseBody) {
-						// Analyze case body with a copy of current stack
-						std::vector<StackValueType> caseStack = typeStack;
-						std::unordered_map<std::string, StackValueType> caseVars = localVariables;
-						std::vector<std::string> caseStructStack = structTypeStack;
-						typeCheckBlock(caseBody, caseStack, caseVars, caseStructStack);
+					if (!caseBody) {
+						continue;
+					}
 
-						int caseEffect = static_cast<int>(caseStack.size()) - static_cast<int>(typeStack.size());
+					bool isOk = false;
+					if (!caseNode->isDefault() && caseNode->value() &&
+							caseNode->value()->type() == IAstNode::Type::LITERAL) {
+						AstNodeLiteral* caseLit = static_cast<AstNodeLiteral*>(caseNode->value());
+						// `Ok`/`true` keep their keyword text as BOOL literals. A literal `1` is an error
+						// *code* arm, not the success arm (spec 10.3: a panic carrying code 1 does not
+						// match Ok), so it must be seeded from the failure stack like any other code.
+						isOk = caseLit->literalType() == AstNodeLiteral::LiteralType::BOOL &&
+							   (caseLit->value() == "Ok" || caseLit->value() == "true");
+					}
+					bool seedFromSuccess = !fallible || isOk;
 
-						// Track if this branch diverges (return/panic)
-						if (!blockEndsDiverging(caseBody)) {
-							allDiverge = false;
-						}
+					std::vector<StackValueType> caseStack = seedFromSuccess ? typeStack : failureStack;
+					std::unordered_map<std::string, StackValueType> caseVars = localVariables;
+					std::vector<std::string> caseStructStack = seedFromSuccess ? structTypeStack : failureStructStack;
+					size_t base = caseStack.size();
+					typeCheckBlock(caseBody, caseStack, caseVars, caseStructStack);
+					int caseEffect = static_cast<int>(caseStack.size()) - static_cast<int>(base);
 
-						// Detect Ok case for fallible switch patterns.
-						// Ok is parsed as literal integer 1 (true).
-						if (!caseNode->isDefault() && caseNode->value()) {
-							if (caseNode->value()->type() == IAstNode::Type::LITERAL) {
-								AstNodeLiteral* caseLit = static_cast<AstNodeLiteral*>(caseNode->value());
-								bool isOk = (caseLit->literalType() == AstNodeLiteral::LiteralType::INTEGER &&
-													caseLit->value() == "1") ||
-											(caseLit->literalType() == AstNodeLiteral::LiteralType::BOOL &&
-													(caseLit->value() == "Ok" || caseLit->value() == "true"));
-								if (isOk) {
-									okCaseStack = caseStack;
-									okCaseStructStack = caseStructStack;
-									hasOkCase = true;
-								}
-							}
-						}
+					if (isOk && fallible) {
+						okCaseStack = caseStack;
+						okCaseStructStack = caseStructStack;
+						hasOkCase = true;
+					}
 
-						if (firstCase) {
-							commonEffect = caseEffect;
-							firstCaseStack = caseStack;
-							firstCaseStructStack = caseStructStack;
-							firstCase = false;
-						} else if (caseEffect != commonEffect) {
-							allSameEffect = false;
-						}
+					if (blockEndsDiverging(caseBody)) {
+						continue;
+					}
+					allDiverge = false;
+
+					if (fallible) {
+						// Arms of a fallible switch legitimately differ (Ok has the results); the Ok arm,
+						// when present, is authoritative for what follows.
+						continue;
+					}
+					if (!haveReference) {
+						haveReference = true;
+						referenceEffect = caseEffect;
+						referenceStack = caseStack;
+						referenceStructStack = caseStructStack;
+					} else if (caseEffect != referenceEffect && !armsDisagree) {
+						armsDisagree = true;
+						disagreeingEffect = caseEffect;
 					}
 				}
 
-				// Apply stack effects from switch branches
-				if (hasDefault && !firstCase) {
-					if (allDiverge) {
-						// All branches diverge (return/panic) — no effect on parent stack
-					} else if (allSameEffect && commonEffect != 0) {
-						// All branches have the same effect — apply it
-						typeStack = firstCaseStack;
-						structTypeStack = firstCaseStructStack;
-					} else if (!allSameEffect && hasOkCase) {
-						// Fallible switch: branches disagree because the Ok branch gets
-						// the result value and error branches don't.
-						// Use Ok branch's state as authoritative.
+				if (fallible) {
+					if (hasOkCase) {
 						typeStack = okCaseStack;
 						structTypeStack = okCaseStructStack;
+					} else {
+						// No Ok arm: the results were never handled, so nothing of them survives.
+						typeStack = failureStack;
+						structTypeStack = failureStructStack;
 					}
+					break;
+				}
+
+				// The same rule as for `if`/`else`: every arm that reaches the merge point must leave
+				// the stack at the same depth. Without a `_` arm the switch may match nothing, so
+				// the arms must additionally leave it at the depth it had before the switch.
+				if (!mHasUnpredictableStack && !allDiverge) {
+					if (armsDisagree) {
+						std::string msg = "switch arms leave different numbers of values on the stack (" +
+										  std::to_string(referenceEffect) + " and " +
+										  std::to_string(disagreeingEffect) +
+										  "); every arm must leave the same number, since whatever follows reads a "
+										  "value whose identity would otherwise depend on which arm ran";
+						reportError(child, msg.c_str());
+					} else if (!hasDefault && haveReference && referenceEffect != 0) {
+						std::string msg = "switch without a '_' arm changes the stack by " +
+										  std::to_string(referenceEffect) +
+										  "; when no arm matches nothing runs, so the arms must leave the stack "
+										  "as they found it (add a '_' arm with the same effect, or balance the arms)";
+						reportError(child, msg.c_str());
+					}
+				}
+				if (haveReference && (hasDefault || referenceEffect == 0)) {
+					// Balanced arms: what follows sees what an arm left, in-place changes included.
+					typeStack = referenceStack;
+					structTypeStack = referenceStructStack;
 				}
 				break;
 			}
@@ -2168,10 +2261,14 @@ namespace Qd {
 							StackValueType expected = sig.consumes[j];
 							StackValueType actual = typeStack[stackIdx];
 
-							if (expected == StackValueType::ANY || expected == StackValueType::UNKNOWN) {
+							// ANY and UNKNOWN cannot be checked; a TYPEVAR is a generic parameter that accepts
+							// any concrete type at the call site, exactly as in the function-call path.
+							if (expected == StackValueType::ANY || expected == StackValueType::UNKNOWN ||
+									expected == StackValueType::TYPEVAR) {
 								continue;
 							}
-							if (actual == StackValueType::UNKNOWN || actual == StackValueType::ANY) {
+							if (actual == StackValueType::UNKNOWN || actual == StackValueType::ANY ||
+									actual == StackValueType::TYPEVAR) {
 								continue;
 							}
 
@@ -2627,9 +2724,14 @@ namespace Qd {
 							structTypeStack.push_back(getProducedStructType(idx, type));
 						}
 					}
+				} else {
+					// Not a local, not a method, not a user function: unresolved, so its stack
+					// effect is unknown and the function-level checks cannot be trusted.
+					// This must stay inside the else: placed after the block it ran for every
+					// call, which switched off the arity, if-arm and defer checks in any
+					// function that called anything.
+					mHasUnpredictableStack = true;
 				}
-				// If it's not a user function, it could be unresolved — stack effects unknown
-				mHasUnpredictableStack = true;
 				break;
 			}
 
@@ -3293,10 +3395,14 @@ namespace Qd {
 							StackValueType expected = sig.consumes[j];
 							StackValueType actual = typeStack[stackIdx];
 
-							if (expected == StackValueType::ANY || expected == StackValueType::UNKNOWN) {
+							// ANY and UNKNOWN cannot be checked; a TYPEVAR is a generic parameter that accepts
+							// any concrete type at the call site, exactly as in the function-call path.
+							if (expected == StackValueType::ANY || expected == StackValueType::UNKNOWN ||
+									expected == StackValueType::TYPEVAR) {
 								continue;
 							}
-							if (actual == StackValueType::UNKNOWN || actual == StackValueType::ANY) {
+							if (actual == StackValueType::UNKNOWN || actual == StackValueType::ANY ||
+									actual == StackValueType::TYPEVAR) {
 								continue;
 							}
 
@@ -3625,10 +3731,11 @@ namespace Qd {
 									structIt != sig.producesStructTypes.end() ? structIt->second : "");
 						}
 					}
+				} else {
+					// Signature not found: the module was not loaded or analysed, so the stack
+					// effect is unknown. Inside the else for the same reason as the IDENTIFIER case.
+					mHasUnpredictableStack = true;
 				}
-				// If signature not found, module wasn't loaded or analyzed
-				// Stack effects are unknown — skip strict output validation
-				mHasUnpredictableStack = true;
 				break;
 			}
 

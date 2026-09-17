@@ -1,0 +1,28 @@
+// Test: a fallible *method* call before an if is recognised as such (methods are keyed by
+// their mangled name), so the arms may legitimately differ and the failure arm is modelled
+// from the pre-call stack.
+struct Box {
+	v:i64
+}
+
+fn (b:Box) get(name:str -- value:i64)! {
+	name "x" == if {
+		b <<v
+	} else {
+		"not found" 2 panic
+	}
+}
+
+fn main() {
+	Box { v = 7 } -> b
+	b "x" get if {
+		"got " print print nl
+	} else {
+		"missing" print nl
+	}
+	b "y" get if {
+		"got " print print nl
+	} else {
+		"missing" print nl
+	}
+}

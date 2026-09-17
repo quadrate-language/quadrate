@@ -788,16 +788,34 @@ This is the one place where the declared stack effect cannot be checked by eye, 
 unreported mismatch is not merely unchecked but wrong: whatever follows the `if` reads a value
 whose identity depends on which arm ran.
 
-Two cases are exempt, because the arms legitimately differ:
+One case is exempt, because the arm never reaches the merge point:
 
-- **A diverging arm.** An arm ending in `return`, `panic`, `break` or `continue` never reaches
-  the merge point and contributes no stack effect, so the guard idiom `c if { "..." panic }` is
-  unaffected whatever the other arm leaves.
-- **An `if` immediately after a fallible call.** The success arm receives the call's result and
-  the failure arm does not. See §10.3.
+- **A diverging arm.** An arm containing a top-level `return`, `panic`, `break` or `continue`
+  never reaches the merge point and contributes no stack effect, so the guard idiom
+  `c if { "..." panic }` is unaffected whatever the other arm leaves. Any statement after the
+  diverging one is unreachable and does not count.
+
+An `if` immediately after a bare fallible call (§10.3) is **not** exempt. The two arms start
+from different stacks — the success arm from the call's results, the failure arm from the stack
+as it was before the call — and MUST still end at the same depth. In practice the success arm
+consumes or drops the results:
+
+```quadrate
+// doccheck: expect-error the success arm leaves the result, the failure arm has none
+fn divide(a:i64 b:i64 -- result:i64)! {
+    b 0 == if { "division by zero" -1 panic }
+    a b /
+}
+
+fn main() {
+    10 2 divide if { "ok" print nl } else { "failed" print nl }
+}
+```
 
 An `if` without an `else` is not constrained by this rule; its then-arm is governed by the
-enclosing function's declared effect (§4.3).
+enclosing function's declared effect (§4.3). The exception is again a bare fallible call: with
+no failure arm to run, what follows sees the pre-call stack, so the success arm MUST leave that
+same depth — by consuming the results or by diverging.
 
 ### 6.2 For Loops
 
@@ -845,6 +863,15 @@ Cases can match:
 - String literals
 - Constants (including scoped: `module::Constant`)
 - Wildcard `_` for default
+
+#### 6.4.1 Arm stack effects
+
+The rule of §6.1.1 applies to `switch` arms: every arm that reaches the merge point MUST leave
+the stack at the same depth, and an implementation MUST reject a program whose arms disagree.
+Diverging arms are exempt as for `if`. A `switch` with no `_` arm may match nothing, in which
+case no arm runs; its arms MUST therefore leave the stack at the depth it had before the
+`switch`. After a bare fallible call (§10.3) the `Ok` arm starts from the call's results and
+every other arm from the pre-call stack.
 
 ### 6.5 Break and Continue
 
@@ -1265,7 +1292,14 @@ The `?` operator requires the enclosing function to be fallible. On error, the f
 The status value a bare fallible call leaves is consumed by the `if` (or `switch`) that reads
 it. Neither arm receives it, so an arm MUST NOT `drop` it — doing so underflows the stack. On
 success the call's own return values are on the stack for the success arm to use; on failure
-there are none.
+there are none: the failure arm sees the stack exactly as it was before the call.
+
+That guarantee holds whatever the callee's body did before it failed. A fallible function's
+failure exit MUST discard anything above the depth the caller expects — the depth at entry
+minus the declared inputs (and the receiver) — so a callee with unnamed parameters that panics
+before consuming them, or one that pushes a value and then panics, leaves nothing behind. An
+implementation MUST model the failure arm from that pre-call stack and MUST reject a `drop` in
+it (§6.1.1).
 
 **Check with switch:**
 
@@ -1349,11 +1383,11 @@ fn doubled(a:i64 b:i64 -- result:i64)! {
 fn main() {
     // 1. if/else -- the status is a boolean, consumed by the `if`
     10 2 divide if { "10/2 = " print print nl } else { "failed" print nl }
-    10 0 divide if { "unreachable" print nl } else { "10/0 failed as expected" print nl }
+    10 0 divide if { "unreachable: " print print nl } else { "10/0 failed as expected" print nl }
 
     // 2. switch -- the status carries the error code, so specific codes can be matched
     10 0 divide switch {
-        Ok { "unreachable" print nl }
+        Ok { "unreachable: " print print nl }
         -1 { "caught code -1: " print err print " " print print nl }
         _  { "some other error" print nl }
     }

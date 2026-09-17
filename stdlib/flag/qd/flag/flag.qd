@@ -125,9 +125,7 @@ pub fn (f:Flag) int(name:str -- value:i64)! {
 		-> s
 		s parse_int
 	} else {
-		drop  // drop unused string from 'string' call
 		"flag not found: " name strings::concat ErrNotFound panic
-		0
 	}
 }
 
@@ -142,9 +140,7 @@ pub fn (f:Flag) float(name:str -- value:f64)! {
 		-> s
 		s parse_float
 	} else {
-		drop  // drop unused string from 'string' call
 		"flag not found: " name strings::concat ErrNotFound panic
-		0.0
 	}
 }
 

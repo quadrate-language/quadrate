@@ -284,6 +284,18 @@ int qd_nip(qd_context* ctx);
 int qd_drop(qd_context* ctx);
 
 /**
+ * @brief Drop elements until the stack holds exactly `target` elements ( ... -- )
+ *
+ * Emitted on the failure exit of a fallible function so the caller sees the stack it
+ * expects: as before the call, minus the callee's declared inputs. Strings dropped this
+ * way are released. A negative target is treated as 0.
+ *
+ * @param ctx Execution context
+ * @param target Number of elements to keep
+ */
+void qd_stack_truncate(qd_context* ctx, int64_t target);
+
+/**
  * @brief Free memory pointed to by pointer on stack ( ptr -- )
  *
  * @param ctx Execution context
