@@ -1043,6 +1043,7 @@ namespace Qd {
 				auto savedIsFallible = currentFunctionIsFallible;
 				auto savedIsIntegerOnly = currentFunctionIsIntegerOnly;
 				auto savedIteratorVars = iteratorVars;
+				auto savedIteratorFloatVars = iteratorFloatVars;
 
 				localVariables.clear();
 				localVariableStructTypes.clear();
@@ -1050,6 +1051,7 @@ namespace Qd {
 				localArrayVariables.clear();
 				nativeLocalVariables.clear();
 				iteratorVars.clear();
+				iteratorFloatVars.clear();
 				currentFunctionIsIntegerOnly = true;
 				currentFunctionIsFallible = false;
 
@@ -1153,6 +1155,7 @@ namespace Qd {
 				currentFunctionIsFallible = savedIsFallible;
 				currentFunctionIsIntegerOnly = savedIsIntegerOnly;
 				iteratorVars = savedIteratorVars;
+				iteratorFloatVars = savedIteratorFloatVars;
 
 				// --- Generate stack wrapper body ---
 				// The wrapper pops args from runtime stack, calls native, pushes result

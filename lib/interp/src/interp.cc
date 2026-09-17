@@ -6,13 +6,19 @@
 #include <quadrate/interp/interp.h>
 
 #include <quadrate/qc/ast.h>
+#include <quadrate/qc/ast_node_array_literal.h>
+#include <quadrate/qc/ast_node_case.h>
+#include <quadrate/qc/ast_node_constant.h>
+#include <quadrate/qc/ast_node_enum.h>
+#include <quadrate/qc/ast_node_for.h>
 #include <quadrate/qc/ast_node_function.h>
 #include <quadrate/qc/ast_node_identifier.h>
 #include <quadrate/qc/ast_node_if.h>
 #include <quadrate/qc/ast_node_instruction.h>
 #include <quadrate/qc/ast_node_literal.h>
+#include <quadrate/qc/ast_node_local.h>
 #include <quadrate/qc/ast_node_loop.h>
-#include <quadrate/qc/ast_node_case.h>
+#include <quadrate/qc/ast_node_parameter.h>
 #include <quadrate/qc/ast_node_scoped.h>
 #include <quadrate/qc/ast_node_switch.h>
 #include <quadrate/rt/array.h>
@@ -29,6 +35,7 @@
 #include <new>
 #include <string>
 #include <unordered_map>
+#include <utility>
 #include <vector>
 
 namespace {
@@ -127,8 +134,27 @@ namespace {
 enum class Flow {
 	Normal,
 	Break,
-	Continue
+	Continue,
+	Return
 };
+
+// A value bound to a name by '-> x', by a named parameter, or by a 'for'
+// iterator.
+//
+// Strings are copied rather than reference-counted. A frame has to survive the
+// longjmp a fatal runtime error performs, and a copy needs nothing released on
+// that path; the stack's own reference is dropped when the value is popped.
+struct Local {
+	qd_stack_type type = QD_STACK_TYPE_INT;
+	int64_t i = 0;
+	double f = 0.0;
+	void* p = nullptr;
+	std::string s;
+};
+
+// Names visible to one function body. Locals are function-scoped, as they are
+// in the compiled tier -- a block does not open a scope of its own.
+using Frame = std::unordered_map<std::string, Local>;
 
 // Nodes one eval may walk. Nothing can interrupt a running evaluation, so an
 // unbounded loop would otherwise need a power cycle. About a second on an A53.
@@ -144,15 +170,22 @@ struct Declared {
 };
 
 struct qd_interp {
-	qd_context* ctx;   ///< Execution context holding the stack
-	bool owns_ctx;	   ///< Whether destroy() should free the context
-	std::string error; ///< Message from the most recent failure
-	Flow flow;		   ///< Set by break/continue, cleared by the enclosing loop
-	uint64_t steps;	   ///< Nodes walked in this call
-	uint64_t step_limit;
+	qd_context* ctx = nullptr; ///< Execution context holding the stack
+	bool owns_ctx = false;	   ///< Whether destroy() should free the context
+	std::string error;		   ///< Message from the most recent failure
+	Flow flow = Flow::Normal;  ///< Set by break/continue/return, cleared by what encloses it
+	uint64_t steps = 0;		   ///< Nodes walked in this call
+	uint64_t step_limit = QD_INTERP_DEFAULT_STEP_LIMIT;
 
-	std::unordered_map<std::string, Declared> functions; ///< `fn` declarations
-	size_t call_depth;
+	std::unordered_map<std::string, Declared> functions;			 ///< `fn` declarations
+	std::unordered_map<std::string, std::string> constants;			 ///< `const` values and enum variants, as written
+	std::unordered_map<std::string, std::vector<std::string>> enums; ///< enum name -> its keys in `constants`
+
+	/// One frame per active call. frames.front() belongs to the top level and
+	/// persists across evaluations, as the stack does.
+	std::vector<Frame> frames;
+
+	size_t call_depth = 0;
 	std::string last_declared; ///< Name the most recent eval declared, if any
 };
 
@@ -198,20 +231,38 @@ namespace {
 		return true;
 	}
 
+	// One iteration of a loop body. Returns false to stop the walk entirely;
+	// sets `stop` when the loop itself is over but the walk continues.
+	bool runLoopBody(qd_interp* interp, const Qd::IAstNode* body, bool& stop) {
+		stop = false;
+		if (!evalNode(interp, body)) {
+			return false;
+		}
+
+		if (interp->flow == Flow::Break) {
+			interp->flow = Flow::Normal;
+			stop = true;
+			return true;
+		}
+		if (interp->flow == Flow::Continue) {
+			interp->flow = Flow::Normal;
+			return true;
+		}
+		// A return leaves the loop and the function with it, so the flow stands
+		stop = (interp->flow == Flow::Return);
+		return true;
+	}
+
 	bool evalLoop(qd_interp* interp, const Qd::IAstNode* node) {
 		const Qd::IAstNode* body = node->child(0);
 
 		for (;;) {
-			if (!evalNode(interp, body)) {
+			bool stop = false;
+			if (!runLoopBody(interp, body, stop)) {
 				return false;
 			}
-
-			if (interp->flow == Flow::Break) {
-				interp->flow = Flow::Normal;
+			if (stop) {
 				break;
-			}
-			if (interp->flow == Flow::Continue) {
-				interp->flow = Flow::Normal;
 			}
 
 			// An empty body walks no node, so the step budget alone would never stop it.
@@ -310,15 +361,384 @@ namespace {
 		return false;
 	}
 
+	void recordConstant(qd_interp* interp, const Qd::AstNodeConstant* constant) {
+		interp->constants[constant->name()] = constant->value();
+		if (interp->last_declared.empty()) {
+			interp->last_declared = constant->name();
+		}
+	}
+
+	// Variants are reachable as 'Enum::Variant', the spelling the compiled tier
+	// resolves through the same constant table.
+	void recordEnum(qd_interp* interp, const Qd::AstNodeEnumDeclaration* declaration) {
+		std::vector<std::string>& keys = interp->enums[declaration->name()];
+		for (const std::string& key : keys) {
+			interp->constants.erase(key);
+		}
+		keys.clear();
+
+		for (const auto& variant : declaration->variants()) {
+			const std::string key = declaration->name() + "::" + variant.name;
+			interp->constants[key] = std::to_string(variant.value);
+			keys.push_back(key);
+		}
+		if (interp->last_declared.empty()) {
+			interp->last_declared = declaration->name();
+		}
+	}
+
+	// A const is stored as written, so its spelling decides its type -- the same
+	// rule the compiled tier applies in generateIdentifier.
+	bool pushConstantValue(qd_interp* interp, const std::string& text) {
+		if (text.size() >= 2 && text.front() == '"') {
+			return qd_push_s(interp->ctx, decodeString(text).c_str()) == 0;
+		}
+		if (text.find('.') != std::string::npos) {
+			return qd_push_f(interp->ctx, std::strtod(text.c_str(), nullptr)) == 0;
+		}
+		// Base 0 so a hex enum value reads as written
+		return qd_push_i(interp->ctx, static_cast<int64_t>(std::strtoll(text.c_str(), nullptr, 0))) == 0;
+	}
+
+	// The stack owns a reference to every string on it; a popped element that
+	// nothing takes over has to drop it.
+	void releaseElement(qd_stack_element_t& element) {
+		if (element.type == QD_STACK_TYPE_STR && element.value.s != nullptr) {
+			qd_string_release(element.value.s);
+			element.value.s = nullptr;
+		}
+	}
+
+	// Every binding a frame holds owns a reference, so dropping one gives it up.
+	// The runtime's generic release knows an array from a struct from a raw
+	// pointer, which is why a frame need not track which it has.
+	void releaseLocal(Local& value) {
+		if (value.type == QD_STACK_TYPE_PTR && value.p != nullptr) {
+			qd_ptr_release(value.p);
+			value.p = nullptr;
+		}
+	}
+
+	void dropFrame(qd_interp* interp) {
+		for (auto& entry : interp->frames.back()) {
+			releaseLocal(entry.second);
+		}
+		interp->frames.pop_back();
+	}
+
+	// Bind a popped value to a name, consuming the element. Storing does not
+	// retain -- the reference the stack held moves into the binding, as it does
+	// in generateLocalOne.
+	void bindLocal(qd_interp* interp, const std::string& name, qd_stack_element_t& element) {
+		Local& slot = interp->frames.back()[name];
+		releaseLocal(slot); // whatever the name held before
+		slot.type = element.type;
+		slot.i = 0;
+		slot.f = 0.0;
+		slot.p = nullptr;
+		slot.s.clear();
+
+		switch (element.type) {
+		case QD_STACK_TYPE_INT:
+			slot.i = element.value.i;
+			break;
+		case QD_STACK_TYPE_FLOAT:
+			slot.f = element.value.f;
+			break;
+		case QD_STACK_TYPE_PTR:
+			slot.p = element.value.p;
+			break;
+		case QD_STACK_TYPE_STR: {
+			const char* data = (element.value.s != nullptr) ? qd_string_data(element.value.s) : nullptr;
+			if (data != nullptr) {
+				slot.s = data;
+			}
+			break;
+		}
+		}
+		releaseElement(element);
+	}
+
+	// Reading a name pushes a copy, leaving the binding in place. A pointer is
+	// retained first: 'len' and 'nth' consume the reference the stack carries,
+	// so without this an array read twice would be freed under the second read.
+	bool pushLocal(qd_interp* interp, const Local& value) {
+		switch (value.type) {
+		case QD_STACK_TYPE_INT:
+			return qd_push_i(interp->ctx, value.i) == 0;
+		case QD_STACK_TYPE_FLOAT:
+			return qd_push_f(interp->ctx, value.f) == 0;
+		case QD_STACK_TYPE_PTR:
+			if (value.p != nullptr) {
+				qd_ptr_retain(value.p);
+			}
+			return qd_push_p(interp->ctx, value.p) == 0;
+		case QD_STACK_TYPE_STR:
+			return qd_push_s(interp->ctx, value.s.c_str()) == 0;
+		}
+		return false;
+	}
+
+	// '-> a b c' pops three values, the top into a. '_' names nothing and drops.
+	bool evalLocalBinding(qd_interp* interp, const Qd::AstNodeLocal* local) {
+		const std::vector<std::string>& names = local->names();
+		const size_t depth = static_cast<size_t>(qd_stack_size(interp->ctx->st));
+		if (depth < names.size()) {
+			interp->error = "'->' needs " + std::to_string(names.size()) +
+							(names.size() == 1 ? " value, " : " values, ") + std::to_string(depth) + " on the stack";
+			return false;
+		}
+
+		for (const std::string& name : names) {
+			qd_stack_element_t element;
+			if (qd_stack_pop(interp->ctx->st, &element) != QD_STACK_OK) {
+				interp->error = "'-> " + name + "' could not take its value";
+				return false;
+			}
+			if (name == "_") {
+				releaseElement(element);
+				continue;
+			}
+			bindLocal(interp, name, element);
+		}
+		return true;
+	}
+
+	// 'start end step for i { ... }'. The bounds come off the stack, step last,
+	// and the end is exclusive -- the rule generateFor applies.
+	bool evalFor(qd_interp* interp, const Qd::AstNodeForStatement* statement) {
+		if (static_cast<size_t>(qd_stack_size(interp->ctx->st)) < 3) {
+			interp->error = "'for' needs a start, an end and a step on the stack";
+			return false;
+		}
+
+		qd_stack_element_t bounds[3]; // step, end, start
+		for (qd_stack_element_t& element : bounds) {
+			if (qd_stack_pop(interp->ctx->st, &element) != QD_STACK_OK) {
+				interp->error = "'for' could not take its bounds";
+				return false;
+			}
+		}
+
+		double numbers[3] = {0.0, 0.0, 0.0};
+		for (size_t i = 0; i < 3; i++) {
+			if (bounds[i].type == QD_STACK_TYPE_INT) {
+				numbers[i] = static_cast<double>(bounds[i].value.i);
+			} else if (bounds[i].type == QD_STACK_TYPE_FLOAT) {
+				numbers[i] = bounds[i].value.f;
+			} else {
+				releaseElement(bounds[0]);
+				releaseElement(bounds[1]);
+				releaseElement(bounds[2]);
+				interp->error = "'for' bounds must be numbers";
+				return false;
+			}
+		}
+
+		// The start decides the iterator's type, as it does in the compiled tier
+		const bool isFloat = bounds[2].type == QD_STACK_TYPE_FLOAT;
+		const double step = numbers[0];
+		const double end = numbers[1];
+		double iterator = numbers[2];
+
+		const std::string& name = statement->iteratorName();
+		const Qd::IAstNode* body = statement->body();
+
+		// An outer binding of the same name is set aside and restored afterwards.
+		// Moved rather than copied: whatever reference it owns has to be held in
+		// one place only, or restoring it would release what it still points at.
+		bool hadShadowed = false;
+		Local previous;
+		{
+			Frame& frame = interp->frames.back();
+			const auto shadowed = frame.find(name);
+			hadShadowed = shadowed != frame.end();
+			if (hadShadowed) {
+				previous = std::move(shadowed->second);
+				shadowed->second = Local();
+			}
+		}
+
+		bool ok = true;
+		for (; (step < 0.0) ? (iterator > end) : (iterator < end); iterator += step) {
+			Local& slot = interp->frames.back()[name];
+			releaseLocal(slot); // in case the body rebound the name
+			slot.type = isFloat ? QD_STACK_TYPE_FLOAT : QD_STACK_TYPE_INT;
+			slot.i = static_cast<int64_t>(iterator);
+			slot.f = iterator;
+			slot.s.clear();
+
+			bool stop = false;
+			if (body != nullptr) {
+				if (!runLoopBody(interp, body, stop)) {
+					ok = false;
+					break;
+				}
+			}
+			if (stop) {
+				break;
+			}
+
+			// A body that walks nothing would otherwise never meet the budget
+			if (++interp->steps > interp->step_limit) {
+				interp->error = "execution limit reached; is this loop missing a break?";
+				ok = false;
+				break;
+			}
+		}
+
+		Local& restored = interp->frames.back()[name];
+		releaseLocal(restored);
+		if (hadShadowed) {
+			restored = std::move(previous);
+		} else {
+			interp->frames.back().erase(name);
+		}
+		return ok;
+	}
+
+	// '[1, 2, 3]' builds a Quadrate array, whose element type the first element
+	// decides -- what generateArrayLiteral does. The caller frees it.
+	bool evalArrayLiteral(qd_interp* interp, const Qd::AstNodeArrayLiteral* literal) {
+		const auto& elements = literal->elements();
+
+		qd_array_type elementType = QD_ARRAY_TYPE_INT;
+		if (!elements.empty() && elements[0]->type() == Qd::IAstNode::Type::LITERAL) {
+			switch (static_cast<const Qd::AstNodeLiteral*>(elements[0].get())->literalType()) {
+			case Qd::AstNodeLiteral::LiteralType::FLOAT:
+				elementType = QD_ARRAY_TYPE_FLOAT;
+				break;
+			case Qd::AstNodeLiteral::LiteralType::STRING:
+				elementType = QD_ARRAY_TYPE_STR;
+				break;
+			default:
+				break;
+			}
+		}
+
+		qd_array_t* array = qd_array_create(elements.empty() ? 8 : elements.size(), elementType);
+		if (array == nullptr) {
+			interp->error = "could not allocate the array";
+			return false;
+		}
+
+		for (const auto& element : elements) {
+			if (element->type() != Qd::IAstNode::Type::LITERAL) {
+				qd_array_release(array);
+				interp->error = "an array literal takes literal elements only";
+				return false;
+			}
+
+			const auto* value = static_cast<const Qd::AstNodeLiteral*>(element.get());
+			const std::string& text = value->value();
+
+			double number = 0.0;
+			switch (value->literalType()) {
+			case Qd::AstNodeLiteral::LiteralType::INTEGER:
+				number = static_cast<double>(std::strtoll(text.c_str(), nullptr, 0));
+				break;
+			case Qd::AstNodeLiteral::LiteralType::BOOL:
+				number = (text == "true" || text == "Ok") ? 1.0 : 0.0;
+				break;
+			case Qd::AstNodeLiteral::LiteralType::FLOAT:
+				number = std::strtod(text.c_str(), nullptr);
+				break;
+			case Qd::AstNodeLiteral::LiteralType::STRING: {
+				if (elementType != QD_ARRAY_TYPE_STR) {
+					qd_array_release(array);
+					interp->error = "an array literal holds one type; this element is a string";
+					return false;
+				}
+				qd_string_t* held = qd_string_create(decodeString(text).c_str());
+				if (held == nullptr) {
+					qd_array_release(array);
+					interp->error = "could not allocate the array element";
+					return false;
+				}
+				const int pushed = qd_array_push_ptr(array, held);
+				qd_string_release(held); // the array retained its own
+				if (pushed != 0) {
+					qd_array_release(array);
+					interp->error = "could not grow the array";
+					return false;
+				}
+				continue;
+			}
+			default:
+				qd_array_release(array);
+				interp->error = "this array element cannot be interpreted";
+				return false;
+			}
+
+			if (elementType == QD_ARRAY_TYPE_STR) {
+				qd_array_release(array);
+				interp->error = "an array literal holds one type; this element is a number";
+				return false;
+			}
+
+			const int pushed = (elementType == QD_ARRAY_TYPE_FLOAT)
+									   ? qd_array_push_float(array, number)
+									   : qd_array_push_int(array, static_cast<int64_t>(number));
+			if (pushed != 0) {
+				qd_array_release(array);
+				interp->error = "could not grow the array";
+				return false;
+			}
+		}
+
+		if (qd_push_p(interp->ctx, array) != 0) {
+			qd_array_release(array);
+			interp->error = "stack overflow";
+			return false;
+		}
+		return true;
+	}
+
+	// 'cast<T>' is one instruction name covering four runtime ops, picked by its
+	// type parameter -- the mapping generator_nodes_instructions.cc uses.
+	OpFn castOp(const std::string& typeParam) {
+		if (typeParam == "f64" || typeParam == "f32" || typeParam == "f" || typeParam == "float" ||
+				typeParam == "float64") {
+			return qd_castf;
+		}
+		if (typeParam == "str" || typeParam == "string" || typeParam == "s") {
+			return qd_casts;
+		}
+		if (typeParam == "ptr" || typeParam == "p" || typeParam == "pointer") {
+			return qd_castp;
+		}
+		if (typeParam == "i64" || typeParam == "i32" || typeParam == "i16" || typeParam == "i8" || typeParam == "u64" ||
+				typeParam == "u32" || typeParam == "u16" || typeParam == "u8" || typeParam == "i" ||
+				typeParam == "int" || typeParam == "int64") {
+			return qd_casti;
+		}
+		return nullptr;
+	}
+
 	bool evalInstruction(qd_interp* interp, const Qd::AstNodeInstruction* instruction) {
+		// 'cast' carries its type parameter rather than spelling it in the name,
+		// so it resolves before the table lookup.
+		BuiltinOp cast{nullptr, 1};
+		if (instruction->name() == "cast") {
+			if (!instruction->hasTypeParam()) {
+				interp->error = "'cast' needs a type, as in 'cast<i64>'";
+				return false;
+			}
+			cast.fn = castOp(instruction->typeParam());
+			if (cast.fn == nullptr) {
+				interp->error = "'cast<" + instruction->typeParam() + ">' is not a conversion this tier knows";
+				return false;
+			}
+		}
+
 		const std::unordered_map<std::string, BuiltinOp>& table = opTable();
 		const auto found = table.find(instruction->name());
-		if (found == table.end()) {
+		if (cast.fn == nullptr && found == table.end()) {
 			interp->error = "'" + instruction->name() + "' cannot be interpreted";
 			return false;
 		}
 
-		const BuiltinOp& op = found->second;
+		const BuiltinOp& op = (cast.fn != nullptr) ? cast : found->second;
 
 		// Refuse rather than let the runtime end the process
 		const size_t depth = static_cast<size_t>(qd_stack_size(interp->ctx->st));
@@ -373,36 +793,94 @@ namespace {
 		return false;
 	}
 
-	// Parameters arrive on the stack, so the body just runs.
+	// Arguments arrive on the stack. A signature whose inputs are *all* named
+	// binds them into the frame and takes them off the stack -- the rule the
+	// type checker states in semantic_validator_typecheck.cc. Mixed or unnamed
+	// inputs stay on the stack, where the body reads them positionally.
+	bool bindParameters(qd_interp* interp, const std::string& name, const Qd::AstNodeFunctionDeclaration* function) {
+		const auto& inputs = function->inputParameters();
+		if (inputs.empty() || function->hasReceiver()) {
+			return true;
+		}
+
+		for (const auto& input : inputs) {
+			if (!static_cast<const Qd::AstNodeParameter*>(input.get())->hasName()) {
+				return true;
+			}
+		}
+
+		const size_t depth = static_cast<size_t>(qd_stack_size(interp->ctx->st));
+		if (depth < inputs.size()) {
+			interp->error = "'" + name + "' needs " + std::to_string(inputs.size()) +
+							(inputs.size() == 1 ? " value, " : " values, ") + std::to_string(depth) + " on the stack";
+			return false;
+		}
+
+		// The last parameter is on top, so binding runs backwards
+		for (size_t i = inputs.size(); i > 0; i--) {
+			const auto* parameter = static_cast<const Qd::AstNodeParameter*>(inputs[i - 1].get());
+			qd_stack_element_t element;
+			if (qd_stack_pop(interp->ctx->st, &element) != QD_STACK_OK) {
+				interp->error = "'" + name + "' could not take its arguments";
+				return false;
+			}
+			bindLocal(interp, parameter->name(), element);
+		}
+		return true;
+	}
+
 	bool callFunction(qd_interp* interp, const std::string& name, const Qd::IAstNode* decl) {
 		if (interp->call_depth >= QD_INTERP_MAX_CALL_DEPTH) {
 			interp->error = "'" + name + "' recursed too deeply";
 			return false;
 		}
 
-		// The body is the function's Block; the other children are parameters
-		const Qd::IAstNode* body = nullptr;
-		for (size_t i = 0; i < decl->childCount(); i++) {
-			if (decl->child(i)->type() == Qd::IAstNode::Type::BLOCK) {
-				body = decl->child(i);
-			}
-		}
+		const auto* function = static_cast<const Qd::AstNodeFunctionDeclaration*>(decl);
+		const Qd::IAstNode* body = function->body();
 		if (body == nullptr) {
 			interp->error = "'" + name + "' has no body";
 			return false;
 		}
 
+		interp->frames.emplace_back();
 		interp->call_depth++;
-		const bool ok = evalNode(interp, body);
+		bool ok = bindParameters(interp, name, function);
+		if (ok) {
+			ok = evalNode(interp, body);
+		}
 		interp->call_depth--;
+		dropFrame(interp);
 
-		// A break inside a function does not escape it
+		// A break or a return inside a function does not escape it
 		interp->flow = Flow::Normal;
 		return ok;
 	}
 
-	// Call a registered native function by the name written in source.
+	// Resolve a name written in source: a local, then a constant, then a
+	// declared function, then a registered native.
 	bool evalName(qd_interp* interp, const std::string& name) {
+		// Scoped: a call below pushes a frame, which may move this one
+		{
+			const Frame& frame = interp->frames.back();
+			const auto local = frame.find(name);
+			if (local != frame.end()) {
+				if (!pushLocal(interp, local->second)) {
+					interp->error = "stack overflow";
+					return false;
+				}
+				return true;
+			}
+		}
+
+		const auto constant = interp->constants.find(name);
+		if (constant != interp->constants.end()) {
+			if (!pushConstantValue(interp, constant->second)) {
+				interp->error = "stack overflow";
+				return false;
+			}
+			return true;
+		}
+
 		// A declared word shadows a registered native.
 		const auto declared = interp->functions.find(name);
 		if (declared != interp->functions.end()) {
@@ -437,10 +915,47 @@ namespace {
 		return true;
 	}
 
-	// One case value against what switch took off the stack. The parser puts
-	// only literals here.
-	bool caseMatches(const Qd::IAstNode* value, const qd_stack_element_t& subject) {
+	// A case label naming a constant or an enum variant compares by the value's
+	// written form, which is all a constant is -- the rule pushConstantValue
+	// applies when the same name is read as a value.
+	bool constantMatches(const std::string& text, const qd_stack_element_t& subject) {
+		if (text.size() >= 2 && text.front() == '"') {
+			if (subject.type != QD_STACK_TYPE_STR || subject.value.s == nullptr) {
+				return false;
+			}
+			const char* held = qd_string_data(subject.value.s);
+			return held != nullptr && decodeString(text) == held;
+		}
+		if (text.find('.') != std::string::npos) {
+			return subject.type == QD_STACK_TYPE_FLOAT && subject.value.f == std::strtod(text.c_str(), nullptr);
+		}
+		return subject.type == QD_STACK_TYPE_INT &&
+			   subject.value.i == static_cast<int64_t>(std::strtoll(text.c_str(), nullptr, 0));
+	}
+
+	// One case value against what switch took off the stack. `resolved` reports
+	// whether the label meant anything at all: a name that resolves to nothing
+	// is a mistake, not a case that failed to match, and the compiled tier
+	// rejects it rather than silently never matching.
+	bool caseMatches(qd_interp* interp, const Qd::IAstNode* value, const qd_stack_element_t& subject, bool& resolved) {
+		resolved = true;
+
+		if (value != nullptr && value->type() == Qd::IAstNode::Type::IDENTIFIER) {
+			const auto* named = static_cast<const Qd::AstNodeIdentifier*>(value);
+			const auto constant = interp->constants.find(named->name());
+			resolved = constant != interp->constants.end();
+			return resolved && constantMatches(constant->second, subject);
+		}
+
+		if (value != nullptr && value->type() == Qd::IAstNode::Type::SCOPED_IDENTIFIER) {
+			const auto* scoped = static_cast<const Qd::AstNodeScopedIdentifier*>(value);
+			const auto constant = interp->constants.find(scoped->scope() + "::" + scoped->name());
+			resolved = constant != interp->constants.end();
+			return resolved && constantMatches(constant->second, subject);
+		}
+
 		if (value == nullptr || value->type() != Qd::IAstNode::Type::LITERAL) {
+			resolved = false;
 			return false;
 		}
 
@@ -453,12 +968,10 @@ namespace {
 				   subject.value.i == static_cast<int64_t>(std::strtoll(text.c_str(), nullptr, 0));
 
 		case Qd::AstNodeLiteral::LiteralType::BOOL:
-			return subject.type == QD_STACK_TYPE_INT &&
-				   subject.value.i == ((text == "true" || text == "Ok") ? 1 : 0);
+			return subject.type == QD_STACK_TYPE_INT && subject.value.i == ((text == "true" || text == "Ok") ? 1 : 0);
 
 		case Qd::AstNodeLiteral::LiteralType::FLOAT:
-			return subject.type == QD_STACK_TYPE_FLOAT &&
-				   subject.value.f == std::strtod(text.c_str(), nullptr);
+			return subject.type == QD_STACK_TYPE_FLOAT && subject.value.f == std::strtod(text.c_str(), nullptr);
 
 		case Qd::AstNodeLiteral::LiteralType::STRING: {
 			if (subject.type != QD_STACK_TYPE_STR || subject.value.s == nullptr) {
@@ -469,6 +982,7 @@ namespace {
 		}
 
 		default:
+			resolved = false;
 			return false;
 		}
 	}
@@ -499,12 +1013,21 @@ namespace {
 				fallback = branch;
 				continue;
 			}
-			if (caseMatches(branch->value(), subject)) {
+			bool resolved = false;
+			const bool matched = caseMatches(interp, branch->value(), subject, resolved);
+			if (!resolved) {
+				releaseElement(subject);
+				interp->error = "a case label must be a literal, a constant or an enum variant";
+				return false;
+			}
+			if (matched) {
+				releaseElement(subject);
 				return branch->body() == nullptr || evalNode(interp, branch->body());
 			}
 		}
 
 		// Nothing matched and no '_': the value is spent and nothing runs
+		releaseElement(subject);
 		if (fallback != nullptr && fallback->body() != nullptr) {
 			return evalNode(interp, fallback->body());
 		}
@@ -551,12 +1074,34 @@ namespace {
 		case Type::LOOP_STATEMENT:
 			return evalLoop(interp, node);
 
+		case Type::FOR_STATEMENT:
+			return evalFor(interp, static_cast<const Qd::AstNodeForStatement*>(node));
+
 		case Type::BREAK_STATEMENT:
 			interp->flow = Flow::Break;
 			return true;
 
 		case Type::CONTINUE_STATEMENT:
 			interp->flow = Flow::Continue;
+			return true;
+
+		case Type::RETURN_STATEMENT:
+			interp->flow = Flow::Return;
+			return true;
+
+		case Type::LOCAL:
+			return evalLocalBinding(interp, static_cast<const Qd::AstNodeLocal*>(node));
+
+		case Type::ARRAY_LITERAL:
+			return evalArrayLiteral(interp, static_cast<const Qd::AstNodeArrayLiteral*>(node));
+
+		// A declaration inside an evaluated body records itself and runs nothing
+		case Type::CONSTANT_DECLARATION:
+			recordConstant(interp, static_cast<const Qd::AstNodeConstant*>(node));
+			return true;
+
+		case Type::ENUM_DECLARATION:
+			recordEnum(interp, static_cast<const Qd::AstNodeEnumDeclaration*>(node));
 			return true;
 
 		case Type::IDENTIFIER:
@@ -586,18 +1131,31 @@ namespace {
 			return ok;
 		}
 
-		// Unwound from a fatal runtime error; recovery disarmed itself
+		// Unwound from a fatal runtime error; recovery disarmed itself. The
+		// frames a call in progress pushed are still there, since longjmp ran no
+		// destructor -- they live in the interpreter, so dropping them here is
+		// all the cleanup needed.
+		while (interp->frames.size() > 1) {
+			dropFrame(interp);
+		}
+		interp->call_depth = 0;
+
 		const char* message = qd_error_message(interp->ctx);
 		interp->error = (message != nullptr) ? message : "runtime error";
 		return false;
 	}
 
 	qd_interp* makeInterp(qd_context* ctx, bool owns) {
-		qd_interp* interp = new (std::nothrow) qd_interp{
-				ctx, owns, std::string(), Flow::Normal, 0, QD_INTERP_DEFAULT_STEP_LIMIT, {}, 0, std::string()};
-		if (interp == nullptr && owns) {
-			qd_free_context(ctx);
+		qd_interp* interp = new (std::nothrow) qd_interp();
+		if (interp == nullptr) {
+			if (owns) {
+				qd_free_context(ctx);
+			}
+			return nullptr;
 		}
+		interp->ctx = ctx;
+		interp->owns_ctx = owns;
+		interp->frames.resize(1); // the top-level frame
 		return interp;
 	}
 
@@ -623,6 +1181,10 @@ qd_interp* qd_interp_attach(qd_context* ctx) {
 void qd_interp_destroy(qd_interp* interp) {
 	if (interp == nullptr) {
 		return;
+	}
+	// Give up what the bindings own; the top-level frame lives as long as this
+	while (!interp->frames.empty()) {
+		dropFrame(interp);
 	}
 	if (interp->owns_ctx) {
 		qd_free_context(interp->ctx);
@@ -663,7 +1225,18 @@ bool qd_interp_undeclare(qd_interp* interp, const char* name) {
 	if (interp == nullptr || name == nullptr) {
 		return false;
 	}
-	return interp->functions.erase(name) > 0;
+
+	// Removing an enum removes the variants it put in the constant table
+	const auto declared = interp->enums.find(name);
+	if (declared != interp->enums.end()) {
+		for (const std::string& key : declared->second) {
+			interp->constants.erase(key);
+		}
+		interp->enums.erase(declared);
+		return true;
+	}
+
+	return interp->functions.erase(name) > 0 || interp->constants.erase(name) > 0;
 }
 
 void qd_interp_visit_words(const qd_interp* interp, qd_interp_word_visitor visit, void* userdata) {
@@ -686,10 +1259,25 @@ void qd_interp_visit_words(const qd_interp* interp, qd_interp_word_visitor visit
 			return;
 		}
 	}
+
+	for (const auto& entry : interp->constants) {
+		if (!visit(entry.first.c_str(), userdata)) {
+			return;
+		}
+	}
 }
 
 size_t qd_interp_declared_count(const qd_interp* interp) {
-	return (interp != nullptr) ? interp->functions.size() : 0;
+	if (interp == nullptr) {
+		return 0;
+	}
+	// An enum counts once, not once per variant, so its variants are discounted
+	// from the constant table they share
+	size_t variants = 0;
+	for (const auto& entry : interp->enums) {
+		variants += entry.second.size();
+	}
+	return interp->functions.size() + interp->constants.size() - variants + interp->enums.size();
 }
 
 bool qd_interp_eval(qd_interp* interp, const char* source) {
@@ -702,6 +1290,9 @@ bool qd_interp_eval(qd_interp* interp, const char* source) {
 	interp->flow = Flow::Normal;
 	interp->steps = 0;
 	interp->call_depth = 0;
+	while (interp->frames.size() > 1) {
+		dropFrame(interp);
+	}
 
 	// A declaration parses as a program; anything else as a function body.
 	const bool declares = startsWithDeclaration(source);
@@ -720,15 +1311,32 @@ bool qd_interp_eval(qd_interp* interp, const char* source) {
 		bool recorded = false;
 		for (size_t i = 0; i < root->childCount(); i++) {
 			const Qd::IAstNode* child = root->child(i);
-			if (child->type() != Qd::IAstNode::Type::FUNCTION_DECLARATION) {
-				continue;
+			switch (child->type()) {
+			case Qd::IAstNode::Type::FUNCTION_DECLARATION: {
+				const auto* fn = static_cast<const Qd::AstNodeFunctionDeclaration*>(child);
+				interp->functions[fn->name()] = Declared{child, ast};
+				if (interp->last_declared.empty()) {
+					interp->last_declared = fn->name();
+				}
+				recorded = true;
+				break;
 			}
-			const auto* fn = static_cast<const Qd::AstNodeFunctionDeclaration*>(child);
-			interp->functions[fn->name()] = Declared{child, ast};
-			if (interp->last_declared.empty()) {
-				interp->last_declared = fn->name();
+
+			// A constant's value is copied out, so these keep no reference to
+			// the parse they came from.
+			case Qd::IAstNode::Type::CONSTANT_DECLARATION:
+				recordConstant(interp, static_cast<const Qd::AstNodeConstant*>(child));
+				recorded = true;
+				break;
+
+			case Qd::IAstNode::Type::ENUM_DECLARATION:
+				recordEnum(interp, static_cast<const Qd::AstNodeEnumDeclaration*>(child));
+				recorded = true;
+				break;
+
+			default:
+				break;
 			}
-			recorded = true;
 		}
 		if (!recorded) {
 			interp->error = "nothing declared here can be interpreted yet";

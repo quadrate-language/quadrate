@@ -413,8 +413,7 @@ TEST(Loops) {
 TEST(Switch) {
 	qd_interp* interp = qd_interp_create(256);
 
-	ASSERT(std::strcmp(top(interp, "2 switch { 1 { 10 } 2 { 20 } _ { 0 } }"), "20") == 0,
-			"the matching case runs");
+	ASSERT(std::strcmp(top(interp, "2 switch { 1 { 10 } 2 { 20 } _ { 0 } }"), "20") == 0, "the matching case runs");
 
 	ASSERT(std::strcmp(top(interp, "clear 9 switch { 1 { 10 } _ { 99 } }"), "99") == 0,
 			"'_' catches what nothing else does");
@@ -434,6 +433,192 @@ TEST(Switch) {
 
 	ASSERT(!qd_interp_eval(interp, "clear switch { 1 { 10 } }"), "an empty stack is refused");
 	ASSERT(std::strstr(qd_interp_error(interp), "value") != nullptr, "and says why");
+
+	qd_interp_destroy(interp);
+}
+
+TEST(Return) {
+	qd_interp* interp = qd_interp_create(256);
+
+	// At the top level a return ends the line, like a break does
+	ASSERT(qd_interp_eval(interp, "1 return 2"), "a top-level return succeeds");
+	ASSERT(qd_interp_depth(interp) == 1, "so the 2 is never pushed");
+
+	// The guard clause the absence of 'return' used to cost a level of nesting
+	qd_interp_eval(interp, "fn clamp(n:i64 -- r:i64) { n 0 < if { 0 return } n 2 * }");
+	ASSERT(std::strcmp(top(interp, "clear -5 clamp"), "0") == 0, "the guard returns early");
+	ASSERT(std::strcmp(top(interp, "clear 5 clamp"), "10") == 0, "and the rest runs otherwise");
+
+	// A return leaves the loop it is written in, and the function with it
+	qd_interp_eval(interp, "fn first_over(n:i64 -- r:i64) { n loop { 1 + dup 10 > if { return } } }");
+	ASSERT(std::strcmp(top(interp, "clear 5 first_over"), "11") == 0, "return escapes a loop");
+
+	// But not the call: the caller carries on
+	qd_interp_eval(interp, "fn seven( -- r:i64) { 7 return 9 }");
+	ASSERT(std::strcmp(top(interp, "clear seven 100 +"), "107") == 0, "the caller resumes");
+
+	qd_interp_destroy(interp);
+}
+
+TEST(Constants) {
+	qd_interp* interp = qd_interp_create(256);
+
+	// A const used to parse and then report its own name as undefined
+	ASSERT(qd_interp_eval(interp, "const Fire = 0xa3"), "a constant can be declared");
+	ASSERT(qd_interp_depth(interp) == 0, "declaring runs nothing");
+	ASSERT(std::strcmp(top(interp, "Fire"), "163") == 0, "and the name resolves to its value");
+
+	ASSERT(qd_interp_eval(interp, "const Half = 0.5"), "a float constant");
+	ASSERT(std::strcmp(top(interp, "clear Half"), "0.5") == 0, "keeps its type");
+
+	ASSERT(qd_interp_eval(interp, "const Greeting = \"hi\""), "a string constant");
+	ASSERT(std::strcmp(top(interp, "clear Greeting"), "\"hi\"") == 0, "likewise");
+
+	// And composes with everything else
+	ASSERT(std::strcmp(top(interp, "clear Fire 1 +"), "164") == 0, "constants are ordinary values");
+
+	qd_interp_eval(interp, "const Limit = 10");
+	const char* name = qd_interp_last_declared(interp);
+	ASSERT(name != nullptr && std::strcmp(name, "Limit") == 0, "the declared name is reported");
+
+	ASSERT(qd_interp_undeclare(interp, "Fire"), "a constant can be undeclared");
+	ASSERT(!qd_interp_eval(interp, "clear Fire"), "and stops resolving");
+	ASSERT(std::strstr(qd_interp_error(interp), "not defined") != nullptr, "with the usual message");
+
+	qd_interp_destroy(interp);
+}
+
+TEST(Enums) {
+	qd_interp* interp = qd_interp_create(256);
+
+	ASSERT(qd_interp_eval(interp, "enum Color { Red, Green, Blue }"), "an enum can be declared");
+	ASSERT(std::strcmp(top(interp, "Color::Red"), "0") == 0, "the first variant is 0");
+	ASSERT(std::strcmp(top(interp, "clear Color::Blue"), "2") == 0, "and they count up");
+
+	ASSERT(qd_interp_eval(interp, "enum Sig { Hup = 1, Int = 2, Kill = 9 }"), "explicit values");
+	ASSERT(std::strcmp(top(interp, "clear Sig::Kill"), "9") == 0, "are used as written");
+
+	// A switch over an enum is the reason to want one
+	ASSERT(std::strcmp(top(interp, "clear Sig::Int switch { Sig::Hup { 10 } Sig::Int { 20 } _ { 0 } }"), "20") == 0,
+			"an enum variant is a case label");
+
+	ASSERT(qd_interp_undeclare(interp, "Color"), "an enum can be undeclared");
+	ASSERT(!qd_interp_eval(interp, "clear Color::Red"), "and its variants go with it");
+
+	qd_interp_destroy(interp);
+}
+
+TEST(NamedLocals) {
+	qd_interp* interp = qd_interp_create(256);
+
+	ASSERT(std::strcmp(top(interp, "5 -> x x x +"), "10") == 0, "a name can be bound and read twice");
+	ASSERT(qd_interp_depth(interp) == 1, "reading copies rather than moves");
+
+	// Each arrow takes the top, so the bindings read in reverse
+	ASSERT(qd_interp_eval(interp, "clear 1 2 3 -> a -> b -> c"), "three arrows bind three values");
+	ASSERT(std::strcmp(top(interp, "a"), "3") == 0, "the top went to the first name");
+	ASSERT(std::strcmp(top(interp, "clear b"), "2") == 0, "the next to the second");
+	ASSERT(std::strcmp(top(interp, "clear c"), "1") == 0, "the bottom to the last");
+
+	// '_' is the documented spelling of a discard
+	ASSERT(qd_interp_eval(interp, "clear 1 2 -> _"), "a discard binds nothing");
+	ASSERT(qd_interp_depth(interp) == 1, "and drops the value");
+
+	ASSERT(std::strcmp(top(interp, "clear \"kept\" -> s s"), "\"kept\"") == 0, "a string binds too");
+	ASSERT(std::strcmp(top(interp, "clear 1.5 -> f f"), "1.5") == 0, "and a float");
+
+	ASSERT(!qd_interp_eval(interp, "clear -> a"), "binding with nothing on the stack is refused");
+	ASSERT(std::strstr(qd_interp_error(interp), "needs 1 value") != nullptr, "with the arity");
+
+	qd_interp_destroy(interp);
+}
+
+TEST(NamedParameters) {
+	qd_interp* interp = qd_interp_create(256);
+
+	// All inputs named: they are bound on entry and leave the stack, which is
+	// what the type checker models and what the compiled tier does
+	qd_interp_eval(interp, "fn area(w:i64 h:i64 -- a:i64) { w h * }");
+	ASSERT(std::strcmp(top(interp, "clear 3 4 area"), "12") == 0, "parameters bind by name");
+	ASSERT(qd_interp_depth(interp) == 1, "and are consumed");
+
+	// The last parameter is the one on top
+	qd_interp_eval(interp, "fn difference(a:i64 b:i64 -- r:i64) { a b - }");
+	ASSERT(std::strcmp(top(interp, "clear 10 3 difference"), "7") == 0, "in the order written");
+
+	// An unnamed input stays on the stack for the body to read positionally
+	qd_interp_eval(interp, "fn twice(i64 -- r:i64) { 2 * }");
+	ASSERT(std::strcmp(top(interp, "clear 5 twice"), "10") == 0, "an unnamed parameter stays on the stack");
+
+	// A frame belongs to its call: the caller's names are not visible inside it
+	qd_interp_eval(interp, "fn peek( -- r:i64) { outer }");
+	ASSERT(!qd_interp_eval(interp, "clear 1 -> outer peek"), "a callee cannot see the caller's names");
+	ASSERT(std::strstr(qd_interp_error(interp), "not defined") != nullptr, "the name means nothing there");
+	ASSERT(std::strcmp(top(interp, "clear 7 -> outer 3 4 area drop outer"), "7") == 0,
+			"and the caller's binding survives the call");
+
+	ASSERT(!qd_interp_eval(interp, "clear 1 area"), "too few arguments is refused");
+	ASSERT(std::strstr(qd_interp_error(interp), "needs 2 values") != nullptr, "with the arity");
+
+	qd_interp_destroy(interp);
+}
+
+TEST(ForLoops) {
+	qd_interp* interp = qd_interp_create(256);
+
+	// start end step, with the end exclusive
+	ASSERT(std::strcmp(top(interp, "0 0 5 1 for i { i + }"), "10") == 0, "0..5 sums to 10");
+	ASSERT(std::strcmp(top(interp, "clear 0 0 10 2 for i { i + }"), "20") == 0, "a step of 2 skips");
+	ASSERT(std::strcmp(top(interp, "clear 0 5 0 -1 for i { i + }"), "15") == 0, "a negative step counts down");
+	ASSERT(qd_interp_eval(interp, "clear 0 5 5 1 for i { i + }"), "an empty range runs nothing");
+	ASSERT(std::strcmp(top(interp, ""), "0") == 0, "leaving the accumulator alone");
+
+	ASSERT(std::strcmp(top(interp, "clear 0 0 10 1 for i { i 3 == if { break } i + }"), "3") == 0, "break leaves it");
+	ASSERT(std::strcmp(top(interp, "clear 0 0 5 1 for i { i 2 == if { continue } i + }"), "8") == 0,
+			"continue skips the rest of the body");
+
+	// The iterator is an ordinary local, so loops nest
+	ASSERT(std::strcmp(top(interp, "clear 0 0 3 1 for i { 0 3 1 for j { i j * + } }"), "9") == 0, "for loops nest");
+
+	// A float start makes a float iterator
+	ASSERT(std::strcmp(top(interp, "clear 0.0 0.0 2.0 0.5 for x { x + }"), "3") == 0, "a float loop steps by 0.5");
+
+	ASSERT(!qd_interp_eval(interp, "clear 1 2 for i { }"), "too few bounds is refused");
+	ASSERT(std::strstr(qd_interp_error(interp), "start") != nullptr, "and says what is missing");
+
+	ASSERT(!qd_interp_eval(interp, "clear \"a\" 2 1 for i { }"), "a non-numeric bound is refused");
+
+	qd_interp_destroy(interp);
+}
+
+TEST(Casts) {
+	qd_interp* interp = qd_interp_create(256);
+
+	// A calculator mixes the two numeric types constantly
+	ASSERT(std::strcmp(top(interp, "3.7 cast<i64>"), "3") == 0, "float to int truncates");
+	ASSERT(std::strcmp(top(interp, "clear 3 cast<f64> 2.0 /"), "1.5") == 0, "int to float divides as a float");
+	ASSERT(std::strcmp(top(interp, "clear 65 cast<str>"), "\"65\"") == 0, "int to string renders it");
+
+	ASSERT(!qd_interp_eval(interp, "clear 1 cast"), "a bare cast is refused");
+	ASSERT(std::strstr(qd_interp_error(interp), "cast<i64>") != nullptr, "and shows the spelling");
+
+	qd_interp_destroy(interp);
+}
+
+TEST(ArrayLiterals) {
+	qd_interp* interp = qd_interp_create(256);
+
+	ASSERT(std::strcmp(top(interp, "[1 2 3] -> a a len"), "3") == 0, "a literal builds an array");
+	ASSERT(std::strcmp(top(interp, "clear a 1 nth"), "2") == 0, "which indexes with nth");
+	ASSERT(qd_interp_eval(interp, "clear a free"), "and frees");
+
+	ASSERT(std::strcmp(top(interp, "clear [] len"), "0") == 0, "an empty literal has no elements");
+	ASSERT(std::strcmp(top(interp, "clear [1.5 2.5] 0 nth"), "1.5") == 0, "a float array keeps its type");
+	ASSERT(std::strcmp(top(interp, "clear [\"a\" \"b\"] 1 nth"), "\"b\"") == 0, "a string array too");
+
+	// A dispatch table is the reason to want one
+	ASSERT(std::strcmp(top(interp, "clear [10 20 30] -> t 0 0 3 1 for i { t i nth + }"), "60") == 0,
+			"an array reads as data");
 
 	qd_interp_destroy(interp);
 }
@@ -488,7 +673,7 @@ TEST(DeclaredFunctions) {
 	qd_interp* interp = qd_interp_create(256);
 
 	// A declaration defines; it does not run
-	ASSERT(qd_interp_eval(interp, "fn double(x:i64 -- r:i64) { 2 * }"), "a function can be declared");
+	ASSERT(qd_interp_eval(interp, "fn double(x:i64 -- r:i64) { x 2 * }"), "a function can be declared");
 	ASSERT(qd_interp_depth(interp) == 0, "declaring runs nothing");
 
 	ASSERT(std::strcmp(top(interp, "5 double"), "10") == 0, "and can then be called");
@@ -555,7 +740,7 @@ TEST(LastDeclared) {
 	qd_interp_eval(interp, "1 2 +");
 	ASSERT(qd_interp_last_declared(interp) == nullptr, "an expression declares nothing");
 
-	qd_interp_eval(interp, "fn double(x:i64 -- r:i64) { 2 * }");
+	qd_interp_eval(interp, "fn double(x:i64 -- r:i64) { x 2 * }");
 	const char* name = qd_interp_last_declared(interp);
 	ASSERT(name != nullptr && std::strcmp(name, "double") == 0, "the declared name is reported");
 
@@ -568,8 +753,8 @@ TEST(LastDeclared) {
 TEST(FunctionsCallFunctions) {
 	qd_interp* interp = qd_interp_create(256);
 
-	qd_interp_eval(interp, "fn sq(x:i64 -- r:i64) { dup * }");
-	qd_interp_eval(interp, "fn quad(x:i64 -- r:i64) { sq sq }");
+	qd_interp_eval(interp, "fn sq(x:i64 -- r:i64) { x x * }");
+	qd_interp_eval(interp, "fn quad(x:i64 -- r:i64) { x sq sq }");
 
 	ASSERT(std::strcmp(top(interp, "clear 3 quad"), "81") == 0, "a function may call another");
 
@@ -579,7 +764,7 @@ TEST(FunctionsCallFunctions) {
 TEST(FunctionsUseControlFlow) {
 	qd_interp* interp = qd_interp_create(256);
 
-	qd_interp_eval(interp, "fn clamp(x:i64 -- r:i64) { dup 100 > if { drop 100 } }");
+	qd_interp_eval(interp, "fn clamp(x:i64 -- r:i64) { x dup 100 > if { drop 100 } }");
 	ASSERT(std::strcmp(top(interp, "clear 5 clamp"), "5") == 0, "below the limit passes through");
 	ASSERT(std::strcmp(top(interp, "clear 500 clamp"), "100") == 0, "above it is clamped");
 
@@ -589,7 +774,7 @@ TEST(FunctionsUseControlFlow) {
 TEST(FunctionsRecurse) {
 	qd_interp* interp = qd_interp_create(256);
 
-	qd_interp_eval(interp, "fn countdown(n:i64 -- r:i64) { dup 0 > if { 1 - countdown } }");
+	qd_interp_eval(interp, "fn countdown(n:i64 -- r:i64) { n dup 0 > if { 1 - countdown } }");
 	ASSERT(std::strcmp(top(interp, "clear 5 countdown"), "0") == 0, "recursion terminates");
 
 	qd_interp_destroy(interp);
@@ -600,7 +785,7 @@ TEST(RunawayRecursionIsStopped) {
 	// rather than left to take the process down
 	qd_interp* interp = qd_interp_create(256);
 
-	qd_interp_eval(interp, "fn forever(n:i64 -- r:i64) { forever }");
+	qd_interp_eval(interp, "fn forever(n:i64 -- r:i64) { n forever }");
 	ASSERT(!qd_interp_eval(interp, "clear 1 forever"), "unbounded recursion fails");
 	ASSERT(std::strstr(qd_interp_error(interp), "recursed too deeply") != nullptr, "and says why");
 
@@ -612,10 +797,10 @@ TEST(RunawayRecursionIsStopped) {
 TEST(RedefiningAFunction) {
 	qd_interp* interp = qd_interp_create(256);
 
-	qd_interp_eval(interp, "fn f(x:i64 -- r:i64) { 1 + }");
+	qd_interp_eval(interp, "fn f(x:i64 -- r:i64) { x 1 + }");
 	ASSERT(std::strcmp(top(interp, "clear 10 f"), "11") == 0, "the first definition applies");
 
-	qd_interp_eval(interp, "fn f(x:i64 -- r:i64) { 100 + }");
+	qd_interp_eval(interp, "fn f(x:i64 -- r:i64) { x 100 + }");
 	ASSERT(std::strcmp(top(interp, "clear 10 f"), "110") == 0, "a later definition replaces it");
 
 	qd_interp_destroy(interp);
@@ -639,7 +824,7 @@ TEST(DeclarationsSurviveTheParseThatMadeThem) {
 	// the call. Many later evaluations should not disturb it.
 	qd_interp* interp = qd_interp_create(256);
 
-	qd_interp_eval(interp, "fn keep(x:i64 -- r:i64) { 3 * }");
+	qd_interp_eval(interp, "fn keep(x:i64 -- r:i64) { x 3 * }");
 	for (int i = 0; i < 200; i++) {
 		qd_interp_eval(interp, "clear 1 2 +");
 	}
@@ -666,7 +851,7 @@ TEST(UndeclaringAFunction) {
 	qd_interp* interp = qd_interp_create(256);
 
 	ASSERT(qd_interp_declared_count(interp) == 0, "nothing declared yet");
-	qd_interp_eval(interp, "fn sq(x:i64 -- r:i64) { dup * }");
+	qd_interp_eval(interp, "fn sq(x:i64 -- r:i64) { x x * }");
 	ASSERT(qd_interp_declared_count(interp) == 1, "one declaration");
 	ASSERT(std::strcmp(top(interp, "7 sq"), "49") == 0, "it works");
 
@@ -705,7 +890,7 @@ TEST(RedeclaringDoesNotAccumulate) {
 	qd_interp* interp = qd_interp_create(256);
 
 	for (int i = 0; i < 500; i++) {
-		ASSERT(qd_interp_eval(interp, "fn f(x:i64 -- r:i64) { 2 * }") || false, "redeclare");
+		ASSERT(qd_interp_eval(interp, "fn f(x:i64 -- r:i64) { x 2 * }") || false, "redeclare");
 	}
 	ASSERT(qd_interp_declared_count(interp) == 1, "500 redefinitions leave one declaration");
 	ASSERT(std::strcmp(top(interp, "clear 21 f"), "42") == 0, "and the last one works");
@@ -718,8 +903,8 @@ TEST(UndeclaredFunctionsStopBeingCallable) {
 	// is the failure this ownership is meant to prevent
 	qd_interp* interp = qd_interp_create(256);
 
-	qd_interp_eval(interp, "fn outer(x:i64 -- r:i64) { inner }");
-	qd_interp_eval(interp, "fn inner(x:i64 -- r:i64) { 3 * }");
+	qd_interp_eval(interp, "fn outer(x:i64 -- r:i64) { x inner }");
+	qd_interp_eval(interp, "fn inner(x:i64 -- r:i64) { x 3 * }");
 	ASSERT(std::strcmp(top(interp, "clear 5 outer"), "15") == 0, "calls through");
 
 	qd_interp_undeclare(interp, "inner");

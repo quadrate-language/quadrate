@@ -103,10 +103,35 @@ registered native becomes that native once more. Each declaration owns the parse
 its body lives in, so replacing or removing one releases it rather than
 accumulating for the life of the interpreter.
 
-Parameters are passed on the stack like everything else; the signature is for
-type checking, which this tier leaves to the runtime. A declared name shadows a
-registered native of the same name, so a program can replace a host capability
-deliberately.
+A declared name shadows a registered native of the same name, so a program can
+replace a host capability deliberately.
+
+## Names
+
+`-> x` binds the top of the stack to a name, and the name pushes a copy back.
+Bindings belong to the body they appear in, so a called function cannot see its
+caller's names. The top-level ones persist across evaluations, as the stack
+does.
+
+A signature whose inputs are **all** named binds them on entry and takes them off
+the stack — the rule the type checker states, so a body written for this tier
+compiles unchanged:
+
+```c
+qd_interp_eval(interp, "fn area(w:i64 h:i64 -- a:i64) { w h * }");
+qd_interp_eval(interp, "3 4 area");                     // 12
+```
+
+Leave an input unnamed and every input stays on the stack for the body to read
+positionally, which is the older spelling:
+
+```c
+qd_interp_eval(interp, "fn twice(i64 -- r:i64) { 2 * }");
+```
+
+`const` and `enum` declare values rather than words. A constant is stored as
+written, so its spelling decides its type, and an enum's variants are reachable
+as `Colour::Red` — including as `switch` case labels.
 
 ## Execution limits
 
@@ -124,9 +149,17 @@ bounded separately, since each level costs a C stack frame in the walk.
 ## Coverage
 
 Builtin instructions, literals, registered native functions, control flow
-(`if`/`else`, `loop`, `break`, `continue`) and Quadrate-defined functions.
-`for`, named locals and module imports are not interpreted yet; they are reported as an
-error rather than failing silently.
+(`if`/`else`, `loop`, `for`, `break`, `continue`, `return`, `switch`), named
+locals and parameters, `const` and `enum` declarations, `cast<T>`, array
+literals and Quadrate-defined functions.
+
+`defer`, structs, methods, anonymous functions and module imports are not
+interpreted; they are reported as an error rather than failing silently.
+Imports in particular cannot mean anything on a device with no package
+resolution, so they should keep refusing clearly.
+
+A `for` whose start is a float steps by a float, and the other two bounds are
+converted into that domain — the same rule the compiled tier follows.
 
 ## Constraints
 

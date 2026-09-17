@@ -68,7 +68,14 @@ namespace Qd {
 	void LlvmGenerator::Impl::generateInlinePushIntValue(llvm::Value* ctx, llvm::Value* value) {
 		// Inline implementation of qd_push_i for runtime integer values
 		// Same as generateInlinePushInt but takes llvm::Value* instead of int64_t
+		generateInlinePushTaggedValue(ctx, value, builder->getInt32(0), "pushv");
+	}
 
+	// The body of the inline pushes. `bits` goes into the element's union field
+	// and `typeTag` into its type field; the tag is an ordinary value, so a `for`
+	// iterator whose type is only known at run time can select it.
+	void LlvmGenerator::Impl::generateInlinePushTaggedValue(
+			llvm::Value* ctx, llvm::Value* bits, llvm::Value* typeTag, const char* label) {
 		llvm::Value* stPtr = builder->CreateStructGEP(contextStructTy, ctx, 0, "st_ptr");
 		llvm::Value* st = builder->CreateLoad(ptrTy, stPtr, "st");
 
@@ -83,8 +90,9 @@ namespace Qd {
 			llvm::Value* hasSpace = builder->CreateICmpULT(size, capacity, "has_space");
 
 			llvm::Function* currentFn = builder->GetInsertBlock()->getParent();
-			llvm::BasicBlock* overflowBB = llvm::BasicBlock::Create(*context, "pushv.overflow", currentFn);
-			llvm::BasicBlock* pushBB = llvm::BasicBlock::Create(*context, "pushv.do", currentFn);
+			llvm::BasicBlock* overflowBB =
+					llvm::BasicBlock::Create(*context, std::string(label) + ".overflow", currentFn);
+			llvm::BasicBlock* pushBB = llvm::BasicBlock::Create(*context, std::string(label) + ".do", currentFn);
 			builder->CreateCondBr(hasSpace, pushBB, overflowBB);
 
 			// Generate overflow error
@@ -102,12 +110,10 @@ namespace Qd {
 
 		// Store runtime value
 		llvm::Value* valuePtr = builder->CreateStructGEP(stackElementTy, elemPtr, 0, "value_ptr");
-		llvm::Value* valueiPtr = builder->CreateBitCast(valuePtr, ptrTy);
-		builder->CreateStore(value, valueiPtr);
+		builder->CreateStore(bits, valuePtr);
 
-		// Set type to integer
 		llvm::Value* typePtr = builder->CreateStructGEP(stackElementTy, elemPtr, 1, "type_ptr");
-		builder->CreateStore(builder->getInt32(0), typePtr);
+		builder->CreateStore(typeTag, typePtr);
 
 		// Set is_error_tainted to false
 		llvm::Value* taintedPtr = builder->CreateStructGEP(stackElementTy, elemPtr, 2, "tainted_ptr");
@@ -432,50 +438,9 @@ namespace Qd {
 	}
 
 	void LlvmGenerator::Impl::generateInlinePushFloatValue(llvm::Value* ctx, llvm::Value* value) {
-		// Inline implementation of qd_push_f for runtime float values
-		llvm::Value* stPtr = builder->CreateStructGEP(contextStructTy, ctx, 0, "st_ptr");
-		llvm::Value* st = builder->CreateLoad(ptrTy, stPtr, "st");
-
-		llvm::Value* sizePtr = builder->CreateStructGEP(stackStructTy, st, 2, "size_ptr");
-		llvm::Value* size = builder->CreateLoad(int64Ty, sizePtr, "size");
-
-		// Skip overflow check for non-main functions (predictable stack usage)
-		if (!currentFunctionIsIntegerOnly || currentFunctionIsMain) {
-			llvm::Value* capacityPtr = builder->CreateStructGEP(stackStructTy, st, 1, "capacity_ptr");
-			llvm::Value* capacity = builder->CreateLoad(int64Ty, capacityPtr, "capacity");
-			llvm::Value* hasSpace = builder->CreateICmpULT(size, capacity, "has_space");
-
-			llvm::Function* currentFn = builder->GetInsertBlock()->getParent();
-			llvm::BasicBlock* overflowBB = llvm::BasicBlock::Create(*context, "pushf.overflow", currentFn);
-			llvm::BasicBlock* pushBB = llvm::BasicBlock::Create(*context, "pushf.do", currentFn);
-			builder->CreateCondBr(hasSpace, pushBB, overflowBB);
-
-			builder->SetInsertPoint(overflowBB);
-			emitFatalError(ctx, "Fatal error: Stack overflow (use -s to increase stack size)\n");
-
-			builder->SetInsertPoint(pushBB);
-		}
-
-		llvm::Value* dataPtr = builder->CreateStructGEP(stackStructTy, st, 0, "data_ptr");
-		llvm::Value* data = builder->CreateLoad(ptrTy, dataPtr, "data");
-
-		llvm::Value* elemPtr = builder->CreateGEP(stackElementTy, data, size, "elem_ptr");
-
-		// Store float value (union field at offset 0, same as integer)
-		llvm::Value* valuePtr = builder->CreateStructGEP(stackElementTy, elemPtr, 0, "value_ptr");
-		builder->CreateStore(value, valuePtr);
-
-		// Set type to float (QD_STACK_TYPE_FLOAT = 1)
-		llvm::Value* typePtr = builder->CreateStructGEP(stackElementTy, elemPtr, 1, "type_ptr");
-		builder->CreateStore(builder->getInt32(1), typePtr);
-
-		// Set is_error_tainted to false
-		llvm::Value* taintedPtr = builder->CreateStructGEP(stackElementTy, elemPtr, 2, "tainted_ptr");
-		builder->CreateStore(builder->getInt1(false), taintedPtr);
-
-		// Increment size
-		llvm::Value* newSize = builder->CreateAdd(size, builder->getInt64(1), "new_size");
-		builder->CreateStore(newSize, sizePtr);
+		// Inline implementation of qd_push_f for runtime float values. The union
+		// field holds either kind, so this is the integer push under another tag.
+		generateInlinePushTaggedValue(ctx, value, builder->getInt32(1), "pushf");
 	}
 
 	void LlvmGenerator::Impl::generateInlinePopIntToStorage(llvm::Value* ctx, llvm::Value* dst) {

@@ -432,10 +432,24 @@ namespace Qd {
 		if (iterIt != iteratorVars.end()) {
 			if (useCompileTimeStack) {
 				compileTimeStack.push_back(iterIt->second);
-			} else {
-				// Push loop iterator as integer (inline for performance)
-				generateInlinePushIntValue(ctx, iterIt->second);
+				return;
 			}
+
+			// A loop whose bounds came off the runtime stack carries both halves,
+			// because only the bounds' type tags say which one counts. Push the
+			// bits and the tag the same flag selects rather than branching.
+			auto floatIt = iteratorFloatVars.find(name);
+			if (floatIt != iteratorFloatVars.end()) {
+				llvm::Value* asBits = builder->CreateBitCast(floatIt->second.value, int64Ty, "iter_f_bits");
+				llvm::Value* bits = builder->CreateSelect(floatIt->second.isFloat, asBits, iterIt->second, "iter_bits");
+				llvm::Value* tag = builder->CreateSelect(
+						floatIt->second.isFloat, builder->getInt32(1), builder->getInt32(0), "iter_type");
+				generateInlinePushTaggedValue(ctx, bits, tag, "pushiter");
+				return;
+			}
+
+			// Push loop iterator as integer (inline for performance)
+			generateInlinePushIntValue(ctx, iterIt->second);
 			return;
 		}
 

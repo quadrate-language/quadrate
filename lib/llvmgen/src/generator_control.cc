@@ -203,6 +203,15 @@ namespace Qd {
 		llvm::Value* endValue;
 		llvm::Value* stepValue;
 
+		// The float half of the bounds, and which half to use. Only the
+		// runtime-stack path fills these in: there the bounds carry their type at
+		// run time rather than in the IR, so the loop has to be able to count
+		// either way. Null everywhere else, where the types are already known.
+		llvm::Value* startFloat = nullptr;
+		llvm::Value* endFloat = nullptr;
+		llvm::Value* stepFloat = nullptr;
+		llvm::Value* isFloatLoop = nullptr;
+
 		// Compile-time stack path: pop start/end/step from compile-time stack
 		if (useCompileTimeStack) {
 			stepValue = compileTimeStack.back();
@@ -245,36 +254,50 @@ namespace Qd {
 			// Extract values (stackElementTy layout: { i64 value, i32 type, i1 is_error_tainted })
 			// The i64 field is a union that holds either int or float bits
 			// Type field: 0=INT, 1=FLOAT, 2=PTR, 3=STR
+			//
+			// Each bound is read in both domains, since only the element's own
+			// type tag says which one holds the value. Converting all three the
+			// way the *start* is tagged, as this did, reads an integer end or
+			// step as a double's bits and vice versa.
+			struct Bound {
+				llvm::Value* asInt;
+				llvm::Value* asFloat;
+				llvm::Value* isFloat;
+			};
 
-			// Check the type of start element to determine if we're using int or float loop
-			auto startTypePtr = builder->CreateStructGEP(stackElementTy, startElemPtr, 1, "start_type_ptr");
-			auto startType = builder->CreateLoad(int32Ty, startTypePtr, "start_type");
-			auto isFloatLoop = builder->CreateICmpEQ(startType, builder->getInt32(1), "is_float_loop");
+			auto readBound = [&](llvm::Value* elemPtr, const std::string& name) {
+				llvm::Value* typePtr = builder->CreateStructGEP(stackElementTy, elemPtr, 1, name + "_type_ptr");
+				llvm::Value* type = builder->CreateLoad(int32Ty, typePtr, name + "_type");
 
-			// Extract start value
-			auto startValuePtr = builder->CreateStructGEP(stackElementTy, startElemPtr, 0, "start_value_ptr");
-			auto startBits = builder->CreateLoad(int64Ty, startValuePtr, "start_bits");
+				llvm::Value* valuePtr = builder->CreateStructGEP(stackElementTy, elemPtr, 0, name + "_value_ptr");
+				llvm::Value* bits = builder->CreateLoad(int64Ty, valuePtr, name + "_bits");
 
-			// Convert start based on type
-			auto startAsFloat = builder->CreateBitCast(startBits, builder->getDoubleTy(), "start_as_float");
-			auto startFloatToInt = builder->CreateFPToSI(startAsFloat, int64Ty, "start_float_to_int");
-			startValue = builder->CreateSelect(isFloatLoop, startFloatToInt, startBits, "start");
+				Bound bound;
+				bound.isFloat = builder->CreateICmpEQ(type, builder->getInt32(1), name + "_is_float");
 
-			// Extract end value
-			auto endValuePtr = builder->CreateStructGEP(stackElementTy, endElemPtr, 0, "end_value_ptr");
-			auto endBits = builder->CreateLoad(int64Ty, endValuePtr, "end_bits");
+				llvm::Value* bitsAsFloat = builder->CreateBitCast(bits, builder->getDoubleTy(), name + "_as_float");
+				bound.asInt = builder->CreateSelect(
+						bound.isFloat, builder->CreateFPToSI(bitsAsFloat, int64Ty, name + "_float_to_int"), bits, name);
+				bound.asFloat = builder->CreateSelect(bound.isFloat, bitsAsFloat,
+						builder->CreateSIToFP(bits, builder->getDoubleTy(), name + "_int_to_float"), name + "_f");
+				return bound;
+			};
 
-			auto endAsFloat = builder->CreateBitCast(endBits, builder->getDoubleTy(), "end_as_float");
-			auto endFloatToInt = builder->CreateFPToSI(endAsFloat, int64Ty, "end_float_to_int");
-			endValue = builder->CreateSelect(isFloatLoop, endFloatToInt, endBits, "end");
+			const Bound start = readBound(startElemPtr, "start");
+			const Bound end = readBound(endElemPtr, "end");
+			const Bound step = readBound(stepElemPtr, "step");
 
-			// Extract step value
-			auto stepValuePtr = builder->CreateStructGEP(stackElementTy, stepElemPtr, 0, "step_value_ptr");
-			auto stepBits = builder->CreateLoad(int64Ty, stepValuePtr, "step_bits");
+			startValue = start.asInt;
+			endValue = end.asInt;
+			stepValue = step.asInt;
 
-			auto stepAsFloat = builder->CreateBitCast(stepBits, builder->getDoubleTy(), "step_as_float");
-			auto stepFloatToInt = builder->CreateFPToSI(stepAsFloat, int64Ty, "step_float_to_int");
-			stepValue = builder->CreateSelect(isFloatLoop, stepFloatToInt, stepBits, "step");
+			startFloat = start.asFloat;
+			endFloat = end.asFloat;
+			stepFloat = step.asFloat;
+
+			// The start decides which domain the loop counts in, as it does on
+			// the compile-time-stack path
+			isFloatLoop = start.isFloat;
 		}
 
 		// Compile-time stack path for the entire for loop structure
@@ -492,11 +515,29 @@ namespace Qd {
 		llvm::PHINode* iterVar = builder->CreatePHI(int64Ty, 2, "i");
 		iterVar->addIncoming(startValue, preBB);
 
+		// A float iterator alongside the integer one, advanced in step with it.
+		// Both are live; which one the condition and the body read is settled by
+		// the start element's type tag, a runtime value here.
+		llvm::PHINode* iterFloatVar = nullptr;
+		if (isFloatLoop != nullptr) {
+			iterFloatVar = builder->CreatePHI(builder->getDoubleTy(), 2, "x");
+			iterFloatVar->addIncoming(startFloat, preBB);
+		}
+
 		// Check if step is negative to determine comparison direction
 		auto stepIsNegative = builder->CreateICmpSLT(stepValue, builder->getInt64(0), "step_neg");
 		auto condPositive = builder->CreateICmpSLT(iterVar, endValue, "cmp_pos");
 		auto condNegative = builder->CreateICmpSGT(iterVar, endValue, "cmp_neg");
-		auto cond = builder->CreateSelect(stepIsNegative, condNegative, condPositive, "cmp");
+		llvm::Value* cond = builder->CreateSelect(stepIsNegative, condNegative, condPositive, "cmp");
+
+		if (iterFloatVar != nullptr) {
+			llvm::Value* zero = llvm::ConstantFP::get(builder->getDoubleTy(), 0.0);
+			auto stepIsNegativeF = builder->CreateFCmpOLT(stepFloat, zero, "step_neg_f");
+			auto condPositiveF = builder->CreateFCmpOLT(iterFloatVar, endFloat, "cmp_pos_f");
+			auto condNegativeF = builder->CreateFCmpOGT(iterFloatVar, endFloat, "cmp_neg_f");
+			auto condF = builder->CreateSelect(stepIsNegativeF, condNegativeF, condPositiveF, "cmp_f");
+			cond = builder->CreateSelect(isFloatLoop, condF, cond, "cmp_sel");
+		}
 
 		// Add branch weights: loop body is likely (1000), exit is unlikely (1)
 		llvm::MDBuilder mdBuilder(*context);
@@ -522,6 +563,22 @@ namespace Qd {
 		}
 		iteratorVars[iterName] = iterVar;
 
+		// The float half is registered under the same name, and *unregistered*
+		// when this loop has none: an integer loop nested inside a float one
+		// reusing the name must not read the outer loop's float iterator.
+		bool hadPrevFloatIter = false;
+		FloatIterator prevFloatIter{nullptr, nullptr};
+		auto prevFloatIt = iteratorFloatVars.find(iterName);
+		if (prevFloatIt != iteratorFloatVars.end()) {
+			hadPrevFloatIter = true;
+			prevFloatIter = prevFloatIt->second;
+		}
+		if (iterFloatVar != nullptr) {
+			iteratorFloatVars[iterName] = FloatIterator{iterFloatVar, isFloatLoop};
+		} else {
+			iteratorFloatVars.erase(iterName);
+		}
+
 		if (forStmt->body()) {
 			generateNode(forStmt->body(), ctx);
 		}
@@ -541,6 +598,11 @@ namespace Qd {
 		} else {
 			iteratorVars.erase(iterName);
 		}
+		if (hadPrevFloatIter) {
+			iteratorFloatVars[iterName] = prevFloatIter;
+		} else {
+			iteratorFloatVars.erase(iterName);
+		}
 
 		// Only add branch if block doesn't already have a terminator
 		llvm::BasicBlock* loopBodyBlock = builder->GetInsertBlock();
@@ -554,6 +616,10 @@ namespace Qd {
 		builder->SetInsertPoint(loopIncBB);
 		auto nextIter = builder->CreateAdd(iterVar, stepValue, "next_i");
 		iterVar->addIncoming(nextIter, loopIncBB);
+		if (iterFloatVar != nullptr) {
+			auto nextIterFloat = builder->CreateFAdd(iterFloatVar, stepFloat, "next_x");
+			iterFloatVar->addIncoming(nextIterFloat, loopIncBB);
+		}
 		builder->CreateBr(loopHeaderBB);
 
 		// Continue after loop

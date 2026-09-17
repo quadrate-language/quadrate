@@ -1,0 +1,49 @@
+// Test: for loop with float bounds
+//
+// The runtime-stack path used to convert start, end and step to integers before
+// building the loop, so a fractional step became 0 and the loop never advanced.
+// main is not native-eligible, so it takes that path.
+fn scaled( -- total:f64) {
+	// A native-eligible body takes the compile-time-stack path instead
+	0.0 0.0 2.0 0.5 for x {
+		x +
+	}
+}
+
+fn main() {
+	// Ascending by a fraction
+	0.0 2.0 0.5 for x {
+		x print nl
+	}
+
+	// Descending by a fraction
+	1.0 0.0 -0.5 for x {
+		x print nl
+	}
+
+	// The start decides the domain; an integer end and step come along
+	0.0 3 1 for x {
+		x print nl
+	}
+
+	// The iterator keeps its type when it is bound
+	0.0 1.5 0.5 for x {
+		x -> v
+		v v * print nl
+	}
+
+	// An integer loop nested in a float one, sharing the name
+	0.0 2.0 1.0 for i {
+		i print nl
+		0 2 1 for i {
+			i print nl
+		}
+	}
+
+	// Integer loops are unaffected
+	0 3 1 for i {
+		i print nl
+	}
+
+	scaled print nl
+}

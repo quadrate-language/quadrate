@@ -447,6 +447,18 @@ namespace Qd {
 		// Iterator variables
 		std::unordered_map<std::string, llvm::Value*> iteratorVars;
 
+		// The float half of a `for` iterator on the runtime-stack path, where the
+		// bounds carry their type at run time rather than in the IR. The loop
+		// advances both an integer and a float iterator and reads whichever the
+		// start element's type selects; `iteratorVars` holds the integer half.
+		// Absent for a loop whose bounds are known to be integers.
+		struct FloatIterator {
+			llvm::Value* value;	  ///< the double iterator
+			llvm::Value* isFloat; ///< i1: which half the body should read
+		};
+
+		std::unordered_map<std::string, FloatIterator> iteratorFloatVars;
+
 		// Constructor
 		Impl(const std::string& moduleName) {
 			context = std::make_unique<llvm::LLVMContext>();
@@ -571,6 +583,10 @@ namespace Qd {
 		// Inline stack operations
 		void generateInlinePushInt(llvm::Value* ctx, int64_t value);
 		void generateInlinePushIntValue(llvm::Value* ctx, llvm::Value* value);
+		// Push raw bits under a type tag that may itself be a runtime value; the
+		// int and float pushes are this with a constant tag.
+		void generateInlinePushTaggedValue(
+				llvm::Value* ctx, llvm::Value* bits, llvm::Value* typeTag, const char* label);
 		void generateInlineIntAdd(llvm::Value* ctx);
 		void generateInlineIntSub(llvm::Value* ctx);
 		void generateInlineIntMul(llvm::Value* ctx);

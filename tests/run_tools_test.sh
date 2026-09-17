@@ -203,17 +203,23 @@ expect_not_contains "-q silences the parse warning" \
 echo ""
 echo "=== quadrepl ==="
 
-out=$(printf '2 3 add\n' | timeout 10 "$QUADREPL" 2>&1 | tail -1 || true)
-if [ "$out" = "5" ]; then pass "evaluates piped input"; else
-    fail "evaluates piped input" "expected 5, got '$out'"; fi
+# The REPL's answer is the last line it writes, but the check keeps the whole
+# output to report. It JITs each line, which means compiling and linking against
+# librt: when that fails -- a rebuild rewriting the archive underneath the suite
+# will do it -- the reason is in the lines above, and reporting only the last
+# one reduced every test here to "expected 5, got ''".
+repl_last() {
+    local name="$1" want="$2"; shift 2
+    local all last
+    all=$(printf '%b' "$1" | timeout 10 "$QUADREPL" "${@:2}" 2>&1 || true)
+    last=$(printf '%s' "$all" | tail -1)
+    if [ "$last" = "$want" ]; then pass "$name"; else
+        fail "$name" "expected $want, got '$last'; full output: $(printf '%s' "$all" | tr '\n' ' ')"; fi
+}
 
-out=$(printf '"hi" print\n' | timeout 10 "$QUADREPL" 2>&1 | tail -1 || true)
-if [ "$out" = "hi" ]; then pass "runs instructions from a pipe"; else
-    fail "runs instructions from a pipe" "expected hi, got '$out'"; fi
-
-out=$(printf '1 2 add\n' | timeout 10 "$QUADREPL" -p 2>&1 | tail -1 || true)
-if [ "$out" = "3" ]; then pass "--print reports the stack"; else
-    fail "--print reports the stack" "expected 3, got '$out'"; fi
+repl_last "evaluates piped input" 5 '2 3 add\n'
+repl_last "runs instructions from a pipe" hi '"hi" print\n'
+repl_last "--print reports the stack" 3 '1 2 add\n' -p
 
 repl() { printf '%b' "$1" | timeout 20 "$QUADREPL" 2>&1; }
 
