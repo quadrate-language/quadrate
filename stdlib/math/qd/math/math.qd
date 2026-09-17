@@ -232,7 +232,6 @@ pub fn inv(f64 -- f64) {
 	1.0 swap div
 }
 
-
 /// Minimum of two values.
 /// @param a any First value
 /// @param b any Second value
