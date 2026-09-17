@@ -5,6 +5,14 @@ qdnet_sources = files(
 	'src/platform/posix/net_socket.c',
 )
 
+# Native registration table, generated from the .qd import block
+net_register_c = custom_target('net-register',
+	input: files('qd/net/net.qd'),
+	output: 'net_register.c',
+	command: [gen_module_register, '--module', 'net', '@INPUT@', '@OUTPUT@']
+)
+
+
 qdnet_inc = include_directories('include')
 
 qdnet_extra_deps = []
@@ -16,8 +24,9 @@ endif
 # Static library only
 qdnet_static = static_library('net',
 	qdnet_sources,
+	net_register_c,
 	include_directories: [qdnet_inc, qdrt_inc],
-	dependencies: [qdrt_dep] + qdnet_extra_deps,
+	dependencies: [qdrt_static_dep] + qdnet_extra_deps,
 	c_args: ['-ffunction-sections', '-fdata-sections'],
 	install: false
 )

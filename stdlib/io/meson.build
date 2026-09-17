@@ -7,13 +7,22 @@ qdio_sources = files(
 	'src/io.c',
 )
 
+# Native registration table, generated from the .qd import block
+io_register_c = custom_target('io-register',
+	input: files('qd/io/io.qd'),
+	output: 'io_register.c',
+	command: [gen_module_register, '--module', 'io', '@INPUT@', '@OUTPUT@']
+)
+
+
 qdio_inc = include_directories('include')
 
 # Static library only
 qdio_static = static_library('io',
 	qdio_sources,
+	io_register_c,
 	include_directories: qdio_inc,
-	dependencies: [qd_static_dep, threads_dep_io],
+	dependencies: [qdrt_static_dep, threads_dep_io],
 	c_args: ['-ffunction-sections', '-fdata-sections'],
 	install: false
 )

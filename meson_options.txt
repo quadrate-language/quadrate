@@ -2,4 +2,5 @@ option('build_examples', type: 'boolean', value: false, description: 'Build exam
 option('build_tests', type: 'boolean', value: false, description: 'Build tests')
 option('build_fuzz', type: 'boolean', value: false, description: 'Build fuzzing targets (requires clang)')
 option('build_stdlib', type: 'boolean', value: true, description: 'Build the standard library modules. Disable to build only the core libraries, e.g. for an embedded target that embeds lib/interp and needs neither the modules nor their dependencies such as OpenSSL.')
-option('build_tools', type: 'boolean', value: true, description: 'Build the command-line tools (requires LLVM). Disable to build only the libraries, e.g. when cross-compiling for an embedded target.')
+option('build_compiler', type: 'boolean', value: true, description: 'Build the compiler back end (lib/llvmgen and lib/qd, which need LLVM). Disable to build only the runtime and interpreter. Implied by build_tools.')
+option('build_tools', type: 'boolean', value: true, description: 'Build the command-line tools (implies build_compiler). Disable to build only the libraries, e.g. when cross-compiling for an embedded target.')

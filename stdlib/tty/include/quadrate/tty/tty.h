@@ -88,4 +88,16 @@ int usr_tty_width(qd_context* ctx);
  */
 int usr_tty_height(qd_context* ctx);
 
+/**
+ * @brief Register this module's words on a context
+ *
+ * For interpreted execution: the compiler resolves these words through the
+ * archive, but the interpreter looks them up by name and needs them
+ * registered first. Declared in tty.qd's import block; the table is
+ * generated from it, so the two cannot drift.
+ *
+ * @return false if ctx is NULL or a registration failed
+ */
+bool qd_tty_register(qd_context* ctx);
+
 #endif // QD_QDTTY_TTY_H

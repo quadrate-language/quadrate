@@ -287,4 +287,16 @@ int usr_io_stat_mode(qd_context* ctx);
  */
 int usr_io_append_file(qd_context* ctx);
 
+/**
+ * @brief Register this module's words on a context
+ *
+ * For interpreted execution: the compiler resolves these words through the
+ * archive, but the interpreter looks them up by name and needs them
+ * registered first. Declared in io.qd's import block; the table is
+ * generated from it, so the two cannot drift.
+ *
+ * @return false if ctx is NULL or a registration failed
+ */
+bool qd_io_register(qd_context* ctx);
+
 #endif // STDIOQD_IO_H

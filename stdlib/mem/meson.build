@@ -7,6 +7,14 @@ qdmem_safe_sources = files(
 	'src/mem.c',
 )
 
+# Native registration table, generated from the .qd import block
+mem_register_c = custom_target('mem-register',
+	input: files('qd/mem/mem.qd'),
+	output: 'mem_register.c',
+	command: [gen_module_register, '--module', 'mem', '@INPUT@', '@OUTPUT@']
+)
+
+
 # Heap-using subset: alloc, realloc, alloc_aligned, to_string, from_string.
 # Drags in libc (malloc/realloc/aligned_alloc/strdup); only linked into
 # the hosted variant.
@@ -19,6 +27,7 @@ qdmem_inc = include_directories('include')
 # Hosted static library: safe + heap.
 qdmem_static = static_library('mem',
 	qdmem_safe_sources + qdmem_heap_sources,
+	mem_register_c,
 	include_directories: qdmem_inc,
 	dependencies: qdrt_static_dep,
 	c_args: ['-ffunction-sections', '-fdata-sections'],

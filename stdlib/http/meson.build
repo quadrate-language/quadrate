@@ -6,13 +6,22 @@ qdhttp_sources = files(
 	'src/http_server.c',
 )
 
+# Native registration table, generated from the .qd import block
+http_register_c = custom_target('http-register',
+	input: files('qd/http/http.qd'),
+	output: 'http_register.c',
+	command: [gen_module_register, '--module', 'http', '@INPUT@', '@OUTPUT@']
+)
+
+
 qdhttp_inc = include_directories('include')
 
 # Static library only
 qdhttp_static = static_library('http',
 	qdhttp_sources,
+	http_register_c,
 	include_directories: qdhttp_inc,
-	dependencies: [qdrt_dep],
+	dependencies: [qdrt_static_dep],
 	c_args: ['-ffunction-sections', '-fdata-sections'],
 	install: false
 )

@@ -1,3 +1,7 @@
+// strptime() is an XSI extension. Declared here rather than inherited: the
+// module used to get -D_GNU_SOURCE by accident, via llvm-config's flags
+// leaking through the compiler dependency it no longer has.
+#define _XOPEN_SOURCE 700
 #define _DEFAULT_SOURCE
 #include "platform/time_platform.h"
 #include <quadrate/rt/runtime.h>

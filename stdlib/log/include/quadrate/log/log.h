@@ -4,6 +4,7 @@
 #ifndef QDLOG_LOG_H
 #define QDLOG_LOG_H
 
+#include <quadrate/rt/runtime.h>
 #include <stdint.h>
 #include <stdio.h>
 
@@ -95,6 +96,18 @@ void qdlog_flush(qdlog_logger_t* logger);
 
 // Check if rotation is needed and perform it
 void qdlog_check_rotate(qdlog_logger_t* logger);
+
+/**
+ * @brief Register this module's words on a context
+ *
+ * For interpreted execution: the compiler resolves these words through the
+ * archive, but the interpreter looks them up by name and needs them
+ * registered first. Declared in log.qd's import block; the table is
+ * generated from it, so the two cannot drift.
+ *
+ * @return false if ctx is NULL or a registration failed
+ */
+bool qd_log_register(qd_context* ctx);
 
 #ifdef __cplusplus
 }

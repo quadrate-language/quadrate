@@ -5,13 +5,22 @@ qdstrconv_sources = files(
 	'src/strconv.c',
 )
 
+# Native registration table, generated from the .qd import block
+strconv_register_c = custom_target('strconv-register',
+	input: files('qd/strconv/strconv.qd'),
+	output: 'strconv_register.c',
+	command: [gen_module_register, '--module', 'strconv', '@INPUT@', '@OUTPUT@']
+)
+
+
 qdstrconv_inc = include_directories('include')
 
 # Static library only
 qdstrconv_static = static_library('strconv',
 	qdstrconv_sources,
+	strconv_register_c,
 	include_directories: qdstrconv_inc,
-	dependencies: qd_static_dep,
+	dependencies: qdrt_static_dep,
 	c_args: ['-ffunction-sections', '-fdata-sections'],
 	install: false
 )

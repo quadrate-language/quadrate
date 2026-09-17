@@ -3,8 +3,6 @@
 #include <quadrate/rt/runtime.h>
 #include <math.h>
 #include <stdint.h>
-#include <stdio.h>
-#include <stdlib.h>
 
 int usr_math_sin(qd_context* ctx) {
 	// Compute sine of the top value (in radians)
@@ -841,106 +839,14 @@ int usr_math_trunc(qd_context* ctx) {
 }
 
 // sq - square (x^2)
-int usr_math_sq(qd_context* ctx) {
-	size_t stack_size = qd_stack_size(ctx->st);
-	if (stack_size < 1) {
-		qd_fatal_raise(ctx, "math::sq", "Stack underflow");
-	}
-
-	qd_stack_element_t elem;
-	qd_stack_error err = qd_stack_pop(ctx->st, &elem);
-	if (err != QD_STACK_OK) return (int){-2};
-
-	double value = (elem.type == QD_STACK_TYPE_INT) ? (double)elem.value.i : elem.value.f;
-	err = qd_stack_push_float(ctx->st, value * value);
-	return (err != QD_STACK_OK) ? (int){-2} : (int){0};
-}
 
 // cb - cube (x^3)
-int usr_math_cb(qd_context* ctx) {
-	size_t stack_size = qd_stack_size(ctx->st);
-	if (stack_size < 1) {
-		qd_fatal_raise(ctx, "math::cb", "Stack underflow");
-	}
-
-	qd_stack_element_t elem;
-	qd_stack_error err = qd_stack_pop(ctx->st, &elem);
-	if (err != QD_STACK_OK) return (int){-2};
-
-	double value = (elem.type == QD_STACK_TYPE_INT) ? (double)elem.value.i : elem.value.f;
-	err = qd_stack_push_float(ctx->st, value * value * value);
-	return (err != QD_STACK_OK) ? (int){-2} : (int){0};
-}
 
 // abs - absolute value
-int usr_math_abs(qd_context* ctx) {
-	size_t stack_size = qd_stack_size(ctx->st);
-	if (stack_size < 1) {
-		qd_fatal_raise(ctx, "math::abs", "Stack underflow");
-	}
-
-	qd_stack_element_t elem;
-	qd_stack_error err = qd_stack_pop(ctx->st, &elem);
-	if (err != QD_STACK_OK) return (int){-2};
-
-	double value = (elem.type == QD_STACK_TYPE_INT) ? (double)elem.value.i : elem.value.f;
-	err = qd_stack_push_float(ctx->st, fabs(value));
-	return (err != QD_STACK_OK) ? (int){-2} : (int){0};
-}
 
 // min - minimum of two values
-int usr_math_min(qd_context* ctx) {
-	// Stack: ( a b -- min(a,b) )
-	size_t stack_size = qd_stack_size(ctx->st);
-	if (stack_size < 2) {
-		qd_fatal_raise(ctx, "math::min", "Stack underflow (requires 2 values)");
-	}
-
-	qd_stack_element_t b_elem;
-	qd_stack_error err = qd_stack_pop(ctx->st, &b_elem);
-	if (err != QD_STACK_OK) {
-		qd_fatal_raise(ctx, "math::min", "Failed to pop b");
-	}
-
-	qd_stack_element_t a_elem;
-	err = qd_stack_pop(ctx->st, &a_elem);
-	if (err != QD_STACK_OK) {
-		qd_fatal_raise(ctx, "math::min", "Failed to pop a");
-	}
-
-	double a = (a_elem.type == QD_STACK_TYPE_INT) ? (double)a_elem.value.i : a_elem.value.f;
-	double b = (b_elem.type == QD_STACK_TYPE_INT) ? (double)b_elem.value.i : b_elem.value.f;
-
-	err = qd_stack_push_float(ctx->st, (a < b) ? a : b);
-	return (err != QD_STACK_OK) ? (int){-2} : (int){0};
-}
 
 // max - maximum of two values
-int usr_math_max(qd_context* ctx) {
-	// Stack: ( a b -- max(a,b) )
-	size_t stack_size = qd_stack_size(ctx->st);
-	if (stack_size < 2) {
-		qd_fatal_raise(ctx, "math::max", "Stack underflow (requires 2 values)");
-	}
-
-	qd_stack_element_t b_elem;
-	qd_stack_error err = qd_stack_pop(ctx->st, &b_elem);
-	if (err != QD_STACK_OK) {
-		qd_fatal_raise(ctx, "math::max", "Failed to pop b");
-	}
-
-	qd_stack_element_t a_elem;
-	err = qd_stack_pop(ctx->st, &a_elem);
-	if (err != QD_STACK_OK) {
-		qd_fatal_raise(ctx, "math::max", "Failed to pop a");
-	}
-
-	double a = (a_elem.type == QD_STACK_TYPE_INT) ? (double)a_elem.value.i : a_elem.value.f;
-	double b = (b_elem.type == QD_STACK_TYPE_INT) ? (double)b_elem.value.i : b_elem.value.f;
-
-	err = qd_stack_push_float(ctx->st, (a > b) ? a : b);
-	return (err != QD_STACK_OK) ? (int){-2} : (int){0};
-}
 
 // fac - factorial
 int usr_math_fac(qd_context* ctx) {
@@ -977,22 +883,4 @@ int usr_math_fac(qd_context* ctx) {
 }
 
 // inv - reciprocal (1/x)
-int usr_math_inv(qd_context* ctx) {
-	size_t stack_size = qd_stack_size(ctx->st);
-	if (stack_size < 1) {
-		qd_fatal_raise(ctx, "math::inv", "Stack underflow");
-	}
-
-	qd_stack_element_t elem;
-	qd_stack_error err = qd_stack_pop(ctx->st, &elem);
-	if (err != QD_STACK_OK) return (int){-2};
-
-	double value = (elem.type == QD_STACK_TYPE_INT) ? (double)elem.value.i : elem.value.f;
-	if (value == 0.0) {
-		qd_fatal_raise(ctx, "math::inv", "Division by zero");
-	}
-
-	err = qd_stack_push_float(ctx->st, 1.0 / value);
-	return (err != QD_STACK_OK) ? (int){-2} : (int){0};
-}
 

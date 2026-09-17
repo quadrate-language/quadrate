@@ -463,66 +463,6 @@ TEST(SqrtTwo) {
 	destroy_test_context(ctx);
 }
 
-TEST(SqThree) {
-	qd_context* ctx = create_test_context();
-
-	qd_push_f(ctx, 3.0);
-	usr_math_sq(ctx);
-
-	double result = pop_float(ctx);
-	ASSERT(fabs(result - 9.0) < EPSILON, "sq(3) should be 9");
-
-	destroy_test_context(ctx);
-}
-
-TEST(SqNegative) {
-	qd_context* ctx = create_test_context();
-
-	qd_push_f(ctx, -4.0);
-	usr_math_sq(ctx);
-
-	double result = pop_float(ctx);
-	ASSERT(fabs(result - 16.0) < EPSILON, "sq(-4) should be 16");
-
-	destroy_test_context(ctx);
-}
-
-TEST(SqZero) {
-	qd_context* ctx = create_test_context();
-
-	qd_push_f(ctx, 0.0);
-	usr_math_sq(ctx);
-
-	double result = pop_float(ctx);
-	ASSERT(fabs(result - 0.0) < EPSILON, "sq(0) should be 0");
-
-	destroy_test_context(ctx);
-}
-
-TEST(CbTwo) {
-	qd_context* ctx = create_test_context();
-
-	qd_push_f(ctx, 2.0);
-	usr_math_cb(ctx);
-
-	double result = pop_float(ctx);
-	ASSERT(fabs(result - 8.0) < EPSILON, "cb(2) should be 8");
-
-	destroy_test_context(ctx);
-}
-
-TEST(CbNegative) {
-	qd_context* ctx = create_test_context();
-
-	qd_push_f(ctx, -3.0);
-	usr_math_cb(ctx);
-
-	double result = pop_float(ctx);
-	ASSERT(fabs(result - (-27.0)) < EPSILON, "cb(-3) should be -27");
-
-	destroy_test_context(ctx);
-}
-
 TEST(CbrtEight) {
 	qd_context* ctx = create_test_context();
 
@@ -1016,121 +956,6 @@ TEST(FmodNegative) {
  * Utility Functions
  * ======================================================================== */
 
-TEST(AbsPositive) {
-	qd_context* ctx = create_test_context();
-
-	qd_push_f(ctx, 5.0);
-	usr_math_abs(ctx);
-
-	double result = pop_float(ctx);
-	ASSERT(fabs(result - 5.0) < EPSILON, "abs(5) should be 5");
-
-	destroy_test_context(ctx);
-}
-
-TEST(AbsNegative) {
-	qd_context* ctx = create_test_context();
-
-	qd_push_f(ctx, -3.7);
-	usr_math_abs(ctx);
-
-	double result = pop_float(ctx);
-	ASSERT(fabs(result - 3.7) < EPSILON, "abs(-3.7) should be 3.7");
-
-	destroy_test_context(ctx);
-}
-
-TEST(AbsZero) {
-	qd_context* ctx = create_test_context();
-
-	qd_push_f(ctx, 0.0);
-	usr_math_abs(ctx);
-
-	double result = pop_float(ctx);
-	ASSERT(fabs(result - 0.0) < EPSILON, "abs(0) should be 0");
-
-	destroy_test_context(ctx);
-}
-
-TEST(MinBasic) {
-	qd_context* ctx = create_test_context();
-
-	/* Stack: push a first, then b */
-	qd_push_f(ctx, 3.0);  /* a */
-	qd_push_f(ctx, 7.0);  /* b */
-	usr_math_min(ctx);
-
-	double result = pop_float(ctx);
-	ASSERT(fabs(result - 3.0) < EPSILON, "min(3, 7) should be 3");
-
-	destroy_test_context(ctx);
-}
-
-TEST(MinEqual) {
-	qd_context* ctx = create_test_context();
-
-	qd_push_f(ctx, 5.0);
-	qd_push_f(ctx, 5.0);
-	usr_math_min(ctx);
-
-	double result = pop_float(ctx);
-	ASSERT(fabs(result - 5.0) < EPSILON, "min(5, 5) should be 5");
-
-	destroy_test_context(ctx);
-}
-
-TEST(MinNegative) {
-	qd_context* ctx = create_test_context();
-
-	qd_push_f(ctx, -2.0);
-	qd_push_f(ctx, -8.0);
-	usr_math_min(ctx);
-
-	double result = pop_float(ctx);
-	ASSERT(fabs(result - (-8.0)) < EPSILON, "min(-2, -8) should be -8");
-
-	destroy_test_context(ctx);
-}
-
-TEST(MaxBasic) {
-	qd_context* ctx = create_test_context();
-
-	qd_push_f(ctx, 3.0);
-	qd_push_f(ctx, 7.0);
-	usr_math_max(ctx);
-
-	double result = pop_float(ctx);
-	ASSERT(fabs(result - 7.0) < EPSILON, "max(3, 7) should be 7");
-
-	destroy_test_context(ctx);
-}
-
-TEST(MaxEqual) {
-	qd_context* ctx = create_test_context();
-
-	qd_push_f(ctx, 5.0);
-	qd_push_f(ctx, 5.0);
-	usr_math_max(ctx);
-
-	double result = pop_float(ctx);
-	ASSERT(fabs(result - 5.0) < EPSILON, "max(5, 5) should be 5");
-
-	destroy_test_context(ctx);
-}
-
-TEST(MaxNegative) {
-	qd_context* ctx = create_test_context();
-
-	qd_push_f(ctx, -2.0);
-	qd_push_f(ctx, -8.0);
-	usr_math_max(ctx);
-
-	double result = pop_float(ctx);
-	ASSERT(fabs(result - (-2.0)) < EPSILON, "max(-2, -8) should be -2");
-
-	destroy_test_context(ctx);
-}
-
 TEST(FacZero) {
 	qd_context* ctx = create_test_context();
 
@@ -1183,54 +1008,6 @@ TEST(FacTen) {
 	destroy_test_context(ctx);
 }
 
-TEST(InvTwo) {
-	qd_context* ctx = create_test_context();
-
-	qd_push_f(ctx, 2.0);
-	usr_math_inv(ctx);
-
-	double result = pop_float(ctx);
-	ASSERT(fabs(result - 0.5) < EPSILON, "inv(2) should be 0.5");
-
-	destroy_test_context(ctx);
-}
-
-TEST(InvFour) {
-	qd_context* ctx = create_test_context();
-
-	qd_push_f(ctx, 4.0);
-	usr_math_inv(ctx);
-
-	double result = pop_float(ctx);
-	ASSERT(fabs(result - 0.25) < EPSILON, "inv(4) should be 0.25");
-
-	destroy_test_context(ctx);
-}
-
-TEST(InvNegative) {
-	qd_context* ctx = create_test_context();
-
-	qd_push_f(ctx, -5.0);
-	usr_math_inv(ctx);
-
-	double result = pop_float(ctx);
-	ASSERT(fabs(result - (-0.2)) < EPSILON, "inv(-5) should be -0.2");
-
-	destroy_test_context(ctx);
-}
-
-TEST(InvOne) {
-	qd_context* ctx = create_test_context();
-
-	qd_push_f(ctx, 1.0);
-	usr_math_inv(ctx);
-
-	double result = pop_float(ctx);
-	ASSERT(fabs(result - 1.0) < EPSILON, "inv(1) should be 1");
-
-	destroy_test_context(ctx);
-}
-
 /* ========================================================================
  * Cross-checks: verify inverse relationships
  * ======================================================================== */
@@ -1274,28 +1051,26 @@ TEST(ExpLnRoundTrip) {
 	destroy_test_context(ctx);
 }
 
-TEST(SqSqrtRoundTrip) {
+TEST(SqrtOfSquare) {
 	qd_context* ctx = create_test_context();
 
-	qd_push_f(ctx, 7.0);
-	usr_math_sq(ctx);
+	qd_push_f(ctx, 7.0 * 7.0);
 	usr_math_sqrt(ctx);
 
 	double result = pop_float(ctx);
-	ASSERT(fabs(result - 7.0) < EPSILON, "sqrt(sq(7)) should be 7");
+	ASSERT(fabs(result - 7.0) < EPSILON, "sqrt(49) should be 7");
 
 	destroy_test_context(ctx);
 }
 
-TEST(CbCbrtRoundTrip) {
+TEST(CbrtOfCube) {
 	qd_context* ctx = create_test_context();
 
-	qd_push_f(ctx, 5.0);
-	usr_math_cb(ctx);
+	qd_push_f(ctx, 5.0 * 5.0 * 5.0);
 	usr_math_cbrt(ctx);
 
 	double result = pop_float(ctx);
-	ASSERT(fabs(result - 5.0) < EPSILON, "cbrt(cb(5)) should be 5");
+	ASSERT(fabs(result - 5.0) < EPSILON, "cbrt(125) should be 5");
 
 	destroy_test_context(ctx);
 }

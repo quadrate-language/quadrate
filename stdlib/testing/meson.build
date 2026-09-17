@@ -5,11 +5,20 @@ qdtesting_sources = files(
 	'src/testing.c',
 )
 
+# Native registration table, generated from the .qd import block
+testing_register_c = custom_target('testing-register',
+	input: files('qd/testing/testing.qd'),
+	output: 'testing_register.c',
+	command: [gen_module_register, '--module', 'testing', '@INPUT@', '@OUTPUT@']
+)
+
+
 qdtesting_inc = include_directories('include')
 
 # Static library only
 qdtesting_static = static_library('testing',
 	qdtesting_sources,
+	testing_register_c,
 	include_directories: qdtesting_inc,
 	dependencies: qdrt_static_dep,
 	c_args: ['-ffunction-sections', '-fdata-sections'],

@@ -9,11 +9,20 @@ qdthread_sources = files(
     'src/thread.c',
 )
 
+# Native registration table, generated from the .qd import block
+thread_register_c = custom_target('thread-register',
+	input: files('qd/thread/thread.qd'),
+	output: 'thread_register.c',
+	command: [gen_module_register, '--module', 'thread', '@INPUT@', '@OUTPUT@']
+)
+
+
 # Static library only
 qdthread_static = static_library('thread',
     qdthread_sources,
+	thread_register_c,
     include_directories: qdthread_inc,
-    dependencies: [qd_static_dep, threads_dep],
+    dependencies: [qdrt_static_dep, threads_dep],
     c_args: ['-ffunction-sections', '-fdata-sections'],
     install: false
 )

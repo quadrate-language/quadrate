@@ -45,9 +45,9 @@ endif
 
 fs_root = import('fs')
 
-# Common dependencies (used by multiple cmd tools)
-jansson_dep = dependency('jansson', version: '>=2.14', required: true, fallback: ['jansson', 'jansson_dep'],
-	include_type: 'system')
+# The command-line tools embed the compiler, so asking for them implies it.
+# lib/meson.build reads this; nothing else should call get_option('build_compiler').
+build_compiler = get_option('build_compiler') or get_option('build_tools')
 
 # Platform-aware data directory (Haiku uses 'data' instead of 'share')
 if host_machine.system() == 'haiku'
@@ -61,13 +61,8 @@ subdir('lib')
 
 # Must come after lib/, which defines the deps the modules build against.
 # Skipping them leaves the core libraries, which is what an embedder linking
-# lib/interp wants: the modules pull in OpenSSL and zlib, and nothing in lib/
-# depends on them.
-# math is the exception to the paragraph above: one source file over lib/rt,
-# with nothing external behind it, and an embedder running interpreted Quadrate
-# needs its words to have any mathematics at all. Built either way.
-subdir('stdlib/math')
-
+# lib/interp wants: tls needs OpenSSL, os needs stdc++fs, io and thread need
+# pthreads, and nothing in lib/ depends on any of them.
 if get_option('build_stdlib')
 	subdir('stdlib')
 endif
@@ -76,6 +71,10 @@ endif
 # is what an embedded target wants: lib/rt and lib/interp run Quadrate without
 # a compiler, and nothing there depends on LLVM.
 if get_option('build_tools')
+	# Only the cmd/ tools use it, so it is resolved only when they are built.
+	jansson_dep = dependency('jansson', version: '>=2.14', required: true, fallback: ['jansson', 'jansson_dep'],
+		include_type: 'system')
+
 	subdir('cmd')
 endif
 

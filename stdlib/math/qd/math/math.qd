@@ -190,6 +190,12 @@ import "libmath.a" as "math" {
 	/// @return result f64 Integer part of x (toward zero)
 	/// @example -2.7 math::trunc print  // -2.0
 	pub fn trunc(x:f64 -- result:f64)
+
+	/// Factorial of a non-negative integer.
+	/// @param n i64 Non-negative integer
+	/// @return result i64 n!
+	/// @example 5 math::fac print  // 120
+	pub fn fac(n:i64 -- result:i64)
 }
 
 /// Square a number.
@@ -226,17 +232,6 @@ pub fn inv(f64 -- f64) {
 	1.0 swap div
 }
 
-/// Factorial (n!).
-/// @param n i64 Non-negative integer
-/// @return result i64 n!
-/// @example 5 math::fac print  // 120
-pub fn fac(n:i64 -- result:i64) {
-	1 -> res
-	1 n 1 + 1 for it {
-		res it * -> res
-	}
-	res
-}
 
 /// Minimum of two values.
 /// @param a any First value

@@ -91,6 +91,18 @@ int usr_fmt_sprintln(qd_context* ctx);
 /** Formatted print to a file descriptor. */
 int usr_fmt_fprintf(qd_context* ctx);
 
+/**
+ * @brief Register this module's words on a context
+ *
+ * For interpreted execution: the compiler resolves these words through the
+ * archive, but the interpreter looks them up by name and needs them
+ * registered first. Declared in fmt.qd's import block; the table is
+ * generated from it, so the two cannot drift.
+ *
+ * @return false if ctx is NULL or a registration failed
+ */
+bool qd_fmt_register(qd_context* ctx);
+
 #ifdef __cplusplus
 }
 #endif

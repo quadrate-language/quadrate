@@ -5,13 +5,22 @@ qdstrings_sources = files(
 	'src/strings.c',
 )
 
+# Native registration table, generated from the .qd import block
+strings_register_c = custom_target('strings-register',
+	input: files('qd/strings/strings.qd'),
+	output: 'strings_register.c',
+	command: [gen_module_register, '--module', 'strings', '@INPUT@', '@OUTPUT@']
+)
+
+
 qdstrings_inc = include_directories('include')
 
 # Static library only
 qdstrings_static = static_library('strings',
 	qdstrings_sources,
+	strings_register_c,
 	include_directories: qdstrings_inc,
-	dependencies: qd_static_dep,
+	dependencies: qdrt_static_dep,
 	c_args: ['-ffunction-sections', '-fdata-sections'],
 	install: false
 )

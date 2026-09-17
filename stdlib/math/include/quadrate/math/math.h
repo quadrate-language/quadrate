@@ -71,12 +71,6 @@ int usr_math_atanh(qd_context* ctx);
 /** @brief Square root - Stack Effect: ( x:f -- sqrt(x):f ) */
 int usr_math_sqrt(qd_context* ctx);
 
-/** @brief Square (x²) - Stack Effect: ( x:f -- x²:f ) */
-int usr_math_sq(qd_context* ctx);
-
-/** @brief Cube (x³) - Stack Effect: ( x:f -- x³:f ) */
-int usr_math_cb(qd_context* ctx);
-
 /** @brief Cube root - Stack Effect: ( x:f -- ∛x:f ) */
 int usr_math_cbrt(qd_context* ctx);
 
@@ -140,22 +134,22 @@ int usr_math_fmod(qd_context* ctx);
  * @{
  */
 
-/** @brief Absolute value - Stack Effect: ( x:f -- |x|:f ) */
-int usr_math_abs(qd_context* ctx);
-
-/** @brief Minimum of two values - Stack Effect: ( a:f b:f -- min(a,b):f ) */
-int usr_math_min(qd_context* ctx);
-
-/** @brief Maximum of two values - Stack Effect: ( a:f b:f -- max(a,b):f ) */
-int usr_math_max(qd_context* ctx);
-
 /** @brief Factorial - Stack Effect: ( n:i -- n!:i ) */
 int usr_math_fac(qd_context* ctx);
 
-/** @brief Reciprocal (1/x) - Stack Effect: ( x:f -- 1/x:f ) */
-int usr_math_inv(qd_context* ctx);
-
 /** @} */ // end of MathUtility group
+
+/**
+ * @brief Register this module's words on a context
+ *
+ * For interpreted execution: the compiler resolves these words through the
+ * archive, but the interpreter looks them up by name and needs them
+ * registered first. Declared in math.qd's import block; the table is
+ * generated from it, so the two cannot drift.
+ *
+ * @return false if ctx is NULL or a registration failed
+ */
+bool qd_math_register(qd_context* ctx);
 
 #ifdef __cplusplus
 }

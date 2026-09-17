@@ -6,6 +6,14 @@ qdos_sources = files(
 	'src/os_fs.cc',  # C++17 filesystem wrapper for cross-platform directory ops
 )
 
+# Native registration table, generated from the .qd import block
+os_register_c = custom_target('os-register',
+	input: files('qd/os/os.qd'),
+	output: 'os_register.c',
+	command: [gen_module_register, '--module', 'os', '@INPUT@', '@OUTPUT@']
+)
+
+
 qdos_inc = include_directories('include')
 
 # Get C and C++ compilers for dependencies
@@ -22,8 +30,9 @@ fs_dep = cxx.find_library('stdc++fs', required: false)
 # Static library only
 qdos_static = static_library('os',
 	qdos_sources,
+	os_register_c,
 	include_directories: qdos_inc,
-	dependencies: [qd_static_dep, cpp_dep, fs_dep],
+	dependencies: [qdrt_static_dep, cpp_dep, fs_dep],
 	c_args: ['-ffunction-sections', '-fdata-sections'],
 	install: false
 )

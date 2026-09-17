@@ -7,5 +7,10 @@ subdir('cli')
 subdir('rt')
 subdir('qc')
 subdir('interp')
-subdir('llvmgen')
-subdir('qd')
+
+# The compiler back end. lib/rt, lib/qc and lib/interp are the runtime path and
+# stay unconditional; llvmgen pulls LLVM and lib/qd is built on top of it.
+if build_compiler
+	subdir('llvmgen')
+	subdir('qd')
+endif
