@@ -46,7 +46,8 @@ endif
 fs_root = import('fs')
 
 # Common dependencies (used by multiple cmd tools)
-jansson_dep = dependency('jansson', version: '>=2.14', required: true, fallback: ['jansson', 'jansson_dep'])
+jansson_dep = dependency('jansson', version: '>=2.14', required: true, fallback: ['jansson', 'jansson_dep'],
+	include_type: 'system')
 
 # Platform-aware data directory (Haiku uses 'data' instead of 'share')
 if host_machine.system() == 'haiku'

@@ -310,39 +310,8 @@ jansson_lib = static_library('jansson',
     install: false
 )
 
-# Compile arguments to export to users of this library
-# This suppresses warnings from jansson.h when included in C++ code
-jansson_export_args = []
-
-# Suppress volatile warnings (deprecated increment/decrement of volatile)
-if cc.has_argument('-Wno-error=volatile')
-    jansson_export_args += ['-Wno-error=volatile']
-elif cc.has_argument('-Wno-volatile')
-    jansson_export_args += ['-Wno-volatile']
-endif
-
-# Check C++ compiler for additional warnings
-if has_cpp
-    # Suppress deprecated volatile warnings
-    if cxx.has_argument('-Wno-error=deprecated-volatile')
-        if '-Wno-error=deprecated-volatile' not in jansson_export_args
-            jansson_export_args += ['-Wno-error=deprecated-volatile']
-        endif
-    elif cxx.has_argument('-Wno-deprecated-volatile')
-        if '-Wno-deprecated-volatile' not in jansson_export_args
-            jansson_export_args += ['-Wno-deprecated-volatile']
-        endif
-    endif
-
-    # Suppress old-style cast warnings (C library used in C++ code)
-    if cxx.has_argument('-Wno-old-style-cast')
-        jansson_export_args += ['-Wno-old-style-cast']
-    endif
-endif
-
 # Declare dependency
 jansson_dep = declare_dependency(
     link_with: jansson_lib,
-    include_directories: jansson_inc,
-    compile_args: jansson_export_args
+    include_directories: jansson_inc
 )
