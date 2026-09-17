@@ -12,7 +12,9 @@
 #include <quadrate/qc/ast_node_instruction.h>
 #include <quadrate/qc/ast_node_literal.h>
 #include <quadrate/qc/ast_node_loop.h>
+#include <quadrate/qc/ast_node_case.h>
 #include <quadrate/qc/ast_node_scoped.h>
+#include <quadrate/qc/ast_node_switch.h>
 #include <quadrate/rt/array.h>
 #include <quadrate/rt/qd_string.h>
 #include <quadrate/rt/stack.h>
@@ -435,6 +437,80 @@ namespace {
 		return true;
 	}
 
+	// One case value against what switch took off the stack. The parser puts
+	// only literals here.
+	bool caseMatches(const Qd::IAstNode* value, const qd_stack_element_t& subject) {
+		if (value == nullptr || value->type() != Qd::IAstNode::Type::LITERAL) {
+			return false;
+		}
+
+		const auto* literal = static_cast<const Qd::AstNodeLiteral*>(value);
+		const std::string& text = literal->value();
+
+		switch (literal->literalType()) {
+		case Qd::AstNodeLiteral::LiteralType::INTEGER:
+			return subject.type == QD_STACK_TYPE_INT &&
+				   subject.value.i == static_cast<int64_t>(std::strtoll(text.c_str(), nullptr, 0));
+
+		case Qd::AstNodeLiteral::LiteralType::BOOL:
+			return subject.type == QD_STACK_TYPE_INT &&
+				   subject.value.i == ((text == "true" || text == "Ok") ? 1 : 0);
+
+		case Qd::AstNodeLiteral::LiteralType::FLOAT:
+			return subject.type == QD_STACK_TYPE_FLOAT &&
+				   subject.value.f == std::strtod(text.c_str(), nullptr);
+
+		case Qd::AstNodeLiteral::LiteralType::STRING: {
+			if (subject.type != QD_STACK_TYPE_STR || subject.value.s == nullptr) {
+				return false;
+			}
+			const char* held = qd_string_data(subject.value.s);
+			return held != nullptr && decodeString(text) == held;
+		}
+
+		default:
+			return false;
+		}
+	}
+
+	// switch takes its value off the stack, the way if takes its condition.
+	//
+	// The compiled tier has one more rule: where the value is the status left by
+	// a user-defined fallible call, `Ok` means "no error" rather than "equals 1".
+	// Nothing here can produce such a status -- this tier has no fallible calls --
+	// so the two cannot disagree.
+	bool evalSwitch(qd_interp* interp, const Qd::IAstNode* node) {
+		if (qd_stack_size(interp->ctx->st) == 0) {
+			interp->error = "'switch' needs a value on the stack";
+			return false;
+		}
+
+		qd_stack_element_t subject;
+		if (qd_stack_pop(interp->ctx->st, &subject) != QD_STACK_OK) {
+			interp->error = "'switch' could not take its value";
+			return false;
+		}
+
+		const auto* statement = static_cast<const Qd::AstNodeSwitchStatement*>(node);
+		const Qd::AstNodeCase* fallback = nullptr;
+
+		for (const Qd::AstNodeCase* branch : statement->cases()) {
+			if (branch->isDefault()) {
+				fallback = branch;
+				continue;
+			}
+			if (caseMatches(branch->value(), subject)) {
+				return branch->body() == nullptr || evalNode(interp, branch->body());
+			}
+		}
+
+		// Nothing matched and no '_': the value is spent and nothing runs
+		if (fallback != nullptr && fallback->body() != nullptr) {
+			return evalNode(interp, fallback->body());
+		}
+		return true;
+	}
+
 	bool evalNode(qd_interp* interp, const Qd::IAstNode* node) {
 		using Type = Qd::IAstNode::Type;
 
@@ -468,6 +544,9 @@ namespace {
 
 		case Type::IF_STATEMENT:
 			return evalIf(interp, node);
+
+		case Type::SWITCH_STATEMENT:
+			return evalSwitch(interp, node);
 
 		case Type::LOOP_STATEMENT:
 			return evalLoop(interp, node);

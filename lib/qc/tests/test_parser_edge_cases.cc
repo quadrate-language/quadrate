@@ -569,6 +569,24 @@ TEST(MultipleConsecutiveErrors) {
 
 // Mixed Complex Programs
 
+TEST(AnnotatedSwitch) {
+	// A dispatch table is where a comment per case is most wanted, and the
+	// switch parser used to stop at the first one.
+	Qd::Ast ast;
+	const char* src =
+			"fn k(x:i64 -- r:i64) {\n"
+			"\tswitch {\n"
+			"\t\t1 { 10 }\t// one\n"
+			"\t\t// and the rest\n"
+			"\t\t_ { 0 }\n"
+			"\t}\n"
+			"}";
+	Qd::IAstNode* root = ast.generate(src, false, nullptr);
+
+	ASSERT(root != nullptr, "root should not be null");
+	ASSERT(!ast.hasErrors(), "comments between cases are not cases");
+}
+
 TEST(CompleteProgram) {
 	Qd::Ast ast;
 	const char* src = R"(

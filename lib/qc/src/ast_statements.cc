@@ -461,7 +461,24 @@ namespace Qd {
 		AstNodeSwitchStatement* switchStmt = new AstNodeSwitchStatement();
 		setNodePosition(switchStmt, scanner, src);
 
+		size_t slashPos = SIZE_MAX; // Position of first slash for comment detection
+
 		while ((token = u8t_scanner_scan(scanner)) != U8T_EOF) {
+			// A comment between cases belongs to no case, so it is read and
+			// dropped. Without this a dispatch table cannot be annotated, which
+			// is the one place a table most wants it.
+			AstNodeComment* comment = parseComment(scanner, src, slashPos, token);
+			if (comment != nullptr) {
+				slashPos = SIZE_MAX;
+				delete comment;
+				continue;
+			}
+
+			if (token == '/') {
+				slashPos = u8t_scanner_token_start(scanner);
+				continue; // Wait for next token to see if it's a comment
+			}
+
 			if (token == '}') {
 				break;
 			}

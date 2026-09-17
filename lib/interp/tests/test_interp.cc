@@ -410,6 +410,34 @@ TEST(Loops) {
 	qd_interp_destroy(interp);
 }
 
+TEST(Switch) {
+	qd_interp* interp = qd_interp_create(256);
+
+	ASSERT(std::strcmp(top(interp, "2 switch { 1 { 10 } 2 { 20 } _ { 0 } }"), "20") == 0,
+			"the matching case runs");
+
+	ASSERT(std::strcmp(top(interp, "clear 9 switch { 1 { 10 } _ { 99 } }"), "99") == 0,
+			"'_' catches what nothing else does");
+
+	// The value is spent either way, as 'if' spends its condition
+	ASSERT(qd_interp_eval(interp, "clear 7 switch { 1 { 10 } }"), "no case and no '_' is not an error");
+	ASSERT(qd_interp_depth(interp) == 0, "and the value is gone");
+
+	ASSERT(std::strcmp(top(interp, "clear \"b\" switch { \"a\" { 1 } \"b\" { 2 } _ { 0 } }"), "2") == 0,
+			"a string matches a string case");
+
+	ASSERT(std::strcmp(top(interp, "clear 1 switch { \"1\" { 10 } _ { 0 } }"), "0") == 0,
+			"a case of another type is not a match");
+
+	ASSERT(std::strcmp(top(interp, "clear 3 switch { 1 { 10 } _ { 5 } } 100 +"), "105") == 0,
+			"execution resumes after the switch");
+
+	ASSERT(!qd_interp_eval(interp, "clear switch { 1 { 10 } }"), "an empty stack is refused");
+	ASSERT(std::strstr(qd_interp_error(interp), "value") != nullptr, "and says why");
+
+	qd_interp_destroy(interp);
+}
+
 TEST(RunawayLoopIsStopped) {
 	// Nothing can interrupt a running evaluation on a calculator, so an
 	// unbounded loop has to stop itself
