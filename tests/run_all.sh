@@ -585,17 +585,26 @@ run_single_qd_test() {
     if [[ ! -f "$expected_file" ]]; then
         expected_file="${test_file%.qd}.out"
         if [[ ! -f "$expected_file" ]]; then
-            # A file with no expected output is normally a helper module pulled in
-            # by a sibling test. Servers are the exception: they end in a blocking
-            # http::run!, so they cannot be compile-run-diffed at all and are driven
-            # by the http suite (tests/run_http_test.sh) instead. Name them so the
-            # skip reads as deliberate rather than as a forgotten .out file.
+            # A file with no expected output is either a helper module pulled in
+            # by a sibling test, or a file this suite cannot drive and another
+            # one does: the servers end in a blocking http::run!, the args tests
+            # need an argument list, the stdlib tests assert inside test blocks.
+            # Name the reason so the skip reads as deliberate rather than as a
+            # forgotten .out file -- and note that "helper module" is checked, by
+            # tools/check_test_expectations.py in the reference suite, which
+            # fails if such a file is reached from no test at all.
             case "$test_file" in
                 */http/server_integration.qd|*/http/sse_integration.qd)
                     echo "SKIP:blocking server, covered by the http suite" > "$result_file"
                     ;;
+                */tests/qd/args/*.qd)
+                    echo "SKIP:needs an argument list, covered by the args suite" > "$result_file"
+                    ;;
+                */tests/qd/stdlib/*_test.qd)
+                    echo "SKIP:test blocks, covered by the stdlib suite" > "$result_file"
+                    ;;
                 *)
-                    echo "SKIP:no expected output" > "$result_file"
+                    echo "SKIP:helper module, asserted through the test that imports it" > "$result_file"
                     ;;
             esac
             return
@@ -1269,6 +1278,12 @@ run_reference_tests() {
         log_pass "$suite" "fallible_propagation" "(fallible functions propagate, not abort)"
     else
         log_fail "$suite" "fallible_propagation" "$output"
+    fi
+
+    if output=$(cd "$PROJECT_ROOT" && python3 tools/check_test_expectations.py 2>&1); then
+        log_pass "$suite" "test_expectations" "(every test pins output or is imported by one that does)"
+    else
+        log_fail "$suite" "test_expectations" "$output"
     fi
 
     if output=$(cd "$PROJECT_ROOT" && python3 tools/check_versions.py 2>&1); then

@@ -101,6 +101,11 @@ Tests for Quadrate language features. Each test is a `.qd` file with correspondi
 bash tests/run_all.sh --suite qd
 ```
 
+A `.qd` file with no `.out`/`.expected`/`.err`/`.runtime_err` is skipped here, and is either a
+helper module imported by a sibling test or a file another suite drives. Which one is stated in
+the skip line, and `tools/check_test_expectations.py` (the `reference` suite) fails if a file is
+neither — so a forgotten `.out` is an error rather than a silent skip.
+
 ### Formatter tests (`formatter`)
 
 Tests that code formatter produces expected output and is idempotent.

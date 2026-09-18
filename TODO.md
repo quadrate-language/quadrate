@@ -131,17 +131,11 @@ where it remains open.
       1,120 skipped as "not programs", out of 1,337 fenced Quadrate blocks (218/1,117/1,335 at the
       review; the three added are this session's). The floor is honestly
       scoped and documented in `tools/check_docs.py` — but the front-page example is in the 84%:
-      `fn double(x:i64 -- result:i64) { 2 * }` in `about.md` does not compile (R10).
+      `fn double(x:i64 -- result:i64) { 2 * }` in `about.md` does not compile (R11: naming `x`
+      consumes it, so the body underflows).
       **Open question**: can the harness synthesise a `fn main` wrapper for fragment blocks and lift
       coverage materially, or is the current floor the right stopping point and the fix is only to
       hand-audit the handful of blocks that are whole declarations?
-
-- [ ] **R10. 92 test files have no asserted output.** Re-verified 2026-09-18: of 803 `.qd` files
-      under `tests/qd`, 549 have a `.out` sibling and 162 a `.err`; **92 have neither**, so they
-      compile and run with nothing pinned. `run_all.sh` reports 89 skips, the difference being
-      skips for other reasons (an unavailable external module, a blocking server).
-      **Open question**: generate the missing `.out` siblings from current behaviour and review the
-      diff, or are these deliberately output-free?
 
 #### Language design decisions to settle
 
@@ -372,6 +366,22 @@ are in this file's git history; the user-facing versions are in `CHANGELOG.md`.
       worse bug and was not in the item at all: declared fallible, documented `@error
       ErrOutOfBounds`, and it called `abort()` — so every caller's `switch` was dead code.
       Remaining: the 33 `substring!` sites, guarded at every site the fuzzing reached.
+
+- [x] **R10 — exactly one of them was really unasserted; the skip line could not say which.**
+      Generating `.out` siblings was the wrong answer: none of these files is a program with a
+      `main` whose output was forgotten. Of the 93 (the suite has grown to 834 files since the 92
+      of 803 above), 42 are asserted by a suite other than `qd` — 37 `stdlib/*_test.qd` through
+      `quad test`, 3 `args/*.qd` through the args suite, which pins the output per argument list,
+      2 blocking http servers — and 50 are helper modules, asserted through the `.out`/`.err` of
+      the test that imports them. The exception was `tests/qd/test_constants/module.qd`: a stale
+      duplicate of
+      `constants/test_constants/module.qd` with non-`pub` constants and an older `Pi`, which
+      `use test_constants` never reached because the copy beside the test is nearer. Deleted.
+      What was actually wrong is that `SKIP:no expected output` read identically for a helper and
+      for a forgotten `.out`. `tools/check_test_expectations.py` (reference suite) now fails unless
+      every file without an expectation is reached from one that has one — by relative-path `use`,
+      by module name resolved outwards as the compiler resolves it, or by a symbol it defines named
+      inside its own module — and `run_all.sh` states which of the four reasons each skip is.
 
 - [x] **R12 — `while` is back, condition written once.** The `while` removed earlier was
       `cond while { body … cond }`, the same line count as the `loop { cond if { break } … }` that

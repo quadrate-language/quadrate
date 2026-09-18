@@ -1,5 +1,0 @@
-// module
-const MaxValue = 100
-const Pi = 3.14159265359
-const AppName = "Quadrate"
-const DebugMode = 1
