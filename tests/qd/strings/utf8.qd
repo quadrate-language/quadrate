@@ -1,0 +1,61 @@
+// str is UTF-8 and its unit is the codepoint (specification 3.1).
+//
+// Every index and length below counts characters, and no operation may produce invalid
+// UTF-8. Before this, all of these were byte operations: len of "héllo wörld" was 13,
+// char_at 1 was 195 (the first byte of the é), upper left every accented letter alone,
+// and reverse turned the string into mojibake by reversing bytes inside each character.
+use strings
+
+fn main() {
+	"héllo wörld" -> s
+
+	// Lengths and indices are characters
+	s strings::len print nl
+	s 1 strings::char_at! print nl
+	s "ö" strings::index_of print nl
+	s 0 5 strings::substring! print nl
+	s 7 1 strings::substring! print nl
+
+	// Nothing may emit a broken sequence
+	s strings::reverse print nl
+	"héllo" 0 2 strings::substring! print nl
+	"héllo" 1 2 strings::remove_range print nl
+	"héllo" 1 "ö" strings::insert print nl
+	"héllo" -3 -1 strings::slice print nl
+
+	// Case mapping covers the cased scripts, not just ASCII
+	s strings::upper print nl
+	"HÉLLO WÖRLD" strings::lower print nl
+	"ärlig dag" strings::capitalize print nl
+	"ärlig dag" strings::title print nl
+	"ÄPPLE" "äpple" strings::equals_ignore_case print nl
+	"Ω" strings::lower print nl
+	"привет" strings::upper print nl
+	"ΑΘΗΝΑ" strings::lower print nl
+
+	// Codepoints round-trip through from_char / char_at
+	233 strings::from_char print nl
+	"é" 0 strings::char_at! print nl
+	28450 strings::from_char print nl
+
+	// Width is measured in characters, and the pad is a whole character
+	"ab" 5 "ö" strings::pad_left print nl
+	"ab" 5 "ö" strings::center print nl
+	"日本語テキスト" 4 "…" strings::truncate print nl
+
+	// Scripts without case are returned unchanged, which is the correct mapping
+	"日本語" strings::len print nl
+	"日本語" strings::reverse print nl
+	"日本語" strings::upper print nl
+
+	// Classification is per codepoint
+	"héllo" strings::is_alpha print nl
+	"日本語" strings::is_alpha print nl
+	"äbc" strings::is_lowercase print nl
+	"ÄBC" strings::is_uppercase print nl
+
+	// Whitespace includes the Unicode spaces
+	"  ärlig  " strings::trim print nl
+	"a b" strings::words! -> n -> w
+	n print nl
+}

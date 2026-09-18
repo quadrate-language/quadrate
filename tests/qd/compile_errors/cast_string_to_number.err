@@ -1,0 +1,7 @@
+error: Type error in 'cast': a string cannot be cast to an integer; parsing can fail and 'cast' has no way to report it
+hint: use 'strconv::atoi' (or 'strconv::parse_int' for a base), which is fallible
+error: Type error in 'cast': a string cannot be cast to a float; parsing can fail and 'cast' has no way to report it
+hint: use 'strconv::parse_float', which is fallible
+!3.9 cast<i64>
+!7 cast<f64>
+!42 cast<str>

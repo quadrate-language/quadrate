@@ -199,13 +199,13 @@
     },
     {
       "name": "readline",
-      "signature": "( -- line:str)",
+      "signature": "( -- line:str ok:i64)",
       "failable": true,
-      "description": "Read a line from stdin.",
+      "description": "Read a line from stdin.  Running out of input is not an error -- it is how a read loop ends -- so it comes back as ok=0 with the error state untouched. Only a genuine read failure is reported through the fallible status.",
       "params": [],
-      "returns": [{"name": "line", "type": "str", "description": "Line without trailing newline"}],
-      "errors": [{"code": "ErrEof", "description": "End of file or read error"}],
-      "examples": ["io::readline! -> input"]
+      "returns": [{"name": "line", "type": "str", "description": "The line read, without its trailing newline"}, {"name": " "" at end of input", "type": "", "description": ""}, {"name": "ok", "type": "i64", "description": "1 if a line was read, 0 at end of input"}],
+      "errors": [{"code": "ErrRead", "description": "The underlying read failed"}],
+      "examples": ["io::readline switch { Ok { -> ok -> line ok 0 == if { break } } _ { } }"]
     },
     {
       "name": "seek",

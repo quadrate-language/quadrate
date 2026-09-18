@@ -3,6 +3,7 @@
 /// Signals are caught and stored as flags. Use pending() to check
 /// if a signal was received, and clear() to reset the flag.
 ///
+/// doccheck: compile-only loops until Ctrl+C
 /// Example:
 ///   use signal
 ///

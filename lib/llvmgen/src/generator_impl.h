@@ -200,6 +200,8 @@ namespace Qd {
 		llvm::Function* stackTruncateFn = nullptr;
 		llvm::Function* pushCallFn = nullptr;
 		llvm::Function* popCallFn = nullptr;
+		llvm::Function* assertionResetFn = nullptr;
+		llvm::Function* assertionFailuresFn = nullptr;
 		llvm::Function* checkStackFn = nullptr;
 		llvm::Function* strdupFn = nullptr;
 		llvm::Function* mallocFn = nullptr;

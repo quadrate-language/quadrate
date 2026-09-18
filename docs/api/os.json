@@ -256,11 +256,11 @@
       "name": "list",
       "signature": "(path:str -- entries:ptr count:i64)",
       "failable": true,
-      "description": "List directory contents.",
+      "description": "List directory contents. so the bindings read in reverse of the declared outputs",
       "params": [{"name": "path", "type": "str", "description": "Directory path"}],
       "returns": [{"name": "entries", "type": "ptr", "description": "Array of entry names"}, {"name": "count", "type": "i64", "description": "Number of entries"}],
       "errors": [{"code": "ErrNotFound", "description": "File not found"}, {"code": "ErrNotDirectory", "description": "Path is not a directory"}],
-      "examples": ["\"/tmp\" os::list! -> entries -> count"]
+      "examples": ["\"/tmp\" os::list! -> count -> entries   // `->` binds top-of-stack first,"]
     },
     {
       "name": "mkdir",
@@ -346,7 +346,7 @@
       "name": "system",
       "signature": "(cmd:str -- exitcode:i64)",
       "failable": false,
-      "description": "Execute a shell command.",
+      "description": "Execute a shell command. SECURITY: cmd is passed to the system shell (/bin/sh -c). Never build it from untrusted input - that is a shell-injection vector. If you need to run a program with dynamic arguments, prefer os::exec with a fixed command and validated inputs.",
       "params": [{"name": "cmd", "type": "str", "description": "Command to execute"}],
       "returns": [{"name": "exitcode", "type": "i64", "description": "Command exit status"}],
       "errors": [],
@@ -361,6 +361,16 @@
       "returns": [],
       "errors": [],
       "examples": ["\"MY_VAR\" os::unsetenv"]
+    },
+    {
+      "name": "urandom",
+      "signature": "( -- n:i64)",
+      "failable": true,
+      "description": "Get a cryptographically secure random 64-bit value from the OS entropy pool (/dev/urandom). Suitable for seeds, tokens, and nonces.",
+      "params": [],
+      "returns": [{"name": "n", "type": "i64", "description": "Secure random 64-bit value"}],
+      "errors": [{"code": "ErrIo", "description": "Failed to read from the entropy source"}],
+      "examples": ["os::urandom! -> n"]
     },
     {
       "name": "walk",

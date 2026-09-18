@@ -1,0 +1,3 @@
+error: in module 'badimport_mod'
+'upper' is imported by that module and must be called as 'badimport_mod::upper'
+An unqualified call does not resolve to the import

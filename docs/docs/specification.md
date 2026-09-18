@@ -222,6 +222,17 @@ Implementations MUST support these four primitive types:
 narrower *stack* types; arithmetic, comparison, and all stack operations operate on `i64` and
 `f64` only. Narrower widths exist solely as memory-layout annotations — see §3.1.1.
 
+**Strings are UTF-8, and their unit is the codepoint.** Every index and length a string
+operation takes or returns MUST count codepoints, not bytes: `"héllo" strings::len` is 5, and
+`strings::char_at 1` is U+00E9, not the byte `0xC3` that happens to begin its encoding. No
+string operation may produce invalid UTF-8; an operation that would cut a multi-byte sequence
+MUST instead act on whole characters. `strings::data` exposes the underlying bytes for the
+callers that genuinely need them, and is the only place byte extent is visible.
+
+Implementations SHOULD decode malformed input rather than reject it — a string can arrive from
+a file, a socket or `argv` — by treating each byte that is not part of a well-formed sequence
+as one character. Whatever they accept, their *output* MUST be well-formed.
+
 `bool` MAY be provided as an alias for `i64`.
 
 #### 3.1.1 Sized Integer Types
@@ -292,7 +303,14 @@ Dynamic arrays are created via array literals or `make<T>` instruction:
 [1.0 2.0 3.0]         // Float array
 ["a" "b" "c"]         // String array
 [[1 2] [3 4]]         // Nested array
+[x 2 3]               // A local as an element
+[P { x = 1 }]         // Struct literals as elements
 ```
+
+An element MAY be any expression that pushes one value, not only a literal: a local, a
+nested array literal or a struct literal. All elements MUST have the same type -- an array
+carries one element type, adopted from the first value stored -- and a literal whose
+element types disagree is a compile-time error where they are known.
 
 Arrays MUST be represented as `ptr` on the stack. In type annotations, arrays MAY be written as `[]T` (e.g., `[]i64`, `[]f64`, `[]str`) to indicate the element type. This is a compile-time annotation; at runtime, arrays are pointers.
 
@@ -400,8 +418,13 @@ Explicit casting via `cast<Type>`:
 3.14 cast<i64>    // Float to int (truncates toward zero)
 42 cast<f64>      // Int to float
 100 cast<str>     // Any to string
-"42" cast<i64>    // String to int (parse)
 ```
+
+`cast<T>` MUST be total: every conversion it offers always produces a value, so its result
+never needs to be checked. A string MUST NOT be cast to a numeric type -- parsing can fail
+and `cast` has nowhere to report it. Implementations MUST reject `"42" cast<i64>` and
+`"42" cast<f64>` at compile time; `strconv::atoi`, `strconv::parse_int`,
+`strconv::parse_float` and `strconv::parse_bool` are the fallible conversions.
 
 **Implicit coercion**: Implementations MUST NOT perform implicit type coercion. All type conversions MUST be explicit.
 
@@ -1445,6 +1468,43 @@ struct qd_refcounted {
 - **Retain**: Increment refcount (when sharing)
 - **Release**: Decrement refcount; free when reaches 0
 
+#### 11.2.1 Reference Cycles
+
+Reference counting alone MUST NOT be expected to reclaim a cycle. Two objects that refer to each
+other keep each other's count above zero, so neither is ever freed, and an implementation is NOT
+required to detect this. The memory is unreachable and stays allocated until the process exits.
+
+Only cycles are affected. A non-cyclic chain of pointer-typed fields is reclaimed in full: when
+the last reference to the head goes away, releasing it releases the field it holds, and so on down
+the chain.
+
+This is reachable with the pointer-typed struct fields of §3.6.2 — the same `Node` shape the
+specification uses to illustrate them:
+
+```quadrate
+struct Node {
+    value:i64
+    next:*Node
+}
+
+fn main() {
+    Node { value = 1 next = null } -> a
+    Node { value = 2 next = null } -> b
+    a b >>next drop
+    b a >>next drop     // a and b now reference each other and are never freed
+    "built a cycle" print nl
+}
+```
+
+A program that builds cyclic structures — a doubly-linked list, a parent pointer in a tree, a
+graph with back edges — MUST break the cycle itself before dropping the last external reference
+if the memory is to be reclaimed. Setting one of the two fields back to `null` is enough. A
+long-running program that repeatedly builds and discards such structures will otherwise grow
+without bound.
+
+Implementations MAY provide a cycle detector or weak references; this specification requires
+neither, and the reference implementation provides neither.
+
 ### 11.3 String Memory
 
 Strings MUST be reference-counted and immutable:
@@ -1551,6 +1611,15 @@ yields `-9223372036854775808` with remainder `0`. Division or modulo by zero is 
 error; when the divisor is a literal `0` it is a compile-time error. Numeric literals do
 not support exponent notation (`1e300` is rejected); write the value out.
 
+**Float semantics.** `f64` arithmetic follows IEEE 754. Division by zero is therefore
+*defined*, not an error: `1.0 0.0 /` is `inf`, `-1.0 0.0 /` is `-inf`, and `0.0 0.0 /` is
+NaN. The integer rule above does not apply to floats, and neither the compiler nor the
+runtime rejects a zero float divisor. NaN compares unequal to everything including itself,
+so `x x ==` is `0` when `x` is NaN; test for it with `math::is_nan` rather than `==`.
+Infinity and NaN have no literal spelling — `math::inf` and `math::nan` name them, and
+`math::is_inf` and `math::is_finite` classify. `mod`/`%` is integer-only and reports a type
+error on float operands; `math::fmod` is the float remainder.
+
 ### 12.2 Comparison
 
 | Instruction | Alias | Stack Effect | Description |
@@ -1596,7 +1665,7 @@ See [Section 4.2](#42-stack-operations) for complete list.
 
 | Instruction | Stack Effect | Description |
 |-------------|--------------|-------------|
-| `cast<T>` | `(a -- b)` | Cast to type T |
+| `cast<T>` | `(a -- b)` | Cast to type T (total conversions only; see §3.7) |
 | `sizeof` | `(T -- n)` | Size of type in bytes |
 
 ### 12.7 I/O Operations

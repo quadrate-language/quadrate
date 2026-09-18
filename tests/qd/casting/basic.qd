@@ -1,10 +1,14 @@
-// Test: basic type casting operations
+// Test: basic type casting operations.
+// 'cast' covers the total conversions only -- string -> numeric is rejected and belongs to
+// strconv, which can report a parse failure. See casting/str_numeric.
+use strconv
+
 fn main() {
 	// Test cast<i64> - cast float to int (truncates)
 	3.14 cast<i64> print nl
 
-	// Test cast<i64> - cast string to int
-	"42" cast<i64> print nl
+	// String -> int goes through the fallible API
+	"42" strconv::atoi! print nl
 
 	// Test cast<i64> - negative float
 	-5.9 cast<i64> print nl
@@ -12,8 +16,8 @@ fn main() {
 	// Test cast<f64> - cast int to float
 	10 cast<f64> print nl
 
-	// Test cast<f64> - cast string to float
-	"2.5" cast<f64> print nl
+	// String -> float likewise
+	"2.5" strconv::parse_float! print nl
 
 	// Test cast<f64> - negative int
 	-7 cast<f64> print nl

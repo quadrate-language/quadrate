@@ -79,7 +79,7 @@ import "libtesting.a" as "testing" {
 /// @param b i64 Second value
 /// @example 5 3 testing::assert_gt  // passes
 pub fn assert_gt(a:i64 b:i64 -- ) {
-	a b > assert_true
+	a b > testing::assert_true
 }
 
 /// Assert that a is less than b.
@@ -87,7 +87,7 @@ pub fn assert_gt(a:i64 b:i64 -- ) {
 /// @param b i64 Second value
 /// @example 3 5 testing::assert_lt  // passes
 pub fn assert_lt(a:i64 b:i64 -- ) {
-	a b < assert_true
+	a b < testing::assert_true
 }
 
 /// Assert that a is greater than or equal to b.
@@ -95,7 +95,7 @@ pub fn assert_lt(a:i64 b:i64 -- ) {
 /// @param b i64 Second value
 /// @example 5 5 testing::assert_ge  // passes
 pub fn assert_ge(a:i64 b:i64 -- ) {
-	a b >= assert_true
+	a b >= testing::assert_true
 }
 
 /// Assert that a is less than or equal to b.
@@ -103,7 +103,7 @@ pub fn assert_ge(a:i64 b:i64 -- ) {
 /// @param b i64 Second value
 /// @example 5 5 testing::assert_le  // passes
 pub fn assert_le(a:i64 b:i64 -- ) {
-	a b <= assert_true
+	a b <= testing::assert_true
 }
 
 /// Assert that value is within an inclusive range [min, max].
@@ -112,7 +112,7 @@ pub fn assert_le(a:i64 b:i64 -- ) {
 /// @param max i64 Maximum value (inclusive)
 /// @example 5 0 10 testing::assert_in_range  // passes
 pub fn assert_in_range(value:i64 min:i64 max:i64 -- ) {
-	value min >= value max <= and assert_true
+	value min >= value max <= and testing::assert_true
 }
 
 /// Assert that a float is greater than another.
@@ -120,7 +120,7 @@ pub fn assert_in_range(value:i64 min:i64 max:i64 -- ) {
 /// @param b f64 Second value
 /// @example 5.0 3.0 testing::assert_gt_f  // passes
 pub fn assert_gt_f(a:f64 b:f64 -- ) {
-	a b gt assert_true
+	a b gt testing::assert_true
 }
 
 /// Assert that a float is less than another.
@@ -128,33 +128,33 @@ pub fn assert_gt_f(a:f64 b:f64 -- ) {
 /// @param b f64 Second value
 /// @example 3.0 5.0 testing::assert_lt_f  // passes
 pub fn assert_lt_f(a:f64 b:f64 -- ) {
-	a b lt assert_true
+	a b lt testing::assert_true
 }
 
 /// Assert that value is positive (> 0).
 /// @param value i64 Value to check
 /// @example 5 testing::assert_positive  // passes
 pub fn assert_positive(value:i64 -- ) {
-	value 0 > assert_true
+	value 0 > testing::assert_true
 }
 
 /// Assert that value is negative (< 0).
 /// @param value i64 Value to check
 /// @example -5 testing::assert_negative  // passes
 pub fn assert_negative(value:i64 -- ) {
-	value 0 < assert_true
+	value 0 < testing::assert_true
 }
 
 /// Assert that value is zero.
 /// @param value i64 Value to check
 /// @example 0 testing::assert_zero  // passes
 pub fn assert_zero(value:i64 -- ) {
-	value 0 == assert_true
+	value 0 == testing::assert_true
 }
 
 /// Assert that value is non-zero.
 /// @param value i64 Value to check
 /// @example 5 testing::assert_nonzero  // passes
 pub fn assert_nonzero(value:i64 -- ) {
-	value 0 != assert_true
+	value 0 != testing::assert_true
 }

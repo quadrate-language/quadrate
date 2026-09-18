@@ -170,10 +170,10 @@ fn process_token(s:ptr tok:str -- ) {
 	is_num if {
 		tok 0 strings::char_at! -> first
 		first unicode::underscore == if {
-			tok 1 tok strings::len 1 - strings::substring! cast<f64> -> val
+			tok 1 tok strings::len 1 - strings::substring! strconv::parse_float! -> val
 			s 0.0 val - stack_push
 		} else {
-			tok cast<f64> -> val
+			tok strconv::parse_float! -> val
 			s val stack_push
 		}
 	}

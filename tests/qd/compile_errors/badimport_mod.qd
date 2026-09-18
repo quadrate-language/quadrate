@@ -1,0 +1,9 @@
+// A module whose own body calls one of its imports without the module name.
+// Imported by compile_errors/unqualified_module_import; has no expected output of its own.
+import "libstrings.a" as "badimport_mod" {
+	pub fn upper(str:str -- result:str)
+}
+
+pub fn shout(s:str -- r:str) {
+	s upper
+}

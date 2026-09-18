@@ -803,6 +803,21 @@ void qd_push_call(qd_context* ctx, const char* func_name, const char* file, size
  *
  * @param ctx Execution context
  */
+/**
+ * @brief Record that an assertion failed
+ *
+ * Assertions signal failure by returning a non-zero exec result, which only the caller that
+ * emitted the call can see -- so a failure inside a helper printed its message and the test
+ * still passed. This records it where depth does not matter. See qd_context::assertion_failures.
+ */
+void qd_assertion_failed(qd_context* ctx);
+
+/** @brief Assertion failures recorded since the last reset */
+int64_t qd_assertion_failures(const qd_context* ctx);
+
+/** @brief Clear the assertion failure count, called when a test starts */
+void qd_assertion_reset(qd_context* ctx);
+
 void qd_pop_call(qd_context* ctx);
 
 /**

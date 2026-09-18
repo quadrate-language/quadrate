@@ -25,6 +25,16 @@ static std::vector<Qd::ErrorInfo> validateCodeErrors(const char* src) {
 	return validator.getErrors();
 }
 
+// Same, with warnings promoted to errors, so a test can assert on a warning's text.
+static std::vector<Qd::ErrorInfo> validateCodeWarnings(const char* src) {
+	Qd::Ast ast;
+	Qd::IAstNode* root = ast.generate(src, false, nullptr);
+	Qd::SemanticValidator validator;
+	validator.setStoreErrors(true);
+	validator.validate(root, "test.qd", false, /*werror=*/true);
+	return validator.getErrors();
+}
+
 // True when some diagnostic contains 'needle'.
 static bool hasError(const std::vector<Qd::ErrorInfo>& errors, const char* needle) {
 	for (const Qd::ErrorInfo& e : errors) {
@@ -726,4 +736,62 @@ TEST(ManyLocalVariables) {
 
 int main() {
 	return UC_PrintResults();
+}
+
+// Enum switch exhaustiveness (R16)
+//
+// A switch whose every arm names a variant of one enum, with no `_`, probably forgot the arms it
+// does not name -- and with no `_` nothing runs for those values. This is a warning rather than an
+// error because an enum variant is an i64 and nothing tracks that the subject came from that enum:
+// the check reads intent off the case labels, not off a type.
+
+TEST(EnumSwitchMissingVariantWarns) {
+	auto w = validateCodeWarnings("enum Color { Red Green Blue }\n"
+								  "fn f(c:i64 -- ) { c switch { Color::Red { } Color::Green { } } }\n"
+								  "fn main() { Color::Red f }\n");
+	ASSERT(hasError(w, "switch on enum 'Color' does not handle Blue"), "should name the missing variant");
+}
+
+TEST(EnumSwitchNamesEveryMissingVariant) {
+	auto w = validateCodeWarnings("enum E { A B C D }\n"
+								  "fn f(c:i64 -- ) { c switch { E::A { } } }\n"
+								  "fn main() { E::A f }\n");
+	ASSERT(hasError(w, "does not handle B, C, D"), "should list all missing variants");
+}
+
+TEST(EnumSwitchExhaustiveIsClean) {
+	auto w = validateCodeWarnings("enum Color { Red Green Blue }\n"
+								  "fn f(c:i64 -- ) { c switch { Color::Red { } Color::Green { } Color::Blue { } } }\n"
+								  "fn main() { Color::Red f }\n");
+	ASSERT(!hasError(w, "does not handle"), "covering every variant should not warn");
+}
+
+TEST(EnumSwitchWildcardIsClean) {
+	auto w = validateCodeWarnings("enum Color { Red Green Blue }\n"
+								  "fn f(c:i64 -- ) { c switch { Color::Red { } _ { } } }\n"
+								  "fn main() { Color::Red f }\n");
+	ASSERT(!hasError(w, "does not handle"), "a '_' arm handles the rest");
+}
+
+TEST(EnumSwitchMixedArmsIsClean) {
+	// Arms that are not all variants of one enum say nothing about exhaustiveness.
+	auto w = validateCodeWarnings("enum Color { Red Green Blue }\n"
+								  "fn f(c:i64 -- ) { c switch { Color::Red { } 7 { } _ { } } }\n"
+								  "fn main() { Color::Red f }\n");
+	ASSERT(!hasError(w, "does not handle"), "a mixed switch should not be judged for exhaustiveness");
+}
+
+TEST(EnumSwitchTwoEnumsIsClean) {
+	auto w = validateCodeWarnings("enum A { X Y }\n"
+								  "enum B { P Q }\n"
+								  "fn f(c:i64 -- ) { c switch { A::X { } B::P { } _ { } } }\n"
+								  "fn main() { A::X f }\n");
+	ASSERT(!hasError(w, "does not handle"), "arms from two enums should not be judged");
+}
+
+TEST(NonEnumScopedArmsAreClean) {
+	// `io::ErrNotFound` is a module constant, not an enum variant.
+	auto w = validateCodeWarnings("fn f(c:i64 -- ) { c switch { 1 { } 2 { } _ { } } }\n"
+								  "fn main() { 1 f }\n");
+	ASSERT(!hasError(w, "does not handle"), "literal arms should not be judged");
 }

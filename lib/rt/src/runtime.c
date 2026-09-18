@@ -341,7 +341,7 @@ static void release_if_string(qd_stack_element_t* elem) {
 	}
 }
 
-// Helper function to push a stack element (retains strings)
+// Helper function to push a stack element, taking a reference to what it holds
 static qd_stack_error push_element(qd_stack* stack, const qd_stack_element_t* elem) {
 	qd_stack_error err;
 	switch (elem->type) {
@@ -364,7 +364,14 @@ static qd_stack_error push_element(qd_stack* stack, const qd_stack_element_t* el
 			stack->size++;
 			return QD_STACK_OK;
 		case QD_STACK_TYPE_PTR:
+			// Take a reference of our own, as the string case above does. A slot owns what it
+			// holds, so a value that ends up in two slots -- `dup`, `over`, `pick` -- must be
+			// counted twice; otherwise releasing one slot frees a value the other still holds.
+			qd_ptr_retain(elem->value.p);
 			err = qd_stack_push_ptr(stack, elem->value.p);
+			if (err != QD_STACK_OK) {
+				qd_ptr_release(elem->value.p); // Cleanup on overflow
+			}
 			break;
 		default:
 			return QD_STACK_ERR_TYPE_MISMATCH;
@@ -1055,6 +1062,22 @@ size_t qd_context_stack_size(const qd_context* ctx) {
 }
 
 // Context management functions
+void qd_assertion_failed(qd_context* ctx) {
+	if (ctx != NULL) {
+		ctx->assertion_failures++;
+	}
+}
+
+int64_t qd_assertion_failures(const qd_context* ctx) {
+	return (ctx != NULL) ? ctx->assertion_failures : 0;
+}
+
+void qd_assertion_reset(qd_context* ctx) {
+	if (ctx != NULL) {
+		ctx->assertion_failures = 0;
+	}
+}
+
 qd_context* qd_create_context(size_t stack_size) {
 	qd_context* ctx = (qd_context*)malloc(sizeof(qd_context));
 	if (ctx) {
@@ -1074,6 +1097,7 @@ qd_context* qd_create_context(size_t stack_size) {
 		ctx->argv = NULL;
 		ctx->program_name = NULL;
 		ctx->call_stack_depth = 0;
+		ctx->assertion_failures = 0;
 	}
 	return ctx;
 }

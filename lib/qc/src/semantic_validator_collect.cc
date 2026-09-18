@@ -222,9 +222,12 @@ namespace Qd {
 			}
 
 			mDefinedEnums.insert(enumDecl->name());
+			std::vector<std::string>& variantNames = mEnumVariants[enumDecl->name()];
+			variantNames.clear();
 			for (const auto& variant : enumDecl->variants()) {
 				std::string scopedName = enumDecl->name() + "::" + variant.name;
 				mConstantValues[scopedName] = std::to_string(variant.value);
+				variantNames.push_back(variant.name);
 			}
 		}
 

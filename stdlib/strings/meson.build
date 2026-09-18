@@ -19,7 +19,7 @@ qdstrings_inc = include_directories('include')
 qdstrings_static = static_library('strings',
 	qdstrings_sources,
 	strings_register_c,
-	include_directories: qdstrings_inc,
+	include_directories: [qdstrings_inc, qdunicode_inc],
 	dependencies: qdrt_static_dep,
 	c_args: ['-ffunction-sections', '-fdata-sections'],
 	install: false

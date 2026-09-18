@@ -77,10 +77,11 @@ fn main() {
 	3.14 cast<i64> print nl    // 3 (truncates)
 	42 cast<f64> print nl      // 42
 	100 cast<str> print nl     // 100
-	"42" cast<i64> print nl    // 42
-	"2.5" cast<f64> print nl   // 2.5
 }
 ```
+
+String to number is deliberately absent: it can fail, and `cast` has no way to say so.
+Use `strconv::atoi` or `strconv::parse_float`, which are fallible.
 
 | From | To | Behavior |
 |------|----|----------|
@@ -88,8 +89,8 @@ fn main() {
 | `i64` | `f64` | Exact conversion |
 | `i64` | `str` | Decimal string |
 | `f64` | `str` | Decimal string |
-| `str` | `i64` | Parses integer |
-| `str` | `f64` | Parses float |
+| `str` | `i64` | **Not allowed** -- use `strconv::atoi` |
+| `str` | `f64` | **Not allowed** -- use `strconv::parse_float` |
 
 ## How it works
 

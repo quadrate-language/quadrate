@@ -83,6 +83,22 @@ typedef struct {
 	jmp_buf recovery_buf; ///< Armed by qd_recovery_arm()
 	bool recovery_armed;  ///< Whether a fatal error unwinds instead of exiting
 
+	/**
+	 * @brief Count of assertion failures since the last reset (0 = none)
+	 *
+	 * An assertion reports failure by returning a non-zero exec result, and the generated
+	 * code for a `test` block checks that result. It can only check the calls it emits
+	 * itself, though: one frame deeper -- inside a helper, or inside `testing`'s own
+	 * `assert_gt`, which is Quadrate wrapping the C `assert_true` -- the return value has
+	 * nowhere to go, so the failure printed its message and the test still passed.
+	 *
+	 * A flag on the context does not care how deep the call was. It lives here rather than
+	 * at file scope in libtesting for the same reason the recovery state does: lib/qd may
+	 * link the shared runtime while lib/interp links the static one, and a static would then
+	 * exist twice in one process. Appended so codegen's GEP of field 0 is unaffected.
+	 */
+	int64_t assertion_failures;
+
 	struct qd_native_registry* natives; ///< Native functions, shared by both execution tiers
 } qd_context;
 

@@ -9,10 +9,12 @@ pub const ErrAlloc = 3
 pub const ErrInvalidArg = 4
 
 import "libstrings.a" as "strings" {
-	/// Get string length in bytes.
+	/// Get string length in characters.
+	/// Counts UTF-8 codepoints, so "héllo" is 5 even though it occupies 6 bytes.
+	/// Use strings::data for the byte buffer when byte extent is what you need.
 	/// @param str str Input string
-	/// @return len i64 Length in bytes
-	/// @example "hello" strings::len print  // 5
+	/// @return len i64 Length in characters
+	/// @example "héllo" strings::len print  // 5
 	pub fn len(str:str -- len:i64)
 
 	/// Get raw char pointer to string data.
@@ -101,16 +103,19 @@ import "libstrings.a" as "strings" {
 
 	/// Get character code at index.
 	/// @param str str Input string
+	/// The index counts characters and the result is a Unicode codepoint, so indexing
+	/// never lands in the middle of a multi-byte character.
 	/// @param index i64 Character position
-	/// @return char_code i64 ASCII/UTF-8 byte value
+	/// @return char_code i64 Unicode codepoint
 	/// @error ErrOutOfBounds Index out of bounds
-	/// @example "hello" 0 strings::char_at! print  // 104 ('h')
+	/// @example "héllo" 1 strings::char_at! print  // 233 ('é')
 	pub fn char_at(str:str index:i64 -- char_code:i64)!
 
-	/// Create string from character code.
-	/// @param char_code i64 ASCII/UTF-8 byte value
+	/// Create string from a Unicode codepoint, encoded as UTF-8.
+	/// A value outside the Unicode range, or a surrogate, gives the empty string.
+	/// @param char_code i64 Unicode codepoint
 	/// @return str str Single character string
-	/// @example 65 strings::from_char print  // "A"
+	/// @example 233 strings::from_char print  // "é"
 	pub fn from_char(char_code:i64 -- str:str)
 
 	/// Split string by delimiter.
@@ -358,11 +363,13 @@ import "libstrings.a" as "strings" {
 	/// @example "HELLO" strings::is_uppercase print  // 1
 	pub fn is_uppercase(s:str -- result:i64)
 
-	/// Count UTF-8 codepoints (characters, not bytes).
+	/// Size of the string's UTF-8 encoding, in bytes.
+	/// strings::len counts characters; this is what you want when sizing a buffer or
+	/// writing to something that counts octets.
 	/// @param s str Input string
-	/// @return count i64 Number of UTF-8 codepoints
-	/// @example "héllo" strings::char_count print  // 5
-	pub fn char_count(s:str -- count:i64)
+	/// @return bytes i64 Number of bytes
+	/// @example "héllo" strings::byte_len print  // 6
+	pub fn byte_len(s:str -- bytes:i64)
 
 	/// Slice with negative index support (Python-style).
 	/// @param s str Input string

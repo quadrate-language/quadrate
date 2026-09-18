@@ -802,6 +802,50 @@ namespace Qd {
 			return;
 		}
 
+		// An element that is not a scalar literal -- a nested array literal, a struct
+		// literal, a local, a call -- cannot be emitted by the constant path below, which
+		// reads its value straight out of the AST. Such elements used to be skipped in
+		// silence: `7 -> x  [x 2 3]` compiled to the two-element array `[2 3]`, and a
+		// nested `[[1 2] [3 4]]` would have done the same had the parser accepted it.
+		//
+		// Build through the Quadrate stack instead. The array goes on the stack, each
+		// element generates itself on top of it, and `append` consumes the pair and leaves
+		// the array -- which is where this function has to leave it anyway. The array is
+		// created as QD_ARRAY_TYPE_ANY (4) and adopts its element type from the first value
+		// appended, exactly as `[] x append` does, so a nested array yields an array of
+		// pointers without anything here having to work out the element type statically.
+		bool allScalarLiterals = true;
+		for (const auto& elemPtr : elements) {
+			if (elemPtr->type() != IAstNode::Type::LITERAL) {
+				allScalarLiterals = false;
+				break;
+			}
+		}
+
+		if (!allScalarLiterals) {
+			llvm::Function* createAnyArrayFn = module->getFunction("qd_array_create");
+			if (!createAnyArrayFn) {
+				auto fnTy = llvm::FunctionType::get(ptrTy, {int64Ty, int32Ty}, false);
+				createAnyArrayFn =
+						llvm::Function::Create(fnTy, llvm::Function::ExternalLinkage, "qd_array_create", *module);
+			}
+			llvm::Function* appendFn = module->getFunction("qd_append");
+			if (!appendFn) {
+				auto fnTy = llvm::FunctionType::get(int32Ty, {ptrTy}, false);
+				appendFn = llvm::Function::Create(fnTy, llvm::Function::ExternalLinkage, "qd_append", *module);
+			}
+
+			llvm::Value* dynArr = builder->CreateCall(
+					createAnyArrayFn, {builder->getInt64(numElements), builder->getInt32(4)}, "arr_dyn");
+			builder->CreateCall(pushPtrFn, {ctx, dynArr});
+			for (const auto& elemPtr : elements) {
+				generateNode(elemPtr.get(), ctx);
+				builder->CreateCall(appendFn, {ctx});
+			}
+			lastPushedWasArray = true;
+			return;
+		}
+
 		// Determine array element type from first element
 		// QD_ARRAY_TYPE_INT = 0, QD_ARRAY_TYPE_FLOAT = 1, QD_ARRAY_TYPE_STR = 2, QD_ARRAY_TYPE_PTR = 3
 		int32_t arrayType = 0; // Default to INT

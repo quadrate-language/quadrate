@@ -3,11 +3,17 @@
 Random number generation using xorshift64* algorithm.
 Fast, high-quality PRNG suitable for most applications.
 
+SECURITY: the `Rng` generator (`new`, `with_seed`, `next`, ...) is NOT
+cryptographically secure - xorshift64* is fast but predictable and a
+time-based seed is guessable. Do NOT use it for tokens, session IDs,
+nonces, salts, or keys. For those, use `rand::secure_i64` (which draws
+fresh OS entropy on every call) or seed an `Rng` with `rand::secure`.
+
 ## Functions
 
 ### `fn` new
 
-Create a new RNG seeded from current time.
+Create a new RNG seeded from current time. NOT cryptographically secure (guessable seed) - see module security note.
 
 **Signature:** `( -- rng:Rng)`
 
@@ -19,6 +25,23 @@ Create a new RNG seeded from current time.
 
 ```qd
 rand::new  // rng
+```
+---
+
+### `fn` secure_i64
+
+Get a cryptographically secure random 64-bit value directly from the OS entropy pool. Each call draws fresh entropy, so the output is suitable for tokens, nonces, salts, and keys.
+
+**Signature:** `( -- n:i64)`
+
+| Output | Type | Description |
+|--------|------|-------------|
+| `n` | `i64` | Secure random 64-bit value |
+
+**Example:**
+
+```qd
+rand::secure_i64  // token
 ```
 ---
 
@@ -50,6 +73,24 @@ Random number generator state.
 | Field | Type | Description |
 |-------|------|-------------|
 | `state` | `i64` | Internal RNG state |
+
+### Constructors
+
+#### `fn` secure
+
+Create a new RNG seeded from the OS entropy pool. The seed is unpredictable, but the generated stream is still xorshift64* and therefore NOT cryptographically secure - use `secure_i64` when stream secrecy matters.
+
+**Signature:** `( -- rng:Rng)`
+
+| Output | Type | Description |
+|--------|------|-------------|
+| `rng` | `Rng` | New random number generator |
+
+**Example:**
+
+```qd
+rand::secure  // rng
+```
 
 ### Methods
 

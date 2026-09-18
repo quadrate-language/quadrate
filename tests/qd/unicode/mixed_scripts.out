@@ -1,12 +1,12 @@
 === Latin + Cyrillic ===
 Hello Мир
-12
+9
 === Latin + CJK ===
 Hello 世界
-12
+8
 === Latin + Arabic ===
 Hello مرحبا
-16
+11
 === Mixed contains ===
 1
 1
@@ -17,5 +17,5 @@ Hello مرحبا
 0
 === All scripts ===
 ABC Мир 世界
-17
+10
 done

@@ -1,20 +1,42 @@
-// Test: string to numeric casting
+// Test: conversions between strings and numbers.
+//
+// Numeric -> string is a total conversion and stays on 'cast'. String -> numeric is not:
+// parsing can fail, and 'cast' reported failure as 0, so "notanumber" and "0" produced the
+// same answer. That direction is rejected at compile time now (see
+// compile_errors/cast_string_to_number) and belongs to strconv, which is fallible.
+use strconv
+
 fn main() {
-	// String to int
+	// String to int, via the fallible API
 	"=== String to int ===" print nl
-	"0" cast<i64> print nl
-	"42" cast<i64> print nl
-	"-100" cast<i64> print nl
-	"1000000" cast<i64> print nl
+	"0" strconv::atoi! print nl
+	"42" strconv::atoi! print nl
+	"-100" strconv::atoi! print nl
+	"1000000" strconv::atoi! print nl
 
 	// String to float
 	"=== String to float ===" print nl
-	"0.0" cast<f64> print nl
-	"3.14" cast<f64> print nl
-	"-2.5" cast<f64> print nl
-	"1e6" cast<f64> print nl
+	"0.0" strconv::parse_float! print nl
+	"3.14" strconv::parse_float! print nl
+	"-2.5" strconv::parse_float! print nl
+	"1e6" strconv::parse_float! print nl
 
-	// Numeric to string
+	// Failure is reportable, which is the entire point
+	"=== Failure is visible ===" print nl
+	"notanumber" strconv::atoi if {
+		-> n
+		"parsed " print n print nl
+	} else {
+		"not a number" print nl
+	}
+	"0" strconv::atoi if {
+		-> n
+		"parsed " print n print nl
+	} else {
+		"not a number" print nl
+	}
+
+	// Numeric to string is total and stays on 'cast'
 	"=== Int to string ===" print nl
 	0 cast<str> print nl
 	42 cast<str> print nl

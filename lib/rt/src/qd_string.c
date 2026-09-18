@@ -51,6 +51,8 @@ qd_string_t* qd_string_create_with_length(const char* str, size_t length) {
 	qd_str->data[length] = '\0';
 	qd_str->length = length;
 	qd_str->capacity = capacity;
+	qd_str->char_length = QD_STRING_CHAR_LEN_UNKNOWN;
+	atomic_init(&qd_str->scan_cursor, 0);
 	atomic_init(&qd_str->refcount, 1);
 
 	return qd_str;
@@ -99,6 +101,116 @@ size_t qd_string_length(const qd_string_t* str) {
 	return str->length;
 }
 
+size_t qd_string_char_length(qd_string_t* str) {
+	if (str == NULL) {
+		return 0;
+	}
+	if (str->char_length != QD_STRING_CHAR_LEN_UNKNOWN) {
+		return str->char_length;
+	}
+
+	// Count lead bytes: a continuation byte is 10xxxxxx, everything else starts a character.
+	// A byte that is not part of a well-formed sequence counts as one character, which is the
+	// same rule the strings module decodes by.
+	size_t count = 0;
+	const unsigned char* p = (const unsigned char*)str->data;
+	for (size_t i = 0; i < str->length; i++) {
+		if ((p[i] & 0xC0u) != 0x80u) {
+			count++;
+		}
+	}
+	str->char_length = count;
+	return count;
+}
+
+size_t qd_string_char_offset(qd_string_t* str, size_t index) {
+	if (str == NULL || index == 0) {
+		return 0;
+	}
+	const size_t bytes = str->length;
+
+	// Every character one byte: the index is the offset, no walk at all.
+	if (qd_string_char_length(str) == bytes) {
+		return (index < bytes) ? index : bytes;
+	}
+
+	// Resume from the last lookup when it is at or before the one being asked for, which is
+	// what a forward scan always does. Both halves come from one atomic word, so they always
+	// describe the same position. Offsets above 4GB do not fit the packing and simply walk.
+	size_t from_char = 0;
+	size_t from_byte = 0;
+	if (bytes <= 0xFFFFFFFFu) {
+		const uint64_t cursor = atomic_load(&str->scan_cursor);
+		const size_t cur_char = (size_t)(cursor >> 32);
+		const size_t cur_byte = (size_t)(cursor & 0xFFFFFFFFu);
+		if (cur_char <= index && cur_byte <= bytes) {
+			from_char = cur_char;
+			from_byte = cur_byte;
+		}
+	}
+
+	size_t off = from_byte;
+	size_t seen = from_char;
+	while (off < bytes && seen < index) {
+		// Step over one character: the lead byte plus its continuation bytes.
+		off++;
+		while (off < bytes && ((const unsigned char)str->data[off] & 0xC0u) == 0x80u) {
+			off++;
+		}
+		seen++;
+	}
+
+	if (bytes <= 0xFFFFFFFFu) {
+		atomic_store(&str->scan_cursor, ((uint64_t)seen << 32) | (uint64_t)off);
+	}
+	return off;
+}
+
+size_t qd_string_char_index(qd_string_t* str, size_t byte_offset) {
+	if (str == NULL || byte_offset == 0) {
+		return 0;
+	}
+	const size_t bytes = str->length;
+	if (byte_offset > bytes) {
+		byte_offset = bytes;
+	}
+
+	// Every character one byte: the offset is the index.
+	if (qd_string_char_length(str) == bytes) {
+		return byte_offset;
+	}
+
+	// The inverse of qd_string_char_offset, sharing its cursor: `s needle index_of_from` in a
+	// loop walks forward through the same string, so each call resumes where the last stopped
+	// instead of counting from the beginning again.
+	size_t from_char = 0;
+	size_t from_byte = 0;
+	if (bytes <= 0xFFFFFFFFu) {
+		const uint64_t cursor = atomic_load(&str->scan_cursor);
+		const size_t cur_char = (size_t)(cursor >> 32);
+		const size_t cur_byte = (size_t)(cursor & 0xFFFFFFFFu);
+		if (cur_byte <= byte_offset && cur_byte <= bytes) {
+			from_char = cur_char;
+			from_byte = cur_byte;
+		}
+	}
+
+	size_t off = from_byte;
+	size_t seen = from_char;
+	while (off < byte_offset) {
+		off++;
+		while (off < bytes && ((const unsigned char)str->data[off] & 0xC0u) == 0x80u) {
+			off++;
+		}
+		seen++;
+	}
+
+	if (bytes <= 0xFFFFFFFFu) {
+		atomic_store(&str->scan_cursor, ((uint64_t)seen << 32) | (uint64_t)off);
+	}
+	return seen;
+}
+
 qd_string_t* qd_string_concat_smart(qd_string_t* str1, qd_string_t* str2) {
 	if (str1 == NULL || str2 == NULL) {
 		if (str1) qd_string_release(str1);
@@ -118,6 +230,11 @@ qd_string_t* qd_string_concat_smart(qd_string_t* str1, qd_string_t* str2) {
 		memcpy(str1->data + len1, str2->data, len2);
 		str1->data[total_len] = '\0';
 		str1->length = total_len;
+		// The buffer changed, so any memo describes the old contents. The cursor stays valid
+		// for the prefix that was already there, but resetting it is simpler and costs one
+		// rescan at most.
+		str1->char_length = QD_STRING_CHAR_LEN_UNKNOWN;
+		atomic_store(&str1->scan_cursor, 0);
 		qd_string_release(str2);
 		return str1;
 	}
@@ -155,6 +272,8 @@ qd_string_t* qd_string_concat_smart(qd_string_t* str1, qd_string_t* str2) {
 	result->data[total_len] = '\0';
 	result->length = total_len;
 	result->capacity = new_capacity;
+	result->char_length = QD_STRING_CHAR_LEN_UNKNOWN;
+	atomic_init(&result->scan_cursor, 0);
 	atomic_init(&result->refcount, 1);
 
 	// Release inputs

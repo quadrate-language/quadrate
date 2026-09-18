@@ -1,0 +1,44 @@
+// Array literal elements that are not scalar literals.
+//
+// Two bugs met here. The parser rejected a nested `[` outright -- specification.md 3.2.2
+// documents `[[1 2] [3 4]]` -- because the recovery that handled it ran only after
+// parseSimpleToken had already reported "Unexpected character '['". And codegen emitted
+// only LITERAL elements, silently skipping everything else, so `7 -> x  [x 2 3]` compiled
+// to the two-element array `[2 3]` with no diagnostic at all.
+struct P {
+	x:i64
+}
+
+fn make_from(x:i64 -- r:[]i64) {
+	[x 2 3]
+}
+
+fn main() {
+	// a local as an element
+	7 -> x
+	[x 2 3] -> a
+	a len print nl
+	a print nl
+
+	// the element type is inferred from the elements, so this returns []i64
+	9 make_from print nl
+
+	// nested literals, including uneven rows and three levels
+	[[1 2] [3 4]] -> m
+	m len print nl
+	m print nl
+	m 0 nth print nl
+	m 1 nth print nl
+	[[1.5 2.5] [3.5]] print nl
+	[["a" "b"] ["c"]] print nl
+	[[[1] [2]] [[3]]] print nl
+
+	// struct literals as elements
+	[ P { x = 1 } P { x = 2 } ] -> ps
+	ps len print nl
+	ps 0 nth <<x print nl
+	ps 1 nth <<x print nl
+
+	// an empty literal still adopts on first append
+	[] 1 append 2 append print nl
+}

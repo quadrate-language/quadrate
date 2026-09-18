@@ -1,0 +1,38 @@
+// Float division by zero is IEEE 754, not an error: +/-infinity, and NaN for 0.0/0.0.
+// Integer division by zero remains fatal -- see compile_errors/division_by_literal_zero
+// for the literal case and errors/division_by_zero_runtime for the computed one.
+//
+// Both paths must agree. A literal divisor and a divisor bound to a local used to
+// disagree: the inlined path emitted a bare fdiv and returned inf, while the runtime's
+// qd_div trapped and killed the process.
+use math
+
+fn divide(a:f64 b:f64 -- r:f64) {
+	a b /
+}
+
+fn main() {
+	0.0 -> z
+	1.0 z / print nl
+	-1.0 z / print nl
+	1.0 0.0 / print nl
+	1.0 0.0 divide print nl
+
+	// 0.0/0.0 is NaN, which is unequal to everything including itself
+	0.0 0.0 / math::is_nan print nl
+	0.0 0.0 / dup == print nl
+
+	// math names the two values that have no literal spelling
+	math::inf print nl
+	math::inf math::is_inf print nl
+	math::nan math::is_nan print nl
+
+	// classification
+	1.0 math::is_finite print nl
+	math::inf math::is_finite print nl
+	math::nan math::is_finite print nl
+
+	// infinity is absorbing, and 1/inf underflows to zero
+	math::inf 1.0 + math::is_inf print nl
+	1.0 math::inf / print nl
+}

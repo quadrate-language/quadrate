@@ -200,76 +200,78 @@ pub const rbrace = 125
 /// Punctuation: Tilde (~).
 pub const tilde = 126
 
-/// Check if character is a digit (0-9).
-/// @param c i64 Character code
-/// @return result i64 1 if digit, 0 otherwise
-/// @example 48 unicode::is_digit print  // 1
-pub fn is_digit(c:i64 -- result:i64) {
-	c digit0 >= c digit9 <= *
-}
+import "libunicode.a" as "unicode" {
+	/// Check if a codepoint is a decimal digit (0-9).
+	/// Only decimal digits: other scripts' digits are not interchangeable with these for
+	/// parsing, so this stays narrow on purpose.
+	/// @param c i64 Character code
+	/// @return result i64 1 if digit, 0 otherwise
+	/// @example 48 unicode::is_digit print  // 1
+	pub fn is_digit(c:i64 -- result:i64)
 
-/// Check if character is an uppercase letter (A-Z).
-/// @param c i64 Character code
-/// @return result i64 1 if uppercase, 0 otherwise
-/// @example 65 unicode::is_upper print  // 1
-pub fn is_upper(c:i64 -- result:i64) {
-	c A >= c Z <= *
-}
+	/// Check if a codepoint is an uppercase letter.
+	/// @param c i64 Character code
+	/// @return result i64 1 if uppercase, 0 otherwise
+	/// @example 65 unicode::is_upper print  // 1
+	pub fn is_upper(c:i64 -- result:i64)
 
-/// Check if character is a lowercase letter (a-z).
-/// @param c i64 Character code
-/// @return result i64 1 if lowercase, 0 otherwise
-/// @example 97 unicode::is_lower print  // 1
-pub fn is_lower(c:i64 -- result:i64) {
-	c a >= c z <= *
-}
+	/// Check if a codepoint is a lowercase letter.
+	/// @param c i64 Character code
+	/// @return result i64 1 if lowercase, 0 otherwise
+	/// @example 97 unicode::is_lower print  // 1
+	pub fn is_lower(c:i64 -- result:i64)
 
-/// Check if character is an alphabetic letter (A-Z or a-z).
-/// @param c i64 Character code
-/// @return result i64 1 if alphabetic, 0 otherwise
-/// @example 65 unicode::is_alpha print  // 1
-pub fn is_alpha(c:i64 -- result:i64) {
-	c is_upper c is_lower or
-}
+	/// Check if a codepoint is a letter, in any script.
+	/// @param c i64 Character code
+	/// @return result i64 1 if a letter, 0 otherwise
+	/// @example 233 unicode::is_alpha print  // 1
+	pub fn is_alpha(c:i64 -- result:i64)
 
-/// Check if character is alphanumeric (A-Z, a-z, or 0-9).
-/// @param c i64 Character code
-/// @return result i64 1 if alphanumeric, 0 otherwise
-/// @example 65 unicode::is_alnum print  // 1
-pub fn is_alnum(c:i64 -- result:i64) {
-	c is_alpha c is_digit or
-}
+	/// Check if a codepoint is a letter or a decimal digit.
+	/// @param c i64 Character code
+	/// @return result i64 1 if alphanumeric, 0 otherwise
+	/// @example 233 unicode::is_alnum print  // 1
+	pub fn is_alnum(c:i64 -- result:i64)
 
-/// Check if character is whitespace (space, tab, newline, carriage return).
-/// @param c i64 Character code
-/// @return result i64 1 if whitespace, 0 otherwise
-/// @example 32 unicode::is_space print  // 1
-pub fn is_space(c:i64 -- result:i64) {
-	c space == c tab == or c newline == or c cr == or
-}
+	/// Check if a codepoint is whitespace.
+	/// Includes the Unicode spaces, so a pasted non-breaking space counts.
+	/// @param c i64 Character code
+	/// @return result i64 1 if whitespace, 0 otherwise
+	/// @example 32 unicode::is_space print  // 1
+	pub fn is_space(c:i64 -- result:i64)
 
-/// Convert uppercase letter to lowercase.
-/// @param c i64 Character code
-/// @return result i64 Lowercase character code (unchanged if not uppercase)
-/// @example 65 unicode::to_lower print  // 97
-pub fn to_lower(c:i64 -- result:i64) {
-	c is_upper if {
-		c A - a +
-	} else {
-		c
-	}
-}
+	/// Check if a codepoint is a control character (C0, C1 and delete).
+	/// @param c i64 Character code
+	/// @return result i64 1 if a control character, 0 otherwise
+	/// @example 10 unicode::is_control print  // 1 (newline)
+	pub fn is_control(c:i64 -- result:i64)
 
-/// Convert lowercase letter to uppercase.
-/// @param c i64 Character code
-/// @return result i64 Uppercase character code (unchanged if not lowercase)
-/// @example 97 unicode::to_upper print  // 65
-pub fn to_upper(c:i64 -- result:i64) {
-	c is_lower if {
-		c a - A +
-	} else {
-		c
-	}
+	/// Check if a codepoint is printable, which is anything that is not a control character.
+	/// @param c i64 Character code
+	/// @return result i64 1 if printable, 0 otherwise
+	/// @example 65 unicode::is_print print  // 1
+	pub fn is_print(c:i64 -- result:i64)
+
+	/// Check if a codepoint is punctuation or a symbol.
+	/// Printable, and none of letter, digit or whitespace.
+	/// @param c i64 Character code
+	/// @return result i64 1 if punctuation, 0 otherwise
+	/// @example 33 unicode::is_punct print  // 1 (!)
+	pub fn is_punct(c:i64 -- result:i64)
+
+	/// Convert a codepoint to lowercase, or return it unchanged if it does not case.
+	/// @param c i64 Character code
+	/// @return result i64 Lowercase codepoint
+	/// @example 201 unicode::to_lower print  // 233
+	pub fn to_lower(c:i64 -- result:i64)
+
+	/// Convert a codepoint to uppercase, or return it unchanged if it does not case.
+	/// Mappings that would change length, such as U+00DF to "SS", are not applied: this
+	/// returns one codepoint. strings::upper has the same limit for the same reason.
+	/// @param c i64 Character code
+	/// @return result i64 Uppercase codepoint
+	/// @example 233 unicode::to_upper print  // 201
+	pub fn to_upper(c:i64 -- result:i64)
 }
 
 /// Check if character is a hexadecimal digit (0-9, A-F, a-f).
@@ -277,52 +279,30 @@ pub fn to_upper(c:i64 -- result:i64) {
 /// @return result i64 1 if hex digit, 0 otherwise
 /// @example 65 unicode::is_hex_digit print  // 1 (A)
 pub fn is_hex_digit(c:i64 -- result:i64) {
-	c is_digit
+	c unicode::is_digit
 	c A >= c F <= and or
 	c a >= c f <= and or
 }
 
-/// Check if character is printable (space through tilde, ASCII 32-126).
-/// @param c i64 Character code
-/// @return result i64 1 if printable, 0 otherwise
-/// @example 65 unicode::is_print print  // 1
-pub fn is_print(c:i64 -- result:i64) {
-	c space >= c tilde <= and
-}
-
-/// Check if character is a control character (ASCII 0-31 and 127).
-/// @param c i64 Character code
-/// @return result i64 1 if control character, 0 otherwise
-/// @example 10 unicode::is_control print  // 1 (newline)
-pub fn is_control(c:i64 -- result:i64) {
-	c 0 >= c 31 <= and
-	c 127 == or
-}
-
-/// Check if character is punctuation (printable but not alphanumeric or space).
-/// @param c i64 Character code
-/// @return result i64 1 if punctuation, 0 otherwise
-/// @example 33 unicode::is_punct print  // 1 (!)
-pub fn is_punct(c:i64 -- result:i64) {
-	c is_print
-	c is_alnum 0 == and
-	c space != and
-}
-
-/// Check if character is a valid identifier start (letter or underscore).
+/// Check if character is a valid identifier start (ASCII letter or underscore).
+/// Deliberately ASCII: specification 2 restricts identifiers to ASCII letters, digits and
+/// underscores, so this must not follow is_alpha into the rest of Unicode.
 /// @param c i64 Character code
 /// @return result i64 1 if valid identifier start, 0 otherwise
 /// @example 95 unicode::is_ident_start print  // 1 (_)
 pub fn is_ident_start(c:i64 -- result:i64) {
-	c is_alpha c underscore == or
+	c A >= c Z <= and
+	c a >= c z <= and or
+	c underscore == or
 }
 
-/// Check if character is a valid identifier continuation (letter, digit, or underscore).
+/// Check if character is a valid identifier continuation (ASCII letter, digit or underscore).
 /// @param c i64 Character code
 /// @return result i64 1 if valid identifier continuation, 0 otherwise
 /// @example 95 unicode::is_ident_cont print  // 1 (_)
 pub fn is_ident_cont(c:i64 -- result:i64) {
-	c is_alnum c underscore == or
+	c is_ident_start
+	c digit0 >= c digit9 <= and or
 }
 
 /// Check if character is ASCII (0-127).
@@ -338,7 +318,7 @@ pub fn is_ascii(c:i64 -- result:i64) {
 /// @return result i64 Numeric value (0-9), or -1 if not a digit
 /// @example 53 unicode::digit_value print  // 5
 pub fn digit_value(c:i64 -- result:i64) {
-	c is_digit if {
+	c unicode::is_digit if {
 		c digit0 -
 	} else {
 		-1
@@ -350,7 +330,7 @@ pub fn digit_value(c:i64 -- result:i64) {
 /// @return result i64 Numeric value (0-15), or -1 if not a hex digit
 /// @example 65 unicode::hex_digit_value print  // 10 (A)
 pub fn hex_digit_value(c:i64 -- result:i64) {
-	c is_digit if {
+	c unicode::is_digit if {
 		c digit0 -
 	} else {
 		c A >= c F <= and if {

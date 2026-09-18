@@ -79,8 +79,15 @@ namespace Qd {
 		// Returns 0 if valid, > 0 if errors were found
 		// If isModuleFile is true, missing module imports will not be reported as errors
 		// If werror is true, warnings are treated as errors
+		// Writes every computed signature to stderr when QUADC_DUMP_SIGNATURES is set. The
+		// reference for consolidating the five signature builders (see the definition).
+		void dumpFunctionSignatures() const;
+
 		// Whether a value of type `actual` may initialise a field declared `expected`.
 		bool fieldTypesCompatible(const std::string& expected, const std::string& actual) const;
+
+		// Warns when a `switch` over one enum's variants misses some and has no `_` arm.
+		void checkEnumSwitchExhaustive(IAstNode* switchNode, const std::vector<class AstNodeCase*>& cases);
 
 		// The canonical spelling of a struct type name: an unqualified name that is not local but
 		// is exported by an imported module becomes `module::Name`, so the two spellings of the
@@ -250,6 +257,8 @@ namespace Qd {
 		// Helper: Look up struct field types, handling both qualified and unqualified names
 		const std::unordered_map<std::string, StackValueType>* lookupStructFieldTypes(
 				const std::string& typeName) const;
+		void checkModuleUnqualifiedImportCalls(IAstNode* node, const std::string& moduleName,
+				const std::unordered_map<std::string, ImportedFunctionInfo>& imports);
 		void collectModuleImportedFunctions(IAstNode* node, const std::string& moduleName,
 				std::unordered_map<std::string, ImportedFunctionInfo>& imports);
 
@@ -360,6 +369,11 @@ namespace Qd {
 
 		// Symbol table: all defined enums
 		std::unordered_set<std::string> mDefinedEnums;
+		// Variant names of each enum, in declaration order, keyed by the name a `switch` case label
+		// spells before the `::` -- so both `Status` and `mymod::Status` for a module's enum. Needed to
+		// tell which variants a switch does not handle; mConstantValues holds the values but cannot
+		// answer "which variants does this enum have".
+		std::unordered_map<std::string, std::vector<std::string>> mEnumVariants;
 
 		// Symbol table: type aliases (name → target type string)
 		std::unordered_map<std::string, std::string> mTypeAliases;

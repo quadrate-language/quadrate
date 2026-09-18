@@ -459,7 +459,7 @@ Exponential function (e^x).
 
 ### `fn` fac
 
-Factorial (n!).
+Factorial of a non-negative integer.
 
 **Signature:** `(n:i64 -- result:i64)`
 
@@ -543,6 +543,23 @@ Hypotenuse (Euclidean distance). Computes sqrt(x² + y²) without intermediate o
 ```
 ---
 
+### `fn` inf
+
+Positive infinity. Infinity is not writable as a literal, so this is the only way to name it.
+
+**Signature:** `( -- result:f64)`
+
+| Output | Type | Description |
+|--------|------|-------------|
+| `result` | `f64` | +INF |
+
+**Example:**
+
+```qd
+math::inf print  // inf
+```
+---
+
 ### `fn` inverse_lerp
 
 Inverse lerp - find t given a value between a and b.
@@ -584,6 +601,69 @@ Reciprocal (1/x).
 
 ```qd
 4.0 math::inv print  // 0.25
+```
+---
+
+### `fn` is_finite
+
+Is x neither infinite nor NaN?
+
+**Signature:** `(x:f64 -- result:i64)`
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `x` | `f64` | Any value |
+
+| Output | Type | Description |
+|--------|------|-------------|
+| `result` | `i64` | 1 if x is finite, else 0 |
+
+**Example:**
+
+```qd
+1.0 math::is_finite print  // 1
+```
+---
+
+### `fn` is_inf
+
+Is x positive or negative infinity?
+
+**Signature:** `(x:f64 -- result:i64)`
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `x` | `f64` | Any value |
+
+| Output | Type | Description |
+|--------|------|-------------|
+| `result` | `i64` | 1 if x is infinite, else 0 |
+
+**Example:**
+
+```qd
+1.0 0.0 / math::is_inf print  // 1
+```
+---
+
+### `fn` is_nan
+
+Is x Not-a-Number?
+
+**Signature:** `(x:f64 -- result:i64)`
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `x` | `f64` | Any value |
+
+| Output | Type | Description |
+|--------|------|-------------|
+| `result` | `i64` | 1 if x is NaN, else 0 |
+
+**Example:**
+
+```qd
+0.0 0.0 / math::is_nan print  // 1
 ```
 ---
 
@@ -736,6 +816,23 @@ Minimum of two values.
 
 ```qd
 3 7 math::min print  // 3
+```
+---
+
+### `fn` nan
+
+Not-a-Number. NaN compares unequal to everything, including itself -- test it with is_nan.
+
+**Signature:** `( -- result:f64)`
+
+| Output | Type | Description |
+|--------|------|-------------|
+| `result` | `f64` | NaN |
+
+**Example:**
+
+```qd
+math::nan math::is_nan print  // 1
 ```
 ---
 

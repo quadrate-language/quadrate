@@ -404,7 +404,7 @@ Check if path is a symbolic link. Does not follow the link to check if the targe
 
 ### `fn` list
 
-List directory contents.
+List directory contents. so the bindings read in reverse of the declared outputs
 
 **Signature:** `(path:str -- entries:ptr count:i64)!`
 
@@ -425,8 +425,7 @@ List directory contents.
 **Example:**
 
 ```qd
-"/tmp" os::list! -> count -> entries   // `->` binds top-of-stack first,
-// so the bindings read in reverse of the declared outputs
+"/tmp" os::list! -> count  // entries   // `->` binds top-of-stack first,
 ```
 ---
 
@@ -612,7 +611,7 @@ Create a symbolic link.
 
 ### `fn` system
 
-Execute a shell command.
+Execute a shell command. SECURITY: cmd is passed to the system shell (/bin/sh -c). Never build it from untrusted input - that is a shell-injection vector. If you need to run a program with dynamic arguments, prefer os::exec with a fixed command and validated inputs.
 
 **Signature:** `(cmd:str -- exitcode:i64)`
 
@@ -645,6 +644,27 @@ Unset environment variable.
 
 ```qd
 "MY_VAR" os::unsetenv
+```
+---
+
+### `fn` urandom
+
+Get a cryptographically secure random 64-bit value from the OS entropy pool (/dev/urandom). Suitable for seeds, tokens, and nonces.
+
+**Signature:** `( -- n:i64)!`
+
+| Output | Type | Description |
+|--------|------|-------------|
+| `n` | `i64` | Secure random 64-bit value |
+
+| Error | Description |
+|-------|-------------|
+| `os::ErrIo` | Failed to read from the entropy source |
+
+**Example:**
+
+```qd
+os::urandom!  // n
 ```
 ---
 

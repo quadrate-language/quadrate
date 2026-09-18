@@ -133,6 +133,30 @@ TEST(UnderflowIsRefusedNotFatal) {
 	qd_interp_destroy(interp);
 }
 
+TEST(CastIsTotalSoStringsAreRefused) {
+	qd_interp* interp = qd_interp_create(256);
+
+	// 'cast' must always produce a value, so the one direction that can fail is not offered.
+	// It used to answer 0, which is also what "0" parses to, so a failure was undetectable.
+	ASSERT(!qd_interp_eval(interp, "clear \"notanumber\" cast<i64>"), "string to int is refused");
+	ASSERT(std::strstr(qd_interp_error(interp), "cannot be cast to an integer") != nullptr, "and says why");
+	ASSERT(std::strstr(qd_interp_error(interp), "strconv") != nullptr, "and points at strconv");
+
+	ASSERT(!qd_interp_eval(interp, "clear \"1.5\" cast<f64>"), "string to float is refused too");
+	ASSERT(std::strstr(qd_interp_error(interp), "cannot be cast to a float") != nullptr, "with the float wording");
+
+	// A well-formed numeral is refused just the same: the point is that the operation has no
+	// way to report failure, not that this particular string would have failed.
+	ASSERT(!qd_interp_eval(interp, "clear \"42\" cast<i64>"), "a parseable string is refused as well");
+
+	// The total directions are untouched.
+	ASSERT(std::strcmp(top(interp, "clear 3.9 cast<i64>"), "3") == 0, "float to int still truncates");
+	ASSERT(std::strcmp(top(interp, "clear 7 cast<f64>"), "7") == 0, "int to float still works");
+	ASSERT(std::strcmp(top(interp, "clear 42 cast<str>"), "\"42\"") == 0, "any to string still works");
+
+	qd_interp_destroy(interp);
+}
+
 TEST(FatalRuntimeErrorsAreRecovered) {
 	// Each of these called _exit(1) before the runtime grew a recovery mode.
 	// They are the reason interpreted code can be typed by a person.
@@ -141,7 +165,12 @@ TEST(FatalRuntimeErrorsAreRecovered) {
 	ASSERT(!qd_interp_eval(interp, "1 0 /"), "integer division by zero fails");
 	ASSERT(std::strstr(qd_interp_error(interp), "Division by zero") != nullptr, "with the runtime's message");
 
-	ASSERT(!qd_interp_eval(interp, "clear 1.0 0.0 /"), "float division by zero fails");
+	// Float division by zero is NOT one of these: IEEE 754 defines it as +/-infinity,
+	// and 0.0/0.0 as NaN. It used to abort here while the compiled path -- a bare fdiv --
+	// returned infinity for the same expression.
+	ASSERT(std::strcmp(top(interp, "clear 1.0 0.0 /"), "inf") == 0, "float division by zero is +infinity");
+	ASSERT(std::strcmp(top(interp, "clear -1.0 0.0 /"), "-inf") == 0, "negative numerator gives -infinity");
+	ASSERT(qd_interp_eval(interp, "clear 0.0 0.0 /"), "0.0/0.0 is NaN, not an error");
 
 	ASSERT(!qd_interp_eval(interp, "clear \"abc\" 1 +"), "adding a string to an int fails");
 	ASSERT(std::strstr(qd_interp_error(interp), "Type error") != nullptr, "with a type error");

@@ -1,0 +1,17 @@
+// 'cast' is a total conversion: every direction it offers must always produce an answer.
+// String -> numeric is not total, and it used to report failure as the value 0, so
+// "notanumber" cast<i64> and "0" cast<i64> were indistinguishable, and "42abc" silently
+// became 42. strconv has the fallible versions.
+fn main() {
+	"notanumber" cast<i64> print nl
+	"nope" cast<f64> print nl
+
+	// through a local, not just a literal
+	"12x" -> s
+	s cast<i64> print nl
+
+	// the other directions are still fine
+	3.9 cast<i64> print nl
+	7 cast<f64> print nl
+	42 cast<str> print nl
+}

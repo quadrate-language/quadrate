@@ -657,23 +657,44 @@ namespace Qd {
 					continue;
 				}
 
+				// A nested array literal has to be recognised *before* parseSimpleToken sees
+				// it: that function reports "Unexpected character '['" for anything it has no
+				// branch for, so the recovery attempt that used to live in the else below ran
+				// only after the diagnostic had already been emitted, and `[[1 2] [3 4]]` --
+				// which specification.md 3.2.2 documents -- failed to parse.
+				if (elemToken == '[') {
+					IAstNode* nestedArr = parseBlockStatement(elemToken, scanner, errorReporter, n, src, false);
+					if (nestedArr) {
+						arrNode->addElement(nestedArr);
+					} else {
+						break;
+					}
+					continue;
+				}
+
+				// An identifier element goes through parseBlockStatement too, which is where
+				// `Name { ... }` becomes a struct construction. parseSimpleToken returns a bare
+				// identifier node and leaves the '{' for the loop to choke on, so
+				// `[ P { x = 1 } P { x = 2 } ]` reported "Unexpected character '{'" and then
+				// spilled the rest of the literal into the top level as four more errors.
+				if (elemToken == U8T_IDENTIFIER) {
+					IAstNode* identElem = parseBlockStatement(elemToken, scanner, errorReporter, n, src, false);
+					if (identElem) {
+						arrNode->addElement(identElem);
+					} else {
+						break;
+					}
+					continue;
+				}
+
 				// Parse the element
 				IAstNode* elem = parseSimpleToken(elemToken, scanner, errorReporter, n, src);
 				if (elem) {
 					arrNode->addElement(elem);
 				} else {
-					// Try to parse as a nested array
-					if (elemToken == '[') {
-						// Recursive array literal
-						IAstNode* nestedArr = parseBlockStatement(elemToken, scanner, errorReporter, n, src, false);
-						if (nestedArr) {
-							arrNode->addElement(nestedArr);
-						}
-					} else {
-						// Unknown token in array literal
-						errorReporter->reportError(scanner, "Unexpected token in array literal");
-						break;
-					}
+					// Unknown token in array literal
+					errorReporter->reportError(scanner, "Unexpected token in array literal");
+					break;
 				}
 			}
 

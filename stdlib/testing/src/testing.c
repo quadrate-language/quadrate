@@ -71,6 +71,7 @@ int usr_testing_assert_eq(qd_context* ctx) {
 	if (stack_size < 2) {
 		fprintf(stderr, "Assertion error: assert_eq requires 2 values on stack, have %zu\n", stack_size);
 		qd_print_stack_trace(ctx);
+		qd_assertion_failed(ctx);
 		return (int){1};
 	}
 
@@ -96,6 +97,7 @@ int usr_testing_assert_eq(qd_context* ctx) {
 		print_element_value(stderr, &b);
 		fprintf(stderr, " (%s)\n", get_type_name(b.type));
 		qd_print_stack_trace(ctx);
+		qd_assertion_failed(ctx);
 		release_element(&a);
 		release_element(&b);
 		return (int){1};
@@ -112,6 +114,7 @@ int usr_testing_assert_ne(qd_context* ctx) {
 	if (stack_size < 2) {
 		fprintf(stderr, "Assertion error: assert_ne requires 2 values on stack, have %zu\n", stack_size);
 		qd_print_stack_trace(ctx);
+		qd_assertion_failed(ctx);
 		return (int){1};
 	}
 
@@ -134,6 +137,7 @@ int usr_testing_assert_ne(qd_context* ctx) {
 		print_element_value(stderr, &a);
 		fprintf(stderr, " (%s)\n", get_type_name(a.type));
 		qd_print_stack_trace(ctx);
+		qd_assertion_failed(ctx);
 		release_element(&a);
 		release_element(&b);
 		return (int){1};
@@ -150,6 +154,7 @@ int usr_testing_assert_true(qd_context* ctx) {
 	if (stack_size < 1) {
 		fprintf(stderr, "Assertion error: assert_true requires 1 value on stack, have %zu\n", stack_size);
 		qd_print_stack_trace(ctx);
+		qd_assertion_failed(ctx);
 		return (int){1};
 	}
 
@@ -184,6 +189,7 @@ int usr_testing_assert_true(qd_context* ctx) {
 		print_element_value(stderr, &v);
 		fprintf(stderr, " (%s) is not truthy\n", get_type_name(v.type));
 		qd_print_stack_trace(ctx);
+		qd_assertion_failed(ctx);
 		release_element(&v);
 		return (int){1};
 	}
@@ -198,6 +204,7 @@ int usr_testing_assert_false(qd_context* ctx) {
 	if (stack_size < 1) {
 		fprintf(stderr, "Assertion error: assert_false requires 1 value on stack, have %zu\n", stack_size);
 		qd_print_stack_trace(ctx);
+		qd_assertion_failed(ctx);
 		return (int){1};
 	}
 
@@ -232,6 +239,7 @@ int usr_testing_assert_false(qd_context* ctx) {
 		print_element_value(stderr, &v);
 		fprintf(stderr, " (%s) is not falsy\n", get_type_name(v.type));
 		qd_print_stack_trace(ctx);
+		qd_assertion_failed(ctx);
 		release_element(&v);
 		return (int){1};
 	}
@@ -246,6 +254,7 @@ int usr_testing_fail(qd_context* ctx) {
 	if (stack_size < 1) {
 		fprintf(stderr, "Test failed (no message provided)\n");
 		qd_print_stack_trace(ctx);
+		qd_assertion_failed(ctx);
 		return (int){1};
 	}
 
@@ -254,6 +263,7 @@ int usr_testing_fail(qd_context* ctx) {
 	if (err != QD_STACK_OK) {
 		fprintf(stderr, "Test failed (error reading message)\n");
 		qd_print_stack_trace(ctx);
+		qd_assertion_failed(ctx);
 		return (int){1};
 	}
 
@@ -265,6 +275,7 @@ int usr_testing_fail(qd_context* ctx) {
 		fprintf(stderr, "\n");
 	}
 	qd_print_stack_trace(ctx);
+		qd_assertion_failed(ctx);
 
 	release_element(&msg);
 	return (int){1};
@@ -278,6 +289,7 @@ static int pop_two_strings(qd_context* ctx, const char* func_name,
 	if (stack_size < 2) {
 		fprintf(stderr, "Assertion error: %s requires 2 strings on stack, have %zu\n", func_name, stack_size);
 		qd_print_stack_trace(ctx);
+		qd_assertion_failed(ctx);
 		return 1;
 	}
 
@@ -295,6 +307,7 @@ static int pop_two_strings(qd_context* ctx, const char* func_name,
 		fprintf(stderr, "Assertion error: %s requires 2 strings, got %s and %s\n",
 				func_name, get_type_name(haystack->type), get_type_name(needle->type));
 		qd_print_stack_trace(ctx);
+		qd_assertion_failed(ctx);
 		release_element(haystack);
 		release_element(needle);
 		return 1;
@@ -319,6 +332,7 @@ int usr_testing_assert_contains(qd_context* ctx) {
 		fprintf(stderr, "  string: \"%s\"\n", h);
 		fprintf(stderr, "  does not contain: \"%s\"\n", n);
 		qd_print_stack_trace(ctx);
+		qd_assertion_failed(ctx);
 		release_element(&haystack);
 		release_element(&needle);
 		return (int){1};
@@ -346,6 +360,7 @@ int usr_testing_assert_starts_with(qd_context* ctx) {
 		fprintf(stderr, "  string: \"%s\"\n", h);
 		fprintf(stderr, "  does not start with: \"%s\"\n", n);
 		qd_print_stack_trace(ctx);
+		qd_assertion_failed(ctx);
 		release_element(&haystack);
 		release_element(&needle);
 		return (int){1};
@@ -374,6 +389,7 @@ int usr_testing_assert_ends_with(qd_context* ctx) {
 		fprintf(stderr, "  string: \"%s\"\n", h);
 		fprintf(stderr, "  does not end with: \"%s\"\n", n);
 		qd_print_stack_trace(ctx);
+		qd_assertion_failed(ctx);
 		release_element(&haystack);
 		release_element(&needle);
 		return (int){1};
@@ -390,6 +406,7 @@ int usr_testing_assert_approx_eq(qd_context* ctx) {
 	if (stack_size < 3) {
 		fprintf(stderr, "Assertion error: assert_approx_eq requires 3 values on stack (a b epsilon), have %zu\n", stack_size);
 		qd_print_stack_trace(ctx);
+		qd_assertion_failed(ctx);
 		return (int){1};
 	}
 
@@ -415,6 +432,7 @@ int usr_testing_assert_approx_eq(qd_context* ctx) {
 		fprintf(stderr, "Assertion error: assert_approx_eq requires 3 floats\n");
 		fprintf(stderr, "  got: %s, %s, %s\n", get_type_name(a.type), get_type_name(b.type), get_type_name(epsilon.type));
 		qd_print_stack_trace(ctx);
+		qd_assertion_failed(ctx);
 		release_element(&a);
 		release_element(&b);
 		release_element(&epsilon);
@@ -435,6 +453,7 @@ int usr_testing_assert_approx_eq(qd_context* ctx) {
 		fprintf(stderr, "      diff: %g\n", diff);
 		fprintf(stderr, "   epsilon: %g\n", epsilon.value.f);
 		qd_print_stack_trace(ctx);
+		qd_assertion_failed(ctx);
 		release_element(&a);
 		release_element(&b);
 		release_element(&epsilon);

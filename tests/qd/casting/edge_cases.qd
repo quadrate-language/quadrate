@@ -1,4 +1,5 @@
 // Test: casting edge cases
+use strconv
 use limits
 
 fn main() {
@@ -23,18 +24,19 @@ fn main() {
 	limits::I32Max cast<f64> cast<i64> print nl    // 2147483647 (should round-trip)
 	limits::I32Min cast<f64> cast<i64> print nl    // -2147483648
 
-	// String parsing edge cases
+	// String parsing edge cases. These go through strconv: 'cast' rejects string -> numeric
+	// because it cannot report a parse failure (casting/str_numeric).
 	"=== String parsing ===" print nl
-	"0" cast<i64> print nl            // 0
-	"-0" cast<i64> print nl           // 0
-	"   42" cast<i64> print nl        // 42 (leading whitespace)
-	"-123" cast<i64> print nl         // -123
-	"+456" cast<i64> print nl         // 456
-	"0.0" cast<f64> print nl          // 0.0
-	"-0.0" cast<f64> print nl         // -0.0 or 0.0
-	".5" cast<f64> print nl           // 0.5
-	"1e5" cast<f64> print nl          // 100000.0
-	"-1e-5" cast<f64> print nl        // -0.00001
+	"0" strconv::atoi! print nl                  // 0
+	"-0" strconv::atoi! print nl                 // 0
+	"   42" strconv::atoi! print nl              // 42 (leading whitespace)
+	"-123" strconv::atoi! print nl               // -123
+	"+456" strconv::atoi! print nl               // 456
+	"0.0" strconv::parse_float! print nl         // 0.0
+	"-0.0" strconv::parse_float! print nl        // -0.0 or 0.0
+	".5" strconv::parse_float! print nl          // 0.5
+	"1e5" strconv::parse_float! print nl         // 100000.0
+	"-1e-5" strconv::parse_float! print nl       // -0.00001
 
 	// Integer to string
 	"=== Int to string ===" print nl
@@ -51,7 +53,7 @@ fn main() {
 
 	// Chained casts
 	"=== Chained casts ===" print nl
-	"100" cast<i64> cast<f64> cast<str> cast<f64> cast<i64> print nl  // 100
+	"100" strconv::atoi! cast<f64> cast<str> strconv::parse_float! cast<i64> print nl  // 100
 	3.7 cast<i64> cast<str> print nl  // "3" (truncates then converts)
 
 	"done" print nl

@@ -322,14 +322,19 @@ test "strings::is_uppercase" {
 	"" strings::is_uppercase testing::assert_false
 }
 
-test "strings::char_count" {
-	"hello" strings::char_count 5 testing::assert_eq
-	"" strings::char_count 0 testing::assert_eq
-	"abc" strings::char_count 3 testing::assert_eq
-	// UTF-8 multi-byte characters (each is 2-4 bytes but 1 codepoint)
-	"héllo" strings::char_count 5 testing::assert_eq
-	"日本語" strings::char_count 3 testing::assert_eq
-	"🎉" strings::char_count 1 testing::assert_eq
+test "strings::byte_len" {
+	// len counts characters; byte_len is the size of the encoding, so the two differ
+	// exactly where a character needs more than one byte.
+	"hello" strings::byte_len 5 testing::assert_eq
+	"" strings::byte_len 0 testing::assert_eq
+	"abc" strings::byte_len 3 testing::assert_eq
+
+	"héllo" strings::byte_len 6 testing::assert_eq
+	"héllo" strings::len 5 testing::assert_eq
+	"日本語" strings::byte_len 9 testing::assert_eq
+	"日本語" strings::len 3 testing::assert_eq
+	"🎉" strings::byte_len 4 testing::assert_eq
+	"🎉" strings::len 1 testing::assert_eq
 }
 
 test "strings::slice" {

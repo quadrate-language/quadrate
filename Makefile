@@ -63,7 +63,7 @@ COMPLETION_LINKS := $(filter-out quad,$(ALL_CMDS))
 TOOLCHAIN_LIBS_WITH_C := rt qd qc interp
 
 # Standard library modules with C components (directory names under stdlib/)
-STDLIB_LIBS_WITH_C := fmt io math mem net os signal strings strconv time thread testing tty tls http log
+STDLIB_LIBS_WITH_C := fmt io math mem net os signal strings strconv time thread testing tty tls http log unicode
 
 LIBS_WITH_C := $(TOOLCHAIN_LIBS_WITH_C) $(STDLIB_LIBS_WITH_C)
 

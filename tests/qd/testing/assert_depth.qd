@@ -1,0 +1,47 @@
+// An assertion must fail its test however deep the call is.
+//
+// Assertions report failure by returning a non-zero exec result, and a test block can only
+// check the calls it emits itself. One frame deeper -- inside a helper, or inside testing's
+// own assert_gt, which is Quadrate wrapping the C assert_true -- the return value had nowhere
+// to go: the failure printed its message and a full stack trace, and the test still passed.
+// The runtime now records assertion failures on the context, where depth does not matter.
+//
+// This file asserts the *passing* direction at each depth; the failing direction cannot be
+// expressed here, since a failing test fails the run. See the isolated checks in the review
+// notes for R45.
+use testing
+
+fn via_helper(a:i64 b:i64 -- ) {
+	a b > testing::assert_true
+}
+
+fn via_two_frames(a:i64 b:i64 -- ) {
+	a b via_helper
+}
+
+test "assertion through one frame" {
+	5 3 via_helper
+}
+
+test "assertion through two frames" {
+	5 3 via_two_frames
+}
+
+test "the wrapper assertions are Quadrate and go through the same path" {
+	5 3 testing::assert_gt
+	3 5 testing::assert_lt
+	5 5 testing::assert_ge
+	5 5 testing::assert_le
+	5 1 10 testing::assert_in_range
+	7 testing::assert_positive
+	-7 testing::assert_negative
+	0 testing::assert_zero
+	7 testing::assert_nonzero
+	5.0 3.0 testing::assert_gt_f
+	3.0 5.0 testing::assert_lt_f
+}
+
+test "a direct assertion still works" {
+	1 testing::assert_true
+	0 testing::assert_false
+}

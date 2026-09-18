@@ -925,6 +925,9 @@ namespace Qd {
 		std::unordered_map<std::string, ImportedFunctionInfo> moduleImports;
 		collectModuleImportedFunctions(moduleAstRoot, moduleName, moduleImports);
 
+		// ... and reject the module's own bodies calling them without the module name.
+		checkModuleUnqualifiedImportCalls(moduleAstRoot, moduleName, moduleImports);
+
 		// Store the collected imported functions
 		if (mModuleImportedFunctions.find(moduleName) != mModuleImportedFunctions.end()) {
 			// Merge: add new imported functions to existing map
@@ -1177,6 +1180,59 @@ namespace Qd {
 		}
 	}
 
+	// Reports a bare reference to one of this module's own imported functions.
+	//
+	// Inside the module that declares the import, `c is_digit` reads as the natural spelling,
+	// but it does not resolve to the import. Nothing modelled its stack effect, so the call
+	// left an extra value behind: `c is_digit if { ... }` in unicode.qd consumed that instead
+	// of the result and always took the true branch, and digit_value answered 17 for 'A'
+	// rather than -1. No diagnostic, wrong data.
+	//
+	// The module's own bodies are not run through typeCheckBlock when a program imports it,
+	// which is why this is a walk of its own rather than a case in the type checker. It is a
+	// purely syntactic match: only a name declared in this module's import block counts, and
+	// the qualified form is a SCOPED_IDENTIFIER, so it never matches here.
+	void SemanticValidator::checkModuleUnqualifiedImportCalls(IAstNode* node, const std::string& moduleName,
+			const std::unordered_map<std::string, ImportedFunctionInfo>& imports) {
+		if (!node || imports.empty()) {
+			return;
+		}
+
+		// An import block declares the names; it does not call them.
+		if (node->type() == IAstNode::Type::IMPORT_STATEMENT) {
+			return;
+		}
+
+		if (node->type() == IAstNode::Type::IDENTIFIER || node->type() == IAstNode::Type::INSTRUCTION) {
+			const std::string& name = (node->type() == IAstNode::Type::IDENTIFIER)
+											  ? static_cast<AstNodeIdentifier*>(node)->name()
+											  : static_cast<AstNodeInstruction*>(node)->name();
+			if (imports.find(name) != imports.end()) {
+				// Reported without a node: the position belongs to the module's source, but the
+				// reporter names the file being compiled, so anchoring it here would point the
+				// caret at an unrelated line of the importing program. The module and line go in
+				// the text instead.
+				std::string err = "in module '";
+				err += moduleName;
+				err += "' (line ";
+				err += std::to_string(node->line());
+				err += "): '";
+				err += name;
+				err += "' is imported by that module and must be called as '";
+				err += moduleName;
+				err += "::";
+				err += name;
+				err += "'. An unqualified call does not resolve to the import, and leaves the stack wrong "
+					   "rather than failing";
+				reportError(err.c_str());
+			}
+		}
+
+		for (auto* child : node->children()) {
+			checkModuleUnqualifiedImportCalls(child, moduleName, imports);
+		}
+	}
+
 	void SemanticValidator::collectModuleConstantValues(
 			IAstNode* node, const std::string& moduleName, bool mergeIntoMain) {
 		if (!node) {
@@ -1199,10 +1255,18 @@ namespace Qd {
 		// If this is an enum declaration, store variant values
 		if (node->type() == IAstNode::Type::ENUM_DECLARATION) {
 			AstNodeEnumDeclaration* enumNode = static_cast<AstNodeEnumDeclaration*>(node);
+			// A case label inside the module spells the enum bare; one outside spells it
+			// module-qualified. Record both so the exhaustiveness check finds it either way.
+			std::vector<std::string>& bare = mEnumVariants[enumNode->name()];
+			std::vector<std::string>& qualified = mEnumVariants[moduleName + "::" + enumNode->name()];
+			bare.clear();
+			qualified.clear();
 			for (const auto& variant : enumNode->variants()) {
 				std::string scopedName = enumNode->name() + "::" + variant.name;
 				std::string qualifiedName = moduleName + "::" + scopedName;
 				mModuleConstantValues[qualifiedName] = std::to_string(variant.value);
+				bare.push_back(variant.name);
+				qualified.push_back(variant.name);
 				if (mergeIntoMain) {
 					mModuleConstantValues[scopedName] = std::to_string(variant.value);
 					mConstantValues[scopedName] = std::to_string(variant.value);

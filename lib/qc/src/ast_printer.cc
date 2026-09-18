@@ -82,6 +82,28 @@ namespace Qd {
 			return "AsCast";
 		case IAstNode::Type::ENUM_DECLARATION:
 			return "EnumDeclaration";
+		case IAstNode::Type::FIELD_SET:
+			return "FieldSet";
+		case IAstNode::Type::ARRAY_LITERAL:
+			return "ArrayLiteral";
+		case IAstNode::Type::ARRAY_INDEX:
+			return "ArrayIndex";
+		case IAstNode::Type::LOOP_STATEMENT:
+			return "LoopStatement";
+		case IAstNode::Type::IMPORT_STATEMENT:
+			return "ImportStatement";
+		case IAstNode::Type::GLOBAL_VAR_DECLARATION:
+			return "GlobalVarDeclaration";
+		case IAstNode::Type::FUNCTION_POINTER_REFERENCE:
+			return "FunctionPointerReference";
+		case IAstNode::Type::COMMENT:
+			return "Comment";
+		case IAstNode::Type::TEST_DECLARATION:
+			return "TestDeclaration";
+		case IAstNode::Type::ANONYMOUS_FUNCTION:
+			return "AnonymousFunction";
+		case IAstNode::Type::TYPE_ALIAS_DECLARATION:
+			return "TypeAliasDeclaration";
 		default:
 			return "Unknown";
 		}

@@ -137,6 +137,21 @@ int usr_math_fmod(qd_context* ctx);
 /** @brief Factorial - Stack Effect: ( n:i -- n!:i ) */
 int usr_math_fac(qd_context* ctx);
 
+/** @brief Positive infinity - Stack Effect: ( -- inf:f ) */
+int usr_math_inf(qd_context* ctx);
+
+/** @brief Not-a-Number - Stack Effect: ( -- nan:f ) */
+int usr_math_nan(qd_context* ctx);
+
+/** @brief Is NaN - Stack Effect: ( x:f -- flag:i ) */
+int usr_math_is_nan(qd_context* ctx);
+
+/** @brief Is infinite - Stack Effect: ( x:f -- flag:i ) */
+int usr_math_is_inf(qd_context* ctx);
+
+/** @brief Is finite - Stack Effect: ( x:f -- flag:i ) */
+int usr_math_is_finite(qd_context* ctx);
+
 /** @} */ // end of MathUtility group
 
 /**

@@ -729,6 +729,20 @@ namespace {
 				interp->error = "'cast<" + instruction->typeParam() + ">' is not a conversion this tier knows";
 				return false;
 			}
+			// 'cast' is total, so a string operand is refused for the numeric targets the
+			// same way the compiler refuses it: parsing can fail and there is nowhere to say
+			// so, and the old answer for a failure was the value 0. This tier can be exact
+			// about it -- the operand's type is right there on the stack.
+			if (cast.fn == qd_casti || cast.fn == qd_castf) {
+				qd_stack_element_t top;
+				if (qd_stack_size(interp->ctx->st) > 0 && qd_stack_peek(interp->ctx->st, &top) == QD_STACK_OK &&
+						top.type == QD_STACK_TYPE_STR) {
+					interp->error = std::string("a string cannot be cast to ") +
+									((cast.fn == qd_casti) ? "an integer" : "a float") +
+									"; use strconv (atoi, parse_int, parse_float), which can report a parse failure";
+					return false;
+				}
+			}
 		}
 
 		const std::unordered_map<std::string, BuiltinOp>& table = opTable();

@@ -23,6 +23,16 @@
   ],
   "functions": [
     {
+      "name": "byte_len",
+      "signature": "(s:str -- bytes:i64)",
+      "failable": false,
+      "description": "Size of the string's UTF-8 encoding, in bytes. strings::len counts characters; this is what you want when sizing a buffer or writing to something that counts octets.",
+      "params": [{"name": "s", "type": "str", "description": "Input string"}],
+      "returns": [{"name": "bytes", "type": "i64", "description": "Number of bytes"}],
+      "errors": [],
+      "examples": ["\"héllo\" strings::byte_len print  // 6"]
+    },
+    {
       "name": "capitalize",
       "signature": "(s:str -- result:str)",
       "failable": false,
@@ -46,21 +56,11 @@
       "name": "char_at",
       "signature": "(str:str index:i64 -- char_code:i64)",
       "failable": true,
-      "description": "Get character code at index.",
+      "description": "Get character code at index. The index counts characters and the result is a Unicode codepoint, so indexing never lands in the middle of a multi-byte character.",
       "params": [{"name": "str", "type": "str", "description": "Input string"}, {"name": "index", "type": "i64", "description": "Character position"}],
-      "returns": [{"name": "char_code", "type": "i64", "description": "ASCII/UTF-8 byte value"}],
+      "returns": [{"name": "char_code", "type": "i64", "description": "Unicode codepoint"}],
       "errors": [{"code": "ErrOutOfBounds", "description": "Index out of bounds"}],
-      "examples": ["\"hello\" 0 strings::char_at! print  // 104 ('h')"]
-    },
-    {
-      "name": "char_count",
-      "signature": "(s:str -- count:i64)",
-      "failable": false,
-      "description": "Count UTF-8 codepoints (characters, not bytes).",
-      "params": [{"name": "s", "type": "str", "description": "Input string"}],
-      "returns": [{"name": "count", "type": "i64", "description": "Number of UTF-8 codepoints"}],
-      "errors": [],
-      "examples": ["\"héllo\" strings::char_count print  // 5"]
+      "examples": ["\"héllo\" 1 strings::char_at! print  // 233 ('é')"]
     },
     {
       "name": "column",
@@ -146,11 +146,11 @@
       "name": "from_char",
       "signature": "(char_code:i64 -- str:str)",
       "failable": false,
-      "description": "Create string from character code.",
-      "params": [{"name": "char_code", "type": "i64", "description": "ASCII/UTF-8 byte value"}],
+      "description": "Create string from a Unicode codepoint, encoded as UTF-8. A value outside the Unicode range, or a surrogate, gives the empty string.",
+      "params": [{"name": "char_code", "type": "i64", "description": "Unicode codepoint"}],
       "returns": [{"name": "str", "type": "str", "description": "Single character string"}],
       "errors": [],
-      "examples": ["65 strings::from_char print  // \"A\""]
+      "examples": ["233 strings::from_char print  // \"é\""]
     },
     {
       "name": "from_ptr",
@@ -296,11 +296,11 @@
       "name": "len",
       "signature": "(str:str -- len:i64)",
       "failable": false,
-      "description": "Get string length in bytes.",
+      "description": "Get string length in characters. Counts UTF-8 codepoints, so \"héllo\" is 5 even though it occupies 6 bytes. Use strings::data for the byte buffer when byte extent is what you need.",
       "params": [{"name": "str", "type": "str", "description": "Input string"}],
-      "returns": [{"name": "len", "type": "i64", "description": "Length in bytes"}],
+      "returns": [{"name": "len", "type": "i64", "description": "Length in characters"}],
       "errors": [],
-      "examples": ["\"hello\" strings::len print  // 5"]
+      "examples": ["\"héllo\" strings::len print  // 5"]
     },
     {
       "name": "lines",

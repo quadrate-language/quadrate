@@ -1,0 +1,35 @@
+// Test: a switch covering every variant of an enum compiles without the exhaustiveness
+// warning and dispatches correctly. The `_` arm is still required when the switch produces a
+// value, because an enum variant is an i64 and the subject could hold any integer.
+enum Color {
+	Red
+	Green
+	Blue
+}
+
+fn name(c:i64 -- s:str) {
+	c switch {
+		Color::Red { "red" }
+		Color::Green { "green" }
+		Color::Blue { "blue" }
+		_ { "unknown" }
+	}
+}
+
+fn describe(c:i64 -- ) {
+	// Stack-neutral, so no `_` arm is needed
+	c switch {
+		Color::Red { "warm" print nl }
+		Color::Green { "cool" print nl }
+		Color::Blue { "cool" print nl }
+	}
+}
+
+fn main() {
+	Color::Red name print nl
+	Color::Green name print nl
+	Color::Blue name print nl
+	7 name print nl
+	Color::Red describe
+	Color::Blue describe
+}

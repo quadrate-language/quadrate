@@ -888,3 +888,37 @@ test "math::bezier3_vec3" {
 	r1 <<y 0.0 0.0001 testing::assert_approx_eq
 	r1 <<z 0.0 0.0001 testing::assert_approx_eq
 }
+
+test "math::inf and math::is_inf" {
+	math::inf math::is_inf testing::assert_true
+	math::inf math::is_finite testing::assert_false
+	math::inf math::is_nan testing::assert_false
+
+	// infinity is absorbing, and larger than any finite value
+	math::inf 1.0 + math::is_inf testing::assert_true
+	math::inf 1.0e300 > testing::assert_true
+
+	// reachable by division, which is defined for f64
+	1.0 0.0 / math::is_inf testing::assert_true
+	-1.0 0.0 / math::is_inf testing::assert_true
+	-1.0 0.0 / 0.0 < testing::assert_true
+}
+
+test "math::nan and math::is_nan" {
+	math::nan math::is_nan testing::assert_true
+	math::nan math::is_finite testing::assert_false
+	math::nan math::is_inf testing::assert_false
+
+	// NaN is unequal to everything, itself included -- which is why is_nan exists
+	math::nan math::nan == testing::assert_false
+	math::nan dup == testing::assert_false
+
+	0.0 0.0 / math::is_nan testing::assert_true
+}
+
+test "math::is_finite" {
+	0.0 math::is_finite testing::assert_true
+	1.0 math::is_finite testing::assert_true
+	-1.0e300 math::is_finite testing::assert_true
+	1.0 math::inf / math::is_finite testing::assert_true
+}

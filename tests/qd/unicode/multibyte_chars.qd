@@ -1,18 +1,19 @@
-// Test: multi-byte UTF-8 character handling
+// Test: multi-byte UTF-8 character handling.
+// str is UTF-8 and counts codepoints, so a character costs one regardless of its encoding.
 use strings
 
 fn main() {
-	// Byte lengths of different character types
-	"=== Byte lengths ===" print nl
-	"A" strings::len print nl        // 1 byte (ASCII)
-	"é" strings::len print nl        // 2 bytes (Latin-1 Supplement)
-	"世" strings::len print nl       // 3 bytes (CJK)
-	"🌍" strings::len print nl       // 4 bytes (emoji)
+	// Length is in characters, whatever each one costs in bytes
+	"=== Character lengths ===" print nl
+	"A" strings::len print nl        // 1 (ASCII, 1 byte)
+	"é" strings::len print nl        // 1 (Latin-1 Supplement, 2 bytes)
+	"世" strings::len print nl       // 1 (CJK, 3 bytes)
+	"🌍" strings::len print nl       // 1 (emoji, 4 bytes)
 
 	// String with mixed byte-width characters
 	"=== Mixed byte-widths ===" print nl
-	"Aé世🌍" strings::len print nl   // 1+2+3+4 = 10 bytes
-	"hello世界" strings::len print nl // 5+3+3 = 11 bytes
+	"Aé世🌍" strings::len print nl   // 4 characters, 10 bytes
+	"hello世界" strings::len print nl // 7 characters, 11 bytes
 
 	// Comparison with multi-byte
 	"=== Multi-byte comparison ===" print nl

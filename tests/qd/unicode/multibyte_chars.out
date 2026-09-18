@@ -1,11 +1,11 @@
-=== Byte lengths ===
+=== Character lengths ===
 1
-2
-3
-4
+1
+1
+1
 === Mixed byte-widths ===
-10
-11
+4
+7
 === Multi-byte comparison ===
 1
 1

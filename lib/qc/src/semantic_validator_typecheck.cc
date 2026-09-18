@@ -410,6 +410,63 @@ namespace Qd {
 		return unifyTypeName(expected, actual, {}, noBindings, mMergedModules, canon, why, true);
 	}
 
+	// Warns when a `switch` whose every arm names a variant of one enum leaves some variant
+	// unhandled and has no `_` arm -- the arm was probably forgotten, and with no `_` nothing runs.
+	//
+	// A warning rather than an error, deliberately: an enum variant is an `i64`, and nothing tracks
+	// that the value being switched on came from that enum, so this reads the author's intent off
+	// the case labels rather than off a type. Inferred intent should not be fatal. If a real sum
+	// type ever lands (R3) the subject would have a type and this could become an error.
+	void SemanticValidator::checkEnumSwitchExhaustive(IAstNode* switchNode, const std::vector<AstNodeCase*>& cases) {
+		std::string enumName;
+		std::unordered_set<std::string> covered;
+		for (const auto* caseNode : cases) {
+			if (caseNode->isDefault()) {
+				return; // a `_` arm handles whatever is left
+			}
+			IAstNode* label = caseNode->value();
+			if (!label || label->type() != IAstNode::Type::SCOPED_IDENTIFIER) {
+				return; // a literal or constant arm: this is not a switch over one enum
+			}
+			auto* scoped = static_cast<AstNodeScopedIdentifier*>(label);
+			if (enumName.empty()) {
+				enumName = scoped->scope();
+			} else if (enumName != scoped->scope()) {
+				return; // arms from two different enums
+			}
+			covered.insert(scoped->name());
+		}
+		if (enumName.empty()) {
+			return;
+		}
+		auto it = mEnumVariants.find(enumName);
+		if (it == mEnumVariants.end()) {
+			// The scope is not a known enum -- a module constant, say.
+			return;
+		}
+		std::vector<std::string> missing;
+		for (const std::string& variant : it->second) {
+			if (covered.find(variant) == covered.end()) {
+				missing.push_back(variant);
+			}
+		}
+		if (missing.empty()) {
+			return;
+		}
+		std::string msg = "switch on enum '" + enumName + "' does not handle ";
+		for (size_t i = 0; i < missing.size() && i < 4; i++) {
+			if (i > 0) {
+				msg += ", ";
+			}
+			msg += missing[i];
+		}
+		if (missing.size() > 4) {
+			msg += " and " + std::to_string(missing.size() - 4) + " more";
+		}
+		msg += "; add the missing arm(s), or a '_' arm if that is deliberate";
+		reportWarning(switchNode, msg.c_str());
+	}
+
 	std::string SemanticValidator::canonicalStructName(const std::string& name) const {
 		if (name.empty() || name.find("::") != std::string::npos || mDefinedStructs.count(name) > 0) {
 			return name;
@@ -1099,6 +1156,77 @@ namespace Qd {
 		typeCheckFunction(node);
 	}
 
+	namespace {
+		// Element type of an array literal, as a type *name* ("i64", "[]f64", "Point"), or an
+		// empty string when this element's type cannot be decided here.
+		//
+		// The validator does not walk an array literal's children, so before nested literals
+		// and non-literal elements worked this only ever looked at element zero and gave up
+		// on anything that was not a scalar literal. That is why `[x 2 3]` typed as `[]any`
+		// and could not be returned from a function declaring `[]i64`.
+		std::string arrayElementTypeName(
+				IAstNode* elem, const std::unordered_map<std::string, StackValueType>& localVariables) {
+			if (elem == nullptr) {
+				return "";
+			}
+			switch (elem->type()) {
+			case IAstNode::Type::LITERAL: {
+				auto* lit = static_cast<AstNodeLiteral*>(elem);
+				switch (lit->literalType()) {
+				case AstNodeLiteral::LiteralType::INTEGER:
+				case AstNodeLiteral::LiteralType::BOOL:
+					return "i64";
+				case AstNodeLiteral::LiteralType::FLOAT:
+					return "f64";
+				case AstNodeLiteral::LiteralType::STRING:
+					return "str";
+				default:
+					return "";
+				}
+			}
+			case IAstNode::Type::STRUCT_CONSTRUCTION:
+				return static_cast<AstNodeStructConstruction*>(elem)->structName();
+			case IAstNode::Type::ARRAY_LITERAL: {
+				auto* nested = static_cast<AstNodeArrayLiteral*>(elem);
+				if (nested->elements().empty()) {
+					return "[]any";
+				}
+				// Every element must agree, or the nested array's own type is unknown.
+				std::string inner = arrayElementTypeName(nested->elements()[0].get(), localVariables);
+				if (inner.empty()) {
+					return "[]any";
+				}
+				for (size_t i = 1; i < nested->elements().size(); i++) {
+					if (arrayElementTypeName(nested->elements()[i].get(), localVariables) != inner) {
+						return "[]any";
+					}
+				}
+				return "[]" + inner;
+			}
+			case IAstNode::Type::IDENTIFIER: {
+				// A local's coarse stack type is enough for the scalar cases; a pointer could
+				// be an array, a struct or a string-like, and nothing here can tell which.
+				auto it = localVariables.find(static_cast<AstNodeIdentifier*>(elem)->name());
+				if (it == localVariables.end()) {
+					return "";
+				}
+				switch (it->second) {
+				case StackValueType::INT:
+					return "i64";
+				case StackValueType::FLOAT:
+					return "f64";
+				case StackValueType::STRING:
+					return "str";
+				default:
+					return "";
+				}
+			}
+			default:
+				return "";
+			}
+		}
+	} // namespace
+
 	void SemanticValidator::typeCheckBlock(IAstNode* node, std::vector<StackValueType>& typeStack,
 			std::unordered_map<std::string, StackValueType>& localVariables,
 			std::vector<std::string>& structTypeStack) {
@@ -1141,32 +1269,22 @@ namespace Qd {
 			case IAstNode::Type::ARRAY_LITERAL: {
 				// Array literal pushes a pointer (array reference) onto the stack
 				typeStack.push_back(StackValueType::PTR);
-				// Infer array element type from first element
+				// Infer the element type from the elements. They must all agree: a literal
+				// array is one array, and the runtime adopts a single element type from the
+				// first value that goes in (QD_ARRAY_TYPE_ANY), so a mixed literal is not a
+				// thing that can be built. Anything undecidable lands on "[]any", which is
+				// the permissive answer and matches an empty literal.
 				AstNodeArrayLiteral* arrLit = static_cast<AstNodeArrayLiteral*>(child);
 				if (arrLit->elements().empty()) {
 					structTypeStack.push_back("[]any");
 				} else {
-					IAstNode* firstElem = arrLit->elements()[0].get();
-					if (firstElem->type() == IAstNode::Type::LITERAL) {
-						auto* lit = static_cast<AstNodeLiteral*>(firstElem);
-						switch (lit->literalType()) {
-						case AstNodeLiteral::LiteralType::INTEGER:
-						case AstNodeLiteral::LiteralType::BOOL:
-							structTypeStack.push_back("[]i64");
-							break;
-						case AstNodeLiteral::LiteralType::FLOAT:
-							structTypeStack.push_back("[]f64");
-							break;
-						case AstNodeLiteral::LiteralType::STRING:
-							structTypeStack.push_back("[]str");
-							break;
-						default:
-							structTypeStack.push_back("[]any");
-							break;
+					std::string elemType = arrayElementTypeName(arrLit->elements()[0].get(), localVariables);
+					for (size_t e = 1; e < arrLit->elements().size() && !elemType.empty(); e++) {
+						if (arrayElementTypeName(arrLit->elements()[e].get(), localVariables) != elemType) {
+							elemType.clear();
 						}
-					} else {
-						structTypeStack.push_back("[]any");
 					}
+					structTypeStack.push_back(elemType.empty() ? "[]any" : "[]" + elemType);
 				}
 				break;
 			}
@@ -1294,21 +1412,25 @@ namespace Qd {
 					}
 				}
 
-				// A literal zero divisor is knowable now, and reaching it at run time is a
-				// fatal error that kills the process. Report it here instead, the way C, Go
-				// and Rust all do. Only the immediately preceding literal is examined --
+				// A literal zero *integer* divisor is knowable now, and reaching it at run time
+				// is a fatal error that kills the process. Report it here instead, the way C,
+				// Go and Rust all do. Only the immediately preceding literal is examined --
 				// this is a peephole check, not constant propagation, so `0 -> z x z /`
 				// still fails at run time.
+				//
+				// Floats are deliberately excluded: `x 0.0 /` is a defined IEEE 754 operation
+				// yielding +/-infinity (or NaN for 0.0/0.0), not an error. The integer rule had
+				// been applied to them, which made the language contradict itself -- the inlined
+				// float path emits a bare fdiv and produces `inf`, so `1.0 0.0 d` through a
+				// typed function already returned infinity while `1.0 z /` on a local killed the
+				// process.
 				if ((instrName == "div" || instrName == "/" || instrName == "mod" || instrName == "%") && i > 0) {
 					IAstNode* prev = node->child(i - 1);
 					if (prev != nullptr && prev->type() == IAstNode::Type::LITERAL) {
 						auto* lit = static_cast<AstNodeLiteral*>(prev);
 						const std::string& text = lit->value();
 						const bool zeroInt = lit->literalType() == AstNodeLiteral::LiteralType::INTEGER && text == "0";
-						const bool zeroFloat = lit->literalType() == AstNodeLiteral::LiteralType::FLOAT &&
-											   text.find_first_not_of("0.") == std::string::npos &&
-											   text.find_first_of("0") != std::string::npos;
-						if (zeroInt || zeroFloat) {
+						if (zeroInt) {
 							std::string errorMsg = "Division by zero in '";
 							errorMsg += instrName;
 							errorMsg += "': the divisor is the literal ";
@@ -1484,6 +1606,8 @@ namespace Qd {
 				// Analyze all case branches to track stack effects
 				AstNodeSwitchStatement* switchStmt = static_cast<AstNodeSwitchStatement*>(child);
 				const auto& cases = switchStmt->cases();
+
+				checkEnumSwitchExhaustive(child, cases);
 
 				// After a bare fallible call the status carries the error code: the `Ok` arm sees the
 				// call's results, every other arm sees the stack as it was before the call.

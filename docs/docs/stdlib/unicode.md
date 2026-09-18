@@ -151,7 +151,7 @@ Convert hex digit character to its numeric value.
 
 ### `fn` is_alnum
 
-Check if character is alphanumeric (A-Z, a-z, or 0-9).
+Check if a codepoint is a letter or a decimal digit.
 
 **Signature:** `(c:i64 -- result:i64)`
 
@@ -166,13 +166,13 @@ Check if character is alphanumeric (A-Z, a-z, or 0-9).
 **Example:**
 
 ```qd
-65 unicode::is_alnum print  // 1
+233 unicode::is_alnum print  // 1
 ```
 ---
 
 ### `fn` is_alpha
 
-Check if character is an alphabetic letter (A-Z or a-z).
+Check if a codepoint is a letter, in any script.
 
 **Signature:** `(c:i64 -- result:i64)`
 
@@ -182,12 +182,12 @@ Check if character is an alphabetic letter (A-Z or a-z).
 
 | Output | Type | Description |
 |--------|------|-------------|
-| `result` | `i64` | 1 if alphabetic, 0 otherwise |
+| `result` | `i64` | 1 if a letter, 0 otherwise |
 
 **Example:**
 
 ```qd
-65 unicode::is_alpha print  // 1
+233 unicode::is_alpha print  // 1
 ```
 ---
 
@@ -214,7 +214,7 @@ Check if character is ASCII (0-127).
 
 ### `fn` is_control
 
-Check if character is a control character (ASCII 0-31 and 127).
+Check if a codepoint is a control character (C0, C1 and delete).
 
 **Signature:** `(c:i64 -- result:i64)`
 
@@ -224,7 +224,7 @@ Check if character is a control character (ASCII 0-31 and 127).
 
 | Output | Type | Description |
 |--------|------|-------------|
-| `result` | `i64` | 1 if control character, 0 otherwise |
+| `result` | `i64` | 1 if a control character, 0 otherwise |
 
 **Example:**
 
@@ -235,7 +235,7 @@ Check if character is a control character (ASCII 0-31 and 127).
 
 ### `fn` is_digit
 
-Check if character is a digit (0-9).
+Check if a codepoint is a decimal digit (0-9). Only decimal digits: other scripts' digits are not interchangeable with these for parsing, so this stays narrow on purpose.
 
 **Signature:** `(c:i64 -- result:i64)`
 
@@ -277,7 +277,7 @@ Check if character is a hexadecimal digit (0-9, A-F, a-f).
 
 ### `fn` is_ident_cont
 
-Check if character is a valid identifier continuation (letter, digit, or underscore).
+Check if character is a valid identifier continuation (ASCII letter, digit or underscore).
 
 **Signature:** `(c:i64 -- result:i64)`
 
@@ -298,7 +298,7 @@ Check if character is a valid identifier continuation (letter, digit, or undersc
 
 ### `fn` is_ident_start
 
-Check if character is a valid identifier start (letter or underscore).
+Check if character is a valid identifier start (ASCII letter or underscore). Deliberately ASCII: specification 2 restricts identifiers to ASCII letters, digits and underscores, so this must not follow is_alpha into the rest of Unicode.
 
 **Signature:** `(c:i64 -- result:i64)`
 
@@ -319,7 +319,7 @@ Check if character is a valid identifier start (letter or underscore).
 
 ### `fn` is_lower
 
-Check if character is a lowercase letter (a-z).
+Check if a codepoint is a lowercase letter.
 
 **Signature:** `(c:i64 -- result:i64)`
 
@@ -340,7 +340,7 @@ Check if character is a lowercase letter (a-z).
 
 ### `fn` is_print
 
-Check if character is printable (space through tilde, ASCII 32-126).
+Check if a codepoint is printable, which is anything that is not a control character.
 
 **Signature:** `(c:i64 -- result:i64)`
 
@@ -361,7 +361,7 @@ Check if character is printable (space through tilde, ASCII 32-126).
 
 ### `fn` is_punct
 
-Check if character is punctuation (printable but not alphanumeric or space).
+Check if a codepoint is punctuation or a symbol. Printable, and none of letter, digit or whitespace.
 
 **Signature:** `(c:i64 -- result:i64)`
 
@@ -382,7 +382,7 @@ Check if character is punctuation (printable but not alphanumeric or space).
 
 ### `fn` is_space
 
-Check if character is whitespace (space, tab, newline, carriage return).
+Check if a codepoint is whitespace. Includes the Unicode spaces, so a pasted non-breaking space counts.
 
 **Signature:** `(c:i64 -- result:i64)`
 
@@ -403,7 +403,7 @@ Check if character is whitespace (space, tab, newline, carriage return).
 
 ### `fn` is_upper
 
-Check if character is an uppercase letter (A-Z).
+Check if a codepoint is an uppercase letter.
 
 **Signature:** `(c:i64 -- result:i64)`
 
@@ -487,7 +487,7 @@ Check if a codepoint is valid Unicode.
 
 ### `fn` to_lower
 
-Convert uppercase letter to lowercase.
+Convert a codepoint to lowercase, or return it unchanged if it does not case.
 
 **Signature:** `(c:i64 -- result:i64)`
 
@@ -497,18 +497,18 @@ Convert uppercase letter to lowercase.
 
 | Output | Type | Description |
 |--------|------|-------------|
-| `result` | `i64` | Lowercase character code (unchanged if not uppercase) |
+| `result` | `i64` | Lowercase codepoint |
 
 **Example:**
 
 ```qd
-65 unicode::to_lower print  // 97
+201 unicode::to_lower print  // 233
 ```
 ---
 
 ### `fn` to_upper
 
-Convert lowercase letter to uppercase.
+Convert a codepoint to uppercase, or return it unchanged if it does not case. Mappings that would change length, such as U+00DF to "SS", are not applied: this returns one codepoint. strings::upper has the same limit for the same reason.
 
 **Signature:** `(c:i64 -- result:i64)`
 
@@ -518,12 +518,12 @@ Convert lowercase letter to uppercase.
 
 | Output | Type | Description |
 |--------|------|-------------|
-| `result` | `i64` | Uppercase character code (unchanged if not lowercase) |
+| `result` | `i64` | Uppercase codepoint |
 
 **Example:**
 
 ```qd
-97 unicode::to_upper print  // 65
+233 unicode::to_upper print  // 201
 ```
 ---
 

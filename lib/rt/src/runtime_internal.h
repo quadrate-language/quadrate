@@ -69,13 +69,23 @@ static inline double qdrt_to_double(const qd_stack_element_t* elem) {
 }
 
 // Release string reference if element is a string
-static inline void qdrt_release_if_string(qd_stack_element_t* elem) {
+// Drop a stack slot's reference to what it holds.
+//
+// A slot owns one reference to a refcounted value, whether that is a string or a pointer to
+// an array or a struct. Pointers used not to be released here at all, on the reasoning that a
+// raw pointer on the stack is not necessarily a counted object -- but qd_ptr_release answers
+// exactly that question, by array magic and then the struct registry, and leaves anything
+// else alone. Skipping them meant `drop` leaked every array and struct it discarded: a
+// dropped array was 128,000 bytes over a thousand iterations where binding it was zero.
+static inline void qdrt_release_element(qd_stack_element_t* elem) {
 	if (elem->type == QD_STACK_TYPE_STR) {
 		qd_string_release(elem->value.s);
+	} else if (elem->type == QD_STACK_TYPE_PTR) {
+		qd_ptr_release(elem->value.p);
 	}
 }
 
-// Push a stack element (retains strings)
+// Push a stack element, taking a reference of its own to what it holds
 qd_stack_error qdrt_push_element(qd_stack* stack, const qd_stack_element_t* elem);
 
 #endif // QDRT_RUNTIME_INTERNAL_H

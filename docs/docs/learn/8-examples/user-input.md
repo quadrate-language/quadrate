@@ -38,18 +38,28 @@ fn main() {
 
 ## Reading numbers
 
-`io::readline` returns a string. Use `cast` to convert to other types:
+`io::readline` returns a string. Converting it to a number can fail -- whatever the user
+typed is not necessarily a number -- so use `strconv`, which reports that:
 
 <!-- doccheck: compile-only reads from stdin -->
 ```qd
 use io
+use strconv
 
 fn main() {
 	"Enter a number: " print
-	io::readline! -> _ cast<i64> -> n
-	"Double: " print n 2 * print nl
+	io::readline! -> _ -> line
+	line strconv::atoi if {
+		-> n
+		"Double: " print n 2 * print nl
+	} else {
+		"That is not a number." print nl
+	}
 }
 ```
+
+`cast<i64>` will not do this: `cast` only performs conversions that always succeed, and
+parsing is not one of them. Reading input is exactly the case where the difference matters.
 
 ## Interactive loop
 
@@ -110,6 +120,7 @@ A complete example combining input and parsing:
 
 ```qd
 use io
+use strconv
 use strings
 
 fn main() {
@@ -124,8 +135,12 @@ fn main() {
 				line strings::len 0 == if {
 					continue
 				}
-				line cast<f64> -> num
-				"= " print num print nl
+				line strconv::parse_float if {
+					-> num
+					"= " print num print nl
+				} else {
+					"not a number" print nl
+				}
 			}
 			_ {
 				nl break

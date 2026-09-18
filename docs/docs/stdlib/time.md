@@ -54,7 +54,7 @@ Add days to a timestamp.
 **Example:**
 
 ```qd
-time::unix 7 time::add_days .
+time::unix 7 time::add_days print
 ```
 ---
 
@@ -76,7 +76,7 @@ Add hours to a timestamp.
 **Example:**
 
 ```qd
-time::unix 2 time::add_hours .
+time::unix 2 time::add_hours print
 ```
 ---
 
@@ -98,7 +98,7 @@ Add minutes to a timestamp.
 **Example:**
 
 ```qd
-time::unix 30 time::add_minutes .
+time::unix 30 time::add_minutes print
 ```
 ---
 
@@ -120,7 +120,7 @@ Add duration to a timestamp.
 **Example:**
 
 ```qd
-time::now time::Day 4 * time::add .
+time::now time::Day 4 * time::add print
 ```
 ---
 
@@ -142,7 +142,7 @@ Check if timestamp is after another.
 **Example:**
 
 ```qd
-ts1 ts2 time::after .
+ts1 ts2 time::after print
 ```
 ---
 
@@ -164,7 +164,7 @@ Check if timestamp is before another.
 **Example:**
 
 ```qd
-ts1 ts2 time::before .
+ts1 ts2 time::before print
 ```
 ---
 
@@ -190,7 +190,7 @@ Create Unix timestamp from date components.
 **Example:**
 
 ```qd
-2024 1 15 12 30 0 time::date .
+2024 1 15 12 30 0 time::date print
 ```
 ---
 
@@ -212,7 +212,7 @@ Get number of full days between two timestamps.
 **Example:**
 
 ```qd
-end_ts start_ts time::days_between .
+end_ts start_ts time::days_between print
 ```
 ---
 
@@ -276,7 +276,7 @@ Extract day of month from Unix timestamp (1-31).
 **Example:**
 
 ```qd
-time::unix time::day .
+time::unix time::day print
 ```
 ---
 
@@ -297,7 +297,7 @@ Get end of day (23:59:59) for a timestamp.
 **Example:**
 
 ```qd
-time::unix time::end_of_day .
+time::unix time::end_of_day print
 ```
 ---
 
@@ -345,7 +345,7 @@ Get number of full hours between two timestamps.
 **Example:**
 
 ```qd
-end_ts start_ts time::hours_between .
+end_ts start_ts time::hours_between print
 ```
 ---
 
@@ -366,7 +366,7 @@ Extract hour from Unix timestamp (0-23).
 **Example:**
 
 ```qd
-time::unix time::hour .
+time::unix time::hour print
 ```
 ---
 
@@ -408,7 +408,7 @@ Get ISO week number (1-53).
 **Example:**
 
 ```qd
-time::unix time::iso_week .
+time::unix time::iso_week print
 ```
 ---
 
@@ -429,7 +429,7 @@ Check if weekday is a weekday (Monday-Friday).
 **Example:**
 
 ```qd
-time::unix time::weekday time::is_weekday .
+time::unix time::weekday time::is_weekday print
 ```
 ---
 
@@ -450,7 +450,7 @@ Check if weekday is a weekend day (Saturday or Sunday).
 **Example:**
 
 ```qd
-time::unix time::weekday time::is_weekend .
+time::unix time::weekday time::is_weekend print
 ```
 ---
 
@@ -505,7 +505,7 @@ Extract minute from Unix timestamp (0-59).
 **Example:**
 
 ```qd
-time::unix time::minute .
+time::unix time::minute print
 ```
 ---
 
@@ -526,7 +526,7 @@ Extract month from Unix timestamp (1-12).
 **Example:**
 
 ```qd
-time::unix time::month .
+time::unix time::month print
 ```
 ---
 
@@ -591,7 +591,7 @@ Check if two timestamps are on the same day.
 **Example:**
 
 ```qd
-ts1 ts2 time::same_day .
+ts1 ts2 time::same_day print
 ```
 ---
 
@@ -612,7 +612,7 @@ Extract second from Unix timestamp (0-59).
 **Example:**
 
 ```qd
-time::unix time::second .
+time::unix time::second print
 ```
 ---
 
@@ -650,7 +650,7 @@ Get start of day (midnight) for a timestamp.
 **Example:**
 
 ```qd
-time::unix time::start_of_day .
+time::unix time::start_of_day print
 ```
 ---
 
@@ -672,7 +672,7 @@ Get difference between two timestamps in seconds.
 **Example:**
 
 ```qd
-end_time start_time time::sub .
+end_time start_time time::sub print
 ```
 ---
 
@@ -710,7 +710,7 @@ Get day of week from Unix timestamp (0=Sunday, 6=Saturday).
 **Example:**
 
 ```qd
-time::unix time::weekday .
+time::unix time::weekday print
 ```
 ---
 
@@ -731,7 +731,7 @@ Get day of year from Unix timestamp (1-366).
 **Example:**
 
 ```qd
-time::unix time::year_day .
+time::unix time::year_day print
 ```
 ---
 
@@ -752,5 +752,5 @@ Extract year from Unix timestamp.
 **Example:**
 
 ```qd
-time::unix time::year .
+time::unix time::year print
 ```

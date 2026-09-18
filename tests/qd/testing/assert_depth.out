@@ -1,0 +1,7 @@
+Running 4 tests...
+  ✓ assert_depth.qd::assertion through one frame
+  ✓ assert_depth.qd::assertion through two frames
+  ✓ assert_depth.qd::the wrapper assertions are Quadrate and go through the same path
+  ✓ assert_depth.qd::a direct assertion still works
+
+4 passed, 0 failed

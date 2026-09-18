@@ -1,0 +1,54 @@
+// The unicode module answers questions about a single codepoint; strings answers the same
+// questions about a whole string. They share one implementation, so they must agree.
+//
+// Before this they did not: unicode was ASCII arithmetic (to_upper was `c a - A +`), so
+// `"é" strings::is_alpha` was true while `unicode::is_alpha` of that very codepoint was
+// false, and strings::upper produced É where unicode::to_upper returned é unchanged.
+use strings
+use unicode
+
+fn main() {
+	// The two layers agree, character by character
+	"é" strings::is_alpha print nl
+	"é" 0 strings::char_at! unicode::is_alpha print nl
+
+	"é" strings::upper print nl
+	"é" 0 strings::char_at! unicode::to_upper strings::from_char print nl
+
+	"Ä" strings::lower print nl
+	"Ä" 0 strings::char_at! unicode::to_lower strings::from_char print nl
+
+	// Case mapping across the cased scripts
+	233 unicode::to_upper print nl        // é -> É
+	201 unicode::to_lower print nl        // É -> é
+	1071 unicode::to_lower print nl       // Я -> я
+	937 unicode::to_lower print nl        // Ω -> ω
+	97 unicode::to_upper print nl         // a -> A, unchanged behaviour
+
+	// Classification beyond ASCII
+	233 unicode::is_alpha print nl        // é
+	26085 unicode::is_alpha print nl      // 日
+	233 unicode::is_lower print nl
+	201 unicode::is_upper print nl
+	160 unicode::is_space print nl        // non-breaking space
+
+	// Decimal digits stay decimal: other scripts' digits are not interchangeable
+	53 unicode::is_digit print nl
+	1633 unicode::is_digit print nl       // Arabic-Indic digit one
+
+	// Identifiers are ASCII by specification 2, so they must NOT follow is_alpha
+	233 unicode::is_ident_start print nl  // 0, though é is a letter
+	65 unicode::is_ident_start print nl
+	95 unicode::is_ident_cont print nl
+	53 unicode::is_ident_cont print nl
+
+	// Hex is an ASCII notation and stays narrow
+	70 unicode::is_hex_digit print nl     // F
+	71 unicode::is_hex_digit print nl     // G
+	70 unicode::hex_digit_value print nl  // 15
+	65 unicode::digit_value print nl      // -1, 'A' is not a decimal digit
+
+	// Not a codepoint: predicates are false, mappings leave it alone
+	1114112 unicode::is_alpha print nl
+	-1 unicode::to_upper print nl
+}

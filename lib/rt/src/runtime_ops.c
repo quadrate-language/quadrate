@@ -57,8 +57,8 @@ int qd_add(qd_context* ctx) {
 			QDRT_FATAL(ctx, "add", "Stack overflow pushing result");
 		}
 	} else {
-		qdrt_release_if_string(&b);
-		qdrt_release_if_string(&a);
+		qdrt_release_element(&b);
+		qdrt_release_element(&a);
 		return (int){-5};
 	}
 	return (int){0};
@@ -111,8 +111,8 @@ int qd_sub(qd_context* ctx) {
 			QDRT_FATAL(ctx, "sub", "Stack overflow pushing result");
 		}
 	} else {
-		qdrt_release_if_string(&b);
-		qdrt_release_if_string(&a);
+		qdrt_release_element(&b);
+		qdrt_release_element(&a);
 		return (int){-5};
 	}
 	return (int){0};
@@ -140,8 +140,8 @@ int qd_mul(qd_context* ctx) {
 			QDRT_FATAL(ctx, "mul", "Stack overflow pushing result");
 		}
 	} else {
-		qdrt_release_if_string(&b);
-		qdrt_release_if_string(&a);
+		qdrt_release_element(&b);
+		qdrt_release_element(&a);
 		return (int){-5};
 	}
 	return (int){0};
@@ -168,17 +168,19 @@ int qd_div(qd_context* ctx) {
 	} else if (qdrt_is_numeric_type(a.type) && qdrt_is_numeric_type(b.type)) {
 		double af = qdrt_to_double(&a);
 		double bf = qdrt_to_double(&b);
-		if (bf == 0.0) {
-			QDRT_FATAL(ctx, "div", "Division by zero");
-		}
+		// No zero check: float division by zero is defined by IEEE 754 as +/-infinity, and
+		// 0.0/0.0 as NaN. Only integer division by zero is an error. This path used to trap,
+		// which contradicted the compiled one -- generator_nodes_instructions.cc emits a bare
+		// fdiv for two doubles -- so the same expression aborted or returned `inf` depending
+		// on whether the operands reached the inline path.
 		double result = af / bf;
 		qd_stack_error err = qd_stack_push_float(ctx->st, result);
 		if (err != QD_STACK_OK) {
 			QDRT_FATAL(ctx, "div", "Stack overflow pushing result");
 		}
 	} else {
-		qdrt_release_if_string(&b);
-		qdrt_release_if_string(&a);
+		qdrt_release_element(&b);
+		qdrt_release_element(&a);
 		return (int){-5};
 	}
 	return (int){0};

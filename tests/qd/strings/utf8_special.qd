@@ -2,7 +2,7 @@
 use strings
 
 fn main() {
-	// UTF-8 length tests (note: strlen counts bytes, not characters)
+	// Length is in characters, not bytes
 	"hello" strings::len print nl
 	"héllo" strings::len print nl
 	"世界" strings::len print nl
@@ -44,15 +44,16 @@ fn main() {
 	"" "test" strings::contains print nl
 	"test" "" strings::contains print nl
 
-	// Case conversion with UTF-8 (only ASCII affected)
+	// Case conversion covers the cased scripts, not just ASCII
 	"hello WORLD" strings::upper print nl
 	"HELLO world" strings::lower print nl
 	"test 世界 TEST" strings::upper print nl
 	"TEST 世界 test" strings::lower print nl
 
-	// UTF-8 case should not change non-ASCII
+	// Accented Latin, Greek and Cyrillic all map
 	"héllo" strings::upper print nl
 	"HÉLLO" strings::lower print nl
 	"Привет" strings::upper print nl
 	"ПРИВЕТ" strings::lower print nl
+	"世界" strings::upper print nl
 }

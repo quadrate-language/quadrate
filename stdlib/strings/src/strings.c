@@ -2,14 +2,14 @@
 #define _DEFAULT_SOURCE
 
 #include <quadrate/strings/strings.h>
-#include <strings.h>
+#include <quadrate/unicode/codepoint.h>
 #include <quadrate/rt/array.h>
 #include <quadrate/rt/stack.h>
 #include <quadrate/rt/runtime.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <ctype.h>
+#include <stdint.h>
 
 // Error codes matching module.qd
 #define STRINGS_ERR_OK 1            // Success (matches builtin Ok)
@@ -23,6 +23,94 @@
 		abort(); \
 	} \
 } while(0)
+
+/* `str` is a UTF-8 string (specification 3.1), so every index and length in this module counts
+ * codepoints, not bytes, and no operation may cut a multi-byte sequence in half.
+ *
+ * Nothing here converts between character indices and byte offsets by hand. That goes through
+ * qd_string_char_length, qd_string_char_offset and qd_string_char_index, which memoise on the
+ * string: a conversion is a walk, and doing it per call made any loop that scanned or sliced a
+ * large string quadratic. Going through them uniformly is the point -- one function still
+ * counting for itself is the loop that gets written next.
+ *
+ * The UTF-8 encoding primitives and the codepoint case/classification tables live in
+ * <quadrate/unicode/codepoint.h>, shared with the unicode module so the two layers cannot
+ * disagree about a character. */
+
+
+/* Map every codepoint through `map` into a fresh NUL-terminated buffer; NULL on allocation
+ * failure, and *out_bytes gets the result length. The result can differ in byte length from
+ * the input (U+017F long s uppercases to a one-byte 'S'), so the buffer is sized for the
+ * worst case rather than assumed equal.
+ *
+ * A byte that is not part of a well-formed sequence is copied through untouched: case
+ * mapping a broken byte is meaningless, and inventing a codepoint for it would rewrite the
+ * caller's data. */
+static char* utf8_map_case(const char* src, size_t bytes, uint32_t (*map)(uint32_t), size_t* out_bytes) {
+	char* out = malloc(bytes * 4 + 1);
+	if (out == NULL) {
+		return NULL;
+	}
+	size_t w = 0;
+	size_t i = 0;
+	while (i < bytes) {
+		uint32_t cp = 0;
+		const size_t n = utf8_decode((const unsigned char*)src + i, bytes - i, &cp);
+		if (n == 1 && (unsigned char)src[i] >= 0x80u) {
+			out[w++] = src[i];
+		} else {
+			const size_t m = utf8_encode(map(cp), out + w);
+			if (m == 0) {
+				memcpy(out + w, src + i, n);
+				w += n;
+			} else {
+				w += m;
+			}
+		}
+		i += n;
+	}
+	out[w] = '\0';
+	if (out_bytes != NULL) {
+		*out_bytes = w;
+	}
+	return out;
+}
+
+/* Byte offset just past the leading whitespace of `s`. Unicode spaces count as well as the
+ * ASCII ones -- a non-breaking space (U+00A0) is whitespace a user pasted in, and the
+ * byte-wise isspace() left it in place. */
+static size_t utf8_skip_space_forward(const char* s, size_t bytes) {
+	size_t i = 0;
+	while (i < bytes) {
+		uint32_t cp = 0;
+		const size_t n = utf8_decode((const unsigned char*)s + i, bytes - i, &cp);
+		if (!utf8_is_space_cp(cp)) {
+			break;
+		}
+		i += n;
+	}
+	return i;
+}
+
+/* Byte offset of the end of `s` once trailing whitespace is removed, never going below
+ * `floor_off`. Scanning backwards means finding each character's start first, which is what
+ * the continuation-byte test does. */
+static size_t utf8_skip_space_backward(const char* s, size_t bytes, size_t floor_off) {
+	size_t end = bytes;
+	while (end > floor_off) {
+		size_t start = end - 1;
+		while (start > floor_off && ((unsigned char)s[start] & 0xC0u) == 0x80u) {
+			start--;
+		}
+		uint32_t cp = 0;
+		utf8_decode((const unsigned char*)s + start, end - start, &cp);
+		if (!utf8_is_space_cp(cp)) {
+			break;
+		}
+		end = start;
+	}
+	return end;
+}
 
 // len - get string length ( str:s -- len:i )
 int usr_strings_len(qd_context* ctx) {
@@ -39,10 +127,13 @@ int usr_strings_len(qd_context* ctx) {
 		abort();
 	}
 
-	size_t len = qd_string_length(val.value.s);
+	// Codepoints, not bytes: `str` is UTF-8 (specification 3.1), so "héllo" is 5 characters
+	// even though it occupies 6 bytes. strings::byte_len gives the encoded size.
+	// The count is memoised on the string, so repeated calls in a loop cost nothing.
+	const int64_t len = (int64_t)qd_string_char_length(val.value.s);
 	qd_string_release(val.value.s);
 
-	qd_push_i(ctx, (int64_t)len);
+	qd_push_i(ctx, len);
 	return (int){0};
 }
 
@@ -221,17 +312,16 @@ int usr_strings_upper(qd_context* ctx) {
 		abort();
 	}
 
+	// Per codepoint, not per byte. toupper() on a byte left every non-ASCII letter alone, so
+	// "héllo wörld" uppercased to "HéLLO WöRLD" -- the two letters that most needed it
+	// were the two it skipped.
 	size_t len = qd_string_length(val.value.s);
-	char* result = malloc(len + 1);
+	char* result = utf8_map_case(qd_string_data(val.value.s), len, utf8_to_upper_cp, NULL);
 
 	if (!result) {
 		fprintf(stderr, "Fatal error in strings::upper: Memory allocation failed\n");
 		qd_string_release(val.value.s);
 		abort();
-	}
-
-	for (size_t i = 0; i <= len; i++) {
-		result[i] = (char)toupper((unsigned char)qd_string_data(val.value.s)[i]);
 	}
 
 	qd_string_release(val.value.s);
@@ -257,16 +347,12 @@ int usr_strings_lower(qd_context* ctx) {
 	}
 
 	size_t len = qd_string_length(val.value.s);
-	char* result = malloc(len + 1);
+	char* result = utf8_map_case(qd_string_data(val.value.s), len, utf8_to_lower_cp, NULL);
 
 	if (!result) {
 		fprintf(stderr, "Fatal error in strings::lower: Memory allocation failed\n");
 		qd_string_release(val.value.s);
 		abort();
-	}
-
-	for (size_t i = 0; i <= len; i++) {
-		result[i] = (char)tolower((unsigned char)qd_string_data(val.value.s)[i]);
 	}
 
 	qd_string_release(val.value.s);
@@ -291,30 +377,15 @@ int usr_strings_trim(qd_context* ctx) {
 		abort();
 	}
 
-	const char* start = qd_string_data(val.value.s);
-	const char* end = start + strlen(start);
+	const char* base = qd_string_data(val.value.s);
+	const size_t base_bytes = strlen(base);
 
-	// Trim leading whitespace
-	while (*start && isspace((unsigned char)*start)) {
-		start++;
-	}
+	// Whitespace is decided per codepoint, so Unicode spaces are trimmed too.
+	const size_t begin_off = utf8_skip_space_forward(base, base_bytes);
+	const size_t end_off = utf8_skip_space_backward(base, base_bytes, begin_off);
 
-	// Trim trailing whitespace
-	if (end > start) {
-		end--;
-		while (end > start && isspace((unsigned char)*end)) {
-			end--;
-		}
-	}
-
-	// Calculate length
-	size_t trimmed_len;
-	if (end >= start) {
-		trimmed_len = (size_t)(end - start) + 1;
-	} else {
-		// String is all whitespace
-		trimmed_len = 0;
-	}
+	const char* start = base + begin_off;
+	size_t trimmed_len = end_off - begin_off;
 
 	char* result = malloc(trimmed_len + 1);
 
@@ -382,11 +453,17 @@ int usr_strings_substring(qd_context* ctx) {
 		abort();
 	}
 
-	// Adjust length to not exceed string bounds
-	size_t actual_length = (size_t)length;
-	if ((size_t)start + actual_length > str_len) {
-		actual_length = str_len - (size_t)start;
-	}
+	// `start` and `length` count codepoints, so the cut always lands on a character boundary.
+	// Slicing by byte let a cut fall inside a sequence: "héllo" 0 2 substring produced the two
+	// bytes 'h' 0xC3, a truncated é that is not valid UTF-8.
+	const char* src_data = qd_string_data(str_elem.value.s);
+	// Character indices, so a cut always lands on a character boundary. The conversion is
+	// memoised on the string (see qd_string_char_offset), which is what keeps a .qd loop
+	// slicing forward through a large string linear rather than quadratic.
+	(void)src_data;
+	const size_t begin = qd_string_char_offset(str_elem.value.s, (size_t)start);
+	const size_t end = qd_string_char_offset(str_elem.value.s, (size_t)start + (size_t)length);
+	const size_t actual_length = end - begin;
 
 	char* result = malloc(actual_length + 1);
 	if (!result) {
@@ -395,7 +472,7 @@ int usr_strings_substring(qd_context* ctx) {
 		abort();
 	}
 
-	memcpy(result, qd_string_data(str_elem.value.s) + start, actual_length);
+	memcpy(result, src_data + begin, actual_length);
 	result[actual_length] = '\0';
 
 	qd_string_release(str_elem.value.s);
@@ -667,12 +744,27 @@ int usr_strings_char_at(qd_context* ctx) {
 	}
 
 	int64_t index = index_elem.value.i;
-	// The runtime already knows the length; strlen() here made char_at O(n), so
-	// every .qd loop that scanned a string one character at a time -- json's
-	// find_str_end over an MCP request body, for one -- was quadratic.
-	size_t str_len = qd_string_length(str_elem.value.s);
+	const char* data = qd_string_data(str_elem.value.s);
+	const size_t bytes = qd_string_length(str_elem.value.s);
 
-	if (index < 0 || (size_t)index >= str_len) {
+	// `index` counts codepoints, and the result is a codepoint. Indexing bytes returned 195
+	// for character 1 of "héllo" -- the first half of the é -- which is not a character
+	// the string contains.
+	//
+	// Locating a codepoint is a walk from the start, which would make a .qd loop that reads a
+	// string one character at a time quadratic -- json's scan over an MCP request body took
+	// minutes. When the memoised codepoint count equals the byte length every character
+	// occupies one byte, so the index is already the offset and no walk is needed; that covers
+	// ASCII, which is nearly all of the strings a scan like that runs over.
+	if (index < 0) {
+		qd_string_release(str_elem.value.s);
+		ctx->error_code = STRINGS_ERR_OUT_OF_BOUNDS;
+		qd_set_error_msg(ctx, "index out of bounds");
+		qd_push_i(ctx, STRINGS_ERR_OUT_OF_BOUNDS);
+		return (int){STRINGS_ERR_OUT_OF_BOUNDS};
+	}
+	const size_t offset = qd_string_char_offset(str_elem.value.s, (size_t)index);
+	if (offset >= bytes) {
 		qd_string_release(str_elem.value.s);
 		ctx->error_code = STRINGS_ERR_OUT_OF_BOUNDS;
 		qd_set_error_msg(ctx, "index out of bounds");
@@ -680,7 +772,9 @@ int usr_strings_char_at(qd_context* ctx) {
 		return (int){STRINGS_ERR_OUT_OF_BOUNDS};
 	}
 
-	int64_t char_code = (unsigned char)qd_string_data(str_elem.value.s)[index];
+	uint32_t cp = 0;
+	utf8_decode((const unsigned char*)data + offset, bytes - offset, &cp);
+	int64_t char_code = (int64_t)cp;
 
 	qd_string_release(str_elem.value.s);
 
@@ -716,7 +810,14 @@ int usr_strings_index_of(qd_context* ctx) {
 	const char* needle = qd_string_data(needle_elem.value.s);
 	const char* pos = strstr(haystack, needle);
 
-	int64_t result = (pos != NULL) ? (int64_t)(pos - haystack) : -1;
+	// The search itself is safe on bytes -- UTF-8 is self-synchronising, so a match can only
+	// begin on a character boundary -- but the *index* returned must count codepoints, to
+	// match strings::len and char_at. It used to be a byte offset, so "héllo wörld" reported
+	// 8 for "ö" where the character index is 7.
+	int64_t result = -1;
+	if (pos != NULL) {
+		result = (int64_t)qd_string_char_index(haystack_elem.value.s, (size_t)(pos - haystack));
+	}
 
 	qd_string_release(haystack_elem.value.s);
 	qd_string_release(needle_elem.value.s);
@@ -764,11 +865,16 @@ int usr_strings_index_of_from(qd_context* ctx) {
 	int64_t start = start_elem.value.i;
 	size_t haystack_len = strlen(haystack);
 
+	// `start` and the result are both codepoint indices, so the byte offset to search from is
+	// computed rather than used directly -- starting at byte `start` could land mid-character.
 	int64_t result = -1;
-	if (start >= 0 && (size_t)start < haystack_len) {
-		const char* pos = strstr(haystack + start, needle);
-		if (pos != NULL) {
-			result = (int64_t)(pos - haystack);
+	if (start >= 0) {
+		const size_t start_byte = qd_string_char_offset(haystack_elem.value.s, (size_t)start);
+		if (start_byte < haystack_len) {
+			const char* pos = strstr(haystack + start_byte, needle);
+			if (pos != NULL) {
+				result = (int64_t)qd_string_char_index(haystack_elem.value.s, (size_t)(pos - haystack));
+			}
 		}
 	}
 
@@ -796,20 +902,15 @@ int usr_strings_from_char(qd_context* ctx) {
 
 	int64_t char_code = code_elem.value.i;
 
-	// Handle single-byte ASCII characters
-	if (char_code >= 0 && char_code <= 127) {
-		char result[2];
-		result[0] = (char)char_code;
-		result[1] = '\0';
-		qd_push_s(ctx, result);
-	} else {
-		// For non-ASCII, we could support UTF-8 encoding here
-		// For now, just handle single-byte values
-		char result[2];
-		result[0] = (char)(char_code & 0xFF);
-		result[1] = '\0';
-		qd_push_s(ctx, result);
-	}
+	// Encode the codepoint as UTF-8. This used to truncate to one byte ("just handle
+	// single-byte values"), so from_char of anything above 127 produced a lone continuation
+	// or lead byte -- not a character, and not even valid UTF-8. A codepoint outside the
+	// Unicode range, or a surrogate, yields the empty string rather than invalid output.
+	char result[5];
+	const size_t n = utf8_encode((char_code >= 0 && char_code <= 0x10FFFF) ? (uint32_t)char_code : 0xFFFFFFFFu,
+			result);
+	result[n] = '\0';
+	qd_push_s(ctx, result);
 
 	return (int){0};
 }
@@ -992,9 +1093,18 @@ int usr_strings_reverse(qd_context* ctx) {
 		abort();
 	}
 
+	// Reverse whole codepoints. Reversing bytes turned "héllo wörld" into mojibake: every
+	// multi-byte character came out with its bytes backwards, which is not a character at all,
+	// so the result was not valid UTF-8.
 	const char* src = qd_string_data(str_elem.value.s);
-	for (size_t i = 0; i < len; i++) {
-		result[i] = src[len - 1 - i];
+	size_t out = len;
+	size_t i = 0;
+	while (i < len) {
+		uint32_t cp = 0;
+		const size_t n = utf8_decode((const unsigned char*)src + i, len - i, &cp);
+		out -= n;
+		memcpy(result + out, src + i, n);
+		i += n;
 	}
 	result[len] = '\0';
 
@@ -1015,9 +1125,7 @@ int usr_strings_trim_left(qd_context* ctx) {
 	}
 
 	const char* src = qd_string_data(str_elem.value.s);
-	while (*src && isspace((unsigned char)*src)) {
-		src++;
-	}
+	src += utf8_skip_space_forward(src, strlen(src));
 
 	size_t len = strlen(src);
 	char* result = malloc(len + 1);
@@ -1047,11 +1155,7 @@ int usr_strings_trim_right(qd_context* ctx) {
 	}
 
 	const char* src = qd_string_data(str_elem.value.s);
-	size_t len = strlen(src);
-
-	while (len > 0 && isspace((unsigned char)src[len - 1])) {
-		len--;
-	}
+	size_t len = utf8_skip_space_backward(src, strlen(src), 0);
 
 	char* result = malloc(len + 1);
 	if (!result) {
@@ -1127,13 +1231,17 @@ int usr_strings_last_index_of(qd_context* ctx) {
 	int64_t result = -1;
 	if (needle_len > 0) {
 		const char* pos = haystack;
+		const char* found = NULL;
 		while ((pos = strstr(pos, needle)) != NULL) {
-			result = (int64_t)(pos - haystack);
+			found = pos;
 			pos += needle_len;
 		}
+		if (found != NULL) {
+			result = (int64_t)qd_string_char_index(haystack_elem.value.s, (size_t)(found - haystack));
+		}
 	} else {
-		// Empty needle matches at the end
-		result = (int64_t)strlen(haystack);
+		// Empty needle matches at the end, which in codepoints is the character count
+		result = (int64_t)qd_string_char_length(haystack_elem.value.s);
 	}
 
 	qd_string_release(haystack_elem.value.s);
@@ -1265,7 +1373,9 @@ int usr_strings_is_blank(qd_context* ctx) {
 	const char* s = qd_string_data(str_elem.value.s);
 	int result = 1;
 	while (*s) {
-		if (!isspace((unsigned char)*s)) {
+		uint32_t cp = 0;
+		utf8_decode((const unsigned char*)s, strlen(s), &cp);
+		if (!utf8_is_space_cp(cp)) {
 			result = 0;
 			break;
 		}
@@ -1293,7 +1403,20 @@ int usr_strings_equals_ignore_case(qd_context* ctx) {
 		abort();
 	}
 
-	int result = (strcasecmp(qd_string_data(a_elem.value.s), qd_string_data(b_elem.value.s)) == 0) ? 1 : 0;
+	// strcasecmp folds ASCII only, so "STRASSE" and "strasse" matched but "ÄPPLE" and "äpple"
+	// did not. Fold both sides per codepoint and compare the results.
+	const char* a_str = qd_string_data(a_elem.value.s);
+	const char* b_str = qd_string_data(b_elem.value.s);
+	size_t a_folded_len = 0;
+	size_t b_folded_len = 0;
+	char* a_folded = utf8_map_case(a_str, strlen(a_str), utf8_to_lower_cp, &a_folded_len);
+	char* b_folded = utf8_map_case(b_str, strlen(b_str), utf8_to_lower_cp, &b_folded_len);
+	int result = 0;
+	if (a_folded != NULL && b_folded != NULL) {
+		result = (a_folded_len == b_folded_len && memcmp(a_folded, b_folded, a_folded_len) == 0) ? 1 : 0;
+	}
+	free(a_folded);
+	free(b_folded);
 	qd_string_release(a_elem.value.s);
 	qd_string_release(b_elem.value.s);
 	qd_push_i(ctx, result);
@@ -1312,21 +1435,27 @@ int usr_strings_pad_left(qd_context* ctx) {
 	const char* pad_ch = qd_string_data(ch_elem.value.s);
 	size_t str_len = strlen(str);
 
-	if ((int64_t)str_len >= target_len || strlen(pad_ch) == 0) {
+	// Width is measured in characters, and the pad is one whole character. Both used to be
+	// bytes: an accented string was padded too little, and a non-ASCII pad character was
+	// emitted as `pad_ch[0]` -- its first byte on its own, which is not a character.
+	const int64_t str_chars = (int64_t)qd_string_char_length(str_elem.value.s);
+	const size_t pad_bytes = (strlen(pad_ch) > 0) ? utf8_seq_len((unsigned char)pad_ch[0]) : 0;
+
+	if (str_chars >= target_len || pad_bytes == 0) {
 		qd_push_s(ctx, str);
 		qd_string_release(str_elem.value.s);
 		qd_string_release(ch_elem.value.s);
 		return (int){0};
 	}
 
-	size_t pad_count = (size_t)target_len - str_len;
-	char* result = malloc((size_t)target_len + 1);
+	size_t pad_count = (size_t)(target_len - str_chars);
+	char* result = malloc(pad_count * pad_bytes + str_len + 1);
 	if (!result) abort();
 
 	for (size_t i = 0; i < pad_count; i++) {
-		result[i] = pad_ch[0];
+		memcpy(result + i * pad_bytes, pad_ch, pad_bytes);
 	}
-	memcpy(result + pad_count, str, str_len + 1);
+	memcpy(result + pad_count * pad_bytes, str, str_len + 1);
 
 	qd_string_release(str_elem.value.s);
 	qd_string_release(ch_elem.value.s);
@@ -1347,22 +1476,26 @@ int usr_strings_pad_right(qd_context* ctx) {
 	const char* pad_ch = qd_string_data(ch_elem.value.s);
 	size_t str_len = strlen(str);
 
-	if ((int64_t)str_len >= target_len || strlen(pad_ch) == 0) {
+	// Characters, not bytes -- see pad_left.
+	const int64_t str_chars = (int64_t)qd_string_char_length(str_elem.value.s);
+	const size_t pad_bytes = (strlen(pad_ch) > 0) ? utf8_seq_len((unsigned char)pad_ch[0]) : 0;
+
+	if (str_chars >= target_len || pad_bytes == 0) {
 		qd_push_s(ctx, str);
 		qd_string_release(str_elem.value.s);
 		qd_string_release(ch_elem.value.s);
 		return (int){0};
 	}
 
-	size_t pad_count = (size_t)target_len - str_len;
-	char* result = malloc((size_t)target_len + 1);
+	size_t pad_count = (size_t)(target_len - str_chars);
+	char* result = malloc(str_len + pad_count * pad_bytes + 1);
 	if (!result) abort();
 
 	memcpy(result, str, str_len);
 	for (size_t i = 0; i < pad_count; i++) {
-		result[str_len + i] = pad_ch[0];
+		memcpy(result + str_len + i * pad_bytes, pad_ch, pad_bytes);
 	}
-	result[target_len] = '\0';
+	result[str_len + pad_count * pad_bytes] = '\0';
 
 	qd_string_release(str_elem.value.s);
 	qd_string_release(ch_elem.value.s);
@@ -1383,24 +1516,36 @@ int usr_strings_center(qd_context* ctx) {
 	const char* pad_ch = qd_string_data(ch_elem.value.s);
 	size_t str_len = strlen(str);
 
-	if ((int64_t)str_len >= target_len || strlen(pad_ch) == 0) {
+	// Characters, not bytes -- see pad_left.
+	const int64_t str_chars = (int64_t)qd_string_char_length(str_elem.value.s);
+	const size_t pad_bytes = (strlen(pad_ch) > 0) ? utf8_seq_len((unsigned char)pad_ch[0]) : 0;
+
+	if (str_chars >= target_len || pad_bytes == 0) {
 		qd_push_s(ctx, str);
 		qd_string_release(str_elem.value.s);
 		qd_string_release(ch_elem.value.s);
 		return (int){0};
 	}
 
-	size_t total_pad = (size_t)target_len - str_len;
+	size_t total_pad = (size_t)(target_len - str_chars);
 	size_t left_pad = total_pad / 2;
 	size_t right_pad = total_pad - left_pad;
 
-	char* result = malloc((size_t)target_len + 1);
+	char* result = malloc(total_pad * pad_bytes + str_len + 1);
 	if (!result) abort();
 
-	for (size_t i = 0; i < left_pad; i++) result[i] = pad_ch[0];
-	memcpy(result + left_pad, str, str_len);
-	for (size_t i = 0; i < right_pad; i++) result[left_pad + str_len + i] = pad_ch[0];
-	result[target_len] = '\0';
+	size_t w = 0;
+	for (size_t i = 0; i < left_pad; i++) {
+		memcpy(result + w, pad_ch, pad_bytes);
+		w += pad_bytes;
+	}
+	memcpy(result + w, str, str_len);
+	w += str_len;
+	for (size_t i = 0; i < right_pad; i++) {
+		memcpy(result + w, pad_ch, pad_bytes);
+		w += pad_bytes;
+	}
+	result[w] = '\0';
 
 	qd_string_release(str_elem.value.s);
 	qd_string_release(ch_elem.value.s);
@@ -1417,16 +1562,34 @@ int usr_strings_capitalize(qd_context* ctx) {
 	const char* str = qd_string_data(str_elem.value.s);
 	size_t len = strlen(str);
 
-	char* result = malloc(len + 1);
+	// Per codepoint: the first character uppercases, the rest lowercase. Byte-wise this both
+	// missed every non-ASCII letter and, for a string starting with one, would have written a
+	// mapped byte over the lead byte of a sequence.
+	char* result = malloc(len * 4 + 1);
 	if (!result) abort();
 
-	if (len > 0) {
-		result[0] = (char)toupper((unsigned char)str[0]);
-		for (size_t i = 1; i < len; i++) {
-			result[i] = (char)tolower((unsigned char)str[i]);
+	size_t w = 0;
+	size_t i = 0;
+	int first = 1;
+	while (i < len) {
+		uint32_t cp = 0;
+		const size_t n = utf8_decode((const unsigned char*)str + i, len - i, &cp);
+		if (n == 1 && (unsigned char)str[i] >= 0x80u) {
+			result[w++] = str[i];
+		} else {
+			const uint32_t mapped = first ? utf8_to_upper_cp(cp) : utf8_to_lower_cp(cp);
+			const size_t m = utf8_encode(mapped, result + w);
+			if (m == 0) {
+				memcpy(result + w, str + i, n);
+				w += n;
+			} else {
+				w += m;
+			}
 		}
+		first = 0;
+		i += n;
 	}
-	result[len] = '\0';
+	result[w] = '\0';
 
 	qd_string_release(str_elem.value.s);
 	qd_push_s(ctx, result);
@@ -1442,22 +1605,37 @@ int usr_strings_title(qd_context* ctx) {
 	const char* str = qd_string_data(str_elem.value.s);
 	size_t len = strlen(str);
 
-	char* result = malloc(len + 1);
+	// Per codepoint, with word boundaries decided by the same whitespace test the trim family
+	// uses.
+	char* result = malloc(len * 4 + 1);
 	if (!result) abort();
 
+	size_t w = 0;
+	size_t i = 0;
 	int capitalize_next = 1;
-	for (size_t i = 0; i < len; i++) {
-		if (isspace((unsigned char)str[i])) {
-			result[i] = str[i];
+	while (i < len) {
+		uint32_t cp = 0;
+		const size_t n = utf8_decode((const unsigned char*)str + i, len - i, &cp);
+		if (n == 1 && (unsigned char)str[i] >= 0x80u) {
+			result[w++] = str[i];
+		} else if (utf8_is_space_cp(cp)) {
+			memcpy(result + w, str + i, n);
+			w += n;
 			capitalize_next = 1;
-		} else if (capitalize_next) {
-			result[i] = (char)toupper((unsigned char)str[i]);
-			capitalize_next = 0;
 		} else {
-			result[i] = (char)tolower((unsigned char)str[i]);
+			const uint32_t mapped = capitalize_next ? utf8_to_upper_cp(cp) : utf8_to_lower_cp(cp);
+			const size_t m = utf8_encode(mapped, result + w);
+			if (m == 0) {
+				memcpy(result + w, str + i, n);
+				w += n;
+			} else {
+				w += m;
+			}
+			capitalize_next = 0;
 		}
+		i += n;
 	}
-	result[len] = '\0';
+	result[w] = '\0';
 
 	qd_string_release(str_elem.value.s);
 	qd_push_s(ctx, result);
@@ -1564,15 +1742,18 @@ int usr_strings_insert(qd_context* ctx) {
 	size_t str_len = strlen(str);
 	size_t ins_len = strlen(ins);
 
+	// `pos` is a codepoint index, so the insertion point is converted to a byte offset -- a
+	// raw byte position could split a character and leave two invalid fragments around the
+	// inserted text.
 	if (pos < 0) pos = 0;
-	if ((size_t)pos > str_len) pos = (int64_t)str_len;
+	const size_t pos_byte = qd_string_char_offset(str_elem.value.s, (size_t)pos);
 
 	char* result = malloc(str_len + ins_len + 1);
 	if (!result) abort();
 
-	memcpy(result, str, (size_t)pos);
-	memcpy(result + pos, ins, ins_len);
-	strcpy(result + pos + ins_len, str + pos);
+	memcpy(result, str, pos_byte);
+	memcpy(result + pos_byte, ins, ins_len);
+	strcpy(result + pos_byte + ins_len, str + pos_byte);
 
 	qd_string_release(str_elem.value.s);
 	qd_string_release(ins_elem.value.s);
@@ -1593,22 +1774,23 @@ int usr_strings_remove_range(qd_context* ctx) {
 	int64_t remove_len = len_elem.value.i;
 	size_t str_len = strlen(str);
 
+	// Both indices count codepoints; the range is turned into byte offsets so the cut lands
+	// on character boundaries at each end.
 	if (start < 0) start = 0;
-	if ((size_t)start >= str_len || remove_len <= 0) {
+	const size_t start_byte = qd_string_char_offset(str_elem.value.s, (size_t)start);
+	if (start_byte >= str_len || remove_len <= 0) {
 		qd_push_s(ctx, str);
 		qd_string_release(str_elem.value.s);
 		return (int){0};
 	}
-	if ((size_t)(start + remove_len) > str_len) {
-		remove_len = (int64_t)str_len - start;
-	}
+	const size_t end_byte = qd_string_char_offset(str_elem.value.s, (size_t)(start + remove_len));
 
-	size_t result_len = str_len - (size_t)remove_len;
+	size_t result_len = str_len - (end_byte - start_byte);
 	char* result = malloc(result_len + 1);
 	if (!result) abort();
 
-	memcpy(result, str, (size_t)start);
-	strcpy(result + start, str + start + remove_len);
+	memcpy(result, str, start_byte);
+	strcpy(result + start_byte, str + end_byte);
 
 	qd_string_release(str_elem.value.s);
 	qd_push_s(ctx, result);
@@ -1626,24 +1808,30 @@ int usr_strings_truncate(qd_context* ctx) {
 	const char* str = qd_string_data(str_elem.value.s);
 	int64_t max_len = max_elem.value.i;
 	const char* suffix = qd_string_data(suffix_elem.value.s);
-	size_t str_len = strlen(str);
 	size_t suffix_len = strlen(suffix);
 
-	if ((int64_t)str_len <= max_len || max_len < 0) {
+	// `max_len` is a character budget, and the suffix costs characters out of it. Measuring
+	// in bytes truncated a string of accented text far earlier than asked and could cut
+	// inside a character.
+	const int64_t str_chars = (int64_t)qd_string_char_length(str_elem.value.s);
+	const int64_t suffix_chars = (int64_t)qd_string_char_length(suffix_elem.value.s);
+
+	if (str_chars <= max_len || max_len < 0) {
 		qd_push_s(ctx, str);
 	} else {
-		size_t trunc_len = (size_t)max_len;
-		if (suffix_len > 0 && trunc_len > suffix_len) {
-			trunc_len -= suffix_len;
+		int64_t keep_chars = max_len;
+		if (suffix_chars > 0 && keep_chars > suffix_chars) {
+			keep_chars -= suffix_chars;
 		}
-		char* result = malloc((size_t)max_len + 1);
+		const size_t keep_bytes = qd_string_char_offset(str_elem.value.s, (size_t)keep_chars);
+		char* result = malloc(keep_bytes + suffix_len + 1);
 		if (!result) abort();
 
-		memcpy(result, str, trunc_len);
+		memcpy(result, str, keep_bytes);
 		if (suffix_len > 0) {
-			memcpy(result + trunc_len, suffix, suffix_len);
+			memcpy(result + keep_bytes, suffix, suffix_len);
 		}
-		result[trunc_len + suffix_len] = '\0';
+		result[keep_bytes + suffix_len] = '\0';
 
 		qd_push_s(ctx, result);
 		free(result);
@@ -1702,16 +1890,23 @@ int usr_strings_words(qd_context* ctx) {
 
 	const char* str = qd_string_data(str_elem.value.s);
 
-	// Count words
+	// Word boundaries use the same codepoint whitespace test as trim and title, so a string
+	// separated by non-breaking spaces splits the way it looks like it should. Splitting on
+	// ASCII whitespace bytes alone was already safe for UTF-8 -- a space byte cannot occur
+	// inside a multi-byte sequence -- but it was inconsistent with the rest of the module.
+	const size_t bytes = strlen(str);
 	size_t count = 0;
 	int in_word = 0;
-	for (const char* p = str; *p; p++) {
-		if (isspace((unsigned char)*p)) {
+	for (size_t i = 0; i < bytes;) {
+		uint32_t cp = 0;
+		const size_t n = utf8_decode((const unsigned char*)str + i, bytes - i, &cp);
+		if (utf8_is_space_cp(cp)) {
 			in_word = 0;
 		} else if (!in_word) {
 			in_word = 1;
 			count++;
 		}
+		i += n;
 	}
 
 	if (count == 0) {
@@ -1727,18 +1922,28 @@ int usr_strings_words(qd_context* ctx) {
 	qd_string_t** parts = (qd_string_t**)parts_arr->data.p;
 
 	size_t idx = 0;
-	const char* start = NULL;
-	for (const char* p = str; ; p++) {
-		if (*p == '\0' || isspace((unsigned char)*p)) {
-			if (start != NULL) {
-				size_t len = (size_t)(p - start);
-				parts[idx++] = qd_string_create_with_length(start, len);
-				start = NULL;
-			}
-			if (*p == '\0') break;
-		} else if (start == NULL) {
-			start = p;
+	int have_start = 0;
+	size_t start_off = 0;
+	for (size_t i = 0; i <= bytes;) {
+		const int at_end = (i == bytes);
+		uint32_t cp = 0;
+		size_t n = 1;
+		if (!at_end) {
+			n = utf8_decode((const unsigned char*)str + i, bytes - i, &cp);
 		}
+		if (at_end || utf8_is_space_cp(cp)) {
+			if (have_start) {
+				parts[idx++] = qd_string_create_with_length(str + start_off, i - start_off);
+				have_start = 0;
+			}
+			if (at_end) {
+				break;
+			}
+		} else if (!have_start) {
+			have_start = 1;
+			start_off = i;
+		}
+		i += n;
 	}
 
 	parts_arr->length = idx;
@@ -1817,8 +2022,10 @@ int usr_strings_is_numeric(qd_context* ctx) {
 
 	const char* str = qd_string_data(str_elem.value.s);
 	int result = (*str != '\0') ? 1 : 0;
-	for (const char* p = str; *p && result; p++) {
-		if (!isdigit((unsigned char)*p)) result = 0;
+	for (size_t i = 0, n = strlen(str); i < n && result;) {
+		uint32_t cp = 0;
+		i += utf8_decode((const unsigned char*)str + i, n - i, &cp);
+		if (!utf8_is_digit_cp(cp)) result = 0;
 	}
 
 	qd_string_release(str_elem.value.s);
@@ -1832,9 +2039,13 @@ int usr_strings_is_alpha(qd_context* ctx) {
 	STRINGS_POP(ctx, &str_elem, "is_alpha");
 
 	const char* str = qd_string_data(str_elem.value.s);
+	// Per codepoint. isalpha() on bytes answered "no" for every non-ASCII letter, so
+	// "h\xc3\xa9llo" was not alphabetic and "\xe6\x97\xa5\xe6\x9c\xac" was not either.
 	int result = (*str != '\0') ? 1 : 0;
-	for (const char* p = str; *p && result; p++) {
-		if (!isalpha((unsigned char)*p)) result = 0;
+	for (size_t i = 0, n = strlen(str); i < n && result;) {
+		uint32_t cp = 0;
+		i += utf8_decode((const unsigned char*)str + i, n - i, &cp);
+		if (!utf8_is_alpha_cp(cp)) result = 0;
 	}
 
 	qd_string_release(str_elem.value.s);
@@ -1849,8 +2060,10 @@ int usr_strings_is_alphanumeric(qd_context* ctx) {
 
 	const char* str = qd_string_data(str_elem.value.s);
 	int result = (*str != '\0') ? 1 : 0;
-	for (const char* p = str; *p && result; p++) {
-		if (!isalnum((unsigned char)*p)) result = 0;
+	for (size_t i = 0, n = strlen(str); i < n && result;) {
+		uint32_t cp = 0;
+		i += utf8_decode((const unsigned char*)str + i, n - i, &cp);
+		if (!utf8_is_alpha_cp(cp) && !utf8_is_digit_cp(cp)) result = 0;
 	}
 
 	qd_string_release(str_elem.value.s);
@@ -1882,9 +2095,11 @@ int usr_strings_is_lowercase(qd_context* ctx) {
 	const char* str = qd_string_data(str_elem.value.s);
 	int has_letters = 0;
 	int result = 1;
-	for (const char* p = str; *p && result; p++) {
-		if (isupper((unsigned char)*p)) result = 0;
-		if (isalpha((unsigned char)*p)) has_letters = 1;
+	for (size_t i = 0, n = strlen(str); i < n && result;) {
+		uint32_t cp = 0;
+		i += utf8_decode((const unsigned char*)str + i, n - i, &cp);
+		if (utf8_is_upper_cp(cp)) result = 0;
+		if (utf8_is_alpha_cp(cp)) has_letters = 1;
 	}
 
 	qd_string_release(str_elem.value.s);
@@ -1900,9 +2115,11 @@ int usr_strings_is_uppercase(qd_context* ctx) {
 	const char* str = qd_string_data(str_elem.value.s);
 	int has_letters = 0;
 	int result = 1;
-	for (const char* p = str; *p && result; p++) {
-		if (islower((unsigned char)*p)) result = 0;
-		if (isalpha((unsigned char)*p)) has_letters = 1;
+	for (size_t i = 0, n = strlen(str); i < n && result;) {
+		uint32_t cp = 0;
+		i += utf8_decode((const unsigned char*)str + i, n - i, &cp);
+		if (utf8_is_lower_cp(cp)) result = 0;
+		if (utf8_is_alpha_cp(cp)) has_letters = 1;
 	}
 
 	qd_string_release(str_elem.value.s);
@@ -1910,21 +2127,21 @@ int usr_strings_is_uppercase(qd_context* ctx) {
 	return (int){0};
 }
 
-// char_count - count UTF-8 codepoints ( str:s -- count:i )
-int usr_strings_char_count(qd_context* ctx) {
+// byte_len - size of the UTF-8 encoding ( str:s -- bytes:i )
+//
+// This is what strings::len used to return. len now counts characters, which is the useful
+// answer nearly everywhere; the byte size still matters when sizing a buffer or writing to
+// something that counts octets, so it keeps a name of its own rather than being reachable
+// only through strings::data. It replaces char_count, which counted codepoints and so became
+// an exact synonym for len.
+int usr_strings_byte_len(qd_context* ctx) {
 	qd_stack_element_t str_elem;
-	STRINGS_POP(ctx, &str_elem, "char_count");
+	STRINGS_POP(ctx, &str_elem, "byte_len");
 
-	const char* str = qd_string_data(str_elem.value.s);
-	int64_t count = 0;
-
-	for (const unsigned char* p = (const unsigned char*)str; *p; p++) {
-		// Count only leading bytes (not continuation bytes 10xxxxxx)
-		if ((*p & 0xC0) != 0x80) count++;
-	}
+	const int64_t bytes = (int64_t)qd_string_length(str_elem.value.s);
 
 	qd_string_release(str_elem.value.s);
-	qd_push_i(ctx, count);
+	qd_push_i(ctx, bytes);
 	return (int){0};
 }
 
@@ -1938,7 +2155,9 @@ int usr_strings_slice(qd_context* ctx) {
 	const char* str = qd_string_data(str_elem.value.s);
 	int64_t start = start_elem.value.i;
 	int64_t end = end_elem.value.i;
-	int64_t str_len = (int64_t)strlen(str);
+	// Indices count codepoints here too, including the negative ones -- -1 means the last
+	// character, not the last byte.
+	int64_t str_len = (int64_t)qd_string_char_length(str_elem.value.s);
 
 	// Handle negative indices
 	if (start < 0) start = str_len + start;
@@ -1952,10 +2171,12 @@ int usr_strings_slice(qd_context* ctx) {
 	if (end <= start) {
 		qd_push_s(ctx, "");
 	} else {
-		size_t result_len = (size_t)(end - start);
+		const size_t begin_byte = qd_string_char_offset(str_elem.value.s, (size_t)start);
+		const size_t end_byte = qd_string_char_offset(str_elem.value.s, (size_t)end);
+		size_t result_len = end_byte - begin_byte;
 		char* result = malloc(result_len + 1);
 		if (!result) abort();
-		memcpy(result, str + start, result_len);
+		memcpy(result, str + begin_byte, result_len);
 		result[result_len] = '\0';
 		qd_push_s(ctx, result);
 		free(result);

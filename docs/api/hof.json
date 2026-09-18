@@ -10,7 +10,7 @@
   "functions": [
     {
       "name": "all",
-      "signature": "(arr:[]T pred:fn(T -- i64)",
+      "signature": "(arr:[]T pred:fn(T -- i64) -- result:i64)",
       "failable": false,
       "description": "Check if all elements satisfy a predicate.",
       "params": [{"name": "pred", "type": "fn", "description": "Predicate function (i64 -- bool:i64)"}],
@@ -20,7 +20,7 @@
     },
     {
       "name": "any",
-      "signature": "(arr:[]T pred:fn(T -- i64)",
+      "signature": "(arr:[]T pred:fn(T -- i64) -- result:i64)",
       "failable": false,
       "description": "Check if any element satisfies a predicate.",
       "params": [{"name": "pred", "type": "fn", "description": "Predicate function (i64 -- bool:i64)"}],
@@ -30,7 +30,7 @@
     },
     {
       "name": "apply",
-      "signature": "(x:T f:fn(T -- T)",
+      "signature": "(x:T f:fn(T -- T) -- r:T)",
       "failable": false,
       "description": "Apply a function to a value.",
       "params": [{"name": "x", "type": "T", "description": "The input value"}, {"name": "f", "type": "fn", "description": "Function applied to the value"}],
@@ -40,7 +40,7 @@
     },
     {
       "name": "bi_star",
-      "signature": "(x:T y:T f:fn(T -- U)",
+      "signature": "(x:T y:T f:fn(T -- U) g:fn(T -- U) -- a:U b:U)",
       "failable": false,
       "description": "Apply two functions to two values (first to first, second to second).",
       "params": [{"name": "x", "type": "T", "description": "First value"}, {"name": "y", "type": "i64", "description": "Second value"}, {"name": "f", "type": "fn", "description": "Function for first value (i64 -- i64)"}, {"name": "g", "type": "fn", "description": "Function for second value (i64 -- i64)"}],
@@ -50,7 +50,7 @@
     },
     {
       "name": "bi",
-      "signature": "(x:T f:fn(T -- U)",
+      "signature": "(x:T f:fn(T -- U) g:fn(T -- U) -- a:U b:U)",
       "failable": false,
       "description": "Apply two functions to the same value.",
       "params": [{"name": "x", "type": "T", "description": "The input value"}, {"name": "f", "type": "fn", "description": "First function"}, {"name": "g", "type": "fn", "description": "Second function"}],
@@ -60,7 +60,7 @@
     },
     {
       "name": "both",
-      "signature": "(x:T y:T f:fn(T -- U)",
+      "signature": "(x:T y:T f:fn(T -- U) -- a:U b:U)",
       "failable": false,
       "description": "Apply a function to two values separately.",
       "params": [{"name": "x", "type": "T", "description": "First value"}, {"name": "y", "type": "i64", "description": "Second value"}, {"name": "f", "type": "fn", "description": "Function applied to the value"}],
@@ -70,7 +70,7 @@
     },
     {
       "name": "dip",
-      "signature": "(x:T y:U f:fn(T -- T)",
+      "signature": "(x:T y:U f:fn(T -- T) -- r:T top:U)",
       "failable": false,
       "description": "Apply a function to the second stack element, preserving the top.",
       "params": [{"name": "x", "type": "T", "description": "Second element (will have f applied)"}, {"name": "y", "type": "i64", "description": "Top element (preserved)"}, {"name": "f", "type": "fn", "description": "Function applied to the value"}],
@@ -80,7 +80,7 @@
     },
     {
       "name": "filter",
-      "signature": "(arr:[]T pred:fn(T -- i64)",
+      "signature": "(arr:[]T pred:fn(T -- i64) -- result:[]T)",
       "failable": false,
       "description": "Filter an array, keeping only elements that satisfy a predicate.",
       "params": [{"name": "pred", "type": "fn", "description": "Predicate function (i64 -- bool:i64)"}],
@@ -90,7 +90,7 @@
     },
     {
       "name": "find",
-      "signature": "(arr:[]T pred:fn(T -- i64)",
+      "signature": "(arr:[]T pred:fn(T -- i64) -- elem:T found:i64)",
       "failable": false,
       "description": "Find the first element satisfying a predicate.",
       "params": [{"name": "pred", "type": "fn", "description": "Predicate function (i64 -- bool:i64)"}],
@@ -100,7 +100,7 @@
     },
     {
       "name": "fold",
-      "signature": "(arr:[]T acc:A f:fn(A T -- A)",
+      "signature": "(arr:[]T acc:A f:fn(A T -- A) -- result:A)",
       "failable": false,
       "description": "Fold/reduce an array left-to-right with a binary function.",
       "params": [{"name": "init", "type": "i64", "description": "Initial accumulator value"}, {"name": "f", "type": "fn", "description": "(i64 i64 -- i64) Binary function (acc:i64 elem:i64 -- acc:i64)"}],
@@ -110,7 +110,7 @@
     },
     {
       "name": "fold_right",
-      "signature": "(arr:[]T acc:A f:fn(T A -- A)",
+      "signature": "(arr:[]T acc:A f:fn(T A -- A) -- result:A)",
       "failable": false,
       "description": "Fold/reduce an array right-to-left with a binary function.",
       "params": [{"name": "init", "type": "i64", "description": "Initial accumulator value"}, {"name": "f", "type": "fn", "description": "(i64 i64 -- i64) Binary function (elem:i64 acc:i64 -- acc:i64)"}],
@@ -120,7 +120,7 @@
     },
     {
       "name": "keep",
-      "signature": "(x:T f:fn(T -- U)",
+      "signature": "(x:T f:fn(T -- U) -- r:U orig:T)",
       "failable": false,
       "description": "Apply a function but keep the original value.",
       "params": [{"name": "x", "type": "T", "description": "The input value"}, {"name": "f", "type": "fn", "description": "Function applied to the value"}],
@@ -130,7 +130,7 @@
     },
     {
       "name": "map",
-      "signature": "(arr:[]T f:fn(T -- U)",
+      "signature": "(arr:[]T f:fn(T -- U) -- result:[]U)",
       "failable": false,
       "description": "Map a function over an array, returning a new array.",
       "params": [{"name": "f", "type": "fn", "description": "Function applied to the value"}],
@@ -140,7 +140,7 @@
     },
     {
       "name": "times",
-      "signature": "(x:T n:i64 f:fn(T -- T)",
+      "signature": "(x:T n:i64 f:fn(T -- T) -- r:T)",
       "failable": false,
       "description": "Apply function n times to an initial value.",
       "params": [{"name": "x", "type": "T", "description": "Initial value"}, {"name": "n", "type": "i64", "description": "Number of times to apply"}, {"name": "f", "type": "fn", "description": "Function applied to the value"}],
@@ -150,7 +150,7 @@
     },
     {
       "name": "tri",
-      "signature": "(x:T f:fn(T -- U)",
+      "signature": "(x:T f:fn(T -- U) g:fn(T -- U) h:fn(T -- U) -- a:U b:U c:U)",
       "failable": false,
       "description": "Apply three functions to the same value.",
       "params": [{"name": "x", "type": "T", "description": "The input value"}, {"name": "f", "type": "fn", "description": "First function"}, {"name": "g", "type": "fn", "description": "Second function"}, {"name": "h", "type": "fn", "description": "Third function"}],
@@ -160,7 +160,7 @@
     },
     {
       "name": "unless",
-      "signature": "(x:T cond:i64 f:fn(T -- T)",
+      "signature": "(x:T cond:i64 f:fn(T -- T) -- r:T)",
       "failable": false,
       "description": "Apply function only if condition is false, otherwise return value unchanged.",
       "params": [{"name": "x", "type": "T", "description": "The input value"}, {"name": "cond", "type": "i64", "description": "Condition (0 = false, non-zero = true)"}, {"name": "f", "type": "fn", "description": "Function applied to the value"}],
@@ -170,7 +170,7 @@
     },
     {
       "name": "when",
-      "signature": "(x:T cond:i64 f:fn(T -- T)",
+      "signature": "(x:T cond:i64 f:fn(T -- T) -- r:T)",
       "failable": false,
       "description": "Apply function only if condition is true, otherwise return value unchanged.",
       "params": [{"name": "x", "type": "T", "description": "The input value"}, {"name": "cond", "type": "i64", "description": "Condition (0 = false, non-zero = true)"}, {"name": "f", "type": "fn", "description": "Function applied to the value"}],

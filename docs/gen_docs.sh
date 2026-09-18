@@ -164,13 +164,18 @@ parse_module() {
         fi
 
         # Parse function (including method syntax)
-        local fn_regex='fn[[:space:]]+(\([^)]*\)[[:space:]]+)?([a-zA-Z_][a-zA-Z0-9_]*)(<[^>]*>)?[[:space:]]*\(([^)]*)\)[[:space:]]*(!?)'
+        # The parameter list may contain one level of nested parentheses -- a function-pointer
+        # type such as `pred:fn(T -- i64)`. A plain `[^)]*` stops at that inner `)`, which
+        # published every such signature truncated mid-type, with the return section missing and
+        # the parenthesis unbalanced: `(arr:[]T pred:fn(T -- i64)`. Match non-paren runs and
+        # balanced one-level groups instead. Group 5 is the repeat, so `!` moved to group 6.
+        local fn_regex='fn[[:space:]]+(\([^)]*\)[[:space:]]+)?([a-zA-Z_][a-zA-Z0-9_]*)(<[^>]*>)?[[:space:]]*\(([^()]*(\([^()]*\)[^()]*)*)\)[[:space:]]*(!?)'
         if [[ "$trimmed" =~ $fn_regex ]]; then
             local fn_receiver="${BASH_REMATCH[1]}"
             local fn_name="${BASH_REMATCH[2]}"
             local fn_type_params="${BASH_REMATCH[3]}"
             local fn_sig="${BASH_REMATCH[4]}"
-            local fn_failable="${BASH_REMATCH[5]}"
+            local fn_failable="${BASH_REMATCH[6]}"
 
             if [[ $is_public -eq 1 ]]; then
                 # Parse doc comment
@@ -407,10 +412,23 @@ generate_markdown() {
     output+="# \`use\` $module_name"$'\n\n'
 
     # Module description (with example block detection)
+    #
+    # A `doccheck:` line in the module's doc comment is emitted as an HTML comment just above the
+    # fence, which is where tools/check_docs.py looks for it. It has to come from the source:
+    # signal.md carried a hand-added `<!-- doccheck: compile-only -->` that every regeneration of
+    # this file silently dropped, because nothing here knew the marker existed.
     local in_example=0
+    local pending_doccheck=""
     for desc in "${_module_desc[@]}"; do
-        if [[ "$desc" =~ ^Example: ]]; then
+        if [[ "$desc" =~ ^doccheck:[[:space:]]*(.*) ]]; then
+            pending_doccheck="${BASH_REMATCH[1]}"
+        elif [[ "$desc" =~ ^Example: ]]; then
             output+="**Example:**"$'\n\n'
+            # check_docs.py only sees the marker on the line directly above the fence
+            if [[ -n "$pending_doccheck" ]]; then
+                output+="<!-- doccheck: $pending_doccheck -->"$'\n'
+                pending_doccheck=""
+            fi
             output+="\`\`\`qd"$'\n'
             in_example=1
         elif [[ $in_example -eq 1 ]]; then

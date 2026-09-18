@@ -125,21 +125,21 @@ int qd_swap(qd_context* ctx) {
 	// Push them back in swapped order (b first, then a, strings are retained not copied)
 	err = qdrt_push_element(st, &b);
 	if (err != QD_STACK_OK) {
-		qdrt_release_if_string(&a);
-		qdrt_release_if_string(&b);
+		qdrt_release_element(&a);
+		qdrt_release_element(&b);
 		QDRT_FATAL(ctx, "swap", "Stack overflow pushing result");
 	}
 
 	err = qdrt_push_element(st, &a);
 	if (err != QD_STACK_OK) {
-		qdrt_release_if_string(&a);
-		qdrt_release_if_string(&b);
+		qdrt_release_element(&a);
+		qdrt_release_element(&b);
 		QDRT_FATAL(ctx, "swap", "Stack overflow pushing result");
 	}
 
 	// Release our original references (push_element retained them)
-	qdrt_release_if_string(&a);
-	qdrt_release_if_string(&b);
+	qdrt_release_element(&a);
+	qdrt_release_element(&b);
 
 	return (int){0};
 }
@@ -184,10 +184,7 @@ int qd_nip(qd_context* ctx) {
 		QDRT_FATAL(ctx, "nip", "Failed to pop value (stack changed unexpectedly)");
 	}
 
-	// Release string reference if necessary
-	if (second.type == QD_STACK_TYPE_STR) {
-		qd_string_release(second.value.s);
-	}
+	qdrt_release_element(&second);
 
 	// Push the top element back
 	err = qdrt_push_element(ctx->st, &top);
@@ -196,10 +193,8 @@ int qd_nip(qd_context* ctx) {
 		QDRT_FATAL(ctx, "nip", "Stack overflow pushing result");
 	}
 
-	// Release our reference to top (push_element retained it)
-	if (top.type == QD_STACK_TYPE_STR) {
-		qd_string_release(top.value.s);
-	}
+	// Release our reference to top (push_element took one of its own)
+	qdrt_release_element(&top);
 
 	return (int){0};
 }
@@ -213,10 +208,7 @@ int qd_drop(qd_context* ctx) {
 		QDRT_FATAL(ctx, "drop", "Failed to pop value (stack changed unexpectedly)");
 	}
 
-	// Release string reference if needed
-	if (val.type == QD_STACK_TYPE_STR) {
-		qd_string_release(val.value.s);
-	}
+	qdrt_release_element(&val);
 
 	return (int){0};
 }
@@ -236,9 +228,7 @@ void qd_stack_truncate(qd_context* ctx, int64_t target) {
 		if (qd_stack_pop(ctx->st, &val) != QD_STACK_OK) {
 			break;
 		}
-		if (val.type == QD_STACK_TYPE_STR) {
-			qd_string_release(val.value.s);
-		}
+		qdrt_release_element(&val);
 	}
 }
 
@@ -280,15 +270,9 @@ int qd_rot(qd_context* ctx) {
 	}
 
 	// Release our original references (push_element retained them)
-	if (a.type == QD_STACK_TYPE_STR) {
-		qd_string_release(a.value.s);
-	}
-	if (b.type == QD_STACK_TYPE_STR) {
-		qd_string_release(b.value.s);
-	}
-	if (c.type == QD_STACK_TYPE_STR) {
-		qd_string_release(c.value.s);
-	}
+	qdrt_release_element(&a);
+	qdrt_release_element(&b);
+	qdrt_release_element(&c);
 
 	return (int){0};
 }
@@ -395,25 +379,25 @@ int qd_roll(qd_context* ctx) {
 		if (err != QD_STACK_OK) {
 			// Release all remaining elements
 			for (int64_t j = i; j < n; j++) {
-				qdrt_release_if_string(&temp[j]);
+				qdrt_release_element(&temp[j]);
 			}
-			qdrt_release_if_string(&temp[0]);
+			qdrt_release_element(&temp[0]);
 			free(temp);
 			QDRT_FATAL(ctx, "roll", "Stack overflow restoring element %ld", (long)i);
 		}
 		// Release our reference (push_element retained it)
-		qdrt_release_if_string(&temp[i]);
+		qdrt_release_element(&temp[i]);
 	}
 
 	// Push temp[0] last (it becomes the top)
 	err = qdrt_push_element(ctx->st, &temp[0]);
 	if (err != QD_STACK_OK) {
-		qdrt_release_if_string(&temp[0]);
+		qdrt_release_element(&temp[0]);
 		free(temp);
 		QDRT_FATAL(ctx, "roll", "Stack overflow restoring rolled element");
 	}
 	// Release our reference (push_element retained it)
-	qdrt_release_if_string(&temp[0]);
+	qdrt_release_element(&temp[0]);
 
 	free(temp);
 
@@ -428,10 +412,7 @@ int qd_clear(qd_context* ctx) {
 		if (err != QD_STACK_OK) {
 			QDRT_FATAL(ctx, "clear", "Failed to pop element");
 		}
-		// Release string reference if it was a string element
-		if (elem.type == QD_STACK_TYPE_STR) {
-			qd_string_release(elem.value.s);
-		}
+		qdrt_release_element(&elem);
 	}
 
 	return (int){0};

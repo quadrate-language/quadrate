@@ -13,6 +13,27 @@ Error codes: Ok=1 (success), specific errors start at 2
 
 ## Functions
 
+### `fn` byte_len
+
+Size of the string's UTF-8 encoding, in bytes. strings::len counts characters; this is what you want when sizing a buffer or writing to something that counts octets.
+
+**Signature:** `(s:str -- bytes:i64)`
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `s` | `str` | Input string |
+
+| Output | Type | Description |
+|--------|------|-------------|
+| `bytes` | `i64` | Number of bytes |
+
+**Example:**
+
+```qd
+"héllo" strings::byte_len print  // 6
+```
+---
+
 ### `fn` capitalize
 
 Capitalize first character, lowercase rest.
@@ -59,7 +80,7 @@ Center string with padding on both sides.
 
 ### `fn` char_at
 
-Get character code at index.
+Get character code at index. The index counts characters and the result is a Unicode codepoint, so indexing never lands in the middle of a multi-byte character.
 
 **Signature:** `(str:str index:i64 -- char_code:i64)!`
 
@@ -70,7 +91,7 @@ Get character code at index.
 
 | Output | Type | Description |
 |--------|------|-------------|
-| `char_code` | `i64` | ASCII/UTF-8 byte value |
+| `char_code` | `i64` | Unicode codepoint |
 
 | Error | Description |
 |-------|-------------|
@@ -79,28 +100,7 @@ Get character code at index.
 **Example:**
 
 ```qd
-"hello" 0 strings::char_at! print  // 104 ('h')
-```
----
-
-### `fn` char_count
-
-Count UTF-8 codepoints (characters, not bytes).
-
-**Signature:** `(s:str -- count:i64)`
-
-| Parameter | Type | Description |
-|-----------|------|-------------|
-| `s` | `str` | Input string |
-
-| Output | Type | Description |
-|--------|------|-------------|
-| `count` | `i64` | Number of UTF-8 codepoints |
-
-**Example:**
-
-```qd
-"héllo" strings::char_count print  // 5
+"héllo" 1 strings::char_at! print  // 233 ('é')
 ```
 ---
 
@@ -271,13 +271,13 @@ Case-insensitive string comparison.
 
 ### `fn` from_char
 
-Create string from character code.
+Create string from a Unicode codepoint, encoded as UTF-8. A value outside the Unicode range, or a surrogate, gives the empty string.
 
 **Signature:** `(char_code:i64 -- str:str)`
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
-| `char_code` | `i64` | ASCII/UTF-8 byte value |
+| `char_code` | `i64` | Unicode codepoint |
 
 | Output | Type | Description |
 |--------|------|-------------|
@@ -286,7 +286,7 @@ Create string from character code.
 **Example:**
 
 ```qd
-65 strings::from_char print  // "A"
+233 strings::from_char print  // "é"
 ```
 ---
 
@@ -598,7 +598,7 @@ Find last occurrence of substring.
 
 ### `fn` len
 
-Get string length in bytes.
+Get string length in characters. Counts UTF-8 codepoints, so "héllo" is 5 even though it occupies 6 bytes. Use strings::data for the byte buffer when byte extent is what you need.
 
 **Signature:** `(str:str -- len:i64)`
 
@@ -608,12 +608,12 @@ Get string length in bytes.
 
 | Output | Type | Description |
 |--------|------|-------------|
-| `len` | `i64` | Length in bytes |
+| `len` | `i64` | Length in characters |
 
 **Example:**
 
 ```qd
-"hello" strings::len print  // 5
+"héllo" strings::len print  // 5
 ```
 ---
 

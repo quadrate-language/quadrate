@@ -393,7 +393,9 @@ namespace Qd {
 				reportErrorConditional(node, "Type error in 'cast': Stack underflow (requires 1 value)", reportErrors);
 				return;
 			}
-			// Pop any type
+			// Pop any type, remembering it: a string operand is the one case 'cast' cannot
+			// handle honestly (see the rejection below).
+			const StackValueType operandType = typeStack.back();
 			typeStack.pop_back();
 			if (!structTypeStack.empty()) {
 				structTypeStack.pop_back();
@@ -416,6 +418,30 @@ namespace Qd {
 					}
 				}
 			}
+			// A string cannot be cast to a number. Every other direction 'cast' offers is
+			// total -- an int to a float, a float to an int, anything to a string -- but
+			// parsing can fail, and this one reported failure as the value 0: "notanumber"
+			// cast<i64> and "0" cast<i64> both gave 0, with nothing to tell them apart. It
+			// also stopped at the first bad character, so "42abc" silently became 42.
+			//
+			// strconv already has the honest version of every one of these, fallible, so
+			// this direction was a quiet duplicate of an existing API rather than a feature.
+			// Removing it rather than making 'cast' fallible keeps 'cast' what it is: a
+			// total conversion that never needs its result checked.
+			if (operandType == StackValueType::STRING &&
+					(resultType == StackValueType::INT || resultType == StackValueType::FLOAT)) {
+				const char* hint =
+						(resultType == StackValueType::INT)
+								? "use 'strconv::atoi' (or 'strconv::parse_int' for a base), which is fallible: "
+								  "'s strconv::atoi if { -> n ... } else { ... }'"
+								: "use 'strconv::parse_float', which is fallible: "
+								  "'s strconv::parse_float if { -> x ... } else { ... }'";
+				std::string err = "Type error in 'cast': a string cannot be cast to ";
+				err += (resultType == StackValueType::INT) ? "an integer" : "a float";
+				err += "; parsing can fail and 'cast' has no way to report it";
+				reportErrorConditionalWithHint(node, err.c_str(), hint, reportErrors);
+			}
+
 			typeStack.push_back(resultType);
 			structTypeStack.push_back("");
 			return;

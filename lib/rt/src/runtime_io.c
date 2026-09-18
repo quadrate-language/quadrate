@@ -6,7 +6,9 @@
 
 #include "runtime_internal.h"
 #include <ctype.h>
+#include <quadrate/rt/array.h>
 #include <quadrate/rt/qd_string.h>
+#include <quadrate/rt/qd_struct.h>
 #include <quadrate/rt/runtime.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -42,6 +44,76 @@ static char* remove_quotes(const char* str) {
 	return strdup(str);
 }
 
+/* Renders a pointer the way `print` and `printv` should: an array as its elements, anything else
+ * as what it is. A pointer used to print as nothing at all -- `[1 2 3] print` produced an empty
+ * line -- which made arrays and structs the one kind of value you could not look at while
+ * debugging.
+ *
+ * The runtime can tell an array from a struct by the magic word each carries, but a struct header
+ * holds no field names, so a struct can only be reported as one. Depth is capped because an array
+ * may contain itself. */
+#define QD_PRINT_MAX_DEPTH 8
+
+static void print_pointer(const void* p, int depth);
+
+static void print_array_contents(const qd_array_t* arr, int depth) {
+	const size_t n = qd_array_length(arr);
+	printf("[");
+	for (size_t i = 0; i < n; i++) {
+		if (i > 0) {
+			printf(" ");
+		}
+		switch (arr->elemType) {
+		case QD_ARRAY_TYPE_INT: {
+			int64_t v = 0;
+			qd_array_get_int(arr, i, &v);
+			printf("%ld", v);
+			break;
+		}
+		case QD_ARRAY_TYPE_FLOAT: {
+			double v = 0;
+			qd_array_get_float(arr, i, &v);
+			printf("%g", v);
+			break;
+		}
+		case QD_ARRAY_TYPE_STR: {
+			void* v = NULL;
+			qd_array_get_ptr(arr, i, &v);
+			printf("%s", v ? qd_string_data((qd_string_t*)v) : "");
+			break;
+		}
+		default: {
+			void* v = NULL;
+			qd_array_get_ptr(arr, i, &v);
+			print_pointer(v, depth + 1);
+			break;
+		}
+		}
+	}
+	printf("]");
+}
+
+static void print_pointer(const void* p, int depth) {
+	if (!p) {
+		printf("null");
+		return;
+	}
+	if (qd_array_is_valid(p)) {
+		if (depth >= QD_PRINT_MAX_DEPTH) {
+			printf("[...]");
+			return;
+		}
+		print_array_contents((const qd_array_t*)p, depth);
+		return;
+	}
+	if (qd_struct_is_valid(p)) {
+		/* The header carries a refcount and a destructor, not field names. */
+		printf("<struct %p>", p);
+		return;
+	}
+	printf("<ptr %p>", p);
+}
+
 int qd_print(qd_context* ctx) {
 	// Pop and print the top element
 	QDRT_CHECK_STACK(ctx, "print", 1);
@@ -62,6 +134,10 @@ int qd_print(qd_context* ctx) {
 	case QD_STACK_TYPE_STR:
 		printf("%s", qd_string_data(val.value.s));
 		qd_string_release(val.value.s); // Release the string reference after printing
+		break;
+	case QD_STACK_TYPE_PTR:
+		print_pointer(val.value.p, 0);
+		qd_ptr_release(val.value.p); // The stack held a reference; printing consumes it
 		break;
 	default:
 		return (int){-3};
@@ -150,7 +226,10 @@ int qd_printv(qd_context* ctx) {
 		break;
 	}
 	case QD_STACK_TYPE_PTR:
-		printf("ptr:%p\n", val.value.p);
+		printf("ptr:");
+		print_pointer(val.value.p, 0);
+		printf("\n");
+		qd_ptr_release(val.value.p);
 		break;
 	default:
 		return (int){-3};

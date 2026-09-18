@@ -1075,17 +1075,28 @@ TEST(StrIsUppercaseFalseTest) {
 }
 
 
-/* ---------- char_count ---------- */
+/* ---------- byte_len ---------- */
 
-TEST(StrCharCountTest) {
+TEST(StrByteLenTest) {
 	qd_context* ctx = create_test_context();
 
 	qd_push_s(ctx, "hello");
-	usr_strings_char_count(ctx);
+	usr_strings_byte_len(ctx);
 
 	qd_stack_element_t elem;
 	qd_stack_pop(ctx->st, &elem);
-	ASSERT_EQ(5, (int)elem.value.i, "char_count 'hello'");
+	ASSERT_EQ(5, (int)elem.value.i, "byte_len 'hello'");
+
+	/* len counts characters, byte_len counts the encoding: the two part company here. */
+	qd_push_s(ctx, "h\xc3\xa9llo");
+	usr_strings_byte_len(ctx);
+	qd_stack_pop(ctx->st, &elem);
+	ASSERT_EQ(6, (int)elem.value.i, "byte_len 'hello' with an e-acute");
+
+	qd_push_s(ctx, "h\xc3\xa9llo");
+	usr_strings_len(ctx);
+	qd_stack_pop(ctx->st, &elem);
+	ASSERT_EQ(5, (int)elem.value.i, "len of the same string");
 
 	destroy_test_context(ctx);
 }

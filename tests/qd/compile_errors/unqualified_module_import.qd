@@ -1,0 +1,15 @@
+// A function from a module's `import` block must be called with its module name, including
+// inside the module that declares the import.
+//
+// The bare name does not resolve to the import. It used to compile clean and leave an extra
+// value on the stack, so an `if` consumed that instead of the result and always took the
+// true branch: in unicode.qd, `c is_digit if { ... }` made digit_value answer 17 for 'A'
+// rather than -1. Every module in the corpus already writes the qualified form, which is why
+// nothing caught it.
+//
+// badimport_mod.qd calls its own imported `upper` as a bare `upper`.
+use badimport_mod.qd
+
+fn main() {
+	"hi" badimport_mod::shout print nl
+}

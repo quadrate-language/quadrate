@@ -1,6 +1,6 @@
 {
   "name": "rand",
-  "description": "Random number generation using xorshift64* algorithm. Fast, high-quality PRNG suitable for most applications.",
+  "description": "Random number generation using xorshift64* algorithm. Fast, high-quality PRNG suitable for most applications.  SECURITY: the `Rng` generator (`new`, `with_seed`, `next`, ...) is NOT cryptographically secure - xorshift64* is fast but predictable and a time-based seed is guessable. Do NOT use it for tokens, session IDs, nonces, salts, or keys. For those, use `rand::secure_i64` (which draws fresh OS entropy on every call) or seed an `Rng` with `rand::secure`.",
   "constants": [
 
   ],
@@ -78,7 +78,7 @@
       "name": "new",
       "signature": "( -- rng:Rng)",
       "failable": false,
-      "description": "Create a new RNG seeded from current time.",
+      "description": "Create a new RNG seeded from current time. NOT cryptographically secure (guessable seed) - see module security note.",
       "params": [],
       "returns": [{"name": "rng", "type": "ptr", "description": "New random number generator"}],
       "errors": [],
@@ -133,6 +133,26 @@
       "returns": [{"name": "rng", "type": "ptr", "description": "Updated RNG state"}],
       "errors": [],
       "examples": ["rng src 10 dst 3 rand::sample -> rng"]
+    },
+    {
+      "name": "secure_i64",
+      "signature": "( -- n:i64)",
+      "failable": false,
+      "description": "Get a cryptographically secure random 64-bit value directly from the OS entropy pool. Each call draws fresh entropy, so the output is suitable for tokens, nonces, salts, and keys.",
+      "params": [],
+      "returns": [{"name": "n", "type": "i64", "description": "Secure random 64-bit value"}],
+      "errors": [],
+      "examples": ["rand::secure_i64 -> token"]
+    },
+    {
+      "name": "secure",
+      "signature": "( -- rng:Rng)",
+      "failable": false,
+      "description": "Create a new RNG seeded from the OS entropy pool. The seed is unpredictable, but the generated stream is still xorshift64* and therefore NOT cryptographically secure - use `secure_i64` when stream secrecy matters.",
+      "params": [],
+      "returns": [{"name": "rng", "type": "Rng", "description": "New random number generator"}],
+      "errors": [],
+      "examples": ["rand::secure -> rng"]
     },
     {
       "name": "shuffle",

@@ -25,11 +25,14 @@ Converts a value to the specified type using the `cast<T>` syntax.
 3.14 cast<i64>   // 3 (truncates toward zero)
 42 cast<f64>     // 42
 42 cast<str>     // "42"
-"3.14" cast<f64> // 3.14 (parses string)
-"42" cast<i64>   // 42 (parses string)
 ```
 
 **Supported types:** `i64`, `f64`, `str`, `ptr`
+
+`cast` performs only conversions that always succeed, so its result never has to be checked.
+A string cannot be cast to a number: parsing can fail and `cast` has nowhere to report it.
+Use `strconv::atoi`, `strconv::parse_int`, `strconv::parse_float` or `strconv::parse_bool`,
+which are fallible.
 
 ---
 

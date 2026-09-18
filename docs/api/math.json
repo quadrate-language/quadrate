@@ -489,7 +489,7 @@
       "name": "fac",
       "signature": "(n:i64 -- result:i64)",
       "failable": false,
-      "description": "Factorial (n!).",
+      "description": "Factorial of a non-negative integer.",
       "params": [{"name": "n", "type": "i64", "description": "Non-negative integer"}],
       "returns": [{"name": "result", "type": "i64", "description": "n!"}],
       "errors": [],
@@ -524,6 +524,16 @@
       "returns": [{"name": "result", "type": "f64", "description": "sqrt(x² + y²)"}],
       "errors": [],
       "examples": ["3.0 4.0 math::hypot print  // 5.0"]
+    },
+    {
+      "name": "inf",
+      "signature": "( -- result:f64)",
+      "failable": false,
+      "description": "Positive infinity. Infinity is not writable as a literal, so this is the only way to name it.",
+      "params": [],
+      "returns": [{"name": "result", "type": "f64", "description": "+INF"}],
+      "errors": [],
+      "examples": ["math::inf print  // inf"]
     },
     {
       "name": "inverse_lerp",
@@ -564,6 +574,36 @@
       "returns": [{"name": "result", "type": "f64", "description": "1/x"}],
       "errors": [],
       "examples": ["4.0 math::inv print  // 0.25"]
+    },
+    {
+      "name": "is_finite",
+      "signature": "(x:f64 -- result:i64)",
+      "failable": false,
+      "description": "Is x neither infinite nor NaN?",
+      "params": [{"name": "x", "type": "f64", "description": "Any value"}],
+      "returns": [{"name": "result", "type": "i64", "description": "1 if x is finite, else 0"}],
+      "errors": [],
+      "examples": ["1.0 math::is_finite print  // 1"]
+    },
+    {
+      "name": "is_inf",
+      "signature": "(x:f64 -- result:i64)",
+      "failable": false,
+      "description": "Is x positive or negative infinity?",
+      "params": [{"name": "x", "type": "f64", "description": "Any value"}],
+      "returns": [{"name": "result", "type": "i64", "description": "1 if x is infinite, else 0"}],
+      "errors": [],
+      "examples": ["1.0 0.0 / math::is_inf print  // 1"]
+    },
+    {
+      "name": "is_nan",
+      "signature": "(x:f64 -- result:i64)",
+      "failable": false,
+      "description": "Is x Not-a-Number?",
+      "params": [{"name": "x", "type": "f64", "description": "Any value"}],
+      "returns": [{"name": "result", "type": "i64", "description": "1 if x is NaN, else 0"}],
+      "errors": [],
+      "examples": ["0.0 0.0 / math::is_nan print  // 1"]
     },
     {
       "name": "length",
@@ -874,6 +914,16 @@
       "returns": [{"name": "result", "type": "Quat", "description": "Product of this and other"}],
       "errors": [],
       "examples": ["other q mul -> product"]
+    },
+    {
+      "name": "nan",
+      "signature": "( -- result:f64)",
+      "failable": false,
+      "description": "Not-a-Number. NaN compares unequal to everything, including itself -- test it with is_nan.",
+      "params": [],
+      "returns": [{"name": "result", "type": "f64", "description": "NaN"}],
+      "errors": [],
+      "examples": ["math::nan math::is_nan print  // 1"]
     },
     {
       "name": "neg",

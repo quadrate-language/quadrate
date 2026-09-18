@@ -9,7 +9,7 @@ Arrays are pointers to contiguous i64 values, f64 values, or string pointers.
 
 Sort an array of i64 by a comparator (quicksort). The comparator returns a negative value if `a` sorts before `b`, zero if they tie, and a positive value if `a` sorts after `b` -- the same convention as C's `qsort`. Sorting by a key, by several fields, or in descending order are all just comparators. Not stable.
 
-**Signature:** `(arr:ptr count:i64 cmp:fn(i64 i64 -- i64)`
+**Signature:** `(arr:ptr count:i64 cmp:fn(i64 i64 -- i64) -- )`
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
@@ -122,7 +122,7 @@ arr count sort::is_sorted  // result
 
 Whether an array of i64 is sorted according to a comparator.
 
-**Signature:** `(arr:ptr count:i64 cmp:fn(i64 i64 -- i64)`
+**Signature:** `(arr:ptr count:i64 cmp:fn(i64 i64 -- i64) -- sorted:i64)`
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
@@ -167,7 +167,7 @@ arr count sort::is_sorted_floats  // result
 
 Find the index of the first element not ordered before `needle` (binary search lower bound). The array must already be sorted by the same comparator. Returns `count` when every element sorts before `needle`.
 
-**Signature:** `(arr:ptr count:i64 needle:i64 cmp:fn(i64 i64 -- i64)`
+**Signature:** `(arr:ptr count:i64 needle:i64 cmp:fn(i64 i64 -- i64) -- idx:i64)`
 
 | Parameter | Type | Description |
 |-----------|------|-------------|

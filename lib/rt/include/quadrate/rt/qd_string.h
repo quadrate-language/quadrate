@@ -15,11 +15,15 @@
 
 #ifdef __cplusplus
 #include <atomic>
+#include <cstdint>
 extern "C" {
 typedef std::atomic<size_t> qd_atomic_size_t;
+typedef std::atomic<uint64_t> qd_atomic_uint64;
 #else
 #include <stdatomic.h>
+#include <stdint.h>
 typedef atomic_size_t qd_atomic_size_t;
+typedef _Atomic uint64_t qd_atomic_uint64;
 #endif
 
 /**
@@ -44,10 +48,19 @@ typedef atomic_size_t qd_atomic_size_t;
  * The reference count starts at 1 when created.
  * When refcount==1, strings can be mutated in-place if capacity allows.
  */
+/** @brief char_length has not been computed for this string yet */
+#define QD_STRING_CHAR_LEN_UNKNOWN ((size_t)-1)
+
 typedef struct qd_string {
-	char* data;				   ///< Null-terminated string data (owned)
-	size_t length;			   ///< String length (cached, excluding null terminator)
-	size_t capacity;		   ///< Buffer capacity (excluding null terminator)
+	char* data;			///< Null-terminated string data (owned)
+	size_t length;		///< Byte length (cached, excluding null terminator)
+	size_t capacity;	///< Buffer capacity (excluding null terminator)
+	size_t char_length; ///< Codepoint count, or QD_STRING_CHAR_LEN_UNKNOWN until asked
+	/// Memo for character-index lookups: the packed (char index, byte offset) of the last one.
+	/// Both halves move together in a single atomic word so a concurrent reader can never pair
+	/// one update's index with another's offset. Zero means "start of string", which is always
+	/// a valid place to resume from.
+	qd_atomic_uint64 scan_cursor;
 	qd_atomic_size_t refcount; ///< Atomic reference count
 } qd_string_t;
 
@@ -90,6 +103,37 @@ qd_string_t* qd_string_create_with_length(const char* str, size_t length);
  * @note Thread-safe: uses atomic operations
  * @note If str is NULL, this is a no-op and returns NULL
  */
+/**
+ * @brief Number of codepoints in the string, computed once and cached
+ *
+ * `length` is bytes; this is characters. Counting is a walk, so the answer is memoised on
+ * the string -- a loop calling strings::char_at would otherwise rescan from the start on
+ * every character and turn an ordinary scan quadratic.
+ *
+ * When this equals `length` every character occupies one byte, which lets an index-based
+ * operation skip the walk entirely and index bytes directly.
+ */
+size_t qd_string_char_length(qd_string_t* str);
+
+/**
+ * @brief Byte offset of character `index`, clamped to the byte length
+ *
+ * The walk that finding a character requires is what makes a loop reading a string one
+ * character at a time quadratic. Two things stop that: when every character is one byte the
+ * index *is* the offset, and otherwise the last lookup is memoised so a forward scan -- which
+ * is what such loops do -- resumes from where it left off instead of from the start.
+ */
+size_t qd_string_char_offset(qd_string_t* str, size_t index);
+
+/**
+ * @brief Character index of byte offset `byte_offset`, the inverse of qd_string_char_offset
+ *
+ * A search returns where in the bytes it matched; the string functions report character
+ * indices. Shares the same cursor, so scanning a string with repeated searches costs one walk
+ * in total rather than one per call.
+ */
+size_t qd_string_char_index(qd_string_t* str, size_t byte_offset);
+
 qd_string_t* qd_string_retain(qd_string_t* str);
 
 /**

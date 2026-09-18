@@ -14,7 +14,7 @@ They enable functional programming without explicit temporary variables.
 
 Check if all elements satisfy a predicate.
 
-**Signature:** `(arr:[]T pred:fn(T -- i64)`
+**Signature:** `(arr:[]T pred:fn(T -- i64) -- result:i64)`
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
@@ -35,7 +35,7 @@ arr fn (x:i64 -- r:i64) { 0 > } hof::all  // all positive?
 
 Check if any element satisfies a predicate.
 
-**Signature:** `(arr:[]T pred:fn(T -- i64)`
+**Signature:** `(arr:[]T pred:fn(T -- i64) -- result:i64)`
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
@@ -56,7 +56,7 @@ arr fn (x:i64 -- r:i64) { 0 > } hof::any  // any positive?
 
 Apply a function to a value.
 
-**Signature:** `(x:T f:fn(T -- T)`
+**Signature:** `(x:T f:fn(T -- T) -- r:T)`
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
@@ -78,7 +78,7 @@ Apply a function to a value.
 
 Apply two functions to two values (first to first, second to second).
 
-**Signature:** `(x:T y:T f:fn(T -- U)`
+**Signature:** `(x:T y:T f:fn(T -- U) g:fn(T -- U) -- a:U b:U)`
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
@@ -103,7 +103,7 @@ Apply two functions to two values (first to first, second to second).
 
 Apply two functions to the same value.
 
-**Signature:** `(x:T f:fn(T -- U)`
+**Signature:** `(x:T f:fn(T -- U) g:fn(T -- U) -- a:U b:U)`
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
@@ -127,7 +127,7 @@ Apply two functions to the same value.
 
 Apply a function to two values separately.
 
-**Signature:** `(x:T y:T f:fn(T -- U)`
+**Signature:** `(x:T y:T f:fn(T -- U) -- a:U b:U)`
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
@@ -151,7 +151,7 @@ Apply a function to two values separately.
 
 Apply a function to the second stack element, preserving the top.
 
-**Signature:** `(x:T y:U f:fn(T -- T)`
+**Signature:** `(x:T y:U f:fn(T -- T) -- r:T top:U)`
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
@@ -175,7 +175,7 @@ Apply a function to the second stack element, preserving the top.
 
 Filter an array, keeping only elements that satisfy a predicate.
 
-**Signature:** `(arr:[]T pred:fn(T -- i64)`
+**Signature:** `(arr:[]T pred:fn(T -- i64) -- result:[]T)`
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
@@ -192,7 +192,7 @@ arr fn (x:i64 -- r:i64) { 2 mod 0 == } hof::filter  // keep evens
 
 Find the first element satisfying a predicate.
 
-**Signature:** `(arr:[]T pred:fn(T -- i64)`
+**Signature:** `(arr:[]T pred:fn(T -- i64) -- elem:T found:i64)`
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
@@ -214,7 +214,7 @@ arr fn (x:i64 -- r:i64) { 10 > } hof::find  // first > 10
 
 Fold/reduce an array left-to-right with a binary function.
 
-**Signature:** `(arr:[]T acc:A f:fn(A T -- A)`
+**Signature:** `(arr:[]T acc:A f:fn(A T -- A) -- result:A)`
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
@@ -236,7 +236,7 @@ arr 0 fn (acc:i64 x:i64 -- r:i64) { + } hof::fold  // sum of array
 
 Fold/reduce an array right-to-left with a binary function.
 
-**Signature:** `(arr:[]T acc:A f:fn(T A -- A)`
+**Signature:** `(arr:[]T acc:A f:fn(T A -- A) -- result:A)`
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
@@ -258,7 +258,7 @@ arr 0 fn (x:i64 acc:i64 -- r:i64) { + } hof::fold_right  // sum of array
 
 Apply a function but keep the original value.
 
-**Signature:** `(x:T f:fn(T -- U)`
+**Signature:** `(x:T f:fn(T -- U) -- r:U orig:T)`
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
@@ -281,7 +281,7 @@ Apply a function but keep the original value.
 
 Map a function over an array, returning a new array.
 
-**Signature:** `(arr:[]T f:fn(T -- U)`
+**Signature:** `(arr:[]T f:fn(T -- U) -- result:[]U)`
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
@@ -298,7 +298,7 @@ arr fn (x:i64 -- r:i64) { 2 * } hof::map  // double each element
 
 Apply function n times to an initial value.
 
-**Signature:** `(x:T n:i64 f:fn(T -- T)`
+**Signature:** `(x:T n:i64 f:fn(T -- T) -- r:T)`
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
@@ -321,7 +321,7 @@ Apply function n times to an initial value.
 
 Apply three functions to the same value.
 
-**Signature:** `(x:T f:fn(T -- U)`
+**Signature:** `(x:T f:fn(T -- U) g:fn(T -- U) h:fn(T -- U) -- a:U b:U c:U)`
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
@@ -347,7 +347,7 @@ Apply three functions to the same value.
 
 Apply function only if condition is false, otherwise return value unchanged.
 
-**Signature:** `(x:T cond:i64 f:fn(T -- T)`
+**Signature:** `(x:T cond:i64 f:fn(T -- T) -- r:T)`
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
@@ -371,7 +371,7 @@ Apply function only if condition is false, otherwise return value unchanged.
 
 Apply function only if condition is true, otherwise return value unchanged.
 
-**Signature:** `(x:T cond:i64 f:fn(T -- T)`
+**Signature:** `(x:T cond:i64 f:fn(T -- T) -- r:T)`
 
 | Parameter | Type | Description |
 |-----------|------|-------------|

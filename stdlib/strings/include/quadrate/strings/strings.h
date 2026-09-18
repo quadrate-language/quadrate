@@ -285,6 +285,15 @@ int usr_strings_count(qd_context* ctx);
 int usr_strings_last_index_of(qd_context* ctx);
 
 /**
+ * @brief strings::byte_len - size of the string's UTF-8 encoding
+ * @param ctx Execution context
+ * @return Execution result
+ *
+ * usr_strings_len counts characters; this counts the bytes they occupy.
+ */
+int usr_strings_byte_len(qd_context* ctx);
+
+/**
  * @brief Register this module's words on a context
  *
  * For interpreted execution: the compiler resolves these words through the

@@ -29,6 +29,7 @@ static bool isStdlibImport(const std::string& library) {
 			"libthread.a",
 			"libtesting.a",
 			"libtty.a",
+			"libunicode.a",
 			"libbits.a",
 			"libhttp.a",
 			"libtls.a",
@@ -140,6 +141,9 @@ namespace Qd {
 		auto pushCallFnTy = llvm::FunctionType::get(builder->getVoidTy(), {contextPtrTy, ptrTy, ptrTy, int64Ty}, false);
 		pushCallFn = declareFn(pushCallFnTy, "qd_push_call");
 		popCallFn = declareFn(ctxToVoidTy, "qd_pop_call");
+		assertionResetFn = declareFn(ctxToVoidTy, "qd_assertion_reset");
+		assertionFailuresFn =
+				declareFn(llvm::FunctionType::get(int64Ty, {contextPtrTy}, false), "qd_assertion_failures");
 
 		// Stack checking
 		auto checkStackFnTy =
@@ -1670,6 +1674,11 @@ namespace Qd {
 		testErrorAlloca = builder->CreateAlloca(int32Ty, nullptr, "test_error");
 		builder->CreateStore(builder->getInt32(0), testErrorAlloca);
 
+		// The alloca only sees assertions this block emits itself. One called from a helper --
+		// or from testing's own assert_gt, which is Quadrate wrapping the C assert_true -- has
+		// nowhere to return its result to, so the runtime records those on the context instead.
+		builder->CreateCall(assertionResetFn, {ctx});
+
 		// Initialize defer scope for this test
 		deferScopeStack.clear();
 		deferScopeStack.push_back({});
@@ -1715,9 +1724,15 @@ namespace Qd {
 		// Pop from call stack
 		builder->CreateCall(popCallFn, {ctx});
 
-		// Return the accumulated error status
+		// Return the accumulated error status: what this block saw directly, plus anything an
+		// assertion recorded from deeper in the call stack.
 		auto finalError = builder->CreateLoad(int32Ty, testErrorAlloca, "final_error");
-		builder->CreateRet(finalError);
+		auto deepFailures = builder->CreateCall(assertionFailuresFn, {ctx}, "deep_failures");
+		auto deepFailed = builder->CreateICmpNE(deepFailures, builder->getInt64(0), "deep_failed");
+		auto directFailed = builder->CreateICmpNE(finalError, builder->getInt32(0), "direct_failed");
+		auto combined = builder->CreateSelect(directFailed, finalError,
+				builder->CreateSelect(deepFailed, builder->getInt32(1), builder->getInt32(0)), "test_status");
+		builder->CreateRet(combined);
 
 		currentFunctionReturnBlock = nullptr;
 		testErrorAlloca = nullptr; // Clear test context

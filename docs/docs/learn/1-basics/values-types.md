@@ -138,11 +138,27 @@ fn main() {
 	42 cast<f64> print nl    // 42
 	3.14 cast<i64> print nl  // 3 (truncates)
 	42 cast<str> print nl    // 42
-	"99" cast<i64> print nl  // 99
 }
 ```
 
 This is especially useful when mixing integer and float operations.
+
+`cast` only does conversions that always succeed. Turning a string into a number is not one
+of them -- `"12x"` and `"hello"` have no numeric value -- so that direction lives in
+`strconv`, which tells you whether it worked:
+
+```qd
+use strconv
+
+fn main() {
+	"99" strconv::atoi if {
+		-> n
+		n print nl              // 99
+	} else {
+		"not a number" print nl
+	}
+}
+```
 
 ## Type in function signatures
 

@@ -126,7 +126,10 @@ void qd_array_release(qd_array_t* arr) {
 	// Free contents
 	switch (arr->elemType) {
 	case QD_ARRAY_TYPE_ANY:
-		break; // never held an element, so nothing to release
+		// No element ever went in, so there is nothing to release -- but the buffer was still
+		// allocated (as pointers, see qd_array_create) and still has to be freed.
+		free(arr->data.p);
+		break;
 	case QD_ARRAY_TYPE_INT:
 		free(arr->data.i);
 		break;

@@ -196,6 +196,36 @@ import "libmath.a" as "math" {
 	/// @return result i64 n!
 	/// @example 5 math::fac print  // 120
 	pub fn fac(n:i64 -- result:i64)
+
+	/// Positive infinity.
+	/// Infinity is not writable as a literal, so this is the only way to name it.
+	/// @return result f64 +INF
+	/// @example math::inf print  // inf
+	pub fn inf( -- result:f64)
+
+	/// Not-a-Number.
+	/// NaN compares unequal to everything, including itself -- test it with is_nan.
+	/// @return result f64 NaN
+	/// @example math::nan math::is_nan print  // 1
+	pub fn nan( -- result:f64)
+
+	/// Is x Not-a-Number?
+	/// @param x f64 Any value
+	/// @return result i64 1 if x is NaN, else 0
+	/// @example 0.0 0.0 / math::is_nan print  // 1
+	pub fn is_nan(x:f64 -- result:i64)
+
+	/// Is x positive or negative infinity?
+	/// @param x f64 Any value
+	/// @return result i64 1 if x is infinite, else 0
+	/// @example 1.0 0.0 / math::is_inf print  // 1
+	pub fn is_inf(x:f64 -- result:i64)
+
+	/// Is x neither infinite nor NaN?
+	/// @param x f64 Any value
+	/// @return result i64 1 if x is finite, else 0
+	/// @example 1.0 math::is_finite print  // 1
+	pub fn is_finite(x:f64 -- result:i64)
 }
 
 /// Square a number.

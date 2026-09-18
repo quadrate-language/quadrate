@@ -1,0 +1,51 @@
+// `drop` releases what it discards.
+//
+// A stack slot owns one reference to a refcounted value. That was true for strings and not
+// for pointers: drop released a string and left an array or struct alone, on the reasoning
+// that a raw pointer is not necessarily a counted object -- but qd_ptr_release answers
+// exactly that, by array magic then the struct registry, and leaves anything else untouched.
+// So `drop` leaked every array and struct it discarded: 128,000 bytes over a thousand
+// iterations for an array where binding it instead was zero.
+//
+// The fix gives pointers the rule strings already had: a push takes a reference of its own,
+// so a value in two slots is counted twice, and a discard drops one. That ordering is what
+// makes `dup` safe -- releasing on drop without retaining on copy would free a value the
+// other slot still holds.
+//
+// This test exercises the shapes; `make tests --valgrind` is what proves the counts.
+struct P {
+	x:i64
+}
+
+fn make_p( -- p:P) {
+	P { x = 7 }
+}
+
+fn main() {
+	// discard each kind of heap value
+	0 200 1 for i {
+		make_p drop
+		0 make<i64> 1 append drop
+		[[1 2] [3 4]] drop
+	}
+
+	// a value in two slots survives one of them being dropped
+	0 make<i64> 5 append dup drop
+	len print nl
+
+	make_p dup drop
+	<<x print nl
+
+	// the shufflers move references between slots without losing or duplicating one
+	0 make<i64> 1 append 0 make<i64> 2 append 0 make<i64> 3 append
+	rot drop drop
+	len print nl
+
+	0 make<i64> 8 append 0 make<i64> 9 append
+	nip len print nl
+
+	0 make<i64> 4 append 0 make<i64> 6 append dup2 drop drop drop
+	len print nl
+
+	"still running" print nl
+}

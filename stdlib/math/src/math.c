@@ -884,3 +884,65 @@ int usr_math_fac(qd_context* ctx) {
 
 // inv - reciprocal (1/x)
 
+
+// inf / nan - name the two IEEE 754 values that have no literal spelling.
+// Division produces them (1.0 0.0 / is +infinity, 0.0 0.0 / is NaN), but without
+// these a program cannot write one down -- which matters for the usual seeds:
+// "smallest so far" starts at +infinity, "no result yet" at NaN.
+int usr_math_inf(qd_context* ctx) {
+	// HUGE_VAL, not INFINITY: the latter is a float and -Wdouble-promotion rejects widening it.
+	qd_stack_error err = qd_stack_push_float(ctx->st, HUGE_VAL);
+	return (err != QD_STACK_OK) ? (int){-2} : (int){0};
+}
+
+int usr_math_nan(qd_context* ctx) {
+	// nan("") is double; the NAN macro is a float.
+	qd_stack_error err = qd_stack_push_float(ctx->st, nan(""));
+	return (err != QD_STACK_OK) ? (int){-2} : (int){0};
+}
+
+// Classification predicates. NaN is not equal to itself, so `x x ==` is the only
+// portable NaN test without these, and it reads as a mistake.
+static int math_classify(qd_context* ctx, const char* name, int (*test)(double)) {
+	size_t stack_size = qd_stack_size(ctx->st);
+	if (stack_size < 1) {
+		qd_fatal_raise(ctx, name, "Stack underflow");
+	}
+
+	qd_stack_element_t elem;
+	qd_stack_error err = qd_stack_pop(ctx->st, &elem);
+	if (err != QD_STACK_OK) return (int){-2};
+
+	if (elem.type != QD_STACK_TYPE_INT && elem.type != QD_STACK_TYPE_FLOAT) {
+		qd_fatal_raise(ctx, name, "Type error (expected a number)");
+	}
+
+	double value = (elem.type == QD_STACK_TYPE_INT) ? (double)elem.value.i : elem.value.f;
+	err = qd_stack_push_int(ctx->st, test(value) ? 1 : 0);
+	return (err != QD_STACK_OK) ? (int){-2} : (int){0};
+}
+
+// isnan/isinf/isfinite are macros, so they need real functions to take the address of.
+static int math_test_is_nan(double v) {
+	return isnan(v);
+}
+
+static int math_test_is_inf(double v) {
+	return isinf(v);
+}
+
+static int math_test_is_finite(double v) {
+	return isfinite(v);
+}
+
+int usr_math_is_nan(qd_context* ctx) {
+	return math_classify(ctx, "math::is_nan", math_test_is_nan);
+}
+
+int usr_math_is_inf(qd_context* ctx) {
+	return math_classify(ctx, "math::is_inf", math_test_is_inf);
+}
+
+int usr_math_is_finite(qd_context* ctx) {
+	return math_classify(ctx, "math::is_finite", math_test_is_finite);
+}
