@@ -73,7 +73,11 @@ fn main() {
 		"> " print
 		io::readline switch {
 			Ok {
-				-> _ -> line
+				-> ok -> line
+				ok 0 == if {
+					nl
+					break
+				}
 				"You said: " print line print nl
 			}
 			_ {
