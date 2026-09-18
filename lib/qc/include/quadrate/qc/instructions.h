@@ -114,7 +114,6 @@ namespace Qd {
 
 	inline constexpr RemovedKeyword REMOVED_KEYWORDS[] = {
 			{"ctx", REMOVED_CTX_MESSAGE},
-			{"while", "'while' has been removed; use 'loop' with 'if'/'break' instead"},
 	};
 
 	inline constexpr size_t REMOVED_KEYWORD_COUNT = sizeof(REMOVED_KEYWORDS) / sizeof(REMOVED_KEYWORDS[0]);

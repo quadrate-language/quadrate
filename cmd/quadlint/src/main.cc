@@ -479,7 +479,8 @@ void detectEmptyBlocks(IAstNode* node, const std::string& filename, std::vector<
 				issue.column = node->column();
 				std::string blockType = node->type() == IAstNode::Type::IF_STATEMENT	 ? "if"
 										: node->type() == IAstNode::Type::FOR_STATEMENT	 ? "for"
-										: node->type() == IAstNode::Type::LOOP_STATEMENT ? "loop"
+										: node->type() == IAstNode::Type::LOOP_STATEMENT	 ? "loop"
+										: node->type() == IAstNode::Type::WHILE_STATEMENT ? "while"
 																						 : "block";
 				issue.message = "Empty '" + blockType + "' block";
 				issue.level = "warning";

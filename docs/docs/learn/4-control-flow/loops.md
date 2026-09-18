@@ -84,6 +84,40 @@ fn main() {
 }
 ```
 
+## while - conditional loop
+
+Loop while a condition holds:
+
+```qd
+fn main() {
+	0 -> count
+	count 5 < while {
+		count print nl
+		count 1 + -> count
+	}
+	// Output: 0 1 2 3 4
+}
+```
+
+The condition is the words immediately before `while` — here `count 5 <`. It is re-evaluated
+before every iteration, so the body does not restate it, and a condition that is false to begin
+with runs the body no times.
+
+It must leave exactly one value, which the loop consumes. Two values, or none, is a compile error
+naming what was left.
+
+The condition stops at the previous statement, so a line before the loop is not drawn into it:
+
+```qd
+fn main() {
+	0 -> i
+	"starting" print nl    // printed once, not once per iteration
+	i 3 < while {
+		i 1 + -> i
+	}
+}
+```
+
 ## break - exit loop
 
 Exit immediately:

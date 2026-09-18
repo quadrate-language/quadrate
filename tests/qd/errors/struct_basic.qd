@@ -1,21 +1,26 @@
-// Test: basic error syntax with anonymous error { } and panic
+// Test: signalling an error with `msg code panic`, the one spelling there is.
+// Was written against the `error { ... }` literal, which is removed.
 
 fn validate(x:i64 -- )! {
-    x 0 < if {
-        error { code = 100 message = "must be non-negative" } panic
-    }
+	x 0 < if {
+		"must be non-negative" 100 panic
+	}
 }
 
 fn test_success()! {
-    5 validate!
-    "ok" print nl
+	5 validate!
+	"ok" print nl
 }
 
-fn test_fail()! {
-    -5 validate!
-    "should not reach" print nl
+fn test_fail( -- caught:i64) {
+	-5 validate switch {
+		Ok { 0 }
+		100 { 1 }
+		_ { 0 }
+	}
 }
 
 fn main() {
-    test_success!
+	test_success!
+	test_fail print nl
 }

@@ -1,0 +1,63 @@
+// Test: `cond while { body }` -- the condition is re-evaluated each iteration, so the
+// body does not restate it. Zero-trip, break/continue, calls and nesting all covered.
+fn is_small(n:i64 -- r:i64) {
+	n 3 <
+}
+
+fn main() {
+	0 -> i
+	i 5 < while {
+		i print nl
+		i 1 + -> i
+	}
+
+	// A condition that is false to begin with runs the body no times.
+	0 -> z
+	z 0 > while {
+		"never" print nl
+	}
+	"zero-trip" print nl
+
+	// break and continue
+	0 -> j
+	j 10 < while {
+		j 1 + -> j
+		j 3 == if { continue }
+		j 6 > if { break }
+		j print nl
+	}
+
+	// a call in the condition
+	0 -> k
+	k is_small while {
+		"k=" print k print nl
+		k 1 + -> k
+	}
+
+	// a compound condition
+	0 -> m
+	m 2 + 5 < while {
+		m 1 + -> m
+	}
+	"m=" print m print nl
+
+	// nesting
+	0 -> a
+	a 2 < while {
+		0 -> b
+		b 2 < while {
+			a print "," print b print nl
+			b 1 + -> b
+		}
+		a 1 + -> a
+	}
+
+	// A statement before the loop is not swallowed by the condition: the trimming keeps
+	// only the shortest run that produces the flag, so this prints once, not once per pass.
+	0 -> p
+	"before" print nl
+	p 3 < while {
+		p 1 + -> p
+	}
+	"p=" print p print nl
+}

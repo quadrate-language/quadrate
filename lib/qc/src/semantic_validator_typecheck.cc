@@ -26,6 +26,7 @@
 #include <quadrate/qc/ast_node_literal.h>
 #include <quadrate/qc/ast_node_local.h>
 #include <quadrate/qc/ast_node_loop.h>
+#include <quadrate/qc/ast_node_while.h>
 #include <quadrate/qc/ast_node_parameter.h>
 #include <quadrate/qc/ast_node_scoped.h>
 #include <quadrate/qc/ast_node_struct.h>
@@ -1350,6 +1351,9 @@ namespace Qd {
 			if (!child) {
 				continue;
 			}
+			if (mDepthProbe != nullptr && node == mDepthProbeBlock) {
+				mDepthProbe->push_back(typeStack.size());
+			}
 			if (mUndefinedNodes.count(child)) {
 				typeStack.push_back(StackValueType::UNKNOWN);
 				structTypeStack.push_back("");
@@ -1897,6 +1901,80 @@ namespace Qd {
 				break;
 			}
 
+			case IAstNode::Type::WHILE_STATEMENT: {
+				AstNodeWhileStatement* whileStmt = static_cast<AstNodeWhileStatement*>(child);
+
+				// The condition runs before every iteration, including the first, so it is checked
+				// against the stack as it stands here and must leave exactly one value -- the flag
+				// the loop tests. The parser hands over the run of expression nodes that preceded
+				// the keyword; a run that nets to anything else is the author having written
+				// something the condition was never going to mean.
+				const size_t headDepth = typeStack.size();
+				std::vector<size_t> condDepths;
+				if (whileStmt->condition()) {
+					const IAstNode* savedProbeBlock = mDepthProbeBlock;
+					std::vector<size_t>* savedProbe = mDepthProbe;
+					mDepthProbeBlock = whileStmt->condition();
+					mDepthProbe = &condDepths;
+					typeCheckBlock(whileStmt->condition(), typeStack, localVariables, structTypeStack);
+					mDepthProbeBlock = savedProbeBlock;
+					mDepthProbe = savedProbe;
+				}
+
+				// Trim to the shortest suffix that produces the flag: the last point where the stack
+				// stood at the head depth, with nothing after it dipping below. What precedes it is a
+				// statement that happened to be expression-shaped, and is generated once.
+				if (!mHasUnpredictableStack && typeStack.size() == headDepth + 1) {
+					size_t start = 0;
+					for (size_t d = condDepths.size(); d-- > 0;) {
+						if (condDepths[d] < headDepth) {
+							break;
+						}
+						if (condDepths[d] == headDepth) {
+							// First match scanning backwards is the shortest such suffix.
+							start = d;
+							break;
+						}
+					}
+					whileStmt->setConditionStart(start);
+				}
+				if (!mHasUnpredictableStack) {
+					if (typeStack.size() != headDepth + 1) {
+						long long delta =
+								static_cast<long long>(typeStack.size()) - static_cast<long long>(headDepth);
+						std::string msg = "the 'while' condition must leave exactly one value for the loop to "
+										  "test, but it leaves ";
+						msg += std::to_string(delta);
+						msg += (delta == 1 || delta == -1) ? " value" : " values";
+						msg += "; the condition is the words between the previous statement and 'while'";
+						reportErrorConditional(child, msg.c_str(), true);
+					} else {
+						// Pop the flag the loop consumes.
+						typeStack.pop_back();
+						structTypeStack.pop_back();
+					}
+				}
+
+				std::vector<StackValueType> loopStack = typeStack;
+				std::unordered_map<std::string, StackValueType> loopVars = localVariables;
+				std::vector<std::string> loopStructStack = structTypeStack;
+
+				bool wasInLoopBody = mInLoopBody;
+				mInLoopBody = true;
+				auto savedJumps = std::move(mLoopJumps);
+				mLoopJumps.clear();
+				if (whileStmt->body()) {
+					typeCheckBlock(whileStmt->body(), loopStack, loopVars, loopStructStack);
+				}
+				// A `while` may run zero times, so unlike `loop` it cannot leave anything behind:
+				// the body has to be neutral, which is what the fallthrough flag asks for.
+				checkLoopStackEffect(
+						whileStmt->body(), "while", true, typeStack, structTypeStack, loopStack.size());
+				mLoopJumps = std::move(savedJumps);
+				mInLoopBody = wasInLoopBody;
+				break;
+			}
+
 			case IAstNode::Type::LOCAL: {
 				// Handle local variable declaration: pop value from stack and store
 				// Supports multiple assignment: -> a b c pops 3 values
@@ -2001,39 +2079,6 @@ namespace Qd {
 							}
 						}
 					}
-				}
-
-				// Special handling for anonymous error literal: error { code = X message = Y }
-				// This pushes message then code onto the stack (for panic to consume)
-				if (name == "__error__") {
-					// Validate only 'code' and 'message' fields are allowed
-					bool hasCode = false;
-					bool hasMessage = false;
-					for (const auto& fieldInit : fieldInits) {
-						const std::string& fieldName = fieldInit.fieldName;
-						if (fieldName == "code") {
-							hasCode = true;
-						} else if (fieldName == "message") {
-							hasMessage = true;
-						} else {
-							std::string errorMsg = "Unknown field '";
-							errorMsg += fieldName;
-							errorMsg += "' in error literal; only 'code' and 'message' are allowed";
-							reportError(construct, errorMsg.c_str());
-						}
-					}
-					if (!hasCode) {
-						reportError(construct, "Error literal requires 'code' field");
-					}
-					if (!hasMessage) {
-						reportError(construct, "Error literal requires 'message' field");
-					}
-					// Pushes message (str) then code (int) onto stack
-					typeStack.push_back(StackValueType::STRING);
-					structTypeStack.push_back("");
-					typeStack.push_back(StackValueType::INT);
-					structTypeStack.push_back("");
-					break;
 				}
 
 				if (structDecl) {

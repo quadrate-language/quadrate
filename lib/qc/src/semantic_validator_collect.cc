@@ -834,17 +834,6 @@ namespace Qd {
 			AstNodeStructConstruction* construct = static_cast<AstNodeStructConstruction*>(node);
 			const std::string& structName = construct->structName();
 
-			// Special handling for anonymous error literal
-			if (structName == "__error__") {
-				// Validate field initializer expressions
-				for (const auto& fieldInit : construct->fieldInits()) {
-					for (const auto& valueNode : fieldInit.valueNodes) {
-						validateReferencesInternal(valueNode.get(), localVariables, iteratorNames);
-					}
-				}
-				return;
-			}
-
 			bool validStruct = false;
 
 			// Check if struct name is qualified (e.g., "vec2::Vec2")
@@ -1098,7 +1087,8 @@ namespace Qd {
 
 		// When entering a loop or switch statement, use a placeholder iterator name for break/continue tracking
 		// Also create a new scope so variables defined inside don't leak out
-		if (node->type() == IAstNode::Type::LOOP_STATEMENT || node->type() == IAstNode::Type::SWITCH_STATEMENT) {
+		if (node->type() == IAstNode::Type::LOOP_STATEMENT || node->type() == IAstNode::Type::WHILE_STATEMENT ||
+				node->type() == IAstNode::Type::SWITCH_STATEMENT) {
 			std::unordered_set<std::string> childIterators = iteratorNames;
 			childIterators.insert("__loop__"); // Placeholder to indicate we're inside a loop/switch
 			std::unordered_set<std::string> loopLocals = localVariables; // New scope for the loop body
@@ -1301,7 +1291,8 @@ namespace Qd {
 		}
 
 		// Handle loop/switch - create new scope
-		if (node->type() == IAstNode::Type::LOOP_STATEMENT || node->type() == IAstNode::Type::SWITCH_STATEMENT) {
+		if (node->type() == IAstNode::Type::LOOP_STATEMENT || node->type() == IAstNode::Type::WHILE_STATEMENT ||
+				node->type() == IAstNode::Type::SWITCH_STATEMENT) {
 			std::unordered_set<std::string> loopLocals = localVariables;
 			for (auto* child : node->children()) {
 				collectCapturedVariables(child, loopLocals, iteratorNames, outerScopeVariables, anonFunc);

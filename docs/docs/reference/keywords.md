@@ -18,6 +18,7 @@ Language keywords for declarations, control flow, and more.
 | [`else`](#else) | Alternative block when if condition is false |
 | [`for`](#for) | Iteration with counter |
 | [`loop`](#loop) | Infinite loop |
+| [`while`](#while) | Loop while the preceding condition holds |
 | [`break`](#break) | Exit loop |
 | [`continue`](#continue) | Skip to next iteration |
 | [`return`](#return) | Exit function |
@@ -186,6 +187,20 @@ Repeats a block indefinitely until break is called.
 loop {
 	"forever"
 	print nl
+}
+```
+
+### while
+
+Repeats a block while the preceding condition holds. The condition is the words immediately before
+the keyword, re-evaluated before every iteration, so the body does not restate it; it must leave
+exactly one value.
+
+```qd
+0 -> i
+i 5 < while {
+	i print nl
+	i 1 + -> i
 }
 ```
 

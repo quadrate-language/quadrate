@@ -1,0 +1,7 @@
+// Test: the `while` condition must leave exactly one value for the loop to test.
+fn main() {
+	0 -> i
+	i 5 < i 3 < while {
+		i 1 + -> i
+	}
+}

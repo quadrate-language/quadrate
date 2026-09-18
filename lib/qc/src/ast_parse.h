@@ -36,6 +36,7 @@
 #include <quadrate/qc/ast_node_literal.h>
 #include <quadrate/qc/ast_node_local.h>
 #include <quadrate/qc/ast_node_loop.h>
+#include <quadrate/qc/ast_node_while.h>
 #include <quadrate/qc/ast_node_parameter.h>
 #include <quadrate/qc/ast_node_program.h>
 #include <quadrate/qc/ast_node_return.h>
@@ -486,6 +487,42 @@ namespace Qd {
 		}
 	}
 
+	// Node kinds that may form a `while` condition: the run of expression nodes immediately before
+	// the keyword. Anything else -- a binding, a nested statement, a comment -- ends the run, so the
+	// condition never swallows a preceding `-> x` and re-runs it every iteration.
+	inline bool isConditionExpressionNode(IAstNode::Type type) {
+		switch (type) {
+			case IAstNode::Type::IDENTIFIER:
+			case IAstNode::Type::SCOPED_IDENTIFIER:
+			case IAstNode::Type::INSTRUCTION:
+			case IAstNode::Type::LITERAL:
+			case IAstNode::Type::FIELD_ACCESS:
+				return true;
+			default:
+				return false;
+		}
+	}
+
+	// Skips a brace-delimited group, nesting included, starting from the '{' that follows.
+	// `synchronize` stops *at* the opening brace, which leaves the group's closing '}' to be read
+	// as if it closed the enclosing block -- so diagnosing a removed `name { ... }` construct
+	// reported a second, bogus "Unmatched '}' at top level" after the real message. Callers that
+	// have just rejected such a construct use this instead, and report one error.
+	inline void skipBracedGroup(u8t_scanner* scanner) {
+		char32_t token = u8t_scanner_scan(scanner);
+		if (token != '{') {
+			return;
+		}
+		int depth = 1;
+		while (depth > 0 && (token = u8t_scanner_scan(scanner)) != U8T_EOF) {
+			if (token == '{') {
+				depth++;
+			} else if (token == '}') {
+				depth--;
+			}
+		}
+	}
+
 	// Helper to check if a token is an operator alias and create the corresponding instruction node
 	// Returns the instruction node if it's an operator, nullptr otherwise
 	inline IAstNode* tryParseOperatorAlias(char32_t token, u8t_scanner* scanner, const char* src) {
@@ -562,6 +599,7 @@ namespace Qd {
 			bool inFunctionBody = false);
 	IAstNode* parseForStatement(u8t_scanner* scanner, ErrorReporter* errorReporter, const char* src);
 	IAstNode* parseLoopStatement(u8t_scanner* scanner, ErrorReporter* errorReporter, const char* src);
+	IAstNode* parseWhileStatement(u8t_scanner* scanner, ErrorReporter* errorReporter, const char* src);
 	IAstNode* parseIfStatement(u8t_scanner* scanner, ErrorReporter* errorReporter, const char* src);
 	IAstNode* parseSwitchStatement(u8t_scanner* scanner, ErrorReporter* errorReporter, const char* src);
 

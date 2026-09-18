@@ -1,0 +1,2 @@
+tests/qd/compile_errors/while_condition_arity.qd:4:20: error: the 'while' condition must leave exactly one value for the loop to test, but it leaves 2 values; the condition is the words between the previous statement and 'while'
+tests/qd/compile_errors/while_condition_arity.qd:2:4: error: Function 'main' declares 0 output(s) but body leaves 2 value(s) on the stack

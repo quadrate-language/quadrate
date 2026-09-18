@@ -1308,6 +1308,10 @@ std::string QuadrateLSP::getBuiltInDocumentation(const std::string& word) {
 			{"if", "Conditional execution.\n\n**Syntax:** `condition if { ... } else { ... }`"},
 			{"for", "Loop construct.\n\n**Syntax:** `start end step for name { ... }`"},
 			{"loop", "Infinite loop.\n\n**Syntax:** `loop { ... }`\n\nUse `if { break }` for conditional exit."},
+			{"while",
+					"Conditional loop.\n\n**Syntax:** `cond while { ... }`\n\nThe condition is the words "
+					"immediately before the keyword, re-evaluated before every iteration, so the body does not "
+					"restate it. It must leave exactly one value."},
 			{"free", "Free allocated memory.\n\n**Stack effect:** `ptr --`\n\nFrees memory allocated for structs or "
 					 "strings. Automatically frees nested string fields in structs."},
 			{"struct", "Declare a struct type.\n\n**Syntax:** `struct Name { field1:type1 field2:type2 "

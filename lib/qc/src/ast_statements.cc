@@ -309,6 +309,24 @@ namespace Qd {
 
 			IAstNode* node = parseBlockStatement(token, scanner, errorReporter, &n, src);
 			if (node) {
+				// `cond while { body }`: the condition is the run of expression nodes immediately
+				// before the keyword. It stops at the previous binding or statement, so the `0 -> i`
+				// in `0 -> i  i 5 < while { ... }` stays put and only `i 5 <` is re-evaluated. A run
+				// that does not leave exactly one value is reported by the validator, which is where
+				// stack effects are known.
+				if (node->type() == IAstNode::Type::WHILE_STATEMENT) {
+					AstNodeWhileStatement* whileStmt = static_cast<AstNodeWhileStatement*>(node);
+					AstNodeBlock* condition = static_cast<AstNodeBlock*>(whileStmt->condition());
+					size_t start = tempNodes.size();
+					while (start > 0 && isConditionExpressionNode(tempNodes[start - 1]->type())) {
+						start--;
+					}
+					for (size_t i = start; i < tempNodes.size(); i++) {
+						tempNodes[i]->setParent(condition);
+						condition->addChild(tempNodes[i]);
+					}
+					tempNodes.resize(start);
+				}
 				tempNodes.push_back(node);
 			}
 		}
@@ -395,6 +413,37 @@ namespace Qd {
 		loopStmt->setBody(body);
 
 		return loopStmt;
+	}
+
+	IAstNode* parseWhileStatement(u8t_scanner* scanner, ErrorReporter* errorReporter, const char* src) {
+		char32_t token = u8t_scanner_scan(scanner);
+
+		AstNodeWhileStatement* whileStmt = new AstNodeWhileStatement();
+		setNodePosition(whileStmt, scanner, src);
+		AstNodeBlock* condition = new AstNodeBlock();
+		setNodePosition(condition, scanner, src);
+		condition->setParent(whileStmt);
+		whileStmt->setCondition(condition);
+
+		AstNodeBlock* body = new AstNodeBlock();
+		setNodePosition(body, scanner, src);
+
+		if (token != '{') {
+			errorReporter->reportError(scanner, "Expected '{' after 'while'");
+			body->setParent(whileStmt);
+			whileStmt->setBody(body);
+			synchronize(scanner);
+			return whileStmt;
+		}
+
+		parseBlockBody(body, scanner, errorReporter, src);
+
+		body->setParent(whileStmt);
+		whileStmt->setBody(body);
+
+		// The condition block is filled by the caller in parseBlockBody, which is the only place
+		// the preceding expression nodes are still reachable.
+		return whileStmt;
 	}
 
 	IAstNode* parseIfStatement(u8t_scanner* scanner, ErrorReporter* errorReporter, const char* src) {

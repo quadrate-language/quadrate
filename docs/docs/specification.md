@@ -870,6 +870,32 @@ loop {
 }
 ```
 
+### 6.3.1 Conditional Loops
+
+```quadrate
+0 -> i
+i 5 < while {
+    // body
+}
+```
+
+The **condition** is the shortest run of words immediately preceding `while` whose net stack effect
+is `( -- flag )`. It is evaluated before every iteration, including the first, and the flag it
+leaves is consumed by the loop; a body that runs zero times is therefore well defined. The body
+MUST leave the stack as it found it.
+
+Because the condition is delimited by its stack effect rather than by punctuation, a preceding
+statement whose own effect is neutral is not part of it: in
+
+```quadrate
+0 -> i
+"starting" print nl
+i 3 < while { i 1 + -> i }
+```
+
+the condition is `i 3 <`, and `"starting" print nl` is evaluated once. A run that does not leave
+exactly one value is a compile error.
+
 ### 6.4 Switch-Case
 
 ```quadrate
@@ -1276,13 +1302,6 @@ MUST therefore record "an error is signalled" separately from the code itself: a
 carrying code `0` is a failure, even though `0` is also the conventional "no error" value and
 the value of `Err` (§10.4). Testing the code alone would report such a call as a success and
 hand the caller a return value that was never produced.
-
-**Alternative: Error literal syntax:**
-```quadrate
-error { code = 100 message = "must be non-negative" } panic
-```
-
-The `error { code = N message = "..." }` syntax creates an anonymous error value that can be used with `panic`.
 
 ### 10.3 Error Handling at Call Site
 

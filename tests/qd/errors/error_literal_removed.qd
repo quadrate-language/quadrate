@@ -1,0 +1,10 @@
+// Test: the `error { ... }` literal is removed; it was a second spelling of `msg code panic`.
+fn validate(x:i64 -- )! {
+	x 0 < if {
+		error { code = 100 message = "must be non-negative" } panic
+	}
+}
+
+fn main() {
+	-5 validate!
+}

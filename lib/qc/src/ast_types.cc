@@ -566,17 +566,14 @@ namespace Qd {
 
 				// Not a field name, parse as expression element
 
-				// Check for anonymous error literal: error { code = X message = Y }
+				// The `error { ... }` literal is removed -- see the matching diagnostic in
+				// ast_expressions.cc. Diagnosed here too, since a field initializer is the other
+				// position it could appear in.
 				if (strcmp(text, "error") == 0) {
-					char32_t errNextToken = peekNextNonWhitespace(scanner, src);
-					if (errNextToken == '{') {
-						size_t errorPos = u8t_scanner_token_start(scanner);
-						u8t_scanner_scan(scanner); // Consume '{'
-						AstNodeStructConstruction* errorConstruct =
-								parseStructConstruction("__error__", {}, scanner, errorReporter, src, errorPos);
-						if (errorConstruct) {
-							currentFieldNodes.push_back(errorConstruct);
-						}
+					if (peekNextNonWhitespace(scanner, src) == '{') {
+						errorReporter->reportError(scanner,
+								"the 'error { ... }' literal has been removed; use 'msg code panic' instead");
+						skipBracedGroup(scanner);
 						continue;
 					}
 				}

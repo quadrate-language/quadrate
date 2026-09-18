@@ -1,4 +1,0 @@
-// Test: error error literal missing message
-fn main() {
-	error { code = 1 }
-}

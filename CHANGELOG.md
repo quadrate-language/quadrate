@@ -9,6 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **`while` is back, and the condition is written once.** `cond while { body }` loops while the condition holds, re-evaluating it at the head of every iteration, so the body does not restate it and a condition that is false to begin with runs the body no times. The `while` removed earlier was `cond while { body … cond }` — it popped a flag and the body had to leave the next one, which is the same line count as the `loop { cond if { break } … }` it was replaced by, so it saved nothing. The condition is the shortest run of words before the keyword whose net stack effect is `( -- flag )`: the parser takes the preceding expression run and the validator trims it to that suffix, so a neutral statement before the loop — `"starting" print nl` — is evaluated once rather than drawn in and repeated. A run leaving two values, or none, is a compile error naming what was left, and the body must leave the stack as it found it. `break` and `continue` work in it as in `loop`.
+
 - **`strings::byte_len`**, the size of a string's UTF-8 encoding. `strings::len` counts characters now, so the byte size needed a name of its own for sizing a buffer or writing to something that counts octets; it was otherwise reachable only through the raw pointer from `strings::data`. It replaces `strings::char_count`, which counted codepoints and so became an exact synonym for `len` (it had no uses outside its own tests).
 
 - **`math::inf`, `math::nan`, `math::is_nan`, `math::is_inf`, `math::is_finite`.** Infinity and NaN have no literal spelling, so before this a program could only obtain one by dividing and could not test for one at all -- NaN is unequal to itself, so `x x ==` was the only NaN check and it reads as a mistake. The usual seeds (`+infinity` for "smallest so far", NaN for "no result yet") are now writable.
@@ -147,6 +149,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `qd_clone_context` leaked `error_context` when the `program_name` copy failed.
 
 ### Removed
+
+- **The `error { code = … message = … }` literal.** It was specified as the alternative to `msg code panic` and had four uses in the tree, three of them its own tests. It was never a value: the parser rewrote it into a struct construction under the reserved name `__error__`, and the validator and generator each carried a special case that pushed the message and code for `panic` to consume — so it was `msg code panic` with braces, kept alive by three special cases across two tiers. Using it now reports *"the 'error { … }' literal has been removed; use 'msg code panic' instead"*, as a single error: a removed `name { … }` construct used to also produce a bogus *"Unmatched '}' at top level"*, because error recovery stopped at the opening brace and left the closing one to be read as the enclosing block's.
+
 
 - **`ctx` keyword**: `ctx { ... }` ran its body on a copy of the stack and appended only the body's top value to the parent. Nothing in the corpus used it and the static checker could not model it. There is no drop-in replacement — inlining the body is *not* equivalent, since it consumes the values `ctx` preserved; bind what the body needs with named locals and push the result explicitly. Using it reports the removal.
 - **Eight stack shufflers**: `drop2`, `dupd`, `nipd`, `over2`, `overd`, `swap2`, `swapd`, `tuck`. All had zero uses; named parameters and `->` locals cover what they did. Using one reports the removal together with its old stack effect and the equivalent named-local rewrite.

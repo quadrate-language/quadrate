@@ -73,6 +73,7 @@
 #include <quadrate/qc/ast_node_literal.h>
 #include <quadrate/qc/ast_node_local.h>
 #include <quadrate/qc/ast_node_loop.h>
+#include <quadrate/qc/ast_node_while.h>
 #include <quadrate/qc/ast_node_parameter.h>
 #include <quadrate/qc/ast_node_return.h>
 #include <quadrate/qc/ast_node_scoped.h>
@@ -518,6 +519,9 @@ namespace Qd {
 		void generateIf(AstNodeIfStatement* ifStmt, llvm::Value* ctx);
 		void generateFor(AstNodeForStatement* forStmt, llvm::Value* ctx);
 		void generateLoop(AstNodeLoopStatement* loopStmt, llvm::Value* ctx);
+		void generateWhile(AstNodeWhileStatement* whileStmt, llvm::Value* ctx);
+		void generateWhileConditionPrefix(AstNodeWhileStatement* whileStmt, llvm::Value* ctx);
+		void generateWhileConditionTest(AstNodeWhileStatement* whileStmt, llvm::Value* ctx);
 		void generateSwitchStatement(AstNodeSwitchStatement* switchStmt, llvm::Value* ctx);
 
 		// Struct handling

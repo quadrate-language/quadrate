@@ -2,6 +2,33 @@
 
 ## Open
 
+### Direction: Quadrate is a concatenative stack language (decided 2026-09-18)
+
+The goal is the concatenative property: **juxtaposition is composition**, so any contiguous run of
+words can be lifted into a named word and replaced by its name without changing meaning. That is a
+testable property, not a style preference, and it is what the items below are now judged against.
+
+The language already admits it. Verified against this build:
+
+```qd
+fn sq(i64 -- r:i64)   { dup * }        // unnamed parameter -- the concatenative form, works
+fn sq(n:i64 -- r:i64) { dup * }        // naming CONSUMES it: "Stack underflow (requires 1 value)"
+6 fn (i64 -- r:i64) { dup * } call     // inline quotation applied: 36
+```
+
+and `stdlib/hof` already carries a Factor-shaped combinator *vocabulary* — `bi`, `tri`, `keep`,
+`dip`, `both`, `bi_star`, `when`, `unless`, `times`, `fold` — though not yet the dialect: all of its
+own signatures take named parameters (R47). Enforced stack effects are not an obstacle; Factor
+enforces them too. So this is not a rewrite. It is picking a side in a disagreement the tree is
+already having with itself, and then moving the corpus (R47), which is where the real cost is:
+**of 816 functions that take parameters, 784 name them** — and naming consumes.
+
+What this decision closes, and where it lands, is recorded on each item. Two were deleted outright
+rather than answered: *"Decide the fate of the live shufflers"* (its proposed experiment was to port
+`bits.qd` and `fuzzy.qd` **to named locals** and read the diff) and **R18** (multi-return selection
+"has no syntax" — `drop`/`nip`/`swap` are that syntax). Both are recoverable from git if the
+direction is ever reversed.
+
 ### Language design / scope
 
 From a feature-scope review (2026-08-13). Counts are whole-corpus greps over `lib/` + `examples/`
@@ -9,28 +36,25 @@ From a feature-scope review (2026-08-13). Counts are whole-corpus greps over `li
 tree — `packed` and `enum` score much higher there.
 
 Overall read: the core is the right size — comparable to Go. The problem isn't count, it's
-redundancy. Subtractive work. After the shuffler and `ctx` removals below: 21 keywords, 87
-`BUILTIN_INSTRUCTIONS` entries (57 user-facing word-named, 13 symbol operators, 17 `__` freestanding
-internals), 69 documented in `reference.def`.
+redundancy. Subtractive work, with one exception the Direction above carves out: the shufflers are
+vocabulary, not redundancy, and the item proposing to cut them is deleted. Re-counted 2026-09-18:
+**21 keywords, 86 `BUILTIN_INSTRUCTIONS` entries** (17 of them `__` freestanding internals), **66
+documented in `reference.def`** — the review's 87/69 predate the `read` removal (R41) and the
+`ctx` removal.
 
-- [ ] **Drop `pick`/`roll` from the user-facing surface.** Both take a *runtime* index, which defeats
-      static stack tracking — codegen already refuses them in compile-time-stack functions
-      (`generator_nodes_instructions.cc`, "not supported in compile-time-stack functions"). Keep
-      `roll` as an internal op (method receiver rotation). Needs the 3 call sites rewritten first
-      (`pick` 1, `roll` 2), so it is not the freebie the shuffler removal was.
-- [ ] **Decide the fate of the live shufflers: `swap` 18, `over` 7, `nip` 7, `rot` 5, `dup2` 2.**
-      Not obviously wrong, but two signals say they are papering over missing expressiveness rather
-      than earning their place: **`rot` never appears alone** — 2 of its 3 sites are `rot rot`, i.e.
-      the inverse spelled as two forwards — and **`over over` (math.qd) and `dup2` (fuzzy.qd) spell
-      the same min/max idiom two ways**. The other cluster, `nip nip` / `drop nip` in `time.qd`, is
-      not shuffling at all: it is *selecting one of a multi-return*, a real need with no syntax.
-      Cheap way to settle it with evidence instead of argument: port `bits.qd` and `fuzzy.qd` to
-      named locals and read the diff. They are the heaviest users and exercise both failure modes
-      (`1 swap shl` = fixed operand order, `nip nip` = multi-return selection). Check first that
-      named locals lower with no runtime call — `bits.qd` is freestanding-eligible.
-      `dup` (26) and `drop` (48) are **not** in scope: `drop` is result-discarding (`io::write! drop`),
-      the job of Go's `_ =`, and `dup *` for squaring is genuinely clearer than naming the value.
-- [ ] (Longer horizon) **Sum types / tagged unions** — the one addition worth arguing for. `enum`
+- [ ] **Make `pick` fixed-depth; drop `roll`.** *(Rewritten 2026-09-18 — was "drop `pick`/`roll`
+      from the user-facing surface".)* The technical objection stands and is the reason to change
+      them rather than keep them as they are: both take a **runtime** index, which defeats static
+      stack tracking, and codegen already refuses them in compile-time-stack functions
+      (`generator_nodes_instructions.cc`, "not supported in compile-time-stack functions"). But
+      deleting them outright was the wrong conclusion once the language is concatenative — Factor
+      keeps `pick` as a fixed-depth word, `( x y z -- x y z x )`, and has no `roll` at all. So:
+      respell `pick` as third-item copy, which is statically checkable and needs no index, and drop
+      `roll` from the user-facing surface while keeping it as an internal op (method receiver
+      rotation). Blast radius is nil either way — `pick` is at **0** corpus uses and `roll` at 2.
+- [ ] **Sum types / tagged unions** — the one addition worth arguing for, and no longer a longer
+      horizon: a concatenative language is worse off than an ALGOL one with an error channel that
+      cannot be put on the stack (see R24), so the Direction above promotes this. `enum`
       gives bare ints and `struct` gives records, but there's no "one of these". That absence is *why*
       errors are out-of-band int codes plus a message, why `Ok`/`Err` are conflated with `true`/`false`,
       and why `null` is `0` (four spellings each of 0 and 1). A `Result<T, E>`-shaped variant type
@@ -261,19 +285,16 @@ candidates did not, and R29 and R30 were withdrawn because of it.
       purely documentary changes what the body means, and mixing the two forms is rejected outright
       (*"Cannot mix named and unnamed input parameters"*). The rule is stated in the spec (§4.4) and
       the interpreter tier already had eleven tests encoding it wrongly.
-      **Open question**: leave it (it is at least consistent and diagnosed), or make naming
-      non-consuming, or bind *and* leave the value? This is the wart most likely to cost a newcomer
-      their first hour, so "leave it, document harder" is a legitimate answer but should be a
-      decision rather than the default.
-
-- [ ] **R12. The cost of removing `while`, now measurable.** `loop` is at 182 uses against `for`'s
-      104 (re-verified 2026-09-18), and the overwhelming majority are `loop { cond if { break } … }` — three lines and a
-      nesting level where `while` was one. `examples/kernel/kernel.qd` is wall-to-wall with it.
-      What used to compound this — `loop` being the construct that suspended effect checking —
-      is gone: R5 landed, and a loop body is now checked like anything else (see Done). So this is
-      purely the ergonomic argument now, with no correctness cost attached.
-      **Open question**: reinstate `while` as sugar that lowers to the same `loop`, or does the
-      subtractive argument still hold?
+      **Decided 2026-09-18 by the Direction above: the unnamed form is the real one, and naming
+      should become documentary rather than consuming.** The open question offered three answers and
+      the concatenative property picks one of them: a signature is a stack effect, as `( n -- n n )`
+      is in Forth, so annotating it must not change what the body means. `fn sq(i64 -- r:i64)
+      { dup * }` compiles today and `fn sq(n:i64 -- r:i64) { dup * }` does not, which is the whole
+      complaint — and under the old direction there was no principled way to choose. There is now.
+      What is left is the migration cost, not the decision: all 784 named-parameter functions are
+      bodies that re-push by name (R47), so this lands with R47 rather than before it. The
+      cannot-mix rejection quoted above also stops being needed — once naming is non-consuming the
+      two forms mean the same thing.
 
 - [ ] **R13. `and`/`or` are bitwise and are used throughout as logical.** There is no short-circuit
       operator; `lnot` exists but has no binary counterpart. Verified: `2 1 and` → `0`, so any
@@ -281,9 +302,15 @@ candidates did not, and R29 and R30 were withdrawn because of it.
       form `i xs len < xs i nth … and` is unsafe. Live in the corpus:
       `t 0.0 > best_t 0.0 < t best_t < or and if` (`examples/raytracer/raytracer.qd`) is correct
       only because every operand happens to be a comparison result.
-      **Open question**: add short-circuit `land`/`lor` (named, per the no-symbolic-bitwise rule),
-      or rely on comparisons always yielding 0/1 and document the hazard? Note this is a correctness
-      question, not ergonomics.
+      **Reframed 2026-09-18: do not design this separately.** Short-circuiting *is* deferred
+      evaluation, and the concatenative answer to deferred evaluation is a quotation — which already
+      works (`6 fn (i64 -- r:i64) { dup * } call` evaluates to 36). Adding `land`/`lor` as a third
+      pair of boolean primitives would spend the language's budget on a special case of the general
+      mechanism, and would have to be unpicked later. The correctness hazard is real and stands:
+      `2 1 and` is `0`, and the guarded form `i xs len < xs i nth … and` evaluates both sides. Until
+      the quotation-based form exists, document the hazard.
+      **Open question**: what is the spelling — `[ … ] [ … ] and` over quotations, or combinators in
+      `hof` beside `when`/`unless`?
 
 - [x] **R14 — removed the direction rather than making `cast` fallible.** The open question offered
       both. Removal wins on the property that makes `cast` worth having: every other direction it
@@ -343,14 +370,12 @@ candidates did not, and R29 and R30 were withdrawn because of it.
 - [ ] **R17. Closures cannot capture a `for` iterator.** `0 3 1 for i { fn ( -- r:i64) { i } … }` →
       *"Undefined identifier 'i'"*. The iterator is saved and restored around the loop as an
       ordinary frame entry, so it is presumably not in the capture set.
-      **Open question**: fix, or is building closures in a loop out of scope? Worth noting the
-      classic capture-by-reference-vs-value question has to be answered either way.
-
-- [ ] **R18. Multi-return selection still has no syntax.** Already flagged above as the real need
-      hiding inside the `nip nip` / `drop nip` cluster in `time.qd`; adding that the `(value, found)`
-      convention makes it pervasive — every one of `json::get_*`, and much of `strings`, returns two
-      values of which callers usually want one, spelled `-> found -> value` and then ignoring one.
-      **Open question**: a discard binding (`-> _`), destructuring, or does R3 delete the need?
+      **Deprioritised 2026-09-18, not closed.** `for i { … }` binds a name per iteration, which is
+      the construct the Direction above is moving away from — `hof::times` and `hof::fold` are the
+      concatenative forms and neither needs a capture. Fixing the capture set would be work spent on
+      a construct that may not survive R47. It stays open because it is a genuine defect in a
+      shipped feature, and because the capture-by-reference-vs-value question has to be answered for
+      quotations regardless of what happens to `for`.
 
 #### Spec and implementation disagree
 
@@ -544,9 +569,15 @@ candidates did not, and R29 and R30 were withdrawn because of it.
       a struct to a function lets that function mutate the caller's value. The spec's "sets field,
       pushes modified struct back (for chaining)" and the idiom `p 42 >>x -> p` both read as a
       functional update.
-      **Open question**: documentation only, or is there an argument for value semantics on
-      assignment? (Almost certainly documentation only — but the current wording is actively
-      misleading and 12 `>>` sites is a small blast radius if anything does change.)
+      **Inverted 2026-09-18: the spec is the one that is right.** The item's parenthetical said
+      "almost certainly documentation only" — that was under the old direction. "Sets field, pushes
+      modified struct back (for chaining)" is the composable reading, and chaining is what makes
+      `>>field` a word like any other rather than a statement; mutating in place and returning the
+      same reference is what breaks it. So the implementation is the odd one out, not the wording.
+      12 `>>` sites remains the whole blast radius, which is why this is worth doing rather than
+      documenting around.
+      **Open question**: does the functional update mean copying the struct — and if so, does that
+      make structs value types on assignment, which is a much larger change than 12 call sites?
 
 - [x] **R22 — allowed, because the language was already contradicting itself.** The open question
       asked whether rejecting it was a deliberate safety choice. It was not, and the evidence is
@@ -597,12 +628,10 @@ candidates did not, and R29 and R30 were withdrawn because of it.
       intervening non-fallible calls (all verified). It cannot be stored, returned, wrapped, or
       chained, so there is no way to build "failed to open config: no such file". It is also the
       main reason R4's authors reach for `!`.
+      **Raised 2026-09-18 by the Direction above.** A value that cannot be put on the stack cannot
+      be composed, so global `err` costs a concatenative language more than it cost an ALGOL one —
+      this moves from "ergonomics and gaps" to a blocker for the error surface generally.
       **Open question**: subsumed by R3, or worth an independent error-value type first?
-
-- [ ] **R25. `error { code = … message = … }` literal has near-zero use.** Listed in the grammar and
-      §10.2 as the alternative to `msg code panic`.
-      **Open question**: cut it now on the `>>field!` precedent (two spellings of one operation), or
-      hold because R3 would replace both?
 
 - [x] **R26 — documented, after the measurement was redone properly.** New §11.2.1 "Reference
       Cycles" in `specification.md`: refcounting alone MUST NOT be expected to reclaim a cycle, an
@@ -667,31 +696,81 @@ candidates did not, and R29 and R30 were withdrawn because of it.
       them as the debugging affordance they are? Unlike the earlier removals this one is not
       settled by corpus counts.
 
-- [ ] **R31. Supporting numbers for the `pick`/`roll` and live-shuffler items above.** Re-measured
+- [ ] **R31. The migration baseline.** *(Repurposed 2026-09-18: these were the supporting numbers
+      for the `pick`/`roll` and live-shuffler cuts. The shuffler item is deleted and the ratio below
+      now reads the other way — it is the problem statement, not the verdict, and the number to
+      drive down under R47.)* Re-measured
       2026-09-18 with the tokenizer, over `stdlib` + `examples` (the original scope): `-> ` locals
       **2,896**; `<<field` 1,150; `>>field` **12**; `drop` 54, `dup` 23, `swap` 18, `nip` 7, `rot`
       5, `over` 4, `dup2` 2, `roll` 2, `pick` **0**. Named binding outnumbers every shuffler
-      combined by roughly 40:1 — the earlier 46:1 was from the broken pattern, and the conclusion
-      is unchanged. `pick` is now at zero and `roll` at two, which strengthens the separate
-      `pick`/`roll` item above. Still worth noting: `>>field`, one of the language's two custom
-      sigils, has twelve uses in the whole corpus — structs are read-mostly in practice.
-      **Open question**: does the 40:1 ratio settle the live-shuffler item, or is frequency the
-      wrong test for `swap`/`over`?
+      combined by roughly 40:1 (the earlier 46:1 was from the broken pattern).
+
+      Under the Direction above none of this argues for cutting anything, and each figure now reads
+      differently. **40:1** is the gap to close, not evidence the shufflers are dead weight — it is
+      R47's headline. **`pick` 0 and `roll` 2** still single those two out, but for respelling
+      rather than removal: they are the only two that cannot be statically checked. **`>>field` at
+      12** is the one figure that keeps its original reading — structs are read-mostly in practice,
+      which is also why R21's blast radius is small.
+      **Open question**: is 40:1 the right metric to track, or is "functions whose parameters are
+      unnamed" the more honest one, since that is what R47 actually changes?
 
 #### Positioning and scope
 
-- [ ] **R32. The stack is no longer the programming model, and the documentation still says it is.**
-      Given R31's ratios, real Quadrate is an ALGOL-family language with named parameters, named
-      locals, structs and methods, that uses postfix syntax and a stack calling convention.
-      `examples/dc/dc.qd` — a calculator, the most stack-shaped program there is — opens with
+- [ ] **R32. The stack is no longer the programming model — parent item for closing that gap.**
+      *(Its open question is answered: see Direction at the top of this file. The other branch, a
+      docs restructure that leads with functions and locals and demotes the stack to "how calls
+      work", is dropped — it would have documented the drift as the design.)*
+
+      The diagnosis stands unchanged and is the reason the decision was needed. Given R31's ratios,
+      real Quadrate is an ALGOL-family language with named parameters, named locals, structs and
+      methods, that uses postfix syntax and a stack calling convention. `examples/dc/dc.qd` — a
+      calculator, the most stack-shaped program there is — opens with
       `fn stack_push(s:ptr val:f64 -- )` over a hand-rolled `mem::alloc` array, because the
       language's stack is not where data lives. Meanwhile `learn/2-stack/` is four pages against
       three for functions and two for error handling. *(Corrected 2026-09-18: the review said "more
       than functions and error handling together", which is 4 against 5 — it is not. Four pages on
       the stack, more than on either subject alone, is the accurate form and still the point.)*
-      **Open question**: is this a docs restructure (lead with functions and locals, demote the
-      stack to "how calls work"), or is the concatenative framing something to keep pushing toward
-      in the language itself?
+
+      What hangs off this: R47 (the corpus), R11 (naming stops consuming), R13 (short-circuit via
+      quotations), R21 (`>>field` chains), the `pick`/`roll` respelling, and R3/R24 gaining
+      priority. The docs work is still real but it is now the *last* step and points the other way:
+      `learn/2-stack/` becomes correct rather than demoted.
+      **Open question**: does `dc.qd` get rewritten onto the language's own stack as the proof, and
+      is that the acceptance test for R47?
+
+- [ ] **R47. The corpus is written in the other dialect, and nothing in this file said so.**
+      The gap is not a missing feature — the concatenative style compiles today (see Direction) —
+      it is that almost nothing is written in it. Two measurements over `stdlib` + `examples`,
+      2026-09-18:
+
+      - **2,896 `-> ` named locals against 36 shufflers combined** (`swap` 18, `nip` 7, `rot` 5,
+        `over` 4, `dup2` 2, `roll` 2, `pick` 0) — R31.
+      - **Of 816 functions that take parameters, 784 name them and 32 do not.** A named parameter is
+        consumed off the stack, so those 784 bodies re-push their arguments by name instead of
+        operating on what the caller left. This is the measurement that was missing from this file.
+
+      The 32 are not spread evenly, and where they cluster is the useful part: **`bits` 7 of 18 and
+      `fuzzy` 6 of 11**, then `math` 8 of 93, `examples` 8 of 83, `bytes` 2 of 24, `crypto` 1 of 41.
+      Every other module is at zero — **including `hof`**, which is Factor-shaped in its *vocabulary*
+      (`bi`, `tri`, `keep`, `dip`) while every one of its own signatures is named. So the combinator
+      library that reads most concatenative is not written concatenatively either.
+
+      This is the item that decides whether the direction is real, and it is deliberately *not* a
+      sweep: a mechanical `-> x` elimination would produce unreadable stack gymnastics and prove the
+      wrong thing. The question is which code is *better* concatenative, and that has to be answered
+      by porting and reading.
+
+      Suggested first cut: **`bits.qd` then `fuzzy.qd`** — they are already the two most
+      concatenative modules by the ratio above, which is the same reason the deleted shuffler item
+      named them as its heaviest shuffler users, so they should be the ones where the style fits
+      with least forcing. If the diffs read worse *there*, the direction is wrong and this is where
+      to find that out cheaply. `bits.qd` is also freestanding-eligible, so it settles whether named
+      locals and stack juggling lower to the same code. Then `hof.qd`, which is the one that should
+      be pure gain. Then `dc.qd`, the honest test — a calculator that currently hand-rolls its own
+      stack over `mem::alloc`.
+      **Open question**: is the target every module, or is the honest answer a two-dialect language
+      where `hof`-style code is concatenative and data-heavy modules keep named locals? Answering
+      "every module" without porting three first would be a guess.
 
 - [ ] **R33. Supporting numbers for the scope-vs-depth note above.** Re-verified 2026-09-18:
       `cmd/` is **20,841 lines, larger than `lib/llvmgen/` at 12,414** — ten CLI tools against one
@@ -728,6 +807,73 @@ candidates did not, and R29 and R30 were withdrawn because of it.
       halt) so kernel code can stay in `.qd`.
 
 ## Done
+
+### R12 — `while` is back, and the condition is not written twice (2026-09-18)
+
+- [x] **The removed `while` would not have fixed what the item complained about.** R12 measured
+      `loop` at 182 uses, overwhelmingly `loop { cond if { break } … }`, and called that "three
+      lines and a nesting level where `while` was one". But the `while` removed in `bc077a69` was
+      `cond while { body … cond }`: it popped a flag and the body had to leave the next one. The
+      test that commit converted, `while_simple.qd` → `loop_condition.qd`, is **five lines either
+      way**. Restoring it verbatim would have restored the shape without the saving.
+
+      So `while` is back in the shape the item wanted: `cond while { body }`, with the condition
+      **re-evaluated at the head of every iteration** and written once.
+
+      ```qd
+      0 -> i
+      i 5 < while {
+          i print nl
+          i 1 + -> i
+      }
+      ```
+
+      **What the condition is, exactly.** The parser hands the statement the run of expression nodes
+      immediately before the keyword; the validator, which knows each node's stack effect, then trims
+      that run to the **shortest suffix whose net effect is `( -- flag )`** and records where it
+      starts. Everything before that point is generated once, before the loop. The trimming is the
+      part that matters: a net-effect check alone accepts the wrong answer, because
+      `"Processing..." print nl` nets zero and so hides inside a run that still totals one value —
+      and it printed on every iteration until the trim landed. `i 5 < i 3 < while` (two values) and
+      a bare `while` (none) are compile errors naming what was left.
+
+      Lowering is `loop` with a conditional exit at the head, so a zero-trip loop is well defined and
+      falling out of the test is an exit edge that merges with any `break` the body wrote. Both
+      generator paths are implemented — the runtime stack and the compile-time stack with its PHI
+      nodes. `break`/`continue` now recognise `while` as a loop context, which they did not at first.
+
+      Verified: zero-trip, `break`, `continue`, a call in the condition (`k is_small while`), a
+      compound condition (`m 2 + 5 <`), nesting, and the statement-before-loop case. Tests
+      `control_flow/while_basic` and `compile_errors/while_condition_arity`; suite 2,130 → 2,132;
+      docscheck 222 → 224. `while` is out of `REMOVED_KEYWORDS`, which `reference:builtin_lists`
+      checks, and back in `reference.def`, the LSP completion and hover lists, `quadrepl`'s keyword
+      list and `quadlint`'s empty-block reporter.
+
+### R25 — the `error { … }` literal is removed (2026-09-18)
+
+- [x] **Cut on the `>>field!` precedent: two spellings of one operation.** It was listed in the
+      grammar and specification §10.2 as the alternative to `msg code panic`, and had four uses in
+      the whole tree — three of them its own tests. It was never a value: the parser rewrote
+      `error { code = X message = Y }` into a struct construction under the reserved name
+      `__error__`, and the validator and generator each carried a special case that pushed the
+      message and the code onto the stack for `panic` to consume. So it was `msg code panic` with
+      braces around it, and cost three special cases across two tiers to keep.
+
+      Removed: both parse sites (expression position and struct-field position), and the
+      `__error__` branches in `semantic_validator_collect.cc`, `semantic_validator_typecheck.cc`
+      and `generator_control.cc`. The name is gone from the compiler entirely.
+
+      Using it now reports *"the 'error { … }' literal has been removed; use 'msg code panic'
+      instead"* — **one** error, not two. `synchronize` stops *at* the opening brace, which left the
+      group's `}` to be read as if it closed the enclosing block and produced a bogus second
+      *"Unmatched '}' at top level"*; the removed-`while` diagnostic had the same cascade. A new
+      `skipBracedGroup` consumes the group with nesting accounted for, and the removal diagnostic
+      uses it.
+
+      Tests: `errors/error_literal_removed` pins the diagnostic, and `errors/struct_basic` —
+      which was written against the literal — now signals with `msg code panic` and checks the code
+      reaches the caller's `switch`. The two `error_error_literal_missing_*` tests, which pinned
+      field-validation errors for a construct that no longer parses, are deleted.
 
 ### R4 — `strings::char_at` is total, and json no longer dies on malformed input (2026-09-18)
 

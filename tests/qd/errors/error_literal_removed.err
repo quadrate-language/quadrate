@@ -1,0 +1,1 @@
+tests/qd/errors/error_literal_removed.qd:4:3: error: the 'error { ... }' literal has been removed; use 'msg code panic' instead

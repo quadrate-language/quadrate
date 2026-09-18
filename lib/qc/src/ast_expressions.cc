@@ -349,8 +349,8 @@ namespace Qd {
 				return deferStmt;
 			}
 
-			// 'ctx' has been removed. Recognised here, at the same altitude as the
-			// removed 'while', so it reports what happened from any block position -
+			// 'ctx' has been removed. Recognised here, at block-statement altitude, so it
+			// reports what happened from any block position -
 			// function body, if/else, loop, switch case, defer, test, anonymous fn -
 			// rather than only from the one position a caller happens to flag.
 			// Only 'ctx {' was the keyword: a bare 'ctx' is now an ordinary
@@ -376,10 +376,7 @@ namespace Qd {
 				} else if (strcmp(text, "for") == 0) {
 					return parseForStatement(scanner, errorReporter, src);
 				} else if (strcmp(text, "while") == 0) {
-					errorReporter->reportError(
-							scanner, "'while' has been removed; use 'loop' with 'if'/'break' instead");
-					synchronize(scanner);
-					return nullptr;
+					return parseWhileStatement(scanner, errorReporter, src);
 				} else if (strcmp(text, "loop") == 0) {
 					return parseLoopStatement(scanner, errorReporter, src);
 				} else if (strcmp(text, "switch") == 0) {
@@ -469,15 +466,16 @@ namespace Qd {
 			size_t identPos = u8t_scanner_token_start(scanner);
 			std::string identName(text);
 
-			// Check for anonymous error literal: error { code = X message = Y }
+			// `error { code = X message = Y }` was a second spelling of `msg code panic` and is
+			// removed; diagnose it rather than letting `error` parse as an ordinary identifier,
+			// which would report the following '{' as a stray brace.
 			if (identName == "error") {
-				char32_t errNextToken = peekNextNonWhitespace(scanner, src);
-				if (errNextToken == '{') {
-					u8t_scanner_scan(scanner); // Consume '{'
-					// Parse as anonymous error struct using special name __error__
-					return parseStructConstruction("__error__", {}, scanner, errorReporter, src, identPos);
+				if (peekNextNonWhitespace(scanner, src) == '{') {
+					errorReporter->reportError(scanner,
+							"the 'error { ... }' literal has been removed; use 'msg code panic' instead");
+					skipBracedGroup(scanner);
+					return nullptr;
 				}
-				// Note: error <<field is handled in parseBlockBody via <<field handler
 			}
 
 			// Check for scoped identifier (module::function, module::constant, or module::StructName)
