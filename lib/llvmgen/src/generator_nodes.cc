@@ -853,7 +853,6 @@ namespace Qd {
 		auto savedClosureVariables = closureVariables;
 		auto savedIndirectLocalVars = indirectLocalVariables;
 		auto savedHeapAllocatedCaptures = heapAllocatedCaptures;
-		auto savedHeapCapturePointers = heapCapturePointers;
 
 		// Clear local variables for the anonymous function
 		localVariables.clear();
@@ -866,7 +865,6 @@ namespace Qd {
 		closureVariables.clear();
 		indirectLocalVariables.clear();
 		heapAllocatedCaptures.clear();
-		heapCapturePointers.clear();
 
 		// Create the function type
 		// For closures: takes (context, env_ptr), returns int
@@ -997,7 +995,6 @@ namespace Qd {
 		closureVariables = savedClosureVariables;
 		indirectLocalVariables = savedIndirectLocalVars;
 		heapAllocatedCaptures = savedHeapAllocatedCaptures;
-		heapCapturePointers = savedHeapCapturePointers;
 
 		if (hasClosure) {
 			// Allocate closure struct: { magic, fn_ptr, env_ptr, capture_count }
@@ -1034,6 +1031,47 @@ namespace Qd {
 					// Store pointer to captured variable into environment array
 					llvm::Value* envSlot = builder->CreateGEP(ptrTy, envAlloc, builder->getInt64(i), capName + "_slot");
 					builder->CreateStore(capturePtr, envSlot);
+					continue;
+				}
+
+				// A captured `for` iterator has no alloca to point at: it is an SSA value, replaced
+				// each iteration, so there is no address whose contents could be shared. It is
+				// captured by value instead -- this closure gets a block of its own holding the
+				// iterator as it stands now. That is the per-iteration meaning the documentation
+				// already promised, and it is indistinguishable from capturing the iteration's
+				// binding by reference, because assigning to the name inside the body creates a
+				// shadowing local rather than moving the loop on. The block carries a refcount of
+				// one, so the closure's own release frees it like any other capture.
+				auto iterIt = iteratorVars.find(capName);
+				if (iterIt != iteratorVars.end()) {
+					llvm::Value* block =
+							builder->CreateCall(mallocFn, {builder->getInt64(32)}, capName + "_iter_block");
+					builder->CreateStore(builder->getInt64(1), block);
+					llvm::Value* elem = builder->CreateGEP(
+							builder->getInt8Ty(), block, builder->getInt64(8), capName + "_iter_elem");
+
+					// A loop whose bounds came off the runtime stack carries both halves and picks
+					// between them at run time; mirror that here so a float iterator captures as a
+					// float.
+					llvm::Value* bits = iterIt->second;
+					llvm::Value* tag = builder->getInt32(0);
+					auto floatIt = iteratorFloatVars.find(capName);
+					if (floatIt != iteratorFloatVars.end()) {
+						llvm::Value* asBits =
+								builder->CreateBitCast(floatIt->second.value, int64Ty, capName + "_iter_f_bits");
+						bits = builder->CreateSelect(
+								floatIt->second.isFloat, asBits, iterIt->second, capName + "_iter_bits");
+						tag = builder->CreateSelect(floatIt->second.isFloat, builder->getInt32(1), builder->getInt32(0),
+								capName + "_iter_tag");
+					}
+
+					llvm::Value* valuePtr = builder->CreateStructGEP(stackElementTy, elem, 0, capName + "_iter_value");
+					builder->CreateStore(bits, valuePtr);
+					llvm::Value* typePtr = builder->CreateStructGEP(stackElementTy, elem, 1, capName + "_iter_type");
+					builder->CreateStore(tag, typePtr);
+
+					llvm::Value* envSlot = builder->CreateGEP(ptrTy, envAlloc, builder->getInt64(i), capName + "_slot");
+					builder->CreateStore(elem, envSlot);
 				}
 			}
 

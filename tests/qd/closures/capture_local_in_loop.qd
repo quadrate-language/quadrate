@@ -1,0 +1,53 @@
+// Test: a local declared in a loop body gets one binding per iteration, so closures that
+// outlive the loop each report their own iteration.
+//
+// The capture block used to be allocated once, in the function's entry block, on the reasoning
+// that a loop should not allocate repeatedly. That gave every iteration's closure a pointer to
+// the same block, so the three closures below all printed 2 -- the value last written to it.
+// The block is now allocated where the declaration runs, and the previous one released first,
+// so it stays alive only for whatever captured it.
+//
+// Capture is still by reference within a binding: reassigning the variable is visible through
+// a closure that captured it, which is what the last case checks.
+
+fn main() {
+	[] -> fns
+	0 3 1 for i {
+		i 10 * -> val
+		fns fn ( -- r:i64) { val } append -> fns
+	}
+	0 3 1 for n {
+		fns n nth call print nl
+	}
+	fns free
+
+	// a string local, to exercise releasing the element's contents with the block
+	[] -> names
+	0 2 1 for k {
+		k 0 == if { "zero" } else { "one" } -> label
+		names fn ( -- r:str) { label } append -> names
+	}
+	0 2 1 for m {
+		names m nth call print nl
+	}
+	names free
+
+	// declared in a branch that is not taken on every pass: the slot is empty until it runs
+	[] -> odds
+	0 4 1 for p {
+		p 2 % 1 == if {
+			p -> odd
+			odds fn ( -- r:i64) { odd } append -> odds
+		}
+	}
+	0 2 1 for q {
+		odds q nth call print nl
+	}
+	odds free
+
+	// by-reference within one binding
+	5 -> x
+	fn ( -- r:i64) { x } -> f
+	7 -> x
+	f call print nl
+}

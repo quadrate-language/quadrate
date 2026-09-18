@@ -721,7 +721,6 @@ namespace Qd {
 		lastStructWasConstructedInPlace = false;
 		lastFieldAccessResultType.clear();
 		heapAllocatedCaptures.clear();
-		heapCapturePointers.clear();
 		indirectLocalVariables.clear();
 		closureVariables.clear();
 		localVariableTypeHints.clear();

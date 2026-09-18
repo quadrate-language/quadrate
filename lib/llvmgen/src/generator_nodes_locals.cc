@@ -125,28 +125,37 @@ namespace Qd {
 				// Create alloca to hold the heap pointer (to the elem part, not the refcount)
 				localAlloca = tmpBuilder.CreateAlloca(ptrTy, nullptr, name + "_ptr");
 
-				// Allocate heap memory in ENTRY BLOCK (important for loops - only allocate once)
-				// 8 bytes refcount + 24 bytes qd_stack_element_t = 32 bytes
-				llvm::Value* heapBlock =
-						tmpBuilder.CreateCall(mallocFn, {tmpBuilder.getInt64(32)}, name + "_heap_block");
+				// Null until the declaration runs, so a declaration inside a branch that is never
+				// taken leaves nothing to release and the release below has something to test.
+				tmpBuilder.CreateStore(llvm::Constant::getNullValue(ptrTy), localAlloca);
 
-				// Initialize refcount to 1
-				tmpBuilder.CreateStore(tmpBuilder.getInt64(1), heapBlock);
+				// The block is allocated *here*, where the declaration runs, not once in the entry
+				// block. One block per declaration is what gives a loop body one binding per
+				// iteration: the entry-block version handed every iteration's closure a pointer to
+				// the same block, so closures that outlived the loop all read the last value
+				// written to it. The previous iteration's block is released first, leaving it alive
+				// only for whatever captured it.
+				emitCaptureBlockRelease(builder->CreateLoad(ptrTy, localAlloca, name + "_prev"), name);
+
+				// 8 bytes refcount + 24 bytes qd_stack_element_t = 32 bytes
+				llvm::Value* heapBlock = builder->CreateCall(mallocFn, {builder->getInt64(32)}, name + "_heap_block");
+
+				// Initialize refcount to 1 -- this slot's own reference
+				builder->CreateStore(builder->getInt64(1), heapBlock);
 
 				// Get pointer to the qd_stack_element_t (at offset 8)
 				llvm::Value* heapPtr =
-						tmpBuilder.CreateGEP(tmpBuilder.getInt8Ty(), heapBlock, tmpBuilder.getInt64(8), name + "_heap");
-
-				// Store elem pointer in the alloca (this is what code accesses)
-				tmpBuilder.CreateStore(heapPtr, localAlloca);
+						builder->CreateGEP(builder->getInt8Ty(), heapBlock, builder->getInt64(8), name + "_heap");
 
 				// Initialize type field to -1 (uninitialized marker)
-				llvm::Value* typePtr = tmpBuilder.CreateStructGEP(stackElementTy, heapPtr, 1, name + "_init_type");
-				tmpBuilder.CreateStore(tmpBuilder.getInt32(static_cast<uint32_t>(-1)), typePtr);
+				llvm::Value* typePtr = builder->CreateStructGEP(stackElementTy, heapPtr, 1, name + "_init_type");
+				builder->CreateStore(builder->getInt32(static_cast<uint32_t>(-1)), typePtr);
 
-				// Track as indirect variable and record heap pointer
+				// Store elem pointer in the alloca (this is what code accesses)
+				builder->CreateStore(heapPtr, localAlloca);
+
+				// Track as indirect variable
 				indirectLocalVariables.insert(name);
-				heapCapturePointers[name] = heapPtr;
 			} else {
 				// Normal case: Create alloca for the stack element in the entry block
 				localAlloca = tmpBuilder.CreateAlloca(stackElementTy, nullptr, name);
@@ -452,6 +461,65 @@ namespace Qd {
 		}
 	}
 
+	// Drops one reference to a capture block and frees it at zero, releasing whatever the element
+	// held first. `elemPtr` points at the qd_stack_element_t; the refcount sits 8 bytes before it,
+	// which is also the start of the malloc'd block. A null pointer means the declaration that
+	// would have allocated the block never ran, so there is nothing to release.
+	void LlvmGenerator::Impl::emitCaptureBlockRelease(llvm::Value* elemPtr, const std::string& name) {
+		llvm::Function* currentFn = builder->GetInsertBlock()->getParent();
+
+		llvm::BasicBlock* haveBlock = llvm::BasicBlock::Create(*context, name + "_cap_have", currentFn);
+		llvm::BasicBlock* doneBlock = llvm::BasicBlock::Create(*context, name + "_cap_done", currentFn);
+		llvm::Value* isNull =
+				builder->CreateICmpEQ(elemPtr, llvm::Constant::getNullValue(ptrTy), name + "_cap_is_null");
+		builder->CreateCondBr(isNull, doneBlock, haveBlock);
+
+		builder->SetInsertPoint(haveBlock);
+		llvm::Value* refCountPtr = builder->CreateGEP(builder->getInt8Ty(), elemPtr,
+				builder->getInt64(static_cast<uint64_t>(-8)), name + "_cap_refcount_ptr");
+		llvm::Value* refCount = builder->CreateLoad(int64Ty, refCountPtr, "cap_refcount");
+		llvm::Value* newRefCount = builder->CreateSub(refCount, builder->getInt64(1), "cap_new_refcount");
+		builder->CreateStore(newRefCount, refCountPtr);
+
+		llvm::BasicBlock* freeCapBlock = llvm::BasicBlock::Create(*context, name + "_cap_free", currentFn);
+		llvm::Value* shouldFree = builder->CreateICmpEQ(newRefCount, builder->getInt64(0), name + "_cap_should_free");
+		builder->CreateCondBr(shouldFree, freeCapBlock, doneBlock);
+
+		// Release the value the element held before the block goes away.
+		builder->SetInsertPoint(freeCapBlock);
+		llvm::Value* capTypePtr =
+				builder->CreateGEP(builder->getInt8Ty(), elemPtr, builder->getInt64(8), name + "_cap_type_ptr");
+		llvm::Value* capType = builder->CreateLoad(int32Ty, capTypePtr, "cap_type");
+
+		llvm::BasicBlock* capIsStr = llvm::BasicBlock::Create(*context, name + "_cap_is_str", currentFn);
+		llvm::BasicBlock* capCheckPtr = llvm::BasicBlock::Create(*context, name + "_cap_check_ptr", currentFn);
+		llvm::BasicBlock* capIsPtr = llvm::BasicBlock::Create(*context, name + "_cap_is_ptr", currentFn);
+		llvm::BasicBlock* capDoFree = llvm::BasicBlock::Create(*context, name + "_cap_do_free", currentFn);
+
+		llvm::Value* capIsStrCond = builder->CreateICmpEQ(capType, builder->getInt32(3), "cap_is_str_cond");
+		builder->CreateCondBr(capIsStrCond, capIsStr, capCheckPtr);
+
+		builder->SetInsertPoint(capIsStr);
+		llvm::Value* capStrVal = builder->CreateLoad(ptrTy, elemPtr, "cap_str");
+		builder->CreateCall(qdStringReleaseFn, {capStrVal});
+		builder->CreateBr(capDoFree);
+
+		builder->SetInsertPoint(capCheckPtr);
+		llvm::Value* capIsPtrCond = builder->CreateICmpEQ(capType, builder->getInt32(2), "cap_is_ptr_cond");
+		builder->CreateCondBr(capIsPtrCond, capIsPtr, capDoFree);
+
+		builder->SetInsertPoint(capIsPtr);
+		llvm::Value* capPtrVal = builder->CreateLoad(ptrTy, elemPtr, "cap_ptr");
+		builder->CreateCall(qdPtrReleaseFn, {capPtrVal});
+		builder->CreateBr(capDoFree);
+
+		builder->SetInsertPoint(capDoFree);
+		builder->CreateCall(freeFn, {refCountPtr});
+		builder->CreateBr(doneBlock);
+
+		builder->SetInsertPoint(doneBlock);
+	}
+
 	void LlvmGenerator::Impl::generateLocalCleanup() {
 		// Free any string and array locals to prevent memory leaks
 		// Iterate through all local variables and check their type
@@ -459,70 +527,11 @@ namespace Qd {
 			const std::string& varName = pair.first;
 			llvm::AllocaInst* localAlloca = pair.second;
 
-			// Handle heap-allocated captured variables - decrement refcount
-			// The original owner releases its reference; closures will release theirs when cleaned up
+			// Handle heap-allocated captured variables - drop this slot's reference.
+			// Closures that captured the block keep it alive until they are released.
 			if (indirectLocalVariables.find(varName) != indirectLocalVariables.end()) {
-				// Load the heap pointer (elem location)
 				llvm::Value* heapPtr = builder->CreateLoad(ptrTy, localAlloca, varName + "_heap_cleanup");
-
-				// Refcount is 8 bytes before the elem pointer
-				llvm::Value* refCountPtr = builder->CreateGEP(builder->getInt8Ty(), heapPtr,
-						builder->getInt64(static_cast<uint64_t>(-8)), varName + "_refcount_cleanup");
-				llvm::Value* refCount = builder->CreateLoad(int64Ty, refCountPtr, "refcount");
-				llvm::Value* newRefCount = builder->CreateSub(refCount, builder->getInt64(1), "new_refcount");
-				builder->CreateStore(newRefCount, refCountPtr);
-
-				// If refcount == 0, free the heap block
-				llvm::Function* currentFn = builder->GetInsertBlock()->getParent();
-				llvm::BasicBlock* freeCapBlock =
-						llvm::BasicBlock::Create(*context, varName + "_free_cap_heap", currentFn);
-				llvm::BasicBlock* skipFreeCapBlock =
-						llvm::BasicBlock::Create(*context, varName + "_skip_free_cap", currentFn);
-				llvm::Value* shouldFree = builder->CreateICmpEQ(newRefCount, builder->getInt64(0), "should_free_cap");
-				builder->CreateCondBr(shouldFree, freeCapBlock, skipFreeCapBlock);
-
-				builder->SetInsertPoint(freeCapBlock);
-				// Before freeing, release the value inside if it's a string or pointer
-				// heapPtr points to qd_stack_element_t; type is at offset 8 within it
-				llvm::Value* capTypePtr = builder->CreateGEP(
-						builder->getInt8Ty(), heapPtr, builder->getInt64(8), varName + "_cap_type_ptr");
-				llvm::Value* capType = builder->CreateLoad(int32Ty, capTypePtr, "cap_type");
-
-				// Create blocks for type-specific cleanup
-				llvm::BasicBlock* capIsStr = llvm::BasicBlock::Create(*context, varName + "_cap_is_str", currentFn);
-				llvm::BasicBlock* capCheckPtr =
-						llvm::BasicBlock::Create(*context, varName + "_cap_check_ptr", currentFn);
-				llvm::BasicBlock* capIsPtr = llvm::BasicBlock::Create(*context, varName + "_cap_is_ptr", currentFn);
-				llvm::BasicBlock* capDoFree = llvm::BasicBlock::Create(*context, varName + "_cap_do_free", currentFn);
-
-				// Check if type == 3 (string)
-				llvm::Value* capIsStrCond = builder->CreateICmpEQ(capType, builder->getInt32(3), "cap_is_str");
-				builder->CreateCondBr(capIsStrCond, capIsStr, capCheckPtr);
-
-				// Release string
-				builder->SetInsertPoint(capIsStr);
-				llvm::Value* capStrVal = builder->CreateLoad(ptrTy, heapPtr, "cap_str");
-				builder->CreateCall(qdStringReleaseFn, {capStrVal});
-				builder->CreateBr(capDoFree);
-
-				// Check if type == 2 (pointer - could be struct, array, or closure)
-				builder->SetInsertPoint(capCheckPtr);
-				llvm::Value* capIsPtrCond = builder->CreateICmpEQ(capType, builder->getInt32(2), "cap_is_ptr");
-				builder->CreateCondBr(capIsPtrCond, capIsPtr, capDoFree);
-
-				// Release pointer (works for structs and arrays)
-				builder->SetInsertPoint(capIsPtr);
-				llvm::Value* capPtrVal = builder->CreateLoad(ptrTy, heapPtr, "cap_ptr");
-				builder->CreateCall(qdPtrReleaseFn, {capPtrVal});
-				builder->CreateBr(capDoFree);
-
-				// Free the heap block
-				builder->SetInsertPoint(capDoFree);
-				// Free starting at refcount (the actual malloc block start)
-				builder->CreateCall(freeFn, {refCountPtr});
-				builder->CreateBr(skipFreeCapBlock);
-
-				builder->SetInsertPoint(skipFreeCapBlock);
+				emitCaptureBlockRelease(heapPtr, varName);
 				continue;
 			}
 

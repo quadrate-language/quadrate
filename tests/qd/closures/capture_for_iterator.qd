@@ -1,0 +1,54 @@
+// Test: a closure can capture a `for` iterator.
+//
+// The iterator is tracked separately from ordinary locals, and only the locals were passed as
+// the outer scope when collecting captures -- so the name came back "Undefined identifier 'i'".
+// It is captured by value: the iterator is an SSA value replaced each iteration, so there is no
+// address whose contents could be shared, and each closure gets a block of its own holding the
+// iterator as it stood when the closure was built. That is per-iteration capture, which is what
+// the documentation promises and what an escaping closure needs.
+
+fn main() {
+	// called within the iteration
+	0 3 1 for i {
+		fn ( -- r:i64) { i } -> f
+		f call print nl
+	}
+
+	// escaping the loop: each closure keeps its own iteration's value
+	[] -> fns
+	0 3 1 for j {
+		fns fn ( -- r:i64) { j } append -> fns
+	}
+	0 3 1 for n {
+		fns n nth call print nl
+	}
+	fns free
+
+	// a float iterator captures as a float
+	0.0 3.0 1.0 for x {
+		fn ( -- r:f64) { x 0.5 + } -> g
+		g call print nl
+	}
+
+	// nested loops, both iterators captured by one closure
+	0 2 1 for a {
+		0 2 1 for b {
+			fn ( -- r:i64) { a 10 * b + } -> h
+			h call print nl
+		}
+	}
+
+	// an iterator captured alongside an ordinary local
+	100 -> base
+	0 2 1 for k {
+		fn ( -- r:i64) { base k + } -> m
+		m call print nl
+	}
+
+	// reading the iterator normally still works in a body that also captures it
+	0 2 1 for p {
+		p print
+		fn ( -- r:i64) { p 1 + } -> q
+		q call print nl
+	}
+}

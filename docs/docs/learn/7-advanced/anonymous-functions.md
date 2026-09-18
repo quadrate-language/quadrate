@@ -168,18 +168,41 @@ fn main() {
 
 ### Closures in loops
 
-Closures created inside loops capture the current value at each iteration:
+A `for` iterator can be captured directly, and it is captured **by value**: each closure keeps the
+iterator as it stood when the closure was built, so one that outlives the loop still reports its own
+iteration.
 
 ```qd
 fn main() {
 	0 5 1 for i {
-		i -> val
-		fn ( -- r:i64) { val } -> c
+		fn ( -- r:i64) { i } -> c
 		c call print nl
 	}
 	// Output: 0 1 2 3 4
 }
 ```
+
+A local declared in the loop body behaves the same way: each iteration gives it a fresh binding, so
+a closure that escapes reports the value from its own pass.
+
+```qd
+fn main() {
+	[] -> fns
+	0 3 1 for i {
+		i 10 * -> val
+		fns fn ( -- r:i64) { val } append -> fns
+	}
+	0 3 1 for n {
+		fns n nth call print nl
+	}
+	// Output: 0 10 20
+	fns free
+}
+```
+
+Capture by reference (above) still applies **within** a binding: reassigning a variable is visible
+through a closure that captured it. What a new iteration produces is a new binding, not a new value
+in the old one — the same distinction `let` draws from `var` in other languages.
 
 ### Nested closures
 

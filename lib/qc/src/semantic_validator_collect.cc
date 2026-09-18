@@ -1170,8 +1170,19 @@ namespace Qd {
 			std::unordered_set<std::string> anonLocals;
 			std::unordered_set<std::string> anonIterators;
 
+			// A `for` iterator is in scope for the body but is tracked in iteratorNames rather than
+			// in localVariables, so passing localVariables alone as the outer scope meant a closure
+			// referring to the iterator captured nothing and the name came back undefined. The
+			// placeholder loop/switch marker is not a real binding and is left out.
+			std::unordered_set<std::string> outerScope = localVariables;
+			for (const auto& iterName : iteratorNames) {
+				if (iterName != "__loop__") {
+					outerScope.insert(iterName);
+				}
+			}
+
 			// Collect captured variables by walking the body
-			collectCapturedVariables(anonFunc->body(), anonLocals, anonIterators, localVariables, anonFunc);
+			collectCapturedVariables(anonFunc->body(), anonLocals, anonIterators, outerScope, anonFunc);
 
 			// Now validate the body with captured variables added to the local scope
 			// This ensures undefined references are properly reported

@@ -389,7 +389,6 @@ namespace Qd {
 		// Captured variables
 		std::map<std::string, llvm::AllocaInst*> capturedVariableRefs;
 		std::set<std::string> heapAllocatedCaptures;
-		std::map<std::string, llvm::Value*> heapCapturePointers;
 		std::set<std::string> indirectLocalVariables;
 		std::set<std::string> closureVariables;
 
@@ -496,6 +495,7 @@ namespace Qd {
 		void generateLocal(AstNodeLocal* local, llvm::Value* ctx);
 		void generateLocalOne(const std::string& name, size_t lineNum, llvm::Value* ctx);
 		void generateLocalCleanup();
+		void emitCaptureBlockRelease(llvm::Value* elemPtr, const std::string& name);
 		void generateCastInstructions(const std::vector<CastDirection>& casts, llvm::Value* ctx);
 
 		// Error state

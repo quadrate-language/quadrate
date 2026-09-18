@@ -1051,7 +1051,15 @@ vec length
 fn (params -- returns) { body }
 ```
 
-**Implicit capture**: Variables from the enclosing scope MUST be automatically captured when referenced inside the closure body. An explicit capture list MUST NOT be required.
+**Implicit capture**: Variables from the enclosing scope MUST be automatically captured when referenced inside the closure body. An explicit capture list MUST NOT be required. A `for` iterator is in scope for the loop body and MUST be capturable there.
+
+A local is captured by reference: a later assignment to it is visible through the closure. A local
+declared inside a loop body gets a fresh binding on each iteration, so a closure created in one
+iteration and called after the loop MUST report that iteration's value rather than the last. A `for`
+iterator is captured **by value**, as it stood when the closure was created — it is not a storage
+location the body can assign to, since assigning to its name declares a shadowing local instead, so
+by-reference capture would have no meaning distinct from this one. The practical consequence is
+that a closure built in one iteration and called after the loop reports that iteration's value.
 
 **Example:**
 ```quadrate
@@ -1625,6 +1633,8 @@ struct captured_var {
 
 - Closure increments refcount of captured variables
 - Variables freed when all closures using them are released
+- A captured `for` iterator has no such variable to point at, so the closure is given a block of
+  its own holding the iterator's value, with a refcount of one, released the same way
 
 ### 11.7 Defer for Cleanup
 

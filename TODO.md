@@ -85,11 +85,12 @@ Nothing here is an accepted decision. Each item records **what was measured**, a
 question** — several may well come out as "working as intended, close it". IDs are stable so they
 can be referred to while working through them; they are ordered by leverage, not by effort.
 
-Where an item restates something already open above (`R3`, parts of `R23`), it is kept only for the
-new evidence, not as a second copy of the task.
+Where an item restates something already open above (`R3`), it is kept only for the new evidence,
+not as a second copy of the task.
 
-*Amended 2026-09-17*: R2 corrected (its headline claim was wrong); R34 and R35 added and fixed
-the same day, R34 taking R6 with it; R36–R38 found while fixing them. R1, R2 and R28 are done — see Done.
+*Amended 2026-09-17*: R2 corrected (its headline claim was wrong); R34 and R35 added and fixed the
+same day, R34 taking R6 with it. R36–R38 were found while fixing those and have since been resolved
+or dropped. Everything from this review that is finished is in Done, condensed.
 
 *Re-verified 2026-09-18.* Every number in this section was re-measured; corrections are inline
 below and summarised here. **Wrong**: R4's abort-site counts (inflated ~65% by counting fallible
@@ -108,7 +109,9 @@ times. Every "zero uses" claim below was re-measured with a tokenizer that strip
 literals, comments and parenthesised signatures (`/tmp/census.py` shape; worth committing if this
 recurs). The ratios and the headline conclusions survive — named binding still outnumbers every
 shuffler combined by roughly 40:1, and `>>field` really is 12 uses — but three specific cut
-candidates did not, and R29 and R30 were withdrawn because of it.
+candidates did not: R29 was withdrawn outright (`read` was load-bearing, and has since been
+removed for a different reason — see Done), and R30 was cut from four unused builtins to two,
+where it remains open.
 
 #### Abstraction — the cluster that shapes everything else
 
@@ -174,52 +177,6 @@ candidates did not, and R29 and R30 were withdrawn because of it.
       **Open question**: what is the spelling — `[ … ] [ … ] and` over quotations, or combinators in
       `hof` beside `when`/`unless`?
 
-- [x] **R14 — removed the direction rather than making `cast` fallible.** The open question offered
-      both. Removal wins on the property that makes `cast` worth having: every other direction it
-      offers is *total* — int to float, float to int, anything to string — so its result never
-      needs checking. Making it fallible would have put a failure arm on conversions that cannot
-      fail, to accommodate the one that can. And `strconv` already had the honest version of every
-      case (`atoi`, `parse_int`, `parse_float`, `parse_bool`, all `!`), so this was a silent
-      duplicate of an existing API, not a capability being taken away.
-
-      The compiler rejects a string operand for `cast<i64>`/`cast<f64>` and names the replacement
-      in the hint. The interpreter tier rejects it too, and can be exact where the compiler is
-      static — the operand's type is on the stack.
-
-      **Corpus fallout: one program.** The sweep compiled all 1,061 `.qd` files; 4 reported the new
-      error and 3 of those were the cast tests themselves. The 33 files that fail to parse (all
-      intentional `compile_errors`/`syntax` tests) were checked separately and contain no `cast<`
-      at all, so nothing is hidden behind them. The one real site, `examples/dc/dc.qd`, guarded
-      with its own `is_number` before casting — exactly the shape this item describes — and now
-      calls `strconv::parse_float!`, matching the `!` style it already used for
-      `strings::substring!`.
-
-      Two escape hatches were checked and are closed: `nth` off a `[]str` propagates `str` and is
-      caught, and laundering through `cast<ptr>` already fails at run time (*"Cannot cast type 3 to
-      pointer"*). So the silent parse is unreachable from Quadrate in both tiers.
-
-      **Deliberately left**: `qd_casti`/`qd_castf` in `lib/rt` still parse a string with `atoll`.
-      They are declared in the public embedding header with that documented behaviour, and no
-      Quadrate code can reach the branch any more; turning it into a fatal error is a C-API
-      decision, separate from what the language allows.
-
-      Tests: `compile_errors/cast_string_to_number` (literal and local operands, with negatives
-      pinning that the total directions still compile), `casting/str_numeric` rewritten to show the
-      failure actually being *detected* — `"notanumber"` and `"0"` now give different answers, which
-      was the whole complaint — plus `casting/basic` and `casting/edge_cases` moved to `strconv`
-      with byte-identical output, and `CastIsTotalSoStringsAreRefused` in `test_interp.cc`.
-      Specification §3.7 states the totality rule and §12.6 points at it.
-
-      **The docs were teaching the unsafe pattern**, which the test suite could not see because
-      docscheck runs separately from `run_all.sh` — it went from 0 failures to 4 on this change.
-      Two were reference listings (`learn/1-basics/values-types`, `learn/7-advanced/generics`,
-      whose conversion table advertised `str -> i64` as "Parses integer"). The other two were
-      worse: `learn/8-examples/user-input` read a line from the user and cast it straight to a
-      number, in both of its examples — the one input source guaranteed to contain arbitrary text,
-      demonstrated with the conversion that cannot report failure. All four now use `strconv` and
-      show the failure arm. `reference/types.md` listed the two string rows as supported and now
-      states the totality rule. docscheck: 221 checked, 0 failed.
-
 - [ ] **R15. The sized-integer divergence the spec already documents — decide it.** `300 cast<u8>`
       yields `300`, and a sized type on a parameter or return annotation is inert. Only struct
       fields and the `mem` accessors honour the width; those were verified correct (`packed struct
@@ -229,202 +186,7 @@ candidates did not, and R29 and R30 were withdrawn because of it.
       **Open question**: truncate in `cast`, or reject the annotation where it carries no meaning?
       Rejecting is smaller and matches the subtractive precedent.
 
-- [ ] **R17. Closures cannot capture a `for` iterator.** `0 3 1 for i { fn ( -- r:i64) { i } … }` →
-      *"Undefined identifier 'i'"*. The iterator is saved and restored around the loop as an
-      ordinary frame entry, so it is presumably not in the capture set.
-      **Deprioritised 2026-09-18, not closed.** `for i { … }` binds a name per iteration, which is
-      the construct the Direction above is moving away from — `hof::times` and `hof::fold` are the
-      concatenative forms and neither needs a capture. Fixing the capture set would be work spent on
-      a construct that may not survive R47. It stays open because it is a genuine defect in a
-      shipped feature, and because the capture-by-reference-vs-value question has to be answered for
-      quotations regardless of what happens to `for`.
-
 #### Spec and implementation disagree
-
-- [x] **R19 — implemented, and it uncovered a silent miscompilation.** Implementing was the right
-      answer to the open question, not narrowing the spec: §3.2.2 documents `[[1 2] [3 4]]`, R23
-      had just made nested arrays printable, and the adaptive element type from R28 does the
-      typing work at run time.
-
-      Two separate bugs. **The parser** had a nested-array branch, but it sat in the `else` of
-      `parseSimpleToken` returning null — and that function reports its own diagnostic before
-      returning null, so the recovery ran only after *"Unexpected character '['"* was already
-      emitted. Nested `[` and identifiers (which is how `Name { … }` is reached) are now handled
-      before that call.
-
-      **Codegen was worse.** Its element loop emitted `LITERAL` nodes and ignored everything else
-      without a word, so `7 -> x  [x 2 3]` compiled to the two-element array `[2 3]` — wrong data,
-      no diagnostic, and reachable without any of the syntax this item is about. A literal whose
-      elements are not all scalar literals is now built through the stack: the array is created
-      with no element type and each element generates itself and appends, which is the `[] x
-      append` path and gives struct elements and arbitrary nesting depth for free. All-literal
-      arrays keep the constant path unchanged.
-
-      **Typing** was also only ever inferred from element zero, and only when it was a scalar
-      literal, so `fn mk(x:i64 -- r:[]i64) { [x 2 3] }` was rejected as `[]any`. It now considers
-      every element — literals, locals, nested literals, struct literals — requires them to agree,
-      and reports a genuine mismatch (`[x "a"]` against `[]i64` says `[]str`). Undecidable stays
-      `[]any`.
-
-      Found alongside: `--dump-ast` printed eleven node types as `Unknown`, including
-      `ArrayLiteral` itself — fixed. Test: `arrays/nested_and_computed_literals`, valgrind-clean.
-
-- [x] **R20(a)(b) — `str` was made properly UTF-8, rather than the spec relabelled.** The item
-      offered "correct the spec's wording to byte string" as (a); the decision went the other way,
-      on the instruction that the language shall be proper UTF-8. The spec's description was the
-      one that was right and the library was what had to change.
-
-      **What was actually wrong** was worse than the item recorded. Re-verifying turned up two
-      things it did not mention: `strings::reverse` reversed *bytes*, so `"héllo wörld"` came back
-      as mojibake with every multi-byte character shredded, and `substring` could cut inside a
-      sequence — `"héllo" 0 2 substring` produced the bytes `h 0xC3`, a truncated character. Those
-      are not "byte semantics", they are output that is not UTF-8 at all, and no amount of
-      relabelling the spec fixes them. `from_char` truncated every codepoint above 127 to one
-      byte, and the padding functions emitted `pad_ch[0]` — the first byte of the pad character on
-      its own.
-
-      **What was done.** A UTF-8 layer in `stdlib/strings/src/strings.c` (decode, encode, count,
-      codepoint index to byte offset and back) and every index- or length-sensitive function moved
-      onto it: `len`, `char_at`, `from_char`, `substring`, `slice`, `insert`, `remove_range`,
-      `truncate`, `index_of`, `index_of_from`, `last_index_of`, `pad_left`, `pad_right`, `center`,
-      `reverse`. Case mapping (`upper`, `lower`, `capitalize`, `title`, `equals_ignore_case`,
-      `is_lowercase`, `is_uppercase`) and classification (`is_alpha`, `is_alphanumeric`) map per
-      codepoint, and the trim family plus `words` use a Unicode whitespace test. No live `ctype`
-      call is left in the module.
-
-      **Case mapping is algorithmic, not a UCD table.** Latin-1, Latin Extended-A and Additional,
-      Greek and Cyrillic are laid out regularly enough to compute — either a fixed offset between
-      the upper and lower runs, or alternating pairs. **Deliberately not handled**: mappings that
-      change length (U+00DF sharp s uppercases to "SS"), which a one-to-one API cannot express and
-      which would invalidate every index the caller holds; locale-dependent mappings (Turkish
-      dotless i); and Latin Extended-B, whose layout is genuinely irregular. Scripts without case
-      come back unchanged, which is correct rather than a gap.
-
-      **`char_count` became an exact synonym for `len` and was replaced by `byte_len`.** It had no
-      uses outside its own tests. Byte extent still matters for sizing a buffer, and after this it
-      was reachable only through the raw pointer from `strings::data`, so it keeps a name.
-
-      Corpus fallout was four tests, every one of which was *asserting the bug* — `strings/utf8_special`
-      ("note: strlen counts bytes, not characters"), `unicode/multibyte_chars` ("1+2+3+4 = 10 bytes"),
-      `unicode/emoji_handling` and `unicode/mixed_scripts`. Their comments were rewritten rather
-      than just their expected output regenerated, so they no longer document the old behaviour as
-      intended. New test: `strings/utf8`, valgrind-clean. Specification §3.1 states the codepoint
-      rule and the well-formed-output requirement.
-
-- [x] **R20(c) — `unicode` was made to deserve its name, instead of renamed to `ascii`.** The
-      earlier recommendation here was the rename. That was wrong, and the measurement is what
-      changed it: `unicode` is not a duplicate of `strings`, it is the *per-codepoint* layer
-      (`strings::is_alpha` takes a string, `unicode::is_alpha` takes one character), and now that
-      `char_at` returns codepoints it is needed more than before, not less. Renaming to `ascii`
-      would have made the label honest while enshrining the real problem — that the two layers
-      disagreed:
-
-    | | `strings` | `unicode` (before) |
-    |---|---|---|
-    | is `é` a letter? | 1 | **0** |
-    | uppercase `é` | `É` | **`é`** |
-    | lowercase `Ä` | `ä` | **`Ä`** |
-
-      The 11 functions that were bounded by ASCII arithmetic (`is_upper`, `is_lower`, `is_alpha`,
-      `is_alnum`, `is_space`, `is_digit`, `is_print`, `is_control`, `is_punct`, `to_lower`,
-      `to_upper`) moved to a new C backend that shares R20(a)(b)'s tables through
-      `stdlib/unicode/include/quadrate/unicode/codepoint.h`, so one implementation answers both
-      layers and they cannot drift. **Zero call-site churn**: the 118 function calls are unchanged,
-      ASCII results identical, non-ASCII now correct — against the 502 edits the rename needed.
-
-      **What deliberately did not widen.** The 357 constant references needed nothing: `space = 32`
-      is an ordinary Unicode codepoint, ASCII being a subset. `is_hex_digit`, `is_ascii`,
-      `digit_value`, `hex_digit_value` and the five UTF-8 mechanics helpers stay pure Quadrate,
-      because they are ASCII notation or byte arithmetic by definition. `is_ident_start` and
-      `is_ident_cont` were defined in terms of `is_alpha`/`is_alnum` and would have silently
-      followed them into the rest of Unicode — specification §2 restricts identifiers to ASCII, so
-      they are now written against explicit ASCII ranges.
-
-      Two build-level facts this turned up. `isStdlibImport` in `generator.cc` is a hardcoded list
-      of stdlib archives, and a library missing from it gets bare symbol names instead of
-      `usr_<module>_<name>` plus a forwarding wrapper, which fails to link; `libunicode.a` had to
-      be added. And see R43 — the silent miscompilation that cost the most time here.
-
-- [x] **R43 — rejected with a compile error.** An unqualified call to a function in the module's
-      own `import` block used to compile clean and leave an extra value on the stack, so an `if`
-      consumed that instead of the result and always took the true branch: in `unicode.qd`,
-      `c is_digit if { ... }` made `digit_value` answer **17** for `'A'` rather than -1.
-
-      Rejecting beat making it work: the qualified form is already what every module in the
-      corpus writes (`math::log` is `x math::ln base math::ln /`), so a diagnostic is cheaper and
-      more certain than a second name-resolution path.
-
-      **The first attempt was in the wrong place** and never fired. Putting it in the type
-      checker's unresolved-identifier branch covers only a *consumer* writing the bare name, and
-      that is already caught by the existing "Undefined identifier" check. The module's own bodies
-      never go through `typeCheckBlock` when a program imports it, which is exactly why the bug
-      existed. The check now runs where the module's imports are collected
-      (`checkModuleUnqualifiedImportCalls`), as a syntactic walk of the module AST: only names
-      from that module's import block match, and the qualified form is a `SCOPED_IDENTIFIER` so it
-      never does.
-
-      Reported without a source position on purpose. The offending line belongs to the module, but
-      the reporter names the file being compiled, so anchoring the caret would point it at an
-      unrelated line of the importing program; the module and line go in the message text instead.
-
-      Test: `compile_errors/unqualified_module_import`, with `badimport_mod.qd` — a local module
-      that calls its own imported `upper` unqualified.
-
-- [x] **R45 — assertion failures are recorded on the context, so depth no longer matters.** The
-      open question offered general propagation of a callee's exec result or a failure flag the
-      harness checks. The flag won: propagating would change the calling convention across the
-      whole language to duplicate a mechanism Quadrate already has — fallible functions with `!`
-      and `error_code`. `testing` simply was not using it; it returns a code and relies on the
-      caller looking, which only the frame that emitted the call can do.
-
-      Three parts. The runtime gained `qd_assertion_failed` / `qd_assertion_failures` /
-      `qd_assertion_reset` over a counter on `qd_context`; all 19 failure paths in `testing.c`
-      record alongside their existing return; and `generateTest` resets at the start of each test
-      and folds the count into the result, so a direct failure still returns its own code and a
-      deep one returns 1.
-
-      The counter lives on the context rather than at file scope in libtesting for the reason the
-      context already documents for its recovery state — `lib/qd` may link the shared runtime
-      while `lib/interp` links the static one, so a static would exist twice in one process. It is
-      appended, so codegen's GEP of field 0 is unaffected.
-
-      **Verified by mutation, not just by the suite going green.** `1 testing::assert_positive`
-      in `testing/numeric_assertions` was changed to `-1`: it now fails, where before the fix that
-      assertion was one of the 103 inert ones and would have passed. Reverted after. Regression
-      test `testing/assert_depth` covers the passing direction at one frame, two frames and
-      through all eleven wrappers; the failing direction cannot live in the suite, since a failing
-      test fails the run.
-
-- [x] **R44 — every character-index conversion now goes through the memo, not just the hot ones.**
-      Making `str` UTF-8 turned finding character *i* into a walk from the start, so any loop
-      reading a string one character at a time became quadratic: a 20,000-character scan took
-      **2.9 s**, and `json::get_array` over the 60 KB `docs/api/math.json` never finished —
-      `quadrate_list_modules` span at 99.6% CPU for 16 minutes and wedged two full test runs before
-      the cause was found. The original `char_at` carried a comment warning about precisely this,
-      from the last time it was fixed.
-
-      Two memos on `qd_string_t`: the codepoint count (so `len` is O(1) after the first call, and
-      when it equals the byte length every character is one byte and an index *is* an offset), and
-      a packed (char index, byte offset) scan cursor so a forward scan resumes rather than
-      restarting. The cursor is what actually mattered, since `math.json` contains `π` and so
-      misses the one-byte shortcut entirely. Both halves live in one atomic word because strings
-      are shared between threads and two separate fields could be read from different updates.
-
-      The first pass fixed only `len`, `char_at`, `substring`, `slice` and the `index_of` family
-      and left seven functions counting for themselves — which was the actual finding here, since
-      that asymmetry is exactly the trap that had just cost hours. `insert`, `remove_range`,
-      `truncate`, `pad_left`, `pad_right`, `center` and `last_index_of` now use the same helpers,
-      and `qd_string_char_index` was added as the inverse (byte offset to character index) so the
-      search functions share the cursor too. **No hand-rolled conversion is left in the module**:
-      `utf8_offset`, `utf8_count`, `utf8_char_index` and `strings_is_flat` all became unused and
-      were deleted, which is the check that the conversion is complete.
-
-      Measured on identical work — 30,000 non-ASCII characters, 5,000 `index_of_from` calls and a
-      full forward slice scan: **non-ASCII 32 ms against ASCII 27 ms**. The two paths now cost
-      about the same, where non-ASCII previously fell off a cliff. The earlier headline figures
-      hold: the 20,000-character scan is 26 ms (was 2.9 s), `get_array` 32 ms (was unbounded), the
-      MCP call 374 ms (was hung).
-
 
 - [ ] **R21. `>>field` is specced as returning an updated struct; it mutates in place.** Structs are
       reference values: `P { x = 1 } -> a  a -> b  b 99 >>x drop` leaves `a <<x` as 99, and passing
@@ -441,50 +203,7 @@ candidates did not, and R29 and R30 were withdrawn because of it.
       **Open question**: does the functional update mean copying the struct — and if so, does that
       make structs value types on assignment, which is a much larger change than 12 call sites?
 
-- [x] **R22 — allowed, because the language was already contradicting itself.** The open question
-      asked whether rejecting it was a deliberate safety choice. It was not, and the evidence is
-      that the two code paths disagreed: `generator_nodes_instructions.cc` emits a bare `fdiv` for
-      two doubles, so `fn d(a:f64 b:f64 -- r:f64) { a b / }` called with `1.0 0.0` returned `inf`,
-      while `0.0 -> z  1.0 z /` went through the runtime's `qd_div`, which trapped, and killed the
-      process. Same expression, two behaviours, decided by whether the operands reached the inline
-      path. A safety property that holds half the time is not one.
-
-      The integer rule had simply been applied to floats in two places — the validator's literal
-      check and `qd_div` — and both are now integer-only. `1.0 0.0 /` is `inf`, `-1.0 0.0 /` is
-      `-inf`, `0.0 0.0 /` is NaN. Integer division and modulo by zero are untouched; `mod`/`%` is
-      integer-only anyway (the validator types it `int` and the runtime rejects float operands),
-      with `math::fmod` as the float remainder.
-
-      `math` gained the second half of the open question: `inf`, `nan`, `is_nan`, `is_inf`,
-      `is_finite`. Infinity has no literal spelling, so without them a program could produce one
-      only by dividing and could not test for one at all — NaN is unequal to itself, so `x x ==`
-      was the only NaN check available and it reads as a bug.
-
-      Specification §12.1 gains a **Float semantics** paragraph beside the existing integer one.
-      Tests: `arithmetic/float_div_by_zero`, three in `stdlib/math_test.qd`, the float line dropped
-      from `compile_errors/division_by_literal_zero` and pinned negative so it cannot come back,
-      and `test_interp.cc` updated — it had been asserting the old trap.
-
 #### Ergonomics and gaps
-
-- [x] **R23 — `print` renders arrays.** `[1 2 3] print` was printing an empty line because
-      `qd_print` had no `QD_STACK_TYPE_PTR` case at all and fell through. It now formats arrays by
-      element type — `[1 2 3]`, `[1.5 2.5]`, `[a bb]`, `[]` — and recurses into nested arrays
-      (`[[1 2] [1 2]]`) under a `QD_PRINT_MAX_DEPTH` of 8, so a self-referential structure prints
-      `…` rather than running off the stack. `printv` gets the same treatment.
-
-      Structs print as `<struct 0x…>`. Rendering fields would need the layout at runtime and the
-      runtime has only the registry — answering the item's open question in the direction of
-      "arrays yes, structs are what `fmt` is for", which is also where the type information lives.
-
-      `print` releases the pointer it consumed (`qd_ptr_release`), matching the stack's
-      transfer-on-push convention for pointers. Verifying that turned up a real leak in the R28
-      `QD_ARRAY_TYPE_ANY` work — `case QD_ARRAY_TYPE_ANY: break;` skipped `free(arr->data.p)`, so an
-      array that never received an element leaked its buffer — now fixed. All the new paths are
-      valgrind-clean.
-
-      It also exposed R42: `drop` releases nothing but strings, which is a much larger leak than
-      this item and is filed separately.
 
 - [ ] **R24. `err` is global state, not a value.** Set by `panic`, cleared on read, survives
       intervening non-fallible calls (all verified). It cannot be stored, returned, wrapped, or
@@ -495,27 +214,6 @@ candidates did not, and R29 and R30 were withdrawn because of it.
       this moves from "ergonomics and gaps" to a blocker for the error surface generally.
       **Open question**: subsumed by R3, or worth an independent error-value type first?
 
-- [x] **R26 — documented, after the measurement was redone properly.** New §11.2.1 "Reference
-      Cycles" in `specification.md`: refcounting alone MUST NOT be expected to reclaim a cycle, an
-      implementation is NOT required to detect one, this implementation provides neither a detector
-      nor weak references, and a program that builds cyclic structures must break the cycle itself.
-      It uses the spec's own `struct Node { next:*Node }` shape, as the item asked.
-
-      The first round of verification contradicted itself — cycle and no-cycle controls leaked
-      identically — because every arm discarded the field-write result with `drop`, which leaks on
-      its own (R42) and swamped the signal. Re-measured over 1,000 iterations with the results
-      bound instead, `in use at exit`:
-
-    - no link — **0**
-    - one-way link `a.next = c` — **0**
-    - two-node cycle — **112,000 bytes / 4,000 blocks** (1,000 × 2 nodes)
-    - self-cycle `a.next = a` — **56,000 bytes / 2,000 blocks** (1,000 × 1 node)
-
-      So the original claim holds exactly, and the one-way result is worth as much as the cycle
-      one: nested release works, and the spec now says so — only cycles are affected, a non-cyclic
-      chain of pointer fields is reclaimed in full. Documenting was indeed sufficient; no detector.
-      Everything leaked is precisely the cycle's own nodes and nothing more.
-
 - [ ] **R27. Threads get a hardcoded 1,024-element stack.** `qd_create_context(1024)` in
       `stdlib/thread/src/thread.c:44` and `lib/rt/src/runtime.c:856`; `-s` does not reach it.
       Verified: a thread body that pushes 5,000 values dies with *"Stack overflow (use -s to
@@ -524,17 +222,6 @@ candidates did not, and R29 and R30 were withdrawn because of it.
       **Open question**: plumb `-s` through, or make it a `thread::spawn` parameter?
 
 #### Cuts with corpus evidence
-
-- [x] **R29 — withdrawn. `read` is load-bearing.** The claim of "zero bare uses" was the grep
-      bug above. It has 10 uses, and they are not incidental: `read` is the only way to get
-      command-line arguments onto the stack, and `flag::parse(argc)` is documented as taking the
-      "Argument count from read". `examples/wc`, `examples/dc`, `examples/sha256sum` and
-      `cmd/quadmcp/server.qd` all open with `read flag::parse -> f`; `examples/csvcut` uses
-      `read -> argc` directly. Removing it was attempted and immediately broke the quadmcp build.
-      What remained true was the second half of the original item, recorded as R41: `read`
-      cleared the whole type stack and set `mHasUnpredictableStack`. **R41 has since removed
-      `read` outright** — see Done. The load-bearing part was real and is what `os::args`
-      now carries; what was never load-bearing was the *shape*.
 
 - [ ] **R30. Two genuinely unused debug builtins, not four.** Re-measured 2026-09-18 over
       `stdlib`, `examples`, `tests` and `cmd` (the last was missing from the original count, which
@@ -670,1075 +357,188 @@ candidates did not, and R29 and R30 were withdrawn because of it.
 
 ## Done
 
-### R39 — an anonymous function is a value, and now parses like one (2026-09-18)
-
-- [x] **Fixed in the parser, and the open question's second guess was the right one.** The item
-      asked whether to teach the field-initializer parser to recognise `fn (`, or to leave it and
-      say so in the docs — and noted it was "the same family as R19", *"probably one fix to the
-      'what can appear as a value here' question rather than three"*. That reading was correct, and
-      the fix is two small ones rather than three, because the array-literal path already routed
-      through the shared expression parser.
-
-      `parseSimpleToken` now recognises `fn (` and parses an anonymous function. That is the
-      altitude the array-literal loop already reaches — it routes identifier elements through
-      `parseBlockStatement` so that `[ P { x = 1 } ]` works (R19) — so `[fn (x:i64 -- r:i64) { x 2
-      * }]` started working from that one change. It is deliberately **not** gated on
-      `allowControlFlow`: a lambda is a value, not control flow, and the array loop passes false.
-
-      The struct-literal field parser needed its own, because it has bespoke identifier handling
-      that never reaches `parseSimpleToken`. The check has to come **before** the `:` test there,
-      which was the actual cause of the reported symptom: the lambda's own parameter list
-      `fn (x:i64 -- r:i64)` was read as another field written with a colon, so the diagnostic was
-      *"Use '=' instead of ':' for struct field initializers. Expected 'x = value'"* — advice
-      about a field the author never wrote.
-
-      All four positions now work: inline in a struct literal, inside a *nested* struct literal,
-      as an array-literal element, and an array literal and a lambda in the same struct literal.
-      Captures work inline (`Ops { add = fn (x:i64 -- r:i64) { x k + } }` closes over `k`), and
-      the field is still type-checked — a wrong signature reports *"Field 'f' expects
-      fn(i64 -- i64), but got fn(str -- str)"*. The bind-it-first form the corpus uses is
-      unchanged and still reads better when the same function is used twice.
-
-      `quadfmt` needed nothing: it expands such a literal across lines with the lambdas intact,
-      and its output is idempotent and runs identically.
-
-      Specification 8.2 now states the rule the item was really about — a field initializer is an
-      ordinary expression, and an implementation MUST accept there anything it accepts as a value
-      elsewhere, nested literals and anonymous functions included — with the same holding for array
-      elements. The learn page gains an "as a value in a literal" section showing both forms.
-      Tests: `fntype/lambda_inline_value` and `fntype/error_lambda_inline_wrong_sig`. Suite
-      2,135 → 2,137; docscheck 224 → 226.
-
-### R46 — the allocation sites were not aborting; `!` was doing nothing at all (2026-09-18)
-
-- [x] **The item's premise was wrong in the way that mattered.** It said "50 `mem::alloc!` /
-      `mem::realloc!` sites abort the host process on OOM", and asked whether to propagate instead
-      or write an abort policy down. Neither, as it turned out: **they did not abort.**
-
-      `mem::alloc` detected the failure and pushed `ErrAlloc`, but set neither `ctx->error_code`
-      nor an error message — and those are what `!` and `?` read. `generateReadErrorState` tests
-      `has_error` or a non-zero `error_code`; a pushed status is what `switch` reads. So the two
-      disagreed: `switch` saw the failure, `!` saw success, fell through, and popped the status as
-      if it were the call's result. The next binding then reported
-
-      ```
-      Fatal error: Stack underflow when assigning to local variable
-      ```
-
-      which blames the binding for an allocation that failed two lines earlier. `err` after a
-      handled failure gave **code 0 and an empty message**.
-
-      **It was not only `mem`.** An audit of every stdlib C source for error-status pushes against
-      `ctx->error_code` assignments found three modules that never set it: `net.c` (33 paths),
-      `mem_heap.c` (12) and `http_server.c` (5). `net` was worse again — every one of its failure
-      paths also `return 0`, which reports success to the caller. So `!` and `?` were inert for all
-      of `net::listen`, `accept`, `connect`, `send`, `receive`, `set_timeout`, `set_keepalive`,
-      `lookup`, `get_peer_addr`, all three `mem` allocators, and `http::run`. Confirmed by probe:
-      `net::connect!` to a closed port produced the same misleading stack-underflow message.
-
-      Every failure path in those three now sets the code and a message, pushes the status and
-      returns it, through one `*_FAIL` macro per file matching what `io`, `os` and `thread` already
-      did. `mem::alloc` failure now reads `code=2`, `msg=[mem::alloc: out of memory]`, and
-      `mem::alloc!` aborts with *"alloc failed: mem::alloc: out of memory"* plus a stack trace.
-
-      **With the mechanism fixed, the original question answers itself.** The 50 `!` sites now do
-      what they always claimed, so "abort with a message naming the allocation" is a policy that is
-      actually true rather than one the code merely asserted. Specification 11.1 states it, and
-      distinguishes it from malformed *input*, which a library MUST NOT abort on: input is chosen
-      by whoever is talking to the program, allocation failure is a property of the machine.
-      Specification 10.5 gains the normative rule the three modules broke — a native fallible
-      function MUST set the error code and message, not only push a status. `stdlib/mem` states the
-      policy at module level.
-
-      Not done, deliberately: converting the 50 sites to `?`. That is still the signature cascade
-      across seven modules that R3 will settle, and it is now propagating a condition callers can
-      do nothing about — the argument against it is stronger than when the item was written.
-
-      Tests: `errors/alloc_failure` pins the code and message on the handled path for `mem::alloc`,
-      `mem::realloc` and an invalid-argument case; `errors/alloc_failure_abort` pins the abort
-      message on the `!` path, which is the one that used to blame the binding; `net/connect_error_state`
-      does the same for `net`, provoked with a closed loopback port as `net/connect_fail` already
-      does. The net check was first written into `errors/alloc_failure` as `-1 "x" net::send`, and
-      that **failed under `make valgrind`** — not for anything net does, but because valgrind's
-      file-descriptor checker reports `write(-1, …)`, so the test itself was the error. An
-      allocation test had no business calling the network stack anyway. Suite 2,132 → 2,135.
-
-### R12 — `while` is back, and the condition is not written twice (2026-09-18)
-
-- [x] **The removed `while` would not have fixed what the item complained about.** R12 measured
-      `loop` at 182 uses, overwhelmingly `loop { cond if { break } … }`, and called that "three
-      lines and a nesting level where `while` was one". But the `while` removed in `bc077a69` was
-      `cond while { body … cond }`: it popped a flag and the body had to leave the next one. The
-      test that commit converted, `while_simple.qd` → `loop_condition.qd`, is **five lines either
-      way**. Restoring it verbatim would have restored the shape without the saving.
-
-      So `while` is back in the shape the item wanted: `cond while { body }`, with the condition
-      **re-evaluated at the head of every iteration** and written once.
-
-      ```qd
-      0 -> i
-      i 5 < while {
-          i print nl
-          i 1 + -> i
-      }
-      ```
-
-      **What the condition is, exactly.** The parser hands the statement the run of expression nodes
-      immediately before the keyword; the validator, which knows each node's stack effect, then trims
-      that run to the **shortest suffix whose net effect is `( -- flag )`** and records where it
-      starts. Everything before that point is generated once, before the loop. The trimming is the
-      part that matters: a net-effect check alone accepts the wrong answer, because
-      `"Processing..." print nl` nets zero and so hides inside a run that still totals one value —
-      and it printed on every iteration until the trim landed. `i 5 < i 3 < while` (two values) and
-      a bare `while` (none) are compile errors naming what was left.
-
-      Lowering is `loop` with a conditional exit at the head, so a zero-trip loop is well defined and
-      falling out of the test is an exit edge that merges with any `break` the body wrote. Both
-      generator paths are implemented — the runtime stack and the compile-time stack with its PHI
-      nodes. `break`/`continue` now recognise `while` as a loop context, which they did not at first.
-
-      **The compile-time-stack path shipped untested and was caught later.** A function reaches that
-      generator only when it takes at least one typed scalar input and returns at most one; `main`
-      never qualifies, and every test written with the feature put its loop in `main`. So the PHI
-      path — the harder of the two — had no coverage. `control_flow/while_native` closes that:
-      accumulation, zero-trip, `break`, `continue`, nesting, an `f64` loop (which exercises the
-      double branch of the back-edge wiring), and a condition that calls another native function,
-      with `--dump-ir` confirming each one compiles to `*_native` with a `while.stk` phi. The path
-      was correct; it was the testing that was missing.
-
-      Verified: zero-trip, `break`, `continue`, a call in the condition (`k is_small while`), a
-      compound condition (`m 2 + 5 <`), nesting, and the statement-before-loop case. Tests
-      `control_flow/while_basic`, `control_flow/while_native` and
-      `compile_errors/while_condition_arity`; suite 2,130 → 2,132;
-      docscheck 222 → 224. `while` is out of `REMOVED_KEYWORDS`, which `reference:builtin_lists`
-      checks, and back in `reference.def`, the LSP completion and hover lists, `quadrepl`'s keyword
-      list and `quadlint`'s empty-block reporter.
-
-### R25 — the `error { … }` literal is removed (2026-09-18)
-
-- [x] **Cut on the `>>field!` precedent: two spellings of one operation.** It was listed in the
-      grammar and specification §10.2 as the alternative to `msg code panic`, and had four uses in
-      the whole tree — three of them its own tests. It was never a value: the parser rewrote
-      `error { code = X message = Y }` into a struct construction under the reserved name
-      `__error__`, and the validator and generator each carried a special case that pushed the
-      message and the code onto the stack for `panic` to consume. So it was `msg code panic` with
-      braces around it, and cost three special cases across two tiers to keep.
-
-      Removed: both parse sites (expression position and struct-field position), and the
-      `__error__` branches in `semantic_validator_collect.cc`, `semantic_validator_typecheck.cc`
-      and `generator_control.cc`. The name is gone from the compiler entirely.
-
-      Using it now reports *"the 'error { … }' literal has been removed; use 'msg code panic'
-      instead"* — **one** error, not two. `synchronize` stops *at* the opening brace, which left the
-      group's `}` to be read as if it closed the enclosing block and produced a bogus second
-      *"Unmatched '}' at top level"*; the removed-`while` diagnostic had the same cascade. A new
-      `skipBracedGroup` consumes the group with nesting accounted for, and the removal diagnostic
-      uses it.
-
-      Tests: `errors/error_literal_removed` pins the diagnostic, and `errors/struct_basic` —
-      which was written against the literal — now signals with `msg code panic` and checks the code
-      reaches the caller's `switch`. The two `error_error_literal_missing_*` tests, which pinned
-      field-validation errors for a construct that no longer parses, are deleted.
-
-### R4 — `strings::char_at` is total, and json no longer dies on malformed input (2026-09-18)
-
-- [x] **The count was right; the prescription was not.** 158 abort-on-error call sites in
-      `stdlib` is confirmed, but they are three unrelated populations, not one:
-      `strings::char_at!` 67 and `strings::substring!` 33 (string indexing), `mem::alloc!` 47 and
-      `mem::realloc!` 3 (OOM), `strings::replace!` 6 and `os::urandom!` 2. And **all 158 sit
-      inside non-fallible functions** — not one was the local `!` → `?` edit the item proposed.
-      Converting even the json ones would have made all 27 of its public signatures fallible,
-      which is R3's redesign done early and then done again.
-
-      What actually shipped removes the need for the operator instead. `strings::char_at` is now
-      total: an index outside the string gives `strings::NotAChar` (-1) rather than an error, the
-      same sentinel convention as `strings::index_of` and the same totality as `strings::slice`,
-      which has always been `substring`'s non-aborting counterpart. All 67 `!` sites and 6 `?`
-      sites lose their operator and nothing else. Public stdlib signatures are unchanged.
-
-      **The aborts were real and trivially reachable.** Fuzzing the module entry points over 8,070
-      malformed inputs (mutated JSON/URI/path seeds plus random strings) found 10 of json's 18
-      scanned entry points killing the process, and one hang:
-
-      - `json::get_int "{\"a\":1,"`, `json::array_len "[1,"`, `json::get_bool "{\"a\":"`,
-        `json::get_string "{\"=a\":,"` — all abort. The shape is always the same: a scanner
-        reads `char_at!` straight after skipping whitespace, without re-checking `pos < slen`.
-      - `json::array_len "[}"` — **hangs**. `type_at` reports `Number` for anything it does not
-        recognise, so a stray `}` left `skip_value` exactly where it started and the caller
-        looped on it forever. `skip_value` now always advances.
-      - `find_key`, `array_len` and `find_elem` round the loop with `continue` after a comma
-        instead of falling through, so the end of the document and the closing bracket are
-        re-tested at the top where those checks already are. Falling through is what read one
-        past the end; it also counted the element `[1,` does not have, and walked past the `]`
-        of `[,]3` into what followed the array. Reusing the loop head rather than adding a
-        guard leaves `json.qd` on 16 `quadlint` nesting warnings, one below where it started.
-
-      `uri`, `path`, `hex`, `base64` and `fuzzy` came through the same 8,070 inputs clean on the
-      **unchanged** build as well as after, so their guards hold on their own; `regex` and `uuid`
-      were fuzzed on the fixed build only, and are clean there. The "not shippable" charge was
-      true, but it was true of `json` specifically, not of the twelve modules the count spanned.
-
-      **`strings::substring` was the worse bug, and was not in the item at all.** It is declared
-      fallible and documents `@error ErrOutOfBounds`, but the C implementation called `abort()` on
-      an out-of-range cut — so the `switch` every caller wraps it in was dead code, the process
-      being gone before any arm could run. It returns the error it declares now. A length running
-      past the end is still truncated rather than an error, and that is written down.
-
-      Verified by differential run rather than by reading: over 612 well-formed JSON documents
-      every json entry point returns byte-identical results before and after. Over the 8,070
-      malformed ones, 48 inputs went from crash-or-hang to clean, none the other way, 8,021 were
-      byte-identical, and the single output that moved (`[,]3`) moved to the correct answer —
-      element 0 is now not-found, consistent with the `array_len` of 0 beside it. Suite 2,126 →
-      2,131 (5 new stdlib blocks, plus 3 new C assertions); `docscheck` 219 → 222 blocks.
-
-      What is left of the 158 is filed as **R46** (the 50 OOM sites) and the 33 `substring!` sites,
-      which no longer abort inside the callee and are guarded at every site the fuzzing reached.
-
-### R41 — `read` removed, arguments are an array (2026-09-18)
-
-- [x] **`read` is gone; `os::args` replaces it.** It splayed the command-line arguments across
-      the operand stack, which is not an expressible stack effect: the validator modelled it by
-      clearing the type stack, pushing **sixteen synthetic `str` values** and setting
-      `mHasUnpredictableStack`, so every function containing it lost its arity, if-arm and defer
-      checks. `flag::parse(argc:i64)` then read that pile back off the stack, which is why it
-      needed an exemption of its own on both the call and definition sides.
-
-      `os::args( -- args:ptr)` returns them as a Quadrate string array — the convention
-      CLAUDE.md already states for anything returning a list of strings — and `os::program_name`
-      exposes argv[0], which `read` used to stash in `ctx->program_name` as a side effect that
-      nothing ever read back. `flag::parse(args:ptr)` takes the array. All 10 call sites
-      rewritten; `read` is in `REMOVED_INSTRUCTIONS`, so using it reports what happened and the
-      rewrite. Both exemptions are deleted: `fmt::printf`/`sprintf` remain, since they really do
-      pop one value per `%` in the format string.
-
-      **The fiction was hiding a real bug.** With the type stack no longer padded with sixteen
-      strings, `f "--name" flag::string if { ... }` stopped compiling — and correctly so. The
-      module-method call path pushed a fallible call's *results* but not the **status** the
-      following `if` tests, unlike the explicit `Type::method` path, which has always pushed
-      both. So the `if` was consuming the result as its condition and the success arm read an
-      empty stack. Every caller sat downstream of `read`, whose synthetic strings absorbed it.
-      Fixed in the SCOPED_IDENTIFIER module-method branch.
-
-      Smaller things the same removal turned up, all in examples that are
-      `build_by_default: false` and so had gone unbuilt since the R5 checks landed:
-      `examples/sha256sum` had `= =` where it meant `==`, `> =` where it meant `>=`, and a bare
-      `crypto::sha256_bytes` missing its `!`; `examples/csvcut`'s `parse_columns` returned a bare
-      `0` for a declared `ptr`; `examples/kernel`'s `print_prompt` pushed three arguments to a
-      two-argument `cursor_set` and leaked one per prompt. All four now compile, and sha256sum
-      agrees with GNU `sha256sum`.
-
-      `tools/check_builtin_lists.py` found every stale mention, including a `read` left in the
-      playground's highlighter. Its prose scan needed a `PROSE_EXEMPT` set: the tool's own note
-      says removed names "like `tuck` and `dupd` are distinctive enough not to collide", and
-      `read` is an ordinary English word — it flagged "Receiver is read-only" and "Use << to read
-      fields", prose that is correct and should not be reworded to satisfy a grep.
-
-      Tests: `compile_errors/removed_read` pins the diagnostic, `os/args` pins the new API, and
-      the three `tests/qd/args/` programs plus `flag/basic` and `modules/flag_module` now build
-      their argument arrays explicitly. Note `echo_args` changed expected output: arguments come
-      back in **input order** now, where popping the stack yielded them reversed.
-
-### Use-after-free on every struct global (2026-09-18)
-
-- [x] **Reading a field off a `var` struct global freed it.** The five
-      `tests/qd/globals/var_struct_*` valgrind failures were all one bug, and it was not a leak:
-      each reported `in use at exit: 0 bytes in 0 blocks` alongside three invalid reads.
-
-      A pointer on the stack owns a reference. Reading a *local* retains before pushing
-      (`generator_nodes.cc`, the PTR block of the local switch), and every consumer releases —
-      `generateFieldAccess` pops and calls `qd_ptr_release` with the comment "was retained when
-      pushed". Reading a *global* loaded and pushed without retaining, so that release cancelled
-      the one reference the global itself owns. `var origin = Point { ... }` was therefore freed
-      by its **first** field read, and every read after it touched freed memory. `qd_push_s_ref`
-      retains internally, which is why the `str` case was fine and only the pointer case was
-      wrong; the compile-time-stack path pushes an SSA value no runtime release ever sees.
-
-      Not just a valgrind finding: with the block reused by the next allocation the corruption is
-      plainly visible — `origin <<x` then `Point { x = 99 y = 98 }` then `origin <<x` printed
-      `99`, and `origin <<y` printed `98`. Pinned without valgrind as
-      `tests/qd/globals/var_struct_use_after_read`, alongside the five that catch it under
-      valgrind. `make valgrind` is green.
-
-### Language review — R5, R7, R8: loop stack effects (2026-09-18)
-
-- [x] **R5 / R7 / R8 — loops now have a checked stack effect.** All three were one hole. The
-      model that landed: **a loop body must leave the stack as it found it**, because the next
-      iteration starts where the last one ended and the trip count is a runtime value. The exits
-      are the other half — a `for` can also leave by running off the end of its range, at the head
-      depth, so each of its `break`s has to agree with that; a `loop` has no fall-through exit, so
-      its `break`s are the only way out and they are what *define* the depth after it. A
-      `continue` jumps back to the head in both forms. That last point matters: the
-      counter-on-the-stack idiom (`0 loop { ... dup 10 gt if { drop break } ... }`) is a net
-      effect of -1 and is perfectly well defined, so the first rule tried — "every jump must be
-      neutral too" — was wrong and rejected it. `checkLoopStackEffect` applies the effect to the
-      parent stack, which is also what makes the *declared-effect* check work rather than merely
-      reject: `fn count_to(limit:i64 -- total:i64)` accumulating on the stack and breaking out now
-      verifies.
-
-      With that in place `LOOP_STATEMENT` no longer sets `mHasUnpredictableStack`, so R5's
-      declared-effect check, R7's if-arm balance check and the defer-effect check come back on for
-      every function containing a loop. R7 needed one more thing: errors inside a loop body were
-      suppressed *wholesale* (`reportError` consulted `mInLoopBody`), which is why the unbalanced
-      `if` only ever surfaced from codegen as `error: internal:` with no `file:line`. The
-      suppression now applies only where the model is genuinely broken —
-      `mInLoopBody && mHasUnpredictableStack` — which is `read`, FFI, an unresolved name, or one
-      of the variadic entry points. Those needed the exemption on the definition side too, not
-      just at call sites: `flag::parse`'s own `for` consumes the argument pile `read` left below
-      its frame, which no signature can describe.
-
-      **Corpus cost of the strict rule: three real bugs and one pinned test.** That is the
-      argument for taking it rather than the "only loops with no `break`/`continue`" middle option.
-      - `examples/fibonacci` leaked a value per iteration — `it dup fib print nl`, 20 values left
-        on the stack.
-      - `tests/qd/control_flow/complex_control_flow.qd` leaked on `break`: the break arm left `it`
-        where falling through left nothing.
-      - `fuzzy::best` wrote `... set -> results`, but `set` is `( arr index value -- )` and pushes
-        nothing. It compiled clean and **died at runtime** — "Fatal error: Stack underflow when
-        assigning to local variable" — verified against the pre-fix compiler. `docs/api/builtins.json`
-        was the source of the mistake: it alone claimed `(arr i val -- arr)`, against `reference.def`,
-        `reference.md` and the spec. Fixed.
-      - `for_loop_stack_accumulation.qd` pinned the old behaviour and its own note asked for this
-        to change "as a conscious decision, not silently" if strict loop checking ever landed. It
-        is now a `.err` test pinning the rejection.
-
-      Found and not fixed, since nothing calls it and it is a naming defect rather than a
-      behavioural one: `regex::find` and `find_from` declare `-- start:i64 end:i64` but leave
-      `start` on top, so the names are in the wrong order. Both are i64, so no check can see it.
-      `find_all` had the same reversal with `ptr`/`i64`, where the check *could* see it, and that
-      one is fixed.
-
-      Regression tests: `loop_body_not_neutral` (R5), `loop_unbalanced_if` (R7, with negative
-      patterns pinning the absence of `internal:`), `loop_break_depth_mismatch` (R8), and
-      `loop_break_defines_effect` pinning the counter-on-the-stack idiom that must keep compiling.
-
-      Still not modelled, and worth a note rather than a task: a neutral body that *rewrites* a
-      slot's type in place. Only the depth is tracked across a loop, not a type fixpoint.
-
-### Compiler correctness — the two doom segfaults (2026-09-18)
-
-Both were reproduced and fixed. The port's sources are not in the working tree, but they are in
-git history at `01e766b6` (`git archive 01e766b6 examples/doom | tar -x -C <dir>`), which is what
-made this bisectable. Neither cause was what the notes guessed: nesting depth is bounded (the
-parser reports "Block nesting too deep"), and neither bug was in the type stack.
-
-- [x] **quadc segfaults when `d_main.qd` adds `use "info.qd"`.** The crash was in
-      `llvm::verifyModule` — and in `Module::print`, so the module could not even be dumped.
-      `generateFunction` dropped a function's native (compile-time-stack) version on the way past
-      its body, the moment the body turned out to call a non-native function. Bodies are generated
-      in module order, so a caller could already have emitted a call to `callee_native`;
-      `eraseFromParent()` then freed a `Function` those call instructions still pointed at, and the
-      module was left holding dangling operands. Importing `info.qd` into `d_main` is what put
-      `info::mobj_doomednum` (2 live uses at erase time), `mobj_spawnstate` and `mobj_painstate` in
-      that position. The map purge was also incomplete — it guessed two alias keys where the
-      function was registered under three.
-      Fix: `demoteNonNativeFunctions` settles the native set to a fixpoint after all declarations
-      and before any body is generated, so no call to a demoted native version is ever emitted; the
-      purge walks the map by pointer; and the remaining in-generation path only erases when
-      `use_empty()`. Regression test `tests/qd/regression/native_demotion/` (segfaults without the
-      fix).
-
-- [x] **quadc segfaults on a cross-module `pub fn` call from deeply-nested control flow.** Same
-      codegen bug — `r_perspective.qd` is not special, and neither is the `if`/`else` depth. What
-      that note did capture was real, though: the call was unresolved, because quadc re-validates
-      every imported `.qd` outside the main file's directory in a second, isolated pass, and that
-      pass could not see what the file imported. Three defects there, each reported as an undefined
-      identifier or a bogus stack underflow rather than as the missing import it was:
-      a relative `use` was resolved against the *main* file's directory instead of the importing
-      file's; a `use` written in the file being validated was treated as an intra-module import, so
-      its names never came into scope unqualified and `use "../ffi/sdl.qd"` left `sdl::Init` with
-      no known stack effect; and the derived namespace was not registered at all, so every
-      qualified call through such a file failed with "Module 'sdl' not imported". A file declaring
-      a constant that one of its imports also declares is now a shadow, not a duplicate — the main
-      pass already allowed it. Regression test
-      `tests/qd/file_imports/import_subdir_nested.qd`.
-
-      Effect on the port: **690 semantic errors → 7 on the pristine tree, from the compiler fix
-      alone**. The remaining ones are the port's own rot against five months of language drift
-      (`type` became a reserved word; two block-scoped locals read after their block; a dead call
-      to a helper that never existed; `netgame` never declared; `NUMSPRITES`/`NUMSTATES`/
-      `NUMMOBJTYPES` emitted twice in `info.qd`). With those patched in a scratch copy the whole
-      62 kLOC port compiles, codegens and **links** — `use "info.qd"` in `d_main.qd` included.
-
-      Two things found on the way and deliberately left open, since neither blocks the port:
-      `0xFFFFFFFFFFFF0000` is rejected as "out of range for i64" (hex and binary literals are bit
-      patterns and should parse as `uint64_t` then reinterpret — `integerLiteralProblem` in
-      `semantic_validator_typecheck.cc` and `safeParseInt64` in `generator_impl.h` both use
-      `from_chars` into `int64_t`), and the same file reached under two path spellings is loaded
-      twice, since `mLoadedModuleFiles` is keyed on the literal `use` string rather than the
-      resolved path.
-
-### Language review 2026-09-17
-
-- [x] **R2 — `call` after `<<field` (or on a typed parameter) was never modelled.** The
-      corrected diagnosis stood: nothing converted a `fn(...)` type *string* back into a
-      signature, so `call` always took its unknown-effect branch outside the `&f`/lambda case.
-      `parseFnTypeString` is the inverse of `buildFnTypeString`, and `call` falls back to it
-      using the type the value already carries — which the parameter registration and the field
-      access had been putting on the struct-type stack all along. **Dynamic dispatch through a
-      struct field now works**, including multi-result, zero-result and struct-returning fields
-      that chain straight into `<<`. Found while fixing it:
-
-    - **`call` was a third instance of the R34 bug.** Its branch fell out of the chain into the
-      trailing `mHasUnpredictableStack = true` — a plain statement, not an `else` — so *every*
-      function containing a `call` lost its arity, if-arm and defer checks. It is the only
-      non-alias branch in `typeCheckInstructionInternal` that did not `return`. The flag is now
-      set only when the effect is genuinely unknown (an untyped `ptr`).
-    - **Nothing checked a function pointer against the field it initialises**: the field
-      initializer evaluator had no case for `&f` or a lambda, so `H { f = &shout }` with
-      `f:fn(i64 -- i64)` was accepted. Added both cases, and replaced the raw string compare it
-      then reaches with the structural one from R1.
-    - **`buildFnTypeString` rendered coarse stack types**, so a struct-returning function came
-      out as `fn( -- ptr)` and did not match a field declared `fn( -- Point)`. It now uses the
-      declared type names R1 put on the signature.
-    - **`ptr` vs `any` in unification**: `ptr` is the untyped escape hatch and stays compatible
-      at any depth; `any` means "unknown" only at the top level, which is what keeps the empty
-      `[]` literal failing against `[]i64`.
-
-    R39 (a lambda cannot appear inline in a struct literal) was found here; it is fixed, see Done.
-    Sweep clean, docscheck clean, stdlib unit tests clean.
-
-
-- [x] **R28 — comparator sort and generic `hof`, the payoff from R1.** Both APIs were shaped by
-      the missing unification: `sort` had six entry points each fixing element type *and*
-      direction, and every `hof` combinator was `fn(i64 -- i64)`.
-
-    - **`hof` is generic**: all seventeen combinators take type parameters, `map` is `map<T, U>`
-      so it can change the element type. The seventeen existing i64 tests pass unchanged; five
-      new tests cover floats and strings.
-    - **`sort::by`, `is_sorted_by`, `lower_bound_by`**: comparator-ordered, C `qsort` convention.
-    - **Found a shipped correctness bug in the existing quicksort.** All four of `ints`,
-      `ints_desc`, `floats`, `floats_desc` returned *unsorted data* for reverse-sorted input of
-      even length 18 or more, silently. The left scan was bounded by `j` instead of `hi`, so it
-      could stop on an element sorting before the pivot, which the following pivot swap then
-      jumped over. Found only because `sort::by` mirrors the same partition and failed its test.
-      Fixed in all five partitions; regression tests cover lengths 2..60 for `ints`, `floats` and
-      `by`, and a stress run of ~1,000 sorts over random, duplicate-heavy, reverse and all-equal
-      input reports no failures.
-    - **Arrays now decide their element type on first use** (runtime change). An empty `[]`
-      literal was an *int* array, so `[] "x" append` failed at run time and a generic `map<T, U>`
-      could not build its result. Arrays start untyped and adopt from the first `append` or
-      `set`; `make<T>` for a type parameter uses the new `qd_makea`, since generics are erased
-      and T is unknown at run time.
-    - **The function-level output check is structural too**, with the function's own type
-      parameters as wildcards — the last place still doing a string comparison. It also skipped
-      struct results entirely, so returning a `B` where `A` was declared went unreported.
-
-    R40 (quaddoc truncates fn-pointer signatures) was found here and is filed above. `hof.md` and
-    `sort.md` regenerated; sweep clean, docscheck clean.
-
-
-- [x] **R16 — a `switch` over an enum warns about variants it does not handle.** The check reads
-      the case labels: if every arm is a `ScopedIdentifier` whose scope is one known enum, there is
-      no `_` arm, and some variant goes unnamed, it says which. Needed one new piece of metadata —
-      `mEnumVariants`, the variant list per enum, recorded for both the bare and the
-      module-qualified spelling; `mConstantValues` held the variants' *values* but could not answer
-      "which variants does this enum have".
-
-      **A warning, not an error** — the open question this item carried. An enum variant is an
-      `i64` and nothing tracks that the subject came from that enum, so the check infers intent
-      from the labels rather than reading a type, and inferred intent should not be fatal. If a
-      real sum type lands (R3) the subject would have a type and this could be promoted.
-
-      It also turned out to sit well beside R6's rule: a switch with no `_` that *produces* a value
-      is already an error, because if nothing matches, nothing runs. So covering every variant is
-      not enough when the switch yields something — the two diagnostics together push you to the
-      `_` arm, which is right, since the subject can hold any integer. A stack-neutral switch over
-      every variant needs no `_` and stays clean.
-
-      Nothing in the corpus trips it. Tests: seven in `test_semantic_validator_extended.cc` (missing
-      one variant, missing several, exhaustive, wildcard, mixed enum-and-literal arms, two enums,
-      literal-only) plus `enums/enum_switch_exhaustive` end to end.
-
-
-- [x] **R1 — generic type parameters unify structurally.** `structTypesMatch` compared declared
-      and actual types as literal strings, so `[]T` never matched `[]i64` and `fn(T -- T)` never
-      matched `fn(i64 -- i64)`; only a bare `T` worked, via a coarse `TYPEVAR` on the stack-type
-      level. `FunctionSignature` now carries the function's `typeParams` and the declared type
-      *names* of parameters and results (the coarse types cannot express this: `[]T` and `[]i64`
-      are both PTR). `unifyTypeName` recurses through `[]X`, `fn(A -- B)` and `Name<X>`, binding
-      parameters into a map; `pushCallResults` substitutes those bindings into the results.
-      Fallout and findings:
-
-    - **The consistency hole closed for free.** `fn same<T>(a:T b:T -- r:T)` accepted `1 "s"`
-      because no binding environment existed. Now an error naming both types.
-    - **Module-qualified calls never checked struct/array/fn argument types at all** — the check
-      lived only in the unqualified path. Both now share `bindCallTypeParams`/`pushCallResults`.
-      This surfaced `Flag` vs `flag::Flag` (quadmcp declares a parameter with the unqualified name
-      after `use flag`), fixed by canonicalising an unqualified struct name to its module's.
-    - **Instantiated generics lost their arguments.** `Box<i64> { value = 5 }` pushed `Box`, so
-      `<<value` reported `T`. The struct-type stack now carries `Box<i64>`,
-      `lookupStructFieldTypes` strips the arguments, and `resolveFieldType` maps a field declared
-      as a type parameter to the matching argument. This also replaced the ad-hoc generic-field
-      exemption added for `>>field` during R35.
-    - **`hof_test.qd` declared seven lambdas as `fn ( -- )` and passed them where `fn(i64 -- i64)`
-      was expected** — untruthful signatures the old string compare could not see (the *strings*
-      differed, but the check never ran on a lambda whose type came from the anonymous-fn node).
-      Corrected to the effect they actually have.
-
-    `sort`'s six monomorphic entry points and `hof`'s `i64`-only combinators are now fixable
-    (R28), and `type` aliases for fn-pointer types become usable. Sweep clean, docscheck 219/219,
-    stdlib unit tests clean.
-
-
-- [x] **R34 — the declared-effect check ran only on literal-only bodies.** `mHasUnpredictableStack
-      = true` sat after the closing brace of the "signature found" block in both the `IDENTIFIER`
-      (`typecheck.cc:2632`) and `SCOPED_IDENTIFIER` (`:3631`) call paths, so every call switched off
-      the arity check, the `if`-arm rule and the `defer` rule for the rest of the function. Since
-      `3267700f` (2026-03-24). Moved into the not-found branch of both. Also closed here, because
-      turning the checks on exposed each of them within the hour:
-
-    - **R6** — `switch` arms are now depth-checked like `if` arms, with the no-`_` rule that arms
-      must leave the stack as found; `switch_arms_unbalanced`, `switch_no_default_changes_stack`.
-    - **Failure arms were modelled from the success stack.** `drop` in a failure arm type-checked
-      and, at runtime, ate the caller's value (sentinel probe: caller's final `drop` underflowed).
-      `flag::int`/`float` and `examples/errors` did exactly this. The arm now starts from the
-      pre-call stack; `drop` there is a compile-time underflow. `Ok` seeding follows the same rule
-      in `switch`, and a literal `1` arm is an error-code arm (spec 10.3), not `Ok`.
-    - **Fallible-call `if` arms are no longer exempt from the depth rule**, and a fallible `if`
-      with no `else` merges to the pre-call stack. The spec's §10.6 example needed fixing.
-    - **The failure exit of a fallible function truncates the stack** to entry depth minus inputs
-      (`qd_stack_truncate`, emitted in the return block when `has_error` is set). Probe:
-      `fn g(i64 -- i64)!` panicking before consuming its input left depth 1 in the caller's failure
-      arm; now 0. This is what makes the validator's model true for every callee body.
-    - **Balanced arms kept the pre-`if` types** (no `== 0` branch in the merge) — the
-      `flag::float ... expects float but got string` report.
-    - **`blockEndsDiverging` looked only at the last statement**, so `panic  0.0` was not
-      diverging; `break`/`continue` (spec 6.1.1) were never checked.
-    - **Fallible method calls before `if`/`switch` were not recognised** (bare-name lookup; methods
-      are keyed mangled). One helper, `bareFallibleCallBefore`, now serves both.
-    - **Module functions with no declared outputs took their produces from the isolated body
-      residual** (`modules.cc:1361`), so `bytes::fill` "produced" four values and every `( -- )`
-      module function with a loop leaked its inputs into the caller's model. Declared outputs only,
-      and the module builder's scalar mapping now goes through `stringToStackValueType` (sized
-      integers were `any`).
-    - **Method-call argument checks did not skip `TYPEVAR`**, unlike function calls.
-
-    Fallout across stdlib + examples was three functions (`flag::int`, `flag::float`,
-    `regex::get_cclass`) plus `examples/errors`; nine tests and four doc pages encoded the old
-    conventions. Sweep clean, `docscheck` 218/218, stdlib unit tests clean. Spec §6.1.1, §6.4.1
-    and §10.3 rewritten to say what the implementation now enforces.
-
-- [x] **R35 — `ident <<field` folded the identifier into the field-access node.** The parser
-      deleted the preceding `IDENTIFIER` and stored its name as `varName`; codegen reconstructed
-      the meaning (struct type → function → global → captured → local), the validator had no
-      function branch, so a call with arguments before `<<` left phantom values equal to its
-      parameter count. Fixed by not folding: `<<field` always reads the struct on top of the stack
-      (option B), as `>>field` already did. `AstNodeFieldAccess`/`AstNodeFieldSet` carry only the
-      field name; `__global_error__` (`error <<code`, one use — inside `run_tools_test.sh`, now `err`) removed; validator, codegen, LSP
-      (`precedingIdentifierName`) and linter updated. Three silent dependents surfaced and were
-      made stack-based: the construction-time field evaluator (no `<<` case — `math.qd` reported
-      `Vec2` as a float field), the isolated analysis (pushed without popping), and closure
-      codegen (captured variables lost their struct type, so `v <<x` in a closure hit the
-      ambiguity fallback). Zero-argument calls before `<<` on an ambiguous field name now resolve
-      too. `>>field` gained a value-type check. Tests: `structs/field_access_operand_forms`,
-      `compile_errors/field_access_on_scalar`, `field_access_unknown_field_typed`. 135 test files
-      exercise the form; suite green, valgrind clean on the changed retain/release path.
-
-### Language design / scope
-
-- [x] **Cut `>>field!`.** Two forms for one operation, split purely on "does it leave the
-      struct behind" — which `drop` already says. `<<`, `>>` and `as` remain; `>>!` is gone.
-
-    43 call sites rewritten to `>>field drop` (12 in `lib/` + `examples/`, 31 in `tests/`).
-    Verified the two forms produce byte-identical output before starting. The `noReturn` flag
-    is removed from `AstNodeFieldSet`, all three parse sites (`ast_statements.cc`,
-    `ast_expressions.cc`, `ast_types.cc`), both validator branches and `generator_structs.cc`,
-    which now always pushes the struct back.
-
-    Following the `while` and shuffler precedent, a use reports what happened rather than
-    looking like a syntax error:
-
-    ```
-    '>>field!' has been removed; it only differed from '>>field' by discarding the struct,
-    so write '>>field drop' instead
-    ```
-
-    The diagnostic is load-bearing, not a courtesy: `parseSimpleToken`'s `'!'` branch returns
-    nullptr without reporting, so a bare trailing `!` would otherwise be silently dropped and
-    `p 42 >>x!` would compile as `p 42 >>x` — leaving the struct on the stack and changing the
-    program's meaning rather than rejecting it.
-
-    Also touched: 4 doc files (11 code examples plus the prose in `dc-walkthrough.md`
-    explaining the `!` suffix), `StructFieldSetNoReturn` in both
-    `test_semantic_validator_extended.cc` and `test_llvmgen.cc` (renamed and rewritten, with a
-    third test pinning that `>>x!` is now rejected), and
-    `tests/qd/structs/struct_field_write_noreturn` renamed to `..._discard`. Regression test
-    `tests/qd/compile_errors/removed_field_set_bang`. Suite 2033 passed, 0 failed; `docscheck`
-    218 blocks clean.
-
-- [x] **Cut `ctx`.** Zero corpus uses, ~340 lines of implementation, and a static checker that
-      could not model it. 22 keywords → 21.
-
-    Removed: the parse site in `ast_statements.cc`, `ast_node_ctx.h` (deleted) and its
-    `CTX_STATEMENT` enum member plus seven stale `#include`s, the validator's typecheck case,
-    `generateCtxBlock` (81 lines in `generator_control.cc`), both codegen dispatch sites, the
-    `generator_impl.h` declaration, and the then-orphaned `cloneContextFn`. Eight `.qd` tests with
-    their `.out` siblings, the `CtxStatement` llvmgen test, the 253-line
-    `learn/7-advanced/context.md` and its mkdocs nav entry (`defer.md`'s "What's next?" repointed at
-    function-pointers), `keywords.md`, `specification.md`, `reference.def`, the playground keyword
-    list and the pygments lexer.
-
-    **Kept deliberately, diverging from how the shufflers were handled:**
-    - `qd_clone_context` stays in the runtime. Unlike `qd_tuck`, it is an advertised embedding API
-      (`docs/docs/embedding.md:675`, "Deep copy a context") with plausible standalone use, so
-      deleting it is a separate ABI decision this task does not imply. Its doc comment claimed
-      "This is used by the ctx keyword" — corrected.
-    - `ctx` stays in `isReservedKeyword`. `while` is not, but the parser diagnostic fires on any
-      `ctx` in a function body, so permitting `-> ctx` as a variable would only produce a more
-      confusing error at the use site. `ctx` also stays in `synchronize()`'s recovery list, which
-      does match the `while` precedent.
-
-    **The diagnostic skips the block rather than calling `synchronize()`.** `synchronize()` stops at
-    the `ctx` body's own `}`, which then closes the enclosing function — turning one error into four,
-    three of them bogus "unexpected identifier at top level". Since `ctx { … }` is brace-balanced,
-    consuming it exactly leaves the function intact and yields a single error:
-
-    ```
-    'ctx' has been removed; the block's values were appended to the parent stack anyway,
-    so write the body inline
-    ```
-
-    **Four sources described `ctx` four different ways** — which is the "semantics are non-obvious"
-    strike, caught concretely: `ast_node_ctx.h` said "exactly one value is returned to the parent";
-    `reference.def` said "results are appended to parent stack"; `keywords.md`'s table said "Context
-    variable access" (not even close) while its body said "cannot modify parent variables"; and the
-    validator ignored the body entirely, pushing exactly one `INT` unconditionally. That last one is
-    the documented net-zero-body bug, and it was three lines of code.
-
-- [x] **Cut the eight zero-use stack shufflers** — `dupd`, `swapd`, `swap2`, `drop2`, `over2`,
-      `overd`, `nipd`, `tuck`. Removed from the instruction table, the validator's type rules, the
-      compile-time-stack codegen, and the runtime (`qd_dupd` … `qd_tuck` are gone from
-      `runtime_stack.c` and `runtime.h` — **an `libqdrt.so` ABI break**, safe because nothing emitted
-      calls to them and the build cache keys on compiler identity).
-
-    Counts, measured rather than the "81 builtins" this file previously asserted:
-    `BUILTIN_INSTRUCTIONS` went 95 → 87 entries, of which the user-facing word-named ones went
-    65 → 57 (the rest are 13 symbol operators and 17 `__`-prefixed freestanding internals).
-    The documented surface in `reference.def` went 76 → 68 `BUILTIN(...)` entries, plus one
-    `KEYWORD(...)` for `ctx` (22 → 21).
-
-    Following the `while` precedent in `parseBlockStatement` (`ast_expressions.cc`), use now reports what happened rather
-    than a generic "undefined identifier", and carries the old stack effect because that is what a
-    reader porting old code needs:
-
-    ```
-    'tuck' has been removed (it was ( a b -- b a b )); bind the values with named locals ('-> a -> b') instead
-    ```
-
-    A `REMOVED_INSTRUCTIONS` table in `instructions.h` holds the eight names and their effects;
-    `semantic_validator_collect.cc` consults it just before the undefined-identifier fallback.
-
-    **The scope was wider than "zero uses" suggested.** That count was over `lib/` + `examples/`;
-    `tests/` had seven dedicated `.qd` tests (`stack/{dupd,swapd,nipd,overd}.qd` deleted,
-    `stack/{pairs,advanced}.qd` and `documentation/stack_notation.qd` trimmed) and twelve C runtime
-    tests. Also touched: `reference.def` (the source `gen_docs.sh` generates `reference.md` from),
-    `builtins.json`, the pygments lexer, quadrepl and quadlsp completion lists, quadmcp's two help
-    texts, and the playground's quick reference — 24 files.
-
-    Regression test `tests/qd/compile_errors/removed_stack_shufflers` with its `.err` sibling;
-    `TuckValid` in `test_semantic_validator_extended.cc` flipped to `RemovedShufflerRejected`.
-
-    **Two doc bugs surfaced, both in the dead builtins.** `docs/api/builtins.json` had `overd` as
-    `(a b c -- a b c a)` and `runtime.h` had `qd_dupd` as `( a b -- a b a )`; the runtime does
-    `( a b c -- a b a c )` and `( a b -- a a b )`. Wrong signatures had been published for builtins
-    nobody used, and nothing caught it — `docscheck` can't, since these are table rows rather than
-    fenced blocks. Evidence for the removal, not against it.
-
-    Regenerating `reference.md` also picked up `lnot`, added earlier but never regenerated. Left in.
-    Unrelated drift in `os`/`rand`/`signal` docs was reverted to keep the change focused — note
-    `gen_docs.sh` drops the `<!-- doccheck: compile-only -->` directive from `signal.md`, so
-    regenerating it breaks `docscheck`. Pre-existing bug, not fixed here.
-
-### Interpreter tier (lib/interp)
-
-- [x] **The six remaining gaps in the AST walker are closed: `return`, `const`/`enum`, named
-      locals, `for`, `cast<T>` and array literals.** Each had been probed construct by construct;
-      all six landed together because four of them turned out to be one feature.
-
-    **Named locals were the load-bearing one.** `qd_interp` grows a `std::vector<Frame>`, one
-    frame per active call, and `-> x` binds into the innermost. `for`'s iterator is an ordinary
-    entry in the same frame (saved and restored around the loop, as `iteratorVars` is in
-    `generateFor`), so implementing locals implemented most of `for` with it. The top-level frame
-    persists across evaluations, the way the stack already does — a prompt that forgot its names
-    between lines would be the wrong shape for what this tier is for.
-
-    **The tier had been binding parameters wrongly, and the tests recorded it.** A signature whose
-    inputs are *all* named binds them on entry and takes them off the stack —
-    `semantic_validator_typecheck.cc` states the rule and the compiled tier follows it, so
-    `fn double(x:i64 -- r:i64) { 2 * }` is a stack-underflow *error* in a real build. Eleven test
-    declarations spelled it that way and passed here; they now read `{ x 2 * }` and mean the same
-    thing in both tiers. Mixed or unnamed inputs still stay on the stack, which is the exemption
-    the validator makes.
-
-    **Arrays needed reference counting, not just construction.** `len` and `nth` each consume the
-    reference the stack carries, so a literal bound with `-> a` and read twice was freed under the
-    second read — `a 1 nth` returned garbage from freed memory. Reading a pointer local now
-    retains first and a frame releases what it holds when it is dropped, which is precisely what
-    `generateIdentifier` and `generateLocalCleanup` do. The interpreter now ends its own test run
-    with zero bytes in use.
-
-    **`const` was the worst failure of the set and the smallest fix**: it parsed, and then the name
-    reported as undefined, which reads like a typo rather than a missing feature. Constants and
-    enum variants share one table keyed by the written form, so `Colour::Red` resolves as a value
-    *and* as a `switch` case label — the latter matching `compareAgainstNamedConstant`, including
-    its refusal to let a label that resolves to nothing quietly never match.
-
-    Also: `evalSwitch` was leaking the string it popped as its subject. `qd_interp_destroy` now
-    drops its frames rather than leaving what they own to the allocator.
-
-    Fourteen tests added (`Return`, `Constants`, `Enums`, `NamedLocals`, `NamedParameters`,
-    `ForLoops`, `Casts`, `ArrayLiterals` among them); 754 assertions pass under valgrind with no
-    errors and nothing in use at exit. Full suite 2064 passed, 0 failed.
-
-    **Writing `for` here found a compiler bug**, since a float loop worked in this tier and hung
-    in a compiled build. Fixed below rather than matched.
-
-    **`-> a b c` is not a thing.** `AstNodeLocal` carries a name list and the compiled tier loops
-    over it, but both parse sites build a one-element vector and the syntax is a single name —
-    so the multiple-binding spelling is dead in the parser. The walk handles the list anyway,
-    because the node can express it; `-> a -> b -> c` is what a program writes.
+Condensed to the decision and anything that would be re-litigated without it. The full write-ups
+are in this file's git history; the user-facing versions are in `CHANGELOG.md`.
+
+### 2026-09-18 — language review items
+
+- [x] **R4 — `strings::char_at` is total.** The 158 abort sites were three unrelated populations,
+      not one, and **all sat inside non-fallible functions**, so none was the local `!` → `?` edit
+      the item proposed. Fixed by removing the need for the operator: an index outside the string
+      gives `strings::NotAChar` (-1), as `index_of` already returns -1 and `slice` already clamps.
+      Fuzzing (8,070 malformed inputs) found 10 of json's 18 entry points killing the process and
+      `array_len "[}"` hanging; `uri`, `path`, `hex`, `base64`, `fuzzy` were clean before and after,
+      so the "not shippable" charge was true of `json` specifically. `strings::substring` was the
+      worse bug and was not in the item at all: declared fallible, documented `@error
+      ErrOutOfBounds`, and it called `abort()` — so every caller's `switch` was dead code.
+      Remaining: the 33 `substring!` sites, guarded at every site the fuzzing reached.
+
+- [x] **R12 — `while` is back, condition written once.** The `while` removed earlier was
+      `cond while { body … cond }`, the same line count as the `loop { cond if { break } … }` that
+      replaced it, so restoring it verbatim would have delivered nothing. Now `cond while { body }`,
+      the condition re-evaluated at the head of each iteration. The condition is the shortest run of
+      preceding words whose net effect is `( -- flag )`: the parser takes the preceding expression
+      run, the validator trims it. The trim is load-bearing — `"Processing..." print nl` nets zero,
+      so a net-effect check alone accepts it and it printed every iteration until the trim landed.
+      The compile-time-stack path shipped untested (`main` is never native-eligible, so every test
+      put its loop there); `control_flow/while_native` closes that.
+
+- [x] **R17 — a closure can capture a `for` iterator, by value.** Two bugs. The validator tracks the
+      iterator in `iteratorNames`, separate from `localVariables`, and passed only the latter as the
+      capture scope. Fixing that alone would have produced a wild read: the closure environment
+      holds *pointers* to each capture's slot, and an iterator has none — it is an SSA value
+      replaced each iteration. So it is captured by value, each closure getting a refcounted block
+      of its own. By-reference has no distinct meaning here: assigning to the iterator's name
+      declares a shadowing local rather than moving the loop on.
+
+- [x] **R25 — the `error { … }` literal is removed.** Two spellings of `msg code panic`, four uses,
+      three of them its own tests. It was never a value: the parser rewrote it to a struct
+      construction named `__error__` with special cases in the validator and generator.
+      `skipBracedGroup` was added so a removed `name { … }` construct reports one error rather than
+      also emitting a bogus "Unmatched '}' at top level".
+
+- [x] **R39 — an anonymous function is a value, and parses like one.** `parseSimpleToken` now
+      recognises `fn (`, which the array-literal loop already routes through, so `[fn (…) {…}]`
+      came free. The struct-literal field parser needed its own check *before* its `:` test, which
+      was the cause: the lambda's own `x:i64` was read as a field written with a colon, so the
+      error advised `x = value` about a field nobody wrote. Specification 8.2 now states the
+      general rule — a field initializer accepts anything accepted as a value elsewhere.
+
+- [x] **R46 — the allocation sites were not aborting; `!` was inert.** The item said 50 sites abort
+      on OOM. They did not: `mem::alloc` set neither `error_code` nor a message, and those are what
+      `!` and `?` read, so the call fell through and the status was popped as the result — the next
+      binding reported *"Stack underflow when assigning to local variable"*. An audit found three
+      modules that never set it: `net.c` (33 paths, which also returned success from every
+      failure), `mem_heap.c` (12), `http_server.c` (5). All fixed. With the mechanism working,
+      "abort with a message naming the allocation" is a policy that is now true rather than
+      asserted; specification 11.1 states it and distinguishes it from malformed input, which a
+      library must not abort on. Specification 10.5 gains the rule the three modules broke.
+      Converting the sites to `?` remains R3's cascade.
+
+- [x] **R48 — a loop body gives a captured local one binding per iteration.** The capture block was
+      allocated once in the entry block, so every iteration's closure pointed at the same one and
+      escaping closures all read the last value. Allocated at the declaration now, previous released
+      first. The pointer slot starts null so a declaration in an untaken branch leaves nothing to
+      release, and release became one helper shared with function-exit cleanup, which had the logic
+      inline and without a null check. Capture by reference is unchanged within a binding.
+      `heapCapturePointers` went with it: written everywhere, read nowhere.
+
+- [x] **R41 — `read` removed, `os::args` replaces it.** It splayed argv across the operand stack,
+      which is not an expressible stack effect: the validator pushed sixteen synthetic `str` values
+      and set `mHasUnpredictableStack`, so every function containing it lost its arity, if-arm and
+      defer checks. Removing the padding exposed a real bug the fiction had hidden — the
+      module-method call path pushed a fallible call's results but not its status.
+
+- [x] **R5 / R7 / R8 — loops have a checked stack effect.** One hole, not three. A loop body must
+      leave the stack as it found it; `break` arms must agree; `continue` must leave it as an
+      iteration starts.
+
+- [x] **Use-after-free on every struct global.** Reading a field off a `var` struct global freed it
+      — five `globals/var_struct_*` valgrind failures, one bug.
+
+- [x] **The two `quadc` doom segfaults.** Both in codegen, surfacing through `llvm::verifyModule`;
+      neither file was special. Open for months for want of sources that were in git history at
+      `01e766b6` the whole time.
+
+### 2026-09-17 — language review items
+
+- [x] **R1 — generic type parameters unify structurally.** `structTypesMatch` compared types as
+      literal strings, so `[]T` never matched `[]i64`.
+- [x] **R2 — `call` after `<<field` or on a typed parameter was never modelled.** Nothing converted
+      a `fn(...)` type string back into a signature.
+- [x] **R16 — `switch` over an enum warns about unhandled variants**, read off the case labels; a
+      warning rather than an error, because the intent is inferred rather than typed.
+- [x] **R28 — comparator `sort` and generic `hof`**, the payoff from R1: six entry points that each
+      fixed element type *and* direction collapse to comparators.
+- [x] **R34 — the declared-effect check ran only on literal-only bodies**, a misplaced
+      `mHasUnpredictableStack = true`. Took R6 with it.
+- [x] **R35 — `ident <<field` folded the identifier into the field-access node**, so the parser
+      deleted the preceding node and codegen reconstructed it.
+- [x] **R14 — `cast<T>` no longer converts a string to a number.** Every other direction `cast`
+      offers is total; parsing is not, and it reported failure as `0`. `strconv` already had the
+      honest version. The docs were teaching the unsafe form, including reading user input.
+- [x] **R19 — nested array literals implemented**, which uncovered a silent miscompilation:
+      codegen's element loop ignored non-literals without a word, so `7 -> x  [x 2 3]` built `[2 3]`.
+- [x] **R20 — `str` made properly UTF-8** (a),(b), and `unicode` made to deserve its name (c)
+      rather than renamed to `ascii`: the two layers disagreed about the same character.
+- [x] **R22 — float division by zero gives inf/nan**, because the two code paths disagreed: an
+      inline `fdiv` returned inf while the runtime path trapped.
+- [x] **R23 — `print` renders arrays.** `qd_print` had no pointer case at all.
+- [x] **R26 — reference cycles documented**, not detected; the measurement was redone after `drop`'s
+      own leak (R42) swamped the first one.
+- [x] **R29 — withdrawn; `read` is load-bearing.** The "zero bare uses" claim came from a broken
+      grep: `^` inside a group matches nothing under `-o`, reporting 0 for a word `grep -ow` finds
+      22 times. The same artefact cut R30 from four unused builtins to two, where it remains open.
+- [x] **R40 — truncated signatures were `gen_docs.sh`, not `quaddoc`.** `\(([^)]*)\)` stops at the
+      first `)`, which in `pred:fn(T -- i64)` is the inner one.
+- [x] **R42 — a stack slot owns what it holds, pointers included.** `drop` leaked every array and
+      struct it discarded; the item's scope estimate was wrong, because the codebase already had
+      the right convention for strings behind a helper the survey missed.
+- [x] **R43 — an unqualified call to a function in the module's own import block is rejected.** It
+      used to compile clean and leave an extra value, so an `if` consumed that instead of the
+      result and always took the true branch.
+- [x] **R45 — an assertion failing inside a helper now fails its test.** 103 assertion calls across
+      the corpus were inert.
+- [x] **R44 — every character-index conversion goes through the memo.** Making `str` UTF-8 turned
+      finding character *i* into a walk from the start, so a loop reading a string one character at
+      a time became quadratic: a 20,000-character scan took 2.9 s and `json::get_array` over a 60 KB
+      file never finished. Two memos on `qd_string_t` — the codepoint count, and a packed
+      (char index, byte offset) scan cursor so a forward scan resumes rather than restarting. The
+      cursor is what mattered, since the file contains `π` and so misses the one-byte shortcut.
+      `char_at` already carried a comment warning about exactly this, from the last time it was
+      fixed.
+
+### Language design / scope — cuts
+
+- [x] Cut `>>field!` (two forms for one operation, split on what `drop` already says), `ctx` (zero
+      uses, ~340 lines, unmodellable by the static checker), and the eight zero-use shufflers
+      `dupd`, `swapd`, `swap2`, `drop2`, `over2`, `overd`, `nipd`, `tuck`.
 
 ### Compiler & runtime
 
-- [x] FIXED — **A `for` loop with float bounds never terminated.** `0.0 2.0 0.5 for x { … }`
-      compiled clean and hung, printing the iterator as 0 forever. `generateFor`'s runtime-stack
-      path converted start, end and step with `CreateFPToSI` before building the loop, so a step
-      of 0.5 became 0. Only functions that miss `analyzeIsBodyNativeEligible` — `main` among them —
-      take that path; the compile-time-stack path already had a float branch and was correct.
+- [x] **A `for` loop with float bounds never terminated** — the runtime-stack path converted the
+      bounds with `CreateFPToSI`, so a step of `0.5` became `0`. The type is not known at compile
+      time there, so the loop now carries both iterators and selects on the runtime tag.
+- [x] **`return` was a silent no-op in `main`**, top level included.
+- [x] **Module bodies were never semantically validated when imported** — `use sb` compiled clean
+      when `sb.qd` called a function that does not exist.
+- [x] **The JIT could pair new codegen with an old runtime**, resolving an installed
+      `libqdrt.so` ahead of the build's.
+- [x] **`panic` with code 0 reported success** — sentinel collision with `error_code`'s "no error";
+      fixed with a separate `has_error` flag.
+- [x] **Fallible calls used two incompatible protocols** — FFI imports pushed the real code, user
+      functions pushed 1/0, so `switch { Ok … }` always hit `_` for user calls.
+- [x] **`defer` ignored the control flow it was written under** — a `defer` in an untaken branch
+      still ran.
+- [x] **Branch stack effects unified**, and the diagnostic promoted to an error.
+- [x] **Build cache did not include compiler identity**, so a rebuilt `quadc` served executables
+      from the old one (7,670 stale entries).
+- [x] **`shr` was arithmetic in the constant folder and logical everywhere else**; `not` is bitwise
+      and silently wrong for boolean use, so `lnot` was added rather than changing `not`.
+- [x] **The parser accepted an unbalanced `}`**, closing the function early and compiling the
+      truncated result cleanly.
+- [x] Smaller: `//` comments on struct-field lines, the formatter deleting comments inside
+      declaration bodies, `<` versus generic ambiguity, method dispatch colliding with builtin
+      names, `switch` native-path codegen, `spawn`/`wait`/`detach` type models, sized integers
+      reconciled with the spec, `create_test_context` hand-rolling the context.
 
-    **The type is not known at compile time on that path, which is the whole difficulty.** The
-    bounds arrive as `qd_stack_element_t`s carrying a runtime tag, so there is no IR type to
-    branch on. The loop therefore carries *both* iterators — an i64 PHI and a double PHI, each
-    advanced by its own step — and selects between them with the tag: the condition is
-    `select(isFloatLoop, floatCmp, intCmp)` and the body reads whichever the same flag picks. The
-    start element decides, matching the compile-time path and the interpreter. LLVM deletes the
-    dead half whenever the tag folds to a constant, so an integer loop is unchanged in the
-    optimised output.
+### Interpreter tier, docs, CI, freestanding, examples
 
-    **Reading the iterator had to become type-aware too**, or a float loop would push its value
-    under an INT tag. `generateInlinePushIntValue` and `generateInlinePushFloatValue` differed only
-    in the tag they stored, so both now delegate to one `generateInlinePushTaggedValue` that takes
-    the tag as a value; the iterator passes a `select` of 0 and 1. No branch, one extra select per
-    read, and 40 lines of duplication gone.
-
-    **A second bug fell out of the same code.** All three bounds were converted according to the
-    *start's* tag, so `0.0 10 1 for` read the integer end and step as the bits of a double —
-    garbage. Each bound is now read in both domains from its own tag, so mixed bounds mean what
-    they look like.
-
-    Regression test `tests/qd/control_flow/for_loop_float_bounds` covers ascending and descending
-    fractional steps, mixed bounds, an iterator bound with `->`, an integer loop nested in a float
-    one sharing the name, and a native-eligible function for the other path. Verified red: on the
-    unfixed compiler it prints 0 forever. Its output is byte-identical to the same programs under
-    `lib/interp`. Full suite 2064 passed, 0 failed; `docscheck` 218 blocks clean.
-
-- [x] **`switch` in the interpreter tier.** Matches integers, floats, strings and bools against
-      literal cases, with `_` as the default, and takes its value off the stack the way `if` takes
-      its condition. The compiled tier has one further rule — where the value is the status of a
-      user-defined fallible call, `Ok` means "no error" rather than "equals 1" — which is
-      inexpressible here, this tier having no fallible calls, so the two cannot disagree.
-
-    Also fixed `parseSwitchStatement`, which stopped at the first comment between two cases. A
-    dispatch table is the one place that most wants a comment per line, so annotating one made it
-    fail to parse; it affected the compiled tier equally.
-
-- [x] FIXED — **`return` was a silent no-op in `main`.** Not just inside an `if` — at the top
-      level too. Found while restructuring `wc.qd` for the branch-arity work below.
-
-    **Cause.** Every other function-generation path assigns `currentFunctionReturnBlock`, but
-    main's did not: `generateFunction`'s `isMain` branch created its `returnBB` and used it as the
-    fall-through target without ever setting the member. `generateNode`'s `RETURN_STATEMENT` case
-    is guarded on that being non-null, so it emitted nothing at all. One assignment (plus clearing
-    it at the end of the branch, as the other paths do) fixes it.
-
-    Worth noting what the silence cost beyond the obvious: reaching `returnBB` is also what runs
-    main's defers and local cleanup, so an early `return` skipped those too — and the semantic
-    validator models `return` as diverging, so a `main` written with guard clauses validated
-    clean and then did the wrong thing at runtime.
-
-    Regression test `tests/qd/control_flow/return_in_main` covers a top-level return, a guard
-    whose condition is false, a return out of a `for` loop, defer execution on the early path, and
-    a non-main function for contrast. Verified red by reverting just the assignment: the loop runs
-    to completion and `unreachable` prints.
-
-    **The reference documented the bug as a language limitation, and over-generalised it.**
-    `keywords.md` claimed *"`return` only works at the function body's top level. It cannot be
-    used inside `if`, `else`, `loop`, or other blocks."* That was never true outside `main` —
-    verified `return` working from inside `if`, `for`, `loop` and `switch` arms in ordinary
-    functions, on the pre-fix build. Replaced with an accurate description plus a guard-clause
-    example that `make docscheck` compiles and runs.
-
-- [x] FIXED — **Branch stack effects are unified, and the diagnostic is now an error.** Both
-      halves landed together, so codegen and the validator agree instead of one warning while the
-      other silently discarded:
-
-    - **Validator** (`semantic_validator_typecheck.cc`, IF_STATEMENT case): mismatched arms are
-      rejected. The message now says what the rule is rather than describing the old miscompile:
-      *"both arms must leave the same number, since whatever follows reads a value whose identity
-      would otherwise depend on which arm ran"*.
-    - **Codegen** (`generateIf`, `generator_control.cc`): unequal arms set `compilationFailed`
-      with an internal-error diagnostic. The `std::min` merge stays, because bottom alignment is
-      correct — the arms share the pre-`if` stack as a prefix — but it is no longer reached
-      silently. What was wrong was the silence, not the alignment.
-
-    Exemptions unchanged and still load-bearing: a diverging arm (`return`/`panic`/`break`/
-    `continue`) contributes no effect, and an `if` directly after a fallible call is skipped
-    because the success arm receives the call's result and the failure arm does not.
-
-    **The two `wc.qd` sites turned out to be false positives, not benign mismatches — and finding
-    that is what made the flip safe.** `f flag::destroy` is net zero at runtime (verified with
-    `depth`), but the validator modelled it as +1, so *any* module-qualified method call on a
-    receiver inside one arm produced a spurious mismatch. Root cause: `mHasUnpredictableStack` —
-    set when a function calls a variadic, an imported C function, or `flag::parse`, meaning the
-    validator has admitted its stack model is unreliable — is consulted by the function-level
-    arity check (`:628`) and the defer-effect check (`:1049`), but this diagnostic ignored it.
-    It now gates on the same flag. `wc.qd` needed no change and is untouched; had this been
-    promoted to an error without the gate, it would have rejected correct programs.
-
-    Acceptance test restored as `tests/qd/compile_errors/if_branch_arity_mismatch` with its `.err`
-    sibling. Spec gains **§6.1.1 Branch stack effects**, stating the rule normatively with both
-    exemptions and an `expect-error` example that `make docscheck` compiles. Re-swept after the
-    flip: 38 stdlib modules and 24 example programs, zero errors and zero warnings. Full suite:
-    2024 passed, 0 failed.
-
-- [x] FIXED — **Module bodies were never semantically validated when imported.** A program doing
-      `use sb` compiled clean even when `sb.qd`'s body called a function that does not exist, so
-      every stdlib and third-party module body went unchecked during a normal build. The module
-      loop in `main.cc` did call `validate(..., isModuleFile=true, ...)`, but under
-      `if (!fromCache)` — and the validator parses module files to collect their signatures and
-      hands those ASTs to `AstCache` via `importFromValidator`, so by the time the loop ran every
-      module was a cache hit and validation was skipped for all of them. Four parts:
-
-    1. **`CachedAst` gains a `validated` flag**, and `getOrParse`'s `outFromCache` becomes
-       `outAlreadyValidated`. Presence in the cache means parsed, never checked; the loop now marks
-       entries validated after they pass.
-    2. **Files in the main file's own directory are excluded** (the first of the two designs the
-       item proposed). They are directory-namespace siblings already owned by the main-file pass,
-       and only that pass has the context to resolve them — `getSiblingQdFiles` deliberately skips
-       the file containing `main()`, so a sibling referencing a constant defined there cannot be
-       resolved from the module loop at all.
-    3. **Intra-module references resolve via the module's own file list**, not
-       `getSiblingQdFiles` — that function scans a directory for the directory-namespace feature
-       and returns nothing under `lib/` or `tests/`, i.e. for every module that matters here. Files
-       already linked by an explicit `use "other.qd"` in either direction are excluded, or every
-       function in them is reported as a duplicate definition.
-    4. **Unqualified references inside a module file now resolve against the current package's
-       module functions.** Functions pulled in by an intra-module `use "helper.qd"` land in
-       `mModuleFunctions` under the package, not in `mDefinedFunctions`, so referencing them
-       without a prefix — which is the documented behaviour inside a module — was rejected. Guarded
-       on `mIsModuleFile` so a main file cannot silently reach into a module.
-
-    Regression test `tests/qd/compile_errors/module_body_unvalidated` with its
-    `unchecked_module_body/` helper module, whose uncalled function references an undefined name.
-    Full suite: 2022 passed, 0 failed — the same count as before the change.
-
-    **It immediately found a real stdlib bug.** `crypto`'s `build_hmac_input` declared
-    `-- result:ptr result_len:i64` while its body ends `total result`, pushing the length first and
-    the pointer on top. Every caller binds `-> buf -> len`, matching the body, so HMAC was correct
-    at runtime — the *signature* was backwards, and the type checker believed it, flagging four
-    `sha256_bytes`/`sha512_bytes` calls. Fixed by correcting the declaration to match the body
-    (no runtime change); verified `hmac_sha256` and `hmac_sha512` still match `openssl dgst` exactly.
-
-- [x] FIXED — **The JIT could pair new codegen with an old runtime.** `quad run` resolved
-      `libqdrt.so` through the loader's search path first, so an installed `/usr/lib/libqdrt.so`
-      from an older release won over the one the binary was built with — reading struct fields at
-      offsets the old ABI doesn't have, and presenting as "my compiler change had no effect" while
-      `quad build` produced a correct binary. The order is now explicit override
-      (`QUADRATE_LIBDIR`) → the runtime beside the executable (`dist/bin/quad` → `dist/lib`, then a
-      flat layout) → the loader search path as a last resort.
-
-- [x] FIXED — **`create_test_context` in `lib/rt/tests` and `stdlib/mem/tests` hand-rolled the
-      context**, mallocing it and initialising only `->st`, so any test that tripped a fatal
-      runtime path walked an uninitialised call stack and died of SIGSEGV instead of the SIGABRT it
-      was asserting. Both now go through `qd_create_context`/`qd_free_context` like the other
-      thirteen test files, and the workaround comment on the death tests is gone.
-
-- [x] Reaped the dead `while` implementation — the keyword has been rejected at parse time for a
-      while, but `AstNodeWhileStatement`, `generateWhile` (~225 lines in `generator_control.cc`),
-      the `WHILE_STATEMENT` branches in `semantic_validator_{collect,typecheck}.cc`, the codegen
-      dispatch case, the LSP folding case, the enum member and seven `#include`s were all still
-      carried. The parse-time diagnostic and `while`'s entry in the parser's `synchronize()`
-      keyword list stay — the latter is error recovery, not an implementation.
-
-- [x] `panic` with code 0 reported success — sentinel collision between the panic code and
-      `error_code`'s "no error" value. Added `int64_t has_error` to `qd_context`; codegen now tests
-      `has_error != 0 || error_code != 0` via `generateClearErrorState`/`generateReadErrorState`
-      (7 sites). `tests/qd/errors/panic_code_zero`.
-- [x] Fallible calls used two incompatible protocols — FFI-imported functions pushed the real error
-      code, user-defined ones pushed only 1/0, so `switch { Ok … }` always hit `_` for user code and
-      `if`/`else` crashed for FFI code. Codegen now shapes the status for whichever consumer reads it
-      (`fallibleConsumerOf`): boolean before `if`, error code before `switch`. `Ok` is generated as a
-      test of error *state*, so a `panic` carrying code 1 still reads as failure.
-      `tests/qd/errors/fallible_protocol_unified`; spec §10.3 states both shapes normatively.
-- [x] Fallible-call arity invisible in the signature — folded into the protocol unification above.
-- [x] Runtime stack-underflow handling was inconsistent — `drop` was fatal but `print` returned `-2`
-      silently, and codegen discards those return values. 11 genuinely silent functions found (not the
-      91 first claimed — that grep missed ops that hand-roll the fatal sequence). All instruction-level
-      stack failures are now fatal, 61 sites. The embedding API (`qd_push_i`, `qd_pop_s`, …) and
-      `qd_spawn`'s allocation/thread failures deliberately keep returning codes; both conventions are
-      documented at the top of `runtime.h`. Two tests were pinning the old behaviour, one of which hid
-      a real bug in `tests/embed/native-functions-test.cc`.
-- [x] `defer` ignored the control flow it was written under — registration was lexical, so a `defer`
-      in an untaken branch still ran, and a `defer` after a `?` ran on the propagate path with its
-      local unbound. Each `DeferEntry` now carries an i1 `reached` alloca created in the entry block;
-      scope exit emits `if (reached) { body }`. Six emission sites collapsed into `emitDeferScope`.
-      `tests/qd/control_flow/defer_registration`; spec gains §6.6.1 Registration.
-- [x] `switch` had no native-path codegen — two defects: `generateSwitchStatement` popped the
-      scrutinee off the runtime stack unconditionally (now takes it from `compileTimeStack`, with PHI
-      reconciliation at the merge block), and bare `const` case labels resolved to nothing, leaving
-      the block unterminated → invalid IR (now an `IDENTIFIER` branch sharing
-      `compareAgainstNamedConstant`, plus a hard diagnostic when a label resolves to nothing).
-      Four tests in `tests/qd/control_flow/switch_value_native_*`.
-- [x] `spawn`/`wait`/`detach` had no type model in the validator, so `&worker spawn` left a `ptr` on
-      the type stack while the runtime pushed an `i64` handle — thread handles couldn't be stored in
-      an array. Branches added matching the runtime. Not added: a check that the spawned function
-      consumes nothing (`mPendingFnSignature` has subtle lifetime rules).
-      `tests/qd/threading/spawn_handle_type`.
-- [x] Build cache did not include compiler identity — `computeKey` hashed only sources and a few
-      options, so a rebuilt `quadc` kept serving executables from the old one (7670 stale entries).
-      `BuildCache::addCompilerIdentity()` mixes in `QUADRATE_VERSION`, `QUADRATE_GIT_COMMIT`, and the
-      size + mtime of `/proc/self/exe`.
-- [x] `shr` was arithmetic in the constant folder and logical everywhere else — the folder now emits
-      `CreateLShr`, so all four paths agree. `tests/qd/bitwise/shr_logical_all_paths`. A separate
-      `sar` for arithmetic shift is a language addition, deliberately left out.
-- [x] `not` is bitwise and silently wrong for boolean use (`flag not and other` — `~0 = -1`, and
-      `-1 and X = X`). Added a new `lnot` builtin (`x == 0 ? 1 : 0`) and left `not` untouched, wired
-      through every path. `tests/qd/bitwise/lnot_logical_negation`.
-- [x] Parser silently accepted an unbalanced `}` in a function body, closing the function early and
-      compiling the truncated result cleanly. The top-level loop's `default:` case discarded
-      unrecognised tokens; now diagnoses "Unmatched '}' at top level".
-      `tests/qd/compile_errors/stray_close_brace_module_scope`.
-- [x] `//` comment on a struct field line was a parse error, and cascaded to every following field.
-      The struct-declaration field loop was the only one of three not calling `parseComment`.
-      `tests/qd/structs/field_trailing_comment`.
-- [x] Formatter deleted comments inside struct/enum declaration bodies. Both declaration nodes gain a
-      `BodyComment` list, kept out of `child()`/`childCount()` so generic tree walkers are unaffected.
-      `tests/formatter/51_declaration_body_comments`.
-- [x] `<` operator vs generic ambiguity — generics now require `<` immediately adjacent, so `Vec3<T>`
-      is generic and `COUNT < x` is comparison.
-- [x] Method dispatch silently failed when the method name collided with a builtin instruction
-      (`depth`, `clear`, `len`) — the instruction path built the function name without the module
-      prefix. Now resolves via `userFunctions` like the identifier path.
-- [x] Runtime `read` inferred types on argv and pushed numeric-looking args as i64, crashing
-      `flag::parse`. `qd_read` now always pushes strings, matching what the validator already declared.
-- [x] Sized integer types reconciled with the spec — §3.1 rewritten (stack values are 64-bit; narrower
-      widths are memory-layout annotations only), new §3.1.1 covering the width table, store
-      truncation, load widening, packed vs 8-byte-slot layout, and the `u64`-above-2^63 caveat.
-      `packed` documented in §5.6/§8.1 and added to the grammar; §2.3.1's keyword list corrected.
-      Recorded as a known divergence: sized types are accepted in positions where they're inert
-      (`300 cast<u8>` yields `300`; parameters and returns ignore the width).
-
-### Documentation
-
-- [x] Freestanding subset documented — `docs/docs/learn/7-advanced/freestanding.md`, in the nav
-      after FFI. Covers what changes versus a hosted build, the `_start` entry contract, the allowed
-      modules (`bits`, `limits`, `mem`, `sys`) and the `mem.c` / `mem_heap.c` split, the rejected
-      builtins, the whole `sys` surface (raw `st*`/`ld*`, x86 port I/O, `cli`/`sti`/`hlt`), what does
-      *not* work (division and modulo halt via `qd_div`/`qd_mod`; strings are a stub; no error
-      reporting at all), overriding the weak `qd_freestanding_halt` and `QD_FREESTANDING_STACK_CAP`,
-      and the `boot.S` + `linker.ld` + Makefile pattern. Every claim was checked against a real
-      `--freestanding` compile rather than taken from the source comments — including confirming
-      that a `/` really does emit a reference to `qd_div`. Note the page describes the *current*
-      `examples/kernel/`, which has moved well past the VGA hello-world this item was written for:
-      it is now x86_64 long mode with GDT, IDT, PIC remapping, PIT timer and PS/2 keyboard.
-
-- [x] `make docscheck` — `tools/check_docs.py` extracts fenced `quadrate`/`qd` blocks, compiles each,
-      and runs the complete programs; wired into all three `.builds/*.yml` after `fmtcheck`. 224
-      blocks compile and run clean; 21 were failing when it first ran. The other 1118 blocks are
-      fragments with no sound way to synthesise context, so this is a floor. Opt out with
-      `// doccheck: skip|compile-only|expect-error <reason>`.
-- [x] Error-handling docs fixed by hand (spec §10.1–§10.6, `reference/errors.md`,
-      `learn/6-error-handling/patterns.md`): the `drop`s in error arms are gone (both `if` and
-      `switch` consume the status), §10.1's `divide` never compiled, §10.2 now states that `panic`
-      reports failure whatever code it carries including 0, and §10.6 adds a complete worked example
-      covered by `docscheck`. The stale caveat about FFI-only `switch` matching is deleted.
-- [x] Doc examples calling `-> x` on an already-bound parameter — swept across `reference/errors.md`,
-      `types.md`, `keywords.md` and spec §4.4, which now states that named parameters are bound on
-      entry and MUST NOT be re-bound.
-- [x] Other bugs `docscheck` found: `sb.data`/`pool.used` dot syntax that doesn't exist
-      (`learn/7-advanced/memory.md`), `make<ptr>` where `make<Point>` was meant (`structs.md`).
-- [x] Getting-started guide, "Thinking in stack-based" tutorial
-      (`learn/2-stack/thinking-in-stack.md`), and the annotated `dc-walkthrough.md`.
-- [x] All 36 stdlib modules documented; cross-module `Calls:`/`Called by:` links in quaddoc output via
-      a `buildCallGraph` pass; quadmcp's module list generated from `docs/api/modules.json` instead of
-      four hardcoded chains (36 modules vs 25).
-
-### CI / quality
-
-- [x] The release build was broken and CI could not have been passing. Two failures at `-O3 -Werror`:
-      a genuine null-deref in `lib/qc/src/ast_parse.h:386` (`expandAllStringInterpolations`
-      dereferenced `block->child(i-1)` unchecked), and `-Wnull-dereference` firing inside LLVM's own
-      inlined internals, now scoped to `-Wno-error=null-dereference` on the `llvmgen` target only.
-      Worth checking what GCC/LLVM the CI images pin.
-- [x] `fmtcheck` target (`quadfmt -c lib examples`) wired into all three `.builds/*.yml`; `tests/` is
-      excluded because `tests/formatter/` inputs are intentionally unformatted.
-- [x] Formatter fuzzer (`tests/fuzz/fuzz_formatter.cc`, crash-freedom + idempotency) and LSP fuzzer
-      (`fuzz_lsp_text.cc`, 200K iterations clean; `lspGetWordAtPosition` extracted into
-      `cmd/quadlsp/src/lsp_text.cc`). Also fixed `tests/fuzz/meson.build`, whose `fuzz_parser` target
-      had been broken since the AST split. A full JSON-RPC LSP fuzzer is still pending —
-      `handleMessage` is stateful with many side effects.
-- [x] Two formatter idempotency bugs — `findBlockEndLine` falling back to `startLine` on unbalanced
-      braces, and the inline-body extractor using `rfind('}')` instead of the matching close brace.
-      Both `emitBlockBody` paths now track brace depth.
-- [x] Function-entry coverage for `quad test` — `--coverage` on `quad test` and `quadc --test`,
-      instrumenting every user function in the main module with `qd_coverage_mark(idx)`. Stdlib
-      functions excluded.
-- [x] Dependency conflict detection across the graph — `rangesHaveCommonVersion` in
-      `cmd/quadpm/src/semver.cc` probes boundary candidates, replacing the caret-vs-caret-only check.
-      Catches `^1 vs ^2`, `~1.2 vs ~1.3`, `>=2 vs <1.5`, `=1.2.3 vs =1.2.4`, three-way unsatisfiable.
-
-### Freestanding mode (kernels, embedded, no-OS targets)
-
-Goal: compile a Quadrate program with no libc / hosted-OS dependency.
-
-- [x] `quadc --freestanding` — skips the auto-emitted `int main(int, char**)` wrapper, accepts
-      `pub fn _start( -- )` (or `main`) as the entry, emits a `void _start(void)` shim calling the
-      user fn with a runtime-provided static `qd_context`, then `qd_freestanding_halt()`. Output is
-      `.o`, so the user runs their own linker.
-- [x] `libqdrt-freestanding.a` (`lib/rt/src/freestanding.c`) — statically allocated stack
-      (`QD_FREESTANDING_STACK_CAP`, default 1024), `qd_freestanding_ctx` global, weak
-      `qd_freestanding_halt` (`cli; hlt` on x86, `wfi` on ARM). Stubs for call-stack tracking,
-      `free`/retain/release, closures, and inline arithmetic/comparison/bitwise stack ops.
-      Division/modulo halt rather than pulling in libgcc's `__divdi3` on 32-bit.
-- [x] Validator subset enforcement — `setFreestandingMode(bool)` rejects `use <module>` for anything
-      but `bits`, `limits`, `mem`, and rejects `print`/`prints`/`printv`/`printsv`/`nl`/`read`/
-      `panic`/`err`/`spawn`/`wait`/`detach`. User `.qd` imports are still allowed.
-- [x] Freestanding-safe `mem` — split into `mem.c` (raw ops) and `mem_heap.c` (alloc family), no
-      `#ifdef`s; the build picks sources. `libmem-freestanding.a` = `mem.c` only.
-- [x] Raw memory builtins `st8`/`st16`/`st32`/`st64` and `ld8`/`ld16`/`ld32`/`ld64`, lowering directly
-      to LLVM `store`/`load`. No runtime call, no libc, allowed in `--freestanding` — a kernel can
-      touch MMIO without an FFI shim.
-- [x] `examples/kernel/` — "Hello, Quadrate kernel!" to VGA at 0xB8000 from pure Quadrate (the `vga.c`
-      shim was removed once `st16` landed). `kernel.qd`, `boot.S` (multiboot1), `linker.ld`,
-      `grub.cfg`, `Makefile` (`make` → 33KB i386 multiboot ELF, `make iso`, `make run`).
-
-### Examples
-
-- [x] `examples/csvcut/csvcut.qd` — `cut`-like CSV column extractor with RFC-4180-ish quote handling,
-      file or stdin. Demonstrates manual `argv` parsing, `sb::StringBuilder`, byte scanning.
-- [x] `examples/wc/wc.qd` — `wc(1)` clone; output matches GNU wc.
-- [x] `links-api` — HTTP JSON API example, including `http::request_body(c)` (named to avoid colliding
-      with client-side `http::body(req, body)`), demonstrated by its POST /echo endpoint.
+- [x] **Interpreter tier**: the six remaining AST-walker gaps closed — `return`, `const`/`enum`,
+      named locals, `for`, `cast<T>`, array literals — plus `switch`.
+- [x] **`make docscheck`** compiles and runs the fenced blocks in the docs; it immediately found
+      dot-syntax that does not exist, `make<ptr>` for `make<Point>`, `drop`s in error arms, and
+      `-> x` on already-bound parameters. Error-handling docs and the freestanding subset written.
+- [x] **CI/quality**: the release build was broken at `-O3 -Werror` (a real null-deref);
+      `fmtcheck` wired in; formatter and LSP fuzzers; two formatter idempotency bugs; function-entry
+      coverage for `quad test`; dependency conflict detection across the graph.
+- [x] **Freestanding mode**: `quadc --freestanding`, `libqdrt-freestanding.a`, validator subset
+      enforcement, the `mem.c` / `mem_heap.c` split, raw `st*`/`ld*` builtins, and
+      `examples/kernel/` — now x86_64 long mode with GDT, IDT, PIC, PIT and PS/2.
+- [x] **Examples**: `wc` (matches GNU wc), `csvcut`.
 
 ### Earlier
 
-- [x] Embedding API: `qd_pop_i`/`qd_pop_f`/`qd_pop_s`/`qd_pop_p`, `qd_load_file`,
-      `qd_error_code`/`qd_error_message`/`qd_clear_error`, `qd_context_stack_size`; go-quadrate and
-      python-quadrate bindings, C embed tests, FFI example and docs updated.
-- [x] Build cache — ~200x speedup on repeat builds, 16 integration tests.
-- [x] Linter `//nolint` inline suppression, opt-in rule tests, `.flags` test runner.
-- [x] Package manager: smart semver-based `update`.
-- [x] Formatter: removed dead `--line-width`, brace-in-comment fix, blank-line preservation, struct
-      default-value preservation, inline struct construction detection, import-block doc comment
-      preservation, `--` rule for void functions and receiver-only methods, idempotency.
-- [x] LSP: `--` separator conditional on inputs/outputs across 11 signature sites.
-- [x] Formatted the entire stdlib (48 files) and all examples (29 files).
-- [x] Replaced raw `new`/`delete` with `std::unique_ptr` — 17 container classes, zero leaks in 345K+
-      fuzz runs.
-- [x] Split `parseFunctionDeclaration` (~990 lines of duplication removed); split `ast.cc` into 5
-      compilation units.
-- [x] Fixed cross-module method call resolution (3 compiler bugs).
-- [x] Typed function pointers with type aliases; `flag` and `regex` converted to method syntax.
-- [x] Pre-built binaries via Docker (`make docker-x64`, `make docker-arm64`).
-- [x] Playground with quick reference, share, format, auto-save.
-- [x] Fixed the 5 broken benchmarks.
+- [x] Embedding API (`qd_pop_*`, `qd_load_file`, error accessors), go- and python-quadrate bindings.
+- [x] Build cache (~200x on repeat builds), package manager semver `update`, formatter and LSP
+      polish, the whole stdlib and examples formatted.
