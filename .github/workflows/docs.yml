@@ -1,0 +1,73 @@
+name: Docs
+
+on:
+  push:
+    branches: [master]
+    paths:
+      - 'docs/**'
+      - '.github/workflows/docs.yml'
+  pull_request:
+    paths:
+      - 'docs/**'
+      - '.github/workflows/docs.yml'
+  workflow_dispatch:
+
+# One deployment at a time, and never cancel one half-way: an interrupted deploy
+# leaves the live site on whatever partial state it had reached.
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+
+      # requirements.txt ends in `-e pygments-quadrate`, a path pip resolves
+      # against the working directory rather than against the file, so this has
+      # to run from docs/. Without the lexer installed every Quadrate code block
+      # falls back to plain text.
+      - name: Install MkDocs and the Quadrate lexer
+        working-directory: docs
+        run: pip install -r requirements.txt
+
+      # --strict turns MkDocs warnings (a broken internal link, a nav entry with
+      # no file behind it) into a failed build, so a pull request that breaks the
+      # site says so before it merges rather than after it deploys. `make docs`
+      # runs the same thing.
+      - name: Build
+        working-directory: docs
+        run: mkdocs build --strict
+
+      - name: Upload artifact
+        if: github.event_name != 'pull_request'
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: docs/site
+
+  # Split from the build so a pull request gets the build check without ever
+  # holding the deploy permissions.
+  deploy:
+    name: deploy
+    if: github.ref == 'refs/heads/master' && github.event_name != 'pull_request'
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

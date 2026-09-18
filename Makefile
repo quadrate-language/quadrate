@@ -357,7 +357,7 @@ docs:
 	@echo "=========================================="
 	@echo "  Building documentation"
 	@echo "=========================================="
-	@cd docs && mkdocs build
+	@cd docs && mkdocs build --strict
 	@echo ""
 	@echo "Documentation built successfully!"
 	@echo "To serve locally: cd docs && mkdocs serve"

@@ -36,7 +36,7 @@ The command-line arguments, excluding the program name.
 **Example:**
 
 ```qd
-os::args -> args  args len -> argc
+os::args -> args  args len  // argc
 ```
 ---
 

@@ -71,13 +71,13 @@
     },
     {
       "name": "parse",
-      "signature": "(argc:i64 -- f:Flag)",
+      "signature": "(args:ptr -- f:Flag)",
       "failable": false,
-      "description": "Parse arguments from read instruction.",
-      "params": [{"name": "argc", "type": "i64", "description": "Argument count from read"}],
+      "description": "Parse command-line arguments.",
+      "params": [{"name": "args", "type": "ptr", "description": "Argument array, as os::args returns"}],
       "returns": [{"name": "f", "type": "Flag", "description": "Parsed flags"}],
       "errors": [],
-      "examples": ["read flag::parse -> f"]
+      "examples": ["os::args flag::parse -> f"]
     },
     {
       "name": "positional",

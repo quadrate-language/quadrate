@@ -1,5 +1,14 @@
 site_name: Quadrate
 site_description: A stack-based programming language that compiles to native code via LLVM
+# The custom domain in docs/docs/CNAME, which serves from the domain root rather
+# than the /quadrate/ subpath a project-pages URL would use. Every internal link
+# MkDocs emits is relative, so the site works at either address; this only fixes
+# what the canonical tags and the sitemap point at.
+site_url: https://quad.r8.rs/
+repo_url: https://github.com/quadrate-language/quadrate
+# The markdown lives in docs/docs/, one level below the mkdocs.yml, so the default
+# edit_uri of `edit/master/docs/` would land a directory short.
+edit_uri: edit/master/docs/docs/
 theme:
   name: readthedocs
   custom_dir: overrides

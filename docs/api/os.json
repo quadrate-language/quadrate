@@ -73,6 +73,16 @@
   ],
   "functions": [
     {
+      "name": "args",
+      "signature": "( -- args:ptr)",
+      "failable": false,
+      "description": "The command-line arguments, excluding the program name.",
+      "params": [],
+      "returns": [{"name": "args", "type": "ptr", "description": "Array of argument strings"}],
+      "errors": [],
+      "examples": ["os::args -> args  args len -> argc"]
+    },
+    {
       "name": "chdir",
       "signature": "(path:str -- )",
       "failable": true,
@@ -291,6 +301,16 @@
       "returns": [{"name": "exitcode", "type": "i64", "description": "Command exit status"}],
       "errors": [{"code": "ErrIo", "description": "Failed to execute command"}],
       "examples": ["\"ls -la\" fn (line:str -- ) { print nl } os::popen! -> code"]
+    },
+    {
+      "name": "program_name",
+      "signature": "( -- name:str)",
+      "failable": false,
+      "description": "The program name (argv[0]).",
+      "params": [],
+      "returns": [{"name": "name", "type": "str", "description": "Program name as invoked"}],
+      "errors": [],
+      "examples": ["os::program_name print nl"]
     },
     {
       "name": "readlink",

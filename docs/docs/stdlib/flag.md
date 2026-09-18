@@ -32,7 +32,7 @@ Parse command-line arguments.
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
-| `args` | `ptr` | Argument array, as `os::args` returns |
+| `args` | `ptr` | Argument array, as os::args returns |
 
 | Output | Type | Description |
 |--------|------|-------------|
