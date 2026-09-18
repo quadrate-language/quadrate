@@ -584,7 +584,7 @@ namespace Qd {
 			std::vector<std::string> registerNames;
 		};
 
-		auto registerNamesFor = [this](AstNodeFunctionDeclaration* funcNode, const std::string& namePrefix) {
+		auto registerNamesFor = [](AstNodeFunctionDeclaration* funcNode, const std::string& namePrefix) {
 			std::vector<std::string> names;
 			if (funcNode->hasReceiver()) {
 				std::string receiver = funcNode->receiverType();
