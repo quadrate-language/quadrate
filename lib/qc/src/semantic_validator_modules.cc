@@ -217,8 +217,8 @@ namespace Qd {
 		return true;
 	}
 
-	void SemanticValidator::loadModuleDefinitions(
-			const std::string& moduleName, const std::string& currentPackage, bool reportErrors) {
+	void SemanticValidator::loadModuleDefinitions(const std::string& moduleName, const std::string& currentPackage,
+			bool reportErrors, const std::string& importerDirectory) {
 		// Check for circular dependency
 		for (size_t i = 0; i < mModuleDependencyChain.size(); i++) {
 			if (mModuleDependencyChain[i] == moduleName) {
@@ -273,7 +273,16 @@ namespace Qd {
 			// Note: currentPackage alone is not sufficient because it's also set from directory names
 			// The dependency chain already includes the current module (added by guard above),
 			// so we check if size > 1 to see if there's a parent module context
-			bool isIntraModuleImport = mIsModuleFile || mModuleDependencyChain.size() > 1;
+			// quadc re-validates every imported .qd outside the main file's directory on its
+			// own, with isModuleFile set. A `use` written directly in that file is the same
+			// statement the main-file pass reads, so it has to mean the same thing: the file
+			// gets a namespace from its own name and its definitions come into scope
+			// unqualified. Treating it as an intra-module import instead collapsed it into the
+			// enclosing directory's package, so `use "../ffi/sdl.qd"` left `sdl::Init` with no
+			// known stack effect and every call to it reported a bogus underflow — in that pass
+			// only. Nested imports (chain > 1) keep the old intra-module behaviour.
+			bool isRootOfModulePass = mIsModuleFile && mModuleDependencyChain.size() == 1;
+			bool isIntraModuleImport = (mIsModuleFile || mModuleDependencyChain.size() > 1) && !isRootOfModulePass;
 			if (!isIntraModuleImport) {
 				effectiveModuleName = getPackageFromModuleName(moduleName);
 				mergeIntoMain = true; // Mark for merging into main namespace
@@ -323,19 +332,35 @@ namespace Qd {
 					searchDir = mModuleDirectories[currentPackage];
 				}
 
-				// Try 1: Same directory as parent module
-				modulePath = searchDir + "/" + moduleName;
-				file.open(modulePath);
-				if (file.good()) {
-					std::stringstream buffer;
-					buffer << file.rdbuf();
-					std::string source = buffer.str();
-					file.close();
-					// Parse and add to effective module namespace
-					parseModuleAndCollectFunctions(effectiveModuleName, source, modulePath, mergeIntoMain);
-					return;
+				// Try 1: Directory of the file that wrote the `use`, then the parent module's
+				// directory. The importer's own directory has to come first: a file reached as
+				// `use "qd/r_sky.qd"` from a main file one level up writes `use "tables.qd"`
+				// meaning its sibling, not a `tables.qd` next to main. Resolving only against
+				// mSourceDirectory silently dropped the import (nested loads report no errors),
+				// and every constant it defined then read as an undefined identifier.
+				std::vector<std::string> searchDirs;
+				if (!importerDirectory.empty()) {
+					searchDirs.push_back(importerDirectory);
 				}
-				file.close();
+				if (searchDirs.empty() || searchDirs[0] != searchDir) {
+					searchDirs.push_back(searchDir);
+				}
+
+				for (const auto& dir : searchDirs) {
+					modulePath = dir + "/" + moduleName;
+					file.open(modulePath);
+					if (file.good()) {
+						std::stringstream buffer;
+						buffer << file.rdbuf();
+						std::string source = buffer.str();
+						file.close();
+						// Parse and add to effective module namespace
+						parseModuleAndCollectFunctions(effectiveModuleName, source, modulePath, mergeIntoMain);
+						return;
+					}
+					file.close();
+					file.clear();
+				}
 			}
 
 			// If not found in same directory, try standard paths
@@ -815,12 +840,16 @@ namespace Qd {
 
 		// Process USE statements in the module first (to load .qd file imports)
 		// We need to recursively collect definitions, including from imported .qd files
+		std::string moduleDirectory;
+		if (!filePath.empty()) {
+			moduleDirectory = std::filesystem::path(filePath).parent_path().string();
+		}
 		for (auto* child : moduleAstRoot->children()) {
 			if (child && child->type() == IAstNode::Type::USE_STATEMENT) {
 				AstNodeUse* use = static_cast<AstNodeUse*>(child);
 				// Recursively load this module/file with the current module as context
 				// Pass false for reportErrors since this is a nested import
-				loadModuleDefinitions(use->module(), moduleName, false);
+				loadModuleDefinitions(use->module(), moduleName, false, moduleDirectory);
 			}
 		}
 
@@ -867,6 +896,7 @@ namespace Qd {
 		if (mergeIntoMain) {
 			for (const auto& constant : moduleConstants) {
 				mDefinedConstants.insert(constant.first);
+				mMergedImportedConstants.insert(constant.first);
 			}
 			// Also register module enums in mDefinedEnums for type checking
 			for (size_t i = 0; i < moduleAstRoot->childCount(); i++) {

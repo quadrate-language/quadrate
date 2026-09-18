@@ -1,0 +1,8 @@
+// `tables.qd` is this file's sibling, not a sibling of the main file one level up.
+use "tables.qd"
+
+pub var skytexturemid:i64 = 0
+
+pub fn init_sky_map( -- ) {
+	100 FRACUNIT mul -> skytexturemid
+}

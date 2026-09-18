@@ -1,0 +1,15 @@
+// `caller` is native-eligible and is generated before `callee`. `callee` looks
+// native-eligible from its signature but calls `nonnative`, so its native version
+// has to be dropped — after `caller` has already emitted a call to it.
+pub fn caller(x:i64 -- r:i64) {
+	x callee
+}
+
+pub fn callee(x:i64 -- r:i64) {
+	x nonnative
+}
+
+pub fn nonnative(x:i64 -- r:i64) {
+	"" print
+	x 1 add
+}

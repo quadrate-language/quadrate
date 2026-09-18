@@ -2,25 +2,6 @@
 
 ## Open
 
-### Compiler correctness (high priority)
-
-- [ ] **quadc segfaults on a cross-module `pub fn` call from deeply-nested control flow.**
-      `examples/doom/qd/r_perspective.qd` calls `R_PointToAngle2` (from `r_main.qd`) inside the
-      R_DrawThings iteration, ~5 `if`/`else` levels deep. `quadc` dies with "Segmentation fault (core
-      dumped)" during the final `doom.qd` compile — no diagnostic, just the signal. Signature is
-      ordinary: `pub fn R_PointToAngle2(x1:i64 y1:i64 x2:i64 y2:i64 -- ang:i64)`. Defining the
-      function in the same file works; adding `use "r_main.qd"` doesn't help. Likely a missing bounds
-      check on a type-stack/local table past some nesting depth. Bisect under gdb for a backtrace.
-      **Not reproducible from this tree** —
-      `examples/doom/` currently contains only `build/`, `ffi/sdl_shim.o` and `wads/`; the `.qd`
-      sources are absent, so this needs the port restored before it can be bisected.
-
-- [ ] **quadc segfaults when `examples/doom/qd/d_main.qd` adds `use "info.qd"`.** `info.qd` is a
-      ~1400-line auto-generated const table that already imports fine from `p_mobj`, `p_pspr`, etc.
-      Pulling it into `d_main` to seed per-thing state-machine fields (`mobj_spawnstate`,
-      `state_nextstate`, …) crashes the compiler with no message. Probably the same class as the item
-      above — a module-graph shape crossing a limit in symbol resolution or type-stack state.
-
 ### Language design / scope
 
 From a feature-scope review (2026-08-13). Counts are whole-corpus greps over `lib/` + `examples/`
@@ -62,8 +43,9 @@ internals), 69 documented in `reference.def`.
       `enum` 1 are load-bearing in the doom port, so they stay regardless.)
 - [ ] Scope-vs-depth note, not a task: 39 stdlib modules, 506 public `.qd` functions plus the
       C-implemented modules (`strings`, `io`, `os`, `fmt`, `net`, `http`, `tls`), 10 CLI tools, 67k
-      lines of C++. The library and tooling surface has outrun the compiler's reliability — two
-      documented `quadc` segfaults on ordinary programs, above. Breadth is fine; depth under the
+      lines of C++. The library and tooling surface has outrun the compiler's reliability — the
+      two `quadc` segfaults that stood here are fixed (see Done), but both had been open and
+      unbisected for months while modules and tools kept landing. Breadth is fine; depth under the
       breadth is thin. Worth weighing before the next module or tool lands.
 
 ### Language review 2026-09-17
@@ -767,8 +749,9 @@ candidates did not, and R29 and R30 were withdrawn because of it.
       337 MCP server, 714 language, 25 C++ compiler tests; it was 2,064 at the review and the
       growth is this session's regression tests. The whole
       `[Unreleased]` changelog is completions, `--help` layout, `quadrepl`, `quaddoc` and diagnostic
-      prefixes — **no language changes except removals** — while the two `quadc` segfaults at the
-      top of this file remain unbisectable for want of the doom sources.
+      prefixes — **no language changes except removals** — while the two `quadc` segfaults that
+      stood at the top of this file went unbisected for want of the doom sources. (They are fixed
+      now; the sources were in git history at `01e766b6` the whole time.)
       **Open question**: is a tooling freeze for one release worth doing explicitly, or does the
       existing note already cover it?
 
@@ -795,6 +778,59 @@ candidates did not, and R29 and R30 were withdrawn because of it.
       halt) so kernel code can stay in `.qd`.
 
 ## Done
+
+### Compiler correctness — the two doom segfaults (2026-09-18)
+
+Both were reproduced and fixed. The port's sources are not in the working tree, but they are in
+git history at `01e766b6` (`git archive 01e766b6 examples/doom | tar -x -C <dir>`), which is what
+made this bisectable. Neither cause was what the notes guessed: nesting depth is bounded (the
+parser reports "Block nesting too deep"), and neither bug was in the type stack.
+
+- [x] **quadc segfaults when `d_main.qd` adds `use "info.qd"`.** The crash was in
+      `llvm::verifyModule` — and in `Module::print`, so the module could not even be dumped.
+      `generateFunction` dropped a function's native (compile-time-stack) version on the way past
+      its body, the moment the body turned out to call a non-native function. Bodies are generated
+      in module order, so a caller could already have emitted a call to `callee_native`;
+      `eraseFromParent()` then freed a `Function` those call instructions still pointed at, and the
+      module was left holding dangling operands. Importing `info.qd` into `d_main` is what put
+      `info::mobj_doomednum` (2 live uses at erase time), `mobj_spawnstate` and `mobj_painstate` in
+      that position. The map purge was also incomplete — it guessed two alias keys where the
+      function was registered under three.
+      Fix: `demoteNonNativeFunctions` settles the native set to a fixpoint after all declarations
+      and before any body is generated, so no call to a demoted native version is ever emitted; the
+      purge walks the map by pointer; and the remaining in-generation path only erases when
+      `use_empty()`. Regression test `tests/qd/regression/native_demotion/` (segfaults without the
+      fix).
+
+- [x] **quadc segfaults on a cross-module `pub fn` call from deeply-nested control flow.** Same
+      codegen bug — `r_perspective.qd` is not special, and neither is the `if`/`else` depth. What
+      that note did capture was real, though: the call was unresolved, because quadc re-validates
+      every imported `.qd` outside the main file's directory in a second, isolated pass, and that
+      pass could not see what the file imported. Three defects there, each reported as an undefined
+      identifier or a bogus stack underflow rather than as the missing import it was:
+      a relative `use` was resolved against the *main* file's directory instead of the importing
+      file's; a `use` written in the file being validated was treated as an intra-module import, so
+      its names never came into scope unqualified and `use "../ffi/sdl.qd"` left `sdl::Init` with
+      no known stack effect; and the derived namespace was not registered at all, so every
+      qualified call through such a file failed with "Module 'sdl' not imported". A file declaring
+      a constant that one of its imports also declares is now a shadow, not a duplicate — the main
+      pass already allowed it. Regression test
+      `tests/qd/file_imports/import_subdir_nested.qd`.
+
+      Effect on the port: **690 semantic errors → 7 on the pristine tree, from the compiler fix
+      alone**. The remaining ones are the port's own rot against five months of language drift
+      (`type` became a reserved word; two block-scoped locals read after their block; a dead call
+      to a helper that never existed; `netgame` never declared; `NUMSPRITES`/`NUMSTATES`/
+      `NUMMOBJTYPES` emitted twice in `info.qd`). With those patched in a scratch copy the whole
+      62 kLOC port compiles, codegens and **links** — `use "info.qd"` in `d_main.qd` included.
+
+      Two things found on the way and deliberately left open, since neither blocks the port:
+      `0xFFFFFFFFFFFF0000` is rejected as "out of range for i64" (hex and binary literals are bit
+      patterns and should parse as `uint64_t` then reinterpret — `integerLiteralProblem` in
+      `semantic_validator_typecheck.cc` and `safeParseInt64` in `generator_impl.h` both use
+      `from_chars` into `int64_t`), and the same file reached under two path spellings is loaded
+      twice, since `mLoadedModuleFiles` is keyed on the literal `use` string rather than the
+      resolved path.
 
 ### Language review 2026-09-17
 

@@ -146,8 +146,12 @@ namespace Qd {
 			}
 
 			// Check for duplicate constant name
-			// Skip this check if the constant was pre-collected from main file (for sibling namespace support)
-			if (mDefinedConstants.find(constant->name()) != mDefinedConstants.end() &&
+			// Skip this check if the constant was pre-collected from main file (for sibling namespace support),
+			// or if the name so far only came from a merged file import - this file declaring it too is a
+			// shadow, not a redefinition. The name is dropped from that set here so a second declaration
+			// in this file still reports.
+			if (mMergedImportedConstants.erase(constant->name()) == 0 &&
+					mDefinedConstants.find(constant->name()) != mDefinedConstants.end() &&
 					mPreCollectedConstants.find(constant->name()) == mPreCollectedConstants.end()) {
 				std::string errorMsg = "Duplicate constant definition: '" + constant->name() + "'";
 				reportError(constant, errorMsg.c_str());
@@ -403,15 +407,16 @@ namespace Qd {
 
 			mImportedModules.insert(moduleName);
 
-			// For top-level file imports (not intra-module imports), also register the derived namespace
-			// This allows "use "calculator.qd"" to work with "calculator::function"
-			// But for intra-module imports like "use helper.qd" inside a module, we want functions
-			// to remain in the parent module's namespace, not create a new "helper" namespace
-			if (!mIsModuleFile) {
-				std::string packageName = getPackageFromModuleName(moduleName);
-				if (packageName != moduleName) {
-					mImportedModules.insert(packageName);
-				}
+			// For file imports, also register the derived namespace.
+			// This allows "use "calculator.qd"" to work with "calculator::function".
+			// A module file being validated on its own needs this too: `use "../ffi/sdl.qd"`
+			// is what puts `sdl::` in scope, and the main-file pass already registers exactly
+			// these two names for the same file (see the scopedImports block in pass 3c).
+			// Leaving it out here made every qualified call in a module that imports an FFI
+			// wrapper by path fail with "Module 'sdl' not imported" in that pass alone.
+			std::string packageName = getPackageFromModuleName(moduleName);
+			if (packageName != moduleName) {
+				mImportedModules.insert(packageName);
 			}
 
 			// Only report errors for missing modules if this is the main entry point (not a module file)

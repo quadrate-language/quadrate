@@ -1,0 +1,9 @@
+// A relative `use` inside an imported file resolves against that file's own
+// directory. Resolving it against the main file's directory instead dropped the
+// import silently, and every constant it defined then read as undefined.
+use "nested/sky.qd"
+
+fn main() {
+	init_sky_map
+	skytexturemid print nl
+}

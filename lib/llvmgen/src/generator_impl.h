@@ -667,6 +667,8 @@ namespace Qd {
 		// True when generateInstruction lowers 'inst' onto the compile-time stack.
 		static bool isCompileTimeStackInstruction(AstNodeInstruction* inst, bool allowFloat);
 		bool analyzeCalleesAllNative(IAstNode* node);
+		// Runs after all functions are declared and before any body is generated.
+		void demoteNonNativeFunctions(IAstNode* root);
 	};
 
 } // namespace Qd

@@ -561,7 +561,8 @@ namespace Qd {
 						}
 						// Load the module if not already loaded
 						if (mImportedModules.find(use->module()) == mImportedModules.end()) {
-							loadModuleDefinitions(use->module(), moduleName, false);
+							loadModuleDefinitions(use->module(), moduleName, false,
+									std::filesystem::path(siblingFile).parent_path().string());
 						}
 					}
 				}

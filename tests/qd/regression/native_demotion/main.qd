@@ -1,0 +1,9 @@
+// Dropping a function's native version after a caller already referenced it left
+// the LLVM module holding a freed Function, which crashed LLVM's own verifier
+// with no diagnostic. Native eligibility is settled before any body is generated.
+use "helpers.qd"
+
+fn main() {
+	41 caller print nl
+	1 callee print nl
+}

@@ -238,8 +238,10 @@ namespace Qd {
 		// Pass 1: Collect all function definitions
 		void collectDefinitions(IAstNode* node);
 
-		void loadModuleDefinitions(
-				const std::string& moduleName, const std::string& currentPackage, bool reportErrors = true);
+		// importerDirectory is the directory of the file containing the `use`, so a relative
+		// path resolves against its own file rather than against the main source file.
+		void loadModuleDefinitions(const std::string& moduleName, const std::string& currentPackage,
+				bool reportErrors = true, const std::string& importerDirectory = "");
 
 		// Helper: Try to load a module from a directory (module.qd or glob *.qd)
 		bool tryLoadModuleFromDirectory(const std::string& moduleDir, const std::string& moduleName);
@@ -386,6 +388,12 @@ namespace Qd {
 		// duplicate errors when collectDefinitions runs on the main file
 		std::unordered_set<std::string> mPreCollectedStructs;
 		std::unordered_set<std::string> mPreCollectedConstants;
+
+		// Constants brought into scope unqualified by a merged file import. A file may declare
+		// a constant that one of its imports also declares - r_plane.qd and r_draw.qd in the
+		// doom port both define SBARHEIGHT - and that is not a redefinition, it is two modules
+		// each owning a name. Only a second declaration in the same file is.
+		std::unordered_set<std::string> mMergedImportedConstants;
 
 		// Symbol table: all defined tests
 		std::unordered_set<std::string> mDefinedTests;

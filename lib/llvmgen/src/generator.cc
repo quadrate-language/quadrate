@@ -567,6 +567,111 @@ namespace Qd {
 		return true;
 	}
 
+	// Drops the native (compile-time-stack) version of every function that calls a non-native
+	// one, iterating until the set stops shrinking.
+	//
+	// The same test used to run inside generateFunction, on the way past each body. That is too
+	// late: bodies are generated in module order, so a caller could already have emitted a call
+	// to `callee_native` by the time the callee's own body revealed it was not native-eligible,
+	// and the erase then freed a Function that those call instructions still pointed at. The
+	// module was left holding dangling operands, which crashed LLVM inside verifyModule - and
+	// inside Module::print, so the crash could not even be dumped. Demoting to a fixpoint here,
+	// before a single body exists, means no call to a demoted native version is ever emitted.
+	void LlvmGenerator::Impl::demoteNonNativeFunctions(IAstNode* root) {
+		struct Candidate {
+			AstNodeFunctionDeclaration* funcNode;
+			std::string prefix;
+			std::vector<std::string> registerNames;
+		};
+
+		auto registerNamesFor = [this](AstNodeFunctionDeclaration* funcNode, const std::string& namePrefix) {
+			std::vector<std::string> names;
+			if (funcNode->hasReceiver()) {
+				std::string receiver = funcNode->receiverType();
+				names.push_back(receiver + "::" + funcNode->name());
+				if (namePrefix != "main" && receiver.find("::") == std::string::npos) {
+					names.push_back(namePrefix + "::" + receiver + "::" + funcNode->name());
+				}
+			} else {
+				names.push_back(funcNode->name());
+				if (namePrefix != "main") {
+					names.push_back(namePrefix + "::" + funcNode->name());
+				}
+			}
+			return names;
+		};
+
+		std::vector<Candidate> candidates;
+		for (const auto& modulePair : moduleASTs) {
+			if (!modulePair.second) {
+				continue;
+			}
+			for (auto* child : modulePair.second->children()) {
+				if (auto* funcNode = dynamic_cast<AstNodeFunctionDeclaration*>(child)) {
+					candidates.push_back({funcNode, modulePair.first, registerNamesFor(funcNode, modulePair.first)});
+				}
+			}
+		}
+		if (root) {
+			for (auto* child : root->children()) {
+				if (auto* funcNode = dynamic_cast<AstNodeFunctionDeclaration*>(child)) {
+					candidates.push_back({funcNode, mainModuleName, registerNamesFor(funcNode, mainModuleName)});
+				}
+			}
+		}
+
+		const std::string savedPrefix = currentModulePrefix;
+		bool changed = true;
+		while (changed) {
+			changed = false;
+			for (const auto& candidate : candidates) {
+				llvm::Function* nativeFn = nullptr;
+				for (const auto& name : candidate.registerNames) {
+					auto it = nativeFunctions.find(name);
+					if (it != nativeFunctions.end()) {
+						nativeFn = it->second;
+						break;
+					}
+				}
+				if (!nativeFn) {
+					continue;
+				}
+				auto* body = candidate.funcNode->body();
+				if (!body) {
+					continue;
+				}
+				currentModulePrefix = candidate.prefix;
+				bool calleesAllNative = true;
+				for (auto* child : body->children()) {
+					if (!analyzeCalleesAllNative(child)) {
+						calleesAllNative = false;
+						break;
+					}
+				}
+				if (calleesAllNative) {
+					continue;
+				}
+				// Purge every name pointing at this function, not just the ones it was looked up
+				// under: main-file functions are registered both qualified and unqualified, and a
+				// merged module adds a third. A missed alias is a dangling pointer handed to the
+				// next caller that looks the name up.
+				for (auto it = nativeFunctions.begin(); it != nativeFunctions.end();) {
+					if (it->second == nativeFn) {
+						nativeFuncInfo.erase(it->first);
+						it = nativeFunctions.erase(it);
+					} else {
+						++it;
+					}
+				}
+				if (nativeFn->use_empty()) {
+					nativeFn->eraseFromParent();
+				}
+				changed = true;
+			}
+		}
+		currentModulePrefix = savedPrefix;
+	}
+
 	// Check if all user function calls in a body have native versions.
 	// Used to verify a native function won't call non-native user functions.
 	bool LlvmGenerator::Impl::analyzeCalleesAllNative(IAstNode* node) {
@@ -1007,20 +1112,22 @@ namespace Qd {
 			}
 			// If callees aren't all native, remove the native function declaration
 			if (nativeIt != nativeFunctions.end() && !calleesAllNative) {
+				// Backstop: demoteNonNativeFunctions has already settled the native set before any
+				// body existed, so reaching here means a shape it did not cover. Drop every name
+				// pointing at this function, and only erase it if nothing references it yet -
+				// erasing a Function that call instructions still point at is what left the module
+				// with dangling operands and crashed LLVM's own verifier.
 				auto* erasedFn = nativeIt->second;
-				erasedFn->eraseFromParent();
-				nativeFunctions.erase(registerName);
-				nativeFuncInfo.erase(registerName);
-				// Also remove any other name that points to the same erased function
-				// (main-file functions are registered under both qualified and unqualified names)
-				auto unqualIt = nativeFunctions.find(funcNode->name());
-				if (unqualIt != nativeFunctions.end() && unqualIt->second == erasedFn) {
-					nativeFunctions.erase(unqualIt);
-					nativeFuncInfo.erase(funcNode->name());
+				for (auto it = nativeFunctions.begin(); it != nativeFunctions.end();) {
+					if (it->second == erasedFn) {
+						nativeFuncInfo.erase(it->first);
+						it = nativeFunctions.erase(it);
+					} else {
+						++it;
+					}
 				}
-				if (namePrefix != "main" && mergedModules.count(namePrefix) > 0) {
-					nativeFunctions.erase(funcNode->name());
-					nativeFuncInfo.erase(funcNode->name());
+				if (erasedFn->use_empty()) {
+					erasedFn->eraseFromParent();
 				}
 				nativeIt = nativeFunctions.end(); // Invalidate iterator
 				currentFunctionIsIntegerOnly = false;
@@ -2623,6 +2730,11 @@ namespace Qd {
 			}
 		}
 		printTiming("declareModuleFunctions");
+
+		// Every function is declared now, so the native set can be settled before any call to a
+		// native version is emitted.
+		demoteNonNativeFunctions(root);
+		printTiming("demoteNonNativeFunctions");
 
 		// Second pass: GENERATE function bodies from all loaded modules
 		for (const auto& modulePair : moduleASTs) {
