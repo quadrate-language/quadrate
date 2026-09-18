@@ -4,12 +4,12 @@ use strings
 fn main() {
 	// char_at - get ASCII code at index
 	"=== char_at ===" print nl
-	"hello" 0 strings::char_at! print nl    // 104 (h)
-	"hello" 1 strings::char_at! print nl    // 101 (e)
-	"hello" 4 strings::char_at! print nl    // 111 (o)
-	"ABC" 0 strings::char_at! print nl      // 65 (A)
-	"ABC" 1 strings::char_at! print nl      // 66 (B)
-	"ABC" 2 strings::char_at! print nl      // 67 (C)
+	"hello" 0 strings::char_at print nl    // 104 (h)
+	"hello" 1 strings::char_at print nl    // 101 (e)
+	"hello" 4 strings::char_at print nl    // 111 (o)
+	"ABC" 0 strings::char_at print nl      // 65 (A)
+	"ABC" 1 strings::char_at print nl      // 66 (B)
+	"ABC" 2 strings::char_at print nl      // 67 (C)
 
 	// from_char - create string from char code
 	"=== from_char ===" print nl

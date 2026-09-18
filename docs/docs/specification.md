@@ -1719,7 +1719,7 @@ String manipulation.
 - `index_of`, `last_index_of`, `substring!`
 - `upper`, `lower`, `trim`, `trim_left`, `trim_right`
 - `split!`, `join!`, `replace!`, `repeat`, `reverse`
-- `char_at!`, `from_char`, `compare`, `count`
+- `char_at`, `from_char`, `compare`, `count`
 
 ### 13.3 io
 

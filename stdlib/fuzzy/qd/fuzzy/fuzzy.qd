@@ -61,7 +61,7 @@ pub fn distance(a:str b:str -- dist:i64) {
 				loop {
 					j len_b >= if { break }
 
-					a i strings::char_at! b j strings::char_at! == if {
+					a i strings::char_at b j strings::char_at == if {
 						// Characters match: no edit needed
 						prev_row j 8 * mem::get_i64 curr_row j 1 + 8 * mem::set_i64
 					} else {
@@ -203,13 +203,13 @@ fn word_boundary_match(query:str target:str -- matches:i64) {
 			qi qlen >= ti tlen >= or if { break }
 
 			at_boundary if {
-				query qi strings::char_at! target ti strings::char_at! == if {
+				query qi strings::char_at target ti strings::char_at == if {
 					qi 1 + -> qi
 				}
 			}
 
 			// Check for next boundary
-			target ti strings::char_at! 95 == if {
+			target ti strings::char_at 95 == if {
 				// 95 = '_'
 				1 -> at_boundary
 			} else {

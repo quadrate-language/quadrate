@@ -150,13 +150,13 @@ fn is_number(tok:str -- result:i64) {
 	0 -> second
 	0 -> result
 	tok strings::len 0 > if {
-		tok 0 strings::char_at! -> first
+		tok 0 strings::char_at -> first
 		first unicode::is_digit if {
 			1 -> result
 		} else {
 			first unicode::underscore == first unicode::minus == or if {
 				tok strings::len 1 > if {
-					tok 1 strings::char_at! -> second
+					tok 1 strings::char_at -> second
 					second unicode::is_digit -> result
 				}
 			}
@@ -168,7 +168,7 @@ fn is_number(tok:str -- result:i64) {
 fn process_token(s:ptr tok:str -- ) {
 	tok is_number -> is_num
 	is_num if {
-		tok 0 strings::char_at! -> first
+		tok 0 strings::char_at -> first
 		first unicode::underscore == if {
 			tok 1 tok strings::len 1 - strings::substring! strconv::parse_float! -> val
 			s 0.0 val - stack_push
@@ -191,7 +191,7 @@ fn process_operator(s:ptr op:str -- ) {
 	0.0 -> q
 	0.0 -> r
 	"" -> octal
-	op 0 strings::char_at! switch {
+	op 0 strings::char_at switch {
 		unicode::plus {
 			s 2 stack_check if {
 				s stack_pop -> b
@@ -308,7 +308,7 @@ fn process_operator(s:ptr op:str -- ) {
 			0 os::exit
 		}
 		_ {
-			op 0 strings::char_at! 8 strconv::format_int -> octal
+			op 0 strings::char_at 8 strconv::format_int -> octal
 			"dc: '" print op print "' (0" print octal print ") unimplemented" print nl
 		}
 	}

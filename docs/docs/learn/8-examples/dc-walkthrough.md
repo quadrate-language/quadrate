@@ -116,13 +116,13 @@ underscore `_` as the negative sign (since `-` is subtraction):
 fn is_number(tok:str -- result:i64) {
     0 -> result
     tok strings::len 0 > if {
-        tok 0 strings::char_at! -> first
+        tok 0 strings::char_at -> first
         first unicode::is_digit if {
             1 -> result
         } else {
             first unicode::underscore == first unicode::minus == or if {
                 tok strings::len 1 > if {
-                    tok 1 strings::char_at! -> second
+                    tok 1 strings::char_at -> second
                     second unicode::is_digit -> result
                 }
             }
@@ -145,7 +145,7 @@ The pattern is:
 fn process_token(s:ptr tok:str -- ) {
     tok is_number -> is_num
     is_num if {
-        tok 0 strings::char_at! -> first
+        tok 0 strings::char_at -> first
         first unicode::underscore == if {
             // dc convention: `_5` means -5
             tok 1 tok strings::len 1 - strings::substring! cast<f64> -> val
@@ -173,7 +173,7 @@ on the first character of the operator token:
 
 ```qd
 fn process_operator(s:ptr op:str -- ) {
-    op 0 strings::char_at! switch {
+    op 0 strings::char_at switch {
         unicode::plus {
             s 2 stack_check if {
                 s stack_pop -> b

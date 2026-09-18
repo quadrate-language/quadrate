@@ -75,14 +75,14 @@ fn parse_checksum_line(line:str -- hash:str filename:str valid:i64) {
 			i 64 >= if {
 				break
 			}
-			line i strings::char_at! strings::from_char -> ch
+			line i strings::char_at strings::from_char -> ch
 			hash_tmp ch strings::concat -> hash_tmp
 			i 1 + -> i
 		}
 		hash_tmp -> hash
 
 		// Check separator (space + space or space + asterisk)
-		line 64 strings::char_at! 32 == line 64 strings::char_at! 42 == or if {
+		line 64 strings::char_at 32 == line 64 strings::char_at 42 == or if {
 			// Extract filename (after position 66)
 			66 -> start
 			"" -> fname_tmp
@@ -90,7 +90,7 @@ fn parse_checksum_line(line:str -- hash:str filename:str valid:i64) {
 				start line_len >= if {
 					break
 				}
-				line start strings::char_at! strings::from_char -> ch
+				line start strings::char_at strings::from_char -> ch
 				fname_tmp ch strings::concat -> fname_tmp
 				start 1 + -> start
 			}
@@ -108,7 +108,7 @@ fn extract_line(content:str start:i64 end_pos:i64 -- line:str) {
 		start end_pos >= if {
 			break
 		}
-		content start strings::char_at! strings::from_char -> ch
+		content start strings::char_at strings::from_char -> ch
 		line ch strings::concat -> line
 		start 1 + -> start
 	}
@@ -135,7 +135,7 @@ fn check_file(path:str quiet:i64 status_mode:i64 warn_mode:i64 ignore_missing:i6
 
 fn is_flag(arg:str -- result:i64) {
 	arg strings::len 0 > if {
-		arg 0 strings::char_at! 45 ==
+		arg 0 strings::char_at 45 ==
 	} else {
 		0
 	}

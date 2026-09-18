@@ -23,7 +23,7 @@ pub fn encode(s:str -- hex:str) {
 			i slen >= if {
 				break
 			}
-			s i strings::char_at! -> byte
+			s i strings::char_at -> byte
 
 			// High nibble
 			byte 4 shr 15 and -> high
@@ -75,7 +75,7 @@ pub fn encode_lower(s:str -- hex:str) {
 			i slen >= if {
 				break
 			}
-			s i strings::char_at! -> byte
+			s i strings::char_at -> byte
 
 			// High nibble
 			byte 4 shr 15 and -> high
@@ -150,8 +150,8 @@ pub fn decode(hex:str -- s:str) {
 				break
 			}
 
-			hex i strings::char_at! hex_char_value -> high
-			hex i 1 + strings::char_at! hex_char_value -> low
+			hex i strings::char_at hex_char_value -> high
+			hex i 1 + strings::char_at hex_char_value -> low
 
 			high -1 != low -1 != and if {
 				high 4 shl low or -> byte
@@ -211,8 +211,8 @@ pub fn decode_byte(hex:str -- b:i64) {
 	hex strings::len 2 != if {
 		-1
 	} else {
-		hex 0 strings::char_at! hex_char_value -> high
-		hex 1 strings::char_at! hex_char_value -> low
+		hex 0 strings::char_at hex_char_value -> high
+		hex 1 strings::char_at hex_char_value -> low
 
 		high -1 == low -1 == or if {
 			-1
@@ -246,7 +246,7 @@ pub fn is_valid(hex:str -- valid:i64) {
 				i hlen >= valid 0 == or if {
 					break
 				}
-				hex i strings::char_at! hex_char_value -1 == if {
+				hex i strings::char_at hex_char_value -1 == if {
 					0 -> valid
 				}
 				i 1 + -> i

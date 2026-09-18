@@ -10,13 +10,13 @@ use unicode
 fn main() {
 	// The two layers agree, character by character
 	"é" strings::is_alpha print nl
-	"é" 0 strings::char_at! unicode::is_alpha print nl
+	"é" 0 strings::char_at unicode::is_alpha print nl
 
 	"é" strings::upper print nl
-	"é" 0 strings::char_at! unicode::to_upper strings::from_char print nl
+	"é" 0 strings::char_at unicode::to_upper strings::from_char print nl
 
 	"Ä" strings::lower print nl
-	"Ä" 0 strings::char_at! unicode::to_lower strings::from_char print nl
+	"Ä" 0 strings::char_at unicode::to_lower strings::from_char print nl
 
 	// Case mapping across the cased scripts
 	233 unicode::to_upper print nl        // é -> É

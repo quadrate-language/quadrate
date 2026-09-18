@@ -22,6 +22,10 @@
 #define STRINGS_ERR_ALLOC 3			/**< Memory allocation failed */
 #define STRINGS_ERR_INVALID_ARG 4	/**< Invalid argument */
 
+/** Returned by char_at for an index outside the string. Not a codepoint, so it matches no
+ *  character a scanner compares against. */
+#define STRINGS_NOT_A_CHAR (-1)
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -147,8 +151,8 @@ int usr_strings_compare(qd_context* ctx);
  * @param ctx Execution context
  * @return Execution result
  *
- * Returns the ASCII/Unicode code point at the given index.
- * Aborts if index is out of bounds.
+ * Returns the Unicode code point at the given index, or STRINGS_NOT_A_CHAR when the index
+ * is outside the string. Total: it pushes the code point alone, with no status word above it.
  */
 int usr_strings_char_at(qd_context* ctx);
 

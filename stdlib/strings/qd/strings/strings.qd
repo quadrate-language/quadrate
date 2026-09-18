@@ -8,6 +8,10 @@ pub const ErrAlloc = 3
 /// Error: Invalid argument.
 pub const ErrInvalidArg = 4
 
+/// Returned by char_at for an index outside the string. Not a codepoint, so it compares
+/// equal to no character.
+pub const NotAChar = -1
+
 import "libstrings.a" as "strings" {
 	/// Get string length in characters.
 	/// Counts UTF-8 codepoints, so "héllo" is 5 even though it occupies 6 bytes.
@@ -84,6 +88,9 @@ import "libstrings.a" as "strings" {
 	pub fn trim(str:str -- result:str)
 
 	/// Extract substring.
+	/// A negative index, or a start past the end of the string, is ErrOutOfBounds; a length
+	/// that runs past the end is truncated to what is there. Use strings::slice for the
+	/// clamping, non-fallible form.
 	/// @param str str Source string
 	/// @param start i64 Starting index
 	/// @param length i64 Number of characters
@@ -101,15 +108,19 @@ import "libstrings.a" as "strings" {
 	/// @example "hello" "l" "L" strings::replace! print  // "heLLo"
 	pub fn replace(str:str old:str new:str -- result:str)!
 
-	/// Get character code at index.
+	/// Get character code at index, or NotAChar when the index is outside the string.
 	/// @param str str Input string
 	/// The index counts characters and the result is a Unicode codepoint, so indexing
 	/// never lands in the middle of a multi-byte character.
+	/// An index past the end, or a negative one, gives NotAChar (-1) rather than an error:
+	/// scanners read "the character here, if there is one", and -1 matches nothing they
+	/// test for, so the loop ends on its own. Use strings::len to tell "past the end" from
+	/// a character the string really holds.
 	/// @param index i64 Character position
-	/// @return char_code i64 Unicode codepoint
-	/// @error ErrOutOfBounds Index out of bounds
-	/// @example "héllo" 1 strings::char_at! print  // 233 ('é')
-	pub fn char_at(str:str index:i64 -- char_code:i64)!
+	/// @return char_code i64 Unicode codepoint, or NotAChar
+	/// @example "héllo" 1 strings::char_at print  // 233 ('é')
+	/// @example "héllo" 9 strings::char_at print  // -1 (NotAChar)
+	pub fn char_at(str:str index:i64 -- char_code:i64)
 
 	/// Create string from a Unicode codepoint, encoded as UTF-8.
 	/// A value outside the Unicode range, or a surrogate, gives the empty string.

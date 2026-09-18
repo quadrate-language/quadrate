@@ -16,6 +16,11 @@
       "name": "ErrOutOfBounds",
       "value": "2",
       "description": "Error: Index out of bounds."
+    },
+    {
+      "name": "NotAChar",
+      "value": "-1",
+      "description": "Returned by char_at for an index outside the string. Not a codepoint, so it compares equal to no character."
     }
   ],
   "structs": [
@@ -55,12 +60,12 @@
     {
       "name": "char_at",
       "signature": "(str:str index:i64 -- char_code:i64)",
-      "failable": true,
-      "description": "Get character code at index. The index counts characters and the result is a Unicode codepoint, so indexing never lands in the middle of a multi-byte character.",
+      "failable": false,
+      "description": "Get character code at index, or NotAChar when the index is outside the string. The index counts characters and the result is a Unicode codepoint, so indexing never lands in the middle of a multi-byte character. An index past the end, or a negative one, gives NotAChar (-1) rather than an error: scanners read \"the character here, if there is one\", and -1 matches nothing they test for, so the loop ends on its own. Use strings::len to tell \"past the end\" from a character the string really holds.",
       "params": [{"name": "str", "type": "str", "description": "Input string"}, {"name": "index", "type": "i64", "description": "Character position"}],
-      "returns": [{"name": "char_code", "type": "i64", "description": "Unicode codepoint"}],
-      "errors": [{"code": "ErrOutOfBounds", "description": "Index out of bounds"}],
-      "examples": ["\"héllo\" 1 strings::char_at! print  // 233 ('é')"]
+      "returns": [{"name": "char_code", "type": "i64", "description": "Unicode codepoint, or NotAChar"}],
+      "errors": [],
+      "examples": ["\"héllo\" 1 strings::char_at print  // 233 ('é')", "\"héllo\" 9 strings::char_at print  // -1 (NotAChar)"]
     },
     {
       "name": "column",
@@ -456,7 +461,7 @@
       "name": "substring",
       "signature": "(str:str start:i64 length:i64 -- result:str)",
       "failable": true,
-      "description": "Extract substring.",
+      "description": "Extract substring. A negative index, or a start past the end of the string, is ErrOutOfBounds; a length that runs past the end is truncated to what is there. Use strings::slice for the clamping, non-fallible form.",
       "params": [{"name": "str", "type": "str", "description": "Source string"}, {"name": "start", "type": "i64", "description": "Starting index"}, {"name": "length", "type": "i64", "description": "Number of characters"}],
       "returns": [{"name": "result", "type": "str", "description": "Extracted substring"}],
       "errors": [{"code": "ErrOutOfBounds", "description": "Index out of bounds"}],

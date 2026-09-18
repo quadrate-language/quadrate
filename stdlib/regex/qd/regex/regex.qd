@@ -598,7 +598,7 @@ pub fn (self:Regex) matches(s:str -- result:i64) {
 			break
 		}
 
-		s pos strings::char_at! -> c
+		s pos strings::char_at -> c
 		listid 1 + -> listid
 
 		// Build next state set
@@ -711,7 +711,7 @@ fn find_from(re:ptr s:str from:i64 -- start:i64 end:i64) {
 			clist 0 mem::get_i64 -> cn
 			cn 0 == if { break }
 
-			s pos strings::char_at! -> c
+			s pos strings::char_at -> c
 			listid 1 + -> listid
 
 			0 nlist 0 mem::set_i64

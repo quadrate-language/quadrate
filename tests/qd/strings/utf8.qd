@@ -11,7 +11,7 @@ fn main() {
 
 	// Lengths and indices are characters
 	s strings::len print nl
-	s 1 strings::char_at! print nl
+	s 1 strings::char_at print nl
 	s "ö" strings::index_of print nl
 	s 0 5 strings::substring! print nl
 	s 7 1 strings::substring! print nl
@@ -35,7 +35,7 @@ fn main() {
 
 	// Codepoints round-trip through from_char / char_at
 	233 strings::from_char print nl
-	"é" 0 strings::char_at! print nl
+	"é" 0 strings::char_at print nl
 	28450 strings::from_char print nl
 
 	// Width is measured in characters, and the pad is a whole character

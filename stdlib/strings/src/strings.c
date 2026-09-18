@@ -11,12 +11,6 @@
 #include <string.h>
 #include <stdint.h>
 
-// Error codes matching module.qd
-#define STRINGS_ERR_OK 1            // Success (matches builtin Ok)
-#define STRINGS_ERR_OUT_OF_BOUNDS 2 // Index out of bounds
-#define STRINGS_ERR_ALLOC 3         // Allocation failed
-#define STRINGS_ERR_INVALID_ARG 4   // Invalid argument
-
 #define STRINGS_POP(ctx, elem, func_name) do { \
 	if (qd_stack_pop((ctx)->st, (elem)) != QD_STACK_OK) { \
 		fprintf(stderr, "Fatal error in strings::" func_name ": Stack underflow\n"); \
@@ -441,16 +435,24 @@ int usr_strings_substring(qd_context* ctx) {
 	int64_t length = len_elem.value.i;
 	size_t str_len = qd_string_length(str_elem.value.s);
 
+	// An out-of-range cut is the error this function declares, so it is returned rather than
+	// aborted on. It used to abort, which made the `switch` every caller wraps it in dead code:
+	// the process was gone before any arm ran. Use strings::slice for the clamping form that
+	// cannot fail at all.
 	if (start < 0 || length < 0) {
-		fprintf(stderr, "Fatal error in strings::substring: Negative indices not allowed\n");
 		qd_string_release(str_elem.value.s);
-		abort();
+		ctx->error_code = STRINGS_ERR_OUT_OF_BOUNDS;
+		qd_set_error_msg(ctx, "index out of bounds");
+		qd_push_i(ctx, STRINGS_ERR_OUT_OF_BOUNDS);
+		return (int){STRINGS_ERR_OUT_OF_BOUNDS};
 	}
 
 	if ((size_t)start > str_len) {
-		fprintf(stderr, "Fatal error in strings::substring: Start index out of bounds\n");
 		qd_string_release(str_elem.value.s);
-		abort();
+		ctx->error_code = STRINGS_ERR_OUT_OF_BOUNDS;
+		qd_set_error_msg(ctx, "index out of bounds");
+		qd_push_i(ctx, STRINGS_ERR_OUT_OF_BOUNDS);
+		return (int){STRINGS_ERR_OUT_OF_BOUNDS};
 	}
 
 	// `start` and `length` count codepoints, so the cut always lands on a character boundary.
@@ -718,29 +720,25 @@ int usr_strings_compare(qd_context* ctx) {
 	return (int){0};
 }
 
-// char_at - get character code at index ( str:s index:i -- char_code:i )!
+// char_at - get character code at index ( str:s index:i -- char_code:i )
+//
+// Total: an index outside the string gives NotAChar (-1) rather than an error. Scanners are the
+// whole readership of this function, and they all read "the character here, if there is one" --
+// json's, uri's and path's loops each bounds-check before every call. As a fallible function it
+// had to be called with `!` from those non-fallible scanners, so a single missing check aborted
+// the host process: json::get_int on the malformed document {"a":1, killed it outright. -1 is
+// not a codepoint, so it compares equal to no character a scanner tests for and the loop ends on
+// its own; the same sentinel convention as strings::index_of, and the same totality as
+// strings::slice, which is substring's non-aborting counterpart.
 int usr_strings_char_at(qd_context* ctx) {
 	qd_stack_element_t index_elem, str_elem;
-	qd_stack_error err = qd_stack_pop(ctx->st, &index_elem);
-	if (err != QD_STACK_OK) {
-		qd_push_i(ctx, STRINGS_ERR_INVALID_ARG);
-		return (int){STRINGS_ERR_INVALID_ARG};
-	}
-	err = qd_stack_pop(ctx->st, &str_elem);
-	if (err != QD_STACK_OK) {
-		qd_push_i(ctx, STRINGS_ERR_INVALID_ARG);
-		return (int){STRINGS_ERR_INVALID_ARG};
-	}
+	STRINGS_POP(ctx, &index_elem, "char_at");
+	STRINGS_POP(ctx, &str_elem, "char_at");
 
-	if (str_elem.type != QD_STACK_TYPE_STR) {
-		qd_push_i(ctx, STRINGS_ERR_INVALID_ARG);
-		return (int){STRINGS_ERR_INVALID_ARG};
-	}
-
-	if (index_elem.type != QD_STACK_TYPE_INT) {
-		qd_string_release(str_elem.value.s);
-		qd_push_i(ctx, STRINGS_ERR_INVALID_ARG);
-		return (int){STRINGS_ERR_INVALID_ARG};
+	if (str_elem.type != QD_STACK_TYPE_STR || index_elem.type != QD_STACK_TYPE_INT) {
+		fprintf(stderr, "Fatal error in strings::char_at: Expected a string and an integer\n");
+		if (str_elem.type == QD_STACK_TYPE_STR) qd_string_release(str_elem.value.s);
+		abort();
 	}
 
 	int64_t index = index_elem.value.i;
@@ -758,18 +756,14 @@ int usr_strings_char_at(qd_context* ctx) {
 	// ASCII, which is nearly all of the strings a scan like that runs over.
 	if (index < 0) {
 		qd_string_release(str_elem.value.s);
-		ctx->error_code = STRINGS_ERR_OUT_OF_BOUNDS;
-		qd_set_error_msg(ctx, "index out of bounds");
-		qd_push_i(ctx, STRINGS_ERR_OUT_OF_BOUNDS);
-		return (int){STRINGS_ERR_OUT_OF_BOUNDS};
+		qd_push_i(ctx, STRINGS_NOT_A_CHAR);
+		return (int){0};
 	}
 	const size_t offset = qd_string_char_offset(str_elem.value.s, (size_t)index);
 	if (offset >= bytes) {
 		qd_string_release(str_elem.value.s);
-		ctx->error_code = STRINGS_ERR_OUT_OF_BOUNDS;
-		qd_set_error_msg(ctx, "index out of bounds");
-		qd_push_i(ctx, STRINGS_ERR_OUT_OF_BOUNDS);
-		return (int){STRINGS_ERR_OUT_OF_BOUNDS};
+		qd_push_i(ctx, STRINGS_NOT_A_CHAR);
+		return (int){0};
 	}
 
 	uint32_t cp = 0;
@@ -778,9 +772,7 @@ int usr_strings_char_at(qd_context* ctx) {
 
 	qd_string_release(str_elem.value.s);
 
-	// Push result then Ok
 	qd_push_i(ctx, char_code);
-	qd_push_i(ctx, STRINGS_ERR_OK);
 	return (int){0};
 }
 

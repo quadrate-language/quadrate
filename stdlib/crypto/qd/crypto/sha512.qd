@@ -269,7 +269,7 @@ pub fn (h:Sha512) update(data:str -- h2:Sha512)! {
 		loop {
 			buflen 128 >= if { break }
 			i dlen >= if { break }
-			data i strings::char_at? buf buflen mem::set_byte
+			data i strings::char_at buf buflen mem::set_byte
 			buflen 1 + -> buflen
 			i 1 + -> i
 		}

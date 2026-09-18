@@ -10,6 +10,7 @@ Error codes: Ok=1 (success), specific errors start at 2
 | `ErrAlloc` | `3` | Error: Memory allocation failed. |
 | `ErrInvalidArg` | `4` | Error: Invalid argument. |
 | `ErrOutOfBounds` | `2` | Error: Index out of bounds. |
+| `NotAChar` | `-1` | Returned by char_at for an index outside the string. Not a codepoint, so it compares equal to no character. |
 
 ## Functions
 
@@ -80,9 +81,9 @@ Center string with padding on both sides.
 
 ### `fn` char_at
 
-Get character code at index. The index counts characters and the result is a Unicode codepoint, so indexing never lands in the middle of a multi-byte character.
+Get character code at index, or NotAChar when the index is outside the string. The index counts characters and the result is a Unicode codepoint, so indexing never lands in the middle of a multi-byte character. An index past the end, or a negative one, gives NotAChar (-1) rather than an error: scanners read "the character here, if there is one", and -1 matches nothing they test for, so the loop ends on its own. Use strings::len to tell "past the end" from a character the string really holds.
 
-**Signature:** `(str:str index:i64 -- char_code:i64)!`
+**Signature:** `(str:str index:i64 -- char_code:i64)`
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
@@ -91,16 +92,13 @@ Get character code at index. The index counts characters and the result is a Uni
 
 | Output | Type | Description |
 |--------|------|-------------|
-| `char_code` | `i64` | Unicode codepoint |
-
-| Error | Description |
-|-------|-------------|
-| `strings::ErrOutOfBounds` | Index out of bounds |
+| `char_code` | `i64` | Unicode codepoint, or NotAChar |
 
 **Example:**
 
 ```qd
-"héllo" 1 strings::char_at! print  // 233 ('é')
+"héllo" 1 strings::char_at print  // 233 ('é')
+"héllo" 9 strings::char_at print  // -1 (NotAChar)
 ```
 ---
 
@@ -964,7 +962,7 @@ Check if string starts with prefix.
 
 ### `fn` substring
 
-Extract substring.
+Extract substring. A negative index, or a start past the end of the string, is ErrOutOfBounds; a length that runs past the end is truncated to what is there. Use strings::slice for the clamping, non-fallible form.
 
 **Signature:** `(str:str start:i64 length:i64 -- result:str)!`
 

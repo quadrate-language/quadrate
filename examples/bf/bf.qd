@@ -34,7 +34,7 @@ fn main() {
 			break
 		}
 
-		code ip strings::char_at! switch {
+		code ip strings::char_at switch {
 			unicode::gt {
 				dp ++ -> dp
 			}
@@ -53,7 +53,7 @@ fn main() {
 			unicode::comma {
 				io::readline! -> ok -> line
 				ok 0 != line strings::len 0 > and if {
-					line 0 strings::char_at!
+					line 0 strings::char_at
 				} else {
 					0
 				}
@@ -67,7 +67,7 @@ fn main() {
 							drop break
 						}
 						ip ++ -> ip
-						code ip strings::char_at! switch {
+						code ip strings::char_at switch {
 							unicode::lbracket {
 								++
 							}
@@ -86,7 +86,7 @@ fn main() {
 							drop break
 						}
 						ip -- -> ip
-						code ip strings::char_at! switch {
+						code ip strings::char_at switch {
 							unicode::rbracket {
 								++
 							}

@@ -11,7 +11,7 @@ fn find_last_slash(s:str -- idx:i64) {
 	-1 -> result
 	0 slen 1 for it {
 		it -> i
-		s i strings::char_at! 47 == if {
+		s i strings::char_at 47 == if {
 			i -> result
 		}
 	}
@@ -24,7 +24,7 @@ fn find_last_dot(s:str -- idx:i64) {
 	-1 -> result
 	0 slen 1 for it {
 		it -> i
-		s i strings::char_at! 46 == if {
+		s i strings::char_at 46 == if {
 			i -> result
 		}
 	}
@@ -133,7 +133,7 @@ pub fn join(p1:str p2:str -- joined:str) {
 		len1 0 == if {
 			p2 -> result
 		} else {
-			p1 len1 1 - strings::char_at! 47 == if {
+			p1 len1 1 - strings::char_at 47 == if {
 				p1 p2 strings::concat -> result
 			} else {
 				p1 "/" strings::concat p2 strings::concat -> result
@@ -164,7 +164,7 @@ pub fn normalize(path:str -- norm:str) {
 	}
 	result strings::len -> rlen
 	rlen 1 > if {
-		result rlen 1 - strings::char_at! 47 == if {
+		result rlen 1 - strings::char_at 47 == if {
 			result 0 rlen 1 - strings::substring! -> result
 		}
 	}
@@ -183,7 +183,7 @@ pub fn with_ext(path:str newext:str -- result:str) {
 	path dirname -> dir
 	// Ensure extension starts with dot
 	newext strings::len 0 > if {
-		newext 0 strings::char_at! 46 != if {
+		newext 0 strings::char_at 46 != if {
 			"." newext strings::concat -> newext
 		}
 	}
@@ -227,7 +227,7 @@ pub fn is_relative(path:str -- result:i64) {
 pub fn has_extension(path:str extension:str -- result:i64) {
 	// Normalize extension to include dot
 	extension strings::len 0 > if {
-		extension 0 strings::char_at! 46 != if {
+		extension 0 strings::char_at 46 != if {
 			"." extension strings::concat -> extension
 		}
 	}
@@ -248,7 +248,7 @@ pub fn depth(path:str -- depth:i64) {
 		0 -> in_component
 		loop {
 			i plen >= if { break }
-			path i strings::char_at! -> ch
+			path i strings::char_at -> ch
 			ch 47 == if {
 				in_component 1 == if {
 					0 -> in_component
@@ -280,7 +280,7 @@ pub fn starts_with(path:str prefix:str -- result:i64) {
 			1 -> result
 		} else {
 			pathlen plen > if {
-				path plen strings::char_at! 47 == -> result
+				path plen strings::char_at 47 == -> result
 			}
 		}
 	}
@@ -298,7 +298,7 @@ pub fn strip_prefix(path:str prefix:str -- result:str) {
 		path strings::len -> pathlen
 		plen pathlen < if {
 			// Skip the prefix and any leading slash
-			path plen strings::char_at! 47 == if {
+			path plen strings::char_at 47 == if {
 				plen 1 + -> plen
 			}
 			path plen pathlen plen - strings::substring!

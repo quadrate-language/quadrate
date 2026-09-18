@@ -215,7 +215,7 @@ fn main() {
 						continue
 					}
 					arg strings::len 0 > if {
-						arg 0 strings::char_at! 45 == if {
+						arg 0 strings::char_at 45 == if {
 							continue
 						}
 					}

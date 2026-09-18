@@ -265,16 +265,16 @@ pub fn is_valid(s:str -- valid:i64) {
 	} else {
 		1 -> result
 		// Check dashes at positions 8, 13, 18, 23
-		s 8 strings::char_at! 45 != if {
+		s 8 strings::char_at 45 != if {
 			0 -> result
 		}
-		s 13 strings::char_at! 45 != if {
+		s 13 strings::char_at 45 != if {
 			0 -> result
 		}
-		s 18 strings::char_at! 45 != if {
+		s 18 strings::char_at 45 != if {
 			0 -> result
 		}
-		s 23 strings::char_at! 45 != if {
+		s 23 strings::char_at 45 != if {
 			0 -> result
 		}
 		result

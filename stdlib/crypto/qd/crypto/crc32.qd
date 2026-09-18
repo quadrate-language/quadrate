@@ -74,7 +74,7 @@ pub fn (c:Crc32) update(data:str -- c2:Crc32) {
 	data strings::len -> slen
 
 	0 slen 1 for i {
-		data i strings::char_at! -> byte
+		data i strings::char_at -> byte
 		state byte xor 255 and -> index
 		tbl index 8 * mem::get_i64 state 8 shr xor -> state
 	}

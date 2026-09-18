@@ -260,7 +260,7 @@ pub fn (h:Sha256) update(data:str -- h2:Sha256)! {
 		loop {
 			buflen 64 >= if { break }
 			i dlen >= if { break }
-			data i strings::char_at? buf buflen mem::set_byte
+			data i strings::char_at buf buflen mem::set_byte
 			buflen 1 + -> buflen
 			i 1 + -> i
 		}

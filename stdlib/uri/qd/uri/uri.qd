@@ -108,7 +108,7 @@ pub fn encode(s:str -- encoded:str) {
 			i slen >= if {
 				break
 			}
-			s i strings::char_at! -> c
+			s i strings::char_at -> c
 
 			c is_unreserved if {
 				// Safe char, pass through
@@ -156,12 +156,12 @@ pub fn decode(s:str -- decoded:str) {
 			i slen >= if {
 				break
 			}
-			s i strings::char_at! -> c
+			s i strings::char_at -> c
 
 			c unicode::percent == i 2 + slen < and if {
 				// Found '%', decode hex
-				s i 1 + strings::char_at! hex_value -> high
-				s i 2 + strings::char_at! hex_value -> low
+				s i 1 + strings::char_at hex_value -> high
+				s i 2 + strings::char_at hex_value -> low
 
 				high -1 != low -1 != and if {
 					high 4 shl low or -> byte
@@ -201,7 +201,7 @@ fn find_char(s:str start:i64 c:i64 -- pos:i64) {
 		i slen >= if {
 			break
 		}
-		s i strings::char_at! c == if {
+		s i strings::char_at c == if {
 			i -> pos
 			break
 		}
@@ -230,8 +230,8 @@ pub fn parse(s:str -- u:Uri) {
 	s pos unicode::colon find_char -> colon_pos
 	colon_pos -1 != if {
 		colon_pos 2 + slen < if {
-			s colon_pos 1 + strings::char_at! unicode::slash == if {
-				s colon_pos 2 + strings::char_at! unicode::slash == if {
+			s colon_pos 1 + strings::char_at unicode::slash == if {
+				s colon_pos 2 + strings::char_at unicode::slash == if {
 					s 0 colon_pos strings::substring! -> scheme
 					colon_pos 3 + -> pos
 				}
@@ -273,14 +273,14 @@ pub fn parse(s:str -- u:Uri) {
 
 		// Check for IPv6 address in brackets [...]
 		hplen 0 > if {
-			hostport 0 strings::char_at! unicode::lbracket == if {
+			hostport 0 strings::char_at unicode::lbracket == if {
 				hostport 0 unicode::rbracket find_char -> bracket_end
 				bracket_end -1 != if {
 					// IPv6 address
 					hostport 1 bracket_end 1 - strings::substring! -> host
 					// Check for port after ]
 					bracket_end 1 + hplen < if {
-						hostport bracket_end 1 + strings::char_at! unicode::colon == if {
+						hostport bracket_end 1 + strings::char_at unicode::colon == if {
 							// Parse port
 							0 -> port
 							bracket_end 2 + -> pi
@@ -288,7 +288,7 @@ pub fn parse(s:str -- u:Uri) {
 								pi hplen >= if {
 									break
 								}
-								hostport pi strings::char_at! -> digit
+								hostport pi strings::char_at -> digit
 								digit unicode::digit0 >= digit unicode::digit9 <= and if {
 									port 10 * digit unicode::digit0 - + -> port
 								}
@@ -316,7 +316,7 @@ pub fn parse(s:str -- u:Uri) {
 						pi hplen >= if {
 							break
 						}
-						hostport pi strings::char_at! -> digit
+						hostport pi strings::char_at -> digit
 						digit unicode::digit0 >= digit unicode::digit9 <= and if {
 							port 10 * digit unicode::digit0 - + -> port
 						}

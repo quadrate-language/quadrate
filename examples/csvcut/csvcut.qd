@@ -64,7 +64,7 @@ fn parse_columns(spec:str -- cols:ptr count:i64 ok:i64) {
 				0 -> in_num
 				loop {
 					i n >= if { break }
-					spec i strings::char_at! -> ch
+					spec i strings::char_at -> ch
 					ch 48 >= ch 57 <= and if {
 						num 10 * ch 48 - + -> num
 						1 -> in_num
@@ -117,14 +117,14 @@ fn emit_row(text:str start:i64 end_pos:i64 cols:ptr ncols:i64 delim:i64 out:Stri
 		}
 
 		"" -> field
-		text pos strings::char_at! 34 == if {
+		text pos strings::char_at 34 == if {
 			pos 1 + -> pos
 			loop {
 				pos end_pos >= if { break }
-				text pos strings::char_at! -> ch
+				text pos strings::char_at -> ch
 				ch 34 == if {
 					pos 1 + end_pos < if {
-						text pos 1 + strings::char_at! 34 == if {
+						text pos 1 + strings::char_at 34 == if {
 							field "\"" strings::concat -> field
 							pos 2 + -> pos
 							continue
@@ -139,13 +139,13 @@ fn emit_row(text:str start:i64 end_pos:i64 cols:ptr ncols:i64 delim:i64 out:Stri
 			}
 			loop {
 				pos end_pos >= if { break }
-				text pos strings::char_at! delim == if { break }
+				text pos strings::char_at delim == if { break }
 				pos 1 + -> pos
 			}
 		} else {
 			loop {
 				pos end_pos >= if { break }
-				text pos strings::char_at! -> ch
+				text pos strings::char_at -> ch
 				ch delim == if { break }
 				ch strings::from_char -> chs
 				field chs strings::concat -> field
@@ -162,7 +162,7 @@ fn emit_row(text:str start:i64 end_pos:i64 cols:ptr ncols:i64 delim:i64 out:Stri
 		}
 
 		pos end_pos < if {
-			text pos strings::char_at! delim == if {
+			text pos strings::char_at delim == if {
 				pos 1 + -> pos
 			}
 		}
@@ -179,11 +179,11 @@ fn find_row_end(text:str start:i64 text_len:i64 -- end_pos:i64) {
 	0 -> in_quotes
 	loop {
 		pos text_len >= if { break }
-		text pos strings::char_at! -> ch
+		text pos strings::char_at -> ch
 		ch 34 == if {
 			in_quotes if {
 				pos 1 + text_len < if {
-					text pos 1 + strings::char_at! 34 == if {
+					text pos 1 + strings::char_at 34 == if {
 						pos 2 + -> pos
 						continue
 					}
@@ -278,7 +278,7 @@ fn main() {
 				ep2 i > if {
 					joined i ep2 i - strings::substring! -> dstr
 					dstr strings::len 0 > if {
-						dstr 0 strings::char_at! -> delim
+						dstr 0 strings::char_at -> delim
 					}
 				}
 				ep2 1 + -> i
@@ -289,7 +289,7 @@ fn main() {
 				continue
 			}
 			a strings::len 0 > if {
-				a 0 strings::char_at! 45 == if {
+				a 0 strings::char_at 45 == if {
 					"csvcut: unknown option: " print a print nl
 					continue
 				}
@@ -328,7 +328,7 @@ fn main() {
 							pos tlen >= if { break }
 							text pos tlen find_row_end -> rend
 							rend pos > if {
-								text rend 1 - strings::char_at! 10 == if {
+								text rend 1 - strings::char_at 10 == if {
 									text pos rend 1 - cols ncols delim out emit_row -> out
 								} else {
 									text pos rend cols ncols delim out emit_row -> out

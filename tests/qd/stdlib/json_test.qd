@@ -321,3 +321,48 @@ test "json::array_get_float survives a malformed element" {
 	"[1.5, -, 2.5]" 1 json::array_get_float -> f1 -> _
 	f1 0 testing::assert_eq
 }
+
+test "json survives a document that ends on its comma" {
+	// strings::char_at was fallible, so every scanner called it with `!` and a single
+	// missing bounds check killed the host process: get_int on {"a":1, aborted before
+	// returning. char_at is total now and NotAChar ends the scan.
+	"{\"a\":1," "a" json::get_int -> found -> val
+	found 1 testing::assert_eq
+	val 1 testing::assert_eq
+
+	"{\"a\":1," "b" json::get_int -> found2 -> _
+	found2 0 testing::assert_eq
+
+	"{\"=a\":," "a" json::get_string -> found3 -> _
+	found3 0 testing::assert_eq
+
+	"{\"a\":" "a" json::get_bool -> found4 -> _
+	found4 0 testing::assert_eq
+
+	"{\"a\":" "a" json::get_object -> found5 -> _
+	found5 0 testing::assert_eq
+
+	"{\"a\":" "a" json::get_array -> found6 -> _
+	found6 0 testing::assert_eq
+
+	"[," 0 json::array_get_object -> found7 -> _
+	found7 0 testing::assert_eq
+}
+
+test "json::array_len counts no phantom element after a trailing comma" {
+	"[1," json::array_len 1 testing::assert_eq
+	"[1,2," json::array_len 2 testing::assert_eq
+	"[1,2]" json::array_len 2 testing::assert_eq
+	"[]" json::array_len 0 testing::assert_eq
+}
+
+test "json terminates on a value-less character" {
+	// type_at reports Number for anything it does not recognise, so a stray '}' left
+	// skip_value where it started and array_len spun forever on the document [}.
+	"[}" json::array_len 1 testing::assert_eq
+	"[{" json::array_len 1 testing::assert_eq
+	"[,]" json::array_len 0 testing::assert_eq
+
+	"[,]" 0 json::array_get_string -> found -> _
+	found 0 testing::assert_eq
+}

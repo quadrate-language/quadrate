@@ -98,21 +98,18 @@ candidates did not, and R29 and R30 were withdrawn because of it.
       **Open question**: does the JSON case move this from "longer horizon" to the next thing after
       R1/R2, or is a real `json::parse` simply not a goal?
 
-- [ ] **R4. 158 abort-on-error call sites inside the standard library.** *(Corrected 2026-09-18:
-      "315, of which 263 in stdlib" came from `grep -E '[a-z_]!'`, which counts the `!` in a
-      fallible **declaration** — `pub fn substring(…)!` — as a call site; stdlib has 145 of those.
-      `thread` 30 and `os` 19 were wrong outright: neither module is in the top ten.)* Re-measured
-      with a tokenizer that skips declarations, strings and comments: **158 in `stdlib`, 56 in
-      `examples`**. Heaviest: `json` 38, `uri` 28, `regex` 18, `path` 18, `hex` 11, `uuid` 10,
-      `crypto` 10, `fuzzy` 9. `json.qd` calls `strings::char_at!`
-      20+ times while scanning *untrusted input*, and line 376 already carries the comment
-      *"`!` aborted here, which killed the process on untrusted input"* against a site that was
-      converted to a `switch`. A library that aborts the host process on malformed input is not
-      shippable, and this reads as the design pushing authors there — `?` requires the enclosing
-      function to be fallible, and threading a bare `(code, msg)` through recursive descent is
-      miserable — rather than as carelessness.
-      **Open question**: is this a stdlib-hygiene sweep to do now (convert library `!` to `?`), or
-      does it wait for R3 because the sweep would otherwise be done twice?
+- [ ] **R46. 50 `mem::alloc!`/`mem::realloc!` sites abort the host process on OOM.** Split out of
+      R4, which lumped them in with the string-indexing sites they have nothing in common with.
+      They are the largest remaining group: `regex` 13, `crypto` 9, `uuid` 6, `sb` 5, `base64` 4,
+      `uri` 4, `hex` 4, `fuzzy` 4, `rand` 1; every one sits inside a **non-fallible**
+      function, so none is a local `!` → `?` edit. Unlike R4's population there is no total
+      counterpart to reach for: the honest fix makes the enclosing functions fallible and
+      propagates, which is the signature cascade across seven modules that R3 will settle anyway.
+      Aborting on OOM is at least a defensible library policy, which malformed-input aborts were
+      not.
+      **Open question**: does this wait for R3, or is an allocation-failure policy (abort, with a
+      documented `qd_set_oom_handler`-style hook) the actual answer, so the `!` stays and only
+      the contract is written down?
 
 #### What the compiler does and does not check
 
@@ -731,6 +728,60 @@ candidates did not, and R29 and R30 were withdrawn because of it.
       halt) so kernel code can stay in `.qd`.
 
 ## Done
+
+### R4 — `strings::char_at` is total, and json no longer dies on malformed input (2026-09-18)
+
+- [x] **The count was right; the prescription was not.** 158 abort-on-error call sites in
+      `stdlib` is confirmed, but they are three unrelated populations, not one:
+      `strings::char_at!` 67 and `strings::substring!` 33 (string indexing), `mem::alloc!` 47 and
+      `mem::realloc!` 3 (OOM), `strings::replace!` 6 and `os::urandom!` 2. And **all 158 sit
+      inside non-fallible functions** — not one was the local `!` → `?` edit the item proposed.
+      Converting even the json ones would have made all 27 of its public signatures fallible,
+      which is R3's redesign done early and then done again.
+
+      What actually shipped removes the need for the operator instead. `strings::char_at` is now
+      total: an index outside the string gives `strings::NotAChar` (-1) rather than an error, the
+      same sentinel convention as `strings::index_of` and the same totality as `strings::slice`,
+      which has always been `substring`'s non-aborting counterpart. All 67 `!` sites and 6 `?`
+      sites lose their operator and nothing else. Public stdlib signatures are unchanged.
+
+      **The aborts were real and trivially reachable.** Fuzzing the module entry points over 8,070
+      malformed inputs (mutated JSON/URI/path seeds plus random strings) found 10 of json's 18
+      scanned entry points killing the process, and one hang:
+
+      - `json::get_int "{\"a\":1,"`, `json::array_len "[1,"`, `json::get_bool "{\"a\":"`,
+        `json::get_string "{\"=a\":,"` — all abort. The shape is always the same: a scanner
+        reads `char_at!` straight after skipping whitespace, without re-checking `pos < slen`.
+      - `json::array_len "[}"` — **hangs**. `type_at` reports `Number` for anything it does not
+        recognise, so a stray `}` left `skip_value` exactly where it started and the caller
+        looped on it forever. `skip_value` now always advances.
+      - `find_key`, `array_len` and `find_elem` round the loop with `continue` after a comma
+        instead of falling through, so the end of the document and the closing bracket are
+        re-tested at the top where those checks already are. Falling through is what read one
+        past the end; it also counted the element `[1,` does not have, and walked past the `]`
+        of `[,]3` into what followed the array. Reusing the loop head rather than adding a
+        guard leaves `json.qd` on 16 `quadlint` nesting warnings, one below where it started.
+
+      `uri`, `path`, `hex`, `base64` and `fuzzy` came through the same 8,070 inputs clean on the
+      **unchanged** build as well as after, so their guards hold on their own; `regex` and `uuid`
+      were fuzzed on the fixed build only, and are clean there. The "not shippable" charge was
+      true, but it was true of `json` specifically, not of the twelve modules the count spanned.
+
+      **`strings::substring` was the worse bug, and was not in the item at all.** It is declared
+      fallible and documents `@error ErrOutOfBounds`, but the C implementation called `abort()` on
+      an out-of-range cut — so the `switch` every caller wraps it in was dead code, the process
+      being gone before any arm could run. It returns the error it declares now. A length running
+      past the end is still truncated rather than an error, and that is written down.
+
+      Verified by differential run rather than by reading: over 612 well-formed JSON documents
+      every json entry point returns byte-identical results before and after. Over the 8,070
+      malformed ones, 48 inputs went from crash-or-hang to clean, none the other way, 8,021 were
+      byte-identical, and the single output that moved (`[,]3`) moved to the correct answer —
+      element 0 is now not-found, consistent with the `array_len` of 0 beside it. Suite 2,126 →
+      2,131 (5 new stdlib blocks, plus 3 new C assertions); `docscheck` 219 → 222 blocks.
+
+      What is left of the 158 is filed as **R46** (the 50 OOM sites) and the 33 `substring!` sites,
+      which no longer abort inside the callee and are guarded at every site the fuzzing reached.
 
 ### R41 — `read` removed, arguments are an array (2026-09-18)
 

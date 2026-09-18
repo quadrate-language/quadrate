@@ -22,7 +22,7 @@ fn skip_ws(json:str pos:i64 -- new_pos:i64) {
 	json strings::len -> slen
 	loop {
 		pos slen < if {
-			json pos strings::char_at! -> ch
+			json pos strings::char_at -> ch
 			ch unicode::space == ch unicode::tab == + ch unicode::newline == + ch unicode::cr == + 0 > if {
 				pos 1 + -> pos
 			} else {
@@ -46,7 +46,7 @@ pub fn find_str_end(json:str pos:i64 -- end_pos:i64) {
 	pos 1 + -> pos
 	loop {
 		pos slen < if {
-			json pos strings::char_at! -> ch
+			json pos strings::char_at -> ch
 			ch unicode::dquote == if {
 				pos 1 + -> pos
 				break
@@ -70,7 +70,7 @@ fn find_num_end(json:str pos:i64 -- end_pos:i64) {
 	json strings::len -> slen
 	loop {
 		pos slen < if {
-			json pos strings::char_at! -> ch
+			json pos strings::char_at -> ch
 			ch unicode::digit0 >= ch unicode::digit9 <= *
 			ch unicode::minus == +
 			ch unicode::plus == +
@@ -96,7 +96,7 @@ fn find_bracket(json:str pos:i64 -- end_pos:i64) {
 	0 -> nesting
 	0 -> ch
 	json strings::len -> slen
-	json pos strings::char_at! -> open_ch
+	json pos strings::char_at -> open_ch
 	open_ch unicode::lbrace == if {
 		unicode::rbrace
 	} else {
@@ -107,7 +107,7 @@ fn find_bracket(json:str pos:i64 -- end_pos:i64) {
 	pos 1 + -> pos
 	loop {
 		pos slen < nesting 0 > * if {
-			json pos strings::char_at! -> ch
+			json pos strings::char_at -> ch
 			ch unicode::dquote == if {
 				json pos find_str_end -> pos
 			} else {
@@ -141,7 +141,7 @@ pub fn type_at(json:str pos:i64 -- result:i64) {
 	pos slen >= if {
 		Null
 	} else {
-		json pos strings::char_at! -> ch
+		json pos strings::char_at -> ch
 		ch unicode::dquote == if {
 			String
 		} else {
@@ -190,28 +190,38 @@ fn skip_value(json:str pos:i64 -- new_pos:i64) {
 	0 -> slen
 	0 -> val_type
 	0 -> ch
+	0 -> next_pos
 	json strings::len -> slen
 	json pos type_at -> val_type
+	pos -> next_pos
 	val_type String == if {
-		json pos find_str_end
+		json pos find_str_end -> next_pos
 	} else {
 		val_type Object == val_type Array == + 0 > if {
-			json pos find_bracket
+			json pos find_bracket -> next_pos
 		} else {
 			loop {
-				pos slen < if {
-					json pos strings::char_at! -> ch
+				next_pos slen < if {
+					json next_pos strings::char_at -> ch
 					ch unicode::comma == ch unicode::rbrace == + ch unicode::rbracket == + 0 > if {
 						break
 					} else {
-						pos 1 + -> pos
+						next_pos 1 + -> next_pos
 					}
 				} else {
 					break
 				}
 			}
-			pos
 		}
+	}
+	// Always advance. A character that starts no value -- type_at reports Number for anything
+	// it does not recognise, so a stray '}' lands here -- left next_pos where it started, and
+	// every caller loops on skip_value until the input is consumed: json::array_len spun
+	// forever on the two-character document [}.
+	next_pos pos <= if {
+		pos 1 +
+	} else {
+		next_pos
 	}
 }
 
@@ -226,7 +236,7 @@ fn find_key(json:str pos:i64 key:str -- value_pos:i64) {
 	pos slen >= if {
 		-1
 	} else {
-		json pos strings::char_at! unicode::lbrace != if {
+		json pos strings::char_at unicode::lbrace != if {
 			-1
 		} else {
 			pos 1 + -> pos
@@ -236,14 +246,17 @@ fn find_key(json:str pos:i64 key:str -- value_pos:i64) {
 				pos slen >= if {
 					break
 				} else {
-					json pos strings::char_at! -> ch
+					json pos strings::char_at -> ch
 					ch unicode::rbrace == if {
 						break
 					} else {
+						// Round the loop rather than falling through, so the end of the
+						// document and the closing brace are re-tested at the top. A document
+						// that ends on its comma ({"a":1,) used to read one past the end here,
+						// which killed the process while char_at was fallible.
 						ch unicode::comma == if {
 							pos 1 + -> pos
-							json pos skip_ws -> pos
-							json pos strings::char_at! -> ch
+							continue
 						}
 
 						ch unicode::dquote == if {
@@ -252,7 +265,7 @@ fn find_key(json:str pos:i64 key:str -- value_pos:i64) {
 
 							json pos skip_ws -> pos
 							pos slen < if {
-								json pos strings::char_at! unicode::colon == if {
+								json pos strings::char_at unicode::colon == if {
 									pos 1 + -> pos
 									json pos skip_ws -> pos
 
@@ -287,14 +300,14 @@ fn parse_int(num_str:str -- value:i64) {
 	0 -> ch
 	num_str strings::len -> num_len
 	num_len 0 > if {
-		num_str 0 strings::char_at! unicode::minus == if {
+		num_str 0 strings::char_at unicode::minus == if {
 			-1 -> sign
 			1 -> i
 		}
 	}
 	loop {
 		i num_len < if {
-			num_str i strings::char_at! -> ch
+			num_str i strings::char_at -> ch
 			ch unicode::digit0 >= ch unicode::digit9 <= * if {
 				value 10 * ch unicode::digit0 - + -> value
 				i 1 + -> i
@@ -399,7 +412,7 @@ pub fn get_bool(json:str key:str -- value:i64 found:i64) {
 		0 0
 	} else {
 		json pos skip_ws -> pos
-		json pos strings::char_at! -> ch
+		json pos strings::char_at -> ch
 		ch unicode::t == if {
 			1 1
 		} else {
@@ -439,7 +452,7 @@ pub fn get_object(json:str key:str -- value:str found:i64) {
 		"" 0
 	} else {
 		json pos skip_ws -> pos
-		json pos strings::char_at! unicode::lbrace != if {
+		json pos strings::char_at unicode::lbrace != if {
 			"" 0
 		} else {
 			json pos find_bracket -> end_pos
@@ -467,7 +480,7 @@ pub fn get_array(json:str key:str -- value:str found:i64) {
 		"" 0
 	} else {
 		json pos skip_ws -> pos
-		json pos strings::char_at! unicode::lbracket != if {
+		json pos strings::char_at unicode::lbracket != if {
 			"" 0
 		} else {
 			json pos find_bracket -> end_pos
@@ -492,7 +505,7 @@ fn find_elem(json:str pos:i64 index:i64 -- elem_pos:i64) {
 	pos slen >= if {
 		-1
 	} else {
-		json pos strings::char_at! unicode::lbracket != if {
+		json pos strings::char_at unicode::lbracket != if {
 			-1
 		} else {
 			pos 1 + -> pos
@@ -503,13 +516,17 @@ fn find_elem(json:str pos:i64 index:i64 -- elem_pos:i64) {
 				pos slen >= if {
 					break
 				} else {
-					json pos strings::char_at! -> ch
+					json pos strings::char_at -> ch
 					ch unicode::rbracket == if {
 						break
 					} else {
+						// Round the loop rather than falling through, so the end of the
+						// document and the closing bracket are re-tested at the top. Neither
+						// [1, nor [,] leaves an element after the comma, and falling through
+						// walked past the ] into whatever came after the array.
 						ch unicode::comma == if {
 							pos 1 + -> pos
-							json pos skip_ws -> pos
+							continue
 						}
 
 						current_index index == if {
@@ -619,7 +636,7 @@ pub fn array_get_object(json:str index:i64 -- value:str found:i64) {
 		"" 0
 	} else {
 		json pos skip_ws -> pos
-		json pos strings::char_at! unicode::lbrace != if {
+		json pos strings::char_at unicode::lbrace != if {
 			"" 0
 		} else {
 			json pos find_bracket -> end_pos
@@ -647,7 +664,7 @@ pub fn array_get_array(json:str index:i64 -- value:str found:i64) {
 		"" 0
 	} else {
 		json pos skip_ws -> pos
-		json pos strings::char_at! unicode::lbracket != if {
+		json pos strings::char_at unicode::lbracket != if {
 			"" 0
 		} else {
 			json pos find_bracket -> end_pos
@@ -676,7 +693,7 @@ pub fn array_len(json:str -- length:i64) {
 	pos slen >= if {
 		0
 	} else {
-		json pos strings::char_at! unicode::lbracket != if {
+		json pos strings::char_at unicode::lbracket != if {
 			0
 		} else {
 			pos 1 + -> pos
@@ -686,20 +703,20 @@ pub fn array_len(json:str -- length:i64) {
 				pos slen >= if {
 					break
 				} else {
-					json pos strings::char_at! -> ch
+					json pos strings::char_at -> ch
 					ch unicode::rbracket == if {
 						break
 					} else {
+						// Round the loop rather than falling through, so the end of the
+						// document and the closing bracket are re-tested at the top. [1, used
+						// to read one past the end here and count the element that is not there.
 						ch unicode::comma == if {
 							pos 1 + -> pos
-							json pos skip_ws -> pos
-							json pos strings::char_at! -> ch
+							continue
 						}
 
-						ch unicode::rbracket != if {
-							count 1 + -> count
-							json pos skip_value -> pos
-						}
+						count 1 + -> count
+						json pos skip_value -> pos
 					}
 				}
 			}
@@ -719,7 +736,7 @@ pub fn is_null_at(json:str pos:i64 -- is_null:i64) {
 	pos slen >= if {
 		1
 	} else {
-		json pos strings::char_at! unicode::n == if {
+		json pos strings::char_at unicode::n == if {
 			1
 		} else {
 			0

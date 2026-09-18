@@ -95,9 +95,9 @@ test "strings::substring" {
 }
 
 test "strings::char_at returns char code" {
-	"hello" 0 strings::char_at! 104 testing::assert_eq  // 'h' = 104
-	"hello" 1 strings::char_at! 101 testing::assert_eq  // 'e' = 101
-	"ABC" 0 strings::char_at! 65 testing::assert_eq     // 'A' = 65
+	"hello" 0 strings::char_at 104 testing::assert_eq  // 'h' = 104
+	"hello" 1 strings::char_at 101 testing::assert_eq  // 'e' = 101
+	"ABC" 0 strings::char_at 65 testing::assert_eq     // 'A' = 65
 }
 
 test "strings::from_char" {
@@ -439,4 +439,38 @@ test "the string-list family composes" {
 	"c,a,b" "," strings::split! -> count -> parts
 	parts count strings::sort
 	parts count "-" strings::join! "a-b-c" testing::assert_eq
+}
+
+test "strings::char_at is total" {
+	// Past the end, and negative, give NotAChar rather than an error. Scanners read
+	// "the character here, if there is one", and a fallible char_at meant a missing
+	// bounds check in one of them aborted the whole process.
+	"hello" 0 strings::char_at 104 testing::assert_eq
+	"hello" 4 strings::char_at 111 testing::assert_eq
+	"hello" 5 strings::char_at strings::NotAChar testing::assert_eq
+	"hello" 99 strings::char_at strings::NotAChar testing::assert_eq
+	"hello" -1 strings::char_at strings::NotAChar testing::assert_eq
+	"" 0 strings::char_at strings::NotAChar testing::assert_eq
+
+	// Still a codepoint index, not a byte index.
+	"héllo" 1 strings::char_at 233 testing::assert_eq
+	"héllo" 5 strings::char_at strings::NotAChar testing::assert_eq
+}
+
+test "strings::substring reports its documented error" {
+	// It used to abort on an out-of-range cut, which made the switch every caller
+	// wraps it in dead code -- the process was gone before any arm ran.
+	"hi" 99 1 strings::substring switch {
+		Ok { -> _  "substring should not have succeeded" testing::fail }
+		_ { err -> code -> _  code strings::ErrOutOfBounds testing::assert_eq }
+	}
+
+	"hi" -1 1 strings::substring switch {
+		Ok { -> _  "a negative start should not have succeeded" testing::fail }
+		_ { err -> code -> _  code strings::ErrOutOfBounds testing::assert_eq }
+	}
+
+	// A length running past the end is still truncated, not an error.
+	"hello" 3 99 strings::substring! "lo" testing::assert_eq
+	"hello" 1 3 strings::substring! "ell" testing::assert_eq
 }

@@ -253,18 +253,59 @@ TEST(StrSubstringTest) {
 TEST(StrCharAtTest) {
 	qd_context* ctx = create_test_context();
 
+	// Total, so it pushes the codepoint alone -- no status word above it.
 	qd_push_s(ctx, "hello");
 	qd_push_i(ctx, 1);
 	usr_strings_char_at(ctx);
 
-	// Pop status code first
-	qd_stack_element_t status_elem;
-	qd_stack_pop(ctx->st, &status_elem);
-	ASSERT_EQ(STRINGS_ERR_OK, (int)status_elem.value.i, "char_at should succeed");
-
 	qd_stack_element_t elem;
 	qd_stack_pop(ctx->st, &elem);
 	ASSERT_EQ('e', (int)elem.value.i, "char at index 1 should be 'e'");
+
+	destroy_test_context(ctx);
+}
+
+TEST(StrCharAtOutOfBoundsTest) {
+	qd_context* ctx = create_test_context();
+
+	qd_push_s(ctx, "hello");
+	qd_push_i(ctx, 99);
+	usr_strings_char_at(ctx);
+
+	qd_stack_element_t elem;
+	qd_stack_pop(ctx->st, &elem);
+	ASSERT_EQ(STRINGS_NOT_A_CHAR, (int)elem.value.i, "past the end should be NotAChar");
+
+	qd_push_s(ctx, "hello");
+	qd_push_i(ctx, -1);
+	usr_strings_char_at(ctx);
+
+	qd_stack_pop(ctx->st, &elem);
+	ASSERT_EQ(STRINGS_NOT_A_CHAR, (int)elem.value.i, "a negative index should be NotAChar");
+
+	destroy_test_context(ctx);
+}
+
+TEST(StrSubstringOutOfBoundsTest) {
+	qd_context* ctx = create_test_context();
+
+	// Returns its documented error rather than aborting, so the caller's switch can run.
+	qd_push_s(ctx, "hi");
+	qd_push_i(ctx, 99);
+	qd_push_i(ctx, 1);
+	usr_strings_substring(ctx);
+
+	qd_stack_element_t status_elem;
+	qd_stack_pop(ctx->st, &status_elem);
+	ASSERT_EQ(STRINGS_ERR_OUT_OF_BOUNDS, (int)status_elem.value.i, "start past the end is an error");
+
+	qd_push_s(ctx, "hi");
+	qd_push_i(ctx, -1);
+	qd_push_i(ctx, 1);
+	usr_strings_substring(ctx);
+
+	qd_stack_pop(ctx->st, &status_elem);
+	ASSERT_EQ(STRINGS_ERR_OUT_OF_BOUNDS, (int)status_elem.value.i, "a negative start is an error");
 
 	destroy_test_context(ctx);
 }

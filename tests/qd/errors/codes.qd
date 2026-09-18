@@ -47,9 +47,9 @@ fn main() {
 	}
 
 	// Test 4: String error codes
-	"hello" 100 strings::char_at switch {
+	"hello" 100 1 strings::substring switch {
 		Ok {
-			-> ch
+			-> part
 			"FAIL: should be out of bounds" print nl
 		}
 		_ {
