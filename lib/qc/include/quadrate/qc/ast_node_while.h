@@ -21,7 +21,14 @@ namespace Qd {
 		~AstNodeWhileStatement() = default;
 
 		size_t childCount() const override {
-			return (mCondition ? 1 : 0) + (mBody ? 1 : 0);
+			size_t count = 0;
+			if (mCondition) {
+				count++;
+			}
+			if (mBody) {
+				count++;
+			}
+			return count;
 		}
 
 		IAstNode* child(size_t index) const override {
