@@ -1,0 +1,11 @@
+// os::args returns the arguments as a Quadrate string array, excluding the program
+// name. With no arguments it is empty, not null.
+use os
+use strings
+
+fn main() {
+	os::args -> args
+	"len=" print args len print nl
+	os::program_name strings::len 0 > print nl
+	args free
+}

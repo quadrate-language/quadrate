@@ -40,7 +40,7 @@ namespace Qd {
 			// CPU control — lower to single inline asm. Freestanding-only.
 			"__cli", "__hlt", "__sti",
 			// I/O
-			"nl", "print", "prints", "printsv", "printv", "read",
+			"nl", "print", "prints", "printsv", "printv",
 			// Threading
 			"detach", "spawn", "wait",
 			// Error handling
@@ -59,6 +59,9 @@ namespace Qd {
 		const char* name;
 		const char* effect;
 		const char* replacement;
+		// The phrase introducing the replacement. Per-entry because not every removal is
+		// answered by named locals: `read` is answered by a stdlib call.
+		const char* advice = "use named locals instead";
 	};
 
 	inline constexpr RemovedInstruction REMOVED_INSTRUCTIONS[] = {
@@ -67,6 +70,8 @@ namespace Qd {
 			{"nipd", "( a b c -- a c )", "-> c -> b -> a  a c"},
 			{"over2", "( a b c d -- a b c d a b )", "-> d -> c -> b -> a  a b c d a b"},
 			{"overd", "( a b c -- a b a c )", "-> c -> b -> a  a b a c"},
+			{"read", "( -- ... n )", "os::args -> args  args len -> argc",
+					"the arguments are an array now; use os::args instead"},
 			{"swap2", "( a b c d -- c d a b )", "-> d -> c -> b -> a  c d a b"},
 			{"swapd", "( a b c -- b a c )", "-> c -> b -> a  b a c"},
 			{"tuck", "( a b -- b a b )", "-> b -> a  b a b"},
@@ -87,8 +92,8 @@ namespace Qd {
 	// Builds the diagnostic for a removed builtin: what it was, and the exact
 	// rewrite. Shared so every reporting site says the same thing.
 	inline std::string removedInstructionMessage(const RemovedInstruction& removed) {
-		return std::string("'") + removed.name + "' has been removed (it was " + removed.effect +
-			   "); use named locals instead: '" + removed.replacement + "'";
+		return std::string("'") + removed.name + "' has been removed (it was " + removed.effect + "); " +
+			   removed.advice + ": '" + removed.replacement + "'";
 	}
 
 	// Keywords that used to exist and no longer do. Unlike the removed builtins

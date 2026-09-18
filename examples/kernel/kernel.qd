@@ -313,7 +313,7 @@ fn print_prompt() {
 	row col 62 vga_put
 	col 1 + -> col
 	row col 32 vga_put
-	col 1 + col cursor_get_row swap cursor_set
+	row col 1 + cursor_set
 }
 
 // ---------------------------------------------------------------------------

@@ -25,6 +25,7 @@
 
 use io
 use mem
+use os
 use sb
 use strings
 
@@ -51,7 +52,7 @@ fn print_help() {
 fn parse_columns(spec:str -- cols:ptr count:i64 ok:i64) {
 	spec strings::len -> n
 	n 0 == if {
-		0 0 0
+		0 cast<ptr> 0 0
 	} else {
 		// Upper bound on count: n bytes can have at most (n+1)/2 numbers
 		n 1 + 2 / 1 + 8 * mem::alloc switch {
@@ -85,12 +86,12 @@ fn parse_columns(spec:str -- cols:ptr count:i64 ok:i64) {
 				}
 				count 0 == if {
 					buf mem::free
-					0 0 0
+					0 cast<ptr> 0 0
 				} else {
 					buf count 1
 				}
 			}
-			_ { 0 0 0 }
+			_ { 0 cast<ptr> 0 0 }
 		}
 	}
 }
@@ -230,21 +231,15 @@ fn slurp(path:str -- text:str ok:i64) {
 }
 
 fn main() {
-	read -> argc
+	os::args -> args
+	args len -> argc
 
-	// Pop args from the stack into a flat newline-joined string. Args come
-	// off the stack in reverse order so we prepend each one to keep input
-	// order in `joined`.
+	// Flatten the arguments into a newline-joined string, in input order.
 	"" -> joined
-	argc 0 > if {
-		argc -> remaining
-		loop {
-			remaining 0 <= if { break }
-			-> arg
-			arg "\n" strings::concat joined strings::concat -> joined
-			remaining 1 - -> remaining
-		}
+	0 argc 1 for i {
+		joined args i nth strings::concat "\n" strings::concat -> joined
 	}
+	args free
 
 	// Walk joined args ("arg\narg\n...") in input order.
 	joined strings::len -> jlen

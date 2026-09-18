@@ -107,6 +107,16 @@ import "libos.a" as "os" {
 	/// so the bindings read in reverse of the declared outputs
 	pub fn list(path:str -- entries:ptr count:i64)!
 
+	/// The command-line arguments, excluding the program name.
+	/// @return args ptr Array of argument strings
+	/// @example os::args -> args  args len -> argc
+	pub fn args( -- args:ptr)
+
+	/// The program name (argv[0]).
+	/// @return name str Program name as invoked
+	/// @example os::program_name print nl
+	pub fn program_name( -- name:str)
+
 	/// Execute a command and stream output line-by-line to a callback.
 	/// The callback is called synchronously for each line of output (without trailing newline).
 	/// The call blocks until the command completes. Closures with captured variables are supported.

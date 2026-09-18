@@ -62,8 +62,8 @@ namespace Qd {
 		// Freestanding mode: reject builtins that need libc / hosted I/O.
 		// Pure stack/arithmetic/control-flow ops are still allowed.
 		if (mFreestandingMode) {
-			static const char* kUnsafeBuiltins[] = {"print", "prints", "printv", "printsv", "nl", "read", "panic",
-					"err", "spawn", "wait", "detach", nullptr};
+			static const char* kUnsafeBuiltins[] = {
+					"print", "prints", "printv", "printsv", "nl", "panic", "err", "spawn", "wait", "detach", nullptr};
 			for (size_t i = 0; kUnsafeBuiltins[i] != nullptr; i++) {
 				if (strcmp(name, kUnsafeBuiltins[i]) == 0) {
 					std::string err = "builtin '" + std::string(name) + "' is not available in --freestanding mode";
@@ -105,25 +105,6 @@ namespace Qd {
 			structTypeStack.push_back("");
 			typeStack.push_back(StackValueType::INT);
 			structTypeStack.push_back("");
-			return;
-		}
-
-		// read instruction: reads command-line arguments
-		// Stack: [...] -> [...] arg0 arg1 ... argN argc
-		// Since we don't know argc at compile-time, we push multiple values
-		// to allow reasonable operations after read (assumes up to 16 arguments)
-		// At runtime, arguments are parsed as int, float, or string based on content.
-		// At compile-time, we use STRING type for arguments since that's the most common case.
-		static const int READ_INSTRUCTION_MAX_ARGS = 16; // Maximum expected command-line arguments
-		if (strcmp(name, "read") == 0) {
-			mHasUnpredictableStack = true;
-			typeStack.clear();
-			// Push 16 STRING-typed arguments (actual types determined at runtime)
-			for (int i = 0; i < READ_INSTRUCTION_MAX_ARGS; i++) {
-				typeStack.push_back(StackValueType::STRING);
-			}
-			// Push argc as integer (on top of stack)
-			typeStack.push_back(StackValueType::INT);
 			return;
 		}
 

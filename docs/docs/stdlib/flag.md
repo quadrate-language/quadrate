@@ -26,13 +26,13 @@ Parsed command-line arguments.
 
 #### `fn` parse
 
-Parse arguments from read instruction.
+Parse command-line arguments.
 
-**Signature:** `(argc:i64 -- f:Flag)`
+**Signature:** `(args:ptr -- f:Flag)`
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
-| `argc` | `i64` | Argument count from read |
+| `args` | `ptr` | Argument array, as `os::args` returns |
 
 | Output | Type | Description |
 |--------|------|-------------|
@@ -41,7 +41,7 @@ Parse arguments from read instruction.
 **Example:**
 
 ```qd
-read flag::parse  // f
+os::args flag::parse  // f
 ```
 
 ### Methods

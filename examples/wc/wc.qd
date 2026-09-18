@@ -21,6 +21,7 @@
 use flag
 use io
 use mem
+use os
 use strconv
 use strings
 
@@ -166,7 +167,7 @@ fn print_row(lines:i64 words:i64 bytes:i64 label:str want_l:i64 want_w:i64 want_
 }
 
 fn main() {
-	read flag::parse -> f
+	os::args flag::parse -> f
 
 	f "-h" flag::boolean f "--help" flag::boolean or if {
 		print_help

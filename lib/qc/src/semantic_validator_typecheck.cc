@@ -185,17 +185,18 @@ namespace Qd {
 
 	// Helper: Check if a block ends with a diverging instruction (like `panic`)
 	// Diverging instructions never return, so stack effects don't need to balance
-	// The three stdlib entry points that consume the argument pile `read` leaves on the stack.
-	// Their signatures cannot describe that -- the count is a runtime value -- so no static model
-	// applies inside them. Call sites already special-case exactly these names; this is the same
-	// list seen from the definition side.
+	// The stdlib entry points that consume more of the stack than their signature says.
+	// `fmt::printf`/`sprintf` pop one value per `%` in the format string, a count known only at
+	// runtime, so no static model applies inside them. Call sites already special-case exactly
+	// these names; this is the same list seen from the definition side.
+	//
+	// `flag::parse` used to be here too, because it consumed the argument pile `read` splayed
+	// across the stack. It takes an array now, so its effect is ordinary and it is checked like
+	// anything else.
 	static bool isVariadicStackConsumer(const std::string& functionName, const char* filename) {
 		// Keyed on the defining file rather than the package name, which is derived differently
 		// depending on which pass is validating the module.
 		const std::string module = filename ? std::filesystem::path(filename).stem().string() : std::string();
-		if (module == "flag") {
-			return functionName == "parse";
-		}
 		if (module == "fmt") {
 			return functionName == "printf" || functionName == "sprintf";
 		}
@@ -3368,8 +3369,7 @@ namespace Qd {
 				// Imported C functions and variadic stdlib functions may have signatures
 				// that don't reflect all consumed values. Mark stack as unpredictable.
 				if (mImportedLibraryFunctions.find(qualifiedName) != mImportedLibraryFunctions.end() ||
-						qualifiedName == "fmt::printf" || qualifiedName == "fmt::sprintf" ||
-						qualifiedName == "flag::parse") {
+						qualifiedName == "fmt::printf" || qualifiedName == "fmt::sprintf") {
 					mHasUnpredictableStack = true;
 				}
 
@@ -3754,8 +3754,20 @@ namespace Qd {
 							}
 						}
 
-						// Push return values
-						pushProducesTypes(sig, typeStack, structTypeStack);
+						// Push return values. A bare fallible call also leaves the status the
+						// following `if`/`switch` tests -- the explicit `Type::method` path above
+						// has always done this, and this one did not, so `f "--name"
+						// flag::string if { ... }` had the `if` consume the *result* as its
+						// condition and the success arm read an empty stack. It went unnoticed
+						// because the only callers sat downstream of `read`, whose sixteen
+						// synthetic strings left enough fiction on the type stack to absorb it.
+						if (sig.throws && !scoped->abortOnError() && !scoped->propagateOnError()) {
+							pushProducesTypes(sig, typeStack, structTypeStack);
+							typeStack.push_back(StackValueType::INT);
+							structTypeStack.push_back("");
+						} else {
+							pushProducesTypes(sig, typeStack, structTypeStack);
+						}
 
 						// Mark as method call for code generation
 						scoped->setIsMethodCall(true);

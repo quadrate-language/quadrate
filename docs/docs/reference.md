@@ -965,7 +965,6 @@ Detaches a thread, allowing it to run independently.
 | [`prints`](#prints) | `()` | Prints the entire stack contents without clearing it. |
 | [`printsv`](#printsv) | `()` | Prints the entire stack with type information for debugging. |
 | [`nl`](#nl) | `()` | Prints a newline character to stdout. |
-| [`read`](#read) | `( -- ... n )` | Reads command line arguments onto the stack, pushing count last. |
 
 #### print
 
@@ -1021,20 +1020,6 @@ Prints a newline character to stdout.
 
 ```qd
 nl
-```
-
----
-
-#### read
-
-Reads command line arguments onto the stack, pushing count last.
-
-**Signature:** `( -- ... n )`
-
-**Example:**
-
-```qd
-read -> argc // reads command line args
 ```
 
 ---

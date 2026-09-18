@@ -412,10 +412,6 @@ BUILTIN(printsv, "()", "Prints the entire stack with type information for debugg
 /// @example nl
 BUILTIN(nl, "()", "Prints a newline character to stdout.")
 
-/// Read input.
-/// @signature ( -- ... n )
-/// @example read -> argc // reads command line args
-BUILTIN(read, "( -- ... n )", "Reads command line arguments onto the stack, pushing count last.")
 
 // ============================================================================
 // ERROR HANDLING

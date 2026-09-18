@@ -23,6 +23,23 @@ Error codes: Ok=1 (success), specific errors start at 2
 
 ## Functions
 
+### `fn` args
+
+The command-line arguments, excluding the program name.
+
+**Signature:** `( -- args:ptr)`
+
+| Output | Type | Description |
+|--------|------|-------------|
+| `args` | `ptr` | Array of argument strings |
+
+**Example:**
+
+```qd
+os::args -> args  args len -> argc
+```
+---
+
 ### `fn` chdir
 
 Change the current working directory.
@@ -494,6 +511,23 @@ Execute a command and stream output line-by-line to a callback. The callback is 
 
 ```qd
 "ls -la" fn (line:str -- ) { print nl } os::popen!  // code
+```
+---
+
+### `fn` program_name
+
+The program name (argv[0]).
+
+**Signature:** `( -- name:str)`
+
+| Output | Type | Description |
+|--------|------|-------------|
+| `name` | `str` | Program name as invoked |
+
+**Example:**
+
+```qd
+os::program_name print nl
 ```
 ---
 

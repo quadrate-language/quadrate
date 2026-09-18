@@ -117,9 +117,12 @@ fi
 
 mkdir -p "$TEST_DIR/args"
 cat > "$TEST_DIR/args/args.qd" <<'EOF'
+use os
+
 fn main() {
-    read -> argc
-    argc print nl
+    os::args -> args
+    args len print nl
+    args free
 }
 EOF
 

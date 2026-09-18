@@ -710,7 +710,7 @@ fn tool_generate_template(args:str -- result:str) {
 						"HTTP GET TEMPLATE\n=================\nuse http\n\nfn fetch(url:str -- body:str) {\n    url http::get switch {\n        Ok { -> resp\n            resp <<status 200 == if {\n                resp <<body\n            } else { empty }\n        }\n        Err { -> _ -> _ empty }\n    }\n}" tool_text_result
 					} else {
 						template "cli-args" strings::compare 0 == if {
-							"CLI ARGS TEMPLATE\n=================\nuse os\n\nfn main() {\n    os::args -> args\n    args len -> argc\n    \n    1 -> i\n    loop {\n        i argc >= if { break }\n        args i nth -> arg\n        arg print nl\n        i 1 + -> i\n    }\n}" tool_text_result
+							"CLI ARGS TEMPLATE\n=================\nuse os\n\nfn main() {\n    os::args -> args\n    args len -> argc\n    \n    0 -> i\n    loop {\n        i argc >= if { break }\n        args i nth -> arg\n        arg print nl\n        i 1 + -> i\n    }\n}" tool_text_result
 						} else {
 							template "struct-crud" strings::compare 0 == if {
 								"STRUCT CRUD TEMPLATE\n====================\n\nstruct Item {\n    id: i64\n    name: str\n    count: i64\n}\n\n// Create\nfn new_item(id:i64 name:str -- item:Item) {\n    Item { id = id name = name count = 0 }\n}\n\n// Read: item <<field_name\n// Update: item value #field_name\n\nfn main() {\n    1 name new_item -> item\n    item <<name print nl\n    item 10 #count -> item\n    item <<count print nl\n}" tool_text_result
@@ -784,7 +784,7 @@ fn tool_explain_signature(args:str -- result:str) {
 		output "  (path:str -- content:str found:i64)\n" strings::concat -> output
 		output "    Takes 1 string, returns 2 values\n" strings::concat -> output
 		output "    'found' is on TOP (check it first)\n" strings::concat -> output
-		output "    Call: path read -> found -> content\n\n" strings::concat -> output
+		output "    Call: path io::read_file -> found -> content\n\n" strings::concat -> output
 
 		output "  ( -- timestamp:i64)\n" strings::concat -> output
 		output "    Takes nothing, returns 1 integer\n" strings::concat -> output

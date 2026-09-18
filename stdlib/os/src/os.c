@@ -1390,3 +1390,42 @@ int usr_os_chdir(qd_context* ctx) {
 	qd_stack_push_int(ctx->st, OS_ERR_OK);
 	return (int){0};
 }
+
+int usr_os_args(qd_context* ctx) {
+	// The command-line arguments, excluding the program name, as a Quadrate string
+	// array. Replaces the `read` builtin, which splayed them across the operand stack
+	// and so had no expressible stack effect: the validator modelled it by clearing the
+	// type stack, pushing sixteen synthetic strings and giving up on the enclosing
+	// function's declared effect.
+	int count = ctx->argc > 1 ? ctx->argc - 1 : 0;
+
+	qd_array_t* args = qd_array_create((size_t)count, QD_ARRAY_TYPE_STR);
+	if (args == NULL) {
+		fprintf(stderr, "Fatal error in os::args: Failed to allocate argument array\n");
+		qd_print_stack_trace(ctx);
+		abort();
+	}
+
+	for (int i = 0; i < count; i++) {
+		const char* arg = ctx->argv != NULL && ctx->argv[i + 1] != NULL ? ctx->argv[i + 1] : "";
+		args->data.p[i] = qd_string_create(arg);
+	}
+	args->length = (size_t)count;
+
+	if (qd_stack_push_ptr(ctx->st, args) != QD_STACK_OK) {
+		qd_array_release(args);
+		fprintf(stderr, "Fatal error in os::args: Failed to push argument array\n");
+		qd_print_stack_trace(ctx);
+		abort();
+	}
+
+	return (int){0};
+}
+
+int usr_os_program_name(qd_context* ctx) {
+	// argv[0]. `read` used to stash this in ctx->program_name as a side effect; nothing
+	// read it back, so it is exposed properly here instead.
+	const char* name = ctx->argc > 0 && ctx->argv != NULL && ctx->argv[0] != NULL ? ctx->argv[0] : "";
+	qd_push_s(ctx, name);
+	return (int){0};
+}

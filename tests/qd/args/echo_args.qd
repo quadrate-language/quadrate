@@ -1,18 +1,13 @@
 // Test: echo all command-line arguments
+use os
+
 fn main() {
-	read -> argc
+	os::args -> args
+	args len -> argc
 	"argc=" print argc print nl
 
-	argc 0 > if {
-		-> arg0
-		"arg0=" print arg0 print nl
+	0 argc 1 for i {
+		"arg" print i print "=" print args i nth print nl
 	}
-	argc 1 > if {
-		-> arg1
-		"arg1=" print arg1 print nl
-	}
-	argc 2 > if {
-		-> arg2
-		"arg2=" print arg2 print nl
-	}
+	args free
 }

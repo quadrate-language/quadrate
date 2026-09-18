@@ -165,17 +165,6 @@ candidates did not, and R29 and R30 were withdrawn because of it.
       docscheck: 219 checked, 0 failed.
 
 
-- [ ] **R41. `read` switches off the declared-effect check in any function that uses it.**
-      `semantic_validator_instructions.cc` clears the type stack, pushes 16 synthetic `str`
-      values (argc is unknown at compile time) and sets `mHasUnpredictableStack`. The 16 strings
-      are a fiction and the flag is the same one R34 was about: every function containing `read`
-      loses its arity, if-arm and defer checks. Four programs use it, all immediately followed by
-      `flag::parse`, which takes only the count.
-      **Open question**: give `read` the signature it actually needs — `( -- argc:i64 )`, with the
-      arguments reachable through `os`/`flag` rather than pushed — or keep the current shape and
-      accept the hole? The former is a breaking change to five call sites and would let the flag
-      go. Salvaged from R29, which was withdrawn.
-
 - [x] **R42 — a stack slot owns what it holds, pointers included.** `qd_drop` released strings and
       deliberately skipped `QD_STACK_TYPE_PTR`, on the reasoning that "a raw pointer on the stack
       is not necessarily a counted object". `qd_ptr_release` answers exactly that question — array
@@ -654,11 +643,10 @@ candidates did not, and R29 and R30 were withdrawn because of it.
       "Argument count from read". `examples/wc`, `examples/dc`, `examples/sha256sum` and
       `cmd/quadmcp/server.qd` all open with `read flag::parse -> f`; `examples/csvcut` uses
       `read -> argc` directly. Removing it was attempted and immediately broke the quadmcp build.
-      What remains true is the second half of the original item: `read` clears the whole type
-      stack and sets `mHasUnpredictableStack`, so any function containing it loses its
-      declared-effect check. That is worth fixing on its own — give it an honest signature
-      (`( -- argc:i64 )` with the arguments left addressable through `os`/`flag` rather than
-      splayed onto the stack as 16 synthetic strings) — and is recorded as R41.
+      What remained true was the second half of the original item, recorded as R41: `read`
+      cleared the whole type stack and set `mHasUnpredictableStack`. **R41 has since removed
+      `read` outright** — see Done. The load-bearing part was real and is what `os::args`
+      now carries; what was never load-bearing was the *shape*.
 
 - [ ] **R30. Two genuinely unused debug builtins, not four.** Re-measured 2026-09-18 over
       `stdlib`, `examples`, `tests` and `cmd` (the last was missing from the original count, which
@@ -743,6 +731,50 @@ candidates did not, and R29 and R30 were withdrawn because of it.
       halt) so kernel code can stay in `.qd`.
 
 ## Done
+
+### R41 — `read` removed, arguments are an array (2026-09-18)
+
+- [x] **`read` is gone; `os::args` replaces it.** It splayed the command-line arguments across
+      the operand stack, which is not an expressible stack effect: the validator modelled it by
+      clearing the type stack, pushing **sixteen synthetic `str` values** and setting
+      `mHasUnpredictableStack`, so every function containing it lost its arity, if-arm and defer
+      checks. `flag::parse(argc:i64)` then read that pile back off the stack, which is why it
+      needed an exemption of its own on both the call and definition sides.
+
+      `os::args( -- args:ptr)` returns them as a Quadrate string array — the convention
+      CLAUDE.md already states for anything returning a list of strings — and `os::program_name`
+      exposes argv[0], which `read` used to stash in `ctx->program_name` as a side effect that
+      nothing ever read back. `flag::parse(args:ptr)` takes the array. All 10 call sites
+      rewritten; `read` is in `REMOVED_INSTRUCTIONS`, so using it reports what happened and the
+      rewrite. Both exemptions are deleted: `fmt::printf`/`sprintf` remain, since they really do
+      pop one value per `%` in the format string.
+
+      **The fiction was hiding a real bug.** With the type stack no longer padded with sixteen
+      strings, `f "--name" flag::string if { ... }` stopped compiling — and correctly so. The
+      module-method call path pushed a fallible call's *results* but not the **status** the
+      following `if` tests, unlike the explicit `Type::method` path, which has always pushed
+      both. So the `if` was consuming the result as its condition and the success arm read an
+      empty stack. Every caller sat downstream of `read`, whose synthetic strings absorbed it.
+      Fixed in the SCOPED_IDENTIFIER module-method branch.
+
+      Smaller things the same removal turned up, all in examples that are
+      `build_by_default: false` and so had gone unbuilt since the R5 checks landed:
+      `examples/sha256sum` had `= =` where it meant `==`, `> =` where it meant `>=`, and a bare
+      `crypto::sha256_bytes` missing its `!`; `examples/csvcut`'s `parse_columns` returned a bare
+      `0` for a declared `ptr`; `examples/kernel`'s `print_prompt` pushed three arguments to a
+      two-argument `cursor_set` and leaked one per prompt. All four now compile, and sha256sum
+      agrees with GNU `sha256sum`.
+
+      `tools/check_builtin_lists.py` found every stale mention, including a `read` left in the
+      playground's highlighter. Its prose scan needed a `PROSE_EXEMPT` set: the tool's own note
+      says removed names "like `tuck` and `dupd` are distinctive enough not to collide", and
+      `read` is an ordinary English word — it flagged "Receiver is read-only" and "Use << to read
+      fields", prose that is correct and should not be reworded to satisfy a grep.
+
+      Tests: `compile_errors/removed_read` pins the diagnostic, `os/args` pins the new API, and
+      the three `tests/qd/args/` programs plus `flag/basic` and `modules/flag_module` now build
+      their argument arrays explicitly. Note `echo_args` changed expected output: arguments come
+      back in **input order** now, where popping the stack yielded them reversed.
 
 ### Use-after-free on every struct global (2026-09-18)
 

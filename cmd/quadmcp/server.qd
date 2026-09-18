@@ -211,7 +211,7 @@ fn main() {
 	// Flags are parsed before the docs are loaded so --help and --version stay
 	// cheap, and so they answer rather than dropping into the stdio server the
 	// way every unrecognised invocation used to.
-	read flag::parse -> f
+	os::args flag::parse -> f
 	defer {
 		f flag::destroy
 	}

@@ -72,17 +72,18 @@ Prints a newline character to stdout.
 
 ## Input
 
-### read
-
-Reads command line arguments onto the stack, pushing count last.
-
-**Signature:** `(-- ... n)`
+Command-line arguments are not a builtin. `os::args` returns them as a string array,
+excluding the program name, and `os::program_name` gives argv[0]:
 
 ```qd
-read -> argc // argc is the number of arguments
-```
+use os
 
-Arguments are pushed onto the stack with the count on top.
+fn main() {
+	os::args -> args
+	args len print nl
+	args free
+}
+```
 
 ---
 

@@ -9,11 +9,13 @@ use unicode
 const TapeSize = 30000
 
 fn main() {
-	read 1 < if {
+	os::args -> args
+	args len 1 < if {
 		"usage: bf <program.bf>" print nl
 		1 os::exit
 	}
-	-> filename
+	args 0 nth -> filename
+	args free
 
 	filename io::read_file! -> code
 	code strings::len -> code_len

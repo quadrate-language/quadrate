@@ -20,19 +20,22 @@ pub struct Flag {
 	argv: str
 }
 
-/// Parse arguments from read instruction.
-/// @param argc i64 Argument count from read
+/// Parse command-line arguments.
+/// @param args ptr Argument array, as os::args returns
 /// @return f Flag Parsed flags
-/// @example read flag::parse -> f
-pub fn parse(argc:i64 -- f:Flag) {
+/// @example os::args flag::parse -> f
+pub fn parse(args:ptr -- f:Flag) {
+	args len -> argc
 	"" -> argv
 	"" -> arg
 	"" -> old_argv
 	"" -> prefix
 	0 -> iter
 
+	// Walked back to front, prepending, which is the order the arguments used to
+	// come off the operand stack when `read` splayed them there.
 	0 argc 1 for it {
-		-> arg
+		args argc 1 - it - nth -> arg
 		"\n" arg strings::concat -> prefix
 		argv -> old_argv
 		prefix argv strings::concat -> argv

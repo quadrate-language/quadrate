@@ -321,7 +321,7 @@ fn main() {
     stack_new -> s
     defer { s stack_free }
 
-    read flag::parse -> f
+    os::args flag::parse -> f
     defer { f flag::destroy }
 
     // ... check each flag

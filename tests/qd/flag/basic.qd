@@ -1,19 +1,37 @@
 // Test: flag parsing module
 use flag
 
+// flag::parse takes the argument array os::args returns; these build one by hand.
+fn args0( -- args:ptr) {
+	0 makes
+}
+
+fn args1(a:str -- args:ptr) {
+	1 makes -> r
+	r 0 a set
+	r
+}
+
+fn args2(a:str b:str -- args:ptr) {
+	2 makes -> r
+	r 0 a set
+	r 1 b set
+	r
+}
+
 fn main() {
 	// Test boolean - flag not present
-	"" 0 flag::parse -> f1
+	args0 -> a1  a1 flag::parse -> f1  a1 free
 	f1 "--verbose" flag::boolean print nl
 	f1 flag::destroy
 
 	// Test boolean - flag present
-	"--verbose" 1 flag::parse -> f2
+	"--verbose" args1 -> a2  a2 flag::parse -> f2  a2 free
 	f2 "--verbose" flag::boolean print nl
 	f2 flag::destroy
 
 	// Test string - flag not present
-	"" 0 flag::parse -> f3
+	args0 -> a3  a3 flag::parse -> f3  a3 free
 	f3 "--name" flag::string if {
 		print nl
 	} else {
@@ -22,7 +40,7 @@ fn main() {
 	f3 flag::destroy
 
 	// Test string - flag present
-	"--name" "Alice" 2 flag::parse -> f4
+	"--name" "Alice" args2 -> a4  a4 flag::parse -> f4  a4 free
 	f4 "--name" flag::string if {
 		print nl
 	} else {
@@ -31,7 +49,7 @@ fn main() {
 	f4 flag::destroy
 
 	// Test int - flag not present (use default)
-	"" 0 flag::parse -> f5
+	args0 -> a5  a5 flag::parse -> f5  a5 free
 	f5 "--count" flag::int if {
 		print nl
 	} else {
@@ -40,7 +58,7 @@ fn main() {
 	f5 flag::destroy
 
 	// Test int - flag present
-	"--count" "42" 2 flag::parse -> f6
+	"--count" "42" args2 -> a6  a6 flag::parse -> f6  a6 free
 	f6 "--count" flag::int if {
 		print nl
 	} else {
@@ -49,7 +67,7 @@ fn main() {
 	f6 flag::destroy
 
 	// Test float - flag present
-	"--pi" "3.14" 2 flag::parse -> f7
+	"--pi" "3.14" args2 -> a7  a7 flag::parse -> f7  a7 free
 	f7 "--pi" flag::float if {
 		print nl
 	} else {
@@ -58,7 +76,7 @@ fn main() {
 	f7 flag::destroy
 
 	// Test positional arguments
-	"file.txt" 1 flag::parse -> f8
+	"file.txt" args1 -> a8  a8 flag::parse -> f8  a8 free
 	f8 0 flag::positional if {
 		print nl
 	} else {

@@ -8,8 +8,16 @@ fn main() {
 	flag::ErrInvalidValue print nl
 
 	"=== Parsed flags ===" print nl
-	// Parse test data via flag::parse
-	"--verbose" "--name" "test" "--count" "42" 5 flag::parse -> f
+	// Parse test data via flag::parse. `parse` takes the argument array that
+	// os::args returns, so a test builds one by hand.
+	5 makes -> argv
+	argv 0 "--verbose" set
+	argv 1 "--name" set
+	argv 2 "test" set
+	argv 3 "--count" set
+	argv 4 "42" set
+	argv flag::parse -> f
+	argv free
 
 	"=== boolean ===" print nl
 	f "--verbose" flag::boolean print nl
@@ -19,14 +27,14 @@ fn main() {
 	f "--name" flag::string if {
 		print nl
 	} else {
-		drop "error" print nl
+		"error" print nl
 	}
 
 	"=== int ===" print nl
 	f "--count" flag::int if {
 		print nl
 	} else {
-		drop "error" print nl
+		"error" print nl
 	}
 
 	f flag::destroy

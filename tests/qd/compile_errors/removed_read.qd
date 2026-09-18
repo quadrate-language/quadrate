@@ -1,0 +1,8 @@
+// `read` splayed the command-line arguments across the operand stack, so it had no
+// expressible stack effect: the validator modelled it by clearing the type stack,
+// pushing sixteen synthetic strings and giving up on the enclosing function's
+// declared effect. os::args returns them as an array instead.
+fn main() {
+	read -> argc
+	argc print nl
+}

@@ -42,6 +42,10 @@ PROSE_SOURCES = [
     "cmd/quadmcp/resources.qd",
 ]
 
+# Removed names that are ordinary English words, so a word-boundary scan of prose says
+# nothing. See the note at the prose scan below.
+PROSE_EXEMPT = {"read"}
+
 
 def read(rel):
     with open(os.path.join(ROOT, rel), encoding="utf-8") as f:
@@ -153,7 +157,14 @@ def main():
     # cannot be scanned here: these files embed JavaScript, and the playground's own
     # highlighter is full of `while (i < code.length)`. Instruction names like `tuck`
     # and `dupd` are distinctive enough not to collide.
-    prose = [(rel, read(rel), removed) for rel in PROSE_SOURCES]
+    #
+    # PROSE_EXEMPT is for the ones that are not. `read` is an ordinary English word, and
+    # scanning for it flagged "read field x from p", "Receiver is read-only", "Use << to
+    # read fields" and the "file-read" template name -- prose that is correct and should
+    # not be reworded to satisfy a grep. The list checks below still cover it: a syntax
+    # file or documented-builtin list carrying `read` is still an error, which is what
+    # actually matters.
+    prose = [(rel, read(rel), removed - PROSE_EXEMPT) for rel in PROSE_SOURCES]
 
     # --extra files are syntax definitions -- keyword lists, tree-sitter rules,
     # TextMate patterns -- where every name is a claim about Quadrate, so removed
@@ -164,7 +175,7 @@ def main():
             problems.append(f"{path}: --extra file does not exist")
             continue
         with open(path, encoding="utf-8") as f:
-            prose.append((path, f.read(), removed | removed_kw))
+            prose.append((path, f.read(), (removed | removed_kw) - PROSE_EXEMPT))
 
     for rel, text, banned in prose:
         for name in sorted(banned):

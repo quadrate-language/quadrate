@@ -92,25 +92,25 @@ fn main() {
 
 ## Command-line arguments
 
-Use the `read` builtin to access command-line arguments:
+Use `os::args` to access command-line arguments. It returns them as an array,
+excluding the program name:
 
 ```qd
+use os
+
 fn main() {
-	read -> argc
+	os::args -> args
+	args len -> argc
 
 	argc 0 == if {
 		"No arguments provided" print nl
 	} else {
 		"Arguments:" print nl
-		argc 0 > if {
-			-> arg1
-			"  1: " print arg1 print nl
-		}
-		argc 1 > if {
-			-> arg2
-			"  2: " print arg2 print nl
+		0 argc 1 for i {
+			"  " print i 1 + print ": " print args i nth print nl
 		}
 	}
+	args free
 }
 ```
 

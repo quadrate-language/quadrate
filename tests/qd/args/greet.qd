@@ -1,11 +1,14 @@
 // Test: greet a person by name
-fn main() {
-	read -> argc
+use os
 
-	argc 0 == if {
+fn main() {
+	os::args -> args
+
+	args len 0 == if {
 		"Usage: greet <name>" print nl
 	} else {
-		-> name
+		args 0 nth -> name
 		"Hello, " print name print "!" print nl
 	}
+	args free
 }

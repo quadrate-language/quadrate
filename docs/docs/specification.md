@@ -1677,7 +1677,6 @@ See [Section 4.2](#42-stack-operations) for complete list.
 | `prints` | `( -- )` | Print entire stack contents (debug) |
 | `printsv` | `( -- )` | Print entire stack with type info (debug) |
 | `nl` | `( -- )` | Print newline |
-| `read` | `( -- ... n)` | Read command-line arguments (pushes args with type inference, then count) |
 
 ### 12.8 Error Handling
 
@@ -1952,7 +1951,7 @@ operator        = "+" | "-" | "*" | "/" | "%" | "++" | "--"
 instruction     = "dup" | "swap" | "drop" | "over" | "rot" | "nip"
                 | "pick" | "roll" | "nth" | "len" | "append" | "set"
                 | "make" "<" type ">" | "cast" "<" type ">"
-                | "print" | "nl" | "read" | "call" | "panic" | "err" | ... ;
+                | "print" | "nl" | "call" | "panic" | "err" | ... ;
 ```
 
 ---

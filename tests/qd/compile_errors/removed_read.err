@@ -1,0 +1,2 @@
+'read' has been removed (it was ( -- ... n )); the arguments are an array now; use os::args instead: 'os::args -> args  args len -> argc'
+!did you mean

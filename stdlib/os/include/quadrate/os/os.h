@@ -232,6 +232,12 @@ int usr_os_mkdir(qd_context* ctx);
  */
 int usr_os_list(qd_context* ctx);
 
+/// Command-line arguments (excluding the program name) as a Quadrate string array.
+int usr_os_args(qd_context* ctx);
+
+/// The program name, argv[0].
+int usr_os_program_name(qd_context* ctx);
+
 /**
  * @brief Execute a command and stream output to callback
  *

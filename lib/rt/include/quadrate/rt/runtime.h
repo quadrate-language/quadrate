@@ -209,14 +209,6 @@ int qd_printsv(qd_context* ctx);
  */
 int qd_nl(qd_context* ctx);
 
-/**
- * @brief Read input (implementation-specific)
- *
- * @param ctx Execution context
- * @return Execution result (0 on success)
- */
-int qd_read(qd_context* ctx);
-
 /** @} */ // end of IO group
 
 /**

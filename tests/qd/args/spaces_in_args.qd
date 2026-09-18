@@ -1,11 +1,14 @@
 // Test: handle arguments with spaces
-fn main() {
-	read -> argc
+use os
 
-	argc 0 > if {
-		-> arg
+fn main() {
+	os::args -> args
+
+	args len 0 > if {
+		args 0 nth -> arg
 		"Got: [" print arg print "]" print nl
 	} else {
 		"No arguments" print nl
 	}
+	args free
 }

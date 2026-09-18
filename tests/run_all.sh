@@ -1210,8 +1210,10 @@ run_args_tests() {
         fi
 
         local actual
-        # Capture only stdout, ignore stderr (compiler warnings)
-        actual=$("${cmd[@]}" 2>/dev/null)
+        # Capture only stdout, ignore stderr (compiler warnings).
+        # QUADRATE_ROOT is needed since these programs `use os` for os::args; they
+        # used to reach the arguments through the `read` builtin, which was removed.
+        actual=$(QUADRATE_ROOT="$QUADRATE_ROOT_DEFAULT" QUADRATE_LIBDIR="$QUADRATE_LIBDIR_DEFAULT" "${cmd[@]}" 2>/dev/null)
 
         if [[ "$actual" == "$expected" ]]; then
             ((passed++))
@@ -1227,9 +1229,9 @@ run_args_tests() {
     run_arg_test "greet with single arg" "greet.qd" "Hello, Alice!" "Alice"
     run_arg_test "greet with no args" "greet.qd" "Usage: greet <name>"
     run_arg_test "echo multiple args" "echo_args.qd" "argc=3
-arg0=third
+arg0=first
 arg1=second
-arg2=first" "first" "second" "third"
+arg2=third" "first" "second" "third"
     run_arg_test "echo no args" "echo_args.qd" "argc=0"
     run_arg_test "echo single arg" "echo_args.qd" "argc=1
 arg0=hello" "hello"
