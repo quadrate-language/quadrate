@@ -1,0 +1,1 @@
+tests/qd/fntype/error_lambda_inline_wrong_sig.qd:7:2: error: Type error in struct construction 'H': Field 'f' expects fn(i64 -- i64), but got fn(str -- str)

@@ -1,0 +1,9 @@
+// Test: an inline lambda in a struct literal is type-checked like any other field value.
+struct H {
+	f:fn(i64 -- i64)
+}
+
+fn main() {
+	H { f = fn (a:str -- r:str) { a } } -> h
+	h drop
+}

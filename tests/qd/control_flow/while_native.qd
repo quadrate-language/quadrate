@@ -1,0 +1,106 @@
+// Test: `while` inside a native-eligible function, which is generated on the compile-time
+// stack with PHI nodes rather than on the runtime stack.
+//
+// A function qualifies when it takes at least one typed scalar input and returns at most one.
+// `main` never does, so a `while` written in `main` only exercises the runtime-stack path --
+// which is what every other while test does. This one covers the PHI path: the loop header
+// carries a phi per stack slot, the body wires a back edge into it, and falling out of the
+// test is an exit edge that merges with any `break`.
+
+fn sum_to(n:i64 -- total:i64) {
+	0 -> acc
+	0 -> i
+	i n < while {
+		acc i + -> acc
+		i 1 + -> i
+	}
+	acc
+}
+
+fn count_down(n:i64 -- steps:i64) {
+	0 -> steps
+	n 0 > while {
+		n 1 - -> n
+		steps 1 + -> steps
+	}
+	steps
+}
+
+fn first_five(n:i64 -- stopped:i64) {
+	0 -> i
+	i n < while {
+		i 5 == if { break }
+		i 1 + -> i
+	}
+	i
+}
+
+fn odd_count(n:i64 -- odds:i64) {
+	0 -> i
+	0 -> odds
+	i n < while {
+		i 1 + -> i
+		i 2 % 0 == if { continue }
+		odds 1 + -> odds
+	}
+	odds
+}
+
+fn nested(n:i64 -- cells:i64) {
+	0 -> a
+	0 -> cells
+	a n < while {
+		0 -> b
+		b n < while {
+			cells 1 + -> cells
+			b 1 + -> b
+		}
+		a 1 + -> a
+	}
+	cells
+}
+
+// f64 exercises the double branch of the stack-PHI wiring.
+fn halve_until(x:f64 -- r:f64) {
+	x 1.0 > while {
+		x 2.0 / -> x
+	}
+	x
+}
+
+// Not native, despite the typed input: `print` in the body disqualifies it, so this one runs the
+// runtime-stack path. Kept here as the contrast -- the same loop, the other generator.
+fn shout(n:i64 -- ) {
+	0 -> i
+	i n < while {
+		"x" print
+		i 1 + -> i
+	}
+	nl
+}
+
+// The condition calls another native function.
+fn below(a:i64 b:i64 -- r:i64) {
+	a b <
+}
+
+fn call_in_cond(n:i64 -- r:i64) {
+	0 -> i
+	i n below while {
+		i 1 + -> i
+	}
+	i
+}
+
+fn main() {
+	5 sum_to print nl
+	0 sum_to print nl
+	4 count_down print nl
+	100 first_five print nl
+	3 first_five print nl
+	10 odd_count print nl
+	3 nested print nl
+	8.0 halve_until print nl
+	3 shout
+	6 call_in_cond print nl
+}

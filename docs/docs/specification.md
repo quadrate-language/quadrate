@@ -1123,6 +1123,16 @@ Box<i64> { value = 42 }
 Pair<str, i64> { first = "key" second = 100 }
 ```
 
+Each `expr` is an ordinary expression, and an implementation MUST accept in that position anything
+it accepts as a value elsewhere — including a nested struct literal, an array literal and an
+anonymous function:
+
+```quadrate
+Box { items = [1 2 3]  f = fn (x:i64 -- r:i64) { x 10 * } }
+```
+
+The same holds for the elements of an array literal (3.2.2).
+
 ### 8.3 Field Access (Read)
 
 Use `<<` operator (data flows left, out of struct):

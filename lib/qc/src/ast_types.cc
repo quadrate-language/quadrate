@@ -489,6 +489,19 @@ namespace Qd {
 				size_t n;
 				const char* text = u8t_scanner_token_text(scanner, &n);
 
+				// An anonymous function is a value, so it may initialise a field. It has to be
+				// recognised before the ':' check below, which would otherwise read the lambda's
+				// own parameter list -- `fn (x:i64 -- r:i64)` -- as another field written with a
+				// colon, and suggest `x = value`. The corpus works around this by binding the
+				// lambda first; both forms are accepted now.
+				if (strcmp(text, "fn") == 0 && peekNextNonWhitespace(scanner, src) == '(') {
+					IAstNode* anonFunc = parseAnonymousFunction(scanner, errorReporter, src);
+					if (anonFunc) {
+						currentFieldNodes.push_back(anonFunc);
+					}
+					continue;
+				}
+
 				// Check if this identifier is followed by '=' (field name in struct construction)
 				// Use peekNextNonWhitespace to allow spaces around '='
 				char32_t nextToken = peekNextNonWhitespace(scanner, src);

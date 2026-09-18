@@ -1,0 +1,61 @@
+// Test: an anonymous function is a value, so it may appear wherever a value may --
+// a struct-literal field initializer, an array-literal element, and inside a nested
+// literal of either kind.
+//
+// Both positions used to reject it. The array loop reported "Unexpected character '('",
+// and the struct-literal field parser read the lambda's own `x:i64` as the start of
+// another field, suggesting `x = value`. The corpus worked around it by binding the
+// lambda to a local first, which still works and is checked here too.
+
+struct Ops {
+	add:fn(i64 -- i64)
+	mul:fn(i64 -- i64)
+	name:str
+}
+
+struct Inner {
+	g:fn(i64 -- i64)
+}
+
+struct Outer {
+	inner:Inner
+}
+
+struct Box {
+	items:[]i64
+	f:fn(i64 -- i64)
+}
+
+fn main() {
+	// inline in a struct literal, with a plain field after it
+	Ops { add = fn (x:i64 -- r:i64) { x 1 + }  mul = fn (x:i64 -- r:i64) { x 3 * }  name = "ops" } -> o
+	10 o <<add call print nl
+	10 o <<mul call print nl
+	o <<name print nl
+
+	// the lambda captures an enclosing local
+	7 -> k
+	Ops { add = fn (x:i64 -- r:i64) { x k + }  mul = fn (x:i64 -- r:i64) { x k * }  name = "cap" } -> c
+	1 c <<add call print nl
+	2 c <<mul call print nl
+
+	// inside a nested struct literal
+	Outer { inner = Inner { g = fn (x:i64 -- r:i64) { x 3 * } } } -> nested
+	4 nested <<inner <<g call print nl
+
+	// as an array-literal element
+	[fn (x:i64 -- r:i64) { x 2 * }] -> fns
+	5 fns 0 nth call print nl
+	fns free
+
+	// an array literal and a lambda in the same struct literal
+	Box { items = [1 2 3]  f = fn (x:i64 -- r:i64) { x 10 * } } -> b
+	b <<items len print nl
+	4 b <<f call print nl
+
+	// binding first still works
+	fn (x:i64 -- r:i64) { x 100 * } -> cb
+	Ops { add = cb  mul = cb  name = "bound" } -> bound
+	1 bound <<add call print nl
+	bound <<name print nl
+}

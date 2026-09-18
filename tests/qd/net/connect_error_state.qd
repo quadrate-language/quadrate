@@ -1,0 +1,23 @@
+// Test: a failed net call reports its code and message through the error state.
+//
+// net set neither ctx->error_code nor a message -- it only pushed the status, and additionally
+// returned 0 (success) from every failure path. `switch` therefore saw the failure while `!` and
+// `?`, which read the error state, saw success: `net::connect!` fell through, the status was
+// popped as if it were the socket, and the next binding reported "Stack underflow when assigning
+// to local variable". `err` gave code 0 and an empty message.
+//
+// A closed loopback port is the same provocation net/connect_fail uses; it opens a real socket,
+// so it does not trip valgrind's file-descriptor checks the way a bogus descriptor would.
+use net
+
+fn main() {
+	"localhost" 44444 net::connect switch {
+		Ok { -> sock  sock net::close  "FAIL: nothing should be listening" print nl }
+		net::ErrConnect {
+			err -> code -> msg
+			"code=" print code print nl
+			"msg=" print msg print nl
+		}
+		_ { err -> code -> _  "FAIL: unexpected code " print code print nl }
+	}
+}

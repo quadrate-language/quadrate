@@ -140,131 +140,6 @@ candidates did not, and R29 and R30 were withdrawn because of it.
       **Open question**: generate the missing `.out` siblings from current behaviour and review the
       diff, or are these deliberately output-free?
 
-- [ ] **R39. A lambda cannot appear inline in a struct literal.** `H { f = fn (x:i64 -- r:i64) {
-      x 2 * } }` is rejected by the struct-literal field parser with *"Use '=' instead of ':' for
-      struct field initializers"* — it reads the lambda's `x:i64` as the start of another field.
-      The working form is to bind it first (`fn (…) {…} -> cb  H { f = cb }`), which is what the
-      corpus does. Found while adding the construction-time check in R2; predates it.
-      **Open question**: teach the field-initializer parser to recognise `fn (` and parse a
-      lambda, or leave it and say so in the docs? Same family as R19 (nested array literals and
-      struct literals inside array literals do not parse either) — probably one fix to the
-      "what can appear as a value here" question rather than three.
-
-
-- [x] **R40 — the truncated signatures were `gen_docs.sh`, not `quaddoc`.** The renderer was never
-      at fault: `docs/gen_docs.sh` parsed each declaration with `\(([^)]*)\)`, whose `[^)]*` stops
-      at the *first* `)` — which, in `pred:fn(T -- i64)`, is the inner one closing the function
-      pointer. Every signature with a `fn(...)` parameter lost everything after it and was left
-      with an unbalanced paren. Fixed with a one-level-nesting pattern,
-      `\(([^()]*(\([^()]*\)[^()]*)*)\)`, which is enough for the one nesting depth a
-      function-pointer parameter can have; `fn_failable` moved from `BASH_REMATCH[5]` to `[6]` to
-      account for the added group.
-
-      All stdlib signatures now balance (**0 unbalanced**, was 17). `hof::all` publishes in full as
-      `(arr:[]T pred:fn(T -- i64) -- result:i64)`. The `[Unreleased]` note claiming this was already
-      fixed was about the renderer and was correct about the renderer — the generator was the
-      remaining half.
-
-      The related `signal.md` defect went with it: `gen_docs.sh` dropped `/// doccheck:` directives,
-      so the one module whose example cannot run under docscheck (it loops until Ctrl+C) lost its
-      opt-out on every regeneration. The generator now passes `doccheck:` through as an
-      `<!-- doccheck: … -->` comment immediately before the fence, and `signal.qd` carries the
-      directive at source. Regenerated `signal.md` is byte-identical to the checked-in page.
-      docscheck: 219 checked, 0 failed.
-
-
-- [x] **R42 — a stack slot owns what it holds, pointers included.** `qd_drop` released strings and
-      deliberately skipped `QD_STACK_TYPE_PTR`, on the reasoning that "a raw pointer on the stack
-      is not necessarily a counted object". `qd_ptr_release` answers exactly that question — array
-      magic, then the struct registry, and anything else untouched — so the objection was already
-      handled. `drop` leaked every array and struct it discarded: 128,000 bytes over a thousand
-      iterations for an array where binding it instead was zero.
-
-      **The scope estimate in this item was wrong.** It said the fix meant touching every
-      `qd_stack_push_ptr` caller, all 66 of them. It did not, because the codebase already had the
-      right convention for strings and applied it through a helper — `qdrt_release_if_string` —
-      that the original survey missed by grepping for `qd_string_release`. That is also why `swap`
-      looked like it leaked strings and does not. The change is to make pointers follow the rule
-      strings already followed, in three places: `push_element` takes a reference of its own for
-      pointers as it did for strings; the helper (now `qdrt_release_element`) drops a pointer's
-      reference as it drops a string's; and the six discard sites that inlined `qd_string_release`
-      go through it. Creation sites are untouched — `qd_push_p` goes straight to
-      `qd_stack_push_ptr`, so a newly built array still transfers its single reference into the
-      slot.
-
-      **The ordering is the safety argument.** Releasing on `drop` without retaining on copy would
-      free a value another slot still holds, which is why this was not done earlier; retaining
-      first is what makes `dup` safe. Verified both directions: the three leaks go to zero, and
-      `dup`/`over`/`swap`/`rot`/`dup2`/`nip` followed by drops are valgrind-clean with no errors,
-      as are nested arrays and strings.
-
-      R26's documented behaviour is preserved exactly: a two-node cycle still leaks its own nodes
-      (112,000 bytes / 4,000 blocks) and a one-way link is still zero, so the specification text
-      stays true. Test: `memory/drop_releases`.
-
-
-- [ ] **R36. A user function named like a builtin is accepted, and the builtin wins.** Found by
-      accident: a test function called `pick` compiled, and `1 pick!` ran the *builtin* `pick` at
-      runtime (*"Index 1 out of range (stack has 0 elements)"*). The plain-call form `pick print`
-      is rejected only because the builtin's stack effect happens not to fit. Locals shadowing a
-      function already get *"Local variable 'x' shadows function with same name"*; declarations
-      shadowing a builtin get nothing.
-      **Open question**: reject at the declaration (`fn pick` → error naming the builtin), which is
-      the only reading under which the call site is unambiguous?
-
-- [ ] **R37. Four hand-rolled signature builders.** `analyzeFunctionSignatures` in `collect.cc`
-      (main-module functions), the import-block loop in `collectDefinitions` (same file),
-      `analyzeModuleFunctionSignatures` in `modules.cc` (module functions) and the import-block
-      loop beside it — each with its own type-string → stack-type
-      mapping and its own struct-qualification rules, plus the receiver-insertion logic repeated
-      in two of them. R34's fallout included one of them substituting a body residual for
-      declared outputs and another mapping sized integers to `any`; both were divergences the
-      others did not have. Also of this family: the struct-construction field-initializer check
-      (`typecheck.cc`, "Process the field's expression nodes") is a hand-rolled mini type checker
-      with its own `switch` over node kinds; R35 found it had no `<<` case at all. It should call
-      the real one. R1 and R2 factored the call-site *application* into `bindCallTypeParams` and
-      `pushCallResults`, shared by both call paths, so what remains duplicated is the builders.
-      `parseFnTypeString` is the inverse of `buildFnTypeString`; those two should stay adjacent,
-      since a change to either silently breaks the round trip.
-
-      **Measured 2026-09-18** with `tools/signature_baseline.sh`, driven by the new
-      `QUADC_DUMP_SIGNATURES` env var: **773 compilation units, 2,224 distinct signatures, and
-      zero module-qualified names computed inconsistently.** The premise of this item — that the
-      builders are currently diverging — does not hold any more. The divergences it was written
-      from were real, and were fixed: the body-residual substitution and the sized-ints-as-`any`
-      mapping both went in R34, and R1 gave every builder the declared type names.
-
-      A first reading of the dump reported 293 inconsistent names. That was an artefact of the
-      harness: `quadc` validates the program and then each module file *as its own main file*, and
-      a struct that is `thread::Barrier` to an importer is plainly `Barrier` inside its own module.
-      Comparing across those passes compares different contexts. The harness now keeps pass 1 only
-      — worth remembering before trusting a future run of it. The 47 names that still differ are
-      all unqualified and genuinely different functions sharing a name across test files (`abs` is
-      `f64 -- f64` in one and `i64 -- i64` in another).
-
-      So what is left is duplication, not a live defect: four builders of ~200 near-identical
-      lines that have produced three separate bugs historically. The case for consolidating is
-      maintenance, and the baseline now makes it **provable** — it must stay byte-identical.
-
-      One asymmetry does remain, and it is small: **`parameterFieldAccess` is populated only by
-      `collect.cc`**, so of 61 pass-1 signatures carrying field requirements just 3 are
-      module-qualified and no stdlib function has any. That mechanism infers a `ptr` parameter's
-      struct type from the fields the body reads; since R1 the declared struct type is checked
-      structurally anyway (`fp::takes` rejects a `Wrong` for a `Need` with no field data at all),
-      so the gap is an inference nicety rather than a missing check.
-      **Open question**: is a pure de-duplication worth the churn now that it is not fixing
-      anything? The baseline makes it safe, and the history argues for it, but it is no longer
-      urgent — R9 or R29/R30 may be better uses of a long run.
-
-
-- [ ] **R38. `analyzeBlockInIsolation` still runs on every function body at collection time, and
-      its result is no longer used for anything declared.** Both builders call it before building
-      the signature; after R34 neither reads its residual. It may still be load-bearing for side
-      effects — method-call marking on identifier nodes, captured-variable collection — and it
-      may be pure cost.
-      **Open question**: find out which, then either delete the call or rename it for what it
-      actually does.
-
 #### Language design decisions to settle
 
 - [ ] **R11. Naming a parameter silently changes the calling convention.** `fn f(x:i64 -- r:i64)`
@@ -795,6 +670,45 @@ candidates did not, and R29 and R30 were withdrawn because of it.
 
 ## Done
 
+### R39 — an anonymous function is a value, and now parses like one (2026-09-18)
+
+- [x] **Fixed in the parser, and the open question's second guess was the right one.** The item
+      asked whether to teach the field-initializer parser to recognise `fn (`, or to leave it and
+      say so in the docs — and noted it was "the same family as R19", *"probably one fix to the
+      'what can appear as a value here' question rather than three"*. That reading was correct, and
+      the fix is two small ones rather than three, because the array-literal path already routed
+      through the shared expression parser.
+
+      `parseSimpleToken` now recognises `fn (` and parses an anonymous function. That is the
+      altitude the array-literal loop already reaches — it routes identifier elements through
+      `parseBlockStatement` so that `[ P { x = 1 } ]` works (R19) — so `[fn (x:i64 -- r:i64) { x 2
+      * }]` started working from that one change. It is deliberately **not** gated on
+      `allowControlFlow`: a lambda is a value, not control flow, and the array loop passes false.
+
+      The struct-literal field parser needed its own, because it has bespoke identifier handling
+      that never reaches `parseSimpleToken`. The check has to come **before** the `:` test there,
+      which was the actual cause of the reported symptom: the lambda's own parameter list
+      `fn (x:i64 -- r:i64)` was read as another field written with a colon, so the diagnostic was
+      *"Use '=' instead of ':' for struct field initializers. Expected 'x = value'"* — advice
+      about a field the author never wrote.
+
+      All four positions now work: inline in a struct literal, inside a *nested* struct literal,
+      as an array-literal element, and an array literal and a lambda in the same struct literal.
+      Captures work inline (`Ops { add = fn (x:i64 -- r:i64) { x k + } }` closes over `k`), and
+      the field is still type-checked — a wrong signature reports *"Field 'f' expects
+      fn(i64 -- i64), but got fn(str -- str)"*. The bind-it-first form the corpus uses is
+      unchanged and still reads better when the same function is used twice.
+
+      `quadfmt` needed nothing: it expands such a literal across lines with the lambdas intact,
+      and its output is idempotent and runs identically.
+
+      Specification 8.2 now states the rule the item was really about — a field initializer is an
+      ordinary expression, and an implementation MUST accept there anything it accepts as a value
+      elsewhere, nested literals and anonymous functions included — with the same holding for array
+      elements. The learn page gains an "as a value in a literal" section showing both forms.
+      Tests: `fntype/lambda_inline_value` and `fntype/error_lambda_inline_wrong_sig`. Suite
+      2,135 → 2,137; docscheck 224 → 226.
+
 ### R46 — the allocation sites were not aborting; `!` was doing nothing at all (2026-09-18)
 
 - [x] **The item's premise was wrong in the way that mattered.** It said "50 `mem::alloc!` /
@@ -841,9 +755,13 @@ candidates did not, and R29 and R30 were withdrawn because of it.
       do nothing about — the argument against it is stronger than when the item was written.
 
       Tests: `errors/alloc_failure` pins the code and message on the handled path for `mem::alloc`,
-      `mem::realloc`, an invalid-argument case and `net::send`; `errors/alloc_failure_abort` pins
-      the abort message on the `!` path, which is the one that used to blame the binding. Suite
-      2,132 → 2,134.
+      `mem::realloc` and an invalid-argument case; `errors/alloc_failure_abort` pins the abort
+      message on the `!` path, which is the one that used to blame the binding; `net/connect_error_state`
+      does the same for `net`, provoked with a closed loopback port as `net/connect_fail` already
+      does. The net check was first written into `errors/alloc_failure` as `-1 "x" net::send`, and
+      that **failed under `make valgrind`** — not for anything net does, but because valgrind's
+      file-descriptor checker reports `write(-1, …)`, so the test itself was the error. An
+      allocation test had no business calling the network stack anyway. Suite 2,132 → 2,135.
 
 ### R12 — `while` is back, and the condition is not written twice (2026-09-18)
 
@@ -879,9 +797,19 @@ candidates did not, and R29 and R30 were withdrawn because of it.
       generator paths are implemented — the runtime stack and the compile-time stack with its PHI
       nodes. `break`/`continue` now recognise `while` as a loop context, which they did not at first.
 
+      **The compile-time-stack path shipped untested and was caught later.** A function reaches that
+      generator only when it takes at least one typed scalar input and returns at most one; `main`
+      never qualifies, and every test written with the feature put its loop in `main`. So the PHI
+      path — the harder of the two — had no coverage. `control_flow/while_native` closes that:
+      accumulation, zero-trip, `break`, `continue`, nesting, an `f64` loop (which exercises the
+      double branch of the back-edge wiring), and a condition that calls another native function,
+      with `--dump-ir` confirming each one compiles to `*_native` with a `while.stk` phi. The path
+      was correct; it was the testing that was missing.
+
       Verified: zero-trip, `break`, `continue`, a call in the condition (`k is_small while`), a
       compound condition (`m 2 + 5 <`), nesting, and the statement-before-loop case. Tests
-      `control_flow/while_basic` and `compile_errors/while_condition_arity`; suite 2,130 → 2,132;
+      `control_flow/while_basic`, `control_flow/while_native` and
+      `compile_errors/while_condition_arity`; suite 2,130 → 2,132;
       docscheck 222 → 224. `while` is out of `REMOVED_KEYWORDS`, which `reference:builtin_lists`
       checks, and back in `reference.def`, the LSP completion and hover lists, `quadrepl`'s keyword
       list and `quadlint`'s empty-block reporter.
@@ -1166,7 +1094,7 @@ parser reports "Block nesting too deep"), and neither bug was in the type stack.
       at any depth; `any` means "unknown" only at the top level, which is what keeps the empty
       `[]` literal failing against `[]i64`.
 
-    R39 (a lambda cannot appear inline in a struct literal) was found here and is filed above.
+    R39 (a lambda cannot appear inline in a struct literal) was found here; it is fixed, see Done.
     Sweep clean, docscheck clean, stdlib unit tests clean.
 
 

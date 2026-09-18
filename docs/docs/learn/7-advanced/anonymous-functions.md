@@ -32,6 +32,42 @@ fn main() {
 }
 ```
 
+## As a value in a literal
+
+An anonymous function is a value, so it can initialise a struct field or be an element of an array
+literal — no need to bind it to a local first:
+
+```qd
+struct Ops {
+	add:fn(i64 -- i64)
+	name:str
+}
+
+fn main() {
+	Ops { add = fn (x:i64 -- r:i64) { x 1 + }  name = "ops" } -> o
+	10 o <<add call print nl  // 11
+
+	[fn (x:i64 -- r:i64) { x 2 * }] -> fns
+	5 fns 0 nth call print nl  // 10
+	fns free
+}
+```
+
+Binding it first still works and reads better when the same function is used more than once:
+
+```qd
+struct Ops {
+	add:fn(i64 -- i64)
+	mul:fn(i64 -- i64)
+}
+
+fn main() {
+	fn (x:i64 -- r:i64) { x 2 * } -> double
+	Ops { add = double  mul = double } -> o
+	5 o <<add call print nl  // 10
+}
+```
+
 ## Side-effect functions
 
 Functions that don't return values use an empty output signature:

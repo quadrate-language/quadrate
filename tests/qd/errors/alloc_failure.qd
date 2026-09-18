@@ -5,7 +5,6 @@
 // status was popped as if it were the result, and the next binding reported "Stack underflow
 // when assigning to local variable". `err` gave code 0 and an empty message.
 use mem
-use net
 
 fn main() {
 	// A request larger than the address space cannot be satisfied.
@@ -34,11 +33,4 @@ fn main() {
 		_ { err -> code -> _  "FAIL: unexpected code " print code print nl }
 	}
 	small mem::free
-
-	// A socket operation that cannot succeed reports its own code and message, for the same
-	// reason: net set neither, and additionally returned 0 -- success -- from every failure.
-	-1 "x" net::send switch {
-		Ok { -> n  "FAIL: send should not have succeeded" print nl  n drop }
-		_ { err -> code -> msg  "send code=" print code print nl  "send msg=" print msg print nl }
-	}
 }

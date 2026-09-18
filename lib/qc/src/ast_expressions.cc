@@ -370,6 +370,17 @@ namespace Qd {
 				return nullptr;
 			}
 
+			// An anonymous function is a value, so it is recognised here rather than only in
+			// parseBlockBody -- that is what lets one appear wherever a value may, including a
+			// struct-literal field initializer and an array literal element. Both used to reject
+			// it: the array loop reported "Unexpected character '('" and the struct-literal field
+			// parser read the lambda's own `x:i64` as the start of another field and suggested
+			// `x = value`. Not gated on allowControlFlow -- a lambda is not control flow, and the
+			// array-literal loop passes false.
+			if (strcmp(text, "fn") == 0 && peekNextNonWhitespace(scanner, src) == '(') {
+				return parseAnonymousFunction(scanner, errorReporter, src);
+			}
+
 			if (allowControlFlow) {
 				if (strcmp(text, "if") == 0) {
 					return parseIfStatement(scanner, errorReporter, src);
