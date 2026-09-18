@@ -1,0 +1,9 @@
+// Test: `!` on a failing allocation aborts naming the allocation, not the binding after it.
+use mem
+
+fn main() {
+	"before" print nl
+	9223372036854775807 mem::alloc! -> p
+	"FAIL: should not be reached" print nl
+	p mem::free
+}

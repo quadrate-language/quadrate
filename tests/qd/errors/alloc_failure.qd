@@ -1,0 +1,44 @@
+// Test: a failing allocation reports its code and message on both paths.
+//
+// mem::alloc detected the failure but set neither ctx->error_code nor a message, and those are
+// what `!` and `?` read -- so `mem::alloc!` did not abort at all. The call fell through, the
+// status was popped as if it were the result, and the next binding reported "Stack underflow
+// when assigning to local variable". `err` gave code 0 and an empty message.
+use mem
+use net
+
+fn main() {
+	// A request larger than the address space cannot be satisfied.
+	9223372036854775807 mem::alloc switch {
+		Ok { -> p  "FAIL: allocation should not have succeeded" print nl  p mem::free }
+		mem::ErrAlloc {
+			err -> code -> msg
+			"alloc code=" print code print nl
+			"alloc msg=" print msg print nl
+		}
+		_ { err -> code -> _  "FAIL: unexpected code " print code print nl }
+	}
+
+	// Negative sizes are an argument error, not an allocation failure.
+	-1 mem::alloc switch {
+		Ok { -> p  "FAIL: negative size should not have succeeded" print nl  p mem::free }
+		mem::ErrInvalidArg { err -> code -> _  "negative code=" print code print nl }
+		_ { err -> code -> _  "FAIL: unexpected code " print code print nl }
+	}
+
+	// realloc reports the same way.
+	0 mem::alloc! -> small
+	small 9223372036854775807 mem::realloc switch {
+		Ok { -> p  "FAIL: realloc should not have succeeded" print nl  p mem::free }
+		mem::ErrAlloc { err -> code -> _  "realloc code=" print code print nl }
+		_ { err -> code -> _  "FAIL: unexpected code " print code print nl }
+	}
+	small mem::free
+
+	// A socket operation that cannot succeed reports its own code and message, for the same
+	// reason: net set neither, and additionally returned 0 -- success -- from every failure.
+	-1 "x" net::send switch {
+		Ok { -> n  "FAIL: send should not have succeeded" print nl  n drop }
+		_ { err -> code -> msg  "send code=" print code print nl  "send msg=" print msg print nl }
+	}
+}

@@ -1404,6 +1404,14 @@ err    // Stack effect: ( -- msg:str code:i64 )
 `err` reports the code the `panic` carried, whatever it was — including `0`. Reading the error
 state clears it.
 
+A fallible function implemented natively rather than in Quadrate MUST report failure through the
+same error state, not only by pushing a status value. The `!` and `?` operators read the error
+state; a `switch` reads the pushed status. An implementation that sets only the status makes the
+two disagree — `switch` sees the failure while `!` sees success, falls through, and pops the status
+as if it were the call's result, so the failure surfaces later as an unrelated stack error. A
+native fallible function therefore MUST, on failure, set the error code, set an error message, push
+the status, and return the status.
+
 ### 10.6 Worked Example
 
 A complete program exercising all four call-site forms against one fallible function:
@@ -1471,6 +1479,22 @@ caught code -1: -1 division by zero
 - Strings
 - Arrays
 - Captured closure variables
+
+**Allocation failure:**
+
+`mem::alloc`, `mem::realloc` and `mem::alloc_aligned` are fallible and report failure as
+`mem::ErrAlloc`, so a program that has something useful to do when memory runs out can handle it
+like any other error.
+
+The standard library does not. Its allocation sites call these with `!`, which aborts the process
+with a message naming the allocation and a stack trace. This is a deliberate policy rather than an
+oversight: a library function such as `sb::new` or `regex::compile` has no way to report the
+failure that would not make every one of its callers fallible for a condition none of them can act
+on. Where a program needs a different policy, it allocates for itself and handles the error.
+
+This differs from the treatment of malformed *input*, which a library MUST NOT abort on: input is
+chosen by whoever is talking to the program, whereas allocation failure is a property of the
+machine.
 
 ### 11.2 Reference Counting
 

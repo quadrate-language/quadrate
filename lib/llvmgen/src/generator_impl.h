@@ -73,7 +73,6 @@
 #include <quadrate/qc/ast_node_literal.h>
 #include <quadrate/qc/ast_node_local.h>
 #include <quadrate/qc/ast_node_loop.h>
-#include <quadrate/qc/ast_node_while.h>
 #include <quadrate/qc/ast_node_parameter.h>
 #include <quadrate/qc/ast_node_return.h>
 #include <quadrate/qc/ast_node_scoped.h>
@@ -81,6 +80,7 @@
 #include <quadrate/qc/ast_node_switch.h>
 #include <quadrate/qc/ast_node_test.h>
 #include <quadrate/qc/ast_node_use.h>
+#include <quadrate/qc/ast_node_while.h>
 
 #include <algorithm>
 #include <charconv>

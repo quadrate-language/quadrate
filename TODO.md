@@ -122,19 +122,6 @@ candidates did not, and R29 and R30 were withdrawn because of it.
       **Open question**: does the JSON case move this from "longer horizon" to the next thing after
       R1/R2, or is a real `json::parse` simply not a goal?
 
-- [ ] **R46. 50 `mem::alloc!`/`mem::realloc!` sites abort the host process on OOM.** Split out of
-      R4, which lumped them in with the string-indexing sites they have nothing in common with.
-      They are the largest remaining group: `regex` 13, `crypto` 9, `uuid` 6, `sb` 5, `base64` 4,
-      `uri` 4, `hex` 4, `fuzzy` 4, `rand` 1; every one sits inside a **non-fallible**
-      function, so none is a local `!` → `?` edit. Unlike R4's population there is no total
-      counterpart to reach for: the honest fix makes the enclosing functions fallible and
-      propagates, which is the signature cascade across seven modules that R3 will settle anyway.
-      Aborting on OOM is at least a defensible library policy, which malformed-input aborts were
-      not.
-      **Open question**: does this wait for R3, or is an allocation-failure policy (abort, with a
-      documented `qd_set_oom_handler`-style hook) the actual answer, so the `!` stays and only
-      the contract is written down?
-
 #### What the compiler does and does not check
 
 - [ ] **R9. `docscheck` covers 16% of the documented examples.** 219 blocks checked and passing,
@@ -807,6 +794,56 @@ candidates did not, and R29 and R30 were withdrawn because of it.
       halt) so kernel code can stay in `.qd`.
 
 ## Done
+
+### R46 — the allocation sites were not aborting; `!` was doing nothing at all (2026-09-18)
+
+- [x] **The item's premise was wrong in the way that mattered.** It said "50 `mem::alloc!` /
+      `mem::realloc!` sites abort the host process on OOM", and asked whether to propagate instead
+      or write an abort policy down. Neither, as it turned out: **they did not abort.**
+
+      `mem::alloc` detected the failure and pushed `ErrAlloc`, but set neither `ctx->error_code`
+      nor an error message — and those are what `!` and `?` read. `generateReadErrorState` tests
+      `has_error` or a non-zero `error_code`; a pushed status is what `switch` reads. So the two
+      disagreed: `switch` saw the failure, `!` saw success, fell through, and popped the status as
+      if it were the call's result. The next binding then reported
+
+      ```
+      Fatal error: Stack underflow when assigning to local variable
+      ```
+
+      which blames the binding for an allocation that failed two lines earlier. `err` after a
+      handled failure gave **code 0 and an empty message**.
+
+      **It was not only `mem`.** An audit of every stdlib C source for error-status pushes against
+      `ctx->error_code` assignments found three modules that never set it: `net.c` (33 paths),
+      `mem_heap.c` (12) and `http_server.c` (5). `net` was worse again — every one of its failure
+      paths also `return 0`, which reports success to the caller. So `!` and `?` were inert for all
+      of `net::listen`, `accept`, `connect`, `send`, `receive`, `set_timeout`, `set_keepalive`,
+      `lookup`, `get_peer_addr`, all three `mem` allocators, and `http::run`. Confirmed by probe:
+      `net::connect!` to a closed port produced the same misleading stack-underflow message.
+
+      Every failure path in those three now sets the code and a message, pushes the status and
+      returns it, through one `*_FAIL` macro per file matching what `io`, `os` and `thread` already
+      did. `mem::alloc` failure now reads `code=2`, `msg=[mem::alloc: out of memory]`, and
+      `mem::alloc!` aborts with *"alloc failed: mem::alloc: out of memory"* plus a stack trace.
+
+      **With the mechanism fixed, the original question answers itself.** The 50 `!` sites now do
+      what they always claimed, so "abort with a message naming the allocation" is a policy that is
+      actually true rather than one the code merely asserted. Specification 11.1 states it, and
+      distinguishes it from malformed *input*, which a library MUST NOT abort on: input is chosen
+      by whoever is talking to the program, allocation failure is a property of the machine.
+      Specification 10.5 gains the normative rule the three modules broke — a native fallible
+      function MUST set the error code and message, not only push a status. `stdlib/mem` states the
+      policy at module level.
+
+      Not done, deliberately: converting the 50 sites to `?`. That is still the signature cascade
+      across seven modules that R3 will settle, and it is now propagating a condition callers can
+      do nothing about — the argument against it is stronger than when the item was written.
+
+      Tests: `errors/alloc_failure` pins the code and message on the handled path for `mem::alloc`,
+      `mem::realloc`, an invalid-argument case and `net::send`; `errors/alloc_failure_abort` pins
+      the abort message on the `!` path, which is the one that used to blame the binding. Suite
+      2,132 → 2,134.
 
 ### R12 — `while` is back, and the condition is not written twice (2026-09-18)
 

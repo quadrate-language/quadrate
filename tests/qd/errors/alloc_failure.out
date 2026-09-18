@@ -1,0 +1,6 @@
+alloc code=2
+alloc msg=mem::alloc: out of memory
+negative code=3
+realloc code=2
+send code=5
+send msg=net::send: could not send on the socket

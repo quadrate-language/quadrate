@@ -775,6 +775,15 @@ static void handle_request(http_engine_t* engine, int client_fd, qd_context* ctx
 	close(client_fd);
 }
 
+// http::run is fallible, and the `!` and `?` operators read ctx->error_code rather than the status
+// pushed on the stack. Without the code set, `http::run!` fell through instead of aborting.
+#define HTTP_SERVER_FAIL(ctx, msg) do {                                                                               \
+	(ctx)->error_code = HTTP_ERR_BIND;                                                                                \
+	qd_set_error_msg(ctx, msg);                                                                                       \
+	qd_push_i(ctx, HTTP_ERR_BIND);                                                                                    \
+	return (int){HTTP_ERR_BIND};                                                                                      \
+} while (0)
+
 int usr_http_run(qd_context* ctx) {
 	// Pop addr
 	qd_stack_element_t addr_elem;
@@ -801,16 +810,14 @@ int usr_http_run(qd_context* ctx) {
 	int port;
 	if (parse_addr(addr, host, sizeof(host), &port) < 0) {
 		qd_string_release(addr_elem.value.s);
-		qd_push_i(ctx, HTTP_ERR_BIND);
-		return (int){HTTP_ERR_BIND};
+		HTTP_SERVER_FAIL(ctx, "http::run: could not parse the listen address");
 	}
 
 	// Create server socket
 	int server_fd = socket(AF_INET, SOCK_STREAM, 0);
 	if (server_fd < 0) {
 		qd_string_release(addr_elem.value.s);
-		qd_push_i(ctx, HTTP_ERR_BIND);
-		return (int){HTTP_ERR_BIND};
+		HTTP_SERVER_FAIL(ctx, "http::run: could not create the server socket");
 	}
 
 	// Set SO_REUSEADDR
@@ -829,24 +836,21 @@ int usr_http_run(qd_context* ctx) {
 		if (inet_pton(AF_INET, host, &server_addr.sin_addr) <= 0) {
 			close(server_fd);
 			qd_string_release(addr_elem.value.s);
-			qd_push_i(ctx, HTTP_ERR_BIND);
-			return (int){HTTP_ERR_BIND};
+			HTTP_SERVER_FAIL(ctx, "http::run: the listen address is not a valid IPv4 address");
 		}
 	}
 
 	if (bind(server_fd, (struct sockaddr*)&server_addr, sizeof(server_addr)) < 0) {
 		close(server_fd);
 		qd_string_release(addr_elem.value.s);
-		qd_push_i(ctx, HTTP_ERR_BIND);
-		return (int){HTTP_ERR_BIND};
+		HTTP_SERVER_FAIL(ctx, "http::run: could not bind the listen address");
 	}
 
 	// Listen
 	if (listen(server_fd, 128) < 0) {
 		close(server_fd);
 		qd_string_release(addr_elem.value.s);
-		qd_push_i(ctx, HTTP_ERR_BIND);
-		return (int){HTTP_ERR_BIND};
+		HTTP_SERVER_FAIL(ctx, "http::run: could not listen on the bound socket");
 	}
 
 	engine->server_fd = server_fd;

@@ -16,9 +16,20 @@
 #define MEM_ERR_ALLOC 2
 #define MEM_ERR_INVALID_ARG 3
 
-#define MEM_SET_ERR(ctx, msg) do {                                                                                    \
-	(ctx)->error_code = -1;                                                                                           \
+// A fallible import reports failure through ctx->error_code: the `!` and `?` operators read that
+// (via has_error or a non-zero code), not the status this function pushes. Setting only the pushed
+// status made `switch` work while `!` silently did nothing -- the call fell through, the status was
+// popped as if it were the result, and the next binding reported "Stack underflow when assigning to
+// local variable". So every failure path here sets the code and a message as well as pushing.
+#define MEM_SET_ERR(ctx, code, msg) do {                                                                              \
+	(ctx)->error_code = (code);                                                                                       \
 	qd_set_error_msg(ctx, msg);                                                                                       \
+} while (0)
+
+#define MEM_FAIL(ctx, code, msg) do {                                                                                 \
+	MEM_SET_ERR(ctx, code, msg);                                                                                      \
+	qd_push_i(ctx, code);                                                                                             \
+	return (int){code};                                                                                               \
 } while (0)
 
 // Helpers duplicated from mem.c (they're tiny and we want this file to
@@ -53,19 +64,16 @@ static qd_stack_error pop_ptr(qd_context* ctx, void** value) {
 int usr_mem_alloc(qd_context* ctx) {
 	int64_t bytes;
 	if (pop_int(ctx, &bytes) != QD_STACK_OK) {
-		qd_push_i(ctx, MEM_ERR_INVALID_ARG);
-		return (int){MEM_ERR_INVALID_ARG};
+		MEM_FAIL(ctx, MEM_ERR_INVALID_ARG, "mem::alloc: expected a byte count");
 	}
 
 	if (bytes < 0) {
-		qd_push_i(ctx, MEM_ERR_INVALID_ARG);
-		return (int){MEM_ERR_INVALID_ARG};
+		MEM_FAIL(ctx, MEM_ERR_INVALID_ARG, "mem::alloc: negative byte count");
 	}
 
 	void* ptr = malloc((size_t)bytes);
 	if (ptr == NULL && bytes > 0) {
-		qd_push_i(ctx, MEM_ERR_ALLOC);
-		return (int){MEM_ERR_ALLOC};
+		MEM_FAIL(ctx, MEM_ERR_ALLOC, "mem::alloc: out of memory");
 	}
 
 	qd_push_p(ctx, ptr);
@@ -79,24 +87,20 @@ int usr_mem_realloc(qd_context* ctx) {
 	void* ptr;
 
 	if (pop_int(ctx, &new_bytes) != QD_STACK_OK) {
-		qd_push_i(ctx, MEM_ERR_INVALID_ARG);
-		return (int){MEM_ERR_INVALID_ARG};
+		MEM_FAIL(ctx, MEM_ERR_INVALID_ARG, "mem::realloc: expected a byte count");
 	}
 
 	if (pop_ptr(ctx, &ptr) != QD_STACK_OK) {
-		qd_push_i(ctx, MEM_ERR_INVALID_ARG);
-		return (int){MEM_ERR_INVALID_ARG};
+		MEM_FAIL(ctx, MEM_ERR_INVALID_ARG, "mem::realloc: expected a pointer");
 	}
 
 	if (new_bytes < 0) {
-		qd_push_i(ctx, MEM_ERR_INVALID_ARG);
-		return (int){MEM_ERR_INVALID_ARG};
+		MEM_FAIL(ctx, MEM_ERR_INVALID_ARG, "mem::realloc: negative byte count");
 	}
 
 	void* new_ptr = realloc(ptr, (size_t)new_bytes);
 	if (new_ptr == NULL && new_bytes > 0) {
-		qd_push_i(ctx, MEM_ERR_ALLOC);
-		return (int){MEM_ERR_ALLOC};
+		MEM_FAIL(ctx, MEM_ERR_ALLOC, "mem::realloc: out of memory");
 	}
 
 	qd_push_p(ctx, new_ptr);
@@ -110,23 +114,19 @@ int usr_mem_alloc_aligned(qd_context* ctx) {
 	int64_t alignment;
 
 	if (pop_int(ctx, &bytes) != QD_STACK_OK) {
-		qd_push_i(ctx, MEM_ERR_INVALID_ARG);
-		return (int){MEM_ERR_INVALID_ARG};
+		MEM_FAIL(ctx, MEM_ERR_INVALID_ARG, "mem::alloc_aligned: expected a byte count");
 	}
 
 	if (pop_int(ctx, &alignment) != QD_STACK_OK) {
-		qd_push_i(ctx, MEM_ERR_INVALID_ARG);
-		return (int){MEM_ERR_INVALID_ARG};
+		MEM_FAIL(ctx, MEM_ERR_INVALID_ARG, "mem::alloc_aligned: expected an alignment");
 	}
 
 	if (bytes < 0 || alignment < 1) {
-		qd_push_i(ctx, MEM_ERR_INVALID_ARG);
-		return (int){MEM_ERR_INVALID_ARG};
+		MEM_FAIL(ctx, MEM_ERR_INVALID_ARG, "mem::alloc_aligned: negative size or alignment below 1");
 	}
 
 	if ((alignment & (alignment - 1)) != 0) {
-		qd_push_i(ctx, MEM_ERR_INVALID_ARG);
-		return (int){MEM_ERR_INVALID_ARG};
+		MEM_FAIL(ctx, MEM_ERR_INVALID_ARG, "mem::alloc_aligned: alignment is not a power of two");
 	}
 
 	size_t align = (size_t)alignment;
@@ -140,8 +140,7 @@ int usr_mem_alloc_aligned(qd_context* ctx) {
 
 	void* ptr = aligned_alloc(align, size);
 	if (ptr == NULL && bytes > 0) {
-		qd_push_i(ctx, MEM_ERR_ALLOC);
-		return (int){MEM_ERR_ALLOC};
+		MEM_FAIL(ctx, MEM_ERR_ALLOC, "mem::alloc_aligned: out of memory");
 	}
 
 	qd_push_p(ctx, ptr);
@@ -160,18 +159,18 @@ int usr_mem_to_string(qd_context* ctx) {
 	}
 
 	if (buffer == NULL) {
-		MEM_SET_ERR(ctx, "Null pointer in mem::to_string");
+		MEM_SET_ERR(ctx, MEM_ERR_INVALID_ARG, "mem::to_string: null pointer");
 		return (int){-1};
 	}
 
 	if (length < 0) {
-		MEM_SET_ERR(ctx, "Negative length in mem::to_string");
+		MEM_SET_ERR(ctx, MEM_ERR_INVALID_ARG, "mem::to_string: negative length");
 		return (int){-1};
 	}
 
 	char* str = malloc((size_t)length + 1);
 	if (!str) {
-		MEM_SET_ERR(ctx, "Allocation failed in mem::to_string");
+		MEM_SET_ERR(ctx, MEM_ERR_ALLOC, "mem::to_string: allocation failed");
 		return (int){-1};
 	}
 
@@ -202,7 +201,7 @@ int usr_mem_from_string(qd_context* ctx) {
 	void* buffer = malloc(length);
 	if (!buffer) {
 		qd_string_release(str_elem.value.s);
-		MEM_SET_ERR(ctx, "Allocation failed in mem::from_string");
+		MEM_SET_ERR(ctx, MEM_ERR_ALLOC, "mem::from_string: allocation failed");
 		return (int){-1};
 	}
 

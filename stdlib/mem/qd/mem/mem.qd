@@ -2,6 +2,12 @@
 ///
 /// SAFETY: These are unsafe operations with no bounds checking.
 /// Improper use can cause segmentation faults and memory corruption.
+///
+/// Allocation failure is reported as ErrAlloc, so a program with something useful to do when
+/// memory runs out can handle it like any other error. The standard library does not: its own
+/// allocation sites use `!`, which aborts with a message naming the allocation. See
+/// specification 11.1 -- a library function has no way to report the failure that would not make
+/// every one of its callers fallible for a condition none of them can act on.
 
 /// Allocation failure error code
 pub const ErrAlloc = 2

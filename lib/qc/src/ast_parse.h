@@ -36,7 +36,6 @@
 #include <quadrate/qc/ast_node_literal.h>
 #include <quadrate/qc/ast_node_local.h>
 #include <quadrate/qc/ast_node_loop.h>
-#include <quadrate/qc/ast_node_while.h>
 #include <quadrate/qc/ast_node_parameter.h>
 #include <quadrate/qc/ast_node_program.h>
 #include <quadrate/qc/ast_node_return.h>
@@ -47,6 +46,7 @@
 #include <quadrate/qc/ast_node_test.h>
 #include <quadrate/qc/ast_node_type_alias.h>
 #include <quadrate/qc/ast_node_use.h>
+#include <quadrate/qc/ast_node_while.h>
 #include <quadrate/qc/colors.h>
 #include <quadrate/qc/error_reporter.h>
 #include <u8t/scanner.h>
@@ -492,14 +492,14 @@ namespace Qd {
 	// condition never swallows a preceding `-> x` and re-runs it every iteration.
 	inline bool isConditionExpressionNode(IAstNode::Type type) {
 		switch (type) {
-			case IAstNode::Type::IDENTIFIER:
-			case IAstNode::Type::SCOPED_IDENTIFIER:
-			case IAstNode::Type::INSTRUCTION:
-			case IAstNode::Type::LITERAL:
-			case IAstNode::Type::FIELD_ACCESS:
-				return true;
-			default:
-				return false;
+		case IAstNode::Type::IDENTIFIER:
+		case IAstNode::Type::SCOPED_IDENTIFIER:
+		case IAstNode::Type::INSTRUCTION:
+		case IAstNode::Type::LITERAL:
+		case IAstNode::Type::FIELD_ACCESS:
+			return true;
+		default:
+			return false;
 		}
 	}
 

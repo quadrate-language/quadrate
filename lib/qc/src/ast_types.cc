@@ -571,8 +571,8 @@ namespace Qd {
 				// position it could appear in.
 				if (strcmp(text, "error") == 0) {
 					if (peekNextNonWhitespace(scanner, src) == '{') {
-						errorReporter->reportError(scanner,
-								"the 'error { ... }' literal has been removed; use 'msg code panic' instead");
+						errorReporter->reportError(
+								scanner, "the 'error { ... }' literal has been removed; use 'msg code panic' instead");
 						skipBracedGroup(scanner);
 						continue;
 					}

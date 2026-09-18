@@ -15,19 +15,29 @@
 #define NET_ERR_RECEIVE 6
 #define NET_ERR_INVALID_ARG 7
 
+// A fallible import reports failure through ctx->error_code -- that is what the `!` and `?`
+// operators read. Pushing the status alone made `switch` work while `!` did nothing at all: the
+// call fell through, the status was popped as if it were the result, and the next binding reported
+// "Stack underflow when assigning to local variable". These paths also returned 0, which claims
+// success to the caller. So every failure sets the code and a message, pushes, and returns it.
+#define NET_FAIL(ctx, code, msg) do {                                                                                 \
+	(ctx)->error_code = (code);                                                                                       \
+	qd_set_error_msg(ctx, msg);                                                                                       \
+	qd_push_i(ctx, code);                                                                                             \
+	return (int){code};                                                                                               \
+} while (0)
+
 // Stack signature: ( port:i -- socket:i )!
 // Creates a server socket, binds to the port, and listens
 int usr_net_listen(qd_context* ctx) {
 	qd_stack_element_t port_elem;
 	qd_stack_error err = qd_stack_pop(ctx->st, &port_elem);
 	if (err != QD_STACK_OK) {
-		qd_push_i(ctx, NET_ERR_INVALID_ARG);
-		return 0;
+		NET_FAIL(ctx, NET_ERR_INVALID_ARG, "net::listen: invalid argument");
 	}
 
 	if (port_elem.type != QD_STACK_TYPE_INT) {
-		qd_push_i(ctx, NET_ERR_INVALID_ARG);
-		return 0;
+		NET_FAIL(ctx, NET_ERR_INVALID_ARG, "net::listen: invalid argument");
 	}
 
 	int port = (int)port_elem.value.i;
@@ -35,8 +45,7 @@ int usr_net_listen(qd_context* ctx) {
 	// Create server socket using platform abstraction
 	net_socket_t server_fd = net_platform_listen(port);
 	if (server_fd == NET_SOCKET_INVALID) {
-		qd_push_i(ctx, NET_ERR_LISTEN);
-		return 0;
+		NET_FAIL(ctx, NET_ERR_LISTEN, "net::listen: could not bind or listen on the port");
 	}
 
 	// Push socket file descriptor to stack, then Ok
@@ -51,13 +60,11 @@ int usr_net_accept(qd_context* ctx) {
 	qd_stack_element_t socket_elem;
 	qd_stack_error err = qd_stack_pop(ctx->st, &socket_elem);
 	if (err != QD_STACK_OK) {
-		qd_push_i(ctx, NET_ERR_INVALID_ARG);
-		return 0;
+		NET_FAIL(ctx, NET_ERR_INVALID_ARG, "net::accept: invalid argument");
 	}
 
 	if (socket_elem.type != QD_STACK_TYPE_INT) {
-		qd_push_i(ctx, NET_ERR_INVALID_ARG);
-		return 0;
+		NET_FAIL(ctx, NET_ERR_INVALID_ARG, "net::accept: invalid argument");
 	}
 
 	net_socket_t server_fd = (net_socket_t)socket_elem.value.i;
@@ -65,8 +72,7 @@ int usr_net_accept(qd_context* ctx) {
 	// Accept connection using platform abstraction
 	net_socket_t client_fd = net_platform_accept(server_fd);
 	if (client_fd == NET_SOCKET_INVALID) {
-		qd_push_i(ctx, NET_ERR_ACCEPT);
-		return 0;
+		NET_FAIL(ctx, NET_ERR_ACCEPT, "net::accept: could not accept a connection");
 	}
 
 	// Push client socket to stack, then Ok
@@ -81,26 +87,22 @@ int usr_net_connect(qd_context* ctx) {
 	qd_stack_element_t port_elem;
 	qd_stack_error err = qd_stack_pop(ctx->st, &port_elem);
 	if (err != QD_STACK_OK) {
-		qd_push_i(ctx, NET_ERR_INVALID_ARG);
-		return 0;
+		NET_FAIL(ctx, NET_ERR_INVALID_ARG, "net::connect: invalid argument");
 	}
 
 	qd_stack_element_t host_elem;
 	err = qd_stack_pop(ctx->st, &host_elem);
 	if (err != QD_STACK_OK) {
-		qd_push_i(ctx, NET_ERR_INVALID_ARG);
-		return 0;
+		NET_FAIL(ctx, NET_ERR_INVALID_ARG, "net::connect: invalid argument");
 	}
 
 	if (port_elem.type != QD_STACK_TYPE_INT) {
 		if (host_elem.type == QD_STACK_TYPE_STR) qd_string_release(host_elem.value.s);
-		qd_push_i(ctx, NET_ERR_INVALID_ARG);
-		return 0;
+		NET_FAIL(ctx, NET_ERR_INVALID_ARG, "net::connect: invalid argument");
 	}
 
 	if (host_elem.type != QD_STACK_TYPE_STR) {
-		qd_push_i(ctx, NET_ERR_INVALID_ARG);
-		return 0;
+		NET_FAIL(ctx, NET_ERR_INVALID_ARG, "net::connect: invalid argument");
 	}
 
 	int port = (int)port_elem.value.i;
@@ -111,8 +113,7 @@ int usr_net_connect(qd_context* ctx) {
 
 	if (sock_fd == NET_SOCKET_INVALID) {
 		qd_string_release(host_elem.value.s);
-		qd_push_i(ctx, NET_ERR_CONNECT);
-		return 0;
+		NET_FAIL(ctx, NET_ERR_CONNECT, "net::connect: could not connect to the host");
 	}
 
 	qd_string_release(host_elem.value.s);
@@ -129,27 +130,23 @@ int usr_net_send(qd_context* ctx) {
 	qd_stack_element_t data_elem;
 	qd_stack_error err = qd_stack_pop(ctx->st, &data_elem);
 	if (err != QD_STACK_OK) {
-		qd_push_i(ctx, NET_ERR_INVALID_ARG);
-		return 0;
+		NET_FAIL(ctx, NET_ERR_INVALID_ARG, "net::send: invalid argument");
 	}
 
 	qd_stack_element_t socket_elem;
 	err = qd_stack_pop(ctx->st, &socket_elem);
 	if (err != QD_STACK_OK) {
 		if (data_elem.type == QD_STACK_TYPE_STR) qd_string_release(data_elem.value.s);
-		qd_push_i(ctx, NET_ERR_INVALID_ARG);
-		return 0;
+		NET_FAIL(ctx, NET_ERR_INVALID_ARG, "net::send: invalid argument");
 	}
 
 	if (socket_elem.type != QD_STACK_TYPE_INT) {
 		if (data_elem.type == QD_STACK_TYPE_STR) qd_string_release(data_elem.value.s);
-		qd_push_i(ctx, NET_ERR_INVALID_ARG);
-		return 0;
+		NET_FAIL(ctx, NET_ERR_INVALID_ARG, "net::send: invalid argument");
 	}
 
 	if (data_elem.type != QD_STACK_TYPE_STR) {
-		qd_push_i(ctx, NET_ERR_INVALID_ARG);
-		return 0;
+		NET_FAIL(ctx, NET_ERR_INVALID_ARG, "net::send: invalid argument");
 	}
 
 	net_socket_t sock_fd = (net_socket_t)socket_elem.value.i;
@@ -161,8 +158,7 @@ int usr_net_send(qd_context* ctx) {
 	qd_string_release(data_elem.value.s);
 
 	if (bytes_sent < 0) {
-		qd_push_i(ctx, NET_ERR_SEND);
-		return 0;
+		NET_FAIL(ctx, NET_ERR_SEND, "net::send: could not send on the socket");
 	}
 
 	// Push bytes sent to stack, then Ok
@@ -177,48 +173,41 @@ int usr_net_receive(qd_context* ctx) {
 	qd_stack_element_t max_bytes_elem;
 	qd_stack_error err = qd_stack_pop(ctx->st, &max_bytes_elem);
 	if (err != QD_STACK_OK) {
-		qd_push_i(ctx, NET_ERR_INVALID_ARG);
-		return 0;
+		NET_FAIL(ctx, NET_ERR_INVALID_ARG, "net::receive: invalid argument");
 	}
 
 	qd_stack_element_t socket_elem;
 	err = qd_stack_pop(ctx->st, &socket_elem);
 	if (err != QD_STACK_OK) {
-		qd_push_i(ctx, NET_ERR_INVALID_ARG);
-		return 0;
+		NET_FAIL(ctx, NET_ERR_INVALID_ARG, "net::receive: invalid argument");
 	}
 
 	if (socket_elem.type != QD_STACK_TYPE_INT) {
-		qd_push_i(ctx, NET_ERR_INVALID_ARG);
-		return 0;
+		NET_FAIL(ctx, NET_ERR_INVALID_ARG, "net::receive: invalid argument");
 	}
 
 	if (max_bytes_elem.type != QD_STACK_TYPE_INT) {
-		qd_push_i(ctx, NET_ERR_INVALID_ARG);
-		return 0;
+		NET_FAIL(ctx, NET_ERR_INVALID_ARG, "net::receive: invalid argument");
 	}
 
 	net_socket_t sock_fd = (net_socket_t)socket_elem.value.i;
 	int max_bytes = (int)max_bytes_elem.value.i;
 
 	if (max_bytes <= 0 || max_bytes > 1048576) { // Max 1MB
-		qd_push_i(ctx, NET_ERR_INVALID_ARG);
-		return 0;
+		NET_FAIL(ctx, NET_ERR_INVALID_ARG, "net::receive: invalid argument");
 	}
 
 	// Allocate buffer
 	char* buffer = malloc((size_t)max_bytes + 1);
 	if (buffer == NULL) {
-		qd_push_i(ctx, NET_ERR_RECEIVE);
-		return 0;
+		NET_FAIL(ctx, NET_ERR_RECEIVE, "net::receive: could not receive from the socket");
 	}
 
 	// Read data using platform abstraction
 	int bytes_read = net_platform_receive(sock_fd, buffer, (size_t)max_bytes);
 	if (bytes_read < 0) {
 		free(buffer);
-		qd_push_i(ctx, NET_ERR_RECEIVE);
-		return 0;
+		NET_FAIL(ctx, NET_ERR_RECEIVE, "net::receive: could not receive from the socket");
 	}
 
 	buffer[bytes_read] = '\0';
@@ -281,13 +270,11 @@ int usr_net_close(qd_context* ctx) {
 int usr_net_set_timeout(qd_context* ctx) {
 	qd_stack_element_t ms_elem, socket_elem;
 	if (qd_stack_pop(ctx->st, &ms_elem) != QD_STACK_OK || qd_stack_pop(ctx->st, &socket_elem) != QD_STACK_OK) {
-		qd_push_i(ctx, NET_ERR_INVALID_ARG);
-		return 0;
+		NET_FAIL(ctx, NET_ERR_INVALID_ARG, "net::set_timeout: invalid argument");
 	}
 
 	if (socket_elem.type != QD_STACK_TYPE_INT || ms_elem.type != QD_STACK_TYPE_INT) {
-		qd_push_i(ctx, NET_ERR_INVALID_ARG);
-		return 0;
+		NET_FAIL(ctx, NET_ERR_INVALID_ARG, "net::set_timeout: invalid argument");
 	}
 
 	int result = net_platform_set_timeout((net_socket_t)socket_elem.value.i, (int)ms_elem.value.i);
@@ -299,13 +286,11 @@ int usr_net_set_timeout(qd_context* ctx) {
 int usr_net_set_keepalive(qd_context* ctx) {
 	qd_stack_element_t enable_elem, socket_elem;
 	if (qd_stack_pop(ctx->st, &enable_elem) != QD_STACK_OK || qd_stack_pop(ctx->st, &socket_elem) != QD_STACK_OK) {
-		qd_push_i(ctx, NET_ERR_INVALID_ARG);
-		return 0;
+		NET_FAIL(ctx, NET_ERR_INVALID_ARG, "net::set_keepalive: invalid argument");
 	}
 
 	if (socket_elem.type != QD_STACK_TYPE_INT || enable_elem.type != QD_STACK_TYPE_INT) {
-		qd_push_i(ctx, NET_ERR_INVALID_ARG);
-		return 0;
+		NET_FAIL(ctx, NET_ERR_INVALID_ARG, "net::set_keepalive: invalid argument");
 	}
 
 	int result = net_platform_set_keepalive((net_socket_t)socket_elem.value.i, (int)enable_elem.value.i);
@@ -317,13 +302,11 @@ int usr_net_set_keepalive(qd_context* ctx) {
 int usr_net_lookup(qd_context* ctx) {
 	qd_stack_element_t host_elem;
 	if (qd_stack_pop(ctx->st, &host_elem) != QD_STACK_OK) {
-		qd_push_i(ctx, NET_ERR_INVALID_ARG);
-		return 0;
+		NET_FAIL(ctx, NET_ERR_INVALID_ARG, "net::lookup: invalid argument");
 	}
 
 	if (host_elem.type != QD_STACK_TYPE_STR) {
-		qd_push_i(ctx, NET_ERR_INVALID_ARG);
-		return 0;
+		NET_FAIL(ctx, NET_ERR_INVALID_ARG, "net::lookup: invalid argument");
 	}
 
 	const char* hostname = qd_string_data(host_elem.value.s);
@@ -333,8 +316,7 @@ int usr_net_lookup(qd_context* ctx) {
 	qd_string_release(host_elem.value.s);
 
 	if (result != NET_SUCCESS) {
-		qd_push_i(ctx, NET_ERR_LOOKUP);
-		return 0;
+		NET_FAIL(ctx, NET_ERR_LOOKUP, "net::lookup: could not resolve the hostname");
 	}
 
 	qd_stack_push_str(ctx->st, ip_buf);
@@ -346,13 +328,11 @@ int usr_net_lookup(qd_context* ctx) {
 int usr_net_get_peer_addr(qd_context* ctx) {
 	qd_stack_element_t socket_elem;
 	if (qd_stack_pop(ctx->st, &socket_elem) != QD_STACK_OK) {
-		qd_push_i(ctx, NET_ERR_INVALID_ARG);
-		return 0;
+		NET_FAIL(ctx, NET_ERR_INVALID_ARG, "net::get_peer_addr: invalid argument");
 	}
 
 	if (socket_elem.type != QD_STACK_TYPE_INT) {
-		qd_push_i(ctx, NET_ERR_INVALID_ARG);
-		return 0;
+		NET_FAIL(ctx, NET_ERR_INVALID_ARG, "net::get_peer_addr: invalid argument");
 	}
 
 	char addr_buf[64];
@@ -360,8 +340,7 @@ int usr_net_get_peer_addr(qd_context* ctx) {
 	int result = net_platform_get_peer_addr((net_socket_t)socket_elem.value.i, addr_buf, sizeof(addr_buf), &port);
 
 	if (result != NET_SUCCESS) {
-		qd_push_i(ctx, NET_ERR_INVALID_ARG);
-		return 0;
+		NET_FAIL(ctx, NET_ERR_INVALID_ARG, "net::get_peer_addr: invalid argument");
 	}
 
 	qd_stack_push_str(ctx->st, addr_buf);

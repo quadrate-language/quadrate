@@ -53,9 +53,9 @@ static const ReferenceEntry g_reference[] = {
 #undef KEYWORD
 };
 
-static const char* const g_keywords[] = {"fn", "pub", "inline", "if", "else", "for", "loop", "while", "break", "continue",
-		"return", "use", "struct", "packed", "enum", "const", "var", "defer", "switch", "case", "test", "type", "as",
-		"null", "true", "false", "Ok", "Err"};
+static const char* const g_keywords[] = {"fn", "pub", "inline", "if", "else", "for", "loop", "while", "break",
+		"continue", "return", "use", "struct", "packed", "enum", "const", "var", "defer", "switch", "case", "test",
+		"type", "as", "null", "true", "false", "Ok", "Err"};
 
 extern "C" int exe_path_platform_get(char* buffer, size_t buffer_size);
 

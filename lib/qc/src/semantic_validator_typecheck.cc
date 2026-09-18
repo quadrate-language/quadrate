@@ -26,13 +26,13 @@
 #include <quadrate/qc/ast_node_literal.h>
 #include <quadrate/qc/ast_node_local.h>
 #include <quadrate/qc/ast_node_loop.h>
-#include <quadrate/qc/ast_node_while.h>
 #include <quadrate/qc/ast_node_parameter.h>
 #include <quadrate/qc/ast_node_scoped.h>
 #include <quadrate/qc/ast_node_struct.h>
 #include <quadrate/qc/ast_node_switch.h>
 #include <quadrate/qc/ast_node_test.h>
 #include <quadrate/qc/ast_node_use.h>
+#include <quadrate/qc/ast_node_while.h>
 #include <quadrate/qc/colors.h>
 #include <quadrate/qc/instructions.h>
 #include <quadrate/qc/semantic_validator.h>
@@ -1940,8 +1940,7 @@ namespace Qd {
 				}
 				if (!mHasUnpredictableStack) {
 					if (typeStack.size() != headDepth + 1) {
-						long long delta =
-								static_cast<long long>(typeStack.size()) - static_cast<long long>(headDepth);
+						long long delta = static_cast<long long>(typeStack.size()) - static_cast<long long>(headDepth);
 						std::string msg = "the 'while' condition must leave exactly one value for the loop to "
 										  "test, but it leaves ";
 						msg += std::to_string(delta);
@@ -1968,8 +1967,7 @@ namespace Qd {
 				}
 				// A `while` may run zero times, so unlike `loop` it cannot leave anything behind:
 				// the body has to be neutral, which is what the fallthrough flag asks for.
-				checkLoopStackEffect(
-						whileStmt->body(), "while", true, typeStack, structTypeStack, loopStack.size());
+				checkLoopStackEffect(whileStmt->body(), "while", true, typeStack, structTypeStack, loopStack.size());
 				mLoopJumps = std::move(savedJumps);
 				mInLoopBody = wasInLoopBody;
 				break;

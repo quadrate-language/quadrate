@@ -471,8 +471,8 @@ namespace Qd {
 			// which would report the following '{' as a stray brace.
 			if (identName == "error") {
 				if (peekNextNonWhitespace(scanner, src) == '{') {
-					errorReporter->reportError(scanner,
-							"the 'error { ... }' literal has been removed; use 'msg code panic' instead");
+					errorReporter->reportError(
+							scanner, "the 'error { ... }' literal has been removed; use 'msg code panic' instead");
 					skipBracedGroup(scanner);
 					return nullptr;
 				}
