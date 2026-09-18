@@ -1,0 +1,20 @@
+// Reading a field off a struct global used to free it. A pointer on the stack owns
+// a reference -- reading a local retains before pushing, and `<<field` pops and
+// releases -- but reading a global pushed without retaining, so the release
+// cancelled the reference the global itself owns. The first `<<x` below freed the
+// struct; the next allocation reused the block, and the global's fields then read
+// back as 99 and 98. Valgrind saw it as three invalid reads; this sees it without.
+struct Point {
+	x:i64
+	y:i64
+}
+
+var origin = Point { x = 11 y = 22 }
+
+fn main() {
+	origin <<x print nl
+	Point { x = 99 y = 98 } -> other
+	origin <<x print nl
+	origin <<y print nl
+	other <<x print nl
+}

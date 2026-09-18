@@ -259,9 +259,18 @@ namespace Qd {
 		return Qd::isKnownInstruction(name);
 	}
 
+	// Errors inside a loop body used to be suppressed wholesale, because a loop body's stack
+	// effect was not modelled and the numbers could not be trusted. It is modelled now -- the
+	// body is checked against the entry stack and required to be neutral -- so the suppression
+	// only still applies where the model is genuinely broken: `read`, an FFI call, an unresolved
+	// name, or one of the variadic entry points that consumes the pile `read` left. Keeping it
+	// unconditional is what hid R7, an unbalanced `if` inside a loop, from the frontend entirely.
+	bool SemanticValidator::suppressingLoopBodyErrors() const {
+		return mInLoopBody && mHasUnpredictableStack;
+	}
+
 	void SemanticValidator::reportError(const char* message) {
-		// Suppress errors inside loop bodies (we still analyze for method call marking)
-		reportErrorConditional(message, !mInLoopBody);
+		reportErrorConditional(message, !suppressingLoopBodyErrors());
 	}
 
 	static bool isUnknownOperandError(const char* message) {
@@ -272,13 +281,11 @@ namespace Qd {
 		if (isUnknownOperandError(message)) {
 			return;
 		}
-		// Suppress errors inside loop bodies (we still analyze for method call marking)
-		reportErrorConditional(node, message, !mInLoopBody);
+		reportErrorConditional(node, message, !suppressingLoopBodyErrors());
 	}
 
 	void SemanticValidator::reportErrorWithHint(const IAstNode* node, const char* message, const char* hint) {
-		// Suppress errors inside loop bodies (we still analyze for method call marking)
-		reportErrorConditionalWithHint(node, message, hint, !mInLoopBody);
+		reportErrorConditionalWithHint(node, message, hint, !suppressingLoopBodyErrors());
 	}
 
 	void SemanticValidator::reportErrorConditional(const char* message, bool shouldReport) {

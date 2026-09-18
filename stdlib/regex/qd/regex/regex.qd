@@ -816,7 +816,7 @@ pub fn (self:Regex) find_all(s:str max:i64 -- results:ptr count:i64) {
 		}
 	}
 
-	count results
+	results count
 }
 
 /// Replace all matches with replacement string.

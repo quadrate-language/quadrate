@@ -290,6 +290,16 @@ namespace Qd {
 		// Pass 3b: Type check the AST
 		void typeCheckFunction(IAstNode* node);
 		void typeCheckTest(IAstNode* node);
+		// Checks a loop's stack effect and applies it to typeStack/structTypeStack. The body must
+		// be neutral; `exitsByFallthrough` says whether running off the end of the range is also
+		// an exit (true for `for`, false for `loop`).
+		void checkLoopStackEffect(IAstNode* body, const char* loopKeyword, bool exitsByFallthrough,
+				std::vector<StackValueType>& typeStack, std::vector<std::string>& structTypeStack, size_t bodyEndDepth);
+
+		// True when the current loop body's stack model is already known to be broken, so its
+		// depth-derived errors are not evidence of anything.
+		bool suppressingLoopBodyErrors() const;
+
 		void typeCheckBlock(IAstNode* node, std::vector<StackValueType>& typeStack,
 				std::unordered_map<std::string, StackValueType>& localVariables,
 				std::vector<std::string>& structTypeStack);
@@ -545,6 +555,19 @@ namespace Qd {
 		// When true, output validation is skipped (e.g., 'read' has dynamic stack effect,
 		// or unhandled instructions whose stack effects are unknown)
 		bool mHasUnpredictableStack;
+
+		// Where each `break`/`continue` in the loop body being checked leaves the stack. A
+		// `loop` has no fall-through exit, so its breaks are what define the depth after it.
+		// Saved and restored around every loop, so an inner loop's jumps are not attributed to
+		// the outer one.
+		struct LoopJump {
+			IAstNode* node;
+			bool isBreak;
+			std::vector<StackValueType> typeStack;
+			std::vector<std::string> structTypeStack;
+		};
+
+		std::vector<LoopJump> mLoopJumps;
 
 		// Source text for error context printing (optional, may be null)
 		const char* mSource;

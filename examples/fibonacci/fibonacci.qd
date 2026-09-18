@@ -10,6 +10,6 @@ pub fn fib(i64 -- i64) {
 
 fn main() {
 	0 20 1 for it {
-		it dup fib print nl
+		it fib print nl
 	}
 }

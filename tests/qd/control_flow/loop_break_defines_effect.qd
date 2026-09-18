@@ -1,0 +1,25 @@
+// A `loop` has no fall-through exit, so its `break`s are the only way out and they
+// are what define the depth after it. Carrying a counter on the stack and dropping
+// it on the way out is a net effect of -1, and is not an error: every break agrees.
+fn count_to(limit:i64 -- total:i64) {
+	0
+	loop {
+		dup limit gte if {
+			break
+		}
+		1 add
+	}
+}
+
+fn main() {
+	0
+	loop {
+		dup 3 gte if {
+			drop
+			break
+		}
+		dup print nl
+		1 add
+	}
+	5 count_to print nl
+}

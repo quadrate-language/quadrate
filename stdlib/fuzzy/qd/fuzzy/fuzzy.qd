@@ -298,7 +298,7 @@ pub fn best(query:str items:ptr max_results:i64 -- results:ptr count:i64) {
 	0 -> i
 	loop {
 		i count >= if { break }
-		results i items indices i 8 * mem::get_i64 nth set -> results
+		results i items indices i 8 * mem::get_i64 nth set
 		i 1 + -> i
 	}
 

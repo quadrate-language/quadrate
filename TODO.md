@@ -116,42 +116,6 @@ candidates did not, and R29 and R30 were withdrawn because of it.
 
 #### What the compiler does and does not check
 
-- [ ] **R5. Any function containing a `loop` gets no declared-effect verification.**
-      The `LOOP_STATEMENT` case in `typeCheckBlock` sets `mHasUnpredictableStack = true`
-      unconditionally, and the declared-effect check at the end of `typeCheckFunction` is gated on
-      that flag.
-      Verified: a `( -- r:i64)` function whose `loop` body pushes an unconsumed `42` each iteration
-      compiles clean and returns with three junk values on the stack. With `loop` at 182 uses (177 at
-      the review; the five new ones are `sort::by`'s) and `while` removed (R12), this exemption
-      covers most non-trivial functions in the corpus.
-      The other exemptions, for the record: `read` (R14), `fmt::printf`, `fmt::sprintf`,
-      `flag::parse`, every FFI-imported function, and any unresolved symbol.
-      **Open question**: model loop bodies properly (fixpoint over the body, `break` edges joined),
-      or accept the gap and stop claiming *"validates all stack operations at compile time"*
-      (`index.md`)? A middle option is to check only loops with no `break`/`continue`.
-      *2026-09-17*: R34 (every call tripped the flag) is fixed — see Done. `loop` and `read` are
-      the remaining triggers, plus `fmt::printf`/`sprintf`, `flag::parse` and FFI imports by design.
-
-- [ ] **R7. An unbalanced `if` inside a loop is caught by codegen, as an internal error.** *(2026-09-17: the frontend now catches this everywhere except inside `loop`/`for`, where R5's flag still suppresses it; R7 is now exactly the loop case.)*
-      `quadc: error: internal: if/else arms leave the stack at different depths (then: 2, else: 3)
-      at line 3` followed by `quadc: error: LLVM generation failed` — no source excerpt, no
-      `file:line:column:`, and the word "internal" tells the user they hit a compiler bug when they
-      wrote ordinary bad code. The frontend misses it precisely because of R5.
-      **Open question**: this is arguably fixed for free by R5. If R5 is declined, is it worth
-      promoting the codegen check to a located frontend diagnostic on its own?
-      *Note 2026-09-17*: per R34, this codegen check is currently the **only** live if-arm balance
-      check in any function that calls another function — the frontend rule is gated off there.
-
-- [ ] **R8. `for` bodies are checked against the pre-loop stack, so the model is unsound in both
-      directions.** The body is type-checked in a *copy* and the parent stack is left unchanged
-      ("loops don't have consistent stack effects", in the `FOR_STATEMENT` case). Verified rejecting a valid program:
-      `0 1000 1 for i { i }  0 1000 1 for i { drop }` → *"Type error in 'drop': Stack underflow"*,
-      though it is balanced. And verified accepting an invalid one: a `for` body leaving values per
-      iteration passes silently (`0 5 1 for i { i }` leaves depth 5 at runtime).
-      **Open question**: is accumulate-on-the-stack inside `for` an idiom worth keeping (it is the
-      only map-like form available today), in which case the check can only ever be a warning — or
-      is it a mistake that R1 would make unnecessary?
-
 - [ ] **R9. `docscheck` covers 16% of the documented examples.** 219 blocks checked and passing,
       1,120 skipped as "not programs", out of 1,337 fenced Quadrate blocks (218/1,117/1,335 at the
       review; the three added are this session's). The floor is honestly
@@ -293,7 +257,7 @@ candidates did not, and R29 and R30 were withdrawn because of it.
       so the gap is an inference nicety rather than a missing check.
       **Open question**: is a pure de-duplication worth the churn now that it is not fixing
       anything? The baseline makes it safe, and the history argues for it, but it is no longer
-      urgent — R9, R29/R30 or R5 may be better uses of a long run.
+      urgent — R9 or R29/R30 may be better uses of a long run.
 
 
 - [ ] **R38. `analyzeBlockInIsolation` still runs on every function body at collection time, and
@@ -319,10 +283,11 @@ candidates did not, and R29 and R30 were withdrawn because of it.
 - [ ] **R12. The cost of removing `while`, now measurable.** `loop` is at 182 uses against `for`'s
       104 (re-verified 2026-09-18), and the overwhelming majority are `loop { cond if { break } … }` — three lines and a
       nesting level where `while` was one. `examples/kernel/kernel.qd` is wall-to-wall with it.
-      Compounding: `loop` is exactly the construct that suspends effect checking (R5), so the
-      removal pushed the dominant loop form into the unchecked path.
+      What used to compound this — `loop` being the construct that suspended effect checking —
+      is gone: R5 landed, and a loop body is now checked like anything else (see Done). So this is
+      purely the ergonomic argument now, with no correctness cost attached.
       **Open question**: reinstate `while` as sugar that lowers to the same `loop`, or does the
-      subtractive argument still hold? If R5 is fixed, most of this item evaporates.
+      subtractive argument still hold?
 
 - [ ] **R13. `and`/`or` are bitwise and are used throughout as logical.** There is no short-circuit
       operator; `lnot` exists but has no binary counterpart. Verified: `2 1 and` → `0`, so any
@@ -778,6 +743,82 @@ candidates did not, and R29 and R30 were withdrawn because of it.
       halt) so kernel code can stay in `.qd`.
 
 ## Done
+
+### Use-after-free on every struct global (2026-09-18)
+
+- [x] **Reading a field off a `var` struct global freed it.** The five
+      `tests/qd/globals/var_struct_*` valgrind failures were all one bug, and it was not a leak:
+      each reported `in use at exit: 0 bytes in 0 blocks` alongside three invalid reads.
+
+      A pointer on the stack owns a reference. Reading a *local* retains before pushing
+      (`generator_nodes.cc`, the PTR block of the local switch), and every consumer releases —
+      `generateFieldAccess` pops and calls `qd_ptr_release` with the comment "was retained when
+      pushed". Reading a *global* loaded and pushed without retaining, so that release cancelled
+      the one reference the global itself owns. `var origin = Point { ... }` was therefore freed
+      by its **first** field read, and every read after it touched freed memory. `qd_push_s_ref`
+      retains internally, which is why the `str` case was fine and only the pointer case was
+      wrong; the compile-time-stack path pushes an SSA value no runtime release ever sees.
+
+      Not just a valgrind finding: with the block reused by the next allocation the corruption is
+      plainly visible — `origin <<x` then `Point { x = 99 y = 98 }` then `origin <<x` printed
+      `99`, and `origin <<y` printed `98`. Pinned without valgrind as
+      `tests/qd/globals/var_struct_use_after_read`, alongside the five that catch it under
+      valgrind. `make valgrind` is green.
+
+### Language review — R5, R7, R8: loop stack effects (2026-09-18)
+
+- [x] **R5 / R7 / R8 — loops now have a checked stack effect.** All three were one hole. The
+      model that landed: **a loop body must leave the stack as it found it**, because the next
+      iteration starts where the last one ended and the trip count is a runtime value. The exits
+      are the other half — a `for` can also leave by running off the end of its range, at the head
+      depth, so each of its `break`s has to agree with that; a `loop` has no fall-through exit, so
+      its `break`s are the only way out and they are what *define* the depth after it. A
+      `continue` jumps back to the head in both forms. That last point matters: the
+      counter-on-the-stack idiom (`0 loop { ... dup 10 gt if { drop break } ... }`) is a net
+      effect of -1 and is perfectly well defined, so the first rule tried — "every jump must be
+      neutral too" — was wrong and rejected it. `checkLoopStackEffect` applies the effect to the
+      parent stack, which is also what makes the *declared-effect* check work rather than merely
+      reject: `fn count_to(limit:i64 -- total:i64)` accumulating on the stack and breaking out now
+      verifies.
+
+      With that in place `LOOP_STATEMENT` no longer sets `mHasUnpredictableStack`, so R5's
+      declared-effect check, R7's if-arm balance check and the defer-effect check come back on for
+      every function containing a loop. R7 needed one more thing: errors inside a loop body were
+      suppressed *wholesale* (`reportError` consulted `mInLoopBody`), which is why the unbalanced
+      `if` only ever surfaced from codegen as `error: internal:` with no `file:line`. The
+      suppression now applies only where the model is genuinely broken —
+      `mInLoopBody && mHasUnpredictableStack` — which is `read`, FFI, an unresolved name, or one
+      of the variadic entry points. Those needed the exemption on the definition side too, not
+      just at call sites: `flag::parse`'s own `for` consumes the argument pile `read` left below
+      its frame, which no signature can describe.
+
+      **Corpus cost of the strict rule: three real bugs and one pinned test.** That is the
+      argument for taking it rather than the "only loops with no `break`/`continue`" middle option.
+      - `examples/fibonacci` leaked a value per iteration — `it dup fib print nl`, 20 values left
+        on the stack.
+      - `tests/qd/control_flow/complex_control_flow.qd` leaked on `break`: the break arm left `it`
+        where falling through left nothing.
+      - `fuzzy::best` wrote `... set -> results`, but `set` is `( arr index value -- )` and pushes
+        nothing. It compiled clean and **died at runtime** — "Fatal error: Stack underflow when
+        assigning to local variable" — verified against the pre-fix compiler. `docs/api/builtins.json`
+        was the source of the mistake: it alone claimed `(arr i val -- arr)`, against `reference.def`,
+        `reference.md` and the spec. Fixed.
+      - `for_loop_stack_accumulation.qd` pinned the old behaviour and its own note asked for this
+        to change "as a conscious decision, not silently" if strict loop checking ever landed. It
+        is now a `.err` test pinning the rejection.
+
+      Found and not fixed, since nothing calls it and it is a naming defect rather than a
+      behavioural one: `regex::find` and `find_from` declare `-- start:i64 end:i64` but leave
+      `start` on top, so the names are in the wrong order. Both are i64, so no check can see it.
+      `find_all` had the same reversal with `ptr`/`i64`, where the check *could* see it, and that
+      one is fixed.
+
+      Regression tests: `loop_body_not_neutral` (R5), `loop_unbalanced_if` (R7, with negative
+      patterns pinning the absence of `internal:`), `loop_break_depth_mismatch` (R8), and
+      `loop_break_defines_effect` pinning the counter-on-the-stack idiom that must keep compiling.
+
+      Still not modelled, and worth a note rather than a task: a neutral body that *rewrites* a
+      slot's type in place. Only the depth is tracked across a loop, not a type fixpoint.
 
 ### Compiler correctness — the two doom segfaults (2026-09-18)
 

@@ -1,0 +1,17 @@
+// R7: an unbalanced `if` inside a loop reached codegen and came out as
+// "error: internal: if/else arms leave the stack at different depths" with no
+// file:line and the word "internal", telling the user they had hit a compiler bug.
+// The frontend rule was gated off inside loops.
+fn main() {
+	0 -> n
+	loop {
+		n 3 gte if { break }
+		n 1 eq if {
+			1 2
+		} else {
+			3
+		}
+		-> _ -> _
+		n 1 add -> n
+	}
+}

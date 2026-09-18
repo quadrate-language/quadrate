@@ -185,6 +185,23 @@ namespace Qd {
 
 	// Helper: Check if a block ends with a diverging instruction (like `panic`)
 	// Diverging instructions never return, so stack effects don't need to balance
+	// The three stdlib entry points that consume the argument pile `read` leaves on the stack.
+	// Their signatures cannot describe that -- the count is a runtime value -- so no static model
+	// applies inside them. Call sites already special-case exactly these names; this is the same
+	// list seen from the definition side.
+	static bool isVariadicStackConsumer(const std::string& functionName, const char* filename) {
+		// Keyed on the defining file rather than the package name, which is derived differently
+		// depending on which pass is validating the module.
+		const std::string module = filename ? std::filesystem::path(filename).stem().string() : std::string();
+		if (module == "flag") {
+			return functionName == "parse";
+		}
+		if (module == "fmt") {
+			return functionName == "printf" || functionName == "sprintf";
+		}
+		return false;
+	}
+
 	// A block diverges when control cannot reach its end: some top-level statement in it
 	// is `panic`, `return`, `break` or `continue` (spec 6.1.1). Everything after such a
 	// statement is unreachable, so it is the statement's presence that matters, not whether
@@ -1001,7 +1018,11 @@ namespace Qd {
 			// Track whether current function is fallible (for panic validation)
 			mCurrentFunctionFallible = func->throws();
 			mCurrentFunctionOutputCount = func->outputParameters().size();
-			mHasUnpredictableStack = false;
+			// The variadic entry points consume values their signature does not declare -- the
+			// pile `read` leaves below the frame, which nothing in the body names. Call sites
+			// already treat them this way (see the same list in the SCOPED_IDENTIFIER case); the
+			// bodies need it too, or their own loops read as consuming values that are not there.
+			mHasUnpredictableStack = isVariadicStackConsumer(func->name(), mFilename);
 
 			// For methods, register the receiver as a local variable (it's implicitly bound)
 			if (func->hasReceiver()) {
@@ -1226,6 +1247,94 @@ namespace Qd {
 			}
 		}
 	} // namespace
+
+	// A loop body has to leave the stack exactly as it found it: the next iteration starts where
+	// the last one ended, so a body with a non-zero effect makes the depth at the loop head a
+	// function of the trip count, which is a runtime value.
+	//
+	// The exits are the other half. `for` can leave by running off the end of its range, at the
+	// head depth, so each of its `break`s has to agree with that. `loop` has no fall-through exit,
+	// so its `break`s are the only way out and they are what define the depth after the loop --
+	// `0 loop { ... dup 10 gt if { drop break } ... }` carries a counter on the stack and drops it
+	// on the way out, a net effect of -1 that is perfectly well defined. They only have to agree
+	// with each other. A `continue` jumps back to the head, so it must be at the head depth in
+	// both forms.
+	//
+	// Nothing checked any of this before. `loop` instead declared the whole enclosing function to
+	// have an unpredictable stack, which switched off the declared-effect check, the if-arm
+	// balance check and the defer-effect check for every function containing one -- most
+	// non-trivial functions in the corpus, with `loop` at 182 uses and `while` gone. A
+	// `( -- r:i64)` function whose loop body pushed an unconsumed value each iteration compiled
+	// clean and returned with junk on the stack.
+	void SemanticValidator::checkLoopStackEffect(IAstNode* body, const char* loopKeyword, bool exitsByFallthrough,
+			std::vector<StackValueType>& typeStack, std::vector<std::string>& structTypeStack, size_t bodyEndDepth) {
+		// Something in the body already defeated the model (an unresolved name, `read`, an FFI
+		// call); its depth numbers are not evidence of anything.
+		if (mHasUnpredictableStack || !body) {
+			return;
+		}
+
+		const size_t headDepth = typeStack.size();
+
+		auto describe = [](size_t depth, size_t against) {
+			long long delta = static_cast<long long>(depth) - static_cast<long long>(against);
+			std::string s = std::to_string(delta < 0 ? -delta : delta);
+			s += " value";
+			if (delta != 1 && delta != -1) {
+				s += "s";
+			}
+			return s + (delta > 0 ? " deeper" : " shallower");
+		};
+
+		if (!blockEndsDiverging(body) && bodyEndDepth != headDepth) {
+			std::string msg = std::string(loopKeyword) + " body leaves the stack " + describe(bodyEndDepth, headDepth) +
+							  " than it found it; a loop body must leave the stack as it found it, since the "
+							  "next iteration starts where the last one ended (bind what you are accumulating "
+							  "to a named local instead)";
+			reportErrorConditional(body, msg.c_str(), true);
+		}
+
+		const LoopJump* firstBreak = nullptr;
+		for (const auto& jump : mLoopJumps) {
+			if (!jump.isBreak) {
+				if (jump.typeStack.size() != headDepth) {
+					std::string msg = std::string("'continue' leaves the stack ") +
+									  describe(jump.typeStack.size(), headDepth) + " than the " + loopKeyword +
+									  " head; 'continue' jumps back to the head, so it has to leave the stack "
+									  "the way an iteration starts";
+					reportErrorConditional(jump.node, msg.c_str(), true);
+				}
+				continue;
+			}
+			if (exitsByFallthrough) {
+				if (jump.typeStack.size() != headDepth) {
+					std::string msg = std::string("'break' leaves the stack ") +
+									  describe(jump.typeStack.size(), headDepth) + " than the " + loopKeyword +
+									  " head; a '" + loopKeyword +
+									  "' also exits by running off the end of its range, and what follows cannot "
+									  "read a value whose presence depends on which way it left";
+					reportErrorConditional(jump.node, msg.c_str(), true);
+				}
+				continue;
+			}
+			if (!firstBreak) {
+				firstBreak = &jump;
+			} else if (jump.typeStack.size() != firstBreak->typeStack.size()) {
+				std::string msg = std::string("'break' leaves the stack ") +
+								  describe(jump.typeStack.size(), firstBreak->typeStack.size()) +
+								  " than another 'break' in the same loop; every way out has to agree, since "
+								  "what follows cannot read a value whose presence depends on which one ran";
+				reportErrorConditional(jump.node, msg.c_str(), true);
+			}
+		}
+
+		// A `loop` leaves the stack the way its breaks did. With no break it never falls out at
+		// all, so whatever the parent had still stands.
+		if (!exitsByFallthrough && firstBreak) {
+			typeStack = firstBreak->typeStack;
+			structTypeStack = firstBreak->structTypeStack;
+		}
+	}
 
 	void SemanticValidator::typeCheckBlock(IAstNode* node, std::vector<StackValueType>& typeStack,
 			std::unordered_map<std::string, StackValueType>& localVariables,
@@ -1752,31 +1861,38 @@ namespace Qd {
 				// This is necessary because loop bodies can have complex stack effects that are hard to analyze
 				bool wasInLoopBody = mInLoopBody;
 				mInLoopBody = true;
+				auto savedJumps = std::move(mLoopJumps);
+				mLoopJumps.clear();
 				if (forStmt->body()) {
 					typeCheckBlock(forStmt->body(), loopStack, loopVars, loopStructStack);
 				}
+				checkLoopStackEffect(forStmt->body(), "for", true, typeStack, structTypeStack, loopStack.size());
+				mLoopJumps = std::move(savedJumps);
 				mInLoopBody = wasInLoopBody;
 
-				// Don't modify parent stack - loops don't have consistent stack effects
+				// A `for` always leaves the stack at the head depth, so the parent stack already
+				// describes what follows. (Types a neutral body rewrote in place are still not
+				// modelled; only the depth is.)
 				break;
 			}
 
 			case IAstNode::Type::LOOP_STATEMENT: {
-				// Infinite loops with break/continue have unpredictable stack effects
-				mHasUnpredictableStack = true;
 				std::vector<StackValueType> loopStack = typeStack;
 				std::unordered_map<std::string, StackValueType> loopVars = localVariables;
 				std::vector<std::string> loopStructStack = structTypeStack;
 
 				bool wasInLoopBody = mInLoopBody;
 				mInLoopBody = true;
+				auto savedJumps = std::move(mLoopJumps);
+				mLoopJumps.clear();
 				AstNodeLoopStatement* loopStmt = static_cast<AstNodeLoopStatement*>(child);
 				if (loopStmt->body()) {
 					typeCheckBlock(loopStmt->body(), loopStack, loopVars, loopStructStack);
 				}
+				// Applies the loop's effect: a `loop` leaves the stack the way its breaks did.
+				checkLoopStackEffect(loopStmt->body(), "loop", false, typeStack, structTypeStack, loopStack.size());
+				mLoopJumps = std::move(savedJumps);
 				mInLoopBody = wasInLoopBody;
-
-				// Don't modify parent stack
 				break;
 			}
 
@@ -3876,6 +3992,16 @@ namespace Qd {
 				if (!structTypeStack.empty()) {
 					structTypeStack.back() = asCast->typeName();
 				}
+				break;
+			}
+
+			case IAstNode::Type::BREAK_STATEMENT:
+			case IAstNode::Type::CONTINUE_STATEMENT: {
+				// Record where this jump leaves the stack; the enclosing loop checks it against
+				// the depth at the loop head. Processing continues rather than returning, so
+				// anything written after the jump is still checked as it was before.
+				mLoopJumps.push_back(
+						{child, child->type() == IAstNode::Type::BREAK_STATEMENT, typeStack, structTypeStack});
 				break;
 			}
 

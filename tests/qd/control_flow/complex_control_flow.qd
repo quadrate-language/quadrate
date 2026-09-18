@@ -33,12 +33,10 @@ fn main() {
 	// For loop with break
 	// Should print nl = 0 1 2 3 4
 	0 10 1 for it {
-		it
-		it
-		5 eq if {
+		it 5 eq if {
 			break
 		}
-		print nl
+		it print nl
 	}
 	// Nested for loops with conditionals
 	// Should print nl 99 three times (when inner loop it == 1)

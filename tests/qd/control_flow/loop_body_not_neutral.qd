@@ -1,0 +1,17 @@
+// R5: a function containing a `loop` used to get no declared-effect verification at
+// all -- LOOP_STATEMENT set mHasUnpredictableStack unconditionally. This body pushes
+// an unconsumed 42 per iteration, and the function compiled clean and returned with
+// three junk values on the stack.
+fn junk( -- r:i64) {
+	0 -> i
+	loop {
+		i 3 gte if { break }
+		42
+		i 1 add -> i
+	}
+	7
+}
+
+fn main() {
+	junk print nl
+}

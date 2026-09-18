@@ -1,0 +1,13 @@
+// R8: a `for` also exits by running off the end of its range, so a `break` that
+// leaves an extra value disagrees with that exit. This one printed 0..4 and left
+// the 5 behind.
+fn main() {
+	0 10 1 for it {
+		it
+		it
+		5 eq if {
+			break
+		}
+		print nl
+	}
+}

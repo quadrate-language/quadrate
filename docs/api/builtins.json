@@ -71,7 +71,7 @@
         {"name": "makes", "signature": "(n -- arr)", "description": "Create array of n strings"},
         {"name": "makep", "signature": "(n -- arr)", "description": "Create array of n pointers"},
         {"name": "nth", "signature": "(arr i -- val)", "description": "Get element at index i"},
-        {"name": "set", "signature": "(arr i val -- arr)", "description": "Set element at index i"},
+        {"name": "set", "signature": "(arr i val -- )", "description": "Set element at index i"},
         {"name": "len", "signature": "(arr -- n)", "description": "Get array length"},
         {"name": "append", "signature": "(arr val -- arr)", "description": "Append element to array"}
       ]

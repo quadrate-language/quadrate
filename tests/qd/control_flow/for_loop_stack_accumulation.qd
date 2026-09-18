@@ -1,20 +1,12 @@
-// Test: a for-loop body that pushes a value per iteration really does accumulate
-// on the runtime stack -- `depth` observes 5 after five iterations.
+// Test: a for-loop body that pushes a value per iteration is rejected.
 //
-// Note the static and dynamic models disagree here. The semantic validator treats
-// the loop body as net-zero (it cannot know the trip count), so the accumulated
-// values are unreachable by static means: adding five `print`s after the loop is
-// rejected with "Type error in 'print': Stack underflow (requires 1 value)" even
-// though the values are present at runtime. Only depth/clear and other dynamic
-// ops can see them.
-//
-// Pinned deliberately: strict branch/loop stack-effect unification would make this
-// an error outright, closing the gap. If that lands, this test should change or be
-// removed as a conscious decision, not silently. See TODO.md, "Branch stack effects
-// are not unified" -> blast radius.
-//
-// Different shape from for_loop_push_values.qd, whose body is net-zero (it prints)
-// despite the name.
+// This file used to pin the opposite behaviour -- the body accumulated on the
+// runtime stack, `depth` observed 5 after five iterations, and the static model
+// silently disagreed, treating the body as net-zero. Its note asked for this to
+// change "as a conscious decision, not silently" if strict loop stack-effect
+// checking ever landed. It has: the body's effect has to be zero, because the
+// next iteration starts where the last one ended and the trip count is a runtime
+// value. Accumulating means binding to a named local.
 fn main() {
 	0 5 1 for i {
 		i

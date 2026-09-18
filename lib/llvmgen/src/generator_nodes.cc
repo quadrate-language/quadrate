@@ -495,6 +495,16 @@ namespace Qd {
 				} else if (isStr) {
 					builder->CreateCall(pushStrRefFn, {ctx, v});
 				} else if (isPtr) {
+					// A pointer on the stack owns a reference: reading a local retains before
+					// pushing, and every consumer releases -- `<<field` pops and calls
+					// qd_ptr_release on the assumption that the push retained. Reading a global
+					// did not, so the release was cancelling the one reference the global itself
+					// owns. `var origin = Point { ... }` freed the struct on the *first* field
+					// read, and every read after that was a use-after-free.
+					// (qd_push_s_ref retains internally, which is why the str case above needs
+					// nothing; the compile-time-stack path above pushes an SSA value that no
+					// runtime release ever sees.)
+					builder->CreateCall(qdPtrRetainFn, {v});
 					builder->CreateCall(pushPtrFn, {ctx, v});
 				} else {
 					// Integer (sized or unknown → i64 default).
