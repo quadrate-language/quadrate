@@ -53,7 +53,7 @@ static const ReferenceEntry g_reference[] = {
 #undef KEYWORD
 };
 
-static const char* const g_keywords[] = {"fn", "pub", "inline", "if", "else", "for", "loop", "while", "break",
+static const char* const g_keywords[] = {"fn", "pub", "inline", "stack", "if", "else", "for", "loop", "while", "break",
 		"continue", "return", "use", "struct", "packed", "enum", "const", "var", "defer", "switch", "case", "test",
 		"type", "as", "null", "true", "false", "Ok", "Err"};
 
@@ -153,6 +153,7 @@ static void collectPublicDeclarations(
 		};
 
 		skipKeyword("inline");
+		skipKeyword("stack");
 		if (!skipKeyword("fn") && !skipKeyword("const") && !skipKeyword("struct") && !skipKeyword("enum") &&
 				!skipKeyword("type")) {
 			continue;
@@ -1224,7 +1225,12 @@ private:
 			source += "\n";
 		}
 
-		source += "pub fn repl_main(";
+		// The unnamed flavour hands the carried stack straight to the body, which is
+		// what `stack fn` means; without the modifier an unnamed input is refused.
+		// With nothing carried there are no inputs at all, and `stack` would be an
+		// error of its own.
+		const bool stackForm = !named && !(stackTypes.empty() && locals.empty());
+		source += stackForm ? "pub stack fn repl_main(" : "pub fn repl_main(";
 		for (size_t i = 0; i < stackTypes.size(); i++) {
 			source += named ? "_s" + std::to_string(i) + ":" + stackTypes[i] + " " : stackTypes[i] + " ";
 		}

@@ -1,36 +1,38 @@
 // Test: This test demonstrates Quadrate's stack notation in function declarations
-// Format: fn name(inputs -- outputs)
-// Where inputs and outputs have name:type annotations
+// Format: stack fn name(inputs -- outputs)
+// `stack` is what leaves the inputs on the stack; without it each input must be
+// named and is bound as a local on entry. Names are optional under `stack` and
+// are documentation only.
 use math
 
 // Basic arithmetic with stack notation
-fn add_numbers(i64 i64 -- i64) {
+stack fn add_numbers(i64 i64 -- i64) {
 	// a and b are consumed from stack, result is produced
 	+
 }
 
-fn multiply_then_add(i64 i64 i64 -- i64) {
+stack fn multiply_then_add(i64 i64 i64 -- i64) {
 	// Stack is [a, b, c] with c on top
 	// Computes (b * c) + a
 	* +
 }
 
 // Functions with float parameters
-fn multiply_floats(f64 f64 -- f64) {
+stack fn multiply_floats(f64 f64 -- f64) {
 	*
 }
 
-fn divide_floats(f64 f64 -- f64) {
+stack fn divide_floats(f64 f64 -- f64) {
 	/
 }
 
 // Stack manipulation operations
-fn swap_values(i64 i64 -- i64 i64) {
+stack fn swap_values(i64 i64 -- i64 i64) {
 	swap
 }
 
 // Functions demonstrating stack effects
-fn square_and_double(i64 -- i64 i64) {
+stack fn square_and_double(i64 -- i64 i64) {
 	// Returns x*x and x*2
 	dup
 	dup mul swap
@@ -38,40 +40,40 @@ fn square_and_double(i64 -- i64 i64) {
 }
 
 // Min/max operations with stack notation
-fn triple_min(i64 i64 i64 -- i64) {
+stack fn triple_min(i64 i64 i64 -- i64) {
 	math::min
 	math::min
 }
 
-fn triple_max(i64 i64 i64 -- i64) {
+stack fn triple_max(i64 i64 i64 -- i64) {
 	math::max
 	math::max
 }
 
 // Logical operations
-fn bitwise_and_or(i64 i64 i64 -- i64) {
+stack fn bitwise_and_or(i64 i64 i64 -- i64) {
 	and
 	or
 }
 
 // Functions demonstrating drop
-fn keep_first(i64 i64 -- i64) {
+stack fn keep_first(i64 i64 -- i64) {
 	drop
 }
 
-fn keep_first_of_four(i64 i64 i64 i64 -- i64) {
+stack fn keep_first_of_four(i64 i64 i64 i64 -- i64) {
 	drop
 	drop
 	drop
 }
 
 // Rotation example
-fn rotate_three(i64 i64 i64 -- i64 i64 i64) {
+stack fn rotate_three(i64 i64 i64 -- i64 i64 i64) {
 	rot
 }
 
 // Mixed types
-fn int_to_float_calc(i64 f64 -- f64) {
+stack fn int_to_float_calc(i64 f64 -- f64) {
 	// Integer is automatically promoted to float
 	+
 }
@@ -82,7 +84,7 @@ fn get_answer( -- answer:i64) {
 }
 
 // Consume but produce nothing
-fn consume_two(i64 i64 -- ) {
+stack fn consume_two(i64 i64 -- ) {
 	drop
 	drop
 }

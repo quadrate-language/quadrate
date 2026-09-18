@@ -962,16 +962,10 @@ namespace Qd {
 			// Clear local variable struct types for this function
 			mLocalVariableStructTypes.clear();
 
-			// Initialize type stack with input parameters
-			// Named parameters are auto-bound as local variables at function entry,
-			// but only when ALL params are named (mixed named/unnamed all stay on stack)
-			bool allParamsNamed = true;
-			for (size_t i = 0; i < func->inputParameters().size(); i++) {
-				if (!static_cast<AstNodeParameter*>(func->inputParameters()[i].get())->hasName()) {
-					allParamsNamed = false;
-					break;
-				}
-			}
+			// Initialize type stack with input parameters. They are auto-bound as local
+			// variables at function entry unless the function is `stack fn`, where they
+			// stay on the stack and any names they carry are documentation only.
+			const bool bindParams = !func->isStack();
 			for (size_t i = 0; i < func->inputParameters().size(); i++) {
 				AstNodeParameter* param = static_cast<AstNodeParameter*>(func->inputParameters()[i].get());
 				const std::string& typeStr = param->typeString();
@@ -1004,14 +998,14 @@ namespace Qd {
 					structType = resolvedType;
 				}
 
-				if (allParamsNamed && param->hasName()) {
+				if (bindParams && param->hasName()) {
 					// Named parameter: auto-bound as a local variable
 					localVariables[param->name()] = paramType;
 					if (!structType.empty()) {
 						mLocalVariableStructTypes[param->name()] = structType;
 					}
 				} else {
-					// Unnamed parameter: stays on the stack
+					// `stack fn` parameter: stays on the stack
 					typeStack.push_back(paramType);
 					structTypeStack.push_back(structType);
 				}
@@ -1043,8 +1037,9 @@ namespace Qd {
 			mFinalStackTypes = typeStack;
 			mFinalStackStructTypes = structTypeStack;
 
-			// Warn about unused named parameters
-			if (func->body()) {
+			// Warn about unused named parameters. A `stack fn` name is documentation and
+			// is never referenced by definition, so there is nothing to warn about.
+			if (func->body() && bindParams) {
 				// Collect named param names
 				std::unordered_set<std::string> paramNames;
 				for (size_t i = 0; i < func->inputParameters().size(); i++) {

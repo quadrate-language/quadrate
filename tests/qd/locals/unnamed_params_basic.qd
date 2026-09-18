@@ -1,7 +1,7 @@
 // Test: unnamed parameters - values stay on the stack
-fn add(i64 i64 -- i64) { + }
+stack fn add(i64 i64 -- i64) { + }
 
-fn double(i64 -- i64) { dup + }
+stack fn double(i64 -- i64) { dup + }
 
 fn main() {
 	3 4 add print nl

@@ -300,6 +300,16 @@
       ]
     },
     {
+      "name": "stack",
+      "category": "Declaration",
+      "description": "Function modifier: the input parameters are not bound as locals; they stay on the stack for the body to work on, and any names they carry are documentation that is not in scope. Without it every input must be named. Combines with pub and inline.",
+      "syntax": "[pub] [inline] stack fn name(inputs -- outputs) { body }",
+      "examples": [
+        "stack fn double(i64 -- result:i64) { 2 * }",
+        "stack fn mask(value:i64 num_bits:i64 -- result:i64) { 1 swap shl 1 sub and }"
+      ]
+    },
+    {
       "name": "import",
       "category": "Import",
       "description": "Imports a C library, declaring its functions with Quadrate signatures",

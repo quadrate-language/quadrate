@@ -571,6 +571,10 @@ namespace Qd {
 			if (node->isInline()) {
 				mOutput << "inline ";
 			}
+			// Canonical modifier order is pub, inline, stack; the parser accepts any order
+			if (node->isStack()) {
+				mOutput << "stack ";
+			}
 			mOutput << "fn ";
 			if (node->hasReceiver()) {
 				mOutput << "(" << node->receiverName() << ":" << node->receiverType();

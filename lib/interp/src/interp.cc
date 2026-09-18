@@ -798,7 +798,11 @@ namespace {
 			break;
 		}
 
-		static const char* const KEYWORDS[] = {"fn ", "fn(", "const ", "struct ", "enum ", "use ", "type ", "test "};
+		// The modifiers that may precede `fn` start a declaration just as `fn` does;
+		// without them `stack fn twice(i64 -- r:i64) { 2 * }` was wrapped in a main
+		// and parsed as an expression.
+		static const char* const KEYWORDS[] = {
+				"fn ", "fn(", "pub ", "inline ", "stack ", "const ", "struct ", "enum ", "use ", "type ", "test "};
 		for (const char* keyword : KEYWORDS) {
 			if (std::strncmp(p, keyword, std::strlen(keyword)) == 0) {
 				return true;
@@ -807,20 +811,14 @@ namespace {
 		return false;
 	}
 
-	// Arguments arrive on the stack. A signature whose inputs are *all* named
-	// binds them into the frame and takes them off the stack -- the rule the
-	// type checker states in semantic_validator_typecheck.cc. Mixed or unnamed
-	// inputs stay on the stack, where the body reads them positionally.
+	// Arguments arrive on the stack. A signature binds them into the frame and takes
+	// them off the stack -- the rule the type checker states in
+	// semantic_validator_typecheck.cc -- unless the function is `stack fn`, whose
+	// inputs stay on the stack where the body reads them positionally.
 	bool bindParameters(qd_interp* interp, const std::string& name, const Qd::AstNodeFunctionDeclaration* function) {
 		const auto& inputs = function->inputParameters();
-		if (inputs.empty() || function->hasReceiver()) {
+		if (inputs.empty() || function->hasReceiver() || function->isStack()) {
 			return true;
-		}
-
-		for (const auto& input : inputs) {
-			if (!static_cast<const Qd::AstNodeParameter*>(input.get())->hasName()) {
-				return true;
-			}
 		}
 
 		const size_t depth = static_cast<size_t>(qd_stack_size(interp->ctx->st));

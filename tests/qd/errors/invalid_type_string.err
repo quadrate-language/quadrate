@@ -1,1 +1,1 @@
-Invalid type '' in parameter 'string'. Valid types are: i64, f64, str, ptr, any, or a struct name
+Invalid type 'string'. Valid types are: i64, f64, str, ptr, any, or a struct name

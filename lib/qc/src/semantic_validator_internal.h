@@ -75,6 +75,16 @@ inline bool looksLikeStructType(const std::string& typeName) {
 	return std::isupper(typeName[0]);
 }
 
+// " in parameter 'x'" when the parameter is named, nothing when it is not:
+// a `stack fn f(i64 -- )` parameter has a type to complain about and no name,
+// and "in parameter ''" reads as though the name were the problem.
+// Templated on the parameter node so this header needs no AST include: it is
+// pulled in from inside `namespace Qd {}`, where an include would nest.
+template <typename Param>
+inline std::string parameterSuffix(const Param* param) {
+	return param->hasName() ? " in parameter '" + param->name() + "'" : "";
+}
+
 // Check if a name is a reserved keyword
 inline bool isReservedKeyword(const std::string& name) {
 	static const std::unordered_set<std::string> KEYWORDS = {"if", "else", "for", "loop", "switch", "case", "break",

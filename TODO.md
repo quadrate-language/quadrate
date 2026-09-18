@@ -11,7 +11,7 @@ testable property, not a style preference, and it is what the items below are no
 The language already admits it. Verified against this build:
 
 ```qd
-fn sq(i64 -- r:i64)   { dup * }        // unnamed parameter -- the concatenative form, works
+stack fn sq(i64 -- r:i64) { dup * }    // the concatenative form (spelled `fn sq(i64 …)` until R11)
 fn sq(n:i64 -- r:i64) { dup * }        // naming CONSUMES it: "Stack underflow (requires 1 value)"
 6 fn (i64 -- r:i64) { dup * } call     // inline quotation applied: 36
 ```
@@ -28,6 +28,18 @@ rather than answered: *"Decide the fate of the live shufflers"* (its proposed ex
 `bits.qd` and `fuzzy.qd` **to named locals** and read the diff) and **R18** (multi-return selection
 "has no syntax" — `drop`/`nip`/`swap` are that syntax). Both are recoverable from git if the
 direction is ever reversed.
+
+*Amended 2026-09-19 — the half of this that said which form is "the real one" is withdrawn; the
+half that said the difference must not be silent is shipped.* R11 landed as `stack fn` (see Done):
+binding is the unmarked default and the modifier marks the stack form, rather than naming becoming
+documentary everywhere. So the language now carries **both dialects explicitly**, and the choice
+per function is a readability judgement rather than a property of the colon. Two consequences for
+the items below. **R47 is no longer a migration**: the 456 bodies that name their parameters are
+correct as written, and what is left of the item is the open question it always had — which code
+reads better stack-direct — now answerable one function at a time with no compiler change behind
+it. **R13 and R21 lose the justification they were given on 2026-09-18** (that the concatenative
+property demanded them) and stand or fall on their own: the `and`/`or` hazard is real regardless,
+and `>>field` chaining is a spec-versus-implementation disagreement regardless.
 
 ### Language design / scope
 
@@ -138,22 +150,6 @@ where it remains open.
       hand-audit the handful of blocks that are whole declarations?
 
 #### Language design decisions to settle
-
-- [ ] **R11. Naming a parameter silently changes the calling convention.** `fn f(x:i64 -- r:i64)`
-      binds and consumes `x`; `fn f(i64 -- r:i64)` leaves it on the stack. An annotation that looks
-      purely documentary changes what the body means, and mixing the two forms is rejected outright
-      (*"Cannot mix named and unnamed input parameters"*). The rule is stated in the spec (§4.4) and
-      the interpreter tier already had eleven tests encoding it wrongly.
-      **Decided 2026-09-18 by the Direction above: the unnamed form is the real one, and naming
-      should become documentary rather than consuming.** The open question offered three answers and
-      the concatenative property picks one of them: a signature is a stack effect, as `( n -- n n )`
-      is in Forth, so annotating it must not change what the body means. `fn sq(i64 -- r:i64)
-      { dup * }` compiles today and `fn sq(n:i64 -- r:i64) { dup * }` does not, which is the whole
-      complaint — and under the old direction there was no principled way to choose. There is now.
-      What is left is the migration cost, not the decision: all 784 named-parameter functions are
-      bodies that re-push by name (R47), so this lands with R47 rather than before it. The
-      cannot-mix rejection quoted above also stops being needed — once naming is non-consuming the
-      two forms mean the same thing.
 
 - [ ] **R13. `and`/`or` are bitwise and are used throughout as logical.** There is no short-circuit
       operator; `lnot` exists but has no binary counterpart. Verified: `2 1 and` → `0`, so any
@@ -274,7 +270,7 @@ where it remains open.
       than functions and error handling together", which is 4 against 5 — it is not. Four pages on
       the stack, more than on either subject alone, is the accurate form and still the point.)*
 
-      What hangs off this: R47 (the corpus), R11 (naming stops consuming), R13 (short-circuit via
+      What hangs off this: R47 (the corpus), R13 (short-circuit via
       quotations), R21 (`>>field` chains), the `pick`/`roll` respelling, and R3/R24 gaining
       priority. The docs work is still real but it is now the *last* step and points the other way:
       `learn/2-stack/` becomes correct rather than demoted.
@@ -382,6 +378,22 @@ are in this file's git history; the user-facing versions are in `CHANGELOG.md`.
       every file without an expectation is reached from one that has one — by relative-path `use`,
       by module name resolved outwards as the compiler resolves it, or by a symbol it defines named
       inside its own module — and `run_all.sh` states which of the four reasons each skip is.
+
+- [x] **R11 — the colon no longer decides; `stack fn` does.** The complaint was that
+      `fn f(x:i64 -- r:i64)` binds and consumes `x` while `fn f(i64 -- r:i64)` leaves it on the
+      stack, so an annotation that reads as documentation changes what the body means. The fix is
+      a declaration modifier rather than a change of default: **binding stays the unmarked
+      behaviour, and `stack fn` marks the function whose inputs stay on the stack.** Under it,
+      names are optional and documentary — not in scope, visible to `quaddoc`, the LSP and
+      diagnostics, and a body may bind a local of the same name with `->`. Without it every input
+      must be named, since there would be nothing to bind, and the *"Cannot mix named and unnamed
+      input parameters"* rejection is gone: it was a symptom of the ambiguity, and under `stack`
+      naming only some inputs is merely partial documentation. Blast radius was 27 declarations in
+      `stdlib`/`examples`/`cmd` and 96 in tests, none of them body changes. Two adjacent bugs fell
+      out: a bare identifier in a parameter list was stored as the *name* with an empty type, so
+      `fn f(P -- r:i64)` over a struct reported *"Invalid type ''"* and then a cascade; and the
+      interpreter's declaration sniffer did not know `pub`/`inline`/`stack`, so `stack fn …` at
+      the REPL was wrapped in a `main` and parsed as an expression.
 
 - [x] **R12 — `while` is back, condition written once.** The `while` removed earlier was
       `cond while { body … cond }`, the same line count as the `loop { cond if { break } … }` that

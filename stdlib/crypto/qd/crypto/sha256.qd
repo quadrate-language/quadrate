@@ -148,7 +148,7 @@ fn sha256_gamma1(x:i64 -- result:i64) {
 	x 17 sha256_rotr32 x 19 sha256_rotr32 xor x 10 shr xor 32 bits::mask
 }
 
-fn sha256_add32(i64 i64 -- i64) {
+stack fn sha256_add32(a:i64 b:i64 -- i64) {
 	+ 32 bits::mask
 }
 

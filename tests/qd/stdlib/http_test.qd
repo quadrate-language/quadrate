@@ -24,11 +24,11 @@ fn handle_api_data(c:ptr -- ) {
 	c 200 "Data" http::json
 }
 
-fn global_middleware(ptr -- ) {
+stack fn global_middleware(ptr -- ) {
 	drop
 }
 
-fn group_middleware(ptr -- ) {
+stack fn group_middleware(ptr -- ) {
 	drop
 }
 

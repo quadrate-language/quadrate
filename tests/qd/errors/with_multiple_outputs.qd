@@ -1,9 +1,9 @@
 // Test: with multiple outputs
-fn add_and_sub(i64 i64 -- i64 i64)! {
+stack fn add_and_sub(i64 i64 -- i64 i64)! {
 	swap dup rot dup rot add rot rot sub
 }
 
-fn divide_and_double(i64 i64 -- i64 i64)! {
+stack fn divide_and_double(i64 i64 -- i64 i64)! {
 	dup 0 > if {
 		/ dup 2 mul
 	} else {

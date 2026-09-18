@@ -484,8 +484,8 @@
                             <span class="result">takes 2 ints, returns 1</span>
                         </div>
                         <div class="quick-ref-example">
-                            <code>fn double(i64 -- i64)</code>
-                            <span class="result">unnamed params use the stack</span>
+                            <code>stack fn double(i64 -- i64)</code>
+                            <span class="result">`stack` leaves the arguments on the stack</span>
                         </div>
                         <div class="quick-ref-example">
                             <code>fn greet() { "Hi" print }</code>
@@ -733,7 +733,7 @@
         let errorLines = new Set();
 
         // Quadrate syntax highlighting
-        const keywords = ['fn', 'pub', 'inline', 'if', 'else', 'for', 'loop', 'break', 'continue', 'return', 'use', 'import', 'as', 'struct', 'enum', 'type', 'const', 'defer', 'switch', 'test', 'true', 'false', 'null', 'Ok', 'Err'];
+        const keywords = ['fn', 'pub', 'inline', 'stack', 'if', 'else', 'for', 'loop', 'break', 'continue', 'return', 'use', 'import', 'as', 'struct', 'enum', 'type', 'const', 'defer', 'switch', 'test', 'true', 'false', 'null', 'Ok', 'Err'];
         const types = ['i64', 'f64', 'str', 'ptr', 'any', 'bool'];
         const builtins = [
             'dup', 'dup2', 'drop', 'swap',

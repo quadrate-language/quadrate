@@ -227,7 +227,7 @@ fn main() {
 Functions can return closures that capture their local variables:
 
 ```qd
-fn make_adder(i64 -- adder:ptr) {
+stack fn make_adder(i64 -- adder:ptr) {
 	-> n
 	fn (x:i64 -- r:i64) { x n + }
 }

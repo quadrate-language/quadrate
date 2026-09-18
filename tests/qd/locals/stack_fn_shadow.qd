@@ -1,0 +1,17 @@
+// Test: a `stack fn` parameter name is documentation, not a binding, so the
+// body may bind a local of the same name -- and the name means nothing until
+// it does.
+stack fn scaled(value:i64 -- result:i64) {
+	10 * -> value
+	value 1 +
+}
+
+stack fn twice(n:i64 -- result:i64) {
+	dup + -> n
+	n
+}
+
+fn main() {
+	4 scaled print nl
+	21 twice print nl
+}

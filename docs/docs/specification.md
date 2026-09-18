@@ -80,9 +80,9 @@ Quadrate source files MUST be UTF-8 encoded. Identifiers MUST contain only ASCII
 #### 2.3.1 Keywords
 
 ```
-fn        pub       inline    struct    packed    enum      type
-use       import    if        else      for       loop
-switch    break     continue  return    defer
+fn        pub       inline    stack     struct    packed    enum
+type      use       import    if        else      for
+loop      switch    break     continue  return    defer
 const     var       test      as
 ```
 
@@ -530,9 +530,9 @@ fn example( -- result:i64) {
 }
 ```
 
-Named parameters in a stack effect signature are bound automatically on entry, so a function
-MUST NOT re-bind them with `->`. The parameters have already been consumed from the stack, and
-attempting `-> x` for a declared parameter `x` is a stack underflow:
+Input parameters are bound automatically on entry, so a function MUST NOT re-bind them with
+`->`. The parameters have already been consumed from the stack, and attempting `-> x` for a
+declared parameter `x` is a stack underflow:
 
 ```quadrate
 fn good(x:i64 y:i64 -- result:i64) {
@@ -542,6 +542,18 @@ fn good(x:i64 y:i64 -- result:i64) {
 fn bad(x:i64 -- result:i64) {
     -> x        // ERROR: nothing left on the stack to bind
     x 2 *
+}
+```
+
+A `stack fn` (§5.7) binds nothing: its inputs stay on the stack for the body to work on, and
+any names they carry are documentation that is NOT in scope. A body MAY therefore bind a local
+of the same name:
+
+```quadrate
+stack fn scaled(value:i64 -- result:i64) {
+    10 *        // The argument is on the stack, `value` is not in scope
+    -> value    // ... until the body binds a local of that name
+    value 1 +
 }
 ```
 
@@ -729,15 +741,23 @@ Type aliases are resolved at compile time and carry no runtime overhead. They ar
 ### 5.7 Function Declarations
 
 ```quadrate
-[pub] [inline] fn name [<TypeParams>] (params -- returns) [!] {
+[pub] [inline] [stack] fn name [<TypeParams>] (params -- returns) [!] {
     body
 }
 ```
 
 - `pub`: Makes function publicly accessible from other modules
 - `inline`: Requests the compiler to inline the function at call sites, eliminating call overhead. The compiler will inline in most cases, but may decline for recursive functions or indirect calls. Useful for small wrapper functions.
+- `stack`: The input parameters are NOT bound as locals; they stay on the stack for the body to
+  work on (§4.4). Names on them are documentation and are not in scope. Without it every input
+  MUST be named, since there would be nothing to bind; with it, naming is optional and naming
+  some inputs and not others is permitted, as it changes nothing but the documentation. A
+  `stack fn` MUST declare at least one input.
 - `<TypeParams>`: Generic type parameters
 - `!`: Marks function as fallible (can fail with error)
+
+The modifiers MAY be written in any order; the canonical order, which the formatter produces,
+is `pub inline stack`. A receiver (§8.4) is always bound, including on a `stack fn`.
 
 ### 5.8 Import Declarations (FFI)
 

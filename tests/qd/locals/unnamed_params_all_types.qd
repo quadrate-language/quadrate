@@ -1,7 +1,7 @@
 // Test: unnamed parameters with all built-in types
-fn pass_int(i64 -- i64) { }
-fn pass_float(f64 -- f64) { }
-fn pass_str(str -- str) { }
+stack fn pass_int(i64 -- i64) { }
+stack fn pass_float(f64 -- f64) { }
+stack fn pass_str(str -- str) { }
 
 // Test unnamed output parameters
 fn make_pair( -- i64 i64) { 10 20 }

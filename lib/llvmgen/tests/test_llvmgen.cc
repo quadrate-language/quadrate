@@ -204,7 +204,7 @@ TEST(SimpleFunctionCall) {
 
 TEST(FunctionMultipleParams) {
 	const char* src = R"(
-		fn add_three( i64 i64 i64 -- sum:i64 ) {
+		stack fn add_three( i64 i64 i64 -- sum:i64 ) {
 			+ +
 		}
 		fn main() {
@@ -849,7 +849,7 @@ TEST(ModuloOperator) {
 
 TEST(MultipleReturnValuesUsed) {
 	const char* src = R"(
-		fn divmod(i64 i64 -- quot:i64 rem:i64) {
+		stack fn divmod(i64 i64 -- quot:i64 rem:i64) {
 			over over div
 			rot rot mod
 		}

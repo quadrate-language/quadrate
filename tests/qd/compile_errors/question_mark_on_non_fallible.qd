@@ -1,5 +1,5 @@
 // Test: ? used on a non-fallible function should error
-fn normal_add(i64 i64 -- i64) {
+stack fn normal_add(i64 i64 -- i64) {
 	add
 }
 

@@ -11,7 +11,7 @@ fn named_no_output(a:i64 b:i64 -- ) {
 }
 
 // All unnamed inputs, no outputs
-fn unnamed_no_output(i64 i64 -- ) {
+stack fn unnamed_no_output(i64 i64 -- ) {
 	+ print nl
 }
 
@@ -21,7 +21,7 @@ fn named_with_output(a:i64 b:i64 -- result:i64) {
 }
 
 // All unnamed inputs, unnamed output
-fn unnamed_with_output(i64 i64 -- i64) {
+stack fn unnamed_with_output(i64 i64 -- i64) {
 	+
 }
 
@@ -41,7 +41,7 @@ fn single_named(x:i64 -- i64) {
 }
 
 // Single unnamed param
-fn single_unnamed(i64 -- i64) {
+stack fn single_unnamed(i64 -- i64) {
 	2 *
 }
 

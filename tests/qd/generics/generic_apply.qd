@@ -4,11 +4,11 @@ fn apply<T>(val:T func:ptr -- result:T) {
 	val func call
 }
 
-fn double(i64 -- i64) {
+stack fn double(i64 -- i64) {
 	2 *
 }
 
-fn square(i64 -- i64) {
+stack fn square(i64 -- i64) {
 	dup *
 }
 

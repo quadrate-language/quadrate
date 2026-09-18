@@ -1,5 +1,5 @@
 // Test: conditional error
-fn process(i64 i64 -- i64)! {
+stack fn process(i64 i64 -- i64)! {
 	dup 0 > if {
 		add
 	} else {

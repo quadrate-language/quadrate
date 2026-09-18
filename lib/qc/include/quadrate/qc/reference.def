@@ -35,6 +35,10 @@ KEYWORD(struct, "Declares a structured data type with named fields.")
 /// @example packed struct FileLump { offset:u32 size:u32 name:u64 }
 KEYWORD(packed, "Struct modifier: fields laid out adjacent at exact widths, no padding. Used before `struct`.")
 
+/// Stack-argument function modifier.
+/// @example stack fn double(i64 -- r:i64) { 2 * }
+KEYWORD(stack, "Function modifier: the inputs stay on the stack instead of being bound as locals, and any names they carry are documentation. Used before `fn`.")
+
 /// Module import keyword.
 /// @example use strings
 KEYWORD(use, "Imports a module, making its functions available with module::function syntax.")

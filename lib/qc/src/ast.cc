@@ -9,6 +9,29 @@ namespace Qd {
 
 	Ast::~Ast() = default;
 
+	// Consumes the run of `inline` / `stack` modifiers that may precede `fn`, in any
+	// order, and returns the keyword that follows them. `text` is the identifier the
+	// caller has already scanned; `token` is updated alongside it so the caller's own
+	// dispatch still sees the current token. Returns nullptr if the run is not
+	// followed by an identifier at all, which the caller reports.
+	static const char* consumeFunctionModifiers(
+			u8t_scanner* scanner, const char* text, char32_t& token, bool& isInline, bool& isStack) {
+		size_t n;
+		while (text != nullptr && (strcmp(text, "inline") == 0 || strcmp(text, "stack") == 0)) {
+			if (strcmp(text, "inline") == 0) {
+				isInline = true;
+			} else {
+				isStack = true;
+			}
+			token = u8t_scanner_scan(scanner);
+			if (token != U8T_IDENTIFIER) {
+				return nullptr;
+			}
+			text = u8t_scanner_token_text(scanner, &n);
+		}
+		return text;
+	}
+
 	// Helper to parse constant value after '=' (handles literals and env() function)
 	// Returns the resolved string value, or empty string on error
 	static std::string parseConstantValue(u8t_scanner* scanner, ErrorReporter* errorReporter) {
@@ -387,17 +410,20 @@ namespace Qd {
 				const char* text = u8t_scanner_token_text(&scanner, &n);
 
 				if (strcmp(text, "pub") == 0) {
-					// Check if next token is "fn", "inline", "packed", "const", or "struct"
+					// Check if next token is "fn", "inline", "stack", "packed", "const", or "struct"
 					token = u8t_scanner_scan(&scanner);
 					if (token == U8T_IDENTIFIER) {
 						const char* nextText = u8t_scanner_token_text(&scanner, &n);
 						bool isInline = false;
+						bool isStack = false;
 						bool isPacked = false;
-						if (strcmp(nextText, "inline") == 0) {
-							isInline = true;
-							token = u8t_scanner_scan(&scanner);
-							nextText = u8t_scanner_token_text(&scanner, &n);
-						} else if (strcmp(nextText, "packed") == 0) {
+						nextText = consumeFunctionModifiers(&scanner, nextText, token, isInline, isStack);
+						if (nextText == nullptr) {
+							errorReporter.reportError(&scanner, "Expected 'fn' after function modifier");
+							synchronize(&scanner);
+							continue;
+						}
+						if (strcmp(nextText, "packed") == 0) {
 							isPacked = true;
 							token = u8t_scanner_scan(&scanner);
 							nextText = u8t_scanner_token_text(&scanner, &n);
@@ -406,6 +432,7 @@ namespace Qd {
 							IAstNode* func = parseFunctionDeclaration(&scanner, &errorReporter, src, true);
 							if (func) {
 								static_cast<AstNodeFunctionDeclaration*>(func)->setInline(isInline);
+								static_cast<AstNodeFunctionDeclaration*>(func)->setStack(isStack);
 								func->setParent(program);
 								program->addChild(func);
 							}
@@ -465,24 +492,21 @@ namespace Qd {
 								&scanner, "Expected 'fn', 'struct', 'enum', 'type', 'const', or 'var' after 'pub'");
 						synchronize(&scanner);
 					}
-				} else if (strcmp(text, "inline") == 0) {
-					// inline fn — private inline function
-					token = u8t_scanner_scan(&scanner);
-					if (token == U8T_IDENTIFIER) {
-						const char* nextText = u8t_scanner_token_text(&scanner, &n);
-						if (strcmp(nextText, "fn") == 0) {
-							IAstNode* func = parseFunctionDeclaration(&scanner, &errorReporter, src, false);
-							if (func) {
-								static_cast<AstNodeFunctionDeclaration*>(func)->setInline(true);
-								func->setParent(program);
-								program->addChild(func);
-							}
-						} else {
-							errorReporter.reportError(&scanner, "Expected 'fn' after 'inline'");
-							synchronize(&scanner);
+				} else if (strcmp(text, "inline") == 0 || strcmp(text, "stack") == 0) {
+					// `inline fn` / `stack fn` — private function with modifiers
+					bool isInline = false;
+					bool isStack = false;
+					const char* nextText = consumeFunctionModifiers(&scanner, text, token, isInline, isStack);
+					if (nextText != nullptr && strcmp(nextText, "fn") == 0) {
+						IAstNode* func = parseFunctionDeclaration(&scanner, &errorReporter, src, false);
+						if (func) {
+							static_cast<AstNodeFunctionDeclaration*>(func)->setInline(isInline);
+							static_cast<AstNodeFunctionDeclaration*>(func)->setStack(isStack);
+							func->setParent(program);
+							program->addChild(func);
 						}
 					} else {
-						errorReporter.reportError(&scanner, "Expected 'fn' after 'inline'");
+						errorReporter.reportError(&scanner, "Expected 'fn' after function modifier");
 						synchronize(&scanner);
 					}
 				} else if (strcmp(text, "fn") == 0) {

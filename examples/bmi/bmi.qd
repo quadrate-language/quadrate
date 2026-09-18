@@ -1,6 +1,6 @@
 use math
 
-fn bmi(f64 f64 -- f64) {
+stack fn bmi(weight_kg:f64 height_m:f64 -- f64) {
 	math::sq /
 }
 

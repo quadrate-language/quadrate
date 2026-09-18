@@ -1,5 +1,5 @@
 // Test: invalid type output
-fn test(i64 -- float64) {
+stack fn test(i64 -- float64) {
 	dup
 }
 

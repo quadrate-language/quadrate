@@ -1,5 +1,5 @@
 // Example demonstrating fallible functions and error handling
-fn division(i64 i64 -- i64)! {
+stack fn division(numerator:i64 denominator:i64 -- i64)! {
 	dup 0 == if {
 		drop drop
 		"division by zero" -1 panic

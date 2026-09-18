@@ -1342,8 +1342,8 @@ namespace Qd {
 
 				// Validate type name
 				if (!isValidTypeName(typeStr)) {
-					reportError(param, ("Invalid type '" + typeStr + "' in parameter '" + param->name() +
-											   "'. Valid types are: i64, f64, str, ptr, any, or a struct name")
+					reportError(param, ("Invalid type '" + typeStr + "'" + parameterSuffix(param) +
+											   ". Valid types are: i64, f64, str, ptr, any, or a struct name")
 											   .c_str());
 				}
 
@@ -1523,8 +1523,8 @@ namespace Qd {
 
 					// Validate type name
 					if (!isValidTypeName(typeStr)) {
-						reportError(param, ("Invalid type '" + typeStr + "' in parameter '" + param->name() +
-												   "'. Valid types are: i64, f64, str, ptr, any, or a struct name")
+						reportError(param, ("Invalid type '" + typeStr + "'" + parameterSuffix(param) +
+												   ". Valid types are: i64, f64, str, ptr, any, or a struct name")
 												   .c_str());
 					}
 
@@ -1571,8 +1571,8 @@ namespace Qd {
 
 					// Validate type name
 					if (!isValidTypeName(typeStr)) {
-						reportError(param, ("Invalid type '" + typeStr + "' in parameter '" + param->name() +
-												   "'. Valid types are: i64, f64, str, ptr, any, or a struct name")
+						reportError(param, ("Invalid type '" + typeStr + "'" + parameterSuffix(param) +
+												   ". Valid types are: i64, f64, str, ptr, any, or a struct name")
 												   .c_str());
 					}
 

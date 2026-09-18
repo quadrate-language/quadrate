@@ -1,8 +1,8 @@
 // Helper functions for module import tests
-pub fn square(f64 -- f64) {
+pub stack fn square(f64 -- f64) {
 	dup mul
 }
 
-pub fn add_ten(f64 -- f64) {
+pub stack fn add_ten(f64 -- f64) {
 	10.0 add
 }

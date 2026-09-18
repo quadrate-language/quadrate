@@ -1,1 +1,1 @@
-Invalid type '' in parameter 'float64'. Valid types are: i64, f64, str, ptr, any
+Invalid type 'float64'. Valid types are: i64, f64, str, ptr, any

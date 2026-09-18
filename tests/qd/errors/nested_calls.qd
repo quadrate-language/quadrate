@@ -1,12 +1,12 @@
 // Test: nested calls
-fn validate(i64 -- i64)! {
+stack fn validate(i64 -- i64)! {
 	dup 0 < if {
 		0
 		"Error occurred" 1 panic
 	}
 }
 
-fn process(i64 -- i64)! {
+stack fn process(i64 -- i64)! {
 	validate if {
 		2 mul
 	} else {

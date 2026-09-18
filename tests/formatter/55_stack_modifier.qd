@@ -1,0 +1,12 @@
+// The modifiers may be written in any order; the canonical order is pub inline stack
+pub stack inline fn twice( i64  --  r:i64 ) {
+	2 *
+}
+
+stack fn diff(a:i64 b:i64 -- r:i64) {
+	-
+}
+
+pub inline stack fn half(value:f64 -- r:f64) {
+	2.0 /
+}

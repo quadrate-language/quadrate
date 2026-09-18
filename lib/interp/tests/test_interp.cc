@@ -576,7 +576,7 @@ TEST(NamedParameters) {
 	ASSERT(std::strcmp(top(interp, "clear 10 3 difference"), "7") == 0, "in the order written");
 
 	// An unnamed input stays on the stack for the body to read positionally
-	qd_interp_eval(interp, "fn twice(i64 -- r:i64) { 2 * }");
+	qd_interp_eval(interp, "stack fn twice(i64 -- r:i64) { 2 * }");
 	ASSERT(std::strcmp(top(interp, "clear 5 twice"), "10") == 0, "an unnamed parameter stays on the stack");
 
 	// A frame belongs to its call: the caller's names are not visible inside it

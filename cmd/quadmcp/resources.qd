@@ -418,7 +418,7 @@ fn resource_uri_to_index(uri:str -- idx:i64) {
 	idx
 }
 
-fn get_snippet_content(str -- str) {
+stack fn get_snippet_content(uri:str -- content:str) {
 	resource_uri_to_index switch {
 		1 { "// Hello World\nfn main() {\n\t42 print nl\n}" }
 		2 { "// File I/O\nuse io\n\nfn read_example() {\n\tpath io::read_file switch {\n\t\tOk { -> content content print nl }\n\t\t_ { 1 os::exit }\n\t}\n}\n\nfn write_example() {\n\tpath data io::write_file!\n}" }

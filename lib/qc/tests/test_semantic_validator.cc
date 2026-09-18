@@ -436,7 +436,7 @@ TEST(ScopedIdentifierModuleImported) {
 // Test implicit cast: int to float - should succeed with warning
 TEST(ImplicitCastIntToFloat) {
 	const char* src = R"(
-		fn add_float(f64 f64 -- f64) {
+		stack fn add_float(f64 f64 -- f64) {
 			+
 		}
 		fn main() {
@@ -454,7 +454,7 @@ TEST(ImplicitCastIntToFloat) {
 // Test implicit cast: float to int - should succeed with warning
 TEST(ImplicitCastFloatToInt) {
 	const char* src = R"(
-		fn add_int(i64 i64 -- i64) {
+		stack fn add_int(i64 i64 -- i64) {
 			+
 		}
 		fn main() {
@@ -472,7 +472,7 @@ TEST(ImplicitCastFloatToInt) {
 // Test werror: warnings treated as errors
 TEST(WerrorTreatsWarningsAsErrors) {
 	const char* src = R"(
-		fn add_float(f64 f64 -- f64) {
+		stack fn add_float(f64 f64 -- f64) {
 			+
 		}
 		fn main() {
@@ -490,7 +490,7 @@ TEST(WerrorTreatsWarningsAsErrors) {
 // Test werror: clean code still passes
 TEST(WerrorCleanCodePasses) {
 	const char* src = R"(
-		fn add_int(i64 i64 -- i64) {
+		stack fn add_int(i64 i64 -- i64) {
 			+
 		}
 		fn main() {

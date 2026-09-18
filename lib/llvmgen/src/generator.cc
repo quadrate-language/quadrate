@@ -1190,7 +1190,7 @@ namespace Qd {
 				// Values stay on the compileTimeStack too (native codegen uses them positionally).
 				{
 					const auto& inputs = funcNode->inputParameters();
-					for (size_t i = 0; i < inputs.size() && i < compileTimeStack.size(); i++) {
+					for (size_t i = 0; !funcNode->isStack() && i < inputs.size() && i < compileTimeStack.size(); i++) {
 						const auto* paramNode = static_cast<const AstNodeParameter*>(inputs[i].get());
 						if (!paramNode->hasName()) {
 							continue;
@@ -1475,18 +1475,11 @@ namespace Qd {
 
 				// Auto-bind named input parameters as local variables
 				// Pop from stack in reverse order (stack is LIFO: last param on top)
-				// Only auto-bind when ALL input params are named (mixed named/unnamed
-				// would require complex stack reordering)
+				// A `stack fn` binds nothing: its arguments stay on the stack for the body
 				if (!currentFunctionIsIntegerOnly) {
 					const auto& inputs = funcNode->inputParameters();
-					bool allNamed = true;
-					for (size_t i = 0; i < inputs.size(); i++) {
-						if (!static_cast<const AstNodeParameter*>(inputs[i].get())->hasName()) {
-							allNamed = false;
-							break;
-						}
-					}
-					for (int paramIdx = static_cast<int>(inputs.size()) - 1; allNamed && paramIdx >= 0; paramIdx--) {
+					const bool bindParams = !funcNode->isStack();
+					for (int paramIdx = static_cast<int>(inputs.size()) - 1; bindParams && paramIdx >= 0; paramIdx--) {
 						const auto* param =
 								static_cast<const AstNodeParameter*>(inputs[static_cast<size_t>(paramIdx)].get());
 						const std::string& paramName = param->name();

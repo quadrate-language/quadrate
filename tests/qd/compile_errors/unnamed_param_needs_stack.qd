@@ -1,0 +1,8 @@
+// Without `stack` every input must be named -- there would be nothing to bind.
+fn sq(i64 -- result:i64) {
+	dup *
+}
+
+fn main() {
+	6 sq print nl
+}

@@ -1,0 +1,8 @@
+// A `stack fn` parameter name is documentation: it is not in scope in the body.
+stack fn sq(n:i64 -- result:i64) {
+	n n *
+}
+
+fn main() {
+	6 sq print nl
+}

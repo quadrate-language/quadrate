@@ -1,19 +1,19 @@
 // Test: complex flow
-fn parse_number(i64 -- i64)! {
+stack fn parse_number(i64 -- i64)! {
 	dup 0 < if {
 		0
 		"Error occurred" 1 panic
 	}
 }
 
-fn validate_range(i64 -- i64)! {
+stack fn validate_range(i64 -- i64)! {
 	dup 100 > if {
 		0
 		"Error occurred" 1 panic
 	}
 }
 
-fn compute(i64 -- i64)! {
+stack fn compute(i64 -- i64)! {
 	dup 50 > if {
 		10 add
 	} else {

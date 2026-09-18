@@ -1,5 +1,5 @@
 // Test: always fail
-fn always_error(i64 -- i64)! {
+stack fn always_error(i64 -- i64)! {
 	0
 	"Error occurred" 1 panic
 }

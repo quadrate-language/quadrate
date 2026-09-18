@@ -29,7 +29,7 @@ struct Pair<A, B> {
 }
 
 // Section 3.4 - Function Types
-fn double(i64 -- i64) {
+stack fn double(i64 -- i64) {
     2 *
 }
 
@@ -38,15 +38,15 @@ fn apply(val:i64 func:ptr -- result:i64) {
 }
 
 // Section 4.3 - Stack Effect Signatures
-fn add(i64 i64 -- i64) {
+stack fn add(i64 i64 -- i64) {
     +
 }
 
-fn swap_pair(i64 i64 -- i64 i64) {
+stack fn swap_pair(i64 i64 -- i64 i64) {
     swap
 }
 
-fn print_value(i64 -- ) {
+stack fn print_value(i64 -- ) {
     print nl
 }
 
@@ -67,7 +67,7 @@ fn length(v:Vec2 -- len:f64) {
 }
 
 // Section 10.1 - Fallible Functions
-fn divide(i64 i64 -- i64)! {
+stack fn divide(i64 i64 -- i64)! {
     dup 0 == if {
         drop drop
         "division by zero" -1 panic

@@ -79,6 +79,30 @@ namespace Qd {
 				}
 			}
 
+			// Whether an input is bound to a local is carried by the `stack` modifier, not
+			// by whether someone wrote a name. Without it every input must be named, since
+			// there would be nothing to bind; with it the names are documentation and the
+			// values stay on the stack, so naming some and not others is merely partial
+			// documentation and is allowed.
+			if (func->isStack()) {
+				if (func->inputParameters().empty()) {
+					std::string errorMsg = "'stack fn " + func->name() +
+										   "' takes no input parameters, so there is nothing to leave on the stack";
+					reportError(func, errorMsg.c_str());
+				}
+			} else {
+				for (const auto& paramNode : func->inputParameters()) {
+					AstNodeParameter* param = static_cast<AstNodeParameter*>(paramNode.get());
+					if (!param->hasName()) {
+						std::string errorMsg = "Unnamed input parameter '" + param->typeString() + "' in '" +
+											   func->name() + "'. Name it ('value:" + param->typeString() +
+											   "'), or write 'stack fn " + func->name() +
+											   "' to leave the arguments on the stack for the body to work on";
+						reportError(param, errorMsg.c_str());
+					}
+				}
+			}
+
 			// Handle struct methods (functions with receiver)
 			if (func->hasReceiver()) {
 				std::string structType = func->receiverType();
@@ -1111,16 +1135,10 @@ namespace Qd {
 				funcLocalVariables.insert(func->receiverName());
 			}
 
-			// Named parameters are auto-bound as local variables
-			// (only when ALL params are named; mixed stays on stack)
-			bool allNamed = true;
-			for (const auto& paramNode : func->inputParameters()) {
-				if (!static_cast<AstNodeParameter*>(paramNode.get())->hasName()) {
-					allNamed = false;
-					break;
-				}
-			}
-			if (allNamed) {
+			// Input parameters are auto-bound as local variables, unless the function is
+			// `stack fn` -- there the names are documentation and are not in scope, which
+			// is what leaves the body free to bind a local of the same name with `->`.
+			if (!func->isStack()) {
 				for (const auto& paramNode : func->inputParameters()) {
 					AstNodeParameter* param = static_cast<AstNodeParameter*>(paramNode.get());
 					if (param->hasName()) {
@@ -1379,8 +1397,8 @@ namespace Qd {
 				// Validate type name
 				std::string typeStr = param->typeString();
 				if (!isValidTypeName(typeStr)) {
-					reportError(param, ("Invalid type '" + typeStr + "' in parameter '" + param->name() +
-											   "'. Valid types are: i64, f64, str, ptr, any, or a struct name")
+					reportError(param, ("Invalid type '" + typeStr + "'" + parameterSuffix(param) +
+											   ". Valid types are: i64, f64, str, ptr, any, or a struct name")
 											   .c_str());
 				}
 
@@ -1407,8 +1425,8 @@ namespace Qd {
 
 				// Validate type name
 				if (!isValidTypeName(typeStr)) {
-					reportError(param, ("Invalid type '" + typeStr + "' in parameter '" + param->name() +
-											   "'. Valid types are: i64, f64, str, ptr, any, or a struct name")
+					reportError(param, ("Invalid type '" + typeStr + "'" + parameterSuffix(param) +
+											   ". Valid types are: i64, f64, str, ptr, any, or a struct name")
 											   .c_str());
 				}
 
@@ -1439,8 +1457,8 @@ namespace Qd {
 
 				// Validate type name
 				if (!isValidTypeName(typeStr)) {
-					reportError(param, ("Invalid type '" + typeStr + "' in parameter '" + param->name() +
-											   "'. Valid types are: i64, f64, str, ptr, any, or a struct name")
+					reportError(param, ("Invalid type '" + typeStr + "'" + parameterSuffix(param) +
+											   ". Valid types are: i64, f64, str, ptr, any, or a struct name")
 											   .c_str());
 				}
 			}

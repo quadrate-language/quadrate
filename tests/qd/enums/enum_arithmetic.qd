@@ -8,7 +8,7 @@ enum Perm {
 	All = 7
 }
 
-fn has_perm(i64 i64 -- i64) {
+stack fn has_perm(i64 i64 -- i64) {
 	and 0 !=
 }
 

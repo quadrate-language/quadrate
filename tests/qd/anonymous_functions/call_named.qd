@@ -1,5 +1,5 @@
 // Test: anonymous function calling a named function
-fn helper(i64 -- i64) {
+stack fn helper(i64 -- i64) {
     10 +
 }
 

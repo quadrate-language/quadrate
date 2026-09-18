@@ -126,6 +126,17 @@ namespace Qd {
 			return mIsInline;
 		}
 
+		// `stack fn` -- the input parameters are not bound as locals; they stay on the
+		// stack for the body to work on. Any names they carry are documentation, and a
+		// local of the same name may be bound in the body.
+		void setStack(bool isStack) {
+			mIsStack = isStack;
+		}
+
+		bool isStack() const {
+			return mIsStack;
+		}
+
 		const std::vector<std::string>& typeParams() const {
 			return mTypeParams;
 		}
@@ -182,6 +193,7 @@ namespace Qd {
 		bool mThrows;
 		bool mIsPublic;
 		bool mIsInline = false;
+		bool mIsStack = false;
 		size_t mLine;
 		size_t mColumn;
 

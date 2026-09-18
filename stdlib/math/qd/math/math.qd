@@ -232,7 +232,7 @@ import "libmath.a" as "math" {
 /// @param x f64 Value to square
 /// @return result f64 x * x
 /// @example 3.0 math::sq print  // 9.0
-pub fn sq(f64 -- f64) {
+pub stack fn sq(x:f64 -- f64) {
 	dup mul
 }
 
@@ -240,7 +240,7 @@ pub fn sq(f64 -- f64) {
 /// @param x f64 Value to cube
 /// @return result f64 x * x * x
 /// @example 2.0 math::cb print  // 8.0
-pub fn cb(f64 -- f64) {
+pub stack fn cb(x:f64 -- f64) {
 	dup dup mul mul
 }
 
@@ -248,7 +248,7 @@ pub fn cb(f64 -- f64) {
 /// @param x f64 Any value
 /// @return result f64 |x|
 /// @example -5.0 math::abs print  // 5.0
-pub fn abs(f64 -- f64) {
+pub stack fn abs(x:f64 -- f64) {
 	dup 0.0 lt if {
 		neg
 	}
@@ -258,7 +258,7 @@ pub fn abs(f64 -- f64) {
 /// @param x f64 Non-zero value
 /// @return result f64 1/x
 /// @example 4.0 math::inv print  // 0.25
-pub fn inv(f64 -- f64) {
+pub stack fn inv(x:f64 -- f64) {
 	1.0 swap div
 }
 
@@ -267,7 +267,7 @@ pub fn inv(f64 -- f64) {
 /// @param b any Second value
 /// @return result any Smaller of a and b
 /// @example 3 7 math::min print  // 3
-pub fn min(any any -- any) {
+pub stack fn min(a:any b:any -- any) {
 	over over lt if {
 		drop
 	} else {
@@ -280,7 +280,7 @@ pub fn min(any any -- any) {
 /// @param b any Second value
 /// @return result any Larger of a and b
 /// @example 3 7 math::max print  // 7
-pub fn max(any any -- any) {
+pub stack fn max(a:any b:any -- any) {
 	over over gt if {
 		drop
 	} else {
@@ -349,7 +349,7 @@ pub fn lerp(a:f64 b:f64 t:f64 -- result:f64) {
 /// @param degrees f64 Angle in degrees
 /// @return radians f64 Angle in radians
 /// @example 180.0 math::deg_to_rad print  // ~3.14159
-pub fn deg_to_rad(f64 -- f64) {
+pub stack fn deg_to_rad(degrees:f64 -- f64) {
 	3.141592653589793 180 div mul
 }
 
@@ -357,7 +357,7 @@ pub fn deg_to_rad(f64 -- f64) {
 /// @param radians f64 Angle in radians
 /// @return degrees f64 Angle in degrees
 /// @example 3.141592653589793 math::rad_to_deg print  // 180.0
-pub fn rad_to_deg(f64 -- f64) {
+pub stack fn rad_to_deg(radians:f64 -- f64) {
 	180 mul 3.141592653589793 div
 }
 

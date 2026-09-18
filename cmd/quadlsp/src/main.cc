@@ -1322,6 +1322,10 @@ std::string QuadrateLSP::getBuiltInDocumentation(const std::string& word) {
 			{"pub", "Public visibility modifier.\n\n**Syntax:** `pub struct Name { ... }` or `pub fn name(...) { "
 					"... "
 					"}`\n\nMakes structs, enums, or functions visible to other modules."},
+			{"stack", "Stack-argument modifier.\n\n**Syntax:** `stack fn name(a:i64 b:i64 -- r:i64) { ... "
+					  "}`\n\nThe inputs are not bound as locals: they stay on the stack for the body to work on, "
+					  "and any names they carry are documentation that is not in scope. Without it every input must "
+					  "be named."},
 			{"defer", "Defer execution until scope exit.\n\n**Syntax:** `defer { ... }`\n\nExecutes code block when "
 					  "function returns, useful for cleanup."},
 			{"as", "Type narrowing cast.\n\n**Syntax:** `expr as TypeName`\n\nNarrows a ptr value to a specific "
@@ -1871,7 +1875,7 @@ enum SemanticTokenModifier {
 static bool isKeyword(const std::string& word) {
 	static const std::set<std::string> keywords = {"fn", "if", "else", "for", "use", "struct", "packed", "enum", "type",
 			"const", "var", "return", "break", "continue", "defer", "switch", "case", "default", "true", "false", "nil",
-			"and", "or", "not", "in", "as", "test", "pub"};
+			"and", "or", "not", "in", "as", "test", "pub", "inline", "stack"};
 	return keywords.count(word) > 0;
 }
 

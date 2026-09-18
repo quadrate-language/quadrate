@@ -2,17 +2,17 @@ use mem
 use strings
 
 /// Minimum of two integers.
-fn min2(i64 i64 -- i64) {
+stack fn min2(a:i64 b:i64 -- i64) {
 	dup2 < if { drop } else { nip }
 }
 
 /// Minimum of three integers.
-fn min3(i64 i64 i64 -- i64) {
+stack fn min3(a:i64 b:i64 c:i64 -- i64) {
 	min2 min2
 }
 
 /// Maximum of two integers.
-fn max2(i64 i64 -- i64) {
+stack fn max2(a:i64 b:i64 -- i64) {
 	dup2 > if { drop } else { nip }
 }
 
@@ -122,7 +122,7 @@ pub fn similarity(a:str b:str -- sim:f64) {
 /// @return matches i64 1 if similarity >= threshold, 0 otherwise
 /// @example "helo" "hello" 0.7 fuzzy::matches -> 1
 /// @example "xyz" "hello" 0.7 fuzzy::matches -> 0
-pub fn matches(str str f64 -- i64) {
+pub stack fn matches(query:str target:str threshold:f64 -- i64) {
 	rot rot similarity swap >= if { 1 } else { 0 }
 }
 
@@ -311,7 +311,7 @@ pub fn best(query:str items:ptr max_results:i64 -- results:ptr count:i64) {
 /// @param s str String to check
 /// @param prefix str Prefix to look for
 /// @return starts i64 1 if s starts with prefix, 0 otherwise
-pub fn starts_with_ci(str str -- i64) {
+pub stack fn starts_with_ci(s:str prefix:str -- i64) {
 	swap strings::lower swap strings::lower strings::starts_with
 }
 
@@ -319,6 +319,6 @@ pub fn starts_with_ci(str str -- i64) {
 /// @param s str String to search in
 /// @param substr str Substring to look for
 /// @return contains i64 1 if s contains substr, 0 otherwise
-pub fn contains_ci(str str -- i64) {
+pub stack fn contains_ci(s:str substr:str -- i64) {
 	swap strings::lower swap strings::lower strings::contains
 }

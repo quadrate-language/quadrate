@@ -572,12 +572,13 @@ void QuadrateLSP::handleCompletion(const std::string& id, const std::string& uri
 		if (topLevel) {
 			// At top level - show only declaration keywords
 			static const char* topLevelKeywords[] = {
-					"use", "fn", "test", "struct", "packed", "enum", "type", "const", "var", "pub"};
+					"use", "fn", "test", "struct", "packed", "enum", "type", "const", "var", "pub", "inline", "stack"};
 			static const char* topLevelDescriptions[] = {"Import a module", "Declare a function",
 					"Declare a test function", "Declare a struct type",
 					"Modifier for packed struct layout (packed struct ...)", "Declare an enum type",
-					"Declare a type alias", "Declare a constant", "Declare a mutable global",
-					"Make declaration public"};
+					"Declare a type alias", "Declare a constant", "Declare a mutable global", "Make declaration public",
+					"Inline the function at call sites (inline fn ...)",
+					"Leave the arguments on the stack instead of binding them (stack fn ...)"};
 
 			for (size_t i = 0; i < sizeof(topLevelKeywords) / sizeof(topLevelKeywords[0]); i++) {
 				json_t* item = json_object();

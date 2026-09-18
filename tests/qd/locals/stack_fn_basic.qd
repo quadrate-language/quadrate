@@ -1,0 +1,25 @@
+// Test: `stack fn` leaves its arguments on the stack for the body, whether or
+// not the parameters carry names. A name there is documentation only.
+stack fn sq(n:i64 -- result:i64) {
+	dup *
+}
+
+stack fn diff(i64 i64 -- result:i64) {
+	-
+}
+
+pub stack fn scale(value:f64 factor:f64 -- result:f64) {
+	*
+}
+
+// Mixing named and unnamed is only partial documentation when nothing binds
+stack fn clamp_low(value:i64 i64 -- result:i64) {
+	dup2 < if { drop } else { nip }
+}
+
+fn main() {
+	6 sq print nl
+	10 4 diff print nl
+	2.5 4.0 scale print nl
+	3 7 clamp_low print nl
+}

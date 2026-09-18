@@ -1,5 +1,5 @@
 // Test: always success
-fn always_ok(i64 -- i64)! {
+stack fn always_ok(i64 -- i64)! {
 }
 
 fn main() {

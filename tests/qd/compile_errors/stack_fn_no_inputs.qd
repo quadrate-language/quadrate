@@ -1,0 +1,8 @@
+// `stack` says the arguments stay on the stack; with no arguments it says nothing.
+stack fn answer( -- result:i64) {
+	42
+}
+
+fn main() {
+	answer print nl
+}

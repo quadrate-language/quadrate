@@ -81,23 +81,30 @@ fn add(a:i64 b:i64 -- sum:i64) {
 }
 ```
 
-## Unnamed parameters
+## `stack fn` — working on the stack directly
 
-Parameters can omit names — they stay on the stack for direct manipulation:
+A parameter is bound to a local on entry, which is why `fn double(x:i64 -- i64) { 2 * }` fails:
+`x` was consumed into the binding, so the body starts with nothing on the stack. Mark the
+function `stack` when you want the arguments left where the caller put them:
 
 ```qd
-fn double(i64 -- i64) {
+stack fn double(i64 -- i64) {
 	2 *       // operates directly on the stack value
 }
 
-fn add(i64 i64 -- i64) {
-	+         // adds the two values on the stack
+stack fn add(a:i64 b:i64 -- i64) {
+	+         // the names are documentation; the values are on the stack
 }
 ```
 
+Under `stack`, names are optional and never in scope — they show up in documentation, editor
+hints and error messages, and the body may bind a local of the same name with `->` when it
+wants one. Without `stack`, every input must be named, because there would be nothing to bind.
+
 **When to use which:**
-- **Named** (`a:i64`) — when you reference the value multiple times or the meaning isn't obvious
-- **Unnamed** (`i64`) — for simple stack operations where the body is a single expression
+- **Plain `fn`** — the default: name each input, refer to it by name
+- **`stack fn`** — for small words whose body is a stack expression, where naming the operands
+  would add nothing
 
 The same applies to return types: name them for clarity in public APIs (`-- result:i64`), leave unnamed in lambdas and trivial functions (`-- i64`).
 
