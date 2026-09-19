@@ -163,7 +163,7 @@ pub fn (s:Set) add(key:str -- s2:Set)! {
 	keys states cap key set_find_slot -> found -> slot
 
 	slot 0 < if {
-		"add: set is full" 1 err
+		"add: set is full" 1 panic
 	}
 
 	found 0 == if {
@@ -222,13 +222,13 @@ pub fn (s:Set) remove(key:str -- s2:Set)! {
 	s <<cap -> cap
 
 	cap 0 == if {
-		"remove: set is empty" 1 err
+		"remove: set is empty" 1 panic
 	}
 
 	keys states cap key set_find_slot -> found -> slot
 
 	found 0 == if {
-		"remove: element not found" 1 err
+		"remove: element not found" 1 panic
 	}
 
 	keys slot 8 * mem::get_ptr mem::free

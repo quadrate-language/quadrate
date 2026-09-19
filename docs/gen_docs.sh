@@ -71,6 +71,7 @@ declare -A STDLIB_MODULES=(
     ["sort"]="stdlib/sort/qd/sort/sort.qd"
     ["net"]="stdlib/net/qd/net/net.qd"
     ["tty"]="stdlib/tty/qd/tty/tty.qd"
+    ["error"]="stdlib/error/qd/error/error.qd"
 )
 
 # Get module name from file path

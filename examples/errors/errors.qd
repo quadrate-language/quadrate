@@ -1,36 +1,86 @@
-// Example demonstrating fallible functions and error handling
+// Error handling: raising, checking, and keeping an error as a value.
+use error
+use strings
+
+const ErrDivZero = -1
+const ErrNegative = -2
+
 stack fn division(numerator:i64 denominator:i64 -- i64)! {
 	dup 0 == if {
 		drop drop
-		"division by zero" -1 panic
+		"division by zero" ErrDivZero panic
 	}
 	/
 }
 
-fn main() {
-	// Call fallible function with error check using 'if'
-	// Success: 'if' branch is taken, result is on stack
-	// Error: 'else' branch is taken; the function produced nothing, so the
-	// stack is as it was before the call. Use 'err' to read the message and code.
+// A frame that catches a failure, says where it happened, and passes it on. The wrapped error
+// keeps the original code, so a caller matching on ErrDivZero still matches.
+fn average(total:i64 count:i64 -- avg:i64)! {
+	count 0 < if { "count is negative" ErrNegative panic }
+	total count division if {
+		// success: the result is on the stack
+	} else {
+		error::last "cannot average" wrap -> e
+		e <<message e <<code panic
+	}
+}
 
-	// Attempt division by zero
+fn main() {
+	// A fallible call must say what happens on failure: '!' aborts, '?' propagates, or the
+	// result is read by 'if' or 'switch'. On failure the function produced nothing, so the
+	// failure arm sees the stack as it was before the call.
 	1 0 division if {
-		// Success - print result
 		"1 / 0 = " print print nl
 	} else {
-		// Error - nothing was produced; report it
-		err drop drop
-		"Error: Division by zero!" print nl
+		"1 / 0 failed" print nl
 	}
 
-	// Successful division
 	10 2 division if {
 		"10 / 2 = " print print nl
 	} else {
-		"Unexpected error" print nl
+		"unexpected failure" print nl
 	}
 
-	// Call with '!' to propagate/crash on error
-	// Uncomment to see crash behavior:
-	// 1 0 division!
+	// 'err' reads the channel directly: a message and a code, and reading empties it.
+	1 0 division if {
+		drop
+	} else {
+		err -> code -> msg
+		"err: " print msg print " (code " print code print ")" print nl
+	}
+
+	// 'error::last' reads the same thing as one value, which can be kept.
+	1 0 division if {
+		drop
+	} else {
+		error::last -> e
+		"error::last: " print e <<message print " (code " print e <<code print ")" print nl
+	}
+
+	// Kept: several failures collected while the loop carries on.
+	[] -> failures
+	[0 2 0] -> divisors
+	0 divisors len 1 for i {
+		100 divisors i nth division if {
+			drop
+		} else {
+			failures error::last append -> failures
+		}
+	}
+	"collected " print failures len print " failures" print nl
+
+	// Wrapped: context from the frame that had it. Re-raising with 'panic' carries the message
+	// and the code, so the text and the code survive the frame -- the chain behind them does not.
+	100 0 average if {
+		drop
+	} else {
+		error::last -> e
+		e <<message print nl
+		"  code is still ErrDivZero: " print e <<code ErrDivZero == print nl
+	}
+
+	// Within one frame the chain is structured, and 'root' walks back to what actually failed.
+	"disk full" 5 error::new "cannot save" wrap "cannot quit" wrap -> layered
+	layered <<message print nl
+	"  root: " print layered root <<message print nl
 }

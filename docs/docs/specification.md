@@ -862,10 +862,21 @@ fn main() {
 }
 ```
 
-An `if` without an `else` is not constrained by this rule; its then-arm is governed by the
-enclosing function's declared effect (§4.3). The exception is again a bare fallible call: with
-no failure arm to run, what follows sees the pre-call stack, so the success arm MUST leave that
-same depth — by consuming the results or by diverging.
+An `if` without an `else` is an `if` whose other arm is empty, so the same rule binds it: its
+then-arm MUST leave the stack at the depth it found it, and an implementation MUST reject an arm
+that does not. The reasoning is the one above — the arm may not run, so what follows cannot read
+a value whose presence depends on it — and the exemption for a diverging arm applies here too.
+
+This paragraph used to say the opposite: that a bare `if` was unconstrained and the enclosing
+function's declared effect governed it. That could not be true, because an arm whose effect is
+not applied to the model leaves the function-level check comparing against a stack that pretends
+the arm did nothing. `fn main() { 1 0 == if { 42 } }` was accepted with no diagnostic anywhere,
+and fourteen guards in the `ct` module pushed their error message onto the stack as data and
+fell through into the code they were guarding.
+
+The exception is again a bare fallible call: with no failure arm to run, what follows sees the
+pre-call stack, so the success arm MUST leave that same depth — by consuming the results or by
+diverging.
 
 ### 6.2 For Loops
 

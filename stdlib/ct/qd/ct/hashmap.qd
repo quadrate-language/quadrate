@@ -194,7 +194,7 @@ pub fn (m:Map<V>) insert<V>(key:str value:V -- m2:Map<V>)! {
 	keys states cap key find_slot -> found -> slot
 
 	slot 0 < if {
-		"insert: hash table is full" 1 err
+		"insert: hash table is full" 1 panic
 	}
 
 	found 0 == if {
@@ -233,13 +233,13 @@ pub fn (m:Map<V>) get<V>(key:str -- value:V)! {
 	m <<cap -> cap
 
 	cap 0 == if {
-		"get: map is empty" 1 err
+		"get: map is empty" 1 panic
 	}
 
 	keys states cap key find_slot -> found -> slot
 
 	found 0 == if {
-		"get: key not found" 1 err
+		"get: key not found" 1 panic
 	}
 
 	values slot mem::AnySize * mem::get_any
@@ -282,13 +282,13 @@ pub fn (m:Map<V>) remove<V>(key:str -- m2:Map<V>)! {
 	m <<cap -> cap
 
 	cap 0 == if {
-		"remove: map is empty" 1 err
+		"remove: map is empty" 1 panic
 	}
 
 	keys states cap key find_slot -> found -> slot
 
 	found 0 == if {
-		"remove: key not found" 1 err
+		"remove: key not found" 1 panic
 	}
 
 	// Free the key string and let go of the value

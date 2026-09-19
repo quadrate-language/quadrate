@@ -11,7 +11,7 @@ fn main() {
 					5 5 eq
 					if {
 						// This is too deep!
-						6 6 add
+						6 6 add drop
 					}
 				}
 			}

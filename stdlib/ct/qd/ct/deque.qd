@@ -157,7 +157,7 @@ pub fn (d:Deque<T>) pop_front<T>( -- val:T d2:Deque<T>)! {
 	d <<len -> len
 
 	len 0 == if {
-		"pop_front: deque is empty" 1 err
+		"pop_front: deque is empty" 1 panic
 	}
 
 	d <<data -> data
@@ -184,7 +184,7 @@ pub fn (d:Deque<T>) pop_back<T>( -- val:T d2:Deque<T>)! {
 	d <<len -> len
 
 	len 0 == if {
-		"pop_back: deque is empty" 1 err
+		"pop_back: deque is empty" 1 panic
 	}
 
 	d <<data -> data
@@ -212,7 +212,7 @@ pub fn (d:Deque<T>) peek_front<T>( -- val:T)! {
 	d <<len -> len
 
 	len 0 == if {
-		"peek_front: deque is empty" 1 err
+		"peek_front: deque is empty" 1 panic
 	}
 
 	d <<data -> data
@@ -228,7 +228,7 @@ pub fn (d:Deque<T>) peek_back<T>( -- val:T)! {
 	d <<len -> len
 
 	len 0 == if {
-		"peek_back: deque is empty" 1 err
+		"peek_back: deque is empty" 1 panic
 	}
 
 	d <<data -> data

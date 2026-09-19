@@ -173,6 +173,25 @@ that way.
       out. A named function's pointer loses it the same way. Fixing it means giving the type
       syntax somewhere to put the mark.
 
+- [x] **Fixed 2026-09-19: an `if` without an `else` has its arm checked.** It had no check at
+      all. An arm that left values behind was not applied to the stack model either, so the
+      function-level arity check then ran against a stack that pretended the arm did nothing:
+      `fn main() { 1 0 == if { 42 } }` was accepted with no diagnostic anywhere. Specification
+      6.1.1 *said* a bare `if` was "governed by the enclosing function's declared effect", which
+      could not be true for that reason; the rule now matches the two that were already there --
+      an `if`/`else` whose arms disagree is rejected, and a loop body must be neutral -- because
+      a bare `if` is an `if` whose other arm is empty. A diverging arm is exempt, as before, and
+      the separate rule for an `if` after a bare fallible call is unchanged.
+
+      **Fallout over all 1,111 `.qd` files in the repository: 15 sites, 14 of them real bugs.**
+      Every guard in `ct`'s `Queue`, `Deque`, `Map` and `Set` was written `"..." 1 err` -- which
+      *reads* the last error rather than raising one, so the message went onto the stack as data
+      and the function fell through into the code it was guarding. `q dequeue` on an empty queue
+      died in `mod` with "Division by zero" instead of reporting. `Vec` used `panic` and worked,
+      which is why the module looked fine. All fourteen are `panic` now, and the five error paths
+      that had no test have one. The fifteenth was a linter fixture whose deliberately-nested
+      innermost arm left a value; it gained a `drop`.
+
 #### Language design decisions to settle
 
 - [ ] **R13. `and`/`or` are bitwise and are used throughout as logical.** There is no short-circuit
@@ -233,8 +252,42 @@ that way.
       main reason stdlib authors reach for `!` rather than propagating.
       A value that cannot be put on the stack cannot be composed, which is why this is filed as a
       blocker for the error surface generally rather than an ergonomic wish.
-      **Open question**: subsumed by the sum-types item above, or worth an independent
-      error-value type first?
+      **Designed 2026-09-19, not built.** Two designs were compared. *Error as a value handed
+      out on request*: `panic` also builds an `Error` struct (code, message, `*Error` cause), the
+      context holds a reference, and a reader pushes it. It is the cheaper one, but it does not
+      answer the complaint -- the error stays global and you get a copy -- and it needs more than
+      it looks: the runtime cannot build a struct whose layout belongs to a stdlib module, so it
+      needs an opaque refcounted slot plus a `raise` primitive that takes a value, and clearing
+      at every fallible call site stops being two inline stores and becomes a release.
+      *Error on the stack*: the failure path of a fallible call pushes the `Error`, and the
+      context slot disappears. This is the answer to the complaint as written -- "a value that
+      cannot be put on the stack cannot be composed" -- and most of the machinery exists: the
+      validator already models the failure arm as a different stack shape
+      (`bareFallibleCallBefore` + `removeProducedValues`), and what to push on failure is decided
+      in one place (`generateFallibleCallEpilogue`). Pushing `(Error, code)` keeps `switch`
+      matching codes and leaves the error under it for the arm.
+      **Measured 2026-09-19, and it reversed the conclusion.** The corpus has **394 failure arms
+      after bare fallible calls; 330 ignore the error and 64 read it** (249 switch arms, 145
+      if/else arms, plus 6 sites with no failure arm at all). The stack-passing design taxes the
+      330 to improve the 64, which is the wrong way round for a language that charges for what
+      you do not use.
+
+      **Done instead 2026-09-19: `stdlib/error`.** The reader returns one value rather than two.
+      It needed no compiler change at all -- `error::last` packs what `err` already returns into
+      an `Error` struct, `wrap` composes context and keeps the code, `root` walks the cause chain
+      -- so it is forty lines of Quadrate, no migration is forced, and the 64 sites that read
+      `err` today can move when someone touches them. That answers the parts of this item that
+      were actually blocking: an error can now be stored, returned, collected into an array, and
+      given context by the frame that has it.
+
+      **Still open**, and the reason this item is not closed: the channel is still global. `err`
+      empties on read, the state survives intervening non-fallible calls, and `error::last` has
+      to run first in the failure arm. If that turns out to matter in practice, the stack-passing
+      design is the fix and `Error` is already the type it would push -- so nothing here is
+      wasted. The evidence to watch for is whether anyone uses the module.
+      **Still open**: whether sum types subsume it. They do not appear to -- the control flow
+      already exists and is enforced, and what is missing is a payload type, which a refcounted
+      struct already is.
 
 - [x] **Fixed 2026-09-19: a thread's stack is as big as the context that spawned it.** It was a
       hardcoded 1,024 elements in both spawn paths (`stdlib/thread/src/thread.c`,

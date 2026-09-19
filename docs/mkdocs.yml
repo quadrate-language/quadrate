@@ -120,6 +120,7 @@ nav:
       - Crypto:
           - crypto: stdlib/crypto.md
       - Utilities:
+          - error: stdlib/error.md
           - mem: stdlib/mem.md
           - flag: stdlib/flag.md
           - testing: stdlib/testing.md

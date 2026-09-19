@@ -37,6 +37,7 @@ fn main() {
 | [bytes](bytes.md) | Byte array operations and endianness conversion. |
 | [crypto](crypto.md) | Cryptographic hash functions, checksums, and HMAC. |
 | [ct](ct.md) | Generic container types. |
+| [error](error.md) | Errors as values. |
 | [flag](flag.md) | Command-line flag parsing. |
 | [fmt](fmt.md) | Formatted output functions. |
 | [fuzzy](fuzzy.md) | doccheck: page-context |

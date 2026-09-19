@@ -1980,8 +1980,29 @@ namespace Qd {
 									"consume or drop the call's result(s) inside the arm, or add an else arm");
 						}
 					}
-					// Otherwise the arm might not run; spec 6.1.1 leaves a bare `if` unconstrained and
-					// the enclosing function's declared effect governs. The pre-`if` stack stands.
+					else if (!blockEndsDiverging(thenBody) && !mHasUnpredictableStack &&
+							 thenStack.size() != typeStack.size()) {
+						// An `if` with no `else` is an `if` whose other arm is empty, so the same rule
+						// applies: the arm has to leave the stack as it found it. This used to be
+						// unconstrained, on the reasoning that the enclosing function's declared effect
+						// would govern -- but the arm's effect was never applied to the model, so that
+						// check ran against a stack that pretended the arm did nothing. A body could
+						// leave values behind and nothing anywhere reported it, which is how fourteen
+						// guards in `ct` came to push their error message onto the stack as data and
+						// fall through into the code they were guarding.
+						const long long delta = static_cast<long long>(thenStack.size()) -
+												static_cast<long long>(typeStack.size());
+						std::string msg = "'if' without an 'else' leaves the stack " +
+										  std::to_string(delta < 0 ? -delta : delta) + " value" +
+										  ((delta == 1 || delta == -1) ? "" : "s") +
+										  (delta > 0 ? " deeper" : " shallower") +
+										  " than it found it; the arm may not run, so what follows cannot "
+										  "read a value whose presence depends on it";
+						reportErrorWithHint(child, msg.c_str(),
+								"consume what the arm produces inside it, or add an 'else' arm that leaves "
+								"the same depth");
+					}
+					// The pre-`if` stack stands: the arm is neutral, or the error above was reported.
 				}
 				break;
 			}

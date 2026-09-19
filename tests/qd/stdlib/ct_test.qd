@@ -695,3 +695,110 @@ test "Pair carries two different types" {
 	c <<first <<label "three" testing::assert_eq
 	c <<second 9 testing::assert_eq
 }
+
+// The error paths. Fourteen of these guards were written `"..." 1 err`, which reads the last
+// error rather than raising one: the message went onto the stack as data and the function fell
+// through into the code it was guarding. `dequeue` on an empty queue died in `mod` with
+// "Division by zero". Nothing tested any of them, which is why it went unnoticed.
+
+test "Queue reports an empty dequeue" {
+	Queue<i64> { data = null head = 0 tail = 0 len = 0 cap = 0 } -> q
+	q dequeue if {
+		-> q2 -> val
+		val drop
+		q2 release
+		"dequeue on an empty queue should fail" testing::fail
+	} else {
+		q release
+	}
+}
+
+test "Queue reports an empty peek" {
+	Queue<i64> { data = null head = 0 tail = 0 len = 0 cap = 0 } -> q
+	q peek if {
+		drop
+		"peek on an empty queue should fail" testing::fail
+	} else {
+		1 testing::assert_true
+	}
+	q release
+}
+
+test "Deque reports empty pops and peeks" {
+	Deque<i64> { data = null head = 0 tail = 0 len = 0 cap = 0 } -> d
+	d pop_front if {
+		-> d2 -> val
+		val drop
+		d2 release
+		"pop_front on an empty deque should fail" testing::fail
+	} else {
+		1 testing::assert_true
+	}
+	d pop_back if {
+		-> d3 -> val
+		val drop
+		d3 release
+		"pop_back on an empty deque should fail" testing::fail
+	} else {
+		1 testing::assert_true
+	}
+	d peek_front if {
+		drop
+		"peek_front on an empty deque should fail" testing::fail
+	} else {
+		1 testing::assert_true
+	}
+	d peek_back if {
+		drop
+		"peek_back on an empty deque should fail" testing::fail
+	} else {
+		1 testing::assert_true
+	}
+	d release
+}
+
+test "Map reports a missing key" {
+	Map<i64> { keys = null values = null states = null len = 0 cap = 0 } -> m
+	m "absent" get if {
+		drop
+		"get on an empty map should fail" testing::fail
+	} else {
+		1 testing::assert_true
+	}
+	m "a" 1 insert! -> m
+	m "absent" get if {
+		drop
+		"get of a missing key should fail" testing::fail
+	} else {
+		1 testing::assert_true
+	}
+	m "a" get! 1 testing::assert_eq
+	m "absent" remove if {
+		-> m2
+		m2 release
+		"remove of a missing key should fail" testing::fail
+	} else {
+		1 testing::assert_true
+	}
+	m release
+}
+
+test "Set reports a missing element" {
+	Set { keys = null states = null len = 0 cap = 0 } -> s
+	s "absent" remove if {
+		-> s2
+		s2 release
+		"remove on an empty set should fail" testing::fail
+	} else {
+		1 testing::assert_true
+	}
+	s "a" add! -> s
+	s "absent" remove if {
+		-> s3
+		s3 release
+		"remove of a missing element should fail" testing::fail
+	} else {
+		1 testing::assert_true
+	}
+	s release
+}

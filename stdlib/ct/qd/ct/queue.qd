@@ -109,7 +109,7 @@ pub fn (q:Queue<T>) dequeue<T>( -- val:T q2:Queue<T>)! {
 	q <<len -> len
 
 	len 0 == if {
-		"dequeue: queue is empty" 1 err
+		"dequeue: queue is empty" 1 panic
 	}
 
 	q <<data -> data
@@ -138,7 +138,7 @@ pub fn (q:Queue<T>) peek<T>( -- val:T)! {
 	q <<len -> len
 
 	len 0 == if {
-		"peek: queue is empty" 1 err
+		"peek: queue is empty" 1 panic
 	}
 
 	q <<data -> data

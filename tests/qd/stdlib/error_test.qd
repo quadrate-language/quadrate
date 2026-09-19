@@ -1,0 +1,105 @@
+// Unit tests for the error module
+use error
+use testing
+use strings
+
+const ErrEmpty = 1
+const ErrRange = 2
+
+fn parse_port(s:str -- port:i64)! {
+	s strings::len 0 == if { "port is empty" ErrEmpty panic }
+	s strings::len 5 > if { "port out of range" ErrRange panic }
+	8080
+}
+
+test "error::last carries the message and the code" {
+	"" parse_port if {
+		drop
+		"an empty port should fail" testing::fail
+	} else {
+		error::last -> e
+		e <<message "port is empty" testing::assert_eq
+		e <<code ErrEmpty testing::assert_eq
+	}
+}
+
+test "error::last reports nothing when nothing failed" {
+	error::last -> e
+	e <<code 0 testing::assert_eq
+	e <<message "" testing::assert_eq
+}
+
+test "error::new builds one without raising" {
+	"disk full" 5 error::new -> e
+	e <<message "disk full" testing::assert_eq
+	e <<code 5 testing::assert_eq
+	e <<cause null == testing::assert_true
+}
+
+test "wrap composes the message and keeps the code" {
+	"port is empty" ErrEmpty error::new -> cause
+	cause "cannot connect to localhost" wrap -> e
+	e <<message "cannot connect to localhost: port is empty" testing::assert_eq
+	e <<code ErrEmpty testing::assert_eq
+	e <<cause null neq testing::assert_true
+}
+
+test "root walks to the error that actually failed" {
+	"port is empty" ErrEmpty error::new -> inner
+	inner "cannot connect" wrap -> middle
+	middle "cannot start" wrap -> outer
+	outer <<message "cannot start: cannot connect: port is empty" testing::assert_eq
+	outer root <<message "port is empty" testing::assert_eq
+	outer root <<code ErrEmpty testing::assert_eq
+	inner root <<message "port is empty" testing::assert_eq
+}
+
+test "an error survives the arm that caught it" {
+	[] -> failures
+	["" "123456"] -> inputs
+	0 inputs len 1 for i {
+		inputs i nth parse_port if {
+			drop
+		} else {
+			failures error::last append -> failures
+		}
+	}
+	failures len 2 testing::assert_eq
+	failures 0 nth <<code ErrEmpty testing::assert_eq
+	failures 1 nth <<code ErrRange testing::assert_eq
+	failures 0 nth <<message "port is empty" testing::assert_eq
+}
+
+// Wrapping across a frame: the caller sees where it happened and can still match the code.
+fn connect(host:str port_text:str -- desc:str)! {
+	port_text parse_port if {
+		drop
+		host
+	} else {
+		error::last host "cannot connect to " swap strings::concat wrap -> e
+		e <<message e <<code panic
+	}
+}
+
+test "a wrapped error crosses a frame with its code intact" {
+	"localhost" "" connect if {
+		drop
+		"connect with an empty port should fail" testing::fail
+	} else {
+		error::last -> e
+		e <<message "cannot connect to localhost: port is empty" testing::assert_eq
+		e <<code ErrEmpty testing::assert_eq
+	}
+}
+
+test "a switch arm reads the error as one value" {
+	"123456" parse_port switch {
+		Ok       { drop  "should not succeed" testing::fail }
+		ErrEmpty { "wrong arm" testing::fail }
+		ErrRange {
+			error::last -> e
+			e <<message "port out of range" testing::assert_eq
+		}
+		_ { "wrong arm" testing::fail }
+	}
+}
