@@ -1715,6 +1715,18 @@ error on float operands; `math::fmod` is the float remainder.
 | `gte` | `>=` | `(a b -- bool)` | Greater than or equal |
 | `within` | | `(x lo hi -- bool)` | lo <= x <= hi |
 
+**Operands of `==` and `!=`.** Numbers compare by value, and an `i64` may be compared with an
+`f64`. Strings compare by content, so two strings with the same characters are equal whether or
+not they are the same string. Pointers compare by identity: `a b ==` is true when both name the
+same address, which is also how two struct values are asked whether they are the same struct,
+since a struct is a reference. A pointer may be compared with an integer, which is what the
+idiomatic null check `p null ==` is. Any other mixture -- a string against a pointer, say -- is
+a runtime type error.
+
+The ordering operators are numeric only. Comparing two pointers with `<` is a type error rather
+than an address comparison: the relative order of two allocations is not something a program
+should be written against.
+
 ### 12.3 Bitwise
 
 | Instruction | Alias | Stack Effect | Description |

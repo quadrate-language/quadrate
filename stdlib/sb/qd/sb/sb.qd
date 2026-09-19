@@ -52,7 +52,10 @@ pub fn (sb:StringBuilder) append(s:str -- sb2:StringBuilder) {
 	sb <<len -> curlen
 	sb <<cap -> cap
 
-	s strings::len -> slen
+	// Bytes, not characters. strings::len counts codepoints, so this used to copy four
+	// bytes of a five-byte string and the appended text came back cut off in the middle
+	// of a character -- "héllo" became "héll".
+	s strings::byte_len -> slen
 
 	// Check if we need to grow
 	curlen slen + -> newlen
@@ -87,18 +90,45 @@ pub fn (sb:StringBuilder) append_char(c:i64 -- sb2:StringBuilder) {
 	sb <<len -> curlen
 	sb <<cap -> cap
 
+	// A codepoint is one to four bytes. Writing the low byte and calling it a character
+	// produced a lone lead or continuation byte for anything above 127 -- not the
+	// character, and not valid UTF-8 either.
+	c 128 < if { 1 } else { c 2048 < if { 2 } else { c 65536 < if { 3 } else { 4 } } } -> width
+
 	// Check if we need to grow
-	curlen 1 + cap > if {
-		cap 2 * -> cap
+	curlen width + cap > if {
+		loop {
+			cap 2 * -> cap
+			curlen width + cap <= if {
+				break
+			}
+		}
 		buf cap mem::realloc! -> buf
 	}
 
-	// Set the byte
-	c buf curlen mem::set_byte
+	width 1 == if {
+		c buf curlen mem::set_byte
+	} else {
+		width 2 == if {
+			192 c 64 / + buf curlen mem::set_byte
+			128 c 63 and + buf curlen 1 + mem::set_byte
+		} else {
+			width 3 == if {
+				224 c 4096 / + buf curlen mem::set_byte
+				128 c 64 / 63 and + buf curlen 1 + mem::set_byte
+				128 c 63 and + buf curlen 2 + mem::set_byte
+			} else {
+				240 c 262144 / + buf curlen mem::set_byte
+				128 c 4096 / 63 and + buf curlen 1 + mem::set_byte
+				128 c 64 / 63 and + buf curlen 2 + mem::set_byte
+				128 c 63 and + buf curlen 3 + mem::set_byte
+			}
+		}
+	}
 
 	// Update builder in-place
 	sb buf >>buf drop
-	sb curlen 1 + >>len drop
+	sb curlen width + >>len drop
 	sb cap >>cap drop
 	sb
 }
@@ -165,8 +195,9 @@ pub fn (sb:StringBuilder) append_int(n:i64 -- sb2:StringBuilder) {
 	}
 }
 
-/// Get current length of builder content.
-/// @return sblen i64 Current content length
+/// Get current length of builder content, in bytes -- the size of its UTF-8 encoding,
+/// as strings::byte_len reports for a string.
+/// @return sblen i64 Current content length in bytes
 /// @example builder sb::len -> sblen
 pub fn (sb:StringBuilder) len( -- sblen:i64) {
 	sb <<len

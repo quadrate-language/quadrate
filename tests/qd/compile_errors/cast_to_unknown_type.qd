@@ -1,0 +1,4 @@
+// Test: a misspelled cast target is an error, not a silent cast to string.
+fn main() {
+	42 cast<i65> print nl
+}

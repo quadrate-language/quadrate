@@ -3,6 +3,11 @@
   "description": "Low-level memory allocation and manipulation.  SAFETY: These are unsafe operations with no bounds checking. Improper use can cause segmentation faults and memory corruption.  Allocation failure is reported as ErrAlloc, so a program with something useful to do when memory runs out can handle it like any other error. The standard library does not: its own allocation sites use `!`, which aborts with a message naming the allocation. See specification 11.1 -- a library function has no way to report the failure that would not make every one of its callers fallible for a condition none of them can act on.",
   "constants": [
     {
+      "name": "AnySize",
+      "value": "16",
+      "description": "Size in bytes of one `set_any`/`get_any` slot: eight bytes of value and eight of type tag. A container over a type parameter sizes its storage with this rather than with `sizeof<T>`, since one body has to hold every T."
+    },
+    {
       "name": "ErrAlloc",
       "value": "2",
       "description": "Allocation failure error code"
@@ -36,6 +41,16 @@
       "returns": [{"name": "address", "type": "ptr", "description": "Allocated memory address"}],
       "errors": [{"code": "ErrAlloc", "description": "Allocation failed"}, {"code": "ErrInvalidArg", "description": "Invalid size (negative)"}],
       "examples": ["1024 mem::alloc! -> buf"]
+    },
+    {
+      "name": "clear_any",
+      "signature": "(address:ptr offset:i64 -- )",
+      "failable": false,
+      "description": "Release what the slot holds and zero it.",
+      "params": [{"name": "address", "type": "ptr", "description": "Base address"}, {"name": "offset", "type": "i64", "description": "Byte offset from base, a multiple of AnySize"}],
+      "returns": [],
+      "errors": [],
+      "examples": ["buf idx mem::AnySize * mem::clear_any"]
     },
     {
       "name": "copy",
@@ -76,6 +91,16 @@
       "returns": [{"name": "buffer", "type": "ptr", "description": "Allocated buffer"}, {"name": "length", "type": "i64", "description": "String length"}],
       "errors": [],
       "examples": ["\"hello\" mem::from_string -> len -> buf"]
+    },
+    {
+      "name": "get_any",
+      "signature": "(address:ptr offset:i64 -- value:any)",
+      "failable": false,
+      "description": "Read back a value stored by set_any, with the type it was stored as.",
+      "params": [{"name": "address", "type": "ptr", "description": "Base address"}, {"name": "offset", "type": "i64", "description": "Byte offset from base, a multiple of AnySize"}],
+      "returns": [{"name": "value", "type": "any", "description": "Stored value"}],
+      "errors": [],
+      "examples": ["buf idx mem::AnySize * mem::get_any -> elem"]
     },
     {
       "name": "get_byte",
@@ -216,6 +241,16 @@
       "returns": [{"name": "new_address", "type": "ptr", "description": "Reallocated memory address"}],
       "errors": [{"code": "ErrAlloc", "description": "Reallocation failed"}, {"code": "ErrInvalidArg", "description": "Invalid size (negative)"}],
       "examples": ["buf 2048 mem::realloc! -> buf"]
+    },
+    {
+      "name": "set_any",
+      "signature": "(value:any address:ptr offset:i64 -- )",
+      "failable": false,
+      "description": "Store a value of any type, with its type, in the slot at offset.  The slot takes over the reference the value came with, and gives it back when the slot is overwritten or cleared, so a string or a struct kept in one stays alive as long as the slot does. The region must be zeroed before first use -- `mem::zero` does it, and a zeroed slot reads back as the integer 0.",
+      "params": [{"name": "value", "type": "any", "description": "Value to store"}, {"name": "address", "type": "ptr", "description": "Base address"}, {"name": "offset", "type": "i64", "description": "Byte offset from base, a multiple of AnySize"}],
+      "returns": [],
+      "errors": [],
+      "examples": ["elem buf idx mem::AnySize * mem::set_any"]
     },
     {
       "name": "set_byte",

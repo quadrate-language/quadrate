@@ -202,13 +202,13 @@ builder sb::is_empty  // empty
 
 #### `fn` len
 
-Get current length of builder content.
+Get current length of builder content, in bytes -- the size of its UTF-8 encoding, as strings::byte_len reports for a string.
 
 **Signature:** `(sb:StringBuilder) len( -- sblen:i64)`
 
 | Output | Type | Description |
 |--------|------|-------------|
-| `sblen` | `i64` | Current content length |
+| `sblen` | `i64` | Current content length in bytes |
 
 **Example:**
 

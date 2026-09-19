@@ -396,6 +396,31 @@ namespace Qd {
 						resultType = StackValueType::STRING;
 					} else if (typeParam == "ptr") {
 						resultType = StackValueType::PTR;
+					} else if (isCurrentTypeParam(typeParam)) {
+						// `cast<T>` inside a generic: the target is not known here.
+						resultType = StackValueType::TYPEVAR;
+					} else {
+						// Anything else used to fall through to the STRING default in silence:
+						// `p cast<Node>` type-checked and produced a string, and the mistake
+						// surfaced a long way away as "the value on the stack is string, not a
+						// struct". 'cast' offers four targets and a struct is not one of them --
+						// narrowing a pointer to a struct type is what `as` is for, and it is
+						// free, where a cast implies a conversion.
+						std::string err = "Type error in 'cast': '";
+						err += typeParam;
+						err += "' is not a type 'cast' converts to";
+						if (isStructTypeName(typeParam)) {
+							std::string hint = "use 'value as ";
+							hint += typeParam;
+							hint += "' to read a pointer as a struct -- 'as' is a compile-time annotation, "
+									"not a conversion";
+							reportErrorConditionalWithHint(node, err.c_str(), hint.c_str(), reportErrors);
+						} else {
+							reportErrorConditionalWithHint(node, err.c_str(),
+									"'cast' converts between i64, f64, ptr and str; sized integer types are "
+									"accepted as i64",
+									reportErrors);
+						}
 					}
 				}
 			}

@@ -1120,6 +1120,21 @@ namespace Qd {
 					fieldType = StackValueType::INT;
 				} else if (typeName == "str") {
 					fieldType = StackValueType::STRING;
+				} else if (typeName.size() > 1 && typeName[0] == '*') {
+					// A pointer to a struct still names the struct -- see the same case in
+					// semantic_validator_collect.cc.
+					fieldType = StackValueType::PTR;
+					std::string pointeeType = typeName.substr(1);
+					if (pointeeType.find("::") == std::string::npos && !moduleName.empty() && moduleName != "main" &&
+							!mergeIntoMain) {
+						pointeeType = moduleName + "::" + pointeeType;
+					}
+					mStructFieldStructTypes[qualifiedName][field->name()] = pointeeType;
+					mStructPointerFields[qualifiedName].insert(field->name());
+					if (mergeIntoMain) {
+						mStructFieldStructTypes[unqualifiedName][field->name()] = pointeeType;
+						mStructPointerFields[unqualifiedName].insert(field->name());
+					}
 				} else if (typeName == "ptr" || typeName.find('*') != std::string::npos) {
 					fieldType = StackValueType::PTR;
 				} else if (typeName.size() > 2 && typeName[0] == '[' && typeName[1] == ']') {
@@ -1142,10 +1157,19 @@ namespace Qd {
 					// If the type is unqualified (no ::), qualify it with the current module name
 					// This ensures "ControlPoint" in module "spline" becomes "spline::ControlPoint"
 					// so it matches when compared against fully qualified types
-					// BUT: don't qualify if merging into main (sibling files share main namespace)
+					// BUT: don't qualify if merging into main (sibling files share main namespace),
+					// and not if the "type" is one of the struct's own type parameters -- `U` in
+					// `struct Pair<T, U>` is not a struct in this module, and qualifying it to
+					// `ct::U` stopped it being recognised as a parameter at all: constructing a
+					// `Pair<i64, str>` was rejected with "Field 'second' expects ct::U, but got
+					// string". A struct declared in the program rather than a module never went
+					// through this path, which is why the same declaration worked there.
+					const auto& structTypeParams = structDecl->typeParams();
+					bool isOwnTypeParam = std::find(structTypeParams.begin(), structTypeParams.end(), typeName) !=
+										  structTypeParams.end();
 					std::string qualifiedTypeName = typeName;
-					if (typeName.find("::") == std::string::npos && !moduleName.empty() && moduleName != "main" &&
-							!mergeIntoMain) {
+					if (!isOwnTypeParam && typeName.find("::") == std::string::npos && !moduleName.empty() &&
+							moduleName != "main" && !mergeIntoMain) {
 						qualifiedTypeName = moduleName + "::" + typeName;
 					}
 					mStructFieldStructTypes[qualifiedName][field->name()] = qualifiedTypeName;
@@ -1342,9 +1366,7 @@ namespace Qd {
 
 				// Validate type name
 				if (!isValidTypeName(typeStr)) {
-					reportError(param, ("Invalid type '" + typeStr + "'" + parameterSuffix(param) +
-											   ". Valid types are: i64, f64, str, ptr, any, or a struct name")
-											   .c_str());
+					reportError(param, invalidTypeMessage(typeStr, parameterSuffix(param)).c_str());
 				}
 
 				if (typeStr == "i64") {
@@ -1523,9 +1545,7 @@ namespace Qd {
 
 					// Validate type name
 					if (!isValidTypeName(typeStr)) {
-						reportError(param, ("Invalid type '" + typeStr + "'" + parameterSuffix(param) +
-												   ". Valid types are: i64, f64, str, ptr, any, or a struct name")
-												   .c_str());
+						reportError(param, invalidTypeMessage(typeStr, parameterSuffix(param)).c_str());
 					}
 
 					if (typeStr == "i64") {
@@ -1571,9 +1591,7 @@ namespace Qd {
 
 					// Validate type name
 					if (!isValidTypeName(typeStr)) {
-						reportError(param, ("Invalid type '" + typeStr + "'" + parameterSuffix(param) +
-												   ". Valid types are: i64, f64, str, ptr, any, or a struct name")
-												   .c_str());
+						reportError(param, invalidTypeMessage(typeStr, parameterSuffix(param)).c_str());
 					}
 
 					if (typeStr == "i64") {

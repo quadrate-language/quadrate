@@ -354,6 +354,13 @@ namespace Qd {
 						fieldType = StackValueType::INT;
 					} else if (resolvedTypeName == "str") {
 						fieldType = StackValueType::STRING;
+					} else if (resolvedTypeName.size() > 1 && resolvedTypeName[0] == '*') {
+						// `next:*Node` is a pointer to a struct: a pointer on the stack, but a
+						// pointer to something with a name. Dropping the name here is what left
+						// a method call on `n <<next` unresolvable.
+						fieldType = StackValueType::PTR;
+						mStructFieldStructTypes[structDecl->name()][field->name()] = resolvedTypeName.substr(1);
+						mStructPointerFields[structDecl->name()].insert(field->name());
 					} else if (resolvedTypeName == "ptr" || resolvedTypeName.find('*') != std::string::npos) {
 						fieldType = StackValueType::PTR;
 					} else if (resolvedTypeName.size() > 2 && resolvedTypeName[0] == '[' &&
@@ -1397,9 +1404,7 @@ namespace Qd {
 				// Validate type name
 				std::string typeStr = param->typeString();
 				if (!isValidTypeName(typeStr)) {
-					reportError(param, ("Invalid type '" + typeStr + "'" + parameterSuffix(param) +
-											   ". Valid types are: i64, f64, str, ptr, any, or a struct name")
-											   .c_str());
+					reportError(param, invalidTypeMessage(typeStr, parameterSuffix(param)).c_str());
 				}
 
 				// Add parameter type to the type stack (values are on runtime stack)
@@ -1425,9 +1430,7 @@ namespace Qd {
 
 				// Validate type name
 				if (!isValidTypeName(typeStr)) {
-					reportError(param, ("Invalid type '" + typeStr + "'" + parameterSuffix(param) +
-											   ". Valid types are: i64, f64, str, ptr, any, or a struct name")
-											   .c_str());
+					reportError(param, invalidTypeMessage(typeStr, parameterSuffix(param)).c_str());
 				}
 
 				// Resolve type aliases
@@ -1457,9 +1460,7 @@ namespace Qd {
 
 				// Validate type name
 				if (!isValidTypeName(typeStr)) {
-					reportError(param, ("Invalid type '" + typeStr + "'" + parameterSuffix(param) +
-											   ". Valid types are: i64, f64, str, ptr, any, or a struct name")
-											   .c_str());
+					reportError(param, invalidTypeMessage(typeStr, parameterSuffix(param)).c_str());
 				}
 			}
 

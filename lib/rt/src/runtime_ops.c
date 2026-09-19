@@ -346,14 +346,23 @@ static int qdrt_equality_op(qd_context* ctx, const char* name, bool want_equal) 
 
 	int is_string_compare = (check_a.type == QD_STACK_TYPE_STR && check_b.type == QD_STACK_TYPE_STR);
 
+	// Two pointers compare by identity: same address, same thing. Structs are references, so
+	// this is also how two struct values are asked whether they are the same struct -- "is this
+	// child the last one", the question every walk over a linked structure ends on. It used to
+	// be a fatal type error, so the question could not be written at all and callers went the
+	// long way round (json::put asks `c <<next null ==` instead). Ordering pointers is a
+	// different matter and stays rejected: `<` on two addresses means nothing a program should
+	// rely on.
+	int is_ptr_compare = (check_a.type == QD_STACK_TYPE_PTR && check_b.type == QD_STACK_TYPE_PTR);
+
 	// Allow ptr compared with int (for null checks: ptr 0 == or ptr 0 !=)
 	int is_ptr_null_check = (check_a.type == QD_STACK_TYPE_PTR && check_b.type == QD_STACK_TYPE_INT) ||
 	                        (check_a.type == QD_STACK_TYPE_INT && check_b.type == QD_STACK_TYPE_PTR);
 
-	if (!is_string_compare && !is_ptr_null_check &&
+	if (!is_string_compare && !is_ptr_compare && !is_ptr_null_check &&
 	    ((check_a.type != QD_STACK_TYPE_INT && check_a.type != QD_STACK_TYPE_FLOAT) ||
 	     (check_b.type != QD_STACK_TYPE_INT && check_b.type != QD_STACK_TYPE_FLOAT))) {
-		qdrt_fatal_raise(ctx, name, "Type error (expected numeric or string types for comparison)");
+		qdrt_fatal_raise(ctx, name, "Type error (expected numeric, string or pointer types for comparison)");
 	}
 
 	qd_stack_element_t b;
@@ -372,6 +381,8 @@ static int qdrt_equality_op(qd_context* ctx, const char* name, bool want_equal) 
 		const char* str_a = qd_string_data(a.value.s);
 		const char* str_b = qd_string_data(b.value.s);
 		equal = (strcmp(str_a, str_b) == 0);
+	} else if (is_ptr_compare) {
+		equal = (a.value.p == b.value.p);
 	} else if (is_ptr_null_check) {
 		void* ptr_val = (a.type == QD_STACK_TYPE_PTR) ? a.value.p : b.value.p;
 		int64_t int_val = (a.type == QD_STACK_TYPE_INT) ? a.value.i : b.value.i;

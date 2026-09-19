@@ -174,16 +174,6 @@ namespace Qd {
 		}
 	}
 
-	// Helper: Push produces types from a function signature onto the type stacks
-	static void pushProducesTypes(const FunctionSignature& sig, std::vector<StackValueType>& typeStack,
-			std::vector<std::string>& structTypeStack) {
-		for (size_t idx = 0; idx < sig.produces.size(); idx++) {
-			typeStack.push_back(sig.produces[idx]);
-			auto structIt = sig.producesStructTypes.find(idx);
-			structTypeStack.push_back(structIt != sig.producesStructTypes.end() ? structIt->second : "");
-		}
-	}
-
 	// Helper: Check if a block ends with a diverging instruction (like `panic`)
 	// Diverging instructions never return, so stack effects don't need to balance
 	// The stdlib entry points that consume more of the stack than their signature says.
@@ -376,6 +366,54 @@ namespace Qd {
 		return ok;
 	}
 
+	// What a receiver's type arguments bind its struct's type parameters to: a `Box<i64>`
+	// receiver binds T to i64 for every method declared on `Box<T>`. Without it a method's
+	// result was pushed as the bare type parameter -- `b unwrap 2 *` on a `Box<i64>` failed
+	// with "Expected numeric types, got typevar and int", and a generic container could only be
+	// read into something that takes `any`, which is why nothing in the corpus passed one to a
+	// function.
+	std::map<std::string, std::string> SemanticValidator::receiverTypeBindings(
+			const std::string& receiverStructType) const {
+		std::map<std::string, std::string> bindings;
+		std::vector<std::string> args = typeArgsOf(receiverStructType);
+		if (args.empty()) {
+			return bindings;
+		}
+
+		const AstNodeStructDeclaration* decl = nullptr;
+		std::string base = typeBaseName(receiverStructType);
+		auto declIt = mStructDeclarations.find(base);
+		if (declIt != mStructDeclarations.end()) {
+			decl = declIt->second;
+		} else {
+			auto moduleIt = mModuleStructDeclarations.find(base);
+			if (moduleIt != mModuleStructDeclarations.end()) {
+				decl = moduleIt->second;
+			} else if (base.find("::") == std::string::npos) {
+				// A method's own signature names its struct unqualified -- `push` on a
+				// `ct::Vec<i64>` returns `Vec<T>` -- so the type the result carries is
+				// unqualified from there on, and the next call has only `Vec` to look up.
+				const std::string suffix = "::" + base;
+				for (const auto& entry : mModuleStructDeclarations) {
+					if (entry.first.size() > suffix.size() &&
+							entry.first.compare(entry.first.size() - suffix.size(), suffix.size(), suffix) == 0) {
+						decl = entry.second;
+						break;
+					}
+				}
+			}
+		}
+		if (decl == nullptr) {
+			return bindings;
+		}
+
+		const auto& params = decl->typeParams();
+		for (size_t idx = 0; idx < params.size() && idx < args.size(); idx++) {
+			bindings[params[idx]] = args[idx];
+		}
+		return bindings;
+	}
+
 	void SemanticValidator::pushCallResults(const FunctionSignature& sig,
 			const std::map<std::string, std::string>& bindings, const std::vector<std::string>& consumedStructTypes,
 			std::vector<StackValueType>& typeStack, std::vector<std::string>& structTypeStack) {
@@ -416,6 +454,23 @@ namespace Qd {
 			typeStack.push_back(type);
 			structTypeStack.push_back(structType);
 		}
+	}
+
+	// True when this struct's field was declared `*T` rather than `T`.
+	bool SemanticValidator::isPointerField(const std::string& structName, const std::string& fieldName) const {
+		auto it = mStructPointerFields.find(structName);
+		if (it == mStructPointerFields.end()) {
+			// Module structs may be registered under the unqualified name.
+			size_t colon = structName.rfind("::");
+			if (colon == std::string::npos) {
+				return false;
+			}
+			it = mStructPointerFields.find(structName.substr(colon + 2));
+			if (it == mStructPointerFields.end()) {
+				return false;
+			}
+		}
+		return it->second.find(fieldName) != it->second.end();
 	}
 
 	// Whether a value of type `actual` may initialise a field declared `expected`. Structural,
@@ -972,12 +1027,11 @@ namespace Qd {
 
 				// Validate type name
 				if (!isValidTypeName(typeStr)) {
-					std::string errorMsg = "Invalid type '" + typeStr + "'";
+					std::string where;
 					if (param->hasName()) {
-						errorMsg += " in parameter '" + param->name() + "'";
+						where = " in parameter '" + param->name() + "'";
 					}
-					errorMsg += ". Valid types are: i64, f64, str, ptr, any, []T, fn(...), or a struct name";
-					reportError(param, errorMsg.c_str());
+					reportError(param, invalidTypeMessage(typeStr, where).c_str());
 				}
 
 				// Resolve type aliases
@@ -1499,6 +1553,15 @@ namespace Qd {
 						// (we verified the receiver is at the expected position above)
 						size_t receiverPositionFromTop = additionalParams;
 
+						// Save consumed struct types before popping (for pass-through tracking)
+						std::vector<std::string> consumedStructTypes;
+						if (sig.consumes.size() > 0 && structTypeStack.size() >= sig.consumes.size()) {
+							size_t startIdx = structTypeStack.size() - sig.consumes.size();
+							for (size_t j = 0; j < sig.consumes.size(); j++) {
+								consumedStructTypes.push_back(structTypeStack[startIdx + j]);
+							}
+						}
+
 						// Pop all consumed values (receiver + params)
 						for (size_t j = 0; j < sig.consumes.size(); j++) {
 							typeStack.pop_back();
@@ -1507,8 +1570,9 @@ namespace Qd {
 							}
 						}
 
-						// Push return values
-						pushProducesTypes(sig, typeStack, structTypeStack);
+						// Push return values, with whatever the receiver's type arguments bound
+						pushCallResults(sig, receiverTypeBindings(receiverStructType), consumedStructTypes, typeStack,
+								structTypeStack);
 
 						// Mark instruction as a method call for code generation
 						// Use registeredStructType (the generic type) for proper function name lookup
@@ -2334,13 +2398,16 @@ namespace Qd {
 																			 : actualStructType;
 										reportError(construct, errorMsg.c_str());
 									}
-								} else if (!expectedStructType.empty() &&
+								} else if (!expectedStructType.empty() && !isPointerField(lookupKey, fieldName) &&
 										   (actualStructType.empty() ||
 												   !fieldTypesCompatible(expectedStructType, actualStructType))) {
 									// An empty actual type is an untyped pointer, which does not satisfy a typed
-									// field. Otherwise compare structurally rather than by string: `fn( -- f64)`
-									// and the `fn(-- f64)` buildFnTypeString emits are the same type, and so are
-									// `Point` and `mod::Point`.
+									// field -- unless the field was declared `*T`, where a pointer of unknown
+									// provenance is exactly what `null` is, and `next = null` is how every
+									// linked structure starts (specification 3.6.2). Otherwise compare
+									// structurally rather than by string: `fn( -- f64)` and the `fn(-- f64)`
+									// buildFnTypeString emits are the same type, and so are `Point` and
+									// `mod::Point`.
 									std::string errorMsg = "Type error in struct construction '";
 									errorMsg += name;
 									errorMsg += "': Field '";
@@ -2911,12 +2978,15 @@ namespace Qd {
 						}
 
 						// Push return values
+						{
+							// The receiver's type arguments bind the method's type parameters.
+							std::vector<std::string> noConsumed;
+							pushCallResults(sig, receiverTypeBindings(receiverStructType), noConsumed, typeStack,
+									structTypeStack);
+						}
 						if (sig.throws && !ident->abortOnError() && !ident->propagateOnError()) {
-							pushProducesTypes(sig, typeStack, structTypeStack);
 							typeStack.push_back(StackValueType::INT); // Error status
 							structTypeStack.push_back("");
-						} else {
-							pushProducesTypes(sig, typeStack, structTypeStack);
 						}
 
 						// Mark identifier as a method call for code generation
@@ -3696,12 +3766,14 @@ namespace Qd {
 						}
 
 						// Push return values
+						{
+							std::vector<std::string> noConsumed;
+							pushCallResults(sig, receiverTypeBindings(receiverStructType), noConsumed, typeStack,
+									structTypeStack);
+						}
 						if (sig.throws && !scoped->abortOnError() && !scoped->propagateOnError()) {
-							pushProducesTypes(sig, typeStack, structTypeStack);
 							typeStack.push_back(StackValueType::INT);
 							structTypeStack.push_back("");
-						} else {
-							pushProducesTypes(sig, typeStack, structTypeStack);
 						}
 
 						// Mark as method call for code generation
@@ -3799,12 +3871,14 @@ namespace Qd {
 						// condition and the success arm read an empty stack. It went unnoticed
 						// because the only callers sat downstream of `read`, whose sixteen
 						// synthetic strings left enough fiction on the type stack to absorb it.
+						{
+							std::vector<std::string> noConsumed;
+							pushCallResults(sig, receiverTypeBindings(receiverStructType), noConsumed, typeStack,
+									structTypeStack);
+						}
 						if (sig.throws && !scoped->abortOnError() && !scoped->propagateOnError()) {
-							pushProducesTypes(sig, typeStack, structTypeStack);
 							typeStack.push_back(StackValueType::INT);
 							structTypeStack.push_back("");
-						} else {
-							pushProducesTypes(sig, typeStack, structTypeStack);
 						}
 
 						// Mark as method call for code generation

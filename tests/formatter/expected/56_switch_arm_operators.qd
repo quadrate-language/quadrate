@@ -1,0 +1,28 @@
+// A switch arm labelled with a constant reads like a struct construction: an uppercase
+// name, a brace, and an '=' somewhere inside it. The '=' here belongs to != and ==, and
+// expanding the arm as if it were a field list drove a space through the operator --
+// `0 ! = if` -- which does not compile, so `make format` could break a working file.
+const Bool = 1
+const Number = 2
+
+struct Point {
+	x: i64
+	y: i64
+}
+
+fn render(kind:i64 flag:i64 -- s:str) {
+	kind switch {
+		Bool { flag 0 != if { "true and this arm is long enough to be wrapped" } else { "false" } }
+		Number { flag 7 == if { "seven and this arm is also long enough to wrap" } else { "other" } }
+		_ { "null" }
+	}
+}
+
+fn main() {
+	Point {
+		x = 1
+		y = 2
+	} -> p
+	p <<x 0 != if { "x set" } else { "x zero" } print nl
+	1 0 render print nl
+}

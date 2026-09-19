@@ -1,7 +1,11 @@
 /// Vec<T> - A Generic Dynamic Array
 /// ================================
 ///
-/// Vec<T> is a growable array that can hold elements of any type T.
+/// Vec<T> is a growable array that can hold elements of any type T -- i64, f64, str, ptr or a
+/// struct. Each element is stored in a tagged slot (mem::set_any), so the vector reads back
+/// what was put in rather than reinterpreting it as an integer, and it holds a reference to a
+/// string or a struct for as long as it holds the element.
+///
 /// It automatically manages memory allocation and resizing.
 ///
 /// ## Creating a Vector
@@ -63,15 +67,18 @@ pub fn (v:Vec<T>) push<T>(elem:T -- v2:Vec<T>)! {
 	v <<cap -> cap
 	v <<data -> data
 
-	// Grow capacity if full
+	// Grow capacity if full. The new slots are zeroed: set_any reads the slot it is about to
+	// overwrite to release what was there, and a zeroed slot reads as the integer 0, which
+	// holds nothing.
 	len cap >= if {
 		cap 0 == if { 8 } else { cap 2 * } -> new_cap
-		data new_cap sizeof<T> * mem::realloc? -> data
+		data new_cap mem::AnySize * mem::realloc? -> data
+		data cap mem::AnySize * mem::ptr_add new_cap cap - mem::AnySize * mem::zero
 		new_cap -> cap
 	}
 
 	// Store element at end
-	elem data len sizeof<T> * mem::set_i64
+	elem data len mem::AnySize * mem::set_any
 
 	Vec<T> { data = data len = len 1 + cap = cap }
 }
@@ -94,8 +101,9 @@ pub fn (v:Vec<T>) pop<T>( -- elem:T v2:Vec<T>)! {
 		"pop: vector is empty" 1 panic
 	}
 
-	// Get last element
-	data len 1 - sizeof<T> * mem::get_i64 -> elem
+	// Get last element, then let the slot go: the element that came off is the caller's now.
+	data len 1 - mem::AnySize * mem::get_any -> elem
+	data len 1 - mem::AnySize * mem::clear_any
 
 	elem
 	Vec<T> { data = data len = len 1 - cap = cap }
@@ -117,7 +125,7 @@ pub fn (v:Vec<T>) get<T>(idx:i64 -- elem:T)! {
 		"get: index out of bounds" 1 panic
 	}
 
-	data idx sizeof<T> * mem::get_i64
+	data idx mem::AnySize * mem::get_any
 }
 
 /// Set element at index.
@@ -138,7 +146,7 @@ pub fn (v:Vec<T>) set<T>(idx:i64 elem:T -- v2:Vec<T>)! {
 		"set: index out of bounds" 1 panic
 	}
 
-	elem data idx sizeof<T> * mem::set_i64
+	elem data idx mem::AnySize * mem::set_any
 
 	Vec<T> { data = data len = len cap = cap }
 }
@@ -186,7 +194,13 @@ pub fn (v:Vec<T>) is_empty<T>( -- b:i64) {
 /// Stack: (v -- v2)
 pub fn (v:Vec<T>) reset<T>( -- v2:Vec<T>) {
 	v <<cap -> cap
+	v <<len -> len
 	v <<data -> data
+	// Let go of every element: the slots are about to be reused, and a string or a struct in
+	// one is the vector's to release.
+	0 len 1 for i {
+		data i mem::AnySize * mem::clear_any
+	}
 	Vec<T> { data = data len = 0 cap = cap }
 }
 
@@ -202,7 +216,11 @@ pub fn (v:Vec<T>) reset<T>( -- v2:Vec<T>) {
 /// Stack: (v --)
 pub fn (v:Vec<T>) release<T>() {
 	v <<data -> data
+	v <<len -> len
 	data 0 neq if {
+		0 len 1 for i {
+			data i mem::AnySize * mem::clear_any
+		}
 		data mem::free
 	}
 }

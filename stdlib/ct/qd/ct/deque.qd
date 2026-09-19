@@ -67,7 +67,8 @@ pub fn (d:Deque<T>) push_back<T>(val:T -- d2:Deque<T>)! {
 	// Grow capacity if full
 	len cap >= cap 0 == or if {
 		cap 0 == if { 8 } else { cap 2 * } -> new_cap
-		new_cap 8 * mem::alloc? -> new_data
+		new_cap mem::AnySize * mem::alloc? -> new_data
+		new_data new_cap mem::AnySize * mem::zero
 
 		// Copy elements in order (unwrap circular buffer)
 		cap 0 > if {
@@ -75,8 +76,9 @@ pub fn (d:Deque<T>) push_back<T>(val:T -- d2:Deque<T>)! {
 			loop {
 				i len >= if { break }
 				head i + cap mod -> src_idx
-				data src_idx 8 * mem::get_i64 -> v
-				v new_data i 8 * mem::set_i64
+				data src_idx mem::AnySize * mem::get_any -> v
+				v new_data i mem::AnySize * mem::set_any
+				data src_idx mem::AnySize * mem::clear_any
 				i 1 + -> i
 			}
 			data mem::free
@@ -88,7 +90,7 @@ pub fn (d:Deque<T>) push_back<T>(val:T -- d2:Deque<T>)! {
 		new_cap -> cap
 	}
 
-	val data tail 8 * mem::set_i64
+	val data tail mem::AnySize * mem::set_any
 
 	tail 1 + cap mod -> new_tail
 
@@ -111,7 +113,8 @@ pub fn (d:Deque<T>) push_front<T>(val:T -- d2:Deque<T>)! {
 	// Grow capacity if full
 	len cap >= cap 0 == or if {
 		cap 0 == if { 8 } else { cap 2 * } -> new_cap
-		new_cap 8 * mem::alloc? -> new_data
+		new_cap mem::AnySize * mem::alloc? -> new_data
+		new_data new_cap mem::AnySize * mem::zero
 
 		// Copy elements in order (unwrap circular buffer)
 		cap 0 > if {
@@ -119,8 +122,9 @@ pub fn (d:Deque<T>) push_front<T>(val:T -- d2:Deque<T>)! {
 			loop {
 				i len >= if { break }
 				head i + cap mod -> src_idx
-				data src_idx 8 * mem::get_i64 -> v
-				v new_data i 8 * mem::set_i64
+				data src_idx mem::AnySize * mem::get_any -> v
+				v new_data i mem::AnySize * mem::set_any
+				data src_idx mem::AnySize * mem::clear_any
 				i 1 + -> i
 			}
 			data mem::free
@@ -138,7 +142,7 @@ pub fn (d:Deque<T>) push_front<T>(val:T -- d2:Deque<T>)! {
 		cap 1 - -> new_head
 	}
 
-	val data new_head 8 * mem::set_i64
+	val data new_head mem::AnySize * mem::set_any
 
 	Deque<T> { data = data head = new_head tail = tail len = len 1 + cap = cap }
 }
@@ -161,7 +165,8 @@ pub fn (d:Deque<T>) pop_front<T>( -- val:T d2:Deque<T>)! {
 	d <<tail -> tail
 	d <<cap -> cap
 
-	data head 8 * mem::get_i64 -> val
+	data head mem::AnySize * mem::get_any -> val
+	data head mem::AnySize * mem::clear_any
 
 	head 1 + cap mod -> new_head
 
@@ -193,7 +198,8 @@ pub fn (d:Deque<T>) pop_back<T>( -- val:T d2:Deque<T>)! {
 		cap 1 - -> new_tail
 	}
 
-	data new_tail 8 * mem::get_i64 -> val
+	data new_tail mem::AnySize * mem::get_any -> val
+	data new_tail mem::AnySize * mem::clear_any
 
 	val
 	Deque<T> { data = data head = head tail = new_tail len = len 1 - cap = cap }
@@ -212,7 +218,7 @@ pub fn (d:Deque<T>) peek_front<T>( -- val:T)! {
 	d <<data -> data
 	d <<head -> head
 
-	data head 8 * mem::get_i64
+	data head mem::AnySize * mem::get_any
 }
 
 /// View the back element without removing it.
@@ -234,7 +240,7 @@ pub fn (d:Deque<T>) peek_back<T>( -- val:T)! {
 		cap 1 - -> back_idx
 	}
 
-	data back_idx 8 * mem::get_i64
+	data back_idx mem::AnySize * mem::get_any
 }
 
 /// Get the number of elements.
@@ -256,5 +262,14 @@ pub fn (d:Deque<T>) is_empty<T>( -- b:i64) {
 /// Stack: (d --)
 pub fn (d:Deque<T>) release<T>() {
 	d <<data -> data
-	data 0 neq if { data mem::free }
+	data 0 neq if {
+		// Let go of every element still held: a string or a struct in one is ours to release.
+		d <<head -> head
+		d <<len -> len
+		d <<cap -> cap
+		0 len 1 for i {
+			data head i + cap mod mem::AnySize * mem::clear_any
+		}
+		data mem::free
+	}
 }

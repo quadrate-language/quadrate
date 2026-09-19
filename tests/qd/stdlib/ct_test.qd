@@ -517,3 +517,181 @@ test "Map is_empty" {
 	m is_empty testing::assert_true
 	m release
 }
+
+// ============================================================
+// Element types other than i64
+// ============================================================
+//
+// push/get went through mem::set_i64 and mem::get_i64 whatever T was, so a Vec<f64> or a
+// Vec<str> read back 0 and a Vec of structs crashed on get. The tests only ever instantiated
+// i64, which is why the containers read as working. Elements now live in tagged slots
+// (mem::set_any), which carry the type with the value and hold a reference to what they hold.
+
+struct Item {
+	n:     i64
+	label: str
+}
+
+test "Vec holds floats" {
+	Vec<f64> { data = null len = 0 cap = 0 } -> v
+	v 1.5 push! -> v
+	v -0.25 push! -> v
+	v 0 get! 1.5 0.0 testing::assert_approx_eq
+	v 1 get! -0.25 0.0 testing::assert_approx_eq
+	v 0 9.75 set! -> v
+	v 0 get! 9.75 0.0 testing::assert_approx_eq
+	v pop! -> v -> last
+	last -0.25 0.0 testing::assert_approx_eq
+	v length 1 testing::assert_eq
+	v release
+}
+
+test "Vec holds strings" {
+	Vec<str> { data = null len = 0 cap = 0 } -> v
+	v "alpha" push! -> v
+	v "héllo" push! -> v
+	v 0 get! "alpha" testing::assert_eq
+	v 1 get! "héllo" testing::assert_eq
+	// The same element read twice is still there: the slot keeps its own reference.
+	v 1 get! "héllo" testing::assert_eq
+	v release
+}
+
+test "Vec holds structs" {
+	Vec<Item> { data = null len = 0 cap = 0 } -> v
+	v Item { n = 1 label = "one" } push! -> v
+	v Item { n = 2 label = "two" } push! -> v
+	v 0 get! -> first
+	first <<n 1 testing::assert_eq
+	first <<label "one" testing::assert_eq
+	v 1 get! <<label "two" testing::assert_eq
+	v length 2 testing::assert_eq
+	v release
+}
+
+test "Vec of strings survives growth" {
+	Vec<str> { data = null len = 0 cap = 0 } -> v
+	0 40 1 for i {
+		v "s" i strconv::itoa strings::concat push! -> v
+	}
+	v length 40 testing::assert_eq
+	v 0 get! "s0" testing::assert_eq
+	v 39 get! "s39" testing::assert_eq
+	v release
+}
+
+test "Vec reset lets go of its elements" {
+	Vec<str> { data = null len = 0 cap = 0 } -> v
+	v "before" push! -> v
+	v reset -> v
+	v length 0 testing::assert_eq
+	v "after" push! -> v
+	v 0 get! "after" testing::assert_eq
+	v release
+}
+
+test "Queue holds strings and structs" {
+	Queue<str> { data = null head = 0 tail = 0 len = 0 cap = 0 } -> q
+	q "a" enqueue! -> q
+	q "b" enqueue! -> q
+	q peek! "a" testing::assert_eq
+	q dequeue! -> q -> first
+	first "a" testing::assert_eq
+	q dequeue! -> q -> second
+	second "b" testing::assert_eq
+	q is_empty testing::assert_true
+	q release
+
+	Queue<Item> { data = null head = 0 tail = 0 len = 0 cap = 0 } -> qi
+	0 12 1 for i {
+		qi Item { n = i label = "x" } enqueue! -> qi
+	}
+	qi dequeue! -> qi -> item
+	item <<n 0 testing::assert_eq
+	qi length 11 testing::assert_eq
+	qi release
+}
+
+test "Deque holds floats at both ends" {
+	Deque<f64> { data = null head = 0 tail = 0 len = 0 cap = 0 } -> d
+	d 1.5 push_back! -> d
+	d 0.5 push_front! -> d
+	d peek_front! 0.5 0.0 testing::assert_approx_eq
+	d peek_back! 1.5 0.0 testing::assert_approx_eq
+	d pop_front! -> d -> front
+	front 0.5 0.0 testing::assert_approx_eq
+	d pop_back! -> d -> back
+	back 1.5 0.0 testing::assert_approx_eq
+	d is_empty testing::assert_true
+	d release
+}
+
+test "Map holds strings, floats and structs" {
+	Map<str> { keys = null values = null states = null len = 0 cap = 0 } -> ms
+	ms "greeting" "hello" insert! -> ms
+	ms "other" "world" insert! -> ms
+	ms "greeting" get! "hello" testing::assert_eq
+	ms "other" get! "world" testing::assert_eq
+	// Replacing a value releases the one it replaces
+	ms "greeting" "hi" insert! -> ms
+	ms "greeting" get! "hi" testing::assert_eq
+	ms length 2 testing::assert_eq
+	ms release
+
+	Map<f64> { keys = null values = null states = null len = 0 cap = 0 } -> mf
+	mf "pi" 3.25 insert! -> mf
+	mf "pi" get! 3.25 0.0 testing::assert_approx_eq
+	mf "pi" remove! -> mf
+	mf "pi" has testing::assert_false
+	mf release
+
+	Map<Item> { keys = null values = null states = null len = 0 cap = 0 } -> mi
+	mi "first" Item { n = 7 label = "seven" } insert! -> mi
+	mi "first" get! <<label "seven" testing::assert_eq
+	mi release
+}
+
+test "Map of strings survives rehashing" {
+	Map<str> { keys = null values = null states = null len = 0 cap = 0 } -> m
+	0 40 1 for i {
+		m "k" i strconv::itoa strings::concat "v" i strconv::itoa strings::concat insert! -> m
+	}
+	m length 40 testing::assert_eq
+	m "k0" get! "v0" testing::assert_eq
+	m "k39" get! "v39" testing::assert_eq
+	m release
+}
+
+test "Map keys are compared by bytes" {
+	// The key was copied with strings::len bytes, which counts codepoints, so a key with any
+	// non-ASCII character in it was stored truncated -- and "héllo" collided with "héll".
+	Map<i64> { keys = null values = null states = null len = 0 cap = 0 } -> m
+	m "héllo" 5 insert! -> m
+	m "héll" 4 insert! -> m
+	m "héllo" get! 5 testing::assert_eq
+	m "héll" get! 4 testing::assert_eq
+	m length 2 testing::assert_eq
+	m release
+}
+
+test "Set keys are compared by bytes" {
+	Set { keys = null states = null len = 0 cap = 0 } -> s
+	s "héllo" add! -> s
+	s "héllo" contains testing::assert_true
+	s "héll" contains testing::assert_false
+	s release
+}
+
+test "Pair carries two different types" {
+	Pair<i64, str> { first = 5 second = "x" } -> a
+	a <<first 5 testing::assert_eq
+	a <<second "x" testing::assert_eq
+
+	Pair<str, f64> { first = "pi" second = 3.25 } -> b
+	b <<first "pi" testing::assert_eq
+	b <<second 3.25 0.0 testing::assert_approx_eq
+
+	Pair<Item, i64> { first = Item { n = 3 label = "three" } second = 9 } -> c
+	c <<first <<label "three" testing::assert_eq
+	c <<second 9 testing::assert_eq
+}

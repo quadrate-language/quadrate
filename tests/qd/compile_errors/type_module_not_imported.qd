@@ -1,0 +1,12 @@
+// Test: naming another module's struct without importing the module says so.
+//
+// The message used to be "Invalid type 'sb::StringBuilder'. Valid types are: i64, f64, str,
+// ptr, any, or a struct name", which reads as "you cannot name another module's struct here".
+// You can -- `use sb` and this compiles.
+fn add_two(b:sb::StringBuilder -- b2:sb::StringBuilder) {
+	b
+}
+
+fn main() {
+	1 print nl
+}

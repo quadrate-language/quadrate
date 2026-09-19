@@ -1048,6 +1048,29 @@ namespace Qd {
 			return result;
 		}
 
+		// The '=' of a field initializer, as opposed to the one inside ==, !=, <= or >=.
+		// A switch arm labelled with a constant reads exactly like a struct construction --
+		// `Bool { b v <<inum 0 != if { … } }` is an uppercase name, a brace and an '=' -- so
+		// without this test the arm was expanded as if it were one, and re-emitted as
+		// `field = value` with a space driven through the operator: `0 ! = if`, which does
+		// not compile. `make format` could turn a working file into a broken one.
+		static size_t findFieldAssignEquals(const std::string& s, size_t from = 0) {
+			for (size_t i = from; i < s.length(); i++) {
+				if (s[i] != '=') {
+					continue;
+				}
+				if (i + 1 < s.length() && s[i + 1] == '=') {
+					i++; // ==, and skip its second character
+					continue;
+				}
+				if (i > 0 && (s[i - 1] == '=' || s[i - 1] == '!' || s[i - 1] == '<' || s[i - 1] == '>')) {
+					continue;
+				}
+				return i;
+			}
+			return std::string::npos;
+		}
+
 		// Check if line contains a struct construction that should be expanded to multiline
 		// Returns the struct construction string to expand, or empty if none
 		static bool isStructConstruction(const std::string& line) {
@@ -1118,7 +1141,7 @@ namespace Qd {
 						continue;
 					}
 					std::string content = line.substr(i + 1, braceEnd - i - 1);
-					if (content.find('=') != std::string::npos) {
+					if (findFieldAssignEquals(content) != std::string::npos) {
 						return true;
 					}
 				}
@@ -1192,7 +1215,7 @@ namespace Qd {
 					}
 
 					std::string content = trim(trimmed.substr(i + 1, braceEnd - i - 1));
-					if (content.find('=') == std::string::npos) {
+					if (findFieldAssignEquals(content) == std::string::npos) {
 						continue;
 					}
 
@@ -1203,7 +1226,7 @@ namespace Qd {
 					std::vector<std::pair<std::string, std::string>> fields;
 					std::string remaining = content;
 					while (!remaining.empty()) {
-						size_t eqPos = remaining.find('=');
+						size_t eqPos = findFieldAssignEquals(remaining);
 						if (eqPos == std::string::npos) {
 							break;
 						}
@@ -1248,7 +1271,8 @@ namespace Qd {
 											std::isspace(static_cast<unsigned char>(remaining[afterId]))) {
 										afterId++;
 									}
-									if (afterId < remaining.length() && remaining[afterId] == '=') {
+									if (afterId < remaining.length() && remaining[afterId] == '=' &&
+											findFieldAssignEquals(remaining, afterId) == afterId) {
 										nextField = ahead;
 										break;
 									}

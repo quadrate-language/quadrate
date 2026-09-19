@@ -153,6 +153,42 @@ fn main(--) {
 	acc print nl
 }' 30000 4096
 
+# Containers hold a reference to every string and struct in them, and give it back when the
+# element is popped, replaced, reset or released. Nothing about that shows in their output.
+check_flat "containers" 'use ct
+use strconv
+
+struct Item {
+	n:     i64
+	label: str
+}
+
+fn round( -- n:i64) {
+	Vec<str> { data = null len = 0 cap = 0 } -> v
+	Vec<Item> { data = null len = 0 cap = 0 } -> vi
+	Map<str> { keys = null values = null states = null len = 0 cap = 0 } -> m
+	0 20 1 for i {
+		v i strconv::itoa push! -> v
+		vi Item { n = i label = "x" } push! -> vi
+		m i strconv::itoa i strconv::itoa insert! -> m
+	}
+	v 0 "replaced" set! -> v
+	v pop! -> v -> _
+	m "0" remove! -> m
+	v length vi length + m length +
+	v release
+	vi release
+	m release
+}
+
+fn main(--) {
+	0 -> acc
+	0 @N@ 1 for i {
+		round acc + -> acc
+	}
+	acc print nl
+}' 20000 4096
+
 echo ""
 echo "Memory tests: $PASSED passed, $FAILED failed"
 [[ $FAILED -eq 0 ]]

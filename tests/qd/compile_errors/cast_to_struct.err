@@ -1,0 +1,2 @@
+Type error in 'cast': 'Node' is not a type 'cast' converts to
+use 'value as Node' to read a pointer as a struct

@@ -142,3 +142,65 @@ test "mem::alloc_aligned 16-byte" {
 test "mem::alloc_aligned 64-byte" {
 	test_alloc_aligned_64 testing::assert_true
 }
+
+// ============================================================
+// Tagged slots
+// ============================================================
+
+struct Held {
+	n: i64
+}
+
+test "mem::set_any and get_any keep the type" {
+	4 mem::AnySize * mem::alloc! -> buf
+	buf 4 mem::AnySize * mem::zero
+
+	42 buf 0 mem::set_any
+	1.5 buf mem::AnySize mem::set_any
+	"héllo" buf 2 mem::AnySize * mem::set_any
+	Held { n = 9 } buf 3 mem::AnySize * mem::set_any
+
+	buf 0 mem::get_any 42 testing::assert_eq
+	buf mem::AnySize mem::get_any 1.5 0.0 testing::assert_approx_eq
+	buf 2 mem::AnySize * mem::get_any "héllo" testing::assert_eq
+	buf 3 mem::AnySize * mem::get_any <<n 9 testing::assert_eq
+
+	// Reading does not empty the slot
+	buf 2 mem::AnySize * mem::get_any "héllo" testing::assert_eq
+
+	buf mem::free
+}
+
+test "mem::set_any over a slot replaces what was there" {
+	mem::AnySize mem::alloc! -> buf
+	buf mem::AnySize mem::zero
+
+	"first" buf 0 mem::set_any
+	buf 0 mem::get_any "first" testing::assert_eq
+	"second" buf 0 mem::set_any
+	buf 0 mem::get_any "second" testing::assert_eq
+	7 buf 0 mem::set_any
+	buf 0 mem::get_any 7 testing::assert_eq
+
+	buf mem::free
+}
+
+test "mem::clear_any empties a slot" {
+	mem::AnySize mem::alloc! -> buf
+	buf mem::AnySize mem::zero
+
+	"held" buf 0 mem::set_any
+	buf 0 mem::clear_any
+	// A cleared slot reads as the integer 0, the same as a freshly zeroed one
+	buf 0 mem::get_any 0 testing::assert_eq
+
+	buf mem::free
+}
+
+test "a zeroed slot reads as zero" {
+	2 mem::AnySize * mem::alloc! -> buf
+	buf 2 mem::AnySize * mem::zero
+	buf 0 mem::get_any 0 testing::assert_eq
+	buf mem::AnySize mem::get_any 0 testing::assert_eq
+	buf mem::free
+}

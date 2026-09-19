@@ -211,3 +211,124 @@ int usr_mem_from_string(qd_context* ctx) {
 	qd_push_p(ctx, buffer);
 	return qd_push_i(ctx, (int64_t)length);
 }
+
+// --- Tagged slots: storing a value of any type in raw memory ---
+//
+// set_i64 and its siblings each know what they are moving. A container written over a type
+// parameter does not: `Vec<T>` has one body for every T, and no way to ask what T is, so it
+// stored everything through set_i64 and read everything back through get_i64. That is why
+// Vec<f64> and Vec<str> read back 0 and Vec<SomeStruct> crashed.
+//
+// A tagged slot carries the type with the value: eight bytes of payload and eight of tag, the
+// same shape the compiler already gives a generic struct field. The slot owns a reference to
+// what it holds -- set_any takes over the one the push handed it, get_any takes a fresh one for
+// the stack, and clear_any gives the slot's back -- so a string or a struct in a container stays
+// alive exactly as long as the container does.
+//
+// A zeroed slot reads as the integer 0, which is what a freshly allocated (and zeroed) region
+// has to look like: it owns nothing, so releasing it does nothing.
+
+#define MEM_ANY_TAG_OFFSET 8
+
+static void mem_release_slot(char* slot) {
+	int64_t tag;
+	memcpy(&tag, slot + MEM_ANY_TAG_OFFSET, sizeof(tag));
+	void* held;
+	memcpy(&held, slot, sizeof(held));
+	if (held == NULL) {
+		return;
+	}
+	if (tag == (int64_t)QD_STACK_TYPE_STR) {
+		qd_string_release((qd_string_t*)held);
+	} else if (tag == (int64_t)QD_STACK_TYPE_PTR) {
+		qd_ptr_release(held);
+	}
+}
+
+/* Store a value of any type, with its type, in the slot at address+offset */
+int usr_mem_set_any(qd_context* ctx) {
+	int64_t offset;
+	void* address;
+	qd_stack_element_t value_elem;
+
+	if (pop_int(ctx, &offset) != QD_STACK_OK || pop_ptr(ctx, &address) != QD_STACK_OK) {
+		return (int){-1};
+	}
+	if (qd_stack_pop(ctx->st, &value_elem) != QD_STACK_OK) {
+		return (int){-1};
+	}
+
+	if (address == NULL) {
+		MEM_SET_ERR(ctx, MEM_ERR_INVALID_ARG, "mem::set_any: null pointer");
+		return (int){-1};
+	}
+
+	char* slot = (char*)address + offset;
+	mem_release_slot(slot);
+
+	int64_t tag = (int64_t)value_elem.type;
+	memcpy(slot, &value_elem.value, sizeof(value_elem.value));
+	memcpy(slot + MEM_ANY_TAG_OFFSET, &tag, sizeof(tag));
+	return (int){0};
+}
+
+/* Read back a value stored by set_any, with the type it was stored as */
+int usr_mem_get_any(qd_context* ctx) {
+	int64_t offset;
+	void* address;
+
+	if (pop_int(ctx, &offset) != QD_STACK_OK || pop_ptr(ctx, &address) != QD_STACK_OK) {
+		return (int){-1};
+	}
+	if (address == NULL) {
+		MEM_SET_ERR(ctx, MEM_ERR_INVALID_ARG, "mem::get_any: null pointer");
+		return (int){-1};
+	}
+
+	const char* slot = (const char*)address + offset;
+	int64_t tag;
+	memcpy(&tag, slot + MEM_ANY_TAG_OFFSET, sizeof(tag));
+
+	if (tag == (int64_t)QD_STACK_TYPE_FLOAT) {
+		double value;
+		memcpy(&value, slot, sizeof(value));
+		return qd_push_f(ctx, value);
+	}
+	if (tag == (int64_t)QD_STACK_TYPE_STR) {
+		qd_string_t* value;
+		memcpy(&value, slot, sizeof(value));
+		if (value == NULL) {
+			return qd_push_s(ctx, "");
+		}
+		return qd_push_s_ref(ctx, value); // retains
+	}
+	if (tag == (int64_t)QD_STACK_TYPE_PTR) {
+		void* value;
+		memcpy(&value, slot, sizeof(value));
+		qd_ptr_retain(value);
+		return qd_push_p(ctx, value);
+	}
+
+	int64_t value;
+	memcpy(&value, slot, sizeof(value));
+	return qd_push_i(ctx, value);
+}
+
+/* Release whatever the slot holds and zero it */
+int usr_mem_clear_any(qd_context* ctx) {
+	int64_t offset;
+	void* address;
+
+	if (pop_int(ctx, &offset) != QD_STACK_OK || pop_ptr(ctx, &address) != QD_STACK_OK) {
+		return (int){-1};
+	}
+	if (address == NULL) {
+		MEM_SET_ERR(ctx, MEM_ERR_INVALID_ARG, "mem::clear_any: null pointer");
+		return (int){-1};
+	}
+
+	char* slot = (char*)address + offset;
+	mem_release_slot(slot);
+	memset(slot, 0, 16);
+	return (int){0};
+}

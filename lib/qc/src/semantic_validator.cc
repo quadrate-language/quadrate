@@ -119,6 +119,27 @@ namespace Qd {
 		return false;
 	}
 
+	// What to say about a type name the validator does not recognise. A qualified name gets a
+	// diagnostic about the qualifier: "Valid types are: i64, f64, str, ptr, any, or a struct
+	// name" reads as "another module's struct cannot be named here", which is not true and cost
+	// a reader a day's detour into working around a limitation that does not exist.
+	// `sb::StringBuilder` is a perfectly good parameter type; what is missing is the `use`.
+	std::string SemanticValidator::invalidTypeMessage(const std::string& typeStr, const std::string& where) const {
+		size_t colon = typeStr.rfind("::");
+		if (colon != std::string::npos && colon > 0) {
+			std::string moduleName = typeStr.substr(0, colon);
+			std::string typeName = typeStr.substr(colon + 2);
+			if (mImportedModules.find(moduleName) == mImportedModules.end()) {
+				return "Unknown type '" + typeStr + "'" + where + ": module '" + moduleName +
+					   "' not imported. Add 'use " + moduleName + "' to name its types";
+			}
+			return "Unknown type '" + typeStr + "'" + where + ": module '" + moduleName + "' has no type named '" +
+				   typeName + "'";
+		}
+		return "Invalid type '" + typeStr + "'" + where +
+			   ". Valid types are: i64, f64, str, ptr, any, or a struct name";
+	}
+
 	bool SemanticValidator::isValidTypeName(const std::string& typeStr) const {
 		// Primitive types
 		if (typeStr == "i64" || typeStr == "f64" || typeStr == "str" || typeStr == "ptr" || typeStr == "any") {

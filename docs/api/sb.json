@@ -100,9 +100,9 @@
       "name": "len",
       "signature": "(sb:StringBuilder) len( -- sblen:i64)",
       "failable": false,
-      "description": "Get current length of builder content.",
+      "description": "Get current length of builder content, in bytes -- the size of its UTF-8 encoding, as strings::byte_len reports for a string.",
       "params": [],
-      "returns": [{"name": "sblen", "type": "i64", "description": "Current content length"}],
+      "returns": [{"name": "sblen", "type": "i64", "description": "Current content length in bytes"}],
       "errors": [],
       "examples": ["builder sb::len -> sblen"]
     },

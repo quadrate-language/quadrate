@@ -257,7 +257,7 @@ Double-ended queue with elements of type T.  Fields:   data - Pointer to circula
 
 ## Map
 
-Hash map with string keys and values of type V.  Fields:   keys   - Array of string key pointers   values - Array of V values   states - Array of slot states (0=empty, 1=occupied, 2=deleted)   len    - Number of entries   cap    - Allocated capacity
+Hash map with string keys and values of any type V -- i64, f64, str, ptr or a struct. A value lives in a tagged slot (mem::set_any), so it reads back as what was inserted, and the map holds a reference to a string or a struct for as long as the entry is in it.  Fields:   keys   - Array of string key pointers   values - Array of V values   states - Array of slot states (0=empty, 1=occupied, 2=deleted)   len    - Number of entries   cap    - Allocated capacity
 
 ### Struct
 

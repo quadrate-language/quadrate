@@ -15,6 +15,11 @@ pub const ErrAlloc = 2
 /// Invalid argument error code
 pub const ErrInvalidArg = 3
 
+/// Size in bytes of one `set_any`/`get_any` slot: eight bytes of value and eight of type tag.
+/// A container over a type parameter sizes its storage with this rather than with `sizeof<T>`,
+/// since one body has to hold every T.
+pub const AnySize = 16
+
 import "libmem.a" as "mem" {
 	/// Allocate memory.
 	/// @param bytes i64 Number of bytes to allocate
@@ -112,6 +117,31 @@ import "libmem.a" as "mem" {
 	/// @return value i64 Integer value
 	/// @example buf 0 mem::get_i64 -> n
 	pub fn get_i64(address:ptr offset:i64 -- value:i64)
+
+	/// Store a value of any type, with its type, in the slot at offset.
+	///
+	/// The slot takes over the reference the value came with, and gives it back when the slot
+	/// is overwritten or cleared, so a string or a struct kept in one stays alive as long as
+	/// the slot does. The region must be zeroed before first use -- `mem::zero` does it, and
+	/// a zeroed slot reads back as the integer 0.
+	/// @param value any Value to store
+	/// @param address ptr Base address
+	/// @param offset i64 Byte offset from base, a multiple of AnySize
+	/// @example elem buf idx mem::AnySize * mem::set_any
+	pub fn set_any(value:any address:ptr offset:i64 -- )
+
+	/// Read back a value stored by set_any, with the type it was stored as.
+	/// @param address ptr Base address
+	/// @param offset i64 Byte offset from base, a multiple of AnySize
+	/// @return value any Stored value
+	/// @example buf idx mem::AnySize * mem::get_any -> elem
+	pub fn get_any(address:ptr offset:i64 -- value:any)
+
+	/// Release what the slot holds and zero it.
+	/// @param address ptr Base address
+	/// @param offset i64 Byte offset from base, a multiple of AnySize
+	/// @example buf idx mem::AnySize * mem::clear_any
+	pub fn clear_any(address:ptr offset:i64 -- )
 
 	/// Set a 64-bit float at offset.
 	/// @param value f64 Float value

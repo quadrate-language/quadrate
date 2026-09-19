@@ -15,6 +15,7 @@ every one of its callers fallible for a condition none of them can act on.
 
 | Name | Value | Description |
 |------|-------|-------------|
+| `AnySize` | `16` | Size in bytes of one `set_any`/`get_any` slot: eight bytes of value and eight of type tag. A container over a type parameter sizes its storage with this rather than with `sizeof<T>`, since one body has to hold every T. |
 | `ErrAlloc` | `2` | Allocation failure error code |
 | `ErrInvalidArg` | `3` | Invalid argument error code |
 
@@ -70,6 +71,24 @@ Allocate memory.
 
 ```qd
 1024 mem::alloc!  // buf
+```
+---
+
+### `fn` clear_any
+
+Release what the slot holds and zero it.
+
+**Signature:** `(address:ptr offset:i64 -- )`
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `address` | `ptr` | Base address |
+| `offset` | `i64` | Byte offset from base, a multiple of AnySize |
+
+**Example:**
+
+```qd
+buf idx mem::AnySize * mem::clear_any
 ```
 ---
 
@@ -147,6 +166,28 @@ Convert string to buffer.
 
 ```qd
 "hello" mem::from_string -> len  // buf
+```
+---
+
+### `fn` get_any
+
+Read back a value stored by set_any, with the type it was stored as.
+
+**Signature:** `(address:ptr offset:i64 -- value:any)`
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `address` | `ptr` | Base address |
+| `offset` | `i64` | Byte offset from base, a multiple of AnySize |
+
+| Output | Type | Description |
+|--------|------|-------------|
+| `value` | `any` | Stored value |
+
+**Example:**
+
+```qd
+buf idx mem::AnySize * mem::get_any  // elem
 ```
 ---
 
@@ -370,6 +411,25 @@ Reallocate memory to new size.
 
 ```qd
 buf 2048 mem::realloc!  // buf
+```
+---
+
+### `fn` set_any
+
+Store a value of any type, with its type, in the slot at offset.  The slot takes over the reference the value came with, and gives it back when the slot is overwritten or cleared, so a string or a struct kept in one stays alive as long as the slot does. The region must be zeroed before first use -- `mem::zero` does it, and a zeroed slot reads back as the integer 0.
+
+**Signature:** `(value:any address:ptr offset:i64 -- )`
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `value` | `any` | Value to store |
+| `address` | `ptr` | Base address |
+| `offset` | `i64` | Byte offset from base, a multiple of AnySize |
+
+**Example:**
+
+```qd
+elem buf idx mem::AnySize * mem::set_any
 ```
 ---
 

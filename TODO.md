@@ -222,8 +222,13 @@ that way.
 
 ### Found while writing `json::parse` (2026-09-19)
 
-Six things the parser ran into. The memory bug is **fixed** (see below); the rest are smaller, and
-each has a reproducer that fits on a screen.
+Eight things the parser ran into. **Seven are fixed**: the memory bug, and six smaller ones that
+all failed without a diagnostic, or with the wrong one — a formatter that broke working files, a
+method call that resolved to nothing, a cast that quietly produced a string, a StringBuilder
+that cut multi-byte characters in half, a container library that only held integers, and an
+equality test that killed the process on two pointers. **One was withdrawn**: a struct from
+another module can be named in a signature, and the message that said otherwise is fixed.
+Nothing from the list is left open; what the work turned up on the way is in the section below.
 
 - [x] **Fixed 2026-09-19: a struct stored in a field was never freed.** Three defects, each found
       by counting `qd_struct_alloc` against `qd_struct_release` on a loop that parses `[1,1]`:
@@ -242,46 +247,71 @@ each has a reproducer that fits on a screen.
       `generateLocalCleanup` releases only the `str` fields of one -- but 400,000 iterations of
       that shape hold RSS flat, so whatever balances it, it is not leaking.
 
-- [ ] **`quadfmt` splits `==` and `!=` when it expands a `switch` arm.** A one-line arm that is
-      long enough to be rewrapped comes back as `0 ! =` / `0 = =`, which does not compile — so
-      `make format` can turn a working file into a broken one, and `make fmtcheck` passes on the
-      wreckage. Reproducer: any `switch` arm on one line, over ~100 characters, containing `==`.
-      The workaround in `json.qd` was to move the comparison into a helper.
-      **Open question**: is the re-tokenisation in the arm-expansion path, or in the width
-      calculation that decides to expand?
+- [x] **Fixed 2026-09-19: `quadfmt` split `==` and `!=` when it expanded a `switch` arm.** An
+      arm labelled with a constant reads exactly like a struct construction — an uppercase
+      name, a brace, an `=` inside — so a long one was expanded as a field list and re-emitted
+      as `field = value`, turning `0 != if` into `0 ! = if`. `make format` could break a
+      working file while `make fmtcheck` passed on the result. The field-initializer scan in
+      `source_formatter.cc` now tells a lone `=` from the one inside `==`, `!=`, `<=` and `>=`;
+      pinned by `tests/formatter/56_switch_arm_operators.qd`.
 
-- [ ] **A method call on a `*T`-typed local silently does nothing.** `c <<next -> c  c b write`
-      compiles and emits no call; `c as Value b write` works. Field reads through the same local
-      (`c <<key`) resolve fine, so it is the method dispatch that drops it. Silent — no warning,
-      no error, and the missing output only shows up in the result.
-      **Open question**: should `as` be required here, in which case this is a missing diagnostic,
-      or should dispatch use the field's declared struct type?
+- [x] **Fixed 2026-09-19: a method call on a `*T`-typed local resolves.** The field's type was
+      recorded as a bare pointer with the struct name discarded, so the call fell through to a
+      builtin of the same name or to nothing at all. The name now reaches the validator
+      (`semantic_validator_collect.cc`, `_modules.cc`) and codegen (`generator_structs.cc`),
+      and the six `as Value` annotations in `stdlib/json` are gone. A `*T` field still accepts
+      `null`, tracked separately from the struct name, since that is how a linked structure
+      starts; pinned by `tests/qd/structs/pointer_field_methods.qd`.
 
-- [ ] **`cast<T>` to an unknown or struct type silently becomes `cast<str>`.** `p cast<Node>`
-      type-checks and yields a string, so the next `<<field` fails with *"the value on the stack is
-      string, not a struct"* — a confusing error a long way from the cast. `as` is the right
-      spelling for ptr→struct and it works; the cast should be rejected rather than reinterpreted.
+- [x] **Fixed 2026-09-19: `cast<T>` to an unknown or struct type is an error.** It used to fall
+      through to a STRING default, so `p cast<Node>` produced a string and the mistake surfaced
+      far away. The struct case now points at `as`; `cast<T>` over a generic type parameter is
+      unaffected. Pinned by `tests/qd/compile_errors/cast_to_struct.qd` and
+      `cast_to_unknown_type.qd`.
 
-- [ ] **`ptr == ptr` is a runtime type error.** *"Fatal error in eq: Type error (expected numeric or
-      string types for comparison)"*, though `ptr null ==` is fine. Comparing two node pointers for
-      identity — "is this child the last one" — therefore cannot be written, and `json::put` asks
-      `c <<next null ==` instead. Either comparison should work on pointers or the compiler should
-      reject it, rather than compiling and dying.
+- [x] **Fixed 2026-09-19: `ptr == ptr` was a runtime type error.** Two pointers now compare by
+      identity, which is also how two struct values are asked whether they are the same struct.
+      Ordering stays numeric-only on purpose — `<` on two addresses is still a type error.
+      Specification 12.2 gained the operand rules for `==`/`!=`, which it had never stated;
+      pinned by `tests/qd/structs/struct_identity_compare.qd`.
 
-- [ ] **A struct from another module cannot be named in a signature.** `fn f(b:sb::StringBuilder …)`
-      is *"Invalid type 'sb::StringBuilder' in parameter 'b'. Valid types are: i64, f64, str, ptr,
-      any, or a struct name"*. So no module can take or return another module's struct, which is
-      why `json` carries its own 40-line byte buffer rather than building output in a
-      `sb::StringBuilder`. This is the quiet reason the stdlib modules do not compose.
-      **Open question**: is qualifying a struct name in a signature just unimplemented, or is there
-      a reason the type table is per-module?
+- [x] **Withdrawn 2026-09-19: a struct from another module *can* be named in a signature.**
+      The finding was wrong. `fn f(b:sb::StringBuilder -- b2:sb::StringBuilder)` compiles and
+      runs, in a program and in a module alike; what produced *"Invalid type
+      'sb::StringBuilder'. Valid types are: i64, f64, str, ptr, any, or a struct name"* was a
+      missing `use sb` in a scratch file that the compiler picked up as a sibling of the one
+      being built. The message named the wrong problem, which is what made the mistake look
+      like a language limitation — and cost a day's detour building around it. So the fix is to
+      the diagnostic: a qualified name now says *"module 'sb' not imported. Add 'use sb' to name
+      its types"*, or *"module 'sb' has no type named 'Nope'"* when the module is imported.
+      `json`'s own byte buffer stays: it appends raw byte ranges, which is what its serializer
+      wants, and it no longer stands for a limitation that was never there.
 
-  Two more, not json's business but found on the way: **`ct::Vec` and `ct::Map` only work for
-  `i64`** — `Vec<f64>` and `Vec<str>` store and read back `0`, and `Vec<SomeStruct>` segfaults on
-  `get`, because `push`/`get` go through `mem::set_i64`/`get_i64` whatever `T` is; the tests only
-  ever instantiate `i64`. And **`sb::append` copies `strings::len` bytes**, which counts codepoints
-  now, so appending any non-ASCII string truncates it — `strings::byte_len` is the fix and it
-  already exists.
+- [x] **Fixed 2026-09-19: a generic method's result was pushed as a bare type parameter.** Found
+      on the way to the above, and the real obstacle in that area. `Box<i64> unwrap` calls
+      `fn (b:Box<T>) unwrap<T>( -- v:T)`, and the result arrived as `typevar`, so `b unwrap 2 *`
+      was *"Expected numeric types, got typevar and int"* — a container could only be read into
+      something taking `any`, which is why nothing in the corpus passed one to a function of its
+      own. The machinery existed for plain calls (`bindCallTypeParams` / `pushCallResults`) and
+      the four method-call paths all bypassed it. They now bind the struct's type parameters
+      from the receiver's type arguments. `tests/qd/generics/generic_method_result.qd` pins it.
+
+- [x] **Fixed 2026-09-19: `ct::Vec` and `ct::Map` only worked for `i64`.** `push`/`get` went
+      through `mem::set_i64`/`get_i64` whatever `T` was, so `Vec<f64>` and `Vec<str>` read back
+      `0` and `Vec<SomeStruct>` segfaulted; the module's tests only ever instantiated `i64`.
+      Elements now live in tagged slots — `mem::set_any`/`get_any`/`clear_any`, eight bytes of
+      value and eight of type, the shape the compiler already gives a generic struct field —
+      which also makes the container the owner of a string or a struct it holds. `Vec`, `Queue`,
+      `Deque` and `Map` are covered for i64, f64, str and struct elements, and the memory suite
+      has a `containers` case that catches a missing release. Two more found in passing: a
+      module struct's own type parameters were being qualified with the module name (`U` became
+      `ct::U`), so `Pair<i64, str>` could not be constructed; and `Map`/`Set` sized the key copy
+      with `strings::len`, so `"héllo"` and `"héll"` were the same key.
+
+  Also found on the way and **fixed 2026-09-19**: `sb::append` sized its copy with
+  `strings::len`, which counts codepoints, so appending any non-ASCII string cut it inside a
+  character, and `sb::append_char` wrote a codepoint as a single byte. Both go by bytes now,
+  `append_char` encodes UTF-8, and `sb::len` is documented as the byte count it always was.
 
 ### Interpreter tier (lib/interp)
 

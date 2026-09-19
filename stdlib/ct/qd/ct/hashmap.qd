@@ -37,7 +37,9 @@
 use mem
 use strings
 
-/// Hash map with string keys and values of type V.
+/// Hash map with string keys and values of any type V -- i64, f64, str, ptr or a struct. A
+/// value lives in a tagged slot (mem::set_any), so it reads back as what was inserted, and the
+/// map holds a reference to a string or a struct for as long as the entry is in it.
 ///
 /// Fields:
 ///   keys   - Array of string key pointers
@@ -122,11 +124,13 @@ fn find_slot(keys:ptr states:ptr cap:i64 key:str -- slot:i64 found:i64) {
 // Returns new_keys, new_values, new_states pointers.
 fn rehash(old_keys:ptr old_values:ptr old_states:ptr old_cap:i64 new_cap:i64 -- new_keys:ptr new_values:ptr new_states:ptr)! {
 	new_cap 8 * mem::alloc? -> new_keys
-	new_cap 8 * mem::alloc? -> new_values
+	new_cap mem::AnySize * mem::alloc? -> new_values
 	new_cap 8 * mem::alloc? -> new_states
 
-	// Initialize states to 0 (empty)
+	// Initialize states to 0 (empty), and the value slots with them: set_any reads the slot it
+	// is about to overwrite to release what was there, and a zeroed slot holds nothing.
 	new_states new_cap 8 * mem::zero
+	new_values new_cap mem::AnySize * mem::zero
 
 	// Rehash existing entries
 	old_cap 0 > if {
@@ -137,13 +141,14 @@ fn rehash(old_keys:ptr old_values:ptr old_states:ptr old_cap:i64 new_cap:i64 -- 
 			old_states i 8 * mem::get_i64 1 == if {
 				// Occupied slot - rehash
 				old_keys i 8 * mem::get_ptr -> key_ptr
-				old_values i 8 * mem::get_i64 -> value
+				old_values i mem::AnySize * mem::get_any -> value
 
 				key_ptr strings::from_ptr -> key
 				new_keys new_states new_cap key find_slot -> found -> slot
 
 				key_ptr new_keys slot 8 * mem::set_ptr
-				value new_values slot 8 * mem::set_i64
+				value new_values slot mem::AnySize * mem::set_any
+				old_values i mem::AnySize * mem::clear_any
 				1 new_states slot 8 * mem::set_i64
 			}
 
@@ -194,7 +199,9 @@ pub fn (m:Map<V>) insert<V>(key:str value:V -- m2:Map<V>)! {
 
 	found 0 == if {
 		// New key - allocate null-terminated copy and store
-		key strings::len -> klen
+		// Bytes, not characters: strings::len counts codepoints, so a key with any non-ASCII
+		// character in it was copied short and truncated mid-character.
+		key strings::byte_len -> klen
 		klen 1 + mem::alloc? -> key_buf
 		key mem::from_string -> tmplen -> tmpbuf
 		key_buf tmpbuf klen mem::copy
@@ -205,7 +212,7 @@ pub fn (m:Map<V>) insert<V>(key:str value:V -- m2:Map<V>)! {
 	}
 
 	// Store value and mark occupied
-	value values slot 8 * mem::set_i64
+	value values slot mem::AnySize * mem::set_any
 	1 states slot 8 * mem::set_i64
 
 	Map<V> { keys = keys values = values states = states len = len cap = cap }
@@ -235,7 +242,7 @@ pub fn (m:Map<V>) get<V>(key:str -- value:V)! {
 		"get: key not found" 1 err
 	}
 
-	values slot 8 * mem::get_i64
+	values slot mem::AnySize * mem::get_any
 }
 
 /// Check if a key exists in the map.
@@ -284,8 +291,9 @@ pub fn (m:Map<V>) remove<V>(key:str -- m2:Map<V>)! {
 		"remove: key not found" 1 err
 	}
 
-	// Free the key string
+	// Free the key string and let go of the value
 	keys slot 8 * mem::get_ptr mem::free
+	values slot mem::AnySize * mem::clear_any
 
 	// Mark as deleted (tombstone)
 	2 states slot 8 * mem::set_i64
@@ -337,6 +345,7 @@ pub fn (m:Map<V>) release<V>() {
 
 			states i 8 * mem::get_i64 1 == if {
 				keys i 8 * mem::get_ptr mem::free
+				values i mem::AnySize * mem::clear_any
 			}
 
 			i 1 + -> i

@@ -1,0 +1,65 @@
+// Test: a value read out of a `*T` field carries the struct type, so it takes a method
+// and a chained field access without an `as`.
+//
+// `*T` names a struct as surely as `T` does, but the field's type was recorded as a bare
+// pointer and the name thrown away -- so `n <<next -> c  c o add` resolved `add` to the
+// arithmetic builtin ("Expected numeric types, got ptr and ptr"), and a method whose name
+// was not also a builtin resolved to nothing at all and silently emitted no call. `as T`
+// was the only way to say what the declaration already said.
+struct Node {
+	v:    i64
+	next: *Node
+}
+
+struct Total {
+	sum: i64
+}
+
+fn (n:Node) add_to(t:Total -- ) {
+	t t <<sum n <<v + >>sum drop
+}
+
+fn (n:Node) doubled( -- r:i64) {
+	n <<v 2 *
+}
+
+fn main() {
+	Node { v = 1 next = null } -> a
+	Node { v = 2 next = a } -> b
+	Node { v = 4 next = b } -> c
+	Total { sum = 0 } -> t
+
+	// Receiver straight from a local
+	c t add_to
+	t <<sum print nl
+
+	// Receiver read out of a *Node field
+	c <<next -> second
+	second t add_to
+	t <<sum print nl
+
+	// And one read out of a field of that
+	second <<next -> third
+	third t add_to
+	t <<sum print nl
+
+	// A method with no arguments, through two pointer hops
+	c <<next <<next -> deep
+	deep doubled print nl
+
+	// `as` still works and means the same thing
+	c <<next as Node t add_to
+	t <<sum print nl
+
+	// Walking the chain to the end: the loop rebinds a *Node local every iteration
+	c -> walk
+	0 -> seen
+	loop {
+		seen walk <<v + -> seen
+		walk <<next null == if {
+			break
+		}
+		walk <<next -> walk
+	}
+	seen print nl
+}

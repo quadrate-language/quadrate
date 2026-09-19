@@ -1,0 +1,15 @@
+// Test: cast<T> rejects a type it does not convert to, rather than quietly producing a string.
+//
+// The type parameter fell through to a STRING default, so `p cast<Node>` type-checked and
+// yielded a string; the mistake surfaced later and elsewhere as "the value on the stack is
+// string, not a struct". Narrowing a pointer to a struct type is what `as` is for.
+struct Node {
+	v: i64
+}
+
+fn main() {
+	Node { v = 7 } -> a
+	a cast<ptr> -> p
+	p cast<Node> -> back
+	back <<v print nl
+}

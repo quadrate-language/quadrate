@@ -578,7 +578,19 @@ namespace Qd {
 			// Retain the pointer before pushing (it could be an array/struct that will be released after use)
 			builder->CreateCall(qdPtrRetainFn, {ptrValue});
 			builder->CreateCall(pushPtrFn, {ctx, ptrValue});
-			lastFieldAccessResultType.clear(); // Raw pointer/array, not a known struct type
+			// `*T` points at a struct, and the value read out of it can take a method or a
+			// chained `<<` exactly as a `T` field's can -- only the name was missing, so
+			// `node <<next -> c  c … method` resolved to a builtin of that name, or to
+			// nothing at all, and `as T` was the only way to say what the field already said.
+			std::string pointeeType;
+			if (matchingField->typeName.size() > 1 && matchingField->typeName[0] == '*') {
+				pointeeType = matchingField->typeName.substr(1);
+			}
+			if (!pointeeType.empty() && isKnownStruct(pointeeType)) {
+				lastFieldAccessResultType = pointeeType;
+			} else {
+				lastFieldAccessResultType.clear(); // Raw pointer/array, not a known struct type
+			}
 		} else if (looksLikeStructType(matchingField->typeName) && isKnownStruct(matchingField->typeName)) {
 			// Struct-typed field - stored as pointer, push as PTR
 			llvm::Value* fieldPtr = bytePtr;

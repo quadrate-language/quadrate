@@ -1,0 +1,72 @@
+// Test: a method's result takes the type its receiver's type arguments give it.
+//
+// `Box<i64> unwrap` calls `fn (b:Box<T>) unwrap<T>( -- v:T)`, and the result used to be pushed
+// as the bare type parameter -- so `b unwrap 2 *` failed with "Expected numeric types, got
+// typevar and int". Every generic container was in the same position: what came out of a
+// `Vec<i64>` could only be handed to something taking `any`, which is why nothing in the corpus
+// ever passed one to a function of its own.
+use ct
+use strings
+
+struct Box<T> {
+	value: T
+}
+
+fn (b:Box<T>) unwrap<T>( -- v:T) {
+	b <<value
+}
+
+fn double_box(b:Box<i64> -- n:i64) {
+	b unwrap 2 *
+}
+
+fn sum_vec(v:Vec<i64> -- total:i64)! {
+	0 -> sum
+	0 v length 1 for i {
+		v i get! sum + -> sum
+	}
+	sum
+}
+
+fn fill(v:Vec<str> n:i64 -- v2:Vec<str>)! {
+	0 n 1 for i {
+		v "s" push! -> v
+	}
+	v
+}
+
+fn main() {
+	// A locally declared generic struct
+	Box<i64> { value = 21 } -> b
+	b double_box print nl
+	Box<str> { value = "boxed" } -> bs
+	bs unwrap print nl
+
+	// A container from a module, used arithmetically
+	Vec<i64> { data = null len = 0 cap = 0 } -> vi
+	vi 3 push! -> vi
+	vi 4 push! -> vi
+	vi 0 get! 10 * print nl
+	vi sum_vec! print nl
+
+	// Passed to a function and given back
+	Vec<str> { data = null len = 0 cap = 0 } -> vs
+	vs 3 fill! -> vs
+	vs length print nl
+	vs 0 get! "!" strings::concat print nl
+
+	// Floats keep being floats
+	Vec<f64> { data = null len = 0 cap = 0 } -> vf
+	vf 1.5 push! -> vf
+	vf 0 get! 2.0 * print nl
+
+	// And a map's value type flows out of get
+	Map<str> { keys = null values = null states = null len = 0 cap = 0 } -> m
+	m "a" "x" insert! -> m
+	m "a" get! "y" strings::concat print nl
+
+	vi release
+	vs release
+	vf release
+	m release
+}

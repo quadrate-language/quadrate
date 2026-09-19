@@ -1,0 +1,2 @@
+Type error in 'cast': 'i65' is not a type 'cast' converts to
+'cast' converts between i64, f64, ptr and str

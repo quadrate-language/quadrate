@@ -1,5 +1,6 @@
 // Unit tests for the sb (StringBuilder) module
 use sb
+use strings
 use testing
 
 test "sb::new and build" {
@@ -116,4 +117,40 @@ test "sb::space" {
 	builder "world" sb::append -> builder
 	builder sb::finish -> result
 	result "hello world" testing::assert_eq
+}
+
+test "sb::append copies bytes, not characters" {
+	// strings::len counts codepoints, so appending by that measure copied four bytes of a
+	// five-byte string: "héllo" came back as "héll", cut inside a character.
+	sb::new -> builder
+	builder "héllo" sb::append -> builder
+	builder sb::len 6 testing::assert_eq
+	builder sb::finish -> result
+	result "héllo" testing::assert_eq
+	result strings::len 5 testing::assert_eq
+	result strings::byte_len 6 testing::assert_eq
+}
+
+test "sb::append_char encodes a codepoint as UTF-8" {
+	// It used to write the low byte and call that a character, so anything above 127
+	// produced a lone lead or continuation byte -- not the character, and not valid UTF-8.
+	sb::new -> builder
+	builder 233 sb::append_char -> builder
+	builder 20013 sb::append_char -> builder
+	builder 128512 sb::append_char -> builder
+	builder 65 sb::append_char -> builder
+	builder sb::finish -> result
+	result "é中😀A" testing::assert_eq
+	result strings::len 4 testing::assert_eq
+	result strings::byte_len 10 testing::assert_eq
+}
+
+test "sb::append mixes scripts without losing bytes" {
+	sb::new -> builder
+	builder "αβγ" sb::append -> builder
+	builder " " sb::append -> builder
+	builder "日本語" sb::append -> builder
+	builder sb::finish -> result
+	result "αβγ 日本語" testing::assert_eq
+	result strings::len 7 testing::assert_eq
 }

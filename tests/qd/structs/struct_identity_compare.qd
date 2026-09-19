@@ -1,0 +1,57 @@
+// Test: two pointers compare by identity, which is how two struct values are asked whether
+// they are the same struct.
+//
+// `==` accepted two numbers, two strings, or a pointer against an integer (the null check), and
+// two pointers were a fatal runtime type error -- so "is this child the last one", the question
+// every walk over a linked structure ends on, could not be written. Ordering two pointers is
+// still a type error: the relative order of two allocations means nothing.
+use mem
+
+struct Node {
+	v:    i64
+	next: *Node
+}
+
+fn (n:Node) is_last(head:Node -- b:i64) {
+	head -> walk
+	loop {
+		walk <<next null == if {
+			break
+		}
+		walk <<next -> walk
+	}
+	walk n ==
+}
+
+fn main() {
+	Node { v = 1 next = null } -> third
+	Node { v = 2 next = third } -> second
+	Node { v = 3 next = second } -> first
+	first -> alias
+
+	// The same struct, by two names
+	first first == print nl
+	first alias == print nl
+	first second == print nl
+	first second != print nl
+
+	// A struct read out of a field is the struct it was put in
+	first <<next second == print nl
+	first <<next <<next third == print nl
+
+	// Null checks still read as they did
+	first null == print nl
+	third <<next null == print nl
+
+	// The question the walk ends on
+	third first is_last print nl
+	second first is_last print nl
+
+	// Raw pointers compare the same way
+	16 mem::alloc! -> p
+	16 mem::alloc! -> q
+	p p == print nl
+	p q == print nl
+	p mem::free
+	q mem::free
+}

@@ -167,7 +167,8 @@ pub fn (s:Set) add(key:str -- s2:Set)! {
 	}
 
 	found 0 == if {
-		key strings::len -> klen
+		// Bytes, not characters -- see the same case in hashmap.qd.
+		key strings::byte_len -> klen
 		klen 1 + mem::alloc? -> key_buf
 		key mem::from_string -> tmplen -> tmpbuf
 		key_buf tmpbuf klen mem::copy

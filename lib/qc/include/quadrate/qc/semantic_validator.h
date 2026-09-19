@@ -85,6 +85,7 @@ namespace Qd {
 
 		// Whether a value of type `actual` may initialise a field declared `expected`.
 		bool fieldTypesCompatible(const std::string& expected, const std::string& actual) const;
+		bool isPointerField(const std::string& structName, const std::string& fieldName) const;
 
 		// Warns when a `switch` over one enum's variants misses some and has no `_` arm.
 		void checkEnumSwitchExhaustive(IAstNode* switchNode, const std::vector<class AstNodeCase*>& cases);
@@ -119,6 +120,7 @@ namespace Qd {
 		// Pushes a call's results with the type parameters substituted from `bindings`, and with
 		// the struct types of pointer results resolved (declared, substituted, or passed through
 		// from a pointer argument of the same position).
+		std::map<std::string, std::string> receiverTypeBindings(const std::string& receiverStructType) const;
 		void pushCallResults(const FunctionSignature& sig, const std::map<std::string, std::string>& bindings,
 				const std::vector<std::string>& consumedStructTypes, std::vector<StackValueType>& typeStack,
 				std::vector<std::string>& structTypeStack);
@@ -328,6 +330,7 @@ namespace Qd {
 		StackValueType stringToStackValueType(const std::string& typeStr) const;
 
 		bool isValidTypeName(const std::string& typeStr) const;
+		std::string invalidTypeMessage(const std::string& typeStr, const std::string& where) const;
 
 		bool isStructTypeName(const std::string& typeStr) const;
 
@@ -420,6 +423,12 @@ namespace Qd {
 		// Struct field struct types: maps struct name -> (field name -> struct type name)
 		// Only populated for fields that are struct-typed (i.e., where the type is another struct)
 		std::unordered_map<std::string, std::unordered_map<std::string, std::string>> mStructFieldStructTypes;
+
+		// Fields declared `*T` rather than `T`: maps struct name -> set of field names. Both
+		// name a struct and both are pointers on the stack, so they share
+		// mStructFieldStructTypes; the difference is that a pointer field may be null, which
+		// is how every linked structure starts out.
+		std::unordered_map<std::string, std::unordered_set<std::string>> mStructPointerFields;
 
 		// Struct field order: maps struct name -> vector of field names (in declaration order)
 		std::unordered_map<std::string, std::vector<std::string>> mStructFieldOrder;

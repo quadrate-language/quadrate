@@ -1164,7 +1164,7 @@ pub fn (v:Value) get(key:str -- child:Value)! {
 	found null == if {
 		"json: no such key: " key strings::concat ErrKey panic
 	}
-	found as Value
+	found
 }
 
 /// Report whether an object has a member with this name.
@@ -1278,10 +1278,11 @@ pub fn (v:Value) put(key:str child:Value -- v2:Value)! {
 			prev null == if {
 				v child >>head drop
 			} else {
-				prev as Value child >>next drop
+				prev child >>next drop
 			}
-			// c is the last member exactly when nothing follows it, which is
-			// the test to make: two pointers cannot be compared with ==.
+			// c is the last member exactly when nothing follows it. `v <<tail c ==`
+			// says the same thing and compiles now that two pointers compare by
+			// identity, but this form does not depend on tail being in step.
 			c <<next null == if {
 				v child >>tail drop
 			}
@@ -1906,7 +1907,7 @@ fn (v:Value) write(b:Buf -- ) {
 				i 0 > if {
 					b unicode::comma byte
 				}
-				c as Value b write
+				c b write
 				c <<next -> c
 				i 1 + -> i
 			}
@@ -1925,7 +1926,7 @@ fn (v:Value) write(b:Buf -- ) {
 				}
 				b c <<key quoted
 				b unicode::colon byte
-				c as Value b write
+				c b write
 				c <<next -> c
 				i 1 + -> i
 			}
@@ -1959,7 +1960,7 @@ fn (v:Value) write_pretty(b:Buf width:i64 depth:i64 -- ) {
 						b unicode::comma byte
 					}
 					b width depth 1 + newline_indent
-					c as Value b width depth 1 + write_pretty
+					c b width depth 1 + write_pretty
 					c <<next -> c
 					i 1 + -> i
 				}
@@ -1985,7 +1986,7 @@ fn (v:Value) write_pretty(b:Buf width:i64 depth:i64 -- ) {
 					b c <<key quoted
 					b unicode::colon byte
 					b unicode::space byte
-					c as Value b width depth 1 + write_pretty
+					c b width depth 1 + write_pretty
 					c <<next -> c
 					i 1 + -> i
 				}
