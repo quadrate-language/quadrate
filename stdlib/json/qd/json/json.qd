@@ -1,4 +1,11 @@
-/// JSON parsing and querying without AST construction.
+/// JSON parsing and querying.
+///
+/// Two ways in. `parse` reads a document once into a Value tree, which is what
+/// you want when more than one field is read out of it. The get_* family scans
+/// the text for a single key and allocates nothing, which is cheaper for exactly
+/// that -- one lookup, one document.
+use fmt
+use mem
 use strconv
 use strings
 use unicode
@@ -864,4 +871,1149 @@ pub fn empty_arr( -- arr:str) {
 /// @example "\"a\":1" "\"b\":2" json::join print  // "a":1,"b":2
 pub fn join(a:str b:str -- joined:str) {
 	a "," strings::concat b strings::concat
+}
+
+// ============================================================
+// Parsed Values
+// ============================================================
+
+/// Error: the document is not well-formed JSON.
+pub const ErrSyntax = 10
+/// Error: the value is not of the requested type.
+pub const ErrType = 11
+/// Error: the array index is out of range.
+pub const ErrIndex = 12
+/// Error: the object has no member with that key.
+pub const ErrKey = 13
+/// Error: the document nests deeper than MaxDepth.
+pub const ErrDepth = 14
+
+/// Deepest array/object nesting `parse` accepts. Parsing is recursive, so this
+/// is what stops a document like [[[[... from running the process out of stack.
+pub const MaxDepth = 200
+
+/// A parsed JSON value.
+///
+/// Children are a singly linked list rather than an array: `head` is the first
+/// element (or member), `next` chains siblings, and `tail` is kept only so that
+/// appending stays O(1). An object member carries its name in `key`.
+///
+/// @field kind i64 One of Null, Bool, Number, String, Array, Object
+/// @field inum i64 Bool payload (0 or 1), or the Number payload when isint
+/// @field num f64 Number payload, always set for a Number
+/// @field isint i64 1 when the number was written without fraction or exponent
+/// @field text str String payload
+/// @field key str Member name, when this value is a member of an object
+/// @field head ptr First child, or null
+/// @field tail ptr Last child, or null
+/// @field next ptr Next sibling, or null
+/// @field count i64 Number of children
+pub struct Value {
+	kind:  i64
+	inum:  i64
+	num:   f64
+	isint: i64
+	text:  str
+	key:   str
+	head:  *Value
+	tail:  *Value
+	next:  *Value
+	count: i64
+}
+
+fn node(kind:i64 -- v:Value) {
+	Value {
+		kind = kind
+		inum = 0
+		num = 0.0
+		isint = 0
+		text = ""
+		key = ""
+		head = null
+		tail = null
+		next = null
+		count = 0
+	}
+}
+
+/// Create a null value.
+/// @return v Value JSON null
+/// @example json::new_null -> v
+pub fn new_null( -- v:Value) {
+	Null node
+}
+
+/// Create a boolean value.
+/// @param b i64 0 for false, anything else for true
+/// @return v Value JSON boolean
+/// @example 1 json::new_bool -> v
+pub fn new_bool(b:i64 -- v:Value) {
+	Bool node -> v
+	v b 0 != >>inum drop
+	v
+}
+
+/// Create a number from an integer.
+/// @param n i64 Integer value
+/// @return v Value JSON number
+/// @example 42 json::new_int -> v
+pub fn new_int(n:i64 -- v:Value) {
+	Number node -> v
+	v n >>inum drop
+	v n cast<f64> >>num drop
+	v 1 >>isint drop
+	v
+}
+
+/// Create a number from a float.
+/// @param f f64 Floating point value
+/// @return v Value JSON number
+/// @example 1.5 json::new_float -> v
+pub fn new_float(f:f64 -- v:Value) {
+	Number node -> v
+	v f >>num drop
+	v f cast<i64> >>inum drop
+	v
+}
+
+/// Create a string value.
+/// @param s str String contents (unescaped)
+/// @return v Value JSON string
+/// @example "hello" json::new_string -> v
+pub fn new_string(s:str -- v:Value) {
+	String node -> v
+	v s >>text drop
+	v
+}
+
+/// Create an empty array.
+/// @return v Value JSON array
+/// @example json::new_array -> v
+pub fn new_array( -- v:Value) {
+	Array node
+}
+
+/// Create an empty object.
+/// @return v Value JSON object
+/// @example json::new_object -> v
+pub fn new_object( -- v:Value) {
+	Object node
+}
+
+// ============================================================
+// Inspecting a Value
+// ============================================================
+
+/// Report whether the value is JSON null.
+/// @param v Value Value to test
+/// @return b i64 1 when the value is null
+/// @example v json::is_null -> b
+pub fn (v:Value) is_null( -- b:i64) {
+	v <<kind Null ==
+}
+
+/// Report whether the value is a boolean.
+/// @param v Value Value to test
+/// @return b i64 1 when the value is a boolean
+/// @example v json::is_bool -> b
+pub fn (v:Value) is_bool( -- b:i64) {
+	v <<kind Bool ==
+}
+
+/// Report whether the value is a number.
+/// @param v Value Value to test
+/// @return b i64 1 when the value is a number
+/// @example v json::is_number -> b
+pub fn (v:Value) is_number( -- b:i64) {
+	v <<kind Number ==
+}
+
+/// Report whether the value is a string.
+/// @param v Value Value to test
+/// @return b i64 1 when the value is a string
+/// @example v json::is_string -> b
+pub fn (v:Value) is_string( -- b:i64) {
+	v <<kind String ==
+}
+
+/// Report whether the value is an array.
+/// @param v Value Value to test
+/// @return b i64 1 when the value is an array
+/// @example v json::is_array -> b
+pub fn (v:Value) is_array( -- b:i64) {
+	v <<kind Array ==
+}
+
+/// Report whether the value is an object.
+/// @param v Value Value to test
+/// @return b i64 1 when the value is an object
+/// @example v json::is_object -> b
+pub fn (v:Value) is_object( -- b:i64) {
+	v <<kind Object ==
+}
+
+/// Read a number as an integer. A number written with a fraction or an exponent
+/// is truncated toward zero.
+/// @param v Value Number value
+/// @return n i64 Integer value
+/// @example v json::as_int! -> n
+pub fn (v:Value) as_int( -- n:i64)! {
+	v <<kind Number != if {
+		"json: value is not a number" ErrType panic
+	}
+	v <<isint if { v <<inum } else { v <<num cast<i64> }
+}
+
+/// Read a number as a float.
+/// @param v Value Number value
+/// @return f f64 Floating point value
+/// @example v json::as_float! -> f
+pub fn (v:Value) as_float( -- f:f64)! {
+	v <<kind Number != if {
+		"json: value is not a number" ErrType panic
+	}
+	v <<num
+}
+
+/// Read a string value.
+/// @param v Value String value
+/// @return s str String contents, with escapes already decoded
+/// @example v json::as_str! -> s
+pub fn (v:Value) as_str( -- s:str)! {
+	v <<kind String != if {
+		"json: value is not a string" ErrType panic
+	}
+	v <<text
+}
+
+/// Read a boolean value.
+/// @param v Value Boolean value
+/// @return b i64 0 or 1
+/// @example v json::as_bool! -> b
+pub fn (v:Value) as_bool( -- b:i64)! {
+	v <<kind Bool != if {
+		"json: value is not a boolean" ErrType panic
+	}
+	v <<inum
+}
+
+/// Count the elements of an array or the members of an object. Any other value
+/// has no children and counts 0.
+/// @param v Value Value to measure
+/// @return n i64 Number of children
+/// @example v json::len -> n
+pub fn (v:Value) len( -- n:i64) {
+	v <<count
+}
+
+/// Read the name this value carries as a member of an object. Empty for a value
+/// that is not a member.
+/// @param v Value Member value
+/// @return k str Member name
+/// @example v json::name -> k
+pub fn (v:Value) name( -- k:str) {
+	v <<key
+}
+
+/// Read the element at an index. Works on an object too, where it reads the
+/// member at that position.
+/// @param v Value Array or object
+/// @param index i64 Zero-based position
+/// @return child Value Value at that position
+/// @example doc 0 json::at! -> first
+pub fn (v:Value) at(index:i64 -- child:Value)! {
+	v <<kind Array != v <<kind Object != * if {
+		"json: value is not an array or object" ErrType panic
+	}
+	index 0 < index v <<count >= + 0 > if {
+		"json: index out of range: " index strconv::itoa strings::concat ErrIndex panic
+	}
+	v <<head -> c
+	0 -> i
+	loop {
+		i index >= if {
+			break
+		}
+		c <<next -> c
+		i 1 + -> i
+	}
+	c
+}
+
+/// Read an object member by name.
+/// @param v Value Object
+/// @param key str Member name
+/// @return child Value Member value
+/// @example doc "name" json::get! -> name_value
+pub fn (v:Value) get(key:str -- child:Value)! {
+	v <<kind Object != if {
+		"json: value is not an object" ErrType panic
+	}
+	v <<head -> c
+	null -> found
+	loop {
+		c null == if {
+			break
+		}
+		c <<key key strings::compare 0 == if {
+			c -> found
+			break
+		}
+		c <<next -> c
+	}
+	found null == if {
+		"json: no such key: " key strings::concat ErrKey panic
+	}
+	found as Value
+}
+
+/// Report whether an object has a member with this name.
+/// @param v Value Object
+/// @param key str Member name
+/// @return exists i64 1 when the member is present
+/// @example doc "name" json::has -> exists
+pub fn (v:Value) has(key:str -- exists:i64) {
+	v <<kind Object != if {
+		0
+	} else {
+		v <<head -> c
+		0 -> found
+		loop {
+			c null == if {
+				break
+			}
+			c <<key key strings::compare 0 == if {
+				1 -> found
+				break
+			}
+			c <<next -> c
+		}
+		found
+	}
+}
+
+/// Read the first child of an array or object.
+/// @param v Value Array or object with at least one child
+/// @return child Value First child
+/// @example doc json::first! -> c
+pub fn (v:Value) first( -- child:Value)! {
+	v <<head null == if {
+		"json: value has no children" ErrIndex panic
+	}
+	v <<head
+}
+
+/// Report whether this value has a sibling after it.
+/// @param v Value Child value
+/// @return b i64 1 when a sibling follows
+/// @example c json::has_next -> b
+pub fn (v:Value) has_next( -- b:i64) {
+	v <<next null !=
+}
+
+/// Read the sibling after this value. Walking `first` then `next` visits the
+/// children of an array or object in order, in linear time overall -- `at`
+/// walks from the head on every call.
+/// @param v Value Child value
+/// @return sibling Value Next sibling
+/// @example c json::next! -> c
+pub fn (v:Value) next( -- sibling:Value)! {
+	v <<next null == if {
+		"json: value has no sibling" ErrIndex panic
+	}
+	v <<next
+}
+
+// ============================================================
+// Building a Value
+// ============================================================
+
+fn (parent:Value) link(child:Value -- p:Value) {
+	parent <<tail -> t
+	t null == if {
+		parent child >>head drop
+	} else {
+		t child >>next drop
+	}
+	parent child >>tail drop
+	parent parent <<count 1 + >>count drop
+	parent
+}
+
+/// Append a value to an array.
+/// @param v Value Array
+/// @param child Value Value to append
+/// @return v2 Value The same array
+/// @example arr 42 json::new_int json::push! -> arr
+pub fn (v:Value) push(child:Value -- v2:Value)! {
+	v <<kind Array != if {
+		"json: push on a value that is not an array" ErrType panic
+	}
+	child null >>next drop
+	v child link
+}
+
+/// Set an object member. Replaces the member of that name if there is one,
+/// keeping its position.
+/// @param v Value Object
+/// @param key str Member name
+/// @param child Value Member value
+/// @return v2 Value The same object
+/// @example obj "n" 1 json::new_int json::put! -> obj
+pub fn (v:Value) put(key:str child:Value -- v2:Value)! {
+	v <<kind Object != if {
+		"json: put on a value that is not an object" ErrType panic
+	}
+	child key >>key drop
+	child null >>next drop
+	v <<head -> c
+	null -> prev
+	0 -> replaced
+	loop {
+		c null == if {
+			break
+		}
+		c <<key key strings::compare 0 == if {
+			child c <<next >>next drop
+			prev null == if {
+				v child >>head drop
+			} else {
+				prev as Value child >>next drop
+			}
+			// c is the last member exactly when nothing follows it, which is
+			// the test to make: two pointers cannot be compared with ==.
+			c <<next null == if {
+				v child >>tail drop
+			}
+			1 -> replaced
+			break
+		}
+		c -> prev
+		c <<next -> c
+	}
+	replaced if {
+		v
+	} else {
+		v child link
+	}
+}
+
+// ============================================================
+// Parsing
+// ============================================================
+
+// The document is read as bytes rather than through strings::char_at, which
+// counts codepoints: on a document with any non-ASCII character in it that
+// walks from the start on every call, and the scan turns quadratic.
+struct Parser {
+	buf:   ptr
+	len:   i64
+	pos:   i64
+	depth: i64
+}
+
+// The byte at the cursor, or -1 at the end of the document.
+fn (p:Parser) peek( -- ch:i64) {
+	p <<pos p <<len < if {
+		p <<buf p <<pos mem::get_byte
+	} else {
+		-1
+	}
+}
+
+fn (p:Parser) bump() {
+	p p <<pos 1 + >>pos drop
+}
+
+fn (p:Parser) ws() {
+	0 -> ch
+	loop {
+		p peek -> ch
+		ch unicode::space == ch unicode::tab == + ch unicode::newline == + ch unicode::cr == + 0 > if {
+			p bump
+		} else {
+			break
+		}
+	}
+}
+
+fn (p:Parser) errmsg(msg:str -- out:str) {
+	"json: " msg strings::concat " at offset " strings::concat p <<pos strconv::itoa strings::concat
+}
+
+fn (p:Parser) enter()! {
+	p <<depth 1 + -> d
+	d MaxDepth > if {
+		p "nesting deeper than MaxDepth" errmsg ErrDepth panic
+	}
+	p d >>depth drop
+}
+
+fn (p:Parser) leave() {
+	p p <<depth 1 - >>depth drop
+}
+
+// The document text from start, n bytes long.
+fn (p:Parser) slice(start:i64 n:i64 -- s:str) {
+	n 0 <= if {
+		""
+	} else {
+		p <<buf start mem::ptr_add n mem::to_string
+	}
+}
+
+fn hex_val(ch:i64 -- v:i64) {
+	ch unicode::digit0 >= ch unicode::digit9 <= * if {
+		ch unicode::digit0 -
+	} else {
+		ch unicode::a >= ch unicode::f <= * if {
+			ch unicode::a - 10 +
+		} else {
+			ch unicode::A >= ch unicode::F <= * if {
+				ch unicode::A - 10 +
+			} else {
+				-1
+			}
+		}
+	}
+}
+
+// Write a codepoint to out as UTF-8, and report the offset after it.
+fn utf8_put(cp:i64 out:ptr o:i64 -- o2:i64) {
+	cp 128 < if {
+		cp out o mem::set_byte
+		o 1 +
+	} else {
+		cp 2048 < if {
+			192 cp 64 / + out o mem::set_byte
+			128 cp 63 and + out o 1 + mem::set_byte
+			o 2 +
+		} else {
+			cp 65536 < if {
+				224 cp 4096 / + out o mem::set_byte
+				128 cp 64 / 63 and + out o 1 + mem::set_byte
+				128 cp 63 and + out o 2 + mem::set_byte
+				o 3 +
+			} else {
+				240 cp 262144 / + out o mem::set_byte
+				128 cp 4096 / 63 and + out o 1 + mem::set_byte
+				128 cp 64 / 63 and + out o 2 + mem::set_byte
+				128 cp 63 and + out o 3 + mem::set_byte
+				o 4 +
+			}
+		}
+	}
+}
+
+// The four hex digits of a \u escape, starting at at.
+fn (p:Parser) hex4(at:i64 -- cp:i64)! {
+	at 4 + p <<len > if {
+		p "truncated unicode escape" errmsg ErrSyntax panic
+	}
+	0 -> cp
+	0 -> d
+	at at 4 + 1 for k {
+		p <<buf k mem::get_byte hex_val -> d
+		d 0 < if {
+			p "invalid unicode escape" errmsg ErrSyntax panic
+		}
+		cp 16 * d + -> cp
+	}
+	cp
+}
+
+// Decode the n bytes of string body at start. Every JSON escape is at least as
+// long as what it stands for -- \n is two bytes for one, and a surrogate pair
+// is twelve for four -- so n bytes of room is always enough.
+fn (p:Parser) unescape(start:i64 n:i64 -- s:str)! {
+	n 1 + mem::alloc? -> out
+	defer { out mem::free }
+	0 -> o
+	start -> i
+	start n + -> stop
+	0 -> ch
+	0 -> cp
+	0 -> lo
+	loop {
+		i stop >= if {
+			break
+		}
+		p <<buf i mem::get_byte -> ch
+		ch unicode::backslash != if {
+			ch out o mem::set_byte
+			o 1 + -> o
+			i 1 + -> i
+			continue
+		}
+		i 1 + -> i
+		p <<buf i mem::get_byte -> ch
+		i 1 + -> i
+		ch unicode::u == if {
+			p i hex4? -> cp
+			i 4 + -> i
+			// A surrogate pair is written as two escapes; anything else in the
+			// surrogate range stands for no character, and becomes U+FFFD.
+			cp 55296 >= cp 56319 <= * if {
+				i 6 + stop <= if {
+					p <<buf i mem::get_byte unicode::backslash ==
+					p <<buf i 1 + mem::get_byte unicode::u == * if {
+						p i 2 + hex4? -> lo
+						lo 56320 >= lo 57343 <= * if {
+							cp 55296 - 1024 * lo 56320 - + 65536 + -> cp
+							i 6 + -> i
+						}
+					}
+				}
+			}
+			cp 55296 >= cp 57343 <= * if {
+				65533 -> cp
+			}
+			cp out o utf8_put -> o
+			continue
+		}
+		ch unicode::dquote == if { unicode::dquote out o mem::set_byte  o 1 + -> o  continue }
+		ch unicode::backslash == if { unicode::backslash out o mem::set_byte  o 1 + -> o  continue }
+		ch unicode::slash == if { unicode::slash out o mem::set_byte  o 1 + -> o  continue }
+		ch unicode::b == if { 8 out o mem::set_byte  o 1 + -> o  continue }
+		ch unicode::f == if { 12 out o mem::set_byte  o 1 + -> o  continue }
+		ch unicode::n == if { 10 out o mem::set_byte  o 1 + -> o  continue }
+		ch unicode::r == if { 13 out o mem::set_byte  o 1 + -> o  continue }
+		ch unicode::t == if { 9 out o mem::set_byte  o 1 + -> o  continue }
+		p "invalid escape sequence" errmsg ErrSyntax panic
+	}
+	out o mem::to_string
+}
+
+fn (p:Parser) take_string( -- s:str)! {
+	p peek unicode::dquote != if {
+		p "expected a string" errmsg ErrSyntax panic
+	}
+	p bump
+	p <<pos -> start
+	0 -> esc
+	0 -> ch
+	loop {
+		p peek -> ch
+		ch 0 < if {
+			p "unterminated string" errmsg ErrSyntax panic
+		}
+		ch unicode::dquote == if {
+			break
+		}
+		ch unicode::backslash == if {
+			1 -> esc
+			p bump
+			p peek 0 < if {
+				p "unterminated string" errmsg ErrSyntax panic
+			}
+			p bump
+			continue
+		}
+		ch 32 < if {
+			p "unescaped control character in string" errmsg ErrSyntax panic
+		}
+		p bump
+	}
+	p <<pos start - -> n
+	p bump
+	esc if {
+		p start n unescape?
+	} else {
+		p start n slice
+	}
+}
+
+fn (p:Parser) digits()! {
+	0 -> ch
+	p peek -> ch
+	ch unicode::digit0 >= ch unicode::digit9 <= * 0 == if {
+		p "expected a digit" errmsg ErrSyntax panic
+	}
+	loop {
+		p peek -> ch
+		ch unicode::digit0 >= ch unicode::digit9 <= * 0 == if {
+			break
+		}
+		p bump
+	}
+}
+
+fn (p:Parser) take_number( -- v:Value)! {
+	p <<pos -> start
+	1 -> isint
+	0 -> ch
+	p peek unicode::minus == if {
+		p bump
+	}
+	p peek -> ch
+	ch unicode::digit0 == if {
+		// A leading zero stands alone: 01 is not a JSON number.
+		p bump
+	} else {
+		ch unicode::digit1 >= ch unicode::digit9 <= * 0 == if {
+			p "expected a value" errmsg ErrSyntax panic
+		}
+		p digits?
+	}
+	p peek unicode::dot == if {
+		0 -> isint
+		p bump
+		p digits?
+	}
+	p peek -> ch
+	ch unicode::e == ch unicode::E == + 0 > if {
+		0 -> isint
+		p bump
+		p peek -> ch
+		ch unicode::plus == ch unicode::minus == + 0 > if {
+			p bump
+		}
+		p digits?
+	}
+	p start p <<pos start - slice -> text
+	isint if {
+		// An integer literal too wide for i64 is still a JSON number; it keeps
+		// the value a double can hold rather than failing the parse.
+		text 10 strconv::parse_int if {
+			new_int
+		} else {
+			text strconv::parse_float if {
+				new_float
+			} else {
+				p "number out of range" errmsg ErrSyntax panic
+			}
+		}
+	} else {
+		text strconv::parse_float if {
+			new_float
+		} else {
+			p "number out of range" errmsg ErrSyntax panic
+		}
+	}
+}
+
+fn (p:Parser) take_word(word:str -- )! {
+	word strings::len -> n
+	p <<pos n + p <<len <= if {
+		p p <<pos n slice word strings::compare 0 ==
+	} else {
+		0
+	} 0 == if {
+		p "invalid literal" errmsg ErrSyntax panic
+	}
+	p p <<pos n + >>pos drop
+}
+
+fn (p:Parser) take_array( -- v:Value)! {
+	p enter?
+	p bump
+	new_array -> items
+	0 -> ch
+	p ws
+	p peek unicode::rbracket == if {
+		p bump
+	} else {
+		loop {
+			p take_value? -> elem
+			items elem push? -> items
+			p ws
+			p peek -> ch
+			ch unicode::comma == if {
+				p bump
+				continue
+			}
+			ch unicode::rbracket == if {
+				p bump
+				break
+			}
+			p "expected a comma or a closing bracket" errmsg ErrSyntax panic
+		}
+	}
+	p leave
+	items
+}
+
+fn (p:Parser) take_object( -- v:Value)! {
+	p enter?
+	p bump
+	new_object -> fields
+	0 -> ch
+	p ws
+	p peek unicode::rbrace == if {
+		p bump
+	} else {
+		loop {
+			p ws
+			p take_string? -> key
+			p ws
+			p peek unicode::colon != if {
+				p "expected a colon" errmsg ErrSyntax panic
+			}
+			p bump
+			p take_value? -> val
+			fields key val put? -> fields
+			p ws
+			p peek -> ch
+			ch unicode::comma == if {
+				p bump
+				continue
+			}
+			ch unicode::rbrace == if {
+				p bump
+				break
+			}
+			p "expected a comma or a closing brace" errmsg ErrSyntax panic
+		}
+	}
+	p leave
+	fields
+}
+
+fn (p:Parser) take_value( -- v:Value)! {
+	p ws
+	p peek -> ch
+	ch 0 < if {
+		p "unexpected end of input" errmsg ErrSyntax panic
+	}
+	ch switch {
+		unicode::lbrace { p take_object? }
+		unicode::lbracket { p take_array? }
+		unicode::dquote { p take_string? new_string }
+		unicode::t { p "true" take_word? 1 new_bool }
+		unicode::f { p "false" take_word? 0 new_bool }
+		unicode::n { p "null" take_word? new_null }
+		_ { p take_number? }
+	}
+}
+
+/// Parse a JSON document into a Value tree.
+///
+/// The whole document is read once, so a lookup on the result costs a walk of
+/// the tree rather than a rescan of the text -- which is what the get_* family
+/// above does on every call. Failure reports the byte offset.
+///
+/// @param text str JSON document
+/// @return v Value Parsed value
+/// @example "{\x22a\x22:1}" json::parse! -> doc
+pub fn parse(text:str -- v:Value)! {
+	text strings::byte_len -> n
+	Parser {
+		buf = text strings::data
+		len = n
+		pos = 0
+		depth = 0
+	} -> p
+	p take_value? -> v
+	p ws
+	p <<pos n < if {
+		p "unexpected trailing characters" errmsg ErrSyntax panic
+	}
+	v
+}
+
+// ============================================================
+// Serializing a Value
+// ============================================================
+
+// A byte buffer. json builds its output here rather than in a sb::StringBuilder
+// because a builder cannot be named in a signature -- a parameter takes a struct
+// of this module, i64, f64, str or ptr -- and because appends here are by byte,
+// so a multi-byte character survives being written out.
+struct Buf {
+	data: ptr
+	len:  i64
+	cap:  i64
+}
+
+fn buf_new( -- b:Buf) {
+	256 -> cap
+	cap mem::alloc! -> data
+	Buf {
+		data = data
+		len = 0
+		cap = cap
+	}
+}
+
+fn (b:Buf) reserve(extra:i64 -- ) {
+	b <<len extra + -> need
+	need b <<cap > if {
+		b <<cap -> cap
+		loop {
+			cap 2 * -> cap
+			need cap <= if {
+				break
+			}
+		}
+		b <<data cap mem::realloc! -> data
+		b data >>data drop
+		b cap >>cap drop
+	}
+}
+
+fn (b:Buf) byte(ch:i64 -- ) {
+	b 1 reserve
+	ch b <<data b <<len mem::set_byte
+	b b <<len 1 + >>len drop
+}
+
+fn (b:Buf) raw(src:ptr off:i64 n:i64 -- ) {
+	n 0 > if {
+		b n reserve
+		b <<data b <<len mem::ptr_add src off mem::ptr_add n mem::copy
+		b b <<len n + >>len drop
+	}
+}
+
+fn (b:Buf) text(s:str -- ) {
+	b s strings::data 0 s strings::byte_len raw
+}
+
+fn (b:Buf) finish( -- s:str) {
+	b <<data b <<len mem::to_string -> result
+	b <<data mem::free
+	result
+}
+
+// Shortest representation that reads back as the same double. %g with a fixed
+// precision is either lossy (1e21 written to six digits is a different number)
+// or noisy (0.1 written to seventeen is 0.10000000000000001).
+fn float_text(f:f64 -- s:str) {
+	// Infinities and NaN subtract to NaN, which equals nothing, itself included.
+	f f - 0.0 == if {
+		f "%.15g" fmt::sprintf -> s
+		s strconv::parse_float! f == if {
+			s
+		} else {
+			f "%.16g" fmt::sprintf -> s
+			s strconv::parse_float! f == if {
+				s
+			} else {
+				f "%.17g" fmt::sprintf
+			}
+		}
+	} else {
+		// JSON has no spelling for these.
+		"null"
+	}
+}
+
+fn bool_text(v:Value -- s:str) {
+	v <<inum if {
+		"true"
+	} else {
+		"false"
+	}
+}
+
+fn number_text(v:Value -- s:str) {
+	v <<isint if {
+		v <<inum strconv::itoa
+	} else {
+		v <<num float_text
+	}
+}
+
+fn hex_digit(v:i64 -- ch:i64) {
+	v 10 < if {
+		unicode::digit0 v +
+	} else {
+		unicode::a v 10 - +
+	}
+}
+
+// Write s to b as a quoted JSON string. Runs of ordinary bytes are written
+// whole, so a string with nothing to escape costs one copy; bytes above 127 are
+// copied through, which keeps the UTF-8 the caller gave us.
+fn (b:Buf) quoted(s:str -- ) {
+	b unicode::dquote byte
+	s strings::data -> src
+	s strings::byte_len -> n
+	0 -> i
+	0 -> run
+	0 -> ch
+	0 -> special
+	loop {
+		i n >= if {
+			break
+		}
+		src i mem::get_byte -> ch
+		ch unicode::dquote == ch unicode::backslash == + ch 32 < + 0 > -> special
+		special if {
+			b src run i run - raw
+			ch unicode::dquote == if {
+				b unicode::backslash byte
+				b unicode::dquote byte
+			} else {
+				ch unicode::backslash == if {
+					b unicode::backslash byte
+					b unicode::backslash byte
+				} else {
+					ch 8 == if {
+						b unicode::backslash byte
+						b unicode::b byte
+					} else {
+						ch 9 == if {
+							b unicode::backslash byte
+							b unicode::t byte
+						} else {
+							ch 10 == if {
+								b unicode::backslash byte
+								b unicode::n byte
+							} else {
+								ch 12 == if {
+									b unicode::backslash byte
+									b unicode::f byte
+								} else {
+									ch 13 == if {
+										b unicode::backslash byte
+										b unicode::r byte
+									} else {
+										b unicode::backslash byte
+										b unicode::u byte
+										b unicode::digit0 byte
+										b unicode::digit0 byte
+										b ch 16 / hex_digit byte
+										b ch 16 % hex_digit byte
+									}
+								}
+							}
+						}
+					}
+				}
+			}
+			i 1 + -> run
+		}
+		i 1 + -> i
+	}
+	b src run n run - raw
+	b unicode::dquote byte
+}
+
+fn (v:Value) write(b:Buf -- ) {
+	v <<kind switch {
+		Bool { b v bool_text text }
+		Number { b v number_text text }
+		String { b v <<text quoted }
+		Array {
+			b unicode::lbracket byte
+			v <<head -> c
+			0 -> i
+			loop {
+				c null == if {
+					break
+				}
+				i 0 > if {
+					b unicode::comma byte
+				}
+				c as Value b write
+				c <<next -> c
+				i 1 + -> i
+			}
+			b unicode::rbracket byte
+		}
+		Object {
+			b unicode::lbrace byte
+			v <<head -> c
+			0 -> i
+			loop {
+				c null == if {
+					break
+				}
+				i 0 > if {
+					b unicode::comma byte
+				}
+				b c <<key quoted
+				b unicode::colon byte
+				c as Value b write
+				c <<next -> c
+				i 1 + -> i
+			}
+			b unicode::rbrace byte
+		}
+		_ { b "null" text }
+	}
+}
+
+fn (b:Buf) newline_indent(width:i64 depth:i64 -- ) {
+	b unicode::newline byte
+	0 width depth * 1 for k {
+		b unicode::space byte
+	}
+}
+
+fn (v:Value) write_pretty(b:Buf width:i64 depth:i64 -- ) {
+	v <<kind switch {
+		Array {
+			v <<head null == if {
+				b "[]" text
+			} else {
+				b unicode::lbracket byte
+				v <<head -> c
+				0 -> i
+				loop {
+					c null == if {
+						break
+					}
+					i 0 > if {
+						b unicode::comma byte
+					}
+					b width depth 1 + newline_indent
+					c as Value b width depth 1 + write_pretty
+					c <<next -> c
+					i 1 + -> i
+				}
+				b width depth newline_indent
+				b unicode::rbracket byte
+			}
+		}
+		Object {
+			v <<head null == if {
+				b "{}" text
+			} else {
+				b unicode::lbrace byte
+				v <<head -> c
+				0 -> i
+				loop {
+					c null == if {
+						break
+					}
+					i 0 > if {
+						b unicode::comma byte
+					}
+					b width depth 1 + newline_indent
+					b c <<key quoted
+					b unicode::colon byte
+					b unicode::space byte
+					c as Value b width depth 1 + write_pretty
+					c <<next -> c
+					i 1 + -> i
+				}
+				b width depth newline_indent
+				b unicode::rbrace byte
+			}
+		}
+		_ { v b write }
+	}
+}
+
+/// Serialize a value to compact JSON text.
+/// @param v Value Value to serialize
+/// @return s str JSON text with no space between tokens
+/// @example doc json::stringify print
+pub fn (v:Value) stringify( -- s:str) {
+	buf_new -> b
+	v b write
+	b finish
+}
+
+/// Serialize a value to indented JSON text.
+/// @param v Value Value to serialize
+/// @param width i64 Spaces per nesting level
+/// @return s str JSON text, one element or member to a line
+/// @example doc 2 json::pretty print
+pub fn (v:Value) pretty(width:i64 -- s:str) {
+	buf_new -> b
+	v b width 0 write_pretty
+	b finish
 }

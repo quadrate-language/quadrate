@@ -1,6 +1,11 @@
 # `use` json
 
-JSON parsing and querying without AST construction.
+JSON parsing and querying.
+
+Two ways in. `parse` reads a document once into a Value tree, which is what
+you want when more than one field is read out of it. The get_* family scans
+the text for a single key and allocates nothing, which is cheaper for exactly
+that -- one lookup, one document.
 
 ## Constants
 
@@ -8,6 +13,12 @@ JSON parsing and querying without AST construction.
 |------|-------|-------------|
 | `Array` | `4` | Type: Array value. |
 | `Bool` | `1` | Type: Boolean value. |
+| `ErrDepth` | `14` | Error: the document nests deeper than MaxDepth. |
+| `ErrIndex` | `12` | Error: the array index is out of range. |
+| `ErrKey` | `13` | Error: the object has no member with that key. |
+| `ErrSyntax` | `10` | Error: the document is not well-formed JSON. |
+| `ErrType` | `11` | Error: the value is not of the requested type. |
+| `MaxDepth` | `200` | Deepest array/object nesting `parse` accepts. Parsing is recursive, so this is what stops a document like [[[[... from running the process out of stack. |
 | `Null` | `0` | Type: Null value. |
 | `Number` | `2` | Type: Number value. |
 | `Object` | `5` | Type: Object value. |
@@ -592,3 +603,649 @@ Get JSON value type at position.
 ```qd
 "{\"a\":1}" 5 json::type_at print  // 2 (Number)
 ```
+## Value
+
+A parsed JSON value.  Children are a singly linked list rather than an array: `head` is the first element (or member), `next` chains siblings, and `tail` is kept only so that appending stays O(1). An object member carries its name in `key`. 
+
+### Struct
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `kind` | `i64` | One of Null, Bool, Number, String, Array, Object |
+| `inum` | `i64` | Bool payload (0 or 1), or the Number payload when isint |
+| `num` | `f64` | Number payload, always set for a Number |
+| `isint` | `i64` | 1 when the number was written without fraction or exponent |
+| `text` | `str` | String payload |
+| `key` | `str` | Member name, when this value is a member of an object |
+| `head` | `ptr` | First child, or null |
+| `tail` | `ptr` | Last child, or null |
+| `next` | `ptr` | Next sibling, or null |
+| `count` | `i64` | Number of children |
+
+### Constructors
+
+#### `fn` new_array
+
+Create an empty array.
+
+**Signature:** `( -- v:Value)`
+
+| Output | Type | Description |
+|--------|------|-------------|
+| `v` | `Value` | JSON array |
+
+**Example:**
+
+```qd
+json::new_array  // v
+```
+---
+
+#### `fn` new_bool
+
+Create a boolean value.
+
+**Signature:** `(b:i64 -- v:Value)`
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `b` | `i64` | 0 for false, anything else for true |
+
+| Output | Type | Description |
+|--------|------|-------------|
+| `v` | `Value` | JSON boolean |
+
+**Example:**
+
+```qd
+1 json::new_bool  // v
+```
+---
+
+#### `fn` new_float
+
+Create a number from a float.
+
+**Signature:** `(f:f64 -- v:Value)`
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `f` | `f64` | Floating point value |
+
+| Output | Type | Description |
+|--------|------|-------------|
+| `v` | `Value` | JSON number |
+
+**Example:**
+
+```qd
+1.5 json::new_float  // v
+```
+---
+
+#### `fn` new_int
+
+Create a number from an integer.
+
+**Signature:** `(n:i64 -- v:Value)`
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `n` | `i64` | Integer value |
+
+| Output | Type | Description |
+|--------|------|-------------|
+| `v` | `Value` | JSON number |
+
+**Example:**
+
+```qd
+42 json::new_int  // v
+```
+---
+
+#### `fn` new_null
+
+Create a null value.
+
+**Signature:** `( -- v:Value)`
+
+| Output | Type | Description |
+|--------|------|-------------|
+| `v` | `Value` | JSON null |
+
+**Example:**
+
+```qd
+json::new_null  // v
+```
+---
+
+#### `fn` new_object
+
+Create an empty object.
+
+**Signature:** `( -- v:Value)`
+
+| Output | Type | Description |
+|--------|------|-------------|
+| `v` | `Value` | JSON object |
+
+**Example:**
+
+```qd
+json::new_object  // v
+```
+---
+
+#### `fn` new_string
+
+Create a string value.
+
+**Signature:** `(s:str -- v:Value)`
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `s` | `str` | String contents (unescaped) |
+
+| Output | Type | Description |
+|--------|------|-------------|
+| `v` | `Value` | JSON string |
+
+**Example:**
+
+```qd
+"hello" json::new_string  // v
+```
+---
+
+#### `fn` parse
+
+Parse a JSON document into a Value tree.  The whole document is read once, so a lookup on the result costs a walk of the tree rather than a rescan of the text -- which is what the get_* family above does on every call. Failure reports the byte offset. 
+
+**Signature:** `(text:str -- v:Value)!`
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `text` | `str` | JSON document |
+
+| Output | Type | Description |
+|--------|------|-------------|
+| `v` | `Value` | Parsed value |
+
+**Example:**
+
+```qd
+"{\x22a\x22:1}" json::parse!  // doc
+```
+
+### Methods
+
+#### `fn` as_bool
+
+Read a boolean value.
+
+**Signature:** `(v:Value) as_bool( -- b:i64)!`
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `v` | `Value` | Boolean value |
+
+| Output | Type | Description |
+|--------|------|-------------|
+| `b` | `i64` | 0 or 1 |
+
+**Example:**
+
+```qd
+v json::as_bool!  // b
+```
+---
+
+#### `fn` as_float
+
+Read a number as a float.
+
+**Signature:** `(v:Value) as_float( -- f:f64)!`
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `v` | `Value` | Number value |
+
+| Output | Type | Description |
+|--------|------|-------------|
+| `f` | `f64` | Floating point value |
+
+**Example:**
+
+```qd
+v json::as_float!  // f
+```
+---
+
+#### `fn` as_int
+
+Read a number as an integer. A number written with a fraction or an exponent is truncated toward zero.
+
+**Signature:** `(v:Value) as_int( -- n:i64)!`
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `v` | `Value` | Number value |
+
+| Output | Type | Description |
+|--------|------|-------------|
+| `n` | `i64` | Integer value |
+
+**Example:**
+
+```qd
+v json::as_int!  // n
+```
+---
+
+#### `fn` as_str
+
+Read a string value.
+
+**Signature:** `(v:Value) as_str( -- s:str)!`
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `v` | `Value` | String value |
+
+| Output | Type | Description |
+|--------|------|-------------|
+| `s` | `str` | String contents, with escapes already decoded |
+
+**Example:**
+
+```qd
+v json::as_str!  // s
+```
+---
+
+#### `fn` at
+
+Read the element at an index. Works on an object too, where it reads the member at that position.
+
+**Signature:** `(v:Value) at(index:i64 -- child:Value)!`
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `v` | `Value` | Array or object |
+| `index` | `i64` | Zero-based position |
+
+| Output | Type | Description |
+|--------|------|-------------|
+| `child` | `Value` | Value at that position |
+
+**Example:**
+
+```qd
+doc 0 json::at!  // first
+```
+---
+
+#### `fn` first
+
+Read the first child of an array or object.
+
+**Signature:** `(v:Value) first( -- child:Value)!`
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `v` | `Value` | Array or object with at least one child |
+
+| Output | Type | Description |
+|--------|------|-------------|
+| `child` | `Value` | First child |
+
+**Example:**
+
+```qd
+doc json::first!  // c
+```
+---
+
+#### `fn` get
+
+Read an object member by name.
+
+**Signature:** `(v:Value) get(key:str -- child:Value)!`
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `v` | `Value` | Object |
+| `key` | `str` | Member name |
+
+| Output | Type | Description |
+|--------|------|-------------|
+| `child` | `Value` | Member value |
+
+**Example:**
+
+```qd
+doc "name" json::get!  // name_value
+```
+---
+
+#### `fn` has_next
+
+Report whether this value has a sibling after it.
+
+**Signature:** `(v:Value) has_next( -- b:i64)`
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `v` | `Value` | Child value |
+
+| Output | Type | Description |
+|--------|------|-------------|
+| `b` | `i64` | 1 when a sibling follows |
+
+**Example:**
+
+```qd
+c json::has_next  // b
+```
+---
+
+#### `fn` has
+
+Report whether an object has a member with this name.
+
+**Signature:** `(v:Value) has(key:str -- exists:i64)`
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `v` | `Value` | Object |
+| `key` | `str` | Member name |
+
+| Output | Type | Description |
+|--------|------|-------------|
+| `exists` | `i64` | 1 when the member is present |
+
+**Example:**
+
+```qd
+doc "name" json::has  // exists
+```
+---
+
+#### `fn` is_array
+
+Report whether the value is an array.
+
+**Signature:** `(v:Value) is_array( -- b:i64)`
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `v` | `Value` | Value to test |
+
+| Output | Type | Description |
+|--------|------|-------------|
+| `b` | `i64` | 1 when the value is an array |
+
+**Example:**
+
+```qd
+v json::is_array  // b
+```
+---
+
+#### `fn` is_bool
+
+Report whether the value is a boolean.
+
+**Signature:** `(v:Value) is_bool( -- b:i64)`
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `v` | `Value` | Value to test |
+
+| Output | Type | Description |
+|--------|------|-------------|
+| `b` | `i64` | 1 when the value is a boolean |
+
+**Example:**
+
+```qd
+v json::is_bool  // b
+```
+---
+
+#### `fn` is_null
+
+Report whether the value is JSON null.
+
+**Signature:** `(v:Value) is_null( -- b:i64)`
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `v` | `Value` | Value to test |
+
+| Output | Type | Description |
+|--------|------|-------------|
+| `b` | `i64` | 1 when the value is null |
+
+**Example:**
+
+```qd
+v json::is_null  // b
+```
+---
+
+#### `fn` is_number
+
+Report whether the value is a number.
+
+**Signature:** `(v:Value) is_number( -- b:i64)`
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `v` | `Value` | Value to test |
+
+| Output | Type | Description |
+|--------|------|-------------|
+| `b` | `i64` | 1 when the value is a number |
+
+**Example:**
+
+```qd
+v json::is_number  // b
+```
+---
+
+#### `fn` is_object
+
+Report whether the value is an object.
+
+**Signature:** `(v:Value) is_object( -- b:i64)`
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `v` | `Value` | Value to test |
+
+| Output | Type | Description |
+|--------|------|-------------|
+| `b` | `i64` | 1 when the value is an object |
+
+**Example:**
+
+```qd
+v json::is_object  // b
+```
+---
+
+#### `fn` is_string
+
+Report whether the value is a string.
+
+**Signature:** `(v:Value) is_string( -- b:i64)`
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `v` | `Value` | Value to test |
+
+| Output | Type | Description |
+|--------|------|-------------|
+| `b` | `i64` | 1 when the value is a string |
+
+**Example:**
+
+```qd
+v json::is_string  // b
+```
+---
+
+#### `fn` len
+
+Count the elements of an array or the members of an object. Any other value has no children and counts 0.
+
+**Signature:** `(v:Value) len( -- n:i64)`
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `v` | `Value` | Value to measure |
+
+| Output | Type | Description |
+|--------|------|-------------|
+| `n` | `i64` | Number of children |
+
+**Example:**
+
+```qd
+v json::len  // n
+```
+---
+
+#### `fn` name
+
+Read the name this value carries as a member of an object. Empty for a value that is not a member.
+
+**Signature:** `(v:Value) name( -- k:str)`
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `v` | `Value` | Member value |
+
+| Output | Type | Description |
+|--------|------|-------------|
+| `k` | `str` | Member name |
+
+**Example:**
+
+```qd
+v json::name  // k
+```
+---
+
+#### `fn` next
+
+Read the sibling after this value. Walking `first` then `next` visits the children of an array or object in order, in linear time overall -- `at` walks from the head on every call.
+
+**Signature:** `(v:Value) next( -- sibling:Value)!`
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `v` | `Value` | Child value |
+
+| Output | Type | Description |
+|--------|------|-------------|
+| `sibling` | `Value` | Next sibling |
+
+**Example:**
+
+```qd
+c json::next!  // c
+```
+---
+
+#### `fn` pretty
+
+Serialize a value to indented JSON text.
+
+**Signature:** `(v:Value) pretty(width:i64 -- s:str)`
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `v` | `Value` | Value to serialize |
+| `width` | `i64` | Spaces per nesting level |
+
+| Output | Type | Description |
+|--------|------|-------------|
+| `s` | `str` | JSON text, one element or member to a line |
+
+**Example:**
+
+```qd
+doc 2 json::pretty print
+```
+---
+
+#### `fn` push
+
+Append a value to an array.
+
+**Signature:** `(v:Value) push(child:Value -- v2:Value)!`
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `v` | `Value` | Array |
+| `child` | `Value` | Value to append |
+
+| Output | Type | Description |
+|--------|------|-------------|
+| `v2` | `Value` | The same array |
+
+**Example:**
+
+```qd
+arr 42 json::new_int json::push!  // arr
+```
+---
+
+#### `fn` put
+
+Set an object member. Replaces the member of that name if there is one, keeping its position.
+
+**Signature:** `(v:Value) put(key:str child:Value -- v2:Value)!`
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `v` | `Value` | Object |
+| `key` | `str` | Member name |
+| `child` | `Value` | Member value |
+
+| Output | Type | Description |
+|--------|------|-------------|
+| `v2` | `Value` | The same object |
+
+**Example:**
+
+```qd
+obj "n" 1 json::new_int json::put!  // obj
+```
+---
+
+#### `fn` stringify
+
+Serialize a value to compact JSON text.
+
+**Signature:** `(v:Value) stringify( -- s:str)`
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `v` | `Value` | Value to serialize |
+
+| Output | Type | Description |
+|--------|------|-------------|
+| `s` | `str` | JSON text with no space between tokens |
+
+**Example:**
+
+```qd
+doc json::stringify print
+```
+

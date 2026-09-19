@@ -1,6 +1,6 @@
 {
   "name": "json",
-  "description": "JSON parsing and querying without AST construction.",
+  "description": "JSON parsing and querying.  Two ways in. `parse` reads a document once into a Value tree, which is what you want when more than one field is read out of it. The get_* family scans the text for a single key and allocates nothing, which is cheaper for exactly that -- one lookup, one document.",
   "constants": [
     {
       "name": "Array",
@@ -11,6 +11,36 @@
       "name": "Bool",
       "value": "1",
       "description": "Type: Boolean value."
+    },
+    {
+      "name": "ErrDepth",
+      "value": "14",
+      "description": "Error: the document nests deeper than MaxDepth."
+    },
+    {
+      "name": "ErrIndex",
+      "value": "12",
+      "description": "Error: the array index is out of range."
+    },
+    {
+      "name": "ErrKey",
+      "value": "13",
+      "description": "Error: the object has no member with that key."
+    },
+    {
+      "name": "ErrSyntax",
+      "value": "10",
+      "description": "Error: the document is not well-formed JSON."
+    },
+    {
+      "name": "ErrType",
+      "value": "11",
+      "description": "Error: the value is not of the requested type."
+    },
+    {
+      "name": "MaxDepth",
+      "value": "200",
+      "description": "Deepest array/object nesting `parse` accepts. Parsing is recursive, so this is what stops a document like [[[[... from running the process out of stack."
     },
     {
       "name": "Null",
@@ -34,7 +64,22 @@
     }
   ],
   "structs": [
-
+    {
+      "name": "Value",
+      "description": "A parsed JSON value.  Children are a singly linked list rather than an array: `head` is the first element (or member), `next` chains siblings, and `tail` is kept only so that appending stays O(1). An object member carries its name in `key`. ",
+      "fields": [
+        {"name": "kind", "type": "i64", "description": "One of Null, Bool, Number, String, Array, Object"},
+        {"name": "inum", "type": "i64", "description": "Bool payload (0 or 1), or the Number payload when isint"},
+        {"name": "num", "type": "f64", "description": "Number payload, always set for a Number"},
+        {"name": "isint", "type": "i64", "description": "1 when the number was written without fraction or exponent"},
+        {"name": "text", "type": "str", "description": "String payload"},
+        {"name": "key", "type": "str", "description": "Member name, when this value is a member of an object"},
+        {"name": "head", "type": "ptr", "description": "First child, or null"},
+        {"name": "tail", "type": "ptr", "description": "Last child, or null"},
+        {"name": "next", "type": "ptr", "description": "Next sibling, or null"},
+        {"name": "count", "type": "i64", "description": "Number of children"}
+      ]
+    }
   ],
   "functions": [
     {
@@ -108,6 +153,56 @@
       "examples": ["\"1,2,3\" json::arr print  // [1,2,3]"]
     },
     {
+      "name": "as_bool",
+      "signature": "(v:Value) as_bool( -- b:i64)",
+      "failable": true,
+      "description": "Read a boolean value.",
+      "params": [{"name": "v", "type": "Value", "description": "Boolean value"}],
+      "returns": [{"name": "b", "type": "i64", "description": "0 or 1"}],
+      "errors": [],
+      "examples": ["v json::as_bool! -> b"]
+    },
+    {
+      "name": "as_float",
+      "signature": "(v:Value) as_float( -- f:f64)",
+      "failable": true,
+      "description": "Read a number as a float.",
+      "params": [{"name": "v", "type": "Value", "description": "Number value"}],
+      "returns": [{"name": "f", "type": "f64", "description": "Floating point value"}],
+      "errors": [],
+      "examples": ["v json::as_float! -> f"]
+    },
+    {
+      "name": "as_int",
+      "signature": "(v:Value) as_int( -- n:i64)",
+      "failable": true,
+      "description": "Read a number as an integer. A number written with a fraction or an exponent is truncated toward zero.",
+      "params": [{"name": "v", "type": "Value", "description": "Number value"}],
+      "returns": [{"name": "n", "type": "i64", "description": "Integer value"}],
+      "errors": [],
+      "examples": ["v json::as_int! -> n"]
+    },
+    {
+      "name": "as_str",
+      "signature": "(v:Value) as_str( -- s:str)",
+      "failable": true,
+      "description": "Read a string value.",
+      "params": [{"name": "v", "type": "Value", "description": "String value"}],
+      "returns": [{"name": "s", "type": "str", "description": "String contents, with escapes already decoded"}],
+      "errors": [],
+      "examples": ["v json::as_str! -> s"]
+    },
+    {
+      "name": "at",
+      "signature": "(v:Value) at(index:i64 -- child:Value)",
+      "failable": true,
+      "description": "Read the element at an index. Works on an object too, where it reads the member at that position.",
+      "params": [{"name": "v", "type": "Value", "description": "Array or object"}, {"name": "index", "type": "i64", "description": "Zero-based position"}],
+      "returns": [{"name": "child", "type": "Value", "description": "Value at that position"}],
+      "errors": [],
+      "examples": ["doc 0 json::at! -> first"]
+    },
+    {
       "name": "empty_arr",
       "signature": "( -- arr:str)",
       "failable": false,
@@ -156,6 +251,16 @@
       "returns": [{"name": "end_pos", "type": "i64", "description": "Position after closing quote"}],
       "errors": [],
       "examples": []
+    },
+    {
+      "name": "first",
+      "signature": "(v:Value) first( -- child:Value)",
+      "failable": true,
+      "description": "Read the first child of an array or object.",
+      "params": [{"name": "v", "type": "Value", "description": "Array or object with at least one child"}],
+      "returns": [{"name": "child", "type": "Value", "description": "First child"}],
+      "errors": [],
+      "examples": ["doc json::first! -> c"]
     },
     {
       "name": "get_array",
@@ -218,6 +323,16 @@
       "examples": ["\"{\\\"name\\\":\\\"Bob\\\"}\" \"name\" json::get_string  // \"Bob\" 1"]
     },
     {
+      "name": "get",
+      "signature": "(v:Value) get(key:str -- child:Value)",
+      "failable": true,
+      "description": "Read an object member by name.",
+      "params": [{"name": "v", "type": "Value", "description": "Object"}, {"name": "key", "type": "str", "description": "Member name"}],
+      "returns": [{"name": "child", "type": "Value", "description": "Member value"}],
+      "errors": [],
+      "examples": ["doc \"name\" json::get! -> name_value"]
+    },
+    {
       "name": "has_key",
       "signature": "(json:str key:str -- exists:i64)",
       "failable": false,
@@ -228,6 +343,46 @@
       "examples": ["\"{\\\"a\\\":1}\" \"a\" json::has_key print  // 1"]
     },
     {
+      "name": "has_next",
+      "signature": "(v:Value) has_next( -- b:i64)",
+      "failable": false,
+      "description": "Report whether this value has a sibling after it.",
+      "params": [{"name": "v", "type": "Value", "description": "Child value"}],
+      "returns": [{"name": "b", "type": "i64", "description": "1 when a sibling follows"}],
+      "errors": [],
+      "examples": ["c json::has_next -> b"]
+    },
+    {
+      "name": "has",
+      "signature": "(v:Value) has(key:str -- exists:i64)",
+      "failable": false,
+      "description": "Report whether an object has a member with this name.",
+      "params": [{"name": "v", "type": "Value", "description": "Object"}, {"name": "key", "type": "str", "description": "Member name"}],
+      "returns": [{"name": "exists", "type": "i64", "description": "1 when the member is present"}],
+      "errors": [],
+      "examples": ["doc \"name\" json::has -> exists"]
+    },
+    {
+      "name": "is_array",
+      "signature": "(v:Value) is_array( -- b:i64)",
+      "failable": false,
+      "description": "Report whether the value is an array.",
+      "params": [{"name": "v", "type": "Value", "description": "Value to test"}],
+      "returns": [{"name": "b", "type": "i64", "description": "1 when the value is an array"}],
+      "errors": [],
+      "examples": ["v json::is_array -> b"]
+    },
+    {
+      "name": "is_bool",
+      "signature": "(v:Value) is_bool( -- b:i64)",
+      "failable": false,
+      "description": "Report whether the value is a boolean.",
+      "params": [{"name": "v", "type": "Value", "description": "Value to test"}],
+      "returns": [{"name": "b", "type": "i64", "description": "1 when the value is a boolean"}],
+      "errors": [],
+      "examples": ["v json::is_bool -> b"]
+    },
+    {
       "name": "is_null_at",
       "signature": "(json:str pos:i64 -- is_null:i64)",
       "failable": false,
@@ -236,6 +391,46 @@
       "returns": [{"name": "is_null", "type": "i64", "description": "1 if null, 0 otherwise"}],
       "errors": [],
       "examples": ["\"null\" 0 json::is_null_at print  // 1"]
+    },
+    {
+      "name": "is_null",
+      "signature": "(v:Value) is_null( -- b:i64)",
+      "failable": false,
+      "description": "Report whether the value is JSON null.",
+      "params": [{"name": "v", "type": "Value", "description": "Value to test"}],
+      "returns": [{"name": "b", "type": "i64", "description": "1 when the value is null"}],
+      "errors": [],
+      "examples": ["v json::is_null -> b"]
+    },
+    {
+      "name": "is_number",
+      "signature": "(v:Value) is_number( -- b:i64)",
+      "failable": false,
+      "description": "Report whether the value is a number.",
+      "params": [{"name": "v", "type": "Value", "description": "Value to test"}],
+      "returns": [{"name": "b", "type": "i64", "description": "1 when the value is a number"}],
+      "errors": [],
+      "examples": ["v json::is_number -> b"]
+    },
+    {
+      "name": "is_object",
+      "signature": "(v:Value) is_object( -- b:i64)",
+      "failable": false,
+      "description": "Report whether the value is an object.",
+      "params": [{"name": "v", "type": "Value", "description": "Value to test"}],
+      "returns": [{"name": "b", "type": "i64", "description": "1 when the value is an object"}],
+      "errors": [],
+      "examples": ["v json::is_object -> b"]
+    },
+    {
+      "name": "is_string",
+      "signature": "(v:Value) is_string( -- b:i64)",
+      "failable": false,
+      "description": "Report whether the value is a string.",
+      "params": [{"name": "v", "type": "Value", "description": "Value to test"}],
+      "returns": [{"name": "b", "type": "i64", "description": "1 when the value is a string"}],
+      "errors": [],
+      "examples": ["v json::is_string -> b"]
     },
     {
       "name": "join",
@@ -288,6 +483,106 @@
       "examples": ["\"data\" \"{}\" json::kv_raw print  // \"data\":{}"]
     },
     {
+      "name": "len",
+      "signature": "(v:Value) len( -- n:i64)",
+      "failable": false,
+      "description": "Count the elements of an array or the members of an object. Any other value has no children and counts 0.",
+      "params": [{"name": "v", "type": "Value", "description": "Value to measure"}],
+      "returns": [{"name": "n", "type": "i64", "description": "Number of children"}],
+      "errors": [],
+      "examples": ["v json::len -> n"]
+    },
+    {
+      "name": "name",
+      "signature": "(v:Value) name( -- k:str)",
+      "failable": false,
+      "description": "Read the name this value carries as a member of an object. Empty for a value that is not a member.",
+      "params": [{"name": "v", "type": "Value", "description": "Member value"}],
+      "returns": [{"name": "k", "type": "str", "description": "Member name"}],
+      "errors": [],
+      "examples": ["v json::name -> k"]
+    },
+    {
+      "name": "new_array",
+      "signature": "( -- v:Value)",
+      "failable": false,
+      "description": "Create an empty array.",
+      "params": [],
+      "returns": [{"name": "v", "type": "Value", "description": "JSON array"}],
+      "errors": [],
+      "examples": ["json::new_array -> v"]
+    },
+    {
+      "name": "new_bool",
+      "signature": "(b:i64 -- v:Value)",
+      "failable": false,
+      "description": "Create a boolean value.",
+      "params": [{"name": "b", "type": "i64", "description": "0 for false, anything else for true"}],
+      "returns": [{"name": "v", "type": "Value", "description": "JSON boolean"}],
+      "errors": [],
+      "examples": ["1 json::new_bool -> v"]
+    },
+    {
+      "name": "new_float",
+      "signature": "(f:f64 -- v:Value)",
+      "failable": false,
+      "description": "Create a number from a float.",
+      "params": [{"name": "f", "type": "f64", "description": "Floating point value"}],
+      "returns": [{"name": "v", "type": "Value", "description": "JSON number"}],
+      "errors": [],
+      "examples": ["1.5 json::new_float -> v"]
+    },
+    {
+      "name": "new_int",
+      "signature": "(n:i64 -- v:Value)",
+      "failable": false,
+      "description": "Create a number from an integer.",
+      "params": [{"name": "n", "type": "i64", "description": "Integer value"}],
+      "returns": [{"name": "v", "type": "Value", "description": "JSON number"}],
+      "errors": [],
+      "examples": ["42 json::new_int -> v"]
+    },
+    {
+      "name": "new_null",
+      "signature": "( -- v:Value)",
+      "failable": false,
+      "description": "Create a null value.",
+      "params": [],
+      "returns": [{"name": "v", "type": "Value", "description": "JSON null"}],
+      "errors": [],
+      "examples": ["json::new_null -> v"]
+    },
+    {
+      "name": "new_object",
+      "signature": "( -- v:Value)",
+      "failable": false,
+      "description": "Create an empty object.",
+      "params": [],
+      "returns": [{"name": "v", "type": "Value", "description": "JSON object"}],
+      "errors": [],
+      "examples": ["json::new_object -> v"]
+    },
+    {
+      "name": "new_string",
+      "signature": "(s:str -- v:Value)",
+      "failable": false,
+      "description": "Create a string value.",
+      "params": [{"name": "s", "type": "str", "description": "String contents (unescaped)"}],
+      "returns": [{"name": "v", "type": "Value", "description": "JSON string"}],
+      "errors": [],
+      "examples": ["\"hello\" json::new_string -> v"]
+    },
+    {
+      "name": "next",
+      "signature": "(v:Value) next( -- sibling:Value)",
+      "failable": true,
+      "description": "Read the sibling after this value. Walking `first` then `next` visits the children of an array or object in order, in linear time overall -- `at` walks from the head on every call.",
+      "params": [{"name": "v", "type": "Value", "description": "Child value"}],
+      "returns": [{"name": "sibling", "type": "Value", "description": "Next sibling"}],
+      "errors": [],
+      "examples": ["c json::next! -> c"]
+    },
+    {
       "name": "obj",
       "signature": "(content:str -- obj:str)",
       "failable": false,
@@ -296,6 +591,56 @@
       "returns": [{"name": "obj", "type": "str", "description": "JSON object"}],
       "errors": [],
       "examples": ["\"\\\"a\\\":1,\\\"b\\\":2\" json::obj print  // {\"a\":1,\"b\":2}"]
+    },
+    {
+      "name": "parse",
+      "signature": "(text:str -- v:Value)",
+      "failable": true,
+      "description": "Parse a JSON document into a Value tree.  The whole document is read once, so a lookup on the result costs a walk of the tree rather than a rescan of the text -- which is what the get_* family above does on every call. Failure reports the byte offset. ",
+      "params": [{"name": "text", "type": "str", "description": "JSON document"}],
+      "returns": [{"name": "v", "type": "Value", "description": "Parsed value"}],
+      "errors": [],
+      "examples": ["\"{\\x22a\\x22:1}\" json::parse! -> doc"]
+    },
+    {
+      "name": "pretty",
+      "signature": "(v:Value) pretty(width:i64 -- s:str)",
+      "failable": false,
+      "description": "Serialize a value to indented JSON text.",
+      "params": [{"name": "v", "type": "Value", "description": "Value to serialize"}, {"name": "width", "type": "i64", "description": "Spaces per nesting level"}],
+      "returns": [{"name": "s", "type": "str", "description": "JSON text, one element or member to a line"}],
+      "errors": [],
+      "examples": ["doc 2 json::pretty print"]
+    },
+    {
+      "name": "push",
+      "signature": "(v:Value) push(child:Value -- v2:Value)",
+      "failable": true,
+      "description": "Append a value to an array.",
+      "params": [{"name": "v", "type": "Value", "description": "Array"}, {"name": "child", "type": "Value", "description": "Value to append"}],
+      "returns": [{"name": "v2", "type": "Value", "description": "The same array"}],
+      "errors": [],
+      "examples": ["arr 42 json::new_int json::push! -> arr"]
+    },
+    {
+      "name": "put",
+      "signature": "(v:Value) put(key:str child:Value -- v2:Value)",
+      "failable": true,
+      "description": "Set an object member. Replaces the member of that name if there is one, keeping its position.",
+      "params": [{"name": "v", "type": "Value", "description": "Object"}, {"name": "key", "type": "str", "description": "Member name"}, {"name": "child", "type": "Value", "description": "Member value"}],
+      "returns": [{"name": "v2", "type": "Value", "description": "The same object"}],
+      "errors": [],
+      "examples": ["obj \"n\" 1 json::new_int json::put! -> obj"]
+    },
+    {
+      "name": "stringify",
+      "signature": "(v:Value) stringify( -- s:str)",
+      "failable": false,
+      "description": "Serialize a value to compact JSON text.",
+      "params": [{"name": "v", "type": "Value", "description": "Value to serialize"}],
+      "returns": [{"name": "s", "type": "str", "description": "JSON text with no space between tokens"}],
+      "errors": [],
+      "examples": ["doc json::stringify print"]
     },
     {
       "name": "type_at",

@@ -57,16 +57,19 @@ documented in `reference.def`** — the review's 87/69 predate the `read` and `c
       `Ok`/`Err` are conflated with `true`/`false`, and why `null` is `0` (four spellings each of 0
       and 1). A `Result<T, E>`-shaped variant type would let most of the error-handling surface be
       deleted rather than maintained.
-      The sharpest evidence is `stdlib/json`: it has **no `parse`**, and its 27 public functions
-      are string scanners that re-scan the document on every key lookup
-      (`get_int(json:str key:str -- value:i64 found:i64)`), because there is no value type to parse
-      into and no dispatch to walk one with. That `(value, found)` pair is an ad-hoc `Option`
-      repeated across dozens of stdlib signatures.
+      The evidence used to be `stdlib/json`, which had no `parse` at all. **It has one now
+      (2026-09-19), and writing it did not need sum types** — so that argument is withdrawn and
+      this item stands on R24 alone. A JSON value is a tagged union in the abstract, but a
+      `struct Value { kind:i64 … }` with a payload field per kind is what every C and Go parser
+      writes, it costs 80 bytes a node, and the `kind` tag is checked in exactly the places a
+      `match` would have been. The `(value, found)` pair *was* the real cost, and it was paid off
+      without the feature: the accessors are fallible (`as_int!`, `get!`) and report `ErrType`,
+      `ErrKey`, `ErrIndex`, so nothing returns a bare flag beside its value.
       Deliberately **not** adding: interfaces/traits (generics see 5 uses, not under strain),
       slices/iterators (`len`/`nth`/`append`/`set` over `ptr` arrays is the right level),
       `comptime`/const-generics. Labeled `break` will bite eventually with nested `for`, but not yet.
-      **Open question**: does the JSON case make this the next thing to do, or is a real
-      `json::parse` simply not a goal?
+      **Open question**: with JSON out of the argument, is the error channel (R24) enough on its
+      own to justify the feature, or does it want a purpose-built error value instead?
 
 ### Language review 2026-09-17
 
@@ -216,6 +219,69 @@ that way.
       **Open question**: is the target every module, or is the honest answer that `hof`-style code
       is stack-direct and data-heavy modules keep named locals? Answering "every module" without
       porting three first would be a guess — and is `dc.qd` the acceptance test?
+
+### Found while writing `json::parse` (2026-09-19)
+
+Six things the parser ran into. The memory bug is **fixed** (see below); the rest are smaller, and
+each has a reproducer that fits on a screen.
+
+- [x] **Fixed 2026-09-19: a struct stored in a field was never freed.** Three defects, each found
+      by counting `qd_struct_alloc` against `qd_struct_release` on a loop that parses `[1,1]`:
+      `>>field` overwrote a `str`/`ptr`/struct field without releasing the old value, though the
+      destructor releases the field and the push that supplied the value retained it; `==`/`!=`
+      released their operands only on the string path, so `node null ==` -- the test at the head
+      of every walk over a linked structure -- leaked a reference per comparison; and the
+      integer-only body scan let a call to a struct-returning function through, which put the
+      caller on fast paths that store a local with no retain and rebind it with no release. Fixed
+      in `generator_structs.cc`, `runtime_ops.c` and `generator.cc` + `generator_impl.h`
+      respectively, along with the `nm`-derived symbol-map collision in `lib/qd/src/qd.cc` that
+      surfaced with them. Parsing a 200-element document 100, 400 and 1,600 times now holds RSS
+      at 13.5 MB; it was linear in the number of parses. `fib 30` and `tak` are unchanged, so the
+      integer fast paths are still taken where they belong.
+      A struct held in a field of a *stack-allocated* struct was the obvious next suspect --
+      `generateLocalCleanup` releases only the `str` fields of one -- but 400,000 iterations of
+      that shape hold RSS flat, so whatever balances it, it is not leaking.
+
+- [ ] **`quadfmt` splits `==` and `!=` when it expands a `switch` arm.** A one-line arm that is
+      long enough to be rewrapped comes back as `0 ! =` / `0 = =`, which does not compile — so
+      `make format` can turn a working file into a broken one, and `make fmtcheck` passes on the
+      wreckage. Reproducer: any `switch` arm on one line, over ~100 characters, containing `==`.
+      The workaround in `json.qd` was to move the comparison into a helper.
+      **Open question**: is the re-tokenisation in the arm-expansion path, or in the width
+      calculation that decides to expand?
+
+- [ ] **A method call on a `*T`-typed local silently does nothing.** `c <<next -> c  c b write`
+      compiles and emits no call; `c as Value b write` works. Field reads through the same local
+      (`c <<key`) resolve fine, so it is the method dispatch that drops it. Silent — no warning,
+      no error, and the missing output only shows up in the result.
+      **Open question**: should `as` be required here, in which case this is a missing diagnostic,
+      or should dispatch use the field's declared struct type?
+
+- [ ] **`cast<T>` to an unknown or struct type silently becomes `cast<str>`.** `p cast<Node>`
+      type-checks and yields a string, so the next `<<field` fails with *"the value on the stack is
+      string, not a struct"* — a confusing error a long way from the cast. `as` is the right
+      spelling for ptr→struct and it works; the cast should be rejected rather than reinterpreted.
+
+- [ ] **`ptr == ptr` is a runtime type error.** *"Fatal error in eq: Type error (expected numeric or
+      string types for comparison)"*, though `ptr null ==` is fine. Comparing two node pointers for
+      identity — "is this child the last one" — therefore cannot be written, and `json::put` asks
+      `c <<next null ==` instead. Either comparison should work on pointers or the compiler should
+      reject it, rather than compiling and dying.
+
+- [ ] **A struct from another module cannot be named in a signature.** `fn f(b:sb::StringBuilder …)`
+      is *"Invalid type 'sb::StringBuilder' in parameter 'b'. Valid types are: i64, f64, str, ptr,
+      any, or a struct name"*. So no module can take or return another module's struct, which is
+      why `json` carries its own 40-line byte buffer rather than building output in a
+      `sb::StringBuilder`. This is the quiet reason the stdlib modules do not compose.
+      **Open question**: is qualifying a struct name in a signature just unimplemented, or is there
+      a reason the type table is per-module?
+
+  Two more, not json's business but found on the way: **`ct::Vec` and `ct::Map` only work for
+  `i64`** — `Vec<f64>` and `Vec<str>` store and read back `0`, and `Vec<SomeStruct>` segfaults on
+  `get`, because `push`/`get` go through `mem::set_i64`/`get_i64` whatever `T` is; the tests only
+  ever instantiate `i64`. And **`sb::append` copies `strings::len` bytes**, which counts codepoints
+  now, so appending any non-ASCII string truncates it — `strings::byte_len` is the fix and it
+  already exists.
 
 ### Interpreter tier (lib/interp)
 

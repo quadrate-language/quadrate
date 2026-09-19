@@ -366,3 +366,217 @@ test "json terminates on a value-less character" {
 	"[,]" 0 json::array_get_string -> found -> _
 	found 0 testing::assert_eq
 }
+
+
+// ============================================================
+// Value tree: json::parse and friends
+// ============================================================
+
+test "json::parse reads scalars" {
+	"42" json::parse! -> v
+	v json::is_number testing::assert_true
+	v json::as_int! 42 testing::assert_eq
+	v json::as_float! 42.0 0.0 testing::assert_approx_eq
+
+	"-1.5e2" json::parse! -> f
+	f json::as_float! -150.0 0.0 testing::assert_approx_eq
+	f json::as_int! -150 testing::assert_eq
+
+	"true" json::parse! -> t
+	t json::is_bool testing::assert_true
+	t json::as_bool! 1 testing::assert_eq
+
+	"false" json::parse! json::as_bool! 0 testing::assert_eq
+
+	"null" json::parse! json::is_null testing::assert_true
+
+	"\"hi\"" json::parse! -> s
+	s json::is_string testing::assert_true
+	s json::as_str! "hi" testing::assert_eq
+}
+
+test "json::parse ignores whitespace around a value" {
+	" \t\r\n 7 \n" json::parse! json::as_int! 7 testing::assert_eq
+}
+
+test "json::parse reads arrays" {
+	"[1, 2, 3]" json::parse! -> v
+	v json::is_array testing::assert_true
+	v json::len 3 testing::assert_eq
+	v 0 json::at! json::as_int! 1 testing::assert_eq
+	v 2 json::at! json::as_int! 3 testing::assert_eq
+	"[]" json::parse! json::len 0 testing::assert_eq
+}
+
+test "json::parse reads objects" {
+	"{\"a\": 1, \"b\": \"x\"}" json::parse! -> v
+	v json::is_object testing::assert_true
+	v json::len 2 testing::assert_eq
+	v "a" json::has testing::assert_true
+	v "q" json::has testing::assert_false
+	v "a" json::get! json::as_int! 1 testing::assert_eq
+	v "b" json::get! json::as_str! "x" testing::assert_eq
+	"{}" json::parse! json::len 0 testing::assert_eq
+}
+
+test "json::parse nests" {
+	"{\"a\":{\"b\":[1,{\"c\":null}]}}" json::parse! -> v
+	v "a" json::get! "b" json::get! -> arr
+	arr json::len 2 testing::assert_eq
+	arr 1 json::at! "c" json::get! json::is_null testing::assert_true
+}
+
+test "json::parse decodes escapes" {
+	"\"a\\nb\\tc\\\"d\\\\e\\/f\"" json::parse! json::as_str! -> s
+	s strings::len 11 testing::assert_eq
+	s 1 strings::char_at 10 testing::assert_eq
+	s 3 strings::char_at 9 testing::assert_eq
+	s 5 strings::char_at 34 testing::assert_eq
+	s 7 strings::char_at 92 testing::assert_eq
+	s 9 strings::char_at 47 testing::assert_eq
+	"\"\\b\\f\\r\"" json::parse! json::as_str! -> c
+	c 0 strings::char_at 8 testing::assert_eq
+	c 1 strings::char_at 12 testing::assert_eq
+	c 2 strings::char_at 13 testing::assert_eq
+}
+
+test "json::parse decodes unicode escapes" {
+	// One codepoint each: Latin-1, CJK, and an astral character written as a
+	// surrogate pair. strings::len counts codepoints, so each of these is 1.
+	"\"\\u00e9\"" json::parse! json::as_str! -> a
+	a strings::len 1 testing::assert_eq
+	a 0 strings::char_at 233 testing::assert_eq
+
+	"\"\\u4e2d\"" json::parse! json::as_str! 0 strings::char_at 20013 testing::assert_eq
+
+	"\"\\ud83d\\ude00\"" json::parse! json::as_str! -> e
+	e strings::len 1 testing::assert_eq
+	e 0 strings::char_at 128512 testing::assert_eq
+
+	// A surrogate with no partner stands for no character: U+FFFD.
+	"\"\\ud83d\"" json::parse! json::as_str! 0 strings::char_at 65533 testing::assert_eq
+}
+
+test "json::parse passes UTF-8 through unchanged" {
+	"\"héllo\"" json::parse! json::as_str! "héllo" testing::assert_eq
+}
+
+test "json::parse keeps the last of two members with the same name" {
+	"{\"a\":1,\"b\":2,\"a\":3}" json::parse! -> v
+	v json::len 2 testing::assert_eq
+	v "a" json::get! json::as_int! 3 testing::assert_eq
+}
+
+test "json::parse rejects malformed documents" {
+	"" json::parse if { drop "expected a failure" testing::fail } else { err -> code -> _ code json::ErrSyntax testing::assert_eq }
+	"1 2" json::parse if { drop "expected a failure" testing::fail } else { err -> code -> _ code json::ErrSyntax testing::assert_eq }
+	"01" json::parse if { drop "expected a failure" testing::fail } else { err -> code -> _ code json::ErrSyntax testing::assert_eq }
+	"[1,]" json::parse if { drop "expected a failure" testing::fail } else { err -> code -> _ code json::ErrSyntax testing::assert_eq }
+	"{\"a\" 1}" json::parse if { drop "expected a failure" testing::fail } else { err -> code -> _ code json::ErrSyntax testing::assert_eq }
+	"\"abc" json::parse if { drop "expected a failure" testing::fail } else { err -> code -> _ code json::ErrSyntax testing::assert_eq }
+	"\"\\q\"" json::parse if { drop "expected a failure" testing::fail } else { err -> code -> _ code json::ErrSyntax testing::assert_eq }
+	"tru" json::parse if { drop "expected a failure" testing::fail } else { err -> code -> _ code json::ErrSyntax testing::assert_eq }
+	".5" json::parse if { drop "expected a failure" testing::fail } else { err -> code -> _ code json::ErrSyntax testing::assert_eq }
+	"-" json::parse if { drop "expected a failure" testing::fail } else { err -> code -> _ code json::ErrSyntax testing::assert_eq }
+}
+
+test "json::parse reports the offset of the error" {
+	"[1, x]" json::parse if { drop "expected a failure" testing::fail } else { err -> _ -> msg msg "offset 4" testing::assert_contains }
+}
+
+test "json::parse stops at MaxDepth" {
+	"" -> deep
+	0 json::MaxDepth 1 + 1 for i {
+		deep "[" strings::concat -> deep
+	}
+	deep json::parse if {
+		drop "expected a failure" testing::fail
+	} else {
+		err -> code -> _ code json::ErrDepth testing::assert_eq
+	}
+}
+
+test "json accessors report the wrong type rather than guessing" {
+	"{\"a\":1}" json::parse! -> v
+	v json::as_int if { drop "expected a failure" testing::fail } else { err -> code -> _ code json::ErrType testing::assert_eq }
+	v json::as_str if { drop "expected a failure" testing::fail } else { err -> code -> _ code json::ErrType testing::assert_eq }
+	v "nope" json::get if { drop "expected a failure" testing::fail } else { err -> code -> _ code json::ErrKey testing::assert_eq }
+	"[1]" json::parse! 3 json::at if { drop "expected a failure" testing::fail } else { err -> code -> _ code json::ErrIndex testing::assert_eq }
+}
+
+test "json::first and json::next walk children in order" {
+	"{\"a\":1,\"b\":2,\"c\":3}" json::parse! -> v
+	v json::first! -> c
+	"" -> keys
+	0 -> sum
+	loop {
+		keys c json::name strings::concat -> keys
+		c json::as_int! sum + -> sum
+		c json::has_next 0 == if {
+			break
+		}
+		c json::next! -> c
+	}
+	keys "abc" testing::assert_eq
+	sum 6 testing::assert_eq
+}
+
+test "json::stringify round-trips a document" {
+	"{\"a\":1,\"b\":[1,2.5,true,null,\"x\"],\"c\":{}}" -> text
+	text json::parse! json::stringify text testing::assert_eq
+}
+
+test "json::stringify escapes what has to be escaped" {
+	// Tab, quote and backslash by name; other control characters as \u00XX.
+	"\"a\\tb\"" json::parse! json::stringify "\"a\\tb\"" testing::assert_eq
+	"\"\\u0001\"" json::parse! json::stringify "\"\\u0001\"" testing::assert_eq
+	"héllo" json::new_string json::stringify "\"héllo\"" testing::assert_eq
+}
+
+test "json::stringify writes numbers that read back the same" {
+	"0.1" json::parse! json::stringify "0.1" testing::assert_eq
+	"1e21" json::parse! json::stringify -> big
+	big json::parse! json::as_float! 1.0e21 0.0 testing::assert_approx_eq
+	"3" json::parse! json::stringify "3" testing::assert_eq
+	"-0.5" json::parse! json::stringify "-0.5" testing::assert_eq
+}
+
+test "json::pretty indents one element to a line" {
+	"{\"a\":[1],\"b\":{},\"c\":[]}" json::parse! 2 json::pretty -> out
+	out "{\n  \"a\": [\n    1\n  ],\n  \"b\": {},\n  \"c\": []\n}" testing::assert_eq
+}
+
+test "json builds a document from nothing" {
+	json::new_object -> o
+	o "n" 42 json::new_int json::put! -> o
+	o "f" 0.5 json::new_float json::put! -> o
+	o "s" "x" json::new_string json::put! -> o
+	o "t" 1 json::new_bool json::put! -> o
+	o "z" json::new_null json::put! -> o
+	json::new_array -> a
+	a 1 json::new_int json::push! -> a
+	a 2 json::new_int json::push! -> a
+	o "a" a json::put! -> o
+	o json::stringify "{\"n\":42,\"f\":0.5,\"s\":\"x\",\"t\":true,\"z\":null,\"a\":[1,2]}" testing::assert_eq
+}
+
+test "json::put replaces a member in place" {
+	json::new_object -> o
+	o "a" 1 json::new_int json::put! -> o
+	o "b" 2 json::new_int json::put! -> o
+	o "a" 9 json::new_int json::put! -> o
+	o json::len 2 testing::assert_eq
+	o json::stringify "{\"a\":9,\"b\":2}" testing::assert_eq
+
+	// Replacing the last member keeps the end of the list intact.
+	o "b" 8 json::new_int json::put! -> o
+	o "c" 7 json::new_int json::put! -> o
+	o json::stringify "{\"a\":9,\"b\":8,\"c\":7}" testing::assert_eq
+}
+
+test "json::push and json::put refuse the wrong container" {
+	json::new_object -> o
+	o 1 json::new_int json::push if { drop "expected a failure" testing::fail } else { err -> code -> _ code json::ErrType testing::assert_eq }
+	json::new_array -> a
+	a "k" 1 json::new_int json::put if { drop "expected a failure" testing::fail } else { err -> code -> _ code json::ErrType testing::assert_eq }
+}

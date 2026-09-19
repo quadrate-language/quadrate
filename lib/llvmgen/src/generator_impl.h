@@ -673,6 +673,13 @@ namespace Qd {
 		bool analyzeCalleesAllNative(IAstNode* node);
 		// Runs after all functions are declared and before any body is generated.
 		void demoteNonNativeFunctions(IAstNode* root);
+		// Fills nonIntegerSignatureFunctions. Runs with demoteNonNativeFunctions.
+		void collectNonIntegerSignatureFunctions(IAstNode* root);
+
+		// Functions whose signature mentions anything but i64 -- a receiver, a string, a float,
+		// a struct. A body that calls one can put a pointer in a local, so it is not
+		// integer-only however plain the rest of it reads.
+		std::set<std::string> nonIntegerSignatureFunctions;
 	};
 
 } // namespace Qd

@@ -732,7 +732,21 @@ namespace Qd {
 				   matchingField->typeName.find('*') != std::string::npos || isArrayType(matchingField->typeName) ||
 				   (looksLikeStructType(matchingField->typeName) && isKnownStruct(matchingField->typeName))) {
 			llvm::Value* ptrValue = builder->CreateLoad(ptrTy, valuePtr, "ptr_val");
+			// A field of one of these types owns a reference: pushing the value onto the stack
+			// took one (generateFieldAccess and the identifier load both retain), the store
+			// below keeps it, and the destructor hands it back. Overwriting has to hand back the
+			// one the old value held as well, or nothing ever does -- a list whose tail pointer
+			// moved on leaked every node it had pointed at, and with it everything those nodes
+			// held. Read before the store, release after it, so old == new nets out to no change.
+			// Both release calls are safe on null, on a pointer that is not refcounted, and on
+			// the uninitialised zero a fresh struct body carries.
+			llvm::Value* oldFieldValue = builder->CreateLoad(ptrTy, bytePtr, "old_field_val");
 			builder->CreateStore(ptrValue, bytePtr);
+			if (matchingField->typeName == "str") {
+				builder->CreateCall(qdStringReleaseFn, {oldFieldValue});
+			} else {
+				builder->CreateCall(qdPtrReleaseFn, {oldFieldValue});
+			}
 		} else if (matchingField->isTypeParam) {
 			// Release old string value if the generic field currently holds a string
 			{

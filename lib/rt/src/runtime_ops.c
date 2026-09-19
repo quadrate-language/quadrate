@@ -372,8 +372,6 @@ static int qdrt_equality_op(qd_context* ctx, const char* name, bool want_equal) 
 		const char* str_a = qd_string_data(a.value.s);
 		const char* str_b = qd_string_data(b.value.s);
 		equal = (strcmp(str_a, str_b) == 0);
-		qd_string_release(a.value.s);
-		qd_string_release(b.value.s);
 	} else if (is_ptr_null_check) {
 		void* ptr_val = (a.type == QD_STACK_TYPE_PTR) ? a.value.p : b.value.p;
 		int64_t int_val = (a.type == QD_STACK_TYPE_INT) ? a.value.i : b.value.i;
@@ -383,6 +381,14 @@ static int qdrt_equality_op(qd_context* ctx, const char* name, bool want_equal) 
 		double bf = (b.type == QD_STACK_TYPE_INT) ? (double)b.value.i : b.value.f;
 		equal = (af == bf);
 	}
+
+	// Both operands were popped, so both references this call was handed have to go back.
+	// The string path used to be the only one that did, and `node null ==` -- the test at the
+	// head of every walk over a linked structure -- held on to the node for the rest of the
+	// program: one leaked reference per comparison, which kept the node, and through it
+	// everything the node pointed at.
+	qdrt_release_element(&a);
+	qdrt_release_element(&b);
 
 	int64_t result = (equal == (int)want_equal) ? 1 : 0;
 	err = qd_stack_push_int(ctx->st, result);

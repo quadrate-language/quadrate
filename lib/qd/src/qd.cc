@@ -708,14 +708,23 @@ void qd_build(qd_module* mod) {
 					if (!full_symbol.empty() && full_symbol.back() == '\n') {
 						full_symbol.pop_back();
 					}
-					// Extract function name after the second underscore
-					// usr_package_function -> function
-					size_t first_us = full_symbol.find('_');
-					if (first_us != std::string::npos) {
-						size_t second_us = full_symbol.find('_', first_us + 1);
-						if (second_us != std::string::npos) {
-							std::string func_name = full_symbol.substr(second_us + 1);
-							symbol_map[func_name] = full_symbol;
+					// The object holds this module's functions and every function of every
+					// module it uses, and the map is keyed on the bare name -- so a script
+					// with its own `parse` and a `use json` both want the key "parse", and
+					// whichever nm printed second used to win. This module's own symbols
+					// take the key; a used module's only fills one nothing else claims.
+					const std::string ownPrefix = "usr_" + mod->name + "_";
+					if (full_symbol.compare(0, ownPrefix.size(), ownPrefix) == 0) {
+						symbol_map[full_symbol.substr(ownPrefix.size())] = full_symbol;
+					} else {
+						// usr_package_function -> function
+						size_t first_us = full_symbol.find('_');
+						if (first_us != std::string::npos) {
+							size_t second_us = full_symbol.find('_', first_us + 1);
+							if (second_us != std::string::npos) {
+								std::string func_name = full_symbol.substr(second_us + 1);
+								symbol_map.emplace(func_name, full_symbol);
+							}
 						}
 					}
 				}

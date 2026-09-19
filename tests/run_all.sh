@@ -5,7 +5,7 @@
 #   ./tests/run_all.sh                    # Run all tests
 #   ./tests/run_all.sh --failed           # Run only previously failed tests
 #   ./tests/run_all.sh --test NAME        # Run specific test
-#   ./tests/run_all.sh --suite SUITE      # Run specific suite (cpp, lsp, qd, formatter, linter, embed, quadpm, build_cache, quadmcp, args, reference, crosscompile, stdlib, tools, http, mtls, fuzz)
+#   ./tests/run_all.sh --suite SUITE      # Run specific suite (cpp, lsp, qd, formatter, linter, embed, quadpm, build_cache, quadmcp, args, reference, crosscompile, stdlib, tools, memory, http, mtls, fuzz)
 #   ./tests/run_all.sh --clear            # Clear failed tests file
 #   ./tests/run_all.sh --list             # List all available tests
 
@@ -112,7 +112,7 @@ while [[ $# -gt 0 ]]; do
             echo "Options:"
             echo "  --failed, -f       Run only previously failed tests"
             echo "  --test, -t NAME    Run specific test by name"
-            echo "  --suite, -s SUITE  Run specific suite (cpp, lsp, qd, formatter, linter, embed, quadpm, build_cache, quadmcp, args, reference, crosscompile, stdlib, tools, http, mtls, fuzz)"
+            echo "  --suite, -s SUITE  Run specific suite (cpp, lsp, qd, formatter, linter, embed, quadpm, build_cache, quadmcp, args, reference, crosscompile, stdlib, tools, memory, http, mtls, fuzz)"
             echo "  --fuzz-time SECS   Fuzz test duration in seconds (default: 10)"
             echo "  --list, -l         List all available tests"
             echo "  --clear, -c        Clear failed tests file"
@@ -1573,6 +1573,30 @@ run_tools_tests() {
     fi
 }
 
+# Run the peak-memory regression checks
+run_memory_tests() {
+    local suite="memory"
+
+    if ! should_run_test "$suite" "memory_test"; then
+        return
+    fi
+
+    print_header "Memory Tests"
+
+    local output
+    local exit_code
+
+    output=$(BUILD_DIR="$BUILD_DIR" bash "$PROJECT_ROOT/tests/run_memory_test.sh" 2>&1)
+    exit_code=$?
+
+    if [[ $exit_code -eq 0 ]]; then
+        log_pass "$suite" "memory_test"
+    else
+        local error_msg=$(echo "$output" | grep "✗" | head -20)
+        log_fail "$suite" "memory_test" "test failed" "$error_msg"
+    fi
+}
+
 # Run the shared CLI surface checks across all ten tools
 run_cli_surface_tests() {
     local suite="tools"
@@ -1888,6 +1912,10 @@ list_all_tests() {
     echo "  cli_surface_test"
     echo ""
 
+    echo "Memory Tests (suite: memory):"
+    echo "  memory_test"
+    echo ""
+
     echo "HTTP Integration Tests (suite: http):"
     echo "  http_test"
     echo ""
@@ -1908,7 +1936,7 @@ print_summary() {
     echo -e "${BOLD}═══════════════════════════════════════════════════════════════════════════════${NC}"
 
     # Print per-suite summary
-    for suite in cpp lsp qd formatter linter embed quadpm build_cache quadmcp stdlib tools http mtls fuzz; do
+    for suite in cpp lsp qd formatter linter embed quadpm build_cache quadmcp stdlib tools memory http mtls fuzz; do
         local passed=${SUITE_PASSED[$suite]:-0}
         local failed=${SUITE_FAILED[$suite]:-0}
         local skipped=${SUITE_SKIPPED[$suite]:-0}
@@ -1929,6 +1957,7 @@ print_summary() {
             quadmcp) suite_name="MCP Server" ;;
             stdlib) suite_name="Stdlib Unit Tests" ;;
             tools) suite_name="Tool Tests" ;;
+            memory) suite_name="Memory" ;;
             http) suite_name="HTTP Integration" ;;
             mtls) suite_name="mTLS" ;;
             fuzz) suite_name="Fuzz" ;;
@@ -2076,6 +2105,10 @@ main() {
     if [[ -z "$SPECIFIC_SUITE" ]] || [[ "$SPECIFIC_SUITE" == "tools" ]]; then
         run_tools_tests
         run_cli_surface_tests
+    fi
+
+    if [[ -z "$SPECIFIC_SUITE" ]] || [[ "$SPECIFIC_SUITE" == "memory" ]]; then
+        run_memory_tests
     fi
 
     if [[ -z "$SPECIFIC_SUITE" ]] || [[ "$SPECIFIC_SUITE" == "http" ]]; then

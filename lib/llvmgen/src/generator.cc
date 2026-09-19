@@ -544,6 +544,21 @@ namespace Qd {
 			}
 			break;
 		}
+		case IAstNode::Type::IDENTIFIER: {
+			// A bare name is a local, a constant, or a call to a user function. A call that
+			// returns a string or a struct puts a refcounted pointer in whatever local binds
+			// it, and the integer fast paths this flag selects store a local without a retain
+			// and rebind it without a release -- so the value is never freed, and reading it
+			// back pushes it typed as an integer. A local shadows a function name, so a name
+			// that is one is not a call.
+			auto* ident = static_cast<AstNodeIdentifier*>(node);
+			const std::string& identName = ident->name();
+			if (localNames.find(identName) == localNames.end() &&
+					nonIntegerSignatureFunctions.find(identName) != nonIntegerSignatureFunctions.end()) {
+				return false;
+			}
+			break;
+		}
 		case IAstNode::Type::ANONYMOUS_FUNCTION:
 			// Anonymous functions/closures are complex, reject for now
 			return false;
@@ -565,6 +580,69 @@ namespace Qd {
 		}
 
 		return true;
+	}
+
+	// Records every function whose signature is not made of i64 alone, under each name a call
+	// site can spell it with. analyzeIsBodyNativeEligible reads this to keep a caller out of the
+	// integer-only fast paths, which have no retain and no release in them.
+	void LlvmGenerator::Impl::collectNonIntegerSignatureFunctions(IAstNode* root) {
+		auto isIntegerTypeName = [](const std::string& typeStr) {
+			return typeStr == "i64" || typeStr == "int" || typeStr == "int64" || typeStr == "i";
+		};
+
+		// The program's own functions are in root, the imported ones in moduleASTs -- the same
+		// two places demoteNonNativeFunctions reads.
+		std::vector<std::pair<std::string, IAstNode*>> roots;
+		for (const auto& modulePair : moduleASTs) {
+			roots.emplace_back(modulePair.first, modulePair.second);
+		}
+		roots.emplace_back(mainModuleName, root);
+
+		for (const auto& modulePair : roots) {
+			if (!modulePair.second) {
+				continue;
+			}
+			const std::string& namePrefix = modulePair.first;
+			for (auto* child : modulePair.second->children()) {
+				auto* funcNode = dynamic_cast<AstNodeFunctionDeclaration*>(child);
+				if (!funcNode) {
+					continue;
+				}
+
+				// A receiver is a struct, so a method is never integer-only.
+				bool integerOnly = !funcNode->hasReceiver();
+				if (integerOnly) {
+					for (const auto& param : funcNode->inputParameters()) {
+						const auto* paramNode = dynamic_cast<const AstNodeParameter*>(param.get());
+						// An untyped parameter says nothing about what it carries: assume the worst.
+						if (!paramNode || !isIntegerTypeName(paramNode->typeString())) {
+							integerOnly = false;
+							break;
+						}
+					}
+				}
+				if (integerOnly) {
+					for (const auto& param : funcNode->outputParameters()) {
+						const auto* paramNode = dynamic_cast<const AstNodeParameter*>(param.get());
+						if (!paramNode || !isIntegerTypeName(paramNode->typeString())) {
+							integerOnly = false;
+							break;
+						}
+					}
+				}
+				if (integerOnly) {
+					continue;
+				}
+
+				nonIntegerSignatureFunctions.insert(funcNode->name());
+				if (funcNode->hasReceiver()) {
+					nonIntegerSignatureFunctions.insert(funcNode->receiverType() + "::" + funcNode->name());
+				}
+				if (namePrefix != "main") {
+					nonIntegerSignatureFunctions.insert(namePrefix + "::" + funcNode->name());
+				}
+			}
+		}
 	}
 
 	// Drops the native (compile-time-stack) version of every function that calls a non-native
@@ -2725,6 +2803,7 @@ namespace Qd {
 
 		// Every function is declared now, so the native set can be settled before any call to a
 		// native version is emitted.
+		collectNonIntegerSignatureFunctions(root);
 		demoteNonNativeFunctions(root);
 		printTiming("demoteNonNativeFunctions");
 
