@@ -199,7 +199,6 @@ int qd_prints(qd_context* ctx);
  * @param ctx Execution context
  * @return Execution result (0 on success)
  */
-int qd_printsv(qd_context* ctx);
 
 /**
  * @brief Print a newline

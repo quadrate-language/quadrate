@@ -118,7 +118,6 @@ namespace {
 				{"print", {qd_print, 1}},
 				{"printv", {qd_printv, 1}},
 				{"prints", {qd_prints, 1}},
-				{"printsv", {qd_printsv, 1}},
 				{"nl", {qd_nl, 0}},
 
 				// Errors

@@ -12,6 +12,14 @@ to `fn(i64 -- i64)` until generic function-pointer parameters started unifying.
 Combinators are functions that combine or apply other functions in useful patterns.
 They enable functional programming without explicit temporary variables.
 
+Three of them are `stack fn` and the rest bind their parameters, which is not an accident of
+who wrote what. A combinator that passes one value through one function -- `apply`, `when`,
+`unless` -- says what it means with no names at all: `apply` is the single word `call`, and
+`when` is "test it, then call it or throw it away". A combinator that uses a value twice or
+takes two functions does not: `bi` stack-direct is `pick rot call rot rot call`, which is
+correct, passes its tests, and tells the reader nothing. Both forms were written and run
+before choosing (see R47 in TODO.md).
+
 ## Functions
 
 ### `fn` all

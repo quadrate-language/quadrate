@@ -1,0 +1,3 @@
+'u32' is a memory-layout type and means nothing on a module global
+'u8' is a memory-layout type and means nothing on a parameter
+'u8' is a memory-layout type and means nothing on a cast target

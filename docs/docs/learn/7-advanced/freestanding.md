@@ -51,7 +51,7 @@ operations — `set_byte`/`get_byte`, `set_i64`/`get_i64`, `set_f64`/`get_f64`,
 `to_string`, `from_string`) lives in `libmem.a` and is simply not linked, so reaching for
 it is a link error rather than a silent heap dependency.
 
-**Rejected builtins** — `print`, `prints`, `printv`, `printsv`, `nl`, `read`, `panic`,
+**Rejected builtins** — `print`, `prints`, `printv`, `nl`, `read`, `panic`,
 `err`, `spawn`, `wait`, `detach`. Each gives
 `builtin 'X' is not available in --freestanding mode`. Arithmetic, comparison, bitwise
 ops, stack manipulation, locals, `if`/`loop`/`for`/`switch`, structs, arrays, function

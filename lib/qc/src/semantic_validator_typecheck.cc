@@ -1483,6 +1483,9 @@ namespace Qd {
 						"'" + param->name() + "' is a reserved keyword and cannot be used as a parameter name";
 				reportError(param, errorMsg.c_str());
 			}
+			if (isSizedIntType(param->typeString())) {
+				reportError(param, sizedTypeMisuseMessage(param->typeString(), "a parameter").c_str());
+			}
 			if (!isValidTypeName(param->typeString())) {
 				std::string where;
 				if (param->hasName()) {
@@ -1519,6 +1522,9 @@ namespace Qd {
 		}
 		for (const auto& paramNode : anonFunc->outputParameters()) {
 			AstNodeParameter* param = static_cast<AstNodeParameter*>(paramNode.get());
+			if (isSizedIntType(param->typeString())) {
+				reportError(param, sizedTypeMisuseMessage(param->typeString(), "a return value").c_str());
+			}
 			if (!isValidTypeName(param->typeString())) {
 				std::string where;
 				if (param->hasName()) {

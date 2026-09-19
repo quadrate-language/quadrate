@@ -1464,51 +1464,6 @@ TEST(PrintsMixedTypesTest) {
 	destroy_test_context(ctx);
 }
 
-TEST(PrintsvNonDestructiveTest) {
-	qd_context* ctx = create_test_context();
-
-	// Push three values
-	qd_push_i(ctx, 1);
-	qd_push_i(ctx, 2);
-	qd_push_i(ctx, 3);
-
-	// Stack should have 3 elements
-	ASSERT_EQ((int)qd_stack_size(ctx->st), 3, "Stack should have 3 elements");
-
-	// Printsv (non-destructive with types)
-	int result = qd_printsv(ctx);
-	ASSERT_EQ(result, 0, "printsv should succeed");
-
-	// Stack should still have 3 elements (non-destructive)
-	ASSERT_EQ((int)qd_stack_size(ctx->st), 3, "Stack should still have 3 elements after printsv");
-
-	destroy_test_context(ctx);
-}
-
-TEST(PrintsvEmptyStackTest) {
-	qd_context* ctx = create_test_context();
-
-	// Printsv on empty stack should succeed but output nothing
-	int result = qd_printsv(ctx);
-	ASSERT_EQ(result, 0, "printsv on empty stack should succeed");
-
-	destroy_test_context(ctx);
-}
-
-TEST(PrintsvMixedTypesTest) {
-	qd_context* ctx = create_test_context();
-
-	qd_push_i(ctx, 42);
-	qd_push_f(ctx, 3.14);
-	qd_push_s(ctx, "hello");
-
-	int result = qd_printsv(ctx);
-	ASSERT_EQ(result, 0, "printsv should succeed with mixed types");
-	ASSERT_EQ((int)qd_stack_size(ctx->st), 3, "Stack should still have 3 elements");
-
-	destroy_test_context(ctx);
-}
-
 
 TEST(DupIntegerTest) {
 	qd_context* ctx = create_test_context();
@@ -3567,8 +3522,7 @@ TEST(PickTest) {
 	qd_push_i(ctx, 30);
 	qd_push_i(ctx, 40);
 
-	// Pick index 2 (should copy 20 to top)
-	qd_push_i(ctx, 2);
+	// pick copies the third value from the top: 20
 	qd_pick(ctx);
 
 	// Verify: ( 10 20 30 40 20 )
@@ -3589,6 +3543,9 @@ TEST(PickTest) {
 	destroy_test_context(ctx);
 }
 
+// qd_roll is no longer reachable as a word -- it took its depth at run time, which
+// defeats static stack tracking. It remains the internal op code generation emits to
+// bring a method's receiver to the top, so its behaviour is still pinned here.
 TEST(RollTest) {
 	qd_context* ctx = create_test_context();
 

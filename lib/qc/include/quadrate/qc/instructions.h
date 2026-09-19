@@ -21,8 +21,7 @@ namespace Qd {
 			// Logical operations
 			"eq", "gt", "gte", "lt", "lte", "neq", "within",
 			// Stack operations
-			"call", "clear", "depth", "drop", "dup", "dup2", "free", "len", "nip", "nth", "over", "pick", "rot",
-			"swap",
+			"call", "clear", "depth", "drop", "dup", "dup2", "free", "len", "nip", "nth", "over", "pick", "rot", "swap",
 			// Array operations
 			"append", "make", "makef", "makei", "makep", "makes", "set",
 			// Type casting and introspection
@@ -40,7 +39,7 @@ namespace Qd {
 			// CPU control — lower to single inline asm. Freestanding-only.
 			"__cli", "__hlt", "__sti",
 			// I/O
-			"nl", "print", "prints", "printsv", "printv",
+			"nl", "print", "prints", "printv",
 			// Threading
 			"detach", "spawn", "wait",
 			// Error handling
@@ -72,6 +71,8 @@ namespace Qd {
 			{"overd", "( a b c -- a b a c )", "-> c -> b -> a  a b a c"},
 			{"read", "( -- ... n )", "os::args -> args  args len -> argc",
 					"the arguments are an array now; use os::args instead"},
+			{"printsv", "( -- )", "prints",
+					"nothing ever used it; 'prints' dumps the stack and 'printv' types one value"},
 			{"roll", "( ... n -- ... )", "-> c -> b -> a  b c a",
 					"it took its depth at run time, which no static stack model can follow; name the "
 					"values instead"},

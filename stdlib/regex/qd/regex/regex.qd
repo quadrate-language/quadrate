@@ -661,8 +661,8 @@ pub fn is_match(pattern:str s:str -- result:i64) {
 }
 
 // Internal: unwrap Regex for internal functions that take raw ptr
-fn unwrap_re(self:Regex -- re:ptr) {
-	self <<re
+stack fn unwrap_re(self:Regex -- re:ptr) {
+	<<re
 }
 
 // Internal: find first match of compiled regex starting at or after 'from'.

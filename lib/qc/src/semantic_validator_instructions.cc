@@ -83,7 +83,7 @@ namespace Qd {
 		// Pure stack/arithmetic/control-flow ops are still allowed.
 		if (mFreestandingMode) {
 			static const char* kUnsafeBuiltins[] = {
-					"print", "prints", "printv", "printsv", "nl", "panic", "err", "spawn", "wait", "detach", nullptr};
+					"print", "prints", "printv", "nl", "panic", "err", "spawn", "wait", "detach", nullptr};
 			for (size_t i = 0; kUnsafeBuiltins[i] != nullptr; i++) {
 				if (strcmp(name, kUnsafeBuiltins[i]) == 0) {
 					std::string err = "builtin '" + std::string(name) + "' is not available in --freestanding mode";
@@ -407,8 +407,14 @@ namespace Qd {
 				AstNodeInstruction* instr = static_cast<AstNodeInstruction*>(node);
 				if (instr->hasTypeParam()) {
 					const std::string& typeParam = instr->typeParam();
-					if (typeParam == "i64" || typeParam == "i32" || typeParam == "i16" || typeParam == "i8" ||
-							typeParam == "u64" || typeParam == "u32" || typeParam == "u16" || typeParam == "u8") {
+					if (isSizedIntType(typeParam)) {
+						// `300 cast<u8>` yielded 300: the target named a width and the cast did
+						// nothing with it. A cast target is a stack value, which is always 64
+						// bits, so there is no width to apply -- mask if that is what is wanted.
+						resultType = StackValueType::INT;
+						reportErrorConditionalWithHint(node, sizedTypeMisuseMessage(typeParam, "a cast target").c_str(),
+								"to keep the low bits, mask: 'value 255 and' for a byte", reportErrors);
+					} else if (typeParam == "i64") {
 						resultType = StackValueType::INT;
 					} else if (typeParam == "f64" || typeParam == "f32") {
 						resultType = StackValueType::FLOAT;
@@ -436,10 +442,8 @@ namespace Qd {
 									"not a conversion";
 							reportErrorConditionalWithHint(node, err.c_str(), hint.c_str(), reportErrors);
 						} else {
-							reportErrorConditionalWithHint(node, err.c_str(),
-									"'cast' converts between i64, f64, ptr and str; sized integer types are "
-									"accepted as i64",
-									reportErrors);
+							reportErrorConditionalWithHint(
+									node, err.c_str(), "'cast' converts between i64, f64, ptr and str", reportErrors);
 						}
 					}
 				}
@@ -613,8 +617,8 @@ namespace Qd {
 			}
 			return;
 		}
-		// Non-destructive print: prints, printsv
-		else if (strcmp(name, "prints") == 0 || strcmp(name, "printsv") == 0 || strcmp(name, "nl") == 0) {
+		// Non-destructive print: prints
+		else if (strcmp(name, "prints") == 0 || strcmp(name, "nl") == 0) {
 			// These don't modify the stack
 			return;
 		}

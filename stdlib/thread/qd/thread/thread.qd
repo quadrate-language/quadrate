@@ -123,8 +123,8 @@ import "libthread.a" as "thread" {
 ///
 /// @param ms i64 Sleep duration in milliseconds
 /// @example 1000 thread::sleep  // Sleep 1 second
-pub fn sleep(ms:i64 -- ) {
-	ms thread::raw_sleep
+pub stack fn sleep(ms:i64 -- ) {
+	thread::raw_sleep
 }
 
 // ============================================================================

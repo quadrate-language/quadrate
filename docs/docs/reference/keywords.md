@@ -128,9 +128,9 @@ fn bump() {
 }
 ```
 
-**Inference rules:** integer literal → `i64`, float literal → `f64`, string literal → `str`, const-reference → the const's type (derived from its value shape). Write `:type` explicitly when you want a narrower type (e.g. `var port:u16 = 8080`) or when the inferred default isn't what you want — the declared type becomes metadata for field/memory-boundary operations; the global's storage is still `i64`-wide for integer kinds.
+**Inference rules:** integer literal → `i64`, float literal → `f64`, string literal → `str`, const-reference → the const's type (derived from its value shape). Write `:type` explicitly when the inferred default isn't what you want (e.g. `var handle:ptr = null`).
 
-Supported types: `i64`, `f64`, `str` (always null-initialized), `ptr`, any struct type, plus all sized ints (`i8/i16/i32/u8/u16/u32/u64`) as explicit annotations. Initializers accept a literal, a reference to a previously-declared `const`, or a struct construction (`var p = Point { x = 1.0 y = 2.0 }`). Struct initializers run once before `main` and are stored as a reference-counted pointer in the global. A `-> name` assignment inside any function always writes to the matching module-level var — locals never shadow globals; pick a different name if you need a local.
+Supported types: `i64`, `f64`, `str` (always null-initialized), `ptr`, and any struct type. Sized integer types are rejected here — a global is a 64-bit slot, so the width would describe nothing (see [sized integer types](types.md#sized-integer-types)). Initializers accept a literal, a reference to a previously-declared `const`, or a struct construction (`var p = Point { x = 1.0 y = 2.0 }`). Struct initializers run once before `main` and are stored as a reference-counted pointer in the global. A `-> name` assignment inside any function always writes to the matching module-level var — locals never shadow globals; pick a different name if you need a local.
 
 
 ### struct

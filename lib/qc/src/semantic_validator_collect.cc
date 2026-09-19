@@ -223,6 +223,10 @@ namespace Qd {
 				return;
 			}
 			const std::string& typeName = varNode->typeName();
+			if (isSizedIntType(typeName)) {
+				reportError(varNode, sizedTypeMisuseMessage(typeName, "a module global").c_str());
+				return;
+			}
 			if (!isValidTypeName(typeName)) {
 				std::string errorMsg = "Unknown type '" + typeName + "' for var";
 				reportError(varNode, errorMsg.c_str());
@@ -1396,6 +1400,9 @@ namespace Qd {
 
 				// Validate type name
 				std::string typeStr = param->typeString();
+				if (isSizedIntType(typeStr)) {
+					reportError(param, sizedTypeMisuseMessage(typeStr, "a parameter").c_str());
+				}
 				if (!isValidTypeName(typeStr)) {
 					reportError(param, invalidTypeMessage(typeStr, parameterSuffix(param)).c_str());
 				}
@@ -1422,6 +1429,9 @@ namespace Qd {
 				std::string typeStr = param->typeString();
 
 				// Validate type name
+				if (isSizedIntType(typeStr)) {
+					reportError(param, sizedTypeMisuseMessage(typeStr, "a parameter").c_str());
+				}
 				if (!isValidTypeName(typeStr)) {
 					reportError(param, invalidTypeMessage(typeStr, parameterSuffix(param)).c_str());
 				}
@@ -1452,6 +1462,9 @@ namespace Qd {
 				std::string typeStr = param->typeString();
 
 				// Validate type name
+				if (isSizedIntType(typeStr)) {
+					reportError(param, sizedTypeMisuseMessage(typeStr, "a return value").c_str());
+				}
 				if (!isValidTypeName(typeStr)) {
 					reportError(param, invalidTypeMessage(typeStr, parameterSuffix(param)).c_str());
 				}

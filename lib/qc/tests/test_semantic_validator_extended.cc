@@ -134,16 +134,24 @@ TEST(CtxUsableAsLocalName) {
 	ASSERT(errors == 0, "'ctx' should be usable as an ordinary local name");
 }
 
-TEST(PickZero) {
-	const char* src = "fn main() { 1 2 3 0 pick drop drop drop drop }";
+TEST(PickCopiesThird) {
+	const char* src = "fn main() { 1 2 3 pick drop drop drop drop }";
 	size_t errors = validateCode(src);
-	ASSERT(errors == 0, "pick 0 should succeed (copies top)");
+	ASSERT(errors == 0, "pick copies the third value, leaving four");
 }
 
-TEST(RollZero) {
+TEST(PickNeedsThreeValues) {
+	// The whole point of the fixed depth: a short stack is a compile error rather than
+	// something only the runtime can notice.
+	const char* src = "fn main() { 1 2 pick drop drop drop }";
+	size_t errors = validateCode(src);
+	ASSERT(errors > 0, "pick on two values should be rejected");
+}
+
+TEST(RollIsRemoved) {
 	const char* src = "fn main() { 1 2 3 0 roll drop drop drop }";
 	size_t errors = validateCode(src);
-	ASSERT(errors == 0, "roll 0 should succeed (no-op)");
+	ASSERT(errors > 0, "'roll' is no longer a word");
 }
 
 // Arithmetic Operations Edge Cases

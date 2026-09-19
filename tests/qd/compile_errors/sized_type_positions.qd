@@ -1,0 +1,16 @@
+// Test: a sized integer type is rejected where it has no width to describe.
+//
+// Specification 3.1.1 says these types describe a width in memory: they are valid on a struct
+// field and as the width selector on a mem accessor. Everywhere else the value is a 64-bit
+// stack slot, and the annotation used to be accepted and silently do nothing -- `300 cast<u8>`
+// yielded 300, and `var count:u32 = 1000` stored a u32 in name only.
+var count:u32 = 1000
+
+fn scaled(x:u8 -- r:i64) {
+	x 2 *
+}
+
+fn main() {
+	300 cast<u8> print nl
+	count scaled print nl
+}

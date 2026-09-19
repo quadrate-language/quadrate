@@ -86,6 +86,24 @@ inline std::string parameterSuffix(const Param* param) {
 }
 
 // Check if a name is a reserved keyword
+// The sized integer types. Specification 3.1.1: they describe a width **in memory**, and are
+// valid on a struct field and as the width selector on a `mem` accessor. Everywhere else --
+// a parameter, a return, a module global, a `cast` target -- the value lives in a 64-bit
+// stack slot and the annotation has nothing to act on. They used to be accepted there and
+// silently do nothing, which is the divergence the specification called out.
+inline bool isSizedIntType(const std::string& name) {
+	return name == "i8" || name == "i16" || name == "i32" || name == "u8" || name == "u16" || name == "u32" ||
+		   name == "u64";
+}
+
+// `where` names the position: "a parameter", "a return value", "a module global", "a cast target".
+inline std::string sizedTypeMisuseMessage(const std::string& name, const std::string& where) {
+	return "'" + name + "' is a memory-layout type and means nothing on " + where +
+		   ": a stack value is always 64 bits. Sized types belong on a struct field or a mem accessor "
+		   "(mem::get_" +
+		   name + "); use 'i64' here";
+}
+
 inline bool isReservedKeyword(const std::string& name) {
 	static const std::unordered_set<std::string> KEYWORDS = {"if", "else", "for", "loop", "switch", "case", "break",
 			"continue", "return", "fn", "struct", "enum", "type", "const", "pub", "test", "use", "import", "defer",

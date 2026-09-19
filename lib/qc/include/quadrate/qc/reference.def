@@ -386,7 +386,7 @@ BUILTIN(free, "( arr -- )", "Frees the memory used by an array or struct.")
 /// @example 3.14 cast<i64> // 3
 /// @example 42 cast<f64> // 42.0
 /// @example 42 cast<str> // "42"
-BUILTIN(cast, "( val -- T )", "Converts a value to the specified type (use with cast<T> syntax).")
+BUILTIN(cast, "( val -- T )", "Converts a value between i64, f64, ptr and str (use with cast<T> syntax).")
 
 // ============================================================================
 // INPUT/OUTPUT
@@ -405,10 +405,6 @@ BUILTIN(printv, "( val -- )", "Prints a value with type information for debuggin
 /// @signature ()
 /// @example 1 2 3 prints  // prints entire stack
 BUILTIN(prints, "()", "Prints the entire stack contents without clearing it.")
-
-/// Print entire stack with type info.
-/// @signature ()
-BUILTIN(printsv, "()", "Prints the entire stack with type information for debugging.")
 
 /// Print newline.
 /// @signature ()

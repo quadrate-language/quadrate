@@ -67,7 +67,7 @@ Use `var` when you need a mutable value that lives across function calls. The in
 ```qd
 var counter = 0            // inferred i64
 pub var greeting = "hi"    // inferred str
-var port:u16 = 8080        // explicit sized type when it matters
+var port:i64 = 8080        // explicit type when the initializer is not enough
 
 fn bump() {
 	counter 1 + -> counter

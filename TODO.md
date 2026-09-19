@@ -191,14 +191,22 @@ that way.
       **Open question**: what is the spelling — `[ … ] [ … ] and` over quotations, or combinators in
       `hof` beside `when`/`unless`?
 
-- [ ] **R15. The sized-integer divergence the spec already documents — decide it.** `300 cast<u8>`
-      yields `300`, and a sized type on a parameter or return annotation is inert. Only struct
-      fields and the `mem` accessors honour the width; those were verified correct (`packed struct
-      { a:u32 … }` with `-1 >>a` loads back `4294967295`). The spec §3.1.1 says a conforming
-      implementation "SHOULD either apply the width consistently or reject sized types in positions
-      where it does not" — the reference implementation does neither.
-      **Open question**: truncate in `cast`, or reject the annotation where it carries no meaning?
-      Rejecting is smaller and matches the subtractive precedent.
+- [x] **Decided and done 2026-09-19: a sized integer type is rejected where it has no width to
+      describe.** The specification already answered this in its own normative sentence — these
+      types "are valid as struct field types and as the width selector on raw memory accessors" —
+      and the divergence note under it recorded that the implementation accepted them elsewhere
+      and silently did nothing. So the fix was to make the implementation say what the
+      specification says, rather than to invent width semantics for positions that have no width:
+      a parameter, a return value, a module-level `var` and a `cast` target are all 64-bit stack
+      slots.
+
+      The probe turned up a fourth inert position the item had not listed: a module-level
+      `var count:u32 = 1000` stored a `u32` in name only, and its own test said so in a comment.
+      All four are rejected now, with a message that names the two places a width does mean
+      something and suggests masking (`value 255 and`) for the truncation `cast<u8>` looked like
+      it offered. Corpus cost: **zero** — no signature, cast or global in `stdlib`, `examples`,
+      `tests` or `cmd` used one, and the eight `sized_ints` tests are all struct fields and are
+      untouched. The specification's divergence note is gone.
 
 #### Spec and implementation disagree
 
@@ -238,60 +246,47 @@ that way.
 
 #### Cuts with corpus evidence
 
-- [ ] **R30. Two genuinely unused debug builtins, not four.** Re-measured 2026-09-18 over
-      `stdlib`, `examples`, `tests` and `cmd` (the last was missing from the original count, which
-      is where `quadmcp`'s Quadrate sources live):
+- [x] **Done 2026-09-19: `printsv` is cut; `prints` and `printv` stay.** Re-counted over
+      `stdlib`, `examples`, `tests` and `cmd`: `printsv` **0 uses anywhere**, `printv` 5 (all in
+      its own tests), `prints` **38** — it is how a good many tests print their result, so the
+      original count ("0 outside tests") understated it. `free` (109 uses) and `dec` were never
+      removable: `mem::free` is implemented *with* `free`, and `dec` is the same instruction as
+      `--`, which has 37 real uses.
 
-    - `printsv` — **0 uses anywhere.**
-    - `printv` — **5, all in its own tests** (`errors/invalid_type`, `errors/invalid_type_output`,
-      `control_flow/function_pointers`). `prints` is likewise 0 outside tests.
-    - `free` — **109 uses. Not removable**: `stdlib/mem/qd/mem/mem.qd` implements `mem::free`
-      *with* it (`address free`), so the suggested replacement was circular, and `buf free` on a
-      raw allocation is the ordinary idiom.
-    - `dec` — 3 uses, all in tests, but `--` is the same instruction and has **37 real decrement
-      uses** (`examples/tak`, `examples/bf`). Removing the word form alone would delete one
-      spelling of an instruction that is in use.
+      So the cut is the one form that nothing has ever used, in tests or out. What is lost is
+      "the stack, with types", which is the cross-product of two aids that both remain; what is
+      kept is the debugging affordance the item was worried about. Writing `printsv` now reports
+      the removal and points at `prints`, the way the removed shufflers do.
 
-      So the only defensible cut is `printsv`, and possibly `printv`. Both are debug aids, and
-      "no committed uses" is a weak argument for that category — nobody commits debug prints. The
-      three print forms (`prints`, `printv`, `printsv`) are all unused in real code by that
-      measure, which argues about the trio rather than the two.
-      **Open question**: cut `printsv` alone, cut all three type-aware/stack debug forms, or keep
-      them as the debugging affordance they are? Unlike the earlier removals this one is not
-      settled by corpus counts.
+- [x] **Answered 2026-09-19 by porting: the bound dialect is right for almost all of it, and
+      the exceptions have a shape.** `hof` was the sharpest case and it was ported both ways
+      before choosing. What came out is a rule rather than a preference:
 
-#### Positioning and scope
+      **A body whose parameters are used once, in the order the caller pushed them, is
+      ceremony.** Those bodies re-push what the caller already arranged. `apply` was
+      `x f call`; as a `stack fn` it is the single word `call`, which is what the function
+      *is*. `when` and `unless` go the same way, and the stack form says something the bound
+      one hid: `swap 0 != if { call } else { drop }` shows that the function is thrown away
+      when the condition fails.
 
-- [ ] **R47. Almost the whole corpus is written in the bound dialect.** The gap is not a missing
-      feature — `stack fn` makes the other form first-class — it is that almost nothing uses it.
-      Measured over `stdlib` + `examples`, 2026-09-19:
+      **A body that uses a value twice, or takes two functions, becomes a puzzle.** `bi`
+      stack-direct is `pick rot call rot rot call` and `both` is
+      `dup rot swap call rot rot call swap`. Both were written, both pass the tests, and
+      neither tells a reader anything. `bi`, `tri`, `keep`, `dip`, `both`, `bi_star`, `times`
+      and the seven array combinators keep their names. Deep access is capped at three now
+      that `roll` is gone, which is the same reasoning arriving from the other side.
 
-      - **Of 497 functions that take parameters, 27 are `stack fn`.** A bound parameter is consumed
-        off the stack, so the other 470 bodies re-push their arguments by name instead of operating
-        on what the caller left.
-      - **2,896 `-> ` named locals against 36 shufflers combined** (`swap` 18, `nip` 7, `rot` 5,
-        `over` 4, `dup2` 2, `roll` 2, `pick` 0). `<<field` is 1,150 and `>>field` 12.
+      Ported on that rule: `hof::apply`, `hof::when`, `hof::unless`, and the eighteen pure
+      pass-through wrappers whose body was exactly the word being wrapped -- the fourteen
+      `sys` port/load/store wrappers, `mem::free`, `path::parent`, `thread::sleep`,
+      `regex::unwrap_re`. **Stack fn count: 27 -> 48 of 452 functions that take parameters.**
 
-      The 27 are not spread evenly, and where they cluster is the useful part: **`math` 8, `bits` 7,
-      `fuzzy` 6**, then `bytes` 2, `crypto` 1, and three in `examples`. Every other module is at
-      zero — **including `hof`**, which is Factor-shaped in its *vocabulary* (`bi`, `tri`, `keep`,
-      `dip`) while every one of its own signatures binds. So the combinator library that reads most
-      stack-direct is not written that way either.
-
-      It is deliberately *not* a sweep: a mechanical `-> x` elimination would produce unreadable
-      stack gymnastics and prove the wrong thing. The question is which code is *better*
-      stack-direct, and that has to be answered by porting and reading.
-
-      Suggested first cut: **`bits.qd` then `fuzzy.qd`** — they already hold 13 of the 27 `stack
-      fn` declarations and the heaviest shuffler use in the corpus, so they should be where the
-      style fits with least forcing. If the diffs read worse *there*, the answer is "keep the bound
-      dialect", and this is where to find that out cheaply. `bits.qd` is also freestanding-eligible,
-      so it settles whether bound locals and stack juggling lower to the same code. Then `hof.qd`,
-      which should be pure gain. Then `dc.qd`, the honest test — a calculator that currently
-      hand-rolls its own stack over `mem::alloc`.
-      **Open question**: is the target every module, or is the honest answer that `hof`-style code
-      is stack-direct and data-heavy modules keep named locals? Answering "every module" without
-      porting three first would be a guess — and is `dc.qd` the acceptance test?
+      Deliberately *not* ported: the other 41 bodies that are mechanically convertible by the
+      same scan. `time::add` would become `+` and `term::up` would become
+      `"\x1b[%dA" fmt::sprintf`; in both the bound form is where the argument order is
+      visible, and the scan cannot tell "the name carries nothing" from "the name is the
+      documentation". That is the line, and it is a judgement per function, which is what this
+      item said it would be.
 
 ### Found while writing `json::parse` (2026-09-19)
 

@@ -208,8 +208,8 @@ pub fn has_ext(path:str -- result:i64) {
 /// @param path str File path
 /// @return parent str Parent directory
 /// @example "/home/user/file.txt" path::parent -> "/home/user"
-pub fn parent(path:str -- parent:str) {
-	path dirname
+pub stack fn parent(path:str -- parent:str) {
+	dirname
 }
 
 /// Check if path is relative (not absolute).

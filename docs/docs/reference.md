@@ -587,11 +587,11 @@ Returns 1 if val is in [low, high), 0 otherwise.
 
 | Instruction | Signature | Description |
 |-------------|-----------|-------------|
-| [`cast`](#cast) | `( val -- T )` | Converts a value to the specified type (use with cast<T> syntax). |
+| [`cast`](#cast) | `( val -- T )` | Converts a value between i64, f64, ptr and str (use with cast<T> syntax). |
 
 #### cast
 
-Converts a value to the specified type (use with cast<T> syntax).
+Converts a value between i64, f64, ptr and str (use with cast<T> syntax).
 
 **Signature:** `( val -- T )`
 
@@ -989,7 +989,6 @@ Detaches a thread, allowing it to run independently.
 | [`print`](#print) | `( val -- )` | Prints a value to stdout without a newline. |
 | [`printv`](#printv) | `( val -- )` | Prints a value with type information for debugging. |
 | [`prints`](#prints) | `()` | Prints the entire stack contents without clearing it. |
-| [`printsv`](#printsv) | `()` | Prints the entire stack with type information for debugging. |
 | [`nl`](#nl) | `()` | Prints a newline character to stdout. |
 
 #### print
@@ -1025,14 +1024,6 @@ Prints the entire stack contents without clearing it.
 ```qd
 1 2 3 prints  // prints entire stack
 ```
-
----
-
-#### printsv
-
-Prints the entire stack with type information for debugging.
-
-**Signature:** `()`
 
 ---
 

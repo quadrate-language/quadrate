@@ -223,8 +223,8 @@ import "libmem.a" as "mem" {
 /// Free allocated memory.
 /// @param address ptr Memory to free (null is safe)
 /// @example buf mem::free
-pub fn free(address:ptr -- ) {
-	address free
+pub stack fn free(address:ptr -- ) {
+	free
 }
 
 /// Check if pointer is null.

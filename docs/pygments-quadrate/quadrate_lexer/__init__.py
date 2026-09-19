@@ -61,7 +61,7 @@ class QuadrateLexer(RegexLexer):
 
     # Built-in I/O
     builtins_io = (
-        'print', 'printv', 'prints', 'printsv', 'nl',
+        'print', 'printv', 'prints', 'nl',
     )
 
     # Built-in misc

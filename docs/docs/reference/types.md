@@ -61,7 +61,7 @@ Quadrate's runtime stack holds 64-bit values, but struct fields and memory buffe
 | `i32` / `u32` | 32-bit signed / unsigned integer | 4 bytes |
 | `u64` | 64-bit unsigned integer | 8 bytes |
 
-Use them as struct fields (`x:u8`, `count:i32`) or with `mem::get_u8` / `mem::set_i16` / etc. for raw byte-offset access.
+Use them as struct fields (`x:u8`, `count:i32`) or with `mem::get_u8` / `mem::set_i16` / etc. for raw byte-offset access. They are rejected anywhere else — a parameter, a return value, a module-level `var`, a `cast` target — because a stack value is always 64 bits, so there is no width for the annotation to describe. They used to be accepted there and do nothing: `300 cast<u8>` yielded `300`, not `44`. To keep the low bits, mask (`value 255 and`).
 
 **Note on `u64`:** because the stack element is always an `i64`, a `u64` field containing a value above `2^63-1` loads onto the stack as a negative `i64` (same bit pattern). Arithmetic still works bitwise, but comparison operators treat it as signed. Use `i64` when you don't specifically need the wider unsigned semantics at the memory layer.
 

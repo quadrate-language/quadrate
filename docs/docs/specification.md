@@ -249,7 +249,11 @@ layouts (on-disk formats, network headers, MMIO registers):
 | `u64` | 64-bit unsigned integer | 8 bytes |
 
 They are valid as struct field types (§8) and as the width selector on raw memory accessors
-(`mem::get_u8`, `mem::set_i16`, and the rest of that family).
+(`mem::get_u8`, `mem::set_i16`, and the rest of that family), and an implementation MUST reject
+them anywhere else — a parameter, a return value, a module-level `var`, a `cast` target. In each
+of those the value is a 64-bit stack slot and the annotation has no width to describe; accepting
+it there states a constraint the implementation does not keep. To keep the low bits of a value,
+mask it (`value 255 and`).
 
 **Load and store semantics.** At a memory boundary:
 
@@ -267,12 +271,6 @@ declared widths with no padding, in target byte order.
 a negative `i64` with the same bit pattern. Bitwise operations behave as expected; comparison
 operators treat it as signed.
 
-**Known divergence in the reference implementation** (not normative — implementers SHOULD NOT
-copy this): sized types are currently accepted in positions where they carry no meaning, and are
-silently inert there. `cast<u8>` does not truncate (`300 cast<u8>` yields `300`, not `44`), and a
-sized type used as a function parameter or return annotation has no effect on the value. Only
-struct fields and the `mem` accessors honour the declared width. A conforming implementation
-SHOULD either apply the width consistently or reject sized types in positions where it does not.
 
 ### 3.2 Composite Types
 
@@ -1861,7 +1859,6 @@ See [Section 4.2](#42-stack-operations) for complete list.
 | `print` | `(x -- )` | Print value |
 | `printv` | `(x -- )` | Print value with type info |
 | `prints` | `( -- )` | Print entire stack contents (debug) |
-| `printsv` | `( -- )` | Print entire stack with type info (debug) |
 | `nl` | `( -- )` | Print newline |
 
 ### 12.8 Error Handling

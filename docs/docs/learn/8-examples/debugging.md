@@ -10,7 +10,6 @@ Use the built-in debug instructions to inspect stack state:
 fn main() {
 	1 2 3
 	prints    // 1 2 3 (print entire stack, non-destructive)
-	printsv   // int:1 int:2 int:3 (with type info)
 	printv    // int:3 (print and pop top value)
 	prints    // 1 2
 	drop drop
@@ -20,7 +19,6 @@ fn main() {
 | Instruction | Pops | Type info | Description |
 |-------------|------|-----------|-------------|
 | `prints` | No | No | Print entire stack |
-| `printsv` | No | Yes | Print entire stack with types |
 | `printv` | Yes (one) | Yes | Print and pop top value |
 
 ## GDB debugging

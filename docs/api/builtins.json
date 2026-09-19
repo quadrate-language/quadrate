@@ -81,7 +81,6 @@
         {"name": "print", "signature": "(a --)", "description": "Print top value (no newline)"},
         {"name": "prints", "signature": "(... -- ...)", "description": "Print entire stack"},
         {"name": "printv", "signature": "(a --)", "description": "Print top value with type info"},
-        {"name": "printsv", "signature": "(... -- ...)", "description": "Print entire stack with types"},
         {"name": "nl", "signature": "(--)", "description": "Print newline"}
       ]
     },
