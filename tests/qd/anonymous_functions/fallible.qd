@@ -1,0 +1,52 @@
+// Test: an anonymous function marked '!' is fallible, and its call site handles the error the
+// way a call to a fallible name does.
+fn propagates()! {
+	0 fn (x:i64 -- r:i64)! {
+		x 0 == if { "divide by zero" 1 panic }
+		100 x /
+	} call? print nl
+}
+
+fn main() {
+	// '!' aborts, so only the success path reaches print
+	4 fn (x:i64 -- r:i64)! {
+		x 0 == if { "divide by zero" 1 panic }
+		100 x /
+	} call! print nl
+
+	// A bare call is read by 'if'
+	0 fn (x:i64 -- r:i64)! {
+		x 0 == if { "divide by zero" 1 panic }
+		100 x /
+	} call if {
+		print nl
+	} else {
+		"caught" print nl
+	}
+
+	5 fn (x:i64 -- r:i64)! {
+		x 0 == if { "divide by zero" 1 panic }
+		100 x /
+	} call if {
+		print nl
+	} else {
+		"caught" print nl
+	}
+
+	// A bare call is read by 'switch', which sees the error code
+	0 fn (x:i64 -- r:i64)! {
+		x 0 == if { "divide by zero" 7 panic }
+		100 x /
+	} call switch {
+		Ok { print nl }
+		7 { "code 7" print nl }
+		_ { "other" print nl }
+	}
+
+	// '?' returns from the enclosing fallible function
+	propagates if {
+		"not reached" print nl
+	} else {
+		"propagated" print nl
+	}
+}

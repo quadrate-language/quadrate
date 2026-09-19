@@ -1,5 +1,7 @@
 # `use` uri
 
+<!-- doccheck: page-context use uri -->
+
 URI encoding, decoding, and parsing.
 Handles percent-encoding and URI component extraction.
 
@@ -141,6 +143,6 @@ Build a URI string from components.
 **Example:**
 
 ```qd
-u .build  // url
+"https://example.com/p" uri::parse uri::build  // url
 ```
 

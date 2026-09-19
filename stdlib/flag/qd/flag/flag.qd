@@ -1,5 +1,8 @@
 /// Command-line flag parsing.
 /// Error codes: Ok=1 (success), specific errors start at 2
+/// doccheck: page-context
+/// doccheck: page-context use os
+/// doccheck: page-setup os::args flag::parse -> f
 
 /// Error: Flag not found.
 pub const ErrNotFound = 2

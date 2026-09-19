@@ -1,6 +1,6 @@
 {
   "name": "hex",
-  "description": "Hexadecimal encoding and decoding. Converts between binary data and hexadecimal string representation.",
+  "description": "Hexadecimal encoding and decoding. Converts between binary data and hexadecimal string representation. doccheck: page-context",
   "constants": [
 
   ],

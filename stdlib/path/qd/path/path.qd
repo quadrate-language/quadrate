@@ -1,5 +1,6 @@
 /// File path manipulation functions.
 /// POSIX-style paths with forward slash separator.
+/// doccheck: page-context
 use strings
 
 /// Path separator constant.

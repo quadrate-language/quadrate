@@ -1,6 +1,6 @@
 {
   "name": "http",
-  "description": "HTTP module. Provides HTTP client and server functionality. Error codes: Ok=1 (success), specific errors start at 2",
+  "description": "HTTP module. Provides HTTP client and server functionality. Error codes: Ok=1 (success), specific errors start at 2 doccheck: page-context doccheck: page-setup http::engine -> e doccheck: page-setup e \"/api\" http::group -> api doccheck: page-setup \"http://example.com\" http::new -> req doccheck: page-setup http::Response { status = 200 headers = \"\" body = \"\" } -> resp doccheck: page-setup http::Ctx { method = \"GET\" path = \"/\" query = \"\" headers = \"\" body = \"\" params = \"\" _socket = 0 _responded = 0 } -> c",
   "constants": [
     {
       "name": "ErrAccept",
@@ -547,7 +547,7 @@
       "params": [{"name": "group", "type": "ptr", "description": "Group handle"}, {"name": "path", "type": "str", "description": "Route path (relative to group prefix)"}, {"name": "handler", "type": "ptr", "description": "Handler function"}],
       "returns": [],
       "errors": [],
-      "examples": ["api \"/users\" fn(c:Ctx -- ) { ... } http::group_GET"]
+      "examples": ["api \"/users\" fn(c:Ctx -- ) { c 200 \"users\" http::string } http::group_GET"]
     },
     {
       "name": "group_POST",
@@ -577,7 +577,7 @@
       "params": [{"name": "group", "type": "ptr", "description": "Group handle"}, {"name": "middleware", "type": "ptr", "description": "Middleware function"}],
       "returns": [],
       "errors": [],
-      "examples": ["api fn(c:Ctx -- ) { ... } http::group_use"]
+      "examples": ["api fn(c:Ctx -- ) { c \"X-Group\" \"api\" http::set_header } http::group_use"]
     },
     {
       "name": "handle_one",
@@ -667,7 +667,7 @@
       "params": [{"name": "engine", "type": "ptr", "description": "Engine"}, {"name": "path", "type": "str", "description": "Route path"}, {"name": "handler", "type": "ptr", "description": "Handler function"}],
       "returns": [],
       "errors": [],
-      "examples": ["e \"/api/users\" fn(c:Ctx -- ) { ... } http::POST"]
+      "examples": ["e \"/api/users\" fn(c:Ctx -- ) { c 200 \"created\" http::string } http::POST"]
     },
     {
       "name": "PUT",

@@ -32,6 +32,7 @@ fn main() {
 
 Try alternatives when first option fails:
 
+<!-- doccheck: skip pattern sketch: try_parse stands for a program's own fallible word -->
 ```qd
 fn try_parse(s:str -- value:i64)! {
 	// ... parsing logic
@@ -154,6 +155,8 @@ Defers execute in LIFO order (last in, first out).
 Wrap resource operations:
 
 ```qd
+use io
+
 struct File {
 	handle:ptr
 	path:str
@@ -226,6 +229,7 @@ fn process(x:i64 -- result:i64)! {
 
 Retry on transient failures:
 
+<!-- doccheck: skip pattern sketch: unreliable_op stands for a program's own fallible word -->
 ```qd
 fn unreliable_op( -- result:i64)! {
 	// Might fail sometimes
@@ -257,6 +261,7 @@ fn retry(max_attempts:i64 -- result:i64)! {
 
 Add context to errors:
 
+<!-- doccheck: skip pattern sketch: read_file and parse_json stand for a program's own fallible words -->
 ```qd
 fn parse_config(path:str -- cfg:ptr)! {
 	path read_file if {
@@ -276,6 +281,7 @@ fn parse_config(path:str -- cfg:ptr)! {
 
 Process items, log failures:
 
+<!-- doccheck: skip pattern sketch: process_item stands for a program's own fallible word -->
 ```qd
 fn process_batch(items:[]i64 -- processed:i64 failed:i64) {
 	0 -> processed

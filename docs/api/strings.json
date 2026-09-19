@@ -1,6 +1,6 @@
 {
   "name": "strings",
-  "description": "String manipulation functions. Error codes: Ok=1 (success), specific errors start at 2",
+  "description": "String manipulation functions. Error codes: Ok=1 (success), specific errors start at 2 doccheck: page-context use mem",
   "constants": [
     {
       "name": "ErrAlloc",
@@ -165,7 +165,7 @@
       "params": [{"name": "ptr", "type": "ptr", "description": "Pointer to null-terminated C string"}],
       "returns": [{"name": "str", "type": "str", "description": "Quadrate string"}],
       "errors": [],
-      "examples": ["entries 0 mem::get_ptr strings::from_ptr print"]
+      "examples": ["2 mem::alloc! -> p  65 p 0 mem::set_byte  0 p 1 mem::set_byte  p strings::from_ptr -> s"]
     },
     {
       "name": "index_of_from",
@@ -285,7 +285,7 @@
       "params": [{"name": "parts", "type": "ptr", "description": "Array of string pointers"}, {"name": "count", "type": "i64", "description": "Number of strings"}, {"name": "delim", "type": "str", "description": "Delimiter string"}],
       "returns": [{"name": "result", "type": "str", "description": "Joined string"}],
       "errors": [{"code": "ErrAlloc", "description": "Memory allocation failed"}],
-      "examples": ["parts count \"/\" strings::join! -> path"]
+      "examples": ["\"usr,bin\" \",\" strings::split! \"/\" strings::join! -> path"]
     },
     {
       "name": "last_index_of",
@@ -415,7 +415,7 @@
       "params": [{"name": "arr", "type": "ptr", "description": "Array of string pointers"}, {"name": "count", "type": "i64", "description": "Number of elements"}],
       "returns": [],
       "errors": [],
-      "examples": ["entries count strings::sort"]
+      "examples": ["\"b,a,c\" \",\" strings::split! strings::sort"]
     },
     {
       "name": "sort_desc",
@@ -425,7 +425,7 @@
       "params": [{"name": "arr", "type": "ptr", "description": "Array of string pointers"}, {"name": "count", "type": "i64", "description": "Number of elements"}],
       "returns": [],
       "errors": [],
-      "examples": ["entries count strings::sort_desc"]
+      "examples": ["\"b,a,c\" \",\" strings::split! strings::sort_desc"]
     },
     {
       "name": "split_n",

@@ -102,6 +102,17 @@ namespace Qd {
 			return mPropagateOnError;
 		}
 
+		// `call` only: whether the function pointer on the stack is a fallible one. The call site
+		// cannot see that for itself -- the callee is a value, not a name -- so the validator,
+		// which resolves the pointer's signature, records it here for code generation.
+		void setCalleeFallible(bool fallible) {
+			mCalleeFallible = fallible;
+		}
+
+		bool calleeFallible() const {
+			return mCalleeFallible;
+		}
+
 	private:
 		// Semantic validation setters (only accessible by SemanticValidator)
 		void setIsMethodCall(bool isMethod) {
@@ -131,6 +142,7 @@ namespace Qd {
 		size_t mMethodReceiverPositionFromTop = 0;
 		bool mAbortOnError = false;
 		bool mPropagateOnError = false;
+		bool mCalleeFallible = false;
 	};
 }
 

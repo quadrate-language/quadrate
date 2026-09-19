@@ -1,5 +1,10 @@
 /// File and stream I/O operations.
 /// Error codes: Ok=1 (success), specific errors start at 2
+/// doccheck: page-context
+/// doccheck: page-context use mem
+/// doccheck: page-setup "/tmp/doccheck.txt" io::Read io::open! -> f
+/// doccheck: page-setup 1024 mem::alloc! -> buf
+/// doccheck: page-setup 16 -> len
 
 /// Error: File not found.
 pub const ErrNotFound = 2
@@ -118,7 +123,7 @@ import "libio.a" as "io" {
 	/// @return line str The line read, without its trailing newline; "" at end of input
 	/// @return ok i64 1 if a line was read, 0 at end of input
 	/// @error ErrRead The underlying read failed
-	/// @example io::readline switch { Ok { -> ok -> line ok 0 == if { break } } _ { } }
+	/// @example io::readline switch { Ok { -> ok -> line line print nl } _ { } }
 	pub fn readline( -- line:str ok:i64)!
 
 	/// Read entire file contents.

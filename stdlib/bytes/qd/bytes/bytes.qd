@@ -1,6 +1,13 @@
 /// Byte array operations and endianness conversion.
 /// Provides functions for reading and writing multi-byte integers
 /// in big-endian and little-endian byte order.
+/// doccheck: page-context
+/// doccheck: page-context use mem
+/// doccheck: page-setup 16 mem::alloc! -> buf
+/// doccheck: page-setup 16 mem::alloc! -> buf1
+/// doccheck: page-setup 16 mem::alloc! -> buf2
+/// doccheck: page-setup 16 mem::alloc! -> dst
+/// doccheck: page-setup 16 mem::alloc! -> src
 use mem
 
 /// Read a 16-bit unsigned integer from memory in big-endian order.

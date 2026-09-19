@@ -1,5 +1,39 @@
 # `use` math
 
+<!-- doccheck: page-context use math -->
+
+<!-- doccheck: page-setup math::Vec2 { x = 3.0 y = 4.0 } -> v2 -->
+
+<!-- doccheck: page-setup math::Vec2 { x = 1.0 y = 0.0 } -> other2 -->
+
+<!-- doccheck: page-setup math::Vec3 { x = 1.0 y = 2.0 z = 2.0 } -> v3 -->
+
+<!-- doccheck: page-setup math::Vec3 { x = 0.0 y = 1.0 z = 0.0 } -> other3 -->
+
+<!-- doccheck: page-setup math::Vec4 { x = 1.0 y = 2.0 z = 2.0 w = 1.0 } -> v4 -->
+
+<!-- doccheck: page-setup math::Vec4 { x = 0.0 y = 1.0 z = 0.0 w = 1.0 } -> other4 -->
+
+<!-- doccheck: page-setup math::quat_identity -> q -->
+
+<!-- doccheck: page-setup math::quat_identity -> other_q -->
+
+<!-- doccheck: page-setup math::mat4_identity -> m -->
+
+<!-- doccheck: page-setup math::mat4_identity -> other_m -->
+
+<!-- doccheck: page-setup math::Vec3 { x = 0.0 y = 1.0 z = 0.0 } -> axis -->
+
+<!-- doccheck: page-setup math::Vec3 { x = 0.0 y = 1.0 z = 0.0 } -> normal -->
+
+<!-- doccheck: page-setup math::Vec3 { x = 1.0 y = 0.0 z = 0.0 } -> point -->
+
+<!-- doccheck: page-setup math::Vec3 { x = 0.0 y = 0.0 z = 5.0 } -> eye -->
+
+<!-- doccheck: page-setup math::Vec3 { x = 0.0 y = 0.0 z = 0.0 } -> target -->
+
+<!-- doccheck: page-setup math::Vec3 { x = 0.0 y = 1.0 z = 0.0 } -> up -->
+
 Mathematical functions and constants.
 
 ## Constants
@@ -23,7 +57,7 @@ Mathematical functions and constants.
 
 Absolute value.
 
-**Signature:** `(f64 -- f64)`
+**Signature:** `(x:f64 -- f64)`
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
@@ -31,16 +65,12 @@ Absolute value.
 
 | Output | Type | Description |
 |--------|------|-------------|
-| `result` | `f64` |  |
-
-| Error | Description |
-|-------|-------------|
-| `math::x` |  |
+| `result` | `f64` | \|x\| |
 
 **Example:**
 
 ```qd
-||-5.0 math::abs print  // 5.0
+-5.0 math::abs print  // 5.0
 ```
 ---
 
@@ -241,27 +271,6 @@ Evaluate cubic Bezier curve.
 ```
 ---
 
-### `fn` cb
-
-Cube a number.
-
-**Signature:** `(f64 -- f64)`
-
-| Parameter | Type | Description |
-|-----------|------|-------------|
-| `x` | `f64` | Value to cube |
-
-| Output | Type | Description |
-|--------|------|-------------|
-| `result` | `f64` | x * x * x |
-
-**Example:**
-
-```qd
-2.0 math::cb print  // 8.0
-```
----
-
 ### `fn` cbrt
 
 Cube root.
@@ -280,6 +289,27 @@ Cube root.
 
 ```qd
 8.0 math::cbrt print  // 2.0
+```
+---
+
+### `fn` cb
+
+Cube a number.
+
+**Signature:** `(x:f64 -- f64)`
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `x` | `f64` | Value to cube |
+
+| Output | Type | Description |
+|--------|------|-------------|
+| `result` | `f64` | x * x * x |
+
+**Example:**
+
+```qd
+2.0 math::cb print  // 8.0
 ```
 ---
 
@@ -398,7 +428,7 @@ Cubic Hermite spline interpolation. Interpolates between p1 and p2 using tangent
 
 Convert degrees to radians.
 
-**Signature:** `(f64 -- f64)`
+**Signature:** `(degrees:f64 -- f64)`
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
@@ -587,7 +617,7 @@ Inverse lerp - find t given a value between a and b.
 
 Reciprocal (1/x).
 
-**Signature:** `(f64 -- f64)`
+**Signature:** `(x:f64 -- f64)`
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
@@ -779,7 +809,7 @@ Logarithm with arbitrary base.
 
 Maximum of two values.
 
-**Signature:** `(any any -- any)`
+**Signature:** `(a:any b:any -- any)`
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
@@ -801,7 +831,7 @@ Maximum of two values.
 
 Minimum of two values.
 
-**Signature:** `(any any -- any)`
+**Signature:** `(a:any b:any -- any)`
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
@@ -862,7 +892,7 @@ Power function.
 
 Convert radians to degrees.
 
-**Signature:** `(f64 -- f64)`
+**Signature:** `(radians:f64 -- f64)`
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
@@ -1034,27 +1064,6 @@ Smooth step interpolation (cubic Hermite, zero derivatives at edges).
 ```
 ---
 
-### `fn` sq
-
-Square a number.
-
-**Signature:** `(f64 -- f64)`
-
-| Parameter | Type | Description |
-|-----------|------|-------------|
-| `x` | `f64` | Value to square |
-
-| Output | Type | Description |
-|--------|------|-------------|
-| `result` | `f64` | x * x |
-
-**Example:**
-
-```qd
-3.0 math::sq print  // 9.0
-```
----
-
 ### `fn` sqrt
 
 Square root.
@@ -1073,6 +1082,27 @@ Square root.
 
 ```qd
 4.0 math::sqrt print  // 2.0
+```
+---
+
+### `fn` sq
+
+Square a number.
+
+**Signature:** `(x:f64 -- f64)`
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `x` | `f64` | Value to square |
+
+| Output | Type | Description |
+|--------|------|-------------|
+| `result` | `f64` | x * x |
+
+**Example:**
+
+```qd
+3.0 math::sq print  // 9.0
 ```
 ---
 
@@ -1204,7 +1234,7 @@ Create rotation matrix from quaternion.
 **Example:**
 
 ```qd
-q mat4_from_quat  // rot_mat
+other_q math::mat4_from_quat  // rot_mat
 ```
 ---
 
@@ -1244,7 +1274,7 @@ Create a look-at view matrix.
 **Example:**
 
 ```qd
-eye target up mat4_look_at  // view
+eye target up math::mat4_look_at  // view
 ```
 ---
 
@@ -1270,7 +1300,7 @@ Create an orthographic projection matrix.
 **Example:**
 
 ```qd
--1.0 1.0 -1.0 1.0 0.1 100.0 mat4_orthographic  // proj
+-1.0 1.0 -1.0 1.0 0.1 100.0 math::mat4_orthographic  // proj
 ```
 ---
 
@@ -1294,7 +1324,7 @@ Create a perspective projection matrix.
 **Example:**
 
 ```qd
-1.047 1.777 0.1 100.0 mat4_perspective  // proj
+1.047 1.777 0.1 100.0 math::mat4_perspective  // proj
 ```
 ---
 
@@ -1380,7 +1410,7 @@ Create scale Mat4.
 **Example:**
 
 ```qd
-2.0 2.0 2.0 math::mat4_scaling  // m
+1.0 1.0 1.0 math::mat4_scaling  // m
 ```
 ---
 
@@ -1403,7 +1433,7 @@ Create translation Mat4.
 **Example:**
 
 ```qd
-1.0 2.0 3.0 math::mat4_translation  // m
+1.0 1.0 1.0 math::mat4_translation  // m
 ```
 ---
 
@@ -1476,7 +1506,7 @@ Matrix multiplication.
 **Example:**
 
 ```qd
-other m mul  // product
+m other_m mul  // product
 ```
 ---
 
@@ -1497,7 +1527,7 @@ Transform a Vec3 point by this matrix (w=1).
 **Example:**
 
 ```qd
-point m transform_point  // transformed
+m point transform_point  // transformed
 ```
 ---
 
@@ -1518,7 +1548,7 @@ Transform a Vec4 by this matrix.
 **Example:**
 
 ```qd
-vec m transform_vec4  // transformed
+m other4 transform_vec4  // transformed
 ```
 ---
 
@@ -1571,7 +1601,7 @@ Create quaternion from axis and angle.
 **Example:**
 
 ```qd
-axis 1.57 quat_from_axis_angle  // q
+axis 1.57 math::quat_from_axis_angle  // q
 ```
 ---
 
@@ -1594,7 +1624,7 @@ Create quaternion from Euler angles (XYZ order).
 **Example:**
 
 ```qd
-0.0 1.57 0.0 quat_from_euler  // q
+0.0 1.57 0.0 math::quat_from_euler  // q
 ```
 ---
 
@@ -1650,7 +1680,7 @@ Dot product with another quaternion.
 **Example:**
 
 ```qd
-other q dot  // d
+q other_q dot  // d
 ```
 ---
 
@@ -1716,7 +1746,7 @@ Quaternion multiplication.
 **Example:**
 
 ```qd
-other q mul  // product
+q other_q mul  // product
 ```
 ---
 
@@ -1754,7 +1784,7 @@ Rotate a Vec3 by this quaternion.
 **Example:**
 
 ```qd
-v q rotate_vec3  // rotated
+q point rotate_vec3  // rotated
 ```
 ---
 
@@ -1776,7 +1806,7 @@ Spherical linear interpolation to another quaternion.
 **Example:**
 
 ```qd
-other 0.5 q slerp  // mid
+q other_q 0.5 slerp  // mid
 ```
 
 ## Vec2
@@ -1881,7 +1911,7 @@ Add another Vec2 to this vector.
 **Example:**
 
 ```qd
-other v add  // sum
+v2 other2 add  // sum
 ```
 ---
 
@@ -1898,7 +1928,7 @@ Angle of this vector from positive X axis.
 **Example:**
 
 ```qd
-v angle  // a
+v2 angle  // a
 ```
 ---
 
@@ -1919,7 +1949,7 @@ Distance to another Vec2.
 **Example:**
 
 ```qd
-other v distance  // d
+v2 other2 distance  // d
 ```
 ---
 
@@ -1940,7 +1970,7 @@ Dot product with another Vec2.
 **Example:**
 
 ```qd
-other v dot  // d
+v2 other2 dot  // d
 ```
 ---
 
@@ -1957,7 +1987,7 @@ Squared length of this vector (avoids sqrt).
 **Example:**
 
 ```qd
-v length_sq  // len_sq
+v2 length_sq  // len_sq
 ```
 ---
 
@@ -1974,7 +2004,7 @@ Length (magnitude) of this vector.
 **Example:**
 
 ```qd
-v length  // len
+v2 length  // len
 ```
 ---
 
@@ -1996,7 +2026,7 @@ Linear interpolation to another Vec2.
 **Example:**
 
 ```qd
-other 0.5 v lerp  // mid
+v2 other2 0.5 lerp  // mid
 ```
 ---
 
@@ -2013,7 +2043,7 @@ Negate this vector.
 **Example:**
 
 ```qd
-v neg  // neg_v
+v2 neg  // neg_v
 ```
 ---
 
@@ -2030,7 +2060,7 @@ Normalize this vector to unit length.
 **Example:**
 
 ```qd
-v normalize  // unit
+v2 normalize  // unit
 ```
 ---
 
@@ -2047,7 +2077,7 @@ Get perpendicular vector (90° counterclockwise rotation).
 **Example:**
 
 ```qd
-v perpendicular  // perp
+v2 perpendicular  // perp
 ```
 ---
 
@@ -2068,7 +2098,7 @@ Rotate this vector by an angle.
 **Example:**
 
 ```qd
-1.57 v rotate  // rotated
+v2 1.57 rotate  // rotated
 ```
 ---
 
@@ -2089,7 +2119,7 @@ Multiply this vector by a scalar.
 **Example:**
 
 ```qd
-2.0 v scale  // scaled
+v2 2.0 scale  // scaled
 ```
 ---
 
@@ -2110,7 +2140,7 @@ Subtract another Vec2 from this vector.
 **Example:**
 
 ```qd
-other v subtract  // diff
+v2 other2 subtract  // diff
 ```
 
 ## Vec3
@@ -2249,7 +2279,7 @@ Add another Vec3 to this vector.
 **Example:**
 
 ```qd
-other v add  // sum
+v3 other3 add  // sum
 ```
 ---
 
@@ -2270,7 +2300,7 @@ Angle between this vector and another.
 **Example:**
 
 ```qd
-other v angle_between  // a
+v3 other3 angle_between  // a
 ```
 ---
 
@@ -2291,7 +2321,7 @@ Cross product with another Vec3.
 **Example:**
 
 ```qd
-other v cross  // c
+v3 other3 cross  // c
 ```
 ---
 
@@ -2312,7 +2342,7 @@ Distance to another Vec3.
 **Example:**
 
 ```qd
-other v distance  // d
+v3 other3 distance  // d
 ```
 ---
 
@@ -2333,7 +2363,7 @@ Dot product with another Vec3.
 **Example:**
 
 ```qd
-other v dot  // d
+v3 other3 dot  // d
 ```
 ---
 
@@ -2350,7 +2380,7 @@ Squared length of this vector (avoids sqrt).
 **Example:**
 
 ```qd
-v length_sq  // len_sq
+v3 length_sq  // len_sq
 ```
 ---
 
@@ -2367,7 +2397,7 @@ Length (magnitude) of this vector.
 **Example:**
 
 ```qd
-v length  // len
+v3 length  // len
 ```
 ---
 
@@ -2389,7 +2419,7 @@ Linear interpolation to another Vec3.
 **Example:**
 
 ```qd
-other 0.5 v lerp  // mid
+v3 other3 0.5 lerp  // mid
 ```
 ---
 
@@ -2406,7 +2436,7 @@ Negate this vector.
 **Example:**
 
 ```qd
-v neg  // neg_v
+v3 neg  // neg_v
 ```
 ---
 
@@ -2423,7 +2453,7 @@ Normalize this vector to unit length.
 **Example:**
 
 ```qd
-v normalize  // unit
+v3 normalize  // unit
 ```
 ---
 
@@ -2444,7 +2474,7 @@ Reflect this vector around a normal.
 **Example:**
 
 ```qd
-normal v reflect  // reflected
+v3 normal reflect  // reflected
 ```
 ---
 
@@ -2465,7 +2495,7 @@ Multiply this vector by a scalar.
 **Example:**
 
 ```qd
-2.0 v scale  // scaled
+v3 2.0 scale  // scaled
 ```
 ---
 
@@ -2486,7 +2516,7 @@ Subtract another Vec3 from this vector.
 **Example:**
 
 ```qd
-other v subtract  // diff
+v3 other3 subtract  // diff
 ```
 
 ## Vec4
@@ -2556,7 +2586,7 @@ Add another Vec4 to this vector.
 **Example:**
 
 ```qd
-other v add  // sum
+v4 other4 add  // sum
 ```
 ---
 
@@ -2577,7 +2607,7 @@ Dot product with another Vec4.
 **Example:**
 
 ```qd
-other v dot  // d
+v4 other4 dot  // d
 ```
 ---
 
@@ -2594,7 +2624,7 @@ Squared length of this vector (avoids sqrt).
 **Example:**
 
 ```qd
-v length_sq  // len_sq
+v4 length_sq  // len_sq
 ```
 ---
 
@@ -2611,7 +2641,7 @@ Length (magnitude) of this vector.
 **Example:**
 
 ```qd
-v length  // len
+v4 length  // len
 ```
 ---
 
@@ -2633,7 +2663,7 @@ Linear interpolation to another Vec4.
 **Example:**
 
 ```qd
-other 0.5 v lerp  // mid
+v4 other4 0.5 lerp  // mid
 ```
 ---
 
@@ -2650,7 +2680,7 @@ Negate this vector.
 **Example:**
 
 ```qd
-v neg  // neg_v
+v4 neg  // neg_v
 ```
 ---
 
@@ -2667,7 +2697,7 @@ Normalize this vector to unit length.
 **Example:**
 
 ```qd
-v normalize  // unit
+v4 normalize  // unit
 ```
 ---
 
@@ -2688,7 +2718,7 @@ Multiply this vector by a scalar.
 **Example:**
 
 ```qd
-2.0 v scale  // scaled
+v4 2.0 scale  // scaled
 ```
 ---
 
@@ -2709,6 +2739,6 @@ Subtract another Vec4 from this vector.
 **Example:**
 
 ```qd
-other v subtract  // diff
+v4 other4 subtract  // diff
 ```
 

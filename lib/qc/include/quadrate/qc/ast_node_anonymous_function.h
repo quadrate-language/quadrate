@@ -12,6 +12,8 @@ namespace Qd {
 	 *
 	 * Syntax without captures: fn (x:i64 y:i64 -- r:i64) { body }
 	 * Syntax with captures:    fn [a, b] (x:i64 y:i64 -- r:i64) { body }
+	 * Arguments left on stack:  stack fn (i64 i64 -- r:i64) { body }
+	 * Fallible:                 fn (x:i64 -- r:i64)! { body }
 	 *
 	 * This node represents an inline function definition that produces
 	 * a function pointer (or closure) when evaluated. Unlike regular function
@@ -123,12 +125,34 @@ namespace Qd {
 			return !mCapturedVariables.empty();
 		}
 
+		// `stack fn (...) { }`: the inputs stay on the stack for the body to work on, and any
+		// names they carry are documentation. Without it every input must be named and is bound
+		// as a local -- the same rule, and the same spelling, as a named function.
+		void setStack(bool isStack) {
+			mIsStack = isStack;
+		}
+
+		bool isStack() const {
+			return mIsStack;
+		}
+
+		// `fn (...)! { }`: the body may panic, and a call site must handle or propagate it.
+		void setThrows(bool throws) {
+			mThrows = throws;
+		}
+
+		bool throws() const {
+			return mThrows;
+		}
+
 	private:
 		IAstNode* mParent;
 		std::unique_ptr<IAstNode> mBody;
 		std::vector<std::unique_ptr<IAstNode>> mInputParameters;
 		std::vector<std::unique_ptr<IAstNode>> mOutputParameters;
 		std::vector<std::string> mCapturedVariables; // Variables captured from enclosing scope
+		bool mIsStack = false;
+		bool mThrows = false;
 		size_t mLine;
 		size_t mColumn;
 	};

@@ -118,7 +118,9 @@ x 0 > if { "positive" } else { "negative" } -> color
 When you're confused, track what's on the stack at each step:
 
 ```qd
-fn hypot(a:f64 b:f64 -- result:f64) {
+use math
+
+stack fn hypot(a:f64 b:f64 -- result:f64) {
     //            Stack: [a, b]
     dup *         // Stack: [a, b*b]
     swap dup *    // Stack: [b*b, a*a]

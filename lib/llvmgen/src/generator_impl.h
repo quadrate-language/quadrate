@@ -514,6 +514,10 @@ namespace Qd {
 		 * code 0 is still a failure -- or a non-zero `error_code`, since imported C functions set
 		 * the code but not the flag. */
 		ErrorState generateReadErrorState(llvm::Value* ctx, const char* name = "has_error");
+		// The abort / propagate / push-status tail shared by fallible call sites. See its
+		// definition; `callNode` is the call, which is how the status is shaped for its consumer.
+		void generateFallibleCallEpilogue(
+				llvm::Value* ctx, const char* name, IAstNode* callNode, bool abortOnError, bool propagateOnError);
 
 		// Control flow
 		void generateIf(AstNodeIfStatement* ifStmt, llvm::Value* ctx);

@@ -10,6 +10,7 @@
 /// test "addition works" {
 ///     2 3 + 5 testing::assert_eq
 /// }
+/// doccheck: page-context
 import "libtesting.a" as "testing" {
 	/// Assert that two values are equal.
 	/// Works with any type (i64, f64, str, ptr).

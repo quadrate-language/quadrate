@@ -466,6 +466,10 @@ namespace Qd {
 		mModuleFunctions.clear();
 		mModuleImportedFunctions.clear();
 		mReportedErrors.clear();
+		// Keyed by AST node, and this validator outlives the AST it was last given: a freed node's
+		// address could come back as a new one's and silently suppress its check.
+		mCheckedAnonFunctions.clear();
+		mCallSiteSignatures.clear();
 
 		// Extract source directory and package name from filename
 		if (filename) {

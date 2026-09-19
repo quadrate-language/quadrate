@@ -1,5 +1,15 @@
 # `use` io
 
+<!-- doccheck: page-context use io -->
+
+<!-- doccheck: page-context use mem -->
+
+<!-- doccheck: page-setup "/tmp/doccheck.txt" io::Read io::open! -> f -->
+
+<!-- doccheck: page-setup 1024 mem::alloc! -> buf -->
+
+<!-- doccheck: page-setup 16 -> len -->
+
 File and stream I/O operations.
 Error codes: Ok=1 (success), specific errors start at 2
 
@@ -208,7 +218,7 @@ Read a line from stdin.  Running out of input is not an error -- it is how a rea
 **Example:**
 
 ```qd
-io::readline switch { Ok { -> ok  // line ok 0 == if { break } } _ { } }
+io::readline switch { Ok { -> ok -> line line print nl } _ { } }
 ```
 ---
 

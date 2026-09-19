@@ -1,5 +1,8 @@
 /// TCP network operations.
 /// Error codes: Ok=1 (success), specific errors start at 2
+/// doccheck: page-context
+/// doccheck: page-setup 0 -> sock
+/// doccheck: page-setup 0 -> server
 
 /// Error: Listen/bind failed.
 pub const ErrListen = 2

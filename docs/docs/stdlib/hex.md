@@ -1,5 +1,7 @@
 # `use` hex
 
+<!-- doccheck: page-context use hex -->
+
 Hexadecimal encoding and decoding.
 Converts between binary data and hexadecimal string representation.
 

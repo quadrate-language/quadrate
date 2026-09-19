@@ -1,5 +1,7 @@
 # `use` tty
 
+<!-- doccheck: page-context use tty -->
+
 Terminal detection and information.
 Provides functions to check if file descriptors are connected to terminals
 and to get terminal dimensions.

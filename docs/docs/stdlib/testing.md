@@ -1,5 +1,7 @@
 # `use` testing
 
+<!-- doccheck: page-context use testing -->
+
 Testing utilities for unit tests.
 
 Provides assertion functions for writing test cases.

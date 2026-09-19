@@ -34,7 +34,7 @@ Quadrate has four basic types:
 Function signatures use `(inputs -- outputs)` notation:
 
 ```qd
-fn add(a:i64 b:i64 -- sum:i64) { + }
+fn add(a:i64 b:i64 -- sum:i64) { a b + }
 ```
 
 - **Before `--`**: Values consumed from stack (bottom to top)
@@ -44,6 +44,7 @@ fn add(a:i64 b:i64 -- sum:i64) { + }
 
 Functions that can fail are marked with `!`:
 
+<!-- doccheck: skip signature shown with its body elided -->
 ```qd
 fn divide(a:i64 b:i64 -- result:i64)! {
 	// Can signal error

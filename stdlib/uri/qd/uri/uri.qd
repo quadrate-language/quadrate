@@ -1,5 +1,6 @@
 /// URI encoding, decoding, and parsing.
 /// Handles percent-encoding and URI component extraction.
+/// doccheck: page-context
 use mem
 use strings
 use unicode
@@ -437,7 +438,7 @@ pub fn query_has(query:str key:str -- exists:i64) {
 
 /// Build a URI string from components.
 /// @return s str URI string
-/// @example u .build -> url
+/// @example "https://example.com/p" uri::parse uri::build -> url
 pub fn (u:Uri) build( -- s:str) {
 	u <<scheme -> scheme
 	u <<host -> host

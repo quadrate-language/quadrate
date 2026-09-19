@@ -83,7 +83,6 @@ Use **if-else** when:
 
 ```qd
 fn get_color(code:i64 -- name:str) {
-	-> code  // bind parameter
 	code switch {
 		0 {
 			"black"
@@ -108,7 +107,6 @@ fn get_color(code:i64 -- name:str) {
 
 ```qd
 fn get_color_if(code:i64 -- name:str) {
-	-> code  // bind parameter
 	code 0 == if {
 		"black"
 	} else {
@@ -135,7 +133,6 @@ fn get_color_if(code:i64 -- name:str) {
 
 ```qd
 fn handle_menu(choice:i64 -- ) {
-	-> choice  // bind parameter
 	choice switch {
 		1 {
 			"Creating new file..." print nl
@@ -160,7 +157,6 @@ fn handle_menu(choice:i64 -- ) {
 
 ```qd
 fn next_state(current:i64 input:i64 -- next:i64) {
-	-> input -> current
 	current switch {
 		0 {
 			input 97 == if { 1 } else { 0 }  // 'a'

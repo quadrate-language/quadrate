@@ -8,6 +8,7 @@ Language keywords for declarations, control flow, and more.
 |---------|-------------|
 | [`fn`](#fn) | Declares a function with a stack signature |
 | [`pub`](#pub) | Makes a function, constant, or struct visible to other modules |
+| [`stack`](#stack) | Function modifier: the inputs stay on the stack instead of being bound |
 | [`inline`](#inline) | Requests the compiler to inline a function at call sites |
 | [`const`](#const) | Declares a compile-time constant value |
 | [`var`](#var) | Declares a module-level mutable global variable |
@@ -47,7 +48,17 @@ Declares a function with a stack signature.
 
 ```qd
 fn add(a:i64 b:i64 -- sum:i64) {
-	+
+	a b +
+}
+```
+
+Written without a name it is an anonymous function, and every rule here applies to it unchanged —
+named inputs are bound, `stack` leaves them on the stack, `!` makes it fallible, and the body must
+leave what the signature declares:
+
+```qd
+fn main() {
+	5 fn (x:i64 -- r:i64) { x 2 * } call print nl  // 10
 }
 ```
 
@@ -58,6 +69,23 @@ Makes a function, constant, or struct visible to other modules.
 ```qd
 pub fn greet() {
 	"Hello" print nl
+}
+```
+
+### stack
+
+Function modifier: the input parameters are not bound as locals; they stay on the stack for the
+body to work on, and any names they carry are documentation. Without it every input must be named,
+since there would be nothing to bind. A `stack fn` must declare at least one input.
+
+```qd
+stack fn scaled(value:i64 -- result:i64) {
+	3 *
+}
+
+fn main() {
+	7 scaled print nl  // 21
+	3 4 stack fn (i64 i64 -- r:i64) { + } call print nl  // 7
 }
 ```
 
@@ -328,6 +356,8 @@ Has two uses:
 **1. Type narrowing cast** — Narrows a `ptr` value to a specific struct type for field access. This is compile-time only with no runtime cost.
 
 ```qd
+use http
+
 fn get_body(c:ptr -- body:str) {
 	c as http::Ctx <<body
 }
@@ -371,6 +401,7 @@ type Number = i64
 
 Use `pub type` to export from a module.
 
+<!-- doccheck: skip signature shown with its body elided -->
 ```qd
 fn filter(arr:IntArray pred:Predicate -- result:IntArray) { ... }
 ```

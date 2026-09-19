@@ -305,6 +305,15 @@ namespace Qd {
 		void typeCheckBlock(IAstNode* node, std::vector<StackValueType>& typeStack,
 				std::unordered_map<std::string, StackValueType>& localVariables,
 				std::vector<std::string>& structTypeStack);
+		// Checks an anonymous function's body the way a named function's body is checked: on its
+		// own empty stack, with its named parameters bound and its captures typed from the scope
+		// it was written in.
+		void typeCheckAnonymousFunction(class AstNodeAnonymousFunction* anonFunc,
+				const std::unordered_map<std::string, StackValueType>& enclosingLocals);
+		// Checks every anonymous function inside a value that the block walk does not descend
+		// into -- an array literal's elements, a struct literal's field initializers.
+		void checkAnonymousFunctionsWithin(
+				IAstNode* node, const std::unordered_map<std::string, StackValueType>& enclosingLocals);
 		void typeCheckInstruction(IAstNode* node, const char* name, std::vector<StackValueType>& typeStack,
 				std::vector<std::string>& structTypeStack);
 
@@ -544,6 +553,14 @@ namespace Qd {
 		// nothing - so type checking skips them rather than emitting a cascade of
 		// underflow/arity errors on lines the user must not change.
 		std::unordered_set<const IAstNode*> mBodiesWithRemovedBuiltins;
+		// The resolved signature of each fallible `call` site, keyed by the instruction node. A
+		// `call` has no name to look up, so this is where the `if`/`switch` after a bare one
+		// finds what the callee produces.
+		std::unordered_map<const IAstNode*, FunctionSignature> mCallSiteSignatures;
+
+		// Anonymous functions whose body has been checked. The same one can be reached twice --
+		// a module's AST is validated once per importer -- and it is only worth one diagnostic.
+		std::unordered_set<const IAstNode*> mCheckedAnonFunctions;
 		std::unordered_set<const IAstNode*> mUndefinedNodes;
 
 		// Pending function signature - set when an anonymous function or function pointer

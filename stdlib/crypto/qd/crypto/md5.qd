@@ -375,7 +375,7 @@ pub fn (h:Md5) release() {
 /// Note: MD5 is cryptographically broken. Use only for checksums, not security.
 /// @param s str Input string
 /// @return hash str 32-character hex string
-/// @example "Hello" md5! -> hash
+/// @example "Hello" crypto::md5! -> hash
 pub fn md5(s:str -- hash:str)! {
 	Md5 {} -> h
 	h s update? -> h

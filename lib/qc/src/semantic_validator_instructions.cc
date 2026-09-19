@@ -19,6 +19,26 @@
 
 namespace Qd {
 
+	namespace {
+		// The node that follows this one in its parent block, or nullptr. A fallible call's
+		// consumer is its next sibling, which is what the rule about `if`/`switch` is about.
+		IAstNode* nextSiblingOf(IAstNode* node) {
+			if (!node) {
+				return nullptr;
+			}
+			IAstNode* parent = node->parent();
+			if (!parent) {
+				return nullptr;
+			}
+			for (size_t i = 0; i + 1 < parent->childCount(); i++) {
+				if (parent->child(i) == node) {
+					return parent->child(i + 1);
+				}
+			}
+			return nullptr;
+		}
+	}
+
 #include "semantic_validator_internal.h"
 
 	void SemanticValidator::typeCheckInstruction(IAstNode* node, const char* name,
@@ -783,6 +803,44 @@ namespace Qd {
 			if (mPendingFnSignature.has_value()) {
 				const FunctionSignature& sig = mPendingFnSignature.value();
 
+				// A fallible callee is handled at the call site exactly as a fallible name is:
+				// `!` aborts, `?` propagates, and a bare call has to be read by an `if` or a
+				// `switch`. The site cannot see any of this for itself -- what it calls is a
+				// value -- so the resolved signature is what answers, and the answer is recorded
+				// on the node for code generation, which has no signature to consult.
+				if (AstNodeInstruction* callInst = (node && node->type() == IAstNode::Type::INSTRUCTION)
+														   ? static_cast<AstNodeInstruction*>(node)
+														   : nullptr) {
+					const bool abort = callInst->abortOnError();
+					const bool propagate = callInst->propagateOnError();
+					if ((abort || propagate) && !sig.throws) {
+						std::string op = abort ? "!" : "?";
+						std::string errorMsg =
+								"Cannot use '" + op + "' operator on 'call': the function called is not fallible";
+						reportErrorConditional(node, errorMsg.c_str(), reportErrors);
+					}
+					if (propagate && !mCurrentFunctionFallible) {
+						reportErrorConditional(node,
+								"Cannot use '?' operator on 'call': enclosing function must be fallible "
+								"(add '!' to function signature)",
+								reportErrors);
+					}
+					if (sig.throws) {
+						callInst->setCalleeFallible(true);
+						mCallSiteSignatures[node] = sig;
+						if (!abort && !propagate) {
+							IAstNode* nextNode = nextSiblingOf(node);
+							if (!nextNode || (nextNode->type() != IAstNode::Type::IF_STATEMENT &&
+													 nextNode->type() != IAstNode::Type::SWITCH_STATEMENT)) {
+								reportErrorConditional(node,
+										"Fallible 'call' must be immediately followed by 'if' or 'switch' to "
+										"check for errors, or use '!' to abort on error, or '?' to propagate",
+										reportErrors);
+							}
+						}
+					}
+				}
+
 				// Consume input parameters from stack
 				if (typeStack.size() < sig.consumes.size()) {
 					std::string errorMsg = "Type error in 'call': Stack underflow for function pointer (requires ";
@@ -806,8 +864,17 @@ namespace Qd {
 				// Push produced types, with any struct/array/fn types the signature carries, so a
 				// call that returns a struct or another function pointer can be chained.
 				FunctionSignature applied = sig;
+				const bool bareFallible = applied.throws && node && node->type() == IAstNode::Type::INSTRUCTION &&
+										  !static_cast<AstNodeInstruction*>(node)->abortOnError() &&
+										  !static_cast<AstNodeInstruction*>(node)->propagateOnError();
 				mPendingFnSignature.reset();
 				pushCallResults(applied, {}, {}, typeStack, structTypeStack);
+				if (bareFallible) {
+					// The status the following `if`/`switch` reads, as a bare fallible call by
+					// name leaves.
+					typeStack.push_back(StackValueType::INT);
+					structTypeStack.push_back("");
+				}
 				// The effect is fully known, so the function-level checks stay in force. Falling
 				// out of this branch instead would reach the "unhandled instruction" marker at the
 				// end of this function -- a plain statement, not an `else` -- and switch off the

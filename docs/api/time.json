@@ -95,7 +95,7 @@
     {
       "name": "Nanosecond",
       "value": "1",
-      "description": "Time operations and duration constants. Duration = 1 nanosecond."
+      "description": "Time operations and duration constants. Duration = 1 nanosecond. doccheck: page-context doccheck: page-setup 1700000000 -> ts1 doccheck: page-setup 1700086400 -> ts2 doccheck: page-setup 1700000000 -> start_ts doccheck: page-setup 1700086400 -> end_ts doccheck: page-setup 1700000000 -> start_time doccheck: page-setup 1700086400 -> end_time"
     },
     {
       "name": "November",
@@ -250,7 +250,7 @@
       "params": [{"name": "yr", "type": "i64", "description": "Year"}],
       "returns": [{"name": "days", "type": "i64", "description": "365 or 366 for leap year"}],
       "errors": [],
-      "examples": ["2024 time::days_in_year .  // 366"]
+      "examples": ["2024 time::days_in_year print  // 366"]
     },
     {
       "name": "day",

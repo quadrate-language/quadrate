@@ -1,5 +1,6 @@
 /// Numeric limits and constants.
 /// Provides minimum and maximum values for numeric types.
+/// doccheck: page-context
 
 // ============================================================
 // Native Type Limits (i64, f64)

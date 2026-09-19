@@ -1,6 +1,6 @@
 {
   "name": "net",
-  "description": "TCP network operations. Error codes: Ok=1 (success), specific errors start at 2",
+  "description": "TCP network operations. Error codes: Ok=1 (success), specific errors start at 2 doccheck: page-context doccheck: page-setup 0 -> sock doccheck: page-setup 0 -> server",
   "constants": [
     {
       "name": "ErrAccept",

@@ -4,6 +4,7 @@ Functions are the building blocks of Quadrate programs. They transform values on
 
 ## Basic syntax
 
+<!-- doccheck: skip syntax template: `inputs`/`outputs` stand for type lists, not types -->
 ```qd
 fn name(inputs -- outputs) {
 	// body
@@ -181,6 +182,7 @@ Always specify types for parameters:
 
 Booleans are represented as `i64` (0 = false, non-zero = true).
 
+<!-- doccheck: skip signature shown with its body elided -->
 ```qd
 fn format_price(price:f64 currency:str -- formatted:str) {
 	// ... implementation using price and currency

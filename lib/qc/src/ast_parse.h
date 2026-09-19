@@ -419,6 +419,31 @@ namespace Qd {
 		return 0;
 	}
 
+	// Peeks the next whitespace-separated word from the source, without consuming anything.
+	// `peekNextNonWhitespace` answers with one character, which is not enough to tell `stack fn (`
+	// from an identifier that merely starts with an 'f'.
+	inline std::string peekNextWord(u8t_scanner* scanner, const char* src) {
+		size_t tokenStart = u8t_scanner_token_start(scanner);
+		size_t tokenLen = u8t_scanner_token_len(scanner);
+		size_t bytePos = fastCharToByteOffset(src, tokenStart + tokenLen);
+
+		while (src[bytePos] == ' ' || src[bytePos] == '\t' || src[bytePos] == '\n' || src[bytePos] == '\r') {
+			bytePos++;
+		}
+		std::string word;
+		while (src[bytePos] != '\0') {
+			const char c = src[bytePos];
+			const bool isWordChar =
+					(c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || (c >= '0' && c <= '9') || c == '_';
+			if (!isWordChar) {
+				break;
+			}
+			word += c;
+			bytePos++;
+		}
+		return word;
+	}
+
 	// Helper to parse type arguments between '<' and '>'
 	// Assumes '<' has already been consumed. Returns vector of type argument names.
 	inline std::vector<std::string> parseTypeArguments(
@@ -606,7 +631,30 @@ namespace Qd {
 	// ast_declarations.cc
 	IAstNode* parseFunctionDeclaration(
 			u8t_scanner* scanner, ErrorReporter* errorReporter, const char* src, bool isPublic = false);
-	IAstNode* parseAnonymousFunction(u8t_scanner* scanner, ErrorReporter* errorReporter, const char* src);
+	IAstNode* parseAnonymousFunction(
+			u8t_scanner* scanner, ErrorReporter* errorReporter, const char* src, bool isStack = false);
+
+	// Recognises a lambda at the identifier just scanned: `fn (` or `stack fn (`, consuming the
+	// `fn` in the second form. Returns nullptr when this identifier does not start one, so the
+	// caller can carry on with its own dispatch. `stack` is a modifier here for the same reason
+	// it is one before a named function: it is what says the inputs stay on the stack.
+	inline IAstNode* tryParseAnonymousFunction(
+			u8t_scanner* scanner, ErrorReporter* errorReporter, const char* src, const char* text) {
+		if (strcmp(text, "fn") == 0 && peekNextNonWhitespace(scanner, src) == '(') {
+			return parseAnonymousFunction(scanner, errorReporter, src, false);
+		}
+		if (strcmp(text, "stack") == 0 && peekNextWord(scanner, src) == "fn") {
+			u8t_scanner_scan(scanner); // the 'fn'
+			if (peekNextNonWhitespace(scanner, src) != '(') {
+				errorReporter->reportError(scanner, "Function declarations not allowed inside blocks. Did you mean "
+													"'stack fn (...) { }' for an anonymous function?");
+				return nullptr;
+			}
+			return parseAnonymousFunction(scanner, errorReporter, src, true);
+		}
+		return nullptr;
+	}
+
 	IAstNode* parseTestDeclaration(u8t_scanner* scanner, ErrorReporter* errorReporter, const char* src);
 
 	// ast_types.cc

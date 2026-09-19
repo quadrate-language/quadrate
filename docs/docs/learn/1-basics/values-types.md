@@ -166,11 +166,10 @@ When you write functions, you specify types:
 
 ```qd
 fn sum(a:i64 b:i64 -- result:i64) {
-	+
+	a b +
 }
 
 fn greet(name:str -- ) {
-	-> name  // bind parameter
 	"Hello, " print name print nl
 }
 ```

@@ -1,6 +1,6 @@
 {
   "name": "tty",
-  "description": "Terminal detection and information. Provides functions to check if file descriptors are connected to terminals and to get terminal dimensions.  @example tty::is_stdout if {     term::Green print \"Success\" print term::Reset print nl } else {     \"Success\" print nl }",
+  "description": "Terminal detection and information. Provides functions to check if file descriptors are connected to terminals and to get terminal dimensions.  @example tty::is_stdout if {     term::Green print \"Success\" print term::Reset print nl } else {     \"Success\" print nl } doccheck: page-context",
   "constants": [
 
   ],

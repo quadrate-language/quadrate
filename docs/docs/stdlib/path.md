@@ -1,5 +1,7 @@
 # `use` path
 
+<!-- doccheck: page-context use path -->
+
 File path manipulation functions.
 POSIX-style paths with forward slash separator.
 

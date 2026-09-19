@@ -1,6 +1,6 @@
 {
   "name": "base64",
-  "description": "Base64 encoding and decoding. Optimized with lookup tables and direct buffer writes.",
+  "description": "Base64 encoding and decoding. Optimized with lookup tables and direct buffer writes. doccheck: page-context",
   "constants": [
 
   ],

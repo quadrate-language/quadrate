@@ -1,5 +1,7 @@
 # `use` signal
 
+<!-- doccheck: page-context use signal -->
+
 Unix signal handling with polling-based API.
 
 Signals are caught and stored as flags. Use pending() to check

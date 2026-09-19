@@ -1,6 +1,6 @@
 {
   "name": "fuzzy",
-  "description": "",
+  "description": "doccheck: page-context",
   "constants": [
 
   ],
@@ -20,7 +20,7 @@
     },
     {
       "name": "contains_ci",
-      "signature": "(str str -- i64)",
+      "signature": "(s:str substr:str -- i64)",
       "failable": false,
       "description": "Check if a string contains a substring (case-insensitive).",
       "params": [{"name": "s", "type": "str", "description": "String to search in"}, {"name": "substr", "type": "str", "description": "Substring to look for"}],
@@ -40,7 +40,7 @@
     },
     {
       "name": "matches",
-      "signature": "(str str f64 -- i64)",
+      "signature": "(query:str target:str threshold:f64 -- i64)",
       "failable": false,
       "description": "Check if query approximately matches target within a similarity threshold.",
       "params": [{"name": "query", "type": "str", "description": "Query string to search for"}, {"name": "target", "type": "str", "description": "Target string to match against"}, {"name": "threshold", "type": "f64", "description": "Minimum similarity (0.0 to 1.0)"}],
@@ -56,7 +56,7 @@
       "params": [{"name": "query", "type": "str", "description": "Query string (typically shorter)"}, {"name": "target", "type": "str", "description": "Target string to match against"}],
       "returns": [{"name": "score", "type": "i64", "description": "Match score (0 = no match, higher = better)"}],
       "errors": [],
-      "examples": ["\"sin\" \"sin\" fuzzy::score -> 1000", "\"sin\" \"asin\" fuzzy::score -> ~350 (substring)", "\"rf\" \"read_file\" fuzzy::score -> 200 (word boundary)"]
+      "examples": ["\"sin\" \"sin\" fuzzy::score -> 1000", "\"sin\" \"asin\" fuzzy::score  // ~350 (substring)", "\"rf\" \"read_file\" fuzzy::score  // 200 (word boundary)"]
     },
     {
       "name": "similarity",
@@ -70,7 +70,7 @@
     },
     {
       "name": "starts_with_ci",
-      "signature": "(str str -- i64)",
+      "signature": "(s:str prefix:str -- i64)",
       "failable": false,
       "description": "Check if a string starts with a given prefix (case-insensitive).",
       "params": [{"name": "s", "type": "str", "description": "String to check"}, {"name": "prefix", "type": "str", "description": "Prefix to look for"}],

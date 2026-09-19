@@ -104,6 +104,7 @@ fn main() {
 
 Use `[]T` to declare the element type in function signatures:
 
+<!-- doccheck: skip signatures shown with their bodies elided -->
 ```qd
 fn sum(arr:[]i64 -- total:i64) { ... }
 fn names(arr:[]str -- ) { ... }

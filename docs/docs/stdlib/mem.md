@@ -1,5 +1,21 @@
 # `use` mem
 
+<!-- doccheck: page-context use mem -->
+
+<!-- doccheck: page-setup 1024 mem::alloc! -> buf -->
+
+<!-- doccheck: page-setup 1024 mem::alloc! -> dst -->
+
+<!-- doccheck: page-setup 1024 mem::alloc! -> src -->
+
+<!-- doccheck: page-setup 1024 mem::alloc! -> other_buf -->
+
+<!-- doccheck: page-setup 0 -> idx -->
+
+<!-- doccheck: page-setup 4 -> len -->
+
+<!-- doccheck: page-setup 42 -> elem -->
+
 Low-level memory allocation and manipulation.
 
 SAFETY: These are unsafe operations with no bounds checking.
@@ -44,7 +60,7 @@ Allocate aligned memory. The returned pointer is aligned to the specified bounda
 **Example:**
 
 ```qd
-64 1024 mem::alloc_aligned!  // buf  // 64-byte aligned
+64 1024 mem::alloc_aligned! -> buf  // 64-byte aligned
 ```
 ---
 

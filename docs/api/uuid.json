@@ -1,6 +1,6 @@
 {
   "name": "uuid",
-  "description": "UUID generation (version 4 random UUIDs). Format: xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx",
+  "description": "UUID generation (version 4 random UUIDs). Format: xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx doccheck: page-context",
   "constants": [
 
   ],

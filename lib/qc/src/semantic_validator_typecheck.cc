@@ -242,6 +242,17 @@ namespace Qd {
 			return nullptr;
 		}
 		std::string key;
+		if (prev->type() == IAstNode::Type::INSTRUCTION) {
+			// `call` on a fallible function pointer. There is no name to look up, so the
+			// signature the call site resolved is what says what the success arm receives.
+			auto* callInst = static_cast<AstNodeInstruction*>(prev);
+			if (callInst->name() != "call" || !callInst->calleeFallible() || callInst->abortOnError() ||
+					callInst->propagateOnError()) {
+				return nullptr;
+			}
+			auto sigIt = mCallSiteSignatures.find(prev);
+			return (sigIt != mCallSiteSignatures.end()) ? &sigIt->second : nullptr;
+		}
 		if (prev->type() == IAstNode::Type::IDENTIFIER) {
 			auto* id = static_cast<AstNodeIdentifier*>(prev);
 			if (id->abortOnError() || id->propagateOnError()) {
@@ -938,8 +949,10 @@ namespace Qd {
 				break;
 
 			case IAstNode::Type::ANONYMOUS_FUNCTION:
-				// Anonymous functions push a function pointer onto the stack
-				// The function body will be validated separately during code generation
+				// Anonymous functions push a function pointer onto the stack. The body is checked
+				// by typeCheckAnonymousFunction, from the walk in typeCheckBlock; this walk is
+				// measuring an enclosing block's stack effect and only needs what the lambda
+				// leaves behind.
 				typeStack.push_back(StackValueType::PTR);
 				break;
 
@@ -1387,6 +1400,238 @@ namespace Qd {
 		}
 	}
 
+	// An anonymous function's body is a function body: it starts on an empty stack, its named
+	// parameters are bound as locals the way a named function's are, and what it leaves has to
+	// match what its own signature declares. Nothing checked it before -- the case in
+	// typeCheckBlock pushed a PTR and moved on, under a comment saying code generation would
+	// validate the body, which it does not -- so `fn (x:i64 -- r:i64) { 2 * }` compiled and
+	// underflowed at run time where the identical body in a named function is a compile error.
+	void SemanticValidator::typeCheckAnonymousFunction(AstNodeAnonymousFunction* anonFunc,
+			const std::unordered_map<std::string, StackValueType>& enclosingLocals) {
+		if (!anonFunc || !anonFunc->body()) {
+			return;
+		}
+		// The same lambda can be reached more than once: a module's AST is validated again for
+		// each importer, and a value can be walked both as a statement and as an initializer.
+		if (!mCheckedAnonFunctions.insert(anonFunc).second) {
+			return;
+		}
+		// Same reason typeCheckFunction skips these: past a removed builtin the simulation is
+		// off by whatever the name used to push, and every error after it points at lines the
+		// user must not change.
+		if (mBodiesWithRemovedBuiltins.count(anonFunc->body()) || mBodiesWithRemovedBuiltins.count(anonFunc)) {
+			return;
+		}
+
+		// Everything saved here belongs to the enclosing function, whose own walk is in progress
+		// and resumes as soon as this one is done.
+		auto savedStructTypes = mLocalVariableStructTypes;
+		const bool savedFallible = mCurrentFunctionFallible;
+		const size_t savedOutputCount = mCurrentFunctionOutputCount;
+		const bool savedUnpredictable = mHasUnpredictableStack;
+		const bool savedInLoopBody = mInLoopBody;
+		auto savedLoopJumps = mLoopJumps;
+		auto savedPendingSig = mPendingFnSignature;
+		const IAstNode* savedProbeBlock = mDepthProbeBlock;
+		std::vector<size_t>* savedProbe = mDepthProbe;
+
+		mCurrentFunctionOutputCount = anonFunc->outputParameters().size();
+		// A lambda's own `!` is what makes its body fallible. Inheriting the enclosing function's
+		// would let a `panic` inside a plain lambda pass validation and then be compiled by a
+		// generator that knows the lambda cannot throw.
+		mCurrentFunctionFallible = anonFunc->throws();
+		mHasUnpredictableStack = false;
+		// A lambda written inside a loop body is not itself a loop body: its stack starts at a
+		// known depth, so its errors are evidence and are worth reporting.
+		mInLoopBody = false;
+		mLoopJumps.clear();
+		mDepthProbeBlock = nullptr;
+		mDepthProbe = nullptr;
+		mPendingFnSignature.reset();
+
+		std::vector<StackValueType> typeStack;
+		std::vector<std::string> structTypeStack;
+		std::unordered_map<std::string, StackValueType> localVariables;
+
+		// A captured variable keeps the type it has where it was captured. Its struct type is
+		// already in mLocalVariableStructTypes, which is why that map is carried in rather than
+		// cleared.
+		for (const std::string& captured : anonFunc->capturedVariables()) {
+			auto capturedIt = enclosingLocals.find(captured);
+			localVariables[captured] =
+					(capturedIt != enclosingLocals.end()) ? capturedIt->second : StackValueType::UNKNOWN;
+		}
+
+		// Whether inputs are bound is carried by `stack`, exactly as it is for a named function:
+		// without it every input must be named and is bound as a local; with it they stay on the
+		// stack and any names are documentation.
+		const bool bindParams = !anonFunc->isStack();
+		if (anonFunc->isStack() && anonFunc->inputParameters().empty()) {
+			reportError(anonFunc, "'stack fn' takes no input parameters, so there is nothing to leave on the stack");
+		}
+		for (const auto& paramNode : anonFunc->inputParameters()) {
+			AstNodeParameter* param = static_cast<AstNodeParameter*>(paramNode.get());
+			if (bindParams && !param->hasName()) {
+				std::string errorMsg = "Unnamed input parameter '" + param->typeString() +
+									   "' in an anonymous function. Name it ('value:" + param->typeString() +
+									   "'), or write 'stack fn' to leave the arguments on the stack for the "
+									   "body to work on";
+				reportError(param, errorMsg.c_str());
+			}
+			if (param->hasName() && isReservedKeyword(param->name())) {
+				std::string errorMsg =
+						"'" + param->name() + "' is a reserved keyword and cannot be used as a parameter name";
+				reportError(param, errorMsg.c_str());
+			}
+			if (!isValidTypeName(param->typeString())) {
+				std::string where;
+				if (param->hasName()) {
+					where = " in parameter '" + param->name() + "'";
+				}
+				reportError(param, invalidTypeMessage(param->typeString(), where).c_str());
+			}
+
+			std::string resolvedType = param->typeString();
+			auto aliasIt = mTypeAliases.find(resolvedType);
+			if (aliasIt != mTypeAliases.end()) {
+				resolvedType = aliasIt->second;
+			}
+			const StackValueType paramType = stringToStackValueType(resolvedType);
+			std::string structType;
+			if (paramType == StackValueType::PTR &&
+					(isStructTypeName(resolvedType) ||
+							(resolvedType.size() > 2 && resolvedType[0] == '[' && resolvedType[1] == ']') ||
+							(resolvedType.size() > 3 && resolvedType.substr(0, 3) == "fn("))) {
+				structType = resolvedType;
+			}
+			if (bindParams && param->hasName()) {
+				localVariables[param->name()] = paramType;
+				if (structType.empty()) {
+					// A parameter shadows a capture of the same name, including its struct type.
+					mLocalVariableStructTypes.erase(param->name());
+				} else {
+					mLocalVariableStructTypes[param->name()] = structType;
+				}
+			} else {
+				typeStack.push_back(paramType);
+				structTypeStack.push_back(structType);
+			}
+		}
+		for (const auto& paramNode : anonFunc->outputParameters()) {
+			AstNodeParameter* param = static_cast<AstNodeParameter*>(paramNode.get());
+			if (!isValidTypeName(param->typeString())) {
+				std::string where;
+				if (param->hasName()) {
+					where = " in output '" + param->name() + "'";
+				}
+				reportError(param, invalidTypeMessage(param->typeString(), where).c_str());
+			}
+		}
+
+		typeCheckBlock(anonFunc->body(), typeStack, localVariables, structTypeStack);
+
+		if (!blockEndsDiverging(anonFunc->body()) && !mHasUnpredictableStack) {
+			const size_t expectedOutputs = anonFunc->outputParameters().size();
+			if (typeStack.size() != expectedOutputs) {
+				std::string errorMsg = "Anonymous function declares ";
+				errorMsg += std::to_string(expectedOutputs);
+				errorMsg += " output(s) but body leaves ";
+				errorMsg += std::to_string(typeStack.size());
+				errorMsg += " value(s) on the stack";
+				reportError(anonFunc, errorMsg.c_str());
+			} else {
+				for (size_t i = 0; i < expectedOutputs; i++) {
+					AstNodeParameter* outParam = static_cast<AstNodeParameter*>(anonFunc->outputParameters()[i].get());
+					const StackValueType expectedType = stringToStackValueType(outParam->typeString());
+					const StackValueType actualType = typeStack[i];
+					if (expectedType == StackValueType::ANY || expectedType == StackValueType::UNKNOWN ||
+							expectedType == StackValueType::TYPEVAR || actualType == StackValueType::ANY ||
+							actualType == StackValueType::UNKNOWN || actualType == StackValueType::TYPEVAR) {
+						continue;
+					}
+					if (actualType != expectedType) {
+						std::string errorMsg = "Anonymous function output ";
+						errorMsg += std::to_string(i + 1);
+						errorMsg += " expects ";
+						errorMsg += stackValueTypeToString(expectedType);
+						errorMsg += " but got ";
+						errorMsg += stackValueTypeToString(actualType);
+						reportError(anonFunc, errorMsg.c_str());
+					} else if (actualType == StackValueType::PTR) {
+						// Both are PTR, so compare the pointer's real type, with the enclosing
+						// function's type parameters as wildcards -- the same compare a named
+						// function's outputs get.
+						const std::string expectedStructType = outParam->typeString();
+						const std::string actualStructType = (i < structTypeStack.size()) ? structTypeStack[i] : "";
+						std::map<std::string, std::string> outBindings;
+						std::string outWhy;
+						auto canon = [this](const std::string& n) { return canonicalStructName(n); };
+						const bool mismatch = !expectedStructType.empty() && !actualStructType.empty() &&
+											  !unifyTypeName(expectedStructType, actualStructType, mCurrentTypeParams,
+													  outBindings, mMergedModules, canon, outWhy);
+						if (mismatch) {
+							std::string errorMsg = "Anonymous function output ";
+							errorMsg += std::to_string(i + 1);
+							errorMsg += " expects type '";
+							errorMsg += expectedStructType;
+							errorMsg += "' but got '";
+							errorMsg += actualStructType;
+							errorMsg += "'";
+							reportError(anonFunc, errorMsg.c_str());
+						}
+					}
+				}
+			}
+		}
+
+		// Unused named parameters, warned about the way a named function's are. Under `stack` the
+		// names are documentation and are never referenced, so there is nothing to warn about.
+		if (bindParams) {
+			std::unordered_set<std::string> paramNames;
+			for (const auto& paramNode : anonFunc->inputParameters()) {
+				AstNodeParameter* param = static_cast<AstNodeParameter*>(paramNode.get());
+				if (param->hasName() && param->name()[0] != '_') {
+					paramNames.insert(param->name());
+				}
+			}
+			if (!paramNames.empty()) {
+				std::unordered_set<std::string> refs;
+				collectIdentifierRefs(anonFunc->body(), refs, paramNames);
+				for (const auto& paramNode : anonFunc->inputParameters()) {
+					AstNodeParameter* param = static_cast<AstNodeParameter*>(paramNode.get());
+					if (param->hasName() && param->name()[0] != '_' && refs.find(param->name()) == refs.end()) {
+						reportWarning(param, ("Unused parameter '" + param->name() + "'").c_str());
+					}
+				}
+			}
+		}
+
+		mLocalVariableStructTypes = savedStructTypes;
+		mCurrentFunctionFallible = savedFallible;
+		mCurrentFunctionOutputCount = savedOutputCount;
+		mHasUnpredictableStack = savedUnpredictable;
+		mInLoopBody = savedInLoopBody;
+		mLoopJumps = savedLoopJumps;
+		mPendingFnSignature = savedPendingSig;
+		mDepthProbeBlock = savedProbeBlock;
+		mDepthProbe = savedProbe;
+	}
+
+	void SemanticValidator::checkAnonymousFunctionsWithin(
+			IAstNode* node, const std::unordered_map<std::string, StackValueType>& enclosingLocals) {
+		if (!node) {
+			return;
+		}
+		if (node->type() == IAstNode::Type::ANONYMOUS_FUNCTION) {
+			// Its own walk reaches anything nested inside it, with the right scope.
+			typeCheckAnonymousFunction(static_cast<AstNodeAnonymousFunction*>(node), enclosingLocals);
+			return;
+		}
+		for (auto* child : node->children()) {
+			checkAnonymousFunctionsWithin(child, enclosingLocals);
+		}
+	}
+
 	void SemanticValidator::typeCheckBlock(IAstNode* node, std::vector<StackValueType>& typeStack,
 			std::unordered_map<std::string, StackValueType>& localVariables,
 			std::vector<std::string>& structTypeStack) {
@@ -1438,6 +1683,7 @@ namespace Qd {
 				// thing that can be built. Anything undecidable lands on "[]any", which is
 				// the permissive answer and matches an empty literal.
 				AstNodeArrayLiteral* arrLit = static_cast<AstNodeArrayLiteral*>(child);
+				checkAnonymousFunctionsWithin(arrLit, localVariables);
 				if (arrLit->elements().empty()) {
 					structTypeStack.push_back("[]any");
 				} else {
@@ -2105,6 +2351,7 @@ namespace Qd {
 			case IAstNode::Type::STRUCT_CONSTRUCTION: {
 				// Handle struct construction with named fields: StructName { field: expr ... }
 				AstNodeStructConstruction* construct = static_cast<AstNodeStructConstruction*>(child);
+				checkAnonymousFunctionsWithin(construct, localVariables);
 				const std::string& name = construct->structName();
 				const auto& fieldInits = construct->fieldInits();
 
@@ -2298,6 +2545,7 @@ namespace Qd {
 									anonSig.produces.push_back(stringToStackValueType(
 											static_cast<AstNodeParameter*>(pn.get())->typeString()));
 								}
+								anonSig.throws = anonFn->throws();
 								exprTypeStack.push_back(StackValueType::PTR);
 								exprStructTypeStack.push_back(buildFnTypeString(anonSig));
 								break;
@@ -4082,6 +4330,10 @@ namespace Qd {
 					AstNodeParameter* param = static_cast<AstNodeParameter*>(paramNode.get());
 					sig.produces.push_back(stringToStackValueType(param->typeString()));
 				}
+				// `fn(...)` type strings cannot carry it, so a lambda's fallibility reaches the
+				// call site only through the pending signature -- the same route a named
+				// function's does via `&f`.
+				sig.throws = anonFunc->throws();
 				std::string fnTypeStr = buildFnTypeString(sig);
 
 				// Store as pending signature for subsequent LOCAL or call
@@ -4089,6 +4341,8 @@ namespace Qd {
 
 				typeStack.push_back(StackValueType::PTR);
 				structTypeStack.push_back(fnTypeStr);
+
+				typeCheckAnonymousFunction(anonFunc, localVariables);
 				break;
 			}
 

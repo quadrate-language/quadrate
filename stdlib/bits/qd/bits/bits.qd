@@ -7,6 +7,7 @@
 /// @param num_bits i64 Number of bits to keep from LSB
 /// @return result i64 Masked value
 /// @example 0xFF 4 bits::mask print  // 15
+/// doccheck: page-context
 pub stack fn mask(value:i64 num_bits:i64 -- result:i64) {
 	dup 64 >= if {
 		drop

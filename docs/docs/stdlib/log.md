@@ -1,5 +1,9 @@
 # `use` log
 
+<!-- doccheck: page-context use log -->
+
+<!-- doccheck: page-setup log::new! -> logger -->
+
 Logging module - structured logging with levels and rotation.
 
 Provides:

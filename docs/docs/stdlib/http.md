@@ -1,5 +1,17 @@
 # `use` http
 
+<!-- doccheck: page-context use http -->
+
+<!-- doccheck: page-setup http::engine -> e -->
+
+<!-- doccheck: page-setup e "/api" http::group -> api -->
+
+<!-- doccheck: page-setup "http://example.com" http::new -> req -->
+
+<!-- doccheck: page-setup http::Response { status = 200 headers = "" body = "" } -> resp -->
+
+<!-- doccheck: page-setup http::Ctx { method = "GET" path = "/" query = "" headers = "" body = "" params = "" _socket = 0 _responded = 0 } -> c -->
+
 HTTP module.
 Provides HTTP client and server functionality.
 Error codes: Ok=1 (success), specific errors start at 2
@@ -320,7 +332,7 @@ Register GET on group.
 **Example:**
 
 ```qd
-api "/users" fn(c:Ctx -- ) { ... } http::group_GET
+api "/users" fn(c:Ctx -- ) { c 200 "users" http::string } http::group_GET
 ```
 ---
 
@@ -352,7 +364,7 @@ Add middleware to group.
 **Example:**
 
 ```qd
-api fn(c:Ctx -- ) { ... } http::group_use
+api fn(c:Ctx -- ) { c "X-Group" "api" http::set_header } http::group_use
 ```
 ---
 
@@ -531,7 +543,7 @@ Register POST route.
 **Example:**
 
 ```qd
-e "/api/users" fn(c:Ctx -- ) { ... } http::POST
+e "/api/users" fn(c:Ctx -- ) { c 200 "created" http::string } http::POST
 ```
 ---
 
@@ -855,6 +867,6 @@ Execute HTTP request.
 **Example:**
 
 ```qd
-req http::send!  // resp  resp <<status print
+req http::send! -> resp  resp <<status print
 ```
 

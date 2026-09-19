@@ -39,12 +39,12 @@ fn main() {
 | [ct](ct.md) | Generic container types. |
 | [flag](flag.md) | Command-line flag parsing. |
 | [fmt](fmt.md) | Formatted output functions. |
-| [fuzzy](fuzzy.md) | Minimum of two integers. |
+| [fuzzy](fuzzy.md) | doccheck: page-context |
 | [hex](hex.md) | Hexadecimal encoding and decoding. |
 | [hof](hof.md) | Higher-Order Function combinators. |
 | [http](http.md) | HTTP module. |
 | [io](io.md) | File and stream I/O operations. |
-| [json](json.md) | JSON parsing and querying without AST construction. |
+| [json](json.md) | JSON parsing and querying. |
 | [limits](limits.md) | Numeric limits and constants. |
 | [log](log.md) | Logging module - structured logging with levels and rotation... |
 | [math](math.md) | Mathematical functions and constants. |

@@ -189,6 +189,64 @@ fn main(--) {
 	acc print nl
 }' 20000 4096
 
+# The places that hold a reference, one program each: an array, a closure's captured block, a
+# deferred block, a generic struct field and a plain string field overwritten in a loop.
+# Specification 11.2.2 states the contract they share; this is what checks they all keep it.
+check_flat "holders" 'use strings
+use strconv
+
+struct Box<T> {
+	value: T
+}
+
+struct Holder {
+	label: str
+}
+
+struct P {
+	n: i64
+}
+
+fn make_adder(n:i64 -- f:fn(i64 -- i64)) {
+	fn (x:i64 -- r:i64) { x n + }
+}
+
+fn round( -- n:i64) {
+	// an array of strings, and one of structs
+	["alpha" "beta"] -> words
+	[] -> items
+	items P { n = 1 } append -> items
+	words 0 nth strings::len items 0 nth <<n + -> total
+
+	// a closure over a value, called and dropped
+	5 make_adder -> add5
+	3 add5 call total + -> total
+
+	// a deferred block holding a string
+	"deferred" -> d
+	defer { d strings::len drop }
+
+	// a generic field, overwritten
+	Box<str> { value = "first" } -> b
+	b "second" >>value drop
+	b <<value strings::len total + -> total
+
+	// a plain string field, overwritten in a loop
+	Holder { label = "start" } -> h
+	0 5 1 for i {
+		h i strconv::itoa "-tail" strings::concat >>label drop
+	}
+	h <<label strings::len total +
+}
+
+fn main(--) {
+	0 -> acc
+	0 @N@ 1 for i {
+		round acc + -> acc
+	}
+	acc print nl
+}' 20000 4096
+
 echo ""
 echo "Memory tests: $PASSED passed, $FAILED failed"
 [[ $FAILED -eq 0 ]]

@@ -1,5 +1,7 @@
 # `use` base64
 
+<!-- doccheck: page-context use base64 -->
+
 Base64 encoding and decoding.
 Optimized with lookup tables and direct buffer writes.
 

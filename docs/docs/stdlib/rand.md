@@ -1,5 +1,19 @@
 # `use` rand
 
+<!-- doccheck: page-context use rand -->
+
+<!-- doccheck: page-context use mem -->
+
+<!-- doccheck: page-setup rand::new -> rng -->
+
+<!-- doccheck: page-setup 32 mem::alloc! -> arr -->
+
+<!-- doccheck: page-setup 32 mem::alloc! -> src -->
+
+<!-- doccheck: page-setup 32 mem::alloc! -> dst -->
+
+<!-- doccheck: page-setup 4 -> len -->
+
 Random number generation using xorshift64* algorithm.
 Fast, high-quality PRNG suitable for most applications.
 

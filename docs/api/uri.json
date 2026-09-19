@@ -1,6 +1,6 @@
 {
   "name": "uri",
-  "description": "URI encoding, decoding, and parsing. Handles percent-encoding and URI component extraction.",
+  "description": "URI encoding, decoding, and parsing. Handles percent-encoding and URI component extraction. doccheck: page-context",
   "constants": [
 
   ],
@@ -27,7 +27,7 @@
       "params": [],
       "returns": [{"name": "s", "type": "str", "description": "URI string"}],
       "errors": [],
-      "examples": ["u .build -> url"]
+      "examples": ["\"https://example.com/p\" uri::parse uri::build -> url"]
     },
     {
       "name": "decode",

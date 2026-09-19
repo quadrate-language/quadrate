@@ -107,7 +107,6 @@ mymodule/
 use testing
 
 fn factorial(n:i64 -- result:i64) {
-	-> n
 	n 1 <= if {
 		1
 	} else {
@@ -135,7 +134,7 @@ Test fallible functions by checking both success and failure cases:
 ```qd
 use testing
 
-fn divide(a:i64 b:i64 -- result:i64)! {
+stack fn divide(a:i64 b:i64 -- result:i64)! {
 	dup 0 == if {
 		drop drop
 		"division by zero" -1 panic
@@ -153,7 +152,8 @@ test "divide succeeds with valid input" {
 
 test "divide fails on zero" {
 	10 0 divide if {
-		"should not succeed" testing::fail
+		// The success arm receives the result, so it has to consume it
+		drop "should not succeed" testing::fail
 	} else {
 		// Error case: division by zero was caught
 		1 testing::assert_true

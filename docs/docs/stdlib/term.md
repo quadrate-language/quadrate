@@ -1,5 +1,7 @@
 # `use` term
 
+<!-- doccheck: page-context use term -->
+
 Terminal colors and formatting using ANSI escape codes.
 Use these constants to colorize terminal output.
 @example term::Green print "PASS" print term::Reset print nl

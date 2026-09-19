@@ -4,52 +4,52 @@ use testing
 use strings
 
 test "hof::apply" {
-	5 fn (i64 -- i64) { 2 * } hof::apply 10 testing::assert_eq
-	10 fn (i64 -- i64) { 3 + } hof::apply 13 testing::assert_eq
-	7 fn (i64 -- i64) { dup * } hof::apply 49 testing::assert_eq
+	5 stack fn (i64 -- i64) { 2 * } hof::apply 10 testing::assert_eq
+	10 stack fn (i64 -- i64) { 3 + } hof::apply 13 testing::assert_eq
+	7 stack fn (i64 -- i64) { dup * } hof::apply 49 testing::assert_eq
 }
 
 test "hof::bi" {
-	5 fn (i64 -- i64) { 1 + } fn (i64 -- i64) { 2 * } hof::bi
+	5 stack fn (i64 -- i64) { 1 + } stack fn (i64 -- i64) { 2 * } hof::bi
 	-> b -> a
 	a 6 testing::assert_eq
 	b 10 testing::assert_eq
 }
 
 test "hof::both" {
-	3 4 fn (i64 -- i64) { 2 * } hof::both
+	3 4 stack fn (i64 -- i64) { 2 * } hof::both
 	-> b -> a
 	a 6 testing::assert_eq
 	b 8 testing::assert_eq
 }
 
 test "hof::dip" {
-	3 4 fn (i64 -- i64) { 10 + } hof::dip
+	3 4 stack fn (i64 -- i64) { 10 + } hof::dip
 	-> top -> below
 	below 13 testing::assert_eq
 	top 4 testing::assert_eq
 }
 
 test "hof::keep" {
-	5 fn (i64 -- i64) { 2 * } hof::keep
+	5 stack fn (i64 -- i64) { 2 * } hof::keep
 	-> orig -> result
 	result 10 testing::assert_eq
 	orig 5 testing::assert_eq
 }
 
 test "hof::times" {
-	0 5 fn (i64 -- i64) { 1 + } hof::times 5 testing::assert_eq
-	1 4 fn (i64 -- i64) { 2 * } hof::times 16 testing::assert_eq
+	0 5 stack fn (i64 -- i64) { 1 + } hof::times 5 testing::assert_eq
+	1 4 stack fn (i64 -- i64) { 2 * } hof::times 16 testing::assert_eq
 }
 
 test "hof::when" {
-	5 1 fn (i64 -- i64) { 10 + } hof::when 15 testing::assert_eq
-	5 0 fn (i64 -- i64) { 10 + } hof::when 5 testing::assert_eq
+	5 1 stack fn (i64 -- i64) { 10 + } hof::when 15 testing::assert_eq
+	5 0 stack fn (i64 -- i64) { 10 + } hof::when 5 testing::assert_eq
 }
 
 test "hof::unless" {
-	5 0 fn (i64 -- i64) { 10 + } hof::unless 15 testing::assert_eq
-	5 1 fn (i64 -- i64) { 10 + } hof::unless 5 testing::assert_eq
+	5 0 stack fn (i64 -- i64) { 10 + } hof::unless 15 testing::assert_eq
+	5 1 stack fn (i64 -- i64) { 10 + } hof::unless 5 testing::assert_eq
 }
 
 test "hof::fold" {
@@ -59,7 +59,7 @@ test "hof::fold" {
 }
 
 test "hof::tri" {
-	10 fn (i64 -- i64) { 1 + } fn (i64 -- i64) { 2 * } fn (i64 -- i64) { 3 - } hof::tri
+	10 stack fn (i64 -- i64) { 1 + } stack fn (i64 -- i64) { 2 * } stack fn (i64 -- i64) { 3 - } hof::tri
 	-> c -> b -> a
 	a 11 testing::assert_eq
 	b 20 testing::assert_eq
@@ -68,7 +68,7 @@ test "hof::tri" {
 
 test "hof::bi_star" {
 	// bi_star applies different functions to two values
-	3 4 fn (i64 -- i64) { 1 + } fn (i64 -- i64) { 2 * } hof::bi_star
+	3 4 stack fn (i64 -- i64) { 1 + } stack fn (i64 -- i64) { 2 * } hof::bi_star
 	-> b -> a
 	a 4 testing::assert_eq   // 3 + 1 = 4
 	b 8 testing::assert_eq   // 4 * 2 = 8
@@ -85,7 +85,7 @@ test "hof::fold_right" {
 test "hof::map" {
 	// map: apply function to each element
 	0 make<i64> 1 append 2 append 3 append -> arr
-	arr fn (i64 -- i64) { 2 * } hof::map -> result
+	arr stack fn (i64 -- i64) { 2 * } hof::map -> result
 	result len 3 testing::assert_eq
 	result 0 nth cast<i64> 2 testing::assert_eq   // 1 * 2
 	result 1 nth cast<i64> 4 testing::assert_eq   // 2 * 2
@@ -97,7 +97,7 @@ test "hof::map" {
 test "hof::filter" {
 	// filter: keep elements matching predicate
 	0 make<i64> 1 append 2 append 3 append 4 append 5 append -> arr
-	arr fn (i64 -- i64) { 2 % 0 == } hof::filter -> result
+	arr stack fn (i64 -- i64) { 2 % 0 == } hof::filter -> result
 	result len 2 testing::assert_eq  // 2 and 4 are even
 	result 0 nth cast<i64> 2 testing::assert_eq
 	result 1 nth cast<i64> 4 testing::assert_eq
@@ -111,10 +111,10 @@ test "hof::any" {
 	0 make<i64> 2 append 4 append 6 append -> evens
 
 	// Check if any odd number is even (should be false)
-	odds fn (i64 -- i64) { 2 % 0 == } hof::any testing::assert_false
+	odds stack fn (i64 -- i64) { 2 % 0 == } hof::any testing::assert_false
 
 	// Check if any even number is even (should be true)
-	evens fn (i64 -- i64) { 2 % 0 == } hof::any testing::assert_true
+	evens stack fn (i64 -- i64) { 2 % 0 == } hof::any testing::assert_true
 
 	odds free
 	evens free
@@ -126,8 +126,8 @@ test "hof::all" {
 	0 make<i64> 2 append 3 append 4 append -> mixed
 
 	// Check if all are even
-	evens fn (i64 -- i64) { 2 % 0 == } hof::all testing::assert_true
-	mixed fn (i64 -- i64) { 2 % 0 == } hof::all testing::assert_false
+	evens stack fn (i64 -- i64) { 2 % 0 == } hof::all testing::assert_true
+	mixed stack fn (i64 -- i64) { 2 % 0 == } hof::all testing::assert_false
 
 	evens free
 	mixed free
@@ -138,12 +138,12 @@ test "hof::find" {
 	0 make<i64> 1 append 2 append 3 append 4 append -> arr
 
 	// Find first even number
-	arr fn (i64 -- i64) { 2 % 0 == } hof::find -> found -> elem
+	arr stack fn (i64 -- i64) { 2 % 0 == } hof::find -> found -> elem
 	found testing::assert_true
 	elem 2 testing::assert_eq
 
 	// Find number greater than 10 (not found)
-	arr fn (i64 -- i64) { 10 > } hof::find -> found -> elem
+	arr stack fn (i64 -- i64) { 10 > } hof::find -> found -> elem
 	found testing::assert_false
 
 	arr free

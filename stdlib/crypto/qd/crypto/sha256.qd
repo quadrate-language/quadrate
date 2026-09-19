@@ -412,7 +412,7 @@ pub fn (h:Sha256) release() {
 /// One-shot SHA-256 of a string.
 /// @param s str Input string
 /// @return hash str 64-character hex string
-/// @example "Hello" sha256! -> hash
+/// @example "Hello" crypto::sha256! -> hash
 pub fn sha256(s:str -- hash:str)! {
 	Sha256 {} -> h
 	h s update? -> h

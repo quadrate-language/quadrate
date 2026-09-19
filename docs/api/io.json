@@ -1,6 +1,6 @@
 {
   "name": "io",
-  "description": "File and stream I/O operations. Error codes: Ok=1 (success), specific errors start at 2",
+  "description": "File and stream I/O operations. Error codes: Ok=1 (success), specific errors start at 2 doccheck: page-context doccheck: page-context use mem doccheck: page-setup \"/tmp/doccheck.txt\" io::Read io::open! -> f doccheck: page-setup 1024 mem::alloc! -> buf doccheck: page-setup 16 -> len",
   "constants": [
     {
       "name": "Append",
@@ -205,7 +205,7 @@
       "params": [],
       "returns": [{"name": "line", "type": "str", "description": "The line read, without its trailing newline"}, {"name": " "" at end of input", "type": "", "description": ""}, {"name": "ok", "type": "i64", "description": "1 if a line was read, 0 at end of input"}],
       "errors": [{"code": "ErrRead", "description": "The underlying read failed"}],
-      "examples": ["io::readline switch { Ok { -> ok -> line ok 0 == if { break } } _ { } }"]
+      "examples": ["io::readline switch { Ok { -> ok -> line line print nl } _ { } }"]
     },
     {
       "name": "seek",

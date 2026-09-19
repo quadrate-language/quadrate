@@ -1,6 +1,12 @@
 /// HTTP module.
 /// Provides HTTP client and server functionality.
 /// Error codes: Ok=1 (success), specific errors start at 2
+/// doccheck: page-context
+/// doccheck: page-setup http::engine -> e
+/// doccheck: page-setup e "/api" http::group -> api
+/// doccheck: page-setup "http://example.com" http::new -> req
+/// doccheck: page-setup http::Response { status = 200 headers = "" body = "" } -> resp
+/// doccheck: page-setup http::Ctx { method = "GET" path = "/" query = "" headers = "" body = "" params = "" _socket = 0 _responded = 0 } -> c
 
 // HTTP Status Codes - 1xx Informational
 pub const StatusContinue = 100
@@ -216,7 +222,7 @@ import "libhttp.a" as "http" {
 	/// @param engine ptr Engine
 	/// @param path str Route path
 	/// @param handler ptr Handler function
-	/// @example e "/api/users" fn(c:Ctx -- ) { ... } http::POST
+	/// @example e "/api/users" fn(c:Ctx -- ) { c 200 "created" http::string } http::POST
 	pub fn POST(engine:ptr path:str handler:ptr -- )
 
 	/// Register PUT route.
@@ -357,14 +363,14 @@ import "libhttp.a" as "http" {
 	/// Add middleware to group.
 	/// @param group ptr Group handle
 	/// @param middleware ptr Middleware function
-	/// @example api fn(c:Ctx -- ) { ... } http::group_use
+	/// @example api fn(c:Ctx -- ) { c "X-Group" "api" http::set_header } http::group_use
 	pub fn group_use(group:ptr middleware:ptr -- )
 
 	/// Register GET on group.
 	/// @param group ptr Group handle
 	/// @param path str Route path (relative to group prefix)
 	/// @param handler ptr Handler function
-	/// @example api "/users" fn(c:Ctx -- ) { ... } http::group_GET
+	/// @example api "/users" fn(c:Ctx -- ) { c 200 "users" http::string } http::group_GET
 	pub fn group_GET(group:ptr path:str handler:ptr -- )
 
 	/// Register POST on group.

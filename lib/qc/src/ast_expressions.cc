@@ -377,8 +377,8 @@ namespace Qd {
 			// parser read the lambda's own `x:i64` as the start of another field and suggested
 			// `x = value`. Not gated on allowControlFlow -- a lambda is not control flow, and the
 			// array-literal loop passes false.
-			if (strcmp(text, "fn") == 0 && peekNextNonWhitespace(scanner, src) == '(') {
-				return parseAnonymousFunction(scanner, errorReporter, src);
+			if (IAstNode* anonFunc = tryParseAnonymousFunction(scanner, errorReporter, src, text)) {
+				return anonFunc;
 			}
 
 			if (allowControlFlow) {

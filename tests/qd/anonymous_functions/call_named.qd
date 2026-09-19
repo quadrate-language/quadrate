@@ -5,7 +5,7 @@ stack fn helper(i64 -- i64) {
 
 fn main() {
     // Anonymous function that calls named function
-    fn (i64 -- i64) { helper 2 * } -> process
+    stack fn (i64 -- i64) { helper 2 * } -> process
 
     5 process call print nl
 }

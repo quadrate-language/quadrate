@@ -62,9 +62,11 @@ namespace Qd {
 	 * referenced inside the anonymous function that is defined in an enclosing
 	 * scope will be captured implicitly.
 	 */
-	IAstNode* parseAnonymousFunction(u8t_scanner* scanner, ErrorReporter* errorReporter, const char* src) {
+	IAstNode* parseAnonymousFunction(
+			u8t_scanner* scanner, ErrorReporter* errorReporter, const char* src, bool isStack) {
 		auto func = std::make_unique<AstNodeAnonymousFunction>();
 		setNodePosition(func.get(), scanner, src);
+		func->setStack(isStack);
 
 		char32_t token = u8t_scanner_scan(scanner);
 		if (token != '(') {
@@ -232,11 +234,14 @@ namespace Qd {
 						func->addInputParameter(param);
 					}
 				} else {
-					// Unnamed parameter — identifier is the type, not a name
+					// Unnamed parameter — the identifier is the type, not a name. It used to be
+					// read the other way round, as a name with no type, so `fn (Str -- )` bound a
+					// local called `Str` and left the body an empty stack; a named function's
+					// parameter list has always read it as a type.
 					if (!isOutput) {
 						anonHasUnnamedInput = true;
 					}
-					AstNodeParameter* param = new AstNodeParameter(paramNameStr, "", isOutput);
+					AstNodeParameter* param = new AstNodeParameter("", paramNameStr, isOutput);
 					setNodePosition(param, scanner, src);
 					param->setParent(func.get());
 					if (isOutput) {
@@ -286,12 +291,22 @@ namespace Qd {
 			errorReporter->reportError(scanner,
 					"Function signature requires '--' separator (e.g., 'fn(x:i64 -- )' or 'fn(x:i64 -- y:i64)')");
 		}
-		if (anonHasNamedInput && anonHasUnnamedInput) {
-			errorReporter->reportError(scanner, "Cannot mix named and unnamed input parameters");
+		// Whether inputs are bound is carried by `stack`, not by whether someone wrote a name, so
+		// mixing named and unnamed inputs is no longer a parse error: under `stack` the names are
+		// partial documentation, and without it the validator reports each unnamed input the way
+		// it does for a named function. `anonHasNamedInput` is kept for the parse either way.
+		(void)anonHasNamedInput;
+		(void)anonHasUnnamedInput;
+
+		// A '!' before the body marks the function fallible, as it does after a named function's
+		// signature.
+		token = u8t_scanner_scan(scanner);
+		if (token == '!') {
+			func->setThrows(true);
+			token = u8t_scanner_scan(scanner);
 		}
 
 		// Expect '{'
-		token = u8t_scanner_scan(scanner);
 		if (token != '{') {
 			errorReporter->reportError(scanner, "Expected '{' after anonymous function signature");
 			return nullptr;

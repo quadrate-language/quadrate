@@ -128,7 +128,7 @@ pub fn (c:Crc32) release() {
 /// One-shot CRC32 of a string.
 /// @param s str Input string
 /// @return crc i64 CRC32 checksum
-/// @example "Hello" crc32 -> crc
+/// @example "Hello" crypto::crc32 -> crc
 pub fn crc32(s:str -- crc:i64) {
 	Crc32 {} -> c
 	c s update -> c

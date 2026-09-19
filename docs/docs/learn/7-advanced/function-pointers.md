@@ -256,6 +256,7 @@ fn cmd_quit() {
 
 Use `type` to create readable names for function pointer types:
 
+<!-- doccheck: skip signature shown with its body elided -->
 ```qd
 type Predicate = fn(i64 -- i64)
 type Reducer = fn(i64 i64 -- i64)

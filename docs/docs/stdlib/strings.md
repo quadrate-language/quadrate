@@ -1,5 +1,9 @@
 # `use` strings
 
+<!-- doccheck: page-context use strings -->
+
+<!-- doccheck: page-context use mem -->
+
 String manipulation functions.
 Error codes: Ok=1 (success), specific errors start at 2
 
@@ -305,7 +309,7 @@ Convert C string pointer to Quadrate string.
 **Example:**
 
 ```qd
-entries 0 mem::get_ptr strings::from_ptr print
+2 mem::alloc! -> p  65 p 0 mem::set_byte  0 p 1 mem::set_byte  p strings::from_ptr  // s
 ```
 ---
 
@@ -568,7 +572,7 @@ Join array of strings with delimiter.
 **Example:**
 
 ```qd
-parts count "/" strings::join!  // path
+"usr,bin" "," strings::split! "/" strings::join!  // path
 ```
 ---
 
@@ -861,7 +865,7 @@ Sort array of strings in ascending alphabetical order.
 **Example:**
 
 ```qd
-entries count strings::sort
+"b,a,c" "," strings::split! strings::sort
 ```
 ---
 
@@ -879,7 +883,7 @@ Sort array of strings in descending alphabetical order.
 **Example:**
 
 ```qd
-entries count strings::sort_desc
+"b,a,c" "," strings::split! strings::sort_desc
 ```
 ---
 

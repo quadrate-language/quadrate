@@ -8,6 +8,7 @@
 /// } else {
 ///     "Success" print nl
 /// }
+/// doccheck: page-context
 
 import "libtty.a" as "tty" {
 	/// Check if stdout is connected to a terminal.

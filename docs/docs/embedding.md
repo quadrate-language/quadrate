@@ -216,6 +216,7 @@ qd_build(app);
 
 Type signatures enable seamless interop with the Quadrate standard library:
 
+<!-- doccheck: skip the host application registers these words; they cannot exist outside it -->
 ```quadrate
 use sensors
 use strconv
@@ -580,6 +581,7 @@ void scripting_shutdown(void) {
 
 ## Step 4: Write Game Scripts
 
+<!-- doccheck: skip the host application registers these words; they cannot exist outside it -->
 ```quadrate
 // scripts/player.qd
 // Player behavior script
@@ -612,6 +614,7 @@ fn take_damage(amount:i64 -- ) {
 }
 ```
 
+<!-- doccheck: skip the host application registers these words; they cannot exist outside it -->
 ```quadrate
 // scripts/enemy.qd
 // Enemy AI script
@@ -838,6 +841,7 @@ int get_vector(qd_context* ctx, void* userdata) {
 
 ### Passing Callbacks
 
+<!-- doccheck: skip the host application registers these words; they cannot exist outside it -->
 ```quadrate
 // Quadrate side
 fn my_callback(x:i64 -- result:i64) { x 2 * }

@@ -49,7 +49,6 @@ struct Point {
 }
 
 fn point_add(a:Point b:Point -- c:Point) {
-	-> b -> a
 	Point { x = a <<x b <<x + y = a <<y b <<y + }
 }
 ```
@@ -173,10 +172,11 @@ Create a folder `mymath/` with source files inside:
 
 // Private helper (no pub keyword) - only visible within mymath/
 fn square_internal(x:i64 -- result:i64) {
-	dup *
+	x dup *
 }
 ```
 
+<!-- doccheck: skip one file of a two-file module: square_internal is declared in the block above -->
 ```qd
 // mymath/api.qd
 
@@ -209,7 +209,7 @@ Use `pub` to mark symbols that can be accessed from outside the module:
 // mymodule/mymodule.qd
 
 pub fn public_function(x:i64 -- result:i64) {
-	helper 2 *
+	x helper 2 *
 }
 
 pub const PUBLIC_VALUE = 42
@@ -220,7 +220,7 @@ pub struct PublicStruct {
 
 // No pub - only accessible within this module's directory
 fn helper(x:i64 -- y:i64) {
-	1 +
+	x 1 +
 }
 
 const PRIVATE_VALUE = 99
@@ -257,16 +257,16 @@ pub struct Circle {
 }
 
 pub fn circle_area(r:f64 -- area:f64) {
-	square math::Pi *
+	r square math::Pi *
 }
 
 pub fn circle_circumference(r:f64 -- c:f64) {
-	2.0 * math::Pi *
+	r 2.0 * math::Pi *
 }
 
 // Private helper
 fn square(x:f64 -- result:f64) {
-	dup *
+	x dup *
 }
 ```
 

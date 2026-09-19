@@ -81,6 +81,60 @@ namespace Qd {
 		return ErrorState{builder->CreateOr(flagSet, codeSet, name), errorCode};
 	}
 
+	// The tail of a fallible call: `!` aborts, `?` returns to the caller, and a bare call pushes
+	// a status for the `if` or `switch` that reads it. Written for `call`, where the callee is a
+	// value rather than a name; the calls by name each carry their own copy of this, from before
+	// there was anywhere shared to put it.
+	void LlvmGenerator::Impl::generateFallibleCallEpilogue(
+			llvm::Value* ctx, const char* name, IAstNode* callNode, bool abortOnError, bool propagateOnError) {
+		auto errorState = generateReadErrorState(ctx);
+		auto hasError = errorState.failed;
+		auto errorCode = errorState.code;
+
+		if (abortOnError) {
+			llvm::BasicBlock* errorBlock =
+					llvm::BasicBlock::Create(*context, "error_abort", builder->GetInsertBlock()->getParent());
+			llvm::BasicBlock* continueBlock =
+					llvm::BasicBlock::Create(*context, "no_error", builder->GetInsertBlock()->getParent());
+			builder->CreateCondBr(hasError, errorBlock, continueBlock);
+
+			builder->SetInsertPoint(errorBlock);
+			auto funcNameStr = builder->CreateGlobalString(name);
+			builder->CreateCall(printErrorMsgFn, {ctx, funcNameStr});
+			builder->CreateCall(printStackTraceFn, {ctx});
+			builder->CreateCall(exitFn, {builder->getInt32(1)});
+			builder->CreateUnreachable();
+
+			builder->SetInsertPoint(continueBlock);
+			return;
+		}
+
+		if (propagateOnError) {
+			llvm::BasicBlock* errorBlock =
+					llvm::BasicBlock::Create(*context, "error_propagate", builder->GetInsertBlock()->getParent());
+			llvm::BasicBlock* continueBlock =
+					llvm::BasicBlock::Create(*context, "no_error", builder->GetInsertBlock()->getParent());
+			builder->CreateCondBr(hasError, errorBlock, continueBlock);
+
+			builder->SetInsertPoint(errorBlock);
+			if (currentFunctionReturnBlock) {
+				builder->CreateBr(currentFunctionReturnBlock);
+			} else {
+				builder->CreateUnreachable();
+			}
+
+			builder->SetInsertPoint(continueBlock);
+			return;
+		}
+
+		// Bare call: the status is shaped for whoever consumes it -- 1/0 for an `if`, the error
+		// code itself for a `switch`, which matches against specific codes.
+		const bool wantsCode = fallibleConsumerOf(callNode) == FallibleConsumer::Switch;
+		llvm::Value* onFailure = wantsCode ? static_cast<llvm::Value*>(errorCode) : builder->getInt64(0);
+		auto successStatus = builder->CreateSelect(hasError, onFailure, builder->getInt64(1), "success_status");
+		builder->CreateCall(pushIntFn, {ctx, successStatus});
+	}
+
 	void LlvmGenerator::Impl::generateLiteral(AstNodeLiteral* lit, llvm::Value* ctx) {
 		auto type = lit->literalType();
 		const auto& value = lit->value();
@@ -925,22 +979,21 @@ namespace Qd {
 
 		// Set the return target for this function
 		currentFunctionReturnBlock = returnBB;
-		currentFunctionIsFallible = false; // Anonymous functions are not fallible (yet)
+		// A lambda marked `!` is fallible, exactly as a named function marked `!` is: `panic` in
+		// its body returns from it, and a call site handles or propagates the error.
+		currentFunctionIsFallible = anonFunc->throws();
 
 		// Auto-bind named input parameters as local variables
 		// Pop from stack in reverse order (stack is LIFO: last param on top)
-		// Only when ALL params are named (mixed named/unnamed all stay on stack)
+		// `stack fn` leaves them on the stack instead, which is the rule a named function uses.
 		{
 			const auto& inputs = anonFunc->inputParameters();
-			bool allNamed = true;
-			for (size_t i = 0; i < inputs.size(); i++) {
-				if (!static_cast<const AstNodeParameter*>(inputs[i].get())->hasName()) {
-					allNamed = false;
-					break;
-				}
-			}
-			for (int paramIdx = static_cast<int>(inputs.size()) - 1; allNamed && paramIdx >= 0; paramIdx--) {
+			const bool bindParams = !anonFunc->isStack();
+			for (int paramIdx = static_cast<int>(inputs.size()) - 1; bindParams && paramIdx >= 0; paramIdx--) {
 				const auto* param = static_cast<const AstNodeParameter*>(inputs[static_cast<size_t>(paramIdx)].get());
+				if (!param->hasName()) {
+					continue;
+				}
 				const std::string& paramName = param->name();
 
 				// Create alloca in entry block

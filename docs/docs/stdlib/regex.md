@@ -1,5 +1,7 @@
 # `use` regex
 
+<!-- doccheck: page-context use regex -->
+
 Regular expression matching using Thompson NFA.
 Supports . * + ? | () [] [^] [a-z] ^ $ and escapes.
 Note: Nested groups and alternation inside groups not yet supported.
@@ -150,7 +152,7 @@ Free a compiled regex.
 **Example:**
 
 ```qd
-re regex::release
+"a+" regex::compile regex::release
 ```
 ---
 

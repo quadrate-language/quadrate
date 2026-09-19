@@ -1,6 +1,6 @@
 {
   "name": "crypto",
-  "description": "Cryptographic hash functions, checksums, and HMAC. Provides SHA-256, SHA-512, MD5, CRC32, and HMAC implementations.  Each hash algorithm supports both one-shot hashing and streaming (incremental) mode. HMAC provides message authentication using SHA-256 or SHA-512.",
+  "description": "Cryptographic hash functions, checksums, and HMAC. Provides SHA-256, SHA-512, MD5, CRC32, and HMAC implementations.  Each hash algorithm supports both one-shot hashing and streaming (incremental) mode. HMAC provides message authentication using SHA-256 or SHA-512. doccheck: page-context",
   "constants": [
 
   ],
@@ -72,7 +72,7 @@
       "params": [{"name": "s", "type": "str", "description": "Input string"}],
       "returns": [{"name": "crc", "type": "i64", "description": "CRC32 checksum"}],
       "errors": [],
-      "examples": ["\"Hello\" crc32 -> crc"]
+      "examples": ["\"Hello\" crypto::crc32 -> crc"]
     },
     {
       "name": "crc32_verify",
@@ -152,7 +152,7 @@
       "params": [{"name": "s", "type": "str", "description": "Input string"}],
       "returns": [{"name": "hash", "type": "str", "description": "32-character hex string"}],
       "errors": [],
-      "examples": ["\"Hello\" md5! -> hash"]
+      "examples": ["\"Hello\" crypto::md5! -> hash"]
     },
     {
       "name": "release",
@@ -212,7 +212,7 @@
       "params": [{"name": "s", "type": "str", "description": "Input string"}],
       "returns": [{"name": "hash", "type": "str", "description": "64-character hex string"}],
       "errors": [],
-      "examples": ["\"Hello\" sha256! -> hash"]
+      "examples": ["\"Hello\" crypto::sha256! -> hash"]
     },
     {
       "name": "sha512_bytes",

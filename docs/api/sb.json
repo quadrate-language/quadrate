@@ -1,6 +1,6 @@
 {
   "name": "sb",
-  "description": "StringBuilder - Efficient string building. Avoids O(n²) cost of repeated strings::concat.",
+  "description": "StringBuilder - Efficient string building. Avoids O(n²) cost of repeated strings::concat. doccheck: page-context doccheck: page-setup sb::new -> builder",
   "constants": [
 
   ],

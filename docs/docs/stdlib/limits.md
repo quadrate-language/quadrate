@@ -1,5 +1,7 @@
 # `use` limits
 
+<!-- doccheck: page-context use limits -->
+
 Numeric limits and constants.
 Provides minimum and maximum values for numeric types.
 

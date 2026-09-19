@@ -1,5 +1,7 @@
 # `use` unicode
 
+<!-- doccheck: page-context use unicode -->
+
 ## Constants
 
 | Name | Value | Description |
@@ -65,13 +67,13 @@
 | `n` | `110` | Letter: Lowercase n. |
 | `N` | `78` | Letter: Uppercase N. |
 | `newline` | `10` | Control: Newline (line feed). |
-| `nul` | `0` | Unicode character constants and classification. Control: Null character. |
+| `nul` | `0` | Unicode character constants and classification. Control: Null character. doccheck: page-context |
 | `o` | `111` | Letter: Lowercase o. |
 | `O` | `79` | Letter: Uppercase O. |
 | `p` | `112` | Letter: Lowercase p. |
 | `P` | `80` | Letter: Uppercase P. |
 | `percent` | `37` | Punctuation: Percent (%). |
-| `pipe` | `124` | Punctuation: Pipe (|). |
+| `pipe` | `124` | Punctuation: Pipe (\|). |
 | `plus` | `43` | Punctuation: Plus sign (+). |
 | `q` | `113` | Letter: Lowercase q. |
 | `Q` | `81` | Letter: Uppercase Q. |

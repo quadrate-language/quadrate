@@ -1,5 +1,7 @@
 # `use` uuid
 
+<!-- doccheck: page-context use uuid -->
+
 UUID generation (version 4 random UUIDs).
 Format: xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx
 

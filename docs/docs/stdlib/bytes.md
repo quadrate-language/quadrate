@@ -1,5 +1,19 @@
 # `use` bytes
 
+<!-- doccheck: page-context use bytes -->
+
+<!-- doccheck: page-context use mem -->
+
+<!-- doccheck: page-setup 16 mem::alloc! -> buf -->
+
+<!-- doccheck: page-setup 16 mem::alloc! -> buf1 -->
+
+<!-- doccheck: page-setup 16 mem::alloc! -> buf2 -->
+
+<!-- doccheck: page-setup 16 mem::alloc! -> dst -->
+
+<!-- doccheck: page-setup 16 mem::alloc! -> src -->
+
 Byte array operations and endianness conversion.
 Provides functions for reading and writing multi-byte integers
 in big-endian and little-endian byte order.
@@ -35,7 +49,7 @@ buf1 0 buf2 0 10 bytes::compare  // result
 
 Check if a byte value exists in a buffer.
 
-**Signature:** `(ptr i64 i64 i64 -- i64)`
+**Signature:** `(buf:ptr offset:i64 count:i64 value:i64 -- i64)`
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
@@ -104,7 +118,7 @@ buf 0 10 0x41 bytes::count  // n
 
 Check if two byte buffers are equal.
 
-**Signature:** `(ptr i64 ptr i64 i64 -- i64)`
+**Signature:** `(a:ptr a_off:i64 b:ptr b_off:i64 count:i64 -- i64)`
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
@@ -337,7 +351,7 @@ Swap byte order of a 16-bit value.
 **Example:**
 
 ```qd
-0x1234 bytes::swap16  // result  // 0x3412
+0x1234 bytes::swap16 -> result  // 0x3412
 ```
 ---
 
@@ -358,7 +372,7 @@ Swap byte order of a 32-bit value.
 **Example:**
 
 ```qd
-0x12345678 bytes::swap32  // result  // 0x78563412
+0x12345678 bytes::swap32 -> result  // 0x78563412
 ```
 ---
 
@@ -379,7 +393,7 @@ Swap byte order of a 64-bit value.
 **Example:**
 
 ```qd
-0x0102030405060708 bytes::swap64  // result  // 0x0807060504030201
+0x0102030405060708 bytes::swap64 -> result  // 0x0807060504030201
 ```
 ---
 

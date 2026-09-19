@@ -1,5 +1,15 @@
 # `use` tls
 
+<!-- doccheck: page-context use tls -->
+
+<!-- doccheck: page-context use net -->
+
+<!-- doccheck: page-setup 0 -> sock -->
+
+<!-- doccheck: page-setup 0 -> client_sock -->
+
+<!-- doccheck: page-setup sock "example.com" tls::connect! -> conn -->
+
 TLS/SSL secure socket operations.
 Provides encryption layer on top of TCP sockets using OpenSSL.
 Error codes: Ok=1 (success), specific errors start at 2
@@ -102,7 +112,7 @@ Wrap a TCP socket with TLS encryption (client mode). Performs TLS handshake and 
 **Example:**
 
 ```qd
-"example.com" 443 net::connect -> sock  sock "example.com" tls::connect!  // conn
+"example.com" 443 net::connect! -> sock  sock "example.com" tls::connect!  // conn
 ```
 ---
 

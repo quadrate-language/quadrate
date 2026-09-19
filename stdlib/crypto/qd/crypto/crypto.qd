@@ -3,6 +3,7 @@
 ///
 /// Each hash algorithm supports both one-shot hashing and streaming (incremental) mode.
 /// HMAC provides message authentication using SHA-256 or SHA-512.
+/// doccheck: page-context
 
 use crc32.qd
 use hmac.qd

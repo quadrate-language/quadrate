@@ -1,12 +1,14 @@
 # `use` bits
 
+<!-- doccheck: page-context use bits -->
+
 ## Functions
 
 ### `fn` clear_bit
 
 Clear a bit to 0.
 
-**Signature:** `(i64 i64 -- result:i64)`
+**Signature:** `(value:i64 bit_pos:i64 -- result:i64)`
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
@@ -70,7 +72,7 @@ Count trailing zeros (from LSB).
 
 Extract a bit field from a value.
 
-**Signature:** `(i64 i64 i64 -- result:i64)`
+**Signature:** `(value:i64 start_bit:i64 num_bits:i64 -- result:i64)`
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
@@ -93,7 +95,7 @@ Extract a bit field from a value.
 
 Check if a bit is set.
 
-**Signature:** `(i64 i64 -- flag:i64)`
+**Signature:** `(value:i64 bit_pos:i64 -- flag:i64)`
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
@@ -199,9 +201,9 @@ Get the lowest set bit as a value (isolate lowest bit).
 
 ### `fn` mask
 
-Bitwise operations for integer manipulation.  Core operations (and, or, xor, not, shl, shr) are builtins. This module provides higher-level bit manipulation functions. Keep only the bottom N bits.
+Bitwise operations for integer manipulation.  Core operations (and, or, xor, not, shl, shr) are builtins. This module provides higher-level bit manipulation functions. Keep only the bottom N bits. doccheck: page-context
 
-**Signature:** `(i64 i64 -- result:i64)`
+**Signature:** `(value:i64 num_bits:i64 -- result:i64)`
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
@@ -245,7 +247,7 @@ Find the next power of two greater than or equal to value.
 
 Count set bits (population count).
 
-**Signature:** `(i64 -- count:i64)`
+**Signature:** `(value:i64 -- count:i64)`
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
@@ -330,28 +332,6 @@ Rotate bits right within a width.
 ```
 ---
 
-### `fn` set_bit
-
-Set a bit to 1.
-
-**Signature:** `(i64 i64 -- result:i64)`
-
-| Parameter | Type | Description |
-|-----------|------|-------------|
-| `value` | `i64` | Input value |
-| `bit_pos` | `i64` | Bit position to set |
-
-| Output | Type | Description |
-|--------|------|-------------|
-| `result` | `i64` | Value with bit set |
-
-**Example:**
-
-```qd
-0b1000 1 bits::set_bit print  // 10 (0b1010)
-```
----
-
 ### `fn` set_bits
 
 Set a bit field in a value.
@@ -376,11 +356,33 @@ Set a bit field in a value.
 ```
 ---
 
+### `fn` set_bit
+
+Set a bit to 1.
+
+**Signature:** `(value:i64 bit_pos:i64 -- result:i64)`
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `value` | `i64` | Input value |
+| `bit_pos` | `i64` | Bit position to set |
+
+| Output | Type | Description |
+|--------|------|-------------|
+| `result` | `i64` | Value with bit set |
+
+**Example:**
+
+```qd
+0b1000 1 bits::set_bit print  // 10 (0b1010)
+```
+---
+
 ### `fn` toggle_bit
 
 Toggle a bit.
 
-**Signature:** `(i64 i64 -- result:i64)`
+**Signature:** `(value:i64 bit_pos:i64 -- result:i64)`
 
 | Parameter | Type | Description |
 |-----------|------|-------------|

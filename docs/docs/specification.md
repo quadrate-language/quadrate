@@ -510,6 +510,7 @@ fn name(input1:type1 input2:type2 -- output1:type1 output2:type2)
 - **Right of `--`**: Values produced on stack (bottom to top)
 
 Examples:
+<!-- doccheck: skip grammar: signatures shown without bodies -->
 ```quadrate
 fn add(a:i64 b:i64 -- sum:i64)        // Consumes 2, produces 1
 fn swap_pair(a:i64 b:i64 -- b:i64 a:i64)  // Consumes 2, produces 2
@@ -534,6 +535,7 @@ Input parameters are bound automatically on entry, so a function MUST NOT re-bin
 `->`. The parameters have already been consumed from the stack, and attempting `-> x` for a
 declared parameter `x` is a stack underflow:
 
+<!-- doccheck: expect-error the second function is the error this passage describes -->
 ```quadrate
 fn good(x:i64 y:i64 -- result:i64) {
     x y +       // Parameters are already in scope
@@ -588,6 +590,7 @@ declaration := use_statement
 
 ### 5.2 Use Statements
 
+<!-- doccheck: skip grammar: the forms a use statement takes -->
 ```quadrate
 use module_name           // Import module by name
 use "path/to/file.qd"     // Import file by path
@@ -596,6 +599,7 @@ use "./relative/path"     // Relative import
 
 ### 5.3 Constant Declarations
 
+<!-- doccheck: skip grammar: NAME and literal stand for a name and a value -->
 ```quadrate
 const NAME = literal
 const PI = 3.14159
@@ -761,6 +765,7 @@ is `pub inline stack`. A receiver (§8.4) is always bound, including on a `stack
 
 ### 5.8 Import Declarations (FFI)
 
+<!-- doccheck: skip grammar: the shape of an import block -->
 ```quadrate
 import "library.a" as "namespace" {
     [pub] fn funcname(params -- returns) [!]
@@ -953,6 +958,7 @@ continue   // Skip to next iteration
 
 Deferred code MUST execute when scope exits in LIFO order:
 
+<!-- doccheck: skip pattern sketch: resource_open and resource_close stand for a program's own words -->
 ```quadrate
 fn process() {
     resource_open -> handle
@@ -980,6 +986,7 @@ A `defer` MUST be registered when control **reaches** the statement, not merely 
 statement appears in the function. A `defer` written inside a branch that was not taken, or
 after a point from which the function already returned, MUST NOT run:
 
+<!-- doccheck: skip pattern sketch: acquire and release stand for a program's own words -->
 ```quadrate
 fn open_maybe(c:i64 -- ) {
     c if {
@@ -996,6 +1003,7 @@ resource is the arm that registers its release, and the failure arms register no
 The same applies to `?` (§10.3). A `?` that propagates out of the function before reaching a
 `defer` MUST NOT run that `defer`:
 
+<!-- doccheck: skip pattern sketch: open and close stand for a program's own words -->
 ```quadrate
 fn use_it( -- )! {
     open?  -> f              // if this propagates, the defer below is never registered
@@ -1067,9 +1075,28 @@ vec length
 
 ### 7.5 Anonymous Functions (Closures)
 
+<!-- doccheck: skip grammar: the shape of an anonymous function -->
 ```quadrate
-fn (params -- returns) { body }
+[stack] fn (params -- returns) [!] { body }
 ```
+
+An anonymous function is a function that has no name. Every rule in §5.7 about a named function's
+parameters, body and fallibility applies to it unchanged, and an implementation MUST NOT accept in
+one what it rejects in the other:
+
+- Without `stack`, every input MUST be named, and each name is bound as a local at entry, so the
+  body reads its arguments by name and does not find them on the stack.
+- With `stack`, the inputs stay on the stack, naming is optional, and a `stack fn` MUST declare at
+  least one input.
+- `!` marks it fallible. Only then may its body `panic`, and a `call` on it MUST be written `!`,
+  `?`, or be followed immediately by `if` or `switch` (§9.2) — the rule that governs a call to a
+  fallible name. Without `!` a `call` on it is an ordinary call, and `!` or `?` there is an error.
+- The body MUST leave exactly what the signature declares, counted and typed as §5.7 requires.
+- A parameter's type MUST be a valid type name, a name that is not one is an error, and an unused
+  named parameter is reported the same way.
+
+A bare identifier in the parameter list is a **type**, as it is in a named function's parameter
+list: `stack fn (Point -- r:f64)` takes a `Point`. It does not declare a parameter called `Point`.
 
 **Implicit capture**: Variables from the enclosing scope MUST be automatically captured when referenced inside the closure body. An explicit capture list MUST NOT be required. A `for` iterator is in scope for the loop body and MUST be capturable there.
 
@@ -1100,6 +1127,20 @@ sum call print nl                // Prints 30
 ```quadrate
 fn (x:i64 y:i64 -- r:i64) { x y + } -> add_fn
 3 4 add_fn call print nl         // Prints 7
+```
+
+**Arguments left on the stack**:
+```quadrate
+3 4 stack fn (i64 i64 -- r:i64) { + } call print nl   // Prints 7
+```
+
+**Fallible**:
+```quadrate
+0 fn (x:i64 -- r:i64)! { x 0 == if { "divide by zero" 1 panic } 100 x / } call if {
+    print nl
+} else {
+    "caught" print nl            // Prints caught
+}
 ```
 
 ### 7.6 Function Pointers
@@ -1183,6 +1224,7 @@ Use `>>` operator (data flows right, into struct). The struct and value are popp
 - `>>field` — sets field, pushes modified struct back (for chaining)
 - `>>field drop` — sets the field, then discards the struct (for standalone mutation)
 
+<!-- doccheck: skip grammar: struct and value stand for operands already on the stack -->
 ```quadrate
 struct value >>field     // Set field, push modified struct back
 struct value >>field drop    // Set field, discard struct
@@ -1349,6 +1391,7 @@ hand the caller a return value that was never produced.
 ```
 
 **Propagate error (`?` operator):**
+<!-- doccheck: continues -->
 ```quadrate
 fn wrapper(a:i64 b:i64 -- result:i64)! {
     a b divide?     // Propagates error to caller if divide fails
@@ -1586,6 +1629,49 @@ without bound.
 Implementations MAY provide a cycle detector or weak references; this specification requires
 neither, and the reference implementation provides neither.
 
+#### 11.2.2 Ownership
+
+Reference counting says how a count moves; it does not say who moves it. This is the contract,
+and every part of an implementation MUST hold to the same one. Three defects fixed in the
+reference implementation were this contract implemented differently in different places, none
+of them visible in a program's output: a field overwrite that dropped a reference on the floor,
+an equality test that released its operands only when both were strings, and a fast path for
+integer-only functions that skipped the release when a local was rebound.
+
+**A value on the stack carries a reference of its own.** Reading a local, a field, an array
+element or a global retains what it reads before pushing it. A value that was just created --
+by a struct literal, a string operation, an array literal -- arrives with the single reference
+its allocation gave it.
+
+**Somewhere that holds a value owns a reference.** There are four such places, and they behave
+alike:
+
+- a **local variable**, from `->` until it is rebound or its scope ends;
+- a **struct field**, from the store until it is overwritten or the struct is destroyed;
+- an **array element**, until it is overwritten or the array is destroyed;
+- a **tagged slot** (`mem::set_any`), until it is overwritten or cleared.
+
+Storing into one of these MUST take over the reference the stack supplied, and MUST release
+whatever the place held before. Emptying one -- rebinding a local, leaving a scope, running a
+destructor, releasing an array, `mem::clear_any` -- MUST give its reference back. It follows
+that a region of memory that will hold references MUST be zeroed before first use, since the
+store reads the old contents in order to release them; the standard library's containers zero
+the capacity they allocate, and a zeroed slot holds nothing.
+
+**An instruction that pops a value releases it, unless it hands the value on.** `drop` releases;
+`==` and `!=` release both operands; `dup` retains the copy it makes; `swap`, `over`, `rot` and
+`nip` leave the net count unchanged. A function's parameters are bound as locals and released
+when it returns; its results are pushed with a reference the caller then owns.
+
+**A value may be held in several places at once**, and each gives its reference back
+independently: a node reachable from a list's head pointer and from its tail pointer is freed
+when both stop pointing at it, not when the first does.
+
+None of this is visible in what a program prints, which is why an implementation SHOULD test it
+by measuring: build and drop the same structure at two iteration counts far apart and compare
+peak memory. `tests/run_memory_test.sh` in the reference implementation does exactly that, over
+a linked structure, a returned struct, the JSON parser and the containers.
+
 ### 11.3 String Memory
 
 Strings MUST be reference-counted and immutable:
@@ -1660,6 +1746,7 @@ struct captured_var {
 
 Use `defer` for explicit cleanup:
 
+<!-- doccheck: skip excerpt: the body is elided and io is used without an import, to keep defer in view -->
 ```quadrate
 fn process(path:str -- )! {
     path io::Read io::open!

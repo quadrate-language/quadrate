@@ -1,5 +1,6 @@
 /// Unicode character constants and classification.
 /// Control: Null character.
+/// doccheck: page-context
 pub const nul = 0
 /// Control: Tab character.
 pub const tab = 9

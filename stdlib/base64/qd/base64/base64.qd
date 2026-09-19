@@ -1,5 +1,6 @@
 /// Base64 encoding and decoding.
 /// Optimized with lookup tables and direct buffer writes.
+/// doccheck: page-context
 use mem
 use unicode
 

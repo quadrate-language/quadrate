@@ -20,7 +20,7 @@ Compare these two approaches for computing `(x - y) * (x + y)`:
 **Stack manipulation only:**
 
 ```qd
-fn diff_of_squares(x:i64 y:i64 -- result:i64) {
+stack fn diff_of_squares(x:i64 y:i64 -- result:i64) {
 	over over - rot rot + *
 }
 ```

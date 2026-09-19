@@ -8,11 +8,22 @@ Quadrate makes data flow explicit through stack-based evaluation. Every function
 
 ```qd
 fn double(x:i64 -- result:i64) {
-	2 *
+	x 2 *
 }
 ```
 
-This function takes one integer and produces one integer. The signature documents the stack effect, and the compiler enforces it.
+This function takes one integer and produces one integer. The signature documents the stack
+effect, and the compiler enforces it.
+
+Naming a parameter binds it: `x` is consumed off the stack on entry and the body refers to it
+by name. A function that would rather work on what the caller left says so, and then the name
+is documentation only:
+
+```qd
+stack fn double(value:i64 -- result:i64) {
+	2 *
+}
+```
 
 ## Stack language heritage
 

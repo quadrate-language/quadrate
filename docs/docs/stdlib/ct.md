@@ -1,5 +1,7 @@
 # `use` ct
 
+<!-- doccheck: page-context use ct -->
+
 Generic container types.
 Provides Vec, HashMap, Set, Queue, Deque, and Pair.
 

@@ -1151,7 +1151,21 @@ namespace Qd {
 				runtimeFn = llvm::Function::Create(fnTy, llvm::Function::ExternalLinkage, fnName, *module);
 			}
 
+			// `call` on a fallible function pointer is a fallible call site, and gets the same
+			// epilogue a fallible call by name gets: stale error state cleared first, so the check
+			// after it is about this call. Without it `call!` ran on and the program carried on
+			// past a panic with nothing on the stack -- true for a pointer to a fallible named
+			// function long before a lambda could be marked `!`.
+			const bool fallibleCall = name == "call" && inst->calleeFallible();
+			if (fallibleCall) {
+				generateClearErrorState(ctx);
+			}
+
 			builder->CreateCall(runtimeFn, {ctx});
+
+			if (fallibleCall) {
+				generateFallibleCallEpilogue(ctx, "call", inst, inst->abortOnError(), inst->propagateOnError());
+			}
 
 			// Special handling for 'panic' instruction in fallible functions
 			// After calling qd_panic, we need to return immediately to prevent further execution

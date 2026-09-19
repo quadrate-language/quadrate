@@ -1,5 +1,25 @@
 # `use` thread
 
+<!-- doccheck: page-context use thread -->
+
+<!-- doccheck: page-context fn worker() { } -->
+
+<!-- doccheck: page-context fn init_stuff() { } -->
+
+<!-- doccheck: page-setup thread::mutex_new! -> m -->
+
+<!-- doccheck: page-setup thread::chan_new! -> ch -->
+
+<!-- doccheck: page-setup thread::wg_new! -> wg -->
+
+<!-- doccheck: page-setup thread::once_new! -> o -->
+
+<!-- doccheck: page-setup 2 thread::barrier_new! -> b -->
+
+<!-- doccheck: page-setup thread::rwlock_new! -> rw -->
+
+<!-- doccheck: page-setup &worker thread::spawn! -> t -->
+
 Thread module - threading primitives using C11 threads.
 
 Provides:

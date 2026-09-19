@@ -14,10 +14,10 @@ stack fn square(i64 -- i64) {
 
 fn main() {
 	// Apply double
-	5 fn (i64 -- i64) { 2 * } apply print nl
+	5 stack fn (i64 -- i64) { 2 * } apply print nl
 
 	// Apply square
-	4 fn (i64 -- i64) { dup * } apply print nl
+	4 stack fn (i64 -- i64) { dup * } apply print nl
 
 	// Apply named functions
 	7 &double apply print nl

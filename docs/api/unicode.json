@@ -310,7 +310,7 @@
     {
       "name": "nul",
       "value": "0",
-      "description": "Unicode character constants and classification. Control: Null character."
+      "description": "Unicode character constants and classification. Control: Null character. doccheck: page-context"
     },
     {
       "name": "o",

@@ -1,5 +1,6 @@
 /// Hexadecimal encoding and decoding.
 /// Converts between binary data and hexadecimal string representation.
+/// doccheck: page-context
 use mem
 use strings
 use unicode

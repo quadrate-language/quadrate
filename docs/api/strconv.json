@@ -1,6 +1,6 @@
 {
   "name": "strconv",
-  "description": "String to number conversions.  Functions: - format_int: Format integer in any base (2-36) - parse_int: Parse string to integer in any base (2-36) - itoa: Convert integer to decimal string (shorthand for 10 format_int) - atoi: Parse decimal string to integer (shorthand for 10 parse_int) - format_float: Format float to string - parse_float: Parse string to float - format_bool: Format boolean to string (\"true\"/\"false\") - parse_bool: Parse string to boolean",
+  "description": "String to number conversions.  Functions: - format_int: Format integer in any base (2-36) - parse_int: Parse string to integer in any base (2-36) - itoa: Convert integer to decimal string (shorthand for 10 format_int) - atoi: Parse decimal string to integer (shorthand for 10 parse_int) - format_float: Format float to string - parse_float: Parse string to float - format_bool: Format boolean to string (\"true\"/\"false\") - parse_bool: Parse string to boolean doccheck: page-context",
   "constants": [
 
   ],

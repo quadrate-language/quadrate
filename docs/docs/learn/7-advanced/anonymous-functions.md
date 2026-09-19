@@ -18,6 +18,51 @@ fn main() {
 
 The signature follows the same format as regular functions: `(inputs -- outputs)`.
 
+## The same rules as a named function
+
+An anonymous function is a function that happens to have no name. Everything a named function's
+signature means, its signature means too.
+
+**Named inputs are bound.** `fn (x:i64 -- r:i64)` binds `x` as a local at entry, so the body says
+`x 2 *`, not `2 *` — the argument is not on the stack any more. This is the mistake to watch for
+when writing one inline:
+
+```qd
+fn main() {
+	5 fn (x:i64 -- r:i64) { x 2 * } call print nl  // 10
+}
+```
+
+**`stack fn` leaves them on the stack.** Write it when the body should work on the values
+directly, exactly as with a named `stack fn`. Then the names are optional:
+
+```qd
+fn main() {
+	3 4 stack fn (i64 i64 -- r:i64) { + } call print nl  // 7
+}
+```
+
+Without `stack`, every input must be named — an unnamed one is an error that tells you to name it
+or to write `stack fn`. A bare type name in the parameter list is a *type*, never a parameter
+name: `stack fn (Point -- r:f64)` takes a `Point`.
+
+**The body must leave what the signature declares**, in the number and the types it declares. A
+body that leaves two values under `-- r:i64` does not compile.
+
+**`!` makes it fallible.** Only then may the body `panic`, and the call site has to say what
+happens on failure — `call!` to abort, `call?` to propagate, or a bare `call` read by `if` or
+`switch`:
+
+```qd
+fn main() {
+	0 fn (x:i64 -- r:i64)! { x 0 == if { "divide by zero" 1 panic } 100 x / } call if {
+		print nl
+	} else {
+		"caught" print nl  // caught
+	}
+}
+```
+
 ## Inline usage
 
 Anonymous functions can be used directly without storing them:

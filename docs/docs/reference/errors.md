@@ -123,6 +123,7 @@ Handle success/failure without matching specific errors:
 
 Handle specific errors:
 
+<!-- doccheck: skip excerpt: the body is elided and io is used without an import, to keep the switch arms in view -->
 ```qd
 fn read_config( -- data:str)! {
 	"/etc/app/config.txt" io::Read io::open switch {
@@ -146,6 +147,7 @@ fn read_config( -- data:str)! {
 
 Handle errors without matching specific codes:
 
+<!-- doccheck: continues -->
 ```qd
 fn compute(x:i64 -- result:i64)! {
 	x 2 divide if {
@@ -160,6 +162,7 @@ fn compute(x:i64 -- result:i64)! {
 
 Abort the program if an error occurs:
 
+<!-- doccheck: continues -->
 ```qd
 fn compute(x:i64 -- result:i64)! {
 	x 2 divide!  // Aborts program if divide fails
@@ -173,6 +176,7 @@ fn compute(x:i64 -- result:i64)! {
 
 Automatically propagate errors to the calling function:
 
+<!-- doccheck: continues -->
 ```qd
 fn compute(x:i64 -- result:i64)! {
 	x 2 divide?  // Propagates error to caller if divide fails
@@ -184,6 +188,7 @@ The `?` operator requires the enclosing function to be fallible (marked with `!`
 
 This is equivalent to the more verbose pattern:
 
+<!-- doccheck: continues -->
 ```qd
 fn compute(x:i64 -- result:i64)! {
 	x 2 divide switch {
@@ -232,6 +237,8 @@ strings::ErrAlloc        // 3 - Memory allocation failed
 4. **Clean up with defer** - Resources released on every exit from the arm that acquired them
 
 ```qd
+use io
+
 fn process(path:str -- result:i64)! {
 	path io::Read io::open switch {
 		Ok {

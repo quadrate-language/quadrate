@@ -1,6 +1,6 @@
 {
   "name": "testing",
-  "description": "Testing utilities for unit tests.  Provides assertion functions for writing test cases. Tests are defined using the `test` keyword and assertions check that conditions are met.  @example use testing  test \"addition works\" {     2 3 + 5 testing::assert_eq }",
+  "description": "Testing utilities for unit tests.  Provides assertion functions for writing test cases. Tests are defined using the `test` keyword and assertions check that conditions are met.  @example use testing  test \"addition works\" {     2 3 + 5 testing::assert_eq } doccheck: page-context",
   "constants": [
 
   ],

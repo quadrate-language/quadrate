@@ -6,6 +6,13 @@
 /// time-based seed is guessable. Do NOT use it for tokens, session IDs,
 /// nonces, salts, or keys. For those, use `rand::secure_i64` (which draws
 /// fresh OS entropy on every call) or seed an `Rng` with `rand::secure`.
+/// doccheck: page-context
+/// doccheck: page-context use mem
+/// doccheck: page-setup rand::new -> rng
+/// doccheck: page-setup 32 mem::alloc! -> arr
+/// doccheck: page-setup 32 mem::alloc! -> src
+/// doccheck: page-setup 32 mem::alloc! -> dst
+/// doccheck: page-setup 4 -> len
 use math
 use mem
 use os

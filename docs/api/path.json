@@ -1,6 +1,6 @@
 {
   "name": "path",
-  "description": "File path manipulation functions. POSIX-style paths with forward slash separator.",
+  "description": "File path manipulation functions. POSIX-style paths with forward slash separator. doccheck: page-context",
   "constants": [
     {
       "name": "Sep",

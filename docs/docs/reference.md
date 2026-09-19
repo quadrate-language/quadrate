@@ -6,12 +6,13 @@ This page documents all Quadrate keywords and built-in instructions.
 
 | Keyword | Description |
 |---------|-------------|
-| [`fn`](#fn) | Declares a function with a stack signature. |
+| [`fn`](#fn) | Declares a function with a stack signature. Written without a name it is an anonymous function, which follows the same rules. |
 | [`pub`](#pub) | Makes a function, constant, or struct visible to other modules. |
 | [`const`](#const) | Declares a compile-time constant value. |
 | [`var`](#var) | Declares a module-level mutable global (type annotation optional; inferred from initializer when omitted). |
 | [`struct`](#struct) | Declares a structured data type with named fields. |
 | [`packed`](#packed) | Struct modifier: fields laid out adjacent at exact widths, no padding. Used before `struct`. |
+| [`stack`](#stack) | Function modifier: the inputs stay on the stack instead of being bound as locals, and any names they carry are documentation. Used before `fn`, named or anonymous. |
 | [`use`](#use) | Imports a module, making its functions available with module::function syntax. |
 | [`import`](#import) | Imports a C library, declaring its functions with Quadrate signatures. |
 | [`if`](#if) | Executes a block if the top of stack is true (non-zero). |
@@ -31,12 +32,12 @@ This page documents all Quadrate keywords and built-in instructions.
 
 ### fn
 
-Declares a function with a stack signature.
+Declares a function with a stack signature. Written without a name it is an anonymous function, which follows the same rules.
 
 **Example:**
 
 ```qd
-fn add(a:i64 b:i64 -- sum:i64) { + }
+fn add(a:i64 b:i64 -- sum:i64) { a b + }
 ```
 
 ---
@@ -97,6 +98,18 @@ Struct modifier: fields laid out adjacent at exact widths, no padding. Used befo
 
 ```qd
 packed struct FileLump { offset:u32 size:u32 name:u64 }
+```
+
+---
+
+### stack
+
+Function modifier: the inputs stay on the stack instead of being bound as locals, and any names they carry are documentation. Used before `fn`, named or anonymous.
+
+**Example:**
+
+```qd
+stack fn double(i64 -- r:i64) { 2 * }
 ```
 
 ---

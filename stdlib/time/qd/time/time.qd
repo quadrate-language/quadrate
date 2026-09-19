@@ -1,5 +1,12 @@
 /// Time operations and duration constants.
 /// Duration = 1 nanosecond.
+/// doccheck: page-context
+/// doccheck: page-setup 1700000000 -> ts1
+/// doccheck: page-setup 1700086400 -> ts2
+/// doccheck: page-setup 1700000000 -> start_ts
+/// doccheck: page-setup 1700086400 -> end_ts
+/// doccheck: page-setup 1700000000 -> start_time
+/// doccheck: page-setup 1700086400 -> end_time
 pub const Nanosecond = 1
 /// Duration = 1 microsecond (1000 nanoseconds).
 pub const Microsecond = 1000
@@ -425,7 +432,7 @@ pub fn is_weekday(wd:i64 -- is_wkday:i64) {
 /// Get number of days in a year.
 /// @param yr i64 Year
 /// @return days i64 365 or 366 for leap year
-/// @example 2024 time::days_in_year .  // 366
+/// @example 2024 time::days_in_year print  // 366
 pub fn days_in_year(yr:i64 -- days:i64) {
 	yr is_leap_year if { 366 } else { 365 }
 }

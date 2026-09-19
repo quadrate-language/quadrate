@@ -1,5 +1,7 @@
 # `use` crypto
 
+<!-- doccheck: page-context use crypto -->
+
 Cryptographic hash functions, checksums, and HMAC.
 Provides SHA-256, SHA-512, MD5, CRC32, and HMAC implementations.
 
@@ -25,7 +27,7 @@ One-shot CRC32 of a string.
 **Example:**
 
 ```qd
-"Hello" crc32  // crc
+"Hello" crypto::crc32  // crc
 ```
 ---
 
@@ -90,7 +92,7 @@ One-shot MD5 of a string. Note: MD5 is cryptographically broken. Use only for ch
 **Example:**
 
 ```qd
-"Hello" md5!  // hash
+"Hello" crypto::md5!  // hash
 ```
 ---
 
@@ -111,7 +113,7 @@ One-shot SHA-256 of a string.
 **Example:**
 
 ```qd
-"Hello" sha256!  // hash
+"Hello" crypto::sha256!  // hash
 ```
 ---
 

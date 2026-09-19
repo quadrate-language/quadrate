@@ -1,6 +1,11 @@
 /// TLS/SSL secure socket operations.
 /// Provides encryption layer on top of TCP sockets using OpenSSL.
 /// Error codes: Ok=1 (success), specific errors start at 2
+/// doccheck: page-context
+/// doccheck: page-context use net
+/// doccheck: page-setup 0 -> sock
+/// doccheck: page-setup 0 -> client_sock
+/// doccheck: page-setup sock "example.com" tls::connect! -> conn
 
 /// TLS initialization failed.
 pub const ErrInit = 2
@@ -35,7 +40,7 @@ import "libtls.a" as "tls" {
 	/// @param socket i64 TCP socket from net::connect
 	/// @param hostname str Server hostname for SNI and certificate verification
 	/// @return conn ptr TLS connection handle
-	/// @example "example.com" 443 net::connect -> sock  sock "example.com" tls::connect! -> conn
+	/// @example "example.com" 443 net::connect! -> sock  sock "example.com" tls::connect! -> conn
 	pub fn connect(socket:i64 hostname:str -- conn:ptr)!
 
 	/// Wrap a TCP socket with TLS encryption using client certificate (mTLS).

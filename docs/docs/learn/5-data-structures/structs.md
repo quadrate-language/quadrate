@@ -64,6 +64,10 @@ fn main() {
 When working with raw `ptr` values (common in callbacks), use `as` to tell the compiler the struct type:
 
 ```qd
+struct Config {
+	debug:i64
+}
+
 fn handler(data:ptr -- ) {
 	data as Config <<debug print nl
 }
@@ -427,11 +431,17 @@ fn main() {
 Use `null` for empty pointer fields. Check for null before accessing:
 
 ```qd
-fn print_list(cur:ptr -- ) {
+struct Node {
+	value:i64
+	next:*Node
+}
+
+fn print_list(start:ptr -- ) {
+	start -> cur
 	loop {
 		cur null eq if { break }
-		cur <<value print nl
-		cur <<next -> cur
+		cur as Node <<value print nl
+		cur as Node <<next -> cur
 	}
 }
 ```

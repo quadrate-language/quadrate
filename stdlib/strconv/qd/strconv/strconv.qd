@@ -9,6 +9,7 @@
 /// - parse_float: Parse string to float
 /// - format_bool: Format boolean to string ("true"/"false")
 /// - parse_bool: Parse string to boolean
+/// doccheck: page-context
 import "libstrconv.a" as "strconv" {
 	/// Format integer in given base.
 	/// @param value i64 Integer value

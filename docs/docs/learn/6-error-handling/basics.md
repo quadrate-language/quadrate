@@ -6,6 +6,7 @@ Quadrate has a robust error handling system built around **fallible functions**.
 
 A fallible function is one that might fail. Mark it with `!` after the signature:
 
+<!-- doccheck: skip signature shown with its body elided -->
 ```qd
 fn divide(a:i64 b:i64 -- result:i64)! {
 	// This function can fail
@@ -101,6 +102,7 @@ Error: Cannot divide by zero!
 
 Call a fallible function with `!` to abort the program on error:
 
+<!-- doccheck: continues -->
 ```qd
 fn divide_and_double(a:i64 b:i64 -- result:i64)! {
 	a b divide!  // Aborts if divide fails
@@ -114,6 +116,7 @@ fn divide_and_double(a:i64 b:i64 -- result:i64)! {
 
 Call a fallible function with `?` to automatically propagate errors to the caller. The enclosing function must itself be fallible:
 
+<!-- doccheck: continues -->
 ```qd
 fn divide_and_double(a:i64 b:i64 -- result:i64)! {
 	a b divide?  // If divide fails, return the error to our caller
@@ -123,6 +126,7 @@ fn divide_and_double(a:i64 b:i64 -- result:i64)! {
 
 This is equivalent to the more verbose:
 
+<!-- doccheck: continues -->
 ```qd
 fn divide_and_double(a:i64 b:i64 -- result:i64)! {
 	a b divide switch {
@@ -135,6 +139,7 @@ fn divide_and_double(a:i64 b:i64 -- result:i64)! {
 
 The `?` operator is useful when you want to let the caller handle the error instead of handling it locally. Errors chain naturally:
 
+<!-- doccheck: skip pattern sketch: step1, step2 and step3 stand for a program's own fallible words -->
 ```qd
 fn pipeline(x:i64 -- result:i64)! {
 	x step1?   // propagates step1 errors

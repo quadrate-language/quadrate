@@ -1,5 +1,9 @@
 # `use` hof
 
+<!-- doccheck: page-context use hof -->
+
+<!-- doccheck: page-setup [1 2 3] -> arr -->
+
 Higher-Order Function combinators.
 
 Every combinator is generic: `T` is the value's type and `U` the result's, so the same
@@ -27,7 +31,7 @@ Check if all elements satisfy a predicate.
 **Example:**
 
 ```qd
-arr fn (x:i64 -- r:i64) { 0 > } hof::all  // all positive?
+arr fn (x:i64 -- r:i64) { x 0 > } hof::all  // all positive?
 ```
 ---
 
@@ -48,7 +52,7 @@ Check if any element satisfies a predicate.
 **Example:**
 
 ```qd
-arr fn (x:i64 -- r:i64) { 0 > } hof::any  // any positive?
+arr fn (x:i64 -- r:i64) { x 0 > } hof::any  // any positive?
 ```
 ---
 
@@ -70,7 +74,7 @@ Apply a function to a value.
 **Example:**
 
 ```qd
-5 fn (x:i64 -- r:i64) { 2 * } hof::apply print nl  // 10
+5 fn (x:i64 -- r:i64) { x 2 * } hof::apply print nl  // 10
 ```
 ---
 
@@ -95,7 +99,7 @@ Apply two functions to two values (first to first, second to second).
 **Example:**
 
 ```qd
-3 4 fn (x:i64 -- r:i64) { 1 + } fn (x:i64 -- r:i64) { 2 * } hof::bi_star  // Stack: 4 8
+3 4 fn (x:i64 -- r:i64) { x 1 + } fn (x:i64 -- r:i64) { x 2 * } hof::bi_star  // Stack: 4 8
 ```
 ---
 
@@ -119,7 +123,7 @@ Apply two functions to the same value.
 **Example:**
 
 ```qd
-5 fn (x:i64 -- r:i64) { 2 * } fn (x:i64 -- r:i64) { 3 + } hof::bi  // Stack: 10 8
+5 fn (x:i64 -- r:i64) { x 2 * } fn (x:i64 -- r:i64) { x 3 + } hof::bi  // Stack: 10 8
 ```
 ---
 
@@ -143,7 +147,7 @@ Apply a function to two values separately.
 **Example:**
 
 ```qd
-3 4 fn (x:i64 -- r:i64) { dup * } hof::both  // Stack: 9 16
+3 4 fn (x:i64 -- r:i64) { x dup * } hof::both  // Stack: 9 16
 ```
 ---
 
@@ -167,7 +171,7 @@ Apply a function to the second stack element, preserving the top.
 **Example:**
 
 ```qd
-10 20 fn (x:i64 -- r:i64) { 2 * } hof::dip  // Stack: 20 20
+10 20 fn (x:i64 -- r:i64) { x 2 * } hof::dip  // Stack: 20 20
 ```
 ---
 
@@ -184,7 +188,7 @@ Filter an array, keeping only elements that satisfy a predicate.
 **Example:**
 
 ```qd
-arr fn (x:i64 -- r:i64) { 2 mod 0 == } hof::filter  // keep evens
+arr fn (x:i64 -- r:i64) { x 2 mod 0 == } hof::filter  // keep evens
 ```
 ---
 
@@ -206,7 +210,7 @@ Find the first element satisfying a predicate.
 **Example:**
 
 ```qd
-arr fn (x:i64 -- r:i64) { 10 > } hof::find  // first > 10
+arr fn (x:i64 -- r:i64) { x 10 > } hof::find  // first > 10
 ```
 ---
 
@@ -228,7 +232,7 @@ Fold/reduce an array left-to-right with a binary function.
 **Example:**
 
 ```qd
-arr 0 fn (acc:i64 x:i64 -- r:i64) { + } hof::fold  // sum of array
+arr 0 fn (acc:i64 x:i64 -- r:i64) { acc x + } hof::fold  // sum of array
 ```
 ---
 
@@ -250,7 +254,7 @@ Fold/reduce an array right-to-left with a binary function.
 **Example:**
 
 ```qd
-arr 0 fn (x:i64 acc:i64 -- r:i64) { + } hof::fold_right  // sum of array
+arr 0 fn (x:i64 acc:i64 -- r:i64) { x acc + } hof::fold_right  // sum of array
 ```
 ---
 
@@ -273,7 +277,7 @@ Apply a function but keep the original value.
 **Example:**
 
 ```qd
-5 fn (x:i64 -- r:i64) { 2 * } hof::keep  // Stack: 10 5
+5 fn (x:i64 -- r:i64) { x 2 * } hof::keep  // Stack: 10 5
 ```
 ---
 
@@ -290,7 +294,7 @@ Map a function over an array, returning a new array.
 **Example:**
 
 ```qd
-arr fn (x:i64 -- r:i64) { 2 * } hof::map  // double each element
+arr fn (x:i64 -- r:i64) { x 2 * } hof::map  // double each element
 ```
 ---
 
@@ -313,7 +317,7 @@ Apply function n times to an initial value.
 **Example:**
 
 ```qd
-2 4 fn (x:i64 -- r:i64) { dup * } hof::times print nl  // 65536 (2^16)
+2 4 fn (x:i64 -- r:i64) { x dup * } hof::times print nl  // 65536 (2^16)
 ```
 ---
 
@@ -339,7 +343,7 @@ Apply three functions to the same value.
 **Example:**
 
 ```qd
-5 fn (x:i64 -- r:i64) { 1 + } fn (x:i64 -- r:i64) { 2 * } fn (x:i64 -- r:i64) { dup * } hof::tri  // Stack: 6 10 25
+5 fn (x:i64 -- r:i64) { x 1 + } fn (x:i64 -- r:i64) { x 2 * } fn (x:i64 -- r:i64) { x dup * } hof::tri  // Stack: 6 10 25
 ```
 ---
 
@@ -362,8 +366,8 @@ Apply function only if condition is false, otherwise return value unchanged.
 **Example:**
 
 ```qd
-5 0 fn (x:i64 -- r:i64) { 2 * } hof::unless print nl  // 10
-5 1 fn (x:i64 -- r:i64) { 2 * } hof::unless print nl  // 5
+5 0 fn (x:i64 -- r:i64) { x 2 * } hof::unless print nl  // 10
+5 1 fn (x:i64 -- r:i64) { x 2 * } hof::unless print nl  // 5
 ```
 ---
 
@@ -386,6 +390,6 @@ Apply function only if condition is true, otherwise return value unchanged.
 **Example:**
 
 ```qd
-5 1 fn (x:i64 -- r:i64) { 2 * } hof::when print nl  // 10
-5 0 fn (x:i64 -- r:i64) { 2 * } hof::when print nl  // 5
+5 1 fn (x:i64 -- r:i64) { x 2 * } hof::when print nl  // 10
+5 0 fn (x:i64 -- r:i64) { x 2 * } hof::when print nl  // 5
 ```

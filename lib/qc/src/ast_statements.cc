@@ -256,20 +256,23 @@ namespace Qd {
 						errorReporter->reportError(scanner, "'else' without preceding 'if'");
 						continue;
 					}
-				} else if (strcmp(tokenText, "fn") == 0) {
-					// Anonymous function: fn (params -- outputs) { body }
-					char32_t nextToken = peekNextNonWhitespace(scanner, src);
-					if (nextToken == '(') {
-						IAstNode* anonFunc = parseAnonymousFunction(scanner, errorReporter, src);
-						if (anonFunc) {
-							tempNodes.push_back(anonFunc);
-						}
+				} else if (strcmp(tokenText, "fn") == 0 || strcmp(tokenText, "stack") == 0) {
+					// Anonymous function: fn (params -- outputs) { body }, or
+					// stack fn (params -- outputs) { body } to leave the inputs on the stack.
+					// tokenText points into the scanner's buffer, which parsing invalidates.
+					const bool isFn = strcmp(tokenText, "fn") == 0;
+					IAstNode* anonFunc = tryParseAnonymousFunction(scanner, errorReporter, src, tokenText);
+					if (anonFunc) {
+						tempNodes.push_back(anonFunc);
 						continue;
-					} else {
+					}
+					if (isFn) {
 						errorReporter->reportError(scanner, "Function declarations not allowed inside blocks. "
 															"Did you mean 'fn (...) { }' for an anonymous function?");
 						continue;
 					}
+					// A plain identifier that happens to be called `stack`: fall through to the
+					// normal identifier handling below.
 				}
 			}
 

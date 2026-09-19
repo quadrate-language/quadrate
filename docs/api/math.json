@@ -1,6 +1,6 @@
 {
   "name": "math",
-  "description": "Mathematical functions and constants.",
+  "description": "Mathematical functions and constants. doccheck: page-context doccheck: page-setup math::Vec2 { x = 3.0 y = 4.0 } -> v2 doccheck: page-setup math::Vec2 { x = 1.0 y = 0.0 } -> other2 doccheck: page-setup math::Vec3 { x = 1.0 y = 2.0 z = 2.0 } -> v3 doccheck: page-setup math::Vec3 { x = 0.0 y = 1.0 z = 0.0 } -> other3 doccheck: page-setup math::Vec4 { x = 1.0 y = 2.0 z = 2.0 w = 1.0 } -> v4 doccheck: page-setup math::Vec4 { x = 0.0 y = 1.0 z = 0.0 w = 1.0 } -> other4 doccheck: page-setup math::quat_identity -> q doccheck: page-setup math::quat_identity -> other_q doccheck: page-setup math::mat4_identity -> m doccheck: page-setup math::mat4_identity -> other_m doccheck: page-setup math::Vec3 { x = 0.0 y = 1.0 z = 0.0 } -> axis doccheck: page-setup math::Vec3 { x = 0.0 y = 1.0 z = 0.0 } -> normal doccheck: page-setup math::Vec3 { x = 1.0 y = 0.0 z = 0.0 } -> point doccheck: page-setup math::Vec3 { x = 0.0 y = 0.0 z = 5.0 } -> eye doccheck: page-setup math::Vec3 { x = 0.0 y = 0.0 z = 0.0 } -> target doccheck: page-setup math::Vec3 { x = 0.0 y = 1.0 z = 0.0 } -> up",
   "constants": [
     {
       "name": "E",
@@ -117,13 +117,13 @@
   "functions": [
     {
       "name": "abs",
-      "signature": "(f64 -- f64)",
+      "signature": "(x:f64 -- f64)",
       "failable": false,
       "description": "Absolute value.",
       "params": [{"name": "x", "type": "f64", "description": "Any value"}],
-      "returns": [{"name": "result", "type": "f64", "description": ""}],
-      "errors": [{"code": "x", "description": ""}],
-      "examples": ["||-5.0 math::abs print  // 5.0"]
+      "returns": [{"name": "result", "type": "f64", "description": "|x|"}],
+      "errors": [],
+      "examples": ["-5.0 math::abs print  // 5.0"]
     },
     {
       "name": "acosh",
@@ -153,7 +153,7 @@
       "params": [{"name": "other", "type": "Vec2", "description": "Vector to add"}],
       "returns": [{"name": "result", "type": "Vec2", "description": "Sum of vectors"}],
       "errors": [],
-      "examples": ["other v add -> sum"]
+      "examples": ["v2 other2 add -> sum"]
     },
     {
       "name": "add",
@@ -163,7 +163,7 @@
       "params": [{"name": "other", "type": "Vec3", "description": "Vector to add"}],
       "returns": [{"name": "result", "type": "Vec3", "description": "Sum of vectors"}],
       "errors": [],
-      "examples": ["other v add -> sum"]
+      "examples": ["v3 other3 add -> sum"]
     },
     {
       "name": "add",
@@ -173,7 +173,7 @@
       "params": [{"name": "other", "type": "Vec4", "description": "Vector to add"}],
       "returns": [{"name": "result", "type": "Vec4", "description": "Sum of vectors"}],
       "errors": [],
-      "examples": ["other v add -> sum"]
+      "examples": ["v4 other4 add -> sum"]
     },
     {
       "name": "angle_between",
@@ -183,7 +183,7 @@
       "params": [{"name": "other", "type": "Vec3", "description": "Other vector"}],
       "returns": [{"name": "result", "type": "f64", "description": "Angle in radians [0, π]"}],
       "errors": [],
-      "examples": ["other v angle_between -> a"]
+      "examples": ["v3 other3 angle_between -> a"]
     },
     {
       "name": "angle",
@@ -193,7 +193,7 @@
       "params": [],
       "returns": [{"name": "result", "type": "f64", "description": "Angle in radians [-π, π]"}],
       "errors": [],
-      "examples": ["v angle -> a"]
+      "examples": ["v2 angle -> a"]
     },
     {
       "name": "asinh",
@@ -296,16 +296,6 @@
       "examples": []
     },
     {
-      "name": "cb",
-      "signature": "(f64 -- f64)",
-      "failable": false,
-      "description": "Cube a number.",
-      "params": [{"name": "x", "type": "f64", "description": "Value to cube"}],
-      "returns": [{"name": "result", "type": "f64", "description": "x * x * x"}],
-      "errors": [],
-      "examples": ["2.0 math::cb print  // 8.0"]
-    },
-    {
       "name": "cbrt",
       "signature": "(x:f64 -- result:f64)",
       "failable": false,
@@ -314,6 +304,16 @@
       "returns": [{"name": "result", "type": "f64", "description": "Cube root of x"}],
       "errors": [],
       "examples": ["8.0 math::cbrt print  // 2.0"]
+    },
+    {
+      "name": "cb",
+      "signature": "(x:f64 -- f64)",
+      "failable": false,
+      "description": "Cube a number.",
+      "params": [{"name": "x", "type": "f64", "description": "Value to cube"}],
+      "returns": [{"name": "result", "type": "f64", "description": "x * x * x"}],
+      "errors": [],
+      "examples": ["2.0 math::cb print  // 8.0"]
     },
     {
       "name": "ceil",
@@ -373,7 +373,7 @@
       "params": [{"name": "other", "type": "Vec3", "description": "Other vector"}],
       "returns": [{"name": "result", "type": "Vec3", "description": "Cross product (v x other)"}],
       "errors": [],
-      "examples": ["other v cross -> c"]
+      "examples": ["v3 other3 cross -> c"]
     },
     {
       "name": "cubic_hermite",
@@ -387,7 +387,7 @@
     },
     {
       "name": "deg_to_rad",
-      "signature": "(f64 -- f64)",
+      "signature": "(degrees:f64 -- f64)",
       "failable": false,
       "description": "Convert degrees to radians.",
       "params": [{"name": "degrees", "type": "f64", "description": "Angle in degrees"}],
@@ -413,7 +413,7 @@
       "params": [{"name": "other", "type": "Vec2", "description": "Other point"}],
       "returns": [{"name": "result", "type": "f64", "description": "Distance between points"}],
       "errors": [],
-      "examples": ["other v distance -> d"]
+      "examples": ["v2 other2 distance -> d"]
     },
     {
       "name": "distance",
@@ -423,7 +423,7 @@
       "params": [{"name": "other", "type": "Vec3", "description": "Other point"}],
       "returns": [{"name": "result", "type": "f64", "description": "Distance between points"}],
       "errors": [],
-      "examples": ["other v distance -> d"]
+      "examples": ["v3 other3 distance -> d"]
     },
     {
       "name": "dot",
@@ -433,7 +433,7 @@
       "params": [{"name": "other", "type": "Quat", "description": "Other quaternion"}],
       "returns": [{"name": "result", "type": "f64", "description": "Dot product"}],
       "errors": [],
-      "examples": ["other q dot -> d"]
+      "examples": ["q other_q dot -> d"]
     },
     {
       "name": "dot",
@@ -443,7 +443,7 @@
       "params": [{"name": "other", "type": "Vec2", "description": "Other vector"}],
       "returns": [{"name": "result", "type": "f64", "description": "Dot product"}],
       "errors": [],
-      "examples": ["other v dot -> d"]
+      "examples": ["v2 other2 dot -> d"]
     },
     {
       "name": "dot",
@@ -453,7 +453,7 @@
       "params": [{"name": "other", "type": "Vec3", "description": "Other vector"}],
       "returns": [{"name": "result", "type": "f64", "description": "Dot product"}],
       "errors": [],
-      "examples": ["other v dot -> d"]
+      "examples": ["v3 other3 dot -> d"]
     },
     {
       "name": "dot",
@@ -463,7 +463,7 @@
       "params": [{"name": "other", "type": "Vec4", "description": "Other vector"}],
       "returns": [{"name": "result", "type": "f64", "description": "Dot product"}],
       "errors": [],
-      "examples": ["other v dot -> d"]
+      "examples": ["v4 other4 dot -> d"]
     },
     {
       "name": "exp2",
@@ -567,7 +567,7 @@
     },
     {
       "name": "inv",
-      "signature": "(f64 -- f64)",
+      "signature": "(x:f64 -- f64)",
       "failable": false,
       "description": "Reciprocal (1/x).",
       "params": [{"name": "x", "type": "f64", "description": "Non-zero value"}],
@@ -633,7 +633,7 @@
       "params": [],
       "returns": [{"name": "result", "type": "f64", "description": "Squared length of vector"}],
       "errors": [],
-      "examples": ["v length_sq -> len_sq"]
+      "examples": ["v2 length_sq -> len_sq"]
     },
     {
       "name": "length_sq",
@@ -643,7 +643,7 @@
       "params": [],
       "returns": [{"name": "result", "type": "f64", "description": "Squared length of vector"}],
       "errors": [],
-      "examples": ["v length_sq -> len_sq"]
+      "examples": ["v3 length_sq -> len_sq"]
     },
     {
       "name": "length_sq",
@@ -653,7 +653,7 @@
       "params": [],
       "returns": [{"name": "result", "type": "f64", "description": "Squared length of vector"}],
       "errors": [],
-      "examples": ["v length_sq -> len_sq"]
+      "examples": ["v4 length_sq -> len_sq"]
     },
     {
       "name": "length",
@@ -663,7 +663,7 @@
       "params": [],
       "returns": [{"name": "result", "type": "f64", "description": "Length of vector"}],
       "errors": [],
-      "examples": ["v length -> len"]
+      "examples": ["v2 length -> len"]
     },
     {
       "name": "length",
@@ -673,7 +673,7 @@
       "params": [],
       "returns": [{"name": "result", "type": "f64", "description": "Length of vector"}],
       "errors": [],
-      "examples": ["v length -> len"]
+      "examples": ["v3 length -> len"]
     },
     {
       "name": "length",
@@ -683,7 +683,7 @@
       "params": [],
       "returns": [{"name": "result", "type": "f64", "description": "Length of vector"}],
       "errors": [],
-      "examples": ["v length -> len"]
+      "examples": ["v4 length -> len"]
     },
     {
       "name": "lerp",
@@ -703,7 +703,7 @@
       "params": [{"name": "other", "type": "Vec2", "description": "End vector"}, {"name": "t", "type": "f64", "description": "Interpolation factor (0.0 to 1.0)"}],
       "returns": [{"name": "result", "type": "Vec2", "description": "Interpolated vector"}],
       "errors": [],
-      "examples": ["other 0.5 v lerp -> mid"]
+      "examples": ["v2 other2 0.5 lerp -> mid"]
     },
     {
       "name": "lerp",
@@ -713,7 +713,7 @@
       "params": [{"name": "other", "type": "Vec3", "description": "End vector"}, {"name": "t", "type": "f64", "description": "Interpolation factor (0.0 to 1.0)"}],
       "returns": [{"name": "result", "type": "Vec3", "description": "Interpolated vector"}],
       "errors": [],
-      "examples": ["other 0.5 v lerp -> mid"]
+      "examples": ["v3 other3 0.5 lerp -> mid"]
     },
     {
       "name": "lerp",
@@ -723,7 +723,7 @@
       "params": [{"name": "other", "type": "Vec4", "description": "End vector"}, {"name": "t", "type": "f64", "description": "Interpolation factor (0.0 to 1.0)"}],
       "returns": [{"name": "result", "type": "Vec4", "description": "Interpolated vector"}],
       "errors": [],
-      "examples": ["other 0.5 v lerp -> mid"]
+      "examples": ["v4 other4 0.5 lerp -> mid"]
     },
     {
       "name": "ln",
@@ -773,7 +773,7 @@
       "params": [{"name": "q", "type": "Quat", "description": "Rotation quaternion"}],
       "returns": [{"name": "m", "type": "Mat4", "description": "Rotation matrix"}],
       "errors": [],
-      "examples": ["q mat4_from_quat -> rot_mat"]
+      "examples": ["other_q math::mat4_from_quat -> rot_mat"]
     },
     {
       "name": "mat4_identity",
@@ -793,7 +793,7 @@
       "params": [{"name": "eye", "type": "Vec3", "description": "Camera position"}, {"name": "target", "type": "Vec3", "description": "Point to look at"}, {"name": "up", "type": "Vec3", "description": "Up direction"}],
       "returns": [{"name": "m", "type": "Mat4", "description": "View matrix"}],
       "errors": [],
-      "examples": ["eye target up mat4_look_at -> view"]
+      "examples": ["eye target up math::mat4_look_at -> view"]
     },
     {
       "name": "mat4_orthographic",
@@ -803,7 +803,7 @@
       "params": [{"name": "left", "type": "f64", "description": "Left clipping plane"}, {"name": "right", "type": "f64", "description": "Right clipping plane"}, {"name": "bottom", "type": "f64", "description": "Bottom clipping plane"}, {"name": "top", "type": "f64", "description": "Top clipping plane"}, {"name": "near", "type": "f64", "description": "Near clipping plane"}, {"name": "far", "type": "f64", "description": "Far clipping plane"}],
       "returns": [{"name": "m", "type": "Mat4", "description": "Orthographic projection matrix"}],
       "errors": [],
-      "examples": ["-1.0 1.0 -1.0 1.0 0.1 100.0 mat4_orthographic -> proj"]
+      "examples": ["-1.0 1.0 -1.0 1.0 0.1 100.0 math::mat4_orthographic -> proj"]
     },
     {
       "name": "mat4_perspective",
@@ -813,7 +813,7 @@
       "params": [{"name": "fov", "type": "f64", "description": "Field of view in radians"}, {"name": "aspect", "type": "f64", "description": "Aspect ratio (width/height)"}, {"name": "near", "type": "f64", "description": "Near clipping plane"}, {"name": "far", "type": "f64", "description": "Far clipping plane"}],
       "returns": [{"name": "m", "type": "Mat4", "description": "Perspective projection matrix"}],
       "errors": [],
-      "examples": ["1.047 1.777 0.1 100.0 mat4_perspective -> proj"]
+      "examples": ["1.047 1.777 0.1 100.0 math::mat4_perspective -> proj"]
     },
     {
       "name": "mat4_rotation_x",
@@ -853,7 +853,7 @@
       "params": [{"name": "sx", "type": "f64", "description": "X scale factor"}, {"name": "sy", "type": "f64", "description": "Y scale factor"}, {"name": "sz", "type": "f64", "description": "Z scale factor"}],
       "returns": [{"name": "m", "type": "Mat4", "description": "Scale matrix"}],
       "errors": [],
-      "examples": ["2.0 2.0 2.0 math::mat4_scaling -> m"]
+      "examples": ["1.0 1.0 1.0 math::mat4_scaling -> m"]
     },
     {
       "name": "mat4_translation",
@@ -863,7 +863,7 @@
       "params": [{"name": "x", "type": "f64", "description": "X translation"}, {"name": "y", "type": "f64", "description": "Y translation"}, {"name": "z", "type": "f64", "description": "Z translation"}],
       "returns": [{"name": "m", "type": "Mat4", "description": "Translation matrix"}],
       "errors": [],
-      "examples": ["1.0 2.0 3.0 math::mat4_translation -> m"]
+      "examples": ["1.0 1.0 1.0 math::mat4_translation -> m"]
     },
     {
       "name": "mat4_zero",
@@ -877,7 +877,7 @@
     },
     {
       "name": "max",
-      "signature": "(any any -- any)",
+      "signature": "(a:any b:any -- any)",
       "failable": false,
       "description": "Maximum of two values.",
       "params": [{"name": "a", "type": "any", "description": "First value"}, {"name": "b", "type": "any", "description": "Second value"}],
@@ -887,7 +887,7 @@
     },
     {
       "name": "min",
-      "signature": "(any any -- any)",
+      "signature": "(a:any b:any -- any)",
       "failable": false,
       "description": "Minimum of two values.",
       "params": [{"name": "a", "type": "any", "description": "First value"}, {"name": "b", "type": "any", "description": "Second value"}],
@@ -903,7 +903,7 @@
       "params": [{"name": "other", "type": "Mat4", "description": "Matrix to multiply with"}],
       "returns": [{"name": "result", "type": "Mat4", "description": "Product of matrices (m * other)"}],
       "errors": [],
-      "examples": ["other m mul -> product"]
+      "examples": ["m other_m mul -> product"]
     },
     {
       "name": "mul",
@@ -913,7 +913,7 @@
       "params": [{"name": "other", "type": "Quat", "description": "Quaternion to multiply with"}],
       "returns": [{"name": "result", "type": "Quat", "description": "Product of this and other"}],
       "errors": [],
-      "examples": ["other q mul -> product"]
+      "examples": ["q other_q mul -> product"]
     },
     {
       "name": "nan",
@@ -933,7 +933,7 @@
       "params": [],
       "returns": [{"name": "result", "type": "Vec2", "description": "Negated vector"}],
       "errors": [],
-      "examples": ["v neg -> neg_v"]
+      "examples": ["v2 neg -> neg_v"]
     },
     {
       "name": "neg",
@@ -943,7 +943,7 @@
       "params": [],
       "returns": [{"name": "result", "type": "Vec3", "description": "Negated vector"}],
       "errors": [],
-      "examples": ["v neg -> neg_v"]
+      "examples": ["v3 neg -> neg_v"]
     },
     {
       "name": "neg",
@@ -953,7 +953,7 @@
       "params": [],
       "returns": [{"name": "result", "type": "Vec4", "description": "Negated vector"}],
       "errors": [],
-      "examples": ["v neg -> neg_v"]
+      "examples": ["v4 neg -> neg_v"]
     },
     {
       "name": "normalize",
@@ -973,7 +973,7 @@
       "params": [],
       "returns": [{"name": "result", "type": "Vec2", "description": "Unit vector in same direction"}],
       "errors": [],
-      "examples": ["v normalize -> unit"]
+      "examples": ["v2 normalize -> unit"]
     },
     {
       "name": "normalize",
@@ -983,7 +983,7 @@
       "params": [],
       "returns": [{"name": "result", "type": "Vec3", "description": "Unit vector in same direction"}],
       "errors": [],
-      "examples": ["v normalize -> unit"]
+      "examples": ["v3 normalize -> unit"]
     },
     {
       "name": "normalize",
@@ -993,7 +993,7 @@
       "params": [],
       "returns": [{"name": "result", "type": "Vec4", "description": "Unit vector in same direction"}],
       "errors": [],
-      "examples": ["v normalize -> unit"]
+      "examples": ["v4 normalize -> unit"]
     },
     {
       "name": "perpendicular",
@@ -1003,7 +1003,7 @@
       "params": [],
       "returns": [{"name": "result", "type": "Vec2", "description": "Perpendicular vector"}],
       "errors": [],
-      "examples": ["v perpendicular -> perp"]
+      "examples": ["v2 perpendicular -> perp"]
     },
     {
       "name": "pow",
@@ -1023,7 +1023,7 @@
       "params": [{"name": "axis", "type": "Vec3", "description": "Rotation axis (should be normalized)"}, {"name": "angle", "type": "f64", "description": "Rotation angle in radians"}],
       "returns": [{"name": "result", "type": "Quat", "description": "Rotation quaternion"}],
       "errors": [],
-      "examples": ["axis 1.57 quat_from_axis_angle -> q"]
+      "examples": ["axis 1.57 math::quat_from_axis_angle -> q"]
     },
     {
       "name": "quat_from_euler",
@@ -1033,7 +1033,7 @@
       "params": [{"name": "pitch", "type": "f64", "description": "Rotation around X axis (radians)"}, {"name": "yaw", "type": "f64", "description": "Rotation around Y axis (radians)"}, {"name": "roll", "type": "f64", "description": "Rotation around Z axis (radians)"}],
       "returns": [{"name": "result", "type": "Quat", "description": "Rotation quaternion"}],
       "errors": [],
-      "examples": ["0.0 1.57 0.0 quat_from_euler -> q"]
+      "examples": ["0.0 1.57 0.0 math::quat_from_euler -> q"]
     },
     {
       "name": "quat_identity",
@@ -1047,7 +1047,7 @@
     },
     {
       "name": "rad_to_deg",
-      "signature": "(f64 -- f64)",
+      "signature": "(radians:f64 -- f64)",
       "failable": false,
       "description": "Convert radians to degrees.",
       "params": [{"name": "radians", "type": "f64", "description": "Angle in radians"}],
@@ -1063,7 +1063,7 @@
       "params": [{"name": "n", "type": "Vec3", "description": "Normal vector"}],
       "returns": [{"name": "result", "type": "Vec3", "description": "Reflected vector"}],
       "errors": [],
-      "examples": ["normal v reflect -> reflected"]
+      "examples": ["v3 normal reflect -> reflected"]
     },
     {
       "name": "remap",
@@ -1083,7 +1083,7 @@
       "params": [{"name": "v", "type": "Vec3", "description": "Vector to rotate"}],
       "returns": [{"name": "result", "type": "Vec3", "description": "Rotated vector"}],
       "errors": [],
-      "examples": ["v q rotate_vec3 -> rotated"]
+      "examples": ["q point rotate_vec3 -> rotated"]
     },
     {
       "name": "rotate",
@@ -1093,7 +1093,7 @@
       "params": [{"name": "angle", "type": "f64", "description": "Rotation angle in radians"}],
       "returns": [{"name": "result", "type": "Vec2", "description": "Rotated vector"}],
       "errors": [],
-      "examples": ["1.57 v rotate -> rotated"]
+      "examples": ["v2 1.57 rotate -> rotated"]
     },
     {
       "name": "round",
@@ -1113,7 +1113,7 @@
       "params": [{"name": "s", "type": "f64", "description": "Scalar multiplier"}],
       "returns": [{"name": "result", "type": "Vec2", "description": "Scaled vector"}],
       "errors": [],
-      "examples": ["2.0 v scale -> scaled"]
+      "examples": ["v2 2.0 scale -> scaled"]
     },
     {
       "name": "scale",
@@ -1123,7 +1123,7 @@
       "params": [{"name": "s", "type": "f64", "description": "Scalar multiplier"}],
       "returns": [{"name": "result", "type": "Vec3", "description": "Scaled vector"}],
       "errors": [],
-      "examples": ["2.0 v scale -> scaled"]
+      "examples": ["v3 2.0 scale -> scaled"]
     },
     {
       "name": "scale",
@@ -1133,7 +1133,7 @@
       "params": [{"name": "s", "type": "f64", "description": "Scalar multiplier"}],
       "returns": [{"name": "result", "type": "Vec4", "description": "Scaled vector"}],
       "errors": [],
-      "examples": ["2.0 v scale -> scaled"]
+      "examples": ["v4 2.0 scale -> scaled"]
     },
     {
       "name": "sign",
@@ -1173,7 +1173,7 @@
       "params": [{"name": "other", "type": "Quat", "description": "End quaternion"}, {"name": "t", "type": "f64", "description": "Interpolation factor (0.0 to 1.0)"}],
       "returns": [{"name": "result", "type": "Quat", "description": "Interpolated quaternion"}],
       "errors": [],
-      "examples": ["other 0.5 q slerp -> mid"]
+      "examples": ["q other_q 0.5 slerp -> mid"]
     },
     {
       "name": "smootherstep",
@@ -1196,16 +1196,6 @@
       "examples": ["0.0 1.0 0.5 math::smoothstep print  // 0.5"]
     },
     {
-      "name": "sq",
-      "signature": "(f64 -- f64)",
-      "failable": false,
-      "description": "Square a number.",
-      "params": [{"name": "x", "type": "f64", "description": "Value to square"}],
-      "returns": [{"name": "result", "type": "f64", "description": "x * x"}],
-      "errors": [],
-      "examples": ["3.0 math::sq print  // 9.0"]
-    },
-    {
       "name": "sqrt",
       "signature": "(x:f64 -- result:f64)",
       "failable": false,
@@ -1216,6 +1206,16 @@
       "examples": ["4.0 math::sqrt print  // 2.0"]
     },
     {
+      "name": "sq",
+      "signature": "(x:f64 -- f64)",
+      "failable": false,
+      "description": "Square a number.",
+      "params": [{"name": "x", "type": "f64", "description": "Value to square"}],
+      "returns": [{"name": "result", "type": "f64", "description": "x * x"}],
+      "errors": [],
+      "examples": ["3.0 math::sq print  // 9.0"]
+    },
+    {
       "name": "subtract",
       "signature": "(v:Vec2) subtract(other:Vec2 -- result:Vec2)",
       "failable": false,
@@ -1223,7 +1223,7 @@
       "params": [{"name": "other", "type": "Vec2", "description": "Vector to subtract"}],
       "returns": [{"name": "result", "type": "Vec2", "description": "Difference of vectors"}],
       "errors": [],
-      "examples": ["other v subtract -> diff"]
+      "examples": ["v2 other2 subtract -> diff"]
     },
     {
       "name": "subtract",
@@ -1233,7 +1233,7 @@
       "params": [{"name": "other", "type": "Vec3", "description": "Vector to subtract"}],
       "returns": [{"name": "result", "type": "Vec3", "description": "Difference of vectors"}],
       "errors": [],
-      "examples": ["other v subtract -> diff"]
+      "examples": ["v3 other3 subtract -> diff"]
     },
     {
       "name": "subtract",
@@ -1243,7 +1243,7 @@
       "params": [{"name": "other", "type": "Vec4", "description": "Vector to subtract"}],
       "returns": [{"name": "result", "type": "Vec4", "description": "Difference of vectors"}],
       "errors": [],
-      "examples": ["other v subtract -> diff"]
+      "examples": ["v4 other4 subtract -> diff"]
     },
     {
       "name": "tanh",
@@ -1273,7 +1273,7 @@
       "params": [{"name": "v", "type": "Vec3", "description": "Point to transform"}],
       "returns": [{"name": "result", "type": "Vec3", "description": "Transformed point"}],
       "errors": [],
-      "examples": ["point m transform_point -> transformed"]
+      "examples": ["m point transform_point -> transformed"]
     },
     {
       "name": "transform_vec4",
@@ -1283,7 +1283,7 @@
       "params": [{"name": "v", "type": "Vec4", "description": "Vector to transform"}],
       "returns": [{"name": "result", "type": "Vec4", "description": "Transformed vector"}],
       "errors": [],
-      "examples": ["vec m transform_vec4 -> transformed"]
+      "examples": ["m other4 transform_vec4 -> transformed"]
     },
     {
       "name": "transpose",

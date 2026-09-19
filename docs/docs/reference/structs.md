@@ -98,6 +98,8 @@ line <<start <<x print nl  // read x from start point of line
 When a value is typed as `ptr` (e.g., in callback handlers), use `as` to tell the compiler which struct type it is:
 
 ```qd
+use http
+
 fn handler(c:ptr -- ) {
 	c as http::Ctx <<body -> body
 }

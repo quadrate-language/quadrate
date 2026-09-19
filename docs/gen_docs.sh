@@ -14,6 +14,17 @@
 
 set -euo pipefail
 
+# Field separator for the packed records below. A doc comment can contain any printable
+# character -- math::abs documents its return as `|x|` -- so the separator must be one that
+# cannot: ASCII unit separator.
+SEP=$'\x1f'
+
+# A pipe inside a table cell ends the cell, so a description that contains one -- math::abs
+# documents its return as `|x|` -- has to be escaped where it lands in a table.
+md_cell() {
+    printf '%s' "${1//|/\\|}"
+}
+
 # Find project root (parent of docs directory)
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(dirname "$SCRIPT_DIR")"
@@ -220,7 +231,7 @@ parse_module() {
                     sig_str="$fn_receiver $fn_name${fn_type_params}$sig_str"
                 fi
 
-                functions+=("$fn_name|$sig_str|$fn_failable|$desc|$params|$returns|$errors|$examples")
+                functions+=("$fn_name$SEP$sig_str$SEP$fn_failable$SEP$desc$SEP$params$SEP$returns$SEP$errors$SEP$examples")
             fi
             doc_buffer=()
 
@@ -239,7 +250,7 @@ parse_module() {
                         desc+="$doc_line"
                     fi
                 done
-                constants+=("$const_name|$const_value|$desc")
+                constants+=("$const_name$SEP$const_value$SEP$desc")
             fi
             doc_buffer=()
 
@@ -265,7 +276,7 @@ parse_module() {
                 done
 
                 if [[ -n "$struct_doc_fields" ]]; then
-                    structs+=("$struct_name|$struct_desc|$struct_doc_fields")
+                    structs+=("$struct_name$SEP$struct_desc$SEP$struct_doc_fields")
                 else
                     in_struct=1
                     struct_fields=""
@@ -276,7 +287,7 @@ parse_module() {
         # Parse struct fields (if in struct body and no @field docs)
         elif [[ $in_struct -eq 1 ]]; then
             if [[ "$trimmed" == "}" ]]; then
-                structs+=("$struct_name|$struct_desc|$struct_fields")
+                structs+=("$struct_name$SEP$struct_desc$SEP$struct_fields")
                 in_struct=0
             elif [[ "$trimmed" =~ ^([a-zA-Z_][a-zA-Z0-9_]*)[[:space:]]*:[[:space:]]*([a-zA-Z0-9_]+) ]]; then
                 local f_name="${BASH_REMATCH[1]}"
@@ -299,7 +310,7 @@ parse_module() {
     done < <(expand_includes "$filepath")
 
     # Generate markdown
-    generate_markdown "$module_name" module_desc constants structs functions
+    generate_markdown "$module_name" module_desc constants structs functions "$filepath"
 
     # Generate JSON
     generate_json "$module_name" module_desc constants structs functions
@@ -323,7 +334,7 @@ output_function() {
     local heading_level="$3"  # "###" or "####"
     local output=""
 
-    IFS='|' read -r f_name f_sig f_failable f_desc f_params f_returns f_errors f_examples <<< "$func"
+    IFS=$'\x1f' read -r f_name f_sig f_failable f_desc f_params f_returns f_errors f_examples <<< "$func"
 
     output+="$heading_level \`fn\` $f_name"$'\n\n'
 
@@ -343,7 +354,7 @@ output_function() {
         for param in "${param_arr[@]}"; do
             [[ -z "$param" ]] && continue
             IFS=':' read -r p_name p_type p_desc <<< "$param"
-            output+="| \`$p_name\` | \`$p_type\` | $p_desc |"$'\n'
+            output+="| \`$p_name\` | \`$p_type\` | $(md_cell "$p_desc") |"$'\n'
         done
         output+=$'\n'
     fi
@@ -356,7 +367,7 @@ output_function() {
         for ret in "${return_arr[@]}"; do
             [[ -z "$ret" ]] && continue
             IFS=':' read -r r_name r_type r_desc <<< "$ret"
-            output+="| \`$r_name\` | \`$r_type\` | $r_desc |"$'\n'
+            output+="| \`$r_name\` | \`$r_type\` | $(md_cell "$r_desc") |"$'\n'
         done
         output+=$'\n'
     fi
@@ -370,9 +381,9 @@ output_function() {
             [[ -z "$err" ]] && continue
             IFS=':' read -r e_code e_desc <<< "$err"
             if [[ -n "$e_code" ]]; then
-                output+="| \`$module_name::$e_code\` | $e_desc |"$'\n'
+                output+="| \`$module_name::$e_code\` | $(md_cell "$e_desc") |"$'\n'
             else
-                output+="| - | $e_desc |"$'\n'
+                output+="| - | $(md_cell "$e_desc") |"$'\n'
             fi
         done
         output+=$'\n'
@@ -385,8 +396,13 @@ output_function() {
         IFS=';' read -ra example_arr <<< "$f_examples"
         for ex in "${example_arr[@]}"; do
             [[ -z "$ex" ]] && continue
-            # Transform "code -> output" format
-            if [[ "$ex" =~ ^(.+)[[:space:]]-\>[[:space:]](.+)$ ]]; then
+            # Transform "code -> output" format. The trailing `-> name` (or `-> name name`,
+            # for a word that returns two values) is the result annotation and becomes a
+            # comment. Anything else after the last arrow is code: io::readline's example binds
+            # two values inside a switch arm and goes on using them, and rewriting that as a
+            # comment swallowed the rest of the line and left the block unparseable.
+            _tok='([A-Za-z_][A-Za-z0-9_]*|-?[0-9][0-9._]*|"[^"]*")'
+            if [[ "$ex" =~ ^(.+)[[:space:]]-\>[[:space:]](${_tok}([[:space:]]+${_tok})*)$ ]]; then
                 output+="${BASH_REMATCH[1]}  // ${BASH_REMATCH[2]}"$'\n'
             else
                 output+="$ex"$'\n'
@@ -405,11 +421,43 @@ generate_markdown() {
     local -n _constants=$3
     local -n _structs=$4
     local -n _functions=$5
+    local module_file="$6"
 
     local output=""
 
     # Title with `use` prefix
     output+="# \`use\` $module_name"$'\n\n'
+
+    # Every example on this page comes from an `@example` line in the module's source, so it is
+    # a fragment that only makes sense against that module. The marker below tells
+    # tools/check_docs.py what to compile them with; without it the whole page goes unchecked.
+    #
+    # It is opt-in per module, declared by a `/// doccheck: page-context` line in the module's
+    # own doc comment, because turning it on means every `@example` in that module has to be a
+    # fragment that compiles on its own. Several modules write theirs against named values the
+    # prose supplies (`buf 0 10 0x41 bytes::contains`), and those have to be made self-contained
+    # before the page can be checked.
+    # A module may name extra context its examples need, by writing it after the marker:
+    # `/// doccheck: page-context use mem`.
+    # `|| true`: this script runs under `set -e` with `pipefail`, and grep exits non-zero for
+    # every module that has not opted in -- which killed the run at the third module.
+    if grep -q "doccheck: page-context" "$module_file" 2>/dev/null; then
+        output+="<!-- doccheck: page-context use $module_name -->"$'\n\n'
+        # Anything the module named after the marker: another `use`, or a declaration its
+        # examples call (`fn worker() { }`), since the preamble lands outside `fn main`.
+        while IFS= read -r ctx_line; do
+            [[ -z "$ctx_line" ]] && continue
+            output+="<!-- doccheck: page-context $ctx_line -->"$'\n\n'
+        done < <(grep "doccheck: page-context" "$module_file" 2>/dev/null \
+            | sed 's/.*doccheck: page-context[[:space:]]*//' || true)
+        # Values the module's examples are written against, one per `/// doccheck: page-setup`
+        # line in its doc comment.
+        while IFS= read -r setup_line; do
+            [[ -z "$setup_line" ]] && continue
+            output+="<!-- doccheck: page-setup $setup_line -->"$'\n\n'
+        done < <(grep "doccheck: page-setup" "$module_file" 2>/dev/null \
+            | sed 's/.*doccheck: page-setup[[:space:]]*//' || true)
+    fi
 
     # Module description (with example block detection)
     #
@@ -465,8 +513,8 @@ generate_markdown() {
         output+="|------|-------|-------------|"$'\n'
         for const in "${sorted_constants[@]}"; do
             [[ -z "$const" ]] && continue
-            IFS='|' read -r c_name c_value c_desc <<< "$const"
-            output+="| \`$c_name\` | \`$c_value\` | $c_desc |"$'\n'
+            IFS=$'\x1f' read -r c_name c_value c_desc <<< "$const"
+            output+="| \`$c_name\` | \`$c_value\` | $(md_cell "$c_desc") |"$'\n'
         done
         output+=$'\n'
     fi
@@ -479,7 +527,7 @@ generate_markdown() {
     declare -A struct_names
     for struct in "${sorted_structs[@]}"; do
         [[ -z "$struct" ]] && continue
-        IFS='|' read -r s_name s_desc s_fields <<< "$struct"
+        IFS=$'\x1f' read -r s_name s_desc s_fields <<< "$struct"
         struct_names["$s_name"]=1
     done
 
@@ -493,7 +541,7 @@ generate_markdown() {
 
     for func in "${sorted_functions[@]}"; do
         [[ -z "$func" ]] && continue
-        IFS='|' read -r f_name f_sig f_failable f_desc f_params f_returns f_errors f_examples <<< "$func"
+        IFS=$'\x1f' read -r f_name f_sig f_failable f_desc f_params f_returns f_errors f_examples <<< "$func"
 
         local receiver_type
         receiver_type=$(get_receiver_type "$f_sig")
@@ -536,7 +584,7 @@ generate_markdown() {
     # Output each struct with its constructors and methods
     for struct in "${sorted_structs[@]}"; do
         [[ -z "$struct" ]] && continue
-        IFS='|' read -r s_name s_desc s_fields <<< "$struct"
+        IFS=$'\x1f' read -r s_name s_desc s_fields <<< "$struct"
 
         output+="## $s_name"$'\n\n'
 
@@ -553,7 +601,7 @@ generate_markdown() {
             for field in "${field_arr[@]}"; do
                 [[ -z "$field" ]] && continue
                 IFS='~' read -r f_name f_type f_desc <<< "$field"
-                output+="| \`$f_name\` | \`$f_type\` | $f_desc |"$'\n'
+                output+="| \`$f_name\` | \`$f_type\` | $(md_cell "$f_desc") |"$'\n'
             done
             output+=$'\n'
         fi
@@ -628,7 +676,7 @@ generate_json() {
     IFS=$'\n' sorted_constants=($(sort <<<"${__constants[*]}")); unset IFS
     for const in "${sorted_constants[@]}"; do
         [[ -z "$const" ]] && continue
-        IFS='|' read -r c_name c_value c_desc <<< "$const"
+        IFS=$'\x1f' read -r c_name c_value c_desc <<< "$const"
         if [[ $first -eq 0 ]]; then
             output+=","$'\n'
         fi
@@ -647,7 +695,7 @@ generate_json() {
     IFS=$'\n' sorted_structs=($(sort <<<"${__structs[*]}")); unset IFS
     for struct in "${sorted_structs[@]}"; do
         [[ -z "$struct" ]] && continue
-        IFS='|' read -r s_name s_desc s_fields <<< "$struct"
+        IFS=$'\x1f' read -r s_name s_desc s_fields <<< "$struct"
         if [[ $first -eq 0 ]]; then
             output+=","$'\n'
         fi
@@ -678,7 +726,7 @@ generate_json() {
     IFS=$'\n' sorted_functions=($(sort <<<"${__functions[*]}")); unset IFS
     for func in "${sorted_functions[@]}"; do
         [[ -z "$func" ]] && continue
-        IFS='|' read -r f_name f_sig f_failable f_desc f_params f_returns f_errors f_examples <<< "$func"
+        IFS=$'\x1f' read -r f_name f_sig f_failable f_desc f_params f_returns f_errors f_examples <<< "$func"
         if [[ $first -eq 0 ]]; then
             output+=","$'\n'
         fi
@@ -812,7 +860,7 @@ generate_reference() {
                 fi
             done
 
-            keywords+=("$kw_name|$kw_desc|$examples")
+            keywords+=("$kw_name$SEP$kw_desc$SEP$examples")
             doc_buffer=()
             continue
         fi
@@ -830,7 +878,7 @@ generate_reference() {
                 fi
             done
 
-            builtins+=("$bi_name|$bi_sig|$bi_desc|$current_category|$examples")
+            builtins+=("$bi_name$SEP$bi_sig$SEP$bi_desc$SEP$current_category$SEP$examples")
             doc_buffer=()
             continue
         fi
@@ -853,7 +901,7 @@ generate_reference() {
         output+="| Keyword | Description |"$'\n'
         output+="|---------|-------------|"$'\n'
         for kw in "${keywords[@]}"; do
-            IFS='|' read -r kw_name kw_desc kw_examples <<< "$kw"
+            IFS=$'\x1f' read -r kw_name kw_desc kw_examples <<< "$kw"
             local anchor="${kw_name//->/arrow}"
             anchor="${anchor//=>/case-arrow}"
             output+="| [\`$kw_name\`](#$anchor) | $kw_desc |"$'\n'
@@ -861,7 +909,7 @@ generate_reference() {
         output+=$'\n'
 
         for kw in "${keywords[@]}"; do
-            IFS='|' read -r kw_name kw_desc kw_examples <<< "$kw"
+            IFS=$'\x1f' read -r kw_name kw_desc kw_examples <<< "$kw"
             output+="### $kw_name"$'\n\n'
             output+="$kw_desc"$'\n\n'
             if [[ -n "$kw_examples" ]]; then
@@ -883,7 +931,7 @@ generate_reference() {
 
     declare -A categories
     for bi in "${builtins[@]}"; do
-        IFS='|' read -r bi_name bi_sig bi_desc bi_cat bi_examples <<< "$bi"
+        IFS=$'\x1f' read -r bi_name bi_sig bi_desc bi_cat bi_examples <<< "$bi"
         [[ -z "$bi_cat" ]] && bi_cat="Other"
         categories["$bi_cat"]+="$bi"$'\n'
     done
@@ -895,7 +943,7 @@ generate_reference() {
 
         while IFS= read -r bi; do
             [[ -z "$bi" ]] && continue
-            IFS='|' read -r bi_name bi_sig bi_desc bi_cat bi_examples <<< "$bi"
+            IFS=$'\x1f' read -r bi_name bi_sig bi_desc bi_cat bi_examples <<< "$bi"
             local sig_display="-"
             [[ -n "$bi_sig" ]] && sig_display="\`$bi_sig\`"
             local anchor="${bi_name//+/plus}"
@@ -913,7 +961,7 @@ generate_reference() {
 
         while IFS= read -r bi; do
             [[ -z "$bi" ]] && continue
-            IFS='|' read -r bi_name bi_sig bi_desc bi_cat bi_examples <<< "$bi"
+            IFS=$'\x1f' read -r bi_name bi_sig bi_desc bi_cat bi_examples <<< "$bi"
             output+="#### $bi_name"$'\n\n'
             output+="$bi_desc"$'\n\n'
             if [[ -n "$bi_sig" ]]; then

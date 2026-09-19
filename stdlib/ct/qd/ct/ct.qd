@@ -1,5 +1,6 @@
 /// Generic container types.
 /// Provides Vec, HashMap, Set, Queue, Deque, and Pair.
+/// doccheck: page-context
 
 use deque.qd
 use hashmap.qd

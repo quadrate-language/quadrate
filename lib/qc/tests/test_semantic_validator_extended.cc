@@ -602,7 +602,7 @@ TEST(DeferWithLocal) {
 TEST(AnonymousFunctionSimple) {
 	const char* src = R"(
 		fn main() {
-			fn(x:i64 -- y:i64) { dup mul } -> square
+			fn(x:i64 -- y:i64) { x dup mul } -> square
 		}
 	)";
 	size_t errors = validateCode(src);
@@ -613,11 +613,183 @@ TEST(AnonymousFunctionCapture) {
 	const char* src = R"(
 		fn main() {
 			10 -> base
-			fn(x:i64 -- y:i64) { base add } -> add_base
+			fn(x:i64 -- y:i64) { x base add } -> add_base
 		}
 	)";
 	size_t errors = validateCode(src);
 	ASSERT(errors == 0, "anonymous function with capture should succeed");
+}
+
+// An anonymous function's body is checked the way a named function's body is. Both bodies above
+// used to be written without their parameter -- `{ dup mul }`, `{ base add }` -- and were
+// accepted, because nothing walked the body at all; they underflow at run time.
+
+TEST(AnonymousFunctionBodyUnderflows) {
+	const char* src = R"(
+		fn main() {
+			fn(x:i64 -- y:i64) { dup mul } -> square
+		}
+	)";
+	size_t errors = validateCode(src);
+	ASSERT(errors > 0, "a named parameter is bound, so the body has nothing to dup");
+}
+
+TEST(AnonymousFunctionBodyLeavesTooMuch) {
+	const char* src = R"(
+		fn main() {
+			fn(x:i64 -- y:i64) { x x } -> pair
+		}
+	)";
+	size_t errors = validateCode(src);
+	ASSERT(errors > 0, "one declared output, two values left");
+}
+
+TEST(AnonymousFunctionBodyWrongOutputType) {
+	const char* src = R"(
+		fn main() {
+			fn(x:i64 -- y:str) { x 1 add } -> wrong
+		}
+	)";
+	size_t errors = validateCode(src);
+	ASSERT(errors > 0, "declares a str output but leaves an i64");
+}
+
+TEST(AnonymousStackFnLeavesArgumentsOnStack) {
+	const char* src = R"(
+		fn main() {
+			stack fn(i64 -- i64) { 2 mul } -> double
+		}
+	)";
+	size_t errors = validateCode(src);
+	ASSERT(errors == 0, "a stack lambda leaves its arguments for the body");
+}
+
+// An anonymous function follows a named function's rules. Each of these used to differ.
+
+TEST(AnonymousUnnamedParamWithoutStackRejected) {
+	const char* src = R"(
+		fn main() {
+			fn(i64 -- i64) { 2 mul } -> double
+		}
+	)";
+	size_t errors = validateCode(src);
+	ASSERT(errors > 0, "without 'stack' every input must be named, as in a named function");
+}
+
+TEST(AnonymousStackFnWithoutInputsRejected) {
+	const char* src = R"(
+		fn main() {
+			stack fn( -- i64) { 5 } -> five
+		}
+	)";
+	size_t errors = validateCode(src);
+	ASSERT(errors > 0, "'stack fn' with no input has nothing to leave on the stack");
+}
+
+TEST(AnonymousBareTypeNameIsAType) {
+	const char* src = R"(
+		struct Point { x:i64 y:i64 }
+		fn main() {
+			stack fn(Point -- i64) { <<x } -> getx
+		}
+	)";
+	size_t errors = validateCode(src);
+	ASSERT(errors == 0, "a bare type name in the parameter list is a type, not a parameter name");
+}
+
+TEST(AnonymousInvalidParamTypeRejected) {
+	const char* src = R"(
+		fn main() {
+			fn(x:Nope -- i64) { 1 } -> f
+		}
+	)";
+	size_t errors = validateCode(src);
+	ASSERT(errors > 0, "a parameter's type name is checked, as a named function's is");
+}
+
+TEST(AnonymousPanicRequiresFallibleMarker) {
+	const char* src = R"(
+		fn main() {
+			fn(x:i64 -- r:i64) { "boom" 1 panic } -> f
+		}
+	)";
+	size_t errors = validateCode(src);
+	ASSERT(errors > 0, "'panic' needs the lambda's own '!'");
+}
+
+TEST(AnonymousFallibleMarkerAllowsPanic) {
+	const char* src = R"(
+		fn main() {
+			5 fn(x:i64 -- r:i64)! { x 0 eq if { "boom" 1 panic } x } call! -> r
+			r drop
+		}
+	)";
+	size_t errors = validateCode(src);
+	ASSERT(errors == 0, "a lambda marked '!' may panic, and 'call!' handles it");
+}
+
+TEST(AnonymousPanicNotInheritedFromEnclosingFunction) {
+	const char* src = R"(
+		fn outer()! {
+			fn(x:i64 -- r:i64) { "boom" 1 panic } -> f
+			f drop
+		}
+	)";
+	size_t errors = validateCode(src);
+	ASSERT(errors > 0, "an enclosing fallible function does not make the lambda fallible");
+}
+
+TEST(AnonymousAbortOnNonFallibleCallRejected) {
+	const char* src = R"(
+		fn main() {
+			5 fn(x:i64 -- r:i64) { x 2 mul } call! -> r
+			r drop
+		}
+	)";
+	size_t errors = validateCode(src);
+	ASSERT(errors > 0, "'!' on a call to a lambda that cannot fail is an error");
+}
+
+TEST(AnonymousBareFallibleCallMustBeChecked) {
+	const char* src = R"(
+		fn main() {
+			5 fn(x:i64 -- r:i64)! { x 2 mul } call -> r
+			r drop
+		}
+	)";
+	size_t errors = validateCode(src);
+	ASSERT(errors > 0, "a bare fallible call has to be read by 'if' or 'switch'");
+}
+
+TEST(AnonymousFunctionInStructFieldChecked) {
+	const char* src = R"(
+		struct H { f: fn(i64 -- i64) }
+		fn main() {
+			H { f = fn(x:i64 -- y:i64) { mul } } -> h
+		}
+	)";
+	size_t errors = validateCode(src);
+	ASSERT(errors > 0, "a field initializer's lambda body is checked too");
+}
+
+TEST(AnonymousFunctionInArrayLiteralChecked) {
+	const char* src = R"(
+		fn main() {
+			[fn(x:i64 -- y:i64) { mul }] -> fns
+		}
+	)";
+	size_t errors = validateCode(src);
+	ASSERT(errors > 0, "an array element's lambda body is checked too");
+}
+
+TEST(AnonymousFunctionDivergingBodyIsClean) {
+	const char* src = R"(
+		fn main() {
+			fn(x:i64 -- y:i64) { x 0 gt if { x return } 0 } -> clamp
+		}
+	)";
+	size_t errors = validateCode(src);
+	ASSERT(errors == 0, "a body that returns early still satisfies its signature");
 }
 
 // Generic Functions

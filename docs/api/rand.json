@@ -1,6 +1,6 @@
 {
   "name": "rand",
-  "description": "Random number generation using xorshift64* algorithm. Fast, high-quality PRNG suitable for most applications.  SECURITY: the `Rng` generator (`new`, `with_seed`, `next`, ...) is NOT cryptographically secure - xorshift64* is fast but predictable and a time-based seed is guessable. Do NOT use it for tokens, session IDs, nonces, salts, or keys. For those, use `rand::secure_i64` (which draws fresh OS entropy on every call) or seed an `Rng` with `rand::secure`.",
+  "description": "Random number generation using xorshift64* algorithm. Fast, high-quality PRNG suitable for most applications.  SECURITY: the `Rng` generator (`new`, `with_seed`, `next`, ...) is NOT cryptographically secure - xorshift64* is fast but predictable and a time-based seed is guessable. Do NOT use it for tokens, session IDs, nonces, salts, or keys. For those, use `rand::secure_i64` (which draws fresh OS entropy on every call) or seed an `Rng` with `rand::secure`. doccheck: page-context doccheck: page-context use mem doccheck: page-setup rand::new -> rng doccheck: page-setup 32 mem::alloc! -> arr doccheck: page-setup 32 mem::alloc! -> src doccheck: page-setup 32 mem::alloc! -> dst doccheck: page-setup 4 -> len",
   "constants": [
 
   ],

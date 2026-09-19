@@ -1,5 +1,6 @@
 /// String manipulation functions.
 /// Error codes: Ok=1 (success), specific errors start at 2
+/// doccheck: page-context use mem
 
 /// Error: Index out of bounds.
 pub const ErrOutOfBounds = 2
@@ -148,19 +149,19 @@ import "libstrings.a" as "strings" {
 	/// Sort array of strings in ascending alphabetical order.
 	/// @param arr ptr Array of string pointers
 	/// @param count i64 Number of elements
-	/// @example entries count strings::sort
+	/// @example "b,a,c" "," strings::split! strings::sort
 	pub fn sort(arr:ptr count:i64 -- )
 
 	/// Sort array of strings in descending alphabetical order.
 	/// @param arr ptr Array of string pointers
 	/// @param count i64 Number of elements
-	/// @example entries count strings::sort_desc
+	/// @example "b,a,c" "," strings::split! strings::sort_desc
 	pub fn sort_desc(arr:ptr count:i64 -- )
 
 	/// Convert C string pointer to Quadrate string.
 	/// @param ptr ptr Pointer to null-terminated C string
 	/// @return str str Quadrate string
-	/// @example entries 0 mem::get_ptr strings::from_ptr print
+	/// @example 2 mem::alloc! -> p  65 p 0 mem::set_byte  0 p 1 mem::set_byte  p strings::from_ptr -> s
 	pub fn from_ptr(ptr:ptr -- str:str)
 
 	/// Join array of strings with delimiter.
@@ -169,7 +170,7 @@ import "libstrings.a" as "strings" {
 	/// @param delim str Delimiter string
 	/// @return result str Joined string
 	/// @error ErrAlloc Memory allocation failed
-	/// @example parts count "/" strings::join! -> path
+	/// @example "usr,bin" "," strings::split! "/" strings::join! -> path
 	pub fn join(parts:ptr count:i64 delim:str -- result:str)!
 
 	/// Repeat string n times.

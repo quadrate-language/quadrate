@@ -4,6 +4,12 @@
 /// you want when more than one field is read out of it. The get_* family scans
 /// the text for a single key and allocates nothing, which is cheaper for exactly
 /// that -- one lookup, one document.
+/// doccheck: page-context
+/// doccheck: page-setup "{\x22name\x22:\x22Ada\x22,\x22n\x22:1,\x22xs\x22:[1,2]}" json::parse! -> doc
+/// doccheck: page-setup doc "n" json::get! -> v
+/// doccheck: page-setup doc json::first! -> c
+/// doccheck: page-setup json::new_array -> arr
+/// doccheck: page-setup json::new_object -> obj
 use fmt
 use mem
 use strconv

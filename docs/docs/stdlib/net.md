@@ -1,5 +1,11 @@
 # `use` net
 
+<!-- doccheck: page-context use net -->
+
+<!-- doccheck: page-setup 0 -> sock -->
+
+<!-- doccheck: page-setup 0 -> server -->
+
 TCP network operations.
 Error codes: Ok=1 (success), specific errors start at 2
 

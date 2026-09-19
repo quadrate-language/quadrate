@@ -1,5 +1,8 @@
 # `use` fuzzy
 
+<!-- doccheck: page-context use fuzzy -->
+
+
 ## Functions
 
 ### `fn` best
@@ -24,7 +27,7 @@ Find the best matching items from a list, sorted by score descending. Items with
 
 Check if a string contains a substring (case-insensitive).
 
-**Signature:** `(str str -- i64)`
+**Signature:** `(s:str substr:str -- i64)`
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
@@ -64,7 +67,7 @@ Compute Levenshtein edit distance between two strings. The edit distance is the 
 
 Check if query approximately matches target within a similarity threshold.
 
-**Signature:** `(str str f64 -- i64)`
+**Signature:** `(query:str target:str threshold:f64 -- i64)`
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
@@ -136,7 +139,7 @@ Compute similarity between two strings as a value from 0.0 to 1.0. 1.0 means ide
 
 Check if a string starts with a given prefix (case-insensitive).
 
-**Signature:** `(str str -- i64)`
+**Signature:** `(s:str prefix:str -- i64)`
 
 | Parameter | Type | Description |
 |-----------|------|-------------|

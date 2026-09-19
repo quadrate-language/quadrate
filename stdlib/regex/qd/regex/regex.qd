@@ -1,6 +1,7 @@
 /// Regular expression matching using Thompson NFA.
 /// Supports . * + ? | () [] [^] [a-z] ^ $ and escapes.
 /// Note: Nested groups and alternation inside groups not yet supported.
+/// doccheck: page-context
 use mem
 use sb
 use strings
@@ -493,7 +494,7 @@ pub fn compile(pattern:str -- re:Regex) {
 }
 
 /// Free a compiled regex.
-/// @example re regex::release
+/// @example "a+" regex::compile regex::release
 pub fn (self:Regex) release() {
 	self <<re -> re
 	// Free character classes

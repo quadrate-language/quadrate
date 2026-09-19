@@ -1,0 +1,18 @@
+// Test: 'stack fn' leaves the inputs on the stack, and a bare type name in the parameter list is
+// a type -- both the same as a named function.
+struct Point {
+	x: i64
+	y: i64
+}
+
+fn main() {
+	3 4 stack fn (i64 i64 -- r:i64) { + } call print nl
+
+	Point {
+		x = 6
+		y = 7
+	} stack fn (Point -- r:i64) { <<y } call print nl
+
+	// Named inputs are bound instead, so the body reads them by name
+	9 fn (n:i64 -- r:i64) { n n * } call print nl
+}

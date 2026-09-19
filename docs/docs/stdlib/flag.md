@@ -1,5 +1,11 @@
 # `use` flag
 
+<!-- doccheck: page-context use flag -->
+
+<!-- doccheck: page-context use os -->
+
+<!-- doccheck: page-setup os::args flag::parse -> f -->
+
 Command-line flag parsing.
 Error codes: Ok=1 (success), specific errors start at 2
 

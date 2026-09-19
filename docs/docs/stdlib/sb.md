@@ -1,5 +1,9 @@
 # `use` sb
 
+<!-- doccheck: page-context use sb -->
+
+<!-- doccheck: page-setup sb::new -> builder -->
+
 StringBuilder - Efficient string building.
 Avoids O(n²) cost of repeated strings::concat.
 

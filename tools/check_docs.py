@@ -5,11 +5,12 @@ Doc examples drift: they are written by hand, never executed, and rot silently w
 language changes underneath them. Three separate rounds of "the doc example does not compile"
 have been fixed by hand; this makes it mechanical.
 
-Scope: fenced ```quadrate / ```qd blocks that are complete programs (they define `fn main`).
-Those are unambiguously runnable. Bare fragments -- `point <<x`, a lone signature, a snippet
-that references variables from surrounding prose -- are not checked, because there is no sound
-way to synthesise the context they assume. That is the large majority of blocks, so this gate
-is a floor, not a ceiling.
+Scope: fenced ```quadrate / ```qd blocks that are complete programs (they define `fn main`),
+which are compiled and run; and blocks that are nothing but whole declarations, which are a
+compilation unit already and are compiled with an empty `fn main` appended. Bare fragments --
+`point <<x`, a lone signature, a snippet that references variables from surrounding prose --
+are not checked, because there is no sound way to synthesise the context they assume. That is
+still the majority of blocks, so this gate is a floor, not a ceiling.
 
 Markers, written either as a `//` comment on any line of the block, or -- to keep them out of
 the rendered page -- as an HTML comment on the line immediately before the opening fence:
@@ -18,6 +19,25 @@ the rendered page -- as an HTML comment on the line immediately before the openi
     // doccheck: compile-only      compile it, but do not run it
     // doccheck: expect-error      compilation MUST fail (for examples that demonstrate a
                                    diagnostic); the check fails if it compiles cleanly
+    // doccheck: continues         compile it after the nearest declaration-only block above it
+                                   in the same file. A tutorial page declares something in one
+                                   block and uses it in the next few; without this those blocks
+                                   are fragments and go unchecked, which is where doc rot
+                                   collects.
+
+    <!-- doccheck: page-setup math::Vec3 { x = 1.0 y = 2.0 z = 2.0 } -> v3 -->
+                                   file-level: a value the page's fragments are written
+                                   against, bound at the top of the wrapper's `fn main`. A
+                                   reference page says `v3 length`, not a constructor and then
+                                   `length`.
+
+    <!-- doccheck: page-context use json -->
+                                   file-level: every fragment on this page is compiled with
+                                   these lines in front of it and the body wrapped in `fn main`.
+                                   A fragment that leaves values on the stack is fine -- it is
+                                   compiled again with as many `drop`s as the diagnostic says it
+                                   left, so a one-line example does not have to consume its own
+                                   result.
 
     <!-- doccheck: skip fragment shown piece by piece in the prose -->
     ```qd
@@ -41,9 +61,33 @@ import sys
 import tempfile
 
 FENCE = re.compile(r"^([ \t]*)```(quadrate|qd)[ \t]*$(.*?)^[ \t]*```[ \t]*$", re.S | re.M)
-MARKER = re.compile(r"//\s*doccheck:\s*(skip|compile-only|expect-error)\b[ \t]*(.*)")
+MARKER = re.compile(r"//\s*doccheck:\s*(skip|compile-only|expect-error|continues)\b[ \t]*(.*)")
 # Same marker in an HTML comment just above the fence, so it stays out of the rendered page.
-PRE_MARKER = re.compile(r"<!--\s*doccheck:\s*(skip|compile-only|expect-error)\b[ \t]*(.*?)-->\s*$")
+PRE_MARKER = re.compile(
+    r"<!--\s*doccheck:\s*(skip|compile-only|expect-error|continues)\b[ \t]*(.*?)-->\s*$")
+# A file-level preamble every fragment on the page is compiled with. The stdlib reference pages
+# are generated from `@example` lines in the module source, so each is a one-line fragment that
+# only makes sense against its own module: `"Hello" base64::encode`. One line at the top of the
+# page supplies the `use`, and `gen_docs.sh` emits it.
+PAGE_CONTEXT = re.compile(r"<!--\s*doccheck:\s*page-context[ \t]+(.*?)-->\s*$", re.M)
+# Values the page's fragments are written against, declared once and bound at the top of the
+# wrapper's `fn main`. A reference page's examples say `v3 length`, not a Vec3 constructor and
+# then `length`; this is what lets them stay that short and still be compiled.
+PAGE_SETUP = re.compile(r"<!--\s*doccheck:\s*page-setup[ \t]+(.*?)-->\s*$", re.M)
+# "Function 'main' declares 0 output(s) but body leaves 3 value(s) on the stack"
+LEFTOVER = re.compile(r"declares 0 output\(s\) but body leaves (\d+) value")
+
+
+def page_context(path):
+    """The preamble every fragment on this page is compiled with, if the page declares one."""
+    src = open(path, encoding="utf-8").read()
+    return "\n".join(m.group(1).strip() for m in PAGE_CONTEXT.finditer(src))
+
+
+def page_setup(path):
+    """The bindings every fragment on this page is compiled with, inside `fn main`."""
+    src = open(path, encoding="utf-8").read()
+    return "\n".join("\t" + m.group(1).strip() for m in PAGE_SETUP.finditer(src))
 
 
 def find_blocks(path):
@@ -69,26 +113,92 @@ def is_program(body):
     return re.search(r"^\s*(pub\s+)?fn\s+main\s*\(", body, re.M) is not None
 
 
-def check(quad, path, line_no, body, marker, run, verbose):
+# A line that opens a top-level declaration, at column 0. An indented line is inside a body.
+DECL_OPENER = re.compile(
+    r"^(pub\s+)?(inline\s+)?(stack\s+)?(fn|struct|packed\s+struct|enum|const|var|use|import|type|test)\b"
+)
+
+
+def is_declarations_only(body):
+    """True when every top-level line is part of a declaration.
+
+    Such a block is a compilation unit already -- it lacks only an entry point -- so appending
+    an empty `fn main` makes it checkable. This is what catches a broken signature on a page
+    that shows no whole program: the front page's `fn double(x:i64 -- result:i64) { 2 * }`
+    underflowed, because naming `x` consumes it, and nothing checked it for a year.
+
+    A block with a loose statement at top level (`point <<x`, a line of stack shuffling) is a
+    fragment that assumes context from the prose, and stays skipped.
+    """
+    depth = 0
+    saw_declaration = False
+    for raw in body.splitlines():
+        line = raw.rstrip()
+        stripped = line.strip()
+        if not stripped or stripped.startswith("//"):
+            continue
+        if depth == 0:
+            if not DECL_OPENER.match(line):  # matched against column 0, not the stripped line
+                return False
+            saw_declaration = True
+        depth += line.count("{") - line.count("}")
+        if depth < 0:
+            return False
+    return saw_declaration and depth == 0
+
+
+def build(quad, td, source):
+    """Write `source` to a temp file and compile it. Returns (returncode, output, exe)."""
+    src = os.path.join(td, "doc.qd")
+    with open(src, "w", encoding="utf-8") as fh:
+        fh.write(source)
+    exe = os.path.join(td, "doc")
+    cp = subprocess.run([quad, "build", src, "-o", exe], capture_output=True, text=True, timeout=120)
+    return cp.returncode, (cp.stdout + cp.stderr), exe
+
+
+def check(quad, path, line_no, body, marker, run, verbose, context="", preamble="", setup=""):
     """Return (status, detail) where status is 'ok', 'skip', or 'fail'."""
     if marker == "skip":
         return "skip", ""
+    if marker == "continues":
+        if not context:
+            return "fail", "`doccheck: continues` with no declaration-only block above it"
+        body = context.rstrip() + "\n\n" + body
+    declarations_only = False
+    fragment = False
     if not is_program(body):
-        return "skip", ""
+        if is_declarations_only(body):
+            declarations_only = True
+        elif preamble:
+            fragment = True   # the page says what to compile its fragments against
+        else:
+            return "skip", ""
 
     with tempfile.TemporaryDirectory(prefix="qddoc_") as td:
-        src = os.path.join(td, "doc.qd")
-        with open(src, "w", encoding="utf-8") as fh:
-            fh.write(body)
-        exe = os.path.join(td, "doc")
+        if declarations_only:
+            # An entry point, so the unit links. Nothing calls what the block declares, so
+            # this compiles it and never runs it.
+            source = body + "\n\nfn main() {\n}\n"
+        elif fragment:
+            source = preamble + "\n\nfn main() {\n" + (setup + "\n" if setup else "") + body + "\n}\n"
+        else:
+            source = body
 
         try:
-            cp = subprocess.run(
-                [quad, "build", src, "-o", exe],
-                capture_output=True, text=True, timeout=120,
-            )
+            rc, out, exe = build(quad, td, source)
+            if fragment and rc != 0:
+                # A one-line example is written to show what it produces, not to consume it.
+                # The diagnostic says how many values were left; give them back and retry.
+                m = LEFTOVER.search(out)
+                if m:
+                    drops = "\n".join("\tdrop" for _ in range(int(m.group(1))))
+                    source = (preamble + "\n\nfn main() {\n" + (setup + "\n" if setup else "")
+                              + body + "\n" + drops + "\n}\n")
+                    rc, out, exe = build(quad, td, source)
         except subprocess.TimeoutExpired:
             return "fail", "compile timed out after 120s"
+        cp = argparse.Namespace(returncode=rc, stdout=out, stderr="")
         if marker == "expect-error":
             if cp.returncode == 0:
                 return "fail", "expected a compile error, but it compiled cleanly"
@@ -96,7 +206,7 @@ def check(quad, path, line_no, body, marker, run, verbose):
         if cp.returncode != 0:
             return "fail", (cp.stdout + cp.stderr).strip()
 
-        if not run or marker == "compile-only":
+        if not run or marker == "compile-only" or declarations_only or fragment:
             return "ok", ""
 
         try:
@@ -142,8 +252,15 @@ def main():
 
     checked = skipped = failed = 0
     for path in paths:
+        # The nearest declaration-only block above, for `doccheck: continues` to build on.
+        context = ""
+        preamble = page_context(path)
+        setup = page_setup(path)
         for line_no, body, marker, _arg in find_blocks(path):
-            status, detail = check(quad, path, line_no, body, marker, args.run, args.verbose)
+            status, detail = check(
+                quad, path, line_no, body, marker, args.run, args.verbose, context, preamble, setup)
+            if marker != "skip" and marker != "continues" and is_declarations_only(body):
+                context = body
             if status == "skip":
                 skipped += 1
                 continue

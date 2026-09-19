@@ -51,6 +51,7 @@ grows. If it fills up, we print an error and drop the push.
 
 `stack_new` allocates the buffer and constructs the struct:
 
+<!-- doccheck: skip excerpt from examples/dc/dc.qd, shown piece by piece; the whole program is built by the example suite -->
 ```qd
 fn stack_new( -- s:ptr) {
     1024 -> cap
@@ -71,6 +72,7 @@ Read left to right:
 
 `stack_push` writes a value at the current top, then increments `size`:
 
+<!-- doccheck: skip excerpt from examples/dc/dc.qd, shown piece by piece; the whole program is built by the example suite -->
 ```qd
 fn stack_push(s:ptr val:f64 -- ) {
     s <<size -> sz
@@ -93,6 +95,7 @@ Key syntax:
 
 `stack_pop` is the mirror image — decrement `size`, read the value:
 
+<!-- doccheck: skip excerpt from examples/dc/dc.qd, shown piece by piece; the whole program is built by the example suite -->
 ```qd
 fn stack_pop(s:ptr -- val:f64) {
     s <<size -> sz
@@ -112,6 +115,7 @@ fn stack_pop(s:ptr -- val:f64) {
 `is_number` decides whether a token is a number or an operator. dc uses
 underscore `_` as the negative sign (since `-` is subtraction):
 
+<!-- doccheck: skip excerpt from examples/dc/dc.qd, shown piece by piece; the whole program is built by the example suite -->
 ```qd
 fn is_number(tok:str -- result:i64) {
     0 -> result
@@ -141,6 +145,7 @@ The pattern is:
 
 `process_token` dispatches based on this:
 
+<!-- doccheck: skip excerpt from examples/dc/dc.qd, shown piece by piece; the whole program is built by the example suite -->
 ```qd
 fn process_token(s:ptr tok:str -- ) {
     tok is_number -> is_num
@@ -171,6 +176,7 @@ after the underscore and negating.
 `process_operator` is where the actual calculator lives. It's a big `switch`
 on the first character of the operator token:
 
+<!-- doccheck: skip excerpt from examples/dc/dc.qd, shown piece by piece; the whole program is built by the example suite -->
 ```qd
 fn process_operator(s:ptr op:str -- ) {
     op 0 strings::char_at switch {
@@ -254,6 +260,7 @@ unicode::f {
 
 `process_line` tokenizes an input line and processes each token:
 
+<!-- doccheck: skip excerpt from examples/dc/dc.qd, shown piece by piece; the whole program is built by the example suite -->
 ```qd
 fn process_line(s:ptr input:str -- ) {
     // Strip anything after `#` (comments)
@@ -292,6 +299,7 @@ If there's no space, the remaining string is the last token.
 
 The interactive loop just reads lines from stdin until EOF:
 
+<!-- doccheck: skip excerpt from examples/dc/dc.qd, shown piece by piece; the whole program is built by the example suite -->
 ```qd
 fn repl(s:ptr -- ) {
     loop {

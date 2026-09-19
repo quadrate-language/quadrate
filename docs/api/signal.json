@@ -1,6 +1,6 @@
 {
   "name": "signal",
-  "description": "Unix signal handling with polling-based API.  Signals are caught and stored as flags. Use pending() to check if a signal was received, and clear() to reset the flag.  doccheck: compile-only loops until Ctrl+C Example:   use signal    fn main() {       signal::SigInt signal::trap       \"Running. Press Ctrl+C to stop.\" print nl        loop {           signal::SigInt signal::pending if {               \"Shutting down\" print nl               signal::SigInt signal::clear               break           }       }   }",
+  "description": "Unix signal handling with polling-based API.  Signals are caught and stored as flags. Use pending() to check if a signal was received, and clear() to reset the flag.  doccheck: compile-only loops until Ctrl+C Example:   use signal    fn main() {       signal::SigInt signal::trap       \"Running. Press Ctrl+C to stop.\" print nl        loop {           signal::SigInt signal::pending if {               \"Shutting down\" print nl               signal::SigInt signal::clear               break           }       }   } doccheck: page-context",
   "constants": [
 
   ],

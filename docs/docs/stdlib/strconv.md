@@ -1,5 +1,7 @@
 # `use` strconv
 
+<!-- doccheck: page-context use strconv -->
+
 String to number conversions.
 
 Functions:

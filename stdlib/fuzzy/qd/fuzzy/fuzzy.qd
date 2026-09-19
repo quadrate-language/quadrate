@@ -1,3 +1,4 @@
+/// doccheck: page-context
 use mem
 use strings
 
@@ -138,8 +139,8 @@ pub stack fn matches(query:str target:str threshold:f64 -- i64) {
 /// @param target str Target string to match against
 /// @return score i64 Match score (0 = no match, higher = better)
 /// @example "sin" "sin" fuzzy::score -> 1000
-/// @example "sin" "asin" fuzzy::score -> ~350 (substring)
-/// @example "rf" "read_file" fuzzy::score -> 200 (word boundary)
+/// @example "sin" "asin" fuzzy::score  // ~350 (substring)
+/// @example "rf" "read_file" fuzzy::score  // 200 (word boundary)
 pub fn score(query:str target:str -- score:i64) {
 	query strings::len -> qlen
 	target strings::len -> tlen

@@ -442,7 +442,7 @@ List directory contents. so the bindings read in reverse of the declared outputs
 **Example:**
 
 ```qd
-"/tmp" os::list! -> count  // entries   // `->` binds top-of-stack first,
+"/tmp" os::list! -> count -> entries   // `->` binds top-of-stack first,
 ```
 ---
 

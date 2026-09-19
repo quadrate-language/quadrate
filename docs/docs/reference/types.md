@@ -69,6 +69,7 @@ Use them as struct fields (`x:u8`, `count:i32`) or with `mem::get_u8` / `mem::se
 
 In function signatures:
 
+<!-- doccheck: skip signature shown with its body elided -->
 ```qd
 fn process(x:i64 y:f64 name:str data:[]i64 -- result:i64) {
 	// ...
@@ -129,6 +130,10 @@ The `as` keyword narrows a `ptr` value to a specific struct type. This is a comp
 **Syntax:** `value as StructType`
 
 ```qd
+struct Dog {
+	name:str
+}
+
 fn get_name(p:ptr -- name:str) {
 	p as Dog <<name
 }
@@ -163,6 +168,11 @@ Without `as`, accessing `<<value` on an untyped `ptr` when multiple structs defi
 Combining `as` with `->` tracks the type for all subsequent accesses:
 
 ```qd
+struct Point {
+	x:i64
+	y:i64
+}
+
 fn process(p:ptr -- ) {
 	p as Point -> pt   // pt is now typed as Point
 	pt <<x print nl     // no ambiguity

@@ -1216,16 +1216,9 @@ namespace Qd {
 				validatedLocals.insert(captured);
 			}
 
-			// Named parameters are auto-bound as local variables
-			// (only when ALL params are named)
-			bool allAnonNamed = true;
-			for (const auto& paramNode : anonFunc->inputParameters()) {
-				if (!static_cast<AstNodeParameter*>(paramNode.get())->hasName()) {
-					allAnonNamed = false;
-					break;
-				}
-			}
-			if (allAnonNamed) {
+			// Named parameters are auto-bound as local variables, unless `stack` says the inputs
+			// stay on the stack -- the same rule a named function follows.
+			if (!anonFunc->isStack()) {
 				for (const auto& paramNode : anonFunc->inputParameters()) {
 					AstNodeParameter* param = static_cast<AstNodeParameter*>(paramNode.get());
 					if (param->hasName()) {

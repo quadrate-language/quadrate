@@ -1,5 +1,7 @@
 /// StringBuilder - Efficient string building.
 /// Avoids O(n²) cost of repeated strings::concat.
+/// doccheck: page-context
+/// doccheck: page-setup sb::new -> builder
 use mem
 use strings
 use unicode

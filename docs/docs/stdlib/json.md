@@ -1,5 +1,17 @@
 # `use` json
 
+<!-- doccheck: page-context use json -->
+
+<!-- doccheck: page-setup "{\x22name\x22:\x22Ada\x22,\x22n\x22:1,\x22xs\x22:[1,2]}" json::parse! -> doc -->
+
+<!-- doccheck: page-setup doc "n" json::get! -> v -->
+
+<!-- doccheck: page-setup doc json::first! -> c -->
+
+<!-- doccheck: page-setup json::new_array -> arr -->
+
+<!-- doccheck: page-setup json::new_object -> obj -->
+
 JSON parsing and querying.
 
 Two ways in. `parse` reads a document once into a Value tree, which is what

@@ -91,15 +91,88 @@ that way.
 
 #### What the compiler does and does not check
 
-- [ ] **R9. `docscheck` covers 16% of the documented examples.** 219 blocks checked and passing,
-      1,120 skipped as "not programs", out of 1,337 fenced Quadrate blocks (218/1,117/1,335 at the
-      review; the three added are this session's). The floor is honestly scoped and documented in
-      `tools/check_docs.py` — but the front-page example is in the 84%:
-      `fn double(x:i64 -- result:i64) { 2 * }` in `about.md` does not compile: naming `x` consumes
-      it, so the body underflows. It wants `x 2 *` or `stack fn double(i64 -- result:i64)`.
-      **Open question**: can the harness synthesise a `fn main` wrapper for fragment blocks and lift
-      coverage materially, or is the current floor the right stopping point and the fix is only to
-      hand-audit the handful of blocks that are whole declarations?
+- [x] **Fixed 2026-09-19: R9. `docscheck` covered 16% of the documented examples.** It checked
+      only blocks defining `fn main`, so a page that shows no whole program went unchecked —
+      which is how the front page came to open with `fn double(x:i64 -- result:i64) { 2 * }`,
+      a body that underflows because naming `x` consumes it.
+
+      Three classifiers were added to `tools/check_docs.py`:
+
+      - a block whose every top-level line opens a declaration is a compilation unit already,
+        so it is compiled with an empty `fn main` appended;
+      - `doccheck: continues` compiles a block after the nearest declaration-only block above it
+        in the same file, which is how a tutorial page is written — declare `divide` in one
+        block, use it in the next four;
+      - `doccheck: page-context <preamble>`, a file-level marker: every fragment on the page is
+        compiled with that preamble and wrapped in `fn main`, and if the fragment leaves values
+        on the stack it is compiled again with as many `drop`s as the diagnostic says it left.
+        This is what makes a generated stdlib page checkable, where every block is a one-line
+        `@example` from the module's source.
+
+      **Coverage went from 219 to 485 blocks**, and every failure it surfaced is resolved: the
+      broken examples are fixed, and 54 blocks carry a `doccheck: skip <reason>` naming why they
+      cannot be checked. The largest class of real breakage was one mistake repeated across nine
+      pages — a body written stack-direct under a signature with named parameters — and the
+      second was `-> x  // bind parameter` lines left from before parameters bound themselves.
+      One of them was in `reference.def`, so the compiler's own reference table shipped it.
+
+- [x] **Fixed 2026-09-19: every stdlib module's examples are compiled.** All thirty-six are
+      opted in. `docscheck` now checks **1,010 blocks**, up from 219 when this started. What is
+      left unchecked is 385 prose fragments on the hand-written pages (`point <<x`, a line of
+      shuffling, a stack trace) plus the two hand-written math pages, whose examples use values
+      the prose supplies; checking those needs a way to say what context a fragment assumes,
+      which none of the classifiers answers.
+
+      Three generator bugs surfaced while doing it, each of which had been quietly mangling
+      pages: a `|` in a doc comment split the packed record (`math::abs` documents its return as
+      `|x|`, and lost its description, grew a phantom error table and rendered its example as
+      `||-5.0 math::abs print`); only the first `page-context` line of a module was emitted; and
+      the `-> result` annotation was matched greedily, so an example that binds a value
+      mid-line had the rest of the line swallowed into a comment -- which is how
+      `io::readline`'s example was unparseable and no one could see it. The annotation is now
+      recognised only when what follows the last arrow is a list of names or literals.
+
+- [x] **Fixed 2026-09-19: an anonymous function's body is stack-checked.** It was not, and the
+      answer to the open question was that the validator walked past it: the case in
+      `typeCheckBlock` pushed a PTR and moved on, under a comment saying code generation would
+      validate the body, which it does not. `5 fn (x:i64 -- r:i64) { 2 * } call` compiled and
+      died at run time with *"Fatal error in mul: Stack underflow"* where the identical body in
+      a named function is a compile error. `typeCheckAnonymousFunction` now checks the body the
+      way a named function's body is checked -- on its own empty stack, with named parameters
+      bound and captures typed from the scope the lambda was written in -- from all three places
+      a lambda can appear: a statement, a struct literal's field, an array literal's element.
+
+      It found three more broken `hof` examples that the earlier pass had missed
+      (`fn (x:i64 -- r:i64) { dup * }`, which underflows for the same reason), two callbacks in
+      `os_test.qd` that never consumed their argument, and two C++ fixtures that asserted zero
+      errors for bodies that underflow. All fixed.
+
+- [x] **Fixed 2026-09-19: an anonymous function follows a named function's rules, all of them.**
+      The two had drifted apart in seven places, each one silent. A bare type name in a lambda's
+      parameter list was read as a parameter *name* with no type, so `fn (Str -- ) { drop }` bound
+      a local called `Str` and underflowed; a named function's parameter list had always read it
+      as a type. Unnamed inputs were accepted and quietly left on the stack, where a named
+      function rejects them and points at `stack fn` -- which a lambda had no way to spell.
+      Parameter type names were not checked, so `fn (x:Nope -- )` compiled. Unused parameters were
+      not reported. Fallibility was inherited from the enclosing function, so a `panic` inside a
+      plain lambda in a fallible function passed validation and was then compiled by a generator
+      that knew the lambda could not throw. Outputs were compared by primitive type only, never
+      structurally. And a lambda could not be marked `!` at all.
+
+      Now: `stack fn (...)` and `fn (...)!` parse wherever a lambda may appear, binding is decided
+      by `stack` in the parser, the validator and the generator alike (all three used to apply
+      their own "all parameters named" heuristic), and a fallible lambda's call site behaves like
+      a call to a fallible name -- `call!` aborts, `call?` propagates, a bare `call` is read by
+      `if` or `switch`. Fixing the last one fixed a bug that had nothing to do with lambdas:
+      `call!` on a pointer to a *named* fallible function never checked for the error, so the
+      program ran on past a panic with nothing on the stack.
+
+      The 65 lambdas in the corpus written with unnamed parameters now say `stack fn`.
+
+      **Known limit, shared with named functions**: an `fn(...)` type string cannot say `!`, so a
+      fallible lambda stored in a field or returned as a `ptr` loses its fallibility on the way
+      out. A named function's pointer loses it the same way. Fixing it means giving the type
+      syntax somewhere to put the mark.
 
 #### Language design decisions to settle
 

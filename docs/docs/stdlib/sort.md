@@ -1,5 +1,19 @@
 # `use` sort
 
+<!-- doccheck: page-context use sort -->
+
+<!-- doccheck: page-context use mem -->
+
+<!-- doccheck: page-context fn by_length(a:i64 b:i64 -- order:i64) { a b - } -->
+
+<!-- doccheck: page-context fn ascending(a:i64 b:i64 -- order:i64) { a b - } -->
+
+<!-- doccheck: page-setup 32 mem::alloc! -> arr -->
+
+<!-- doccheck: page-setup 32 mem::alloc! -> strs -->
+
+<!-- doccheck: page-setup 4 -> count -->
+
 Sorting algorithms for arrays.
 Arrays are pointers to contiguous i64 values, f64 values, or string pointers.
 

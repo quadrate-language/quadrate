@@ -34,6 +34,8 @@
 ///         // Cleanup
 ///         logger log::free
 ///     }
+/// doccheck: page-context
+/// doccheck: page-setup log::new! -> logger
 
 /// Log level: Debug (most verbose).
 pub const LevelDebug = 0

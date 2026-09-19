@@ -28,17 +28,20 @@ Defers run even when errors occur:
 
 ```qd
 use io
+use mem
 
 fn process_file(path:str -- )! {
-	-> path  // bind parameter
 	path io::Read io::open! -> file
 	defer {
-		// Always runs, even if do_something fails
+		// Always runs, even if the read fails
 		file io::close
 	}
 
-	// Even if this fails, file gets closed
-	file do_something!
+	64 mem::alloc! -> buf
+	defer { buf mem::free }
+
+	// Even if this fails, the file is closed and the buffer freed
+	file buf 64 io::read? drop
 }
 ```
 
@@ -89,8 +92,6 @@ use io
 use mem
 
 fn copy_file(src:str dst:str -- )! {
-	-> dst -> src  // bind parameters
-
 	src io::Read io::open! -> src_file
 	defer { src_file io::close }
 
@@ -129,6 +130,7 @@ fn main() {
 
 ### Transaction
 
+<!-- doccheck: skip pattern sketch: begin_transaction, rollback and commit stand for a program's own words -->
 ```qd
 fn transaction()! {
 	begin_transaction
@@ -148,7 +150,6 @@ fn transaction()! {
 
 ```qd
 fn traced_operation(name:str -- ) {
-	-> name  // bind parameter
 	"Entering " print name print nl
 	defer {
 		"Exiting " print name print nl
@@ -166,6 +167,7 @@ Unlike try/finally in other languages, defer is simpler:
 - Just add defer where you acquire a resource
 - Cleanup is guaranteed
 
+<!-- doccheck: skip comparison sketch: open_file and close_file stand for a program's own words -->
 ```qd
 // Other languages:
 // try {

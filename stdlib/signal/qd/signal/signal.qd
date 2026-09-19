@@ -19,6 +19,7 @@
 ///           }
 ///       }
 ///   }
+/// doccheck: page-context
 
 import "libsignal.a" as "signal" {
 	/// Hangup signal (terminal closed).
