@@ -20,7 +20,7 @@ jobs:
         run: |
           apt-get update
           DEBIAN_FRONTEND=noninteractive apt-get install -y \
-            build-essential ca-certificates clang clang-format git \
+            build-essential ca-certificates clang clang-format curl git \
             libclang-rt-dev libreadline-dev libsqlite3-dev libssl-dev \
             llvm-dev meson ninja-build patchelf pkg-config python3 \
             valgrind zlib1g-dev
@@ -42,7 +42,7 @@ jobs:
       - name: Install packages
         run: |
           pacman -Syu --noconfirm --needed \
-            clang git llvm meson ninja openssl patchelf pkgconf python \
+            clang curl git llvm meson ninja openssl patchelf pkgconf python \
             readline sqlite zlib
 
       - uses: actions/checkout@v5
@@ -65,7 +65,7 @@ jobs:
           docker run --rm -v "$PWD:/build" -w /build alpine:edge sh -euc '
             apk add --no-cache \
               bash build-base clang clang-dev clang-extra-tools compiler-rt \
-              git llvm-dev meson musl-dev openssl-dev patchelf pkgconf \
+              curl git llvm-dev meson musl-dev openssl-dev patchelf pkgconf \
               python3 readline-dev sqlite-dev zlib-dev
             exec .github/scripts/ci-checks.sh
           '

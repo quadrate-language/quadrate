@@ -1592,7 +1592,14 @@ run_memory_tests() {
     if [[ $exit_code -eq 0 ]]; then
         log_pass "$suite" "memory_test"
     else
+        # The ✗ lines when there are any, and the tail of the output when there are
+        # none: a run that dies before reporting a case -- a program that will not
+        # start, a compiler that is not there -- used to leave this empty, and the
+        # failure arrived as "test failed" with nothing to go on.
         local error_msg=$(echo "$output" | grep "✗" | head -20)
+        if [[ -z "$error_msg" ]]; then
+            error_msg=$(echo "$output" | tail -20)
+        fi
         log_fail "$suite" "memory_test" "test failed" "$error_msg"
     fi
 }

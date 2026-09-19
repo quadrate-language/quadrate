@@ -41,11 +41,26 @@ if ! command -v python3 >/dev/null 2>&1; then
 	exit 0
 fi
 
-# Peak RSS of a child process, in KB.
+# Peak RSS of a child process, in KB. argv[1] is where the child's stderr goes.
+# A child that fails prints "FAILED <code>" rather than raising: this runs under
+# `set -e`, where a non-zero exit inside a command substitution kills the script
+# before it can say which program died, which is how a crash on CI arrives as a
+# bare "test failed" with nothing to go on.
 cat > "$WORK_DIR/peak_rss.py" <<'PY'
 import resource, subprocess, sys
-subprocess.run(sys.argv[1:], check=True, stdout=subprocess.DEVNULL)
-print(resource.getrusage(resource.RUSAGE_CHILDREN).ru_maxrss)
+
+err_path = sys.argv[1]
+with open(err_path, "wb") as err:
+	result = subprocess.run(sys.argv[2:], stdout=subprocess.DEVNULL, stderr=err)
+if result.returncode != 0:
+	print("FAILED %d" % result.returncode)
+	sys.exit(0)
+
+peak = resource.getrusage(resource.RUSAGE_CHILDREN).ru_maxrss
+# ru_maxrss is kilobytes on Linux and bytes on macOS.
+if sys.platform == "darwin":
+	peak //= 1024
+print(peak)
 PY
 
 PASSED=0
@@ -69,15 +84,39 @@ check_flat() {
 		fi
 	done
 
-	rss_low=$(python3 "$WORK_DIR/peak_rss.py" "$WORK_DIR/${name}_$low")
-	rss_high=$(python3 "$WORK_DIR/peak_rss.py" "$WORK_DIR/${name}_$high")
+	for n in "$low" "$high"; do
+		local measured
+		measured=$(python3 "$WORK_DIR/peak_rss.py" "$WORK_DIR/${name}_$n.err" "$WORK_DIR/${name}_$n")
+		if [[ "$measured" == FAILED* ]]; then
+			local why
+			why=$(tr '\n' ' ' < "$WORK_DIR/${name}_$n.err" | cut -c1-300)
+			echo -e "  ${RED}✗${NC} $name (the $n-iteration run exited ${measured#FAILED }: ${why:-no output on stderr})"
+			FAILED=$((FAILED + 1))
+			return
+		fi
+		if [[ "$n" == "$low" ]]; then
+			rss_low=$measured
+		else
+			rss_high=$measured
+		fi
+	done
 	growth=$((rss_high - rss_low))
 
-	if [[ $growth -gt $budget ]]; then
-		echo -e "  ${RED}✗${NC} $name (peak RSS grew ${growth} KB from $low to $high iterations, budget ${budget} KB)"
+	# Allocator behaviour is not the same everywhere -- how much of a freed block is
+	# held on to, and how much of the heap is touched at all, differ between glibc and
+	# musl and between versions of each. So the budget is the stated one or a quarter
+	# of what the short run already used, whichever is larger; the leaks these cases
+	# were written for ran to hundreds of megabytes, which neither figure comes near.
+	local allowance=$((rss_low / 4))
+	if [[ $allowance -lt $budget ]]; then
+		allowance=$budget
+	fi
+
+	if [[ $growth -gt $allowance ]]; then
+		echo -e "  ${RED}✗${NC} $name (peak RSS grew ${growth} KB from $low to $high iterations: ${rss_low} KB -> ${rss_high} KB, allowed ${allowance} KB)"
 		FAILED=$((FAILED + 1))
 	else
-		echo -e "  ${GREEN}✓${NC} $name (${growth} KB over 100x the work)"
+		echo -e "  ${GREEN}✓${NC} $name (${growth} KB over 100x the work: ${rss_low} KB -> ${rss_high} KB)"
 		PASSED=$((PASSED + 1))
 	fi
 }
