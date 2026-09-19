@@ -907,15 +907,15 @@ TEST(FloatToIntConversion) {
 	ASSERT(!ir.empty(), "should generate IR for type conversions");
 }
 
-TEST(StackPickRoll) {
+TEST(StackPick) {
 	const char* src = R"(
 		fn main() {
-			1 2 3 2 pick print
-			1 2 3 2 roll print
+			1 2 3 pick print
+			drop drop drop
 		}
 	)";
 	std::string ir = generateIR(src);
-	ASSERT(!ir.empty(), "should generate IR for pick and roll");
+	ASSERT(!ir.empty(), "should generate IR for pick");
 }
 
 TEST(StackNip) {

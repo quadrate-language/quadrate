@@ -277,43 +277,25 @@ int qd_rot(qd_context* ctx) {
 	return (int){0};
 }
 
+// pick - copy the third element to the top: ( x y z -- x y z x )
+//
+// It used to take the depth as a value popped at run time, which no static stack
+// model can follow: the compiler could not say what a body containing one leaves,
+// and code generation refused it outright in compile-time-stack functions. A fixed
+// depth is checkable, and it is the word Factor keeps.
 int qd_pick(qd_context* ctx) {
-	size_t stack_size = qd_stack_size(ctx->st);
-	if (stack_size < 1) {
-		QDRT_FATAL(ctx, "pick", "Stack underflow (need at least the index)");
+	const size_t stack_size = qd_stack_size(ctx->st);
+	if (stack_size < 3) {
+		QDRT_FATAL(ctx, "pick", "Stack underflow (requires 3 values, have %zu)", stack_size);
 	}
 
-	// Pop the index
-	qd_stack_element_t idx_elem;
-	qd_stack_error err = qd_stack_pop(ctx->st, &idx_elem);
-	if (err != QD_STACK_OK) {
-		QDRT_FATAL(ctx, "pick", "Failed to pop index");
-	}
-
-	if (idx_elem.type != QD_STACK_TYPE_INT) {
-		QDRT_FATAL(ctx, "pick", "Index must be an integer");
-	}
-
-	int64_t n = idx_elem.value.i;
-	if (n < 0) {
-		QDRT_FATAL(ctx, "pick", "Index must be non-negative (got %ld)", (long)n);
-	}
-
-	stack_size = qd_stack_size(ctx->st);  // Update after popping index
-	if ((size_t)n >= stack_size) {
-		QDRT_FATAL(ctx, "pick", "Index %ld out of range (stack has %zu elements)", (long)n, stack_size);
-	}
-
-	// Get the nth element from the top (0 = top)
 	qd_stack_element_t elem;
-	err = qd_stack_element(ctx->st, stack_size - 1 - (size_t)n, &elem);
+	qd_stack_error err = qd_stack_element(ctx->st, stack_size - 3, &elem);
 	if (err != QD_STACK_OK) {
 		QDRT_FATAL(ctx, "pick", "Failed to access element");
 	}
 
-	// Push a copy of that element
 	err = qdrt_push_element(ctx->st, &elem);
-
 	if (err != QD_STACK_OK) {
 		QDRT_FATAL(ctx, "pick", "Stack overflow pushing picked element");
 	}

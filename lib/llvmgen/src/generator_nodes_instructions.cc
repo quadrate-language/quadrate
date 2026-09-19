@@ -361,15 +361,9 @@ namespace Qd {
 				compileTimeStack.pop_back();
 				return;
 			}
-			if (name == "pick" || name == "roll") {
-				// pick/roll reorder the stack dynamically, which the
-				// compile-time stack cannot model. Falling through here would
-				// dispatch to the runtime op while the values actually live on
-				// the compile-time stack - a silent miscompile. Fail cleanly
-				// instead. (If this fires, the eligibility analysis should be
-				// taught to exclude functions using pick/roll.)
-				llvm::errs() << "Error: '" << name << "' is not supported in compile-time-stack functions\n";
-				compilationFailed = true;
+			if (name == "pick") {
+				size_t sz = compileTimeStack.size();
+				compileTimeStack.push_back(compileTimeStack[sz - 3]);
 				return;
 			}
 			// print: materialize top value to runtime stack, call runtime print

@@ -698,6 +698,20 @@ namespace Qd {
 			}
 			return;
 		}
+		// Stack operations: pick ( x y z -- x y z x )
+		else if (strcmp(name, "pick") == 0) {
+			if (typeStack.size() < 3) {
+				reportErrorConditional(node, "Type error in 'pick': Stack underflow (requires 3 values)", reportErrors);
+				return;
+			}
+			typeStack.push_back(typeStack[typeStack.size() - 3]);
+			if (structTypeStack.size() >= 3) {
+				structTypeStack.push_back(structTypeStack[structTypeStack.size() - 3]);
+			} else {
+				structTypeStack.push_back("");
+			}
+			return;
+		}
 		// Stack operations: nip ( a b -- b )
 		else if (strcmp(name, "nip") == 0) {
 			if (typeStack.size() < 2) {

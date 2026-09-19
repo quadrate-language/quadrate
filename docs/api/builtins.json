@@ -12,8 +12,7 @@
         {"name": "nip", "signature": "(a b -- b)", "description": "Remove second element"},
         {"name": "drop", "signature": "(a --)", "description": "Drop top element"},
         {"name": "rot", "signature": "(a b c -- b c a)", "description": "Rotate three elements"},
-        {"name": "pick", "signature": "(... n -- ... x)", "description": "Copy nth element to top (0 = top)"},
-        {"name": "roll", "signature": "(... n -- ... x)", "description": "Move nth element to top"},
+        {"name": "pick", "signature": "(x y z -- x y z x)", "description": "Copy the third value to the top"},
         {"name": "depth", "signature": "(-- n)", "description": "Push current stack depth"},
         {"name": "clear", "signature": "(... --)", "description": "Clear entire stack"},
         {"name": "call", "signature": "(fn --)", "description": "Call a function pointer"}

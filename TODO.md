@@ -39,17 +39,16 @@ redundancy, and the item proposing to cut them was deleted. Re-counted 2026-09-1
 **21 keywords, 86 `BUILTIN_INSTRUCTIONS` entries** (17 of them `__` freestanding internals), **66
 documented in `reference.def`** — the review's 87/69 predate the `read` and `ctx` removals.
 
-- [ ] **Make `pick` fixed-depth; drop `roll`.** *(Rewritten 2026-09-18 — was "drop `pick`/`roll`
-      from the user-facing surface".)* The technical objection stands and is the reason to change
-      them rather than keep them as they are: both take a **runtime** index, which defeats static
-      stack tracking, and codegen already refuses them in compile-time-stack functions
-      (`generator_nodes_instructions.cc`, "not supported in compile-time-stack functions"). But
-      deleting them outright was the wrong conclusion now that `stack fn` makes stack-direct code a
-      first-class form — Factor keeps `pick` as a fixed-depth word, `( x y z -- x y z x )`, and has
-      no `roll` at all. So: respell `pick` as third-item copy, which is statically checkable and
-      needs no index, and drop
-      `roll` from the user-facing surface while keeping it as an internal op (method receiver
-      rotation). Blast radius is nil either way — `pick` is at **0** corpus uses and `roll` at 2.
+- [x] **Done 2026-09-19: `pick` is fixed-depth and `roll` is gone.** Both took a **runtime**
+      index, which defeats static stack tracking: nothing could say what a body containing one
+      leaves, and code generation refused them outright in compile-time-stack functions.
+      `pick` is now the third-item copy Factor keeps, `( x y z -- x y z x )` — checkable, and
+      handled on the compile-time stack like the other shufflers rather than hard-erroring.
+      `roll` is no longer a word; it stays as the internal op code generation emits to bring a
+      method's receiver to the top, and a use of the word reports the removal with the rewrite,
+      the way the other removed shufflers do. Corpus blast radius was as measured: `pick` 0 uses,
+      `roll` 2 (both in `tests/qd/stack/advanced.qd`).
+
 - [ ] **Sum types / tagged unions** — the one addition worth arguing for, and no longer a longer
       horizon: an error channel that cannot be put on the stack costs this language more than it
       would an ALGOL one (see R24). `enum` gives bare ints and `struct` gives records, but there is
@@ -229,12 +228,13 @@ that way.
       **Open question**: subsumed by the sum-types item above, or worth an independent
       error-value type first?
 
-- [ ] **R27. Threads get a hardcoded 1,024-element stack.** `qd_create_context(1024)` in
-      `stdlib/thread/src/thread.c:44` and `lib/rt/src/runtime.c:856`; `-s` does not reach it.
-      Verified: a thread body that pushes 5,000 values dies with *"Stack overflow (use -s to
-      increase stack size)"* — advice that does not work for this case. Thread contexts are properly
-      isolated otherwise, which is the important part.
-      **Open question**: plumb `-s` through, or make it a `thread::spawn` parameter?
+- [x] **Fixed 2026-09-19: a thread's stack is as big as the context that spawned it.** It was a
+      hardcoded 1,024 elements in both spawn paths (`stdlib/thread/src/thread.c`,
+      `lib/rt/src/runtime.c`), so a thread body that pushed more died telling the user to *"use -s
+      to increase stack size"* — advice that could not reach it. Both now take the spawning
+      context's capacity, which is what `-s` sets, and `QD_DEFAULT_STACK_SIZE` in `rt/stack.h`
+      names the fallback that was a bare 1024 in three places. Verified: a thread that pushes
+      3,000 values overflows at the default and runs under `-s 8192`.
 
 #### Cuts with corpus evidence
 

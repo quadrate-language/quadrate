@@ -21,7 +21,7 @@ namespace Qd {
 			// Logical operations
 			"eq", "gt", "gte", "lt", "lte", "neq", "within",
 			// Stack operations
-			"call", "clear", "depth", "drop", "dup", "dup2", "free", "len", "nip", "nth", "over", "pick", "roll", "rot",
+			"call", "clear", "depth", "drop", "dup", "dup2", "free", "len", "nip", "nth", "over", "pick", "rot",
 			"swap",
 			// Array operations
 			"append", "make", "makef", "makei", "makep", "makes", "set",
@@ -72,6 +72,9 @@ namespace Qd {
 			{"overd", "( a b c -- a b a c )", "-> c -> b -> a  a b a c"},
 			{"read", "( -- ... n )", "os::args -> args  args len -> argc",
 					"the arguments are an array now; use os::args instead"},
+			{"roll", "( ... n -- ... )", "-> c -> b -> a  b c a",
+					"it took its depth at run time, which no static stack model can follow; name the "
+					"values instead"},
 			{"swap2", "( a b c d -- c d a b )", "-> d -> c -> b -> a  c d a b"},
 			{"swapd", "( a b c -- b a c )", "-> c -> b -> a  b a c"},
 			{"tuck", "( a b -- b a b )", "-> b -> a  b a b"},

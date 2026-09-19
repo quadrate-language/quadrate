@@ -36,12 +36,16 @@ static void push_element(qd_context* ctx, qd_stack_element_t elem) {
 
 typedef struct {
 	qd_stack_element_t func;
+	// The spawning context's stack capacity, which is what `-s` sets. The thread used
+	// to get a hardcoded 1,024 elements whatever the program asked for, so a thread
+	// body that pushed more died advising a flag that could not reach it.
+	size_t stack_size;
 } qd_thread_spawn_data;
 
 static int thread_entry(void* arg) {
 	qd_thread_spawn_data* data = (qd_thread_spawn_data*)arg;
 
-	qd_context* thread_ctx = qd_create_context(1024);
+	qd_context* thread_ctx = qd_create_context(data->stack_size);
 	if (!thread_ctx) {
 		free(data);
 		return 1;
@@ -89,6 +93,7 @@ int usr_thread_raw_spawn(qd_context* ctx) {
 	}
 
 	data->func = func_elem;
+	data->stack_size = (ctx->st != NULL) ? (size_t)ctx->st->capacity : QD_DEFAULT_STACK_SIZE;
 
 	int result = thrd_create(&thread->handle, thread_entry, data);
 	if (result != thrd_success) {

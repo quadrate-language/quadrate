@@ -118,32 +118,33 @@ fn main() {
 
 ## Deep stack access
 
-For values deeper in the stack:
+### pick - copy the third value
 
-### pick - copy nth value
+`pick` reaches one deeper than `over`:
+
+```qd
+fn main() {
+	10 20 30
+	pick       // ( x y z -- x y z x )
+	print nl   // 10
+	drop drop drop
+}
+```
+
+That is as deep as the stack words reach, on purpose. `pick` used to take the depth as a value
+(`2 pick`), and `roll` moved the nth value to the top the same way; both have been removed in that
+form, because a depth that is only known at run time means nothing can say what the code around it
+leaves on the stack.
+
+Below three deep, name what you need:
 
 ```qd
 fn main() {
 	10 20 30 40
-	2 pick     // Copy index 2 (value 20)
-	print nl   // 20
+	-> d -> c -> b -> a
+	a print nl   // 10
 }
 ```
-
-Index 0 is the top, 1 is second, etc.
-
-### roll - move nth value
-
-```qd
-fn main() {
-	10 20 30 40
-	2 roll     // Move index 2 to top (0-based: 0=top)
-	print nl   // 20
-	// Stack now: [10, 30, 40]
-}
-```
-
-Index 0 is the top, 1 is second, etc. (same as `pick`).
 
 ## Utility operations
 

@@ -463,8 +463,8 @@ namespace Qd {
 	}
 
 	// Instructions generateInstruction lowers directly onto the compile-time stack.
-	// pick/roll are deliberately absent: they reorder the stack dynamically, which the
-	// compile-time stack cannot model, and generateInstruction hard-errors on them.
+	// `pick` is here now that it copies a fixed depth; it used to take its depth from a
+	// value popped at run time, which the compile-time stack cannot model.
 	bool LlvmGenerator::Impl::isCompileTimeStackInstruction(AstNodeInstruction* inst, bool allowFloat) {
 		static const std::set<std::string> HANDLED = {// Arithmetic and comparison
 				"+", "-", "*", "/", "%", "++", "--", "add", "sub", "mul", "div", "mod", "neg", "<",
@@ -472,7 +472,7 @@ namespace Qd {
 				// Bitwise and logical
 				"and", "or", "xor", "not", "lnot", "shl", "shr",
 				// Stack shuffling
-				"drop", "dup", "dup2", "nip", "over", "rot", "swap",
+				"drop", "dup", "dup2", "nip", "over", "pick", "rot", "swap",
 				// I/O
 				"nl", "print", "prints",
 				// Raw memory loads/stores

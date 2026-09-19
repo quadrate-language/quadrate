@@ -13,8 +13,7 @@ Operations for manipulating values on the stack.
 | `over` | `(a b -- a b a)` | Copy second to top |
 | `rot` | `(a b c -- b c a)` | Rotate three |
 | `nip` | `(a b -- b)` | Remove second |
-| `pick` | `(... n -- ... val)` | Copy nth value |
-| `roll` | `(... n -- ...)` | Move nth to top |
+| `pick` | `(x y z -- x y z x)` | Copy the third value to the top |
 | `clear` | `(... --)` | Remove all |
 | `depth` | `(... -- ... n)` | Count values |
 
@@ -117,23 +116,20 @@ Removes the second value, keeping top.
 
 ### pick
 
-Copies the nth value (0-indexed from top) to the top.
+Copies the third value from the top to the top.
 
-**Signature:** `(... n -- ... val)`
-
-```qd
-1 2 3 4 2 pick // Copies index 2 (value 2) to top
-```
-
-### roll
-
-Moves the nth value (0-indexed from top) to the top, shifting others down.
-
-**Signature:** `(... n -- ...)`
+**Signature:** `(x y z -- x y z x)`
 
 ```qd
-1 2 3 4 2 roll // Moves index 2 (value 2) to top -> [1, 3, 4, 2]
+1 2 3 pick // Stack: [1, 2, 3, 1]
 ```
+
+It used to take the depth as a value popped at run time — `1 2 3 4 2 pick`. Nothing could say
+what a body containing one leaves on the stack, so it was rejected outright in functions the
+compiler evaluates on a compile-time stack. A fixed depth is checkable everywhere.
+
+`roll`, which moved the nth value to the top, is gone for the same reason and has no replacement
+word: name the values with `->` and push them back in the order you want.
 
 ### clear
 

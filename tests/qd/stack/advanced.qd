@@ -1,12 +1,11 @@
 // Test: advanced
 fn main() {
-	// Test pick - copy nth element to top (0-indexed)
-	100 200 300 400 2 pick
-	// Copy element at index 2 (which is 200)
+	// Test pick - copy the third value to the top: ( x y z -- x y z x )
+	100 200 300 pick
 	prints
 	clear
-	// Test roll - move index n to top (0-based)
-	10 20 30 40 3 roll
-	// Move index 3 (10) to top: 20 30 40 10
+	// pick reads the three values below the top wherever they came from
+	1 2 3 4 pick
 	prints
+	clear
 }

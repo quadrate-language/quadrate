@@ -19,6 +19,15 @@ extern "C" {
 #endif
 
 /**
+ * @brief Stack capacity a context gets when nothing says otherwise.
+ *
+ * The compiler's `-s` overrides it for the main context, and a spawned thread
+ * takes the capacity of the context that spawned it; this is only the fallback
+ * for a context created without a parent to ask.
+ */
+#define QD_DEFAULT_STACK_SIZE 1024
+
+/**
  * @brief Stack operation error codes
  */
 typedef enum {

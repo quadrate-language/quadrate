@@ -1061,8 +1061,7 @@ nl
 | [`over`](#over) | `( a b -- a b a )` | Copies the second value to the top. |
 | [`rot`](#rot) | `( a b c -- b c a )` | Rotates the top three values, moving third to top. |
 | [`nip`](#nip) | `( a b -- b )` | Removes the second value, keeping top. |
-| [`pick`](#pick) | `( ... n -- ... val )` | Copies the nth value (0-indexed from top) to the top. |
-| [`roll`](#roll) | `( ... n -- ... )` | Moves the nth value to the top, shifting others down. |
+| [`pick`](#pick) | `( x y z -- x y z x )` | Copies the third value from the top to the top. |
 | [`clear`](#clear) | `( ... -- )` | Removes all values from the stack. |
 | [`depth`](#depth) | `( ... -- ... n )` | Pushes the number of values on the stack. |
 
@@ -1166,28 +1165,14 @@ Removes the second value, keeping top.
 
 #### pick
 
-Copies the nth value (0-indexed from top) to the top.
+Copies the third value from the top to the top.
 
-**Signature:** `( ... n -- ... val )`
-
-**Example:**
-
-```qd
-1 2 3 4 2 pick // Copies index 2 (value 2) to top
-```
-
----
-
-#### roll
-
-Moves the nth value to the top, shifting others down.
-
-**Signature:** `( ... n -- ... )`
+**Signature:** `( x y z -- x y z x )`
 
 **Example:**
 
 ```qd
-1 2 3 4 2 roll // Moves index 2 (value 2) to top, shifting others
+1 2 3 pick // 1 2 3 1
 ```
 
 ---

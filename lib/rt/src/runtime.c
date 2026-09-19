@@ -802,8 +802,11 @@ int qd_free_struct(qd_context* ctx) {
 }
 
 // rot - rotate top 3 elements: ( a b c -- b c a )
-// pick - copy nth element to top (0-indexed from top): ( ... n -- ... nth )
+// pick - copy the third element to the top: ( x y z -- x y z x )
 // roll - rotate n elements, moving nth to top: ( ... n -- ... )
+// Not a word any more: it takes its depth at run time, which defeats static stack
+// tracking. Kept as an internal op -- code generation emits it to bring a method's
+// receiver to the top.
 // mod - modulo operation: ( a b -- a%b )
 // and - bitwise AND: ( a b -- a&b )
 // or - bitwise OR: ( a b -- a|b )
@@ -860,7 +863,12 @@ int qd_spawn(qd_context* ctx) {
 	// Create new context for the thread. These are transient runtime failures
 	// (out of memory, OS thread limit), not programming errors, so report them
 	// via the error convention and clean up rather than aborting the process.
-	qd_context* thread_ctx = qd_create_context(1024);
+	//
+	// The thread's stack is as big as the spawning context's, which is what `-s`
+	// sets. It used to be a hardcoded 1,024 elements, so a thread that pushed more
+	// died advising a flag that could not reach it.
+	const size_t thread_stack_size = (ctx->st != NULL) ? (size_t)ctx->st->capacity : QD_DEFAULT_STACK_SIZE;
+	qd_context* thread_ctx = qd_create_context(thread_stack_size);
 	if (!thread_ctx) {
 		ctx->error_code = -1;
 		qd_set_error_msg(ctx, "spawn: failed to create thread context");

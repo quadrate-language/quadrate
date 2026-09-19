@@ -175,10 +175,9 @@ TEST(FatalRuntimeErrorsAreRecovered) {
 	ASSERT(!qd_interp_eval(interp, "clear \"abc\" 1 +"), "adding a string to an int fails");
 	ASSERT(std::strstr(qd_interp_error(interp), "Type error") != nullptr, "with a type error");
 
-	// pick takes its depth from a value popped at run time, so the arity check
-	// cannot see this coming — only recovery catches it
-	ASSERT(!qd_interp_eval(interp, "clear 1 5 pick"), "out-of-range pick fails");
-	ASSERT(std::strstr(qd_interp_error(interp), "out of range") != nullptr, "with a range error");
+	// pick copies a fixed depth, so the arity check sees a short stack coming
+	ASSERT(!qd_interp_eval(interp, "clear 1 2 pick"), "pick on two values fails");
+	ASSERT(std::strstr(qd_interp_error(interp), "needs 3 values") != nullptr, "with an arity error");
 
 	// And the interpreter still works afterwards
 	ASSERT(std::strcmp(top(interp, "clear 2 3 +"), "5") == 0, "the context survives recovery");

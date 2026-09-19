@@ -142,15 +142,10 @@ BUILTIN(rot, "( a b c -- b c a )", "Rotates the top three values, moving third t
 /// @example 1 2 nip // Stack: [2]
 BUILTIN(nip, "( a b -- b )", "Removes the second value, keeping top.")
 
-/// Copy nth value to top.
-/// @signature ( ... n -- ... val )
-/// @example 1 2 3 4 2 pick // Copies index 2 (value 2) to top
-BUILTIN(pick, "( ... n -- ... val )", "Copies the nth value (0-indexed from top) to the top.")
-
-/// Move nth value to top.
-/// @signature ( ... n -- ... )
-/// @example 1 2 3 4 2 roll // Moves index 2 (value 2) to top, shifting others
-BUILTIN(roll, "( ... n -- ... )", "Moves the nth value to the top, shifting others down.")
+/// Copy the third value to the top.
+/// @signature ( x y z -- x y z x )
+/// @example 1 2 3 pick // 1 2 3 1
+BUILTIN(pick, "( x y z -- x y z x )", "Copies the third value from the top to the top.")
 
 /// Clear the stack.
 /// @signature ( ... -- )

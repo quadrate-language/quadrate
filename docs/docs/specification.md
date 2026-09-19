@@ -493,10 +493,14 @@ All operations MUST be postfix. Arguments MUST be popped from the stack, and res
 |-----------|--------------|-------------|
 | `over` | `( a b -- a b a )` | Copy second to top |
 | `rot` | `( a b c -- b c a )` | Rotate three |
-| `pick` | `( ... n -- ... x )` | Copy nth to top |
-| `roll` | `( ... n -- ... )` | Move nth to top |
+| `pick` | `( x y z -- x y z x )` | Copy the third value to the top |
 | `nth` | `( array n -- elem )` | Get array element |
 | `depth` | `( -- n )` | Push stack depth |
+
+Every stack word has a fixed effect. A word whose depth comes from a value on the stack cannot be
+given one, so an implementation cannot say what the code around it leaves — `pick` therefore
+copies the third value rather than an indexed one, and there is no `roll`. Below three deep, the
+values are named with `->` (§4.4).
 
 ### 4.3 Stack Effect Signatures
 
@@ -2131,7 +2135,7 @@ operator        = "+" | "-" | "*" | "/" | "%" | "++" | "--"
                 ;
 
 instruction     = "dup" | "swap" | "drop" | "over" | "rot" | "nip"
-                | "pick" | "roll" | "nth" | "len" | "append" | "set"
+                | "pick" | "nth" | "len" | "append" | "set"
                 | "make" "<" type ">" | "cast" "<" type ">"
                 | "print" | "nl" | "call" | "panic" | "err" | ... ;
 ```

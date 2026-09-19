@@ -290,7 +290,7 @@ Linking this combination needs both paths: `-lqd -lqdrt -linterp -lqc -lu8t`.
 
 Interpreted code is typed by people and is wrong all the time, so nothing on this path ends the
 process. Arity is checked before an instruction runs, and everything else — type mismatch,
-division by zero, an out-of-range `pick` — runs inside a recovery point, so the runtime unwinds
+division by zero, an array index past the end — runs inside a recovery point, so the runtime unwinds
 back to the interpreter instead of exiting:
 
 ```c
