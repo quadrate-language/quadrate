@@ -115,22 +115,33 @@ namespace Qd {
 
 	static std::string integerLiteralProblem(const std::string& text) {
 		int64_t value = 0;
-		const char* begin = text.data();
-		const char* finish = text.data() + text.size();
 		int base = 10;
 		bool prefixed = false;
-		if (text.size() > 2 && text[0] == '0') {
-			if (text[1] == 'x' || text[1] == 'X') {
+
+		// The sign comes before the radix prefix, so it has to be stepped over to find one:
+		// `-0x10` is a hex literal, and testing text[0] for '0' says it is decimal and then
+		// rejects it at the 'x'.
+		size_t pos = (!text.empty() && text[0] == '-') ? 1 : 0;
+		const bool negative = pos == 1;
+		if (text.size() > pos + 2 && text[pos] == '0') {
+			if (text[pos + 1] == 'x' || text[pos + 1] == 'X') {
 				base = 16;
 				prefixed = true;
-			} else if (text[1] == 'b' || text[1] == 'B') {
+			} else if (text[pos + 1] == 'b' || text[pos + 1] == 'B') {
 				base = 2;
 				prefixed = true;
 			}
 		}
-		if (prefixed) {
-			begin += 2;
+
+		// from_chars does not accept the `0x`/`0b` prefix but does accept a sign in any base,
+		// so hand it the sign and the digits. Keeping the sign attached is what makes the
+		// bound exact: the magnitude of the most negative i64 does not fit a positive one.
+		std::string digits = text.substr(prefixed ? pos + 2 : pos);
+		if (negative) {
+			digits.insert(digits.begin(), '-');
 		}
+		const char* begin = digits.data();
+		const char* finish = digits.data() + digits.size();
 		auto [ptr, ec] = std::from_chars(begin, finish, value, base);
 		if (ec == std::errc() && ptr == finish) {
 			return "";

@@ -180,6 +180,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **u8t tokenizer updated to 1.4.0.**
 ### Fixed
 
+- **A negative hex or binary literal lexes and compiles.** `-0x10` came back from the
+  scanner as the integer `-0` followed by the identifier `x10`, and `-0b101` as `-0` and
+  `b101`: u8t's negative-number branch duplicated only the decimal path, so the `0x`/`0b`
+  prefix handling in the positive branch above it never ran. In an expression the stray
+  identifier was undefined and `quadc` said so, misleadingly (`Undefined identifier
+  'x10'`); in an enum value it was taken as the next variant, and the formatter wrote the
+  enum back split in two. Fixed upstream in libu8t 1.4.1, which factors the prefix
+  handling into one `scanner_scan_radix_literal` that both branches call;
+  `subprojects/u8t.wrap` is bumped to it and the two workarounds it forced — the
+  malformed-literal guard in `parseEnumDeclaration` and the decimal rewriting of enum
+  values, which discarded the author's spelling — are gone.
+  Both of the compiler's own literal parsers made the same assumption and are fixed with
+  it: `integerLiteralProblem` in the validator and `safeParseInt64` in the backend each
+  tested the *first* character for `'0'` to find a radix prefix, so a sign in front hid
+  it. Each now steps over the sign first and hands the sign and digits to `from_chars`
+  together, which is what keeps the bound exact — the magnitude of the most negative i64
+  does not fit a positive one, so `-0x8000000000000000` is in range while
+  `-0x8000000000000001` is not, and both are now reported as such rather than as an
+  invalid format. Found 2026-09-20 by `fuzz_formatter`.
 - **An unterminated `/*` or `"` is a parse error.** u8t ends a string token at end of
   file exactly as it does at a closing quote, and the comment reader stopped at end of
   file the same way, so both were accepted in silence: the swallowed text vanished and

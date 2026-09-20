@@ -65,25 +65,10 @@ namespace Qd {
 					}
 					if (token == U8T_INTEGER) {
 						const char* valText = u8t_scanner_token_text(scanner, &n);
-						// u8t 1.4.0 reads a leading '-' as part of a number but only along its
-						// decimal path, so `-0x10` comes back as the integer `-0` followed by
-						// the identifier `x10`. Everywhere else that identifier is undefined
-						// and the compiler says so; here it would have become the next variant,
-						// and the formatter would then have written the enum back split in two.
-						char32_t glued = peekNextChar(scanner, src);
-						if (std::isalnum(static_cast<int>(glued)) || glued == U'_') {
-							errorReporter->reportError(scanner, "Malformed integer literal in enum value");
-						}
 						int64_t val = static_cast<int64_t>(strtoll(valText, nullptr, 0));
-						bool radixPrefixed = valText[0] == '0' && (valText[1] == 'x' || valText[1] == 'X' ||
-																		  valText[1] == 'b' || valText[1] == 'B');
 						if (negative) {
 							val = -val;
-							// `= - 0x1` is read as minus one but cannot be written back as
-							// `-0x1`, which the lexer does not read (see TODO, Upstream), so a
-							// negative hex or binary value is recorded in decimal. A negative
-							// decimal keeps the spelling the author used.
-							valueText = radixPrefixed ? std::to_string(val) : "-" + std::string(valText);
+							valueText = "-" + std::string(valText);
 						} else {
 							valueText = valText;
 						}

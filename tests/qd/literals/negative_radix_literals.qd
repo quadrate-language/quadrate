@@ -1,0 +1,55 @@
+// Test: negative hex and binary literals
+// The sign comes before the radix prefix, so a parser that tests the first
+// character for '0' reads `-0x10` as decimal and then chokes on the 'x'.
+use bits
+
+enum Mask {
+	Low = -0x10
+	Bits = -0b101
+	High = 0x10
+	Plain = -1
+}
+
+fn main() {
+	// Negative hex
+	"=== Negative hex ===" print nl
+	-0x1 print nl
+	-0x10 print nl
+	-0xFF print nl
+	-0XFF print nl
+
+	// Negative binary
+	"=== Negative binary ===" print nl
+	-0b1 print nl
+	-0b101 print nl
+	-0b11111111 print nl
+	-0B1111 print nl
+
+	// Arithmetic with them
+	"=== Arithmetic ===" print nl
+	-0x10 0x10 + print nl      // 0
+	-0b101 -0b101 + print nl   // -10
+	-0xFF neg print nl         // 255
+	-0x10 0x2 * print nl       // -32
+
+	// Bitwise with them
+	"=== Bitwise ===" print nl
+	-0x10 0xFF bits::and print nl   // 240
+	-0b1 bits::not print nl         // 0
+
+	// The i64 bounds, where the magnitude of the most negative value does
+	// not fit a positive one
+	"=== Bounds ===" print nl
+	0x7FFFFFFFFFFFFFFF print nl
+	-0x8000000000000000 print nl
+	-0b1000000000000000000000000000000000000000000000000000000000000000 print nl
+
+	// In enum values
+	"=== Enum values ===" print nl
+	Mask::Low print nl
+	Mask::Bits print nl
+	Mask::High print nl
+	Mask::Plain print nl
+
+	"done" print nl
+}

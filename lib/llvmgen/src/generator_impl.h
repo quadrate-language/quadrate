@@ -369,17 +369,30 @@ namespace Qd {
 			if (str.empty()) {
 				return false;
 			}
-			if (str.size() > 2 && str[0] == '0') {
-				if (str[1] == 'x' || str[1] == 'X') {
-					auto [ptr, ec] = std::from_chars(str.data() + 2, str.data() + str.size(), out, 16);
-					return ec == std::errc() && ptr == str.data() + str.size();
-				} else if (str[1] == 'b' || str[1] == 'B') {
-					auto [ptr, ec] = std::from_chars(str.data() + 2, str.data() + str.size(), out, 2);
-					return ec == std::errc() && ptr == str.data() + str.size();
+			// The sign comes before the radix prefix, so it has to be stepped over to find one:
+			// `-0x10` is a hex literal, and testing str[0] for '0' says it is decimal and then
+			// rejects it at the 'x'.
+			const size_t pos = str[0] == '-' ? 1 : 0;
+			int base = 10;
+			bool prefixed = false;
+			if (str.size() > pos + 2 && str[pos] == '0') {
+				if (str[pos + 1] == 'x' || str[pos + 1] == 'X') {
+					base = 16;
+					prefixed = true;
+				} else if (str[pos + 1] == 'b' || str[pos + 1] == 'B') {
+					base = 2;
+					prefixed = true;
 				}
 			}
-			auto [ptr, ec] = std::from_chars(str.data(), str.data() + str.size(), out);
-			return ec == std::errc() && ptr == str.data() + str.size();
+			// from_chars does not accept the `0x`/`0b` prefix but does accept a sign in any base,
+			// so hand it the sign and the digits. Keeping the sign attached is what makes the
+			// bound exact: the magnitude of the most negative i64 does not fit a positive one.
+			std::string digits = str.substr(prefixed ? pos + 2 : pos);
+			if (pos == 1) {
+				digits.insert(digits.begin(), '-');
+			}
+			auto [ptr, ec] = std::from_chars(digits.data(), digits.data() + digits.size(), out, base);
+			return ec == std::errc() && ptr == digits.data() + digits.size();
 		}
 
 		// Local variables
