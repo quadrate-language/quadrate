@@ -1,0 +1,7 @@
+use hof
+
+fn main() {
+	3 fn(x:i64 -- r:i64){dup *} call -> a  4 fn(y:i64 -- r:i64){1 +} call -> b
+	a print nl
+	b print nl
+}

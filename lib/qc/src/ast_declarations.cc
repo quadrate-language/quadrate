@@ -62,6 +62,35 @@ namespace Qd {
 	 * referenced inside the anonymous function that is defined in an enclosing
 	 * scope will be captured implicitly.
 	 */
+	// Read the type arguments of `Type<...>` onto `typeStr`; the caller has consumed the
+	// '<'. A brace can never be a type argument, and skipping over one swallowed the body's
+	// own brace -- `fn i(){fn(i<}>--){}}` parsed clean one `}` short of what it had read --
+	// so it ends the run and is reported.
+	static void parseTypeArgumentList(u8t_scanner* scanner, ErrorReporter* errorReporter, std::string& typeStr) {
+		size_t n;
+		typeStr += "<";
+		int depth = 1;
+		while (depth > 0) {
+			char32_t token = u8t_scanner_scan(scanner);
+			if (token == '<') {
+				depth++;
+				typeStr += "<";
+			} else if (token == '>') {
+				depth--;
+				typeStr += ">";
+			} else if (token == ',') {
+				typeStr += ",";
+			} else if (token == U8T_IDENTIFIER) {
+				typeStr += std::string(u8t_scanner_token_text(scanner, &n));
+			} else if (token == U8T_EOF) {
+				break; // Prevent infinite loop on malformed input
+			} else if (token == '{' || token == '}') {
+				errorReporter->reportError(scanner, "Unexpected '{' or '}' in type arguments");
+				break;
+			}
+		}
+	}
+
 	IAstNode* parseAnonymousFunction(
 			u8t_scanner* scanner, ErrorReporter* errorReporter, const char* src, bool isStack) {
 		auto func = std::make_unique<AstNodeAnonymousFunction>();
@@ -87,11 +116,28 @@ namespace Qd {
 				break;
 			}
 
+			// A brace or a slash can never appear in a parameter list, and the loop below
+			// skips tokens it does not recognise -- so `fn n(){fn(}){}}` let the signature
+			// swallow the body's braces, and `fn a(){fn(//){` let it read a comment's `){`
+			// as parameters. Everything downstream that counts braces (the formatter most
+			// of all) then disagreed with the parser about where the body was. Stop here
+			// instead, leaving the scanner on the offending token for the body parse.
+			if (token == '{' || token == '}' || token == '/') {
+				errorReporter->reportError(scanner, "Unexpected '{', '}' or '/' in parameter list");
+				break;
+			}
+
 			if (token == '-') {
 				char32_t nextToken = u8t_scanner_scan(scanner);
 				if (nextToken == '-') {
 					isOutput = true;
 					anonHasSeparator = true;
+				} else {
+					// A lone '-' is not the `--` separator and nothing else spells it. The token
+					// after has already been scanned, so accepting this in silence swallowed it:
+					// `fn m(){fn(-}){}}` lost the brace that closed the signature's block.
+					errorReporter->reportError(scanner, "Expected '--' between inputs and outputs");
+					break;
 				}
 			} else if (token == U8T_IDENTIFIER) {
 				anonHasParams = true;
@@ -109,22 +155,29 @@ namespace Qd {
 					// Get the type
 					token = u8t_scanner_scan(scanner);
 					if (token == '[') {
-						// Array type: []T
+						// Array type: []T. Both halves used to be optional in practice: the
+						// tokens were scanned and, if they were not what `[]T` wants, dropped
+						// without a word, so `fn([<vt>){}}` consumed the `)` that ended the
+						// signature and the file still parsed.
 						token = u8t_scanner_scan(scanner);
-						if (token == ']') {
-							token = u8t_scanner_scan(scanner);
-							if (token == U8T_IDENTIFIER) {
-								const char* elemType = u8t_scanner_token_text(scanner, &n);
-								std::string paramTypeStr = "[]" + std::string(elemType);
-								AstNodeParameter* param = new AstNodeParameter(paramNameStr, paramTypeStr, isOutput);
-								setNodePosition(param, scanner, src);
-								param->setParent(func.get());
-								if (isOutput) {
-									func->addOutputParameter(param);
-								} else {
-									func->addInputParameter(param);
-								}
-							}
+						if (token != ']') {
+							errorReporter->reportError(scanner, "Expected ']' after '[' in an array type");
+							break;
+						}
+						token = u8t_scanner_scan(scanner);
+						if (token != U8T_IDENTIFIER) {
+							errorReporter->reportError(scanner, "Expected an element type after '[]'");
+							break;
+						}
+						const char* elemType = u8t_scanner_token_text(scanner, &n);
+						std::string paramTypeStr = "[]" + std::string(elemType);
+						AstNodeParameter* param = new AstNodeParameter(paramNameStr, paramTypeStr, isOutput);
+						setNodePosition(param, scanner, src);
+						param->setParent(func.get());
+						if (isOutput) {
+							func->addOutputParameter(param);
+						} else {
+							func->addInputParameter(param);
 						}
 					} else if (token == U8T_IDENTIFIER) {
 						const char* paramType = u8t_scanner_token_text(scanner, &n);
@@ -162,24 +215,7 @@ namespace Qd {
 						char32_t peekAngle = u8t_scanner_peek(scanner);
 						if (peekAngle == '<') {
 							u8t_scanner_scan(scanner); // consume '<'
-							paramTypeStr += "<";
-							int depth = 1;
-							while (depth > 0) {
-								token = u8t_scanner_scan(scanner);
-								if (token == '<') {
-									depth++;
-									paramTypeStr += "<";
-								} else if (token == '>') {
-									depth--;
-									paramTypeStr += ">";
-								} else if (token == ',') {
-									paramTypeStr += ",";
-								} else if (token == U8T_IDENTIFIER) {
-									paramTypeStr += std::string(u8t_scanner_token_text(scanner, &n));
-								} else if (token == U8T_EOF) {
-									break; // Prevent infinite loop on malformed input
-								}
-							}
+							parseTypeArgumentList(scanner, errorReporter, paramTypeStr);
 						}
 						AstNodeParameter* param = new AstNodeParameter(paramNameStr, paramTypeStr, isOutput);
 						setNodePosition(param, scanner, src);
@@ -189,6 +225,12 @@ namespace Qd {
 						} else {
 							func->addInputParameter(param);
 						}
+					} else {
+						// A type is an identifier or `[]T`; anything else here has been scanned
+						// and is gone. `fn a(){fn(n:}--){}}` lost the brace that closed the
+						// signature's block that way and still parsed clean.
+						errorReporter->reportError(scanner, "Expected a type name after ':'");
+						break;
 					}
 				} else if (isTypeName(paramNameStr)) {
 					// Unnamed typed parameter (e.g., fn (i64 -- i64) { ... })
@@ -207,24 +249,7 @@ namespace Qd {
 					// Unnamed generic type parameter (e.g., fn (Vec<i64> -- ) { ... })
 					std::string typeStr = paramNameStr;
 					u8t_scanner_scan(scanner); // consume '<'
-					typeStr += "<";
-					int depth = 1;
-					while (depth > 0) {
-						token = u8t_scanner_scan(scanner);
-						if (token == '<') {
-							depth++;
-							typeStr += "<";
-						} else if (token == '>') {
-							depth--;
-							typeStr += ">";
-						} else if (token == ',') {
-							typeStr += ",";
-						} else if (token == U8T_IDENTIFIER) {
-							typeStr += std::string(u8t_scanner_token_text(scanner, &n));
-						} else if (token == U8T_EOF) {
-							break;
-						}
-					}
+					parseTypeArgumentList(scanner, errorReporter, typeStr);
 					AstNodeParameter* param = new AstNodeParameter("", typeStr, isOutput);
 					setNodePosition(param, scanner, src);
 					param->setParent(func.get());
@@ -251,22 +276,26 @@ namespace Qd {
 					}
 				}
 			} else if (token == '[') {
-				// Unnamed array type parameter: []T
+				// Unnamed array type parameter: []T -- same as the named form above.
 				token = u8t_scanner_scan(scanner);
-				if (token == ']') {
-					token = u8t_scanner_scan(scanner);
-					if (token == U8T_IDENTIFIER) {
-						const char* elemType = u8t_scanner_token_text(scanner, &n);
-						std::string typeStr = "[]" + std::string(elemType);
-						AstNodeParameter* param = new AstNodeParameter("", typeStr, isOutput);
-						setNodePosition(param, scanner, src);
-						param->setParent(func.get());
-						if (isOutput) {
-							func->addOutputParameter(param);
-						} else {
-							func->addInputParameter(param);
-						}
-					}
+				if (token != ']') {
+					errorReporter->reportError(scanner, "Expected ']' after '[' in an array type");
+					break;
+				}
+				token = u8t_scanner_scan(scanner);
+				if (token != U8T_IDENTIFIER) {
+					errorReporter->reportError(scanner, "Expected an element type after '[]'");
+					break;
+				}
+				const char* elemType = u8t_scanner_token_text(scanner, &n);
+				std::string typeStr = "[]" + std::string(elemType);
+				AstNodeParameter* param = new AstNodeParameter("", typeStr, isOutput);
+				setNodePosition(param, scanner, src);
+				param->setParent(func.get());
+				if (isOutput) {
+					func->addOutputParameter(param);
+				} else {
+					func->addInputParameter(param);
 				}
 			} else if (token == U8T_IDENTIFIER) {
 				// Check for unnamed fn(...) type parameter
@@ -479,11 +508,22 @@ namespace Qd {
 				break;
 			}
 
+			// As in parseAnonymousFunction above: a brace or a slash is not a parameter, and
+			// skipping it let the signature swallow the body's own braces.
+			if (token == '{' || token == '}' || token == '/') {
+				errorReporter->reportError(scanner, "Unexpected '{', '}' or '/' in parameter list");
+				break;
+			}
+
 			if (token == '-') {
 				char32_t nextToken = u8t_scanner_scan(scanner);
 				if (nextToken == '-') {
 					isOutput = true;
 					hasSeparator = true;
+				} else {
+					// Same as above: the token after a lone '-' has been scanned and is gone.
+					errorReporter->reportError(scanner, "Expected '--' between inputs and outputs");
+					break;
 				}
 			} else if (token == U8T_IDENTIFIER) {
 				hasParams = true;
@@ -498,22 +538,29 @@ namespace Qd {
 					// Get the type
 					token = u8t_scanner_scan(scanner);
 					if (token == '[') {
-						// Array type: []T
+						// Array type: []T. Both halves used to be optional in practice: the
+						// tokens were scanned and, if they were not what `[]T` wants, dropped
+						// without a word, so `fn([<vt>){}}` consumed the `)` that ended the
+						// signature and the file still parsed.
 						token = u8t_scanner_scan(scanner);
-						if (token == ']') {
-							token = u8t_scanner_scan(scanner);
-							if (token == U8T_IDENTIFIER) {
-								const char* elemType = u8t_scanner_token_text(scanner, &n);
-								std::string paramTypeStr = "[]" + std::string(elemType);
-								AstNodeParameter* param = new AstNodeParameter(paramNameStr, paramTypeStr, isOutput);
-								setNodePosition(param, scanner, src);
-								param->setParent(func.get());
-								if (isOutput) {
-									func->addOutputParameter(param);
-								} else {
-									func->addInputParameter(param);
-								}
-							}
+						if (token != ']') {
+							errorReporter->reportError(scanner, "Expected ']' after '[' in an array type");
+							break;
+						}
+						token = u8t_scanner_scan(scanner);
+						if (token != U8T_IDENTIFIER) {
+							errorReporter->reportError(scanner, "Expected an element type after '[]'");
+							break;
+						}
+						const char* elemType = u8t_scanner_token_text(scanner, &n);
+						std::string paramTypeStr = "[]" + std::string(elemType);
+						AstNodeParameter* param = new AstNodeParameter(paramNameStr, paramTypeStr, isOutput);
+						setNodePosition(param, scanner, src);
+						param->setParent(func.get());
+						if (isOutput) {
+							func->addOutputParameter(param);
+						} else {
+							func->addInputParameter(param);
 						}
 					} else if (token == U8T_IDENTIFIER) {
 						const char* paramType = u8t_scanner_token_text(scanner, &n);
@@ -551,24 +598,7 @@ namespace Qd {
 						char32_t peekAngle = u8t_scanner_peek(scanner);
 						if (peekAngle == '<') {
 							u8t_scanner_scan(scanner); // consume '<'
-							paramTypeStr += "<";
-							int depth = 1;
-							while (depth > 0) {
-								token = u8t_scanner_scan(scanner);
-								if (token == '<') {
-									depth++;
-									paramTypeStr += "<";
-								} else if (token == '>') {
-									depth--;
-									paramTypeStr += ">";
-								} else if (token == ',') {
-									paramTypeStr += ",";
-								} else if (token == U8T_IDENTIFIER) {
-									paramTypeStr += std::string(u8t_scanner_token_text(scanner, &n));
-								} else if (token == U8T_EOF) {
-									break; // Prevent infinite loop on malformed input
-								}
-							}
+							parseTypeArgumentList(scanner, errorReporter, paramTypeStr);
 						}
 						AstNodeParameter* param = new AstNodeParameter(paramNameStr, paramTypeStr, isOutput);
 						setNodePosition(param, scanner, src);
@@ -578,6 +608,12 @@ namespace Qd {
 						} else {
 							func->addInputParameter(param);
 						}
+					} else {
+						// A type is an identifier or `[]T`; anything else here has been scanned
+						// and is gone. `fn a(){fn(n:}--){}}` lost the brace that closed the
+						// signature's block that way and still parsed clean.
+						errorReporter->reportError(scanner, "Expected a type name after ':'");
+						break;
 					}
 				} else if (isTypeName(paramNameStr)) {
 					// Unnamed typed parameter (e.g., fn foo(i64 f64 -- i64))
@@ -593,24 +629,7 @@ namespace Qd {
 					// Unnamed generic type parameter (e.g., fn foo(Vec<i64> -- ))
 					std::string typeStr = paramNameStr;
 					u8t_scanner_scan(scanner); // consume '<'
-					typeStr += "<";
-					int depth = 1;
-					while (depth > 0) {
-						token = u8t_scanner_scan(scanner);
-						if (token == '<') {
-							depth++;
-							typeStr += "<";
-						} else if (token == '>') {
-							depth--;
-							typeStr += ">";
-						} else if (token == ',') {
-							typeStr += ",";
-						} else if (token == U8T_IDENTIFIER) {
-							typeStr += std::string(u8t_scanner_token_text(scanner, &n));
-						} else if (token == U8T_EOF) {
-							break;
-						}
-					}
+					parseTypeArgumentList(scanner, errorReporter, typeStr);
 					AstNodeParameter* param = new AstNodeParameter("", typeStr, isOutput);
 					setNodePosition(param, scanner, src);
 					param->setParent(func.get());
@@ -634,22 +653,26 @@ namespace Qd {
 					}
 				}
 			} else if (token == '[') {
-				// Unnamed array type parameter: []T
+				// Unnamed array type parameter: []T -- same as the named form above.
 				token = u8t_scanner_scan(scanner);
-				if (token == ']') {
-					token = u8t_scanner_scan(scanner);
-					if (token == U8T_IDENTIFIER) {
-						const char* elemType = u8t_scanner_token_text(scanner, &n);
-						std::string typeStr = "[]" + std::string(elemType);
-						AstNodeParameter* param = new AstNodeParameter("", typeStr, isOutput);
-						setNodePosition(param, scanner, src);
-						param->setParent(func.get());
-						if (isOutput) {
-							func->addOutputParameter(param);
-						} else {
-							func->addInputParameter(param);
-						}
-					}
+				if (token != ']') {
+					errorReporter->reportError(scanner, "Expected ']' after '[' in an array type");
+					break;
+				}
+				token = u8t_scanner_scan(scanner);
+				if (token != U8T_IDENTIFIER) {
+					errorReporter->reportError(scanner, "Expected an element type after '[]'");
+					break;
+				}
+				const char* elemType = u8t_scanner_token_text(scanner, &n);
+				std::string typeStr = "[]" + std::string(elemType);
+				AstNodeParameter* param = new AstNodeParameter("", typeStr, isOutput);
+				setNodePosition(param, scanner, src);
+				param->setParent(func.get());
+				if (isOutput) {
+					func->addOutputParameter(param);
+				} else {
+					func->addInputParameter(param);
 				}
 			} else if (token == U8T_IDENTIFIER) {
 				// Check for unnamed fn(...) type parameter
@@ -718,6 +741,7 @@ namespace Qd {
 		}
 
 		size_t n;
+		noteUnterminatedString(scanner, src);
 		const char* nameStr = u8t_scanner_token_text(scanner, &n);
 		// Strip quotes from string literal
 		std::string testName(nameStr);

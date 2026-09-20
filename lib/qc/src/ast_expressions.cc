@@ -18,16 +18,9 @@ namespace Qd {
 			setNodePosition(node, scanner, src);
 			return node;
 		} else if (token == U8T_STRING) {
-			// u8t ends a string token at EOF exactly as it does at a closing quote, so an
-			// unterminated literal silently swallows the rest of the file and the parser
-			// then blames the missing '}' at the last line. Detect it here, where the
-			// position still points at the opening quote.
-			const size_t startChar = u8t_scanner_token_start(scanner);
-			const size_t lenChars = u8t_scanner_token_len(scanner);
-			const size_t endByte = fastCharToByteOffset(src, startChar + lenChars);
-			const size_t srcLen = strlen(src);
-			if (lenChars < 2 || endByte == 0 || endByte > srcLen || src[endByte - 1] != '"') {
-				errorReporter->reportError(scanner, "Unterminated string literal");
+			if (!noteUnterminatedString(scanner, src)) {
+				// Building a literal out of the rest of the file helps nobody; Ast::generate
+				// reports the unterminated quote once the parse is done.
 				return nullptr;
 			}
 			const char* text = u8t_scanner_token_text(scanner, n);
@@ -335,7 +328,10 @@ namespace Qd {
 				setNodePosition(deferStmt, scanner, src);
 				token = u8t_scanner_scan(scanner);
 
-				// Check if defer has a block
+				// `defer` always takes a block (spec 6.6). Anything else here has already been
+				// scanned and cannot be pushed back, so accepting it in silence swallowed it:
+				// `defer` followed by the `}` that closed the enclosing block consumed that
+				// brace, and the file still parsed clean one `}` short of what it read.
 				if (token == '{') {
 					// Parse defer block - wrap it in a block node
 					AstNodeBlock* deferBlock = new AstNodeBlock();
@@ -345,6 +341,8 @@ namespace Qd {
 					// Add the block as a child of defer
 					deferBlock->setParent(deferStmt);
 					deferStmt->addChild(deferBlock);
+				} else {
+					errorReporter->reportError(scanner, "Expected '{' after 'defer'");
 				}
 				return deferStmt;
 			}
@@ -571,10 +569,15 @@ namespace Qd {
 						}
 						return scoped;
 					}
+					// `::` with nothing that can follow it. The token after has already been
+					// scanned and cannot be pushed back, so leaving it unreported swallowed
+					// it: `fn m(){i::}}` lost the brace that closed the body and still parsed
+					// clean, and the formatter then rebuilt the function without it.
+					errorReporter->reportError(scanner, "Expected a name after '::'");
+					return nullptr;
 				}
-				// Not a valid scoped identifier, create regular identifier
-				// Note: We already consumed the first ':', so we can't undo that.
-				// This is an edge case that shouldn't normally happen.
+				// A lone ':' that did not begin a scope -- a type annotation, say. It has
+				// been consumed either way; fall through and treat the identifier on its own.
 			}
 
 			// Check if this is struct construction: StructName { ... } or StructName<T> { ... }

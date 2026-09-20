@@ -1816,54 +1816,78 @@ run_helgrind_tests() {
 
 run_fuzz_tests() {
     local suite="fuzz"
+    # fuzz_parser and fuzz_formatter share the seed corpus; fuzz_lsp_text reads a
+    # line/character pair off the front of its input, so the .qd seeds mean nothing
+    # to it and it starts from scratch.
+    local -a targets=(fuzz_parser fuzz_formatter fuzz_lsp_text)
 
-    if ! should_run_test "$suite" "fuzz_parser"; then
-        return
-    fi
+    local -a selected=()
+    for target in "${targets[@]}"; do
+        if should_run_test "$suite" "$target"; then
+            selected+=("$target")
+        fi
+    done
+    [[ ${#selected[@]} -eq 0 ]] && return
 
     if ! command -v clang++ &> /dev/null; then
-        log_skip "$suite" "fuzz_parser" "clang++ not found"
+        for target in "${selected[@]}"; do
+            log_skip "$suite" "$target" "clang++ not found"
+        done
         return
     fi
 
-    print_header "Fuzz Tests ${DIM}(${FUZZ_TIME}s)${NC}"
+    print_header "Fuzz Tests ${DIM}(${FUZZ_TIME}s each)${NC}"
 
     local fuzz_build="$PROJECT_ROOT/build/fuzz"
-    local fuzz_exe="$fuzz_build/tests/fuzz/fuzz_parser"
-
-    if [[ ! -x "$fuzz_exe" ]]; then
-        echo -e "  ${DIM}Building fuzz target...${NC}"
-        local build_output
-        if ! build_output=$(CC=clang CXX=clang++ meson setup "$fuzz_build" --buildtype=debug -Dbuild_fuzz=true 2>&1); then
-            log_fail "$suite" "fuzz_parser" "build setup failed" "$build_output"
-            return
-        fi
-        if ! build_output=$(meson compile -C "$fuzz_build" tests/fuzz/fuzz_parser 2>&1); then
-            log_fail "$suite" "fuzz_parser" "build failed" "$build_output"
-            return
-        fi
-    fi
-
     local corpus_dir="$PROJECT_ROOT/tests/fuzz/corpus"
-    local crash_dir="$TEMP_DIR/fuzz_crashes"
-    mkdir -p "$crash_dir"
 
-    # Disable leak detection for fuzz tests - valgrind tests cover memory leaks
-    # This prevents false positives from different ASan versions across platforms
-    ASAN_OPTIONS=detect_leaks=0 "$fuzz_exe" "$corpus_dir" \
-        -max_len=5000 \
-        -max_total_time="$FUZZ_TIME" \
-        -artifact_prefix="$crash_dir/" \
-        > /dev/null 2>&1
+    CURRENT_TEST_TOTAL=${#selected[@]}
+    CURRENT_TEST_NUM=0
 
-    local crash_count=$(find "$crash_dir" -type f 2>/dev/null | wc -l)
+    for target in "${selected[@]}"; do
+        CURRENT_TEST_NUM=$((CURRENT_TEST_NUM + 1))
+        local fuzz_exe="$fuzz_build/tests/fuzz/$target"
 
-    if [[ $crash_count -gt 0 ]]; then
-        local crash_files=$(ls "$crash_dir" 2>/dev/null | head -5)
-        log_fail "$suite" "fuzz_parser" "$crash_count crash(es) found" "Crashes saved to: $crash_dir\n$crash_files"
-    else
-        log_pass "$suite" "fuzz_parser"
-    fi
+        # Always compile: meson is a no-op when the target is current, and skipping it
+        # when the binary merely exists ran a fuzzer built from stale sources.
+        echo -e "  ${DIM}Building $target...${NC}"
+        local build_output
+        if [[ ! -f "$fuzz_build/build.ninja" ]]; then
+            if ! build_output=$(CC=clang CXX=clang++ meson setup "$fuzz_build" --buildtype=debug -Dbuild_fuzz=true 2>&1); then
+                log_fail "$suite" "$target" "build setup failed" "$build_output"
+                continue
+            fi
+        fi
+        if ! build_output=$(meson compile -C "$fuzz_build" "tests/fuzz/$target" 2>&1); then
+            log_fail "$suite" "$target" "build failed" "$build_output"
+            continue
+        fi
+
+        local crash_dir="$TEMP_DIR/fuzz_crashes_$target"
+        mkdir -p "$crash_dir"
+
+        local -a corpus_arg=()
+        [[ "$target" != "fuzz_lsp_text" ]] && corpus_arg=("$corpus_dir")
+
+        # Disable leak detection for fuzz tests - valgrind tests cover memory leaks
+        # This prevents false positives from different ASan versions across platforms
+        ASAN_OPTIONS=detect_leaks=0 "$fuzz_exe" "${corpus_arg[@]}" \
+            -max_len=5000 \
+            -max_total_time="$FUZZ_TIME" \
+            -artifact_prefix="$crash_dir/" \
+            > /dev/null 2>&1
+
+        local crash_count=$(find "$crash_dir" -type f 2>/dev/null | wc -l)
+
+        if [[ $crash_count -gt 0 ]]; then
+            local crash_files=$(ls "$crash_dir" 2>/dev/null | head -5)
+            log_fail "$suite" "$target" "$crash_count crash(es) found" "Crashes saved to: $crash_dir\n$crash_files"
+        else
+            log_pass "$suite" "$target"
+        fi
+    done
+
+    CURRENT_TEST_TOTAL=0
 }
 
 # List all available tests
@@ -1933,6 +1957,8 @@ list_all_tests() {
 
     echo "Fuzz Tests (suite: fuzz):"
     echo "  fuzz_parser"
+    echo "  fuzz_formatter"
+    echo "  fuzz_lsp_text"
 }
 
 # Print summary

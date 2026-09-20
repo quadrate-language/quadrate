@@ -1,4 +1,6 @@
 #include "ast_parse.h"
+
+#include <algorithm>
 #include <quadrate/qc/ast_node_global_var.h>
 #include <quadrate/qc/ast_node_struct_construction.h>
 
@@ -34,7 +36,7 @@ namespace Qd {
 
 	// Helper to parse constant value after '=' (handles literals and env() function)
 	// Returns the resolved string value, or empty string on error
-	static std::string parseConstantValue(u8t_scanner* scanner, ErrorReporter* errorReporter) {
+	static std::string parseConstantValue(u8t_scanner* scanner, ErrorReporter* errorReporter, const char* src) {
 		size_t n;
 		char32_t token = u8t_scanner_scan(scanner);
 
@@ -55,6 +57,7 @@ namespace Qd {
 					errorReporter->reportError(scanner, "Expected string argument for environment variable name");
 					return "";
 				}
+				noteUnterminatedString(scanner, src);
 				const char* envNameText = u8t_scanner_token_text(scanner, &n);
 				// Remove quotes from string
 				std::string envName(envNameText);
@@ -74,6 +77,7 @@ namespace Qd {
 						errorReporter->reportError(scanner, "Expected string for default value in env()");
 						return "";
 					}
+					noteUnterminatedString(scanner, src);
 					const char* defaultText = u8t_scanner_token_text(scanner, &n);
 					defaultValue = std::string(defaultText);
 					// Remove quotes from string
@@ -115,6 +119,7 @@ namespace Qd {
 			return std::string(valueText);
 		} else if (token == U8T_STRING) {
 			// Keep quotes so LLVM generator knows it's a string
+			noteUnterminatedString(scanner, src);
 			const char* valueText = u8t_scanner_token_text(scanner, &n);
 			return std::string(valueText);
 		}
@@ -260,6 +265,9 @@ namespace Qd {
 				sourceExpr = refName;
 			}
 		} else if (token == U8T_INTEGER || token == U8T_FLOAT || token == U8T_STRING) {
+			if (token == U8T_STRING) {
+				noteUnterminatedString(scanner, src);
+			}
 			value = u8t_scanner_token_text(scanner, &n);
 			sourceExpr = value;
 		} else {
@@ -342,6 +350,14 @@ namespace Qd {
 
 		ErrorReporter errorReporter(src, filename);
 		errorReporter.setStoreErrors(true);
+
+		// parseComment and noteUnterminatedString record an unterminated /* or " here
+		// rather than reporting it themselves; reset both so a previous parse on this
+		// thread cannot leak into this one.
+		gUnterminatedBlockCommentLine = 0;
+		gUnterminatedBlockCommentColumn = 0;
+		gUnterminatedStringLine = 0;
+		gUnterminatedStringColumn = 0;
 
 		mRoot = std::make_unique<AstProgram>();
 		setNodePosition(mRoot.get(), &scanner, src);
@@ -465,7 +481,7 @@ namespace Qd {
 								std::string constNameStr(constName);
 								token = u8t_scanner_scan(&scanner);
 								if (token == '=') {
-									std::string value = parseConstantValue(&scanner, &errorReporter);
+									std::string value = parseConstantValue(&scanner, &errorReporter, src);
 									if (!value.empty()) {
 										AstNodeConstant* constDecl =
 												new AstNodeConstant(constNameStr, value.c_str(), true);
@@ -553,6 +569,7 @@ namespace Qd {
 
 					if (token == U8T_STRING) {
 						// Quoted path: use "path/to/file.qd"
+						noteUnterminatedString(&scanner, src);
 						const char* pathLiteral = u8t_scanner_token_text(&scanner, &n);
 						std::string path(pathLiteral);
 						// Strip quotes from string literal
@@ -598,6 +615,7 @@ namespace Qd {
 						errorReporter.reportError(&scanner, "Expected library name (string) after 'import'");
 						break;
 					}
+					noteUnterminatedString(&scanner, src);
 					const char* libName = u8t_scanner_token_text(&scanner, &n);
 					// Strip quotes from string literal
 					std::string library(libName);
@@ -623,6 +641,7 @@ namespace Qd {
 						errorReporter.reportError(&scanner, "Expected namespace name (string) after 'as'");
 						break;
 					}
+					noteUnterminatedString(&scanner, src);
 					const char* nsName = u8t_scanner_token_text(&scanner, &n);
 					// Strip quotes from string literal
 					std::string namespaceName(nsName);
@@ -828,7 +847,7 @@ namespace Qd {
 						std::string constNameStr(constName);
 						token = u8t_scanner_scan(&scanner);
 						if (token == '=') {
-							std::string value = parseConstantValue(&scanner, &errorReporter);
+							std::string value = parseConstantValue(&scanner, &errorReporter, src);
 							if (!value.empty()) {
 								AstNodeConstant* constDecl = new AstNodeConstant(constNameStr, value.c_str());
 								setNodePosition(constDecl, &scanner, src);
@@ -880,12 +899,62 @@ namespace Qd {
 			}
 		}
 
+		// A block comment the lexer ran to the end of the file looking for `*/` swallowed
+		// everything after it, including the braces that closed the enclosing blocks. Left
+		// unreported it read as a clean parse of a shorter program, and the formatter then
+		// re-emitted the comment with a `*/` the author never wrote.
+		if (gUnterminatedBlockCommentLine != 0) {
+			errorReporter.reportError(gUnterminatedBlockCommentLine, gUnterminatedBlockCommentColumn,
+					"Unterminated block comment (reached end of file looking for '*/')");
+			gUnterminatedBlockCommentLine = 0;
+			gUnterminatedBlockCommentColumn = 0;
+		}
+
+		// Same shape for a string: u8t ends the token at EOF, so `use "abc` took the rest
+		// of the file as a module name and the formatter re-emitted it, growing the
+		// literal by a newline on every pass.
+		if (gUnterminatedStringLine != 0) {
+			errorReporter.reportError(
+					gUnterminatedStringLine, gUnterminatedStringColumn, "Unterminated string literal");
+			gUnterminatedStringLine = 0;
+			gUnterminatedStringColumn = 0;
+		}
+
 		// Expand STRING_INTERPOLATION nodes before semantic validation sees them
 		expandAllStringInterpolations(mRoot.get());
 
 		// Store the error count and details for later checking
 		mErrorCount = errorReporter.errorCount();
 		mErrors = errorReporter.getErrors();
+
+		// Parsing runs left to right, so the errors come out in source order -- except the
+		// two reported just above, which are only known once the whole file has been read.
+		// Sorting by position puts those back where they belong; the index breaks ties, so
+		// reports at one position keep the order they were made in. (An index rather than
+		// std::stable_sort: that allocates a temporary buffer through libstdc++'s
+		// get_temporary_buffer, which ASan reports as an alloc-dealloc mismatch and which
+		// aborts every fuzz run.)
+		std::vector<size_t> order(mErrors.size());
+		for (size_t i = 0; i < order.size(); i++) {
+			order[i] = i;
+		}
+		std::sort(order.begin(), order.end(), [this](size_t a, size_t b) {
+			const ErrorInfo& x = mErrors[a];
+			const ErrorInfo& y = mErrors[b];
+			if (x.line != y.line) {
+				return x.line < y.line;
+			}
+			if (x.column != y.column) {
+				return x.column < y.column;
+			}
+			return a < b;
+		});
+		std::vector<ErrorInfo> ordered;
+		ordered.reserve(mErrors.size());
+		for (size_t i : order) {
+			ordered.push_back(mErrors[i]);
+		}
+		mErrors = std::move(ordered);
 
 		// Clear thread-local source maps pointer
 		tCurrentSourceMaps = nullptr;

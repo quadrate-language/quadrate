@@ -1,6 +1,16 @@
 # Fuzzing
 
-This directory contains fuzzing targets for the Quadrate parser using libFuzzer.
+This directory contains the fuzzing targets for Quadrate, built with libFuzzer.
+
+| Target | What it asserts |
+| --- | --- |
+| `fuzz_parser` | The parser handles any input without crashing. |
+| `fuzz_formatter` | For any input the parser accepts: the formatted output parses, and formatting it again changes nothing. |
+| `fuzz_lsp_text` | `lspGetWordAtPosition` stays in bounds for any document and any line/character pair, and returns a word off the line it was asked for. |
+
+`fuzz_parser` and `fuzz_formatter` share the seed corpus. `fuzz_lsp_text` reads the
+position off the first four bytes of its input, so the `.qd` seeds mean nothing to it
+and it is run without the corpus.
 
 ## Quick start
 
@@ -10,14 +20,20 @@ Fuzz tests are integrated into the test runner:
 # Run quick 10-second fuzz test (part of make tests)
 make tests
 
-# Run fuzz tests only
+# Run fuzz tests only (all three targets)
 bash tests/run_all.sh --suite fuzz
 
-# Run longer fuzz session
+# Run one target
+bash tests/run_all.sh --suite fuzz --test fuzz_formatter
+
+# Run longer fuzz session (per target)
 bash tests/run_all.sh --suite fuzz --fuzz-time 60
 
 # Extended fuzzing via make
 make fuzz TIME=300
+
+# Extended fuzzing of another target
+make fuzz TARGET=fuzz_formatter TIME=300
 ```
 
 ## Prerequisites
@@ -36,6 +52,8 @@ meson compile -C build/fuzz
 ```
 
 ## Running the fuzzer
+
+Substitute `fuzz_formatter` for `fuzz_parser` below to run that target instead.
 
 ```bash
 # Basic run (uses seed corpus)
@@ -60,6 +78,8 @@ The `corpus/` directory contains seed inputs for the fuzzer:
 
 - Valid Quadrate source files from the test suite
 - Edge case inputs (empty, deeply nested, etc.)
+- `edge_*` reproducers for bugs that have been fixed, so a regression is caught in the
+  first seconds of a run rather than after the fuzzer rediscovers the shape
 
 The fuzzer will mutate these inputs to find crashes.
 

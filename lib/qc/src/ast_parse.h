@@ -148,6 +148,58 @@ namespace Qd {
 		return name == "i64" || name == "f64" || name == "str" || name == "ptr" || name == "any";
 	}
 
+	// Where the first unterminated block comment in the current parse started, or
+	// {0, 0} when there is none. parseComment cannot reach the ErrorReporter -- it is
+	// called from seven places that do not all hold one -- so it records the position
+	// here and Ast::generate reports it once the parse is done. Per thread, like
+	// gParseDepth, because the language server parses from several.
+	inline thread_local size_t gUnterminatedBlockCommentLine = 0;
+	inline thread_local size_t gUnterminatedBlockCommentColumn = 0;
+
+	// Where the first unterminated string literal in the current parse started, or
+	// {0, 0} when there is none. Recorded rather than reported for the same reason as
+	// the block comment above: most of the sites that consume a U8T_STRING token have
+	// no ErrorReporter to hand.
+	inline thread_local size_t gUnterminatedStringLine = 0;
+	inline thread_local size_t gUnterminatedStringColumn = 0;
+
+	// u8t ends a string token at EOF exactly as it does at a closing quote, so an
+	// unterminated literal silently swallows the rest of the file and the parser then
+	// blames whatever is missing at the last line -- or, for `use "abc`, accepts the
+	// rest of the file as a module name. Returns false for such a token and records
+	// where it started, so Ast::generate can report it once for the whole parse.
+	// Every place that consumes a U8T_STRING has to call this.
+	inline bool noteUnterminatedString(u8t_scanner* scanner, const char* src) {
+		const size_t startChar = u8t_scanner_token_start(scanner);
+		const size_t lenChars = u8t_scanner_token_len(scanner);
+		const size_t endByte = fastCharToByteOffset(src, startChar + lenChars);
+		const size_t srcLen = strlen(src);
+		if (lenChars >= 2 && endByte != 0 && endByte <= srcLen && src[endByte - 1] == '"') {
+			// ...and that quote closes the literal rather than sitting inside it. In `use "\"`
+			// the last character is a quote but an escaped one, so the literal runs to the end
+			// of the file; an odd number of backslashes before it means it is escaped.
+			size_t backslashes = 0;
+			while (backslashes + 1 < endByte && src[endByte - 2 - backslashes] == '\\') {
+				backslashes++;
+			}
+			if (backslashes % 2 == 0) {
+				return true;
+			}
+		}
+		if (gUnterminatedStringLine == 0) {
+			size_t line, column;
+			if (tCurrentSourceMaps) {
+				size_t bytePos = tCurrentSourceMaps->charByteMap.getByteOffset(startChar);
+				tCurrentSourceMaps->lineMap.getLineColumn(bytePos, &line, &column);
+			} else {
+				fastLineColumn(src, fastCharToByteOffset(src, startChar), &line, &column);
+			}
+			gUnterminatedStringLine = line;
+			gUnterminatedStringColumn = column;
+		}
+		return false;
+	}
+
 	// Helper to parse a comment (// or /* */)
 	// Returns the comment node, or nullptr if not a comment
 	// firstSlashPos: character position of the first slash (SIZE_MAX if no slash was seen)
@@ -206,13 +258,14 @@ namespace Qd {
 		} else {
 			// Read until */ - support nested block comments
 			// Track nesting depth: /* starts a nested comment, */ ends one
+			// commentEnd[1] is always safe to read while commentEnd[0] is not the NUL.
 			int nestingDepth = 1;
-			while (*commentEnd != '\0' && *(commentEnd + 1) != '\0' && nestingDepth > 0) {
-				if (*commentEnd == '/' && *(commentEnd + 1) == '*') {
+			while (*commentEnd != '\0') {
+				if (commentEnd[0] == '/' && commentEnd[1] == '*') {
 					// Nested comment start
 					nestingDepth++;
 					commentEnd += 2;
-				} else if (*commentEnd == '*' && *(commentEnd + 1) == '/') {
+				} else if (commentEnd[0] == '*' && commentEnd[1] == '/') {
 					// Comment end
 					nestingDepth--;
 					if (nestingDepth == 0) {
@@ -222,6 +275,10 @@ namespace Qd {
 				} else {
 					commentEnd++;
 				}
+			}
+			if (nestingDepth > 0 && gUnterminatedBlockCommentLine == 0) {
+				gUnterminatedBlockCommentLine = commentLine;
+				gUnterminatedBlockCommentColumn = commentColumn;
 			}
 		}
 

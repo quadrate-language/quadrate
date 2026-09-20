@@ -241,15 +241,17 @@ asan:
 	@echo "ASAN build complete. Run tests with: meson test -C build/asan --print-errorlogs"
 
 # Fuzzing with libFuzzer (requires clang)
-# Usage: make fuzz [TIME=60] [LEN=5000]
+# Usage: make fuzz [TIME=60] [LEN=5000] [TARGET=fuzz_parser]
+# TARGET is one of fuzz_parser, fuzz_formatter, fuzz_lsp_text; see tests/fuzz/README.md.
 TIME ?= 60
 LEN ?= 5000
+TARGET ?= fuzz_parser
 fuzz:
 	@if ! which clang++ > /dev/null 2>&1; then echo "Error: clang++ required for fuzzing"; exit 1; fi
 	@CC=clang CXX=clang++ meson setup build/fuzz --buildtype=debug -Dbuild_fuzz=true $(MESON_FLAGS) --reconfigure >/dev/null 2>&1 || CC=clang CXX=clang++ meson setup build/fuzz --buildtype=debug -Dbuild_fuzz=true $(MESON_FLAGS) >/dev/null 2>&1
-	@meson compile -C build/fuzz tests/fuzz/fuzz_parser >/dev/null 2>&1
-	@echo "Running fuzzer for $(TIME) seconds..."
-	@./build/fuzz/tests/fuzz/fuzz_parser tests/fuzz/corpus/ -max_len=$(LEN) -max_total_time=$(TIME) >/dev/null 2>&1 && echo "Done. No crashes found." || echo "Fuzzer crashed - check for crash-* files"
+	@meson compile -C build/fuzz tests/fuzz/$(TARGET) >/dev/null 2>&1
+	@echo "Running $(TARGET) for $(TIME) seconds..."
+	@./build/fuzz/tests/fuzz/$(TARGET) $(if $(filter fuzz_lsp_text,$(TARGET)),,tests/fuzz/corpus/) -max_len=$(LEN) -max_total_time=$(TIME) >/dev/null 2>&1 && echo "Done. No crashes found." || echo "Fuzzer crashed - check for crash-* files"
 
 examples: debug
 	@mkdir -p dist/examples

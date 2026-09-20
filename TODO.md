@@ -124,20 +124,26 @@ its tests, and tells a reader nothing. 48 of 452 functions that take parameters 
       subsume any of this: the control flow already exists and is enforced, and what was missing
       was a payload type, which a refcounted struct already is.
 
+## Upstream
+
+- [ ] **libu8t 1.4.0 does not lex a negative hex or binary literal.** `-0x10` comes back as
+      the integer `-0` followed by the identifier `x10`, and `-0b101` as `-0` and `b101`.
+      The scanner takes a leading `-` as part of the number (`scanner.c`, the `cp == U'-'`
+      branch) but that branch duplicates only the decimal path -- the `0x`/`0b` prefix
+      handling in the positive branch above it is missing. Found 2026-09-20 by
+      `fuzz_formatter`. In an expression the stray identifier is undefined and `quadc`
+      says so, badly (`Undefined identifier 'x10'`); in an enum value it was taken as the
+      next variant and the formatter wrote the enum back split in two, which
+      `parseEnumDeclaration` now rejects as a malformed literal. Both are papering over
+      the lexer. The fix belongs in `github.com/klahr/libu8t`, followed by a revision bump
+      in `subprojects/u8t.wrap`; the guard in `parseEnumDeclaration` and the wrong error
+      message in expressions can both go once that lands.
+
 ## Interpreter tier (lib/interp)
 
 - [ ] Not planned for this tier: structs, `defer`, `import`/`use`, anonymous functions. Imports in
       particular cannot mean anything on a device with no package resolution — qdos takes its
       scopes from `lib<name>.so` filenames — so they should keep refusing clearly.
-
-## Formatter
-
-- [ ] Remaining edge cases (low priority — no valid Quadrate program triggers them):
-    - Unclosed nested block comments (`/* a/* b/* c`): the formatter wraps with a synthetic `*/`.
-      `fuzz_formatter` skips inputs with an unclosed `/*`.
-    - Content loss on dense malformed input with control chars (e.g.
-      `fn main() {ed \tp <<_fncx!+!\t {\n\t\035if {}}\n}`) — pass 1 produces output that pass 2 fails
-      to re-parse. The normalization step is lossy on these inputs.
 
 ## Deferred
 

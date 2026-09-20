@@ -1,0 +1,4 @@
+fn m() {
+	"a\\" print nl
+	"a\"b" print nl
+}

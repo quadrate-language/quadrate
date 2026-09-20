@@ -1979,9 +1979,8 @@ namespace Qd {
 							reportErrorWithHint(child, msg.c_str(),
 									"consume or drop the call's result(s) inside the arm, or add an else arm");
 						}
-					}
-					else if (!blockEndsDiverging(thenBody) && !mHasUnpredictableStack &&
-							 thenStack.size() != typeStack.size()) {
+					} else if (!blockEndsDiverging(thenBody) && !mHasUnpredictableStack &&
+							   thenStack.size() != typeStack.size()) {
 						// An `if` with no `else` is an `if` whose other arm is empty, so the same rule
 						// applies: the arm has to leave the stack as it found it. This used to be
 						// unconstrained, on the reasoning that the enclosing function's declared effect
@@ -1990,8 +1989,8 @@ namespace Qd {
 						// leave values behind and nothing anywhere reported it, which is how fourteen
 						// guards in `ct` came to push their error message onto the stack as data and
 						// fall through into the code they were guarding.
-						const long long delta = static_cast<long long>(thenStack.size()) -
-												static_cast<long long>(typeStack.size());
+						const long long delta =
+								static_cast<long long>(thenStack.size()) - static_cast<long long>(typeStack.size());
 						std::string msg = "'if' without an 'else' leaves the stack " +
 										  std::to_string(delta < 0 ? -delta : delta) + " value" +
 										  ((delta == 1 || delta == -1) ? "" : "s") +

@@ -220,6 +220,16 @@ namespace Qd {
 				}
 			}
 
+			// A block whose braces never balanced means the formatter and the parser
+			// disagree about where that block ends, and reconstructing it from the wrong
+			// end invents structure: `fn n(){f{{}}` parses clean but counts one `}` short,
+			// and the rebuilt body came back with a brace the author never wrote. Hand the
+			// source back untouched instead -- the same answer the formatter already gives
+			// for input it cannot parse.
+			if (mBailOut) {
+				return mSource;
+			}
+
 			return mOutput.str();
 		}
 
@@ -229,10 +239,31 @@ namespace Qd {
 		FormatOptions mOpts;
 		std::ostringstream mOutput;
 		int mIndent;
+		bool mBailOut = false;
 
 		// ============================================================
 		// Helpers
 		// ============================================================
+
+		// Whether the quote at `i` opens or closes a string, given whether the scan is
+		// already inside one. Outside a string nothing is escaped, so a `"` always opens one
+		// -- the backslash in `t{\"}}` is a stray character, not an escape. Inside one, an
+		// odd run of backslashes before the quote escapes it; testing only the character
+		// before read the closing quote of `"a\\"` as escaped, because that backslash is
+		// itself escaped.
+		static bool quoteToggles(const std::string& s, size_t i, bool inStr) {
+			if (s[i] != '"') {
+				return false;
+			}
+			if (!inStr) {
+				return true;
+			}
+			size_t backslashes = 0;
+			while (backslashes < i && s[i - 1 - backslashes] == '\\') {
+				backslashes++;
+			}
+			return backslashes % 2 == 0;
+		}
 
 		static std::string trim(const std::string& s) {
 			size_t start = 0;
@@ -350,7 +381,7 @@ namespace Qd {
 				for (auto* node : useNodes) {
 					auto* use = static_cast<AstNodeUse*>(node);
 					const std::string& mod = use->module();
-					if (mod.find('/') != std::string::npos || mod.find(' ') != std::string::npos) {
+					if (useModuleNeedsQuotes(mod)) {
 						quotedUses.push_back(mod);
 					} else {
 						bareUses.push_back(mod);
@@ -372,14 +403,30 @@ namespace Qd {
 			}
 		}
 
+		// The parser stores `use helper.qd` and `use "helper.qd"` identically, so the
+		// quotes have to be decided from the name alone. Bare is only safe for what the
+		// parser reads back bare -- an identifier, optionally suffixed `.qd`. Testing
+		// instead for the characters that are known to need quoting let a path the
+		// heuristic had not met through unquoted, and `use "a b/c"` losing its quotes is
+		// a file that no longer resolves.
+		static bool useModuleNeedsQuotes(const std::string& mod) {
+			std::string name = mod;
+			if (name.size() > 3 && name.compare(name.size() - 3, 3, ".qd") == 0) {
+				name = name.substr(0, name.size() - 3);
+			}
+			if (name.empty() || (!std::isalpha(static_cast<unsigned char>(name[0])) && name[0] != '_')) {
+				return true;
+			}
+			for (char c : name) {
+				if (!std::isalnum(static_cast<unsigned char>(c)) && c != '_') {
+					return true;
+				}
+			}
+			return false;
+		}
+
 		void emitUseModule(const std::string& mod) {
-			// Quote use paths that contain spaces, slashes, or are .qd file references
-			bool needsQuotes = mod.find(' ') != std::string::npos || mod.find('/') != std::string::npos;
-			// Also check: if module name contains a dot and ends with .qd but also has a path component
-			// (like "local_module.qd"), the original source likely had quotes
-			// Actually, the parser stores bare "use helper.qd" and quoted use "file.qd" identically.
-			// We quote if it has spaces or slashes (file paths). Bare .qd files stay unquoted.
-			if (needsQuotes) {
+			if (useModuleNeedsQuotes(mod)) {
 				mOutput << "use \"" << mod << "\"\n";
 			} else {
 				mOutput << "use " << mod << "\n";
@@ -457,31 +504,20 @@ namespace Qd {
 			// Preserve original source text for import blocks to keep doc comments.
 			// Only normalize the -- separator in fn signatures.
 			size_t startLine = node->line();
-			size_t endLine = startLine;
-			int depth = 0;
-			bool foundOpen = false;
-
-			// Find the closing brace by scanning source lines
-			for (size_t i = startLine; i <= mSourceLines.size(); i++) {
-				const std::string& line = getSourceLine(i);
-				for (char c : line) {
-					if (c == '{') {
-						depth++;
-						foundOpen = true;
-					} else if (c == '}') {
-						depth--;
-						if (foundOpen && depth == 0) {
-							endLine = i;
-							goto found_end;
-						}
-					}
-				}
+			BlockRange range = scanBlockRange(startLine, 0);
+			if (!range.found || !startsItsLine(node)) {
+				// Same as the struct case: without a matching `}` every line but the first
+				// would be dropped, so hand the source back instead.
+				mBailOut = true;
+				return;
 			}
-		found_end:
+			size_t endLine = range.closeLine;
 
 			// Emit lines from source, normalizing fn signatures for --
 			for (size_t i = startLine; i <= endLine; i++) {
-				std::string line = getSourceLine(i);
+				// Only as far as the block's own `}`, as in emitStructDecl: whatever follows
+				// it on that line is the next declaration, and is emitted as itself.
+				std::string line = i == endLine ? getSourceLine(i).substr(0, range.closeCol + 1) : getSourceLine(i);
 
 				// Check if this line has a fn declaration without --
 				// Pattern: "pub fn name(params)" or "fn name(params)" where params exist but no --
@@ -671,28 +707,20 @@ namespace Qd {
 			if (hasDefaults) {
 				// Preserve original source lines for struct with default values
 				size_t startLine = node->line();
-				size_t endLine = startLine;
-				int depth = 0;
-				bool foundOpen = false;
-				for (size_t i = startLine; i <= mSourceLines.size(); i++) {
-					const std::string& line = getSourceLine(i);
-					for (char c : line) {
-						if (c == '{') {
-							depth++;
-							foundOpen = true;
-						} else if (c == '}') {
-							depth--;
-							if (foundOpen && depth == 0) {
-								endLine = i;
-								goto struct_end;
-							}
-						}
-					}
+				BlockRange range = scanBlockRange(startLine, 0);
+				if (!range.found || !startsItsLine(node)) {
+					// Falling back to `endLine = startLine` here emitted the declaration's
+					// first line and dropped every field under it.
+					mBailOut = true;
+					return;
 				}
-			struct_end:
-				for (size_t i = startLine; i <= endLine; i++) {
+				for (size_t i = startLine; i < range.closeLine; i++) {
 					mOutput << getSourceLine(i) << "\n";
 				}
+				// Only as far as the declaration's own `}`. Emitting the whole closing line
+				// copied out whatever followed it -- in `struct P{e:i=c}fn i(){}` the function
+				// after it, which was then emitted again as itself.
+				mOutput << getSourceLine(range.closeLine).substr(0, range.closeCol + 1) << "\n";
 				return;
 			}
 
@@ -842,7 +870,7 @@ namespace Qd {
 			bool inStr = false;
 			for (size_t i = 0; i < line.length(); i++) {
 				char c = line[i];
-				if (c == '"' && (i == 0 || line[i - 1] != '\\')) {
+				if (quoteToggles(line, i, inStr)) {
 					inStr = !inStr;
 				}
 				if (inStr) {
@@ -986,7 +1014,7 @@ namespace Qd {
 					size_t braceEnd = std::string::npos;
 					bool bInStr = false;
 					for (size_t j = braceStart; j < result.length(); j++) {
-						if (result[j] == '"' && (j == 0 || result[j - 1] != '\\')) {
+						if (quoteToggles(result, j, bInStr)) {
 							bInStr = !bInStr;
 						}
 						if (bInStr) {
@@ -1028,20 +1056,31 @@ namespace Qd {
 						}
 						normBody += bc;
 					}
-					// Normalize after: "->var" becomes " -> var"
+					// Normalize after: "->var" becomes " -> var". With no name after the arrow
+					// the space would trail the line, which the next pass trims away, so the
+					// formatter would never reach a fixed point.
 					std::string normAfter = after;
+					std::string varName;
+					bool hasArrow = false;
 					if (normAfter.length() >= 2 && normAfter[0] == '-' && normAfter[1] == '>') {
-						std::string varName = trim(normAfter.substr(2));
-						normAfter = " -> " + varName;
+						varName = trim(normAfter.substr(2));
+						hasArrow = true;
 					} else if (normAfter.length() >= 3 && normAfter[0] == ' ' && normAfter[1] == '-' &&
 							   normAfter[2] == '>') {
-						std::string varName = trim(normAfter.substr(3));
-						normAfter = " -> " + varName;
+						varName = trim(normAfter.substr(3));
+						hasArrow = true;
+					}
+					if (hasArrow) {
+						normAfter = varName.empty() ? " ->" : " -> " + varName;
 					}
 					rebuilt += "(" + normSig + ") { " + trim(normBody) + " }" + normAfter;
 
 					result = rebuilt;
-					pos = fnPos + rebuilt.length() - after.length(); // Skip past rebuilt section
+					// Resume just past what was rebuilt. `rebuilt` is the whole line, so its
+					// length minus the tail's is already that index -- adding `fnPos` skipped
+					// the rest of the line, and a second `fn(){}` on it was only normalised on
+					// the pass after. The tail may have been rewritten, so measure `normAfter`.
+					pos = rebuilt.length() - normAfter.length();
 					continue;
 				}
 			}
@@ -1077,7 +1116,7 @@ namespace Qd {
 			// Look for UpperCase { field = value ... } pattern
 			bool inStr = false;
 			for (size_t i = 0; i < line.length(); i++) {
-				if (line[i] == '"' && (i == 0 || line[i - 1] != '\\')) {
+				if (quoteToggles(line, i, inStr)) {
 					inStr = !inStr;
 				}
 				if (inStr) {
@@ -1121,7 +1160,7 @@ namespace Qd {
 					size_t braceEnd = std::string::npos;
 					int depth = 0;
 					for (size_t j = i; j < line.length(); j++) {
-						if (line[j] == '"' && (j == 0 || line[j - 1] != '\\')) {
+						if (quoteToggles(line, j, inStr)) {
 							inStr = !inStr;
 						}
 						if (inStr) {
@@ -1155,18 +1194,82 @@ namespace Qd {
 		// "\tx = 1"
 		// "\ty = 2"
 		// "} -> p"
-		std::vector<std::string> expandStructConstruction(const std::string& line, int baseIndent) {
-			std::vector<std::string> result;
-			std::string trimmed = trim(line);
+		static bool isPlainIdentifier(const std::string& s) {
+			if (s.empty() || (!std::isalpha(static_cast<unsigned char>(s[0])) && s[0] != '_')) {
+				return false;
+			}
+			for (char c : s) {
+				if (!std::isalnum(static_cast<unsigned char>(c)) && c != '_') {
+					return false;
+				}
+			}
+			return true;
+		}
 
-			// Find the struct name and opening brace
+		// Whether every brace in `s` outside a string literal is matched.
+		static bool bracesBalanced(const std::string& s) {
+			int depth = 0;
 			bool inStr = false;
-			for (size_t i = 0; i < trimmed.length(); i++) {
-				if (trimmed[i] == '"' && (i == 0 || trimmed[i - 1] != '\\')) {
+			for (size_t i = 0; i < s.length(); i++) {
+				if (quoteToggles(s, i, inStr)) {
 					inStr = !inStr;
 				}
 				if (inStr) {
 					continue;
+				}
+				if (s[i] == '{') {
+					depth++;
+				} else if (s[i] == '}') {
+					depth--;
+					if (depth < 0) {
+						return false;
+					}
+				}
+			}
+			return depth == 0 && !inStr;
+		}
+
+		std::vector<std::string> expandStructConstruction(const std::string& line, int baseIndent) {
+			std::vector<std::string> result;
+			std::string trimmed = trim(line);
+
+			// A comment ends the code on the line, and the braces inside it are text. In
+			// `V{x=//}` the `}` is commented out and the construction carries on to the next
+			// line; expanding to the first `}` regardless closed it here and emitted a brace
+			// the author never wrote. A comment that begins after the construction's own `}`
+			// is past `codeEnd` and still lands in `afterBrace` as before.
+			size_t commentStart = findCommentStart(trimmed);
+			size_t codeEnd = commentStart == std::string::npos ? trimmed.length() : commentStart;
+
+			// Find the struct name and opening brace
+			//
+			// Only a construction the line itself opens can be expanded. One nested inside
+			// another brace group has that group's braces around it, and putting its fields
+			// on lines of their own splits those across lines: `Ok { P { x = 1 y = 2 } -> p }`
+			// came back as `Ok { P {` / fields / `} -> p }`, which the next pass indents
+			// differently, so `quadfmt -c` reported the file forever.
+			bool inStr = false;
+			int lineDepth = 0;
+			for (size_t i = 0; i < codeEnd; i++) {
+				if (quoteToggles(trimmed, i, inStr)) {
+					inStr = !inStr;
+				}
+				if (inStr) {
+					continue;
+				}
+				if (trimmed[i] == '}') {
+					lineDepth--;
+					continue;
+				}
+				if (trimmed[i] == '{') {
+					lineDepth++;
+					// Exactly one: deeper means the construction is nested inside another
+					// group, and zero or less means the line has already closed more than it
+					// opened -- `O{=}}P{x=0}}` reaches `P` at depth -1, where the expansion's
+					// idea of the line's shape no longer matches the re-indenter's.
+					if (lineDepth != 1) {
+						continue;
+					}
 				}
 
 				if (trimmed[i] == '{' && i > 0) {
@@ -1193,8 +1296,8 @@ namespace Qd {
 					size_t braceEnd = std::string::npos;
 					int depth = 0;
 					bool bInStr = false;
-					for (size_t j = i; j < trimmed.length(); j++) {
-						if (trimmed[j] == '"' && (j == 0 || trimmed[j - 1] != '\\')) {
+					for (size_t j = i; j < codeEnd; j++) {
+						if (quoteToggles(trimmed, j, bInStr)) {
 							bInStr = !bInStr;
 						}
 						if (bInStr) {
@@ -1239,7 +1342,7 @@ namespace Qd {
 						bool fInStr = false;
 						int fBraceDepth = 0;
 						for (size_t k = 0; k < remaining.length(); k++) {
-							if (remaining[k] == '"' && (k == 0 || remaining[k - 1] != '\\')) {
+							if (quoteToggles(remaining, k, fInStr)) {
 								fInStr = !fInStr;
 							}
 							if (fInStr) {
@@ -1290,6 +1393,31 @@ namespace Qd {
 						fields.push_back({fieldName, fieldValue});
 					}
 
+					// The expansion puts each field on a line of its own, so it can only be
+					// applied to fields that survive being separated. A name that is not an
+					// identifier or a value whose braces do not balance -- `V{r{=0 y=}}` splits
+					// into `r{ = 0` and `y = }` -- leaves the following lines at a brace depth
+					// the next pass reads differently, so the formatter never reaches a fixed
+					// point; an empty name or value came back as `\t = `, whose trailing space
+					// the next pass trims; and anything left in `remaining` would be dropped
+					// outright. Leave such a line alone.
+					// What follows the construction on the line has to leave the line's brace
+					// accounting alone too: `fn t(){f{\nP{x=0}}}` put `} }` on one line, and
+					// the re-indenter reads two leading closes there where the expansion meant
+					// one, so the line dedented further on every pass.
+					std::string afterBraceCode =
+							codeEnd > braceEnd + 1 ? trimmed.substr(braceEnd + 1, codeEnd - braceEnd - 1) : "";
+					bool expandable = !fields.empty() && remaining.empty() && bracesBalanced(afterBraceCode);
+					for (const auto& field : fields) {
+						if (!isPlainIdentifier(field.first) || field.second.empty() || !bracesBalanced(field.second)) {
+							expandable = false;
+							break;
+						}
+					}
+					if (!expandable) {
+						continue;
+					}
+
 					// Build output lines
 					std::string indentStr;
 					for (int j = 0; j < baseIndent; j++) {
@@ -1313,16 +1441,17 @@ namespace Qd {
 				}
 			}
 
-			// No struct construction found, return line as-is
-			result.push_back(line);
-			return result;
+			// No struct construction the expansion can spell. Return nothing rather than the
+			// line: the caller emitted whatever came back verbatim, so a line that reached
+			// one of the bail-outs above came out at column 0, having lost its indent.
+			return {};
 		}
 
 		static size_t findCommentStart(const std::string& line) {
 			bool inStr = false;
 			for (size_t i = 0; i < line.length(); i++) {
 				char c = line[i];
-				if (c == '"' && (i == 0 || line[i - 1] != '\\')) {
+				if (quoteToggles(line, i, inStr)) {
 					inStr = !inStr;
 					continue;
 				}
@@ -1359,52 +1488,129 @@ namespace Qd {
 		// content while fixing structural indentation.
 		// ============================================================
 
-		// Find the closing brace line of a block by scanning source.
-		// Returns 0 if no matching } can be found (e.g. malformed input
-		// with unbalanced braces) so callers can detect that case rather
-		// than misinterpret a fallback value as an inline body.
-		size_t findBlockEndLine(IAstNode* blockNode) {
+		// Where a block's own braces sit in the source. Both ends are needed, not just
+		// the closing line: a brace is not always the last thing on its line, and
+		// whatever shares the line with it is body content that has to be emitted.
+		// `found` is false when the braces never balance (malformed input), so callers
+		// can fall back rather than read a sentinel line number as a real one.
+		struct BlockRange {
+			size_t openLine = 0;
+			size_t openCol = 0;
+			size_t closeLine = 0;
+			size_t closeCol = 0;
+			bool found = false;
+		};
+
+		// Whether nothing precedes the declaration on its line but its own leading keywords.
+		// Both source-preserving emitters copy from the start of the line, so anything else
+		// there is copied with it: in `struct P{}struct P{e:i=c}` the second declaration
+		// copied out the first one's text, and in `type e=r struct P{e:i=c}` the alias. A
+		// declaration that does not start its line is handed back instead.
+		bool startsItsLine(IAstNode* node) const {
+			if (node->column() == 0) {
+				return false;
+			}
+			const std::string& line = getSourceLine(node->line());
+			size_t end = node->column() - 1;
+			if (end > line.length()) {
+				return false;
+			}
+			size_t i = 0;
+			bool sawKeyword = false;
+			while (i < end) {
+				while (i < end && std::isspace(static_cast<unsigned char>(line[i]))) {
+					i++;
+				}
+				if (i == end) {
+					break;
+				}
+				size_t wordStart = i;
+				while (i < end && (std::isalnum(static_cast<unsigned char>(line[i])) || line[i] == '_')) {
+					i++;
+				}
+				if (i == wordStart) {
+					return false; // punctuation: something else on the line
+				}
+				std::string word = line.substr(wordStart, i - wordStart);
+				if (word == "struct" || word == "import") {
+					sawKeyword = true;
+				} else if (word != "pub" && word != "packed") {
+					return false;
+				}
+			}
+			// The keyword has to be on this line too: the node's position is its name, and
+			// in `struct\nP{e:i=c}` the copy would have started below the `struct`.
+			return sawKeyword;
+		}
+
+		// Find a block's own `{` and its matching `}` by scanning source, skipping
+		// braces inside strings and comments.
+		BlockRange findBlockRange(IAstNode* blockNode) {
 			if (!blockNode) {
-				return 0;
+				return BlockRange{};
 			}
 
-			// Start from the block's own line, scan forward for its closing }
 			size_t startLine = blockNode->line();
+
+			// The parser positions a block node on its own `{`, so the exact brace is
+			// known and does not have to be guessed at. Taking the first `{` on the line
+			// instead read the one inside the parameter list of `fn i({){}` as the body's
+			// and re-emitted the signature's leftovers as the body.
+			size_t startCol = 0;
+			const std::string& openLine = getSourceLine(startLine);
+			size_t col = blockNode->column();
+			if (col >= 1 && col - 1 < openLine.length() && openLine[col - 1] == '{') {
+				startCol = col - 1;
+			}
+
+			return scanBlockRange(startLine, startCol);
+		}
+
+		// Scan forward from (startLine, startCol) for the first `{` and the `}` that
+		// matches it, skipping braces inside strings and comments.
+		BlockRange scanBlockRange(size_t startLine, size_t startCol) {
+			BlockRange range;
 
 			// Track brace depth to find the matching }
 			int depth = 0;
 			bool inStr = false;
 			bool inLC = false;
-			bool inBC = false;
+			int bcDepth = 0;
 
 			for (size_t i = startLine; i <= mSourceLines.size(); i++) {
 				const std::string& line = getSourceLine(i);
 				inLC = false; // Line comments reset each line
 
-				for (size_t j = 0; j < line.length(); j++) {
+				for (size_t j = (i == startLine ? startCol : 0); j < line.length(); j++) {
 					char c = line[j];
 					if (inLC) {
 						break;
 					}
-					if (!inStr && !inBC && j + 1 < line.length()) {
+					if (!inStr && bcDepth == 0 && j + 1 < line.length()) {
 						if (c == '/' && line[j + 1] == '/') {
 							inLC = true;
 							break;
 						}
 						if (c == '/' && line[j + 1] == '*') {
-							inBC = true;
+							bcDepth = 1;
 							j++;
 							continue;
 						}
 					}
-					if (inBC) {
-						if (j + 1 < line.length() && c == '*' && line[j + 1] == '/') {
-							inBC = false;
+					// Block comments nest, so stopping at the first `*/` is wrong: in
+					// `fn t(){/*/**/}*/}` that `*/` is the inner comment's, and treating it
+					// as the outer one's made the `}` after it look like the body's close.
+					if (bcDepth > 0) {
+						if (j + 1 < line.length() && c == '/' && line[j + 1] == '*') {
+							bcDepth++;
+							j++;
+						} else if (j + 1 < line.length() && c == '*' && line[j + 1] == '/') {
+							bcDepth--;
 							j++;
 						}
 						continue;
 					}
-					if (c == '"' && (j == 0 || line[j - 1] != '\\')) {
+					if (quoteToggles(line, j, inStr)) {
 						inStr = !inStr;
 					}
 					if (inStr) {
@@ -1412,16 +1618,88 @@ namespace Qd {
 					}
 					if (c == '{') {
 						depth++;
+						if (depth == 1) {
+							range.openLine = i;
+							range.openCol = j;
+						}
 					}
 					if (c == '}') {
 						depth--;
 						if (depth == 0) {
-							return i;
+							range.closeLine = i;
+							range.closeCol = j;
+							range.found = range.openLine != 0;
+							return range;
 						}
 					}
 				}
 			}
-			return 0;
+			return range;
+		}
+
+		// Advance a block-comment nesting depth over one line, by the lexer's rule that
+		// `/*` nests. Updates `depth` and returns the index just past the `*/` that closed
+		// it, or the line's length when the comment runs on. The caller has to scan from
+		// there: whatever follows a closing `*/` is code, and leaving it unscanned lost
+		// both the brace it opened and the comment it started.
+		static size_t advanceBlockCommentDepth(const std::string& line, int& depth) {
+			size_t j = 0;
+			for (; j + 1 < line.length() && depth > 0; j++) {
+				if (line[j] == '/' && line[j + 1] == '*') {
+					depth++;
+					j++;
+				} else if (line[j] == '*' && line[j + 1] == '/') {
+					depth--;
+					j++;
+				}
+			}
+			return depth == 0 ? j : line.length();
+		}
+
+		// Scan `line` from `from`, carrying the running brace depth forward and reporting
+		// what the line leaves open: a string, or a block comment at `bcDepth`. A line
+		// comment ends the scan.
+		static void scanLineState(const std::string& line, size_t from, int& braceDepth, bool& inStr, int& bcDepth) {
+			bool inLineComment = false;
+			for (size_t j = from; j < line.length(); j++) {
+				char c = line[j];
+				if (inLineComment) {
+					break;
+				}
+				if (!inStr && bcDepth == 0 && j + 1 < line.length()) {
+					if (c == '/' && line[j + 1] == '/') {
+						inLineComment = true;
+						break;
+					}
+					if (c == '/' && line[j + 1] == '*') {
+						bcDepth = 1;
+						j++;
+						continue;
+					}
+				}
+				if (bcDepth > 0) {
+					if (j + 1 < line.length() && c == '/' && line[j + 1] == '*') {
+						bcDepth++;
+						j++;
+					} else if (j + 1 < line.length() && c == '*' && line[j + 1] == '/') {
+						bcDepth--;
+						j++;
+					}
+					continue;
+				}
+				if (quoteToggles(line, j, inStr)) {
+					inStr = !inStr;
+				}
+				if (inStr) {
+					continue;
+				}
+				if (c == '{') {
+					braceDepth++;
+				}
+				if (c == '}') {
+					braceDepth--;
+				}
+			}
 		}
 
 		void emitBlockBody(IAstNode* body) {
@@ -1429,97 +1707,92 @@ namespace Qd {
 				return;
 			}
 
-			size_t bodyLine = body->line();
-			size_t endLine = findBlockEndLine(body);
+			BlockRange range = findBlockRange(body);
 
-			// Malformed input: braces never balanced. Fall back to scanning
-			// to end of source so we still re-indent something rather than
-			// misinterpreting the start line as an inline body.
-			if (endLine == 0) {
-				endLine = mSourceLines.size();
-			}
-
-			// Handle inline bodies: fn main() { body } on a single line.
-			// The closing brace we want is the one that matches the body's
-			// opening `{` — not the LAST `}` on the line, which may belong
-			// to an unrelated trailing block. Walk the line tracking depth.
-			if (endLine == bodyLine) {
-				const std::string& line = getSourceLine(bodyLine);
-				size_t braceOpen = line.find('{');
-				size_t braceClose = std::string::npos;
-				if (braceOpen != std::string::npos) {
-					int d = 0;
-					for (size_t k = braceOpen; k < line.length(); k++) {
-						char c = line[k];
-						if (c == '{') {
-							d++;
-						} else if (c == '}') {
-							d--;
-							if (d == 0) {
-								braceClose = k;
-								break;
-							}
-						}
-					}
+			// The braces the caller emits are not part of the body, but anything sharing
+			// a line with them is. Collect the body as a list of lines -- the tail of the
+			// `{` line, the lines between, the head of the `}` line -- so the one loop
+			// below handles every shape. Dropping those two partial lines is what lost
+			// the whole body of `fn main()\n {0 5 1 for it {`: the `for` header shared a
+			// line with the brace that opened the body.
+			std::vector<std::string> bodyLines;
+			if (range.found && range.closeLine == range.openLine) {
+				// Inline body: fn main() { body } on a single line.
+				const std::string& line = getSourceLine(range.openLine);
+				std::string content = trim(line.substr(range.openCol + 1, range.closeCol - range.openCol - 1));
+				if (!content.empty()) {
+					bodyLines.push_back(content);
 				}
-				if (braceOpen != std::string::npos && braceClose != std::string::npos && braceClose > braceOpen) {
-					std::string content = trim(line.substr(braceOpen + 1, braceClose - braceOpen - 1));
-					if (!content.empty()) {
-						std::string normalized = normalizeLine(content);
-						emitIndent();
-						mOutput << normalized << "\n";
-					}
+			} else {
+				if (!range.found) {
+					// No matching `}` anywhere in the source. Where the body ends is a
+					// guess from here on, so stop and let format() return the source.
+					mBailOut = true;
+					return;
 				}
-				return;
-			}
+				size_t openLine = range.openLine;
+				size_t closeLine = range.closeLine;
 
-			size_t startLine = bodyLine + 1;
-
-			// Edge case: body content lives on the same line as the closing
-			// brace (e.g. malformed input like `fn x() {\n\tbody }\n`). The
-			// loop below processes lines [startLine, endLine), which would
-			// be empty here. Emit the prefix-of-endLine content directly.
-			if (startLine == endLine) {
-				const std::string& closeLine = getSourceLine(endLine);
-				size_t braceClose = closeLine.find('}');
-				if (braceClose != std::string::npos) {
-					std::string content = trim(closeLine.substr(0, braceClose));
-					if (!content.empty()) {
-						std::string normalized = normalizeLine(content);
-						emitIndent();
-						mOutput << normalized << "\n";
-					}
+				std::string tail = trim(getSourceLine(openLine).substr(range.openCol + 1));
+				if (!tail.empty()) {
+					bodyLines.push_back(tail);
 				}
-				return;
+				for (size_t i = openLine + 1; i < closeLine; i++) {
+					bodyLines.push_back(getSourceLine(i));
+				}
+				std::string head = trim(getSourceLine(closeLine).substr(0, range.closeCol));
+				if (!head.empty()) {
+					bodyLines.push_back(head);
+				}
 			}
 
 			int braceDepth = 0;
 			bool inMultilineString = false;
-			bool inBlockComment = false;
+			int blockCommentDepth = 0;
 			std::string blockCommentBase;
+			int blockCommentIndent = 0;
 
-			for (size_t i = startLine; i < endLine; i++) {
-				const std::string& srcLine = getSourceLine(i);
+			for (const std::string& srcLine : bodyLines) {
 				std::string trimmed = trim(srcLine);
 
 				// Handle multiline string continuation
 				if (inMultilineString) {
-					emitIndent(mIndent + braceDepth);
+					int emittedAt = mIndent + braceDepth;
+					emitIndent(emittedAt);
 					mOutput << trimmed << "\n";
+					// Find where the string closes and hand the rest of the line to the normal
+					// scanner: it is code, and leaving it unread lost the brace, string or
+					// comment it opened -- in `"/*` the block comment that followed.
+					size_t resume = srcLine.length();
 					for (size_t j = 0; j < srcLine.length(); j++) {
-						if (srcLine[j] == '"' && (j == 0 || srcLine[j - 1] != '\\')) {
+						if (quoteToggles(srcLine, j, inMultilineString)) {
 							inMultilineString = false;
+							resume = j + 1;
+							break;
+						}
+					}
+					if (!inMultilineString && resume < srcLine.length()) {
+						int tailBcDepth = 0;
+						scanLineState(srcLine, resume, braceDepth, inMultilineString, tailBcDepth);
+						if (tailBcDepth > 0) {
+							blockCommentDepth = tailBcDepth;
+							blockCommentBase = srcLine.substr(0, srcLine.find_first_not_of(" \t"));
+							blockCommentIndent = emittedAt;
 						}
 					}
 					continue;
 				}
 
 				// Handle block comment continuation
-				if (inBlockComment) {
+				if (blockCommentDepth > 0) {
 					if (trimmed.empty()) {
 						mOutput << '\n';
 					} else {
-						emitIndent(mIndent + braceDepth);
+						// At the level the comment's opening line was emitted at, not at the
+						// depth after it: when that line also opened a brace -- `r{/*` -- the
+						// two differ, and the continuation then sat one level deeper than the
+						// base it is measured against, so it gained a tab on every pass.
+						emitIndent(blockCommentIndent);
 						if (!blockCommentBase.empty() &&
 								srcLine.compare(0, blockCommentBase.size(), blockCommentBase) == 0) {
 							mOutput << srcLine.substr(blockCommentBase.size()) << "\n";
@@ -1527,8 +1800,19 @@ namespace Qd {
 							mOutput << trimmed << "\n";
 						}
 					}
-					if (trimmed.find("*/") != std::string::npos) {
-						inBlockComment = false;
+					size_t resume = advanceBlockCommentDepth(trimmed, blockCommentDepth);
+					if (blockCommentDepth == 0 && resume < trimmed.length()) {
+						// The comment closed part way along: the rest of the line is code.
+						bool tailInStr = false;
+						int tailBcDepth = 0;
+						scanLineState(trimmed, resume, braceDepth, tailInStr, tailBcDepth);
+						if (tailInStr) {
+							inMultilineString = true;
+						}
+						if (tailBcDepth > 0) {
+							blockCommentDepth = tailBcDepth;
+							blockCommentBase = srcLine.substr(0, srcLine.find_first_not_of(" \t"));
+						}
 					}
 					continue;
 				}
@@ -1568,14 +1852,18 @@ namespace Qd {
 				// Apply normalizations to the trimmed line
 				std::string normalized = normalizeLine(trimmed);
 
-				// Check for struct construction that should be expanded to multiline
+				// Check for struct construction that should be expanded to multiline.
+				// An empty expansion means the line is not one, so emit it as an ordinary
+				// line. (The expansion does not change the net brace count, so the depth
+				// tracking below reads the original line either way.)
+				std::vector<std::string> expanded;
 				if (isStructConstruction(normalized)) {
-					auto expanded = expandStructConstruction(normalized, mIndent + lineIndent);
+					expanded = expandStructConstruction(normalized, mIndent + lineIndent);
+				}
+				if (!expanded.empty()) {
 					for (const auto& expLine : expanded) {
 						mOutput << expLine << "\n";
 					}
-					// Recount braces from the original line for depth tracking
-					// (the expansion doesn't change net brace count)
 				} else {
 					emitIndent(mIndent + lineIndent);
 					mOutput << normalized << "\n";
@@ -1583,51 +1871,16 @@ namespace Qd {
 
 				// Update brace depth for next line
 				bool lineInStr = false;
-				bool lineInLC = false;
-				bool lineInBC = false;
-				for (size_t j = 0; j < trimmed.length(); j++) {
-					char c = trimmed[j];
-					if (lineInLC) {
-						break;
-					}
-					if (!lineInStr && !lineInBC && j + 1 < trimmed.length()) {
-						if (c == '/' && trimmed[j + 1] == '/') {
-							lineInLC = true;
-							break;
-						}
-						if (c == '/' && trimmed[j + 1] == '*') {
-							lineInBC = true;
-							j++;
-							continue;
-						}
-					}
-					if (lineInBC) {
-						if (j + 1 < trimmed.length() && c == '*' && trimmed[j + 1] == '/') {
-							lineInBC = false;
-							j++;
-						}
-						continue;
-					}
-					if (c == '"' && (j == 0 || trimmed[j - 1] != '\\')) {
-						lineInStr = !lineInStr;
-					}
-					if (lineInStr) {
-						continue;
-					}
-					if (c == '{') {
-						braceDepth++;
-					}
-					if (c == '}') {
-						braceDepth--;
-					}
-				}
+				int lineBcDepth = 0;
+				scanLineState(trimmed, 0, braceDepth, lineInStr, lineBcDepth);
 
 				if (lineInStr) {
 					inMultilineString = true;
 				}
-				if (lineInBC) {
-					inBlockComment = true;
+				if (lineBcDepth > 0) {
+					blockCommentDepth = lineBcDepth;
 					blockCommentBase = srcLine.substr(0, srcLine.find_first_not_of(" \t"));
+					blockCommentIndent = mIndent + lineIndent;
 				}
 			}
 		}

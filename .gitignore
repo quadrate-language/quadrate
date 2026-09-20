@@ -48,8 +48,10 @@ crash-*
 vgcore.*
 oom-*
 slow-unit-*
-fuzz/
-tests/fuzz/corpus/
+# `fuzz/` matched any directory of that name, so it swallowed tests/fuzz -- which is
+# source, and is why two of the targets tests/fuzz/meson.build names were never
+# committed. `build` above already covers the fuzz build directory. The corpus has its
+# own .gitignore keeping the edge_* seeds; a rule here would override that negation.
 /benchmarks/csharp/bin
 /benchmarks/csharp/obj
 /benchmarks/mat4x4_rust

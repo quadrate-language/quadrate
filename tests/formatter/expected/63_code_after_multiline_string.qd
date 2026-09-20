@@ -1,0 +1,7 @@
+fn m() {
+	"line one
+	line two" print nl
+	true if {
+		1 print nl
+	}
+}

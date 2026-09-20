@@ -9,6 +9,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **`fuzz_formatter` and `fuzz_lsp_text`**, the two fuzz targets `tests/fuzz/meson.build`
+  had always named but which were never written, so `meson compile -C build/fuzz` could
+  not build the directory. `fuzz_formatter` checks the formatter's two contracts on every
+  input the parser accepts — the output parses, and formatting it again changes nothing —
+  and found every formatter bug listed under Fixed below. `tests/run_all.sh --suite fuzz`
+  now runs all three targets rather than only `fuzz_parser`.
 - **`error` — errors as values.**
 - **`docscheck` checks 1,010 of the documented examples, up from 219.**
 - **Specification §11.2.2, "Ownership"**: who retains and who releases, which §11 never said.
@@ -95,6 +101,121 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **u8t tokenizer updated to 1.4.0.**
 ### Fixed
 
+- **An unterminated `/*` or `"` is a parse error.** u8t ends a string token at end of
+  file exactly as it does at a closing quote, and the comment reader stopped at end of
+  file the same way, so both were accepted in silence: the swallowed text vanished and
+  what was left read as a clean parse of a shorter program. `fn main() { /* a }` parsed,
+  and the formatter re-emitted the comment with a `*/` the author never wrote;
+  `use "abc` took the rest of the file as a module name, and re-formatting grew that
+  name by a newline every pass, so the formatter never reached a fixed point. The string
+  check existed but only in the expression parser; it now covers every place a string
+  token is consumed — `use`, `import`, `test` names, constant and global initialisers,
+  struct field defaults, array elements and `switch` case values.
+- **A quote's escaping is judged from the run of backslashes, and only inside a string.**
+  The parser's unterminated-string check and every string scan in the formatter tested
+  the single character before the quote, which reads the closing quote of `"a\\"` as
+  escaped — that backslash is itself escaped — and reads the opening quote of `t{\"}` as
+  escaped, though outside a string nothing is. The parser took `use "\"` for a
+  terminated literal; the formatter, still inside a string it thought was open, could
+  not find the block's closing brace and handed the file back untouched, or counted a
+  brace inside a string it thought had ended.
+- **A nested block comment is read to its own end.** `parseComment` tracked nesting but
+  dropped the last character before end of file, and the formatter's own brace scanners
+  did not nest at all, so in `fn t(){/*/**/}*/}` the inner `*/` looked like the outer
+  comment's close and the `}` after it looked like the body's.
+- **The formatter no longer drops what shares a line with a block's braces.** It emitted
+  the lines strictly between the `{` line and the `}` line, so `fn one() { 1 print nl`
+  lost `1 print nl` and `	2 print nl }` lost `2 print nl`. On
+  `fn main()\n {0 5 1 for it {` that was the whole body.
+- **The formatter takes a block's `{` from the parser instead of guessing.** It used the
+  first `{` on the block's line, which in `fn i({){}` is the one inside the parameter
+  list; the parser records the block's own brace, so the position is known.
+- **A struct or `import` declaration copies out its own text, and only that.** Both are
+  re-emitted from the source rather than rebuilt, and both copied whole lines from the
+  declaration's first line to its last: in `struct P{e:i=c}fn i(){}` the struct's copy
+  carried the function after it, which was then emitted again as itself, and in
+  `struct P{}struct P{e:i=c}` the second declaration copied out the first one's text.
+  The copy now stops at the declaration's own `}`, and a declaration that does not own
+  the first brace on its line is handed back rather than copied from the wrong start.
+- **The formatter hands back the source when a block's braces do not balance.** Three
+  places fell back to a guess instead — scanning to the end of the file for a function
+  body, and emitting only the first line of a struct or `import` declaration — so a
+  brace-unbalanced file came back with a brace the author never wrote, or with every
+  field under a `struct P {` dropped.
+- **A `use` path is quoted whenever the parser would not read it back bare.** The test
+  was for spaces and slashes, so a path the heuristic had not met lost its quotes and
+  no longer resolved.
+- **A struct construction is only expanded when its fields survive being separated.**
+  The expansion gives each field a line of its own, so a name that is not an identifier
+  or a value whose braces do not balance leaves the lines after it at a brace depth the
+  next pass reads differently — `V{r{=0 y=}}` splits into `r{ = 0` and `y = }` — and an
+  empty name or value came back as `\t = `, whose trailing space the next pass trims.
+  Either way the formatter never reached a fixed point. Such a line is now left alone,
+  and it keeps its indentation: the bail-out paths returned the line unchanged and the
+  caller emitted what came back verbatim, at column 0. This was live in the corpus: a
+  `switch` arm reading `mem::ErrInvalidArg { err -> code -> _  "negative code=" print
+  code print nl }` was expanded as a struct construction, and the rewrite put spaces
+  inside the string literal, turning it into `"negative code = "`.
+- **The struct-construction expansion stops at a comment.** A comment ends the code on
+  the line, and the braces inside it are text: in `V{x=//}` the `}` is commented out
+  and the construction carries on to the next line, but the expansion matched it and
+  emitted a brace the author never wrote.
+- **Only a construction the line itself opens and closes is expanded.** One nested
+  inside another brace group has that group's braces around it, and giving its fields
+  lines of their own splits those across lines: `Ok { P { x = 1 y = 2 } -> p }` came
+  back as `Ok { P {` / the fields / `} -> p }`, which the next pass indents differently
+  — so `quadfmt -c` reported the file as unformatted however many times it was
+  formatted. That one is plain Quadrate, not a fuzzer shape. What follows the
+  construction on the line has to balance too: `P{x=0}}` put `} }` on one line, where
+  the re-indenter reads two leading closes but the expansion meant one, so the line
+  dedented further on every pass.
+- **The code after a multi-line string or comment ends is accounted for.** The
+  re-indenter stopped at the closing `"` or `*/` and moved to the next line, so a brace,
+  a string or a comment opened on the rest of that line was invisible to it: everything
+  under `b */ true if {`, or under a `true if {` on the line a multi-line string ends,
+  was indented as if the `if` had never opened.
+- **A block comment's continuation lines are indented from the line that opened it.**
+  They used the brace depth *after* that line, so when the opening line also opened a
+  brace — `r{/*` — the continuation sat one level deeper than the base its relative
+  indent is measured against, and gained a tab on every pass.
+- **An anonymous function followed by a bare `->` keeps no trailing space.** The
+  normaliser wrote `" -> " + name` with nothing for the name, and the next pass trimmed
+  the space back off.
+- **A second anonymous function on a line is normalised on the same pass.** After
+  rewriting one, the scan resumed at the rebuilt line's length *plus* the offset it had
+  started from, which lands past the end of the line, so anything after the first
+  `fn(...){...}` waited for the next pass — and `quadfmt -c` run straight after
+  `quadfmt -w` reported the file as unformatted.
+- **The formatter's multiline-string tracker toggles instead of clearing.** A
+  continuation line holding two quotes closes one string and opens the next; clearing
+  on each left the tracker reading the lines after it as code, and since that depended
+  on where the lines had been split, the formatter never converged.
+- **A token the parser cannot use is reported rather than swallowed.** Several places
+  scanned a token, found nothing to do with it and moved on, which left the file one
+  brace short of what the parser had read — and every one of them still parsed clean:
+  a bare `$`, which only ever introduces an interpolated string (`fn s(){$//f{`); a
+  `{`, `}` or `/` in a parameter list (`fn i({){}`, `fn a(){fn(//){`); a `{` or `}` in
+  type arguments (`fn i(){fn(i<}>--){}}`) or in an array literal; a parameter type that
+  is neither an identifier nor `[]T` (`fn a(){fn(n:}--){}}`); an array type missing its
+  `]` or its element type (`fn n(){fn([<vt>){}}`); a `-` that is not part of
+  `--` (`fn m(){fn(-}){}}`); `::` with no name after it (`fn m(){i::}}`, `fn s(){a{F::}}}`);
+  `&` with no function name after it (`fn t(){p{&}}}`); a struct field default with no
+  value after the `=` (`struct c{e:i=}`); `defer` with no block; and a struct
+  construction that reaches end of file (`var g = r{`), whose recorded source text the
+  formatter then re-emitted with a newline the next pass read back as part of it. The
+  four copies of the type-argument reader are now one, `parseTypeArgumentList`. Two of
+  these fire on `tests/formatter/04_for_loop.qd`, whose body held a bare `$` and which
+  therefore never compiled; it is now the `it` the loop binds.
+- **An enum value whose literal was cut short is rejected.** libu8t 1.4.0 lexes `-0x10`
+  as the integer `-0` followed by the identifier `x10` (see TODO, Upstream). Everywhere
+  else that identifier is undefined and the compiler says so; in an enum value it became
+  the next variant, and the formatter then wrote `Mask = -0x10` back as `Mask = -0` and a
+  variant `x10`. The separated form `= - 0x10` does read as minus sixteen, but cannot be
+  written back with the minus attached, so a negative hex or binary enum value is now
+  recorded in decimal; a negative decimal keeps the spelling the author used.
+- **Parse errors come back in source order.** The two that are only known once the
+  whole file has been read — the unterminated comment and the unterminated string —
+  were appended after errors from earlier lines.
 - **An `if` without an `else` has its arm checked.**
 - **Every error path in `ct`'s `Queue`, `Deque`, `Map` and `Set` was dead.**
 - **A thread's stack is as big as the context that spawned it.**

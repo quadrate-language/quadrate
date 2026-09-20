@@ -1,0 +1,7 @@
+fn m() {
+	/* a
+	b */ true if {
+		2 print nl
+	}
+	3 print nl
+}

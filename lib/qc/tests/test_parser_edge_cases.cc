@@ -618,6 +618,193 @@ TEST(CompleteProgram) {
 	ASSERT(root->childCount() >= 4, "should have use, const, struct, and functions");
 }
 
+// Lexical constructs that run to end of file
+//
+// u8t ends a string token at EOF exactly as it does at a closing quote, and the
+// comment reader stops at EOF the same way, so both used to be accepted silently:
+// the swallowed text vanished and what was left looked like a clean parse of a
+// shorter program. The formatter then re-emitted the comment with a `*/` the author
+// never wrote, or took the rest of the file as a module name and grew it by a
+// newline on every pass.
+
+TEST(UnterminatedBlockCommentIsAnError) {
+	Qd::Ast ast;
+	const char* src = "fn main() { /* a }";
+	ast.generate(src, false, nullptr);
+
+	ASSERT(ast.hasErrors(), "an unterminated /* must be reported");
+}
+
+TEST(UnterminatedNestedBlockCommentIsAnError) {
+	Qd::Ast ast;
+	const char* src = "fn main() { /* a/* b/* c }";
+	ast.generate(src, false, nullptr);
+
+	ASSERT(ast.hasErrors(), "an unterminated nested /* must be reported");
+}
+
+TEST(NestedBlockCommentClosesAtItsOwnEnd) {
+	Qd::Ast ast;
+	const char* src = "fn t(){/*/**/}*/}";
+	Qd::IAstNode* root = ast.generate(src, false, nullptr);
+
+	ASSERT(root != nullptr, "root should not be null");
+	ASSERT(!ast.hasErrors(), "the inner */ does not close the outer comment");
+}
+
+TEST(UnterminatedStringInUseIsAnError) {
+	Qd::Ast ast;
+	const char* src = "use \"abc";
+	ast.generate(src, false, nullptr);
+
+	ASSERT(ast.hasErrors(), "an unterminated string in a use path must be reported");
+}
+
+TEST(UnterminatedStringInTestNameIsAnError) {
+	Qd::Ast ast;
+	const char* src = "test \"abc";
+	ast.generate(src, false, nullptr);
+
+	ASSERT(ast.hasErrors(), "an unterminated string in a test name must be reported");
+}
+
+// Tokens that cannot appear where they were being skipped
+//
+// Each of these used to be swallowed in silence, which left the source brace-count
+// one short of what the parser had actually consumed.
+
+TEST(BraceInNamedParameterListIsAnError) {
+	Qd::Ast ast;
+	const char* src = "fn i({){}";
+	ast.generate(src, false, nullptr);
+
+	ASSERT(ast.hasErrors(), "a brace in a parameter list must be reported");
+}
+
+TEST(BraceInAnonymousParameterListIsAnError) {
+	Qd::Ast ast;
+	const char* src = "fn n(){fn(}){}}";
+	ast.generate(src, false, nullptr);
+
+	ASSERT(ast.hasErrors(), "a brace in an anonymous fn parameter list must be reported");
+}
+
+TEST(LoneDashInParameterListIsAnError) {
+	Qd::Ast ast;
+	const char* src = "fn m(){fn(-}){}}";
+	ast.generate(src, false, nullptr);
+
+	ASSERT(ast.hasErrors(), "a '-' that is not part of '--' must be reported");
+}
+
+TEST(DeferWithoutABlockIsAnError) {
+	Qd::Ast ast;
+	const char* src = "fn main() {\n\tdefer\n}";
+	ast.generate(src, false, nullptr);
+
+	ASSERT(ast.hasErrors(), "'defer' without a block must be reported");
+}
+
+TEST(UnterminatedStructConstructionIsAnError) {
+	Qd::Ast ast;
+	const char* src = "var g = r{";
+	ast.generate(src, false, nullptr);
+
+	ASSERT(ast.hasErrors(), "a struct construction that reaches end of file must be reported");
+}
+
+TEST(BraceInTypeArgumentsIsAnError) {
+	Qd::Ast ast;
+	const char* src = "fn i(){fn(i<}>--){}}";
+	ast.generate(src, false, nullptr);
+
+	ASSERT(ast.hasErrors(), "a brace in a type argument list must be reported");
+}
+
+TEST(AmpersandWithoutAFunctionNameIsAnError) {
+	Qd::Ast ast;
+	const char* src = "fn t(){p{&}}}";
+	ast.generate(src, false, nullptr);
+
+	ASSERT(ast.hasErrors(), "'&' with no function name after it must be reported");
+}
+
+TEST(BraceAsAParameterTypeIsAnError) {
+	Qd::Ast ast;
+	const char* src = "fn a(){fn(n:}--){}}";
+	ast.generate(src, false, nullptr);
+
+	ASSERT(ast.hasErrors(), "a parameter type that is not a type name must be reported");
+}
+
+TEST(ArrayParameterTypeStillParses) {
+	Qd::Ast ast;
+	const char* src = "fn f(x:[]i64 -- r:i64) { x len }";
+	Qd::IAstNode* root = ast.generate(src, false, nullptr);
+
+	ASSERT(root != nullptr, "root should not be null");
+	ASSERT(!ast.hasErrors(), "a well-formed []T parameter must still parse");
+}
+
+TEST(BareDollarIsAnError) {
+	Qd::Ast ast;
+	const char* src = "fn s(){$//f{\n}}";
+	ast.generate(src, false, nullptr);
+
+	ASSERT(ast.hasErrors(), "'$' not followed by a string must be reported");
+}
+
+TEST(StringInterpolationStillParses) {
+	Qd::Ast ast;
+	const char* src = "fn s() {\n\t42 -> n\n\t$\"n is {n}\" print nl\n}";
+	Qd::IAstNode* root = ast.generate(src, false, nullptr);
+
+	ASSERT(root != nullptr, "root should not be null");
+	ASSERT(!ast.hasErrors(), "a well-formed interpolated string must still parse");
+}
+
+TEST(GenericTypeParameterStillParses) {
+	Qd::Ast ast;
+	const char* src = "fn f(b:Box<i64> -- r:i64) { b <<v }";
+	Qd::IAstNode* root = ast.generate(src, false, nullptr);
+
+	ASSERT(root != nullptr, "root should not be null");
+	ASSERT(!ast.hasErrors(), "a well-formed generic parameter must still parse");
+}
+
+TEST(ScopeOperatorWithoutANameIsAnError) {
+	Qd::Ast ast;
+	const char* src = "fn m(){i::}}";
+	ast.generate(src, false, nullptr);
+
+	ASSERT(ast.hasErrors(), "'::' with no name after it must be reported");
+}
+
+TEST(ParseErrorsComeBackInSourceOrder) {
+	Qd::Ast ast;
+	// The unterminated string is only detected once the file has been read, well after
+	// the missing '}' has been reported, so it has to be sorted back into place.
+	const char* src = "fn main() {\n\t\"abc\n";
+	ast.generate(src, false, nullptr);
+
+	const auto& errors = ast.getErrors();
+	ASSERT(errors.size() >= 2, "both the unterminated string and the missing '}' are reported");
+	for (size_t i = 1; i < errors.size(); i++) {
+		bool ordered = errors[i - 1].line < errors[i].line ||
+					   (errors[i - 1].line == errors[i].line && errors[i - 1].column <= errors[i].column);
+		ASSERT(ordered, "errors must be reported in source order");
+	}
+}
+
+TEST(ScopedIdentifierStillParses) {
+	Qd::Ast ast;
+	const char* src = "fn m() { math::abs }";
+	Qd::IAstNode* root = ast.generate(src, false, nullptr);
+
+	ASSERT(root != nullptr, "root should not be null");
+	ASSERT(!ast.hasErrors(), "a well-formed scoped identifier must still parse");
+}
+
 int main() {
 	return UC_PrintResults();
 }

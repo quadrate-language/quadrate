@@ -38,6 +38,10 @@ namespace Qd {
 						setNodePosition(extended, scanner, src);
 						tempNodes.push_back(extended);
 					} else {
+						// The token after `::` has been scanned and cannot be pushed back, so
+						// leaving it unreported swallowed it: `fn m(){i::}}` lost the brace
+						// that closed the body and still parsed clean.
+						errorReporter->reportError(scanner, "Expected a name after '::'");
 						// Put it back — unique_ptr must release ownership
 						tempNodes.push_back(existingOwner.release());
 					}
@@ -85,6 +89,8 @@ namespace Qd {
 						}
 						tempNodes.push_back(scoped);
 					} else {
+						// Same as above: the swallowed token is gone either way, so say so.
+						errorReporter->reportError(scanner, "Expected a name after '::'");
 						// No identifier after ::, put scope back
 						tempNodes.push_back(scopeOwner.release());
 					}
@@ -197,6 +203,7 @@ namespace Qd {
 				char32_t nextToken = u8t_scanner_scan(scanner);
 				if (nextToken == U8T_STRING) {
 					size_t sn;
+					noteUnterminatedString(scanner, src);
 					const char* strText = u8t_scanner_token_text(scanner, &sn);
 					std::string raw(strText);
 					// Strip outer quotes
@@ -212,7 +219,12 @@ namespace Qd {
 					parseStringInterpolation(raw, scanner, src, tempNodes);
 					continue;
 				} else {
-					// Not a string after $ — treat $ as unknown and process the consumed token normally
+					// `$` only ever introduces an interpolated string (spec 2121), and the token
+					// after it has already been scanned, so it reaches parseBlockStatement out
+					// of the loop's context -- without the comment detection, among other
+					// things, which is how `fn s(){$//f{` swallowed a brace and still parsed
+					// clean. Report the `$`, then process what followed as before.
+					errorReporter->reportError(scanner, "Expected a string after '$'");
 					IAstNode* extraNode = parseBlockStatement(nextToken, scanner, errorReporter, &n, src);
 					if (extraNode) {
 						tempNodes.push_back(extraNode);
@@ -553,6 +565,7 @@ namespace Qd {
 				caseValue.reset(new AstNodeLiteral(valueText, AstNodeLiteral::LiteralType::FLOAT));
 				setNodePosition(caseValue.get(), scanner, src);
 			} else if (token == U8T_STRING) {
+				noteUnterminatedString(scanner, src);
 				const char* valueText = u8t_scanner_token_text(scanner, &n);
 				caseValue.reset(new AstNodeLiteral(valueText, AstNodeLiteral::LiteralType::STRING));
 				setNodePosition(caseValue.get(), scanner, src);

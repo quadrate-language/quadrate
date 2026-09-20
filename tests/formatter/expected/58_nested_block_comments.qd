@@ -1,0 +1,9 @@
+fn main() {
+	/* outer /* inner */ still outer */
+	1 print nl
+	/* outer
+	/* inner
+	*/ still outer
+	*/
+	2 print nl
+}

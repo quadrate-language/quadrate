@@ -65,12 +65,28 @@ namespace Qd {
 					}
 					if (token == U8T_INTEGER) {
 						const char* valText = u8t_scanner_token_text(scanner, &n);
+						// u8t 1.4.0 reads a leading '-' as part of a number but only along its
+						// decimal path, so `-0x10` comes back as the integer `-0` followed by
+						// the identifier `x10`. Everywhere else that identifier is undefined
+						// and the compiler says so; here it would have become the next variant,
+						// and the formatter would then have written the enum back split in two.
+						char32_t glued = peekNextChar(scanner, src);
+						if (std::isalnum(static_cast<int>(glued)) || glued == U'_') {
+							errorReporter->reportError(scanner, "Malformed integer literal in enum value");
+						}
 						int64_t val = static_cast<int64_t>(strtoll(valText, nullptr, 0));
+						bool radixPrefixed = valText[0] == '0' && (valText[1] == 'x' || valText[1] == 'X' ||
+																		  valText[1] == 'b' || valText[1] == 'B');
 						if (negative) {
 							val = -val;
-							valueText = "-";
+							// `= - 0x1` is read as minus one but cannot be written back as
+							// `-0x1`, which the lexer does not read (see TODO, Upstream), so a
+							// negative hex or binary value is recorded in decimal. A negative
+							// decimal keeps the spelling the author used.
+							valueText = radixPrefixed ? std::to_string(val) : "-" + std::string(valText);
+						} else {
+							valueText = valText;
 						}
-						valueText += valText;
 						hasExplicitValue = true;
 						nextValue = val;
 					} else {
@@ -325,6 +341,7 @@ namespace Qd {
 						setNodePosition(numNode, scanner, src);
 						defaultNodes.push_back(numNode);
 					} else if (valToken == U8T_STRING) {
+						noteUnterminatedString(scanner, src);
 						const char* strText = u8t_scanner_token_text(scanner, &n);
 						AstNodeLiteral* strNode = new AstNodeLiteral(strText, AstNodeLiteral::LiteralType::STRING);
 						setNodePosition(strNode, scanner, src);
@@ -354,7 +371,14 @@ namespace Qd {
 							AstNodeLiteral* numNode = new AstNodeLiteral(negNum, AstNodeLiteral::LiteralType::FLOAT);
 							setNodePosition(numNode, scanner, src);
 							defaultNodes.push_back(numNode);
+						} else {
+							errorReporter->reportError(scanner, "Expected a number after '-' in a field default");
 						}
+					} else {
+						// The token has been scanned and cannot be pushed back, so dropping it
+						// swallowed it: in `struct c{e:i=}` the `}` that closed the declaration
+						// went with it, and the struct ran on into whatever followed.
+						errorReporter->reportError(scanner, "Expected a default value after '='");
 					}
 
 					if (!defaultNodes.empty()) {
@@ -389,6 +413,7 @@ namespace Qd {
 		std::string currentFieldName;
 		std::vector<IAstNode*> currentFieldNodes;
 		size_t slashPos = SIZE_MAX;
+		bool closed = false;
 
 		char32_t token;
 		while ((token = u8t_scanner_scan(scanner)) != U8T_EOF) {
@@ -477,6 +502,7 @@ namespace Qd {
 					structConstruct->addFieldInit(currentFieldName, std::move(currentFieldNodes));
 					currentFieldNodes.clear();
 				}
+				closed = true;
 				break;
 			}
 
@@ -570,6 +596,11 @@ namespace Qd {
 							setNodePosition(scoped, scanner, src);
 							currentFieldNodes.push_back(scoped);
 						}
+					} else {
+						// The token after `::` has been scanned and cannot be pushed back, so
+						// ignoring it swallowed it: `fn s(){a{F::}}}` lost the brace that closed
+						// the construction and still parsed clean.
+						errorReporter->reportError(scanner, "Expected a name after '::'");
 					}
 					continue;
 				}
@@ -685,6 +716,10 @@ namespace Qd {
 							currentFieldNodes.push_back(scoped);
 							continue;
 						}
+						// As in parsePrimaryExpression: the token after `::` has been scanned and
+						// cannot be pushed back, so ignoring it swallowed it -- `fn s(){a{F::}}}`
+						// lost the brace that closed the construction and still parsed clean.
+						errorReporter->reportError(scanner, "Expected a name after '::'");
 					}
 				}
 
@@ -721,6 +756,7 @@ namespace Qd {
 				currentFieldNodes.push_back(lit);
 			} else if (token == U8T_STRING) {
 				size_t n;
+				noteUnterminatedString(scanner, src);
 				const char* text = u8t_scanner_token_text(scanner, &n);
 				AstNodeLiteral* lit = new AstNodeLiteral(text, AstNodeLiteral::LiteralType::STRING);
 				setNodePosition(lit, scanner, src);
@@ -737,8 +773,12 @@ namespace Qd {
 					fastLineColumn(src, ampPosByte, &line, &column);
 					node->setPosition(line, column);
 					currentFieldNodes.push_back(node);
+				} else {
+					// The token after '&' has already been scanned, so ignoring it here
+					// swallowed it -- `fn t(){p{&}}}` lost a brace and still parsed clean, and
+					// no later pass can catch a brace that is gone.
+					errorReporter->reportError(scanner, "Expected a function name after '&'");
 				}
-				// If not followed by identifier, silently ignore (error will be caught by semantic validator)
 			} else if (token == '[') {
 				// Array literal inside struct construction: [elem1 elem2 ...]
 				size_t bracketPos = u8t_scanner_token_start(scanner);
@@ -753,6 +793,12 @@ namespace Qd {
 					if (elemToken == ']') {
 						break;
 					}
+					// A brace is not an array element, and skipping it swallowed the brace
+					// that closed the enclosing block.
+					if (elemToken == '{' || elemToken == '}') {
+						errorReporter->reportError(scanner, "Unexpected '{' or '}' in array literal");
+						break;
+					}
 					size_t en;
 					if (elemToken == U8T_INTEGER) {
 						const char* etext = u8t_scanner_token_text(scanner, &en);
@@ -765,6 +811,7 @@ namespace Qd {
 						setNodePosition(lit, scanner, src);
 						arrNode->addElement(lit);
 					} else if (elemToken == U8T_STRING) {
+						noteUnterminatedString(scanner, src);
 						const char* etext = u8t_scanner_token_text(scanner, &en);
 						AstNodeLiteral* lit = new AstNodeLiteral(etext, AstNodeLiteral::LiteralType::STRING);
 						setNodePosition(lit, scanner, src);
@@ -801,6 +848,7 @@ namespace Qd {
 								setNodePosition(lit, scanner, src);
 								nested->addElement(lit);
 							} else if (nestedToken == U8T_STRING) {
+								noteUnterminatedString(scanner, src);
 								const char* nt = u8t_scanner_token_text(scanner, &nn);
 								AstNodeLiteral* lit = new AstNodeLiteral(nt, AstNodeLiteral::LiteralType::STRING);
 								setNodePosition(lit, scanner, src);
@@ -827,6 +875,14 @@ namespace Qd {
 					currentFieldNodes.push_back(opNode);
 				}
 			}
+		}
+
+		// Reaching end of file rather than the closing '}' used to be accepted in silence,
+		// so `var g = r{` parsed clean and the formatter emitted the recorded source text
+		// with a newline after it -- which the next pass read back as part of the text,
+		// growing it a line at a time.
+		if (!closed) {
+			errorReporter->reportError(scanner, "Unterminated struct construction (reached end of file)");
 		}
 
 		// Clean up any remaining nodes that weren't added to a field
