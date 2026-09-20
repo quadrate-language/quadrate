@@ -71,7 +71,7 @@ fn worker() {
 }
 
 fn main() {
-	3 make<i64> -> threads
+	[3]i64 -> threads
 
 	0 3 1 for i {
 		threads i &worker spawn set

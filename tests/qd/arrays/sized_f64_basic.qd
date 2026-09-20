@@ -1,0 +1,8 @@
+// Test: [n]f64 - create float array
+fn main() {
+	// Create array with 2 elements
+	[2]f64 -> arr
+	arr len print nl          // Should print = 2
+	arr 0 nth print nl        // Should print = 0
+	arr 1 nth print nl        // Should print = 0
+}

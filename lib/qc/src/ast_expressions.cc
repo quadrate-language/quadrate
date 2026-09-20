@@ -638,6 +638,17 @@ namespace Qd {
 
 			if (elemToken != ']') {
 				errorReporter->reportError(scanner, "Expected ']' to close array literal");
+				return arrNode;
+			}
+
+			// A type name hard against the ']' makes this the `[size]T` form, and what was
+			// parsed as elements above is the size expression instead.
+			std::string elementType;
+			if (!parseArrayLiteralElementType(scanner, src, errorReporter, n, elementType)) {
+				return arrNode;
+			}
+			if (!elementType.empty()) {
+				arrNode->setElementType(elementType);
 			}
 
 			return arrNode;

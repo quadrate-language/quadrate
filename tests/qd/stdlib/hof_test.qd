@@ -53,7 +53,7 @@ test "hof::unless" {
 }
 
 test "hof::fold" {
-	0 make<i64> 1 append 2 append 3 append 4 append 5 append -> arr
+	[]i64 1 append 2 append 3 append 4 append 5 append -> arr
 	arr 0 fn (acc:i64 x:i64 -- r:i64) { acc x + } hof::fold 15 testing::assert_eq
 	arr free
 }
@@ -76,7 +76,7 @@ test "hof::bi_star" {
 
 test "hof::fold_right" {
 	// fold_right: fold from the right side
-	0 make<i64> 1 append 2 append 3 append -> arr
+	[]i64 1 append 2 append 3 append -> arr
 	// Subtraction to show right-to-left: 1 - (2 - (3 - 0)) = 1 - (2 - 3) = 1 - (-1) = 2
 	arr 0 fn (elem:i64 acc:i64 -- r:i64) { elem acc - } hof::fold_right 2 testing::assert_eq
 	arr free
@@ -84,7 +84,7 @@ test "hof::fold_right" {
 
 test "hof::map" {
 	// map: apply function to each element
-	0 make<i64> 1 append 2 append 3 append -> arr
+	[]i64 1 append 2 append 3 append -> arr
 	arr stack fn (i64 -- i64) { 2 * } hof::map -> result
 	result len 3 testing::assert_eq
 	result 0 nth cast<i64> 2 testing::assert_eq   // 1 * 2
@@ -96,7 +96,7 @@ test "hof::map" {
 
 test "hof::filter" {
 	// filter: keep elements matching predicate
-	0 make<i64> 1 append 2 append 3 append 4 append 5 append -> arr
+	[]i64 1 append 2 append 3 append 4 append 5 append -> arr
 	arr stack fn (i64 -- i64) { 2 % 0 == } hof::filter -> result
 	result len 2 testing::assert_eq  // 2 and 4 are even
 	result 0 nth cast<i64> 2 testing::assert_eq
@@ -107,8 +107,8 @@ test "hof::filter" {
 
 test "hof::any" {
 	// any: check if any element matches predicate
-	0 make<i64> 1 append 3 append 5 append -> odds
-	0 make<i64> 2 append 4 append 6 append -> evens
+	[]i64 1 append 3 append 5 append -> odds
+	[]i64 2 append 4 append 6 append -> evens
 
 	// Check if any odd number is even (should be false)
 	odds stack fn (i64 -- i64) { 2 % 0 == } hof::any testing::assert_false
@@ -122,8 +122,8 @@ test "hof::any" {
 
 test "hof::all" {
 	// all: check if all elements match predicate
-	0 make<i64> 2 append 4 append 6 append -> evens
-	0 make<i64> 2 append 3 append 4 append -> mixed
+	[]i64 2 append 4 append 6 append -> evens
+	[]i64 2 append 3 append 4 append -> mixed
 
 	// Check if all are even
 	evens stack fn (i64 -- i64) { 2 % 0 == } hof::all testing::assert_true
@@ -135,7 +135,7 @@ test "hof::all" {
 
 test "hof::find" {
 	// find: find first element matching predicate
-	0 make<i64> 1 append 2 append 3 append 4 append -> arr
+	[]i64 1 append 2 append 3 append 4 append -> arr
 
 	// Find first even number
 	arr stack fn (i64 -- i64) { 2 % 0 == } hof::find -> found -> elem

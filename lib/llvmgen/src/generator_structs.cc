@@ -808,9 +808,140 @@ namespace Qd {
 		builder->CreateCall(pushPtrFn, {ctx, structPtr});
 	}
 
+	// Emits `[n]T` for a struct T: an array of n distinct `T {}` instances. The size is already
+	// on the Quadrate stack.
+	//
+	// The array itself comes from qd_makep, the same entry point the scalar forms use, so the
+	// size is validated in one place -- a negative size reports "makep: negative size" rather
+	// than reaching qd_array_create, where it became a huge size_t, a failed malloc and a null
+	// array that only showed up as "len: null array" further down the program. The loop then
+	// overwrites each of the n null slots with a constructed struct.
+	void LlvmGenerator::Impl::generateStructFilledArray(const std::string& structName, llvm::Value* ctx) {
+		const StructLayout* layoutPtr = findStructDefinition(structName);
+		if (layoutPtr == nullptr) {
+			std::cerr << "Error: Unknown struct type in array literal: " << structName << std::endl;
+			return;
+		}
+		const StructLayout& layout = *layoutPtr;
+
+		// Take the size for the loop bound, then put it back for qd_makep to consume.
+		llvm::Value* count = generateInlinePopInt(ctx);
+		builder->CreateCall(pushIntFn, {ctx, count});
+
+		auto declare = [&](const char* name) {
+			llvm::Function* fn = module->getFunction(name);
+			if (!fn) {
+				auto fnTy = llvm::FunctionType::get(execResultTy, {contextPtrTy}, false);
+				fn = llvm::Function::Create(fnTy, llvm::Function::ExternalLinkage, name, *module);
+			}
+			return fn;
+		};
+		llvm::Function* makepFn = declare("qd_makep");
+		llvm::Function* dupFn = declare("qd_dup");
+		llvm::Function* setFn = declare("qd_set");
+
+		builder->CreateCall(makepFn, {ctx});
+
+		llvm::Function* currentFn = builder->GetInsertBlock()->getParent();
+		llvm::BasicBlock& entryBlock = currentFn->getEntryBlock();
+		llvm::IRBuilder<> entryBuilder(&entryBlock, entryBlock.getFirstInsertionPt());
+		llvm::Value* idxPtr = entryBuilder.CreateAlloca(int64Ty, nullptr, "fill_idx");
+		builder->CreateStore(builder->getInt64(0), idxPtr);
+
+		auto* condBlock = llvm::BasicBlock::Create(*context, "arrfill_cond", currentFn);
+		auto* bodyBlock = llvm::BasicBlock::Create(*context, "arrfill_body", currentFn);
+		auto* doneBlock = llvm::BasicBlock::Create(*context, "arrfill_done", currentFn);
+
+		builder->CreateBr(condBlock);
+
+		builder->SetInsertPoint(condBlock);
+		llvm::Value* idx = builder->CreateLoad(int64Ty, idxPtr, "arrfill_i");
+		builder->CreateCondBr(builder->CreateICmpSLT(idx, count, "arrfill_cmp"), bodyBlock, doneBlock);
+
+		// ( arr -- arr ) per iteration: dup the array, push the index, build the struct, and
+		// let `set` consume the three of them.
+		builder->SetInsertPoint(bodyBlock);
+		builder->CreateCall(dupFn, {ctx});
+		builder->CreateCall(pushIntFn, {ctx, builder->CreateLoad(int64Ty, idxPtr, "arrfill_i2")});
+		for (const auto& field : layout.fields) {
+			for (IAstNode* defaultNode : field.defaultValue) {
+				generateNode(defaultNode, ctx);
+			}
+		}
+		generateStructConstruction(layout.name, ctx);
+		builder->CreateCall(setFn, {ctx});
+		llvm::Value* nextIdx = builder->CreateAdd(
+				builder->CreateLoad(int64Ty, idxPtr, "arrfill_i3"), builder->getInt64(1), "arrfill_next");
+		builder->CreateStore(nextIdx, idxPtr);
+		builder->CreateBr(condBlock);
+
+		builder->SetInsertPoint(doneBlock);
+		lastPushedWasArray = true;
+	}
+
+	// Emits the `[size]T` form. The size expression leaves one integer on the Quadrate stack
+	// (or zero is pushed when the size was left out, as in `[]i64`), then the qd_make* entry
+	// point for the element type pops it and returns the array.
+	//
+	// The element-type dispatch is the one `make<T>` had: a type parameter of the enclosing
+	// generic reaches qd_makea, whose array adopts a type on first append, because generics are
+	// erased and the concrete type is not known at run time.
+	void LlvmGenerator::Impl::generateSizedArrayLiteral(AstNodeArrayLiteral* arrayLiteral, llvm::Value* ctx) {
+		const auto& sizeExpr = arrayLiteral->elements();
+		if (sizeExpr.empty()) {
+			builder->CreateCall(pushIntFn, {ctx, builder->getInt64(0)});
+		} else {
+			for (const auto& node : sizeExpr) {
+				generateNode(node.get(), ctx);
+			}
+		}
+
+		const std::string& elemType = arrayLiteral->elementType();
+
+		// A struct element type fills with instances rather than nulls: `[2]Point` is two
+		// distinct `Point {}`. Null slots are what makes field access on an unfilled slot
+		// segfault, so the zero of a struct is a constructed one. The validator has already
+		// checked that every field has a default, which is what makes `Point {}` legal.
+		if (isKnownStruct(elemType)) {
+			generateStructFilledArray(elemType, ctx);
+			return;
+		}
+
+		std::string fnName;
+		if (elemType == "i64" || elemType == "i32" || elemType == "i16" || elemType == "i8" || elemType == "u64" ||
+				elemType == "u32" || elemType == "u16" || elemType == "u8") {
+			fnName = "qd_makei";
+		} else if (elemType == "f64" || elemType == "f32") {
+			fnName = "qd_makef";
+		} else if (elemType == "str" || elemType == "string") {
+			fnName = "qd_makes";
+		} else if (elemType == "ptr" || isKnownStruct(elemType) ||
+				   (elemType.size() > 2 && elemType[0] == '[' && elemType[1] == ']')) {
+			fnName = "qd_makep";
+		} else {
+			fnName = "qd_makea";
+		}
+
+		llvm::Function* makeFn = module->getFunction(fnName);
+		if (!makeFn) {
+			auto fnTy = llvm::FunctionType::get(execResultTy, {contextPtrTy}, false);
+			makeFn = llvm::Function::Create(fnTy, llvm::Function::ExternalLinkage, fnName, *module);
+		}
+		builder->CreateCall(makeFn, {ctx});
+		lastPushedWasArray = true;
+	}
+
 	void LlvmGenerator::Impl::generateArrayLiteral(AstNodeArrayLiteral* arrayLiteral, llvm::Value* ctx) {
 		const auto& elements = arrayLiteral->elements();
 		size_t numElements = elements.size();
+
+		// `[size]T` -- the nodes above are the size expression, not elements. This is the
+		// lowering `make<T>` used to have: the size goes on the stack and one of the qd_make*
+		// entry points allocates and zero-fills.
+		if (arrayLiteral->hasElementType()) {
+			generateSizedArrayLiteral(arrayLiteral, ctx);
+			return;
+		}
 
 		if (numElements == 0) {
 			// Empty array - element type unknown until the first append (QD_ARRAY_TYPE_ANY = 4).

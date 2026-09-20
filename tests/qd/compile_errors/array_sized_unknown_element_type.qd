@@ -1,0 +1,5 @@
+// Test: the element type of `[n]T` has to name something.
+fn main() {
+	[3]Nonesuch -> a
+	a len print nl
+}

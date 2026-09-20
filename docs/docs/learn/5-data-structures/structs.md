@@ -166,7 +166,7 @@ struct Polygon {
 }
 
 fn main() {
-	3 make<Point> -> pts
+	[]Point -> pts
 	Point {
 		x = 0.0
 		y = 0.0
@@ -179,15 +179,31 @@ fn main() {
 		x = 0.5
 		y = 1.0
 	} -> p2
-	pts 0 p0 set
-	pts 1 p1 set
-	pts 2 p2 set
+	pts p0 append -> pts
+	pts p1 append -> pts
+	pts p2 append -> pts
 
 	Polygon {
 		points = pts
 	} -> triangle
 
 	triangle <<points len print nl  // 3
+}
+```
+
+`[]Point` starts the array empty and `append` grows it. The sized form `[3]Point` is available
+too, but it builds three real `Point {}` instances up front, so it needs every field of `Point`
+to declare a default:
+
+```qd
+struct Point { x:f64 = 0.0  y:f64 = 0.0 }
+
+fn main() {
+	[3]Point -> pts
+	pts 0 nth <<x print nl   // 0 -- a real Point, not an empty slot
+	pts 1 nth 2.5 >>y drop   // each element is its own instance
+	pts 0 nth <<y print nl   // 0
+	pts 1 nth <<y print nl   // 2.5
 }
 ```
 
@@ -352,7 +368,7 @@ struct Stack {
 }
 
 fn stack_new(capacity:i64 -- s:Stack) {
-	capacity make<i64> -> data
+	[capacity]i64 -> data
 	Stack {
 		data = data
 		top = 0

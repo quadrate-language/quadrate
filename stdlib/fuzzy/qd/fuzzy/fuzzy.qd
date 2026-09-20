@@ -295,7 +295,7 @@ pub fn best(query:str items:ptr max_results:i64 -- results:ptr count:i64) {
 	}
 
 	// Build result array
-	count makes -> results
+	[count]str -> results
 	0 -> i
 	loop {
 		i count >= if { break }

@@ -331,31 +331,6 @@ BUILTIN(shr, "( a n -- result )", "Shifts a right by n bits (arithmetic shift)."
 // ARRAY OPERATIONS
 // ============================================================================
 
-/// Create integer array.
-/// @signature ( size -- arr )
-/// @example 10 makei -> arr
-BUILTIN(makei, "( size -- arr )", "Creates an array of size integers, initialized to 0.")
-
-/// Create float array.
-/// @signature ( size -- arr )
-/// @example 10 makef -> arr
-BUILTIN(makef, "( size -- arr )", "Creates an array of size floats, initialized to 0.0.")
-
-/// Create string array.
-/// @signature ( size -- arr )
-/// @example 10 makes -> arr
-BUILTIN(makes, "( size -- arr )", "Creates an array of size strings, initialized to empty.")
-
-/// Create pointer array.
-/// @signature ( size -- arr )
-/// @example 10 makep -> arr
-BUILTIN(makep, "( size -- arr )", "Creates an array of size pointers, initialized to null.")
-
-/// Create typed array.
-/// @signature ( size -- arr )
-/// @example 10 make<Point> -> points
-BUILTIN(make, "( size -- arr )", "Creates a typed array (use with make<Type> syntax).")
-
 /// Get array length.
 /// @signature ( arr -- len )
 /// @example arr len // number of elements

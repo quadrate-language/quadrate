@@ -9,6 +9,16 @@
   ],
   "functions": [
     {
+      "name": "and",
+      "signature": "(a:i64 b:i64 -- result:i64)",
+      "failable": false,
+      "description": "Bitwise operations for integer manipulation.  `and`, `or` and `not` are logical words in Quadrate -- every non-zero value counts as true, so `2 1 and` is 1. The bitwise operations of the same names live here, where the `bits::` in front says which meaning is meant. `shl` and `shr` have no logical counterpart and stay builtins.  The four core operations below are one machine instruction each; the rest of the module is higher-level bit manipulation built on them. Bitwise AND. doccheck: page-context",
+      "params": [{"name": "a", "type": "i64", "description": "Left operand"}, {"name": "b", "type": "i64", "description": "Right operand"}],
+      "returns": [{"name": "result", "type": "i64", "description": "a & b"}],
+      "errors": [],
+      "examples": ["6 3 bits::and print  // 2"]
+    },
+    {
       "name": "clear_bit",
       "signature": "(value:i64 bit_pos:i64 -- result:i64)",
       "failable": false,
@@ -102,7 +112,7 @@
       "name": "mask",
       "signature": "(value:i64 num_bits:i64 -- result:i64)",
       "failable": false,
-      "description": "Bitwise operations for integer manipulation.  Core operations (and, or, xor, not, shl, shr) are builtins. This module provides higher-level bit manipulation functions. Keep only the bottom N bits. doccheck: page-context",
+      "description": "Keep only the bottom N bits. doccheck: page-context",
       "params": [{"name": "value", "type": "i64", "description": "Input value"}, {"name": "num_bits", "type": "i64", "description": "Number of bits to keep from LSB"}],
       "returns": [{"name": "result", "type": "i64", "description": "Masked value"}],
       "errors": [],
@@ -117,6 +127,26 @@
       "returns": [{"name": "result", "type": "i64", "description": "Next power of two"}],
       "errors": [],
       "examples": ["5 bits::next_power_of_two print  // 8", "8 bits::next_power_of_two print  // 8"]
+    },
+    {
+      "name": "not",
+      "signature": "(a:i64 -- result:i64)",
+      "failable": false,
+      "description": "Bitwise NOT (ones' complement).",
+      "params": [{"name": "a", "type": "i64", "description": "Operand"}],
+      "returns": [{"name": "result", "type": "i64", "description": "~a"}],
+      "errors": [],
+      "examples": ["5 bits::not print  // -6"]
+    },
+    {
+      "name": "or",
+      "signature": "(a:i64 b:i64 -- result:i64)",
+      "failable": false,
+      "description": "Bitwise OR.",
+      "params": [{"name": "a", "type": "i64", "description": "Left operand"}, {"name": "b", "type": "i64", "description": "Right operand"}],
+      "returns": [{"name": "result", "type": "i64", "description": "a | b"}],
+      "errors": [],
+      "examples": ["6 3 bits::or print  // 7"]
     },
     {
       "name": "popcount",
@@ -187,6 +217,16 @@
       "returns": [{"name": "result", "type": "i64", "description": "Value with bit toggled"}],
       "errors": [],
       "examples": ["0b1010 0 bits::toggle_bit print  // 11 (0b1011)"]
+    },
+    {
+      "name": "xor",
+      "signature": "(a:i64 b:i64 -- result:i64)",
+      "failable": false,
+      "description": "Bitwise XOR.",
+      "params": [{"name": "a", "type": "i64", "description": "Left operand"}, {"name": "b", "type": "i64", "description": "Right operand"}],
+      "returns": [{"name": "result", "type": "i64", "description": "a ^ b"}],
+      "errors": [],
+      "examples": ["6 3 bits::xor print  // 5"]
     }
   ]
 }

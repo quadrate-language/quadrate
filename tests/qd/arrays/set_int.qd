@@ -1,7 +1,7 @@
 // Test: set with integer array
 fn main() {
 	// Create array and set elements
-	3 makei -> arr
+	[3]i64 -> arr
 	arr 0 100 set
 	arr 1 200 set
 	arr 2 300 set

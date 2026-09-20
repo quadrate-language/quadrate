@@ -161,7 +161,7 @@ namespace Qd {
 						// signature and the file still parsed.
 						token = u8t_scanner_scan(scanner);
 						if (token != ']') {
-							errorReporter->reportError(scanner, "Expected ']' after '[' in an array type");
+							reportArrayTypeBracketError(scanner, token, errorReporter);
 							break;
 						}
 						token = u8t_scanner_scan(scanner);
@@ -279,7 +279,7 @@ namespace Qd {
 				// Unnamed array type parameter: []T -- same as the named form above.
 				token = u8t_scanner_scan(scanner);
 				if (token != ']') {
-					errorReporter->reportError(scanner, "Expected ']' after '[' in an array type");
+					reportArrayTypeBracketError(scanner, token, errorReporter);
 					break;
 				}
 				token = u8t_scanner_scan(scanner);
@@ -544,7 +544,7 @@ namespace Qd {
 						// signature and the file still parsed.
 						token = u8t_scanner_scan(scanner);
 						if (token != ']') {
-							errorReporter->reportError(scanner, "Expected ']' after '[' in an array type");
+							reportArrayTypeBracketError(scanner, token, errorReporter);
 							break;
 						}
 						token = u8t_scanner_scan(scanner);
@@ -656,7 +656,7 @@ namespace Qd {
 				// Unnamed array type parameter: []T -- same as the named form above.
 				token = u8t_scanner_scan(scanner);
 				if (token != ']') {
-					errorReporter->reportError(scanner, "Expected ']' after '[' in an array type");
+					reportArrayTypeBracketError(scanner, token, errorReporter);
 					break;
 				}
 				token = u8t_scanner_scan(scanner);

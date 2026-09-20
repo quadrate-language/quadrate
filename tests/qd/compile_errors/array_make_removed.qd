@@ -1,0 +1,9 @@
+// Test: the removed array-creation builtins name their replacement.
+//
+// `make` with no type parameter used to pass the validator and fail at link with an
+// undefined reference to a `qd_make` that never existed, so it is the one that most needed
+// to reach the user as a compile error.
+fn main() {
+	10 make -> a
+	a len print nl
+}

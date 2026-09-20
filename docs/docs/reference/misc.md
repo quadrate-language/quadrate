@@ -108,7 +108,7 @@ fn op_mul(a:i64 b:i64 -- r:i64) {
 }
 
 fn main() {
-	3 make<ptr> -> ops
+	[3]ptr -> ops
 	ops 0 &op_add set
 	ops 1 &op_sub set
 	ops 2 &op_mul set
@@ -123,7 +123,7 @@ fn main() {
 
 ```qd
 fn map(arr:[]i64 f:fn(i64 -- i64) -- result:[]i64) {
-	arr len make<i64> -> result
+	[arr len]i64 -> result
 	0 arr len 1 for i {
 		result i arr i nth f call set
 	}

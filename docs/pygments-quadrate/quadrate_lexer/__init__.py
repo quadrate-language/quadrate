@@ -50,7 +50,6 @@ class QuadrateLexer(RegexLexer):
 
     # Built-in array operations
     builtins_array = (
-        'makei', 'makef', 'makes', 'makep', 'make',
         'len', 'nth', 'set', 'append',
     )
 

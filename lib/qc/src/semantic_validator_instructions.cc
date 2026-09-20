@@ -956,45 +956,6 @@ namespace Qd {
 			}
 			return;
 		}
-		// Array creation: make, makei, makef, makes, makep ( size -- arr )
-		// All create typed arrays, always return pointer
-		else if (strcmp(name, "make") == 0 || strcmp(name, "makei") == 0 || strcmp(name, "makef") == 0 ||
-				 strcmp(name, "makes") == 0 || strcmp(name, "makep") == 0) {
-			if (typeStack.empty()) {
-				std::string errorMsg = "Type error in '";
-				errorMsg += name;
-				errorMsg += "': Stack underflow (requires 1 integer for size)";
-				reportErrorConditional(node, errorMsg.c_str(), reportErrors);
-				return;
-			}
-			// Pop size argument
-			typeStack.pop_back();
-			if (!structTypeStack.empty()) {
-				structTypeStack.pop_back();
-			}
-			// Push pointer (array) with element type tracking
-			typeStack.push_back(StackValueType::PTR);
-			if (strcmp(name, "makei") == 0) {
-				structTypeStack.push_back("[]i64");
-			} else if (strcmp(name, "makef") == 0) {
-				structTypeStack.push_back("[]f64");
-			} else if (strcmp(name, "makes") == 0) {
-				structTypeStack.push_back("[]str");
-			} else if (strcmp(name, "makep") == 0) {
-				structTypeStack.push_back("[]ptr");
-			} else if (strcmp(name, "make") == 0) {
-				// Generic make<T>: read type param from instruction node
-				auto* inst = static_cast<AstNodeInstruction*>(node);
-				if (!inst->typeParam().empty()) {
-					structTypeStack.push_back("[]" + inst->typeParam());
-				} else {
-					structTypeStack.push_back("[]i64"); // default
-				}
-			} else {
-				structTypeStack.push_back("");
-			}
-			return;
-		}
 		// Array length: len ( arr -- len )
 		// Returns the length of an array, consuming the array reference
 		else if (strcmp(name, "len") == 0) {

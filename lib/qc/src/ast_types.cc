@@ -198,7 +198,7 @@ namespace Qd {
 							continue;
 						}
 					} else {
-						errorReporter->reportError(scanner, "Expected ']' after '['");
+						reportArrayTypeBracketError(scanner, token, errorReporter);
 						continue;
 					}
 				} else if (token == '*') {
@@ -359,6 +359,57 @@ namespace Qd {
 						} else {
 							errorReporter->reportError(scanner, "Expected a number after '-' in a field default");
 						}
+					} else if (valToken == '[') {
+						// An array default: `xs:[]i64 = []i64`, `= [4]i64`, `= [1 2 3]`. Without
+						// this an array field could never have a default, and a struct with one
+						// could never be default-constructed -- which is what `[n]T` for a struct
+						// needs, since it means n of `T {}`.
+						AstNodeArrayLiteral* arrNode = new AstNodeArrayLiteral();
+						setNodePosition(arrNode, scanner, src);
+						char32_t arrToken;
+						while ((arrToken = u8t_scanner_scan(scanner)) != U8T_EOF) {
+							if (arrToken == ']') {
+								break;
+							}
+							// A brace here is the one that closes the struct: swallowing it would
+							// run the declaration on into whatever followed.
+							if (arrToken == '{' || arrToken == '}') {
+								errorReporter->reportError(scanner, "Expected ']' to close an array default");
+								break;
+							}
+							size_t an;
+							const char* aText = u8t_scanner_token_text(scanner, &an);
+							if (arrToken == U8T_INTEGER) {
+								auto* lit = new AstNodeLiteral(aText, AstNodeLiteral::LiteralType::INTEGER);
+								setNodePosition(lit, scanner, src);
+								arrNode->addElement(lit);
+							} else if (arrToken == U8T_FLOAT) {
+								auto* lit = new AstNodeLiteral(aText, AstNodeLiteral::LiteralType::FLOAT);
+								setNodePosition(lit, scanner, src);
+								arrNode->addElement(lit);
+							} else if (arrToken == U8T_STRING) {
+								noteUnterminatedString(scanner, src);
+								auto* lit = new AstNodeLiteral(aText, AstNodeLiteral::LiteralType::STRING);
+								setNodePosition(lit, scanner, src);
+								arrNode->addElement(lit);
+							} else if (arrToken == U8T_IDENTIFIER) {
+								auto* ident = new AstNodeIdentifier(aText);
+								setNodePosition(ident, scanner, src);
+								arrNode->addElement(ident);
+							} else {
+								errorReporter->reportError(scanner, "Unexpected token in an array default");
+								break;
+							}
+						}
+						if (arrToken == ']') {
+							size_t etn;
+							std::string elementType;
+							if (parseArrayLiteralElementType(scanner, src, errorReporter, &etn, elementType) &&
+									!elementType.empty()) {
+								arrNode->setElementType(elementType);
+							}
+						}
+						defaultNodes.push_back(arrNode);
 					} else {
 						// The token has been scanned and cannot be pushed back, so dropping it
 						// swallowed it: in `struct c{e:i=}` the `}` that closed the declaration
@@ -849,6 +900,17 @@ namespace Qd {
 						arrNode->addElement(nested);
 					}
 				}
+				// A type name hard against the ']' makes this the `[size]T` form, the same as
+				// in expression position. Without it, `P { xs = [4]Cell }` would parse as a
+				// one-element literal and then choke on `Cell`.
+				if (elemToken == ']') {
+					size_t etn;
+					std::string elementType;
+					if (parseArrayLiteralElementType(scanner, src, errorReporter, &etn, elementType) &&
+							!elementType.empty()) {
+						arrNode->setElementType(elementType);
+					}
+				}
 				currentFieldNodes.push_back(arrNode);
 			} else if (token == ',') {
 				// Commas are not part of struct instantiation syntax
@@ -920,6 +982,10 @@ namespace Qd {
 					const char* elemType = u8t_scanner_token_text(scanner, &n);
 					targetType = "[]" + std::string(elemType);
 				}
+			} else {
+				// Falling through to "Expected type after '='" sent the reader looking for a
+				// missing word; `type Grid = [10]i64` has a size where no type can take one.
+				reportArrayTypeBracketError(scanner, token, errorReporter);
 			}
 		} else if (token == U8T_IDENTIFIER) {
 			const char* typeName = u8t_scanner_token_text(scanner, &n);

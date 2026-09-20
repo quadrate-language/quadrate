@@ -4,6 +4,28 @@
 
 ## Functions
 
+### `fn` and
+
+Bitwise operations for integer manipulation.  `and`, `or` and `not` are logical words in Quadrate -- every non-zero value counts as true, so `2 1 and` is 1. The bitwise operations of the same names live here, where the `bits::` in front says which meaning is meant. `shl` and `shr` have no logical counterpart and stay builtins.  The four core operations below are one machine instruction each; the rest of the module is higher-level bit manipulation built on them. Bitwise AND. doccheck: page-context
+
+**Signature:** `(a:i64 b:i64 -- result:i64)`
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `a` | `i64` | Left operand |
+| `b` | `i64` | Right operand |
+
+| Output | Type | Description |
+|--------|------|-------------|
+| `result` | `i64` | a & b |
+
+**Example:**
+
+```qd
+6 3 bits::and print  // 2
+```
+---
+
 ### `fn` clear_bit
 
 Clear a bit to 0.
@@ -201,7 +223,7 @@ Get the lowest set bit as a value (isolate lowest bit).
 
 ### `fn` mask
 
-Bitwise operations for integer manipulation.  Core operations (and, or, xor, not, shl, shr) are builtins. This module provides higher-level bit manipulation functions. Keep only the bottom N bits. doccheck: page-context
+Keep only the bottom N bits. doccheck: page-context
 
 **Signature:** `(value:i64 num_bits:i64 -- result:i64)`
 
@@ -240,6 +262,49 @@ Find the next power of two greater than or equal to value.
 ```qd
 5 bits::next_power_of_two print  // 8
 8 bits::next_power_of_two print  // 8
+```
+---
+
+### `fn` not
+
+Bitwise NOT (ones' complement).
+
+**Signature:** `(a:i64 -- result:i64)`
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `a` | `i64` | Operand |
+
+| Output | Type | Description |
+|--------|------|-------------|
+| `result` | `i64` | ~a |
+
+**Example:**
+
+```qd
+5 bits::not print  // -6
+```
+---
+
+### `fn` or
+
+Bitwise OR.
+
+**Signature:** `(a:i64 b:i64 -- result:i64)`
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `a` | `i64` | Left operand |
+| `b` | `i64` | Right operand |
+
+| Output | Type | Description |
+|--------|------|-------------|
+| `result` | `i64` | a \| b |
+
+**Example:**
+
+```qd
+6 3 bits::or print  // 7
 ```
 ---
 
@@ -397,4 +462,26 @@ Toggle a bit.
 
 ```qd
 0b1010 0 bits::toggle_bit print  // 11 (0b1011)
+```
+---
+
+### `fn` xor
+
+Bitwise XOR.
+
+**Signature:** `(a:i64 b:i64 -- result:i64)`
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `a` | `i64` | Left operand |
+| `b` | `i64` | Right operand |
+
+| Output | Type | Description |
+|--------|------|-------------|
+| `result` | `i64` | a ^ b |
+
+**Example:**
+
+```qd
+6 3 bits::xor print  // 5
 ```

@@ -25,26 +25,26 @@ fn main() {
 	// discard each kind of heap value
 	0 200 1 for i {
 		make_p drop
-		0 make<i64> 1 append drop
+		[]i64 1 append drop
 		[[1 2] [3 4]] drop
 	}
 
 	// a value in two slots survives one of them being dropped
-	0 make<i64> 5 append dup drop
+	[]i64 5 append dup drop
 	len print nl
 
 	make_p dup drop
 	<<x print nl
 
 	// the shufflers move references between slots without losing or duplicating one
-	0 make<i64> 1 append 0 make<i64> 2 append 0 make<i64> 3 append
+	[]i64 1 append []i64 2 append []i64 3 append
 	rot drop drop
 	len print nl
 
-	0 make<i64> 8 append 0 make<i64> 9 append
+	[]i64 8 append []i64 9 append
 	nip len print nl
 
-	0 make<i64> 4 append 0 make<i64> 6 append dup2 drop drop drop
+	[]i64 4 append []i64 6 append dup2 drop drop drop
 	len print nl
 
 	"still running" print nl

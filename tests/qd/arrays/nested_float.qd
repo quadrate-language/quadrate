@@ -2,14 +2,14 @@
 
 fn main() {
 	// Create 2x3 matrix of floats
-	2 makep -> matrix
+	[2]ptr -> matrix
 
-	3 makef -> row1
+	[3]f64 -> row1
 	row1 0 1.5 set
 	row1 1 2.5 set
 	row1 2 3.5 set
 
-	3 makef -> row2
+	[3]f64 -> row2
 	row2 0 4.5 set
 	row2 1 5.5 set
 	row2 2 6.5 set

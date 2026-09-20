@@ -36,7 +36,7 @@ Compiled regular expression.
 
 | Field | Type | Description |
 |-------|------|-------------|
-| `re` | `ptr` | Internal NFA state |
+| `re` | `Nfa` | Internal NFA state |
 
 ### Constructors
 

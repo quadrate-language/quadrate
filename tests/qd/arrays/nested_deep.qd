@@ -2,9 +2,9 @@
 
 fn main() {
 	// Create 1x1x4 nested structure
-	1 makep -> level1
-	1 makep -> level2
-	4 makei -> leaf
+	[1]ptr -> level1
+	[1]ptr -> level2
+	[4]i64 -> leaf
 
 	leaf 0 1 set
 	leaf 1 2 set

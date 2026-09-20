@@ -1284,6 +1284,9 @@ namespace Qd {
 				return static_cast<AstNodeStructConstruction*>(elem)->structName();
 			case IAstNode::Type::ARRAY_LITERAL: {
 				auto* nested = static_cast<AstNodeArrayLiteral*>(elem);
+				if (nested->hasElementType()) {
+					return nested->declaredArrayType();
+				}
 				if (nested->elements().empty()) {
 					return "[]any";
 				}
@@ -1649,6 +1652,73 @@ namespace Qd {
 		}
 	}
 
+	// `[n]T` has to name a type whose zero exists. The scalars and `ptr` always have one. A
+	// struct has one when every field has a default, because the form means n distinct
+	// `T {}` and that is exactly when `T {}` is legal -- which also puts the decision about
+	// whether a type has a sensible zero on the struct's author rather than on the array. A
+	// type parameter of the enclosing generic is erased, so its answer comes at run time from
+	// an array that adopts its element type on first append.
+	void SemanticValidator::validateSizedArrayLiteral(IAstNode* literal) {
+		auto* lit = static_cast<AstNodeArrayLiteral*>(literal);
+		const std::string& elem = lit->elementType();
+		if (elem.empty()) {
+			return;
+		}
+
+		static const char* const kScalarTypes[] = {"i64", "i32", "i16", "i8", "u64", "u32", "u16", "u8", "f64", "f32",
+				"str", "string", "ptr", "bool", "any"};
+		for (const char* scalar : kScalarTypes) {
+			if (elem == scalar) {
+				return;
+			}
+		}
+		if (isTypeParamName(elem, mCurrentTypeParams)) {
+			return;
+		}
+
+		std::string resolved = elem;
+		auto aliasIt = mTypeAliases.find(resolved);
+		if (aliasIt != mTypeAliases.end()) {
+			resolved = aliasIt->second;
+		}
+
+		const auto* fieldTypes = lookupStructFieldTypes(resolved);
+		if (fieldTypes == nullptr) {
+			std::string errorMsg = "Unknown element type \'";
+			errorMsg += elem;
+			errorMsg += "\' in array literal";
+			reportError(lit, errorMsg.c_str());
+			return;
+		}
+
+		// With the size left out -- `[]Point` -- there are zero elements and nothing is ever
+		// constructed, so the struct needs no zero. This is the form to reach for when a type
+		// has no sensible default, and requiring one here would have made it unreachable. The
+		// type still has to name something, which is why this sits below that check.
+		if (lit->elements().empty()) {
+			return;
+		}
+
+		const std::unordered_set<std::string>* fieldsWithDefaults = nullptr;
+		auto defaultsIt = mStructFieldsWithDefaults.find(resolved);
+		if (defaultsIt != mStructFieldsWithDefaults.end()) {
+			fieldsWithDefaults = &defaultsIt->second;
+		}
+		for (const auto& fieldEntry : *fieldTypes) {
+			const bool hasDefault = fieldsWithDefaults != nullptr && fieldsWithDefaults->count(fieldEntry.first) > 0;
+			if (!hasDefault) {
+				std::string errorMsg = "Missing field \'";
+				errorMsg += fieldEntry.first;
+				errorMsg += "\' in struct construction \'";
+				errorMsg += elem;
+				errorMsg += "\': \'[n]";
+				errorMsg += elem;
+				errorMsg += "\' builds n of them, so every field needs a default";
+				reportError(lit, errorMsg.c_str());
+			}
+		}
+	}
+
 	void SemanticValidator::typeCheckBlock(IAstNode* node, std::vector<StackValueType>& typeStack,
 			std::unordered_map<std::string, StackValueType>& localVariables,
 			std::vector<std::string>& structTypeStack) {
@@ -1701,6 +1771,13 @@ namespace Qd {
 				// the permissive answer and matches an empty literal.
 				AstNodeArrayLiteral* arrLit = static_cast<AstNodeArrayLiteral*>(child);
 				checkAnonymousFunctionsWithin(arrLit, localVariables);
+				// The `[size]T` form declares its element type, so there is nothing to infer:
+				// what is inside the brackets is the size expression, not elements.
+				if (arrLit->hasElementType()) {
+					validateSizedArrayLiteral(arrLit);
+					structTypeStack.push_back(arrLit->declaredArrayType());
+					break;
+				}
 				if (arrLit->elements().empty()) {
 					structTypeStack.push_back("[]any");
 				} else {
@@ -2533,6 +2610,10 @@ namespace Qd {
 								// Array literal pushes a pointer with element type info
 								AstNodeArrayLiteral* arrLit = static_cast<AstNodeArrayLiteral*>(exprNode);
 								exprTypeStack.push_back(StackValueType::PTR);
+								if (arrLit->hasElementType()) {
+									exprStructTypeStack.push_back(arrLit->declaredArrayType());
+									break;
+								}
 								if (arrLit->elements().empty()) {
 									exprStructTypeStack.push_back("[]any");
 								} else {

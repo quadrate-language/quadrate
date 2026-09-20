@@ -314,9 +314,9 @@ fn get_cheatsheet_content( -- content:str) {
 
 	s "ARRAYS (builtins)\n" strings::concat -> s
 	s "-----------------\n" strings::concat -> s
-	s "makes              n -- arr               Create array of size n\n" strings::concat -> s
-	s "makei              n -- arr               Create int array of size n\n" strings::concat -> s
-	s "makef              n -- arr               Create float array of size n\n" strings::concat -> s
+	s "[a b c]            -- arr                 Array literal\n" strings::concat -> s
+	s "[n]i64             -- arr                 Array of n zeroed i64 (also f64, str, ptr)\n" strings::concat -> s
+	s "[]i64              -- arr                 Empty array of i64\n" strings::concat -> s
 	s "len                arr -- length          Array length\n" strings::concat -> s
 	s "nth                arr idx -- elem        Get element at index\n" strings::concat -> s
 	s "set                arr idx val -- arr     Set element (returns new arr)\n" strings::concat -> s

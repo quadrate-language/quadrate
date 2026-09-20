@@ -1,7 +1,7 @@
 // Test: set with string array
 fn main() {
 	// Create string array and set elements
-	3 makes -> arr
+	[3]str -> arr
 	arr 0 "first" set
 	arr 1 "second" set
 	arr 2 "third" set

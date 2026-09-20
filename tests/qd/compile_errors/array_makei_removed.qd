@@ -1,0 +1,5 @@
+// Test: the legacy per-type array-creation builtins name their replacement.
+fn main() {
+	10 makei -> a
+	a len print nl
+}

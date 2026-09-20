@@ -9,7 +9,7 @@
       "name": "Regex",
       "description": "Compiled regular expression.",
       "fields": [
-        {"name": "re", "type": "ptr", "description": "Internal NFA state"}
+        {"name": "re", "type": "Nfa", "description": "Internal NFA state"}
       ]
     }
   ],

@@ -3,17 +3,17 @@ use flag
 
 // flag::parse takes the argument array os::args returns; these build one by hand.
 fn args0( -- args:ptr) {
-	0 makes
+	[]str
 }
 
 fn args1(a:str -- args:ptr) {
-	1 makes -> r
+	[1]str -> r
 	r 0 a set
 	r
 }
 
 fn args2(a:str b:str -- args:ptr) {
-	2 makes -> r
+	[2]str -> r
 	r 0 a set
 	r 1 b set
 	r

@@ -1,0 +1,24 @@
+// Test: whether the brackets hold elements or a size is decided by adjacency.
+//
+// A type name hard against the ']' makes the brackets a size. Anything else -- whitespace,
+// an arrow, end of the literal -- leaves them elements. This is the whole disambiguation,
+// so both readings are pinned here.
+fn main() {
+	[10]i64 -> sized
+	sized len print nl        // 10: a size
+
+	[10] -> elements
+	elements len print nl     // 1: one element, the number 10
+	elements 0 nth print nl   // 10
+
+	[]i64 -> typedEmpty
+	typedEmpty len print nl   // 0: the size form with the size left out
+
+	[] -> untypedEmpty
+	untypedEmpty len print nl // 0: the element form with no elements
+
+	[3]f64 -> f
+	f len print nl            // 3
+	[1.5 2.5] -> g
+	g len print nl            // 2
+}

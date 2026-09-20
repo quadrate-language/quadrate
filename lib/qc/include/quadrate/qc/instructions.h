@@ -27,8 +27,9 @@ namespace Qd {
 			"eq", "gt", "gte", "lt", "lte", "neq", "within",
 			// Stack operations
 			"call", "clear", "depth", "drop", "dup", "dup2", "free", "len", "nip", "nth", "over", "pick", "rot", "swap",
-			// Array operations
-			"append", "make", "makef", "makei", "makep", "makes", "set",
+			// Array operations. Creation is a literal -- `[10]i64`, `[]i64` -- not an
+			// instruction; see REMOVED_INSTRUCTIONS below.
+			"append", "set",
 			// Type casting and introspection
 			"cast", "sizeof",
 			// Raw memory stores/loads — lower directly to LLVM store/load.
@@ -75,6 +76,13 @@ namespace Qd {
 					"the bitwise operators moved to the bits module so 'and', 'or' and 'not' could take "
 					"their logical meanings"},
 			{"dupd", "( a b -- a a b )", "-> b -> a  a a b"},
+			{"make", "( size -- arr )", "[N]T', and an empty one is '[]T",
+					"array creation is a literal now, spelling the element type the way a signature does, so "
+					"'N make<T>' is written"},
+			{"makef", "( size -- arr )", "[N]f64", "array creation is a literal now, so 'N makef' is written"},
+			{"makei", "( size -- arr )", "[N]i64", "array creation is a literal now, so 'N makei' is written"},
+			{"makep", "( size -- arr )", "[N]ptr", "array creation is a literal now, so 'N makep' is written"},
+			{"makes", "( size -- arr )", "[N]str", "array creation is a literal now, so 'N makes' is written"},
 			{"nipd", "( a b c -- a c )", "-> c -> b -> a  a c"},
 			{"over2", "( a b c d -- a b c d a b )", "-> d -> c -> b -> a  a b c d a b"},
 			{"overd", "( a b c -- a b a c )", "-> c -> b -> a  a b a c"},

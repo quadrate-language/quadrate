@@ -70,7 +70,7 @@ fn div_op(a:i64 b:i64 -- r:i64) {
 }
 
 fn main() {
-	4 make<ptr> -> ops
+	[4]ptr -> ops
 	ops 0 &addition set
 	ops 1 &subtraction set
 	ops 2 &multiplication set
@@ -110,7 +110,7 @@ fn main() {
 
 ```qd
 fn map(arr:[]i64 f:fn(i64 -- i64) -- result:[]i64) {
-	arr len make<i64> -> result
+	[arr len]i64 -> result
 	0 arr len 1 for i {
 		result i arr i nth f call set
 	}
@@ -141,7 +141,7 @@ fn filter(arr:[]i64 pred:fn(i64 -- i64) -- result:[]i64) {
 	}
 
 	// Create result
-	count make<i64> -> result
+	[count]i64 -> result
 	0 -> j
 	0 arr len 1 for i {
 		arr i nth pred call if {
@@ -222,7 +222,7 @@ Dispatch based on a selector:
 
 ```qd
 fn handle_cmd(cmd:i64 -- ) {
-	4 make<ptr> -> handlers
+	[4]ptr -> handlers
 	handlers 0 &cmd_help set
 	handlers 1 &cmd_list set
 	handlers 2 &cmd_add set

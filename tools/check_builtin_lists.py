@@ -43,8 +43,10 @@ PROSE_SOURCES = [
 ]
 
 # Removed names that are ordinary English words, so a word-boundary scan of prose says
-# nothing. See the note at the prose scan below.
-PROSE_EXEMPT = {"read"}
+# nothing. See the note at the prose scan below. "make" and "makes" joined the list when
+# array creation became a literal: the playground's commentary is full of "named params make
+# the swap explicit", and no scan can tell that from the instruction that used to exist.
+PROSE_EXEMPT = {"read", "make", "makes"}
 
 
 def read(rel):

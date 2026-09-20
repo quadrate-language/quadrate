@@ -551,6 +551,8 @@ namespace Qd {
 		void generateFieldAccess(AstNodeFieldAccess* fieldAccess, llvm::Value* ctx);
 		void generateFieldSet(AstNodeFieldSet* fieldSet, llvm::Value* ctx);
 		void generateArrayLiteral(AstNodeArrayLiteral* arrayLiteral, llvm::Value* ctx);
+		void generateSizedArrayLiteral(AstNodeArrayLiteral* arrayLiteral, llvm::Value* ctx);
+		void generateStructFilledArray(const std::string& structName, llvm::Value* ctx);
 		bool isKnownStruct(const std::string& typeName);
 		size_t getTypeSize(const std::string& typeName);
 		void generateStructCleanup(llvm::Value* structPtr, const std::string& structTypeName);

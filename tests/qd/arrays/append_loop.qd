@@ -1,6 +1,6 @@
 // Test: building array in a loop
 fn main() {
-	0 makei -> arr
+	[]i64 -> arr
 	0 5 1 for it {
 		arr it append -> arr
 	}

@@ -1,0 +1,10 @@
+// Test: `[n]T` for a struct means n of `T {}`, so it is allowed exactly where `T {}` is.
+//
+// A field with no default is what makes `Point {}` illegal, and the array form inherits
+// that rather than falling back to null slots.
+struct Point { x:f64  y:f64 }
+
+fn main() {
+	[3]Point -> ps
+	ps len print nl
+}

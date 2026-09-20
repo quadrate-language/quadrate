@@ -2,6 +2,9 @@
 
 <!-- doccheck: page-context use unicode -->
 
+Unicode character constants and classification.
+Control: Null character.
+
 ## Constants
 
 | Name | Value | Description |
@@ -67,7 +70,7 @@
 | `n` | `110` | Letter: Lowercase n. |
 | `N` | `78` | Letter: Uppercase N. |
 | `newline` | `10` | Control: Newline (line feed). |
-| `nul` | `0` | Unicode character constants and classification. Control: Null character. doccheck: page-context |
+| `nul` | `0` |  |
 | `o` | `111` | Letter: Lowercase o. |
 | `O` | `79` | Letter: Uppercase O. |
 | `p` | `112` | Letter: Lowercase p. |

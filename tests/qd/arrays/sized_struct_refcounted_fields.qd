@@ -1,0 +1,13 @@
+// Test: each instance from `[n]T` gets its own refcounted fields, not a shared one.
+//
+// The array field's default is built once per slot, so appending through one element must
+// not be visible through another.
+struct Bag { xs:[]i64 = []i64  tag:str = "" }
+
+fn main() {
+	[2]Bag -> bags
+	bags 0 nth <<xs 7 append drop
+	bags 0 nth <<xs len print nl   // 1
+	bags 1 nth <<xs len print nl   // 0
+	bags 0 nth <<tag print nl      // (empty)
+}

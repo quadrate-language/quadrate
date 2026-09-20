@@ -1,0 +1,16 @@
+// Test: `[]T` for a struct is allowed even when T has no defaults.
+//
+// The size is left out, so nothing is ever constructed and the struct needs no zero. This
+// is the form to reach for when a type has no sensible default -- requiring one here would
+// have left such a type with no way to get an array of it at all.
+struct Point { x:f64  y:f64 }
+
+fn main() {
+	[]Point -> ps
+	ps len print nl                       // 0
+
+	Point { x = 1.0 y = 2.0 } -> p
+	ps p append -> ps
+	ps len print nl                       // 1
+	ps 0 nth <<x print nl                 // 1
+}

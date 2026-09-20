@@ -61,9 +61,9 @@ fn main() {
 Create typed arrays:
 
 ```qd
-10 make<i64> -> ints      // Array of 10 integers
-5 make<f64> -> floats     // Array of 5 floats
-3 make<str> -> strings    // Array of 3 strings
+[10]i64 -> ints      // Array of 10 integers
+[5]f64 -> floats     // Array of 5 floats
+[3]str -> strings    // Array of 3 strings
 ```
 
 See [Arrays](../5-data-structures/arrays.md) for more on array operations.

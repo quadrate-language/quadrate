@@ -1,0 +1,10 @@
+// Test: a nested element type is reserved, not silently read as two literals.
+//
+// `[][]i64` has no meaning yet -- the `[]T` type parsers do not recurse, so the type cannot
+// be written on the other side of a signature. What it must not do is parse as `[]` followed
+// by `[]i64`, which left a value on the stack and reported the function's stack effect
+// instead of the real problem.
+fn main() {
+	[][]i64 -> g
+	g len print nl
+}

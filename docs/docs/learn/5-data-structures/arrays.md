@@ -13,13 +13,30 @@ fn main() {
 }
 ```
 
-### Empty arrays with size
+### Sized arrays
+
+Put the element type right after the closing bracket and the brackets hold a *size* instead
+of elements. Every element starts at the zero value of that type.
 
 ```qd
 fn main() {
-	10 make<i64> -> arr     // Array of 10 integers
-	5 make<f64> -> floats   // Array of 5 floats
-	3 make<str> -> strings  // Array of 3 strings
+	[10]i64 -> arr     // Array of 10 integers, each 0
+	[5]f64 -> floats   // Array of 5 floats, each 0.0
+	[3]str -> strings  // Array of 3 strings, each ""
+	[]i64 -> empty     // Size left out, so none of them: an empty []i64
+}
+```
+
+The type name has to touch the `]`. With a space it is an ordinary literal again, so `[10]i64`
+is ten zeros while `[10]` is a one-element array holding the number 10.
+
+The size can be any expression that leaves one integer:
+
+```qd
+fn main() {
+	[1 2 3] -> src
+	[src len]i64 -> dst    // As long as src
+	dst len print nl       // 3
 }
 ```
 
@@ -43,7 +60,7 @@ Use `set` to write elements:
 
 ```qd
 fn main() {
-	5 make<i64> -> arr
+	[5]i64 -> arr
 
 	arr 0 100 set  // Set first element to 100
 	arr 1 200 set  // Set second element to 200
@@ -62,7 +79,7 @@ fn main() {
 	[1 2 3 4 5] -> arr
 	arr len print nl  // 5
 
-	10 make<i64> -> arr2
+	[10]i64 -> arr2
 	arr2 len print nl  // 10
 }
 ```
@@ -73,7 +90,7 @@ Use `append` to add elements to an array:
 
 ```qd
 fn main() {
-	0 make<i64> -> arr    // Start with empty array
+	[]i64 -> arr          // Start with an empty []i64
 	arr 10 append -> arr  // Append 10
 	arr 20 append -> arr  // Append 20
 	arr 30 append -> arr  // Append 30
@@ -197,7 +214,7 @@ Arrays are references. To copy:
 
 ```qd
 fn copy_array(src:[]i64 -- dst:[]i64) {
-	src len make<i64> -> dst
+	[src len]i64 -> dst
 	0 src len 1 for i {
 		dst i src i nth set
 	}
@@ -227,7 +244,7 @@ fn fill(arr:[]i64 value:i64 -- ) {
 }
 
 fn main() {
-	5 make<i64> -> arr
+	[5]i64 -> arr
 	arr 42 fill
 	0 arr len 1 for i {
 		arr i nth print " " print
@@ -274,7 +291,7 @@ fn filter_positive(arr:[]i64 -- result:[]i64) {
 		}
 	}
 	// Create result array
-	count make<i64> -> result
+	[count]i64 -> result
 	0 -> j
 	0 arr len 1 for i {
 		arr i nth 0 > if {

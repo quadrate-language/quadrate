@@ -261,6 +261,8 @@ namespace Qd {
 		// Helper: Look up struct field types, handling both qualified and unqualified names
 		const std::unordered_map<std::string, StackValueType>* lookupStructFieldTypes(
 				const std::string& typeName) const;
+		// Checks the element type of a `[n]T` literal: it has to be a type whose zero exists.
+		void validateSizedArrayLiteral(IAstNode* literal);
 		void checkModuleUnqualifiedImportCalls(IAstNode* node, const std::string& moduleName,
 				const std::unordered_map<std::string, ImportedFunctionInfo>& imports);
 		void collectModuleImportedFunctions(IAstNode* node, const std::string& moduleName,

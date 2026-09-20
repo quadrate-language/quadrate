@@ -1,0 +1,12 @@
+// Test: `[n]T` is an expression, not a type.
+//
+// Arrays are dynamic and `[]i64` is the only array type there is, so a size in type
+// position is always a mistake. Saying so beats "Expected ']'", which sends the reader
+// looking for a typo.
+fn f(xs:[10]i64 -- n:i64) {
+	xs len
+}
+
+fn main() {
+	[10]i64 f print nl
+}

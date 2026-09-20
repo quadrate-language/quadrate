@@ -10,7 +10,7 @@ fn main() {
 	"=== Parsed flags ===" print nl
 	// Parse test data via flag::parse. `parse` takes the argument array that
 	// os::args returns, so a test builds one by hand.
-	5 makes -> argv
+	[5]str -> argv
 	argv 0 "--verbose" set
 	argv 1 "--name" set
 	argv 2 "test" set

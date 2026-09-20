@@ -641,6 +641,13 @@ TEST(ArrayLiterals) {
 	ASSERT(qd_interp_eval(interp, "clear a free"), "and frees");
 
 	ASSERT(std::strcmp(top(interp, "clear [] len"), "0") == 0, "an empty literal has no elements");
+	// The sized form. This tier never had `make<T>`: its builtin table carried makei/makef/
+	// makes/makep and no generic `make`, so an array of n zeroes could not be written here.
+	ASSERT(std::strcmp(top(interp, "clear [4]i64 len"), "4") == 0, "a sized literal has that many elements");
+	ASSERT(std::strcmp(top(interp, "clear [4]i64 2 nth"), "0") == 0, "a sized i64 literal is zero-filled");
+	ASSERT(std::strcmp(top(interp, "clear [3]f64 0 nth"), "0") == 0, "a sized f64 literal is zero-filled");
+	ASSERT(std::strcmp(top(interp, "clear []i64 len"), "0") == 0, "the size may be left out");
+	ASSERT(std::strcmp(top(interp, "clear 5 -> n [n]i64 len"), "5") == 0, "the size may be an expression");
 	ASSERT(std::strcmp(top(interp, "clear [1.5 2.5] 0 nth"), "1.5") == 0, "a float array keeps its type");
 	ASSERT(std::strcmp(top(interp, "clear [\"a\" \"b\"] 1 nth"), "\"b\"") == 0, "a string array too");
 

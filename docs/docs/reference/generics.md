@@ -75,14 +75,14 @@ fn main() {
 
 ## Generic arrays
 
-The `make<T>` builtin creates typed arrays:
+The `[n]T` literal creates typed arrays, and `T` may be a type parameter:
 
 ```qd
 fn main() {
-    5 make<i64> -> ints    // Integer array
-    5 make<f64> -> floats  // Float array
-    5 make<str> -> strings // String array
-    5 make<ptr> -> ptrs    // Pointer array
+    [5]i64 -> ints    // Integer array
+    [5]f64 -> floats  // Float array
+    [5]str -> strings // String array
+    [5]ptr -> ptrs    // Pointer array
 }
 ```
 

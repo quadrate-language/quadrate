@@ -308,13 +308,7 @@ false if { } else { "no" print }
 
 ## Built-in Instructions
 
-### LOGICAL OPERATIONS
-
-These work on truth values: every non-zero value counts as true and the result is always 0
-or 1. The bitwise operations of the same names are [`bits::and`](stdlib/bits.md),
-`bits::or` and `bits::not`. Both operands are always evaluated — these are ordinary stack
-words, not short-circuiting forms, so a guard of the form `i len < xs i nth ... and` reads
-`xs[i]` whether or not the bound check passed.
+### short-circuiting forms.
 
 | Instruction | Signature | Description |
 |-------------|-----------|-------------|
@@ -332,7 +326,8 @@ Logical AND: 1 if both values are non-zero, 0 otherwise. Both sides are always e
 
 ```qd
 1 1 and // 1
-2 1 and // 1 (any non-zero value is true; bits::and would give 0)
+2 1 and // 1 (any non-zero value is true
+ bits::and would give 0)
 ```
 
 ---
@@ -347,7 +342,8 @@ Logical OR: 1 if either value is non-zero, 0 otherwise. Both sides are always ev
 
 ```qd
 0 0 or // 0
-2 1 or // 1 (any non-zero value is true; bits::or would give 3)
+2 1 or // 1 (any non-zero value is true
+ bits::or would give 3)
 ```
 
 ---
@@ -363,45 +359,6 @@ Logical NOT: 1 if the value is zero, 0 otherwise. `bits::not` is the bitwise one
 ```qd
 0 not // 1
 5 not // 0
-```
-
----
-
-### BITWISE OPERATIONS
-
-AND, OR, XOR and NOT would collide with the logical words above, so they live in the
-`bits` module: `bits::and`, `bits::or`, `bits::xor` and `bits::not`. The shifts have no
-logical counterpart and stay builtins.
-
-| Instruction | Signature | Description |
-|-------------|-----------|-------------|
-| [`shl`](#shl) | `( a n -- result )` | Shifts a left by n bits. |
-| [`shr`](#shr) | `( a n -- result )` | Shifts a right by n bits (arithmetic shift). |
-
-#### shl
-
-Shifts a left by n bits.
-
-**Signature:** `( a n -- result )`
-
-**Example:**
-
-```qd
-1 4 shl // 16
-```
-
----
-
-#### shr
-
-Shifts a right by n bits (arithmetic shift).
-
-**Signature:** `( a n -- result )`
-
-**Example:**
-
-```qd
-16 2 shr // 4
 ```
 
 ---
@@ -596,86 +553,11 @@ Converts a value between i64, f64, ptr and str (use with cast<T> syntax).
 
 | Instruction | Signature | Description |
 |-------------|-----------|-------------|
-| [`makei`](#makei) | `( size -- arr )` | Creates an array of size integers, initialized to 0. |
-| [`makef`](#makef) | `( size -- arr )` | Creates an array of size floats, initialized to 0.0. |
-| [`makes`](#makes) | `( size -- arr )` | Creates an array of size strings, initialized to empty. |
-| [`makep`](#makep) | `( size -- arr )` | Creates an array of size pointers, initialized to null. |
-| [`make`](#make) | `( size -- arr )` | Creates a typed array (use with make<Type> syntax). |
 | [`len`](#len) | `( arr -- len )` | Returns the number of elements in an array. |
 | [`nth`](#nth) | `( arr index -- value )` | Returns the element at the given index. |
 | [`set`](#set) | `( arr index value -- )` | Sets the element at the given index. |
 | [`append`](#append) | `( arr value -- arr )` | Appends a value to the array, returning the modified array. |
 | [`free`](#free) | `( arr -- )` | Frees the memory used by an array or struct. |
-
-#### makei
-
-Creates an array of size integers, initialized to 0.
-
-**Signature:** `( size -- arr )`
-
-**Example:**
-
-```qd
-10 makei -> arr
-```
-
----
-
-#### makef
-
-Creates an array of size floats, initialized to 0.0.
-
-**Signature:** `( size -- arr )`
-
-**Example:**
-
-```qd
-10 makef -> arr
-```
-
----
-
-#### makes
-
-Creates an array of size strings, initialized to empty.
-
-**Signature:** `( size -- arr )`
-
-**Example:**
-
-```qd
-10 makes -> arr
-```
-
----
-
-#### makep
-
-Creates an array of size pointers, initialized to null.
-
-**Signature:** `( size -- arr )`
-
-**Example:**
-
-```qd
-10 makep -> arr
-```
-
----
-
-#### make
-
-Creates a typed array (use with make<Type> syntax).
-
-**Signature:** `( size -- arr )`
-
-**Example:**
-
-```qd
-10 make<Point> -> points
-```
-
----
 
 #### len
 
@@ -1024,6 +906,41 @@ Prints a newline character to stdout.
 
 ```qd
 nl
+```
+
+---
+
+### logical operations above. The shifts have no logical counterpart and stay here.
+
+| Instruction | Signature | Description |
+|-------------|-----------|-------------|
+| [`shl`](#shl) | `( a n -- result )` | Shifts a left by n bits. |
+| [`shr`](#shr) | `( a n -- result )` | Shifts a right by n bits (arithmetic shift). |
+
+#### shl
+
+Shifts a left by n bits.
+
+**Signature:** `( a n -- result )`
+
+**Example:**
+
+```qd
+1 4 shl // 16
+```
+
+---
+
+#### shr
+
+Shifts a right by n bits (arithmetic shift).
+
+**Signature:** `( a n -- result )`
+
+**Example:**
+
+```qd
+16 2 shr // 4
 ```
 
 ---

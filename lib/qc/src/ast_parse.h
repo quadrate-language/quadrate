@@ -373,6 +373,71 @@ namespace Qd {
 		return true;
 	}
 
+	// Reports the token that followed a `[` where an array type was expected. `[10]i64` is the
+	// interesting case: it is an expression that builds an array, not a type. Arrays are dynamic
+	// and `[]i64` is the only array type there is, so a size in type position is always a
+	// mistake -- and saying so beats "Expected ']'", which sends the reader looking for a typo.
+	//
+	// Shared because the `[]T` type parser is written out six times, and six copies of a
+	// diagnostic drift.
+	inline void reportArrayTypeBracketError(u8t_scanner* scanner, char32_t token, ErrorReporter* errorReporter) {
+		if (token == U8T_INTEGER || token == U8T_IDENTIFIER) {
+			errorReporter->reportError(scanner,
+					"A size does not belong in an array type: '[]T' is the only array type there is, and '[n]T' is "
+					"an expression that builds one");
+			return;
+		}
+		errorReporter->reportError(scanner, "Expected ']' after '[' in an array type");
+	}
+
+	// Parses the element type written hard against the `]` of an array literal, as in `[10]i64`
+	// or `[n]mod::Point`. `elementType` comes back empty when there is no type name there at
+	// all, which is what keeps `[1 2 3]` and `[] -> x` meaning exactly what they always did.
+	// Returns false on a malformed one, having reported it.
+	//
+	// The adjacency is the whole disambiguation: `[10]i64` is ten zeros, `[10] i64` is a
+	// one-element array followed by a stray word. Same discipline as parseInstructionTypeParam,
+	// and for the same reason -- peekNextChar does not skip whitespace.
+	inline bool parseArrayLiteralElementType(
+			u8t_scanner* scanner, const char* src, ErrorReporter* errorReporter, size_t* n, std::string& elementType) {
+		elementType.clear();
+		const char32_t next = peekNextChar(scanner, src);
+		// A '[' here would be a nested element type, `[][]i64`. Nothing can be done with one
+		// yet -- the six `[]T` type parsers do not recurse, so the type is unwriteable on the
+		// other side of a signature -- but it has to be caught rather than read as two adjacent
+		// literals, which left a value on the stack and reported that instead.
+		if (next == U'[') {
+			errorReporter->reportError(scanner,
+					"A nested array element type is not supported yet: '[]T' does not accept another '[]' as its "
+					"element type");
+			return false;
+		}
+		const bool startsTypeName = (next >= U'a' && next <= U'z') || (next >= U'A' && next <= U'Z') || next == U'_';
+		if (!startsTypeName) {
+			return true;
+		}
+		if (u8t_scanner_scan(scanner) != U8T_IDENTIFIER) {
+			errorReporter->reportError(scanner, "Expected an element type after ']'");
+			return false;
+		}
+		elementType = u8t_scanner_token_text(scanner, n);
+
+		// Qualified name: module::TypeName
+		if (u8t_scanner_peek(scanner) == U':') {
+			u8t_scanner_scan(scanner); // Consume first ':'
+			if (u8t_scanner_peek(scanner) == U':') {
+				u8t_scanner_scan(scanner); // Consume second ':'
+				if (u8t_scanner_scan(scanner) != U8T_IDENTIFIER) {
+					errorReporter->reportError(scanner, "Expected a type name after '::'");
+					return false;
+				}
+				elementType += "::";
+				elementType += u8t_scanner_token_text(scanner, n);
+			}
+		}
+		return true;
+	}
+
 	// Parse string interpolation: $"hello {name} is {age}" desugars to
 	// sb::new "hello " sb::append name sb::append_int " is " sb::append age sb::append_int sb::finish
 	// Called after '$' and the string token have both been consumed.

@@ -296,7 +296,11 @@ Structs MUST be represented as `ptr` on the stack (pointer to heap or stack allo
 
 #### 3.2.2 Arrays
 
-Dynamic arrays are created via array literals or `make<T>` instruction:
+Dynamic arrays are created by an array literal. There is no creation instruction.
+
+A literal's brackets hold either **elements** or a **size**, and which one MUST be decided by
+what follows the `]`: a type name immediately after it, with no intervening whitespace, makes
+the brackets a size. Anything else makes them elements.
 
 ```quadrate
 [1 2 3 4 5]           // Integer array
@@ -305,12 +309,30 @@ Dynamic arrays are created via array literals or `make<T>` instruction:
 [[1 2] [3 4]]         // Nested array
 [x 2 3]               // A local as an element
 [P { x = 1 }]         // Struct literals as elements
+[]                    // No elements; element type adopted on first append
 ```
 
 An element MAY be any expression that pushes one value, not only a literal: a local, a
 nested array literal or a struct literal. All elements MUST have the same type -- an array
 carries one element type, adopted from the first value stored -- and a literal whose
 element types disagree is a compile-time error where they are known.
+
+```quadrate
+[10]i64               // Ten elements, each the zero value of i64
+[]i64                 // The size omitted, so zero of them: an empty []i64
+[src len]i64          // The size MAY be any expression leaving one i64
+```
+
+The zero value MUST be `0` for the integer types, `0.0` for `f64` and `f32`, an empty string
+for `str`, and null for `ptr`. For a struct type, `[n]T` MUST produce `n` distinct instances,
+each constructed as `T {}`; it is therefore well-formed exactly where `T {}` is, which
+requires every field of `T` to declare a default. For a type parameter of the enclosing
+generic function, the element type is not known at run time and the array MUST adopt one from
+the first value appended.
+
+`[n]T` is an expression, not a type. Arrays are dynamic and `[]T` is the only array type, so
+`[10]i64` and `[]i64` both produce a value of type `[]i64` and a size MUST be rejected
+wherever a type is expected.
 
 Arrays MUST be represented as `ptr` on the stack. In type annotations, arrays MAY be written as `[]T` (e.g., `[]i64`, `[]f64`, `[]str`) to indicate the element type. This is a compile-time annotation; at runtime, arrays are pointers.
 
@@ -1873,7 +1895,6 @@ See [Section 4.2](#42-stack-operations) for complete list.
 
 | Instruction | Stack Effect | Description |
 |-------------|--------------|-------------|
-| `make<T>` | `(n -- arr)` | Create typed array of size n |
 | `append` | `(arr elem -- arr)` | Append element |
 | `set` | `(arr idx elem -- )` | Set element at index |
 | `nth` | `(arr idx -- elem)` | Get element at index |

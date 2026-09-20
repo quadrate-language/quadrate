@@ -8,8 +8,8 @@ use math
 fn main() {
 	0.5 -> A  // X rotation
 	0.3 -> B  // Z rotation
-	1760 makef -> z  // Z-buffer (80x22 screen)
-	1760 makei -> o  // Output buffer (char indices)
+	[1760]f64 -> z  // Z-buffer (80x22 screen)
+	[1760]i64 -> o  // Output buffer (char indices)
 
 	"\x1b[2J" print "\x1b[?25l" print  // Clear screen, hide cursor
 

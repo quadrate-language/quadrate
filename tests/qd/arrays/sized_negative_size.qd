@@ -1,0 +1,13 @@
+// Test: a negative size is rejected the same way whichever element type is asked for.
+//
+// The struct form builds its array through the same qd_makep the scalar forms use, so the
+// size is validated in one place. Building it directly instead turned a negative size into a
+// huge size_t, a failed allocation and a null array that only surfaced much later as
+// "len: null array".
+struct Point { x:f64 = 0.0 }
+
+fn main() {
+	0 3 - -> n
+	[n]Point -> ps
+	ps len print nl
+}

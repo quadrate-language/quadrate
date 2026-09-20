@@ -9,6 +9,53 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **`[n]T` array literals, replacing the `make` family.** Array *types* were already written
+  `[]T` everywhere a signature mentions them, while creation was written `make<T>`, which names
+  the element type instead — two spellings of the same array depending on which side of the `--`
+  it sat on. Creation is now a literal, and the element type is spelled the way a signature
+  spells it.
+
+  Whether the brackets hold **elements** or a **size** is decided by what follows the `]`: a type
+  name immediately after it, with no whitespace, makes the brackets a size.
+
+  ```qd
+  [1 2 3]      // elements
+  [10]i64      // ten 0
+  []i64        // the size left out, so none of them: an empty []i64
+  [10]         // still one element, the number 10
+  [src len]i64 // the size is any expression leaving one i64
+  ```
+
+  For the scalars the zero values are the ones the runtime already produced, so `[10]i64` lowers
+  to the call `10 make<i64>` lowered to and nothing changed underneath: `0` for the integer types,
+  `0.0` for `f64`/`f32`, `""` for `str` (a real empty string, not null), null for `ptr`. For a type
+  parameter of the enclosing generic the element type is unknowable at run time, so the array
+  adopts one on first append, exactly as before.
+
+  For a **struct**, `[2]Point` now holds two distinct *instances* rather than two nulls. It is
+  `n` × `Point {}`, allowed exactly where `Point {}` is — every field needs a default — which puts
+  the question of whether a type has a sensible zero on the struct's author rather than on the
+  array, and settles the recursive case for free, since a struct-valued default does not parse and
+  so `[n]Node` on a self-referential type is rejected rather than recursing. `[]Point` with the
+  size omitted constructs nothing and needs no defaults, which is the form to reach for when a
+  type has no sensible zero.
+
+  This is what closes the hole the old spelling left: `3 make<Point>` gave null slots, and reading
+  a field out of an unfilled one segfaulted, reported as `Segmentation fault (stack overflow from
+  unbounded recursion?)`.
+
+  `[n]T` is an expression, not a type. Arrays are dynamic and `[]T` is the only array type there
+  is, so `[10]i64` and `[]i64` both produce a value of type `[]i64` and a size in type position
+  now reports that rather than `Expected ']'`.
+
+  The builtin was barely load-bearing to begin with: one `make<T>` in all of stdlib, none in the
+  examples, and the stdlib's own array builders (`hof::map`, `hof::filter`) never used it — they
+  build with `[]` and `append`. The interpreter tier never had it at all; its builtin table
+  carried `makei`/`makef`/`makes`/`makep` and no generic `make`, so `make<i64>` could not run
+  there. The literal works in both tiers.
+- **Array-typed struct field defaults.** `struct Bag { xs:[]i64 = []i64 }` and `Bag {}` now work;
+  the field-default parser took scalar literals only, so a struct with an array field could never
+  be default-constructed — and therefore could never be an element type of `[n]T`.
 - **`fuzz_formatter` and `fuzz_lsp_text`**, the two fuzz targets `tests/fuzz/meson.build`
   had always named but which were never written, so `meson compile -C build/fuzz` could
   not build the directory. `fuzz_formatter` checks the formatter's two contracts on every
@@ -64,6 +111,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **`quadrepl` command aliases**: `:quit` and `:exit` alongside `exit`/`quit`/`:q`, and `:save`/`:load` alongside `.save`/`.load`.
 ### Changed
 
+- **`stdlib/regex` appends states instead of preallocating 256 null slots.** `regex_new` built its
+  `states` with `MAX_STATES make<State>` and `add_state` wrote into it with `set` at an index that
+  was always `nstates` — an append loop wearing a preallocation. It cost 256 slots for every
+  compiled regex and left the unfilled ones as nulls a field access would have walked into. It is
+  `[]State` and `append` now.
 - **`stdlib/regex` represents its NFA as typed structs rather than raw byte offsets.**
   The eight state kinds were stored in hand-computed slots — `ST_TYPE = 0`, `ST_CHAR = 8`,
   … `STATE_SIZE = 40` — reached through `state_get`/`state_set` with an integer offset,
@@ -411,6 +463,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `qd_clone_context` leaked `error_context` when the `program_name` copy failed.
 ### Removed
 
+- **The five array-creation builtins**: `make`, `makei`, `makef`, `makes`, `makep`. Array creation
+  is a literal now — see `[n]T` under Added. All five report the rewrite when used, the way the
+  removed stack shufflers do.
+
+  `make` with no type parameter was the one that most needed to reach the user: it passed the
+  validator, which defaulted its tracked type to `[]i64`, but codegen only handled `make` *with* a
+  type parameter, so `3 make -> a` compiled clean and died at link with `undefined reference to
+  'qd_make'`, with `quadlint` saying nothing. It is a compile error now.
 - **`xor` and `lnot` as builtins.** `xor` is `bits::xor`; `lnot` is `not`. Both report the
   rewrite when used, the way the removed stack shufflers do.
 - **The `error { code = … message = … }` literal.**

@@ -52,6 +52,40 @@ and are stable, so they can be referred to while working through them.
       matches "shallow", but it means `clone` gives independence at one level only, and the
       name should not suggest more than it does.
 
+- [ ] **Nested array types.** `[][]i64` does not exist: not as a type and, since the `[n]T`
+      work, reserved rather than supported as a literal. The cause is that `[]T` is parsed by
+      six hand-rolled copies of the same six lines — scan `[`, expect `]`, expect one
+      identifier — at `ast_declarations.cc:157`, `:278`, `:540`, `:655`, `ast_types.cc:188`
+      and `:914`. None recurses and none accepts a qualified `mod::Name` either. The fix is
+      one shared type parser that recurses, replacing all six, which is worth doing on its own
+      merits. Until then an array of arrays exists only untyped, through `[n]ptr` and a
+      `cast<ptr>` before every access.
+
+- [ ] **`[]T` satisfies a declared `ptr` parameter silently.** `unifyTypeName` treats a
+      declared `ptr` as a top type that accepts anything
+      (`lib/qc/src/semantic_validator_internal.h:438`), which is deliberate as an escape
+      hatch but means an array can be handed to any of the stdlib functions that take a raw
+      `arr:ptr count:i64` buffer. `[3 1 2] -> a  a a len sort::ints` compiles clean and
+      prints several kilobytes of heap: `sort` reads the `qd_array_t` header as element data.
+      Found 2026-09-20 while reviewing array creation; independent of that change.
+
+- [ ] **Two array worlds.** `[]T` is a `qd_array_t` — refcounted, length-carrying,
+      bounds-checked — and is taken by 7 stdlib functions, all of them in `hof`. A raw `ptr`
+      buffer is `mem::alloc` plus byte offsets with the length passed alongside, and is taken
+      by 41, including all of `sort`. The second is the one the stdlib actually uses, the
+      first is the one the language has syntax for, and the entry above is what happens when
+      a value crosses between them. Whether these converge, or the boundary is merely made
+      un-crossable, is the question.
+
+- [ ] **A struct holding an array field is never released.** Constructing one in a loop grows
+      the heap without bound: `struct B { xs:[]i64 }` with `B { xs = [1 2 3] } -> b` leaks three
+      blocks an iteration — the struct, the array and the array's buffer — 3,000 blocks at 1,000
+      iterations and 12,000 at 4,000. Valgrind calls them still reachable rather than lost,
+      because the pointer registry is holding them at exit, which is why no existing suite
+      catches it. A `str` field is fine and an `f64` field is fine; it is the array field that
+      is not. Predates the `[n]T` work — it reproduces with `B { xs = [1 2 3] }`, whose spelling
+      that change did not touch — and was found while valgrinding it.
+
 ## Interpreter tier (lib/interp)
 
 - [ ] Not planned for this tier: structs, `defer`, `import`/`use`, anonymous functions. Imports in

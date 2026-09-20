@@ -8,7 +8,7 @@ fn sum(arr:[]i64 -- total:i64) {
 }
 
 fn main() {
-	0 make<i64> -> arr
+	[]i64 -> arr
 	arr 1 append -> arr
 	arr 2 append -> arr
 	arr 3 append -> arr

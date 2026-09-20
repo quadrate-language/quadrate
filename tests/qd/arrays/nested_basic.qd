@@ -2,10 +2,10 @@
 
 fn main() {
 	// Create outer array to hold 1 inner array
-	1 makep -> outer
+	[1]ptr -> outer
 
 	// Create inner array
-	4 makei -> arr
+	[4]i64 -> arr
 	arr 0 100 set
 	arr 1 200 set
 	arr 2 300 set

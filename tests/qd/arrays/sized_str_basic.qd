@@ -1,0 +1,8 @@
+// Test: [n]str - create string array
+fn main() {
+	// Create array with 2 elements (initialized to empty strings)
+	[2]str -> arr
+	arr len print nl          // Should print = 2
+	arr 0 nth print nl        // Should print empty line
+	arr 1 nth print nl        // Should print empty line
+}

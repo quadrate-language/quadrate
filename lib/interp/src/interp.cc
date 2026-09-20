@@ -119,10 +119,6 @@ namespace {
 				{"nth", {qd_nth, 2}},
 				{"append", {qd_append, 2}},
 				{"set", {qd_set, 3}},
-				{"makei", {qd_makei, 1}},
-				{"makef", {qd_makef, 1}},
-				{"makes", {qd_makes, 1}},
-				{"makep", {qd_makep, 1}},
 
 				// I/O
 				{"print", {qd_print, 1}},
@@ -607,7 +603,88 @@ namespace {
 
 	// '[1, 2, 3]' builds a Quadrate array, whose element type the first element
 	// decides -- what generateArrayLiteral does. The caller frees it.
+	// `[size]T` -- the nodes are the size expression, and the array comes back zero-filled.
+	// This is the form `make<T>` used to cover, which the interpreter never had: its builtin
+	// table carried makei/makef/makes/makep and no generic `make` at all.
+	bool evalSizedArrayLiteral(qd_interp* interp, const Qd::AstNodeArrayLiteral* literal) {
+		const std::string& elemName = literal->elementType();
+		qd_array_type elementType = QD_ARRAY_TYPE_INT;
+		if (elemName == "f64" || elemName == "f32") {
+			elementType = QD_ARRAY_TYPE_FLOAT;
+		} else if (elemName == "str" || elemName == "string") {
+			elementType = QD_ARRAY_TYPE_STR;
+		} else if (elemName == "ptr") {
+			elementType = QD_ARRAY_TYPE_PTR;
+		} else if (elemName != "i64" && elemName != "i32" && elemName != "i16" && elemName != "i8" &&
+				   elemName != "u64" && elemName != "u32" && elemName != "u16" && elemName != "u8") {
+			// Structs are not a thing in this tier, so `[n]Point` has nothing to build.
+			interp->error = "this tier has no structs, so an array of them cannot be built";
+			return false;
+		}
+
+		int64_t size = 0;
+		if (!literal->elements().empty()) {
+			for (const auto& node : literal->elements()) {
+				if (!evalNode(interp, node.get())) {
+					return false;
+				}
+			}
+			qd_stack_element_t element;
+			if (qd_stack_pop(interp->ctx->st, &element) != QD_STACK_OK) {
+				interp->error = "the size of an array literal left nothing on the stack";
+				return false;
+			}
+			if (element.type != QD_STACK_TYPE_INT) {
+				interp->error = "the size of an array literal has to be an integer";
+				return false;
+			}
+			size = element.value.i;
+		}
+		if (size < 0) {
+			interp->error = "an array literal cannot have a negative size";
+			return false;
+		}
+
+		qd_array_t* array = qd_array_create(static_cast<size_t>(size), elementType);
+		if (array == nullptr) {
+			interp->error = "could not allocate the array";
+			return false;
+		}
+		for (int64_t i = 0; i < size; i++) {
+			int pushed = 0;
+			switch (elementType) {
+			case QD_ARRAY_TYPE_FLOAT:
+				pushed = qd_array_push_float(array, 0.0);
+				break;
+			case QD_ARRAY_TYPE_STR:
+				pushed = qd_array_push_ptr(array, qd_string_create(""));
+				break;
+			case QD_ARRAY_TYPE_PTR:
+				pushed = qd_array_push_ptr(array, nullptr);
+				break;
+			default:
+				pushed = qd_array_push_int(array, 0);
+				break;
+			}
+			if (pushed != 0) {
+				qd_array_release(array);
+				interp->error = "could not grow the array";
+				return false;
+			}
+		}
+
+		if (qd_push_p(interp->ctx, array) != 0) {
+			qd_array_release(array);
+			interp->error = "stack overflow";
+			return false;
+		}
+		return true;
+	}
+
 	bool evalArrayLiteral(qd_interp* interp, const Qd::AstNodeArrayLiteral* literal) {
+		if (literal->hasElementType()) {
+			return evalSizedArrayLiteral(interp, literal);
+		}
 		const auto& elements = literal->elements();
 
 		qd_array_type elementType = QD_ARRAY_TYPE_INT;

@@ -1,0 +1,5 @@
+// Test: creating an empty typed array with []i64
+fn main() {
+	[]i64 -> arr
+	arr len print nl          // Should print = 0
+}

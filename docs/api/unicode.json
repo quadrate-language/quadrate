@@ -1,6 +1,6 @@
 {
   "name": "unicode",
-  "description": "",
+  "description": "Unicode character constants and classification. Control: Null character. doccheck: page-context",
   "constants": [
     {
       "name": "A",
@@ -310,7 +310,7 @@
     {
       "name": "nul",
       "value": "0",
-      "description": "Unicode character constants and classification. Control: Null character. doccheck: page-context"
+      "description": ""
     },
     {
       "name": "o",

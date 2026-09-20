@@ -922,7 +922,7 @@ TEST(ManyLocalVariables) {
 // exactly the type the signature asks for.
 TEST(DeclaredParameterStructTypeWinsOverInference) {
 	const char* src = R"(
-		struct Cell { value:i64 }
+		struct Cell { value:i64 = 0 }
 		struct Grid { cells:[]Cell  n:i64 }
 
 		fn at(g:Grid idx:i64 -- c:Cell) {
@@ -934,7 +934,7 @@ TEST(DeclaredParameterStructTypeWinsOverInference) {
 		}
 
 		fn main() {
-			2 make<Cell> -> arr
+			[2]Cell -> arr
 			Grid { cells = arr n = 2 } -> g
 			g <<cells 0 Cell { value = 7 } set
 			g 0 read_at print

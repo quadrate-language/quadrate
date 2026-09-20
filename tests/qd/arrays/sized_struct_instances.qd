@@ -1,0 +1,23 @@
+// Test: `[n]T` for a struct holds n distinct instances, not n nulls.
+//
+// The old `make<Point>` gave null slots, and reading a field out of an unfilled one
+// segfaulted. The zero of a struct is a constructed one, so each slot is its own `T {}`
+// and a field write to one is invisible to the others.
+struct Point { x:f64 = 0.0  y:f64 = 1.5 }
+
+fn main() {
+	[3]Point -> ps
+	ps len print nl           // 3
+
+	// Reading an untouched slot works rather than segfaulting, and defaults are honoured.
+	ps 0 nth <<x print nl     // 0
+	ps 0 nth <<y print nl     // 1.5
+
+	// Distinct: writing through one slot leaves the others alone.
+	ps 0 nth 9.0 >>x drop
+	ps 0 nth <<x print nl     // 9
+	ps 1 nth <<x print nl     // 0
+	ps 2 nth <<x print nl     // 0
+
+	ps free
+}

@@ -68,7 +68,7 @@ const MAX_CCLASS = 32
 fn regex_new( -- re:Nfa) {
 	MAX_CCLASS 8 * mem::alloc! -> cclasses
 	Nfa {
-		states = MAX_STATES make<State>
+		states = []State
 		nstates = 0
 		start = 0
 		cclasses = cclasses
@@ -95,7 +95,10 @@ fn add_state(re:Nfa stype:i64 -- idx:i64) {
 			out2 = -1
 			cclass = -1
 		} -> s
-		re <<states n s set
+		// States are only ever added at the end, so this is an append. It used to preallocate
+		// MAX_STATES null slots and `set` into them, which cost 256 slots for every regex and
+		// left the unfilled ones as nulls a field access would have walked into.
+		re <<states s append drop
 		re n 1 + >>nstates drop
 		n
 	}

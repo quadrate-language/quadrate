@@ -2,9 +2,9 @@
 
 fn main() {
 	// Create array of one string array
-	1 makep -> outer
+	[1]ptr -> outer
 
-	3 makes -> words
+	[3]str -> words
 	words 0 "hello" set
 	words 1 "world" set
 	words 2 "!" set

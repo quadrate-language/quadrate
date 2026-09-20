@@ -1226,9 +1226,9 @@ run_test "Generate template: loop-array has for loop" \
     '{"jsonrpc":"2.0","method":"tools/call","id":415,"params":{"name":"quadrate_generate_template","arguments":{"template":"loop-array"}}}' \
     'for i'
 
-run_test "Generate template: loop-array has makei" \
+run_test "Generate template: loop-array has a sized array literal" \
     '{"jsonrpc":"2.0","method":"tools/call","id":416,"params":{"name":"quadrate_generate_template","arguments":{"template":"loop-array"}}}' \
-    'makei'
+    '\[n\]i64'
 
 run_test "Generate template: loop-array has loop/break" \
     '{"jsonrpc":"2.0","method":"tools/call","id":417,"params":{"name":"quadrate_generate_template","arguments":{"template":"loop-array"}}}' \

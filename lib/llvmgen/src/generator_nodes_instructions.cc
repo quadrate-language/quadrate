@@ -680,37 +680,6 @@ namespace Qd {
 			}
 		}
 
-		// Handle generic make<T> instruction
-		if (name == "make" && inst->hasTypeParam()) {
-			const std::string& typeParam = inst->typeParam();
-			std::string fnName;
-			if (typeParam == "i64" || typeParam == "i32" || typeParam == "i16" || typeParam == "i8" ||
-					typeParam == "u64" || typeParam == "u32" || typeParam == "u16" || typeParam == "u8") {
-				fnName = "qd_makei";
-			} else if (typeParam == "f64" || typeParam == "f32") {
-				fnName = "qd_makef";
-			} else if (typeParam == "str" || typeParam == "string") {
-				fnName = "qd_makes";
-			} else if (typeParam == "ptr" || isKnownStruct(typeParam) ||
-					   (typeParam.size() > 2 && typeParam[0] == '[' && typeParam[1] == ']')) {
-				fnName = "qd_makep";
-			} else {
-				// A type parameter of the enclosing generic function: its concrete type is not
-				// known at run time (generics are erased, not monomorphised), so the array adopts
-				// the type of the first value put into it.
-				fnName = "qd_makea";
-			}
-
-			llvm::Function* makeFn = module->getFunction(fnName);
-			if (!makeFn) {
-				auto fnTy = llvm::FunctionType::get(execResultTy, {contextPtrTy}, false);
-				makeFn = llvm::Function::Create(fnTy, llvm::Function::ExternalLinkage, fnName, *module);
-			}
-			builder->CreateCall(makeFn, {ctx});
-			lastPushedWasArray = true;
-			return;
-		}
-
 		// Handle generic cast<T> instruction
 		if (name == "cast" && inst->hasTypeParam()) {
 			const std::string& typeParam = inst->typeParam();
