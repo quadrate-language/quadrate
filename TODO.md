@@ -27,26 +27,30 @@ its tests, and tells a reader nothing. 48 of 452 functions that take parameters 
 
 ## Language design
 
-- [ ] **Sum types / tagged unions** — the one addition worth arguing for, and no longer a longer
-      horizon: an error channel that cannot be put on the stack costs this language more than it
-      would an ALGOL one (see R24). `enum` gives bare ints and `struct` gives records, but there is
-      no "one of these". That absence is *why* errors are out-of-band int codes plus a message, why
-      `Ok`/`Err` are conflated with `true`/`false`, and why `null` is `0` (four spellings each of 0
-      and 1). A `Result<T, E>`-shaped variant type would let most of the error-handling surface be
-      deleted rather than maintained.
-      The evidence used to be `stdlib/json`, which had no `parse` at all. **It has one now
-      (2026-09-19), and writing it did not need sum types** — so that argument is withdrawn and
-      this item stands on R24 alone. A JSON value is a tagged union in the abstract, but a
+- [ ] **Sum types / tagged unions.** `enum` gives bare ints and `struct` gives records, but there
+      is no "one of these". That absence is why `Ok`/`Err` are conflated with `true`/`false` and
+      why `null` is `0` — four spellings each of 0 and 1 — and a `Result<T, E>`-shaped variant
+      type would let much of that be deleted rather than maintained.
+      **Both arguments filed for it have since been withdrawn, each by an implementation that
+      turned out not to need the feature.** The first was `stdlib/json`, which had no `parse` at
+      all: it has one as of 2026-09-19. A JSON value is a tagged union in the abstract, but a
       `struct Value { kind:i64 … }` with a payload field per kind is what every C and Go parser
       writes, it costs 80 bytes a node, and the `kind` tag is checked in exactly the places a
       `match` would have been. The `(value, found)` pair *was* the real cost, and it was paid off
       without the feature: the accessors are fallible (`as_int!`, `get!`) and report `ErrType`,
       `ErrKey`, `ErrIndex`, so nothing returns a bare flag beside its value.
+      The second was the error channel — R24, closed 2026-09-20, see the `error` entry in
+      `CHANGELOG.md` — which `stdlib/error` answered the same way and in forty lines of Quadrate:
+      the control flow already exists and is enforced, and what was missing was a payload type,
+      which a refcounted struct already is.
+      So what is left is the spelling of 0 and 1, not a blocked use case.
       Deliberately **not** adding: interfaces/traits (generics see 5 uses, not under strain),
       slices/iterators (`len`/`nth`/`append`/`set` over `ptr` arrays is the right level),
       `comptime`/const-generics. Labeled `break` will bite eventually with nested `for`, but not yet.
-      **Open question**: with JSON out of the argument and `stdlib/error` now supplying the
-      purpose-built error value (see R24), is anything left of the case for the feature?
+      **Open question**: twice the concrete case dissolved on contact with a real implementation,
+      and both times what replaced it was a struct with a tag field. What would a third candidate
+      have to look like to survive that — and if none presents itself, is this an item or a
+      preference?
 
 - [ ] **R13. `and`/`or` are bitwise and are used throughout as logical.** There is no short-circuit
       operator; `lnot` exists but has no binary counterpart. Verified: `2 1 and` → `0`, so any
@@ -81,48 +85,6 @@ its tests, and tells a reader nothing. 48 of 452 functions that take parameters 
       into specification 11.2.2 since then are what a copying `>>field` would have to respect.
       **Open question**: does the functional update mean copying the struct — and if so, does that
       make structs value types on assignment, which is a far larger change than the call sites?
-
-- [ ] **R24. `err` is global state, not a value.** Set by `panic`, cleared on read, survives
-      intervening non-fallible calls (all verified). It cannot be stored, returned, wrapped, or
-      chained, so there is no way to build "failed to open config: no such file". It is also the
-      main reason stdlib authors reach for `!` rather than propagating.
-      A value that cannot be put on the stack cannot be composed, which is why this is filed as a
-      blocker for the error surface generally rather than an ergonomic wish.
-      **Designed 2026-09-19, not built.** Two designs were compared. *Error as a value handed
-      out on request*: `panic` also builds an `Error` struct (code, message, `*Error` cause), the
-      context holds a reference, and a reader pushes it. It is the cheaper one, but it does not
-      answer the complaint -- the error stays global and you get a copy -- and it needs more than
-      it looks: the runtime cannot build a struct whose layout belongs to a stdlib module, so it
-      needs an opaque refcounted slot plus a `raise` primitive that takes a value, and clearing
-      at every fallible call site stops being two inline stores and becomes a release.
-      *Error on the stack*: the failure path of a fallible call pushes the `Error`, and the
-      context slot disappears. This is the answer to the complaint as written -- "a value that
-      cannot be put on the stack cannot be composed" -- and most of the machinery exists: the
-      validator already models the failure arm as a different stack shape
-      (`bareFallibleCallBefore` + `removeProducedValues`), and what to push on failure is decided
-      in one place (`generateFallibleCallEpilogue`). Pushing `(Error, code)` keeps `switch`
-      matching codes and leaves the error under it for the arm.
-      **Measured 2026-09-19, and it reversed the conclusion.** The corpus has **394 failure arms
-      after bare fallible calls; 330 ignore the error and 64 read it** (249 switch arms, 145
-      if/else arms, plus 6 sites with no failure arm at all). The stack-passing design taxes the
-      330 to improve the 64, which is the wrong way round for a language that charges for what
-      you do not use.
-
-      **Done instead 2026-09-19: `stdlib/error`.** The reader returns one value rather than two.
-      It needed no compiler change at all -- `error::last` packs what `err` already returns into
-      an `Error` struct, `wrap` composes context and keeps the code, `root` walks the cause chain
-      -- so it is forty lines of Quadrate, no migration is forced, and the 64 sites that read
-      `err` today can move when someone touches them. That answers the parts of this item that
-      were actually blocking: an error can now be stored, returned, collected into an array, and
-      given context by the frame that has it.
-
-      **Still open**, and why this is not closed: the channel is still global. `err` empties on
-      read, the state survives intervening non-fallible calls, and `error::last` has to run first
-      in the failure arm. If that turns out to matter in practice, the stack-passing design is
-      the fix and `Error` is already the type it would push, so nothing here is wasted. The
-      evidence to watch for is whether anyone reaches for the module. Sum types do not appear to
-      subsume any of this: the control flow already exists and is enforced, and what was missing
-      was a payload type, which a refcounted struct already is.
 
 ## Upstream
 

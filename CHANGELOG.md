@@ -15,7 +15,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   input the parser accepts — the output parses, and formatting it again changes nothing —
   and found every formatter bug listed under Fixed below. `tests/run_all.sh --suite fuzz`
   now runs all three targets rather than only `fuzz_parser`.
-- **`error` — errors as values.**
+- **`error` — errors as values (R24).** `error::last` packs what the `err` builtin returns
+  into an `Error` struct, `wrap` composes context and keeps the code, and `root` walks the
+  cause chain, so a failure can be stored, returned, collected into an array or given context
+  by the frame that has it — none of which the two loose values `err` hands back allowed. It
+  is forty lines of Quadrate and needed no compiler change.
+  The alternative was to push the `Error` on the failure path of every fallible call, which is
+  what "a value that cannot be put on the stack cannot be composed" literally asks for, and
+  most of the machinery for it exists: the validator already models the failure arm as a
+  different stack shape, and what to push on failure is decided in one place. It was measured
+  against the corpus first, and the measurement reversed the conclusion: of **394 failure arms
+  after bare fallible calls, 330 ignore the error and 64 read it** (249 switch arms, 145
+  if/else arms, plus 6 sites with no failure arm at all). Pushing taxes the 330 to improve the
+  64, which is the wrong way round for a language that charges for what you do not use. So the
+  channel stays where it is and the module reads it; `Error` is already the type a future
+  stack-passing design would push, if the evidence ever turns round.
+  What follows from keeping the channel: `err` empties on read and the next fallible call
+  clears it, so `error::last` has to run first in the failure arm. The module says so.
 - **`docscheck` checks 1,010 of the documented examples, up from 219.**
 - **Specification §11.2.2, "Ownership"**: who retains and who releases, which §11 never said.
 - **`memory` suite case `holders`**: an array of strings, an array of structs, a closure's captured block, a deferred block, a generic struct field and a plain string field, each built and dropped 20,000 times.
