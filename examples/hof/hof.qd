@@ -2,6 +2,7 @@
 ///
 /// This example demonstrates the hof module which provides
 /// functional programming combinators for Quadrate.
+use bits
 use hof
 
 fn main() {
@@ -29,7 +30,7 @@ fn main() {
 		2 % 0 ==
 	}
 	hof::bi
-	and if {
+	bits::and if {
 		"yes"
 	} else {
 		"no"
@@ -113,9 +114,9 @@ fn main() {
 	age
 	stack fn (i64 -- i64) { 0 > }
 	stack fn (i64 -- i64) { 18 >= }
-	hof::bi and
+	hof::bi bits::and
 	age 120 <=
-	and if {
+	bits::and if {
 		"  Age " print age print " is valid!" print nl
 	} else {
 		"  Age " print age print " is invalid!" print nl

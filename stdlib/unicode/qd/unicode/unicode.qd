@@ -1,6 +1,8 @@
 /// Unicode character constants and classification.
 /// Control: Null character.
 /// doccheck: page-context
+use bits
+
 pub const nul = 0
 /// Control: Tab character.
 pub const tab = 9
@@ -355,7 +357,7 @@ pub fn hex_digit_value(c:i64 -- result:i64) {
 /// @return result i64 1 if continuation byte, 0 otherwise
 /// @example 0x80 unicode::is_utf8_cont print  // 1
 pub fn is_utf8_cont(b:i64 -- result:i64) {
-	b 0xC0 and 0x80 ==
+	b 0xC0 bits::and 0x80 ==
 }
 
 /// Check if byte is the start of a UTF-8 sequence.

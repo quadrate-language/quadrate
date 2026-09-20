@@ -82,12 +82,22 @@ namespace {
 				{"gte", {qd_gte, 2}},
 				{"within", {qd_within, 3}},
 
-				// Bitwise and logical
-				{"and", {qd_and, 2}},
-				{"or", {qd_or, 2}},
-				{"xor", {qd_xor, 2}},
-				{"not", {qd_not, 1}},
-				{"lnot", {qd_lnot, 1}},
+				// Logical
+				{"and", {qd_land, 2}},
+				{"or", {qd_lor, 2}},
+				{"not", {qd_lnot, 1}},
+
+				// Bitwise. This tier has no module system, so the qualified spellings are
+				// registered as plain names: bits::and is how the rest of the language
+				// reaches these, and a device with no package resolution still needs them.
+				{"bits::and", {qd_and, 2}},
+				{"bits::or", {qd_or, 2}},
+				{"bits::xor", {qd_xor, 2}},
+				{"bits::not", {qd_not, 1}},
+				{"__and", {qd_and, 2}},
+				{"__or", {qd_or, 2}},
+				{"__xor", {qd_xor, 2}},
+				{"__not", {qd_not, 1}},
 				{"shl", {qd_shl, 2}},
 				{"shr", {qd_shr, 2}},
 

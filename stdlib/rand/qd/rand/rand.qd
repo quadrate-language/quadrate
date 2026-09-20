@@ -13,6 +13,7 @@
 /// doccheck: page-setup 32 mem::alloc! -> src
 /// doccheck: page-setup 32 mem::alloc! -> dst
 /// doccheck: page-setup 4 -> len
+use bits
 use math
 use mem
 use os
@@ -89,9 +90,9 @@ pub fn (rng:Rng) next( -- rng2:Rng n:i64) {
 	rng <<state -> x
 
 	// xorshift64*
-	x x 12 shl xor -> x
-	x x 25 shr xor -> x
-	x x 27 shl xor -> x
+	x x 12 shl bits::xor -> x
+	x x 25 shr bits::xor -> x
+	x x 27 shl bits::xor -> x
 
 	// Return new state (rng) first, then random number (n) on top
 	x 2685821657736338717 * -> result

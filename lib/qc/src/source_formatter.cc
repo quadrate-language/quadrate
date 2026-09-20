@@ -925,6 +925,16 @@ namespace Qd {
 						continue;
 					}
 
+					// A `:` before it makes this a function-pointer type, not an anonymous
+					// function: `g:fn(i64 -- i64)`. The rewrite below puts a space after the
+					// `fn`, which is fine for a value but not for a type -- the parser only
+					// reads `fn` as a type when the `(` is glued to it, so `g:fn (i64 -- i64)`
+					// no longer parses. Leave type annotations alone.
+					if (fnPos > 0 && result[fnPos - 1] == ':') {
+						pos = fnPos + 2;
+						continue;
+					}
+
 					size_t afterFn = fnPos + 2;
 					// Skip spaces
 					while (afterFn < result.length() && result[afterFn] == ' ') {

@@ -46,10 +46,9 @@
     {
       "name": "Bitwise",
       "instructions": [
-        {"name": "and", "signature": "(a b -- a&b)", "description": "Bitwise AND"},
-        {"name": "or", "signature": "(a b -- a|b)", "description": "Bitwise OR"},
-        {"name": "xor", "signature": "(a b -- a^b)", "description": "Bitwise XOR"},
-        {"name": "not", "signature": "(a -- ~a)", "description": "Bitwise NOT"},
+        {"name": "and", "signature": "(a b -- result)", "description": "Logical AND (bits::and is the bitwise one)"},
+        {"name": "or", "signature": "(a b -- result)", "description": "Logical OR (bits::or is the bitwise one)"},
+        {"name": "not", "signature": "(a -- result)", "description": "Logical NOT (bits::not is the bitwise one)"},
         {"name": "shl", "signature": "(a n -- a<<n)", "description": "Shift left by n bits", "alias": "<<"},
         {"name": "shr", "signature": "(a n -- a>>n)", "description": "Shift right by n bits", "alias": ">>"}
       ]

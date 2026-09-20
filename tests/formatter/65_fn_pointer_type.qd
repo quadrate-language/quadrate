@@ -1,0 +1,12 @@
+// A function-pointer type must keep its `(` glued to the `fn`: the parser only reads
+// `fn` as a type that way, so `g:fn (i64 -- i64)` would not parse. An anonymous function
+// *value* on the same line still gets the space.
+fn apply(g:fn(i64 -- i64) x:i64 -- r:i64) {
+	x g call
+}
+
+fn main() {
+	3 fn(x:i64 -- r:i64){x x *} call print nl
+	fn(y:i64 -- r:i64){y 1 +} -> inc
+	inc 7 apply print nl
+}

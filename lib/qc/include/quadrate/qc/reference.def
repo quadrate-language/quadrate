@@ -284,34 +284,38 @@ BUILTIN(gte, "( a b -- bool )", "Returns 1 if a is greater than or equal to b, 0
 BUILTIN(within, "( val low high -- bool )", "Returns 1 if val is in [low, high), 0 otherwise.")
 
 // ============================================================================
-// BITWISE OPERATIONS
+// LOGICAL OPERATIONS
+//
+// These work on truth values: every non-zero value counts as true and the result is
+// always 0 or 1. The bitwise operations of the same names are bits::and, bits::or and
+// bits::not. Both operands are always evaluated -- these are ordinary stack words, not
+// short-circuiting forms.
 // ============================================================================
 
-/// Bitwise AND.
+/// Logical AND.
 /// @signature ( a b -- result )
-/// @example 0b1100 0b1010 and // 0b1000
-BUILTIN(and, "( a b -- result )", "Computes bitwise AND of two integers.")
+/// @example 1 1 and // 1
+/// @example 2 1 and // 1 (any non-zero value is true; bits::and would give 0)
+BUILTIN(and, "( a b -- result )", "Logical AND: 1 if both values are non-zero, 0 otherwise. Both sides are always evaluated. `bits::and` is the bitwise one.")
 
-/// Bitwise OR.
+/// Logical OR.
 /// @signature ( a b -- result )
-/// @example 0b1100 0b1010 or // 0b1110
-BUILTIN(or, "( a b -- result )", "Computes bitwise OR of two integers.")
-
-/// Bitwise XOR.
-/// @signature ( a b -- result )
-/// @example 0b1100 0b1010 xor // 0b0110
-BUILTIN(xor, "( a b -- result )", "Computes bitwise XOR of two integers.")
-
-/// Bitwise NOT.
-/// @signature ( a -- result )
-/// @example 0 not // -1 (all bits set)
-BUILTIN(not, "( a -- result )", "Computes bitwise NOT (ones' complement).")
+/// @example 0 0 or // 0
+/// @example 2 1 or // 1 (any non-zero value is true; bits::or would give 3)
+BUILTIN(or, "( a b -- result )", "Logical OR: 1 if either value is non-zero, 0 otherwise. Both sides are always evaluated. `bits::or` is the bitwise one.")
 
 /// Logical NOT.
 /// @signature ( a -- result )
-/// @example 0 lnot // 1
-/// @example 5 lnot // 0
-BUILTIN(lnot, "( a -- result )", "Logical NOT: 1 if the value is zero, 0 otherwise. Use this for boolean negation; `not` is bitwise.")
+/// @example 0 not // 1
+/// @example 5 not // 0
+BUILTIN(not, "( a -- result )", "Logical NOT: 1 if the value is zero, 0 otherwise. `bits::not` is the bitwise ones' complement.")
+
+// ============================================================================
+// BITWISE OPERATIONS
+//
+// AND, OR, XOR and NOT live in the bits module, because the plain names mean the
+// logical operations above. The shifts have no logical counterpart and stay here.
+// ============================================================================
 
 /// Shift left.
 /// @signature ( a n -- result )

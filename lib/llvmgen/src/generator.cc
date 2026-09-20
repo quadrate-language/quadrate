@@ -133,6 +133,8 @@ namespace Qd {
 		orFn = declareFn(ctxToResultTy, "qd_or");
 		xorFn = declareFn(ctxToResultTy, "qd_xor");
 		notFn = declareFn(ctxToResultTy, "qd_not");
+		landFn = declareFn(ctxToResultTy, "qd_land");
+		lorFn = declareFn(ctxToResultTy, "qd_lor");
 		lnotFn = declareFn(ctxToResultTy, "qd_lnot");
 		shlFn = declareFn(ctxToResultTy, "qd_shl");
 		shrFn = declareFn(ctxToResultTy, "qd_shr");
@@ -469,8 +471,8 @@ namespace Qd {
 		static const std::set<std::string> HANDLED = {// Arithmetic and comparison
 				"+", "-", "*", "/", "%", "++", "--", "add", "sub", "mul", "div", "mod", "neg", "<",
 				"<=", "==", "!=", ">", ">=", "lt", "lte", "eq", "neq", "gt", "gte",
-				// Bitwise and logical
-				"and", "or", "xor", "not", "lnot", "shl", "shr",
+				// Logical, and the bitwise forms behind the bits module
+				"and", "or", "not", "__and", "__or", "__xor", "__not", "shl", "shr",
 				// Stack shuffling
 				"drop", "dup", "dup2", "nip", "over", "pick", "rot", "swap",
 				// I/O

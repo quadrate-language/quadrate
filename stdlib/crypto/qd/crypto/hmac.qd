@@ -9,6 +9,7 @@
 /// "my-secret-key" "Hello World" hmac_sha256! -> mac
 /// mac print  // prints 64-char hex HMAC
 
+use bits
 use hex
 use mem
 use strings
@@ -56,7 +57,7 @@ fn build_hmac_input(key:str block_size:i64 pad_byte:i64 msg_buf:ptr msg_len:i64 
 	0 -> i
 	loop {
 		i block_size >= if { break }
-		kpad i mem::get_byte pad_byte xor -> xored
+		kpad i mem::get_byte pad_byte bits::xor -> xored
 		xored kpad i mem::set_byte
 		i 1 + -> i
 	}

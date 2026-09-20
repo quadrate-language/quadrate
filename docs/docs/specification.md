@@ -197,7 +197,10 @@ $"result={x + y}"             // Expression interpolation
 [ ]   Array literals
 ```
 
-**Note**: Bitwise operators `and`, `or`, `xor`, `not` MUST use named forms (no symbolic equivalents). Shift operators use `shl` and `shr`.
+**Note**: `and`, `or` and `not` are the logical operators and MUST use named forms (no
+symbolic equivalents). The bitwise operations of the same names live in the `bits` module
+as `bits::and`, `bits::or`, `bits::xor` and `bits::not`. Shift operators are `shl` and
+`shr`; they have no logical counterpart and stay builtins.
 
 ### 2.4 Whitespace
 
@@ -667,13 +670,15 @@ enum Internal { A B C }                 // Private to this module
 Enum values are `i64` and support all integer operations:
 
 ```quadrate
+use bits
+
 enum Perm { None Read = 1 Write = 2 Execute = 4 All = 7 }
 
 // Arithmetic
 Perm::Read Perm::Write + print nl     // 3
 
 // Bitwise (flags/bitmasks)
-Perm::All Perm::Execute and print nl  // 4
+Perm::All Perm::Execute bits::and print nl  // 4
 
 // Comparison
 Color::Red Color::Blue < print nl     // 1
@@ -1827,14 +1832,26 @@ The ordering operators are numeric only. Comparing two pointers with `<` is a ty
 than an address comparison: the relative order of two allocations is not something a program
 should be written against.
 
-### 12.3 Bitwise
+### 12.3 Logical
+
+Every non-zero value counts as true and the result is always 0 or 1, so `2 1 and` is `1`.
+Both operands are always evaluated: these are ordinary stack words, and a guard of the
+form `i len < xs i nth ... and` reads `xs[i]` whether or not the bound check passed.
 
 | Instruction | Alias | Stack Effect | Description |
 |-------------|-------|--------------|-------------|
-| `and` | | `(a b -- c)` | Bitwise AND |
-| `or` | | `(a b -- c)` | Bitwise OR |
-| `xor` | | `(a b -- c)` | Bitwise XOR |
-| `not` | | `(a -- b)` | Bitwise NOT |
+| `and` | | `(a b -- c)` | 1 if both operands are non-zero |
+| `or` | | `(a b -- c)` | 1 if either operand is non-zero |
+| `not` | | `(a -- b)` | 1 if the operand is zero |
+
+### 12.3.1 Bitwise
+
+The shifts are builtins. AND, OR, XOR and NOT would collide with the logical words above,
+so they live in the `bits` module and MUST be written `bits::and`, `bits::or`,
+`bits::xor` and `bits::not`.
+
+| Instruction | Alias | Stack Effect | Description |
+|-------------|-------|--------------|-------------|
 | `shl` | | `(a n -- b)` | Shift left |
 | `shr` | | `(a n -- b)` | Shift right (logical) |
 
@@ -2181,10 +2198,13 @@ instruction     = "dup" | "swap" | "drop" | "over" | "rot" | "nip"
 |----------|-------|--------------|-------------|
 | `shl` | | `(a n -- b)` | Shift left |
 | `shr` | | `(a n -- b)` | Shift right |
-| | `and` | `(a b -- c)` | a & b |
-| | `or` | `(a b -- c)` | a \| b |
-| | `xor` | `(a b -- c)` | a ^ b |
-| | `not` | `(a -- b)` | ~a |
+| | `bits::and` | `(a b -- c)` | a & b |
+| | `bits::or` | `(a b -- c)` | a \| b |
+| | `bits::xor` | `(a b -- c)` | a ^ b |
+| | `bits::not` | `(a -- b)` | ~a |
+| | `and` | `(a b -- c)` | logical AND |
+| | `or` | `(a b -- c)` | logical OR |
+| | `not` | `(a -- b)` | logical NOT |
 
 ### B.4 Special Operators
 

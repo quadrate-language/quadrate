@@ -1,3 +1,4 @@
+use bits
 use fmt
 use time
 
@@ -84,7 +85,7 @@ fn popcount(n:i64 -- count:i64) {
 	0 -> count
 	loop {
 		n 0 <= if { break }
-		n 1 and count + -> count
+		n 1 bits::and count + -> count
 		n 1 shr -> n
 	}
 	count

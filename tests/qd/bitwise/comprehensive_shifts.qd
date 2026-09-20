@@ -1,4 +1,6 @@
 // Test: Comprehensive bit shift tests
+use bits
+
 fn main() {
 	// Left shift basics
 	"=== Left shift ===" print nl
@@ -30,8 +32,8 @@ fn main() {
 	"=== Shift and mask ===" print nl
 	0xABCD 8 shr print nl         // 0xAB = 171
 	0xABCD 8 shl print nl         // 0xABCD00 = 11259136
-	0xABCD 0xFF and print nl      // 0xCD = 205
-	0xABCD 8 shr 0xFF and print nl // 0xAB = 171
+	0xABCD 0xFF bits::and print nl      // 0xCD = 205
+	0xABCD 8 shr 0xFF bits::and print nl // 0xAB = 171
 
 	// Edge cases
 	"=== Edge cases ===" print nl

@@ -136,23 +136,23 @@ fn md5_make_k( -- k:ptr) {
 
 fn md5_rotl32(x:i64 n:i64 -- result:i64) {
 	x 32 bits::mask -> x
-	x n shl x 32 n - shr or 32 bits::mask
+	x n shl x 32 n - shr bits::or 32 bits::mask
 }
 
 // Read 32-bit little-endian from buffer
 fn md5_read_u32_le(buf:ptr offset:i64 -- val:i64) {
 	buf offset mem::get_byte
-	buf offset 1 + mem::get_byte 8 shl or
-	buf offset 2 + mem::get_byte 16 shl or
-	buf offset 3 + mem::get_byte 24 shl or
+	buf offset 1 + mem::get_byte 8 shl bits::or
+	buf offset 2 + mem::get_byte 16 shl bits::or
+	buf offset 3 + mem::get_byte 24 shl bits::or
 }
 
 // Write 32-bit little-endian to buffer
 fn md5_write_u32_le(buf:ptr offset:i64 val:i64 -- ) {
-	val 255 and buf offset mem::set_byte
-	val 8 shr 255 and buf offset 1 + mem::set_byte
-	val 16 shr 255 and buf offset 2 + mem::set_byte
-	val 24 shr 255 and buf offset 3 + mem::set_byte
+	val 255 bits::and buf offset mem::set_byte
+	val 8 shr 255 bits::and buf offset 1 + mem::set_byte
+	val 16 shr 255 bits::and buf offset 2 + mem::set_byte
+	val 24 shr 255 bits::and buf offset 3 + mem::set_byte
 }
 
 // Process a single 64-byte block
@@ -178,22 +178,22 @@ fn md5_process_block(aa:i64 bb:i64 cc:i64 dd:i64 block:ptr -- ra:i64 rb:i64 rc:i
 
 		// Round 1: i < 16
 		i 16 < if {
-			b c and b not d and or 32 bits::mask -> f
+			b c bits::and b bits::not d bits::and bits::or 32 bits::mask -> f
 			i -> g
 		}
 		// Round 2: 16 <= i < 32
 		i 16 >= i 32 < and if {
-			d b and d not c and or 32 bits::mask -> f
+			d b bits::and d bits::not c bits::and bits::or 32 bits::mask -> f
 			5 i * 1 + 16 mod -> g
 		}
 		// Round 3: 32 <= i < 48
 		i 32 >= i 48 < and if {
-			b c xor d xor 32 bits::mask -> f
+			b c bits::xor d bits::xor 32 bits::mask -> f
 			3 i * 5 + 16 mod -> g
 		}
 		// Round 4: i >= 48
 		i 48 >= if {
-			c b d not or xor 32 bits::mask -> f
+			c b d bits::not bits::or bits::xor 32 bits::mask -> f
 			7 i * 16 mod -> g
 		}
 
@@ -315,9 +315,9 @@ pub fn (h:Md5) finish( -- hash:str)! {
 
 	// Write A (little-endian bytes)
 	0 4 1 for j {
-		aa j 8 * shr 255 and -> byte
+		aa j 8 * shr 255 bits::and -> byte
 		byte 4 shr -> hi
-		byte 15 and -> lo
+		byte 15 bits::and -> lo
 		hi 10 < if { 48 hi + } else { 87 hi + } out pos mem::set_byte
 		pos 1 + -> pos
 		lo 10 < if { 48 lo + } else { 87 lo + } out pos mem::set_byte
@@ -326,9 +326,9 @@ pub fn (h:Md5) finish( -- hash:str)! {
 
 	// Write B
 	0 4 1 for j {
-		bb j 8 * shr 255 and -> byte
+		bb j 8 * shr 255 bits::and -> byte
 		byte 4 shr -> hi
-		byte 15 and -> lo
+		byte 15 bits::and -> lo
 		hi 10 < if { 48 hi + } else { 87 hi + } out pos mem::set_byte
 		pos 1 + -> pos
 		lo 10 < if { 48 lo + } else { 87 lo + } out pos mem::set_byte
@@ -337,9 +337,9 @@ pub fn (h:Md5) finish( -- hash:str)! {
 
 	// Write C
 	0 4 1 for j {
-		cc j 8 * shr 255 and -> byte
+		cc j 8 * shr 255 bits::and -> byte
 		byte 4 shr -> hi
-		byte 15 and -> lo
+		byte 15 bits::and -> lo
 		hi 10 < if { 48 hi + } else { 87 hi + } out pos mem::set_byte
 		pos 1 + -> pos
 		lo 10 < if { 48 lo + } else { 87 lo + } out pos mem::set_byte
@@ -348,9 +348,9 @@ pub fn (h:Md5) finish( -- hash:str)! {
 
 	// Write D
 	0 4 1 for j {
-		dd j 8 * shr 255 and -> byte
+		dd j 8 * shr 255 bits::and -> byte
 		byte 4 shr -> hi
-		byte 15 and -> lo
+		byte 15 bits::and -> lo
 		hi 10 < if { 48 hi + } else { 87 hi + } out pos mem::set_byte
 		pos 1 + -> pos
 		lo 10 < if { 48 lo + } else { 87 lo + } out pos mem::set_byte

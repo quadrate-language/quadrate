@@ -1,4 +1,6 @@
 // Test: boolean edge cases
+use bits
+
 fn main() {
 	// Logical negation using "0 eq" pattern (since 'not' is bitwise)
 	"=== Logical negation ===" print nl
@@ -21,16 +23,16 @@ fn main() {
 
 	// Chained logical operations
 	"=== Chained and/or ===" print nl
-	1 1 and 1 and print nl     // 1 (true and true and true)
-	1 0 and 1 and print nl     // 0 (true and false = false)
-	0 0 or 0 or print nl       // 0 (false or false or false)
-	0 1 or 0 or print nl       // 1 (false or true = true)
+	1 1 bits::and 1 bits::and print nl     // 1 (true and true and true)
+	1 0 bits::and 1 bits::and print nl     // 0 (true and false = false)
+	0 0 bits::or 0 bits::or print nl       // 0 (false or false or false)
+	0 1 bits::or 0 bits::or print nl       // 1 (false or true = true)
 
 	// Mixed and/or (tests associativity)
 	"=== Mixed and/or ===" print nl
-	1 0 and 1 or print nl      // 1 ((true and false) or true = true)
-	1 1 and 0 or print nl      // 1 ((true and true) or false = true)
-	0 1 or 0 and print nl      // 0 ((false or true) and false = false)
+	1 0 bits::and 1 bits::or print nl      // 1 ((true and false) or true = true)
+	1 1 bits::and 0 bits::or print nl      // 1 ((true and true) or false = true)
+	0 1 bits::or 0 bits::and print nl      // 0 ((false or true) and false = false)
 
 	// Zero comparisons edge cases
 	"=== Zero comparisons ===" print nl

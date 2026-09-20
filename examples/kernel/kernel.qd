@@ -1,6 +1,7 @@
 // Bare-metal x86_64 multiboot kernel with interrupt support.
 // Demonstrates: GDT, IDT, PIC remapping, PIT timer, PS/2 keyboard.
 
+use bits
 use sys
 
 // ---------------------------------------------------------------------------
@@ -135,14 +136,14 @@ fn cursor_newline() {
 // ---------------------------------------------------------------------------
 fn gdt_set_entry(base:i64 idx:i64 seg_base:i64 seg_limit:i64 access:i64 flags:i64 -- ) {
 	base idx 8 * + -> off
-	off 0 + 0 seg_limit 0xFF and sys::st8
-	off 1 + 0 seg_limit 8 shr 0xFF and sys::st8
-	off 2 + 0 seg_base 0xFF and sys::st8
-	off 3 + 0 seg_base 8 shr 0xFF and sys::st8
-	off 4 + 0 seg_base 16 shr 0xFF and sys::st8
+	off 0 + 0 seg_limit 0xFF bits::and sys::st8
+	off 1 + 0 seg_limit 8 shr 0xFF bits::and sys::st8
+	off 2 + 0 seg_base 0xFF bits::and sys::st8
+	off 3 + 0 seg_base 8 shr 0xFF bits::and sys::st8
+	off 4 + 0 seg_base 16 shr 0xFF bits::and sys::st8
 	off 5 + 0 access sys::st8
-	off 6 + 0 seg_limit 16 shr 0x0F and flags 4 shl or sys::st8
-	off 7 + 0 seg_base 24 shr 0xFF and sys::st8
+	off 6 + 0 seg_limit 16 shr 0x0F bits::and flags 4 shl bits::or sys::st8
+	off 7 + 0 seg_base 24 shr 0xFF bits::and sys::st8
 }
 
 fn setup_gdt() {
@@ -161,12 +162,12 @@ fn setup_gdt() {
 // ---------------------------------------------------------------------------
 fn idt_set_entry(base:i64 idx:i64 handler:i64 selector:i64 type_attr:i64 -- ) {
 	base idx 16 * + -> off
-	off 0 + 0 handler 0xFFFF and sys::st16
+	off 0 + 0 handler 0xFFFF bits::and sys::st16
 	off 2 + 0 selector sys::st16
 	off 4 + 0 0 sys::st8
 	off 5 + 0 type_attr sys::st8
-	off 6 + 0 handler 16 shr 0xFFFF and sys::st16
-	off 8 + 0 handler 32 shr 0xFFFFFFFF and sys::st32
+	off 6 + 0 handler 16 shr 0xFFFF bits::and sys::st16
+	off 8 + 0 handler 32 shr 0xFFFFFFFF bits::and sys::st32
 	off 12 + 0 0 sys::st32
 }
 
@@ -274,7 +275,7 @@ fn scancode_to_ascii(sc:i64 -- ch:i64) {
 
 fn handle_keyboard() {
 	0x60 sys::port_in8 -> scancode
-	scancode 0x80 and 0 != if { return }
+	scancode 0x80 bits::and 0 != if { return }
 
 	// Backspace
 	scancode SC_BACKSPACE == if {

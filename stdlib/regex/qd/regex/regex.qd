@@ -2,6 +2,7 @@
 /// Supports . * + ? | () [] [^] [a-z] ^ $ and escapes.
 /// Note: Nested groups and alternation inside groups not yet supported.
 /// doccheck: page-context
+use bits
 use mem
 use sb
 use strings
@@ -123,21 +124,21 @@ fn get_cclass(re:ptr idx:i64 -- cc:ptr) {
 
 // Set bit in character class
 fn cclass_set(cc:ptr c:i64 -- ) {
-	c 255 and -> c
+	c 255 bits::and -> c
 	c 8 / -> byte_idx
 	c 8 % -> bit_idx
 	cc byte_idx mem::get_byte -> b
-	1 bit_idx shl b or -> b
+	1 bit_idx shl b bits::or -> b
 	b cc byte_idx mem::set_byte
 }
 
 // Test bit in character class
 fn cclass_test(cc:ptr c:i64 -- result:i64) {
-	c 255 and -> c
+	c 255 bits::and -> c
 	c 8 / -> byte_idx
 	c 8 % -> bit_idx
 	cc byte_idx mem::get_byte -> b
-	b bit_idx shr 1 and
+	b bit_idx shr 1 bits::and
 }
 
 // Parser state (stored in memory)
@@ -631,7 +632,7 @@ pub fn (self:Regex) matches(s:str -- result:i64) {
 	clist 0 mem::get_i64 -> n
 	0 -> i
 	loop {
-		i n >= result or if {
+		i n >= result bits::or if {
 			break
 		}
 		clist i 1 + 8 * mem::get_i64 -> sidx

@@ -38,8 +38,8 @@ fn crc32_make_entry(index:i64 -- entry:i64) {
 	index -> crc
 	0 8 1 for j {
 		crc 1 shr -> shifted
-		shifted CRC32_POLY xor -> xored
-		crc 1 and 1 == if {
+		shifted CRC32_POLY bits::xor -> xored
+		crc 1 bits::and 1 == if {
 			xored -> crc
 		} else {
 			shifted -> crc
@@ -75,8 +75,8 @@ pub fn (c:Crc32) update(data:str -- c2:Crc32) {
 
 	0 slen 1 for i {
 		data i strings::char_at -> byte
-		state byte xor 255 and -> index
-		tbl index 8 * mem::get_i64 state 8 shr xor -> state
+		state byte bits::xor 255 bits::and -> index
+		tbl index 8 * mem::get_i64 state 8 shr bits::xor -> state
 	}
 
 	// Return new Crc32 with updated state
@@ -90,7 +90,7 @@ pub fn (c:Crc32) update(data:str -- c2:Crc32) {
 /// @param c Crc32 The hasher state
 /// @return crc i64 Current CRC32 checksum
 pub fn (c:Crc32) value( -- crc:i64) {
-	c <<state CRC32_INIT xor 32 bits::mask
+	c <<state CRC32_INIT bits::xor 32 bits::mask
 }
 
 /// Get CRC32 as 8-character hex string.
@@ -101,7 +101,7 @@ pub fn (c:Crc32) hex( -- hex:str) {
 
 	8 mem::alloc! -> buf
 	0 8 1 for i {
-		crc 28 i 4 * - shr 15 and -> nibble
+		crc 28 i 4 * - shr 15 bits::and -> nibble
 		nibble 10 < if {
 			48 nibble +
 		} else {

@@ -1,10 +1,11 @@
 // Unit tests for the mem module
+use bits
 use mem
 use testing
 
 fn test_alloc_and_free( -- result:i64) {
 	1024 mem::alloc! -> buf
-	buf mem::is_null not -> ok
+	buf mem::is_null bits::not -> ok
 	buf mem::free
 	ok
 }
@@ -41,7 +42,7 @@ fn test_mem_zero( -- result:i64) {
 	buf 0 mem::get_byte -> b0
 	buf 1 mem::get_byte -> b1
 	buf mem::free
-	b0 0 eq b1 0 eq and
+	b0 0 eq b1 0 eq bits::and
 }
 
 fn test_mem_fill( -- result:i64) {
@@ -50,7 +51,7 @@ fn test_mem_fill( -- result:i64) {
 	buf 0 mem::get_byte -> b0
 	buf 15 mem::get_byte -> b15
 	buf mem::free
-	b0 0xAB eq b15 0xAB eq and
+	b0 0xAB eq b15 0xAB eq bits::and
 }
 
 fn test_mem_copy( -- result:i64) {
@@ -62,7 +63,7 @@ fn test_mem_copy( -- result:i64) {
 	dst 15 mem::get_byte -> b15
 	src mem::free
 	dst mem::free
-	b0 0xAB eq b15 0xAB eq and
+	b0 0xAB eq b15 0xAB eq bits::and
 }
 
 fn test_to_from_string( -- result:i64) {
@@ -70,7 +71,7 @@ fn test_to_from_string( -- result:i64) {
 	len 5 eq -> len_ok
 	buf len mem::to_string -> s
 	buf mem::free
-	s "hello" eq len_ok and
+	s "hello" eq len_ok bits::and
 }
 
 test "mem::alloc and free" {

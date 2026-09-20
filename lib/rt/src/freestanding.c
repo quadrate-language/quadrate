@@ -340,6 +340,10 @@ int qd_not(qd_context* ctx) {
 	return push_i_inline(ctx, ~a);
 }
 
+// Logical AND and OR: every non-zero value counts as true, unlike the bitwise ops above.
+BINOP_I(qd_land, (a != 0 && b != 0) ? 1 : 0)
+BINOP_I(qd_lor, (a != 0 || b != 0) ? 1 : 0)
+
 // Logical negation, as distinct from the bitwise `not` above.
 int qd_lnot(qd_context* ctx) {
 	int64_t a = pop_i_inline(ctx);

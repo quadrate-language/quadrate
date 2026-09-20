@@ -1,5 +1,6 @@
 // Brainfuck interpreter
 // Usage: bf <program.bf>
+use bits
 use io
 use mem
 use os
@@ -42,10 +43,10 @@ fn main() {
 				dp -- -> dp
 			}
 			unicode::plus {
-				tape dp mem::get_byte ++ 255 and tape dp mem::set_byte
+				tape dp mem::get_byte ++ 255 bits::and tape dp mem::set_byte
 			}
 			unicode::minus {
-				tape dp mem::get_byte -- 255 and tape dp mem::set_byte
+				tape dp mem::get_byte -- 255 bits::and tape dp mem::set_byte
 			}
 			unicode::dot {
 				tape dp mem::get_byte strings::from_char print

@@ -308,88 +308,75 @@ false if { } else { "no" print }
 
 ## Built-in Instructions
 
-### BITWISE OPERATIONS
+### LOGICAL OPERATIONS
+
+These work on truth values: every non-zero value counts as true and the result is always 0
+or 1. The bitwise operations of the same names are [`bits::and`](stdlib/bits.md),
+`bits::or` and `bits::not`. Both operands are always evaluated — these are ordinary stack
+words, not short-circuiting forms, so a guard of the form `i len < xs i nth ... and` reads
+`xs[i]` whether or not the bound check passed.
 
 | Instruction | Signature | Description |
 |-------------|-----------|-------------|
-| [`and`](#and) | `( a b -- result )` | Computes bitwise AND of two integers. |
-| [`or`](#or) | `( a b -- result )` | Computes bitwise OR of two integers. |
-| [`xor`](#xor) | `( a b -- result )` | Computes bitwise XOR of two integers. |
-| [`not`](#not) | `( a -- result )` | Computes bitwise NOT (ones' complement). |
-| [`lnot`](#lnot) | `( a -- result )` | Logical NOT: 1 if the value is zero, 0 otherwise. Use this for boolean negation; `not` is bitwise. |
-| [`shl`](#shl) | `( a n -- result )` | Shifts a left by n bits. |
-| [`shr`](#shr) | `( a n -- result )` | Shifts a right by n bits (arithmetic shift). |
+| [`and`](#and) | `( a b -- result )` | Logical AND: 1 if both values are non-zero, 0 otherwise. Both sides are always evaluated. `bits::and` is the bitwise one. |
+| [`or`](#or) | `( a b -- result )` | Logical OR: 1 if either value is non-zero, 0 otherwise. Both sides are always evaluated. `bits::or` is the bitwise one. |
+| [`not`](#not) | `( a -- result )` | Logical NOT: 1 if the value is zero, 0 otherwise. `bits::not` is the bitwise ones' complement. |
 
 #### and
 
-Computes bitwise AND of two integers.
+Logical AND: 1 if both values are non-zero, 0 otherwise. Both sides are always evaluated. `bits::and` is the bitwise one.
 
 **Signature:** `( a b -- result )`
 
 **Example:**
 
 ```qd
-0b1100 0b1010 and // 0b1000
+1 1 and // 1
+2 1 and // 1 (any non-zero value is true; bits::and would give 0)
 ```
 
 ---
 
 #### or
 
-Computes bitwise OR of two integers.
+Logical OR: 1 if either value is non-zero, 0 otherwise. Both sides are always evaluated. `bits::or` is the bitwise one.
 
 **Signature:** `( a b -- result )`
 
 **Example:**
 
 ```qd
-0b1100 0b1010 or // 0b1110
-```
-
----
-
-#### xor
-
-Computes bitwise XOR of two integers.
-
-**Signature:** `( a b -- result )`
-
-**Example:**
-
-```qd
-0b1100 0b1010 xor // 0b0110
+0 0 or // 0
+2 1 or // 1 (any non-zero value is true; bits::or would give 3)
 ```
 
 ---
 
 #### not
 
-Computes bitwise NOT (ones' complement).
+Logical NOT: 1 if the value is zero, 0 otherwise. `bits::not` is the bitwise ones' complement.
 
 **Signature:** `( a -- result )`
 
 **Example:**
 
 ```qd
-0 not // -1 (all bits set)
+0 not // 1
+5 not // 0
 ```
 
 ---
 
-#### lnot
+### BITWISE OPERATIONS
 
-Logical NOT: 1 if the value is zero, 0 otherwise. Use this for boolean negation; `not` is bitwise.
+AND, OR, XOR and NOT would collide with the logical words above, so they live in the
+`bits` module: `bits::and`, `bits::or`, `bits::xor` and `bits::not`. The shifts have no
+logical counterpart and stay builtins.
 
-**Signature:** `( a -- result )`
-
-**Example:**
-
-```qd
-0 lnot // 1
-5 lnot // 0
-```
-
----
+| Instruction | Signature | Description |
+|-------------|-----------|-------------|
+| [`shl`](#shl) | `( a n -- result )` | Shifts a left by n bits. |
+| [`shr`](#shr) | `( a n -- result )` | Shifts a right by n bits (arithmetic shift). |
 
 #### shl
 

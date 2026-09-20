@@ -64,6 +64,31 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **`quadrepl` command aliases**: `:quit` and `:exit` alongside `exit`/`quit`/`:q`, and `:save`/`:load` alongside `.save`/`.load`.
 ### Changed
 
+- **`and`, `or` and `not` are logical; the bitwise operations moved to `bits` (R13).** They
+  were bitwise and used throughout as logical, which is only correct while every operand is
+  already 0 or 1: `2 1 and` was `0` and `2 1 or` was `3`, neither of them a truth value. The
+  plain names now go to the common case — `2 1 and` is `1` — and the bitwise forms are
+  `bits::and`, `bits::or`, `bits::xor` and `bits::not`, where the prefix says which meaning
+  is meant. `lnot` is gone; `not` is the logical negation it used to spell. `shl` and `shr`
+  have no logical counterpart, so nothing collides and they stay builtins.
+  The awkward name lands where it costs least. Bitwise use is concentrated — 301 uses
+  across 32 files, but 218 of them in ten: `bytes`, the three `crypto` hashes, `uuid`,
+  `hex`, `bits` itself and the kernel example, all code that is *about* bits, where
+  `bits::and` reads as accurate rather than verbose and where the line often ended in
+  `bits::mask` already. Logical use is 233 across 44 files, thinly spread, and keeps the
+  short names and no import.
+  `bits::and` and friends are `pub inline stack fn` wrapping one instruction each, the same
+  way `sys` wraps the privileged instructions, so a module-qualified name costs nothing at
+  runtime. The interpreter tier has no module system, so it registers the qualified
+  spellings as plain names — a device with no package resolution still needs bit
+  manipulation.
+  There is no ambiguity between a builtin and a module function of the same name: Quadrate
+  has no unqualified import, so `bits::and` is parsed as a scoped identifier and its member
+  name never reaches the builtin table. `bytes::xor` and `bits::xor` coexist in the corpus
+  today.
+  **This does not add short-circuiting.** `and` and `or` are still ordinary stack words and
+  both operands are still evaluated, so a guard of the form `i len < xs i nth ... and` still
+  reads `xs[i]`. That half of R13 stays open for the quotation combinators.
 - **Twenty-one functions are written in the stack-direct dialect, and the rest deliberately are not.**
 - **A sized integer type is rejected where it has no width to describe.**
 - **`printsv` is removed.**
@@ -127,6 +152,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   check existed but only in the expression parser; it now covers every place a string
   token is consumed — `use`, `import`, `test` names, constant and global initialisers,
   struct field defaults, array elements and `switch` case values.
+- **A function-pointer type keeps its `(` glued to the `fn`.** The anonymous-function
+  normaliser puts a space after `fn`, which is right for a value and wrong for a type:
+  the parser only reads `fn` as a type when the `(` follows it directly, so
+  `g:fn (i64 -- i64)` does not parse. It now leaves `fn` alone in type position, which a
+  `:` before it identifies, and still normalises the value form on the same line.
 - **A quote's escaping is judged from the run of backslashes, and only inside a string.**
   The parser's unterminated-string check and every string scan in the formatter tested
   the single character before the quote, which reads the closing quote of `"a\\"` as
@@ -298,6 +328,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `qd_clone_context` leaked `error_context` when the `program_name` copy failed.
 ### Removed
 
+- **`xor` and `lnot` as builtins.** `xor` is `bits::xor`; `lnot` is `not`. Both report the
+  rewrite when used, the way the removed stack shufflers do.
 - **The `error { code = … message = … }` literal.**
 - **`ctx` keyword**: `ctx { ... }` ran its body on a copy of the stack and appended only the body's top value to the parent.
 - **Eight stack shufflers**: `drop2`, `dupd`, `nipd`, `over2`, `overd`, `swap2`, `swapd`, `tuck`.

@@ -1,0 +1,25 @@
+// Test: `not` is logical negation (0 -> 1, anything else -> 0), as distinct from
+// `bits::not`, which is bitwise ones' complement. Boolean negation is the common case
+// people reach for, which is why it has the plain name; writing the bitwise one for it
+// silently yields the wrong answer because ~0 = -1 = 0xFF..FF.
+//
+// Covers both codegen paths: an all-i64 function takes the native/compile-time-stack path,
+// while main goes through the runtime stack.
+use bits
+
+fn negate_native(x:i64 -- r:i64) {
+	x not
+}
+
+fn main() {
+	0 not print nl
+	5 not print nl
+	-1 not print nl
+
+	0 negate_native print nl
+	7 negate_native print nl
+
+	// bits::not is the bitwise one
+	0 bits::not print nl
+	5 bits::not print nl
+}

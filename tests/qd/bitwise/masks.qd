@@ -1,4 +1,6 @@
 // Test: bit mask operations
+use bits
+
 fn main() {
 	// Create masks
 	"=== Create masks ===" print nl
@@ -9,24 +11,24 @@ fn main() {
 
 	// Apply masks
 	"=== Apply masks ===" print nl
-	0xABCDEF 0xFF and print nl        // Low 8 bits: 239
-	0xABCDEF 0xFFFF and print nl      // Low 16 bits: 52719
-	0xABCDEF 0xF0 and print nl        // Middle nibble: 224
+	0xABCDEF 0xFF bits::and print nl        // Low 8 bits: 239
+	0xABCDEF 0xFFFF bits::and print nl      // Low 16 bits: 52719
+	0xABCDEF 0xF0 bits::and print nl        // Middle nibble: 224
 
 	// Mask and shift extract
 	"=== Extract fields ===" print nl
-	0b11010110 0b00001111 and print nl     // Low nibble: 6
-	0b11010110 4 shr 0b00001111 and print nl // High nibble: 13
+	0b11010110 0b00001111 bits::and print nl     // Low nibble: 6
+	0b11010110 4 shr 0b00001111 bits::and print nl // High nibble: 13
 
 	// Combine values with masks
 	"=== Combine values ===" print nl
-	0xAB 8 shl 0xCD or print nl   // 0xABCD = 43981
-	0x12 16 shl 0x34 8 shl or 0x56 or print nl  // 0x123456 = 1193046
+	0xAB 8 shl 0xCD bits::or print nl   // 0xABCD = 43981
+	0x12 16 shl 0x34 8 shl bits::or 0x56 bits::or print nl  // 0x123456 = 1193046
 
 	// Clear and set field
 	"=== Clear and set ===" print nl
-	0xFF 0x0F not and print nl    // Clear low nibble: 240
-	0xFF 0x0F not and 0x05 or print nl  // Set low nibble to 5: 245
+	0xFF 0x0F bits::not bits::and print nl    // Clear low nibble: 240
+	0xFF 0x0F bits::not bits::and 0x05 bits::or print nl  // Set low nibble to 5: 245
 
 	"done" print nl
 }

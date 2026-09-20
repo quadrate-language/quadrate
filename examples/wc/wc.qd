@@ -18,6 +18,7 @@
 // With no count flags, all three counts are printed.
 // With multiple files, totals are printed at the end.
 
+use bits
 use flag
 use io
 use mem
@@ -182,7 +183,7 @@ fn main() {
 			f "-c" flag::boolean f "--bytes" flag::boolean or -> want_c
 
 			// If no specific count requested, show all three.
-			want_l want_w or want_c or 0 == if {
+			want_l want_w bits::or want_c bits::or 0 == if {
 				1 -> want_l
 				1 -> want_w
 				1 -> want_c

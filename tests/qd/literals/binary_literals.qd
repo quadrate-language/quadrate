@@ -1,4 +1,6 @@
 // Test: binary literal parsing
+use bits
+
 fn main() {
 	// Basic binary values
 	"=== Basic binary ===" print nl
@@ -38,9 +40,9 @@ fn main() {
 
 	// Binary in bitwise
 	"=== Binary bitwise ===" print nl
-	0b1010 0b1100 and print nl  // 1010 & 1100 = 1000 = 8
-	0b1010 0b0101 or print nl   // 1010 | 0101 = 1111 = 15
-	0b1010 0b1100 xor print nl  // 1010 ^ 1100 = 0110 = 6
+	0b1010 0b1100 bits::and print nl  // 1010 & 1100 = 1000 = 8
+	0b1010 0b0101 bits::or print nl   // 1010 | 0101 = 1111 = 15
+	0b1010 0b1100 bits::xor print nl  // 1010 ^ 1100 = 0110 = 6
 
 	"done" print nl
 }

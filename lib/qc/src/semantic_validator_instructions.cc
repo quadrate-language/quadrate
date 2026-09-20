@@ -320,8 +320,10 @@ namespace Qd {
 			structTypeStack.push_back("");
 			return;
 		}
-		// Logical operations: and, or (consume 2 bools, produce int/bool)
-		else if (strcmp(name, "and") == 0 || strcmp(name, "or") == 0) {
+		// Logical operations: and, or, and the bitwise forms behind the bits module
+		// (consume 2 values, produce int)
+		else if (strcmp(name, "and") == 0 || strcmp(name, "or") == 0 || strcmp(name, "__and") == 0 ||
+				 strcmp(name, "__or") == 0 || strcmp(name, "__xor") == 0) {
 			if (typeStack.size() < 2) {
 				std::string errorMsg = "Type error in '";
 				errorMsg += name;
@@ -341,8 +343,9 @@ namespace Qd {
 			structTypeStack.push_back("");
 			return;
 		}
-		// Bitwise / logical negation: not, lnot (consume 1, produce int/bool)
-		else if (strcmp(name, "not") == 0 || strcmp(name, "lnot") == 0) {
+		// Negation: the logical 'not', and the bitwise form behind the bits module
+		// (consume 1, produce int)
+		else if (strcmp(name, "not") == 0 || strcmp(name, "__not") == 0) {
 			if (typeStack.empty()) {
 				std::string msg = std::string("Type error in '") + name + "': Stack underflow (requires 1 value)";
 				reportErrorConditional(node, msg.c_str(), reportErrors);
@@ -357,8 +360,8 @@ namespace Qd {
 			structTypeStack.push_back("");
 			return;
 		}
-		// Bitwise shift and XOR operations: shl, shr, xor (consume 2 ints, produce int)
-		else if (strcmp(name, "shl") == 0 || strcmp(name, "shr") == 0 || strcmp(name, "xor") == 0) {
+		// Bitwise shift operations: shl, shr (consume 2 ints, produce int)
+		else if (strcmp(name, "shl") == 0 || strcmp(name, "shr") == 0) {
 			if (typeStack.size() < 2) {
 				std::string errorMsg = "Type error in '";
 				errorMsg += name;

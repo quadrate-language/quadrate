@@ -16,6 +16,7 @@
 /// h finish! -> hash
 /// h release
 
+use bits
 use mem
 use strings
 
@@ -131,55 +132,55 @@ fn sha512_make_k( -- k:ptr) {
 }
 
 fn sha512_rotr64(x:i64 n:i64 -- result:i64) {
-	x n shr x 64 n - shl or
+	x n shr x 64 n - shl bits::or
 }
 
 fn sha512_ch(x:i64 y:i64 z:i64 -- result:i64) {
-	x y and x not z and xor
+	x y bits::and x bits::not z bits::and bits::xor
 }
 
 fn sha512_maj(x:i64 y:i64 z:i64 -- result:i64) {
-	x y and x z and xor y z and xor
+	x y bits::and x z bits::and bits::xor y z bits::and bits::xor
 }
 
 fn sha512_sigma0(x:i64 -- result:i64) {
-	x 28 sha512_rotr64 x 34 sha512_rotr64 xor x 39 sha512_rotr64 xor
+	x 28 sha512_rotr64 x 34 sha512_rotr64 bits::xor x 39 sha512_rotr64 bits::xor
 }
 
 fn sha512_sigma1(x:i64 -- result:i64) {
-	x 14 sha512_rotr64 x 18 sha512_rotr64 xor x 41 sha512_rotr64 xor
+	x 14 sha512_rotr64 x 18 sha512_rotr64 bits::xor x 41 sha512_rotr64 bits::xor
 }
 
 fn sha512_gamma0(x:i64 -- result:i64) {
-	x 1 sha512_rotr64 x 8 sha512_rotr64 xor x 7 shr xor
+	x 1 sha512_rotr64 x 8 sha512_rotr64 bits::xor x 7 shr bits::xor
 }
 
 fn sha512_gamma1(x:i64 -- result:i64) {
-	x 19 sha512_rotr64 x 61 sha512_rotr64 xor x 6 shr xor
+	x 19 sha512_rotr64 x 61 sha512_rotr64 bits::xor x 6 shr bits::xor
 }
 
 // Read 64-bit big-endian from buffer
 fn sha512_read_u64_be(buf:ptr offset:i64 -- val:i64) {
 	buf offset mem::get_byte 56 shl
-	buf offset 1 + mem::get_byte 48 shl or
-	buf offset 2 + mem::get_byte 40 shl or
-	buf offset 3 + mem::get_byte 32 shl or
-	buf offset 4 + mem::get_byte 24 shl or
-	buf offset 5 + mem::get_byte 16 shl or
-	buf offset 6 + mem::get_byte 8 shl or
-	buf offset 7 + mem::get_byte or
+	buf offset 1 + mem::get_byte 48 shl bits::or
+	buf offset 2 + mem::get_byte 40 shl bits::or
+	buf offset 3 + mem::get_byte 32 shl bits::or
+	buf offset 4 + mem::get_byte 24 shl bits::or
+	buf offset 5 + mem::get_byte 16 shl bits::or
+	buf offset 6 + mem::get_byte 8 shl bits::or
+	buf offset 7 + mem::get_byte bits::or
 }
 
 // Write 64-bit big-endian to buffer
 fn sha512_write_u64_be(buf:ptr offset:i64 val:i64 -- ) {
-	val 56 shr 255 and buf offset mem::set_byte
-	val 48 shr 255 and buf offset 1 + mem::set_byte
-	val 40 shr 255 and buf offset 2 + mem::set_byte
-	val 32 shr 255 and buf offset 3 + mem::set_byte
-	val 24 shr 255 and buf offset 4 + mem::set_byte
-	val 16 shr 255 and buf offset 5 + mem::set_byte
-	val 8 shr 255 and buf offset 6 + mem::set_byte
-	val 255 and buf offset 7 + mem::set_byte
+	val 56 shr 255 bits::and buf offset mem::set_byte
+	val 48 shr 255 bits::and buf offset 1 + mem::set_byte
+	val 40 shr 255 bits::and buf offset 2 + mem::set_byte
+	val 32 shr 255 bits::and buf offset 3 + mem::set_byte
+	val 24 shr 255 bits::and buf offset 4 + mem::set_byte
+	val 16 shr 255 bits::and buf offset 5 + mem::set_byte
+	val 8 shr 255 bits::and buf offset 6 + mem::set_byte
+	val 255 bits::and buf offset 7 + mem::set_byte
 }
 
 // Process a single 128-byte block
@@ -344,49 +345,49 @@ pub fn (h:Sha512) finish( -- hash:str)! {
 
 	// Helper to write 16 hex chars for each 64-bit word
 	0 16 1 for j {
-		hh0 60 j 4 * - shr 15 and -> nibble
+		hh0 60 j 4 * - shr 15 bits::and -> nibble
 		nibble 10 < if { 48 nibble + } else { 87 nibble + }
 		out pos mem::set_byte
 		pos 1 + -> pos
 	}
 	0 16 1 for j {
-		hh1 60 j 4 * - shr 15 and -> nibble
+		hh1 60 j 4 * - shr 15 bits::and -> nibble
 		nibble 10 < if { 48 nibble + } else { 87 nibble + }
 		out pos mem::set_byte
 		pos 1 + -> pos
 	}
 	0 16 1 for j {
-		hh2 60 j 4 * - shr 15 and -> nibble
+		hh2 60 j 4 * - shr 15 bits::and -> nibble
 		nibble 10 < if { 48 nibble + } else { 87 nibble + }
 		out pos mem::set_byte
 		pos 1 + -> pos
 	}
 	0 16 1 for j {
-		hh3 60 j 4 * - shr 15 and -> nibble
+		hh3 60 j 4 * - shr 15 bits::and -> nibble
 		nibble 10 < if { 48 nibble + } else { 87 nibble + }
 		out pos mem::set_byte
 		pos 1 + -> pos
 	}
 	0 16 1 for j {
-		hh4 60 j 4 * - shr 15 and -> nibble
+		hh4 60 j 4 * - shr 15 bits::and -> nibble
 		nibble 10 < if { 48 nibble + } else { 87 nibble + }
 		out pos mem::set_byte
 		pos 1 + -> pos
 	}
 	0 16 1 for j {
-		hh5 60 j 4 * - shr 15 and -> nibble
+		hh5 60 j 4 * - shr 15 bits::and -> nibble
 		nibble 10 < if { 48 nibble + } else { 87 nibble + }
 		out pos mem::set_byte
 		pos 1 + -> pos
 	}
 	0 16 1 for j {
-		hh6 60 j 4 * - shr 15 and -> nibble
+		hh6 60 j 4 * - shr 15 bits::and -> nibble
 		nibble 10 < if { 48 nibble + } else { 87 nibble + }
 		out pos mem::set_byte
 		pos 1 + -> pos
 	}
 	0 16 1 for j {
-		hh7 60 j 4 * - shr 15 and -> nibble
+		hh7 60 j 4 * - shr 15 bits::and -> nibble
 		nibble 10 < if { 48 nibble + } else { 87 nibble + }
 		out pos mem::set_byte
 		pos 1 + -> pos
@@ -483,49 +484,49 @@ pub fn sha512_bytes(buf:ptr length:i64 -- hash:str)! {
 	0 -> pos
 
 	0 16 1 for j {
-		hh0 60 j 4 * - shr 15 and -> nibble
+		hh0 60 j 4 * - shr 15 bits::and -> nibble
 		nibble 10 < if { 48 nibble + } else { 87 nibble + }
 		out pos mem::set_byte
 		pos 1 + -> pos
 	}
 	0 16 1 for j {
-		hh1 60 j 4 * - shr 15 and -> nibble
+		hh1 60 j 4 * - shr 15 bits::and -> nibble
 		nibble 10 < if { 48 nibble + } else { 87 nibble + }
 		out pos mem::set_byte
 		pos 1 + -> pos
 	}
 	0 16 1 for j {
-		hh2 60 j 4 * - shr 15 and -> nibble
+		hh2 60 j 4 * - shr 15 bits::and -> nibble
 		nibble 10 < if { 48 nibble + } else { 87 nibble + }
 		out pos mem::set_byte
 		pos 1 + -> pos
 	}
 	0 16 1 for j {
-		hh3 60 j 4 * - shr 15 and -> nibble
+		hh3 60 j 4 * - shr 15 bits::and -> nibble
 		nibble 10 < if { 48 nibble + } else { 87 nibble + }
 		out pos mem::set_byte
 		pos 1 + -> pos
 	}
 	0 16 1 for j {
-		hh4 60 j 4 * - shr 15 and -> nibble
+		hh4 60 j 4 * - shr 15 bits::and -> nibble
 		nibble 10 < if { 48 nibble + } else { 87 nibble + }
 		out pos mem::set_byte
 		pos 1 + -> pos
 	}
 	0 16 1 for j {
-		hh5 60 j 4 * - shr 15 and -> nibble
+		hh5 60 j 4 * - shr 15 bits::and -> nibble
 		nibble 10 < if { 48 nibble + } else { 87 nibble + }
 		out pos mem::set_byte
 		pos 1 + -> pos
 	}
 	0 16 1 for j {
-		hh6 60 j 4 * - shr 15 and -> nibble
+		hh6 60 j 4 * - shr 15 bits::and -> nibble
 		nibble 10 < if { 48 nibble + } else { 87 nibble + }
 		out pos mem::set_byte
 		pos 1 + -> pos
 	}
 	0 16 1 for j {
-		hh7 60 j 4 * - shr 15 and -> nibble
+		hh7 60 j 4 * - shr 15 bits::and -> nibble
 		nibble 10 < if { 48 nibble + } else { 87 nibble + }
 		out pos mem::set_byte
 		pos 1 + -> pos

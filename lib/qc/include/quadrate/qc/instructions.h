@@ -16,9 +16,14 @@ namespace Qd {
 			"%", "*", "+", "++", "-", "--", "/",
 			// Arithmetic instructions
 			"add", "dec", "div", "inc", "mod", "mul", "neg", "sub",
-			// Bitwise operations
-			"and", "lnot", "not", "or", "shl", "shr", "xor",
-			// Logical operations
+			// Logical operations on truth values: every non-zero value counts as true, so
+			// `2 1 and` is 1. The bitwise forms live in the bits module.
+			"and", "not", "or",
+			// Bitwise operations. Shifts have no logical counterpart, so they keep plain
+			// names; AND/OR/XOR/NOT would collide with the logical words above and are
+			// reached through the bits module. Internal: use bits::and and friends.
+			"__and", "__not", "__or", "__xor", "shl", "shr",
+			// Named comparison instructions
 			"eq", "gt", "gte", "lt", "lte", "neq", "within",
 			// Stack operations
 			"call", "clear", "depth", "drop", "dup", "dup2", "free", "len", "nip", "nth", "over", "pick", "rot", "swap",
@@ -65,6 +70,10 @@ namespace Qd {
 
 	inline constexpr RemovedInstruction REMOVED_INSTRUCTIONS[] = {
 			{"drop2", "( a b -- )", "drop drop"},
+			{"lnot", "( a -- b )", "not", "'not' is the logical negation now; 'bits::not' is the bitwise one"},
+			{"xor", "( a b -- c )", "bits::xor",
+					"the bitwise operators moved to the bits module so 'and', 'or' and 'not' could take "
+					"their logical meanings"},
 			{"dupd", "( a b -- a a b )", "-> b -> a  a a b"},
 			{"nipd", "( a b c -- a c )", "-> c -> b -> a  a c"},
 			{"over2", "( a b c d -- a b c d a b )", "-> d -> c -> b -> a  a b c d a b"},

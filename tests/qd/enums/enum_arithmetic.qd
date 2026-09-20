@@ -1,4 +1,6 @@
 // Test: enum arithmetic
+use bits
+
 enum Perm {
 	None
 	Read = 1
@@ -9,14 +11,14 @@ enum Perm {
 }
 
 stack fn has_perm(i64 i64 -- i64) {
-	and 0 !=
+	bits::and 0 !=
 }
 
 fn main() {
 	// Bitwise operations
-	Perm::Read Perm::Write or print nl
-	Perm::All Perm::Execute and print nl
-	Perm::ReadWrite Perm::Read and 0 neq print nl
+	Perm::Read Perm::Write bits::or print nl
+	Perm::All Perm::Execute bits::and print nl
+	Perm::ReadWrite Perm::Read bits::and 0 neq print nl
 
 	// Arithmetic
 	Perm::Read Perm::Write + print nl

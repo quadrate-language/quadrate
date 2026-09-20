@@ -252,7 +252,7 @@ TEST(NotOperation) {
 }
 
 TEST(XorOperation) {
-	const char* src = "fn main() { 1 0 xor drop }";
+	const char* src = "fn main() { 1 0 __xor drop }";
 	size_t errors = validateCode(src);
 	ASSERT(errors == 0, "xor operation should succeed");
 }

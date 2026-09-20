@@ -258,6 +258,25 @@ namespace Qd {
 		finishBinaryOp(boc, result);
 	}
 
+	// Logical AND and OR: ( a:int b:int -- result:int ). Every non-zero value counts as true,
+	// so both operands are narrowed to 0/1 first -- `2 1 and` is 1, where the bitwise
+	// `bits::and` makes it 0.
+	void LlvmGenerator::Impl::generateInlineLogicalAnd(llvm::Value* ctx) {
+		auto boc = setupBinaryOp(ctx);
+		llvm::Value* a = builder->CreateICmpNE(boc.value1, builder->getInt64(0), "a_true");
+		llvm::Value* b = builder->CreateICmpNE(boc.value2, builder->getInt64(0), "b_true");
+		llvm::Value* result = builder->CreateZExt(builder->CreateAnd(a, b, "land"), int64Ty, "land_result");
+		finishBinaryOp(boc, result);
+	}
+
+	void LlvmGenerator::Impl::generateInlineLogicalOr(llvm::Value* ctx) {
+		auto boc = setupBinaryOp(ctx);
+		llvm::Value* a = builder->CreateICmpNE(boc.value1, builder->getInt64(0), "a_true");
+		llvm::Value* b = builder->CreateICmpNE(boc.value2, builder->getInt64(0), "b_true");
+		llvm::Value* result = builder->CreateZExt(builder->CreateOr(a, b, "lor"), int64Ty, "lor_result");
+		finishBinaryOp(boc, result);
+	}
+
 	void LlvmGenerator::Impl::generateInlineLogicalNot(llvm::Value* ctx) {
 		// Inline implementation of logical NOT: ( a:int -- result:int )
 		// Distinct from `not`, which is bitwise: 0 -> 1, anything else -> 0.

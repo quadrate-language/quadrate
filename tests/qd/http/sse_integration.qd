@@ -5,6 +5,7 @@
 // Or manually: quad run sse_integration_test.qd
 // Then in another terminal: curl -N http://localhost:19876/test/<name>
 
+use bits
 use http
 use strconv
 use time
@@ -132,7 +133,7 @@ Available endpoints:
   /test/single       - Single data event
   /test/multiple     - Multiple data events
   /test/named        - Named events (event: prefix)
-  /test/mixed        - Mixed data and named events
+  /test/mixed        - Mixed data bits::and named events
   /test/loop         - Events in a for loop
   /test/streaming    - Events with delays
   /test/empty        - Empty stream (no events)

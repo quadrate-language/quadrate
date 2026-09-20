@@ -2,6 +2,7 @@
 /// Avoids O(n²) cost of repeated strings::concat.
 /// doccheck: page-context
 /// doccheck: page-setup sb::new -> builder
+use bits
 use mem
 use strings
 use unicode
@@ -113,17 +114,17 @@ pub fn (sb:StringBuilder) append_char(c:i64 -- sb2:StringBuilder) {
 	} else {
 		width 2 == if {
 			192 c 64 / + buf curlen mem::set_byte
-			128 c 63 and + buf curlen 1 + mem::set_byte
+			128 c 63 bits::and + buf curlen 1 + mem::set_byte
 		} else {
 			width 3 == if {
 				224 c 4096 / + buf curlen mem::set_byte
-				128 c 64 / 63 and + buf curlen 1 + mem::set_byte
-				128 c 63 and + buf curlen 2 + mem::set_byte
+				128 c 64 / 63 bits::and + buf curlen 1 + mem::set_byte
+				128 c 63 bits::and + buf curlen 2 + mem::set_byte
 			} else {
 				240 c 262144 / + buf curlen mem::set_byte
-				128 c 4096 / 63 and + buf curlen 1 + mem::set_byte
-				128 c 64 / 63 and + buf curlen 2 + mem::set_byte
-				128 c 63 and + buf curlen 3 + mem::set_byte
+				128 c 4096 / 63 bits::and + buf curlen 1 + mem::set_byte
+				128 c 64 / 63 bits::and + buf curlen 2 + mem::set_byte
+				128 c 63 bits::and + buf curlen 3 + mem::set_byte
 			}
 		}
 	}

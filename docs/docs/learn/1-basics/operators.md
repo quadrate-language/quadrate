@@ -98,31 +98,41 @@ fn main() {
 }
 ```
 
-For logical negation, use comparison with zero:
+For logical negation, use `not`:
 
 ```qd
 fn main() {
-	true 0 == print nl   // 0 (logical NOT true)
-	false 0 == print nl  // 1 (logical NOT false)
+	true not print nl   // 0
+	false not print nl  // 1
+	5 not print nl      // 0 (any non-zero value is true)
 }
 ```
+
+Both operands of `and` and `or` are always evaluated. They are ordinary stack words, so
+there is no short-circuiting: writing a bound check and an index either side of an `and`
+still performs the index.
 
 ## Bitwise
 
-For bit manipulation:
+Bit manipulation lives in the `bits` module, because the plain names mean the logical
+operations above:
 
 ```qd
+use bits
+
 fn main() {
-	0b1100 0b1010 and print nl  // 8 (0b1000)
-	0b1100 0b1010 or print nl   // 14 (0b1110)
-	0b1100 0b1010 xor print nl  // 6 (0b0110)
-	0b1111 not print nl         // -16 (bitwise NOT)
-	1 4 shl print nl            // 16 (shift left)
-	16 2 shr print nl           // 4 (shift right)
+	0b1100 0b1010 bits::and print nl  // 8 (0b1000)
+	0b1100 0b1010 bits::or print nl   // 14 (0b1110)
+	0b1100 0b1010 bits::xor print nl  // 6 (0b0110)
+	0b1111 bits::not print nl         // -16 (bitwise NOT)
+	1 4 shl print nl                  // 16 (shift left)
+	16 2 shr print nl                 // 4 (shift right)
 }
 ```
 
-**Note:** `and`, `or`, and `not` are bitwise operators. For logical operations on boolean values (0/1), `and` and `or` work correctly. For logical NOT, use `0 ==` instead.
+**Note:** the shifts are builtins — they have no logical counterpart, so there is nothing
+for them to collide with. `and`, `or` and `not` are logical: `2 1 and` is `1`, where
+`2 1 bits::and` is `0`.
 
 ## Combining operations
 

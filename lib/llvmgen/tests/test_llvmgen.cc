@@ -829,7 +829,7 @@ TEST(NegationOperator) {
 TEST(BitwiseXor) {
 	const char* src = R"(
 		fn main() {
-			5 3 xor print
+			5 3 __xor print
 		}
 	)";
 	std::string ir = generateIR(src);

@@ -1,4 +1,6 @@
 // Test: shift operations edge cases
+use bits
+
 fn main() {
 	// Shift by 0 (no change)
 	"=== Shift by 0 ===" print nl
@@ -28,6 +30,6 @@ fn main() {
 
 	// Shift and mask pattern (common in bit manipulation)
 	"=== Shift + mask ===" print nl
-	43981 8 shr 255 and print nl  // 0xABCD >> 8 & 0xFF = 0xAB = 171
-	43981 0 shr 255 and print nl  // 0xABCD & 0xFF = 0xCD = 205
+	43981 8 shr 255 bits::and print nl  // 0xABCD >> 8 & 0xFF = 0xAB = 171
+	43981 0 shr 255 bits::and print nl  // 0xABCD & 0xFF = 0xCD = 205
 }

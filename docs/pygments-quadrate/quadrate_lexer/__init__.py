@@ -45,7 +45,7 @@ class QuadrateLexer(RegexLexer):
 
     # Built-in bitwise
     builtins_bit = (
-        'and', 'or', 'xor', 'not', 'shl', 'shr',
+        'and', 'or', 'not', 'shl', 'shr',
     )
 
     # Built-in array operations

@@ -10,6 +10,7 @@
 /// doccheck: page-setup doc json::first! -> c
 /// doccheck: page-setup json::new_array -> arr
 /// doccheck: page-setup json::new_object -> obj
+use bits
 use fmt
 use mem
 use strconv
@@ -1393,19 +1394,19 @@ fn utf8_put(cp:i64 out:ptr o:i64 -- o2:i64) {
 	} else {
 		cp 2048 < if {
 			192 cp 64 / + out o mem::set_byte
-			128 cp 63 and + out o 1 + mem::set_byte
+			128 cp 63 bits::and + out o 1 + mem::set_byte
 			o 2 +
 		} else {
 			cp 65536 < if {
 				224 cp 4096 / + out o mem::set_byte
-				128 cp 64 / 63 and + out o 1 + mem::set_byte
-				128 cp 63 and + out o 2 + mem::set_byte
+				128 cp 64 / 63 bits::and + out o 1 + mem::set_byte
+				128 cp 63 bits::and + out o 2 + mem::set_byte
 				o 3 +
 			} else {
 				240 cp 262144 / + out o mem::set_byte
-				128 cp 4096 / 63 and + out o 1 + mem::set_byte
-				128 cp 64 / 63 and + out o 2 + mem::set_byte
-				128 cp 63 and + out o 3 + mem::set_byte
+				128 cp 4096 / 63 bits::and + out o 1 + mem::set_byte
+				128 cp 64 / 63 bits::and + out o 2 + mem::set_byte
+				128 cp 63 bits::and + out o 3 + mem::set_byte
 				o 4 +
 			}
 		}

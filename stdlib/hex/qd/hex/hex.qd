@@ -1,6 +1,7 @@
 /// Hexadecimal encoding and decoding.
 /// Converts between binary data and hexadecimal string representation.
 /// doccheck: page-context
+use bits
 use mem
 use strings
 use unicode
@@ -27,7 +28,7 @@ pub fn encode(s:str -- hex:str) {
 			s i strings::char_at -> byte
 
 			// High nibble
-			byte 4 shr 15 and -> high
+			byte 4 shr 15 bits::and -> high
 			high 10 < if {
 				unicode::digit0 high +
 			} else {
@@ -38,7 +39,7 @@ pub fn encode(s:str -- hex:str) {
 			o 1 + -> o
 
 			// Low nibble
-			byte 15 and -> low
+			byte 15 bits::and -> low
 			low 10 < if {
 				unicode::digit0 low +
 			} else {
@@ -79,7 +80,7 @@ pub fn encode_lower(s:str -- hex:str) {
 			s i strings::char_at -> byte
 
 			// High nibble
-			byte 4 shr 15 and -> high
+			byte 4 shr 15 bits::and -> high
 			high 10 < if {
 				unicode::digit0 high +
 			} else {
@@ -90,7 +91,7 @@ pub fn encode_lower(s:str -- hex:str) {
 			o 1 + -> o
 
 			// Low nibble
-			byte 15 and -> low
+			byte 15 bits::and -> low
 			low 10 < if {
 				unicode::digit0 low +
 			} else {
@@ -155,7 +156,7 @@ pub fn decode(hex:str -- s:str) {
 			hex i 1 + strings::char_at hex_char_value -> low
 
 			high -1 != low -1 != and if {
-				high 4 shl low or -> byte
+				high 4 shl low bits::or -> byte
 				byte out o mem::set_byte
 				o 1 + -> o
 			}
@@ -174,12 +175,12 @@ pub fn decode(hex:str -- s:str) {
 /// @return hex str Two-character hex string (uppercase)
 /// @example 65 hex::encode_byte -> "41"
 pub fn encode_byte(b:i64 -- hex:str) {
-	b 255 and -> b  // Clamp to byte range
+	b 255 bits::and -> b  // Clamp to byte range
 
 	2 mem::alloc! -> out
 
 	// High nibble
-	b 4 shr 15 and -> high
+	b 4 shr 15 bits::and -> high
 	high 10 < if {
 		unicode::digit0 high +
 	} else {
@@ -189,7 +190,7 @@ pub fn encode_byte(b:i64 -- hex:str) {
 	hchar out 0 mem::set_byte
 
 	// Low nibble
-	b 15 and -> low
+	b 15 bits::and -> low
 	low 10 < if {
 		unicode::digit0 low +
 	} else {
@@ -218,7 +219,7 @@ pub fn decode_byte(hex:str -- b:i64) {
 		high -1 == low -1 == or if {
 			-1
 		} else {
-			high 4 shl low or
+			high 4 shl low bits::or
 		}
 	}
 }

@@ -667,6 +667,37 @@ int qd_not(qd_context* ctx) {
 	return (int){0};
 }
 
+// Logical AND and OR, as distinct from the bitwise ops above: every non-zero value counts
+// as true, so `2 1 and` is 1 where the bitwise `bits::and` makes it 0. Both operands are
+// evaluated -- these are ordinary stack words, not short-circuiting forms.
+static int qdrt_logical_op(qd_context* ctx, const char* name, bool isOr) {
+	qd_stack* st = ctx->st;
+	if (st->size < 2) {
+		qdrt_fatal_raise(ctx, name, "Stack underflow (required 2 elements, have %zu)", st->size);
+	}
+
+	qd_stack_element_t* b = &st->data[st->size - 1];
+	qd_stack_element_t* a = &st->data[st->size - 2];
+
+	if (a->type != QD_STACK_TYPE_INT || b->type != QD_STACK_TYPE_INT) {
+		qdrt_fatal_raise(ctx, name, "Type error (expected int for logical operation)");
+	}
+
+	bool left = a->value.i != 0;
+	bool right = b->value.i != 0;
+	a->value.i = (isOr ? (left || right) : (left && right)) ? 1 : 0;
+	st->size--;
+	return (int){0};
+}
+
+int qd_land(qd_context* ctx) {
+	return qdrt_logical_op(ctx, "and", false);
+}
+
+int qd_lor(qd_context* ctx) {
+	return qdrt_logical_op(ctx, "or", true);
+}
+
 // Logical negation, as distinct from the bitwise `not` above: 0 -> 1, anything else -> 0.
 int qd_lnot(qd_context* ctx) {
 	qd_stack* st = ctx->st;

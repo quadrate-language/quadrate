@@ -1,4 +1,5 @@
 // Unit tests for the bytes module
+use bits
 use bytes
 use mem
 use testing
@@ -75,7 +76,7 @@ fn test_bytes_fill( -- result:i64) {
 	buf 0 mem::get_byte -> b1
 	buf 15 mem::get_byte -> b2
 	buf mem::free
-	b1 0xAB eq b2 0xAB eq and
+	b1 0xAB eq b2 0xAB eq bits::and
 }
 
 fn test_bytes_compare_equal( -- result:i64) {

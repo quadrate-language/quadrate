@@ -231,39 +231,40 @@ namespace Qd {
 				compileTimeStack.push_back(builder->CreateZExt(cmp, int64Ty, "ge_i64"));
 				return;
 			}
-			// Bitwise operations (integer-only, no float changes needed)
-			if (name == "and") {
+			// Logical operations: every non-zero value counts as true, so both operands are
+			// narrowed to 0/1 before combining. The bitwise forms are the __ ones below.
+			if (name == "and" || name == "or") {
 				llvm::Value* b = compileTimeStack.back();
 				compileTimeStack.pop_back();
 				llvm::Value* a = compileTimeStack.back();
 				compileTimeStack.pop_back();
-				compileTimeStack.push_back(builder->CreateAnd(a, b, "and"));
-				return;
-			}
-			if (name == "or") {
-				llvm::Value* b = compileTimeStack.back();
-				compileTimeStack.pop_back();
-				llvm::Value* a = compileTimeStack.back();
-				compileTimeStack.pop_back();
-				compileTimeStack.push_back(builder->CreateOr(a, b, "or"));
-				return;
-			}
-			if (name == "xor") {
-				llvm::Value* b = compileTimeStack.back();
-				compileTimeStack.pop_back();
-				llvm::Value* a = compileTimeStack.back();
-				compileTimeStack.pop_back();
-				compileTimeStack.push_back(builder->CreateXor(a, b, "xor"));
-				return;
-			}
-			if (name == "lnot") {
-				llvm::Value* a = compileTimeStack.back();
-				compileTimeStack.pop_back();
-				llvm::Value* isZero = builder->CreateICmpEQ(a, builder->getInt64(0), "is_zero");
-				compileTimeStack.push_back(builder->CreateZExt(isZero, int64Ty, "lnot"));
+				llvm::Value* aTrue = builder->CreateICmpNE(a, builder->getInt64(0), "a_true");
+				llvm::Value* bTrue = builder->CreateICmpNE(b, builder->getInt64(0), "b_true");
+				llvm::Value* r = name == "and" ? builder->CreateAnd(aTrue, bTrue, "land")
+											   : builder->CreateOr(aTrue, bTrue, "lor");
+				compileTimeStack.push_back(builder->CreateZExt(r, int64Ty, name.c_str()));
 				return;
 			}
 			if (name == "not") {
+				llvm::Value* a = compileTimeStack.back();
+				compileTimeStack.pop_back();
+				llvm::Value* isZero = builder->CreateICmpEQ(a, builder->getInt64(0), "is_zero");
+				compileTimeStack.push_back(builder->CreateZExt(isZero, int64Ty, "not"));
+				return;
+			}
+			// Bitwise operations (integer-only, no float changes needed)
+			if (name == "__and" || name == "__or" || name == "__xor") {
+				llvm::Value* b = compileTimeStack.back();
+				compileTimeStack.pop_back();
+				llvm::Value* a = compileTimeStack.back();
+				compileTimeStack.pop_back();
+				llvm::Value* r = name == "__and"  ? builder->CreateAnd(a, b, "and")
+								 : name == "__or" ? builder->CreateOr(a, b, "or")
+												  : builder->CreateXor(a, b, "xor");
+				compileTimeStack.push_back(r);
+				return;
+			}
+			if (name == "__not") {
 				llvm::Value* a = compileTimeStack.back();
 				compileTimeStack.pop_back();
 				compileTimeStack.push_back(builder->CreateNot(a, "not"));
@@ -1055,6 +1056,27 @@ namespace Qd {
 			}
 			return;
 		} else if (name == "and") {
+			if (currentFunctionIsIntegerOnly) {
+				generateInlineLogicalAnd(ctx);
+			} else {
+				builder->CreateCall(landFn, {ctx});
+			}
+			return;
+		} else if (name == "or") {
+			if (currentFunctionIsIntegerOnly) {
+				generateInlineLogicalOr(ctx);
+			} else {
+				builder->CreateCall(lorFn, {ctx});
+			}
+			return;
+		} else if (name == "not") {
+			if (currentFunctionIsIntegerOnly) {
+				generateInlineLogicalNot(ctx);
+			} else {
+				builder->CreateCall(lnotFn, {ctx});
+			}
+			return;
+		} else if (name == "__and") {
 			// Use inline bitwise AND for integer-only functions, runtime call otherwise
 			if (currentFunctionIsIntegerOnly) {
 				generateInlineBitAnd(ctx);
@@ -1062,32 +1084,25 @@ namespace Qd {
 				builder->CreateCall(andFn, {ctx});
 			}
 			return;
-		} else if (name == "or") {
+		} else if (name == "__or") {
 			if (currentFunctionIsIntegerOnly) {
 				generateInlineBitOr(ctx);
 			} else {
 				builder->CreateCall(orFn, {ctx});
 			}
 			return;
-		} else if (name == "xor") {
+		} else if (name == "__xor") {
 			if (currentFunctionIsIntegerOnly) {
 				generateInlineBitXor(ctx);
 			} else {
 				builder->CreateCall(xorFn, {ctx});
 			}
 			return;
-		} else if (name == "not") {
+		} else if (name == "__not") {
 			if (currentFunctionIsIntegerOnly) {
 				generateInlineBitNot(ctx);
 			} else {
 				builder->CreateCall(notFn, {ctx});
-			}
-			return;
-		} else if (name == "lnot") {
-			if (currentFunctionIsIntegerOnly) {
-				generateInlineLogicalNot(ctx);
-			} else {
-				builder->CreateCall(lnotFn, {ctx});
 			}
 			return;
 		} else if (name == "shl") {

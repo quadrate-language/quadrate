@@ -3,6 +3,7 @@
 // `stack` is what leaves the inputs on the stack; without it each input must be
 // named and is bound as a local on entry. Names are optional under `stack` and
 // are documentation only.
+use bits
 use math
 
 // Basic arithmetic with stack notation
@@ -52,8 +53,8 @@ stack fn triple_max(i64 i64 i64 -- i64) {
 
 // Logical operations
 stack fn bitwise_and_or(i64 i64 i64 -- i64) {
-	and
-	or
+	bits::and
+	bits::or
 }
 
 // Functions demonstrating drop

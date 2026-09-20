@@ -1,6 +1,7 @@
 /// URI encoding, decoding, and parsing.
 /// Handles percent-encoding and URI component extraction.
 /// doccheck: page-context
+use bits
 use mem
 use strings
 use unicode
@@ -119,8 +120,8 @@ pub fn encode(s:str -- encoded:str) {
 				// Encode as %XX
 				unicode::percent out o mem::set_byte
 				o 1 + -> o
-				c 4 shr 15 and -> hidx
-				c 15 and -> lidx
+				c 4 shr 15 bits::and -> hidx
+				c 15 bits::and -> lidx
 				hex_tbl hidx mem::get_byte -> high
 				hex_tbl lidx mem::get_byte -> low
 				high out o mem::set_byte
@@ -165,7 +166,7 @@ pub fn decode(s:str -- decoded:str) {
 				s i 2 + strings::char_at hex_value -> low
 
 				high -1 != low -1 != and if {
-					high 4 shl low or -> byte
+					high 4 shl low bits::or -> byte
 					byte out o mem::set_byte
 					o 1 + -> o
 					i 3 + -> i

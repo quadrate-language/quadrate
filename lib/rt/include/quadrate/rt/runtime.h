@@ -456,6 +456,8 @@ int qd_xor(qd_context* ctx);
  * @return Execution result (0 on success)
  */
 int qd_not(qd_context* ctx);
+int qd_land(qd_context* ctx);
+int qd_lor(qd_context* ctx);
 int qd_lnot(qd_context* ctx);
 
 /**

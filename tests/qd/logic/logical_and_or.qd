@@ -1,0 +1,31 @@
+// Test: the truth table for `and` and `or`, and that they are logical rather than bitwise.
+//
+// This file used to be called short_circuit.qd and its comments claimed to test
+// short-circuit evaluation. It never did: every operand was already 0 or 1, so it proved
+// nothing that a truth table does not. Quadrate has no short-circuiting -- `and` and `or`
+// are ordinary stack words and both operands are evaluated before either runs -- so there
+// is nothing here to test, and the name was asserting a property the language lacks.
+//
+// What is worth pinning is that these are logical: any non-zero value is true, where the
+// bitwise `bits::and` would combine the bits instead.
+use bits
+
+fn main() {
+	// AND truth table
+	0 0 and print nl
+	0 1 and print nl
+	1 0 and print nl
+	1 1 and print nl
+
+	// OR truth table
+	0 0 or print nl
+	0 1 or print nl
+	1 0 or print nl
+	1 1 or print nl
+
+	// Any non-zero value is true, which is where logical and bitwise part company
+	2 1 and print nl
+	2 1 bits::and print nl
+	2 1 or print nl
+	2 1 bits::or print nl
+}
