@@ -180,8 +180,7 @@ $"result={x + y}"             // Expression interpolation
 ++    Increment
 --    Decrement
 <<    Field access (read): struct <<field
->>    Field set (write): struct value >>field  (returns updated struct)
->>    Field set (write): struct value >>field (returns struct; add drop to discard)
+>>    Field set (write): struct value >>field (writes the field, pushes the same struct back)
 ->    Local variable binding
 ::    Scope resolution
 &     Function pointer prefix
@@ -1239,13 +1238,18 @@ ptr_val as MyStruct <<field
 
 Use `>>` operator (data flows right, into struct). The struct and value are popped from the stack:
 
-- `>>field` — sets field, pushes modified struct back (for chaining)
-- `>>field drop` — sets the field, then discards the struct (for standalone mutation)
+- `>>field` — writes the field and pushes the same struct back, so writes chain
+- `>>field drop` — writes the field, then discards the struct reference
+
+A struct is a reference, and `>>field` writes through it. It does not produce a new
+struct: the value pushed back is the one that was passed in, already modified, and every
+other name bound to that struct sees the change. `drop` discards the reference, not an
+update — the write has already happened.
 
 <!-- doccheck: skip grammar: struct and value stand for operands already on the stack -->
 ```quadrate
-struct value >>field     // Set field, push modified struct back
-struct value >>field drop    // Set field, discard struct
+struct value >>field     // Write the field, push the same struct back
+struct value >>field drop    // Write the field, discard the reference
 ```
 
 **Example:**
@@ -1253,11 +1257,13 @@ struct value >>field drop    // Set field, discard struct
 // Chaining writes
 Point { x = 0.0 y = 0.0 } 5.0 >>x 10.0 >>y -> p
 
-// Standalone mutation (no return)
+// Standalone mutation
 p 99 >>x drop
 
-// Write with rebind
-p 42 >>x -> p
+// Two names for one struct: writing through either is visible from both
+p -> q
+q 42 >>x drop
+p <<x            // 42
 ```
 
 ### 8.5 Generic Structs
@@ -2213,7 +2219,7 @@ instruction     = "dup" | "swap" | "drop" | "over" | "rot" | "nip"
 | `->` | Bind top of stack to local variable |
 | `::` | Scope resolution (module::member) |
 | `<<` | Field access (read): `struct <<field` |
-| `>>` | Field set (write): `struct value >>field` — returns the struct; add `drop` to discard it |
+| `>>` | Field set (write): `struct value >>field` — writes the field, pushes the same struct back; add `drop` to discard the reference |
 | `&` | Get function pointer |
 | `!` | Abort on error (after fallible call) |
 | `?` | Propagate error to caller (after fallible call) |

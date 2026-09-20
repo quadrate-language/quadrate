@@ -79,8 +79,17 @@ This is compile-time only — no runtime cost. It's required when multiple struc
 
 Use `>>fieldname` to write. Two variants:
 
-- `>>field` — pushes modified struct back (for chaining)
-- `>>field drop` — discards the struct (for standalone mutation)
+- `>>field` — writes the field and pushes the same struct back, so writes chain
+- `>>field drop` — writes the field, then discards the struct reference
+
+A struct is a reference, and `>>field` writes through it rather than producing a new
+struct. Two names for one struct see each other's writes:
+
+```qd
+c -> same
+same 10 >>value drop
+c <<value print nl  // 10 — written through `same`, visible through `c`
+```
 
 ```qd
 struct Counter {

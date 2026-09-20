@@ -114,6 +114,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `when`/`unless`. Adding `land`/`lor` as a third pair of boolean primitives would spend
   the budget on a special case of a mechanism the language already has. The hazard itself
   is documented where a reader meets it, in `reference.md` and specification §12.3.
+- **Two dialects, spelled explicitly (decided 2026-09-19).** The goal was the concatenative
+  property — juxtaposition is composition, so any contiguous run of words can be lifted into
+  a named word and replaced by its name without changing meaning. What was decided instead
+  is narrower: **the difference must not be silent.** Binding is the unmarked default,
+  `stack fn` marks the function whose inputs stay on the stack, and the choice per function
+  is a readability judgement rather than a property of a colon. The language carries both,
+  and nothing forces the corpus to move.
+  Which code is *better* stack-direct was answered by porting `stdlib/hof` both ways (R47):
+  **a body whose parameters are used once, in the order the caller pushed them, is
+  ceremony** — `apply` became the single word `call` — while a body that uses a value twice
+  or takes two functions becomes a puzzle. `bi` stack-direct is `pick rot call rot rot
+  call`, which is correct, passes its tests, and tells a reader nothing. 48 of 452 functions
+  that take parameters are `stack fn`.
 - **Twenty-one functions are written in the stack-direct dialect, and the rest deliberately are not.**
 - **A sized integer type is rejected where it has no width to describe.**
 - **`printsv` is removed.**
@@ -193,6 +206,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   This was masking a real error in `cmd/quadmcp/server.qd`, which declared
   `reject_unknown_options(f:Flag …)` for a `flag::Flag`; the overwrite happened to paper
   over the missing qualification. Now fixed at the declaration.
+- **The specification describes what `>>field` actually does (R21).** It said the operator
+  "pushes modified struct back" and "returns updated struct", which reads as a functional
+  update — hand it a struct, get a new one back with the field changed. A struct is a
+  reference and `>>field` writes through it: the value pushed back is the one passed in,
+  already modified, so every other name bound to that struct sees the change, and `drop`
+  discards the reference rather than an update. The idiom the spec showed, `p 42 >>x -> p`,
+  rebinds `p` to what it already was; it is replaced by an example of the aliasing, which
+  is the thing worth knowing. **Decided 2026-09-20: mutable references are the design, and
+  the wording was the bug** — the item had previously inverted to "the spec is right, the
+  implementation is the odd one out", which is now settled the other way.
 - **A function-pointer type keeps its `(` glued to the `fn`.** The anonymous-function
   normaliser puts a space after `fn`, which is right for a value and wrong for a type:
   the parser only reads `fn` as a type when the `(` follows it directly, so

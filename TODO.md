@@ -4,27 +4,6 @@ What is open. Finished work is not kept here: `CHANGELOG.md` has the prose and g
 history. The `R<n>` identifiers come from a full review of the language surface on 2026-09-17
 and are stable, so they can be referred to while working through them.
 
-## Direction: two dialects, spelled explicitly (decided 2026-09-19)
-
-The goal was the concatenative property: **juxtaposition is composition**, so any contiguous run
-of words can be lifted into a named word and replaced by its name without changing meaning. What
-was decided instead is narrower and is now shipped: **the difference must not be silent.** Binding
-is the unmarked default, `stack fn` marks the function whose inputs stay on the stack, and the
-choice per function is a readability judgement rather than a property of a colon.
-
-```qd
-fn sq(n:i64 -- r:i64) { n n * }         // default: each input bound as a local
-stack fn sq(i64 -- r:i64) { dup * }     // inputs stay on the stack; names, if any, are docs
-6 fn (i64 -- r:i64) { dup * } call      // inline quotation applied: 36
-```
-
-So the language carries both dialects, and nothing forces the corpus to move. Which code is
-*better* stack-direct was answered by porting `stdlib/hof` both ways (R47, closed): **a body
-whose parameters are used once, in the order the caller pushed them, is ceremony** -- `apply`
-became the single word `call` -- while a body that uses a value twice or takes two functions
-becomes a puzzle: `bi` stack-direct is `pick rot call rot rot call`, which is correct, passes
-its tests, and tells a reader nothing. 48 of 452 functions that take parameters are `stack fn`.
-
 ## Language design
 
 - [ ] **Sum types / tagged unions.** `enum` gives bare ints and `struct` gives records, but there
@@ -52,23 +31,26 @@ its tests, and tells a reader nothing. 48 of 452 functions that take parameters 
       have to look like to survive that — and if none presents itself, is this an item or a
       preference?
 
-- [ ] **R21. `>>field` is specced as returning an updated struct; it mutates in place.** Structs are
-      reference values: `P { x = 1 } -> a  a -> b  b 99 >>x drop` leaves `a <<x` as 99, and passing
-      a struct to a function lets that function mutate the caller's value. The spec's "sets field,
-      pushes modified struct back (for chaining)" and the idiom `p 42 >>x -> p` both read as a
-      functional update.
-      **Inverted 2026-09-18: the spec is the one that is right.** The item first read as
-      "almost certainly documentation only". "Sets field, pushes
-      modified struct back (for chaining)" is the composable reading, and chaining is what makes
-      `>>field` a word like any other rather than a statement; mutating in place and returning the
-      same reference is what breaks it. So the implementation is the odd one out, not the wording.
-      The blast radius was 12 `>>` sites when this was written; it is **38 in `stdlib` +
-      `examples` and 125 across the whole corpus** as of 2026-09-20, most of the growth being
-      `stdlib/json`, which builds its tree by assigning fields. Still small enough to change
-      rather than document around, but no longer negligible -- and the ownership rules written
-      into specification 11.2.2 since then are what a copying `>>field` would have to respect.
-      **Open question**: does the functional update mean copying the struct — and if so, does that
-      make structs value types on assignment, which is a far larger change than the call sites?
+- [ ] **No way to copy a struct.** A struct is a mutable reference: `a -> b` binds a second
+      name to the same struct, and `b 42 >>x drop` is visible through `a`. That is the design
+      (R21, settled 2026-09-20 — the specification wording was the bug, not the behaviour),
+      but it leaves no way to ask for an independent one. The only copy available is
+      rebuilding it by hand, `P { x = a <<x  y = a <<y }`, which is verbose and has to be
+      revisited every time a field is added.
+      Shallow is the tractable meaning: a new struct of the same type, fields copied, the
+      refcounted ones retained. `sizeof<P>` already reports the layout, so the machinery is
+      there. `clone` is the better name than `copy` — a builtin shadows user functions of
+      the same name, and `copy` is a word a program is likely to want for itself.
+
+      ```qd
+      a clone -> b
+      b 42 >>x drop        // a untouched
+      ```
+
+      **Open question**: what happens to the fields that are themselves references — a
+      `str`, an array, another struct? Retaining them is the cheap answer and the one that
+      matches "shallow", but it means `clone` gives independence at one level only, and the
+      name should not suggest more than it does.
 
 ## Upstream
 
