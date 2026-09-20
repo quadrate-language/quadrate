@@ -725,7 +725,13 @@ namespace Qd {
 
 				// Check if it's a built-in instruction
 				if (isBuiltInInstruction(text)) {
-					IAstNode* instr = new AstNodeInstruction(text);
+					std::string instrName(text);
+					std::string typeParam;
+					if (!parseInstructionTypeParam(scanner, src, errorReporter, &n, typeParam)) {
+						continue;
+					}
+					IAstNode* instr = typeParam.empty() ? new AstNodeInstruction(instrName)
+														: new AstNodeInstruction(instrName, typeParam);
 					setNodePosition(instr, scanner, src);
 					currentFieldNodes.push_back(instr);
 				} else {

@@ -52,29 +52,6 @@ its tests, and tells a reader nothing. 48 of 452 functions that take parameters 
       have to look like to survive that — and if none presents itself, is this an item or a
       preference?
 
-- [ ] **R13. `and`/`or` do not short-circuit.** Both operands are evaluated before either
-      runs, so the guarded form `i xs len < xs i nth … and` reads `xs[i]` whether or not the
-      bound check passed. There is no way to write a guard.
-      **Half of this closed 2026-09-20.** The other complaint was that `and`/`or` were
-      bitwise and used as logical, so `2 1 and` was `0`. They are the logical operators now
-      and the bitwise forms are `bits::and`/`bits::or`/`bits::xor`/`bits::not`; see the
-      `and`, `or` and `not` entry in `CHANGELOG.md`. That fixes the wrong-answer hazard and
-      does nothing for this one, which is a property of the evaluation order rather than of
-      the operators.
-      **Reframed 2026-09-18, and it still holds: do not design this separately.**
-      Short-circuiting *is* deferred evaluation, and the concatenative answer to deferred
-      evaluation is a quotation — which already works (`6 fn (i64 -- r:i64) { dup * } call`
-      evaluates to 36). Adding `land`/`lor` as a third pair of boolean primitives would
-      spend the language's budget on a special case of the general mechanism, and would have
-      to be unpicked later.
-      **Nothing in the corpus needs it.** Searched 2026-09-20 for the shape this describes —
-      a bounds or null guard combined with an index or dereference: zero sites, in stdlib,
-      examples, tests and cmd alike. It is a trap that is set and has caught nobody, which is
-      why the hazard is documented rather than worked around.
-      **Open question**: what is the spelling — `[ … ] [ … ] and` over quotations, or
-      combinators in `hof` beside `when`/`unless`? And given no call site wants it, is the
-      answer to wait for one?
-
 - [ ] **R21. `>>field` is specced as returning an updated struct; it mutates in place.** Structs are
       reference values: `P { x = 1 } -> a  a -> b  b 99 >>x drop` leaves `a <<x` as 99, and passing
       a struct to a function lets that function mutate the caller's value. The spec's "sets field,

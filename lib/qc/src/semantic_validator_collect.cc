@@ -1475,8 +1475,17 @@ namespace Qd {
 				collectParameterFieldAccesses(func->body(), paramNames, sig.parameterFieldAccess);
 			}
 
-			// Infer struct types from field access patterns
+			// Infer struct types from field access patterns, for parameters that did not
+			// declare one. A declared type always wins: the inference reads every field
+			// mentioned in the body, including fields of *other* structs reached through a
+			// call, so it happily concludes that `fn f(re:Nfa …)` whose body does
+			// `re idx state_at <<kind` takes a State -- the struct that has `kind`. That
+			// overwrote the declared Nfa and every call site was then rejected for passing
+			// the type the signature actually asks for.
 			for (size_t paramIdx = 0; paramIdx < paramNames.size(); paramIdx++) {
+				if (sig.parameterStructTypes.find(paramIdx) != sig.parameterStructTypes.end()) {
+					continue;
+				}
 				const std::string& paramName = paramNames[paramIdx];
 				auto fieldAccessIt = sig.parameterFieldAccess.find(paramName);
 

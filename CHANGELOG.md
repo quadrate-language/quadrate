@@ -64,6 +64,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **`quadrepl` command aliases**: `:quit` and `:exit` alongside `exit`/`quit`/`:q`, and `:save`/`:load` alongside `.save`/`.load`.
 ### Changed
 
+- **`stdlib/regex` represents its NFA as typed structs rather than raw byte offsets.**
+  The eight state kinds were stored in hand-computed slots — `ST_TYPE = 0`, `ST_CHAR = 8`,
+  … `STATE_SIZE = 40` — reached through `state_get`/`state_set` with an integer offset,
+  so nothing was checked and the layout comment had already drifted from the constants
+  (it claimed 48 bytes). It is now a `State` struct in a `[]State`, with `Nfa` and
+  `Parser` records for the other two hand-rolled blocks. Forty lines of offset constants
+  and the accessor plumbing are gone, the field names are checked against `State`
+  specifically, and `release` loses two manual frees because the array and the struct are
+  refcounted.
+  Done as the measurement the sum-types item asks for: `regex` is the third candidate for
+  a variant type, and this is how far the existing type system carries it. Reasonably far
+  — what a sum type would still add is that only the fields belonging to the current kind
+  are reachable, which the struct cannot express and a comment now records instead.
 - **`and`, `or` and `not` are logical; the bitwise operations moved to `bits` (R13).** They
   were bitwise and used throughout as logical, which is only correct while every operand is
   already 0 or 1: `2 1 and` was `0` and `2 1 or` was `3`, neither of them a truth value. The
@@ -86,9 +99,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   has no unqualified import, so `bits::and` is parsed as a scoped identifier and its member
   name never reaches the builtin table. `bytes::xor` and `bits::xor` coexist in the corpus
   today.
-  **This does not add short-circuiting.** `and` and `or` are still ordinary stack words and
-  both operands are still evaluated, so a guard of the form `i len < xs i nth ... and` still
-  reads `xs[i]`. That half of R13 stays open for the quotation combinators.
+  **This does not add short-circuiting, and R13 is closed anyway.** `and` and `or` are
+  still ordinary stack words and both operands are still evaluated, so a guard of the form
+  `i len < xs i nth ... and` still reads `xs[i]`. Measured before closing: the corpus has
+  **no site using that shape**, and **no site working around its absence** — a bound or
+  null check written as a nested `if` whose body immediately indexes turns up twice, and
+  neither is a guard that short-circuiting would collapse. The C idiom
+  `if (p != null && p->x > 0)` does not arise here, because values are bound with `->` and
+  branched on with `switch`, which separates the test from the use. So the item is closed
+  for lack of a call site rather than because anything answers it. If one ever appears, the
+  design was settled on 2026-09-18 and stands: short-circuiting is deferred evaluation, the
+  concatenative answer to deferred evaluation is a quotation, and the spelling is the only
+  open part — `[ … ] [ … ] and` over quotations, or combinators in `hof` beside
+  `when`/`unless`. Adding `land`/`lor` as a third pair of boolean primitives would spend
+  the budget on a special case of a mechanism the language already has. The hazard itself
+  is documented where a reader meets it, in `reference.md` and specification §12.3.
 - **Twenty-one functions are written in the stack-direct dialect, and the rest deliberately are not.**
 - **A sized integer type is rejected where it has no width to describe.**
 - **`printsv` is removed.**
@@ -152,6 +177,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   check existed but only in the expression parser; it now covers every place a string
   token is consumed — `use`, `import`, `test` names, constant and global initialisers,
   struct field defaults, array elements and `switch` case values.
+- **`make<T>` works as a struct-construction field value.** The type parameter was parsed
+  only in expression position, so `P { xs = 4 make<Cell> }` built the instruction without
+  it and the backend lowered it to a `qd_make` that does not exist — a link failure rather
+  than a compile error. The parsing is now one shared `parseInstructionTypeParam`, used by
+  the field-value parser and by the two expression sites that had a copy each.
+- **A declared parameter struct type is no longer overwritten by inference.** Signature
+  collection records the declared type and then infers one from the fields the body
+  touches, and the inferred one won. The inference reads every field mentioned in the
+  body, and when it cannot tell where an access came from it attributes it to the first
+  parameter — so `fn connect(re:Nfa …)` whose body does `re idx state_at <<kind` was
+  recorded as taking a `State`, the struct that has `kind`, and every call was then
+  rejected for passing exactly the type the signature asks for. Inference is now the
+  fallback for a parameter that declared no struct type, which is what it was for.
+  This was masking a real error in `cmd/quadmcp/server.qd`, which declared
+  `reject_unknown_options(f:Flag …)` for a `flag::Flag`; the overwrite happened to paper
+  over the missing qualification. Now fixed at the declaration.
 - **A function-pointer type keeps its `(` glued to the `fn`.** The anonymous-function
   normaliser puts a space after `fn`, which is right for a value and wrong for a type:
   the parser only reads `fn` as a type when the `(` follows it directly, so

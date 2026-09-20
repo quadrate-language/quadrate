@@ -35,49 +35,12 @@ namespace Qd {
 			}
 			if (isBuiltInInstruction(text)) {
 				std::string instrName(text);
-				// Check for generic type parameter: instruction<Type> or instruction<module::Type>
-				// Use peekNextChar (no whitespace skip) to distinguish make<T> from len <
-				char32_t nextCh = peekNextChar(scanner, src);
-				if (nextCh == '<') {
-					u8t_scanner_scan(scanner); // Consume '<'
-					char32_t typeToken = u8t_scanner_scan(scanner);
-					if (typeToken == U8T_IDENTIFIER) {
-						std::string typeParam = u8t_scanner_token_text(scanner, n);
-
-						// Check for qualified name: module::StructName
-						char32_t peekChar = u8t_scanner_peek(scanner);
-						if (peekChar == ':') {
-							u8t_scanner_scan(scanner); // Consume first ':'
-							char32_t secondColon = u8t_scanner_peek(scanner);
-							if (secondColon == ':') {
-								u8t_scanner_scan(scanner); // Consume second ':'
-								char32_t nameToken = u8t_scanner_scan(scanner);
-								if (nameToken == U8T_IDENTIFIER) {
-									const char* qualName = u8t_scanner_token_text(scanner, n);
-									typeParam += "::";
-									typeParam += qualName;
-								} else {
-									errorReporter->reportError(scanner, "Expected struct name after '::'");
-									return nullptr;
-								}
-							}
-						}
-
-						char32_t closeAngle = u8t_scanner_scan(scanner);
-						if (closeAngle == '>') {
-							IAstNode* node = new AstNodeInstruction(instrName, typeParam);
-							setNodePosition(node, scanner, src);
-							return node;
-						} else {
-							errorReporter->reportError(scanner, "Expected '>' after type parameter");
-							return nullptr;
-						}
-					} else {
-						errorReporter->reportError(scanner, "Expected type name after '<'");
-						return nullptr;
-					}
+				std::string typeParam;
+				if (!parseInstructionTypeParam(scanner, src, errorReporter, n, typeParam)) {
+					return nullptr;
 				}
-				IAstNode* node = new AstNodeInstruction(instrName);
+				IAstNode* node = typeParam.empty() ? new AstNodeInstruction(instrName)
+												   : new AstNodeInstruction(instrName, typeParam);
 				setNodePosition(node, scanner, src);
 				return node;
 			}
@@ -424,49 +387,12 @@ namespace Qd {
 
 			if (isBuiltInInstruction(text)) {
 				std::string instrName(text);
-				// Check for generic type parameter: instruction<Type> or instruction<module::Type>
-				// Use peekNextChar (no whitespace skip) to distinguish make<T> from len <
-				char32_t nextCh = peekNextChar(scanner, src);
-				if (nextCh == '<') {
-					u8t_scanner_scan(scanner); // Consume '<'
-					char32_t typeToken = u8t_scanner_scan(scanner);
-					if (typeToken == U8T_IDENTIFIER) {
-						std::string typeParam = u8t_scanner_token_text(scanner, n);
-
-						// Check for qualified name: module::StructName
-						char32_t peekChar = u8t_scanner_peek(scanner);
-						if (peekChar == ':') {
-							u8t_scanner_scan(scanner); // Consume first ':'
-							char32_t secondColon = u8t_scanner_peek(scanner);
-							if (secondColon == ':') {
-								u8t_scanner_scan(scanner); // Consume second ':'
-								char32_t nameToken = u8t_scanner_scan(scanner);
-								if (nameToken == U8T_IDENTIFIER) {
-									const char* qualName = u8t_scanner_token_text(scanner, n);
-									typeParam += "::";
-									typeParam += qualName;
-								} else {
-									errorReporter->reportError(scanner, "Expected struct name after '::'");
-									return nullptr;
-								}
-							}
-						}
-
-						char32_t closeAngle = u8t_scanner_scan(scanner);
-						if (closeAngle == '>') {
-							IAstNode* node = new AstNodeInstruction(instrName, typeParam);
-							setNodePosition(node, scanner, src);
-							return node;
-						} else {
-							errorReporter->reportError(scanner, "Expected '>' after type parameter");
-							return nullptr;
-						}
-					} else {
-						errorReporter->reportError(scanner, "Expected type name after '<'");
-						return nullptr;
-					}
+				std::string typeParam;
+				if (!parseInstructionTypeParam(scanner, src, errorReporter, n, typeParam)) {
+					return nullptr;
 				}
-				IAstNode* node = new AstNodeInstruction(instrName);
+				IAstNode* node = typeParam.empty() ? new AstNodeInstruction(instrName)
+												   : new AstNodeInstruction(instrName, typeParam);
 				setNodePosition(node, scanner, src);
 				return node;
 			}

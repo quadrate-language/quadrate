@@ -914,6 +914,36 @@ TEST(ManyLocalVariables) {
 	ASSERT(errors == 0, "many local variables should succeed");
 }
 
+// A declared parameter struct type is not overwritten by the type inferred from the
+// fields the body touches. The inference reads every field mentioned in the body,
+// including fields of another struct reached through a call, so here it concludes that
+// a `<<value` of unknown provenance belongs to the first parameter, so `g` must be the
+// struct that has `value` -- a Cell -- which would reject the call below for passing
+// exactly the type the signature asks for.
+TEST(DeclaredParameterStructTypeWinsOverInference) {
+	const char* src = R"(
+		struct Cell { value:i64 }
+		struct Grid { cells:[]Cell  n:i64 }
+
+		fn at(g:Grid idx:i64 -- c:Cell) {
+			g <<cells idx nth
+		}
+
+		fn read_at(g:Grid idx:i64 -- v:i64) {
+			g idx at <<value
+		}
+
+		fn main() {
+			2 make<Cell> -> arr
+			Grid { cells = arr n = 2 } -> g
+			g <<cells 0 Cell { value = 7 } set
+			g 0 read_at print
+		}
+	)";
+	size_t errors = validateCode(src);
+	ASSERT(errors == 0, "a declared struct parameter type must survive field-access inference");
+}
+
 int main() {
 	return UC_PrintResults();
 }

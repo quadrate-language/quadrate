@@ -185,7 +185,7 @@ fn print_usage( -- ) {
 // used to ignore an unrecognised flag and drop into the stdio server, which to
 // whoever mistyped it looked like a hang -- the process just sat there waiting
 // for JSON-RPC that was never coming.
-fn reject_unknown_options(f:Flag -- ) {
+fn reject_unknown_options(f:flag::Flag -- ) {
 	f <<argv "\n" strings::split! -> count -> parts
 	0 count 1 for it {
 		parts it nth -> tok

@@ -330,6 +330,49 @@ namespace Qd {
 		return 0;
 	}
 
+	// Parses the optional `<Type>` after a builtin instruction name, as in `make<Point>` or
+	// `make<mod::Point>`. `typeParam` comes back empty when there is no `<` at all. Returns
+	// false on a malformed one, having reported it.
+	//
+	// Shared because it was written out at each call site and one of them -- the field values
+	// of a struct construction -- did not have it, so `P { xs = 4 make<Cell> }` built an
+	// instruction with no type parameter and the backend lowered it to a `qd_make` that does
+	// not exist, failing at link time.
+	inline bool parseInstructionTypeParam(
+			u8t_scanner* scanner, const char* src, ErrorReporter* errorReporter, size_t* n, std::string& typeParam) {
+		typeParam.clear();
+		// peekNextChar does not skip whitespace, which is what distinguishes `make<T>` from `len <`
+		if (peekNextChar(scanner, src) != U'<') {
+			return true;
+		}
+		u8t_scanner_scan(scanner); // Consume '<'
+		if (u8t_scanner_scan(scanner) != U8T_IDENTIFIER) {
+			errorReporter->reportError(scanner, "Expected type name after '<'");
+			return false;
+		}
+		typeParam = u8t_scanner_token_text(scanner, n);
+
+		// Qualified name: module::StructName
+		if (u8t_scanner_peek(scanner) == U':') {
+			u8t_scanner_scan(scanner); // Consume first ':'
+			if (u8t_scanner_peek(scanner) == U':') {
+				u8t_scanner_scan(scanner); // Consume second ':'
+				if (u8t_scanner_scan(scanner) != U8T_IDENTIFIER) {
+					errorReporter->reportError(scanner, "Expected struct name after '::'");
+					return false;
+				}
+				typeParam += "::";
+				typeParam += u8t_scanner_token_text(scanner, n);
+			}
+		}
+
+		if (u8t_scanner_scan(scanner) != U'>') {
+			errorReporter->reportError(scanner, "Expected '>' after type parameter");
+			return false;
+		}
+		return true;
+	}
+
 	// Parse string interpolation: $"hello {name} is {age}" desugars to
 	// sb::new "hello " sb::append name sb::append_int " is " sb::append age sb::append_int sb::finish
 	// Called after '$' and the string token have both been consumed.
