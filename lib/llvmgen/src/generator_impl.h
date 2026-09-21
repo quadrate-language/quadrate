@@ -209,6 +209,7 @@ namespace Qd {
 		llvm::Function* mallocFn = nullptr;
 		llvm::Function* freeFn = nullptr;
 		llvm::Function* qdStringReleaseFn = nullptr;
+		llvm::Function* qdStringRetainFn = nullptr;
 		llvm::Function* qdStringDataFn = nullptr;
 		llvm::Function* qdStructAllocFn = nullptr;
 		llvm::Function* qdStructReleaseFn = nullptr;
@@ -415,6 +416,8 @@ namespace Qd {
 
 		std::map<std::string, StructLayout> structDefinitions;
 		std::map<std::string, llvm::Function*> structDestructors;
+		// `__qd_clone_<S>`: the shallow copy `clone` calls, one per struct that can be cloned.
+		std::map<std::string, llvm::Function*> structCloners;
 		std::unordered_map<std::string, std::string> typeAliases; // name → resolved type
 		std::string currentModuleName;
 
@@ -517,6 +520,8 @@ namespace Qd {
 		// Struct handling
 		void processStructDeclaration(AstNodeStructDeclaration* structDecl, const std::string& moduleName);
 		void generateStructDestructors();
+		void generateStructCloners();
+		llvm::Function* findStructCloner(const std::string& structName) const;
 		void generateStructConstruction(const std::string& structName, llvm::Value* ctx);
 		const StructLayout* findStructDefinition(const std::string& structName) const;
 		void generateFieldAccess(AstNodeFieldAccess* fieldAccess, llvm::Value* ctx);

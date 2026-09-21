@@ -348,6 +348,14 @@ a type name is, so two array literals written in a row MUST be separated by whit
 
 Arrays MUST be represented as `ptr` on the stack. In type annotations, arrays MAY be written as `[]T` (e.g., `[]i64`, `[]f64`, `[]str`, `[]mod::Point`, `[][]i64`) to indicate the element type. This is a compile-time annotation; at runtime, arrays are pointers.
 
+A declared `ptr` otherwise accepts any pointer-shaped value, but implementations MUST reject a `[]T` supplied where a parameter, output or struct field is declared `ptr`. The pointer an array is represented by addresses the array's header, not its elements, so a function that takes a raw buffer would read and write the header rather than the data. A raw buffer and the length beside it remain the way to pass elements:
+
+<!-- doccheck: skip two signatures contrasted, not a program -->
+```quadrate
+fn sum(arr:ptr count:i64 -- total:i64)   // a raw buffer
+fn sum(arr:[]i64 -- total:i64)           // an array; `arr len` gives the count
+```
+
 ### 3.3 Generic Types
 
 Functions and structs can be parameterized over types:
@@ -1299,6 +1307,23 @@ p -> q
 q 42 >>x drop
 p <<x            // 42
 ```
+
+#### Copying
+
+`clone` MUST produce a new struct of the same type with the fields copied, and MUST be
+shallow: a field that holds a reference is retained, not copied, so the copy and the
+original share whatever their fields point to. A `str` field cannot expose the
+difference, strings being immutable; an array or a struct field can, and does.
+
+```quadrate
+p clone -> r
+r 7 >>x drop
+p <<x            // unchanged
+```
+
+Implementations MUST reject `clone` where the struct type is not known at the call site,
+including on an untyped `ptr`: the type is what gives the size to allocate and the fields
+to retain. `as` narrows a pointer and is the way through.
 
 ### 8.5 Generic Structs
 

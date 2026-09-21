@@ -1136,7 +1136,13 @@ namespace Qd {
 						mStructPointerFields[unqualifiedName].insert(field->name());
 					}
 				} else if (typeName == "ptr" || typeName.find('*') != std::string::npos) {
+					// Recorded rather than left blank -- see the same case in
+					// semantic_validator_collect.cc.
 					fieldType = StackValueType::PTR;
+					mStructFieldStructTypes[qualifiedName][field->name()] = "ptr";
+					if (mergeIntoMain) {
+						mStructFieldStructTypes[unqualifiedName][field->name()] = "ptr";
+					}
 				} else if (typeName.size() > 2 && typeName[0] == '[' && typeName[1] == ']') {
 					// Array type: []T - treat as PTR and track the array type
 					fieldType = StackValueType::PTR;

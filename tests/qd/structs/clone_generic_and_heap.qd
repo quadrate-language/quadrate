@@ -1,0 +1,28 @@
+// Test: clone over the shapes that resolve to a layout by a different name --
+// a generic struct (`Box<str>` is the `Box` layout with a tagged slot) and a
+// struct that came back from a function rather than a literal. Both used to
+// find no cloner and silently leave the original on the stack, so `-> b` bound
+// the original and the two names shared a struct.
+struct Box<T> { v:T  n:i64 }
+struct P { x:i64  s:str }
+
+fn make(n:i64 -- p:P) { P { x = n s = "made" } }
+
+fn dup_it(p:P -- q:P) { p clone }
+
+fn main() {
+	Box<str> { v = "gv" n = 1 } -> g
+	g clone -> h
+	h 2 >>n drop
+	g <<n print nl              // 1
+	h <<n print nl              // 2
+	g <<v print nl              // gv -- the str is shared, and immutable
+	h <<v print nl              // gv
+
+	7 make -> a
+	a dup_it -> b               // cloned inside a function, returned out of it
+	b 8 >>x drop
+	a <<x print nl              // 7
+	b <<x print nl              // 8
+	b <<s print nl              // made
+}

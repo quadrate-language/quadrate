@@ -19,6 +19,15 @@ set -euo pipefail
 # cannot: ASCII unit separator.
 SEP=$'\x1f'
 
+# A type as a doc tag writes it. This used to be `[a-zA-Z0-9_]+`, which matched a bare `i64`
+# and nothing else: `@return args []str Array of argument strings` matched no branch at all,
+# so the row vanished from the table and the text landed in the prose, and `@param f
+# fn(i64 -- i64) ...` kept `fn` as the type and pushed the signature into the description.
+# The forms here are the ones a tag can carry without a ':' in them -- `[]str`, `[][]i64`,
+# `*Node`, `Box<i64>`, `fn(i64 -- i64)`. A qualified `mod::Point` is deliberately not among
+# them: the records below are packed with ':' between the fields, so one would split wrong.
+DOC_TYPE_RE='((\[\])*\*?(fn\([^)]*\)|[a-zA-Z_][a-zA-Z0-9_]*(<[^>]*>)?))'
+
 # A pipe inside a table cell ends the cell, so a description that contains one -- math::abs
 # documents its return as `|x|` -- has to be escaped where it lands in a table.
 md_cell() {
@@ -193,15 +202,15 @@ parse_module() {
                 # Parse doc comment
                 local desc="" params="" returns="" errors="" examples=""
                 for doc_line in "${doc_buffer[@]}"; do
-                    if [[ "$doc_line" =~ ^@param[[:space:]]+([a-zA-Z_][a-zA-Z0-9_]*)[[:space:]]+([a-zA-Z0-9_]+)[[:space:]]*(.*) ]]; then
+                    if [[ "$doc_line" =~ ^@param[[:space:]]+([a-zA-Z_][a-zA-Z0-9_]*)[[:space:]]+${DOC_TYPE_RE}[[:space:]]*(.*) ]]; then
                         local p_name="${BASH_REMATCH[1]}"
                         local p_type="${BASH_REMATCH[2]}"
-                        local p_desc="${BASH_REMATCH[3]}"
+                        local p_desc="${BASH_REMATCH[6]}"
                         params+="${p_name}:${p_type}:${p_desc};"
-                    elif [[ "$doc_line" =~ ^@return[[:space:]]+([a-zA-Z_][a-zA-Z0-9_]*)[[:space:]]+([a-zA-Z0-9_]+)[[:space:]]*(.*) ]]; then
+                    elif [[ "$doc_line" =~ ^@return[[:space:]]+([a-zA-Z_][a-zA-Z0-9_]*)[[:space:]]+${DOC_TYPE_RE}[[:space:]]*(.*) ]]; then
                         local r_name="${BASH_REMATCH[1]}"
                         local r_type="${BASH_REMATCH[2]}"
-                        local r_desc="${BASH_REMATCH[3]}"
+                        local r_desc="${BASH_REMATCH[6]}"
                         returns+="${r_name}:${r_type}:${r_desc};"
                     elif [[ "$doc_line" =~ ^@example[[:space:]]+(.*) ]]; then
                         examples+="${BASH_REMATCH[1]};"
@@ -263,10 +272,10 @@ parse_module() {
                 struct_desc=""
                 struct_doc_fields=""
                 for doc_line in "${doc_buffer[@]}"; do
-                    if [[ "$doc_line" =~ ^@field[[:space:]]+([a-zA-Z_][a-zA-Z0-9_]*)[[:space:]]+([a-zA-Z0-9_]+)[[:space:]]*(.*) ]]; then
+                    if [[ "$doc_line" =~ ^@field[[:space:]]+([a-zA-Z_][a-zA-Z0-9_]*)[[:space:]]+${DOC_TYPE_RE}[[:space:]]*(.*) ]]; then
                         local f_name="${BASH_REMATCH[1]}"
                         local f_type="${BASH_REMATCH[2]}"
-                        local f_desc="${BASH_REMATCH[3]}"
+                        local f_desc="${BASH_REMATCH[6]}"
                         struct_doc_fields+="${f_name}~${f_type}~${f_desc}§"
                     elif [[ ! "$doc_line" =~ ^@ ]]; then
                         if [[ -n "$struct_desc" ]]; then

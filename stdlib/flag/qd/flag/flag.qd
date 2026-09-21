@@ -24,10 +24,10 @@ pub struct Flag {
 }
 
 /// Parse command-line arguments.
-/// @param args ptr Argument array, as os::args returns
+/// @param args []str Argument array, as os::args returns
 /// @return f Flag Parsed flags
 /// @example os::args flag::parse -> f
-pub fn parse(args:ptr -- f:Flag) {
+pub fn parse(args:[]str -- f:Flag) {
 	args len -> argc
 	"" -> argv
 	"" -> arg

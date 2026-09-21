@@ -1,409 +1,317 @@
 // sort test
 use strings
 use sort
-use mem
 use testing
 
 // --- sort::ints ---
 
 test "sort::ints ascending" {
-	5 8 * mem::alloc! -> arr
-	5 arr 0 mem::set_i64
-	2 arr 8 mem::set_i64
-	8 arr 16 mem::set_i64
-	1 arr 24 mem::set_i64
-	9 arr 32 mem::set_i64
+	[5 2 8 1 9] -> arr
 
-	arr 5 sort::ints
+	arr sort::ints
 
-	arr 0 mem::get_i64 1 testing::assert_eq
-	arr 8 mem::get_i64 2 testing::assert_eq
-	arr 16 mem::get_i64 5 testing::assert_eq
-	arr 24 mem::get_i64 8 testing::assert_eq
-	arr 32 mem::get_i64 9 testing::assert_eq
+	arr 0 nth 1 testing::assert_eq
+	arr 1 nth 2 testing::assert_eq
+	arr 2 nth 5 testing::assert_eq
+	arr 3 nth 8 testing::assert_eq
+	arr 4 nth 9 testing::assert_eq
 
-	arr mem::free
+	arr free
 }
 
 test "sort::ints already sorted" {
-	3 8 * mem::alloc! -> arr
-	1 arr 0 mem::set_i64
-	2 arr 8 mem::set_i64
-	3 arr 16 mem::set_i64
+	[1 2 3] -> arr
 
-	arr 3 sort::ints
+	arr sort::ints
 
-	arr 0 mem::get_i64 1 testing::assert_eq
-	arr 8 mem::get_i64 2 testing::assert_eq
-	arr 16 mem::get_i64 3 testing::assert_eq
+	arr 0 nth 1 testing::assert_eq
+	arr 1 nth 2 testing::assert_eq
+	arr 2 nth 3 testing::assert_eq
 
-	arr mem::free
+	arr free
 }
 
 test "sort::ints reverse sorted" {
-	4 8 * mem::alloc! -> arr
-	4 arr 0 mem::set_i64
-	3 arr 8 mem::set_i64
-	2 arr 16 mem::set_i64
-	1 arr 24 mem::set_i64
+	[4 3 2 1] -> arr
 
-	arr 4 sort::ints
+	arr sort::ints
 
-	arr 0 mem::get_i64 1 testing::assert_eq
-	arr 8 mem::get_i64 2 testing::assert_eq
-	arr 16 mem::get_i64 3 testing::assert_eq
-	arr 24 mem::get_i64 4 testing::assert_eq
+	arr 0 nth 1 testing::assert_eq
+	arr 1 nth 2 testing::assert_eq
+	arr 2 nth 3 testing::assert_eq
+	arr 3 nth 4 testing::assert_eq
 
-	arr mem::free
+	arr free
 }
 
 test "sort::ints single element" {
-	1 8 * mem::alloc! -> arr
-	42 arr 0 mem::set_i64
+	[42] -> arr
 
-	arr 1 sort::ints
+	arr sort::ints
 
-	arr 0 mem::get_i64 42 testing::assert_eq
+	arr 0 nth 42 testing::assert_eq
 
-	arr mem::free
+	arr free
 }
 
 test "sort::ints with duplicates" {
-	5 8 * mem::alloc! -> arr
-	3 arr 0 mem::set_i64
-	1 arr 8 mem::set_i64
-	3 arr 16 mem::set_i64
-	2 arr 24 mem::set_i64
-	1 arr 32 mem::set_i64
+	[3 1 3 2 1] -> arr
 
-	arr 5 sort::ints
+	arr sort::ints
 
-	arr 0 mem::get_i64 1 testing::assert_eq
-	arr 8 mem::get_i64 1 testing::assert_eq
-	arr 16 mem::get_i64 2 testing::assert_eq
-	arr 24 mem::get_i64 3 testing::assert_eq
-	arr 32 mem::get_i64 3 testing::assert_eq
+	arr 0 nth 1 testing::assert_eq
+	arr 1 nth 1 testing::assert_eq
+	arr 2 nth 2 testing::assert_eq
+	arr 3 nth 3 testing::assert_eq
+	arr 4 nth 3 testing::assert_eq
 
-	arr mem::free
+	arr free
 }
 
 test "sort::ints with negatives" {
-	4 8 * mem::alloc! -> arr
-	-5 arr 0 mem::set_i64
-	3 arr 8 mem::set_i64
-	-1 arr 16 mem::set_i64
-	0 arr 24 mem::set_i64
+	[-5 3 -1 0] -> arr
 
-	arr 4 sort::ints
+	arr sort::ints
 
-	arr 0 mem::get_i64 -5 testing::assert_eq
-	arr 8 mem::get_i64 -1 testing::assert_eq
-	arr 16 mem::get_i64 0 testing::assert_eq
-	arr 24 mem::get_i64 3 testing::assert_eq
+	arr 0 nth -5 testing::assert_eq
+	arr 1 nth -1 testing::assert_eq
+	arr 2 nth 0 testing::assert_eq
+	arr 3 nth 3 testing::assert_eq
 
-	arr mem::free
+	arr free
 }
 
 test "sort::ints all same value" {
-	3 8 * mem::alloc! -> arr
-	7 arr 0 mem::set_i64
-	7 arr 8 mem::set_i64
-	7 arr 16 mem::set_i64
+	[7 7 7] -> arr
 
-	arr 3 sort::ints
+	arr sort::ints
 
-	arr 0 mem::get_i64 7 testing::assert_eq
-	arr 8 mem::get_i64 7 testing::assert_eq
-	arr 16 mem::get_i64 7 testing::assert_eq
+	arr 0 nth 7 testing::assert_eq
+	arr 1 nth 7 testing::assert_eq
+	arr 2 nth 7 testing::assert_eq
 
-	arr mem::free
+	arr free
 }
 
 // --- sort::ints_desc ---
 
 test "sort::ints_desc descending" {
-	5 8 * mem::alloc! -> arr
-	5 arr 0 mem::set_i64
-	2 arr 8 mem::set_i64
-	8 arr 16 mem::set_i64
-	1 arr 24 mem::set_i64
-	9 arr 32 mem::set_i64
+	[5 2 8 1 9] -> arr
 
-	arr 5 sort::ints_desc
+	arr sort::ints_desc
 
-	arr 0 mem::get_i64 9 testing::assert_eq
-	arr 8 mem::get_i64 8 testing::assert_eq
-	arr 16 mem::get_i64 5 testing::assert_eq
-	arr 24 mem::get_i64 2 testing::assert_eq
-	arr 32 mem::get_i64 1 testing::assert_eq
+	arr 0 nth 9 testing::assert_eq
+	arr 1 nth 8 testing::assert_eq
+	arr 2 nth 5 testing::assert_eq
+	arr 3 nth 2 testing::assert_eq
+	arr 4 nth 1 testing::assert_eq
 
-	arr mem::free
+	arr free
 }
 
 test "sort::ints_desc with negatives" {
-	4 8 * mem::alloc! -> arr
-	-5 arr 0 mem::set_i64
-	3 arr 8 mem::set_i64
-	-1 arr 16 mem::set_i64
-	0 arr 24 mem::set_i64
+	[-5 3 -1 0] -> arr
 
-	arr 4 sort::ints_desc
+	arr sort::ints_desc
 
-	arr 0 mem::get_i64 3 testing::assert_eq
-	arr 8 mem::get_i64 0 testing::assert_eq
-	arr 16 mem::get_i64 -1 testing::assert_eq
-	arr 24 mem::get_i64 -5 testing::assert_eq
+	arr 0 nth 3 testing::assert_eq
+	arr 1 nth 0 testing::assert_eq
+	arr 2 nth -1 testing::assert_eq
+	arr 3 nth -5 testing::assert_eq
 
-	arr mem::free
+	arr free
 }
 
 // --- sort::min ---
 
 test "sort::min" {
-	3 8 * mem::alloc! -> arr
-	5 arr 0 mem::set_i64
-	2 arr 8 mem::set_i64
-	8 arr 16 mem::set_i64
+	[5 2 8] -> arr
 
-	arr 3 sort::min 2 testing::assert_eq
+	arr sort::min 2 testing::assert_eq
 
-	arr mem::free
+	arr free
 }
 
 test "sort::min with negatives" {
-	4 8 * mem::alloc! -> arr
-	3 arr 0 mem::set_i64
-	-10 arr 8 mem::set_i64
-	5 arr 16 mem::set_i64
-	-2 arr 24 mem::set_i64
+	[3 -10 5 -2] -> arr
 
-	arr 4 sort::min -10 testing::assert_eq
+	arr sort::min -10 testing::assert_eq
 
-	arr mem::free
+	arr free
 }
 
 test "sort::min single element" {
-	1 8 * mem::alloc! -> arr
-	42 arr 0 mem::set_i64
+	[42] -> arr
 
-	arr 1 sort::min 42 testing::assert_eq
+	arr sort::min 42 testing::assert_eq
 
-	arr mem::free
+	arr free
 }
 
 test "sort::min first element is min" {
-	3 8 * mem::alloc! -> arr
-	1 arr 0 mem::set_i64
-	5 arr 8 mem::set_i64
-	3 arr 16 mem::set_i64
+	[1 5 3] -> arr
 
-	arr 3 sort::min 1 testing::assert_eq
+	arr sort::min 1 testing::assert_eq
 
-	arr mem::free
+	arr free
 }
 
 test "sort::min last element is min" {
-	3 8 * mem::alloc! -> arr
-	5 arr 0 mem::set_i64
-	3 arr 8 mem::set_i64
-	1 arr 16 mem::set_i64
+	[5 3 1] -> arr
 
-	arr 3 sort::min 1 testing::assert_eq
+	arr sort::min 1 testing::assert_eq
 
-	arr mem::free
+	arr free
 }
 
 // --- sort::max ---
 
 test "sort::max" {
-	3 8 * mem::alloc! -> arr
-	5 arr 0 mem::set_i64
-	2 arr 8 mem::set_i64
-	8 arr 16 mem::set_i64
+	[5 2 8] -> arr
 
-	arr 3 sort::max 8 testing::assert_eq
+	arr sort::max 8 testing::assert_eq
 
-	arr mem::free
+	arr free
 }
 
 test "sort::max with negatives" {
-	3 8 * mem::alloc! -> arr
-	-5 arr 0 mem::set_i64
-	-2 arr 8 mem::set_i64
-	-8 arr 16 mem::set_i64
+	[-5 -2 -8] -> arr
 
-	arr 3 sort::max -2 testing::assert_eq
+	arr sort::max -2 testing::assert_eq
 
-	arr mem::free
+	arr free
 }
 
 // --- sort::search ---
 
 test "sort::search finds element" {
-	5 8 * mem::alloc! -> arr
-	1 arr 0 mem::set_i64
-	2 arr 8 mem::set_i64
-	5 arr 16 mem::set_i64
-	8 arr 24 mem::set_i64
-	9 arr 32 mem::set_i64
+	[1 2 5 8 9] -> arr
 
-	arr 5 5 sort::search 2 testing::assert_eq
-	arr 5 1 sort::search 0 testing::assert_eq
-	arr 5 9 sort::search 4 testing::assert_eq
+	arr 5 sort::search 2 testing::assert_eq
+	arr 1 sort::search 0 testing::assert_eq
+	arr 9 sort::search 4 testing::assert_eq
 
-	arr mem::free
+	arr free
 }
 
 test "sort::search not found" {
-	5 8 * mem::alloc! -> arr
-	1 arr 0 mem::set_i64
-	2 arr 8 mem::set_i64
-	5 arr 16 mem::set_i64
-	8 arr 24 mem::set_i64
-	9 arr 32 mem::set_i64
+	[1 2 5 8 9] -> arr
 
-	arr 5 3 sort::search -1 testing::assert_eq
-	arr 5 0 sort::search -1 testing::assert_eq
-	arr 5 10 sort::search -1 testing::assert_eq
+	arr 3 sort::search -1 testing::assert_eq
+	arr 0 sort::search -1 testing::assert_eq
+	arr 10 sort::search -1 testing::assert_eq
 
-	arr mem::free
+	arr free
 }
 
 test "sort::search single element found" {
-	1 8 * mem::alloc! -> arr
-	42 arr 0 mem::set_i64
+	[42] -> arr
 
-	arr 1 42 sort::search 0 testing::assert_eq
+	arr 42 sort::search 0 testing::assert_eq
 
-	arr mem::free
+	arr free
 }
 
 test "sort::search single element not found" {
-	1 8 * mem::alloc! -> arr
-	42 arr 0 mem::set_i64
+	[42] -> arr
 
-	arr 1 99 sort::search -1 testing::assert_eq
+	arr 99 sort::search -1 testing::assert_eq
 
-	arr mem::free
+	arr free
 }
 
 // --- sort::is_sorted ---
 
 test "sort::is_sorted true" {
-	3 8 * mem::alloc! -> arr
-	1 arr 0 mem::set_i64
-	2 arr 8 mem::set_i64
-	3 arr 16 mem::set_i64
+	[1 2 3] -> arr
 
-	arr 3 sort::is_sorted testing::assert_true
+	arr sort::is_sorted testing::assert_true
 
-	arr mem::free
+	arr free
 }
 
 test "sort::is_sorted false" {
-	3 8 * mem::alloc! -> arr
-	3 arr 0 mem::set_i64
-	1 arr 8 mem::set_i64
-	2 arr 16 mem::set_i64
+	[3 1 2] -> arr
 
-	arr 3 sort::is_sorted testing::assert_false
+	arr sort::is_sorted testing::assert_false
 
-	arr mem::free
+	arr free
 }
 
 test "sort::is_sorted single element" {
-	1 8 * mem::alloc! -> arr
-	42 arr 0 mem::set_i64
+	[42] -> arr
 
-	arr 1 sort::is_sorted testing::assert_true
+	arr sort::is_sorted testing::assert_true
 
-	arr mem::free
+	arr free
 }
 
 test "sort::is_sorted with equal elements" {
-	3 8 * mem::alloc! -> arr
-	5 arr 0 mem::set_i64
-	5 arr 8 mem::set_i64
-	5 arr 16 mem::set_i64
+	[5 5 5] -> arr
 
-	arr 3 sort::is_sorted testing::assert_true
+	arr sort::is_sorted testing::assert_true
 
-	arr mem::free
+	arr free
 }
 
 test "sort::is_sorted after sort" {
-	4 8 * mem::alloc! -> arr
-	9 arr 0 mem::set_i64
-	1 arr 8 mem::set_i64
-	5 arr 16 mem::set_i64
-	3 arr 24 mem::set_i64
+	[9 1 5 3] -> arr
 
-	arr 4 sort::is_sorted testing::assert_false
-	arr 4 sort::ints
-	arr 4 sort::is_sorted testing::assert_true
+	arr sort::is_sorted testing::assert_false
+	arr sort::ints
+	arr sort::is_sorted testing::assert_true
 
-	arr mem::free
+	arr free
 }
 
 // --- sort::reverse ---
 
 test "sort::reverse" {
-	4 8 * mem::alloc! -> arr
-	1 arr 0 mem::set_i64
-	2 arr 8 mem::set_i64
-	3 arr 16 mem::set_i64
-	4 arr 24 mem::set_i64
+	[1 2 3 4] -> arr
 
-	arr 4 sort::reverse
+	arr sort::reverse
 
-	arr 0 mem::get_i64 4 testing::assert_eq
-	arr 8 mem::get_i64 3 testing::assert_eq
-	arr 16 mem::get_i64 2 testing::assert_eq
-	arr 24 mem::get_i64 1 testing::assert_eq
+	arr 0 nth 4 testing::assert_eq
+	arr 1 nth 3 testing::assert_eq
+	arr 2 nth 2 testing::assert_eq
+	arr 3 nth 1 testing::assert_eq
 
-	arr mem::free
+	arr free
 }
 
 test "sort::reverse odd count" {
-	3 8 * mem::alloc! -> arr
-	10 arr 0 mem::set_i64
-	20 arr 8 mem::set_i64
-	30 arr 16 mem::set_i64
+	[10 20 30] -> arr
 
-	arr 3 sort::reverse
+	arr sort::reverse
 
-	arr 0 mem::get_i64 30 testing::assert_eq
-	arr 8 mem::get_i64 20 testing::assert_eq
-	arr 16 mem::get_i64 10 testing::assert_eq
+	arr 0 nth 30 testing::assert_eq
+	arr 1 nth 20 testing::assert_eq
+	arr 2 nth 10 testing::assert_eq
 
-	arr mem::free
+	arr free
 }
 
 test "sort::reverse single element" {
-	1 8 * mem::alloc! -> arr
-	42 arr 0 mem::set_i64
+	[42] -> arr
 
-	arr 1 sort::reverse
+	arr sort::reverse
 
-	arr 0 mem::get_i64 42 testing::assert_eq
+	arr 0 nth 42 testing::assert_eq
 
-	arr mem::free
+	arr free
 }
 
 test "sort::reverse twice restores original" {
-	3 8 * mem::alloc! -> arr
-	1 arr 0 mem::set_i64
-	2 arr 8 mem::set_i64
-	3 arr 16 mem::set_i64
+	[1 2 3] -> arr
 
-	arr 3 sort::reverse
-	arr 3 sort::reverse
+	arr sort::reverse
+	arr sort::reverse
 
-	arr 0 mem::get_i64 1 testing::assert_eq
-	arr 8 mem::get_i64 2 testing::assert_eq
-	arr 16 mem::get_i64 3 testing::assert_eq
+	arr 0 nth 1 testing::assert_eq
+	arr 1 nth 2 testing::assert_eq
+	arr 2 nth 3 testing::assert_eq
 
-	arr mem::free
+	arr free
 }
 
 // --- sort::strings ---
@@ -411,49 +319,36 @@ test "sort::reverse twice restores original" {
 // --- sort + reverse combo ---
 
 test "sort::ints then reverse gives descending" {
-	4 8 * mem::alloc! -> arr
-	3 arr 0 mem::set_i64
-	1 arr 8 mem::set_i64
-	4 arr 16 mem::set_i64
-	2 arr 24 mem::set_i64
+	[3 1 4 2] -> arr
 
-	arr 4 sort::ints
-	arr 4 sort::reverse
+	arr sort::ints
+	arr sort::reverse
 
-	arr 0 mem::get_i64 4 testing::assert_eq
-	arr 8 mem::get_i64 3 testing::assert_eq
-	arr 16 mem::get_i64 2 testing::assert_eq
-	arr 24 mem::get_i64 1 testing::assert_eq
+	arr 0 nth 4 testing::assert_eq
+	arr 1 nth 3 testing::assert_eq
+	arr 2 nth 2 testing::assert_eq
+	arr 3 nth 1 testing::assert_eq
 
-	arr mem::free
+	arr free
 }
 
 // --- sort + search combo ---
 
 test "sort then search" {
-	5 8 * mem::alloc! -> arr
-	50 arr 0 mem::set_i64
-	10 arr 8 mem::set_i64
-	30 arr 16 mem::set_i64
-	40 arr 24 mem::set_i64
-	20 arr 32 mem::set_i64
+	[50 10 30 40 20] -> arr
 
-	arr 5 sort::ints
-	arr 5 30 sort::search 2 testing::assert_eq
-	arr 5 10 sort::search 0 testing::assert_eq
-	arr 5 50 sort::search 4 testing::assert_eq
-	arr 5 25 sort::search -1 testing::assert_eq
+	arr sort::ints
+	arr 30 sort::search 2 testing::assert_eq
+	arr 10 sort::search 0 testing::assert_eq
+	arr 50 sort::search 4 testing::assert_eq
+	arr 25 sort::search -1 testing::assert_eq
 
-	arr mem::free
+	arr free
 }
 
 test "sort::strings sorts a string array" {
-	// sort::strings used mem::get_ptr at 8-byte strides, which on a Quadrate array
-	// reads the header rather than the elements. The numeric functions in this
-	// module keep operating on flat mem::alloc buffers -- a different shape, on
-	// purpose -- and every test above still exercises that.
 	"c,a,b" "," strings::split! -> count -> arr
-	arr count sort::strings
+	arr sort::strings
 	arr 0 nth "a" testing::assert_eq
 	arr 1 nth "b" testing::assert_eq
 	arr 2 nth "c" testing::assert_eq
@@ -461,7 +356,7 @@ test "sort::strings sorts a string array" {
 
 test "sort::strings_desc sorts a string array" {
 	"a,c,b" "," strings::split! -> count -> arr
-	arr count sort::strings_desc
+	arr sort::strings_desc
 	arr 0 nth "c" testing::assert_eq
 	arr 2 nth "a" testing::assert_eq
 }
@@ -481,71 +376,62 @@ fn cmp_asc(a:i64 b:i64 -- r:i64) {
 }
 
 test "sort::by orders with a caller-supplied comparator" {
-	5 8 * mem::alloc! -> arr
-	31 arr 0 mem::set_i64
-	12 arr 8 mem::set_i64
-	45 arr 16 mem::set_i64
-	27 arr 24 mem::set_i64
-	6 arr 32 mem::set_i64
+	[31 12 45 27 6] -> arr
 
-	arr 5 &cmp_desc sort::by
-	arr 0 mem::get_i64 45 testing::assert_eq
-	arr 32 mem::get_i64 6 testing::assert_eq
-	arr 5 &cmp_desc sort::is_sorted_by testing::assert_true
+	arr &cmp_desc sort::by
+	arr 0 nth 45 testing::assert_eq
+	arr 4 nth 6 testing::assert_eq
+	arr &cmp_desc sort::is_sorted_by testing::assert_true
 
 	// A comparator can order by a key rather than the value: 31 12 45 6 27
-	arr 5 &cmp_by_last_digit sort::by
-	arr 0 mem::get_i64 31 testing::assert_eq
-	arr 8 mem::get_i64 12 testing::assert_eq
-	arr 32 mem::get_i64 27 testing::assert_eq
-	arr 5 &cmp_by_last_digit sort::is_sorted_by testing::assert_true
+	arr &cmp_by_last_digit sort::by
+	arr 0 nth 31 testing::assert_eq
+	arr 1 nth 12 testing::assert_eq
+	arr 4 nth 27 testing::assert_eq
+	arr &cmp_by_last_digit sort::is_sorted_by testing::assert_true
 
-	arr mem::free
+	arr free
 }
 
 test "sort::by handles empty, single and already-sorted input" {
-	1 8 * mem::alloc! -> one
-	7 one 0 mem::set_i64
-	one 0 &cmp_asc sort::by
-	one 1 &cmp_asc sort::by
-	one 0 mem::get_i64 7 testing::assert_eq
-	one 1 &cmp_asc sort::is_sorted_by testing::assert_true
-	one mem::free
+	[7] -> one
+	one &cmp_asc sort::by
+	one &cmp_asc sort::by
+	one 0 nth 7 testing::assert_eq
+	one &cmp_asc sort::is_sorted_by testing::assert_true
+	one free
 }
 
 test "sort::by sorts a partition larger than the insertion-sort threshold" {
 	// 16 is the cutoff between insertion sort and quicksort; 40 exercises both paths
-	40 8 * mem::alloc! -> arr
+	[40]i64 -> arr
 	0 40 1 for i {
-		40 i - arr i 8 * mem::set_i64
+		arr i 40 i - set
 	}
-	arr 40 &cmp_asc sort::by
-	arr 0 mem::get_i64 1 testing::assert_eq
-	arr 39 8 * mem::get_i64 40 testing::assert_eq
-	arr 40 &cmp_asc sort::is_sorted_by testing::assert_true
-	arr mem::free
+	arr &cmp_asc sort::by
+	arr 0 nth 1 testing::assert_eq
+	arr 39 nth 40 testing::assert_eq
+	arr &cmp_asc sort::is_sorted_by testing::assert_true
+	arr free
 }
 
 test "sort::is_sorted_by reports unsorted input" {
-	3 8 * mem::alloc! -> arr
-	1 arr 0 mem::set_i64
-	9 arr 8 mem::set_i64
-	4 arr 16 mem::set_i64
-	arr 3 &cmp_asc sort::is_sorted_by testing::assert_false
-	arr mem::free
+	[1 9 4] -> arr
+	arr &cmp_asc sort::is_sorted_by testing::assert_false
+	arr free
 }
 
 test "sort::lower_bound_by locates the insertion point" {
-	5 8 * mem::alloc! -> arr
+	[5]i64 -> arr
 	0 5 1 for i {
-		i 2 * arr i 8 * mem::set_i64
+		arr i i 2 * set
 	}
 	// 0 2 4 6 8
-	arr 5 4 &cmp_asc sort::lower_bound_by 2 testing::assert_eq
-	arr 5 5 &cmp_asc sort::lower_bound_by 3 testing::assert_eq
-	arr 5 0 &cmp_asc sort::lower_bound_by 0 testing::assert_eq
-	arr 5 99 &cmp_asc sort::lower_bound_by 5 testing::assert_eq
-	arr mem::free
+	arr 4 &cmp_asc sort::lower_bound_by 2 testing::assert_eq
+	arr 5 &cmp_asc sort::lower_bound_by 3 testing::assert_eq
+	arr 0 &cmp_asc sort::lower_bound_by 0 testing::assert_eq
+	arr 99 &cmp_asc sort::lower_bound_by 5 testing::assert_eq
+	arr free
 }
 
 test "sort::ints sorts reverse-sorted input of every length" {
@@ -555,15 +441,15 @@ test "sort::ints sorts reverse-sorted input of every length" {
 	// unsorted -- silently, since nothing checked.
 	0 -> failures
 	2 61 1 for n {
-		n 8 * mem::alloc! -> arr
+		[n]i64 -> arr
 		0 n 1 for i {
-			n i - arr i 8 * mem::set_i64
+			arr i n i - set
 		}
-		arr n sort::ints
-		arr n sort::is_sorted 0 == if {
+		arr sort::ints
+		arr sort::is_sorted 0 == if {
 			failures 1 + -> failures
 		}
-		arr mem::free
+		arr free
 	}
 	failures 0 testing::assert_eq
 }
@@ -571,15 +457,15 @@ test "sort::ints sorts reverse-sorted input of every length" {
 test "sort::floats sorts reverse-sorted input of every length" {
 	0 -> failures
 	2 61 1 for n {
-		n 8 * mem::alloc! -> arr
+		[n]f64 -> arr
 		0 n 1 for i {
-			n i - cast<f64> arr i 8 * mem::set_f64
+			arr i n i - cast<f64> set
 		}
-		arr n sort::floats
-		arr n sort::is_sorted_floats 0 == if {
+		arr sort::floats
+		arr sort::is_sorted_floats 0 == if {
 			failures 1 + -> failures
 		}
-		arr mem::free
+		arr free
 	}
 	failures 0 testing::assert_eq
 }
@@ -587,15 +473,15 @@ test "sort::floats sorts reverse-sorted input of every length" {
 test "sort::by sorts reverse-sorted input of every length" {
 	0 -> failures
 	2 61 1 for n {
-		n 8 * mem::alloc! -> arr
+		[n]i64 -> arr
 		0 n 1 for i {
-			n i - arr i 8 * mem::set_i64
+			arr i n i - set
 		}
-		arr n &cmp_asc sort::by
-		arr n &cmp_asc sort::is_sorted_by 0 == if {
+		arr &cmp_asc sort::by
+		arr &cmp_asc sort::is_sorted_by 0 == if {
 			failures 1 + -> failures
 		}
-		arr mem::free
+		arr free
 	}
 	failures 0 testing::assert_eq
 }

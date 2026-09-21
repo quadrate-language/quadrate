@@ -1,0 +1,9 @@
+// Test: []i64 passed to a raw ptr parameter should fail. An array value points at
+// its qd_array_t header, not at its elements, so a function that takes a buffer
+// would write over magic, refcount and length.
+fn old_style(arr:ptr -- ) {
+}
+
+fn main() {
+	[1 2 3] old_style
+}

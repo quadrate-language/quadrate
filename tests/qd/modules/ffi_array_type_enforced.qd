@@ -1,0 +1,13 @@
+// Test: an FFI import block can declare `[]T`, and the element type is enforced.
+// `os::args` is declared `-- args:[]str` in the import block; the parameter reader
+// there used to scan a single identifier after the ':', so that came apart into two
+// stray tokens and an unnamed `str` and the result was typed `str`.
+use os
+
+fn wants_ints(a:[]i64 -- ) {
+}
+
+fn main() {
+	os::args -> a
+	a wants_ints
+}

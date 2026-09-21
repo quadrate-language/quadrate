@@ -1,10 +1,12 @@
 // Test: old ptr variable to []i64 struct field should fail
+use mem
+
 struct Container {
 	data:[]i64
 }
 
 fn old_make( -- arr:ptr) {
-	[1 2 3]
+	24 mem::alloc!
 }
 
 fn main() {

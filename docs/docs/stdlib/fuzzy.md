@@ -9,17 +9,17 @@
 
 Find the best matching items from a list, sorted by score descending. Items with score 0 are excluded.
 
-**Signature:** `(query:str items:ptr max_results:i64 -- results:ptr count:i64)`
+**Signature:** `(query:str items:[]str max_results:i64 -- results:[]str count:i64)`
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
 | `query` | `str` | Query string to match |
-| `items` | `ptr` | Array of strings to search |
+| `items` | `[]str` | Array of strings to search |
 | `max_results` | `i64` | Maximum number of results to return |
 
 | Output | Type | Description |
 |--------|------|-------------|
-| `results` | `ptr` | Array of matching strings (caller must free) |
+| `results` | `[]str` | Array of matching strings |
 | `count` | `i64` | Number of results |
 ---
 

@@ -13,6 +13,7 @@ Custom data types that group related fields together.
 | `<<field` | Read a field |
 | `struct value >>field` | Write a field (pushes modified struct back for chaining) |
 | `struct value >>field drop` | Write a field and discard the struct (standalone mutation) |
+| `clone` | A new struct of the same type, fields copied (shallow) |
 | `fn (s:Name) method(...)` | Define a method |
 
 ---

@@ -281,6 +281,124 @@ namespace Qd {
 		}
 	}
 
+	// The cloner for a struct type as the validator spells it, which is not always the key the
+	// map uses: a type argument list (`Box<str>`) names the same layout as the bare `Box`,
+	// because a generic struct has one layout with a tagged slot per parameter, and an
+	// unqualified name may belong to a module. Resolution follows findStructDefinition.
+	llvm::Function* LlvmGenerator::Impl::findStructCloner(const std::string& structName) const {
+		const std::string base = structName.substr(0, structName.find('<'));
+		auto direct = structCloners.find(base);
+		if (direct != structCloners.end()) {
+			return direct->second;
+		}
+		if (base.find("::") != std::string::npos) {
+			return nullptr; // a qualified name names exactly one struct
+		}
+		if (!currentModuleName.empty()) {
+			auto qualified = structCloners.find(currentModuleName + "::" + base);
+			if (qualified != structCloners.end()) {
+				return qualified->second;
+			}
+		}
+		for (const auto& entry : structCloners) {
+			size_t colonPos = entry.first.find("::");
+			if (colonPos != std::string::npos && entry.first.substr(colonPos + 2) == base) {
+				return entry.second;
+			}
+		}
+		return nullptr;
+	}
+
+	// The shallow copy `clone` calls: a fresh heap struct of the same type, the bytes copied, and
+	// one reference taken for every field that holds one. It is the destructor read backwards --
+	// the same field walk, retain where that releases -- which is what keeps the two in step when
+	// a field kind is added.
+	//
+	// Shallow is the whole contract: what a field points to is shared, not copied. A `str` field
+	// makes that invisible, because a string is immutable and a shared one cannot be told from a
+	// copy. An array or a nested struct field is visibly shared, and deliberately so -- a struct
+	// is a mutable reference in this language (R21), so a field holding one behaves on `clone`
+	// exactly as `a -> b` does.
+	void LlvmGenerator::Impl::generateStructCloners() {
+		// void* __qd_clone_<S>(void* src)
+		auto clonerFnTy = llvm::FunctionType::get(ptrTy, {ptrTy}, false);
+
+		for (const auto& [structName, layout] : structDefinitions) {
+			std::string clonerName = "__qd_clone_" + structName;
+			auto clonerFn = llvm::Function::Create(clonerFnTy, llvm::Function::InternalLinkage, clonerName, *module);
+
+			auto savedBlock = builder->GetInsertBlock();
+			auto savedPoint = builder->GetInsertPoint();
+
+			auto entryBlock = llvm::BasicBlock::Create(*context, "entry", clonerFn);
+			builder->SetInsertPoint(entryBlock);
+
+			llvm::Value* src = clonerFn->getArg(0);
+
+			// Always heap, never the stack allocation generateStructConstruction can use: the copy
+			// is a value the caller binds and may return, and it carries the same destructor as
+			// the original so the references taken below are handed back.
+			llvm::Value* destructorPtr = llvm::ConstantPointerNull::get(ptrTy);
+			auto destructorIt = structDestructors.find(structName);
+			if (destructorIt != structDestructors.end() && destructorIt->second != nullptr) {
+				destructorPtr = destructorIt->second;
+			}
+			llvm::Value* dst = builder->CreateCall(
+					qdStructAllocFn, {builder->getInt64(layout.totalSize), destructorPtr}, "clone_ptr");
+
+			builder->CreateMemCpy(
+					dst, llvm::MaybeAlign(8), src, llvm::MaybeAlign(8), builder->getInt64(layout.totalSize));
+
+			// One reference per field that holds one, in the same order the destructor hands them
+			// back. Without this the copy and the original share a field whose count says one
+			// owner, and whichever dies first takes it with it.
+			for (const auto& field : layout.fields) {
+				std::string baseTypeName = field.typeName;
+				if (!baseTypeName.empty() && baseTypeName[0] == '*') {
+					baseTypeName = baseTypeName.substr(1);
+				}
+				auto fieldPtr = [&](const char* name) {
+					return builder->CreateGEP(builder->getInt8Ty(), dst, builder->getInt64(field.offset), name);
+				};
+				if (looksLikeStructType(baseTypeName) && isKnownStruct(baseTypeName)) {
+					llvm::Value* nested = builder->CreateLoad(ptrTy, fieldPtr("nested_field_ptr"), "nested_struct_ptr");
+					builder->CreateCall(qdStructRetainFn, {nested});
+				} else if (field.typeName == "str") {
+					llvm::Value* str = builder->CreateLoad(ptrTy, fieldPtr("str_field_ptr"), "string_ptr");
+					builder->CreateCall(qdStringRetainFn, {str});
+				} else if (isArrayType(field.typeName)) {
+					llvm::Value* arr = builder->CreateLoad(ptrTy, fieldPtr("array_field_ptr"), "array_ptr");
+					builder->CreateCall(qdPtrRetainFn, {arr});
+				} else if (field.isTypeParam) {
+					// A generic field carries its concrete kind in the tag beside it, the way the
+					// destructor reads it; 3 is `str`, the only kind that holds a reference.
+					auto tagPtr = builder->CreateGEP(
+							builder->getInt8Ty(), dst, builder->getInt64(field.offset + 8), "typeparam_tag_ptr");
+					llvm::Value* typeTag = builder->CreateLoad(int64Ty, tagPtr, "typeparam_tag");
+
+					auto* retainStr = llvm::BasicBlock::Create(*context, field.name + "_retain_str", clonerFn);
+					auto* skipRetain = llvm::BasicBlock::Create(*context, field.name + "_skip_retain", clonerFn);
+					llvm::Value* isStr = builder->CreateICmpEQ(typeTag, builder->getInt64(3), "is_str_typeparam");
+					builder->CreateCondBr(isStr, retainStr, skipRetain);
+
+					builder->SetInsertPoint(retainStr);
+					llvm::Value* str = builder->CreateLoad(ptrTy, fieldPtr("typeparam_str_ptr"), "typeparam_str");
+					builder->CreateCall(qdStringRetainFn, {str});
+					builder->CreateBr(skipRetain);
+
+					builder->SetInsertPoint(skipRetain);
+				}
+			}
+
+			builder->CreateRet(dst);
+
+			if (savedBlock) {
+				builder->SetInsertPoint(savedBlock, savedPoint);
+			}
+			structCloners[structName] = clonerFn;
+		}
+	}
+
 	void LlvmGenerator::Impl::generateStructConstruction(const std::string& structName, llvm::Value* ctx) {
 		const StructLayout* layoutPtr = findStructDefinition(structName);
 		if (layoutPtr == nullptr) {

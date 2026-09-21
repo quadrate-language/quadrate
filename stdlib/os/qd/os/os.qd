@@ -99,18 +99,18 @@ import "libos.a" as "os" {
 
 	/// List directory contents.
 	/// @param path str Directory path
-	/// @return entries ptr Array of entry names
+	/// @return entries []str Array of entry names
 	/// @return count i64 Number of entries
 	/// @error ErrNotFound File not found
 	/// @error ErrNotDirectory Path is not a directory
 	/// @example "/tmp" os::list! -> count -> entries   // `->` binds top-of-stack first,
 	/// so the bindings read in reverse of the declared outputs
-	pub fn list(path:str -- entries:ptr count:i64)!
+	pub fn list(path:str -- entries:[]str count:i64)!
 
 	/// The command-line arguments, excluding the program name.
-	/// @return args ptr Array of argument strings
+	/// @return args []str Array of argument strings
 	/// @example os::args -> args  args len -> argc
-	pub fn args( -- args:ptr)
+	pub fn args( -- args:[]str)
 
 	/// The program name (argv[0]).
 	/// @return name str Program name as invoked
@@ -173,10 +173,10 @@ import "libos.a" as "os" {
 	/// Match files using glob pattern.
 	/// Supports *, ?, and ** for recursive matching.
 	/// @param pattern str Glob pattern
-	/// @return entries ptr Array of matching paths
+	/// @return entries []str Array of matching paths
 	/// @return count i64 Number of matches
 	/// @example "*.qd" os::glob! -> count -> entries
-	pub fn glob(pattern:str -- entries:ptr count:i64)!
+	pub fn glob(pattern:str -- entries:[]str count:i64)!
 
 	/// Create a unique temporary directory.
 	/// Creates a directory in /tmp with a unique name.

@@ -74,11 +74,11 @@
   "functions": [
     {
       "name": "args",
-      "signature": "( -- args:ptr)",
+      "signature": "( -- args:[]str)",
       "failable": false,
       "description": "The command-line arguments, excluding the program name.",
       "params": [],
-      "returns": [{"name": "args", "type": "ptr", "description": "Array of argument strings"}],
+      "returns": [{"name": "args", "type": "[]str", "description": "Array of argument strings"}],
       "errors": [],
       "examples": ["os::args -> args  args len -> argc"]
     },
@@ -214,11 +214,11 @@
     },
     {
       "name": "glob",
-      "signature": "(pattern:str -- entries:ptr count:i64)",
+      "signature": "(pattern:str -- entries:[]str count:i64)",
       "failable": true,
       "description": "Match files using glob pattern. Supports *, ?, and ** for recursive matching.",
       "params": [{"name": "pattern", "type": "str", "description": "Glob pattern"}],
-      "returns": [{"name": "entries", "type": "ptr", "description": "Array of matching paths"}, {"name": "count", "type": "i64", "description": "Number of matches"}],
+      "returns": [{"name": "entries", "type": "[]str", "description": "Array of matching paths"}, {"name": "count", "type": "i64", "description": "Number of matches"}],
       "errors": [],
       "examples": ["\"*.qd\" os::glob! -> count -> entries"]
     },
@@ -264,11 +264,11 @@
     },
     {
       "name": "list",
-      "signature": "(path:str -- entries:ptr count:i64)",
+      "signature": "(path:str -- entries:[]str count:i64)",
       "failable": true,
       "description": "List directory contents. so the bindings read in reverse of the declared outputs",
       "params": [{"name": "path", "type": "str", "description": "Directory path"}],
-      "returns": [{"name": "entries", "type": "ptr", "description": "Array of entry names"}, {"name": "count", "type": "i64", "description": "Number of entries"}],
+      "returns": [{"name": "entries", "type": "[]str", "description": "Array of entry names"}, {"name": "count", "type": "i64", "description": "Number of entries"}],
       "errors": [{"code": "ErrNotFound", "description": "File not found"}, {"code": "ErrNotDirectory", "description": "Path is not a directory"}],
       "examples": ["\"/tmp\" os::list! -> count -> entries   // `->` binds top-of-stack first,"]
     },

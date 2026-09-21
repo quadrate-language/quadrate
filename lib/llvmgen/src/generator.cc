@@ -187,6 +187,7 @@ namespace Qd {
 
 		// String functions
 		qdStringReleaseFn = declareFn(ptrToVoidTy, "qd_string_release");
+		qdStringRetainFn = declareFn(ptrToPtrTy, "qd_string_retain");
 		qdStringDataFn = declareFn(ptrToPtrTy, "qd_string_data");
 
 		// Initialize debug info if enabled
@@ -2521,6 +2522,7 @@ namespace Qd {
 
 		// Generate destructor functions for all struct types (after all structs are known)
 		generateStructDestructors();
+		generateStructCloners(); // after the destructors: a cloner carries the struct's destructor
 		printTiming("processStructs");
 
 		// Process import statements from main file

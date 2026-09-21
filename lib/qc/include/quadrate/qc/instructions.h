@@ -26,7 +26,8 @@ namespace Qd {
 			// Named comparison instructions
 			"eq", "gt", "gte", "lt", "lte", "neq", "within",
 			// Stack operations
-			"call", "clear", "depth", "drop", "dup", "dup2", "free", "len", "nip", "nth", "over", "pick", "rot", "swap",
+			"call", "clear", "clone", "depth", "drop", "dup", "dup2", "free", "len", "nip", "nth", "over", "pick",
+			"rot", "swap",
 			// Array operations. Creation is a literal -- `[10]i64`, `[]i64` -- not an
 			// instruction; see REMOVED_INSTRUCTIONS below.
 			"append", "set",

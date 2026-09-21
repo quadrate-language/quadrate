@@ -13,7 +13,7 @@
       "signature": "(arr:[]T pred:fn(T -- i64) -- result:i64)",
       "failable": false,
       "description": "Check if all elements satisfy a predicate.",
-      "params": [{"name": "pred", "type": "fn", "description": "Predicate function (i64 -- bool:i64)"}],
+      "params": [{"name": "arr", "type": "[]T", "description": "Array"}, {"name": "pred", "type": "fn", "description": "Predicate function (i64 -- bool:i64)"}],
       "returns": [{"name": "result", "type": "i64", "description": "1 if all elements satisfy pred, 0 otherwise"}],
       "errors": [],
       "examples": ["arr fn (x:i64 -- r:i64) { x 0 > } hof::all  // all positive?"]
@@ -23,7 +23,7 @@
       "signature": "(arr:[]T pred:fn(T -- i64) -- result:i64)",
       "failable": false,
       "description": "Check if any element satisfies a predicate.",
-      "params": [{"name": "pred", "type": "fn", "description": "Predicate function (i64 -- bool:i64)"}],
+      "params": [{"name": "arr", "type": "[]T", "description": "Array"}, {"name": "pred", "type": "fn", "description": "Predicate function (i64 -- bool:i64)"}],
       "returns": [{"name": "result", "type": "i64", "description": "1 if any element satisfies pred, 0 otherwise"}],
       "errors": [],
       "examples": ["arr fn (x:i64 -- r:i64) { x 0 > } hof::any  // any positive?"]
@@ -83,8 +83,8 @@
       "signature": "(arr:[]T pred:fn(T -- i64) -- result:[]T)",
       "failable": false,
       "description": "Filter an array, keeping only elements that satisfy a predicate.",
-      "params": [{"name": "pred", "type": "fn", "description": "Predicate function (i64 -- bool:i64)"}],
-      "returns": [],
+      "params": [{"name": "arr", "type": "[]T", "description": "Input array"}, {"name": "pred", "type": "fn", "description": "Predicate function (i64 -- bool:i64)"}],
+      "returns": [{"name": "result", "type": "[]i64", "description": "New array with filtered values"}],
       "errors": [],
       "examples": ["arr fn (x:i64 -- r:i64) { x 2 mod 0 == } hof::filter  // keep evens"]
     },
@@ -93,7 +93,7 @@
       "signature": "(arr:[]T pred:fn(T -- i64) -- elem:T found:i64)",
       "failable": false,
       "description": "Find the first element satisfying a predicate.",
-      "params": [{"name": "pred", "type": "fn", "description": "Predicate function (i64 -- bool:i64)"}],
+      "params": [{"name": "arr", "type": "[]T", "description": "Array"}, {"name": "pred", "type": "fn", "description": "Predicate function (i64 -- bool:i64)"}],
       "returns": [{"name": "elem", "type": "i64", "description": "The found element (or 0 if not found)"}, {"name": "found", "type": "i64", "description": "1 if found, 0 otherwise"}],
       "errors": [],
       "examples": ["arr fn (x:i64 -- r:i64) { x 10 > } hof::find  // first > 10"]
@@ -103,7 +103,7 @@
       "signature": "(arr:[]T acc:A f:fn(A T -- A) -- result:A)",
       "failable": false,
       "description": "Fold/reduce an array left-to-right with a binary function.",
-      "params": [{"name": "init", "type": "i64", "description": "Initial accumulator value"}, {"name": "f", "type": "fn", "description": "(i64 i64 -- i64) Binary function (acc:i64 elem:i64 -- acc:i64)"}],
+      "params": [{"name": "arr", "type": "[]T", "description": "Array"}, {"name": "init", "type": "i64", "description": "Initial accumulator value"}, {"name": "f", "type": "fn(i64 i64 -- i64)", "description": "Binary function (acc:i64 elem:i64 -- acc:i64)"}],
       "returns": [{"name": "result", "type": "i64", "description": "Final accumulated value"}],
       "errors": [],
       "examples": ["arr 0 fn (acc:i64 x:i64 -- r:i64) { acc x + } hof::fold  // sum of array"]
@@ -113,7 +113,7 @@
       "signature": "(arr:[]T acc:A f:fn(T A -- A) -- result:A)",
       "failable": false,
       "description": "Fold/reduce an array right-to-left with a binary function.",
-      "params": [{"name": "init", "type": "i64", "description": "Initial accumulator value"}, {"name": "f", "type": "fn", "description": "(i64 i64 -- i64) Binary function (elem:i64 acc:i64 -- acc:i64)"}],
+      "params": [{"name": "arr", "type": "[]T", "description": "Array"}, {"name": "init", "type": "i64", "description": "Initial accumulator value"}, {"name": "f", "type": "fn(i64 i64 -- i64)", "description": "Binary function (elem:i64 acc:i64 -- acc:i64)"}],
       "returns": [{"name": "result", "type": "i64", "description": "Final accumulated value"}],
       "errors": [],
       "examples": ["arr 0 fn (x:i64 acc:i64 -- r:i64) { x acc + } hof::fold_right  // sum of array"]
@@ -133,8 +133,8 @@
       "signature": "(arr:[]T f:fn(T -- U) -- result:[]U)",
       "failable": false,
       "description": "Map a function over an array, returning a new array.",
-      "params": [{"name": "f", "type": "fn", "description": "Function applied to the value"}],
-      "returns": [],
+      "params": [{"name": "arr", "type": "[]T", "description": "Input array"}, {"name": "f", "type": "fn", "description": "Function applied to the value"}],
+      "returns": [{"name": "result", "type": "[]i64", "description": "New array with mapped values"}],
       "errors": [],
       "examples": ["arr fn (x:i64 -- r:i64) { x 2 * } hof::map  // double each element"]
     },

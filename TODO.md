@@ -31,46 +31,16 @@ and are stable, so they can be referred to while working through them.
       have to look like to survive that — and if none presents itself, is this an item or a
       preference?
 
-- [ ] **No way to copy a struct.** A struct is a mutable reference: `a -> b` binds a second
-      name to the same struct, and `b 42 >>x drop` is visible through `a`. That is the design
-      (R21, settled 2026-09-20 — the specification wording was the bug, not the behaviour),
-      but it leaves no way to ask for an independent one. The only copy available is
-      rebuilding it by hand, `P { x = a <<x  y = a <<y }`, which is verbose and has to be
-      revisited every time a field is added.
-      Shallow is the tractable meaning: a new struct of the same type, fields copied, the
-      refcounted ones retained. `sizeof<P>` already reports the layout, so the machinery is
-      there. `clone` is the better name than `copy` — a builtin shadows user functions of
-      the same name, and `copy` is a word a program is likely to want for itself.
-
-      ```qd
-      a clone -> b
-      b 42 >>x drop        // a untouched
-      ```
-
-      **Open question**: what happens to the fields that are themselves references — a
-      `str`, an array, another struct? Retaining them is the cheap answer and the one that
-      matches "shallow", but it means `clone` gives independence at one level only, and the
-      name should not suggest more than it does.
-
-- [ ] **`[]T` satisfies a declared `ptr` parameter silently.** `unifyTypeName` treats a
-      declared `ptr` as a top type that accepts anything
-      (`lib/qc/src/semantic_validator_internal.h:438`), which is deliberate as an escape
-      hatch but means an array can be handed to any of the stdlib functions that take a raw
-      `arr:ptr count:i64` buffer. `[3 1 2] -> a  a a len sort::ints` compiles clean and sorts
-      the `qd_array_t` header as if it were the elements: magic, refcount and length go in
-      ascending order, so `a len` reads 3 before the call and 1363427669 after it — the
-      `QDAR` magic, now sitting in the length slot. The elements themselves are untouched, and
-      nothing reports anything, so what the program has afterwards is an array whose bounds
-      check passes for any index.
-      Found 2026-09-20 while reviewing array creation; independent of that change.
-
-- [ ] **Two array worlds.** `[]T` is a `qd_array_t` — refcounted, length-carrying,
-      bounds-checked — and is taken by 7 stdlib functions, all of them in `hof`. A raw `ptr`
-      buffer is `mem::alloc` plus byte offsets with the length passed alongside, and is taken
-      by 54 public ones (79 counting the private helpers), including all 16 of `sort`. The
-      second is the one the stdlib actually uses, the first is the one the language has syntax
-      for, and the entry above is what happens when a value crosses between them. Whether
-      these converge, or the boundary is merely made un-crossable, is the question.
+- [ ] **A count beside an array, in the `strings` FFI.** `sort::*` takes `[]T` and nothing
+      else — the array carries its length. `strings::sort`, `sort_desc`, `join` and `column`
+      still take `arr:[]str count:i64`, and `split`, `lines`, `words` and `split_n` still
+      *return* a count beside the array they built. The two spellings now sit side by side for
+      the same job: `strs sort::strings` against `strs count strings::sort`.
+      These are FFI, so the count comes off the stack in C rather than out of the signature;
+      dropping it means reading `qd_array_length` in `stdlib/strings/src/strings.c` and
+      revisiting what the four producers return. Left out of the sort conversion on purpose —
+      it is a separate change to a separate module, and C rather than Quadrate.
+      Found 2026-09-21 on finishing the sort conversion.
 
 ## Interpreter tier (lib/interp)
 

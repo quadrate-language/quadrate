@@ -366,7 +366,13 @@ namespace Qd {
 						mStructFieldStructTypes[structDecl->name()][field->name()] = resolvedTypeName.substr(1);
 						mStructPointerFields[structDecl->name()].insert(field->name());
 					} else if (resolvedTypeName == "ptr" || resolvedTypeName.find('*') != std::string::npos) {
+						// A plain `ptr` field used to record no type at all, which left the field
+						// unchecked: `struct C { data:ptr }` accepted `C { data = [1 2 3] }`, and the
+						// array then reached every raw-buffer function through `c <<data`. Recording
+						// it makes the field say what it is, so the same rule a declared `ptr`
+						// parameter gets applies here.
 						fieldType = StackValueType::PTR;
+						mStructFieldStructTypes[structDecl->name()][field->name()] = "ptr";
 					} else if (resolvedTypeName.size() > 2 && resolvedTypeName[0] == '[' &&
 							   resolvedTypeName[1] == ']') {
 						// Array type: []T - treat as PTR and track the array type

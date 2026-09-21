@@ -1,0 +1,8 @@
+// Test: the same struct constructed under its bare name, the other positional form.
+use struct_fields
+
+fn main() {
+	[1 2 3] -> a
+	1 a Box -> b
+	b drop
+}

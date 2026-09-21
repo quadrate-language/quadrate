@@ -1,0 +1,17 @@
+// Test: the same declaration used correctly. `os::list` and `strings::split` return
+// `[]str` through an FFI import block, so they carry an element type across it.
+use os
+use strings
+
+fn count_of(a:[]str -- n:i64) {
+	a len
+}
+
+fn main() {
+	"c,a,b" "," strings::split! -> count -> parts
+	parts count_of print nl
+	parts count strings::sort
+	parts 0 nth print nl
+	parts free
+	count drop
+}

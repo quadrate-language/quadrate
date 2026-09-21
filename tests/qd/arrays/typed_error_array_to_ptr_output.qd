@@ -1,0 +1,9 @@
+// Test: returning a []i64 through a declared ptr output should fail. Laundering it
+// this way would put an array back into the raw-buffer world one call later.
+fn leak( -- r:ptr) {
+	[1 2 3]
+}
+
+fn main() {
+	leak drop
+}

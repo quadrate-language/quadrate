@@ -1,0 +1,11 @@
+// Test: storing a []i64 in a raw ptr field should fail. `c <<data` would hand the
+// array header to every function that takes a buffer.
+struct Container {
+	data:ptr
+}
+
+fn main() {
+	Container {
+		data = [1 2 3]
+	} drop
+}

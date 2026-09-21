@@ -2,20 +2,20 @@
 
 <!-- doccheck: page-context use sort -->
 
-<!-- doccheck: page-context use mem -->
-
 <!-- doccheck: page-context fn by_length(a:i64 b:i64 -- order:i64) { a b - } -->
 
 <!-- doccheck: page-context fn ascending(a:i64 b:i64 -- order:i64) { a b - } -->
 
-<!-- doccheck: page-setup 32 mem::alloc! -> arr -->
+<!-- doccheck: page-setup [5 2 8 1] -> arr -->
 
-<!-- doccheck: page-setup 32 mem::alloc! -> strs -->
+<!-- doccheck: page-setup [5.0 2.0 8.0 1.0] -> farr -->
 
-<!-- doccheck: page-setup 4 -> count -->
+<!-- doccheck: page-setup ["b" "a" "c" "d"] -> strs -->
 
 Sorting algorithms for arrays.
-Arrays are pointers to contiguous i64 values, f64 values, or string pointers.
+Every entry point takes a `[]T` -- `[]i64`, `[]f64` or `[]str` -- and nothing takes a count
+beside it: the array carries its length, and saying it twice is a chance to say it wrong.
+The sorts reorder in place; `min`, `max`, `search` and the `is_sorted` pair only read.
 
 ## Functions
 
@@ -23,18 +23,17 @@ Arrays are pointers to contiguous i64 values, f64 values, or string pointers.
 
 Sort an array of i64 by a comparator (quicksort). The comparator returns a negative value if `a` sorts before `b`, zero if they tie, and a positive value if `a` sorts after `b` -- the same convention as C's `qsort`. Sorting by a key, by several fields, or in descending order are all just comparators. Not stable.
 
-**Signature:** `(arr:ptr count:i64 cmp:fn(i64 i64 -- i64) -- )`
+**Signature:** `(arr:[]i64 cmp:fn(i64 i64 -- i64) -- )`
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
-| `arr` | `ptr` | Array of i64 values |
-| `count` | `i64` | Number of elements |
+| `arr` | `[]i64` | Array of i64 values |
 | `cmp` | `fn` | Comparator (a b -- ordering) |
 
 **Example:**
 
 ```qd
-arr count &by_length sort::by
+arr &by_length sort::by
 ```
 ---
 
@@ -42,17 +41,16 @@ arr count &by_length sort::by
 
 Sort an array of f64 in ascending order (quicksort).
 
-**Signature:** `(arr:ptr count:i64 -- )`
+**Signature:** `(arr:[]f64 -- )`
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
-| `arr` | `ptr` | Array of f64 values |
-| `count` | `i64` | Number of elements |
+| `arr` | `[]f64` | Array of f64 values |
 
 **Example:**
 
 ```qd
-arr count sort::floats
+farr sort::floats
 ```
 ---
 
@@ -60,17 +58,16 @@ arr count sort::floats
 
 Sort an array of f64 in descending order (quicksort).
 
-**Signature:** `(arr:ptr count:i64 -- )`
+**Signature:** `(arr:[]f64 -- )`
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
-| `arr` | `ptr` | Array of f64 values |
-| `count` | `i64` | Number of elements |
+| `arr` | `[]f64` | Array of f64 values |
 
 **Example:**
 
 ```qd
-arr count sort::floats_desc
+farr sort::floats_desc
 ```
 ---
 
@@ -78,17 +75,16 @@ arr count sort::floats_desc
 
 Sort an array of i64 in ascending order (quicksort).
 
-**Signature:** `(arr:ptr count:i64 -- )`
+**Signature:** `(arr:[]i64 -- )`
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
-| `arr` | `ptr` | Array of i64 values |
-| `count` | `i64` | Number of elements |
+| `arr` | `[]i64` | Array of i64 values |
 
 **Example:**
 
 ```qd
-arr count sort::ints
+arr sort::ints
 ```
 ---
 
@@ -96,17 +92,16 @@ arr count sort::ints
 
 Sort an array of i64 in descending order (quicksort).
 
-**Signature:** `(arr:ptr count:i64 -- )`
+**Signature:** `(arr:[]i64 -- )`
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
-| `arr` | `ptr` | Array of i64 values |
-| `count` | `i64` | Number of elements |
+| `arr` | `[]i64` | Array of i64 values |
 
 **Example:**
 
 ```qd
-arr count sort::ints_desc
+arr sort::ints_desc
 ```
 ---
 
@@ -114,12 +109,11 @@ arr count sort::ints_desc
 
 Check if array of i64 is sorted in ascending order.
 
-**Signature:** `(arr:ptr count:i64 -- sorted:i64)`
+**Signature:** `(arr:[]i64 -- sorted:i64)`
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
-| `arr` | `ptr` | Array of i64 values |
-| `count` | `i64` | Number of elements |
+| `arr` | `[]i64` | Array of i64 values |
 
 | Output | Type | Description |
 |--------|------|-------------|
@@ -128,7 +122,7 @@ Check if array of i64 is sorted in ascending order.
 **Example:**
 
 ```qd
-arr count sort::is_sorted  // result
+arr sort::is_sorted  // result
 ```
 ---
 
@@ -136,12 +130,11 @@ arr count sort::is_sorted  // result
 
 Whether an array of i64 is sorted according to a comparator.
 
-**Signature:** `(arr:ptr count:i64 cmp:fn(i64 i64 -- i64) -- sorted:i64)`
+**Signature:** `(arr:[]i64 cmp:fn(i64 i64 -- i64) -- sorted:i64)`
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
-| `arr` | `ptr` | Array of i64 values |
-| `count` | `i64` | Number of elements |
+| `arr` | `[]i64` | Array of i64 values |
 | `cmp` | `fn` | Comparator (a b -- ordering) |
 
 | Output | Type | Description |
@@ -151,7 +144,7 @@ Whether an array of i64 is sorted according to a comparator.
 **Example:**
 
 ```qd
-arr count &by_length sort::is_sorted_by print nl
+arr &by_length sort::is_sorted_by print nl
 ```
 ---
 
@@ -159,12 +152,11 @@ arr count &by_length sort::is_sorted_by print nl
 
 Check if array of f64 is sorted in ascending order.
 
-**Signature:** `(arr:ptr count:i64 -- sorted:i64)`
+**Signature:** `(arr:[]f64 -- sorted:i64)`
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
-| `arr` | `ptr` | Array of f64 values |
-| `count` | `i64` | Number of elements |
+| `arr` | `[]f64` | Array of f64 values |
 
 | Output | Type | Description |
 |--------|------|-------------|
@@ -173,7 +165,7 @@ Check if array of f64 is sorted in ascending order.
 **Example:**
 
 ```qd
-arr count sort::is_sorted_floats  // result
+farr sort::is_sorted_floats  // result
 ```
 ---
 
@@ -181,12 +173,11 @@ arr count sort::is_sorted_floats  // result
 
 Find the index of the first element not ordered before `needle` (binary search lower bound). The array must already be sorted by the same comparator. Returns `count` when every element sorts before `needle`.
 
-**Signature:** `(arr:ptr count:i64 needle:i64 cmp:fn(i64 i64 -- i64) -- idx:i64)`
+**Signature:** `(arr:[]i64 needle:i64 cmp:fn(i64 i64 -- i64) -- idx:i64)`
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
-| `arr` | `ptr` | Array of i64 values, sorted by `cmp` |
-| `count` | `i64` | Number of elements |
+| `arr` | `[]i64` | Array of i64 values, sorted by `cmp` |
 | `needle` | `i64` | Value to locate |
 | `cmp` | `fn` | Comparator (a b -- ordering) |
 
@@ -197,7 +188,7 @@ Find the index of the first element not ordered before `needle` (binary search l
 **Example:**
 
 ```qd
-arr count 42 &ascending sort::lower_bound_by print nl
+arr 42 &ascending sort::lower_bound_by print nl
 ```
 ---
 
@@ -205,12 +196,11 @@ arr count 42 &ascending sort::lower_bound_by print nl
 
 Find maximum value in array.
 
-**Signature:** `(arr:ptr count:i64 -- maxval:i64)`
+**Signature:** `(arr:[]i64 -- maxval:i64)`
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
-| `arr` | `ptr` | Array of i64 values |
-| `count` | `i64` | Number of elements (must be > 0) |
+| `arr` | `[]i64` | Array of i64 values (must not be empty) |
 
 | Output | Type | Description |
 |--------|------|-------------|
@@ -219,7 +209,7 @@ Find maximum value in array.
 **Example:**
 
 ```qd
-arr count sort::max  // val
+arr sort::max  // val
 ```
 ---
 
@@ -227,12 +217,11 @@ arr count sort::max  // val
 
 Find minimum value in array.
 
-**Signature:** `(arr:ptr count:i64 -- minval:i64)`
+**Signature:** `(arr:[]i64 -- minval:i64)`
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
-| `arr` | `ptr` | Array of i64 values |
-| `count` | `i64` | Number of elements (must be > 0) |
+| `arr` | `[]i64` | Array of i64 values (must not be empty) |
 
 | Output | Type | Description |
 |--------|------|-------------|
@@ -241,7 +230,7 @@ Find minimum value in array.
 **Example:**
 
 ```qd
-arr count sort::min  // val
+arr sort::min  // val
 ```
 ---
 
@@ -249,17 +238,16 @@ arr count sort::min  // val
 
 Reverse an array in place.
 
-**Signature:** `(arr:ptr count:i64 -- )`
+**Signature:** `(arr:[]i64 -- )`
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
-| `arr` | `ptr` | Array of i64 values |
-| `count` | `i64` | Number of elements |
+| `arr` | `[]i64` | Array of i64 values |
 
 **Example:**
 
 ```qd
-arr count sort::reverse
+arr sort::reverse
 ```
 ---
 
@@ -267,12 +255,11 @@ arr count sort::reverse
 
 Binary search for value in sorted array.
 
-**Signature:** `(arr:ptr count:i64 needle:i64 -- idx:i64)`
+**Signature:** `(arr:[]i64 needle:i64 -- idx:i64)`
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
-| `arr` | `ptr` | Sorted array of i64 values |
-| `count` | `i64` | Number of elements |
+| `arr` | `[]i64` | Sorted array of i64 values |
 | `needle` | `i64` | Value to find |
 
 | Output | Type | Description |
@@ -282,7 +269,7 @@ Binary search for value in sorted array.
 **Example:**
 
 ```qd
-arr count 42 sort::search  // idx
+arr 42 sort::search  // idx
 ```
 ---
 
@@ -290,17 +277,16 @@ arr count 42 sort::search  // idx
 
 Sort an array of strings in ascending alphabetical order (insertion sort).
 
-**Signature:** `(arr:ptr count:i64 -- )`
+**Signature:** `(arr:[]str -- )`
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
-| `arr` | `ptr` | Array of string pointers |
-| `count` | `i64` | Number of elements |
+| `arr` | `[]str` | Array of strings |
 
 **Example:**
 
 ```qd
-strs count sort::strings
+strs sort::strings
 ```
 ---
 
@@ -308,17 +294,16 @@ strs count sort::strings
 
 Sort an array of strings in descending alphabetical order.
 
-**Signature:** `(arr:ptr count:i64 -- )`
+**Signature:** `(arr:[]str -- )`
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
-| `arr` | `ptr` | Array of string pointers |
-| `count` | `i64` | Number of elements |
+| `arr` | `[]str` | Array of strings |
 
 **Example:**
 
 ```qd
-strs count sort::strings_desc
+strs sort::strings_desc
 ```
 ---
 
@@ -326,12 +311,11 @@ strs count sort::strings_desc
 
 Remove adjacent duplicate i64 values in-place (array must be sorted).
 
-**Signature:** `(arr:ptr count:i64 -- new_count:i64)`
+**Signature:** `(arr:[]i64 -- new_count:i64)`
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
-| `arr` | `ptr` | Sorted array of i64 values |
-| `count` | `i64` | Number of elements |
+| `arr` | `[]i64` | Sorted array of i64 values |
 
 | Output | Type | Description |
 |--------|------|-------------|
@@ -340,5 +324,5 @@ Remove adjacent duplicate i64 values in-place (array must be sorted).
 **Example:**
 
 ```qd
-arr count sort::unique  // new_count
+arr sort::unique  // new_count
 ```

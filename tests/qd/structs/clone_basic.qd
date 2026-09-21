@@ -1,0 +1,14 @@
+// Test: clone gives an independent struct. Scalar fields are copied, so writing
+// through one name is not visible through the other.
+struct P { x:i64  y:f64 }
+
+fn main() {
+	P { x = 1 y = 2.5 } -> a
+	a clone -> b
+	b 42 >>x drop
+	b 9.5 >>y drop
+	a <<x print nl
+	b <<x print nl
+	a <<y print nl
+	b <<y print nl
+}

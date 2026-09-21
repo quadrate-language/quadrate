@@ -113,13 +113,16 @@ namespace Qd {
 			return mCalleeFallible;
 		}
 
-		// `nth` only: the type of the element it leaves on the stack, empty when the validator
-		// could not work it out. The backend cannot work it out for itself -- by the time `nth`
-		// runs, the array is two pushes back and which name put it there is not recoverable --
-		// so what a following `<<field` or `-> name` needs is recorded here, the same way
-		// `call` carries its callee's fallibility.
-		const std::string& elementType() const {
-			return mElementType;
+		// A type the validator worked out for this instruction and the backend has no way to
+		// reach, empty when the validator could not work it out either. Recorded the same way
+		// `call` carries its callee's fallibility. Two instructions use it:
+		//   `nth`   -- the type of the element it leaves on the stack. By the time it runs the
+		//              array is two pushes back and which name put it there is not recoverable,
+		//              so a following `<<field` or `-> name` reads the element type from here.
+		//   `clone` -- the struct type being cloned, which decides the size to allocate and the
+		//              fields to retain. The value is a bare pointer by the time it is popped.
+		const std::string& resolvedType() const {
+			return mResolvedType;
 		}
 
 	private:
@@ -140,8 +143,8 @@ namespace Qd {
 			mMethodReceiverPositionFromTop = pos;
 		}
 
-		void setElementType(const std::string& type) {
-			mElementType = type;
+		void setResolvedType(const std::string& type) {
+			mResolvedType = type;
 		}
 
 		std::string mName;
@@ -156,7 +159,7 @@ namespace Qd {
 		bool mAbortOnError = false;
 		bool mPropagateOnError = false;
 		bool mCalleeFallible = false;
-		std::string mElementType;
+		std::string mResolvedType;
 	};
 }
 

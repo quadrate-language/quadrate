@@ -1,0 +1,9 @@
+// Test: an untyped pointer cannot be cloned -- nothing says how much of it
+// there is. The error points at `as`, which is the way through.
+use mem
+
+fn main() {
+	8 mem::alloc! -> p
+	p clone drop
+	p mem::free
+}

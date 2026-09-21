@@ -110,13 +110,13 @@ Get character code at index, or NotAChar when the index is outside the string. T
 
 Format strings into columns.
 
-**Signature:** `(arr:ptr count:i64 widths:ptr num_cols:i64 -- result:str)`
+**Signature:** `(arr:[]str count:i64 widths:ptr num_cols:i64 -- result:str)`
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
-| `arr` | `ptr` | Array of strings |
+| `arr` | `[]str` | Array of strings |
 | `count` | `i64` | Number of strings |
-| `widths` | `ptr` | Array of column widths |
+| `widths` | `ptr` | Raw buffer of i64 column widths |
 | `num_cols` | `i64` | Number of columns |
 
 | Output | Type | Description |
@@ -553,11 +553,11 @@ Check if all letters are uppercase.
 
 Join array of strings with delimiter.
 
-**Signature:** `(parts:ptr count:i64 delim:str -- result:str)!`
+**Signature:** `(parts:[]str count:i64 delim:str -- result:str)!`
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
-| `parts` | `ptr` | Array of string pointers |
+| `parts` | `[]str` | Array of strings |
 | `count` | `i64` | Number of strings |
 | `delim` | `str` | Delimiter string |
 
@@ -623,7 +623,7 @@ Get string length in characters. Counts UTF-8 codepoints, so "héllo" is 5 even 
 
 Split string by newlines.
 
-**Signature:** `(s:str -- arr:ptr count:i64)!`
+**Signature:** `(s:str -- arr:[]str count:i64)!`
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
@@ -631,7 +631,7 @@ Split string by newlines.
 
 | Output | Type | Description |
 |--------|------|-------------|
-| `arr` | `ptr` | Array of line strings |
+| `arr` | `[]str` | Array of line strings |
 | `count` | `i64` | Number of lines |
 
 | Error | Description |
@@ -855,11 +855,11 @@ Slice with negative index support (Python-style).
 
 Sort array of strings in ascending alphabetical order.
 
-**Signature:** `(arr:ptr count:i64 -- )`
+**Signature:** `(arr:[]str count:i64 -- )`
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
-| `arr` | `ptr` | Array of string pointers |
+| `arr` | `[]str` | Array of strings |
 | `count` | `i64` | Number of elements |
 
 **Example:**
@@ -873,11 +873,11 @@ Sort array of strings in ascending alphabetical order.
 
 Sort array of strings in descending alphabetical order.
 
-**Signature:** `(arr:ptr count:i64 -- )`
+**Signature:** `(arr:[]str count:i64 -- )`
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
-| `arr` | `ptr` | Array of string pointers |
+| `arr` | `[]str` | Array of strings |
 | `count` | `i64` | Number of elements |
 
 **Example:**
@@ -891,7 +891,7 @@ Sort array of strings in descending alphabetical order.
 
 Split into at most n parts.
 
-**Signature:** `(s:str delim:str n:i64 -- parts:ptr count:i64)!`
+**Signature:** `(s:str delim:str n:i64 -- parts:[]str count:i64)!`
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
@@ -901,7 +901,7 @@ Split into at most n parts.
 
 | Output | Type | Description |
 |--------|------|-------------|
-| `parts` | `ptr` | Array of string parts |
+| `parts` | `[]str` | Array of string parts |
 | `count` | `i64` | Number of parts |
 
 | Error | Description |
@@ -919,7 +919,7 @@ Split into at most n parts.
 
 Split string by delimiter.
 
-**Signature:** `(str:str delim:str -- parts:ptr count:i64)!`
+**Signature:** `(str:str delim:str -- parts:[]str count:i64)!`
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
@@ -928,7 +928,7 @@ Split string by delimiter.
 
 | Output | Type | Description |
 |--------|------|-------------|
-| `parts` | `ptr` | Array of string parts |
+| `parts` | `[]str` | Array of string parts |
 | `count` | `i64` | Number of parts |
 
 | Error | Description |
@@ -1167,7 +1167,7 @@ Convert string to uppercase.
 
 Split string by whitespace.
 
-**Signature:** `(s:str -- arr:ptr count:i64)!`
+**Signature:** `(s:str -- arr:[]str count:i64)!`
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
@@ -1175,7 +1175,7 @@ Split string by whitespace.
 
 | Output | Type | Description |
 |--------|------|-------------|
-| `arr` | `ptr` | Array of word strings |
+| `arr` | `[]str` | Array of word strings |
 | `count` | `i64` | Number of words |
 
 | Error | Description |

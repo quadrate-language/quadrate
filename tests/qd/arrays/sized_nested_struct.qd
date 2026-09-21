@@ -1,7 +1,7 @@
 // Test: [n]T with nested structs
 struct Container {
 	value:i64 = 0
-	data:ptr = 0
+	data:[]i64 = 0
 }
 
 fn main() {

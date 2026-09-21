@@ -1034,11 +1034,11 @@ namespace Qd {
 				structTypeStack.push_back("");
 			}
 			// Hand the element type to the backend, which has no way to reach it: see
-			// AstNodeInstruction::elementType. Only on the reporting pass -- the isolated
+			// AstNodeInstruction::resolvedType. Only on the reporting pass -- the isolated
 			// signature analysis walks the same nodes with a stack it has less information
 			// about, and its answer must not overwrite this one.
 			if (reportErrors && node != nullptr && node->type() == IAstNode::Type::INSTRUCTION) {
-				static_cast<AstNodeInstruction*>(node)->setElementType(elemType);
+				static_cast<AstNodeInstruction*>(node)->setResolvedType(elemType);
 			}
 			return;
 		}
@@ -1135,6 +1135,39 @@ namespace Qd {
 				return;
 			}
 			// Array stays on stack (as modified array), already PTR type
+			return;
+		}
+		// clone - a new struct of the same type, fields copied
+		else if (strcmp(name, "clone") == 0) {
+			if (typeStack.empty()) {
+				reportErrorConditional(
+						node, "Type error in 'clone': Stack underflow (requires 1 struct)", reportErrors);
+				return;
+			}
+			// The struct type is what decides the size to allocate and the fields to retain, so
+			// an untyped pointer cannot be cloned: nothing says how much of it there is. `as`
+			// narrows one to a struct type and is the way through.
+			const std::string structType = structTypeStack.empty() ? std::string() : structTypeStack.back();
+			const bool known = typeStack.back() == StackValueType::PTR && !structType.empty() &&
+							   lookupStructFieldTypes(structType) != nullptr;
+			if (!known) {
+				std::string errorMsg = "Type error in 'clone': Expected a struct, got ";
+				errorMsg += structType.empty() ? typeToString(typeStack.back()) : structType;
+				if (typeStack.back() == StackValueType::PTR && structType.empty()) {
+					reportErrorConditionalWithHint(node, errorMsg.c_str(),
+							"the struct type has to be known here; narrow the pointer with 'as', e.g. 'p as Point "
+							"clone'",
+							reportErrors);
+				} else {
+					reportErrorConditional(node, errorMsg.c_str(), reportErrors);
+				}
+				return;
+			}
+			// The copy has the type of the original, so the stack is unchanged in shape: the
+			// struct goes off and one of the same type comes back.
+			if (reportErrors && node != nullptr && node->type() == IAstNode::Type::INSTRUCTION) {
+				static_cast<AstNodeInstruction*>(node)->setResolvedType(structType);
+			}
 			return;
 		}
 		// free - deallocate memory pointed to by a pointer

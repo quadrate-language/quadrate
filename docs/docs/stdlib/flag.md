@@ -34,11 +34,11 @@ Parsed command-line arguments.
 
 Parse command-line arguments.
 
-**Signature:** `(args:ptr -- f:Flag)`
+**Signature:** `(args:[]str -- f:Flag)`
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
-| `args` | `ptr` | Argument array, as os::args returns |
+| `args` | `[]str` | Argument array, as os::args returns |
 
 | Output | Type | Description |
 |--------|------|-------------|

@@ -91,7 +91,6 @@ fn main() {
 
 ```qd
 use io
-use mem
 use strings
 
 fn process_line(num:i64 line:str -- ) {
@@ -104,9 +103,9 @@ fn main() {
 			-> content
 			content strings::lines! -> count -> lines
 			0 count 1 for i {
-				i 1 + lines i 8 * mem::get_ptr cast<str> process_line
+				i 1 + lines i nth process_line
 			}
-			lines mem::free
+			lines free
 		}
 		_ { err drop drop "Could not read file" print nl }
 	}
@@ -118,7 +117,6 @@ fn main() {
 <!-- doccheck: compile-only reads a file that only exists on the reader's machine -->
 ```qd
 use io
-use mem
 use strings
 
 fn count_words(path:str -- words:i64 lines:i64 chars:i64)! {
@@ -130,14 +128,14 @@ fn count_words(path:str -- words:i64 lines:i64 chars:i64)! {
 
 	0 -> words
 	0 line_count 1 for i {
-		line_array i 8 * mem::get_ptr cast<str> -> line
+		line_array i nth -> line
 		line strings::len 0 > if {
 			line strings::words! -> word_count -> word_arr
 			words word_count + -> words
-			word_arr mem::free
+			word_arr free
 		}
 	}
-	line_array mem::free
+	line_array free
 
 	words lines chars
 }

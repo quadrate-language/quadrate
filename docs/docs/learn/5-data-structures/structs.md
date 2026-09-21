@@ -91,6 +91,34 @@ same 10 >>value drop
 c <<value print nl  // 10 — written through `same`, visible through `c`
 ```
 
+`clone` is how you ask for an independent one:
+
+```qd
+c clone -> copy
+copy 99 >>value drop
+c <<value print nl     // 10 — untouched
+copy <<value print nl  // 99
+```
+
+The copy is shallow, and the word means exactly one thing: a new struct of the same type
+with the fields copied. What a field *points to* is shared, not copied. For a `str` field
+that is invisible, because a string is immutable and a shared one cannot be told from a
+copy. For an array or a nested struct it is visible, and deliberately so — a struct is a
+reference, so a field holding one behaves on `clone` the same way `c -> same` does:
+
+```qd
+struct Tally { counts:[]i64  name:str }
+
+Tally { counts = [0 0] name = "first" } -> t
+t clone -> u
+u <<counts 0 5 set
+t <<counts 0 nth print nl  // 5 — the array is shared
+```
+
+To give the array its own copy, build one: `clone` never recurses, so there is no
+question of how deep it goes and no way for it to loop on a structure that points at
+itself.
+
 ```qd
 struct Counter {
 	value:i64
@@ -362,7 +390,7 @@ fn main() {
 
 ```qd
 struct Stack {
-	data:ptr
+	data:[]i64
 	top:i64
 	capacity:i64
 }

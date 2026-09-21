@@ -338,6 +338,17 @@ inline std::string typeBaseName(const std::string& t) {
 	return p == std::string::npos ? t : t.substr(0, p);
 }
 
+// Whether a type name denotes a `[]T`.
+inline bool isArrayTypeName(const std::string& t) {
+	return t.size() > 2 && t[0] == '[' && t[1] == ']';
+}
+
+// A `[]T` handed to something that declared a raw `ptr`. The reason is the same wherever it is
+// caught -- a call argument, a function output, a struct field -- so the wording is too.
+inline std::string rawPtrArrayWhy(const std::string& actual) {
+	return "expects a raw 'ptr' buffer but got '" + actual + "': an array points at its header, not at its elements";
+}
+
 // "Box<A, []B>" -> ["A", "[]B"]; top-level split on ',' respecting nested <> and ().
 inline std::vector<std::string> typeArgsOf(const std::string& t) {
 	std::vector<std::string> args;
@@ -435,8 +446,24 @@ inline bool unifyTypeName(const std::string& expected, const std::string& actual
 		const std::vector<std::string>& typeParams, std::map<std::string, std::string>& bindings,
 		const std::unordered_set<std::string>& mergedModules,
 		const std::function<std::string(const std::string&)>& canon, std::string& why, bool strict = false) {
-	if (expected.empty() || expected == "any" || expected == "ptr" || actual.empty()) {
+	if (expected.empty() || expected == "any" || actual.empty()) {
 		return true; // the declaration accepts anything, or nothing is known about the argument
+	}
+	if (expected == "ptr") {
+		// A declared `ptr` is the escape hatch, and accepts any pointer-shaped value: what a raw
+		// buffer holds is the caller's business. The exception is a `[]T`, because an array value
+		// does not point at its elements -- it points at the `qd_array_t` header, and magic,
+		// refcount, length and capacity sit in front of the data. Handing one to a function that
+		// takes `arr:ptr count:i64` therefore aims it at the header: `[3 1 2] -> a
+		// a a len sort::ints` sorted magic, refcount and length into ascending order and left
+		// `a len` reading the `QDAR` magic as the length, with the bounds check passing for any
+		// index. A struct is not affected -- `qd_struct_alloc` returns the address of the fields,
+		// with its header behind them -- so a struct handed to a `ptr` still points at its data.
+		if (isArrayTypeName(actual)) {
+			why = rawPtrArrayWhy(actual);
+			return false;
+		}
+		return true;
 	}
 	if (!strict && (actual == "any" || actual == "ptr")) {
 		// The argument's type is not known well enough to check: a bare `ptr`, or an `any`. This
@@ -460,8 +487,8 @@ inline bool unifyTypeName(const std::string& expected, const std::string& actual
 			  actual + "'";
 		return false;
 	}
-	bool expArr = expected.size() > 2 && expected[0] == '[' && expected[1] == ']';
-	bool actArr = actual.size() > 2 && actual[0] == '[' && actual[1] == ']';
+	bool expArr = isArrayTypeName(expected);
+	bool actArr = isArrayTypeName(actual);
 	if (expArr || actArr) {
 		if (!(expArr && actArr)) {
 			why = "expects type '" + expected + "' but got '" + actual + "'";

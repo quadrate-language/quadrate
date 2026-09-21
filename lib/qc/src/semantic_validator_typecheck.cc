@@ -330,7 +330,10 @@ namespace Qd {
 					expected = stIt->second;
 				}
 			}
-			if (expected.empty() || expected == "ptr" || expected == "any") {
+			// A declared `ptr` used to be skipped here alongside `any`. It is still a top type, but
+			// `unifyTypeName` has one thing to say about it -- a `[]T` is not a raw buffer -- so
+			// the check has to run.
+			if (expected.empty() || expected == "any") {
 				continue;
 			}
 			size_t stackIdx = base + idx;
@@ -479,6 +482,46 @@ namespace Qd {
 		// Strict from the start: a field initializer is a definite assignment, so a bare `ptr`
 		// does not satisfy a typed field.
 		return unifyTypeName(expected, actual, {}, noBindings, mMergedModules, canon, why, true);
+	}
+
+	// Writing a field happens in five places -- a named initializer, a positional construction of
+	// a local struct, the two positional forms for a module's struct (bare name and `mod::Name`),
+	// and `>>field` -- and they had five answers to the same question. The coarse
+	// `StackValueType` check each does first catches a string going into an `i64`; this is the
+	// part underneath it, where both sides are pointers and the pointer's real type is what
+	// separates them. Three of the five did not have that part at all, `>>field` among them, so
+	// they took any pointer for any pointer field: an array into a raw `ptr`, a `Point` into a
+	// `[]i64`.
+	//
+	// All five are definite assignments rather than values of unknown provenance, which is what
+	// makes the rule strict: an untyped pointer satisfies only a field that asked for a raw `ptr`,
+	// and a `[]T` never satisfies one, because an array addresses its header rather than its
+	// elements. A field declared `*T` is exempt -- a pointer of unknown provenance is exactly what
+	// `null` is, and `next = null` is how every linked structure starts (specification 3.6.2).
+	bool SemanticValidator::fieldValueRejected(const std::string& structName, const std::string& fieldName,
+			const std::string& expected, const std::string& actual, std::string& why) const {
+		if (expected.empty() || isPointerField(structName, fieldName)) {
+			return false; // the field's type was never recorded, or it is a `*T`
+		}
+		if (actual.empty()) {
+			if (expected == "ptr") {
+				return false; // a raw pointer is what it asked for
+			}
+			why = "expects " + expected + ", but got ptr";
+			return true;
+		}
+		if (expected == "ptr") {
+			if (isArrayTypeName(actual)) {
+				why = rawPtrArrayWhy(actual);
+				return true;
+			}
+			return false;
+		}
+		if (fieldTypesCompatible(expected, actual)) {
+			return false;
+		}
+		why = "expects " + expected + ", but got " + actual;
+		return true;
 	}
 
 	// Warns when a `switch` whose every arm names a variant of one enum leaves some variant
@@ -2736,24 +2779,18 @@ namespace Qd {
 																			 : actualStructType;
 										reportError(construct, errorMsg.c_str());
 									}
-								} else if (!expectedStructType.empty() && !isPointerField(lookupKey, fieldName) &&
-										   (actualStructType.empty() ||
-												   !fieldTypesCompatible(expectedStructType, actualStructType))) {
-									// An empty actual type is an untyped pointer, which does not satisfy a typed
-									// field -- unless the field was declared `*T`, where a pointer of unknown
-									// provenance is exactly what `null` is, and `next = null` is how every
-									// linked structure starts (specification 3.6.2). Otherwise compare
-									// structurally rather than by string: `fn( -- f64)` and the `fn(-- f64)`
-									// buildFnTypeString emits are the same type, and so are `Point` and
-									// `mod::Point`.
+								} else if (std::string why; fieldValueRejected(
+												   lookupKey, fieldName, expectedStructType, actualStructType, why)) {
+									// Both are the coarse type the field declared, so what separates them is
+									// the pointer's real type. Structural rather than by string: `fn( -- f64)`
+									// and the `fn(-- f64)` buildFnTypeString emits are the same type, and so
+									// are `Point` and `mod::Point`.
 									std::string errorMsg = "Type error in struct construction '";
 									errorMsg += name;
 									errorMsg += "': Field '";
 									errorMsg += fieldName;
-									errorMsg += "' expects ";
-									errorMsg += expectedStructType;
-									errorMsg += ", but got ";
-									errorMsg += actualStructType.empty() ? "ptr" : actualStructType;
+									errorMsg += "' ";
+									errorMsg += why;
 									reportError(construct, errorMsg.c_str());
 								}
 							}
@@ -2976,16 +3013,15 @@ namespace Qd {
 																			 : actualStructType;
 										reportError(ident, errorMsg.c_str());
 									}
-								} else if (!expectedStructType.empty() && actualStructType != expectedStructType) {
-									// Types match (both PTR) but struct types don't match
+								} else if (std::string why; fieldValueRejected(
+												   name, fieldName, expectedStructType, actualStructType, why)) {
+									// Both are PTR, so the pointer's real type is what separates them.
 									std::string errorMsg = "Type error in struct construction '";
 									errorMsg += name;
 									errorMsg += "': Field '";
 									errorMsg += fieldName;
-									errorMsg += "' expects ";
-									errorMsg += expectedStructType;
-									errorMsg += ", but got ";
-									errorMsg += actualStructType.empty() ? "ptr" : actualStructType;
+									errorMsg += "' ";
+									errorMsg += why;
 									reportError(ident, errorMsg.c_str());
 								}
 							}
@@ -3043,6 +3079,8 @@ namespace Qd {
 								for (size_t fi = 0; fi < fieldCount; fi++) {
 									size_t stackIdx = typeStack.size() - fieldCount + fi;
 									StackValueType actual = typeStack[stackIdx];
+									const std::string actualStructType =
+											(stackIdx < structTypeStack.size()) ? structTypeStack[stackIdx] : "";
 									const AstNodeStructField* field = fields[fi].get();
 									const std::string& fieldName = field->name();
 
@@ -3107,6 +3145,17 @@ namespace Qd {
 											errorMsg += stackValueTypeToString(actual);
 											reportError(ident, errorMsg.c_str());
 										}
+									} else if (std::string why; fieldValueRejected(qualifiedStructName, fieldName,
+													   expectedStructType, actualStructType, why)) {
+										// A module's struct gets the same pointer-type check a local one
+										// does. This form had only the coarse compare above.
+										std::string errorMsg = "Type error in struct construction '";
+										errorMsg += name;
+										errorMsg += "': Field '";
+										errorMsg += fieldName;
+										errorMsg += "' ";
+										errorMsg += why;
+										reportError(ident, errorMsg.c_str());
 									}
 								}
 							}
@@ -3756,6 +3805,18 @@ namespace Qd {
 											  stackValueTypeToString(expected) + ", but the value is " +
 											  stackValueTypeToString(valueType);
 							reportError(fieldSet, msg.c_str());
+						} else if (checkable && expected == StackValueType::PTR) {
+							// Both are pointers, which is where the coarse compare above stops. The
+							// field's own type is what separates them, and `>>field` is a definite
+							// assignment like a struct construction, so it gets the same rule.
+							std::string why;
+							const std::string valueStructType =
+									structTypeStack.empty() ? std::string() : structTypeStack.back();
+							if (fieldValueRejected(structType, fieldName, fieldOwnType, valueStructType, why)) {
+								std::string msg = "Type error in field set '>>" + fieldName + "': field '" + fieldName +
+												  "' of struct '" + structType + "' " + why;
+								reportError(fieldSet, msg.c_str());
+							}
 						}
 					}
 				} else {
@@ -3918,6 +3979,8 @@ namespace Qd {
 								for (size_t fi = 0; fi < fieldOrder.size(); fi++) {
 									size_t stackIdx = typeStack.size() - fieldOrder.size() + fi;
 									StackValueType actual = typeStack[stackIdx];
+									const std::string actualStructType =
+											(stackIdx < structTypeStack.size()) ? structTypeStack[stackIdx] : "";
 									const std::string& fieldName = fieldOrder[fi];
 
 									// Get expected type from fieldTypes
@@ -3926,6 +3989,18 @@ namespace Qd {
 										continue;
 									}
 									StackValueType expected = fieldTypeIt->second;
+
+									std::string expectedStructType;
+									auto fstIt = mStructFieldStructTypes.find(qualifiedName);
+									if (fstIt != mStructFieldStructTypes.end()) {
+										auto nm = fstIt->second.find(fieldName);
+										if (nm != fstIt->second.end()) {
+											expectedStructType = nm->second;
+										}
+									}
+									if (!expectedStructType.empty() && isCurrentTypeParam(expectedStructType)) {
+										continue; // a generic field binds to whatever it is given
+									}
 
 									// Skip check if actual type is UNKNOWN (can't determine type)
 									if (actual == StackValueType::UNKNOWN) {
@@ -3960,6 +4035,17 @@ namespace Qd {
 											errorMsg += stackValueTypeToString(actual);
 											reportError(scoped, errorMsg.c_str());
 										}
+									} else if (std::string why; fieldValueRejected(qualifiedName, fieldName,
+													   expectedStructType, actualStructType, why)) {
+										// `mod::Name` constructed positionally: the last of the five, and
+										// the one that had no pointer-type check of any kind.
+										std::string errorMsg = "Type error in struct construction '";
+										errorMsg += qualifiedName;
+										errorMsg += "': Field '";
+										errorMsg += fieldName;
+										errorMsg += "' ";
+										errorMsg += why;
+										reportError(scoped, errorMsg.c_str());
 									}
 								}
 							}

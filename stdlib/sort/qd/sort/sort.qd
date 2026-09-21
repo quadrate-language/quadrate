@@ -1,31 +1,31 @@
 /// Sorting algorithms for arrays.
-/// Arrays are pointers to contiguous i64 values, f64 values, or string pointers.
+/// Every entry point takes a `[]T` -- `[]i64`, `[]f64` or `[]str` -- and nothing takes a count
+/// beside it: the array carries its length, and saying it twice is a chance to say it wrong.
+/// The sorts reorder in place; `min`, `max`, `search` and the `is_sorted` pair only read.
 /// doccheck: page-context
-/// doccheck: page-context use mem
 /// doccheck: page-context fn by_length(a:i64 b:i64 -- order:i64) { a b - }
 /// doccheck: page-context fn ascending(a:i64 b:i64 -- order:i64) { a b - }
-/// doccheck: page-setup 32 mem::alloc! -> arr
-/// doccheck: page-setup 32 mem::alloc! -> strs
-/// doccheck: page-setup 4 -> count
-use mem
+/// doccheck: page-setup [5 2 8 1] -> arr
+/// doccheck: page-setup [5.0 2.0 8.0 1.0] -> farr
+/// doccheck: page-setup ["b" "a" "c" "d"] -> strs
 use strings
 
 // --- Internal quicksort helpers ---
 
 // Swap two i64 elements in array
-fn swap_i64(arr:ptr a:i64 b:i64 -- ) {
-	arr a 8 * mem::get_i64 -> va
-	arr b 8 * mem::get_i64 -> vb
-	vb arr a 8 * mem::set_i64
-	va arr b 8 * mem::set_i64
+fn swap_i64(arr:[]i64 a:i64 b:i64 -- ) {
+	arr a nth -> va
+	arr b nth -> vb
+	arr a vb set
+	arr b va set
 }
 
 // Median-of-three pivot selection for i64
-fn median3_i64(arr:ptr lo:i64 hi:i64 -- pivot:i64) {
+fn median3_i64(arr:[]i64 lo:i64 hi:i64 -- pivot:i64) {
 	lo hi + 2 / -> mid
-	arr lo 8 * mem::get_i64 -> a
-	arr mid 8 * mem::get_i64 -> b
-	arr hi 8 * mem::get_i64 -> c
+	arr lo nth -> a
+	arr mid nth -> b
+	arr hi nth -> c
 	a b <= if {
 		b c <= if { mid } else {
 			a c <= if { hi } else { lo }
@@ -38,26 +38,26 @@ fn median3_i64(arr:ptr lo:i64 hi:i64 -- pivot:i64) {
 }
 
 // Insertion sort for small i64 partitions
-fn isort_i64(arr:ptr lo:i64 hi:i64 -- ) {
+fn isort_i64(arr:[]i64 lo:i64 hi:i64 -- ) {
 	lo 1 + -> i
 	loop {
 		i hi > if { break }
-		arr i 8 * mem::get_i64 -> key
+		arr i nth -> key
 		i 1 - -> j
 		loop {
 			j lo < if { break }
-			arr j 8 * mem::get_i64 -> jval
+			arr j nth -> jval
 			jval key <= if { break }
-			jval arr j 1 + 8 * mem::set_i64
+			arr j 1 + jval set
 			j 1 - -> j
 		}
-		key arr j 1 + 8 * mem::set_i64
+		arr j 1 + key set
 		i 1 + -> i
 	}
 }
 
 // Quicksort for i64 ascending
-fn qsort_i64_asc(arr:ptr lo:i64 hi:i64 -- ) {
+fn qsort_i64_asc(arr:[]i64 lo:i64 hi:i64 -- ) {
 	hi lo - 1 + -> n
 	n 16 <= if {
 		arr lo hi isort_i64
@@ -65,7 +65,7 @@ fn qsort_i64_asc(arr:ptr lo:i64 hi:i64 -- ) {
 		// Median-of-three pivot
 		arr lo hi median3_i64 -> pivotIdx
 		arr pivotIdx hi swap_i64
-		arr hi 8 * mem::get_i64 -> pivot
+		arr hi nth -> pivot
 
 		lo -> i
 		hi 1 - -> j
@@ -77,13 +77,13 @@ fn qsort_i64_asc(arr:ptr lo:i64 hi:i64 -- ) {
 				// final swap below then placed the pivot to the left of it -- leaving the array
 				// unsorted for every reverse-sorted input of even length 18 or more.
 				i hi >= if { break }
-				arr i 8 * mem::get_i64 pivot >= if { break }
+				arr i nth pivot >= if { break }
 				i 1 + -> i
 			}
 			// Find element <= pivot from right
 			loop {
 				j i <= if { break }
-				arr j 8 * mem::get_i64 pivot <= if { break }
+				arr j nth pivot <= if { break }
 				j 1 - -> j
 			}
 			i j >= if { break }
@@ -103,33 +103,33 @@ fn qsort_i64_asc(arr:ptr lo:i64 hi:i64 -- ) {
 }
 
 // Insertion sort for small i64 partitions (descending)
-fn isort_i64_desc(arr:ptr lo:i64 hi:i64 -- ) {
+fn isort_i64_desc(arr:[]i64 lo:i64 hi:i64 -- ) {
 	lo 1 + -> i
 	loop {
 		i hi > if { break }
-		arr i 8 * mem::get_i64 -> key
+		arr i nth -> key
 		i 1 - -> j
 		loop {
 			j lo < if { break }
-			arr j 8 * mem::get_i64 -> jval
+			arr j nth -> jval
 			jval key >= if { break }
-			jval arr j 1 + 8 * mem::set_i64
+			arr j 1 + jval set
 			j 1 - -> j
 		}
-		key arr j 1 + 8 * mem::set_i64
+		arr j 1 + key set
 		i 1 + -> i
 	}
 }
 
 // Quicksort for i64 descending
-fn qsort_i64_desc(arr:ptr lo:i64 hi:i64 -- ) {
+fn qsort_i64_desc(arr:[]i64 lo:i64 hi:i64 -- ) {
 	hi lo - 1 + -> n
 	n 16 <= if {
 		arr lo hi isort_i64_desc
 	} else {
 		arr lo hi median3_i64 -> pivotIdx
 		arr pivotIdx hi swap_i64
-		arr hi 8 * mem::get_i64 -> pivot
+		arr hi nth -> pivot
 
 		lo -> i
 		hi 1 - -> j
@@ -140,12 +140,12 @@ fn qsort_i64_desc(arr:ptr lo:i64 hi:i64 -- ) {
 				// final swap below then placed the pivot to the left of it -- leaving the array
 				// unsorted for every reverse-sorted input of even length 18 or more.
 				i hi >= if { break }
-				arr i 8 * mem::get_i64 pivot <= if { break }
+				arr i nth pivot <= if { break }
 				i 1 + -> i
 			}
 			loop {
 				j i <= if { break }
-				arr j 8 * mem::get_i64 pivot >= if { break }
+				arr j nth pivot >= if { break }
 				j 1 - -> j
 			}
 			i j >= if { break }
@@ -166,41 +166,41 @@ fn qsort_i64_desc(arr:ptr lo:i64 hi:i64 -- ) {
 
 // --- Float quicksort helpers ---
 
-fn swap_f64(arr:ptr a:i64 b:i64 -- ) {
-	arr a 8 * mem::get_f64 -> va
-	arr b 8 * mem::get_f64 -> vb
-	vb arr a 8 * mem::set_f64
-	va arr b 8 * mem::set_f64
+fn swap_f64(arr:[]f64 a:i64 b:i64 -- ) {
+	arr a nth -> va
+	arr b nth -> vb
+	arr a vb set
+	arr b va set
 }
 
-fn isort_f64_asc(arr:ptr lo:i64 hi:i64 -- ) {
+fn isort_f64_asc(arr:[]f64 lo:i64 hi:i64 -- ) {
 	lo 1 + -> i
 	loop {
 		i hi > if { break }
-		arr i 8 * mem::get_f64 -> key
+		arr i nth -> key
 		i 1 - -> j
 		loop {
 			j lo < if { break }
-			arr j 8 * mem::get_f64 -> jval
+			arr j nth -> jval
 			jval key <= if { break }
-			jval arr j 1 + 8 * mem::set_f64
+			arr j 1 + jval set
 			j 1 - -> j
 		}
-		key arr j 1 + 8 * mem::set_f64
+		arr j 1 + key set
 		i 1 + -> i
 	}
 }
 
-fn qsort_f64_asc(arr:ptr lo:i64 hi:i64 -- ) {
+fn qsort_f64_asc(arr:[]f64 lo:i64 hi:i64 -- ) {
 	hi lo - 1 + -> n
 	n 16 <= if {
 		arr lo hi isort_f64_asc
 	} else {
 		lo hi + 2 / -> mid
 		// Median-of-three for f64
-		arr lo 8 * mem::get_f64 -> a
-		arr mid 8 * mem::get_f64 -> b
-		arr hi 8 * mem::get_f64 -> c
+		arr lo nth -> a
+		arr mid nth -> b
+		arr hi nth -> c
 		a b <= if {
 			b c <= if { mid } else {
 				a c <= if { hi } else { lo }
@@ -212,7 +212,7 @@ fn qsort_f64_asc(arr:ptr lo:i64 hi:i64 -- ) {
 		} -> pivotIdx
 
 		arr pivotIdx hi swap_f64
-		arr hi 8 * mem::get_f64 -> pivot
+		arr hi nth -> pivot
 
 		lo -> i
 		hi 1 - -> j
@@ -223,12 +223,12 @@ fn qsort_f64_asc(arr:ptr lo:i64 hi:i64 -- ) {
 				// final swap below then placed the pivot to the left of it -- leaving the array
 				// unsorted for every reverse-sorted input of even length 18 or more.
 				i hi >= if { break }
-				arr i 8 * mem::get_f64 pivot >= if { break }
+				arr i nth pivot >= if { break }
 				i 1 + -> i
 			}
 			loop {
 				j i <= if { break }
-				arr j 8 * mem::get_f64 pivot <= if { break }
+				arr j nth pivot <= if { break }
 				j 1 - -> j
 			}
 			i j >= if { break }
@@ -247,33 +247,33 @@ fn qsort_f64_asc(arr:ptr lo:i64 hi:i64 -- ) {
 	}
 }
 
-fn isort_f64_desc(arr:ptr lo:i64 hi:i64 -- ) {
+fn isort_f64_desc(arr:[]f64 lo:i64 hi:i64 -- ) {
 	lo 1 + -> i
 	loop {
 		i hi > if { break }
-		arr i 8 * mem::get_f64 -> key
+		arr i nth -> key
 		i 1 - -> j
 		loop {
 			j lo < if { break }
-			arr j 8 * mem::get_f64 -> jval
+			arr j nth -> jval
 			jval key >= if { break }
-			jval arr j 1 + 8 * mem::set_f64
+			arr j 1 + jval set
 			j 1 - -> j
 		}
-		key arr j 1 + 8 * mem::set_f64
+		arr j 1 + key set
 		i 1 + -> i
 	}
 }
 
-fn qsort_f64_desc(arr:ptr lo:i64 hi:i64 -- ) {
+fn qsort_f64_desc(arr:[]f64 lo:i64 hi:i64 -- ) {
 	hi lo - 1 + -> n
 	n 16 <= if {
 		arr lo hi isort_f64_desc
 	} else {
 		lo hi + 2 / -> mid
-		arr lo 8 * mem::get_f64 -> a
-		arr mid 8 * mem::get_f64 -> b
-		arr hi 8 * mem::get_f64 -> c
+		arr lo nth -> a
+		arr mid nth -> b
+		arr hi nth -> c
 		a b <= if {
 			b c <= if { mid } else {
 				a c <= if { hi } else { lo }
@@ -285,7 +285,7 @@ fn qsort_f64_desc(arr:ptr lo:i64 hi:i64 -- ) {
 		} -> pivotIdx
 
 		arr pivotIdx hi swap_f64
-		arr hi 8 * mem::get_f64 -> pivot
+		arr hi nth -> pivot
 
 		lo -> i
 		hi 1 - -> j
@@ -296,12 +296,12 @@ fn qsort_f64_desc(arr:ptr lo:i64 hi:i64 -- ) {
 				// final swap below then placed the pivot to the left of it -- leaving the array
 				// unsorted for every reverse-sorted input of even length 18 or more.
 				i hi >= if { break }
-				arr i 8 * mem::get_f64 pivot <= if { break }
+				arr i nth pivot <= if { break }
 				i 1 + -> i
 			}
 			loop {
 				j i <= if { break }
-				arr j 8 * mem::get_f64 pivot >= if { break }
+				arr j nth pivot >= if { break }
 				j 1 - -> j
 			}
 			i j >= if { break }
@@ -323,10 +323,10 @@ fn qsort_f64_desc(arr:ptr lo:i64 hi:i64 -- ) {
 // --- Public API ---
 
 /// Sort an array of i64 in ascending order (quicksort).
-/// @param arr ptr Array of i64 values
-/// @param count i64 Number of elements
-/// @example arr count sort::ints
-pub fn ints(arr:ptr count:i64 -- ) {
+/// @param arr []i64 Array of i64 values
+/// @example arr sort::ints
+pub fn ints(arr:[]i64 -- ) {
+	arr len -> count
 	count 2 < if {
 	} else {
 		arr 0 count 1 - qsort_i64_asc
@@ -341,30 +341,30 @@ pub fn ints(arr:ptr count:i64 -- ) {
 // caller can express, including by a key, by several fields, or descending.
 
 // Insertion sort for small partitions, ordered by `cmp`
-fn isort_cmp(arr:ptr lo:i64 hi:i64 cmp:fn(i64 i64 -- i64) -- ) {
+fn isort_cmp(arr:[]i64 lo:i64 hi:i64 cmp:fn(i64 i64 -- i64) -- ) {
 	lo 1 + -> i
 	loop {
 		i hi > if { break }
-		arr i 8 * mem::get_i64 -> key
+		arr i nth -> key
 		i 1 - -> j
 		loop {
 			j lo < if { break }
-			arr j 8 * mem::get_i64 -> jval
+			arr j nth -> jval
 			jval key cmp call 0 <= if { break }
-			jval arr j 1 + 8 * mem::set_i64
+			arr j 1 + jval set
 			j 1 - -> j
 		}
-		key arr j 1 + 8 * mem::set_i64
+		arr j 1 + key set
 		i 1 + -> i
 	}
 }
 
 // Median-of-three pivot selection, ordered by `cmp`
-fn median3_cmp(arr:ptr lo:i64 hi:i64 cmp:fn(i64 i64 -- i64) -- pivot:i64) {
+fn median3_cmp(arr:[]i64 lo:i64 hi:i64 cmp:fn(i64 i64 -- i64) -- pivot:i64) {
 	lo hi + 2 / -> mid
-	arr lo 8 * mem::get_i64 -> a
-	arr mid 8 * mem::get_i64 -> b
-	arr hi 8 * mem::get_i64 -> c
+	arr lo nth -> a
+	arr mid nth -> b
+	arr hi nth -> c
 	a b cmp call 0 <= if {
 		b c cmp call 0 <= if { mid } else {
 			a c cmp call 0 <= if { hi } else { lo }
@@ -376,14 +376,14 @@ fn median3_cmp(arr:ptr lo:i64 hi:i64 cmp:fn(i64 i64 -- i64) -- pivot:i64) {
 	}
 }
 
-fn qsort_cmp(arr:ptr lo:i64 hi:i64 cmp:fn(i64 i64 -- i64) -- ) {
+fn qsort_cmp(arr:[]i64 lo:i64 hi:i64 cmp:fn(i64 i64 -- i64) -- ) {
 	hi lo - 1 + -> n
 	n 16 <= if {
 		arr lo hi cmp isort_cmp
 	} else {
 		arr lo hi cmp median3_cmp -> pivotIdx
 		arr pivotIdx hi swap_i64
-		arr hi 8 * mem::get_i64 -> pivot
+		arr hi nth -> pivot
 
 		lo -> i
 		hi 1 - -> j
@@ -394,12 +394,12 @@ fn qsort_cmp(arr:ptr lo:i64 hi:i64 cmp:fn(i64 i64 -- i64) -- ) {
 				// final swap below then placed the pivot to the left of it -- leaving the array
 				// unsorted for every reverse-sorted input of even length 18 or more.
 				i hi >= if { break }
-				arr i 8 * mem::get_i64 pivot cmp call 0 >= if { break }
+				arr i nth pivot cmp call 0 >= if { break }
 				i 1 + -> i
 			}
 			loop {
 				j i <= if { break }
-				arr j 8 * mem::get_i64 pivot cmp call 0 <= if { break }
+				arr j nth pivot cmp call 0 <= if { break }
 				j 1 - -> j
 			}
 			i j >= if { break }
@@ -422,11 +422,11 @@ fn qsort_cmp(arr:ptr lo:i64 hi:i64 cmp:fn(i64 i64 -- i64) -- ) {
 /// The comparator returns a negative value if `a` sorts before `b`, zero if they tie, and a
 /// positive value if `a` sorts after `b` -- the same convention as C's `qsort`. Sorting by a
 /// key, by several fields, or in descending order are all just comparators. Not stable.
-/// @param arr ptr Array of i64 values
-/// @param count i64 Number of elements
+/// @param arr []i64 Array of i64 values
 /// @param cmp fn Comparator (a b -- ordering)
-/// @example arr count &by_length sort::by
-pub fn by(arr:ptr count:i64 cmp:fn(i64 i64 -- i64) -- ) {
+/// @example arr &by_length sort::by
+pub fn by(arr:[]i64 cmp:fn(i64 i64 -- i64) -- ) {
+	arr len -> count
 	count 2 < if {
 	} else {
 		arr 0 count 1 - cmp qsort_cmp
@@ -434,18 +434,18 @@ pub fn by(arr:ptr count:i64 cmp:fn(i64 i64 -- i64) -- ) {
 }
 
 /// Whether an array of i64 is sorted according to a comparator.
-/// @param arr ptr Array of i64 values
-/// @param count i64 Number of elements
+/// @param arr []i64 Array of i64 values
 /// @param cmp fn Comparator (a b -- ordering)
 /// @return sorted i64 1 if sorted, 0 otherwise
-/// @example arr count &by_length sort::is_sorted_by print nl
-pub fn is_sorted_by(arr:ptr count:i64 cmp:fn(i64 i64 -- i64) -- sorted:i64) {
+/// @example arr &by_length sort::is_sorted_by print nl
+pub fn is_sorted_by(arr:[]i64 cmp:fn(i64 i64 -- i64) -- sorted:i64) {
+	arr len -> count
 	1 -> result
 	1 -> i
 	loop {
 		i count >= if { break }
-		arr i 1 - 8 * mem::get_i64 -> prev
-		arr i 8 * mem::get_i64 -> cur
+		arr i 1 - nth -> prev
+		arr i nth -> cur
 		prev cur cmp call 0 > if {
 			0 -> result
 			break
@@ -458,19 +458,19 @@ pub fn is_sorted_by(arr:ptr count:i64 cmp:fn(i64 i64 -- i64) -- sorted:i64) {
 /// Find the index of the first element not ordered before `needle` (binary search lower bound).
 /// The array must already be sorted by the same comparator. Returns `count` when every element
 /// sorts before `needle`.
-/// @param arr ptr Array of i64 values, sorted by `cmp`
-/// @param count i64 Number of elements
+/// @param arr []i64 Array of i64 values, sorted by `cmp`
 /// @param needle i64 Value to locate
 /// @param cmp fn Comparator (a b -- ordering)
 /// @return idx i64 Index of the first element not ordered before `needle`
-/// @example arr count 42 &ascending sort::lower_bound_by print nl
-pub fn lower_bound_by(arr:ptr count:i64 needle:i64 cmp:fn(i64 i64 -- i64) -- idx:i64) {
+/// @example arr 42 &ascending sort::lower_bound_by print nl
+pub fn lower_bound_by(arr:[]i64 needle:i64 cmp:fn(i64 i64 -- i64) -- idx:i64) {
+	arr len -> count
 	0 -> lo
 	count -> hi
 	loop {
 		lo hi >= if { break }
 		lo hi + 2 / -> mid
-		arr mid 8 * mem::get_i64 needle cmp call 0 < if {
+		arr mid nth needle cmp call 0 < if {
 			mid 1 + -> lo
 		} else {
 			mid -> hi
@@ -480,10 +480,10 @@ pub fn lower_bound_by(arr:ptr count:i64 needle:i64 cmp:fn(i64 i64 -- i64) -- idx
 }
 
 /// Sort an array of i64 in descending order (quicksort).
-/// @param arr ptr Array of i64 values
-/// @param count i64 Number of elements
-/// @example arr count sort::ints_desc
-pub fn ints_desc(arr:ptr count:i64 -- ) {
+/// @param arr []i64 Array of i64 values
+/// @example arr sort::ints_desc
+pub fn ints_desc(arr:[]i64 -- ) {
+	arr len -> count
 	count 2 < if {
 	} else {
 		arr 0 count 1 - qsort_i64_desc
@@ -491,10 +491,10 @@ pub fn ints_desc(arr:ptr count:i64 -- ) {
 }
 
 /// Sort an array of f64 in ascending order (quicksort).
-/// @param arr ptr Array of f64 values
-/// @param count i64 Number of elements
-/// @example arr count sort::floats
-pub fn floats(arr:ptr count:i64 -- ) {
+/// @param arr []f64 Array of f64 values
+/// @example farr sort::floats
+pub fn floats(arr:[]f64 -- ) {
+	arr len -> count
 	count 2 < if {
 	} else {
 		arr 0 count 1 - qsort_f64_asc
@@ -502,10 +502,10 @@ pub fn floats(arr:ptr count:i64 -- ) {
 }
 
 /// Sort an array of f64 in descending order (quicksort).
-/// @param arr ptr Array of f64 values
-/// @param count i64 Number of elements
-/// @example arr count sort::floats_desc
-pub fn floats_desc(arr:ptr count:i64 -- ) {
+/// @param arr []f64 Array of f64 values
+/// @example farr sort::floats_desc
+pub fn floats_desc(arr:[]f64 -- ) {
+	arr len -> count
 	count 2 < if {
 	} else {
 		arr 0 count 1 - qsort_f64_desc
@@ -513,15 +513,15 @@ pub fn floats_desc(arr:ptr count:i64 -- ) {
 }
 
 /// Find minimum value in array.
-/// @param arr ptr Array of i64 values
-/// @param count i64 Number of elements (must be > 0)
+/// @param arr []i64 Array of i64 values (must not be empty)
 /// @return minval i64 Minimum value
-/// @example arr count sort::min -> val
-pub fn min(arr:ptr count:i64 -- minval:i64) {
-	arr 0 mem::get_i64 -> result
+/// @example arr sort::min -> val
+pub fn min(arr:[]i64 -- minval:i64) {
+	arr len -> count
+	arr 0 nth -> result
 	1 count 1 for it {
 		it -> i
-		arr i 8 * mem::get_i64 -> val
+		arr i nth -> val
 		val result < if {
 			val -> result
 		}
@@ -530,15 +530,15 @@ pub fn min(arr:ptr count:i64 -- minval:i64) {
 }
 
 /// Find maximum value in array.
-/// @param arr ptr Array of i64 values
-/// @param count i64 Number of elements (must be > 0)
+/// @param arr []i64 Array of i64 values (must not be empty)
 /// @return maxval i64 Maximum value
-/// @example arr count sort::max -> val
-pub fn max(arr:ptr count:i64 -- maxval:i64) {
-	arr 0 mem::get_i64 -> result
+/// @example arr sort::max -> val
+pub fn max(arr:[]i64 -- maxval:i64) {
+	arr len -> count
+	arr 0 nth -> result
 	1 count 1 for it {
 		it -> i
-		arr i 8 * mem::get_i64 -> val
+		arr i nth -> val
 		val result > if {
 			val -> result
 		}
@@ -547,19 +547,19 @@ pub fn max(arr:ptr count:i64 -- maxval:i64) {
 }
 
 /// Check if array of i64 is sorted in ascending order.
-/// @param arr ptr Array of i64 values
-/// @param count i64 Number of elements
+/// @param arr []i64 Array of i64 values
 /// @return sorted i64 1 if sorted, 0 otherwise
-/// @example arr count sort::is_sorted -> result
-pub fn is_sorted(arr:ptr count:i64 -- sorted:i64) {
+/// @example arr sort::is_sorted -> result
+pub fn is_sorted(arr:[]i64 -- sorted:i64) {
+	arr len -> count
 	1 -> result
 	count 2 < if {
 		result
 	} else {
 		1 count 1 for it {
 			it -> i
-			arr i 1 - 8 * mem::get_i64 -> prev
-			arr i 8 * mem::get_i64 -> curr
+			arr i 1 - nth -> prev
+			arr i nth -> curr
 			prev curr > if {
 				0 -> result
 				break
@@ -570,19 +570,19 @@ pub fn is_sorted(arr:ptr count:i64 -- sorted:i64) {
 }
 
 /// Check if array of f64 is sorted in ascending order.
-/// @param arr ptr Array of f64 values
-/// @param count i64 Number of elements
+/// @param arr []f64 Array of f64 values
 /// @return sorted i64 1 if sorted, 0 otherwise
-/// @example arr count sort::is_sorted_floats -> result
-pub fn is_sorted_floats(arr:ptr count:i64 -- sorted:i64) {
+/// @example farr sort::is_sorted_floats -> result
+pub fn is_sorted_floats(arr:[]f64 -- sorted:i64) {
+	arr len -> count
 	1 -> result
 	count 2 < if {
 		result
 	} else {
 		1 count 1 for it {
 			it -> i
-			arr i 1 - 8 * mem::get_f64 -> prev
-			arr i 8 * mem::get_f64 -> curr
+			arr i 1 - nth -> prev
+			arr i nth -> curr
 			prev curr > if {
 				0 -> result
 				break
@@ -593,32 +593,32 @@ pub fn is_sorted_floats(arr:ptr count:i64 -- sorted:i64) {
 }
 
 /// Reverse an array in place.
-/// @param arr ptr Array of i64 values
-/// @param count i64 Number of elements
-/// @example arr count sort::reverse
-pub fn reverse(arr:ptr count:i64 -- ) {
+/// @param arr []i64 Array of i64 values
+/// @example arr sort::reverse
+pub fn reverse(arr:[]i64 -- ) {
+	arr len -> count
 	0 -> left
 	count 1 - -> right
 	loop {
 		left right >= if {
 			break
 		}
-		arr left 8 * mem::get_i64 -> lval
-		arr right 8 * mem::get_i64 -> rval
-		rval arr left 8 * mem::set_i64
-		lval arr right 8 * mem::set_i64
+		arr left nth -> lval
+		arr right nth -> rval
+		arr left rval set
+		arr right lval set
 		left 1 + -> left
 		right 1 - -> right
 	}
 }
 
 /// Binary search for value in sorted array.
-/// @param arr ptr Sorted array of i64 values
-/// @param count i64 Number of elements
+/// @param arr []i64 Sorted array of i64 values
 /// @param needle i64 Value to find
 /// @return idx i64 Index if found, -1 otherwise
-/// @example arr count 42 sort::search -> idx
-pub fn search(arr:ptr count:i64 needle:i64 -- idx:i64) {
+/// @example arr 42 sort::search -> idx
+pub fn search(arr:[]i64 needle:i64 -- idx:i64) {
+	arr len -> count
 	0 -> left
 	count -> right
 	-1 -> result
@@ -627,7 +627,7 @@ pub fn search(arr:ptr count:i64 needle:i64 -- idx:i64) {
 			break
 		}
 		left right + 2 / -> mid
-		arr mid 8 * mem::get_i64 -> midval
+		arr mid nth -> midval
 		midval needle == if {
 			mid -> result
 			break
@@ -642,21 +642,21 @@ pub fn search(arr:ptr count:i64 needle:i64 -- idx:i64) {
 }
 
 /// Remove adjacent duplicate i64 values in-place (array must be sorted).
-/// @param arr ptr Sorted array of i64 values
-/// @param count i64 Number of elements
+/// @param arr []i64 Sorted array of i64 values
 /// @return new_count i64 Number of unique elements
-/// @example arr count sort::unique -> new_count
-pub fn unique(arr:ptr count:i64 -- new_count:i64) {
+/// @example arr sort::unique -> new_count
+pub fn unique(arr:[]i64 -- new_count:i64) {
+	arr len -> count
 	count 2 < if {
 		count
 	} else {
 		1 -> write_idx
 		1 count 1 for it {
 			it -> i
-			arr i 8 * mem::get_i64 -> curr
-			arr write_idx 1 - 8 * mem::get_i64 -> prev
+			arr i nth -> curr
+			arr write_idx 1 - nth -> prev
 			curr prev != if {
-				curr arr write_idx 8 * mem::set_i64
+				arr write_idx curr set
 				write_idx 1 + -> write_idx
 			}
 		}
@@ -665,15 +665,10 @@ pub fn unique(arr:ptr count:i64 -- new_count:i64) {
 }
 
 /// Sort an array of strings in ascending alphabetical order (insertion sort).
-/// @param arr ptr Array of string pointers
-/// @param count i64 Number of elements
-/// @example strs count sort::strings
-// Element access is `nth`/`set`, not mem::get_ptr at 8-byte strides: a string
-// list is a Quadrate array now (strings::split/lines/words, os::list/glob), and
-// raw pointer arithmetic over one would read the array header, not its elements.
-// The numeric functions in this module keep operating on flat mem::alloc buffers,
-// which is a different and deliberate shape.
-pub fn strings(arr:ptr count:i64 -- ) {
+/// @param arr []str Array of strings
+/// @example strs sort::strings
+pub fn strings(arr:[]str -- ) {
+	arr len -> count
 	1 count 1 for it {
 		it -> i
 		arr i nth -> key
@@ -694,10 +689,10 @@ pub fn strings(arr:ptr count:i64 -- ) {
 }
 
 /// Sort an array of strings in descending alphabetical order.
-/// @param arr ptr Array of string pointers
-/// @param count i64 Number of elements
-/// @example strs count sort::strings_desc
-pub fn strings_desc(arr:ptr count:i64 -- ) {
+/// @param arr []str Array of strings
+/// @example strs sort::strings_desc
+pub fn strings_desc(arr:[]str -- ) {
+	arr len -> count
 	1 count 1 for it {
 		it -> i
 		arr i nth -> key

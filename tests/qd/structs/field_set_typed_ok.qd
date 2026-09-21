@@ -1,0 +1,28 @@
+// Test: the field writes that must keep working -- a *T field taking a real node,
+// a raw ptr field taking an untyped pointer, and array, fn and struct fields
+// taking their own types.
+use mem
+
+struct Node { value:i64  next:*Node }
+struct Holder { buf:ptr  xs:[]i64  cb:fn(i64 -- i64)  inner:Node }
+
+fn double(x:i64 -- r:i64) { x 2 * }
+
+fn main() {
+	Node { value = 1 next = 0 } -> a
+	Node { value = 2 next = 0 } -> b
+	a b >>next drop
+
+	32 mem::alloc! -> p
+	Holder { buf = p xs = [1 2] cb = &double inner = a } -> h
+	64 mem::alloc! -> p2
+	h p2 >>buf drop
+	h [3 4 5] >>xs drop
+	h &double >>cb drop
+	h b >>inner drop
+
+	p mem::free
+	p2 mem::free
+	h <<xs 2 nth print nl
+	a <<next <<value print nl
+}

@@ -1,0 +1,9 @@
+// Test: constructing a module's struct qualified and positionally gets the same
+// field check the unqualified and named forms do -- an array is not a raw buffer.
+use struct_fields
+
+fn main() {
+	[1 2 3] -> a
+	1 a struct_fields::Box -> b
+	b drop
+}

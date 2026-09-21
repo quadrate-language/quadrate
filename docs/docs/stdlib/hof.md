@@ -30,6 +30,7 @@ Check if all elements satisfy a predicate.
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
+| `arr` | `[]T` | Array |
 | `pred` | `fn` | Predicate function (i64 -- bool:i64) |
 
 | Output | Type | Description |
@@ -51,6 +52,7 @@ Check if any element satisfies a predicate.
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
+| `arr` | `[]T` | Array |
 | `pred` | `fn` | Predicate function (i64 -- bool:i64) |
 
 | Output | Type | Description |
@@ -191,7 +193,12 @@ Filter an array, keeping only elements that satisfy a predicate.
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
+| `arr` | `[]T` | Input array |
 | `pred` | `fn` | Predicate function (i64 -- bool:i64) |
+
+| Output | Type | Description |
+|--------|------|-------------|
+| `result` | `[]i64` | New array with filtered values |
 
 **Example:**
 
@@ -208,6 +215,7 @@ Find the first element satisfying a predicate.
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
+| `arr` | `[]T` | Array |
 | `pred` | `fn` | Predicate function (i64 -- bool:i64) |
 
 | Output | Type | Description |
@@ -230,8 +238,9 @@ Fold/reduce an array left-to-right with a binary function.
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
+| `arr` | `[]T` | Array |
 | `init` | `i64` | Initial accumulator value |
-| `f` | `fn` | (i64 i64 -- i64) Binary function (acc:i64 elem:i64 -- acc:i64) |
+| `f` | `fn(i64 i64 -- i64)` | Binary function (acc:i64 elem:i64 -- acc:i64) |
 
 | Output | Type | Description |
 |--------|------|-------------|
@@ -252,8 +261,9 @@ Fold/reduce an array right-to-left with a binary function.
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
+| `arr` | `[]T` | Array |
 | `init` | `i64` | Initial accumulator value |
-| `f` | `fn` | (i64 i64 -- i64) Binary function (elem:i64 acc:i64 -- acc:i64) |
+| `f` | `fn(i64 i64 -- i64)` | Binary function (elem:i64 acc:i64 -- acc:i64) |
 
 | Output | Type | Description |
 |--------|------|-------------|
@@ -297,7 +307,12 @@ Map a function over an array, returning a new array.
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
+| `arr` | `[]T` | Input array |
 | `f` | `fn` | Function applied to the value |
+
+| Output | Type | Description |
+|--------|------|-------------|
+| `result` | `[]i64` | New array with mapped values |
 
 **Example:**
 

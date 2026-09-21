@@ -9,6 +9,37 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **`clone`.** A struct is a mutable reference -- `a -> b` binds a second name to the same
+  struct -- which is the design (R21), but it left no way to ask for an independent one. The
+  only copy available was rebuilding it by hand, `P { x = a <<x  y = a <<y }`, which had to be
+  revisited every time a field was added.
+
+  ```qd
+  a clone -> b
+  b 42 >>x drop        // a untouched
+  ```
+
+  Shallow, and the word means one thing: a new struct of the same type with the fields copied,
+  and what a field *points to* is shared. A `str` field cannot expose that, a string being
+  immutable -- a shared one and a copy behave identically. An array or a nested struct field
+  can, and does, which is the consistent answer rather than a concession: a struct is a
+  reference in this language, so a field holding one behaves on `clone` exactly as `a -> b`
+  does. Nothing recurses, so there is no question of how deep the copy goes and no way to loop
+  on a structure that points at itself.
+
+  It is the destructor read backwards -- `__qd_clone_<S>` walks the same fields and retains
+  where `__qd_dtor_<S>` releases -- which is what should keep the two in step as field kinds are
+  added. `clone` over a type whose layout is not known is rejected rather than silently passed
+  through, including on an untyped `ptr`, where the error points at `as`:
+
+  ```
+  error: Type error in 'clone': Expected a struct, got ptr
+    hint: the struct type has to be known here; narrow the pointer with 'as', e.g. 'p as Point clone'
+  ```
+
+  `clone` rather than `copy` because a builtin shadows user functions of the same name, and
+  `copy` is a word a program is likely to want for itself.
+
 - **Nested array types.** `[][]i64` is a type now, and `[n][]i64` builds one. An array of
   arrays could always be *built* -- `[[1 2] [3 4]]` has worked since the nested-literal fix --
   but the type had no spelling, so it could not cross a signature, sit in a struct field or be
@@ -150,6 +181,37 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **`quadrepl` command aliases**: `:quit` and `:exit` alongside `exit`/`quit`/`:q`, and `:save`/`:load` alongside `.save`/`.load`.
 ### Changed
 
+- **`sort` takes arrays, and only arrays.** Closing the `[]T`/`ptr` hole left the module
+  lopsided: the four string entry points took `[]str`, and the fourteen numeric ones took a raw
+  `mem::alloc` buffer, so `[5 2 8 1 9]` could not be sorted by anything. Sorting numbers meant
+  building the buffer by hand and reading it back the same way.
+
+  ```qd
+  // was -- the only way to sort numbers
+  5 8 * mem::alloc! -> arr
+  5 arr 0 mem::set_i64   2 arr 8 mem::set_i64   8 arr 16 mem::set_i64
+  arr 5 sort::ints
+  arr 0 mem::get_i64 print
+  arr mem::free
+
+  // now
+  [5 2 8 1 9] -> a
+  a sort::ints
+  a 0 nth print
+  ```
+
+  All sixteen entry points take a `[]T` and nothing else. The `count` beside the array went with
+  it: the array carries its length, and a second opinion about it is only a chance to disagree
+  -- which the raw-buffer version could not even detect, and which `nth` now catches. Nothing
+  outside the module's own tests called any of them, so the conversion cost was the test file,
+  where 34 hand-built buffers became array literals.
+
+  The module's comment claimed the numeric functions stayed raw "on purpose". That was written
+  when the string ones moved, and it did not survive the question of how to sort `[3 1 2]`:
+  the raw shape was not a decision about numbers, it was the shape everything had before
+  arrays could cross a signature. Raw buffers remain everywhere they are the real subject --
+  `mem`, `io`, `http`, `bytes`, `tls`, and `strings::column`'s `widths`.
+
 - **`stdlib/regex` appends states instead of preallocating 256 null slots.** `regex_new` built its
   `states` with `MAX_STATES make<State>` and `add_state` wrote into it with `set` at an index that
   was always `nstates` — an append loop wearing a preallocation. It cost 256 slots for every
@@ -270,6 +332,91 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **`quadrepl` accepts `struct`, `enum`, `const`, `type` and `var` declarations.**
 - **u8t tokenizer updated to 1.4.0.**
 ### Fixed
+
+- **A `[]T` no longer satisfies a declared `ptr`.** `unifyTypeName` treated a declared `ptr` as
+  a top type that accepts anything, so an array could be handed to any of the 54 public stdlib
+  functions that take an `arr:ptr count:i64` buffer. The pointer an array is represented by
+  addresses its `qd_array_t` header, not its elements, so the buffer those functions write
+  through starts at the magic number:
+
+  ```qd
+  [3 1 2] -> a
+  a a len sort::ints    // compiled clean; now an error
+  a len                 // 3 before the call, 1363427669 after -- the "QDAR" magic
+  ```
+
+  Nothing reported anything, and what the program had afterwards was an array whose length was
+  the magic number and whose bounds check therefore passed for any index. A declared `ptr` is
+  still the escape hatch and still accepts anything else pointer-shaped, a struct included:
+  `qd_struct_alloc` returns the address of the fields with the header behind them, so a struct
+  passed as a `ptr` does point at its data. Only `[]T` does not.
+
+  The same rule now applies wherever a `ptr` is declared, not just to a parameter: a function
+  or anonymous-function output declared `ptr` no longer launders an array back into the raw
+  world one call later, and neither does a struct field. The field case needed the field's own
+  type to be recorded first -- a plain `ptr` field stored nothing at all in
+  `mStructFieldStructTypes`, which is why `struct C { data:ptr }` accepted
+  `C { data = [1 2 3] }` and then handed the header to everything through `c <<data`.
+
+  Three declarations in the tree turned out to be this mistake and are corrected:
+  `flag::parse` takes `[]str`, `fuzzy::best` takes and returns `[]str`, and the `Stack` example
+  in the structs chapter holds `[]i64`.
+
+- **An FFI `import` block can spell every type a signature can.** Its parameter list had its
+  own reader, which scanned exactly one identifier after the `:`. Every other type form came
+  apart on it, silently: `[]str` was read as two stray tokens `[` `]` and then an *unnamed*
+  parameter of type `str`, so `pub fn args( -- args:[]str)` declared a function returning a
+  string. `fn(...)`, `*T` and, in an output, `mod::T` were lost the same way, and nothing
+  reported any of it. The list is read by `parseTypeFrom` now, the same function a named
+  function's parameters go through, which is half the code it was.
+
+  That was what kept fifteen stdlib declarations saying `ptr` over something that is really a
+  `qd_array_t`. They are corrected: `os::args`, `os::list` and `os::glob` (all built with
+  `qd_array_create`), `strings::split`, `lines`, `words` and `split_n` (the same), and
+  `strings::sort`, `sort_desc`, `join` and `column`, whose C aborts with "expected a string
+  array" if handed anything else. `sort::strings` and `sort::strings_desc` followed, since
+  their bodies had already moved to `nth`/`set` and only the declaration was stale.
+
+  What that bought is the element type crossing the FFI boundary, so a mistake downstream is
+  now a compile error rather than a read of the array header:
+
+  ```qd
+  os::args -> a
+  a wants_ints        // Parameter 1 expects type '[]i64' but got '[]str'
+  a 3 sort::ints      // expects a raw 'ptr' buffer but got '[]str'
+  ```
+
+  Two examples in the file-processing chapter were walking `strings::lines` with
+  `mem::get_ptr` at 8-byte strides, which reads magic, refcount and length rather than the
+  first three lines. They compiled and were never run with a file present, so nothing had
+  caught them; they use `nth` now. The stdlib documentation generator needed the same widening
+  for the same reason -- its `@param`/`@return` reader took `[a-zA-Z0-9_]+` as the type, so
+  `[]str` matched no branch at all and the row vanished out of the table. Rows that had been
+  missing from `hof` for the same reason are back.
+
+- **A field is checked the same way wherever it is written.** Writing a struct field happens in
+  five places -- a named initializer, a positional construction of a local struct, the two
+  positional forms for a module's struct, and `>>field` -- and each had its own answer to the
+  same question. Each does a coarse `StackValueType` compare first, which catches a `str` going
+  into an `i64`; underneath that, where both sides are pointers and the pointer's real type is
+  what separates them, three of the five had no check at all:
+
+  ```qd
+  struct C { data:ptr }
+  struct D { xs:[]i64 }
+
+  c a >>data          // a is []i64: compiled, and `c <<data` then fed the header to anything
+  d p >>xs            // p is a Point: compiled
+  1 a mod::Box        // an array into that struct's `ptr` field: compiled
+  ```
+
+  The three that did check disagreed with each other too -- one compared structurally, one by
+  string equality, and only one exempted a `*T` field -- so they are now one predicate,
+  `fieldValueRejected`, that all five call. The rule is the one the strictest of them already
+  had: these are definite assignments rather than values of unknown provenance, so an untyped
+  pointer satisfies only a field that asked for a raw `ptr`, a `[]T` never satisfies one, and a
+  field declared `*T` is exempt because `next = null` is how every linked structure starts.
+  Nothing in the stdlib, the examples or the documentation was relying on the gap.
 
 - **`<<field` reads the field the value's own type names.** When the type was not known at the
   access, the backend searched every struct in the module, took the first one declaring a field

@@ -10,11 +10,11 @@
   "functions": [
     {
       "name": "best",
-      "signature": "(query:str items:ptr max_results:i64 -- results:ptr count:i64)",
+      "signature": "(query:str items:[]str max_results:i64 -- results:[]str count:i64)",
       "failable": false,
       "description": "Find the best matching items from a list, sorted by score descending. Items with score 0 are excluded.",
-      "params": [{"name": "query", "type": "str", "description": "Query string to match"}, {"name": "items", "type": "ptr", "description": "Array of strings to search"}, {"name": "max_results", "type": "i64", "description": "Maximum number of results to return"}],
-      "returns": [{"name": "results", "type": "ptr", "description": "Array of matching strings (caller must free)"}, {"name": "count", "type": "i64", "description": "Number of results"}],
+      "params": [{"name": "query", "type": "str", "description": "Query string to match"}, {"name": "items", "type": "[]str", "description": "Array of strings to search"}, {"name": "max_results", "type": "i64", "description": "Maximum number of results to return"}],
+      "returns": [{"name": "results", "type": "[]str", "description": "Array of matching strings"}, {"name": "count", "type": "i64", "description": "Number of results"}],
       "errors": [],
       "examples": []
     },

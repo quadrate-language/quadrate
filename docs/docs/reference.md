@@ -363,6 +363,27 @@ Logical NOT: 1 if the value is zero, 0 otherwise. `bits::not` is the bitwise one
 
 ---
 
+### STRUCT OPERATIONS
+
+| Instruction | Signature | Description |
+|-------------|-----------|-------------|
+| [`clone`](#clone) | `( s -- s2 )` | A new struct of the same type, fields copied. Shallow: what a field points to is shared. |
+
+#### clone
+
+A new struct of the same type, fields copied. Shallow: what a field points to is shared.
+
+**Signature:** `( s -- s2 )`
+
+**Example:**
+
+```qd
+p clone -> q
+q 42 >>x drop // p is untouched
+```
+
+---
+
 ### COMPARISON OPERATIONS
 
 | Instruction | Signature | Description |

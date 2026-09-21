@@ -228,11 +228,11 @@ fn word_boundary_match(query:str target:str -- matches:i64) {
 /// Find the best matching items from a list, sorted by score descending.
 /// Items with score 0 are excluded.
 /// @param query str Query string to match
-/// @param items ptr Array of strings to search
+/// @param items []str Array of strings to search
 /// @param max_results i64 Maximum number of results to return
-/// @return results ptr Array of matching strings (caller must free)
+/// @return results []str Array of matching strings
 /// @return count i64 Number of results
-pub fn best(query:str items:ptr max_results:i64 -- results:ptr count:i64) {
+pub fn best(query:str items:[]str max_results:i64 -- results:[]str count:i64) {
 	items len -> num_items
 
 	// Create arrays for (score, index) pairs using raw memory

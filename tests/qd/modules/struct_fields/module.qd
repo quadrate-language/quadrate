@@ -1,0 +1,5 @@
+// A struct whose fields cover the pointer kinds a construction has to tell apart.
+pub struct Box {
+	tag:i64
+	data:ptr
+}

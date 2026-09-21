@@ -1,0 +1,9 @@
+// Test: >>field storing the wrong struct in a typed field should fail.
+struct P { x:i64 }
+struct D { xs:[]i64 }
+
+fn main() {
+	D { xs = [1 2] } -> d
+	P { x = 1 } -> p
+	d p >>xs drop
+}

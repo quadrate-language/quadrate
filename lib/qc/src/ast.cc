@@ -739,87 +739,51 @@ namespace Qd {
 									continue; // func auto-deleted by unique_ptr
 								}
 
-								// Parse parameters (simplified - name:type format)
+								// Parse parameters. An import block's list takes the same forms a named
+								// function's does, so it is read by the same `parseTypeFrom`. It used to
+								// have its own reader that scanned exactly one identifier after the ':',
+								// which meant every other form came apart silently: `[]str` was read as
+								// two stray tokens `[` `]` and then an unnamed parameter of type `str`,
+								// so `pub fn args( -- args:[]str)` declared a function returning a
+								// string. `fn(...)`, `*T` and, in an output, `mod::T` were lost the same
+								// way. Nothing reported any of it.
+								bool isOutput = false;
 								while (true) {
 									token = u8t_scanner_scan(&scanner);
 									if (token == ')' || token == U8T_EOF) {
 										break;
 									}
 									if (token == '-') {
-										// Check for '--' separator
 										token = u8t_scanner_scan(&scanner);
 										if (token == '-') {
-											// Now parse output parameters
-											while (true) {
-												token = u8t_scanner_scan(&scanner);
-												if (token == ')' || token == U8T_EOF) {
-													break;
-												}
-												if (token == U8T_IDENTIFIER) {
-													const char* paramName = u8t_scanner_token_text(&scanner, &n);
-													std::string paramNameStr(paramName);
-													char32_t paramPeek = u8t_scanner_peek(&scanner);
-													if (paramPeek == ':') {
-														// Named typed parameter: name:type
-														token = u8t_scanner_scan(&scanner);
-														token = u8t_scanner_scan(&scanner);
-														if (token == U8T_IDENTIFIER) {
-															const char* paramType =
-																	u8t_scanner_token_text(&scanner, &n);
-															std::string paramTypeStr(paramType);
-															AstNodeParameter* param = new AstNodeParameter(
-																	paramNameStr, paramTypeStr, true);
-															func->outputParameters.emplace_back(param);
-														}
-													} else if (isTypeName(paramNameStr)) {
-														// Unnamed typed parameter: i64
-														AstNodeParameter* param =
-																new AstNodeParameter("", paramNameStr, true);
-														func->outputParameters.emplace_back(param);
-													}
-												}
-											}
-											// After parsing output parameters, check if we hit ')'
-											if (token == ')' || token == U8T_EOF) {
-												break; // Break outer loop - we're done with all parameters
-											}
+											isOutput = true;
+											continue;
 										}
+										errorReporter.reportError(&scanner, "Expected '--' between inputs and outputs");
+										break;
 									}
-									if (token == U8T_IDENTIFIER) {
-										const char* paramName = u8t_scanner_token_text(&scanner, &n);
-										std::string paramNameStr(paramName);
-										char32_t paramPeek = u8t_scanner_peek(&scanner);
-										if (paramPeek == ':') {
-											// Named typed parameter: name:type
-											token = u8t_scanner_scan(&scanner); // consume ':'
-											token = u8t_scanner_scan(&scanner);
-											if (token == U8T_IDENTIFIER) {
-												const char* paramType = u8t_scanner_token_text(&scanner, &n);
-												std::string paramTypeStr(paramType);
-												// Check for qualified type name (module::Type)
-												char32_t peek1 = u8t_scanner_peek(&scanner);
-												if (peek1 == ':') {
-													u8t_scanner_scan(&scanner); // consume first ':'
-													char32_t peek2 = u8t_scanner_peek(&scanner);
-													if (peek2 == ':') {
-														u8t_scanner_scan(&scanner); // consume second ':'
-														token = u8t_scanner_scan(&scanner);
-														if (token == U8T_IDENTIFIER) {
-															const char* structName =
-																	u8t_scanner_token_text(&scanner, &n);
-															paramTypeStr = paramTypeStr + "::" + structName;
-														}
-													}
-												}
-												AstNodeParameter* param =
-														new AstNodeParameter(paramNameStr, paramTypeStr, false);
-												func->inputParameters.emplace_back(param);
-											}
-										} else if (isTypeName(paramNameStr)) {
-											// Unnamed typed parameter: i64
-											AstNodeParameter* param = new AstNodeParameter("", paramNameStr, false);
-											func->inputParameters.emplace_back(param);
-										}
+									// `name:type`, or a bare type. A name is always written with its
+									// type, so a lone identifier here can only be the type.
+									std::string paramNameStr;
+									std::string paramTypeStr;
+									if (token == U8T_IDENTIFIER && u8t_scanner_peek(&scanner) == ':') {
+										paramNameStr = u8t_scanner_token_text(&scanner, &n);
+										u8t_scanner_scan(&scanner); // consume ':'
+										paramTypeStr = parseType(&scanner, &errorReporter);
+									} else {
+										paramTypeStr = parseTypeFrom(token, &scanner, &errorReporter);
+									}
+									if (paramTypeStr.empty()) {
+										// parseType has already reported and consumed it; carrying on
+										// would read the rest of the signature as more parameters.
+										break;
+									}
+									auto* param = new AstNodeParameter(paramNameStr, paramTypeStr, isOutput);
+									setNodePosition(param, &scanner, src);
+									if (isOutput) {
+										func->outputParameters.emplace_back(param);
+									} else {
+										func->inputParameters.emplace_back(param);
 									}
 								}
 

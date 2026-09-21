@@ -27,11 +27,11 @@ Error codes: Ok=1 (success), specific errors start at 2
 
 The command-line arguments, excluding the program name.
 
-**Signature:** `( -- args:ptr)`
+**Signature:** `( -- args:[]str)`
 
 | Output | Type | Description |
 |--------|------|-------------|
-| `args` | `ptr` | Array of argument strings |
+| `args` | `[]str` | Array of argument strings |
 
 **Example:**
 
@@ -317,7 +317,7 @@ os::getuid print
 
 Match files using glob pattern. Supports *, ?, and ** for recursive matching.
 
-**Signature:** `(pattern:str -- entries:ptr count:i64)!`
+**Signature:** `(pattern:str -- entries:[]str count:i64)!`
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
@@ -325,7 +325,7 @@ Match files using glob pattern. Supports *, ?, and ** for recursive matching.
 
 | Output | Type | Description |
 |--------|------|-------------|
-| `entries` | `ptr` | Array of matching paths |
+| `entries` | `[]str` | Array of matching paths |
 | `count` | `i64` | Number of matches |
 
 **Example:**
@@ -423,7 +423,7 @@ Check if path is a symbolic link. Does not follow the link to check if the targe
 
 List directory contents. so the bindings read in reverse of the declared outputs
 
-**Signature:** `(path:str -- entries:ptr count:i64)!`
+**Signature:** `(path:str -- entries:[]str count:i64)!`
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
@@ -431,7 +431,7 @@ List directory contents. so the bindings read in reverse of the declared outputs
 
 | Output | Type | Description |
 |--------|------|-------------|
-| `entries` | `ptr` | Array of entry names |
+| `entries` | `[]str` | Array of entry names |
 | `count` | `i64` | Number of entries |
 
 | Error | Description |

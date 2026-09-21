@@ -87,6 +87,12 @@ namespace Qd {
 		bool fieldTypesCompatible(const std::string& expected, const std::string& actual) const;
 		bool isPointerField(const std::string& structName, const std::string& fieldName) const;
 
+		// Whether a value must be rejected where a field declared `expected` is being written,
+		// and if so why. The one rule the four places that write a field share; see the
+		// definition.
+		bool fieldValueRejected(const std::string& structName, const std::string& fieldName,
+				const std::string& expected, const std::string& actual, std::string& why) const;
+
 		// Warns when a `switch` over one enum's variants misses some and has no `_` arm.
 		void checkEnumSwitchExhaustive(IAstNode* switchNode, const std::vector<class AstNodeCase*>& cases);
 

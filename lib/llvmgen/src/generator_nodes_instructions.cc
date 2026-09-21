@@ -1088,6 +1088,48 @@ namespace Qd {
 				builder->CreateCall(shrFn, {ctx});
 			}
 			return;
+		} else if (name == "clone") {
+			// The struct type is not on the stack -- what is popped is a bare pointer -- so the
+			// validator recorded it on the node and it picks the cloner out here. An empty one
+			// means the validator already reported that this is not a struct.
+			const std::string& structName = inst->resolvedType();
+			llvm::Function* cloner = structName.empty() ? nullptr : findStructCloner(structName);
+			if (cloner == nullptr) {
+				// Never silently: leaving the value alone makes `a clone -> b` bind the original,
+				// so the two names share a struct the program was told they would not. An empty
+				// name means the validator already reported that this is not a struct.
+				if (!structName.empty()) {
+					std::cerr << "Error: no cloner for struct type: " << structName << std::endl;
+				}
+				return;
+			}
+			lastIdentifierPushed.clear();
+
+			llvm::Function* qdPopPFn = module->getFunction("qd_pop_p");
+			if (!qdPopPFn) {
+				auto fnTy = llvm::FunctionType::get(execResultTy, {contextPtrTy, ptrTy}, false);
+				qdPopPFn = llvm::Function::Create(fnTy, llvm::Function::ExternalLinkage, "qd_pop_p", *module);
+			}
+			llvm::Function* currentFn = builder->GetInsertBlock()->getParent();
+			llvm::IRBuilder<> entryBuilder(&currentFn->getEntryBlock(), currentFn->getEntryBlock().begin());
+			llvm::Value* slot = entryBuilder.CreateAlloca(ptrTy, nullptr, "clone_src");
+			builder->CreateCall(qdPopPFn, {ctx, slot});
+			llvm::Value* src = builder->CreateLoad(ptrTy, slot, "clone_src_ptr");
+			llvm::Value* copy = builder->CreateCall(cloner, {src}, "clone_result");
+			// The stack held a reference to the original and this consumed it, the same way
+			// printing a value does. Pushing a local retains it, so without this the original
+			// ends the scope one owner up and is never freed -- which is what a struct with no
+			// refcounted fields at all still leaked.
+			builder->CreateCall(qdPtrReleaseFn, {src});
+			builder->CreateCall(pushPtrFn, {ctx, copy});
+
+			// The copy is the same struct type as the original, so whatever follows -- `<<field`,
+			// `-> name`, a method call -- resolves against it the way it would after `nth`.
+			lastFieldAccessResultType = structName;
+			lastStructConstructed = structName;
+			lastStructWasConstructedInPlace = false;
+			lastPushedWasArray = false;
+			return;
 		} else if (name == "free") {
 			// Use qd_free for raw memory (mem::alloc, mem::from_string, etc.)
 			// Structs are released automatically via local cleanup code
@@ -1168,7 +1210,7 @@ namespace Qd {
 			// Aaa's offset for `x` and printed the value of Bbb's `y` -- silently, and decided
 			// by map order, so adding a struct could change an unrelated function's answer.
 			if (name == "nth") {
-				const std::string& element = inst->elementType();
+				const std::string& element = inst->resolvedType();
 				if (!element.empty()) {
 					lastFieldAccessResultType = isKnownStruct(element) ? element : std::string();
 					lastStructConstructed = element;

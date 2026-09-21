@@ -1,0 +1,27 @@
+// Test: clone is shallow. A str field cannot tell the difference -- a string is
+// immutable, so a shared one and a copy behave the same. An array field and a
+// nested struct field are shared, and that is the contract: a struct is a mutable
+// reference (R21), so a field holding one behaves on clone as `a -> b` does.
+struct Inner { v:i64 }
+struct Big { n:i64  s:str  xs:[]i64  inner:Inner }
+
+fn main() {
+	Inner { v = 7 } -> i
+	Big { n = 1 s = "hello" xs = [1 2 3] inner = i } -> a
+	a clone -> b
+
+	b 99 >>n drop
+	a <<n print nl              // 1  -- scalar is independent
+	b <<n print nl              // 99
+
+	a <<s print nl              // hello -- immutable, sharing is invisible
+	b <<s print nl              // hello
+
+	b <<xs 0 42 set
+	a <<xs 0 nth print nl       // 42 -- the array is shared
+	b <<xs 0 nth print nl       // 42
+
+	b <<inner 55 >>v drop
+	a <<inner <<v print nl      // 55 -- the nested struct is shared
+	b <<inner <<v print nl      // 55
+}

@@ -71,10 +71,10 @@
     },
     {
       "name": "parse",
-      "signature": "(args:ptr -- f:Flag)",
+      "signature": "(args:[]str -- f:Flag)",
       "failable": false,
       "description": "Parse command-line arguments.",
-      "params": [{"name": "args", "type": "ptr", "description": "Argument array, as os::args returns"}],
+      "params": [{"name": "args", "type": "[]str", "description": "Argument array, as os::args returns"}],
       "returns": [{"name": "f", "type": "Flag", "description": "Parsed flags"}],
       "errors": [],
       "examples": ["os::args flag::parse -> f"]
