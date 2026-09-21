@@ -113,6 +113,15 @@ namespace Qd {
 			return mCalleeFallible;
 		}
 
+		// `nth` only: the type of the element it leaves on the stack, empty when the validator
+		// could not work it out. The backend cannot work it out for itself -- by the time `nth`
+		// runs, the array is two pushes back and which name put it there is not recoverable --
+		// so what a following `<<field` or `-> name` needs is recorded here, the same way
+		// `call` carries its callee's fallibility.
+		const std::string& elementType() const {
+			return mElementType;
+		}
+
 	private:
 		// Semantic validation setters (only accessible by SemanticValidator)
 		void setIsMethodCall(bool isMethod) {
@@ -131,6 +140,10 @@ namespace Qd {
 			mMethodReceiverPositionFromTop = pos;
 		}
 
+		void setElementType(const std::string& type) {
+			mElementType = type;
+		}
+
 		std::string mName;
 		std::string mTypeParam;
 		IAstNode* mParent;
@@ -143,6 +156,7 @@ namespace Qd {
 		bool mAbortOnError = false;
 		bool mPropagateOnError = false;
 		bool mCalleeFallible = false;
+		std::string mElementType;
 	};
 }
 

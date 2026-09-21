@@ -1,0 +1,2 @@
+ambiguous field '<<x' found in 2 structs
+Use 'as StructType' to disambiguate

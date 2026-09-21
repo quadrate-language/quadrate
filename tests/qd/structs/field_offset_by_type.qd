@@ -1,0 +1,83 @@
+// Test: `<<field` computes its offset from the value's own type, not from whichever struct
+// happens to declare a field of that name first.
+//
+// When the type was not known at the access, the backend searched every struct in the module
+// and took the first one with a field of that name, computing the offset from *its* layout.
+// Two places left the type unknown, and both were silent: `nth` never learned the element type
+// of the array it read, and a method's receiver was qualified with the enclosing module's
+// name, which for a file compiled directly is its path, so the lookup resolved to nothing.
+//
+// Alpha is declared first and sorts first, and its `x` is at offset 8 where Beta's is at 0.
+// Every number below is therefore Alpha's answer if the type was lost, and Beta's if it was
+// kept -- 2.0 instead of 7.5, and 4.0 instead of 3.5.
+struct Alpha {
+	pad: f64
+	x: f64
+}
+
+struct Beta {
+	x: f64
+	y: f64
+}
+
+fn (b:Beta) get_x( -- r:f64) {
+	b <<x
+}
+
+fn (b:Beta) scaled(k:f64 -- r:f64) {
+	b <<x k *
+}
+
+fn first_x(bs:[]Beta -- r:f64) {
+	bs 0 nth <<x
+}
+
+fn second_x(bs:[]Beta -- r:f64) {
+	bs 1 nth -> e
+	e <<x
+}
+
+fn method_on_element(bs:[]Beta -- r:f64) {
+	bs 0 nth 2.0 scaled
+}
+
+fn nested_x(rows:[][]Beta -- r:f64) {
+	rows 0 nth 1 nth <<x
+}
+
+fn set_on_element(bs:[]Beta -- r:f64) {
+	bs 0 nth -> e
+	e 9.25 >>x drop
+	bs 0 nth <<x
+}
+
+fn main() {
+	Beta {
+		x = 7.5
+		y = 2.0
+	} -> one
+
+	"=== Method receiver ===" print nl
+	one get_x print nl
+	one 2.0 scaled print nl
+
+	"=== Element of a []T parameter ===" print nl
+	[Beta { x = 7.5 y = 2.0 } Beta { x = 3.5 y = 4.0 }] -> pair
+	pair first_x print nl
+	pair second_x print nl
+	pair method_on_element print nl
+	pair set_on_element print nl
+
+	"=== Element of a [][]T parameter ===" print nl
+	[[Beta { x = 1.0 y = 0.0 } Beta { x = 8.25 y = 0.0 }]] -> rows
+	rows nested_x print nl
+
+	"=== Unaffected: Alpha still reads its own ===" print nl
+	Alpha {
+		pad = 1.0
+		x = 6.25
+	} -> a
+	a <<x print nl
+
+	"done" print nl
+}

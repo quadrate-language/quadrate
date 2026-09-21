@@ -9,6 +9,45 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **Nested array types.** `[][]i64` is a type now, and `[n][]i64` builds one. An array of
+  arrays could always be *built* -- `[[1 2] [3 4]]` has worked since the nested-literal fix --
+  but the type had no spelling, so it could not cross a signature, sit in a struct field or be
+  given a name, and an array of arrays existed only untyped, through `[n]ptr` and a `cast<ptr>`
+  before every access.
+
+  ```qd
+  struct Grid { rows:[][]i64 }
+  type Table = [][]str
+
+  fn sum(g:[][]i64 -- total:i64) { ... }
+
+  [2][]i64              // two distinct empty []i64
+  [[1 2] [3 4]]         // an expression of type [][]i64
+  ```
+
+  `[n][]T` fills with `n` distinct empty arrays rather than `n` nulls, for the reason `[n]T`
+  over a struct fills with instances: the zero of an array is an empty one, the way the zero of
+  `str` is a real empty string. A null slot does not report itself, it surfaces later as
+  `len: null array` from the first thing that reads it.
+
+  The cause was that `[]T` was written out by hand at each of the six places a type can appear
+  -- two in an anonymous function's parameter list, two in a named function's, one in a struct
+  field, one in a type alias -- and none of the six recursed. They are replaced by one
+  `parseTypeFrom` in `ast_parse.h` that does, and that is also where the `fn(...)`, `*T`,
+  `mod::T` and `T<U>` forms are now read, each of which had been written out two or three times
+  with slightly different reach. A qualified element type falls out of the same change:
+  `[]mod::Point` had no spelling either, because the copies read one identifier and stopped.
+  Every position now *reads* every form, which is not the same as supporting it -- a struct
+  field declared `Box<i64>` is still rejected, but as one "Unknown type" where the reach used
+  to stop short and spill the rest of the declaration into the top level as a cascade.
+
+  Two adjacent array literals, `[1 2][3 4]`, now say so rather than reporting a size in an
+  array type: a `[` hard against a `]` is an element type by the same adjacency rule that makes
+  `[10]i64` a size, so the two literals want a space between them.
+
+  Nesting past 64 deep is rejected rather than read. The wrappers are counted in a loop, not a
+  recursion, so the parser itself does not care -- but the readers downstream of it do peel one
+  `[]` per stack frame, and a type nobody means to write should not be the thing that finds out.
 - **`[n]T` array literals, replacing the `make` family.** Array *types* were already written
   `[]T` everywhere a signature mentions them, while creation was written `make<T>`, which names
   the element type instead — two spellings of the same array depending on which side of the `--`
@@ -232,6 +271,45 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **u8t tokenizer updated to 1.4.0.**
 ### Fixed
 
+- **`<<field` reads the field the value's own type names.** When the type was not known at the
+  access, the backend searched every struct in the module, took the first one declaring a field
+  of that name and computed the offset from *its* layout. Two places left the type unknown, and
+  both were silent -- the wrong `f64` came back, not a crash -- and which struct won was decided
+  by map order, so adding a struct could change an unrelated function's answer.
+
+  ```qd
+  struct Alpha { pad:f64  x:f64 }
+  struct Beta  { x:f64    y:f64 }
+
+  fn (b:Beta) get_x( -- r:f64)   { b <<x }          // read Alpha's x: Beta's y came back
+  fn first_x(bs:[]Beta -- r:f64) { bs 0 nth <<x }   // the same
+  ```
+
+  `nth` never learned the element type of the array it read: by the time it runs, the array is
+  two pushes back and which name put it there is not recoverable. The validator does know --
+  it tracks element types as it walks the stack -- so it records the resolved one on the node,
+  the way `call` already carries its callee's fallibility, and `<<field`, `-> name` and method
+  dispatch all read it from there. Chains work for the same reason: `rows 0 nth 1 nth <<x` over
+  a `[][]Beta`.
+
+  A method's receiver was qualified with the enclosing module's name against a literal `"main"`,
+  but the program's own module is named after whatever was handed to `generate()`, which for a
+  file compiled directly is its path. So the receiver's type was recorded as `<path>::Beta`,
+  which resolves to nothing, and every method body fell through to the search. The test is
+  against `mainModuleName` now.
+
+  The search itself no longer guesses. It was allowed to when a type *was* known but had failed
+  to resolve, on the grounds that the fallback is a reasonable best effort; a type that resolved
+  to nothing is no more information than no type at all, and with more than one candidate it now
+  reports the ambiguity instead of picking one. Reporting it fails the compile, too: that path
+  and the unknown-field one both gave up without emitting the read and then let the build finish,
+  so the binary was short a field access and the exit status said everything was fine.
+- **An unterminated `<` in a type is a parse error.** The type argument reader ended its run
+  at end of file in silence, so `Box<` was a type the parser accepted and nothing rejected it
+  until the validator. The formatter only promises anything about source that parses, so it
+  wrote that back out and its own output no longer parsed -- the invariant `fuzz_formatter`
+  exists to check, which is what found it, on source the struct-field type parser only started
+  reaching once it shared the one type reader.
 - **A struct holding an array field releases it.** The generated destructor released the
   string fields and the nested structs and stopped there, so the `qd_array_t` and its
   element buffer outlived every struct that held one: `struct B { xs:[]i64 }` built in a

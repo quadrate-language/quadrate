@@ -1,0 +1,13 @@
+=== Method receiver ===
+7.5
+15
+=== Element of a []T parameter ===
+7.5
+3.5
+15
+9.25
+=== Element of a [][]T parameter ===
+8.25
+=== Unaffected: Alpha still reads its own ===
+6.25
+done

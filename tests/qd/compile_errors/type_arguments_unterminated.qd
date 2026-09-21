@@ -1,0 +1,8 @@
+// Test: a `<` with no `>` to close it is a parse error.
+//
+// The type argument reader used to end its run at end of file in silence, which made `Box<`
+// a type the parser accepted -- nothing rejected it until the validator. The formatter only
+// promises anything about source that parses, so it wrote that back out and its own output
+// no longer parsed. Found by fuzz_formatter.
+struct Holder {
+	item: Box<i64

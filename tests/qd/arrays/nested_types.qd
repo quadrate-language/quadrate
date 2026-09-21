@@ -1,0 +1,89 @@
+// Test: `[][]T` -- an array type whose element type is itself an array.
+//
+// `[]T` used to be parsed by six hand-rolled copies of the same few lines, one for each place
+// a type can appear, and none of them recursed: a nested array could be built as a literal but
+// the type could not be written on the other side of a signature, so it existed only untyped.
+// Every one of those places is exercised here.
+
+struct Grid {
+	rows: [][]i64
+}
+
+type Table = [][]str
+
+fn sum(g:[][]i64 -- total:i64) {
+	0 -> total
+	0 g len 1 for i {
+		g i nth -> row
+		0 row len 1 for j {
+			total row j nth + -> total
+		}
+	}
+	total
+}
+
+// An unnamed parameter -- the other of the two `[` branches a parameter list has -- and a
+// nested array as a return type
+stack fn widen([][]i64 -- g:[][]i64) {
+	-> g
+	g [9 9] append
+}
+
+// The alias has to be load-bearing, or the only thing under test is that `type` parses
+fn corner(t:Table -- s:str) {
+	t 0 nth 0 nth
+}
+
+fn build(n:i64 -- g:[][]i64) {
+	[n][]i64 -> g
+	0 n 1 for i {
+		g i nth i append drop
+	}
+	g
+}
+
+fn main() {
+	"=== Literal ===" print nl
+	[[1 2] [3 4] [5]] -> lit
+	lit len print nl
+	lit sum print nl
+
+	"=== Parameter and return ===" print nl
+	lit widen -> wider
+	wider len print nl
+	wider sum print nl
+
+	"=== Sized ===" print nl
+	// `[n][]T` is n distinct empty arrays, not n nulls: the zero of an array is an empty one,
+	// the way the zero of str is a real empty string.
+	[3][]i64 -> made
+	made len print nl
+	made 0 nth len print nl
+	4 build sum print nl
+
+	"=== Struct field ===" print nl
+	Grid {
+		rows = [[7 8]]
+	} -> grid
+	grid <<rows sum print nl
+	grid [[1] [2] [3]] >>rows drop
+	grid <<rows len print nl
+
+	"=== Type alias ===" print nl
+	[["a" "b"] ["c"]] -> table
+	table 0 nth 1 nth print nl
+	table corner print nl
+
+	"=== Three levels ===" print nl
+	[[[1 2]] [[3]]] -> deep
+	deep len print nl
+	deep 0 nth 0 nth 1 nth print nl
+
+	"=== Empty ===" print nl
+	[][]str -> emptyTable
+	emptyTable len print nl
+	emptyTable ["z"] append -> emptyTable
+	emptyTable 0 nth 0 nth print nl
+
+	"done" print nl
+}

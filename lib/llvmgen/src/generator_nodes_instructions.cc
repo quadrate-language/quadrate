@@ -1155,6 +1155,27 @@ namespace Qd {
 			if (name == "makei" || name == "makef" || name == "makes" || name == "makep" || name == "append") {
 				lastPushedWasArray = true;
 			}
+
+			// `arr i nth` leaves an element, and its type is what a following `<<field` or
+			// `-> name` reads. Nothing here can work it out -- by the time `nth` runs the array
+			// is two pushes back and which name put it there is not recoverable -- so the
+			// validator records it on the node.
+			//
+			// Without it, a field access on the element fell through to the by-name search over
+			// every struct in the module: it took whichever one declares a field of that name
+			// and computed the offset from *its* layout. With `struct Aaa { p:f64  x:f64 }`
+			// alongside `struct Bbb { x:f64  y:f64 }`, `c 0 nth <<x` on a `[]Bbb` parameter read
+			// Aaa's offset for `x` and printed the value of Bbb's `y` -- silently, and decided
+			// by map order, so adding a struct could change an unrelated function's answer.
+			if (name == "nth") {
+				const std::string& element = inst->elementType();
+				if (!element.empty()) {
+					lastFieldAccessResultType = isKnownStruct(element) ? element : std::string();
+					lastStructConstructed = element;
+					lastStructWasConstructedInPlace = false;
+					lastPushedWasArray = isArrayType(element);
+				}
+			}
 		}
 	}
 

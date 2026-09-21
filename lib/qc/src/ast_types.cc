@@ -181,127 +181,9 @@ namespace Qd {
 					continue;
 				}
 
-				token = u8t_scanner_scan(scanner);
-				if (token != U8T_IDENTIFIER && token != '*' && token != '[') {
-					errorReporter->reportError(scanner, "Expected type after ':'");
+				const std::string fieldType = parseTypeFrom(u8t_scanner_scan(scanner), scanner, errorReporter);
+				if (fieldType.empty()) {
 					continue;
-				}
-
-				std::string fieldType;
-				if (token == '[') {
-					// Array type: []T
-					token = u8t_scanner_scan(scanner);
-					if (token == ']') {
-						token = u8t_scanner_scan(scanner);
-						if (token == U8T_IDENTIFIER) {
-							const char* elemType = u8t_scanner_token_text(scanner, &n);
-							fieldType = "[]" + std::string(elemType);
-						} else {
-							errorReporter->reportError(scanner, "Expected element type after '[]'");
-							continue;
-						}
-					} else {
-						reportArrayTypeBracketError(scanner, token, errorReporter);
-						continue;
-					}
-				} else if (token == '*') {
-					// Pointer type: *StructName
-					fieldType = "*";
-					token = u8t_scanner_scan(scanner);
-					if (token == U8T_IDENTIFIER) {
-						const char* typeName = u8t_scanner_token_text(scanner, &n);
-						fieldType += typeName;
-
-						// Check for qualified name: *module::StructName
-						char32_t peekChar = u8t_scanner_peek(scanner);
-						if (peekChar == ':') {
-							u8t_scanner_scan(scanner); // Consume first ':'
-							char32_t secondColon = u8t_scanner_peek(scanner);
-							if (secondColon == ':') {
-								u8t_scanner_scan(scanner); // Consume second ':'
-								char32_t nameToken = u8t_scanner_scan(scanner);
-								if (nameToken == U8T_IDENTIFIER) {
-									const char* qualName = u8t_scanner_token_text(scanner, &n);
-									fieldType += "::";
-									fieldType += qualName;
-								} else {
-									errorReporter->reportError(scanner, "Expected struct name after '::'");
-								}
-							}
-							// Note: If second char wasn't ':', we've consumed a single ':'
-							// which is an error in this context, but that will be handled
-							// on the next field parse attempt
-						}
-					} else {
-						errorReporter->reportError(scanner, "Expected type name after '*'");
-						continue;
-					}
-				} else {
-					// Regular type
-					const char* typeName = u8t_scanner_token_text(scanner, &n);
-					fieldType = typeName;
-
-					// Check for fn(...) type: fn(i64 -- i64)
-					if (fieldType == "fn") {
-						char32_t fnPeek = u8t_scanner_peek(scanner);
-						if (fnPeek == '(') {
-							u8t_scanner_scan(scanner); // consume '('
-							fieldType = "fn(";
-							bool needSpace = false;
-							while (true) {
-								char32_t ftok = u8t_scanner_scan(scanner);
-								if (ftok == U8T_EOF || ftok == ')') {
-									break;
-								}
-								if (ftok == '-') {
-									char32_t next = u8t_scanner_peek(scanner);
-									if (next == '-') {
-										u8t_scanner_scan(scanner);
-										if (needSpace) {
-											fieldType += " ";
-										}
-										fieldType += "-- ";
-										needSpace = false;
-										continue;
-									}
-								}
-								if (ftok == U8T_IDENTIFIER) {
-									size_t fn;
-									const char* ft = u8t_scanner_token_text(scanner, &fn);
-									if (needSpace) {
-										fieldType += " ";
-									}
-									fieldType += ft;
-									needSpace = true;
-								}
-							}
-							if (!fieldType.empty() && fieldType.back() == ' ') {
-								fieldType.pop_back();
-							}
-							fieldType += ")";
-						}
-					}
-
-					// Check for qualified name: module::StructName
-					char32_t peekChar = u8t_scanner_peek(scanner);
-					if (peekChar == ':') {
-						u8t_scanner_scan(scanner); // Consume first ':'
-						char32_t secondColon = u8t_scanner_peek(scanner);
-						if (secondColon == ':') {
-							u8t_scanner_scan(scanner); // Consume second ':'
-							char32_t nameToken = u8t_scanner_scan(scanner);
-							if (nameToken == U8T_IDENTIFIER) {
-								const char* qualName = u8t_scanner_token_text(scanner, &n);
-								fieldType += "::";
-								fieldType += qualName;
-							} else {
-								errorReporter->reportError(scanner, "Expected struct name after '::'");
-							}
-						}
-						// Note: If second char wasn't ':', we've consumed a single ':'
-						// which is an error in this context, but that will be handled
-						// on the next field parse attempt
-					}
 				}
 
 				AstNodeStructField* field = new AstNodeStructField(fieldNameStr, fieldType);
@@ -405,9 +287,8 @@ namespace Qd {
 							}
 						}
 						if (arrToken == ']') {
-							size_t etn;
 							std::string elementType;
-							if (parseArrayLiteralElementType(scanner, src, errorReporter, &etn, elementType) &&
+							if (parseArrayLiteralElementType(scanner, src, errorReporter, elementType) &&
 									!elementType.empty()) {
 								arrNode->setElementType(elementType);
 							}
@@ -907,9 +788,8 @@ namespace Qd {
 				// in expression position. Without it, `P { xs = [4]Cell }` would parse as a
 				// one-element literal and then choke on `Cell`.
 				if (elemToken == ']') {
-					size_t etn;
 					std::string elementType;
-					if (parseArrayLiteralElementType(scanner, src, errorReporter, &etn, elementType) &&
+					if (parseArrayLiteralElementType(scanner, src, errorReporter, elementType) &&
 							!elementType.empty()) {
 						arrNode->setElementType(elementType);
 					}
@@ -973,89 +853,10 @@ namespace Qd {
 		}
 
 		// Parse the target type
-		token = u8t_scanner_scan(scanner);
-		std::string targetType;
-
-		if (token == '[') {
-			// Array type: []T
-			token = u8t_scanner_scan(scanner);
-			if (token == ']') {
-				token = u8t_scanner_scan(scanner);
-				if (token == U8T_IDENTIFIER) {
-					const char* elemType = u8t_scanner_token_text(scanner, &n);
-					targetType = "[]" + std::string(elemType);
-				}
-			} else {
-				// Falling through to "Expected type after '='" sent the reader looking for a
-				// missing word; `type Grid = [10]i64` has a size where no type can take one.
-				reportArrayTypeBracketError(scanner, token, errorReporter);
-			}
-		} else if (token == U8T_IDENTIFIER) {
-			const char* typeName = u8t_scanner_token_text(scanner, &n);
-			targetType = typeName;
-
-			// Check for fn(...) type
-			if (targetType == "fn") {
-				char32_t peek = u8t_scanner_peek(scanner);
-				if (peek == '(') {
-					u8t_scanner_scan(scanner); // consume '('
-					targetType = "fn(";
-					bool needSpace = false;
-					while (true) {
-						char32_t ftok = u8t_scanner_scan(scanner);
-						if (ftok == U8T_EOF || ftok == ')') {
-							break;
-						}
-						if (ftok == '-') {
-							char32_t next = u8t_scanner_peek(scanner);
-							if (next == '-') {
-								u8t_scanner_scan(scanner);
-								if (needSpace) {
-									targetType += " ";
-								}
-								targetType += "-- ";
-								needSpace = false;
-								continue;
-							}
-						}
-						if (ftok == U8T_IDENTIFIER) {
-							size_t fn;
-							const char* ft = u8t_scanner_token_text(scanner, &fn);
-							if (needSpace) {
-								targetType += " ";
-							}
-							targetType += ft;
-							needSpace = true;
-						}
-					}
-					if (!targetType.empty() && targetType.back() == ' ') {
-						targetType.pop_back();
-					}
-					targetType += ")";
-				}
-			}
-
-			// Check for qualified name: module::Type
-			if (targetType.find("fn(") == std::string::npos) {
-				char32_t peek = u8t_scanner_peek(scanner);
-				if (peek == ':') {
-					u8t_scanner_scan(scanner);
-					char32_t peek2 = u8t_scanner_peek(scanner);
-					if (peek2 == ':') {
-						u8t_scanner_scan(scanner);
-						token = u8t_scanner_scan(scanner);
-						if (token == U8T_IDENTIFIER) {
-							const char* qualName = u8t_scanner_token_text(scanner, &n);
-							targetType += "::";
-							targetType += qualName;
-						}
-					}
-				}
-			}
-		}
+		const std::string targetType = parseType(scanner, errorReporter);
 
 		if (targetType.empty()) {
-			errorReporter->reportError(scanner, "Expected type after '=' in type alias");
+			// parseType has already reported what was wrong with it.
 			synchronize(scanner);
 			return nullptr;
 		}

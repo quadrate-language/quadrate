@@ -1,0 +1,68 @@
+// Test: a module-qualified element type, `[]mod::T`, and the nesting of one.
+//
+// The six hand-rolled `[]T` parsers read one identifier for the element type and stopped, so
+// a qualified one had no spelling either -- `[]math::Vec3` got as far as `[]math` and left the
+// `::Vec3` for whatever came next to choke on. The one shared type reader handles the two the
+// same way, which is why they are fixed together.
+//
+// What is checked here is the type: that it parses, that it is carried across a signature, a
+// struct field and an alias, that a literal of qualified structs satisfies it, and that a
+// field read off an element resolves against the element's own type.
+use math
+
+struct Path {
+	points: []math::Vec3
+}
+
+type Cloud = []math::Vec3
+
+fn count(ps:[]math::Vec3 -- n:i64) {
+	ps len
+}
+
+fn count_via_alias(c:Cloud -- n:i64) {
+	c len
+}
+
+fn first_x(c:Cloud -- x:f64) {
+	c 0 nth <<x
+}
+
+fn total(paths:[][]math::Vec3 -- n:i64) {
+	0 -> n
+	0 paths len 1 for i {
+		n paths i nth len + -> n
+	}
+	n
+}
+
+fn main() {
+	[math::Vec3 { x = 1.5 y = 2.0 z = 3.0 } math::Vec3 { x = 4.5 y = 5.0 z = 6.0 }] -> pair
+
+	"=== Parameter ===" print nl
+	pair count print nl
+
+	"=== Alias ===" print nl
+	pair count_via_alias print nl
+	pair first_x print nl
+
+	"=== Struct field ===" print nl
+	Path {
+		points = pair
+	} -> p
+	p <<points count print nl
+
+	"=== Nested ===" print nl
+	// Written out rather than `[pair]`: a local element carries only its coarse stack type,
+	// so a literal holding one infers `[]any` and would not satisfy the parameter. That is a
+	// limit of the inference, not of the type.
+	[[math::Vec3 { x = 1.5 y = 2.0 z = 3.0 }] [math::Vec3 { x = 4.5 y = 5.0 z = 6.0 }]] -> paths
+	paths len print nl
+	paths total print nl
+
+	"=== Sized, empty ===" print nl
+	[][]math::Vec3 -> none
+	none len print nl
+
+	"done" print nl
+}

@@ -644,7 +644,7 @@ namespace Qd {
 			// A type name hard against the ']' makes this the `[size]T` form, and what was
 			// parsed as elements above is the size expression instead.
 			std::string elementType;
-			if (!parseArrayLiteralElementType(scanner, src, errorReporter, n, elementType)) {
+			if (!parseArrayLiteralElementType(scanner, src, errorReporter, elementType)) {
 				return arrNode;
 			}
 			if (!elementType.empty()) {

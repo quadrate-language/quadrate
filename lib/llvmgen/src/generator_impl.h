@@ -104,6 +104,7 @@ namespace Qd {
 
 	// Forward declarations for helper functions
 	bool looksLikeStructType(const std::string& typeStr);
+	bool isArrayType(const std::string& typeStr);
 	std::string extractStructName(const std::string& typeStr);
 
 	/**
@@ -522,7 +523,11 @@ namespace Qd {
 		void generateFieldSet(AstNodeFieldSet* fieldSet, llvm::Value* ctx);
 		void generateArrayLiteral(AstNodeArrayLiteral* arrayLiteral, llvm::Value* ctx);
 		void generateSizedArrayLiteral(AstNodeArrayLiteral* arrayLiteral, llvm::Value* ctx);
+		std::string arrayMakeFunction(const std::string& elemType);
+		void callArrayMake(const std::string& elemType, llvm::Value* ctx);
+		void generateFilledArray(llvm::Value* ctx, const std::function<void()>& emitElement);
 		void generateStructFilledArray(const std::string& structName, llvm::Value* ctx);
+		void generateArrayFilledArray(const std::string& elemType, llvm::Value* ctx);
 		bool isKnownStruct(const std::string& typeName);
 		size_t getTypeSize(const std::string& typeName);
 

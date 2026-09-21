@@ -1,0 +1,10 @@
+// Test: two array literals written against each other are reported as that.
+//
+// A type name hard against a ']' makes the brackets a size, and a '[' there is an element
+// type -- `[2][]i64` is two empty `[]i64`. So `[1 2][3 4]` reads the second '[' as the first
+// one's element type and finds a size inside it. Reporting that as a size in an array type
+// sends the reader looking for a type they did not write; the two literals want a space.
+fn main() {
+	[[1 2][3 4]] -> g
+	g len print nl
+}

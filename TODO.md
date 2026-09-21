@@ -52,36 +52,38 @@ and are stable, so they can be referred to while working through them.
       matches "shallow", but it means `clone` gives independence at one level only, and the
       name should not suggest more than it does.
 
-- [ ] **Nested array types.** `[][]i64` does not exist: not as a type and, since the `[n]T`
-      work, reserved rather than supported as a literal. The cause is that `[]T` is parsed by
-      six hand-rolled copies of the same six lines — scan `[`, expect `]`, expect one
-      identifier — at `ast_declarations.cc:157`, `:278`, `:540`, `:655`, `ast_types.cc:188`
-      and `:914`. None recurses and none accepts a qualified `mod::Name` either. The fix is
-      one shared type parser that recurses, replacing all six, which is worth doing on its own
-      merits. Until then an array of arrays exists only untyped, through `[n]ptr` and a
-      `cast<ptr>` before every access.
-
 - [ ] **`[]T` satisfies a declared `ptr` parameter silently.** `unifyTypeName` treats a
       declared `ptr` as a top type that accepts anything
       (`lib/qc/src/semantic_validator_internal.h:438`), which is deliberate as an escape
       hatch but means an array can be handed to any of the stdlib functions that take a raw
-      `arr:ptr count:i64` buffer. `[3 1 2] -> a  a a len sort::ints` compiles clean and
-      prints several kilobytes of heap: `sort` reads the `qd_array_t` header as element data.
+      `arr:ptr count:i64` buffer. `[3 1 2] -> a  a a len sort::ints` compiles clean and sorts
+      the `qd_array_t` header as if it were the elements: magic, refcount and length go in
+      ascending order, so `a len` reads 3 before the call and 1363427669 after it — the
+      `QDAR` magic, now sitting in the length slot. The elements themselves are untouched, and
+      nothing reports anything, so what the program has afterwards is an array whose bounds
+      check passes for any index.
       Found 2026-09-20 while reviewing array creation; independent of that change.
 
 - [ ] **Two array worlds.** `[]T` is a `qd_array_t` — refcounted, length-carrying,
       bounds-checked — and is taken by 7 stdlib functions, all of them in `hof`. A raw `ptr`
       buffer is `mem::alloc` plus byte offsets with the length passed alongside, and is taken
-      by 41, including all of `sort`. The second is the one the stdlib actually uses, the
-      first is the one the language has syntax for, and the entry above is what happens when
-      a value crosses between them. Whether these converge, or the boundary is merely made
-      un-crossable, is the question.
+      by 54 public ones (79 counting the private helpers), including all 16 of `sort`. The
+      second is the one the stdlib actually uses, the first is the one the language has syntax
+      for, and the entry above is what happens when a value crosses between them. Whether
+      these converge, or the boundary is merely made un-crossable, is the question.
 
 ## Interpreter tier (lib/interp)
 
 - [ ] Not planned for this tier: structs, `defer`, `import`/`use`, anonymous functions. Imports in
       particular cannot mean anything on a device with no package resolution — qdos takes its
       scopes from `lib<name>.so` filenames — so they should keep refusing clearly.
+
+      Three of the four do. `struct` and `use` are refused where they are written ("nothing
+      declared here can be interpreted yet"), and a `defer` body is refused when the function
+      holding it is called ("this construct cannot be interpreted yet"). An anonymous function
+      is not: `fn (x:i64 -- r:i64) { x 1 + } -> g` reports `Expected ')' after receiver type in
+      method declaration`, which is the parser reading `fn (` as the start of a method rather
+      than a refusal of anything. It is the one of the four that does not say what is wrong.
 
 ## Deferred
 

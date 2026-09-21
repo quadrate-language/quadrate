@@ -1299,6 +1299,25 @@ namespace Qd {
 				return "";
 			}
 		}
+
+		// Type of an array literal itself: "[]i64", "[][]f64", "[]Point", or "[]any" when the
+		// elements do not agree on one or cannot be decided here.
+		std::string arrayLiteralTypeName(
+				AstNodeArrayLiteral* arrLit, const std::unordered_map<std::string, StackValueType>& localVariables) {
+			if (arrLit->hasElementType()) {
+				return arrLit->declaredArrayType();
+			}
+			if (arrLit->elements().empty()) {
+				return "[]any";
+			}
+			std::string elemType = arrayElementTypeName(arrLit->elements()[0].get(), localVariables);
+			for (size_t e = 1; e < arrLit->elements().size() && !elemType.empty(); e++) {
+				if (arrayElementTypeName(arrLit->elements()[e].get(), localVariables) != elemType) {
+					elemType.clear();
+				}
+			}
+			return elemType.empty() ? "[]any" : "[]" + elemType;
+		}
 	} // namespace
 
 	// A loop body has to leave the stack exactly as it found it: the next iteration starts where
@@ -1651,6 +1670,20 @@ namespace Qd {
 			return;
 		}
 
+		// An array element type -- `[n][]i64`, `[n][][]Point` -- makes n empty arrays, and an
+		// empty array constructs nothing, so there is no zero to ask the innermost type for.
+		// What has to hold is that the type names something, which isValidTypeName answers by
+		// recursing the same way the parser did to read it.
+		if (elem.size() > 2 && elem[0] == '[' && elem[1] == ']') {
+			if (!isValidTypeName(elem)) {
+				std::string errorMsg = "Unknown element type \'";
+				errorMsg += elem;
+				errorMsg += "\' in array literal";
+				reportError(lit, errorMsg.c_str());
+			}
+			return;
+		}
+
 		std::string resolved = elem;
 		auto aliasIt = mTypeAliases.find(resolved);
 		if (aliasIt != mTypeAliases.end()) {
@@ -1750,20 +1783,8 @@ namespace Qd {
 				// what is inside the brackets is the size expression, not elements.
 				if (arrLit->hasElementType()) {
 					validateSizedArrayLiteral(arrLit);
-					structTypeStack.push_back(arrLit->declaredArrayType());
-					break;
 				}
-				if (arrLit->elements().empty()) {
-					structTypeStack.push_back("[]any");
-				} else {
-					std::string elemType = arrayElementTypeName(arrLit->elements()[0].get(), localVariables);
-					for (size_t e = 1; e < arrLit->elements().size() && !elemType.empty(); e++) {
-						if (arrayElementTypeName(arrLit->elements()[e].get(), localVariables) != elemType) {
-							elemType.clear();
-						}
-					}
-					structTypeStack.push_back(elemType.empty() ? "[]any" : "[]" + elemType);
-				}
+				structTypeStack.push_back(arrayLiteralTypeName(arrLit, localVariables));
 				break;
 			}
 
@@ -2585,35 +2606,11 @@ namespace Qd {
 								// Array literal pushes a pointer with element type info
 								AstNodeArrayLiteral* arrLit = static_cast<AstNodeArrayLiteral*>(exprNode);
 								exprTypeStack.push_back(StackValueType::PTR);
-								if (arrLit->hasElementType()) {
-									exprStructTypeStack.push_back(arrLit->declaredArrayType());
-									break;
-								}
-								if (arrLit->elements().empty()) {
-									exprStructTypeStack.push_back("[]any");
-								} else {
-									IAstNode* firstElem = arrLit->elements()[0].get();
-									if (firstElem->type() == IAstNode::Type::LITERAL) {
-										auto* lit = static_cast<AstNodeLiteral*>(firstElem);
-										switch (lit->literalType()) {
-										case AstNodeLiteral::LiteralType::INTEGER:
-										case AstNodeLiteral::LiteralType::BOOL:
-											exprStructTypeStack.push_back("[]i64");
-											break;
-										case AstNodeLiteral::LiteralType::FLOAT:
-											exprStructTypeStack.push_back("[]f64");
-											break;
-										case AstNodeLiteral::LiteralType::STRING:
-											exprStructTypeStack.push_back("[]str");
-											break;
-										default:
-											exprStructTypeStack.push_back("[]any");
-											break;
-										}
-									} else {
-										exprStructTypeStack.push_back("[]any");
-									}
-								}
+								// Same inference as a literal anywhere else. This used to be a third
+								// copy that read element zero and recognised only the three scalar
+								// literals, so `xs = [[1 2]]` typed as `[]any` and a field declared
+								// `[][]i64` rejected the one literal that can fill it.
+								exprStructTypeStack.push_back(arrayLiteralTypeName(arrLit, localVariables));
 								break;
 							}
 							case IAstNode::Type::FUNCTION_POINTER_REFERENCE: {

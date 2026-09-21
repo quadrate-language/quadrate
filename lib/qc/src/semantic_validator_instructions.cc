@@ -1008,8 +1008,9 @@ namespace Qd {
 				structTypeStack.pop_back();
 			}
 			typeStack.pop_back();
+			std::string elemType;
 			if (arrayType.size() > 2 && arrayType[0] == '[' && arrayType[1] == ']') {
-				std::string elemType = arrayType.substr(2);
+				elemType = arrayType.substr(2);
 				if (elemType == "i64") {
 					typeStack.push_back(StackValueType::INT);
 					structTypeStack.push_back("");
@@ -1031,6 +1032,13 @@ namespace Qd {
 				// Unknown array type, fall back to ANY
 				typeStack.push_back(StackValueType::ANY);
 				structTypeStack.push_back("");
+			}
+			// Hand the element type to the backend, which has no way to reach it: see
+			// AstNodeInstruction::elementType. Only on the reporting pass -- the isolated
+			// signature analysis walks the same nodes with a stack it has less information
+			// about, and its answer must not overwrite this one.
+			if (reportErrors && node != nullptr && node->type() == IAstNode::Type::INSTRUCTION) {
+				static_cast<AstNodeInstruction*>(node)->setElementType(elemType);
 			}
 			return;
 		}

@@ -1,0 +1,23 @@
+// Test: a field access the backend cannot resolve fails the build.
+//
+// With no type to go on, `<<x` used to search every struct in the module and take the first
+// one declaring a field of that name -- a coin toss decided by map order, which computed the
+// offset from the wrong layout without saying so. Where more than one struct is a candidate
+// it now reports the ambiguity, and reporting it fails the compile: printing to stderr and
+// carrying on left a binary with the field read missing from it and an exit status of zero.
+use mem
+
+struct Aaa {
+	pad: f64
+	x: f64
+}
+
+struct Bbb {
+	x: f64
+	y: f64
+}
+
+fn main() {
+	16 mem::alloc! -> raw
+	raw <<x print nl
+}

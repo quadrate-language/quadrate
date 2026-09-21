@@ -377,9 +377,6 @@ namespace Qd {
 	// interesting case: it is an expression that builds an array, not a type. Arrays are dynamic
 	// and `[]i64` is the only array type there is, so a size in type position is always a
 	// mistake -- and saying so beats "Expected ']'", which sends the reader looking for a typo.
-	//
-	// Shared because the `[]T` type parser is written out six times, and six copies of a
-	// diagnostic drift.
 	inline void reportArrayTypeBracketError(u8t_scanner* scanner, char32_t token, ErrorReporter* errorReporter) {
 		if (token == U8T_INTEGER || token == U8T_IDENTIFIER) {
 			errorReporter->reportError(scanner,
@@ -390,52 +387,221 @@ namespace Qd {
 		errorReporter->reportError(scanner, "Expected ']' after '[' in an array type");
 	}
 
-	// Parses the element type written hard against the `]` of an array literal, as in `[10]i64`
-	// or `[n]mod::Point`. `elementType` comes back empty when there is no type name there at
-	// all, which is what keeps `[1 2 3]` and `[] -> x` meaning exactly what they always did.
+	// Reads the `<...>` of `Type<T>` or `Type<T, U>` onto `typeStr`; the caller has consumed the
+	// '<'. A brace can never be a type argument, and skipping over one swallowed the body's own
+	// brace -- `fn i(){fn(i<}>--){}}` parsed clean one `}` short of what it had read -- so it
+	// ends the run and is reported.
+	inline void parseTypeArgumentList(u8t_scanner* scanner, ErrorReporter* errorReporter, std::string& typeStr) {
+		size_t n;
+		typeStr += "<";
+		int depth = 1;
+		while (depth > 0) {
+			char32_t token = u8t_scanner_scan(scanner);
+			if (token == '<') {
+				depth++;
+				typeStr += "<";
+			} else if (token == '>') {
+				depth--;
+				typeStr += ">";
+			} else if (token == ',') {
+				typeStr += ",";
+			} else if (token == U8T_IDENTIFIER) {
+				typeStr += std::string(u8t_scanner_token_text(scanner, &n));
+			} else if (token == U8T_EOF) {
+				// An unterminated `<` used to end the run in silence, which made `Box<` a type
+				// the parser accepted: nothing rejected it until the validator, so the formatter
+				// -- which only promises anything about source that parses -- wrote it back out
+				// and its own output no longer parsed. Found by fuzz_formatter.
+				errorReporter->reportError(scanner, "Expected '>' to close the type arguments");
+				break;
+			} else if (token == '{' || token == '}') {
+				errorReporter->reportError(scanner, "Unexpected '{' or '}' in type arguments");
+				break;
+			}
+		}
+	}
+
+	// Reads the `(...)` of an `fn(i64 -- i64)` type; the caller has scanned the identifier `fn`.
+	// Returns "" with nothing consumed when no '(' follows, which is what lets a struct or a
+	// parameter be called `fn` as an ordinary name.
+	inline std::string tryParseFnType(u8t_scanner* scanner) {
+		if (u8t_scanner_peek(scanner) != '(') {
+			return "";
+		}
+		u8t_scanner_scan(scanner); // consume '('
+		std::string typeStr = "fn(";
+		bool needSpace = false;
+		while (true) {
+			char32_t tok = u8t_scanner_scan(scanner);
+			if (tok == U8T_EOF || tok == ')') {
+				break;
+			}
+			if (tok == '-' && u8t_scanner_peek(scanner) == '-') {
+				u8t_scanner_scan(scanner); // consume second '-'
+				if (needSpace) {
+					typeStr += " ";
+				}
+				typeStr += "-- ";
+				needSpace = false;
+				continue;
+			}
+			if (tok == U8T_IDENTIFIER) {
+				size_t n;
+				const char* text = u8t_scanner_token_text(scanner, &n);
+				if (needSpace) {
+					typeStr += " ";
+				}
+				typeStr += text;
+				needSpace = true;
+			}
+		}
+		if (!typeStr.empty() && typeStr.back() == ' ') {
+			typeStr.pop_back();
+		}
+		typeStr += ")";
+		return typeStr;
+	}
+
+	// Appends the `::Name` half of a qualified type name, if one is written. The caller has
+	// scanned the first half. Returns false on a `::` with no name after it, having reported it.
+	inline bool parseQualifiedTypeTail(u8t_scanner* scanner, ErrorReporter* errorReporter, std::string& typeStr) {
+		if (u8t_scanner_peek(scanner) != U':') {
+			return true;
+		}
+		u8t_scanner_scan(scanner); // Consume first ':'
+		if (u8t_scanner_peek(scanner) != U':') {
+			// A lone ':' after a type name is a mistake in every position a type appears, but
+			// the character is already gone; the caller's next token is what reports it.
+			return true;
+		}
+		u8t_scanner_scan(scanner); // Consume second ':'
+		size_t n;
+		if (u8t_scanner_scan(scanner) != U8T_IDENTIFIER) {
+			errorReporter->reportError(scanner, "Expected a type name after '::'");
+			return false;
+		}
+		typeStr += "::";
+		typeStr += u8t_scanner_token_text(scanner, &n);
+		return true;
+	}
+
+	// The one reader for a type as it is written:
+	//
+	//     type      := '[' ']' type | '*' qualified | 'fn' '(' ... ')' | qualified generics?
+	//     qualified := name ( '::' name )?
+	//     generics  := '<' ... '>'
+	//
+	// `token` is the type's first token, which every caller has already scanned -- looking at it
+	// is how they know a type is coming at all. Returns "" on a malformed type, having reported
+	// it; the caller decides whether to recover or give up on the construct.
+	//
+	// It recurses, which is the whole point: `[]T` used to be written out at each of the six
+	// places a type can appear, none of the copies recursed, and so `[][]i64` had no spelling.
+	// A qualified element type, `[]mod::Point`, had none either -- the copies read one
+	// identifier and stopped.
+	inline std::string parseTypeFrom(char32_t token, u8t_scanner* scanner, ErrorReporter* errorReporter) {
+		size_t n;
+
+		// The `[]` wrappers are a loop rather than a recursion. Their depth is whatever the
+		// source writes, and one stack frame per wrapper turns `[][][]...` repeated across a
+		// file into a crash instead of a diagnostic. The cap is what keeps a type the parser
+		// accepts from reaching the recursive readers downstream -- isValidTypeName peels one
+		// `[]` per frame -- and nothing anyone means to write comes near it.
+		constexpr size_t kMaxArrayDepth = 64;
+		size_t arrayDepth = 0;
+		while (token == '[') {
+			const char32_t closing = u8t_scanner_scan(scanner);
+			if (closing != ']') {
+				reportArrayTypeBracketError(scanner, closing, errorReporter);
+				return "";
+			}
+			++arrayDepth;
+			token = u8t_scanner_scan(scanner);
+		}
+		if (arrayDepth > kMaxArrayDepth) {
+			// Reported after the loop rather than inside it, so a pathological type is one
+			// diagnostic and not one per bracket pair.
+			errorReporter->reportError(scanner, "Array type nested too deeply");
+			return "";
+		}
+		std::string arrayPrefix;
+		arrayPrefix.reserve(arrayDepth * 2);
+		for (size_t i = 0; i < arrayDepth; i++) {
+			arrayPrefix += "[]";
+		}
+
+		if (token == '*') {
+			if (u8t_scanner_scan(scanner) != U8T_IDENTIFIER) {
+				errorReporter->reportError(scanner, "Expected type name after '*'");
+				return "";
+			}
+			std::string typeStr = arrayPrefix + "*";
+			typeStr += u8t_scanner_token_text(scanner, &n);
+			return parseQualifiedTypeTail(scanner, errorReporter, typeStr) ? typeStr : "";
+		}
+
+		if (token != U8T_IDENTIFIER) {
+			errorReporter->reportError(scanner, "Expected a type name");
+			return "";
+		}
+
+		std::string typeStr = u8t_scanner_token_text(scanner, &n);
+		if (typeStr == "fn") {
+			const std::string fnType = tryParseFnType(scanner);
+			if (!fnType.empty()) {
+				return arrayPrefix + fnType;
+			}
+		}
+		if (!parseQualifiedTypeTail(scanner, errorReporter, typeStr)) {
+			return "";
+		}
+		if (u8t_scanner_peek(scanner) == '<') {
+			u8t_scanner_scan(scanner); // consume '<'
+			parseTypeArgumentList(scanner, errorReporter, typeStr);
+		}
+		return arrayPrefix + typeStr;
+	}
+
+	// Reads a type at a position where the caller has not scanned its first token yet.
+	inline std::string parseType(u8t_scanner* scanner, ErrorReporter* errorReporter) {
+		return parseTypeFrom(u8t_scanner_scan(scanner), scanner, errorReporter);
+	}
+
+	// Parses the element type written hard against the `]` of an array literal, as in `[10]i64`,
+	// `[n]mod::Point` or `[10][]i64`. `elementType` comes back empty when there is no type there
+	// at all, which is what keeps `[1 2 3]` and `[] -> x` meaning exactly what they always did.
 	// Returns false on a malformed one, having reported it.
 	//
 	// The adjacency is the whole disambiguation: `[10]i64` is ten zeros, `[10] i64` is a
 	// one-element array followed by a stray word. Same discipline as parseInstructionTypeParam,
-	// and for the same reason -- peekNextChar does not skip whitespace.
+	// and for the same reason -- peekNextChar does not skip whitespace. It is also what decides
+	// a `[` here: `[10][]i64` is ten empty `[]i64`, while the two adjacent literals that could
+	// otherwise be read out of it are written `[10] []i64`, with the space.
 	inline bool parseArrayLiteralElementType(
-			u8t_scanner* scanner, const char* src, ErrorReporter* errorReporter, size_t* n, std::string& elementType) {
+			u8t_scanner* scanner, const char* src, ErrorReporter* errorReporter, std::string& elementType) {
 		elementType.clear();
 		const char32_t next = peekNextChar(scanner, src);
-		// A '[' here would be a nested element type, `[][]i64`. Nothing can be done with one
-		// yet -- the six `[]T` type parsers do not recurse, so the type is unwriteable on the
-		// other side of a signature -- but it has to be caught rather than read as two adjacent
-		// literals, which left a value on the stack and reported that instead.
 		if (next == U'[') {
-			errorReporter->reportError(scanner,
-					"A nested array element type is not supported yet: '[]T' does not accept another '[]' as its "
-					"element type");
-			return false;
+			u8t_scanner_scan(scanner); // Consume the '[' that opens the element type
+			// `[]` is the only thing an element type can start with. Anything else means two
+			// array literals were written against each other, which is the likelier mistake by
+			// far -- and reporting it as a size in an array type sends the reader looking for a
+			// type they did not write.
+			if (u8t_scanner_peek(scanner) != U']') {
+				errorReporter->reportError(scanner,
+						"Two array literals written against each other: the '[' after a ']' opens the first "
+						"one's element type. Separate them with a space");
+				return false;
+			}
+			elementType = parseTypeFrom('[', scanner, errorReporter);
+			return !elementType.empty();
 		}
 		const bool startsTypeName = (next >= U'a' && next <= U'z') || (next >= U'A' && next <= U'Z') || next == U'_';
 		if (!startsTypeName) {
 			return true;
 		}
-		if (u8t_scanner_scan(scanner) != U8T_IDENTIFIER) {
-			errorReporter->reportError(scanner, "Expected an element type after ']'");
-			return false;
-		}
-		elementType = u8t_scanner_token_text(scanner, n);
-
-		// Qualified name: module::TypeName
-		if (u8t_scanner_peek(scanner) == U':') {
-			u8t_scanner_scan(scanner); // Consume first ':'
-			if (u8t_scanner_peek(scanner) == U':') {
-				u8t_scanner_scan(scanner); // Consume second ':'
-				if (u8t_scanner_scan(scanner) != U8T_IDENTIFIER) {
-					errorReporter->reportError(scanner, "Expected a type name after '::'");
-					return false;
-				}
-				elementType += "::";
-				elementType += u8t_scanner_token_text(scanner, n);
-			}
-		}
-		return true;
+		elementType = parseTypeFrom(u8t_scanner_scan(scanner), scanner, errorReporter);
+		return !elementType.empty();
 	}
 
 	// Parse string interpolation: $"hello {name} is {age}" desugars to

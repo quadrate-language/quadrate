@@ -1533,9 +1533,15 @@ namespace Qd {
 
 					// Store in local variables map
 					localVariables[receiverName] = receiverAlloca;
-					// Qualify receiver type with module prefix if not already qualified
+					// Qualify receiver type with module prefix if not already qualified. The
+					// test is against mainModuleName, not the literal "main": the program's own
+					// module is named after whatever was handed to generate(), which for a file
+					// compiled directly is its path. Comparing with "main" qualified the
+					// receiver as `<path>::Bbb`, which findStructDefinition resolves to nothing,
+					// so `b <<x` in a method fell through to the by-name search over every
+					// struct and took whichever one declares a field of that name.
 					std::string qualifiedReceiverType = receiverType;
-					if (receiverType.find("::") == std::string::npos && currentModulePrefix != "main") {
+					if (receiverType.find("::") == std::string::npos && currentModulePrefix != mainModuleName) {
 						qualifiedReceiverType = currentModulePrefix + "::" + receiverType;
 					}
 					localVariableStructTypes[receiverName] = qualifiedReceiverType;

@@ -21,4 +21,14 @@ fn main() {
 	f len print nl            // 3
 	[1.5 2.5] -> g
 	g len print nl            // 2
+
+	// A '[' hard against the ']' is an element type like any other, so the same rule decides
+	// between an array of arrays and two array literals in a row
+	[2][]i64 -> rows
+	rows len print nl         // 2: two empty []i64
+	rows 0 nth len print nl   // 0
+
+	[2] []i64 -> second -> first
+	first len print nl        // 1: one element, the number 2
+	second len print nl       // 0: an empty []i64
 }

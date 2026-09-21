@@ -454,19 +454,31 @@ namespace Qd {
 					}
 				}
 			}
-			// Only error on ambiguity when no type info was available at all.
-			// If structTypeName was set, the specific lookup failed due to
-			// module aliasing — the fallback is a reasonable best-effort.
-			if (matchCount > 1 && structTypeName.empty()) {
-				std::cerr << "Error: ambiguous field '<<" << fieldName << "' found in " << matchCount
-						  << " structs. Use 'as StructType' to disambiguate, e.g.: value as " << selectedStruct << " <<"
+			// The fallback picks whichever struct comes first in the map, so it is only
+			// answerable when exactly one declares the field. With more than one it is a coin
+			// toss decided by map order, and it computes the offset from the wrong layout
+			// without saying so -- `b <<x` in a method on `Bbb` read `Aaa`'s `x` and returned
+			// the value of `Bbb`'s `y`. Say so instead, whether or not a type was known: a
+			// known one that reached here is a type that resolved to nothing, which is no more
+			// information than none.
+			if (matchCount > 1) {
+				std::cerr << "Error: ambiguous field '<<" << fieldName << "' found in " << matchCount << " structs";
+				if (!structTypeName.empty()) {
+					std::cerr << " and '" << structTypeName << "' names no struct that is known here";
+				}
+				std::cerr << ". Use 'as StructType' to disambiguate, e.g.: value as " << selectedStruct << " <<"
 						  << fieldName << std::endl;
+				// Both of these give up without emitting the read, so the build has to fail:
+				// printing to stderr and carrying on produced a binary with a field access
+				// missing from it and an exit status that said everything was fine.
+				compilationFailed = true;
 				return;
 			}
 		}
 
 		if (!matchingField) {
 			std::cerr << "Error: Unknown field: " << fieldName << std::endl;
+			compilationFailed = true;
 			return;
 		}
 
@@ -757,22 +769,46 @@ namespace Qd {
 		builder->CreateCall(pushPtrFn, {ctx, structPtr});
 	}
 
-	// Emits `[n]T` for a struct T: an array of n distinct `T {}` instances. The size is already
-	// on the Quadrate stack.
+	// The qd_make* entry point that builds an array of `elemType`. A type parameter of the
+	// enclosing generic reaches qd_makea, whose array adopts a type on first append, because
+	// generics are erased and the concrete type is not known at run time.
+	std::string LlvmGenerator::Impl::arrayMakeFunction(const std::string& elemType) {
+		if (elemType == "i64" || elemType == "i32" || elemType == "i16" || elemType == "i8" || elemType == "u64" ||
+				elemType == "u32" || elemType == "u16" || elemType == "u8") {
+			return "qd_makei";
+		}
+		if (elemType == "f64" || elemType == "f32") {
+			return "qd_makef";
+		}
+		if (elemType == "str" || elemType == "string") {
+			return "qd_makes";
+		}
+		if (elemType == "ptr" || isArrayType(elemType) || isKnownStruct(elemType)) {
+			return "qd_makep";
+		}
+		return "qd_makea";
+	}
+
+	// Builds an array of `elemType` from the size already on the Quadrate stack.
+	void LlvmGenerator::Impl::callArrayMake(const std::string& elemType, llvm::Value* ctx) {
+		const std::string fnName = arrayMakeFunction(elemType);
+		llvm::Function* makeFn = module->getFunction(fnName);
+		if (!makeFn) {
+			auto fnTy = llvm::FunctionType::get(execResultTy, {contextPtrTy}, false);
+			makeFn = llvm::Function::Create(fnTy, llvm::Function::ExternalLinkage, fnName, *module);
+		}
+		builder->CreateCall(makeFn, {ctx});
+	}
+
+	// Emits `[n]T` for a T whose zero is a value that has to be built rather than a bit pattern
+	// -- a struct instance, or an empty array. The size is already on the Quadrate stack.
 	//
 	// The array itself comes from qd_makep, the same entry point the scalar forms use, so the
 	// size is validated in one place -- a negative size reports "makep: negative size" rather
 	// than reaching qd_array_create, where it became a huge size_t, a failed malloc and a null
 	// array that only showed up as "len: null array" further down the program. The loop then
-	// overwrites each of the n null slots with a constructed struct.
-	void LlvmGenerator::Impl::generateStructFilledArray(const std::string& structName, llvm::Value* ctx) {
-		const StructLayout* layoutPtr = findStructDefinition(structName);
-		if (layoutPtr == nullptr) {
-			std::cerr << "Error: Unknown struct type in array literal: " << structName << std::endl;
-			return;
-		}
-		const StructLayout& layout = *layoutPtr;
-
+	// overwrites each of the n null slots with whatever `emitElement` pushes.
+	void LlvmGenerator::Impl::generateFilledArray(llvm::Value* ctx, const std::function<void()>& emitElement) {
 		// Take the size for the loop bound, then put it back for qd_makep to consume.
 		llvm::Value* count = generateInlinePopInt(ctx);
 		builder->CreateCall(pushIntFn, {ctx, count});
@@ -812,12 +848,7 @@ namespace Qd {
 		builder->SetInsertPoint(bodyBlock);
 		builder->CreateCall(dupFn, {ctx});
 		builder->CreateCall(pushIntFn, {ctx, builder->CreateLoad(int64Ty, idxPtr, "arrfill_i2")});
-		for (const auto& field : layout.fields) {
-			for (IAstNode* defaultNode : field.defaultValue) {
-				generateNode(defaultNode, ctx);
-			}
-		}
-		generateStructConstruction(layout.name, ctx);
+		emitElement();
 		builder->CreateCall(setFn, {ctx});
 		llvm::Value* nextIdx = builder->CreateAdd(
 				builder->CreateLoad(int64Ty, idxPtr, "arrfill_i3"), builder->getInt64(1), "arrfill_next");
@@ -828,13 +859,40 @@ namespace Qd {
 		lastPushedWasArray = true;
 	}
 
+	// `[n]T` for a struct T: n distinct `T {}`. Null slots are what makes field access on an
+	// unfilled one segfault, so the zero of a struct is a constructed one. The validator has
+	// already checked that every field has a default, which is what makes `Point {}` legal.
+	void LlvmGenerator::Impl::generateStructFilledArray(const std::string& structName, llvm::Value* ctx) {
+		const StructLayout* layoutPtr = findStructDefinition(structName);
+		if (layoutPtr == nullptr) {
+			std::cerr << "Error: Unknown struct type in array literal: " << structName << std::endl;
+			return;
+		}
+		const StructLayout& layout = *layoutPtr;
+		generateFilledArray(ctx, [&] {
+			for (const auto& field : layout.fields) {
+				for (IAstNode* defaultNode : field.defaultValue) {
+					generateNode(defaultNode, ctx);
+				}
+			}
+			generateStructConstruction(layout.name, ctx);
+		});
+	}
+
+	// `[n][]T` : n distinct empty arrays. The zero of an array is an empty one, the way the zero
+	// of str is a real empty string rather than null -- a null slot only shows up later, as
+	// "len: null array" from the first thing that reads it.
+	void LlvmGenerator::Impl::generateArrayFilledArray(const std::string& elemType, llvm::Value* ctx) {
+		const std::string inner = elemType.substr(2);
+		generateFilledArray(ctx, [&] {
+			builder->CreateCall(pushIntFn, {ctx, builder->getInt64(0)});
+			callArrayMake(inner, ctx);
+		});
+	}
+
 	// Emits the `[size]T` form. The size expression leaves one integer on the Quadrate stack
-	// (or zero is pushed when the size was left out, as in `[]i64`), then the qd_make* entry
-	// point for the element type pops it and returns the array.
-	//
-	// The element-type dispatch is the one `make<T>` had: a type parameter of the enclosing
-	// generic reaches qd_makea, whose array adopts a type on first append, because generics are
-	// erased and the concrete type is not known at run time.
+	// (or zero is pushed when the size was left out, as in `[]i64`), then the entry point for
+	// the element type pops it and returns the array.
 	void LlvmGenerator::Impl::generateSizedArrayLiteral(AstNodeArrayLiteral* arrayLiteral, llvm::Value* ctx) {
 		const auto& sizeExpr = arrayLiteral->elements();
 		if (sizeExpr.empty()) {
@@ -847,36 +905,17 @@ namespace Qd {
 
 		const std::string& elemType = arrayLiteral->elementType();
 
-		// A struct element type fills with instances rather than nulls: `[2]Point` is two
-		// distinct `Point {}`. Null slots are what makes field access on an unfilled slot
-		// segfault, so the zero of a struct is a constructed one. The validator has already
-		// checked that every field has a default, which is what makes `Point {}` legal.
+		// The two element types whose zero has to be built rather than allocated.
 		if (isKnownStruct(elemType)) {
 			generateStructFilledArray(elemType, ctx);
 			return;
 		}
-
-		std::string fnName;
-		if (elemType == "i64" || elemType == "i32" || elemType == "i16" || elemType == "i8" || elemType == "u64" ||
-				elemType == "u32" || elemType == "u16" || elemType == "u8") {
-			fnName = "qd_makei";
-		} else if (elemType == "f64" || elemType == "f32") {
-			fnName = "qd_makef";
-		} else if (elemType == "str" || elemType == "string") {
-			fnName = "qd_makes";
-		} else if (elemType == "ptr" || isKnownStruct(elemType) ||
-				   (elemType.size() > 2 && elemType[0] == '[' && elemType[1] == ']')) {
-			fnName = "qd_makep";
-		} else {
-			fnName = "qd_makea";
+		if (isArrayType(elemType)) {
+			generateArrayFilledArray(elemType, ctx);
+			return;
 		}
 
-		llvm::Function* makeFn = module->getFunction(fnName);
-		if (!makeFn) {
-			auto fnTy = llvm::FunctionType::get(execResultTy, {contextPtrTy}, false);
-			makeFn = llvm::Function::Create(fnTy, llvm::Function::ExternalLinkage, fnName, *module);
-		}
-		builder->CreateCall(makeFn, {ctx});
+		callArrayMake(elemType, ctx);
 		lastPushedWasArray = true;
 	}
 

@@ -601,11 +601,18 @@ namespace Qd {
 						continue;
 					}
 
-					// Check for qualified type names (e.g., vec2::Vec2)
-					size_t colonPos = typeName.find("::");
+					// Check for qualified type names (e.g., vec2::Vec2). The brackets come off
+					// first: `[]vec2::Vec2` names the same type `vec2::Vec2` does, and looking
+					// for the "::" before peeling them read the module name as "[]vec2" and told
+					// the author to `use []vec2`.
+					std::string namedType = typeName;
+					while (namedType.size() > 2 && namedType[0] == '[' && namedType[1] == ']') {
+						namedType = namedType.substr(2);
+					}
+					size_t colonPos = namedType.find("::");
 					if (colonPos != std::string::npos) {
-						std::string moduleName = typeName.substr(0, colonPos);
-						std::string structTypeName = typeName.substr(colonPos + 2);
+						std::string moduleName = namedType.substr(0, colonPos);
+						std::string structTypeName = namedType.substr(colonPos + 2);
 
 						// Check if the module is imported
 						if (mImportedModules.find(moduleName) == mImportedModules.end()) {

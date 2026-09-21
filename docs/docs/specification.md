@@ -326,15 +326,27 @@ element types disagree is a compile-time error where they are known.
 The zero value MUST be `0` for the integer types, `0.0` for `f64` and `f32`, an empty string
 for `str`, and null for `ptr`. For a struct type, `[n]T` MUST produce `n` distinct instances,
 each constructed as `T {}`; it is therefore well-formed exactly where `T {}` is, which
-requires every field of `T` to declare a default. For a type parameter of the enclosing
-generic function, the element type is not known at run time and the array MUST adopt one from
-the first value appended.
+requires every field of `T` to declare a default. For an array element type, `[n][]T` MUST
+produce `n` distinct empty arrays, on the same principle: the zero of an array is an empty
+one. For a type parameter of the enclosing generic function, the element type is not known at
+run time and the array MUST adopt one from the first value appended.
 
 `[n]T` is an expression, not a type. Arrays are dynamic and `[]T` is the only array type, so
 `[10]i64` and `[]i64` both produce a value of type `[]i64` and a size MUST be rejected
 wherever a type is expected.
 
-Arrays MUST be represented as `ptr` on the stack. In type annotations, arrays MAY be written as `[]T` (e.g., `[]i64`, `[]f64`, `[]str`) to indicate the element type. This is a compile-time annotation; at runtime, arrays are pointers.
+The element type MAY itself be an array, so `[][]i64` is the type of an array of `[]i64`, and
+`[n][]i64` builds one. A `[` hard against a `]` is an element type by the same adjacency rule
+a type name is, so two array literals written in a row MUST be separated by whitespace.
+
+```quadrate
+[][]i64               // The type: an array whose elements are []i64
+[2][]i64              // Two distinct empty []i64
+[[1 2] [3 4]]         // Two []i64 with elements, an expression of type [][]i64
+[1 2] [3 4]           // Two array literals, which the space is what makes them
+```
+
+Arrays MUST be represented as `ptr` on the stack. In type annotations, arrays MAY be written as `[]T` (e.g., `[]i64`, `[]f64`, `[]str`, `[]mod::Point`, `[][]i64`) to indicate the element type. This is a compile-time annotation; at runtime, arrays are pointers.
 
 ### 3.3 Generic Types
 
