@@ -333,6 +333,40 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **u8t tokenizer updated to 1.4.0.**
 ### Fixed
 
+- **The interpreter tier refuses what it does not interpret, by name.** `defer`, structs,
+  methods, anonymous functions and module imports are all deliberately outside `lib/interp`,
+  and the README has always said they are "reported as an error rather than failing silently".
+  Two of the five were not.
+
+  An anonymous function reported the parser's `Expected ')' after receiver type in method
+  declaration`. `fn (` opens a method when a name follows the receiver and an anonymous
+  function when the body does — `fn (v:Vec) push(x:i64 -- )` against
+  `fn (x:i64 -- r:i64) { x 1 + }` — and the tier decided between program and function body on
+  the leading keyword alone, so the second was handed to the declaration parser, which read
+  its signature as a receiver. What came back described a method nobody had written. The
+  choice now looks past the `)` for the `{`, and a leading lambda is wrapped and refused as
+  the value it is:
+
+  ```
+  fn (x:i64 -- r:i64) { x 1 + } -> g
+  an anonymous function cannot be interpreted yet
+  ```
+
+  A method was worse than unclear: it was accepted. `fn (p:Point) magnitude( -- r:i64)` was
+  recorded under the bare name `magnitude` with its receiver dropped on the floor, so it
+  answered to that name and returned a value, in a tier with no structs for it to have a
+  receiver in. It is refused now, and refused before anything is recorded, so a program that
+  mixes a method in with functions leaves none of itself behind rather than half of itself.
+
+  The refusals that already worked now say which construct they are about instead of
+  `this construct cannot be interpreted yet` and `nothing declared here can be interpreted
+  yet` -- `'defer' cannot be interpreted yet`, `a struct declaration`, `a module import` —
+  which is the rule the rest of the tier's errors already follow.
+
+  The `double` example in `lib/interp/README.md` was wrong in a way the same section explains:
+  a signature whose inputs are all named binds them and takes them off the stack, so
+  `fn double(x:i64 -- r:i64) { 2 * }` leaves the body one value short. It reads `{ x 2 * }`.
+
 - **A `[]T` no longer satisfies a declared `ptr`.** `unifyTypeName` treated a declared `ptr` as
   a top type that accepts anything, so an array could be handed to any of the 54 public stdlib
   functions that take an `arr:ptr count:i64` buffer. The pointer an array is represented by

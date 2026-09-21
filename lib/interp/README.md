@@ -94,9 +94,14 @@ as the body of one. A leading `fn`, `const`, `struct`, `enum`, `use`, `type` or
 `test` decides which, so an error always concerns what the caller meant to write.
 
 ```c
-qd_interp_eval(interp, "fn double(x:i64 -- r:i64) { 2 * }");  // defines
-qd_interp_eval(interp, "5 double");                           // 10
+qd_interp_eval(interp, "fn double(x:i64 -- r:i64) { x 2 * }");  // defines
+qd_interp_eval(interp, "5 double");                             // 10
 ```
+
+A leading `fn (` is the exception, since it opens a method when a name follows
+the receiver and an anonymous function when the body does. Only the first
+declares; the second is a value, and is refused as one rather than read as a
+malformed method.
 
 `qd_interp_undeclare()` removes a declaration again, and a name that shadowed a
 registered native becomes that native once more. Each declaration owns the parse
@@ -154,9 +159,12 @@ locals and parameters, `const` and `enum` declarations, `cast<T>`, array
 literals and Quadrate-defined functions.
 
 `defer`, structs, methods, anonymous functions and module imports are not
-interpreted; they are reported as an error rather than failing silently.
-Imports in particular cannot mean anything on a device with no package
-resolution, so they should keep refusing clearly.
+interpreted. Each is refused by name — `a method cannot be interpreted yet` —
+rather than failing silently or reporting the parse it happened to break. A
+declaration is refused before anything is recorded, so a program that mixes a
+method in with functions leaves none of itself behind. Imports in particular
+cannot mean anything on a device with no package resolution, so they should keep
+refusing clearly.
 
 A `for` whose start is a float steps by a float, and the other two bounds are
 converted into that domain — the same rule the compiled tier follows.

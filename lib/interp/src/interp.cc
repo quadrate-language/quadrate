@@ -856,10 +856,8 @@ namespace {
 		return true;
 	}
 
-	// Whether the source declares rather than evaluates; a leading keyword decides.
-	bool startsWithDeclaration(const char* source) {
-		const char* p = source;
-		// Skip comments too: a stored program usually opens with one
+	// Whitespace and comments; a stored program usually opens with one
+	const char* skipTrivia(const char* p) {
 		for (;;) {
 			while (*p == ' ' || *p == '\t' || *p == '\n' || *p == '\r') {
 				p++;
@@ -880,20 +878,100 @@ namespace {
 				}
 				continue;
 			}
-			break;
+			return p;
 		}
+	}
+
+	bool isWordChar(char c) {
+		return (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || (c >= '0' && c <= '9') || c == '_';
+	}
+
+	// `fn (` opens a method when a name follows the receiver and an anonymous function when
+	// the body does: `fn (v:Vec) push(x:i64 -- )` against `fn (x:i64 -- r:i64) { x 1 + }`.
+	// Only the first declares. Reading the second as one is what made it report a method's
+	// parse error -- `Expected ')' after receiver type` -- instead of a refusal of what was
+	// actually written. `p` is at the '('.
+	bool anonymousFunctionFollows(const char* p) {
+		size_t depth = 0;
+		for (; *p != '\0'; p++) {
+			if (*p == '(') {
+				depth++;
+			} else if (*p == ')' && --depth == 0) {
+				return *skipTrivia(p + 1) == '{';
+			}
+		}
+		return false; // unbalanced; let the declaration parser say so
+	}
+
+	// Whether the source declares rather than evaluates; a leading keyword decides.
+	bool startsWithDeclaration(const char* source) {
+		const char* p = skipTrivia(source);
 
 		// The modifiers that may precede `fn` start a declaration just as `fn` does;
 		// without them `stack fn twice(i64 -- r:i64) { 2 * }` was wrapped in a main
 		// and parsed as an expression.
-		static const char* const KEYWORDS[] = {
-				"fn ", "fn(", "pub ", "inline ", "stack ", "const ", "struct ", "enum ", "use ", "type ", "test "};
+		static const char* const MODIFIERS[] = {"pub", "inline", "stack"};
+		bool modified = false;
+		for (bool matched = true; matched;) {
+			matched = false;
+			for (const char* modifier : MODIFIERS) {
+				const size_t length = std::strlen(modifier);
+				if (std::strncmp(p, modifier, length) == 0 && !isWordChar(p[length])) {
+					p = skipTrivia(p + length);
+					matched = true;
+					modified = true;
+					break;
+				}
+			}
+		}
+
+		if (std::strncmp(p, "fn", 2) == 0 && !isWordChar(p[2])) {
+			const char* signature = skipTrivia(p + 2);
+			return *signature != '(' || !anonymousFunctionFollows(signature);
+		}
+
+		static const char* const KEYWORDS[] = {"const ", "struct ", "enum ", "use ", "type ", "test "};
 		for (const char* keyword : KEYWORDS) {
 			if (std::strncmp(p, keyword, std::strlen(keyword)) == 0) {
 				return true;
 			}
 		}
-		return false;
+		// A modifier with nothing it can modify after it is still a declaration gone wrong,
+		// and saying so beats reporting it as an unknown word.
+		return modified;
+	}
+
+	// The constructs this tier deliberately does not interpret, named so a refusal says
+	// which one was written rather than only that something was.
+	const char* unsupportedName(const Qd::IAstNode* node) {
+		using Type = Qd::IAstNode::Type;
+
+		switch (node->type()) {
+		case Type::FUNCTION_DECLARATION:
+			// A method, recorded under its bare name, used to answer to that name with its
+			// receiver silently dropped.
+			return static_cast<const Qd::AstNodeFunctionDeclaration*>(node)->hasReceiver() ? "a method" : nullptr;
+		case Type::ANONYMOUS_FUNCTION:
+			return "an anonymous function";
+		case Type::DEFER_STATEMENT:
+			return "'defer'";
+		case Type::STRUCT_DECLARATION:
+			return "a struct declaration";
+		case Type::STRUCT_CONSTRUCTION:
+			return "a struct literal";
+		case Type::FIELD_ACCESS:
+		case Type::FIELD_SET:
+			return "a struct field";
+		case Type::USE_STATEMENT:
+		case Type::IMPORT_STATEMENT:
+			return "a module import";
+		case Type::TEST_DECLARATION:
+			return "a test declaration";
+		case Type::TYPE_ALIAS_DECLARATION:
+			return "a type alias";
+		default:
+			return nullptr;
+		}
 	}
 
 	// Arguments arrive on the stack. A signature binds them into the frame and takes
@@ -1208,9 +1286,12 @@ namespace {
 			return evalName(interp, scoped->scope() + "::" + scoped->name());
 		}
 
-		default:
-			interp->error = "this construct cannot be interpreted yet";
+		default: {
+			const char* unsupported = unsupportedName(node);
+			interp->error = (unsupported != nullptr) ? (std::string(unsupported) + " cannot be interpreted yet")
+													 : "this construct cannot be interpreted yet";
 			return false;
+		}
 		}
 	}
 
@@ -1403,6 +1484,16 @@ bool qd_interp_eval(qd_interp* interp, const char* source) {
 	}
 
 	if (declares) {
+		// Refuse before recording anything, so a program that mixes a method in with
+		// functions does not leave half of itself declared.
+		for (size_t i = 0; i < root->childCount(); i++) {
+			const char* unsupported = unsupportedName(root->child(i));
+			if (unsupported != nullptr) {
+				interp->error = std::string(unsupported) + " cannot be interpreted yet";
+				return false;
+			}
+		}
+
 		// The nodes belong to this Ast, so the declaration keeps it alive.
 		bool recorded = false;
 		for (size_t i = 0; i < root->childCount(); i++) {

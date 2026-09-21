@@ -121,6 +121,58 @@ TEST(UnsupportedConstructsNameThemselves) {
 	qd_interp_destroy(interp);
 }
 
+TEST(ConstructsThisTierDoesNotInterpretAreRefusedByName) {
+	qd_interp* interp = qd_interp_create(256);
+
+	// Each of the four says which construct it is. An anonymous function used to report
+	// `Expected ')' after receiver type in method declaration` instead: leading on `fn (`
+	// is a declaration was enough to have the parser read the signature as a receiver.
+	ASSERT(!qd_interp_eval(interp, "fn (x:i64 -- r:i64) { x 1 + } -> g"), "a leading lambda is refused");
+	ASSERT(std::strstr(qd_interp_error(interp), "anonymous function") != nullptr, "and named");
+
+	ASSERT(!qd_interp_eval(interp, "stack fn (i64 -- i64) { 1 + }"), "the stack spelling too");
+	ASSERT(std::strstr(qd_interp_error(interp), "anonymous function") != nullptr, "and named");
+
+	ASSERT(!qd_interp_eval(interp, "5 fn (x:i64 -- r:i64) { x 1 + }"), "and one inside a body");
+	ASSERT(std::strstr(qd_interp_error(interp), "anonymous function") != nullptr, "and named");
+
+	ASSERT(!qd_interp_eval(interp, "struct Point { x:i64 y:i64 }"), "a struct is refused");
+	ASSERT(std::strstr(qd_interp_error(interp), "struct") != nullptr, "and named");
+
+	ASSERT(!qd_interp_eval(interp, "use strings"), "an import is refused");
+	ASSERT(std::strstr(qd_interp_error(interp), "import") != nullptr, "and named");
+
+	ASSERT(qd_interp_eval(interp, "fn d(-- ) { defer { 1 drop } }"), "a defer body parses");
+	ASSERT(!qd_interp_eval(interp, "d"), "and is refused when the function runs");
+	ASSERT(std::strstr(qd_interp_error(interp), "defer") != nullptr, "and named");
+
+	qd_interp_destroy(interp);
+}
+
+TEST(MethodsAreRefusedRatherThanRecordedWithoutTheirReceiver) {
+	qd_interp* interp = qd_interp_create(256);
+
+	// `fn (p:Point) magnitude(...)` used to be recorded as a plain `magnitude` with the
+	// receiver dropped, so calling it answered instead of saying the tier has no methods.
+	ASSERT(!qd_interp_eval(interp, "fn (p:Point) magnitude(-- r:i64) { 7 }"), "a method is refused");
+	ASSERT(std::strstr(qd_interp_error(interp), "method") != nullptr, "message names it");
+	ASSERT(qd_interp_declared_count(interp) == 0, "nothing was declared");
+	ASSERT(qd_interp_last_declared(interp) == nullptr, "and nothing is reported as declared");
+	ASSERT(!qd_interp_eval(interp, "magnitude"), "so the bare name does not answer");
+
+	// A method beside a function refuses the whole program rather than half-recording it.
+	ASSERT(!qd_interp_eval(interp, "fn ok(-- r:i64) { 1 }\nfn (p:Point) bad(-- r:i64) { 2 }"),
+			"a mixed program is refused");
+	ASSERT(qd_interp_declared_count(interp) == 0, "and leaves nothing behind");
+
+	// The receiver form is still what tells a method from a lambda, so a named function
+	// declares as it always did.
+	ASSERT(qd_interp_eval(interp, "fn double(x:i64 -- r:i64) { x 2 * }"), "a named function declares");
+	ASSERT(std::strcmp(top(interp, "5 double"), "10") == 0, "and runs");
+
+	qd_interp_destroy(interp);
+}
+
 TEST(UnderflowIsRefusedNotFatal) {
 	qd_interp* interp = qd_interp_create(256);
 

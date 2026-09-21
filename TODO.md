@@ -42,19 +42,6 @@ and are stable, so they can be referred to while working through them.
       it is a separate change to a separate module, and C rather than Quadrate.
       Found 2026-09-21 on finishing the sort conversion.
 
-## Interpreter tier (lib/interp)
-
-- [ ] Not planned for this tier: structs, `defer`, `import`/`use`, anonymous functions. Imports in
-      particular cannot mean anything on a device with no package resolution — qdos takes its
-      scopes from `lib<name>.so` filenames — so they should keep refusing clearly.
-
-      Three of the four do. `struct` and `use` are refused where they are written ("nothing
-      declared here can be interpreted yet"), and a `defer` body is refused when the function
-      holding it is called ("this construct cannot be interpreted yet"). An anonymous function
-      is not: `fn (x:i64 -- r:i64) { x 1 + } -> g` reports `Expected ')' after receiver type in
-      method declaration`, which is the parser reading `fn (` as the start of a method rather
-      than a refusal of anything. It is the one of the four that does not say what is wrong.
-
 ## Deferred
 
 - [ ] Package registry — searchable index instead of raw Git URLs.
