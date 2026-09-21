@@ -142,7 +142,7 @@ namespace Qd {
 		switch (type) {
 		case AstNodeLiteral::LiteralType::INTEGER: {
 			int64_t val = 0;
-			if (!safeParseInt64(value, val)) {
+			if (!parseIntegerLiteral(value, val)) {
 				std::cerr << "quadc: error: Invalid integer literal '" << value << "' (out of range or invalid format)"
 						  << std::endl;
 				compilationFailed = true;
@@ -591,7 +591,7 @@ namespace Qd {
 					return;
 				} else {
 					int64_t intValue = 0;
-					safeParseInt64(value, intValue);
+					parseIntegerLiteral(value, intValue);
 					compileTimeStack.push_back(builder->getInt64(static_cast<uint64_t>(intValue)));
 					return;
 				}
@@ -611,7 +611,7 @@ namespace Qd {
 			} else {
 				// Integer constant
 				int64_t intValue = 0;
-				if (!safeParseInt64(value, intValue)) {
+				if (!parseIntegerLiteral(value, intValue)) {
 					std::cerr << "quadc: error: Invalid integer constant '" << value
 							  << "' (out of range or invalid format)" << std::endl;
 					compilationFailed = true;
@@ -1687,7 +1687,7 @@ namespace Qd {
 			// Integer constant
 			auto switchVal = switchValueInt();
 			int64_t parsedVal = 0;
-			if (!safeParseInt64(value, parsedVal)) {
+			if (!parseIntegerLiteral(value, parsedVal)) {
 				std::cerr << "quadc: error: Invalid integer constant value '" << value << "' for " << name << std::endl;
 				compilationFailed = true;
 			}
@@ -1780,7 +1780,7 @@ namespace Qd {
 					int64_t parsedVal = 0;
 					if (lit->literalType() == AstNodeLiteral::LiteralType::BOOL) {
 						parsedVal = (lit->value() == "true" || lit->value() == "Ok") ? 1 : 0;
-					} else if (!safeParseInt64(lit->value(), parsedVal)) {
+					} else if (!parseIntegerLiteral(lit->value(), parsedVal)) {
 						std::cerr << "quadc: error: Invalid integer case label '" << lit->value()
 								  << "' (out of range or invalid format)" << std::endl;
 						compilationFailed = true;

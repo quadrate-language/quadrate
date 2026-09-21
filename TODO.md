@@ -77,15 +77,6 @@ and are stable, so they can be referred to while working through them.
       a value crosses between them. Whether these converge, or the boundary is merely made
       un-crossable, is the question.
 
-- [ ] **A struct holding an array field is never released.** Constructing one in a loop grows
-      the heap without bound: `struct B { xs:[]i64 }` with `B { xs = [1 2 3] } -> b` leaks three
-      blocks an iteration — the struct, the array and the array's buffer — 3,000 blocks at 1,000
-      iterations and 12,000 at 4,000. Valgrind calls them still reachable rather than lost,
-      because the pointer registry is holding them at exit, which is why no existing suite
-      catches it. A `str` field is fine and an `f64` field is fine; it is the array field that
-      is not. Predates the `[n]T` work — it reproduces with `B { xs = [1 2 3] }`, whose spelling
-      that change did not touch — and was found while valgrinding it.
-
 ## Interpreter tier (lib/interp)
 
 - [ ] Not planned for this tier: structs, `defer`, `import`/`use`, anonymous functions. Imports in

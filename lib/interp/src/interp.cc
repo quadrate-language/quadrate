@@ -21,6 +21,7 @@
 #include <quadrate/qc/ast_node_parameter.h>
 #include <quadrate/qc/ast_node_scoped.h>
 #include <quadrate/qc/ast_node_switch.h>
+#include <quadrate/qc/numeric_literal.h>
 #include <quadrate/rt/array.h>
 #include <quadrate/rt/qd_string.h>
 #include <quadrate/rt/stack.h>
@@ -345,11 +346,11 @@ namespace {
 		const std::string& text = literal->value();
 
 		switch (literal->literalType()) {
-		case Qd::AstNodeLiteral::LiteralType::INTEGER: {
-			// Base 0 so hex, octal and binary prefixes parse as written
-			const long long value = std::strtoll(text.c_str(), nullptr, 0);
-			return qd_push_i(interp->ctx, static_cast<int64_t>(value)) == 0;
-		}
+		case Qd::AstNodeLiteral::LiteralType::INTEGER:
+			// Every literal that reaches here has been through the validator, which rejects
+			// the ones that will not read, so the fallback stands for a case that cannot
+			// arrive rather than for a value the program might see.
+			return qd_push_i(interp->ctx, Qd::integerLiteralOr(text, 0)) == 0;
 		case Qd::AstNodeLiteral::LiteralType::FLOAT:
 			return qd_push_f(interp->ctx, std::strtod(text.c_str(), nullptr)) == 0;
 		case Qd::AstNodeLiteral::LiteralType::STRING:
@@ -400,8 +401,7 @@ namespace {
 		if (text.find('.') != std::string::npos) {
 			return qd_push_f(interp->ctx, std::strtod(text.c_str(), nullptr)) == 0;
 		}
-		// Base 0 so a hex enum value reads as written
-		return qd_push_i(interp->ctx, static_cast<int64_t>(std::strtoll(text.c_str(), nullptr, 0))) == 0;
+		return qd_push_i(interp->ctx, Qd::integerLiteralOr(text, 0)) == 0;
 	}
 
 	// The stack owns a reference to every string on it; a popped element that
@@ -720,7 +720,7 @@ namespace {
 			double number = 0.0;
 			switch (value->literalType()) {
 			case Qd::AstNodeLiteral::LiteralType::INTEGER:
-				number = static_cast<double>(std::strtoll(text.c_str(), nullptr, 0));
+				number = static_cast<double>(Qd::integerLiteralOr(text, 0));
 				break;
 			case Qd::AstNodeLiteral::LiteralType::BOOL:
 				number = (text == "true" || text == "Ok") ? 1.0 : 0.0;
@@ -1026,8 +1026,8 @@ namespace {
 		if (text.find('.') != std::string::npos) {
 			return subject.type == QD_STACK_TYPE_FLOAT && subject.value.f == std::strtod(text.c_str(), nullptr);
 		}
-		return subject.type == QD_STACK_TYPE_INT &&
-			   subject.value.i == static_cast<int64_t>(std::strtoll(text.c_str(), nullptr, 0));
+		int64_t value = 0;
+		return subject.type == QD_STACK_TYPE_INT && Qd::parseIntegerLiteral(text, value) && subject.value.i == value;
 	}
 
 	// One case value against what switch took off the stack. `resolved` reports
@@ -1061,8 +1061,7 @@ namespace {
 
 		switch (literal->literalType()) {
 		case Qd::AstNodeLiteral::LiteralType::INTEGER:
-			return subject.type == QD_STACK_TYPE_INT &&
-				   subject.value.i == static_cast<int64_t>(std::strtoll(text.c_str(), nullptr, 0));
+			return subject.type == QD_STACK_TYPE_INT && subject.value.i == Qd::integerLiteralOr(text, 0);
 
 		case Qd::AstNodeLiteral::LiteralType::BOOL:
 			return subject.type == QD_STACK_TYPE_INT && subject.value.i == ((text == "true" || text == "Ok") ? 1 : 0);

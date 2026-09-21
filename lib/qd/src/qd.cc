@@ -12,6 +12,7 @@
 #include <quadrate/qc/ast.h>
 #include <quadrate/qc/ast_node.h>
 #include <quadrate/qc/ast_node_use.h>
+#include <quadrate/qc/numeric_literal.h>
 #include <quadrate/qc/semantic_validator.h>
 #include <set>
 #include <sstream>
@@ -932,21 +933,8 @@ void qd_execute(qd_context* ctx, const char* code) {
 		// Check if it's a number (integer or float)
 		char* endptr;
 
-		// Try parsing as integer (with hex 0x and binary 0b support)
-		int base = 10;
-		const char* numStart = token.c_str();
-		if (token.size() > 2 && token[0] == '0') {
-			if (token[1] == 'x' || token[1] == 'X') {
-				base = 16;
-				numStart += 2;
-			} else if (token[1] == 'b' || token[1] == 'B') {
-				base = 2;
-				numStart += 2;
-			}
-		}
-		long long int_val = strtoll(numStart, &endptr, base);
-		if (*endptr == '\0' && numStart != endptr) {
-			// It's an integer
+		int64_t int_val = 0;
+		if (Qd::parseIntegerLiteral(token, int_val)) {
 			qd_push_i(ctx, int_val);
 			continue;
 		}

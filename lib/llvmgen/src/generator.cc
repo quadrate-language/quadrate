@@ -2469,7 +2469,7 @@ namespace Qd {
 					// packed record).
 					ty = int64Ty;
 					int64_t iv = 0;
-					safeParseInt64(value, iv);
+					parseIntegerLiteral(value, iv);
 					init = builder->getInt64(static_cast<uint64_t>(iv));
 				}
 

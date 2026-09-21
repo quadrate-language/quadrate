@@ -47,20 +47,55 @@ fi
 # before it can say which program died, which is how a crash on CI arrives as a
 # bare "test failed" with nothing to go on.
 cat > "$WORK_DIR/peak_rss.py" <<'PY'
-import resource, subprocess, sys
+import os, resource, subprocess, sys
+
+# VmHWM is the kernel's own high-water mark for the process, and exec starts it
+# over, so where /proc has it that is what to read. getrusage(RUSAGE_CHILDREN) is
+# the fallback and a poor one: a child forked from this interpreter starts out
+# holding every page the interpreter holds, some 13 MB of it, and reports that as
+# the peak. Under it sat a floor that no leak smaller than the interpreter could
+# be seen over -- a struct's array field leaked 5.7 MB across a case here and the
+# reading did not move. Poll instead; the mark only ever climbs, and the cmdline
+# check keeps the readings taken before exec, which are this interpreter's, out
+# of the maximum.
+def poll_hwm(proc, program):
+	want = os.path.basename(program).encode()
+	status = "/proc/%d/status" % proc.pid
+	cmdline = "/proc/%d/cmdline" % proc.pid
+	hwm = 0
+	while proc.poll() is None:
+		try:
+			with open(cmdline, "rb") as f:
+				if os.path.basename(f.read().split(b"\0")[0]) != want:
+					continue
+			with open(status) as f:
+				for line in f:
+					if line.startswith("VmHWM:"):
+						hwm = max(hwm, int(line.split()[1]))
+						break
+		except OSError:
+			break
+	return hwm
 
 err_path = sys.argv[1]
+argv = sys.argv[2:]
 with open(err_path, "wb") as err:
-	result = subprocess.run(sys.argv[2:], stdout=subprocess.DEVNULL, stderr=err)
-if result.returncode != 0:
-	print("FAILED %d" % result.returncode)
+	proc = subprocess.Popen(argv, stdout=subprocess.DEVNULL, stderr=err)
+	hwm = poll_hwm(proc, argv[0]) if os.path.isdir("/proc") else 0
+	returncode = proc.wait()
+
+if returncode != 0:
+	print("FAILED %d" % returncode)
 	sys.exit(0)
 
-peak = resource.getrusage(resource.RUSAGE_CHILDREN).ru_maxrss
-# ru_maxrss is kilobytes on Linux and bytes on macOS.
-if sys.platform == "darwin":
-	peak //= 1024
-print(peak)
+if hwm:
+	print(hwm)
+else:
+	peak = resource.getrusage(resource.RUSAGE_CHILDREN).ru_maxrss
+	# ru_maxrss is kilobytes on Linux and bytes on macOS.
+	if sys.platform == "darwin":
+		peak //= 1024
+	print(peak)
 PY
 
 PASSED=0
@@ -285,6 +320,36 @@ fn main(--) {
 	}
 	acc print nl
 }' 20000 4096
+
+# A struct field holding an array. The field owns a reference the same way a str field
+# does -- construction moves the one the stack held into the slot, and `>>cells` hands
+# back the one it replaced -- but the generated destructor released only the strings and
+# the nested structs, so the qd_array_t and its buffer outlived every struct built in a
+# loop. Nothing lost it: the pointer registry still held both at exit, so valgrind called
+# them reachable and the language suite saw a clean run. Only the heap climbing says so.
+check_flat "struct_array_field" 'struct Row {
+	label: str
+	cells: []i64
+}
+
+fn make( -- r:Row) {
+	Row { label = "row" cells = [1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16] }
+}
+
+fn round( -- n:i64) {
+	make -> r
+	r <<cells 1 nth -> total
+	r [17 18 19 20 21 22 23 24 25 26 27 28 29 30 31 32] >>cells drop
+	r <<cells len total +
+}
+
+fn main(--) {
+	0 -> acc
+	0 @N@ 1 for i {
+		round acc + -> acc
+	}
+	acc print nl
+}' 30000 4096
 
 echo ""
 echo "Memory tests: $PASSED passed, $FAILED failed"

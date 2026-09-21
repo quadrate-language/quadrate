@@ -1,0 +1,46 @@
+// Test: an enum value reads the way the same literal reads in an expression
+// The enum parser read its value with strtoll at base 0, which is C's spelling of an
+// integer rather than this language's: a leading zero meant octal, which the language
+// has no notion of, and whether `0b` was understood at all was up to the C library.
+enum Spelled {
+	Bin = 0b1010
+	NegBin = -0b101
+	Hex = 0x10
+	AfterHex
+	NegHex = -0x10
+	Upper = 0XFF
+	Lead = 010
+	NegLead = -010
+	Min = -9223372036854775808
+	Max = 0x7FFFFFFFFFFFFFFF
+}
+
+fn main() {
+	"=== Enum ===" print nl
+	Spelled::Bin print nl
+	Spelled::NegBin print nl
+	Spelled::Hex print nl
+	Spelled::NegHex print nl
+	Spelled::Upper print nl
+	Spelled::Lead print nl
+	Spelled::NegLead print nl
+	Spelled::Min print nl
+	Spelled::Max print nl
+
+	// The same literals, written where an expression is expected
+	"=== Expression ===" print nl
+	0b1010 print nl
+	-0b101 print nl
+	0x10 print nl
+	-0x10 print nl
+	0XFF print nl
+	010 print nl
+	-010 print nl
+	-9223372036854775808 print nl
+	0x7FFFFFFFFFFFFFFF print nl
+
+	// A variant with no value counts on from the one before it, which is only 17 if
+	// the radix value it follows was read as 16
+	"=== Increment ===" print nl
+	Spelled::AfterHex print nl
+}

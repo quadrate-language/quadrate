@@ -232,6 +232,35 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **u8t tokenizer updated to 1.4.0.**
 ### Fixed
 
+- **A struct holding an array field releases it.** The generated destructor released the
+  string fields and the nested structs and stopped there, so the `qd_array_t` and its
+  element buffer outlived every struct that held one: `struct B { xs:[]i64 }` built in a
+  loop leaked 192 bytes an iteration. Nothing lost them -- the pointer registry still held
+  both at exit -- so valgrind called them reachable and every suite ran clean. An array
+  field owns a reference the same way a str field does, since construction moves the one
+  the stack held into the slot and `>>field` already hands back the one it replaced, and
+  the struct's last reference now hands back what the slot still holds.
+  Two things had hidden it. `generateStructCleanup`, a second copy of the destructor's
+  field walk, was never called from anywhere and is deleted rather than kept in step. And
+  the memory suite measured peak RSS with `getrusage(RUSAGE_CHILDREN)` from a python
+  parent, where a forked child is charged for every page the interpreter holds -- some
+  13 MB of floor, under which no leak was visible at all. It reads the kernel's own
+  `VmHWM` now, and the case added for this leak fails by 7 MB without the fix.
+- **An enum value written in binary, and one written with a leading zero.** `Bits = -0b101`
+  was 0 and `Lead = 010` was 8, while the same literals in an expression were -5 and 10:
+  `parseEnumDeclaration` read the value with `strtoll` at base 0, which is C's spelling of
+  an integer rather than Quadrate's. Base 0 takes a leading zero for octal, which the
+  language has no notion of, and whether it takes a `0b` prefix at all is up to the C
+  library -- glibc 2.38 and newer do, older ones and musl do not -- so the binary case was
+  a value that changed with the machine the compiler was built on rather than with the
+  program.
+  The two parsers that already read the spelling correctly -- `integerLiteralProblem` in
+  the validator and `safeParseInt64` in the backend -- were copies of each other, and the
+  interpreter tier had four more `strtoll` base 0 calls behind literals, constants, array
+  elements and `switch` case labels. All of them, and `qd_eval`'s tokeniser in the
+  embedding API, now go through one `readIntegerLiteral` in `quadrate/qc/numeric_literal.h`.
+  An enum value that will not read is reported where it is written instead of silently
+  becoming 0.
 - **A negative hex or binary literal lexes and compiles.** `-0x10` came back from the
   scanner as the integer `-0` followed by the identifier `x10`, and `-0b101` as `-0` and
   `b101`: u8t's negative-number branch duplicated only the decimal path, so the `0x`/`0b`

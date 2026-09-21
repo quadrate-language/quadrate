@@ -1,5 +1,6 @@
 #include "ast_parse.h"
 #include <quadrate/qc/ast_node_array_literal.h>
+#include <quadrate/qc/numeric_literal.h>
 
 namespace Qd {
 
@@ -65,15 +66,17 @@ namespace Qd {
 					}
 					if (token == U8T_INTEGER) {
 						const char* valText = u8t_scanner_token_text(scanner, &n);
-						int64_t val = static_cast<int64_t>(strtoll(valText, nullptr, 0));
-						if (negative) {
-							val = -val;
-							valueText = "-" + std::string(valText);
+						// A sign written apart from its digits -- `= - 5` -- reaches here as two
+						// tokens, so the text may still need one put back on the front.
+						valueText = negative ? "-" + std::string(valText) : std::string(valText);
+						int64_t val = 0;
+						if (parseIntegerLiteral(valueText, val)) {
+							hasExplicitValue = true;
+							nextValue = val;
 						} else {
-							valueText = valText;
+							const std::string message = "Enum value '" + valueText + "' is not an integer i64 can hold";
+							errorReporter->reportError(scanner, message.c_str());
 						}
-						hasExplicitValue = true;
-						nextValue = val;
 					} else {
 						errorReporter->reportError(scanner, "Expected integer value after '=' in enum");
 					}

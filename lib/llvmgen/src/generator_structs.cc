@@ -160,71 +160,6 @@ namespace Qd {
 		return nullptr;
 	}
 
-	void LlvmGenerator::Impl::generateStructCleanup(llvm::Value* structPtr, const std::string& structTypeName) {
-		const StructLayout* layoutPtr = findStructDefinition(structTypeName);
-		if (layoutPtr == nullptr) {
-			return;
-		}
-
-		const StructLayout& layout = *layoutPtr;
-
-		// First, recursively cleanup nested struct fields
-		for (const auto& field : layout.fields) {
-			// Check if field is a known struct type (not a type parameter like T)
-			if (looksLikeStructType(field.typeName) && isKnownStruct(field.typeName)) {
-				// Load the nested struct pointer from this field
-				auto fieldOffset = builder->getInt64(field.offset);
-				auto fieldBytePtr =
-						builder->CreateGEP(builder->getInt8Ty(), structPtr, fieldOffset, "nested_field_ptr");
-				llvm::Value* nestedStructPtr = builder->CreateLoad(ptrTy, fieldBytePtr, "nested_struct_ptr");
-
-				// Release the nested struct (handles refcount, destructor, and deallocation)
-				builder->CreateCall(qdStructReleaseFn, {nestedStructPtr});
-			}
-		}
-
-		// Then, release string fields
-		for (const auto& field : layout.fields) {
-			if (field.typeName == "str") {
-				// Calculate field offset and load string pointer
-				auto fieldOffset = builder->getInt64(field.offset);
-				auto fieldBytePtr = builder->CreateGEP(builder->getInt8Ty(), structPtr, fieldOffset, "str_field_ptr");
-				llvm::Value* stringPtr = builder->CreateLoad(ptrTy, fieldBytePtr, "string_ptr");
-
-				// Call qd_string_release() on the string
-				builder->CreateCall(qdStringReleaseFn, {stringPtr});
-			}
-		}
-
-		// Release generic type parameter fields that hold strings
-		for (const auto& field : layout.fields) {
-			if (field.isTypeParam) {
-				auto tagOffset = builder->getInt64(field.offset + 8);
-				auto tagPtr = builder->CreateGEP(builder->getInt8Ty(), structPtr, tagOffset, "typeparam_tag_ptr");
-				llvm::Value* typeTag = builder->CreateLoad(int64Ty, tagPtr, "typeparam_tag");
-
-				llvm::Function* currentFn = builder->GetInsertBlock()->getParent();
-				llvm::BasicBlock* releaseStr =
-						llvm::BasicBlock::Create(*context, field.name + "_release_str", currentFn);
-				llvm::BasicBlock* skipRelease =
-						llvm::BasicBlock::Create(*context, field.name + "_skip_release", currentFn);
-
-				llvm::Value* isStr = builder->CreateICmpEQ(typeTag, builder->getInt64(3), "is_str_typeparam");
-				builder->CreateCondBr(isStr, releaseStr, skipRelease);
-
-				builder->SetInsertPoint(releaseStr);
-				auto fieldOffset = builder->getInt64(field.offset);
-				auto fieldBytePtr =
-						builder->CreateGEP(builder->getInt8Ty(), structPtr, fieldOffset, "typeparam_str_ptr");
-				llvm::Value* stringPtr = builder->CreateLoad(ptrTy, fieldBytePtr, "typeparam_str");
-				builder->CreateCall(qdStringReleaseFn, {stringPtr});
-				builder->CreateBr(skipRelease);
-
-				builder->SetInsertPoint(skipRelease);
-			}
-		}
-	}
-
 	void LlvmGenerator::Impl::generateStructDestructors() {
 		// Destructor function type: void (*)(void*)
 		auto destructorFnTy = llvm::FunctionType::get(builder->getVoidTy(), {ptrTy}, false);
@@ -238,7 +173,7 @@ namespace Qd {
 				if (!baseTypeName.empty() && baseTypeName[0] == '*') {
 					baseTypeName = baseTypeName.substr(1);
 				}
-				if (field.typeName == "str" || field.isTypeParam ||
+				if (field.typeName == "str" || field.isTypeParam || isArrayType(field.typeName) ||
 						(looksLikeStructType(baseTypeName) && isKnownStruct(baseTypeName))) {
 					needsDestructor = true;
 					break;
@@ -291,6 +226,20 @@ namespace Qd {
 							builder->CreateGEP(builder->getInt8Ty(), structPtr, fieldOffset, "str_field_ptr");
 					llvm::Value* stringPtr = builder->CreateLoad(ptrTy, fieldBytePtr, "string_ptr");
 					builder->CreateCall(qdStringReleaseFn, {stringPtr});
+				}
+			}
+
+			// Release array fields. An array field owns a reference the same way a str field
+			// does -- construction moves the one the stack held into the slot, and generateFieldSet
+			// hands back the one an overwritten slot held -- so the struct's last reference has to
+			// hand back what the slot still holds, or the qd_array_t and its buffer outlive it.
+			for (const auto& field : layout.fields) {
+				if (isArrayType(field.typeName)) {
+					auto fieldOffset = builder->getInt64(field.offset);
+					auto fieldBytePtr =
+							builder->CreateGEP(builder->getInt8Ty(), structPtr, fieldOffset, "array_field_ptr");
+					llvm::Value* arrayPtr = builder->CreateLoad(ptrTy, fieldBytePtr, "array_ptr");
+					builder->CreateCall(qdPtrReleaseFn, {arrayPtr});
 				}
 			}
 
@@ -1057,7 +1006,7 @@ namespace Qd {
 					if (lit->literalType() == AstNodeLiteral::LiteralType::BOOL) {
 						val = (lit->value() == "true" || lit->value() == "Ok") ? 1 : 0;
 					} else {
-						safeParseInt64(lit->value(), val);
+						parseIntegerLiteral(lit->value(), val);
 					}
 					if (arrayType == 1) {
 						// Coerce int to float

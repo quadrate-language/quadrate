@@ -952,6 +952,49 @@ TEST(PublicFunction) {
 	ASSERT(!ir.empty(), "should generate IR for public function");
 }
 
+TEST(StructWithArrayFieldReleasesIt) {
+	// An array field owns a reference the same way a str field does, so the struct's
+	// destructor has to hand it back. It did not, and the qd_array_t and its buffer
+	// outlived every struct that held one -- invisibly, because the pointer registry
+	// kept hold of both, so valgrind called them reachable rather than lost.
+	const char* src = R"(
+		struct Row {
+			cells:[]i64
+		}
+		fn main() {
+			Row { cells = [1 2 3] } -> r
+			r <<cells len print
+		}
+	)";
+	std::string ir = generateIR(src);
+	ASSERT(!ir.empty(), "should generate IR for struct with array field");
+	ASSERT(irContains(ir, "define internal void @__qd_dtor_Row"), "array field should earn a destructor");
+	ASSERT(irContains(ir, "@qd_struct_alloc(i64 8, ptr @__qd_dtor_Row)"), "the struct should be built with it");
+	const size_t dtor = ir.find("define internal void @__qd_dtor_Row");
+	const size_t endOfDtor = ir.find("ret void", dtor);
+	ASSERT(endOfDtor != std::string::npos, "destructor should have a body");
+	ASSERT(ir.find("qd_ptr_release", dtor) < endOfDtor, "destructor should release the array field");
+}
+
+TEST(StructOfPlainFieldsHasNoDestructor) {
+	// The other half of the rule: nothing to hand back means no destructor at all,
+	// and qd_struct_alloc is handed a null one.
+	const char* src = R"(
+		struct Point {
+			x:i64
+			y:f64
+		}
+		fn main() {
+			Point { x = 1 y = 2.0 } -> p
+			p <<x print
+		}
+	)";
+	std::string ir = generateIR(src);
+	ASSERT(!ir.empty(), "should generate IR for struct of plain fields");
+	ASSERT(!irContains(ir, "__qd_dtor_Point"), "plain fields should earn no destructor");
+	ASSERT(irContains(ir, "@qd_struct_alloc(i64 16, ptr null)"), "the struct should be built without one");
+}
+
 // Main - required for test executable
 int main(void) {
 	return UC_PrintResults();
