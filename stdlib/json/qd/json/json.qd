@@ -194,9 +194,28 @@ pub fn extract_str(json:str pos:i64 -- value:str) {
 	after_end 1 - -> end_pos
 	end_pos start - -> length
 	length 0 > if {
-		json start length strings::substring!
+		json start length strings::substring! -> raw
+		raw "\\" strings::contains if {
+			raw decode_escapes
+		} else {
+			raw
+		}
 	} else {
 		""
+	}
+}
+
+fn decode_escapes(raw:str -- value:str) {
+	raw strings::byte_len -> n
+	Parser {
+		buf = raw strings::data
+		len = n
+		pos = 0
+		depth = 0
+	} -> p
+	p 0 n unescape switch {
+		Ok { }
+		_ { raw }
 	}
 }
 
@@ -762,23 +781,14 @@ pub fn is_null_at(json:str pos:i64 -- is_null:i64) {
 // JSON Building Functions
 // ============================================================
 
-/// Quote character for JSON strings.
-fn quote( -- q:str) {
-	"\x22"
-}
-
 /// Encode a string for JSON (add quotes and escape special chars).
 /// @param s str String to encode
 /// @return encoded str JSON-encoded string with quotes
 /// @example "hello" json::encode print  // "hello"
 pub fn encode(s:str -- encoded:str) {
-	s "\\" "\\\\" strings::replace!
-	"\x22" "\\\x22" strings::replace!
-	"\n" "\\n" strings::replace!
-	"\t" "\\t" strings::replace!
-	"\r" "\\r" strings::replace!
-	-> s
-	quote s strings::concat quote strings::concat
+	buf_new -> b
+	b s quoted
+	b finish
 }
 
 /// Build a key-value pair with string value.
