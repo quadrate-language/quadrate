@@ -286,6 +286,7 @@ bool QuadrateLSP::readMessage(std::string& content) {
 }
 
 void QuadrateLSP::sendMessage(json_t* json) {
+	convertPositions(json, requestUri_, true);
 	if (json_object_get(json, "id") && (json_object_get(json, "result") || json_object_get(json, "error"))) {
 		responded_ = true;
 	}
@@ -366,6 +367,178 @@ static bool getItemData(json_t* params, std::string& itemData) {
 	return true;
 }
 
+std::string QuadrateLSP::getDocumentText(const std::string& uri) {
+	auto it = documents_.find(uri);
+	if (it != documents_.end()) {
+		return it->second;
+	}
+	std::string filePath = lspUriToPath(uri);
+	if (filePath.empty()) {
+		return "";
+	}
+	std::ifstream file(filePath, std::ios::binary);
+	if (!file.good()) {
+		return "";
+	}
+	std::stringstream buffer;
+	buffer << file.rdbuf();
+	return buffer.str();
+}
+
+const std::vector<std::string>* QuadrateLSP::positionLines(const std::string& uri) {
+	auto it = positionLines_.find(uri);
+	if (it == positionLines_.end()) {
+		std::string text = getDocumentText(uri);
+		bool ascii = std::all_of(text.begin(), text.end(), [](char c) { return static_cast<unsigned char>(c) < 0x80; });
+		positionAscii_[uri] = ascii;
+		it = positionLines_.emplace(uri, std::vector<std::string>()).first;
+		if (!ascii) {
+			size_t lineStart = 0;
+			while (lineStart <= text.size()) {
+				size_t lineEnd = text.find('\n', lineStart);
+				if (lineEnd == std::string::npos) {
+					lineEnd = text.size();
+				}
+				it->second.push_back(text.substr(lineStart, lineEnd - lineStart));
+				lineStart = lineEnd + 1;
+			}
+		}
+	}
+	return positionAscii_[uri] ? nullptr : &it->second;
+}
+
+size_t QuadrateLSP::toClientColumn(const std::string& lineText, size_t byteColumn) const {
+	return utf8Positions_ ? byteColumn : lspByteToUtf16Column(lineText, byteColumn);
+}
+
+void QuadrateLSP::convertPositions(json_t* node, const std::string& uri, bool toClient) {
+	if (utf8Positions_ || !node) {
+		return;
+	}
+	convertPositionsIn(node, uri, toClient);
+	positionLines_.clear();
+	positionAscii_.clear();
+}
+
+void QuadrateLSP::convertPositionsIn(json_t* node, const std::string& uri, bool toClient) {
+	if (json_is_array(node)) {
+		for (size_t i = 0; i < json_array_size(node); i++) {
+			convertPositionsIn(json_array_get(node, i), uri, toClient);
+		}
+		return;
+	}
+	if (!json_is_object(node)) {
+		return;
+	}
+
+	std::string context = uri;
+	json_t* uriJson = json_object_get(node, "uri");
+	if (!json_is_string(uriJson)) {
+		uriJson = json_object_get(node, "targetUri");
+	}
+	json_t* textDoc = json_object_get(node, "textDocument");
+	if (!json_is_string(uriJson) && json_is_object(textDoc)) {
+		uriJson = json_object_get(textDoc, "uri");
+	}
+	if (json_is_string(uriJson)) {
+		context = json_string_value(uriJson);
+	}
+
+	json_t* lineJson = json_object_get(node, "line");
+	json_t* charJson = json_object_get(node, "character");
+	if (json_is_integer(lineJson) && json_is_integer(charJson) && json_integer_value(lineJson) >= 0 &&
+			json_integer_value(charJson) >= 0) {
+		const std::vector<std::string>* lines = positionLines(context);
+		size_t line = static_cast<size_t>(json_integer_value(lineJson));
+		if (lines && line < lines->size()) {
+			size_t column = static_cast<size_t>(json_integer_value(charJson));
+			size_t converted = toClient ? lspByteToUtf16Column((*lines)[line], column)
+										: lspUtf16ToByteColumn((*lines)[line], column);
+			json_object_set_new(node, "character", json_integer(static_cast<json_int_t>(converted)));
+		}
+	}
+
+	std::string fromUri = context;
+	json_t* from = json_object_get(node, "from");
+	if (json_is_object(from) && json_is_string(json_object_get(from, "uri"))) {
+		fromUri = json_string_value(json_object_get(from, "uri"));
+	}
+
+	const char* key;
+	json_t* value;
+	json_object_foreach(node, key, value) {
+		if (strcmp(key, "changes") == 0 && json_is_object(value)) {
+			const char* changeUri;
+			json_t* edits;
+			json_object_foreach(value, changeUri, edits) {
+				convertPositionsIn(edits, changeUri, toClient);
+			}
+		} else if (strcmp(key, "fromRanges") == 0) {
+			convertPositionsIn(value, fromUri, toClient);
+		} else if (json_is_object(value) || json_is_array(value)) {
+			convertPositionsIn(value, context, toClient);
+		}
+	}
+}
+
+static size_t byteOffsetOf(const std::string& text, size_t line, size_t byteColumn) {
+	size_t lineStart = 0;
+	for (size_t i = 0; i < line; i++) {
+		size_t newline = text.find('\n', lineStart);
+		if (newline == std::string::npos) {
+			return text.size();
+		}
+		lineStart = newline + 1;
+	}
+	size_t lineEnd = text.find('\n', lineStart);
+	if (lineEnd == std::string::npos) {
+		lineEnd = text.size();
+	}
+	return std::min(lineStart + byteColumn, lineEnd);
+}
+
+static std::string lineAt(const std::string& text, size_t line) {
+	size_t start = byteOffsetOf(text, line, 0);
+	size_t end = text.find('\n', start);
+	return text.substr(start, (end == std::string::npos ? text.size() : end) - start);
+}
+
+void QuadrateLSP::applyContentChanges(const std::string& uri, json_t* contentChanges) {
+	auto it = documents_.find(uri);
+	std::string text = (it != documents_.end()) ? it->second : "";
+	bool changed = false;
+
+	for (size_t i = 0; i < json_array_size(contentChanges); i++) {
+		json_t* change = json_array_get(contentChanges, i);
+		json_t* textNode = getJsonObject(change, "text");
+		if (!json_is_string(textNode)) {
+			continue;
+		}
+		std::string newText(json_string_value(textNode), json_string_length(textNode));
+		size_t startLine = 0;
+		size_t startChar = 0;
+		size_t endLine = 0;
+		size_t endChar = 0;
+		json_t* range = getJsonObject(change, "range");
+		if (range && getRangeField(range, startLine, startChar, endLine, endChar)) {
+			if (!utf8Positions_) {
+				startChar = lspUtf16ToByteColumn(lineAt(text, startLine), startChar);
+				endChar = lspUtf16ToByteColumn(lineAt(text, endLine), endChar);
+			}
+			size_t start = byteOffsetOf(text, startLine, startChar);
+			size_t end = std::max(start, byteOffsetOf(text, endLine, endChar));
+			text.replace(start, end - start, newText);
+		} else {
+			text = newText;
+		}
+		changed = true;
+	}
+
+	if (changed) {
+		handleDidOpen(uri, text);
+	}
+}
+
 void QuadrateLSP::handleMessage(const std::string& message) {
 	currentIdIsString_ = false;
 	json_error_t error;
@@ -424,6 +597,13 @@ void QuadrateLSP::handleMessage(const std::string& message) {
 		return;
 	}
 
+	requestUri_.clear();
+	if (!getDocumentUri(params, requestUri_)) {
+		requestUri_ = getJsonString(getJsonObject(params, "item"), "uri");
+	}
+	if (method != "textDocument/didChange") {
+		convertPositions(params, requestUri_, false);
+	}
 	responded_ = false;
 	DispatchResult result = dispatchMessage(method, id, params);
 	if (isRequest) {
@@ -464,6 +644,15 @@ QuadrateLSP::DispatchResult QuadrateLSP::dispatchMessage(
 				workspaceRoot_ = rootPath;
 			}
 		}
+		json_t* general = getJsonObject(getJsonObject(params, "capabilities"), "general");
+		json_t* encodings = getJsonObject(general, "positionEncodings");
+		utf8Positions_ = false;
+		for (size_t i = 0; json_is_array(encodings) && i < json_array_size(encodings); i++) {
+			json_t* encoding = json_array_get(encodings, i);
+			if (json_is_string(encoding) && strcmp(json_string_value(encoding), "utf-8") == 0) {
+				utf8Positions_ = true;
+			}
+		}
 		json_t* initOptions =
 				(params && json_is_object(params)) ? getJsonObject(params, "initializationOptions") : nullptr;
 		handleInitialize(id, initOptions);
@@ -496,19 +685,7 @@ QuadrateLSP::DispatchResult QuadrateLSP::dispatchMessage(
 		if (!getDocumentUri(params, uri) || !contentChanges || !json_is_array(contentChanges)) {
 			return DispatchResult::InvalidParams;
 		}
-		// For full sync, contentChanges[0] contains the full document.
-		// Empty text is a real edit -- the user selected all and deleted --
-		// so it must not be skipped, or the server keeps answering from the
-		// content the buffer had before it was cleared. Only a change with
-		// no "text" member at all (incremental sync, which is not
-		// advertised) is ignored.
-		if (json_array_size(contentChanges) > 0) {
-			json_t* change = json_array_get(contentChanges, 0);
-			json_t* textNode = getJsonObject(change, "text");
-			if (textNode && json_is_string(textNode)) {
-				handleDidOpen(uri, getJsonString(change, "text"));
-			}
-		}
+		applyContentChanges(uri, contentChanges);
 	} else if (method == "textDocument/didClose") {
 		if (!getDocumentUri(params, uri)) {
 			return DispatchResult::InvalidParams;
@@ -731,6 +908,7 @@ void QuadrateLSP::handleInitialize(const std::string& id, json_t* initOptions) {
 	json_object_set_new(saveOptions, "includeText", json_true());
 	json_object_set_new(textDocumentSync, "save", saveOptions);
 	json_object_set_new(capabilities, "textDocumentSync", textDocumentSync);
+	json_object_set_new(capabilities, "positionEncoding", json_string(utf8Positions_ ? "utf-8" : "utf-16"));
 	json_object_set_new(capabilities, "documentFormattingProvider", json_true());
 	json_object_set_new(capabilities, "hoverProvider", json_true());
 	json_object_set_new(capabilities, "documentSymbolProvider", json_true());
@@ -2013,8 +2191,17 @@ void QuadrateLSP::handleSemanticTokens(const std::string& id, const std::string&
 		size_t line = 0;
 		size_t col = 0;
 		size_t i = 0;
+		size_t lineStart = 0;
 
 		auto addToken = [&](size_t tokenLine, size_t tokenCol, size_t length, int tokenType, int modifiers) {
+			if (!utf8Positions_) {
+				size_t lineEnd = documentText.find('\n', lineStart);
+				std::string lineText = documentText.substr(
+						lineStart, (lineEnd == std::string::npos ? documentText.size() : lineEnd) - lineStart);
+				size_t endCol = lspByteToUtf16Column(lineText, tokenCol + length);
+				tokenCol = lspByteToUtf16Column(lineText, tokenCol);
+				length = endCol - tokenCol;
+			}
 			int deltaLine = static_cast<int>(tokenLine - prevLine);
 			int deltaChar = (deltaLine == 0) ? static_cast<int>(tokenCol - prevChar) : static_cast<int>(tokenCol);
 			data.push_back(deltaLine);
@@ -2034,6 +2221,7 @@ void QuadrateLSP::handleSemanticTokens(const std::string& id, const std::string&
 				line++;
 				col = 0;
 				i++;
+				lineStart = i;
 				continue;
 			}
 

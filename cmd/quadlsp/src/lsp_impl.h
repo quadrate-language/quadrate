@@ -23,6 +23,12 @@ std::string expandTilde(const std::string& path);
 // targets without the rest of the LSP server.
 std::string lspGetWordAtPosition(const std::string& text, size_t line, size_t character);
 
+// Convert a column within one line between UTF-8 bytes (what the server
+// works in) and UTF-16 code units (what LSP clients send by default).
+// Columns past the end of the line map one-to-one.
+size_t lspByteToUtf16Column(const std::string& lineText, size_t byteColumn);
+size_t lspUtf16ToByteColumn(const std::string& lineText, size_t utf16Column);
+
 // Convert a file:// URI to a filesystem path, percent-decoding it. Returns ""
 // for anything that is not a file URI.
 std::string lspUriToPath(const std::string& uri);
@@ -60,6 +66,15 @@ private:
 	json_t* makeResponseId(const std::string& id) const;
 	void handleMessage(const std::string& message);
 	DispatchResult dispatchMessage(const std::string& method, const std::string& id, json_t* params);
+
+	// Position encoding: the server works in UTF-8 byte columns; clients
+	// speak UTF-16 code units unless they negotiate UTF-8.
+	std::string getDocumentText(const std::string& uri);
+	void convertPositions(json_t* node, const std::string& uri, bool toClient);
+	void convertPositionsIn(json_t* node, const std::string& uri, bool toClient);
+	const std::vector<std::string>* positionLines(const std::string& uri);
+	size_t toClientColumn(const std::string& lineText, size_t byteColumn) const;
+	void applyContentChanges(const std::string& uri, json_t* contentChanges);
 
 	// Initialization
 	void handleInitialize(const std::string& id, json_t* initOptions);
@@ -188,6 +203,10 @@ private:
 	bool currentIdIsString_ = false;
 	bool responded_ = false;
 	bool shutdownRequested_ = false;
+	bool utf8Positions_ = false;
+	std::string requestUri_;
+	std::map<std::string, std::vector<std::string>> positionLines_;
+	std::map<std::string, bool> positionAscii_;
 	[[maybe_unused]] int messageId_;
 	bool lintEnabled_ = true;
 	std::string quadlintPath_ = "quadlint";

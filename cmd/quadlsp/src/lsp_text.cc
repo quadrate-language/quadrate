@@ -62,6 +62,59 @@ std::string lspGetWordAtPosition(const std::string& text, size_t line, size_t ch
 	return "";
 }
 
+static size_t utf8SequenceLength(const std::string& text, size_t index) {
+	unsigned char lead = static_cast<unsigned char>(text[index]);
+	size_t length = 1;
+	if (lead >= 0xF0 && lead <= 0xF4) {
+		length = 4;
+	} else if (lead >= 0xE0 && lead <= 0xEF) {
+		length = 3;
+	} else if (lead >= 0xC2 && lead <= 0xDF) {
+		length = 2;
+	}
+	if (length == 1 || index + length > text.size()) {
+		return 1;
+	}
+	for (size_t i = 1; i < length; i++) {
+		if ((static_cast<unsigned char>(text[index + i]) & 0xC0) != 0x80) {
+			return 1;
+		}
+	}
+	return length;
+}
+
+size_t lspByteToUtf16Column(const std::string& lineText, size_t byteColumn) {
+	size_t units = 0;
+	size_t i = 0;
+	while (i < lineText.size() && i < byteColumn) {
+		size_t length = utf8SequenceLength(lineText, i);
+		units += (length == 4) ? 2 : 1;
+		i += length;
+	}
+	if (byteColumn > lineText.size()) {
+		units += byteColumn - lineText.size();
+	}
+	return units;
+}
+
+size_t lspUtf16ToByteColumn(const std::string& lineText, size_t utf16Column) {
+	size_t units = 0;
+	size_t i = 0;
+	while (i < lineText.size() && units < utf16Column) {
+		size_t length = utf8SequenceLength(lineText, i);
+		size_t width = (length == 4) ? 2 : 1;
+		if (units + width > utf16Column) {
+			break;
+		}
+		units += width;
+		i += length;
+	}
+	if (i >= lineText.size() && units < utf16Column) {
+		i += utf16Column - units;
+	}
+	return i;
+}
+
 static int hexDigitValue(char c) {
 	if (c >= '0' && c <= '9') {
 		return c - '0';
