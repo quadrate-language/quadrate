@@ -105,6 +105,24 @@ _Noreturn void qdrt_fatal_raise(qd_context* ctx, const char* op, const char* fmt
 	qdrt_fatal_exit();
 }
 
+void qd_fatal_recover(qd_context* ctx, const char* op, const char* detail) {
+	if (ctx == NULL || !ctx->recovery_armed) {
+		return;
+	}
+	if (detail == NULL) {
+		detail = (ctx->error_msg != NULL && ctx->error_msg[0] != '\0') ? ctx->error_msg : "failed";
+	}
+	char message[448];
+	if (op != NULL) {
+		snprintf(message, sizeof(message), "%s: %s", op, detail);
+	} else {
+		snprintf(message, sizeof(message), "%s", detail);
+	}
+	qd_set_error_msg(ctx, message);
+	ctx->recovery_armed = false;
+	longjmp(ctx->recovery_buf, 1);
+}
+
 _Noreturn void qd_fatal_raise(qd_context* ctx, const char* op, const char* fmt, ...) {
 	char detail[384];
 	va_list args;

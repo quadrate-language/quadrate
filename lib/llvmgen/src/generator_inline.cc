@@ -8,6 +8,18 @@ namespace Qd {
 		// it is a macro, not a linker symbol, so loading it would crash.
 		auto writeFn = module->getOrInsertFunction(
 				"write", llvm::FunctionType::get(int64Ty, {int32Ty, ptrTy, int64Ty}, false));
+		std::string detail = message;
+		for (const char* prefix : {"Fatal error in ", "Fatal error: "}) {
+			if (detail.rfind(prefix, 0) == 0) {
+				detail = detail.substr(strlen(prefix));
+				break;
+			}
+		}
+		while (!detail.empty() && detail.back() == '\n') {
+			detail.pop_back();
+		}
+		builder->CreateCall(
+				fatalRecoverFn, {ctx, llvm::ConstantPointerNull::get(ptrTy), builder->CreateGlobalString(detail)});
 		auto errorMsg = builder->CreateGlobalString(message);
 		builder->CreateCall(writeFn, {builder->getInt32(2), errorMsg, builder->getInt64(strlen(message))});
 		builder->CreateCall(printStackTraceFn, {ctx});

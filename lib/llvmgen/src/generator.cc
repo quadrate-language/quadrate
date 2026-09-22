@@ -184,6 +184,8 @@ namespace Qd {
 		installCrashHandlerFn =
 				declareFn(llvm::FunctionType::get(builder->getVoidTy(), {}, false), "qd_install_crash_handler");
 		printErrorMsgFn = declareFn(ptrPtrToVoidTy, "qd_print_error_msg");
+		fatalRecoverFn = declareFn(
+				llvm::FunctionType::get(builder->getVoidTy(), {contextPtrTy, ptrTy, ptrTy}, false), "qd_fatal_recover");
 
 		// String functions
 		qdStringReleaseFn = declareFn(ptrToVoidTy, "qd_string_release");

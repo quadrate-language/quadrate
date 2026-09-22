@@ -100,6 +100,7 @@ namespace Qd {
 
 			builder->SetInsertPoint(errorBlock);
 			auto funcNameStr = builder->CreateGlobalString(name);
+			builder->CreateCall(fatalRecoverFn, {ctx, funcNameStr, llvm::ConstantPointerNull::get(ptrTy)});
 			builder->CreateCall(printErrorMsgFn, {ctx, funcNameStr});
 			builder->CreateCall(printStackTraceFn, {ctx});
 			builder->CreateCall(exitFn, {builder->getInt32(1)});
@@ -822,6 +823,7 @@ namespace Qd {
 
 					// Print error message with context->error_msg if available
 					auto funcNameStr = builder->CreateGlobalString(name);
+					builder->CreateCall(fatalRecoverFn, {ctx, funcNameStr, llvm::ConstantPointerNull::get(ptrTy)});
 					builder->CreateCall(printErrorMsgFn, {ctx, funcNameStr});
 					builder->CreateCall(printStackTraceFn, {ctx});
 					builder->CreateCall(exitFn, {builder->getInt32(1)});
@@ -1231,6 +1233,7 @@ namespace Qd {
 
 						// Print error message with context->error_msg if available
 						auto funcNameStr = builder->CreateGlobalString(name);
+						builder->CreateCall(fatalRecoverFn, {ctx, funcNameStr, llvm::ConstantPointerNull::get(ptrTy)});
 						builder->CreateCall(printErrorMsgFn, {ctx, funcNameStr});
 						builder->CreateCall(printStackTraceFn, {ctx});
 						builder->CreateCall(exitFn, {builder->getInt32(1)});
@@ -1453,6 +1456,7 @@ namespace Qd {
 
 				// Print error message with context->error_msg if available
 				auto funcNameStr = builder->CreateGlobalString(name);
+				builder->CreateCall(fatalRecoverFn, {ctx, funcNameStr, llvm::ConstantPointerNull::get(ptrTy)});
 				builder->CreateCall(printErrorMsgFn, {ctx, funcNameStr});
 				builder->CreateCall(printStackTraceFn, {ctx});
 				builder->CreateCall(exitFn, {builder->getInt32(1)});

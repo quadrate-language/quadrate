@@ -441,6 +441,20 @@ quadrepl_regressions() {
         fail "a runtime error is reported and the session goes on" "$(echo "$out" | tr '\n' ' ')"
     fi
 
+    out=$(repl 'fn d(a:i64 b:i64 -- c:i64) { a b / }\n1 2\n1 0 d\n7\nstack\n' || true)
+    if echo "$out" | grep -q 'Division by zero' && [ "$(echo "$out" | tail -1)" = "1 2 7" ]; then
+        pass "a runtime error in a typed function is recovered"
+    else
+        fail "a runtime error in a typed function is recovered" "$(echo "$out" | tr '\n' ' ')"
+    fi
+
+    out=$(repl 'use strconv\n"zz" 10 strconv::parse_int!\n5\nstack\n' || true)
+    if echo "$out" | grep -q 'invalid number format' && [ "$(echo "$out" | tail -1)" = "5" ]; then
+        pass "an aborting fallible call is recovered"
+    else
+        fail "an aborting fallible call is recovered" "$(echo "$out" | tr '\n' ' ')"
+    fi
+
     out=$(repl '"a" 5 -> x\n0 -> z "b" 1 z /\nx print\nstack\n' || true)
     if [ "$(echo "$out" | tail -1)" = "a" ] && echo "$out" | grep -q '^5$'; then
         pass "a failed line leaves the stack and locals as they were"

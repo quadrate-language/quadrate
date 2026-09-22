@@ -229,6 +229,7 @@ namespace Qd {
 		llvm::Function* shlFn = nullptr;
 		llvm::Function* shrFn = nullptr;
 		llvm::Function* exitFn = nullptr;
+		llvm::Function* fatalRecoverFn = nullptr;
 		llvm::Function* printStackTraceFn = nullptr;
 		llvm::Function* installCrashHandlerFn = nullptr;
 		llvm::Function* printErrorMsgFn = nullptr;

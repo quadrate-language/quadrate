@@ -1230,6 +1230,11 @@ void qd_fatal_raise(qd_context* ctx, const char* op, const char* fmt, ...)
 #endif
 		;
 
+/** @brief Longjmp to the recovery buffer if recovery is armed, otherwise return.
+ *  @param op Operation name prefixed to the message, or NULL
+ *  @param detail Error detail, or NULL to use the context's error message */
+void qd_fatal_recover(qd_context* ctx, const char* op, const char* detail);
+
 /** @brief Whether recovery is armed on this context */
 bool qd_recovery_armed(const qd_context* ctx);
 

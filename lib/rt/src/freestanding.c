@@ -208,6 +208,12 @@ void qd_print_stack_trace(qd_context* ctx) {
 	(void)ctx;
 }
 
+void qd_fatal_recover(qd_context* ctx, const char* op, const char* detail) {
+	(void)ctx;
+	(void)op;
+	(void)detail;
+}
+
 void qd_print_error_msg(qd_context* ctx, const char* func_name) {
 	(void)ctx;
 	(void)func_name;
