@@ -69,10 +69,10 @@
     },
     {
       "name": "column",
-      "signature": "(arr:[]str count:i64 widths:ptr num_cols:i64 -- result:str)",
+      "signature": "(arr:[]str widths:ptr num_cols:i64 -- result:str)",
       "failable": false,
       "description": "Format strings into columns.",
-      "params": [{"name": "arr", "type": "[]str", "description": "Array of strings"}, {"name": "count", "type": "i64", "description": "Number of strings"}, {"name": "widths", "type": "ptr", "description": "Raw buffer of i64 column widths"}, {"name": "num_cols", "type": "i64", "description": "Number of columns"}],
+      "params": [{"name": "arr", "type": "[]str", "description": "Array of strings"}, {"name": "widths", "type": "ptr", "description": "Raw buffer of i64 column widths"}, {"name": "num_cols", "type": "i64", "description": "Number of columns"}],
       "returns": [{"name": "result", "type": "str", "description": "Formatted column output"}],
       "errors": [],
       "examples": []
@@ -279,10 +279,10 @@
     },
     {
       "name": "join",
-      "signature": "(parts:[]str count:i64 delim:str -- result:str)",
+      "signature": "(parts:[]str delim:str -- result:str)",
       "failable": true,
       "description": "Join array of strings with delimiter.",
-      "params": [{"name": "parts", "type": "[]str", "description": "Array of strings"}, {"name": "count", "type": "i64", "description": "Number of strings"}, {"name": "delim", "type": "str", "description": "Delimiter string"}],
+      "params": [{"name": "parts", "type": "[]str", "description": "Array of strings"}, {"name": "delim", "type": "str", "description": "Delimiter string"}],
       "returns": [{"name": "result", "type": "str", "description": "Joined string"}],
       "errors": [{"code": "ErrAlloc", "description": "Memory allocation failed"}],
       "examples": ["\"usr,bin\" \",\" strings::split! \"/\" strings::join! -> path"]
@@ -309,11 +309,11 @@
     },
     {
       "name": "lines",
-      "signature": "(s:str -- arr:[]str count:i64)",
+      "signature": "(s:str -- arr:[]str)",
       "failable": true,
       "description": "Split string by newlines.",
       "params": [{"name": "s", "type": "str", "description": "Input string"}],
-      "returns": [{"name": "arr", "type": "[]str", "description": "Array of line strings"}, {"name": "count", "type": "i64", "description": "Number of lines"}],
+      "returns": [{"name": "arr", "type": "[]str", "description": "Array of line strings"}],
       "errors": [{"code": "ErrAlloc", "description": "Memory allocation failed"}],
       "examples": ["\"a\\nb\\nc\" strings::lines!  // [\"a\", \"b\", \"c\"]"]
     },
@@ -409,43 +409,43 @@
     },
     {
       "name": "sort",
-      "signature": "(arr:[]str count:i64 -- )",
+      "signature": "(arr:[]str -- )",
       "failable": false,
       "description": "Sort array of strings in ascending alphabetical order.",
-      "params": [{"name": "arr", "type": "[]str", "description": "Array of strings"}, {"name": "count", "type": "i64", "description": "Number of elements"}],
+      "params": [{"name": "arr", "type": "[]str", "description": "Array of strings"}],
       "returns": [],
       "errors": [],
       "examples": ["\"b,a,c\" \",\" strings::split! strings::sort"]
     },
     {
       "name": "sort_desc",
-      "signature": "(arr:[]str count:i64 -- )",
+      "signature": "(arr:[]str -- )",
       "failable": false,
       "description": "Sort array of strings in descending alphabetical order.",
-      "params": [{"name": "arr", "type": "[]str", "description": "Array of strings"}, {"name": "count", "type": "i64", "description": "Number of elements"}],
+      "params": [{"name": "arr", "type": "[]str", "description": "Array of strings"}],
       "returns": [],
       "errors": [],
       "examples": ["\"b,a,c\" \",\" strings::split! strings::sort_desc"]
     },
     {
       "name": "split_n",
-      "signature": "(s:str delim:str n:i64 -- parts:[]str count:i64)",
+      "signature": "(s:str delim:str n:i64 -- parts:[]str)",
       "failable": true,
       "description": "Split into at most n parts.",
       "params": [{"name": "s", "type": "str", "description": "String to split"}, {"name": "delim", "type": "str", "description": "Delimiter"}, {"name": "n", "type": "i64", "description": "Maximum number of parts"}],
-      "returns": [{"name": "parts", "type": "[]str", "description": "Array of string parts"}, {"name": "count", "type": "i64", "description": "Number of parts"}],
+      "returns": [{"name": "parts", "type": "[]str", "description": "Array of string parts"}],
       "errors": [{"code": "ErrAlloc", "description": "Memory allocation failed"}],
       "examples": ["\"a:b:c:d\" \":\" 2 strings::split_n!  // [\"a\", \"b:c:d\"]"]
     },
     {
       "name": "split",
-      "signature": "(str:str delim:str -- parts:[]str count:i64)",
+      "signature": "(str:str delim:str -- parts:[]str)",
       "failable": true,
       "description": "Split string by delimiter.",
       "params": [{"name": "str", "type": "str", "description": "String to split"}, {"name": "delim", "type": "str", "description": "Delimiter string"}],
-      "returns": [{"name": "parts", "type": "[]str", "description": "Array of string parts"}, {"name": "count", "type": "i64", "description": "Number of parts"}],
+      "returns": [{"name": "parts", "type": "[]str", "description": "Array of string parts"}],
       "errors": [{"code": "ErrAlloc", "description": "Memory allocation failed"}],
-      "examples": ["\"a,b,c\" \",\" strings::split!  // parts=[\"a\",\"b\",\"c\"], count=3"]
+      "examples": ["\"a,b,c\" \",\" strings::split!  // [\"a\",\"b\",\"c\"]"]
     },
     {
       "name": "starts_with",
@@ -549,11 +549,11 @@
     },
     {
       "name": "words",
-      "signature": "(s:str -- arr:[]str count:i64)",
+      "signature": "(s:str -- arr:[]str)",
       "failable": true,
       "description": "Split string by whitespace.",
       "params": [{"name": "s", "type": "str", "description": "Input string"}],
-      "returns": [{"name": "arr", "type": "[]str", "description": "Array of word strings"}, {"name": "count", "type": "i64", "description": "Number of words"}],
+      "returns": [{"name": "arr", "type": "[]str", "description": "Array of word strings"}],
       "errors": [{"code": "ErrAlloc", "description": "Memory allocation failed"}],
       "examples": ["\"hello  world\" strings::words!  // [\"hello\", \"world\"]"]
     }

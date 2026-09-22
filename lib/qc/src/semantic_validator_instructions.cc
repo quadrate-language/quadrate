@@ -411,12 +411,17 @@ namespace Qd {
 				AstNodeInstruction* instr = static_cast<AstNodeInstruction*>(node);
 				if (instr->hasTypeParam()) {
 					const std::string& typeParam = instr->typeParam();
-					if (isSizedIntType(typeParam)) {
+					// The sized-type rejection is read through `type` aliases -- `type Byte = u8`
+					// used to slip past it. Only that check: the backend picks `qd_cast*` from
+					// the written name, so an alias of `i64` is still not a cast target.
+					const std::string sizedTarget = sizedIntTypeThroughAliases(typeParam);
+					if (!sizedTarget.empty()) {
 						// `300 cast<u8>` yielded 300: the target named a width and the cast did
 						// nothing with it. A cast target is a stack value, which is always 64
 						// bits, so there is no width to apply -- mask if that is what is wanted.
 						resultType = StackValueType::INT;
-						reportErrorConditionalWithHint(node, sizedTypeMisuseMessage(typeParam, "a cast target").c_str(),
+						reportErrorConditionalWithHint(node,
+								sizedTypeMisuseMessage(typeParam, sizedTarget, "a cast target").c_str(),
 								"to keep the low bits, mask: 'value 255 and' for a byte", reportErrors);
 					} else if (typeParam == "i64") {
 						resultType = StackValueType::INT;

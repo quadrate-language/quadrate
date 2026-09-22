@@ -94,7 +94,10 @@ pub fn (d:Deque<T>) push_back<T>(val:T -- d2:Deque<T>)! {
 
 	tail 1 + cap mod -> new_tail
 
-	Deque<T> { data = data head = head tail = new_tail len = len 1 + cap = cap }
+	// Written through the receiver, and the receiver is what comes back: a container is a
+	// reference (3.2.1), and a fresh struct over the same buffer leaves every earlier copy
+	// live and pointing at a buffer the next grow reallocates and `release` frees.
+	d data >>data head >>head new_tail >>tail len 1 + >>len cap >>cap
 }
 
 /// Push an element to the front.
@@ -144,7 +147,7 @@ pub fn (d:Deque<T>) push_front<T>(val:T -- d2:Deque<T>)! {
 
 	val data new_head mem::AnySize * mem::set_any
 
-	Deque<T> { data = data head = new_head tail = tail len = len 1 + cap = cap }
+	d data >>data new_head >>head tail >>tail len 1 + >>len cap >>cap
 }
 
 /// Remove and return the front element.
@@ -171,7 +174,7 @@ pub fn (d:Deque<T>) pop_front<T>( -- val:T d2:Deque<T>)! {
 	head 1 + cap mod -> new_head
 
 	val
-	Deque<T> { data = data head = new_head tail = tail len = len 1 - cap = cap }
+	d new_head >>head len 1 - >>len
 }
 
 /// Remove and return the back element.
@@ -202,7 +205,7 @@ pub fn (d:Deque<T>) pop_back<T>( -- val:T d2:Deque<T>)! {
 	data new_tail mem::AnySize * mem::clear_any
 
 	val
-	Deque<T> { data = data head = head tail = new_tail len = len 1 - cap = cap }
+	d new_tail >>tail len 1 - >>len
 }
 
 /// View the front element without removing it.
@@ -272,4 +275,7 @@ pub fn (d:Deque<T>) release<T>() {
 		}
 		data mem::free
 	}
+	// Cleared so a second `release` is a no-op rather than a double free: nothing stops a
+	// caller holding two names for one container, and the freed buffer is what both hold.
+	d null >>data 0 >>head 0 >>tail 0 >>len 0 >>cap drop
 }

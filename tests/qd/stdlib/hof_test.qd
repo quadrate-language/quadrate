@@ -181,7 +181,7 @@ test "hof::apply over f64 and str" {
 }
 
 test "hof::map changes the element type" {
-	"a,bbb" "," strings::split! -> count -> arr
+	"a,bbb" "," strings::split! -> arr
 	arr &length_of hof::map -> lens
 	lens 0 nth 1 testing::assert_eq
 	lens 1 nth 3 testing::assert_eq
@@ -189,7 +189,7 @@ test "hof::map changes the element type" {
 }
 
 test "hof::filter and find over strings" {
-	"a,bbb,cc" "," strings::split! -> count -> arr
+	"a,bbb,cc" "," strings::split! -> arr
 	arr &is_short hof::filter -> shorts
 	shorts len 2 testing::assert_eq
 	shorts 0 nth "a" testing::assert_eq
@@ -201,12 +201,12 @@ test "hof::filter and find over strings" {
 }
 
 test "hof::fold over strings" {
-	"a,b,c" "," strings::split! -> count -> arr
+	"a,b,c" "," strings::split! -> arr
 	arr "" &join_two hof::fold "abc" testing::assert_eq
 }
 
 test "hof::any and all over strings" {
-	"a,bbb" "," strings::split! -> count -> arr
+	"a,bbb" "," strings::split! -> arr
 	arr &is_short hof::any testing::assert_true
 	arr &is_short hof::all testing::assert_false
 }

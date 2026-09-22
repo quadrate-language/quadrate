@@ -101,8 +101,8 @@ fn main() {
 	"data.txt" io::read_file switch {
 		Ok {
 			-> content
-			content strings::lines! -> count -> lines
-			0 count 1 for i {
+			content strings::lines! -> lines
+			0 lines len 1 for i {
 				i 1 + lines i nth process_line
 			}
 			lines free
@@ -123,15 +123,15 @@ fn count_words(path:str -- words:i64 lines:i64 chars:i64)! {
 	path io::read_file! -> content
 
 	content strings::len -> chars
-	content strings::lines! -> line_count -> line_array
-	line_count -> lines
+	content strings::lines! -> line_array
+	line_array len -> lines
 
 	0 -> words
-	0 line_count 1 for i {
+	0 lines 1 for i {
 		line_array i nth -> line
 		line strings::len 0 > if {
-			line strings::words! -> word_count -> word_arr
-			words word_count + -> words
+			line strings::words! -> word_arr
+			words word_arr len + -> words
 			word_arr free
 		}
 	}

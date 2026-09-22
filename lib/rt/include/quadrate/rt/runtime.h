@@ -456,8 +456,29 @@ int qd_xor(qd_context* ctx);
  * @return Execution result (0 on success)
  */
 int qd_not(qd_context* ctx);
+
+/**
+ * @brief Logical AND ( a b -- 1 if both are non-zero ) -- the language's `and`
+ *
+ * @param ctx Execution context
+ * @return Execution result (0 on success)
+ */
 int qd_land(qd_context* ctx);
+
+/**
+ * @brief Logical OR ( a b -- 1 if either is non-zero ) -- the language's `or`
+ *
+ * @param ctx Execution context
+ * @return Execution result (0 on success)
+ */
 int qd_lor(qd_context* ctx);
+
+/**
+ * @brief Logical NOT ( a -- 1 if a is zero ) -- the language's `not`
+ *
+ * @param ctx Execution context
+ * @return Execution result (0 on success)
+ */
 int qd_lnot(qd_context* ctx);
 
 /**

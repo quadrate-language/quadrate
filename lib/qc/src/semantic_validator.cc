@@ -951,11 +951,34 @@ namespace Qd {
 		}
 	}
 
+	std::string SemanticValidator::resolveTypeAliasChain(const std::string& typeStr) const {
+		// `type A = B  type B = A` is a program a user can write; walking it needs a bound
+		// rather than a stack overflow. No real chain is anywhere near this long.
+		static const int MaxAliasDepth = 64;
+		std::string resolved = typeStr;
+		for (int depth = 0; depth < MaxAliasDepth; depth++) {
+			auto aliasIt = mTypeAliases.find(resolved);
+			if (aliasIt == mTypeAliases.end()) {
+				break;
+			}
+			if (aliasIt->second == resolved) {
+				break;
+			}
+			resolved = aliasIt->second;
+		}
+		return resolved;
+	}
+
+	std::string SemanticValidator::sizedIntTypeThroughAliases(const std::string& typeStr) const {
+		const std::string resolved = resolveTypeAliasChain(typeStr);
+		return isSizedIntType(resolved) ? resolved : std::string();
+	}
+
 	StackValueType SemanticValidator::stringToStackValueType(const std::string& typeStr) const {
 		// Resolve type aliases first
-		auto aliasIt = mTypeAliases.find(typeStr);
-		if (aliasIt != mTypeAliases.end()) {
-			return stringToStackValueType(aliasIt->second);
+		const std::string aliasTarget = resolveTypeAliasChain(typeStr);
+		if (aliasTarget != typeStr) {
+			return stringToStackValueType(aliasTarget);
 		}
 		// Array types: []i64, []f64, etc. - all map to PTR on the stack
 		if (typeStr.size() > 2 && typeStr[0] == '[' && typeStr[1] == ']') {

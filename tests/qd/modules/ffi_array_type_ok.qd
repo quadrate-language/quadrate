@@ -8,10 +8,9 @@ fn count_of(a:[]str -- n:i64) {
 }
 
 fn main() {
-	"c,a,b" "," strings::split! -> count -> parts
+	"c,a,b" "," strings::split! -> parts
 	parts count_of print nl
-	parts count strings::sort
+	parts strings::sort
 	parts 0 nth print nl
 	parts free
-	count drop
 }

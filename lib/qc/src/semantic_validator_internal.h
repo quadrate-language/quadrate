@@ -147,11 +147,23 @@ inline bool isSizedIntType(const std::string& name) {
 }
 
 // `where` names the position: "a parameter", "a return value", "a module global", "a cast target".
-inline std::string sizedTypeMisuseMessage(const std::string& name, const std::string& where) {
-	return "'" + name + "' is a memory-layout type and means nothing on " + where +
+// `written` is the name in the source and `sized` the sized type it finally names: a `type`
+// alias does not launder the rejection, and naming both is what makes the message readable
+// when the two differ.
+inline std::string sizedTypeMisuseMessage(
+		const std::string& written, const std::string& sized, const std::string& where) {
+	std::string subject = "'" + written + "' is a memory-layout type";
+	if (written != sized) {
+		subject = "'" + written + "' is an alias for '" + sized + "', a memory-layout type,";
+	}
+	return subject + " and means nothing on " + where +
 		   ": a stack value is always 64 bits. Sized types belong on a struct field or a mem accessor "
 		   "(mem::get_" +
-		   name + "); use 'i64' here";
+		   sized + "); use 'i64' here";
+}
+
+inline std::string sizedTypeMisuseMessage(const std::string& name, const std::string& where) {
+	return sizedTypeMisuseMessage(name, name, where);
 }
 
 inline bool isReservedKeyword(const std::string& name) {

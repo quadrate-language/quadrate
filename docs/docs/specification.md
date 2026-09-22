@@ -1,6 +1,9 @@
 # Quadrate Language Specification
 
-**Version 0.2.0**
+**Version 0.5.0**
+
+This document describes the Quadrate language as of toolchain release 0.5.0. The version above
+is the release it describes, not a number the document carries on its own.
 
 <small>SPDX-License-Identifier: CC0-1.0 — This specification is released into the public domain. Anyone may implement the Quadrate language without royalty or restriction.</small>
 
@@ -81,8 +84,8 @@ Quadrate source files MUST be UTF-8 encoded. Identifiers MUST contain only ASCII
 
 ```
 fn        pub       inline    stack     struct    packed    enum
-type      use       import    if        else      for
-loop      switch    break     continue  return    defer
+type      use       import    if        else      for       loop
+while     switch    break     continue  return    defer
 const     var       test      as
 ```
 
@@ -119,25 +122,28 @@ Naming conventions (RECOMMENDED):
 
 **Integer literals:**
 ```
-integer := digit+
-         | '0x' hex_digit+
-         | '0b' bin_digit+
+integer  := ['-'] ( digit+
+                  | '0x' hex_digit+
+                  | '0b' bin_digit+ )
 ```
-Examples: `42`, `0`, `1000`, `0xFF`, `0b1010`
+Examples: `42`, `0`, `1000`, `0xFF`, `0b1010`, `-1`, `-0x10`
 
 **Float literals:**
 ```
-float    := digit+ ('.' digit+)? exponent
-          | digit+ '.' digit+ exponent?
+float    := ['-'] ( digit+ ('.' digit+)? exponent
+                  | digit+ '.' digit+ exponent? )
 exponent := ('e' | 'E') ('+' | '-')? digit+
 ```
-Examples: `3.14`, `0.0`, `100.5`, `1e3`, `1.5e-3`, `6.02214076e23`
+Examples: `3.14`, `0.0`, `100.5`, `1e3`, `1.5e-3`, `6.02214076e23`, `-2.5`
 
 A point needs a digit on each side of it: `0.5` and `5.0`, not `.5` or `5.`. A literal
 carrying a point or an exponent is an `f64`, so `1e3` is the float `1000.0` and `1000` is
 the integer. `_` is not a digit separator and there is no hex float form. A value too large
 for an `f64` is an error; one too small underflows to a subnormal or to zero, as the same
 arithmetic does at runtime.
+
+A leading `-` belongs to the literal, so `10-1` is the two literals `10` and `-1` and not a
+subtraction; §2.4 says what that costs.
 
 **String literals:**
 ```
@@ -211,7 +217,18 @@ as `bits::and`, `bits::or`, `bits::xor` and `bits::not`. Shift operators are `sh
 
 ### 2.4 Whitespace
 
-Whitespace (spaces, tabs, newlines) separates tokens but is otherwise insignificant. Indentation MUST NOT be syntactically meaningful.
+Whitespace (spaces, tabs, newlines) separates tokens. Indentation MUST NOT be syntactically
+meaningful, and no construct is delimited by a line break.
+
+Whitespace is not, however, insignificant everywhere. Two rules read it, and both are normative:
+
+- **Adjacency after `]`** (§3.2.2). A type name or a `[` written immediately after a `]`, with no
+  whitespace, makes the brackets a size rather than a list of elements. `[3]i64` is an array of
+  three zeros; `[3] i64` is the one-element array `[3]` followed by the identifier `i64`. Two
+  array literals in a row MUST therefore be separated by whitespace.
+- **A leading `-` on a numeric literal** (§2.3.4). The sign belongs to the literal, so `10 1 -`
+  subtracts and `10-1` pushes the two literals `10` and `-1`. An implementation SHOULD diagnose
+  the second form, which reads as subtraction to anyone arriving from an infix language.
 
 ---
 
@@ -405,9 +422,6 @@ The `fn(...)` type specifies the full signature of the function pointer, includi
 | Type | Description |
 |------|-------------|
 | `any` | Wildcard type for operations accepting any type |
-| `UNKNOWN` | Internal: unresolved type during compilation |
-| `TAINTED` | Internal: error-tainted value from fallible function |
-| `TYPEVAR` | Internal: type variable in generic context |
 
 ### 3.6 Null
 
@@ -544,7 +558,6 @@ All operations MUST be postfix. Arguments MUST be popped from the stack, and res
 | `over` | `( a b -- a b a )` | Copy second to top |
 | `rot` | `( a b c -- b c a )` | Rotate three |
 | `pick` | `( x y z -- x y z x )` | Copy the third value to the top |
-| `nth` | `( array n -- elem )` | Get array element |
 | `depth` | `( -- n )` | Push stack depth |
 
 Every stack word has a fixed effect. A word whose depth comes from a value on the stack cannot be
@@ -921,13 +934,6 @@ then-arm MUST leave the stack at the depth it found it, and an implementation MU
 that does not. The reasoning is the one above — the arm may not run, so what follows cannot read
 a value whose presence depends on it — and the exemption for a diverging arm applies here too.
 
-This paragraph used to say the opposite: that a bare `if` was unconstrained and the enclosing
-function's declared effect governed it. That could not be true, because an arm whose effect is
-not applied to the model leaves the function-level check comparing against a stack that pretends
-the arm did nothing. `fn main() { 1 0 == if { 42 } }` was accepted with no diagnostic anywhere,
-and fourteen guards in the `ct` module pushed their error message onto the stack as data and
-fell through into the code they were guarding.
-
 The exception is again a bare fallible call: with no failure arm to run, what follows sees the
 pre-call stack, so the success arm MUST leave that same depth — by consuming the results or by
 diverging.
@@ -962,7 +968,7 @@ loop {
 }
 ```
 
-### 6.3.1 Conditional Loops
+### 6.4 Conditional Loops
 
 ```quadrate
 0 -> i
@@ -988,7 +994,7 @@ i 3 < while { i 1 + -> i }
 the condition is `i 3 <`, and `"starting" print nl` is evaluated once. A run that does not leave
 exactly one value is a compile error.
 
-### 6.4 Switch-Case
+### 6.5 Switch-Case
 
 ```quadrate
 value switch {
@@ -1005,7 +1011,7 @@ Cases can match:
 - Constants (including scoped: `module::Constant`)
 - Wildcard `_` for default
 
-#### 6.4.1 Arm stack effects
+#### 6.5.1 Arm stack effects
 
 The rule of §6.1.1 applies to `switch` arms: every arm that reaches the merge point MUST leave
 the stack at the same depth, and an implementation MUST reject a program whose arms disagree.
@@ -1014,14 +1020,14 @@ case no arm runs; its arms MUST therefore leave the stack at the depth it had be
 `switch`. After a bare fallible call (§10.3) the `Ok` arm starts from the call's results and
 every other arm from the pre-call stack.
 
-### 6.5 Break and Continue
+### 6.6 Break and Continue
 
 ```quadrate
 break      // Exit innermost loop
 continue   // Skip to next iteration
 ```
 
-### 6.6 Defer
+### 6.7 Defer
 
 Deferred code MUST execute when scope exits in LIFO order:
 
@@ -1047,7 +1053,7 @@ fn example() {
 // Prints: first, second, third
 ```
 
-#### 6.6.1 Registration
+#### 6.7.1 Registration
 
 A `defer` MUST be registered when control **reaches** the statement, not merely because the
 statement appears in the function. A `defer` written inside a branch that was not taken, or
@@ -1159,8 +1165,9 @@ one what it rejects in the other:
   `?`, or be followed immediately by `if` or `switch` (§9.2) — the rule that governs a call to a
   fallible name. Without `!` a `call` on it is an ordinary call, and `!` or `?` there is an error.
 - The body MUST leave exactly what the signature declares, counted and typed as §5.7 requires.
-- A parameter's type MUST be a valid type name, a name that is not one is an error, and an unused
-  named parameter is reported the same way.
+- A parameter's type MUST be a valid type name, and a name that is not one is an error. An
+  unused named parameter is diagnosed the same way it is in a named function: a warning, not an
+  error, so the program still compiles.
 
 A bare identifier in the parameter list is a **type**, as it is in a named function's parameter
 list: `stack fn (Point -- r:f64)` takes a `Point`. It does not declare a parameter called `Point`.
@@ -1723,11 +1730,9 @@ neither, and the reference implementation provides neither.
 #### 11.2.2 Ownership
 
 Reference counting says how a count moves; it does not say who moves it. This is the contract,
-and every part of an implementation MUST hold to the same one. Three defects fixed in the
-reference implementation were this contract implemented differently in different places, none
-of them visible in a program's output: a field overwrite that dropped a reference on the floor,
-an equality test that released its operands only when both were strings, and a fast path for
-integer-only functions that skipped the release when a local was rebound.
+and every part of an implementation MUST hold to the same one. None of it is visible in a
+program's output, so an implementation that gets it wrong in one place and right in another
+still passes every test of what programs print.
 
 **A value on the stack carries a reference of its own.** Reading a local, a field, an array
 element or a global retains what it reads before pushing it. A value that was just created --
@@ -1950,7 +1955,7 @@ See [Section 4.2](#42-stack-operations) for complete list.
 | Instruction | Stack Effect | Description |
 |-------------|--------------|-------------|
 | `cast<T>` | `(a -- b)` | Cast to type T (total conversions only; see §3.7) |
-| `sizeof` | `(T -- n)` | Size of type in bytes |
+| `sizeof<T>` | `( -- n)` | Size of type T in bytes; the type is a type parameter, not a value |
 
 ### 12.7 I/O Operations
 
@@ -2042,6 +2047,8 @@ Time operations.
 - `unix`, `now`, `sleep`
 - `year`, `month`, `day`, `hour`, `minute`, `second`, `weekday`
 - `is_leap_year`, `days_in_month`, `add`, `sub`, `before`, `after`
+- `format!`, `parse!` -- the two fallible ones, since a format string can be malformed and an
+  input can fail to match it
 
 ### 13.7 thread
 
@@ -2151,7 +2158,9 @@ Implementations MUST provide the following runtime functions:
 **Operations:**
 - `qd_add`, `qd_sub`, `qd_mul`, `qd_div`, `qd_mod` - Arithmetic
 - `qd_lt`, `qd_gt`, `qd_eq`, `qd_neq`, `qd_lte`, `qd_gte` - Comparison
-- `qd_and`, `qd_or`, `qd_xor`, `qd_not`, `qd_shl`, `qd_shr` - Bitwise
+- `qd_land`, `qd_lor`, `qd_lnot` - Logical (§12.3): the operations `and`, `or` and `not` name
+- `qd_and`, `qd_or`, `qd_xor`, `qd_not`, `qd_shl`, `qd_shr` - Bitwise (§12.3.1): the operations
+  `bits::and`, `bits::or`, `bits::xor`, `bits::not`, `shl` and `shr` name
 
 **Memory:**
 - `qd_struct_alloc(size, destructor)` - Allocate struct
@@ -2194,30 +2203,29 @@ field_decl      = identifier ":" type [ "=" expression ] ;
 import_fn       = ["pub"] "fn" identifier signature ["!"] ;
 
 block           = "{" { statement } "}" ;
-statement       = expression | if_stmt | for_stmt | loop_stmt
-                | switch_stmt | defer_stmt | "break" | "continue" ;
+statement       = expression | if_stmt | for_stmt | loop_stmt | while_stmt
+                | switch_stmt | defer_stmt | "break" | "continue" | "return" ;
 
 if_stmt         = expression "if" block [ "else" block ] ;
 for_stmt        = expression expression expression "for" identifier block ;
 loop_stmt       = "loop" block ;
+while_stmt      = expression "while" block ;   /* condition delimited by stack effect, see 6.4 */
 switch_stmt     = expression "switch" "{" { case_clause } "}" ;
 case_clause     = ( literal | identifier | "_" ) block ;
 defer_stmt      = "defer" ( block | statement ) ;
 
 expression      = literal | identifier | scoped_id | struct_const | array_lit
                 | field_access | field_set | local_bind | fn_call | anon_fn
-                | error_lit | operator | instruction | as_cast | interp_string ;
+                | operator | instruction | as_cast | interp_string ;
 interp_string   = "$\"" { character | "{" expression "}" } "\"" ;
 as_cast         = "as" type ;
 
-error_lit       = "error" "{" "code" "=" expression "message" "=" expression "}" ;
-
 literal         = integer | float | string | "true" | "false" | "Ok" | "Err" | "null" ;
-scoped_id       = identifier "::" identifier ;
+scoped_id       = identifier "::" identifier { "::" identifier } ;  /* mod::Enum::Variant, 5.4.2 */
 struct_const    = identifier [type_args] "{" { field_init } "}" ;
 array_lit       = "[" { expression } "]" ;
 field_access    = "<<" identifier ;
-field_set       = ">>" identifier [ "!" ] ;
+field_set       = ">>" identifier ;
 local_bind      = "->" identifier ;
 anon_fn         = "fn" signature block ;  /* captures are implicit */
 fn_call         = identifier [ "!" ] ;
@@ -2233,7 +2241,7 @@ operator        = "+" | "-" | "*" | "/" | "%" | "++" | "--"
 
 instruction     = "dup" | "swap" | "drop" | "over" | "rot" | "nip"
                 | "pick" | "nth" | "len" | "append" | "set"
-                | "make" "<" type ">" | "cast" "<" type ">"
+                | "clone" | "cast" "<" type ">" | "sizeof" "<" type ">"
                 | "print" | "nl" | "call" | "panic" | "err" | ... ;
 ```
 
@@ -2264,7 +2272,15 @@ instruction     = "dup" | "swap" | "drop" | "over" | "rot" | "nip"
 | `<=` | `lte` | `(a b -- bool)` | 1 if a <= b, else 0 |
 | `>=` | `gte` | `(a b -- bool)` | 1 if a >= b, else 0 |
 
-### B.3 Bitwise Operators
+### B.3 Logical Operators
+
+| Operator | Named | Stack Effect | Description |
+|----------|-------|--------------|-------------|
+| | `and` | `(a b -- c)` | 1 if both operands are non-zero |
+| | `or` | `(a b -- c)` | 1 if either operand is non-zero |
+| | `not` | `(a -- b)` | 1 if the operand is zero |
+
+### B.3.1 Bitwise Operators
 
 | Operator | Named | Stack Effect | Description |
 |----------|-------|--------------|-------------|
@@ -2274,9 +2290,6 @@ instruction     = "dup" | "swap" | "drop" | "over" | "rot" | "nip"
 | | `bits::or` | `(a b -- c)` | a \| b |
 | | `bits::xor` | `(a b -- c)` | a ^ b |
 | | `bits::not` | `(a -- b)` | ~a |
-| | `and` | `(a b -- c)` | logical AND |
-| | `or` | `(a b -- c)` | logical OR |
-| | `not` | `(a -- b)` | logical NOT |
 
 ### B.4 Special Operators
 
@@ -2295,6 +2308,10 @@ instruction     = "dup" | "swap" | "drop" | "over" | "rot" | "nip"
 
 ## Document History
 
+- **0.5.0**: Sized integer types (§3.1.1), `[n]T` array literals and nested array types
+  (§3.2.2), `while` (§6.4), `stack fn` and the anonymous-function rules (§7.5), branch and
+  switch-arm stack effects (§6.1.1, §6.5.1), logical `and`/`or`/`not` with the bitwise
+  operations in `bits` (§12.3), reference cycles and ownership (§11.2)
 - **0.2.0**: Method syntax for stdlib, expanded regex/fmt/sort/crypto/net, unified block parsers
 - **2.0.0-alpha**: Initial specification document
 

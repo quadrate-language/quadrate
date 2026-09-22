@@ -1,0 +1,7 @@
+// Test: a type alias must not launder a sized integer type past the check that
+// rejects it on a parameter (specification 3.1.1)
+type Byte = u8
+
+fn f(b:Byte -- r:i64) { b }
+
+fn main() { 5 f print nl }

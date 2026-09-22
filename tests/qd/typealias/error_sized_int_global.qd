@@ -1,0 +1,5 @@
+// Test: the same rejection on a module global
+type Byte = u8
+var g:Byte = 0
+
+fn main() { g print nl }

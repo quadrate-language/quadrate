@@ -1,0 +1,4 @@
+// Test: the same rejection on a cast target
+type Byte = u8
+
+fn main() { 300 cast<Byte> print nl }

@@ -215,7 +215,10 @@ pub fn (m:Map<V>) insert<V>(key:str value:V -- m2:Map<V>)! {
 	value values slot mem::AnySize * mem::set_any
 	1 states slot 8 * mem::set_i64
 
-	Map<V> { keys = keys values = values states = states len = len cap = cap }
+	// Written through the receiver, and the receiver is what comes back: a container is a
+	// reference (3.2.1), and a fresh struct over the same buffer leaves every earlier copy
+	// live and pointing at a buffer the next grow reallocates and `release` frees.
+	m keys >>keys values >>values states >>states len >>len cap >>cap
 }
 
 /// Get the value for a key.
@@ -298,7 +301,7 @@ pub fn (m:Map<V>) remove<V>(key:str -- m2:Map<V>)! {
 	// Mark as deleted (tombstone)
 	2 states slot 8 * mem::set_i64
 
-	Map<V> { keys = keys values = values states = states len = len 1 - cap = cap }
+	m len 1 - >>len
 }
 
 /// Get the number of entries in the map.
@@ -356,4 +359,8 @@ pub fn (m:Map<V>) release<V>() {
 	keys 0 neq if { keys mem::free }
 	values 0 neq if { values mem::free }
 	states 0 neq if { states mem::free }
+
+	// Cleared so a second `release` is a no-op rather than a double free: nothing stops a
+	// caller holding two names for one container, and the freed buffer is what both hold.
+	m null >>keys null >>values null >>states 0 >>len 0 >>cap drop
 }

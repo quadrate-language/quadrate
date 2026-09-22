@@ -1,0 +1,7 @@
+// Test: the same rejection on a return value, through a chain of aliases
+type Byte = u8
+type Octet = Byte
+
+fn f( -- r:Octet) { 5 }
+
+fn main() { f print nl }

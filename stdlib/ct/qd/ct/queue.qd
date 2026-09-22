@@ -93,7 +93,10 @@ pub fn (q:Queue<T>) enqueue<T>(val:T -- q2:Queue<T>)! {
 
 	tail 1 + cap mod -> new_tail
 
-	Queue<T> { data = data head = head tail = new_tail len = len 1 + cap = cap }
+	// Written through the receiver, and the receiver is what comes back: a container is a
+	// reference (3.2.1), and a fresh struct over the same buffer leaves every earlier copy
+	// live and pointing at a buffer the next grow reallocates and `release` frees.
+	q data >>data head >>head new_tail >>tail len 1 + >>len cap >>cap
 }
 
 /// Remove and return the front element.
@@ -123,7 +126,7 @@ pub fn (q:Queue<T>) dequeue<T>( -- val:T q2:Queue<T>)! {
 	head 1 + cap mod -> new_head
 
 	val
-	Queue<T> { data = data head = new_head tail = tail len = len 1 - cap = cap }
+	q new_head >>head len 1 - >>len
 }
 
 /// View the front element without removing it.
@@ -176,4 +179,7 @@ pub fn (q:Queue<T>) release<T>() {
 		}
 		data mem::free
 	}
+	// Cleared so a second `release` is a no-op rather than a double free: nothing stops a
+	// caller holding two names for one container, and the freed buffer is what both hold.
+	q null >>data 0 >>head 0 >>tail 0 >>len 0 >>cap drop
 }

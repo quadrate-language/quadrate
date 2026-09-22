@@ -802,3 +802,71 @@ test "Set reports a missing element" {
 	}
 	s release
 }
+
+// --- one container per reference ------------------------------------------------------
+
+test "a second name for a Vec sees the same vector" {
+	// push used to allocate a *new* Vec sharing the buffer, so the older name kept
+	// its old len and its pre-realloc data pointer: reading through it gave garbage
+	// and releasing both freed the buffer twice.
+	Vec<i64> { data = null len = 0 cap = 0 } -> v
+	v 10 push! -> v
+	v 20 push! -> v2
+	v length 2 testing::assert_eq
+	v2 length 2 testing::assert_eq
+	v 0 get! 10 testing::assert_eq
+	v2 1 get! 20 testing::assert_eq
+	// Grow past the initial capacity of 8, which reallocs: the older name follows.
+	0 12 1 for i {
+		v i push! -> v
+	}
+	v length 14 testing::assert_eq
+	v2 length 14 testing::assert_eq
+	v2 13 get! 11 testing::assert_eq
+	v release
+	v release
+}
+
+test "a second name for a Map sees the same map" {
+	Map<i64> { keys = null values = null states = null len = 0 cap = 0 } -> m
+	m "a" 1 insert! -> m
+	m "b" 2 insert! -> m2
+	m length 2 testing::assert_eq
+	m2 length 2 testing::assert_eq
+	m "b" get! 2 testing::assert_eq
+	m release
+	m release
+}
+
+test "a second name for a Set sees the same set" {
+	Set { keys = null states = null len = 0 cap = 0 } -> s
+	s "x" add! -> s
+	s "y" add! -> s2
+	s length 2 testing::assert_eq
+	s2 length 2 testing::assert_eq
+	s "y" contains testing::assert_true
+	s release
+	s release
+}
+
+test "a second name for a Deque sees the same deque" {
+	Deque<i64> { data = null head = 0 tail = 0 len = 0 cap = 0 } -> d
+	d 1 push_back! -> d
+	d 2 push_front! -> d2
+	d length 2 testing::assert_eq
+	d2 length 2 testing::assert_eq
+	d peek_front! 2 testing::assert_eq
+	d release
+	d release
+}
+
+test "a second name for a Queue sees the same queue" {
+	Queue<i64> { data = null head = 0 tail = 0 len = 0 cap = 0 } -> q
+	q 7 enqueue! -> q
+	q 8 enqueue! -> q2
+	q length 2 testing::assert_eq
+	q2 length 2 testing::assert_eq
+	q peek! 7 testing::assert_eq
+	q release
+	q release
+}

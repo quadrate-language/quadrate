@@ -8,11 +8,11 @@ fn main() {
 	// Test 1: Single element
 	os::mktemp! -> tmpdir
 	tmpdir "/only.txt" strings::concat "x" io::write_file!
-	tmpdir os::list! -> count -> entries
-	entries count "," strings::join! print nl
+	tmpdir os::list! drop -> entries
+	entries "," strings::join! print nl
 
 	// Test 2: Empty delimiter
-	entries count "" strings::join! print nl
+	entries "" strings::join! print nl
 
 	entries free
 	tmpdir "/only.txt" strings::concat os::delete!
@@ -22,18 +22,18 @@ fn main() {
 	os::mktemp! -> tmpdir2
 	tmpdir2 "/a.txt" strings::concat "a" io::write_file!
 	tmpdir2 "/b.txt" strings::concat "b" io::write_file!
-	tmpdir2 os::list! -> count2 -> entries2
-	entries2 count2 strings::sort
-	entries2 count2 " - " strings::join! print nl
+	tmpdir2 os::list! drop -> entries2
+	entries2 strings::sort
+	entries2 " - " strings::join! print nl
 
 	entries2 free
 	tmpdir2 "/a.txt" strings::concat os::delete!
 	tmpdir2 "/b.txt" strings::concat os::delete!
 	tmpdir2 os::rmdir!
 
-	// Test 4: Empty array (count=0)
-	8 mem::alloc! -> empty_arr  // allocate small buffer, count=0 matters
-	empty_arr 0 "," strings::join! -> empty_result
+	// Test 4: Empty array -- the length comes off the array, so there is nothing to
+	// disagree with it
+	[]str -> empty_arr
+	empty_arr "," strings::join! -> empty_result
 	"[" print empty_result print "]" print nl
-	empty_arr mem::free
 }

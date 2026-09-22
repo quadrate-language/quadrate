@@ -56,6 +56,6 @@ fn main() {
 
 	// Whitespace includes the Unicode spaces
 	"  ärlig  " strings::trim print nl
-	"a b" strings::words! -> n -> w
-	n print nl
+	"a b" strings::words! -> w
+	w len print nl
 }

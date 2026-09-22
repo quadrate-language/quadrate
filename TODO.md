@@ -32,23 +32,12 @@ through them.
       have to look like to survive that — and if none presents itself, is this an item or a
       preference?
 
-- [ ] **A count beside an array, in the `strings` FFI.** `sort::*` takes `[]T` and nothing
-      else — the array carries its length. `strings::sort`, `sort_desc`, `join` and `column`
-      still take `arr:[]str count:i64`, and `split`, `lines`, `words` and `split_n` still
-      *return* a count beside the array they built. The two spellings now sit side by side for
-      the same job: `strs sort::strings` against `strs count strings::sort`.
-      These are FFI, so the count comes off the stack in C rather than out of the signature;
-      dropping it means reading `qd_array_length` in `stdlib/strings/src/strings.c` and
-      revisiting what the four producers return. Left out of the sort conversion on purpose —
-      it is a separate change to a separate module, and C rather than Quadrate.
-      Found 2026-09-21 on finishing the sort conversion.
-
 - [ ] **R54 -- `while` is unusable as specified and unused in practice.** Across `examples/`,
       `stdlib/` and `cmd/`: `loop` 217 uses, `for` 119, **`while` 0**. The only 19 uses in the
       tree are in `tests/`. The cause is the condition-delimiting rule: the parser takes the
-      maximal backward run of expression-shaped nodes (`lib/qc/src/ast_parse.h:849`,
+      maximal backward run of expression-shaped nodes (`lib/qc/src/ast_parse.h:898`,
       `lib/qc/src/ast_statements.cc:336`) and the validator then requires *that whole run* to
-      net exactly `+1` (`lib/qc/src/semantic_validator_typecheck.cc:2385`). So no value may be
+      net exactly `+1` (`lib/qc/src/semantic_validator_typecheck.cc:2371`). So no value may be
       pending on the stack where a `while` is written:
 
           0 -> i
@@ -102,18 +91,6 @@ through them.
       `null == false == Err == 0` makes `p null ==` and `p false ==` indistinguishable, so a
       null check and a boolean test are the same program.
 
-- [ ] **R59 -- whitespace is significant, and §2.4 says it is not.** §2.4: *"Whitespace
-      (spaces, tabs, newlines) separates tokens but is otherwise insignificant."* Meanwhile:
-
-          [3]i64     // array of three zeros
-          [3] i64    // array [3], then: Undefined identifier 'i64'
-          10 1 -     // 9
-          10-1       // pushes 10 and -1 -- silently, and a C reader sees 9
-
-      §3.2.2 mandates the adjacency rule for `[n]T` and separately requires two adjacent array
-      literals to be space-separated, so the rule is load-bearing. The §2.4 sentence is what
-      should go, and the `10-1` case deserves a diagnostic.
-
 - [ ] **R60 -- `<` carries four jobs and explicit generic instantiation misparses into one of
       them.** Comparison, generic parameter lists, `cast<T>`/`sizeof<T>`, and the `<<`/`>>`
       field operators. The bill is paid twice: the shifts had to become the words `shl`/`shr`
@@ -130,8 +107,8 @@ through them.
 
 - [ ] **R61 -- `--` is both the signature separator and decrement.** `fn f(a:i64--b:i64)`
       compiles, `x--` decrements, and the two readings are distinguished only by whether the
-      parser is inside a signature. Together with R59 this makes `-` the most context-dependent
-      character in the grammar.
+      parser is inside a signature. With the sign that belongs to a numeric literal (§2.4),
+      this makes `-` the most context-dependent character in the grammar.
 
 - [ ] **R62 -- `*T` means "nullable T", not "pointer to T", and is documented as the latter.**
 
@@ -157,8 +134,8 @@ through them.
 
 - [ ] **R65 -- four mutation conventions, one per container operation.** `>>field` returns the
       receiver; `append` returns the array; `set` returns nothing; `sort::ints` mutates in place
-      and returns nothing; `Vec::push!` returns a newly allocated struct (R48). Every one needs a
-      different call-site shape, and none of the differences carries meaning.
+      and returns nothing; `Vec::push!` writes through the receiver and returns it. Every one
+      needs a different call-site shape, and none of the differences carries meaning.
 
 - [ ] **R66 -- `->` both declares and assigns, and an unused local is silent.**
 
@@ -167,33 +144,13 @@ through them.
           counter print nl
 
       compiles clean. An unused *parameter* is a warning (`Unused parameter 'y'`), so the two
-      halves of the same idea are policed differently -- and §7.5 says an unused named parameter
-      is an error, which it is not. A rebind that does not match an existing local is the single
-      most likely typo in the language and nothing reports it.
+      halves of the same idea are policed differently. A rebind that does not match an existing
+      local is the single most likely typo in the language and nothing reports it.
 
 ## Correctness and safety
 
 Found 2026-09-21. Each of these was reproduced against `quad 0.5.0`; the programs are short
 enough to be inlined here.
-
-- [ ] **R48 -- `ct::Vec` shares its buffer between stale copies, so a `release` frees memory
-      another live `Vec` still points at.** `push` allocates a *new* `Vec<T>` struct on every
-      call (`stdlib/ct/qd/ct/vec.qd:65`, last line of the body) and returns it, sharing `data`
-      with the value it was called on. The old value stays valid, keeps its old `len`, and
-      addresses the same buffer.
-
-          ct::Vec<i64> { data = null len = 0 cap = 0 } -> v
-          v 10 push! -> v
-          v 20 push! -> v2        // v and v2 now share one buffer
-          v2 release
-          v 0 get! print nl       // prints 23139457034, not 10
-          v release               // frees it a second time; exit status 0, no diagnostic
-
-      Three faults in one line of design: a stale-but-valid alias after every push, a heap
-      struct allocated per element, and a use-after-free reachable without touching `mem`. The
-      fix is to write through the receiver the way `>>field` does (§8.4) and return the same
-      struct, which also removes the per-push allocation. `pop`, `set` and `reset` have the
-      same shape and the same problem.
 
 - [ ] **R49 -- an out-of-bounds `nth` pushes nothing and lets the program continue.** It is
       neither a trap, nor a catchable error, nor a defined value; the stack is silently one
@@ -244,17 +201,6 @@ enough to be inlined here.
       words become frame-local, or the checker has to treat a call to a function containing
       them as unpredictable.
 
-- [ ] **R53 -- a type alias launders a sized integer type past the check that rejects it.**
-      §3.1.1 requires `u8` and friends to be rejected anywhere but a struct field or a `mem`
-      accessor, and the direct spelling is:
-
-          fn f(b:u8 -- r:i64)      // error: 'u8' is a memory-layout type and means nothing
-                                   //        on a parameter
-          type Byte = u8
-          fn f(b:Byte -- r:i64)    // accepted
-
-      The rejection happens before alias resolution. It needs to happen after.
-
 ## Standard library
 
 - [ ] **R67 -- two array types with incompatible APIs.** Built-in `[]T` gives
@@ -284,75 +230,27 @@ enough to be inlined here.
 - [ ] **R71 -- `ct::Vec` has no constructor and requires manual release.** Callers write
       `Vec<i64> { data = null len = 0 cap = 0 }` by hand and must remember `release`, in a
       language whose §11 promises automatic reference counting. A `Vec<T> new` plus a
-      destructor would remove both, and would remove the double-free of R48 as a class.
+      destructor would remove both. `release` is idempotent now, so releasing twice is a no-op
+      rather than a double free, but nothing stops a caller forgetting it entirely.
 
 ## Specification
 
-The spec is stamped **0.2.0**; the toolchain is **0.5.0**. Most of what follows is that gap.
-
-- [ ] **R72 -- version drift.** `docs/docs/specification.md:3` says 0.2.0 and the Document
-      History stops there. Either the spec tracks releases or it states which release it
-      describes.
-
-- [ ] **R73 -- Appendix A still spells constructs the compiler has removed.** All three are
-      rejected with "has been removed" messages, so the grammar is behind the diagnostics:
-      `make "<" type ">"` in `instruction`; `error_lit = "error" "{" "code" "=" ... "}"`;
-      `field_set = ">>" identifier [ "!" ]`. The `error` literal is also absent from the keyword
-      list while appearing in the grammar.
-
-- [ ] **R74 -- `while` is in neither the keyword list nor the grammar.** §2.3.1 does not list
-      it and Appendix A has no `while_stmt` and does not mention it in `statement`. `return` is
-      in the keyword list with no production either, and `statement` omits local binding too.
+The spec is stamped **0.5.0**, the release it describes. What is left is where it still does
+not describe it.
 
 - [ ] **R75 -- `var` has no prose section anywhere.** §5 runs 5.1 through 5.9 with no entry for
-      it; the only descriptions are the keyword list, one incidental mention at line 255, and
-      `var_decl` at line 2172. Module-level mutable state in a language with threads needs
+      it; the only descriptions are the keyword list, one incidental mention in §3.1.1, and
+      `var_decl` in Appendix A. Module-level mutable state in a language with threads needs
       initialisation order, visibility and thread-safety written down.
-
-- [ ] **R76 -- §13 misstates which stdlib functions are fallible.** §13.7 documents `spawn!`,
-      `join!`, `detach!`, `mutex_new!`, `lock!`, `unlock!`, `chan_new!`, `send!`, `recv!`,
-      `wg_new!` and `wait!`; `stdlib/thread` has **zero** fallible functions. §13.6 lists time's
-      functions as total and omits `format!` and `parse!`, which are the two that are fallible.
-      Worth generating this section rather than maintaining it.
 
 - [ ] **R77 -- §2.3.4's interpolation examples do not compile.** See R64. Appendix A's
       `interp_string = '$"' { character | "{" expression "}" } '"'` is wrong the same way.
 
-- [ ] **R78 -- §6.3.1 describes a `while` rule nobody implemented.** The spec says the condition
+- [ ] **R78 -- §6.4 describes a `while` rule nobody implemented.** The spec says the condition
       is *"the shortest run of words immediately preceding `while` whose net stack effect is
       `( -- flag )`"*, under which `5 i 3 < while` is legal with condition `i 3 <`. The
       implementation rejects it (R54). Fixing R54 should replace this paragraph rather than
       correct it.
-
-- [ ] **R79 -- logical and bitwise are classified inconsistently in two places.** §14.3 lists
-      `qd_and`, `qd_or`, `qd_xor`, `qd_not`, `qd_shl`, `qd_shr` under **"Bitwise"**, but §12.3
-      makes `and`/`or`/`not` logical and puts bitwise in `bits`. Appendix B.3, titled "Bitwise
-      Operators", then contains three rows described as "logical AND/OR/NOT".
-
-- [ ] **R80 -- small grammar gaps.** `scoped_id = identifier "::" identifier` cannot express
-      the `module::EnumName::Variant` form §5.4.2 requires. `integer := digit+` has no sign,
-      but §5.4.1 requires `Variant5 = -1` and negative literals are real tokens
-      (`10 -1 print` prints `-1`). §12.6 gives `sizeof` the stack effect `(T -- n)` as though
-      a type were pushed; it is written `sizeof<P>`.
-
-- [ ] **R81 -- `nth` is documented twice under different headings.** §4.2 lists it under stack
-      "Rearrangement" and §12.5 under "Array Operations". It is an array operation.
-
-- [ ] **R82 -- compiler internals are in the user-facing type table.** §3.5 lists `UNKNOWN`,
-      `TAINTED` and `TYPEVAR` beside `any`. An implementer does not need them and a user cannot
-      write them.
-
-- [ ] **R83 -- changelog prose sits inside normative text.** §6.1.1 carries a paragraph
-      beginning *"This paragraph used to say the opposite..."* and recounting that *"fourteen
-      guards in the `ct` module pushed their error message onto the stack as data"*; §11.2.2
-      has a similar passage about three fixed defects. Both belong in `CHANGELOG.md`; a
-      specification should state the rule, not its history.
-
-- [ ] **R84 -- §6.3.1 "Conditional Loops" is nested under §6.3 "Infinite Loops".** `while`
-      should be a sibling of `loop` and `for`, not a subsection of one of them.
-
-- [ ] **R85 -- §7.5 says an unused named parameter is an error; it is a warning.** See R66 for
-      the matching silence on locals.
 
 ## Deferred
 

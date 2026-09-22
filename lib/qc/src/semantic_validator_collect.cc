@@ -233,8 +233,9 @@ namespace Qd {
 				return;
 			}
 			const std::string& typeName = varNode->typeName();
-			if (isSizedIntType(typeName)) {
-				reportError(varNode, sizedTypeMisuseMessage(typeName, "a module global").c_str());
+			const std::string sizedGlobal = sizedIntTypeThroughAliases(typeName);
+			if (!sizedGlobal.empty()) {
+				reportError(varNode, sizedTypeMisuseMessage(typeName, sizedGlobal, "a module global").c_str());
 				return;
 			}
 			if (!isValidTypeName(typeName)) {
@@ -1427,8 +1428,9 @@ namespace Qd {
 
 				// Validate type name
 				std::string typeStr = param->typeString();
-				if (isSizedIntType(typeStr)) {
-					reportError(param, sizedTypeMisuseMessage(typeStr, "a parameter").c_str());
+				const std::string sizedParam = sizedIntTypeThroughAliases(typeStr);
+				if (!sizedParam.empty()) {
+					reportError(param, sizedTypeMisuseMessage(typeStr, sizedParam, "a parameter").c_str());
 				}
 				if (!isValidTypeName(typeStr)) {
 					reportError(param, invalidTypeMessage(typeStr, parameterSuffix(param)).c_str());
@@ -1456,8 +1458,9 @@ namespace Qd {
 				std::string typeStr = param->typeString();
 
 				// Validate type name
-				if (isSizedIntType(typeStr)) {
-					reportError(param, sizedTypeMisuseMessage(typeStr, "a parameter").c_str());
+				const std::string sizedConsumed = sizedIntTypeThroughAliases(typeStr);
+				if (!sizedConsumed.empty()) {
+					reportError(param, sizedTypeMisuseMessage(typeStr, sizedConsumed, "a parameter").c_str());
 				}
 				if (!isValidTypeName(typeStr)) {
 					reportError(param, invalidTypeMessage(typeStr, parameterSuffix(param)).c_str());
@@ -1489,8 +1492,9 @@ namespace Qd {
 				std::string typeStr = param->typeString();
 
 				// Validate type name
-				if (isSizedIntType(typeStr)) {
-					reportError(param, sizedTypeMisuseMessage(typeStr, "a return value").c_str());
+				const std::string sizedOutput = sizedIntTypeThroughAliases(typeStr);
+				if (!sizedOutput.empty()) {
+					reportError(param, sizedTypeMisuseMessage(typeStr, sizedOutput, "a return value").c_str());
 				}
 				if (!isValidTypeName(typeStr)) {
 					reportError(param, invalidTypeMessage(typeStr, parameterSuffix(param)).c_str());

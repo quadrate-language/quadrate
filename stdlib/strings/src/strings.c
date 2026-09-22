@@ -485,8 +485,8 @@ int usr_strings_substring(qd_context* ctx) {
 	return (int){STRINGS_ERR_OK};
 }
 
-// split - split string by delimiter ( str:s delim:s -- parts:p count:i )
-// Returns pointer to array of qd_string* and count
+// split - split string by delimiter ( str:s delim:s -- parts:[]str )!
+// Returns a Quadrate array of qd_string*; the caller reads its length off the array
 int usr_strings_split(qd_context* ctx) {
 	qd_stack_element_t delim_elem, str_elem;
 	qd_stack_error err = qd_stack_pop(ctx->st, &delim_elem);
@@ -576,7 +576,6 @@ int usr_strings_split(qd_context* ctx) {
 
 	parts_arr->length = count;
 	qd_push_p(ctx, parts_arr);
-	qd_push_i(ctx, (int64_t)count);
 	qd_push_i(ctx, STRINGS_ERR_OK);  // Success status for fallible function
 
 	return (int){STRINGS_ERR_OK};
@@ -962,23 +961,26 @@ static qd_string_t** strings_array_elems(const qd_stack_element_t* elem, const c
 	return (qd_string_t**)((qd_array_t*)elem->value.p)->data.p;
 }
 
-// sort - sort array of strings in ascending order ( arr:p count:i -- )
-int usr_strings_sort(qd_context* ctx) {
-	qd_stack_element_t count_elem, arr_elem;
-	qd_stack_error err = qd_stack_pop(ctx->st, &count_elem);
-	if (err != QD_STACK_OK || count_elem.type != QD_STACK_TYPE_INT) {
-		fprintf(stderr, "Fatal error in strings::sort: Expected integer count\n");
-		abort();
+/* The array's own length. An array carries it, so nothing takes a count beside
+ * one any more -- a second opinion about a length is only a chance to disagree,
+ * and the raw-buffer shape these functions used to take could not detect it. */
+static int64_t strings_array_count(const qd_stack_element_t* elem) {
+	if (elem->value.p == NULL || !qd_array_is_valid(elem->value.p)) {
+		return 0;
 	}
+	return (int64_t)qd_array_length((const qd_array_t*)elem->value.p);
+}
 
-	// Pop array pointer
-	err = qd_stack_pop(ctx->st, &arr_elem);
+// sort - sort array of strings in ascending order ( arr:[]str -- )
+int usr_strings_sort(qd_context* ctx) {
+	qd_stack_element_t arr_elem;
+	qd_stack_error err = qd_stack_pop(ctx->st, &arr_elem);
 	if (err != QD_STACK_OK || arr_elem.type != QD_STACK_TYPE_PTR) {
 		fprintf(stderr, "Fatal error in strings::sort: Expected pointer to string array\n");
 		abort();
 	}
 
-	int64_t count = count_elem.value.i;
+	int64_t count = strings_array_count(&arr_elem);
 	qd_string_t** arr = strings_array_elems(&arr_elem, "sort");
 
 	if (count > 1 && arr != NULL) {
@@ -988,23 +990,16 @@ int usr_strings_sort(qd_context* ctx) {
 	return (int){0};
 }
 
-// sort_desc - sort array of strings in descending order ( arr:p count:i -- )
+// sort_desc - sort array of strings in descending order ( arr:[]str -- )
 int usr_strings_sort_desc(qd_context* ctx) {
-	qd_stack_element_t count_elem, arr_elem;
-	qd_stack_error err = qd_stack_pop(ctx->st, &count_elem);
-	if (err != QD_STACK_OK || count_elem.type != QD_STACK_TYPE_INT) {
-		fprintf(stderr, "Fatal error in strings::sort_desc: Expected integer count\n");
-		abort();
-	}
-
-	// Pop array pointer
-	err = qd_stack_pop(ctx->st, &arr_elem);
+	qd_stack_element_t arr_elem;
+	qd_stack_error err = qd_stack_pop(ctx->st, &arr_elem);
 	if (err != QD_STACK_OK || arr_elem.type != QD_STACK_TYPE_PTR) {
 		fprintf(stderr, "Fatal error in strings::sort_desc: Expected pointer to string array\n");
 		abort();
 	}
 
-	int64_t count = count_elem.value.i;
+	int64_t count = strings_array_count(&arr_elem);
 	qd_string_t** arr = strings_array_elems(&arr_elem, "sort_desc");
 
 	if (count > 1 && arr != NULL) {
@@ -1243,18 +1238,12 @@ int usr_strings_last_index_of(qd_context* ctx) {
 	return (int){0};
 }
 
-// join - join array of strings with delimiter ( parts:p count:i delim:s -- result:s )
+// join - join array of strings with delimiter ( parts:[]str delim:s -- result:s )!
 int usr_strings_join(qd_context* ctx) {
-	qd_stack_element_t delim_elem, count_elem, parts_elem;
+	qd_stack_element_t delim_elem, parts_elem;
 	qd_stack_error err = qd_stack_pop(ctx->st, &delim_elem);
 	if (err != QD_STACK_OK || delim_elem.type != QD_STACK_TYPE_STR) {
 		fprintf(stderr, "Fatal error in strings::join: Expected string delimiter\n");
-		abort();
-	}
-	err = qd_stack_pop(ctx->st, &count_elem);
-	if (err != QD_STACK_OK || count_elem.type != QD_STACK_TYPE_INT) {
-		qd_string_release(delim_elem.value.s);
-		fprintf(stderr, "Fatal error in strings::join: Expected integer count\n");
 		abort();
 	}
 
@@ -1266,13 +1255,11 @@ int usr_strings_join(qd_context* ctx) {
 		abort();
 	}
 
-	int64_t count = count_elem.value.i;
+	int64_t count = strings_array_count(&parts_elem);
 	const char* delim = qd_string_data(delim_elem.value.s);
 	size_t delim_len = strlen(delim);
 
-	// count <= 0 short-circuits before the pointer is examined at all: joining
-	// nothing is "" whatever was passed, and callers rely on that (see
-	// tests/qd/strings/join_edge.qd, which passes a scratch buffer with count 0).
+	// An empty array joins to "" without the pointer being examined at all.
 	if (count <= 0) {
 		qd_string_release(delim_elem.value.s);
 		qd_push_s(ctx, "");
@@ -1834,7 +1821,7 @@ int usr_strings_truncate(qd_context* ctx) {
 	return (int){0};
 }
 
-// lines - split by newlines ( str:s -- arr:p count:i )!
+// lines - split by newlines ( str:s -- arr:[]str )!
 int usr_strings_lines(qd_context* ctx) {
 	qd_stack_element_t str_elem;
 	STRINGS_POP(ctx, &str_elem, "lines");
@@ -1870,12 +1857,11 @@ int usr_strings_lines(qd_context* ctx) {
 	parts_arr->length = idx;
 	qd_string_release(str_elem.value.s);
 	qd_push_p(ctx, parts_arr);
-	qd_push_i(ctx, (int64_t)idx);
 	qd_push_i(ctx, STRINGS_ERR_OK);
 	return (int){0};
 }
 
-// words - split by whitespace ( str:s -- arr:p count:i )!
+// words - split by whitespace ( str:s -- arr:[]str )!
 int usr_strings_words(qd_context* ctx) {
 	qd_stack_element_t str_elem;
 	STRINGS_POP(ctx, &str_elem, "words");
@@ -1902,9 +1888,12 @@ int usr_strings_words(qd_context* ctx) {
 	}
 
 	if (count == 0) {
+		// A real empty array rather than NULL: the length comes off the array now, and
+		// `len` on a null one is an error rather than 0.
+		qd_array_t* empty = qd_array_create(0, QD_ARRAY_TYPE_STR);
+		if (!empty) abort();
 		qd_string_release(str_elem.value.s);
-		qd_push_p(ctx, NULL);
-		qd_push_i(ctx, 0);
+		qd_push_p(ctx, empty);
 		qd_push_i(ctx, STRINGS_ERR_OK);
 		return (int){0};
 	}
@@ -1941,12 +1930,11 @@ int usr_strings_words(qd_context* ctx) {
 	parts_arr->length = idx;
 	qd_string_release(str_elem.value.s);
 	qd_push_p(ctx, parts_arr);
-	qd_push_i(ctx, (int64_t)idx);
 	qd_push_i(ctx, STRINGS_ERR_OK);
 	return (int){0};
 }
 
-// split_n - split into at most n parts ( str:s delim:s n:i -- parts:p count:i )!
+// split_n - split into at most n parts ( str:s delim:s n:i -- parts:[]str )!
 int usr_strings_split_n(qd_context* ctx) {
 	qd_stack_element_t n_elem, delim_elem, str_elem;
 	STRINGS_POP(ctx, &n_elem, "split_n");
@@ -2002,7 +1990,6 @@ int usr_strings_split_n(qd_context* ctx) {
 	qd_string_release(str_elem.value.s);
 	qd_string_release(delim_elem.value.s);
 	qd_push_p(ctx, parts_arr);
-	qd_push_i(ctx, (int64_t)count);
 	qd_push_i(ctx, STRINGS_ERR_OK);
 	return (int){0};
 }
@@ -2178,16 +2165,15 @@ int usr_strings_slice(qd_context* ctx) {
 	return (int){0};
 }
 
-// column - format strings into columns ( arr:p count:i widths:p num_cols:i -- result:s )
+// column - format strings into columns ( arr:[]str widths:p num_cols:i -- result:s )
 int usr_strings_column(qd_context* ctx) {
-	qd_stack_element_t num_cols_elem, widths_elem, count_elem, arr_elem;
+	qd_stack_element_t num_cols_elem, widths_elem, arr_elem;
 	STRINGS_POP(ctx, &num_cols_elem, "column");
 	STRINGS_POP(ctx, &widths_elem, "column");
-	STRINGS_POP(ctx, &count_elem, "column");
 	STRINGS_POP(ctx, &arr_elem, "column");
 
 	qd_string_t** arr = strings_array_elems(&arr_elem, "column");
-	int64_t count = count_elem.value.i;
+	int64_t count = strings_array_count(&arr_elem);
 	int64_t* widths = (int64_t*)widths_elem.value.p;
 	int64_t num_cols = num_cols_elem.value.i;
 

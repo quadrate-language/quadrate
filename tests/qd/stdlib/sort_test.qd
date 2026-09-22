@@ -347,7 +347,7 @@ test "sort then search" {
 }
 
 test "sort::strings sorts a string array" {
-	"c,a,b" "," strings::split! -> count -> arr
+	"c,a,b" "," strings::split! -> arr
 	arr sort::strings
 	arr 0 nth "a" testing::assert_eq
 	arr 1 nth "b" testing::assert_eq
@@ -355,7 +355,7 @@ test "sort::strings sorts a string array" {
 }
 
 test "sort::strings_desc sorts a string array" {
-	"a,c,b" "," strings::split! -> count -> arr
+	"a,c,b" "," strings::split! -> arr
 	arr sort::strings_desc
 	arr 0 nth "c" testing::assert_eq
 	arr 2 nth "a" testing::assert_eq

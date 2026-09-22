@@ -14,12 +14,12 @@ fn main() {
 	tmpdir "/c.txt" strings::concat "c" io::write_file!
 
 	// List directory and join with comma
-	tmpdir os::list! -> count -> entries
-	entries count strings::sort
-	entries count "," strings::join! print nl
+	tmpdir os::list! drop -> entries
+	entries strings::sort
+	entries "," strings::join! print nl
 
 	// Join with slash
-	entries count "/" strings::join! print nl
+	entries "/" strings::join! print nl
 
 	entries free
 

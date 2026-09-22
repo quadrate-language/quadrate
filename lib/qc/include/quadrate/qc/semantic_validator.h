@@ -346,6 +346,16 @@ namespace Qd {
 
 		StackValueType stringToStackValueType(const std::string& typeStr) const;
 
+		// Follow a chain of `type` aliases to the name it finally stands for, so a check on
+		// what a type *is* sees through the alias. `type Byte = u8` used to hide `u8` from the
+		// sized-type rejection (specification 3.1.1) at every position that rejects it.
+		// Bounded, so a cyclic alias returns rather than spins.
+		std::string resolveTypeAliasChain(const std::string& typeStr) const;
+
+		// The sized integer type `typeStr` finally names, directly or through aliases, or ""
+		// when it names something else.
+		std::string sizedIntTypeThroughAliases(const std::string& typeStr) const;
+
 		bool isValidTypeName(const std::string& typeStr) const;
 		std::string invalidTypeMessage(const std::string& typeStr, const std::string& where) const;
 

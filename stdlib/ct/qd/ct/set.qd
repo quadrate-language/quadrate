@@ -179,12 +179,10 @@ pub fn (s:Set) add(key:str -- s2:Set)! {
 		len 1 + -> len
 	}
 
-	Set {
-		keys = keys
-		states = states
-		len = len
-		cap = cap
-	}
+	// Written through the receiver, and the receiver is what comes back: a container is a
+	// reference (3.2.1), and a fresh struct over the same buffer leaves every earlier copy
+	// live and pointing at a buffer the next grow reallocates and `release` frees.
+	s keys >>keys states >>states len >>len cap >>cap
 }
 
 /// Check if an element exists in the set.
@@ -234,12 +232,7 @@ pub fn (s:Set) remove(key:str -- s2:Set)! {
 	keys slot 8 * mem::get_ptr mem::free
 	2 states slot 8 * mem::set_i64
 
-	Set {
-		keys = keys
-		states = states
-		len = len 1 -
-		cap = cap
-	}
+	s len 1 - >>len
 }
 
 /// Get the number of elements in the set.
@@ -291,4 +284,8 @@ pub fn (s:Set) release() {
 
 	keys 0 neq if { keys mem::free }
 	states 0 neq if { states mem::free }
+
+	// Cleared so a second `release` is a no-op rather than a double free: nothing stops a
+	// caller holding two names for one container, and the freed buffer is what both hold.
+	s null >>keys null >>states 0 >>len 0 >>cap drop
 }

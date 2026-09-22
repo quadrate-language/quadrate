@@ -80,7 +80,11 @@ pub fn (v:Vec<T>) push<T>(elem:T -- v2:Vec<T>)! {
 	// Store element at end
 	elem data len mem::AnySize * mem::set_any
 
-	Vec<T> { data = data len = len 1 + cap = cap }
+	// Written through the receiver, and the receiver is what comes back. A Vec is a reference
+	// (3.2.1), so returning a *new* struct over the same buffer left every earlier copy live
+	// and pointing at a buffer the next grow reallocates and `release` frees: a use-after-free
+	// and a double-free reachable without touching `mem`.
+	v data >>data cap >>cap len 1 + >>len
 }
 
 /// Pop and return the last element.
@@ -94,7 +98,6 @@ pub fn (v:Vec<T>) push<T>(elem:T -- v2:Vec<T>)! {
 /// Stack: (v -- elem v2)
 pub fn (v:Vec<T>) pop<T>( -- elem:T v2:Vec<T>)! {
 	v <<len -> len
-	v <<cap -> cap
 	v <<data -> data
 
 	len 0 <= if {
@@ -106,7 +109,7 @@ pub fn (v:Vec<T>) pop<T>( -- elem:T v2:Vec<T>)! {
 	data len 1 - mem::AnySize * mem::clear_any
 
 	elem
-	Vec<T> { data = data len = len 1 - cap = cap }
+	v len 1 - >>len
 }
 
 /// Get element at index.
@@ -139,7 +142,6 @@ pub fn (v:Vec<T>) get<T>(idx:i64 -- elem:T)! {
 /// Stack: (v idx elem -- v2)
 pub fn (v:Vec<T>) set<T>(idx:i64 elem:T -- v2:Vec<T>)! {
 	v <<len -> len
-	v <<cap -> cap
 	v <<data -> data
 
 	idx 0 < idx len >= or if {
@@ -148,7 +150,7 @@ pub fn (v:Vec<T>) set<T>(idx:i64 elem:T -- v2:Vec<T>)! {
 
 	elem data idx mem::AnySize * mem::set_any
 
-	Vec<T> { data = data len = len cap = cap }
+	v
 }
 
 /// Get the number of elements in the vector.
@@ -193,7 +195,6 @@ pub fn (v:Vec<T>) is_empty<T>( -- b:i64) {
 ///
 /// Stack: (v -- v2)
 pub fn (v:Vec<T>) reset<T>( -- v2:Vec<T>) {
-	v <<cap -> cap
 	v <<len -> len
 	v <<data -> data
 	// Let go of every element: the slots are about to be reused, and a string or a struct in
@@ -201,7 +202,7 @@ pub fn (v:Vec<T>) reset<T>( -- v2:Vec<T>) {
 	0 len 1 for i {
 		data i mem::AnySize * mem::clear_any
 	}
-	Vec<T> { data = data len = 0 cap = cap }
+	v 0 >>len
 }
 
 /// Free the vector's memory.
@@ -223,4 +224,7 @@ pub fn (v:Vec<T>) release<T>() {
 		}
 		data mem::free
 	}
+	// Cleared so a second `release` is a no-op rather than a double free: nothing stops a
+	// caller holding two names for one container, and the freed buffer is what both hold.
+	v null >>data 0 >>len 0 >>cap drop
 }

@@ -385,19 +385,17 @@ TEST(StrSplitTest) {
 	qd_stack_pop(ctx->st, &status_elem);
 	ASSERT_EQ(STRINGS_ERR_OK, (int)status_elem.value.i, "split should succeed");
 
-	qd_stack_element_t count_elem;
-	qd_stack_pop(ctx->st, &count_elem);
-	ASSERT_EQ(3, (int)count_elem.value.i, "should have 3 parts");
-
+	// The array alone: it carries its own length, so nothing is pushed beside it.
 	qd_stack_element_t ptr_elem;
 	qd_stack_pop(ctx->st, &ptr_elem);
 	ASSERT_EQ(QD_STACK_TYPE_PTR, ptr_elem.type, "result should be ptr");
+	ASSERT_EQ(0, (int)ctx->st->size, "split pushes the array and nothing beside it");
 
 	// split returns a real Quadrate array now, so the elements are readable and
 	// releasing the array releases them.
 	qd_array_t* parts = (qd_array_t*)ptr_elem.value.p;
 	ASSERT_EQ(1, qd_array_is_valid(parts), "split result should be a valid array");
-	ASSERT_EQ(3, (int)qd_array_length(parts), "array length should match count");
+	ASSERT_EQ(3, (int)qd_array_length(parts), "should have 3 parts");
 	qd_string_t** elems = (qd_string_t**)parts->data.p;
 	ASSERT_STR_EQ("a", qd_string_data(elems[0]), "first part");
 	ASSERT_STR_EQ("b", qd_string_data(elems[1]), "second part");
@@ -421,7 +419,6 @@ TEST(StrJoinTest) {
 	parts->length = 3;
 
 	qd_push_p(ctx, parts);
-	qd_push_i(ctx, 3);
 	qd_push_s(ctx, ",");
 	usr_strings_join(ctx);
 
