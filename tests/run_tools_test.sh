@@ -176,7 +176,7 @@ SHAPES="$WORK_DIR/docs2/shapes.html"
 
 if grep -q 'id="emit"' "$SHAPES" 2>/dev/null; then pass "documents 'pub inline fn'"; else
     fail "documents 'pub inline fn'" "the whole sys module went missing this way"; fi
-if grep -q 'id="scaled"' "$SHAPES" 2>/dev/null; then pass "documents a generic function"; else
+if grep -q 'id="Box.scaled"' "$SHAPES" 2>/dev/null; then pass "documents a generic function"; else
     fail "documents a generic function" "the whole ct container library went missing this way"; fi
 
 # The old pattern ended the parameter list at the first ')', truncating the
@@ -199,6 +199,89 @@ expect_contains "reports a parse error as a located warning" \
 expect_not_contains "-q silences the parse warning" \
                 ": warning: " "$QUADDOC" -q -o "$WORK_DIR/docs3" "$WORK_DIR/src/broken"
 
+echo ""
+echo "=== quaddoc includes, pages and tags ==="
+
+quaddoc_regressions() {
+    local src="$WORK_DIR/docsrc" out="$WORK_DIR/docsout"
+    mkdir -p "$src/cyc" "$src/one/util" "$src/two/util" "$src/pkg"
+    printf '/// Cycle.\n\nuse cyc.qd\nuse part.qd\n\n/// c\npub fn c() {\n}\n' > "$src/cyc/cyc.qd"
+    printf 'use cyc.qd\n\n/// p\npub fn p() {\n}\n' > "$src/cyc/part.qd"
+    printf '/// First util.\n\n/// ua\npub fn ua() {\n}\n' > "$src/one/util/util.qd"
+    printf '/// Second util.\n\n/// ub\npub fn ub() {\n}\n' > "$src/two/util/util.qd"
+    cat > "$src/pkg/pkg.qd" <<'QDEOF'
+/// Package docs.
+///
+/// @example
+/// 1 2 add
+///     print
+/// doccheck: page-context
+
+use helper.qd
+
+/// A kind.
+pub enum Kind { A B = 5 }
+
+/// A transform.
+pub type Transform = fn(i64 -- i64)
+
+pub struct Foo { x:i64 }
+pub struct Bar { x:i64 }
+
+/// Foo length.
+pub fn (f:Foo) len( -- n:i64) {
+	f <<x
+}
+
+/// Bar length.
+pub fn (b:Bar) len( -- n:i64) {
+	b <<x
+}
+
+/// Apply.
+/// @param f fn(i64 i64 -- i64) Binary function
+/// doccheck: page-setup 1 -> x
+pub fn apply(f:fn(i64 i64 -- i64) x:i64 -- r:i64) {
+	x x f call assist
+}
+QDEOF
+    printf '/// Helper file.\n\n/// assist\npub fn assist(x:i64 -- y:i64) {\n\tx\n}\n' > "$src/pkg/helper.qd"
+
+    expect_rc "an include cycle does not crash" 0 timeout 20 "$QUADDOC" -q -o "$out" "$src"
+    if [ -f "$out/cyc.html" ] && [ ! -f "$out/part.html" ] && [ ! -f "$out/helper.html" ]; then
+        pass "an included file gets no page of its own"
+    else
+        fail "an included file gets no page of its own" "$(ls "$out" | tr '\n' ' ')"
+    fi
+    if grep -q 'id="assist"' "$out/pkg.html" 2>/dev/null; then pass "an included file is documented by its includer"; else
+        fail "an included file is documented by its includer" "assist missing from pkg.html"; fi
+    if [ -f "$out/one.util.util.html" ] && [ -f "$out/two.util.util.html" ]; then
+        pass "same-named modules get separate pages"
+    else
+        fail "same-named modules get separate pages" "$(ls "$out" | tr '\n' ' ')"
+    fi
+    expect_contains "a bare @example keeps its following lines" "<pre><code>1 2 add"$'\n'"    print</code></pre>" \
+                    cat "$out/pkg.html"
+    expect_not_contains "a bare @example is not folded into the description" "Package docs. 1 2 add" \
+                        cat "$out/pkg.html"
+    expect_not_contains "doccheck directives are not published" "doccheck" cat "$out/pkg.html"
+    expect_contains "a receiver method's anchor names the receiver" 'id="Foo.len"' cat "$out/pkg.html"
+    expect_contains "a same-named method on another receiver has its own anchor" 'id="Bar.len"' \
+                    cat "$out/pkg.html"
+    expect_contains "a call links to the callee's anchor" 'href="pkg.html#assist"' cat "$out/pkg.html"
+    expect_contains "an enum is documented" '<code>B</code> = <code>5</code>' cat "$out/pkg.html"
+    expect_contains "a type alias is documented" 'type Transform = fn(i64 -- i64)' cat "$out/pkg.html"
+    expect_contains "a tag type with spaces is kept whole" '<dd>Binary function</dd>' cat "$out/pkg.html"
+
+    expect_rc "an output path that cannot be created exits 1" 1 "$QUADDOC" -q -o /dev/null/x "$src"
+    expect_not_contains "an output path that cannot be created does not throw" "terminate called" \
+                        "$QUADDOC" -q -o /dev/null/x "$src"
+    mkdir -p "$WORK_DIR/fulldocs"
+    ln -sf /dev/full "$WORK_DIR/fulldocs/index.html"
+    expect_rc "a failed write exits 1" 1 "$QUADDOC" -q -o "$WORK_DIR/fulldocs" "$src"
+    expect_contains "a failed write is reported" "write failed" "$QUADDOC" -q -o "$WORK_DIR/fulldocs" "$src"
+}
+quaddoc_regressions
 
 echo ""
 echo "=== quadrepl ==="
