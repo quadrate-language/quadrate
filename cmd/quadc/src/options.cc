@@ -153,8 +153,8 @@ bool parseArgs(int argc, char* argv[], Options& opts) {
 				return false;
 			}
 			if (value.size() > 10 || std::stoull(value) > MAX_STACK_SIZE) {
-				qdcli::usageError("quadc", "stack size too large: " + value + " (maximum is " +
-												   std::to_string(MAX_STACK_SIZE) + ")");
+				qdcli::usageError("quadc",
+						"stack size too large: " + value + " (maximum is " + std::to_string(MAX_STACK_SIZE) + ")");
 				return false;
 			}
 			opts.stackSize = std::stoull(value);
