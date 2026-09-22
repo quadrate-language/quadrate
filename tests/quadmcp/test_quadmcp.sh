@@ -1538,6 +1538,107 @@ run_error_test "Type conversion: typo in target type" \
     'Unknown target type'
 
 echo ""
+echo "--- JSON-RPC Conformance Tests ---"
+
+# Helper for fixed-string matches, for responses full of JSON escapes
+run_fixed_test() {
+    local name="$1"
+    local input="$2"
+    local expected="$3"
+
+    local result
+    result=$(printf '%s\n' "$input" | "$QUADMCP" 2>&1)
+
+    if printf '%s' "$result" | grep -qF -- "$expected"; then
+        echo -e "${GREEN}PASS${NC}: $name"
+        ((PASS++))
+    else
+        echo -e "${RED}FAIL${NC}: $name"
+        echo "  Expected to contain: $expected"
+        echo "  Got: ${result:0:200}..."
+        ((FAIL++))
+    fi
+}
+
+run_no_response_test() {
+    local name="$1"
+    local input="$2"
+
+    local result
+    result=$(printf '%s\n' "$input" | "$QUADMCP" 2>&1)
+
+    if [ -z "$result" ]; then
+        echo -e "${GREEN}PASS${NC}: $name"
+        ((PASS++))
+    else
+        echo -e "${RED}FAIL${NC}: $name - got: ${result:0:200}"
+        ((FAIL++))
+    fi
+}
+
+run_fixed_test "String id echoed as a string" \
+    '{"jsonrpc":"2.0","method":"ping","id":"req-7"}' \
+    '"id":"req-7","result"'
+
+run_fixed_test "Fractional id echoed unchanged" \
+    '{"jsonrpc":"2.0","method":"ping","id":1.5}' \
+    '"id":1.5,"result"'
+
+run_fixed_test "Null id echoed as null" \
+    '{"jsonrpc":"2.0","method":"ping","id":null}' \
+    '"id":null,"result"'
+
+run_fixed_test "Large integer id does not wrap" \
+    '{"jsonrpc":"2.0","method":"ping","id":9007199254740993}' \
+    '"id":9007199254740993,"result"'
+
+run_no_response_test "Request without id is a notification" \
+    '{"jsonrpc":"2.0","method":"ping"}'
+
+run_no_response_test "Unknown method without id gets no response" \
+    '{"jsonrpc":"2.0","method":"nonexistent/method"}'
+
+run_fixed_test "Malformed JSON is a parse error" \
+    '{not json' \
+    '"id":null,"error":{"code":-32700,"message":"Parse error"}'
+
+run_fixed_test "Non-object request is invalid" \
+    '[1,2]' \
+    '"error":{"code":-32600'
+
+run_fixed_test "Non-string method is invalid" \
+    '{"jsonrpc":"2.0","method":123,"id":4}' \
+    '"id":4,"error":{"code":-32600'
+
+run_fixed_test "tools/call without params is invalid params" \
+    '{"jsonrpc":"2.0","method":"tools/call","id":5}' \
+    '"id":5,"error":{"code":-32602'
+
+run_fixed_test "tools/call without a tool name is invalid params" \
+    '{"jsonrpc":"2.0","method":"tools/call","id":6,"params":{}}' \
+    '"id":6,"error":{"code":-32602'
+
+run_fixed_test "Unknown tool is invalid params" \
+    '{"jsonrpc":"2.0","method":"tools/call","id":7,"params":{"name":"unknown_tool"}}' \
+    '"id":7,"error":{"code":-32602,"message":"Unknown tool: unknown_tool"}'
+
+run_not_match_test "Module name cannot leave the docs directory" \
+    '{"jsonrpc":"2.0","method":"tools/call","id":8,"params":{"name":"quadrate_get_module","arguments":{"name":"../../cmd/quadmcp/qd"}}}' \
+    'MCP (Model Context Protocol) server'
+
+run_error_test "Module name with a path is not found" \
+    '{"jsonrpc":"2.0","method":"tools/call","id":9,"params":{"name":"quadrate_get_module","arguments":{"name":"../../cmd/quadmcp/qd"}}}' \
+    'not found'
+
+run_fixed_test "Escaped request strings are escaped once in the response" \
+    '{"jsonrpc":"2.0","method":"tools/call","id":11,"params":{"name":"quadrate_get_module","arguments":{"name":"a\"b\\cé"}}}' \
+    "Module 'a\\\"b\\\\c"$'\xc3\xa9'"' not found"
+
+run_fixed_test "Control characters come back escaped" \
+    '{"jsonrpc":"2.0","method":"tools/call","id":12,"params":{"name":"quadrate_trace_stack","arguments":{"code":"x\u0001y"}}}' \
+    'Stack Trace for: x\u0001y'
+
+echo ""
 echo "=========================================="
 echo "Test Results: ${GREEN}$PASS passed${NC}, ${RED}$FAIL failed${NC}"
 echo "=========================================="

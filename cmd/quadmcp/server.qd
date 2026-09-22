@@ -88,19 +88,69 @@ fn dispatch(ds:ptr method:str id:str body:str -- response:str) {
 	}
 }
 
-fn extract_id(body:str -- id:str) {
-	body "id" json::get_int -> found -> id_int
-	found if {
-		id_int strconv::itoa
-	} else {
-		"null"
+fn request_id(doc:json::Value -- id:str valid:i64) {
+	doc "id" json::get switch {
+		Ok {
+			-> v
+			v json::is_string v json::is_number + v json::is_null + 0 > if {
+				v json::stringify 1
+			} else {
+				"null" 0
+			}
+		}
+		_ { "null" 1 }
+	}
+}
+
+fn request_method(doc:json::Value -- method:str valid:i64) {
+	doc "method" json::get switch {
+		Ok {
+			-> v
+			v json::is_string if {
+				v json::as_str! 1
+			} else {
+				"" 0
+			}
+		}
+		_ { "" 0 }
+	}
+}
+
+fn handle_message(ds:ptr body:str -- response:str valid:i64) {
+	body json::parse switch {
+		Ok {
+			-> doc
+			doc request_id -> id_ok -> id
+			doc request_method -> method_ok -> method
+			doc json::is_object id_ok * method_ok * if {
+				doc "id" json::has if {
+					ds method id body dispatch 1
+				} else {
+					"" 1
+				}
+			} else {
+				id "-32600" "Invalid request" rpc_error 0
+			}
+		}
+		_ { "null" "-32700" "Parse error" rpc_error 0 }
 	}
 }
 
 fn run_stdio(ds:ptr -- ) {
 	loop {
 		io::readline switch {
-			Ok { -> ok -> line ok 0 == if { line drop break } line strings::len 0 > if { line "method" json::get_string -> found -> method found 0 == if { "null" "-32600" "Invalid request: missing method" rpc_error print nl io::flush } else { line extract_id -> id ds method id line dispatch -> response response strings::len 0 > if { response print nl io::flush } } } }
+			Ok {
+				-> ok -> line
+				ok 0 == if {
+					break
+				}
+				line strings::len 0 > if {
+					ds line handle_message -> _ -> response
+					response strings::len 0 > if {
+						response print nl io::flush
+					}
+				}
+			}
 			_ { break }
 		}
 	}
@@ -113,19 +163,13 @@ fn handle_mcp(c:ptr -- ) {
 	}
 
 	c as http::Ctx <<body -> body
-	body "method" json::get_string -> _ -> method
+	ds body handle_message -> valid -> response
 
-	body extract_id -> id
-
-	method strings::len 0 == if {
-		c http::StatusBadRequest id "-32600" "Invalid request" rpc_error http::json
+	response strings::len 0 == if {
+		c 204 "" http::string
 	} else {
-		ds method id body dispatch -> response
-		response strings::len 0 > if {
-			c http::StatusOK response http::json
-		} else {
-			c 204 "" http::string
-		}
+		valid if { http::StatusOK } else { http::StatusBadRequest } -> status
+		c status response http::json
 	}
 }
 
@@ -143,11 +187,11 @@ fn handle_root(c:ptr -- ) {
 	json::obj http::json
 }
 
-fn run_http(ds:ptr port:str -- ) {
+fn run_http(ds:ptr addr:str -- ) {
 	"quadmcp v" print SERVER_VERSION print " (HTTP mode)" print nl
 	"Protocol: " print PROTOCOL_VERSION print nl
 	"Docs: " print ds <<docs_dir print nl
-	"http://localhost" print port print nl
+	"http://" print addr print nl
 
 	http::engine -> e
 	defer {
@@ -158,10 +202,10 @@ fn run_http(ds:ptr port:str -- ) {
 	e "/mcp" &handle_mcp http::POST
 	e "/mcp/sse" &handle_sse http::GET
 
-	e port http::run!
+	e addr http::run!
 }
 
-fn print_usage( -- ) {
+fn print_usage() {
 	"quadmcp - Quadrate MCP server" print nl
 	nl
 	"Serves the Model Context Protocol over stdin/stdout as JSON-RPC, giving an" print nl
@@ -173,7 +217,8 @@ fn print_usage( -- ) {
 	"  -h, --help       Show this help message" print nl
 	"  -v, --version    Show version information" print nl
 	"      --no-color   Disable coloured output" print nl
-	"      --http       Serve over HTTP on :3000 instead of stdio" print nl
+	"      --http       Serve over HTTP on 127.0.0.1:3000 instead of stdio" print nl
+	"      --host <ip>  Bind --http to this address instead of 127.0.0.1" print nl
 	nl
 	"Examples:" print nl
 	"  quadmcp          Serve MCP on stdin/stdout (how a client starts it)" print nl
@@ -195,6 +240,7 @@ fn reject_unknown_options(f:flag::Flag -- ) {
 		tok "-v" strings::compare 0 != *
 		tok "--version" strings::compare 0 != *
 		tok "--http" strings::compare 0 != *
+		tok "--host" strings::compare 0 != *
 		tok "--no-color" strings::compare 0 != *
 		tok "--no-colors" strings::compare 0 != * if {
 			"quadmcp: unknown option: " tok strings::concat fmt::eprintln
@@ -236,7 +282,11 @@ fn main() {
 	f "--http" flag::boolean -> use_http
 
 	use_http if {
-		ds ":3000" run_http
+		f "--host" flag::string switch {
+			Ok { }
+			_ { "127.0.0.1" }
+		} -> host
+		ds host ":3000" strings::concat run_http
 	} else {
 		ds run_stdio
 	}
