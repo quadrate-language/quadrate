@@ -1,0 +1,5 @@
+struct Crc {
+	state: i64 = 4294967295
+	name: str = "a:b" // k:v
+	p: geom::Point
+}

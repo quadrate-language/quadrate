@@ -1,0 +1,8 @@
+const MAX = 10    // the limit
+pub const MIN = 1 /* floor */
+var count = 0  // running total
+type Id = i64 // identifiers
+// doc for main
+fn main() {
+	MAX print nl
+}

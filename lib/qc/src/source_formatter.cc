@@ -152,7 +152,6 @@ namespace Qd {
 			}
 
 			// Emit top-level nodes with proper spacing and use sorting
-			std::vector<IAstNode*> useBuffer;
 			std::vector<IAstNode*> commentBuffer;
 			std::string prevType;
 			size_t prevLine = 0;
@@ -161,16 +160,14 @@ namespace Qd {
 				IAstNode* node = children[i];
 
 				if (node->type() == IAstNode::Type::USE_STATEMENT) {
-					useBuffer.push_back(node);
-					continue;
-				}
-
-				if (!useBuffer.empty()) {
-					flushUseStatements(useBuffer, commentBuffer, prevType, prevLine);
-					prevLine = useBuffer.back()->line();
-					useBuffer.clear();
+					std::vector<UseUnit> units;
+					size_t last = collectUseGroup(children, i, units);
+					flushUseStatements(units, commentBuffer, prevType, prevLine);
 					commentBuffer.clear();
 					prevType = "use";
+					prevLine = units.back().use->line();
+					i = last;
+					continue;
 				}
 
 				std::string curType = getTopLevelType(node);
@@ -205,14 +202,23 @@ namespace Qd {
 				}
 
 				addTopLevelSpacing(prevType, curType, prevLine, node->line());
+				AstNodeComment* trailing = nullptr;
+				if (i + 1 < children.size() && takesTrailingComment(node)) {
+					trailing = trailingCommentOf(node, children[i + 1]);
+				}
 				emitTopLevelNode(node);
+				if (takesTrailingComment(node)) {
+					emitTrailingComment(trailing);
+					mOutput << "\n";
+				}
+				if (trailing) {
+					i++;
+				}
 				prevType = curType;
 				prevLine = node->line();
 			}
 
-			if (!useBuffer.empty()) {
-				flushUseStatements(useBuffer, commentBuffer, prevType, prevLine);
-			} else if (!commentBuffer.empty()) {
+			if (!commentBuffer.empty()) {
 				for (auto* c : commentBuffer) {
 					addTopLevelSpacing(prevType, "comment");
 					emitComment(static_cast<AstNodeComment*>(c));
@@ -263,6 +269,22 @@ namespace Qd {
 				backslashes++;
 			}
 			return backslashes % 2 == 0;
+		}
+
+		static std::string ltrim(const std::string& s) {
+			size_t start = 0;
+			while (start < s.length() && std::isspace(static_cast<unsigned char>(s[start]))) {
+				start++;
+			}
+			return s.substr(start);
+		}
+
+		static std::string rtrim(const std::string& s) {
+			size_t end = s.length();
+			while (end > 0 && std::isspace(static_cast<unsigned char>(s[end - 1]))) {
+				end--;
+			}
+			return s.substr(0, end);
 		}
 
 		static std::string trim(const std::string& s) {
@@ -361,7 +383,80 @@ namespace Qd {
 		// Use statement sorting
 		// ============================================================
 
-		void flushUseStatements(std::vector<IAstNode*>& useNodes, std::vector<IAstNode*>& comments,
+		struct UseUnit {
+			AstNodeUse* use = nullptr;
+			std::vector<AstNodeComment*> leading;
+			AstNodeComment* trailing = nullptr;
+		};
+
+		static bool takesTrailingComment(IAstNode* node) {
+			switch (node->type()) {
+			case IAstNode::Type::CONSTANT_DECLARATION:
+			case IAstNode::Type::GLOBAL_VAR_DECLARATION:
+			case IAstNode::Type::TYPE_ALIAS_DECLARATION:
+				return true;
+			default:
+				return false;
+			}
+		}
+
+		static AstNodeComment* trailingCommentOf(IAstNode* node, IAstNode* next) {
+			if (next->type() != IAstNode::Type::COMMENT || next->line() == 0 || next->line() != node->line()) {
+				return nullptr;
+			}
+			auto* comment = static_cast<AstNodeComment*>(next);
+			if (comment->commentType() == AstNodeComment::CommentType::LINE) {
+				return comment;
+			}
+			if (comment->commentType() == AstNodeComment::CommentType::BLOCK &&
+					comment->text().find('\n') == std::string::npos) {
+				return comment;
+			}
+			return nullptr;
+		}
+
+		void emitTrailingComment(AstNodeComment* comment) {
+			if (!comment) {
+				return;
+			}
+			if (comment->commentType() == AstNodeComment::CommentType::BLOCK) {
+				mOutput << " /*" << comment->text() << "*/";
+			} else {
+				mOutput << " //" << comment->text();
+			}
+		}
+
+		size_t collectUseGroup(const std::vector<IAstNode*>& children, size_t first, std::vector<UseUnit>& units) {
+			std::vector<AstNodeComment*> pending;
+			size_t last = first;
+			for (size_t j = first; j < children.size(); j++) {
+				IAstNode* child = children[j];
+				if (child->type() == IAstNode::Type::USE_STATEMENT) {
+					UseUnit unit;
+					unit.use = static_cast<AstNodeUse*>(child);
+					unit.leading = pending;
+					pending.clear();
+					units.push_back(unit);
+					last = j;
+					continue;
+				}
+				if (child->type() != IAstNode::Type::COMMENT) {
+					break;
+				}
+				if (pending.empty() && !units.empty() && !units.back().trailing) {
+					AstNodeComment* trailing = trailingCommentOf(units.back().use, child);
+					if (trailing) {
+						units.back().trailing = trailing;
+						last = j;
+						continue;
+					}
+				}
+				pending.push_back(static_cast<AstNodeComment*>(child));
+			}
+			return last;
+		}
+
+		void flushUseStatements(std::vector<UseUnit>& units, std::vector<IAstNode*>& comments,
 				const std::string& prevType, size_t prevLine = 0) {
 			std::string prevT = prevType;
 			size_t prevL = prevLine;
@@ -371,35 +466,36 @@ namespace Qd {
 				prevT = "comment";
 				prevL = c->line();
 			}
-			size_t firstUseLine = useNodes.empty() ? 0 : useNodes.front()->line();
+			size_t firstUseLine = units.empty() ? 0 : units.front().use->line();
+			if (!units.empty() && !units.front().leading.empty()) {
+				firstUseLine = units.front().leading.front()->line();
+			}
 			addTopLevelSpacing(prevT, "use", prevL, firstUseLine);
 
 			if (mOpts.sortImports) {
-				std::vector<std::string> quotedUses;
-				std::vector<std::string> bareUses;
-
-				for (auto* node : useNodes) {
-					auto* use = static_cast<AstNodeUse*>(node);
-					const std::string& mod = use->module();
-					if (useModuleNeedsQuotes(mod)) {
-						quotedUses.push_back(mod);
-					} else {
-						bareUses.push_back(mod);
+				std::stable_sort(units.begin(), units.end(), [](const UseUnit& a, const UseUnit& b) {
+					bool aQuoted = useModuleNeedsQuotes(a.use->module());
+					bool bQuoted = useModuleNeedsQuotes(b.use->module());
+					if (aQuoted != bQuoted) {
+						return aQuoted;
+					}
+					return a.use->module() < b.use->module();
+				});
+			}
+			for (size_t u = 0; u < units.size(); u++) {
+				const UseUnit& unit = units[u];
+				if (u > 0 && !unit.leading.empty()) {
+					size_t commentLine = unit.leading.front()->line();
+					if (commentLine > 1 && trim(getSourceLine(commentLine - 1)).empty()) {
+						mOutput << '\n';
 					}
 				}
-				std::sort(quotedUses.begin(), quotedUses.end());
-				std::sort(bareUses.begin(), bareUses.end());
-				for (const auto& mod : quotedUses) {
-					emitUseModule(mod);
+				for (auto* c : unit.leading) {
+					emitComment(c);
 				}
-				for (const auto& mod : bareUses) {
-					emitUseModule(mod);
-				}
-			} else {
-				for (auto* node : useNodes) {
-					auto* use = static_cast<AstNodeUse*>(node);
-					emitUseModule(use->module());
-				}
+				emitUseModule(unit.use->module());
+				emitTrailingComment(unit.trailing);
+				mOutput << "\n";
 			}
 		}
 
@@ -427,9 +523,9 @@ namespace Qd {
 
 		void emitUseModule(const std::string& mod) {
 			if (useModuleNeedsQuotes(mod)) {
-				mOutput << "use \"" << mod << "\"\n";
+				mOutput << "use \"" << mod << "\"";
 			} else {
-				mOutput << "use " << mod << "\n";
+				mOutput << "use " << mod;
 			}
 		}
 
@@ -444,6 +540,7 @@ namespace Qd {
 				break;
 			case IAstNode::Type::USE_STATEMENT:
 				emitUseModule(static_cast<AstNodeUse*>(node)->module());
+				mOutput << "\n";
 				break;
 			case IAstNode::Type::IMPORT_STATEMENT:
 				emitImportStatement(static_cast<AstNodeImport*>(node));
@@ -560,7 +657,7 @@ namespace Qd {
 			if (node->isPublic()) {
 				mOutput << "pub ";
 			}
-			mOutput << "const " << node->name() << " = " << node->value() << "\n";
+			mOutput << "const " << node->name() << " = " << node->value();
 		}
 
 		void emitGlobalVar(AstNodeGlobalVar* node) {
@@ -572,7 +669,7 @@ namespace Qd {
 			if (node->hasExplicitType()) {
 				mOutput << ":" << node->typeName();
 			}
-			mOutput << " = " << node->sourceExpr() << "\n";
+			mOutput << " = " << node->sourceExpr();
 		}
 
 		void emitTypeAlias(AstNodeTypeAlias* node) {
@@ -580,7 +677,7 @@ namespace Qd {
 			if (node->isPublic()) {
 				mOutput << "pub ";
 			}
-			mOutput << "type " << node->name() << " = " << node->targetType() << "\n";
+			mOutput << "type " << node->name() << " = " << node->targetType();
 		}
 
 		// ============================================================
@@ -714,13 +811,17 @@ namespace Qd {
 					mBailOut = true;
 					return;
 				}
+				bool inStr = false;
+				int bcDepth = 0;
 				for (size_t i = startLine; i < range.closeLine; i++) {
-					mOutput << getSourceLine(i) << "\n";
+					mOutput << spaceFieldColons(getSourceLine(i), inStr, bcDepth) << "\n";
 				}
 				// Only as far as the declaration's own `}`. Emitting the whole closing line
 				// copied out whatever followed it -- in `struct P{e:i=c}fn i(){}` the function
 				// after it, which was then emitted again as itself.
-				mOutput << getSourceLine(range.closeLine).substr(0, range.closeCol + 1) << "\n";
+				mOutput << spaceFieldColons(
+								   getSourceLine(range.closeLine).substr(0, range.closeCol + 1), inStr, bcDepth)
+						<< "\n";
 				return;
 			}
 
@@ -776,6 +877,50 @@ namespace Qd {
 			mIndent--;
 			emitIndent();
 			mOutput << "}\n";
+		}
+
+		static std::string spaceFieldColons(const std::string& line, bool& inStr, int& bcDepth) {
+			std::string result;
+			for (size_t j = 0; j < line.length(); j++) {
+				char c = line[j];
+				if (bcDepth > 0) {
+					result += c;
+					if (j + 1 < line.length() && c == '/' && line[j + 1] == '*') {
+						bcDepth++;
+						result += line[++j];
+					} else if (j + 1 < line.length() && c == '*' && line[j + 1] == '/') {
+						bcDepth--;
+						result += line[++j];
+					}
+					continue;
+				}
+				if (quoteToggles(line, j, inStr)) {
+					inStr = !inStr;
+					result += c;
+					continue;
+				}
+				if (inStr) {
+					result += c;
+					continue;
+				}
+				if (c == '/' && j + 1 < line.length() && line[j + 1] == '/') {
+					result += line.substr(j);
+					break;
+				}
+				if (c == '/' && j + 1 < line.length() && line[j + 1] == '*') {
+					bcDepth = 1;
+					result += c;
+					result += line[++j];
+					continue;
+				}
+				result += c;
+				if (c == ':' && j > 0 && j + 1 < line.length() && line[j + 1] != ':' && line[j - 1] != ':' &&
+						!std::isspace(static_cast<unsigned char>(line[j + 1])) &&
+						(std::isalnum(static_cast<unsigned char>(line[j - 1])) || line[j - 1] == '_')) {
+					result += ' ';
+				}
+			}
+			return result;
 		}
 
 		// Comments recorded inside a struct or enum body. `index` is the number of fields (or
@@ -1743,15 +1888,15 @@ namespace Qd {
 				size_t openLine = range.openLine;
 				size_t closeLine = range.closeLine;
 
-				std::string tail = trim(getSourceLine(openLine).substr(range.openCol + 1));
-				if (!tail.empty()) {
+				std::string tail = getSourceLine(openLine).substr(range.openCol + 1);
+				if (!trim(tail).empty()) {
 					bodyLines.push_back(tail);
 				}
 				for (size_t i = openLine + 1; i < closeLine; i++) {
 					bodyLines.push_back(getSourceLine(i));
 				}
-				std::string head = trim(getSourceLine(closeLine).substr(0, range.closeCol));
-				if (!head.empty()) {
+				std::string head = getSourceLine(closeLine).substr(0, range.closeCol);
+				if (!trim(head).empty()) {
 					bodyLines.push_back(head);
 				}
 			}
@@ -1768,8 +1913,6 @@ namespace Qd {
 				// Handle multiline string continuation
 				if (inMultilineString) {
 					int emittedAt = mIndent + braceDepth;
-					emitIndent(emittedAt);
-					mOutput << trimmed << "\n";
 					// Find where the string closes and hand the rest of the line to the normal
 					// scanner: it is code, and leaving it unread lost the brace, string or
 					// comment it opened -- in `"/*` the block comment that followed.
@@ -1780,6 +1923,11 @@ namespace Qd {
 							resume = j + 1;
 							break;
 						}
+					}
+					if (inMultilineString) {
+						mOutput << srcLine << "\n";
+					} else {
+						mOutput << srcLine.substr(0, resume) << rtrim(srcLine.substr(resume)) << "\n";
 					}
 					if (!inMultilineString && resume < srcLine.length()) {
 						int tailBcDepth = 0;
@@ -1857,6 +2005,16 @@ namespace Qd {
 				int lineIndent = braceDepth - leadingCloses;
 				if (lineIndent < 0) {
 					lineIndent = 0;
+				}
+
+				{
+					int probeDepth = 0;
+					bool probeInStr = false;
+					int probeBcDepth = 0;
+					scanLineState(trimmed, 0, probeDepth, probeInStr, probeBcDepth);
+					if (probeInStr) {
+						trimmed = ltrim(srcLine);
+					}
 				}
 
 				// Apply normalizations to the trimmed line

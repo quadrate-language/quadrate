@@ -34,7 +34,7 @@ enum Color {
 }
 
 pub struct Crc32 {
-	state:i64 = 4294967295 // default values take the source-preserving path
-	tbl:ptr = null
+	state: i64 = 4294967295 // default values take the source-preserving path
+	tbl: ptr = null
 	// so comments survive there too
 }

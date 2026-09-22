@@ -1,5 +1,5 @@
 fn test() {
 	"line one
-	line two
-	line three" print nl
+line two
+line three" print nl
 }
