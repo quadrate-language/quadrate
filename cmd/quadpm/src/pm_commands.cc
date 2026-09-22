@@ -2,6 +2,7 @@
 
 #include "pm_impl.h"
 #include <algorithm>
+#include <cctype>
 #include <cstdlib>
 #include <filesystem>
 #include <fstream>
@@ -12,98 +13,108 @@
 
 namespace fs = std::filesystem;
 
-// Clone a Git repository to the modules directory
-// Uses Go-style paths: host/user/repo@version
-// Returns the actual module name (from manifest if present, otherwise from git ref)
-// Returns empty string on failure
-std::string gitClone(const GitRef& gitRef) {
-	std::string modulesDir = getModulesDir();
-
-	// Create modules directory if it doesn't exist
-	fs::create_directories(modulesDir);
-
-	// Use hostPath for Go-style directory structure
-	std::string installedDirName = getInstalledDirName(gitRef.hostPath, gitRef.ref);
-	std::string targetDir = modulesDir + "/" + installedDirName;
-
-	// Check if already exists
-	if (fs::exists(targetDir)) {
-		std::cout << COLOR_YELLOW << "Module already exists: " << COLOR_RESET << targetDir << "\n";
-		std::cout << COLOR_CYAN << "Use 'quadpm update' to update it" << COLOR_RESET << "\n";
-		return gitRef.moduleName;
-	}
-
-	std::cout << COLOR_CYAN << "Fetching " << COLOR_BOLD << gitRef.hostPath << COLOR_RESET << COLOR_CYAN << " @ "
-			  << (gitRef.ref.empty() ? "default branch" : gitRef.ref) << "..." << COLOR_RESET << "\n";
-	std::cout << "  → Cloning " << gitRef.url << "\n";
-
-	// Create parent directories for Go-style path
-	fs::path targetPath(targetDir);
-	fs::create_directories(targetPath.parent_path());
-
-	// Reject URLs/refs that git would interpret as options (argument injection).
-	if (!isSafeGitArgument(gitRef.url) || !isSafeGitArgument(gitRef.ref)) {
-		pmError("refusing unsafe git URL or ref: " + gitRef.url + (gitRef.ref.empty() ? "" : ("@" + gitRef.ref)));
-		return "";
-	}
-
-	// Clone with --depth 1 for faster download. The "--" separator ensures the
-	// URL and target are always treated as positional arguments.
-	std::vector<std::string> cloneCmd = {"git", "clone", "--depth", "1"};
-	if (!gitRef.ref.empty()) {
-		cloneCmd.push_back("--branch");
-		cloneCmd.push_back(gitRef.ref);
-	}
-	cloneCmd.push_back("--");
-	cloneCmd.push_back(gitRef.url);
-	cloneCmd.push_back(targetDir);
-	int result = execCommandLive(cloneCmd);
-
-	if (result != 0) {
-		pmError("failed to clone repository");
-		// Try to clean up partial clone
-		if (fs::exists(targetDir)) {
-			fs::remove_all(targetDir);
-		}
-		return "";
-	}
-
-	std::string finalDir = targetDir;
-	std::string actualModuleName = gitRef.moduleName;
-
-	std::cout << COLOR_GREEN << "  ✓ Installed to " << COLOR_RESET << finalDir << "\n";
-
-	// Check if module has any .qd files
-	if (hasQuadrateFiles(finalDir)) {
-		std::cout << COLOR_GREEN << "  ✓ Found .qd files" << COLOR_RESET << "\n";
-	} else {
-		pmWarn("no .qd files found at the module root; a module should contain at least one .qd file");
-	}
-
-	// Parse namespace from qd.json and create symlink
-	std::string manifestPath = finalDir + "/qd.json";
-	std::string manifestModuleName = parseModuleName(manifestPath);
+static std::string moduleNamespace(const std::string& moduleDir, const std::string& fallbackModuleName) {
+	std::string manifestPath = moduleDir + "/qd.json";
 	std::string manifestNamespace = parseNamespace(manifestPath);
-
-	// Determine the namespace: explicit namespace > module name > repo name
-	std::string namespaceName;
 	if (!manifestNamespace.empty()) {
-		namespaceName = manifestNamespace;
-	} else if (!manifestModuleName.empty()) {
-		namespaceName = manifestModuleName;
-	} else {
-		namespaceName = gitRef.moduleName;
+		return manifestNamespace;
+	}
+	std::string manifestModuleName = parseModuleName(manifestPath);
+	if (!manifestModuleName.empty()) {
+		return manifestModuleName;
+	}
+	return fallbackModuleName;
+}
+
+static bool hasCSources(const std::string& moduleDir) {
+	std::string srcDir = moduleDir + "/src";
+	if (!fs::is_directory(srcDir)) {
+		return false;
+	}
+	for (const auto& entry : fs::recursive_directory_iterator(srcDir)) {
+		if (entry.is_regular_file() && entry.path().extension() == ".c") {
+			return true;
+		}
+	}
+	return false;
+}
+
+bool isInstallComplete(const std::string& moduleDir) {
+	if (!hasCSources(moduleDir)) {
+		return true;
+	}
+	std::string libDir = moduleDir + "/lib";
+	if (!fs::is_directory(libDir)) {
+		return false;
+	}
+	for (const auto& entry : fs::directory_iterator(libDir)) {
+		std::string filename = entry.path().filename().string();
+		if (filename.size() > 9 && filename.substr(filename.size() - 9) == "_static.a") {
+			return true;
+		}
+	}
+	return false;
+}
+
+static void removeStaging(const std::string& stagingDir) {
+	std::error_code ec;
+	fs::remove_all(stagingDir, ec);
+}
+
+// Move a fully built staging checkout to its final location, replacing what is there
+static bool moveIntoPlace(const std::string& stagingDir, const std::string& targetDir) {
+	std::error_code ec;
+	fs::create_directories(fs::path(targetDir).parent_path(), ec);
+	if (ec) {
+		pmError("could not create " + fs::path(targetDir).parent_path().string() + ": " + ec.message());
+		return false;
 	}
 
-	// Create namespace symlink
-	// Relative path from _namespaces/ to the package directory
+	std::string trashDir;
+	if (fs::exists(targetDir) || fs::is_symlink(targetDir)) {
+		trashDir = makeStagingDir();
+		if (trashDir.empty()) {
+			pmError("could not create a staging directory in " + getModulesDir());
+			return false;
+		}
+		fs::rename(targetDir, trashDir + "/old", ec);
+		if (ec) {
+			pmError("could not replace " + targetDir + ": " + ec.message());
+			removeStaging(trashDir);
+			return false;
+		}
+	}
+
+	fs::rename(stagingDir, targetDir, ec);
+	if (ec) {
+		pmError("could not move the checkout to " + targetDir + ": " + ec.message());
+		if (!trashDir.empty()) {
+			std::error_code restoreEc;
+			fs::rename(trashDir + "/old", targetDir, restoreEc);
+			removeStaging(trashDir);
+		}
+		return false;
+	}
+
+	if (!trashDir.empty()) {
+		removeStaging(trashDir);
+	}
+	return true;
+}
+
+static bool registerNamespace(const std::string& targetDir, const std::string& installedDirName, const GitRef& gitRef,
+		std::string* registeredNamespace) {
+	std::string namespaceName = moduleNamespace(targetDir, gitRef.moduleName);
 	std::string relativeTarget = "../" + installedDirName;
 
-	// Check for namespace conflicts
+	std::error_code ec;
+	fs::path self = fs::weakly_canonical(targetDir, ec);
+	std::string modulesDir = getModulesDir();
 	std::vector<std::string> existingPackages = findPackagesWithNamespace(namespaceName);
 	bool hasConflict = false;
 	for (const auto& pkg : existingPackages) {
-		if (pkg != installedDirName) {
+		std::error_code pkgEc;
+		if (fs::weakly_canonical(modulesDir + "/" + pkg, pkgEc) != self) {
 			hasConflict = true;
 			pmWarn("namespace '" + namespaceName + "' is also claimed by: " + pkg);
 		}
@@ -116,30 +127,133 @@ std::string gitClone(const GitRef& gitRef) {
 					  << "\n";
 			std::cout << COLOR_CYAN << "    use " << gitRef.hostPath << COLOR_RESET << "\n";
 		}
+		if (registeredNamespace) {
+			*registeredNamespace = namespaceName;
+		}
+		return true;
+	}
+
+	std::cout << COLOR_YELLOW << "  ⚠ Namespace '" << namespaceName << "' already registered to different package"
+			  << COLOR_RESET << "\n";
+	std::cout << COLOR_CYAN << "    Use full path in 'use' directive: use " << gitRef.hostPath << COLOR_RESET << "\n";
+	return false;
+}
+
+// Clone a Git repository to the modules directory
+// Uses Go-style paths: host/user/repo@version
+// Returns the actual module name (from manifest if present, otherwise from git ref)
+// Returns empty string on failure
+std::string gitClone(const GitRef& gitRef, const CloneOptions& options) {
+	std::string modulesDir = getModulesDir();
+
+	// Reject URLs/refs that git would interpret as options (argument injection).
+	if (!isSafeGitArgument(gitRef.url) || !isSafeGitArgument(gitRef.ref)) {
+		pmError("refusing unsafe git URL or ref: " + gitRef.url + (gitRef.ref.empty() ? "" : ("@" + gitRef.ref)));
+		return "";
+	}
+
+	// Use hostPath for Go-style directory structure
+	std::string installedDirName = getInstalledDirName(gitRef.hostPath, gitRef.ref);
+	if (gitRef.hostPath.empty() || !isSafeInstalledDirName(installedDirName)) {
+		pmError("refusing to install outside the modules directory: " + gitRef.url +
+				(gitRef.ref.empty() ? "" : ("@" + gitRef.ref)));
+		return "";
+	}
+	std::string targetDir = modulesDir + "/" + installedDirName;
+
+	// Create modules directory if it doesn't exist
+	fs::create_directories(modulesDir);
+
+	bool replace = options.replaceExisting;
+	if (fs::exists(targetDir) && !replace) {
+		if (isInstallComplete(targetDir)) {
+			std::cout << COLOR_YELLOW << "Module already exists: " << COLOR_RESET << targetDir << "\n";
+			std::cout << COLOR_CYAN << "Use 'quadpm update' to update it" << COLOR_RESET << "\n";
+			std::string namespaceName = moduleNamespace(targetDir, gitRef.moduleName);
+			if (createNamespaceSymlink(namespaceName, "../" + installedDirName) && options.registeredNamespace) {
+				*options.registeredNamespace = namespaceName;
+			}
+			return gitRef.moduleName;
+		}
+		pmWarn("the install at " + targetDir + " was never built; reinstalling");
+		replace = true;
+	}
+
+	std::cout << COLOR_CYAN << "Fetching " << COLOR_BOLD << gitRef.hostPath << COLOR_RESET << COLOR_CYAN << " @ "
+			  << (gitRef.ref.empty() ? "default branch" : gitRef.ref) << "..." << COLOR_RESET << "\n";
+	std::cout << "  → Cloning " << gitRef.url << "\n";
+
+	std::string stagingDir = makeStagingDir();
+	if (stagingDir.empty()) {
+		pmError("could not create a staging directory in " + modulesDir);
+		return "";
+	}
+
+	// Clone with --depth 1 for faster download. The "--" separator ensures the
+	// URL and target are always treated as positional arguments.
+	std::vector<std::string> cloneCmd = {"git", "clone", "--depth", "1"};
+	if (!gitRef.ref.empty()) {
+		cloneCmd.push_back("--branch");
+		cloneCmd.push_back(gitRef.ref);
+	}
+	cloneCmd.push_back("--");
+	cloneCmd.push_back(gitRef.url);
+	cloneCmd.push_back(stagingDir);
+	int result = execCommandLive(cloneCmd);
+
+	if (result != 0) {
+		pmError("failed to clone repository");
+		removeStaging(stagingDir);
+		return "";
+	}
+
+	if (!options.expectedCommit.empty()) {
+		std::string commitHash = getModuleCommitHash(stagingDir);
+		if (commitHash != options.expectedCommit) {
+			std::cerr << "  " << COLOR_RED << "✗ " << options.mismatchLabel << COLOR_RESET << "\n";
+			std::cerr << "    Expected: " << options.expectedCommit << "\n";
+			std::cerr << "    Got:      " << commitHash << "\n";
+			removeStaging(stagingDir);
+			return "";
+		}
+	}
+
+	std::string actualModuleName = gitRef.moduleName;
+
+	// Check if module has any .qd files
+	if (hasQuadrateFiles(stagingDir)) {
+		std::cout << COLOR_GREEN << "  ✓ Found .qd files" << COLOR_RESET << "\n";
 	} else {
-		std::cout << COLOR_YELLOW << "  ⚠ Namespace '" << namespaceName << "' already registered to different package"
-				  << COLOR_RESET << "\n";
-		std::cout << COLOR_CYAN << "    Use full path in 'use' directive: use " << gitRef.hostPath << COLOR_RESET
-				  << "\n";
+		pmWarn("no .qd files found at the module root; a module should contain at least one .qd file");
 	}
 
 	// Before the src/ check: a prebuild script may be what puts src/ there
-	if (!runPrebuild(finalDir, actualModuleName)) {
+	if (!runPrebuild(stagingDir, actualModuleName)) {
+		removeStaging(stagingDir);
 		return "";
 	}
 
 	// Check for C source files and compile if found
-	std::string srcDir = finalDir + "/src";
+	std::string srcDir = stagingDir + "/src";
 	if (fs::exists(srcDir) && fs::is_directory(srcDir)) {
 		std::cout << COLOR_GREEN << "  ✓ Found src/ directory" << COLOR_RESET << "\n";
 		// Parse native config for link libraries
-		NativeConfig nativeConfig = parseNativeConfig(manifestPath);
-		if (!compileCsources(finalDir, actualModuleName, nativeConfig)) {
-			pmError("failed to build native sources for '" + actualModuleName + "'");
-			std::cerr << "The checkout is left at " << finalDir << " so the build can be retried with 'quadpm build'\n";
+		NativeConfig nativeConfig = parseNativeConfig(stagingDir + "/qd.json");
+		if (!compileCsources(stagingDir, actualModuleName, nativeConfig)) {
+			pmError("failed to build native sources for '" + actualModuleName + "'; nothing was installed");
+			removeStaging(stagingDir);
 			return "";
 		}
 	}
+
+	if (!moveIntoPlace(stagingDir, targetDir)) {
+		removeStaging(stagingDir);
+		return "";
+	}
+
+	std::cout << COLOR_GREEN << "  ✓ Installed to " << COLOR_RESET << targetDir << "\n";
+
+	registerNamespace(targetDir, installedDirName, gitRef, options.registeredNamespace);
 
 	return actualModuleName;
 }
@@ -149,26 +263,7 @@ std::string gitClone(const GitRef& gitRef) {
 // Returns true on success
 bool ensureNamespaceSymlink(
 		const std::string& installedDir, const std::string& installedDirName, const std::string& fallbackModuleName) {
-	// Parse namespace from qd.json
-	std::string manifestPath = installedDir + "/qd.json";
-	std::string manifestModuleName = parseModuleName(manifestPath);
-	std::string manifestNamespace = parseNamespace(manifestPath);
-
-	// Determine the namespace: explicit namespace > module name > fallback
-	std::string namespaceName;
-	if (!manifestNamespace.empty()) {
-		namespaceName = manifestNamespace;
-	} else if (!manifestModuleName.empty()) {
-		namespaceName = manifestModuleName;
-	} else {
-		namespaceName = fallbackModuleName;
-	}
-
-	// Create namespace symlink
-	// Relative path from _namespaces/ to the package directory
-	std::string relativeTarget = "../" + installedDirName;
-
-	return createNamespaceSymlink(namespaceName, relativeTarget);
+	return createNamespaceSymlink(moduleNamespace(installedDir, fallbackModuleName), "../" + installedDirName);
 }
 
 // Check if C source files use Quadrate name mangling convention (usr_* functions)
@@ -240,6 +335,89 @@ bool runPrebuild(const std::string& moduleDir, const std::string& moduleName) {
 	return true;
 }
 
+static bool isPlainToken(const std::string& s, const std::string& extra) {
+	if (s.empty()) {
+		return false;
+	}
+	for (char c : s) {
+		if (!std::isalnum(static_cast<unsigned char>(c)) && extra.find(c) == std::string::npos) {
+			return false;
+		}
+	}
+	return true;
+}
+
+// Check one native.cflags entry against the allow-list. On success, resolved
+// holds the flag to pass to the compiler.
+static bool checkCflag(
+		const std::string& flag, const std::string& moduleDir, std::string& resolved, std::string& reason) {
+	static const std::set<std::string> exactFlags = {"-g", "-g0", "-g1", "-g2", "-g3", "-ggdb", "-pthread", "-w",
+			"-pedantic", "-pedantic-errors", "-ansi", "-O", "-O0", "-O1", "-O2", "-O3", "-Os", "-Oz", "-Og", "-Ofast",
+			"-fPIC", "-fpic", "-fPIE", "-fpie", "-fno-common", "-fcommon", "-fwrapv", "-fno-strict-aliasing",
+			"-fstrict-aliasing", "-fno-strict-overflow", "-fno-omit-frame-pointer", "-fomit-frame-pointer",
+			"-fsigned-char", "-funsigned-char", "-fno-builtin", "-ffast-math", "-fno-fast-math", "-fno-math-errno",
+			"-fms-extensions", "-fno-exceptions", "-fexceptions", "-fno-asynchronous-unwind-tables",
+			"-ffunction-sections", "-fdata-sections", "-fno-stack-protector", "-fstack-protector",
+			"-fstack-protector-strong", "-fstack-protector-all", "-fno-plt", "-fno-delete-null-pointer-checks",
+			"-fno-inline", "-finline-functions", "-funroll-loops", "-fno-unroll-loops", "-fno-lto"};
+	static const std::vector<std::string> valuePrefixes = {"-std=", "-fvisibility=", "-fdiagnostics-color=",
+			"-ffp-contract=", "-march=", "-mtune=", "-mcpu=", "-mfpu=", "-mfloat-abi="};
+
+	resolved = flag;
+	if (exactFlags.count(flag) > 0) {
+		return true;
+	}
+
+	if (flag.size() > 2 && (flag.compare(0, 2, "-D") == 0 || flag.compare(0, 2, "-U") == 0)) {
+		return true;
+	}
+
+	if (flag.size() > 2 && flag.compare(0, 2, "-W") == 0) {
+		if (flag.find(',') != std::string::npos) {
+			reason = "-W options that forward arguments to other tools are not accepted";
+			return false;
+		}
+		if (!isPlainToken(flag.substr(2), "-=_+.")) {
+			reason = "not a warning option";
+			return false;
+		}
+		return true;
+	}
+
+	for (const auto& prefix : valuePrefixes) {
+		if (flag.size() > prefix.size() && flag.compare(0, prefix.size(), prefix) == 0) {
+			if (!isPlainToken(flag.substr(prefix.size()), "-_+.")) {
+				reason = "unexpected characters in the value";
+				return false;
+			}
+			return true;
+		}
+	}
+
+	if (flag.size() > 2 && flag.compare(0, 2, "-m") == 0 && flag.compare(0, 6, "-mllvm") != 0 &&
+			isPlainToken(flag.substr(2), "-_.")) {
+		return true;
+	}
+
+	if (flag.size() > 2 && flag.compare(0, 2, "-I") == 0) {
+		fs::path path(flag.substr(2));
+		fs::path normal = path.lexically_normal();
+		if (path.is_absolute() || normal.empty() || *normal.begin() == ".." || flag[2] == '-') {
+			reason = "include paths must be relative and inside the module";
+			return false;
+		}
+		resolved = "-I" + (fs::path(moduleDir) / normal).lexically_normal().string();
+		return true;
+	}
+
+	reason = "not on the allow-list";
+	return false;
+}
+
+static bool isSafeLinkName(const std::string& lib) {
+	return !lib.empty() && lib[0] != '-' && isPlainToken(lib, "-_.+:");
+}
+
 // Compile C sources in a module directory
 // Returns true on success, false on failure
 bool compileCsources(const std::string& moduleDir, const std::string& moduleName, const NativeConfig& nativeConfig) {
@@ -258,6 +436,26 @@ bool compileCsources(const std::string& moduleDir, const std::string& moduleName
 
 	if (cFiles.empty()) {
 		return true; // No C files is not an error
+	}
+	std::sort(cFiles.begin(), cFiles.end());
+
+	std::vector<std::string> extraFlags;
+	for (const auto& flag : nativeConfig.cflags) {
+		std::string resolved;
+		std::string reason;
+		if (!checkCflag(flag, moduleDir, resolved, reason)) {
+			pmError("native.cflags: '" + flag + "' is not allowed: " + reason);
+			std::cerr << "Allowed: -D, -U, -I<path inside the module>, -W<warning>, -O<level>, -std=, -g, "
+						 "-pthread, -m<target option> and a fixed set of -f code-generation options.\n";
+			return false;
+		}
+		extraFlags.push_back(resolved);
+	}
+	for (const auto& lib : nativeConfig.link) {
+		if (!isSafeLinkName(lib)) {
+			pmError("native.link: '" + lib + "' is not a library name");
+			return false;
+		}
 	}
 
 	std::cout << "  → Compiling C sources...\n";
@@ -313,10 +511,19 @@ bool compileCsources(const std::string& moduleDir, const std::string& moduleName
 
 	// Compile to object files
 	std::vector<std::string> objFiles;
+	std::set<std::string> objNames;
 	bool compileFailed = false;
 
 	for (const auto& cFile : cFiles) {
-		std::string objFile = libDir + "/" + fs::path(cFile).stem().string() + ".o";
+		fs::path relative = fs::path(cFile).lexically_relative(srcDir);
+		relative.replace_extension("");
+		std::string objName = relative.generic_string();
+		std::replace(objName.begin(), objName.end(), '/', '_');
+		std::string uniqueName = objName;
+		for (int n = 2; !objNames.insert(uniqueName).second; n++) {
+			uniqueName = objName + "_" + std::to_string(n);
+		}
+		std::string objFile = libDir + "/" + uniqueName + ".o";
 		objFiles.push_back(objFile);
 
 		// Build compile command as vector
@@ -326,7 +533,7 @@ bool compileCsources(const std::string& moduleDir, const std::string& moduleName
 		}
 		// After quadpm's own flags and include paths, so a module can override
 		// what it needs to -- the compiler takes the last of a repeated option.
-		for (const auto& flag : nativeConfig.cflags) {
+		for (const auto& flag : extraFlags) {
 			compileArgs.push_back(flag);
 		}
 		compileArgs.push_back(cFile);
@@ -547,7 +754,7 @@ void listModules() {
 // Update a single module by running git pull
 // Update a module using semver resolution when a version constraint is available.
 // Falls back to git pull for branch-based dependencies.
-bool updateModule(const std::string& moduleDir, const Dependency* dep) {
+bool updateModule(const std::string& moduleDir, const Dependency* dep, std::string* newRef) {
 	std::string modulesDir = getModulesDir();
 	std::string name = fs::path(moduleDir).filename().string();
 
@@ -558,6 +765,10 @@ bool updateModule(const std::string& moduleDir, const Dependency* dep) {
 	if (atPos != std::string::npos) {
 		moduleName = name.substr(0, atPos);
 		currentVersion = name.substr(atPos + 1);
+	}
+
+	if (newRef) {
+		*newRef = currentVersion;
 	}
 
 	std::string displayName = currentVersion.empty() ? moduleName : moduleName + " @ " + currentVersion;
@@ -587,7 +798,7 @@ bool updateModule(const std::string& moduleDir, const Dependency* dep) {
 		std::string newDirName = getInstalledDirName(hostPath, resolvedTag);
 		std::string newDir = modulesDir + "/" + newDirName;
 
-		if (fs::exists(newDir)) {
+		if (fs::exists(newDir) && isInstallComplete(newDir)) {
 			std::cout << COLOR_GREEN << "  ✓ Version " << resolvedTag << " already installed" << COLOR_RESET << "\n";
 		} else {
 			GitRef gitRef;
@@ -611,6 +822,10 @@ bool updateModule(const std::string& moduleDir, const Dependency* dep) {
 		// Update namespace symlink
 		ensureNamespaceSymlink(newDir, newDirName, moduleName);
 
+		if (newRef) {
+			*newRef = resolvedTag;
+		}
+
 		std::cout << COLOR_GREEN << "  ✓ Updated " << moduleName << " " << currentVersion << " → " << resolvedTag
 				  << COLOR_RESET << "\n";
 		return true;
@@ -630,12 +845,16 @@ bool updateModule(const std::string& moduleDir, const Dependency* dep) {
 
 	// Rebuild C sources if present
 	std::string manifestPath = moduleDir + "/qd.json";
-	if (!runPrebuild(moduleDir, moduleName)) {
-		return false;
+	bool built = runPrebuild(moduleDir, moduleName);
+	if (built) {
+		NativeConfig nativeConfig = parseNativeConfig(manifestPath);
+		built = compileCsources(moduleDir, moduleName, nativeConfig);
 	}
-	NativeConfig nativeConfig = parseNativeConfig(manifestPath);
-	if (!compileCsources(moduleDir, moduleName, nativeConfig)) {
-		pmError("failed to rebuild native sources for '" + displayName + "'");
+	if (!built) {
+		pmError("failed to rebuild native sources for '" + displayName + "'; removed " + moduleDir);
+		std::cerr << "Run 'quadpm install' or 'quadpm get' to reinstall it.\n";
+		std::error_code ec;
+		fs::remove_all(moduleDir, ec);
 		return false;
 	}
 
@@ -897,27 +1116,31 @@ InstallResult installSingleDependency(const Dependency& dep, const std::string& 
 	gitRef.moduleName = dep.name;
 	gitRef.hostPath = extractHostPath(dep.url);
 
-	// Determine the version to use
 	std::string versionSpec = dep.version;
-	if (versionSpec.empty()) {
-		versionSpec = "master";
-	}
-
-	// Check if we have a locked version to use
-	auto lockedIt = lockedByName.find(dep.name);
 	std::string expectedCommit;
 
-	if (lockedIt != lockedByName.end() && !lockedIt->second.resolvedRef.empty()) {
-		// Use locked commit hash for reproducibility
-		expectedCommit = lockedIt->second.resolvedRef;
-		if (frozen) {
-			// In frozen mode, use locked ref
-			gitRef.ref = lockedIt->second.ref;
+	if (frozen) {
+		auto lockedIt = lockedByName.find(dep.name);
+		if (lockedIt == lockedByName.end() || lockedIt->second.isPath || lockedIt->second.resolvedRef.empty()) {
+			std::cout << COLOR_RED << "✗ No pinned commit in qd.lock (frozen)" << COLOR_RESET << "\n";
+			std::cout << "  Run 'quadpm install' to update the lockfile.\n";
+			return result;
 		}
-	}
-
-	// Resolve semver range if needed (and not using lockfile)
-	if (!frozen && dep.isSemVer && !versionSpec.empty()) {
+		if (lockedIt->second.url != dep.url) {
+			std::cout << COLOR_RED << "✗ qd.lock is outdated (frozen)" << COLOR_RESET << "\n";
+			std::cout << "  qd.lock:  " << lockedIt->second.url << "\n";
+			std::cout << "  Manifest: " << dep.url << "\n";
+			return result;
+		}
+		expectedCommit = lockedIt->second.resolvedRef;
+		gitRef.ref = lockedIt->second.ref;
+		if (!dep.sha256.empty() && dep.sha256 != expectedCommit) {
+			std::cout << COLOR_RED << "✗ qd.lock and qd.json pin different commits" << COLOR_RESET << "\n";
+			std::cout << "  qd.lock:  " << expectedCommit << "\n";
+			std::cout << "  qd.json:  " << dep.sha256 << "\n";
+			return result;
+		}
+	} else if (dep.isSemVer) {
 		std::cout << "\n";
 		std::string resolvedTag = resolveSemVerRange(dep.url, versionSpec);
 		if (resolvedTag.empty()) {
@@ -925,47 +1148,68 @@ InstallResult installSingleDependency(const Dependency& dep, const std::string& 
 			return result;
 		}
 		gitRef.ref = resolvedTag;
-	} else if (!frozen) {
+	} else {
 		gitRef.ref = versionSpec;
+	}
+
+	CloneOptions cloneOptions;
+	if (frozen) {
+		cloneOptions.expectedCommit = expectedCommit;
+		cloneOptions.mismatchLabel = "Commit mismatch (frozen)";
+	} else if (!dep.sha256.empty()) {
+		cloneOptions.expectedCommit = dep.sha256;
+		cloneOptions.mismatchLabel = "Pinned commit mismatch";
 	}
 
 	result.actualRef = gitRef.ref;
 
 	// Check if already installed (using Go-style hostPath)
 	std::string installedDirName = getInstalledDirName(gitRef.hostPath, gitRef.ref);
+	if (gitRef.hostPath.empty() || !isSafeInstalledDirName(installedDirName)) {
+		std::cout << COLOR_RED << "✗ Refusing to install outside the modules directory: " << dep.url << COLOR_RESET
+				  << "\n";
+		return result;
+	}
 	std::string installedDir = modulesDir + "/" + installedDirName;
-	if (fs::exists(installedDir)) {
+	if (fs::exists(installedDir) && isInstallComplete(installedDir)) {
 		std::string currentCommit = getModuleCommitHash(installedDir);
 
 		// In frozen mode, verify commit matches lockfile
-		if (frozen && !expectedCommit.empty() && currentCommit != expectedCommit) {
+		if (frozen && currentCommit != expectedCommit) {
 			std::cout << COLOR_RED << "✗ Commit mismatch (frozen)" << COLOR_RESET << "\n";
 			std::cout << "  Expected: " << expectedCommit << "\n";
 			std::cout << "  Got:      " << currentCommit << "\n";
 			return result;
 		}
 
-		std::cout << COLOR_GREEN << "✓ " << COLOR_RESET << "already installed @ "
-				  << (gitRef.ref.empty() ? "HEAD" : gitRef.ref);
-		if (!currentCommit.empty()) {
-			std::cout << " (" << currentCommit.substr(0, 8) << ")";
+		if (!cloneOptions.expectedCommit.empty() && currentCommit != cloneOptions.expectedCommit) {
+			std::cout << COLOR_YELLOW << "installed @ "
+					  << (currentCommit.empty() ? "unknown" : currentCommit.substr(0, 8)) << " but qd.json pins "
+					  << cloneOptions.expectedCommit.substr(0, 8) << "; reinstalling" << COLOR_RESET << "\n";
+			cloneOptions.replaceExisting = true;
+		} else {
+			std::cout << COLOR_GREEN << "✓ " << COLOR_RESET << "already installed @ "
+					  << (gitRef.ref.empty() ? "HEAD" : gitRef.ref);
+			if (!currentCommit.empty()) {
+				std::cout << " (" << currentCommit.substr(0, 8) << ")";
+			}
+			std::cout << "\n";
+
+			// Ensure namespace symlink exists (may have been missing)
+			ensureNamespaceSymlink(installedDir, installedDirName, gitRef.moduleName);
+
+			result.modulePath = installedDir;
+			result.commitHash = currentCommit;
+			result.alreadyInstalled = true;
+			result.success = true;
+			return result;
 		}
-		std::cout << "\n";
-
-		// Ensure namespace symlink exists (may have been missing)
-		ensureNamespaceSymlink(installedDir, installedDirName, gitRef.moduleName);
-
-		result.modulePath = installedDir;
-		result.commitHash = currentCommit;
-		result.alreadyInstalled = true;
-		result.success = true;
-		return result;
 	}
 
 	// Clone the repository
-	std::string installedName = gitClone(gitRef);
+	std::string installedName = gitClone(gitRef, cloneOptions);
 	if (installedName.empty()) {
-		std::cout << COLOR_RED << "✗ Failed to clone" << COLOR_RESET << "\n";
+		std::cout << COLOR_RED << "✗ Failed to install" << COLOR_RESET << "\n";
 		return result;
 	}
 
@@ -977,35 +1221,6 @@ InstallResult installSingleDependency(const Dependency& dep, const std::string& 
 		std::cout << " (" << commitHash.substr(0, 8) << ")";
 	}
 	std::cout << "\n";
-
-	// In frozen mode the lockfile pins an exact commit, but what we just cloned is
-	// the *symbolic* ref (a tag or branch), which can have moved since the lock was
-	// written. The already-installed branch above performs this check; without it
-	// here, a clean machine -- CI, a fresh clone, exactly where a lockfile is meant
-	// to guarantee reproducibility -- silently accepts whatever the ref now points
-	// at. Remove the clone and abort, as the integrity check below does.
-	if (frozen && !expectedCommit.empty() && commitHash != expectedCommit) {
-		std::cerr << "  " << COLOR_RED << "✗ Commit mismatch (frozen)" << COLOR_RESET << "\n";
-		std::cerr << "    Expected: " << expectedCommit << "\n";
-		std::cerr << "    Got:      " << commitHash << "\n";
-		if (fs::exists(installedDir)) {
-			fs::remove_all(installedDir);
-		}
-		return result;
-	}
-
-	// Verify the pinned commit if the manifest specifies one. A mismatch is a hard
-	// failure: the resolved code is not what the manifest pinned, so installing it
-	// would defeat the point of pinning. Remove the clone and abort.
-	if (!dep.sha256.empty() && commitHash != dep.sha256) {
-		std::cerr << "  " << COLOR_RED << "✗ Pinned commit mismatch" << COLOR_RESET << "\n";
-		std::cerr << "    Expected: " << dep.sha256 << "\n";
-		std::cerr << "    Got:      " << commitHash << "\n";
-		if (fs::exists(installedDir)) {
-			fs::remove_all(installedDir);
-		}
-		return result;
-	}
 
 	result.modulePath = installedDir;
 	result.commitHash = commitHash;
@@ -1108,6 +1323,13 @@ int installDependencies(bool frozen) {
 		processedDeps.insert(dep.name);
 
 		std::cout << COLOR_BOLD << dep.name << COLOR_RESET << ": ";
+
+		if (frozen && lockedByName.find(dep.name) == lockedByName.end()) {
+			std::cout << COLOR_RED << "✗ Not in the lockfile (frozen)" << COLOR_RESET << "\n";
+			std::cout << "  Run 'quadpm install' to update the lockfile.\n";
+			failures++;
+			continue;
+		}
 
 		// Install this dependency
 		InstallResult installResult = installSingleDependency(dep, basePath, lockedByName, frozen);
@@ -1291,6 +1513,7 @@ int updateModules(const std::string& targetModuleName) {
 
 	bool found = false;
 	int failures = 0;
+	std::vector<std::string> moduleDirs;
 
 	// Recursively traverse to find all git repositories
 	for (auto it = fs::recursive_directory_iterator(modulesDir); it != fs::recursive_directory_iterator(); ++it) {
@@ -1303,7 +1526,7 @@ int updateModules(const std::string& targetModuleName) {
 		// each one a second time under its bare name. Recursion has to be
 		// disabled rather than the entry skipped: is_directory() follows the
 		// symlinks, so a plain continue would still walk through them.
-		if (entry.path().filename() == "_namespaces") {
+		if (entry.path().filename() == "_namespaces" || entry.path().filename() == STAGING_DIR_NAME) {
 			it.disable_recursion_pending();
 			continue;
 		}
@@ -1334,14 +1557,56 @@ int updateModules(const std::string& targetModuleName) {
 		}
 
 		found = true;
+		moduleDirs.push_back(entry.path().lexically_normal().string());
+	}
 
+	std::map<std::string, std::string> updatedRefs;
+	for (const auto& moduleDir : moduleDirs) {
 		// Find matching dependency constraint
+		std::string name = fs::path(moduleDir).filename().string();
 		size_t atPos = name.find('@');
 		std::string moduleName = (atPos != std::string::npos) ? name.substr(0, atPos) : name;
 		auto depIt = depsByName.find(moduleName);
 		const Dependency* dep = (depIt != depsByName.end()) ? &depIt->second : nullptr;
 
-		if (!updateModule(entry.path().string(), dep)) {
+		std::string newRef;
+		if (updateModule(moduleDir, dep, &newRef)) {
+			updatedRefs[moduleDir] = newRef;
+		} else {
+			failures++;
+		}
+	}
+
+	std::string lockfilePath = "qd.lock";
+	std::vector<LockedDependency> locked =
+			fs::exists(lockfilePath) ? readLockfile(lockfilePath) : std::vector<LockedDependency>();
+	bool lockChanged = false;
+	for (auto& entry : locked) {
+		if (entry.isPath || entry.url.empty()) {
+			continue;
+		}
+		std::string hostPath = extractHostPath(entry.url);
+		std::string oldDir =
+				fs::path(modulesDir + "/" + getInstalledDirName(hostPath, entry.ref)).lexically_normal().string();
+		auto updated = updatedRefs.find(oldDir);
+		if (updated == updatedRefs.end()) {
+			continue;
+		}
+		std::string ref = (updated->second == "HEAD" && entry.ref.empty()) ? "" : updated->second;
+		std::string commit = getModuleCommitHash(modulesDir + "/" + getInstalledDirName(hostPath, ref));
+		if (commit.empty() || (ref == entry.ref && commit == entry.resolvedRef)) {
+			continue;
+		}
+		entry.ref = ref;
+		entry.resolvedRef = commit;
+		entry.integrity = commit;
+		lockChanged = true;
+	}
+	if (lockChanged) {
+		if (writeLockfile(lockfilePath, locked)) {
+			std::cout << COLOR_GREEN << "✓ " << COLOR_RESET << "Updated qd.lock\n";
+		} else {
+			pmError("failed to write qd.lock");
 			failures++;
 		}
 	}
@@ -1399,8 +1664,7 @@ std::vector<VersionConflict> detectVersionConflicts(
 			modulePath = resolveLocalPath(dep.url, depBasePath);
 		} else {
 			GitRef gitRef = parseGitUrl(dep.url);
-			std::string installedDirName =
-					getInstalledDirName(gitRef.hostPath, dep.version.empty() ? "master" : dep.version);
+			std::string installedDirName = getInstalledDirName(gitRef.hostPath, dep.version);
 			modulePath = modulesDir + "/" + installedDirName;
 		}
 
@@ -1709,10 +1973,9 @@ int removeModule(const std::string& targetModuleName) {
 	if (fs::exists(symlinkPath) || fs::is_symlink(symlinkPath)) {
 		try {
 			// Check if symlink points to the removed module
-			std::string target = fs::read_symlink(symlinkPath).string();
-			// Extract just the final directory name from the relative target
-			// Target is like "../github.com/user/repo@version"
-			if (target.find(foundName) != std::string::npos) {
+			fs::path target = fs::read_symlink(symlinkPath);
+			fs::path resolved = target.is_absolute() ? target : fs::path(namespacesDir) / target;
+			if (resolved.lexically_normal() == fs::path(foundPath).lexically_normal()) {
 				fs::remove(symlinkPath);
 				std::cout << COLOR_GREEN << "  ✓ Removed namespace '" << namespaceName << "'" << COLOR_RESET << "\n";
 			}

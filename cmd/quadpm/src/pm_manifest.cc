@@ -195,9 +195,7 @@ std::vector<Dependency> parseDependencies(const std::string& manifestPath) {
 					// Check if URL has inline version (@tag)
 					GitRef gitRef = parseGitUrl(urlStr);
 					dep.url = gitRef.url;
-					if (gitRef.ref != "master") {
-						dep.version = gitRef.ref;
-					}
+					dep.version = gitRef.ref;
 					dep.isPath = (dep.url.size() > 0 &&
 								  (dep.url[0] == '/' || dep.url[0] == '.' ||
 										  (dep.url.size() > 1 && dep.url[0] == '~' && dep.url[1] == '/')));
@@ -238,6 +236,14 @@ std::vector<Dependency> parseDependencies(const std::string& manifestPath) {
 	return deps;
 }
 
+static bool isSamePackage(const std::string& targetA, const std::string& targetB) {
+	std::string a = fs::path(targetA).lexically_normal().generic_string();
+	std::string b = fs::path(targetB).lexically_normal().generic_string();
+	size_t atA = a.rfind('@');
+	size_t atB = b.rfind('@');
+	return atA != std::string::npos && atB != std::string::npos && a.substr(0, atA) == b.substr(0, atB);
+}
+
 // Create or update a namespace symlink
 // Returns true on success, false on conflict (different package already owns namespace)
 bool createNamespaceSymlink(const std::string& namespaceName, const std::string& targetPath) {
@@ -266,8 +272,11 @@ bool createNamespaceSymlink(const std::string& namespaceName, const std::string&
 														fs::weakly_canonical(namespacesDir + "/" + targetPath)) {
 				return true; // Same target, no conflict
 			}
-			// Different target - this is a conflict
-			return false;
+			// A dangling link, or one to another version of the same package, is replaced
+			if (fs::exists(symlinkPath) && !isSamePackage(existingTarget, targetPath)) {
+				return false;
+			}
+			fs::remove(symlinkPath);
 		} catch (const std::exception&) {
 			// If we can't read symlink, remove and recreate
 			fs::remove(symlinkPath);
@@ -321,7 +330,12 @@ std::vector<std::string> findPackagesWithNamespace(const std::string& namespaceN
 	}
 
 	// Recursively search for qd.json files
-	for (const auto& entry : fs::recursive_directory_iterator(modulesDir)) {
+	for (auto it = fs::recursive_directory_iterator(modulesDir); it != fs::recursive_directory_iterator(); ++it) {
+		const auto& entry = *it;
+		if (entry.is_directory() && entry.path().filename() == STAGING_DIR_NAME) {
+			it.disable_recursion_pending();
+			continue;
+		}
 		if (entry.is_regular_file() && entry.path().filename() == "qd.json") {
 			std::string manifestPath = entry.path().string();
 			std::string ns = parseNamespace(manifestPath);

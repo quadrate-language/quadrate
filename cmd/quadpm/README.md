@@ -50,7 +50,12 @@ it from what is installed.
 ```
 
 Version ranges accept `^1.2.3`, `~1.2.3`, `1.2.x`, `>=1.0.0`, `<2.0.0`,
-`1.0.0 - 2.0.0`, `>=1.0.0 <2.0.0 || >=3.0.0` and `*`.
+`1.0.0 - 2.0.0`, `>=1.0.0 <2.0.0 || >=3.0.0`, `>=1.0.0, <2.0.0` and `*`, with
+npm's reading of partial versions (`~1` is `>=1.0.0 <2.0.0`, `^0` is
+`>=0.0.0 <1.0.0`). Prereleases only match a range that names a prerelease of
+the same `major.minor.patch`. A token that is not a comparator is an error.
+
+A dependency without a version installs the repository's default branch.
 
 ## Native build configuration
 
@@ -71,6 +76,12 @@ include paths quadpm knows about. `native` adds to that:
 can override what it needs to: the compiler takes the last of a repeated option.
 Both keys take a platform suffix — `link_linux`, `cflags_haiku` — which is added
 to the common list rather than replacing it.
+
+`cflags` are limited to an allow-list, and anything else fails the build with an
+error: `-D`, `-U`, `-I<path>` with a relative path inside the module (resolved
+against the module directory), `-W<warning>` (but not `-Wl,`/`-Wa,`/`-Wp,`),
+`-O<level>`, `-std=`, `-g`, `-pthread`, `-m<target option>` and a fixed set of
+`-f` code-generation options. `link` entries must be plain library names.
 
 Without `cflags` the only way to set a compile-time constant in a vendored
 dependency is to patch it, so a module that wraps a library with a build-time

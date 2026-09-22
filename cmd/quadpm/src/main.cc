@@ -127,15 +127,23 @@ int main(int argc, char** argv) {
 		std::string gitUrl = argv[2];
 		GitRef gitRef = parseGitUrl(gitUrl);
 
-		std::string installedName = gitClone(gitRef);
+		std::string registeredNamespace;
+		CloneOptions options;
+		options.registeredNamespace = &registeredNamespace;
+		std::string installedName = gitClone(gitRef, options);
 		if (installedName.empty()) {
 			return 1;
+		}
+
+		if (registeredNamespace.empty()) {
+			std::cout << "\n" << COLOR_GREEN << "Success!" << COLOR_RESET << "\n";
+			return 0;
 		}
 
 		std::cout << "\n"
 				  << COLOR_GREEN << "Success!" << COLOR_RESET
 				  << " You can now use this module in your Quadrate code:\n";
-		std::cout << "  " << COLOR_CYAN << "use " << installedName << COLOR_RESET << "\n";
+		std::cout << "  " << COLOR_CYAN << "use " << registeredNamespace << COLOR_RESET << "\n";
 
 		return 0;
 	}

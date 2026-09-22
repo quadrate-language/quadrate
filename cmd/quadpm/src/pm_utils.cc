@@ -250,6 +250,64 @@ std::string getInstalledDirName(const std::string& hostPath, const std::string& 
 	return hostPath + "@" + actualRef;
 }
 
+bool isSafeInstalledDirName(const std::string& installedDirName) {
+	if (installedDirName.empty() || installedDirName[0] == '/') {
+		return false;
+	}
+
+	size_t start = 0;
+	bool first = true;
+	while (true) {
+		size_t slash = installedDirName.find('/', start);
+		std::string component =
+				installedDirName.substr(start, slash == std::string::npos ? std::string::npos : slash - start);
+		if (component.empty() || component == "." || component == "..") {
+			return false;
+		}
+		if (first && (component == "_namespaces" || component == STAGING_DIR_NAME)) {
+			return false;
+		}
+		for (char c : component) {
+			if (c == '\\' || static_cast<unsigned char>(c) < 0x20) {
+				return false;
+			}
+		}
+		if (slash == std::string::npos) {
+			break;
+		}
+		start = slash + 1;
+		first = false;
+	}
+
+	std::error_code ec;
+	fs::path base = fs::weakly_canonical(getModulesDir(), ec);
+	if (ec) {
+		return false;
+	}
+	fs::path target = fs::weakly_canonical(base / installedDirName, ec);
+	if (ec) {
+		return false;
+	}
+	fs::path rel = target.lexically_relative(base);
+	return !rel.empty() && *rel.begin() != ".." && rel != ".";
+}
+
+std::string makeStagingDir() {
+	std::string stagingRoot = getModulesDir() + "/" + STAGING_DIR_NAME;
+	std::error_code ec;
+	fs::create_directories(stagingRoot, ec);
+	if (ec) {
+		return "";
+	}
+	std::string pattern = stagingRoot + "/XXXXXX";
+	std::vector<char> buffer(pattern.begin(), pattern.end());
+	buffer.push_back('\0');
+	if (!mkdtemp(buffer.data())) {
+		return "";
+	}
+	return std::string(buffer.data());
+}
+
 // Get the namespaces directory path
 std::string getNamespacesDir() {
 	return getModulesDir() + "/_namespaces";

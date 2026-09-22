@@ -314,13 +314,19 @@ cd - > /dev/null
 output=$(QUADRATE_PATH="$TEST_CACHE_DIR/cache" "$QUADPM" get "$TEST_BAD_C_REPO@v1.0.0" 2>&1)
 status=$?
 
-# The checkout stays so the build can be retried, but a module whose C sources
-# did not compile is not installed in any useful sense and must not be reported
-# as a success.
-if [ -n "$(find "$TEST_CACHE_DIR/cache" -name module.qd -print -quit 2>/dev/null)" ]; then
-    pass "The checkout is kept when C compilation fails"
+# A module whose C sources did not compile is not installed: nothing may be
+# left behind for the next run to mistake for a finished install.
+if [ -z "$(find "$TEST_CACHE_DIR/cache" -name "test-bad-c-repo@*" -print -quit 2>/dev/null)" ]; then
+    pass "No checkout is left behind when C compilation fails"
 else
-    fail "Should keep the checkout even if C compilation fails" "$output"
+    fail "A failed build left its checkout behind" "$(find "$TEST_CACHE_DIR/cache" -name "test-bad-c-repo@*")"
+fi
+
+output2=$(QUADRATE_PATH="$TEST_CACHE_DIR/cache" "$QUADPM" get "$TEST_BAD_C_REPO@v1.0.0" 2>&1)
+if [ $? -ne 0 ] && ! echo "$output2" | grep -q "Module already exists"; then
+    pass "A second get after a failed build does not report success"
+else
+    fail "A second get after a failed build reported the module as installed" "$output2"
 fi
 
 if echo "$output" | grep -q "✗ Failed to compile"; then
@@ -1258,7 +1264,7 @@ export QUADRATE_PATH="$TEST_CACHE_DIR/upd_modules"
 # A module may leave a checkout of its own behind -- a prebuild script that
 # vendors an upstream tree does. That is not a module, and neither is the
 # namespace symlink pointing at this one.
-installed=$(dirname "$(find "$TEST_CACHE_DIR/upd_modules" -maxdepth 4 -name qd.json | head -1)")
+installed=$(dirname "$(find "$TEST_CACHE_DIR/upd_modules" -name qd.json -path "*upd_src@*" | head -1)")
 if [ ! -d "$installed" ]; then
     fail "Could not find the installed module" "$(find "$TEST_CACHE_DIR/upd_modules" -maxdepth 4)"
 fi
@@ -1307,6 +1313,326 @@ if [ $status -ne 0 ] && ! echo "$output" | grep -q "Build complete!"; then
     pass "build reports a link failure instead of claiming success"
 else
     fail "build claimed success when the shared library failed to link" "$output"
+fi
+unset QUADRATE_PATH
+cd - > /dev/null
+
+
+# ============================================
+# Regression tests for install-path, pinning and namespace handling
+# ============================================
+
+make_repo() {
+    local dir="$1"
+    local branch="${2:-main}"
+    git -C "$dir" init -q -b "$branch" .
+    git -C "$dir" config user.name "Test User"
+    git -C "$dir" config user.email "test@example.com"
+    git -C "$dir" config commit.gpgSign false
+    git -C "$dir" config tag.gpgSign false
+    git -C "$dir" add -A
+    git -C "$dir" commit -qm init
+}
+
+commit_all() {
+    git -C "$1" add -A
+    git -C "$1" commit -qm "$2"
+}
+
+REG="$TEST_CACHE_DIR/reg"
+mkdir -p "$REG"
+
+echo ""
+echo "Test 45: a URL cannot place a module outside the modules directory"
+mkdir -p "$REG/esc/lib"
+echo "fn f() {}" > "$REG/esc/lib/lib.qd"
+make_repo "$REG/esc/lib"
+export QUADRATE_PATH="$REG/esc_modules"
+"$QUADPM" get "file:///../../../..$REG/esc/lib" > /dev/null 2>&1
+escaped=$(find "$REG" -name "lib@*" -not -path "$REG/esc_modules/*" 2>/dev/null)
+if [ -z "$escaped" ] && [ -d "$REG/esc_modules/local$REG/esc/lib@HEAD" ]; then
+    pass "file:///../.. installs under the modules directory"
+else
+    fail "file:///../.. escaped the modules directory" "$escaped"
+fi
+output=$("$QUADPM" get "https://evil.invalid/../../../../x" 2>&1)
+if [ $? -ne 0 ] && echo "$output" | grep -q "refusing to install outside the modules directory"; then
+    pass "a remote URL with .. segments is refused before cloning"
+else
+    fail "a remote URL with .. segments was not refused" "$output"
+fi
+mkdir -p "$REG/esc_proj"
+printf '{"name": "escproj", "dependencies": {"evil": "https://evil.invalid/a/../../../../x"}}\n' > "$REG/esc_proj/qd.json"
+output=$(cd "$REG/esc_proj" && "$QUADPM" install 2>&1)
+if [ $? -ne 0 ] && echo "$output" | grep -q "Refusing to install outside the modules directory"; then
+    pass "install refuses a dependency URL with .. segments"
+else
+    fail "install did not refuse a dependency URL with .. segments" "$output"
+fi
+unset QUADRATE_PATH
+
+echo ""
+echo "Test 46: a module is not warned about its own namespace"
+mkdir -p "$REG/self"
+echo "fn f() {}" > "$REG/self/self.qd"
+printf '{"name": "selfns"}\n' > "$REG/self/qd.json"
+make_repo "$REG/self"
+export QUADRATE_PATH="$REG/self_modules"
+output=$("$QUADPM" get "file://$REG/self" 2>&1)
+if ! echo "$output" | grep -q "also claimed"; then
+    pass "no self-conflict warning for a file:// install"
+else
+    fail "a file:// install was warned about its own namespace" "$output"
+fi
+unset QUADRATE_PATH
+
+echo ""
+echo "Test 47: get only suggests 'use' when the namespace was registered"
+mkdir -p "$REG/ns1" "$REG/ns2"
+echo "fn a() {}" > "$REG/ns1/a.qd"
+printf '{"name": "first", "namespace": "shared"}\n' > "$REG/ns1/qd.json"
+make_repo "$REG/ns1"
+echo "fn b() {}" > "$REG/ns2/b.qd"
+printf '{"name": "second", "namespace": "shared"}\n' > "$REG/ns2/qd.json"
+make_repo "$REG/ns2"
+export QUADRATE_PATH="$REG/ns_modules"
+output1=$("$QUADPM" get "file://$REG/ns1" 2>&1)
+output2=$("$QUADPM" get "file://$REG/ns2" 2>&1)
+if echo "$output1" | grep -q "use shared" && echo "$output2" | grep -q "already registered to different package" &&
+    ! echo "$output2" | grep -q "^  use "; then
+    pass "use line printed for the registered namespace only"
+else
+    fail "use line printed for an unregistered namespace" "$output2"
+fi
+unset QUADRATE_PATH
+
+echo ""
+echo "Test 48: remove leaves a namespace pointing at a similarly named module"
+mkdir -p "$REG/rm/ab" "$REG/rm/b"
+echo "fn a() {}" > "$REG/rm/ab/ab.qd"
+printf '{"name": "ab", "namespace": "b"}\n' > "$REG/rm/ab/qd.json"
+make_repo "$REG/rm/ab"
+git -C "$REG/rm/ab" tag v1
+echo "fn b() {}" > "$REG/rm/b/b.qd"
+printf '{"name": "b"}\n' > "$REG/rm/b/qd.json"
+make_repo "$REG/rm/b"
+git -C "$REG/rm/b" tag v1
+export QUADRATE_PATH="$REG/rm_modules"
+"$QUADPM" get "file://$REG/rm/ab@v1" > /dev/null 2>&1
+"$QUADPM" get "file://$REG/rm/b@v1" > /dev/null 2>&1
+"$QUADPM" remove "b@v1" > /dev/null 2>&1
+if [ -L "$REG/rm_modules/_namespaces/b" ] && readlink "$REG/rm_modules/_namespaces/b" | grep -q "/ab@v1$"; then
+    pass "removing b@v1 keeps the namespace link to ab@v1"
+else
+    fail "removing b@v1 removed the namespace link to ab@v1" "$(ls -l "$REG/rm_modules/_namespaces" 2>&1)"
+fi
+unset QUADRATE_PATH
+
+echo ""
+echo "Test 49: native.cflags are checked against an allow-list"
+mkdir -p "$REG/cflags/src" "$REG/cflags/include"
+echo '#define FROM_HEADER 1' > "$REG/cflags/include/extra.h"
+cat > "$REG/cflags/src/a.c" << 'CSRC'
+#include "extra.h"
+int answer(void) { return FROM_HEADER + ANSWER; }
+CSRC
+cd "$REG/cflags"
+bad_accepted=""
+for flag in "-B/tmp" "-fplugin=/tmp/x.so" "-wrapper" "-specs=/tmp/s" "--sysroot=/" "-Xclang" "-fno-integrated-as" \
+    "-include" "@/tmp/flags" "-o" "-Wl,-z,now" "-I/etc" "-I../outside"; do
+    printf '{"name": "cfl", "native": {"cflags": ["%s", "-DANSWER=1", "-Iinclude"]}}\n' "$flag" > qd.json
+    rm -rf lib
+    output=$("$QUADPM" build 2>&1)
+    if [ $? -eq 0 ] || ! echo "$output" | grep -q "is not allowed"; then
+        bad_accepted="$bad_accepted $flag"
+    fi
+done
+if [ -z "$bad_accepted" ]; then
+    pass "dangerous cflags are rejected with an error"
+else
+    fail "dangerous cflags were accepted:$bad_accepted" ""
+fi
+printf '{"name": "cfl", "native": {"cflags": ["-DANSWER=1", "-Iinclude", "-O2", "-std=c11", "-Wno-unused", "-fvisibility=hidden"]}}\n' > qd.json
+rm -rf lib
+output=$(cd / && cd "$REG/cflags" && "$QUADPM" build 2>&1)
+if [ $? -eq 0 ] && [ -f lib/libcfl_static.a ]; then
+    pass "safe cflags, including a relative -I inside the module, still build"
+else
+    fail "safe cflags were rejected" "$output"
+fi
+printf '{"name": "cfl", "native": {"cflags": ["-DANSWER=1", "-Iinclude"], "link": ["m -Wl,-plugin"]}}\n' > qd.json
+output=$("$QUADPM" build 2>&1)
+if [ $? -ne 0 ] && echo "$output" | grep -q "native.link"; then
+    pass "a native.link entry that is not a library name is rejected"
+else
+    fail "a bogus native.link entry was accepted" "$output"
+fi
+cd - > /dev/null
+
+echo ""
+echo "Test 50: C files with the same name in different directories"
+mkdir -p "$REG/stem/src/a" "$REG/stem/src/b"
+echo 'int from_a(void) { return 1; }' > "$REG/stem/src/a/util.c"
+echo 'int from_b(void) { return 2; }' > "$REG/stem/src/b/util.c"
+printf '{"name": "stem"}\n' > "$REG/stem/qd.json"
+cd "$REG/stem"
+"$QUADPM" build > /dev/null 2>&1
+symbols=$(nm lib/libstem_static.a 2>/dev/null)
+if echo "$symbols" | grep -q " T from_a" && echo "$symbols" | grep -q " T from_b"; then
+    pass "both util.c files end up in the static library"
+else
+    fail "one util.c overwrote the other" "$symbols"
+fi
+cd - > /dev/null
+
+echo ""
+echo "Test 51: install without a version uses the remote default branch"
+mkdir -p "$REG/trunk"
+echo "fn f() {}" > "$REG/trunk/trunk.qd"
+printf '{"name": "trunk"}\n' > "$REG/trunk/qd.json"
+make_repo "$REG/trunk" trunk
+mkdir -p "$REG/trunk_proj"
+printf '{"name": "tp", "dependencies": {"trunk": "file://%s"}}\n' "$REG/trunk" > "$REG/trunk_proj/qd.json"
+output=$(cd "$REG/trunk_proj" && QUADRATE_PATH="$REG/trunk_modules" "$QUADPM" install 2>&1)
+if [ $? -eq 0 ] && [ -f "$REG/trunk_modules/local$REG/trunk@HEAD/trunk.qd" ]; then
+    pass "a repository whose default branch is not master installs"
+else
+    fail "install without a version assumed master" "$output"
+fi
+
+echo ""
+echo "Test 52: branch names containing x are not version ranges"
+mkdir -p "$REG/nextrepo"
+echo "fn f() {}" > "$REG/nextrepo/n.qd"
+printf '{"name": "nextmod"}\n' > "$REG/nextrepo/qd.json"
+make_repo "$REG/nextrepo" next
+git -C "$REG/nextrepo" branch fix-foo
+mkdir -p "$REG/next_proj"
+printf '{"name": "np", "dependencies": {"nextmod": {"url": "file://%s", "version": "fix-foo"}}}\n' "$REG/nextrepo" > "$REG/next_proj/qd.json"
+output=$(cd "$REG/next_proj" && QUADRATE_PATH="$REG/next_modules" "$QUADPM" install 2>&1)
+if [ $? -eq 0 ] && [ -d "$REG/next_modules/local$REG/nextrepo@fix-foo" ]; then
+    pass "a branch called fix-foo is cloned as a branch"
+else
+    fail "fix-foo was treated as a version range" "$output"
+fi
+
+echo ""
+echo "Test 53: semver resolution skips prereleases and keeps comma lower bounds"
+mkdir -p "$REG/sv"
+echo "fn f() {}" > "$REG/sv/sv.qd"
+printf '{"name": "sv"}\n' > "$REG/sv/qd.json"
+make_repo "$REG/sv"
+git -C "$REG/sv" tag v0.5.0
+echo "// 1.0" >> "$REG/sv/sv.qd"; commit_all "$REG/sv" 1.0; git -C "$REG/sv" tag v1.0.0
+echo "// 1.1" >> "$REG/sv/sv.qd"; commit_all "$REG/sv" 1.1; git -C "$REG/sv" tag v1.1.0
+echo "// beta" >> "$REG/sv/sv.qd"; commit_all "$REG/sv" beta; git -C "$REG/sv" tag v1.2.0-beta
+mkdir -p "$REG/sv_proj"
+cd "$REG/sv_proj"
+export QUADRATE_PATH="$REG/sv_modules"
+printf '{"name": "svp", "dependencies": {"sv": {"url": "file://%s", "version": "^1.0.0"}}}\n' "$REG/sv" > qd.json
+output=$("$QUADPM" install 2>&1)
+if echo "$output" | grep -q "Resolved to: v1.1.0"; then
+    pass "^1.0.0 resolves to v1.1.0, not v1.2.0-beta"
+else
+    fail "^1.0.0 did not resolve to the newest stable release" "$output"
+fi
+rm -f qd.lock
+printf '{"name": "svp", "dependencies": {"sv": {"url": "file://%s", "version": ">=1.5.0, <2.0.0"}}}\n' "$REG/sv" > qd.json
+output=$("$QUADPM" install 2>&1)
+if [ $? -ne 0 ] && echo "$output" | grep -q "No version satisfies range"; then
+    pass "a comma-separated range keeps its lower bound"
+else
+    fail "a comma-separated range lost its lower bound" "$output"
+fi
+rm -f qd.lock
+printf '{"name": "svp", "dependencies": {"sv": {"url": "file://%s", "version": ">=1.0.0 banana"}}}\n' "$REG/sv" > qd.json
+output=$("$QUADPM" install 2>&1)
+if [ $? -ne 0 ]; then
+    pass "a range with an unparsable token is an error"
+else
+    fail "a range with an unparsable token was accepted" "$output"
+fi
+
+echo ""
+echo "Test 54: update moves the namespace and qd.lock to the new version"
+rm -rf "$REG/sv_modules" qd.lock
+printf '{"name": "svp", "dependencies": {"sv": {"url": "file://%s", "version": "=1.0.0"}}}\n' "$REG/sv" > qd.json
+"$QUADPM" install > /dev/null 2>&1
+printf '{"name": "svp", "dependencies": {"sv": {"url": "file://%s", "version": "^1.0.0"}}}\n' "$REG/sv" > qd.json
+output=$("$QUADPM" update 2>&1)
+link=$(readlink "$REG/sv_modules/_namespaces/sv")
+if [ -e "$REG/sv_modules/_namespaces/sv" ] && echo "$link" | grep -q "sv@v1.1.0$"; then
+    pass "the namespace follows the update to v1.1.0"
+else
+    fail "the namespace was left on the removed version" "$link / $output"
+fi
+if grep -q '"ref": "v1.1.0"' qd.lock && grep -q "$(git -C "$REG/sv" rev-parse v1.1.0^{commit})" qd.lock; then
+    pass "qd.lock records the updated version"
+else
+    fail "qd.lock was not updated" "$(cat qd.lock)"
+fi
+unset QUADRATE_PATH
+cd - > /dev/null
+
+echo ""
+echo "Test 55: a pinned commit is checked against an existing install"
+mkdir -p "$REG/pin"
+echo "fn f() {}" > "$REG/pin/pin.qd"
+printf '{"name": "pin"}\n' > "$REG/pin/qd.json"
+make_repo "$REG/pin"
+OLD_PIN=$(git -C "$REG/pin" rev-parse HEAD)
+echo "// two" >> "$REG/pin/pin.qd"; commit_all "$REG/pin" two
+mkdir -p "$REG/pin_proj"
+cd "$REG/pin_proj"
+export QUADRATE_PATH="$REG/pin_modules"
+printf '{"name": "pp", "dependencies": {"pin": {"url": "file://%s", "version": "main"}}}\n' "$REG/pin" > qd.json
+"$QUADPM" install > /dev/null 2>&1
+rm -f qd.lock
+printf '{"name": "pp", "dependencies": {"pin": {"url": "file://%s", "version": "main", "commit": "%s"}}}\n' "$REG/pin" "$OLD_PIN" > qd.json
+output=$("$QUADPM" install 2>&1)
+if [ $? -ne 0 ] && echo "$output" | grep -q "Pinned commit mismatch"; then
+    pass "an installed checkout at another commit does not satisfy the pin"
+else
+    fail "the pin was ignored for an installed module" "$output"
+fi
+unset QUADRATE_PATH
+cd - > /dev/null
+
+echo ""
+echo "Test 56: install --frozen pins transitive dependencies"
+mkdir -p "$REG/leaf" "$REG/mid"
+echo "fn l() {}" > "$REG/leaf/leaf.qd"
+printf '{"name": "leaf"}\n' > "$REG/leaf/qd.json"
+make_repo "$REG/leaf"
+echo "fn m() {}" > "$REG/mid/mid.qd"
+printf '{"name": "mid", "dependencies": {"leaf": "file://%s@main"}}\n' "$REG/leaf" > "$REG/mid/qd.json"
+make_repo "$REG/mid"
+mkdir -p "$REG/frozen_proj"
+cd "$REG/frozen_proj"
+export QUADRATE_PATH="$REG/frozen_modules"
+printf '{"name": "fp", "dependencies": {"mid": "file://%s@main"}}\n' "$REG/mid" > qd.json
+"$QUADPM" install > /dev/null 2>&1
+cp qd.lock qd.lock.full
+python3 - << 'PY'
+import json
+d = json.load(open("qd.lock"))
+d["packages"] = [p for p in d["packages"] if p["name"] != "leaf"]
+json.dump(d, open("qd.lock", "w"))
+PY
+output=$("$QUADPM" install --frozen 2>&1)
+if [ $? -ne 0 ] && echo "$output" | grep -q "Not in the lockfile (frozen)"; then
+    pass "a transitive dependency missing from qd.lock fails --frozen"
+else
+    fail "--frozen accepted a transitive dependency missing from qd.lock" "$output"
+fi
+cp qd.lock.full qd.lock
+echo "// moved" >> "$REG/leaf/leaf.qd"; commit_all "$REG/leaf" moved
+rm -rf "$REG/frozen_modules"
+output=$("$QUADPM" install --frozen 2>&1)
+if [ $? -ne 0 ] && echo "$output" | grep -q "Commit mismatch (frozen)"; then
+    pass "a moved transitive dependency fails --frozen"
+else
+    fail "--frozen accepted a transitive dependency that moved" "$output"
 fi
 unset QUADRATE_PATH
 cd - > /dev/null
