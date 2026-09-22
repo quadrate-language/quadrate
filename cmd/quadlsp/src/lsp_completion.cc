@@ -182,8 +182,8 @@ void QuadrateLSP::handleCompletion(const std::string& id, const std::string& uri
 		documentText = docIter->second;
 	} else {
 		// Try to read file from disk if it's a file:// URI
-		if (uri.substr(0, 7) == "file://") {
-			std::string filePath = uri.substr(7);
+		std::string filePath = lspUriToPath(uri);
+		if (!filePath.empty()) {
 			std::ifstream file(filePath);
 			if (file.good()) {
 				std::stringstream buffer;
@@ -195,8 +195,8 @@ void QuadrateLSP::handleCompletion(const std::string& id, const std::string& uri
 
 	// Get source directory for module resolution
 	std::string sourceDir;
-	if (uri.substr(0, 7) == "file://") {
-		std::string filePath = uri.substr(7);
+	std::string filePath = lspUriToPath(uri);
+	if (!filePath.empty()) {
 		size_t lastSlash = filePath.rfind('/');
 		if (lastSlash != std::string::npos) {
 			sourceDir = filePath.substr(0, lastSlash);

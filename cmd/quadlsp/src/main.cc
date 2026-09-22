@@ -290,9 +290,16 @@ void QuadrateLSP::handleMessage(const std::string& message) {
 		json_t* params = getJsonObject(root, "params");
 		// Capture workspace root URI
 		if (params) {
-			std::string rootUri = getJsonString(params, "rootUri");
-			if (!rootUri.empty() && rootUri.substr(0, 7) == "file://") {
-				workspaceRoot_ = rootUri.substr(7);
+			std::string rootPath = lspUriToPath(getJsonString(params, "rootUri"));
+			json_t* folders = getJsonObject(params, "workspaceFolders");
+			if (rootPath.empty() && folders && json_is_array(folders) && json_array_size(folders) > 0) {
+				rootPath = lspUriToPath(getJsonString(json_array_get(folders, 0), "uri"));
+			}
+			if (rootPath.empty()) {
+				rootPath = getJsonString(params, "rootPath");
+			}
+			if (!rootPath.empty()) {
+				workspaceRoot_ = rootPath;
 			}
 		}
 		json_t* initOptions = params ? getJsonObject(params, "initializationOptions") : nullptr;
@@ -1084,7 +1091,7 @@ void QuadrateLSP::publishDiagnostics(const std::string& uri, const std::string& 
 		validator.setStoreErrors(true);
 
 		// Get filename from URI for validator
-		std::string filePath = uri.substr(7); // Remove "file://"
+		std::string filePath = lspUriToPath(uri);
 
 		// Load include paths from qd.json if present
 		std::filesystem::path fileDir = std::filesystem::path(filePath).parent_path();
@@ -1134,8 +1141,8 @@ void QuadrateLSP::publishDiagnostics(const std::string& uri, const std::string& 
 	// Run quadlint if enabled and no parse/semantic errors
 	// Skip linting for files in standard library or installed package locations
 	bool isExternalModule = false;
-	if (uri.substr(0, 7) == "file://") {
-		std::string filePath = uri.substr(7);
+	std::string filePath = lspUriToPath(uri);
+	if (!filePath.empty()) {
 		// Check if file is in standard library or module locations
 		if (filePath.find("/usr/share/quadrate/") != std::string::npos ||
 				filePath.find("/.quadrate/modules/") != std::string::npos) {
@@ -1920,9 +1927,8 @@ void QuadrateLSP::handleSemanticTokens(const std::string& id, const std::string&
 
 		// Get source directory for module resolution
 		std::string sourceDir;
-		std::string filePath;
-		if (uri.substr(0, 7) == "file://") {
-			filePath = uri.substr(7);
+		std::string filePath = lspUriToPath(uri);
+		if (!filePath.empty()) {
 			std::filesystem::path p(filePath);
 			sourceDir = p.parent_path().string();
 		}
@@ -2292,8 +2298,8 @@ void QuadrateLSP::handleDocumentLinks(const std::string& id, const std::string& 
 
 	// Get source directory for module resolution
 	std::string sourceDir;
-	if (uri.substr(0, 7) == "file://") {
-		std::string filePath = uri.substr(7);
+	std::string filePath = lspUriToPath(uri);
+	if (!filePath.empty()) {
 		size_t lastSlash = filePath.rfind('/');
 		if (lastSlash != std::string::npos) {
 			sourceDir = filePath.substr(0, lastSlash);
@@ -2365,7 +2371,7 @@ void QuadrateLSP::handleDocumentLinks(const std::string& id, const std::string& 
 								json_object_set_new(link, "range", range);
 
 								// Target is the file URI
-								std::string targetUri = "file://" + modulePath;
+								std::string targetUri = lspPathToUri(modulePath);
 								json_object_set_new(link, "target", json_string(targetUri.c_str()));
 
 								// Tooltip
@@ -3622,7 +3628,7 @@ void QuadrateLSP::handleWorkspaceSymbols(const std::string& id, const std::strin
 
 	// Helper lambda to add symbols from a file
 	auto processFile = [&](const std::string& filePath, const std::string& docText) {
-		std::string uri = "file://" + filePath;
+		std::string uri = lspPathToUri(filePath);
 
 		// Extract functions
 		std::vector<FunctionInfo> functions = extractFunctions(docText);
@@ -3690,9 +3696,9 @@ void QuadrateLSP::handleWorkspaceSymbols(const std::string& id, const std::strin
 
 	// First, search through all open documents (they have the latest content)
 	for (const auto& [docUri, docText] : documents_) {
-		std::string filePath = docUri;
-		if (filePath.substr(0, 7) == "file://") {
-			filePath = filePath.substr(7);
+		std::string filePath = lspUriToPath(docUri);
+		if (filePath.empty()) {
+			filePath = docUri;
 		}
 		processedFiles.insert(filePath);
 		processFile(filePath, docText);
@@ -3734,8 +3740,8 @@ void QuadrateLSP::handleHover(const std::string& id, const std::string& uri, siz
 		documentText = docIter->second;
 	} else {
 		// Try to read from disk
-		if (uri.substr(0, 7) == "file://") {
-			std::string filePath = uri.substr(7);
+		std::string filePath = lspUriToPath(uri);
+		if (!filePath.empty()) {
 			std::ifstream file(filePath);
 			if (file.good()) {
 				std::stringstream buffer;
@@ -3835,7 +3841,7 @@ void QuadrateLSP::handleHover(const std::string& id, const std::string& uri, siz
 					std::string symbolName = word.substr(colonPos + 2);
 
 					// Get source directory from URI
-					std::string filePath = uri.substr(7); // Remove "file://"
+					std::string filePath = lspUriToPath(uri);
 					std::string sourceDir = std::filesystem::path(filePath).parent_path().string();
 
 					// Resolve module path
@@ -4062,8 +4068,8 @@ void QuadrateLSP::handleSignatureHelp(const std::string& id, const std::string& 
 	if (docIter != documents_.end()) {
 		documentText = docIter->second;
 	} else {
-		if (uri.substr(0, 7) == "file://") {
-			std::string filePath = uri.substr(7);
+		std::string filePath = lspUriToPath(uri);
+		if (!filePath.empty()) {
 			std::ifstream file(filePath);
 			if (file.good()) {
 				std::stringstream buffer;
@@ -4165,7 +4171,7 @@ void QuadrateLSP::handleSignatureHelp(const std::string& id, const std::string& 
 						std::string moduleName = funcName.substr(0, colonPos);
 						std::string symbolName = funcName.substr(colonPos + 2);
 
-						std::string filePath = uri.substr(7);
+						std::string filePath = lspUriToPath(uri);
 						std::string sourceDir = std::filesystem::path(filePath).parent_path().string();
 						std::string modulePath = resolveModulePath(moduleName, sourceDir);
 
@@ -4300,8 +4306,8 @@ void QuadrateLSP::handleDocumentSymbols(const std::string& id, const std::string
 		documentText = docIter->second;
 	} else {
 		// Try to read from disk
-		if (uri.substr(0, 7) == "file://") {
-			std::string filePath = uri.substr(7);
+		std::string filePath = lspUriToPath(uri);
+		if (!filePath.empty()) {
 			std::ifstream file(filePath);
 			if (file.good()) {
 				std::stringstream buffer;

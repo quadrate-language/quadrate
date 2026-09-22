@@ -335,7 +335,7 @@ json_t* QuadrateLSP::findDefinitionInModule(
 				if (funcNode->name() == symbolName) {
 					// Found the function definition
 					json_t* location = json_object();
-					std::string moduleUri = "file://" + searchPath;
+					std::string moduleUri = lspPathToUri(searchPath);
 					json_object_set_new(location, "uri", json_string(moduleUri.c_str()));
 
 					json_t* range = json_object();
@@ -359,7 +359,7 @@ json_t* QuadrateLSP::findDefinitionInModule(
 				if (constNode->name() == symbolName) {
 					// Found the constant definition
 					json_t* location = json_object();
-					std::string moduleUri = "file://" + searchPath;
+					std::string moduleUri = lspPathToUri(searchPath);
 					json_object_set_new(location, "uri", json_string(moduleUri.c_str()));
 
 					json_t* range = json_object();
@@ -383,7 +383,7 @@ json_t* QuadrateLSP::findDefinitionInModule(
 				if (structNode->name() == symbolName) {
 					// Found the struct definition
 					json_t* location = json_object();
-					std::string moduleUri = "file://" + searchPath;
+					std::string moduleUri = lspPathToUri(searchPath);
 					json_object_set_new(location, "uri", json_string(moduleUri.c_str()));
 
 					json_t* range = json_object();
@@ -408,7 +408,7 @@ json_t* QuadrateLSP::findDefinitionInModule(
 				std::string enumPrefix = enumNode->name() + "::";
 				if (symbolName == enumNode->name() || symbolName.substr(0, enumPrefix.size()) == enumPrefix) {
 					json_t* location = json_object();
-					std::string moduleUri = "file://" + searchPath;
+					std::string moduleUri = lspPathToUri(searchPath);
 					json_object_set_new(location, "uri", json_string(moduleUri.c_str()));
 					json_t* range = json_object();
 					json_t* start = json_object();
@@ -432,7 +432,7 @@ json_t* QuadrateLSP::findDefinitionInModule(
 					if (importedFunc->name == symbolName) {
 						// Found the imported function declaration
 						json_t* location = json_object();
-						std::string moduleUri = "file://" + searchPath;
+						std::string moduleUri = lspPathToUri(searchPath);
 						json_object_set_new(location, "uri", json_string(moduleUri.c_str()));
 
 						json_t* range = json_object();
@@ -489,7 +489,7 @@ json_t* QuadrateLSP::findMethodInModule(const std::string& modulePath, const std
 			if (funcNode->hasReceiver() && funcNode->name() == methodName) {
 				// Found the method definition
 				json_t* location = json_object();
-				std::string moduleUri = "file://" + modulePath;
+				std::string moduleUri = lspPathToUri(modulePath);
 				json_object_set_new(location, "uri", json_string(moduleUri.c_str()));
 
 				json_t* range = json_object();
@@ -744,8 +744,8 @@ json_t* QuadrateLSP::handleFieldAccessDefinition(
 
 			// Get source directory from the current document URI
 			std::string sourceDir;
-			if (uri.substr(0, 7) == "file://") {
-				std::string filePath = uri.substr(7);
+			std::string filePath = lspUriToPath(uri);
+			if (!filePath.empty()) {
 				size_t lastSlash = filePath.find_last_of('/');
 				if (lastSlash != std::string::npos) {
 					sourceDir = filePath.substr(0, lastSlash);
@@ -779,7 +779,7 @@ json_t* QuadrateLSP::handleFieldAccessDefinition(
 										if (field->name() == foundFieldName) {
 											// Found the field!
 											json_t* location = json_object();
-											std::string moduleUri = "file://" + modulePath;
+											std::string moduleUri = lspPathToUri(modulePath);
 											json_object_set_new(location, "uri", json_string(moduleUri.c_str()));
 
 											json_t* range = json_object();
@@ -859,8 +859,8 @@ json_t* QuadrateLSP::handleFieldAccessDefinition(
 			// If not found, search other .qd files in the same directory
 			// (directory-based namespace)
 			std::string sourceDir;
-			if (uri.substr(0, 7) == "file://") {
-				std::string filePath = uri.substr(7);
+			std::string filePath = lspUriToPath(uri);
+			if (!filePath.empty()) {
 				size_t lastSlash = filePath.find_last_of('/');
 				if (lastSlash != std::string::npos) {
 					sourceDir = filePath.substr(0, lastSlash);
@@ -871,7 +871,7 @@ json_t* QuadrateLSP::handleFieldAccessDefinition(
 				try {
 					for (const auto& entry : std::filesystem::directory_iterator(sourceDir)) {
 						if (entry.path().extension() == ".qd" &&
-								entry.path().string() != uri.substr(7)) { // Skip current file
+								entry.path().string() != lspUriToPath(uri)) { // Skip current file
 							// Parse the file
 							std::ifstream file(entry.path());
 							if (file.good()) {
@@ -883,7 +883,7 @@ json_t* QuadrateLSP::handleFieldAccessDefinition(
 								Qd::IAstNode* fileRoot = fileAst.generate(fileContent.c_str(), false, nullptr);
 
 								if (fileRoot && !fileAst.hasErrors()) {
-									std::string fileUri = "file://" + entry.path().string();
+									std::string fileUri = lspPathToUri(entry.path().string());
 									result = searchStructField(fileRoot, fileUri);
 									if (result) {
 										return result;
@@ -914,8 +914,8 @@ void QuadrateLSP::handleDefinition(const std::string& id, const std::string& uri
 		documentText = docIter->second;
 	} else {
 		// Try to read from disk
-		if (uri.substr(0, 7) == "file://") {
-			std::string filePath = uri.substr(7);
+		std::string filePath = lspUriToPath(uri);
+		if (!filePath.empty()) {
 			std::ifstream file(filePath);
 			if (file.good()) {
 				std::stringstream buffer;
@@ -956,12 +956,12 @@ void QuadrateLSP::handleDefinition(const std::string& id, const std::string& uri
 				// Only navigate if cursor is on the module name, not on "use" keyword
 				if (moduleEnd > moduleStart && character >= moduleStart && character < moduleEnd) {
 					std::string moduleName = targetLine.substr(moduleStart, moduleEnd - moduleStart);
-					std::string sourceDir = std::filesystem::path(uri.substr(7)).parent_path().string();
+					std::string sourceDir = std::filesystem::path(lspUriToPath(uri)).parent_path().string();
 					std::string modulePath = resolveModulePath(moduleName, sourceDir);
 
 					if (!modulePath.empty()) {
 						json_t* location = json_object();
-						json_object_set_new(location, "uri", json_string(("file://" + modulePath).c_str()));
+						json_object_set_new(location, "uri", json_string(lspPathToUri(modulePath).c_str()));
 
 						json_t* range = json_object();
 						json_t* start = json_object();
@@ -1216,7 +1216,7 @@ void QuadrateLSP::handleDefinition(const std::string& id, const std::string& uri
 					}
 
 					// Get source directory from URI
-					std::string filePath = uri.substr(7);
+					std::string filePath = lspUriToPath(uri);
 					std::string sourceDir = std::filesystem::path(filePath).parent_path().string();
 
 					// Search each imported module for a method with this name
@@ -1269,7 +1269,7 @@ void QuadrateLSP::handleDefinition(const std::string& id, const std::string& uri
 					std::string symbolName = word.substr(colonPos + 2);
 
 					// Get source directory from URI
-					std::string filePath = uri.substr(7); // Remove "file://"
+					std::string filePath = lspUriToPath(uri);
 					std::string sourceDir = std::filesystem::path(filePath).parent_path().string();
 
 					// Resolve module path
@@ -1306,8 +1306,8 @@ void QuadrateLSP::handleFoldingRange(const std::string& id, const std::string& u
 	if (docIter != documents_.end()) {
 		documentText = docIter->second;
 	} else {
-		if (uri.substr(0, 7) == "file://") {
-			std::string filePath = uri.substr(7);
+		std::string filePath = lspUriToPath(uri);
+		if (!filePath.empty()) {
 			std::ifstream file(filePath);
 			if (file.good()) {
 				std::stringstream buffer;
@@ -1452,8 +1452,8 @@ void QuadrateLSP::handleDocumentHighlight(
 	if (docIter != documents_.end()) {
 		documentText = docIter->second;
 	} else {
-		if (uri.substr(0, 7) == "file://") {
-			std::string filePath = uri.substr(7);
+		std::string filePath = lspUriToPath(uri);
+		if (!filePath.empty()) {
 			std::ifstream file(filePath);
 			if (file.good()) {
 				std::stringstream buffer;
@@ -1552,8 +1552,8 @@ void QuadrateLSP::handleReferences(const std::string& id, const std::string& uri
 		documentText = docIter->second;
 	} else {
 		// Try to read from disk
-		if (uri.substr(0, 7) == "file://") {
-			std::string filePath = uri.substr(7);
+		std::string filePath = lspUriToPath(uri);
+		if (!filePath.empty()) {
 			std::ifstream file(filePath);
 			if (file.good()) {
 				std::stringstream buffer;
@@ -1646,8 +1646,8 @@ void QuadrateLSP::handlePrepareRename(const std::string& id, const std::string& 
 	if (docIter != documents_.end()) {
 		documentText = docIter->second;
 	} else {
-		if (uri.substr(0, 7) == "file://") {
-			std::string filePath = uri.substr(7);
+		std::string filePath = lspUriToPath(uri);
+		if (!filePath.empty()) {
 			std::ifstream file(filePath);
 			if (file.good()) {
 				std::stringstream buffer;
@@ -1715,8 +1715,8 @@ void QuadrateLSP::handleRename(
 		documentText = docIter->second;
 	} else {
 		// Try to read from disk
-		if (uri.substr(0, 7) == "file://") {
-			std::string filePath = uri.substr(7);
+		std::string filePath = lspUriToPath(uri);
+		if (!filePath.empty()) {
 			std::ifstream file(filePath);
 			if (file.good()) {
 				std::stringstream buffer;
@@ -1927,7 +1927,7 @@ void QuadrateLSP::handleRename(
 				json_object_set_new(changes, uri.c_str(), edits);
 
 				// Also search sibling files for the same identifier
-				std::string filePath = uri.substr(7);
+				std::string filePath = lspUriToPath(uri);
 				std::vector<std::string> siblings = getSiblingQdFiles(filePath);
 
 				for (const auto& siblingPath : siblings) {
@@ -1952,7 +1952,7 @@ void QuadrateLSP::handleRename(
 
 					if (!siblingRefs.empty()) {
 						json_t* siblingEdits = json_array();
-						std::string siblingUri = "file://" + siblingPath;
+						std::string siblingUri = lspPathToUri(siblingPath);
 
 						for (Qd::IAstNode* ref : siblingRefs) {
 							json_t* edit = json_object();

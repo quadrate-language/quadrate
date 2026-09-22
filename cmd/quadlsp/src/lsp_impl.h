@@ -23,6 +23,13 @@ std::string expandTilde(const std::string& path);
 // targets without the rest of the LSP server.
 std::string lspGetWordAtPosition(const std::string& text, size_t line, size_t character);
 
+// Convert a file:// URI to a filesystem path, percent-decoding it. Returns ""
+// for anything that is not a file URI.
+std::string lspUriToPath(const std::string& uri);
+
+// Convert a filesystem path to a percent-encoded file:// URI.
+std::string lspPathToUri(const std::string& path);
+
 // Load dependencies from qd.json and return include paths
 std::vector<std::string> loadDependenciesFromManifest(const std::string& manifestDir);
 
