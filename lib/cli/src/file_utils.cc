@@ -4,6 +4,8 @@
 #include "quadrate/cli/file_utils.h"
 
 #include <algorithm>
+#include <cerrno>
+#include <cstring>
 #include <filesystem>
 #include <fstream>
 #include <iostream>
@@ -73,7 +75,7 @@ namespace qdcli {
 		std::error_code ec;
 		const fs::file_status status = fs::status(filename, ec);
 		if (ec) {
-			throw std::runtime_error("No such file or directory");
+			throw std::runtime_error(ec.message());
 		}
 		if (fs::is_directory(status)) {
 			throw std::runtime_error("Is a directory");
@@ -84,7 +86,7 @@ namespace qdcli {
 
 		std::ifstream file(filename);
 		if (!file.good()) {
-			throw std::runtime_error("No such file or directory");
+			throw std::runtime_error(std::strerror(errno));
 		}
 
 		std::stringstream buffer;
