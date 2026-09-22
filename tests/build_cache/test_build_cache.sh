@@ -312,6 +312,38 @@ else
 fi
 
 # ===================================================================
+# Test 14: --freestanding never restores a hosted executable from cache
+# ===================================================================
+FS_DIR="$TEST_DIR/fs"
+mkdir -p "$FS_DIR"
+cat > "$FS_DIR/fs.qd" << 'EOF'
+pub fn _start( -- ) {
+}
+fn main() {
+}
+EOF
+"$QUADC" "$FS_DIR/fs.qd" -o "$TEST_DIR/fsout" > /dev/null 2>&1
+rm -f "$TEST_DIR/fsout" "$TEST_DIR/fsout.o"
+output=$("$QUADC" --freestanding "$FS_DIR/fs.qd" -o "$TEST_DIR/fsout" 2>&1)
+if echo "$output" | grep -q "total (cached)"; then
+    fail "--freestanding should not hit the hosted cache entry"
+elif [[ -f "$TEST_DIR/fsout.o" && ! -e "$TEST_DIR/fsout" ]]; then
+    pass "--freestanding emits an object, not a cached executable"
+else
+    fail "--freestanding output is wrong" "$output"
+fi
+
+# ===================================================================
+# Test 15: Cache store leaves no temporary files behind
+# ===================================================================
+leftover=$(find "$CACHE_DIR" -name "*.tmp.*" 2>/dev/null | wc -l)
+if [[ $leftover -eq 0 ]]; then
+    pass "Cache store leaves no temporary files"
+else
+    fail "Cache store left $leftover temporary files"
+fi
+
+# ===================================================================
 # Summary
 # ===================================================================
 echo ""
