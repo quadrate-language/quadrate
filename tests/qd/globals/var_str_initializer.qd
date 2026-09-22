@@ -20,6 +20,19 @@ fn main() {
 
 	// Read through a helper, which is a separate codegen path from main's.
 	show
+
+	// Reassign repeatedly: each store hands back what the slot held, so the
+	// discarded strings are freed rather than leaked.
+	0 3 1 for i {
+		"round" -> plain
+	}
+	plain print nl
+
+	// Self-assignment: the read retains, so the store has one reference to hand
+	// back. Skipping the release here would leak it; releasing twice would free a
+	// string still in the global.
+	plain -> plain
+	plain print nl
 }
 
 fn show() {

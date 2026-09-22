@@ -351,6 +351,33 @@ fn main(--) {
 	acc print nl
 }' 30000 4096
 
+# A module-level `var` is one of the places that holds a reference, and the store
+# path never gave the old one back: `-> g` wrote the new pointer straight over the
+# old one. Valgrind cannot see this for a struct -- the pointer registry still
+# holds it at exit, so it reads as reachable -- which is why it is measured here.
+check_flat "global_var_store" 'struct Point {
+	x: i64
+	y: i64
+}
+
+var origin = Point { x = 0 y = 0 }
+var label:str = "start"
+
+fn round(i:i64 -- n:i64) {
+	Point { x = i y = i } -> origin
+	"round" -> label
+	origin <<x
+}
+
+fn main(--) {
+	0 -> acc
+	0 @N@ 1 for i {
+		i round acc + -> acc
+	}
+	acc print nl
+	label print nl
+}' 30000 4096
+
 echo ""
 echo "Memory tests: $PASSED passed, $FAILED failed"
 [[ $FAILED -eq 0 ]]

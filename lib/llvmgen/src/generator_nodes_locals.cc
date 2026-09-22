@@ -50,7 +50,26 @@ namespace Qd {
 				} else if (typeName == "str" || typeName == "ptr" || isKnownStruct(typeName)) {
 					// Struct-typed globals store a pointer just like `ptr`/`str`.
 					llvm::Value* v = builder->CreateLoad(ptrTy, valuePtr, name + "_g_p");
+					// A global owns what it holds (specification 11.2.2), so the store has to
+					// hand back the reference the slot held before taking over the one the
+					// stack supplied. It did not, and the old value was leaked -- invisible
+					// while a `str` global started null and a struct global was usually
+					// assigned once, but `"a" -> s  "b" -> s` lost "a" every time.
+					llvm::Value* old = builder->CreateLoad(ptrTy, gv, name + "_g_old");
+					llvm::cast<llvm::LoadInst>(old)->setVolatile(true);
 					storeVolatile(v);
+					// Unconditionally, and after the store: `s -> s` reads through a retain and
+					// so arrives holding a second reference, which is exactly the one this
+					// hands back. Skipping the release when the pointer is unchanged would
+					// leak that one instead. Both release calls ignore a null old value.
+					if (typeName == "str") {
+						// qd_ptr_release knows arrays and structs, not strings: it would hand a
+						// qd_string_t to qd_struct_release, which finds it in no registry and
+						// does nothing.
+						builder->CreateCall(qdStringReleaseFn, {old});
+					} else {
+						builder->CreateCall(qdPtrReleaseFn, {old});
+					}
 				} else {
 					llvm::Value* v = builder->CreateLoad(int64Ty, valuePtr, name + "_g_i");
 					storeVolatile(v);
