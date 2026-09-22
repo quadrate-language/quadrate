@@ -1,0 +1,27 @@
+// A `str` global runs its initializer, the way a struct global does. The literal
+// used to be dropped: the global stayed null and reading it pushed nothing, so the
+// next instruction died of a stack underflow naming itself.
+const GREETING = "from a const"
+
+var plain = "hello"
+var typed:str = "hi there"
+var escaped = "a\tb"
+var from_const = GREETING
+
+fn main() {
+	plain print nl
+	typed print nl
+	escaped print nl
+	from_const print nl
+
+	// Still assignable, and the new value survives.
+	"changed" -> plain
+	plain print nl
+
+	// Read through a helper, which is a separate codegen path from main's.
+	show
+}
+
+fn show() {
+	typed print nl
+}

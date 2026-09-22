@@ -291,6 +291,14 @@ namespace Qd {
 		varDecl->setHasExplicitType(hasExplicitType);
 		if (structInit) {
 			varDecl->setInitializerNode(structInit);
+		} else if (typeName == "str" && !value.empty() && value.front() == '"') {
+			// A string global runs its initializer the way a struct global does. A
+			// refcounted string needs a heap header, which no LLVM static initializer can
+			// express, so the literal was simply dropped: `var label = "hello"` compiled
+			// clean and left the global null, and reading it pushed *nothing* -- the next
+			// instruction died of a stack underflow that named the instruction rather than
+			// the read.
+			varDecl->setInitializerNode(new AstNodeLiteral(value, AstNodeLiteral::LiteralType::STRING));
 		}
 		setNodePosition(varDecl, scanner, src);
 		varDecl->setParent(program);

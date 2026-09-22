@@ -548,7 +548,28 @@ namespace Qd {
 				} else if (isFloat) {
 					builder->CreateCall(pushFloatFn, {ctx, v});
 				} else if (isStr) {
+					// qd_push_s_ref refuses a null string and pushes nothing, returning -2
+					// that nothing here reads -- so a `str` global read before it was ever
+					// assigned left the stack one short and the *next* instruction died of
+					// an underflow naming itself. A global that holds no string reads as the
+					// empty one, which is what `str`'s zero is everywhere else.
+					llvm::Function* strFn = builder->GetInsertBlock()->getParent();
+					auto* emptyBB = llvm::BasicBlock::Create(*context, "gstr_empty", strFn);
+					auto* valueBB = llvm::BasicBlock::Create(*context, "gstr_value", strFn);
+					auto* contBB = llvm::BasicBlock::Create(*context, "gstr_cont", strFn);
+					llvm::Value* isNull =
+							builder->CreateICmpEQ(v, llvm::ConstantPointerNull::get(ptrTy), name + "_g_null");
+					builder->CreateCondBr(isNull, emptyBB, valueBB);
+
+					builder->SetInsertPoint(emptyBB);
+					builder->CreateCall(pushStrFn, {ctx, getOrCreateGlobalString("")});
+					builder->CreateBr(contBB);
+
+					builder->SetInsertPoint(valueBB);
 					builder->CreateCall(pushStrRefFn, {ctx, v});
+					builder->CreateBr(contBB);
+
+					builder->SetInsertPoint(contBB);
 				} else if (isPtr) {
 					// A pointer on the stack owns a reference: reading a local retains before
 					// pushing, and every consumer releases -- `<<field` pops and calls

@@ -130,7 +130,15 @@ fn bump() {
 
 **Inference rules:** integer literal → `i64`, float literal → `f64`, string literal → `str`, const-reference → the const's type (derived from its value shape). Write `:type` explicitly when the inferred default isn't what you want (e.g. `var handle:ptr = null`).
 
-Supported types: `i64`, `f64`, `str` (always null-initialized), `ptr`, and any struct type. Sized integer types are rejected here — a global is a 64-bit slot, so the width would describe nothing (see [sized integer types](types.md#sized-integer-types)). Initializers accept a literal, a reference to a previously-declared `const`, or a struct construction (`var p = Point { x = 1.0 y = 2.0 }`). Struct initializers run once before `main` and are stored as a reference-counted pointer in the global. A `-> name` assignment inside any function always writes to the matching module-level var — locals never shadow globals; pick a different name if you need a local.
+Supported types: `i64`, `f64`, `str`, `ptr`, and any struct type. Sized integer types are rejected here — a global is a 64-bit slot, so the width would describe nothing (see [sized integer types](types.md#sized-integer-types)). Initializers accept a literal, a reference to a previously-declared `const`, or a struct construction (`var p = Point { x = 1.0 y = 2.0 }`). String and struct initializers run once before `main` and are stored as a reference-counted pointer in the global; a `str` global that has not been assigned reads as the empty string.
+
+`pub var` exports the global, as `pub fn` exports a function. The symbol is `qd_global_<name>`, which is the name assembly writes — useful in `--freestanding` builds, where a value shared with an interrupt handler or a boot stub can live in Quadrate instead of a `.S` file:
+
+```qd
+pub var tick_count:i64 = 0    // assembly refers to it as qd_global_tick_count
+```
+
+Without `pub` the global has internal linkage and is visible only inside the compiled module. A `-> name` assignment inside any function always writes to the matching module-level var — locals never shadow globals; pick a different name if you need a local.
 
 
 ### struct

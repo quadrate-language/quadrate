@@ -1315,6 +1315,12 @@ run_reference_tests() {
     else
         log_fail "$suite" "versions" "$output"
     fi
+
+    if output=$(cd "$PROJECT_ROOT" && python3 tools/check_global_var_linkage.py "$QUADC" 2>&1); then
+        log_pass "$suite" "global_var_linkage" "(pub var exports, bare var does not)"
+    else
+        log_fail "$suite" "global_var_linkage" "$output"
+    fi
 }
 
 # Run cross-compilation tests (--target flag)

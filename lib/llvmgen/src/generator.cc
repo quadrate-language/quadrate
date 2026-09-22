@@ -1028,11 +1028,11 @@ namespace Qd {
 			auto lineNum = builder->getInt64(funcNode->line());
 			builder->CreateCall(pushCallFn, {ctx, funcNameStr, sourceFileStr, lineNum});
 
-			// Module struct-global init: run each pending struct construction
-			// and store the resulting pointer into its LLVM global, so user
-			// code sees a fully constructed value. Uses the runtime stack
-			// path explicitly (useCompileTimeStack is still false here).
-			for (auto& pending : pendingStructGlobalInits) {
+			// Module global init: run each pending heap initializer -- a struct
+			// construction or a string literal -- and store the resulting pointer into
+			// its LLVM global, so user code sees a fully constructed value. Uses the
+			// runtime stack path explicitly (useCompileTimeStack is still false here).
+			for (auto& pending : pendingHeapGlobalInits) {
 				llvm::GlobalVariable* gv = pending.first;
 				IAstNode* initNode = pending.second;
 				generateNode(initNode, ctx);
@@ -2534,20 +2534,31 @@ namespace Qd {
 				const std::string& typeName = varNode->typeName();
 				const std::string value = varNode->value();
 
+				// `pub` exports the global, as it does a function. This was ignored, so a
+				// `pub var` got internal linkage and nothing outside the LLVM module could
+				// reach it -- in freestanding, where `pub fn` is given external linkage so
+				// assembly can call it, a `pub var` could not be shared with assembly at
+				// all, which is why the kernel example declares its mutable globals in a
+				// .S file and reaches them through an address getter.
+				auto varLinkage = llvm::GlobalValue::InternalLinkage;
+				if (varNode->isPublic()) {
+					varLinkage = llvm::GlobalValue::ExternalLinkage;
+				}
+
 				llvm::Type* ty = nullptr;
 				llvm::Constant* init = nullptr;
 
-				// Struct-construction initializer: the LLVM global is just a
-				// null pointer here; a module-init sequence inside main will
-				// run the construction and store the resulting pointer.
+				// Heap-initialized global -- a struct construction or a string literal.
+				// The LLVM global is just a null pointer here; a module-init sequence
+				// inside main runs the initializer and stores the resulting pointer.
 				if (varNode->initializerNode() != nullptr) {
 					ty = ptrTy;
 					init = llvm::ConstantPointerNull::get(ptrTy);
-					auto* gv = new llvm::GlobalVariable(*module, ty,
-							/*isConstant=*/false, llvm::GlobalValue::InternalLinkage, init, "qd_global_" + name);
+					auto* gv = new llvm::GlobalVariable(
+							*module, ty, /*isConstant=*/false, varLinkage, init, "qd_global_" + name);
 					moduleGlobalVars[name] = gv;
 					moduleGlobalVarTypes[name] = typeName;
-					pendingStructGlobalInits.emplace_back(gv, varNode->initializerNode());
+					pendingHeapGlobalInits.emplace_back(gv, varNode->initializerNode());
 					continue;
 				}
 
@@ -2556,11 +2567,9 @@ namespace Qd {
 					const double d = value.empty() ? 0.0 : floatLiteralOr(value, 0.0);
 					init = llvm::ConstantFP::get(ty, d);
 				} else if (typeName == "str") {
-					// String globals always start as null. Refcounted string
-					// machinery requires a heap-allocated header that can't
-					// be expressed as an LLVM static initializer; if users
-					// want content, they assign it at runtime. Usually
-					// globals this big are ptrs anyway.
+					// Reached only when the initializer was not a string literal -- a `str`
+					// global written with one is heap-initialized above. Null until
+					// assigned; the read guards against that.
 					ty = ptrTy;
 					init = llvm::ConstantPointerNull::get(ptrTy);
 				} else if (typeName == "ptr") {
@@ -2577,8 +2586,8 @@ namespace Qd {
 					init = builder->getInt64(static_cast<uint64_t>(iv));
 				}
 
-				auto* gv = new llvm::GlobalVariable(*module, ty,
-						/*isConstant=*/false, llvm::GlobalValue::InternalLinkage, init, "qd_global_" + name);
+				auto* gv = new llvm::GlobalVariable(
+						*module, ty, /*isConstant=*/false, varLinkage, init, "qd_global_" + name);
 				moduleGlobalVars[name] = gv;
 				moduleGlobalVarTypes[name] = typeName;
 			}

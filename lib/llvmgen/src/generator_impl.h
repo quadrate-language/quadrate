@@ -308,11 +308,12 @@ namespace Qd {
 		std::map<std::string, llvm::GlobalVariable*> moduleGlobalVars;
 		std::map<std::string, std::string> moduleGlobalVarTypes; // name -> type string
 
-		// Module-level vars whose initializer is a struct construction; these
-		// need a runtime init sequence in `main` because struct allocation
-		// calls qd_struct_alloc and writes fields at runtime. The IAstNode*
-		// is the AstNodeStructConstruction held by the var node.
-		std::vector<std::pair<llvm::GlobalVariable*, IAstNode*>> pendingStructGlobalInits;
+		// Module-level vars whose initializer allocates -- a struct construction or a
+		// string literal. Both need a runtime init sequence in `main`: a struct calls
+		// qd_struct_alloc and writes fields at runtime, and a refcounted string needs a
+		// heap header no LLVM static initializer can express. The IAstNode* is the
+		// initializer node held by the var node.
+		std::vector<std::pair<llvm::GlobalVariable*, IAstNode*>> pendingHeapGlobalInits;
 
 		// Module ASTs
 		std::vector<std::pair<std::string, IAstNode*>> moduleASTs;
