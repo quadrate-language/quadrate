@@ -1,0 +1,6 @@
+// Test: empty while body
+fn main() {
+	0 -> i
+	i 0 > while {
+	}
+}

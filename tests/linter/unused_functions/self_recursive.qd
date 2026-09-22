@@ -1,0 +1,10 @@
+// Test: a function whose only caller is itself is still unused
+fn countdown(n:i64 -- ) {
+	n 0 > if {
+		n 1 - countdown
+	}
+}
+
+fn main() {
+	"hi" print nl
+}

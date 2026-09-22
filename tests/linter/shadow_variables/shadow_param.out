@@ -1,0 +1,3 @@
+tests/linter/shadow_variables/shadow_param.qd:4:8: warning: Variable 'i' shadows variable from outer scope
+
+1 issue found

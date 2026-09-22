@@ -1,0 +1,12 @@
+// Test: constant conditions are judged by the literal's value, not its spelling
+fn main() {
+	0x0 if {
+		"never" print nl
+	}
+	00 if {
+		"never" print nl
+	}
+	0b1 if {
+		"always" print nl
+	}
+}

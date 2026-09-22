@@ -1,0 +1,3 @@
+fn main() {
+	3 4 helper_add print nl
+}

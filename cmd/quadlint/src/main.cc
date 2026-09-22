@@ -1,9 +1,11 @@
 #include <algorithm>
 #include <cstdint>
 #include <cstring>
+#include <filesystem>
 #include <functional>
 #include <iostream>
 #include <jansson.h>
+#include <memory>
 #include <quadrate/cli/cli.h>
 #include <quadrate/cli/file_utils.h>
 #include <quadrate/cli/help.h>
@@ -11,13 +13,17 @@
 #include <quadrate/qc/ast_node_for.h>
 #include <quadrate/qc/ast_node_function.h>
 #include <quadrate/qc/ast_node_function_pointer.h>
+#include <quadrate/qc/ast_node_global_var.h>
 #include <quadrate/qc/ast_node_identifier.h>
 #include <quadrate/qc/ast_node_instruction.h>
 #include <quadrate/qc/ast_node_literal.h>
 #include <quadrate/qc/ast_node_local.h>
 #include <quadrate/qc/ast_node_parameter.h>
+#include <quadrate/qc/ast_node_scoped.h>
 #include <quadrate/qc/ast_node_struct.h>
+#include <quadrate/qc/ast_node_while.h>
 #include <quadrate/qc/colors.h>
+#include <quadrate/qc/numeric_literal.h>
 #include <set>
 #include <string>
 #include <unordered_map>
@@ -53,6 +59,7 @@ struct LintIssue {
 	std::string message;
 	std::string level; // "warning", "error"
 	std::string rule;  // e.g. "unused-functions", "dead-code"
+	std::string keyword;
 };
 
 // Check if a source line contains a //nolint directive that suppresses the given rule.
@@ -161,44 +168,153 @@ void collectFunctions(IAstNode* node, std::unordered_map<std::string, IAstNode*>
 	}
 }
 
-// Recursively collect all function calls
-void collectFunctionCalls(IAstNode* node, std::unordered_set<std::string>& calls) {
+// Recursively collect all function calls, ignoring a function's calls to itself
+void collectFunctionCalls(
+		IAstNode* node, std::unordered_set<std::string>& calls, const std::string& enclosingFunction = "") {
 	if (!node) {
 		return;
 	}
 
-	if (node->type() == IAstNode::Type::IDENTIFIER) {
-		AstNodeIdentifier* ident = static_cast<AstNodeIdentifier*>(node);
-		calls.insert(ident->name());
+	std::string current = enclosingFunction;
+	if (node->type() == IAstNode::Type::FUNCTION_DECLARATION) {
+		current = static_cast<AstNodeFunctionDeclaration*>(node)->name();
 	}
 
-	// Also track function pointer references (&func)
-	if (node->type() == IAstNode::Type::FUNCTION_POINTER_REFERENCE) {
-		AstNodeFunctionPointerReference* funcPtr = static_cast<AstNodeFunctionPointerReference*>(node);
-		calls.insert(funcPtr->functionName());
+	std::string callee;
+	if (node->type() == IAstNode::Type::IDENTIFIER) {
+		callee = static_cast<AstNodeIdentifier*>(node)->name();
+	} else if (node->type() == IAstNode::Type::INSTRUCTION) {
+		callee = static_cast<AstNodeInstruction*>(node)->name();
+	} else if (node->type() == IAstNode::Type::FUNCTION_POINTER_REFERENCE) {
+		callee = static_cast<AstNodeFunctionPointerReference*>(node)->functionName();
+	}
+	if (!callee.empty() && callee != current) {
+		calls.insert(callee);
 	}
 
 	for (size_t i = 0; i < node->childCount(); i++) {
-		collectFunctionCalls(node->child(i), calls);
+		collectFunctionCalls(node->child(i), calls, current);
+	}
+}
+
+// Collect module-level `var` declarations
+void collectGlobals(IAstNode* root, std::unordered_set<std::string>& globals) {
+	for (size_t i = 0; i < root->childCount(); i++) {
+		IAstNode* child = root->child(i);
+		if (child && child->type() == IAstNode::Type::GLOBAL_VAR_DECLARATION) {
+			globals.insert(static_cast<AstNodeGlobalVar*>(child)->name());
+		}
+	}
+}
+
+bool hasMainFunction(IAstNode* root) {
+	for (size_t i = 0; i < root->childCount(); i++) {
+		IAstNode* child = root->child(i);
+		if (child && child->type() == IAstNode::Type::FUNCTION_DECLARATION) {
+			AstNodeFunctionDeclaration* func = static_cast<AstNodeFunctionDeclaration*>(child);
+			if (func->name() == "main" && !func->hasReceiver()) {
+				return true;
+			}
+		}
+	}
+	return false;
+}
+
+struct FileSymbols {
+	bool hasMain = false;
+	std::unordered_set<std::string> calls;
+	std::unordered_set<std::string> globals;
+};
+
+FileSymbols collectFileSymbols(IAstNode* root) {
+	FileSymbols symbols;
+	symbols.hasMain = hasMainFunction(root);
+	collectFunctionCalls(root, symbols.calls);
+	collectGlobals(root, symbols.globals);
+	return symbols;
+}
+
+class SymbolCache {
+public:
+	const FileSymbols* get(const std::string& path) {
+		auto it = mFiles.find(path);
+		if (it != mFiles.end()) {
+			return it->second.get();
+		}
+		std::unique_ptr<FileSymbols> symbols;
+		try {
+			std::string source = qdcli::readFile(path);
+			Ast ast;
+			IAstNode* root = ast.generate(source.c_str(), false, path.c_str());
+			if (root && !ast.hasErrors()) {
+				symbols = std::make_unique<FileSymbols>(collectFileSymbols(root));
+			}
+		} catch (const std::exception&) {
+		}
+		const FileSymbols* result = symbols.get();
+		mFiles[path] = std::move(symbols);
+		return result;
+	}
+
+	const std::vector<std::string>& qdFilesIn(const std::string& dir) {
+		auto it = mDirs.find(dir);
+		if (it != mDirs.end()) {
+			return it->second;
+		}
+		std::vector<std::string> files;
+		std::error_code ec;
+		for (std::filesystem::directory_iterator entry(dir, ec), end; !ec && entry != end; entry.increment(ec)) {
+			const std::string name = entry->path().filename().string();
+			if (name.size() > 3 && name.compare(name.size() - 3, 3, ".qd") == 0 && entry->is_regular_file(ec)) {
+				files.push_back(name);
+			}
+		}
+		return mDirs.emplace(dir, std::move(files)).first->second;
+	}
+
+private:
+	std::unordered_map<std::string, std::unique_ptr<FileSymbols>> mFiles;
+	std::unordered_map<std::string, std::vector<std::string>> mDirs;
+};
+
+void mergeSiblingSymbols(const std::string& filename, FileSymbols& symbols, SymbolCache& cache) {
+	std::filesystem::path path(filename);
+	std::string dir = path.parent_path().string();
+	if (dir.empty()) {
+		dir = ".";
+	}
+	const std::string self = path.filename().string();
+	for (const auto& name : cache.qdFilesIn(dir)) {
+		if (name == self) {
+			continue;
+		}
+		const FileSymbols* sibling = cache.get((std::filesystem::path(dir) / name).string());
+		if (!sibling || (symbols.hasMain && sibling->hasMain)) {
+			continue;
+		}
+		symbols.calls.insert(sibling->calls.begin(), sibling->calls.end());
+		symbols.globals.insert(sibling->globals.begin(), sibling->globals.end());
 	}
 }
 
 // Recursively collect all local variable bindings
-void collectLocalBindings(IAstNode* node, std::unordered_map<std::string, IAstNode*>& locals) {
+void collectLocalBindings(IAstNode* node, std::unordered_map<std::string, IAstNode*>& locals,
+		const std::unordered_set<std::string>& globals) {
 	if (!node) {
 		return;
 	}
 
 	if (node->type() == IAstNode::Type::LOCAL) {
 		AstNodeLocal* local = static_cast<AstNodeLocal*>(node);
-		// Skip "_" which is the discard operator (intentionally unused)
-		if (local->name() != "_") {
-			locals[local->name()] = node;
+		// Skip "_" which is the discard operator (intentionally unused), and stores to globals
+		const std::string& name = local->name();
+		if (name != "_" && globals.find(name) == globals.end() && name.find("::") == std::string::npos) {
+			locals[name] = node;
 		}
 	}
 
 	for (size_t i = 0; i < node->childCount(); i++) {
-		collectLocalBindings(node->child(i), locals);
+		collectLocalBindings(node->child(i), locals, globals);
 	}
 }
 
@@ -281,6 +397,27 @@ void detectDeadCode(IAstNode* node, const std::string& filename, std::vector<Lin
 	}
 }
 
+const char* controlKeyword(IAstNode* node) {
+	switch (node->type()) {
+	case IAstNode::Type::IF_STATEMENT:
+		return "if";
+	case IAstNode::Type::FOR_STATEMENT:
+		return "for";
+	case IAstNode::Type::LOOP_STATEMENT:
+		return "loop";
+	case IAstNode::Type::WHILE_STATEMENT:
+		return "while";
+	case IAstNode::Type::SWITCH_STATEMENT:
+		return "switch";
+	default:
+		return "";
+	}
+}
+
+bool isControlStatement(IAstNode* node) {
+	return controlKeyword(node)[0] != '\0';
+}
+
 // Detect deep nesting
 void detectDeepNesting(IAstNode* node, const std::string& filename, int maxDepth, std::vector<LintIssue>& issues,
 		int currentDepth = 0) {
@@ -289,8 +426,7 @@ void detectDeepNesting(IAstNode* node, const std::string& filename, int maxDepth
 	}
 
 	// Check if this node increases nesting depth
-	if (node->type() == IAstNode::Type::IF_STATEMENT || node->type() == IAstNode::Type::FOR_STATEMENT ||
-			node->type() == IAstNode::Type::LOOP_STATEMENT || node->type() == IAstNode::Type::SWITCH_STATEMENT) {
+	if (isControlStatement(node)) {
 		currentDepth++;
 
 		if (currentDepth > maxDepth) {
@@ -298,6 +434,7 @@ void detectDeepNesting(IAstNode* node, const std::string& filename, int maxDepth
 			issue.filename = filename;
 			issue.line = node->line();
 			issue.column = node->column();
+			issue.keyword = controlKeyword(node);
 			issue.message = "Deep nesting detected (depth: " + std::to_string(currentDepth) +
 							", max: " + std::to_string(maxDepth) + ")";
 			issue.level = "warning";
@@ -312,55 +449,99 @@ void detectDeepNesting(IAstNode* node, const std::string& filename, int maxDepth
 	}
 }
 
-// Detect missing defer for struct allocations
+static bool isScopedCall(IAstNode* node, const char* scope, const char* name) {
+	if (!node || node->type() != IAstNode::Type::SCOPED_IDENTIFIER) {
+		return false;
+	}
+	AstNodeScopedIdentifier* scoped = static_cast<AstNodeScopedIdentifier*>(node);
+	return scoped->scope() == scope && scoped->name() == name;
+}
+
+static bool isAcquisition(IAstNode* node) {
+	return isScopedCall(node, "mem", "alloc") || isScopedCall(node, "io", "open");
+}
+
+static bool isRelease(IAstNode* node) {
+	return isScopedCall(node, "mem", "free") || isScopedCall(node, "io", "close");
+}
+
+static bool propagatesError(IAstNode* node) {
+	switch (node->type()) {
+	case IAstNode::Type::IDENTIFIER:
+		return static_cast<AstNodeIdentifier*>(node)->propagateOnError();
+	case IAstNode::Type::SCOPED_IDENTIFIER:
+		return static_cast<AstNodeScopedIdentifier*>(node)->propagateOnError();
+	case IAstNode::Type::INSTRUCTION:
+		return static_cast<AstNodeInstruction*>(node)->propagateOnError();
+	default:
+		return false;
+	}
+}
+
+struct Resource {
+	std::string name;
+	IAstNode* acquisition;
+	bool held = true;
+	bool exposed = false;
+	bool releasedInDefer = false;
+};
+
+static void scanResources(IAstNode* node, bool inDefer, std::vector<Resource>& resources) {
+	for (size_t i = 0; i < node->childCount(); i++) {
+		IAstNode* child = node->child(i);
+		if (!child || child->type() == IAstNode::Type::FUNCTION_DECLARATION ||
+				child->type() == IAstNode::Type::ANONYMOUS_FUNCTION) {
+			continue;
+		}
+		IAstNode* next = i + 1 < node->childCount() ? node->child(i + 1) : nullptr;
+		if (!inDefer && (child->type() == IAstNode::Type::RETURN_STATEMENT || propagatesError(child))) {
+			for (auto& resource : resources) {
+				resource.exposed = resource.exposed || resource.held;
+			}
+		}
+		if (!inDefer && isAcquisition(child) && next && next->type() == IAstNode::Type::LOCAL) {
+			resources.push_back({static_cast<AstNodeLocal*>(next)->name(), child});
+		}
+		if (child->type() == IAstNode::Type::IDENTIFIER && isRelease(next)) {
+			const std::string& name = static_cast<AstNodeIdentifier*>(child)->name();
+			for (auto& resource : resources) {
+				if (resource.name == name) {
+					if (inDefer) {
+						resource.releasedInDefer = true;
+					} else {
+						resource.held = false;
+					}
+				}
+			}
+		}
+		scanResources(child, inDefer || child->type() == IAstNode::Type::DEFER_STATEMENT, resources);
+	}
+}
+
+// Detect resources released by hand while an early return or `?` can skip the release
 void detectMissingDefer(IAstNode* node, const std::string& filename, std::vector<LintIssue>& issues) {
 	if (!node) {
 		return;
 	}
 
-	// Look for struct constructor calls (integer followed by struct name)
-	// This is a simplified check - full implementation would need more context
 	if (node->type() == IAstNode::Type::FUNCTION_DECLARATION) {
-		bool hasStructAlloc = false;
-		bool hasDefer = false;
-
-		for (size_t i = 0; i < node->childCount(); i++) {
-			IAstNode* child = node->child(i);
-			if (!child) {
-				continue;
+		std::vector<Resource> resources;
+		scanResources(node, false, resources);
+		for (const auto& resource : resources) {
+			if (!resource.held && resource.exposed && !resource.releasedInDefer) {
+				LintIssue issue;
+				issue.filename = filename;
+				issue.line = resource.acquisition->line();
+				issue.column = resource.acquisition->column();
+				issue.message =
+						"'" + resource.name + "' is not released on early exit - consider using defer for cleanup";
+				issue.level = "warning";
+				issue.rule = "missing-defer";
+				issues.push_back(issue);
 			}
-
-			// Check for defer blocks
-			if (child->type() == IAstNode::Type::DEFER_STATEMENT) {
-				hasDefer = true;
-			}
-
-			// Check for potential struct construction (simplified)
-			// A more complete implementation would track identifiers and struct types
-			if (child->type() == IAstNode::Type::IDENTIFIER) {
-				// This is a heuristic - struct names typically start with uppercase
-				AstNodeIdentifier* ident = static_cast<AstNodeIdentifier*>(child);
-				std::string name = ident->name();
-				if (!name.empty() && isupper(static_cast<unsigned char>(name[0]))) {
-					hasStructAlloc = true;
-				}
-			}
-		}
-
-		// If we found a struct allocation but no defer, warn
-		if (hasStructAlloc && !hasDefer) {
-			LintIssue issue;
-			issue.filename = filename;
-			issue.line = node->line();
-			issue.column = node->column();
-			issue.message = "Potential struct allocation without defer - consider using defer for cleanup";
-			issue.level = "warning";
-			issue.rule = "missing-defer";
-			issues.push_back(issue);
 		}
 	}
 
-	// Recursively check children
 	for (size_t i = 0; i < node->childCount(); i++) {
 		detectMissingDefer(node->child(i), filename, issues);
 	}
@@ -390,6 +571,18 @@ void detectShadowVariables(IAstNode* node, const std::string& filename, std::vec
 	if (node->type() == IAstNode::Type::FUNCTION_DECLARATION) {
 		scopeStack.emplace_back();
 		newScope = true;
+		AstNodeFunctionDeclaration* func = static_cast<AstNodeFunctionDeclaration*>(node);
+		if (func->hasReceiver()) {
+			scopeStack.back().insert(func->receiverName());
+		}
+		if (!func->isStack()) {
+			for (const auto& p : func->inputParameters()) {
+				AstNodeParameter* param = static_cast<AstNodeParameter*>(p.get());
+				if (param->hasName()) {
+					scopeStack.back().insert(param->name());
+				}
+			}
+		}
 	}
 
 	// For-loop iterators create a block-scoped variable that can shadow outer variables
@@ -403,6 +596,7 @@ void detectShadowVariables(IAstNode* node, const std::string& filename, std::vec
 			issue.filename = filename;
 			issue.line = node->line();
 			issue.column = node->column();
+			issue.keyword = "for";
 			issue.message = "Variable '" + iterName + "' shadows variable from outer scope";
 			issue.level = "warning";
 			issue.rule = "shadow-variables";
@@ -467,22 +661,21 @@ void detectEmptyBlocks(IAstNode* node, const std::string& filename, std::vector<
 	}
 
 	// Check for control structures with empty bodies
-	if (node->type() == IAstNode::Type::IF_STATEMENT || node->type() == IAstNode::Type::FOR_STATEMENT ||
-			node->type() == IAstNode::Type::LOOP_STATEMENT) {
+	if (isControlStatement(node) && node->type() != IAstNode::Type::SWITCH_STATEMENT) {
 		// Find the block child
 		for (size_t i = 0; i < node->childCount(); i++) {
 			IAstNode* child = node->child(i);
+			if (node->type() == IAstNode::Type::WHILE_STATEMENT &&
+					child != static_cast<AstNodeWhileStatement*>(node)->body()) {
+				continue;
+			}
 			if (child && child->type() == IAstNode::Type::BLOCK && countStatements(child) == 0) {
 				LintIssue issue;
 				issue.filename = filename;
 				issue.line = node->line();
 				issue.column = node->column();
-				std::string blockType = node->type() == IAstNode::Type::IF_STATEMENT	  ? "if"
-										: node->type() == IAstNode::Type::FOR_STATEMENT	  ? "for"
-										: node->type() == IAstNode::Type::LOOP_STATEMENT  ? "loop"
-										: node->type() == IAstNode::Type::WHILE_STATEMENT ? "while"
-																						  : "block";
-				issue.message = "Empty '" + blockType + "' block";
+				issue.keyword = controlKeyword(node);
+				issue.message = "Empty '" + std::string(controlKeyword(node)) + "' block";
 				issue.level = "warning";
 				issue.rule = "empty-blocks";
 				issues.push_back(issue);
@@ -518,8 +711,11 @@ void detectConstantConditions(IAstNode* node, const std::string& filename, std::
 			if (current->type() == IAstNode::Type::IF_STATEMENT && previous->type() == IAstNode::Type::LITERAL) {
 				AstNodeLiteral* literal = static_cast<AstNodeLiteral*>(previous);
 				if (literal->literalType() == AstNodeLiteral::LiteralType::INTEGER) {
-					std::string value = literal->value();
-					bool isAlwaysTrue = (value != "0");
+					int64_t value = 0;
+					if (readIntegerLiteral(literal->value(), value) != std::errc()) {
+						continue;
+					}
+					bool isAlwaysTrue = value != 0;
 					LintIssue issue;
 					issue.filename = filename;
 					issue.line = previous->line();
@@ -710,8 +906,33 @@ void detectNamingConventions(IAstNode* node, const std::string& filename, std::v
 	}
 }
 
-std::vector<LintIssue> lintFile(const std::string& filename, const LintOptions& opts) {
+void anchorAtKeyword(LintIssue& issue, const std::vector<std::string>& lines) {
+	if (issue.line == 0 || issue.line >= lines.size() || issue.column == 0) {
+		return;
+	}
+	const std::string& text = lines[issue.line];
+	const size_t len = issue.keyword.size();
+	size_t end = std::min(issue.column - 1, text.size());
+	auto isWordChar = [](char c) { return std::isalnum(static_cast<unsigned char>(c)) || c == '_'; };
+	while (end >= len) {
+		size_t pos = text.rfind(issue.keyword, end - len);
+		if (pos == std::string::npos) {
+			return;
+		}
+		bool startsWord = pos == 0 || !isWordChar(text[pos - 1]);
+		bool endsWord = pos + len >= text.size() || !isWordChar(text[pos + len]);
+		if (startsWord && endsWord) {
+			issue.column = pos + 1;
+			return;
+		}
+		end = pos + len - 1;
+	}
+}
+
+std::vector<LintIssue> lintFile(
+		const std::string& filename, const LintOptions& opts, SymbolCache& cache, bool& readable) {
 	std::vector<LintIssue> issues;
+	readable = true;
 
 	try {
 		// Read and parse file
@@ -743,13 +964,15 @@ std::vector<LintIssue> lintFile(const std::string& filename, const LintOptions& 
 			return issues;
 		}
 
+		FileSymbols symbols = collectFileSymbols(root);
+		mergeSiblingSymbols(filename, symbols, cache);
+
 		// Check for unused functions
 		if (!opts.noUnusedFunctions) {
 			std::unordered_map<std::string, IAstNode*> functions;
-			std::unordered_set<std::string> calls;
+			const std::unordered_set<std::string>& calls = symbols.calls;
 
 			collectFunctions(root, functions);
-			collectFunctionCalls(root, calls);
 
 			for (const auto& pair : functions) {
 				const std::string& funcName = pair.first;
@@ -790,11 +1013,11 @@ std::vector<LintIssue> lintFile(const std::string& filename, const LintOptions& 
 					std::unordered_set<std::string> usages;
 
 					// Collect locals and usages only within this function
-					collectLocalBindings(child, locals);
+					collectLocalBindings(child, locals, symbols.globals);
 
 					// Also register named function parameters as implicit locals
 					Qd::AstNodeFunctionDeclaration* func = static_cast<Qd::AstNodeFunctionDeclaration*>(child);
-					for (size_t j = 0; j < func->inputParameters().size(); j++) {
+					for (size_t j = 0; !func->isStack() && j < func->inputParameters().size(); j++) {
 						Qd::AstNodeParameter* param =
 								static_cast<Qd::AstNodeParameter*>(func->inputParameters()[j].get());
 						if (param->hasName() && param->name()[0] != '_') {
@@ -876,8 +1099,14 @@ std::vector<LintIssue> lintFile(const std::string& filename, const LintOptions& 
 			detectNamingConventions(root, filename, issues);
 		}
 
-		// Filter out issues suppressed by //nolint directives
 		auto lines = splitLines(source);
+		for (auto& issue : issues) {
+			if (!issue.keyword.empty()) {
+				anchorAtKeyword(issue, lines);
+			}
+		}
+
+		// Filter out issues suppressed by //nolint directives
 		issues.erase(std::remove_if(issues.begin(), issues.end(),
 							 [&lines](const LintIssue& issue) {
 								 if (issue.line > 0 && issue.line < lines.size()) {
@@ -888,7 +1117,8 @@ std::vector<LintIssue> lintFile(const std::string& filename, const LintOptions& 
 				issues.end());
 
 	} catch (const std::exception& e) {
-		// Silently skip files that can't be read/parsed
+		std::cerr << "quadlint: " << filename << ": " << e.what() << "\n";
+		readable = false;
 	}
 
 	return issues;
@@ -909,17 +1139,58 @@ void printIssues(const std::vector<LintIssue>& issues) {
 	}
 }
 
+std::string toValidUtf8(const std::string& text) {
+	std::string out;
+	size_t i = 0;
+	while (i < text.size()) {
+		const unsigned char c = static_cast<unsigned char>(text[i]);
+		size_t len = 0;
+		uint32_t cp = 0;
+		if (c < 0x80) {
+			len = 1;
+			cp = c;
+		} else if (c >= 0xC2 && c <= 0xDF) {
+			len = 2;
+			cp = c & 0x1Fu;
+		} else if (c >= 0xE0 && c <= 0xEF) {
+			len = 3;
+			cp = c & 0x0Fu;
+		} else if (c >= 0xF0 && c <= 0xF4) {
+			len = 4;
+			cp = c & 0x07u;
+		}
+		bool valid = len > 0 && i + len <= text.size();
+		for (size_t k = 1; valid && k < len; k++) {
+			const unsigned char cc = static_cast<unsigned char>(text[i + k]);
+			valid = (cc & 0xC0) == 0x80;
+			cp = (cp << 6) | (cc & 0x3Fu);
+		}
+		if (valid && ((len == 3 && (cp < 0x800 || (cp >= 0xD800 && cp <= 0xDFFF))) ||
+							 (len == 4 && (cp < 0x10000 || cp > 0x10FFFF)))) {
+			valid = false;
+		}
+		if (valid) {
+			out.append(text, i, len);
+			i += len;
+		} else {
+			out += "\xEF\xBF\xBD";
+			i++;
+		}
+	}
+	return out;
+}
+
 void printIssuesJson(const std::vector<LintIssue>& issues) {
 	json_t* array = json_array();
 
 	for (const auto& issue : issues) {
 		json_t* obj = json_object();
-		json_object_set_new(obj, "file", json_string(issue.filename.c_str()));
+		json_object_set_new(obj, "file", json_string(toValidUtf8(issue.filename).c_str()));
 		json_object_set_new(obj, "line", json_integer(static_cast<json_int_t>(issue.line)));
 		json_object_set_new(obj, "column", json_integer(static_cast<json_int_t>(issue.column)));
 		json_object_set_new(obj, "level", json_string(issue.level.c_str()));
 		json_object_set_new(obj, "rule", json_string(issue.rule.c_str()));
-		json_object_set_new(obj, "message", json_string(issue.message.c_str()));
+		json_object_set_new(obj, "message", json_string(toValidUtf8(issue.message).c_str()));
 		json_array_append_new(array, obj);
 	}
 
@@ -1056,8 +1327,12 @@ int main(int argc, char* argv[]) {
 	}
 
 	std::vector<LintIssue> allIssues;
+	SymbolCache cache;
+	bool allReadable = true;
 	for (const auto& file : allFiles) {
-		std::vector<LintIssue> issues = lintFile(file, opts);
+		bool readable = true;
+		std::vector<LintIssue> issues = lintFile(file, opts, cache, readable);
+		allReadable = allReadable && readable;
 		allIssues.insert(allIssues.end(), issues.begin(), issues.end());
 	}
 
@@ -1075,5 +1350,5 @@ int main(int argc, char* argv[]) {
 		return 1;
 	}
 
-	return 0;
+	return allReadable ? 0 : 1;
 }

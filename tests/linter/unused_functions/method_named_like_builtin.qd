@@ -1,0 +1,18 @@
+// Test: calls to methods named like builtins parse as instructions but still count as uses
+struct Stack {
+	top:i64
+}
+
+fn (s:Stack) depth( -- n:i64) {
+	s <<top
+}
+
+fn (s:Stack) len( -- n:i64) {
+	s <<top
+}
+
+fn main() {
+	Stack { top = 1 } -> s
+	s depth print nl
+	s len print nl
+}

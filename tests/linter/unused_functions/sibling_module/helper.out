@@ -1,0 +1,3 @@
+tests/linter/unused_functions/sibling_module/helper.qd:6:4: warning: Unused function 'helper_unused'
+
+1 issue found
