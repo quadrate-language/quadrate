@@ -437,6 +437,7 @@ pub fn sha256_bytes(buf:ptr length:i64 -- hash:str)! {
 	SHA256_H7 -> hh7
 
 	64 mem::alloc? -> block
+	defer { block mem::free }
 	0 -> buflen
 	0 -> total
 
@@ -544,6 +545,5 @@ pub fn sha256_bytes(buf:ptr length:i64 -- hash:str)! {
 
 	out 64 mem::to_string -> result
 	out mem::free
-	block mem::free
 	result
 }

@@ -432,6 +432,7 @@ pub fn sha512_bytes(buf:ptr length:i64 -- hash:str)! {
 	SHA512_H7 -> hh7
 
 	128 mem::alloc? -> block
+	defer { block mem::free }
 	0 -> buflen
 	0 -> total
 
@@ -534,6 +535,5 @@ pub fn sha512_bytes(buf:ptr length:i64 -- hash:str)! {
 
 	out 128 mem::to_string -> result
 	out mem::free
-	block mem::free
 	result
 }

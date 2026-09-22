@@ -28,9 +28,11 @@ const SHA512_OUT = 64
 // `-> buf -> len`.
 fn build_hmac_input(key:str block_size:i64 pad_byte:i64 msg_buf:ptr msg_len:i64 -- result_len:i64 result:ptr)! {
 	key mem::from_string -> klen -> kbuf
+	defer { kbuf mem::free }
 
 	// Prepare key block (zero-padded to block_size)
 	block_size mem::alloc? -> kpad
+	defer { kpad mem::free }
 	kpad block_size mem::zero
 
 	klen block_size > if {
@@ -51,7 +53,6 @@ fn build_hmac_input(key:str block_size:i64 pad_byte:i64 msg_buf:ptr msg_len:i64 
 	} else {
 		kpad kbuf klen mem::copy
 	}
-	kbuf mem::free
 
 	// XOR key with pad byte
 	0 -> i
@@ -69,7 +70,6 @@ fn build_hmac_input(key:str block_size:i64 pad_byte:i64 msg_buf:ptr msg_len:i64 
 	result kpad block_size mem::copy
 	// Copy message after key pad
 	result block_size mem::ptr_add msg_buf msg_len mem::copy
-	kpad mem::free
 
 	total result
 }
