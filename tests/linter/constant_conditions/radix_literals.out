@@ -1,0 +1,5 @@
+tests/linter/constant_conditions/radix_literals.qd:3:2: warning: Constant condition: expression is always false
+tests/linter/constant_conditions/radix_literals.qd:6:2: warning: Constant condition: expression is always false
+tests/linter/constant_conditions/radix_literals.qd:9:2: warning: Constant condition: expression is always true
+
+3 issues found

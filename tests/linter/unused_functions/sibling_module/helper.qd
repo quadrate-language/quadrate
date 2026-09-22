@@ -1,0 +1,8 @@
+// Test: non-pub functions called from a sibling file of the same directory namespace are used
+fn helper_add(a:i64 b:i64 -- c:i64) {
+	a b +
+}
+
+fn helper_unused() {
+	"unused" print nl
+}

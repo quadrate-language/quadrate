@@ -1,0 +1,31 @@
+// Test: a resource released by hand leaks when an early exit can skip the release
+use mem
+
+fn leaks(n:i64 -- )! {
+	n mem::alloc? -> buf
+	n 0 < if {
+		return
+	}
+	buf mem::free
+}
+
+fn deferred(n:i64 -- )! {
+	n mem::alloc? -> buf
+	defer {
+		buf mem::free
+	}
+	n 0 < if {
+		return
+	}
+}
+
+fn straight_line(n:i64 -- ) {
+	n mem::alloc! -> buf
+	buf mem::free
+}
+
+fn main() {
+	8 leaks!
+	8 deferred!
+	8 straight_line
+}

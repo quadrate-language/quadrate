@@ -1,0 +1,15 @@
+// Test: while loops count toward nesting depth
+fn main() {
+	1 -> a
+	a 0 > while {
+		a 0 > while {
+			a 0 > while {
+				a 0 > while {
+					a 0 > while {
+						0 -> a
+					}
+				}
+			}
+		}
+	}
+}

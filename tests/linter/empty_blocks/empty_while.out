@@ -1,0 +1,3 @@
+tests/linter/empty_blocks/empty_while.qd:4:8: warning: Empty 'while' block
+
+1 issue found

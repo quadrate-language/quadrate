@@ -902,11 +902,18 @@ fn tool_type_conversion(args:str -- result:str) {
 }
 
 fn mcp_tools_call(ds:ptr id:str body:str -- response:str) {
-	body "params" json::get_object -> found -> params
-	params "name" json::get_string -> found -> tool_name
+	body "params" json::get_object -> has_params -> params
+	params "name" json::get_string -> has_name -> tool_name
 	params "arguments" json::get_object -> found -> args
 	found 0 == if {
 		"{}" -> args
+	}
+
+	has_params 0 == if {
+		id "-32602" "Missing required parameter: params" rpc_error return
+	}
+	has_name 0 == if {
+		id "-32602" "Missing required parameter: name" rpc_error return
 	}
 
 	tool_name switch {
@@ -926,7 +933,11 @@ fn mcp_tools_call(ds:ptr id:str body:str -- response:str) {
 		"quadrate_generate_template"  { args tool_generate_template }
 		"quadrate_explain_signature"  { args tool_explain_signature }
 		"quadrate_type_conversion"    { args tool_type_conversion }
-		_                             { "Unknown tool" tool_error_result }
+		_                             { "" }
 	} -> result
-	id result rpc_result
+	result strings::len 0 == if {
+		id "-32602" "Unknown tool: " tool_name strings::concat rpc_error
+	} else {
+		id result rpc_result
+	}
 }

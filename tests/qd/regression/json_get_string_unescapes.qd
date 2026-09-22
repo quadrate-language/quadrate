@@ -1,0 +1,29 @@
+// Test: Regression: json::get_string and json::array_get_string decode escape
+// sequences, so a value read and encoded again is escaped once, not twice.
+use json
+
+fn main() {
+	"{\x22name\x22:\x22a\\\x22b\\u00e9\\\\c\x22,\x22k\\\x22ey\x22:\x22v\x22}" -> doc
+
+	doc "name" json::get_string -> found -> name
+	found print nl
+	name print nl
+	name json::encode print nl
+
+	doc "k\x22ey" json::get_string -> found -> v
+	found print nl
+	v print nl
+
+	"[\x22x\\ty\x22,\x22line\\nbreak\x22]" -> arr
+	arr 0 json::array_get_string -> _ -> first
+	first print nl
+	arr 1 json::array_get_string -> _ -> second
+	second print nl
+
+	"{\x22bad\x22:\x22\\q\x22}" "bad" json::get_string -> found -> bad
+	found print nl
+	bad print nl
+
+	"{\x22c\x22:\x22x\\u0001\\by\x22}" "c" json::get_string -> _ -> ctl
+	ctl json::encode print nl
+}

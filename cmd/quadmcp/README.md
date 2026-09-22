@@ -25,7 +25,8 @@ make quadmcp
 
 | Option | Description |
 |--------|-------------|
-| `--http` | Serve over HTTP on :3000 instead of stdio |
+| `--http` | Serve over HTTP on 127.0.0.1:3000 instead of stdio |
+| `--host <ip>` | Bind `--http` to this address instead of 127.0.0.1 |
 
 ## Tools
 

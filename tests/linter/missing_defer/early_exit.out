@@ -1,0 +1,3 @@
+tests/linter/missing_defer/early_exit.qd:5:9: warning: 'buf' is not released on early exit - consider using defer for cleanup
+
+1 issue found

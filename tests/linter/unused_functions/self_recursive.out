@@ -1,0 +1,3 @@
+tests/linter/unused_functions/self_recursive.qd:2:4: warning: Unused function 'countdown'
+
+1 issue found

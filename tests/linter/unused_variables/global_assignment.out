@@ -1,0 +1,3 @@
+tests/linter/unused_variables/global_assignment.qd:10:5: warning: Unused local variable 'unused'
+
+1 issue found

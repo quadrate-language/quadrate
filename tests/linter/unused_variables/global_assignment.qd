@@ -1,0 +1,11 @@
+// Test: `-> name` on a module-level var is a store to the global, not a new local
+var counter:i64 = 0
+
+fn bump() {
+	counter 1 + -> counter
+}
+
+fn main() {
+	bump
+	10 -> unused
+}

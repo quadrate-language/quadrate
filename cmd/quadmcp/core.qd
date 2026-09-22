@@ -5,8 +5,9 @@ use http
 use io
 use json
 use os
-use strings
 use strconv
+use strings
+use unicode
 
 const PROTOCOL_VERSION = "2024-11-05"
 const SERVER_NAME = "quadmcp"
@@ -88,13 +89,26 @@ fn load_docs( -- ds:ptr) {
 	}
 }
 
+fn is_module_name(name:str -- valid:i64) {
+	name strings::len -> n
+	n 0 > -> valid
+	0 n 1 for i {
+		name i strings::char_at unicode::is_ident_cont valid * -> valid
+	}
+	valid
+}
+
 fn load_module(ds:ptr name:str -- content:str) {
-	ds <<docs_dir "/" strings::concat name strings::concat ".json" strings::concat -> path
-	path io::read_file switch {
-		Ok {
-		}
-		_ {
-			"{}"
+	name is_module_name 0 == if {
+		"{}"
+	} else {
+		ds <<docs_dir "/" strings::concat name strings::concat ".json" strings::concat -> path
+		path io::read_file switch {
+			Ok {
+			}
+			_ {
+				"{}"
+			}
 		}
 	}
 }

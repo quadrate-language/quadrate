@@ -1,0 +1,4 @@
+// Test: a path that cannot be read is an error, not a silent skip
+fn main() {
+	"hi" print nl
+}
