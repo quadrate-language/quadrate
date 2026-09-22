@@ -9,6 +9,8 @@
 
 namespace fs = std::filesystem;
 
+static constexpr size_t MAX_STACK_SIZE = 1ULL << 26;
+
 void printHelp() {
 	qdcli::Help help("quadc", "Quadrate compiler");
 	help.description("Compiles .qd source files to native executables via LLVM.")
@@ -145,14 +147,19 @@ bool parseArgs(int argc, char* argv[], Options& opts) {
 				qdcli::usageError("quadc", "option '-s' requires an argument");
 				return false;
 			}
-			try {
-				opts.stackSize = std::stoull(argv[++i]);
-				if (opts.stackSize == 0) {
-					qdcli::usageError("quadc", "stack size must be greater than 0");
-					return false;
-				}
-			} catch (const std::exception&) {
-				qdcli::usageError("quadc", std::string("invalid stack size: ") + argv[i]);
+			std::string value = argv[++i];
+			if (value.empty() || value.find_first_not_of("0123456789") != std::string::npos) {
+				qdcli::usageError("quadc", "invalid stack size: '" + value + "' (expected a positive integer)");
+				return false;
+			}
+			if (value.size() > 10 || std::stoull(value) > MAX_STACK_SIZE) {
+				qdcli::usageError("quadc", "stack size too large: " + value + " (maximum is " +
+												   std::to_string(MAX_STACK_SIZE) + ")");
+				return false;
+			}
+			opts.stackSize = std::stoull(value);
+			if (opts.stackSize == 0) {
+				qdcli::usageError("quadc", "stack size must be greater than 0");
 				return false;
 			}
 		} else if (arg == "-") {
@@ -180,6 +187,11 @@ bool parseArgs(int argc, char* argv[], Options& opts) {
 				opts.files.push_back(arg);
 			}
 		}
+	}
+
+	if (opts.coverage && !opts.testMode) {
+		qdcli::usageError("quadc", "'--coverage' requires '--test'");
+		return false;
 	}
 
 	// If no files and stdin is piped, read from stdin

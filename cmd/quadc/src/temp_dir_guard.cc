@@ -35,7 +35,7 @@ std::string createTempDir(bool useCwd) {
 		}
 
 		// If directory already exists, try again with a different name
-		if (ec.value() == EEXIST) {
+		if (!ec || ec.value() == EEXIST) {
 			continue;
 		}
 
