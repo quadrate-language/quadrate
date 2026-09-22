@@ -424,6 +424,70 @@ if [ -x "$WORK_DIR/nameA/chosen" ]; then pass "-o still overrides the default"; 
     fail "-o still overrides the default" "no 'chosen' produced"; fi
 
 echo ""
+echo "=== quad dispatcher ==="
+
+QUAD="${QUAD:-$PROJECT_ROOT/$BUILD_DIR/cmd/quad/quad}"
+mkdir -p "$WORK_DIR/quadcli"
+mkdir -p "$WORK_DIR/quadargs"
+printf 'use os\n\nfn main() {\n\tos::args -> a\n\ta len print nl\n}\n' > "$WORK_DIR/quadargs/args.qd"
+printf 'fn  main( ) {\n1 print nl\n}\n' > "$WORK_DIR/quadcli/other.qd"
+cp "$WORK_DIR/quadcli/other.qd" "$WORK_DIR/quadcli/other.orig"
+
+out=$(cd "$WORK_DIR/quadcli" && printf 'fn  main( ) {\n2 print nl\n}\n' | "$QUAD" fmt - 2>&1 || true)
+if [ "$out" = "$(printf 'fn main() {\n\t2 print nl\n}')" ]; then pass "quad fmt - formats stdin to stdout"; else
+    fail "quad fmt - formats stdin to stdout" "got '$(echo "$out" | head -3 | tr '\n' '|')'"; fi
+if cmp -s "$WORK_DIR/quadcli/other.qd" "$WORK_DIR/quadcli/other.orig"; then
+    pass "quad fmt - leaves files in the directory alone"; else
+    fail "quad fmt - leaves files in the directory alone" "other.qd was rewritten"; fi
+
+out=$(cd "$WORK_DIR/quadargs" && "$QUAD" args.qd one two 2>&1 || true)
+if [ "$out" = "2" ]; then pass "quad file.qd passes its arguments to the program"; else
+    fail "quad file.qd passes its arguments to the program" "got '$out'"; fi
+
+out=$(cd "$WORK_DIR/quadargs" && "$QUAD" run args.qd -- --no-color 2>&1 || true)
+if [ "$out" = "1" ]; then pass "--no-color after -- reaches the program"; else
+    fail "--no-color after -- reaches the program" "got '$out'"; fi
+
+mkdir -p "$WORK_DIR/quadbuild"
+printf 'fn main() {\n\t7 print nl\n}\n' > "$WORK_DIR/quadbuild/main.qd"
+expect_rc "quad build with only a flag discovers main.qd" 0 \
+    sh -c "cd '$WORK_DIR/quadbuild' && '$QUAD' build --verbose < /dev/null"
+if [ -x "$WORK_DIR/quadbuild/main" ]; then pass "quad build --verbose builds main"; else
+    fail "quad build --verbose builds main" "no binary produced"; fi
+rm -f "$WORK_DIR/quadbuild/main"
+expect_rc "quad build -o takes its value" 0 sh -c "cd '$WORK_DIR/quadbuild' && '$QUAD' build -o prog < /dev/null"
+if [ -x "$WORK_DIR/quadbuild/prog" ]; then pass "quad build -o prog names the binary"; else
+    fail "quad build -o prog names the binary" "no prog produced"; fi
+
+mkdir -p "$WORK_DIR/quadtest"
+printf 'test "one" {\n\t1 1 testing::assert_eq\n}\n' > "$WORK_DIR/quadtest/one_test.qd"
+printf 'use testing\n\n' | cat - "$WORK_DIR/quadtest/one_test.qd" > "$WORK_DIR/quadtest/t" && mv "$WORK_DIR/quadtest/t" "$WORK_DIR/quadtest/one_test.qd"
+expect_rc "quad test -s <size> discovers test files" 0 sh -c "cd '$WORK_DIR/quadtest' && '$QUAD' test -s 4096 < /dev/null"
+
+mkdir -p "$WORK_DIR/quadclean"
+printf 'fn main() {\n\t1 print nl\n}\n' > "$WORK_DIR/quadclean/app.qd"
+printf 'notes\n' > "$WORK_DIR/quadclean/README"
+printf 'notes\n' > "$WORK_DIR/quadclean/notes.qd"
+printf 'keep me\n' > "$WORK_DIR/quadclean/notes"
+printf '.global _start\n' > "$WORK_DIR/quadclean/boot.s"
+printf '.global _start\n' > "$WORK_DIR/quadclean/app.s"
+(cd "$WORK_DIR/quadclean" && "$QUADC" app.qd > /dev/null 2>&1) || true
+(cd "$WORK_DIR/quadclean" && "$QUAD" clean > /dev/null 2>&1) || true
+if [ ! -e "$WORK_DIR/quadclean/app" ]; then pass "quad clean removes a built executable"; else
+    fail "quad clean removes a built executable" "app is still there"; fi
+if [ -e "$WORK_DIR/quadclean/notes" ] && [ -e "$WORK_DIR/quadclean/boot.s" ] && [ -e "$WORK_DIR/quadclean/app.s" ]; then
+    pass "quad clean leaves files it did not build"; else
+    fail "quad clean leaves files it did not build" "$(ls "$WORK_DIR/quadclean" | tr '\n' ' ')"; fi
+
+printf '#!/bin/sh\nkill -TERM $$\n' > "$WORK_DIR/quadcli/quadlint"
+chmod +x "$WORK_DIR/quadcli/quadlint"
+cp "$QUAD" "$WORK_DIR/quadcli/quad"
+rc=0
+out=$(cd "$WORK_DIR/quadcli" && ./quad lint x.qd 2>&1) || rc=$?
+if [ "$rc" = "143" ] && echo "$out" | grep -q "signal 15"; then pass "a tool killed by a signal is reported as such"; else
+    fail "a tool killed by a signal is reported as such" "rc=$rc: $out"; fi
+
+echo ""
 echo "=== io::readline end-of-input (needs controlled stdin) ==="
 
 # Lives here rather than in the qd suite because that suite inherits stdin: a
