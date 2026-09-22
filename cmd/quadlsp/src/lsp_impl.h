@@ -45,13 +45,21 @@ public:
 	void run();
 
 private:
+	enum class DispatchResult {
+		Handled,
+		InvalidParams,
+		UnknownMethod
+	};
+
 	// Core messaging
-	std::string readMessage();
+	bool readMessage(std::string& content);
 	void sendMessage(json_t* json);
+	void sendError(const std::string& id, int code, const std::string& message);
 	std::string getJsonString(json_t* obj, const char* key);
 	json_t* getJsonObject(json_t* obj, const char* key);
 	json_t* makeResponseId(const std::string& id) const;
 	void handleMessage(const std::string& message);
+	DispatchResult dispatchMessage(const std::string& method, const std::string& id, json_t* params);
 
 	// Initialization
 	void handleInitialize(const std::string& id, json_t* initOptions);
@@ -178,6 +186,8 @@ private:
 
 	std::map<std::string, std::string> documents_;
 	bool currentIdIsString_ = false;
+	bool responded_ = false;
+	bool shutdownRequested_ = false;
 	[[maybe_unused]] int messageId_;
 	bool lintEnabled_ = true;
 	std::string quadlintPath_ = "quadlint";
