@@ -13,11 +13,18 @@ Covered:
   * didClose evicting the document and retiring its diagnostics
   * didChange with empty text being honoured rather than skipped
   * out-of-range positions, unknown URIs and unknown methods
+  * frames that are unusual but valid keep the server running, and every
+    request gets an answer or a JSON-RPC error
+  * formatting documents larger than any fixed output buffer
+  * UTF-16 positions, percent-encoded URIs and incremental didChange
+  * rename, references, highlight and definition land on the exact name
 """
 
 import json
 import subprocess
 import sys
+import tempfile
+import urllib.parse
 from pathlib import Path
 
 TIMEOUT = 30
@@ -231,7 +238,7 @@ class Runner:
         self.survives("survives a rename to control characters",
                       frame(INIT) + frame(did_open())
                       + frame({"jsonrpc": "2.0", "id": 2, "method": "textDocument/rename",
-                               "params": {**pos(0, 3), "newName": "[2J‮"}}))
+                               "params": {**pos(0, 3), "newName": "[2J"}}))
         self.survives("survives call-hierarchy data with a non-numeric line",
                       frame(INIT) + frame(did_open())
                       + frame({"jsonrpc": "2.0", "id": 2, "method": "callHierarchy/incomingCalls",
@@ -260,6 +267,234 @@ class Runner:
                                  "params": {"textDocument": {"uri": DOC_URI}}})
                           for i in range(3, 503)))
 
+    # -- helpers for request/response tests ----------------------------
+    @staticmethod
+    def request(req_id, method, params):
+        return {"jsonrpc": "2.0", "id": req_id, "method": method, "params": params}
+
+    @staticmethod
+    def at(uri, line, character, **extra):
+        params = {"textDocument": {"uri": uri}, "position": {"line": line, "character": character}}
+        params.update(extra)
+        return params
+
+    def answer(self, messages, req_id, init=INIT):
+        data = frame(init) + b"".join(m if isinstance(m, bytes) else frame(m) for m in messages)
+        _, responses = self.drive(data)
+        for r in responses:
+            if r.get("id") == req_id and "method" not in r:
+                return r
+        return None
+
+    @staticmethod
+    def ranges(response):
+        result = (response or {}).get("result") or []
+        if isinstance(result, dict):
+            result = [e for edits in (result.get("changes") or {}).values() for e in edits]
+        return sorted((r["range"]["start"]["line"], r["range"]["start"]["character"],
+                       r["range"]["end"]["character"]) for r in result)
+
+    # -- framing and protocol errors ------------------------------------
+    def test_protocol(self):
+        print("\n-- protocol --")
+        hover = self.request(5, "textDocument/hover", self.at(DOC_URI, 1, 13))
+        body = json.dumps(hover).encode()
+        frames = {
+            "a lowercase content-length header": b"content-length: %d\r\n\r\n" % len(body) + body,
+            "a header with no space after the colon": b"Content-Length:%d\r\n\r\n" % len(body) + body,
+            "Content-Type after Content-Length":
+                b"Content-Length: %d\r\nContent-Type: application/vscode-jsonrpc; charset=utf-8\r\n\r\n"
+                % len(body) + body,
+            "a Content-Length: 0 frame before it": b"Content-Length: 0\r\n\r\n" + frame(hover),
+            "a frame without Content-Length before it": b"Content-Type: text/plain\r\n\r\n" + frame(hover),
+            "an oversized frame before it":
+                b"Content-Length: 20000000\r\n\r\n" + b"x" * 20000000 + frame(hover),
+        }
+        for name, data in frames.items():
+            response = self.answer([did_open(), data], 5)
+            self.check("answers a request after %s" % name,
+                       response is not None and "result" in response, "got %r" % (response,))
+
+        response = self.answer([self.request(2, "nonsense/method", {})], 2)
+        self.check("an unknown request gets MethodNotFound",
+                   (response or {}).get("error", {}).get("code") == -32601, "got %r" % (response,))
+        _, responses = self.drive(frame(INIT) + frame({"jsonrpc": "2.0", "method": "nonsense/notify"}))
+        self.check("an unknown notification gets no response",
+                   all(r.get("id") == 1 or "method" in r for r in responses), "got %r" % (responses,))
+        for method, params in {"textDocument/hover": "a string",
+                               "textDocument/definition": {"textDocument": {"uri": DOC_URI}},
+                               "textDocument/rename": self.at(DOC_URI, 0, 3)}.items():
+            response = self.answer([did_open(), self.request(2, method, params)], 2)
+            self.check("%s with bad params gets InvalidParams" % method,
+                       (response or {}).get("error", {}).get("code") == -32602, "got %r" % (response,))
+
+        shutdown = self.request(2, "shutdown", None)
+        response = self.answer([shutdown, self.request(3, "textDocument/documentSymbol",
+                                                       {"textDocument": {"uri": DOC_URI}})], 3)
+        self.check("a request after shutdown gets InvalidRequest",
+                   (response or {}).get("error", {}).get("code") == -32600, "got %r" % (response,))
+        exit_msg = {"jsonrpc": "2.0", "method": "exit"}
+        rc, _ = self.drive(frame(INIT) + frame(shutdown) + frame(exit_msg))
+        self.check("exit after shutdown exits 0", rc == 0, "rc %r" % (rc,))
+        rc, _ = self.drive(frame(INIT) + frame(exit_msg))
+        self.check("exit without shutdown exits 1", rc == 1, "rc %r" % (rc,))
+
+    # -- formatting -----------------------------------------------------
+    def test_formatting(self):
+        print("\n-- formatting --")
+        uri = "file:///big_format.qd"
+        text = "".join("fn f%d( -- x:i64) {\n1\n}\n" % i for i in range(12000)) + "fn main() {\n f0 print\n}\n"
+        response = self.answer([did_open(uri=uri, text=text),
+                                self.request(2, "textDocument/formatting",
+                                             {"textDocument": {"uri": uri},
+                                              "options": {"tabSize": 4, "insertSpaces": False}})], 2)
+        edits = (response or {}).get("result") or []
+        new_text = edits[0]["newText"] if len(edits) == 1 else ""
+        self.check("formats a document larger than 256 KiB in full",
+                   len(text) > 262144 and new_text.endswith("fn main() {\n\tf0 print\n}\n")
+                   and new_text.count("fn f") == 12000, "got %d edits, %d bytes" % (len(edits), len(new_text)))
+
+        response = self.answer([did_open(text="fn main( { oh no\n"),
+                                self.request(2, "textDocument/formatting",
+                                             {"textDocument": {"uri": DOC_URI},
+                                              "options": {"tabSize": 4, "insertSpaces": False}})], 2)
+        self.check("does not format a document that does not parse",
+                   response is not None and response.get("result") == [], "got %r" % (response,))
+
+    # -- positions, URIs and document sync ------------------------------
+    def test_positions(self):
+        print("\n-- positions --")
+        uri = "file:///utf16.qd"
+        text = 'fn helper( -- x:i64) { 1 }\nfn main() {\n  "åäö😀" helper print\n}\n'
+        line = '  "åäö😀" helper print'
+        col16 = len(line[:line.index("helper")].encode("utf-16-le")) // 2
+
+        response = self.answer([did_open(uri=uri, text=text),
+                                self.request(2, "textDocument/definition", self.at(uri, 2, col16 + 1))], 2)
+        location = (response or {}).get("result") or {}
+        self.check("a UTF-16 position after non-ASCII text resolves the word under it",
+                   location.get("range", {}).get("start") == {"line": 0, "character": 3},
+                   "got %r" % (response,))
+
+        response = self.answer([did_open(uri=uri, text=text),
+                                self.request(2, "textDocument/references",
+                                             self.at(uri, 0, 4, context={"includeDeclaration": True}))], 2)
+        self.check("reference ranges are reported in UTF-16 code units",
+                   self.ranges(response) == [(0, 3, 9), (2, col16, col16 + 6)], "got %r" % (response,))
+
+        response = self.answer([did_open(uri=uri, text=text),
+                                self.request(2, "textDocument/semanticTokens/full",
+                                             {"textDocument": {"uri": uri}})], 2)
+        data = ((response or {}).get("result") or {}).get("data") or []
+        tokens, line_no, col = [], 0, 0
+        for i in range(0, len(data) - 4, 5):
+            line_no += data[i]
+            col = data[i + 1] if data[i] else col + data[i + 1]
+            tokens.append((line_no, col, data[i + 2]))
+        self.check("semantic tokens use UTF-16 columns and lengths",
+                   (2, 2, 7) in tokens and (2, col16, 6) in tokens, "got %r" % (tokens,))
+
+        utf8_init = json.loads(json.dumps(INIT))
+        utf8_init["params"]["capabilities"] = {"general": {"positionEncodings": ["utf-8", "utf-16"]}}
+        data = frame(utf8_init) + frame(did_open(uri=uri, text=text)) + frame(
+            self.request(2, "textDocument/references", self.at(uri, 0, 4, context={"includeDeclaration": True})))
+        _, responses = self.drive(data)
+        init_reply = next((r for r in responses if r.get("id") == 1), {})
+        refs = next((r for r in responses if r.get("id") == 2), None)
+        col8 = len(line[:line.index("helper")].encode())
+        self.check("a client offering utf-8 gets byte columns",
+                   init_reply.get("result", {}).get("capabilities", {}).get("positionEncoding") == "utf-8"
+                   and self.ranges(refs) == [(0, 3, 9), (2, col8, col8 + 6)], "got %r" % (refs,))
+
+        change = {"jsonrpc": "2.0", "method": "textDocument/didChange",
+                  "params": {"textDocument": {"uri": DOC_URI, "version": 2}, "contentChanges": [
+                      {"text": "fn one() { }\nfn main() { one }\n"},
+                      {"range": {"start": {"line": 0, "character": 3}, "end": {"line": 0, "character": 6}},
+                       "text": "two"},
+                      {"range": {"start": {"line": 1, "character": 12}, "end": {"line": 1, "character": 15}},
+                       "text": "two"}]}}
+        response = self.answer([did_open(), change, self.request(2, "textDocument/documentSymbol",
+                                                                  {"textDocument": {"uri": DOC_URI}})], 2)
+        names = [s.get("name") for s in (response or {}).get("result") or []]
+        self.check("didChange applies every content change in order", "two" in names and "helper" not in names,
+                   "symbols %r" % (names,))
+
+        with tempfile.TemporaryDirectory() as tmp:
+            folder = Path(tmp) / "my dir"
+            folder.mkdir()
+            (folder / "lib.qd").write_text("fn helper( -- x:i64) { 1 }\n")
+            main_text = "fn main() {\n  helper print\n}\n"
+            (folder / "main.qd").write_text(main_text)
+            main_uri = "file://" + urllib.parse.quote(str(folder / "main.qd"))
+            response = self.answer([did_open(uri=main_uri, text=main_text),
+                                    self.request(2, "textDocument/definition", self.at(main_uri, 1, 3))], 2)
+            target = ((response or {}).get("result") or {}).get("uri")
+            self.check("percent-encoded URIs resolve sibling files",
+                       target == "file://" + urllib.parse.quote(str(folder / "lib.qd")), "got %r" % (response,))
+
+    # -- rename, references, highlight, definition ----------------------
+    def test_names(self):
+        print("\n-- names --")
+        uri = "file:///names.qd"
+
+        def rename(text, line, character, new_name="zz"):
+            return self.answer([did_open(uri=uri, text=text),
+                                self.request(2, "textDocument/rename",
+                                             dict(self.at(uri, line, character), newName=new_name))], 2)
+
+        text = "fn a() { } fn bb() { a }\nfn main() { bb }\n"
+        self.check("renaming a function declared second on a line edits its name",
+                   self.ranges(rename(text, 1, 12)) == [(0, 14, 16), (1, 12, 14)])
+        response = self.answer([did_open(uri=uri, text=text),
+                                self.request(2, "textDocument/documentHighlight", self.at(uri, 1, 12))], 2)
+        self.check("highlight finds a function declared second on a line",
+                   self.ranges(response) == [(0, 14, 16), (1, 12, 14)], "got %r" % (response,))
+        response = self.answer([did_open(uri=uri, text=text),
+                                self.request(2, "textDocument/definition", self.at(uri, 1, 12))], 2)
+        self.check("definition covers exactly the function name",
+                   ((response or {}).get("result") or {}).get("range") ==
+                   {"start": {"line": 0, "character": 14}, "end": {"line": 0, "character": 16}},
+                   "got %r" % (response,))
+
+        text = "fn main() {\n  1 -> ab 2 -> b\n  ab b + print\n}\n"
+        self.check("renaming local b leaves ab alone",
+                   self.ranges(rename(text, 2, 5)) == [(1, 15, 16), (2, 5, 6)])
+        text = "fn main() {\n  1 ->ab\n  ab print\n}\n"
+        self.check("renaming a local bound without a space after the arrow",
+                   self.ranges(rename(text, 2, 2)) == [(1, 6, 8), (2, 2, 4)])
+        text = "fn first() {\n  1 -> x x print\n}\nfn second() {\n  2 -> x x print\n}\n"
+        self.check("renaming a local stays inside its own function",
+                   self.ranges(rename(text, 4, 9)) == [(4, 7, 8), (4, 9, 10)])
+
+        text = "fn f(count:i64 -- ) {\n  count print\n}\nfn main() { 1 f }\n"
+        self.check("renaming a parameter renames its declaration",
+                   self.ranges(rename(text, 1, 3)) == [(0, 5, 10), (1, 2, 7)])
+        for include, expected in ((True, [(0, 5, 10), (1, 2, 7)]), (False, [(1, 2, 7)])):
+            response = self.answer([did_open(uri=uri, text=text),
+                                    self.request(2, "textDocument/references",
+                                                 self.at(uri, 1, 3, context={"includeDeclaration": include}))], 2)
+            self.check("parameter references honour includeDeclaration=%s" % include,
+                       self.ranges(response) == expected, "got %r" % (response,))
+
+        text = "fn helper() { }\nfn main() { helper }\n"
+        for bad in ("not valid!", "1abc", "print", "fn", "i64"):
+            response = rename(text, 1, 13, bad)
+            self.check("rename to %r is rejected" % bad,
+                       (response or {}).get("error", {}).get("code") == -32602, "got %r" % (response,))
+        response = rename(text, 1, 13, "zz")
+        self.check("rename to a valid name succeeds", self.ranges(response) == [(0, 3, 9), (1, 12, 18)],
+                   "got %r" % (response,))
+        response = self.answer([did_open(uri=uri, text="fn main() { 1 print }\n"),
+                                self.request(2, "textDocument/rename",
+                                             dict(self.at(uri, 0, 15), newName="zz"))], 2)
+        self.check("renaming a built-in is refused", "error" in (response or {}), "got %r" % (response,))
+        response = self.answer([did_open(uri=uri, text=text),
+                                self.request(2, "textDocument/prepareRename", self.at(uri, 1, 14))], 2)
+        self.check("prepareRename returns the exact name range",
+                   ((response or {}).get("result") or {}).get("range") ==
+                   {"start": {"line": 1, "character": 12}, "end": {"line": 1, "character": 18}},
+                   "got %r" % (response,))
+
     def run(self):
         print("Quadrate LSP robustness tests\n" + "=" * 40)
         self.test_ids()
@@ -267,6 +502,10 @@ class Runner:
         self.test_lifecycle()
         self.test_params()
         self.test_size()
+        self.test_protocol()
+        self.test_formatting()
+        self.test_positions()
+        self.test_names()
         print("\n" + "=" * 40)
         print("passed: %d  failed: %d" % (self.passed, self.failed))
         return 1 if self.failed else 0
