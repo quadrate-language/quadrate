@@ -76,6 +76,7 @@ private:
 	void publishDiagnostics(const std::string& uri, const std::string& text);
 	void publishEmptyDiagnostics(const std::string& uri);
 	void handleFormatting(const std::string& id, const std::string& uri);
+	bool formatDocument(const std::string& uri, const std::string& source, std::string& formatted);
 
 	// Completion (implemented in lsp_completion.cc)
 	void handleCompletion(const std::string& id, const std::string& uri, size_t line, size_t character);

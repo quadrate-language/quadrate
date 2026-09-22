@@ -12,6 +12,7 @@
 #include <fstream>
 #include <iostream>
 #include <quadrate/cli/cli.h>
+#include <quadrate/cli/file_utils.h>
 #include <quadrate/cli/help.h>
 #include <quadrate/platform/platform.h>
 #include <quadrate/qc/ast.h>
@@ -25,6 +26,7 @@
 #include <quadrate/qc/ast_node_struct.h>
 #include <quadrate/qc/ast_node_test.h>
 #include <quadrate/qc/error_reporter.h>
+#include <quadrate/qc/formatter.h>
 #include <quadrate/qc/instructions.h>
 #include <quadrate/qc/semantic_validator.h>
 #include <set>
@@ -1191,6 +1193,67 @@ void QuadrateLSP::publishDiagnostics(const std::string& uri, const std::string& 
 	json_decref(notification);
 }
 
+static json_t* makeLspRange(size_t startLine, size_t startChar, size_t endLine, size_t endChar) {
+	json_t* start = json_object();
+	json_object_set_new(start, "line", json_integer(static_cast<json_int_t>(startLine)));
+	json_object_set_new(start, "character", json_integer(static_cast<json_int_t>(startChar)));
+	json_t* end = json_object();
+	json_object_set_new(end, "line", json_integer(static_cast<json_int_t>(endLine)));
+	json_object_set_new(end, "character", json_integer(static_cast<json_int_t>(endChar)));
+	json_t* range = json_object();
+	json_object_set_new(range, "start", start);
+	json_object_set_new(range, "end", end);
+	return range;
+}
+
+static json_t* makeWholeDocumentEdit(const std::string& source, const std::string& replacement) {
+	size_t lineCount = 0;
+	size_t lineStart = 0;
+	for (size_t i = 0; i < source.size(); i++) {
+		if (source[i] == '\n') {
+			lineCount++;
+			lineStart = i + 1;
+		}
+	}
+	json_t* edit = json_object();
+	json_object_set_new(edit, "range", makeLspRange(0, 0, lineCount, source.size() - lineStart));
+	json_object_set_new(edit, "newText", json_string(replacement.c_str()));
+	return edit;
+}
+
+bool QuadrateLSP::formatDocument(const std::string& uri, const std::string& source, std::string& formatted) {
+	if (source.empty() || !qdcli::isValidUtf8(source)) {
+		return false;
+	}
+	try {
+		Qd::Ast sourceAst;
+		Qd::IAstNode* sourceRoot = sourceAst.generate(source.c_str(), false, nullptr);
+		if (!sourceRoot || sourceAst.hasErrors()) {
+			return false;
+		}
+
+		std::string configDir = ".";
+		std::string filePath = lspUriToPath(uri);
+		if (!filePath.empty()) {
+			std::string parent = std::filesystem::path(filePath).parent_path().string();
+			if (!parent.empty()) {
+				configDir = parent;
+			}
+		}
+
+		formatted = Qd::formatSource(source, Qd::FormatOptions::loadFromFile(configDir));
+		if (formatted.empty()) {
+			return false;
+		}
+
+		Qd::Ast formattedAst;
+		Qd::IAstNode* formattedRoot = formattedAst.generate(formatted.c_str(), false, nullptr);
+		return formattedRoot && !formattedAst.hasErrors();
+	} catch (const std::exception&) {
+		return false;
+	}
+}
+
 void QuadrateLSP::handleFormatting(const std::string& id, const std::string& uri) {
 	json_t* response = json_object();
 	json_object_set_new(response, "jsonrpc", json_string("2.0"));
@@ -1207,28 +1270,8 @@ void QuadrateLSP::handleFormatting(const std::string& id, const std::string& uri
 
 	const std::string& source = it->second;
 
-	// Write source to temp file
-	std::string tempPath = "/tmp/quadlsp_fmt_" + std::to_string(process_platform_getpid()) + ".qd";
-	{
-		std::ofstream tempFile(tempPath);
-		if (!tempFile.good()) {
-			json_object_set_new(response, "result", json_array());
-			sendMessage(response);
-			json_decref(response);
-			return;
-		}
-		tempFile << source;
-	}
-
-	// Run quadfmt
-	std::string command = "quadfmt \"" + tempPath + "\"" + QD_SHELL_STDERR_SUPPRESS;
-	char outputBuffer[262144]; // 256KB for formatted output
-	int exitCode = process_platform_exec_capture(command.c_str(), outputBuffer, sizeof(outputBuffer));
-	std::string formatted(outputBuffer);
-	std::remove(tempPath.c_str());
-
-	// If quadfmt failed or output is empty, return no edits
-	if (exitCode != 0 || formatted.empty()) {
+	std::string formatted;
+	if (!formatDocument(uri, source, formatted)) {
 		json_object_set_new(response, "result", json_array());
 		sendMessage(response);
 		json_decref(response);
@@ -1243,35 +1286,8 @@ void QuadrateLSP::handleFormatting(const std::string& id, const std::string& uri
 		return;
 	}
 
-	// Count lines in original document
-	size_t lineCount = 0;
-	size_t lastLineLength = 0;
-	size_t lineStart = 0;
-	for (size_t i = 0; i < source.size(); i++) {
-		if (source[i] == '\n') {
-			lineCount++;
-			lineStart = i + 1;
-		}
-	}
-	lastLineLength = source.size() - lineStart;
-
-	// Create a single edit replacing the entire document
 	json_t* edits = json_array();
-	json_t* edit = json_object();
-
-	json_t* range = json_object();
-	json_t* start = json_object();
-	json_object_set_new(start, "line", json_integer(0));
-	json_object_set_new(start, "character", json_integer(0));
-	json_t* end = json_object();
-	json_object_set_new(end, "line", json_integer(static_cast<json_int_t>(lineCount)));
-	json_object_set_new(end, "character", json_integer(static_cast<json_int_t>(lastLineLength)));
-	json_object_set_new(range, "start", start);
-	json_object_set_new(range, "end", end);
-
-	json_object_set_new(edit, "range", range);
-	json_object_set_new(edit, "newText", json_string(formatted.c_str()));
-	json_array_append_new(edits, edit);
+	json_array_append_new(edits, makeWholeDocumentEdit(source, formatted));
 
 	json_object_set_new(response, "result", edits);
 	sendMessage(response);
@@ -1575,6 +1591,7 @@ std::string QuadrateLSP::resolveModulePath(const std::string& moduleName, const 
 void QuadrateLSP::handleCodeAction(const std::string& id, const std::string& uri, size_t startLine, size_t startChar,
 		size_t endLine, size_t endChar, json_t* diagnostics) {
 	(void)startChar;
+	(void)endChar;
 	(void)endLine;
 	(void)endChar;
 
@@ -3008,94 +3025,54 @@ void QuadrateLSP::handleRangeFormatting(const std::string& id, const std::string
 		documentText = docIter->second;
 	}
 
-	if (!documentText.empty()) {
-		// Write to temp file
-		std::string tmpPathStr = (std::filesystem::temp_directory_path() / "quadlsp_fmt.qd").string();
-		bool writeOk = false;
-		{
-			std::ofstream ofs(tmpPathStr, std::ios::binary);
-			if (ofs) {
-				ofs.write(documentText.c_str(), static_cast<std::streamsize>(documentText.size()));
-				writeOk = ofs.good();
-			}
+	std::string formattedText;
+	if (formatDocument(uri, documentText, formattedText) && formattedText != documentText) {
+		std::vector<std::string> origLines;
+		std::vector<std::string> fmtLines;
+
+		std::istringstream origIss(documentText);
+		std::string line;
+		while (std::getline(origIss, line)) {
+			origLines.push_back(line);
 		}
-		if (writeOk) {
-			// Run quadfmt
-			std::string cmd = "quadfmt " + tmpPathStr + QD_SHELL_STDERR_SUPPRESS;
-			char outputBuffer[262144]; // 256KB for formatted output
-			int exitCode = process_platform_exec_capture(cmd.c_str(), outputBuffer, sizeof(outputBuffer));
-			if (exitCode == 0) {
-				std::string formattedText(outputBuffer);
 
-				if (!formattedText.empty()) {
-					// Split both original and formatted into lines
-					std::vector<std::string> origLines;
-					std::vector<std::string> fmtLines;
+		std::istringstream fmtIss(formattedText);
+		while (std::getline(fmtIss, line)) {
+			fmtLines.push_back(line);
+		}
 
-					std::istringstream origIss(documentText);
-					std::string line;
-					while (std::getline(origIss, line)) {
-						origLines.push_back(line);
-					}
-
-					std::istringstream fmtIss(formattedText);
-					while (std::getline(fmtIss, line)) {
-						fmtLines.push_back(line);
-					}
-
-					// Only create edit if the range content changed
-					// Compare lines in the requested range
-					bool changed = false;
-					if (origLines.size() == fmtLines.size()) {
-						for (size_t i = startLine; i <= endLine && i < origLines.size(); i++) {
-							if (origLines[i] != fmtLines[i]) {
-								changed = true;
-								break;
-							}
-						}
-					} else {
-						changed = true;
-					}
-
-					if (changed) {
-						// Build the replacement text for the range
-						std::string rangeText;
-						for (size_t i = startLine; i <= endLine && i < fmtLines.size(); i++) {
-							if (i > startLine) {
-								rangeText += "\n";
-							}
-							rangeText += fmtLines[i];
-						}
-
-						// Adjust endChar if we're replacing full lines
-						size_t adjustedEndChar = endChar;
-						if (endLine < origLines.size()) {
-							adjustedEndChar = origLines[endLine].size();
-						}
-
-						// Create edit
-						json_t* edit = json_object();
-						json_t* range = json_object();
-						json_t* start = json_object();
-						json_object_set_new(start, "line", json_integer(static_cast<json_int_t>(startLine)));
-						json_object_set_new(start, "character", json_integer(0)); // Start of line
-						json_t* end = json_object();
-						json_object_set_new(end, "line", json_integer(static_cast<json_int_t>(endLine)));
-						json_object_set_new(end, "character", json_integer(static_cast<json_int_t>(adjustedEndChar)));
-						json_object_set_new(range, "start", start);
-						json_object_set_new(range, "end", end);
-						json_object_set_new(edit, "range", range);
-						json_object_set_new(edit, "newText", json_string(rangeText.c_str()));
-						json_array_append_new(edits, edit);
-					}
+		if (origLines.size() != fmtLines.size()) {
+			json_array_append_new(edits, makeWholeDocumentEdit(documentText, formattedText));
+		} else {
+			bool changed = false;
+			for (size_t i = startLine; i <= endLine && i < origLines.size(); i++) {
+				if (origLines[i] != fmtLines[i]) {
+					changed = true;
+					break;
 				}
 			}
-			std::filesystem::remove(tmpPathStr);
+
+			if (changed) {
+				size_t lastLine = std::min(endLine, origLines.size() - 1);
+				std::string rangeText;
+				for (size_t i = startLine; i <= lastLine; i++) {
+					if (i > startLine) {
+						rangeText += "\n";
+					}
+					rangeText += fmtLines[i];
+				}
+
+				json_t* edit = json_object();
+				json_object_set_new(edit, "range", makeLspRange(startLine, 0, lastLine, origLines[lastLine].size()));
+				json_object_set_new(edit, "newText", json_string(rangeText.c_str()));
+				json_array_append_new(edits, edit);
+			}
 		}
 	}
 
 	// Suppress unused parameter warnings
 	(void)startChar;
+	(void)endChar;
 
 	json_object_set_new(response, "result", edits);
 	sendMessage(response);
