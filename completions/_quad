@@ -107,7 +107,8 @@ _quadrepl_opts() {
 _quadmcp_opts() {
 	_arguments -s : \
 		$common_opts \
-		'--http[Serve over HTTP on :3000 instead of stdio]'
+		'--http[Serve over HTTP on 127.0.0.1:3000 instead of stdio]' \
+		'--host[Bind --http to this address instead of 127.0.0.1]:address:'
 }
 
 _quadlsp_opts() {

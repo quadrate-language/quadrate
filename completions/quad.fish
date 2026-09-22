@@ -106,7 +106,8 @@ complete -c quaddoc -l css -x -a '(__quad_files_matching .css)' -d 'Append a cus
 complete -c quadrepl -s p -l print -d 'Print stack to stdout on exit'
 
 # --- quadmcp ----------------------------------------------------------------
-complete -c quadmcp -l http -d 'Serve over HTTP on :3000 instead of stdio'
+complete -c quadmcp -l http -d 'Serve over HTTP on 127.0.0.1:3000 instead of stdio'
+complete -c quadmcp -l host -r -d 'Bind --http to this address instead of 127.0.0.1'
 
 # --- quadpm -----------------------------------------------------------------
 complete -c quadpm -f
@@ -183,7 +184,8 @@ complete -c quad -n '__fish_seen_subcommand_from doc' -l css -x -a '(__quad_file
     -d 'Append a custom CSS file'
 
 complete -c quad -n '__fish_seen_subcommand_from repl' -s p -l print -d 'Print stack to stdout on exit'
-complete -c quad -n '__fish_seen_subcommand_from mcp' -l http -d 'Serve over HTTP on :3000 instead of stdio'
+complete -c quad -n '__fish_seen_subcommand_from mcp' -l http -d 'Serve over HTTP on 127.0.0.1:3000 instead of stdio'
+complete -c quad -n '__fish_seen_subcommand_from mcp' -l host -r -d 'Bind --http to this address instead of 127.0.0.1'
 
 complete -c quad -n '__fish_seen_subcommand_from pm' \
     -a 'install lock get update remove list outdated build'
