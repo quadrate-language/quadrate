@@ -1,26 +1,31 @@
 #include <algorithm>
 #include <cstring>
-#include <functional>
 #include <iostream>
 #include <map>
 #include <quadrate/cli/cli.h>
 #include <quadrate/cli/file_utils.h>
 #include <quadrate/cli/help.h>
 #include <quadrate/qc/ast.h>
+#include <quadrate/qc/ast_node_as_cast.h>
+#include <quadrate/qc/ast_node_constant.h>
 #include <quadrate/qc/ast_node_enum.h>
+#include <quadrate/qc/ast_node_for.h>
+#include <quadrate/qc/ast_node_function.h>
+#include <quadrate/qc/ast_node_function_pointer.h>
+#include <quadrate/qc/ast_node_global_var.h>
+#include <quadrate/qc/ast_node_identifier.h>
 #include <quadrate/qc/ast_node_import.h>
+#include <quadrate/qc/ast_node_local.h>
 #include <quadrate/qc/ast_node_parameter.h>
 #include <quadrate/qc/ast_node_program.h>
 #include <quadrate/qc/ast_node_scoped.h>
 #include <quadrate/qc/ast_node_struct.h>
 #include <quadrate/qc/ast_node_struct_construction.h>
 #include <quadrate/qc/ast_node_struct_field.h>
+#include <quadrate/qc/ast_node_type_alias.h>
 #include <quadrate/qc/ast_node_use.h>
-#include <quadrate/qc/formatter.h>
 #include <set>
-#include <sstream>
 #include <string>
-#include <u8t/scanner.h>
 #include <vector>
 
 using namespace Qd;
@@ -50,75 +55,187 @@ void printHelp() {
 	help.print();
 }
 
-// Helper to extract module name from a scoped type like "math::Vec3" -> "math"
-// Also handles generics like "Box<math::Vec3>" -> "math"
-static void extractModulesFromType(const std::string& typeName, std::set<std::string>& scopes) {
-	// Find all occurrences of "::" which indicate scoped types
-	size_t pos = 0;
-	while ((pos = typeName.find("::", pos)) != std::string::npos) {
-		// Find the start of the module name (scan backwards for identifier start)
-		size_t start = pos;
-		while (start > 0 && (std::isalnum(typeName[start - 1]) || typeName[start - 1] == '_')) {
-			start--;
+struct References {
+	std::set<std::string> scopes;
+	std::set<std::string> typeNames;
+	std::set<std::string> identifiers;
+	std::set<std::string> definedTypes;
+	std::set<std::string> definedNames;
+};
+
+static bool isPrimitiveTypeName(const std::string& name) {
+	static const std::set<std::string> primitives = {"i8", "i16", "i32", "i64", "u8", "u16", "u32", "u64", "f32", "f64",
+			"str", "ptr", "any", "bool", "void", "fn", "int", "float", "char", "byte"};
+	return primitives.count(name) > 0;
+}
+
+static bool isIdentChar(char c) {
+	return std::isalnum(static_cast<unsigned char>(c)) || c == '_';
+}
+
+static void scanTypeString(const std::string& typeName, References& refs) {
+	size_t i = 0;
+	while (i < typeName.size()) {
+		if (!isIdentChar(typeName[i])) {
+			i++;
+			continue;
 		}
-		if (start < pos) {
-			std::string moduleName = typeName.substr(start, pos - start);
-			scopes.insert(moduleName);
+		size_t start = i;
+		while (i < typeName.size() && isIdentChar(typeName[i])) {
+			i++;
 		}
-		pos += 2; // Skip past "::"
+		std::string word = typeName.substr(start, i - start);
+		bool qualified = start >= 2 && typeName.compare(start - 2, 2, "::") == 0;
+		bool scope = typeName.compare(i, 2, "::") == 0;
+		if (scope) {
+			if (!qualified) {
+				refs.scopes.insert(word);
+			}
+		} else if (!qualified && !std::isdigit(static_cast<unsigned char>(word[0])) && !isPrimitiveTypeName(word)) {
+			refs.typeNames.insert(word);
+		}
 	}
 }
 
-// Collect all scoped identifiers (namespace::function calls) from the AST
-void collectScopedIdentifiers(const IAstNode* node, std::set<std::string>& scopes) {
+void collectReferences(const IAstNode* node, References& refs) {
 	if (!node) {
 		return;
 	}
 
-	if (node->type() == IAstNode::Type::SCOPED_IDENTIFIER) {
-		const AstNodeScopedIdentifier* scoped = static_cast<const AstNodeScopedIdentifier*>(node);
-		scopes.insert(scoped->scope());
+	switch (node->type()) {
+	case IAstNode::Type::SCOPED_IDENTIFIER:
+		refs.scopes.insert(static_cast<const AstNodeScopedIdentifier*>(node)->scope());
+		break;
+	case IAstNode::Type::IDENTIFIER:
+		refs.identifiers.insert(static_cast<const AstNodeIdentifier*>(node)->name());
+		break;
+	case IAstNode::Type::FUNCTION_POINTER_REFERENCE: {
+		const std::string& name = static_cast<const AstNodeFunctionPointerReference*>(node)->functionName();
+		if (name.find("::") != std::string::npos) {
+			scanTypeString(name, refs);
+		} else {
+			refs.identifiers.insert(name);
+		}
+		break;
 	}
-
-	// Check struct field types for scoped types like "math::Vec3"
-	if (node->type() == IAstNode::Type::STRUCT_FIELD) {
-		const AstNodeStructField* field = static_cast<const AstNodeStructField*>(node);
-		extractModulesFromType(field->typeName(), scopes);
-	}
-
-	// Check parameter types for scoped types
-	if (node->type() == IAstNode::Type::VARIABLE_DECLARATION) {
+	case IAstNode::Type::STRUCT_FIELD:
+		scanTypeString(static_cast<const AstNodeStructField*>(node)->typeName(), refs);
+		break;
+	case IAstNode::Type::VARIABLE_DECLARATION: {
 		const AstNodeParameter* param = static_cast<const AstNodeParameter*>(node);
-		extractModulesFromType(param->typeString(), scopes);
+		scanTypeString(param->typeString(), refs);
+		refs.definedNames.insert(param->name());
+		break;
 	}
-
-	// Check struct construction for scoped struct names like "spline::ControlPoint { }"
-	if (node->type() == IAstNode::Type::STRUCT_CONSTRUCTION) {
+	case IAstNode::Type::STRUCT_CONSTRUCTION: {
 		const AstNodeStructConstruction* construction = static_cast<const AstNodeStructConstruction*>(node);
-		extractModulesFromType(construction->structName(), scopes);
+		scanTypeString(construction->structName(), refs);
+		for (const auto& arg : construction->typeArgs()) {
+			scanTypeString(arg, refs);
+		}
+		break;
+	}
+	case IAstNode::Type::AS_CAST:
+		scanTypeString(static_cast<const AstNodeAsCast*>(node)->typeName(), refs);
+		break;
+	case IAstNode::Type::GLOBAL_VAR_DECLARATION: {
+		const AstNodeGlobalVar* var = static_cast<const AstNodeGlobalVar*>(node);
+		scanTypeString(var->typeName(), refs);
+		refs.definedNames.insert(var->name());
+		break;
+	}
+	case IAstNode::Type::TYPE_ALIAS_DECLARATION: {
+		const AstNodeTypeAlias* alias = static_cast<const AstNodeTypeAlias*>(node);
+		scanTypeString(alias->targetType(), refs);
+		refs.definedTypes.insert(alias->name());
+		break;
+	}
+	case IAstNode::Type::CONSTANT_DECLARATION:
+		refs.definedNames.insert(static_cast<const AstNodeConstant*>(node)->name());
+		break;
+	case IAstNode::Type::FUNCTION_DECLARATION: {
+		const AstNodeFunctionDeclaration* fn = static_cast<const AstNodeFunctionDeclaration*>(node);
+		refs.definedNames.insert(fn->name());
+		for (const auto& tp : fn->typeParams()) {
+			refs.definedTypes.insert(tp);
+		}
+		if (fn->hasReceiver()) {
+			refs.definedNames.insert(fn->receiverName());
+			scanTypeString(fn->receiverType(), refs);
+			for (const auto& tp : fn->receiverTypeParams()) {
+				refs.definedTypes.insert(tp);
+			}
+		}
+		break;
+	}
+	case IAstNode::Type::STRUCT_DECLARATION: {
+		const AstNodeStructDeclaration* decl = static_cast<const AstNodeStructDeclaration*>(node);
+		refs.definedTypes.insert(decl->name());
+		for (const auto& tp : decl->typeParams()) {
+			refs.definedTypes.insert(tp);
+		}
+		break;
+	}
+	case IAstNode::Type::ENUM_DECLARATION:
+		refs.definedTypes.insert(static_cast<const AstNodeEnumDeclaration*>(node)->name());
+		break;
+	case IAstNode::Type::LOCAL:
+		for (const auto& name : static_cast<const AstNodeLocal*>(node)->names()) {
+			refs.definedNames.insert(name);
+		}
+		break;
+	case IAstNode::Type::FOR_STATEMENT:
+		refs.definedNames.insert(static_cast<const AstNodeForStatement*>(node)->iteratorName());
+		break;
+	default:
+		break;
 	}
 
-	// Recursively visit all children
 	for (size_t i = 0; i < node->childCount(); i++) {
-		collectScopedIdentifiers(node->child(i), scopes);
+		collectReferences(node->child(i), refs);
 	}
 }
 
-void collectLocalTypeNames(const IAstNode* node, std::set<std::string>& names) {
-	if (!node) {
-		return;
+static bool codeMentionsScope(const std::string& source, const std::string& scope) {
+	const std::string needle = scope + "::";
+	int blockDepth = 0;
+	bool inStr = false;
+	for (size_t i = 0; i < source.size(); i++) {
+		char c = source[i];
+		if (blockDepth > 0) {
+			if (source.compare(i, 2, "/*") == 0) {
+				blockDepth++;
+				i++;
+			} else if (source.compare(i, 2, "*/") == 0) {
+				blockDepth--;
+				i++;
+			}
+			continue;
+		}
+		if (inStr) {
+			if (c == '\\') {
+				i++;
+			} else if (c == '"') {
+				inStr = false;
+			}
+			continue;
+		}
+		if (c == '"') {
+			inStr = true;
+		} else if (source.compare(i, 2, "//") == 0) {
+			while (i < source.size() && source[i] != '\n') {
+				i++;
+			}
+		} else if (source.compare(i, 2, "/*") == 0) {
+			blockDepth = 1;
+			i++;
+		} else if (source.compare(i, needle.size(), needle) == 0 && (i == 0 || !isIdentChar(source[i - 1]))) {
+			return true;
+		}
 	}
-	if (node->type() == IAstNode::Type::ENUM_DECLARATION) {
-		names.insert(static_cast<const AstNodeEnumDeclaration*>(node)->name());
-	} else if (node->type() == IAstNode::Type::STRUCT_DECLARATION) {
-		names.insert(static_cast<const AstNodeStructDeclaration*>(node)->name());
-	}
-	for (size_t i = 0; i < node->childCount(); i++) {
-		collectLocalTypeNames(node->child(i), names);
-	}
+	return false;
 }
 
-// Collect all namespaces defined by import statements (import "lib" as "namespace" { ... })
 void collectImportNamespaces(const IAstNode* node, std::set<std::string>& importedNamespaces) {
 	if (!node) {
 		return;
@@ -135,27 +252,6 @@ void collectImportNamespaces(const IAstNode* node, std::set<std::string>& import
 		if (child && child->type() == IAstNode::Type::IMPORT_STATEMENT) {
 			const AstNodeImport* importNode = static_cast<const AstNodeImport*>(child);
 			importedNamespaces.insert(importNode->namespaceName());
-		}
-	}
-}
-
-// Collect all existing use statements from the AST
-void collectUseStatements(const IAstNode* node, std::set<std::string>& uses) {
-	if (!node) {
-		return;
-	}
-
-	if (node->type() == IAstNode::Type::USE_STATEMENT) {
-		const AstNodeUse* useNode = static_cast<const AstNodeUse*>(node);
-		uses.insert(useNode->module());
-	}
-
-	// Only check top-level nodes (direct children of program)
-	for (size_t i = 0; i < node->childCount(); i++) {
-		const IAstNode* child = node->child(i);
-		if (child && child->type() == IAstNode::Type::USE_STATEMENT) {
-			const AstNodeUse* useNode = static_cast<const AstNodeUse*>(child);
-			uses.insert(useNode->module());
 		}
 	}
 }
@@ -182,212 +278,370 @@ static std::string getPackageFromModuleName(const std::string& moduleName) {
 	return moduleName;
 }
 
-std::string generateWithUseStatements(const std::string& source, const std::set<std::string>& neededUses,
-		const std::map<std::string, std::string>& scopeToOriginalImport) {
-	std::istringstream input(source);
-	std::ostringstream output;
-	std::string line;
-	bool inUseSection = false;
-	bool useStatementsWritten = false;
-	bool isFirstLine = true;
-	bool hadShebang = false;
+struct UseLine {
+	bool parsed = false;
+	std::string indent;
+	std::vector<std::string> segments;
+	std::vector<std::string> modules;
+	std::string trailer;
+};
 
-	// Helper to format a use statement (with quotes if needed)
-	auto formatUseStatement = [&](const std::string& scope) -> std::string {
-		// Check if we have the original import format
-		auto it = scopeToOriginalImport.find(scope);
-		if (it != scopeToOriginalImport.end()) {
-			const std::string& original = it->second;
-			// Wrap in quotes if the path contains:
-			// - whitespace or special characters that would be invalid in the token stream
-			// - forward slash (path separator) since it would be tokenized separately
-			bool needsQuotes = false;
-			for (char c : original) {
-				if (std::isspace(static_cast<unsigned char>(c)) || c == '/' || c == '(' || c == ')' || c == '[' ||
-						c == ']' || c == '{' || c == '}' || c == '<' || c == '>' || c == ',' || c == ';' || c == ':' ||
-						c == '!' || c == '?' || c == '*' || c == '&' || c == '|' || c == '^' || c == '%' || c == '@' ||
-						c == '#' || c == '$' || c == '`' || c == '~' || c == '\\') {
-					needsQuotes = true;
-					break;
-				}
-			}
-			if (needsQuotes) {
-				return "\"" + original + "\"";
-			}
-			return original;
-		}
-		// No original format found, use scope as-is
-		return scope;
-	};
-
-	// Helper to check if line starts with "use " (after trimming)
-	auto isUseLine = [](const std::string& l) {
-		size_t start = 0;
-		while (start < l.length() && std::isspace(static_cast<unsigned char>(l[start]))) {
-			start++;
-		}
-		std::string trimmed = l.substr(start);
-		return trimmed.rfind("use ", 0) == 0;
-	};
-
-	// Helper to check if line is empty or only whitespace
-	auto isEmptyLine = [](const std::string& l) {
-		for (char c : l) {
-			if (!std::isspace(static_cast<unsigned char>(c))) {
-				return false;
-			}
-		}
-		return true;
-	};
-
-	// Helper to check if line is a comment
-	auto isCommentLine = [](const std::string& l) {
-		size_t start = 0;
-		while (start < l.length() && std::isspace(static_cast<unsigned char>(l[start]))) {
-			start++;
-		}
-		if (start + 1 < l.length()) {
-			return l[start] == '/' && (l[start + 1] == '/' || l[start + 1] == '*');
-		}
-		return false;
-	};
-
-	// Helper to check if line is a shebang
-	auto isShebangLine = [](const std::string& l) {
-		size_t start = 0;
-		while (start < l.length() && std::isspace(static_cast<unsigned char>(l[start]))) {
-			start++;
-		}
-		if (start + 1 < l.length()) {
-			return l[start] == '#' && l[start + 1] == '!';
-		}
-		return false;
-	};
-
-	while (std::getline(input, line)) {
-		// Handle shebang - must be first line
-		if (isFirstLine && isShebangLine(line)) {
-			output << line << '\n';
-			hadShebang = true;
-			isFirstLine = false;
-			continue;
-		}
-		isFirstLine = false;
-		// Check if we're entering or in the use statement section
-		if (isUseLine(line)) {
-			inUseSection = true;
-			// Skip old use statements, we'll write new ones
-			continue;
-		}
-
-		// If we were in use section and hit a non-use, non-empty line, write use statements
-		if (inUseSection && !isEmptyLine(line) && !useStatementsWritten) {
-			// Add blank line after shebang before use statements
-			if (hadShebang) {
-				output << '\n';
-			}
-			// Write all needed use statements, sorted
-			std::vector<std::string> sortedUses(neededUses.begin(), neededUses.end());
-			std::sort(sortedUses.begin(), sortedUses.end());
-
-			for (const auto& use : sortedUses) {
-				output << "use " << formatUseStatement(use) << '\n';
-			}
-
-			useStatementsWritten = true;
-			inUseSection = false;
-		}
-
-		// If we hit a non-comment, non-empty line and haven't written use statements yet, write them
-		if (!useStatementsWritten && !isUseLine(line) && !isEmptyLine(line) && !isCommentLine(line)) {
-			// Add blank line after shebang before use statements
-			if (hadShebang) {
-				output << '\n';
-			}
-			// Write all needed use statements, sorted
-			std::vector<std::string> sortedUses(neededUses.begin(), neededUses.end());
-			std::sort(sortedUses.begin(), sortedUses.end());
-
-			for (const auto& use : sortedUses) {
-				output << "use " << formatUseStatement(use) << '\n';
-			}
-
-			useStatementsWritten = true;
-		}
-
-		// Write the current line (preserve all blank lines as-is)
-		output << line << '\n';
+static UseLine parseUseLine(const std::string& line) {
+	UseLine result;
+	auto isSpace = [](char c) { return c == ' ' || c == '\t' || c == '\r'; };
+	size_t pos = 0;
+	while (pos < line.size() && isSpace(line[pos])) {
+		pos++;
 	}
-
-	// If we never wrote use statements (file had only use statements or was empty)
-	if (!useStatementsWritten && !neededUses.empty()) {
-		// Add blank line after shebang before use statements
-		if (hadShebang) {
-			output << '\n';
+	result.indent = line.substr(0, pos);
+	while (pos < line.size() && line.compare(pos, 3, "use") == 0 && pos + 3 < line.size() &&
+			(line[pos + 3] == ' ' || line[pos + 3] == '\t' || line[pos + 3] == '"')) {
+		size_t start = pos;
+		pos += 3;
+		while (pos < line.size() && isSpace(line[pos])) {
+			pos++;
 		}
-		std::vector<std::string> sortedUses(neededUses.begin(), neededUses.end());
-		std::sort(sortedUses.begin(), sortedUses.end());
-
-		for (const auto& use : sortedUses) {
-			output << "use " << formatUseStatement(use) << '\n';
+		std::string module;
+		if (pos < line.size() && line[pos] == '"') {
+			size_t close = line.find('"', pos + 1);
+			if (close == std::string::npos) {
+				return UseLine{};
+			}
+			module = line.substr(pos + 1, close - pos - 1);
+			pos = close + 1;
+		} else {
+			size_t tokStart = pos;
+			while (pos < line.size() && !isSpace(line[pos]) && line[pos] != '"' && line.compare(pos, 2, "//") != 0 &&
+					line.compare(pos, 2, "/*") != 0) {
+				pos++;
+			}
+			module = line.substr(tokStart, pos - tokStart);
+		}
+		if (module.empty()) {
+			return UseLine{};
+		}
+		result.segments.push_back(line.substr(start, pos - start));
+		result.modules.push_back(module);
+		while (pos < line.size() && isSpace(line[pos])) {
+			pos++;
 		}
 	}
-
-	return output.str();
+	std::string rest = line.substr(pos);
+	if (result.segments.empty() || (!rest.empty() && rest.compare(0, 2, "//") != 0)) {
+		return UseLine{};
+	}
+	while (!rest.empty() && isSpace(rest.back())) {
+		rest.pop_back();
+	}
+	result.trailer = rest;
+	result.parsed = true;
+	return result;
 }
 
-// Extract use statements from source
-std::set<std::string> extractUseStatements(const std::string& source) {
-	std::set<std::string> uses;
-	std::istringstream stream(source);
-	std::string line;
-	while (std::getline(stream, line)) {
-		// Trim leading whitespace
-		size_t start = 0;
-		while (start < line.length() && std::isspace(static_cast<unsigned char>(line[start]))) {
-			start++;
-		}
-		std::string trimmed = line.substr(start);
-		if (trimmed.rfind("use ", 0) == 0) {
-			uses.insert(trimmed);
+struct RealUse {
+	std::string module;
+	size_t line;
+};
+
+static std::vector<RealUse> collectRealUses(const IAstNode* root) {
+	std::vector<RealUse> uses;
+	for (size_t i = 0; i < root->childCount(); i++) {
+		const IAstNode* child = root->child(i);
+		if (child && child->type() == IAstNode::Type::USE_STATEMENT && child->line() > 0) {
+			uses.push_back({static_cast<const AstNodeUse*>(child)->module(), child->line()});
 		}
 	}
 	return uses;
 }
 
-// Show what use statements would change
-void printUseDiff(const std::string& filename, const std::string& original, const std::string& modified) {
-	std::set<std::string> origUses = extractUseStatements(original);
-	std::set<std::string> modUses = extractUseStatements(modified);
+struct SourceLine {
+	std::string text;
+	std::string eol;
+	bool removed = false;
+	std::vector<std::string> before;
+	std::vector<std::string> after;
+};
 
-	// Find removed uses
+static std::vector<SourceLine> splitLines(const std::string& source) {
+	std::vector<SourceLine> lines;
+	size_t start = 0;
+	while (start < source.size()) {
+		size_t nl = source.find('\n', start);
+		SourceLine line;
+		if (nl == std::string::npos) {
+			line.text = source.substr(start);
+			start = source.size();
+		} else {
+			line.text = source.substr(start, nl - start);
+			line.eol = "\n";
+			start = nl + 1;
+		}
+		lines.push_back(line);
+	}
+	return lines;
+}
+
+static bool isBlank(const std::string& s) {
+	for (char c : s) {
+		if (!std::isspace(static_cast<unsigned char>(c))) {
+			return false;
+		}
+	}
+	return true;
+}
+
+static std::string formatUseStatement(const std::string& scope, const std::map<std::string, std::string>& originals) {
+	auto it = originals.find(scope);
+	std::string name = it != originals.end() ? it->second : scope;
+	for (char c : name) {
+		if (!isIdentChar(c) && c != '.') {
+			return "use \"" + name + "\"";
+		}
+	}
+	return "use " + name;
+}
+
+static size_t findUseInsertionLine(const IAstNode* root, const std::vector<SourceLine>& lines) {
+	const IAstNode* first = nullptr;
+	for (size_t i = 0; i < root->childCount(); i++) {
+		const IAstNode* child = root->child(i);
+		if (!child || child->line() == 0 || child->type() == IAstNode::Type::COMMENT) {
+			continue;
+		}
+		first = child;
+		break;
+	}
+	if (!first) {
+		return lines.size() + 1;
+	}
+	auto trimmed = [&lines](size_t lineNo) {
+		const std::string& text = lines[lineNo - 1].text;
+		size_t start = text.find_first_not_of(" \t\r");
+		size_t end = text.find_last_not_of(" \t\r");
+		return start == std::string::npos ? std::string() : text.substr(start, end - start + 1);
+	};
+	size_t insertAt = first->line();
+	size_t above = insertAt - 1;
+	while (above >= 1 && above <= lines.size()) {
+		std::string t = trimmed(above);
+		if (t.rfind("//", 0) == 0) {
+			insertAt = above--;
+			continue;
+		}
+		if (t.size() >= 2 && t.compare(t.size() - 2, 2, "*/") == 0) {
+			size_t open = above;
+			while (open >= 1 && lines[open - 1].text.find("/*") == std::string::npos) {
+				open--;
+			}
+			if (open < 1 || trimmed(open).rfind("/*", 0) != 0) {
+				break;
+			}
+			insertAt = open;
+			above = open - 1;
+			continue;
+		}
+		break;
+	}
+	return insertAt;
+}
+
+struct UsesPlan {
+	std::string result;
 	std::vector<std::string> removed;
-	for (const auto& u : origUses) {
-		if (modUses.find(u) == modUses.end()) {
-			removed.push_back(u);
-		}
-	}
-
-	// Find added uses
 	std::vector<std::string> added;
-	for (const auto& u : modUses) {
-		if (origUses.find(u) == origUses.end()) {
-			added.push_back(u);
+	std::set<std::string> expectedModules;
+};
+
+static UsesPlan planUseStatements(const std::string& source, const IAstNode* root) {
+	References refs;
+	collectReferences(root, refs);
+
+	std::set<std::string> usedScopes = refs.scopes;
+	if (usedScopes.count("sb") && !codeMentionsScope(source, "sb")) {
+		usedScopes.erase("sb");
+	}
+
+	std::set<std::string> importedNamespaces;
+	collectImportNamespaces(root, importedNamespaces);
+	for (const auto& ns : importedNamespaces) {
+		usedScopes.erase(ns);
+	}
+	for (const auto& name : refs.definedTypes) {
+		usedScopes.erase(name);
+	}
+
+	bool unresolved = false;
+	for (const auto& name : refs.typeNames) {
+		if (!refs.definedTypes.count(name)) {
+			unresolved = true;
+		}
+	}
+	for (const auto& name : refs.identifiers) {
+		if (!refs.definedNames.count(name)) {
+			unresolved = true;
 		}
 	}
 
-	if (removed.empty() && added.empty()) {
-		std::cout << filename << ": no changes to use statements\n";
-		return;
+	std::vector<RealUse> realUses = collectRealUses(root);
+	std::map<std::string, std::string> scopeToOriginalImport;
+	for (const auto& use : realUses) {
+		scopeToOriginalImport[getPackageFromModuleName(use.module)] = use.module;
 	}
 
-	std::cout << filename << ":\n";
-	for (const auto& u : removed) {
-		std::cout << "  - " << u << "\n";
+	std::vector<SourceLine> lines = splitLines(source);
+	std::map<size_t, UseLine> useLines;
+	std::map<size_t, std::vector<std::string>> astModulesByLine;
+	for (const auto& use : realUses) {
+		astModulesByLine[use.line].push_back(use.module);
 	}
-	for (const auto& u : added) {
-		std::cout << "  + " << u << "\n";
+	for (const auto& [lineNo, modules] : astModulesByLine) {
+		UseLine parsed = lineNo <= lines.size() ? parseUseLine(lines[lineNo - 1].text) : UseLine{};
+		if (parsed.parsed) {
+			std::vector<std::string> a = parsed.modules;
+			std::vector<std::string> b = modules;
+			std::sort(a.begin(), a.end());
+			std::sort(b.begin(), b.end());
+			if (a != b) {
+				parsed = UseLine{};
+			}
+		}
+		useLines[lineNo] = parsed;
 	}
+
+	UsesPlan plan;
+	std::set<std::string> present;
+	std::vector<size_t> keptUseLines;
+	size_t firstUseLine = 0;
+	for (auto& [lineNo, parsed] : useLines) {
+		if (firstUseLine == 0) {
+			firstUseLine = lineNo;
+		}
+		if (!parsed.parsed) {
+			for (const auto& module : astModulesByLine[lineNo]) {
+				present.insert(getPackageFromModuleName(module));
+				plan.expectedModules.insert(module);
+			}
+			keptUseLines.push_back(lineNo);
+			continue;
+		}
+		std::vector<std::string> keptSegments;
+		for (size_t s = 0; s < parsed.segments.size(); s++) {
+			const std::string& module = parsed.modules[s];
+			std::string package = getPackageFromModuleName(module);
+			bool isFileImport = module.size() >= 3 && module.compare(module.size() - 3, 3, ".qd") == 0;
+			bool keep = !present.count(package) && (unresolved || isFileImport || usedScopes.count(package));
+			if (keep) {
+				present.insert(package);
+				plan.expectedModules.insert(module);
+				keptSegments.push_back(parsed.segments[s]);
+			} else {
+				plan.removed.push_back(parsed.segments[s]);
+			}
+		}
+		SourceLine& line = lines[lineNo - 1];
+		if (keptSegments.empty()) {
+			line.removed = true;
+		} else {
+			keptUseLines.push_back(lineNo);
+			if (keptSegments.size() != parsed.segments.size()) {
+				std::string rebuilt = parsed.indent;
+				for (size_t s = 0; s < keptSegments.size(); s++) {
+					rebuilt += (s > 0 ? " " : "") + keptSegments[s];
+				}
+				if (!parsed.trailer.empty()) {
+					rebuilt += " " + parsed.trailer;
+				}
+				line.text = rebuilt;
+			}
+		}
+	}
+
+	std::vector<std::string> toAdd;
+	for (const auto& scope : usedScopes) {
+		if (!present.count(scope)) {
+			toAdd.push_back(scope);
+		}
+	}
+	std::sort(toAdd.begin(), toAdd.end());
+
+	if (!toAdd.empty()) {
+		std::vector<std::string> statements;
+		for (const auto& scope : toAdd) {
+			statements.push_back(formatUseStatement(scope, scopeToOriginalImport));
+			plan.expectedModules.insert(scope);
+			plan.added.push_back(statements.back());
+		}
+		if (!keptUseLines.empty()) {
+			for (size_t a = 0; a < toAdd.size(); a++) {
+				size_t anchor = 0;
+				for (size_t lineNo : keptUseLines) {
+					const UseLine& parsed = useLines[lineNo];
+					if (parsed.parsed && parsed.modules.size() == 1 &&
+							getPackageFromModuleName(parsed.modules[0]) > toAdd[a]) {
+						anchor = lineNo;
+						break;
+					}
+				}
+				if (anchor != 0) {
+					lines[anchor - 1].before.push_back(statements[a]);
+				} else {
+					lines[keptUseLines.back() - 1].after.push_back(statements[a]);
+				}
+			}
+		} else if (firstUseLine != 0) {
+			lines[firstUseLine - 1].before = statements;
+		} else {
+			size_t insertAt = findUseInsertionLine(root, lines);
+			if (insertAt > 1 && insertAt - 2 < lines.size() && !isBlank(lines[insertAt - 2].text)) {
+				statements.insert(statements.begin(), "");
+			}
+			if (insertAt <= lines.size()) {
+				statements.push_back("");
+				lines[insertAt - 1].before = statements;
+			} else {
+				if (!lines.empty() && lines.back().eol.empty()) {
+					lines.back().eol = "\n";
+				}
+				SourceLine tail;
+				tail.eol = "\n";
+				tail.removed = true;
+				tail.before = statements;
+				lines.push_back(tail);
+			}
+		}
+	}
+
+	for (size_t i = 0; i < lines.size(); i++) {
+		if (!lines[i].removed || !lines[i].before.empty()) {
+			continue;
+		}
+		size_t end = i;
+		bool insertions = false;
+		while (end < lines.size() && lines[end].removed) {
+			insertions = insertions || !lines[end].before.empty() || !lines[end].after.empty();
+			end++;
+		}
+		bool blankAbove = i == 0 || (!lines[i - 1].removed && isBlank(lines[i - 1].text));
+		if (!insertions && blankAbove && end < lines.size() && isBlank(lines[end].text) && lines[end].before.empty()) {
+			lines[end].removed = true;
+		}
+		i = end;
+	}
+
+	std::string out;
+	for (const auto& line : lines) {
+		for (const auto& s : line.before) {
+			out += s + "\n";
+		}
+		if (!line.removed) {
+			out += line.text + line.eol;
+		}
+		for (const auto& s : line.after) {
+			out += s + "\n";
+		}
+	}
+	plan.result = out;
+	return plan;
 }
 
 bool processFile(const std::string& filename, const UsesOptions& opts, bool& needsChanges) {
@@ -410,88 +664,54 @@ bool processFile(const std::string& filename, const UsesOptions& opts, bool& nee
 			return false;
 		}
 
-		// Collect all scoped identifiers (namespaces used in code)
-		std::set<std::string> usedScopes;
-		collectScopedIdentifiers(root, usedScopes);
+		UsesPlan plan = planUseStatements(source, root);
+		bool changed = plan.result != source;
 
-		// Collect namespaces already defined by import statements
-		// These don't need use statements since the import block defines the namespace
-		std::set<std::string> importedNamespaces;
-		collectImportNamespaces(root, importedNamespaces);
-
-		// Remove namespaces that are already defined by import blocks
-		for (const auto& ns : importedNamespaces) {
-			usedScopes.erase(ns);
-		}
-
-		std::set<std::string> localTypeNames;
-		collectLocalTypeNames(root, localTypeNames);
-		for (const auto& name : localTypeNames) {
-			usedScopes.erase(name);
-		}
-
-		// Collect original use statements to preserve file paths vs module names
-		std::map<std::string, std::string> scopeToOriginalImport;
-		std::set<std::string> explicitFileImports; // Track file imports that should always be preserved
-		std::function<void(IAstNode*)> collectOriginalUses = [&](IAstNode* node) {
-			if (!node) {
-				return;
-			}
-			if (node->type() == IAstNode::Type::USE_STATEMENT) {
-				AstNodeUse* useNode = static_cast<AstNodeUse*>(node);
-				std::string moduleName = useNode->module();
-				std::string packageName = getPackageFromModuleName(moduleName);
-				scopeToOriginalImport[packageName] = moduleName;
-
-				// If this is a file import (ends with .qd), always preserve it
-				// This prevents confusing behavior where explicit file imports disappear
-				bool isFileImport = moduleName.size() >= 3 && moduleName.substr(moduleName.size() - 3) == ".qd";
-				if (isFileImport) {
-					explicitFileImports.insert(packageName);
-					usedScopes.insert(packageName); // Ensure it's included in output
+		if (changed) {
+			Ast check;
+			IAstNode* checkRoot = check.generate(plan.result.c_str(), false, filename.c_str());
+			std::set<std::string> resultModules;
+			if (checkRoot && !check.hasErrors()) {
+				for (const auto& use : collectRealUses(checkRoot)) {
+					resultModules.insert(use.module);
 				}
 			}
-			for (size_t i = 0; i < node->childCount(); i++) {
-				collectOriginalUses(node->child(i));
+			if (!checkRoot || check.hasErrors() || resultModules != plan.expectedModules) {
+				std::cerr << "quaduses: " << filename << ": rewriting the use statements would not produce valid "
+						  << "source; leaving the file unchanged\n";
+				return false;
 			}
-		};
-		collectOriginalUses(root);
-
-		// Generate new source with only needed use statements
-		std::string result = generateWithUseStatements(source, usedScopes, scopeToOriginalImport);
-
-		// Format the result to ensure proper formatting
-		result = formatSource(result);
-
-		bool changed = (extractUseStatements(source) != extractUseStatements(result));
+		}
 
 		if (opts.check) {
-			// Check mode: report if changes needed
 			if (changed) {
 				std::cout << filename << ": needs updating\n";
 				needsChanges = true;
 			}
 			return true;
 		} else if (opts.dryRun) {
-			// Dry-run mode: show what use statements would change
 			if (changed) {
-				printUseDiff(filename, source, result);
+				std::cout << filename << ":\n";
+				for (const auto& u : plan.removed) {
+					std::cout << "  - " << u << "\n";
+				}
+				for (const auto& u : plan.added) {
+					std::cout << "  + " << u << "\n";
+				}
 			} else {
 				std::cout << filename << ": no changes needed\n";
 			}
 			return true;
 		} else if (opts.inPlace) {
-			// In-place mode: write back to file
 			if (changed) {
-				qdcli::writeFile(filename, result);
+				qdcli::writeFile(filename, plan.result);
 				std::cout << filename << ": updated\n";
 			} else {
 				std::cout << filename << ": no changes needed\n";
 			}
 			return true;
 		} else {
-			// Stdout mode: write to stdout
-			std::cout << (changed ? result : source);
+			std::cout << plan.result;
 			return true;
 		}
 	} catch (const std::exception& e) {

@@ -7,7 +7,10 @@
 #include <sys/wait.h>
 #include <unistd.h>
 
-int process_platform_exec_wait(const char* path, char* const argv[]) {
+int process_platform_exec_wait_signal(const char* path, char* const argv[], int* term_signal) {
+	if (term_signal) {
+		*term_signal = 0;
+	}
 	if (!path || !argv) {
 		return -1;
 	}
@@ -26,16 +29,24 @@ int process_platform_exec_wait(const char* path, char* const argv[]) {
 
 	// Parent process - wait for child
 	int status;
-	if (waitpid(pid, &status, 0) == -1) {
-		return -1;
+	while (waitpid(pid, &status, 0) == -1) {
+		if (errno != EINTR) {
+			return -1;
+		}
 	}
 
 	if (WIFEXITED(status)) {
 		return WEXITSTATUS(status);
 	}
 
-	// Process didn't exit normally (killed by signal, etc.)
+	if (WIFSIGNALED(status) && term_signal) {
+		*term_signal = WTERMSIG(status);
+	}
 	return -1;
+}
+
+int process_platform_exec_wait(const char* path, char* const argv[]) {
+	return process_platform_exec_wait_signal(path, argv, NULL);
 }
 
 int process_platform_exec_capture(const char* command, char* output, size_t output_size) {
@@ -51,19 +62,27 @@ int process_platform_exec_capture(const char* command, char* output, size_t outp
 	}
 
 	size_t total = 0;
-	char buffer[256];
-	while (fgets(buffer, sizeof(buffer), pipe) != NULL) {
-		size_t len = strlen(buffer);
-		if (total + len < output_size) {
-			memcpy(output + total, buffer, len);
-			total += len;
+	int truncated = 0;
+	char buffer[4096];
+	size_t len;
+	while ((len = fread(buffer, 1, sizeof(buffer), pipe)) > 0) {
+		size_t room = output_size - 1 - total;
+		if (len > room) {
+			truncated = 1;
+			len = room;
 		}
+		memcpy(output + total, buffer, len);
+		total += len;
 	}
 	output[total] = '\0';
 
 	int status = pclose(pipe);
 	if (status == -1) {
 		return -1;
+	}
+
+	if (truncated) {
+		return PROCESS_PLATFORM_ERR_TRUNCATED;
 	}
 
 	if (WIFEXITED(status)) {

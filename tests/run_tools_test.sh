@@ -99,6 +99,34 @@ if grep -q "use strings" "$WORK_DIR/inplace.qd"; then pass "--write updates in p
 
 expect_rc "missing file exits non-zero" 1 "$QUADUSES" "$WORK_DIR/does-not-exist.qd"
 
+printf '/*\nuse os\n*/\nuse math\n\nfn main() {\n\t"text\nuse io\nmore" print nl\n}\n' > "$WORK_DIR/hidden_use.qd"
+"$QUADUSES" -w "$WORK_DIR/hidden_use.qd" > /dev/null 2>&1 || true
+if grep -qx "use os" "$WORK_DIR/hidden_use.qd" && grep -qx "use io" "$WORK_DIR/hidden_use.qd"; then
+    pass "--write keeps use lines inside comments and strings"; else
+    fail "--write keeps use lines inside comments and strings" "$(tr '\n' '|' < "$WORK_DIR/hidden_use.qd")"; fi
+if grep -qx "use math" "$WORK_DIR/hidden_use.qd"; then
+    fail "--write still removes a real unused use" "use math survived"; else
+    pass "--write still removes a real unused use"; fi
+
+printf 'use ct\n\nfn main() {\n\tVec<i64> { data = null len = 0 cap = 0 } -> v\n\tv 1 push! -> v\n\tv release\n}\n' > "$WORK_DIR/generic_type.qd"
+expect_contains "keeps a use whose types are referenced unqualified" "use ct" "$QUADUSES" "$WORK_DIR/generic_type.qd"
+
+printf 'use math\n\nfn  main() {\n\t1   2 +   print nl\n\t"a" "," strings::split -> _ -> p\n}\n' > "$WORK_DIR/unformatted.qd"
+printf 'use strings\n\nfn  main() {\n\t1   2 +   print nl\n\t"a" "," strings::split -> _ -> p\n}\n' > "$WORK_DIR/unformatted.want"
+"$QUADUSES" -w "$WORK_DIR/unformatted.qd" > /dev/null 2>&1 || true
+if cmp -s "$WORK_DIR/unformatted.qd" "$WORK_DIR/unformatted.want"; then pass "--write changes only use lines"; else
+    fail "--write changes only use lines" "$(diff "$WORK_DIR/unformatted.want" "$WORK_DIR/unformatted.qd" | tr '\n' '|')"; fi
+
+printf 'pub fn hi() {\n\t"hi" print nl\n}\n' > "$WORK_DIR/helper.qd"
+printf 'use "helper.qd"\n\nfn main() {\n\thelper::hi\n}\n' > "$WORK_DIR/quoted_use.qd"
+expect_rc "--check accepts a quoted file use" 0 "$QUADUSES" -c "$WORK_DIR/quoted_use.qd"
+
+printf 'fn main() {\n\t$"x {1}" print nl\n}\n' > "$WORK_DIR/interp.qd"
+expect_not_contains "no use sb for string interpolation" "use sb" "$QUADUSES" "$WORK_DIR/interp.qd"
+
+printf 'use os // exits\nuse zeta\n\nfn main() {\n\t"a" "," strings::split -> _ -> p\n\t0 os::exit\n}\n' > "$WORK_DIR/trailing.qd"
+expect_contains "keeps a kept use's trailing comment" "use os // exits" "$QUADUSES" "$WORK_DIR/trailing.qd"
+
 echo ""
 echo "=== quaddoc ==="
 
@@ -565,6 +593,70 @@ if [ -x "$WORK_DIR/nameB/beta" ]; then pass "a second source gets its own name";
 (cd "$WORK_DIR/nameA" && "$QUADC" alpha.qd -o chosen > /dev/null 2>&1) || true
 if [ -x "$WORK_DIR/nameA/chosen" ]; then pass "-o still overrides the default"; else
     fail "-o still overrides the default" "no 'chosen' produced"; fi
+
+echo ""
+echo "=== quad dispatcher ==="
+
+QUAD="${QUAD:-$PROJECT_ROOT/$BUILD_DIR/cmd/quad/quad}"
+mkdir -p "$WORK_DIR/quadcli"
+mkdir -p "$WORK_DIR/quadargs"
+printf 'use os\n\nfn main() {\n\tos::args -> a\n\ta len print nl\n}\n' > "$WORK_DIR/quadargs/args.qd"
+printf 'fn  main( ) {\n1 print nl\n}\n' > "$WORK_DIR/quadcli/other.qd"
+cp "$WORK_DIR/quadcli/other.qd" "$WORK_DIR/quadcli/other.orig"
+
+out=$(cd "$WORK_DIR/quadcli" && printf 'fn  main( ) {\n2 print nl\n}\n' | "$QUAD" fmt - 2>&1 || true)
+if [ "$out" = "$(printf 'fn main() {\n\t2 print nl\n}')" ]; then pass "quad fmt - formats stdin to stdout"; else
+    fail "quad fmt - formats stdin to stdout" "got '$(echo "$out" | head -3 | tr '\n' '|')'"; fi
+if cmp -s "$WORK_DIR/quadcli/other.qd" "$WORK_DIR/quadcli/other.orig"; then
+    pass "quad fmt - leaves files in the directory alone"; else
+    fail "quad fmt - leaves files in the directory alone" "other.qd was rewritten"; fi
+
+out=$(cd "$WORK_DIR/quadargs" && "$QUAD" args.qd one two 2>&1 || true)
+if [ "$out" = "2" ]; then pass "quad file.qd passes its arguments to the program"; else
+    fail "quad file.qd passes its arguments to the program" "got '$out'"; fi
+
+out=$(cd "$WORK_DIR/quadargs" && "$QUAD" run args.qd -- --no-color 2>&1 || true)
+if [ "$out" = "1" ]; then pass "--no-color after -- reaches the program"; else
+    fail "--no-color after -- reaches the program" "got '$out'"; fi
+
+mkdir -p "$WORK_DIR/quadbuild"
+printf 'fn main() {\n\t7 print nl\n}\n' > "$WORK_DIR/quadbuild/main.qd"
+expect_rc "quad build with only a flag discovers main.qd" 0 \
+    sh -c "cd '$WORK_DIR/quadbuild' && '$QUAD' build --verbose < /dev/null"
+if [ -x "$WORK_DIR/quadbuild/main" ]; then pass "quad build --verbose builds main"; else
+    fail "quad build --verbose builds main" "no binary produced"; fi
+rm -f "$WORK_DIR/quadbuild/main"
+expect_rc "quad build -o takes its value" 0 sh -c "cd '$WORK_DIR/quadbuild' && '$QUAD' build -o prog < /dev/null"
+if [ -x "$WORK_DIR/quadbuild/prog" ]; then pass "quad build -o prog names the binary"; else
+    fail "quad build -o prog names the binary" "no prog produced"; fi
+
+mkdir -p "$WORK_DIR/quadtest"
+printf 'test "one" {\n\t1 1 testing::assert_eq\n}\n' > "$WORK_DIR/quadtest/one_test.qd"
+printf 'use testing\n\n' | cat - "$WORK_DIR/quadtest/one_test.qd" > "$WORK_DIR/quadtest/t" && mv "$WORK_DIR/quadtest/t" "$WORK_DIR/quadtest/one_test.qd"
+expect_rc "quad test -s <size> discovers test files" 0 sh -c "cd '$WORK_DIR/quadtest' && '$QUAD' test -s 4096 < /dev/null"
+
+mkdir -p "$WORK_DIR/quadclean"
+printf 'fn main() {\n\t1 print nl\n}\n' > "$WORK_DIR/quadclean/app.qd"
+printf 'notes\n' > "$WORK_DIR/quadclean/README"
+printf 'notes\n' > "$WORK_DIR/quadclean/notes.qd"
+printf 'keep me\n' > "$WORK_DIR/quadclean/notes"
+printf '.global _start\n' > "$WORK_DIR/quadclean/boot.s"
+printf '.global _start\n' > "$WORK_DIR/quadclean/app.s"
+(cd "$WORK_DIR/quadclean" && "$QUADC" app.qd > /dev/null 2>&1) || true
+(cd "$WORK_DIR/quadclean" && "$QUAD" clean > /dev/null 2>&1) || true
+if [ ! -e "$WORK_DIR/quadclean/app" ]; then pass "quad clean removes a built executable"; else
+    fail "quad clean removes a built executable" "app is still there"; fi
+if [ -e "$WORK_DIR/quadclean/notes" ] && [ -e "$WORK_DIR/quadclean/boot.s" ] && [ -e "$WORK_DIR/quadclean/app.s" ]; then
+    pass "quad clean leaves files it did not build"; else
+    fail "quad clean leaves files it did not build" "$(ls "$WORK_DIR/quadclean" | tr '\n' ' ')"; fi
+
+printf '#!/bin/sh\nkill -TERM $$\n' > "$WORK_DIR/quadcli/quadlint"
+chmod +x "$WORK_DIR/quadcli/quadlint"
+cp "$QUAD" "$WORK_DIR/quadcli/quad"
+rc=0
+out=$(cd "$WORK_DIR/quadcli" && ./quad lint x.qd 2>&1) || rc=$?
+if [ "$rc" = "143" ] && echo "$out" | grep -q "signal 15"; then pass "a tool killed by a signal is reported as such"; else
+    fail "a tool killed by a signal is reported as such" "rc=$rc: $out"; fi
 
 echo ""
 echo "=== io::readline end-of-input (needs controlled stdin) ==="

@@ -1,0 +1,9 @@
+fn main() {
+    "first
+    indented   
+  last" print nl
+    1 if {
+"nested
+	keep" print
+    }
+}

@@ -1,0 +1,8 @@
+// header
+use os // for exit
+// about fmt
+use fmt
+use io // io stuff
+
+fn main() {
+}

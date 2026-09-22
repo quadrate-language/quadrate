@@ -8,6 +8,7 @@
 #include <quadrate/cli/help.h>
 #include <quadrate/qc/colors.h>
 #include <string>
+#include <sys/stat.h>
 #include <vector>
 
 #include "version.h"
@@ -142,7 +143,17 @@ int execTool(const std::string& toolPath, const std::vector<std::string>& args) 
 	}
 	argv.push_back(nullptr);
 
-	int result = process_platform_exec_wait(toolPath.c_str(), argv.data());
+	int termSignal = 0;
+	int result = process_platform_exec_wait_signal(toolPath.c_str(), argv.data(), &termSignal);
+	if (result == -1 && termSignal > 0) {
+		const char* name = strsignal(termSignal);
+		std::cerr << "quad: " << fs::path(toolPath).filename().string() << " terminated by signal " << termSignal;
+		if (name) {
+			std::cerr << " (" << name << ")";
+		}
+		std::cerr << "\n";
+		return 128 + termSignal;
+	}
 	if (result == -1) {
 		std::cerr << "quad: failed to execute " << toolPath << "\n";
 		return 1;
@@ -171,95 +182,103 @@ std::vector<std::string> findQdFiles() {
 	return files;
 }
 
-int handleBuild(const std::vector<std::string>& args) {
+static bool quadcOptionTakesValue(const std::string& arg) {
+	return arg == "-o" || arg == "--output" || arg == "-I" || arg == "--include" || arg == "-l" || arg == "--module" ||
+		   arg == "--target" || arg == "-s" || arg == "--stack-size";
+}
+
+struct QuadcArgs {
+	std::vector<std::string> options;
+	std::vector<std::string> inputs;
+	std::vector<std::string> programArgs;
+	bool hasSeparator = false;
+};
+
+static QuadcArgs splitQuadcArgs(const std::vector<std::string>& args) {
+	QuadcArgs split;
+	for (size_t i = 0; i < args.size(); i++) {
+		const std::string& arg = args[i];
+		if (arg == "--") {
+			split.hasSeparator = true;
+			split.programArgs.assign(args.begin() + static_cast<std::ptrdiff_t>(i) + 1, args.end());
+			break;
+		}
+		if (arg.size() > 1 && arg[0] == '-') {
+			split.options.push_back(arg);
+			if (quadcOptionTakesValue(arg) && i + 1 < args.size()) {
+				split.options.push_back(args[++i]);
+			}
+			continue;
+		}
+		split.inputs.push_back(arg);
+	}
+	return split;
+}
+
+static bool resolveQuadcInputs(const QuadcArgs& split, std::vector<std::string>& files) {
+	if (split.inputs.empty()) {
+		auto found = findQdFiles();
+		if (found.empty()) {
+			std::cerr << "quad: no .qd files found in current directory\n";
+			return false;
+		}
+		auto it = std::find_if(
+				found.begin(), found.end(), [](const std::string& f) { return fs::path(f).filename() == "main.qd"; });
+		if (it != found.end()) {
+			files.push_back(*it);
+		} else {
+			files = found;
+		}
+		return true;
+	}
+	for (const auto& arg : split.inputs) {
+		if (arg != "-" && fs::is_directory(arg)) {
+			fs::path mainQd = fs::path(arg) / "main.qd";
+			if (fs::exists(mainQd)) {
+				files.push_back(mainQd.string());
+			} else {
+				std::cerr << "quad: no main.qd found in directory '" << arg << "'\n";
+				return false;
+			}
+		} else {
+			files.push_back(arg);
+		}
+	}
+	return true;
+}
+
+static int runQuadc(const std::vector<std::string>& args, bool run) {
 	std::string toolPath = findTool("quadc");
 	if (toolPath.empty()) {
 		std::cerr << "quad: quadc not found\n";
 		return 1;
 	}
 
-	std::vector<std::string> toolArgs;
-
-	// If no files specified, look for .qd files in current directory
-	if (args.empty()) {
-		auto files = findQdFiles();
-		if (files.empty()) {
-			std::cerr << "quad: no .qd files found in current directory\n";
-			return 1;
-		}
-		// Look for main.qd first
-		auto it = std::find_if(
-				files.begin(), files.end(), [](const std::string& f) { return fs::path(f).filename() == "main.qd"; });
-		if (it != files.end()) {
-			toolArgs.push_back(*it);
-		} else {
-			toolArgs = files;
-		}
-	} else {
-		for (const auto& arg : args) {
-			// If argument is a directory, look for main.qd inside it
-			if (fs::is_directory(arg)) {
-				fs::path mainQd = fs::path(arg) / "main.qd";
-				if (fs::exists(mainQd)) {
-					toolArgs.push_back(mainQd.string());
-				} else {
-					std::cerr << "quad: no main.qd found in directory '" << arg << "'\n";
-					return 1;
-				}
-			} else {
-				toolArgs.push_back(arg);
-			}
-		}
+	QuadcArgs split = splitQuadcArgs(args);
+	std::vector<std::string> files;
+	if (!resolveQuadcInputs(split, files)) {
+		return 1;
 	}
 
+	std::vector<std::string> toolArgs;
+	if (run) {
+		toolArgs.push_back("-r");
+	}
+	toolArgs.insert(toolArgs.end(), split.options.begin(), split.options.end());
+	toolArgs.insert(toolArgs.end(), files.begin(), files.end());
+	if (split.hasSeparator) {
+		toolArgs.push_back("--");
+		toolArgs.insert(toolArgs.end(), split.programArgs.begin(), split.programArgs.end());
+	}
 	return execTool(toolPath, toolArgs);
 }
 
+int handleBuild(const std::vector<std::string>& args) {
+	return runQuadc(args, false);
+}
+
 int handleRun(const std::vector<std::string>& args) {
-	std::string toolPath = findTool("quadc");
-	if (toolPath.empty()) {
-		std::cerr << "quad: quadc not found\n";
-		return 1;
-	}
-
-	std::vector<std::string> toolArgs;
-	toolArgs.push_back("-r");
-
-	if (args.empty()) {
-		auto files = findQdFiles();
-		if (files.empty()) {
-			std::cerr << "quad: no .qd files found in current directory\n";
-			return 1;
-		}
-		auto it = std::find_if(
-				files.begin(), files.end(), [](const std::string& f) { return fs::path(f).filename() == "main.qd"; });
-		if (it != files.end()) {
-			toolArgs.push_back(*it);
-		} else {
-			// No main.qd found — compile all .qd files together
-			// (consistent with build, which also compiles all)
-			for (const auto& f : files) {
-				toolArgs.push_back(f);
-			}
-		}
-	} else {
-		for (const auto& arg : args) {
-			// If argument is a directory, look for main.qd inside it
-			if (fs::is_directory(arg)) {
-				fs::path mainQd = fs::path(arg) / "main.qd";
-				if (fs::exists(mainQd)) {
-					toolArgs.push_back(mainQd.string());
-				} else {
-					std::cerr << "quad: no main.qd found in directory '" << arg << "'\n";
-					return 1;
-				}
-			} else {
-				toolArgs.push_back(arg);
-			}
-		}
-	}
-
-	return execTool(toolPath, toolArgs);
+	return runQuadc(args, true);
 }
 
 // Check if a path should be skipped during test discovery
@@ -310,14 +329,13 @@ int handleTest(const std::vector<std::string>& args) {
 
 	// Collect test files
 	std::vector<std::string> testFiles;
-	std::vector<std::string> options;
 	bool recursive = false;
 
-	for (const auto& arg : args) {
+	QuadcArgs split = splitQuadcArgs(args);
+	std::vector<std::string> options = split.options;
+	for (const auto& arg : split.inputs) {
 		if (arg == "./..." || arg == "...") {
 			recursive = true;
-		} else if (!arg.empty() && arg[0] == '-') {
-			options.push_back(arg);
 		} else {
 			testFiles.push_back(arg);
 		}
@@ -360,6 +378,10 @@ int handleTest(const std::vector<std::string>& args) {
 			toolArgs.push_back(opt);
 		}
 		toolArgs.push_back(file);
+		if (split.hasSeparator) {
+			toolArgs.push_back("--");
+			toolArgs.insert(toolArgs.end(), split.programArgs.begin(), split.programArgs.end());
+		}
 
 		int r = execTool(toolPath, toolArgs);
 		if (r != 0 && result == 0) {
@@ -380,13 +402,19 @@ int handleFmt(const std::vector<std::string>& args) {
 	std::vector<std::string> toolArgs;
 
 	bool hasCheckFlag = false;
+	bool hasFiles = false;
+	bool readsStdin = false;
 	for (const auto& arg : args) {
 		if (arg == "-c" || arg == "--check" || arg == "-n" || arg == "--dry-run") {
 			hasCheckFlag = true;
-			break;
+		} else if (arg == "-") {
+			readsStdin = true;
+			hasFiles = true;
+		} else if (!arg.empty() && arg[0] != '-') {
+			hasFiles = true;
 		}
 	}
-	if (!hasCheckFlag) {
+	if (!hasCheckFlag && !readsStdin) {
 		toolArgs.push_back("-w");
 	}
 
@@ -399,13 +427,6 @@ int handleFmt(const std::vector<std::string>& args) {
 	}
 
 	// If no files specified, format all .qd files in current directory
-	bool hasFiles = false;
-	for (const auto& arg : args) {
-		if (!arg.empty() && arg[0] != '-') {
-			hasFiles = true;
-			break;
-		}
-	}
 	if (!hasFiles) {
 		auto files = findQdFiles();
 		if (files.empty()) {
@@ -632,17 +653,43 @@ int handleInit(const std::vector<std::string>& args) {
 	return 0;
 }
 
+static bool fileStartsWith(const fs::path& path, const std::string& prefix) {
+	std::error_code ec;
+	if (!fs::is_regular_file(path, ec)) {
+		return false;
+	}
+	std::ifstream in(path, std::ios::binary);
+	std::string head(prefix.size(), '\0');
+	if (!in.read(head.data(), static_cast<std::streamsize>(head.size()))) {
+		return false;
+	}
+	return head == prefix;
+}
+
+static bool isElfFile(const fs::path& path) {
+	return fileStartsWith(path, "\x7f"
+								"ELF");
+}
+
+static bool isBuiltExecutable(const fs::path& path) {
+	struct stat st;
+	if (stat(path.c_str(), &st) != 0 || !S_ISREG(st.st_mode) || (st.st_mode & S_IXUSR) == 0) {
+		return false;
+	}
+	return isElfFile(path);
+}
+
 int handleClean(const std::vector<std::string>& args) {
 	// Parse arguments
 	for (const auto& arg : args) {
 		if (arg == "-h" || arg == "--help") {
 			std::cout << "quad clean - Remove build artifacts\n\n";
 			std::cout << "Usage: quad clean\n\n";
-			std::cout << "Removes common build artifacts:\n";
-			std::cout << "  - Executables matching .qd filenames\n";
-			std::cout << "  - *.o object files\n";
-			std::cout << "  - *.ll LLVM IR files\n";
-			std::cout << "  - *.s assembly files\n\n";
+			std::cout << "Removes build artifacts of the .qd files in the current directory:\n";
+			std::cout << "  - <name>     executable built from <name>.qd\n";
+			std::cout << "  - <name>.o   object file built from <name>.qd\n";
+			std::cout << "  - <name>.ll  LLVM IR generated from <name>.qd\n";
+			std::cout << "  - <name>.s   assembly generated from <name>.qd\n\n";
 			std::cout << "Options:\n";
 			std::cout << "  -h, --help     Show this help message\n";
 			return 0;
@@ -650,26 +697,31 @@ int handleClean(const std::vector<std::string>& args) {
 	}
 
 	int count = 0;
-
-	// Find .qd files and remove corresponding executables
+	std::vector<fs::path> targets;
 	for (const auto& entry : fs::directory_iterator(fs::current_path())) {
-		if (entry.path().extension() == ".qd") {
-			fs::path execPath = entry.path().stem(); // Remove .qd extension
-			if (fs::exists(execPath) && !fs::is_directory(execPath)) {
-				std::cout << Colors::red() << "Removing" << Colors::reset() << " " << execPath.string() << "\n";
-				fs::remove(execPath);
-				count++;
-			}
+		if (entry.path().extension() != ".qd" || !entry.is_regular_file()) {
+			continue;
+		}
+		fs::path dir = entry.path().parent_path();
+		std::string stem = entry.path().stem().string();
+		if (isBuiltExecutable(dir / stem)) {
+			targets.push_back(dir / stem);
+		}
+		if (isElfFile(dir / (stem + ".o"))) {
+			targets.push_back(dir / (stem + ".o"));
+		}
+		if (fileStartsWith(dir / (stem + ".ll"), "; ModuleID")) {
+			targets.push_back(dir / (stem + ".ll"));
+		}
+		if (fileStartsWith(dir / (stem + ".s"), "\t.text") || fileStartsWith(dir / (stem + ".s"), "\t.file\t")) {
+			targets.push_back(dir / (stem + ".s"));
 		}
 	}
 
-	// Remove .o, .ll, .s files
-	for (const auto& entry : fs::directory_iterator(fs::current_path())) {
-		std::string ext = entry.path().extension().string();
-		if (ext == ".o" || ext == ".ll" || ext == ".s") {
-			std::cout << Colors::red() << "Removing" << Colors::reset() << " " << entry.path().filename().string()
-					  << "\n";
-			fs::remove(entry.path());
+	for (const auto& target : targets) {
+		std::error_code ec;
+		if (fs::remove(target, ec)) {
+			std::cout << Colors::red() << "Removing" << Colors::reset() << " " << target.filename().string() << "\n";
 			count++;
 		}
 	}
@@ -725,11 +777,21 @@ int main(int argc, char* argv[]) {
 	// that finally produces the output is the one that colours.
 	std::vector<std::string> argList;
 	bool noColorFlag = false;
+	bool stripNoColor = true;
+	bool seenCommand = false;
 	for (int i = 1; i < argc; i++) {
 		std::string arg = argv[i];
-		if (arg == "--no-color" || arg == "--no-colors") {
+		if (stripNoColor && (arg == "--no-color" || arg == "--no-colors")) {
 			noColorFlag = true;
 			continue;
+		}
+		if (arg == "--") {
+			stripNoColor = false;
+		} else if (!seenCommand && !arg.empty() && arg[0] != '-') {
+			seenCommand = true;
+			if (arg.size() > 3 && arg.compare(arg.size() - 3, 3, ".qd") == 0) {
+				stripNoColor = false;
+			}
 		}
 		argList.push_back(arg);
 	}
@@ -761,8 +823,9 @@ int main(int argc, char* argv[]) {
 		std::vector<std::string> toolArgs;
 		toolArgs.push_back("-r");
 		toolArgs.push_back(command);
-		for (const auto& arg : args) {
-			toolArgs.push_back(arg);
+		if (!args.empty()) {
+			toolArgs.push_back("--");
+			toolArgs.insert(toolArgs.end(), args.begin(), args.end());
 		}
 		return execTool(toolPath, toolArgs);
 	}
