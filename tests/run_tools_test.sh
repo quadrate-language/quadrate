@@ -99,6 +99,34 @@ if grep -q "use strings" "$WORK_DIR/inplace.qd"; then pass "--write updates in p
 
 expect_rc "missing file exits non-zero" 1 "$QUADUSES" "$WORK_DIR/does-not-exist.qd"
 
+printf '/*\nuse os\n*/\nuse math\n\nfn main() {\n\t"text\nuse io\nmore" print nl\n}\n' > "$WORK_DIR/hidden_use.qd"
+"$QUADUSES" -w "$WORK_DIR/hidden_use.qd" > /dev/null 2>&1 || true
+if grep -qx "use os" "$WORK_DIR/hidden_use.qd" && grep -qx "use io" "$WORK_DIR/hidden_use.qd"; then
+    pass "--write keeps use lines inside comments and strings"; else
+    fail "--write keeps use lines inside comments and strings" "$(tr '\n' '|' < "$WORK_DIR/hidden_use.qd")"; fi
+if grep -qx "use math" "$WORK_DIR/hidden_use.qd"; then
+    fail "--write still removes a real unused use" "use math survived"; else
+    pass "--write still removes a real unused use"; fi
+
+printf 'use ct\n\nfn main() {\n\tVec<i64> { data = null len = 0 cap = 0 } -> v\n\tv 1 push! -> v\n\tv release\n}\n' > "$WORK_DIR/generic_type.qd"
+expect_contains "keeps a use whose types are referenced unqualified" "use ct" "$QUADUSES" "$WORK_DIR/generic_type.qd"
+
+printf 'use math\n\nfn  main() {\n\t1   2 +   print nl\n\t"a" "," strings::split -> _ -> p\n}\n' > "$WORK_DIR/unformatted.qd"
+printf 'use strings\n\nfn  main() {\n\t1   2 +   print nl\n\t"a" "," strings::split -> _ -> p\n}\n' > "$WORK_DIR/unformatted.want"
+"$QUADUSES" -w "$WORK_DIR/unformatted.qd" > /dev/null 2>&1 || true
+if cmp -s "$WORK_DIR/unformatted.qd" "$WORK_DIR/unformatted.want"; then pass "--write changes only use lines"; else
+    fail "--write changes only use lines" "$(diff "$WORK_DIR/unformatted.want" "$WORK_DIR/unformatted.qd" | tr '\n' '|')"; fi
+
+printf 'pub fn hi() {\n\t"hi" print nl\n}\n' > "$WORK_DIR/helper.qd"
+printf 'use "helper.qd"\n\nfn main() {\n\thelper::hi\n}\n' > "$WORK_DIR/quoted_use.qd"
+expect_rc "--check accepts a quoted file use" 0 "$QUADUSES" -c "$WORK_DIR/quoted_use.qd"
+
+printf 'fn main() {\n\t$"x {1}" print nl\n}\n' > "$WORK_DIR/interp.qd"
+expect_not_contains "no use sb for string interpolation" "use sb" "$QUADUSES" "$WORK_DIR/interp.qd"
+
+printf 'use os // exits\nuse zeta\n\nfn main() {\n\t"a" "," strings::split -> _ -> p\n\t0 os::exit\n}\n' > "$WORK_DIR/trailing.qd"
+expect_contains "keeps a kept use's trailing comment" "use os // exits" "$QUADUSES" "$WORK_DIR/trailing.qd"
+
 echo ""
 echo "=== quaddoc ==="
 
