@@ -2,17 +2,24 @@
 #include <quadrate/cli/help.h>
 #include <quadrate/platform/platform.h>
 #include <quadrate/qc/ast.h>
+#include <quadrate/qc/ast_node_constant.h>
+#include <quadrate/qc/ast_node_enum.h>
 #include <quadrate/qc/ast_node_function.h>
+#include <quadrate/qc/ast_node_global_var.h>
 #include <quadrate/qc/ast_node_local.h>
+#include <quadrate/qc/ast_node_struct_declaration.h>
+#include <quadrate/qc/ast_node_type_alias.h>
 #include <quadrate/qc/colors.h>
 #include <quadrate/qc/instructions.h>
 #include <quadrate/qc/semantic_validator.h>
 #include <quadrate/qd/qd.h>
+#include <quadrate/rt/runtime.h>
 #include <quadrate/rt/stack.h>
 
 #include <algorithm>
 #include <csetjmp>
 #include <csignal>
+#include <cstdint>
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
@@ -663,11 +670,10 @@ public:
 	}
 
 	// Read values from stdin and push onto stack, then run interactive REPL
-	void runWithPipedInput() {
+	bool forEachCompleteInput(std::istream& in, const std::function<bool(const std::string&)>& handle) {
 		std::string accumulated;
 		std::string line;
-		bool keepGoing = true;
-		while (keepGoing && std::getline(std::cin, line)) {
+		while (std::getline(in, line)) {
 			if (accumulated.empty()) {
 				accumulated = line;
 			} else {
@@ -681,11 +687,19 @@ public:
 			if (completeInput.empty()) {
 				continue;
 			}
-			keepGoing = handleCompleteInput(completeInput);
+			if (!handle(completeInput)) {
+				return false;
+			}
 		}
-		if (!trim(accumulated).empty() && keepGoing) {
-			handleCompleteInput(trim(accumulated));
+		if (!trim(accumulated).empty()) {
+			printf("%sError: unterminated input (missing '}')%s\n", COLOR_RED, COLOR_RESET);
 		}
+		return true;
+	}
+
+	void runWithPipedInput() {
+		const bool keepGoing =
+				forEachCompleteInput(std::cin, [this](const std::string& input) { return handleCompleteInput(input); });
 		if (!keepGoing) {
 			return;
 		}
@@ -903,15 +917,13 @@ private:
 			return;
 		}
 
-		std::string line;
 		size_t count = 0;
-		while (std::getline(file, line)) {
-			if (!line.empty()) {
-				processLine(line);
-				sessionHistory.push_back(line);
-				count++;
-			}
-		}
+		forEachCompleteInput(file, [&](const std::string& input) {
+			processLine(input);
+			sessionHistory.push_back(input);
+			count++;
+			return true;
+		});
 
 		printf("%sLoaded %zu commands from '%s'%s\n", COLOR_GREEN, count, filename.c_str(), COLOR_RESET);
 	}
@@ -982,7 +994,7 @@ private:
 
 		for (const auto& definition : definitions) {
 			const std::string declaration = trim(definition.substr(0, definition.find('{')));
-			if (declaration.find(query) != std::string::npos) {
+			if (declarationId(definition).name == query) {
 				matches++;
 				printf("  %s%s%s %s(this session)%s\n", COLOR_BOLD, declaration.c_str(), COLOR_RESET, COLOR_DIM,
 						COLOR_RESET);
@@ -993,7 +1005,15 @@ private:
 			return;
 		}
 
-		for (const auto& name : completionCandidates()) {
+		std::vector<std::string> names = completionCandidates();
+		for (const auto& definition : definitions) {
+			const std::string name = declarationId(definition).name;
+			if (!name.empty() && !std::binary_search(names.begin(), names.end(), name)) {
+				names.insert(std::lower_bound(names.begin(), names.end(), name), name);
+			}
+		}
+
+		for (const auto& name : names) {
 			if (name.find(query) == std::string::npos || name.size() < 2 ||
 					name.compare(name.size() - 2, 2, "::") == 0) {
 				continue;
@@ -1098,17 +1118,34 @@ private:
 		const std::string trimmedLine = trim(line);
 
 		if (trimmedLine.rfind("use ", 0) == 0) {
-			if (validateDefinition(line)) {
-				useStatements.push_back(line);
+			std::vector<std::string> uses = useStatements;
+			uses.push_back(line);
+			if (validateDefinitions(uses, definitions)) {
+				useStatements = std::move(uses);
 				printf("%sModule imported%s\n", COLOR_DIM, COLOR_RESET);
 			}
 			return;
 		}
 
 		if (const char* kind = declarationKind(trimmedLine)) {
-			if (validateDefinition(line)) {
-				definitions.push_back(line);
-				printf("%s%s defined%s\n", COLOR_DIM, kind, COLOR_RESET);
+			std::vector<std::string> candidate = definitions;
+			const std::string key = declarationId(line).key;
+			bool replaced = false;
+			if (!key.empty()) {
+				for (auto& existing : candidate) {
+					if (declarationId(existing).key == key) {
+						existing = line;
+						replaced = true;
+						break;
+					}
+				}
+			}
+			if (!replaced) {
+				candidate.push_back(line);
+			}
+			if (validateDefinitions(useStatements, candidate)) {
+				definitions = std::move(candidate);
+				printf("%s%s %s%s\n", COLOR_DIM, kind, replaced ? "redefined" : "defined", COLOR_RESET);
 			}
 			return;
 		}
@@ -1116,34 +1153,87 @@ private:
 		compileAndExecute(line);
 	}
 
-	// Validate a function or use statement by trying to compile it
-	bool validateDefinition(const std::string& definition) {
-		// Build a minimal source with the definition
-		std::string testSource;
+	struct DeclarationId {
+		std::string key;
+		std::string name;
+	};
 
-		// Add existing use statements
-		for (const auto& use : useStatements) {
+	static DeclarationId declarationId(const std::string& definition) {
+		Qd::Ast ast;
+		Qd::IAstNode* root = ast.generate(definition.c_str(), false, "repl");
+		if (!root || ast.hasErrors()) {
+			return {};
+		}
+
+		DeclarationId id;
+		size_t declarations = 0;
+		for (size_t i = 0; i < root->childCount(); i++) {
+			const Qd::IAstNode* node = root->child(i);
+			if (!node) {
+				continue;
+			}
+			switch (node->type()) {
+			case Qd::IAstNode::Type::FUNCTION_DECLARATION: {
+				const auto* fn = static_cast<const Qd::AstNodeFunctionDeclaration*>(node);
+				id.name = fn->name();
+				id.key = "fn " + (fn->hasReceiver() ? fn->receiverType() + "::" : std::string()) + fn->name();
+				break;
+			}
+			case Qd::IAstNode::Type::STRUCT_DECLARATION:
+				id.name = static_cast<const Qd::AstNodeStructDeclaration*>(node)->name();
+				id.key = "type " + id.name;
+				break;
+			case Qd::IAstNode::Type::ENUM_DECLARATION:
+				id.name = static_cast<const Qd::AstNodeEnumDeclaration*>(node)->name();
+				id.key = "type " + id.name;
+				break;
+			case Qd::IAstNode::Type::TYPE_ALIAS_DECLARATION:
+				id.name = static_cast<const Qd::AstNodeTypeAlias*>(node)->name();
+				id.key = "type " + id.name;
+				break;
+			case Qd::IAstNode::Type::CONSTANT_DECLARATION:
+				id.name = static_cast<const Qd::AstNodeConstant*>(node)->name();
+				id.key = "value " + id.name;
+				break;
+			case Qd::IAstNode::Type::GLOBAL_VAR_DECLARATION:
+				id.name = static_cast<const Qd::AstNodeGlobalVar*>(node)->name();
+				id.key = "value " + id.name;
+				break;
+			default:
+				continue;
+			}
+			declarations++;
+		}
+		return declarations == 1 ? id : DeclarationId{};
+	}
+
+	bool validateDefinitions(const std::vector<std::string>& uses, const std::vector<std::string>& candidate) {
+		std::string testSource;
+		for (const auto& use : uses) {
 			testSource += use + "\n";
 		}
-
-		// Add existing function definitions
-		for (const auto& func : definitions) {
-			testSource += func + "\n";
+		for (const auto& definition : candidate) {
+			testSource += definition + "\n";
 		}
-
-		// Add the new definition
-		testSource += definition + "\n";
-
-		// Add a minimal main function if we don't have one
 		testSource += "fn __repl_validate_main__() { }\n";
 
-		// Try to parse
 		Qd::Ast ast;
 		Qd::IAstNode* root = ast.generate(testSource.c_str(), false, "repl");
 
 		if (!root || ast.hasErrors()) {
-			// Print errors
 			for (const auto& error : ast.getErrors()) {
+				printf("%s%s%s\n", COLOR_RED, error.message.c_str(), COLOR_RESET);
+			}
+			return false;
+		}
+
+		Qd::SemanticValidator validator;
+		validator.setStoreErrors(true);
+		validator.setDisplayFilename("repl");
+		validator.setWarningMinLine(SIZE_MAX);
+		validator.validate(root, "repl", true, false);
+		if (validator.errorCount() > 0) {
+			for (const auto& error : validator.getErrors()) {
 				printf("%s%s%s\n", COLOR_RED, error.message.c_str(), COLOR_RESET);
 			}
 			return false;
@@ -1394,27 +1484,86 @@ private:
 		sigaction(SIGFPE, &sa, &oldFpe);
 		sigaction(SIGSEGV, &sa, &oldSegv);
 
-		int sig = sigsetjmp(g_jmpBuf, 1);
-		if (sig == 0) {
-			// Normal execution path
-			g_inExecution = 1;
-			qd_execute(ctx, funcCall.c_str());
-			g_inExecution = 0;
-
+		qd_stack* snapshot = snapshotStack();
+		int sig = 0;
+		if (executeGuarded(funcCall.c_str(), sig)) {
+			discardSnapshot(snapshot);
 			sessionLocals = carried;
 			recordState(structTypes);
 		} else {
-			// Returned from signal handler - execution crashed
-			g_inExecution = 0;
-			printf("%sExecution error (signal %d)%s\n", COLOR_RED, sig, COLOR_RESET);
+			if (sig != 0) {
+				printf("%sExecution error (signal %d)%s\n", COLOR_RED, sig, COLOR_RESET);
+			} else {
+				const char* message = qd_error_message(ctx);
+				printf("%sError: %s%s\n", COLOR_RED, message ? message : "runtime error", COLOR_RESET);
+			}
+			qd_clear_error(ctx);
+			ctx->call_stack_depth = 0;
 
-			dropEverything();
+			if (snapshot) {
+				releasePointers(ctx->st);
+				qd_stack_destroy(ctx->st);
+				ctx->st = snapshot;
+			} else {
+				dropEverything();
+			}
 		}
 
 		// Restore original signal handlers
 		sigaction(SIGABRT, &oldAbrt, nullptr);
 		sigaction(SIGFPE, &oldFpe, nullptr);
 		sigaction(SIGSEGV, &oldSegv, nullptr);
+	}
+
+	bool executeGuarded(const char* funcCall, int& sig) {
+		sig = sigsetjmp(g_jmpBuf, 1);
+		if (sig != 0) {
+			g_inExecution = 0;
+			qd_recovery_disarm(ctx);
+			return false;
+		}
+		if (setjmp(*qd_recovery_buf(ctx)) != 0) {
+			g_inExecution = 0;
+			return false;
+		}
+		qd_recovery_arm(ctx);
+		g_inExecution = 1;
+		qd_execute(ctx, funcCall);
+		g_inExecution = 0;
+		qd_recovery_disarm(ctx);
+		return true;
+	}
+
+	static void releasePointers(qd_stack* stack) {
+		const size_t depth = qd_stack_size(stack);
+		for (size_t i = 0; i < depth; i++) {
+			qd_stack_element_t elem;
+			if (qd_stack_element(stack, i, &elem) == QD_STACK_OK && elem.type == QD_STACK_TYPE_PTR) {
+				qd_ptr_release(elem.value.p);
+			}
+		}
+	}
+
+	qd_stack* snapshotStack() {
+		qd_stack* snapshot = nullptr;
+		if (qd_stack_clone(&snapshot, ctx->st) != QD_STACK_OK) {
+			return nullptr;
+		}
+		const size_t depth = qd_stack_size(snapshot);
+		for (size_t i = 0; i < depth; i++) {
+			qd_stack_element_t elem;
+			if (qd_stack_element(snapshot, i, &elem) == QD_STACK_OK && elem.type == QD_STACK_TYPE_PTR) {
+				qd_ptr_retain(elem.value.p);
+			}
+		}
+		return snapshot;
+	}
+
+	static void discardSnapshot(qd_stack* snapshot) {
+		if (snapshot) {
+			releasePointers(snapshot);
+			qd_stack_destroy(snapshot);
+		}
 	}
 };
 

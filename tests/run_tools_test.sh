@@ -176,7 +176,7 @@ SHAPES="$WORK_DIR/docs2/shapes.html"
 
 if grep -q 'id="emit"' "$SHAPES" 2>/dev/null; then pass "documents 'pub inline fn'"; else
     fail "documents 'pub inline fn'" "the whole sys module went missing this way"; fi
-if grep -q 'id="scaled"' "$SHAPES" 2>/dev/null; then pass "documents a generic function"; else
+if grep -q 'id="Box.scaled"' "$SHAPES" 2>/dev/null; then pass "documents a generic function"; else
     fail "documents a generic function" "the whole ct container library went missing this way"; fi
 
 # The old pattern ended the parameter list at the first ')', truncating the
@@ -199,6 +199,89 @@ expect_contains "reports a parse error as a located warning" \
 expect_not_contains "-q silences the parse warning" \
                 ": warning: " "$QUADDOC" -q -o "$WORK_DIR/docs3" "$WORK_DIR/src/broken"
 
+echo ""
+echo "=== quaddoc includes, pages and tags ==="
+
+quaddoc_regressions() {
+    local src="$WORK_DIR/docsrc" out="$WORK_DIR/docsout"
+    mkdir -p "$src/cyc" "$src/one/util" "$src/two/util" "$src/pkg"
+    printf '/// Cycle.\n\nuse cyc.qd\nuse part.qd\n\n/// c\npub fn c() {\n}\n' > "$src/cyc/cyc.qd"
+    printf 'use cyc.qd\n\n/// p\npub fn p() {\n}\n' > "$src/cyc/part.qd"
+    printf '/// First util.\n\n/// ua\npub fn ua() {\n}\n' > "$src/one/util/util.qd"
+    printf '/// Second util.\n\n/// ub\npub fn ub() {\n}\n' > "$src/two/util/util.qd"
+    cat > "$src/pkg/pkg.qd" <<'QDEOF'
+/// Package docs.
+///
+/// @example
+/// 1 2 add
+///     print
+/// doccheck: page-context
+
+use helper.qd
+
+/// A kind.
+pub enum Kind { A B = 5 }
+
+/// A transform.
+pub type Transform = fn(i64 -- i64)
+
+pub struct Foo { x:i64 }
+pub struct Bar { x:i64 }
+
+/// Foo length.
+pub fn (f:Foo) len( -- n:i64) {
+	f <<x
+}
+
+/// Bar length.
+pub fn (b:Bar) len( -- n:i64) {
+	b <<x
+}
+
+/// Apply.
+/// @param f fn(i64 i64 -- i64) Binary function
+/// doccheck: page-setup 1 -> x
+pub fn apply(f:fn(i64 i64 -- i64) x:i64 -- r:i64) {
+	x x f call assist
+}
+QDEOF
+    printf '/// Helper file.\n\n/// assist\npub fn assist(x:i64 -- y:i64) {\n\tx\n}\n' > "$src/pkg/helper.qd"
+
+    expect_rc "an include cycle does not crash" 0 timeout 20 "$QUADDOC" -q -o "$out" "$src"
+    if [ -f "$out/cyc.html" ] && [ ! -f "$out/part.html" ] && [ ! -f "$out/helper.html" ]; then
+        pass "an included file gets no page of its own"
+    else
+        fail "an included file gets no page of its own" "$(ls "$out" | tr '\n' ' ')"
+    fi
+    if grep -q 'id="assist"' "$out/pkg.html" 2>/dev/null; then pass "an included file is documented by its includer"; else
+        fail "an included file is documented by its includer" "assist missing from pkg.html"; fi
+    if [ -f "$out/one.util.util.html" ] && [ -f "$out/two.util.util.html" ]; then
+        pass "same-named modules get separate pages"
+    else
+        fail "same-named modules get separate pages" "$(ls "$out" | tr '\n' ' ')"
+    fi
+    expect_contains "a bare @example keeps its following lines" "<pre><code>1 2 add"$'\n'"    print</code></pre>" \
+                    cat "$out/pkg.html"
+    expect_not_contains "a bare @example is not folded into the description" "Package docs. 1 2 add" \
+                        cat "$out/pkg.html"
+    expect_not_contains "doccheck directives are not published" "doccheck" cat "$out/pkg.html"
+    expect_contains "a receiver method's anchor names the receiver" 'id="Foo.len"' cat "$out/pkg.html"
+    expect_contains "a same-named method on another receiver has its own anchor" 'id="Bar.len"' \
+                    cat "$out/pkg.html"
+    expect_contains "a call links to the callee's anchor" 'href="pkg.html#assist"' cat "$out/pkg.html"
+    expect_contains "an enum is documented" '<code>B</code> = <code>5</code>' cat "$out/pkg.html"
+    expect_contains "a type alias is documented" 'type Transform = fn(i64 -- i64)' cat "$out/pkg.html"
+    expect_contains "a tag type with spaces is kept whole" '<dd>Binary function</dd>' cat "$out/pkg.html"
+
+    expect_rc "an output path that cannot be created exits 1" 1 "$QUADDOC" -q -o /dev/null/x "$src"
+    expect_not_contains "an output path that cannot be created does not throw" "terminate called" \
+                        "$QUADDOC" -q -o /dev/null/x "$src"
+    mkdir -p "$WORK_DIR/fulldocs"
+    ln -sf /dev/full "$WORK_DIR/fulldocs/index.html"
+    expect_rc "a failed write exits 1" 1 "$QUADDOC" -q -o "$WORK_DIR/fulldocs" "$src"
+    expect_contains "a failed write is reported" "write failed" "$QUADDOC" -q -o "$WORK_DIR/fulldocs" "$src"
+}
+quaddoc_regressions
 
 echo ""
 echo "=== quadrepl ==="
@@ -345,6 +428,80 @@ if echo "$out" | grep -q '1.41421'; then pass "a stdlib module links and runs"; 
 out=$(repl 'use strings\n"  padded  " strings::trim prints\n')
 if echo "$out" | grep -q '^padded$'; then pass "a second stdlib module links and runs"; else
     fail "a second stdlib module links and runs" "$(echo "$out" | tr '\n' ' ')"; fi
+
+echo ""
+echo "=== quadrepl errors and definitions ==="
+
+quadrepl_regressions() {
+    local out
+    out=$(repl '1 2\n0 -> z 1 z /\n7\nstack\n' || true)
+    if echo "$out" | grep -q 'Division by zero' && [ "$(echo "$out" | tail -1)" = "1 2 7" ]; then
+        pass "a runtime error is reported and the session goes on"
+    else
+        fail "a runtime error is reported and the session goes on" "$(echo "$out" | tr '\n' ' ')"
+    fi
+
+    out=$(repl '"a" 5 -> x\n0 -> z "b" 1 z /\nx print\nstack\n' || true)
+    if [ "$(echo "$out" | tail -1)" = "a" ] && echo "$out" | grep -q '^5$'; then
+        pass "a failed line leaves the stack and locals as they were"
+    else
+        fail "a failed line leaves the stack and locals as they were" "$(echo "$out" | tr '\n' ' ')"
+    fi
+
+    out=$(repl 'fn g( -- y:i64) { "a" }\n1 2 add\n' || true)
+    if ! echo "$out" | grep -q 'Function defined' && [ "$(echo "$out" | tail -1)" = "3" ]; then
+        pass "an ill-typed definition is rejected and does not poison later lines"
+    else
+        fail "an ill-typed definition is rejected and does not poison later lines" "$(echo "$out" | tr '\n' ' ')"
+    fi
+
+    out=$(repl 'fn h() { nosuch }\n1 2 add\n' || true)
+    if echo "$out" | grep -q "Undefined identifier 'nosuch'" && [ "$(echo "$out" | tail -1)" = "3" ]; then
+        pass "a definition naming something undefined is rejected"
+    else
+        fail "a definition naming something undefined is rejected" "$(echo "$out" | tr '\n' ' ')"
+    fi
+
+    out=$(repl 'fn f(x:i64 -- y:i64) { x x add }\nfn f(x:i64 -- y:i64) { x }\n5 f print\n' || true)
+    if echo "$out" | grep -q 'Function redefined' && [ "$(echo "$out" | tail -1)" = "5" ]; then
+        pass "redefining a function replaces it"
+    else
+        fail "redefining a function replaces it" "$(echo "$out" | tr '\n' ' ')"
+    fi
+
+    out=$(repl 'const K = 7\nconst K = 8\nK print\n' || true)
+    if [ "$(echo "$out" | tail -1)" = "8" ]; then pass "redefining a constant replaces it"; else
+        fail "redefining a constant replaces it" "$(echo "$out" | tr '\n' ' ')"; fi
+
+    out=$(repl 'fn f(x:i64 -- y:i64) { x x add }\nfn g(x:i64 -- y:i64) { x f }\nfn f(x:str -- y:str) { x }\n3 g print\n' || true)
+    if [ "$(echo "$out" | tail -1)" = "6" ]; then pass "a redefinition that breaks a caller is rejected"; else
+        fail "a redefinition that breaks a caller is rejected" "$(echo "$out" | tr '\n' ' ')"; fi
+
+    printf 'fn sq(x:i64 -- y:i64) {\n\tx x mul\n}\n4 sq\n' > "$WORK_DIR/session.qd"
+    out=$(repl ":load $WORK_DIR/session.qd\n" || true)
+    if [ "$(echo "$out" | tail -1)" = "16" ]; then pass ":load reads a multi-line definition"; else
+        fail ":load reads a multi-line definition" "$(echo "$out" | tr '\n' ' ')"; fi
+
+    out=$(repl "fn cube(x:i64 -- y:i64) {\n\tx x x mul mul\n}\n:save $WORK_DIR/saved.qd\n" || true)
+    out=$(repl ":load $WORK_DIR/saved.qd\n2 cube print\n" || true)
+    if [ "$(echo "$out" | tail -1)" = "8" ]; then pass ":load reads back what :save wrote"; else
+        fail ":load reads back what :save wrote" "$(echo "$out" | tr '\n' ' ')"; fi
+
+    out=$(repl 'fn doubled(x:i64 -- y:i64) { x x add }\n:doc double\n' || true)
+    if echo "$out" | grep -q 'No exact match' && ! echo "$out" | grep -q '(this session)'; then
+        pass ":doc does not count a substring of a session name as exact"
+    else
+        fail ":doc does not count a substring of a session name as exact" "$(echo "$out" | tr '\n' ' ')"
+    fi
+
+    out=$(repl '1 2\nfn f() {\n' || true)
+    if echo "$out" | grep -q 'unterminated input' && ! echo "$out" | grep -q 'Function declarations not allowed'; then
+        pass "input left open at EOF is reported, not compiled"
+    else
+        fail "input left open at EOF is reported, not compiled" "$(echo "$out" | tr '\n' ' ')"
+    fi
+}
+quadrepl_regressions
 
 echo ""
 echo "=== quadfmt stdin ==="
