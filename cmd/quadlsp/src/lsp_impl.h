@@ -36,11 +36,23 @@ std::string lspUriToPath(const std::string& uri);
 // Convert a filesystem path to a percent-encoded file:// URI.
 std::string lspPathToUri(const std::string& path);
 
+// True for keywords, type names and built-in instructions, none of which can
+// be used as a user-defined name.
+bool lspIsReservedName(const std::string& name);
+
 // Load dependencies from qd.json and return include paths
 std::vector<std::string> loadDependenciesFromManifest(const std::string& manifestDir);
 
 // Get sibling .qd files in the same directory (for directory-based namespaces)
 std::vector<std::string> getSiblingQdFiles(const std::string& filePath);
+
+// Where a symbol's name is spelled in a document, as a byte range on one line
+struct NameOccurrence {
+	size_t line = 0;
+	size_t column = 0;
+	size_t length = 0;
+	bool declaration = false;
+};
 
 // LSP Server using jansson for JSON handling
 class QuadrateLSP {
@@ -120,7 +132,8 @@ private:
 	void handleDefinition(const std::string& id, const std::string& uri, size_t line, size_t character);
 	void handleFoldingRange(const std::string& id, const std::string& uri);
 	void handleDocumentHighlight(const std::string& id, const std::string& uri, size_t line, size_t character);
-	void handleReferences(const std::string& id, const std::string& uri, size_t line, size_t character);
+	void handleReferences(
+			const std::string& id, const std::string& uri, size_t line, size_t character, bool includeDeclaration);
 	void handleRename(
 			const std::string& id, const std::string& uri, size_t line, size_t character, const std::string& newName);
 	void handlePrepareRename(const std::string& id, const std::string& uri, size_t line, size_t character);
@@ -170,7 +183,19 @@ private:
 	void handleLinkedEditingRange(const std::string& id, const std::string& uri, size_t line, size_t character);
 
 	// Navigation helpers (implemented in lsp_navigation.cc)
-	void findIdentifiersInNode(Qd::IAstNode* node, const std::string& targetName, std::vector<Qd::IAstNode*>& results);
+	void findIdentifiersInNode(Qd::IAstNode* node, const std::string& targetName, std::vector<Qd::IAstNode*>& results,
+			bool includeParameters = false);
+
+	std::vector<NameOccurrence> nameOccurrences(
+			const std::string& text, const std::vector<Qd::IAstNode*>& nodes, const std::string& name);
+	std::vector<NameOccurrence> findNameOccurrences(const std::string& text, Qd::IAstNode* root,
+			const std::string& word, size_t line, size_t character, bool* isLocal = nullptr);
+	bool findRenameTarget(const std::string& documentText, size_t line, size_t character, std::string& word,
+			std::vector<NameOccurrence>& occurrences, bool& isLocal, std::string& error);
+	json_t* makeNameLocation(
+			const std::string& uri, const std::string& text, Qd::IAstNode* node, const std::string& name);
+	json_t* makeNameLocationAt(
+			const std::string& uri, const std::string& text, size_t line, size_t column, const std::string& name);
 	Qd::AstNodeFunctionDeclaration* findContainingFunction(Qd::IAstNode* root, size_t line, size_t column);
 	bool isLocalVariableOrParameter(Qd::IAstNode* funcNode, const std::string& name);
 	Qd::AstNodeLocal* findLocalDeclaration(Qd::IAstNode* startNode, const std::string& varName, size_t requestLine);

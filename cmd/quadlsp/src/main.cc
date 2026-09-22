@@ -779,7 +779,10 @@ QuadrateLSP::DispatchResult QuadrateLSP::dispatchMessage(
 		if (!getDocumentPosition(params, uri, line, character)) {
 			return DispatchResult::InvalidParams;
 		}
-		handleReferences(id, uri, line, character);
+		json_t* context = getJsonObject(params, "context");
+		json_t* includeDeclaration = getJsonObject(context, "includeDeclaration");
+		handleReferences(
+				id, uri, line, character, !json_is_boolean(includeDeclaration) || json_is_true(includeDeclaration));
 	} else if (method == "textDocument/documentHighlight") {
 		if (!getDocumentPosition(params, uri, line, character)) {
 			return DispatchResult::InvalidParams;
@@ -2087,6 +2090,11 @@ static bool isTypeName(const std::string& word) {
 	static const std::set<std::string> types = {
 			"i8", "i16", "i32", "i64", "u8", "u16", "u32", "u64", "f32", "f64", "bool", "str", "ptr", "void", "any"};
 	return types.count(word) > 0;
+}
+
+bool lspIsReservedName(const std::string& name) {
+	static const std::set<std::string> syntax = {"loop", "while", "null", "self"};
+	return isKeyword(name) || isTypeName(name) || isBuiltinOp(name) || syntax.count(name) > 0;
 }
 
 void QuadrateLSP::handleSemanticTokens(const std::string& id, const std::string& uri) {
