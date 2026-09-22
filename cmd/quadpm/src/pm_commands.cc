@@ -783,30 +783,7 @@ bool isSemVerRange(const std::string& version) {
 	if (version.empty()) {
 		return false;
 	}
-
-	// Explicit semver operators
-	if (version[0] == '^' || version[0] == '~' || version[0] == '>' || version[0] == '<' || version[0] == '=') {
-		return true;
-	}
-
-	// Wildcard
-	if (version == "*" || version.find('x') != std::string::npos || version.find('X') != std::string::npos) {
-		return true;
-	}
-
-	// Hyphen range
-	if (version.find(" - ") != std::string::npos) {
-		return true;
-	}
-
-	// OR range
-	if (version.find("||") != std::string::npos) {
-		return true;
-	}
-
-	// Could be exact version (1.2.3) or branch name (main)
-	// Try parsing as semver
-	return isSemVer(version);
+	return parseVersionRange(version).isValid();
 }
 
 // Resolve a semver range to a specific tag
