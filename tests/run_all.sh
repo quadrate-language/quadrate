@@ -5,7 +5,7 @@
 #   ./tests/run_all.sh                    # Run all tests
 #   ./tests/run_all.sh --failed           # Run only previously failed tests
 #   ./tests/run_all.sh --test NAME        # Run specific test
-#   ./tests/run_all.sh --suite SUITE      # Run specific suite (cpp, lsp, qd, formatter, linter, embed, quadpm, build_cache, quadmcp, args, reference, crosscompile, stdlib, tools, memory, http, mtls, fuzz)
+#   ./tests/run_all.sh --suite SUITE      # Run specific suite (cpp, lsp, qd, formatter, linter, embed, quadpm, build_cache, quadc, quadmcp, args, reference, crosscompile, stdlib, tools, memory, http, mtls, fuzz)
 #   ./tests/run_all.sh --clear            # Clear failed tests file
 #   ./tests/run_all.sh --list             # List all available tests
 
@@ -112,7 +112,7 @@ while [[ $# -gt 0 ]]; do
             echo "Options:"
             echo "  --failed, -f       Run only previously failed tests"
             echo "  --test, -t NAME    Run specific test by name"
-            echo "  --suite, -s SUITE  Run specific suite (cpp, lsp, qd, formatter, linter, embed, quadpm, build_cache, quadmcp, args, reference, crosscompile, stdlib, tools, memory, http, mtls, fuzz)"
+            echo "  --suite, -s SUITE  Run specific suite (cpp, lsp, qd, formatter, linter, embed, quadpm, build_cache, quadc, quadmcp, args, reference, crosscompile, stdlib, tools, memory, http, mtls, fuzz)"
             echo "  --fuzz-time SECS   Fuzz test duration in seconds (default: 10)"
             echo "  --list, -l         List all available tests"
             echo "  --clear, -c        Clear failed tests file"
@@ -1078,6 +1078,30 @@ run_build_cache_tests() {
     fi
 }
 
+run_quadc_cli_tests() {
+    local suite="quadc"
+    local test_script="$PROJECT_ROOT/tests/quadc/test_quadc_cli.sh"
+
+    if ! should_run_test "$suite" "quadc_cli"; then
+        return
+    fi
+
+    print_header "quadc CLI Tests"
+
+    if [[ ! -x "$test_script" ]]; then
+        log_skip "$suite" "quadc_cli" "test script not found"
+        return
+    fi
+
+    local output
+    output=$(cd "$PROJECT_ROOT" && QUADC="$QUADC" QUADRATE_ROOT="$QUADRATE_ROOT_DEFAULT" QUADRATE_LIBDIR="$PROJECT_ROOT/dist/lib" bash "$test_script" 2>&1)
+    if [[ $? -eq 0 ]]; then
+        log_pass "$suite" "quadc_cli"
+    else
+        log_fail "$suite" "quadc_cli" "test failed" "$output"
+    fi
+}
+
 # Run quadmcp (MCP server) tests
 run_quadmcp_tests() {
     local suite="quadmcp"
@@ -1969,7 +1993,7 @@ print_summary() {
     echo -e "${BOLD}═══════════════════════════════════════════════════════════════════════════════${NC}"
 
     # Print per-suite summary
-    for suite in cpp lsp qd formatter linter embed quadpm build_cache quadmcp stdlib tools memory http mtls fuzz; do
+    for suite in cpp lsp qd formatter linter embed quadpm build_cache quadc quadmcp stdlib tools memory http mtls fuzz; do
         local passed=${SUITE_PASSED[$suite]:-0}
         local failed=${SUITE_FAILED[$suite]:-0}
         local skipped=${SUITE_SKIPPED[$suite]:-0}
@@ -1987,6 +2011,7 @@ print_summary() {
             embed) suite_name="Embed" ;;
             quadpm) suite_name="Package Manager" ;;
             build_cache) suite_name="Build Cache" ;;
+            quadc) suite_name="quadc CLI" ;;
             quadmcp) suite_name="MCP Server" ;;
             stdlib) suite_name="Stdlib Unit Tests" ;;
             tools) suite_name="Tool Tests" ;;
@@ -2108,6 +2133,10 @@ main() {
 
     if [[ -z "$SPECIFIC_SUITE" ]] || [[ "$SPECIFIC_SUITE" == "build_cache" ]]; then
         run_build_cache_tests
+    fi
+
+    if [[ -z "$SPECIFIC_SUITE" ]] || [[ "$SPECIFIC_SUITE" == "quadc" ]]; then
+        run_quadc_cli_tests
     fi
 
     if [[ -z "$SPECIFIC_SUITE" ]] || [[ "$SPECIFIC_SUITE" == "quadmcp" ]]; then

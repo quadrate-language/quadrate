@@ -313,6 +313,54 @@ TEST(ParseStackSizeZero) {
 	ASSERT(!result, "should fail with zero stack size");
 }
 
+TEST(ParseStackSizeNegative) {
+	ArgBuilder ab;
+	ab.add("-s").add("-1");
+	ab.add("test.qd");
+	Options opts;
+	bool result = parseArgs(ab.argc(), ab.argv(), opts);
+	ASSERT(!result, "should fail with negative stack size");
+}
+
+TEST(ParseStackSizeTrailingJunk) {
+	ArgBuilder ab;
+	ab.add("-s").add("10abc");
+	ab.add("test.qd");
+	Options opts;
+	bool result = parseArgs(ab.argc(), ab.argv(), opts);
+	ASSERT(!result, "should fail with trailing junk in stack size");
+}
+
+TEST(ParseStackSizeTooLarge) {
+	ArgBuilder ab;
+	ab.add("-s").add("99999999999999999999");
+	ab.add("test.qd");
+	Options opts;
+	bool result = parseArgs(ab.argc(), ab.argv(), opts);
+	ASSERT(!result, "should fail with huge stack size");
+}
+
+// Coverage tests
+
+TEST(ParseCoverageWithoutTest) {
+	ArgBuilder ab;
+	ab.add("--coverage");
+	ab.add("test.qd");
+	Options opts;
+	bool result = parseArgs(ab.argc(), ab.argv(), opts);
+	ASSERT(!result, "--coverage without --test should fail");
+}
+
+TEST(ParseCoverageWithTest) {
+	ArgBuilder ab;
+	ab.add("--test").add("--coverage");
+	ab.add("test.qd");
+	Options opts;
+	bool result = parseArgs(ab.argc(), ab.argv(), opts);
+	ASSERT(result, "--coverage with --test should parse");
+	ASSERT(opts.coverage, "coverage should be enabled");
+}
+
 // Werror tests
 
 TEST(ParseWerror) {

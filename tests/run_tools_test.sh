@@ -737,7 +737,7 @@ fi
 # An output path that cannot be written must say which path and name the tool,
 # rather than printing a bare strerror line with no context.
 err=$("$QUADC" -o /dev/null/nope "$WORK_DIR/hostile/readable/ok.qd" 2>&1 || true)
-if echo "$err" | grep -q "Error: Could not open"; then
+if echo "$err" | grep -q "quadc: cannot write output '/dev/null/nope'"; then
     pass "quadc names the file it could not open"
 else
     fail "quadc names the file it could not open" "$(echo "$err" | head -1)"

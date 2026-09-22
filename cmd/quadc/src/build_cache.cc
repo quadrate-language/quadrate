@@ -13,6 +13,7 @@
 
 #include <sstream>
 #include <system_error>
+#include <unistd.h>
 
 namespace fs = std::filesystem;
 
@@ -182,6 +183,20 @@ void BuildCache::addStdlibIdentity() {
 	}
 }
 
+static void copyFileAtomically(const fs::path& from, const fs::path& to) {
+	fs::path tmp = to;
+	tmp += ".tmp." + std::to_string(getpid());
+	try {
+		fs::copy_file(from, tmp, fs::copy_options::overwrite_existing);
+		fs::permissions(tmp, fs::status(from).permissions(), fs::perm_options::replace);
+		fs::rename(tmp, to);
+	} catch (...) {
+		std::error_code ec;
+		fs::remove(tmp, ec);
+		throw;
+	}
+}
+
 std::string BuildCache::computeKey() {
 	if (!mKey.empty()) {
 		return mKey;
@@ -238,12 +253,7 @@ bool BuildCache::restore(const std::string& outputPath) {
 	}
 
 	try {
-		// Create parent directories for output if needed
-		fs::path outDir = fs::path(outputPath).parent_path();
-		if (!outDir.empty()) {
-			fs::create_directories(outDir);
-		}
-		fs::copy_file(cachedPath, outputPath, fs::copy_options::overwrite_existing);
+		copyFileAtomically(cachedPath, outputPath);
 		// Ensure executable permissions
 		fs::permissions(outputPath, fs::perms::owner_exec | fs::perms::group_exec | fs::perms::others_exec,
 				fs::perm_options::add);
@@ -265,7 +275,7 @@ void BuildCache::store(const std::string& executablePath) {
 		std::string key = computeKey();
 		std::string cachedPath = dir + "/" + key;
 
-		fs::copy_file(executablePath, cachedPath, fs::copy_options::overwrite_existing);
+		copyFileAtomically(executablePath, cachedPath);
 	} catch (...) {
 		// Cache store failure is not fatal
 	}

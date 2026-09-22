@@ -5,7 +5,9 @@
 #include "options.h"
 #include "parsed_module.h"
 #include "temp_dir_guard.h"
+#include <cerrno>
 #include <chrono>
+#include <csignal>
 #include <cstring>
 #include <filesystem>
 #include <iostream>
@@ -20,6 +22,7 @@
 #include <set>
 #include <sstream>
 #include <sys/wait.h>
+#include <unistd.h>
 #include <unordered_map>
 #include <unordered_set>
 #include <utility>
@@ -67,6 +70,102 @@ static bool isInDirectory(const std::string& filePath, const std::unordered_set<
 	}
 	std::filesystem::path parent = std::filesystem::path(filePath).parent_path();
 	return dirs.count(canonicalDir(parent.empty() ? "." : parent.string())) > 0;
+}
+
+static bool definesFunction(Qd::IAstNode* root, const std::string& name) {
+	for (auto* child : root->children()) {
+		if (child && child->type() == Qd::IAstNode::Type::FUNCTION_DECLARATION &&
+				static_cast<Qd::AstNodeFunctionDeclaration*>(child)->name() == name) {
+			return true;
+		}
+	}
+	return false;
+}
+
+static bool isSameFile(const std::string& a, const std::string& b) {
+	std::error_code ec;
+	return std::filesystem::equivalent(a, b, ec) && !ec;
+}
+
+static bool checkOutputPath(const std::string& outputPath, const std::vector<std::string>& inputs) {
+	for (const auto& input : inputs) {
+		if (isSameFile(outputPath, input)) {
+			printToolError("output file '" + outputPath + "' is the same as input file '" + input + "'");
+			printNote("use -o to choose a different output name");
+			return false;
+		}
+	}
+	std::filesystem::path parent = std::filesystem::path(outputPath).parent_path();
+	std::error_code ec;
+	if (!parent.empty() && std::filesystem::exists(parent, ec) && !std::filesystem::is_directory(parent, ec)) {
+		printToolError("cannot write output '" + outputPath + "': '" + parent.string() + "' is not a directory");
+		return false;
+	}
+	if (!parent.empty() && !std::filesystem::is_directory(parent, ec)) {
+		printToolError("cannot write output '" + outputPath + "': directory '" + parent.string() + "' does not exist");
+		return false;
+	}
+	return true;
+}
+
+static int runExecutable(const std::string& path, const std::vector<std::string>& args) {
+	std::vector<char*> argv;
+	argv.reserve(args.size() + 2);
+	argv.push_back(const_cast<char*>(path.c_str()));
+	for (const auto& arg : args) {
+		argv.push_back(const_cast<char*>(arg.c_str()));
+	}
+	argv.push_back(nullptr);
+
+	std::cout.flush();
+	std::cerr.flush();
+
+	struct sigaction ignore = {};
+	ignore.sa_handler = SIG_IGN;
+	sigemptyset(&ignore.sa_mask);
+	struct sigaction oldInt = {};
+	struct sigaction oldQuit = {};
+	sigaction(SIGINT, &ignore, &oldInt);
+	sigaction(SIGQUIT, &ignore, &oldQuit);
+
+	pid_t pid = fork();
+	if (pid < 0) {
+		sigaction(SIGINT, &oldInt, nullptr);
+		sigaction(SIGQUIT, &oldQuit, nullptr);
+		printError(std::string("failed to execute program: ") + std::strerror(errno));
+		return 1;
+	}
+	if (pid == 0) {
+		sigaction(SIGINT, &oldInt, nullptr);
+		sigaction(SIGQUIT, &oldQuit, nullptr);
+		execv(argv[0], argv.data());
+		int err = errno;
+		std::string msg = "quadc: failed to execute '" + path + "': " + std::strerror(err) + "\n";
+		ssize_t written = write(STDERR_FILENO, msg.data(), msg.size());
+		(void)written;
+		_exit(127);
+	}
+
+	int status = 0;
+	pid_t waited;
+	do {
+		waited = waitpid(pid, &status, 0);
+	} while (waited < 0 && errno == EINTR);
+	sigaction(SIGINT, &oldInt, nullptr);
+	sigaction(SIGQUIT, &oldQuit, nullptr);
+
+	if (waited < 0) {
+		printError(std::string("failed to wait for program: ") + std::strerror(errno));
+		return 1;
+	}
+	if (WIFSIGNALED(status)) {
+		int sig = WTERMSIG(status);
+		const char* name = strsignal(sig);
+		printError(
+				"program terminated by signal " + std::to_string(sig) + (name ? std::string(" (") + name + ")" : ""));
+		return 128 + sig;
+	}
+	return WIFEXITED(status) ? WEXITSTATUS(status) : 1;
 }
 
 int main(int argc, char** argv) {
@@ -161,15 +260,22 @@ int main(int argc, char** argv) {
 	if (opts.run) {
 		std::filesystem::path binDir = std::filesystem::path(outputDir) / "bin";
 		std::filesystem::create_directory(binDir);
-		outputPath = (binDir / opts.outputName).string();
+		outputPath = (binDir / std::filesystem::path(opts.outputName).filename()).string();
 	} else {
 		outputPath = opts.outputName;
+		std::string finalPath = outputPath;
+		if (opts.freestanding && (finalPath.size() < 2 || finalPath.substr(finalPath.size() - 2) != ".o")) {
+			finalPath += ".o";
+		}
+		if (!checkOutputPath(finalPath, opts.files)) {
+			return 1;
+		}
 	}
 
 	// Preserve temp files if requested
 	if (opts.saveTemps) {
 		tempGuard.release();
-		std::cout << "Temporary files saved in: " << outputDir << std::endl;
+		std::cerr << "Temporary files saved in: " << outputDir << std::endl;
 	}
 
 	if (!opts.files.empty() || opts.readStdin) {
@@ -226,13 +332,14 @@ int main(int argc, char** argv) {
 
 		// Parse all main source files
 		for (const auto& file : opts.files) {
+			errno = 0;
 			auto bufferOpt = readFileContents(file);
 			if (!bufferOpt) {
 				// Tool-level failure, not a compiler diagnostic: use the same
 				// `tool: path: message` shape as quadfmt/quadlint/quaduses/quaddoc
 				// rather than the `quadc: error:` form reserved for diagnostics.
-				printToolError(file + ": No such file or directory");
-				continue;
+				printToolError(file + ": " + std::strerror(errno != 0 ? errno : EIO));
+				return 1;
 			}
 			std::string buffer = std::move(*bufferOpt);
 
@@ -587,19 +694,23 @@ int main(int argc, char** argv) {
 
 		// Build cache: check if we can skip compilation entirely
 		// Skip cache for stdin, test mode, JIT, and when dumping debug output
-		bool useCache = !opts.readStdin && !opts.testMode && !opts.dumpAst && !opts.dumpIR && !opts.dumpTokens &&
-						!opts.saveTemps && !opts.verbose;
+		bool useCache = !opts.readStdin && !opts.testMode && !opts.freestanding && !opts.dumpAst && !opts.dumpIR &&
+						!opts.dumpTokens && !opts.saveTemps && !opts.verbose;
 		BuildCache buildCache;
 		if (useCache) {
 			// Hash all source files (main + all modules)
 			for (const auto& mod : parsedModules) {
 				buildCache.addSourceFile(mod.name);
+				buildCache.addOption("module:" + mod.package + ":" + mod.name + ":" + (mod.mergeIntoMain ? "1" : "0"));
 			}
 			// Hash compiler options that affect output
 			buildCache.addOption("opt:" + std::to_string(opts.optLevel));
 			buildCache.addOption("stack:" + std::to_string(opts.stackSize));
 			buildCache.addOption("target:" + opts.targetTriple);
 			buildCache.addOption("debug:" + std::to_string(opts.debugInfo ? 1 : 0));
+			buildCache.addOption("freestanding:" + std::to_string(opts.freestanding ? 1 : 0));
+			buildCache.addOption("test:" + std::to_string(opts.testMode ? 1 : 0));
+			buildCache.addOption("coverage:" + std::to_string(opts.coverage ? 1 : 0));
 			// A different quadc can produce different output from identical sources
 			buildCache.addCompilerIdentity();
 			// ...and so can a different runtime or stdlib, which is linked in
@@ -614,27 +725,7 @@ int main(int argc, char** argv) {
 				}
 				// If running, execute the cached binary
 				if (opts.run) {
-					std::string cmd = outputPath;
-					for (const auto& arg : opts.runArgs) {
-						// Quote arguments that contain spaces or special characters
-						bool needsQuote = arg.find(' ') != std::string::npos || arg.find('\t') != std::string::npos ||
-										  arg.find('"') != std::string::npos || arg.find('\\') != std::string::npos ||
-										  arg.find('$') != std::string::npos;
-						if (needsQuote) {
-							cmd += " \"";
-							for (char c : arg) {
-								if (c == '"' || c == '\\' || c == '$') {
-									cmd += '\\';
-								}
-								cmd += c;
-							}
-							cmd += "\"";
-						} else {
-							cmd += " " + arg;
-						}
-					}
-					int status = system(cmd.c_str());
-					return WIFEXITED(status) ? WEXITSTATUS(status) : -1;
+					return runExecutable(outputPath, opts.runArgs);
 				}
 				return 0;
 			}
@@ -725,21 +816,24 @@ int main(int argc, char** argv) {
 			return 1;
 		}
 
+		if (!opts.testMode) {
+			std::vector<std::string> mainDefiners;
+			for (const auto& module : parsedModules) {
+				if (module.package == "main" && definesFunction(module.root, "main")) {
+					mainDefiners.push_back(module.name);
+				}
+			}
+			if (mainDefiners.size() > 1) {
+				printError("multiple input files define 'main': " + mainDefiners[0] + ", " + mainDefiners[1]);
+				printNote("a program has exactly one entry point; pass one main file");
+				return 1;
+			}
+		}
+
 		// Check if main function exists in main module (unless in test mode
 		// or freestanding mode, which use different entry-point conventions).
 		if (!opts.testMode && !opts.freestanding) {
-			bool hasMainFunction = false;
-			for (auto* child : mainRoot->children()) {
-				if (child && child->type() == Qd::IAstNode::Type::FUNCTION_DECLARATION) {
-					auto* funcDecl = static_cast<Qd::AstNodeFunctionDeclaration*>(child);
-					if (funcDecl->name() == "main") {
-						hasMainFunction = true;
-						break;
-					}
-				}
-			}
-
-			if (!hasMainFunction) {
+			if (!definesFunction(mainRoot, "main")) {
 				printError("no 'main' function found in main module");
 				printNote("a Quadrate program must have a 'main' function as the entry point");
 				return 1;
@@ -834,6 +928,10 @@ int main(int argc, char** argv) {
 			if (opts.verbose) {
 				std::cout << "\n=== JIT Execution ===" << std::endl;
 			}
+			if (!opts.saveTemps) {
+				std::error_code ec;
+				std::filesystem::remove_all(outputDir, ec);
+			}
 			auto jitStart = std::chrono::steady_clock::now();
 			int exitCode = generator.runJIT();
 			if (timing) {
@@ -881,42 +979,7 @@ int main(int argc, char** argv) {
 			if (opts.verbose) {
 				std::cout << "\n=== Running " << outputPath << " ===" << std::endl;
 			}
-			// Build command with arguments
-			std::string cmd = outputPath;
-			for (const auto& arg : opts.runArgs) {
-				// Quote arguments that contain spaces or special characters
-				bool needsQuote = arg.find(' ') != std::string::npos || arg.find('\t') != std::string::npos ||
-								  arg.find('"') != std::string::npos || arg.find('\\') != std::string::npos ||
-								  arg.find('$') != std::string::npos;
-				if (needsQuote) {
-					cmd += " \"";
-					for (char c : arg) {
-						if (c == '"' || c == '\\' || c == '$') {
-							cmd += '\\';
-						}
-						cmd += c;
-					}
-					cmd += "\"";
-				} else {
-					cmd += " " + arg;
-				}
-			}
-			// Execute using system() and get exit code
-			int status = system(cmd.c_str());
-			if (status == -1) {
-				printError("failed to execute program");
-				return 1;
-			}
-			if (WIFEXITED(status)) {
-				return WEXITSTATUS(status);
-			}
-			if (WIFSIGNALED(status)) {
-				int sig = WTERMSIG(status);
-				printError(std::string("program terminated by signal ") + std::to_string(sig) + " (" + strsignal(sig) +
-						   ")");
-				return 128 + sig;
-			}
-			return 1;
+			return runExecutable(outputPath, opts.runArgs);
 		}
 	}
 
