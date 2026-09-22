@@ -430,6 +430,80 @@ if echo "$out" | grep -q '^padded$'; then pass "a second stdlib module links and
     fail "a second stdlib module links and runs" "$(echo "$out" | tr '\n' ' ')"; fi
 
 echo ""
+echo "=== quadrepl errors and definitions ==="
+
+quadrepl_regressions() {
+    local out
+    out=$(repl '1 2\n0 -> z 1 z /\n7\nstack\n' || true)
+    if echo "$out" | grep -q 'Division by zero' && [ "$(echo "$out" | tail -1)" = "1 2 7" ]; then
+        pass "a runtime error is reported and the session goes on"
+    else
+        fail "a runtime error is reported and the session goes on" "$(echo "$out" | tr '\n' ' ')"
+    fi
+
+    out=$(repl '"a" 5 -> x\n0 -> z "b" 1 z /\nx print\nstack\n' || true)
+    if [ "$(echo "$out" | tail -1)" = "a" ] && echo "$out" | grep -q '^5$'; then
+        pass "a failed line leaves the stack and locals as they were"
+    else
+        fail "a failed line leaves the stack and locals as they were" "$(echo "$out" | tr '\n' ' ')"
+    fi
+
+    out=$(repl 'fn g( -- y:i64) { "a" }\n1 2 add\n' || true)
+    if ! echo "$out" | grep -q 'Function defined' && [ "$(echo "$out" | tail -1)" = "3" ]; then
+        pass "an ill-typed definition is rejected and does not poison later lines"
+    else
+        fail "an ill-typed definition is rejected and does not poison later lines" "$(echo "$out" | tr '\n' ' ')"
+    fi
+
+    out=$(repl 'fn h() { nosuch }\n1 2 add\n' || true)
+    if echo "$out" | grep -q "Undefined identifier 'nosuch'" && [ "$(echo "$out" | tail -1)" = "3" ]; then
+        pass "a definition naming something undefined is rejected"
+    else
+        fail "a definition naming something undefined is rejected" "$(echo "$out" | tr '\n' ' ')"
+    fi
+
+    out=$(repl 'fn f(x:i64 -- y:i64) { x x add }\nfn f(x:i64 -- y:i64) { x }\n5 f print\n' || true)
+    if echo "$out" | grep -q 'Function redefined' && [ "$(echo "$out" | tail -1)" = "5" ]; then
+        pass "redefining a function replaces it"
+    else
+        fail "redefining a function replaces it" "$(echo "$out" | tr '\n' ' ')"
+    fi
+
+    out=$(repl 'const K = 7\nconst K = 8\nK print\n' || true)
+    if [ "$(echo "$out" | tail -1)" = "8" ]; then pass "redefining a constant replaces it"; else
+        fail "redefining a constant replaces it" "$(echo "$out" | tr '\n' ' ')"; fi
+
+    out=$(repl 'fn f(x:i64 -- y:i64) { x x add }\nfn g(x:i64 -- y:i64) { x f }\nfn f(x:str -- y:str) { x }\n3 g print\n' || true)
+    if [ "$(echo "$out" | tail -1)" = "6" ]; then pass "a redefinition that breaks a caller is rejected"; else
+        fail "a redefinition that breaks a caller is rejected" "$(echo "$out" | tr '\n' ' ')"; fi
+
+    printf 'fn sq(x:i64 -- y:i64) {\n\tx x mul\n}\n4 sq\n' > "$WORK_DIR/session.qd"
+    out=$(repl ":load $WORK_DIR/session.qd\n" || true)
+    if [ "$(echo "$out" | tail -1)" = "16" ]; then pass ":load reads a multi-line definition"; else
+        fail ":load reads a multi-line definition" "$(echo "$out" | tr '\n' ' ')"; fi
+
+    out=$(repl "fn cube(x:i64 -- y:i64) {\n\tx x x mul mul\n}\n:save $WORK_DIR/saved.qd\n" || true)
+    out=$(repl ":load $WORK_DIR/saved.qd\n2 cube print\n" || true)
+    if [ "$(echo "$out" | tail -1)" = "8" ]; then pass ":load reads back what :save wrote"; else
+        fail ":load reads back what :save wrote" "$(echo "$out" | tr '\n' ' ')"; fi
+
+    out=$(repl 'fn doubled(x:i64 -- y:i64) { x x add }\n:doc double\n' || true)
+    if echo "$out" | grep -q 'No exact match' && ! echo "$out" | grep -q '(this session)'; then
+        pass ":doc does not count a substring of a session name as exact"
+    else
+        fail ":doc does not count a substring of a session name as exact" "$(echo "$out" | tr '\n' ' ')"
+    fi
+
+    out=$(repl '1 2\nfn f() {\n' || true)
+    if echo "$out" | grep -q 'unterminated input' && ! echo "$out" | grep -q 'Function declarations not allowed'; then
+        pass "input left open at EOF is reported, not compiled"
+    else
+        fail "input left open at EOF is reported, not compiled" "$(echo "$out" | tr '\n' ' ')"
+    fi
+}
+quadrepl_regressions
+
+echo ""
 echo "=== quadfmt stdin ==="
 
 printf 'fn  main( ) {\n1 if {\n2 print nl\n}\n}\n' > "$WORK_DIR/fmt.qd"
