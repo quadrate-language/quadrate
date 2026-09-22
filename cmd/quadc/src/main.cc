@@ -97,6 +97,10 @@ static bool checkOutputPath(const std::string& outputPath, const std::vector<std
 	}
 	std::filesystem::path parent = std::filesystem::path(outputPath).parent_path();
 	std::error_code ec;
+	if (!parent.empty() && std::filesystem::exists(parent, ec) && !std::filesystem::is_directory(parent, ec)) {
+		printToolError("cannot write output '" + outputPath + "': '" + parent.string() + "' is not a directory");
+		return false;
+	}
 	if (!parent.empty() && !std::filesystem::is_directory(parent, ec)) {
 		printToolError("cannot write output '" + outputPath + "': directory '" + parent.string() + "' does not exist");
 		return false;

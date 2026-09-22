@@ -143,6 +143,13 @@ for attempt in 1 2; do
     fi
 done
 
+output=$("$QUADC" -o hello.qd/x hello.qd 2>&1)
+if [[ $? -ne 0 ]] && echo "$output" | grep -q "is not a directory" && cmp -s hello.qd same.qd; then
+    pass "-o under a regular file fails and names the reason"
+else
+    fail "-o under a regular file must fail" "$output"
+fi
+
 # ===================================================================
 # Input file errors
 # ===================================================================
