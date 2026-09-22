@@ -114,6 +114,15 @@ std::string getPlatformName();
 // Get the installed directory name for a module@ref
 std::string getInstalledDirName(const std::string& hostPath, const std::string& ref);
 
+// Directory under the modules dir where checkouts are staged before being moved into place
+#define STAGING_DIR_NAME ".quadpm-tmp"
+
+// Check that modulesDir/installedDirName is a plain relative path that stays inside the modules dir
+bool isSafeInstalledDirName(const std::string& installedDirName);
+
+// Create a fresh empty staging directory inside the modules dir; empty string on failure
+std::string makeStagingDir();
+
 // Get the namespaces directory path
 std::string getNamespacesDir();
 
@@ -171,8 +180,19 @@ std::string getModuleCommitHash(const std::string& moduleDir);
 // Command implementations (pm_commands.cc)
 // ============================================================================
 
+// Options for gitClone
+struct CloneOptions {
+	std::string expectedCommit;					// Fail unless the checkout is at this commit
+	std::string mismatchLabel;					// Headline printed when expectedCommit does not match
+	bool replaceExisting = false;				// Reinstall even if the module directory exists
+	std::string* registeredNamespace = nullptr; // Set to the namespace if it was registered
+};
+
 // Clone a Git repository to the modules directory
-std::string gitClone(const GitRef& gitRef);
+std::string gitClone(const GitRef& gitRef, const CloneOptions& options = CloneOptions());
+
+// A module directory whose C sources were never built is not installed
+bool isInstallComplete(const std::string& moduleDir);
 
 // Check if C source files use Quadrate name mangling convention
 bool usesQuadrateNaming(const std::vector<std::string>& cFiles, const std::string& moduleName);
@@ -192,8 +212,8 @@ bool scriptsEnabled();
 // List installed modules
 void listModules();
 
-// Update a single module by running git pull
-bool updateModule(const std::string& moduleDir);
+// Update a single module (semver re-resolution or git pull); newRef receives the ref now installed
+bool updateModule(const std::string& moduleDir, const Dependency* dep, std::string* newRef);
 
 // Build a module in the current directory
 int buildModule();

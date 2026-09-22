@@ -248,6 +248,19 @@ bool VersionConstraint::satisfies(const SemVer& v) const {
 	return false;
 }
 
+static bool prereleaseAllowed(const std::vector<VersionConstraint>& conjunction, const SemVer& v) {
+	if (v.prerelease.empty()) {
+		return true;
+	}
+	for (const auto& c : conjunction) {
+		if (c.op != ConstraintOp::ANY && !c.version.prerelease.empty() && c.version.major == v.major &&
+				c.version.minor == v.minor && c.version.patch == v.patch) {
+			return true;
+		}
+	}
+	return false;
+}
+
 bool VersionRange::satisfies(const SemVer& v) const {
 	for (const auto& conjunction : alternatives) {
 		bool allMatch = true;
@@ -257,156 +270,253 @@ bool VersionRange::satisfies(const SemVer& v) const {
 				break;
 			}
 		}
-		if (allMatch) {
+		if (allMatch && prereleaseAllowed(conjunction, v)) {
 			return true;
 		}
 	}
 	return false;
 }
 
-// Parse a single constraint (no ||)
-static std::vector<VersionConstraint> parseConjunction(const std::string& input) {
-	std::vector<VersionConstraint> constraints;
-	std::string s = trim(input);
+namespace {
+	struct PartialVersion {
+		int parts[3] = {0, 0, 0};
+		int count = 0;
+		std::string prerelease;
+		bool valid = false;
+	};
 
-	if (s.empty() || s == "*") {
-		// Any version
-		VersionConstraint c;
-		c.op = ConstraintOp::ANY;
-		constraints.push_back(c);
-		return constraints;
+	bool isWildcard(const std::string& s) {
+		return s == "x" || s == "X" || s == "*";
 	}
 
-	// Handle hyphen ranges: 1.2.3 - 2.0.0 (inclusive)
-	size_t hyphenPos = s.find(" - ");
-	if (hyphenPos != std::string::npos) {
-		std::string left = trim(s.substr(0, hyphenPos));
-		std::string right = trim(s.substr(hyphenPos + 3));
-
-		SemVer leftVer = parseSemVer(left);
-		SemVer rightVer = parseSemVer(right);
-
-		if (leftVer.isValid() && rightVer.isValid()) {
-			VersionConstraint c1;
-			c1.op = ConstraintOp::GTE;
-			c1.version = leftVer;
-			constraints.push_back(c1);
-
-			VersionConstraint c2;
-			c2.op = ConstraintOp::LTE;
-			c2.version = rightVer;
-			constraints.push_back(c2);
+	PartialVersion parsePartialVersion(const std::string& input) {
+		PartialVersion pv;
+		std::string v = input;
+		if (!v.empty() && (v[0] == 'v' || v[0] == 'V')) {
+			v = v.substr(1);
 		}
-		return constraints;
+
+		size_t plusPos = v.find('+');
+		if (plusPos != std::string::npos) {
+			v = v.substr(0, plusPos);
+		}
+
+		size_t dashPos = v.find('-');
+		if (dashPos != std::string::npos) {
+			pv.prerelease = v.substr(dashPos + 1);
+			v = v.substr(0, dashPos);
+			if (pv.prerelease.empty()) {
+				return pv;
+			}
+			for (char c : pv.prerelease) {
+				if (!std::isalnum(static_cast<unsigned char>(c)) && c != '.' && c != '-') {
+					return pv;
+				}
+			}
+		}
+
+		if (v.empty() || v.back() == '.') {
+			return pv;
+		}
+		std::vector<std::string> parts = split(v, '.');
+		if (parts.empty() || parts.size() > 3) {
+			return pv;
+		}
+
+		bool wildcard = false;
+		for (size_t i = 0; i < parts.size(); i++) {
+			if (isWildcard(parts[i])) {
+				wildcard = true;
+				continue;
+			}
+			if (wildcard) {
+				return pv;
+			}
+			int n = parseNum(parts[i]);
+			if (n < 0) {
+				return pv;
+			}
+			pv.parts[i] = n;
+			pv.count++;
+		}
+
+		if (!pv.prerelease.empty() && pv.count != 3) {
+			return pv;
+		}
+		pv.valid = true;
+		return pv;
 	}
 
-	// Split by whitespace for multiple constraints
+	SemVer makeVersion(int major, int minor, int patch, const std::string& prerelease = "") {
+		SemVer s;
+		s.major = major;
+		s.minor = minor;
+		s.patch = patch;
+		s.prerelease = prerelease;
+		return s;
+	}
+
+	SemVer lowerBound(const PartialVersion& pv) {
+		return makeVersion(pv.parts[0], pv.parts[1], pv.parts[2], pv.prerelease);
+	}
+
+	SemVer nextAfterPartial(const PartialVersion& pv) {
+		if (pv.count == 1) {
+			return makeVersion(pv.parts[0] + 1, 0, 0);
+		}
+		return makeVersion(pv.parts[0], pv.parts[1] + 1, 0);
+	}
+
+	void addConstraint(std::vector<VersionConstraint>& out, ConstraintOp op, const SemVer& v) {
+		VersionConstraint c;
+		c.op = op;
+		c.version = v;
+		out.push_back(c);
+	}
+
+	bool addComparator(std::vector<VersionConstraint>& out, ConstraintOp op, const PartialVersion& pv) {
+		if (pv.count == 0) {
+			if (op == ConstraintOp::GT || op == ConstraintOp::LT) {
+				return false;
+			}
+			addConstraint(out, ConstraintOp::ANY, SemVer());
+			return true;
+		}
+
+		bool full = pv.count == 3;
+		switch (op) {
+		case ConstraintOp::ANY:
+		case ConstraintOp::EQ:
+			if (full) {
+				addConstraint(out, ConstraintOp::EQ, lowerBound(pv));
+			} else {
+				addConstraint(out, ConstraintOp::GTE, lowerBound(pv));
+				addConstraint(out, ConstraintOp::LT, nextAfterPartial(pv));
+			}
+			return true;
+		case ConstraintOp::GT:
+			if (full) {
+				addConstraint(out, ConstraintOp::GT, lowerBound(pv));
+			} else {
+				addConstraint(out, ConstraintOp::GTE, nextAfterPartial(pv));
+			}
+			return true;
+		case ConstraintOp::GTE:
+			addConstraint(out, ConstraintOp::GTE, lowerBound(pv));
+			return true;
+		case ConstraintOp::LT:
+			addConstraint(out, ConstraintOp::LT, lowerBound(pv));
+			return true;
+		case ConstraintOp::LTE:
+			if (full) {
+				addConstraint(out, ConstraintOp::LTE, lowerBound(pv));
+			} else {
+				addConstraint(out, ConstraintOp::LT, nextAfterPartial(pv));
+			}
+			return true;
+		case ConstraintOp::TILDE:
+			addConstraint(out, ConstraintOp::GTE, lowerBound(pv));
+			addConstraint(out, ConstraintOp::LT,
+					pv.count == 1 ? makeVersion(pv.parts[0] + 1, 0, 0) : makeVersion(pv.parts[0], pv.parts[1] + 1, 0));
+			return true;
+		case ConstraintOp::CARET: {
+			addConstraint(out, ConstraintOp::GTE, lowerBound(pv));
+			SemVer upper;
+			if (pv.parts[0] != 0 || pv.count == 1) {
+				upper = makeVersion(pv.parts[0] + 1, 0, 0);
+			} else if (pv.parts[1] != 0 || pv.count == 2) {
+				upper = makeVersion(0, pv.parts[1] + 1, 0);
+			} else {
+				upper = makeVersion(0, 0, pv.parts[2] + 1);
+			}
+			addConstraint(out, ConstraintOp::LT, upper);
+			return true;
+		}
+		}
+		return false;
+	}
+
+	bool isOperatorOnly(const std::string& token) {
+		return token == ">=" || token == "<=" || token == ">" || token == "<" || token == "=" || token == "^" ||
+			   token == "~";
+	}
+} // namespace
+
+// Parse a single conjunction (no ||). Returns false if any token is not a
+// valid comparator.
+static bool parseConjunction(const std::string& input, std::vector<VersionConstraint>& constraints) {
+	std::string s = input;
+	std::replace(s.begin(), s.end(), ',', ' ');
+
+	std::vector<std::string> tokens;
 	std::istringstream iss(s);
 	std::string token;
-
 	while (iss >> token) {
-		VersionConstraint c;
-		size_t versionStart = 0;
-
-		// Detect operator
-		if (token.substr(0, 2) == ">=") {
-			c.op = ConstraintOp::GTE;
-			versionStart = 2;
-		} else if (token.substr(0, 2) == "<=") {
-			c.op = ConstraintOp::LTE;
-			versionStart = 2;
-		} else if (token[0] == '>') {
-			c.op = ConstraintOp::GT;
-			versionStart = 1;
-		} else if (token[0] == '<') {
-			c.op = ConstraintOp::LT;
-			versionStart = 1;
-		} else if (token[0] == '=') {
-			c.op = ConstraintOp::EQ;
-			versionStart = 1;
-		} else if (token[0] == '^') {
-			c.op = ConstraintOp::CARET;
-			versionStart = 1;
-		} else if (token[0] == '~') {
-			c.op = ConstraintOp::TILDE;
-			versionStart = 1;
+		if (!tokens.empty() && isOperatorOnly(tokens.back())) {
+			tokens.back() += token;
 		} else {
-			c.op = ConstraintOp::EQ;
-		}
-
-		std::string versionStr = token.substr(versionStart);
-
-		// Handle x-ranges: 1.x, 1.2.x
-		size_t xPos = versionStr.find('x');
-		if (xPos == std::string::npos) {
-			xPos = versionStr.find('X');
-		}
-		if (xPos == std::string::npos) {
-			xPos = versionStr.find('*');
-		}
-
-		if (xPos != std::string::npos) {
-			// X-range: convert to constraints
-			std::string prefix = versionStr.substr(0, xPos);
-			if (prefix.empty() || prefix == ".") {
-				// Just * or x
-				c.op = ConstraintOp::ANY;
-				constraints.push_back(c);
-			} else {
-				// Parse partial version
-				if (!prefix.empty() && prefix.back() == '.') {
-					prefix = prefix.substr(0, prefix.size() - 1);
-				}
-				std::vector<std::string> parts = split(prefix, '.');
-				if (parts.size() == 1) {
-					// 1.x -> >=1.0.0 <2.0.0
-					int maj = parseNum(parts[0]);
-					if (maj >= 0) {
-						VersionConstraint c1;
-						c1.op = ConstraintOp::GTE;
-						c1.version.major = maj;
-						c1.version.minor = 0;
-						c1.version.patch = 0;
-						constraints.push_back(c1);
-
-						VersionConstraint c2;
-						c2.op = ConstraintOp::LT;
-						c2.version.major = maj + 1;
-						c2.version.minor = 0;
-						c2.version.patch = 0;
-						constraints.push_back(c2);
-					}
-				} else if (parts.size() == 2) {
-					// 1.2.x -> >=1.2.0 <1.3.0
-					int maj = parseNum(parts[0]);
-					int min = parseNum(parts[1]);
-					if (maj >= 0 && min >= 0) {
-						VersionConstraint c1;
-						c1.op = ConstraintOp::GTE;
-						c1.version.major = maj;
-						c1.version.minor = min;
-						c1.version.patch = 0;
-						constraints.push_back(c1);
-
-						VersionConstraint c2;
-						c2.op = ConstraintOp::LT;
-						c2.version.major = maj;
-						c2.version.minor = min + 1;
-						c2.version.patch = 0;
-						constraints.push_back(c2);
-					}
-				}
-			}
-		} else {
-			// Regular version
-			c.version = parseSemVer(versionStr);
-			if (c.version.isValid()) {
-				constraints.push_back(c);
-			}
+			tokens.push_back(token);
 		}
 	}
 
-	return constraints;
+	if (tokens.empty()) {
+		addConstraint(constraints, ConstraintOp::ANY, SemVer());
+		return true;
+	}
+
+	if (tokens.size() == 3 && tokens[1] == "-") {
+		PartialVersion left = parsePartialVersion(tokens[0]);
+		PartialVersion right = parsePartialVersion(tokens[2]);
+		if (!left.valid || !right.valid) {
+			return false;
+		}
+		if (left.count > 0) {
+			addConstraint(constraints, ConstraintOp::GTE, lowerBound(left));
+		}
+		if (right.count == 3) {
+			addConstraint(constraints, ConstraintOp::LTE, lowerBound(right));
+		} else if (right.count > 0) {
+			addConstraint(constraints, ConstraintOp::LT, nextAfterPartial(right));
+		}
+		if (constraints.empty()) {
+			addConstraint(constraints, ConstraintOp::ANY, SemVer());
+		}
+		return true;
+	}
+
+	for (const auto& tok : tokens) {
+		ConstraintOp op = ConstraintOp::EQ;
+		size_t versionStart = 0;
+		if (tok.compare(0, 2, ">=") == 0) {
+			op = ConstraintOp::GTE;
+			versionStart = 2;
+		} else if (tok.compare(0, 2, "<=") == 0) {
+			op = ConstraintOp::LTE;
+			versionStart = 2;
+		} else if (tok[0] == '>') {
+			op = ConstraintOp::GT;
+			versionStart = 1;
+		} else if (tok[0] == '<') {
+			op = ConstraintOp::LT;
+			versionStart = 1;
+		} else if (tok[0] == '=') {
+			op = ConstraintOp::EQ;
+			versionStart = 1;
+		} else if (tok[0] == '^') {
+			op = ConstraintOp::CARET;
+			versionStart = 1;
+		} else if (tok[0] == '~') {
+			op = ConstraintOp::TILDE;
+			versionStart = 1;
+		}
+
+		PartialVersion pv = parsePartialVersion(tok.substr(versionStart));
+		if (!pv.valid || !addComparator(constraints, op, pv)) {
+			return false;
+		}
+	}
+
+	return true;
 }
 
 VersionRange parseVersionRange(const std::string& range) {
@@ -430,10 +540,12 @@ VersionRange parseVersionRange(const std::string& range) {
 			pos = orPos + 2;
 		}
 
-		std::vector<VersionConstraint> conjunction = parseConjunction(part);
-		if (!conjunction.empty()) {
-			result.alternatives.push_back(conjunction);
+		std::vector<VersionConstraint> conjunction;
+		if (!parseConjunction(part, conjunction)) {
+			result.alternatives.clear();
+			return result;
 		}
+		result.alternatives.push_back(conjunction);
 	}
 
 	return result;

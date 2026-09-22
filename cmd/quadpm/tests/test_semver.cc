@@ -244,6 +244,87 @@ TEST(SemVerToStringFullTest) {
 	ASSERT_STR_EQ("1.2.3-beta.1+build.456", v.toString().c_str(), "toString full");
 }
 
+TEST(VersionRangeCommaTest) {
+	VersionRange r = parseVersionRange(">=1.0.0, <2.0.0");
+	ASSERT_TRUE(r.isValid(), "comma range should be valid");
+	ASSERT_TRUE(r.satisfies(parseSemVer("1.5.0")), "should satisfy 1.5.0");
+	ASSERT_FALSE(r.satisfies(parseSemVer("0.5.0")), "lower bound kept: should not satisfy 0.5.0");
+	ASSERT_FALSE(r.satisfies(parseSemVer("2.0.0")), "should not satisfy 2.0.0");
+}
+
+TEST(VersionRangeSpacedOperatorTest) {
+	VersionRange r = parseVersionRange(">= 1.0.0 < 2.0.0");
+	ASSERT_TRUE(r.isValid(), "spaced operators should be valid");
+	ASSERT_FALSE(r.satisfies(parseSemVer("0.9.0")), "should not satisfy 0.9.0");
+	ASSERT_TRUE(r.satisfies(parseSemVer("1.9.0")), "should satisfy 1.9.0");
+}
+
+TEST(VersionRangeJunkRejectedTest) {
+	ASSERT_FALSE(parseVersionRange(">=1.0.0 junk").isValid(), "junk token should invalidate the range");
+	ASSERT_FALSE(parseVersionRange(">=1.0.0 || banana").isValid(), "junk alternative should invalidate the range");
+	ASSERT_FALSE(parseVersionRange("next").isValid(), "branch name is not a range");
+	ASSERT_FALSE(parseVersionRange("fix-foo").isValid(), "branch name is not a range");
+	ASSERT_FALSE(parseVersionRange("1.x.3").isValid(), "wildcard must be trailing");
+}
+
+TEST(VersionRangePartialTildeTest) {
+	VersionRange r = parseVersionRange("~1");
+	ASSERT_TRUE(r.satisfies(parseSemVer("1.0.0")), "~1 should satisfy 1.0.0");
+	ASSERT_TRUE(r.satisfies(parseSemVer("1.5.0")), "~1 should satisfy 1.5.0");
+	ASSERT_FALSE(r.satisfies(parseSemVer("2.0.0")), "~1 should not satisfy 2.0.0");
+
+	VersionRange r2 = parseVersionRange("~1.2");
+	ASSERT_TRUE(r2.satisfies(parseSemVer("1.2.9")), "~1.2 should satisfy 1.2.9");
+	ASSERT_FALSE(r2.satisfies(parseSemVer("1.3.0")), "~1.2 should not satisfy 1.3.0");
+}
+
+TEST(VersionRangePartialCaretTest) {
+	VersionRange r = parseVersionRange("^0");
+	ASSERT_TRUE(r.satisfies(parseSemVer("0.0.1")), "^0 should satisfy 0.0.1");
+	ASSERT_TRUE(r.satisfies(parseSemVer("0.9.0")), "^0 should satisfy 0.9.0");
+	ASSERT_FALSE(r.satisfies(parseSemVer("1.0.0")), "^0 should not satisfy 1.0.0");
+
+	VersionRange r1 = parseVersionRange("^1");
+	ASSERT_TRUE(r1.satisfies(parseSemVer("1.7.2")), "^1 should satisfy 1.7.2");
+	ASSERT_FALSE(r1.satisfies(parseSemVer("2.0.0")), "^1 should not satisfy 2.0.0");
+
+	VersionRange r00 = parseVersionRange("^0.0");
+	ASSERT_TRUE(r00.satisfies(parseSemVer("0.0.7")), "^0.0 should satisfy 0.0.7");
+	ASSERT_FALSE(r00.satisfies(parseSemVer("0.1.0")), "^0.0 should not satisfy 0.1.0");
+
+	VersionRange r003 = parseVersionRange("^0.0.3");
+	ASSERT_TRUE(r003.satisfies(parseSemVer("0.0.3")), "^0.0.3 should satisfy 0.0.3");
+	ASSERT_FALSE(r003.satisfies(parseSemVer("0.0.4")), "^0.0.3 should not satisfy 0.0.4");
+}
+
+TEST(VersionRangePartialComparatorTest) {
+	ASSERT_TRUE(parseVersionRange("1.2").satisfies(parseSemVer("1.2.5")), "1.2 is 1.2.x");
+	ASSERT_FALSE(parseVersionRange("1.2").satisfies(parseSemVer("1.3.0")), "1.2 is 1.2.x");
+	ASSERT_FALSE(parseVersionRange(">1.2").satisfies(parseSemVer("1.2.9")), ">1.2 excludes 1.2.x");
+	ASSERT_TRUE(parseVersionRange(">1.2").satisfies(parseSemVer("1.3.0")), ">1.2 includes 1.3.0");
+	ASSERT_TRUE(parseVersionRange("<=1.2").satisfies(parseSemVer("1.2.9")), "<=1.2 includes 1.2.x");
+	ASSERT_FALSE(parseVersionRange("<=1.2").satisfies(parseSemVer("1.3.0")), "<=1.2 excludes 1.3.0");
+}
+
+TEST(VersionRangePrereleaseExcludedTest) {
+	VersionRange r = parseVersionRange("^1.0.0");
+	ASSERT_FALSE(r.satisfies(parseSemVer("1.2.0-beta")), "^1.0.0 should not satisfy a prerelease");
+	ASSERT_FALSE(parseVersionRange("*").satisfies(parseSemVer("1.0.0-rc.1")), "* should not satisfy a prerelease");
+
+	std::vector<SemVer> versions = {parseSemVer("v1.1.0"), parseSemVer("v1.2.0-beta")};
+	SemVer best = findBestMatch(r, versions);
+	ASSERT_EQ(1, best.minor, "stable 1.1.0 preferred over 1.2.0-beta");
+	ASSERT_TRUE(best.prerelease.empty(), "resolved version is not a prerelease");
+}
+
+TEST(VersionRangePrereleaseSameTupleTest) {
+	VersionRange r = parseVersionRange("^1.2.3-beta.2");
+	ASSERT_TRUE(r.satisfies(parseSemVer("1.2.3-beta.3")), "same tuple prerelease allowed");
+	ASSERT_TRUE(r.satisfies(parseSemVer("1.4.0")), "later stable allowed");
+	ASSERT_FALSE(r.satisfies(parseSemVer("1.2.4-beta")), "prerelease of another tuple excluded");
+	ASSERT_FALSE(r.satisfies(parseSemVer("1.2.3-beta.1")), "earlier prerelease excluded");
+}
+
 // rangesHaveCommonVersion: pair of caret ranges with same major — compatible.
 TEST(ConflictCaretSameMajorTest) {
 	std::vector<VersionRange> rs = {parseVersionRange("^1.2.0"), parseVersionRange("^1.5.0")};
