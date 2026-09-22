@@ -11,7 +11,9 @@
 #include <filesystem>
 #include <fstream>
 #include <iostream>
+#include <limits>
 #include <quadrate/cli/cli.h>
+#include <quadrate/cli/file_utils.h>
 #include <quadrate/cli/help.h>
 #include <quadrate/platform/platform.h>
 #include <quadrate/qc/ast.h>
@@ -25,6 +27,7 @@
 #include <quadrate/qc/ast_node_struct.h>
 #include <quadrate/qc/ast_node_test.h>
 #include <quadrate/qc/error_reporter.h>
+#include <quadrate/qc/formatter.h>
 #include <quadrate/qc/instructions.h>
 #include <quadrate/qc/semantic_validator.h>
 #include <set>
@@ -158,12 +161,8 @@ std::vector<std::string> loadDependenciesFromManifest(const std::string& manifes
 // QuadrateLSP implementation
 
 void QuadrateLSP::run() {
-	while (true) {
-		std::string message = readMessage();
-		if (message.empty()) {
-			break;
-		}
-
+	std::string message;
+	while (readMessage(message)) {
 		handleMessage(message);
 	}
 }
@@ -175,7 +174,7 @@ void QuadrateLSP::run() {
 // which threw std::invalid_argument on a string id such as "abc-123" and
 // terminated the server -- a conforming client could kill it with one message.
 json_t* QuadrateLSP::makeResponseId(const std::string& id) const {
-	if (id.empty()) {
+	if (id.empty() && !currentIdIsString_) {
 		return json_null();
 	}
 	if (!currentIdIsString_) {
@@ -192,63 +191,122 @@ json_t* QuadrateLSP::makeResponseId(const std::string& id) const {
 	return json_string(id.c_str());
 }
 
-std::string QuadrateLSP::readMessage() {
-	std::string line;
-	size_t contentLength = 0;
-
-	// Read headers
-	while (std::getline(std::cin, line)) {
-		if (line == "\r" || line == "\r\n" || line == "\n" || line.empty()) {
-			break;
-		}
-		if (line.substr(0, 16) == "Content-Length: ") {
-			// stoi throws on a header that is not a number ("Content-Length: abc")
-			// and on one too large to fit, which took the whole server down; a
-			// negative value wrapped round to a huge size_t and the resize below
-			// then threw bad_alloc. Parse by hand and reject anything unusable.
-			const std::string value = line.substr(16);
-			size_t parsed = 0;
-			bool valid = false;
-			for (const char c : value) {
-				if (c == '\r' || c == '\n' || c == ' ') {
-					break;
-				}
-				if (c < '0' || c > '9') {
-					valid = false;
-					break;
-				}
-				if (parsed > (MAX_CONTENT_LENGTH / 10)) {
-					valid = false;
-					break;
-				}
-				parsed = parsed * 10 + static_cast<size_t>(c - '0');
-				valid = true;
-			}
-			contentLength = (valid && parsed <= MAX_CONTENT_LENGTH) ? parsed : 0;
-		}
-	}
-
-	if (contentLength == 0) {
+static std::string trimHeaderText(const std::string& text) {
+	size_t start = text.find_first_not_of(" \t");
+	if (start == std::string::npos) {
 		return "";
 	}
+	size_t end = text.find_last_not_of(" \t");
+	return text.substr(start, end - start + 1);
+}
 
-	// Read content
-	std::string content;
-	content.resize(contentLength);
-	std::cin.read(&content[0], static_cast<std::streamsize>(contentLength));
-	// A frame whose header promised more than the client sent leaves the rest of
-	// the buffer uninitialised; truncate to what actually arrived.
-	content.resize(static_cast<size_t>(std::cin.gcount()));
+bool QuadrateLSP::readMessage(std::string& content) {
+	content.clear();
+	while (true) {
+		std::string line;
+		bool sawHeader = false;
+		bool haveLength = false;
+		bool oversize = false;
+		size_t contentLength = 0;
 
-	return content;
+		while (true) {
+			if (!std::getline(std::cin, line)) {
+				return false;
+			}
+			if (!line.empty() && line.back() == '\r') {
+				line.pop_back();
+			}
+			if (line.empty()) {
+				if (sawHeader) {
+					break;
+				}
+				continue;
+			}
+			sawHeader = true;
+
+			size_t colon = line.find(':');
+			if (colon == std::string::npos) {
+				continue;
+			}
+			std::string name = trimHeaderText(line.substr(0, colon));
+			std::transform(name.begin(), name.end(), name.begin(),
+					[](unsigned char c) { return static_cast<char>(std::tolower(c)); });
+			if (name != "content-length") {
+				continue;
+			}
+
+			const std::string value = trimHeaderText(line.substr(colon + 1));
+			haveLength = !value.empty();
+			contentLength = 0;
+			for (const char c : value) {
+				if (c < '0' || c > '9') {
+					haveLength = false;
+					break;
+				}
+				if (contentLength > (std::numeric_limits<size_t>::max() - 9) / 10) {
+					contentLength = std::numeric_limits<size_t>::max();
+					continue;
+				}
+				contentLength = contentLength * 10 + static_cast<size_t>(c - '0');
+			}
+			oversize = haveLength && contentLength > MAX_CONTENT_LENGTH;
+		}
+
+		if (!haveLength) {
+			continue;
+		}
+
+		if (oversize) {
+			char discard[65536];
+			size_t remaining = contentLength;
+			while (remaining > 0 && std::cin) {
+				size_t chunk = std::min(remaining, sizeof(discard));
+				std::cin.read(discard, static_cast<std::streamsize>(chunk));
+				size_t got = static_cast<size_t>(std::cin.gcount());
+				if (got == 0) {
+					break;
+				}
+				remaining -= got;
+			}
+			currentIdIsString_ = false;
+			sendError("", -32600, "Message exceeds the maximum size of 16 MiB");
+			if (!std::cin) {
+				return false;
+			}
+			continue;
+		}
+
+		content.resize(contentLength);
+		if (contentLength > 0) {
+			std::cin.read(&content[0], static_cast<std::streamsize>(contentLength));
+			content.resize(static_cast<size_t>(std::cin.gcount()));
+		}
+		return true;
+	}
 }
 
 void QuadrateLSP::sendMessage(json_t* json) {
+	convertPositions(json, requestUri_, true);
+	if (json_object_get(json, "id") && (json_object_get(json, "result") || json_object_get(json, "error"))) {
+		responded_ = true;
+	}
 	char* message = json_dumps(json, JSON_COMPACT);
 	if (message) {
 		std::cout << "Content-Length: " << strlen(message) << "\r\n\r\n" << message << std::flush;
 		free(message);
 	}
+}
+
+void QuadrateLSP::sendError(const std::string& id, int code, const std::string& message) {
+	json_t* response = json_object();
+	json_object_set_new(response, "jsonrpc", json_string("2.0"));
+	json_object_set_new(response, "id", makeResponseId(id));
+	json_t* error = json_object();
+	json_object_set_new(error, "code", json_integer(code));
+	json_object_set_new(error, "message", json_string(message.c_str()));
+	json_object_set_new(response, "error", error);
+	sendMessage(response);
+	json_decref(response);
 }
 
 std::string QuadrateLSP::getJsonString(json_t* obj, const char* key) {
@@ -263,440 +321,563 @@ json_t* QuadrateLSP::getJsonObject(json_t* obj, const char* key) {
 	return json_object_get(obj, key);
 }
 
+static bool getSizeField(json_t* obj, const char* key, size_t& out) {
+	json_t* value = json_object_get(obj, key);
+	if (!value || !json_is_integer(value) || json_integer_value(value) < 0) {
+		return false;
+	}
+	out = static_cast<size_t>(json_integer_value(value));
+	return true;
+}
+
+static bool getPositionField(json_t* position, size_t& line, size_t& character) {
+	return position && json_is_object(position) && getSizeField(position, "line", line) &&
+		   getSizeField(position, "character", character);
+}
+
+static bool getRangeField(json_t* range, size_t& startLine, size_t& startChar, size_t& endLine, size_t& endChar) {
+	return range && json_is_object(range) && getPositionField(json_object_get(range, "start"), startLine, startChar) &&
+		   getPositionField(json_object_get(range, "end"), endLine, endChar);
+}
+
+static bool getDocumentUri(json_t* params, std::string& uri) {
+	if (!params || !json_is_object(params)) {
+		return false;
+	}
+	json_t* textDoc = json_object_get(params, "textDocument");
+	json_t* uriJson = textDoc && json_is_object(textDoc) ? json_object_get(textDoc, "uri") : nullptr;
+	if (!uriJson || !json_is_string(uriJson) || json_string_length(uriJson) == 0) {
+		return false;
+	}
+	uri = json_string_value(uriJson);
+	return true;
+}
+
+static bool getDocumentPosition(json_t* params, std::string& uri, size_t& line, size_t& character) {
+	return getDocumentUri(params, uri) && getPositionField(json_object_get(params, "position"), line, character);
+}
+
+static bool getItemData(json_t* params, std::string& itemData) {
+	json_t* item = (params && json_is_object(params)) ? json_object_get(params, "item") : nullptr;
+	if (!item || !json_is_object(item)) {
+		return false;
+	}
+	json_t* data = json_object_get(item, "data");
+	itemData = (data && json_is_string(data)) ? json_string_value(data) : "";
+	return true;
+}
+
+std::string QuadrateLSP::getDocumentText(const std::string& uri) {
+	auto it = documents_.find(uri);
+	if (it != documents_.end()) {
+		return it->second;
+	}
+	std::string filePath = lspUriToPath(uri);
+	if (filePath.empty()) {
+		return "";
+	}
+	std::ifstream file(filePath, std::ios::binary);
+	if (!file.good()) {
+		return "";
+	}
+	std::stringstream buffer;
+	buffer << file.rdbuf();
+	return buffer.str();
+}
+
+const std::vector<std::string>* QuadrateLSP::positionLines(const std::string& uri) {
+	auto it = positionLines_.find(uri);
+	if (it == positionLines_.end()) {
+		std::string text = getDocumentText(uri);
+		bool ascii = std::all_of(text.begin(), text.end(), [](char c) { return static_cast<unsigned char>(c) < 0x80; });
+		positionAscii_[uri] = ascii;
+		it = positionLines_.emplace(uri, std::vector<std::string>()).first;
+		if (!ascii) {
+			size_t lineStart = 0;
+			while (lineStart <= text.size()) {
+				size_t lineEnd = text.find('\n', lineStart);
+				if (lineEnd == std::string::npos) {
+					lineEnd = text.size();
+				}
+				it->second.push_back(text.substr(lineStart, lineEnd - lineStart));
+				lineStart = lineEnd + 1;
+			}
+		}
+	}
+	return positionAscii_[uri] ? nullptr : &it->second;
+}
+
+size_t QuadrateLSP::toClientColumn(const std::string& lineText, size_t byteColumn) const {
+	return utf8Positions_ ? byteColumn : lspByteToUtf16Column(lineText, byteColumn);
+}
+
+void QuadrateLSP::convertPositions(json_t* node, const std::string& uri, bool toClient) {
+	if (utf8Positions_ || !node) {
+		return;
+	}
+	convertPositionsIn(node, uri, toClient);
+	positionLines_.clear();
+	positionAscii_.clear();
+}
+
+void QuadrateLSP::convertPositionsIn(json_t* node, const std::string& uri, bool toClient) {
+	if (json_is_array(node)) {
+		for (size_t i = 0; i < json_array_size(node); i++) {
+			convertPositionsIn(json_array_get(node, i), uri, toClient);
+		}
+		return;
+	}
+	if (!json_is_object(node)) {
+		return;
+	}
+
+	std::string context = uri;
+	json_t* uriJson = json_object_get(node, "uri");
+	if (!json_is_string(uriJson)) {
+		uriJson = json_object_get(node, "targetUri");
+	}
+	json_t* textDoc = json_object_get(node, "textDocument");
+	if (!json_is_string(uriJson) && json_is_object(textDoc)) {
+		uriJson = json_object_get(textDoc, "uri");
+	}
+	if (json_is_string(uriJson)) {
+		context = json_string_value(uriJson);
+	}
+
+	json_t* lineJson = json_object_get(node, "line");
+	json_t* charJson = json_object_get(node, "character");
+	if (json_is_integer(lineJson) && json_is_integer(charJson) && json_integer_value(lineJson) >= 0 &&
+			json_integer_value(charJson) >= 0) {
+		const std::vector<std::string>* lines = positionLines(context);
+		size_t line = static_cast<size_t>(json_integer_value(lineJson));
+		if (lines && line < lines->size()) {
+			size_t column = static_cast<size_t>(json_integer_value(charJson));
+			size_t converted = toClient ? lspByteToUtf16Column((*lines)[line], column)
+										: lspUtf16ToByteColumn((*lines)[line], column);
+			json_object_set_new(node, "character", json_integer(static_cast<json_int_t>(converted)));
+		}
+	}
+
+	std::string fromUri = context;
+	json_t* from = json_object_get(node, "from");
+	if (json_is_object(from) && json_is_string(json_object_get(from, "uri"))) {
+		fromUri = json_string_value(json_object_get(from, "uri"));
+	}
+
+	const char* key;
+	json_t* value;
+	json_object_foreach(node, key, value) {
+		if (strcmp(key, "changes") == 0 && json_is_object(value)) {
+			const char* changeUri;
+			json_t* edits;
+			json_object_foreach(value, changeUri, edits) {
+				convertPositionsIn(edits, changeUri, toClient);
+			}
+		} else if (strcmp(key, "fromRanges") == 0) {
+			convertPositionsIn(value, fromUri, toClient);
+		} else if (json_is_object(value) || json_is_array(value)) {
+			convertPositionsIn(value, context, toClient);
+		}
+	}
+}
+
+static size_t byteOffsetOf(const std::string& text, size_t line, size_t byteColumn) {
+	size_t lineStart = 0;
+	for (size_t i = 0; i < line; i++) {
+		size_t newline = text.find('\n', lineStart);
+		if (newline == std::string::npos) {
+			return text.size();
+		}
+		lineStart = newline + 1;
+	}
+	size_t lineEnd = text.find('\n', lineStart);
+	if (lineEnd == std::string::npos) {
+		lineEnd = text.size();
+	}
+	return std::min(lineStart + byteColumn, lineEnd);
+}
+
+static std::string lineAt(const std::string& text, size_t line) {
+	size_t start = byteOffsetOf(text, line, 0);
+	size_t end = text.find('\n', start);
+	return text.substr(start, (end == std::string::npos ? text.size() : end) - start);
+}
+
+void QuadrateLSP::applyContentChanges(const std::string& uri, json_t* contentChanges) {
+	auto it = documents_.find(uri);
+	std::string text = (it != documents_.end()) ? it->second : "";
+	bool changed = false;
+
+	for (size_t i = 0; i < json_array_size(contentChanges); i++) {
+		json_t* change = json_array_get(contentChanges, i);
+		json_t* textNode = getJsonObject(change, "text");
+		if (!json_is_string(textNode)) {
+			continue;
+		}
+		std::string newText(json_string_value(textNode), json_string_length(textNode));
+		size_t startLine = 0;
+		size_t startChar = 0;
+		size_t endLine = 0;
+		size_t endChar = 0;
+		json_t* range = getJsonObject(change, "range");
+		if (range && getRangeField(range, startLine, startChar, endLine, endChar)) {
+			if (!utf8Positions_) {
+				startChar = lspUtf16ToByteColumn(lineAt(text, startLine), startChar);
+				endChar = lspUtf16ToByteColumn(lineAt(text, endLine), endChar);
+			}
+			size_t start = byteOffsetOf(text, startLine, startChar);
+			size_t end = std::max(start, byteOffsetOf(text, endLine, endChar));
+			text.replace(start, end - start, newText);
+		} else {
+			text = newText;
+		}
+		changed = true;
+	}
+
+	if (changed) {
+		handleDidOpen(uri, text);
+	}
+}
+
 void QuadrateLSP::handleMessage(const std::string& message) {
+	currentIdIsString_ = false;
 	json_error_t error;
 	json_t* root = json_loads(message.c_str(), 0, &error);
 
 	if (!root) {
-		return; // Invalid JSON, ignore
+		sendError("", -32700, "Parse error");
+		return;
+	}
+	if (!json_is_object(root)) {
+		json_decref(root);
+		sendError("", -32600, "Invalid Request");
+		return;
 	}
 
-	std::string method = getJsonString(root, "method");
-	std::string id = getJsonString(root, "id");
+	json_t* methodJson = json_object_get(root, "method");
+	json_t* idJson = json_object_get(root, "id");
+	bool isRequest = idJson && !json_is_null(idJson);
+
+	if (!methodJson) {
+		json_decref(root);
+		return;
+	}
 
 	// Remember the id's JSON type so the response echoes it back as the same
 	// type; a client that sent the string "5" must not get the number 5 back.
-	json_t* idJson = json_object_get(root, "id");
-	currentIdIsString_ = (idJson != nullptr) && json_is_string(idJson);
-
-	// If id is not string, try integer
-	if (id.empty()) {
-		if (idJson && json_is_integer(idJson)) {
-			id = std::to_string(json_integer_value(idJson));
-		}
+	std::string id;
+	if (idJson && json_is_string(idJson)) {
+		id = json_string_value(idJson);
+		currentIdIsString_ = true;
+	} else if (idJson && json_is_integer(idJson)) {
+		id = std::to_string(json_integer_value(idJson));
 	}
 
-	if (method == "initialize") {
-		json_t* params = getJsonObject(root, "params");
-		// Capture workspace root URI
-		if (params) {
-			std::string rootUri = getJsonString(params, "rootUri");
-			if (!rootUri.empty() && rootUri.substr(0, 7) == "file://") {
-				workspaceRoot_ = rootUri.substr(7);
-			}
-		}
-		json_t* initOptions = params ? getJsonObject(params, "initializationOptions") : nullptr;
-		handleInitialize(id, initOptions);
-	} else if (method == "initialized") {
-		// Nothing to do
-	} else if (method == "workspace/didChangeConfiguration") {
-		json_t* params = getJsonObject(root, "params");
-		if (params) {
-			json_t* settings = getJsonObject(params, "settings");
-			if (settings) {
-				json_t* quadrate = getJsonObject(settings, "quadrate");
-				if (quadrate) {
-					json_t* lint = getJsonObject(quadrate, "lint");
-					if (lint) {
-						json_t* enabled = json_object_get(lint, "enabled");
-						if (enabled && json_is_boolean(enabled)) {
-							lintEnabled_ = json_boolean_value(enabled);
-						}
-						json_t* path = json_object_get(lint, "path");
-						if (path && json_is_string(path)) {
-							quadlintPath_ = json_string_value(path);
-						}
-					}
-				}
-			}
-		}
-	} else if (method == "textDocument/didOpen") {
-		json_t* params = getJsonObject(root, "params");
-		if (params) {
-			json_t* textDoc = getJsonObject(params, "textDocument");
-			if (textDoc) {
-				std::string uri = getJsonString(textDoc, "uri");
-				std::string text = getJsonString(textDoc, "text");
-				handleDidOpen(uri, text);
-			}
-		}
-	} else if (method == "textDocument/didChange") {
-		json_t* params = getJsonObject(root, "params");
-		if (params) {
-			json_t* textDoc = getJsonObject(params, "textDocument");
-			json_t* contentChanges = getJsonObject(params, "contentChanges");
-			if (textDoc && contentChanges && json_is_array(contentChanges)) {
-				std::string uri = getJsonString(textDoc, "uri");
-				// For full sync, contentChanges[0] contains the full document.
-				// Empty text is a real edit -- the user selected all and deleted --
-				// so it must not be skipped, or the server keeps answering from the
-				// content the buffer had before it was cleared. Only a change with
-				// no "text" member at all (incremental sync, which is not
-				// advertised) is ignored.
-				if (json_array_size(contentChanges) > 0) {
-					json_t* change = json_array_get(contentChanges, 0);
-					json_t* textNode = getJsonObject(change, "text");
-					if (textNode && json_is_string(textNode)) {
-						handleDidOpen(uri, getJsonString(change, "text"));
-					}
-				}
-			}
-		}
-	} else if (method == "textDocument/didClose") {
-		json_t* params = getJsonObject(root, "params");
-		if (params) {
-			json_t* textDoc = getJsonObject(params, "textDocument");
-			if (textDoc) {
-				handleDidClose(getJsonString(textDoc, "uri"));
-			}
-		}
-	} else if (method == "textDocument/didSave") {
-		json_t* params = getJsonObject(root, "params");
-		if (params) {
-			json_t* textDoc = getJsonObject(params, "textDocument");
-			if (textDoc) {
-				std::string uri = getJsonString(textDoc, "uri");
-				std::string text = getJsonString(params, "text");
-				if (!text.empty()) {
-					handleDidOpen(uri, text);
-				} else {
-					// Fallback: use stored document content
-					auto it = documents_.find(uri);
-					if (it != documents_.end()) {
-						publishDiagnostics(uri, it->second);
-					}
-				}
-			}
-		}
-	} else if (method == "textDocument/formatting") {
-		json_t* params = getJsonObject(root, "params");
-		if (params) {
-			json_t* textDoc = getJsonObject(params, "textDocument");
-			if (textDoc) {
-				std::string uri = getJsonString(textDoc, "uri");
-				handleFormatting(id, uri);
-			}
-		}
-	} else if (method == "textDocument/rangeFormatting") {
-		json_t* params = getJsonObject(root, "params");
-		if (params) {
-			json_t* textDoc = getJsonObject(params, "textDocument");
-			std::string uri = getJsonString(textDoc, "uri");
-			json_t* range = getJsonObject(params, "range");
-			json_t* rangeStart = getJsonObject(range, "start");
-			json_t* rangeEnd = getJsonObject(range, "end");
-			size_t startLine = static_cast<size_t>(json_integer_value(json_object_get(rangeStart, "line")));
-			size_t startChar = static_cast<size_t>(json_integer_value(json_object_get(rangeStart, "character")));
-			size_t endLine = static_cast<size_t>(json_integer_value(json_object_get(rangeEnd, "line")));
-			size_t endChar = static_cast<size_t>(json_integer_value(json_object_get(rangeEnd, "character")));
-			handleRangeFormatting(id, uri, startLine, startChar, endLine, endChar);
-		}
-	} else if (method == "textDocument/codeLens") {
-		json_t* params = getJsonObject(root, "params");
-		if (params) {
-			json_t* textDoc = getJsonObject(params, "textDocument");
-			std::string uri = getJsonString(textDoc, "uri");
-			handleCodeLens(id, uri);
-		}
-	} else if (method == "textDocument/prepareTypeHierarchy") {
-		json_t* params = getJsonObject(root, "params");
-		if (params) {
-			json_t* textDocument = getJsonObject(params, "textDocument");
-			std::string uri = getJsonString(textDocument, "uri");
-			json_t* position = getJsonObject(params, "position");
-			size_t line = static_cast<size_t>(json_integer_value(json_object_get(position, "line")));
-			size_t character = static_cast<size_t>(json_integer_value(json_object_get(position, "character")));
-			handlePrepareTypeHierarchy(id, uri, line, character);
-		}
-	} else if (method == "typeHierarchy/supertypes") {
-		json_t* params = getJsonObject(root, "params");
-		if (params) {
-			json_t* item = getJsonObject(params, "item");
-			std::string itemData = getJsonString(item, "data");
-			handleSupertypes(id, itemData);
-		}
-	} else if (method == "typeHierarchy/subtypes") {
-		json_t* params = getJsonObject(root, "params");
-		if (params) {
-			json_t* item = getJsonObject(params, "item");
-			std::string itemData = getJsonString(item, "data");
-			handleSubtypes(id, itemData);
-		}
-	} else if (method == "textDocument/onTypeFormatting") {
-		json_t* params = getJsonObject(root, "params");
-		if (params) {
-			json_t* textDoc = getJsonObject(params, "textDocument");
-			std::string uri = getJsonString(textDoc, "uri");
-			json_t* position = getJsonObject(params, "position");
-			size_t line = static_cast<size_t>(json_integer_value(json_object_get(position, "line")));
-			size_t character = static_cast<size_t>(json_integer_value(json_object_get(position, "character")));
-			std::string ch = getJsonString(params, "ch");
-			handleOnTypeFormatting(id, uri, line, character, ch);
-		}
-	} else if (method == "textDocument/linkedEditingRange") {
-		json_t* params = getJsonObject(root, "params");
-		if (params) {
-			json_t* textDoc = getJsonObject(params, "textDocument");
-			std::string uri = getJsonString(textDoc, "uri");
-			json_t* position = getJsonObject(params, "position");
-			size_t line = static_cast<size_t>(json_integer_value(json_object_get(position, "line")));
-			size_t character = static_cast<size_t>(json_integer_value(json_object_get(position, "character")));
-			handleLinkedEditingRange(id, uri, line, character);
-		}
-	} else if (method == "textDocument/completion") {
-		json_t* params = getJsonObject(root, "params");
-		if (params) {
-			json_t* textDoc = getJsonObject(params, "textDocument");
-			json_t* position = getJsonObject(params, "position");
-			if (textDoc && position) {
-				std::string uri = getJsonString(textDoc, "uri");
-				json_t* lineJson = json_object_get(position, "line");
-				json_t* charJson = json_object_get(position, "character");
-				if (lineJson && charJson && json_is_integer(lineJson) && json_is_integer(charJson)) {
-					size_t line = static_cast<size_t>(json_integer_value(lineJson));
-					size_t character = static_cast<size_t>(json_integer_value(charJson));
-					handleCompletion(id, uri, line, character);
-				}
-			}
-		}
-	} else if (method == "textDocument/hover") {
-		json_t* params = getJsonObject(root, "params");
-		if (params) {
-			json_t* textDoc = getJsonObject(params, "textDocument");
-			json_t* position = getJsonObject(params, "position");
-			if (textDoc && position) {
-				std::string uri = getJsonString(textDoc, "uri");
-				json_t* lineJson = json_object_get(position, "line");
-				json_t* charJson = json_object_get(position, "character");
-				if (lineJson && charJson && json_is_integer(lineJson) && json_is_integer(charJson)) {
-					size_t line = static_cast<size_t>(json_integer_value(lineJson));
-					size_t character = static_cast<size_t>(json_integer_value(charJson));
-					handleHover(id, uri, line, character);
-				}
-			}
-		}
-	} else if (method == "textDocument/signatureHelp") {
-		json_t* params = getJsonObject(root, "params");
-		if (params) {
-			json_t* textDoc = getJsonObject(params, "textDocument");
-			json_t* position = getJsonObject(params, "position");
-			if (textDoc && position) {
-				std::string uri = getJsonString(textDoc, "uri");
-				json_t* lineJson = json_object_get(position, "line");
-				json_t* charJson = json_object_get(position, "character");
-				if (lineJson && charJson && json_is_integer(lineJson) && json_is_integer(charJson)) {
-					size_t line = static_cast<size_t>(json_integer_value(lineJson));
-					size_t character = static_cast<size_t>(json_integer_value(charJson));
-					handleSignatureHelp(id, uri, line, character);
-				}
-			}
-		}
-	} else if (method == "textDocument/documentSymbol") {
-		json_t* params = getJsonObject(root, "params");
-		if (params) {
-			json_t* textDoc = getJsonObject(params, "textDocument");
-			if (textDoc) {
-				std::string uri = getJsonString(textDoc, "uri");
-				handleDocumentSymbols(id, uri);
-			}
-		}
-	} else if (method == "textDocument/definition") {
-		json_t* params = getJsonObject(root, "params");
-		if (params) {
-			json_t* textDoc = getJsonObject(params, "textDocument");
-			json_t* position = getJsonObject(params, "position");
-			if (textDoc && position) {
-				std::string uri = getJsonString(textDoc, "uri");
-				json_t* lineJson = json_object_get(position, "line");
-				json_t* charJson = json_object_get(position, "character");
-				if (lineJson && charJson && json_is_integer(lineJson) && json_is_integer(charJson)) {
-					size_t line = static_cast<size_t>(json_integer_value(lineJson));
-					size_t character = static_cast<size_t>(json_integer_value(charJson));
-					handleDefinition(id, uri, line, character);
-				}
-			}
-		}
-	} else if (method == "textDocument/references") {
-		json_t* params = getJsonObject(root, "params");
-		if (params) {
-			json_t* textDoc = getJsonObject(params, "textDocument");
-			json_t* position = getJsonObject(params, "position");
-			if (textDoc && position) {
-				std::string uri = getJsonString(textDoc, "uri");
-				json_t* lineJson = json_object_get(position, "line");
-				json_t* charJson = json_object_get(position, "character");
-				if (lineJson && charJson && json_is_integer(lineJson) && json_is_integer(charJson)) {
-					size_t line = static_cast<size_t>(json_integer_value(lineJson));
-					size_t character = static_cast<size_t>(json_integer_value(charJson));
-					handleReferences(id, uri, line, character);
-				}
-			}
-		}
-	} else if (method == "textDocument/documentHighlight") {
-		json_t* params = getJsonObject(root, "params");
-		if (params) {
-			json_t* textDoc = getJsonObject(params, "textDocument");
-			json_t* position = getJsonObject(params, "position");
-			if (textDoc && position) {
-				std::string uri = getJsonString(textDoc, "uri");
-				json_t* lineJson = json_object_get(position, "line");
-				json_t* charJson = json_object_get(position, "character");
-				if (lineJson && charJson && json_is_integer(lineJson) && json_is_integer(charJson)) {
-					size_t line = static_cast<size_t>(json_integer_value(lineJson));
-					size_t character = static_cast<size_t>(json_integer_value(charJson));
-					handleDocumentHighlight(id, uri, line, character);
-				}
-			}
-		}
-	} else if (method == "textDocument/foldingRange") {
-		json_t* params = getJsonObject(root, "params");
-		if (params) {
-			json_t* textDoc = getJsonObject(params, "textDocument");
-			if (textDoc) {
-				std::string uri = getJsonString(textDoc, "uri");
-				handleFoldingRange(id, uri);
-			}
-		}
-	} else if (method == "textDocument/codeAction") {
-		json_t* params = getJsonObject(root, "params");
-		json_t* textDocument = getJsonObject(params, "textDocument");
-		std::string uri = getJsonString(textDocument, "uri");
-
-		json_t* range = getJsonObject(params, "range");
-		json_t* rangeStart = getJsonObject(range, "start");
-		json_t* rangeEnd = getJsonObject(range, "end");
-		size_t startLine = static_cast<size_t>(json_integer_value(json_object_get(rangeStart, "line")));
-		size_t startChar = static_cast<size_t>(json_integer_value(json_object_get(rangeStart, "character")));
-		size_t endLine = static_cast<size_t>(json_integer_value(json_object_get(rangeEnd, "line")));
-		size_t endChar = static_cast<size_t>(json_integer_value(json_object_get(rangeEnd, "character")));
-
-		json_t* context = getJsonObject(params, "context");
-		json_t* diagnostics = json_object_get(context, "diagnostics");
-
-		handleCodeAction(id, uri, startLine, startChar, endLine, endChar, diagnostics);
-	} else if (method == "workspace/symbol") {
-		json_t* params = getJsonObject(root, "params");
-		std::string query = getJsonString(params, "query");
-		handleWorkspaceSymbols(id, query);
-	} else if (method == "textDocument/inlayHint") {
-		json_t* params = getJsonObject(root, "params");
-		json_t* textDocument = getJsonObject(params, "textDocument");
-		std::string uri = getJsonString(textDocument, "uri");
-
-		json_t* range = getJsonObject(params, "range");
-		json_t* rangeStart = getJsonObject(range, "start");
-		json_t* rangeEnd = getJsonObject(range, "end");
-		size_t startLine = static_cast<size_t>(json_integer_value(json_object_get(rangeStart, "line")));
-		size_t endLine = static_cast<size_t>(json_integer_value(json_object_get(rangeEnd, "line")));
-
-		handleInlayHints(id, uri, startLine, endLine);
-	} else if (method == "textDocument/semanticTokens/full") {
-		json_t* params = getJsonObject(root, "params");
-		if (params) {
-			json_t* textDocument = getJsonObject(params, "textDocument");
-			std::string uri = getJsonString(textDocument, "uri");
-			handleSemanticTokens(id, uri);
-		}
-	} else if (method == "textDocument/documentLink") {
-		json_t* params = getJsonObject(root, "params");
-		if (params) {
-			json_t* textDocument = getJsonObject(params, "textDocument");
-			std::string uri = getJsonString(textDocument, "uri");
-			handleDocumentLinks(id, uri);
-		}
-	} else if (method == "textDocument/prepareCallHierarchy") {
-		json_t* params = getJsonObject(root, "params");
-		if (params) {
-			json_t* textDocument = getJsonObject(params, "textDocument");
-			std::string uri = getJsonString(textDocument, "uri");
-			json_t* position = getJsonObject(params, "position");
-			size_t line = static_cast<size_t>(json_integer_value(json_object_get(position, "line")));
-			size_t character = static_cast<size_t>(json_integer_value(json_object_get(position, "character")));
-			handlePrepareCallHierarchy(id, uri, line, character);
-		}
-	} else if (method == "callHierarchy/incomingCalls") {
-		json_t* params = getJsonObject(root, "params");
-		if (params) {
-			json_t* item = getJsonObject(params, "item");
-			std::string itemData = getJsonString(item, "data");
-			handleIncomingCalls(id, itemData);
-		}
-	} else if (method == "callHierarchy/outgoingCalls") {
-		json_t* params = getJsonObject(root, "params");
-		if (params) {
-			json_t* item = getJsonObject(params, "item");
-			std::string itemData = getJsonString(item, "data");
-			handleOutgoingCalls(id, itemData);
-		}
-	} else if (method == "textDocument/selectionRange") {
-		json_t* params = getJsonObject(root, "params");
-		if (params) {
-			json_t* textDocument = getJsonObject(params, "textDocument");
-			std::string uri = getJsonString(textDocument, "uri");
-			json_t* positions = json_object_get(params, "positions");
-			std::vector<std::pair<size_t, size_t>> posVec;
-			if (positions && json_is_array(positions)) {
-				size_t posCount = json_array_size(positions);
-				for (size_t i = 0; i < posCount; i++) {
-					json_t* pos = json_array_get(positions, i);
-					size_t posLine = static_cast<size_t>(json_integer_value(json_object_get(pos, "line")));
-					size_t posChar = static_cast<size_t>(json_integer_value(json_object_get(pos, "character")));
-					posVec.push_back({posLine, posChar});
-				}
-			}
-			handleSelectionRange(id, uri, posVec);
-		}
-	} else if (method == "textDocument/prepareRename") {
-		json_t* params = getJsonObject(root, "params");
-		if (params) {
-			json_t* textDoc = getJsonObject(params, "textDocument");
-			json_t* position = getJsonObject(params, "position");
-			if (textDoc && position) {
-				std::string uri = getJsonString(textDoc, "uri");
-				json_t* lineJson = json_object_get(position, "line");
-				json_t* charJson = json_object_get(position, "character");
-				if (lineJson && charJson && json_is_integer(lineJson) && json_is_integer(charJson)) {
-					size_t line = static_cast<size_t>(json_integer_value(lineJson));
-					size_t character = static_cast<size_t>(json_integer_value(charJson));
-					handlePrepareRename(id, uri, line, character);
-				}
-			}
-		}
-	} else if (method == "textDocument/rename") {
-		json_t* params = getJsonObject(root, "params");
-		if (params) {
-			json_t* textDoc = getJsonObject(params, "textDocument");
-			json_t* position = getJsonObject(params, "position");
-			std::string newName = getJsonString(params, "newName");
-			if (textDoc && position && !newName.empty()) {
-				std::string uri = getJsonString(textDoc, "uri");
-				json_t* lineJson = json_object_get(position, "line");
-				json_t* charJson = json_object_get(position, "character");
-				if (lineJson && charJson && json_is_integer(lineJson) && json_is_integer(charJson)) {
-					size_t line = static_cast<size_t>(json_integer_value(lineJson));
-					size_t character = static_cast<size_t>(json_integer_value(charJson));
-					handleRename(id, uri, line, character, newName);
-				}
-			}
-		}
-	} else if (method == "shutdown") {
-		handleShutdown(id);
-	} else if (method == "exit") {
+	if (!json_is_string(methodJson) || (isRequest && !json_is_string(idJson) && !json_is_integer(idJson))) {
 		json_decref(root);
-		exit(0);
+		if (isRequest) {
+			sendError(id, -32600, "Invalid Request");
+		}
+		return;
+	}
+
+	std::string method = json_string_value(methodJson);
+	json_t* params = json_object_get(root, "params");
+
+	if (method == "exit") {
+		json_decref(root);
+		exit(shutdownRequested_ ? 0 : 1);
+	}
+
+	if (shutdownRequested_) {
+		if (isRequest) {
+			sendError(id, -32600, "Server is shutting down");
+		}
+		json_decref(root);
+		return;
+	}
+
+	requestUri_.clear();
+	if (!getDocumentUri(params, requestUri_)) {
+		requestUri_ = getJsonString(getJsonObject(params, "item"), "uri");
+	}
+	if (method != "textDocument/didChange") {
+		convertPositions(params, requestUri_, false);
+	}
+	responded_ = false;
+	DispatchResult result = dispatchMessage(method, id, params);
+	if (isRequest) {
+		if (result == DispatchResult::UnknownMethod) {
+			sendError(id, -32601, "Method not found: " + method);
+		} else if (result == DispatchResult::InvalidParams) {
+			sendError(id, -32602, "Invalid params for " + method);
+		} else if (!responded_) {
+			json_t* response = json_object();
+			json_object_set_new(response, "jsonrpc", json_string("2.0"));
+			json_object_set_new(response, "id", makeResponseId(id));
+			json_object_set_new(response, "result", json_null());
+			sendMessage(response);
+			json_decref(response);
+		}
 	}
 
 	json_decref(root);
+}
+
+QuadrateLSP::DispatchResult QuadrateLSP::dispatchMessage(
+		const std::string& method, const std::string& id, json_t* params) {
+	std::string uri;
+	size_t line = 0;
+	size_t character = 0;
+
+	if (method == "initialize") {
+		if (params && json_is_object(params)) {
+			std::string rootPath = lspUriToPath(getJsonString(params, "rootUri"));
+			json_t* folders = getJsonObject(params, "workspaceFolders");
+			if (rootPath.empty() && folders && json_is_array(folders) && json_array_size(folders) > 0) {
+				rootPath = lspUriToPath(getJsonString(json_array_get(folders, 0), "uri"));
+			}
+			if (rootPath.empty()) {
+				rootPath = getJsonString(params, "rootPath");
+			}
+			if (!rootPath.empty()) {
+				workspaceRoot_ = rootPath;
+			}
+		}
+		json_t* general = getJsonObject(getJsonObject(params, "capabilities"), "general");
+		json_t* encodings = getJsonObject(general, "positionEncodings");
+		utf8Positions_ = false;
+		for (size_t i = 0; json_is_array(encodings) && i < json_array_size(encodings); i++) {
+			json_t* encoding = json_array_get(encodings, i);
+			if (json_is_string(encoding) && strcmp(json_string_value(encoding), "utf-8") == 0) {
+				utf8Positions_ = true;
+			}
+		}
+		json_t* initOptions =
+				(params && json_is_object(params)) ? getJsonObject(params, "initializationOptions") : nullptr;
+		handleInitialize(id, initOptions);
+	} else if (method == "initialized" || method == "$/cancelRequest" || method == "$/setTrace" ||
+			   method == "workspace/didChangeWatchedFiles" || method == "workspace/didChangeWorkspaceFolders") {
+		// Nothing to do
+	} else if (method == "workspace/didChangeConfiguration") {
+		json_t* settings = (params && json_is_object(params)) ? getJsonObject(params, "settings") : nullptr;
+		json_t* quadrate = (settings && json_is_object(settings)) ? getJsonObject(settings, "quadrate") : nullptr;
+		json_t* lint = (quadrate && json_is_object(quadrate)) ? getJsonObject(quadrate, "lint") : nullptr;
+		if (lint && json_is_object(lint)) {
+			json_t* enabled = json_object_get(lint, "enabled");
+			if (enabled && json_is_boolean(enabled)) {
+				lintEnabled_ = json_boolean_value(enabled);
+			}
+			json_t* path = json_object_get(lint, "path");
+			if (path && json_is_string(path)) {
+				quadlintPath_ = json_string_value(path);
+			}
+		}
+	} else if (method == "textDocument/didOpen") {
+		json_t* textDoc = getJsonObject(params, "textDocument");
+		json_t* text = getJsonObject(textDoc, "text");
+		if (!getDocumentUri(params, uri) || !text || !json_is_string(text)) {
+			return DispatchResult::InvalidParams;
+		}
+		handleDidOpen(uri, json_string_value(text));
+	} else if (method == "textDocument/didChange") {
+		json_t* contentChanges = getJsonObject(params, "contentChanges");
+		if (!getDocumentUri(params, uri) || !contentChanges || !json_is_array(contentChanges)) {
+			return DispatchResult::InvalidParams;
+		}
+		applyContentChanges(uri, contentChanges);
+	} else if (method == "textDocument/didClose") {
+		if (!getDocumentUri(params, uri)) {
+			return DispatchResult::InvalidParams;
+		}
+		handleDidClose(uri);
+	} else if (method == "textDocument/didSave") {
+		if (!getDocumentUri(params, uri)) {
+			return DispatchResult::InvalidParams;
+		}
+		std::string text = getJsonString(params, "text");
+		if (!text.empty()) {
+			handleDidOpen(uri, text);
+		} else {
+			// Fallback: use stored document content
+			auto it = documents_.find(uri);
+			if (it != documents_.end()) {
+				publishDiagnostics(uri, it->second);
+			}
+		}
+	} else if (method == "textDocument/formatting") {
+		if (!getDocumentUri(params, uri)) {
+			return DispatchResult::InvalidParams;
+		}
+		handleFormatting(id, uri);
+	} else if (method == "textDocument/rangeFormatting") {
+		size_t startLine = 0;
+		size_t startChar = 0;
+		size_t endLine = 0;
+		size_t endChar = 0;
+		if (!getDocumentUri(params, uri) ||
+				!getRangeField(getJsonObject(params, "range"), startLine, startChar, endLine, endChar)) {
+			return DispatchResult::InvalidParams;
+		}
+		handleRangeFormatting(id, uri, startLine, startChar, endLine, endChar);
+	} else if (method == "textDocument/codeLens") {
+		if (!getDocumentUri(params, uri)) {
+			return DispatchResult::InvalidParams;
+		}
+		handleCodeLens(id, uri);
+	} else if (method == "textDocument/prepareTypeHierarchy") {
+		if (!getDocumentPosition(params, uri, line, character)) {
+			return DispatchResult::InvalidParams;
+		}
+		handlePrepareTypeHierarchy(id, uri, line, character);
+	} else if (method == "typeHierarchy/supertypes" || method == "typeHierarchy/subtypes") {
+		std::string itemData;
+		if (!getItemData(params, itemData)) {
+			return DispatchResult::InvalidParams;
+		}
+		if (method == "typeHierarchy/supertypes") {
+			handleSupertypes(id, itemData);
+		} else {
+			handleSubtypes(id, itemData);
+		}
+	} else if (method == "textDocument/onTypeFormatting") {
+		if (!getDocumentPosition(params, uri, line, character)) {
+			return DispatchResult::InvalidParams;
+		}
+		handleOnTypeFormatting(id, uri, line, character, getJsonString(params, "ch"));
+	} else if (method == "textDocument/linkedEditingRange") {
+		if (!getDocumentPosition(params, uri, line, character)) {
+			return DispatchResult::InvalidParams;
+		}
+		handleLinkedEditingRange(id, uri, line, character);
+	} else if (method == "textDocument/completion") {
+		if (!getDocumentPosition(params, uri, line, character)) {
+			return DispatchResult::InvalidParams;
+		}
+		handleCompletion(id, uri, line, character);
+	} else if (method == "textDocument/hover") {
+		if (!getDocumentPosition(params, uri, line, character)) {
+			return DispatchResult::InvalidParams;
+		}
+		handleHover(id, uri, line, character);
+	} else if (method == "textDocument/signatureHelp") {
+		if (!getDocumentPosition(params, uri, line, character)) {
+			return DispatchResult::InvalidParams;
+		}
+		handleSignatureHelp(id, uri, line, character);
+	} else if (method == "textDocument/documentSymbol") {
+		if (!getDocumentUri(params, uri)) {
+			return DispatchResult::InvalidParams;
+		}
+		handleDocumentSymbols(id, uri);
+	} else if (method == "textDocument/definition") {
+		if (!getDocumentPosition(params, uri, line, character)) {
+			return DispatchResult::InvalidParams;
+		}
+		handleDefinition(id, uri, line, character);
+	} else if (method == "textDocument/references") {
+		if (!getDocumentPosition(params, uri, line, character)) {
+			return DispatchResult::InvalidParams;
+		}
+		json_t* context = getJsonObject(params, "context");
+		json_t* includeDeclaration = getJsonObject(context, "includeDeclaration");
+		handleReferences(
+				id, uri, line, character, !json_is_boolean(includeDeclaration) || json_is_true(includeDeclaration));
+	} else if (method == "textDocument/documentHighlight") {
+		if (!getDocumentPosition(params, uri, line, character)) {
+			return DispatchResult::InvalidParams;
+		}
+		handleDocumentHighlight(id, uri, line, character);
+	} else if (method == "textDocument/foldingRange") {
+		if (!getDocumentUri(params, uri)) {
+			return DispatchResult::InvalidParams;
+		}
+		handleFoldingRange(id, uri);
+	} else if (method == "textDocument/codeAction") {
+		size_t startLine = 0;
+		size_t startChar = 0;
+		size_t endLine = 0;
+		size_t endChar = 0;
+		if (!getDocumentUri(params, uri) ||
+				!getRangeField(getJsonObject(params, "range"), startLine, startChar, endLine, endChar)) {
+			return DispatchResult::InvalidParams;
+		}
+		json_t* context = getJsonObject(params, "context");
+		json_t* diagnostics = (context && json_is_object(context)) ? json_object_get(context, "diagnostics") : nullptr;
+		handleCodeAction(id, uri, startLine, startChar, endLine, endChar, diagnostics);
+	} else if (method == "workspace/symbol") {
+		if (!params || !json_is_object(params)) {
+			return DispatchResult::InvalidParams;
+		}
+		handleWorkspaceSymbols(id, getJsonString(params, "query"));
+	} else if (method == "textDocument/inlayHint") {
+		size_t startLine = 0;
+		size_t startChar = 0;
+		size_t endLine = 0;
+		size_t endChar = 0;
+		if (!getDocumentUri(params, uri) ||
+				!getRangeField(getJsonObject(params, "range"), startLine, startChar, endLine, endChar)) {
+			return DispatchResult::InvalidParams;
+		}
+		handleInlayHints(id, uri, startLine, endLine);
+	} else if (method == "textDocument/semanticTokens/full") {
+		if (!getDocumentUri(params, uri)) {
+			return DispatchResult::InvalidParams;
+		}
+		handleSemanticTokens(id, uri);
+	} else if (method == "textDocument/documentLink") {
+		if (!getDocumentUri(params, uri)) {
+			return DispatchResult::InvalidParams;
+		}
+		handleDocumentLinks(id, uri);
+	} else if (method == "textDocument/prepareCallHierarchy") {
+		if (!getDocumentPosition(params, uri, line, character)) {
+			return DispatchResult::InvalidParams;
+		}
+		handlePrepareCallHierarchy(id, uri, line, character);
+	} else if (method == "callHierarchy/incomingCalls" || method == "callHierarchy/outgoingCalls") {
+		std::string itemData;
+		if (!getItemData(params, itemData)) {
+			return DispatchResult::InvalidParams;
+		}
+		if (method == "callHierarchy/incomingCalls") {
+			handleIncomingCalls(id, itemData);
+		} else {
+			handleOutgoingCalls(id, itemData);
+		}
+	} else if (method == "textDocument/selectionRange") {
+		json_t* positions = getJsonObject(params, "positions");
+		if (!getDocumentUri(params, uri) || !positions || !json_is_array(positions)) {
+			return DispatchResult::InvalidParams;
+		}
+		std::vector<std::pair<size_t, size_t>> posVec;
+		for (size_t i = 0; i < json_array_size(positions); i++) {
+			size_t posLine = 0;
+			size_t posChar = 0;
+			if (!getPositionField(json_array_get(positions, i), posLine, posChar)) {
+				return DispatchResult::InvalidParams;
+			}
+			posVec.push_back({posLine, posChar});
+		}
+		handleSelectionRange(id, uri, posVec);
+	} else if (method == "textDocument/prepareRename") {
+		if (!getDocumentPosition(params, uri, line, character)) {
+			return DispatchResult::InvalidParams;
+		}
+		handlePrepareRename(id, uri, line, character);
+	} else if (method == "textDocument/rename") {
+		json_t* newName = getJsonObject(params, "newName");
+		if (!getDocumentPosition(params, uri, line, character) || !newName || !json_is_string(newName) ||
+				json_string_length(newName) == 0) {
+			return DispatchResult::InvalidParams;
+		}
+		handleRename(id, uri, line, character, json_string_value(newName));
+	} else if (method == "shutdown") {
+		handleShutdown(id);
+	} else {
+		return DispatchResult::UnknownMethod;
+	}
+	return DispatchResult::Handled;
 }
 
 void QuadrateLSP::handleInitialize(const std::string& id, json_t* initOptions) {
@@ -730,6 +911,7 @@ void QuadrateLSP::handleInitialize(const std::string& id, json_t* initOptions) {
 	json_object_set_new(saveOptions, "includeText", json_true());
 	json_object_set_new(textDocumentSync, "save", saveOptions);
 	json_object_set_new(capabilities, "textDocumentSync", textDocumentSync);
+	json_object_set_new(capabilities, "positionEncoding", json_string(utf8Positions_ ? "utf-8" : "utf-16"));
 	json_object_set_new(capabilities, "documentFormattingProvider", json_true());
 	json_object_set_new(capabilities, "hoverProvider", json_true());
 	json_object_set_new(capabilities, "documentSymbolProvider", json_true());
@@ -891,6 +1073,7 @@ void QuadrateLSP::handleDidClose(const std::string& uri) {
 }
 
 void QuadrateLSP::handleShutdown(const std::string& id) {
+	shutdownRequested_ = true;
 	json_t* response = json_object();
 	json_object_set_new(response, "jsonrpc", json_string("2.0"));
 	json_object_set_new(response, "id", makeResponseId(id));
@@ -1084,7 +1267,7 @@ void QuadrateLSP::publishDiagnostics(const std::string& uri, const std::string& 
 		validator.setStoreErrors(true);
 
 		// Get filename from URI for validator
-		std::string filePath = uri.substr(7); // Remove "file://"
+		std::string filePath = lspUriToPath(uri);
 
 		// Load include paths from qd.json if present
 		std::filesystem::path fileDir = std::filesystem::path(filePath).parent_path();
@@ -1134,8 +1317,8 @@ void QuadrateLSP::publishDiagnostics(const std::string& uri, const std::string& 
 	// Run quadlint if enabled and no parse/semantic errors
 	// Skip linting for files in standard library or installed package locations
 	bool isExternalModule = false;
-	if (uri.substr(0, 7) == "file://") {
-		std::string filePath = uri.substr(7);
+	std::string filePath = lspUriToPath(uri);
+	if (!filePath.empty()) {
 		// Check if file is in standard library or module locations
 		if (filePath.find("/usr/share/quadrate/") != std::string::npos ||
 				filePath.find("/.quadrate/modules/") != std::string::npos) {
@@ -1184,6 +1367,67 @@ void QuadrateLSP::publishDiagnostics(const std::string& uri, const std::string& 
 	json_decref(notification);
 }
 
+static json_t* makeLspRange(size_t startLine, size_t startChar, size_t endLine, size_t endChar) {
+	json_t* start = json_object();
+	json_object_set_new(start, "line", json_integer(static_cast<json_int_t>(startLine)));
+	json_object_set_new(start, "character", json_integer(static_cast<json_int_t>(startChar)));
+	json_t* end = json_object();
+	json_object_set_new(end, "line", json_integer(static_cast<json_int_t>(endLine)));
+	json_object_set_new(end, "character", json_integer(static_cast<json_int_t>(endChar)));
+	json_t* range = json_object();
+	json_object_set_new(range, "start", start);
+	json_object_set_new(range, "end", end);
+	return range;
+}
+
+static json_t* makeWholeDocumentEdit(const std::string& source, const std::string& replacement) {
+	size_t lineCount = 0;
+	size_t lineStart = 0;
+	for (size_t i = 0; i < source.size(); i++) {
+		if (source[i] == '\n') {
+			lineCount++;
+			lineStart = i + 1;
+		}
+	}
+	json_t* edit = json_object();
+	json_object_set_new(edit, "range", makeLspRange(0, 0, lineCount, source.size() - lineStart));
+	json_object_set_new(edit, "newText", json_string(replacement.c_str()));
+	return edit;
+}
+
+bool QuadrateLSP::formatDocument(const std::string& uri, const std::string& source, std::string& formatted) {
+	if (source.empty() || !qdcli::isValidUtf8(source)) {
+		return false;
+	}
+	try {
+		Qd::Ast sourceAst;
+		Qd::IAstNode* sourceRoot = sourceAst.generate(source.c_str(), false, nullptr);
+		if (!sourceRoot || sourceAst.hasErrors()) {
+			return false;
+		}
+
+		std::string configDir = ".";
+		std::string filePath = lspUriToPath(uri);
+		if (!filePath.empty()) {
+			std::string parent = std::filesystem::path(filePath).parent_path().string();
+			if (!parent.empty()) {
+				configDir = parent;
+			}
+		}
+
+		formatted = Qd::formatSource(source, Qd::FormatOptions::loadFromFile(configDir));
+		if (formatted.empty()) {
+			return false;
+		}
+
+		Qd::Ast formattedAst;
+		Qd::IAstNode* formattedRoot = formattedAst.generate(formatted.c_str(), false, nullptr);
+		return formattedRoot && !formattedAst.hasErrors();
+	} catch (const std::exception&) {
+		return false;
+	}
+}
+
 void QuadrateLSP::handleFormatting(const std::string& id, const std::string& uri) {
 	json_t* response = json_object();
 	json_object_set_new(response, "jsonrpc", json_string("2.0"));
@@ -1200,28 +1444,8 @@ void QuadrateLSP::handleFormatting(const std::string& id, const std::string& uri
 
 	const std::string& source = it->second;
 
-	// Write source to temp file
-	std::string tempPath = "/tmp/quadlsp_fmt_" + std::to_string(process_platform_getpid()) + ".qd";
-	{
-		std::ofstream tempFile(tempPath);
-		if (!tempFile.good()) {
-			json_object_set_new(response, "result", json_array());
-			sendMessage(response);
-			json_decref(response);
-			return;
-		}
-		tempFile << source;
-	}
-
-	// Run quadfmt
-	std::string command = "quadfmt \"" + tempPath + "\"" + QD_SHELL_STDERR_SUPPRESS;
-	char outputBuffer[262144]; // 256KB for formatted output
-	int exitCode = process_platform_exec_capture(command.c_str(), outputBuffer, sizeof(outputBuffer));
-	std::string formatted(outputBuffer);
-	std::remove(tempPath.c_str());
-
-	// If quadfmt failed or output is empty, return no edits
-	if (exitCode != 0 || formatted.empty()) {
+	std::string formatted;
+	if (!formatDocument(uri, source, formatted)) {
 		json_object_set_new(response, "result", json_array());
 		sendMessage(response);
 		json_decref(response);
@@ -1236,35 +1460,8 @@ void QuadrateLSP::handleFormatting(const std::string& id, const std::string& uri
 		return;
 	}
 
-	// Count lines in original document
-	size_t lineCount = 0;
-	size_t lastLineLength = 0;
-	size_t lineStart = 0;
-	for (size_t i = 0; i < source.size(); i++) {
-		if (source[i] == '\n') {
-			lineCount++;
-			lineStart = i + 1;
-		}
-	}
-	lastLineLength = source.size() - lineStart;
-
-	// Create a single edit replacing the entire document
 	json_t* edits = json_array();
-	json_t* edit = json_object();
-
-	json_t* range = json_object();
-	json_t* start = json_object();
-	json_object_set_new(start, "line", json_integer(0));
-	json_object_set_new(start, "character", json_integer(0));
-	json_t* end = json_object();
-	json_object_set_new(end, "line", json_integer(static_cast<json_int_t>(lineCount)));
-	json_object_set_new(end, "character", json_integer(static_cast<json_int_t>(lastLineLength)));
-	json_object_set_new(range, "start", start);
-	json_object_set_new(range, "end", end);
-
-	json_object_set_new(edit, "range", range);
-	json_object_set_new(edit, "newText", json_string(formatted.c_str()));
-	json_array_append_new(edits, edit);
+	json_array_append_new(edits, makeWholeDocumentEdit(source, formatted));
 
 	json_object_set_new(response, "result", edits);
 	sendMessage(response);
@@ -1568,6 +1765,7 @@ std::string QuadrateLSP::resolveModulePath(const std::string& moduleName, const 
 void QuadrateLSP::handleCodeAction(const std::string& id, const std::string& uri, size_t startLine, size_t startChar,
 		size_t endLine, size_t endChar, json_t* diagnostics) {
 	(void)startChar;
+	(void)endChar;
 	(void)endLine;
 	(void)endChar;
 
@@ -1894,6 +2092,11 @@ static bool isTypeName(const std::string& word) {
 	return types.count(word) > 0;
 }
 
+bool lspIsReservedName(const std::string& name) {
+	static const std::set<std::string> syntax = {"loop", "while", "null", "self"};
+	return isKeyword(name) || isTypeName(name) || isBuiltinOp(name) || syntax.count(name) > 0;
+}
+
 void QuadrateLSP::handleSemanticTokens(const std::string& id, const std::string& uri) {
 	json_t* response = json_object();
 	json_object_set_new(response, "jsonrpc", json_string("2.0"));
@@ -1920,9 +2123,8 @@ void QuadrateLSP::handleSemanticTokens(const std::string& id, const std::string&
 
 		// Get source directory for module resolution
 		std::string sourceDir;
-		std::string filePath;
-		if (uri.substr(0, 7) == "file://") {
-			filePath = uri.substr(7);
+		std::string filePath = lspUriToPath(uri);
+		if (!filePath.empty()) {
 			std::filesystem::path p(filePath);
 			sourceDir = p.parent_path().string();
 		}
@@ -1997,8 +2199,17 @@ void QuadrateLSP::handleSemanticTokens(const std::string& id, const std::string&
 		size_t line = 0;
 		size_t col = 0;
 		size_t i = 0;
+		size_t lineStart = 0;
 
 		auto addToken = [&](size_t tokenLine, size_t tokenCol, size_t length, int tokenType, int modifiers) {
+			if (!utf8Positions_) {
+				size_t lineEnd = documentText.find('\n', lineStart);
+				std::string lineText = documentText.substr(
+						lineStart, (lineEnd == std::string::npos ? documentText.size() : lineEnd) - lineStart);
+				size_t endCol = lspByteToUtf16Column(lineText, tokenCol + length);
+				tokenCol = lspByteToUtf16Column(lineText, tokenCol);
+				length = endCol - tokenCol;
+			}
 			int deltaLine = static_cast<int>(tokenLine - prevLine);
 			int deltaChar = (deltaLine == 0) ? static_cast<int>(tokenCol - prevChar) : static_cast<int>(tokenCol);
 			data.push_back(deltaLine);
@@ -2018,6 +2229,7 @@ void QuadrateLSP::handleSemanticTokens(const std::string& id, const std::string&
 				line++;
 				col = 0;
 				i++;
+				lineStart = i;
 				continue;
 			}
 
@@ -2292,8 +2504,8 @@ void QuadrateLSP::handleDocumentLinks(const std::string& id, const std::string& 
 
 	// Get source directory for module resolution
 	std::string sourceDir;
-	if (uri.substr(0, 7) == "file://") {
-		std::string filePath = uri.substr(7);
+	std::string filePath = lspUriToPath(uri);
+	if (!filePath.empty()) {
 		size_t lastSlash = filePath.rfind('/');
 		if (lastSlash != std::string::npos) {
 			sourceDir = filePath.substr(0, lastSlash);
@@ -2365,7 +2577,7 @@ void QuadrateLSP::handleDocumentLinks(const std::string& id, const std::string& 
 								json_object_set_new(link, "range", range);
 
 								// Target is the file URI
-								std::string targetUri = "file://" + modulePath;
+								std::string targetUri = lspPathToUri(modulePath);
 								json_object_set_new(link, "target", json_string(targetUri.c_str()));
 
 								// Tooltip
@@ -3002,94 +3214,54 @@ void QuadrateLSP::handleRangeFormatting(const std::string& id, const std::string
 		documentText = docIter->second;
 	}
 
-	if (!documentText.empty()) {
-		// Write to temp file
-		std::string tmpPathStr = (std::filesystem::temp_directory_path() / "quadlsp_fmt.qd").string();
-		bool writeOk = false;
-		{
-			std::ofstream ofs(tmpPathStr, std::ios::binary);
-			if (ofs) {
-				ofs.write(documentText.c_str(), static_cast<std::streamsize>(documentText.size()));
-				writeOk = ofs.good();
-			}
+	std::string formattedText;
+	if (formatDocument(uri, documentText, formattedText) && formattedText != documentText) {
+		std::vector<std::string> origLines;
+		std::vector<std::string> fmtLines;
+
+		std::istringstream origIss(documentText);
+		std::string line;
+		while (std::getline(origIss, line)) {
+			origLines.push_back(line);
 		}
-		if (writeOk) {
-			// Run quadfmt
-			std::string cmd = "quadfmt " + tmpPathStr + QD_SHELL_STDERR_SUPPRESS;
-			char outputBuffer[262144]; // 256KB for formatted output
-			int exitCode = process_platform_exec_capture(cmd.c_str(), outputBuffer, sizeof(outputBuffer));
-			if (exitCode == 0) {
-				std::string formattedText(outputBuffer);
 
-				if (!formattedText.empty()) {
-					// Split both original and formatted into lines
-					std::vector<std::string> origLines;
-					std::vector<std::string> fmtLines;
+		std::istringstream fmtIss(formattedText);
+		while (std::getline(fmtIss, line)) {
+			fmtLines.push_back(line);
+		}
 
-					std::istringstream origIss(documentText);
-					std::string line;
-					while (std::getline(origIss, line)) {
-						origLines.push_back(line);
-					}
-
-					std::istringstream fmtIss(formattedText);
-					while (std::getline(fmtIss, line)) {
-						fmtLines.push_back(line);
-					}
-
-					// Only create edit if the range content changed
-					// Compare lines in the requested range
-					bool changed = false;
-					if (origLines.size() == fmtLines.size()) {
-						for (size_t i = startLine; i <= endLine && i < origLines.size(); i++) {
-							if (origLines[i] != fmtLines[i]) {
-								changed = true;
-								break;
-							}
-						}
-					} else {
-						changed = true;
-					}
-
-					if (changed) {
-						// Build the replacement text for the range
-						std::string rangeText;
-						for (size_t i = startLine; i <= endLine && i < fmtLines.size(); i++) {
-							if (i > startLine) {
-								rangeText += "\n";
-							}
-							rangeText += fmtLines[i];
-						}
-
-						// Adjust endChar if we're replacing full lines
-						size_t adjustedEndChar = endChar;
-						if (endLine < origLines.size()) {
-							adjustedEndChar = origLines[endLine].size();
-						}
-
-						// Create edit
-						json_t* edit = json_object();
-						json_t* range = json_object();
-						json_t* start = json_object();
-						json_object_set_new(start, "line", json_integer(static_cast<json_int_t>(startLine)));
-						json_object_set_new(start, "character", json_integer(0)); // Start of line
-						json_t* end = json_object();
-						json_object_set_new(end, "line", json_integer(static_cast<json_int_t>(endLine)));
-						json_object_set_new(end, "character", json_integer(static_cast<json_int_t>(adjustedEndChar)));
-						json_object_set_new(range, "start", start);
-						json_object_set_new(range, "end", end);
-						json_object_set_new(edit, "range", range);
-						json_object_set_new(edit, "newText", json_string(rangeText.c_str()));
-						json_array_append_new(edits, edit);
-					}
+		if (origLines.size() != fmtLines.size()) {
+			json_array_append_new(edits, makeWholeDocumentEdit(documentText, formattedText));
+		} else {
+			bool changed = false;
+			for (size_t i = startLine; i <= endLine && i < origLines.size(); i++) {
+				if (origLines[i] != fmtLines[i]) {
+					changed = true;
+					break;
 				}
 			}
-			std::filesystem::remove(tmpPathStr);
+
+			if (changed) {
+				size_t lastLine = std::min(endLine, origLines.size() - 1);
+				std::string rangeText;
+				for (size_t i = startLine; i <= lastLine; i++) {
+					if (i > startLine) {
+						rangeText += "\n";
+					}
+					rangeText += fmtLines[i];
+				}
+
+				json_t* edit = json_object();
+				json_object_set_new(edit, "range", makeLspRange(startLine, 0, lastLine, origLines[lastLine].size()));
+				json_object_set_new(edit, "newText", json_string(rangeText.c_str()));
+				json_array_append_new(edits, edit);
+			}
 		}
 	}
 
 	// Suppress unused parameter warnings
 	(void)startChar;
+	(void)endChar;
 
 	json_object_set_new(response, "result", edits);
 	sendMessage(response);
@@ -3622,7 +3794,7 @@ void QuadrateLSP::handleWorkspaceSymbols(const std::string& id, const std::strin
 
 	// Helper lambda to add symbols from a file
 	auto processFile = [&](const std::string& filePath, const std::string& docText) {
-		std::string uri = "file://" + filePath;
+		std::string uri = lspPathToUri(filePath);
 
 		// Extract functions
 		std::vector<FunctionInfo> functions = extractFunctions(docText);
@@ -3690,9 +3862,9 @@ void QuadrateLSP::handleWorkspaceSymbols(const std::string& id, const std::strin
 
 	// First, search through all open documents (they have the latest content)
 	for (const auto& [docUri, docText] : documents_) {
-		std::string filePath = docUri;
-		if (filePath.substr(0, 7) == "file://") {
-			filePath = filePath.substr(7);
+		std::string filePath = lspUriToPath(docUri);
+		if (filePath.empty()) {
+			filePath = docUri;
 		}
 		processedFiles.insert(filePath);
 		processFile(filePath, docText);
@@ -3734,8 +3906,8 @@ void QuadrateLSP::handleHover(const std::string& id, const std::string& uri, siz
 		documentText = docIter->second;
 	} else {
 		// Try to read from disk
-		if (uri.substr(0, 7) == "file://") {
-			std::string filePath = uri.substr(7);
+		std::string filePath = lspUriToPath(uri);
+		if (!filePath.empty()) {
 			std::ifstream file(filePath);
 			if (file.good()) {
 				std::stringstream buffer;
@@ -3835,7 +4007,7 @@ void QuadrateLSP::handleHover(const std::string& id, const std::string& uri, siz
 					std::string symbolName = word.substr(colonPos + 2);
 
 					// Get source directory from URI
-					std::string filePath = uri.substr(7); // Remove "file://"
+					std::string filePath = lspUriToPath(uri);
 					std::string sourceDir = std::filesystem::path(filePath).parent_path().string();
 
 					// Resolve module path
@@ -4062,8 +4234,8 @@ void QuadrateLSP::handleSignatureHelp(const std::string& id, const std::string& 
 	if (docIter != documents_.end()) {
 		documentText = docIter->second;
 	} else {
-		if (uri.substr(0, 7) == "file://") {
-			std::string filePath = uri.substr(7);
+		std::string filePath = lspUriToPath(uri);
+		if (!filePath.empty()) {
 			std::ifstream file(filePath);
 			if (file.good()) {
 				std::stringstream buffer;
@@ -4165,7 +4337,7 @@ void QuadrateLSP::handleSignatureHelp(const std::string& id, const std::string& 
 						std::string moduleName = funcName.substr(0, colonPos);
 						std::string symbolName = funcName.substr(colonPos + 2);
 
-						std::string filePath = uri.substr(7);
+						std::string filePath = lspUriToPath(uri);
 						std::string sourceDir = std::filesystem::path(filePath).parent_path().string();
 						std::string modulePath = resolveModulePath(moduleName, sourceDir);
 
@@ -4300,8 +4472,8 @@ void QuadrateLSP::handleDocumentSymbols(const std::string& id, const std::string
 		documentText = docIter->second;
 	} else {
 		// Try to read from disk
-		if (uri.substr(0, 7) == "file://") {
-			std::string filePath = uri.substr(7);
+		std::string filePath = lspUriToPath(uri);
+		if (!filePath.empty()) {
 			std::ifstream file(filePath);
 			if (file.good()) {
 				std::stringstream buffer;

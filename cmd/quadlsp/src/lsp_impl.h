@@ -23,11 +23,36 @@ std::string expandTilde(const std::string& path);
 // targets without the rest of the LSP server.
 std::string lspGetWordAtPosition(const std::string& text, size_t line, size_t character);
 
+// Convert a column within one line between UTF-8 bytes (what the server
+// works in) and UTF-16 code units (what LSP clients send by default).
+// Columns past the end of the line map one-to-one.
+size_t lspByteToUtf16Column(const std::string& lineText, size_t byteColumn);
+size_t lspUtf16ToByteColumn(const std::string& lineText, size_t utf16Column);
+
+// Convert a file:// URI to a filesystem path, percent-decoding it. Returns ""
+// for anything that is not a file URI.
+std::string lspUriToPath(const std::string& uri);
+
+// Convert a filesystem path to a percent-encoded file:// URI.
+std::string lspPathToUri(const std::string& path);
+
+// True for keywords, type names and built-in instructions, none of which can
+// be used as a user-defined name.
+bool lspIsReservedName(const std::string& name);
+
 // Load dependencies from qd.json and return include paths
 std::vector<std::string> loadDependenciesFromManifest(const std::string& manifestDir);
 
 // Get sibling .qd files in the same directory (for directory-based namespaces)
 std::vector<std::string> getSiblingQdFiles(const std::string& filePath);
+
+// Where a symbol's name is spelled in a document, as a byte range on one line
+struct NameOccurrence {
+	size_t line = 0;
+	size_t column = 0;
+	size_t length = 0;
+	bool declaration = false;
+};
 
 // LSP Server using jansson for JSON handling
 class QuadrateLSP {
@@ -38,13 +63,30 @@ public:
 	void run();
 
 private:
+	enum class DispatchResult {
+		Handled,
+		InvalidParams,
+		UnknownMethod
+	};
+
 	// Core messaging
-	std::string readMessage();
+	bool readMessage(std::string& content);
 	void sendMessage(json_t* json);
+	void sendError(const std::string& id, int code, const std::string& message);
 	std::string getJsonString(json_t* obj, const char* key);
 	json_t* getJsonObject(json_t* obj, const char* key);
 	json_t* makeResponseId(const std::string& id) const;
 	void handleMessage(const std::string& message);
+	DispatchResult dispatchMessage(const std::string& method, const std::string& id, json_t* params);
+
+	// Position encoding: the server works in UTF-8 byte columns; clients
+	// speak UTF-16 code units unless they negotiate UTF-8.
+	std::string getDocumentText(const std::string& uri);
+	void convertPositions(json_t* node, const std::string& uri, bool toClient);
+	void convertPositionsIn(json_t* node, const std::string& uri, bool toClient);
+	const std::vector<std::string>* positionLines(const std::string& uri);
+	size_t toClientColumn(const std::string& lineText, size_t byteColumn) const;
+	void applyContentChanges(const std::string& uri, json_t* contentChanges);
 
 	// Initialization
 	void handleInitialize(const std::string& id, json_t* initOptions);
@@ -69,6 +111,7 @@ private:
 	void publishDiagnostics(const std::string& uri, const std::string& text);
 	void publishEmptyDiagnostics(const std::string& uri);
 	void handleFormatting(const std::string& id, const std::string& uri);
+	bool formatDocument(const std::string& uri, const std::string& source, std::string& formatted);
 
 	// Completion (implemented in lsp_completion.cc)
 	void handleCompletion(const std::string& id, const std::string& uri, size_t line, size_t character);
@@ -89,7 +132,8 @@ private:
 	void handleDefinition(const std::string& id, const std::string& uri, size_t line, size_t character);
 	void handleFoldingRange(const std::string& id, const std::string& uri);
 	void handleDocumentHighlight(const std::string& id, const std::string& uri, size_t line, size_t character);
-	void handleReferences(const std::string& id, const std::string& uri, size_t line, size_t character);
+	void handleReferences(
+			const std::string& id, const std::string& uri, size_t line, size_t character, bool includeDeclaration);
 	void handleRename(
 			const std::string& id, const std::string& uri, size_t line, size_t character, const std::string& newName);
 	void handlePrepareRename(const std::string& id, const std::string& uri, size_t line, size_t character);
@@ -139,7 +183,19 @@ private:
 	void handleLinkedEditingRange(const std::string& id, const std::string& uri, size_t line, size_t character);
 
 	// Navigation helpers (implemented in lsp_navigation.cc)
-	void findIdentifiersInNode(Qd::IAstNode* node, const std::string& targetName, std::vector<Qd::IAstNode*>& results);
+	void findIdentifiersInNode(Qd::IAstNode* node, const std::string& targetName, std::vector<Qd::IAstNode*>& results,
+			bool includeParameters = false);
+
+	std::vector<NameOccurrence> nameOccurrences(
+			const std::string& text, const std::vector<Qd::IAstNode*>& nodes, const std::string& name);
+	std::vector<NameOccurrence> findNameOccurrences(const std::string& text, Qd::IAstNode* root,
+			const std::string& word, size_t line, size_t character, bool* isLocal = nullptr);
+	bool findRenameTarget(const std::string& documentText, size_t line, size_t character, std::string& word,
+			std::vector<NameOccurrence>& occurrences, bool& isLocal, std::string& error);
+	json_t* makeNameLocation(
+			const std::string& uri, const std::string& text, Qd::IAstNode* node, const std::string& name);
+	json_t* makeNameLocationAt(
+			const std::string& uri, const std::string& text, size_t line, size_t column, const std::string& name);
 	Qd::AstNodeFunctionDeclaration* findContainingFunction(Qd::IAstNode* root, size_t line, size_t column);
 	bool isLocalVariableOrParameter(Qd::IAstNode* funcNode, const std::string& name);
 	Qd::AstNodeLocal* findLocalDeclaration(Qd::IAstNode* startNode, const std::string& varName, size_t requestLine);
@@ -170,6 +226,12 @@ private:
 
 	std::map<std::string, std::string> documents_;
 	bool currentIdIsString_ = false;
+	bool responded_ = false;
+	bool shutdownRequested_ = false;
+	bool utf8Positions_ = false;
+	std::string requestUri_;
+	std::map<std::string, std::vector<std::string>> positionLines_;
+	std::map<std::string, bool> positionAscii_;
 	[[maybe_unused]] int messageId_;
 	bool lintEnabled_ = true;
 	std::string quadlintPath_ = "quadlint";

@@ -2,11 +2,13 @@
 // Split from main.cc for maintainability
 
 #include "lsp_impl.h"
+#include <algorithm>
 #include <cctype>
 #include <filesystem>
 #include <fstream>
 #include <functional>
 #include <iostream>
+#include <map>
 #include <quadrate/qc/ast.h>
 #include <quadrate/qc/ast_node_constant.h>
 #include <quadrate/qc/ast_node_enum.h>
@@ -25,8 +27,256 @@
 #include <quadrate/qc/ast_node_use.h>
 #include <sstream>
 
-void QuadrateLSP::findIdentifiersInNode(
-		Qd::IAstNode* node, const std::string& targetName, std::vector<Qd::IAstNode*>& results) {
+static bool isIdentifierChar(char c) {
+	return std::isalnum(static_cast<unsigned char>(c)) || c == '_';
+}
+
+static size_t offsetOfPosition(const std::string& text, size_t line, size_t column) {
+	size_t lineStart = 0;
+	for (size_t i = 0; i < line; i++) {
+		size_t newline = text.find('\n', lineStart);
+		if (newline == std::string::npos) {
+			return text.size();
+		}
+		lineStart = newline + 1;
+	}
+	return std::min(lineStart + column, text.size());
+}
+
+static void positionOfOffset(const std::string& text, size_t offset, size_t& line, size_t& column) {
+	line = 0;
+	size_t lineStart = 0;
+	for (size_t i = 0; i < offset && i < text.size(); i++) {
+		if (text[i] == '\n') {
+			line++;
+			lineStart = i + 1;
+		}
+	}
+	column = offset - lineStart;
+}
+
+static size_t lineEndOfOffset(const std::string& text, size_t offset) {
+	size_t end = text.find('\n', offset);
+	return end == std::string::npos ? text.size() : end;
+}
+
+static bool nameAtOffset(const std::string& text, size_t offset, const std::string& name) {
+	if (name.empty() || offset + name.size() > text.size() || text.compare(offset, name.size(), name) != 0) {
+		return false;
+	}
+	bool startOk = offset == 0 || !isIdentifierChar(text[offset - 1]);
+	bool endOk = offset + name.size() >= text.size() || !isIdentifierChar(text[offset + name.size()]);
+	return startOk && endOk;
+}
+
+static size_t findNameForward(const std::string& text, const std::string& name, size_t from, size_t limit) {
+	size_t pos = text.find(name, from);
+	while (pos != std::string::npos && pos + name.size() <= limit) {
+		if (nameAtOffset(text, pos, name)) {
+			return pos;
+		}
+		pos = text.find(name, pos + 1);
+	}
+	return std::string::npos;
+}
+
+static size_t findNameBeforeColon(const std::string& text, size_t typeOffset, const std::string& name) {
+	size_t pos = typeOffset;
+	while (pos > 0 && (text[pos - 1] == ' ' || text[pos - 1] == '\t')) {
+		pos--;
+	}
+	if (pos > 0 && text[pos - 1] == ':') {
+		pos--;
+	}
+	while (pos > 0 && (text[pos - 1] == ' ' || text[pos - 1] == '\t')) {
+		pos--;
+	}
+	if (pos >= name.size() && nameAtOffset(text, pos - name.size(), name)) {
+		return pos - name.size();
+	}
+	return std::string::npos;
+}
+
+static size_t findNameOnLine(const std::string& text, size_t offset, const std::string& name) {
+	if (nameAtOffset(text, offset, name)) {
+		return offset;
+	}
+	size_t lineStart = text.rfind('\n', offset == 0 ? 0 : offset - 1);
+	lineStart = (lineStart == std::string::npos || offset == 0) ? 0 : lineStart + 1;
+	size_t lineEnd = lineEndOfOffset(text, offset);
+	size_t found = findNameForward(text, name, offset, lineEnd);
+	if (found == std::string::npos) {
+		found = findNameForward(text, name, lineStart, lineEnd);
+	}
+	return found;
+}
+
+// Byte offsets of every place `node` spells `name`, from the node's recorded
+// position. Declarations of parameters and struct fields are recorded at the
+// type, so their names are found just before the colon.
+static std::vector<std::pair<size_t, bool>> nodeNameOffsets(
+		const std::string& text, Qd::IAstNode* node, const std::string& name) {
+	std::vector<std::pair<size_t, bool>> offsets;
+	if (!node || node->line() == 0) {
+		return offsets;
+	}
+	size_t base = offsetOfPosition(text, node->line() - 1, node->column() > 0 ? node->column() - 1 : 0);
+	auto add = [&](size_t offset, bool declaration) {
+		if (offset != std::string::npos) {
+			offsets.push_back({offset, declaration});
+		}
+	};
+
+	switch (node->type()) {
+	case Qd::IAstNode::Type::FUNCTION_DECLARATION:
+	case Qd::IAstNode::Type::STRUCT_DECLARATION:
+	case Qd::IAstNode::Type::ENUM_DECLARATION:
+	case Qd::IAstNode::Type::CONSTANT_DECLARATION:
+		add(findNameOnLine(text, base, name), true);
+		break;
+	case Qd::IAstNode::Type::LOCAL:
+		add(findNameForward(text, name, base, lineEndOfOffset(text, base)), true);
+		break;
+	case Qd::IAstNode::Type::VARIABLE_DECLARATION: {
+		Qd::AstNodeParameter* param = static_cast<Qd::AstNodeParameter*>(node);
+		if (param->name() == name) {
+			add(findNameBeforeColon(text, base, name), true);
+		}
+		if (param->typeString() == name) {
+			add(findNameOnLine(text, base, name), false);
+		}
+		break;
+	}
+	case Qd::IAstNode::Type::STRUCT_FIELD: {
+		Qd::AstNodeStructField* field = static_cast<Qd::AstNodeStructField*>(node);
+		if (field->name() == name) {
+			add(findNameBeforeColon(text, base, name), true);
+		}
+		if (field->typeName() == name) {
+			add(findNameOnLine(text, base, name), false);
+		}
+		break;
+	}
+	case Qd::IAstNode::Type::STRUCT_CONSTRUCTION: {
+		Qd::AstNodeStructConstruction* construction = static_cast<Qd::AstNodeStructConstruction*>(node);
+		if (construction->structName() == name) {
+			add(findNameOnLine(text, base, name), false);
+		}
+		size_t searchFrom = base + construction->structName().size();
+		for (const auto& fieldInit : construction->fieldInits()) {
+			if (fieldInit.fieldName != name) {
+				continue;
+			}
+			size_t pos = findNameForward(text, name, searchFrom, text.size());
+			while (pos != std::string::npos) {
+				size_t after = pos + name.size();
+				while (after < text.size() && (text[after] == ' ' || text[after] == '\t')) {
+					after++;
+				}
+				if (after < text.size() && (text[after] == '=' || text[after] == ':')) {
+					break;
+				}
+				pos = findNameForward(text, name, pos + 1, text.size());
+			}
+			add(pos, false);
+			if (pos != std::string::npos) {
+				searchFrom = pos + name.size();
+			}
+		}
+		break;
+	}
+	case Qd::IAstNode::Type::SCOPED_IDENTIFIER: {
+		if (name.find("::") != std::string::npos) {
+			add(findNameOnLine(text, base, name), false);
+		} else {
+			size_t separator = text.find("::", base);
+			if (separator != std::string::npos && separator < lineEndOfOffset(text, base) &&
+					nameAtOffset(text, separator + 2, name)) {
+				add(separator + 2, false);
+			}
+		}
+		break;
+	}
+	default:
+		add(findNameOnLine(text, base, name), false);
+		break;
+	}
+	return offsets;
+}
+
+std::vector<NameOccurrence> QuadrateLSP::nameOccurrences(
+		const std::string& text, const std::vector<Qd::IAstNode*>& nodes, const std::string& name) {
+	std::map<size_t, bool> byOffset;
+	for (Qd::IAstNode* node : nodes) {
+		for (const auto& [offset, declaration] : nodeNameOffsets(text, node, name)) {
+			byOffset[offset] = byOffset[offset] || declaration;
+		}
+	}
+	std::vector<NameOccurrence> occurrences;
+	for (const auto& [offset, declaration] : byOffset) {
+		NameOccurrence occurrence;
+		positionOfOffset(text, offset, occurrence.line, occurrence.column);
+		occurrence.length = name.size();
+		occurrence.declaration = declaration;
+		occurrences.push_back(occurrence);
+	}
+	return occurrences;
+}
+
+std::vector<NameOccurrence> QuadrateLSP::findNameOccurrences(const std::string& text, Qd::IAstNode* root,
+		const std::string& word, size_t line, size_t character, bool* isLocal) {
+	Qd::AstNodeFunctionDeclaration* containingFunc = findContainingFunction(root, line + 1, character + 1);
+	bool local = containingFunc && isLocalVariableOrParameter(containingFunc, word);
+	if (isLocal) {
+		*isLocal = local;
+	}
+	std::vector<Qd::IAstNode*> references;
+	findIdentifiersInNode(local ? containingFunc : root, word, references, local);
+	return nameOccurrences(text, references, word);
+}
+
+static json_t* makeLocationAt(const std::string& uri, size_t line, size_t column, size_t length) {
+	json_t* start = json_object();
+	json_object_set_new(start, "line", json_integer(static_cast<json_int_t>(line)));
+	json_object_set_new(start, "character", json_integer(static_cast<json_int_t>(column)));
+	json_t* end = json_object();
+	json_object_set_new(end, "line", json_integer(static_cast<json_int_t>(line)));
+	json_object_set_new(end, "character", json_integer(static_cast<json_int_t>(column + length)));
+	json_t* range = json_object();
+	json_object_set_new(range, "start", start);
+	json_object_set_new(range, "end", end);
+	json_t* location = json_object();
+	json_object_set_new(location, "uri", json_string(uri.c_str()));
+	json_object_set_new(location, "range", range);
+	return location;
+}
+
+json_t* QuadrateLSP::makeNameLocation(
+		const std::string& uri, const std::string& text, Qd::IAstNode* node, const std::string& name) {
+	size_t line = (node && node->line() > 0) ? node->line() - 1 : 0;
+	size_t column = 0;
+	for (const auto& [offset, declaration] : nodeNameOffsets(text, node, name)) {
+		if (declaration) {
+			positionOfOffset(text, offset, line, column);
+			break;
+		}
+	}
+	return makeLocationAt(uri, line, column, name.size());
+}
+
+json_t* QuadrateLSP::makeNameLocationAt(
+		const std::string& uri, const std::string& text, size_t line, size_t column, const std::string& name) {
+	size_t lspLine = line > 0 ? line - 1 : 0;
+	size_t lspColumn = 0;
+	size_t found = findNameOnLine(text, offsetOfPosition(text, lspLine, column > 0 ? column - 1 : 0), name);
+	if (found != std::string::npos) {
+		positionOfOffset(text, found, lspLine, lspColumn);
+	}
+	return makeLocationAt(uri, lspLine, lspColumn, name.size());
+}
+
+void QuadrateLSP::findIdentifiersInNode(Qd::IAstNode* node, const std::string& targetName,
+		std::vector<Qd::IAstNode*>& results, bool includeParameters) {
 	if (!node) {
 		return;
 	}
@@ -103,63 +353,39 @@ void QuadrateLSP::findIdentifiersInNode(
 	// Check if this node is a parameter/variable declaration with matching type
 	else if (node->type() == Qd::IAstNode::Type::VARIABLE_DECLARATION) {
 		Qd::AstNodeParameter* param = static_cast<Qd::AstNodeParameter*>(node);
-		if (param->typeString() == targetName) {
+		if (param->typeString() == targetName || (includeParameters && param->name() == targetName)) {
 			results.push_back(node);
 		}
 	}
 
 	// Recursively search children
 	for (size_t i = 0; i < node->childCount(); i++) {
-		findIdentifiersInNode(node->child(i), targetName, results);
+		findIdentifiersInNode(node->child(i), targetName, results, includeParameters);
 	}
 }
 
 // Find the function declaration that contains the given line/column position
-Qd::AstNodeFunctionDeclaration* QuadrateLSP::findContainingFunction(
-		Qd::IAstNode* root, size_t line, size_t /*column*/) {
-	if (!root) {
-		return nullptr;
-	}
-
-	// Recursively search for a function that contains the position
-	std::function<Qd::AstNodeFunctionDeclaration*(Qd::IAstNode*)> search =
-			[&](Qd::IAstNode* node) -> Qd::AstNodeFunctionDeclaration* {
+Qd::AstNodeFunctionDeclaration* QuadrateLSP::findContainingFunction(Qd::IAstNode* root, size_t line, size_t column) {
+	Qd::AstNodeFunctionDeclaration* best = nullptr;
+	std::function<void(Qd::IAstNode*)> search = [&](Qd::IAstNode* node) {
 		if (!node) {
-			return nullptr;
+			return;
 		}
-
 		if (node->type() == Qd::IAstNode::Type::FUNCTION_DECLARATION) {
 			Qd::AstNodeFunctionDeclaration* funcDecl = static_cast<Qd::AstNodeFunctionDeclaration*>(node);
-			// Check if the position is within this function
-			// Functions contain all their children, so we check if any child contains our position
-			// or if the function itself starts at/before our line
-			if (funcDecl->line() <= line) {
-				// Check children for more specific containment
-				for (size_t i = 0; i < funcDecl->childCount(); i++) {
-					auto* result = search(funcDecl->child(i));
-					if (result) {
-						return result; // Found a nested function containing the position
-					}
-				}
-				// If the body exists, check if this function likely contains the position
-				if (funcDecl->body()) {
-					return funcDecl;
-				}
+			bool startsBefore = funcDecl->line() < line || (funcDecl->line() == line && funcDecl->column() <= column);
+			bool later = !best || funcDecl->line() > best->line() ||
+						 (funcDecl->line() == best->line() && funcDecl->column() > best->column());
+			if (funcDecl->body() && startsBefore && later) {
+				best = funcDecl;
 			}
 		}
-
-		// Search children
 		for (size_t i = 0; i < node->childCount(); i++) {
-			auto* result = search(node->child(i));
-			if (result) {
-				return result;
-			}
+			search(node->child(i));
 		}
-
-		return nullptr;
 	};
-
-	return search(root);
+	search(root);
+	return best;
 }
 
 // Check if a name is a local variable or parameter within a function
@@ -334,72 +560,24 @@ json_t* QuadrateLSP::findDefinitionInModule(
 				Qd::AstNodeFunctionDeclaration* funcNode = static_cast<Qd::AstNodeFunctionDeclaration*>(child);
 				if (funcNode->name() == symbolName) {
 					// Found the function definition
-					json_t* location = json_object();
-					std::string moduleUri = "file://" + searchPath;
-					json_object_set_new(location, "uri", json_string(moduleUri.c_str()));
-
-					json_t* range = json_object();
-					json_t* start = json_object();
-					size_t lspLine = (funcNode->line() > 0) ? funcNode->line() - 1 : 0;
-					json_object_set_new(start, "line", json_integer(static_cast<json_int_t>(lspLine)));
-					json_object_set_new(start, "character", json_integer(0));
-					json_object_set_new(range, "start", start);
-
-					json_t* end = json_object();
-					json_object_set_new(end, "line", json_integer(static_cast<json_int_t>(lspLine)));
-					json_object_set_new(
-							end, "character", json_integer(static_cast<json_int_t>(funcNode->name().length())));
-					json_object_set_new(range, "end", end);
-
-					json_object_set_new(location, "range", range);
+					json_t* location =
+							makeNameLocation(lspPathToUri(searchPath), moduleText, funcNode, funcNode->name());
 					return location;
 				}
 			} else if (symbolType == "constant" && child && child->type() == Qd::IAstNode::Type::CONSTANT_DECLARATION) {
 				Qd::AstNodeConstant* constNode = static_cast<Qd::AstNodeConstant*>(child);
 				if (constNode->name() == symbolName) {
 					// Found the constant definition
-					json_t* location = json_object();
-					std::string moduleUri = "file://" + searchPath;
-					json_object_set_new(location, "uri", json_string(moduleUri.c_str()));
-
-					json_t* range = json_object();
-					json_t* start = json_object();
-					size_t lspLine = (constNode->line() > 0) ? constNode->line() - 1 : 0;
-					json_object_set_new(start, "line", json_integer(static_cast<json_int_t>(lspLine)));
-					json_object_set_new(start, "character", json_integer(0));
-					json_object_set_new(range, "start", start);
-
-					json_t* end = json_object();
-					json_object_set_new(end, "line", json_integer(static_cast<json_int_t>(lspLine)));
-					json_object_set_new(
-							end, "character", json_integer(static_cast<json_int_t>(constNode->name().length())));
-					json_object_set_new(range, "end", end);
-
-					json_object_set_new(location, "range", range);
+					json_t* location =
+							makeNameLocation(lspPathToUri(searchPath), moduleText, constNode, constNode->name());
 					return location;
 				}
 			} else if (symbolType == "struct" && child && child->type() == Qd::IAstNode::Type::STRUCT_DECLARATION) {
 				Qd::AstNodeStructDeclaration* structNode = static_cast<Qd::AstNodeStructDeclaration*>(child);
 				if (structNode->name() == symbolName) {
 					// Found the struct definition
-					json_t* location = json_object();
-					std::string moduleUri = "file://" + searchPath;
-					json_object_set_new(location, "uri", json_string(moduleUri.c_str()));
-
-					json_t* range = json_object();
-					json_t* start = json_object();
-					size_t lspLine = (structNode->line() > 0) ? structNode->line() - 1 : 0;
-					json_object_set_new(start, "line", json_integer(static_cast<json_int_t>(lspLine)));
-					json_object_set_new(start, "character", json_integer(0));
-					json_object_set_new(range, "start", start);
-
-					json_t* end = json_object();
-					json_object_set_new(end, "line", json_integer(static_cast<json_int_t>(lspLine)));
-					json_object_set_new(
-							end, "character", json_integer(static_cast<json_int_t>(structNode->name().length())));
-					json_object_set_new(range, "end", end);
-
-					json_object_set_new(location, "range", range);
+					json_t* location =
+							makeNameLocation(lspPathToUri(searchPath), moduleText, structNode, structNode->name());
 					return location;
 				}
 			} else if (symbolType == "constant" && child && child->type() == Qd::IAstNode::Type::ENUM_DECLARATION) {
@@ -407,21 +585,8 @@ json_t* QuadrateLSP::findDefinitionInModule(
 				// Check if symbolName is EnumName::Variant or just EnumName
 				std::string enumPrefix = enumNode->name() + "::";
 				if (symbolName == enumNode->name() || symbolName.substr(0, enumPrefix.size()) == enumPrefix) {
-					json_t* location = json_object();
-					std::string moduleUri = "file://" + searchPath;
-					json_object_set_new(location, "uri", json_string(moduleUri.c_str()));
-					json_t* range = json_object();
-					json_t* start = json_object();
-					size_t lspLine = (enumNode->line() > 0) ? enumNode->line() - 1 : 0;
-					json_object_set_new(start, "line", json_integer(static_cast<json_int_t>(lspLine)));
-					json_object_set_new(start, "character", json_integer(0));
-					json_object_set_new(range, "start", start);
-					json_t* end = json_object();
-					json_object_set_new(end, "line", json_integer(static_cast<json_int_t>(lspLine)));
-					json_object_set_new(
-							end, "character", json_integer(static_cast<json_int_t>(enumNode->name().length())));
-					json_object_set_new(range, "end", end);
-					json_object_set_new(location, "range", range);
+					json_t* location =
+							makeNameLocation(lspPathToUri(searchPath), moduleText, enumNode, enumNode->name());
 					return location;
 				}
 			} else if (symbolType == "function" && child && child->type() == Qd::IAstNode::Type::IMPORT_STATEMENT) {
@@ -431,24 +596,8 @@ json_t* QuadrateLSP::findDefinitionInModule(
 				for (const auto& importedFunc : importedFuncs) {
 					if (importedFunc->name == symbolName) {
 						// Found the imported function declaration
-						json_t* location = json_object();
-						std::string moduleUri = "file://" + searchPath;
-						json_object_set_new(location, "uri", json_string(moduleUri.c_str()));
-
-						json_t* range = json_object();
-						json_t* start = json_object();
-						size_t lspLine = (importedFunc->line > 0) ? importedFunc->line - 1 : 0;
-						json_object_set_new(start, "line", json_integer(static_cast<json_int_t>(lspLine)));
-						json_object_set_new(start, "character", json_integer(0));
-						json_object_set_new(range, "start", start);
-
-						json_t* end = json_object();
-						json_object_set_new(end, "line", json_integer(static_cast<json_int_t>(lspLine)));
-						json_object_set_new(
-								end, "character", json_integer(static_cast<json_int_t>(importedFunc->name.length())));
-						json_object_set_new(range, "end", end);
-
-						json_object_set_new(location, "range", range);
+						json_t* location = makeNameLocationAt(lspPathToUri(searchPath), moduleText, importedFunc->line,
+								importedFunc->column, importedFunc->name);
 						return location;
 					}
 				}
@@ -488,23 +637,7 @@ json_t* QuadrateLSP::findMethodInModule(const std::string& modulePath, const std
 			// Check if this is a method (has a receiver) with the matching name
 			if (funcNode->hasReceiver() && funcNode->name() == methodName) {
 				// Found the method definition
-				json_t* location = json_object();
-				std::string moduleUri = "file://" + modulePath;
-				json_object_set_new(location, "uri", json_string(moduleUri.c_str()));
-
-				json_t* range = json_object();
-				json_t* start = json_object();
-				size_t lspLine = (funcNode->line() > 0) ? funcNode->line() - 1 : 0;
-				json_object_set_new(start, "line", json_integer(static_cast<json_int_t>(lspLine)));
-				json_object_set_new(start, "character", json_integer(0));
-				json_object_set_new(range, "start", start);
-
-				json_t* end = json_object();
-				json_object_set_new(end, "line", json_integer(static_cast<json_int_t>(lspLine)));
-				json_object_set_new(end, "character", json_integer(static_cast<json_int_t>(funcNode->name().length())));
-				json_object_set_new(range, "end", end);
-
-				json_object_set_new(location, "range", range);
+				json_t* location = makeNameLocation(lspPathToUri(modulePath), moduleText, funcNode, funcNode->name());
 				return location;
 			}
 		}
@@ -708,22 +841,7 @@ json_t* QuadrateLSP::handleFieldAccessDefinition(
 
 		if (localNode) {
 			// Found the local variable declaration
-			json_t* location = json_object();
-			json_object_set_new(location, "uri", json_string(uri.c_str()));
-
-			json_t* range = json_object();
-			json_t* start = json_object();
-			size_t lspLine = (localNode->line() > 0) ? localNode->line() - 1 : 0;
-			json_object_set_new(start, "line", json_integer(static_cast<json_int_t>(lspLine)));
-			json_object_set_new(start, "character", json_integer(0));
-			json_object_set_new(range, "start", start);
-
-			json_t* end = json_object();
-			json_object_set_new(end, "line", json_integer(static_cast<json_int_t>(lspLine)));
-			json_object_set_new(end, "character", json_integer(static_cast<json_int_t>(localNode->name().length())));
-			json_object_set_new(range, "end", end);
-
-			json_object_set_new(location, "range", range);
+			json_t* location = makeNameLocation(uri, getDocumentText(uri), localNode, foundVarName);
 			return location;
 		}
 	} else {
@@ -744,8 +862,8 @@ json_t* QuadrateLSP::handleFieldAccessDefinition(
 
 			// Get source directory from the current document URI
 			std::string sourceDir;
-			if (uri.substr(0, 7) == "file://") {
-				std::string filePath = uri.substr(7);
+			std::string filePath = lspUriToPath(uri);
+			if (!filePath.empty()) {
 				size_t lastSlash = filePath.find_last_of('/');
 				if (lastSlash != std::string::npos) {
 					sourceDir = filePath.substr(0, lastSlash);
@@ -778,26 +896,8 @@ json_t* QuadrateLSP::handleFieldAccessDefinition(
 									for (const auto& field : fields) {
 										if (field->name() == foundFieldName) {
 											// Found the field!
-											json_t* location = json_object();
-											std::string moduleUri = "file://" + modulePath;
-											json_object_set_new(location, "uri", json_string(moduleUri.c_str()));
-
-											json_t* range = json_object();
-											json_t* start_json = json_object();
-											size_t lspLine = (field->line() > 0) ? field->line() - 1 : 0;
-											json_object_set_new(
-													start_json, "line", json_integer(static_cast<json_int_t>(lspLine)));
-											json_object_set_new(start_json, "character", json_integer(0));
-											json_object_set_new(range, "start", start_json);
-
-											json_t* end = json_object();
-											json_object_set_new(
-													end, "line", json_integer(static_cast<json_int_t>(lspLine)));
-											json_object_set_new(end, "character",
-													json_integer(static_cast<json_int_t>(field->name().length())));
-											json_object_set_new(range, "end", end);
-
-											json_object_set_new(location, "range", range);
+											json_t* location = makeNameLocation(lspPathToUri(modulePath), moduleContent,
+													field.get(), field->name());
 											return location;
 										}
 									}
@@ -823,24 +923,8 @@ json_t* QuadrateLSP::handleFieldAccessDefinition(
 							for (const auto& field : fields) {
 								if (field->name() == foundFieldName) {
 									// Found the field!
-									json_t* location = json_object();
-									json_object_set_new(location, "uri", json_string(targetUri.c_str()));
-
-									json_t* range = json_object();
-									json_t* start_json = json_object();
-									size_t lspLine = (field->line() > 0) ? field->line() - 1 : 0;
-									json_object_set_new(
-											start_json, "line", json_integer(static_cast<json_int_t>(lspLine)));
-									json_object_set_new(start_json, "character", json_integer(0));
-									json_object_set_new(range, "start", start_json);
-
-									json_t* end = json_object();
-									json_object_set_new(end, "line", json_integer(static_cast<json_int_t>(lspLine)));
-									json_object_set_new(end, "character",
-											json_integer(static_cast<json_int_t>(field->name().length())));
-									json_object_set_new(range, "end", end);
-
-									json_object_set_new(location, "range", range);
+									json_t* location = makeNameLocation(
+											targetUri, getDocumentText(targetUri), field.get(), field->name());
 									return location;
 								}
 							}
@@ -859,8 +943,8 @@ json_t* QuadrateLSP::handleFieldAccessDefinition(
 			// If not found, search other .qd files in the same directory
 			// (directory-based namespace)
 			std::string sourceDir;
-			if (uri.substr(0, 7) == "file://") {
-				std::string filePath = uri.substr(7);
+			std::string filePath = lspUriToPath(uri);
+			if (!filePath.empty()) {
 				size_t lastSlash = filePath.find_last_of('/');
 				if (lastSlash != std::string::npos) {
 					sourceDir = filePath.substr(0, lastSlash);
@@ -871,7 +955,7 @@ json_t* QuadrateLSP::handleFieldAccessDefinition(
 				try {
 					for (const auto& entry : std::filesystem::directory_iterator(sourceDir)) {
 						if (entry.path().extension() == ".qd" &&
-								entry.path().string() != uri.substr(7)) { // Skip current file
+								entry.path().string() != lspUriToPath(uri)) { // Skip current file
 							// Parse the file
 							std::ifstream file(entry.path());
 							if (file.good()) {
@@ -883,7 +967,7 @@ json_t* QuadrateLSP::handleFieldAccessDefinition(
 								Qd::IAstNode* fileRoot = fileAst.generate(fileContent.c_str(), false, nullptr);
 
 								if (fileRoot && !fileAst.hasErrors()) {
-									std::string fileUri = "file://" + entry.path().string();
+									std::string fileUri = lspPathToUri(entry.path().string());
 									result = searchStructField(fileRoot, fileUri);
 									if (result) {
 										return result;
@@ -914,8 +998,8 @@ void QuadrateLSP::handleDefinition(const std::string& id, const std::string& uri
 		documentText = docIter->second;
 	} else {
 		// Try to read from disk
-		if (uri.substr(0, 7) == "file://") {
-			std::string filePath = uri.substr(7);
+		std::string filePath = lspUriToPath(uri);
+		if (!filePath.empty()) {
 			std::ifstream file(filePath);
 			if (file.good()) {
 				std::stringstream buffer;
@@ -956,12 +1040,12 @@ void QuadrateLSP::handleDefinition(const std::string& id, const std::string& uri
 				// Only navigate if cursor is on the module name, not on "use" keyword
 				if (moduleEnd > moduleStart && character >= moduleStart && character < moduleEnd) {
 					std::string moduleName = targetLine.substr(moduleStart, moduleEnd - moduleStart);
-					std::string sourceDir = std::filesystem::path(uri.substr(7)).parent_path().string();
+					std::string sourceDir = std::filesystem::path(lspUriToPath(uri)).parent_path().string();
 					std::string modulePath = resolveModulePath(moduleName, sourceDir);
 
 					if (!modulePath.empty()) {
 						json_t* location = json_object();
-						json_object_set_new(location, "uri", json_string(("file://" + modulePath).c_str()));
+						json_object_set_new(location, "uri", json_string(lspPathToUri(modulePath).c_str()));
 
 						json_t* range = json_object();
 						json_t* start = json_object();
@@ -1057,23 +1141,7 @@ void QuadrateLSP::handleDefinition(const std::string& id, const std::string& uri
 
 						if (funcNode->name() == word) {
 							// Found the definition
-							json_t* location = json_object();
-							json_object_set_new(location, "uri", json_string(uri.c_str()));
-
-							json_t* range = json_object();
-							json_t* start = json_object();
-							size_t lspLine = (funcNode->line() > 0) ? funcNode->line() - 1 : 0;
-							json_object_set_new(start, "line", json_integer(static_cast<json_int_t>(lspLine)));
-							json_object_set_new(start, "character", json_integer(0));
-							json_object_set_new(range, "start", start);
-
-							json_t* end = json_object();
-							json_object_set_new(end, "line", json_integer(static_cast<json_int_t>(lspLine)));
-							json_object_set_new(
-									end, "character", json_integer(static_cast<json_int_t>(funcNode->name().length())));
-							json_object_set_new(range, "end", end);
-
-							json_object_set_new(location, "range", range);
+							json_t* location = makeNameLocation(uri, documentText, funcNode, funcNode->name());
 							result = location;
 							break;
 						}
@@ -1082,43 +1150,14 @@ void QuadrateLSP::handleDefinition(const std::string& id, const std::string& uri
 
 						if (structNode->name() == word) {
 							// Found the struct definition
-							json_t* location = json_object();
-							json_object_set_new(location, "uri", json_string(uri.c_str()));
-
-							json_t* range = json_object();
-							json_t* start = json_object();
-							size_t lspLine = (structNode->line() > 0) ? structNode->line() - 1 : 0;
-							json_object_set_new(start, "line", json_integer(static_cast<json_int_t>(lspLine)));
-							json_object_set_new(start, "character", json_integer(0));
-							json_object_set_new(range, "start", start);
-
-							json_t* end = json_object();
-							json_object_set_new(end, "line", json_integer(static_cast<json_int_t>(lspLine)));
-							json_object_set_new(end, "character",
-									json_integer(static_cast<json_int_t>(structNode->name().length())));
-							json_object_set_new(range, "end", end);
-
-							json_object_set_new(location, "range", range);
+							json_t* location = makeNameLocation(uri, documentText, structNode, structNode->name());
 							result = location;
 							break;
 						}
 					} else if (child && child->type() == Qd::IAstNode::Type::ENUM_DECLARATION) {
 						Qd::AstNodeEnumDeclaration* enumNode = static_cast<Qd::AstNodeEnumDeclaration*>(child);
 						if (enumNode->name() == word) {
-							json_t* location = json_object();
-							json_object_set_new(location, "uri", json_string(uri.c_str()));
-							json_t* range = json_object();
-							json_t* start = json_object();
-							size_t lspLine = (enumNode->line() > 0) ? enumNode->line() - 1 : 0;
-							json_object_set_new(start, "line", json_integer(static_cast<json_int_t>(lspLine)));
-							json_object_set_new(start, "character", json_integer(0));
-							json_object_set_new(range, "start", start);
-							json_t* end = json_object();
-							json_object_set_new(end, "line", json_integer(static_cast<json_int_t>(lspLine)));
-							json_object_set_new(
-									end, "character", json_integer(static_cast<json_int_t>(enumNode->name().length())));
-							json_object_set_new(range, "end", end);
-							json_object_set_new(location, "range", range);
+							json_t* location = makeNameLocation(uri, documentText, enumNode, enumNode->name());
 							result = location;
 							break;
 						}
@@ -1132,23 +1171,8 @@ void QuadrateLSP::handleDefinition(const std::string& id, const std::string& uri
 							std::string fullName = namespaceName + "::" + importedFunc->name;
 							if (fullName == word || importedFunc->name == word) {
 								// Found the imported function declaration
-								json_t* location = json_object();
-								json_object_set_new(location, "uri", json_string(uri.c_str()));
-
-								json_t* range = json_object();
-								json_t* start = json_object();
-								size_t lspLine = (importedFunc->line > 0) ? importedFunc->line - 1 : 0;
-								json_object_set_new(start, "line", json_integer(static_cast<json_int_t>(lspLine)));
-								json_object_set_new(start, "character", json_integer(0));
-								json_object_set_new(range, "start", start);
-
-								json_t* end = json_object();
-								json_object_set_new(end, "line", json_integer(static_cast<json_int_t>(lspLine)));
-								json_object_set_new(end, "character",
-										json_integer(static_cast<json_int_t>(importedFunc->name.length())));
-								json_object_set_new(range, "end", end);
-
-								json_object_set_new(location, "range", range);
+								json_t* location = makeNameLocationAt(uri, documentText, importedFunc->line,
+										importedFunc->column, importedFunc->name);
 								result = location;
 								break;
 							}
@@ -1181,24 +1205,19 @@ void QuadrateLSP::handleDefinition(const std::string& id, const std::string& uri
 
 						if (localDecl) {
 							// Found the local variable declaration
-							json_t* location = json_object();
-							json_object_set_new(location, "uri", json_string(uri.c_str()));
-
-							json_t* range = json_object();
-							json_t* start = json_object();
-							size_t lspLine = (localDecl->line() > 0) ? localDecl->line() - 1 : 0;
-							json_object_set_new(start, "line", json_integer(static_cast<json_int_t>(lspLine)));
-							json_object_set_new(start, "character", json_integer(0));
-							json_object_set_new(range, "start", start);
-
-							json_t* end = json_object();
-							json_object_set_new(end, "line", json_integer(static_cast<json_int_t>(lspLine)));
-							json_object_set_new(end, "character",
-									json_integer(static_cast<json_int_t>(localDecl->name().length())));
-							json_object_set_new(range, "end", end);
-
-							json_object_set_new(location, "range", range);
+							json_t* location = makeNameLocation(uri, documentText, localDecl, word);
 							result = location;
+						} else if (Qd::AstNodeFunctionDeclaration* func =
+										   findContainingFunction(root, line + 1, character + 1)) {
+							for (const auto* params : {&func->inputParameters(), &func->outputParameters()}) {
+								for (const auto& param : *params) {
+									if (json_is_null(result) &&
+											param->type() == Qd::IAstNode::Type::VARIABLE_DECLARATION &&
+											static_cast<Qd::AstNodeParameter*>(param.get())->name() == word) {
+										result = makeNameLocation(uri, documentText, param.get(), word);
+									}
+								}
+							}
 						}
 					}
 				}
@@ -1216,7 +1235,7 @@ void QuadrateLSP::handleDefinition(const std::string& id, const std::string& uri
 					}
 
 					// Get source directory from URI
-					std::string filePath = uri.substr(7);
+					std::string filePath = lspUriToPath(uri);
 					std::string sourceDir = std::filesystem::path(filePath).parent_path().string();
 
 					// Search each imported module for a method with this name
@@ -1269,7 +1288,7 @@ void QuadrateLSP::handleDefinition(const std::string& id, const std::string& uri
 					std::string symbolName = word.substr(colonPos + 2);
 
 					// Get source directory from URI
-					std::string filePath = uri.substr(7); // Remove "file://"
+					std::string filePath = lspUriToPath(uri);
 					std::string sourceDir = std::filesystem::path(filePath).parent_path().string();
 
 					// Resolve module path
@@ -1306,8 +1325,8 @@ void QuadrateLSP::handleFoldingRange(const std::string& id, const std::string& u
 	if (docIter != documents_.end()) {
 		documentText = docIter->second;
 	} else {
-		if (uri.substr(0, 7) == "file://") {
-			std::string filePath = uri.substr(7);
+		std::string filePath = lspUriToPath(uri);
+		if (!filePath.empty()) {
 			std::ifstream file(filePath);
 			if (file.good()) {
 				std::stringstream buffer;
@@ -1446,91 +1465,23 @@ void QuadrateLSP::handleDocumentHighlight(
 	json_object_set_new(response, "jsonrpc", json_string("2.0"));
 	json_object_set_new(response, "id", makeResponseId(id));
 
-	// Get document text
-	std::string documentText;
-	auto docIter = documents_.find(uri);
-	if (docIter != documents_.end()) {
-		documentText = docIter->second;
-	} else {
-		if (uri.substr(0, 7) == "file://") {
-			std::string filePath = uri.substr(7);
-			std::ifstream file(filePath);
-			if (file.good()) {
-				std::stringstream buffer;
-				buffer << file.rdbuf();
-				documentText = buffer.str();
-			}
-		}
-	}
-
+	std::string documentText = getDocumentText(uri);
 	json_t* highlights = json_array();
 
-	if (!documentText.empty()) {
-		std::string word = getWordAtPosition(documentText, line, character);
+	std::string word = documentText.empty() ? "" : getWordAtPosition(documentText, line, character);
+	if (!word.empty()) {
+		Qd::Ast ast;
+		Qd::IAstNode* root = ast.generate(documentText.c_str(), false, nullptr);
 
-		if (!word.empty()) {
-			// Parse the document
-			Qd::Ast ast;
-			Qd::IAstNode* root = ast.generate(documentText.c_str(), false, nullptr);
-
-			if (root && !ast.hasErrors()) {
-				// Find all references to this identifier
-				std::vector<Qd::IAstNode*> references;
-
-				// Check if we're highlighting a local variable or parameter
-				// If so, limit the search to the containing function's scope
-				Qd::AstNodeFunctionDeclaration* containingFunc = findContainingFunction(root, line + 1, character + 1);
-				if (containingFunc && isLocalVariableOrParameter(containingFunc, word)) {
-					// Scope-aware search: only search within the containing function
-					findIdentifiersInNode(containingFunc, word, references);
-				} else {
-					// Global search for function names, struct names, etc.
-					findIdentifiersInNode(root, word, references);
-				}
-
-				for (Qd::IAstNode* ref : references) {
-					json_t* highlight = json_object();
-
-					json_t* range = json_object();
-					json_t* start = json_object();
-					size_t lspLine = (ref->line() > 0) ? ref->line() - 1 : 0;
-					size_t lspCol = (ref->column() > 0) ? ref->column() - 1 : 0;
-
-					// For function declarations, find the actual column of the function name
-					if (ref->type() == Qd::IAstNode::Type::FUNCTION_DECLARATION) {
-						std::istringstream lineStream(documentText);
-						std::string lineText;
-						for (size_t i = 0; i <= lspLine; i++) {
-							if (!std::getline(lineStream, lineText)) {
-								lineText.clear();
-								break;
-							}
-						}
-						size_t fnPos = lineText.find("fn ");
-						if (fnPos != std::string::npos) {
-							lspCol = fnPos + 3;
-						}
-					}
-
-					json_object_set_new(start, "line", json_integer(static_cast<json_int_t>(lspLine)));
-					json_object_set_new(start, "character", json_integer(static_cast<json_int_t>(lspCol)));
-					json_object_set_new(range, "start", start);
-
-					json_t* end = json_object();
-					json_object_set_new(end, "line", json_integer(static_cast<json_int_t>(lspLine)));
-					json_object_set_new(
-							end, "character", json_integer(static_cast<json_int_t>(lspCol + word.length())));
-					json_object_set_new(range, "end", end);
-
-					json_object_set_new(highlight, "range", range);
-
-					// DocumentHighlightKind: 1 = Text, 2 = Read, 3 = Write
-					// For function declarations, use Write; for references, use Read
-					int kind = (ref->type() == Qd::IAstNode::Type::FUNCTION_DECLARATION) ? 3 : 2;
-					json_object_set_new(highlight, "kind", json_integer(kind));
-
-					json_array_append_new(highlights, highlight);
-				}
+		if (root && !ast.hasErrors()) {
+			for (const NameOccurrence& occurrence : findNameOccurrences(documentText, root, word, line, character)) {
+				json_t* location = makeLocationAt(uri, occurrence.line, occurrence.column, occurrence.length);
+				json_t* highlight = json_object();
+				json_object_set(highlight, "range", json_object_get(location, "range"));
+				// DocumentHighlightKind: 1 = Text, 2 = Read, 3 = Write
+				json_object_set_new(highlight, "kind", json_integer(occurrence.declaration ? 3 : 2));
+				json_decref(location);
+				json_array_append_new(highlights, highlight);
 			}
 		}
 	}
@@ -1540,92 +1491,27 @@ void QuadrateLSP::handleDocumentHighlight(
 	json_decref(response);
 }
 
-void QuadrateLSP::handleReferences(const std::string& id, const std::string& uri, size_t line, size_t character) {
+void QuadrateLSP::handleReferences(
+		const std::string& id, const std::string& uri, size_t line, size_t character, bool includeDeclaration) {
 	json_t* response = json_object();
 	json_object_set_new(response, "jsonrpc", json_string("2.0"));
 	json_object_set_new(response, "id", makeResponseId(id));
 
-	// Get document text
-	std::string documentText;
-	auto docIter = documents_.find(uri);
-	if (docIter != documents_.end()) {
-		documentText = docIter->second;
-	} else {
-		// Try to read from disk
-		if (uri.substr(0, 7) == "file://") {
-			std::string filePath = uri.substr(7);
-			std::ifstream file(filePath);
-			if (file.good()) {
-				std::stringstream buffer;
-				buffer << file.rdbuf();
-				documentText = buffer.str();
-			}
-		}
-	}
-
+	std::string documentText = getDocumentText(uri);
 	json_t* locations = json_array();
 
-	if (!documentText.empty()) {
-		std::string word = getWordAtPosition(documentText, line, character);
+	std::string word = documentText.empty() ? "" : getWordAtPosition(documentText, line, character);
+	if (!word.empty()) {
+		Qd::Ast ast;
+		Qd::IAstNode* root = ast.generate(documentText.c_str(), false, nullptr);
 
-		if (!word.empty()) {
-			// Parse the document
-			Qd::Ast ast;
-			Qd::IAstNode* root = ast.generate(documentText.c_str(), false, nullptr);
-
-			if (root && !ast.hasErrors()) {
-				// Find all references to this identifier
-				std::vector<Qd::IAstNode*> references;
-
-				// Check if we're searching for a local variable or parameter
-				// If so, limit the search to the containing function's scope
-				Qd::AstNodeFunctionDeclaration* containingFunc = findContainingFunction(root, line + 1, character + 1);
-				if (containingFunc && isLocalVariableOrParameter(containingFunc, word)) {
-					// Scope-aware search: only search within the containing function
-					findIdentifiersInNode(containingFunc, word, references);
-				} else {
-					// Global search for function names, struct names, etc.
-					findIdentifiersInNode(root, word, references);
+		if (root && !ast.hasErrors()) {
+			for (const NameOccurrence& occurrence : findNameOccurrences(documentText, root, word, line, character)) {
+				if (occurrence.declaration && !includeDeclaration) {
+					continue;
 				}
-
-				for (Qd::IAstNode* ref : references) {
-					json_t* location = json_object();
-					json_object_set_new(location, "uri", json_string(uri.c_str()));
-
-					json_t* range = json_object();
-					json_t* start = json_object();
-					size_t lspLine = (ref->line() > 0) ? ref->line() - 1 : 0;
-					size_t lspCol = (ref->column() > 0) ? ref->column() - 1 : 0;
-
-					// For function declarations, find the actual column of the function name
-					if (ref->type() == Qd::IAstNode::Type::FUNCTION_DECLARATION) {
-						std::istringstream lineStream(documentText);
-						std::string lineText;
-						for (size_t i = 0; i <= lspLine; i++) {
-							if (!std::getline(lineStream, lineText)) {
-								lineText.clear();
-								break;
-							}
-						}
-						size_t fnPos = lineText.find("fn ");
-						if (fnPos != std::string::npos) {
-							lspCol = fnPos + 3;
-						}
-					}
-
-					json_object_set_new(start, "line", json_integer(static_cast<json_int_t>(lspLine)));
-					json_object_set_new(start, "character", json_integer(static_cast<json_int_t>(lspCol)));
-					json_object_set_new(range, "start", start);
-
-					json_t* end = json_object();
-					json_object_set_new(end, "line", json_integer(static_cast<json_int_t>(lspLine)));
-					json_object_set_new(
-							end, "character", json_integer(static_cast<json_int_t>(lspCol + word.length())));
-					json_object_set_new(range, "end", end);
-
-					json_object_set_new(location, "range", range);
-					json_array_append_new(locations, location);
-				}
+				json_array_append_new(
+						locations, makeLocationAt(uri, occurrence.line, occurrence.column, occurrence.length));
 			}
 		}
 	}
@@ -1635,64 +1521,73 @@ void QuadrateLSP::handleReferences(const std::string& id, const std::string& uri
 	json_decref(response);
 }
 
+static bool isValidIdentifier(const std::string& name) {
+	if (name.empty() || !(std::isalpha(static_cast<unsigned char>(name[0])) || name[0] == '_')) {
+		return false;
+	}
+	return std::all_of(name.begin(), name.end(), isIdentifierChar);
+}
+
+static bool occurrenceContains(const NameOccurrence& occurrence, size_t line, size_t character) {
+	return occurrence.line == line && occurrence.column <= character &&
+		   character <= occurrence.column + occurrence.length;
+}
+
+bool QuadrateLSP::findRenameTarget(const std::string& documentText, size_t line, size_t character, std::string& word,
+		std::vector<NameOccurrence>& occurrences, bool& isLocal, std::string& error) {
+	word = documentText.empty() ? "" : getWordAtPosition(documentText, line, character);
+	if (word.empty()) {
+		error = "No symbol to rename at this position";
+		return false;
+	}
+	if (word.find("::") != std::string::npos) {
+		error = "Cannot rename a module-qualified name";
+		return false;
+	}
+	if (lspIsReservedName(word)) {
+		error = "Cannot rename built-in '" + word + "'";
+		return false;
+	}
+
+	Qd::Ast ast;
+	Qd::IAstNode* root = ast.generate(documentText.c_str(), false, nullptr);
+	if (!root || ast.hasErrors()) {
+		error = "Cannot rename while the document has errors";
+		return false;
+	}
+
+	occurrences = findNameOccurrences(documentText, root, word, line, character, &isLocal);
+	bool atCursor = std::any_of(occurrences.begin(), occurrences.end(),
+			[&](const NameOccurrence& occurrence) { return occurrenceContains(occurrence, line, character); });
+	if (!atCursor) {
+		error = "No renameable symbol at this position";
+		return false;
+	}
+	return true;
+}
+
 void QuadrateLSP::handlePrepareRename(const std::string& id, const std::string& uri, size_t line, size_t character) {
 	json_t* response = json_object();
 	json_object_set_new(response, "jsonrpc", json_string("2.0"));
 	json_object_set_new(response, "id", makeResponseId(id));
 
-	// Get document text
-	std::string documentText;
-	auto docIter = documents_.find(uri);
-	if (docIter != documents_.end()) {
-		documentText = docIter->second;
-	} else {
-		if (uri.substr(0, 7) == "file://") {
-			std::string filePath = uri.substr(7);
-			std::ifstream file(filePath);
-			if (file.good()) {
-				std::stringstream buffer;
-				buffer << file.rdbuf();
-				documentText = buffer.str();
-			}
-		}
-	}
-
+	std::string documentText = getDocumentText(uri);
+	std::string word;
+	std::vector<NameOccurrence> occurrences;
+	bool isLocal = false;
+	std::string error;
 	json_t* result = json_null();
 
-	if (!documentText.empty()) {
-		std::string word = getWordAtPosition(documentText, line, character);
-
-		if (!word.empty() && word.find("::") == std::string::npos) {
-			// Get the line to find the exact column of the word
-			std::vector<std::string> lines;
-			std::istringstream stream(documentText);
-			std::string currentLine;
-			while (std::getline(stream, currentLine)) {
-				lines.push_back(currentLine);
-			}
-
-			if (line < lines.size()) {
-				const std::string& targetLine = lines[line];
-				// Find the word in this line starting from around the character position
-				size_t wordStart = character;
-				while (wordStart > 0 && (std::isalnum(targetLine[wordStart - 1]) || targetLine[wordStart - 1] == '_')) {
-					wordStart--;
-				}
-				size_t wordEnd = wordStart + word.length();
-
-				// Return range and placeholder
+	if (findRenameTarget(documentText, line, character, word, occurrences, isLocal, error)) {
+		for (const NameOccurrence& occurrence : occurrences) {
+			if (occurrenceContains(occurrence, line, character)) {
+				json_t* location = makeLocationAt(uri, occurrence.line, occurrence.column, occurrence.length);
+				json_decref(result);
 				result = json_object();
-				json_t* range = json_object();
-				json_t* start = json_object();
-				json_object_set_new(start, "line", json_integer(static_cast<json_int_t>(line)));
-				json_object_set_new(start, "character", json_integer(static_cast<json_int_t>(wordStart)));
-				json_t* end = json_object();
-				json_object_set_new(end, "line", json_integer(static_cast<json_int_t>(line)));
-				json_object_set_new(end, "character", json_integer(static_cast<json_int_t>(wordEnd)));
-				json_object_set_new(range, "start", start);
-				json_object_set_new(range, "end", end);
-				json_object_set_new(result, "range", range);
+				json_object_set(result, "range", json_object_get(location, "range"));
 				json_object_set_new(result, "placeholder", json_string(word.c_str()));
+				json_decref(location);
+				break;
 			}
 		}
 	}
@@ -1704,422 +1599,70 @@ void QuadrateLSP::handlePrepareRename(const std::string& id, const std::string& 
 
 void QuadrateLSP::handleRename(
 		const std::string& id, const std::string& uri, size_t line, size_t character, const std::string& newName) {
+	if (!isValidIdentifier(newName)) {
+		sendError(id, -32602, "'" + newName + "' is not a valid identifier");
+		return;
+	}
+	if (lspIsReservedName(newName)) {
+		sendError(id, -32602, "'" + newName + "' is a reserved name");
+		return;
+	}
+
+	std::string documentText = getDocumentText(uri);
+	std::string word;
+	std::vector<NameOccurrence> occurrences;
+	bool isLocal = false;
+	std::string error;
+	if (!findRenameTarget(documentText, line, character, word, occurrences, isLocal, error)) {
+		sendError(id, -32803, error);
+		return;
+	}
+
 	json_t* response = json_object();
 	json_object_set_new(response, "jsonrpc", json_string("2.0"));
 	json_object_set_new(response, "id", makeResponseId(id));
 
-	// Get document text
-	std::string documentText;
-	auto docIter = documents_.find(uri);
-	if (docIter != documents_.end()) {
-		documentText = docIter->second;
-	} else {
-		// Try to read from disk
-		if (uri.substr(0, 7) == "file://") {
-			std::string filePath = uri.substr(7);
-			std::ifstream file(filePath);
-			if (file.good()) {
-				std::stringstream buffer;
-				buffer << file.rdbuf();
-				documentText = buffer.str();
+	json_t* changes = json_object();
+	auto addEdits = [&](const std::string& editUri, const std::vector<NameOccurrence>& found) {
+		if (found.empty()) {
+			return;
+		}
+		json_t* edits = json_array();
+		for (const NameOccurrence& occurrence : found) {
+			json_t* location = makeLocationAt(editUri, occurrence.line, occurrence.column, occurrence.length);
+			json_t* edit = json_object();
+			json_object_set(edit, "range", json_object_get(location, "range"));
+			json_object_set_new(edit, "newText", json_string(newName.c_str()));
+			json_decref(location);
+			json_array_append_new(edits, edit);
+		}
+		json_object_set_new(changes, editUri.c_str(), edits);
+	};
+
+	addEdits(uri, occurrences);
+
+	std::string filePath = lspUriToPath(uri);
+	if (!isLocal && !filePath.empty()) {
+		for (const auto& siblingPath : getSiblingQdFiles(filePath)) {
+			std::string siblingUri = lspPathToUri(siblingPath);
+			std::string siblingText = getDocumentText(siblingUri);
+			if (siblingText.empty()) {
+				continue;
 			}
+
+			Qd::Ast siblingAst;
+			Qd::IAstNode* siblingRoot = siblingAst.generate(siblingText.c_str(), false, nullptr);
+			if (!siblingRoot || siblingAst.hasErrors()) {
+				continue;
+			}
+
+			std::vector<Qd::IAstNode*> siblingRefs;
+			findIdentifiersInNode(siblingRoot, word, siblingRefs);
+			addEdits(siblingUri, nameOccurrences(siblingText, siblingRefs, word));
 		}
 	}
 
 	json_t* workspaceEdit = json_object();
-	json_t* changes = json_object();
-
-	if (!documentText.empty()) {
-		std::string word = getWordAtPosition(documentText, line, character);
-
-		if (!word.empty()) {
-			// Parse the document
-			Qd::Ast ast;
-			Qd::IAstNode* root = ast.generate(documentText.c_str(), false, nullptr);
-
-			if (root && !ast.hasErrors()) {
-				// Find all references to this identifier
-				std::vector<Qd::IAstNode*> references;
-
-				// Check if we're renaming a local variable or parameter
-				// If so, limit the search to the containing function's scope
-				Qd::AstNodeFunctionDeclaration* containingFunc = findContainingFunction(root, line + 1, character + 1);
-				if (containingFunc && isLocalVariableOrParameter(containingFunc, word)) {
-					// Scope-aware search: only search within the containing function
-					findIdentifiersInNode(containingFunc, word, references);
-				} else {
-					// Global search for function names, struct names, etc.
-					findIdentifiersInNode(root, word, references);
-				}
-
-				json_t* edits = json_array();
-
-				for (Qd::IAstNode* ref : references) {
-					json_t* edit = json_object();
-
-					json_t* range = json_object();
-					json_t* start = json_object();
-					size_t lspLine = (ref->line() > 0) ? ref->line() - 1 : 0;
-					size_t lspCol = (ref->column() > 0) ? ref->column() - 1 : 0;
-
-					// For function declarations, find the actual column of the function name
-					if (ref->type() == Qd::IAstNode::Type::FUNCTION_DECLARATION) {
-						std::istringstream lineStream(documentText);
-						std::string lineText;
-						for (size_t i = 0; i <= lspLine; i++) {
-							if (!std::getline(lineStream, lineText)) {
-								lineText.clear();
-								break;
-							}
-						}
-						size_t fnPos = lineText.find("fn ");
-						if (fnPos != std::string::npos) {
-							lspCol = fnPos + 3;
-						}
-					}
-					// For local variable declarations
-					else if (ref->type() == Qd::IAstNode::Type::LOCAL) {
-						std::istringstream lineStream(documentText);
-						std::string lineText;
-						for (size_t i = 0; i <= lspLine; i++) {
-							if (!std::getline(lineStream, lineText)) {
-								lineText.clear();
-								break;
-							}
-						}
-						size_t arrowPos = lineText.find("-> ");
-						if (arrowPos != std::string::npos) {
-							// Find the variable name position after the arrow
-							size_t varPos = lineText.find(word, arrowPos + 3);
-							if (varPos != std::string::npos) {
-								lspCol = varPos;
-							}
-						}
-					}
-					// For struct declarations, find the actual column of the struct name
-					else if (ref->type() == Qd::IAstNode::Type::STRUCT_DECLARATION) {
-						std::istringstream lineStream(documentText);
-						std::string lineText;
-						for (size_t i = 0; i <= lspLine; i++) {
-							if (!std::getline(lineStream, lineText)) {
-								lineText.clear();
-								break;
-							}
-						}
-						// Handle "pub struct Name" or "struct Name"
-						size_t structPos = lineText.find("struct ");
-						if (structPos != std::string::npos) {
-							lspCol = structPos + 7; // Length of "struct "
-						}
-					}
-					// For struct fields, find the field name or type reference
-					else if (ref->type() == Qd::IAstNode::Type::STRUCT_FIELD) {
-						Qd::AstNodeStructField* field = static_cast<Qd::AstNodeStructField*>(ref);
-						std::istringstream lineStream(documentText);
-						std::string lineText;
-						for (size_t i = 0; i <= lspLine; i++) {
-							if (!std::getline(lineStream, lineText)) {
-								lineText.clear();
-								break;
-							}
-						}
-						// Check if we're renaming the field name or the type
-						if (field->name() == word) {
-							// Renaming field name - find it at start of field
-							size_t fieldPos = lineText.find(word);
-							if (fieldPos != std::string::npos) {
-								lspCol = fieldPos;
-							}
-						} else if (field->typeName() == word) {
-							// Renaming type reference - find it after the colon
-							size_t colonPos = lineText.find(':');
-							if (colonPos != std::string::npos) {
-								size_t typePos = lineText.find(word, colonPos + 1);
-								if (typePos != std::string::npos) {
-									lspCol = typePos;
-								}
-							}
-						}
-					}
-					// For struct constructions (e.g., Point { x = 1 })
-					else if (ref->type() == Qd::IAstNode::Type::STRUCT_CONSTRUCTION) {
-						Qd::AstNodeStructConstruction* construction = static_cast<Qd::AstNodeStructConstruction*>(ref);
-						std::istringstream lineStream(documentText);
-						std::string lineText;
-						for (size_t i = 0; i <= lspLine; i++) {
-							if (!std::getline(lineStream, lineText)) {
-								lineText.clear();
-								break;
-							}
-						}
-						// Check if we're renaming the struct type or a field initializer
-						if (construction->structName() == word) {
-							// Renaming struct type - find before the {
-							size_t typePos = lineText.find(word);
-							if (typePos != std::string::npos) {
-								lspCol = typePos;
-							}
-						} else {
-							// Renaming a field initializer - find the field name in the line
-							size_t fieldPos = lineText.find(word);
-							if (fieldPos != std::string::npos) {
-								lspCol = fieldPos;
-							}
-						}
-					}
-					// For field access (e.g., p <<x)
-					else if (ref->type() == Qd::IAstNode::Type::FIELD_ACCESS) {
-						std::istringstream lineStream(documentText);
-						std::string lineText;
-						for (size_t i = 0; i <= lspLine; i++) {
-							if (!std::getline(lineStream, lineText)) {
-								lineText.clear();
-								break;
-							}
-						}
-						// Find the field name after << or >>
-						size_t readPos = lineText.find("<<");
-						size_t writePos = lineText.find(">>");
-						size_t accessPos = (readPos != std::string::npos) ? readPos : writePos;
-						if (accessPos != std::string::npos) {
-							size_t fieldPos = lineText.find(word, accessPos + 2);
-							if (fieldPos != std::string::npos) {
-								lspCol = fieldPos;
-							}
-						}
-					}
-					// For parameter/variable declarations with type reference
-					else if (ref->type() == Qd::IAstNode::Type::VARIABLE_DECLARATION) {
-						std::istringstream lineStream(documentText);
-						std::string lineText;
-						for (size_t i = 0; i <= lspLine; i++) {
-							if (!std::getline(lineStream, lineText)) {
-								lineText.clear();
-								break;
-							}
-						}
-						// Find the type after the colon
-						size_t colonPos = lineText.find(':');
-						if (colonPos != std::string::npos) {
-							size_t typePos = lineText.find(word, colonPos + 1);
-							if (typePos != std::string::npos) {
-								lspCol = typePos;
-							}
-						}
-					}
-
-					json_object_set_new(start, "line", json_integer(static_cast<json_int_t>(lspLine)));
-					json_object_set_new(start, "character", json_integer(static_cast<json_int_t>(lspCol)));
-					json_object_set_new(range, "start", start);
-
-					json_t* end = json_object();
-					json_object_set_new(end, "line", json_integer(static_cast<json_int_t>(lspLine)));
-					json_object_set_new(
-							end, "character", json_integer(static_cast<json_int_t>(lspCol + word.length())));
-					json_object_set_new(range, "end", end);
-
-					json_object_set_new(edit, "range", range);
-					json_object_set_new(edit, "newText", json_string(newName.c_str()));
-
-					json_array_append_new(edits, edit);
-				}
-
-				json_object_set_new(changes, uri.c_str(), edits);
-
-				// Also search sibling files for the same identifier
-				std::string filePath = uri.substr(7);
-				std::vector<std::string> siblings = getSiblingQdFiles(filePath);
-
-				for (const auto& siblingPath : siblings) {
-					std::ifstream siblingFile(siblingPath);
-					if (!siblingFile.good()) {
-						continue;
-					}
-
-					std::stringstream siblingBuffer;
-					siblingBuffer << siblingFile.rdbuf();
-					std::string siblingText = siblingBuffer.str();
-
-					Qd::Ast siblingAst;
-					Qd::IAstNode* siblingRoot = siblingAst.generate(siblingText.c_str(), false, nullptr);
-
-					if (!siblingRoot || siblingAst.hasErrors()) {
-						continue;
-					}
-
-					std::vector<Qd::IAstNode*> siblingRefs;
-					findIdentifiersInNode(siblingRoot, word, siblingRefs);
-
-					if (!siblingRefs.empty()) {
-						json_t* siblingEdits = json_array();
-						std::string siblingUri = "file://" + siblingPath;
-
-						for (Qd::IAstNode* ref : siblingRefs) {
-							json_t* edit = json_object();
-
-							json_t* range = json_object();
-							json_t* start = json_object();
-							size_t lspLine = (ref->line() > 0) ? ref->line() - 1 : 0;
-							size_t lspCol = (ref->column() > 0) ? ref->column() - 1 : 0;
-
-							// For function declarations, find the actual column
-							if (ref->type() == Qd::IAstNode::Type::FUNCTION_DECLARATION) {
-								std::istringstream lineStream(siblingText);
-								std::string lineText;
-								for (size_t i = 0; i <= lspLine; i++) {
-									if (!std::getline(lineStream, lineText)) {
-										lineText.clear();
-										break;
-									}
-								}
-								size_t fnPos = lineText.find("fn ");
-								if (fnPos != std::string::npos) {
-									lspCol = fnPos + 3;
-								}
-							} else if (ref->type() == Qd::IAstNode::Type::LOCAL) {
-								std::istringstream lineStream(siblingText);
-								std::string lineText;
-								for (size_t i = 0; i <= lspLine; i++) {
-									if (!std::getline(lineStream, lineText)) {
-										lineText.clear();
-										break;
-									}
-								}
-								size_t arrowPos = lineText.find("-> ");
-								if (arrowPos != std::string::npos) {
-									size_t varPos = lineText.find(word, arrowPos + 3);
-									if (varPos != std::string::npos) {
-										lspCol = varPos;
-									}
-								}
-							}
-							// For struct declarations
-							else if (ref->type() == Qd::IAstNode::Type::STRUCT_DECLARATION) {
-								std::istringstream lineStream(siblingText);
-								std::string lineText;
-								for (size_t i = 0; i <= lspLine; i++) {
-									if (!std::getline(lineStream, lineText)) {
-										lineText.clear();
-										break;
-									}
-								}
-								size_t structPos = lineText.find("struct ");
-								if (structPos != std::string::npos) {
-									lspCol = structPos + 7;
-								}
-							}
-							// For struct fields
-							else if (ref->type() == Qd::IAstNode::Type::STRUCT_FIELD) {
-								Qd::AstNodeStructField* field = static_cast<Qd::AstNodeStructField*>(ref);
-								std::istringstream lineStream(siblingText);
-								std::string lineText;
-								for (size_t i = 0; i <= lspLine; i++) {
-									if (!std::getline(lineStream, lineText)) {
-										lineText.clear();
-										break;
-									}
-								}
-								if (field->name() == word) {
-									size_t fieldPos = lineText.find(word);
-									if (fieldPos != std::string::npos) {
-										lspCol = fieldPos;
-									}
-								} else if (field->typeName() == word) {
-									size_t colonPos = lineText.find(':');
-									if (colonPos != std::string::npos) {
-										size_t typePos = lineText.find(word, colonPos + 1);
-										if (typePos != std::string::npos) {
-											lspCol = typePos;
-										}
-									}
-								}
-							}
-							// For struct constructions
-							else if (ref->type() == Qd::IAstNode::Type::STRUCT_CONSTRUCTION) {
-								Qd::AstNodeStructConstruction* construction =
-										static_cast<Qd::AstNodeStructConstruction*>(ref);
-								std::istringstream lineStream(siblingText);
-								std::string lineText;
-								for (size_t i = 0; i <= lspLine; i++) {
-									if (!std::getline(lineStream, lineText)) {
-										lineText.clear();
-										break;
-									}
-								}
-								if (construction->structName() == word) {
-									size_t typePos = lineText.find(word);
-									if (typePos != std::string::npos) {
-										lspCol = typePos;
-									}
-								} else {
-									size_t fieldPos = lineText.find(word);
-									if (fieldPos != std::string::npos) {
-										lspCol = fieldPos;
-									}
-								}
-							}
-							// For field access
-							else if (ref->type() == Qd::IAstNode::Type::FIELD_ACCESS) {
-								std::istringstream lineStream(siblingText);
-								std::string lineText;
-								for (size_t i = 0; i <= lspLine; i++) {
-									if (!std::getline(lineStream, lineText)) {
-										lineText.clear();
-										break;
-									}
-								}
-								size_t readPos = lineText.find("<<");
-								size_t writePos = lineText.find(">>");
-								size_t accessPos = (readPos != std::string::npos) ? readPos : writePos;
-								if (accessPos != std::string::npos) {
-									size_t fieldPos = lineText.find(word, accessPos + 2);
-									if (fieldPos != std::string::npos) {
-										lspCol = fieldPos;
-									}
-								}
-							}
-							// For parameter/variable declarations with type reference
-							else if (ref->type() == Qd::IAstNode::Type::VARIABLE_DECLARATION) {
-								std::istringstream lineStream(siblingText);
-								std::string lineText;
-								for (size_t i = 0; i <= lspLine; i++) {
-									if (!std::getline(lineStream, lineText)) {
-										lineText.clear();
-										break;
-									}
-								}
-								size_t colonPos = lineText.find(':');
-								if (colonPos != std::string::npos) {
-									size_t typePos = lineText.find(word, colonPos + 1);
-									if (typePos != std::string::npos) {
-										lspCol = typePos;
-									}
-								}
-							}
-
-							json_object_set_new(start, "line", json_integer(static_cast<json_int_t>(lspLine)));
-							json_object_set_new(start, "character", json_integer(static_cast<json_int_t>(lspCol)));
-							json_object_set_new(range, "start", start);
-
-							json_t* end = json_object();
-							json_object_set_new(end, "line", json_integer(static_cast<json_int_t>(lspLine)));
-							json_object_set_new(
-									end, "character", json_integer(static_cast<json_int_t>(lspCol + word.length())));
-							json_object_set_new(range, "end", end);
-
-							json_object_set_new(edit, "range", range);
-							json_object_set_new(edit, "newText", json_string(newName.c_str()));
-
-							json_array_append_new(siblingEdits, edit);
-						}
-
-						json_object_set_new(changes, siblingUri.c_str(), siblingEdits);
-					}
-				}
-			}
-		}
-	}
-
 	json_object_set_new(workspaceEdit, "changes", changes);
 	json_object_set_new(response, "result", workspaceEdit);
 
