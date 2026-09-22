@@ -1,8 +1,17 @@
 #include "generator_impl.h"
+#include <cerrno>
 #include <chrono>
+#include <cstring>
 #include <dlfcn.h>
+#include <fcntl.h>
 #include <quadrate/qc/ast_node_type_alias.h>
+#include <spawn.h>
+#include <sstream>
+#include <sys/wait.h>
 #include <thread>
+#include <unistd.h>
+
+extern char** environ;
 
 // Platform abstractions
 extern "C" {
@@ -41,6 +50,97 @@ static bool isStdlibImport(const std::string& library) {
 		}
 	}
 	return false;
+}
+
+static bool isValidDynamicLibraryName(const std::string& name) {
+	if (name.empty() || name[0] == '-' || name[0] == '.') {
+		return false;
+	}
+	for (char c : name) {
+		bool ok = (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || (c >= '0' && c <= '9') || c == '_' || c == '-' ||
+				  c == '.' || c == '+';
+		if (!ok) {
+			return false;
+		}
+	}
+	return true;
+}
+
+static std::string dynamicLibraryLinkName(const std::string& library) {
+	std::string libName = library;
+	if (libName.rfind("lib", 0) == 0) {
+		libName = libName.substr(3);
+	}
+	if (libName.size() >= 3 && libName.substr(libName.size() - 3) == ".so") {
+		libName = libName.substr(0, libName.size() - 3);
+	}
+	return libName;
+}
+
+static void appendWords(std::vector<std::string>& out, const std::string& text) {
+	std::istringstream words(text);
+	std::string word;
+	while (words >> word) {
+		out.push_back(word);
+	}
+}
+
+static bool isProgramInPath(const std::string& name) {
+	const char* pathEnv = std::getenv("PATH");
+	if (!pathEnv) {
+		return false;
+	}
+	std::string paths = pathEnv;
+	size_t start = 0;
+	while (start <= paths.size()) {
+		size_t end = paths.find(':', start);
+		if (end == std::string::npos) {
+			end = paths.size();
+		}
+		std::string dir = paths.substr(start, end - start);
+		if (dir.empty()) {
+			dir = ".";
+		}
+		std::string candidate = dir + "/" + name;
+		if (access(candidate.c_str(), X_OK) == 0) {
+			return true;
+		}
+		start = end + 1;
+	}
+	return false;
+}
+
+static int runProgram(const std::vector<std::string>& args, bool silenceStderr) {
+	std::vector<char*> argv;
+	argv.reserve(args.size() + 1);
+	for (const auto& arg : args) {
+		argv.push_back(const_cast<char*>(arg.c_str()));
+	}
+	argv.push_back(nullptr);
+
+	posix_spawn_file_actions_t actions;
+	posix_spawn_file_actions_init(&actions);
+	if (silenceStderr) {
+		posix_spawn_file_actions_addopen(&actions, STDERR_FILENO, "/dev/null", O_WRONLY, 0);
+	}
+
+	pid_t pid = 0;
+	int rc = posix_spawnp(&pid, argv[0], &actions, nullptr, argv.data(), environ);
+	posix_spawn_file_actions_destroy(&actions);
+	if (rc != 0) {
+		return -1;
+	}
+
+	int status = 0;
+	while (waitpid(pid, &status, 0) < 0) {
+		if (errno != EINTR) {
+			return -1;
+		}
+	}
+	if (WIFEXITED(status)) {
+		return WEXITSTATUS(status);
+	}
+	return -1;
 }
 
 namespace Qd {
@@ -3361,8 +3461,35 @@ namespace Qd {
 		static bool timing = std::getenv("QUADC_TIMING") != nullptr;
 		auto start = std::chrono::steady_clock::now();
 
-		// Generate object file first
-		std::string objFile = filename + ".o";
+		for (const auto& library : mImpl->importedLibraries) {
+			if (library.size() >= 2 && library.substr(library.size() - 2) == ".a") {
+				continue;
+			}
+			if (!isValidDynamicLibraryName(dynamicLibraryLinkName(library))) {
+				std::cerr << "Error: invalid library name in import: '" << library << "'" << std::endl;
+				return false;
+			}
+		}
+
+		std::string objDirTemplate = (std::filesystem::temp_directory_path() / "qd_obj_XXXXXX").string();
+		std::vector<char> objDirBuf(objDirTemplate.begin(), objDirTemplate.end());
+		objDirBuf.push_back('\0');
+		if (!mkdtemp(objDirBuf.data())) {
+			std::cerr << "Error: failed to create temporary directory: " << std::strerror(errno) << std::endl;
+			return false;
+		}
+		const std::filesystem::path objDir(objDirBuf.data());
+
+		struct ObjDirCleanup {
+			std::filesystem::path path;
+
+			~ObjDirCleanup() {
+				std::error_code ec;
+				std::filesystem::remove_all(path, ec);
+			}
+		} objDirCleanup{objDir};
+
+		std::string objFile = (objDir / "program.o").string();
 		if (!writeObject(objFile)) {
 			return false;
 		}
@@ -3434,7 +3561,7 @@ namespace Qd {
 
 		// Track which libraries have been processed to avoid duplicates and circular dependencies
 		std::set<std::string> processedLibraries;
-		std::string allDepsFlags;
+		std::vector<std::string> allDeps;
 
 		// Helper function to recursively process a library and its .deps file
 		std::function<void(const std::string&)> processLibraryDeps;
@@ -3503,7 +3630,7 @@ namespace Qd {
 										}
 									}
 								}
-								allDepsFlags += " " + resolvedDep;
+								allDeps.push_back(resolvedDep);
 								processLibraryDeps(resolvedDep);
 							}
 							// For -l<name> entries, try to resolve to full path if it's a Quadrate library
@@ -3518,17 +3645,17 @@ namespace Qd {
 								std::string nestedDepLib = libDir + "/" + depLibName + "/" + depLibFile;
 
 								if (std::filesystem::exists(flatDepLib)) {
-									allDepsFlags += " " + flatDepLib;
+									allDeps.push_back(flatDepLib);
 									processLibraryDeps(flatDepLib);
 								} else if (std::filesystem::exists(nestedDepLib)) {
-									allDepsFlags += " " + nestedDepLib;
+									allDeps.push_back(nestedDepLib);
 									processLibraryDeps(nestedDepLib);
 								} else {
 									// System library, use -l flag as-is
-									allDepsFlags += " " + depLine;
+									appendWords(allDeps, depLine);
 								}
 							} else {
-								allDepsFlags += " " + depLine;
+								appendWords(allDeps, depLine);
 							}
 						}
 					}
@@ -3556,7 +3683,8 @@ namespace Qd {
 			qdrtStaticPath = flatPath;
 		}
 
-		std::string libraryFlags = qdrtStaticPath;
+		std::vector<std::string> libraryFlags = {qdrtStaticPath};
+		std::vector<std::string> dynamicLibFlags;
 
 		// Track resolved static library paths for use in lld command
 		std::vector<std::string> resolvedStaticLibs;
@@ -3614,22 +3742,13 @@ namespace Qd {
 				}
 
 				// Add the library and recursively process its .deps file for transitive dependencies
-				libraryFlags += " " + foundLibPath;
+				libraryFlags.push_back(foundLibPath);
 				resolvedStaticLibs.push_back(foundLibPath);
 				processLibraryDeps(foundLibPath);
 			} else {
 				// Handle .so libraries (dynamic linking)
-				std::string libName = library;
-
-				// Remove "lib" prefix and ".so" suffix to get library name
-				if (libName.rfind("lib", 0) == 0) {
-					libName = libName.substr(3);
-				}
-				if (libName.size() >= 3 && libName.substr(libName.size() - 3) == ".so") {
-					libName = libName.substr(0, libName.size() - 3);
-				}
-
-				libraryFlags += " -l" + libName;
+				dynamicLibFlags.push_back("-l" + dynamicLibraryLinkName(library));
+				libraryFlags.push_back(dynamicLibFlags.back());
 			}
 		}
 
@@ -3644,7 +3763,7 @@ namespace Qd {
 						fn.substr(fn.size() - 2) == ".a" && fn != "libqd.a") {
 					std::string libPath = entry.path().string();
 					if (!processedLibraries.count(libPath)) {
-						allDepsFlags += " " + libPath;
+						allDeps.push_back(libPath);
 						processLibraryDeps(libPath);
 					}
 				}
@@ -3653,12 +3772,15 @@ namespace Qd {
 
 		// Add standard system libraries
 		// Note: C11 threads don't need -lpthread, but we need -lstdc++ for C++ filesystem code
-		libraryFlags += " -lm -lstdc++";
+		libraryFlags.push_back("-lm");
+		libraryFlags.push_back("-lstdc++");
 
 		// Add transitive dependencies from .deps files
 		// Use --start-group/--end-group to resolve circular dependencies between static libraries
-		if (!allDepsFlags.empty()) {
-			libraryFlags += " -Wl,--start-group" + allDepsFlags + " -Wl,--end-group";
+		if (!allDeps.empty()) {
+			libraryFlags.push_back("-Wl,--start-group");
+			libraryFlags.insert(libraryFlags.end(), allDeps.begin(), allDeps.end());
+			libraryFlags.push_back("-Wl,--end-group");
 		}
 
 		// Note: We don't add -L flags for module lib directories because:
@@ -3671,26 +3793,10 @@ namespace Qd {
 		int result = -1;
 		bool usedLld = false;
 
-		// Quote interpolated paths for the system() link commands below, so an
-		// output name or dependency path containing shell metacharacters cannot
-		// inject commands. (The flag strings themselves are not user data.)
-		auto shellQuote = [](const std::string& s) {
-			std::string out = "'";
-			for (char c : s) {
-				if (c == '\'') {
-					out += "'\\''";
-				} else {
-					out += c;
-				}
-			}
-			out += "'";
-			return out;
-		};
-
 		// Check if ld.lld is available and we're not cross-compiling
 		if (mImpl->targetTriple.empty()) {
 			// Check for lld availability
-			if (system("which ld.lld >/dev/null 2>&1") == 0) {
+			if (isProgramInPath("ld.lld")) {
 				// Try direct lld linking - significantly faster than going through clang
 				// Find CRT files using standard locations
 				std::string crtDir;
@@ -3727,51 +3833,41 @@ namespace Qd {
 
 				if (!crtDir.empty() && !gccCrtDir.empty()) {
 					// Build lld command with CRT files
-					std::string lldCmd = "ld.lld --hash-style=gnu --build-id --eh-frame-hdr -m elf_x86_64 -pie "
-										 "-dynamic-linker /lib64/ld-linux-x86-64.so.2 "
-										 "--gc-sections -o " +
-										 shellQuote(filename) + " " + crtDir + "/Scrt1.o " + crtDir + "/crti.o " +
-										 gccCrtDir + "/crtbeginS.o " + "-L" + gccCrtDir + " -L" + crtDir + " " +
-										 shellQuote(objFile) + " " + shellQuote(qdrtStaticPath);
+					std::vector<std::string> lldArgs = {"ld.lld", "--hash-style=gnu", "--build-id", "--eh-frame-hdr",
+							"-m", "elf_x86_64", "-pie", "-dynamic-linker", "/lib64/ld-linux-x86-64.so.2",
+							"--gc-sections", "-o", filename, crtDir + "/Scrt1.o", crtDir + "/crti.o",
+							gccCrtDir + "/crtbeginS.o", "-L" + gccCrtDir, "-L" + crtDir, objFile, qdrtStaticPath};
 
 					// Add resolved static libraries (already have full paths)
-					for (const auto& libPath : resolvedStaticLibs) {
-						lldCmd += " " + shellQuote(libPath);
-					}
+					lldArgs.insert(lldArgs.end(), resolvedStaticLibs.begin(), resolvedStaticLibs.end());
 
 					// Add dynamic libraries (.so)
-					for (const auto& lib : mImpl->importedLibraries) {
-						if (lib.size() >= 3 && lib.substr(lib.size() - 3) == ".so") {
-							std::string libName = lib;
-							if (libName.rfind("lib", 0) == 0) {
-								libName = libName.substr(3);
-							}
-							libName = libName.substr(0, libName.size() - 3);
-							lldCmd += " -l" + libName;
-						}
-					}
+					lldArgs.insert(lldArgs.end(), dynamicLibFlags.begin(), dynamicLibFlags.end());
 
 					// Add standard libraries and CRT files
-					lldCmd += " -lm -lstdc++ -lgcc --as-needed -lgcc_s --no-as-needed -lc -lgcc --as-needed -lgcc_s "
-							  "--no-as-needed " +
-							  gccCrtDir + "/crtendS.o " + crtDir + "/crtn.o";
+					for (const char* flag : {"-lm", "-lstdc++", "-lgcc", "--as-needed", "-lgcc_s", "--no-as-needed",
+								 "-lc", "-lgcc", "--as-needed", "-lgcc_s", "--no-as-needed"}) {
+						lldArgs.emplace_back(flag);
+					}
+					lldArgs.push_back(gccCrtDir + "/crtendS.o");
+					lldArgs.push_back(crtDir + "/crtn.o");
 
 					// Add transitive dependencies
-					if (!allDepsFlags.empty()) {
-						lldCmd += " --start-group" + allDepsFlags + " --end-group";
+					if (!allDeps.empty()) {
+						lldArgs.emplace_back("--start-group");
+						lldArgs.insert(lldArgs.end(), allDeps.begin(), allDeps.end());
+						lldArgs.emplace_back("--end-group");
 					}
 
 					// Suppress error output (errors will fall back to clang)
-					lldCmd += " 2>/dev/null";
-
 					if (timing) {
 						auto lldStart = std::chrono::steady_clock::now();
-						result = system(lldCmd.c_str());
+						result = runProgram(lldArgs, true);
 						auto lldEnd = std::chrono::steady_clock::now();
 						auto lldMs = std::chrono::duration_cast<std::chrono::milliseconds>(lldEnd - lldStart).count();
 						std::cerr << "[TIMING] system(ld.lld): " << lldMs << "ms" << std::endl;
 					} else {
-						result = system(lldCmd.c_str());
+						result = runProgram(lldArgs, true);
 					}
 
 					if (result == 0) {
@@ -3783,22 +3879,19 @@ namespace Qd {
 
 		// Fall back to clang if lld wasn't used or failed
 		if (!usedLld) {
-			std::string linkCmd = "clang -Wl,--gc-sections -o " + shellQuote(filename) + " " + shellQuote(objFile) +
-								  " " + libraryFlags;
+			std::vector<std::string> linkArgs = {"clang", "-Wl,--gc-sections", "-o", filename, objFile};
+			linkArgs.insert(linkArgs.end(), libraryFlags.begin(), libraryFlags.end());
 
 			if (timing) {
 				auto linkStart = std::chrono::steady_clock::now();
-				result = system(linkCmd.c_str());
+				result = runProgram(linkArgs, false);
 				auto linkEnd = std::chrono::steady_clock::now();
 				auto linkMs = std::chrono::duration_cast<std::chrono::milliseconds>(linkEnd - linkStart).count();
 				std::cerr << "[TIMING] system(clang): " << linkMs << "ms" << std::endl;
 			} else {
-				result = system(linkCmd.c_str());
+				result = runProgram(linkArgs, false);
 			}
 		}
-
-		// Clean up object file
-		std::remove(objFile.c_str());
 
 		return result == 0;
 	}
