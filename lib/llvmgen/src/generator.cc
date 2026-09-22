@@ -2553,12 +2553,7 @@ namespace Qd {
 
 				if (typeName == "f64") {
 					ty = builder->getDoubleTy();
-					double d = 0.0;
-					if (!value.empty()) {
-						char* endp = nullptr;
-						d = std::strtod(value.c_str(), &endp);
-						(void)endp;
-					}
+					const double d = value.empty() ? 0.0 : floatLiteralOr(value, 0.0);
 					init = llvm::ConstantFP::get(ty, d);
 				} else if (typeName == "str") {
 					// String globals always start as null. Refcounted string

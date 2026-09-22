@@ -143,17 +143,6 @@ through them.
       bare `N` is never stated. Either rename it to what it does or drop it and make nullability
       explicit some other way.
 
-- [ ] **R63 -- most floats cannot be written down.**
-
-          0.5   // ok
-          .5    // error: Unexpected character '.'
-          5.    // accepted, though §2.3.4's grammar requires digits on both sides
-          1e3   // error: exponent notation is not supported; write the value out
-
-      There is no spelling for `1e-300` at all, and `1e300` needs 300 digits. No underscores,
-      no hex floats. Accepting a trailing dot while rejecting a leading one is backwards from
-      the usual convention, and `5.` contradicts the spec's own `float := digit+ '.' digit+`.
-
 - [ ] **R64 -- string interpolation takes a bare identifier and nothing else.** The spec's own
       §2.3.4 example does not compile:
 

@@ -16,7 +16,57 @@
 #include <vector>
 
 // NOTE: This header is intended to be included inside namespace Qd {}
-// in semantic_validator implementation files.
+// in semantic_validator implementation files. Nothing it includes may open a
+// namespace of its own -- <quadrate/qc/numeric_literal.h>, whose readers the
+// literal checks below use, is included by each of those files at the top.
+
+inline std::string integerLiteralProblem(const std::string& text) {
+	int64_t value = 0;
+	const std::errc ec = readIntegerLiteral(text, value);
+	if (ec == std::errc()) {
+		return "";
+	}
+	if (ec == std::errc::result_out_of_range) {
+		return "Integer literal '" + text + "' is out of range for i64";
+	}
+	return "Invalid integer literal '" + text + "'";
+}
+
+// u8t hands back a float for every literal carrying a point or an exponent, so both
+// spellings land here: `1.5`, `1e3` and `2.5e-3` are the same kind of literal and all
+// three are f64. The grammar check lives here rather than in the scanner because this
+// is where a message can name the fix -- the scanner only has a token type to report.
+inline std::string floatLiteralProblem(const std::string& text) {
+	double value = 0.0;
+	const std::errc ec = readFloatLiteral(text, value);
+	if (ec == std::errc()) {
+		return "";
+	}
+	if (ec == std::errc::result_out_of_range) {
+		return "Float literal '" + text + "' is out of range for f64";
+	}
+	// The only spelling the scanner produces that the reader rejects: it takes a
+	// trailing point, section 2.3.4's grammar does not, and `5.` is one keystroke from
+	// the float that was meant. (A leading point never reaches here -- `.5` is not a
+	// number to the scanner at all, and parseSimpleToken reports it.)
+	if (!text.empty() && text.back() == '.') {
+		return "Invalid float literal '" + text + "': a float needs a digit on each side of the point, so write '" +
+			   text + "0'";
+	}
+	return "Invalid float literal '" + text + "'";
+}
+
+// The spelling of a constant's stored value decides how it reads, so a const is where a
+// numeric literal can go wrong in the same ways a literal in a body can. Anything that is
+// not a number at all -- a string, a reference to another const -- is not this check's
+// business and reads as no problem.
+inline std::string numericLiteralProblem(const std::string& text) {
+	const size_t digitAt = (!text.empty() && text.front() == '-') ? 1 : 0;
+	if (text.size() <= digitAt || text[digitAt] < '0' || text[digitAt] > '9') {
+		return "";
+	}
+	return isFloatLiteralText(text) ? floatLiteralProblem(text) : integerLiteralProblem(text);
+}
 
 // Helper function to expand tilde (~) in file paths
 inline std::string expandTilde(const std::string& path) {

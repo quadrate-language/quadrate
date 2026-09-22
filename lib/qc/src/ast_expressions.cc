@@ -1,5 +1,7 @@
 #include "ast_parse.h"
 
+#include <quadrate/qc/numeric_literal.h>
+
 namespace Qd {
 
 	// Helper to parse a single statement/expression token
@@ -7,6 +9,10 @@ namespace Qd {
 	// Returns a node if it's a literal or identifier
 	IAstNode* parseSimpleToken(
 			char32_t token, u8t_scanner* scanner, ErrorReporter* errorReporter, size_t* n, const char* src) {
+		if (noteDigitSeparator(scanner, errorReporter, src, token)) {
+			return nullptr;
+		}
+
 		if (token == U8T_INTEGER) {
 			const char* text = u8t_scanner_token_text(scanner, n);
 			IAstNode* node = new AstNodeLiteral(text, AstNodeLiteral::LiteralType::INTEGER);
@@ -198,6 +204,47 @@ namespace Qd {
 			}
 			// If not followed by identifier, return nullptr (error will be handled by caller)
 			return nullptr;
+		}
+
+		// u8t reports U8T_ERROR for exactly two spellings, both of them numbers it began to
+		// read and could not finish: a radix prefix with no digits behind it (`0x`) and an
+		// exponent with no digits behind it (`1e`). Naming the missing digits beats
+		// "Unexpected character '1e'", which reads as though `1e` were a stray symbol.
+		if (token == U8T_ERROR) {
+			size_t textLen = 0;
+			const char* tokenText = u8t_scanner_token_text(scanner, &textLen);
+			const std::string text(tokenText != nullptr ? tokenText : "", textLen);
+			const bool isExponent = !hasRadixPrefix(text) && text.find_first_of("eE") != std::string::npos;
+			const std::string message =
+					isExponent
+							? "Invalid float literal '" + text + "': an exponent needs at least one digit, so write '" +
+									  text.substr(0, text.find_first_of("eE")) + "e3' or spell the value out"
+							: "Invalid integer literal '" + text + "': a '0x' or '0b' prefix needs at least one digit";
+			errorReporter->reportError(scanner, message.c_str());
+			return nullptr;
+		}
+
+		// A float written without the digit before its point. u8t only begins a number at a
+		// digit, so `.5` reaches here as a stray '.' with an integer behind it, and
+		// "Unexpected character '.'" said nothing about the number that was meant. The
+		// grammar wants a digit on each side of the point (spec 2.3.4); this says so.
+		if (token == '.') {
+			const char32_t afterDot = u8t_scanner_peek(scanner);
+			if (afterDot >= U'0' && afterDot <= U'9') {
+				size_t line = 0;
+				size_t column = 0;
+				fastLineColumn(src, fastCharToByteOffset(src, u8t_scanner_token_start(scanner)), &line, &column);
+				// Take the digits with it, so one misspelled float is one error.
+				u8t_scanner_scan(scanner);
+				size_t fractionLen = 0;
+				const char* fractionText = u8t_scanner_token_text(scanner, &fractionLen);
+				const std::string fraction(fractionText != nullptr ? fractionText : "", fractionLen);
+				const std::string message = "Invalid float literal '." + fraction +
+											"': a float needs a digit on each side of the point, so write '0." +
+											fraction + "'";
+				errorReporter->reportError(line, column, message.c_str());
+				return nullptr;
+			}
 		}
 
 		// Nothing matched. Every branch above either builds a node or reports its own

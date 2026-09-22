@@ -1,0 +1,22 @@
+=== Basic exponents ===
+1000
+1000
+1500
+250
+=== Signed exponents ===
+1000
+0.0015
+-2000
+-0.0125
+=== Range ===
+1e-300
+6.02214e+23
+1
+=== Arithmetic ===
+2000
+2000
+1
+=== Hex is not an exponent ===
+225
+30
+done

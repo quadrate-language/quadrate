@@ -1,0 +1,7 @@
+// Test: an enum value took the digits before a `_` and read the rest as the next variant,
+// so `A = 1_000` compiled clean with A = 1 and a variant named '_000'
+enum E { A = 1_000 }
+
+fn main() {
+	E::A print nl
+}

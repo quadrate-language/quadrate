@@ -1173,7 +1173,7 @@ namespace Qd {
 						builder->CreateCall(pushIntArrFn, {arrPtr, builder->getInt64(static_cast<uint64_t>(val))});
 					}
 				} else if (lit->literalType() == AstNodeLiteral::LiteralType::FLOAT) {
-					double val = std::stod(lit->value());
+					double val = floatLiteralOr(lit->value(), 0.0);
 					if (arrayType == 0) {
 						// Coerce float to int for int array
 						builder->CreateCall(pushIntArrFn,

@@ -1,0 +1,4 @@
+// Test: a float needs a digit before its point, and the error says so
+fn main() {
+	.5 print nl
+}

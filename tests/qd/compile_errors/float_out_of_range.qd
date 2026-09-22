@@ -1,0 +1,4 @@
+// Test: an exponent naming a value no f64 can hold is reported, not silently infinite
+fn main() {
+	1e400 print nl
+}

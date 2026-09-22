@@ -2345,8 +2345,15 @@ void QuadrateLSP::handleSemanticTokens(const std::string& id, const std::string&
 				while (i < documentText.size() &&
 						(std::isxdigit(documentText[i]) || documentText[i] == '.' || documentText[i] == '_' ||
 								documentText[i] == 'e' || documentText[i] == 'E')) {
+					// The sign of an exponent belongs to the number: without this `1e-3`
+					// highlighted as `1e` and then an operator.
+					const bool exponent = documentText[i] == 'e' || documentText[i] == 'E';
 					i++;
 					col++;
+					if (exponent && i < documentText.size() && (documentText[i] == '+' || documentText[i] == '-')) {
+						i++;
+						col++;
+					}
 				}
 				addToken(line, startCol, i - startI, TOKEN_NUMBER, 0);
 				continue;

@@ -127,9 +127,17 @@ Examples: `42`, `0`, `1000`, `0xFF`, `0b1010`
 
 **Float literals:**
 ```
-float := digit+ '.' digit+
+float    := digit+ ('.' digit+)? exponent
+          | digit+ '.' digit+ exponent?
+exponent := ('e' | 'E') ('+' | '-')? digit+
 ```
-Examples: `3.14`, `0.0`, `100.5`
+Examples: `3.14`, `0.0`, `100.5`, `1e3`, `1.5e-3`, `6.02214076e23`
+
+A point needs a digit on each side of it: `0.5` and `5.0`, not `.5` or `5.`. A literal
+carrying a point or an exponent is an `f64`, so `1e3` is the float `1000.0` and `1000` is
+the integer. `_` is not a digit separator and there is no hex float form. A value too large
+for an `f64` is an error; one too small underflows to a subnormal or to zero, as the same
+arithmetic does at runtime.
 
 **String literals:**
 ```
@@ -1861,8 +1869,8 @@ fn process(path:str -- )! {
 **Integer semantics.** Integer arithmetic is two's-complement and wraps on overflow:
 `9223372036854775807 1 +` yields `-9223372036854775808`, and `-9223372036854775808 -1 /`
 yields `-9223372036854775808` with remainder `0`. Division or modulo by zero is a fatal
-error; when the divisor is a literal `0` it is a compile-time error. Numeric literals do
-not support exponent notation (`1e300` is rejected); write the value out.
+error; when the divisor is a literal `0` it is a compile-time error. An exponent makes a
+literal a float, so `1e3` is an `f64` and there is no exponent spelling for an integer.
 
 **Float semantics.** `f64` arithmetic follows IEEE 754. Division by zero is therefore
 *defined*, not an error: `1.0 0.0 /` is `inf`, `-1.0 0.0 /` is `-inf`, and `0.0 0.0 /` is

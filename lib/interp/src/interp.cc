@@ -398,8 +398,8 @@ namespace {
 		if (text.size() >= 2 && text.front() == '"') {
 			return qd_push_s(interp->ctx, decodeString(text).c_str()) == 0;
 		}
-		if (text.find('.') != std::string::npos) {
-			return qd_push_f(interp->ctx, std::strtod(text.c_str(), nullptr)) == 0;
+		if (Qd::isFloatLiteralText(text)) {
+			return qd_push_f(interp->ctx, Qd::floatLiteralOr(text, 0.0)) == 0;
 		}
 		return qd_push_i(interp->ctx, Qd::integerLiteralOr(text, 0)) == 0;
 	}
@@ -1101,8 +1101,8 @@ namespace {
 			const char* held = qd_string_data(subject.value.s);
 			return held != nullptr && decodeString(text) == held;
 		}
-		if (text.find('.') != std::string::npos) {
-			return subject.type == QD_STACK_TYPE_FLOAT && subject.value.f == std::strtod(text.c_str(), nullptr);
+		if (Qd::isFloatLiteralText(text)) {
+			return subject.type == QD_STACK_TYPE_FLOAT && subject.value.f == Qd::floatLiteralOr(text, 0.0);
 		}
 		int64_t value = 0;
 		return subject.type == QD_STACK_TYPE_INT && Qd::parseIntegerLiteral(text, value) && subject.value.i == value;

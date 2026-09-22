@@ -786,6 +786,9 @@
                     let end = i;
                     if (code[end] === '-') end++;
                     while (end < code.length && /[0-9.]/.test(code[end])) end++;
+                    // An exponent and its sign belong to the number: `1e-3` is one literal.
+                    const exponent = /^[eE][+-]?[0-9]+/.exec(code.slice(end));
+                    if (exponent) end += exponent[0].length;
                     result += `<span class="hl-number">${escapeHtml(code.slice(i, end))}</span>`;
                     i = end;
                     continue;

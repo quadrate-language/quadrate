@@ -106,6 +106,8 @@ class QuadrateLexer(RegexLexer):
             # Numbers
             (r'0b[01_]+', Number.Bin),
             (r'0x[0-9a-fA-F_]+', Number.Hex),
+            (r'-?\d+\.\d+[eE][+-]?\d+', Number.Float),
+            (r'-?\d+[eE][+-]?\d+', Number.Float),
             (r'-?\d+\.\d+', Number.Float),
             (r'-?\d+', Number.Integer),
 

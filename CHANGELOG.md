@@ -9,6 +9,48 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **Exponent notation, and one spelling for a point.** `1e3`, `1.5e-3` and `6.02214076e23` are
+  float literals. Before this, the exponent forms an f64 needs to be writable at all were
+  rejected on sight -- `1e-300` had no spelling, `1e300` needed three hundred digits, and the
+  error suggested writing the value out as though that were always possible.
+
+  ```qd
+  const Avogadro = 6.02214076e23
+  1e3 print        // 1000
+  1.5e-3 print     // 0.0015
+  ```
+
+  A literal carrying a point or an exponent is an `f64`: `1e3` is the float, `1000` is the
+  integer, and there is no exponent spelling for an integer. The `E` of a hex literal stays a
+  digit, so `0xE1` is 225.
+
+  The point now needs a digit on each side of it, which is what section 2.3.4's grammar always
+  said. `.5` was already rejected; `5.` was accepted, which is the convention backwards, and
+  both now report the float that was meant:
+
+  ```
+  error: Invalid float literal '5.': a float needs a digit on each side of the point, so write '5.0'
+  error: Invalid float literal '.5': a float needs a digit on each side of the point, so write '0.5'
+  ```
+
+  A literal too large for an f64 is an error -- `1e400` was going to be an infinity, which is
+  not what the digits said -- while one too small underflows to a subnormal or to zero, as the
+  same arithmetic does at runtime. A half-written number reports what is missing rather than
+  `Unexpected character '1e'`.
+
+  What made this a one-line rejection rather than a feature was that every tier decided a
+  constant's type by looking for a `.` in its stored text, so an exponent read as an integer
+  and the integer reader choked on the `e`. That test lives in one place now,
+  `isFloatLiteralText`, beside a `readFloatLiteral` that the validator, the interpreter and the
+  code generator all read literals through -- which is also why a const's literal is now checked
+  where it is written, instead of becoming a silent zero or a generator error with no line
+  number on it.
+
+  Still not accepted: digit separators (`1_000`) and hex floats (`0x1p3`). The separator is a
+  deliberate no: `_` is an identifier character, so a language where `1_000` is a number and
+  `1_x` is not needs the scanner looking two characters ahead to tell a literal from an
+  identifier -- for a spelling that saves nobody anything a comment could not.
+
 - **`clone`.** A struct is a mutable reference -- `a -> b` binds a second name to the same
   struct -- which is the design (R21), but it left no way to ask for an independent one. The
   only copy available was rebuilding it by hand, `P { x = a <<x  y = a <<y }`, which had to be
@@ -181,6 +223,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **`quadrepl` command aliases**: `:quit` and `:exit` alongside `exit`/`quit`/`:q`, and `:save`/`:load` alongside `.save`/`.load`.
 ### Changed
 
+- **u8t tokenizer updated to 1.4.2.** One number scanner upstream instead of two: the path
+  that starts a number at a digit and the one that starts it at a `-` were near-identical
+  copies of the same digit/point/exponent loop, which is how the radix prefix came to work for
+  `0x10` and not for `-0x10` (fixed in 1.4.1 by adding the check to the second copy rather than
+  removing the copy). Nothing here changes what the scanner returns -- the token stream, each
+  token's start, length and truncation flag included, is identical over the test corpus and
+  200k random numeric-alphabet inputs, and this repo's suites are unchanged by the bump.
+
+
 - **`sort` takes arrays, and only arrays.** Closing the `[]T`/`ptr` hole left the module
   lopsided: the four string entry points took `[]str`, and the fourteen numeric ones took a raw
   `mem::alloc` buffer, so `[5 2 8 1 9]` could not be sorted by anything. Sorting numbers meant
@@ -332,6 +383,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **`quadrepl` accepts `struct`, `enum`, `const`, `type` and `var` declarations.**
 - **u8t tokenizer updated to 1.4.0.**
 ### Fixed
+
+- **`enum E { A = 1_000 }` compiled clean, with the wrong value.** `_` is an identifier
+  character and the language has no digit separator, so the scanner handed the enum parser the
+  integer `1` and then the identifier `_000` -- which it read as the *next variant*. `A` was 1,
+  `_000` was 2, and nothing was reported. A struct field default took the same wrong number,
+  and a `const` or `var` reported a stray identifier at top level rather than the number in
+  front of it.
+
+  ```
+  error: Invalid numeric literal '1_000': digit separators are not supported; write '1000'
+  ```
+
+  Reported from one place now, wherever a numeric literal is scanned: expressions, `const`,
+  `var`, enum values and struct field defaults.
 
 - **The interpreter tier refuses what it does not interpret, by name.** `defer`, structs,
   methods, anonymous functions and module imports are all deliberately outside `lib/interp`,

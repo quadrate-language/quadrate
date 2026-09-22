@@ -162,11 +162,11 @@ namespace Qd {
 			break;
 		}
 		case AstNodeLiteral::LiteralType::FLOAT: {
+			// readFloatLiteral rather than a strtod of its own, so what the validator
+			// accepted is exactly what reaches LLVM: a subnormal is a value like any
+			// other, and only an overflow to infinity is rejected.
 			double dval = 0.0;
-			char* endptr = nullptr;
-			errno = 0;
-			dval = std::strtod(value.c_str(), &endptr);
-			if (errno == ERANGE || (endptr != nullptr && *endptr != '\0' && endptr == value.c_str())) {
+			if (readFloatLiteral(value, dval) != std::errc()) {
 				std::cerr << "quadc: error: Invalid float literal '" << value << "' (out of range or invalid format)"
 						  << std::endl;
 				compilationFailed = true;
@@ -585,10 +585,10 @@ namespace Qd {
 			if (useCompileTimeStack) {
 				if (value.empty() || (value.size() >= 2 && value.front() == '"')) {
 					// String constant - fall through to runtime path
-				} else if (value.find('.') != std::string::npos) {
+				} else if (isFloatLiteralText(value)) {
 					// Float constant
-					double floatValue = std::stod(value);
-					compileTimeStack.push_back(llvm::ConstantFP::get(builder->getDoubleTy(), floatValue));
+					compileTimeStack.push_back(
+							llvm::ConstantFP::get(builder->getDoubleTy(), floatLiteralOr(value, 0.0)));
 					return;
 				} else {
 					int64_t intValue = 0;
@@ -604,10 +604,9 @@ namespace Qd {
 				std::string strValue = value.substr(1, value.length() - 2);
 				llvm::Value* strConst = builder->CreateGlobalString(strValue);
 				builder->CreateCall(pushStrFn, {ctx, strConst});
-			} else if (value.find('.') != std::string::npos) {
+			} else if (isFloatLiteralText(value)) {
 				// Float constant
-				double floatValue = std::stod(value);
-				llvm::Value* floatConst = llvm::ConstantFP::get(builder->getDoubleTy(), floatValue);
+				llvm::Value* floatConst = llvm::ConstantFP::get(builder->getDoubleTy(), floatLiteralOr(value, 0.0));
 				builder->CreateCall(pushFloatFn, {ctx, floatConst});
 			} else {
 				// Integer constant
@@ -1283,7 +1282,7 @@ namespace Qd {
 			AstNodeLiteral::LiteralType litType;
 			if (!value.empty() && value[0] == '"') {
 				litType = AstNodeLiteral::LiteralType::STRING;
-			} else if (value.find('.') != std::string::npos) {
+			} else if (isFloatLiteralText(value)) {
 				litType = AstNodeLiteral::LiteralType::FLOAT;
 			} else {
 				litType = AstNodeLiteral::LiteralType::INTEGER;
@@ -1678,13 +1677,13 @@ namespace Qd {
 				return builder->CreateICmpEQ(cmpResult, builder->getInt32(0), "case_match");
 			}
 
-			if (value.find('.') != std::string::npos) {
+			if (isFloatLiteralText(value)) {
 				// Float constant
 				auto switchVal = switchValueFloat();
 				if (!switchVal) {
 					return nullptr;
 				}
-				auto caseVal = llvm::ConstantFP::get(builder->getDoubleTy(), std::stod(value));
+				auto caseVal = llvm::ConstantFP::get(builder->getDoubleTy(), floatLiteralOr(value, 0.0));
 				return builder->CreateFCmpOEQ(switchVal, caseVal, "case_match");
 			}
 

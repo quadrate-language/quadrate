@@ -32,6 +32,7 @@
 #include <quadrate/qc/ast_node_use.h>
 #include <quadrate/qc/colors.h>
 #include <quadrate/qc/instructions.h>
+#include <quadrate/qc/numeric_literal.h>
 #include <quadrate/qc/semantic_validator.h>
 #include <sstream>
 #include <unordered_set>
@@ -266,8 +267,8 @@ namespace Qd {
 			return StackValueType::STRING;
 		}
 
-		// Check if it contains a decimal point (float)
-		if (value.find('.') != std::string::npos) {
+		// A point or an exponent makes it a float
+		if (isFloatLiteralText(value)) {
 			return StackValueType::FLOAT;
 		}
 

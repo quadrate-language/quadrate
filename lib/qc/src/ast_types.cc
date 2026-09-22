@@ -64,6 +64,12 @@ namespace Qd {
 						negative = true;
 						token = u8t_scanner_scan(scanner);
 					}
+					if (noteDigitSeparator(scanner, errorReporter, src, token)) {
+						// Reported. Taking the digits before the `_` would have been a silent
+						// wrong number, and the identifier it left behind read as the next
+						// variant: `A = 1_000` compiled clean as A = 1 and a variant `_000`.
+						continue;
+					}
 					if (token == U8T_INTEGER) {
 						const char* valText = u8t_scanner_token_text(scanner, &n);
 						// A sign written apart from its digits -- `= - 5` -- reaches here as two
@@ -200,7 +206,10 @@ namespace Qd {
 
 					// Parse the default value (single token for now)
 					char32_t valToken = u8t_scanner_scan(scanner);
-					if (valToken == U8T_INTEGER) {
+					if (noteDigitSeparator(scanner, errorReporter, src, valToken)) {
+						// Reported; the field keeps no default rather than the digits before
+						// the `_`.
+					} else if (valToken == U8T_INTEGER) {
 						const char* numText = u8t_scanner_token_text(scanner, &n);
 						AstNodeLiteral* numNode = new AstNodeLiteral(numText, AstNodeLiteral::LiteralType::INTEGER);
 						setNodePosition(numNode, scanner, src);
@@ -229,7 +238,9 @@ namespace Qd {
 					} else if (valToken == '-') {
 						// Negative number
 						char32_t numToken = u8t_scanner_scan(scanner);
-						if (numToken == U8T_INTEGER) {
+						if (noteDigitSeparator(scanner, errorReporter, src, numToken)) {
+							// Reported, as above.
+						} else if (numToken == U8T_INTEGER) {
 							const char* numText = u8t_scanner_token_text(scanner, &n);
 							std::string negNum = std::string("-") + numText;
 							AstNodeLiteral* numNode = new AstNodeLiteral(negNum, AstNodeLiteral::LiteralType::INTEGER);

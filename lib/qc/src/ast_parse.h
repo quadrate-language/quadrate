@@ -9,6 +9,7 @@
 #include "ast_node_label.h"
 #include "source_utils.h"
 #include <quadrate/qc/instructions.h>
+#include <quadrate/qc/numeric_literal.h>
 
 #include <cstdint>
 #include <cstdlib>
@@ -328,6 +329,54 @@ namespace Qd {
 			return static_cast<char32_t>(static_cast<unsigned char>(src[bytePos]));
 		}
 		return 0;
+	}
+
+	// Reports a `_` written into a number, having just scanned one. The language has no
+	// digit separator, so `1_000` is the integer 1 followed by the identifier `_000`, and
+	// left alone that is a silent wrong answer rather than an error: an enum took the
+	// digits before the `_` for its value and read the rest as its next variant, and a
+	// struct field default took the same wrong number. Returns true when it reported,
+	// having taken the identifier with it so that one bad number is one error.
+	inline bool noteDigitSeparator(
+			u8t_scanner* scanner, ErrorReporter* errorReporter, const char* src, char32_t token) {
+		if ((token != U8T_INTEGER && token != U8T_FLOAT) || peekNextChar(scanner, src) != U'_') {
+			return false;
+		}
+		size_t numberLen = 0;
+		const char* numberText = u8t_scanner_token_text(scanner, &numberLen);
+		std::string spelling(numberText != nullptr ? numberText : "", numberLen);
+		size_t line = 0;
+		size_t column = 0;
+		fastLineColumn(src, fastCharToByteOffset(src, u8t_scanner_token_start(scanner)), &line, &column);
+		if (u8t_scanner_scan(scanner) == U8T_IDENTIFIER) {
+			size_t restLen = 0;
+			const char* rest = u8t_scanner_token_text(scanner, &restLen);
+			spelling.append(rest != nullptr ? rest : "", restLen);
+		}
+
+		// `1_000` has a number behind it to name; `1_x` has not, and "write '1x'" would be
+		// worse than saying nothing. Neither is `1_000.5` named in full -- the fraction is
+		// a token away -- so the suggestion is dropped rather than made short of it.
+		const char32_t after = peekNextChar(scanner, src);
+		const bool numberContinues =
+				after == U'.' || after == U'e' || after == U'E' || (after >= U'0' && after <= U'9');
+		std::string withoutSeparators;
+		for (const char c : spelling) {
+			if (c != '_') {
+				withoutSeparators += c;
+			}
+		}
+		int64_t asInteger = 0;
+		double asFloat = 0.0;
+		const bool reads = !numberContinues && (readIntegerLiteral(withoutSeparators, asInteger) == std::errc() ||
+													   readFloatLiteral(withoutSeparators, asFloat) == std::errc());
+
+		std::string message = "Invalid numeric literal '" + spelling + "': digit separators are not supported";
+		if (reads) {
+			message += "; write '" + withoutSeparators + "'";
+		}
+		errorReporter->reportError(line, column, message.c_str());
+		return true;
 	}
 
 	// Parses the optional `<Type>` after a builtin instruction name, as in `make<Point>` or

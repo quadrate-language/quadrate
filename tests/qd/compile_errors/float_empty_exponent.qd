@@ -1,0 +1,4 @@
+// Test: an exponent with no digits behind it names the missing digits
+fn main() {
+	1e print nl
+}

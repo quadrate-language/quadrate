@@ -1,0 +1,6 @@
+// Test: a const holds its value as written, so its literal is checked where it is written
+const TooBig = 1e400
+
+fn main() {
+	TooBig print nl
+}

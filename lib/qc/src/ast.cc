@@ -3,6 +3,7 @@
 #include <algorithm>
 #include <quadrate/qc/ast_node_global_var.h>
 #include <quadrate/qc/ast_node_struct_construction.h>
+#include <quadrate/qc/numeric_literal.h>
 
 namespace Qd {
 
@@ -115,6 +116,9 @@ namespace Qd {
 
 		// Handle literal values
 		if (token == U8T_INTEGER || token == U8T_FLOAT) {
+			if (noteDigitSeparator(scanner, errorReporter, src, token)) {
+				return "";
+			}
 			const char* valueText = u8t_scanner_token_text(scanner, &n);
 			return std::string(valueText);
 		} else if (token == U8T_STRING) {
@@ -162,13 +166,13 @@ namespace Qd {
 	}
 
 	// Infer a type name from a raw value string produced by the initializer
-	// parser. Strings are wrapped in quotes; floats contain a `.`; everything
-	// else is treated as i64. Matches the set of literal kinds accepted below.
+	// parser. Strings are wrapped in quotes; a point or an exponent makes a float;
+	// everything else is treated as i64. Matches the set of literal kinds accepted below.
 	static std::string inferTypeFromValue(const std::string& value) {
 		if (!value.empty() && value.front() == '"') {
 			return "str";
 		}
-		if (value.find('.') != std::string::npos) {
+		if (isFloatLiteralText(value)) {
 			return "f64";
 		}
 		return "i64";
@@ -265,6 +269,9 @@ namespace Qd {
 				sourceExpr = refName;
 			}
 		} else if (token == U8T_INTEGER || token == U8T_FLOAT || token == U8T_STRING) {
+			if (noteDigitSeparator(scanner, errorReporter, src, token)) {
+				return;
+			}
 			if (token == U8T_STRING) {
 				noteUnterminatedString(scanner, src);
 			}

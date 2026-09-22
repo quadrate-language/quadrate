@@ -2,6 +2,7 @@
 #include <quadrate/qc/ast.h>
 #include <quadrate/qc/ast_node.h>
 #include <quadrate/qc/ast_printer.h>
+#include <quadrate/qc/numeric_literal.h>
 #include <unit-check/uc.h>
 
 // Empty and Whitespace Inputs
@@ -803,6 +804,74 @@ TEST(ScopedIdentifierStillParses) {
 
 	ASSERT(root != nullptr, "root should not be null");
 	ASSERT(!ast.hasErrors(), "a well-formed scoped identifier must still parse");
+}
+
+// Float literal spelling (spec 2.3.4)
+
+TEST(FloatLiteralSpellingsThatRead) {
+	const char* accepted[] = {"0.5", "3.14", "-0.5", "1e3", "1E3", "1e+3", "1.5e-3", "-2.5E10", "1e-300",
+			"1.7976931348623157e+308", "2.2250738585072014e-308", "42"};
+	for (const char* text : accepted) {
+		double value = 0.0;
+		ASSERT(Qd::readFloatLiteral(text, value) == std::errc(), text);
+	}
+
+	double value = 0.0;
+	ASSERT(Qd::readFloatLiteral("1e3", value) == std::errc() && value == 1000.0, "1e3 is one thousand");
+	ASSERT(Qd::readFloatLiteral("-1.5e-3", value) == std::errc() && value == -0.0015, "-1.5e-3 reads exactly");
+}
+
+TEST(FloatLiteralSpellingsThatDoNot) {
+	// A point with nothing on one side of it, an exponent with no digits, and the
+	// separators and hex floats the language has not got.
+	const char* rejected[] = {".5", "-.5", "5.", "1.", "1e", "1e+", "1.2.3", "1_000.5", "0x1p3", "", "1f", "e3"};
+	for (const char* text : rejected) {
+		double value = 0.0;
+		ASSERT(Qd::readFloatLiteral(text, value) == std::errc::invalid_argument, text);
+	}
+}
+
+TEST(FloatLiteralRange) {
+	double value = 0.0;
+	ASSERT(Qd::readFloatLiteral("1e400", value) == std::errc::result_out_of_range, "1e400 has no f64 to land in");
+	ASSERT(Qd::readFloatLiteral("-1e400", value) == std::errc::result_out_of_range, "and neither has -1e400");
+	// Underflow is ordinary arithmetic: it lands on a subnormal or on zero.
+	ASSERT(Qd::readFloatLiteral("1e-320", value) == std::errc() && value > 0.0, "1e-320 is a subnormal, not an error");
+	ASSERT(Qd::readFloatLiteral("1e-400", value) == std::errc() && value == 0.0, "1e-400 underflows to zero");
+}
+
+TEST(FloatLiteralTextRecognition) {
+	ASSERT(Qd::isFloatLiteralText("1.5"), "a point makes a float");
+	ASSERT(Qd::isFloatLiteralText("1e3"), "an exponent makes a float");
+	ASSERT(Qd::isFloatLiteralText("-1E3"), "sign and all");
+	ASSERT(!Qd::isFloatLiteralText("1000"), "digits alone are an integer");
+	ASSERT(!Qd::isFloatLiteralText("0xE1"), "the E of a hex literal is a digit");
+	ASSERT(!Qd::isFloatLiteralText("-0xE1"), "sign and all");
+	ASSERT(!Qd::isFloatLiteralText("0b1011"), "binary literals are integers");
+	ASSERT(!Qd::isFloatLiteralText(""), "nothing is not a float");
+}
+
+TEST(ExponentLiteralParsesAsFloat) {
+	Qd::Ast ast;
+	const char* src = "fn m() { 1e3 print }";
+	Qd::IAstNode* root = ast.generate(src, false, nullptr);
+
+	ASSERT(root != nullptr, "root should not be null");
+	ASSERT(!ast.hasErrors(), "exponent notation is a float literal, not a parse error");
+}
+
+TEST(DigitSeparatorsAreNotANumber) {
+	// The language has no digit separator: a `_` is an identifier character, so `1_000` is
+	// the integer 1 followed by `_000`, and neither reader takes the spelling as a number.
+	const char* rejected[] = {"1_000", "1_000_000", "-1_500", "0xdead_beef", "0b1010_1010", "1_", "_1", "1__0"};
+	for (const char* text : rejected) {
+		int64_t integer = 0;
+		ASSERT(Qd::readIntegerLiteral(text, integer) != std::errc(), text);
+	}
+
+	double value = 0.0;
+	ASSERT(Qd::readFloatLiteral("1_000.5", value) == std::errc::invalid_argument, "nor is 1_000.5 a float");
+	ASSERT(Qd::readFloatLiteral("1_0e1_0", value) == std::errc::invalid_argument, "nor 1_0e1_0");
 }
 
 int main() {

@@ -1,0 +1,38 @@
+// Test: exponent notation, in every spelling section 2.3.4 allows
+const Avogadro = 6.02214076e23
+const Tiny = 1e-300
+
+fn main() {
+	// With and without a fraction part, either case of the marker
+	"=== Basic exponents ===" print nl
+	1e3 print nl
+	1E3 print nl
+	1.5e3 print nl
+	2.5E2 print nl
+
+	// Signed exponents
+	"=== Signed exponents ===" print nl
+	1e+3 print nl
+	1.5e-3 print nl
+	-2e3 print nl
+	-1.25e-2 print nl
+
+	// The range an f64 covers, which no run of digits can write out
+	"=== Range ===" print nl
+	Tiny print nl
+	Avogadro print nl
+	1e308 0.0 gt print nl
+
+	// An exponent literal is an f64, so it takes float arithmetic
+	"=== Arithmetic ===" print nl
+	1e3 2.0 * print nl
+	1e3 1e3 + print nl
+	2.5e-1 0.25 eq print nl
+
+	// The `e` of a hex literal is a digit, not an exponent
+	"=== Hex is not an exponent ===" print nl
+	0xE1 print nl
+	0x1e print nl
+
+	"done" print nl
+}

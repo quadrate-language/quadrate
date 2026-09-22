@@ -41,6 +41,7 @@ extern "C" {
 #include <quadrate/qc/ast_node_use.h>
 #include <quadrate/qc/colors.h>
 #include <quadrate/qc/instructions.h>
+#include <quadrate/qc/numeric_literal.h>
 #include <quadrate/qc/semantic_validator.h>
 #include <sstream>
 #include <sys/stat.h>

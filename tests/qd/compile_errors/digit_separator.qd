@@ -1,0 +1,4 @@
+// Test: the language has no digit separator, and says so with the number that was meant
+fn main() {
+	1_000 print nl
+}

@@ -33,6 +33,7 @@
 #include <quadrate/qc/ast_node_use.h>
 #include <quadrate/qc/colors.h>
 #include <quadrate/qc/instructions.h>
+#include <quadrate/qc/numeric_literal.h>
 #include <quadrate/qc/semantic_validator.h>
 #include <sstream>
 #include <unordered_set>
@@ -196,6 +197,15 @@ namespace Qd {
 				return;
 			}
 
+			// A const is stored as written and every tier re-reads that text, so a literal
+			// that will not read has to be caught here: downstream it turns into a silent
+			// zero (or, before this check existed, an "Invalid integer constant" from the
+			// code generator with no line number on it).
+			const std::string literalProblem = numericLiteralProblem(constant->value());
+			if (!literalProblem.empty()) {
+				reportError(constant, literalProblem.c_str());
+			}
+
 			mDefinedConstants.insert(constant->name());
 			mConstantValues[constant->name()] = constant->value();
 		}
@@ -231,6 +241,10 @@ namespace Qd {
 				std::string errorMsg = "Unknown type '" + typeName + "' for var";
 				reportError(varNode, errorMsg.c_str());
 				return;
+			}
+			const std::string initializerProblem = numericLiteralProblem(varNode->value());
+			if (!initializerProblem.empty()) {
+				reportError(varNode, initializerProblem.c_str());
 			}
 			mDefinedGlobalVars.insert(varNode->name());
 			mGlobalVarTypes[varNode->name()] = typeName;

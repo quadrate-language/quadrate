@@ -108,40 +108,6 @@ namespace Qd {
 		}
 	}
 
-	static std::string exponentNotationProblem(const std::string& text) {
-		return "Invalid numeric literal '" + text +
-			   "': exponent notation is not supported; write the value out, e.g. 1000000.0";
-	}
-
-	static std::string integerLiteralProblem(const std::string& text) {
-		int64_t value = 0;
-		const std::errc ec = readIntegerLiteral(text, value);
-		if (ec == std::errc()) {
-			return "";
-		}
-		// An exponent only stands in for an integer in a literal with no radix prefix --
-		// `0xE1` is hex, not one times ten to the first.
-		if (!hasRadixPrefix(text) && text.find_first_of("eE") != std::string::npos) {
-			return exponentNotationProblem(text);
-		}
-		if (ec == std::errc::result_out_of_range) {
-			return "Integer literal '" + text + "' is out of range for i64";
-		}
-		return "Invalid integer literal '" + text + "'";
-	}
-
-	// u8t classifies every exponent form as a float. It used to type the ones with no
-	// fraction part — 1e300 — as integers, where integerLiteralProblem rejected them,
-	// while 2.2250738585072014e-308 came through as a float and was accepted (stdlib
-	// limits writes f64 bounds that way). Keep that split: an exponent standing in for
-	// an integer is the rejected form.
-	static std::string floatLiteralProblem(const std::string& text) {
-		if (text.find('.') == std::string::npos && text.find_first_of("eE") != std::string::npos) {
-			return exponentNotationProblem(text);
-		}
-		return "";
-	}
-
 	// Helper: Convert literal type to stack value type
 	static StackValueType getLiteralStackType(AstNodeLiteral::LiteralType litType) {
 		switch (litType) {
@@ -3909,7 +3875,7 @@ namespace Qd {
 						const std::string& value = selfConstIt->second;
 						if (!value.empty() && value[0] == '"') {
 							typeStack.push_back(StackValueType::STRING);
-						} else if (value.find('.') != std::string::npos) {
+						} else if (isFloatLiteralText(value)) {
 							typeStack.push_back(StackValueType::FLOAT);
 						} else {
 							typeStack.push_back(StackValueType::INT);
@@ -3932,8 +3898,7 @@ namespace Qd {
 							// Infer type from value
 							if (!value.empty() && value[0] == '"') {
 								typeStack.push_back(StackValueType::STRING);
-							} else if (value.find('.') != std::string::npos || value.find('e') != std::string::npos ||
-									   value.find('E') != std::string::npos) {
+							} else if (isFloatLiteralText(value)) {
 								typeStack.push_back(StackValueType::FLOAT);
 							} else {
 								typeStack.push_back(StackValueType::INT);
