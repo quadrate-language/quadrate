@@ -36,17 +36,17 @@ const SHA256_H7 = 1541459225
 /// @field buflen Current buffer fill level
 /// @field total Total bytes processed
 pub struct Sha256 {
-	h0:i64 = 1779033703
-	h1:i64 = 3144134277
-	h2:i64 = 1013904242
-	h3:i64 = 2773480762
-	h4:i64 = 1359893119
-	h5:i64 = 2600822924
-	h6:i64 = 528734635
-	h7:i64 = 1541459225
-	buf:ptr = null
-	buflen:i64 = 0
-	total:i64 = 0
+	h0: i64 = 1779033703
+	h1: i64 = 3144134277
+	h2: i64 = 1013904242
+	h3: i64 = 2773480762
+	h4: i64 = 1359893119
+	h5: i64 = 2600822924
+	h6: i64 = 528734635
+	h7: i64 = 1541459225
+	buf: ptr = null
+	buflen: i64 = 0
+	total: i64 = 0
 }
 
 // SHA-256 round constants
