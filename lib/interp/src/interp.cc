@@ -346,15 +346,23 @@ namespace {
 		return out;
 	}
 
+	// This tier does not run the validator, so a literal that will not read is refused here
+	bool readInteger(qd_interp* interp, const std::string& text, int64_t& out) {
+		if (Qd::parseIntegerLiteral(text, out)) {
+			return true;
+		}
+		interp->error = "integer literal '" + text + "' is out of range for i64";
+		return false;
+	}
+
 	bool pushLiteral(qd_interp* interp, const Qd::AstNodeLiteral* literal) {
 		const std::string& text = literal->value();
 
 		switch (literal->literalType()) {
-		case Qd::AstNodeLiteral::LiteralType::INTEGER:
-			// Every literal that reaches here has been through the validator, which rejects
-			// the ones that will not read, so the fallback stands for a case that cannot
-			// arrive rather than for a value the program might see.
-			return qd_push_i(interp->ctx, Qd::integerLiteralOr(text, 0)) == 0;
+		case Qd::AstNodeLiteral::LiteralType::INTEGER: {
+			int64_t value = 0;
+			return readInteger(interp, text, value) && qd_push_i(interp->ctx, value) == 0;
+		}
 		case Qd::AstNodeLiteral::LiteralType::FLOAT:
 			return qd_push_f(interp->ctx, std::strtod(text.c_str(), nullptr)) == 0;
 		case Qd::AstNodeLiteral::LiteralType::STRING:
@@ -723,9 +731,15 @@ namespace {
 
 			double number = 0.0;
 			switch (value->literalType()) {
-			case Qd::AstNodeLiteral::LiteralType::INTEGER:
-				number = static_cast<double>(Qd::integerLiteralOr(text, 0));
+			case Qd::AstNodeLiteral::LiteralType::INTEGER: {
+				int64_t whole = 0;
+				if (!readInteger(interp, text, whole)) {
+					qd_array_release(array);
+					return false;
+				}
+				number = static_cast<double>(whole);
 				break;
+			}
 			case Qd::AstNodeLiteral::LiteralType::BOOL:
 				number = (text == "true" || text == "Ok") ? 1.0 : 0.0;
 				break;

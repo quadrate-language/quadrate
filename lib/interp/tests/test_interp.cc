@@ -35,6 +35,20 @@ TEST(Arithmetic) {
 	qd_interp_destroy(interp);
 }
 
+TEST(IntegerLiteralOutOfRange) {
+	qd_interp* interp = qd_interp_create(256);
+
+	ASSERT(!qd_interp_eval(interp, "99999999999999999999"), "a literal past i64 is refused, not read as 0");
+	ASSERT(std::strstr(qd_interp_error(interp), "out of range") != nullptr, "and says why");
+	ASSERT(qd_interp_depth(interp) == 0, "leaving nothing behind");
+	ASSERT(!qd_interp_eval(interp, "9223372036854775808"), "one past the greatest is refused");
+	ASSERT(!qd_interp_eval(interp, "[1 99999999999999999999]"), "in an array literal too");
+	ASSERT(std::strcmp(top(interp, "9223372036854775807"), "9223372036854775807") == 0, "the greatest still reads");
+	ASSERT(std::strcmp(top(interp, "clear -9223372036854775808"), "-9223372036854775808") == 0, "and the least");
+
+	qd_interp_destroy(interp);
+}
+
 TEST(Floats) {
 	qd_interp* interp = qd_interp_create(256);
 
