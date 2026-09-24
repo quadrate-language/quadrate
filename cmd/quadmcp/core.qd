@@ -11,7 +11,7 @@ use unicode
 
 const PROTOCOL_VERSION = "2024-11-05"
 const SERVER_NAME = "quadmcp"
-const SERVER_VERSION = "0.5.0"
+const SERVER_VERSION = "0.6.0"
 
 // modules holds a JSON array of stdlib module names
 // (e.g. ["bits","bytes",...]) loaded from docs/api/modules.json.
