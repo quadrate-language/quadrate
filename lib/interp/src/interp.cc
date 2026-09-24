@@ -191,6 +191,7 @@ struct qd_interp {
 	std::vector<Frame> frames;
 
 	size_t call_depth = 0;
+	size_t eval_depth = 0;	   ///< qd_interp_eval() calls in progress; more than one when a native evaluates
 	std::string last_declared; ///< Name the most recent eval declared, if any
 };
 
@@ -1300,26 +1301,46 @@ namespace {
 	//
 	// longjmp skips destructors, so nothing between this frame and a runtime call
 	// may hold an object needing one. Keep it that way.
+	//
+	// Whoever armed recovery before this -- the host, or an evaluation this one
+	// is nested in -- gets its jump buffer back afterwards, still armed.
 	bool runGuarded(qd_interp* interp, const Qd::IAstNode* root) {
-		if (setjmp(*qd_recovery_buf(interp->ctx)) == 0) {
+		jmp_buf* buf = qd_recovery_buf(interp->ctx);
+		const bool outer_armed = qd_recovery_armed(interp->ctx);
+		jmp_buf outer;
+		if (outer_armed) {
+			std::memcpy(&outer, buf, sizeof(jmp_buf));
+		}
+		const size_t frames = interp->frames.size();
+		const size_t evals = interp->eval_depth;
+		const size_t calls = interp->call_depth;
+
+		bool ok = false;
+		if (setjmp(*buf) == 0) {
 			qd_recovery_arm(interp->ctx);
-			const bool ok = evalNode(interp, root);
+			ok = evalNode(interp, root);
 			qd_recovery_disarm(interp->ctx);
-			return ok;
+		} else {
+			// Unwound from a fatal runtime error; recovery disarmed itself. The
+			// frames a call in progress pushed are still there, since longjmp
+			// ran no destructor -- they live in the interpreter, so dropping
+			// them here is all the cleanup needed. Those below this evaluation
+			// belong to whatever it is nested in.
+			while (interp->frames.size() > frames) {
+				dropFrame(interp);
+			}
+			interp->eval_depth = evals;
+			interp->call_depth = calls;
+
+			const char* message = qd_error_message(interp->ctx);
+			interp->error = (message != nullptr) ? message : "runtime error";
 		}
 
-		// Unwound from a fatal runtime error; recovery disarmed itself. The
-		// frames a call in progress pushed are still there, since longjmp ran no
-		// destructor -- they live in the interpreter, so dropping them here is
-		// all the cleanup needed.
-		while (interp->frames.size() > 1) {
-			dropFrame(interp);
+		if (outer_armed) {
+			std::memcpy(buf, &outer, sizeof(jmp_buf));
+			qd_recovery_arm(interp->ctx);
 		}
-		interp->call_depth = 0;
-
-		const char* message = qd_error_message(interp->ctx);
-		interp->error = (message != nullptr) ? message : "runtime error";
-		return false;
+		return ok;
 	}
 
 	qd_interp* makeInterp(qd_context* ctx, bool owns) {
@@ -1334,6 +1355,77 @@ namespace {
 		interp->owns_ctx = owns;
 		interp->frames.resize(1); // the top-level frame
 		return interp;
+	}
+
+	// Parse and run one evaluation's source; qd_interp_eval() has set up the
+	// frame it runs in.
+	bool evalSource(qd_interp* interp, const char* source) {
+		interp->error.clear();
+		interp->last_declared.clear();
+		interp->flow = Flow::Normal;
+
+		// A declaration parses as a program; anything else as a function body.
+		const bool declares = startsWithDeclaration(source);
+		const std::string text = declares ? std::string(source) : ("fn main() {\n" + std::string(source) + "\n}");
+
+		auto ast = std::make_shared<Qd::Ast>();
+		Qd::IAstNode* root = ast->generate(text.c_str(), false, "<interp>");
+		if (root == nullptr || ast->hasErrors()) {
+			const std::vector<Qd::ErrorInfo>& errors = ast->getErrors();
+			interp->error = errors.empty() ? "syntax error" : errors.front().message;
+			return false;
+		}
+
+		if (declares) {
+			// Refuse before recording anything, so a program that mixes a method in with
+			// functions does not leave half of itself declared.
+			for (size_t i = 0; i < root->childCount(); i++) {
+				const char* unsupported = unsupportedName(root->child(i));
+				if (unsupported != nullptr) {
+					interp->error = std::string(unsupported) + " cannot be interpreted yet";
+					return false;
+				}
+			}
+
+			// The nodes belong to this Ast, so the declaration keeps it alive.
+			bool recorded = false;
+			for (size_t i = 0; i < root->childCount(); i++) {
+				const Qd::IAstNode* child = root->child(i);
+				switch (child->type()) {
+				case Qd::IAstNode::Type::FUNCTION_DECLARATION: {
+					const auto* fn = static_cast<const Qd::AstNodeFunctionDeclaration*>(child);
+					interp->functions[fn->name()] = Declared{child, ast};
+					if (interp->last_declared.empty()) {
+						interp->last_declared = fn->name();
+					}
+					recorded = true;
+					break;
+				}
+
+				// A constant's value is copied out, so these keep no reference to
+				// the parse they came from.
+				case Qd::IAstNode::Type::CONSTANT_DECLARATION:
+					recordConstant(interp, static_cast<const Qd::AstNodeConstant*>(child));
+					recorded = true;
+					break;
+
+				case Qd::IAstNode::Type::ENUM_DECLARATION:
+					recordEnum(interp, static_cast<const Qd::AstNodeEnumDeclaration*>(child));
+					recorded = true;
+					break;
+
+				default:
+					break;
+				}
+			}
+			if (!recorded) {
+				interp->error = "nothing declared here can be interpreted yet";
+				return false;
+			}
+			return true;
+		}
+
+		return runGuarded(interp, root);
 	}
 
 } // namespace
@@ -1457,82 +1549,39 @@ size_t qd_interp_declared_count(const qd_interp* interp) {
 	return interp->functions.size() + interp->constants.size() - variants + interp->enums.size();
 }
 
+// A native may evaluate on the interpreter that is running it -- a solver
+// calling the word it was given, say. That evaluation is nested: it gets a frame
+// of its own, and hands back the calls, locals and flow of the one it is inside.
 bool qd_interp_eval(qd_interp* interp, const char* source) {
 	if (interp == nullptr || source == nullptr) {
 		return false;
 	}
 
-	interp->error.clear();
-	interp->last_declared.clear();
-	interp->flow = Flow::Normal;
-	interp->steps = 0;
-	interp->call_depth = 0;
-	while (interp->frames.size() > 1) {
+	if (interp->eval_depth == 0) {
+		interp->steps = 0;
+		interp->call_depth = 0;
+		while (interp->frames.size() > 1) {
+			dropFrame(interp);
+		}
+		interp->eval_depth++;
+		const bool ok = evalSource(interp, source);
+		interp->eval_depth--;
+		return ok;
+	}
+
+	const Flow flow = interp->flow;
+	const size_t calls = interp->call_depth;
+	const size_t frames = interp->frames.size();
+	interp->frames.emplace_back();
+	interp->eval_depth++;
+	const bool ok = evalSource(interp, source);
+	interp->eval_depth--;
+	while (interp->frames.size() > frames) {
 		dropFrame(interp);
 	}
-
-	// A declaration parses as a program; anything else as a function body.
-	const bool declares = startsWithDeclaration(source);
-	const std::string text = declares ? std::string(source) : ("fn main() {\n" + std::string(source) + "\n}");
-
-	auto ast = std::make_shared<Qd::Ast>();
-	Qd::IAstNode* root = ast->generate(text.c_str(), false, "<interp>");
-	if (root == nullptr || ast->hasErrors()) {
-		const std::vector<Qd::ErrorInfo>& errors = ast->getErrors();
-		interp->error = errors.empty() ? "syntax error" : errors.front().message;
-		return false;
-	}
-
-	if (declares) {
-		// Refuse before recording anything, so a program that mixes a method in with
-		// functions does not leave half of itself declared.
-		for (size_t i = 0; i < root->childCount(); i++) {
-			const char* unsupported = unsupportedName(root->child(i));
-			if (unsupported != nullptr) {
-				interp->error = std::string(unsupported) + " cannot be interpreted yet";
-				return false;
-			}
-		}
-
-		// The nodes belong to this Ast, so the declaration keeps it alive.
-		bool recorded = false;
-		for (size_t i = 0; i < root->childCount(); i++) {
-			const Qd::IAstNode* child = root->child(i);
-			switch (child->type()) {
-			case Qd::IAstNode::Type::FUNCTION_DECLARATION: {
-				const auto* fn = static_cast<const Qd::AstNodeFunctionDeclaration*>(child);
-				interp->functions[fn->name()] = Declared{child, ast};
-				if (interp->last_declared.empty()) {
-					interp->last_declared = fn->name();
-				}
-				recorded = true;
-				break;
-			}
-
-			// A constant's value is copied out, so these keep no reference to
-			// the parse they came from.
-			case Qd::IAstNode::Type::CONSTANT_DECLARATION:
-				recordConstant(interp, static_cast<const Qd::AstNodeConstant*>(child));
-				recorded = true;
-				break;
-
-			case Qd::IAstNode::Type::ENUM_DECLARATION:
-				recordEnum(interp, static_cast<const Qd::AstNodeEnumDeclaration*>(child));
-				recorded = true;
-				break;
-
-			default:
-				break;
-			}
-		}
-		if (!recorded) {
-			interp->error = "nothing declared here can be interpreted yet";
-			return false;
-		}
-		return true;
-	}
-
-	return runGuarded(interp, root);
+	interp->flow = flow;
+	interp->call_depth = calls;
+	return ok;
 }
 
 const char* qd_interp_error(const qd_interp* interp) {

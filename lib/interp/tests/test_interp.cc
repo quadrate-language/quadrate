@@ -390,6 +390,53 @@ TEST(RegisteringTwiceReplaces) {
 	qd_interp_destroy(interp);
 }
 
+namespace {
+
+	// A native that evaluates on the interpreter running it, as a solver calls
+	// the word it was given: the word's name is on top, x under it
+	int nativeApply(qd_context* ctx, void* userdata) {
+		auto* interp = static_cast<qd_interp*>(userdata);
+		char word[64];
+		if (qd_pop_s(ctx, word, sizeof(word)) != 0) {
+			return 1;
+		}
+		if (!qd_interp_eval(interp, word)) {
+			qd_set_error_msg(ctx, qd_interp_error(interp));
+			return 1;
+		}
+		return 0;
+	}
+
+} // namespace
+
+TEST(NestedEvaluationLeavesTheCallerAlone) {
+	qd_interp* interp = qd_interp_create(256);
+	qd_interp_register(interp, "apply", "(x:f64 f:str -- y:f64)", nativeApply, interp);
+
+	ASSERT(qd_interp_eval(interp, "fn double(x:i64 -- y:i64) { x 2 * }"), "declare double");
+	ASSERT(qd_interp_eval(interp, "fn bad(x:i64 -- y:i64) { x \"s\" + }"), "declare bad");
+
+	// The caller's locals and parameters outlive the word it had evaluated
+	ASSERT(qd_interp_eval(interp, "fn f(n:i64 -- r:i64) { 5 -> k n \"double\" apply k + n + }"), "declare f");
+	ASSERT(std::strcmp(top(interp, "clear 10 f"), "35") == 0, "locals survive a nested evaluation");
+
+	// Many times over, which used to empty the frame stack and abort
+	ASSERT(std::strcmp(top(interp, "clear 10 f 1 f 2 f"), "11") == 0, "and it does again");
+
+	// A nested evaluation that fails fatally is caught there, not in the caller
+	ASSERT(qd_interp_eval(interp, "fn g(n:i64 -- r:i64) { 7 -> k n \"bad\" apply drop k }"), "declare g");
+	ASSERT(!qd_interp_eval(interp, "clear 1 g"), "the nested failure surfaces through the native");
+	ASSERT(std::strstr(qd_interp_error(interp), "Type error") != nullptr, "with its own message");
+
+	// And recovery is still armed for the caller once the nested one is done
+	ASSERT(qd_interp_eval(interp, "fn h(n:i64 -- r:i64) { n \"double\" apply 0 / }"), "declare h");
+	ASSERT(!qd_interp_eval(interp, "clear 3 h"), "a fatal error after a nested evaluation fails");
+	ASSERT(std::strstr(qd_interp_error(interp), "Division by zero") != nullptr, "rather than exiting");
+	ASSERT(std::strcmp(top(interp, "clear 2 3 +"), "5") == 0, "the interpreter still works");
+
+	qd_interp_destroy(interp);
+}
+
 TEST(UndefinedNameIsReported) {
 	qd_interp* interp = qd_interp_create(256);
 
