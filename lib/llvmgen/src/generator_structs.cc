@@ -173,7 +173,8 @@ namespace Qd {
 				if (!baseTypeName.empty() && baseTypeName[0] == '*') {
 					baseTypeName = baseTypeName.substr(1);
 				}
-				if (field.typeName == "str" || field.isTypeParam || isArrayType(field.typeName) ||
+				if (field.typeName == "str" || field.typeName == "f128" || field.isTypeParam ||
+						isArrayType(field.typeName) ||
 						(looksLikeStructType(baseTypeName) && isKnownStruct(baseTypeName))) {
 					needsDestructor = true;
 					break;
@@ -218,14 +219,14 @@ namespace Qd {
 				}
 			}
 
-			// Release string fields
+			// Release string and f128 fields
 			for (const auto& field : layout.fields) {
-				if (field.typeName == "str") {
+				if (field.typeName == "str" || field.typeName == "f128") {
 					auto fieldOffset = builder->getInt64(field.offset);
 					auto fieldBytePtr =
 							builder->CreateGEP(builder->getInt8Ty(), structPtr, fieldOffset, "str_field_ptr");
-					llvm::Value* stringPtr = builder->CreateLoad(ptrTy, fieldBytePtr, "string_ptr");
-					builder->CreateCall(qdStringReleaseFn, {stringPtr});
+					llvm::Value* boxPtr = builder->CreateLoad(ptrTy, fieldBytePtr, "string_ptr");
+					builder->CreateCall(field.typeName == "str" ? qdStringReleaseFn : qdF128ReleaseFn, {boxPtr});
 				}
 			}
 
@@ -267,6 +268,9 @@ namespace Qd {
 					builder->CreateBr(skipRelease);
 
 					builder->SetInsertPoint(skipRelease);
+					emitReleaseIfF128(typeTag,
+							builder->CreateGEP(builder->getInt8Ty(), structPtr, fieldOffset, "typeparam_f128_ptr"),
+							field.name);
 				}
 			}
 
@@ -366,6 +370,9 @@ namespace Qd {
 				} else if (field.typeName == "str") {
 					llvm::Value* str = builder->CreateLoad(ptrTy, fieldPtr("str_field_ptr"), "string_ptr");
 					builder->CreateCall(qdStringRetainFn, {str});
+				} else if (field.typeName == "f128") {
+					llvm::Value* box = builder->CreateLoad(ptrTy, fieldPtr("f128_field_ptr"), "f128_ptr");
+					builder->CreateCall(qdF128RetainFn, {box});
 				} else if (isArrayType(field.typeName)) {
 					llvm::Value* arr = builder->CreateLoad(ptrTy, fieldPtr("array_field_ptr"), "array_ptr");
 					builder->CreateCall(qdPtrRetainFn, {arr});
@@ -387,6 +394,16 @@ namespace Qd {
 					builder->CreateBr(skipRetain);
 
 					builder->SetInsertPoint(skipRetain);
+					auto* retainF128 = llvm::BasicBlock::Create(*context, field.name + "_retain_f128", clonerFn);
+					auto* afterF128 = llvm::BasicBlock::Create(*context, field.name + "_after_f128", clonerFn);
+					builder->CreateCondBr(
+							builder->CreateICmpEQ(typeTag, builder->getInt64(kStackTypeF128), "is_f128_typeparam"),
+							retainF128, afterF128);
+					builder->SetInsertPoint(retainF128);
+					llvm::Value* box = builder->CreateLoad(ptrTy, fieldPtr("typeparam_f128_ptr"), "typeparam_f128");
+					builder->CreateCall(qdF128RetainFn, {box});
+					builder->CreateBr(afterF128);
+					builder->SetInsertPoint(afterF128);
 				}
 			}
 
@@ -479,11 +496,11 @@ namespace Qd {
 				llvm::Value* intValue = builder->CreateLoad(int64Ty, valuePtr, "int_val");
 				llvm::Value* truncValue = builder->CreateTrunc(intValue, builder->getInt8Ty(), "int8_val");
 				builder->CreateStore(truncValue, bytePtr);
-			} else if (field.typeName == "ptr" || field.typeName == "str" ||
+			} else if (field.typeName == "ptr" || field.typeName == "str" || field.typeName == "f128" ||
 					   field.typeName.find('*') != std::string::npos || isArrayType(field.typeName) ||
 					   isFnType(field.typeName) ||
 					   (looksLikeStructType(field.typeName) && isKnownStruct(field.typeName))) {
-				// Pointer type (including ptr, str, raw pointers, arrays, and struct-typed fields)
+				// Pointer type (including ptr, str, f128, raw pointers, arrays, and struct-typed fields)
 				llvm::Value* ptrValue = builder->CreateLoad(ptrTy, valuePtr, "ptr_val");
 				builder->CreateStore(ptrValue, bytePtr);
 			} else if (field.isTypeParam) {
@@ -649,6 +666,10 @@ namespace Qd {
 			llvm::Value* ptrValue = builder->CreateLoad(ptrTy, fieldPtr, "field_value");
 			builder->CreateCall(pushStrRefFn, {ctx, ptrValue});
 			lastFieldAccessResultType.clear(); // Not a struct type
+		} else if (matchingField->typeName == "f128") {
+			llvm::Value* box = builder->CreateLoad(ptrTy, bytePtr, "field_value");
+			builder->CreateCall(pushF128Fn, {ctx, box});
+			lastFieldAccessResultType.clear();
 		} else if (matchingField->typeName == "ptr" || matchingField->typeName.find('*') != std::string::npos ||
 				   isArrayType(matchingField->typeName) || isFnType(matchingField->typeName)) {
 			// Handle ptr type, raw pointer types, and array types
@@ -693,10 +714,18 @@ namespace Qd {
 			auto* strBB = llvm::BasicBlock::Create(*context, "generic.str", currentFn);
 			auto* endBB = llvm::BasicBlock::Create(*context, "generic.end", currentFn);
 
-			auto* sw = builder->CreateSwitch(typeTag, intBB, 3);
+			auto* sw = builder->CreateSwitch(typeTag, intBB, 4);
 			sw->addCase(builder->getInt64(1), floatBB);
 			sw->addCase(builder->getInt64(2), ptrBB);
 			sw->addCase(builder->getInt64(3), strBB);
+			{
+				llvm::IRBuilderBase::InsertPointGuard guard(*builder);
+				auto* f128BB = llvm::BasicBlock::Create(*context, "generic.f128", currentFn);
+				sw->addCase(builder->getInt64(kStackTypeF128), f128BB);
+				builder->SetInsertPoint(f128BB);
+				builder->CreateCall(pushF128Fn, {ctx, builder->CreateIntToPtr(rawValue, ptrTy, "f128_val")});
+				builder->CreateBr(endBB);
+			}
 
 			builder->SetInsertPoint(intBB);
 			builder->CreateCall(pushIntFn, {ctx, rawValue});
@@ -820,7 +849,8 @@ namespace Qd {
 			llvm::Value* truncValue = builder->CreateTrunc(intValue, builder->getInt8Ty(), "int8_val");
 			builder->CreateStore(truncValue, bytePtr);
 		} else if (matchingField->typeName == "ptr" || matchingField->typeName == "str" ||
-				   matchingField->typeName.find('*') != std::string::npos || isArrayType(matchingField->typeName) ||
+				   matchingField->typeName == "f128" || matchingField->typeName.find('*') != std::string::npos ||
+				   isArrayType(matchingField->typeName) ||
 				   (looksLikeStructType(matchingField->typeName) && isKnownStruct(matchingField->typeName))) {
 			llvm::Value* ptrValue = builder->CreateLoad(ptrTy, valuePtr, "ptr_val");
 			// A field of one of these types owns a reference: pushing the value onto the stack
@@ -835,6 +865,8 @@ namespace Qd {
 			builder->CreateStore(ptrValue, bytePtr);
 			if (matchingField->typeName == "str") {
 				builder->CreateCall(qdStringReleaseFn, {oldFieldValue});
+			} else if (matchingField->typeName == "f128") {
+				builder->CreateCall(qdF128ReleaseFn, {oldFieldValue});
 			} else {
 				builder->CreateCall(qdPtrReleaseFn, {oldFieldValue});
 			}
@@ -861,6 +893,10 @@ namespace Qd {
 				builder->CreateBr(afterRelease);
 
 				builder->SetInsertPoint(afterRelease);
+				emitReleaseIfF128(oldTag,
+						builder->CreateGEP(builder->getInt8Ty(), structPtr, builder->getInt64(matchingField->offset),
+								"old_f128_ptr"),
+						"old_typeparam");
 			}
 			// Generic type parameter field - store raw 8-byte value + type tag
 			llvm::Value* intValue = builder->CreateLoad(int64Ty, valuePtr, "generic_val");
@@ -900,6 +936,9 @@ namespace Qd {
 		}
 		if (elemType == "str" || elemType == "string") {
 			return "qd_makes";
+		}
+		if (elemType == "f128") {
+			return "qd_makeq";
 		}
 		if (elemType == "ptr" || isArrayType(elemType) || isKnownStruct(elemType)) {
 			return "qd_makep";
@@ -1077,9 +1116,12 @@ namespace Qd {
 		// created as QD_ARRAY_TYPE_ANY (4) and adopts its element type from the first value
 		// appended, exactly as `[] x append` does, so a nested array yields an array of
 		// pointers without anything here having to work out the element type statically.
+		// An f128 literal is a boxed value the constant path has no way to build, so it goes
+		// the same way.
 		bool allScalarLiterals = true;
 		for (const auto& elemPtr : elements) {
-			if (elemPtr->type() != IAstNode::Type::LITERAL) {
+			if (elemPtr->type() != IAstNode::Type::LITERAL ||
+					static_cast<AstNodeLiteral*>(elemPtr.get())->literalType() == AstNodeLiteral::LiteralType::F128) {
 				allScalarLiterals = false;
 				break;
 			}

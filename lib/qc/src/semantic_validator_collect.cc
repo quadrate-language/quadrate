@@ -365,6 +365,8 @@ namespace Qd {
 
 					if (resolvedTypeName == "f64") {
 						fieldType = StackValueType::FLOAT;
+					} else if (resolvedTypeName == "f128") {
+						fieldType = StackValueType::F128;
 					} else if (resolvedTypeName == "i64" || resolvedTypeName == "i32" || resolvedTypeName == "i16" ||
 							   resolvedTypeName == "i8" || resolvedTypeName == "u64" || resolvedTypeName == "u32" ||
 							   resolvedTypeName == "u16" || resolvedTypeName == "u8") {
@@ -501,6 +503,8 @@ namespace Qd {
 						sig.consumes.push_back(StackValueType::INT);
 					} else if (typeStr == "f32" || typeStr == "f64" || typeStr == "float") {
 						sig.consumes.push_back(StackValueType::FLOAT);
+					} else if (typeStr == "f128") {
+						sig.consumes.push_back(StackValueType::F128);
 					} else if (typeStr == "str") {
 						sig.consumes.push_back(StackValueType::STRING);
 					} else if (typeStr == "ptr" || typeStr == "bool" || isStructTypeName(typeStr)) {
@@ -519,6 +523,8 @@ namespace Qd {
 						sig.produces.push_back(StackValueType::INT);
 					} else if (typeStr == "f32" || typeStr == "f64" || typeStr == "float") {
 						sig.produces.push_back(StackValueType::FLOAT);
+					} else if (typeStr == "f128") {
+						sig.produces.push_back(StackValueType::F128);
 					} else if (typeStr == "str") {
 						sig.produces.push_back(StackValueType::STRING);
 					} else if (typeStr == "ptr" || typeStr == "bool") {
@@ -687,8 +693,8 @@ namespace Qd {
 						}
 
 						// Primitive types: f64, i64, str, ptr, bool, u8, i8, u16, i16, u32, i32, u64
-						static const std::unordered_set<std::string> primitiveTypes = {
-								"f64", "i64", "str", "ptr", "bool", "u8", "i8", "u16", "i16", "u32", "i32", "u64"};
+						static const std::unordered_set<std::string> primitiveTypes = {"f64", "f128", "i64", "str",
+								"ptr", "bool", "u8", "i8", "u16", "i16", "u32", "i32", "u64"};
 
 						if (primitiveTypes.find(baseTypeName) == primitiveTypes.end()) {
 							// Not a primitive - check if it's a known struct

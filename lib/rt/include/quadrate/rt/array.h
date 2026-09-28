@@ -35,7 +35,8 @@ typedef enum {
 	/// Element type not yet determined: an empty array that adopts the type of the first value
 	/// appended to it. An empty `[]` literal starts this way, as does `make<T>` for a type
 	/// parameter, whose concrete type a generic function cannot know at run time.
-	QD_ARRAY_TYPE_ANY = 4
+	QD_ARRAY_TYPE_ANY = 4,
+	QD_ARRAY_TYPE_F128 = 5 ///< Reference-counted decimal128 (a NULL slot reads as zero)
 } qd_array_type;
 
 /**
@@ -65,7 +66,7 @@ typedef struct qd_array {
 	union {
 		int64_t* i; ///< Integer array data
 		double* f;	///< Float array data
-		void** p;	///< Pointer array data (includes strings)
+		void** p;	///< Pointer array data (includes strings and f128)
 	} data;
 } qd_array_t;
 
@@ -286,6 +287,16 @@ int qd_makep(qd_context* ctx);
  * @return Execution result (0 on success)
  */
 int qd_makea(qd_context* ctx);
+
+/**
+ * @brief Create an f128 array of n zeros
+ *
+ * Stack effect: ( n -- array )
+ *
+ * @param ctx Execution context
+ * @return 0 on success, non-zero on error
+ */
+int qd_makeq(qd_context* ctx);
 
 /**
  * @brief Append element to array

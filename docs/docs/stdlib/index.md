@@ -38,6 +38,7 @@ fn main() {
 | [crypto](crypto.md) | Cryptographic hash functions, checksums, and HMAC. |
 | [ct](ct.md) | Generic container types. |
 | [error](error.md) | Errors as values. |
+| [f128](f128.md) | IEEE 754 decimal128 arithmetic beyond the operators. |
 | [flag](flag.md) | Command-line flag parsing. |
 | [fmt](fmt.md) | Formatted output functions. |
 | [fuzzy](fuzzy.md) | doccheck: page-context |

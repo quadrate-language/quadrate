@@ -25,6 +25,7 @@ extern "C" {
 static bool isStdlibImport(const std::string& library) {
 	static const char* const stdlibLibs[] = {
 			"librt.a",
+			"libf128.a",
 			"libfmt.a",
 			"libio.a",
 			"libmath.a",
@@ -291,6 +292,13 @@ namespace Qd {
 		qdStringReleaseFn = declareFn(ptrToVoidTy, "qd_string_release");
 		qdStringRetainFn = declareFn(ptrToPtrTy, "qd_string_retain");
 		qdStringDataFn = declareFn(ptrToPtrTy, "qd_string_data");
+
+		// f128 values: boxed and counted, like strings
+		qdF128ReleaseFn = declareFn(ptrToVoidTy, "qd_f128_release");
+		qdF128RetainFn = declareFn(ptrToPtrTy, "qd_f128_retain");
+		pushF128Fn = declareFn(ctxPtrToResultTy, "qd_push_q");
+		pushF128LitFn =
+				declareFn(llvm::FunctionType::get(execResultTy, {contextPtrTy, ptrTy, ptrTy}, false), "qd_push_q_lit");
 
 		// Initialize debug info if enabled
 		if (debugInfoEnabled) {
@@ -589,8 +597,12 @@ namespace Qd {
 		const std::string& name = inst->name();
 		// 'cast' has a compile-time path only in its type-parameterised form, and only
 		// f64 conversions make it worth taking; bare 'cast' falls through to qd_cast*.
+		// The path converts between i64 and f64 and nothing else, so only those two targets
+		// qualify; `cast<f128>` builds a boxed value the compile-time stack cannot hold.
 		if (name == "cast") {
-			return allowFloat && inst->hasTypeParam();
+			static const std::set<std::string> NUMERIC_TARGETS = {
+					"i64", "i", "int", "int64", "f64", "f", "float", "float64"};
+			return allowFloat && inst->hasTypeParam() && NUMERIC_TARGETS.count(inst->typeParam()) != 0;
 		}
 		return HANDLED.find(name) != HANDLED.end();
 	}
@@ -661,6 +673,18 @@ namespace Qd {
 			if (localNames.find(identName) == localNames.end() &&
 					nonIntegerSignatureFunctions.find(identName) != nonIntegerSignatureFunctions.end()) {
 				return false;
+			}
+			// An f128 constant or global is a boxed value, which the compile-time stack has no
+			// way to hold.
+			if (localNames.find(identName) == localNames.end()) {
+				auto constIt = moduleConstants.find(identName);
+				if (constIt != moduleConstants.end() && isF128LiteralText(constIt->second)) {
+					return false;
+				}
+				auto globalIt = moduleGlobalVarTypes.find(identName);
+				if (globalIt != moduleGlobalVarTypes.end() && globalIt->second == "f128") {
+					return false;
+				}
 			}
 			break;
 		}
@@ -1589,9 +1613,9 @@ namespace Qd {
 						const std::string& typeStr = param->typeString();
 						// Check if this is a struct type (not a primitive type)
 						if (!typeStr.empty() && typeStr != "i" && typeStr != "i64" && typeStr != "int" &&
-								typeStr != "int64" && typeStr != "f" && typeStr != "f64" && typeStr != "float" &&
-								typeStr != "s" && typeStr != "str" && typeStr != "string" && typeStr != "p" &&
-								typeStr != "ptr" && typeStr != "pointer") {
+								typeStr != "int64" && typeStr != "f" && typeStr != "f64" && typeStr != "f128" &&
+								typeStr != "float" && typeStr != "s" && typeStr != "str" && typeStr != "string" &&
+								typeStr != "p" && typeStr != "ptr" && typeStr != "pointer") {
 							// This is a struct type - mark the parameter name as a struct local
 							// so it gets released at function cleanup (use full qualified name)
 							if (!param->name().empty()) {
@@ -1689,9 +1713,9 @@ namespace Qd {
 						// Track struct type if applicable
 						const std::string& typeStr = param->typeString();
 						if (!typeStr.empty() && typeStr != "i" && typeStr != "i64" && typeStr != "int" &&
-								typeStr != "int64" && typeStr != "f" && typeStr != "f64" && typeStr != "float" &&
-								typeStr != "s" && typeStr != "str" && typeStr != "string" && typeStr != "p" &&
-								typeStr != "ptr" && typeStr != "pointer") {
+								typeStr != "int64" && typeStr != "f" && typeStr != "f64" && typeStr != "f128" &&
+								typeStr != "float" && typeStr != "s" && typeStr != "str" && typeStr != "string" &&
+								typeStr != "p" && typeStr != "ptr" && typeStr != "pointer") {
 							localVariableStructTypes[paramName] = extractStructName(typeStr);
 						}
 

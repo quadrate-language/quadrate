@@ -322,6 +322,42 @@ int usr_strconv_parse_float(qd_context* ctx) {
 	return (int){0};
 }
 
+// parse_f128 - parse string to f128 ( s:str -- value:f128 )!
+//
+// Stricter than parse_float, which takes the longest prefix that reads: a decimal value is
+// usually money or a measurement typed by a person, and "1.5x" being 1.5 is the kind of
+// answer that goes unnoticed.
+int usr_strconv_parse_f128(qd_context* ctx) {
+	qd_stack_element_t str_elem;
+
+	qd_stack_error err = qd_stack_pop(ctx->st, &str_elem);
+	if (err != QD_STACK_OK) {
+		fprintf(stderr, "Fatal error in strconv::parse_f128: Stack underflow\n");
+		abort();
+	}
+
+	if (str_elem.type != QD_STACK_TYPE_STR) {
+		fprintf(stderr, "Fatal error in strconv::parse_f128: Expected string\n");
+		abort();
+	}
+
+	qd_f128_t* result = qd_f128_parse(qd_string_data(str_elem.value.s));
+	qd_string_release(str_elem.value.s);
+	if (result == NULL) {
+		ctx->error_code = STRCONV_ERR_INVALID;
+		qd_set_error_msg(ctx, "strconv::parse_f128: invalid number format");
+		qd_stack_push_int(ctx->st, (int64_t)STRCONV_ERR_INVALID);
+		return (int){STRCONV_ERR_INVALID};
+	}
+
+	if (qd_stack_push_f128(ctx->st, result) != QD_STACK_OK) {
+		qd_f128_release(result);
+		qd_fatal_raise(ctx, "strconv::parse_f128", "Stack overflow");
+	}
+	qd_stack_push_int(ctx->st, STRCONV_ERR_OK);
+	return (int){0};
+}
+
 // format_bool - format boolean to string ( value:i -- str:s )
 int usr_strconv_format_bool(qd_context* ctx) {
 	qd_stack_element_t value_elem;

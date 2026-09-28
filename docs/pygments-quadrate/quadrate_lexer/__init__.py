@@ -79,7 +79,7 @@ class QuadrateLexer(RegexLexer):
     types = (
         'i8', 'i16', 'i32', 'i64',
         'u8', 'u16', 'u32', 'u64',
-        'f32', 'f64', 'float',
+        'f32', 'f64', 'f128', 'float',
         'str', 'ptr', 'bool', 'void', 'any',
     )
 
@@ -106,6 +106,8 @@ class QuadrateLexer(RegexLexer):
             # Numbers
             (r'0b[01_]+', Number.Bin),
             (r'0x[0-9a-fA-F_]+', Number.Hex),
+            # f128: a decimal literal with a q, before the f64 and integer forms claim its digits
+            (r'-?\d+(\.\d+)?([eE][+-]?\d+)?q\b', Number.Float),
             (r'-?\d+\.\d+[eE][+-]?\d+', Number.Float),
             (r'-?\d+[eE][+-]?\d+', Number.Float),
             (r'-?\d+\.\d+', Number.Float),

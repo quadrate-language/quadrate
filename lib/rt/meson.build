@@ -1,10 +1,12 @@
 # Common sources
 qdrt_sources = files(
+		'src/f128.c',
 		'src/natives.c',
 		'src/runtime.c',
 		'src/runtime_stack.c',
 		'src/runtime_ops.c',
 		'src/runtime_io.c',
+		'src/runtime_f128.c',
 		'src/stack.c',
 		'src/memory.c',
 		'src/qd_string.c',
@@ -53,6 +55,13 @@ version_args = [
 cc = meson.get_compiler('c')
 m_dep = cc.find_library('m', required: false)
 
+# libmpdec does the decimal128 arithmetic behind f128. Always the pinned copy from the
+# wrap, never a system one: it is linked whole into the runtime, so a compiled program
+# carries it and needs nothing installed where it runs -- a Raspberry Pi included.
+mpdec_proj = subproject('mpdecimal', default_options: ['default_library=static'])
+mpdec_lib = mpdec_proj.get_variable('libmpdec')
+mpdec_inc = mpdec_proj.get_variable('mpdec_inc')
+
 # Dynamic library loading dependency
 # - On Haiku: dlopen/dlsym are in libroot (linked by default)
 # - On Linux/BSD/etc: they're in libdl
@@ -65,7 +74,8 @@ endif
 # Shared library - public runtime API
 qdrt_shared = shared_library('qdrt',
 		qdrt_sources,
-		include_directories: qdrt_inc,
+		include_directories: [qdrt_inc, mpdec_inc],
+		link_whole: mpdec_lib,
 		dependencies: [m_dep, dl_dep],
 		c_args: version_args,
 		install_rpath: '$ORIGIN',
@@ -75,7 +85,8 @@ qdrt_shared = shared_library('qdrt',
 # Static library (with -ffunction-sections -fdata-sections for --gc-sections linking)
 qdrt_static = static_library('rt_static',
 		qdrt_sources,
-		include_directories: qdrt_inc,
+		include_directories: [qdrt_inc, mpdec_inc],
+		link_whole: mpdec_lib,
 		dependencies: [m_dep, dl_dep],
 		c_args: version_args + ['-ffunction-sections', '-fdata-sections'],
 		install: false

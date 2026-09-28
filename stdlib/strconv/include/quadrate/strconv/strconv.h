@@ -86,6 +86,9 @@ int usr_strconv_format_float(qd_context* ctx);
  */
 int usr_strconv_parse_float(qd_context* ctx);
 
+/** @brief Parse string to f128 - Stack Effect: ( s:str -- value:f128 )! */
+int usr_strconv_parse_f128(qd_context* ctx);
+
 /**
  * @brief Format boolean to string
  * @par Stack Effect: ( value:i -- str:s )

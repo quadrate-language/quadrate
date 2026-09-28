@@ -556,14 +556,9 @@ namespace Qd {
 
 			// Parse case value (no 'case' keyword)
 			std::unique_ptr<IAstNode> caseValue;
-			if (token == U8T_INTEGER) {
-				const char* valueText = u8t_scanner_token_text(scanner, &n);
-				caseValue.reset(new AstNodeLiteral(valueText, AstNodeLiteral::LiteralType::INTEGER));
-				setNodePosition(caseValue.get(), scanner, src);
-			} else if (token == U8T_FLOAT) {
-				const char* valueText = u8t_scanner_token_text(scanner, &n);
-				caseValue.reset(new AstNodeLiteral(valueText, AstNodeLiteral::LiteralType::FLOAT));
-				setNodePosition(caseValue.get(), scanner, src);
+			if (token == U8T_INTEGER || token == U8T_FLOAT) {
+				caseValue.reset(
+						makeNumericLiteral(scanner, errorReporter, src, token, u8t_scanner_token_text(scanner, &n)));
 			} else if (token == U8T_STRING) {
 				noteUnterminatedString(scanner, src);
 				const char* valueText = u8t_scanner_token_text(scanner, &n);

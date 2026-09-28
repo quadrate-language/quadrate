@@ -13,16 +13,8 @@ namespace Qd {
 			return nullptr;
 		}
 
-		if (token == U8T_INTEGER) {
-			const char* text = u8t_scanner_token_text(scanner, n);
-			IAstNode* node = new AstNodeLiteral(text, AstNodeLiteral::LiteralType::INTEGER);
-			setNodePosition(node, scanner, src);
-			return node;
-		} else if (token == U8T_FLOAT) {
-			const char* text = u8t_scanner_token_text(scanner, n);
-			IAstNode* node = new AstNodeLiteral(text, AstNodeLiteral::LiteralType::FLOAT);
-			setNodePosition(node, scanner, src);
-			return node;
+		if (token == U8T_INTEGER || token == U8T_FLOAT) {
+			return makeNumericLiteral(scanner, errorReporter, src, token, u8t_scanner_token_text(scanner, n));
 		} else if (token == U8T_STRING) {
 			if (!noteUnterminatedString(scanner, src)) {
 				// Building a literal out of the rest of the file helps nobody; Ast::generate

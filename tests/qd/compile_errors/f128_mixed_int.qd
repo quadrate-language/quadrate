@@ -1,0 +1,4 @@
+// Test: an f128 does not mix with an integer; the conversion has to be written.
+fn main() {
+	1.5q 2 + print nl
+}

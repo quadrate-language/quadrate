@@ -209,16 +209,9 @@ namespace Qd {
 					if (noteDigitSeparator(scanner, errorReporter, src, valToken)) {
 						// Reported; the field keeps no default rather than the digits before
 						// the `_`.
-					} else if (valToken == U8T_INTEGER) {
-						const char* numText = u8t_scanner_token_text(scanner, &n);
-						AstNodeLiteral* numNode = new AstNodeLiteral(numText, AstNodeLiteral::LiteralType::INTEGER);
-						setNodePosition(numNode, scanner, src);
-						defaultNodes.push_back(numNode);
-					} else if (valToken == U8T_FLOAT) {
-						const char* numText = u8t_scanner_token_text(scanner, &n);
-						AstNodeLiteral* numNode = new AstNodeLiteral(numText, AstNodeLiteral::LiteralType::FLOAT);
-						setNodePosition(numNode, scanner, src);
-						defaultNodes.push_back(numNode);
+					} else if (valToken == U8T_INTEGER || valToken == U8T_FLOAT) {
+						defaultNodes.push_back(makeNumericLiteral(
+								scanner, errorReporter, src, valToken, u8t_scanner_token_text(scanner, &n)));
 					} else if (valToken == U8T_STRING) {
 						noteUnterminatedString(scanner, src);
 						const char* strText = u8t_scanner_token_text(scanner, &n);
@@ -240,18 +233,10 @@ namespace Qd {
 						char32_t numToken = u8t_scanner_scan(scanner);
 						if (noteDigitSeparator(scanner, errorReporter, src, numToken)) {
 							// Reported, as above.
-						} else if (numToken == U8T_INTEGER) {
+						} else if (numToken == U8T_INTEGER || numToken == U8T_FLOAT) {
 							const char* numText = u8t_scanner_token_text(scanner, &n);
-							std::string negNum = std::string("-") + numText;
-							AstNodeLiteral* numNode = new AstNodeLiteral(negNum, AstNodeLiteral::LiteralType::INTEGER);
-							setNodePosition(numNode, scanner, src);
-							defaultNodes.push_back(numNode);
-						} else if (numToken == U8T_FLOAT) {
-							const char* numText = u8t_scanner_token_text(scanner, &n);
-							std::string negNum = std::string("-") + numText;
-							AstNodeLiteral* numNode = new AstNodeLiteral(negNum, AstNodeLiteral::LiteralType::FLOAT);
-							setNodePosition(numNode, scanner, src);
-							defaultNodes.push_back(numNode);
+							defaultNodes.push_back(makeNumericLiteral(
+									scanner, errorReporter, src, numToken, std::string("-") + numText));
 						} else {
 							errorReporter->reportError(scanner, "Expected a number after '-' in a field default");
 						}
@@ -275,14 +260,8 @@ namespace Qd {
 							}
 							size_t an;
 							const char* aText = u8t_scanner_token_text(scanner, &an);
-							if (arrToken == U8T_INTEGER) {
-								auto* lit = new AstNodeLiteral(aText, AstNodeLiteral::LiteralType::INTEGER);
-								setNodePosition(lit, scanner, src);
-								arrNode->addElement(lit);
-							} else if (arrToken == U8T_FLOAT) {
-								auto* lit = new AstNodeLiteral(aText, AstNodeLiteral::LiteralType::FLOAT);
-								setNodePosition(lit, scanner, src);
-								arrNode->addElement(lit);
+							if (arrToken == U8T_INTEGER || arrToken == U8T_FLOAT) {
+								arrNode->addElement(makeNumericLiteral(scanner, errorReporter, src, arrToken, aText));
 							} else if (arrToken == U8T_STRING) {
 								noteUnterminatedString(scanner, src);
 								auto* lit = new AstNodeLiteral(aText, AstNodeLiteral::LiteralType::STRING);
@@ -679,18 +658,10 @@ namespace Qd {
 					}
 					currentFieldNodes.push_back(ident);
 				}
-			} else if (token == U8T_INTEGER) {
+			} else if (token == U8T_INTEGER || token == U8T_FLOAT) {
 				size_t n;
-				const char* text = u8t_scanner_token_text(scanner, &n);
-				AstNodeLiteral* lit = new AstNodeLiteral(text, AstNodeLiteral::LiteralType::INTEGER);
-				setNodePosition(lit, scanner, src);
-				currentFieldNodes.push_back(lit);
-			} else if (token == U8T_FLOAT) {
-				size_t n;
-				const char* text = u8t_scanner_token_text(scanner, &n);
-				AstNodeLiteral* lit = new AstNodeLiteral(text, AstNodeLiteral::LiteralType::FLOAT);
-				setNodePosition(lit, scanner, src);
-				currentFieldNodes.push_back(lit);
+				currentFieldNodes.push_back(
+						makeNumericLiteral(scanner, errorReporter, src, token, u8t_scanner_token_text(scanner, &n)));
 			} else if (token == U8T_STRING) {
 				size_t n;
 				noteUnterminatedString(scanner, src);
@@ -737,16 +708,9 @@ namespace Qd {
 						break;
 					}
 					size_t en;
-					if (elemToken == U8T_INTEGER) {
-						const char* etext = u8t_scanner_token_text(scanner, &en);
-						AstNodeLiteral* lit = new AstNodeLiteral(etext, AstNodeLiteral::LiteralType::INTEGER);
-						setNodePosition(lit, scanner, src);
-						arrNode->addElement(lit);
-					} else if (elemToken == U8T_FLOAT) {
-						const char* etext = u8t_scanner_token_text(scanner, &en);
-						AstNodeLiteral* lit = new AstNodeLiteral(etext, AstNodeLiteral::LiteralType::FLOAT);
-						setNodePosition(lit, scanner, src);
-						arrNode->addElement(lit);
+					if (elemToken == U8T_INTEGER || elemToken == U8T_FLOAT) {
+						arrNode->addElement(makeNumericLiteral(
+								scanner, errorReporter, src, elemToken, u8t_scanner_token_text(scanner, &en)));
 					} else if (elemToken == U8T_STRING) {
 						noteUnterminatedString(scanner, src);
 						const char* etext = u8t_scanner_token_text(scanner, &en);
@@ -774,16 +738,9 @@ namespace Qd {
 								break;
 							}
 							size_t nn;
-							if (nestedToken == U8T_INTEGER) {
-								const char* nt = u8t_scanner_token_text(scanner, &nn);
-								AstNodeLiteral* lit = new AstNodeLiteral(nt, AstNodeLiteral::LiteralType::INTEGER);
-								setNodePosition(lit, scanner, src);
-								nested->addElement(lit);
-							} else if (nestedToken == U8T_FLOAT) {
-								const char* nt = u8t_scanner_token_text(scanner, &nn);
-								AstNodeLiteral* lit = new AstNodeLiteral(nt, AstNodeLiteral::LiteralType::FLOAT);
-								setNodePosition(lit, scanner, src);
-								nested->addElement(lit);
+							if (nestedToken == U8T_INTEGER || nestedToken == U8T_FLOAT) {
+								nested->addElement(makeNumericLiteral(scanner, errorReporter, src, nestedToken,
+										u8t_scanner_token_text(scanner, &nn)));
 							} else if (nestedToken == U8T_STRING) {
 								noteUnterminatedString(scanner, src);
 								const char* nt = u8t_scanner_token_text(scanner, &nn);

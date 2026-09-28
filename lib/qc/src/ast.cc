@@ -119,8 +119,10 @@ namespace Qd {
 			if (noteDigitSeparator(scanner, errorReporter, src, token)) {
 				return "";
 			}
-			const char* valueText = u8t_scanner_token_text(scanner, &n);
-			return std::string(valueText);
+			std::string valueText = u8t_scanner_token_text(scanner, &n);
+			// A constant keeps its `q`, and so its type: `const Tenth = 0.1q` is an f128.
+			takeF128Suffix(scanner, errorReporter, src, token, valueText);
+			return valueText;
 		} else if (token == U8T_STRING) {
 			// Keep quotes so LLVM generator knows it's a string
 			noteUnterminatedString(scanner, src);
@@ -171,6 +173,9 @@ namespace Qd {
 	static std::string inferTypeFromValue(const std::string& value) {
 		if (!value.empty() && value.front() == '"') {
 			return "str";
+		}
+		if (isF128LiteralText(value)) {
+			return "f128";
 		}
 		if (isFloatLiteralText(value)) {
 			return "f64";
@@ -276,6 +281,7 @@ namespace Qd {
 				noteUnterminatedString(scanner, src);
 			}
 			value = u8t_scanner_token_text(scanner, &n);
+			takeF128Suffix(scanner, errorReporter, src, token, value);
 			sourceExpr = value;
 		} else {
 			errorReporter->reportError(scanner, "Expected literal value or const name after '=' in var initializer");
@@ -299,6 +305,9 @@ namespace Qd {
 			// instruction died of a stack underflow that named the instruction rather than
 			// the read.
 			varDecl->setInitializerNode(new AstNodeLiteral(value, AstNodeLiteral::LiteralType::STRING));
+		} else if (typeName == "f128" && isF128LiteralText(value)) {
+			// An f128 is a counted box, like a string, and is built the same way.
+			varDecl->setInitializerNode(new AstNodeLiteral(value, AstNodeLiteral::LiteralType::F128));
 		}
 		setNodePosition(varDecl, scanner, src);
 		varDecl->setParent(program);

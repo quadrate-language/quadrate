@@ -101,6 +101,39 @@ int qd_push_s_ref(qd_context* ctx, qd_string_t* value);
  */
 int qd_push_p(qd_context* ctx, void* value);
 
+/**
+ * @brief Push an f128 onto the stack
+ *
+ * @param ctx Execution context
+ * @param value Value to push; the stack takes a reference of its own, so the caller keeps
+ *        the one it has
+ * @return Execution result (0 on success)
+ */
+int qd_push_q(qd_context* ctx, qd_f128_t* value);
+
+/**
+ * @brief Push an f128 literal, reading it once
+ *
+ * What compiled code calls for `0.1q`. The text is read on the first call and kept in
+ * `*cache`, which must start out NULL and is then owned by the runtime; every later
+ * call pushes the same value.
+ *
+ * @param ctx Execution context
+ * @param text The literal's digits, without the `q`
+ * @param cache Where the value is kept between calls
+ * @return Execution result (0 on success)
+ */
+int qd_push_q_lit(qd_context* ctx, const char* text, qd_f128_t** cache);
+
+/**
+ * @brief Whether a stack element is an f128 equal to a literal, for `switch`
+ *
+ * The literal is read and cached the way qd_push_q_lit() does it.
+ *
+ * @return 1 if `subject` is an f128 comparing equal to the literal, 0 otherwise
+ */
+int qd_f128_matches_lit(const qd_stack_element_t* subject, const char* text, qd_f128_t** cache);
+
 /** @} */ // end of StackPush group
 
 /**
@@ -151,6 +184,16 @@ int qd_pop_s(qd_context* ctx, char* buf, size_t buf_size);
  * @return 0 on success, non-zero on error (underflow or type mismatch)
  */
 int qd_pop_p(qd_context* ctx, void** value);
+
+/**
+ * @brief Pop an f128 from the stack
+ *
+ * @param ctx Execution context
+ * @param[out] value Receives the value, and with it the stack's reference: release it
+ *             with qd_f128_release() when done
+ * @return 0 on success, non-zero on error (underflow or type mismatch)
+ */
+int qd_pop_q(qd_context* ctx, qd_f128_t** value);
 
 /** @} */ // end of StackPop group
 
@@ -602,6 +645,17 @@ int qd_casts(qd_context* ctx);
  * @return Execution result (0 on success)
  */
 int qd_castp(qd_context* ctx);
+
+/**
+ * @brief Cast top element to f128
+ *
+ * An integer converts exactly; an f64 converts its binary value, correctly rounded to
+ * 34 digits.
+ *
+ * @param ctx Execution context
+ * @return Execution result (0 on success)
+ */
+int qd_castq(qd_context* ctx);
 
 /** @} */ // end of TypeCast group
 

@@ -24,7 +24,8 @@ typedef enum {
 	QD_INTERP_VALUE_INT,   ///< 64-bit signed integer
 	QD_INTERP_VALUE_FLOAT, ///< Double-precision float
 	QD_INTERP_VALUE_STR,   ///< String
-	QD_INTERP_VALUE_PTR	   ///< Pointer
+	QD_INTERP_VALUE_PTR,   ///< Pointer
+	QD_INTERP_VALUE_F128   ///< IEEE 754 decimal128; `text` holds the value exactly
 } qd_interp_value_type;
 
 /** @brief Capacity of qd_interp_value::text, including the terminator */

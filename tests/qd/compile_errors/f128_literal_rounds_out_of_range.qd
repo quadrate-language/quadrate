@@ -1,0 +1,4 @@
+// Test: 34 nines and a 5 round up past the largest finite decimal128.
+fn main() {
+	9.9999999999999999999999999999999995e6144q print nl
+}

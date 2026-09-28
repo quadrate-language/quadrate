@@ -47,6 +47,16 @@
       "examples": ["builder \"hello\" sb::append -> builder"]
     },
     {
+      "name": "append_value",
+      "signature": "(sb:StringBuilder) append_value(x:any -- sb2:StringBuilder)",
+      "failable": false,
+      "description": "Append any value, spelled as `cast<str>` spells it. String interpolation uses this for a value that is neither a string nor an integer.",
+      "params": [{"name": "x", "type": "any", "description": "Value to append"}],
+      "returns": [{"name": "sb2", "type": "StringBuilder", "description": "Updated builder"}],
+      "errors": [],
+      "examples": ["builder 1.5 sb::append_value -> builder"]
+    },
+    {
       "name": "build",
       "signature": "(sb:StringBuilder) build( -- s:str)",
       "failable": false,

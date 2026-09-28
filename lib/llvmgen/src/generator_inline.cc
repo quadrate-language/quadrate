@@ -370,6 +370,35 @@ namespace Qd {
 		builder->CreateStore(elem1, elem2Ptr);
 	}
 
+	void LlvmGenerator::Impl::emitReleaseIfF128(llvm::Value* typeTag, llvm::Value* valuePtr, const std::string& name) {
+		llvm::Function* currentFn = builder->GetInsertBlock()->getParent();
+		llvm::BasicBlock* releaseBlock = llvm::BasicBlock::Create(*context, name + "_release_f128", currentFn);
+		llvm::BasicBlock* afterBlock = llvm::BasicBlock::Create(*context, name + "_after_f128", currentFn);
+		llvm::Value* isF128 = builder->CreateICmpEQ(
+				typeTag, llvm::ConstantInt::get(typeTag->getType(), kStackTypeF128), name + "_is_f128");
+		builder->CreateCondBr(isF128, releaseBlock, afterBlock);
+
+		builder->SetInsertPoint(releaseBlock);
+		llvm::Value* box = builder->CreateLoad(ptrTy, valuePtr, name + "_f128");
+		builder->CreateCall(qdF128ReleaseFn, {box});
+		builder->CreateBr(afterBlock);
+
+		builder->SetInsertPoint(afterBlock);
+	}
+
+	void LlvmGenerator::Impl::addF128PushCase(llvm::SwitchInst* sw, llvm::Value* valuePtr, llvm::Value* ctx,
+			llvm::BasicBlock* endBlock, const std::string& name) {
+		llvm::IRBuilderBase::InsertPointGuard guard(*builder);
+		llvm::BasicBlock* block =
+				llvm::BasicBlock::Create(*context, name + "_push_f128", builder->GetInsertBlock()->getParent());
+		sw->addCase(builder->getInt32(kStackTypeF128), block);
+		builder->SetInsertPoint(block);
+		// qd_push_q takes a reference of its own, which is what a copy out of a slot needs.
+		llvm::Value* box = builder->CreateLoad(ptrTy, valuePtr, name + "_f128");
+		builder->CreateCall(pushF128Fn, {ctx, box});
+		builder->CreateBr(endBlock);
+	}
+
 	void LlvmGenerator::Impl::generateInlineDrop(llvm::Value* ctx) {
 		// Inline drop: remove top stack element, releasing string memory if needed
 		auto sa = getStackAccess(ctx);
@@ -401,6 +430,7 @@ namespace Qd {
 
 		// After block - decrement size
 		builder->SetInsertPoint(afterBlock);
+		emitReleaseIfF128(elemType, builder->CreateStructGEP(stackElementTy, topElemPtr, 0, "drop_f128_value"), "drop");
 		llvm::Value* newSize = builder->CreateSub(sa.size, builder->getInt64(1), "new_size");
 		builder->CreateStore(newSize, sa.sizePtr);
 	}

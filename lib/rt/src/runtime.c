@@ -17,6 +17,7 @@
 #include <string.h>
 #include <math.h>
 #include <signal.h>
+#include <stdatomic.h>
 #include "platform/thread_platform.h"
 #include "ptr_registry.h"
 #include "runtime_internal.h"
@@ -215,6 +216,54 @@ int qd_push_p(qd_context* ctx, void* value) {
 	return (int){0};
 }
 
+int qd_push_q(qd_context* ctx, qd_f128_t* value) {
+	if (value == NULL) {
+		return (int){-2};
+	}
+	qd_stack_error err = qd_stack_push_f128(ctx->st, qd_f128_retain(value));
+	if (err != QD_STACK_OK) {
+		qd_f128_release(value);
+		return (int){-2};
+	}
+	return (int){0};
+}
+
+// The value of an f128 literal, read the first time and kept in *cache for good. The first
+// thread to arrive keeps its copy; one that loses the race drops its own and uses the
+// winner's. NULL only when the text will not read, which the compiler has already ruled out.
+static qd_f128_t* f128_literal(const char* text, qd_f128_t** cache) {
+	qd_f128_t* value = atomic_load_explicit((_Atomic(qd_f128_t*)*)cache, memory_order_acquire);
+	if (value == NULL) {
+		value = qd_f128_parse(text);
+		if (value == NULL) {
+			return NULL;
+		}
+		qd_f128_t* expected = NULL;
+		if (!atomic_compare_exchange_strong_explicit((_Atomic(qd_f128_t*)*)cache, &expected, value,
+					memory_order_acq_rel, memory_order_acquire)) {
+			qd_f128_release(value);
+			value = expected;
+		}
+	}
+	return value;
+}
+
+int qd_push_q_lit(qd_context* ctx, const char* text, qd_f128_t** cache) {
+	qd_f128_t* value = f128_literal(text, cache);
+	if (value == NULL) {
+		QDRT_FATAL(ctx, "f128 literal", "Cannot read '%s' (out of memory, or not a number)", text);
+	}
+	return qd_push_q(ctx, value);
+}
+
+int qd_f128_matches_lit(const qd_stack_element_t* subject, const char* text, qd_f128_t** cache) {
+	if (subject == NULL || subject->type != QD_STACK_TYPE_F128) {
+		return 0;
+	}
+	qd_f128_t* label = f128_literal(text, cache);
+	return label != NULL && qd_f128_compare(subject->value.q, label) == 0;
+}
+
 int qd_pop_i(qd_context* ctx, int64_t* value) {
 	if (!ctx || !value) {
 		return QD_ERR_NULL_POINTER;
@@ -272,6 +321,23 @@ int qd_pop_s(qd_context* ctx, char* buf, size_t buf_size) {
 	return result;
 }
 
+int qd_pop_q(qd_context* ctx, qd_f128_t** value) {
+	if (!ctx || !value) {
+		return QD_ERR_NULL_POINTER;
+	}
+	qd_stack_element_t elem;
+	qd_stack_error err = qd_stack_pop(ctx->st, &elem);
+	if (err != QD_STACK_OK) {
+		return QD_ERR_GENERIC;
+	}
+	if (elem.type != QD_STACK_TYPE_F128) {
+		qdrt_release_element(&elem);
+		return QD_ERR_TYPE_MISMATCH;
+	}
+	*value = elem.value.q;
+	return QD_OK;
+}
+
 int qd_pop_p(qd_context* ctx, void** value) {
 	if (!ctx || !value) {
 		return QD_ERR_NULL_POINTER;
@@ -308,6 +374,12 @@ int qd_peek(qd_context* ctx) {
 		case QD_STACK_TYPE_STR:
 			printf("%s\n", qd_string_data(val.value.s));
 			break;
+		case QD_STACK_TYPE_F128: {
+			char text[QD_F128_STRING_MAX];
+			qd_f128_format(val.value.q, text, sizeof text);
+			printf("%s\n", text);
+			break;
+		}
 		default:
 			return (int){-3};
 	}
@@ -397,6 +469,12 @@ static qd_stack_error push_element(qd_stack* stack, const qd_stack_element_t* el
 			err = qd_stack_push_ptr(stack, elem->value.p);
 			if (err != QD_STACK_OK) {
 				qd_ptr_release(elem->value.p); // Cleanup on overflow
+			}
+			break;
+		case QD_STACK_TYPE_F128:
+			err = qd_stack_push_f128(stack, qd_f128_retain(elem->value.q));
+			if (err != QD_STACK_OK) {
+				qd_f128_release(elem->value.q); // Cleanup on overflow
 			}
 			break;
 		default:
@@ -506,6 +584,9 @@ int qd_casti(qd_context* ctx) {
 		release_if_string(&elem);  // Release the string after conversion
 	} else if (elem.type == QD_STACK_TYPE_PTR) {
 		result = (int64_t)(uintptr_t)elem.value.p;
+	} else if (elem.type == QD_STACK_TYPE_F128) {
+		result = qd_f128_to_i64(elem.value.q);
+		qd_f128_release(elem.value.q);
 	} else {
 		QDRT_FATAL(ctx, "casti", "Cannot cast type to integer");
 	}
@@ -540,6 +621,9 @@ int qd_castf(qd_context* ctx) {
 	} else if (elem.type == QD_STACK_TYPE_STR) {
 		result = atof(qd_string_data(elem.value.s));
 		release_if_string(&elem);  // Release the string after conversion
+	} else if (elem.type == QD_STACK_TYPE_F128) {
+		result = qd_f128_to_f64(elem.value.q);
+		qd_f128_release(elem.value.q);
 	} else {
 		QDRT_FATAL(ctx, "castf", "Cannot cast type to float");
 	}
@@ -590,6 +674,9 @@ int qd_casts(qd_context* ctx) {
 		} else {
 			snprintf(buffer, sizeof(buffer), "%" PRId64, (int64_t)(intptr_t)elem.value.p);
 		}
+	} else if (elem.type == QD_STACK_TYPE_F128) {
+		qd_f128_format(elem.value.q, buffer, sizeof buffer);
+		qd_f128_release(elem.value.q);
 	} else {
 		QDRT_FATAL(ctx, "casts", "Cannot cast type to string");
 	}
@@ -690,6 +777,12 @@ static void dump_stack(qd_context* ctx) {
 			case QD_STACK_TYPE_PTR:
 				fprintf(stderr, "ptr = %p\n", elem.value.p);
 				break;
+			case QD_STACK_TYPE_F128: {
+				char text[QD_F128_STRING_MAX];
+				qd_f128_format(elem.value.q, text, sizeof text);
+				fprintf(stderr, "f128 = %s\n", text);
+				break;
+			}
 			default:
 				fprintf(stderr, "<unknown type>");
 				break;
@@ -716,13 +809,7 @@ void qd_check_stack(qd_context* ctx, size_t count, const qd_stack_type* types, c
 			return;  // Fast success
 		}
 		// Fall through to error reporting
-		const char* actual_type_name = "";
-		switch (st->data[stack_size - 1].type) {
-			case QD_STACK_TYPE_INT: actual_type_name = "int"; break;
-			case QD_STACK_TYPE_FLOAT: actual_type_name = "float"; break;
-			case QD_STACK_TYPE_STR: actual_type_name = "str"; break;
-			case QD_STACK_TYPE_PTR: actual_type_name = "ptr"; break;
-		}
+		const char* actual_type_name = qdrt_type_name(st->data[stack_size - 1].type);
 		fprintf(stderr, "Fatal error in %s: Type mismatch for parameter 1 (expected int, got %s)\n",
 			func_name, actual_type_name);
 		dump_stack(ctx);
@@ -742,22 +829,8 @@ void qd_check_stack(qd_context* ctx, size_t count, const qd_stack_type* types, c
 		qd_stack_element_t* elem = &st->data[stack_index];
 
 		if (elem->type != types[i]) {
-			const char* expected_type_name = "";
-			const char* actual_type_name = "";
-
-			switch (types[i]) {
-				case QD_STACK_TYPE_INT: expected_type_name = "int"; break;
-				case QD_STACK_TYPE_FLOAT: expected_type_name = "float"; break;
-				case QD_STACK_TYPE_STR: expected_type_name = "str"; break;
-				case QD_STACK_TYPE_PTR: expected_type_name = "ptr"; break;
-			}
-
-			switch (elem->type) {
-				case QD_STACK_TYPE_INT: actual_type_name = "int"; break;
-				case QD_STACK_TYPE_FLOAT: actual_type_name = "float"; break;
-				case QD_STACK_TYPE_STR: actual_type_name = "str"; break;
-				case QD_STACK_TYPE_PTR: actual_type_name = "ptr"; break;
-			}
+			const char* expected_type_name = qdrt_type_name(types[i]);
+			const char* actual_type_name = qdrt_type_name(elem->type);
 
 			fprintf(stderr, "Fatal error in %s: Type mismatch for parameter %zu (expected %s, got %s)\n",
 				func_name, i + 1, expected_type_name, actual_type_name);
@@ -1453,6 +1526,12 @@ void qd_debug_print_stack(qd_context* ctx) {
 		case QD_STACK_TYPE_PTR:
 			fprintf(stderr, "%sptr    %s %s%p%s\n", color_green, color_end, color_yellow, elem.value.p, color_end);
 			break;
+		case QD_STACK_TYPE_F128: {
+			char text[QD_F128_STRING_MAX];
+			qd_f128_format(elem.value.q, text, sizeof text);
+			fprintf(stderr, "%sf128   %s %s%s%s\n", color_green, color_end, color_yellow, text, color_end);
+			break;
+		}
 		default:
 			fprintf(stderr, "<unknown type %d>\n", elem.type);
 			break;
@@ -1477,6 +1556,17 @@ int qdrt_pop_two_values(qd_context* ctx, qd_stack_element_t* a, qd_stack_element
 
 qd_stack_error qdrt_push_element(qd_stack* stack, const qd_stack_element_t* elem) {
 	return push_element(stack, elem);
+}
+
+const char* qdrt_type_name(qd_stack_type type) {
+	switch (type) {
+		case QD_STACK_TYPE_INT: return "int";
+		case QD_STACK_TYPE_FLOAT: return "float";
+		case QD_STACK_TYPE_STR: return "str";
+		case QD_STACK_TYPE_PTR: return "ptr";
+		case QD_STACK_TYPE_F128: return "f128";
+	}
+	return "unknown";
 }
 
 // Public helper functions

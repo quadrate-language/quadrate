@@ -38,10 +38,12 @@ void qd_stack_destroy(qd_stack* stack) {
 		return;
 	}
 
-	/* Release all string references */
+	/* Release all string and f128 references */
 	for (size_t i = 0; i < stack->size; i++) {
 		if (stack->data[i].type == QD_STACK_TYPE_STR) {
 			qd_string_release(stack->data[i].value.s);
+		} else if (stack->data[i].type == QD_STACK_TYPE_F128) {
+			qd_f128_release(stack->data[i].value.q);
 		}
 	}
 
@@ -74,15 +76,15 @@ qd_stack_error qd_stack_clone(qd_stack** dest, const qd_stack* src) {
 			d->data[i].value.s = qd_string_create_with_length(str_data, str_len);
 			if (d->data[i].value.s == NULL) {
 				/* Cleanup on allocation failure */
-				for (size_t j = 0; j < i; j++) {
-					if (d->data[j].type == QD_STACK_TYPE_STR) {
-						qd_string_release(d->data[j].value.s);
-					}
-				}
+				d->size = i;
 				qd_stack_destroy(d);
 				*dest = NULL;
 				return QD_STACK_ERR_ALLOC;
 			}
+		} else if (src->data[i].type == QD_STACK_TYPE_F128) {
+			/* An f128 is immutable and atomically counted, so sharing it cannot couple the
+			   two contexts the way sharing a string could */
+			d->data[i].value.q = qd_f128_retain(src->data[i].value.q);
 		} else {
 			/* Shallow copy for non-string types */
 			d->data[i].value = src->data[i].value;
@@ -118,6 +120,21 @@ qd_stack_error qd_stack_push_float(qd_stack* stack, double value) {
 
 	stack->data[stack->size].value.f = value;
 	stack->data[stack->size].type = QD_STACK_TYPE_FLOAT;
+	stack->data[stack->size].is_error_tainted = false;
+	stack->size++;
+	return QD_STACK_OK;
+}
+
+qd_stack_error qd_stack_push_f128(qd_stack* stack, qd_f128_t* value) {
+	if (stack == NULL || value == NULL) {
+		return QD_STACK_ERR_NULL_POINTER;
+	}
+	if (stack->size >= stack->capacity) {
+		return QD_STACK_ERR_OVERFLOW;
+	}
+
+	stack->data[stack->size].value.q = value;
+	stack->data[stack->size].type = QD_STACK_TYPE_F128;
 	stack->data[stack->size].is_error_tainted = false;
 	stack->size++;
 	return QD_STACK_OK;

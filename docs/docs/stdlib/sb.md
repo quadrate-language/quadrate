@@ -123,6 +123,27 @@ builder "hello" sb::append  // builder
 ```
 ---
 
+#### `fn` append_value
+
+Append any value, spelled as `cast<str>` spells it. String interpolation uses this for a value that is neither a string nor an integer.
+
+**Signature:** `(sb:StringBuilder) append_value(x:any -- sb2:StringBuilder)`
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `x` | `any` | Value to append |
+
+| Output | Type | Description |
+|--------|------|-------------|
+| `sb2` | `StringBuilder` | Updated builder |
+
+**Example:**
+
+```qd
+builder 1.5 sb::append_value  // builder
+```
+---
+
 #### `fn` build
 
 Build the final string (does not consume builder).

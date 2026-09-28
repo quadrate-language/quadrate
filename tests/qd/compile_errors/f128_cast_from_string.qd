@@ -1,0 +1,4 @@
+// Test: a string is not cast to an f128; parsing can fail and cast cannot say so.
+fn main() {
+	"1.5" cast<f128> print nl
+}

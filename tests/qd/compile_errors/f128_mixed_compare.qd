@@ -1,0 +1,4 @@
+// Test: an f128 compares only with another f128.
+fn main() {
+	1.5q 2 < print nl
+}

@@ -58,6 +58,27 @@ TEST(Floats) {
 	qd_interp_destroy(interp);
 }
 
+TEST(F128) {
+	qd_interp* interp = qd_interp_create(256);
+
+	ASSERT(std::strcmp(top(interp, "0.1q 0.2q +"), "0.3") == 0, "0.1q 0.2q + is exactly 0.3");
+	ASSERT(std::strcmp(top(interp, "clear 0.1q 0.2q + 0.3q =="), "1") == 0, "and equals 0.3q");
+	ASSERT(std::strcmp(top(interp, "clear 1.10q 1.20q +"), "2.30") == 0, "the exponent is kept");
+	ASSERT(std::strcmp(top(interp, "clear 1q 3q /"), "0.3333333333333333333333333333333333") == 0,
+			"34 digits, rounded");
+	ASSERT(std::strcmp(top(interp, "clear 2.5q -> x x x *"), "6.25") == 0, "a local holds an f128");
+	ASSERT(std::strcmp(top(interp, "clear 42 cast<f128>"), "42") == 0, "cast<f128> from an integer");
+	ASSERT(std::strcmp(top(interp, "clear [1.5q 2.5q] 1 nth"), "2.5") == 0, "an array of f128");
+	ASSERT(qd_interp_eval(interp, "const Half = 0.5q"), "an f128 constant");
+	ASSERT(std::strcmp(top(interp, "clear Half Half +"), "1.0") == 0, "keeps its q, and so its type");
+
+	qd_interp_value value;
+	ASSERT(qd_interp_eval(interp, "clear 7q") && qd_interp_peek(interp, 0, &value), "peek an f128");
+	ASSERT(value.type == QD_INTERP_VALUE_F128, "and it reads back as one");
+
+	qd_interp_destroy(interp);
+}
+
 TEST(StackOperations) {
 	qd_interp* interp = qd_interp_create(256);
 

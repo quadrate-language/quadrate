@@ -10,6 +10,7 @@ namespace Qd {
 		enum class LiteralType {
 			INTEGER,
 			FLOAT,
+			F128, // value() keeps the `q` it was written with
 			STRING,
 			NULL_PTR,
 			BOOL // true, false, Ok, Err - preserves original keyword text

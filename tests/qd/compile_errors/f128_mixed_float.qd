@@ -1,0 +1,4 @@
+// Test: an f128 does not mix with an f64 -- the binary rounding is what f128 is for keeping out.
+fn main() {
+	1.5q 0.1 * print nl
+}

@@ -1123,6 +1123,8 @@ namespace Qd {
 				const std::string& typeName = field->typeName();
 				if (typeName == "f64") {
 					fieldType = StackValueType::FLOAT;
+				} else if (typeName == "f128") {
+					fieldType = StackValueType::F128;
 				} else if (typeName == "i64" || typeName == "i32" || typeName == "i16" || typeName == "i8" ||
 						   typeName == "u64" || typeName == "u32" || typeName == "u16" || typeName == "u8") {
 					fieldType = StackValueType::INT;
@@ -1387,6 +1389,8 @@ namespace Qd {
 					typeStack.push_back(StackValueType::INT);
 				} else if (typeStr == "f64") {
 					typeStack.push_back(StackValueType::FLOAT);
+				} else if (typeStr == "f128") {
+					typeStack.push_back(StackValueType::F128);
 				} else if (typeStr == "str") {
 					typeStack.push_back(StackValueType::STRING);
 				} else if (typeStr == "ptr" || isStructTypeName(typeStr)) {
@@ -1413,8 +1417,9 @@ namespace Qd {
 
 				StackValueType scalar = stringToStackValueType(typeStr);
 				if (scalar == StackValueType::INT || scalar == StackValueType::FLOAT ||
-						scalar == StackValueType::STRING || scalar == StackValueType::TYPEVAR) {
-					// i64 and the sized integers, f64, str, or a generic type parameter
+						scalar == StackValueType::F128 || scalar == StackValueType::STRING ||
+						scalar == StackValueType::TYPEVAR) {
+					// i64 and the sized integers, f64, f128, str, or a generic type parameter
 					sig.consumes.push_back(scalar);
 				} else if (typeStr == "ptr") {
 					sig.consumes.push_back(StackValueType::PTR);
@@ -1456,8 +1461,9 @@ namespace Qd {
 
 					StackValueType scalar = stringToStackValueType(typeStr);
 					if (scalar == StackValueType::INT || scalar == StackValueType::FLOAT ||
-							scalar == StackValueType::STRING || scalar == StackValueType::TYPEVAR) {
-						// i64 and the sized integers, f64, str, or a generic type parameter
+							scalar == StackValueType::F128 || scalar == StackValueType::STRING ||
+							scalar == StackValueType::TYPEVAR) {
+						// i64 and the sized integers, f64, f128, str, or a generic type parameter
 						sig.produces.push_back(scalar);
 					} else if (typeStr == "ptr") {
 						sig.produces.push_back(StackValueType::PTR);
@@ -1566,6 +1572,8 @@ namespace Qd {
 						sig.consumes.push_back(StackValueType::INT);
 					} else if (typeStr == "f64") {
 						sig.consumes.push_back(StackValueType::FLOAT);
+					} else if (typeStr == "f128") {
+						sig.consumes.push_back(StackValueType::F128);
 					} else if (typeStr == "str") {
 						sig.consumes.push_back(StackValueType::STRING);
 					} else if (typeStr == "ptr") {
@@ -1612,6 +1620,8 @@ namespace Qd {
 						sig.produces.push_back(StackValueType::INT);
 					} else if (typeStr == "f64") {
 						sig.produces.push_back(StackValueType::FLOAT);
+					} else if (typeStr == "f128") {
+						sig.produces.push_back(StackValueType::F128);
 					} else if (typeStr == "str") {
 						sig.produces.push_back(StackValueType::STRING);
 					} else if (typeStr == "ptr") {

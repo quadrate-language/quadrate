@@ -192,6 +192,9 @@ namespace Qd {
 			case AstNodeLiteral::LiteralType::FLOAT:
 				typeStr = "Float";
 				break;
+			case AstNodeLiteral::LiteralType::F128:
+				typeStr = "F128";
+				break;
 			case AstNodeLiteral::LiteralType::STRING:
 				typeStr = "String";
 				break;

@@ -210,6 +210,10 @@ namespace Qd {
 		llvm::Function* freeFn = nullptr;
 		llvm::Function* qdStringReleaseFn = nullptr;
 		llvm::Function* qdStringRetainFn = nullptr;
+		llvm::Function* qdF128ReleaseFn = nullptr;
+		llvm::Function* qdF128RetainFn = nullptr;
+		llvm::Function* pushF128LitFn = nullptr;
+		llvm::Function* pushF128Fn = nullptr;
 		llvm::Function* qdStringDataFn = nullptr;
 		llvm::Function* qdStructAllocFn = nullptr;
 		llvm::Function* qdStructReleaseFn = nullptr;
@@ -478,6 +482,15 @@ namespace Qd {
 		// Node generation
 		void generateNode(IAstNode* node, llvm::Value* ctx);
 		void generateInstruction(AstNodeInstruction* inst, llvm::Value* ctx);
+		void generateF128Literal(const std::string& text, llvm::Value* ctx);
+
+		// An f128 is a counted box held in a slot the way a string is, but under a tag of
+		// its own (QD_STACK_TYPE_F128). These two cover the places that switch on a slot's
+		// tag: releasing what a slot holds, and pushing a copy of it.
+		static constexpr uint32_t kStackTypeF128 = 4;
+		void emitReleaseIfF128(llvm::Value* typeTag, llvm::Value* valuePtr, const std::string& name);
+		void addF128PushCase(llvm::SwitchInst* sw, llvm::Value* valuePtr, llvm::Value* ctx, llvm::BasicBlock* endBlock,
+				const std::string& name);
 		void generateLiteral(AstNodeLiteral* lit, llvm::Value* ctx);
 		void generateIdentifier(AstNodeIdentifier* ident, llvm::Value* ctx);
 		void generateFunctionPointer(AstNodeFunctionPointerReference* funcPtr, llvm::Value* ctx);

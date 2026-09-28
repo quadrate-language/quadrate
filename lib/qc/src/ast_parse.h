@@ -128,25 +128,30 @@ namespace Qd {
 		return line;
 	}
 
-	inline void setNodePosition(IAstNode* node, u8t_scanner* scanner, const char* src) {
+	// Line and column of the token just scanned.
+	inline void tokenPosition(u8t_scanner* scanner, const char* src, size_t* line, size_t* column) {
 		size_t charPos = u8t_scanner_token_start(scanner);
-		size_t line, column;
 
 		if (tCurrentSourceMaps) {
 			// O(log n) lookup using precomputed tables
 			size_t bytePos = tCurrentSourceMaps->charByteMap.getByteOffset(charPos);
-			tCurrentSourceMaps->lineMap.getLineColumn(bytePos, &line, &column);
+			tCurrentSourceMaps->lineMap.getLineColumn(bytePos, line, column);
 		} else {
 			// Fallback: O(n) lookup
 			size_t bytePos = fastCharToByteOffset(src, charPos);
-			fastLineColumn(src, bytePos, &line, &column);
+			fastLineColumn(src, bytePos, line, column);
 		}
+	}
+
+	inline void setNodePosition(IAstNode* node, u8t_scanner* scanner, const char* src) {
+		size_t line, column;
+		tokenPosition(scanner, src, &line, &column);
 		node->setPosition(line, column);
 	}
 
 	// Check if an identifier is a built-in type name (used for unnamed parameter disambiguation)
 	inline bool isTypeName(const std::string& name) {
-		return name == "i64" || name == "f64" || name == "str" || name == "ptr" || name == "any";
+		return name == "i64" || name == "f64" || name == "f128" || name == "str" || name == "ptr" || name == "any";
 	}
 
 	// Where the first unterminated block comment in the current parse started, or
@@ -377,6 +382,55 @@ namespace Qd {
 		}
 		errorReporter->reportError(line, column, message.c_str());
 		return true;
+	}
+
+	// Takes the `q` that makes the number just scanned an f128 literal, as in `0.1q`. Returns
+	// true, having appended the `q` to `text`, when there is one. A number run into some other
+	// word -- `1qx` -- is reported and left as it was, as is a hex or binary one: an f128 is
+	// decimal by nature, and `0x10q` would say otherwise.
+	inline bool takeF128Suffix(
+			u8t_scanner* scanner, ErrorReporter* errorReporter, const char* src, char32_t token, std::string& text) {
+		if ((token != U8T_INTEGER && token != U8T_FLOAT) || peekNextChar(scanner, src) != U'q') {
+			return false;
+		}
+		size_t line = 0;
+		size_t column = 0;
+		tokenPosition(scanner, src, &line, &column);
+		std::string suffix;
+		if (u8t_scanner_scan(scanner) == U8T_IDENTIFIER) {
+			size_t len = 0;
+			const char* word = u8t_scanner_token_text(scanner, &len);
+			suffix.assign(word != nullptr ? word : "", len);
+		}
+		if (suffix != "q") {
+			const std::string message = "Invalid numeric literal '" + text + suffix +
+										"': the only suffix a number takes is 'q', for an f128";
+			errorReporter->reportError(line, column, message.c_str());
+			return false;
+		}
+		if (hasRadixPrefix(text)) {
+			const std::string message = "Invalid f128 literal '" + text + "q': an f128 literal is written in decimal";
+			errorReporter->reportError(line, column, message.c_str());
+			return false;
+		}
+		text += 'q';
+		return true;
+	}
+
+	// The literal for the number just scanned, `q` suffix and all: INTEGER, FLOAT or F128.
+	inline AstNodeLiteral* makeNumericLiteral(
+			u8t_scanner* scanner, ErrorReporter* errorReporter, const char* src, char32_t token, std::string text) {
+		size_t line = 0;
+		size_t column = 0;
+		tokenPosition(scanner, src, &line, &column);
+		AstNodeLiteral::LiteralType type =
+				token == U8T_FLOAT ? AstNodeLiteral::LiteralType::FLOAT : AstNodeLiteral::LiteralType::INTEGER;
+		if (takeF128Suffix(scanner, errorReporter, src, token, text)) {
+			type = AstNodeLiteral::LiteralType::F128;
+		}
+		auto* lit = new AstNodeLiteral(text, type);
+		lit->setPosition(line, column);
+		return lit;
 	}
 
 	// Parses the optional `<Type>` after a builtin instruction name, as in `make<Point>` or

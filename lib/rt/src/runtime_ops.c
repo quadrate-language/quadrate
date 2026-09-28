@@ -11,6 +11,42 @@
 #include <string.h>
 #include "runtime_internal.h"
 
+// Whether any of the top `n` stack elements is an f128. Those instructions go to
+// runtime_f128.c, which also reports an f128 meeting anything else.
+static inline bool f128_operand(const qd_stack* st, size_t n) {
+	for (size_t i = 1; i <= n && i <= st->size; i++) {
+		if (st->data[st->size - i].type == QD_STACK_TYPE_F128) {
+			return true;
+		}
+	}
+	return false;
+}
+
+static bool f128_eq(int order) {
+	return order == 0;
+}
+
+// Unordered is "not equal": IEEE 754 compareQuietNotEqual is true when either side is NaN.
+static bool f128_ne(int order) {
+	return order != 0;
+}
+
+static bool f128_lt(int order) {
+	return order == -1;
+}
+
+static bool f128_gt(int order) {
+	return order == 1;
+}
+
+static bool f128_le(int order) {
+	return order == -1 || order == 0;
+}
+
+static bool f128_ge(int order) {
+	return order == 1 || order == 0;
+}
+
 int qd_add(qd_context* ctx) {
 	qd_stack* st = ctx->st;
 
@@ -34,6 +70,11 @@ int qd_add(qd_context* ctx) {
 			QD_STACK_PUSH_FLOAT_FAST(st, a_val + b_val);
 			return (int){0};
 		}
+	}
+
+	if (f128_operand(st, 2)) {
+		qdrt_f128_binary(ctx, "add", qd_f128_add);
+		return (int){0};
 	}
 
 	// Slow path with full error checking
@@ -90,6 +131,11 @@ int qd_sub(qd_context* ctx) {
 		}
 	}
 
+	if (f128_operand(st, 2)) {
+		qdrt_f128_binary(ctx, "sub", qd_f128_sub);
+		return (int){0};
+	}
+
 	// Slow path with full error checking
 	qdrt_validate_binary_numeric_op(ctx, "sub");
 
@@ -120,6 +166,11 @@ int qd_sub(qd_context* ctx) {
 }
 
 int qd_mul(qd_context* ctx) {
+	if (f128_operand(ctx->st, 2)) {
+		qdrt_f128_binary(ctx, "mul", qd_f128_mul);
+		return (int){0};
+	}
+
 	qdrt_validate_binary_numeric_op(ctx, "mul");
 
 	qd_stack_element_t a, b;
@@ -149,6 +200,11 @@ int qd_mul(qd_context* ctx) {
 }
 
 int qd_div(qd_context* ctx) {
+	if (f128_operand(ctx->st, 2)) {
+		qdrt_f128_binary(ctx, "div", qd_f128_div);
+		return (int){0};
+	}
+
 	qdrt_validate_binary_numeric_op(ctx, "div");
 
 	qd_stack_element_t a, b;
@@ -303,6 +359,17 @@ int qd_neg(qd_context* ctx) {
 		qdrt_fatal_raise(ctx, "neg", "Failed to access stack element");
 	}
 
+	if (check_val.type == QD_STACK_TYPE_F128) {
+		qd_stack_element_t val;
+		if (qd_stack_pop(ctx->st, &val) != QD_STACK_OK) {
+			QDRT_FATAL(ctx, "neg", "Failed to pop value (stack changed unexpectedly)");
+		}
+		qd_f128_t* result = qd_f128_neg(val.value.q);
+		qd_f128_release(val.value.q);
+		qdrt_push_f128_owned(ctx, "neg", result);
+		return (int){0};
+	}
+
 	if (check_val.type != QD_STACK_TYPE_INT && check_val.type != QD_STACK_TYPE_FLOAT) {
 		qdrt_fatal_raise(ctx, "neg", "Type error (expected numeric type)");
 	}
@@ -334,6 +401,11 @@ static int qdrt_equality_op(qd_context* ctx, const char* name, bool want_equal) 
 	size_t stack_size = qd_stack_size(ctx->st);
 	if (stack_size < 2) {
 		qdrt_fatal_raise(ctx, name, "Stack underflow (required 2 elements, have %zu)", stack_size);
+	}
+
+	if (f128_operand(ctx->st, 2)) {
+		qdrt_f128_compare(ctx, name, want_equal ? f128_eq : f128_ne);
+		return (int){0};
 	}
 
 	qd_stack_element_t check_b, check_a;
@@ -419,6 +491,12 @@ static int qdrt_order_op(qd_context* ctx, const char* name, qdrt_order_kind kind
 	size_t stack_size = qd_stack_size(ctx->st);
 	if (stack_size < 2) {
 		qdrt_fatal_raise(ctx, name, "Stack underflow (required 2 elements, have %zu)", stack_size);
+	}
+
+	if (f128_operand(ctx->st, 2)) {
+		qdrt_f128_compare(ctx, name,
+				kind == QDRT_ORDER_LT ? f128_lt : (kind == QDRT_ORDER_GT ? f128_gt : f128_le));
+		return (int){0};
 	}
 
 	qd_stack_element_t check_b, check_a;
@@ -551,6 +629,11 @@ int qd_lte(qd_context* ctx) {
 
 int qd_gte(qd_context* ctx) {
 	qd_stack* st = ctx->st;
+
+	if (f128_operand(st, 2)) {
+		qdrt_f128_compare(ctx, "gte", f128_ge);
+		return (int){0};
+	}
 
 	// Fast path: check stack has 2 elements and both are integers
 	if (QD_STACK_SIZE(st) >= 2) {

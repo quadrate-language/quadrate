@@ -7,6 +7,7 @@
 /// - atoi: Parse decimal string to integer (shorthand for 10 parse_int)
 /// - format_float: Format float to string
 /// - parse_float: Parse string to float
+/// - parse_f128: Parse string to f128
 /// - format_bool: Format boolean to string ("true"/"false")
 /// - parse_bool: Parse string to boolean
 /// doccheck: page-context
@@ -51,6 +52,14 @@ import "libstrconv.a" as "strconv" {
 	/// @return value f64 Parsed float
 	/// @example "3.14" strconv::parse_float! print  // 3.14
 	pub fn parse_float(s:str -- value:f64)!
+
+	/// Parse string to f128, rounding to 34 digits.
+	/// Takes an optional sign, digits with an optional point and exponent, or inf, infinity
+	/// or nan in any case. The whole string must be the number: " 1" and "1x" are errors.
+	/// @param s str String to parse
+	/// @return value f128 Parsed value
+	/// @example "0.1" strconv::parse_f128! print  // 0.1
+	pub fn parse_f128(s:str -- value:f128)!
 
 	/// Format boolean to string.
 	/// Non-zero becomes "true", zero becomes "false".

@@ -1,0 +1,9 @@
+[wrap-file]
+directory = mpdecimal-4.0.1
+source_url = https://www.bytereef.org/software/mpdecimal/releases/mpdecimal-4.0.1.tar.gz
+source_filename = mpdecimal-4.0.1.tar.gz
+source_hash = 96d33abb4bb0070c7be0fed4246cd38416188325f820468214471938545b1ac8
+patch_directory = mpdecimal
+
+[provide]
+mpdec = mpdec_dep

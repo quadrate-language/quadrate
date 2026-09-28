@@ -1,0 +1,113 @@
+// An f128 is a counted box, so every place a value can live has to take and give back its
+// references: locals, parameters, struct fields, arrays, closures, globals.
+
+const Rate = 0.05q
+
+var ledger:f128 = 0q
+
+struct Box<T> {
+	value:T
+}
+
+fn wrap<T>(x:T -- b:Box<T>) {
+	Box<T> { value = x }
+}
+
+struct Account {
+	name:str
+	balance:f128
+}
+
+fn (a:Account) deposit(amount:f128 -- ) {
+	a a <<balance amount + >>balance drop
+}
+
+fn interest(balance:f128 -- earned:f128) {
+	balance Rate *
+}
+
+fn total(xs:[]f128 -- sum:f128) {
+	0q -> sum
+	xs len -> n
+	0 n 1 for i {
+		sum xs i nth + -> sum
+	}
+	sum
+}
+
+fn describe(x:f128 -- ) {
+	x switch {
+		0q { "zero" print nl }
+		Rate { "the rate" print nl }
+		1.5q { "one and a half" print nl }
+		_ { "something else" print nl }
+	}
+}
+
+fn show(x:any -- ) {
+	x print nl
+}
+
+fn main() {
+	// Locals, rebinding, and a loop that accumulates
+	0q -> sum
+	0 10 1 for i {
+		sum 0.1q + -> sum
+	}
+	sum print nl
+	sum 1q == print nl
+
+	// Struct fields, methods, and clone
+	Account { name = "savings" balance = 100.00q } -> acc
+	acc 0.10q deposit
+	acc 0.20q deposit
+	acc <<balance print nl
+	acc clone -> copy
+	copy 1q deposit
+	acc <<balance print nl
+	copy <<balance print nl
+	acc <<balance interest print nl
+
+	// Arrays
+	[1.10q 2.20q 3.30q] -> prices
+	prices print nl
+	prices total print nl
+	prices 1 9.99q set
+	prices 4.40q append -> prices
+	prices print nl
+	prices total print nl
+	[3]f128 -> zeros
+	zeros print nl
+	zeros 2 nth 1q + print nl
+	[] 5q append 6q append -> grown
+	grown print nl
+
+	// Closures capture an f128 like any other value
+	1.5q -> factor
+	fn(x:f128 -- r:f128) { x factor * } -> scale
+	2q scale call print nl
+
+	// A global holds its own reference across reassignment
+	ledger 12.5q + -> ledger
+	ledger 0.25q + -> ledger
+	ledger print nl
+
+	// switch compares with IEEE equality: 1.50 matches 1.5
+	0q describe
+	0.050q describe
+	1.50q describe
+	7q describe
+
+	// A generic field carries the f128's tag, and takes and gives back its reference
+	1.25q wrap -> box
+	box <<value 2q * print nl
+	box 7.5q >>value drop
+	box clone -> other
+	other <<value print nl
+
+	// Stack shuffles and an untyped parameter
+	3q 4q swap - print nl
+	5q dup * print nl
+	1q 2q 3q rot print print print nl
+	2.25q show
+}

@@ -1,0 +1,4 @@
+// Test: an f128 literal is decimal; a hex spelling with a q is rejected.
+fn main() {
+	0x10q print nl
+}

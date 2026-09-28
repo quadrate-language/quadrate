@@ -281,6 +281,30 @@ namespace Qd {
 				structTypeStack.pop_back();
 			}
 
+			if (a == StackValueType::F128 || b == StackValueType::F128) {
+				// f128 meets only f128. Letting an i64 or an f64 in would convert it on the
+				// quiet, and an f64 is exactly the binary rounding a decimal type is for
+				// keeping out: `0.1 0.1q +` would not be 0.2.
+				const StackValueType other = (a == StackValueType::F128) ? b : a;
+				const bool otherOpen = other == StackValueType::ANY || other == StackValueType::UNKNOWN ||
+									   other == StackValueType::TYPEVAR;
+				if (strcmp(name, "pow") == 0) {
+					reportErrorConditionalWithHint(node, "Type error in 'pow': pow does not take f128",
+							"use 'f128::pow' from the f128 module", reportErrors);
+				} else if (other != StackValueType::F128 && !otherOpen) {
+					std::string errorMsg = "Type error in '";
+					errorMsg += name;
+					errorMsg += "': f128 does not mix with ";
+					errorMsg += typeToString(other);
+					reportErrorConditionalWithHint(node, errorMsg.c_str(),
+							"convert the other operand with 'cast<f128>', or write the literal with a 'q': '2q'",
+							reportErrors);
+				}
+				typeStack.push_back(StackValueType::F128);
+				structTypeStack.push_back("");
+				return;
+			}
+
 			if (!isNumericType(a) || !isNumericType(b)) {
 				std::string errorMsg = "Type error in '";
 				errorMsg += name;
@@ -308,6 +332,25 @@ namespace Qd {
 				errorMsg += "': Stack underflow (requires 2 values)";
 				reportErrorConditional(node, errorMsg.c_str(), reportErrors);
 				return;
+			}
+			// An f128 compares with an f128. Against anything else the answer would come from
+			// a conversion nobody asked for, as with the arithmetic above.
+			{
+				const StackValueType b = typeStack[typeStack.size() - 1];
+				const StackValueType a = typeStack[typeStack.size() - 2];
+				if ((a == StackValueType::F128) != (b == StackValueType::F128)) {
+					const StackValueType other = (a == StackValueType::F128) ? b : a;
+					if (other != StackValueType::ANY && other != StackValueType::UNKNOWN &&
+							other != StackValueType::TYPEVAR) {
+						std::string errorMsg = "Type error in '";
+						errorMsg += name;
+						errorMsg += "': an f128 compares only with an f128, not with ";
+						errorMsg += typeToString(other);
+						reportErrorConditionalWithHint(node, errorMsg.c_str(),
+								"convert the other operand with 'cast<f128>', or write the literal with a 'q': '2q'",
+								reportErrors);
+					}
+				}
 			}
 			// Pop both operands
 			typeStack.pop_back();
@@ -427,6 +470,8 @@ namespace Qd {
 						resultType = StackValueType::INT;
 					} else if (typeParam == "f64" || typeParam == "f32") {
 						resultType = StackValueType::FLOAT;
+					} else if (typeParam == "f128") {
+						resultType = StackValueType::F128;
 					} else if (typeParam == "str" || typeParam == "string") {
 						resultType = StackValueType::STRING;
 					} else if (typeParam == "ptr") {
@@ -451,8 +496,8 @@ namespace Qd {
 									"not a conversion";
 							reportErrorConditionalWithHint(node, err.c_str(), hint.c_str(), reportErrors);
 						} else {
-							reportErrorConditionalWithHint(
-									node, err.c_str(), "'cast' converts between i64, f64, ptr and str", reportErrors);
+							reportErrorConditionalWithHint(node, err.c_str(),
+									"'cast' converts between i64, f64, f128, ptr and str", reportErrors);
 						}
 					}
 				}
@@ -468,17 +513,29 @@ namespace Qd {
 			// Removing it rather than making 'cast' fallible keeps 'cast' what it is: a
 			// total conversion that never needs its result checked.
 			if (operandType == StackValueType::STRING &&
-					(resultType == StackValueType::INT || resultType == StackValueType::FLOAT)) {
+					(resultType == StackValueType::INT || resultType == StackValueType::FLOAT ||
+							resultType == StackValueType::F128)) {
 				const char* hint =
 						(resultType == StackValueType::INT)
 								? "use 'strconv::atoi' (or 'strconv::parse_int' for a base), which is fallible: "
 								  "'s strconv::atoi if { -> n ... } else { ... }'"
-								: "use 'strconv::parse_float', which is fallible: "
-								  "'s strconv::parse_float if { -> x ... } else { ... }'";
+						: (resultType == StackValueType::FLOAT)
+								? "use 'strconv::parse_float', which is fallible: "
+								  "'s strconv::parse_float if { -> x ... } else { ... }'"
+								: "use 'strconv::parse_f128', which is fallible: "
+								  "'s strconv::parse_f128 if { -> x ... } else { ... }'";
 				std::string err = "Type error in 'cast': a string cannot be cast to ";
-				err += (resultType == StackValueType::INT) ? "an integer" : "a float";
+				err += (resultType == StackValueType::INT)	   ? "an integer"
+					   : (resultType == StackValueType::FLOAT) ? "a float"
+															   : "an f128";
 				err += "; parsing can fail and 'cast' has no way to report it";
 				reportErrorConditionalWithHint(node, err.c_str(), hint, reportErrors);
+			}
+
+			// An f128 is a number that happens to be boxed; the box is not something a program
+			// can do anything with, so there is no pointer to cast it to.
+			if (operandType == StackValueType::F128 && resultType == StackValueType::PTR) {
+				reportErrorConditional(node, "Type error in 'cast': an f128 cannot be cast to ptr", reportErrors);
 			}
 
 			typeStack.push_back(resultType);
@@ -598,6 +655,11 @@ namespace Qd {
 				reportErrorConditional(
 						node, "Type error in 'mod': Stack underflow (requires 2 integer values)", reportErrors);
 				return;
+			}
+			if (typeStack[typeStack.size() - 1] == StackValueType::F128 ||
+					typeStack[typeStack.size() - 2] == StackValueType::F128) {
+				reportErrorConditionalWithHint(node, "Type error in 'mod': mod is integer-only and does not take f128",
+						"use 'f128::fmod' for the truncating remainder, or 'f128::remainder' for IEEE's", reportErrors);
 			}
 			// Pop both operands
 			typeStack.pop_back();
@@ -1023,6 +1085,9 @@ namespace Qd {
 				} else if (elemType == "f64") {
 					typeStack.push_back(StackValueType::FLOAT);
 					structTypeStack.push_back("");
+				} else if (elemType == "f128") {
+					typeStack.push_back(StackValueType::F128);
+					structTypeStack.push_back("");
 				} else if (elemType == "str") {
 					typeStack.push_back(StackValueType::STRING);
 					structTypeStack.push_back("");
@@ -1069,6 +1134,8 @@ namespace Qd {
 						expectedElemType = StackValueType::INT;
 					} else if (elemType == "f64") {
 						expectedElemType = StackValueType::FLOAT;
+					} else if (elemType == "f128") {
+						expectedElemType = StackValueType::F128;
 					} else if (elemType == "str") {
 						expectedElemType = StackValueType::STRING;
 					}
@@ -1114,6 +1181,8 @@ namespace Qd {
 						expectedElemType = StackValueType::INT;
 					} else if (elemType == "f64") {
 						expectedElemType = StackValueType::FLOAT;
+					} else if (elemType == "f128") {
+						expectedElemType = StackValueType::F128;
 					} else if (elemType == "str") {
 						expectedElemType = StackValueType::STRING;
 					}

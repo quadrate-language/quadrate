@@ -1,0 +1,60 @@
+// f128 is IEEE 754 decimal128: 34 significant digits, and what prints is exactly what is held.
+
+fn main() {
+	// The binary rounding that f64 cannot avoid is not there
+	0.1q 0.2q + print nl
+	0.1q 0.2q + 0.3q == print nl
+	0.1 0.2 + 0.3 == print nl
+
+	// Results round to 34 digits, ties to even
+	1q 3q / print nl
+	2q 3q / print nl
+	1q 7q / 7q * print nl
+
+	// The exponent a value was written or computed with is kept: equal, but printed as held
+	1.10q 1.20q + print nl
+	2.50q print nl
+	2.50q 2.5q == print nl
+	1.5q 2q * print nl
+	10q 4q / print nl
+	1e3q print nl
+	1000q print nl
+	1e3q 1000q == print nl
+
+	// Integer spellings are exact far past i64
+	123456789012345678901234567890q 2q * print nl
+
+	// More than 34 digits rounds, as arithmetic does
+	1.23456789012345678901234567890123456q print nl
+
+	// Negation is a sign-bit operation: -0 exists and equals 0
+	0.5q neg print nl
+	0q neg print nl
+	0q neg 0q == print nl
+
+	// Ordering
+	1.5q 2.5q < print nl
+	2.5q 1.5q > print nl
+	1.5q 1.50q <= print nl
+	1.5q 1.50q >= print nl
+	1.5q 2.5q != print nl
+
+	// Division by zero is IEEE: infinities and NaN, not an error
+	1q 0q / print nl
+	-1q 0q / print nl
+	0q 0q / print nl
+	0q 0q / -> nan
+	nan nan == print nl
+	nan nan != print nl
+	nan 1q < print nl
+	nan 1q >= print nl
+
+	// The largest finite value is a literal like any other; one step past it overflows
+	9.999999999999999999999999999999999e6144q print nl
+	9.999999999999999999999999999999999e6144q 1e6111q + print nl
+
+	// Overflow and underflow
+	9e6144q 10q * print nl
+	1e-6176q 10q / print nl
+	1e-6150q print nl
+}

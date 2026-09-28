@@ -2087,8 +2087,8 @@ static bool isBuiltinOp(const std::string& word) {
 
 // Helper to check if a word is a type name
 static bool isTypeName(const std::string& word) {
-	static const std::set<std::string> types = {
-			"i8", "i16", "i32", "i64", "u8", "u16", "u32", "u64", "f32", "f64", "bool", "str", "ptr", "void", "any"};
+	static const std::set<std::string> types = {"i8", "i16", "i32", "i64", "u8", "u16", "u32", "u64", "f32", "f64",
+			"f128", "bool", "str", "ptr", "void", "any"};
 	return types.count(word) > 0;
 }
 

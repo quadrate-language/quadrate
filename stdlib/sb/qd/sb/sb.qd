@@ -136,6 +136,15 @@ pub fn (sb:StringBuilder) append_char(c:i64 -- sb2:StringBuilder) {
 	sb
 }
 
+/// Append any value, spelled as `cast<str>` spells it.
+/// String interpolation uses this for a value that is neither a string nor an integer.
+/// @param x any Value to append
+/// @return sb2 StringBuilder Updated builder
+/// @example builder 1.5 sb::append_value -> builder
+pub fn (sb:StringBuilder) append_value(x:any -- sb2:StringBuilder) {
+	sb x cast<str> append
+}
+
 /// Append an integer as string.
 /// @param n i64 Integer to append
 /// @return sb2 StringBuilder Updated builder

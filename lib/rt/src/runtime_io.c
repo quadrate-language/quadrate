@@ -64,6 +64,16 @@ static void print_array_contents(const qd_array_t* arr, int depth) {
 			printf("%s", v ? qd_string_data((qd_string_t*)v) : "");
 			break;
 		}
+		case QD_ARRAY_TYPE_F128: {
+			void* v = NULL;
+			qd_array_get_ptr(arr, i, &v);
+			char text[QD_F128_STRING_MAX] = "0";
+			if (v != NULL) {
+				qd_f128_format((const qd_f128_t*)v, text, sizeof text);
+			}
+			printf("%s", text);
+			break;
+		}
 		default: {
 			void* v = NULL;
 			qd_array_get_ptr(arr, i, &v);
@@ -121,6 +131,13 @@ int qd_print(qd_context* ctx) {
 		print_pointer(val.value.p, 0);
 		qd_ptr_release(val.value.p); // The stack held a reference; printing consumes it
 		break;
+	case QD_STACK_TYPE_F128: {
+		char text[QD_F128_STRING_MAX];
+		qd_f128_format(val.value.q, text, sizeof text);
+		printf("%s", text);
+		qd_f128_release(val.value.q);
+		break;
+	}
 	default:
 		return (int){-3};
 	}
@@ -165,6 +182,12 @@ int qd_prints(qd_context* ctx) {
 			} else {
 				printf("%s", str_data);
 			}
+			break;
+		}
+		case QD_STACK_TYPE_F128: {
+			char text[QD_F128_STRING_MAX];
+			qd_f128_format(val.value.q, text, sizeof text);
+			printf("%s", text);
 			break;
 		}
 		default:
@@ -213,6 +236,13 @@ int qd_printv(qd_context* ctx) {
 		printf("\n");
 		qd_ptr_release(val.value.p);
 		break;
+	case QD_STACK_TYPE_F128: {
+		char text[QD_F128_STRING_MAX];
+		qd_f128_format(val.value.q, text, sizeof text);
+		printf("f128:%s\n", text);
+		qd_f128_release(val.value.q);
+		break;
+	}
 	default:
 		return (int){-3};
 	}

@@ -840,6 +840,46 @@ TEST(FloatLiteralRange) {
 	ASSERT(Qd::readFloatLiteral("1e-400", value) == std::errc() && value == 0.0, "1e-400 underflows to zero");
 }
 
+TEST(F128LiteralSpellings) {
+	const char* accepted[] = {"0.1q", "42q", "-7q", "1e3q", "-1.5e-300q", "0.000q",
+			"9.999999999999999999999999999999999e6144q", "1e-9999q", "123456789012345678901234567890123456789q"};
+	for (const char* text : accepted) {
+		std::string digits;
+		ASSERT(Qd::readF128Literal(text, digits) == std::errc(), text);
+	}
+
+	std::string digits;
+	ASSERT(Qd::readF128Literal("-1.5e-3q", digits) == std::errc() && digits == "-1.5e-3",
+			"the digits come back without the q");
+
+	const char* rejected[] = {"q", ".5q", "5.q", "1e+q", "1.2.3q", "0x10q", "1.5", "1qq", "1_0q"};
+	for (const char* text : rejected) {
+		std::string out;
+		ASSERT(Qd::readF128Literal(text, out) == std::errc::invalid_argument, text);
+	}
+}
+
+TEST(F128LiteralRange) {
+	std::string digits;
+	ASSERT(Qd::readF128Literal("1e6145q", digits) == std::errc::result_out_of_range, "past the largest exponent");
+	ASSERT(Qd::readF128Literal("10e6144q", digits) == std::errc::result_out_of_range,
+			"the leading digit decides, not e");
+	ASSERT(Qd::readF128Literal("0.001e6147q", digits) == std::errc(), "and so it can come back in range");
+	ASSERT(Qd::readF128Literal("9.9999999999999999999999999999999995e6144q", digits) == std::errc::result_out_of_range,
+			"34 nines and a 5 round up past the limit");
+	ASSERT(Qd::readF128Literal("9.9999999999999999999999999999999994e6144q", digits) == std::errc(),
+			"and a 4 rounds down to the largest finite value");
+	ASSERT(Qd::readF128Literal("0e999999q", digits) == std::errc(), "zero has no magnitude to overflow");
+}
+
+TEST(F128LiteralTextRecognition) {
+	ASSERT(Qd::isF128LiteralText("1.5q"), "a q makes an f128");
+	ASSERT(Qd::isF128LiteralText("42q"), "an integer spelling too");
+	ASSERT(!Qd::isF128LiteralText("1.5"), "no q, no f128");
+	ASSERT(!Qd::isFloatLiteralText("1.5q"), "and an f128 is not an f64");
+	ASSERT(!Qd::isF128LiteralText("\"1q\""), "a string is a string");
+}
+
 TEST(FloatLiteralTextRecognition) {
 	ASSERT(Qd::isFloatLiteralText("1.5"), "a point makes a float");
 	ASSERT(Qd::isFloatLiteralText("1e3"), "an exponent makes a float");

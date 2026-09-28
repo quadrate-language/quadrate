@@ -10,6 +10,8 @@
 static void release_element(qd_stack_element_t* elem) {
 	if (elem->type == QD_STACK_TYPE_STR && elem->value.s != NULL) {
 		qd_string_release(elem->value.s);
+	} else if (elem->type == QD_STACK_TYPE_F128) {
+		qd_f128_release(elem->value.q);
 	}
 }
 
@@ -28,6 +30,12 @@ static void print_element_value(FILE* f, qd_stack_element_t* elem) {
 		case QD_STACK_TYPE_PTR:
 			fprintf(f, "ptr(%p)", elem->value.p);
 			break;
+		case QD_STACK_TYPE_F128: {
+			char text[QD_F128_STRING_MAX];
+			qd_f128_format(elem->value.q, text, sizeof text);
+			fprintf(f, "%sq", text);
+			break;
+		}
 		default:
 			fprintf(f, "<unknown>");
 			break;
@@ -41,6 +49,7 @@ static const char* get_type_name(qd_stack_type type) {
 		case QD_STACK_TYPE_FLOAT: return "f64";
 		case QD_STACK_TYPE_STR: return "str";
 		case QD_STACK_TYPE_PTR: return "ptr";
+		case QD_STACK_TYPE_F128: return "f128";
 		default: return "unknown";
 	}
 }
@@ -60,6 +69,9 @@ static int elements_equal(qd_stack_element_t* a, qd_stack_element_t* b) {
 			return strcmp(qd_string_data(a->value.s), qd_string_data(b->value.s)) == 0;
 		case QD_STACK_TYPE_PTR:
 			return a->value.p == b->value.p;
+		case QD_STACK_TYPE_F128:
+			// IEEE equality, as `==` has it: 1.5 and 1.50 are equal, NaN is equal to nothing.
+			return qd_f128_compare(a->value.q, b->value.q) == 0;
 		default:
 			return 0;
 	}
@@ -178,6 +190,9 @@ int usr_testing_assert_true(qd_context* ctx) {
 		case QD_STACK_TYPE_PTR:
 			truthy = v.value.p != NULL;
 			break;
+		case QD_STACK_TYPE_F128:
+			truthy = !qd_f128_is_zero(v.value.q);
+			break;
 		default:
 			truthy = 0;
 			break;
@@ -227,6 +242,9 @@ int usr_testing_assert_false(qd_context* ctx) {
 			break;
 		case QD_STACK_TYPE_PTR:
 			falsy = v.value.p == NULL;
+			break;
+		case QD_STACK_TYPE_F128:
+			falsy = qd_f128_is_zero(v.value.q);
 			break;
 		default:
 			falsy = 1;

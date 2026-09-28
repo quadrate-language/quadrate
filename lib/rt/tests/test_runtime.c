@@ -3582,6 +3582,132 @@ TEST(RollTest) {
 // remains a documented public entry point for embedders, so the deep copy and
 // its string handling are pinned here instead.
 
+// Formats v into a static buffer, for comparing against the exact text a value holds
+static const char* f128_text(const qd_f128_t* v) {
+	static char buf[QD_F128_STRING_MAX];
+	qd_f128_format(v, buf, sizeof buf);
+	return buf;
+}
+
+TEST(F128ParseAndFormat) {
+	qd_f128_t* v = qd_f128_parse("1.10");
+	ASSERT(v != NULL, "1.10 reads");
+	ASSERT(strcmp(f128_text(v), "1.10") == 0, "and keeps its trailing zero");
+	qd_f128_release(v);
+
+	ASSERT(qd_f128_parse("1.5x") == NULL, "trailing junk is not a number");
+	ASSERT(qd_f128_parse("") == NULL, "nor is nothing");
+	ASSERT(qd_f128_parse("sNaN") == NULL, "a signaling NaN is refused");
+
+	v = qd_f128_parse("-Infinity");
+	ASSERT(v != NULL && strcmp(f128_text(v), "-inf") == 0, "infinity is spelled as f64 spells it");
+	qd_f128_release(v);
+}
+
+TEST(F128ArithmeticIsDecimal) {
+	qd_f128_t* a = qd_f128_parse("0.1");
+	qd_f128_t* b = qd_f128_parse("0.2");
+	qd_f128_t* c = qd_f128_parse("0.3");
+	qd_f128_t* sum = qd_f128_add(a, b);
+	ASSERT(qd_f128_compare(sum, c) == 0, "0.1 + 0.2 is 0.3");
+	qd_f128_release(a);
+	qd_f128_release(b);
+	qd_f128_release(c);
+	qd_f128_release(sum);
+
+	qd_f128_t* one = qd_f128_from_i64(1);
+	qd_f128_t* three = qd_f128_from_i64(3);
+	qd_f128_t* third = qd_f128_div(one, three);
+	ASSERT(strcmp(f128_text(third), "0.3333333333333333333333333333333333") == 0, "34 digits, rounded");
+	qd_f128_release(one);
+	qd_f128_release(three);
+	qd_f128_release(third);
+}
+
+TEST(F128ConversionsAreTotal) {
+	qd_f128_t* big = qd_f128_parse("1e30");
+	ASSERT(qd_f128_to_i64(big) == INT64_MAX, "too large saturates");
+	qd_f128_t* neg = qd_f128_neg(big);
+	ASSERT(qd_f128_to_i64(neg) == INT64_MIN, "too small saturates");
+	qd_f128_t* nan = qd_f128_nan();
+	ASSERT(qd_f128_to_i64(nan) == 0, "NaN is zero");
+	qd_f128_t* frac = qd_f128_parse("-2.9");
+	ASSERT(qd_f128_to_i64(frac) == -2, "truncates toward zero");
+	qd_f128_release(big);
+	qd_f128_release(neg);
+	qd_f128_release(nan);
+	qd_f128_release(frac);
+
+	qd_f128_t* tenth = qd_f128_from_f64(0.1);
+	ASSERT(strcmp(f128_text(tenth), "0.1000000000000000055511151231257827") == 0, "the binary value, rounded");
+	ASSERT(qd_f128_to_f64(tenth) == 0.1, "and back to the same double");
+	qd_f128_release(tenth);
+}
+
+TEST(F128ComparisonIsIEEE) {
+	qd_f128_t* nan = qd_f128_nan();
+	qd_f128_t* one = qd_f128_from_i64(1);
+	ASSERT(qd_f128_compare(nan, nan) == 2, "NaN is unordered, even with itself");
+	ASSERT(qd_f128_compare(nan, one) == 2, "and with a number");
+	qd_f128_t* a = qd_f128_parse("1.0");
+	qd_f128_t* b = qd_f128_parse("1.00");
+	ASSERT(qd_f128_compare(a, b) == 0, "1.0 equals 1.00");
+	ASSERT(qd_f128_total_order(b, a) == -1, "but orders before it");
+	qd_f128_release(nan);
+	qd_f128_release(one);
+	qd_f128_release(a);
+	qd_f128_release(b);
+}
+
+TEST(F128StackOwnership) {
+	qd_context* ctx = create_test_context();
+	qd_f128_t* v = qd_f128_parse("2.5");
+	ASSERT(qd_push_q(ctx, v) == 0, "push succeeds");
+	ASSERT(qd_f128_refcount(v) == 2, "the stack holds a reference of its own");
+	qd_dup(ctx);
+	ASSERT(qd_f128_refcount(v) == 3, "dup takes another");
+	qd_add(ctx);
+	ASSERT(qd_f128_refcount(v) == 1, "add consumed both operands");
+
+	qd_f128_t* result = NULL;
+	ASSERT(qd_pop_q(ctx, &result) == 0, "pop succeeds");
+	ASSERT(strcmp(f128_text(result), "5.0") == 0, "2.5 + 2.5 is 5.0");
+	qd_f128_release(result);
+	qd_f128_release(v);
+	destroy_test_context(ctx);
+}
+
+TEST(F128CastsThroughTheStack) {
+	qd_context* ctx = create_test_context();
+	qd_push_i(ctx, 42);
+	qd_castq(ctx);
+	qd_casts(ctx);
+	char buf[32];
+	ASSERT(qd_pop_s(ctx, buf, sizeof buf) == 0 && strcmp(buf, "42") == 0, "42 cast<f128> cast<str> is \"42\"");
+
+	qd_push_f(ctx, 0.5);
+	qd_castq(ctx);
+	qd_castf(ctx);
+	double d = 0.0;
+	ASSERT(qd_pop_f(ctx, &d) == 0 && d == 0.5, "0.5 survives the round trip");
+	destroy_test_context(ctx);
+}
+
+TEST(F128LiteralCache) {
+	qd_context* ctx = create_test_context();
+	qd_f128_t* cache = NULL;
+	qd_push_q_lit(ctx, "0.1", &cache);
+	qd_f128_t* first = cache;
+	ASSERT(first != NULL, "the first push fills the cache");
+	qd_push_q_lit(ctx, "0.1", &cache);
+	ASSERT(cache == first, "and the second reuses it");
+	ASSERT(qd_f128_refcount(first) == 3, "one reference for the cache, one per slot");
+	qd_stack_truncate(ctx, 0);
+	ASSERT(qd_f128_refcount(first) == 1, "only the cache's is left");
+	qd_f128_release(cache);
+	destroy_test_context(ctx);
+}
+
 TEST(CloneContextDeepCopiesStack) {
 	qd_context* src = create_test_context();
 	qd_push_i(src, 1);

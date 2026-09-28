@@ -8,6 +8,7 @@
 #include <cerrno>
 #include <charconv>
 #include <cmath>
+#include <cstddef>
 #include <cstdint>
 #include <cstdlib>
 #include <string>
@@ -116,10 +117,123 @@ namespace Qd {
 	 * integer reader chokes on the `e`.
 	 */
 	inline bool isFloatLiteralText(std::string_view text) {
-		if (text.empty() || hasRadixPrefix(text)) {
+		if (text.empty() || hasRadixPrefix(text) || text.back() == 'q') {
 			return false;
 		}
 		return text.find('.') != std::string_view::npos || text.find_first_of("eE") != std::string_view::npos;
+	}
+
+	/**
+	 * @brief Whether a numeric literal's spelling makes it an f128: a trailing `q`.
+	 *
+	 * The suffix is kept in the text a literal or constant is stored as, so this is the
+	 * whole rule, as isFloatLiteralText is for f64.
+	 */
+	inline bool isF128LiteralText(std::string_view text) {
+		return text.size() > 1 && text.back() == 'q' && !hasRadixPrefix(text);
+	}
+
+	/**
+	 * @brief Read an f128 literal, reporting why if it will not read.
+	 *
+	 * The spelling is a decimal integer or float literal followed by `q`: `42q`, `0.1q`,
+	 * `-1.5e-300q`. The digits are kept as written -- decimal128 holds them exactly, up to
+	 * 34 significant digits, and rounds the rest the way arithmetic does -- so `out` is the
+	 * text without its `q`, ready for the runtime to read.
+	 *
+	 * A magnitude beyond decimal128's largest finite value, 9.99...e6144, is
+	 * `result_out_of_range`, as a too-large f64 literal is. Too small is not an error: it
+	 * rounds toward zero, as arithmetic does.
+	 *
+	 * @param text The literal as written, `q` included.
+	 * @param out Set to the digits on success, untouched otherwise.
+	 * @return `std::errc()` on success.
+	 */
+	inline std::errc readF128Literal(std::string_view text, std::string& out) {
+		if (!isF128LiteralText(text)) {
+			return std::errc::invalid_argument;
+		}
+		const std::string_view body = text.substr(0, text.size() - 1);
+
+		size_t at = 0;
+		std::string significant;  // the digits, leading zeros dropped
+		ptrdiff_t pointShift = 0; // digits after the point
+		const auto digits = [&](bool afterPoint) {
+			const size_t start = at;
+			while (at < body.size() && body[at] >= '0' && body[at] <= '9') {
+				if (!significant.empty() || body[at] != '0') {
+					significant += body[at];
+				}
+				if (afterPoint) {
+					++pointShift;
+				}
+				++at;
+			}
+			return at - start;
+		};
+
+		if (at < body.size() && body[at] == '-') {
+			++at;
+		}
+		if (digits(false) == 0) {
+			return std::errc::invalid_argument;
+		}
+		if (at < body.size() && body[at] == '.') {
+			++at;
+			if (digits(true) == 0) {
+				return std::errc::invalid_argument;
+			}
+		}
+		int64_t exponent = 0;
+		if (at < body.size() && (body[at] == 'e' || body[at] == 'E')) {
+			++at;
+			bool negative = false;
+			if (at < body.size() && (body[at] == '+' || body[at] == '-')) {
+				negative = body[at] == '-';
+				++at;
+			}
+			const size_t start = at;
+			while (at < body.size() && body[at] >= '0' && body[at] <= '9') {
+				// Anything past a few digits is out of every range there is; stop counting
+				// before the product overflows.
+				if (exponent < 1000000) {
+					exponent = exponent * 10 + (body[at] - '0');
+				}
+				++at;
+			}
+			if (at == start) {
+				return std::errc::invalid_argument;
+			}
+			if (negative) {
+				exponent = -exponent;
+			}
+		}
+		if (at != body.size()) {
+			return std::errc::invalid_argument;
+		}
+
+		// The exponent of the leading digit, once the value is rounded to 34 digits. Rounding
+		// carries into a new digit only when the 34 kept are all nines and what follows
+		// rounds up -- the one way a literal just under the limit ends up over it.
+		if (!significant.empty()) {
+			int64_t adjusted = exponent - pointShift + static_cast<int64_t>(significant.size()) - 1;
+			if (significant.size() > 34 && significant.find_first_not_of('9') >= 34 && significant[34] >= '5') {
+				++adjusted;
+			}
+			if (adjusted > 6144) {
+				return std::errc::result_out_of_range;
+			}
+		}
+		out = std::string(body);
+		return std::errc();
+	}
+
+	/**
+	 * @brief The digits of an f128 literal, for the places downstream of the validator.
+	 * @see readF128Literal
+	 */
+	inline std::string f128LiteralDigits(std::string_view text) {
+		return isF128LiteralText(text) ? std::string(text.substr(0, text.size() - 1)) : std::string(text);
 	}
 
 	/**

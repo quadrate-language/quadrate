@@ -1,1 +1,1 @@
-Invalid type 'i65'. Valid types are: i64, f64, str, ptr, any
+Invalid type 'i65'. Valid types are: i64, f64, f128, str, ptr, any

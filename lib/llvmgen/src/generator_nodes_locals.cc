@@ -47,7 +47,7 @@ namespace Qd {
 				if (typeName == "f64") {
 					llvm::Value* v = builder->CreateLoad(builder->getDoubleTy(), valuePtr, name + "_g_f");
 					storeVolatile(v);
-				} else if (typeName == "str" || typeName == "ptr" || isKnownStruct(typeName)) {
+				} else if (typeName == "str" || typeName == "f128" || typeName == "ptr" || isKnownStruct(typeName)) {
 					// Struct-typed globals store a pointer just like `ptr`/`str`.
 					llvm::Value* v = builder->CreateLoad(ptrTy, valuePtr, name + "_g_p");
 					// A global owns what it holds (specification 11.2.2), so the store has to
@@ -67,6 +67,8 @@ namespace Qd {
 						// qd_string_t to qd_struct_release, which finds it in no registry and
 						// does nothing.
 						builder->CreateCall(qdStringReleaseFn, {old});
+					} else if (typeName == "f128") {
+						builder->CreateCall(qdF128ReleaseFn, {old});
 					} else {
 						builder->CreateCall(qdPtrReleaseFn, {old});
 					}
@@ -414,6 +416,8 @@ namespace Qd {
 
 		// Continue after release
 		builder->SetInsertPoint(afterReleaseBlock);
+		emitReleaseIfF128(oldType, builder->CreateStructGEP(stackElementTy, storagePtr, 0, name + "_old_f128_ptr"),
+				name + "_old");
 
 		// Get the stack pointer from context
 		llvm::Value* stackPtrPtr = builder->CreateStructGEP(contextStructTy, ctx, 0, "stack_ptr");
@@ -533,6 +537,7 @@ namespace Qd {
 		builder->CreateBr(capDoFree);
 
 		builder->SetInsertPoint(capDoFree);
+		emitReleaseIfF128(capType, elemPtr, name + "_cap");
 		builder->CreateCall(freeFn, {refCountPtr});
 		builder->CreateBr(doneBlock);
 
@@ -721,6 +726,7 @@ namespace Qd {
 
 				// Free the heap block
 				builder->SetInsertPoint(loopCapDoFree);
+				emitReleaseIfF128(loopCapType, capVarPtr, varName + "_loop_cap");
 				// Free starting at refcount (the actual malloc block)
 				builder->CreateCall(freeFn, {refCountPtr});
 				builder->CreateBr(capContinue);
@@ -778,14 +784,15 @@ namespace Qd {
 				if (stackAllocatedStructLocals.count(varName) > 0 && structTypeIt != localVariableStructTypes.end()) {
 					const StructLayout* layoutPtr = findStructDefinition(structTypeIt->second);
 					if (layoutPtr) {
-						// Release concrete string fields
+						// Release concrete string and f128 fields
 						for (const auto& field : layoutPtr->fields) {
-							if (field.typeName == "str") {
+							if (field.typeName == "str" || field.typeName == "f128") {
 								auto fieldOffset = builder->getInt64(field.offset);
 								auto fieldBytePtr = builder->CreateGEP(
 										builder->getInt8Ty(), ptrVal, fieldOffset, varName + "_str_field_ptr");
 								llvm::Value* strFieldPtr = builder->CreateLoad(ptrTy, fieldBytePtr, "str_field");
-								builder->CreateCall(qdStringReleaseFn, {strFieldPtr});
+								builder->CreateCall(
+										field.typeName == "str" ? qdStringReleaseFn : qdF128ReleaseFn, {strFieldPtr});
 							}
 						}
 						// Release generic type parameter fields that hold strings
@@ -814,6 +821,10 @@ namespace Qd {
 								builder->CreateBr(skipRelease);
 
 								builder->SetInsertPoint(skipRelease);
+								emitReleaseIfF128(typeTag,
+										builder->CreateGEP(builder->getInt8Ty(), ptrVal, fieldOffset,
+												varName + "_typeparam_f128_ptr"),
+										varName + "_" + field.name);
 							}
 						}
 					}
@@ -824,8 +835,12 @@ namespace Qd {
 				builder->CreateBr(skipFreeBlock);
 			}
 
-			// Skip free block
+			// Skip free block. Every branch above tests for a string or a pointer, so an f128
+			// reaches here untouched.
 			builder->SetInsertPoint(skipFreeBlock);
+			emitReleaseIfF128(type,
+					builder->CreateStructGEP(stackElementTy, localAlloca, 0, varName + "_cleanup_f128_ptr"),
+					varName + "_cleanup");
 		}
 	}
 

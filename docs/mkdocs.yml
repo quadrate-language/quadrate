@@ -101,6 +101,7 @@ nav:
           - math: stdlib/math.md
           - math (vectors): stdlib/math-vectors.md
           - math (matrices): stdlib/math-matrices.md
+          - f128: stdlib/f128.md
           - limits: stdlib/limits.md
           - bits: stdlib/bits.md
           - rand: stdlib/rand.md

@@ -355,6 +355,19 @@ namespace {
 		return false;
 	}
 
+	// An f128 literal or constant, `q` and all. The runtime does the reading, as it does for
+	// compiled code, so both tiers round the same digits the same way.
+	bool pushF128Text(qd_interp* interp, const std::string& text) {
+		qd_f128_t* value = qd_f128_parse(Qd::f128LiteralDigits(text).c_str());
+		if (value == nullptr) {
+			interp->error = "cannot read the f128 literal '" + text + "'";
+			return false;
+		}
+		const bool pushed = qd_push_q(interp->ctx, value) == 0;
+		qd_f128_release(value);
+		return pushed;
+	}
+
 	bool pushLiteral(qd_interp* interp, const Qd::AstNodeLiteral* literal) {
 		const std::string& text = literal->value();
 
@@ -365,6 +378,8 @@ namespace {
 		}
 		case Qd::AstNodeLiteral::LiteralType::FLOAT:
 			return qd_push_f(interp->ctx, std::strtod(text.c_str(), nullptr)) == 0;
+		case Qd::AstNodeLiteral::LiteralType::F128:
+			return pushF128Text(interp, text);
 		case Qd::AstNodeLiteral::LiteralType::STRING:
 			return qd_push_s(interp->ctx, decodeString(text).c_str()) == 0;
 		case Qd::AstNodeLiteral::LiteralType::BOOL:
@@ -410,6 +425,9 @@ namespace {
 		if (text.size() >= 2 && text.front() == '"') {
 			return qd_push_s(interp->ctx, decodeString(text).c_str()) == 0;
 		}
+		if (Qd::isF128LiteralText(text)) {
+			return pushF128Text(interp, text);
+		}
 		if (Qd::isFloatLiteralText(text)) {
 			return qd_push_f(interp->ctx, Qd::floatLiteralOr(text, 0.0)) == 0;
 		}
@@ -422,6 +440,9 @@ namespace {
 		if (element.type == QD_STACK_TYPE_STR && element.value.s != nullptr) {
 			qd_string_release(element.value.s);
 			element.value.s = nullptr;
+		} else if (element.type == QD_STACK_TYPE_F128 && element.value.q != nullptr) {
+			qd_f128_release(element.value.q);
+			element.value.q = nullptr;
 		}
 	}
 
@@ -431,6 +452,9 @@ namespace {
 	void releaseLocal(Local& value) {
 		if (value.type == QD_STACK_TYPE_PTR && value.p != nullptr) {
 			qd_ptr_release(value.p);
+			value.p = nullptr;
+		} else if (value.type == QD_STACK_TYPE_F128 && value.p != nullptr) {
+			qd_f128_release(static_cast<qd_f128_t*>(value.p));
 			value.p = nullptr;
 		}
 	}
@@ -464,6 +488,11 @@ namespace {
 		case QD_STACK_TYPE_PTR:
 			slot.p = element.value.p;
 			break;
+		case QD_STACK_TYPE_F128:
+			// The stack's reference moves into the binding.
+			slot.p = element.value.q;
+			element.value.q = nullptr;
+			break;
 		case QD_STACK_TYPE_STR: {
 			const char* data = (element.value.s != nullptr) ? qd_string_data(element.value.s) : nullptr;
 			if (data != nullptr) {
@@ -491,6 +520,8 @@ namespace {
 			return qd_push_p(interp->ctx, value.p) == 0;
 		case QD_STACK_TYPE_STR:
 			return qd_push_s(interp->ctx, value.s.c_str()) == 0;
+		case QD_STACK_TYPE_F128:
+			return qd_push_q(interp->ctx, static_cast<qd_f128_t*>(value.p)) == 0;
 		}
 		return false;
 	}
@@ -627,6 +658,8 @@ namespace {
 			elementType = QD_ARRAY_TYPE_STR;
 		} else if (elemName == "ptr") {
 			elementType = QD_ARRAY_TYPE_PTR;
+		} else if (elemName == "f128") {
+			elementType = QD_ARRAY_TYPE_F128;
 		} else if (elemName != "i64" && elemName != "i32" && elemName != "i16" && elemName != "i8" &&
 				   elemName != "u64" && elemName != "u32" && elemName != "u16" && elemName != "u8") {
 			// Structs are not a thing in this tier, so `[n]Point` has nothing to build.
@@ -672,6 +705,7 @@ namespace {
 				pushed = qd_array_push_ptr(array, qd_string_create(""));
 				break;
 			case QD_ARRAY_TYPE_PTR:
+			case QD_ARRAY_TYPE_F128: // an empty f128 slot reads as zero
 				pushed = qd_array_push_ptr(array, nullptr);
 				break;
 			default:
@@ -707,6 +741,9 @@ namespace {
 				break;
 			case Qd::AstNodeLiteral::LiteralType::STRING:
 				elementType = QD_ARRAY_TYPE_STR;
+				break;
+			case Qd::AstNodeLiteral::LiteralType::F128:
+				elementType = QD_ARRAY_TYPE_F128;
 				break;
 			default:
 				break;
@@ -767,13 +804,29 @@ namespace {
 				}
 				continue;
 			}
+			case Qd::AstNodeLiteral::LiteralType::F128: {
+				if (elementType != QD_ARRAY_TYPE_F128) {
+					qd_array_release(array);
+					interp->error = "an array literal holds one type; this element is an f128";
+					return false;
+				}
+				qd_f128_t* held = qd_f128_parse(Qd::f128LiteralDigits(text).c_str());
+				const int pushed = held != nullptr ? qd_array_push_ptr(array, held) : -1;
+				qd_f128_release(held); // the array retained its own
+				if (pushed != 0) {
+					qd_array_release(array);
+					interp->error = "could not build the array element";
+					return false;
+				}
+				continue;
+			}
 			default:
 				qd_array_release(array);
 				interp->error = "this array element cannot be interpreted";
 				return false;
 			}
 
-			if (elementType == QD_ARRAY_TYPE_STR) {
+			if (elementType == QD_ARRAY_TYPE_STR || elementType == QD_ARRAY_TYPE_F128) {
 				qd_array_release(array);
 				interp->error = "an array literal holds one type; this element is a number";
 				return false;
@@ -807,6 +860,9 @@ namespace {
 		if (typeParam == "str" || typeParam == "string" || typeParam == "s") {
 			return qd_casts;
 		}
+		if (typeParam == "f128") {
+			return qd_castq;
+		}
 		if (typeParam == "ptr" || typeParam == "p" || typeParam == "pointer") {
 			return qd_castp;
 		}
@@ -836,13 +892,16 @@ namespace {
 			// same way the compiler refuses it: parsing can fail and there is nowhere to say
 			// so, and the old answer for a failure was the value 0. This tier can be exact
 			// about it -- the operand's type is right there on the stack.
-			if (cast.fn == qd_casti || cast.fn == qd_castf) {
+			if (cast.fn == qd_casti || cast.fn == qd_castf || cast.fn == qd_castq) {
 				qd_stack_element_t top;
 				if (qd_stack_size(interp->ctx->st) > 0 && qd_stack_peek(interp->ctx->st, &top) == QD_STACK_OK &&
 						top.type == QD_STACK_TYPE_STR) {
 					interp->error = std::string("a string cannot be cast to ") +
-									((cast.fn == qd_casti) ? "an integer" : "a float") +
-									"; use strconv (atoi, parse_int, parse_float), which can report a parse failure";
+									((cast.fn == qd_casti)			? "an integer"
+											: (cast.fn == qd_castf) ? "a float"
+																	: "an f128") +
+									"; use strconv (atoi, parse_int, parse_float, parse_f128), which can report a "
+									"parse failure";
 					return false;
 				}
 			}
@@ -1111,6 +1170,16 @@ namespace {
 	// A case label naming a constant or an enum variant compares by the value's
 	// written form, which is all a constant is -- the rule pushConstantValue
 	// applies when the same name is read as a value.
+	bool f128Matches(const std::string& text, const qd_stack_element_t& subject) {
+		if (subject.type != QD_STACK_TYPE_F128) {
+			return false;
+		}
+		qd_f128_t* label = qd_f128_parse(Qd::f128LiteralDigits(text).c_str());
+		const bool equal = label != nullptr && qd_f128_compare(label, subject.value.q) == 0;
+		qd_f128_release(label);
+		return equal;
+	}
+
 	bool constantMatches(const std::string& text, const qd_stack_element_t& subject) {
 		if (text.size() >= 2 && text.front() == '"') {
 			if (subject.type != QD_STACK_TYPE_STR || subject.value.s == nullptr) {
@@ -1118,6 +1187,9 @@ namespace {
 			}
 			const char* held = qd_string_data(subject.value.s);
 			return held != nullptr && decodeString(text) == held;
+		}
+		if (Qd::isF128LiteralText(text)) {
+			return f128Matches(text, subject);
 		}
 		if (Qd::isFloatLiteralText(text)) {
 			return subject.type == QD_STACK_TYPE_FLOAT && subject.value.f == Qd::floatLiteralOr(text, 0.0);
@@ -1164,6 +1236,9 @@ namespace {
 
 		case Qd::AstNodeLiteral::LiteralType::FLOAT:
 			return subject.type == QD_STACK_TYPE_FLOAT && subject.value.f == std::strtod(text.c_str(), nullptr);
+
+		case Qd::AstNodeLiteral::LiteralType::F128:
+			return f128Matches(text, subject);
 
 		case Qd::AstNodeLiteral::LiteralType::STRING: {
 			if (subject.type != QD_STACK_TYPE_STR || subject.value.s == nullptr) {
@@ -1653,6 +1728,11 @@ bool qd_interp_peek(const qd_interp* interp, size_t index, qd_interp_value* out)
 	case QD_STACK_TYPE_PTR:
 		out->type = QD_INTERP_VALUE_PTR;
 		std::snprintf(out->text, sizeof(out->text), "<ptr %p>", element.value.p);
+		break;
+
+	case QD_STACK_TYPE_F128:
+		out->type = QD_INTERP_VALUE_F128;
+		qd_f128_format(element.value.q, out->text, sizeof(out->text));
 		break;
 	}
 	return true;

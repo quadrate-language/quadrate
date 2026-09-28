@@ -82,10 +82,24 @@ static inline void qdrt_release_element(qd_stack_element_t* elem) {
 		qd_string_release(elem->value.s);
 	} else if (elem->type == QD_STACK_TYPE_PTR) {
 		qd_ptr_release(elem->value.p);
+	} else if (elem->type == QD_STACK_TYPE_F128) {
+		qd_f128_release(elem->value.q);
 	}
 }
 
 // Push a stack element, taking a reference of its own to what it holds
 qd_stack_error qdrt_push_element(qd_stack* stack, const qd_stack_element_t* elem);
+
+// Push an f128 the caller owns, handing its reference to the slot. A NULL value is the
+// allocation failure of the operation that produced it, and is fatal.
+void qdrt_push_f128_owned(qd_context* ctx, const char* op, qd_f128_t* value);
+
+// The f128 cases of the arithmetic and comparison instructions. Each takes the stack
+// with its operands on top, both already known to be f128.
+void qdrt_f128_binary(qd_context* ctx, const char* op, qd_f128_t* (*fn)(const qd_f128_t*, const qd_f128_t*));
+void qdrt_f128_compare(qd_context* ctx, const char* op, bool (*test)(int order));
+
+// Type name of a stack element's tag, as diagnostics spell it
+const char* qdrt_type_name(qd_stack_type type);
 
 #endif // QDRT_RUNTIME_INTERNAL_H
