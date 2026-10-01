@@ -1,5 +1,6 @@
 #include <algorithm>
 #include <chrono>
+#include <climits>
 #include <cstdint>
 #include <cstdlib>
 #include <cstring>
@@ -8,6 +9,12 @@
 #include <fstream>
 #include <functional>
 #include <iostream>
+#include <unistd.h>
+
+// glibc's limits.h defines it; newlib's, as on ESP-IDF, does not
+#ifndef PATH_MAX
+#define PATH_MAX 4096
+#endif
 
 // Platform abstractions
 extern "C" {

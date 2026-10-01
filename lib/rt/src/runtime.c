@@ -4,6 +4,7 @@
 #ifndef _DEFAULT_SOURCE
 #define _DEFAULT_SOURCE
 #endif
+#include <inttypes.h>
 #include <quadrate/rt/runtime.h>
 #include <quadrate/rt/array.h>
 #include <quadrate/rt/qd_string.h>
@@ -25,6 +26,9 @@ static void dump_stack(qd_context* ctx);
 // Closure registry for safe closure detection
 static ptr_registry_t closure_registry = PTR_REGISTRY_INITIALIZER;
 
+// A target with no signals (a microcontroller under FreeRTOS, say) has no
+// sigaltstack either, and its own fault handler reports a crash.
+#ifdef SA_ONSTACK
 static void qdrt_crash_handler(int sig) {
 	const char* msg = sig == SIGSEGV ? "Fatal error: Segmentation fault (stack overflow from unbounded recursion?)\n"
 									 : "Fatal error: Bus error\n";
@@ -54,6 +58,10 @@ void qd_install_crash_handler(void) {
 	sigaction(SIGSEGV, &sa, NULL);
 	sigaction(SIGBUS, &sa, NULL);
 }
+#else
+void qd_install_crash_handler(void) {
+}
+#endif
 
 _Noreturn void qdrt_fatal_exit(void) {
 	fflush(NULL);
@@ -291,7 +299,7 @@ int qd_peek(qd_context* ctx) {
 	}
 	switch (val.type) {
 		case QD_STACK_TYPE_INT:
-			printf("%ld\n", val.value.i);
+			printf("%" PRId64 "\n", val.value.i);
 			break;
 		case QD_STACK_TYPE_FLOAT:
 			// Use %g to match qd_print's float formatting (consistent output).
@@ -560,7 +568,7 @@ int qd_casts(qd_context* ctx) {
 
 	char buffer[64];
 	if (elem.type == QD_STACK_TYPE_INT) {
-		snprintf(buffer, sizeof(buffer), "%ld", elem.value.i);
+		snprintf(buffer, sizeof(buffer), "%" PRId64, elem.value.i);
 	} else if (elem.type == QD_STACK_TYPE_FLOAT) {
 		snprintf(buffer, sizeof(buffer), "%g", elem.value.f);
 	} else if (elem.type == QD_STACK_TYPE_STR) {
@@ -580,7 +588,7 @@ int qd_casts(qd_context* ctx) {
 		if (elem.value.p == NULL) {
 			buffer[0] = '\0';
 		} else {
-			snprintf(buffer, sizeof(buffer), "%ld", (int64_t)(intptr_t)elem.value.p);
+			snprintf(buffer, sizeof(buffer), "%" PRId64, (int64_t)(intptr_t)elem.value.p);
 		}
 	} else {
 		QDRT_FATAL(ctx, "casts", "Cannot cast type to string");
@@ -671,7 +679,7 @@ static void dump_stack(qd_context* ctx) {
 		fprintf(stderr, "  [%zu]: ", i);
 		switch (elem.type) {
 			case QD_STACK_TYPE_INT:
-				fprintf(stderr, "int = %ld\n", elem.value.i);
+				fprintf(stderr, "int = %" PRId64 "\n", elem.value.i);
 				break;
 			case QD_STACK_TYPE_FLOAT:
 				fprintf(stderr, "float = %f\n", elem.value.f);
@@ -1248,7 +1256,11 @@ void qd_pop_call(qd_context* ctx) {
 // We use plain global state because coverage runs in a single test-runner
 // process and gets reported at exit.
 // ---------------------------------------------------------------------------
+// Overridable, as the tables are static: an embedder with no use for coverage
+// should not pay 144 KB of RAM for them.
+#ifndef QD_MAX_COVERED_FUNCS
 #define QD_MAX_COVERED_FUNCS 16384
+#endif
 static const char* g_coverage_names[QD_MAX_COVERED_FUNCS];
 static unsigned char g_coverage_called[QD_MAX_COVERED_FUNCS];
 static int g_coverage_count = 0;
@@ -1421,7 +1433,7 @@ void qd_debug_print_stack(qd_context* ctx) {
 
 		switch (elem.type) {
 		case QD_STACK_TYPE_INT:
-			fprintf(stderr, "%sint    %s %s%ld%s\n", color_green, color_end, color_yellow, elem.value.i, color_end);
+			fprintf(stderr, "%sint    %s %s%" PRId64 "%s\n", color_green, color_end, color_yellow, elem.value.i, color_end);
 			break;
 		case QD_STACK_TYPE_FLOAT:
 			fprintf(stderr, "%sfloat  %s %s%g%s\n", color_green, color_end, color_yellow, elem.value.f, color_end);

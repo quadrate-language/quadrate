@@ -3,6 +3,7 @@
  * @brief Dynamic array implementation for Quadrate runtime
  */
 
+#include <inttypes.h>
 #include <quadrate/rt/array.h>
 #include <quadrate/rt/qd_string.h>
 #include <quadrate/rt/qd_struct.h>
@@ -412,7 +413,7 @@ int qd_nth(qd_context* ctx) {
 	}
 
 	if (index < 0 || (size_t)index >= arr->length) {
-		fprintf(stderr, "nth: index %ld out of bounds (length %zu)\n", index, arr->length);
+		fprintf(stderr, "nth: index %" PRId64 " out of bounds (length %zu)\n", index, arr->length);
 		qd_array_release(arr); // Release before error return
 		result = -1;
 		return result;
@@ -503,7 +504,7 @@ int qd_makei(qd_context* ctx) {
 
 	int64_t size = sizeElem.value.i;
 	if (size < 0) {
-		fprintf(stderr, "makei: negative size %ld\n", size);
+		fprintf(stderr, "makei: negative size %" PRId64 "\n", size);
 		result = -1;
 		return result;
 	}
@@ -552,7 +553,7 @@ int qd_makef(qd_context* ctx) {
 
 	int64_t size = sizeElem.value.i;
 	if (size < 0) {
-		fprintf(stderr, "makef: negative size %ld\n", size);
+		fprintf(stderr, "makef: negative size %" PRId64 "\n", size);
 		result = -1;
 		return result;
 	}
@@ -601,7 +602,7 @@ int qd_makes(qd_context* ctx) {
 
 	int64_t size = sizeElem.value.i;
 	if (size < 0) {
-		fprintf(stderr, "makes: negative size %ld\n", size);
+		fprintf(stderr, "makes: negative size %" PRId64 "\n", size);
 		result = -1;
 		return result;
 	}
@@ -650,7 +651,7 @@ int qd_makep(qd_context* ctx) {
 
 	int64_t size = sizeElem.value.i;
 	if (size < 0) {
-		fprintf(stderr, "makep: negative size %ld\n", size);
+		fprintf(stderr, "makep: negative size %" PRId64 "\n", size);
 		result = -1;
 		return result;
 	}
@@ -698,7 +699,7 @@ int qd_makea(qd_context* ctx) {
 
 	int64_t size = sizeElem.value.i;
 	if (size < 0) {
-		fprintf(stderr, "makea: negative size %ld\n", size);
+		fprintf(stderr, "makea: negative size %" PRId64 "\n", size);
 		result = -1;
 		return result;
 	}
@@ -914,7 +915,7 @@ int qd_set(qd_context* ctx) {
 
 	int64_t index = indexElem.value.i;
 	if (index < 0 || (size_t)index >= arr->length) {
-		fprintf(stderr, "set: index %ld out of bounds (length %zu)\n", index, arr->length);
+		fprintf(stderr, "set: index %" PRId64 " out of bounds (length %zu)\n", index, arr->length);
 		if (valueElem.type == QD_STACK_TYPE_STR) {
 			qd_string_release(valueElem.value.s);
 		}

@@ -165,8 +165,11 @@ using Frame = std::unordered_map<std::string, Local>;
 // unbounded loop would otherwise need a power cycle. About a second on an A53.
 #define QD_INTERP_DEFAULT_STEP_LIMIT 2000000u
 
-// Each level costs a C stack frame in the walk.
+// Each level costs a C stack frame in the walk, about 1.5 KB of it, so an
+// embedder with a small stack lowers this.
+#ifndef QD_INTERP_MAX_CALL_DEPTH
 #define QD_INTERP_MAX_CALL_DEPTH 256
+#endif
 
 // Holding the Ast here releases it when the declaration is replaced or removed.
 struct Declared {

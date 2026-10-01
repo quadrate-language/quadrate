@@ -3,6 +3,7 @@
 
 #define _POSIX_C_SOURCE 200809L
 
+#include <inttypes.h>
 #include <quadrate/rt/runtime.h>
 #include <quadrate/rt/qd_string.h>
 #include <stdio.h>
@@ -476,7 +477,7 @@ typedef enum { QDRT_BIT_AND, QDRT_BIT_OR, QDRT_BIT_XOR } qdrt_bitwise_kind;
 static int qdrt_bitwise_op(qd_context* ctx, const char* name, qdrt_bitwise_kind kind) {
 	qd_stack* st = ctx->st;
 	if (st->size < 2) {
-		qdrt_fatal_raise(ctx, name, "Stack underflow (required 2 elements, have %zu)", st->size);
+		qdrt_fatal_raise(ctx, name, "Stack underflow (required 2 elements, have %zu)", (size_t)st->size);
 	}
 
 	qd_stack_element_t* top = &st->data[st->size - 1];
@@ -507,7 +508,7 @@ static int qdrt_bitwise_op(qd_context* ctx, const char* name, qdrt_bitwise_kind 
 static int qdrt_shift_op(qd_context* ctx, const char* name, bool left) {
 	qd_stack* st = ctx->st;
 	if (st->size < 2) {
-		qdrt_fatal_raise(ctx, name, "Stack underflow (required 2 elements, have %zu)", st->size);
+		qdrt_fatal_raise(ctx, name, "Stack underflow (required 2 elements, have %zu)", (size_t)st->size);
 	}
 
 	qd_stack_element_t* top = &st->data[st->size - 1];
@@ -518,7 +519,7 @@ static int qdrt_shift_op(qd_context* ctx, const char* name, bool left) {
 	}
 
 	if (top->value.i < 0 || top->value.i >= 64) {
-		qdrt_fatal_raise(ctx, name, "Shift count out of range (must be 0-63, got %ld)", top->value.i);
+		qdrt_fatal_raise(ctx, name, "Shift count out of range (must be 0-63, got %" PRId64 ")", top->value.i);
 	}
 
 	int64_t result = left ? (int64_t)((uint64_t)second->value.i << top->value.i)
@@ -580,7 +581,7 @@ int qd_gte(qd_context* ctx) {
 	}
 
 	// Stack underflow
-	qdrt_fatal_raise(ctx, "gte", "Stack underflow (required 2 elements, have %zu)", QD_STACK_SIZE(st));
+	qdrt_fatal_raise(ctx, "gte", "Stack underflow (required 2 elements, have %zu)", (size_t)QD_STACK_SIZE(st));
 }
 
 int qd_within(qd_context* ctx) {
@@ -654,7 +655,7 @@ int qd_xor(qd_context* ctx) {
 int qd_not(qd_context* ctx) {
 	qd_stack* st = ctx->st;
 	if (st->size < 1) {
-		qdrt_fatal_raise(ctx, "not", "Stack underflow (required 1 element, have %zu)", st->size);
+		qdrt_fatal_raise(ctx, "not", "Stack underflow (required 1 element, have %zu)", (size_t)st->size);
 	}
 
 	qd_stack_element_t* top = &st->data[st->size - 1];
@@ -673,7 +674,7 @@ int qd_not(qd_context* ctx) {
 static int qdrt_logical_op(qd_context* ctx, const char* name, bool isOr) {
 	qd_stack* st = ctx->st;
 	if (st->size < 2) {
-		qdrt_fatal_raise(ctx, name, "Stack underflow (required 2 elements, have %zu)", st->size);
+		qdrt_fatal_raise(ctx, name, "Stack underflow (required 2 elements, have %zu)", (size_t)st->size);
 	}
 
 	qd_stack_element_t* b = &st->data[st->size - 1];
@@ -702,7 +703,7 @@ int qd_lor(qd_context* ctx) {
 int qd_lnot(qd_context* ctx) {
 	qd_stack* st = ctx->st;
 	if (st->size < 1) {
-		qdrt_fatal_raise(ctx, "lnot", "Stack underflow (required 1 element, have %zu)", st->size);
+		qdrt_fatal_raise(ctx, "lnot", "Stack underflow (required 1 element, have %zu)", (size_t)st->size);
 	}
 
 	qd_stack_element_t* top = &st->data[st->size - 1];

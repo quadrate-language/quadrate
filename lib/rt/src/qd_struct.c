@@ -44,7 +44,8 @@ void* qd_struct_alloc(size_t size, qd_struct_destructor_fn destructor) {
 
 	// Initialize header
 	qd_struct_header_t* header = (qd_struct_header_t*)mem;
-	header->magic = QD_STRUCT_MAGIC;
+	// Truncated where size_t is 32 bits; it is a marker, never compared whole
+	header->magic = (size_t)QD_STRUCT_MAGIC;
 	atomic_init(&header->refcount, 1);
 	header->destructor = destructor;
 

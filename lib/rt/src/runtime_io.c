@@ -5,6 +5,7 @@
 #define _POSIX_C_SOURCE 200809L
 
 #include "runtime_internal.h"
+#include <inttypes.h>
 #include <ctype.h>
 #include <quadrate/rt/array.h>
 #include <quadrate/rt/qd_string.h>
@@ -48,7 +49,7 @@ static void print_array_contents(const qd_array_t* arr, int depth) {
 		case QD_ARRAY_TYPE_INT: {
 			int64_t v = 0;
 			qd_array_get_int(arr, i, &v);
-			printf("%ld", v);
+			printf("%" PRId64, v);
 			break;
 		}
 		case QD_ARRAY_TYPE_FLOAT: {
@@ -107,7 +108,7 @@ int qd_print(qd_context* ctx) {
 
 	switch (val.type) {
 	case QD_STACK_TYPE_INT:
-		printf("%ld", val.value.i);
+		printf("%" PRId64, val.value.i);
 		break;
 	case QD_STACK_TYPE_FLOAT:
 		printf("%g", val.value.f);
@@ -151,7 +152,7 @@ int qd_prints(qd_context* ctx) {
 
 		switch (val.type) {
 		case QD_STACK_TYPE_INT:
-			printf("%ld", val.value.i);
+			printf("%" PRId64, val.value.i);
 			break;
 		case QD_STACK_TYPE_FLOAT:
 			printf("%g", val.value.f);
@@ -190,7 +191,7 @@ int qd_printv(qd_context* ctx) {
 
 	switch (val.type) {
 	case QD_STACK_TYPE_INT:
-		printf("int:%ld\n", val.value.i);
+		printf("int:%" PRId64 "\n", val.value.i);
 		break;
 	case QD_STACK_TYPE_FLOAT:
 		printf("float:%g\n", val.value.f);
