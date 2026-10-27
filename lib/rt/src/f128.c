@@ -525,42 +525,278 @@ qd_f128_t* qd_f128_nan(void) {
 // ---------------------------------------------------------------------------
 // Trigonometry
 //
-// Everything below works on bare mpd_t at a working precision and rounds once, at the
-// end, into decimal128. Each helper returns false only when memory runs out.
+// Everything below works at a working precision, in fixed-point decimals or bare mpd_t,
+// and rounds once, at the end, into decimal128. Each helper returns false only when
+// memory runs out.
 // ---------------------------------------------------------------------------
 
-// Taylor series for sin (odd) or cos (even) at |r| <= pi/4, where both converge fast.
-static bool trig_series(mpd_t* out, const mpd_t* r, bool odd, mpd_ssize_t prec, uint32_t* status) {
+// A libmpdec value on the stack, with room for the working precision. One that outgrows
+// it moves to the heap by itself, so it still wants mpd_del.
+#define QDRT_MPD_WORDS 12
+#define QDRT_MPD_LOCAL(name)                                                                                           \
+	mpd_uint_t name##_data[QDRT_MPD_WORDS];                                                                            \
+	mpd_t name = {MPD_STATIC | MPD_STATIC_DATA, 0, 0, 0, QDRT_MPD_WORDS, name##_data}
+
+// Decimal CORDIC, as the HP-35 did it: an angle is taken apart into whole multiples of
+// atan(10^-k), and turning a vector through one of them is a shift and an add. The
+// steps run on fixed-point decimals of a few words rather than through libmpdec, as
+// each is the same handful of word operations. They stop below 10^-11, and the angle
+// left over is finished in libmpdec with one turn through its tangent, t + t^3/3, which
+// is out by 2t^5/15, under 10^-55.
+
+#define FX_LIMBS 8 // one whole word and seven of fraction, base 10^9
+#define FX_FRAC_DIGITS 63
+#define FX_BASE 1000000000u
+#define CORDIC_LEVELS 12
+
+typedef struct {
+	uint32_t d[FX_LIMBS]; // most significant first; d[0] is the whole part
+} fx_t;
+
+// atan(10^-k) to 63 places, rounded
+static const fx_t cordic_angles[CORDIC_LEVELS] = {
+		{{0, 785398163, 397448309, 615660845, 819875721, 49292349, 843776455, 243736148}},
+		{{0, 99668652, 491162027, 378446119, 878020590, 243278322, 504314648, 15508777}},
+		{{0, 9999666, 686665238, 206340116, 209279548, 561369352, 544376639, 627939418}},
+		{{0, 999999, 666666866, 666523809, 634920544, 11620934, 554268013, 91431048}},
+		{{0, 99999, 999666666, 668666666, 652380952, 492063491, 154401162, 93462027}},
+		{{0, 9999, 999999666, 666666686, 666666665, 238095238, 206349206, 340115440}},
+		{{0, 999, 999999999, 666666666, 666866666, 666666523, 809523809, 634920635}},
+		{{0, 99, 999999999, 999666666, 666666668, 666666666, 666652380, 952380952}},
+		{{0, 9, 999999999, 999999666, 666666666, 666686666, 666666666, 665238095}},
+		{{0, 0, 999999999, 999999999, 666666666, 666666666, 866666666, 666666667}},
+		{{0, 0, 99999999, 999999999, 999666666, 666666666, 666668666, 666666667}},
+		{{0, 0, 9999999, 999999999, 999999666, 666666666, 666666666, 686666667}},
+};
+
+static const uint32_t pow10_u32[10] = {
+		1, 10, 100, 1000, 10000, 100000, 1000000, 10000000, 100000000, 1000000000};
+
+static void fx_set_one(fx_t* a) {
+	memset(a, 0, sizeof *a);
+	a->d[0] = 1;
+}
+
+// out = a * 10^-k, the digits shifted out dropped. Each digit offset is its own case so
+// that the divisor is a constant, which compiles to a multiplication: the steps do
+// little else.
+#define FX_SHIFT_BY(DIV)                                                                                               \
+	for (int i = FX_LIMBS - 1; i >= 0; i--) {                                                                          \
+		const int from = i - words;                                                                                    \
+		uint32_t v = from >= 0 ? a->d[from] / (DIV) : 0;                                                               \
+		if (from >= 1) {                                                                                               \
+			v += (a->d[from - 1] % (DIV)) * (FX_BASE / (DIV));                                                         \
+		}                                                                                                              \
+		out->d[i] = v;                                                                                                 \
+	}
+
+static void fx_shift(fx_t* out, const fx_t* a, int k) {
+	const int words = k / 9;
+	switch (k % 9) {
+	case 0:
+		FX_SHIFT_BY(1u)
+		break;
+	case 1:
+		FX_SHIFT_BY(10u)
+		break;
+	case 2:
+		FX_SHIFT_BY(100u)
+		break;
+	case 3:
+		FX_SHIFT_BY(1000u)
+		break;
+	case 4:
+		FX_SHIFT_BY(10000u)
+		break;
+	case 5:
+		FX_SHIFT_BY(100000u)
+		break;
+	case 6:
+		FX_SHIFT_BY(1000000u)
+		break;
+	case 7:
+		FX_SHIFT_BY(10000000u)
+		break;
+	default:
+		FX_SHIFT_BY(100000000u)
+		break;
+	}
+}
+
+#undef FX_SHIFT_BY
+
+// a += b
+static void fx_add(fx_t* a, const fx_t* b) {
+	uint32_t carry = 0;
+	for (int i = FX_LIMBS - 1; i >= 0; i--) {
+		const uint32_t v = a->d[i] + b->d[i] + carry;
+		carry = v >= FX_BASE;
+		a->d[i] = carry ? v - FX_BASE : v;
+	}
+}
+
+// out = a - b, unless b > a: then false and out is untouched
+static bool fx_sub(fx_t* out, const fx_t* a, const fx_t* b) {
+	fx_t r;
+	uint32_t borrow = 0;
+	for (int i = FX_LIMBS - 1; i >= 0; i--) {
+		const uint32_t s = b->d[i] + borrow;
+		borrow = a->d[i] < s;
+		r.d[i] = borrow ? a->d[i] + FX_BASE - s : a->d[i] - s;
+	}
+	if (borrow) {
+		return false;
+	}
+	*out = r;
+	return true;
+}
+
+// A non-negative value under 10^9, rounded to 63 places. Exact for every value the
+// steps are given, which have 46 digits at most and are no smaller than 10^-11.
+static bool fx_from_mpd(fx_t* out, const mpd_t* v, uint32_t* status) {
 	mpd_context_t ctx;
-	ctx_work(&ctx, prec + 2);
-	mpd_t* r2 = mpd_qnew();
-	mpd_t* term = mpd_qnew();
-	mpd_t* denom = mpd_qnew();
-	bool ok = r2 != NULL && term != NULL && denom != NULL;
-	if (ok) {
-		mpd_qmul(r2, r, r, &ctx, status);
-		if (odd) {
-			mpd_qcopy(term, r, status);
-		} else {
-			mpd_qset_i64(term, 1, &ctx, status);
+	ctx_work(&ctx, FX_LIMBS * 9);
+	QDRT_MPD_LOCAL(t);
+	mpd_qrescale(&t, v, -FX_FRAC_DIGITS, &ctx, status);
+	memset(out, 0, sizeof *out);
+	// The coefficient's digits, least significant first, regrouped into base 10^9
+	size_t n = 0;
+	for (mpd_ssize_t i = 0; i < t.len && n < FX_LIMBS * 9; i++) {
+		mpd_uint_t w = t.data[i];
+		for (int j = 0; j < MPD_RDIGITS && n < FX_LIMBS * 9; j++, n++) {
+			out->d[FX_LIMBS - 1 - n / 9] += (uint32_t)(w % 10) * pow10_u32[n % 9];
+			w /= 10;
 		}
-		mpd_qcopy(out, term, status);
-		for (int64_t k = odd ? 2 : 1; !(*status & MPD_Malloc_error); k += 2) {
-			// term *= -r^2 / (k * (k + 1))
-			mpd_qset_i64(denom, -(k * (k + 1)), &ctx, status);
-			mpd_qmul(term, term, r2, &ctx, status);
-			mpd_qdiv(term, term, denom, &ctx, status);
-			if (mpd_iszero(term) || mpd_adjexp(term) < mpd_adjexp(out) - prec - 2) {
+	}
+	mpd_del(&t);
+	return !(*status & MPD_Malloc_error);
+}
+
+// The digits regrouped into libmpdec's words, exactly.
+static bool fx_to_mpd(mpd_t* out, const fx_t* a, uint32_t* status) {
+	const mpd_ssize_t words = (FX_LIMBS * 9 + MPD_RDIGITS - 1) / MPD_RDIGITS;
+	if (!mpd_qresize(out, words, status)) {
+		return false;
+	}
+	memset(out->data, 0, (size_t)words * sizeof *out->data);
+	mpd_ssize_t at = 0;
+	int used = 0;
+	mpd_uint_t place = 1;
+	for (int i = FX_LIMBS - 1; i >= 0; i--) {
+		uint32_t w = a->d[i];
+		for (int j = 0; j < 9; j++) {
+			out->data[at] += (mpd_uint_t)(w % 10) * place;
+			w /= 10;
+			place *= 10;
+			if (++used == MPD_RDIGITS) {
+				at++;
+				used = 0;
+				place = 1;
+			}
+		}
+	}
+	out->len = words;
+	while (out->len > 1 && out->data[out->len - 1] == 0) {
+		out->len--;
+	}
+	mpd_set_flags(out, MPD_POS);
+	out->exp = -FX_FRAC_DIGITS;
+	mpd_setdigits(out);
+	return true;
+}
+
+// Turn (1, 0) through theta, 0 <= theta <= pi/4, by every whole step that fits. Leaves
+// the turned vector, stretched by the steps, and what of theta they did not cover.
+static void cordic_rotate(fx_t* x, fx_t* y, fx_t* theta) {
+	fx_set_one(x);
+	memset(y, 0, sizeof *y);
+	fx_t xs;
+	fx_t ys;
+	for (int k = 0; k < CORDIC_LEVELS; k++) {
+		while (fx_sub(theta, theta, &cordic_angles[k])) {
+			fx_shift(&xs, x, k);
+			fx_shift(&ys, y, k);
+			fx_sub(x, x, &ys); // y <= x throughout, so this never borrows
+			fx_add(y, &xs);
+		}
+	}
+}
+
+// Turn (x, y), 0 <= y <= x, toward the x axis by every whole step that keeps y
+// non-negative, adding up the angle turned through.
+static void cordic_vector(fx_t* x, fx_t* y, fx_t* angle) {
+	memset(angle, 0, sizeof *angle);
+	fx_t xs;
+	fx_t ys;
+	fx_t next;
+	for (int k = 0; k < CORDIC_LEVELS; k++) {
+		for (;;) {
+			fx_shift(&xs, x, k);
+			if (!fx_sub(&next, y, &xs)) {
 				break;
 			}
-			mpd_qadd(out, out, term, &ctx, status);
+			fx_shift(&ys, y, k);
+			fx_add(x, &ys);
+			*y = next;
+			fx_add(angle, &cordic_angles[k]);
 		}
-		ok = !(*status & MPD_Malloc_error);
 	}
-	mpd_del(r2);
-	mpd_del(term);
-	mpd_del(denom);
-	return ok;
+}
+
+// Whether a value is large enough for the steps, which cover angles down to 10^-11.
+// Below that the finishing turn is the whole of it, and is done in libmpdec at full
+// relative precision rather than in fixed point.
+static bool cordic_applies(const mpd_t* v) {
+	return !mpd_iszero(v) && mpd_adjexp(v) >= 1 - CORDIC_LEVELS;
+}
+
+// tan(r), 0 <= r <= pi/4, at the working precision. The steps leave a vector at an
+// angle a, whose tangent is y/x whatever they stretched it by, and the angle b left
+// over; tan(a + b) = (y + x tan b) / (x - y tan b).
+static bool cordic_tan(mpd_t* out, const mpd_t* r, uint32_t* status) {
+	mpd_context_t ctx;
+	ctx_work(&ctx, QDRT_WORK_PREC + 2);
+	QDRT_MPD_LOCAL(x);
+	QDRT_MPD_LOCAL(y);
+	QDRT_MPD_LOCAL(b);
+	QDRT_MPD_LOCAL(tb);
+	bool ok = true;
+	const bool stepped = cordic_applies(r);
+	if (stepped) {
+		fx_t fx;
+		fx_t fy;
+		fx_t theta;
+		ok = fx_from_mpd(&theta, r, status);
+		if (ok) {
+			cordic_rotate(&fx, &fy, &theta);
+			ok = fx_to_mpd(&x, &fx, status) && fx_to_mpd(&y, &fy, status) && fx_to_mpd(&b, &theta, status);
+		}
+	} else {
+		mpd_qcopy(&b, r, status);
+	}
+
+	if (ok) {
+		// tan b = b + b^3/3
+		mpd_qmul(&tb, &b, &b, &ctx, status);
+		mpd_qmul(&tb, &tb, &b, &ctx, status);
+		mpd_qset_i64(out, 3, &ctx, status);
+		mpd_qdiv(&tb, &tb, out, &ctx, status);
+		mpd_qadd(&tb, &tb, &b, &ctx, status);
+		if (stepped) {
+			mpd_qmul(&b, &x, &tb, &ctx, status);
+			mpd_qadd(&b, &y, &b, &ctx, status);
+			mpd_qmul(&tb, &y, &tb, &ctx, status);
+			mpd_qsub(&tb, &x, &tb, &ctx, status);
+			mpd_qdiv(out, &b, &tb, &ctx, status);
+		} else {
+			mpd_qcopy(out, &tb, status);
+		}
+	}
+	mpd_del(&x);
+	mpd_del(&y);
+	mpd_del(&b);
+	mpd_del(&tb);
+	return ok && !(*status & MPD_Malloc_error);
 }
 
 // Reduce x to r in [-pi/4, pi/4] with x = r + n*pi/2, and n's quadrant in 0..3.
@@ -638,52 +874,75 @@ static qd_f128_t* trig(const qd_f128_t* a, enum trig_kind kind) {
 	}
 
 	uint32_t status = 0;
-	mpd_t* r = mpd_qnew();
-	mpd_t* s = mpd_qnew();
-	mpd_t* c = mpd_qnew();
+	mpd_context_t ctx;
+	ctx_work(&ctx, QDRT_WORK_PREC + 2);
+	QDRT_MPD_LOCAL(r);
+	QDRT_MPD_LOCAL(t);
+	QDRT_MPD_LOCAL(sn);
+	QDRT_MPD_LOCAL(cn);
+	QDRT_MPD_LOCAL(den);
 	qd_f128_t* result = NULL;
 	int quadrant = 0;
-	if (r != NULL && s != NULL && c != NULL && trig_reduce(r, &quadrant, x, &status)) {
-		mpd_context_t ctx;
-		ctx_work(&ctx, QDRT_WORK_PREC);
-		// r was reduced at whatever precision the reduction needed; the series only
-		// needs the working precision, and at x's size that is a great deal cheaper.
-		mpd_qfinalize(r, &ctx, &status);
-		const bool need_sin = kind != TRIG_COS || (quadrant & 1);
-		const bool need_cos = kind != TRIG_SIN || (quadrant & 1);
-		bool ok = (!need_sin || trig_series(s, r, true, QDRT_WORK_PREC, &status)) &&
-				  (!need_cos || trig_series(c, r, false, QDRT_WORK_PREC, &status));
-		if (ok) {
-			// sin(r + n*pi/2) and cos(r + n*pi/2) by quadrant
-			mpd_t* out = r;
-			switch (kind) {
-			case TRIG_SIN:
-				mpd_qcopy(out, (quadrant & 1) ? c : s, &status);
-				if (quadrant >= 2) {
-					mpd_qcopy_negate(out, out, &status);
-				}
-				break;
-			case TRIG_COS:
-				mpd_qcopy(out, (quadrant & 1) ? s : c, &status);
-				if (quadrant == 1 || quadrant == 2) {
-					mpd_qcopy_negate(out, out, &status);
-				}
-				break;
-			case TRIG_TAN:
-				if (quadrant & 1) {
-					mpd_qdiv(out, c, s, &ctx, &status);
-					mpd_qcopy_negate(out, out, &status);
-				} else {
-					mpd_qdiv(out, s, c, &ctx, &status);
-				}
-				break;
-			}
-			result = box_from_work(out, status);
+
+	// Under pi/4 there is nothing to reduce
+	mpd_qset_string(&t, "0.785398163397448309", &ctx, &status);
+	mpd_qcopy_abs(&r, x, &status);
+	bool ok = mpd_qcmp(&r, &t, &status) < 0 ? mpd_qcopy(&r, x, &status) : trig_reduce(&r, &quadrant, x, &status);
+	if (ok) {
+		// r was reduced at whatever precision the reduction needed; the steps only
+		// need the working precision.
+		mpd_qfinalize(&r, &ctx, &status);
+		const bool negative = mpd_isnegative(&r);
+		mpd_qcopy_abs(&r, &r, &status);
+
+		// t = tan(r/2) gives sin r = 2t/(1+t^2), cos r = (1-t^2)/(1+t^2) and
+		// tan r = 2t/(1-t^2): a division each and no square root, and as t is at most
+		// tan(pi/8) none of them cancels.
+		mpd_qset_i64(&den, 2, &ctx, &status);
+		mpd_qdiv(&r, &r, &den, &ctx, &status);
+		ok = cordic_tan(&t, &r, &status);
+		if (ok && negative) {
+			mpd_qcopy_negate(&t, &t, &status);
 		}
 	}
-	mpd_del(r);
-	mpd_del(s);
-	mpd_del(c);
+	if (ok) {
+		mpd_qadd(&sn, &t, &t, &ctx, &status);
+		mpd_qmul(&t, &t, &t, &ctx, &status);
+		mpd_qset_i64(&den, 1, &ctx, &status);
+		mpd_qsub(&cn, &den, &t, &ctx, &status);
+		mpd_qadd(&den, &den, &t, &ctx, &status);
+
+		// sin(r + n*pi/2) and cos(r + n*pi/2) by quadrant
+		mpd_t* out = &r;
+		switch (kind) {
+		case TRIG_SIN:
+			mpd_qdiv(out, (quadrant & 1) ? &cn : &sn, &den, &ctx, &status);
+			if (quadrant >= 2) {
+				mpd_qcopy_negate(out, out, &status);
+			}
+			break;
+		case TRIG_COS:
+			mpd_qdiv(out, (quadrant & 1) ? &sn : &cn, &den, &ctx, &status);
+			if (quadrant == 1 || quadrant == 2) {
+				mpd_qcopy_negate(out, out, &status);
+			}
+			break;
+		case TRIG_TAN:
+			if (quadrant & 1) {
+				mpd_qdiv(out, &cn, &sn, &ctx, &status);
+				mpd_qcopy_negate(out, out, &status);
+			} else {
+				mpd_qdiv(out, &sn, &cn, &ctx, &status);
+			}
+			break;
+		}
+		result = box_from_work(out, status);
+	}
+	mpd_del(&r);
+	mpd_del(&t);
+	mpd_del(&sn);
+	mpd_del(&cn);
+	mpd_del(&den);
 	return result;
 }
 
@@ -701,74 +960,62 @@ qd_f128_t* qd_f128_tan(const qd_f128_t* a) {
 
 // atan of a finite value, at the working precision.
 //
-// |x| > 1 is folded to pi/2 - atan(1/|x|), then halved with
-// atan(y) = 2*atan(y / (1 + sqrt(1 + y^2))) until the series converges quickly.
+// |x| > 1 is folded to pi/2 - atan(1/|x|). The vector (1, |x|) is then turned down to
+// the axis by CORDIC steps, and the angle u = y/x it is left at, under 10^-11, is
+// finished with u - u^3/3, which is out by u^5/5.
 static bool atan_work(mpd_t* out, const mpd_t* x, uint32_t* status) {
-	const mpd_ssize_t prec = QDRT_WORK_PREC;
 	mpd_context_t ctx;
-	ctx_work(&ctx, prec + 2);
-	mpd_t* y = mpd_qnew();
-	mpd_t* y2 = mpd_qnew();
-	mpd_t* term = mpd_qnew();
-	mpd_t* tmp = mpd_qnew();
-	mpd_t* one = mpd_qnew();
-	mpd_t* tenth = mpd_qnew();
-	bool ok = y != NULL && y2 != NULL && term != NULL && tmp != NULL && one != NULL && tenth != NULL;
+	ctx_work(&ctx, QDRT_WORK_PREC + 2);
+	QDRT_MPD_LOCAL(y);
+	QDRT_MPD_LOCAL(u);
+	QDRT_MPD_LOCAL(tmp);
+	bool ok = true;
+
+	mpd_qset_i64(&tmp, 1, &ctx, status);
+	mpd_qcopy_abs(&y, x, status);
+	const bool invert = mpd_qcmp(&y, &tmp, status) > 0;
+	if (invert) {
+		mpd_qdiv(&y, &tmp, &y, &ctx, status);
+	}
+
+	if (cordic_applies(&y)) {
+		fx_t fx;
+		fx_t fy;
+		fx_t angle;
+		fx_set_one(&fx);
+		ok = fx_from_mpd(&fy, &y, status);
+		if (ok) {
+			cordic_vector(&fx, &fy, &angle);
+			ok = fx_to_mpd(out, &angle, status) && fx_to_mpd(&u, &fy, status) && fx_to_mpd(&tmp, &fx, status);
+			mpd_qdiv(&u, &u, &tmp, &ctx, status);
+		}
+	} else {
+		mpd_qset_i64(out, 0, &ctx, status);
+		mpd_qcopy(&u, &y, status);
+	}
+
 	if (ok) {
-		mpd_qset_i64(one, 1, &ctx, status);
-		mpd_qset_string(tenth, "0.1", &ctx, status);
-		mpd_qcopy_abs(y, x, status);
-		const bool invert = mpd_qcmp(y, one, status) > 0;
-		if (invert) {
-			mpd_qdiv(y, one, y, &ctx, status);
-		}
-
-		int halvings = 0;
-		while (mpd_qcmp(y, tenth, status) > 0 && !(*status & MPD_Malloc_error)) {
-			mpd_qmul(tmp, y, y, &ctx, status);
-			mpd_qadd(tmp, tmp, one, &ctx, status);
-			mpd_qsqrt(tmp, tmp, &ctx, status);
-			mpd_qadd(tmp, tmp, one, &ctx, status);
-			mpd_qdiv(y, y, tmp, &ctx, status);
-			halvings++;
-		}
-
-		// y - y^3/3 + y^5/5 - ...
-		mpd_qmul(y2, y, y, &ctx, status);
-		mpd_qcopy(term, y, status);
-		mpd_qcopy(out, y, status);
-		for (int64_t k = 3; !(*status & MPD_Malloc_error); k += 2) {
-			mpd_qmul(term, term, y2, &ctx, status);
-			mpd_qcopy_negate(term, term, status);
-			mpd_qset_i64(tmp, k, &ctx, status);
-			mpd_qdiv(tmp, term, tmp, &ctx, status);
-			if (mpd_iszero(tmp) || mpd_adjexp(tmp) < mpd_adjexp(out) - prec - 2) {
-				break;
-			}
-			mpd_qadd(out, out, tmp, &ctx, status);
-		}
-		for (int i = 0; i < halvings; i++) {
-			mpd_qadd(out, out, out, &ctx, status);
-		}
+		mpd_qmul(&tmp, &u, &u, &ctx, status);
+		mpd_qmul(&tmp, &tmp, &u, &ctx, status);
+		mpd_qset_i64(&y, 3, &ctx, status);
+		mpd_qdiv(&tmp, &tmp, &y, &ctx, status);
+		mpd_qsub(&u, &u, &tmp, &ctx, status);
+		mpd_qadd(out, out, &u, &ctx, status);
 
 		if (invert) {
-			ok = pi_to(tmp, prec + 2, status);
-			mpd_qset_i64(y, 2, &ctx, status);
-			mpd_qdiv(tmp, tmp, y, &ctx, status);
-			mpd_qsub(out, tmp, out, &ctx, status);
+			ok = pi_to(&tmp, QDRT_WORK_PREC + 2, status);
+			mpd_qset_i64(&y, 2, &ctx, status);
+			mpd_qdiv(&tmp, &tmp, &y, &ctx, status);
+			mpd_qsub(out, &tmp, out, &ctx, status);
 		}
 		if (mpd_isnegative(x)) {
 			mpd_qcopy_negate(out, out, status);
 		}
-		ok = ok && !(*status & MPD_Malloc_error);
 	}
-	mpd_del(y);
-	mpd_del(y2);
-	mpd_del(term);
-	mpd_del(tmp);
-	mpd_del(one);
-	mpd_del(tenth);
-	return ok;
+	mpd_del(&y);
+	mpd_del(&u);
+	mpd_del(&tmp);
+	return ok && !(*status & MPD_Malloc_error);
 }
 
 // pi * num / den at the working precision, with the sign of `negative`.
