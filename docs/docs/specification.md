@@ -327,10 +327,19 @@ Implementations MUST round every `f128` result to the format with roundTiesToEve
 754 requires of each operation. `+ - * /`, `neg` and the comparisons take `f128` operands;
 the remaining IEEE operations and the elementary functions are the `f128` module (§13.9).
 
-An `f128` mixes with nothing but another `f128`. An arithmetic or comparison instruction with
-one `f128` operand and one `i64` or `f64` operand is a compile-time type error: letting the
-`f64` in would bring back the binary rounding the type exists to keep out. `cast<f128>`
-converts explicitly, and a literal is written with its `q`.
+An `i64` widens to an `f128` exactly, since it has at most 19 of the 34 digits: an arithmetic
+or comparison instruction with one `f128` operand and one `i64` operand is an `f128` operation,
+`2 1.5q +` being `3.5`, and an `i64` argument to an `f128` parameter is widened at the call. An
+`f64` does not mix. An instruction with one `f128` operand and one `f64` operand is a
+compile-time type error, as is an `f64` argument to an `f128` parameter: letting the `f64` in
+would bring back the binary rounding the type exists to keep out. `cast<f128>` converts
+explicitly, and a literal is written with its `q`.
+
+An implementation MAY offer a setting under which a decimal float literal written without a
+`q` is an `f128` literal, as if it had one: `1.5` then means `1.5q`, while integer literals
+stay `i64`. It is for a calculator, where every number typed should be decimal. `quadc
+--default-float f128` applies it to the files named on the command line, not to the modules
+they import, and an embedder of the interpreter sets it with `qd_interp_set_default_float`.
 
 A value keeps the exponent it was written or computed with, as IEEE decimal arithmetic
 requires: `1.10q 1.20q +` is `2.30`, which equals `2.3q` but prints with its trailing zero.

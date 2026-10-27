@@ -40,6 +40,8 @@ TEST(RegisterMakesWordsResolvable) {
 			"pi to 34 digits");
 	ASSERT(strcmp(eval_text(interp, "2.5q f128::round_even", &value), "2") == 0, "ties go to even");
 	ASSERT(strcmp(eval_text(interp, "0.1q 0.2q +", &value), "0.3") == 0, "the interpreter adds decimally too");
+	ASSERT(strcmp(eval_text(interp, "2 f128::sqrt", &value), "1.414213562373095048801688724209698") == 0,
+			"an i64 argument widens to an f128");
 
 	qd_interp_destroy(interp);
 }

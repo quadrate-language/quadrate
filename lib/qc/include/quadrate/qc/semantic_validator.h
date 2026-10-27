@@ -21,7 +21,7 @@ namespace Qd {
 	enum class StackValueType {
 		INT,
 		FLOAT,
-		F128, // IEEE 754 decimal128; mixes with nothing but itself
+		F128, // IEEE 754 decimal128; an i64 widens to it exactly, an f64 does not mix
 		STRING,
 		PTR,	 // For function pointers
 		ANY,	 // For operations that accept any type

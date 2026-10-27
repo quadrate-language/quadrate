@@ -384,13 +384,25 @@ namespace Qd {
 		return true;
 	}
 
+	// Whether this parse reads a decimal float written without a `q` as an f128, for
+	// Ast::setDefaultFloatF128. Set by Ast::generate for the length of one parse.
+	inline thread_local bool parseFloatsAsF128 = false;
+
 	// Takes the `q` that makes the number just scanned an f128 literal, as in `0.1q`. Returns
-	// true, having appended the `q` to `text`, when there is one. A number run into some other
-	// word -- `1qx` -- is reported and left as it was, as is a hex or binary one: an f128 is
-	// decimal by nature, and `0x10q` would say otherwise.
+	// true, having appended the `q` to `text`, when there is one -- or when floats default to
+	// f128 and this is one, which is then spelled as if the `q` had been written. A number run
+	// into some other word -- `1qx` -- is reported and left as it was, as is a hex or binary
+	// one: an f128 is decimal by nature, and `0x10q` would say otherwise.
 	inline bool takeF128Suffix(
 			u8t_scanner* scanner, ErrorReporter* errorReporter, const char* src, char32_t token, std::string& text) {
-		if ((token != U8T_INTEGER && token != U8T_FLOAT) || peekNextChar(scanner, src) != U'q') {
+		if (token != U8T_INTEGER && token != U8T_FLOAT) {
+			return false;
+		}
+		if (peekNextChar(scanner, src) != U'q') {
+			if (parseFloatsAsF128 && token == U8T_FLOAT && !hasRadixPrefix(text)) {
+				text += 'q';
+				return true;
+			}
 			return false;
 		}
 		size_t line = 0;

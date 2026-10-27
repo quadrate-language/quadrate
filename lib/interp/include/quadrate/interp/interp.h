@@ -84,6 +84,20 @@ size_t qd_interp_registered_count(const qd_interp* interp);
 /** @brief Limit how much work one qd_interp_eval() call may do */
 void qd_interp_set_step_limit(qd_interp* interp, uint64_t limit);
 
+/** @brief The type a decimal float written without a suffix is read as */
+typedef enum {
+	QD_INTERP_FLOAT_F64,  ///< `1.5` is an f64, as in compiled code by default
+	QD_INTERP_FLOAT_F128, ///< `1.5` is an f128, as if written `1.5q`; integers stay i64
+} qd_interp_float;
+
+/**
+ * @brief Choose what `1.5` means in the source later evaluations read
+ *
+ * QD_INTERP_FLOAT_F128 is for a calculator, where every number someone types should be
+ * decimal. An integer stays an i64, which widens to an f128 exactly where the two meet.
+ */
+void qd_interp_set_default_float(qd_interp* interp, qd_interp_float type);
+
 /** @brief The current step limit, or 0 for no interpreter */
 uint64_t qd_interp_step_limit(const qd_interp* interp);
 

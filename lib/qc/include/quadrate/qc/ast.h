@@ -92,8 +92,20 @@ namespace Qd {
 			return mErrors;
 		}
 
+		/**
+		 * @brief Read a decimal float written without a `q` as an f128 literal
+		 *
+		 * For a calculator, where every number someone types should be decimal: `1.5`
+		 * then means `1.5q`. Integers stay i64, which widens to f128 exactly where the two
+		 * meet. Applies to the parses this Ast does after it is set.
+		 */
+		void setDefaultFloatF128(bool on) {
+			mDefaultFloatF128 = on;
+		}
+
 	private:
 		std::unique_ptr<IAstNode> mRoot; ///< Root node of the AST
+		bool mDefaultFloatF128 = false;	 ///< See setDefaultFloatF128()
 		size_t mErrorCount = 0;			 ///< Number of errors encountered
 		std::vector<ErrorInfo> mErrors;	 ///< Detailed error information
 	};

@@ -1,1 +1,2 @@
-an f128 compares only with an f128, not with int
+an f128 compares only with an f128 or an i64, not with float
+!Stack underflow

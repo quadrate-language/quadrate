@@ -11,10 +11,14 @@
 #include <quadrate/rt/stack.h>
 #include <stdint.h>
 
+// An i64 argument widens to an f128 exactly, as it does in arithmetic
 static qd_f128_t pop_f128(qd_context* ctx, const char* word) {
 	qd_stack_element_t elem;
 	if (qd_stack_pop(ctx->st, &elem) != QD_STACK_OK) {
 		qd_fatal_raise(ctx, word, "Stack underflow");
+	}
+	if (elem.type == QD_STACK_TYPE_INT) {
+		return qd_f128_from_i64(elem.value.i);
 	}
 	if (elem.type != QD_STACK_TYPE_F128) {
 		qd_fatal_raise(ctx, word, "Type error (expected f128)");

@@ -306,7 +306,7 @@ namespace Qd {
 			// the read.
 			varDecl->setInitializerNode(new AstNodeLiteral(value, AstNodeLiteral::LiteralType::STRING));
 		} else if (typeName == "f128" && isF128LiteralText(value)) {
-			// An f128 is a counted box, like a string, and is built the same way.
+			// The literal the compiler reads into the global's initial value
 			varDecl->setInitializerNode(new AstNodeLiteral(value, AstNodeLiteral::LiteralType::F128));
 		}
 		setNodePosition(varDecl, scanner, src);
@@ -315,6 +315,20 @@ namespace Qd {
 	}
 
 	IAstNode* Ast::generate(const char* src, bool dumpTokens, const char* filename) {
+		// For this parse only, however it returns
+		struct FloatDefault {
+			explicit FloatDefault(bool on) {
+				parseFloatsAsF128 = on;
+			}
+
+			~FloatDefault() {
+				parseFloatsAsF128 = false;
+			}
+
+			FloatDefault(const FloatDefault&) = delete;
+			FloatDefault& operator=(const FloatDefault&) = delete;
+		} floatDefault(mDefaultFloatF128);
+
 		u8t_scanner scanner;
 		if (!u8t_scanner_init(&scanner, src)) {
 			// Invalid UTF-8 input - return an empty program, but record the error the

@@ -843,6 +843,28 @@ out=$(printf '1 2\nstack\n' | "$QUADREPL" 2>&1 || true)
 if echo "$out" | grep -q "Stack (2 items)"; then pass "quadrepl still pluralises above one"; else
     fail "quadrepl still pluralises above one" "$(echo "$out" | grep -i item | head -1)"; fi
 
+# --default-float f128 reads the named file's floats as f128 -- and only that file's: an
+# imported module is written for f64, and math::sqrt still takes and gives one. In a
+# directory of its own, as `use math` would find a math.qd beside it first.
+mkdir -p "$WORK_DIR/floats"
+cat > "$WORK_DIR/floats/floats.qd" <<'QD'
+use math
+
+fn main() {
+	"sum " print 0.1 0.2 + 0.3 == print nl
+	"half " print 7 2.0 / print nl
+	"root " print 2.0 cast<f64> math::sqrt print nl
+}
+QD
+expect_contains "quadc --default-float f128 reads 0.1 as decimal" "sum 1" \
+    "$QUADC" --default-float f128 -r "$WORK_DIR/floats/floats.qd"
+expect_contains "and widens an integer where it meets one" "half 3.5" \
+    "$QUADC" --default-float f128 -r "$WORK_DIR/floats/floats.qd"
+expect_contains "and leaves an imported module's f64 alone" "root 1.41421" \
+    "$QUADC" --default-float f128 -r "$WORK_DIR/floats/floats.qd"
+expect_contains "by default 0.1 0.2 + is binary, and not 0.3" "sum 0" "$QUADC" -r "$WORK_DIR/floats/floats.qd"
+expect_rc "--default-float refuses another type" 1 "$QUADC" --default-float f32 "$WORK_DIR/floats/floats.qd"
+
 echo ""
 if [ "$TESTS_FAILED" -gt 0 ]; then
     echo -e "${RED}FAILED${NC}: $TESTS_FAILED of $TESTS_RUN checks failed"

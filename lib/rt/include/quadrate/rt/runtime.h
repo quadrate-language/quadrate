@@ -652,6 +652,19 @@ int qd_castp(qd_context* ctx);
  */
 int qd_castq(qd_context* ctx);
 
+/**
+ * @brief Convert a function argument in place, for the casts a call implies
+ *
+ * The element `depth` places below the top -- 0 is the top -- becomes `type`: an i64 an
+ * f64 or an f128, an f64 an i64 by truncation. Anything else is a type error.
+ *
+ * @param ctx Execution context
+ * @param depth How far below the top the argument lies
+ * @param type The qd_stack_type it becomes
+ * @return Execution result (0 on success)
+ */
+int qd_cast_param(qd_context* ctx, int64_t depth, int64_t type);
+
 /** @} */ // end of TypeCast group
 
 /**

@@ -1,4 +1,5 @@
-// Test: an f128 compares only with another f128.
+// Test: an f128 compares with an f128 or an i64, but not an f64, whose binary value is not
+// the decimal it was written as.
 fn main() {
-	1.5q 2 < print nl
+	1.5q 2.5 < print nl
 }

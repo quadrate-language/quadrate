@@ -282,22 +282,23 @@ namespace Qd {
 			}
 
 			if (a == StackValueType::F128 || b == StackValueType::F128) {
-				// f128 meets only f128. Letting an i64 or an f64 in would convert it on the
-				// quiet, and an f64 is exactly the binary rounding a decimal type is for
-				// keeping out: `0.1 0.1q +` would not be 0.2.
+				// f128 meets f128, and an i64, which widens to it exactly: every i64 has at most
+				// 19 digits of the 34. An f64 does not mix. Converting one on the quiet would
+				// bring in exactly the binary rounding a decimal type is for keeping out:
+				// `0.1 0.1q +` would not be 0.2.
 				const StackValueType other = (a == StackValueType::F128) ? b : a;
 				const bool otherOpen = other == StackValueType::ANY || other == StackValueType::UNKNOWN ||
 									   other == StackValueType::TYPEVAR;
 				if (strcmp(name, "pow") == 0) {
 					reportErrorConditionalWithHint(node, "Type error in 'pow': pow does not take f128",
 							"use 'f128::pow' from the f128 module", reportErrors);
-				} else if (other != StackValueType::F128 && !otherOpen) {
+				} else if (other != StackValueType::F128 && other != StackValueType::INT && !otherOpen) {
 					std::string errorMsg = "Type error in '";
 					errorMsg += name;
 					errorMsg += "': f128 does not mix with ";
 					errorMsg += typeToString(other);
 					reportErrorConditionalWithHint(node, errorMsg.c_str(),
-							"convert the other operand with 'cast<f128>', or write the literal with a 'q': '2q'",
+							"convert the other operand with 'cast<f128>', or write the literal with a 'q': '2.5q'",
 							reportErrors);
 				}
 				typeStack.push_back(StackValueType::F128);
@@ -333,21 +334,21 @@ namespace Qd {
 				reportErrorConditional(node, errorMsg.c_str(), reportErrors);
 				return;
 			}
-			// An f128 compares with an f128. Against anything else the answer would come from
-			// a conversion nobody asked for, as with the arithmetic above.
+			// An f128 compares with an f128, or an i64 widened to one. Against an f64 the answer
+			// would come from a conversion nobody asked for, as with the arithmetic above.
 			{
 				const StackValueType b = typeStack[typeStack.size() - 1];
 				const StackValueType a = typeStack[typeStack.size() - 2];
 				if ((a == StackValueType::F128) != (b == StackValueType::F128)) {
 					const StackValueType other = (a == StackValueType::F128) ? b : a;
 					if (other != StackValueType::ANY && other != StackValueType::UNKNOWN &&
-							other != StackValueType::TYPEVAR) {
+							other != StackValueType::TYPEVAR && other != StackValueType::INT) {
 						std::string errorMsg = "Type error in '";
 						errorMsg += name;
-						errorMsg += "': an f128 compares only with an f128, not with ";
+						errorMsg += "': an f128 compares only with an f128 or an i64, not with ";
 						errorMsg += typeToString(other);
 						reportErrorConditionalWithHint(node, errorMsg.c_str(),
-								"convert the other operand with 'cast<f128>', or write the literal with a 'q': '2q'",
+								"convert the other operand with 'cast<f128>', or write the literal with a 'q': '2.5q'",
 								reportErrors);
 					}
 				}

@@ -1,2 +1,0 @@
-Type error in 'add': f128 does not mix with int
-cast<f128>

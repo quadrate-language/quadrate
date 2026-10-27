@@ -1,9 +1,9 @@
 // The f128 side of the arithmetic, comparison and cast instructions.
 //
-// runtime_ops.c dispatches here once it has seen an f128 operand. f128 does not mix: an
-// f128 meets only another f128, and a cast is how a value of another type becomes one.
-// The compiler rejects the mixed cases, so reaching one here is a type error in code
-// that went around it -- an `any` parameter, say.
+// runtime_ops.c dispatches here once it has seen an f128 operand. An f128 meets another
+// f128, or an i64, which widens to one exactly; an f64 does not mix, and a cast is how
+// one becomes an f128. The compiler rejects that case, so reaching it here is a type
+// error in code that went around it -- an `any` parameter, say.
 
 #define _POSIX_C_SOURCE 200809L
 
@@ -16,19 +16,31 @@ void qdrt_push_f128(qd_context* ctx, const char* op, qd_f128_t value) {
 	}
 }
 
-// Pops the two f128 operands of a binary instruction, checking what it can: `a` is the
+// An operand as an f128: one already, or an i64 widened to one
+static bool as_f128(const qd_stack_element_t* e, qd_f128_t* out) {
+	if (e->type == QD_STACK_TYPE_F128) {
+		*out = e->value.q;
+		return true;
+	}
+	if (e->type == QD_STACK_TYPE_INT) {
+		*out = qd_f128_from_i64(e->value.i);
+		return true;
+	}
+	return false;
+}
+
+// Pops the two operands of a binary instruction that has an f128 among them: `a` is the
 // deeper one.
 static void pop_two_f128(qd_context* ctx, const char* op, qd_f128_t* a, qd_f128_t* b) {
 	QDRT_CHECK_STACK(ctx, op, 2);
 	qd_stack* st = ctx->st;
-	const qd_stack_type ta = st->data[st->size - 2].type;
-	const qd_stack_type tb = st->data[st->size - 1].type;
-	if (ta != QD_STACK_TYPE_F128 || tb != QD_STACK_TYPE_F128) {
+	const qd_stack_element_t* ea = &st->data[st->size - 2];
+	const qd_stack_element_t* eb = &st->data[st->size - 1];
+	if (!as_f128(ea, a) || !as_f128(eb, b)) {
 		QDRT_FATAL(ctx, op, "Type error (f128 does not mix with %s; cast one side)",
-				qdrt_type_name(ta == QD_STACK_TYPE_F128 ? tb : ta));
+				qdrt_type_name(ea->type == QD_STACK_TYPE_F128 ? eb->type : ea->type));
 	}
-	*b = st->data[--st->size].value.q;
-	*a = st->data[--st->size].value.q;
+	st->size -= 2;
 }
 
 void qdrt_f128_binary(qd_context* ctx, const char* op, qd_f128_t (*fn)(qd_f128_t, qd_f128_t)) {
@@ -71,5 +83,25 @@ int qd_castq(qd_context* ctx) {
 			QDRT_FATAL(ctx, "castq", "Cannot cast %s to f128", qdrt_type_name(elem.type));
 	}
 	qdrt_push_f128(ctx, "castq", result);
+	return (int){0};
+}
+
+int qd_cast_param(qd_context* ctx, int64_t depth, int64_t type) {
+	QDRT_CHECK_STACK(ctx, "cast", (size_t)depth + 1);
+	qd_stack_element_t* e = &ctx->st->data[ctx->st->size - 1 - (size_t)depth];
+	if (e->type == (qd_stack_type)type) {
+		return (int){0};
+	}
+	if (e->type == QD_STACK_TYPE_INT && type == QD_STACK_TYPE_F128) {
+		e->value.q = qd_f128_from_i64(e->value.i);
+	} else if (e->type == QD_STACK_TYPE_INT && type == QD_STACK_TYPE_FLOAT) {
+		e->value.f = (double)e->value.i;
+	} else if (e->type == QD_STACK_TYPE_FLOAT && type == QD_STACK_TYPE_INT) {
+		e->value.i = (int64_t)e->value.f;
+	} else {
+		QDRT_FATAL(ctx, "cast", "Cannot convert %s to %s", qdrt_type_name(e->type),
+				qdrt_type_name((qd_stack_type)type));
+	}
+	e->type = (qd_stack_type)type;
 	return (int){0};
 }

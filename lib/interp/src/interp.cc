@@ -185,6 +185,7 @@ struct qd_interp {
 	Flow flow = Flow::Normal;  ///< Set by break/continue/return, cleared by what encloses it
 	uint64_t steps = 0;		   ///< Nodes walked in this call
 	uint64_t step_limit = QD_INTERP_DEFAULT_STEP_LIMIT;
+	bool floats_are_f128 = false; ///< qd_interp_set_default_float()
 
 	std::unordered_map<std::string, Declared> functions;			 ///< `fn` declarations
 	std::unordered_map<std::string, std::string> constants;			 ///< `const` values and enum variants, as written
@@ -1455,6 +1456,7 @@ namespace {
 		const std::string text = declares ? std::string(source) : ("fn main() {\n" + std::string(source) + "\n}");
 
 		auto ast = std::make_shared<Qd::Ast>();
+		ast->setDefaultFloatF128(interp->floats_are_f128);
 		Qd::IAstNode* root = ast->generate(text.c_str(), false, "<interp>");
 		if (root == nullptr || ast->hasErrors()) {
 			const std::vector<Qd::ErrorInfo>& errors = ast->getErrors();
@@ -1562,6 +1564,12 @@ size_t qd_interp_registered_count(const qd_interp* interp) {
 void qd_interp_set_step_limit(qd_interp* interp, uint64_t limit) {
 	if (interp != nullptr) {
 		interp->step_limit = (limit == 0) ? UINT64_MAX : limit;
+	}
+}
+
+void qd_interp_set_default_float(qd_interp* interp, qd_interp_float type) {
+	if (interp != nullptr) {
+		interp->floats_are_f128 = type == QD_INTERP_FLOAT_F128;
 	}
 }
 

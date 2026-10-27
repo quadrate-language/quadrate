@@ -36,6 +36,7 @@ _quadc_opts() {
 		'--no-jit[Link and execute instead of using the JIT]'
 		'--test[Compile and run tests]'
 		'--coverage[Print a function coverage report]'
+		'--default-float[Type of a float literal written without q]:type:(f64 f128)'
 		'--target[Cross-compile for a target]:triple:'
 		'--freestanding[No hosted runtime: no libc, no auto-main]'
 		'--werror[Treat warnings as errors]'

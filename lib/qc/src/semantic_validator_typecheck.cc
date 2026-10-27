@@ -3478,6 +3478,13 @@ namespace Qd {
 							continue;
 						}
 
+						// An i64 widens to an f128 parameter exactly, so there is nothing to warn about
+						if (actual == StackValueType::INT && expected == StackValueType::F128) {
+							paramCasts[j] = CastDirection::INT_TO_F128;
+							typeStack[stackIdx] = StackValueType::F128;
+							continue;
+						}
+
 						// Check for type mismatch
 						if (actual != expected) {
 							// Check if implicit cast is allowed (int <-> float)
@@ -4407,6 +4414,13 @@ namespace Qd {
 						// TYPEVAR occurs when a generic type parameter (like T) is passed to a typed function
 						if (actual == StackValueType::UNKNOWN || actual == StackValueType::ANY ||
 								actual == StackValueType::TYPEVAR) {
+							continue;
+						}
+
+						// An i64 widens to an f128 parameter exactly, so there is nothing to warn about
+						if (actual == StackValueType::INT && expected == StackValueType::F128) {
+							paramCasts[j] = CastDirection::INT_TO_F128;
+							typeStack[stackIdx] = StackValueType::F128;
 							continue;
 						}
 
