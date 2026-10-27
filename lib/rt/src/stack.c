@@ -2,6 +2,7 @@
 
 #include <quadrate/rt/stack.h>
 #include <quadrate/rt/qd_string.h>
+#include "runtime_internal.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -178,7 +179,7 @@ qd_stack_error qd_stack_element(qd_stack* stack, size_t index, qd_stack_element_
 		return QD_STACK_ERR_UNDERFLOW;
 	}
 
-	*element = stack->data[index];
+	qdrt_copy_element(element, &stack->data[index]);
 	return QD_STACK_OK;
 }
 
@@ -190,7 +191,7 @@ qd_stack_error qd_stack_peek(qd_stack* stack, qd_stack_element_t* element) {
 		return QD_STACK_ERR_UNDERFLOW;
 	}
 
-	*element = stack->data[stack->size - 1];
+	qdrt_copy_element(element, &stack->data[stack->size - 1]);
 	return QD_STACK_OK;
 }
 
@@ -203,7 +204,7 @@ qd_stack_error qd_stack_pop(qd_stack* stack, qd_stack_element_t* element) {
 	}
 	stack->size--;
 	if (element != NULL) {
-		*element = stack->data[stack->size];
+		qdrt_copy_element(element, &stack->data[stack->size]);
 	} else {
 		/* Release string reference if element not saved */
 		if (stack->data[stack->size].type == QD_STACK_TYPE_STR) {
@@ -223,7 +224,7 @@ qd_stack_error qd_stack_remove_at(qd_stack* stack, size_t index, qd_stack_elemen
 
 	/* Save the element if requested */
 	if (element != NULL) {
-		*element = stack->data[index];
+		qdrt_copy_element(element, &stack->data[index]);
 	} else {
 		/* Release string reference if element not saved */
 		if (stack->data[index].type == QD_STACK_TYPE_STR) {
@@ -233,7 +234,7 @@ qd_stack_error qd_stack_remove_at(qd_stack* stack, size_t index, qd_stack_elemen
 
 	/* Shift all elements above this index down by one */
 	for (size_t i = index; i < stack->size - 1; i++) {
-		stack->data[i] = stack->data[i + 1];
+		qdrt_copy_element(&stack->data[i], &stack->data[i + 1]);
 	}
 
 	stack->size--;

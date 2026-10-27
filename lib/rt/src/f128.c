@@ -2,7 +2,7 @@
  * @file f128.c
  * @brief IEEE 754-2008 decimal128 values, on libmpdec
  *
- * A value is its 128-bit DPD encoding. Each operation takes its operands apart into
+ * A value is 128 bits of base-10^9 limbs. Each operation takes its operands apart into
  * libmpdec numbers on the C stack and puts the result back together, so nothing is
  * allocated for a value. libmpdec does the arithmetic, every operation in the IEEE
  * decimal128 context -- 34 digits, emax 6144, clamped, roundTiesToEven -- so each result
@@ -21,7 +21,6 @@
 #include <string.h>
 #include <unistd.h>
 
-#include "f128_dpd.h"
 #include "f128_pi.h"
 #include "runtime_internal.h"
 
@@ -40,21 +39,46 @@
 // ---------------------------------------------------------------------------
 // The encoding
 //
-// IEEE 754-2008 section 3.5.2. The top word holds the sign, then a 17-bit combination
-// field -- the leading digit and the exponent, or the marks of infinity and NaN -- and
-// then 46 of the 110 bits that carry the other 33 digits, ten bits to three of them.
-// The bottom word holds the remaining 64.
+// A coefficient of up to 34 digits is four base-10^9 limbs, the words libmpdec itself
+// computes in on a 32-bit host, so taking a value apart and putting it back is moving
+// words rather than regrouping digits. The top limb has at most seven digits and shares
+// a 37-bit head with the exponent; the rest of the 128 bits are three 30-bit limbs and
+// the sign:
+//
+//   w[1]: sign (1) | head (37) | limb 2, top 26 bits
+//   w[0]: limb 2, low 4 bits | limb 1 (30) | limb 0 (30)
+//
+// A finite value's head is top * 12288 + e, where e is the exponent modulo 12288 -- the
+// 12288 exponents from -6176 to 6111 each have one -- so that all-zero bits are a plain
+// 0. 12288 is 3 * 2^12, which makes splitting the head a shift and a division by 3.
+// Heads from 10^7 * 12288 up mark infinity and NaN, a NaN's payload in its limbs.
 // ---------------------------------------------------------------------------
 
-#define DPD_SIGN (UINT64_C(1) << 63)
-#define DPD_COMBINATION_SHIFT 46
-#define DPD_BIAS 6176
-#define DPD_DECLETS 11
+#define F128_SIGN (UINT64_C(1) << 63)
+#define F128_HEAD_SHIFT 26
+#define F128_HEAD_MASK ((UINT64_C(1) << 37) - 1)
+#define F128_LIMB_MASK ((UINT64_C(1) << 30) - 1)
+#define F128_EXPONENTS 12288
+#define F128_TOP_LIMIT 10000000u // 10^7: the top limb's bound, and the stride of the special kinds
+#define F128_HEAD_SPECIAL (UINT64_C(10000000) * F128_EXPONENTS)
 
-// Combination fields of the special values, before the shift
-#define DPD_G_INF (UINT32_C(0x1E) << 12)
-#define DPD_G_NAN (UINT32_C(0x1F) << 12)
-#define DPD_G_SIGNALING (UINT32_C(1) << 11)
+enum { F128_KIND_INF, F128_KIND_NAN, F128_KIND_SNAN };
+
+static uint64_t head(qd_f128_t v) {
+	return (v.w[1] >> F128_HEAD_SHIFT) & F128_HEAD_MASK;
+}
+
+static qd_f128_t encode(bool negative, uint64_t h, const uint32_t limbs[3]) {
+	qd_f128_t r;
+	r.w[1] = (negative ? F128_SIGN : 0) | (h << F128_HEAD_SHIFT) | (limbs[2] >> 4);
+	r.w[0] = ((uint64_t)(limbs[2] & 0xF) << 60) | ((uint64_t)limbs[1] << 30) | limbs[0];
+	return r;
+}
+
+static qd_f128_t special(bool negative, unsigned kind) {
+	static const uint32_t none[3] = {0, 0, 0};
+	return encode(negative, F128_HEAD_SPECIAL + (uint64_t)kind * F128_TOP_LIMIT, none);
+}
 
 // The context every result is rounded in: what mpd_ieee_context(ctx, 128) sets, as a
 // constant to copy rather than a call on every operation
@@ -89,24 +113,6 @@ static _Noreturn void out_of_memory(void) {
 static void check_memory(uint32_t status) {
 	if (status & MPD_Malloc_error) {
 		out_of_memory();
-	}
-}
-
-// Writes a declet into a value whose bits there are still zero. Three zero digits are
-// a zero declet, so nothing is written for them.
-static void set_declet(qd_f128_t* v, int k, unsigned three_digits) {
-	if (three_digits == 0) {
-		return;
-	}
-	const unsigned bit = 10u * (unsigned)k;
-	const uint64_t code = bin_to_dpd[three_digits];
-	if (bit + 10 <= 64) {
-		v->w[0] |= code << bit;
-	} else if (bit >= 64) {
-		v->w[1] |= code << (bit - 64);
-	} else {
-		v->w[0] |= code << bit;
-		v->w[1] |= code >> (64 - bit);
 	}
 }
 
@@ -152,91 +158,114 @@ static void mpd_from_chunks(mpd_t* v, const uint32_t c[4], uint32_t* status) {
 	mpd_setdigits(v);
 }
 
+static mpd_ssize_t digits_in(mpd_uint_t word) {
+	mpd_ssize_t n = 1;
+	while (word >= 10) {
+		word /= 10;
+		n++;
+	}
+	return n;
+}
+
+// The coefficient from four limbs, written straight into libmpdec's words: what
+// mpd_from_chunks does, without the calls, as every operand of every operation comes
+// through here
+static void set_coefficient(mpd_t* v, const uint32_t c[4]) {
+#if MPD_RDIGITS == 9
+	const mpd_ssize_t words = 4;
+#else
+	const mpd_ssize_t words = 2;
+#endif
+	if (v->alloc < words) {
+		uint32_t status = 0;
+		mpd_from_chunks(v, c, &status);
+		check_memory(status);
+		return;
+	}
+#if MPD_RDIGITS == 9
+	v->data[0] = c[0];
+	v->data[1] = c[1];
+	v->data[2] = c[2];
+	v->data[3] = c[3];
+	v->len = c[3] != 0 ? 4 : (c[2] != 0 ? 3 : (c[1] != 0 ? 2 : 1));
+#else
+	v->data[0] = c[0] + (uint64_t)c[1] * 1000000000u + (uint64_t)(c[2] % 10u) * UINT64_C(1000000000000000000);
+	v->data[1] = c[2] / 10u + (uint64_t)c[3] * 100000000u;
+	v->len = v->data[1] != 0 ? 2 : 1;
+#endif
+	v->digits = (v->len - 1) * MPD_RDIGITS + digits_in(v->data[v->len - 1]);
+}
+
+// A local the operations wrote into goes back to the heap only if it went there
+static void release_local(mpd_t* v) {
+	if (!(v->flags & MPD_STATIC_DATA)) {
+		mpd_del(v);
+	}
+}
+
 // The value an encoding holds, into `out`
 static void unpack(qd_f128_t v, mpd_t* out) {
-	const uint8_t sign = (v.w[1] & DPD_SIGN) ? MPD_NEG : MPD_POS;
-	const uint32_t g = (uint32_t)(v.w[1] >> DPD_COMBINATION_SHIFT) & 0x1FFFF;
-	uint32_t status = 0;
-
-	// The leading digit sits in the combination field, and a NaN has none
-	unsigned lead = 0;
-	mpd_ssize_t exp = 0;
+	const uint8_t sign = (v.w[1] & F128_SIGN) ? MPD_NEG : MPD_POS;
+	const uint64_t h = head(v);
+	uint32_t c[4] = {
+			(uint32_t)(v.w[0] & F128_LIMB_MASK),
+			(uint32_t)((v.w[0] >> 30) & F128_LIMB_MASK),
+			(uint32_t)(((v.w[1] & ((UINT64_C(1) << F128_HEAD_SHIFT) - 1)) << 4) | (v.w[0] >> 60)),
+			0,
+	};
 	uint8_t kind = 0;
-	if ((g & DPD_G_NAN) == DPD_G_NAN) {
-		kind = (g & DPD_G_SIGNALING) ? MPD_SNAN : MPD_NAN;
-	} else if ((g & DPD_G_NAN) == DPD_G_INF) {
-		mpd_setspecial(out, sign, MPD_INF);
-		return;
-	} else {
-		uint32_t exp_high;
-		if ((g >> 15) == 3) {
-			lead = 8 + ((g >> 12) & 1);
-			exp_high = (g >> 13) & 3;
-		} else {
-			lead = (g >> 12) & 7;
-			exp_high = g >> 15;
+	mpd_ssize_t exp = 0;
+	if (h >= F128_HEAD_SPECIAL) {
+		const uint64_t rest = h - F128_HEAD_SPECIAL;
+		if (rest < F128_TOP_LIMIT) {
+			mpd_setspecial(out, sign, MPD_INF);
+			return;
 		}
-		exp = (mpd_ssize_t)((exp_high << 12) | (g & 0xFFF)) - DPD_BIAS;
+		kind = rest < 2 * (uint64_t)F128_TOP_LIMIT ? MPD_NAN : MPD_SNAN;
+		c[3] = (uint32_t)(rest % F128_TOP_LIMIT);
+		// A payload has at most 33 digits; one longer is not canonical, and reads as none
+		if (c[3] >= F128_TOP_LIMIT / 10) {
+			c[0] = c[1] = c[2] = c[3] = 0;
+		}
+	} else {
+		c[3] = (uint32_t)(h >> 12) / 3;
+		const uint32_t e = (uint32_t)(h - (uint64_t)c[3] * F128_EXPONENTS);
+		exp = e < 6112 ? (mpd_ssize_t)e : (mpd_ssize_t)e - F128_EXPONENTS;
 	}
-
-	// The declets, least significant first, for as long as any bits are left: most values
-	// a calculator holds have a short coefficient, and a zero declet is three zero digits
-	static const uint32_t place[3] = {1, 1000, 1000000};
-	uint32_t c[4] = {0, 0, 0, lead * 1000000u};
-	uint64_t low = v.w[0];
-	uint64_t high = v.w[1] & ((UINT64_C(1) << DPD_COMBINATION_SHIFT) - 1);
-	for (int k = 0; k < DPD_DECLETS && (low | high) != 0; k++) {
-		c[k / 3] += dpd_to_bin[low & 0x3FF] * place[k % 3];
-		low = (low >> 10) | (high << 54);
-		high >>= 10;
+	// Thirty bits hold more than a limb can: a value with a larger one is not canonical,
+	// and its coefficient reads as zero
+	if (c[0] >= 1000000000u || c[1] >= 1000000000u || c[2] >= 1000000000u) {
+		c[0] = c[1] = c[2] = c[3] = 0;
 	}
-	mpd_from_chunks(out, c, &status);
-	check_memory(status);
-	mpd_set_flags(out, (uint8_t)(sign | kind));
+	set_coefficient(out, c);
+	out->flags = (uint8_t)((out->flags & (MPD_STATIC | MPD_DATAFLAGS)) | sign | kind);
 	out->exp = exp;
 }
 
 // The encoding of `v`, which must already be a decimal128 value: at most 34 digits, an
 // exponent in range, a NaN payload of at most 33.
 static qd_f128_t pack(const mpd_t* v) {
-	qd_f128_t r = {{0, mpd_isnegative(v) ? DPD_SIGN : 0}};
+	const bool negative = mpd_isnegative(v);
 	if (mpd_isinfinite(v)) {
-		r.w[1] |= (uint64_t)DPD_G_INF << DPD_COMBINATION_SHIFT;
-		return r;
+		return special(negative, F128_KIND_INF);
 	}
-
 	uint32_t c[4];
 	chunks_from_mpd(v, c);
-	for (int i = 0; i < 3; i++) {
-		set_declet(&r, 3 * i, c[i] % 1000u);
-		set_declet(&r, 3 * i + 1, c[i] / 1000u % 1000u);
-		set_declet(&r, 3 * i + 2, c[i] / 1000000u);
-	}
-	set_declet(&r, 9, c[3] % 1000u);
-	set_declet(&r, 10, c[3] / 1000u % 1000u);
-
-	uint32_t g;
+	uint64_t h;
 	if (mpd_isnan(v)) {
-		g = DPD_G_NAN | (mpd_issnan(v) ? DPD_G_SIGNALING : 0);
+		h = F128_HEAD_SPECIAL + (uint64_t)(mpd_issnan(v) ? F128_KIND_SNAN : F128_KIND_NAN) * F128_TOP_LIMIT + c[3];
 	} else {
-		const uint32_t lead = c[3] / 1000000u;
-		const uint32_t biased = (uint32_t)(v->exp + DPD_BIAS);
-		const uint32_t exp_high = biased >> 12;
-		if (lead < 8) {
-			g = (exp_high << 15) | (lead << 12) | (biased & 0xFFF);
-		} else {
-			g = (UINT32_C(3) << 15) | (exp_high << 13) | ((lead & 1) << 12) | (biased & 0xFFF);
-		}
+		const mpd_ssize_t e = v->exp < 0 ? v->exp + F128_EXPONENTS : v->exp;
+		h = (uint64_t)c[3] * F128_EXPONENTS + (uint64_t)e;
 	}
-	r.w[1] |= (uint64_t)g << DPD_COMBINATION_SHIFT;
-	return r;
+	return encode(negative, h, c);
 }
 
 // A result libmpdec computed in the decimal128 context, encoded
 static qd_f128_t pack_result(mpd_t* v, uint32_t status) {
 	check_memory(status);
 	const qd_f128_t r = pack(v);
-	mpd_del(v);
+	release_local(v);
 	return r;
 }
 
@@ -249,11 +278,6 @@ static qd_f128_t pack_work(const mpd_t* value, uint32_t status) {
 	mpd_qcopy(&r, value, &status);
 	mpd_qfinalize(&r, &ctx, &status);
 	return pack_result(&r, status);
-}
-
-static qd_f128_t special(bool negative, uint32_t g) {
-	qd_f128_t r = {{0, (negative ? DPD_SIGN : 0) | ((uint64_t)g << DPD_COMBINATION_SHIFT)}};
-	return r;
 }
 
 // ---------------------------------------------------------------------------
@@ -291,10 +315,10 @@ qd_f128_t qd_f128_from_i64(int64_t v) {
 
 qd_f128_t qd_f128_from_f64(double v) {
 	if (isnan(v)) {
-		return special(signbit(v), DPD_G_NAN);
+		return special(signbit(v), F128_KIND_NAN);
 	}
 	if (isinf(v)) {
-		return special(v < 0, DPD_G_INF);
+		return special(v < 0, F128_KIND_INF);
 	}
 
 	// %.33e writes the binary value correctly rounded to 34 significant digits -- glibc and
@@ -365,7 +389,7 @@ size_t qd_f128_format(qd_f128_t v, char* buf, size_t size) {
 	if (buf == NULL || size == 0) {
 		return 0;
 	}
-	const bool negative = (v.w[1] & DPD_SIGN) != 0;
+	const bool negative = (v.w[1] & F128_SIGN) != 0;
 	if (qd_f128_is_nan(v) || qd_f128_is_inf(v)) {
 		const char* name = qd_f128_is_nan(v) ? "nan" : "inf";
 		const int n = snprintf(buf, size, "%s%s", negative ? "-" : "", name);
@@ -420,20 +444,16 @@ size_t qd_f128_format(qd_f128_t v, char* buf, size_t size) {
 // Classification and comparison
 // ---------------------------------------------------------------------------
 
-static uint32_t combination(qd_f128_t v) {
-	return (uint32_t)(v.w[1] >> DPD_COMBINATION_SHIFT) & 0x1FFFF;
-}
-
 bool qd_f128_is_nan(qd_f128_t v) {
-	return (combination(v) & DPD_G_NAN) == DPD_G_NAN;
+	return head(v) >= F128_HEAD_SPECIAL + F128_TOP_LIMIT;
 }
 
 bool qd_f128_is_inf(qd_f128_t v) {
-	return (combination(v) & DPD_G_NAN) == DPD_G_INF;
+	return head(v) >= F128_HEAD_SPECIAL && head(v) < F128_HEAD_SPECIAL + F128_TOP_LIMIT;
 }
 
 bool qd_f128_is_finite(qd_f128_t v) {
-	return (combination(v) & DPD_G_INF) != DPD_G_INF;
+	return head(v) < F128_HEAD_SPECIAL;
 }
 
 bool qd_f128_is_zero(qd_f128_t v) {
@@ -459,7 +479,7 @@ bool qd_f128_is_subnormal(qd_f128_t v) {
 }
 
 bool qd_f128_is_signed(qd_f128_t v) {
-	return (v.w[1] & DPD_SIGN) != 0;
+	return (v.w[1] & F128_SIGN) != 0;
 }
 
 int qd_f128_compare(qd_f128_t a, qd_f128_t b) {
@@ -545,19 +565,19 @@ qd_f128_t qd_f128_fma(qd_f128_t a, qd_f128_t b, qd_f128_t c) {
 }
 
 // negate, abs and copySign are sign-bit operations in IEEE 754 -- quiet, and exact even
-// for NaN and zero -- and in this encoding they are the top bit and nothing else.
+// for NaN and zero -- and here they are the top bit and nothing else.
 qd_f128_t qd_f128_neg(qd_f128_t a) {
-	a.w[1] ^= DPD_SIGN;
+	a.w[1] ^= F128_SIGN;
 	return a;
 }
 
 qd_f128_t qd_f128_abs(qd_f128_t a) {
-	a.w[1] &= ~DPD_SIGN;
+	a.w[1] &= ~F128_SIGN;
 	return a;
 }
 
 qd_f128_t qd_f128_copysign(qd_f128_t a, qd_f128_t sign) {
-	a.w[1] = (a.w[1] & ~DPD_SIGN) | (sign.w[1] & DPD_SIGN);
+	a.w[1] = (a.w[1] & ~F128_SIGN) | (sign.w[1] & F128_SIGN);
 	return a;
 }
 
@@ -655,11 +675,11 @@ qd_f128_t qd_f128_e(void) {
 }
 
 qd_f128_t qd_f128_inf(void) {
-	return special(false, DPD_G_INF);
+	return special(false, F128_KIND_INF);
 }
 
 qd_f128_t qd_f128_nan(void) {
-	return special(false, DPD_G_NAN);
+	return special(false, F128_KIND_NAN);
 }
 
 // ---------------------------------------------------------------------------

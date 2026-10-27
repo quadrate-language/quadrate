@@ -30,11 +30,13 @@ extern "C" {
 #endif
 
 /**
- * @brief A decimal128 value in the IEEE 754 densely packed decimal (DPD) encoding.
+ * @brief A decimal128 value in sixteen bytes.
  *
- * w[0] holds bits 0 to 63 of the encoding and w[1] bits 64 to 127, the sign being the
- * top bit of w[1]. Any 128 bits are a value: non-canonical encodings read as the
- * standard says, as zero.
+ * The coefficient is held as base-10^9 limbs, the form arithmetic on it takes, rather
+ * than in either of IEEE 754's interchange encodings, so the bits are not a C
+ * `_Decimal128`; the values and every result are IEEE decimal128's. The sign is the top
+ * bit of w[1]. All-zero bits are 0, and any 128 bits are a value: a limb out of range
+ * reads as a zero coefficient.
  */
 typedef struct qd_f128 {
 	uint64_t w[2];

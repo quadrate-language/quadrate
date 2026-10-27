@@ -85,6 +85,14 @@ static inline void qdrt_release_element(qd_stack_element_t* elem) {
 	}
 }
 
+// A slot copied field by field. As one assignment a 24-byte struct is a memcpy call at
+// -Os on some targets -- the ESP32-S3's among them -- and every pop goes through here.
+static inline void qdrt_copy_element(qd_stack_element_t* dst, const qd_stack_element_t* src) {
+	dst->value.q = src->value.q;
+	dst->type = src->type;
+	dst->is_error_tainted = src->is_error_tainted;
+}
+
 // Push a stack element, taking a reference of its own to what it holds
 qd_stack_error qdrt_push_element(qd_stack* stack, const qd_stack_element_t* elem);
 

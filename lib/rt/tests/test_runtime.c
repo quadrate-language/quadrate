@@ -3611,26 +3611,41 @@ TEST(F128ParseAndFormat) {
 	ASSERT(strcmp(f128_text(f128_of("-0")), "-0") == 0, "negative zero keeps its sign");
 }
 
-// IEEE 754 decimal128 in densely packed decimal, as decNumber writes them
-TEST(F128EncodingIsStandardDPD) {
+// Limbs of nine digits, the top one sharing a head with the exponent (see f128.c)
+TEST(F128EncodingHoldsLimbs) {
 	qd_f128_t v = f128_of("1");
-	ASSERT(v.w[1] == UINT64_C(0x2208000000000000) && v.w[0] == 1, "1");
+	ASSERT(v.w[1] == 0 && v.w[0] == 1, "1 is a limb of 1 and nothing else");
+	v = f128_of("123456789000000002");
+	ASSERT(v.w[1] == 0 && v.w[0] == ((UINT64_C(123456789) << 30) | 2), "a limb each nine digits");
 	v = f128_of("-7.50");
-	ASSERT(v.w[1] == UINT64_C(0xA207800000000000) && v.w[0] == 0x3D0, "-7.50");
-	v = f128_of("9.999999999999999999999999999999999E+6144");
-	ASSERT(v.w[1] == UINT64_C(0x77FFCFF3FCFF3FCF) && v.w[0] == UINT64_C(0xF3FCFF3FCFF3FCFF), "the largest finite value");
-	v = qd_f128_inf();
-	ASSERT(v.w[1] == UINT64_C(0x7800000000000000) && v.w[0] == 0, "infinity");
-	v = qd_f128_nan();
-	ASSERT(v.w[1] == UINT64_C(0x7C00000000000000) && v.w[0] == 0, "NaN");
-	v = qd_f128_div(qd_f128_from_i64(0), qd_f128_from_i64(0));
-	ASSERT(v.w[1] == UINT64_C(0x7C00000000000000) && v.w[0] == 0, "0/0 is that NaN, with no stray payload");
+	ASSERT(v.w[1] == ((UINT64_C(1) << 63) | (UINT64_C(12286) << 26)) && v.w[0] == 750,
+			"the sign, and an exponent of -2 kept modulo 12288");
 
-	// All-zero bits are 0E-6176, so a zero has to be written: it is not what calloc gives
-	v.w[0] = 0;
-	v.w[1] = 0;
-	ASSERT(qd_f128_is_zero(v) && strcmp(f128_text(v), "0e-6176") == 0, "zeroed memory is the smallest zero");
-	ASSERT(strcmp(f128_text(qd_f128_from_i64(0)), "0") == 0, "from_i64(0) is the plain one");
+	const qd_f128_t zero = {{0, 0}};
+	ASSERT(strcmp(f128_text(zero), "0") == 0, "zeroed memory is a plain zero");
+	v = qd_f128_from_i64(0);
+	ASSERT(v.w[0] == 0 && v.w[1] == 0, "and from_i64(0) is that zero");
+
+	// Each extreme the head has to hold, there and back
+	const char* edges[] = {"9.999999999999999999999999999999999E+6144", "1E-6176", "-1E-6176",
+			"9999999999999999999999999999999999E-6176", "1E+6111", "0E+6111", "-0E-6176"};
+	for (size_t i = 0; i < sizeof edges / sizeof edges[0]; i++) {
+		qd_f128_t once = f128_of(edges[i]);
+		char text[QD_F128_STRING_MAX];
+		qd_f128_format(once, text, sizeof text);
+		const qd_f128_t twice = f128_of(text);
+		ASSERT(once.w[0] == twice.w[0] && once.w[1] == twice.w[1], edges[i]);
+	}
+
+	ASSERT(qd_f128_is_inf(qd_f128_inf()) && !qd_f128_is_nan(qd_f128_inf()), "infinity");
+	ASSERT(qd_f128_is_nan(qd_f128_nan()) && !qd_f128_is_finite(qd_f128_nan()), "NaN");
+	const qd_f128_t quiet = qd_f128_nan();
+	v = qd_f128_div(qd_f128_from_i64(0), qd_f128_from_i64(0));
+	ASSERT(v.w[0] == quiet.w[0] && v.w[1] == quiet.w[1], "0/0 is that NaN, with no stray payload");
+
+	// Bits that are no value's still read as one
+	const qd_f128_t wide = {{~UINT64_C(0) >> 4, 0}};
+	ASSERT(qd_f128_is_zero(wide), "a limb past 999999999 makes the coefficient zero");
 }
 
 TEST(F128ArithmeticIsDecimal) {

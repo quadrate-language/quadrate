@@ -101,9 +101,10 @@ int qd_swap(qd_context* ctx) {
 
 		// For numeric types, just swap in place - no refcount concerns
 		if (top->type != QD_STACK_TYPE_STR && second->type != QD_STACK_TYPE_STR) {
-			qd_stack_element_t tmp = *top;
-			*top = *second;
-			*second = tmp;
+			qd_stack_element_t tmp;
+			qdrt_copy_element(&tmp, top);
+			qdrt_copy_element(top, second);
+			qdrt_copy_element(second, &tmp);
 			return (int){0};
 		}
 	}

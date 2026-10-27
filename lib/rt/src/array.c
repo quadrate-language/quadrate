@@ -29,23 +29,14 @@ int qd_array_is_valid(const void* ptr) {
 	return ptr_registry_contains(&array_registry, ptr);
 }
 
-// An f128 slot nothing has been written to holds zero, as an int or float slot does.
-// All-zero bits would be 0E-6176, which equals zero but prints as such.
-static void fill_f128_zero(qd_f128_t* data, size_t from, size_t to) {
-	const qd_f128_t zero = qd_f128_from_i64(0);
-	for (size_t i = from; i < to; i++) {
-		data[i] = zero;
-	}
-}
-
 // An untyped array becoming an f128 one. Its pointer-sized buffer holds nothing yet but
-// zeros, and an f128 is twice as wide, so it is replaced rather than reinterpreted.
+// zeros, and an f128 is twice as wide, so it is replaced rather than reinterpreted. Zeroed
+// bits are an f128 zero, as they are an int or float one.
 static int adopt_f128(qd_array_t* arr) {
-	qd_f128_t* data = (qd_f128_t*)malloc((arr->capacity > 0 ? arr->capacity : 1) * sizeof(qd_f128_t));
+	qd_f128_t* data = (qd_f128_t*)calloc(arr->capacity > 0 ? arr->capacity : 1, sizeof(qd_f128_t));
 	if (!data) {
 		return -1;
 	}
-	fill_f128_zero(data, 0, arr->capacity);
 	free(arr->data.p);
 	arr->data.q = data;
 	arr->elemType = QD_ARRAY_TYPE_F128;
@@ -95,12 +86,12 @@ qd_array_t* qd_array_create(size_t capacity, qd_array_type elemType) {
 		}
 		break;
 	case QD_ARRAY_TYPE_F128:
-		arr->data.q = (qd_f128_t*)malloc(capacity * sizeof(qd_f128_t));
+		// Zeroed bits are an f128 zero, which is what a slot nothing has been written to holds
+		arr->data.q = (qd_f128_t*)calloc(capacity > 0 ? capacity : 1, sizeof(qd_f128_t));
 		if (!arr->data.q) {
 			free(arr);
 			return NULL;
 		}
-		fill_f128_zero(arr->data.q, 0, capacity);
 		break;
 	case QD_ARRAY_TYPE_STR:
 	case QD_ARRAY_TYPE_PTR:
@@ -318,7 +309,7 @@ static int qd_array_grow(qd_array_t* arr) {
 		if (!newData) {
 			return -1;
 		}
-		fill_f128_zero(newData, arr->capacity, newCapacity);
+		memset(newData + arr->capacity, 0, (newCapacity - arr->capacity) * sizeof(qd_f128_t));
 		arr->data.q = newData;
 		break;
 	}
