@@ -11,7 +11,7 @@
 #include <quadrate/rt/stack.h>
 #include <stdint.h>
 
-static qd_f128_t* pop_f128(qd_context* ctx, const char* word) {
+static qd_f128_t pop_f128(qd_context* ctx, const char* word) {
 	qd_stack_element_t elem;
 	if (qd_stack_pop(ctx->st, &elem) != QD_STACK_OK) {
 		qd_fatal_raise(ctx, word, "Stack underflow");
@@ -33,13 +33,8 @@ static int64_t pop_i64(qd_context* ctx, const char* word) {
 	return elem.value.i;
 }
 
-// Hands the caller's reference to the stack. NULL is the runtime running out of memory.
-static int push_f128(qd_context* ctx, const char* word, qd_f128_t* value) {
-	if (value == NULL) {
-		qd_fatal_raise(ctx, word, "Out of memory");
-	}
+static int push_f128(qd_context* ctx, const char* word, qd_f128_t value) {
 	if (qd_stack_push_f128(ctx->st, value) != QD_STACK_OK) {
-		qd_f128_release(value);
 		qd_fatal_raise(ctx, word, "Stack overflow");
 	}
 	return 0;
@@ -54,28 +49,21 @@ static int push_i64(qd_context* ctx, const char* word, int64_t value) {
 
 #define F128_UNARY(word)                                                                                               \
 	int usr_f128_##word(qd_context* ctx) {                                                                             \
-		qd_f128_t* x = pop_f128(ctx, "f128::" #word);                                                                  \
-		qd_f128_t* result = qd_f128_##word(x);                                                                         \
-		qd_f128_release(x);                                                                                            \
-		return push_f128(ctx, "f128::" #word, result);                                                                 \
+		const qd_f128_t x = pop_f128(ctx, "f128::" #word);                                                             \
+		return push_f128(ctx, "f128::" #word, qd_f128_##word(x));                                                      \
 	}
 
 #define F128_BINARY(word)                                                                                              \
 	int usr_f128_##word(qd_context* ctx) {                                                                             \
-		qd_f128_t* b = pop_f128(ctx, "f128::" #word);                                                                  \
-		qd_f128_t* a = pop_f128(ctx, "f128::" #word);                                                                  \
-		qd_f128_t* result = qd_f128_##word(a, b);                                                                      \
-		qd_f128_release(a);                                                                                            \
-		qd_f128_release(b);                                                                                            \
-		return push_f128(ctx, "f128::" #word, result);                                                                 \
+		const qd_f128_t b = pop_f128(ctx, "f128::" #word);                                                             \
+		const qd_f128_t a = pop_f128(ctx, "f128::" #word);                                                             \
+		return push_f128(ctx, "f128::" #word, qd_f128_##word(a, b));                                                   \
 	}
 
 #define F128_PREDICATE(word)                                                                                           \
 	int usr_f128_##word(qd_context* ctx) {                                                                             \
-		qd_f128_t* x = pop_f128(ctx, "f128::" #word);                                                                  \
-		const bool result = qd_f128_##word(x);                                                                         \
-		qd_f128_release(x);                                                                                            \
-		return push_i64(ctx, "f128::" #word, result ? 1 : 0);                                                         \
+		const qd_f128_t x = pop_f128(ctx, "f128::" #word);                                                             \
+		return push_i64(ctx, "f128::" #word, qd_f128_##word(x) ? 1 : 0);                                              \
 	}
 
 #define F128_CONSTANT(word)                                                                                            \
@@ -128,29 +116,20 @@ F128_CONSTANT(inf)
 F128_CONSTANT(nan)
 
 int usr_f128_fma(qd_context* ctx) {
-	qd_f128_t* c = pop_f128(ctx, "f128::fma");
-	qd_f128_t* b = pop_f128(ctx, "f128::fma");
-	qd_f128_t* a = pop_f128(ctx, "f128::fma");
-	qd_f128_t* result = qd_f128_fma(a, b, c);
-	qd_f128_release(a);
-	qd_f128_release(b);
-	qd_f128_release(c);
-	return push_f128(ctx, "f128::fma", result);
+	const qd_f128_t c = pop_f128(ctx, "f128::fma");
+	const qd_f128_t b = pop_f128(ctx, "f128::fma");
+	const qd_f128_t a = pop_f128(ctx, "f128::fma");
+	return push_f128(ctx, "f128::fma", qd_f128_fma(a, b, c));
 }
 
 int usr_f128_scaleb(qd_context* ctx) {
 	const int64_t n = pop_i64(ctx, "f128::scaleb");
-	qd_f128_t* x = pop_f128(ctx, "f128::scaleb");
-	qd_f128_t* result = qd_f128_scaleb(x, n);
-	qd_f128_release(x);
-	return push_f128(ctx, "f128::scaleb", result);
+	const qd_f128_t x = pop_f128(ctx, "f128::scaleb");
+	return push_f128(ctx, "f128::scaleb", qd_f128_scaleb(x, n));
 }
 
 int usr_f128_total_order(qd_context* ctx) {
-	qd_f128_t* b = pop_f128(ctx, "f128::total_order");
-	qd_f128_t* a = pop_f128(ctx, "f128::total_order");
-	const int order = qd_f128_total_order(a, b);
-	qd_f128_release(a);
-	qd_f128_release(b);
-	return push_i64(ctx, "f128::total_order", order);
+	const qd_f128_t b = pop_f128(ctx, "f128::total_order");
+	const qd_f128_t a = pop_f128(ctx, "f128::total_order");
+	return push_i64(ctx, "f128::total_order", qd_f128_total_order(a, b));
 }

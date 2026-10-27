@@ -10,8 +10,6 @@
 static void release_element(qd_stack_element_t* elem) {
 	if (elem->type == QD_STACK_TYPE_STR && elem->value.s != NULL) {
 		qd_string_release(elem->value.s);
-	} else if (elem->type == QD_STACK_TYPE_F128) {
-		qd_f128_release(elem->value.q);
 	}
 }
 

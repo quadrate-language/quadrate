@@ -1,5 +1,5 @@
-// An f128 is a counted box, so every place a value can live has to take and give back its
-// references: locals, parameters, struct fields, arrays, closures, globals.
+// An f128 lives in every place a value can: locals, parameters, struct fields, arrays,
+// closures, globals.
 
 const Rate = 0.05q
 

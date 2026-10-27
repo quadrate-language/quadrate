@@ -36,7 +36,7 @@ typedef enum {
 	/// appended to it. An empty `[]` literal starts this way, as does `make<T>` for a type
 	/// parameter, whose concrete type a generic function cannot know at run time.
 	QD_ARRAY_TYPE_ANY = 4,
-	QD_ARRAY_TYPE_F128 = 5 ///< Reference-counted decimal128 (a NULL slot reads as zero)
+	QD_ARRAY_TYPE_F128 = 5 ///< Decimal128, sixteen bytes to an element
 } qd_array_type;
 
 /**
@@ -64,9 +64,10 @@ typedef struct qd_array {
 	qd_array_type elemType;			 ///< Type of elements in the array
 
 	union {
-		int64_t* i; ///< Integer array data
-		double* f;	///< Float array data
-		void** p;	///< Pointer array data (includes strings and f128)
+		int64_t* i;	  ///< Integer array data
+		double* f;	  ///< Float array data
+		void** p;	  ///< Pointer array data (includes strings)
+		qd_f128_t* q; ///< Decimal128 array data
 	} data;
 } qd_array_t;
 
@@ -147,6 +148,12 @@ int qd_array_get_float(const qd_array_t* arr, size_t index, double* value);
 int qd_array_get_ptr(const qd_array_t* arr, size_t index, void** value);
 
 /**
+ * @brief Get an element of an f128 array
+ * @return 0 on success, -1 on a wrong type or an index out of bounds
+ */
+int qd_array_get_f128(const qd_array_t* arr, size_t index, qd_f128_t* value);
+
+/**
  * @brief Set an integer element in an array
  *
  * @param arr Array to modify
@@ -177,6 +184,12 @@ int qd_array_set_float(qd_array_t* arr, size_t index, double value);
 int qd_array_set_ptr(qd_array_t* arr, size_t index, void* value);
 
 /**
+ * @brief Set an element of an f128 array
+ * @return 0 on success, -1 on a wrong type or an index out of bounds
+ */
+int qd_array_set_f128(qd_array_t* arr, size_t index, qd_f128_t value);
+
+/**
  * @brief Push an integer element to the end of an array
  *
  * @param arr Array to modify
@@ -202,6 +215,12 @@ int qd_array_push_float(qd_array_t* arr, double value);
  * @return 0 on success, -1 on error (allocation failure or type mismatch)
  */
 int qd_array_push_ptr(qd_array_t* arr, void* value);
+
+/**
+ * @brief Append to an f128 array
+ * @return 0 on success, -1 on a wrong type or when growing fails
+ */
+int qd_array_push_f128(qd_array_t* arr, qd_f128_t value);
 
 /**
  * @defgroup ArrayStackOps Array Stack Operations

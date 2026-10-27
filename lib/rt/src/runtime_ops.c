@@ -364,9 +364,7 @@ int qd_neg(qd_context* ctx) {
 		if (qd_stack_pop(ctx->st, &val) != QD_STACK_OK) {
 			QDRT_FATAL(ctx, "neg", "Failed to pop value (stack changed unexpectedly)");
 		}
-		qd_f128_t* result = qd_f128_neg(val.value.q);
-		qd_f128_release(val.value.q);
-		qdrt_push_f128_owned(ctx, "neg", result);
+		qdrt_push_f128(ctx, "neg", qd_f128_neg(val.value.q));
 		return (int){0};
 	}
 

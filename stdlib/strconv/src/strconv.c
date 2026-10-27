@@ -341,9 +341,10 @@ int usr_strconv_parse_f128(qd_context* ctx) {
 		abort();
 	}
 
-	qd_f128_t* result = qd_f128_parse(qd_string_data(str_elem.value.s));
+	qd_f128_t result;
+	const bool read = qd_f128_parse(qd_string_data(str_elem.value.s), &result);
 	qd_string_release(str_elem.value.s);
-	if (result == NULL) {
+	if (!read) {
 		ctx->error_code = STRCONV_ERR_INVALID;
 		qd_set_error_msg(ctx, "strconv::parse_f128: invalid number format");
 		qd_stack_push_int(ctx->st, (int64_t)STRCONV_ERR_INVALID);
@@ -351,7 +352,6 @@ int usr_strconv_parse_f128(qd_context* ctx) {
 	}
 
 	if (qd_stack_push_f128(ctx->st, result) != QD_STACK_OK) {
-		qd_f128_release(result);
 		qd_fatal_raise(ctx, "strconv::parse_f128", "Stack overflow");
 	}
 	qd_stack_push_int(ctx->st, STRCONV_ERR_OK);

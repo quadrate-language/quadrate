@@ -154,6 +154,7 @@ struct Local {
 	int64_t i = 0;
 	double f = 0.0;
 	void* p = nullptr;
+	qd_f128_t q{};
 	std::string s;
 };
 
@@ -358,14 +359,12 @@ namespace {
 	// An f128 literal or constant, `q` and all. The runtime does the reading, as it does for
 	// compiled code, so both tiers round the same digits the same way.
 	bool pushF128Text(qd_interp* interp, const std::string& text) {
-		qd_f128_t* value = qd_f128_parse(Qd::f128LiteralDigits(text).c_str());
-		if (value == nullptr) {
+		qd_f128_t value;
+		if (!qd_f128_parse(Qd::f128LiteralDigits(text).c_str(), &value)) {
 			interp->error = "cannot read the f128 literal '" + text + "'";
 			return false;
 		}
-		const bool pushed = qd_push_q(interp->ctx, value) == 0;
-		qd_f128_release(value);
-		return pushed;
+		return qd_push_q(interp->ctx, value) == 0;
 	}
 
 	bool pushLiteral(qd_interp* interp, const Qd::AstNodeLiteral* literal) {
@@ -440,9 +439,6 @@ namespace {
 		if (element.type == QD_STACK_TYPE_STR && element.value.s != nullptr) {
 			qd_string_release(element.value.s);
 			element.value.s = nullptr;
-		} else if (element.type == QD_STACK_TYPE_F128 && element.value.q != nullptr) {
-			qd_f128_release(element.value.q);
-			element.value.q = nullptr;
 		}
 	}
 
@@ -452,9 +448,6 @@ namespace {
 	void releaseLocal(Local& value) {
 		if (value.type == QD_STACK_TYPE_PTR && value.p != nullptr) {
 			qd_ptr_release(value.p);
-			value.p = nullptr;
-		} else if (value.type == QD_STACK_TYPE_F128 && value.p != nullptr) {
-			qd_f128_release(static_cast<qd_f128_t*>(value.p));
 			value.p = nullptr;
 		}
 	}
@@ -489,9 +482,7 @@ namespace {
 			slot.p = element.value.p;
 			break;
 		case QD_STACK_TYPE_F128:
-			// The stack's reference moves into the binding.
-			slot.p = element.value.q;
-			element.value.q = nullptr;
+			slot.q = element.value.q;
 			break;
 		case QD_STACK_TYPE_STR: {
 			const char* data = (element.value.s != nullptr) ? qd_string_data(element.value.s) : nullptr;
@@ -521,7 +512,7 @@ namespace {
 		case QD_STACK_TYPE_STR:
 			return qd_push_s(interp->ctx, value.s.c_str()) == 0;
 		case QD_STACK_TYPE_F128:
-			return qd_push_q(interp->ctx, static_cast<qd_f128_t*>(value.p)) == 0;
+			return qd_push_q(interp->ctx, value.q) == 0;
 		}
 		return false;
 	}
@@ -705,8 +696,10 @@ namespace {
 				pushed = qd_array_push_ptr(array, qd_string_create(""));
 				break;
 			case QD_ARRAY_TYPE_PTR:
-			case QD_ARRAY_TYPE_F128: // an empty f128 slot reads as zero
 				pushed = qd_array_push_ptr(array, nullptr);
+				break;
+			case QD_ARRAY_TYPE_F128:
+				pushed = qd_array_push_f128(array, qd_f128_from_i64(0));
 				break;
 			default:
 				pushed = qd_array_push_int(array, 0);
@@ -810,9 +803,10 @@ namespace {
 					interp->error = "an array literal holds one type; this element is an f128";
 					return false;
 				}
-				qd_f128_t* held = qd_f128_parse(Qd::f128LiteralDigits(text).c_str());
-				const int pushed = held != nullptr ? qd_array_push_ptr(array, held) : -1;
-				qd_f128_release(held); // the array retained its own
+				qd_f128_t held;
+				const int pushed = qd_f128_parse(Qd::f128LiteralDigits(text).c_str(), &held)
+										   ? qd_array_push_f128(array, held)
+										   : -1;
 				if (pushed != 0) {
 					qd_array_release(array);
 					interp->error = "could not build the array element";
@@ -1174,9 +1168,9 @@ namespace {
 		if (subject.type != QD_STACK_TYPE_F128) {
 			return false;
 		}
-		qd_f128_t* label = qd_f128_parse(Qd::f128LiteralDigits(text).c_str());
-		const bool equal = label != nullptr && qd_f128_compare(label, subject.value.q) == 0;
-		qd_f128_release(label);
+		qd_f128_t label;
+		const bool equal = qd_f128_parse(Qd::f128LiteralDigits(text).c_str(), &label) &&
+						   qd_f128_compare(label, subject.value.q) == 0;
 		return equal;
 	}
 

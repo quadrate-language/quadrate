@@ -216,52 +216,24 @@ int qd_push_p(qd_context* ctx, void* value) {
 	return (int){0};
 }
 
-int qd_push_q(qd_context* ctx, qd_f128_t* value) {
-	if (value == NULL) {
-		return (int){-2};
-	}
-	qd_stack_error err = qd_stack_push_f128(ctx->st, qd_f128_retain(value));
-	if (err != QD_STACK_OK) {
-		qd_f128_release(value);
+int qd_push_q(qd_context* ctx, qd_f128_t value) {
+	if (qd_stack_push_f128(ctx->st, value) != QD_STACK_OK) {
 		return (int){-2};
 	}
 	return (int){0};
 }
 
-// The value of an f128 literal, read the first time and kept in *cache for good. The first
-// thread to arrive keeps its copy; one that loses the race drops its own and uses the
-// winner's. NULL only when the text will not read, which the compiler has already ruled out.
-static qd_f128_t* f128_literal(const char* text, qd_f128_t** cache) {
-	qd_f128_t* value = atomic_load_explicit((_Atomic(qd_f128_t*)*)cache, memory_order_acquire);
-	if (value == NULL) {
-		value = qd_f128_parse(text);
-		if (value == NULL) {
-			return NULL;
-		}
-		qd_f128_t* expected = NULL;
-		if (!atomic_compare_exchange_strong_explicit((_Atomic(qd_f128_t*)*)cache, &expected, value,
-					memory_order_acq_rel, memory_order_acquire)) {
-			qd_f128_release(value);
-			value = expected;
-		}
-	}
-	return value;
-}
-
-int qd_push_q_lit(qd_context* ctx, const char* text, qd_f128_t** cache) {
-	qd_f128_t* value = f128_literal(text, cache);
-	if (value == NULL) {
-		QDRT_FATAL(ctx, "f128 literal", "Cannot read '%s' (out of memory, or not a number)", text);
-	}
+int qd_push_q_bits(qd_context* ctx, uint64_t low, uint64_t high) {
+	const qd_f128_t value = {{low, high}};
 	return qd_push_q(ctx, value);
 }
 
-int qd_f128_matches_lit(const qd_stack_element_t* subject, const char* text, qd_f128_t** cache) {
+int qd_f128_matches_bits(const qd_stack_element_t* subject, uint64_t low, uint64_t high) {
 	if (subject == NULL || subject->type != QD_STACK_TYPE_F128) {
 		return 0;
 	}
-	qd_f128_t* label = f128_literal(text, cache);
-	return label != NULL && qd_f128_compare(subject->value.q, label) == 0;
+	const qd_f128_t label = {{low, high}};
+	return qd_f128_compare(subject->value.q, label) == 0;
 }
 
 int qd_pop_i(qd_context* ctx, int64_t* value) {
@@ -321,7 +293,7 @@ int qd_pop_s(qd_context* ctx, char* buf, size_t buf_size) {
 	return result;
 }
 
-int qd_pop_q(qd_context* ctx, qd_f128_t** value) {
+int qd_pop_q(qd_context* ctx, qd_f128_t* value) {
 	if (!ctx || !value) {
 		return QD_ERR_NULL_POINTER;
 	}
@@ -472,10 +444,7 @@ static qd_stack_error push_element(qd_stack* stack, const qd_stack_element_t* el
 			}
 			break;
 		case QD_STACK_TYPE_F128:
-			err = qd_stack_push_f128(stack, qd_f128_retain(elem->value.q));
-			if (err != QD_STACK_OK) {
-				qd_f128_release(elem->value.q); // Cleanup on overflow
-			}
+			err = qd_stack_push_f128(stack, elem->value.q);
 			break;
 		default:
 			return QD_STACK_ERR_TYPE_MISMATCH;
@@ -586,7 +555,6 @@ int qd_casti(qd_context* ctx) {
 		result = (int64_t)(uintptr_t)elem.value.p;
 	} else if (elem.type == QD_STACK_TYPE_F128) {
 		result = qd_f128_to_i64(elem.value.q);
-		qd_f128_release(elem.value.q);
 	} else {
 		QDRT_FATAL(ctx, "casti", "Cannot cast type to integer");
 	}
@@ -623,7 +591,6 @@ int qd_castf(qd_context* ctx) {
 		release_if_string(&elem);  // Release the string after conversion
 	} else if (elem.type == QD_STACK_TYPE_F128) {
 		result = qd_f128_to_f64(elem.value.q);
-		qd_f128_release(elem.value.q);
 	} else {
 		QDRT_FATAL(ctx, "castf", "Cannot cast type to float");
 	}
@@ -676,7 +643,6 @@ int qd_casts(qd_context* ctx) {
 		}
 	} else if (elem.type == QD_STACK_TYPE_F128) {
 		qd_f128_format(elem.value.q, buffer, sizeof buffer);
-		qd_f128_release(elem.value.q);
 	} else {
 		QDRT_FATAL(ctx, "casts", "Cannot cast type to string");
 	}

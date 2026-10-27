@@ -10,19 +10,15 @@
 #include <quadrate/rt/runtime.h>
 #include "runtime_internal.h"
 
-void qdrt_push_f128_owned(qd_context* ctx, const char* op, qd_f128_t* value) {
-	if (value == NULL) {
-		QDRT_FATAL(ctx, op, "Out of memory computing an f128 result");
-	}
+void qdrt_push_f128(qd_context* ctx, const char* op, qd_f128_t value) {
 	if (qd_stack_push_f128(ctx->st, value) != QD_STACK_OK) {
-		qd_f128_release(value);
 		QDRT_FATAL(ctx, op, "Stack overflow pushing result");
 	}
 }
 
 // Pops the two f128 operands of a binary instruction, checking what it can: `a` is the
 // deeper one.
-static void pop_two_f128(qd_context* ctx, const char* op, qd_f128_t** a, qd_f128_t** b) {
+static void pop_two_f128(qd_context* ctx, const char* op, qd_f128_t* a, qd_f128_t* b) {
 	QDRT_CHECK_STACK(ctx, op, 2);
 	qd_stack* st = ctx->st;
 	const qd_stack_type ta = st->data[st->size - 2].type;
@@ -35,24 +31,18 @@ static void pop_two_f128(qd_context* ctx, const char* op, qd_f128_t** a, qd_f128
 	*a = st->data[--st->size].value.q;
 }
 
-void qdrt_f128_binary(qd_context* ctx, const char* op, qd_f128_t* (*fn)(const qd_f128_t*, const qd_f128_t*)) {
-	qd_f128_t* a = NULL;
-	qd_f128_t* b = NULL;
+void qdrt_f128_binary(qd_context* ctx, const char* op, qd_f128_t (*fn)(qd_f128_t, qd_f128_t)) {
+	qd_f128_t a;
+	qd_f128_t b;
 	pop_two_f128(ctx, op, &a, &b);
-	qd_f128_t* result = fn(a, b);
-	qd_f128_release(a);
-	qd_f128_release(b);
-	qdrt_push_f128_owned(ctx, op, result);
+	qdrt_push_f128(ctx, op, fn(a, b));
 }
 
 void qdrt_f128_compare(qd_context* ctx, const char* op, bool (*test)(int order)) {
-	qd_f128_t* a = NULL;
-	qd_f128_t* b = NULL;
+	qd_f128_t a;
+	qd_f128_t b;
 	pop_two_f128(ctx, op, &a, &b);
-	const int order = qd_f128_compare(a, b);
-	qd_f128_release(a);
-	qd_f128_release(b);
-	if (qd_stack_push_int(ctx->st, test(order) ? 1 : 0) != QD_STACK_OK) {
+	if (qd_stack_push_int(ctx->st, test(qd_f128_compare(a, b)) ? 1 : 0) != QD_STACK_OK) {
 		QDRT_FATAL(ctx, op, "Stack overflow pushing result");
 	}
 }
@@ -65,7 +55,7 @@ int qd_castq(qd_context* ctx) {
 		QDRT_FATAL(ctx, "castq", "Failed to pop value");
 	}
 
-	qd_f128_t* result = NULL;
+	qd_f128_t result;
 	switch (elem.type) {
 		case QD_STACK_TYPE_INT:
 			result = qd_f128_from_i64(elem.value.i);
@@ -74,13 +64,12 @@ int qd_castq(qd_context* ctx) {
 			result = qd_f128_from_f64(elem.value.f);
 			break;
 		case QD_STACK_TYPE_F128:
-			// Already one: hand the popped reference straight back.
 			result = elem.value.q;
 			break;
 		default:
 			qdrt_release_element(&elem);
 			QDRT_FATAL(ctx, "castq", "Cannot cast %s to f128", qdrt_type_name(elem.type));
 	}
-	qdrt_push_f128_owned(ctx, "castq", result);
+	qdrt_push_f128(ctx, "castq", result);
 	return (int){0};
 }

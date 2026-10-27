@@ -29,10 +29,7 @@ static void push_element(qd_context* ctx, qd_stack_element_t elem) {
 		qd_string_release(elem.value.s);
 		break;
 	case QD_STACK_TYPE_F128:
-		// Same transfer as a string: the stack takes the reference the buffer held
-		if (qd_stack_push_f128(ctx->st, elem.value.q) != QD_STACK_OK) {
-			qd_f128_release(elem.value.q);
-		}
+		qd_stack_push_f128(ctx->st, elem.value.q);
 		break;
 	default:
 		qd_push_i(ctx, 0);
@@ -748,8 +745,6 @@ int usr_thread_raw_chan_free(qd_context* ctx) {
 		ch->count--;
 		if (val.type == QD_STACK_TYPE_STR && val.value.s) {
 			qd_string_release(val.value.s);
-		} else if (val.type == QD_STACK_TYPE_F128) {
-			qd_f128_release(val.value.q);
 		}
 	}
 	mtx_unlock(&ch->mutex);

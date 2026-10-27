@@ -46,6 +46,8 @@ namespace Qd {
 			return 2;
 		} else if (typeName == "i8" || typeName == "u8") {
 			return 1;
+		} else if (typeName == "f128") {
+			return 16; // Held in the struct, as in a stack slot
 		} else if (typeName == "str" || typeName.find('*') != std::string::npos) {
 			return 8; // Pointer size
 		} else if (looksLikeStructType(typeName) && isKnownStruct(typeName)) {
@@ -93,7 +95,7 @@ namespace Qd {
 				for (const auto& tp : structDecl->typeParams()) {
 					if (field->typeName() == tp) {
 						fieldInfo.isTypeParam = true;
-						fieldInfo.size = 16; // 8 value + 8 type tag
+						fieldInfo.size = kTypeParamFieldSize; // a slot's two value words, then the type tag
 						break;
 					}
 				}
@@ -173,8 +175,7 @@ namespace Qd {
 				if (!baseTypeName.empty() && baseTypeName[0] == '*') {
 					baseTypeName = baseTypeName.substr(1);
 				}
-				if (field.typeName == "str" || field.typeName == "f128" || field.isTypeParam ||
-						isArrayType(field.typeName) ||
+				if (field.typeName == "str" || field.isTypeParam || isArrayType(field.typeName) ||
 						(looksLikeStructType(baseTypeName) && isKnownStruct(baseTypeName))) {
 					needsDestructor = true;
 					break;
@@ -219,14 +220,14 @@ namespace Qd {
 				}
 			}
 
-			// Release string and f128 fields
+			// Release string fields
 			for (const auto& field : layout.fields) {
-				if (field.typeName == "str" || field.typeName == "f128") {
+				if (field.typeName == "str") {
 					auto fieldOffset = builder->getInt64(field.offset);
 					auto fieldBytePtr =
 							builder->CreateGEP(builder->getInt8Ty(), structPtr, fieldOffset, "str_field_ptr");
-					llvm::Value* boxPtr = builder->CreateLoad(ptrTy, fieldBytePtr, "string_ptr");
-					builder->CreateCall(field.typeName == "str" ? qdStringReleaseFn : qdF128ReleaseFn, {boxPtr});
+					llvm::Value* stringPtr = builder->CreateLoad(ptrTy, fieldBytePtr, "string_ptr");
+					builder->CreateCall(qdStringReleaseFn, {stringPtr});
 				}
 			}
 
@@ -247,7 +248,7 @@ namespace Qd {
 			// Release generic type parameter fields that hold strings
 			for (const auto& field : layout.fields) {
 				if (field.isTypeParam) {
-					auto tagOffset = builder->getInt64(field.offset + 8);
+					auto tagOffset = builder->getInt64(field.offset + kTypeParamTagOffset);
 					auto tagPtr = builder->CreateGEP(builder->getInt8Ty(), structPtr, tagOffset, "typeparam_tag_ptr");
 					llvm::Value* typeTag = builder->CreateLoad(int64Ty, tagPtr, "typeparam_tag");
 
@@ -268,9 +269,6 @@ namespace Qd {
 					builder->CreateBr(skipRelease);
 
 					builder->SetInsertPoint(skipRelease);
-					emitReleaseIfF128(typeTag,
-							builder->CreateGEP(builder->getInt8Ty(), structPtr, fieldOffset, "typeparam_f128_ptr"),
-							field.name);
 				}
 			}
 
@@ -370,17 +368,14 @@ namespace Qd {
 				} else if (field.typeName == "str") {
 					llvm::Value* str = builder->CreateLoad(ptrTy, fieldPtr("str_field_ptr"), "string_ptr");
 					builder->CreateCall(qdStringRetainFn, {str});
-				} else if (field.typeName == "f128") {
-					llvm::Value* box = builder->CreateLoad(ptrTy, fieldPtr("f128_field_ptr"), "f128_ptr");
-					builder->CreateCall(qdF128RetainFn, {box});
 				} else if (isArrayType(field.typeName)) {
 					llvm::Value* arr = builder->CreateLoad(ptrTy, fieldPtr("array_field_ptr"), "array_ptr");
 					builder->CreateCall(qdPtrRetainFn, {arr});
 				} else if (field.isTypeParam) {
 					// A generic field carries its concrete kind in the tag beside it, the way the
 					// destructor reads it; 3 is `str`, the only kind that holds a reference.
-					auto tagPtr = builder->CreateGEP(
-							builder->getInt8Ty(), dst, builder->getInt64(field.offset + 8), "typeparam_tag_ptr");
+					auto tagPtr = builder->CreateGEP(builder->getInt8Ty(), dst,
+							builder->getInt64(field.offset + kTypeParamTagOffset), "typeparam_tag_ptr");
 					llvm::Value* typeTag = builder->CreateLoad(int64Ty, tagPtr, "typeparam_tag");
 
 					auto* retainStr = llvm::BasicBlock::Create(*context, field.name + "_retain_str", clonerFn);
@@ -394,16 +389,6 @@ namespace Qd {
 					builder->CreateBr(skipRetain);
 
 					builder->SetInsertPoint(skipRetain);
-					auto* retainF128 = llvm::BasicBlock::Create(*context, field.name + "_retain_f128", clonerFn);
-					auto* afterF128 = llvm::BasicBlock::Create(*context, field.name + "_after_f128", clonerFn);
-					builder->CreateCondBr(
-							builder->CreateICmpEQ(typeTag, builder->getInt64(kStackTypeF128), "is_f128_typeparam"),
-							retainF128, afterF128);
-					builder->SetInsertPoint(retainF128);
-					llvm::Value* box = builder->CreateLoad(ptrTy, fieldPtr("typeparam_f128_ptr"), "typeparam_f128");
-					builder->CreateCall(qdF128RetainFn, {box});
-					builder->CreateBr(afterF128);
-					builder->SetInsertPoint(afterF128);
 				}
 			}
 
@@ -496,22 +481,21 @@ namespace Qd {
 				llvm::Value* intValue = builder->CreateLoad(int64Ty, valuePtr, "int_val");
 				llvm::Value* truncValue = builder->CreateTrunc(intValue, builder->getInt8Ty(), "int8_val");
 				builder->CreateStore(truncValue, bytePtr);
-			} else if (field.typeName == "ptr" || field.typeName == "str" || field.typeName == "f128" ||
+			} else if (field.typeName == "f128") {
+				storeSlotValue(loadSlotValue(valuePtr, "f128_val"), bytePtr);
+			} else if (field.typeName == "ptr" || field.typeName == "str" ||
 					   field.typeName.find('*') != std::string::npos || isArrayType(field.typeName) ||
 					   isFnType(field.typeName) ||
 					   (looksLikeStructType(field.typeName) && isKnownStruct(field.typeName))) {
-				// Pointer type (including ptr, str, f128, raw pointers, arrays, and struct-typed fields)
+				// Pointer type (including ptr, str, raw pointers, arrays, and struct-typed fields)
 				llvm::Value* ptrValue = builder->CreateLoad(ptrTy, valuePtr, "ptr_val");
 				builder->CreateStore(ptrValue, bytePtr);
 			} else if (field.isTypeParam) {
-				// Generic type parameter field - store raw 8-byte value + type tag
-				llvm::Value* intValue = builder->CreateLoad(int64Ty, valuePtr, "generic_val");
-				builder->CreateStore(intValue, bytePtr);
-				// Read type tag from stack element (GEP index 1)
+				// Generic type parameter field - the slot's value words, then its type tag
+				storeSlotValue(loadSlotValue(valuePtr, "generic_val"), bytePtr);
 				llvm::Value* typeTagPtr = builder->CreateStructGEP(stackElementTy, elemPtr, 1, "elem_type_ptr");
 				llvm::Value* typeTag = builder->CreateLoad(int32Ty, typeTagPtr, "type_tag");
-				// Store type tag at field.offset + 8
-				llvm::Value* tagOffset = builder->getInt64(field.offset + 8);
+				llvm::Value* tagOffset = builder->getInt64(field.offset + kTypeParamTagOffset);
 				llvm::Value* tagPtr = builder->CreateGEP(builder->getInt8Ty(), structPtr, tagOffset, "tag_ptr");
 				llvm::Value* tagExt = builder->CreateZExt(typeTag, int64Ty, "tag_i64");
 				builder->CreateStore(tagExt, tagPtr);
@@ -667,8 +651,7 @@ namespace Qd {
 			builder->CreateCall(pushStrRefFn, {ctx, ptrValue});
 			lastFieldAccessResultType.clear(); // Not a struct type
 		} else if (matchingField->typeName == "f128") {
-			llvm::Value* box = builder->CreateLoad(ptrTy, bytePtr, "field_value");
-			builder->CreateCall(pushF128Fn, {ctx, box});
+			pushF128At(ctx, bytePtr, "field_value");
 			lastFieldAccessResultType.clear();
 		} else if (matchingField->typeName == "ptr" || matchingField->typeName.find('*') != std::string::npos ||
 				   isArrayType(matchingField->typeName) || isFnType(matchingField->typeName)) {
@@ -702,7 +685,7 @@ namespace Qd {
 			lastFieldAccessResultType = matchingField->typeName;
 		} else if (matchingField->isTypeParam) {
 			// Generic type parameter field - switch on stored type tag to push correctly
-			llvm::Value* tagOffset = builder->getInt64(matchingField->offset + 8);
+			llvm::Value* tagOffset = builder->getInt64(matchingField->offset + kTypeParamTagOffset);
 			llvm::Value* tagPtr = builder->CreateGEP(builder->getInt8Ty(), structPtr, tagOffset, "tag_ptr");
 			llvm::Value* typeTag = builder->CreateLoad(int64Ty, tagPtr, "type_tag");
 			llvm::Value* rawValue = builder->CreateLoad(int64Ty, bytePtr, "raw_value");
@@ -723,7 +706,7 @@ namespace Qd {
 				auto* f128BB = llvm::BasicBlock::Create(*context, "generic.f128", currentFn);
 				sw->addCase(builder->getInt64(kStackTypeF128), f128BB);
 				builder->SetInsertPoint(f128BB);
-				builder->CreateCall(pushF128Fn, {ctx, builder->CreateIntToPtr(rawValue, ptrTy, "f128_val")});
+				pushF128At(ctx, bytePtr, "generic");
 				builder->CreateBr(endBB);
 			}
 
@@ -848,9 +831,10 @@ namespace Qd {
 			llvm::Value* intValue = builder->CreateLoad(int64Ty, valuePtr, "int_val");
 			llvm::Value* truncValue = builder->CreateTrunc(intValue, builder->getInt8Ty(), "int8_val");
 			builder->CreateStore(truncValue, bytePtr);
+		} else if (matchingField->typeName == "f128") {
+			storeSlotValue(loadSlotValue(valuePtr, "f128_val"), bytePtr);
 		} else if (matchingField->typeName == "ptr" || matchingField->typeName == "str" ||
-				   matchingField->typeName == "f128" || matchingField->typeName.find('*') != std::string::npos ||
-				   isArrayType(matchingField->typeName) ||
+				   matchingField->typeName.find('*') != std::string::npos || isArrayType(matchingField->typeName) ||
 				   (looksLikeStructType(matchingField->typeName) && isKnownStruct(matchingField->typeName))) {
 			llvm::Value* ptrValue = builder->CreateLoad(ptrTy, valuePtr, "ptr_val");
 			// A field of one of these types owns a reference: pushing the value onto the stack
@@ -865,15 +849,13 @@ namespace Qd {
 			builder->CreateStore(ptrValue, bytePtr);
 			if (matchingField->typeName == "str") {
 				builder->CreateCall(qdStringReleaseFn, {oldFieldValue});
-			} else if (matchingField->typeName == "f128") {
-				builder->CreateCall(qdF128ReleaseFn, {oldFieldValue});
 			} else {
 				builder->CreateCall(qdPtrReleaseFn, {oldFieldValue});
 			}
 		} else if (matchingField->isTypeParam) {
 			// Release old string value if the generic field currently holds a string
 			{
-				llvm::Value* oldTagOffset = builder->getInt64(matchingField->offset + 8);
+				llvm::Value* oldTagOffset = builder->getInt64(matchingField->offset + kTypeParamTagOffset);
 				llvm::Value* oldTagPtr =
 						builder->CreateGEP(builder->getInt8Ty(), structPtr, oldTagOffset, "old_tag_ptr");
 				llvm::Value* oldTag = builder->CreateLoad(int64Ty, oldTagPtr, "old_tag");
@@ -893,19 +875,12 @@ namespace Qd {
 				builder->CreateBr(afterRelease);
 
 				builder->SetInsertPoint(afterRelease);
-				emitReleaseIfF128(oldTag,
-						builder->CreateGEP(builder->getInt8Ty(), structPtr, builder->getInt64(matchingField->offset),
-								"old_f128_ptr"),
-						"old_typeparam");
 			}
-			// Generic type parameter field - store raw 8-byte value + type tag
-			llvm::Value* intValue = builder->CreateLoad(int64Ty, valuePtr, "generic_val");
-			builder->CreateStore(intValue, bytePtr);
-			// Read type tag from stack element (GEP index 1)
+			// Generic type parameter field - the slot's value words, then its type tag
+			storeSlotValue(loadSlotValue(valuePtr, "generic_val"), bytePtr);
 			llvm::Value* typeTagPtr = builder->CreateStructGEP(stackElementTy, valueTempElem, 1, "elem_type_ptr");
 			llvm::Value* typeTag = builder->CreateLoad(int32Ty, typeTagPtr, "type_tag");
-			// Store type tag at field.offset + 8
-			llvm::Value* tagOffset = builder->getInt64(matchingField->offset + 8);
+			llvm::Value* tagOffset = builder->getInt64(matchingField->offset + kTypeParamTagOffset);
 			llvm::Value* tagPtr = builder->CreateGEP(builder->getInt8Ty(), structPtr, tagOffset, "tag_ptr");
 			llvm::Value* tagExt = builder->CreateZExt(typeTag, int64Ty, "tag_i64");
 			builder->CreateStore(tagExt, tagPtr);
@@ -1116,8 +1091,8 @@ namespace Qd {
 		// created as QD_ARRAY_TYPE_ANY (4) and adopts its element type from the first value
 		// appended, exactly as `[] x append` does, so a nested array yields an array of
 		// pointers without anything here having to work out the element type statically.
-		// An f128 literal is a boxed value the constant path has no way to build, so it goes
-		// the same way.
+		// An f128 literal goes the same way: the constant path lays out eight-byte elements,
+		// and an f128 array's are sixteen.
 		bool allScalarLiterals = true;
 		for (const auto& elemPtr : elements) {
 			if (elemPtr->type() != IAstNode::Type::LITERAL ||

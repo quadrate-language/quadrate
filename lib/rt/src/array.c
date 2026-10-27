@@ -29,6 +29,29 @@ int qd_array_is_valid(const void* ptr) {
 	return ptr_registry_contains(&array_registry, ptr);
 }
 
+// An f128 slot nothing has been written to holds zero, as an int or float slot does.
+// All-zero bits would be 0E-6176, which equals zero but prints as such.
+static void fill_f128_zero(qd_f128_t* data, size_t from, size_t to) {
+	const qd_f128_t zero = qd_f128_from_i64(0);
+	for (size_t i = from; i < to; i++) {
+		data[i] = zero;
+	}
+}
+
+// An untyped array becoming an f128 one. Its pointer-sized buffer holds nothing yet but
+// zeros, and an f128 is twice as wide, so it is replaced rather than reinterpreted.
+static int adopt_f128(qd_array_t* arr) {
+	qd_f128_t* data = (qd_f128_t*)malloc((arr->capacity > 0 ? arr->capacity : 1) * sizeof(qd_f128_t));
+	if (!data) {
+		return -1;
+	}
+	fill_f128_zero(data, 0, arr->capacity);
+	free(arr->data.p);
+	arr->data.q = data;
+	arr->elemType = QD_ARRAY_TYPE_F128;
+	return 0;
+}
+
 qd_array_t* qd_array_create(size_t capacity, qd_array_type elemType) {
 	if (capacity == 0) {
 		capacity = QD_ARRAY_DEFAULT_CAPACITY;
@@ -71,13 +94,20 @@ qd_array_t* qd_array_create(size_t capacity, qd_array_type elemType) {
 			return NULL;
 		}
 		break;
+	case QD_ARRAY_TYPE_F128:
+		arr->data.q = (qd_f128_t*)malloc(capacity * sizeof(qd_f128_t));
+		if (!arr->data.q) {
+			free(arr);
+			return NULL;
+		}
+		fill_f128_zero(arr->data.q, 0, capacity);
+		break;
 	case QD_ARRAY_TYPE_STR:
 	case QD_ARRAY_TYPE_PTR:
-	case QD_ARRAY_TYPE_F128:
 	case QD_ARRAY_TYPE_ANY:
-		// Every element representation is 8 bytes, so an as-yet-untyped array can allocate as
-		// pointers and be reinterpreted once its type is known. Zeroing matters for the string
-		// and pointer cases, which release what they hold.
+		// These are all 8 bytes, so an as-yet-untyped array can allocate as pointers and be
+		// reinterpreted once its type is known, or widened if it turns out to hold f128.
+		// Zeroing matters for the string and pointer cases, which release what they hold.
 		elemSize = sizeof(void*);
 		arr->data.p = (void**)malloc(capacity * elemSize);
 		if (!arr->data.p) {
@@ -148,10 +178,7 @@ void qd_array_release(qd_array_t* arr) {
 		free(arr->data.p);
 		break;
 	case QD_ARRAY_TYPE_F128:
-		for (size_t i = 0; i < arr->length; i++) {
-			qd_f128_release((qd_f128_t*)arr->data.p[i]);
-		}
-		free(arr->data.p);
+		free(arr->data.q);
 		break;
 	case QD_ARRAY_TYPE_PTR:
 		// Release all references (arrays, structs, or raw pointers)
@@ -198,11 +225,18 @@ int qd_array_get_float(const qd_array_t* arr, size_t index, double* value) {
 
 int qd_array_get_ptr(const qd_array_t* arr, size_t index, void** value) {
 	if (!arr || !value || index >= arr->length ||
-		(arr->elemType != QD_ARRAY_TYPE_PTR && arr->elemType != QD_ARRAY_TYPE_STR &&
-			arr->elemType != QD_ARRAY_TYPE_F128)) {
+		(arr->elemType != QD_ARRAY_TYPE_PTR && arr->elemType != QD_ARRAY_TYPE_STR)) {
 		return -1;
 	}
 	*value = arr->data.p[index];
+	return 0;
+}
+
+int qd_array_get_f128(const qd_array_t* arr, size_t index, qd_f128_t* value) {
+	if (!arr || !value || index >= arr->length || arr->elemType != QD_ARRAY_TYPE_F128) {
+		return -1;
+	}
+	*value = arr->data.q[index];
 	return 0;
 }
 
@@ -222,18 +256,17 @@ int qd_array_set_float(qd_array_t* arr, size_t index, double value) {
 	return 0;
 }
 
-int qd_array_set_ptr(qd_array_t* arr, size_t index, void* value) {
-	if (!arr || index >= arr->length ||
-		(arr->elemType != QD_ARRAY_TYPE_PTR && arr->elemType != QD_ARRAY_TYPE_STR &&
-			arr->elemType != QD_ARRAY_TYPE_F128)) {
+int qd_array_set_f128(qd_array_t* arr, size_t index, qd_f128_t value) {
+	if (!arr || index >= arr->length || arr->elemType != QD_ARRAY_TYPE_F128) {
 		return -1;
 	}
+	arr->data.q[index] = value;
+	return 0;
+}
 
-	if (arr->elemType == QD_ARRAY_TYPE_F128) {
-		qd_f128_retain((qd_f128_t*)value);
-		qd_f128_release((qd_f128_t*)arr->data.p[index]);
-		arr->data.p[index] = value;
-		return 0;
+int qd_array_set_ptr(qd_array_t* arr, size_t index, void* value) {
+	if (!arr || index >= arr->length || (arr->elemType != QD_ARRAY_TYPE_PTR && arr->elemType != QD_ARRAY_TYPE_STR)) {
+		return -1;
 	}
 
 	// For string arrays, handle reference counting
@@ -280,9 +313,17 @@ static int qd_array_grow(qd_array_t* arr) {
 		arr->data.f = newData;
 		break;
 	}
-	case QD_ARRAY_TYPE_STR:
-	case QD_ARRAY_TYPE_PTR:
 	case QD_ARRAY_TYPE_F128: {
+		qd_f128_t* newData = (qd_f128_t*)realloc(arr->data.q, newCapacity * sizeof(qd_f128_t));
+		if (!newData) {
+			return -1;
+		}
+		fill_f128_zero(newData, arr->capacity, newCapacity);
+		arr->data.q = newData;
+		break;
+	}
+	case QD_ARRAY_TYPE_STR:
+	case QD_ARRAY_TYPE_PTR: {
 		void** newData = (void**)realloc(arr->data.p, newCapacity * sizeof(void*));
 		if (!newData) {
 			return -1;
@@ -330,9 +371,21 @@ int qd_array_push_float(qd_array_t* arr, double value) {
 	return 0;
 }
 
+int qd_array_push_f128(qd_array_t* arr, qd_f128_t value) {
+	if (!arr || arr->elemType != QD_ARRAY_TYPE_F128) {
+		return -1;
+	}
+	if (arr->length >= arr->capacity) {
+		if (qd_array_grow(arr) != 0) {
+			return -1;
+		}
+	}
+	arr->data.q[arr->length++] = value;
+	return 0;
+}
+
 int qd_array_push_ptr(qd_array_t* arr, void* value) {
-	if (!arr || (arr->elemType != QD_ARRAY_TYPE_PTR && arr->elemType != QD_ARRAY_TYPE_STR &&
-				 arr->elemType != QD_ARRAY_TYPE_F128)) {
+	if (!arr || (arr->elemType != QD_ARRAY_TYPE_PTR && arr->elemType != QD_ARRAY_TYPE_STR)) {
 		return -1;
 	}
 
@@ -342,11 +395,9 @@ int qd_array_push_ptr(qd_array_t* arr, void* value) {
 		}
 	}
 
-	// For string and f128 arrays, take a reference of the array's own
+	// For string arrays, take a reference of the array's own
 	if (arr->elemType == QD_ARRAY_TYPE_STR && value) {
 		qd_string_retain((qd_string_t*)value);
-	} else if (arr->elemType == QD_ARRAY_TYPE_F128) {
-		qd_f128_retain((qd_f128_t*)value);
 	}
 
 	arr->data.p[arr->length++] = value;
@@ -478,19 +529,14 @@ int qd_nth(qd_context* ctx) {
 		}
 		break;
 	}
-	case QD_ARRAY_TYPE_F128: {
-		// A slot nothing has been written to holds zero, as an int or float slot does.
-		qd_f128_t* value = (qd_f128_t*)arr->data.p[index];
-		value = value != NULL ? qd_f128_retain(value) : qd_f128_from_i64(0);
-		if (value == NULL || qd_stack_push_f128(ctx->st, value) != QD_STACK_OK) {
-			fprintf(stderr, "nth: out of memory or stack overflow\n");
-			qd_f128_release(value);
+	case QD_ARRAY_TYPE_F128:
+		if (qd_stack_push_f128(ctx->st, arr->data.q[index]) != QD_STACK_OK) {
+			fprintf(stderr, "nth: stack overflow\n");
 			qd_array_release(arr);
 			result = -1;
 			return result;
 		}
 		break;
-	}
 	case QD_ARRAY_TYPE_PTR: {
 		void* ptr = arr->data.p[index];
 		if (ptr) {
@@ -710,8 +756,7 @@ int qd_makep(qd_context* ctx) {
 
 /* Creates an array whose element type is decided by the first value appended to it. Used for
  * `make<T>` inside a generic function, where T is erased at run time. */
-// makeq - an f128 array of n zeros. The slots are left NULL, which reads as zero, rather
-// than holding n boxes of it.
+// makeq - an f128 array of n zeros
 int qd_makeq(qd_context* ctx) {
 	qd_stack_element_t sizeElem;
 	if (!ctx || !ctx->st || qd_stack_pop(ctx->st, &sizeElem) != QD_STACK_OK) {
@@ -843,7 +888,12 @@ int qd_append(qd_context* ctx) {
 			arr->elemType = QD_ARRAY_TYPE_STR;
 			break;
 		case QD_STACK_TYPE_F128:
-			arr->elemType = QD_ARRAY_TYPE_F128;
+			if (adopt_f128(arr) != 0) {
+				fprintf(stderr, "append: allocation failed\n");
+				qd_array_release(arr);
+				result = -1;
+				return result;
+			}
 			break;
 		default:
 			arr->elemType = QD_ARRAY_TYPE_PTR;
@@ -893,12 +943,11 @@ int qd_append(qd_context* ctx) {
 		break;
 	case QD_ARRAY_TYPE_F128:
 		if (valueElem.type == QD_STACK_TYPE_F128) {
-			appendResult = qd_array_push_ptr(arr, valueElem.value.q);
+			appendResult = qd_array_push_f128(arr, valueElem.value.q);
 		} else {
 			fprintf(stderr, "append: type mismatch - f128 array, got type %d\n", valueElem.type);
+			qdrt_release_element(&valueElem);
 		}
-		// The array took a reference of its own; this one was the stack's.
-		qdrt_release_element(&valueElem);
 		break;
 	default:
 		fprintf(stderr, "append: unknown array type %d\n", arr->elemType);
@@ -1012,7 +1061,12 @@ int qd_set(qd_context* ctx) {
 			arr->elemType = QD_ARRAY_TYPE_STR;
 			break;
 		case QD_STACK_TYPE_F128:
-			arr->elemType = QD_ARRAY_TYPE_F128;
+			if (adopt_f128(arr) != 0) {
+				fprintf(stderr, "set: allocation failed\n");
+				qd_array_release(arr);
+				result = -1;
+				return result;
+			}
 			break;
 		default:
 			arr->elemType = QD_ARRAY_TYPE_PTR;
@@ -1065,11 +1119,11 @@ int qd_set(qd_context* ctx) {
 		break;
 	case QD_ARRAY_TYPE_F128:
 		if (valueElem.type == QD_STACK_TYPE_F128) {
-			setResult = qd_array_set_ptr(arr, (size_t)index, valueElem.value.q);
+			setResult = qd_array_set_f128(arr, (size_t)index, valueElem.value.q);
 		} else {
 			fprintf(stderr, "set: type mismatch - f128 array, got type %d\n", valueElem.type);
+			qdrt_release_element(&valueElem);
 		}
-		qdrt_release_element(&valueElem);
 		break;
 	default:
 		fprintf(stderr, "set: unknown array type %d\n", arr->elemType);

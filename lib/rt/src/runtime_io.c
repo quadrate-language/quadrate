@@ -65,12 +65,10 @@ static void print_array_contents(const qd_array_t* arr, int depth) {
 			break;
 		}
 		case QD_ARRAY_TYPE_F128: {
-			void* v = NULL;
-			qd_array_get_ptr(arr, i, &v);
-			char text[QD_F128_STRING_MAX] = "0";
-			if (v != NULL) {
-				qd_f128_format((const qd_f128_t*)v, text, sizeof text);
-			}
+			qd_f128_t v = qd_f128_from_i64(0);
+			qd_array_get_f128(arr, i, &v);
+			char text[QD_F128_STRING_MAX];
+			qd_f128_format(v, text, sizeof text);
 			printf("%s", text);
 			break;
 		}
@@ -135,7 +133,6 @@ int qd_print(qd_context* ctx) {
 		char text[QD_F128_STRING_MAX];
 		qd_f128_format(val.value.q, text, sizeof text);
 		printf("%s", text);
-		qd_f128_release(val.value.q);
 		break;
 	}
 	default:
@@ -240,7 +237,6 @@ int qd_printv(qd_context* ctx) {
 		char text[QD_F128_STRING_MAX];
 		qd_f128_format(val.value.q, text, sizeof text);
 		printf("f128:%s\n", text);
-		qd_f128_release(val.value.q);
 		break;
 	}
 	default:

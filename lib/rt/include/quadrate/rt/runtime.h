@@ -105,34 +105,30 @@ int qd_push_p(qd_context* ctx, void* value);
  * @brief Push an f128 onto the stack
  *
  * @param ctx Execution context
- * @param value Value to push; the stack takes a reference of its own, so the caller keeps
- *        the one it has
+ * @param value Value to push
  * @return Execution result (0 on success)
  */
-int qd_push_q(qd_context* ctx, qd_f128_t* value);
+int qd_push_q(qd_context* ctx, qd_f128_t value);
 
 /**
- * @brief Push an f128 literal, reading it once
+ * @brief Push an f128 given as the two words of its encoding
  *
- * What compiled code calls for `0.1q`. The text is read on the first call and kept in
- * `*cache`, which must start out NULL and is then owned by the runtime; every later
- * call pushes the same value.
+ * What compiled code calls for `0.1q`: the compiler reads the literal and passes its
+ * qd_f128_t::w[0] and w[1], which crosses into C the same way on every target, where a
+ * sixteen-byte struct would not.
  *
- * @param ctx Execution context
- * @param text The literal's digits, without the `q`
- * @param cache Where the value is kept between calls
  * @return Execution result (0 on success)
  */
-int qd_push_q_lit(qd_context* ctx, const char* text, qd_f128_t** cache);
+int qd_push_q_bits(qd_context* ctx, uint64_t low, uint64_t high);
 
 /**
  * @brief Whether a stack element is an f128 equal to a literal, for `switch`
  *
- * The literal is read and cached the way qd_push_q_lit() does it.
+ * The literal arrives as qd_push_q_bits() takes it.
  *
  * @return 1 if `subject` is an f128 comparing equal to the literal, 0 otherwise
  */
-int qd_f128_matches_lit(const qd_stack_element_t* subject, const char* text, qd_f128_t** cache);
+int qd_f128_matches_bits(const qd_stack_element_t* subject, uint64_t low, uint64_t high);
 
 /** @} */ // end of StackPush group
 
@@ -189,11 +185,10 @@ int qd_pop_p(qd_context* ctx, void** value);
  * @brief Pop an f128 from the stack
  *
  * @param ctx Execution context
- * @param[out] value Receives the value, and with it the stack's reference: release it
- *             with qd_f128_release() when done
+ * @param[out] value Receives the value
  * @return 0 on success, non-zero on error (underflow or type mismatch)
  */
-int qd_pop_q(qd_context* ctx, qd_f128_t** value);
+int qd_pop_q(qd_context* ctx, qd_f128_t* value);
 
 /** @} */ // end of StackPop group
 

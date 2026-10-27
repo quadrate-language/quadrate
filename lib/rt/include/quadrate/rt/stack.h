@@ -52,7 +52,7 @@ typedef enum {
 	QD_STACK_TYPE_FLOAT, ///< Double-precision floating point
 	QD_STACK_TYPE_PTR,	 ///< Generic pointer
 	QD_STACK_TYPE_STR,	 ///< Null-terminated string
-	QD_STACK_TYPE_F128	 ///< IEEE 754 decimal128, boxed and reference-counted (see f128.h)
+	QD_STACK_TYPE_F128	 ///< IEEE 754 decimal128, held in the slot itself (see f128.h)
 } qd_stack_type;
 
 /**
@@ -67,7 +67,7 @@ typedef struct {
 		double f;		///< Float value
 		void* p;		///< Pointer value
 		qd_string_t* s; ///< Reference-counted string value (owned by stack)
-		qd_f128_t* q;	///< Reference-counted decimal128 value (owned by stack)
+		qd_f128_t q;	///< Decimal128 value, sixteen bytes and nothing to release
 	} value;
 
 	qd_stack_type type;	   ///< Type of the stored value
@@ -170,10 +170,8 @@ qd_stack_error qd_stack_push_str(qd_stack* stack, const char* value);
  * @param stack Target stack
  * @param value Value to push
  * @return QD_STACK_OK on success, QD_STACK_ERR_OVERFLOW if stack is full
- *
- * @note The stack takes over the caller's reference; on failure the caller still has it
  */
-qd_stack_error qd_stack_push_f128(qd_stack* stack, qd_f128_t* value);
+qd_stack_error qd_stack_push_f128(qd_stack* stack, qd_f128_t value);
 
 /**
  * @brief Peek at the top element without removing it

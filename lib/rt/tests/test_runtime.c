@@ -3583,97 +3583,99 @@ TEST(RollTest) {
 // its string handling are pinned here instead.
 
 // Formats v into a static buffer, for comparing against the exact text a value holds
-static const char* f128_text(const qd_f128_t* v) {
+static const char* f128_text(qd_f128_t v) {
 	static char buf[QD_F128_STRING_MAX];
 	qd_f128_format(v, buf, sizeof buf);
 	return buf;
 }
 
+static qd_f128_t f128_of(const char* text) {
+	qd_f128_t v = qd_f128_nan();
+	qd_f128_parse(text, &v);
+	return v;
+}
+
 TEST(F128ParseAndFormat) {
-	qd_f128_t* v = qd_f128_parse("1.10");
-	ASSERT(v != NULL, "1.10 reads");
+	qd_f128_t v;
+	ASSERT(qd_f128_parse("1.10", &v), "1.10 reads");
 	ASSERT(strcmp(f128_text(v), "1.10") == 0, "and keeps its trailing zero");
-	qd_f128_release(v);
 
-	ASSERT(qd_f128_parse("1.5x") == NULL, "trailing junk is not a number");
-	ASSERT(qd_f128_parse("") == NULL, "nor is nothing");
-	ASSERT(qd_f128_parse("sNaN") == NULL, "a signaling NaN is refused");
+	ASSERT(!qd_f128_parse("1.5x", &v), "trailing junk is not a number");
+	ASSERT(!qd_f128_parse("", &v), "nor is nothing");
+	ASSERT(!qd_f128_parse("sNaN", &v), "a signaling NaN is refused");
 
-	v = qd_f128_parse("-Infinity");
-	ASSERT(v != NULL && strcmp(f128_text(v), "-inf") == 0, "infinity is spelled as f64 spells it");
-	qd_f128_release(v);
+	ASSERT(qd_f128_parse("-Infinity", &v) && strcmp(f128_text(v), "-inf") == 0, "infinity is spelled as f64 spells it");
+	ASSERT(strcmp(f128_text(f128_of("1E+3")), "1e+3") == 0, "an exponent past the digits is written as one");
+	ASSERT(strcmp(f128_text(f128_of("0.000001")), "0.000001") == 0, "six places still read plainly");
+	ASSERT(strcmp(f128_text(f128_of("0.0000001")), "1e-7") == 0, "seven do not");
+	ASSERT(strcmp(f128_text(f128_of("-0")), "-0") == 0, "negative zero keeps its sign");
+}
+
+// IEEE 754 decimal128 in densely packed decimal, as decNumber writes them
+TEST(F128EncodingIsStandardDPD) {
+	qd_f128_t v = f128_of("1");
+	ASSERT(v.w[1] == UINT64_C(0x2208000000000000) && v.w[0] == 1, "1");
+	v = f128_of("-7.50");
+	ASSERT(v.w[1] == UINT64_C(0xA207800000000000) && v.w[0] == 0x3D0, "-7.50");
+	v = f128_of("9.999999999999999999999999999999999E+6144");
+	ASSERT(v.w[1] == UINT64_C(0x77FFCFF3FCFF3FCF) && v.w[0] == UINT64_C(0xF3FCFF3FCFF3FCFF), "the largest finite value");
+	v = qd_f128_inf();
+	ASSERT(v.w[1] == UINT64_C(0x7800000000000000) && v.w[0] == 0, "infinity");
+	v = qd_f128_nan();
+	ASSERT(v.w[1] == UINT64_C(0x7C00000000000000) && v.w[0] == 0, "NaN");
+	v = qd_f128_div(qd_f128_from_i64(0), qd_f128_from_i64(0));
+	ASSERT(v.w[1] == UINT64_C(0x7C00000000000000) && v.w[0] == 0, "0/0 is that NaN, with no stray payload");
+
+	// All-zero bits are 0E-6176, so a zero has to be written: it is not what calloc gives
+	v.w[0] = 0;
+	v.w[1] = 0;
+	ASSERT(qd_f128_is_zero(v) && strcmp(f128_text(v), "0e-6176") == 0, "zeroed memory is the smallest zero");
+	ASSERT(strcmp(f128_text(qd_f128_from_i64(0)), "0") == 0, "from_i64(0) is the plain one");
 }
 
 TEST(F128ArithmeticIsDecimal) {
-	qd_f128_t* a = qd_f128_parse("0.1");
-	qd_f128_t* b = qd_f128_parse("0.2");
-	qd_f128_t* c = qd_f128_parse("0.3");
-	qd_f128_t* sum = qd_f128_add(a, b);
-	ASSERT(qd_f128_compare(sum, c) == 0, "0.1 + 0.2 is 0.3");
-	qd_f128_release(a);
-	qd_f128_release(b);
-	qd_f128_release(c);
-	qd_f128_release(sum);
-
-	qd_f128_t* one = qd_f128_from_i64(1);
-	qd_f128_t* three = qd_f128_from_i64(3);
-	qd_f128_t* third = qd_f128_div(one, three);
+	ASSERT(qd_f128_compare(qd_f128_add(f128_of("0.1"), f128_of("0.2")), f128_of("0.3")) == 0, "0.1 + 0.2 is 0.3");
+	const qd_f128_t third = qd_f128_div(qd_f128_from_i64(1), qd_f128_from_i64(3));
 	ASSERT(strcmp(f128_text(third), "0.3333333333333333333333333333333333") == 0, "34 digits, rounded");
-	qd_f128_release(one);
-	qd_f128_release(three);
-	qd_f128_release(third);
+	ASSERT(strcmp(f128_text(qd_f128_neg(f128_of("0"))), "-0") == 0, "negation flips the sign even of zero");
 }
 
 TEST(F128ConversionsAreTotal) {
-	qd_f128_t* big = qd_f128_parse("1e30");
+	const qd_f128_t big = f128_of("1e30");
 	ASSERT(qd_f128_to_i64(big) == INT64_MAX, "too large saturates");
-	qd_f128_t* neg = qd_f128_neg(big);
-	ASSERT(qd_f128_to_i64(neg) == INT64_MIN, "too small saturates");
-	qd_f128_t* nan = qd_f128_nan();
-	ASSERT(qd_f128_to_i64(nan) == 0, "NaN is zero");
-	qd_f128_t* frac = qd_f128_parse("-2.9");
-	ASSERT(qd_f128_to_i64(frac) == -2, "truncates toward zero");
-	qd_f128_release(big);
-	qd_f128_release(neg);
-	qd_f128_release(nan);
-	qd_f128_release(frac);
+	ASSERT(qd_f128_to_i64(qd_f128_neg(big)) == INT64_MIN, "too small saturates");
+	ASSERT(qd_f128_to_i64(qd_f128_nan()) == 0, "NaN is zero");
+	ASSERT(qd_f128_to_i64(f128_of("-2.9")) == -2, "truncates toward zero");
 
-	qd_f128_t* tenth = qd_f128_from_f64(0.1);
+	const qd_f128_t tenth = qd_f128_from_f64(0.1);
 	ASSERT(strcmp(f128_text(tenth), "0.1000000000000000055511151231257827") == 0, "the binary value, rounded");
 	ASSERT(qd_f128_to_f64(tenth) == 0.1, "and back to the same double");
-	qd_f128_release(tenth);
 }
 
 TEST(F128ComparisonIsIEEE) {
-	qd_f128_t* nan = qd_f128_nan();
-	qd_f128_t* one = qd_f128_from_i64(1);
+	const qd_f128_t nan = qd_f128_nan();
 	ASSERT(qd_f128_compare(nan, nan) == 2, "NaN is unordered, even with itself");
-	ASSERT(qd_f128_compare(nan, one) == 2, "and with a number");
-	qd_f128_t* a = qd_f128_parse("1.0");
-	qd_f128_t* b = qd_f128_parse("1.00");
-	ASSERT(qd_f128_compare(a, b) == 0, "1.0 equals 1.00");
-	ASSERT(qd_f128_total_order(b, a) == -1, "but orders before it");
-	qd_f128_release(nan);
-	qd_f128_release(one);
-	qd_f128_release(a);
-	qd_f128_release(b);
+	ASSERT(qd_f128_compare(nan, qd_f128_from_i64(1)) == 2, "and with a number");
+	ASSERT(qd_f128_compare(f128_of("1.0"), f128_of("1.00")) == 0, "1.0 equals 1.00");
+	ASSERT(qd_f128_total_order(f128_of("1.00"), f128_of("1.0")) == -1, "but orders before it");
 }
 
-TEST(F128StackOwnership) {
+TEST(F128LivesInTheSlot) {
 	qd_context* ctx = create_test_context();
-	qd_f128_t* v = qd_f128_parse("2.5");
-	ASSERT(qd_push_q(ctx, v) == 0, "push succeeds");
-	ASSERT(qd_f128_refcount(v) == 2, "the stack holds a reference of its own");
+	ASSERT(qd_push_q(ctx, f128_of("2.5")) == 0, "push succeeds");
 	qd_dup(ctx);
-	ASSERT(qd_f128_refcount(v) == 3, "dup takes another");
 	qd_add(ctx);
-	ASSERT(qd_f128_refcount(v) == 1, "add consumed both operands");
-
-	qd_f128_t* result = NULL;
+	qd_f128_t result;
 	ASSERT(qd_pop_q(ctx, &result) == 0, "pop succeeds");
 	ASSERT(strcmp(f128_text(result), "5.0") == 0, "2.5 + 2.5 is 5.0");
-	qd_f128_release(result);
-	qd_f128_release(v);
+
+	// Every bit survives the slot, the top word with the sign and exponent included
+	const qd_f128_t wide = f128_of("-9.876543210987654321098765432109876E-4321");
+	qd_push_q(ctx, wide);
+	qd_dup(ctx);
+	qd_swap(ctx);
+	ASSERT(qd_pop_q(ctx, &result) == 0 && result.w[0] == wide.w[0] && result.w[1] == wide.w[1], "the copy");
+	ASSERT(qd_pop_q(ctx, &result) == 0 && result.w[0] == wide.w[0] && result.w[1] == wide.w[1], "and the original");
 	destroy_test_context(ctx);
 }
 
@@ -3693,18 +3695,55 @@ TEST(F128CastsThroughTheStack) {
 	destroy_test_context(ctx);
 }
 
-TEST(F128LiteralCache) {
+TEST(F128PushedAsTwoWords) {
 	qd_context* ctx = create_test_context();
-	qd_f128_t* cache = NULL;
-	qd_push_q_lit(ctx, "0.1", &cache);
-	qd_f128_t* first = cache;
-	ASSERT(first != NULL, "the first push fills the cache");
-	qd_push_q_lit(ctx, "0.1", &cache);
-	ASSERT(cache == first, "and the second reuses it");
-	ASSERT(qd_f128_refcount(first) == 3, "one reference for the cache, one per slot");
+	const qd_f128_t tenth = f128_of("0.1");
+	ASSERT(qd_push_q_bits(ctx, tenth.w[0], tenth.w[1]) == 0, "push succeeds");
+	const qd_stack_element_t* top = &ctx->st->data[ctx->st->size - 1];
+	ASSERT(qd_f128_matches_bits(top, f128_of("0.10").w[0], f128_of("0.10").w[1]), "0.1 matches 0.10");
+	ASSERT(!qd_f128_matches_bits(top, f128_of("0.2").w[0], f128_of("0.2").w[1]), "and not 0.2");
+	qd_f128_t back;
+	ASSERT(qd_pop_q(ctx, &back) == 0 && strcmp(f128_text(back), "0.1") == 0, "the value is what was pushed");
+	destroy_test_context(ctx);
+}
+
+TEST(F128ArraysHoldValues) {
+	qd_array_t* arr = qd_array_create(2, QD_ARRAY_TYPE_F128);
+	ASSERT(arr != NULL, "an f128 array");
+	arr->length = 2;
+	qd_f128_t v = qd_f128_nan();
+	ASSERT(qd_array_get_f128(arr, 1, &v) == 0 && strcmp(f128_text(v), "0") == 0, "a fresh slot holds a plain zero");
+	for (int i = 0; i < 20; i++) {
+		ASSERT(qd_array_push_f128(arr, qd_f128_from_i64(i)) == 0, "appending grows it");
+	}
+	ASSERT(qd_array_get_f128(arr, 21, &v) == 0 && strcmp(f128_text(v), "19") == 0, "past several growths");
+	ASSERT(qd_array_set_f128(arr, 0, f128_of("1.5")) == 0 && qd_array_get_f128(arr, 0, &v) == 0 &&
+				   strcmp(f128_text(v), "1.5") == 0,
+			"set and get");
+	qd_array_release(arr);
+
+	// An untyped array widens to f128 on its first value, by append and by set
+	qd_context* ctx = create_test_context();
+	qd_stack_push_ptr(ctx->st, qd_array_create(4, QD_ARRAY_TYPE_ANY));
+	qd_push_q(ctx, f128_of("2.25"));
+	qd_append(ctx);
+	qd_array_t* grown = (qd_array_t*)ctx->st->data[ctx->st->size - 1].value.p;
+	ASSERT(grown->elemType == QD_ARRAY_TYPE_F128 && qd_array_get_f128(grown, 0, &v) == 0 &&
+				   strcmp(f128_text(v), "2.25") == 0,
+			"append adopts f128");
 	qd_stack_truncate(ctx, 0);
-	ASSERT(qd_f128_refcount(first) == 1, "only the cache's is left");
-	qd_f128_release(cache);
+
+	qd_push_i(ctx, 3);
+	qd_makea(ctx);
+	qd_array_t* sized = (qd_array_t*)ctx->st->data[ctx->st->size - 1].value.p;
+	qd_array_retain(sized);
+	qd_push_i(ctx, 1);
+	qd_push_q(ctx, f128_of("7"));
+	qd_set(ctx);
+	ASSERT(sized->elemType == QD_ARRAY_TYPE_F128 && qd_array_get_f128(sized, 1, &v) == 0 && strcmp(f128_text(v), "7") == 0,
+			"set adopts f128");
+	ASSERT(qd_array_get_f128(sized, 2, &v) == 0 && strcmp(f128_text(v), "0") == 0, "and its other slots are zero");
+	qd_array_release(sized);
 	destroy_test_context(ctx);
 }
 

@@ -136,21 +136,17 @@ namespace Qd {
 		builder->CreateCall(pushIntFn, {ctx, successStatus});
 	}
 
-	// An f128 literal is read by the runtime, the first time it is reached, into a cache slot of
-	// its own; every later push is a retain. The compiler does not do the reading: decimal128
-	// arithmetic lives in the runtime, and a literal read any other way could round
-	// differently from the same digits read by strconv::parse_f128.
+	// An f128 literal is read here, by the runtime's own reader, so it rounds exactly as
+	// strconv::parse_f128 rounds the same digits, and what is pushed is the encoding as a
+	// constant: nothing is read at run time.
 	void LlvmGenerator::Impl::generateF128Literal(const std::string& text, llvm::Value* ctx) {
-		std::string digits;
-		if (readF128Literal(text, digits) != std::errc()) {
+		uint64_t low = 0;
+		uint64_t high = 0;
+		if (!f128LiteralWords(text, low, high)) {
 			std::cerr << "quadc: error: Invalid f128 literal '" << text << "'" << std::endl;
 			compilationFailed = true;
-			digits = "0";
 		}
-		auto* cache = new llvm::GlobalVariable(*module, ptrTy, false, llvm::GlobalValue::InternalLinkage,
-				llvm::ConstantPointerNull::get(llvm::PointerType::getUnqual(*context)), ".f128_lit");
-		auto* digitsValue = builder->CreateGlobalString(digits, ".f128_str");
-		builder->CreateCall(pushF128LitFn, {ctx, digitsValue, cache});
+		builder->CreateCall(pushF128BitsFn, {ctx, builder->getInt64(low), builder->getInt64(high)});
 	}
 
 	void LlvmGenerator::Impl::generateLiteral(AstNodeLiteral* lit, llvm::Value* ctx) {
@@ -560,7 +556,9 @@ namespace Qd {
 				llvm::Type* loadTy = int64Ty;
 				if (isFloat) {
 					loadTy = builder->getDoubleTy();
-				} else if (isStr || isPtr || isF128) {
+				} else if (isF128) {
+					loadTy = slotValueTy;
+				} else if (isStr || isPtr) {
 					loadTy = ptrTy;
 				}
 
@@ -572,9 +570,9 @@ namespace Qd {
 				} else if (isFloat) {
 					builder->CreateCall(pushFloatFn, {ctx, v});
 				} else if (isF128) {
-					// A global is initialized before main runs, so it always holds a value;
-					// qd_push_q takes the reference the stack slot needs.
-					builder->CreateCall(pushF128Fn, {ctx, v});
+					// A global holds its value from the start, its literal's encoding the initializer
+					builder->CreateCall(pushF128BitsFn, {ctx, builder->CreateExtractValue(v, 0, name + "_g_low"),
+																builder->CreateExtractValue(v, 1, name + "_g_high")});
 				} else if (isStr) {
 					// qd_push_s_ref refuses a null string and pushes nothing, returning -2
 					// that nothing here reads -- so a `str` global read before it was ever
@@ -1587,10 +1585,8 @@ namespace Qd {
 		// happens to be there, which made every literal case fall through to the wildcard.
 		const bool nativePath = useCompileTimeStack;
 
-		auto switchElemTy = llvm::StructType::get(*context,
-				{int64Ty,						// value (union as i64)
-						int32Ty,				// type
-						builder->getInt8Ty()}); // is_error_tainted
+		// The runtime pops into it, so it is a qd_stack_element_t, value words and all
+		auto* switchElemTy = stackElementTy;
 
 		llvm::Value* nativeScrutinee = nullptr;
 		llvm::Value* switchElem = nullptr;
@@ -1701,19 +1697,18 @@ namespace Qd {
 			if (nativePath) {
 				return nullptr;
 			}
-			std::string digits;
-			if (readF128Literal(text, digits) != std::errc()) {
+			uint64_t low = 0;
+			uint64_t high = 0;
+			if (!f128LiteralWords(text, low, high)) {
 				return nullptr;
 			}
-			llvm::Function* matchFn = module->getFunction("qd_f128_matches_lit");
+			llvm::Function* matchFn = module->getFunction("qd_f128_matches_bits");
 			if (!matchFn) {
-				matchFn = llvm::Function::Create(llvm::FunctionType::get(int32Ty, {ptrTy, ptrTy, ptrTy}, false),
-						llvm::Function::ExternalLinkage, "qd_f128_matches_lit", module.get());
+				matchFn = llvm::Function::Create(llvm::FunctionType::get(int32Ty, {ptrTy, int64Ty, int64Ty}, false),
+						llvm::Function::ExternalLinkage, "qd_f128_matches_bits", module.get());
 			}
-			auto* cache = new llvm::GlobalVariable(*module, ptrTy, false, llvm::GlobalValue::InternalLinkage,
-					llvm::ConstantPointerNull::get(llvm::PointerType::getUnqual(*context)), ".f128_case");
-			auto* digitsValue = builder->CreateGlobalString(digits, ".f128_case_str");
-			auto* found = builder->CreateCall(matchFn, {switchElem, digitsValue, cache}, "f128_case");
+			auto* found = builder->CreateCall(
+					matchFn, {switchElem, builder->getInt64(low), builder->getInt64(high)}, "f128_case");
 			return builder->CreateICmpNE(found, builder->getInt32(0), "case_match");
 		};
 
@@ -2051,8 +2046,6 @@ namespace Qd {
 
 		// Skip free block
 		builder->SetInsertPoint(skipFreeBB);
-		emitReleaseIfF128(
-				switchType, builder->CreateStructGEP(switchElemTy, switchElem, 0, "f128_value_ptr"), "switch");
 	}
 
 	// generateLocal, generateLocalOne, generateLocalCleanup, collectAllCapturesFromAST are in generator_nodes_locals.cc

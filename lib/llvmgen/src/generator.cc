@@ -178,8 +178,12 @@ namespace Qd {
 		// exec_result is just an i32 (0 = success, non-zero = error)
 		execResultTy = i32t;
 
-		// qd_stack_element_t layout: { union(i64, double, ptr, ptr), i32 type, i8 is_error_tainted }
-		stackElementTy = llvm::StructType::create(*context, {i64t, i32t, builder->getInt8Ty()}, "qd_stack_element_t");
+		// qd_stack_element_t layout: { union(i64, double, ptr, ptr, f128), i32 type, i8 is_error_tainted }. The
+		// union is two words for the f128; an array of i64 rather than an i128 keeps its alignment at a word's,
+		// as the C union has it.
+		slotValueTy = llvm::ArrayType::get(i64t, 2);
+		stackElementTy =
+				llvm::StructType::create(*context, {slotValueTy, i32t, builder->getInt8Ty()}, "qd_stack_element_t");
 
 		// Context layout: {qd_stack* st, int64_t error_code, char* error_msg, int argc, char** argv, char*
 		// program_name, int64_t has_error}
@@ -293,12 +297,9 @@ namespace Qd {
 		qdStringRetainFn = declareFn(ptrToPtrTy, "qd_string_retain");
 		qdStringDataFn = declareFn(ptrToPtrTy, "qd_string_data");
 
-		// f128 values: boxed and counted, like strings
-		qdF128ReleaseFn = declareFn(ptrToVoidTy, "qd_f128_release");
-		qdF128RetainFn = declareFn(ptrToPtrTy, "qd_f128_retain");
-		pushF128Fn = declareFn(ctxPtrToResultTy, "qd_push_q");
-		pushF128LitFn =
-				declareFn(llvm::FunctionType::get(execResultTy, {contextPtrTy, ptrTy, ptrTy}, false), "qd_push_q_lit");
+		// f128 values cross as the two words of their encoding
+		pushF128BitsFn =
+				declareFn(llvm::FunctionType::get(execResultTy, {contextPtrTy, i64t, i64t}, false), "qd_push_q_bits");
 
 		// Initialize debug info if enabled
 		if (debugInfoEnabled) {
@@ -2571,6 +2572,29 @@ namespace Qd {
 
 				llvm::Type* ty = nullptr;
 				llvm::Constant* init = nullptr;
+
+				// An f128 is held in the global itself, its literal's encoding the initializer:
+				// nothing to run in main. Without one it is zero, as `0q` reads.
+				if (typeName == "f128") {
+					std::string literal = "0q";
+					if (auto* lit = dynamic_cast<AstNodeLiteral*>(varNode->initializerNode())) {
+						literal = lit->value();
+					}
+					uint64_t low = 0;
+					uint64_t high = 0;
+					if (!f128LiteralWords(literal, low, high)) {
+						std::cerr << "quadc: error: Invalid f128 literal '" << literal << "'" << std::endl;
+						compilationFailed = true;
+					}
+					init = llvm::ConstantArray::get(llvm::cast<llvm::ArrayType>(slotValueTy),
+							{builder->getInt64(low), builder->getInt64(high)});
+					auto* gv = new llvm::GlobalVariable(
+							*module, slotValueTy, /*isConstant=*/false, varLinkage, init, "qd_global_" + name);
+					gv->setAlignment(llvm::Align(8));
+					moduleGlobalVars[name] = gv;
+					moduleGlobalVarTypes[name] = typeName;
+					continue;
+				}
 
 				// Heap-initialized global -- a struct construction or a string literal.
 				// The LLVM global is just a null pointer here; a module-init sequence

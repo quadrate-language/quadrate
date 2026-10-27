@@ -5,6 +5,7 @@
 #define QD_LLVMGEN_GENERATOR_IMPL_H
 
 #include <quadrate/llvmgen/generator.h>
+#include <quadrate/rt/f128.h>
 
 // Suppress all warnings from LLVM headers (third-party code)
 #if defined(__clang__)
@@ -172,6 +173,7 @@ namespace Qd {
 		llvm::Type* contextPtrTy = nullptr;
 		llvm::Type* execResultTy = nullptr;
 		llvm::Type* stackElementTy = nullptr;
+		llvm::Type* slotValueTy = nullptr;			 ///< A slot's value: two words, the second used by f128 alone
 		llvm::StructType* contextStructTy = nullptr; // Cached context struct layout:
 													 // {st, error_code, error_msg, argc, argv, program_name, has_error}
 
@@ -210,10 +212,7 @@ namespace Qd {
 		llvm::Function* freeFn = nullptr;
 		llvm::Function* qdStringReleaseFn = nullptr;
 		llvm::Function* qdStringRetainFn = nullptr;
-		llvm::Function* qdF128ReleaseFn = nullptr;
-		llvm::Function* qdF128RetainFn = nullptr;
-		llvm::Function* pushF128LitFn = nullptr;
-		llvm::Function* pushF128Fn = nullptr;
+		llvm::Function* pushF128BitsFn = nullptr;
 		llvm::Function* qdStringDataFn = nullptr;
 		llvm::Function* qdStructAllocFn = nullptr;
 		llvm::Function* qdStructReleaseFn = nullptr;
@@ -484,13 +483,22 @@ namespace Qd {
 		void generateInstruction(AstNodeInstruction* inst, llvm::Value* ctx);
 		void generateF128Literal(const std::string& text, llvm::Value* ctx);
 
-		// An f128 is a counted box held in a slot the way a string is, but under a tag of
-		// its own (QD_STACK_TYPE_F128). These two cover the places that switch on a slot's
-		// tag: releasing what a slot holds, and pushing a copy of it.
+		// An f128 is sixteen bytes held in the slot itself (QD_STACK_TYPE_F128): a slot's value
+		// is two words, of which every other type uses the first. Moving a value whose type is
+		// not known here therefore moves both, and an f128 crosses into the runtime as its two
+		// words, qd_push_q_bits, since a sixteen-byte struct argument is lowered differently on
+		// every target.
 		static constexpr uint32_t kStackTypeF128 = 4;
-		void emitReleaseIfF128(llvm::Value* typeTag, llvm::Value* valuePtr, const std::string& name);
+		// A generic struct field: the value, two words as in a slot, then the tag
+		static constexpr size_t kTypeParamTagOffset = 16;
+		static constexpr size_t kTypeParamFieldSize = 24;
+		llvm::Value* loadSlotValue(llvm::Value* valuePtr, const std::string& name);
+		void storeSlotValue(llvm::Value* value, llvm::Value* valuePtr);
+		void pushF128At(llvm::Value* ctx, llvm::Value* valuePtr, const std::string& name);
 		void addF128PushCase(llvm::SwitchInst* sw, llvm::Value* valuePtr, llvm::Value* ctx, llvm::BasicBlock* endBlock,
 				const std::string& name);
+		// The encoding of an f128 literal, read at compile time by the runtime's own reader
+		bool f128LiteralWords(const std::string& text, uint64_t& low, uint64_t& high);
 		void generateLiteral(AstNodeLiteral* lit, llvm::Value* ctx);
 		void generateIdentifier(AstNodeIdentifier* ident, llvm::Value* ctx);
 		void generateFunctionPointer(AstNodeFunctionPointerReference* funcPtr, llvm::Value* ctx);

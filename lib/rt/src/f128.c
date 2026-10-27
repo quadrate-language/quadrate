@@ -2,77 +2,68 @@
  * @file f128.c
  * @brief IEEE 754-2008 decimal128 values, on libmpdec
  *
- * libmpdec does the arithmetic. Every operation is carried out in the IEEE decimal128
- * context -- 34 digits, emax 6144, clamped, roundTiesToEven -- so each result is the
- * decimal128 value the standard says it is. The trigonometric functions, which libmpdec
- * does not have, are built here from its arithmetic at a higher working precision.
+ * A value is its 128-bit DPD encoding. Each operation takes its operands apart into
+ * libmpdec numbers on the C stack and puts the result back together, so nothing is
+ * allocated for a value. libmpdec does the arithmetic, every operation in the IEEE
+ * decimal128 context -- 34 digits, emax 6144, clamped, roundTiesToEven -- so each result
+ * is the decimal128 value the standard says it is. The elementary functions libmpdec
+ * lacks, or does slowly, are built here at a higher working precision.
  */
 
 #include <quadrate/rt/f128.h>
 
+#include <inttypes.h>
 #include <limits.h>
 #include <math.h>
 #include <mpdecimal.h>
-#include <stdatomic.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <unistd.h>
 
+#include "f128_dpd.h"
 #include "f128_pi.h"
-
-// Four words is 76 digits on a 64-bit host: room for a full decimal128 coefficient and
-// for the double-width intermediate a product rounds from, so ordinary arithmetic never
-// has to allocate beyond the box. libmpdec moves a value that outgrows it to the heap by
-// itself, and mpd_del hands that back.
-#define QDRT_F128_WORDS 4
-
-struct qd_f128 {
-	atomic_size_t refcount;
-	mpd_t num;
-	mpd_uint_t data[QDRT_F128_WORDS];
-};
+#include "runtime_internal.h"
 
 // Digits carried beyond decimal128's 34 while evaluating a function libmpdec lacks.
 #define QDRT_GUARD_DIGITS 10
 #define QDRT_WORK_PREC (34 + QDRT_GUARD_DIGITS)
 
+// A libmpdec value on the C stack, with room for a decimal128 coefficient, for the
+// double-width intermediate a product rounds from, and for the working precision. One
+// that outgrows it moves to the heap by itself, so it still wants mpd_del.
+#define QDRT_MPD_WORDS 12
+#define QDRT_MPD_LOCAL(name)                                                                                           \
+	mpd_uint_t name##_data[QDRT_MPD_WORDS];                                                                            \
+	mpd_t name = {MPD_STATIC | MPD_STATIC_DATA, 0, 0, 0, QDRT_MPD_WORDS, name##_data}
+
 // ---------------------------------------------------------------------------
-// Boxes and contexts
+// The encoding
+//
+// IEEE 754-2008 section 3.5.2. The top word holds the sign, then a 17-bit combination
+// field -- the leading digit and the exponent, or the marks of infinity and NaN -- and
+// then 46 of the 110 bits that carry the other 33 digits, ten bits to three of them.
+// The bottom word holds the remaining 64.
 // ---------------------------------------------------------------------------
 
-static qd_f128_t* box_new(void) {
-	qd_f128_t* v = malloc(sizeof *v);
-	if (v == NULL) {
-		return NULL;
-	}
-	atomic_init(&v->refcount, 1);
-	v->num.flags = MPD_STATIC | MPD_STATIC_DATA;
-	v->num.exp = 0;
-	v->num.digits = 1;
-	v->num.len = 1;
-	v->num.alloc = QDRT_F128_WORDS;
-	v->num.data = v->data;
-	v->data[0] = 0;
-	return v;
-}
+#define DPD_SIGN (UINT64_C(1) << 63)
+#define DPD_COMBINATION_SHIFT 46
+#define DPD_BIAS 6176
+#define DPD_DECLETS 11
 
-static void box_free(qd_f128_t* v) {
-	mpd_del(&v->num);
-	free(v);
-}
+// Combination fields of the special values, before the shift
+#define DPD_G_INF (UINT32_C(0x1E) << 12)
+#define DPD_G_NAN (UINT32_C(0x1F) << 12)
+#define DPD_G_SIGNALING (UINT32_C(1) << 11)
 
-// A result is only lost to running out of memory; every other condition an operation
-// raises -- inexact, overflow, invalid -- is part of the answer it gives.
-static qd_f128_t* box_finish(qd_f128_t* v, uint32_t status) {
-	if (status & MPD_Malloc_error) {
-		box_free(v);
-		return NULL;
-	}
-	return v;
-}
+// The context every result is rounded in: what mpd_ieee_context(ctx, 128) sets, as a
+// constant to copy rather than a call on every operation
+static const mpd_context_t decimal128_context = {
+		34, 6144, -6143, 0, 0, 0, MPD_ROUND_HALF_EVEN, 1, 1,
+};
 
 static void ctx128(mpd_context_t* ctx) {
-	mpd_ieee_context(ctx, 128);
+	*ctx = decimal128_context;
 }
 
 // Unbounded exponent range, so intermediates never overflow on the way to a result that
@@ -87,88 +78,223 @@ static void ctx_work(mpd_context_t* ctx, mpd_ssize_t prec) {
 	ctx->allcr = 1;
 }
 
-// Round a working-precision value into a new decimal128 box. mpd_qfinalize rather than
-// mpd_qplus, which would turn -0 into +0.
-static qd_f128_t* box_from_work(const mpd_t* value, uint32_t status) {
-	qd_f128_t* r = box_new();
-	if (r == NULL) {
-		return NULL;
-	}
-	mpd_context_t ctx;
-	ctx128(&ctx);
-	mpd_qcopy(&r->num, value, &status);
-	mpd_qfinalize(&r->num, &ctx, &status);
-	return box_finish(r, status);
+// Running out of memory ends the process, as an allocation failure does across the
+// runtime: there is no value left to hand back.
+static _Noreturn void out_of_memory(void) {
+	static const char message[] = "fatal: out of memory computing an f128\n";
+	(void)!write(2, message, sizeof message - 1);
+	qdrt_fatal_exit();
 }
 
-static qd_f128_t* box_special(uint8_t flags) {
-	qd_f128_t* r = box_new();
-	if (r != NULL) {
-		mpd_setspecial(&r->num, flags & MPD_NEG, flags & MPD_SPECIAL);
+static void check_memory(uint32_t status) {
+	if (status & MPD_Malloc_error) {
+		out_of_memory();
 	}
+}
+
+// Writes a declet into a value whose bits there are still zero. Three zero digits are
+// a zero declet, so nothing is written for them.
+static void set_declet(qd_f128_t* v, int k, unsigned three_digits) {
+	if (three_digits == 0) {
+		return;
+	}
+	const unsigned bit = 10u * (unsigned)k;
+	const uint64_t code = bin_to_dpd[three_digits];
+	if (bit + 10 <= 64) {
+		v->w[0] |= code << bit;
+	} else if (bit >= 64) {
+		v->w[1] |= code << (bit - 64);
+	} else {
+		v->w[0] |= code << bit;
+		v->w[1] |= code >> (64 - bit);
+	}
+}
+
+// A coefficient of up to 36 digits as four base-10^9 words, least significant first,
+// from libmpdec's words and back. Both are powers of ten, so this is regrouping digits.
+static void chunks_from_mpd(const mpd_t* v, uint32_t c[4]) {
+#if MPD_RDIGITS == 9
+	for (mpd_ssize_t i = 0; i < 4; i++) {
+		c[i] = i < v->len ? (uint32_t)v->data[i] : 0;
+	}
+#else
+	// A special value libmpdec made may have no words at all: a NaN from 0/0 has length 0
+	const uint64_t w0 = v->len > 0 ? (uint64_t)v->data[0] : 0;
+	const uint64_t w1 = v->len > 1 ? (uint64_t)v->data[1] : 0;
+	c[0] = (uint32_t)(w0 % 1000000000u);
+	c[1] = (uint32_t)(w0 / 1000000000u % 1000000000u);
+	c[2] = (uint32_t)(w0 / UINT64_C(1000000000000000000) + w1 % 100000000u * 10u);
+	c[3] = (uint32_t)(w1 / 100000000u);
+#endif
+}
+
+static void mpd_from_chunks(mpd_t* v, const uint32_t c[4], uint32_t* status) {
+#if MPD_RDIGITS == 9
+	const mpd_ssize_t words = 4;
+#else
+	const mpd_ssize_t words = 2;
+#endif
+	if (v->alloc < words && !mpd_qresize(v, words, status)) {
+		return;
+	}
+#if MPD_RDIGITS == 9
+	for (mpd_ssize_t i = 0; i < 4; i++) {
+		v->data[i] = c[i];
+	}
+#else
+	v->data[0] = c[0] + (uint64_t)c[1] * 1000000000u + (uint64_t)(c[2] % 10u) * UINT64_C(1000000000000000000);
+	v->data[1] = c[2] / 10u + (uint64_t)c[3] * 100000000u;
+#endif
+	v->len = words;
+	while (v->len > 1 && v->data[v->len - 1] == 0) {
+		v->len--;
+	}
+	mpd_setdigits(v);
+}
+
+// The value an encoding holds, into `out`
+static void unpack(qd_f128_t v, mpd_t* out) {
+	const uint8_t sign = (v.w[1] & DPD_SIGN) ? MPD_NEG : MPD_POS;
+	const uint32_t g = (uint32_t)(v.w[1] >> DPD_COMBINATION_SHIFT) & 0x1FFFF;
+	uint32_t status = 0;
+
+	// The leading digit sits in the combination field, and a NaN has none
+	unsigned lead = 0;
+	mpd_ssize_t exp = 0;
+	uint8_t kind = 0;
+	if ((g & DPD_G_NAN) == DPD_G_NAN) {
+		kind = (g & DPD_G_SIGNALING) ? MPD_SNAN : MPD_NAN;
+	} else if ((g & DPD_G_NAN) == DPD_G_INF) {
+		mpd_setspecial(out, sign, MPD_INF);
+		return;
+	} else {
+		uint32_t exp_high;
+		if ((g >> 15) == 3) {
+			lead = 8 + ((g >> 12) & 1);
+			exp_high = (g >> 13) & 3;
+		} else {
+			lead = (g >> 12) & 7;
+			exp_high = g >> 15;
+		}
+		exp = (mpd_ssize_t)((exp_high << 12) | (g & 0xFFF)) - DPD_BIAS;
+	}
+
+	// The declets, least significant first, for as long as any bits are left: most values
+	// a calculator holds have a short coefficient, and a zero declet is three zero digits
+	static const uint32_t place[3] = {1, 1000, 1000000};
+	uint32_t c[4] = {0, 0, 0, lead * 1000000u};
+	uint64_t low = v.w[0];
+	uint64_t high = v.w[1] & ((UINT64_C(1) << DPD_COMBINATION_SHIFT) - 1);
+	for (int k = 0; k < DPD_DECLETS && (low | high) != 0; k++) {
+		c[k / 3] += dpd_to_bin[low & 0x3FF] * place[k % 3];
+		low = (low >> 10) | (high << 54);
+		high >>= 10;
+	}
+	mpd_from_chunks(out, c, &status);
+	check_memory(status);
+	mpd_set_flags(out, (uint8_t)(sign | kind));
+	out->exp = exp;
+}
+
+// The encoding of `v`, which must already be a decimal128 value: at most 34 digits, an
+// exponent in range, a NaN payload of at most 33.
+static qd_f128_t pack(const mpd_t* v) {
+	qd_f128_t r = {{0, mpd_isnegative(v) ? DPD_SIGN : 0}};
+	if (mpd_isinfinite(v)) {
+		r.w[1] |= (uint64_t)DPD_G_INF << DPD_COMBINATION_SHIFT;
+		return r;
+	}
+
+	uint32_t c[4];
+	chunks_from_mpd(v, c);
+	for (int i = 0; i < 3; i++) {
+		set_declet(&r, 3 * i, c[i] % 1000u);
+		set_declet(&r, 3 * i + 1, c[i] / 1000u % 1000u);
+		set_declet(&r, 3 * i + 2, c[i] / 1000000u);
+	}
+	set_declet(&r, 9, c[3] % 1000u);
+	set_declet(&r, 10, c[3] / 1000u % 1000u);
+
+	uint32_t g;
+	if (mpd_isnan(v)) {
+		g = DPD_G_NAN | (mpd_issnan(v) ? DPD_G_SIGNALING : 0);
+	} else {
+		const uint32_t lead = c[3] / 1000000u;
+		const uint32_t biased = (uint32_t)(v->exp + DPD_BIAS);
+		const uint32_t exp_high = biased >> 12;
+		if (lead < 8) {
+			g = (exp_high << 15) | (lead << 12) | (biased & 0xFFF);
+		} else {
+			g = (UINT32_C(3) << 15) | (exp_high << 13) | ((lead & 1) << 12) | (biased & 0xFFF);
+		}
+	}
+	r.w[1] |= (uint64_t)g << DPD_COMBINATION_SHIFT;
 	return r;
 }
 
-qd_f128_t* qd_f128_retain(qd_f128_t* v) {
-	if (v != NULL) {
-		atomic_fetch_add_explicit(&v->refcount, 1, memory_order_relaxed);
-	}
-	return v;
+// A result libmpdec computed in the decimal128 context, encoded
+static qd_f128_t pack_result(mpd_t* v, uint32_t status) {
+	check_memory(status);
+	const qd_f128_t r = pack(v);
+	mpd_del(v);
+	return r;
 }
 
-void qd_f128_release(qd_f128_t* v) {
-	if (v != NULL && atomic_fetch_sub_explicit(&v->refcount, 1, memory_order_acq_rel) == 1) {
-		box_free(v);
-	}
+// A working-precision value rounded once into decimal128 and encoded. mpd_qfinalize
+// rather than mpd_qplus, which would turn -0 into +0.
+static qd_f128_t pack_work(const mpd_t* value, uint32_t status) {
+	mpd_context_t ctx;
+	ctx128(&ctx);
+	QDRT_MPD_LOCAL(r);
+	mpd_qcopy(&r, value, &status);
+	mpd_qfinalize(&r, &ctx, &status);
+	return pack_result(&r, status);
 }
 
-size_t qd_f128_refcount(const qd_f128_t* v) {
-	return v != NULL ? atomic_load(&v->refcount) : 0;
+static qd_f128_t special(bool negative, uint32_t g) {
+	qd_f128_t r = {{0, (negative ? DPD_SIGN : 0) | ((uint64_t)g << DPD_COMBINATION_SHIFT)}};
+	return r;
 }
 
 // ---------------------------------------------------------------------------
 // Conversions
 // ---------------------------------------------------------------------------
 
-qd_f128_t* qd_f128_parse(const char* text) {
-	if (text == NULL) {
-		return NULL;
-	}
-	qd_f128_t* r = box_new();
-	if (r == NULL) {
-		return NULL;
+bool qd_f128_parse(const char* text, qd_f128_t* out) {
+	if (text == NULL || out == NULL) {
+		return false;
 	}
 	mpd_context_t ctx;
 	ctx128(&ctx);
 	uint32_t status = 0;
-	mpd_qset_string(&r->num, text, &ctx, &status);
+	QDRT_MPD_LOCAL(v);
+	mpd_qset_string(&v, text, &ctx, &status);
 	// A signaling NaN is a value no operation here produces or tests for, so reading one
 	// would only hand the program something it cannot deal with.
-	if ((status & MPD_Conversion_syntax) || mpd_issnan(&r->num)) {
-		box_free(r);
-		return NULL;
+	const bool ok = !(status & MPD_Conversion_syntax) && !mpd_issnan(&v);
+	if (ok) {
+		*out = pack_result(&v, status);
+	} else {
+		mpd_del(&v);
 	}
-	return box_finish(r, status);
+	return ok;
 }
 
-qd_f128_t* qd_f128_from_i64(int64_t v) {
-	qd_f128_t* r = box_new();
-	if (r == NULL) {
-		return NULL;
-	}
+qd_f128_t qd_f128_from_i64(int64_t v) {
 	mpd_context_t ctx;
 	ctx128(&ctx);
 	uint32_t status = 0;
-	mpd_qset_i64(&r->num, v, &ctx, &status);
-	return box_finish(r, status);
+	QDRT_MPD_LOCAL(r);
+	mpd_qset_i64(&r, v, &ctx, &status);
+	return pack_result(&r, status);
 }
 
-qd_f128_t* qd_f128_from_f64(double v) {
+qd_f128_t qd_f128_from_f64(double v) {
 	if (isnan(v)) {
-		return box_special((uint8_t)(MPD_NAN | (signbit(v) ? MPD_NEG : MPD_POS)));
+		return special(signbit(v), DPD_G_NAN);
 	}
 	if (isinf(v)) {
-		return box_special((uint8_t)(MPD_INF | (v < 0 ? MPD_NEG : MPD_POS)));
+		return special(v < 0, DPD_G_INF);
 	}
 
 	// %.33e writes the binary value correctly rounded to 34 significant digits -- glibc and
@@ -179,59 +305,51 @@ qd_f128_t* qd_f128_from_f64(double v) {
 	mpd_context_t ctx;
 	ctx128(&ctx);
 	uint32_t status = 0;
-	mpd_t* exact = mpd_qnew();
-	if (exact == NULL) {
-		return NULL;
-	}
-	mpd_qset_string(exact, digits, &ctx, &status);
+	QDRT_MPD_LOCAL(exact);
+	QDRT_MPD_LOCAL(tidy);
+	mpd_qset_string(&exact, digits, &ctx, &status);
 
 	// That spelling always carries 34 digits, so 1.0 would arrive as 1.000...000 and print
 	// that way. Give it the quantum a literal would have had: no trailing fractional zeros,
 	// and an integer written as an integer.
-	mpd_t* tidy = mpd_qnew();
-	if (tidy == NULL) {
-		mpd_del(exact);
-		return NULL;
-	}
-	mpd_qreduce(tidy, exact, &ctx, &status);
-	if (tidy->exp > 0 && tidy->digits + tidy->exp <= ctx.prec) {
-		mpd_qrescale(exact, tidy, 0, &ctx, &status);
+	mpd_qreduce(&tidy, &exact, &ctx, &status);
+	if (tidy.exp > 0 && tidy.digits + tidy.exp <= ctx.prec) {
+		mpd_qrescale(&exact, &tidy, 0, &ctx, &status);
 	} else {
-		mpd_qcopy(exact, tidy, &status);
+		mpd_qcopy(&exact, &tidy, &status);
 	}
-	qd_f128_t* r = box_from_work(exact, status);
-	mpd_del(tidy);
-	mpd_del(exact);
+	mpd_del(&tidy);
+	const qd_f128_t r = pack_work(&exact, status);
+	mpd_del(&exact);
 	return r;
 }
 
-int64_t qd_f128_to_i64(const qd_f128_t* v) {
-	const mpd_t* a = &v->num;
-	if (mpd_isnan(a)) {
+int64_t qd_f128_to_i64(qd_f128_t v) {
+	QDRT_MPD_LOCAL(a);
+	unpack(v, &a);
+	if (mpd_isnan(&a)) {
 		return 0;
 	}
-	const bool negative = mpd_isnegative(a);
-	if (mpd_isinfinite(a) || mpd_adjexp(a) > 18) {
+	const bool negative = mpd_isnegative(&a);
+	if (mpd_isinfinite(&a) || mpd_adjexp(&a) > 18) {
 		return negative ? INT64_MIN : INT64_MAX;
 	}
 	mpd_context_t ctx;
 	ctx_work(&ctx, 40);
 	uint32_t status = 0;
-	mpd_t* whole = mpd_qnew();
-	if (whole == NULL) {
-		return 0;
-	}
-	mpd_qtrunc(whole, a, &ctx, &status);
+	QDRT_MPD_LOCAL(whole);
+	mpd_qtrunc(&whole, &a, &ctx, &status);
+	check_memory(status);
 	status = 0;
-	int64_t result = mpd_qget_i64(whole, &status);
-	mpd_del(whole);
+	const int64_t result = mpd_qget_i64(&whole, &status);
+	mpd_del(&whole);
 	if (status & MPD_Invalid_operation) {
 		return negative ? INT64_MIN : INT64_MAX;
 	}
 	return result;
 }
 
-double qd_f128_to_f64(const qd_f128_t* v) {
+double qd_f128_to_f64(qd_f128_t v) {
 	// Formatting and reading back is correctly rounded: at most 34 digits go in, and
 	// strtod rounds whatever it reads to the nearest double.
 	char text[QD_F128_STRING_MAX];
@@ -239,79 +357,127 @@ double qd_f128_to_f64(const qd_f128_t* v) {
 	return strtod(text, NULL);
 }
 
-size_t qd_f128_format(const qd_f128_t* v, char* buf, size_t size) {
+// The IEEE 754 to-scientific-string rule: the coefficient's digits with the point placed
+// by the exponent while the number reads plainly -- a non-positive exponent and an
+// adjusted exponent of -6 or more -- and otherwise one digit, the rest after a point,
+// and the adjusted exponent.
+size_t qd_f128_format(qd_f128_t v, char* buf, size_t size) {
 	if (buf == NULL || size == 0) {
 		return 0;
 	}
-	const mpd_t* a = &v->num;
-	const char* special = NULL;
-	if (mpd_isnan(a)) {
-		special = mpd_isnegative(a) ? "-nan" : "nan";
-	} else if (mpd_isinfinite(a)) {
-		special = mpd_isnegative(a) ? "-inf" : "inf";
-	}
-	if (special != NULL) {
-		int n = snprintf(buf, size, "%s", special);
-		return n < 0 ? 0 : (size_t)n;
+	const bool negative = (v.w[1] & DPD_SIGN) != 0;
+	if (qd_f128_is_nan(v) || qd_f128_is_inf(v)) {
+		const char* name = qd_f128_is_nan(v) ? "nan" : "inf";
+		const int n = snprintf(buf, size, "%s%s", negative ? "-" : "", name);
+		return n < 0 ? 0 : ((size_t)n < size ? (size_t)n : size - 1);
 	}
 
-	char* text = NULL;
-	mpd_ssize_t len = mpd_to_sci_size(&text, a, 0);
-	if (len < 0 || text == NULL) {
+	QDRT_MPD_LOCAL(a);
+	unpack(v, &a);
+	uint32_t c[4];
+	chunks_from_mpd(&a, c);
+	char digits[40];
+	if (c[3] != 0) {
+		snprintf(digits, sizeof digits, "%" PRIu32 "%09" PRIu32 "%09" PRIu32 "%09" PRIu32, c[3], c[2], c[1], c[0]);
+	} else if (c[2] != 0) {
+		snprintf(digits, sizeof digits, "%" PRIu32 "%09" PRIu32 "%09" PRIu32, c[2], c[1], c[0]);
+	} else if (c[1] != 0) {
+		snprintf(digits, sizeof digits, "%" PRIu32 "%09" PRIu32, c[1], c[0]);
+	} else {
+		snprintf(digits, sizeof digits, "%" PRIu32, c[0]);
+	}
+	const int len = (int)strlen(digits);
+	const long exp = (long)a.exp;
+	const long adjusted = exp + len - 1;
+
+	char text[QD_F128_STRING_MAX];
+	int n;
+	if (exp <= 0 && adjusted >= -6) {
+		if (exp == 0) {
+			n = snprintf(text, sizeof text, "%s%s", negative ? "-" : "", digits);
+		} else if (len > -exp) {
+			const int whole = len + (int)exp;
+			n = snprintf(text, sizeof text, "%s%.*s.%s", negative ? "-" : "", whole, digits, digits + whole);
+		} else {
+			// At most five zeros: the adjusted exponent is -6 or more
+			n = snprintf(text, sizeof text, "%s0.%.*s%s", negative ? "-" : "", (int)(-exp - len), "00000", digits);
+		}
+	} else {
+		n = snprintf(text, sizeof text, "%s%c%s%s" "e%c%ld", negative ? "-" : "", digits[0], len > 1 ? "." : "",
+				digits + 1, adjusted < 0 ? '-' : '+', adjusted < 0 ? -adjusted : adjusted);
+	}
+	if (n < 0) {
 		buf[0] = '\0';
 		return 0;
 	}
-	size_t n = (size_t)len < size ? (size_t)len : size - 1;
-	memcpy(buf, text, n);
-	buf[n] = '\0';
-	mpd_free(text);
-	return n;
+	const size_t written = (size_t)n < size ? (size_t)n : size - 1;
+	memcpy(buf, text, written);
+	buf[written] = '\0';
+	return written;
 }
 
 // ---------------------------------------------------------------------------
 // Classification and comparison
 // ---------------------------------------------------------------------------
 
-bool qd_f128_is_nan(const qd_f128_t* v) {
-	return mpd_isnan(&v->num);
+static uint32_t combination(qd_f128_t v) {
+	return (uint32_t)(v.w[1] >> DPD_COMBINATION_SHIFT) & 0x1FFFF;
 }
 
-bool qd_f128_is_inf(const qd_f128_t* v) {
-	return mpd_isinfinite(&v->num);
+bool qd_f128_is_nan(qd_f128_t v) {
+	return (combination(v) & DPD_G_NAN) == DPD_G_NAN;
 }
 
-bool qd_f128_is_finite(const qd_f128_t* v) {
-	return mpd_isfinite(&v->num);
+bool qd_f128_is_inf(qd_f128_t v) {
+	return (combination(v) & DPD_G_NAN) == DPD_G_INF;
 }
 
-bool qd_f128_is_zero(const qd_f128_t* v) {
-	return mpd_iszero(&v->num);
+bool qd_f128_is_finite(qd_f128_t v) {
+	return (combination(v) & DPD_G_INF) != DPD_G_INF;
 }
 
-bool qd_f128_is_normal(const qd_f128_t* v) {
+bool qd_f128_is_zero(qd_f128_t v) {
+	QDRT_MPD_LOCAL(a);
+	unpack(v, &a);
+	return mpd_iszero(&a);
+}
+
+bool qd_f128_is_normal(qd_f128_t v) {
 	mpd_context_t ctx;
 	ctx128(&ctx);
-	return mpd_isnormal(&v->num, &ctx);
+	QDRT_MPD_LOCAL(a);
+	unpack(v, &a);
+	return mpd_isnormal(&a, &ctx);
 }
 
-bool qd_f128_is_subnormal(const qd_f128_t* v) {
+bool qd_f128_is_subnormal(qd_f128_t v) {
 	mpd_context_t ctx;
 	ctx128(&ctx);
-	return mpd_issubnormal(&v->num, &ctx);
+	QDRT_MPD_LOCAL(a);
+	unpack(v, &a);
+	return mpd_issubnormal(&a, &ctx);
 }
 
-bool qd_f128_is_signed(const qd_f128_t* v) {
-	return mpd_isnegative(&v->num);
+bool qd_f128_is_signed(qd_f128_t v) {
+	return (v.w[1] & DPD_SIGN) != 0;
 }
 
-int qd_f128_compare(const qd_f128_t* a, const qd_f128_t* b) {
+int qd_f128_compare(qd_f128_t a, qd_f128_t b) {
+	QDRT_MPD_LOCAL(x);
+	QDRT_MPD_LOCAL(y);
+	unpack(a, &x);
+	unpack(b, &y);
 	uint32_t status = 0;
-	int c = mpd_qcmp(&a->num, &b->num, &status);
+	const int c = mpd_qcmp(&x, &y, &status);
 	return c == INT_MAX ? 2 : c;
 }
 
-int qd_f128_total_order(const qd_f128_t* a, const qd_f128_t* b) {
-	return mpd_cmp_total(&a->num, &b->num);
+int qd_f128_total_order(qd_f128_t a, qd_f128_t b) {
+	QDRT_MPD_LOCAL(x);
+	QDRT_MPD_LOCAL(y);
+	unpack(a, &x);
+	unpack(b, &y);
+	return mpd_cmp_total(&x, &y);
 }
 
 // ---------------------------------------------------------------------------
@@ -319,29 +485,29 @@ int qd_f128_total_order(const qd_f128_t* a, const qd_f128_t* b) {
 // ---------------------------------------------------------------------------
 
 #define QDRT_F128_UNARY(name, call)                                                                                    \
-	qd_f128_t* qd_f128_##name(const qd_f128_t* a) {                                                                    \
-		qd_f128_t* r = box_new();                                                                                      \
-		if (r == NULL) {                                                                                               \
-			return NULL;                                                                                               \
-		}                                                                                                              \
+	qd_f128_t qd_f128_##name(qd_f128_t a) {                                                                            \
 		mpd_context_t ctx;                                                                                             \
 		ctx128(&ctx);                                                                                                  \
 		uint32_t status = 0;                                                                                           \
-		call(&r->num, &a->num, &ctx, &status);                                                                         \
-		return box_finish(r, status);                                                                                  \
+		QDRT_MPD_LOCAL(x);                                                                                             \
+		QDRT_MPD_LOCAL(r);                                                                                             \
+		unpack(a, &x);                                                                                                 \
+		call(&r, &x, &ctx, &status);                                                                                   \
+		return pack_result(&r, status);                                                                                \
 	}
 
 #define QDRT_F128_BINARY(name, call)                                                                                   \
-	qd_f128_t* qd_f128_##name(const qd_f128_t* a, const qd_f128_t* b) {                                                \
-		qd_f128_t* r = box_new();                                                                                      \
-		if (r == NULL) {                                                                                               \
-			return NULL;                                                                                               \
-		}                                                                                                              \
+	qd_f128_t qd_f128_##name(qd_f128_t a, qd_f128_t b) {                                                               \
 		mpd_context_t ctx;                                                                                             \
 		ctx128(&ctx);                                                                                                  \
 		uint32_t status = 0;                                                                                           \
-		call(&r->num, &a->num, &b->num, &ctx, &status);                                                                \
-		return box_finish(r, status);                                                                                  \
+		QDRT_MPD_LOCAL(x);                                                                                             \
+		QDRT_MPD_LOCAL(y);                                                                                             \
+		QDRT_MPD_LOCAL(r);                                                                                             \
+		unpack(a, &x);                                                                                                 \
+		unpack(b, &y);                                                                                                 \
+		call(&r, &x, &y, &ctx, &status);                                                                               \
+		return pack_result(&r, status);                                                                                \
 	}
 
 QDRT_F128_BINARY(add, mpd_qadd)
@@ -363,91 +529,71 @@ QDRT_F128_UNARY(floor, mpd_qfloor)
 QDRT_F128_UNARY(ceil, mpd_qceil)
 QDRT_F128_UNARY(sqrt, mpd_qsqrt)
 
-qd_f128_t* qd_f128_fma(const qd_f128_t* a, const qd_f128_t* b, const qd_f128_t* c) {
-	qd_f128_t* r = box_new();
-	if (r == NULL) {
-		return NULL;
-	}
+qd_f128_t qd_f128_fma(qd_f128_t a, qd_f128_t b, qd_f128_t c) {
 	mpd_context_t ctx;
 	ctx128(&ctx);
 	uint32_t status = 0;
-	mpd_qfma(&r->num, &a->num, &b->num, &c->num, &ctx, &status);
-	return box_finish(r, status);
+	QDRT_MPD_LOCAL(x);
+	QDRT_MPD_LOCAL(y);
+	QDRT_MPD_LOCAL(z);
+	QDRT_MPD_LOCAL(r);
+	unpack(a, &x);
+	unpack(b, &y);
+	unpack(c, &z);
+	mpd_qfma(&r, &x, &y, &z, &ctx, &status);
+	return pack_result(&r, status);
 }
 
 // negate, abs and copySign are sign-bit operations in IEEE 754 -- quiet, and exact even
-// for NaN and zero -- which is what the mpd_qcopy_* family does. mpd_qminus and mpd_qabs
-// are the arithmetic versions and would turn -0 - 0 into +0.
-qd_f128_t* qd_f128_neg(const qd_f128_t* a) {
-	qd_f128_t* r = box_new();
-	if (r == NULL) {
-		return NULL;
-	}
-	uint32_t status = 0;
-	mpd_qcopy_negate(&r->num, &a->num, &status);
-	return box_finish(r, status);
+// for NaN and zero -- and in this encoding they are the top bit and nothing else.
+qd_f128_t qd_f128_neg(qd_f128_t a) {
+	a.w[1] ^= DPD_SIGN;
+	return a;
 }
 
-qd_f128_t* qd_f128_abs(const qd_f128_t* a) {
-	qd_f128_t* r = box_new();
-	if (r == NULL) {
-		return NULL;
-	}
-	uint32_t status = 0;
-	mpd_qcopy_abs(&r->num, &a->num, &status);
-	return box_finish(r, status);
+qd_f128_t qd_f128_abs(qd_f128_t a) {
+	a.w[1] &= ~DPD_SIGN;
+	return a;
 }
 
-qd_f128_t* qd_f128_copysign(const qd_f128_t* a, const qd_f128_t* sign) {
-	qd_f128_t* r = box_new();
-	if (r == NULL) {
-		return NULL;
-	}
-	uint32_t status = 0;
-	mpd_qcopy_sign(&r->num, &a->num, &sign->num, &status);
-	return box_finish(r, status);
+qd_f128_t qd_f128_copysign(qd_f128_t a, qd_f128_t sign) {
+	a.w[1] = (a.w[1] & ~DPD_SIGN) | (sign.w[1] & DPD_SIGN);
+	return a;
 }
 
-qd_f128_t* qd_f128_scaleb(const qd_f128_t* a, int64_t n) {
-	qd_f128_t* r = box_new();
-	if (r == NULL) {
-		return NULL;
-	}
+qd_f128_t qd_f128_scaleb(qd_f128_t a, int64_t n) {
 	mpd_context_t ctx;
 	ctx128(&ctx);
 	uint32_t status = 0;
-	mpd_t* scale = mpd_qnew();
-	if (scale == NULL) {
-		box_free(r);
-		return NULL;
-	}
+	QDRT_MPD_LOCAL(x);
+	QDRT_MPD_LOCAL(scale);
+	QDRT_MPD_LOCAL(r);
+	unpack(a, &x);
 	// scaleb wants its operand within +-2*(emax+prec), and anything past that overflows or
 	// underflows completely anyway, so clamping loses nothing.
 	const int64_t limit = 2 * (6144 + 34) + 1;
-	mpd_qset_i64(scale, n > limit ? limit : (n < -limit ? -limit : n), &ctx, &status);
-	mpd_qscaleb(&r->num, &a->num, scale, &ctx, &status);
-	mpd_del(scale);
-	return box_finish(r, status);
+	mpd_qset_i64(&scale, n > limit ? limit : (n < -limit ? -limit : n), &ctx, &status);
+	mpd_qscaleb(&r, &x, &scale, &ctx, &status);
+	return pack_result(&r, status);
 }
 
-static qd_f128_t* round_with(const qd_f128_t* a, int mode) {
-	qd_f128_t* r = box_new();
-	if (r == NULL) {
-		return NULL;
-	}
+static qd_f128_t round_with(qd_f128_t a, int mode) {
 	mpd_context_t ctx;
 	ctx128(&ctx);
 	ctx.round = mode;
 	uint32_t status = 0;
-	mpd_qround_to_int(&r->num, &a->num, &ctx, &status);
-	return box_finish(r, status);
+	QDRT_MPD_LOCAL(x);
+	QDRT_MPD_LOCAL(r);
+	unpack(a, &x);
+	mpd_qround_to_int(&r, &x, &ctx, &status);
+	return pack_result(&r, status);
 }
 
-qd_f128_t* qd_f128_round_even(const qd_f128_t* a) {
+qd_f128_t qd_f128_round_even(qd_f128_t a) {
 	return round_with(a, MPD_ROUND_HALF_EVEN);
 }
 
-qd_f128_t* qd_f128_round(const qd_f128_t* a) {
+qd_f128_t qd_f128_round(qd_f128_t a) {
 	// MPD_ROUND_HALF_UP is half away from zero, whatever its name suggests.
 	return round_with(a, MPD_ROUND_HALF_UP);
 }
@@ -462,9 +608,11 @@ static bool pi_to(mpd_t* out, mpd_ssize_t prec, uint32_t* status) {
 	if (prec > QDRT_PI_DIGITS - 1) {
 		prec = QDRT_PI_DIGITS - 1;
 	}
-	// "3." and then the digits after the 3, one more than are kept
+	// "3." and then the digits after the 3, one more than are kept. Only reducing a very
+	// large trigonometric argument wants more than fit here.
 	const size_t want = (size_t)prec + 1;
-	char* text = malloc(want + 2);
+	char small[128];
+	char* text = want + 2 <= sizeof small ? small : malloc(want + 2);
 	if (text == NULL) {
 		return false;
 	}
@@ -485,37 +633,33 @@ static bool pi_to(mpd_t* out, mpd_ssize_t prec, uint32_t* status) {
 	mpd_context_t ctx;
 	ctx_work(&ctx, prec);
 	mpd_qset_string(out, text, &ctx, status);
-	free(text);
+	if (text != small) {
+		free(text);
+	}
 	return !(*status & MPD_Malloc_error);
 }
 
-qd_f128_t* qd_f128_pi(void) {
-	mpd_t* pi = mpd_qnew();
-	if (pi == NULL) {
-		return NULL;
-	}
+qd_f128_t qd_f128_pi(void) {
+	QDRT_MPD_LOCAL(pi);
 	uint32_t status = 0;
-	qd_f128_t* r = pi_to(pi, 34, &status) ? box_from_work(pi, status) : NULL;
-	mpd_del(pi);
-	return r;
-}
-
-qd_f128_t* qd_f128_e(void) {
-	qd_f128_t* one = qd_f128_from_i64(1);
-	if (one == NULL) {
-		return NULL;
+	if (!pi_to(&pi, 34, &status)) {
+		out_of_memory();
 	}
-	qd_f128_t* r = qd_f128_exp(one);
-	qd_f128_release(one);
+	const qd_f128_t r = pack_work(&pi, status);
+	mpd_del(&pi);
 	return r;
 }
 
-qd_f128_t* qd_f128_inf(void) {
-	return box_special(MPD_INF);
+qd_f128_t qd_f128_e(void) {
+	return qd_f128_exp(qd_f128_from_i64(1));
 }
 
-qd_f128_t* qd_f128_nan(void) {
-	return box_special(MPD_NAN);
+qd_f128_t qd_f128_inf(void) {
+	return special(false, DPD_G_INF);
+}
+
+qd_f128_t qd_f128_nan(void) {
+	return special(false, DPD_G_NAN);
 }
 
 // ---------------------------------------------------------------------------
@@ -525,13 +669,6 @@ qd_f128_t* qd_f128_nan(void) {
 // and rounds once, at the end, into decimal128. Each helper returns false only when
 // memory runs out.
 // ---------------------------------------------------------------------------
-
-// A libmpdec value on the stack, with room for the working precision. One that outgrows
-// it moves to the heap by itself, so it still wants mpd_del.
-#define QDRT_MPD_WORDS 12
-#define QDRT_MPD_LOCAL(name)                                                                                           \
-	mpd_uint_t name##_data[QDRT_MPD_WORDS];                                                                            \
-	mpd_t name = {MPD_STATIC | MPD_STATIC_DATA, 0, 0, 0, QDRT_MPD_WORDS, name##_data}
 
 // Decimal CORDIC, as the HP-35 did it: an angle is taken apart into whole multiples of
 // atan(10^-k), and turning a vector through one of them is a shift and an add. The
@@ -803,10 +940,13 @@ static bool cordic_tan(mpd_t* out, const mpd_t* r, uint32_t* status) {
 // trying again with that many more.
 static bool trig_reduce(mpd_t* r, int* quadrant, const mpd_t* x, uint32_t* status) {
 	const mpd_ssize_t whole = mpd_adjexp(x) > 0 ? mpd_adjexp(x) + 1 : 0;
-	mpd_t* halfpi = mpd_qnew();
-	mpd_t* k = mpd_qnew();
-	mpd_t* tmp = mpd_qnew();
-	bool ok = halfpi != NULL && k != NULL && tmp != NULL;
+	QDRT_MPD_LOCAL(halfpi_v);
+	QDRT_MPD_LOCAL(k_v);
+	QDRT_MPD_LOCAL(tmp_v);
+	mpd_t* halfpi = &halfpi_v;
+	mpd_t* k = &k_v;
+	mpd_t* tmp = &tmp_v;
+	bool ok = true;
 	mpd_ssize_t loss = 0;
 	*quadrant = 0;
 	while (ok) {
@@ -858,15 +998,17 @@ static bool trig_reduce(mpd_t* r, int* quadrant, const mpd_t* x, uint32_t* statu
 
 enum trig_kind { TRIG_SIN, TRIG_COS, TRIG_TAN };
 
-static qd_f128_t* trig(const qd_f128_t* a, enum trig_kind kind) {
-	const mpd_t* x = &a->num;
+static qd_f128_t trig(qd_f128_t a, enum trig_kind kind) {
+	QDRT_MPD_LOCAL(xa);
+	unpack(a, &xa);
+	const mpd_t* x = &xa;
 	if (mpd_isnan(x) || mpd_isinfinite(x)) {
 		// sin(inf) has no value: invalid, and a quiet NaN.
-		return box_special(MPD_NAN);
+		return qd_f128_nan();
 	}
 	if (mpd_iszero(x) && kind != TRIG_COS) {
 		// sin and tan are odd: -0 stays -0.
-		return qd_f128_retain((qd_f128_t*)a);
+		return a;
 	}
 
 	uint32_t status = 0;
@@ -877,7 +1019,7 @@ static qd_f128_t* trig(const qd_f128_t* a, enum trig_kind kind) {
 	QDRT_MPD_LOCAL(sn);
 	QDRT_MPD_LOCAL(cn);
 	QDRT_MPD_LOCAL(den);
-	qd_f128_t* result = NULL;
+	qd_f128_t result = {{0, 0}};
 	int quadrant = 0;
 
 	// Under pi/4 there is nothing to reduce
@@ -932,25 +1074,28 @@ static qd_f128_t* trig(const qd_f128_t* a, enum trig_kind kind) {
 			}
 			break;
 		}
-		result = box_from_work(out, status);
+		result = pack_work(out, status);
 	}
 	mpd_del(&r);
 	mpd_del(&t);
 	mpd_del(&sn);
 	mpd_del(&cn);
 	mpd_del(&den);
+	if (!ok) {
+		out_of_memory();
+	}
 	return result;
 }
 
-qd_f128_t* qd_f128_sin(const qd_f128_t* a) {
+qd_f128_t qd_f128_sin(qd_f128_t a) {
 	return trig(a, TRIG_SIN);
 }
 
-qd_f128_t* qd_f128_cos(const qd_f128_t* a) {
+qd_f128_t qd_f128_cos(qd_f128_t a) {
 	return trig(a, TRIG_COS);
 }
 
-qd_f128_t* qd_f128_tan(const qd_f128_t* a) {
+qd_f128_t qd_f128_tan(qd_f128_t a) {
 	return trig(a, TRIG_TAN);
 }
 
@@ -1018,9 +1163,9 @@ static bool atan_work(mpd_t* out, const mpd_t* x, uint32_t* status) {
 static bool pi_fraction(mpd_t* out, int64_t num, int64_t den, bool negative, uint32_t* status) {
 	mpd_context_t ctx;
 	ctx_work(&ctx, QDRT_WORK_PREC);
-	mpd_t* tmp = mpd_qnew();
-	if (tmp == NULL || !pi_to(out, QDRT_WORK_PREC + 2, status)) {
-		mpd_del(tmp);
+	QDRT_MPD_LOCAL(tmp_v);
+	mpd_t* tmp = &tmp_v;
+	if (!pi_to(out, QDRT_WORK_PREC + 2, status)) {
 		return false;
 	}
 	mpd_qset_i64(tmp, num, &ctx, status);
@@ -1034,185 +1179,181 @@ static bool pi_fraction(mpd_t* out, int64_t num, int64_t den, bool negative, uin
 	return !(*status & MPD_Malloc_error);
 }
 
-qd_f128_t* qd_f128_atan(const qd_f128_t* a) {
-	const mpd_t* x = &a->num;
+qd_f128_t qd_f128_atan(qd_f128_t a) {
+	QDRT_MPD_LOCAL(xa);
+	unpack(a, &xa);
+	const mpd_t* x = &xa;
 	if (mpd_isnan(x)) {
-		return box_special(MPD_NAN);
+		return qd_f128_nan();
 	}
 	if (mpd_iszero(x)) {
-		return qd_f128_retain((qd_f128_t*)a);
+		return a;
 	}
 	uint32_t status = 0;
-	mpd_t* out = mpd_qnew();
-	qd_f128_t* result = NULL;
-	if (out != NULL) {
-		bool ok = mpd_isinfinite(x) ? pi_fraction(out, 1, 2, mpd_isnegative(x), &status)
-									: atan_work(out, x, &status);
-		if (ok) {
-			result = box_from_work(out, status);
-		}
+	QDRT_MPD_LOCAL(out);
+	const bool ok = mpd_isinfinite(x) ? pi_fraction(&out, 1, 2, mpd_isnegative(x), &status)
+									  : atan_work(&out, x, &status);
+	if (!ok) {
+		out_of_memory();
 	}
-	mpd_del(out);
+	const qd_f128_t result = pack_work(&out, status);
+	mpd_del(&out);
 	return result;
 }
 
 // asin(x) = atan(x / sqrt((1-x)(1+x))). (1-x)(1+x) rather than 1-x^2: near |x| = 1
 // the latter cancels away the digits the answer depends on.
-qd_f128_t* qd_f128_asin(const qd_f128_t* a) {
-	const mpd_t* x = &a->num;
+qd_f128_t qd_f128_asin(qd_f128_t a) {
+	QDRT_MPD_LOCAL(xa);
+	unpack(a, &xa);
+	const mpd_t* x = &xa;
 	if (mpd_isnan(x)) {
-		return box_special(MPD_NAN);
+		return qd_f128_nan();
 	}
 	if (mpd_iszero(x)) {
-		return qd_f128_retain((qd_f128_t*)a);
+		return a;
 	}
 	uint32_t status = 0;
 	mpd_context_t ctx;
 	ctx_work(&ctx, QDRT_WORK_PREC + 2);
-	mpd_t* one = mpd_qnew();
-	mpd_t* p = mpd_qnew();
-	mpd_t* q = mpd_qnew();
-	qd_f128_t* result = NULL;
-	if (one != NULL && p != NULL && q != NULL) {
-		mpd_qset_i64(one, 1, &ctx, &status);
-		mpd_qcopy_abs(p, x, &status);
-		const int against_one = mpd_qcmp(p, one, &status);
-		if (against_one > 0) {
-			result = box_special(MPD_NAN);
-		} else if (against_one == 0) {
-			if (pi_fraction(p, 1, 2, mpd_isnegative(x), &status)) {
-				result = box_from_work(p, status);
-			}
-		} else {
-			mpd_qsub(p, one, x, &ctx, &status);
-			mpd_qadd(q, one, x, &ctx, &status);
-			mpd_qmul(p, p, q, &ctx, &status);
-			mpd_qsqrt(p, p, &ctx, &status);
-			mpd_qdiv(q, x, p, &ctx, &status);
-			if (atan_work(p, q, &status)) {
-				result = box_from_work(p, status);
-			}
-		}
+	QDRT_MPD_LOCAL(one);
+	QDRT_MPD_LOCAL(p);
+	QDRT_MPD_LOCAL(q);
+	qd_f128_t result;
+	bool ok = true;
+	mpd_qset_i64(&one, 1, &ctx, &status);
+	mpd_qcopy_abs(&p, x, &status);
+	const int against_one = mpd_qcmp(&p, &one, &status);
+	if (against_one > 0) {
+		result = qd_f128_nan();
+	} else if (against_one == 0) {
+		ok = pi_fraction(&p, 1, 2, mpd_isnegative(x), &status);
+		result = pack_work(&p, status);
+	} else {
+		mpd_qsub(&p, &one, x, &ctx, &status);
+		mpd_qadd(&q, &one, x, &ctx, &status);
+		mpd_qmul(&p, &p, &q, &ctx, &status);
+		mpd_qsqrt(&p, &p, &ctx, &status);
+		mpd_qdiv(&q, x, &p, &ctx, &status);
+		ok = atan_work(&p, &q, &status);
+		result = pack_work(&p, status);
 	}
-	mpd_del(one);
-	mpd_del(p);
-	mpd_del(q);
+	mpd_del(&one);
+	mpd_del(&p);
+	mpd_del(&q);
+	if (!ok) {
+		out_of_memory();
+	}
 	return result;
 }
 
 // acos(x) = 2*atan(sqrt((1-x)/(1+x))), which keeps its digits near x = 1 where
 // pi/2 - asin(x) would cancel them.
-qd_f128_t* qd_f128_acos(const qd_f128_t* a) {
-	const mpd_t* x = &a->num;
+qd_f128_t qd_f128_acos(qd_f128_t a) {
+	QDRT_MPD_LOCAL(xa);
+	unpack(a, &xa);
+	const mpd_t* x = &xa;
 	if (mpd_isnan(x)) {
-		return box_special(MPD_NAN);
+		return qd_f128_nan();
 	}
 	uint32_t status = 0;
 	mpd_context_t ctx;
 	ctx_work(&ctx, QDRT_WORK_PREC + 2);
-	mpd_t* one = mpd_qnew();
-	mpd_t* p = mpd_qnew();
-	mpd_t* q = mpd_qnew();
-	qd_f128_t* result = NULL;
-	if (one != NULL && p != NULL && q != NULL) {
-		mpd_qset_i64(one, 1, &ctx, &status);
-		mpd_qcopy_abs(p, x, &status);
-		const int against_one = mpd_qcmp(p, one, &status);
-		if (against_one > 0) {
-			result = box_special(MPD_NAN);
-		} else if (against_one == 0 && mpd_isnegative(x)) {
-			if (pi_fraction(p, 1, 1, false, &status)) {
-				result = box_from_work(p, status);
-			}
-		} else if (against_one == 0) {
-			result = qd_f128_from_i64(0);
-		} else {
-			mpd_qsub(p, one, x, &ctx, &status);
-			mpd_qadd(q, one, x, &ctx, &status);
-			mpd_qdiv(p, p, q, &ctx, &status);
-			mpd_qsqrt(p, p, &ctx, &status);
-			if (atan_work(q, p, &status)) {
-				mpd_qadd(q, q, q, &ctx, &status);
-				result = box_from_work(q, status);
-			}
-		}
+	QDRT_MPD_LOCAL(one);
+	QDRT_MPD_LOCAL(p);
+	QDRT_MPD_LOCAL(q);
+	qd_f128_t result;
+	bool ok = true;
+	mpd_qset_i64(&one, 1, &ctx, &status);
+	mpd_qcopy_abs(&p, x, &status);
+	const int against_one = mpd_qcmp(&p, &one, &status);
+	if (against_one > 0) {
+		result = qd_f128_nan();
+	} else if (against_one == 0 && mpd_isnegative(x)) {
+		ok = pi_fraction(&p, 1, 1, false, &status);
+		result = pack_work(&p, status);
+	} else if (against_one == 0) {
+		result = qd_f128_from_i64(0);
+	} else {
+		mpd_qsub(&p, &one, x, &ctx, &status);
+		mpd_qadd(&q, &one, x, &ctx, &status);
+		mpd_qdiv(&p, &p, &q, &ctx, &status);
+		mpd_qsqrt(&p, &p, &ctx, &status);
+		ok = atan_work(&q, &p, &status);
+		mpd_qadd(&q, &q, &q, &ctx, &status);
+		result = pack_work(&q, status);
 	}
-	mpd_del(one);
-	mpd_del(p);
-	mpd_del(q);
+	mpd_del(&one);
+	mpd_del(&p);
+	mpd_del(&q);
+	if (!ok) {
+		out_of_memory();
+	}
 	return result;
 }
 
 // atan2 with the special cases of C99 Annex F, which IEEE 754-2008 section 9.2.1 follows.
-qd_f128_t* qd_f128_atan2(const qd_f128_t* ya, const qd_f128_t* xa) {
-	const mpd_t* y = &ya->num;
-	const mpd_t* x = &xa->num;
+qd_f128_t qd_f128_atan2(qd_f128_t ya, qd_f128_t xa) {
+	QDRT_MPD_LOCAL(yv);
+	QDRT_MPD_LOCAL(xv);
+	unpack(ya, &yv);
+	unpack(xa, &xv);
+	const mpd_t* y = &yv;
+	const mpd_t* x = &xv;
 	if (mpd_isnan(y) || mpd_isnan(x)) {
-		return box_special(MPD_NAN);
+		return qd_f128_nan();
 	}
 	const bool yneg = mpd_isnegative(y);
 	const bool xneg = mpd_isnegative(x);
-	uint32_t status = 0;
-	mpd_t* out = mpd_qnew();
-	if (out == NULL) {
-		return NULL;
+	if (mpd_iszero(y) && !xneg) {
+		// atan2(+-0, +0 or positive) is +-0
+		return ya;
 	}
+	if (mpd_isinfinite(x) && !xneg && !mpd_isinfinite(y)) {
+		// atan2(finite, +inf) is +-0
+		const qd_f128_t zero = qd_f128_from_i64(0);
+		return yneg ? qd_f128_neg(zero) : zero;
+	}
+
+	uint32_t status = 0;
+	QDRT_MPD_LOCAL(out);
 	bool ok = true;
-	qd_f128_t* result = NULL;
 	if (mpd_iszero(y)) {
-		if (!xneg) {
-			// atan2(+-0, +0 or positive) is +-0
-			mpd_del(out);
-			return qd_f128_retain((qd_f128_t*)ya);
-		}
-		ok = pi_fraction(out, 1, 1, yneg, &status);
+		ok = pi_fraction(&out, 1, 1, yneg, &status);
 	} else if (mpd_iszero(x)) {
-		ok = pi_fraction(out, 1, 2, yneg, &status);
+		ok = pi_fraction(&out, 1, 2, yneg, &status);
 	} else if (mpd_isinfinite(y)) {
 		if (mpd_isinfinite(x)) {
-			ok = pi_fraction(out, xneg ? 3 : 1, 4, yneg, &status);
+			ok = pi_fraction(&out, xneg ? 3 : 1, 4, yneg, &status);
 		} else {
-			ok = pi_fraction(out, 1, 2, yneg, &status);
+			ok = pi_fraction(&out, 1, 2, yneg, &status);
 		}
 	} else if (mpd_isinfinite(x)) {
-		if (!xneg) {
-			// atan2(finite, +inf) is +-0
-			mpd_del(out);
-			result = qd_f128_from_i64(0);
-			if (result != NULL && yneg) {
-				qd_f128_t* negated = qd_f128_neg(result);
-				qd_f128_release(result);
-				result = negated;
-			}
-			return result;
-		}
-		ok = pi_fraction(out, 1, 1, yneg, &status);
+		ok = pi_fraction(&out, 1, 1, yneg, &status);
 	} else {
 		mpd_context_t ctx;
 		ctx_work(&ctx, QDRT_WORK_PREC + 2);
-		mpd_t* ratio = mpd_qnew();
-		mpd_t* pi = mpd_qnew();
-		ok = ratio != NULL && pi != NULL;
-		if (ok) {
-			mpd_qdiv(ratio, y, x, &ctx, &status);
-			mpd_qcopy_abs(ratio, ratio, &status);
-			ok = atan_work(out, ratio, &status);
-			if (ok && xneg) {
-				// The angle lies in the left half-plane: pi - atan(|y/x|)
-				ok = pi_to(pi, QDRT_WORK_PREC + 2, &status);
-				mpd_qsub(out, pi, out, &ctx, &status);
-			}
-			if (ok && yneg) {
-				mpd_qcopy_negate(out, out, &status);
-			}
+		QDRT_MPD_LOCAL(ratio);
+		QDRT_MPD_LOCAL(pi);
+		mpd_qdiv(&ratio, y, x, &ctx, &status);
+		mpd_qcopy_abs(&ratio, &ratio, &status);
+		ok = atan_work(&out, &ratio, &status);
+		if (ok && xneg) {
+			// The angle lies in the left half-plane: pi - atan(|y/x|)
+			ok = pi_to(&pi, QDRT_WORK_PREC + 2, &status);
+			mpd_qsub(&out, &pi, &out, &ctx, &status);
 		}
-		mpd_del(ratio);
-		mpd_del(pi);
+		if (ok && yneg) {
+			mpd_qcopy_negate(&out, &out, &status);
+		}
+		mpd_del(&ratio);
+		mpd_del(&pi);
 	}
-	if (ok && !(status & MPD_Malloc_error)) {
-		result = box_from_work(out, status);
+	if (!ok) {
+		out_of_memory();
 	}
-	mpd_del(out);
+	const qd_f128_t result = pack_work(&out, status);
+	mpd_del(&out);
 	return result;
 }
 
@@ -1270,13 +1411,13 @@ static const fx_t ln_down[CORDIC_LEVELS - 1] = {
 // overflow, underflow and subnormals.
 #define QDRT_EXP_LIMIT 14000
 
-// r rounded into a new decimal128 box, when no value within 10^-42 of r rounds
-// differently. NULL otherwise, with *decided false.
+// r rounded into decimal128 in *out, when no value within 10^-42 of r rounds
+// differently. False otherwise, with *out untouched.
 //
-// The box holds the rounded bound rather than r: the functions that come here are
+// *out is the rounded bound rather than r: the functions that come here are
 // inexact, so their result has all 34 digits, even where r happens to be a short
 // value such as 1E+3.
-static qd_f128_t* box_if_decided(const mpd_t* r, uint32_t status, bool* decided) {
+static bool round_if_decided(const mpd_t* r, uint32_t status, qd_f128_t* out) {
 	mpd_context_t ctx;
 	ctx128(&ctx);
 	mpd_context_t wide;
@@ -1290,16 +1431,19 @@ static qd_f128_t* box_if_decided(const mpd_t* r, uint32_t status, bool* decided)
 	mpd_qadd(&hi, r, &slack, &wide, &status);
 	mpd_qfinalize(&lo, &ctx, &status);
 	mpd_qfinalize(&hi, &ctx, &status);
-	*decided = !(status & MPD_Malloc_error) && mpd_cmp_total(&lo, &hi) == 0;
-	qd_f128_t* result = *decided ? box_from_work(&lo, status) : NULL;
+	check_memory(status);
+	const bool decided = mpd_cmp_total(&lo, &hi) == 0;
+	if (decided) {
+		*out = pack(&lo);
+	}
 	mpd_del(&slack);
 	mpd_del(&lo);
 	mpd_del(&hi);
-	return result;
+	return decided;
 }
 
 // An inexact result given every digit decimal128 has, as IEEE 754 section 5.2 asks and
-// box_if_decided does. libmpdec leaves some short where its own working happened to
+// round_if_decided does. libmpdec leaves some short where its own working happened to
 // come out exact: exp(2E-26) as 1.00000000000000000000000002.
 static void pad_inexact(mpd_t* v, uint32_t* status) {
 	if (!(*status & MPD_Inexact) || mpd_isspecial(v) || mpd_iszero(v)) {
@@ -1316,18 +1460,16 @@ static void pad_inexact(mpd_t* v, uint32_t* status) {
 	}
 }
 
-static qd_f128_t* correctly_rounded(const qd_f128_t* a,
-		void (*call)(mpd_t*, const mpd_t*, const mpd_context_t*, uint32_t*)) {
-	qd_f128_t* r = box_new();
-	if (r == NULL) {
-		return NULL;
-	}
+static qd_f128_t correctly_rounded(qd_f128_t a, void (*call)(mpd_t*, const mpd_t*, const mpd_context_t*, uint32_t*)) {
 	mpd_context_t ctx;
 	ctx128(&ctx);
 	uint32_t status = 0;
-	call(&r->num, &a->num, &ctx, &status);
-	pad_inexact(&r->num, &status);
-	return box_finish(r, status);
+	QDRT_MPD_LOCAL(x);
+	QDRT_MPD_LOCAL(r);
+	unpack(a, &x);
+	call(&r, &x, &ctx, &status);
+	pad_inexact(&r, &status);
+	return pack_result(&r, status);
 }
 
 // exp(x) at the working precision, for finite x of magnitude under QDRT_EXP_LIMIT. False
@@ -1510,55 +1652,59 @@ static bool is_positive_finite(const mpd_t* x) {
 	return !mpd_isspecial(x) && !mpd_iszero(x) && !mpd_isnegative(x);
 }
 
-qd_f128_t* qd_f128_exp(const qd_f128_t* a) {
+qd_f128_t qd_f128_exp(qd_f128_t a) {
 	uint32_t status = 0;
+	QDRT_MPD_LOCAL(x);
 	QDRT_MPD_LOCAL(r);
-	qd_f128_t* result = NULL;
+	unpack(a, &x);
+	qd_f128_t result;
 	bool decided = false;
 	// exp(0) is exactly 1
-	if (!mpd_iszero(&a->num) && exp_work(&r, &a->num, &status)) {
-		result = box_if_decided(&r, status, &decided);
+	if (!mpd_iszero(&x) && exp_work(&r, &x, &status)) {
+		decided = round_if_decided(&r, status, &result);
 	}
 	mpd_del(&r);
 	return decided ? result : correctly_rounded(a, mpd_qexp);
 }
 
-qd_f128_t* qd_f128_ln(const qd_f128_t* a) {
-	const mpd_t* x = &a->num;
+qd_f128_t qd_f128_ln(qd_f128_t a) {
 	uint32_t status = 0;
 	mpd_context_t ctx;
 	ctx_work(&ctx, QDRT_WORK_PREC + 2);
+	QDRT_MPD_LOCAL(x);
 	QDRT_MPD_LOCAL(r);
-	qd_f128_t* result = NULL;
+	unpack(a, &x);
+	qd_f128_t result;
 	bool decided = false;
 	// ln 1 is exactly 0
 	mpd_qset_i64(&r, 1, &ctx, &status);
-	if (is_positive_finite(x) && mpd_qcmp(x, &r, &status) != 0 && ln_work(&r, x, &status)) {
-		result = box_if_decided(&r, status, &decided);
+	if (is_positive_finite(&x) && mpd_qcmp(&x, &r, &status) != 0 && ln_work(&r, &x, &status)) {
+		decided = round_if_decided(&r, status, &result);
 	}
 	mpd_del(&r);
 	return decided ? result : correctly_rounded(a, mpd_qln);
 }
 
-qd_f128_t* qd_f128_log10(const qd_f128_t* a) {
-	const mpd_t* x = &a->num;
+qd_f128_t qd_f128_log10(qd_f128_t a) {
 	uint32_t status = 0;
 	mpd_context_t ctx;
 	ctx_work(&ctx, QDRT_WORK_PREC + 2);
 	mpd_context_t wide;
 	ctx_work(&wide, QDRT_WORK_PREC + 16);
+	QDRT_MPD_LOCAL(x);
 	QDRT_MPD_LOCAL(r);
 	QDRT_MPD_LOCAL(ln10);
-	qd_f128_t* result = NULL;
+	unpack(a, &x);
+	qd_f128_t result;
 	bool decided = false;
-	if (is_positive_finite(x)) {
+	if (is_positive_finite(&x)) {
 		// The log of a power of ten is an exact integer, which libmpdec gives as one
-		mpd_qreduce(&r, x, &ctx, &status);
+		mpd_qreduce(&r, &x, &ctx, &status);
 		const bool power_of_ten = r.digits == 1 && r.data[0] == 1;
-		if (!power_of_ten && ln_work(&r, x, &status)) {
+		if (!power_of_ten && ln_work(&r, &x, &status)) {
 			mpd_qset_string(&ln10, QDRT_LN10, &wide, &status);
 			mpd_qdiv(&r, &r, &ln10, &wide, &status);
-			result = box_if_decided(&r, status, &decided);
+			decided = round_if_decided(&r, status, &result);
 		}
 	}
 	mpd_del(&r);
@@ -1566,38 +1712,36 @@ qd_f128_t* qd_f128_log10(const qd_f128_t* a) {
 	return decided ? result : correctly_rounded(a, mpd_qlog10);
 }
 
-qd_f128_t* qd_f128_pow(const qd_f128_t* base, const qd_f128_t* exponent) {
-	const mpd_t* x = &base->num;
-	const mpd_t* y = &exponent->num;
+qd_f128_t qd_f128_pow(qd_f128_t base, qd_f128_t exponent) {
 	uint32_t status = 0;
 	mpd_context_t ctx;
 	ctx_work(&ctx, QDRT_WORK_PREC + 2);
 	mpd_context_t wide;
 	ctx_work(&wide, QDRT_WORK_PREC + 16);
+	QDRT_MPD_LOCAL(x);
+	QDRT_MPD_LOCAL(y);
 	QDRT_MPD_LOCAL(r);
-	qd_f128_t* result = NULL;
+	unpack(base, &x);
+	unpack(exponent, &y);
+	qd_f128_t result;
 	bool decided = false;
 	// x^y = exp(y ln x), for x > 0 and y not an integer. Integer powers are exact where
 	// they can be, which libmpdec works out by multiplying, and 1^y is exactly 1.
 	mpd_qset_i64(&r, 1, &ctx, &status);
-	if (is_positive_finite(x) && mpd_qcmp(x, &r, &status) != 0 && !mpd_isspecial(y) && !mpd_isinteger(y) &&
-			ln_work(&r, x, &status)) {
-		mpd_qmul(&r, &r, y, &wide, &status);
+	if (is_positive_finite(&x) && mpd_qcmp(&x, &r, &status) != 0 && !mpd_isspecial(&y) && !mpd_isinteger(&y) &&
+			ln_work(&r, &x, &status)) {
+		mpd_qmul(&r, &r, &y, &wide, &status);
 		if (exp_work(&r, &r, &status)) {
-			result = box_if_decided(&r, status, &decided);
+			decided = round_if_decided(&r, status, &result);
 		}
 	}
+	if (!decided) {
+		ctx128(&ctx);
+		status = 0;
+		mpd_qpow(&r, &x, &y, &ctx, &status);
+		pad_inexact(&r, &status);
+		return pack_result(&r, status);
+	}
 	mpd_del(&r);
-	if (decided) {
-		return result;
-	}
-	qd_f128_t* fallback = box_new();
-	if (fallback == NULL) {
-		return NULL;
-	}
-	ctx128(&ctx);
-	status = 0;
-	mpd_qpow(&fallback->num, x, y, &ctx, &status);
-	pad_inexact(&fallback->num, &status);
-	return box_finish(fallback, status);
+	return result;
 }

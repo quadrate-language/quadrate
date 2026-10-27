@@ -42,7 +42,9 @@ if llvm_dep.found()
 	llvmgen_lib = static_library('llvmgen',
 		llvmgen_sources,
 		include_directories: [llvmgen_inc, qc_inc, qdrt_src_inc],
-		dependencies: [llvm_dep, qc_dep],
+		# The runtime reads f128 literals at compile time, so a literal rounds exactly as
+		# strconv::parse_f128 rounds the same digits at run time
+		dependencies: [llvm_dep, qc_dep, qdrt_static_dep],
 		cpp_pch: 'src/generator_impl.h',
 		cpp_args: llvm_cxxflags + llvmgen_warn_args,
 		link_args: llvm_ldflags + llvm_libs,
@@ -52,7 +54,7 @@ if llvm_dep.found()
 	llvmgen_dep = declare_dependency(
 		link_with: llvmgen_lib,
 		include_directories: llvmgen_inc,
-		dependencies: [llvm_dep, qc_dep]
+		dependencies: [llvm_dep, qc_dep, qdrt_static_dep]
 	)
 	# Tests
 	if get_option('build_tests')

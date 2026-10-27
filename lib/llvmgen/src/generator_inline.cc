@@ -370,20 +370,29 @@ namespace Qd {
 		builder->CreateStore(elem1, elem2Ptr);
 	}
 
-	void LlvmGenerator::Impl::emitReleaseIfF128(llvm::Value* typeTag, llvm::Value* valuePtr, const std::string& name) {
-		llvm::Function* currentFn = builder->GetInsertBlock()->getParent();
-		llvm::BasicBlock* releaseBlock = llvm::BasicBlock::Create(*context, name + "_release_f128", currentFn);
-		llvm::BasicBlock* afterBlock = llvm::BasicBlock::Create(*context, name + "_after_f128", currentFn);
-		llvm::Value* isF128 = builder->CreateICmpEQ(
-				typeTag, llvm::ConstantInt::get(typeTag->getType(), kStackTypeF128), name + "_is_f128");
-		builder->CreateCondBr(isF128, releaseBlock, afterBlock);
+	llvm::Value* LlvmGenerator::Impl::loadSlotValue(llvm::Value* valuePtr, const std::string& name) {
+		return builder->CreateAlignedLoad(slotValueTy, valuePtr, llvm::Align(8), name);
+	}
 
-		builder->SetInsertPoint(releaseBlock);
-		llvm::Value* box = builder->CreateLoad(ptrTy, valuePtr, name + "_f128");
-		builder->CreateCall(qdF128ReleaseFn, {box});
-		builder->CreateBr(afterBlock);
+	void LlvmGenerator::Impl::storeSlotValue(llvm::Value* value, llvm::Value* valuePtr) {
+		builder->CreateAlignedStore(value, valuePtr, llvm::Align(8));
+	}
 
-		builder->SetInsertPoint(afterBlock);
+	void LlvmGenerator::Impl::pushF128At(llvm::Value* ctx, llvm::Value* valuePtr, const std::string& name) {
+		llvm::Value* words = loadSlotValue(valuePtr, name + "_f128");
+		builder->CreateCall(pushF128BitsFn, {ctx, builder->CreateExtractValue(words, 0, name + "_f128_low"),
+													builder->CreateExtractValue(words, 1, name + "_f128_high")});
+	}
+
+	bool LlvmGenerator::Impl::f128LiteralWords(const std::string& text, uint64_t& low, uint64_t& high) {
+		std::string digits;
+		qd_f128_t value;
+		if (readF128Literal(text, digits) != std::errc() || !qd_f128_parse(digits.c_str(), &value)) {
+			return false;
+		}
+		low = value.w[0];
+		high = value.w[1];
+		return true;
 	}
 
 	void LlvmGenerator::Impl::addF128PushCase(llvm::SwitchInst* sw, llvm::Value* valuePtr, llvm::Value* ctx,
@@ -393,9 +402,7 @@ namespace Qd {
 				llvm::BasicBlock::Create(*context, name + "_push_f128", builder->GetInsertBlock()->getParent());
 		sw->addCase(builder->getInt32(kStackTypeF128), block);
 		builder->SetInsertPoint(block);
-		// qd_push_q takes a reference of its own, which is what a copy out of a slot needs.
-		llvm::Value* box = builder->CreateLoad(ptrTy, valuePtr, name + "_f128");
-		builder->CreateCall(pushF128Fn, {ctx, box});
+		pushF128At(ctx, valuePtr, name);
 		builder->CreateBr(endBlock);
 	}
 
@@ -430,7 +437,6 @@ namespace Qd {
 
 		// After block - decrement size
 		builder->SetInsertPoint(afterBlock);
-		emitReleaseIfF128(elemType, builder->CreateStructGEP(stackElementTy, topElemPtr, 0, "drop_f128_value"), "drop");
 		llvm::Value* newSize = builder->CreateSub(sa.size, builder->getInt64(1), "new_size");
 		builder->CreateStore(newSize, sa.sizePtr);
 	}
@@ -511,12 +517,12 @@ namespace Qd {
 		llvm::Value* topIdx = builder->CreateSub(sa.size, builder->getInt64(1), "top_idx");
 		llvm::Value* topElemPtr = builder->CreateGEP(stackElementTy, sa.data, topIdx, "top_elem");
 		llvm::Value* valuePtr = builder->CreateStructGEP(stackElementTy, topElemPtr, 0, "value_ptr");
-		llvm::Value* value = builder->CreateLoad(int64Ty, valuePtr, "pop_value");
+		llvm::Value* value = loadSlotValue(valuePtr, "pop_value");
 		llvm::Value* srcTypePtr = builder->CreateStructGEP(stackElementTy, topElemPtr, 1, "src_type_ptr");
 		llvm::Value* srcType = builder->CreateLoad(int32Ty, srcTypePtr, "src_type");
-		// Store to destination (qd_stack_element_t: { i64 value, i32 type, i1 tainted })
+		// Store to destination (qd_stack_element_t: { [2 x i64] value, i32 type, i8 tainted })
 		llvm::Value* dstValuePtr = builder->CreateStructGEP(stackElementTy, dst, 0, "dst_value_ptr");
-		builder->CreateStore(value, dstValuePtr);
+		storeSlotValue(value, dstValuePtr);
 		llvm::Value* dstTypePtr = builder->CreateStructGEP(stackElementTy, dst, 1, "dst_type_ptr");
 		builder->CreateStore(srcType, dstTypePtr);
 		llvm::Value* dstTaintedPtr = builder->CreateStructGEP(stackElementTy, dst, 2, "dst_tainted_ptr");
