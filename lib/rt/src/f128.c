@@ -353,7 +353,6 @@ QDRT_F128_BINARY(fmod, mpd_qrem)
 QDRT_F128_BINARY(min, mpd_qmin)
 QDRT_F128_BINARY(max, mpd_qmax)
 QDRT_F128_BINARY(quantize, mpd_qquantize)
-QDRT_F128_BINARY(pow, mpd_qpow)
 
 QDRT_F128_UNARY(logb, mpd_qlogb)
 QDRT_F128_UNARY(next_up, mpd_qnext_plus)
@@ -363,7 +362,6 @@ QDRT_F128_UNARY(trunc, mpd_qtrunc)
 QDRT_F128_UNARY(floor, mpd_qfloor)
 QDRT_F128_UNARY(ceil, mpd_qceil)
 QDRT_F128_UNARY(sqrt, mpd_qsqrt)
-QDRT_F128_UNARY(log10, mpd_qlog10)
 
 qd_f128_t* qd_f128_fma(const qd_f128_t* a, const qd_f128_t* b, const qd_f128_t* c) {
 	qd_f128_t* r = box_new();
@@ -1274,6 +1272,10 @@ static const fx_t ln_down[CORDIC_LEVELS - 1] = {
 
 // r rounded into a new decimal128 box, when no value within 10^-42 of r rounds
 // differently. NULL otherwise, with *decided false.
+//
+// The box holds the rounded bound rather than r: the functions that come here are
+// inexact, so their result has all 34 digits, even where r happens to be a short
+// value such as 1E+3.
 static qd_f128_t* box_if_decided(const mpd_t* r, uint32_t status, bool* decided) {
 	mpd_context_t ctx;
 	ctx128(&ctx);
@@ -1289,10 +1291,29 @@ static qd_f128_t* box_if_decided(const mpd_t* r, uint32_t status, bool* decided)
 	mpd_qfinalize(&lo, &ctx, &status);
 	mpd_qfinalize(&hi, &ctx, &status);
 	*decided = !(status & MPD_Malloc_error) && mpd_cmp_total(&lo, &hi) == 0;
+	qd_f128_t* result = *decided ? box_from_work(&lo, status) : NULL;
 	mpd_del(&slack);
 	mpd_del(&lo);
 	mpd_del(&hi);
-	return *decided ? box_from_work(r, status) : NULL;
+	return result;
+}
+
+// An inexact result given every digit decimal128 has, as IEEE 754 section 5.2 asks and
+// box_if_decided does. libmpdec leaves some short where its own working happened to
+// come out exact: exp(2E-26) as 1.00000000000000000000000002.
+static void pad_inexact(mpd_t* v, uint32_t* status) {
+	if (!(*status & MPD_Inexact) || mpd_isspecial(v) || mpd_iszero(v)) {
+		return;
+	}
+	mpd_context_t ctx;
+	ctx128(&ctx);
+	mpd_ssize_t n = ctx.prec - v->digits;
+	if (n > v->exp - mpd_etiny(&ctx)) {
+		n = v->exp - mpd_etiny(&ctx);
+	}
+	if (n > 0 && mpd_qshiftl(v, v, n, status)) {
+		v->exp -= n;
+	}
 }
 
 static qd_f128_t* correctly_rounded(const qd_f128_t* a,
@@ -1305,12 +1326,13 @@ static qd_f128_t* correctly_rounded(const qd_f128_t* a,
 	ctx128(&ctx);
 	uint32_t status = 0;
 	call(&r->num, &a->num, &ctx, &status);
+	pad_inexact(&r->num, &status);
 	return box_finish(r, status);
 }
 
-qd_f128_t* qd_f128_exp(const qd_f128_t* a) {
-	const mpd_t* x = &a->num;
-	uint32_t status = 0;
+// exp(x) at the working precision, for finite x of magnitude under QDRT_EXP_LIMIT. False
+// for any other x, and when memory runs out. out may be x.
+static bool exp_work(mpd_t* out, const mpd_t* x, uint32_t* status) {
 	mpd_context_t ctx;
 	ctx_work(&ctx, QDRT_WORK_PREC + 2);
 	mpd_context_t wide;
@@ -1318,46 +1340,44 @@ qd_f128_t* qd_f128_exp(const qd_f128_t* a) {
 	QDRT_MPD_LOCAL(ln10);
 	QDRT_MPD_LOCAL(n);
 	QDRT_MPD_LOCAL(r);
-	QDRT_MPD_LOCAL(y);
 	QDRT_MPD_LOCAL(sum);
 	QDRT_MPD_LOCAL(term);
-	qd_f128_t* result = NULL;
-	bool decided = false;
+	bool ok = false;
 
-	mpd_qcopy_abs(&y, x, &status);
-	mpd_qset_i64(&r, QDRT_EXP_LIMIT, &ctx, &status);
-	if (!mpd_isspecial(x) && !mpd_iszero(x) && mpd_qcmp(&y, &r, &status) < 0) {
+	mpd_qcopy_abs(&sum, x, status);
+	mpd_qset_i64(&r, QDRT_EXP_LIMIT, &ctx, status);
+	if (!mpd_isspecial(x) && mpd_qcmp(&sum, &r, status) < 0) {
 		// x = n ln 10 + r with 0 <= r < ln 10, so exp(x) = 10^n exp(r). Most x a calculator
 		// sees already lie there. Otherwise the quotient is rounded, so n can come out one
 		// too large or too small.
-		mpd_qset_string(&term, "2.302585092994", &ctx, &status);
-		if (!mpd_isnegative(x) && mpd_qcmp(x, &term, &status) < 0) {
-			mpd_qset_i64(&n, 0, &ctx, &status);
-			mpd_qcopy(&r, x, &status);
+		mpd_qset_string(&term, "2.302585092994", &ctx, status);
+		if (!mpd_isnegative(x) && mpd_qcmp(x, &term, status) < 0) {
+			mpd_qset_i64(&n, 0, &ctx, status);
+			mpd_qcopy(&r, x, status);
 		} else {
-			mpd_qset_string(&ln10, QDRT_LN10, &wide, &status);
-			mpd_qdiv(&n, x, &ln10, &ctx, &status);
-			mpd_qfloor(&n, &n, &ctx, &status);
-			mpd_qmul(&r, &n, &ln10, &wide, &status);
-			mpd_qsub(&r, x, &r, &wide, &status);
-			mpd_qset_i64(&term, 1, &ctx, &status);
+			mpd_qset_string(&ln10, QDRT_LN10, &wide, status);
+			mpd_qdiv(&n, x, &ln10, &ctx, status);
+			mpd_qfloor(&n, &n, &ctx, status);
+			mpd_qmul(&r, &n, &ln10, &wide, status);
+			mpd_qsub(&r, x, &r, &wide, status);
+			mpd_qset_i64(&term, 1, &ctx, status);
 			if (mpd_isnegative(&r)) {
-				mpd_qsub(&n, &n, &term, &ctx, &status);
-				mpd_qadd(&r, &r, &ln10, &wide, &status);
-			} else if (mpd_qcmp(&r, &ln10, &status) >= 0) {
-				mpd_qadd(&n, &n, &term, &ctx, &status);
-				mpd_qsub(&r, &r, &ln10, &wide, &status);
+				mpd_qsub(&n, &n, &term, &ctx, status);
+				mpd_qadd(&r, &r, &ln10, &wide, status);
+			} else if (mpd_qcmp(&r, &ln10, status) >= 0) {
+				mpd_qadd(&n, &n, &term, &ctx, status);
+				mpd_qsub(&r, &r, &ln10, &wide, status);
 			}
 		}
-		mpd_qfinalize(&r, &ctx, &status);
+		mpd_qfinalize(&r, &ctx, status);
 
-		// y = the product of every factor 1 + 10^-k whose logarithm fits in r
-		bool ok = true;
+		// out = the product of every factor 1 + 10^-k whose logarithm fits in r
+		ok = true;
 		if (cordic_applies(&r)) {
 			fx_t fr;
 			fx_t fy;
 			fx_t shifted;
-			ok = fx_from_mpd(&fr, &r, &status);
+			ok = fx_from_mpd(&fr, &r, status);
 			fx_set_one(&fy);
 			for (int k = 0; ok && k < CORDIC_LEVELS; k++) {
 				while (fx_sub(&fr, &fr, &ln_up[k])) {
@@ -1365,36 +1385,141 @@ qd_f128_t* qd_f128_exp(const qd_f128_t* a) {
 					fx_add(&fy, &shifted);
 				}
 			}
-			ok = ok && fx_to_mpd(&y, &fy, &status) && fx_to_mpd(&r, &fr, &status);
+			ok = ok && fx_to_mpd(out, &fy, status) && fx_to_mpd(&r, &fr, status);
 		} else {
-			mpd_qset_i64(&y, 1, &ctx, &status);
+			mpd_qset_i64(out, 1, &ctx, status);
 		}
 
 		if (ok) {
 			// exp(r) = 1 + r + r^2/2! + ..., for what r has left
-			mpd_qset_i64(&sum, 1, &ctx, &status);
-			mpd_qset_i64(&term, 1, &ctx, &status);
-			for (int64_t j = 1; !(status & MPD_Malloc_error); j++) {
-				mpd_qmul(&term, &term, &r, &ctx, &status);
-				mpd_qset_i64(&ln10, j, &ctx, &status);
-				mpd_qdiv(&term, &term, &ln10, &ctx, &status);
+			mpd_qset_i64(&sum, 1, &ctx, status);
+			mpd_qset_i64(&term, 1, &ctx, status);
+			for (int64_t j = 1; !(*status & MPD_Malloc_error); j++) {
+				mpd_qmul(&term, &term, &r, &ctx, status);
+				mpd_qset_i64(&ln10, j, &ctx, status);
+				mpd_qdiv(&term, &term, &ln10, &ctx, status);
 				if (mpd_iszero(&term) || mpd_adjexp(&term) < -(QDRT_WORK_PREC + 4)) {
 					break;
 				}
-				mpd_qadd(&sum, &sum, &term, &ctx, &status);
+				mpd_qadd(&sum, &sum, &term, &ctx, status);
 			}
-			mpd_qmul(&y, &y, &sum, &ctx, &status);
+			mpd_qmul(out, out, &sum, &ctx, status);
 			uint32_t got = 0;
-			y.exp += mpd_qget_ssize(&n, &got);
-			result = box_if_decided(&y, status, &decided);
+			out->exp += mpd_qget_ssize(&n, &got);
 		}
 	}
 	mpd_del(&ln10);
 	mpd_del(&n);
 	mpd_del(&r);
-	mpd_del(&y);
 	mpd_del(&sum);
 	mpd_del(&term);
+	return ok && !(*status & MPD_Malloc_error);
+}
+
+// ln(x) for finite x > 0, to some sixty digits: the factors and their logarithms are held
+// to 63 places, and only the short series is at the working precision. pow needs the
+// extra, as it multiplies the logarithm, error and all, by its exponent.
+static bool ln_work(mpd_t* out, const mpd_t* x, uint32_t* status) {
+	mpd_context_t ctx;
+	ctx_work(&ctx, QDRT_WORK_PREC + 2);
+	mpd_context_t wide;
+	ctx_work(&wide, QDRT_WORK_PREC + 16);
+	QDRT_MPD_LOCAL(m);
+	QDRT_MPD_LOCAL(y);
+	QDRT_MPD_LOCAL(d);
+	QDRT_MPD_LOCAL(power);
+	QDRT_MPD_LOCAL(term);
+
+	// x = m 10^e with m in [1, 10), so ln x = e ln 10 + ln m. From a half up to 1, m is x
+	// itself and the factors are 1 - 10^-k: there e = -1 would make ln x the difference of
+	// ln 10 and a logarithm nearly as large, which cancels the digits it is made of.
+	mpd_qset_string(&term, "0.5", &ctx, status);
+	const bool down = mpd_adjexp(x) == -1 && mpd_qcmp(x, &term, status) >= 0;
+	const mpd_ssize_t e = down ? 0 : mpd_adjexp(x);
+	mpd_qcopy(&m, x, status);
+	m.exp -= e;
+
+	// y = the product of every factor that keeps it on its side of m, and out the sum of
+	// their logarithms
+	fx_t fm;
+	fx_t fy;
+	fx_t facc;
+	fx_t shifted;
+	fx_t next;
+	fx_t spare;
+	bool ok = fx_from_mpd(&fm, &m, status);
+	fx_set_one(&fy);
+	memset(&facc, 0, sizeof facc);
+	for (int k = down ? 1 : 0; ok && k < CORDIC_LEVELS; k++) {
+		for (;;) {
+			fx_shift(&shifted, &fy, k);
+			if (down) {
+				fx_sub(&next, &fy, &shifted);
+				if (!fx_sub(&spare, &next, &fm)) {
+					break;
+				}
+			} else {
+				next = fy;
+				fx_add(&next, &shifted);
+				if (!fx_sub(&spare, &fm, &next)) {
+					break;
+				}
+			}
+			fy = next;
+			fx_add(&facc, down ? &ln_down[k - 1] : &ln_up[k]);
+		}
+	}
+	ok = ok && fx_to_mpd(&y, &fy, status) && fx_to_mpd(out, &facc, status);
+
+	if (ok) {
+		if (down) {
+			mpd_qcopy_negate(out, out, status);
+		}
+		// ln(m / y) = ln(1 + d) = d - d^2/2 + d^3/3 - ..., |d| under 10^-11
+		mpd_qsub(&d, &m, &y, &ctx, status);
+		mpd_qdiv(&d, &d, &y, &ctx, status);
+		mpd_qcopy(&power, &d, status);
+		mpd_qadd(out, out, &d, &wide, status);
+		for (int64_t j = 2; !mpd_iszero(&d) && !(*status & MPD_Malloc_error); j++) {
+			mpd_qmul(&power, &power, &d, &ctx, status);
+			mpd_qcopy_negate(&power, &power, status);
+			mpd_qset_i64(&term, j, &ctx, status);
+			mpd_qdiv(&term, &power, &term, &ctx, status);
+			if (mpd_iszero(&term) || mpd_adjexp(&term) < mpd_adjexp(&d) - (QDRT_WORK_PREC + 4)) {
+				break;
+			}
+			mpd_qadd(out, out, &term, &wide, status);
+		}
+
+		if (e != 0) {
+			mpd_qset_string(&y, QDRT_LN10, &wide, status);
+			mpd_qset_ssize(&term, e, &ctx, status);
+			mpd_qmul(&term, &term, &y, &wide, status);
+			mpd_qadd(out, out, &term, &wide, status);
+		}
+	}
+	mpd_del(&m);
+	mpd_del(&y);
+	mpd_del(&d);
+	mpd_del(&power);
+	mpd_del(&term);
+	return ok && !(*status & MPD_Malloc_error);
+}
+
+static bool is_positive_finite(const mpd_t* x) {
+	return !mpd_isspecial(x) && !mpd_iszero(x) && !mpd_isnegative(x);
+}
+
+qd_f128_t* qd_f128_exp(const qd_f128_t* a) {
+	uint32_t status = 0;
+	QDRT_MPD_LOCAL(r);
+	qd_f128_t* result = NULL;
+	bool decided = false;
+	// exp(0) is exactly 1
+	if (!mpd_iszero(&a->num) && exp_work(&r, &a->num, &status)) {
+		result = box_if_decided(&r, status, &decided);
+	}
+	mpd_del(&r);
 	return decided ? result : correctly_rounded(a, mpd_qexp);
 }
 
@@ -1403,95 +1528,76 @@ qd_f128_t* qd_f128_ln(const qd_f128_t* a) {
 	uint32_t status = 0;
 	mpd_context_t ctx;
 	ctx_work(&ctx, QDRT_WORK_PREC + 2);
-	mpd_context_t wide;
-	ctx_work(&wide, QDRT_WORK_PREC + 16);
-	QDRT_MPD_LOCAL(m);
-	QDRT_MPD_LOCAL(y);
-	QDRT_MPD_LOCAL(acc);
-	QDRT_MPD_LOCAL(d);
-	QDRT_MPD_LOCAL(power);
-	QDRT_MPD_LOCAL(term);
+	QDRT_MPD_LOCAL(r);
 	qd_f128_t* result = NULL;
 	bool decided = false;
+	// ln 1 is exactly 0
+	mpd_qset_i64(&r, 1, &ctx, &status);
+	if (is_positive_finite(x) && mpd_qcmp(x, &r, &status) != 0 && ln_work(&r, x, &status)) {
+		result = box_if_decided(&r, status, &decided);
+	}
+	mpd_del(&r);
+	return decided ? result : correctly_rounded(a, mpd_qln);
+}
 
-	// Zero, negatives, infinity and NaN to libmpdec, and 1 too: ln 1 is exactly 0
-	mpd_qset_i64(&term, 1, &ctx, &status);
-	if (!mpd_isspecial(x) && !mpd_iszero(x) && !mpd_isnegative(x) && mpd_qcmp(x, &term, &status) != 0) {
-		// x = m 10^e with m in [1, 10), so ln x = e ln 10 + ln m. From a half up to 1, m is x
-		// itself and the factors are 1 - 10^-k: there e = -1 would make ln x the difference
-		// of ln 10 and a logarithm nearly as large, which cancels the digits it is made of.
-		mpd_qset_string(&term, "0.5", &ctx, &status);
-		const bool down = mpd_adjexp(x) == -1 && mpd_qcmp(x, &term, &status) >= 0;
-		const mpd_ssize_t e = down ? 0 : mpd_adjexp(x);
-		mpd_qcopy(&m, x, &status);
-		m.exp -= e;
-
-		// y = the product of every factor that keeps it on its side of m, and acc the sum of
-		// their logarithms
-		fx_t fm;
-		fx_t fy;
-		fx_t facc;
-		fx_t shifted;
-		fx_t next;
-		fx_t spare;
-		bool ok = fx_from_mpd(&fm, &m, &status);
-		fx_set_one(&fy);
-		memset(&facc, 0, sizeof facc);
-		for (int k = down ? 1 : 0; ok && k < CORDIC_LEVELS; k++) {
-			for (;;) {
-				fx_shift(&shifted, &fy, k);
-				if (down) {
-					fx_sub(&next, &fy, &shifted);
-					if (!fx_sub(&spare, &next, &fm)) {
-						break;
-					}
-				} else {
-					next = fy;
-					fx_add(&next, &shifted);
-					if (!fx_sub(&spare, &fm, &next)) {
-						break;
-					}
-				}
-				fy = next;
-				fx_add(&facc, down ? &ln_down[k - 1] : &ln_up[k]);
-			}
-		}
-		ok = ok && fx_to_mpd(&y, &fy, &status) && fx_to_mpd(&acc, &facc, &status);
-
-		if (ok) {
-			if (down) {
-				mpd_qcopy_negate(&acc, &acc, &status);
-			}
-			// ln(m / y) = ln(1 + d) = d - d^2/2 + d^3/3 - ..., |d| under 10^-11
-			mpd_qsub(&d, &m, &y, &ctx, &status);
-			mpd_qdiv(&d, &d, &y, &ctx, &status);
-			mpd_qcopy(&power, &d, &status);
-			mpd_qadd(&acc, &acc, &d, &ctx, &status);
-			for (int64_t j = 2; !mpd_iszero(&d) && !(status & MPD_Malloc_error); j++) {
-				mpd_qmul(&power, &power, &d, &ctx, &status);
-				mpd_qcopy_negate(&power, &power, &status);
-				mpd_qset_i64(&term, j, &ctx, &status);
-				mpd_qdiv(&term, &power, &term, &ctx, &status);
-				if (mpd_iszero(&term) || mpd_adjexp(&term) < mpd_adjexp(&d) - (QDRT_WORK_PREC + 4)) {
-					break;
-				}
-				mpd_qadd(&acc, &acc, &term, &ctx, &status);
-			}
-
-			if (e != 0) {
-				mpd_qset_string(&y, QDRT_LN10, &wide, &status);
-				mpd_qset_ssize(&term, e, &ctx, &status);
-				mpd_qmul(&term, &term, &y, &wide, &status);
-				mpd_qadd(&acc, &acc, &term, &ctx, &status);
-			}
-			result = box_if_decided(&acc, status, &decided);
+qd_f128_t* qd_f128_log10(const qd_f128_t* a) {
+	const mpd_t* x = &a->num;
+	uint32_t status = 0;
+	mpd_context_t ctx;
+	ctx_work(&ctx, QDRT_WORK_PREC + 2);
+	mpd_context_t wide;
+	ctx_work(&wide, QDRT_WORK_PREC + 16);
+	QDRT_MPD_LOCAL(r);
+	QDRT_MPD_LOCAL(ln10);
+	qd_f128_t* result = NULL;
+	bool decided = false;
+	if (is_positive_finite(x)) {
+		// The log of a power of ten is an exact integer, which libmpdec gives as one
+		mpd_qreduce(&r, x, &ctx, &status);
+		const bool power_of_ten = r.digits == 1 && r.data[0] == 1;
+		if (!power_of_ten && ln_work(&r, x, &status)) {
+			mpd_qset_string(&ln10, QDRT_LN10, &wide, &status);
+			mpd_qdiv(&r, &r, &ln10, &wide, &status);
+			result = box_if_decided(&r, status, &decided);
 		}
 	}
-	mpd_del(&m);
-	mpd_del(&y);
-	mpd_del(&acc);
-	mpd_del(&d);
-	mpd_del(&power);
-	mpd_del(&term);
-	return decided ? result : correctly_rounded(a, mpd_qln);
+	mpd_del(&r);
+	mpd_del(&ln10);
+	return decided ? result : correctly_rounded(a, mpd_qlog10);
+}
+
+qd_f128_t* qd_f128_pow(const qd_f128_t* base, const qd_f128_t* exponent) {
+	const mpd_t* x = &base->num;
+	const mpd_t* y = &exponent->num;
+	uint32_t status = 0;
+	mpd_context_t ctx;
+	ctx_work(&ctx, QDRT_WORK_PREC + 2);
+	mpd_context_t wide;
+	ctx_work(&wide, QDRT_WORK_PREC + 16);
+	QDRT_MPD_LOCAL(r);
+	qd_f128_t* result = NULL;
+	bool decided = false;
+	// x^y = exp(y ln x), for x > 0 and y not an integer. Integer powers are exact where
+	// they can be, which libmpdec works out by multiplying, and 1^y is exactly 1.
+	mpd_qset_i64(&r, 1, &ctx, &status);
+	if (is_positive_finite(x) && mpd_qcmp(x, &r, &status) != 0 && !mpd_isspecial(y) && !mpd_isinteger(y) &&
+			ln_work(&r, x, &status)) {
+		mpd_qmul(&r, &r, y, &wide, &status);
+		if (exp_work(&r, &r, &status)) {
+			result = box_if_decided(&r, status, &decided);
+		}
+	}
+	mpd_del(&r);
+	if (decided) {
+		return result;
+	}
+	qd_f128_t* fallback = box_new();
+	if (fallback == NULL) {
+		return NULL;
+	}
+	ctx128(&ctx);
+	status = 0;
+	mpd_qpow(&fallback->num, x, y, &ctx, &status);
+	pad_inexact(&fallback->num, &status);
+	return box_finish(fallback, status);
 }

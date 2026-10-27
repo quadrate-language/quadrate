@@ -142,9 +142,11 @@ qd_f128_t* qd_f128_ceil(const qd_f128_t* a);	   ///< roundToIntegralTowardPositi
 /**
  * @name Elementary functions
  *
- * sqrt, exp, ln and log10 are correctly rounded. pow is computed from the correctly
- * rounded exp and ln, and is almost always correctly rounded -- libmpdec does not promise
- * more. The trigonometric functions are evaluated with ten guard digits and rounded once.
+ * sqrt, exp, ln and log10 are correctly rounded. pow is too, except in the rare case its
+ * fast evaluation cannot settle the rounding and libmpdec's pow decides, which is almost
+ * always correctly rounded -- libmpdec does not promise more. The trigonometric functions
+ * are evaluated with ten guard digits and rounded once. An inexact result has all 34
+ * digits, as IEEE 754 asks.
  * @{
  */
 qd_f128_t* qd_f128_sqrt(const qd_f128_t* a);
