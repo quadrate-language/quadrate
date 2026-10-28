@@ -44,14 +44,6 @@ static inline void ptr_registry_init(ptr_registry_t* reg) {
 	reg->initialized = 1;
 }
 
-/* Destroy a registry */
-static inline void ptr_registry_destroy(ptr_registry_t* reg) {
-	if (reg->initialized) {
-		mutex_platform_destroy((mutex_platform_t*)reg->mutex_storage);
-		reg->initialized = 0;
-	}
-}
-
 /* Static initializer for global registries (requires ptr_registry_init call) */
 #define PTR_REGISTRY_INITIALIZER {.buckets = {NULL}, .mutex_storage = {0}, .initialized = 0}
 

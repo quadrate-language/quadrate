@@ -56,8 +56,7 @@ struct NameOccurrence {
 // LSP Server using jansson for JSON handling
 class QuadrateLSP {
 public:
-	QuadrateLSP() : messageId_(0) {
-	}
+	QuadrateLSP() = default;
 
 	void run();
 
@@ -84,7 +83,6 @@ private:
 	void convertPositions(json_t* node, const std::string& uri, bool toClient);
 	void convertPositionsIn(json_t* node, const std::string& uri, bool toClient);
 	const std::vector<std::string>* positionLines(const std::string& uri);
-	size_t toClientColumn(const std::string& lineText, size_t byteColumn) const;
 	void applyContentChanges(const std::string& uri, json_t* contentChanges);
 
 	// Initialization
@@ -231,7 +229,6 @@ private:
 	std::string requestUri_;
 	std::map<std::string, std::vector<std::string>> positionLines_;
 	std::map<std::string, bool> positionAscii_;
-	[[maybe_unused]] int messageId_;
 	bool lintEnabled_ = true;
 	std::string quadlintPath_; // Set by the client; otherwise the one built with this LSP, or PATH's
 	std::string workspaceRoot_;

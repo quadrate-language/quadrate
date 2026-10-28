@@ -137,6 +137,32 @@ s sz 1 + >>size drop    // common in imperative code
 
 ---
 
+## Copying with clone
+
+A struct is a reference: `p -> q` gives a second name for the same struct, so a write
+through one is seen through the other. `clone` makes a new struct of the same type with the
+fields copied. The copy is shallow: a field that holds a string, array or struct still
+points to the same one.
+
+**Signature:** `(s -- s2)`
+
+```qd
+struct Point {
+	x:i64
+	y:i64
+}
+
+fn main() {
+	Point { x = 1 y = 2 } -> p
+	p clone -> q
+	q 10 >>x drop
+	p <<x print nl  // 1
+	q <<x print nl  // 10
+}
+```
+
+---
+
 ## Methods
 
 Methods are functions with a receiver parameter. The receiver uses a special syntax before the function name.

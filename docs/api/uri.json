@@ -1,6 +1,6 @@
 {
   "name": "uri",
-  "description": "URI encoding, decoding, and parsing. Handles percent-encoding and URI component extraction. doccheck: page-context",
+  "description": "URI encoding, decoding, and parsing. Handles percent-encoding and URI component extraction.",
   "constants": [
 
   ],

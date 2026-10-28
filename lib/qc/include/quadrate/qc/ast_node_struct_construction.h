@@ -102,14 +102,6 @@ namespace Qd {
 			return mTypeArgs;
 		}
 
-		bool hasTypeArgs() const {
-			return !mTypeArgs.empty();
-		}
-
-		void addTypeArg(const std::string& typeArg) {
-			mTypeArgs.push_back(typeArg);
-		}
-
 	private:
 		std::string mStructName;
 		std::vector<std::string> mTypeArgs;

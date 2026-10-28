@@ -189,11 +189,6 @@ bool commandExists(const std::string& cmd) {
 	return status == 0;
 }
 
-// Get the path where a module would be installed
-std::string getModuleInstallPath(const std::string& moduleName, const std::string& ref) {
-	return getModulesDir() + "/" + moduleName + "@" + ref;
-}
-
 // Get the path to a local module's directory
 std::string resolveLocalPath(const std::string& path, const std::string& basePath) {
 	std::string resolvedPath = path;

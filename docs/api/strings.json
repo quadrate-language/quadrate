@@ -1,6 +1,6 @@
 {
   "name": "strings",
-  "description": "String manipulation functions. Error codes: Ok=1 (success), specific errors start at 2 doccheck: page-context use mem",
+  "description": "String manipulation functions. Error codes: Ok=1 (success), specific errors start at 2",
   "constants": [
     {
       "name": "ErrAlloc",

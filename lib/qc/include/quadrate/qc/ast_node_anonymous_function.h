@@ -121,10 +121,6 @@ namespace Qd {
 			return mCapturedVariables;
 		}
 
-		bool hasCaptures() const {
-			return !mCapturedVariables.empty();
-		}
-
 		// `stack fn (...) { }`: the inputs stay on the stack for the body to work on, and any
 		// names they carry are documentation. Without it every input must be named and is bound
 		// as a local -- the same rule, and the same spelling, as a named function.

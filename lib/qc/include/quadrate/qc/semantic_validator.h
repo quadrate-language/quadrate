@@ -26,7 +26,6 @@ namespace Qd {
 		PTR,	 // For function pointers
 		ANY,	 // For operations that accept any type
 		UNKNOWN, // For unresolved types
-		TAINTED, // For error-tainted values from throws functions
 		TYPEVAR	 // For generic type variables (T, U, etc.)
 	};
 
@@ -160,17 +159,6 @@ namespace Qd {
 			return mModuleConstants;
 		}
 
-		// Get the module constant values map
-		const std::unordered_map<std::string, std::string>& moduleConstantValues() const {
-			return mModuleConstantValues;
-		}
-
-		// Get the module imported functions map (public imported C functions)
-		const std::unordered_map<std::string, std::unordered_map<std::string, ImportedFunctionInfo>>&
-		moduleImportedFunctions() const {
-			return mModuleImportedFunctions;
-		}
-
 		// Get the imported FFI libraries map (namespace -> library path)
 		const std::unordered_map<std::string, std::string>& importedLibraries() const {
 			return mImportedLibraries;
@@ -300,7 +288,6 @@ namespace Qd {
 
 		// Pass 3b: Type check the AST
 		void typeCheckFunction(IAstNode* node);
-		void typeCheckTest(IAstNode* node);
 		// Checks a loop's stack effect and applies it to typeStack/structTypeStack. The body must
 		// be neutral; `exitsByFallthrough` says whether running off the end of the range is also
 		// an exit (true for `for`, false for `loop`).
@@ -333,9 +320,6 @@ namespace Qd {
 		// Helper: Type check an instruction (with optional error suppression for signature analysis)
 		void typeCheckInstructionInternal(IAstNode* node, const char* name, std::vector<StackValueType>& typeStack,
 				std::vector<std::string>& structTypeStack, bool reportErrors);
-
-		// Check if a name is a built-in instruction
-		bool isBuiltInInstruction(const char* name) const;
 
 		bool isNumericType(StackValueType type) const;
 
@@ -527,10 +511,6 @@ namespace Qd {
 		// Struct method declarations: maps structType -> (methodName -> AstNodeFunctionDeclaration*)
 		std::unordered_map<std::string, std::unordered_map<std::string, AstNodeFunctionDeclaration*>>
 				mStructMethodDecls;
-
-		// Module struct methods: maps module -> structType -> (methodName -> isPublic)
-		std::unordered_map<std::string, std::unordered_map<std::string, std::unordered_map<std::string, bool>>>
-				mModuleStructMethods;
 
 		// Error count
 		size_t mErrorCount;

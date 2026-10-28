@@ -937,7 +937,7 @@ nl
 | Instruction | Signature | Description |
 |-------------|-----------|-------------|
 | [`shl`](#shl) | `( a n -- result )` | Shifts a left by n bits. |
-| [`shr`](#shr) | `( a n -- result )` | Shifts a right by n bits (arithmetic shift). |
+| [`shr`](#shr) | `( a n -- result )` | Shifts a right by n bits, shifting in zeros (logical shift). |
 
 #### shl
 
@@ -955,7 +955,7 @@ Shifts a left by n bits.
 
 #### shr
 
-Shifts a right by n bits (arithmetic shift).
+Shifts a right by n bits, shifting in zeros (logical shift).
 
 **Signature:** `( a n -- result )`
 

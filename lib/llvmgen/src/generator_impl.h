@@ -56,7 +56,7 @@
 
 #include <quadrate/qc/ast_node.h>
 #include <quadrate/qc/ast_node_anonymous_function.h>
-#include <quadrate/qc/ast_node_array.h>
+#include <quadrate/qc/ast_node_array_literal.h>
 #include <quadrate/qc/ast_node_as_cast.h>
 #include <quadrate/qc/ast_node_break.h>
 #include <quadrate/qc/ast_node_constant.h>
@@ -107,7 +107,6 @@ namespace Qd {
 	// Forward declarations for helper functions
 	bool looksLikeStructType(const std::string& typeStr);
 	bool isArrayType(const std::string& typeStr);
-	std::string extractStructName(const std::string& typeStr);
 
 	/**
 	 * @brief True when `bb` ends in a terminator instruction.
@@ -197,7 +196,6 @@ namespace Qd {
 		llvm::Function* pushStrFn = nullptr;
 		llvm::Function* pushStrRefFn = nullptr;
 		llvm::Function* pushPtrFn = nullptr;
-		llvm::Function* callFn = nullptr;
 		llvm::Function* printsFn = nullptr;
 		llvm::Function* nlFn = nullptr;
 		llvm::Function* stackPopFn = nullptr;
@@ -208,7 +206,6 @@ namespace Qd {
 		llvm::Function* assertionResetFn = nullptr;
 		llvm::Function* assertionFailuresFn = nullptr;
 		llvm::Function* checkStackFn = nullptr;
-		llvm::Function* strdupFn = nullptr;
 		llvm::Function* mallocFn = nullptr;
 		llvm::Function* freeFn = nullptr;
 		llvm::Function* qdStringReleaseFn = nullptr;
@@ -293,15 +290,6 @@ namespace Qd {
 		// Native local variables: name → alloca (i64) for compile-time stack mode
 		std::map<std::string, llvm::AllocaInst*> nativeLocalVariables;
 
-		// Cross-module imported function info
-		struct CrossModuleImportInfo {
-			std::string library;
-			std::string cFunctionName;
-			bool throws;
-		};
-
-		std::map<std::string, CrossModuleImportInfo> crossModuleImportedFunctions;
-
 		// Module constants
 		std::map<std::string, std::string> moduleConstants;
 
@@ -367,9 +355,6 @@ namespace Qd {
 
 		std::vector<std::vector<DeferEntry>> deferScopeStack;
 
-		// Counter for unique variable names
-		int varCounter = 0;
-
 		// Compilation status
 		bool compilationFailed = false;
 
@@ -377,7 +362,6 @@ namespace Qd {
 		std::map<std::string, llvm::AllocaInst*> localVariables;
 		std::map<std::string, std::string> localVariableStructTypes;
 		std::set<std::string> localArrayVariables;
-		std::set<std::string> stackAllocatedStructLocals;
 
 		// Captured variables
 		std::map<std::string, llvm::AllocaInst*> capturedVariableRefs;
@@ -386,18 +370,14 @@ namespace Qd {
 		std::set<std::string> closureVariables;
 
 		// Tracking for smart operations
-		std::string lastIdentifierPushed;
 		std::string lastStructConstructed;
 		std::string lastFieldAccessResultType;
 		bool lastPushedWasArray = false;
-		bool currentFunctionReturnsPtr = false;
-		bool lastStructWasConstructedInPlace = false;
 
 		// Anonymous function tracking
 		size_t anonymousFunctionCounter = 0;
 		std::string lastGeneratedAnonFuncName;
 		bool lastGeneratedWasClosure = false;
-		size_t lastClosureCaptureCount = 0;
 
 		// Function pointer aliases
 		std::map<std::string, llvm::Function*> functionPointerAliases;
@@ -473,9 +453,6 @@ namespace Qd {
 				AstNodeFunctionDeclaration* funcNode, bool isMain, const std::string& namePrefix = "main");
 		// Declare a function (create LLVM function and register in userFunctions, but don't generate body)
 		bool declareFunction(AstNodeFunctionDeclaration* funcNode, const std::string& namePrefix);
-		// Generate function body (assumes function is already declared)
-		bool generateFunctionBody(
-				AstNodeFunctionDeclaration* funcNode, bool isMain, const std::string& namePrefix = "main");
 		bool generateTest(AstNodeTest* testNode, const std::string& namePrefix = "main");
 		bool generateTestRunner(const std::vector<std::pair<std::string, std::string>>& testNamesWithDisplay);
 
@@ -569,7 +546,6 @@ namespace Qd {
 
 		// Set of functions reachable from main (computed before IR generation)
 		std::set<std::string> reachableFunctions;
-		bool useReachabilityAnalysis = true;
 
 		// Common stack access helper - extracts the repeated pattern of accessing ctx->st
 		struct StackAccess {
@@ -641,8 +617,6 @@ namespace Qd {
 		void generateInlineDup(llvm::Value* ctx);
 		void generateInlineSwap(llvm::Value* ctx);
 		void generateInlineDrop(llvm::Value* ctx);
-		void generateInlineOver(llvm::Value* ctx);
-		void generateInlineRot(llvm::Value* ctx);
 		llvm::Value* generateInlinePopInt(llvm::Value* ctx);					 // Returns popped i64 value
 		llvm::Value* generateInlinePopFloat(llvm::Value* ctx);					 // Returns popped f64 value
 		void generateInlinePushFloatValue(llvm::Value* ctx, llvm::Value* value); // Pushes f64 value to runtime stack

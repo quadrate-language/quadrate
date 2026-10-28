@@ -8,24 +8,25 @@ This section documents all Quadrate keywords and built-in instructions.
 - [Stack Operations](stack.md) - `dup`, `drop`, `swap`, `rot`, etc.
 - [Arithmetic](arithmetic.md) - `+`, `-`, `*`, `/`, `%`
 - [Comparison](comparison.md) - `==`, `!=`, `<`, `>`, `<=`, `>=`
-- [Bitwise](bitwise.md) - `and`, `or`, `xor`, `not`, `shl`, `shr`
+- [Logic and bits](bitwise.md) - `and`, `or`, `not`, `shl`, `shr`, and `bits::` for bitwise
 - [Arrays](arrays.md) - Array creation and manipulation
 - [Structs](structs.md) - Struct definition, field access, methods
 - [Generics](generics.md) - Generic functions with `<T>`
 - [Type Casting](types.md) - `cast<T>`, `as TypeName`
-- [Input/Output](io.md) - `print`, `nl`, `read`
+- [Input/Output](io.md) - `print`, `nl`, `prints`
 - [Error Handling](errors.md) - `panic`
 - [Threading](threading.md) - `spawn`, `wait`, `detach`
 - [Miscellaneous](misc.md) - `call`
 
 ## Types
 
-Quadrate has four basic types:
+Quadrate has five basic types:
 
 | Type | Description | Example |
 |------|-------------|---------|
 | `i64` | 64-bit signed integer | `42`, `-17` |
 | `f64` | 64-bit floating-point | `3.14`, `-0.5` |
+| `d128` | Decimal floating-point, 34 digits | `0.1d`, `19.99d` |
 | `str` | String | `"hello"` |
 | `ptr` | Pointer | Struct instances, arrays |
 

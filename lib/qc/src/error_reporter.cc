@@ -8,11 +8,6 @@
 namespace Qd {
 
 	void ErrorReporter::reportError(u8t_scanner* scanner, const char* message) {
-		// Don't report errors in panic mode (cascading errors)
-		if (mPanicMode) {
-			return;
-		}
-
 		// u8t_scanner_token_start returns a character index; calculateLineColumn
 		// indexes bytes. Without the conversion every multi-byte character earlier
 		// in the file drags the reported position backwards - a single em dash in a
@@ -57,11 +52,6 @@ namespace Qd {
 	}
 
 	void ErrorReporter::reportErrorWithHint(size_t line, size_t column, const char* message, const char* hint) {
-		// Don't report errors in panic mode (cascading errors)
-		if (mPanicMode) {
-			return;
-		}
-
 		mErrorCount++;
 
 		// Check if we've hit the error limit

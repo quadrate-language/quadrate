@@ -639,15 +639,6 @@ namespace Qd {
 			}
 		}
 
-		void emitParamList(const std::vector<std::unique_ptr<AstNodeParameter>>& params) {
-			for (size_t i = 0; i < params.size(); i++) {
-				if (i > 0) {
-					mOutput << " ";
-				}
-				mOutput << params[i]->displayString();
-			}
-		}
-
 		// ============================================================
 		// Constant
 		// ============================================================

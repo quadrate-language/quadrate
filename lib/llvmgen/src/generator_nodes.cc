@@ -296,12 +296,10 @@ namespace Qd {
 			builder->CreateBr(endBlock);
 
 			builder->SetInsertPoint(endBlock);
-			lastIdentifierPushed = name;
 			// A captured struct carries its type for a following `<<`, as a plain local does.
 			auto capStructIt = localVariableStructTypes.find(name);
 			if (capStructIt != localVariableStructTypes.end()) {
 				lastStructConstructed = capStructIt->second;
-				lastStructWasConstructedInPlace = false;
 			}
 			return;
 		}
@@ -314,7 +312,6 @@ namespace Qd {
 				llvm::Value* val =
 						builder->CreateLoad(nativeLocalIt->second->getAllocatedType(), nativeLocalIt->second, name);
 				compileTimeStack.push_back(val);
-				lastIdentifierPushed = name;
 				return;
 			}
 		}
@@ -358,7 +355,6 @@ namespace Qd {
 				builder->CreateBr(contBB);
 
 				builder->SetInsertPoint(contBB);
-				lastIdentifierPushed = name;
 				return;
 			}
 
@@ -430,13 +426,11 @@ namespace Qd {
 			builder->SetInsertPoint(endBlock);
 
 			// Track that this identifier was just pushed (for smart free)
-			lastIdentifierPushed = name;
 
 			// If this local variable has a known struct type, track it for the next pop
 			auto structTypeIt = localVariableStructTypes.find(name);
 			if (structTypeIt != localVariableStructTypes.end()) {
 				lastStructConstructed = structTypeIt->second;
-				lastStructWasConstructedInPlace = false;
 			}
 			return;
 		}
@@ -547,7 +541,6 @@ namespace Qd {
 					(void)isSizedInt;
 					builder->CreateCall(pushIntFn, {ctx, v});
 				}
-				lastIdentifierPushed = name;
 				// Remember the struct type of this var so subsequent field
 				// accesses (`var.<<field`) resolve correctly.
 				if (isKnownStruct(typeName)) {
@@ -778,7 +771,6 @@ namespace Qd {
 			auto returnTypeIt = functionReturnStructType.find(lookupName);
 			if (returnTypeIt != functionReturnStructType.end()) {
 				lastStructConstructed = returnTypeIt->second;
-				lastStructWasConstructedInPlace = false;
 			}
 
 			// Check if this function is fallible
@@ -877,7 +869,6 @@ namespace Qd {
 		// Save current state
 		auto savedLocalVars = localVariables;
 		auto savedLocalVarStructTypes = localVariableStructTypes;
-		auto savedStackAllocStructLocals = stackAllocatedStructLocals;
 		auto savedLocalArrayVars = localArrayVariables;
 		auto savedCapturedVarRefs = capturedVariableRefs;
 		auto savedLastStruct = lastStructConstructed;
@@ -893,7 +884,6 @@ namespace Qd {
 		// Clear local variables for the anonymous function
 		localVariables.clear();
 		localVariableStructTypes.clear();
-		stackAllocatedStructLocals.clear();
 		localArrayVariables.clear();
 		capturedVariableRefs.clear();
 		lastStructConstructed.clear();
@@ -1019,7 +1009,6 @@ namespace Qd {
 		// Restore state
 		localVariables = savedLocalVars;
 		localVariableStructTypes = savedLocalVarStructTypes;
-		stackAllocatedStructLocals = savedStackAllocStructLocals;
 		localArrayVariables = savedLocalArrayVars;
 		capturedVariableRefs = savedCapturedVarRefs;
 		lastStructConstructed = savedLastStruct;
@@ -1140,7 +1129,6 @@ namespace Qd {
 
 			// Track that we just generated a closure
 			lastGeneratedWasClosure = true;
-			lastClosureCaptureCount = captures.size();
 		} else {
 			// No captures - just push the function pointer (existing behavior)
 			auto funcPtrValue = builder->CreateBitCast(fn, ptrTy);
@@ -1148,7 +1136,6 @@ namespace Qd {
 
 			// Not a closure
 			lastGeneratedWasClosure = false;
-			lastClosureCaptureCount = 0;
 		}
 
 		// Track the function name for potential aliasing via -> name
@@ -1405,7 +1392,6 @@ namespace Qd {
 		auto returnTypeIt = functionReturnStructType.find(fullName);
 		if (returnTypeIt != functionReturnStructType.end()) {
 			lastStructConstructed = returnTypeIt->second;
-			lastStructWasConstructedInPlace = false;
 		}
 
 		// If in test mode, track errors from testing:: assertion functions only

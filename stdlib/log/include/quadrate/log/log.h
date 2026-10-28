@@ -85,12 +85,6 @@ void qdlog_log(qdlog_logger_t* logger, qdlog_level_t level, const char* message)
 void qdlog_log_kv(
 		qdlog_logger_t* logger, qdlog_level_t level, const char* message, const char** pairs, int64_t pairs_count);
 
-// Convenience macros for common levels
-#define qdlog_debug(logger, msg) qdlog_log(logger, QDLOG_LEVEL_DEBUG, msg)
-#define qdlog_info(logger, msg) qdlog_log(logger, QDLOG_LEVEL_INFO, msg)
-#define qdlog_warn(logger, msg) qdlog_log(logger, QDLOG_LEVEL_WARN, msg)
-#define qdlog_error(logger, msg) qdlog_log(logger, QDLOG_LEVEL_ERROR, msg)
-
 // Force flush all outputs
 void qdlog_flush(qdlog_logger_t* logger);
 

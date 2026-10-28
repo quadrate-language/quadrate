@@ -47,9 +47,4 @@ std::vector<std::string> findModuleFiles(const std::string& moduleName, const st
 // Returns the list of include paths found
 std::vector<std::string> loadDependenciesFromManifest(const std::string& manifestDir);
 
-// Find a namespace directory and return all its .qd files
-// Searches relative to sourceDir, include paths, etc.
-// Returns empty vector if namespace not found
-std::vector<std::string> findNamespaceFiles(const std::string& namespaceName, const std::string& sourceDir);
-
 #endif

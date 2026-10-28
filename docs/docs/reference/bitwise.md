@@ -1,31 +1,26 @@
-# Bitwise operations
+# Logic and bits
 
-Operations for bit manipulation.
+`and`, `or` and `not` are logical: every non-zero value counts as true, and the result is
+always `0` or `1`. The bitwise operations of the same names are in the
+[`bits`](../stdlib/bits.md) module, where `bits::` says which meaning is meant. The shifts
+have no logical counterpart and stay builtins.
 
 ## Overview
 
 | Instruction | Signature | Description |
 |-------------|-----------|-------------|
-| `and` | `(a b -- result)` | Bitwise AND |
-| `or` | `(a b -- result)` | Bitwise OR |
-| `xor` | `(a b -- result)` | Bitwise XOR |
-| `not` | `(a -- result)` | Bitwise NOT (ones' complement) |
-| `lnot` | `(a -- result)` | Logical NOT (boolean negation) |
+| `and` | `(a b -- result)` | Logical AND: 1 if both are non-zero |
+| `or` | `(a b -- result)` | Logical OR: 1 if either is non-zero |
+| `not` | `(a -- result)` | Logical NOT: 1 if the value is zero |
 | `shl` | `(a n -- result)` | Shift left |
-| `shr` | `(a n -- result)` | Shift right |
+| `shr` | `(a n -- result)` | Shift right (logical) |
+| `bits::and` | `(a b -- result)` | Bitwise AND |
+| `bits::or` | `(a b -- result)` | Bitwise OR |
+| `bits::xor` | `(a b -- result)` | Bitwise XOR |
+| `bits::not` | `(a -- result)` | Bitwise NOT (ones' complement) |
 
-!!! warning "`not` is bitwise -- use `lnot` for boolean negation"
-    `not` computes the ones' complement, so `0 not` is `-1`, not `1`. Writing
-    `flag not other and` to mean "NOT flag AND other" silently gives the wrong answer,
-    because `-1` is all bits set and `-1 and X` is `X`.
-
-    Use `lnot` when you want boolean negation:
-
-    ```qd
-    0 not print nl      // -1   (all bits set)
-    0 lnot print nl     // 1
-    5 lnot print nl     // 0
-    ```
+Both operands of `and` and `or` are always evaluated: they are ordinary stack words, not
+short-circuiting forms.
 
 ---
 
@@ -33,42 +28,42 @@ Operations for bit manipulation.
 
 ### and
 
-Computes bitwise AND of two integers.
+1 if both values are non-zero, 0 otherwise.
 
 **Signature:** `(a b -- result)`
 
 ```qd
-0b1100 0b1010 and // 0b1000 (8)
+fn main() {
+	1 1 and print nl  // 1
+	2 1 and print nl  // 1 (bits::and would give 0)
+	1 0 and print nl  // 0
+}
 ```
 
 ### or
 
-Computes bitwise OR of two integers.
+1 if either value is non-zero, 0 otherwise.
 
 **Signature:** `(a b -- result)`
 
 ```qd
-0b1100 0b1010 or // 0b1110 (14)
-```
-
-### xor
-
-Computes bitwise XOR of two integers.
-
-**Signature:** `(a b -- result)`
-
-```qd
-0b1100 0b1010 xor // 0b0110 (6)
+fn main() {
+	0 0 or print nl  // 0
+	2 1 or print nl  // 1 (bits::or would give 3)
+}
 ```
 
 ### not
 
-Computes bitwise NOT (ones' complement).
+1 if the value is zero, 0 otherwise.
 
 **Signature:** `(a -- result)`
 
 ```qd
-0 not // -1 (all bits set)
+fn main() {
+	0 not print nl  // 1
+	5 not print nl  // 0
+}
 ```
 
 ---
@@ -82,50 +77,54 @@ Shifts a left by n bits.
 **Signature:** `(a n -- result)`
 
 ```qd
-1 4 shl // 16
+fn main() {
+	1 4 shl print nl  // 16
+}
 ```
 
 ### shr
 
-Shifts a right by n bits (arithmetic shift).
+Shifts a right by n bits. The shift is logical: the value is treated as unsigned and zeros
+are shifted in, so a negative number becomes a large positive one.
 
 **Signature:** `(a n -- result)`
 
 ```qd
-16 2 shr // 4
+fn main() {
+	16 2 shr print nl  // 4
+	-16 2 shr print nl  // 4611686018427387900
+}
 ```
+
+The count `n` must be 0 to 63; any other count is a fatal error.
 
 ---
 
-## Common uses
+## Bit flags
 
-### Setting bits
+The bitwise operations come from the `bits` module.
 
 ```qd
+use bits
+
 const FlagRead = 1
 const FlagWrite = 2
 const FlagExec = 4
 
-// Set flags
-FlagRead FlagWrite or -> permissions
-```
+fn main() {
+	// Set flags
+	FlagRead FlagWrite bits::or -> permissions
 
-### Checking bits
+	// Check a flag
+	permissions FlagRead bits::and 0 != if {
+		"Has read permission" print nl
+	}
 
-```qd
-permissions FlagRead and 0 != if {
-	"Has read permission" print nl
+	// Clear a flag
+	permissions FlagWrite bits::not bits::and -> permissions
+
+	// Toggle a flag
+	permissions FlagExec bits::xor -> permissions
+	permissions print nl  // 5
 }
-```
-
-### Clearing bits
-
-```qd
-permissions FlagWrite not and -> permissions
-```
-
-### Toggling bits
-
-```qd
-permissions FlagExec xor -> permissions
 ```

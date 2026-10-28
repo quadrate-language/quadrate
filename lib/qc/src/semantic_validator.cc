@@ -34,7 +34,6 @@
 #include <quadrate/qc/instructions.h>
 #include <quadrate/qc/numeric_literal.h>
 #include <quadrate/qc/semantic_validator.h>
-#include <sstream>
 #include <unordered_set>
 
 namespace Qd {
@@ -279,11 +278,6 @@ namespace Qd {
 
 		// Otherwise it's an integer
 		return StackValueType::INT;
-	}
-
-	bool SemanticValidator::isBuiltInInstruction(const char* name) const {
-		// Use the extended validator list which includes stdlib imports
-		return Qd::isKnownInstruction(name);
 	}
 
 	// Errors inside a loop body used to be suppressed wholesale, because a loop body's stack
@@ -949,8 +943,6 @@ namespace Qd {
 			return "any";
 		case StackValueType::UNKNOWN:
 			return "unknown";
-		case StackValueType::TAINTED:
-			return "tainted";
 		case StackValueType::TYPEVAR:
 			return "typevar";
 		default:

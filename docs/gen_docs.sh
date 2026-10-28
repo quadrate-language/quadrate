@@ -203,6 +203,8 @@ parse_module() {
                 # Parse doc comment
                 local desc="" params="" returns="" errors="" examples=""
                 for doc_line in "${doc_buffer[@]}"; do
+                    # A doccheck: line is for tools/check_docs.py, which reads it from the source
+                    [[ "$doc_line" =~ ^doccheck: ]] && continue
                     if [[ "$doc_line" =~ ^@param[[:space:]]+([a-zA-Z_][a-zA-Z0-9_]*)[[:space:]]+${DOC_TYPE_RE}[[:space:]]*(.*) ]]; then
                         local p_name="${BASH_REMATCH[1]}"
                         local p_type="${BASH_REMATCH[2]}"
@@ -254,6 +256,8 @@ parse_module() {
             if [[ $is_public -eq 1 ]]; then
                 local desc=""
                 for doc_line in "${doc_buffer[@]}"; do
+                    # A doccheck: line is for tools/check_docs.py, which reads it from the source
+                    [[ "$doc_line" =~ ^doccheck: ]] && continue
                     if [[ ! "$doc_line" =~ ^@ ]]; then
                         if [[ -n "$desc" ]]; then
                             desc+=" "
@@ -273,6 +277,8 @@ parse_module() {
                 struct_desc=""
                 struct_doc_fields=""
                 for doc_line in "${doc_buffer[@]}"; do
+                    # A doccheck: line is for tools/check_docs.py, which reads it from the source
+                    [[ "$doc_line" =~ ^doccheck: ]] && continue
                     if [[ "$doc_line" =~ ^@field[[:space:]]+([a-zA-Z_][a-zA-Z0-9_]*)[[:space:]]+${DOC_TYPE_RE}[[:space:]]*(.*) ]]; then
                         local f_name="${BASH_REMATCH[1]}"
                         local f_type="${BASH_REMATCH[2]}"
@@ -671,6 +677,7 @@ generate_json() {
 
     local desc_joined=""
     for d in "${__module_desc[@]}"; do
+        [[ "$d" =~ ^doccheck: ]] && continue
         if [[ -n "$desc_joined" ]]; then
             desc_joined+=" "
         fi
@@ -1049,6 +1056,9 @@ EOF
             # Get first line of module description
             local desc=""
             while IFS= read -r line; do
+                if [[ "$line" =~ ^///[[:space:]]*doccheck: ]]; then
+                    continue
+                fi
                 if [[ "$line" =~ ^///[[:space:]]*(.*) ]]; then
                     desc="${BASH_REMATCH[1]}"
                     break

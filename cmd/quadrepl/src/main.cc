@@ -952,7 +952,7 @@ private:
 		command("help, :help, :h", "Show this help message");
 		command("exit, quit, :q", "Exit the REPL");
 		command("stack, :stack", "Show current stack values");
-		command("type, :type", "Show stack types (i64, f64, str, ptr)");
+		command("type, :type", "Show stack types (i64, f64, d128, str, ptr)");
 		command("clear, :clear", "Clear the stack");
 		command("reset, :reset", "Reset the REPL: stack, definitions and imports");
 		command(":doc <name>", "Show a signature; with no exact match, search names");

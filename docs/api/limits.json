@@ -1,6 +1,6 @@
 {
   "name": "limits",
-  "description": "Numeric limits and constants. Provides minimum and maximum values for numeric types. doccheck: page-context",
+  "description": "Numeric limits and constants. Provides minimum and maximum values for numeric types.",
   "constants": [
     {
       "name": "F64Epsilon",

@@ -438,36 +438,3 @@ std::vector<std::string> loadDependenciesFromManifest(const std::string& manifes
 	json_decref(root);
 	return includePaths;
 }
-
-std::vector<std::string> findNamespaceFiles(const std::string& namespaceName, const std::string& sourceDir) {
-	// Namespace directory import - similar to findModuleFiles but for external namespaces
-	std::vector<std::string> result;
-
-	// Try 1: Local path (relative to source file)
-	result = tryGetModuleFilesFromDir(sourceDir + "/" + namespaceName);
-	if (!result.empty()) {
-		return result;
-	}
-
-	// Try 2: Include paths from -I flags
-	for (const auto& includePath : g_moduleIncludePaths) {
-		std::string expandedPath = expandTilde(includePath);
-
-		// Check for namespace as subdirectory of include path
-		result = tryGetModuleFilesFromDir(expandedPath + "/" + namespaceName);
-		if (!result.empty()) {
-			return result;
-		}
-	}
-
-	// Try 3: Third-party packages directory
-	std::string packagePath = findLatestPackageVersion(namespaceName);
-	if (!packagePath.empty()) {
-		result = tryGetModuleFilesFromDir(packagePath);
-		if (!result.empty()) {
-			return result;
-		}
-	}
-
-	return {}; // Not found
-}

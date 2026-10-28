@@ -2,11 +2,21 @@
 
 <!-- doccheck: page-context use bits -->
 
+Bitwise operations for integer manipulation.
+
+`and`, `or` and `not` are logical words in Quadrate -- every non-zero value counts as
+true, so `2 1 and` is 1. The bitwise operations of the same names live here, where the
+`bits::` in front says which meaning is meant. `shl` and `shr` have no logical
+counterpart and stay builtins.
+
+The four core operations below are one machine instruction each; the rest of the
+module is higher-level bit manipulation built on them.
+
 ## Functions
 
 ### `fn` and
 
-Bitwise operations for integer manipulation.  `and`, `or` and `not` are logical words in Quadrate -- every non-zero value counts as true, so `2 1 and` is 1. The bitwise operations of the same names live here, where the `bits::` in front says which meaning is meant. `shl` and `shr` have no logical counterpart and stay builtins.  The four core operations below are one machine instruction each; the rest of the module is higher-level bit manipulation built on them. Bitwise AND. doccheck: page-context
+Bitwise AND.
 
 **Signature:** `(a:i64 b:i64 -- result:i64)`
 
@@ -223,7 +233,7 @@ Get the lowest set bit as a value (isolate lowest bit).
 
 ### `fn` mask
 
-Keep only the bottom N bits. doccheck: page-context
+Keep only the bottom N bits.
 
 **Signature:** `(value:i64 num_bits:i64 -- result:i64)`
 

@@ -5,8 +5,6 @@
 #include <unordered_map>
 #include <vector>
 
-#define QUADC_VERSION "0.1.0"
-
 struct Options {
 	std::vector<std::string> files;
 	std::vector<std::string> runArgs;	   // Arguments to pass to the program when using -r

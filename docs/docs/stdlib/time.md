@@ -14,6 +14,8 @@
 
 <!-- doccheck: page-setup 1700086400 -> end_time -->
 
+Time operations and duration constants.
+
 ## Constants
 
 | Name | Value | Description |
@@ -36,7 +38,7 @@
 | `Millisecond` | `1000000` | Duration = 1 millisecond (1,000,000 nanoseconds). |
 | `Minute` | `60000000000` | Duration = 1 minute (60 seconds). |
 | `Monday` | `1` |  |
-| `Nanosecond` | `1` | Time operations and duration constants. Duration = 1 nanosecond. doccheck: page-context doccheck: page-setup 1700000000 -> ts1 doccheck: page-setup 1700086400 -> ts2 doccheck: page-setup 1700000000 -> start_ts doccheck: page-setup 1700086400 -> end_ts doccheck: page-setup 1700000000 -> start_time doccheck: page-setup 1700086400 -> end_time |
+| `Nanosecond` | `1` | Duration = 1 nanosecond. |
 | `November` | `11` |  |
 | `October` | `10` |  |
 | `Saturday` | `6` |  |

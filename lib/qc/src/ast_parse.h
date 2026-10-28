@@ -6,7 +6,6 @@
 
 #include "ast_node_block.h"
 #include "ast_node_comment.h"
-#include "ast_node_label.h"
 #include "source_utils.h"
 #include <quadrate/qc/instructions.h>
 #include <quadrate/qc/numeric_literal.h>
@@ -20,7 +19,7 @@
 #include <quadrate/qc/ast.h>
 #include <quadrate/qc/ast_node.h>
 #include <quadrate/qc/ast_node_anonymous_function.h>
-#include <quadrate/qc/ast_node_array.h>
+#include <quadrate/qc/ast_node_array_literal.h>
 #include <quadrate/qc/ast_node_as_cast.h>
 #include <quadrate/qc/ast_node_break.h>
 #include <quadrate/qc/ast_node_constant.h>

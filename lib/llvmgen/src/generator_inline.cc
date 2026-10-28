@@ -441,41 +441,6 @@ namespace Qd {
 		builder->CreateStore(newSize, sa.sizePtr);
 	}
 
-	void LlvmGenerator::Impl::generateInlineOver(llvm::Value* ctx) {
-		// Inline over: copy second element to top ( a b -- a b a )
-		auto sa = getStackAccess(ctx);
-		// Get second from top (size - 2)
-		llvm::Value* secondIdx = builder->CreateSub(sa.size, builder->getInt64(2), "second_idx");
-		llvm::Value* secondElemPtr = builder->CreateGEP(stackElementTy, sa.data, secondIdx, "second_elem");
-		// Get new top position (size)
-		llvm::Value* newElemPtr = builder->CreateGEP(stackElementTy, sa.data, sa.size, "new_elem");
-		// Copy second element to new top
-		llvm::Value* secondValue = builder->CreateLoad(stackElementTy, secondElemPtr, "second_value");
-		builder->CreateStore(secondValue, newElemPtr);
-		// Increment size
-		llvm::Value* newSize = builder->CreateAdd(sa.size, builder->getInt64(1), "new_size");
-		builder->CreateStore(newSize, sa.sizePtr);
-	}
-
-	void LlvmGenerator::Impl::generateInlineRot(llvm::Value* ctx) {
-		// Inline rot: rotate top three elements ( a b c -- b c a )
-		auto sa = getStackAccess(ctx);
-		// Get pointers to top three elements
-		llvm::Value* idx1 = builder->CreateSub(sa.size, builder->getInt64(3), "idx1");
-		llvm::Value* elem1Ptr = builder->CreateGEP(stackElementTy, sa.data, idx1, "elem1_ptr");
-		llvm::Value* idx2 = builder->CreateSub(sa.size, builder->getInt64(2), "idx2");
-		llvm::Value* elem2Ptr = builder->CreateGEP(stackElementTy, sa.data, idx2, "elem2_ptr");
-		llvm::Value* idx3 = builder->CreateSub(sa.size, builder->getInt64(1), "idx3");
-		llvm::Value* elem3Ptr = builder->CreateGEP(stackElementTy, sa.data, idx3, "elem3_ptr");
-		// Load all three and rotate: a b c -> b c a
-		llvm::Value* elem1 = builder->CreateLoad(stackElementTy, elem1Ptr, "elem1");
-		llvm::Value* elem2 = builder->CreateLoad(stackElementTy, elem2Ptr, "elem2");
-		llvm::Value* elem3 = builder->CreateLoad(stackElementTy, elem3Ptr, "elem3");
-		builder->CreateStore(elem2, elem1Ptr);
-		builder->CreateStore(elem3, elem2Ptr);
-		builder->CreateStore(elem1, elem3Ptr);
-	}
-
 	llvm::Value* LlvmGenerator::Impl::generateInlinePopInt(llvm::Value* ctx) {
 		// Inline pop for integer-only functions - returns the popped i64 value
 		auto sa = getStackAccess(ctx);

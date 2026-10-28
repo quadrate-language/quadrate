@@ -41,11 +41,6 @@ namespace Qd {
 			return mNames;
 		}
 
-		// Check if this is a multiple assignment
-		bool isMultiple() const {
-			return mNames.size() > 1;
-		}
-
 		size_t childCount() const override {
 			return 0;
 		}

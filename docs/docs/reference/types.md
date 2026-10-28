@@ -47,7 +47,7 @@ Use `strconv::atoi`, `strconv::parse_int`, `strconv::parse_float`, `strconv::par
 |------|-------------|------|
 | `i64` | 64-bit signed integer | 8 bytes |
 | `f64` | 64-bit floating-point | 8 bytes |
-| `d128` | IEEE 754 decimal128: 34 decimal digits, written `0.1d` | 8 bytes (pointer) |
+| `d128` | IEEE 754 decimal128: 34 decimal digits, written `0.1d` | 16 bytes |
 | `str` | String | Variable |
 | `ptr` | Pointer | 8 bytes |
 | `[]T` | Typed array (e.g., `[]i64`, `[]f64`, `[]str`) | 8 bytes (pointer) |
@@ -56,7 +56,7 @@ Use `strconv::atoi`, `strconv::parse_int`, `strconv::parse_float`, `strconv::par
 
 ### Sized integer types
 
-Quadrate's runtime stack holds 64-bit values, but struct fields and memory buffers can use narrower integer types to match binary layouts or pack data more tightly. Sized integers only matter at memory boundaries: a load sign-extends (signed) or zero-extends (unsigned) to i64 on the stack; a store truncates to the field's width.
+Quadrate's runtime stack holds 64-bit integers and floats, but struct fields and memory buffers can use narrower integer types to match binary layouts or pack data more tightly. Sized integers only matter at memory boundaries: a load sign-extends (signed) or zero-extends (unsigned) to i64 on the stack; a store truncates to the field's width.
 
 | Type | Description | Size |
 |------|-------------|------|
@@ -115,15 +115,21 @@ Types are checked at compile time. The compiler verifies stack effects match dec
 
 ### Implicit conversions
 
-Quadrate does not perform implicit type conversions. Use explicit casts:
+An `i64` widens where it meets another number type, in arithmetic, in comparisons and as an
+argument: to `f64` beside an `f64`, and to `d128` beside a `d128`, where it is exact. An
+`f64` and a `d128` do not mix, because converting the `f64` would bring in the binary
+rounding `d128` exists to keep out; convert explicitly with `cast<d128>`.
 
 ```qd
-// WRONG: Type mismatch
-5 3.0 + // Error!
-
-// CORRECT: Explicit cast
-5 cast<f64> 3.0 + // 8
+fn main() {
+	5 3.5 + print nl              // 8.5
+	2 1.5d + print nl             // 3.5
+	1.5 cast<d128> 2d + print nl  // 3.5
+}
 ```
+
+Nothing else converts implicitly: a string never becomes a number, and `cast<T>` is the
+explicit conversion.
 
 ---
 

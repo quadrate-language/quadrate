@@ -1,6 +1,6 @@
 {
   "name": "sort",
-  "description": "Sorting algorithms for arrays. Every entry point takes a `[]T` -- `[]i64`, `[]f64` or `[]str` -- and nothing takes a count beside it: the array carries its length, and saying it twice is a chance to say it wrong. The sorts reorder in place; `min`, `max`, `search` and the `is_sorted` pair only read. doccheck: page-context doccheck: page-context fn by_length(a:i64 b:i64 -- order:i64) { a b - } doccheck: page-context fn ascending(a:i64 b:i64 -- order:i64) { a b - } doccheck: page-setup [5 2 8 1] -> arr doccheck: page-setup [5.0 2.0 8.0 1.0] -> farr doccheck: page-setup [\"b\" \"a\" \"c\" \"d\"] -> strs",
+  "description": "Sorting algorithms for arrays. Every entry point takes a `[]T` -- `[]i64`, `[]f64` or `[]str` -- and nothing takes a count beside it: the array carries its length, and saying it twice is a chance to say it wrong. The sorts reorder in place; `min`, `max`, `search` and the `is_sorted` pair only read.",
   "constants": [
 
   ],

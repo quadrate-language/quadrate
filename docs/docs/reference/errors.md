@@ -7,7 +7,7 @@ Built-in operations for error handling.
 | Instruction | Signature | Description |
 |-------------|-----------|-------------|
 | `panic` | `(msg code --)` | Signal a panic (error) |
-| `err` | `(-- msg code)` | Get error code from last fallible call |
+| `err` | `(-- msg code)` | Get the message and code of the last failed call |
 | `Ok` | `(-- 1)` | Builtin constant for success |
 | `Err` | `(-- 0)` | Builtin constant for generic error |
 
@@ -38,6 +38,28 @@ Signals a panic with a message and code. Used in fallible functions.
 
 ```qd
 "invalid input" 1 panic
+```
+
+### err
+
+Pushes the message and code of the last failed call, and clears them. A failed call leaves
+nothing of its own on the stack, so `err` is how an `else` branch or a `switch` arm gets at
+what went wrong.
+
+**Signature:** `(-- msg code)`
+
+```qd
+use io
+
+fn main() {
+	"/no/such/file" io::Read io::open if {
+		io::close
+	} else {
+		err -> code -> msg
+		"code: " print code print nl     // 2
+		"message: " print msg print nl  // No such file or directory
+	}
+}
 ```
 
 ---

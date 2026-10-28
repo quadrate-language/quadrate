@@ -8,7 +8,6 @@ qdrt_sources = files(
 		'src/runtime_io.c',
 		'src/runtime_d128.c',
 		'src/stack.c',
-		'src/memory.c',
 		'src/qd_string.c',
 		'src/qd_struct.c',
 		'src/array.c',

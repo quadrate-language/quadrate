@@ -1,6 +1,6 @@
 {
   "name": "ct",
-  "description": "Generic container types. Provides Vec, HashMap, Set, Queue, Deque, and Pair. doccheck: page-context",
+  "description": "Generic container types. Provides Vec, HashMap, Set, Queue, Deque, and Pair.",
   "constants": [
 
   ],

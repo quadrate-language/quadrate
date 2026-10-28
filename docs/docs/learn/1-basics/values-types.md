@@ -1,6 +1,6 @@
 # Values and types
 
-Quadrate has four basic types. Understanding them is essential.
+Quadrate has five basic types. Understanding them is essential.
 
 ## Integer (i64)
 
@@ -46,6 +46,29 @@ fn main() {
 
 **Important:** Write `2.0` not `2` when you want a float. `2` is an integer.
 
+## Decimal (d128)
+
+A `d128` is a decimal number with 34 significant digits, written with a `d`. Where an `f64`
+holds the nearest binary fraction, a `d128` holds the decimal digits exactly, so it is the
+type for money and anything else people count in tenths and hundredths:
+
+```qd
+use decimal
+
+fn main() {
+	0.1 0.2 + 0.3 == print nl     // 0
+	0.1d 0.2d + 0.3d == print nl  // 1
+	19.99d 3 * print nl           // 59.97
+	2.50d print nl                // 2.50
+	10d 3d / 0.01d decimal::quantize print nl  // 3.33
+}
+```
+
+An integer mixes with a `d128`, as `19.99d 3 *` does; an `f64` does not, and needs
+`cast<d128>`. A value keeps the decimal places it was written or computed with, so `2.50d`
+prints as `2.50`, and `decimal::quantize` rounds to a number of places. The
+[`decimal`](../../stdlib/decimal.md) module has the rest: `sqrt`, `pow`, rounding and more.
+
 ## String (str)
 
 Text enclosed in double quotes:
@@ -82,7 +105,7 @@ fn main() {
 }
 ```
 
-Expressions in `{...}` are evaluated and converted to strings. String variables use `sb::append`, integer variables use `sb::append_int`. The `sb` module is auto-imported when `$"..."` is used.
+Each `{...}` names a variable or constant, and its value is converted to a string whatever its type. It is a name, not an expression: compute `x + y` into a local first. The `sb` module is auto-imported when `$"..."` is used.
 
 ### Choosing a string method
 

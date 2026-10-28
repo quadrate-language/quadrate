@@ -170,17 +170,22 @@ Examples: `"hello"`, `"line1\nline2"`
 
 **String interpolation:**
 ```
-interp_string := '$"' (character | '{' expression '}')* '"'
+interp_string := '$"' (character | '{' (identifier | scoped_id) '}')* '"'
 ```
 
-Interpolated strings are prefixed with `$`. Expressions inside `{...}` are evaluated and converted to strings. The compiler desugars `$"..."` into `sb::new` / `sb::append` / `sb::finish` calls (the `sb` module is auto-imported).
+Interpolated strings are prefixed with `$`. Each `{...}` names one value -- a local, a
+constant, or a module-qualified name such as `math::Pi` -- which is converted to a string
+whatever its type. It is a name, not an expression: `{x + y}` is an error naming the
+undefined identifier `x + y`; compute the value into a local first. The compiler desugars
+`$"..."` into `sb::new` / `sb::append` / `sb::finish` calls (the `sb` module is
+auto-imported).
 
 Examples:
 ```quadrate
-$"Hello, {name}!"              // Variable interpolation
-$"{first} {last}"              // Multiple expressions
-$"Age: {age}"                  // Integer auto-converted to string
-$"result={x + y}"             // Expression interpolation
+$"Hello, {name}!"              // A local
+$"{first} {last}"              // Several names
+$"Age: {age}"                  // An integer, converted to a string
+$"pi={math::Pi}"               // A module-qualified constant
 ```
 
 #### 2.3.5 Operators and Punctuation
@@ -251,20 +256,21 @@ Whitespace is not, however, insignificant everywhere. Two rules read it, and bot
 
 ### 3.1 Primitive Types
 
-Implementations MUST support these four primitive types:
+Implementations MUST support these five primitive types:
 
 | Type  | Description | Size |
 |-------|-------------|------|
 | `i64` | Signed 64-bit integer | 8 bytes |
 | `f64` | IEEE 754 double-precision float | 8 bytes |
-| `d128` | IEEE 754 decimal128 float (§3.1.2) | pointer |
+| `d128` | IEEE 754 decimal128 float (§3.1.2) | 16 bytes |
 | `str` | Immutable UTF-8 string | pointer |
 | `ptr` | Generic pointer | 8 bytes |
 
-**Note**: Every value on the runtime stack MUST be 64-bit. Implementations MUST NOT introduce
-narrower *stack* types; arithmetic, comparison, and all stack operations operate on `i64`,
-`f64` and `d128` only. Narrower widths exist solely as memory-layout annotations — see §3.1.1.
-A `d128` is wider than a slot, so the slot holds a reference to it, as it does for a `str`.
+**Note**: Arithmetic, comparison, and all stack operations operate on `i64`, `f64` and `d128`
+only; implementations MUST NOT introduce narrower *stack* types. Narrower widths exist solely
+as memory-layout annotations — see §3.1.1. A stack slot is wide enough to hold a `d128` in
+place, so a `d128` is copied by value and needs no reference counting; a `str` is held by
+reference.
 
 **Strings are UTF-8, and their unit is the codepoint.** Every index and length a string
 operation takes or returns MUST count codepoints, not bytes: `"héllo" strings::len` is 5, and
@@ -583,7 +589,7 @@ struct qd_stack_element {
         double f;       // Float value
         void* p;        // Pointer value
         qd_string_t* s; // String reference
-        qd_d128_t* q;   // d128 reference
+        qd_d128_t d;    // d128 value, held in place
     } value;
 
     qd_stack_type type;      // Type tag: INT=0, FLOAT=1, PTR=2, STR=3, D128=4
@@ -1942,6 +1948,11 @@ yields `-9223372036854775808` with remainder `0`. Division or modulo by zero is 
 error; when the divisor is a literal `0` it is a compile-time error. An exponent makes a
 literal a float, so `1e3` is an `f64` and there is no exponent spelling for an integer.
 
+**Mixed operands.** An `i64` operand beside an `f64` is converted to `f64`, and the
+operation is an `f64` one: `5 3.5 +` is `8.5`. An `i64` operand beside a `d128` is widened
+to `d128` exactly (§3.1.2). An `f64` operand beside a `d128` is a compile-time error. The
+same rules apply to the comparisons (§12.2).
+
 **Float semantics.** `f64` arithmetic follows IEEE 754. Division by zero is therefore
 *defined*, not an error: `1.0 0.0 /` is `inf`, `-1.0 0.0 /` is `-inf`, and `0.0 0.0 /` is
 NaN. The integer rule above does not apply to floats, and neither the compiler nor the
@@ -1953,7 +1964,8 @@ error on float operands; `math::fmod` is the float remainder.
 
 **d128 semantics.** `d128` arithmetic follows IEEE 754-2008 decimal128, with the rules of
 §3.1.2: every result is rounded to 34 digits with roundTiesToEven, the operands of `+ - * /`
-and the comparisons are both `d128` or it is a compile-time error, and division by zero gives
+and the comparisons are both `d128`, or one `d128` and one `i64` that is widened to it, or it
+is a compile-time error; and division by zero gives
 `inf` or NaN. The exponent of a result is IEEE's preferred exponent, so `1.5d 2d *` is `3.0`
 and `10d 4d /` is `2.5`.
 
@@ -2241,8 +2253,8 @@ Implementations MUST provide the following runtime functions:
 - `qd_pop_f(ctx, &val)` - Pop float
 - `qd_pop_s(ctx, buf, size)` - Pop string into buffer
 - `qd_pop_p(ctx, &val)` - Pop pointer
-- `qd_push_d(ctx, d128)` - Push d128 (the stack takes a reference of its own)
-- `qd_pop_d(ctx, &val)` - Pop d128 (the caller takes the stack's reference)
+- `qd_push_d(ctx, d128)` - Push d128 (by value)
+- `qd_pop_d(ctx, &val)` - Pop d128 (by value)
 
 **Operations:**
 - `qd_add`, `qd_sub`, `qd_mul`, `qd_div`, `qd_mod` - Arithmetic
@@ -2306,7 +2318,7 @@ defer_stmt      = "defer" ( block | statement ) ;
 expression      = literal | identifier | scoped_id | struct_const | array_lit
                 | field_access | field_set | local_bind | fn_call | anon_fn
                 | operator | instruction | as_cast | interp_string ;
-interp_string   = "$\"" { character | "{" expression "}" } "\"" ;
+interp_string   = "$\"" { character | "{" ( identifier | scoped_id ) "}" } "\"" ;
 as_cast         = "as" type ;
 
 literal         = integer | float | d128 | string | "true" | "false" | "Ok" | "Err" | "null" ;

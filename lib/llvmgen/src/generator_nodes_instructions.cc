@@ -564,7 +564,6 @@ namespace Qd {
 			auto structTypeIt = localVariableStructTypes.find(name);
 			if (structTypeIt != localVariableStructTypes.end()) {
 				lastStructConstructed = structTypeIt->second;
-				lastStructWasConstructedInPlace = false;
 			}
 			return;
 		}
@@ -1068,7 +1067,6 @@ namespace Qd {
 				}
 				return;
 			}
-			lastIdentifierPushed.clear();
 
 			llvm::Function* qdPopPFn = module->getFunction("qd_pop_p");
 			if (!qdPopPFn) {
@@ -1092,13 +1090,11 @@ namespace Qd {
 			// `-> name`, a method call -- resolves against it the way it would after `nth`.
 			lastFieldAccessResultType = structName;
 			lastStructConstructed = structName;
-			lastStructWasConstructedInPlace = false;
 			lastPushedWasArray = false;
 			return;
 		} else if (name == "free") {
 			// Use qd_free for raw memory (mem::alloc, mem::from_string, etc.)
 			// Structs are released automatically via local cleanup code
-			lastIdentifierPushed.clear();
 
 			llvm::Function* qdFreeFn = module->getFunction("qd_free");
 			if (!qdFreeFn) {
@@ -1179,7 +1175,6 @@ namespace Qd {
 				if (!element.empty()) {
 					lastFieldAccessResultType = isKnownStruct(element) ? element : std::string();
 					lastStructConstructed = element;
-					lastStructWasConstructedInPlace = false;
 					lastPushedWasArray = isArrayType(element);
 				}
 			}

@@ -333,17 +333,6 @@ void qd_stack_truncate(qd_context* ctx, int64_t target);
 int qd_free(qd_context* ctx);
 
 /**
- * @brief Release a reference-counted struct from the stack ( ptr -- )
- *
- * Pops a struct pointer and calls qd_struct_release() on it.
- * The struct will be freed when its refcount reaches 0.
- *
- * @param ctx Execution context
- * @return Execution result (0 on success)
- */
-int qd_free_struct(qd_context* ctx);
-
-/**
  * @brief Rotate three elements ( a b c -- b c a )
  *
  * @param ctx Execution context
@@ -946,24 +935,6 @@ void qd_coverage_report(int use_color);
 void qd_print_error_msg(qd_context* ctx, const char* func_name);
 
 /**
- * @brief Set user-defined error context
- *
- * Sets a context string that will be prepended to the error message
- * when a failable function fails. Cleared automatically after use.
- *
- * @param ctx Execution context
- * @param context Context string (e.g., "reading config file")
- */
-void qd_set_error_context(qd_context* ctx, const char* context);
-
-/**
- * @brief Clear user-defined error context
- *
- * @param ctx Execution context
- */
-void qd_clear_error_context(qd_context* ctx);
-
-/**
  * @brief Print the data stack contents for debugging
  *
  * Prints all values currently on the data stack to stderr.
@@ -979,16 +950,6 @@ void qd_clear_error_context(qd_context* ctx);
 void qd_debug_print_stack(qd_context* ctx);
 
 /**
- * @brief Dump stack contents for error reporting
- *
- * Prints all stack values to stderr with type information.
- * Used internally for fatal error reporting.
- *
- * @param ctx Execution context
- */
-void qd_dump_stack(qd_context* ctx);
-
-/**
  * @brief Safely set error message on context
  *
  * Sets ctx->error_msg, freeing any previous message.
@@ -1000,159 +961,6 @@ void qd_dump_stack(qd_context* ctx);
 void qd_set_error_msg(qd_context* ctx, const char* msg);
 
 /** @} */ // end of CallStack group
-
-/**
- * @defgroup Memory Memory Management Operations
- * @brief Functions for dynamic memory allocation and access
- * @{
- */
-
-/**
- * @brief Allocate memory
- *
- * Stack: ( bytes:i -- address:p )
- * Returns NULL (0) on failure.
- *
- * @param ctx Execution context
- * @return Execution result (0 on success)
- */
-int qd_mem_alloc(qd_context* ctx);
-
-/**
- * @brief Free memory
- *
- * Stack: ( address:p -- )
- * Passing NULL is safe (no-op).
- *
- * @param ctx Execution context
- * @return Execution result (0 on success)
- */
-int qd_mem_free(qd_context* ctx);
-
-/**
- * @brief Reallocate memory
- *
- * Stack: ( address:p new_bytes:i -- new_address:p )
- * Returns NULL on failure (original preserved).
- *
- * @param ctx Execution context
- * @return Execution result (0 on success)
- */
-int qd_mem_realloc(qd_context* ctx);
-
-/**
- * @brief Set byte at address
- *
- * Stack: ( address:p offset:i value:i -- )
- * Stores lower 8 bits of value.
- *
- * @param ctx Execution context
- * @return Execution result (0 on success, -1 on null pointer)
- */
-int qd_mem_set_byte(qd_context* ctx);
-
-/**
- * @brief Get byte from address
- *
- * Stack: ( address:p offset:i -- value:i )
- * Returns zero-extended byte value.
- *
- * @param ctx Execution context
- * @return Execution result (0 on success, -1 on null pointer)
- */
-int qd_mem_get_byte(qd_context* ctx);
-
-/**
- * @brief Set 64-bit integer at address
- *
- * Stack: ( address:p offset:i value:i -- )
- *
- * @param ctx Execution context
- * @return Execution result (0 on success, -1 on null pointer)
- */
-int qd_mem_set(qd_context* ctx);
-
-/**
- * @brief Get 64-bit integer from address
- *
- * Stack: ( address:p offset:i -- value:i )
- *
- * @param ctx Execution context
- * @return Execution result (0 on success, -1 on null pointer)
- */
-int qd_mem_get(qd_context* ctx);
-
-/**
- * @brief Set float at address
- *
- * Stack: ( address:p offset:i value:f -- )
- *
- * @param ctx Execution context
- * @return Execution result (0 on success, -1 on null pointer)
- */
-int qd_mem_set_float(qd_context* ctx);
-
-/**
- * @brief Get float from address
- *
- * Stack: ( address:p offset:i -- value:f )
- *
- * @param ctx Execution context
- * @return Execution result (0 on success, -1 on null pointer)
- */
-int qd_mem_get_float(qd_context* ctx);
-
-/**
- * @brief Set pointer at address
- *
- * Stack: ( address:p offset:i value:p -- )
- *
- * @param ctx Execution context
- * @return Execution result (0 on success, -1 on null pointer)
- */
-int qd_mem_set_ptr(qd_context* ctx);
-
-/**
- * @brief Get pointer from address
- *
- * Stack: ( address:p offset:i -- value:p )
- *
- * @param ctx Execution context
- * @return Execution result (0 on success, -1 on null pointer)
- */
-int qd_mem_get_ptr(qd_context* ctx);
-
-/**
- * @brief Copy memory
- *
- * Stack: ( src:p dst:p bytes:i -- )
- *
- * @param ctx Execution context
- * @return Execution result (0 on success, -1 on null pointer)
- */
-int qd_mem_copy(qd_context* ctx);
-
-/**
- * @brief Zero memory
- *
- * Stack: ( address:p bytes:i -- )
- *
- * @param ctx Execution context
- * @return Execution result (0 on success, -1 on null pointer)
- */
-int qd_mem_zero(qd_context* ctx);
-
-/**
- * @brief Fill memory with byte value
- *
- * Stack: ( address:p bytes:i value:i -- )
- *
- * @param ctx Execution context
- * @return Execution result (0 on success, -1 on null pointer)
- */
-int qd_mem_fill(qd_context* ctx);
-
-/** @} */ // end of Memory group
 
 /**
  * @defgroup PtrManagement Generic Pointer Management
@@ -1241,47 +1049,6 @@ const char* qd_version(void);
  * @return API version number
  */
 int qd_version_api(void);
-
-/**
- * @brief Get the Quadrate major version number
- *
- * @return Major version number
- */
-int qd_version_major(void);
-
-/**
- * @brief Get the Quadrate minor version number
- *
- * @return Minor version number
- */
-int qd_version_minor(void);
-
-/**
- * @brief Get the Quadrate patch version number
- *
- * @return Patch version number
- */
-int qd_version_patch(void);
-
-/**
- * @brief Push version string onto stack
- *
- * Stack: ( -- version:str )
- *
- * @param ctx Execution context
- * @return Execution result (0 on success)
- */
-int qd_rt_version(qd_context* ctx);
-
-/**
- * @brief Push API version number onto stack
- *
- * Stack: ( -- api_version:i )
- *
- * @param ctx Execution context
- * @return Execution result (0 on success)
- */
-int qd_rt_version_api(qd_context* ctx);
 
 /** @} */ // end of Version group
 

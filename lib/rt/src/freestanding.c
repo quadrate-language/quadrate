@@ -59,7 +59,6 @@ qd_context qd_freestanding_ctx = {
 		.argv = (char**)0,
 		.program_name = (char*)0,
 		.call_stack_depth = 0,
-		.error_context = (char*)0,
 		.userdata = (void*)0,
 };
 
@@ -328,8 +327,8 @@ static int push_i_inline(qd_context* ctx, int64_t v) {
 
 BINOP_I(qd_add, a + b)
 BINOP_I(qd_sub, a - b)
-BINOP_I(qd_mul, a * b)
-BINOP_I(qd_and, a & b)
+BINOP_I(qd_mul, a* b)
+BINOP_I(qd_and, a& b)
 BINOP_I(qd_or, a | b)
 BINOP_I(qd_xor, a ^ b)
 BINOP_I(qd_shl, a << b)

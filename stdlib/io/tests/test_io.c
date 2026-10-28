@@ -6,17 +6,50 @@
  */
 
 #include <quadrate/io/io.h>
-#include <quadrate/rt/runtime.h>
 #include <quadrate/rt/context.h>
-#include <quadrate/rt/stack.h>
 #include <quadrate/rt/qd_string.h>
-#include <unit-check/uc.h>
+#include <quadrate/rt/runtime.h>
+#include <quadrate/rt/stack.h>
 #include <stdlib.h>
 #include <string.h>
-#include <unistd.h>
 #include <sys/stat.h>
+#include <unistd.h>
+#include <unit-check/uc.h>
 
 // Helper function to create a context
+// Text in and out over io::write and io::read, which take a buffer: ( handle str -- n status )
+// and ( handle count -- str n status ), so a test reads and writes strings directly
+static int write_text(qd_context* ctx) {
+	qd_stack_element_t text;
+	qd_stack_pop(ctx->st, &text);
+	const char* data = qd_string_data(text.value.s);
+	qd_push_p(ctx, (void*)data);
+	qd_push_i(ctx, (int64_t)strlen(data));
+	int result = usr_io_write(ctx);
+	qd_string_release(text.value.s);
+	return result;
+}
+
+static int read_text(qd_context* ctx) {
+	qd_stack_element_t count;
+	qd_stack_pop(ctx->st, &count);
+	char* buffer = calloc((size_t)count.value.i + 1, 1);
+	qd_push_p(ctx, buffer);
+	qd_push_i(ctx, count.value.i);
+	int result = usr_io_read(ctx);
+	if (result == 0) {
+		qd_stack_element_t status;
+		qd_stack_element_t bytes;
+		qd_stack_pop(ctx->st, &status);
+		qd_stack_pop(ctx->st, &bytes);
+		qd_push_s(ctx, buffer);
+		qd_push_i(ctx, bytes.value.i);
+		qd_push_i(ctx, status.value.i);
+	}
+	free(buffer);
+	return result;
+}
+
 static qd_context* create_test_context(void) {
 	qd_context* ctx = qd_create_context(256);
 	return ctx;
@@ -33,7 +66,6 @@ static char* create_temp_path(const char* suffix) {
 	snprintf(path, sizeof(path), "/tmp/quadrate_io_test_%d_%s", getpid(), suffix);
 	return path;
 }
-
 
 TEST(IoOpenReadTest) {
 	qd_context* ctx = create_test_context();
@@ -125,7 +157,6 @@ TEST(IoCloseNullTest) {
 	destroy_test_context(ctx);
 }
 
-
 TEST(IoWriteReadStringTest) {
 	qd_context* ctx = create_test_context();
 	char* path = create_temp_path("write_read.txt");
@@ -143,7 +174,7 @@ TEST(IoWriteReadStringTest) {
 	// Write data
 	qd_push_p(ctx, write_handle.value.p);
 	qd_push_s(ctx, test_data);
-	int result = usr_io_write_string(ctx);
+	int result = write_text(ctx);
 	ASSERT_EQ(result, 0, "write should succeed");
 
 	// Pop write status and bytes_written
@@ -168,7 +199,7 @@ TEST(IoWriteReadStringTest) {
 	// Read data
 	qd_push_p(ctx, read_handle.value.p);
 	qd_push_i(ctx, 100);
-	result = usr_io_read_string(ctx);
+	result = read_text(ctx);
 	ASSERT_EQ(result, 0, "read should succeed");
 
 	// Pop status, bytes_read, data
@@ -208,7 +239,7 @@ TEST(IoWriteReadEmptyTest) {
 	// Write empty string
 	qd_push_p(ctx, handle.value.p);
 	qd_push_s(ctx, "");
-	usr_io_write_string(ctx);
+	write_text(ctx);
 	qd_stack_pop(ctx->st, &status);
 	qd_stack_element_t written;
 	qd_stack_pop(ctx->st, &written);
@@ -226,7 +257,7 @@ TEST(IoWriteReadEmptyTest) {
 
 	qd_push_p(ctx, handle.value.p);
 	qd_push_i(ctx, 100);
-	usr_io_read_string(ctx);
+	read_text(ctx);
 	qd_stack_pop(ctx->st, &status);
 	qd_stack_element_t bytes_read;
 	qd_stack_pop(ctx->st, &bytes_read);
@@ -243,7 +274,6 @@ TEST(IoWriteReadEmptyTest) {
 	destroy_test_context(ctx);
 }
 
-
 TEST(IoSeekTellTest) {
 	qd_context* ctx = create_test_context();
 	char* path = create_temp_path("seek.txt");
@@ -259,7 +289,7 @@ TEST(IoSeekTellTest) {
 
 	qd_push_p(ctx, handle.value.p);
 	qd_push_s(ctx, "0123456789");
-	usr_io_write_string(ctx);
+	write_text(ctx);
 	qd_stack_pop(ctx->st, &status);
 	qd_stack_element_t written;
 	qd_stack_pop(ctx->st, &written);
@@ -290,7 +320,7 @@ TEST(IoSeekTellTest) {
 	// Read from position 5
 	qd_push_p(ctx, handle.value.p);
 	qd_push_i(ctx, 5);
-	usr_io_read_string(ctx);
+	read_text(ctx);
 	qd_stack_pop(ctx->st, &status);
 	qd_stack_element_t bytes_read;
 	qd_stack_pop(ctx->st, &bytes_read);
@@ -350,7 +380,6 @@ TEST(IoSeekEndTest) {
 	destroy_test_context(ctx);
 }
 
-
 TEST(IoEofTest) {
 	qd_context* ctx = create_test_context();
 	char* path = create_temp_path("eof.txt");
@@ -382,7 +411,7 @@ TEST(IoEofTest) {
 	// Read all content
 	qd_push_p(ctx, handle.value.p);
 	qd_push_i(ctx, 10);
-	usr_io_read_string(ctx);
+	read_text(ctx);
 	qd_stack_pop(ctx->st, &status);
 	qd_stack_element_t bytes_read;
 	qd_stack_pop(ctx->st, &bytes_read);
@@ -405,7 +434,6 @@ TEST(IoEofTest) {
 	unlink(path);
 	destroy_test_context(ctx);
 }
-
 
 TEST(IoReadFileTest) {
 	qd_context* ctx = create_test_context();
@@ -479,7 +507,6 @@ TEST(IoReadFileNotFoundTest) {
 	destroy_test_context(ctx);
 }
 
-
 TEST(IoMemoryTest) {
 	qd_context* ctx = create_test_context();
 	char* path = create_temp_path("memory.txt");
@@ -497,7 +524,7 @@ TEST(IoMemoryTest) {
 
 		qd_push_p(ctx, handle.value.p);
 		qd_push_s(ctx, "test data for memory check");
-		usr_io_write_string(ctx);
+		write_text(ctx);
 		qd_stack_pop(ctx->st, &status);
 		qd_stack_element_t written;
 		qd_stack_pop(ctx->st, &written);
@@ -514,7 +541,7 @@ TEST(IoMemoryTest) {
 
 		qd_push_p(ctx, handle.value.p);
 		qd_push_i(ctx, 100);
-		usr_io_read_string(ctx);
+		read_text(ctx);
 		qd_stack_pop(ctx->st, &status);
 		qd_stack_element_t bytes_read;
 		qd_stack_pop(ctx->st, &bytes_read);
@@ -539,7 +566,6 @@ TEST(IoFlushTest) {
 
 	destroy_test_context(ctx);
 }
-
 
 TEST(IoStatMtimeTest) {
 	qd_context* ctx = create_test_context();
@@ -571,7 +597,6 @@ TEST(IoStatMtimeTest) {
 	destroy_test_context(ctx);
 }
 
-
 TEST(IoStatAtimeTest) {
 	qd_context* ctx = create_test_context();
 	char* path = create_temp_path("stat_atime.txt");
@@ -601,7 +626,6 @@ TEST(IoStatAtimeTest) {
 	unlink(path);
 	destroy_test_context(ctx);
 }
-
 
 TEST(IoStatModeTest) {
 	qd_context* ctx = create_test_context();
@@ -646,7 +670,6 @@ TEST(IoStatModeTest) {
 	destroy_test_context(ctx);
 }
 
-
 TEST(IoStatMtimeNotFoundTest) {
 	qd_context* ctx = create_test_context();
 
@@ -662,7 +685,6 @@ TEST(IoStatMtimeNotFoundTest) {
 
 	destroy_test_context(ctx);
 }
-
 
 // Main - required for test executable
 int main(void) {

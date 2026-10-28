@@ -50,9 +50,7 @@ namespace Qd {
 	void SemanticValidator::typeCheckInstructionInternal(IAstNode* node, const char* name,
 			std::vector<StackValueType>& typeStack, std::vector<std::string>& structTypeStack, bool reportErrors) {
 		// Handle instruction aliases
-		if (strcmp(name, ".") == 0) {
-			name = "print";
-		} else if (strcmp(name, "/") == 0) {
+		if (strcmp(name, "/") == 0) {
 			name = "div";
 		} else if (strcmp(name, "*") == 0) {
 			name = "mul";
@@ -129,98 +127,8 @@ namespace Qd {
 			return;
 		}
 
-		// Arithmetic operations: abs, sq (preserve type)
-		if (strcmp(name, "abs") == 0 || strcmp(name, "sq") == 0) {
-			if (typeStack.empty()) {
-				std::string errorMsg = "Type error in '";
-				errorMsg += name;
-				errorMsg += "': Stack underflow (requires 1 numeric value)";
-				reportErrorConditional(node, errorMsg.c_str(), reportErrors);
-				return;
-			}
-
-			StackValueType top = typeStack.back();
-			if (!isNumericType(top)) {
-				std::string errorMsg = "Type error in '";
-				errorMsg += name;
-				errorMsg += "': Expected numeric type, got ";
-				errorMsg += typeToString(top);
-				reportErrorConditional(node, errorMsg.c_str(), reportErrors);
-				return;
-			}
-			// Type remains the same (already on stack)
-			return;
-		}
-		// Trigonometric functions: sin, cos, tan, asin, acos, atan (always return float)
-		else if (strcmp(name, "sin") == 0 || strcmp(name, "cos") == 0 || strcmp(name, "tan") == 0 ||
-				 strcmp(name, "asin") == 0 || strcmp(name, "acos") == 0 || strcmp(name, "atan") == 0) {
-			if (typeStack.empty()) {
-				std::string errorMsg = "Type error in '";
-				errorMsg += name;
-				errorMsg += "': Stack underflow (requires 1 numeric value)";
-				reportError(node, errorMsg.c_str());
-				return;
-			}
-
-			StackValueType top = typeStack.back();
-			if (!isNumericType(top)) {
-				std::string errorMsg = "Type error in '";
-				errorMsg += name;
-				errorMsg += "': Expected numeric type, got ";
-				errorMsg += typeToString(top);
-				reportError(node, errorMsg.c_str());
-				return;
-			}
-			// Pop and push float (trig functions always return float)
-			typeStack.pop_back();
-			typeStack.push_back(StackValueType::FLOAT);
-			return;
-		}
-		// Math functions: sqrt, cb, cbrt, ceil, floor, ln, log10, round (always return float)
-		else if (strcmp(name, "sqrt") == 0 || strcmp(name, "cb") == 0 || strcmp(name, "cbrt") == 0 ||
-				 strcmp(name, "ceil") == 0 || strcmp(name, "floor") == 0 || strcmp(name, "ln") == 0 ||
-				 strcmp(name, "log10") == 0 || strcmp(name, "round") == 0) {
-			if (typeStack.empty()) {
-				std::string errorMsg = "Type error in '";
-				errorMsg += name;
-				errorMsg += "': Stack underflow (requires 1 numeric value)";
-				reportError(node, errorMsg.c_str());
-				return;
-			}
-
-			StackValueType top = typeStack.back();
-			if (!isNumericType(top)) {
-				std::string errorMsg = "Type error in '";
-				errorMsg += name;
-				errorMsg += "': Expected numeric type, got ";
-				errorMsg += typeToString(top);
-				reportError(node, errorMsg.c_str());
-				return;
-			}
-			// Pop and push float (math functions always return float)
-			typeStack.pop_back();
-			typeStack.push_back(StackValueType::FLOAT);
-			return;
-		}
-		// Factorial function: fac (integer only, returns integer)
-		else if (strcmp(name, "fac") == 0) {
-			if (typeStack.empty()) {
-				reportError(node, "Type error in 'fac': Stack underflow (requires 1 integer value)");
-				return;
-			}
-
-			StackValueType top = typeStack.back();
-			if (top != StackValueType::INT) {
-				std::string errorMsg = "Type error in 'fac': Expected integer type, got ";
-				errorMsg += typeToString(top);
-				reportError(node, errorMsg.c_str());
-				return;
-			}
-			// Type remains integer (already on stack)
-			return;
-		}
 		// Increment/Decrement functions: inc, dec (preserve type)
-		else if (strcmp(name, "inc") == 0 || strcmp(name, "dec") == 0) {
+		if (strcmp(name, "inc") == 0 || strcmp(name, "dec") == 0) {
 			if (typeStack.empty()) {
 				std::string errorMsg = "Type error in '";
 				errorMsg += name;
@@ -241,28 +149,9 @@ namespace Qd {
 			// Type remains the same (already on stack)
 			return;
 		}
-		// Inverse function: inv (numeric input, returns float)
-		else if (strcmp(name, "inv") == 0) {
-			if (typeStack.empty()) {
-				reportError(node, "Type error in 'inv': Stack underflow (requires 1 numeric value)");
-				return;
-			}
-
-			StackValueType top = typeStack.back();
-			if (!isNumericType(top)) {
-				std::string errorMsg = "Type error in 'inv': Expected numeric type, got ";
-				errorMsg += typeToString(top);
-				reportError(node, errorMsg.c_str());
-				return;
-			}
-			// Pop and push float (inv always returns float)
-			typeStack.pop_back();
-			typeStack.push_back(StackValueType::FLOAT);
-			return;
-		}
-		// Binary arithmetic operations: add, sub, mul, div, pow
+		// Binary arithmetic operations: add, sub, mul, div
 		else if (strcmp(name, "add") == 0 || strcmp(name, "sub") == 0 || strcmp(name, "mul") == 0 ||
-				 strcmp(name, "div") == 0 || strcmp(name, "pow") == 0) {
+				 strcmp(name, "div") == 0) {
 			if (typeStack.size() < 2) {
 				std::string errorMsg = "Type error in '";
 				errorMsg += name;
@@ -289,10 +178,7 @@ namespace Qd {
 				const StackValueType other = (a == StackValueType::D128) ? b : a;
 				const bool otherOpen = other == StackValueType::ANY || other == StackValueType::UNKNOWN ||
 									   other == StackValueType::TYPEVAR;
-				if (strcmp(name, "pow") == 0) {
-					reportErrorConditionalWithHint(node, "Type error in 'pow': pow does not take d128",
-							"use 'decimal::pow' from the decimal module", reportErrors);
-				} else if (other != StackValueType::D128 && other != StackValueType::INT && !otherOpen) {
+				if (other != StackValueType::D128 && other != StackValueType::INT && !otherOpen) {
 					std::string errorMsg = "Type error in '";
 					errorMsg += name;
 					errorMsg += "': d128 does not mix with ";

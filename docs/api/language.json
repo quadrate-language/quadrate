@@ -84,6 +84,22 @@
       ]
     },
     {
+      "name": "d128",
+      "description": "IEEE 754 decimal128: 34 significant decimal digits, held exactly. An i64 widens to it; an f64 does not mix. The decimal module has the functions beyond the operators.",
+      "examples": [
+        "0.1d",
+        "19.99d",
+        "1.5e-3d"
+      ]
+    },
+    {
+      "name": "any",
+      "description": "Wildcard type for a parameter or value of any type; the value carries its type at run time",
+      "examples": [
+        "fn show(x:any -- ) { x print nl }"
+      ]
+    },
+    {
       "name": "str",
       "description": "String (UTF-8 encoded)",
       "examples": [

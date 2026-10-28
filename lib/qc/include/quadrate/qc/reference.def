@@ -325,7 +325,7 @@ BUILTIN(shl, "( a n -- result )", "Shifts a left by n bits.")
 /// Shift right.
 /// @signature ( a n -- result )
 /// @example 16 2 shr // 4
-BUILTIN(shr, "( a n -- result )", "Shifts a right by n bits (arithmetic shift).")
+BUILTIN(shr, "( a n -- result )", "Shifts a right by n bits, shifting in zeros (logical shift).")
 
 // ============================================================================
 // ARRAY OPERATIONS

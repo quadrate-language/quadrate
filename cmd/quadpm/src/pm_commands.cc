@@ -928,23 +928,6 @@ int buildModule() {
 	return 0;
 }
 
-// Compute SHA256 hash of a file or directory
-std::string computeSha256(const std::string& path) {
-	try {
-		std::string output = execCommand({"sha256sum", path});
-		// sha256sum output: "hash  filename\n" - extract just the hash
-		size_t spacePos = output.find(' ');
-		if (spacePos != std::string::npos) {
-			output = output.substr(0, spacePos);
-		}
-		// Trim whitespace
-		output.erase(output.find_last_not_of(" \t\r\n") + 1);
-		return output;
-	} catch (...) {
-		return "";
-	}
-}
-
 // List all tags from a remote git repository
 // Returns pairs of (tag_name, commit_hash)
 std::vector<std::pair<std::string, std::string>> listRemoteTags(const std::string& gitUrl) {

@@ -32,11 +32,9 @@
 #include <quadrate/qc/ast_node_test.h>
 #include <quadrate/qc/ast_node_use.h>
 #include <quadrate/qc/ast_node_while.h>
-#include <quadrate/qc/colors.h>
 #include <quadrate/qc/instructions.h>
 #include <quadrate/qc/numeric_literal.h>
 #include <quadrate/qc/semantic_validator.h>
-#include <sstream>
 #include <unordered_set>
 
 namespace Qd {
@@ -1232,12 +1230,6 @@ namespace Qd {
 		for (auto* child : node->children()) {
 			typeCheckFunction(child);
 		}
-	}
-
-	void SemanticValidator::typeCheckTest(IAstNode* node) {
-		// Tests are handled in typeCheckFunction along with functions
-		// This method exists for potential future specialized test validation
-		typeCheckFunction(node);
 	}
 
 	namespace {

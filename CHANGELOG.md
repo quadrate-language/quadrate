@@ -9,7 +9,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- **`d128` — IEEE 754-2008 decimal128.** A primitive type with 34 significant decimal digits, written with a `d`: `0.1d 0.2d +` is `0.3` and equals `0.3d`. `+ - * /`, `neg` and the comparisons take it; it mixes with nothing but another `d128` (`cast<d128>` converts, correctly rounded from an `f64`'s binary value), keeps the exponent a value was written with (`2.50d` prints as `2.50`), and works as a local, parameter, struct field, array element (`[]d128`, `[n]d128`), global, constant, closure capture and `switch` label. The arithmetic is libmpdec's, pinned by a wrap and linked into the runtime, so a compiled program needs nothing installed where it runs.
+- **`d128` — IEEE 754-2008 decimal128.** A primitive type with 34 significant decimal digits, written with a `d`: `0.1d 0.2d +` is `0.3` and equals `0.3d`. `+ - * /`, `neg` and the comparisons take it; an `i64` widens to it exactly, in arithmetic, comparisons and arguments, while an `f64` does not mix (`cast<d128>` converts, correctly rounded from the `f64`'s binary value); it is held in the stack slot itself, sixteen bytes with nothing to release; it keeps the exponent a value was written with (`2.50d` prints as `2.50`), and works as a local, parameter, struct field, array element (`[]d128`, `[n]d128`), global, constant, closure capture and `switch` label. The arithmetic is libmpdec's, pinned by a wrap and linked into the runtime, so a compiled program needs nothing installed where it runs.
+- **`quadc --default-float d128`**, and `qd_interp_set_default_float` for an embedder: a float literal written without a `d` is read as a `d128`, for a calculator where every number typed should be decimal. It applies to the files named, not the modules they import; integer literals stay `i64`.
+- **`examples/decimal`**: compound interest in `d128`, rounded to cents with ties to even.
+- **`quadlint --source-path <path>`**: lint the one file given as if it were at `path`, so an editor linting an unsaved copy is checked against the real neighbouring files.
 - **`decimal` module**: the IEEE operations beyond the operators — `fma`, `remainder`, `fmod`, `round_even`, `quantize`, `reduce`, `scaleb`, `logb`, `next_up`, `next_down`, `min`/`max` (minNum/maxNum), `total_order`, the classification predicates — and `sqrt`, `exp`, `ln`, `log10`, `pow` and the trigonometric functions. The trigonometric functions reduce against 6,400 stored digits of pi, so `sin` of 1e6144 is as accurate as `sin` of 1.
 - **`strconv::parse_d128`**, fallible, taking the whole string or nothing.
 - **`sb::append_value`**, which appends any value as `cast<str>` spells it.
@@ -54,6 +57,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- **`sizeof` takes a type.** `sizeof<T>` is the size of a type; a bare `sizeof`, which popped a value and pushed 8 whatever it was, is a compile-time error.
+- **`quadlsp` runs the `quadlint` built beside it** before the one on `PATH`, and checks an open file against the same neighbouring files `quadc` merges: not files with their own `main()`, not `*_test.qd`, none under `tests/`.
 - **u8t tokenizer updated to 1.4.2**: one number scanner upstream instead of two near-identical copies. The token stream is unchanged over the test corpus and 200k random numeric inputs.
 - **`sort` takes arrays, and only arrays.** All sixteen entry points take a `[]T`; the numeric ones took a raw `mem::alloc` buffer and a `count` beside it, so `[5 2 8 1 9]` could not be sorted by anything.
 - **The `strings` FFI drops the count beside the array.** `sort`, `sort_desc`, `join` and `column` take a `[]str` and read its length; `split`, `split_n`, `lines` and `words` return the array alone. The two spellings for one job are gone — `strs count strings::sort` is `strs strings::sort` — and `words` over a string with no words returns an empty array rather than null.
@@ -114,6 +119,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- **Escapes in `const` strings, array literals and `switch` labels.** Compiled code kept `"a\tb"` as a backslash and a `t` in all three; a plain literal, and the interpreter, decoded it. One decoder now serves every position and both tiers.
+- **`sizeof<d128>` was 8**, the size of a pointer; it is 16. `sizeof` of a struct now finds it as every other use does.
+- **`quadlsp` took seconds per keystroke**: it parsed every `.qd` file beside the open one on each change, and its lint step wrote a copy of the buffer into the shared temp directory, leaked it when the lint failed, and then linted every leaked copy there too. A clean directory now answers in milliseconds, and the lint copy goes in a directory of its own that is always removed.
+- **`quadlsp` type completion** read past the end of its description table, so every type from `d128` on showed the next one's description.
+- **`make tests` skipped `test_decimal_register`, `test_math_register` and `test_lsp_robustness`**, which were built and registered but missing from the runner's hand-kept list. The runner now asks meson for the list.
+- **`make quadmcp` failed to compile**: it left out the generated `version.qd`.
+- **`within` and `err` were documented wrongly**: `within` includes both ends, and `err` pushes the message and the code.
 - **String interpolation of anything but a string or an integer crashed.** `$"x = {x}"` with an `f64` `x` sent it to `sb::append_int`, which died on its first `mod`; every other type now goes through `cast<str>`.
 - **`pub var` exports the global.** `pub` was never read when the global was emitted, so every `var` got internal linkage and nothing outside the LLVM module could reach one. In `--freestanding`, where `pub fn` is deliberately given external linkage so assembly can call it, that left module-level mutable state unusable for the one kind of program that needs it: `examples/kernel` declares its four mutable globals in a `.S` file and reaches them through an FFI address getter and `sys::ld64`/`sys::st64`, though three of them are touched only from Quadrate. The symbol is `qd_global_<name>`, and `tools/check_global_var_linkage.py` (reference suite) pins both directions.
 - **A store to a module global hands back what the slot held.** `-> g` wrote the new pointer straight over the old one and released nothing, so every reassignment of a `str` or struct global leaked what it replaced -- §11.2.2 says a place that holds a value owns a reference. It stayed hidden because a `str` global started null and the tests assigned each global once; valgrind cannot see the struct case at all, since the pointer registry still holds the value at exit and reports it reachable, so the `global_var_store` case in the memory suite measures it instead. The release is unconditional: `g -> g` reads through a retain, and that is the reference the store hands back.
@@ -230,6 +242,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Removed
 
+- **Unused runtime API**: the `qd_mem_*` family (superseded by the `mem` module), `qd_set_error_context`/`qd_clear_error_context` and the context's `error_context` field, the error-taint accessors, `qd_dump_stack`, `qd_free_struct`, `qd_rt_version`/`qd_rt_version_api` (the `rt` module's words remain), `qd_version_major`/`minor`/`patch`, `qd_string_refcount`, `qd_struct_refcount`, `qd_stack_is_full` and `qd_stack_error_string`; and `usr_io_read_string`, `usr_io_write_string` and `usr_io_seekg`, which no `.qd` declared.
+- **`quadlsp`'s "Organize imports" code action**, which was offered but made no edit.
 - **The five array-creation builtins**: `make`, `makei`, `makef`, `makes`, `makep`. Array creation is a literal now — see `[n]T` under Added. All five report the rewrite when used.
 - **`xor` and `lnot` as builtins.** `xor` is `bits::xor`; `lnot` is `not`. Both report the rewrite when used.
 - **The `error { code = … message = … }` literal.**

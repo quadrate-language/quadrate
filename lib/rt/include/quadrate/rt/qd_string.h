@@ -152,17 +152,6 @@ qd_string_t* qd_string_retain(qd_string_t* str);
 void qd_string_release(qd_string_t* str);
 
 /**
- * @brief Get the current reference count
- *
- * @param str String to query (must not be NULL)
- * @return Current reference count
- *
- * @note For debugging/testing purposes only
- * @note The returned value may be stale in multithreaded contexts
- */
-size_t qd_string_refcount(const qd_string_t* str);
-
-/**
  * @brief Get the string data
  *
  * @param str String to query (must not be NULL)

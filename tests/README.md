@@ -8,16 +8,23 @@ Quadrate test suite.
 tests/
 ├── qd/           # Quadrate language tests (.qd files with .out expected output)
 │   └── args/     # CLI argument passing tests
-├── formatter/    # Code formatter tests
+├── build_cache/  # quadc build cache tests
+├── embed/        # Embedding API tests
+├── formatter/    # Code formatter tests, and test_errors.sh for its failures
 ├── linter/       # Linter tests
 ├── fuzz/         # Fuzzing tests with libFuzzer
+├── quad/         # quad command tests
+├── quadc/        # quadc command-line tests
+├── quadmcp/      # MCP server tests
 ├── quadpm/       # Package manager tests
 ├── quaduses/     # Dependency analyzer tests
 ├── run_all.sh    # Unified test runner (main entry point)
-├── run_embed_tests.sh    # Embedding API tests
-├── run_linter_tests.sh   # Linter test runner
-├── run_mtls_test.sh      # mTLS tests
-└── external_modules.txt  # External modules for testing
+├── run_cli_surface_test.sh  # Every tool's --help, completions and shared options
+├── run_http_test.sh         # HTTP client and server tests
+├── run_memory_test.sh       # Peak-memory regression checks
+├── run_mtls_test.sh         # mTLS tests
+├── run_tools_test.sh        # Tool behaviour tests
+└── external_modules.txt     # External modules for testing
 ```
 
 ## Running tests

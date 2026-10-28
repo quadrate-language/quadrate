@@ -1,5 +1,4 @@
 #include "ast_node_block.h"
-#include "ast_node_label.h"
 #include <quadrate/qc/ast_node_as_cast.h>
 #include <quadrate/qc/ast_node_constant.h>
 #include <quadrate/qc/ast_node_for.h>
@@ -32,8 +31,6 @@ namespace Qd {
 			return "FunctionDeclaration";
 		case IAstNode::Type::VARIABLE_DECLARATION:
 			return "VariableDeclaration";
-		case IAstNode::Type::EXPRESSION_STATEMENT:
-			return "ExpressionStatement";
 		case IAstNode::Type::IF_STATEMENT:
 			return "IfStatement";
 		case IAstNode::Type::FOR_STATEMENT:
@@ -50,10 +47,6 @@ namespace Qd {
 			return "ContinueStatement";
 		case IAstNode::Type::DEFER_STATEMENT:
 			return "DeferStatement";
-		case IAstNode::Type::BINARY_EXPRESSION:
-			return "BinaryExpression";
-		case IAstNode::Type::UNARY_EXPRESSION:
-			return "UnaryExpression";
 		case IAstNode::Type::LITERAL:
 			return "Literal";
 		case IAstNode::Type::IDENTIFIER:
@@ -66,8 +59,6 @@ namespace Qd {
 			return "UseStatement";
 		case IAstNode::Type::CONSTANT_DECLARATION:
 			return "ConstantDeclaration";
-		case IAstNode::Type::LABEL:
-			return "Label";
 		case IAstNode::Type::LOCAL:
 			return "Local";
 		case IAstNode::Type::STRUCT_DECLARATION:
@@ -86,8 +77,6 @@ namespace Qd {
 			return "FieldSet";
 		case IAstNode::Type::ARRAY_LITERAL:
 			return "ArrayLiteral";
-		case IAstNode::Type::ARRAY_INDEX:
-			return "ArrayIndex";
 		case IAstNode::Type::LOOP_STATEMENT:
 			return "LoopStatement";
 		case IAstNode::Type::WHILE_STATEMENT:
@@ -236,12 +225,6 @@ namespace Qd {
 			printf(",");
 			printf("\"name\":\"");
 			escapeJsonString(constDecl->name().c_str());
-			printf("\"");
-		} else if (node->type() == IAstNode::Type::LABEL) {
-			const AstNodeLabel* label = static_cast<const AstNodeLabel*>(node);
-			printf(",");
-			printf("\"name\":\"");
-			escapeJsonString(label->name().c_str());
 			printf("\"");
 		} else if (node->type() == IAstNode::Type::STRUCT_DECLARATION) {
 			const AstNodeStructDeclaration* structDecl = static_cast<const AstNodeStructDeclaration*>(node);

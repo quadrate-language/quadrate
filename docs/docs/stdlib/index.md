@@ -41,7 +41,7 @@ fn main() {
 | [error](error.md) | Errors as values. |
 | [flag](flag.md) | Command-line flag parsing. |
 | [fmt](fmt.md) | Formatted output functions. |
-| [fuzzy](fuzzy.md) | doccheck: page-context |
+| [fuzzy](fuzzy.md) | Fuzzy string matching: edit distance, similarity scores and ... |
 | [hex](hex.md) | Hexadecimal encoding and decoding. |
 | [hof](hof.md) | Higher-Order Function combinators. |
 | [http](http.md) | HTTP module. |

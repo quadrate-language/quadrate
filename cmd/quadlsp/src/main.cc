@@ -367,10 +367,6 @@ const std::vector<std::string>* QuadrateLSP::positionLines(const std::string& ur
 	return positionAscii_[uri] ? nullptr : &it->second;
 }
 
-size_t QuadrateLSP::toClientColumn(const std::string& lineText, size_t byteColumn) const {
-	return utf8Positions_ ? byteColumn : lspByteToUtf16Column(lineText, byteColumn);
-}
-
 void QuadrateLSP::convertPositions(json_t* node, const std::string& uri, bool toClient) {
 	if (utf8Positions_ || !node) {
 		return;
@@ -907,7 +903,6 @@ void QuadrateLSP::handleInitialize(const std::string& id, json_t* initOptions) {
 	json_t* codeActionProvider = json_object();
 	json_t* codeActionKinds = json_array();
 	json_array_append_new(codeActionKinds, json_string("quickfix"));
-	json_array_append_new(codeActionKinds, json_string("source.organizeImports"));
 	json_object_set_new(codeActionProvider, "codeActionKinds", codeActionKinds);
 	json_object_set_new(capabilities, "codeActionProvider", codeActionProvider);
 
@@ -1771,8 +1766,8 @@ std::string QuadrateLSP::resolveModulePath(const std::string& moduleName, const 
 
 void QuadrateLSP::handleCodeAction(const std::string& id, const std::string& uri, size_t startLine, size_t startChar,
 		size_t endLine, size_t endChar, json_t* diagnostics) {
+	(void)startLine;
 	(void)startChar;
-	(void)endChar;
 	(void)endLine;
 	(void)endChar;
 
@@ -1888,19 +1883,6 @@ void QuadrateLSP::handleCodeAction(const std::string& id, const std::string& uri
 					}
 				}
 			}
-		}
-	}
-
-	// Offer to organize imports if cursor is at the top of the file
-	if (startLine < 5) {
-		// Check if there are any 'use' statements in the document
-		if (!documentText.empty() && documentText.find("use ") != std::string::npos) {
-			json_t* action = json_object();
-			json_object_set_new(action, "title", json_string("Organize imports"));
-			json_object_set_new(action, "kind", json_string("source.organizeImports"));
-			// This would require more complex logic to actually organize imports
-			// For now, just advertise the action
-			json_array_append_new(actions, action);
 		}
 	}
 

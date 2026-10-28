@@ -7,6 +7,7 @@
 ///
 /// The four core operations below are one machine instruction each; the rest of the
 /// module is higher-level bit manipulation built on them.
+
 /// Bitwise AND.
 /// @param a i64 Left operand
 /// @param b i64 Right operand

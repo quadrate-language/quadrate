@@ -94,35 +94,6 @@ int usr_io_read(qd_context* ctx);
 int usr_io_write(qd_context* ctx);
 
 /**
- * @brief Read bytes from a file (legacy string-based API)
- *
- * Stack effect: ( handle:p count:i -- data:s bytes_read:i )
- *
- * Reads up to 'count' bytes from the file.
- * Returns the data as a string and the number of bytes actually read.
- * If bytes_read < count, either EOF was reached or an error occurred.
- * Returns empty string and -1 on error.
- *
- * @param ctx Execution context
- * @return Execution result
- */
-int usr_io_read_string(qd_context* ctx);
-
-/**
- * @brief Write bytes to a file (legacy string-based API)
- *
- * Stack effect: ( handle:p data:s -- bytes_written:i )
- *
- * Writes the given data to the file.
- * Returns the number of bytes written.
- * Returns -1 on error.
- *
- * @param ctx Execution context
- * @return Execution result
- */
-int usr_io_write_string(qd_context* ctx);
-
-/**
  * @brief Seek to a position in a file
  *
  * Stack effect: ( handle:p offset:i whence:i -- position:i )
@@ -154,9 +125,6 @@ int usr_io_seek(qd_context* ctx);
  * @return Execution result
  */
 int usr_io_tell(qd_context* ctx);
-
-// Legacy name for backwards compatibility
-int usr_io_seekg(qd_context* ctx);
 
 /**
  * @brief Check if end-of-file has been reached

@@ -2,6 +2,7 @@
 
 <!-- doccheck: page-context use fuzzy -->
 
+Fuzzy string matching: edit distance, similarity scores and the closest of several candidates.
 
 ## Functions
 

@@ -102,9 +102,6 @@ int execShellIn(const std::string& command, const std::string& workingDir);
 // Check if a command exists in PATH
 bool commandExists(const std::string& cmd);
 
-// Get the path where a module would be installed
-std::string getModuleInstallPath(const std::string& moduleName, const std::string& ref);
-
 // Get the path to a local module's directory
 std::string resolveLocalPath(const std::string& path, const std::string& basePath);
 
@@ -161,9 +158,6 @@ bool createNamespaceSymlink(const std::string& namespaceName, const std::string&
 bool ensureNamespaceSymlink(
 		const std::string& installedDir, const std::string& installedDirName, const std::string& fallbackModuleName);
 
-// Get all namespaces that point to a given hostPath
-std::vector<std::string> getNamespacesForPackage(const std::string& hostPathWithRef);
-
 // Find which packages provide a given namespace
 std::vector<std::string> findPackagesWithNamespace(const std::string& namespaceName);
 
@@ -217,9 +211,6 @@ bool updateModule(const std::string& moduleDir, const Dependency* dep, std::stri
 
 // Build a module in the current directory
 int buildModule();
-
-// Compute SHA256 hash of a file or directory
-std::string computeSha256(const std::string& path);
 
 // List all tags from a remote git repository
 std::vector<std::pair<std::string, std::string>> listRemoteTags(const std::string& gitUrl);

@@ -46,7 +46,6 @@ extern "C" {
 #include <quadrate/qc/ast_node_switch.h>
 #include <quadrate/qc/ast_node_test.h>
 #include <quadrate/qc/ast_node_use.h>
-#include <quadrate/qc/colors.h>
 #include <quadrate/qc/instructions.h>
 #include <quadrate/qc/numeric_literal.h>
 #include <quadrate/qc/semantic_validator.h>
@@ -1062,9 +1061,6 @@ namespace Qd {
 				std::string structType = func->receiverType();
 				std::string methodName = func->name();
 				bool isPublic = func->isPublic();
-
-				// Store in mModuleStructMethods: module -> structType -> (methodName -> isPublic)
-				mModuleStructMethods[moduleName][structType][methodName] = isPublic;
 
 				// Register in mStructMethods with qualified struct type
 				// so method resolution works: "moduleName::StructType" -> methodName -> isPublic

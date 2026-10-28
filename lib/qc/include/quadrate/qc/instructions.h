@@ -159,11 +159,6 @@ namespace Qd {
 		}
 		return false;
 	}
-
-	// Alias for semantic validation (currently same as built-in check)
-	inline bool isKnownInstruction(const char* name) {
-		return isBuiltInInstruction(name);
-	}
 }
 
 #endif // QD_QC_INSTRUCTIONS_H

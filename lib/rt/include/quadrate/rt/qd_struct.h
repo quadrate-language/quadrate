@@ -99,16 +99,6 @@ void* qd_struct_retain(void* struct_ptr);
 void qd_struct_release(void* struct_ptr);
 
 /**
- * @brief Get the current reference count of a struct
- *
- * @param struct_ptr Pointer to struct data (must not be NULL)
- * @return Current reference count
- *
- * @note For debugging/testing purposes only
- */
-size_t qd_struct_refcount(const void* struct_ptr);
-
-/**
  * @brief Get the header from a struct pointer
  *
  * Internal helper to access the header from the user-visible struct pointer.

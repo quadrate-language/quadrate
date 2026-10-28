@@ -1,6 +1,6 @@
 {
   "name": "http",
-  "description": "HTTP module. Provides HTTP client and server functionality. Error codes: Ok=1 (success), specific errors start at 2 doccheck: page-context doccheck: page-setup http::engine -> e doccheck: page-setup e \"/api\" http::group -> api doccheck: page-setup \"http://example.com\" http::new -> req doccheck: page-setup http::Response { status = 200 headers = \"\" body = \"\" } -> resp doccheck: page-setup http::Ctx { method = \"GET\" path = \"/\" query = \"\" headers = \"\" body = \"\" params = \"\" _socket = 0 _responded = 0 } -> c",
+  "description": "HTTP module. Provides HTTP client and server functionality. Error codes: Ok=1 (success), specific errors start at 2",
   "constants": [
     {
       "name": "ErrAccept",

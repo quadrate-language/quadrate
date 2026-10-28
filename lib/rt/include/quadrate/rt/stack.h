@@ -239,14 +239,6 @@ size_t qd_stack_capacity(const qd_stack* stack);
 bool qd_stack_is_empty(const qd_stack* stack);
 
 /**
- * @brief Check if the stack is full
- *
- * @param stack Target stack
- * @return true if the stack is at capacity, false otherwise
- */
-bool qd_stack_is_full(const qd_stack* stack);
-
-/**
  * @defgroup ErrorTaint Error Taint Operations
  * @brief Functions for error propagation tracking
  *
@@ -255,37 +247,7 @@ bool qd_stack_is_full(const qd_stack* stack);
  * @{
  */
 
-/**
- * @brief Check if the top element is error-tainted
- *
- * @param stack Target stack
- * @return true if the top element is tainted, false otherwise
- */
-bool qd_stack_is_top_tainted(const qd_stack* stack);
-
-/**
- * @brief Mark the top element as error-tainted
- *
- * @param stack Target stack
- */
-void qd_stack_mark_top_tainted(qd_stack* stack);
-
-/**
- * @brief Clear the error taint from the top element
- *
- * @param stack Target stack
- */
-void qd_stack_clear_top_taint(qd_stack* stack);
-
 /** @} */ // end of ErrorTaint group
-
-/**
- * @brief Convert error code to human-readable string
- *
- * @param error Error code to convert
- * @return String description of the error
- */
-const char* qd_stack_error_string(qd_stack_error error);
 
 /**
  * @defgroup FastStackOps Fast Stack Operations

@@ -1,6 +1,6 @@
 {
   "name": "io",
-  "description": "File and stream I/O operations. Error codes: Ok=1 (success), specific errors start at 2 doccheck: page-context doccheck: page-context use mem doccheck: page-setup \"/tmp/doccheck.txt\" io::Read io::open! -> f doccheck: page-setup 1024 mem::alloc! -> buf doccheck: page-setup 16 -> len",
+  "description": "File and stream I/O operations. Error codes: Ok=1 (success), specific errors start at 2",
   "constants": [
     {
       "name": "Append",

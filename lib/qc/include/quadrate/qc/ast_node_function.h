@@ -110,10 +110,6 @@ namespace Qd {
 			return mThrows;
 		}
 
-		void setPublic(bool isPublic) {
-			mIsPublic = isPublic;
-		}
-
 		bool isPublic() const {
 			return mIsPublic;
 		}

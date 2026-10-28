@@ -228,7 +228,6 @@ namespace Qd {
 		pushPtrFn = declareFn(ctxPtrToResultTy, "qd_push_p");
 
 		// Runtime operations: (ctx) -> result
-		callFn = declareFn(ctxToResultTy, "qd_call");
 		printsFn = declareFn(ctxToResultTy, "qd_prints");
 		nlFn = declareFn(ctxToResultTy, "qd_nl");
 		addFn = declareFn(ctxToResultTy, "qd_add");
@@ -267,7 +266,6 @@ namespace Qd {
 
 		// C library functions
 		auto i64ToPtrTy = llvm::FunctionType::get(ptrTy, {int64Ty}, false);
-		strdupFn = declareFn(ptrToPtrTy, "strdup");
 		mallocFn = declareFn(i64ToPtrTy, "malloc");
 		freeFn = declareFn(ptrToVoidTy, "free");
 
@@ -923,10 +921,8 @@ namespace Qd {
 		// Clear local variables for this function
 		localVariables.clear();
 		localVariableStructTypes.clear();
-		stackAllocatedStructLocals.clear();
 		localArrayVariables.clear();
 		lastStructConstructed.clear();
-		lastStructWasConstructedInPlace = false;
 		lastFieldAccessResultType.clear();
 		heapAllocatedCaptures.clear();
 		indirectLocalVariables.clear();
@@ -944,13 +940,6 @@ namespace Qd {
 				}
 			}
 		}
-
-		// Check if function returns a pointer (structs must be heap-allocated in such functions)
-		// Note: Quadrate allows implicit returns (values left on stack), so we check both:
-		// Always use heap allocation for structs to ensure proper cleanup via destructors.
-		// Stack allocation was tried but causes memory leaks because stack-allocated structs
-		// aren't registered and qd_struct_release can't clean up their string fields.
-		currentFunctionReturnsPtr = true;
 
 		// Set current module prefix for intra-module function calls
 		currentModulePrefix = namePrefix;
@@ -1356,7 +1345,6 @@ namespace Qd {
 				// Save and reset state for native body generation
 				auto savedLocalVars = localVariables;
 				auto savedLocalVarStructTypes = localVariableStructTypes;
-				auto savedStackAllocStructLocals = stackAllocatedStructLocals;
 				auto savedLocalArrayVars = localArrayVariables;
 				auto savedNativeLocalVars = nativeLocalVariables;
 				auto savedReturnBlock = currentFunctionReturnBlock;
@@ -1367,7 +1355,6 @@ namespace Qd {
 
 				localVariables.clear();
 				localVariableStructTypes.clear();
-				stackAllocatedStructLocals.clear();
 				localArrayVariables.clear();
 				nativeLocalVariables.clear();
 				iteratorVars.clear();
@@ -1468,7 +1455,6 @@ namespace Qd {
 				// Restore state
 				localVariables = savedLocalVars;
 				localVariableStructTypes = savedLocalVarStructTypes;
-				stackAllocatedStructLocals = savedStackAllocStructLocals;
 				localArrayVariables = savedLocalArrayVars;
 				nativeLocalVariables = savedNativeLocalVars;
 				currentFunctionReturnBlock = savedReturnBlock;
@@ -1620,7 +1606,7 @@ namespace Qd {
 							// This is a struct type - mark the parameter name as a struct local
 							// so it gets released at function cleanup (use full qualified name)
 							if (!param->name().empty()) {
-								localVariableStructTypes[param->name()] = extractStructName(typeStr);
+								localVariableStructTypes[param->name()] = typeStr;
 							}
 						}
 					}
@@ -1717,7 +1703,7 @@ namespace Qd {
 								typeStr != "int64" && typeStr != "f" && typeStr != "f64" && typeStr != "d128" &&
 								typeStr != "float" && typeStr != "s" && typeStr != "str" && typeStr != "string" &&
 								typeStr != "p" && typeStr != "ptr" && typeStr != "pointer") {
-							localVariableStructTypes[paramName] = extractStructName(typeStr);
+							localVariableStructTypes[paramName] = typeStr;
 						}
 
 						// Pop from runtime stack
@@ -1939,24 +1925,14 @@ namespace Qd {
 		return true;
 	}
 
-	bool LlvmGenerator::Impl::generateFunctionBody(
-			AstNodeFunctionDeclaration* funcNode, bool isMain, const std::string& namePrefix) {
-		// Generate the function body - function should already be declared in pre-pass
-		// This just delegates to generateFunction, which will find the already-declared function
-		return generateFunction(funcNode, isMain, namePrefix);
-	}
-
 	bool LlvmGenerator::Impl::generateTest(AstNodeTest* testNode, const std::string& namePrefix) {
 		// Clear local variables for this test
 		localVariables.clear();
 		localVariableStructTypes.clear();
-		stackAllocatedStructLocals.clear();
 		localArrayVariables.clear();
 		lastStructConstructed.clear();
-		lastStructWasConstructedInPlace = false;
 		lastFieldAccessResultType.clear();
 
-		currentFunctionReturnsPtr = true;
 		currentModulePrefix = namePrefix;
 
 		// Generate test function name: test_<sanitized_name>
@@ -2305,7 +2281,7 @@ namespace Qd {
 							const std::string& typeStr = outParam->typeString();
 							if (looksLikeStructType(typeStr)) {
 								// Qualify with module name if needed
-								std::string qualifiedType = extractStructName(typeStr);
+								std::string qualifiedType = typeStr;
 								if (qualifiedType.find("::") == std::string::npos) {
 									qualifiedType = moduleName + "::" + qualifiedType;
 								}
@@ -2329,11 +2305,6 @@ namespace Qd {
 						if (func->isPublic) {
 							// Register for cross-module access as module::funcname
 							std::string crossModuleName = moduleName + "::" + func->name;
-							CrossModuleImportInfo info;
-							info.library = library;
-							info.cFunctionName = mangledName;
-							info.throws = func->throws;
-							crossModuleImportedFunctions[crossModuleName] = info;
 
 							// Also register fallibility under the module name
 							fallibleFunctions[crossModuleName] = func->throws;
@@ -2344,7 +2315,7 @@ namespace Qd {
 								const std::string& typeStr = outParam->typeString();
 								if (looksLikeStructType(typeStr)) {
 									// Qualify with module name if needed
-									std::string qualifiedType = extractStructName(typeStr);
+									std::string qualifiedType = typeStr;
 									if (qualifiedType.find("::") == std::string::npos) {
 										qualifiedType = moduleName + "::" + qualifiedType;
 									}
@@ -2788,7 +2759,7 @@ namespace Qd {
 						const std::string& typeStr = param->typeString();
 						if (looksLikeStructType(typeStr)) {
 							// Store the unqualified struct name for lookup
-							functionReturnStructType[registerName] = extractStructName(typeStr);
+							functionReturnStructType[registerName] = typeStr;
 							foundExplicitStructType = true;
 							break; // Use first struct-typed output
 						}
@@ -2889,11 +2860,16 @@ namespace Qd {
 		printTiming("declareMainFunctions");
 
 		// Compute reachable functions to skip generating IR for unused module functions
-		if (useReachabilityAnalysis) {
-			reachableFunctions.clear();
-			computeReachableFunctions(root, reachableFunctions);
-		}
+		reachableFunctions.clear();
+		computeReachableFunctions(root, reachableFunctions);
 		printTiming("computeReachability");
+		auto isReachable = [this](AstNodeFunctionDeclaration* funcNode, const std::string& moduleName,
+								   const std::string& qualifiedName) {
+			return reachableFunctions.count(qualifiedName) || reachableFunctions.count(funcNode->name()) ||
+				   (funcNode->hasReceiver() &&
+						   (reachableFunctions.count(funcNode->receiverType() + "::" + funcNode->name()) ||
+								   reachableFunctions.count(moduleName + "::" + funcNode->name())));
+		};
 
 		// First pass: DECLARE all functions from all loaded modules
 		// This ensures all functions are registered in userFunctions before any bodies are generated.
@@ -2921,7 +2897,7 @@ namespace Qd {
 						if (auto* param = dynamic_cast<AstNodeParameter*>(outParam.get())) {
 							const std::string& typeStr = param->typeString();
 							if (looksLikeStructType(typeStr)) {
-								functionReturnStructType[qualifiedName] = extractStructName(typeStr);
+								functionReturnStructType[qualifiedName] = typeStr;
 								foundExplicitStructType = true;
 								break;
 							}
@@ -2945,15 +2921,8 @@ namespace Qd {
 					}
 
 					// Skip declaring unreachable functions
-					if (useReachabilityAnalysis) {
-						bool isReachable =
-								reachableFunctions.count(qualifiedName) || reachableFunctions.count(funcNode->name()) ||
-								(funcNode->hasReceiver() &&
-										(reachableFunctions.count(funcNode->receiverType() + "::" + funcNode->name()) ||
-												reachableFunctions.count(moduleName + "::" + funcNode->name())));
-						if (!isReachable) {
-							continue;
-						}
+					if (!isReachable(funcNode, moduleName, qualifiedName)) {
+						continue;
 					}
 
 					// Declare the function (creates LLVM function and registers in userFunctions)
@@ -2992,19 +2961,12 @@ namespace Qd {
 					}
 
 					// Skip generating bodies for unreachable functions
-					if (useReachabilityAnalysis) {
-						bool isReachable =
-								reachableFunctions.count(qualifiedName) || reachableFunctions.count(funcNode->name()) ||
-								(funcNode->hasReceiver() &&
-										(reachableFunctions.count(funcNode->receiverType() + "::" + funcNode->name()) ||
-												reachableFunctions.count(moduleName + "::" + funcNode->name())));
-						if (!isReachable) {
-							continue;
-						}
+					if (!isReachable(funcNode, moduleName, qualifiedName)) {
+						continue;
 					}
 
 					// Generate module function body with module name as prefix
-					if (!generateFunctionBody(funcNode, false, moduleName)) {
+					if (!generateFunction(funcNode, false, moduleName)) {
 						currentModuleName = ""; // Reset on error
 						return false;
 					}

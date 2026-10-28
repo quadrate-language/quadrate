@@ -294,32 +294,6 @@ bool createNamespaceSymlink(const std::string& namespaceName, const std::string&
 	}
 }
 
-// Get all namespaces that point to a given hostPath
-std::vector<std::string> getNamespacesForPackage(const std::string& hostPathWithRef) {
-	std::vector<std::string> namespaces;
-	std::string namespacesDir = getNamespacesDir();
-
-	if (!fs::exists(namespacesDir)) {
-		return namespaces;
-	}
-
-	for (const auto& entry : fs::directory_iterator(namespacesDir)) {
-		if (fs::is_symlink(entry.path())) {
-			try {
-				std::string target = fs::read_symlink(entry.path()).string();
-				// Check if target contains the hostPathWithRef
-				if (target.find(hostPathWithRef) != std::string::npos) {
-					namespaces.push_back(entry.path().filename().string());
-				}
-			} catch (const std::exception&) {
-				// Ignore broken symlinks
-			}
-		}
-	}
-
-	return namespaces;
-}
-
 // Find which packages provide a given namespace
 std::vector<std::string> findPackagesWithNamespace(const std::string& namespaceName) {
 	std::vector<std::string> packages;

@@ -28,15 +28,6 @@ namespace Qd {
 		return std::isupper(typeStr[0]);
 	}
 
-	// Helper function to get struct name from type string (preserves qualified names)
-	// "vec2::Vec2" -> "vec2::Vec2", "Response" -> "Response"
-	std::string extractStructName(const std::string& typeStr) {
-		// Return the full type string, including module prefix if present
-		// This ensures qualified types like "vec2::Vec2" are preserved for proper lookup
-		// in structDefinitions which uses qualified names as keys
-		return typeStr;
-	}
-
 	size_t LlvmGenerator::Impl::getTypeSize(const std::string& typeName) {
 		if (typeName == "i64" || typeName == "u64" || typeName == "f64") {
 			return 8;
@@ -410,28 +401,17 @@ namespace Qd {
 
 		const StructLayout& layout = *layoutPtr;
 
-		// Allocate struct - use stack if function doesn't return pointer, heap otherwise
-		llvm::Value* structPtr = nullptr;
-
-		if (!currentFunctionReturnsPtr) {
-			// Stack allocation - struct lives only within this function
-			llvm::Function* currentFn = builder->GetInsertBlock()->getParent();
-			llvm::IRBuilder<> entryBuilder(&currentFn->getEntryBlock(), currentFn->getEntryBlock().begin());
-			auto structAlloca = entryBuilder.CreateAlloca(
-					llvm::ArrayType::get(builder->getInt8Ty(), layout.totalSize), nullptr, structName + "_stack");
-			structPtr = builder->CreateBitCast(structAlloca, ptrTy, "struct_ptr");
+		// Always on the heap and refcounted: a struct on the stack is not registered, so
+		// qd_struct_release cannot release its string fields, and it leaked them
+		llvm::Value* destructorPtr = nullptr;
+		auto destructorIt = structDestructors.find(structName);
+		if (destructorIt != structDestructors.end() && destructorIt->second != nullptr) {
+			destructorPtr = destructorIt->second;
 		} else {
-			// Heap allocation - struct may be returned, needs refcounting
-			llvm::Value* destructorPtr = nullptr;
-			auto destructorIt = structDestructors.find(structName);
-			if (destructorIt != structDestructors.end() && destructorIt->second != nullptr) {
-				destructorPtr = destructorIt->second;
-			} else {
-				destructorPtr = llvm::ConstantPointerNull::get(ptrTy);
-			}
-			structPtr = builder->CreateCall(
-					qdStructAllocFn, {builder->getInt64(layout.totalSize), destructorPtr}, "struct_ptr");
+			destructorPtr = llvm::ConstantPointerNull::get(ptrTy);
 		}
+		llvm::Value* structPtr = builder->CreateCall(
+				qdStructAllocFn, {builder->getInt64(layout.totalSize), destructorPtr}, "struct_ptr");
 
 		// Pop values from stack in reverse order and write to struct fields
 		for (auto fieldIt = layout.fields.rbegin(); fieldIt != layout.fields.rend(); ++fieldIt) {
@@ -511,7 +491,6 @@ namespace Qd {
 
 		// Track that we just constructed this struct type
 		lastStructConstructed = structName;
-		lastStructWasConstructedInPlace = !currentFunctionReturnsPtr;
 		// Reset array flag — the struct is not an array, even if a field value was
 		lastPushedWasArray = false;
 	}
@@ -891,10 +870,6 @@ namespace Qd {
 
 		// Push the struct back onto the stack for chaining. Always: the `>>field!`
 		// form that suppressed this is gone, and callers write `>>field drop`.
-		if (!pushPtrFn) {
-			auto fnTy = llvm::FunctionType::get(execResultTy, {contextPtrTy, ptrTy}, false);
-			pushPtrFn = llvm::Function::Create(fnTy, llvm::Function::ExternalLinkage, "qd_push_p", *module);
-		}
 		builder->CreateCall(pushPtrFn, {ctx, structPtr});
 	}
 

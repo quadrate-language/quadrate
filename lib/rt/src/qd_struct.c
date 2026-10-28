@@ -4,14 +4,14 @@
  */
 
 #include "quadrate/rt/qd_struct.h"
-#include "quadrate/rt/array.h"
 #include "ptr_registry.h"
+#include "quadrate/rt/array.h"
+#include <stdatomic.h>
+#include <stdbool.h>
+#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <stdint.h>
-#include <stdatomic.h>
-#include <stdbool.h>
 
 // Global registry of valid struct pointers
 static ptr_registry_t struct_registry = PTR_REGISTRY_INITIALIZER;
@@ -100,24 +100,8 @@ void qd_struct_release(void* struct_ptr) {
 			header->destructor(struct_ptr);
 		}
 		header->magic = 0; // Clear magic to prevent double-free
-		free(header); // Free from the header pointer, not struct_ptr
+		free(header);	   // Free from the header pointer, not struct_ptr
 	}
-}
-
-size_t qd_struct_refcount(const void* struct_ptr) {
-	if (struct_ptr == NULL) {
-		return 0;
-	}
-
-	// Check registry first
-	if (!ptr_registry_contains(&struct_registry, struct_ptr)) {
-		return 0;
-	}
-
-	const char* byte_ptr = (const char*)struct_ptr;
-	const void* header_ptr = byte_ptr - sizeof(qd_struct_header_t);
-	const qd_struct_header_t* header = (const qd_struct_header_t*)header_ptr;
-	return atomic_load(&header->refcount);
 }
 
 // Generic pointer retain/release (works for both arrays and structs)

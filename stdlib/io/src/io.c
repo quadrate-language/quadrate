@@ -223,190 +223,41 @@ int usr_io_close(qd_context* ctx) {
 	return (int){0};
 }
 
-int usr_io_read_string(qd_context* ctx) {
-	size_t stack_size = qd_stack_size(ctx->st);
-	if (stack_size < 2) {
-		fprintf(stderr, "Fatal error in io::read: Stack underflow (need 2, have %zu)\n", stack_size);
-		qd_print_stack_trace(ctx);
-		abort();
-	}
-
-	qd_stack_element_t count_elem;
-	qd_stack_error err = qd_stack_pop(ctx->st, &count_elem);
-	if (err != QD_STACK_OK) {
-		fprintf(stderr, "Fatal error in io::read: Failed to pop count\n");
-		abort();
-	}
-	if (count_elem.type != QD_STACK_TYPE_INT) {
-		fprintf(stderr, "Fatal error in io::read: Expected integer for count, got %d\n", count_elem.type);
-		abort();
-	}
-
-	qd_stack_element_t handle_elem;
-	err = qd_stack_pop(ctx->st, &handle_elem);
-	if (err != QD_STACK_OK) {
-		fprintf(stderr, "Fatal error in io::read: Failed to pop handle\n");
-		abort();
-	}
-	if (handle_elem.type != QD_STACK_TYPE_PTR) {
-		fprintf(stderr, "Fatal error in io::read: Expected pointer for handle, got %d\n", handle_elem.type);
-		abort();
-	}
-
-	FILE* fp = file_handle_resolve(handle_elem.value.p);
-	int64_t count = count_elem.value.i;
-
-	// Validate file handle using registry
-	if (!is_valid_file_handle(fp, ctx, "io::read_string")) {
-		qd_push_i(ctx, ctx->error_code);
-		return (int){IO_ERR_INVALID_HANDLE};
-	}
-
-// Validate count is within reasonable bounds (max 1GB to prevent DoS)
-#define IO_MAX_READ_SIZE (1024 * 1024 * 1024)
-	if (count < 0 || count > IO_MAX_READ_SIZE) {
-		ctx->error_code = IO_ERR_INVALID_ARG;
-		qd_set_error_msg(ctx, "io::read_string: invalid count (max 1GB)");
-		qd_push_i(ctx, ctx->error_code);
-		return (int){IO_ERR_INVALID_ARG};
-	}
-
-	if (count == 0) {
-		qd_push_s(ctx, "");
-		qd_push_i(ctx, 0);
-		qd_push_i(ctx, IO_ERR_OK);
-		return (int){0};
-	}
-
-	char* buffer = malloc((size_t)count + 1);
-	if (!buffer) {
-		ctx->error_code = IO_ERR_READ;
-		qd_set_error_msg(ctx, "io::read_string: allocation failed");
-		qd_push_i(ctx, ctx->error_code);
-		return (int){IO_ERR_READ};
-	}
-
-	size_t bytes_read = fread(buffer, 1, (size_t)count, fp);
-	buffer[bytes_read] = '\0';
-
-	if (bytes_read < (size_t)count && ferror(fp)) {
-		ctx->error_code = IO_ERR_READ;
-		char err_buf[256];
-		snprintf(err_buf, sizeof(err_buf), "%s", strerror(errno));
-		qd_set_error_msg(ctx, err_buf);
-		free(buffer);
-		qd_push_i(ctx, ctx->error_code);
-		return (int){IO_ERR_READ};
-	}
-
-	qd_push_s(ctx, buffer);
-	qd_push_i(ctx, (int64_t)bytes_read);
-	qd_push_i(ctx, IO_ERR_OK);
-
-	free(buffer);
-
-	return (int){0};
-}
-
-int usr_io_write_string(qd_context* ctx) {
-	size_t stack_size = qd_stack_size(ctx->st);
-	if (stack_size < 2) {
-		fprintf(stderr, "Fatal error in io::write: Stack underflow (need 2, have %zu)\n", stack_size);
-		qd_print_stack_trace(ctx);
-		abort();
-	}
-	qd_stack_element_t data_elem;
-	qd_stack_error err = qd_stack_pop(ctx->st, &data_elem);
-	if (err != QD_STACK_OK) {
-		fprintf(stderr, "Fatal error in io::write: Failed to pop data\n");
-		abort();
-	}
-	if (data_elem.type != QD_STACK_TYPE_STR) {
-		fprintf(stderr, "Fatal error in io::write: Expected string for data, got %d\n", data_elem.type);
-		abort();
-	}
-	qd_stack_element_t handle_elem;
-	err = qd_stack_pop(ctx->st, &handle_elem);
-	if (err != QD_STACK_OK) {
-		qd_string_release(data_elem.value.s);
-		fprintf(stderr, "Fatal error in io::write: Failed to pop handle\n");
-		abort();
-	}
-	if (handle_elem.type != QD_STACK_TYPE_PTR) {
-		qd_string_release(data_elem.value.s);
-		fprintf(stderr, "Fatal error in io::write: Expected pointer for handle, got %d\n", handle_elem.type);
-		abort();
-	}
-
-	FILE* fp = file_handle_resolve(handle_elem.value.p);
-	const char* data = qd_string_data(data_elem.value.s);
-	if (!data) {
-		qd_string_release(data_elem.value.s);
-		ctx->error_code = IO_ERR_INVALID_ARG;
-		qd_set_error_msg(ctx, "io::write_string: null data string");
-		qd_push_i(ctx, ctx->error_code);
-		return (int){IO_ERR_INVALID_ARG};
-	}
-	size_t len = strlen(data);
-
-	if (!is_valid_file_handle(fp, ctx, "io::write_string")) {
-		qd_string_release(data_elem.value.s);
-		qd_push_i(ctx, ctx->error_code);
-		return (int){IO_ERR_INVALID_HANDLE};
-	}
-
-	size_t written = fwrite(data, 1, len, fp);
-	qd_string_release(data_elem.value.s);
-
-	if (written < len) {
-		ctx->error_code = IO_ERR_WRITE;
-		char err_buf[256];
-		snprintf(err_buf, sizeof(err_buf), "%s", strerror(errno));
-		qd_set_error_msg(ctx, err_buf);
-		qd_push_i(ctx, ctx->error_code);
-		return (int){IO_ERR_WRITE};
-	}
-
-	qd_push_i(ctx, (int64_t)written);
-	qd_push_i(ctx, IO_ERR_OK);
-	return (int){0};
-}
-
-int usr_io_seekg(qd_context* ctx) {
+int usr_io_seek(qd_context* ctx) {
 	size_t stack_size = qd_stack_size(ctx->st);
 	if (stack_size < 3) {
-		fprintf(stderr, "Fatal error in io::seekg: Stack underflow (need 3, have %zu)\n", stack_size);
+		fprintf(stderr, "Fatal error in io::seek: Stack underflow (need 3, have %zu)\n", stack_size);
 		qd_print_stack_trace(ctx);
 		abort();
 	}
 	qd_stack_element_t whence_elem;
 	qd_stack_error err = qd_stack_pop(ctx->st, &whence_elem);
 	if (err != QD_STACK_OK) {
-		fprintf(stderr, "Fatal error in io::seekg: Failed to pop whence\n");
+		fprintf(stderr, "Fatal error in io::seek: Failed to pop whence\n");
 		abort();
 	}
 	if (whence_elem.type != QD_STACK_TYPE_INT) {
-		fprintf(stderr, "Fatal error in io::seekg: Expected integer for whence, got %d\n", whence_elem.type);
+		fprintf(stderr, "Fatal error in io::seek: Expected integer for whence, got %d\n", whence_elem.type);
 		abort();
 	}
 	qd_stack_element_t offset_elem;
 	err = qd_stack_pop(ctx->st, &offset_elem);
 	if (err != QD_STACK_OK) {
-		fprintf(stderr, "Fatal error in io::seekg: Failed to pop offset\n");
+		fprintf(stderr, "Fatal error in io::seek: Failed to pop offset\n");
 		abort();
 	}
 	if (offset_elem.type != QD_STACK_TYPE_INT) {
-		fprintf(stderr, "Fatal error in io::seekg: Expected integer for offset, got %d\n", offset_elem.type);
+		fprintf(stderr, "Fatal error in io::seek: Expected integer for offset, got %d\n", offset_elem.type);
 		abort();
 	}
 	qd_stack_element_t handle_elem;
 	err = qd_stack_pop(ctx->st, &handle_elem);
 	if (err != QD_STACK_OK) {
-		fprintf(stderr, "Fatal error in io::seekg: Failed to pop handle\n");
+		fprintf(stderr, "Fatal error in io::seek: Failed to pop handle\n");
 		abort();
 	}
 	if (handle_elem.type != QD_STACK_TYPE_PTR) {
-		fprintf(stderr, "Fatal error in io::seekg: Expected pointer for handle, got %d\n", handle_elem.type);
+		fprintf(stderr, "Fatal error in io::seek: Expected pointer for handle, got %d\n", handle_elem.type);
 		abort();
 	}
 
@@ -495,10 +346,6 @@ int usr_io_eof(qd_context* ctx) {
 }
 
 // New unified API names
-int usr_io_seek(qd_context* ctx) {
-	return usr_io_seekg(ctx); // Just call the existing implementation
-}
-
 int usr_io_tell(qd_context* ctx) {
 	size_t stack_size = qd_stack_size(ctx->st);
 	if (stack_size < 1) {

@@ -76,6 +76,28 @@ quad init              # Initialize a new project
 quad clean             # Remove build artifacts
 ```
 
+| Command | Runs | Purpose |
+|---------|------|---------|
+| `build` | `quadc` | Compile source files |
+| `run` | `quadc -r` | Build and run a program; `quad run greet.qd -- Alice` passes `Alice` to it |
+| `test` | `quadc --test` | Run the `test` blocks in the current directory |
+| `fmt` | `quadfmt -w` | Format files in place; `quad fmt --check` only reports |
+| `lint` | `quadlint` | Check code for common issues |
+| `uses` | `quaduses -w` | Add and remove `use` statements; `quad uses --check` only reports |
+| `repl` | `quadrepl` | Start the interactive REPL |
+| `lsp` | `quadlsp` | Start the language server |
+| `doc` | `quaddoc` | Generate HTML documentation |
+| `pm` | `quadpm` | Manage third-party modules |
+| `mcp` | `quadmcp` | Start the MCP server |
+| `init` | | Create a new project |
+| `clean` | | Remove build artifacts |
+| `version` | | Show version information |
+| `help` | | `quad help <command>` shows that command's help |
+
+Any option `quad` does not know is passed through to the tool, so `quad lint --json` is
+`quadlint --json`. `quad script.qd` runs a script directly, which makes a
+`#!/usr/bin/env quad` shebang line work.
+
 For most development tasks, `quad` is all you need.
 
 ### quad init
@@ -116,8 +138,30 @@ quadc --dump-ast hello.qd    # Output the parsed AST
 quadc --dump-tokens hello.qd # Show the token stream
 ```
 
-The short options that take a value also have long forms: `-o`/`--output`,
-`-g`/`--debug`, `-s`/`--stack-size`, `-I`/`--include` and `-l`/`--module`.
+| Option | Description |
+|--------|-------------|
+| `-o`, `--output <name>` | Output executable name (default: the source file's name) |
+| `-O0` ... `-O3` | Optimization level (default: `-O0`) |
+| `-g`, `--debug` | Generate debug information for GDB/LLDB |
+| `-s`, `--stack-size <size>` | Stack size in elements (default: 1024) |
+| `-I`, `--include <path>` | Add a module search path (repeatable) |
+| `-l`, `--module <mod@ver>` | Pin a module to a version, e.g. `-l color@1.0.0` |
+| `-r`, `--run` | Compile and run immediately, using the JIT |
+| `--no-jit` | With `-r`, link an executable and run it instead of using the JIT |
+| `--test` | Compile and run the `test` blocks |
+| `--coverage` | With `--test`, print a function coverage report |
+| `--target <triple>` | Cross-compile, e.g. `--target aarch64-linux-gnu` |
+| `--freestanding` | No hosted runtime: emit a `.o` with no libc and no automatic `main` |
+| `--default-float <f64\|d128>` | The type of a float literal written without `d` (default: `f64`) |
+| `--werror` | Treat warnings as errors |
+| `--verbose` | Show detailed compilation steps |
+| `--save-temps` | Keep temporary files for debugging |
+| `--dump-tokens`, `--dump-ast`, `--dump-ir` | Print the token stream, the AST or the LLVM IR |
+| `-- <args>` | With `-r`, pass the rest to the program |
+
+`--default-float d128` is for a calculator, where every number typed should be decimal: it
+reads `1.5` as `1.5d` in the files named on the command line, but not in the modules they
+import. Integer literals stay `i64` and widen where they meet a `d128`.
 
 ## quadfmt
 
@@ -129,6 +173,16 @@ quadfmt -w hello.qd    # Format file in place
 quadfmt -w src/        # Format all .qd files in directory
 ```
 
+| Option | Description |
+|--------|-------------|
+| `-w`, `--write` | Format files in place |
+| `-c`, `--check` | Report whether files are formatted; exit 1 if not |
+| `--no-sort-imports` | Leave `use` statements in their original order |
+| `-` | Read from stdin, write to stdout (for an editor) |
+
+Options can also be set in a `.quadfmt.json`, searched for in the current directory and its
+parents: `{ "sortImports": true, "alignStructFields": true }`.
+
 Note: `quad fmt` automatically adds `-w` to format files in place. Use `quad fmt --check` for dry run.
 
 ## quadlint
@@ -138,7 +192,35 @@ Static analyzer that catches common mistakes and potential issues.
 ```bash
 quadlint hello.qd      # Check single file
 quadlint src/          # Check all files in directory
+quadlint --json src/   # Report as JSON, for an editor or CI
 ```
+
+| Option | Description |
+|--------|-------------|
+| `--json` | Report issues as JSON |
+| `-q`, `--quiet` | Only show the summary |
+| `--max-nesting <N>` | Maximum nesting depth (default: 4) |
+| `--no-unused-functions` | Disable unused function warnings |
+| `--no-unused-variables` | Disable unused variable warnings |
+| `--no-dead-code` | Disable dead code warnings |
+| `--no-deep-nesting` | Disable deep nesting warnings |
+| `--no-missing-defer` | Disable missing `defer` warnings |
+| `--no-shadow-variables` | Disable shadowed variable warnings |
+| `--no-empty-blocks` | Disable empty block warnings |
+| `--no-constant-conditions` | Disable constant condition warnings |
+| `--check-magic-numbers` | Warn about magic numbers (off by default) |
+| `--check-long-functions` | Warn about long functions (off by default) |
+| `--max-function-lines <N>` | With `--check-long-functions`, the limit (default: 50) |
+| `--check-naming` | Check naming conventions (off by default) |
+| `--source-path <path>` | Lint the one file given as if it were at `path`: for an editor linting an unsaved copy |
+
+A function is unused only if nothing in its directory calls it: `quadlint` reads the other
+`.qd` files beside the one it checks, as the compiler merges them.
+
+`//nolint` at the end of a line suppresses every warning on it; `//nolint:rule1,rule2`
+suppresses the named ones. The rules are `unused-functions`, `unused-variables`,
+`dead-code`, `deep-nesting`, `missing-defer`, `shadow-variables`, `empty-blocks`,
+`constant-conditions`, `magic-numbers`, `long-functions` and `naming`.
 
 ## quadlsp
 
@@ -159,36 +241,89 @@ formatting.
 
 Configure your editor to use `quadlsp` as the language server for `.qd` files.
 
+The diagnostics include `quadlint`'s warnings. By default the LSP runs the `quadlint` built
+beside it, and otherwise the one on `PATH`. Both can be changed in the initialization
+options, or later under `quadrate` in `workspace/didChangeConfiguration`:
+
+```json
+{ "lint": { "enabled": true, "path": "/usr/local/bin/quadlint" } }
+```
+
 ## quadrepl
 
 Interactive Read-Eval-Print Loop for experimenting with Quadrate expressions.
 
 ```bash
-quadrepl
+quadrepl                    # Start an interactive session
+echo '1 2 add' | quadrepl   # Evaluate a pipe and print the final stack
 ```
 
-Inside the REPL:
+Inside the REPL, what a line leaves on the stack stays there, and the prompt shows it:
 ```
-[]> 5 3 + print
+[]> 5 3
+[5 3]> +
+[8]> print
 8
-[]> fn double(x:i64 -- y:i64) { dup + }
+[]> fn double(x:i64 -- y:i64) { x x + }
 Function defined
 []> 21 double print
 42
 []> exit
 ```
 
+| Command | Description |
+|---------|-------------|
+| `help`, `:help`, `:h` | Show the commands and key bindings |
+| `exit`, `quit`, `:q` | Exit (Ctrl+D also works) |
+| `stack`, `:stack` | Show the stack's values |
+| `type`, `:type` | Show the stack's types |
+| `clear`, `:clear` | Clear the stack |
+| `reset`, `:reset` | Reset the stack, definitions and imports |
+| `:doc <name>` | Show a signature; with no exact match, search names |
+| `:save <file>` | Save the session history to a file |
+| `:load <file>` | Load and run commands from a file |
+
+`-p`/`--print` prints the stack on exit; it is implied when stdin is a pipe.
+
 ## quadpm
 
 Module manager for installing third-party modules from Git repositories.
 
 ```bash
-quadpm list                              # List installed modules
-quadpm get <url>[<<ref]                   # Install a module from Git
+quadpm install                           # Install the dependencies in qd.json
+quadpm install --frozen                  # Install strictly from qd.lock (for CI)
+quadpm lock                              # Write qd.lock from what is installed
+quadpm get <url>[@ref]                   # Install one module from Git
 quadpm update [name]                     # Update installed module(s)
 quadpm remove <name>                     # Remove an installed module
+quadpm list                              # List installed modules
+quadpm outdated                          # Show modules with newer versions
 quadpm build                             # Build C sources in current module
 ```
+
+`--no-scripts` skips modules' prebuild scripts.
+
+Dependencies are listed in `qd.json`, as a URL with an optional `@ref`, a local path, or an
+object with a version range:
+
+```json
+{
+  "name": "mymodule",
+  "dependencies": {
+    "glut":  "https://github.com/user/qd-glut@v1.0.0",
+    "http":  { "url": "https://github.com/user/qd-http", "version": "^2.0.0" },
+    "mylib": "../local/path"
+  }
+}
+```
+
+A range is `^1.2.3` (compatible: below 2.0.0), `~1.2.3` (below 1.3.0), `1.2.x`,
+comparisons such as `>=1.0.0, <2.0.0`, a hyphen range `1.0.0 - 2.0.0`, alternatives joined
+with `||`, or `*`. `qd.lock` pins the exact commit of each module, transitive dependencies
+included, so a build can be reproduced.
+
+Modules are installed in `$QUADRATE_PATH` if set, else `$XDG_DATA_HOME/quadrate/modules`,
+else `~/quadrate/modules`.
 
 The `build` command is useful during local module development. It compiles any C source files in `src/` and creates both shared (`.so`) and static (`.a`) libraries in `lib/`.
 
@@ -201,6 +336,9 @@ quaduses hello.qd        # Show what changes would be made
 quaduses -w hello.qd     # Update file in place
 quaduses -w src/         # Update all .qd files in directory recursively
 ```
+
+`-c`/`--check` reports whether files need changes and exits 1 if so; `-n`/`--dry-run`
+shows the changes without making them.
 
 Note: `quad uses` automatically adds `-w` to update files in place. Use `quad uses --check` for dry run.
 
@@ -218,7 +356,11 @@ with the tags supplying the prose. A file that does not parse is reported as
 quaddoc lib/                        # Generate docs for all modules in lib/
 quaddoc -o api-docs lib/            # Output to custom directory (--output)
 quaddoc --title "My API" src/       # Custom project title
+quaddoc --css custom.css lib/       # Append a stylesheet after the default styles
 ```
+
+With no `-o`, the output goes to `docs/` in the current directory. `-q`/`--quiet` prints
+nothing but errors.
 
 The generated documentation includes function signatures, parameter tables, return values, error conditions, code examples, and `Calls:`/`Called by:` cross-references.
 
@@ -229,6 +371,7 @@ Model Context Protocol server for AI assistants. Provides language documentation
 ```bash
 quadmcp          # Serve MCP on stdin/stdout (how a client starts it)
 quadmcp --http   # Serve MCP over HTTP on localhost:3000
+quadmcp --http --host 0.0.0.0   # Bind to another address
 ```
 
 Configure your MCP client to connect to `quadmcp` as a stdio-based server.

@@ -5,7 +5,6 @@
 #include <filesystem>
 #include <fstream>
 #include <functional>
-#include <iostream>
 #include <quadrate/qc/ast.h>
 #include <quadrate/qc/ast_node.h>
 #include <quadrate/qc/ast_node_anonymous_function.h>
@@ -31,11 +30,9 @@
 #include <quadrate/qc/ast_node_test.h>
 #include <quadrate/qc/ast_node_type_alias.h>
 #include <quadrate/qc/ast_node_use.h>
-#include <quadrate/qc/colors.h>
 #include <quadrate/qc/instructions.h>
 #include <quadrate/qc/numeric_literal.h>
 #include <quadrate/qc/semantic_validator.h>
-#include <sstream>
 #include <unordered_set>
 
 namespace Qd {

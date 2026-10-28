@@ -1,6 +1,6 @@
 {
   "name": "fuzzy",
-  "description": "doccheck: page-context",
+  "description": "Fuzzy string matching: edit distance, similarity scores and the closest of several candidates.",
   "constants": [
 
   ],

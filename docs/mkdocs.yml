@@ -72,7 +72,7 @@ nav:
       - Stack operations: reference/stack.md
       - Arithmetic: reference/arithmetic.md
       - Comparison: reference/comparison.md
-      - Bitwise: reference/bitwise.md
+      - Logic and bits: reference/bitwise.md
       - Arrays: reference/arrays.md
       - Structs: reference/structs.md
       - Generics: reference/generics.md

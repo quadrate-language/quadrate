@@ -10,7 +10,6 @@ Built-in operations for input and output.
 | `printv` | `(val --)` | Print with type info |
 | `prints` | `()` | Print entire stack |
 | `nl` | `()` | Print newline |
-| `read` | `(-- ... n)` | Read command line args |
 
 ---
 

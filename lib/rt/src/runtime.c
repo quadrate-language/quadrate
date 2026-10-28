@@ -841,31 +841,6 @@ int qd_free(qd_context* ctx) {
 	return (int){0};
 }
 
-// free_struct - release reference-counted struct from stack: ( ptr -- )
-// Uses qd_struct_release which decrements refcount and frees when it reaches 0
-int qd_free_struct(qd_context* ctx) {
-	size_t stack_size = qd_stack_size(ctx->st);
-	if (stack_size < 1) {
-		QDRT_FATAL(ctx, "free", "Stack underflow (required 1 element, have %zu)", stack_size);
-	}
-
-	qd_stack_element_t val;
-	qd_stack_error err = qd_stack_pop(ctx->st, &val);
-	if (err != QD_STACK_OK) {
-		QDRT_FATAL(ctx, "free", "Failed to pop pointer");
-	}
-
-	// Verify it's a pointer type
-	if (val.type != QD_STACK_TYPE_PTR) {
-		QDRT_FATAL(ctx, "free", "Expected pointer type, got type %d", val.type);
-	}
-
-	// Release the struct (decrements refcount, frees when 0)
-	qd_struct_release(val.value.p);
-
-	return (int){0};
-}
-
 // rot - rotate top 3 elements: ( a b c -- b c a )
 // pick - copy the third element to the top: ( x y z -- x y z x )
 // roll - rotate n elements, moving nth to top: ( ... n -- ... )
@@ -1164,7 +1139,6 @@ qd_context* qd_create_context(size_t stack_size) {
 		ctx->error_code = 0;
 		ctx->has_error = 0;
 		ctx->error_msg = NULL;
-		ctx->error_context = NULL;
 		ctx->userdata = NULL;
 		ctx->argc = 0;
 		ctx->argv = NULL;
@@ -1186,9 +1160,6 @@ void qd_free_context(qd_context* ctx) {
 	}
 	if (ctx->error_msg) {
 		free(ctx->error_msg);
-	}
-	if (ctx->error_context) {
-		free(ctx->error_context);
 	}
 	free(ctx);
 }
@@ -1226,20 +1197,6 @@ qd_context* qd_clone_context(const qd_context* src) {
 	} else {
 		ctx->error_msg = NULL;
 	}
-	if (src->error_context != NULL) {
-		ctx->error_context = strdup(src->error_context);
-		if (ctx->error_context == NULL) {
-			if (ctx->error_msg) {
-				free(ctx->error_msg);
-			}
-			qd_stack_destroy(ctx->st);
-			free(ctx);
-			return NULL;
-		}
-	} else {
-		ctx->error_context = NULL;
-	}
-
 	/* Share userdata pointer (shallow copy) */
 	ctx->userdata = src->userdata;
 
@@ -1253,9 +1210,6 @@ qd_context* qd_clone_context(const qd_context* src) {
 		if (ctx->program_name == NULL) {
 			if (ctx->error_msg) {
 				free(ctx->error_msg);
-			}
-			if (ctx->error_context) {
-				free(ctx->error_context);
 			}
 			qd_stack_destroy(ctx->st);
 			free(ctx);
@@ -1375,20 +1329,6 @@ void qd_print_stack_trace(qd_context* ctx) {
 	}
 }
 
-void qd_set_error_context(qd_context* ctx, const char* context) {
-	if (ctx->error_context) {
-		free(ctx->error_context);
-	}
-	ctx->error_context = context ? strdup(context) : NULL;
-}
-
-void qd_clear_error_context(qd_context* ctx) {
-	if (ctx->error_context) {
-		free(ctx->error_context);
-		ctx->error_context = NULL;
-	}
-}
-
 void qd_print_error_msg(qd_context* ctx, const char* func_name) {
 	// Check NO_COLOR environment variable
 	const bool use_color = getenv("NO_COLOR") == NULL && isatty(STDERR_FILENO);
@@ -1416,17 +1356,7 @@ void qd_print_error_msg(qd_context* ctx, const char* func_name) {
 	// Print the failing function name
 	fprintf(stderr, "%s", func_name);
 
-	// Print user-defined context if available, then the error message
-	if (ctx->error_context && ctx->error_context[0] != '\0') {
-		if (ctx->error_msg && ctx->error_msg[0] != '\0') {
-			fprintf(stderr, " failed: %s: %s\n", ctx->error_context, ctx->error_msg);
-		} else {
-			fprintf(stderr, " failed: %s\n", ctx->error_context);
-		}
-		// Clear context after use
-		free(ctx->error_context);
-		ctx->error_context = NULL;
-	} else if (ctx->error_msg && ctx->error_msg[0] != '\0') {
+	if (ctx->error_msg && ctx->error_msg[0] != '\0') {
 		fprintf(stderr, " failed: %s\n", ctx->error_msg);
 	} else {
 		fprintf(stderr, " failed\n");
@@ -1548,10 +1478,6 @@ const char* qdrt_type_name(qd_stack_type type) {
 
 // Public helper functions
 
-void qd_dump_stack(qd_context* ctx) {
-	dump_stack(ctx);
-}
-
 void qd_set_error_msg(qd_context* ctx, const char* msg) {
 	if (ctx->error_msg) {
 		free(ctx->error_msg);
@@ -1577,38 +1503,6 @@ int qd_version_api(void) {
 #else
 	return 0;
 #endif
-}
-
-int qd_version_major(void) {
-#ifdef QD_VERSION_MAJOR
-	return QD_VERSION_MAJOR;
-#else
-	return 0;
-#endif
-}
-
-int qd_version_minor(void) {
-#ifdef QD_VERSION_MINOR
-	return QD_VERSION_MINOR;
-#else
-	return 0;
-#endif
-}
-
-int qd_version_patch(void) {
-#ifdef QD_VERSION_PATCH
-	return QD_VERSION_PATCH;
-#else
-	return 0;
-#endif
-}
-
-int qd_rt_version(qd_context* ctx) {
-	return qd_push_s(ctx, qd_version());
-}
-
-int qd_rt_version_api(qd_context* ctx) {
-	return qd_push_i(ctx, qd_version_api());
 }
 
 void qd_set_userdata(qd_context* ctx, void* userdata) {

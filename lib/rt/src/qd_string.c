@@ -2,9 +2,9 @@
 
 #include <quadrate/rt/qd_string.h>
 #include <stdint.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <stdio.h>
 
 qd_string_t* qd_string_create(const char* str) {
 	if (str == NULL) {
@@ -78,13 +78,6 @@ void qd_string_release(qd_string_t* str) {
 		free(str->data);
 		free(str);
 	}
-}
-
-size_t qd_string_refcount(const qd_string_t* str) {
-	if (str == NULL) {
-		return 0;
-	}
-	return atomic_load(&str->refcount);
 }
 
 const char* qd_string_data(const qd_string_t* str) {
@@ -213,8 +206,12 @@ size_t qd_string_char_index(qd_string_t* str, size_t byte_offset) {
 
 qd_string_t* qd_string_concat_smart(qd_string_t* str1, qd_string_t* str2) {
 	if (str1 == NULL || str2 == NULL) {
-		if (str1) qd_string_release(str1);
-		if (str2) qd_string_release(str2);
+		if (str1) {
+			qd_string_release(str1);
+		}
+		if (str2) {
+			qd_string_release(str2);
+		}
 		return NULL;
 	}
 

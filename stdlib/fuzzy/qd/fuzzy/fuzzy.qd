@@ -1,4 +1,6 @@
+/// Fuzzy string matching: edit distance, similarity scores and the closest of several candidates.
 /// doccheck: page-context
+
 use mem
 use strings
 

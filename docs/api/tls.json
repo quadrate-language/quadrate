@@ -1,6 +1,6 @@
 {
   "name": "tls",
-  "description": "TLS/SSL secure socket operations. Provides encryption layer on top of TCP sockets using OpenSSL. Error codes: Ok=1 (success), specific errors start at 2 doccheck: page-context doccheck: page-context use net doccheck: page-setup 0 -> sock doccheck: page-setup 0 -> client_sock doccheck: page-setup sock \"example.com\" tls::connect! -> conn",
+  "description": "TLS/SSL secure socket operations. Provides encryption layer on top of TCP sockets using OpenSSL. Error codes: Ok=1 (success), specific errors start at 2",
   "constants": [
     {
       "name": "ErrAccept",

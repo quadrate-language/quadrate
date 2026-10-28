@@ -1,5 +1,4 @@
 /// Time operations and duration constants.
-/// Duration = 1 nanosecond.
 /// doccheck: page-context
 /// doccheck: page-setup 1700000000 -> ts1
 /// doccheck: page-setup 1700086400 -> ts2
@@ -7,6 +6,8 @@
 /// doccheck: page-setup 1700086400 -> end_ts
 /// doccheck: page-setup 1700000000 -> start_time
 /// doccheck: page-setup 1700086400 -> end_time
+
+/// Duration = 1 nanosecond.
 pub const Nanosecond = 1
 /// Duration = 1 microsecond (1000 nanoseconds).
 pub const Microsecond = 1000
